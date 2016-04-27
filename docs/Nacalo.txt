@@ -1,0 +1,56 @@
+Primerno v konçe fevralä 2016 ja zadumalsä o neobhodimosti jazyka, programmu na
+kotorom možno bylo by zapuskatj v zasciscönoj srede. Ctoby iz porgrammy neljzä
+bylo nikak navreditj srede vypolnenija, isportitj pamätj, perejti na
+nerazrešönnyj adress i t. d. Pri etom hotelosj by, ctoby jazyk obladal horošej
+proizvoditeljnostju.
+
+Ishodä iz etih trebovanij, takoj jazyk dolžen byl by imetj sledujuscije
+svojstva:
+	*) Vozmožnostj kompiläçii.
+	*) Staticeskaja siljnaja tipizaçija.
+	*) Proverka korrektnosti dostupa k pamäti na etape sborki, v podavläjuscem
+	  boljšinstve slucajev.
+	*) Upravlenije pamätju ne cerez sborscik musora.
+
+
+Primerno nacinaja s 20 aprelä 2016 ja nacal zadumyvatjsä, a ne realizovatj li
+samomu takoj jazyk.
+
+
+Posle nekotoryh razdumij, ja rešil nacatj pisatj prototip takogo jazyka, s takim
+nacaljnym naborom vozmožnostej:
+	*) Nalicije nabora elementarnyh tipov: çelyh, vescestvennyh, logiceskih.
+	*) Osnovnyje arifmeticeskije i logiceskije operaçii nad elementarnymi
+	  tipami.
+	*) Bazovyj nabor konstrukçij upravlenija potokom upravlenija: uslovnoje
+	  vypolnenije, çikly, vyzov funkçij (v tom cisle i rekursivnyj).
+	*) Otsutstvije vydelenija pamäti.
+	*) Nalicije massivov, s dlinoj, opredeläjemoj pri sozdanii.
+	*) Peredaca argumentov v funkçii po znaceniju ili po ssylke.
+	*) Strokovyj tip, veduscij sebä pocti kak elementarnyj.
+
+Pri etom, pervuju realizaçiju nado sdelatj takoj, ctoby v buduscem imetj
+vozmožnostj rasširenija jazyka. Ctoby možno bylo dobavitj, naprimer, struktury,
+šablony, klassy, metody klassov, neizmenäjemostj dannyh, dinamiceskoje
+vydelenije pamäti i t. d.
+
+
+Dlä otrabotki jazyka ja rešil napisatj interpritator dannogo jazyka s takimi
+vozmožnostämi:
+	*) Zagruzka teksta programmy i perevod jego v promežutocnyj
+	  mašinno-zavisimyj kod.
+	*) Interpritator promežutocnogo koda.
+	*) Vozmožnistj vyzyvatj iz vnešnej sredy funkçii jazyka.
+	*) Vozmožnostj vyzova vnešnih funkçij okruženija iz programmy na etom
+	  jazyke.
+
+
+V kacestve imeni buduscego jazyka ja rešil vybratj nazvanije, ne pohoçeje, i ne
+assoçiirujuscejesä s nazvanijami uže suscestvujuscih jazykov. Ja rešil, cto
+nazvanije dolžno soderžatj v sebe odnu bukvy, i opçionaljnoje slovo "jazyk".
+Etoj bukvoj ja rešil sdelatj zaglavnuju bukvu "Ü" (U+00DC) iz alfavita nemeçkogo
+jazyka, a slovo "jazyk" vzätj tože iz nemeçkogo jazyka. Nemeçkij ja vybral, kak
+protivopostavlenije zasiliju anglijskogo jazyka.
+V itoge, Nazvanije jazyka polucilosj takoje:
+	"Ü" - kratkaja forma.
+	"Ü-Sprache" - polnaja forma.
