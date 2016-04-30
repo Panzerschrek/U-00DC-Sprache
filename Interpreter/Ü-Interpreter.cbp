@@ -31,6 +31,8 @@
 		<Compiler>
 			<Add option="-Wall" />
 		</Compiler>
+		<Unit filename="src\lexical_analyzer.cpp" />
+		<Unit filename="src\lexical_analyzer.hpp" />
 		<Unit filename="src\main.cpp" />
 		<Extensions>
 			<code_completion />
