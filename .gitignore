@@ -1,0 +1,9 @@
+# Objects and binaries.
+*.obj
+*.o
+*.exe
+*.dll
+*.so
+
+# Code::BLocks shit.
+*.layout
