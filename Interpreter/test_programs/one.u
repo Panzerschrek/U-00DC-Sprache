@@ -4,9 +4,14 @@ fn f( a : i32, b : f32 )
 
 fn l()
 {
+	let x : i32;
+	{
+		let wadawdaw : f64;
+	}
 }
 
 fn ZweiUndVierzig() : int
 {
-	return 42;
+	{
+	}
 }

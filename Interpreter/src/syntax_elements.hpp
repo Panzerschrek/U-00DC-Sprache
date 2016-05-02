@@ -23,13 +23,29 @@ public:
 };
 
 typedef std::unique_ptr<IBlockElement> IBlockElementPtr;
-typedef std::vector<IBlockElementPtr> Block;
+typedef std::vector<IBlockElementPtr> BlockElements;
 
-struct VariableDeclaration
+class Block final : public IBlockElement
 {
+public:
+	Block( BlockElements elements );
+	virtual ~Block() override;
+
+private:
+	const BlockElements elements_;
+};
+
+typedef std::unique_ptr<Block> BlockPtr;
+
+struct VariableDeclaration final : public IBlockElement
+{
+	virtual ~VariableDeclaration() override;
+
 	ProgramString name;
 	ProgramString type;
 };
+
+typedef std::unique_ptr<VariableDeclaration> VariableDeclarationPtr;
 
 class FunctionDeclaration final : public IProgramElement
 {
@@ -38,7 +54,7 @@ public:
 		ProgramString name,
 		ProgramString return_type,
 		std::vector<VariableDeclaration> arguments,
-		Block block );
+		BlockPtr block );
 
 	virtual ~FunctionDeclaration() override;
 
@@ -46,7 +62,7 @@ private:
 	const ProgramString name_;
 	const ProgramString return_type_;
 	const std::vector<VariableDeclaration> arguments_;
-	const Block block_;
+	const BlockPtr block_;
 };
 
 } // namespace Interpreter

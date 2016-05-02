@@ -21,7 +21,61 @@ static void PushErrorMessage(
 		" Syntax error - unexpected lexem: " + ToStdString(lexem.text) );
 }
 
-static Block ParseBlock(
+static VariableDeclarationPtr ParseVariableDeclaration(
+	SyntaxErrorMessages& error_messages,
+	Lexems::const_iterator& it,
+	const Lexems::const_iterator it_end )
+{
+	U_ASSERT( it->type == Lexem::Type::Identifier && it->text == Keywords::let );
+	U_ASSERT( it < it_end );
+
+	++it;
+	U_ASSERT( it < it_end );
+
+	if( it->type != Lexem::Type::Identifier )
+	{
+		PushErrorMessage( error_messages, *it );
+		return nullptr;
+	}
+
+	VariableDeclarationPtr decl( new VariableDeclaration() );
+	decl->name= it->text;
+
+	++it;
+	U_ASSERT( it < it_end );
+
+	if( it->type != Lexem::Type::Colon )
+	{
+		PushErrorMessage( error_messages, *it );
+		return nullptr;
+	}
+
+	++it;
+	U_ASSERT( it < it_end );
+
+	if( it->type != Lexem::Type::Identifier )
+	{
+		PushErrorMessage( error_messages, *it );
+		return nullptr;
+	}
+
+	decl->type= it->text;
+
+	++it;
+	U_ASSERT( it < it_end );
+
+	if( it->type != Lexem::Type::Semicolon )
+	{
+		PushErrorMessage( error_messages, *it );
+		return nullptr;
+	}
+
+	++it;
+
+	return decl;
+}
+
+static BlockPtr ParseBlock(
 	SyntaxErrorMessages& error_messages,
 	Lexems::const_iterator& it,
 	const Lexems::const_iterator it_end )
@@ -31,23 +85,36 @@ static Block ParseBlock(
 
 	++it;
 
-	unsigned int level= 1;
-	while( it < it_end && level > 0 )
-	{
-		if( it->type == Lexem::Type::BraceRight )
-			level--;
-		else if( it->type == Lexem::Type::BraceLeft )
-			level++;
+	BlockElements elements;
 
-		++it;
+	while( it->type != Lexem::Type::EndOfFile )
+	{
+		if( it->type == Lexem::Type::BraceLeft )
+			elements.emplace_back( ParseBlock( error_messages, it, it_end ) );
+
+		else if( it->type == Lexem::Type::BraceRight )
+			break;
+
+		else if( it->type == Lexem::Type::Identifier && it->text == Keywords::let )
+			elements.emplace_back( ParseVariableDeclaration( error_messages, it, it_end ) );
+		else
+		{
+			PushErrorMessage( error_messages, *it );
+			return nullptr;
+		}
 	}
 
-	U_ASSERT( it <= it_end );
+	if( it->type == Lexem::Type::BraceRight )
+		++it;
+	else
+	{
+		PushErrorMessage( error_messages, *it );
+		return nullptr;
+	}
 
-	if( level > 0 )
-		PushErrorMessage( error_messages, it == it_end ? *(it-1) : *it );
-
-	return Block();
+	return BlockPtr(
+		new Block(
+			std::move( elements ) ) );
 }
 
 static IProgramElementPtr ParseFunction(
@@ -156,7 +223,7 @@ static IProgramElementPtr ParseFunction(
 		++it;
 	}
 
-	Block block;
+	BlockPtr block;
 
 	if( it < it_end && it->type == Lexem::Type::BraceLeft )
 		block= ParseBlock( error_messages, it, it_end );
@@ -196,6 +263,8 @@ SyntaxAnalysisResult SyntaxAnalysis( const Lexems& lexems )
 
 			continue;
 		}
+		else if( lexem.type == Lexem::Type::EndOfFile )
+			break;
 
 		if( unexpected_lexem == it_end )
 			unexpected_lexem= it;
