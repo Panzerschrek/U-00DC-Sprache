@@ -1,5 +1,11 @@
 fn f( a : i32, b : f32 )
 {
+	return 42 * l( -427, arr[24*i + 4] );
+	return;
+	{
+	}
+	return;
+	let r : i8;
 }
 
 fn l()
@@ -8,6 +14,7 @@ fn l()
 	{
 		let wadawdaw : f64;
 	}
+	return;
 }
 
 fn ZweiUndVierzig() : int

@@ -198,6 +198,23 @@ void VariableDeclaration::Print( std::ostream& stream, unsigned int indent ) con
 	stream << ";";
 }
 
+ReturnOperator::ReturnOperator( BinaryOperatorsChainPtr expression )
+	: expression_( std::move( expression ) )
+{
+}
+
+ReturnOperator::~ReturnOperator()
+{
+}
+
+void ReturnOperator::Print( std::ostream& stream, unsigned int indent ) const
+{
+	stream << "return ";
+	if( expression_ )
+		expression_->Print( stream, indent );
+	stream << ";";
+}
+
 FunctionDeclaration::FunctionDeclaration(
 	ProgramString name,
 	ProgramString return_type,

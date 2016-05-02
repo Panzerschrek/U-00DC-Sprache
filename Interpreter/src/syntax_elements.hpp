@@ -11,6 +11,8 @@ namespace Interpreter
 class IPrintable
 {
 public:
+	virtual ~IPrintable(){}
+
 	virtual void Print( std::ostream& stream, unsigned int indent ) const= 0;
 };
 
@@ -195,6 +197,18 @@ struct VariableDeclaration final : public IBlockElement
 };
 
 typedef std::unique_ptr<VariableDeclaration> VariableDeclarationPtr;
+
+class ReturnOperator final : public IBlockElement
+{
+public:
+	ReturnOperator( BinaryOperatorsChainPtr expression );
+	~ReturnOperator() override;
+
+	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
+
+private:
+	const BinaryOperatorsChainPtr expression_;
+};
 
 class FunctionDeclaration final : public IProgramElement
 {

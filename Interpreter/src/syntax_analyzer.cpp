@@ -9,6 +9,7 @@ namespace Keywords
 
 const ProgramString fn= ToPorgramString( "fn" );
 const ProgramString let= ToPorgramString( "let" );
+const ProgramString return_= ToPorgramString( "return" );
 
 }
 
@@ -286,6 +287,41 @@ static VariableDeclarationPtr ParseVariableDeclaration(
 	return decl;
 }
 
+static IBlockElementPtr ParseReturnOperator(
+	SyntaxErrorMessages& error_messages,
+	Lexems::const_iterator& it,
+	const Lexems::const_iterator it_end )
+{
+	U_ASSERT( it->type == Lexem::Type::Identifier && it->text == Keywords::return_ );
+	U_ASSERT( it < it_end );
+
+	++it;
+	U_ASSERT( it < it_end );
+
+	if( it->type == Lexem::Type::Semicolon )
+	{
+		++it;
+		return IBlockElementPtr( new ReturnOperator( nullptr ) );
+	}
+
+	BinaryOperatorsChainPtr expression=
+		ParseExpression(
+			error_messages,
+			it,
+			it_end );
+
+	U_ASSERT( it < it_end );
+	if( it->type != Lexem::Type::Semicolon  )
+	{
+		PushErrorMessage( error_messages, *it );
+		return nullptr;
+	}
+
+	++it;
+
+	return IBlockElementPtr( new ReturnOperator( std::move( expression ) ) );
+}
+
 static BlockPtr ParseBlock(
 	SyntaxErrorMessages& error_messages,
 	Lexems::const_iterator& it,
@@ -308,6 +344,10 @@ static BlockPtr ParseBlock(
 
 		else if( it->type == Lexem::Type::Identifier && it->text == Keywords::let )
 			elements.emplace_back( ParseVariableDeclaration( error_messages, it, it_end ) );
+
+		else if( it->type == Lexem::Type::Identifier && it->text == Keywords::return_ )
+			elements.emplace_back( ParseReturnOperator( error_messages, it, it_end ) );
+
 		else
 		{
 			PushErrorMessage( error_messages, *it );
