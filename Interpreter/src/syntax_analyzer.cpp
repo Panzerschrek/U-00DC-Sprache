@@ -21,6 +21,210 @@ static void PushErrorMessage(
 		" Syntax error - unexpected lexem: " + ToStdString(lexem.text) );
 }
 
+static bool IsBinaryOperator( const Lexem& lexem )
+{
+	return
+		lexem.type == Lexem::Type::Plus ||
+		lexem.type == Lexem::Type::Minus ||
+		lexem.type == Lexem::Type::Star ||
+		lexem.type == Lexem::Type::Slash;
+}
+
+static BinaryOperator LexemToBinaryOperator( const Lexem& lexem )
+{
+	switch( lexem.type )
+	{
+		case Lexem::Type::Plus: return BinaryOperator::Add;
+		case Lexem::Type::Minus: return BinaryOperator::Sub;
+		case Lexem::Type::Star: return BinaryOperator::Mul;
+		case Lexem::Type::Slash: return BinaryOperator::Div;
+
+		default:
+		U_ASSERT(false);
+		return BinaryOperator::None;
+	};
+}
+
+static BinaryOperatorsChainPtr ParseExpression(
+	SyntaxErrorMessages& error_messages,
+	Lexems::const_iterator& it,
+	const Lexems::const_iterator it_end )
+{
+	BinaryOperatorsChainPtr result( new BinaryOperatorsChain );
+
+	while(1)
+	{
+		PrefixOperators prefix_operators;
+
+		// Prefix operators.
+		while(1)
+		{
+			switch( it->type )
+			{
+			case Lexem::Type::Identifier:
+			case Lexem::Type::Number:
+			case Lexem::Type::BracketLeft:
+				goto parse_operand;
+
+			case Lexem::Type::Plus:
+				 prefix_operators.emplace_back( new UnaryPlus() );
+				++it;
+				break;
+
+			case Lexem::Type::Minus:
+				prefix_operators.emplace_back( new UnaryMinus() );
+				++it;
+				break;
+
+			default:
+				if( prefix_operators.empty() )
+					goto return_result;
+				else
+				{
+					PushErrorMessage( error_messages, *it );
+					return nullptr;
+				}
+			};
+		}
+
+	parse_operand:
+		result->components.emplace_back();
+		BinaryOperatorsChain::ComponentWithOperator& component= result->components.back();
+
+		component.prefix_operators= std::move( prefix_operators );
+
+		// Operand.
+		if( it->type == Lexem::Type::Identifier )
+		{
+			component.component.reset( new NamedOperand( it->text ) );
+			++it;
+		}
+		else if( it->type == Lexem::Type::Number )
+		{
+			component.component.reset( new NumericConstant( it->text ) );
+			++it;
+		}
+		else if( it->type == Lexem::Type::BracketLeft )
+		{
+			++it;
+
+			component.component.reset(
+				new BracketExpression(
+					ParseExpression(
+						error_messages,
+						it,
+						it_end ) ) );
+
+			U_ASSERT( it < it_end );
+			if( it->type != Lexem::Type::BracketRight )
+			{
+				PushErrorMessage( error_messages, *it );
+				return nullptr;
+			}
+			++it;
+		}
+		else
+		{
+			U_ASSERT(false);
+		}
+
+		// Postfix operators.
+		while(1)
+		{
+			switch( it->type )
+			{
+			case Lexem::Type::SquareBracketLeft:
+				{
+					++it;
+					U_ASSERT( it < it_end );
+
+					component.postfix_operators.emplace_back(
+						new IndexationOperator(
+							ParseExpression(
+								error_messages,
+								it,
+								it_end ) ) );
+
+					U_ASSERT( it < it_end );
+					if( it->type != Lexem::Type::SquareBracketRight )
+					{
+						PushErrorMessage( error_messages, *it );
+						return nullptr;
+					}
+					++it;
+				}
+				break;
+
+			case Lexem::Type::BracketLeft:
+				{
+					++it;
+					U_ASSERT( it < it_end );
+
+					std::vector<BinaryOperatorsChainPtr> arguments;
+					while(1)
+					{
+						if( it->type == Lexem::Type::BracketRight )
+						{
+							++it;
+							break;
+						}
+
+						arguments.emplace_back(
+							ParseExpression(
+								error_messages,
+								it,
+								it_end ) );
+
+						if( it->type == Lexem::Type::Comma )
+						{
+							++it;
+							if( it->type == Lexem::Type::BracketRight )
+							{
+								PushErrorMessage( error_messages, *it );
+								return nullptr;
+							}
+						}
+						else if( it->type == Lexem::Type::BracketRight )
+						{
+							++it;
+							break;
+						}
+					}
+
+					component.postfix_operators.emplace_back( new CallOperator( std::move( arguments ) ) );
+
+				} break;
+
+				default:
+				if( IsBinaryOperator( *it ) )
+					goto parse_binary_operator;
+				else // End of postfix operators.
+					goto return_result;
+			};
+		}
+
+	parse_binary_operator:;
+		component.op= LexemToBinaryOperator( *it );
+
+		++it;
+		U_ASSERT( it < it_end );
+	}
+
+return_result:
+	if( result->components.empty() )
+	{
+		PushErrorMessage( error_messages, *it );
+		return nullptr;
+	}
+	if( result->components.back().op != BinaryOperator::None )
+	{
+		PushErrorMessage( error_messages, *it );
+		return nullptr;
+	}
+
+	return result;
+}
+
 static VariableDeclarationPtr ParseVariableDeclaration(
 	SyntaxErrorMessages& error_messages,
 	Lexems::const_iterator& it,
@@ -64,13 +268,20 @@ static VariableDeclarationPtr ParseVariableDeclaration(
 	++it;
 	U_ASSERT( it < it_end );
 
-	if( it->type != Lexem::Type::Semicolon )
+
+	if( it->type == Lexem::Type::Assignment )
+	{
+		++it;
+		decl->initial_value= ParseExpression( error_messages, it, it_end );
+	}
+
+	if( it->type == Lexem::Type::Semicolon )
+		++it;
+	else
 	{
 		PushErrorMessage( error_messages, *it );
 		return nullptr;
 	}
-
-	++it;
 
 	return decl;
 }
@@ -194,7 +405,7 @@ static IProgramElementPtr ParseFunction(
 			if( it->type == Lexem::Type::BracketRight )
 			{
 				PushErrorMessage( error_messages, *it );
-			return nullptr;
+				return nullptr;
 			}
 		}
 		else if( it->type == Lexem::Type::BracketRight )

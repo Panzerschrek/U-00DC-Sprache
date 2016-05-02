@@ -4,7 +4,7 @@ fn f( a : i32, b : f32 )
 
 fn l()
 {
-	let x : i32;
+	let x : i32 = +-34[09];
 	{
 		let wadawdaw : f64;
 	}
@@ -12,6 +12,7 @@ fn l()
 
 fn ZweiUndVierzig() : int
 {
+	let f : u8 = func( func(64)[45 + ff - ff + aaeraw] );
 	{
 	}
 }
