@@ -3,6 +3,7 @@
 #include <vector>
 
 #include "lexical_analyzer.hpp"
+#include "syntax_analyzer.hpp"
 
 int main()
 {
@@ -27,13 +28,18 @@ int main()
 	for( unsigned int n= 0; n < file_content.size(); n++ )
 		program[n]= file_content[n];
 
-	Interpreter::LexicalAnalysisResult result= Interpreter::LexicalAnalysis( program );
+	Interpreter::LexicalAnalysisResult lexical_result= Interpreter::LexicalAnalysis( program );
 
-	for( const Interpreter::LexicalErrorMessage& error_message : result.error_messages )
+	for( const Interpreter::LexicalErrorMessage& error_message : lexical_result.error_messages )
 		std::cout << error_message << "\n";
 
-	for( const Interpreter::Lexem& lexem : result.lexems )
-		std::cout << "Lexem: " << int(lexem.type) << "\n";
+	for( const Interpreter::Lexem& lexem : lexical_result.lexems )
+		std::cout << Interpreter::ToStdString( lexem.text ) << "\n";
+
+	Interpreter::SyntaxAnalysisResult syntax_result= Interpreter::SyntaxAnalysis( lexical_result.lexems );
+
+	for( const Interpreter::SyntaxErrorMessage& error_message : syntax_result.error_messages )
+		std::cout << error_message << "\n";
 
 	return 0;
 }

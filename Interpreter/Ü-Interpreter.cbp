@@ -31,9 +31,14 @@
 		<Compiler>
 			<Add option="-Wall" />
 		</Compiler>
+		<Unit filename="src\assert.hpp" />
 		<Unit filename="src\lexical_analyzer.cpp" />
 		<Unit filename="src\lexical_analyzer.hpp" />
 		<Unit filename="src\main.cpp" />
+		<Unit filename="src\syntax_analyzer.cpp" />
+		<Unit filename="src\syntax_analyzer.hpp" />
+		<Unit filename="src\syntax_elements.cpp" />
+		<Unit filename="src\syntax_elements.hpp" />
 		<Extensions>
 			<code_completion />
 			<envvars />

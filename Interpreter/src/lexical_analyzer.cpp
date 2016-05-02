@@ -9,7 +9,55 @@ namespace Interpreter
 typedef std::map<ProgramString, Lexem::Type> FixedLexemsMap;
 static const size_t g_max_fixed_lexem_size= 3;
 
-static ProgramString StrToProgramString( const char* str )
+static const FixedLexemsMap g_fixed_lexems[ g_max_fixed_lexem_size + 1 ]=
+{
+	{ // Zero symbol lexems.
+	},
+	{ // One symbol lexems.
+		{ ToPorgramString( "(" ), Lexem::Type::BracketLeft },
+		{ ToPorgramString( ")" ), Lexem::Type::BracketRight },
+		{ ToPorgramString( "[" ), Lexem::Type::SquareBracketLeft },
+		{ ToPorgramString( "]" ), Lexem::Type::SquareBracketRight },
+		{ ToPorgramString( "{" ), Lexem::Type::BraceLeft },
+		{ ToPorgramString( "}" ), Lexem::Type::BraceRight },
+
+		{ ToPorgramString( "," ), Lexem::Type::Comma },
+		{ ToPorgramString( "." ), Lexem::Type::Dot },
+		{ ToPorgramString( ":" ), Lexem::Type::Colon },
+		{ ToPorgramString( ";" ), Lexem::Type::Semicolon },
+
+		{ ToPorgramString( "=" ), Lexem::Type::Assignment },
+		{ ToPorgramString( "+" ), Lexem::Type::Plus },
+		{ ToPorgramString( "-" ), Lexem::Type::Minus },
+		{ ToPorgramString( "*" ), Lexem::Type::Star },
+		{ ToPorgramString( "/" ), Lexem::Type::Slash },
+
+		{ ToPorgramString( "<" ), Lexem::Type::CompareLess },
+		{ ToPorgramString( ">" ), Lexem::Type::CommpareGreater },
+
+		{ ToPorgramString( "|" ), Lexem::Type::Or },
+		{ ToPorgramString( "^" ), Lexem::Type::Xor },
+		{ ToPorgramString( "~" ), Lexem::Type::Tilda },
+		{ ToPorgramString( "!" ), Lexem::Type::Not },
+	},
+	{ // Two symbol lexems.
+		{ ToPorgramString( "++" ), Lexem::Type::Increment },
+		{ ToPorgramString( "--" ), Lexem::Type::Decrement },
+
+		{ ToPorgramString( "==" ), Lexem::Type::CompareEqual },
+		{ ToPorgramString( "!=" ), Lexem::Type::CompareNotEqual },
+		{ ToPorgramString( "<=" ), Lexem::Type::CompareLessOrEqual },
+		{ ToPorgramString( ">=" ), Lexem::Type::CompareGreaterOrEqual },
+
+		{ ToPorgramString( "&&" ), Lexem::Type::Conjunction },
+		{ ToPorgramString( "||" ), Lexem::Type::Disjunction },
+		{ ToPorgramString( "||" ), Lexem::Type::Disjunction },
+	},
+	{
+	},
+};
+
+ProgramString ToPorgramString( const char* str )
 {
 	ProgramString result;
 
@@ -22,53 +70,15 @@ static ProgramString StrToProgramString( const char* str )
 	return result;
 }
 
-static const FixedLexemsMap g_fixed_lexems[ g_max_fixed_lexem_size + 1 ]=
+std::string ToStdString( const ProgramString& str )
 {
-	{ // Zero symbol lexems.
-	},
-	{ // One symbol lexems.
-		{ StrToProgramString( "(" ), Lexem::Type::BracketLeft },
-		{ StrToProgramString( ")" ), Lexem::Type::BracketRight },
-		{ StrToProgramString( "[" ), Lexem::Type::SquareBracketLeft },
-		{ StrToProgramString( "]" ), Lexem::Type::SquareBracketRight },
-		{ StrToProgramString( "{" ), Lexem::Type::BraceLeft },
-		{ StrToProgramString( "}" ), Lexem::Type::BraceRight },
+	std::string result( str.size(), '\0' );
 
-		{ StrToProgramString( "," ), Lexem::Type::Comma },
-		{ StrToProgramString( "." ), Lexem::Type::Dot },
-		{ StrToProgramString( ":" ), Lexem::Type::Colon },
-		{ StrToProgramString( ";" ), Lexem::Type::Semicolon },
+	for( unsigned int i= 0; i < str.size(); i++ )
+		result[i]= str[i];
 
-		{ StrToProgramString( "=" ), Lexem::Type::Assignment },
-		{ StrToProgramString( "+" ), Lexem::Type::Plus },
-		{ StrToProgramString( "-" ), Lexem::Type::Minus },
-		{ StrToProgramString( "*" ), Lexem::Type::Star },
-		{ StrToProgramString( "/" ), Lexem::Type::Slash },
-
-		{ StrToProgramString( "<" ), Lexem::Type::CompareLess },
-		{ StrToProgramString( ">" ), Lexem::Type::CommpareGreater },
-
-		{ StrToProgramString( "|" ), Lexem::Type::Or },
-		{ StrToProgramString( "^" ), Lexem::Type::Xor },
-		{ StrToProgramString( "~" ), Lexem::Type::Tilda },
-		{ StrToProgramString( "!" ), Lexem::Type::Not },
-	},
-	{ // Two symbol lexems.
-		{ StrToProgramString( "++" ), Lexem::Type::Increment },
-		{ StrToProgramString( "--" ), Lexem::Type::Decrement },
-
-		{ StrToProgramString( "==" ), Lexem::Type::CompareEqual },
-		{ StrToProgramString( "!=" ), Lexem::Type::CompareNotEqual },
-		{ StrToProgramString( "<=" ), Lexem::Type::CompareLessOrEqual },
-		{ StrToProgramString( ">=" ), Lexem::Type::CompareGreaterOrEqual },
-
-		{ StrToProgramString( "&&" ), Lexem::Type::Conjunction },
-		{ StrToProgramString( "||" ), Lexem::Type::Disjunction },
-		{ StrToProgramString( "||" ), Lexem::Type::Disjunction },
-	},
-	{
-	},
-};
+	return result;
+}
 
 static bool IsWhitespace( sprache_char c )
 {
@@ -203,6 +213,7 @@ LexicalAnalysisResult LexicalAnalysis( const ProgramString& program_text )
 
 	Lexem eof_lexem;
 	eof_lexem.type= Lexem::Type::EndOfFile;
+	eof_lexem.text= ToPorgramString( "EOF" );
 	eof_lexem.line= line;
 	eof_lexem.pos_in_line= (unsigned int)( it - last_newline_it );
 

@@ -1,5 +1,12 @@
-int main()
+fn f( a : i32, b : f32 )
 {
-	int x_= 34;
-	array[34]= ff();
+}
+
+fn l()
+{
+}
+
+fn ZweiUndVierzig() : int
+{
+	return 42;
 }
