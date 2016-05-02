@@ -7,9 +7,9 @@ namespace Interpreter
 namespace Keywords
 {
 
-const ProgramString fn= ToPorgramString( "fn" );
-const ProgramString let= ToPorgramString( "let" );
-const ProgramString return_= ToPorgramString( "return" );
+const ProgramString fn= ToProgramString( "fn" );
+const ProgramString let= ToProgramString( "let" );
+const ProgramString return_= ToProgramString( "return" );
 
 }
 

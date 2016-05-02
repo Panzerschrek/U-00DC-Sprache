@@ -10,7 +10,7 @@ typedef std::uint16_t sprache_char;
 
 typedef std::basic_string<sprache_char> ProgramString;
 
-ProgramString ToPorgramString( const char* c );
+ProgramString ToProgramString( const char* c );
 
 // Warning, possible lost of data in conversion.
 std::string ToStdString( const ProgramString& str );

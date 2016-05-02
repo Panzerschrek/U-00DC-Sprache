@@ -14,50 +14,50 @@ static const FixedLexemsMap g_fixed_lexems[ g_max_fixed_lexem_size + 1 ]=
 	{ // Zero symbol lexems.
 	},
 	{ // One symbol lexems.
-		{ ToPorgramString( "(" ), Lexem::Type::BracketLeft },
-		{ ToPorgramString( ")" ), Lexem::Type::BracketRight },
-		{ ToPorgramString( "[" ), Lexem::Type::SquareBracketLeft },
-		{ ToPorgramString( "]" ), Lexem::Type::SquareBracketRight },
-		{ ToPorgramString( "{" ), Lexem::Type::BraceLeft },
-		{ ToPorgramString( "}" ), Lexem::Type::BraceRight },
+		{ ToProgramString( "(" ), Lexem::Type::BracketLeft },
+		{ ToProgramString( ")" ), Lexem::Type::BracketRight },
+		{ ToProgramString( "[" ), Lexem::Type::SquareBracketLeft },
+		{ ToProgramString( "]" ), Lexem::Type::SquareBracketRight },
+		{ ToProgramString( "{" ), Lexem::Type::BraceLeft },
+		{ ToProgramString( "}" ), Lexem::Type::BraceRight },
 
-		{ ToPorgramString( "," ), Lexem::Type::Comma },
-		{ ToPorgramString( "." ), Lexem::Type::Dot },
-		{ ToPorgramString( ":" ), Lexem::Type::Colon },
-		{ ToPorgramString( ";" ), Lexem::Type::Semicolon },
+		{ ToProgramString( "," ), Lexem::Type::Comma },
+		{ ToProgramString( "." ), Lexem::Type::Dot },
+		{ ToProgramString( ":" ), Lexem::Type::Colon },
+		{ ToProgramString( ";" ), Lexem::Type::Semicolon },
 
-		{ ToPorgramString( "=" ), Lexem::Type::Assignment },
-		{ ToPorgramString( "+" ), Lexem::Type::Plus },
-		{ ToPorgramString( "-" ), Lexem::Type::Minus },
-		{ ToPorgramString( "*" ), Lexem::Type::Star },
-		{ ToPorgramString( "/" ), Lexem::Type::Slash },
+		{ ToProgramString( "=" ), Lexem::Type::Assignment },
+		{ ToProgramString( "+" ), Lexem::Type::Plus },
+		{ ToProgramString( "-" ), Lexem::Type::Minus },
+		{ ToProgramString( "*" ), Lexem::Type::Star },
+		{ ToProgramString( "/" ), Lexem::Type::Slash },
 
-		{ ToPorgramString( "<" ), Lexem::Type::CompareLess },
-		{ ToPorgramString( ">" ), Lexem::Type::CommpareGreater },
+		{ ToProgramString( "<" ), Lexem::Type::CompareLess },
+		{ ToProgramString( ">" ), Lexem::Type::CommpareGreater },
 
-		{ ToPorgramString( "|" ), Lexem::Type::Or },
-		{ ToPorgramString( "^" ), Lexem::Type::Xor },
-		{ ToPorgramString( "~" ), Lexem::Type::Tilda },
-		{ ToPorgramString( "!" ), Lexem::Type::Not },
+		{ ToProgramString( "|" ), Lexem::Type::Or },
+		{ ToProgramString( "^" ), Lexem::Type::Xor },
+		{ ToProgramString( "~" ), Lexem::Type::Tilda },
+		{ ToProgramString( "!" ), Lexem::Type::Not },
 	},
 	{ // Two symbol lexems.
-		{ ToPorgramString( "++" ), Lexem::Type::Increment },
-		{ ToPorgramString( "--" ), Lexem::Type::Decrement },
+		{ ToProgramString( "++" ), Lexem::Type::Increment },
+		{ ToProgramString( "--" ), Lexem::Type::Decrement },
 
-		{ ToPorgramString( "==" ), Lexem::Type::CompareEqual },
-		{ ToPorgramString( "!=" ), Lexem::Type::CompareNotEqual },
-		{ ToPorgramString( "<=" ), Lexem::Type::CompareLessOrEqual },
-		{ ToPorgramString( ">=" ), Lexem::Type::CompareGreaterOrEqual },
+		{ ToProgramString( "==" ), Lexem::Type::CompareEqual },
+		{ ToProgramString( "!=" ), Lexem::Type::CompareNotEqual },
+		{ ToProgramString( "<=" ), Lexem::Type::CompareLessOrEqual },
+		{ ToProgramString( ">=" ), Lexem::Type::CompareGreaterOrEqual },
 
-		{ ToPorgramString( "&&" ), Lexem::Type::Conjunction },
-		{ ToPorgramString( "||" ), Lexem::Type::Disjunction },
-		{ ToPorgramString( "||" ), Lexem::Type::Disjunction },
+		{ ToProgramString( "&&" ), Lexem::Type::Conjunction },
+		{ ToProgramString( "||" ), Lexem::Type::Disjunction },
+		{ ToProgramString( "||" ), Lexem::Type::Disjunction },
 	},
 	{
 	},
 };
 
-ProgramString ToPorgramString( const char* str )
+ProgramString ToProgramString( const char* str )
 {
 	ProgramString result;
 
@@ -213,7 +213,7 @@ LexicalAnalysisResult LexicalAnalysis( const ProgramString& program_text )
 
 	Lexem eof_lexem;
 	eof_lexem.type= Lexem::Type::EndOfFile;
-	eof_lexem.text= ToPorgramString( "EOF" );
+	eof_lexem.text= ToProgramString( "EOF" );
 	eof_lexem.line= line;
 	eof_lexem.pos_in_line= (unsigned int)( it - last_newline_it );
 
