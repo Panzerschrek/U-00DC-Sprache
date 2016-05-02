@@ -4,7 +4,7 @@ fn f( a : i32, b : f32 )
 
 fn l()
 {
-	let x : i32 = +-34[09];
+	let x : i32 = +-34[(09)];
 	{
 		let wadawdaw : f64;
 	}

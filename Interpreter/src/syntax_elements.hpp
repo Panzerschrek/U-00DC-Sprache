@@ -1,5 +1,6 @@
 #pragma once
 #include <memory>
+#include <ostream>
 #include <vector>
 
 #include "lexical_analyzer.hpp"
@@ -7,16 +8,22 @@
 namespace Interpreter
 {
 
+class IPrintable
+{
+public:
+	virtual void Print( std::ostream& stream, unsigned int indent ) const= 0;
+};
+
 struct BinaryOperatorsChain;
 typedef std::unique_ptr<BinaryOperatorsChain> BinaryOperatorsChainPtr;
 
-class IUnaryPrefixOperator
+class IUnaryPrefixOperator : public IPrintable
 {
 public:
 	virtual ~IUnaryPrefixOperator() {}
 };
 
-class IUnaryPostfixOperator
+class IUnaryPostfixOperator : public IPrintable
 {
 public:
 	virtual ~IUnaryPostfixOperator() {}
@@ -32,12 +39,16 @@ class UnaryPlus final : public IUnaryPrefixOperator
 {
 public:
 	virtual ~UnaryPlus() override;
+
+	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
 };
 
 class UnaryMinus final : public IUnaryPrefixOperator
 {
 public:
 	virtual ~UnaryMinus() override;
+
+	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
 };
 
 class CallOperator final : public IUnaryPostfixOperator
@@ -45,6 +56,8 @@ class CallOperator final : public IUnaryPostfixOperator
 public:
 	CallOperator( std::vector<BinaryOperatorsChainPtr> arguments );
 	virtual ~CallOperator() override;
+
+	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
 
 private:
 	const std::vector<BinaryOperatorsChainPtr> arguments_;
@@ -55,6 +68,8 @@ class IndexationOperator final : public IUnaryPostfixOperator
 public:
 	IndexationOperator( BinaryOperatorsChainPtr index );
 	virtual ~IndexationOperator() override;
+
+	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
 
 private:
 	const BinaryOperatorsChainPtr index_;
@@ -69,7 +84,7 @@ enum class BinaryOperator
 	Mul,
 };
 
-class IBinaryOperatorsChainComponent
+class IBinaryOperatorsChainComponent : public IPrintable
 {
 public:
 	virtual ~IBinaryOperatorsChainComponent(){}
@@ -83,6 +98,8 @@ public:
 	NamedOperand( ProgramString name );
 	virtual ~NamedOperand() override;
 
+	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
+
 private:
 	const ProgramString name_;
 };
@@ -92,6 +109,8 @@ class NumericConstant final : public IBinaryOperatorsChainComponent
 public:
 	NumericConstant( ProgramString value );
 	virtual ~NumericConstant() override;
+
+	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
 
 private:
 	const ProgramString value_;
@@ -103,12 +122,16 @@ public:
 	BracketExpression( BinaryOperatorsChainPtr expression );
 	~BracketExpression() override;
 
+	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
+
 private:
 	const BinaryOperatorsChainPtr expression_;
 };
 
-struct BinaryOperatorsChain final
+struct BinaryOperatorsChain final : public IPrintable
 {
+	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
+
 	struct ComponentWithOperator
 	{
 		PrefixOperators prefix_operators;
@@ -121,7 +144,7 @@ struct BinaryOperatorsChain final
 	std::vector<ComponentWithOperator> components;
 };
 
-class IProgramElement
+class IProgramElement : public IPrintable
 {
 public:
 	virtual ~IProgramElement(){}
@@ -130,7 +153,7 @@ public:
 typedef std::unique_ptr<IProgramElement> IProgramElementPtr;
 typedef std::vector<IProgramElementPtr> ProgramElements;
 
-class IBlockElement
+class IBlockElement : public IPrintable
 {
 public:
 	virtual ~IBlockElement(){}
@@ -144,6 +167,8 @@ class Block final : public IBlockElement
 public:
 	Block( BlockElements elements );
 	virtual ~Block() override;
+
+	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
 
 private:
 	const BlockElements elements_;
@@ -162,6 +187,8 @@ struct VariableDeclaration final : public IBlockElement
 	VariableDeclaration operator=( const VariableDeclaration& )= delete;
 	VariableDeclaration& operator=( VariableDeclaration&& other );
 
+	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
+
 	ProgramString name;
 	ProgramString type;
 	BinaryOperatorsChainPtr initial_value;
@@ -179,6 +206,8 @@ public:
 		BlockPtr block );
 
 	virtual ~FunctionDeclaration() override;
+
+	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
 
 private:
 	const ProgramString name_;
