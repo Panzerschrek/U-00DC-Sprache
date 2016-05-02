@@ -215,6 +215,26 @@ void ReturnOperator::Print( std::ostream& stream, unsigned int indent ) const
 	stream << ";";
 }
 
+WhileOperator::WhileOperator( BinaryOperatorsChainPtr condition, BlockPtr block )
+	: condition_( std::move( condition ) )
+	, block_( std::move( block ) )
+{
+}
+
+WhileOperator::~WhileOperator()
+{
+}
+
+void WhileOperator::Print( std::ostream& stream, unsigned int indent ) const
+{
+	stream << "while( ";
+	condition_->Print( stream, indent );
+	stream << " )" << "\n";
+
+	PrintIndents( stream, indent );
+	block_->Print( stream, indent  );
+}
+
 FunctionDeclaration::FunctionDeclaration(
 	ProgramString name,
 	ProgramString return_type,

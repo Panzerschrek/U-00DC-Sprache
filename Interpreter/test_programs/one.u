@@ -15,11 +15,19 @@ fn l()
 		let wadawdaw : f64;
 	}
 	return;
+	while( forforfor(x) )
+	{
+	}
 }
 
 fn ZweiUndVierzig() : int
 {
 	let f : u8 = func( func(64)[45 + ff - ff + aaeraw] );
 	{
+		while(1 + 1)
+		{
+			{}
+			return 34;
+		}
 	}
 }

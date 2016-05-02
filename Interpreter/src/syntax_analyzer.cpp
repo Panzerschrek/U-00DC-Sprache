@@ -10,8 +10,15 @@ namespace Keywords
 const ProgramString fn= ToProgramString( "fn" );
 const ProgramString let= ToProgramString( "let" );
 const ProgramString return_= ToProgramString( "return" );
+const ProgramString while_= ToProgramString( "while" );
 
 }
+
+// Prototypes.
+static BlockPtr ParseBlock(
+	SyntaxErrorMessages& error_messages,
+	Lexems::const_iterator& it,
+	const Lexems::const_iterator it_end );
 
 static void PushErrorMessage(
 	SyntaxErrorMessages& error_messages,
@@ -322,6 +329,51 @@ static IBlockElementPtr ParseReturnOperator(
 	return IBlockElementPtr( new ReturnOperator( std::move( expression ) ) );
 }
 
+static IBlockElementPtr ParseWhileOperator(
+	SyntaxErrorMessages& error_messages,
+	Lexems::const_iterator& it,
+	const Lexems::const_iterator it_end )
+{
+	U_ASSERT( it->type == Lexem::Type::Identifier && it->text == Keywords::while_ );
+	U_ASSERT( it < it_end );
+
+	++it;
+	U_ASSERT( it < it_end );
+	if( it->type != Lexem::Type::BracketLeft )
+	{
+		PushErrorMessage( error_messages, *it );
+		return nullptr;
+	}
+
+	++it;
+	U_ASSERT( it < it_end );
+
+	BinaryOperatorsChainPtr condition= ParseExpression( error_messages, it, it_end );
+
+	if( it->type != Lexem::Type::BracketRight )
+	{
+		PushErrorMessage( error_messages, *it );
+		return nullptr;
+	}
+
+	++it;
+	U_ASSERT( it < it_end );
+
+	if( it->type != Lexem::Type::BraceLeft )
+	{
+		PushErrorMessage( error_messages, *it );
+		return nullptr;
+	}
+
+	BlockPtr block= ParseBlock( error_messages, it, it_end );
+
+	return
+		IBlockElementPtr(
+			new WhileOperator(
+				std::move( condition ),
+				std::move( block ) ) );
+}
+
 static BlockPtr ParseBlock(
 	SyntaxErrorMessages& error_messages,
 	Lexems::const_iterator& it,
@@ -347,6 +399,9 @@ static BlockPtr ParseBlock(
 
 		else if( it->type == Lexem::Type::Identifier && it->text == Keywords::return_ )
 			elements.emplace_back( ParseReturnOperator( error_messages, it, it_end ) );
+
+		else if( it->type == Lexem::Type::Identifier && it->text == Keywords::while_ )
+			elements.emplace_back( ParseWhileOperator( error_messages, it, it_end ) );
 
 		else
 		{

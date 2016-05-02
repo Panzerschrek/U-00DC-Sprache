@@ -41,12 +41,15 @@ int main()
 	for( const Interpreter::SyntaxErrorMessage& error_message : syntax_result.error_messages )
 		std::cout << error_message << "\n";
 
-	std::cout << std::endl;
-
-	for( const Interpreter::IProgramElementPtr& program_element : syntax_result.program_elements )
+	if( syntax_result.error_messages.empty() )
 	{
-		program_element->Print( std::cout, 0 );
-		std::cout << "\n";
+		std::cout << std::endl;
+
+		for( const Interpreter::IProgramElementPtr& program_element : syntax_result.program_elements )
+		{
+			program_element->Print( std::cout, 0 );
+			std::cout << "\n";
+		}
 	}
 
 	return 0;

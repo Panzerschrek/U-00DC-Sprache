@@ -210,6 +210,19 @@ private:
 	const BinaryOperatorsChainPtr expression_;
 };
 
+class WhileOperator final : public IBlockElement
+{
+public:
+	WhileOperator( BinaryOperatorsChainPtr condition, BlockPtr block );
+	~WhileOperator() override;
+
+	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
+
+private:
+	const BinaryOperatorsChainPtr condition_;
+	const BlockPtr block_;
+};
+
 class FunctionDeclaration final : public IProgramElement
 {
 public:
