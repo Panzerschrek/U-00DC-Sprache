@@ -223,6 +223,20 @@ private:
 	const BlockPtr block_;
 };
 
+class BreakOperator final : public IBlockElement
+{
+public:
+	~BreakOperator() override;
+	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
+};
+
+class ContinueOperator final : public IBlockElement
+{
+public:
+	~ContinueOperator() override;
+	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
+};
+
 class FunctionDeclaration final : public IProgramElement
 {
 public:

@@ -11,6 +11,8 @@ const ProgramString fn= ToProgramString( "fn" );
 const ProgramString let= ToProgramString( "let" );
 const ProgramString return_= ToProgramString( "return" );
 const ProgramString while_= ToProgramString( "while" );
+const ProgramString break_= ToProgramString( "break" );
+const ProgramString continue_= ToProgramString( "continue" );
 
 }
 
@@ -374,6 +376,50 @@ static IBlockElementPtr ParseWhileOperator(
 				std::move( block ) ) );
 }
 
+static IBlockElementPtr ParseBreakOperator(
+	SyntaxErrorMessages& error_messages,
+	Lexems::const_iterator& it,
+	const Lexems::const_iterator it_end )
+{
+	U_ASSERT( it->type == Lexem::Type::Identifier && it->text == Keywords::break_ );
+	U_ASSERT( it < it_end );
+
+	++it;
+	U_ASSERT( it < it_end );
+
+	if( it->type != Lexem::Type::Semicolon )
+	{
+		PushErrorMessage( error_messages, *it );
+		return nullptr;
+	}
+
+	++it;
+
+	return IBlockElementPtr( new BreakOperator() );
+}
+
+static IBlockElementPtr ParseContinueOperator(
+	SyntaxErrorMessages& error_messages,
+	Lexems::const_iterator& it,
+	const Lexems::const_iterator it_end )
+{
+	U_ASSERT( it->type == Lexem::Type::Identifier && it->text == Keywords::continue_ );
+	U_ASSERT( it < it_end );
+
+	++it;
+	U_ASSERT( it < it_end );
+
+	if( it->type != Lexem::Type::Semicolon )
+	{
+		PushErrorMessage( error_messages, *it );
+		return nullptr;
+	}
+
+	++it;
+
+	return IBlockElementPtr( new ContinueOperator() );
+}
+
 static BlockPtr ParseBlock(
 	SyntaxErrorMessages& error_messages,
 	Lexems::const_iterator& it,
@@ -402,6 +448,12 @@ static BlockPtr ParseBlock(
 
 		else if( it->type == Lexem::Type::Identifier && it->text == Keywords::while_ )
 			elements.emplace_back( ParseWhileOperator( error_messages, it, it_end ) );
+
+		else if( it->type == Lexem::Type::Identifier && it->text == Keywords::break_ )
+			elements.emplace_back( ParseBreakOperator( error_messages, it, it_end ) );
+
+		else if( it->type == Lexem::Type::Identifier && it->text == Keywords::continue_ )
+			elements.emplace_back( ParseContinueOperator( error_messages, it, it_end ) );
 
 		else
 		{

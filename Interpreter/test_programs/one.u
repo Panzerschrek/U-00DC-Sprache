@@ -17,6 +17,7 @@ fn l()
 	return;
 	while( forforfor(x) )
 	{
+		break;
 	}
 }
 
@@ -26,7 +27,10 @@ fn ZweiUndVierzig() : int
 	{
 		while(1 + 1)
 		{
-			{}
+			{
+				continue;
+				let rrr : long_int;
+			}
 			return 34;
 		}
 	}

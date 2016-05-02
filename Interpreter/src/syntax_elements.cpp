@@ -235,6 +235,26 @@ void WhileOperator::Print( std::ostream& stream, unsigned int indent ) const
 	block_->Print( stream, indent  );
 }
 
+BreakOperator::~BreakOperator()
+{
+}
+
+void BreakOperator::Print( std::ostream& stream, unsigned int indent ) const
+{
+	U_UNUSED(indent);
+	stream << "break;";
+}
+
+ContinueOperator::~ContinueOperator()
+{
+}
+
+void ContinueOperator::Print( std::ostream& stream, unsigned int indent ) const
+{
+	U_UNUSED(indent);
+	stream << "continue;";
+}
+
 FunctionDeclaration::FunctionDeclaration(
 	ProgramString name,
 	ProgramString return_type,
