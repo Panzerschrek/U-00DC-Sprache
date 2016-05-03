@@ -255,6 +255,39 @@ void ContinueOperator::Print( std::ostream& stream, unsigned int indent ) const
 	stream << "continue;";
 }
 
+IfOperator::IfOperator( std::vector<Branch> branches )
+	: branches_( std::move( branches ) )
+{
+}
+
+IfOperator::~IfOperator()
+{
+}
+
+void IfOperator::Print( std::ostream& stream, unsigned int indent ) const
+{
+	for( const Branch& branch : branches_ )
+	{
+		bool first= &branch == &branches_.front();
+		if( !first )
+			PrintIndents( stream, indent );
+
+		if( branch.condition )
+		{
+			stream << ( first ? "if( " : "else if( ");
+			branch.condition->Print( stream, indent );
+			stream << " )\n";
+		}
+		else
+			stream << "else\n";
+
+
+		PrintIndents( stream, indent );
+		branch.block->Print( stream, indent );
+	}
+
+}
+
 FunctionDeclaration::FunctionDeclaration(
 	ProgramString name,
 	ProgramString return_type,

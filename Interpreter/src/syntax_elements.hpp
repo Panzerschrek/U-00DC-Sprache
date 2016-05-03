@@ -237,6 +237,26 @@ public:
 	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
 };
 
+class IfOperator final : public IBlockElement
+{
+public:
+	struct Branch
+	{
+		// Condition - nullptr for last if.
+		BinaryOperatorsChainPtr condition;
+		BlockPtr block;
+	};
+
+	IfOperator( std::vector<Branch> branches );
+
+	~IfOperator() override;
+
+	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
+
+private:
+	std::vector<Branch> branches_; // else if()
+};
+
 class FunctionDeclaration final : public IProgramElement
 {
 public:

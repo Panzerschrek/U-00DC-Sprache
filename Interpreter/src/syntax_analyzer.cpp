@@ -13,6 +13,8 @@ const ProgramString return_= ToProgramString( "return" );
 const ProgramString while_= ToProgramString( "while" );
 const ProgramString break_= ToProgramString( "break" );
 const ProgramString continue_= ToProgramString( "continue" );
+const ProgramString if_= ToProgramString( "if" );
+const ProgramString else_= ToProgramString( "else" );
 
 }
 
@@ -420,6 +422,104 @@ static IBlockElementPtr ParseContinueOperator(
 	return IBlockElementPtr( new ContinueOperator() );
 }
 
+static IBlockElementPtr ParseIfOperaotr(
+	SyntaxErrorMessages& error_messages,
+	Lexems::const_iterator& it,
+	const Lexems::const_iterator it_end )
+{
+	U_ASSERT( it->type == Lexem::Type::Identifier && it->text == Keywords::if_ );
+	U_ASSERT( it < it_end );
+
+	++it;
+	U_ASSERT( it < it_end );
+
+	if( it->type != Lexem::Type::BracketLeft )
+	{
+		PushErrorMessage( error_messages, *it );
+		return nullptr;
+	}
+
+	++it;
+	U_ASSERT( it < it_end );
+
+	std::vector<IfOperator::Branch> branches;
+	branches.emplace_back();
+
+	branches.back().condition= ParseExpression( error_messages, it, it_end );
+
+	if( it->type != Lexem::Type::BracketRight )
+	{
+		PushErrorMessage( error_messages, *it );
+		return nullptr;
+	}
+
+	++it;
+	U_ASSERT( it < it_end );
+
+	if( it->type != Lexem::Type::BraceLeft )
+	{
+		PushErrorMessage( error_messages, *it );
+		return nullptr;
+	}
+	branches.back().block= ParseBlock( error_messages, it, it_end );
+
+	while(1)
+	{
+		if( it->type == Lexem::Type::Identifier && it->text == Keywords::else_ )
+		{
+			branches.emplace_back();
+
+			++it;
+			U_ASSERT( it < it_end );
+
+			// Optional if.
+			if( it->type == Lexem::Type::Identifier && it->text == Keywords::if_ )
+			{
+				++it;
+				U_ASSERT( it < it_end );
+
+				if( it->type != Lexem::Type::BracketLeft )
+				{
+					PushErrorMessage( error_messages, *it );
+					return nullptr;
+				}
+
+				++it;
+				U_ASSERT( it < it_end );
+
+				branches.back().condition= ParseExpression( error_messages, it, it_end );
+
+				if( it->type != Lexem::Type::BracketRight )
+				{
+					PushErrorMessage( error_messages, *it );
+					return nullptr;
+				}
+
+				++it;
+				U_ASSERT( it < it_end );
+			}
+			// Block - common for "else" and "else if".
+			if( it->type != Lexem::Type::BraceLeft )
+			{
+				PushErrorMessage( error_messages, *it );
+				return nullptr;
+			}
+
+			branches.back().block= ParseBlock( error_messages, it, it_end );
+
+			if( branches.back().condition == nullptr ) break;
+
+		}
+		else
+			break;
+	}
+
+	return
+		IBlockElementPtr(
+			new IfOperator(
+				std::move( branches ) ) );
+}
+
 static BlockPtr ParseBlock(
 	SyntaxErrorMessages& error_messages,
 	Lexems::const_iterator& it,
@@ -454,6 +554,10 @@ static BlockPtr ParseBlock(
 
 		else if( it->type == Lexem::Type::Identifier && it->text == Keywords::continue_ )
 			elements.emplace_back( ParseContinueOperator( error_messages, it, it_end ) );
+
+		else if( it->type == Lexem::Type::Identifier && it->text == Keywords::if_ )
+			elements.emplace_back( ParseIfOperaotr( error_messages, it, it_end ) );
+
 
 		else
 		{

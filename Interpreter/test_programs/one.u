@@ -1,5 +1,6 @@
 fn f( a : i32, b : f32 )
 {
+	if(1) {}
 	return 42 * l( -427, arr[24*i + 4] );
 	return;
 	{
@@ -33,5 +34,19 @@ fn ZweiUndVierzig() : int
 			}
 			return 34;
 		}
+	}
+
+	if( smtht )
+	{
+		return;
+	}
+	else if( 42 )
+	{
+		let r : itr;
+	}
+	else
+	{
+	}
+	{
 	}
 }
