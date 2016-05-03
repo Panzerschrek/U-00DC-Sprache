@@ -257,6 +257,31 @@ private:
 	std::vector<Branch> branches_; // else if()
 };
 
+class SingleExpressionOperator final : public IBlockElement
+{
+public:
+	SingleExpressionOperator( BinaryOperatorsChainPtr expression );
+	virtual ~SingleExpressionOperator() override;
+
+	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
+
+private:
+	const BinaryOperatorsChainPtr expression_;
+};
+
+class AssignmentOperator final : public IBlockElement
+{
+public:
+	AssignmentOperator( BinaryOperatorsChainPtr l_value, BinaryOperatorsChainPtr r_value );
+	virtual ~AssignmentOperator() override;
+
+	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
+
+private:
+	BinaryOperatorsChainPtr l_value_;
+	BinaryOperatorsChainPtr r_value_;
+};
+
 class FunctionDeclaration final : public IProgramElement
 {
 public:

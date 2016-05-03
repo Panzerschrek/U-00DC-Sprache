@@ -561,8 +561,43 @@ static BlockPtr ParseBlock(
 
 		else
 		{
-			PushErrorMessage( error_messages, *it );
-			return nullptr;
+			BinaryOperatorsChainPtr l_expression= ParseExpression( error_messages, it, it_end );
+
+			U_ASSERT( it < it_end );
+			if( it->type == Lexem::Type::Assignment )
+			{
+				++it;
+				U_ASSERT( it < it_end );
+
+				BinaryOperatorsChainPtr r_expression= ParseExpression( error_messages, it, it_end );
+
+				if( it->type != Lexem::Type::Semicolon )
+				{
+					PushErrorMessage( error_messages, *it );
+					return nullptr;
+				}
+				++it;
+				U_ASSERT( it < it_end );
+
+				elements.emplace_back(
+					new AssignmentOperator(
+						std::move( l_expression ),
+						std::move( r_expression ) ) );
+			}
+			else if( it->type == Lexem::Type::Semicolon )
+			{
+				++it;
+				U_ASSERT( it < it_end );
+
+				elements.emplace_back(
+					new SingleExpressionOperator(
+						std::move( l_expression ) ) );
+			}
+			else
+			{
+				PushErrorMessage( error_messages, *it );
+				return nullptr;
+			}
 		}
 	}
 

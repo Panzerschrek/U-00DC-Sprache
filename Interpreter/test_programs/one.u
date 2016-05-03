@@ -20,12 +20,16 @@ fn l()
 	{
 		break;
 	}
+
+	a[10]= ss[25] * 3 + 1;
+	exit(1);
 }
 
 fn ZweiUndVierzig() : int
 {
 	let f : u8 = func( func(64)[45 + ff - ff + aaeraw] );
 	{
+		f= f + 5;
 		while(1 + 1)
 		{
 			{

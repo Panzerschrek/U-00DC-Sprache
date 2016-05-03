@@ -285,7 +285,39 @@ void IfOperator::Print( std::ostream& stream, unsigned int indent ) const
 		PrintIndents( stream, indent );
 		branch.block->Print( stream, indent );
 	}
+}
 
+SingleExpressionOperator::SingleExpressionOperator( BinaryOperatorsChainPtr expression )
+	: expression_( std::move( expression ) )
+{
+}
+
+SingleExpressionOperator::~SingleExpressionOperator()
+{
+}
+
+void SingleExpressionOperator::Print( std::ostream& stream, unsigned int indent ) const
+{
+	expression_->Print( stream, indent );
+	stream << ";";
+}
+
+AssignmentOperator::AssignmentOperator( BinaryOperatorsChainPtr l_value, BinaryOperatorsChainPtr r_value )
+	: l_value_( std::move( l_value ) )
+	, r_value_( std::move( r_value ) )
+{
+}
+
+AssignmentOperator::~AssignmentOperator()
+{
+}
+
+void AssignmentOperator::Print( std::ostream& stream, unsigned int indent ) const
+{
+	l_value_->Print( stream, indent );
+	stream << "= ";
+	r_value_->Print( stream, indent );
+	stream << ";";
 }
 
 FunctionDeclaration::FunctionDeclaration(
