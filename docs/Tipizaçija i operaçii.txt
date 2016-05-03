@@ -1,0 +1,42 @@
+V jazuke prisutstvujut tipy dannyh tröh grupp: logiceskij, celyje,
+vescestvennyje.
+
+Logiceskij tip:
+bool
+
+Çelyje: razmerom v 8, 16, 32, 64 bit so znakom i bez znaka:
+i8, i16, i32, i64
+u8, u16, u32, u64
+
+Vescestvennyj tip - IEEE 754
+f32
+f64
+
+Preobrazovanije tipov. Ono delitsä na javnoje i nejavnoje. Javnoje
+preobrazovanije proishodit cerez vyzov sootvetstvujuscego operatora. Nejavnoje
+preovrazovanije osuscestvläjetsä avtomaticeski togda, kogda tip operanda ne
+sootvetstvujet nužnomu - v arifmeticeskoj operaçii, pri prisvaivanii, peredace
+argumenta v funkçiju.
+
+Nejavnoje preobrazovanije vozmožno toljko togda, kogda pri priobrazovanii ne
+vozmožna poterä informaçii.
+
+Javnoje preobrazovanije (cerez operator) možet privesti k potere informaçii.
+
+
+Çelocislennyje operaçii delätsä na perepolnäjuscijesä i ne perepolnäjuscijesä.
+
+Perepolnäjuscijesä operaçii - takije, pri kotoryh rezuljtat možet ne pomestitsä
+v tipe operandov.
+
+Neperepolnäjuscijesä operaçii - takije, pri kotoryh rezuljtat garantirovanno
+možet umestitsä v tipe operanda.
+
+Perepolnäjuscijesä operaçii: složenije, vycitanije, umnoženije, delenije,
+unarnyj minus, sdvig vlevo.
+
+Neperepolnäjuscijesä operaçii: bitovoje i, bitovoje ili, bitovoje isklücajusceje
+ili, bitovaja inversija, sdvig vlevo.
+
+Pri vypolnenii perepolnäjuscihsä operaçij nad operandami, imejuschumi meneje
+32 bit proishodit preobrazovanije v 32bitnyj tip.
