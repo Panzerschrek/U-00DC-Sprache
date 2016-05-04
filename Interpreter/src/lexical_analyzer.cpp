@@ -14,71 +14,48 @@ static const FixedLexemsMap g_fixed_lexems[ g_max_fixed_lexem_size + 1 ]=
 	{ // Zero symbol lexems.
 	},
 	{ // One symbol lexems.
-		{ ToProgramString( "(" ), Lexem::Type::BracketLeft },
-		{ ToProgramString( ")" ), Lexem::Type::BracketRight },
-		{ ToProgramString( "[" ), Lexem::Type::SquareBracketLeft },
-		{ ToProgramString( "]" ), Lexem::Type::SquareBracketRight },
-		{ ToProgramString( "{" ), Lexem::Type::BraceLeft },
-		{ ToProgramString( "}" ), Lexem::Type::BraceRight },
+		{ "("_SpC, Lexem::Type::BracketLeft },
+		{ ")"_SpC, Lexem::Type::BracketRight },
+		{ "["_SpC, Lexem::Type::SquareBracketLeft },
+		{ "]"_SpC, Lexem::Type::SquareBracketRight },
+		{ "{"_SpC, Lexem::Type::BraceLeft },
+		{ "}"_SpC, Lexem::Type::BraceRight },
 
-		{ ToProgramString( "," ), Lexem::Type::Comma },
-		{ ToProgramString( "." ), Lexem::Type::Dot },
-		{ ToProgramString( ":" ), Lexem::Type::Colon },
-		{ ToProgramString( ";" ), Lexem::Type::Semicolon },
+		{ ","_SpC, Lexem::Type::Comma },
+		{ "."_SpC, Lexem::Type::Dot },
+		{ ":"_SpC, Lexem::Type::Colon },
+		{ ";"_SpC, Lexem::Type::Semicolon },
 
-		{ ToProgramString( "=" ), Lexem::Type::Assignment },
-		{ ToProgramString( "+" ), Lexem::Type::Plus },
-		{ ToProgramString( "-" ), Lexem::Type::Minus },
-		{ ToProgramString( "*" ), Lexem::Type::Star },
-		{ ToProgramString( "/" ), Lexem::Type::Slash },
+		{ "="_SpC, Lexem::Type::Assignment },
+		{ "+"_SpC, Lexem::Type::Plus },
+		{ "-"_SpC, Lexem::Type::Minus },
+		{ "*"_SpC, Lexem::Type::Star },
+		{ "/"_SpC, Lexem::Type::Slash },
 
-		{ ToProgramString( "<" ), Lexem::Type::CompareLess },
-		{ ToProgramString( ">" ), Lexem::Type::CommpareGreater },
+		{ "<"_SpC, Lexem::Type::CompareLess },
+		{ ">"_SpC, Lexem::Type::CommpareGreater },
 
-		{ ToProgramString( "|" ), Lexem::Type::Or },
-		{ ToProgramString( "^" ), Lexem::Type::Xor },
-		{ ToProgramString( "~" ), Lexem::Type::Tilda },
-		{ ToProgramString( "!" ), Lexem::Type::Not },
+		{ "|"_SpC, Lexem::Type::Or },
+		{ "^"_SpC, Lexem::Type::Xor },
+		{ "~"_SpC, Lexem::Type::Tilda },
+		{ "!"_SpC, Lexem::Type::Not },
 	},
 	{ // Two symbol lexems.
-		{ ToProgramString( "++" ), Lexem::Type::Increment },
-		{ ToProgramString( "--" ), Lexem::Type::Decrement },
+		{ "++"_SpC, Lexem::Type::Increment },
+		{ "--"_SpC, Lexem::Type::Decrement },
 
-		{ ToProgramString( "==" ), Lexem::Type::CompareEqual },
-		{ ToProgramString( "!=" ), Lexem::Type::CompareNotEqual },
-		{ ToProgramString( "<=" ), Lexem::Type::CompareLessOrEqual },
-		{ ToProgramString( ">=" ), Lexem::Type::CompareGreaterOrEqual },
+		{ "=="_SpC, Lexem::Type::CompareEqual },
+		{ "!="_SpC, Lexem::Type::CompareNotEqual },
+		{ "<="_SpC, Lexem::Type::CompareLessOrEqual },
+		{ ">="_SpC, Lexem::Type::CompareGreaterOrEqual },
 
-		{ ToProgramString( "&&" ), Lexem::Type::Conjunction },
-		{ ToProgramString( "||" ), Lexem::Type::Disjunction },
-		{ ToProgramString( "||" ), Lexem::Type::Disjunction },
+		{ "&&"_SpC, Lexem::Type::Conjunction },
+		{ "||"_SpC, Lexem::Type::Disjunction },
+		{ "||"_SpC, Lexem::Type::Disjunction },
 	},
 	{
 	},
 };
-
-ProgramString ToProgramString( const char* str )
-{
-	ProgramString result;
-
-	while( *str != 0 )
-	{
-		result.push_back( *str );
-		++str;
-	}
-
-	return result;
-}
-
-std::string ToStdString( const ProgramString& str )
-{
-	std::string result( str.size(), '\0' );
-
-	for( unsigned int i= 0; i < str.size(); i++ )
-		result[i]= str[i];
-
-	return result;
-}
 
 static bool IsWhitespace( sprache_char c )
 {
@@ -213,7 +190,7 @@ LexicalAnalysisResult LexicalAnalysis( const ProgramString& program_text )
 
 	Lexem eof_lexem;
 	eof_lexem.type= Lexem::Type::EndOfFile;
-	eof_lexem.text= ToProgramString( "EOF" );
+	eof_lexem.text= "EOF"_SpC;
 	eof_lexem.line= line;
 	eof_lexem.pos_in_line= (unsigned int)( it - last_newline_it );
 

@@ -35,6 +35,8 @@
 		<Unit filename="src\lexical_analyzer.cpp" />
 		<Unit filename="src\lexical_analyzer.hpp" />
 		<Unit filename="src\main.cpp" />
+		<Unit filename="src\program_string.cpp" />
+		<Unit filename="src\program_string.hpp" />
 		<Unit filename="src\syntax_analyzer.cpp" />
 		<Unit filename="src\syntax_analyzer.hpp" />
 		<Unit filename="src\syntax_elements.cpp" />

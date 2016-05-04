@@ -3,17 +3,10 @@
 #include <string>
 #include <vector>
 
+#include "program_string.hpp"
+
 namespace Interpreter
 {
-
-typedef std::uint16_t sprache_char;
-
-typedef std::basic_string<sprache_char> ProgramString;
-
-ProgramString ToProgramString( const char* c );
-
-// Warning, possible lost of data in conversion.
-std::string ToStdString( const ProgramString& str );
 
 struct Lexem
 {

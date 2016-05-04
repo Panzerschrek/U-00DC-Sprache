@@ -23,10 +23,7 @@ int main()
 	std::fread( file_content.data(), 1, file_content.size(), f );
 	std::fclose( f );
 
-	// Decode ascii to wide bytes.
-	Interpreter::ProgramString program( file_content.size(), 0 );
-	for( unsigned int n= 0; n < file_content.size(); n++ )
-		program[n]= file_content[n];
+	Interpreter::ProgramString program = Interpreter::DecodeUTF8( file_content );
 
 	Interpreter::LexicalAnalysisResult lexical_result= Interpreter::LexicalAnalysis( program );
 
