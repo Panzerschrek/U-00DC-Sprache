@@ -383,6 +383,8 @@ static IBlockElementPtr ParseBreakOperator(
 	Lexems::const_iterator& it,
 	const Lexems::const_iterator it_end )
 {
+	U_UNUSED( it_end );
+
 	U_ASSERT( it->type == Lexem::Type::Identifier && it->text == Keywords::break_ );
 	U_ASSERT( it < it_end );
 
@@ -405,6 +407,7 @@ static IBlockElementPtr ParseContinueOperator(
 	Lexems::const_iterator& it,
 	const Lexems::const_iterator it_end )
 {
+	U_UNUSED( it_end );
 	U_ASSERT( it->type == Lexem::Type::Identifier && it->text == Keywords::continue_ );
 	U_ASSERT( it < it_end );
 
