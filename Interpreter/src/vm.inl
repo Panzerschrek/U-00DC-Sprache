@@ -71,6 +71,16 @@ inline void VM::Call( const ProgramString& func_name )
 	{
 		return;
 	}
+
+	const FuncEntry& func= *it;
+	const VmProgram::FuncCallInfo& call_info= program_.funcs_table[ func.func_number ];
+
+	// Caller stack.
+	stack_frames_.emplace_back( 100 );
+	stack_pointer_= stack_frames_.back().begin();
+
+	OpCallImpl( call_info, 0 );
+	OpLoop( call_info.first_op_position );
 }
 
 template<class ... Args>

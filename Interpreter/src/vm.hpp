@@ -69,9 +69,8 @@ struct Vm_Op
 	{
 		struct
 		{
-			unsigned int func_tart_op_number;
-			unsigned int stack_size;
-		}call_param;
+			unsigned int func_number;
+		} call_param;
 
 		std::uint8_t  push_c_8 ;
 		std::uint16_t push_c_16;
@@ -112,6 +111,11 @@ struct FuncEntry
 	unsigned int func_number;
 	std::vector<U_FundamentalType> params;
 	U_FundamentalType return_type;
+
+	bool operator<( const FuncEntry& other ) const
+	{
+		return name < other.name;
+	}
 };
 
 typedef std::vector<FuncEntry> Funcs;
@@ -171,6 +175,20 @@ private:
 		unsigned int n,
 		const T& arg0,
 		const Args&... args );
+
+private:
+	void OpLoop( unsigned int start_op_index );
+	void OpCallImpl( const VmProgram::FuncCallInfo& call_info, unsigned int return_index );
+
+	// Returns index of next op.
+	typedef unsigned (VM::* VMOpPoiter)( unsigned int op_index );
+
+	static const VMOpPoiter operations_[size_t( Vm_Op::Type::LastOp ) ];
+
+	unsigned int OpNoOp( unsigned int op_index );
+	unsigned int OpCall( unsigned int op_index );
+	unsigned int OpRet( unsigned int op_index );
+	unsigned int OpSysCall( unsigned int op_index );
 
 private:
 	VmProgram program_;
