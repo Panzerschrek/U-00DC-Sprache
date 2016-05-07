@@ -16,6 +16,7 @@ SOURCES += \
     src/syntax_analyzer.cpp \
     src/syntax_elements.cpp \
     src/vm.cpp \
+    src/tests/vm_test.cpp
 
 HEADERS += \
     src/assert.hpp \
@@ -24,7 +25,8 @@ HEADERS += \
     src/syntax_analyzer.hpp \
     src/syntax_elements.hpp \
 	src/vm.hpp \
-	src/vm.inl
+	src/vm.inl \
+    src/tests/vm_test.hpp
 
 U_DUBUG {
 	DEFINES+= DEBUG

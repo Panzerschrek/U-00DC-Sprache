@@ -123,8 +123,8 @@ unsigned int VM::OpRet( unsigned int op_index )
 	StackFrame::iterator old_caller_frame_pos;
 	caller_frame_pos_-= sizeof(unsigned int);
 	std::memcpy(
-		&stack_pointer_,
-		&*old_caller_frame_pos,
+		&old_caller_frame_pos,
+		&*caller_frame_pos_,
 		sizeof(stack_pointer_) );
 
 	// Restore all stack pointers.

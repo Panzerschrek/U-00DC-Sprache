@@ -5,15 +5,11 @@
 #include "lexical_analyzer.hpp"
 #include "syntax_analyzer.hpp"
 
-#include "vm.hpp"
+#include "tests/vm_test.hpp"
 
 int main()
 {
-	Interpreter::VmProgram vm_program;
-
-	Interpreter::VM vm( vm_program );
-
-	vm.Call( Interpreter::ToProgramString("lol"), 42 );
+	Interpreter::RunVMTests();
 
 	std::cout << u8"Ü-Sprache Interpreter" << std::endl;
 
