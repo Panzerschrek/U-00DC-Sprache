@@ -18,6 +18,36 @@ struct Vm_Op
 
 		Syscall,
 
+		// Push constant
+		PushC8 ,
+		PushC16,
+		PushC32,
+		PushC64,
+
+		// Push to stack relative current frame.
+		PushFromLocalStack8 ,
+		PushFromLocalStack16,
+		PushFromLocalStack32,
+		PushFromLocalStack64,
+
+		// Move to local stack from stack top.
+		PopToLocalStack8 ,
+		PopToLocalStack16,
+		PopToLocalStack32,
+		PopToLocalStack64,
+
+		// Push to caller relative current frame.
+		PushFromCallerStack8 ,
+		PushFromCallerStack16,
+		PushFromCallerStack32,
+		PushFromCallerStack64,
+
+		// Move to caller stack from stack top.
+		PopToCallerStack8 ,
+		PopToCallerStack16,
+		PopToCallerStack32,
+		PopToCallerStack64,
+
 		// Bit and
 		And8,
 		And16,
@@ -54,12 +84,6 @@ struct Vm_Op
 		Addi64,
 		Addu64,
 
-		// Push constant
-		PushC8 ,
-		PushC16,
-		PushC32,
-		PushC64,
-
 		LastOp
 	};
 
@@ -76,6 +100,13 @@ struct Vm_Op
 		std::uint16_t push_c_16;
 		std::uint32_t push_c_32;
 		std::uint64_t push_c_64;
+
+		// Offset for pish/pop local stack operations.
+		unsigned int local_stack_operations_offset;
+
+		// Offset for push/pop caller stack operations.
+		// For arguments, return address, result offset are negative.
+		int caller_stack_operations_offset;
 	} param;
 };
 
@@ -189,6 +220,10 @@ private:
 	unsigned int OpCall( unsigned int op_index );
 	unsigned int OpRet( unsigned int op_index );
 	unsigned int OpSysCall( unsigned int op_index );
+
+	unsigned int OpPushC8( unsigned int op_index );
+
+	unsigned int OpPopToCallerStack8( unsigned int op_index );
 
 private:
 	VmProgram program_;

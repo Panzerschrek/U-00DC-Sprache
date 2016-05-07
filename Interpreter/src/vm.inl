@@ -75,8 +75,10 @@ inline void VM::Call( const ProgramString& func_name )
 	const FuncEntry& func= *it;
 	const VmProgram::FuncCallInfo& call_info= program_.funcs_table[ func.func_number ];
 
-	// Caller stack.
-	stack_frames_.emplace_back( 100 );
+	// Caller stack. Size - for return address and saved previous caller.
+	stack_frames_.emplace_back(
+		sizeof( unsigned int) + sizeof(unsigned int));
+
 	stack_pointer_= stack_frames_.back().begin();
 
 	OpCallImpl( call_info, 0 );
@@ -106,6 +108,26 @@ void VM::CallRet( const ProgramString& func_name, Ret& result )
 	{
 		return;
 	}
+
+	// TODO - check result type.
+
+	const FuncEntry& func= *it;
+	const VmProgram::FuncCallInfo& call_info= program_.funcs_table[ func.func_number ];
+
+	// Caller stack. Size - for return address and saved previous caller + result.
+	stack_frames_.emplace_back(
+		sizeof( unsigned int) + sizeof(unsigned int) + sizeof(result) );
+
+	stack_pointer_= stack_frames_.back().begin();
+	stack_pointer_+= sizeof(result); // Reserve result.
+
+	OpCallImpl( call_info, 0 );
+	OpLoop( call_info.first_op_position );
+
+	std::memcpy(
+		&result,
+		&*stack_pointer_,
+		sizeof( result ) );
 }
 
 template<class Ret, class ... Args>

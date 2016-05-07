@@ -10,6 +10,34 @@ const VM::VMOpPoiter VM::operations_[size_t( Vm_Op::Type::LastOp ) ]=
 	[ size_t(Vm_Op::Type::NoOp) ]= &VM::OpNoOp,
 	[ size_t(Vm_Op::Type::Call) ]= &VM::OpCall,
 	[ size_t(Vm_Op::Type::Ret)]= &VM::OpRet,
+
+	[ size_t(Vm_Op::Type::Syscall)]= nullptr,
+
+	[ size_t(Vm_Op::Type::PushC8 )]= &VM::OpPushC8,
+	[ size_t(Vm_Op::Type::PushC16)]= nullptr,
+	[ size_t(Vm_Op::Type::PushC32)]= nullptr,
+	[ size_t(Vm_Op::Type::PushC64)]= nullptr,
+
+	[ size_t(Vm_Op::Type::PushFromLocalStack8 )]= nullptr,
+	[ size_t(Vm_Op::Type::PushFromLocalStack16)]= nullptr,
+	[ size_t(Vm_Op::Type::PushFromLocalStack32)]= nullptr,
+	[ size_t(Vm_Op::Type::PushFromLocalStack64)]= nullptr,
+
+	[ size_t(Vm_Op::Type::PopToLocalStack8 )]= nullptr,
+	[ size_t(Vm_Op::Type::PopToLocalStack16)]= nullptr,
+	[ size_t(Vm_Op::Type::PopToLocalStack32)]= nullptr,
+	[ size_t(Vm_Op::Type::PopToLocalStack64)]= nullptr,
+
+	[ size_t(Vm_Op::Type::PushFromCallerStack8 )]= nullptr,
+	[ size_t(Vm_Op::Type::PushFromCallerStack16)]= nullptr,
+	[ size_t(Vm_Op::Type::PushFromCallerStack32)]= nullptr,
+	[ size_t(Vm_Op::Type::PushFromCallerStack64)]= nullptr,
+
+	[ size_t(Vm_Op::Type::PopToCallerStack8 )]= &VM::OpPopToCallerStack8,
+	[ size_t(Vm_Op::Type::PopToCallerStack16)]= nullptr,
+	[ size_t(Vm_Op::Type::PopToCallerStack32)]= nullptr,
+	[ size_t(Vm_Op::Type::PopToCallerStack64)]= nullptr,
+
 };
 
 VM::VM( VmProgram program )
@@ -138,6 +166,32 @@ unsigned int VM::OpSysCall( unsigned int op_index )
 {
 	// TODO
 	return 0;
+}
+
+unsigned int VM::OpPushC8( unsigned int op_index )
+{
+	const Vm_Op& op= program_.code[ op_index ];
+
+	std::memcpy(
+		&*stack_pointer_,
+		&op.param.push_c_8,
+		sizeof(U_i8) );
+	stack_pointer_+= sizeof(U_i8);
+
+	return op_index + 1;
+}
+
+unsigned int VM::OpPopToCallerStack8( unsigned int op_index )
+{
+	const Vm_Op& op= program_.code[ op_index ];
+
+	stack_pointer_-= sizeof(U_i8);
+	std::memcpy(
+		(&*caller_frame_pos_) + op.param.caller_stack_operations_offset,
+		&*stack_pointer_,
+		sizeof(U_i8) );
+
+	return op_index + 1;
 }
 
 } // namespace Interpreter
