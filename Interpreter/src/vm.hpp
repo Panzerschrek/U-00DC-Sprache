@@ -221,9 +221,11 @@ private:
 	unsigned int OpRet( unsigned int op_index );
 	unsigned int OpSysCall( unsigned int op_index );
 
-	unsigned int OpPushC8( unsigned int op_index );
+	unsigned int OpPushC8 ( unsigned int op_index );
+	unsigned int OpPushC16( unsigned int op_index );
 
-	unsigned int OpPopToCallerStack8( unsigned int op_index );
+	unsigned int OpPopToCallerStack8 ( unsigned int op_index );
+	unsigned int OpPopToCallerStack16( unsigned int op_index );
 
 private:
 	VmProgram program_;

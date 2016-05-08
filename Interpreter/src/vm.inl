@@ -116,17 +116,17 @@ void VM::CallRet( const ProgramString& func_name, Ret& result )
 
 	// Caller stack. Size - for return address and saved previous caller + result.
 	stack_frames_.emplace_back(
-		sizeof( unsigned int) + sizeof(unsigned int) + sizeof(result) );
+		sizeof( unsigned int) + sizeof(unsigned int) + sizeof(Ret) );
 
 	stack_pointer_= stack_frames_.back().begin();
-	stack_pointer_+= sizeof(result); // Reserve result.
+	stack_pointer_+= sizeof(Ret); // Reserve result.
 
 	OpCallImpl( call_info, 0 );
 	OpLoop( call_info.first_op_position );
 
 	std::memcpy(
 		&result,
-		&*stack_pointer_,
+		&*stack_pointer_ - sizeof(Ret),
 		sizeof( result ) );
 }
 

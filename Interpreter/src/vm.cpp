@@ -13,8 +13,8 @@ const VM::VMOpPoiter VM::operations_[size_t( Vm_Op::Type::LastOp ) ]=
 
 	[ size_t(Vm_Op::Type::Syscall)]= nullptr,
 
-	[ size_t(Vm_Op::Type::PushC8 )]= &VM::OpPushC8,
-	[ size_t(Vm_Op::Type::PushC16)]= nullptr,
+	[ size_t(Vm_Op::Type::PushC8 )]= &VM::OpPushC8 ,
+	[ size_t(Vm_Op::Type::PushC16)]= &VM::OpPushC16,
 	[ size_t(Vm_Op::Type::PushC32)]= nullptr,
 	[ size_t(Vm_Op::Type::PushC64)]= nullptr,
 
@@ -33,8 +33,8 @@ const VM::VMOpPoiter VM::operations_[size_t( Vm_Op::Type::LastOp ) ]=
 	[ size_t(Vm_Op::Type::PushFromCallerStack32)]= nullptr,
 	[ size_t(Vm_Op::Type::PushFromCallerStack64)]= nullptr,
 
-	[ size_t(Vm_Op::Type::PopToCallerStack8 )]= &VM::OpPopToCallerStack8,
-	[ size_t(Vm_Op::Type::PopToCallerStack16)]= nullptr,
+	[ size_t(Vm_Op::Type::PopToCallerStack8 )]= &VM::OpPopToCallerStack8 ,
+	[ size_t(Vm_Op::Type::PopToCallerStack16)]= &VM::OpPopToCallerStack16,
 	[ size_t(Vm_Op::Type::PopToCallerStack32)]= nullptr,
 	[ size_t(Vm_Op::Type::PopToCallerStack64)]= nullptr,
 
@@ -181,7 +181,20 @@ unsigned int VM::OpPushC8( unsigned int op_index )
 	return op_index + 1;
 }
 
-unsigned int VM::OpPopToCallerStack8( unsigned int op_index )
+unsigned int VM::OpPushC16( unsigned int op_index )
+{
+	const Vm_Op& op= program_.code[ op_index ];
+
+	std::memcpy(
+		&*stack_pointer_,
+		&op.param.push_c_16,
+		sizeof(U_i16) );
+	stack_pointer_+= sizeof(U_i16);
+
+	return op_index + 1;
+}
+
+unsigned int VM::OpPopToCallerStack8 ( unsigned int op_index )
 {
 	const Vm_Op& op= program_.code[ op_index ];
 
@@ -190,6 +203,19 @@ unsigned int VM::OpPopToCallerStack8( unsigned int op_index )
 		(&*caller_frame_pos_) + op.param.caller_stack_operations_offset,
 		&*stack_pointer_,
 		sizeof(U_i8) );
+
+	return op_index + 1;
+}
+
+unsigned int VM::OpPopToCallerStack16( unsigned int op_index )
+{
+	const Vm_Op& op= program_.code[ op_index ];
+
+	stack_pointer_-= sizeof(U_i16);
+	std::memcpy(
+		(&*caller_frame_pos_) + op.param.caller_stack_operations_offset,
+		&*stack_pointer_,
+		sizeof(U_i16) );
 
 	return op_index + 1;
 }
