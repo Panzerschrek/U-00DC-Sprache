@@ -5,8 +5,12 @@
 #include "lexical_analyzer.hpp"
 #include "syntax_analyzer.hpp"
 
+#include "tests/vm_test.hpp"
+
 int main()
 {
+	Interpreter::RunVMTests();
+
 	std::cout << u8"Ü-Sprache Interpreter" << std::endl;
 
 	std::FILE* f= std::fopen( "test_programs/one.u", "rb" );

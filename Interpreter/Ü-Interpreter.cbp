@@ -41,6 +41,9 @@
 		<Unit filename="src\syntax_analyzer.hpp" />
 		<Unit filename="src\syntax_elements.cpp" />
 		<Unit filename="src\syntax_elements.hpp" />
+		<Unit filename="src\vm.cpp" />
+		<Unit filename="src\vm.hpp" />
+		<Unit filename="src\vm.inl" />
 		<Extensions>
 			<code_completion />
 			<envvars />
