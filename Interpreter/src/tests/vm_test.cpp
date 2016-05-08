@@ -59,7 +59,8 @@ static void SimpleProgramTest()
 
 	VM vm{ program };
 
-	vm.Call( func.name );
+	VM::CallResult call_result= vm.Call( func.name );
+	U_ASSERT( call_result.ok );
 }
 
 static void SimpleRetProgramTest()
@@ -100,7 +101,8 @@ static void SimpleRetProgramTest()
 	VM vm{ program };
 
 	U_u8 result;
-	vm.CallRet( func.name, result );
+	VM::CallResult call_result= vm.CallRet( func.name, result );
+	U_ASSERT( call_result.ok );
 	U_ASSERT( result == c_result );
 }
 
@@ -142,10 +144,10 @@ static void SimpleRetProgramTest2()
 	VM vm{ program };
 
 	U_u16 result;
-	vm.CallRet( func.name, result );
+	VM::CallResult call_result= vm.CallRet( func.name, result );
+	U_ASSERT( call_result.ok );
 	U_ASSERT( result == c_result );
 }
-
 
 static void RetProgramWithArgsTest()
 {
@@ -208,7 +210,8 @@ static void RetProgramWithArgsTest()
 	VM vm{ program };
 
 	U_u32 result;
-	vm.CallRet( func.name, result, arg_a, arg_b );
+	VM::CallResult call_result= vm.CallRet( func.name, result, arg_a, arg_b );
+	U_ASSERT( call_result.ok );
 	U_ASSERT( result == arg_a - arg_b );
 }
 

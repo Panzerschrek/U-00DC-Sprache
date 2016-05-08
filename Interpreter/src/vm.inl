@@ -7,6 +7,9 @@
 namespace Interpreter
 {
 
+namespace
+{
+
 template<class T>
 struct TypeLinker
 {
@@ -38,6 +41,7 @@ LINK_TYPES( U_u64, u64 )
 
 #undef LINK_TYPES
 
+} // namespace
 
 inline size_t VM::SizeOfArgs()
 {
@@ -70,17 +74,20 @@ bool VM::PushArgs(
 			sizeof(T) );
 	}
 
-	ok|= PushArgs( stack + sizeof(T), params, n + 1, args... );
+	ok&= PushArgs( stack + sizeof(T), params, n + 1, args... );
 
 	return ok;
 }
 
-inline void VM::Call( const ProgramString& func_name )
+inline VM::CallResult VM::Call( const ProgramString& func_name )
 {
+	CallResult call_result;
+
 	auto it= FindExportedFunc( func_name );
 	if( it == program_.export_funcs.end() )
 	{
-		return;
+		call_result.error_message= c_func_not_found_;
+		return call_result;
 	}
 
 	const FuncEntry& func= *it;
@@ -94,36 +101,68 @@ inline void VM::Call( const ProgramString& func_name )
 
 	OpCallImpl( call_info, 0 );
 	OpLoop( call_info.first_op_position );
+
+	call_result.ok= true;
+	return call_result;
 }
 
 template<class ... Args>
-void VM::Call( const ProgramString& func_name, Args&&... args )
+VM::CallResult VM::Call( const ProgramString& func_name, Args&&... args )
 {
+	CallResult call_result;
+
 	auto it= FindExportedFunc( func_name );
 	if( it == program_.export_funcs.end() )
 	{
-		return;
+		call_result.error_message= c_func_not_found_;
+		return call_result;
 	}
-
-	const FuncEntry& func= *it;
-
-	StackFrame stack;
-	PushArgs( stack, func.params, 0, args... );
-}
-
-template<class Ret>
-void VM::CallRet( const ProgramString& func_name, Ret& result )
-{
-	auto it= FindExportedFunc( func_name );
-	if( it == program_.export_funcs.end() )
-	{
-		return;
-	}
-
-	// TODO - check result type.
 
 	const FuncEntry& func= *it;
 	const VmProgram::FuncCallInfo& call_info= program_.funcs_table[ func.func_number ];
+
+	size_t args_size= SizeOfArgs(args...);
+
+	stack_frames_.emplace_back(
+		sizeof( unsigned int) + sizeof(unsigned int)+
+		 + args_size );
+
+	bool args_ok= PushArgs( stack_frames_.back().begin(), func.params, 0, args... );
+	if( !args_ok )
+	{
+		call_result.error_message= c_invalid_arguments_type_;
+		return call_result;
+	}
+
+	stack_pointer_= stack_frames_.back().begin() + args_size;
+
+	OpCallImpl( call_info, 0 );
+	OpLoop( call_info.first_op_position );
+
+	call_result.ok= true;
+	return call_result;
+}
+
+template<class Ret>
+VM::CallResult VM::CallRet( const ProgramString& func_name, Ret& result )
+{
+	CallResult call_result;
+
+	auto it= FindExportedFunc( func_name );
+	if( it == program_.export_funcs.end() )
+	{
+		call_result.error_message= c_func_not_found_;
+		return call_result;
+	}
+
+	const FuncEntry& func= *it;
+	const VmProgram::FuncCallInfo& call_info= program_.funcs_table[ func.func_number ];
+
+	if( TypeLinker<Ret>::GetUFundamentalType() != func.return_type )
+	{
+		call_result.error_message= c_invalid_return_type_;
+		return call_result;
+	}
 
 	// Caller stack. Size - for return address and saved previous caller + result.
 	stack_frames_.emplace_back(
@@ -139,24 +178,34 @@ void VM::CallRet( const ProgramString& func_name, Ret& result )
 		&result,
 		&*stack_pointer_ - sizeof(Ret),
 		sizeof( result ) );
+
+	call_result.ok= true;
+	return call_result;
 }
 
 template<class Ret, class ... Args>
-void VM::CallRet(
+VM::CallResult VM::CallRet(
 	const ProgramString& func_name,
 	Ret& result,
 	Args&&... args)
 {
+	CallResult call_result;
+
 	auto it= FindExportedFunc( func_name );
 	if( it == program_.export_funcs.end() )
 	{
-		return;
+		call_result.error_message= c_func_not_found_;
+		return call_result;
 	}
-
-	// TODO - check result type.
 
 	const FuncEntry& func= *it;
 	const VmProgram::FuncCallInfo& call_info= program_.funcs_table[ func.func_number ];
+
+	if( TypeLinker<Ret>::GetUFundamentalType() != func.return_type )
+	{
+		call_result.error_message= c_invalid_return_type_;
+		return call_result;
+	}
 
 	size_t args_and_result_size= sizeof(Ret) + SizeOfArgs(args...);
 
@@ -164,7 +213,12 @@ void VM::CallRet(
 		sizeof( unsigned int) + sizeof(unsigned int)+
 		 + args_and_result_size );
 
-	PushArgs( stack_frames_.back().begin(), func.params, 0, args... );
+	bool args_ok= PushArgs( stack_frames_.back().begin(), func.params, 0, args... );
+	if( !args_ok )
+	{
+		call_result.error_message= c_invalid_arguments_type_;
+		return call_result;
+	}
 
 	stack_pointer_= stack_frames_.back().begin() + args_and_result_size;
 
@@ -175,6 +229,9 @@ void VM::CallRet(
 		&result,
 		&*stack_pointer_ - sizeof(Ret),
 		sizeof( result ) );
+
+	call_result.ok= true;
+	return call_result;
 }
 
 } // namespace Interpreter

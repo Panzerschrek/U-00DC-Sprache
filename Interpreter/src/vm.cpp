@@ -66,6 +66,10 @@ unsigned int VM::UnaryOpBase( unsigned int op_index )
 	return op_index + 1;
 }
 
+const char* const VM::c_func_not_found_= "Function not found.";
+const char* const VM::c_invalid_return_type_= "Invalid return type.";
+const char* const VM::c_invalid_arguments_type_= "Invalid argument(s) type.";
+
 const VM::VMOpPoiter VM::operations_[size_t( Vm_Op::Type::LastOp ) ]=
 {
 	[ size_t(Vm_Op::Type::NoOp) ]= &VM::OpNoOp,

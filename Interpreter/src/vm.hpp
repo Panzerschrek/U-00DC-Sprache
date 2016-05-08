@@ -180,16 +180,23 @@ class VM final
 public:
 	VM( VmProgram program );
 
-	void Call( const ProgramString& func_name );
+public:
+	struct CallResult
+	{
+		bool ok= false;
+		std::string error_message;
+	};
+
+	CallResult Call( const ProgramString& func_name );
 
 	template<class ... Args>
-	void Call( const ProgramString& func_name, Args&&... args );
+	CallResult Call( const ProgramString& func_name, Args&&... args );
 
 	template<class Ret>
-	void CallRet( const ProgramString& func_name, Ret& result );
+	CallResult CallRet( const ProgramString& func_name, Ret& result );
 
 	template<class Ret, class ... Args>
-	void CallRet(
+	CallResult CallRet(
 		const ProgramString& func_name,
 		Ret& result,
 		Args&&... args );
@@ -252,6 +259,11 @@ private:
 
 	template<class T, class Func>
 	unsigned int UnaryOpBase( unsigned int op_index );
+
+private:
+	static const char* const c_func_not_found_;
+	static const char* const c_invalid_return_type_;
+	static const char* const c_invalid_arguments_type_;
 
 private:
 	VmProgram program_;
