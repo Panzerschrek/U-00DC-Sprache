@@ -72,6 +72,12 @@ struct Vm_Op
 		Not32,
 		Not64,
 
+		// Negation
+		Negi32,
+		Negu32,
+		Negi64,
+		Negu64,
+
 		// Subtraction
 		Subi32,
 		Subu32,
@@ -228,16 +234,24 @@ private:
 
 	unsigned int OpPushC8 ( unsigned int op_index );
 	unsigned int OpPushC16( unsigned int op_index );
+	unsigned int OpPushC32( unsigned int op_index );
+	unsigned int OpPushC64( unsigned int op_index );
 
 	unsigned int OpPushFromCallerStack8 ( unsigned int op_index );
 	unsigned int OpPushFromCallerStack16( unsigned int op_index );
 	unsigned int OpPushFromCallerStack32( unsigned int op_index );
+	unsigned int OpPushFromCallerStack64( unsigned int op_index );
 
 	unsigned int OpPopToCallerStack8 ( unsigned int op_index );
 	unsigned int OpPopToCallerStack16( unsigned int op_index );
 	unsigned int OpPopToCallerStack32( unsigned int op_index );
+	unsigned int OpPopToCallerStack64( unsigned int op_index );
 
-	unsigned int OpAddu32( unsigned int op_index );
+	template<class T, class Func>
+	unsigned int BinaryOpBase( unsigned int op_index );
+
+	template<class T, class Func>
+	unsigned int UnaryOpBase( unsigned int op_index );
 
 private:
 	VmProgram program_;

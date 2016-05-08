@@ -5,6 +5,67 @@
 namespace Interpreter
 {
 
+// Hack. There is no std::bit_inverse unary function.
+template<class T>
+struct BitInverse
+{
+	T operator()( const T& x )
+	{
+		return ~x;
+	}
+};
+
+template<class T, class Func>
+unsigned int VM::BinaryOpBase( unsigned int op_index )
+{
+	T a;
+	T b;
+
+	stack_pointer_-= sizeof(T);
+	std::memcpy(
+		&a,
+		&*stack_pointer_,
+		sizeof(U_u32) );
+
+	stack_pointer_-= sizeof(T);
+	std::memcpy(
+		&b,
+		&*stack_pointer_,
+		sizeof(T) );
+
+	Func func;
+	T result= func( a, b );
+
+	std::memcpy(
+		&*stack_pointer_,
+		&result,
+		sizeof(T) );
+	stack_pointer_+= sizeof(T);
+
+	return op_index + 1;
+}
+
+template<class T, class Func>
+unsigned int VM::UnaryOpBase( unsigned int op_index )
+{
+	T operand;
+
+	std::memcpy(
+		&operand,
+		&*stack_pointer_ - sizeof(U_u32),
+		sizeof(U_u32) );
+
+	Func func;
+	operand= func( operand );
+
+	std::memcpy(
+		&*stack_pointer_ - sizeof(U_u32),
+		&operand,
+		sizeof(U_u32) );
+
+	return op_index + 1;
+}
+
 const VM::VMOpPoiter VM::operations_[size_t( Vm_Op::Type::LastOp ) ]=
 {
 	[ size_t(Vm_Op::Type::NoOp) ]= &VM::OpNoOp,
@@ -15,8 +76,8 @@ const VM::VMOpPoiter VM::operations_[size_t( Vm_Op::Type::LastOp ) ]=
 
 	[ size_t(Vm_Op::Type::PushC8 )]= &VM::OpPushC8 ,
 	[ size_t(Vm_Op::Type::PushC16)]= &VM::OpPushC16,
-	[ size_t(Vm_Op::Type::PushC32)]= nullptr,
-	[ size_t(Vm_Op::Type::PushC64)]= nullptr,
+	[ size_t(Vm_Op::Type::PushC32)]= &VM::OpPushC32,
+	[ size_t(Vm_Op::Type::PushC64)]= &VM::OpPushC64,
 
 	[ size_t(Vm_Op::Type::PushFromLocalStack8 )]= nullptr,
 	[ size_t(Vm_Op::Type::PushFromLocalStack16)]= nullptr,
@@ -31,42 +92,47 @@ const VM::VMOpPoiter VM::operations_[size_t( Vm_Op::Type::LastOp ) ]=
 	[ size_t(Vm_Op::Type::PushFromCallerStack8 )]= &VM::OpPushFromCallerStack8 ,
 	[ size_t(Vm_Op::Type::PushFromCallerStack16)]= &VM::OpPushFromCallerStack16,
 	[ size_t(Vm_Op::Type::PushFromCallerStack32)]= &VM::OpPushFromCallerStack32,
-	[ size_t(Vm_Op::Type::PushFromCallerStack64)]= nullptr,
+	[ size_t(Vm_Op::Type::PushFromCallerStack64)]= &VM::OpPushFromCallerStack64,
 
 	[ size_t(Vm_Op::Type::PopToCallerStack8 )]= &VM::OpPopToCallerStack8 ,
 	[ size_t(Vm_Op::Type::PopToCallerStack16)]= &VM::OpPopToCallerStack16,
 	[ size_t(Vm_Op::Type::PopToCallerStack32)]= &VM::OpPopToCallerStack32,
-	[ size_t(Vm_Op::Type::PopToCallerStack64)]= nullptr,
+	[ size_t(Vm_Op::Type::PopToCallerStack64)]= &VM::OpPopToCallerStack64,
 
-	[ size_t(Vm_Op::Type::And8 )]= nullptr,
-	[ size_t(Vm_Op::Type::And16)]= nullptr,
-	[ size_t(Vm_Op::Type::And32)]= nullptr,
-	[ size_t(Vm_Op::Type::And64)]= nullptr,
+	[ size_t(Vm_Op::Type::And8 )]= &VM::BinaryOpBase<U_u8 , std::bit_and<U_u8 >>,
+	[ size_t(Vm_Op::Type::And16)]= &VM::BinaryOpBase<U_u16, std::bit_and<U_u16>>,
+	[ size_t(Vm_Op::Type::And32)]= &VM::BinaryOpBase<U_u32, std::bit_and<U_u32>>,
+	[ size_t(Vm_Op::Type::And64)]= &VM::BinaryOpBase<U_u64, std::bit_and<U_u64>>,
 
-	[ size_t(Vm_Op::Type::Or8 )]= nullptr,
-	[ size_t(Vm_Op::Type::Or16)]= nullptr,
-	[ size_t(Vm_Op::Type::Or32)]= nullptr,
-	[ size_t(Vm_Op::Type::Or64)]= nullptr,
+	[ size_t(Vm_Op::Type::Or8 )]= &VM::BinaryOpBase<U_u8 , std::bit_or<U_u8 >>,
+	[ size_t(Vm_Op::Type::Or16)]= &VM::BinaryOpBase<U_u16, std::bit_or<U_u16>>,
+	[ size_t(Vm_Op::Type::Or32)]= &VM::BinaryOpBase<U_u32, std::bit_or<U_u32>>,
+	[ size_t(Vm_Op::Type::Or64)]= &VM::BinaryOpBase<U_u64, std::bit_or<U_u64>>,
 
-	[ size_t(Vm_Op::Type::Xor8 )]= nullptr,
-	[ size_t(Vm_Op::Type::Xor16)]= nullptr,
-	[ size_t(Vm_Op::Type::Xor32)]= nullptr,
-	[ size_t(Vm_Op::Type::Xor64)]= nullptr,
+	[ size_t(Vm_Op::Type::Xor8 )]= &VM::BinaryOpBase<U_u8 , std::bit_xor<U_u8 >>,
+	[ size_t(Vm_Op::Type::Xor16)]= &VM::BinaryOpBase<U_u16, std::bit_xor<U_u16>>,
+	[ size_t(Vm_Op::Type::Xor32)]= &VM::BinaryOpBase<U_u32, std::bit_xor<U_u32>>,
+	[ size_t(Vm_Op::Type::Xor64)]= &VM::BinaryOpBase<U_u64, std::bit_xor<U_u64>>,
 
-	[ size_t(Vm_Op::Type::Not8 )]= nullptr,
-	[ size_t(Vm_Op::Type::Not16)]= nullptr,
-	[ size_t(Vm_Op::Type::Not32)]= nullptr,
-	[ size_t(Vm_Op::Type::Not64)]= nullptr,
+	[ size_t(Vm_Op::Type::Not8 )]= &VM::UnaryOpBase<U_u8 , BitInverse<U_u8 >>,
+	[ size_t(Vm_Op::Type::Not16)]= &VM::UnaryOpBase<U_u16, BitInverse<U_u16>>,
+	[ size_t(Vm_Op::Type::Not32)]= &VM::UnaryOpBase<U_u32, BitInverse<U_u32>>,
+	[ size_t(Vm_Op::Type::Not64)]= &VM::UnaryOpBase<U_u64, BitInverse<U_u64>>,
 
-	[ size_t(Vm_Op::Type::Subi32)]= nullptr,
-	[ size_t(Vm_Op::Type::Subu32)]= nullptr,
-	[ size_t(Vm_Op::Type::Subi64)]= nullptr,
-	[ size_t(Vm_Op::Type::Subu64)]= nullptr,
+	[ size_t(Vm_Op::Type::Negi32)]= &VM::UnaryOpBase<U_i32, std::negate<U_i32>>,
+	[ size_t(Vm_Op::Type::Negu32)]= &VM::UnaryOpBase<U_u32, std::negate<U_u32>>,
+	[ size_t(Vm_Op::Type::Negi64)]= &VM::UnaryOpBase<U_i64, std::negate<U_i64>>,
+	[ size_t(Vm_Op::Type::Negu64)]= &VM::UnaryOpBase<U_u64, std::negate<U_u64>>,
 
-	[ size_t(Vm_Op::Type::Addi32)]= nullptr,
-	[ size_t(Vm_Op::Type::Addu32)]= &VM::OpAddu32,
-	[ size_t(Vm_Op::Type::Addi64)]= nullptr,
-	[ size_t(Vm_Op::Type::Addu64)]= nullptr,
+	[ size_t(Vm_Op::Type::Subi32)]= &VM::BinaryOpBase<U_i32, std::minus<U_i32>>,
+	[ size_t(Vm_Op::Type::Subu32)]= &VM::BinaryOpBase<U_u32, std::minus<U_u32>>,
+	[ size_t(Vm_Op::Type::Subi64)]= &VM::BinaryOpBase<U_i64, std::minus<U_i64>>,
+	[ size_t(Vm_Op::Type::Subu64)]= &VM::BinaryOpBase<U_u64, std::minus<U_u64>>,
+
+	[ size_t(Vm_Op::Type::Addi32)]= &VM::BinaryOpBase<U_i32, std::plus<U_i32>>,
+	[ size_t(Vm_Op::Type::Addu32)]= &VM::BinaryOpBase<U_u32, std::plus<U_u32>>,
+	[ size_t(Vm_Op::Type::Addi64)]= &VM::BinaryOpBase<U_i64, std::plus<U_i64>>,
+	[ size_t(Vm_Op::Type::Addu64)]= &VM::BinaryOpBase<U_u64, std::plus<U_u64>>,
 
 };
 
@@ -224,6 +290,32 @@ unsigned int VM::OpPushC16( unsigned int op_index )
 	return op_index + 1;
 }
 
+unsigned int VM::OpPushC32( unsigned int op_index )
+{
+	const Vm_Op& op= program_.code[ op_index ];
+
+	std::memcpy(
+		&*stack_pointer_,
+		&op.param.push_c_32,
+		sizeof(U_i32) );
+	stack_pointer_+= sizeof(U_i32);
+
+	return op_index + 1;
+}
+
+unsigned int VM::OpPushC64( unsigned int op_index )
+{
+	const Vm_Op& op= program_.code[ op_index ];
+
+	std::memcpy(
+		&*stack_pointer_,
+		&op.param.push_c_64,
+		sizeof(U_i32) );
+	stack_pointer_+= sizeof(U_i64);
+
+	return op_index + 1;
+}
+
 unsigned int VM::OpPushFromCallerStack8 ( unsigned int op_index )
 {
 	const Vm_Op& op= program_.code[ op_index ];
@@ -259,6 +351,19 @@ unsigned int VM::OpPushFromCallerStack32( unsigned int op_index )
 		(&*caller_frame_pos_) + op.param.caller_stack_operations_offset,
 		sizeof(U_i32) );
 	stack_pointer_+= sizeof(U_i32);
+
+	return op_index + 1;
+}
+
+unsigned int VM::OpPushFromCallerStack64( unsigned int op_index )
+{
+	const Vm_Op& op= program_.code[ op_index ];
+
+	std::memcpy(
+		&*stack_pointer_,
+		(&*caller_frame_pos_) + op.param.caller_stack_operations_offset,
+		sizeof(U_i64) );
+	stack_pointer_+= sizeof(U_i64);
 
 	return op_index + 1;
 }
@@ -302,30 +407,15 @@ unsigned int VM::OpPopToCallerStack32( unsigned int op_index )
 	return op_index + 1;
 }
 
-unsigned int VM::OpAddu32( unsigned int op_index )
+unsigned int VM::OpPopToCallerStack64( unsigned int op_index )
 {
-	U_u32 a;
-	U_u32 b;
+	const Vm_Op& op= program_.code[ op_index ];
 
-	stack_pointer_-= sizeof(U_u32);
+	stack_pointer_-= sizeof(U_i64);
 	std::memcpy(
-		&a,
+		(&*caller_frame_pos_) + op.param.caller_stack_operations_offset,
 		&*stack_pointer_,
-		sizeof(U_u32) );
-
-	stack_pointer_-= sizeof(U_u32);
-	std::memcpy(
-		&b,
-		&*stack_pointer_,
-		sizeof(U_u32) );
-
-	U_u32 result= a + b;
-
-	std::memcpy(
-		&*stack_pointer_,
-		&result,
-		sizeof(U_u32) );
-	stack_pointer_+= sizeof(U_u32);
+		sizeof(U_i64) );
 
 	return op_index + 1;
 }
