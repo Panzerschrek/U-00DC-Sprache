@@ -38,28 +38,39 @@ LINK_TYPES( U_u64, u64 )
 
 #undef LINK_TYPES
 
+
+inline size_t VM::SizeOfArgs()
+{
+	return 0u;
+}
+
+template< class T, class ... Args >
+size_t VM::SizeOfArgs( const T& arg0, const Args&... args )
+{
+	return sizeof(arg0) + SizeOfArgs( args... );
+}
+
 template<class T, class ... Args>
 bool VM::PushArgs(
-	StackFrame& stack,
+	StackFrame::iterator stack,
 	const std::vector<U_FundamentalType> params,
 	unsigned int n,
 	const T& arg0,
 	const Args&... args )
 {
-	U_ASSERT( n > params.size() );
+	U_ASSERT( n <= params.size() );
 	if( n == params.size() ) return false;
 
 	bool ok= TypeLinker<T>::GetUFundamentalType() == params[n];
 	if( ok )
 	{
-		stack.resize( stack.size() + sizeof(T));
 		std::memcpy(
-			stack.data() + stack.size() - sizeof(T),
+			&*stack,
 			&arg0,
 			sizeof(T) );
 	}
 
-	ok|= PushArgs( stack, params, n + 1, args... );
+	ok|= PushArgs( stack + sizeof(T), params, n + 1, args... );
 
 	return ok;
 }
@@ -142,10 +153,28 @@ void VM::CallRet(
 		return;
 	}
 
-	const FuncEntry& func= *it;
+	// TODO - check result type.
 
-	StackFrame stack;
-	PushArgs( stack, func.params, 0, args... );
+	const FuncEntry& func= *it;
+	const VmProgram::FuncCallInfo& call_info= program_.funcs_table[ func.func_number ];
+
+	size_t args_and_result_size= sizeof(Ret) + SizeOfArgs(args...);
+
+	stack_frames_.emplace_back(
+		sizeof( unsigned int) + sizeof(unsigned int)+
+		 + args_and_result_size );
+
+	PushArgs( stack_frames_.back().begin(), func.params, 0, args... );
+
+	stack_pointer_= stack_frames_.back().begin() + args_and_result_size;
+
+	OpCallImpl( call_info, 0 );
+	OpLoop( call_info.first_op_position );
+
+	std::memcpy(
+		&result,
+		&*stack_pointer_ - sizeof(Ret),
+		sizeof( result ) );
 }
 
 } // namespace Interpreter

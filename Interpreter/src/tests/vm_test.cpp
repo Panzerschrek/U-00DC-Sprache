@@ -87,7 +87,7 @@ static void SimpleRetProgramTest()
 	FuncEntry func;
 	func.func_number= 0;
 	func.name= ToProgramString( "foo" );
-	func.return_type= U_FundamentalType::Void;
+	func.return_type= U_FundamentalType::u8;
 	program.export_funcs.push_back( func );
 
 	VmProgram::FuncCallInfo call_info;
@@ -129,7 +129,7 @@ static void SimpleRetProgramTest2()
 	FuncEntry func;
 	func.func_number= 0;
 	func.name= ToProgramString( "foo" );
-	func.return_type= U_FundamentalType::Void;
+	func.return_type= U_FundamentalType::u16;
 	program.export_funcs.push_back( func );
 
 	VmProgram::FuncCallInfo call_info;
@@ -147,11 +147,77 @@ static void SimpleRetProgramTest2()
 }
 
 
+static void RetProgramWithArgsTest()
+{
+	const U_u32 arg_a= 764;
+	const U_u32 arg_b= 7584;
+
+	VmProgram program;
+
+	program.code.push_back( MakeNoOp() );
+
+	// Move args to stack
+	for( unsigned int i= 0; i < 2; i++ )
+	{
+		Vm_Op op;
+		op.type= Vm_Op::Type::PushFromCallerStack32;
+		op.param.caller_stack_operations_offset=
+			-(
+			sizeof(unsigned int) + // saved previous caller pointer.
+			sizeof(unsigned int) + // return address.
+			sizeof(U_u32) + // result
+			sizeof(U_u32) + i * sizeof(U_u32) // args
+			);
+
+		program.code.push_back( op );
+	}
+	{ // Add
+		Vm_Op op;
+		op.type= Vm_Op::Type::Addu32;
+		program.code.push_back( op );
+	}
+	{ // Move result
+		Vm_Op op;
+		op.type= Vm_Op::Type::PopToCallerStack32;
+		op.param.caller_stack_operations_offset=
+			-(
+			sizeof(unsigned int) + // saved previous caller pointer.
+			sizeof(unsigned int) + // return address.
+			sizeof(U_u32) // result
+			);
+
+		program.code.push_back( op );
+	}
+	program.code.push_back( MakeRet() );
+
+	FuncEntry func;
+	func.func_number= 0;
+	func.name= ToProgramString( "foo" );
+	func.return_type= U_FundamentalType::u32;
+	func.params.push_back(U_FundamentalType::u32);
+	func.params.push_back(U_FundamentalType::u32);
+	program.export_funcs.push_back( func );
+
+	VmProgram::FuncCallInfo call_info;
+	call_info.first_op_position= 1;
+	call_info.stack_frame_size= 16;
+	program.funcs_table.push_back( call_info );
+
+	std::sort( program.export_funcs.begin(), program.export_funcs.end() );
+
+	VM vm{ program };
+
+	U_u32 result;
+	vm.CallRet( func.name, result, arg_a, arg_b );
+	U_ASSERT( result == arg_a + arg_b );
+}
+
 void RunVMTests()
 {
 	SimpleProgramTest();
 	SimpleRetProgramTest();
 	SimpleRetProgramTest2();
+	RetProgramWithArgsTest();
 }
 
 } // namespace Interpreter

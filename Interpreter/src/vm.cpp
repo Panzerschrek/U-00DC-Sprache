@@ -28,15 +28,45 @@ const VM::VMOpPoiter VM::operations_[size_t( Vm_Op::Type::LastOp ) ]=
 	[ size_t(Vm_Op::Type::PopToLocalStack32)]= nullptr,
 	[ size_t(Vm_Op::Type::PopToLocalStack64)]= nullptr,
 
-	[ size_t(Vm_Op::Type::PushFromCallerStack8 )]= nullptr,
-	[ size_t(Vm_Op::Type::PushFromCallerStack16)]= nullptr,
-	[ size_t(Vm_Op::Type::PushFromCallerStack32)]= nullptr,
+	[ size_t(Vm_Op::Type::PushFromCallerStack8 )]= &VM::OpPushFromCallerStack8 ,
+	[ size_t(Vm_Op::Type::PushFromCallerStack16)]= &VM::OpPushFromCallerStack16,
+	[ size_t(Vm_Op::Type::PushFromCallerStack32)]= &VM::OpPushFromCallerStack32,
 	[ size_t(Vm_Op::Type::PushFromCallerStack64)]= nullptr,
 
 	[ size_t(Vm_Op::Type::PopToCallerStack8 )]= &VM::OpPopToCallerStack8 ,
 	[ size_t(Vm_Op::Type::PopToCallerStack16)]= &VM::OpPopToCallerStack16,
-	[ size_t(Vm_Op::Type::PopToCallerStack32)]= nullptr,
+	[ size_t(Vm_Op::Type::PopToCallerStack32)]= &VM::OpPopToCallerStack32,
 	[ size_t(Vm_Op::Type::PopToCallerStack64)]= nullptr,
+
+	[ size_t(Vm_Op::Type::And8 )]= nullptr,
+	[ size_t(Vm_Op::Type::And16)]= nullptr,
+	[ size_t(Vm_Op::Type::And32)]= nullptr,
+	[ size_t(Vm_Op::Type::And64)]= nullptr,
+
+	[ size_t(Vm_Op::Type::Or8 )]= nullptr,
+	[ size_t(Vm_Op::Type::Or16)]= nullptr,
+	[ size_t(Vm_Op::Type::Or32)]= nullptr,
+	[ size_t(Vm_Op::Type::Or64)]= nullptr,
+
+	[ size_t(Vm_Op::Type::Xor8 )]= nullptr,
+	[ size_t(Vm_Op::Type::Xor16)]= nullptr,
+	[ size_t(Vm_Op::Type::Xor32)]= nullptr,
+	[ size_t(Vm_Op::Type::Xor64)]= nullptr,
+
+	[ size_t(Vm_Op::Type::Not8 )]= nullptr,
+	[ size_t(Vm_Op::Type::Not16)]= nullptr,
+	[ size_t(Vm_Op::Type::Not32)]= nullptr,
+	[ size_t(Vm_Op::Type::Not64)]= nullptr,
+
+	[ size_t(Vm_Op::Type::Subi32)]= nullptr,
+	[ size_t(Vm_Op::Type::Subu32)]= nullptr,
+	[ size_t(Vm_Op::Type::Subi64)]= nullptr,
+	[ size_t(Vm_Op::Type::Subu64)]= nullptr,
+
+	[ size_t(Vm_Op::Type::Addi32)]= nullptr,
+	[ size_t(Vm_Op::Type::Addu32)]= &VM::OpAddu32,
+	[ size_t(Vm_Op::Type::Addi64)]= nullptr,
+	[ size_t(Vm_Op::Type::Addu64)]= nullptr,
 
 };
 
@@ -69,7 +99,7 @@ Funcs::iterator VM::FindExportedFunc( const ProgramString& name )
 }
 
 bool VM::PushArgs(
-	StackFrame& stack,
+	StackFrame::iterator stack,
 	const std::vector<U_FundamentalType> params,
 	unsigned int n)
 {
@@ -194,6 +224,45 @@ unsigned int VM::OpPushC16( unsigned int op_index )
 	return op_index + 1;
 }
 
+unsigned int VM::OpPushFromCallerStack8 ( unsigned int op_index )
+{
+	const Vm_Op& op= program_.code[ op_index ];
+
+	std::memcpy(
+		&*stack_pointer_,
+		(&*caller_frame_pos_) + op.param.caller_stack_operations_offset,
+		sizeof(U_i8) );
+	stack_pointer_+= sizeof(U_i8);
+
+	return op_index + 1;
+}
+
+unsigned int VM::OpPushFromCallerStack16( unsigned int op_index )
+{
+	const Vm_Op& op= program_.code[ op_index ];
+
+	std::memcpy(
+		&*stack_pointer_,
+		(&*caller_frame_pos_) + op.param.caller_stack_operations_offset,
+		sizeof(U_i16) );
+	stack_pointer_+= sizeof(U_i16);
+
+	return op_index + 1;
+}
+
+unsigned int VM::OpPushFromCallerStack32( unsigned int op_index )
+{
+	const Vm_Op& op= program_.code[ op_index ];
+
+	std::memcpy(
+		&*stack_pointer_,
+		(&*caller_frame_pos_) + op.param.caller_stack_operations_offset,
+		sizeof(U_i32) );
+	stack_pointer_+= sizeof(U_i32);
+
+	return op_index + 1;
+}
+
 unsigned int VM::OpPopToCallerStack8 ( unsigned int op_index )
 {
 	const Vm_Op& op= program_.code[ op_index ];
@@ -216,6 +285,47 @@ unsigned int VM::OpPopToCallerStack16( unsigned int op_index )
 		(&*caller_frame_pos_) + op.param.caller_stack_operations_offset,
 		&*stack_pointer_,
 		sizeof(U_i16) );
+
+	return op_index + 1;
+}
+
+unsigned int VM::OpPopToCallerStack32( unsigned int op_index )
+{
+	const Vm_Op& op= program_.code[ op_index ];
+
+	stack_pointer_-= sizeof(U_i32);
+	std::memcpy(
+		(&*caller_frame_pos_) + op.param.caller_stack_operations_offset,
+		&*stack_pointer_,
+		sizeof(U_i32) );
+
+	return op_index + 1;
+}
+
+unsigned int VM::OpAddu32( unsigned int op_index )
+{
+	U_u32 a;
+	U_u32 b;
+
+	stack_pointer_-= sizeof(U_u32);
+	std::memcpy(
+		&a,
+		&*stack_pointer_,
+		sizeof(U_u32) );
+
+	stack_pointer_-= sizeof(U_u32);
+	std::memcpy(
+		&b,
+		&*stack_pointer_,
+		sizeof(U_u32) );
+
+	U_u32 result= a + b;
+
+	std::memcpy(
+		&*stack_pointer_,
+		&result,
+		sizeof(U_u32) );
+	stack_pointer_+= sizeof(U_u32);
 
 	return op_index + 1;
 }

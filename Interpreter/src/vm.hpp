@@ -194,14 +194,19 @@ private:
 private:
 	Funcs::iterator FindExportedFunc( const ProgramString& name );
 
+	size_t SizeOfArgs();
+
+	template< class T, class ... Args >
+	size_t SizeOfArgs( const T& arg0, const Args&... args );
+
 	bool PushArgs(
-		StackFrame& stack,
+		StackFrame::iterator stack,
 		const std::vector<U_FundamentalType> params,
 		unsigned int n );
 
 	template<class T, class ... Args>
 	bool PushArgs(
-		StackFrame& stack,
+		StackFrame::iterator stack,
 		const std::vector<U_FundamentalType> params,
 		unsigned int n,
 		const T& arg0,
@@ -224,8 +229,15 @@ private:
 	unsigned int OpPushC8 ( unsigned int op_index );
 	unsigned int OpPushC16( unsigned int op_index );
 
+	unsigned int OpPushFromCallerStack8 ( unsigned int op_index );
+	unsigned int OpPushFromCallerStack16( unsigned int op_index );
+	unsigned int OpPushFromCallerStack32( unsigned int op_index );
+
 	unsigned int OpPopToCallerStack8 ( unsigned int op_index );
 	unsigned int OpPopToCallerStack16( unsigned int op_index );
+	unsigned int OpPopToCallerStack32( unsigned int op_index );
+
+	unsigned int OpAddu32( unsigned int op_index );
 
 private:
 	VmProgram program_;
