@@ -173,7 +173,7 @@ static void RetProgramWithArgsTest()
 	}
 	{ // Add
 		Vm_Op op;
-		op.type= Vm_Op::Type::Addu32;
+		op.type= Vm_Op::Type::Subu32;
 		program.code.push_back( op );
 	}
 	{ // Move result
@@ -209,7 +209,7 @@ static void RetProgramWithArgsTest()
 
 	U_u32 result;
 	vm.CallRet( func.name, result, arg_a, arg_b );
-	U_ASSERT( result == arg_a + arg_b );
+	U_ASSERT( result == arg_a - arg_b );
 }
 
 void RunVMTests()
