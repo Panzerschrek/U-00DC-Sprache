@@ -66,6 +66,29 @@ unsigned int VM::UnaryOpBase( unsigned int op_index )
 	return op_index + 1;
 }
 
+template<class From, class To>
+unsigned int VM::ConvertionOpBase( unsigned int op_index )
+{
+	From from;
+	To to;
+
+	stack_pointer_-= sizeof(From);
+	std::memcpy(
+		&from,
+		&*stack_pointer_,
+		sizeof(From) );
+
+	to= static_cast<To>(from);
+
+	std::memcpy(
+		&*stack_pointer_,
+		&to,
+		sizeof(To) );
+	stack_pointer_+= sizeof(To);
+
+	return op_index + 1;
+}
+
 const char* const VM::c_func_not_found_= "Function not found.";
 const char* const VM::c_invalid_return_type_= "Invalid return type.";
 const char* const VM::c_invalid_arguments_type_= "Invalid argument(s) type.";
@@ -137,6 +160,32 @@ const VM::VMOpPoiter VM::operations_[size_t( Vm_Op::Type::LastOp ) ]=
 	[ size_t(Vm_Op::Type::Addu32)]= &VM::BinaryOpBase<U_u32, std::plus<U_u32>>,
 	[ size_t(Vm_Op::Type::Addi64)]= &VM::BinaryOpBase<U_i64, std::plus<U_i64>>,
 	[ size_t(Vm_Op::Type::Addu64)]= &VM::BinaryOpBase<U_u64, std::plus<U_u64>>,
+
+	[ size_t(Vm_Op::Type::Conv8To16S)]= &VM::ConvertionOpBase<U_i8, U_i16>,
+	[ size_t(Vm_Op::Type::Conv8To32S)]= &VM::ConvertionOpBase<U_i8, U_i32>,
+	[ size_t(Vm_Op::Type::Conv8To64S)]= &VM::ConvertionOpBase<U_i8, U_i64>,
+
+	[ size_t(Vm_Op::Type::Conv8To16U)]= &VM::ConvertionOpBase<U_u8, U_u16>,
+	[ size_t(Vm_Op::Type::Conv8To32U)]= &VM::ConvertionOpBase<U_u8, U_u32>,
+	[ size_t(Vm_Op::Type::Conv8To64U)]= &VM::ConvertionOpBase<U_u8, U_u64>,
+
+	[ size_t(Vm_Op::Type::Conv16To32S)]= &VM::ConvertionOpBase<U_i16, U_i32>,
+	[ size_t(Vm_Op::Type::Conv16To64S)]= &VM::ConvertionOpBase<U_i16, U_i64>,
+
+	[ size_t(Vm_Op::Type::Conv16To32U)]= &VM::ConvertionOpBase<U_u16, U_u32>,
+	[ size_t(Vm_Op::Type::Conv16To64U)]= &VM::ConvertionOpBase<U_u16, U_u64>,
+
+	[ size_t(Vm_Op::Type::Conv32To64S)]= &VM::ConvertionOpBase<U_i32, U_i64>,
+	[ size_t(Vm_Op::Type::Conv32To64U)]= &VM::ConvertionOpBase<U_u32, U_u64>,
+
+	[ size_t(Vm_Op::Type::Conv64To32)]= &VM::ConvertionOpBase<U_u64, U_u32>,
+	[ size_t(Vm_Op::Type::Conv64To16)]= &VM::ConvertionOpBase<U_u64, U_u16>,
+	[ size_t(Vm_Op::Type::Conv64To8 )]= &VM::ConvertionOpBase<U_u64, U_u8 >,
+
+	[ size_t(Vm_Op::Type::Conv32To16)]= &VM::ConvertionOpBase<U_u32, U_u16>,
+	[ size_t(Vm_Op::Type::Conv32To8 )]= &VM::ConvertionOpBase<U_u32, U_u8 >,
+
+	[ size_t(Vm_Op::Type::Conv16To8 )]= &VM::ConvertionOpBase<U_u16, U_u8 >,
 
 };
 

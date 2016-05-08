@@ -90,6 +90,40 @@ struct Vm_Op
 		Addi64,
 		Addu64,
 
+		// 8 bit signed expansion
+		Conv8To16S,
+		Conv8To32S,
+		Conv8To64S,
+
+		// 8 bit unsigned expansion
+		Conv8To16U,
+		Conv8To32U,
+		Conv8To64U,
+
+		// 16 bit signed expansion
+		Conv16To32S,
+		Conv16To64S,
+
+		// 16 bit unsigned expansion
+		Conv16To32U,
+		Conv16To64U,
+
+		// 32 bit signmed and unsigned expansion
+		Conv32To64S,
+		Conv32To64U,
+
+		// 64 bit reduction
+		Conv64To32,
+		Conv64To16,
+		Conv64To8 ,
+
+		// 32 bit reduction
+		Conv32To16,
+		Conv32To8 ,
+
+		// 16 bit reduction
+		Conv16To8,
+
 		LastOp
 	};
 
@@ -259,6 +293,9 @@ private:
 
 	template<class T, class Func>
 	unsigned int UnaryOpBase( unsigned int op_index );
+
+	template<class From, class To>
+	unsigned int ConvertionOpBase( unsigned int op_index );
 
 private:
 	static const char* const c_func_not_found_;
