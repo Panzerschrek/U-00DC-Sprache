@@ -25,7 +25,7 @@ unsigned int VM::BinaryOpBase( unsigned int op_index )
 	std::memcpy(
 		&a,
 		&*stack_pointer_,
-		sizeof(U_u32) );
+		sizeof(T) );
 
 	stack_pointer_-= sizeof(T);
 	std::memcpy(
@@ -52,16 +52,16 @@ unsigned int VM::UnaryOpBase( unsigned int op_index )
 
 	std::memcpy(
 		&operand,
-		&*stack_pointer_ - sizeof(U_u32),
-		sizeof(U_u32) );
+		&*stack_pointer_ - sizeof(T),
+		sizeof(T) );
 
 	Func func;
 	operand= func( operand );
 
 	std::memcpy(
-		&*stack_pointer_ - sizeof(U_u32),
+		&*stack_pointer_ - sizeof(T),
 		&operand,
-		sizeof(U_u32) );
+		sizeof(T) );
 
 	return op_index + 1;
 }
