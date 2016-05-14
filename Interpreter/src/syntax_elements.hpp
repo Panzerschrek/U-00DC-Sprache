@@ -172,7 +172,7 @@ public:
 
 	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
 
-private:
+public:
 	const BlockElements elements_;
 };
 
@@ -295,7 +295,6 @@ public:
 
 	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
 
-private:
 	const ProgramString name_;
 	const ProgramString return_type_;
 	const std::vector<VariableDeclaration> arguments_;
