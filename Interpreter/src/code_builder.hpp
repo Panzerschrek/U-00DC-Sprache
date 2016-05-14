@@ -37,6 +37,13 @@ private:
 		Kind kind;
 		U_FundamentalType fundamental;
 		std::unique_ptr<Function> function;
+
+		Type();
+		Type( const Type& other );
+		Type( Type&& other );
+
+		Type& operator=( const Type& other );
+		Type& operator=( Type&& other );
 	};
 
 	struct Function
@@ -70,7 +77,7 @@ private:
 
 		NamesScope( const NamesScope* prev= nullptr );
 
-		void AddName( const ProgramString& name, Variable variable );
+		const NamesMap::value_type* AddName( const ProgramString& name, Variable variable );
 		const NamesMap::value_type* GetName( const ProgramString& name ) const;
 
 	private:
@@ -79,9 +86,12 @@ private:
 
 	};
 
-	typedef std::map< ProgramString, Variable > FuncsTable;
-
 private:
+	void BuildFuncCode(
+		const Function& func,
+		const std::vector<ProgramString> arg_names,
+		const Block& block );
+
 	void BuildBlockCode(
 		const Block& block,
 		const NamesScope& names );
@@ -89,7 +99,7 @@ private:
 private:
 	VmProgram result_;
 
-	FuncsTable func_table_;
+	NamesScope global_names_;
 	unsigned int next_func_number_= 0;
 
 };
