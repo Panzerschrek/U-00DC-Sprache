@@ -216,11 +216,13 @@ void CodeBuilder::BuildFuncCode(
 
 	NamesScope block_names( &global_names_ );
 
-	unsigned int offset= 0;
-	for( auto it= func.args.rbegin(); it != func.args.rend(); it++ )
+	unsigned int args_offset= 0;
+	unsigned int arg_n= arg_names.size() - 1;
+	for( auto it= func.args.rbegin(); it != func.args.rend(); it++, arg_n-- )
 	{
 		Variable var;
 		var.type= *it;
+		var.location= Variable::Location::FunctionArgument;
 
 		unsigned int arg_size;
 		if( var.type.kind == Type::Kind::Fundamental )
@@ -228,22 +230,29 @@ void CodeBuilder::BuildFuncCode(
 		else
 			arg_size= sizeof(unsigned int);
 
-		offset+= arg_size;
-		var.offset= offset;
+		args_offset+= arg_size;
+		var.offset= args_offset;
 
+		// TODO - check redefenition
 		block_names.AddName(
-			arg_names[ it - func.args.rbegin() ],
+			arg_names[ arg_n ],
 			std::move(var) );
 	}
 
-	BuildBlockCode( block, block_names );
+	unsigned int locals_offset= 0;
+	unsigned int needed_stack_size;
+	BuildBlockCode( block, block_names, locals_offset, needed_stack_size );
 }
 
 void CodeBuilder::BuildBlockCode(
 	const Block& block,
-	const NamesScope& names )
+	const NamesScope& names,
+	unsigned int locals_stack_offset,
+	unsigned int& out_locals_stack_offset )
 {
 	NamesScope block_names( &names );
+
+	unsigned int max_inner_block_stack_offset= 0;
 
 	for( const IBlockElementPtr& block_element : block.elements_ )
 	{
@@ -261,6 +270,14 @@ void CodeBuilder::BuildBlockCode(
 			}
 			variable.type.kind= Type::Kind::Fundamental;
 			variable.type.fundamental= it->second;
+			variable.offset= locals_stack_offset;
+
+			if( variable.type.kind == Type::Kind::Fundamental )
+				locals_stack_offset+= g_fundamental_types_size[ size_t( variable.type.fundamental ) ];
+			else
+			{
+				// TODO
+			}
 
 			// TODO - check redefinition
 			block_names.AddName( variable_declaration->name, std::move(variable) );
@@ -268,9 +285,24 @@ void CodeBuilder::BuildBlockCode(
 		else if( const Block* inner_block=
 			dynamic_cast<const Block*>( block_element.get() ) )
 		{
-			BuildBlockCode( *inner_block, block_names );
+			unsigned int inner_block_stack_offset;
+			BuildBlockCode(
+				*inner_block,
+				block_names,
+				locals_stack_offset,
+				inner_block_stack_offset);
+
+			max_inner_block_stack_offset=
+				std::max(
+					max_inner_block_stack_offset,
+					inner_block_stack_offset );
 		}
 	}
+
+	out_locals_stack_offset=
+		std::max(
+			locals_stack_offset,
+			max_inner_block_stack_offset );
 }
 
 } //namespace Interpreter

@@ -94,7 +94,9 @@ private:
 
 	void BuildBlockCode(
 		const Block& block,
-		const NamesScope& names );
+		const NamesScope& names,
+		unsigned int locals_stack_offset,
+		unsigned int& out_locals_stack_offset );
 
 private:
 	VmProgram result_;
