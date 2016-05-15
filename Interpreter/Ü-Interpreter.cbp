@@ -45,6 +45,10 @@
 		<Unit filename="src\syntax_analyzer.hpp" />
 		<Unit filename="src\syntax_elements.cpp" />
 		<Unit filename="src\syntax_elements.hpp" />
+		<Unit filename="src\tests\inverse_polish_notation_test.cpp" />
+		<Unit filename="src\tests\inverse_polish_notation_test.hpp" />
+		<Unit filename="src\tests\vm_test.cpp" />
+		<Unit filename="src\tests\vm_test.hpp" />
 		<Unit filename="src\vm.cpp" />
 		<Unit filename="src\vm.hpp" />
 		<Unit filename="src\vm.inl" />

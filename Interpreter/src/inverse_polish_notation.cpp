@@ -20,7 +20,7 @@ static inline unsigned int GetOperatorPriority( BinaryOperator op )
 	return g_operators_priority[ size_t(op) ];
 }
 
-void ReversePolishNotationComponent::Print( std::ostream& stream )
+void ReversePolishNotationComponent::Print( std::ostream& stream ) const
 {
 	if( operand )
 		operand->Print( stream, 0 );
@@ -58,17 +58,24 @@ InversePolishNotation ConvertToInversePolishNotation(
 				unsigned int op_priority= GetOperatorPriority( component_with_operator.op );
 				unsigned int stack_top_priority= GetOperatorPriority( operators_stack.back() );
 
-				// Pop from stack to notation.
-				if( stack_top_priority > op_priority )
-				{
-					ReversePolishNotationComponent operator_;
-					operator_.operator_= operators_stack.back();
-					result.emplace_back( std::move(operator_) );
-
-					operators_stack.pop_back();
-				}
-				else
+				if( op_priority > stack_top_priority )
 					operators_stack.push_back( component_with_operator.op );
+
+				else
+				{
+					while( op_priority<= stack_top_priority )
+					{
+						ReversePolishNotationComponent operator_;
+						operator_.operator_= operators_stack.back();
+						result.emplace_back( std::move(operator_) );
+
+						operators_stack.pop_back();
+						if( operators_stack.empty() ) break;
+
+						stack_top_priority= GetOperatorPriority( operators_stack.back() );
+					}
+					operators_stack.push_back( component_with_operator.op );
+				}
 			}
 		}
 
@@ -83,6 +90,15 @@ InversePolishNotation ConvertToInversePolishNotation(
 	}
 
 	return result;
+}
+
+void PrintInversePolishNotation( std::ostream& stream, const InversePolishNotation& ipn )
+{
+	for( const ReversePolishNotationComponent& component : ipn )
+	{
+		component.Print( stream );
+		stream << " ";
+	}
 }
 
 } // namespace Interpreter

@@ -6,10 +6,12 @@
 #include "syntax_analyzer.hpp"
 
 #include "tests/vm_test.hpp"
+#include "tests/inverse_polish_notation_test.hpp"
 
 int main()
 {
 	Interpreter::RunVMTests();
+	Interpreter::RunIPNTests();
 
 	std::cout << u8"Ü-Sprache Interpreter" << std::endl;
 

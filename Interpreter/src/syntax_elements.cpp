@@ -228,6 +228,8 @@ BinaryOperatorsChain::ComponentWithOperator&
 	for( const IUnaryPostfixOperatorPtr& op : other.postfix_operators )
 		postfix_operators.emplace_back( op->Clone() );
 
+	op= other.op;
+
 	return *this;
 }
 
@@ -238,6 +240,7 @@ BinaryOperatorsChain::ComponentWithOperator&
 	prefix_operators= std::move( other.prefix_operators );
 	component= std::move( other.component );
 	postfix_operators= std::move( other.postfix_operators );
+	op= std::move( other.op );
 
 	return *this;
 }
