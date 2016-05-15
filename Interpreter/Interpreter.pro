@@ -17,7 +17,8 @@ SOURCES += \
 	src/syntax_elements.cpp \
 	src/vm.cpp \
 	src/tests/vm_test.cpp \
-	src/code_builder.cpp
+	src/code_builder.cpp \
+	src/inverse_polish_notation.cpp
 
 HEADERS += \
 	src/assert.hpp \
@@ -28,7 +29,8 @@ HEADERS += \
 	src/vm.hpp \
 	src/vm.inl \
 	src/tests/vm_test.hpp \
-	src/code_builder.hpp
+	src/code_builder.hpp \
+	src/inverse_polish_notation.hpp
 
 U_DUBUG {
 	DEFINES+= DEBUG

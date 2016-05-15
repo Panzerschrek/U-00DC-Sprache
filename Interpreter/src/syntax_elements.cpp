@@ -91,6 +91,23 @@ IUnaryPostfixOperatorPtr IndexationOperator::Clone() const
 			new IndexationOperator( std::move( index_copy ) ) );
 }
 
+void PrintOperator( std::ostream& stream, BinaryOperator op )
+{
+	const char* op_str= "";
+	switch( op )
+	{
+		case BinaryOperator::Add: op_str= "+"; break;
+		case BinaryOperator::Sub: op_str= "-"; break;
+		case BinaryOperator::Mul: op_str= "*"; break;
+		case BinaryOperator::Div: op_str= "/"; break;
+		case BinaryOperator::None: op_str= ""; break;
+
+		case BinaryOperator::Last: U_ASSERT(false); break;
+	};
+
+	stream << op_str;
+}
+
 void IndexationOperator::Print( std::ostream& stream, unsigned int indent ) const
 {
 	stream << "[ ";
@@ -177,19 +194,7 @@ void BinaryOperatorsChain::Print( std::ostream& stream, unsigned int indent ) co
 		for( const IUnaryPostfixOperatorPtr& postfix_operator : comp.postfix_operators )
 			postfix_operator->Print( stream, indent );
 
-		const char* op= "";
-		switch( comp.op )
-		{
-			case BinaryOperator::Add: op= "+"; break;
-			case BinaryOperator::Sub: op= "-"; break;
-			case BinaryOperator::Mul: op= "*"; break;
-			case BinaryOperator::Div: op= "/"; break;
-			case BinaryOperator::None: op= ""; break;
-
-			case BinaryOperator::Last: U_ASSERT(false); break;
-		};
-
-		stream << op;
+		PrintOperator( stream, comp.op );
 	}
 }
 
