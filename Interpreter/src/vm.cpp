@@ -271,10 +271,16 @@ unsigned int VM::OpNoOp( unsigned int op_index )
 
 unsigned int VM::OpCall( unsigned int op_index )
 {
-	const Vm_Op& op= program_.code[ op_index ];
+	unsigned int func_number;
+
+	stack_pointer_-= sizeof(unsigned int);
+	std::memcpy(
+		&func_number,
+		&*stack_pointer_,
+		sizeof(unsigned int) );
 
 	const VmProgram::FuncCallInfo& call_info=
-		program_.funcs_table[ op.param.call_param.func_number ];
+		program_.funcs_table[ func_number ];
 
 	OpCallImpl( call_info, op_index + 1 );
 

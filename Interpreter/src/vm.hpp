@@ -131,11 +131,6 @@ struct Vm_Op
 
 	union
 	{
-		struct
-		{
-			unsigned int func_number;
-		} call_param;
-
 		std::uint8_t  push_c_8 ;
 		std::uint16_t push_c_16;
 		std::uint32_t push_c_32;
