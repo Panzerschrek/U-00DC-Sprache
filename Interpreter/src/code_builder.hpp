@@ -98,6 +98,10 @@ private:
 		unsigned int locals_stack_offset,
 		unsigned int& out_locals_stack_offset );
 
+	U_FundamentalType BuildExpressionCode(
+		const BinaryOperatorsChain& expression,
+		const NamesScope& names );
+
 private:
 	VmProgram result_;
 

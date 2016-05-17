@@ -256,8 +256,10 @@ void CodeBuilder::BuildBlockCode(
 
 	for( const IBlockElementPtr& block_element : block.elements_ )
 	{
+		const IBlockElement* const block_element_ptr= block_element.get();
+
 		if( const VariableDeclaration* variable_declaration=
-			dynamic_cast<const VariableDeclaration*>( block_element.get() ) )
+			dynamic_cast<const VariableDeclaration*>( block_element_ptr ) )
 		{
 			Variable variable;
 			variable.location= Variable::Location::Stack;
@@ -283,7 +285,7 @@ void CodeBuilder::BuildBlockCode(
 			block_names.AddName( variable_declaration->name, std::move(variable) );
 		}
 		else if( const Block* inner_block=
-			dynamic_cast<const Block*>( block_element.get() ) )
+			dynamic_cast<const Block*>( block_element_ptr ) )
 		{
 			unsigned int inner_block_stack_offset;
 			BuildBlockCode(
@@ -297,12 +299,58 @@ void CodeBuilder::BuildBlockCode(
 					max_inner_block_stack_offset,
 					inner_block_stack_offset );
 		}
+		else if( const ReturnOperator* return_operator=
+			dynamic_cast<const ReturnOperator*>( block_element_ptr ) )
+		{
+			if( return_operator->expression_ )
+			{
+				U_FundamentalType expression_type=
+					BuildExpressionCode(
+						*return_operator->expression_,
+						block_names );
+
+				unsigned int result_size=
+					g_fundamental_types_size[ size_t(expression_type) ];
+
+				unsigned int op_shift= ~0u;
+				switch( result_size )
+				{
+					case 0: goto push_ret;
+
+					case 1: op_shift= 0; break;
+					case 2: op_shift= 1; break;
+					case 4: op_shift= 2; break;
+					case 8: op_shift= 3; break;
+				};
+
+				U_ASSERT( op_shift != ~0u );
+
+				Vm_Op op;
+				op.type= Vm_Op::Type( size_t(Vm_Op::Type::PopToCallerStack8) + op_shift );
+				op.param.caller_stack_operations_offset=
+					-int( sizeof(unsigned int) + sizeof(unsigned int) + result_size );
+
+				result_.code.push_back( op );
+			}
+
+		push_ret:
+			Vm_Op ret_op;
+			ret_op.type= Vm_Op::Type::Ret;
+			result_.code.push_back( ret_op );
+		}
 	}
 
 	out_locals_stack_offset=
 		std::max(
 			locals_stack_offset,
 			max_inner_block_stack_offset );
+}
+
+U_FundamentalType CodeBuilder::BuildExpressionCode(
+	const BinaryOperatorsChain& expression,
+	const NamesScope& names )
+{
+	return U_FundamentalType::Void;
 }
 
 } //namespace Interpreter
