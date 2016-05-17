@@ -101,6 +101,8 @@ const VM::VMOpPoiter VM::operations_[size_t( Vm_Op::Type::LastOp ) ]=
 
 	[ size_t(Vm_Op::Type::Syscall)]= nullptr,
 
+	[ size_t(Vm_Op::Type::StackPointerAdd) ]= &VM::OpStackPointerAdd,
+
 	[ size_t(Vm_Op::Type::PushC8 )]= &VM::OpPushC8 ,
 	[ size_t(Vm_Op::Type::PushC16)]= &VM::OpPushC16,
 	[ size_t(Vm_Op::Type::PushC32)]= &VM::OpPushC32,
@@ -321,6 +323,15 @@ unsigned int VM::OpSysCall( unsigned int op_index )
 {
 	// TODO
 	return 0;
+}
+
+unsigned int VM::OpStackPointerAdd( unsigned int op_index )
+{
+	const Vm_Op& op= program_.code[ op_index ];
+
+	stack_pointer_+= sizeof(op.param.stack_add_size);
+
+	return op_index + 1;
 }
 
 unsigned int VM::OpPushC8( unsigned int op_index )

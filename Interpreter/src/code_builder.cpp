@@ -239,9 +239,22 @@ void CodeBuilder::BuildFuncCode(
 			std::move(var) );
 	}
 
+	VmProgram::FuncCallInfo func_entry;
+	func_entry.first_op_position= result_.code.size();
+
+	// First instruction - stack increasing.
+	result_.code.emplace_back( Vm_Op::Type::StackPointerAdd );
+
 	unsigned int locals_offset= 0;
 	unsigned int needed_stack_size;
 	BuildBlockCode( block, block_names, locals_offset, needed_stack_size );
+
+	// Stack extension instruction - move stack for expression evaluation above local variables.
+	// TODO - add space for expression evaluation.
+	result_.code[ func_entry.first_op_position ].param.stack_add_size= needed_stack_size;
+
+	func_entry.stack_frame_size= needed_stack_size;
+	result_.funcs_table.emplace_back( std::move( func_entry ) );
 }
 
 void CodeBuilder::BuildBlockCode(

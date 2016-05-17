@@ -18,6 +18,8 @@ struct Vm_Op
 
 		Syscall,
 
+		StackPointerAdd,
+
 		// Push constant
 		PushC8 ,
 		PushC16,
@@ -127,6 +129,10 @@ struct Vm_Op
 		LastOp
 	};
 
+
+	Vm_Op() {}
+	explicit Vm_Op( Type in_type ) : type( in_type ) {}
+
 	Type type;
 
 	union
@@ -142,6 +148,9 @@ struct Vm_Op
 		// Offset for push/pop caller stack operations.
 		// For arguments, return address, result offset are negative.
 		int caller_stack_operations_offset;
+
+		// Number of bytes, added to stack pointer
+		int stack_add_size;
 	} param;
 };
 
@@ -267,6 +276,8 @@ private:
 	unsigned int OpCall( unsigned int op_index );
 	unsigned int OpRet( unsigned int op_index );
 	unsigned int OpSysCall( unsigned int op_index );
+
+	unsigned int OpStackPointerAdd( unsigned int op_index );
 
 	unsigned int OpPushC8 ( unsigned int op_index );
 	unsigned int OpPushC16( unsigned int op_index );
