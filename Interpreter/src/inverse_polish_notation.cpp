@@ -20,7 +20,7 @@ static inline unsigned int GetOperatorPriority( BinaryOperator op )
 	return g_operators_priority[ size_t(op) ];
 }
 
-void ReversePolishNotationComponent::Print( std::ostream& stream ) const
+void InversePolishNotationComponent::Print( std::ostream& stream ) const
 {
 	if( operand )
 		operand->Print( stream, 0 );
@@ -39,8 +39,16 @@ InversePolishNotation ConvertToInversePolishNotation(
 		binary_operators_chain.components )
 	{
 		{
-			ReversePolishNotationComponent operand;
+			InversePolishNotationComponent operand;
 			operand.operand= component_with_operator.component->Clone();
+
+			operand.prefix_operand_operators.reserve( component_with_operator.prefix_operators.size() );
+			for( const IUnaryPrefixOperatorPtr& op : component_with_operator.prefix_operators )
+				operand.prefix_operand_operators.emplace_back( op->Clone() );
+
+			operand.postfix_operand_operators.reserve( component_with_operator.postfix_operators.size() );
+			for( const IUnaryPostfixOperatorPtr& op : component_with_operator.postfix_operators )
+				operand.postfix_operand_operators.emplace_back( op->Clone() );
 
 			result.emplace_back( std::move(operand) );
 		}
@@ -65,7 +73,7 @@ InversePolishNotation ConvertToInversePolishNotation(
 				{
 					while( op_priority<= stack_top_priority )
 					{
-						ReversePolishNotationComponent operator_;
+						InversePolishNotationComponent operator_;
 						operator_.operator_= operators_stack.back();
 						result.emplace_back( std::move(operator_) );
 
@@ -84,7 +92,7 @@ InversePolishNotation ConvertToInversePolishNotation(
 	// Clear operators stack
 	for( auto it= operators_stack.rbegin(); it != operators_stack.rend(); ++it )
 	{
-		ReversePolishNotationComponent operator_;
+		InversePolishNotationComponent operator_;
 		operator_.operator_= *it;
 		result.emplace_back( std::move(operator_) );
 	}
@@ -94,7 +102,7 @@ InversePolishNotation ConvertToInversePolishNotation(
 
 void PrintInversePolishNotation( std::ostream& stream, const InversePolishNotation& ipn )
 {
-	for( const ReversePolishNotationComponent& component : ipn )
+	for( const InversePolishNotationComponent& component : ipn )
 	{
 		component.Print( stream );
 		stream << " ";

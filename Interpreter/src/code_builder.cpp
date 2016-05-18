@@ -1,3 +1,5 @@
+#include "inverse_polish_notation.hpp"
+
 #include "code_builder.hpp"
 
 namespace Interpreter
@@ -363,6 +365,84 @@ U_FundamentalType CodeBuilder::BuildExpressionCode(
 	const BinaryOperatorsChain& expression,
 	const NamesScope& names )
 {
+	std::vector< U_FundamentalType > types_stack;
+
+	InversePolishNotation ipn = ConvertToInversePolishNotation( expression );
+
+	for( const InversePolishNotationComponent& comp : ipn )
+	{
+		// Operand
+		if( comp.operator_ != BinaryOperator::None )
+		{
+			const IBinaryOperatorsChainComponent& operand= *comp.operand;
+			if( const NamedOperand* named_operand=
+				dynamic_cast<const NamedOperand*>(&operand) )
+			{
+				const NamesScope::NamesMap::value_type* variable= names.GetName( named_operand->name_ );
+				if( !variable )
+				{
+					// TODO - register error
+				}
+
+				// if variable - push
+				// if func - call
+			}
+			else if( const NumericConstant* number=
+				dynamic_cast<const NumericConstant*>(&operand) )
+			{
+				// Convert str to number
+				// push number
+			}
+			else
+			{
+				U_ASSERT(false);
+			}
+		}
+		else // Operator
+		{
+			U_ASSERT( types_stack.size() >= 2 );
+			U_FundamentalType type0= types_stack.back();
+			U_FundamentalType type1= types_stack[ types_stack.size() - 2 ];
+
+			if( type0 != type1 )
+			{
+				// TODO -register error
+			}
+
+			Vm_Op::Type op_type;
+
+			switch( comp.operator_ )
+			{
+			case BinaryOperator::Add:
+			case BinaryOperator::Sub:
+				{
+					op_type= comp.operator_ == BinaryOperator::Add ? Vm_Op::Type::Addi32 : Vm_Op::Type::Subi32;
+
+					if( type0 == U_FundamentalType::i32 )
+					{}
+					else if( type0 == U_FundamentalType::u32 )
+						op_type= Vm_Op::Type( size_t(op_type) + 1 );
+					else if( type0 == U_FundamentalType::i64 )
+						op_type= Vm_Op::Type( size_t(op_type) + 2 );
+					else if( type0 == U_FundamentalType::i64 )
+						op_type= Vm_Op::Type( size_t(op_type) + 3 );
+				}
+				break;
+
+			case BinaryOperator::Div:
+			case BinaryOperator::Mul:
+				op_type= Vm_Op::Type::NoOp;
+				// TODO
+				break;
+
+			default:
+				U_ASSERT(false);
+				break;
+			};
+
+		} // if operator
+	} // for inverse polish notation
+
 	return U_FundamentalType::Void;
 }
 

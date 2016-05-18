@@ -5,16 +5,19 @@
 namespace Interpreter
 {
 
-struct ReversePolishNotationComponent final
+struct InversePolishNotationComponent final
 {
 	// If operand is zero - is operator.
 	IBinaryOperatorsChainComponentPtr operand;
+	PrefixOperators prefix_operand_operators;
+	PostfixOperators postfix_operand_operators;
+
 	BinaryOperator operator_= BinaryOperator::None;
 
 	void Print( std::ostream& stream ) const;
 };
 
-typedef std::vector<ReversePolishNotationComponent> InversePolishNotation;
+typedef std::vector<InversePolishNotationComponent> InversePolishNotation;
 
 InversePolishNotation ConvertToInversePolishNotation( const BinaryOperatorsChain& binary_operators_chain );
 
