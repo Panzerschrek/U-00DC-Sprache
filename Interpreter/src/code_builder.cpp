@@ -37,6 +37,20 @@ const size_t g_fundamental_types_size[ size_t(U_FundamentalType::LastType) ]=
 	[ size_t(U_FundamentalType::u64) ]= 8,
 };
 
+// Returns 0 for 8bit, 1 for 16bit, 2 for 32bit, 3 for 64 bit, 4 - else
+unsigned int GetOpIndexOffsetForFundamentalType( U_FundamentalType type )
+{
+	switch( g_fundamental_types_size[ size_t(type) ] )
+	{
+		case 1: return 0;
+		case 2: return 1;
+		case 4: return 2;
+		case 8: return 3;
+
+		default: return 4;
+	};
+}
+
 void ReportUnknownFuncReturnType(
 	std::vector<std::string>& error_messages,
 	const FunctionDeclaration& func )
@@ -365,7 +379,7 @@ U_FundamentalType CodeBuilder::BuildExpressionCode(
 	const BinaryOperatorsChain& expression,
 	const NamesScope& names )
 {
-	std::vector< U_FundamentalType > types_stack;
+	std::vector< Type > types_stack;
 
 	InversePolishNotation ipn = ConvertToInversePolishNotation( expression );
 
@@ -378,14 +392,49 @@ U_FundamentalType CodeBuilder::BuildExpressionCode(
 			if( const NamedOperand* named_operand=
 				dynamic_cast<const NamedOperand*>(&operand) )
 			{
-				const NamesScope::NamesMap::value_type* variable= names.GetName( named_operand->name_ );
-				if( !variable )
+				const NamesScope::NamesMap::value_type* variable_entry=
+					names.GetName( named_operand->name_ );
+				if( !variable_entry )
 				{
 					// TODO - register error
 				}
+				const Variable& variable= variable_entry->second;
 
-				// if variable - push
-				// if func - call
+				Vm_Op op;
+
+				if( variable.location == Variable::Location::Global &&
+					variable.type.function )
+				{
+					op.type= Vm_Op::Type::PushC32;
+					op.param.push_c_32= variable.offset;
+				}
+				else
+				{
+					U_ASSERT(! variable.type.function );
+
+					if( variable.location == Variable::Location::FunctionArgument )
+					{
+						op.type= Vm_Op::Type::PushFromCallerStack8;
+						op.param.caller_stack_operations_offset= -variable.offset;
+					}
+					else if( variable.location == Variable::Location::Stack )
+					{
+						op.type= Vm_Op::Type::PushFromLocalStack8;
+						op.param.local_stack_operations_offset= variable.offset;
+					}
+					else
+					{
+						// Global variables not supported
+						U_ASSERT(false);
+					}
+
+					op.type= Vm_Op::Type(
+						size_t(op.type) +
+						GetOpIndexOffsetForFundamentalType(variable.type.fundamental) );
+				}
+
+				types_stack.push_back( variable.type );
+				result_.code.emplace_back(op);
 			}
 			else if( const NumericConstant* number=
 				dynamic_cast<const NumericConstant*>(&operand) )
@@ -393,16 +442,29 @@ U_FundamentalType CodeBuilder::BuildExpressionCode(
 				// Convert str to number
 				// push number
 			}
+			else if( const BracketExpression* bracket_expression=
+				dynamic_cast<const BracketExpression*>(&operand) )
+			{
+				BuildExpressionCode( *bracket_expression->expression_, names );
+			}
 			else
 			{
 				U_ASSERT(false);
+			}
+
+			for( const IUnaryPostfixOperatorPtr& postfix_operator : comp.postfix_operand_operators )
+			{
+			}
+
+			for( const IUnaryPrefixOperatorPtr& prefix_operator : comp.prefix_operand_operators )
+			{
 			}
 		}
 		else // Operator
 		{
 			U_ASSERT( types_stack.size() >= 2 );
-			U_FundamentalType type0= types_stack.back();
-			U_FundamentalType type1= types_stack[ types_stack.size() - 2 ];
+			U_FundamentalType type0= types_stack.back().fundamental;
+			U_FundamentalType type1= types_stack[ types_stack.size() - 2 ].fundamental;
 
 			if( type0 != type1 )
 			{

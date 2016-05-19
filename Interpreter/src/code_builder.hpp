@@ -35,7 +35,7 @@ private:
 		};
 
 		Kind kind;
-		U_FundamentalType fundamental;
+		U_FundamentalType fundamental = U_FundamentalType::InvalidType;
 		std::unique_ptr<Function> function;
 
 		Type();
