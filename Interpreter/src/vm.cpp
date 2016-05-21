@@ -18,23 +18,23 @@ struct BitInverse
 template<class T, class Func>
 unsigned int VM::BinaryOpBase( unsigned int op_index )
 {
-	T a;
-	T b;
+	T second;
+	T first;
 
 	stack_pointer_-= sizeof(T);
 	std::memcpy(
-		&a,
+		&second,
 		&*stack_pointer_,
-		sizeof(U_u32) );
+		sizeof(T) );
 
 	stack_pointer_-= sizeof(T);
 	std::memcpy(
-		&b,
+		&first,
 		&*stack_pointer_,
 		sizeof(T) );
 
 	Func func;
-	T result= func( a, b );
+	T result= func( first, second );
 
 	std::memcpy(
 		&*stack_pointer_,
@@ -52,16 +52,16 @@ unsigned int VM::UnaryOpBase( unsigned int op_index )
 
 	std::memcpy(
 		&operand,
-		&*stack_pointer_ - sizeof(U_u32),
-		sizeof(U_u32) );
+		&*stack_pointer_ - sizeof(T),
+		sizeof(T) );
 
 	Func func;
 	operand= func( operand );
 
 	std::memcpy(
-		&*stack_pointer_ - sizeof(U_u32),
+		&*stack_pointer_ - sizeof(T),
 		&operand,
-		sizeof(U_u32) );
+		sizeof(T) );
 
 	return op_index + 1;
 }
@@ -100,6 +100,8 @@ const VM::VMOpPoiter VM::operations_[size_t( Vm_Op::Type::LastOp ) ]=
 	[ size_t(Vm_Op::Type::Ret)]= &VM::OpRet,
 
 	[ size_t(Vm_Op::Type::Syscall)]= nullptr,
+
+	[ size_t(Vm_Op::Type::StackPointerAdd) ]= &VM::OpStackPointerAdd,
 
 	[ size_t(Vm_Op::Type::PushC8 )]= &VM::OpPushC8 ,
 	[ size_t(Vm_Op::Type::PushC16)]= &VM::OpPushC16,
@@ -160,6 +162,17 @@ const VM::VMOpPoiter VM::operations_[size_t( Vm_Op::Type::LastOp ) ]=
 	[ size_t(Vm_Op::Type::Addu32)]= &VM::BinaryOpBase<U_u32, std::plus<U_u32>>,
 	[ size_t(Vm_Op::Type::Addi64)]= &VM::BinaryOpBase<U_i64, std::plus<U_i64>>,
 	[ size_t(Vm_Op::Type::Addu64)]= &VM::BinaryOpBase<U_u64, std::plus<U_u64>>,
+
+	[ size_t(Vm_Op::Type::Muli32)]= &VM::BinaryOpBase<U_i32, std::multiplies<U_i32>>,
+	[ size_t(Vm_Op::Type::Mulu32)]= &VM::BinaryOpBase<U_u32, std::multiplies<U_u32>>,
+	[ size_t(Vm_Op::Type::Muli64)]= &VM::BinaryOpBase<U_i64, std::multiplies<U_i64>>,
+	[ size_t(Vm_Op::Type::Mulu64)]= &VM::BinaryOpBase<U_u64, std::multiplies<U_u64>>,
+
+	// TODO - check division by zero
+	[ size_t(Vm_Op::Type::Divi32)]= &VM::BinaryOpBase<U_i32, std::divides<U_i32>>,
+	[ size_t(Vm_Op::Type::Divu32)]= &VM::BinaryOpBase<U_u32, std::divides<U_u32>>,
+	[ size_t(Vm_Op::Type::Divi64)]= &VM::BinaryOpBase<U_i64, std::divides<U_i64>>,
+	[ size_t(Vm_Op::Type::Divu64)]= &VM::BinaryOpBase<U_u64, std::divides<U_u64>>,
 
 	[ size_t(Vm_Op::Type::Conv8To16S)]= &VM::ConvertionOpBase<U_i8, U_i16>,
 	[ size_t(Vm_Op::Type::Conv8To32S)]= &VM::ConvertionOpBase<U_i8, U_i32>,
@@ -242,8 +255,8 @@ void VM::OpLoop( unsigned int start_op_index )
 void VM::OpCallImpl( const VmProgram::FuncCallInfo& call_info, unsigned int return_index )
 {
 	/* Stack frame of caller is.
-	Arguments.
 	Result.
+	Arguments.
 	Saved caller caller stack pointer.
 	Return operation index.
 	*/
@@ -259,7 +272,7 @@ void VM::OpCallImpl( const VmProgram::FuncCallInfo& call_info, unsigned int retu
 	// Now, caller stack pointer is stack pointer of this function.
 	caller_frame_pos_= stack_pointer_;
 
-	// Make stack for ne function
+	// Make stack for new function
 	stack_frames_.emplace_back( call_info.stack_frame_size );
 	stack_pointer_= stack_frames_.back().begin();
 }
@@ -271,10 +284,18 @@ unsigned int VM::OpNoOp( unsigned int op_index )
 
 unsigned int VM::OpCall( unsigned int op_index )
 {
-	const Vm_Op& op= program_.code[ op_index ];
+	unsigned int func_number;
+
+	stack_pointer_-= sizeof(unsigned int);
+	std::memcpy(
+		&func_number,
+		&*stack_pointer_,
+		sizeof(unsigned int) );
+
+	U_ASSERT( func_number < program_.funcs_table.size() );
 
 	const VmProgram::FuncCallInfo& call_info=
-		program_.funcs_table[ op.param.call_param.func_number ];
+		program_.funcs_table[ func_number ];
 
 	OpCallImpl( call_info, op_index + 1 );
 
@@ -296,7 +317,7 @@ unsigned int VM::OpRet( unsigned int op_index )
 		&*caller_frame_pos_,
 		sizeof(unsigned int) );
 
-	// Pop old caller fram pos.
+	// Pop old caller frame pos.
 	StackFrame::iterator old_caller_frame_pos;
 	caller_frame_pos_-= sizeof(unsigned int);
 	std::memcpy(
@@ -315,6 +336,15 @@ unsigned int VM::OpSysCall( unsigned int op_index )
 {
 	// TODO
 	return 0;
+}
+
+unsigned int VM::OpStackPointerAdd( unsigned int op_index )
+{
+	const Vm_Op& op= program_.code[ op_index ];
+
+	stack_pointer_+= op.param.stack_add_size;
+
+	return op_index + 1;
 }
 
 unsigned int VM::OpPushC8( unsigned int op_index )

@@ -19,17 +19,8 @@ public:
 struct BinaryOperatorsChain;
 typedef std::unique_ptr<BinaryOperatorsChain> BinaryOperatorsChainPtr;
 
-class IUnaryPrefixOperator : public IPrintable
-{
-public:
-	virtual ~IUnaryPrefixOperator() {}
-};
-
-class IUnaryPostfixOperator : public IPrintable
-{
-public:
-	virtual ~IUnaryPostfixOperator() {}
-};
+class IUnaryPrefixOperator ;
+class IUnaryPostfixOperator;
 
 typedef std::unique_ptr<IUnaryPrefixOperator > IUnaryPrefixOperatorPtr ;
 typedef std::unique_ptr<IUnaryPostfixOperator> IUnaryPostfixOperatorPtr;
@@ -37,10 +28,28 @@ typedef std::unique_ptr<IUnaryPostfixOperator> IUnaryPostfixOperatorPtr;
 typedef std::vector<IUnaryPrefixOperatorPtr > PrefixOperators ;
 typedef std::vector<IUnaryPostfixOperatorPtr> PostfixOperators;
 
+class IUnaryPrefixOperator : public IPrintable
+{
+public:
+	virtual ~IUnaryPrefixOperator() {}
+
+	virtual IUnaryPrefixOperatorPtr Clone() const= 0;
+};
+
+class IUnaryPostfixOperator : public IPrintable
+{
+public:
+	virtual ~IUnaryPostfixOperator() {}
+
+	virtual IUnaryPostfixOperatorPtr Clone() const= 0;
+};
+
 class UnaryPlus final : public IUnaryPrefixOperator
 {
 public:
 	virtual ~UnaryPlus() override;
+
+	virtual IUnaryPrefixOperatorPtr Clone() const override;
 
 	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
 };
@@ -50,26 +59,31 @@ class UnaryMinus final : public IUnaryPrefixOperator
 public:
 	virtual ~UnaryMinus() override;
 
+	virtual IUnaryPrefixOperatorPtr Clone() const override;
+
 	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
 };
 
 class CallOperator final : public IUnaryPostfixOperator
 {
 public:
-	CallOperator( std::vector<BinaryOperatorsChainPtr> arguments );
+	explicit CallOperator( std::vector<BinaryOperatorsChainPtr> arguments );
 	virtual ~CallOperator() override;
+
+	virtual IUnaryPostfixOperatorPtr Clone() const override;
 
 	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
 
-private:
 	const std::vector<BinaryOperatorsChainPtr> arguments_;
 };
 
 class IndexationOperator final : public IUnaryPostfixOperator
 {
 public:
-	IndexationOperator( BinaryOperatorsChainPtr index );
+	explicit IndexationOperator( BinaryOperatorsChainPtr index );
 	virtual ~IndexationOperator() override;
+
+	virtual IUnaryPostfixOperatorPtr Clone() const override;
 
 	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
 
@@ -84,33 +98,42 @@ enum class BinaryOperator
 	Sub,
 	Div,
 	Mul,
+	Last,
 };
+
+void PrintOperator( std::ostream& stream, BinaryOperator op );
+
+class IBinaryOperatorsChainComponent;
+typedef std::unique_ptr<IBinaryOperatorsChainComponent> IBinaryOperatorsChainComponentPtr;
 
 class IBinaryOperatorsChainComponent : public IPrintable
 {
 public:
 	virtual ~IBinaryOperatorsChainComponent(){}
-};
 
-typedef std::unique_ptr<IBinaryOperatorsChainComponent> IBinaryOperatorsChainComponentPtr;
+	virtual IBinaryOperatorsChainComponentPtr Clone() const= 0;
+};
 
 class NamedOperand final : public IBinaryOperatorsChainComponent
 {
 public:
-	NamedOperand( ProgramString name );
+	explicit NamedOperand( ProgramString name );
 	virtual ~NamedOperand() override;
+
+	virtual IBinaryOperatorsChainComponentPtr Clone() const override;
 
 	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
 
-private:
 	const ProgramString name_;
 };
 
 class NumericConstant final : public IBinaryOperatorsChainComponent
 {
 public:
-	NumericConstant( ProgramString value );
+	explicit NumericConstant( ProgramString value );
 	virtual ~NumericConstant() override;
+
+	virtual IBinaryOperatorsChainComponentPtr Clone() const override;
 
 	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
 
@@ -121,12 +144,13 @@ private:
 class BracketExpression final : public IBinaryOperatorsChainComponent
 {
 public:
-	BracketExpression( BinaryOperatorsChainPtr expression );
+	explicit BracketExpression( BinaryOperatorsChainPtr expression );
 	~BracketExpression() override;
+
+	virtual IBinaryOperatorsChainComponentPtr Clone() const override;
 
 	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
 
-private:
 	const BinaryOperatorsChainPtr expression_;
 };
 
@@ -141,6 +165,13 @@ struct BinaryOperatorsChain final : public IPrintable
 		PostfixOperators postfix_operators;
 
 		BinaryOperator op= BinaryOperator::None;
+
+		ComponentWithOperator();
+		ComponentWithOperator( const ComponentWithOperator& other );
+		ComponentWithOperator( ComponentWithOperator&& other );
+
+		ComponentWithOperator& operator=( const ComponentWithOperator& other );
+		ComponentWithOperator& operator=( ComponentWithOperator&& other );
 	};
 
 	std::vector<ComponentWithOperator> components;
@@ -172,7 +203,7 @@ public:
 
 	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
 
-private:
+public:
 	const BlockElements elements_;
 };
 
@@ -206,7 +237,6 @@ public:
 
 	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
 
-private:
 	const BinaryOperatorsChainPtr expression_;
 };
 
@@ -295,7 +325,6 @@ public:
 
 	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
 
-private:
 	const ProgramString name_;
 	const ProgramString return_type_;
 	const std::vector<VariableDeclaration> arguments_;

@@ -102,6 +102,8 @@ inline VM::CallResult VM::Call( const ProgramString& func_name )
 	OpCallImpl( call_info, 0 );
 	OpLoop( call_info.first_op_position );
 
+	stack_frames_.pop_back();
+
 	call_result.ok= true;
 	return call_result;
 }
@@ -138,6 +140,8 @@ VM::CallResult VM::Call( const ProgramString& func_name, Args&&... args )
 
 	OpCallImpl( call_info, 0 );
 	OpLoop( call_info.first_op_position );
+
+	stack_frames_.pop_back();
 
 	call_result.ok= true;
 	return call_result;
@@ -179,6 +183,8 @@ VM::CallResult VM::CallRet( const ProgramString& func_name, Ret& result )
 		&*stack_pointer_ - sizeof(Ret),
 		sizeof( result ) );
 
+	stack_frames_.pop_back();
+
 	call_result.ok= true;
 	return call_result;
 }
@@ -213,7 +219,7 @@ VM::CallResult VM::CallRet(
 		sizeof( unsigned int) + sizeof(unsigned int)+
 		 + args_and_result_size );
 
-	bool args_ok= PushArgs( stack_frames_.back().begin(), func.params, 0, args... );
+	bool args_ok= PushArgs( stack_frames_.back().begin() + sizeof(Ret), func.params, 0, args... );
 	if( !args_ok )
 	{
 		call_result.error_message= c_invalid_arguments_type_;
@@ -227,8 +233,10 @@ VM::CallResult VM::CallRet(
 
 	std::memcpy(
 		&result,
-		&*stack_pointer_ - sizeof(Ret),
+		&*stack_pointer_ - args_and_result_size,
 		sizeof( result ) );
+
+	stack_frames_.pop_back();
 
 	call_result.ok= true;
 	return call_result;

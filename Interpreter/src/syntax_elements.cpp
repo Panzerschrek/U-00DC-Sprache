@@ -14,6 +14,11 @@ UnaryPlus::~UnaryPlus()
 {
 }
 
+IUnaryPrefixOperatorPtr UnaryPlus::Clone() const
+{
+	return IUnaryPrefixOperatorPtr( new UnaryPlus() );
+}
+
 void UnaryPlus::Print( std::ostream& stream, unsigned int indent ) const
 {
 	U_UNUSED( indent );
@@ -22,6 +27,11 @@ void UnaryPlus::Print( std::ostream& stream, unsigned int indent ) const
 
 UnaryMinus::~UnaryMinus()
 {
+}
+
+IUnaryPrefixOperatorPtr UnaryMinus::Clone() const
+{
+	return IUnaryPrefixOperatorPtr( new UnaryMinus() );
 }
 
 void UnaryMinus::Print( std::ostream& stream, unsigned int indent ) const
@@ -37,6 +47,16 @@ CallOperator::CallOperator( std::vector<BinaryOperatorsChainPtr> arguments )
 
 CallOperator::~CallOperator()
 {
+}
+
+IUnaryPostfixOperatorPtr CallOperator::Clone() const
+{
+	std::vector<BinaryOperatorsChainPtr> arguments_copy;
+	arguments_copy.reserve( arguments_.size() );
+	for( const BinaryOperatorsChainPtr& expression : arguments_ )
+		arguments_copy.emplace_back( new BinaryOperatorsChain( *expression ) );
+
+	return IUnaryPostfixOperatorPtr( new CallOperator( std::move( arguments_copy ) ) );
 }
 
 void CallOperator::Print( std::ostream& stream, unsigned int indent ) const
@@ -55,10 +75,37 @@ void CallOperator::Print( std::ostream& stream, unsigned int indent ) const
 IndexationOperator::IndexationOperator( BinaryOperatorsChainPtr index )
 	: index_( std::move( index ) )
 {
+	U_ASSERT( index_ );
 }
 
 IndexationOperator::~IndexationOperator()
 {
+}
+
+IUnaryPostfixOperatorPtr IndexationOperator::Clone() const
+{
+	BinaryOperatorsChainPtr index_copy( new BinaryOperatorsChain( *index_ ) );
+
+	return
+		IUnaryPostfixOperatorPtr(
+			new IndexationOperator( std::move( index_copy ) ) );
+}
+
+void PrintOperator( std::ostream& stream, BinaryOperator op )
+{
+	const char* op_str= "";
+	switch( op )
+	{
+		case BinaryOperator::Add: op_str= "+"; break;
+		case BinaryOperator::Sub: op_str= "-"; break;
+		case BinaryOperator::Mul: op_str= "*"; break;
+		case BinaryOperator::Div: op_str= "/"; break;
+		case BinaryOperator::None: op_str= ""; break;
+
+		case BinaryOperator::Last: U_ASSERT(false); break;
+	};
+
+	stream << op_str;
 }
 
 void IndexationOperator::Print( std::ostream& stream, unsigned int indent ) const
@@ -83,6 +130,11 @@ NamedOperand::~NamedOperand()
 {
 }
 
+IBinaryOperatorsChainComponentPtr NamedOperand::Clone() const
+{
+	return IBinaryOperatorsChainComponentPtr( new NamedOperand( name_ ) );
+}
+
 NumericConstant::NumericConstant( ProgramString value )
 	: value_( std::move(value) )
 {
@@ -98,6 +150,11 @@ NumericConstant::~NumericConstant()
 {
 }
 
+IBinaryOperatorsChainComponentPtr NumericConstant::Clone() const
+{
+	return IBinaryOperatorsChainComponentPtr( new NumericConstant( value_ ) );
+}
+
 BracketExpression::BracketExpression( BinaryOperatorsChainPtr expression )
 	: expression_( std::move( expression ) )
 {
@@ -105,6 +162,17 @@ BracketExpression::BracketExpression( BinaryOperatorsChainPtr expression )
 
 BracketExpression::~BracketExpression()
 {
+}
+
+IBinaryOperatorsChainComponentPtr BracketExpression::Clone() const
+{
+	BinaryOperatorsChainPtr expression_copy;
+	expression_copy.reset( new BinaryOperatorsChain() );
+	expression_copy->components= expression_->components;
+
+	return
+		IBinaryOperatorsChainComponentPtr(
+			new BracketExpression( std::move( expression_copy ) ) );
 }
 
 void BracketExpression::Print( std::ostream& stream, unsigned int indent ) const
@@ -126,18 +194,55 @@ void BinaryOperatorsChain::Print( std::ostream& stream, unsigned int indent ) co
 		for( const IUnaryPostfixOperatorPtr& postfix_operator : comp.postfix_operators )
 			postfix_operator->Print( stream, indent );
 
-		const char* op= "";
-		switch( comp.op )
-		{
-			case BinaryOperator::Add: op= "+"; break;
-			case BinaryOperator::Sub: op= "-"; break;
-			case BinaryOperator::Mul: op= "*"; break;
-			case BinaryOperator::Div: op= "/"; break;
-			case BinaryOperator::None: op= ""; break;
-		};
-
-		stream << op;
+		PrintOperator( stream, comp.op );
 	}
+}
+
+BinaryOperatorsChain::ComponentWithOperator::ComponentWithOperator()
+{
+}
+
+BinaryOperatorsChain::ComponentWithOperator::ComponentWithOperator(
+	const ComponentWithOperator& other )
+{
+	*this= other;
+}
+
+BinaryOperatorsChain::ComponentWithOperator::ComponentWithOperator(
+	ComponentWithOperator&& other )
+{
+	*this= std::move( other );
+}
+
+BinaryOperatorsChain::ComponentWithOperator&
+	BinaryOperatorsChain::ComponentWithOperator::operator=(
+		const ComponentWithOperator& other )
+{
+	prefix_operators.reserve( other.prefix_operators.size() );
+	for( const IUnaryPrefixOperatorPtr& op : other.prefix_operators )
+		prefix_operators.emplace_back( op->Clone() );
+
+	component= other.component->Clone();
+
+	postfix_operators.reserve( other.postfix_operators.size() );
+	for( const IUnaryPostfixOperatorPtr& op : other.postfix_operators )
+		postfix_operators.emplace_back( op->Clone() );
+
+	op= other.op;
+
+	return *this;
+}
+
+BinaryOperatorsChain::ComponentWithOperator&
+	BinaryOperatorsChain::ComponentWithOperator::operator=(
+		ComponentWithOperator&& other )
+{
+	prefix_operators= std::move( other.prefix_operators );
+	component= std::move( other.component );
+	postfix_operators= std::move( other.postfix_operators );
+	op= std::move( other.op );
+
+	return *this;
 }
 
 Block::Block( BlockElements elements )

@@ -32,6 +32,10 @@
 			<Add option="-Wall" />
 		</Compiler>
 		<Unit filename="src\assert.hpp" />
+		<Unit filename="src\code_builder.cpp" />
+		<Unit filename="src\code_builder.hpp" />
+		<Unit filename="src\inverse_polish_notation.cpp" />
+		<Unit filename="src\inverse_polish_notation.hpp" />
 		<Unit filename="src\lexical_analyzer.cpp" />
 		<Unit filename="src\lexical_analyzer.hpp" />
 		<Unit filename="src\main.cpp" />
@@ -41,6 +45,12 @@
 		<Unit filename="src\syntax_analyzer.hpp" />
 		<Unit filename="src\syntax_elements.cpp" />
 		<Unit filename="src\syntax_elements.hpp" />
+		<Unit filename="src\tests\code_builder_test.cpp" />
+		<Unit filename="src\tests\code_builder_test.hpp" />
+		<Unit filename="src\tests\inverse_polish_notation_test.cpp" />
+		<Unit filename="src\tests\inverse_polish_notation_test.hpp" />
+		<Unit filename="src\tests\vm_test.cpp" />
+		<Unit filename="src\tests\vm_test.hpp" />
 		<Unit filename="src\vm.cpp" />
 		<Unit filename="src\vm.hpp" />
 		<Unit filename="src\vm.inl" />
