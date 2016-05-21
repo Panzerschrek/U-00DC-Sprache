@@ -13,6 +13,7 @@ typedef std::map< ProgramString, U_FundamentalType > TypesMap;
 const TypesMap g_types_map=
 {
 	{ ToProgramString( "void" ), U_FundamentalType::Void },
+	{ ToProgramString( "bool" ), U_FundamentalType::Bool },
 	{ ToProgramString( "i8"  ), U_FundamentalType::i8  },
 	{ ToProgramString( "u8"  ), U_FundamentalType::u8  },
 	{ ToProgramString( "i16" ), U_FundamentalType::i16 },
@@ -27,6 +28,7 @@ const size_t g_fundamental_types_size[ size_t(U_FundamentalType::LastType) ]=
 {
 	[ size_t(U_FundamentalType::InvalidType) ]= 0,
 	[ size_t(U_FundamentalType::Void) ]= 0,
+	[ size_t(U_FundamentalType::Bool) ]= 1,
 	[ size_t(U_FundamentalType::i8 ) ]= 1,
 	[ size_t(U_FundamentalType::u8 ) ]= 1,
 	[ size_t(U_FundamentalType::i16) ]= 2,

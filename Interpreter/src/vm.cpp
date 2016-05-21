@@ -46,6 +46,36 @@ unsigned int VM::BinaryOpBase( unsigned int op_index )
 }
 
 template<class T, class Func>
+unsigned int VM::ComparisonOpBase( unsigned int op_index )
+{
+	T second;
+	T first;
+
+	stack_pointer_-= sizeof(T);
+	std::memcpy(
+		&second,
+		&*stack_pointer_,
+		sizeof(T) );
+
+	stack_pointer_-= sizeof(T);
+	std::memcpy(
+		&first,
+		&*stack_pointer_,
+		sizeof(T) );
+
+	Func func;
+	U_bool result= func( first, second );
+
+	std::memcpy(
+		&*stack_pointer_,
+		&result,
+		sizeof(U_bool) );
+	stack_pointer_+= sizeof(U_bool);
+
+	return op_index + 1;
+}
+
+template<class T, class Func>
 unsigned int VM::UnaryOpBase( unsigned int op_index )
 {
 	T operand;
@@ -200,6 +230,51 @@ const VM::VMOpPoiter VM::operations_[size_t( Vm_Op::Type::LastOp ) ]=
 
 	[ size_t(Vm_Op::Type::Conv16To8 )]= &VM::ConvertionOpBase<U_u16, U_u8 >,
 
+	[ size_t(Vm_Op::Type::Equal8  )]= &VM::ComparisonOpBase<U_i8 , std::equal_to<U_i8 >>,
+	[ size_t(Vm_Op::Type::Equal16 )]= &VM::ComparisonOpBase<U_i16, std::equal_to<U_i16>>,
+	[ size_t(Vm_Op::Type::Equal32 )]= &VM::ComparisonOpBase<U_i32, std::equal_to<U_i32>>,
+	[ size_t(Vm_Op::Type::Equal64 )]= &VM::ComparisonOpBase<U_i64, std::equal_to<U_i64>>,
+
+	[ size_t(Vm_Op::Type::NotEqual8  )]= &VM::ComparisonOpBase<U_i8 , std::not_equal_to<U_i8 >>,
+	[ size_t(Vm_Op::Type::NotEqual16 )]= &VM::ComparisonOpBase<U_i16, std::not_equal_to<U_i16>>,
+	[ size_t(Vm_Op::Type::NotEqual32 )]= &VM::ComparisonOpBase<U_i32, std::not_equal_to<U_i32>>,
+	[ size_t(Vm_Op::Type::NotEqual64 )]= &VM::ComparisonOpBase<U_i64, std::not_equal_to<U_i64>>,
+
+	[ size_t(Vm_Op::Type::Less8i  )]= &VM::ComparisonOpBase<U_i8 , std::less<U_i8 >>,
+	[ size_t(Vm_Op::Type::Less16i )]= &VM::ComparisonOpBase<U_i16, std::less<U_i16>>,
+	[ size_t(Vm_Op::Type::Less32i )]= &VM::ComparisonOpBase<U_i32, std::less<U_i32>>,
+	[ size_t(Vm_Op::Type::Less64i )]= &VM::ComparisonOpBase<U_i64, std::less<U_i64>>,
+	[ size_t(Vm_Op::Type::Less8u  )]= &VM::ComparisonOpBase<U_u8 , std::less<U_u8 >>,
+	[ size_t(Vm_Op::Type::Less16u )]= &VM::ComparisonOpBase<U_u16, std::less<U_u16>>,
+	[ size_t(Vm_Op::Type::Less32u )]= &VM::ComparisonOpBase<U_u32, std::less<U_u32>>,
+	[ size_t(Vm_Op::Type::Less64u )]= &VM::ComparisonOpBase<U_u64, std::less<U_u64>>,
+
+	[ size_t(Vm_Op::Type::LessEqual8i  )]= &VM::ComparisonOpBase<U_i8 , std::less_equal<U_i8 >>,
+	[ size_t(Vm_Op::Type::LessEqual16i )]= &VM::ComparisonOpBase<U_i16, std::less_equal<U_i16>>,
+	[ size_t(Vm_Op::Type::LessEqual32i )]= &VM::ComparisonOpBase<U_i32, std::less_equal<U_i32>>,
+	[ size_t(Vm_Op::Type::LessEqual64i )]= &VM::ComparisonOpBase<U_i64, std::less_equal<U_i64>>,
+	[ size_t(Vm_Op::Type::LessEqual8u  )]= &VM::ComparisonOpBase<U_u8 , std::less_equal<U_u8 >>,
+	[ size_t(Vm_Op::Type::LessEqual16u )]= &VM::ComparisonOpBase<U_u16, std::less_equal<U_u16>>,
+	[ size_t(Vm_Op::Type::LessEqual32u )]= &VM::ComparisonOpBase<U_u32, std::less_equal<U_u32>>,
+	[ size_t(Vm_Op::Type::LessEqual64u )]= &VM::ComparisonOpBase<U_u64, std::less_equal<U_u64>>,
+
+	[ size_t(Vm_Op::Type::Greater8i  )]= &VM::ComparisonOpBase<U_i8 , std::greater<U_i8 >>,
+	[ size_t(Vm_Op::Type::Greater16i )]= &VM::ComparisonOpBase<U_i16, std::greater<U_i16>>,
+	[ size_t(Vm_Op::Type::Greater32i )]= &VM::ComparisonOpBase<U_i32, std::greater<U_i32>>,
+	[ size_t(Vm_Op::Type::Greater64i )]= &VM::ComparisonOpBase<U_i64, std::greater<U_i64>>,
+	[ size_t(Vm_Op::Type::Greater8u  )]= &VM::ComparisonOpBase<U_u8 , std::greater<U_u8 >>,
+	[ size_t(Vm_Op::Type::Greater16u )]= &VM::ComparisonOpBase<U_u16, std::greater<U_u16>>,
+	[ size_t(Vm_Op::Type::Greater32u )]= &VM::ComparisonOpBase<U_u32, std::greater<U_u32>>,
+	[ size_t(Vm_Op::Type::Greater64u )]= &VM::ComparisonOpBase<U_u64, std::greater<U_u64>>,
+
+	[ size_t(Vm_Op::Type::GreaterEqual8i  )]= &VM::ComparisonOpBase<U_i8 , std::greater_equal<U_i8 >>,
+	[ size_t(Vm_Op::Type::GreaterEqual16i )]= &VM::ComparisonOpBase<U_i16, std::greater_equal<U_i16>>,
+	[ size_t(Vm_Op::Type::GreaterEqual32i )]= &VM::ComparisonOpBase<U_i32, std::greater_equal<U_i32>>,
+	[ size_t(Vm_Op::Type::GreaterEqual64i )]= &VM::ComparisonOpBase<U_i64, std::greater_equal<U_i64>>,
+	[ size_t(Vm_Op::Type::GreaterEqual8u  )]= &VM::ComparisonOpBase<U_u8 , std::greater_equal<U_u8 >>,
+	[ size_t(Vm_Op::Type::GreaterEqual16u )]= &VM::ComparisonOpBase<U_u16, std::greater_equal<U_u16>>,
+	[ size_t(Vm_Op::Type::GreaterEqual32u )]= &VM::ComparisonOpBase<U_u32, std::greater_equal<U_u32>>,
+	[ size_t(Vm_Op::Type::GreaterEqual64u )]= &VM::ComparisonOpBase<U_u64, std::greater_equal<U_u64>>,
 };
 
 VM::VM( VmProgram program )
