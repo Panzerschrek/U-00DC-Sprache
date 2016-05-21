@@ -18,23 +18,23 @@ struct BitInverse
 template<class T, class Func>
 unsigned int VM::BinaryOpBase( unsigned int op_index )
 {
-	T a;
-	T b;
+	T second;
+	T first;
 
 	stack_pointer_-= sizeof(T);
 	std::memcpy(
-		&a,
+		&second,
 		&*stack_pointer_,
 		sizeof(T) );
 
 	stack_pointer_-= sizeof(T);
 	std::memcpy(
-		&b,
+		&first,
 		&*stack_pointer_,
 		sizeof(T) );
 
 	Func func;
-	T result= func( a, b );
+	T result= func( first, second );
 
 	std::memcpy(
 		&*stack_pointer_,

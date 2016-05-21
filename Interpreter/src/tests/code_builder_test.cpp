@@ -13,7 +13,7 @@ static void SimpleProgramTest()
 
 "fn Foo( a : i32, b : i32 ) : i32\
 {\
-	return a + b;\
+	return a - b ;\
 }"
 ;
 
@@ -31,13 +31,13 @@ static void SimpleProgramTest()
 
 	VM vm{ build_result.program };
 
-	U_i32 arg0= 100500, arg1= -1488, func_result= 0;
+	U_i32 arg0= 100500, arg1= 1488, arg2=42, func_result= 0;
 
 	const VM::CallResult call_result =
 		vm.CallRet( ToProgramString("Foo"), func_result, arg0, arg1 );
 	U_ASSERT( call_result.ok );
 
-	U_ASSERT( arg0 + arg1 == func_result );
+	U_ASSERT( arg0 - arg1 + arg2 == func_result );
 }
 
 void RunCodeBuilderTest()
