@@ -350,15 +350,17 @@ private:
 	unsigned int OpPushC32( unsigned int op_index );
 	unsigned int OpPushC64( unsigned int op_index );
 
-	unsigned int OpPushFromCallerStack8 ( unsigned int op_index );
-	unsigned int OpPushFromCallerStack16( unsigned int op_index );
-	unsigned int OpPushFromCallerStack32( unsigned int op_index );
-	unsigned int OpPushFromCallerStack64( unsigned int op_index );
+	template<class T>
+	unsigned int PushFromLocalStackOpBase( unsigned int op_index );
 
-	unsigned int OpPopToCallerStack8 ( unsigned int op_index );
-	unsigned int OpPopToCallerStack16( unsigned int op_index );
-	unsigned int OpPopToCallerStack32( unsigned int op_index );
-	unsigned int OpPopToCallerStack64( unsigned int op_index );
+	template<class T>
+	unsigned int PopToLocalStackOpBase( unsigned int op_index );
+
+	template<class T>
+	unsigned int PushFromCallerStackOpBase( unsigned int op_index );
+
+	template<class T>
+	unsigned int PopToCallerStackOpBase( unsigned int op_index );
 
 	template<class T, class Func>
 	unsigned int BinaryOpBase( unsigned int op_index );
