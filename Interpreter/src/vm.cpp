@@ -163,6 +163,17 @@ const VM::VMOpPoiter VM::operations_[size_t( Vm_Op::Type::LastOp ) ]=
 	[ size_t(Vm_Op::Type::Addi64)]= &VM::BinaryOpBase<U_i64, std::plus<U_i64>>,
 	[ size_t(Vm_Op::Type::Addu64)]= &VM::BinaryOpBase<U_u64, std::plus<U_u64>>,
 
+	[ size_t(Vm_Op::Type::Muli32)]= &VM::BinaryOpBase<U_i32, std::multiplies<U_i32>>,
+	[ size_t(Vm_Op::Type::Mulu32)]= &VM::BinaryOpBase<U_u32, std::multiplies<U_u32>>,
+	[ size_t(Vm_Op::Type::Muli64)]= &VM::BinaryOpBase<U_i64, std::multiplies<U_i64>>,
+	[ size_t(Vm_Op::Type::Mulu64)]= &VM::BinaryOpBase<U_u64, std::multiplies<U_u64>>,
+
+	// TODO - check division by zero
+	[ size_t(Vm_Op::Type::Divi32)]= &VM::BinaryOpBase<U_i32, std::divides<U_i32>>,
+	[ size_t(Vm_Op::Type::Divu32)]= &VM::BinaryOpBase<U_u32, std::divides<U_u32>>,
+	[ size_t(Vm_Op::Type::Divi64)]= &VM::BinaryOpBase<U_i64, std::divides<U_i64>>,
+	[ size_t(Vm_Op::Type::Divu64)]= &VM::BinaryOpBase<U_u64, std::divides<U_u64>>,
+
 	[ size_t(Vm_Op::Type::Conv8To16S)]= &VM::ConvertionOpBase<U_i8, U_i16>,
 	[ size_t(Vm_Op::Type::Conv8To32S)]= &VM::ConvertionOpBase<U_i8, U_i32>,
 	[ size_t(Vm_Op::Type::Conv8To64S)]= &VM::ConvertionOpBase<U_i8, U_i64>,

@@ -92,6 +92,18 @@ struct Vm_Op
 		Addi64,
 		Addu64,
 
+		// Multiplication
+		Muli32,
+		Mulu32,
+		Muli64,
+		Mulu64,
+
+		// Division
+		Divi32,
+		Divu32,
+		Divi64,
+		Divu64,
+
 		// 8 bit signed expansion
 		Conv8To16S,
 		Conv8To32S,

@@ -526,14 +526,23 @@ U_FundamentalType CodeBuilder::BuildExpressionCode(
 				// TODO -register error
 			}
 
-			Vm_Op::Type op_type;
+			Vm_Op::Type op_type= Vm_Op::Type::NoOp;
 
 			switch( comp.operator_ )
 			{
 			case BinaryOperator::Add:
 			case BinaryOperator::Sub:
+			case BinaryOperator::Div:
+			case BinaryOperator::Mul:
 				{
-					op_type= comp.operator_ == BinaryOperator::Add ? Vm_Op::Type::Addi32 : Vm_Op::Type::Subi32;
+					switch( comp.operator_ )
+					{
+					case BinaryOperator::Add: op_type= Vm_Op::Type::Addi32; break;
+					case BinaryOperator::Sub: op_type= Vm_Op::Type::Subi32; break;
+					case BinaryOperator::Div: op_type= Vm_Op::Type::Divi32; break;
+					case BinaryOperator::Mul: op_type= Vm_Op::Type::Muli32; break;
+					default: U_ASSERT(false); break;
+					};
 
 					if( type0 == U_FundamentalType::i32 )
 					{}
@@ -546,16 +555,13 @@ U_FundamentalType CodeBuilder::BuildExpressionCode(
 				}
 				break;
 
-			case BinaryOperator::Div:
-			case BinaryOperator::Mul:
-				op_type= Vm_Op::Type::NoOp;
-				// TODO
-				break;
-
-			default:
+			case BinaryOperator::None:
+			case BinaryOperator::Last:
 				U_ASSERT(false);
 				break;
 			};
+
+			U_ASSERT( op_type != Vm_Op::Type::NoOp );
 
 			result_.code.emplace_back( op_type );
 
