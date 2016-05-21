@@ -501,25 +501,84 @@ U_FundamentalType CodeBuilder::BuildExpressionCode(
 						// TODO - Register error
 					}
 
-					BuildFuncCall(
-						*types_stack.back().function,
-						function_number,
-						*call_operator,
-						names );
+					U_FundamentalType call_type=
+						BuildFuncCall(
+							*types_stack.back().function,
+							function_number,
+							*call_operator,
+							names );
 
+					// Pop function
 					types_stack.pop_back();
+
+					// Push result
+					Type type;
+					type.kind= Type::Kind::Fundamental;
+					type.fundamental= call_type;
+					types_stack.push_back( type );
+				}
+				else
+				{
+					// Unknown potfix operator
+					U_ASSERT(false);
 				}
 			} // for postfix operators
 
 			for( const IUnaryPrefixOperatorPtr& prefix_operator : comp.prefix_operand_operators )
 			{
-			}
+				const IUnaryPrefixOperator* const prefix_operator_ptr= prefix_operator.get();
+				if( dynamic_cast<const UnaryPlus*>( prefix_operator_ptr ) )
+				{}
+				else if( dynamic_cast<const UnaryMinus*>( prefix_operator_ptr ) )
+				{
+					U_ASSERT( !types_stack.empty() );
+					if( types_stack.back().kind != Type::Kind::Fundamental )
+					{
+						// TODO - register error
+					}
+
+					U_FundamentalType type= types_stack.back().fundamental;
+
+					Vm_Op::Type op_type= Vm_Op::Type::Negi32;
+
+					if( type == U_FundamentalType::i32 )
+					{}
+					else if( type == U_FundamentalType::u32 )
+						op_type= Vm_Op::Type( size_t(op_type) + 1 );
+					else if( type == U_FundamentalType::i64 )
+						op_type= Vm_Op::Type( size_t(op_type) + 2 );
+					else if( type == U_FundamentalType::i64 )
+						op_type= Vm_Op::Type( size_t(op_type) + 3 );
+					else
+					{
+						// TODO - register error
+					}
+
+					result_.code.emplace_back( op_type );
+				}
+				else
+				{
+					// Unknown prefix operator
+					U_ASSERT(false);
+				}
+
+			} // for prefix operators
 		}
 		else // Operator
 		{
 			U_ASSERT( types_stack.size() >= 2 );
 			U_FundamentalType type0= types_stack.back().fundamental;
 			U_FundamentalType type1= types_stack[ types_stack.size() - 2 ].fundamental;
+
+			// Pop operands
+			types_stack.resize( types_stack.size() - 2 );
+			// Push result
+			{
+				Type type;
+				type.kind= Type::Kind::Fundamental;
+				type.fundamental= type0;
+				types_stack.push_back( type );
+			}
 
 			if( type0 != type1 )
 			{
@@ -552,6 +611,10 @@ U_FundamentalType CodeBuilder::BuildExpressionCode(
 						op_type= Vm_Op::Type( size_t(op_type) + 2 );
 					else if( type0 == U_FundamentalType::i64 )
 						op_type= Vm_Op::Type( size_t(op_type) + 3 );
+					else
+					{
+						// TODO - register error
+					}
 				}
 				break;
 
@@ -568,7 +631,7 @@ U_FundamentalType CodeBuilder::BuildExpressionCode(
 		} // if operator
 	} // for inverse polish notation
 
-	U_ASSERT( !types_stack.empty() );
+	U_ASSERT( types_stack.size() == 1 );
 	U_ASSERT( types_stack.back().kind == Type::Kind::Fundamental );
 	return types_stack.back().fundamental;
 }

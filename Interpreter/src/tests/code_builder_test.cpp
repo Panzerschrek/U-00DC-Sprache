@@ -13,7 +13,7 @@ static void SimpleProgramTest()
 
 "fn Foo( a : i32, b : i32, c : i32 ) : i32\
 {\
-	return a - b / c ;\
+	return a - -b / c ;\
 }"
 ;
 
@@ -37,7 +37,7 @@ static void SimpleProgramTest()
 		vm.CallRet( ToProgramString("Foo"), func_result, arg0, arg1, arg2 );
 	U_ASSERT( call_result.ok );
 
-	U_ASSERT( arg0 - arg1 / arg2 == func_result );
+	U_ASSERT( arg0 - -arg1 / arg2 == func_result );
 }
 
 void RunCodeBuilderTest()
