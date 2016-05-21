@@ -45,6 +45,8 @@
 		<Unit filename="src\syntax_analyzer.hpp" />
 		<Unit filename="src\syntax_elements.cpp" />
 		<Unit filename="src\syntax_elements.hpp" />
+		<Unit filename="src\tests\code_builder_test.cpp" />
+		<Unit filename="src\tests\code_builder_test.hpp" />
 		<Unit filename="src\tests\inverse_polish_notation_test.cpp" />
 		<Unit filename="src\tests\inverse_polish_notation_test.hpp" />
 		<Unit filename="src\tests\vm_test.cpp" />

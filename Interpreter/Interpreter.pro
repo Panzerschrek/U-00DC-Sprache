@@ -18,6 +18,7 @@ SOURCES += \
 	src/vm.cpp \
 	src/tests/vm_test.cpp \
 	src/tests/inverse_polish_notation_test.cpp \
+	src/tests/code_builder_test.cpp \
 	src/code_builder.cpp \
 	src/inverse_polish_notation.cpp
 
@@ -31,6 +32,7 @@ HEADERS += \
 	src/vm.inl \
 	src/tests/vm_test.hpp \
 	src/tests/inverse_polish_notation_test.hpp \
+	src/tests/code_builder_test.hpp \
 	src/code_builder.hpp \
 	src/inverse_polish_notation.hpp
 

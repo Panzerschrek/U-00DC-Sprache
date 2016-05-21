@@ -147,6 +147,12 @@ CodeBuilder::BuildResult CodeBuilder::BuildProgram(
 	const ProgramElements& program_elements )
 {
 	BuildResult result;
+	result_.code.emplace_back( Vm_Op::Type::NoOp );
+
+	{ // dummy Function
+		VmProgram::FuncCallInfo call_info{ 0, 0 };
+		result_.funcs_table.push_back( call_info );
+	}
 
 	for( const IProgramElementPtr& program_element : program_elements )
 	{
@@ -161,6 +167,7 @@ CodeBuilder::BuildResult CodeBuilder::BuildProgram(
 			func_info.type.kind= Type::Kind::Function;
 
 			// Return type.
+			func_info.type.function.reset( new Function() );
 			func_info.type.function->return_type.kind= Type::Kind::Fundamental;
 			if( func->return_type_.empty() )
 			{
@@ -208,6 +215,28 @@ CodeBuilder::BuildResult CodeBuilder::BuildProgram(
 					*inserted_func->second.type.function,
 					arg_names,
 					*func->block_ );
+
+				// Push funcs to exports table
+				// TODO - do it not for all functions
+				FuncEntry func_entry;
+				func_entry.name= func->name_;
+				func_entry.func_number= inserted_func->second.offset;
+				for( const Type& type : inserted_func->second.type.function->args )
+				{
+					if( type.kind != Type::Kind::Fundamental )
+					{
+						// TODO - register error
+					}
+					func_entry.params.emplace_back( type.fundamental );
+				}
+
+				if( inserted_func->second.type.function->return_type.kind != Type::Kind::Fundamental )
+				{
+					// TODO - register error
+				}
+				func_entry.return_type= inserted_func->second.type.function->return_type.fundamental;
+
+				result_.export_funcs.emplace_back( std::move( func_entry ) );
 			}
 			else
 			{
@@ -220,6 +249,7 @@ CodeBuilder::BuildResult CodeBuilder::BuildProgram(
 		}
 	} // for program elements
 
+	result.program= std::move( result_ );
 	return result;
 }
 
@@ -233,6 +263,10 @@ void CodeBuilder::BuildFuncCode(
 	NamesScope block_names( &global_names_ );
 
 	unsigned int args_offset= 0;
+	args_offset+=
+		sizeof(unsigned int) + sizeof(unsigned int) +
+		g_fundamental_types_size[ size_t(func.return_type.fundamental) ];
+
 	unsigned int arg_n= arg_names.size() - 1;
 	for( auto it= func.args.rbegin(); it != func.args.rend(); it++, arg_n-- )
 	{
@@ -265,8 +299,10 @@ void CodeBuilder::BuildFuncCode(
 	unsigned int needed_stack_size;
 	BuildBlockCode( block, block_names, locals_offset, needed_stack_size );
 
-	// Stack extension instruction - move stack for expression evaluation above local variables.
 	// TODO - add space for expression evaluation.
+	needed_stack_size+= 256;
+
+	// Stack extension instruction - move stack for expression evaluation above local variables.
 	result_.code[ func_entry.first_op_position ].param.stack_add_size= needed_stack_size;
 
 	func_entry.stack_frame_size= needed_stack_size;
@@ -386,8 +422,12 @@ U_FundamentalType CodeBuilder::BuildExpressionCode(
 	for( const InversePolishNotationComponent& comp : ipn )
 	{
 		// Operand
-		if( comp.operator_ != BinaryOperator::None )
+		if( comp.operator_ == BinaryOperator::None )
 		{
+			// HACK. Pass function number not through stack,
+			// because Vm operation 'call' takes function number from stack top.
+			unsigned int function_number= 0;
+
 			const IBinaryOperatorsChainComponent& operand= *comp.operand;
 			if( const NamedOperand* named_operand=
 				dynamic_cast<const NamedOperand*>(&operand) )
@@ -400,17 +440,14 @@ U_FundamentalType CodeBuilder::BuildExpressionCode(
 				}
 				const Variable& variable= variable_entry->second;
 
-				Vm_Op op;
-
 				if( variable.location == Variable::Location::Global &&
 					variable.type.function )
-				{
-					op.type= Vm_Op::Type::PushC32;
-					op.param.push_c_32= variable.offset;
-				}
+					function_number= variable.offset;
+
 				else
 				{
-					U_ASSERT(! variable.type.function );
+					U_ASSERT(!variable.type.function );
+					Vm_Op op;
 
 					if( variable.location == Variable::Location::FunctionArgument )
 					{
@@ -431,10 +468,12 @@ U_FundamentalType CodeBuilder::BuildExpressionCode(
 					op.type= Vm_Op::Type(
 						size_t(op.type) +
 						GetOpIndexOffsetForFundamentalType(variable.type.fundamental) );
+
+					result_.code.emplace_back(op);
 				}
 
 				types_stack.push_back( variable.type );
-				result_.code.emplace_back(op);
+
 			}
 			else if( const NumericConstant* number=
 				dynamic_cast<const NumericConstant*>(&operand) )
@@ -454,7 +493,23 @@ U_FundamentalType CodeBuilder::BuildExpressionCode(
 
 			for( const IUnaryPostfixOperatorPtr& postfix_operator : comp.postfix_operand_operators )
 			{
-			}
+				if( const CallOperator* call_operator=
+					dynamic_cast<const CallOperator*>(postfix_operator.get()) )
+				{
+					if( types_stack.back().kind != Type::Kind::Function )
+					{
+						// TODO - Register error
+					}
+
+					BuildFuncCall(
+						*types_stack.back().function,
+						function_number,
+						*call_operator,
+						names );
+
+					types_stack.pop_back();
+				}
+			} // for postfix operators
 
 			for( const IUnaryPrefixOperatorPtr& prefix_operator : comp.prefix_operand_operators )
 			{
@@ -502,10 +557,50 @@ U_FundamentalType CodeBuilder::BuildExpressionCode(
 				break;
 			};
 
+			result_.code.emplace_back( op_type );
+
 		} // if operator
 	} // for inverse polish notation
 
-	return U_FundamentalType::Void;
+	U_ASSERT( !types_stack.empty() );
+	U_ASSERT( types_stack.back().kind == Type::Kind::Fundamental );
+	return types_stack.back().fundamental;
+}
+
+U_FundamentalType CodeBuilder::BuildFuncCall(
+	const Function& func,
+	unsigned int func_number,
+	const CallOperator& call_operator,
+	const NamesScope& names )
+{
+	U_ASSERT( func.return_type.kind != Type::Kind::Fundamental );
+
+	if( func.args.size() != call_operator.arguments_.size() )
+	{
+		// TODO - register error
+		return U_FundamentalType::InvalidType;
+	}
+
+	for( unsigned int i= 0; i < func.args.size(); i++ )
+	{
+		U_ASSERT( func.args[i].kind == Type::Kind::Fundamental );
+
+		U_FundamentalType expression_type=
+			BuildExpressionCode(
+				*call_operator.arguments_[i],
+				names );
+
+		if( expression_type != func.args[i].fundamental )
+		{
+			// TODO - register error
+		}
+	}
+
+	Vm_Op op( Vm_Op::Type::PushC32 );
+	op.param.push_c_32= func_number;
+	result_.code.emplace_back( op );
+
+	return func.return_type.fundamental;
 }
 
 } //namespace Interpreter

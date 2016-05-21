@@ -102,6 +102,12 @@ private:
 		const BinaryOperatorsChain& expression,
 		const NamesScope& names );
 
+	U_FundamentalType BuildFuncCall(
+		const Function& func,
+		unsigned int func_number,
+		const CallOperator& call_operator,
+		const NamesScope& names );
+
 private:
 	VmProgram result_;
 
