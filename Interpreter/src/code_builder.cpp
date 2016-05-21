@@ -264,8 +264,7 @@ void CodeBuilder::BuildFuncCode(
 
 	unsigned int args_offset= 0;
 	args_offset+=
-		sizeof(unsigned int) + sizeof(unsigned int) +
-		g_fundamental_types_size[ size_t(func.return_type.fundamental) ];
+		sizeof(unsigned int) + sizeof(unsigned int);
 
 	unsigned int arg_n= arg_names.size() - 1;
 	for( auto it= func.args.rbegin(); it != func.args.rend(); it++, arg_n-- )
@@ -289,6 +288,10 @@ void CodeBuilder::BuildFuncCode(
 			std::move(var) );
 	}
 
+	unsigned int func_result_offset=
+		args_offset +
+		g_fundamental_types_size[ size_t(func.return_type.fundamental) ];
+
 	VmProgram::FuncCallInfo func_entry;
 	func_entry.first_op_position= result_.code.size();
 
@@ -297,13 +300,13 @@ void CodeBuilder::BuildFuncCode(
 
 	unsigned int locals_offset= 0;
 	unsigned int needed_stack_size;
-	BuildBlockCode( block, block_names, locals_offset, needed_stack_size );
-
-	// TODO - add space for expression evaluation.
-	needed_stack_size+= 256;
+	BuildBlockCode( block, block_names, func_result_offset, locals_offset, needed_stack_size );
 
 	// Stack extension instruction - move stack for expression evaluation above local variables.
 	result_.code[ func_entry.first_op_position ].param.stack_add_size= needed_stack_size;
+
+	// TODO - add space for expression evaluation.
+	needed_stack_size+= 256;
 
 	func_entry.stack_frame_size= needed_stack_size;
 	result_.funcs_table.emplace_back( std::move( func_entry ) );
@@ -312,6 +315,7 @@ void CodeBuilder::BuildFuncCode(
 void CodeBuilder::BuildBlockCode(
 	const Block& block,
 	const NamesScope& names,
+	unsigned int func_result_offset,
 	unsigned int locals_stack_offset,
 	unsigned int& out_locals_stack_offset )
 {
@@ -356,8 +360,9 @@ void CodeBuilder::BuildBlockCode(
 			BuildBlockCode(
 				*inner_block,
 				block_names,
+				func_result_offset,
 				locals_stack_offset,
-				inner_block_stack_offset);
+				inner_block_stack_offset );
 
 			max_inner_block_stack_offset=
 				std::max(
@@ -373,32 +378,18 @@ void CodeBuilder::BuildBlockCode(
 					BuildExpressionCode(
 						*return_operator->expression_,
 						block_names );
+				// TODO - check expression and func return type
 
-				unsigned int result_size=
-					g_fundamental_types_size[ size_t(expression_type) ];
+				Vm_Op op{
+					Vm_Op::Type(
+						size_t(Vm_Op::Type::PopToCallerStack8) +
+						GetOpIndexOffsetForFundamentalType( expression_type ) ) };
 
-				unsigned int op_shift= ~0u;
-				switch( result_size )
-				{
-					case 0: goto push_ret;
-
-					case 1: op_shift= 0; break;
-					case 2: op_shift= 1; break;
-					case 4: op_shift= 2; break;
-					case 8: op_shift= 3; break;
-				};
-
-				U_ASSERT( op_shift != ~0u );
-
-				Vm_Op op;
-				op.type= Vm_Op::Type( size_t(Vm_Op::Type::PopToCallerStack8) + op_shift );
-				op.param.caller_stack_operations_offset=
-					-int( sizeof(unsigned int) + sizeof(unsigned int) + result_size );
+				op.param.caller_stack_operations_offset= -int( func_result_offset );
 
 				result_.code.push_back( op );
 			}
 
-		push_ret:
 			Vm_Op ret_op;
 			ret_op.type= Vm_Op::Type::Ret;
 			result_.code.push_back( ret_op );
@@ -642,7 +633,7 @@ U_FundamentalType CodeBuilder::BuildFuncCall(
 	const CallOperator& call_operator,
 	const NamesScope& names )
 {
-	U_ASSERT( func.return_type.kind != Type::Kind::Fundamental );
+	U_ASSERT( func.return_type.kind == Type::Kind::Fundamental );
 
 	if( func.args.size() != call_operator.arguments_.size() )
 	{
@@ -650,6 +641,14 @@ U_FundamentalType CodeBuilder::BuildFuncCall(
 		return U_FundamentalType::InvalidType;
 	}
 
+	// Reserve place for result
+	Vm_Op reserve_result_op( Vm_Op::Type::StackPointerAdd );
+	reserve_result_op.param.stack_add_size=
+		g_fundamental_types_size[ size_t(func.return_type.fundamental) ];
+	result_.code.emplace_back( reserve_result_op );
+
+	// Push arguments
+	unsigned int args_size= 0;
 	for( unsigned int i= 0; i < func.args.size(); i++ )
 	{
 		U_ASSERT( func.args[i].kind == Type::Kind::Fundamental );
@@ -663,11 +662,22 @@ U_FundamentalType CodeBuilder::BuildFuncCall(
 		{
 			// TODO - register error
 		}
+
+		args_size+= g_fundamental_types_size[ size_t(func.args[i].fundamental) ];
 	}
 
-	Vm_Op op( Vm_Op::Type::PushC32 );
-	op.param.push_c_32= func_number;
-	result_.code.emplace_back( op );
+	// Push func number
+	Vm_Op push_func_op( Vm_Op::Type::PushC32 );
+	push_func_op.param.push_c_32= func_number;
+	result_.code.emplace_back( push_func_op );
+
+	// Call
+	result_.code.emplace_back( Vm_Op::Type::Call );
+
+	// Clear args
+	Vm_Op clear_args_op( Vm_Op::Type::StackPointerAdd );
+	clear_args_op.param.stack_add_size= -int(args_size);
+	result_.code.emplace_back( clear_args_op );
 
 	return func.return_type.fundamental;
 }

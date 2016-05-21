@@ -255,8 +255,8 @@ void VM::OpLoop( unsigned int start_op_index )
 void VM::OpCallImpl( const VmProgram::FuncCallInfo& call_info, unsigned int return_index )
 {
 	/* Stack frame of caller is.
-	Arguments.
 	Result.
+	Arguments.
 	Saved caller caller stack pointer.
 	Return operation index.
 	*/
@@ -272,7 +272,7 @@ void VM::OpCallImpl( const VmProgram::FuncCallInfo& call_info, unsigned int retu
 	// Now, caller stack pointer is stack pointer of this function.
 	caller_frame_pos_= stack_pointer_;
 
-	// Make stack for ne function
+	// Make stack for new function
 	stack_frames_.emplace_back( call_info.stack_frame_size );
 	stack_pointer_= stack_frames_.back().begin();
 }
@@ -291,6 +291,8 @@ unsigned int VM::OpCall( unsigned int op_index )
 		&func_number,
 		&*stack_pointer_,
 		sizeof(unsigned int) );
+
+	U_ASSERT( func_number < program_.funcs_table.size() );
 
 	const VmProgram::FuncCallInfo& call_info=
 		program_.funcs_table[ func_number ];
@@ -315,7 +317,7 @@ unsigned int VM::OpRet( unsigned int op_index )
 		&*caller_frame_pos_,
 		sizeof(unsigned int) );
 
-	// Pop old caller fram pos.
+	// Pop old caller frame pos.
 	StackFrame::iterator old_caller_frame_pos;
 	caller_frame_pos_-= sizeof(unsigned int);
 	std::memcpy(
@@ -340,7 +342,7 @@ unsigned int VM::OpStackPointerAdd( unsigned int op_index )
 {
 	const Vm_Op& op= program_.code[ op_index ];
 
-	stack_pointer_+= sizeof(op.param.stack_add_size);
+	stack_pointer_+= op.param.stack_add_size;
 
 	return op_index + 1;
 }

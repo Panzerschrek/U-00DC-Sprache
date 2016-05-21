@@ -95,6 +95,7 @@ private:
 	void BuildBlockCode(
 		const Block& block,
 		const NamesScope& names,
+		unsigned int func_result_offset,
 		unsigned int locals_stack_offset,
 		unsigned int& out_locals_stack_offset );
 

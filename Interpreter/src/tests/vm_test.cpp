@@ -167,8 +167,7 @@ static void RetProgramWithArgsTest()
 			-(
 			sizeof(unsigned int) + // saved previous caller pointer.
 			sizeof(unsigned int) + // return address.
-			sizeof(U_u32) + // result
-			sizeof(U_u32) + ( 1 - i ) * sizeof(U_u32) // args
+			( 2 - i ) * sizeof(U_u32) // args
 			);
 
 		program.code.push_back( op );
@@ -185,6 +184,7 @@ static void RetProgramWithArgsTest()
 			-(
 			sizeof(unsigned int) + // saved previous caller pointer.
 			sizeof(unsigned int) + // return address.
+			sizeof(U_u32) * 2 + // args
 			sizeof(U_u32) // result
 			);
 
