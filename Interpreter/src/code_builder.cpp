@@ -53,6 +53,32 @@ unsigned int GetOpIndexOffsetForFundamentalType( U_FundamentalType type )
 	};
 }
 
+static bool IsNumericType( U_FundamentalType type )
+{
+	return
+		type >= U_FundamentalType::i8 &&
+		type <= U_FundamentalType::u64;
+}
+
+static bool IsUnsignedInteger( U_FundamentalType type )
+{
+	return
+		type == U_FundamentalType::u8  ||
+		type == U_FundamentalType::u16 ||
+		type == U_FundamentalType::u32 ||
+		type == U_FundamentalType::u64;
+}
+
+static bool IsSignedInteger( U_FundamentalType type )
+{
+	return
+		type == U_FundamentalType::i8  ||
+		type == U_FundamentalType::i16 ||
+		type == U_FundamentalType::i32 ||
+		type == U_FundamentalType::i64;
+}
+
+
 void ReportUnknownFuncReturnType(
 	std::vector<std::string>& error_messages,
 	const FunctionDeclaration& func )
@@ -540,7 +566,7 @@ U_FundamentalType CodeBuilder::BuildExpressionCode(
 						op_type= Vm_Op::Type( size_t(op_type) + 1 );
 					else if( type == U_FundamentalType::i64 )
 						op_type= Vm_Op::Type( size_t(op_type) + 2 );
-					else if( type == U_FundamentalType::i64 )
+					else if( type == U_FundamentalType::u64 )
 						op_type= Vm_Op::Type( size_t(op_type) + 3 );
 					else
 					{
@@ -563,20 +589,13 @@ U_FundamentalType CodeBuilder::BuildExpressionCode(
 			U_FundamentalType type0= types_stack.back().fundamental;
 			U_FundamentalType type1= types_stack[ types_stack.size() - 2 ].fundamental;
 
-			// Pop operands
-			types_stack.resize( types_stack.size() - 2 );
-			// Push result
-			{
-				Type type;
-				type.kind= Type::Kind::Fundamental;
-				type.fundamental= type0;
-				types_stack.push_back( type );
-			}
-
 			if( type0 != type1 )
 			{
 				// TODO -register error
 			}
+
+			// Pop operands
+			types_stack.resize( types_stack.size() - 2 );
 
 			Vm_Op::Type op_type= Vm_Op::Type::NoOp;
 
@@ -602,12 +621,82 @@ U_FundamentalType CodeBuilder::BuildExpressionCode(
 						op_type= Vm_Op::Type( size_t(op_type) + 1 );
 					else if( type0 == U_FundamentalType::i64 )
 						op_type= Vm_Op::Type( size_t(op_type) + 2 );
-					else if( type0 == U_FundamentalType::i64 )
+					else if( type0 == U_FundamentalType::u64 )
 						op_type= Vm_Op::Type( size_t(op_type) + 3 );
 					else
 					{
 						// TODO - register error
 					}
+
+					// Result - same as operands
+					Type type;
+					type.kind= Type::Kind::Fundamental;
+					type.fundamental= type0;
+					types_stack.push_back( type );
+				}
+				break;
+
+			case BinaryOperator::Equal:
+			case BinaryOperator::NotEqual:
+			case BinaryOperator::Less:
+			case BinaryOperator::LessEqual:
+			case BinaryOperator::Greater:
+			case BinaryOperator::GreaterEqual:
+				{
+					if( !IsNumericType( type0 ) )
+					{
+						// TODO - register error
+					}
+
+					bool op_needs_sign;
+					switch( comp.operator_ )
+					{
+					case BinaryOperator::Less:
+						op_needs_sign= true;
+						op_type= Vm_Op::Type::Less8i;
+						break;
+
+					case BinaryOperator::LessEqual:
+						op_needs_sign= true;
+						op_type= Vm_Op::Type::LessEqual8i;
+						break;
+
+					case BinaryOperator::Greater:
+						op_needs_sign= true;
+						op_type= Vm_Op::Type::Greater8i;
+						break;
+
+					case BinaryOperator::GreaterEqual:
+						op_needs_sign= true;
+						op_type= Vm_Op::Type::GreaterEqual8i;
+						break;
+
+					case BinaryOperator::Equal:
+						op_needs_sign= false;
+						op_type= Vm_Op::Type::Equal8;
+						break;
+
+					case BinaryOperator::NotEqual:
+						op_needs_sign= false;
+						op_type= Vm_Op::Type::NotEqual8;
+						break;
+
+					default: U_ASSERT(false); break;
+					}
+
+					op_type=
+						Vm_Op::Type(
+							size_t(op_type) +
+							GetOpIndexOffsetForFundamentalType( type0 ) );
+
+					if( op_needs_sign && IsUnsignedInteger( type0 ) )
+						op_type= Vm_Op::Type( size_t(op_type) + 4 );
+
+					// Result - bool
+					Type type;
+					type.kind= Type::Kind::Fundamental;
+					type.fundamental= U_FundamentalType::Bool;
+					types_stack.push_back( type );
 				}
 				break;
 

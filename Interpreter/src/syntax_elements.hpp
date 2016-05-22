@@ -94,10 +94,19 @@ private:
 enum class BinaryOperator
 {
 	None, // Special value - for end of binary operators chain.
+
 	Add,
 	Sub,
 	Div,
 	Mul,
+
+	Equal,
+	NotEqual,
+	Less,
+	LessEqual,
+	Greater,
+	GreaterEqual,
+
 	Last,
 };
 
