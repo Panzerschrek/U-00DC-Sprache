@@ -187,6 +187,10 @@ const VM::VMOpPoiter VM::operations_[size_t( Vm_Op::Type::LastOp ) ]=
 
 	[ size_t(Vm_Op::Type::Syscall)]= nullptr,
 
+	[ size_t(Vm_Op::Type::Jump)]= &VM::OpJump,
+	[ size_t(Vm_Op::Type::JumpIfZero)]= &VM::OpJumpIfZero,
+	[ size_t(Vm_Op::Type::JumpIfNotZero)]= &VM::OpJumpIfNotZero,
+
 	[ size_t(Vm_Op::Type::StackPointerAdd) ]= &VM::OpStackPointerAdd,
 
 	[ size_t(Vm_Op::Type::PushC8 )]= &VM::OpPushC8 ,
@@ -466,7 +470,47 @@ unsigned int VM::OpRet( unsigned int op_index )
 unsigned int VM::OpSysCall( unsigned int op_index )
 {
 	// TODO
+	U_UNUSED(op_index);
 	return 0;
+}
+
+unsigned int VM::OpJump( unsigned int op_index )
+{
+	const Vm_Op& op= program_.code[ op_index ];
+
+	return op.param.jump_op_index;
+}
+
+unsigned int VM::OpJumpIfZero( unsigned int op_index )
+{
+	const Vm_Op& op= program_.code[ op_index ];
+
+	U_bool condition;
+	stack_pointer_-= sizeof(U_bool);
+	std::memcpy(
+		&condition,
+		&*stack_pointer_,
+		sizeof(U_bool) );
+
+	if( !condition )
+		return op.param.jump_op_index;
+	return op_index + 1;
+}
+
+unsigned int VM::OpJumpIfNotZero( unsigned int op_index )
+{
+	const Vm_Op& op= program_.code[ op_index ];
+
+	U_bool condition;
+	stack_pointer_-= sizeof(U_bool);
+	std::memcpy(
+		&condition,
+		&*stack_pointer_,
+		sizeof(U_bool) );
+
+	if( condition )
+		return op.param.jump_op_index;
+	return op_index + 1;
 }
 
 unsigned int VM::OpStackPointerAdd( unsigned int op_index )

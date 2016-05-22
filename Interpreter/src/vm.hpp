@@ -18,6 +18,10 @@ struct Vm_Op
 
 		Syscall,
 
+		Jump,
+		JumpIfZero,
+		JumpIfNotZero,
+
 		StackPointerAdd,
 
 		// Push constant
@@ -215,6 +219,8 @@ struct Vm_Op
 
 		// Number of bytes, added to stack pointer
 		int stack_add_size;
+
+		unsigned int jump_op_index;
 	} param;
 };
 
@@ -342,6 +348,10 @@ private:
 	unsigned int OpCall( unsigned int op_index );
 	unsigned int OpRet( unsigned int op_index );
 	unsigned int OpSysCall( unsigned int op_index );
+
+	unsigned int OpJump( unsigned int op_index );
+	unsigned int OpJumpIfZero( unsigned int op_index );
+	unsigned int OpJumpIfNotZero( unsigned int op_index );
 
 	unsigned int OpStackPointerAdd( unsigned int op_index );
 
