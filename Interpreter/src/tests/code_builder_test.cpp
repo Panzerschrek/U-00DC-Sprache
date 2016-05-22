@@ -1,3 +1,5 @@
+#include <iostream>
+
 #include "../code_builder.hpp"
 #include "../lexical_analyzer.hpp"
 #include "../syntax_analyzer.hpp"
@@ -6,6 +8,31 @@
 
 namespace Interpreter
 {
+
+static VmProgram BuildProgram( const char* text )
+{
+	const LexicalAnalysisResult lexical_analysis_result=
+		LexicalAnalysis( ToProgramString( text ) );
+
+	for( const std::string& lexical_error_message : lexical_analysis_result.error_messages )
+		std::cout << lexical_error_message << "\n";
+	U_ASSERT( lexical_analysis_result.error_messages.empty() );
+
+	const SyntaxAnalysisResult syntax_analysis_result=
+		SyntaxAnalysis( lexical_analysis_result.lexems );
+
+	for( const std::string& syntax_error_message : syntax_analysis_result.error_messages )
+		std::cout << syntax_error_message << "\n";
+	U_ASSERT( syntax_analysis_result.error_messages.empty() );
+
+	const CodeBuilder::BuildResult build_result=
+		CodeBuilder().BuildProgram( syntax_analysis_result.program_elements );
+
+	for( const std::string& error_message : build_result.error_messages )
+		std::cout << error_message << "\n";
+
+	return build_result.program;
+}
 
 static void SimpleProgramTest()
 {
@@ -17,19 +44,7 @@ static void SimpleProgramTest()
 }"
 ;
 
-	const LexicalAnalysisResult lexical_analysis_result=
-		LexicalAnalysis( ToProgramString( c_program_text ) );
-	U_ASSERT( lexical_analysis_result.error_messages.empty() );
-
-	const SyntaxAnalysisResult syntax_analysis_result=
-		SyntaxAnalysis( lexical_analysis_result.lexems );
-	U_ASSERT( syntax_analysis_result.error_messages.empty() );
-
-	const CodeBuilder::BuildResult build_result=
-		CodeBuilder().BuildProgram( syntax_analysis_result.program_elements );
-	U_ASSERT( build_result.error_messages.empty() );
-
-	VM vm{ build_result.program };
+	VM vm{ BuildProgram( c_program_text ) };
 
 	U_i32 arg0= 100500, arg1= 1488, arg2= 42, func_result= 0;
 
@@ -56,19 +71,7 @@ fn Foo( a : i32, b : i32 ) : i32\
 }"
 ;
 
-	const LexicalAnalysisResult lexical_analysis_result=
-		LexicalAnalysis( ToProgramString( c_program_text ) );
-	U_ASSERT( lexical_analysis_result.error_messages.empty() );
-
-	const SyntaxAnalysisResult syntax_analysis_result=
-		SyntaxAnalysis( lexical_analysis_result.lexems );
-	U_ASSERT( syntax_analysis_result.error_messages.empty() );
-
-	const CodeBuilder::BuildResult build_result=
-		CodeBuilder().BuildProgram( syntax_analysis_result.program_elements );
-	U_ASSERT( build_result.error_messages.empty() );
-
-	VM vm{ build_result.program };
+	VM vm{ BuildProgram( c_program_text ) };
 
 	U_i32 arg0= 100, arg1= 17, func_result= 0;
 
@@ -96,19 +99,7 @@ static void IfOperatorTest()
 }"
 ;
 
-	const LexicalAnalysisResult lexical_analysis_result=
-		LexicalAnalysis( ToProgramString( c_program_text ) );
-	U_ASSERT( lexical_analysis_result.error_messages.empty() );
-
-	const SyntaxAnalysisResult syntax_analysis_result=
-		SyntaxAnalysis( lexical_analysis_result.lexems );
-	U_ASSERT( syntax_analysis_result.error_messages.empty() );
-
-	const CodeBuilder::BuildResult build_result=
-		CodeBuilder().BuildProgram( syntax_analysis_result.program_elements );
-	U_ASSERT( build_result.error_messages.empty() );
-
-	VM vm{ build_result.program };
+	VM vm{ BuildProgram( c_program_text ) };
 
 	for( U_i32 i= 1,expected_result= 1; i < 13; i++ )
 	{
