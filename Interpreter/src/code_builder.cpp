@@ -39,6 +39,21 @@ const size_t g_fundamental_types_size[ size_t(U_FundamentalType::LastType) ]=
 	[ size_t(U_FundamentalType::u64) ]= 8,
 };
 
+const char* g_fundamental_types_names[ size_t(U_FundamentalType::LastType) ]=
+{
+	[ size_t(U_FundamentalType::InvalidType) ]= "InvalidTypr",
+	[ size_t(U_FundamentalType::Void) ]= "void",
+	[ size_t(U_FundamentalType::Bool) ]= "bool",
+	[ size_t(U_FundamentalType::i8 ) ]= "i8",
+	[ size_t(U_FundamentalType::u8 ) ]= "u8",
+	[ size_t(U_FundamentalType::i16) ]= "i16",
+	[ size_t(U_FundamentalType::u16) ]= "u16",
+	[ size_t(U_FundamentalType::i32) ]= "i32",
+	[ size_t(U_FundamentalType::u32) ]= "u32",
+	[ size_t(U_FundamentalType::i64) ]= "i64",
+	[ size_t(U_FundamentalType::u64) ]= "u64",
+};
+
 // Returns 0 for 8bit, 1 for 16bit, 2 for 32bit, 3 for 64 bit, 4 - else
 unsigned int GetOpIndexOffsetForFundamentalType( U_FundamentalType type )
 {
@@ -95,6 +110,58 @@ void ReportUnknownVariableType(
 	error_messages.push_back(
 		"Variable " + ToStdString( variable_declaration.name ) +
 		" has unknown type " + ToStdString( variable_declaration.type ) );
+}
+
+void ReportNameNotFound(
+	std::vector<std::string>& error_messages,
+	const ProgramString& name )
+{
+	error_messages.push_back(
+		ToStdString( name ) +
+		" was not declarated in this scope" );
+}
+
+void ReportNotImplemented(
+	std::vector<std::string>& error_messages,
+	const char* what )
+{
+	error_messages.push_back(
+		std::string("Sorry, ") +
+		what +
+		" not implemented" );
+}
+
+void ReportRedefinition(
+	std::vector<std::string>& error_messages,
+	const ProgramString& name )
+{
+	error_messages.push_back(
+		ToStdString(name) +
+		" redifinition" );
+}
+
+void ReportTypesMismatch(
+	std::vector<std::string>& error_messages,
+	U_FundamentalType type,
+	U_FundamentalType expected_type )
+{
+	error_messages.push_back(
+		std::string("Unexpected type: ") +
+		g_fundamental_types_names[ size_t(type) ] +
+		" expected " +
+		g_fundamental_types_names[ size_t(expected_type) ]);
+}
+
+void ReportArgumentsCountMismatch(
+	std::vector<std::string>& error_messages,
+	unsigned int count,
+	unsigned int expected )
+{
+	error_messages.push_back(
+		"Arguments count mismatch. actual " +
+		std::to_string(count) +
+		" expected " +
+		std::to_string(expected) );
 }
 
 } // namespace
@@ -174,13 +241,7 @@ CodeBuilder::~CodeBuilder()
 CodeBuilder::BuildResult CodeBuilder::BuildProgram(
 	const ProgramElements& program_elements )
 {
-	BuildResult result;
 	result_.code.emplace_back( Vm_Op::Type::NoOp );
-
-	{ // dummy Function
-		VmProgram::FuncCallInfo call_info{ 0, 0 };
-		result_.funcs_table.push_back( call_info );
-	}
 
 	for( const IProgramElementPtr& program_element : program_elements )
 	{
@@ -190,7 +251,8 @@ CodeBuilder::BuildResult CodeBuilder::BuildProgram(
 			Variable func_info;
 
 			func_info.location= Variable::Location::Global;
-			func_info.offset= ++next_func_number_;
+			func_info.offset= next_func_number_;
+			next_func_number_++;
 
 			func_info.type.kind= Type::Kind::Function;
 
@@ -206,7 +268,8 @@ CodeBuilder::BuildResult CodeBuilder::BuildProgram(
 				auto it= g_types_map.find( func->return_type_ );
 				if( it == g_types_map.end() )
 				{
-					ReportUnknownFuncReturnType( result.error_messages, *func );
+					++error_count_;
+					ReportUnknownFuncReturnType( error_messages_, *func );
 					func_info.type.function->return_type.fundamental= U_FundamentalType::Void;
 				}
 				else
@@ -223,7 +286,8 @@ CodeBuilder::BuildResult CodeBuilder::BuildProgram(
 				auto it= g_types_map.find( arg.type );
 				if( it == g_types_map.end() )
 				{
-					ReportUnknownVariableType( result.error_messages, arg );
+					error_count_++;
+					ReportUnknownVariableType( error_messages_, arg );
 					continue;
 				}
 
@@ -268,7 +332,9 @@ CodeBuilder::BuildResult CodeBuilder::BuildProgram(
 			}
 			else
 			{
-				// TODO - register error
+				error_count_++;
+				ReportRedefinition( error_messages_, func->name_ );
+				continue;
 			}
 		}
 		else
@@ -277,7 +343,11 @@ CodeBuilder::BuildResult CodeBuilder::BuildProgram(
 		}
 	} // for program elements
 
-	result.program= std::move( result_ );
+	BuildResult result;
+	result.error_messages= std::move( error_messages_ );
+	if( error_count_ == 0 )
+		result.program= std::move( result_ );
+
 	return result;
 }
 
@@ -310,10 +380,16 @@ void CodeBuilder::BuildFuncCode(
 		args_offset+= arg_size;
 		var.offset= args_offset;
 
-		// TODO - check redefenition
-		block_names.AddName(
-			arg_names[ arg_n ],
-			std::move(var) );
+		const NamesScope::NamesMap::value_type* inserted_arg=
+			block_names.AddName(
+				arg_names[ arg_n ],
+				std::move(var) );
+		if( !inserted_arg )
+		{
+			error_count_++;
+			ReportRedefinition( error_messages_, arg_names[ arg_n ] );
+			return;
+		}
 	}
 
 	unsigned int func_result_offset=
@@ -355,86 +431,100 @@ void CodeBuilder::BuildBlockCode(
 	{
 		const IBlockElement* const block_element_ptr= block_element.get();
 
-		if( const VariableDeclaration* variable_declaration=
-			dynamic_cast<const VariableDeclaration*>( block_element_ptr ) )
+		try
 		{
-			Variable variable;
-			variable.location= Variable::Location::Stack;
-
-			auto it= g_types_map.find( variable_declaration->type );
-			if( it == g_types_map.end() )
+			if( const VariableDeclaration* variable_declaration=
+				dynamic_cast<const VariableDeclaration*>( block_element_ptr ) )
 			{
-				// TODO - register error
-				return;
-			}
-			variable.type.kind= Type::Kind::Fundamental;
-			variable.type.fundamental= it->second;
-			variable.offset= locals_stack_offset;
+				Variable variable;
+				variable.location= Variable::Location::Stack;
 
-			if( variable.type.kind == Type::Kind::Fundamental )
-				locals_stack_offset+= g_fundamental_types_size[ size_t( variable.type.fundamental ) ];
+				auto it= g_types_map.find( variable_declaration->type );
+				if( it == g_types_map.end() )
+				{
+					ReportUnknownVariableType( error_messages_, *variable_declaration );
+					throw ProgramError();
+				}
+				variable.type.kind= Type::Kind::Fundamental;
+				variable.type.fundamental= it->second;
+				variable.offset= locals_stack_offset;
+
+				if( variable.type.kind == Type::Kind::Fundamental )
+					locals_stack_offset+= g_fundamental_types_size[ size_t( variable.type.fundamental ) ];
+				else
+				{
+					// TODO
+				}
+
+				// TODO - check redefinition
+				const NamesScope::NamesMap::value_type* inserted_variable=
+					block_names.AddName( variable_declaration->name, std::move(variable) );
+
+				if( !inserted_variable )
+				{
+					ReportRedefinition( error_messages_, variable_declaration->name );
+					throw ProgramError();
+				}
+			}
+			else if( const Block* inner_block=
+				dynamic_cast<const Block*>( block_element_ptr ) )
+			{
+				unsigned int inner_block_stack_offset;
+				BuildBlockCode(
+					*inner_block,
+					block_names,
+					func_result_offset,
+					locals_stack_offset,
+					inner_block_stack_offset );
+
+				max_inner_block_stack_offset=
+					std::max(
+						max_inner_block_stack_offset,
+						inner_block_stack_offset );
+			}
+			else if( const ReturnOperator* return_operator=
+				dynamic_cast<const ReturnOperator*>( block_element_ptr ) )
+			{
+				if( return_operator->expression_ )
+				{
+					U_FundamentalType expression_type=
+						BuildExpressionCode(
+							*return_operator->expression_,
+							block_names );
+					// TODO - check expression and func return type
+
+					Vm_Op op{
+						Vm_Op::Type(
+							size_t(Vm_Op::Type::PopToCallerStack8) +
+							GetOpIndexOffsetForFundamentalType( expression_type ) ) };
+
+					op.param.caller_stack_operations_offset= -int( func_result_offset );
+
+					result_.code.push_back( op );
+				}
+
+				Vm_Op ret_op;
+				ret_op.type= Vm_Op::Type::Ret;
+				result_.code.push_back( ret_op );
+			}
+			else if( const IfOperator* if_operator=
+				dynamic_cast<const IfOperator*>( block_element_ptr ) )
+			{
+				BuildIfOperator(
+					names,
+					*if_operator,
+					func_result_offset,
+					locals_stack_offset,
+					out_locals_stack_offset );
+			}
 			else
 			{
-				// TODO
+				U_ASSERT(false);
 			}
-
-			// TODO - check redefinition
-			block_names.AddName( variable_declaration->name, std::move(variable) );
-		}
-		else if( const Block* inner_block=
-			dynamic_cast<const Block*>( block_element_ptr ) )
+		} // try
+		catch( const ProgramError& )
 		{
-			unsigned int inner_block_stack_offset;
-			BuildBlockCode(
-				*inner_block,
-				block_names,
-				func_result_offset,
-				locals_stack_offset,
-				inner_block_stack_offset );
-
-			max_inner_block_stack_offset=
-				std::max(
-					max_inner_block_stack_offset,
-					inner_block_stack_offset );
-		}
-		else if( const ReturnOperator* return_operator=
-			dynamic_cast<const ReturnOperator*>( block_element_ptr ) )
-		{
-			if( return_operator->expression_ )
-			{
-				U_FundamentalType expression_type=
-					BuildExpressionCode(
-						*return_operator->expression_,
-						block_names );
-				// TODO - check expression and func return type
-
-				Vm_Op op{
-					Vm_Op::Type(
-						size_t(Vm_Op::Type::PopToCallerStack8) +
-						GetOpIndexOffsetForFundamentalType( expression_type ) ) };
-
-				op.param.caller_stack_operations_offset= -int( func_result_offset );
-
-				result_.code.push_back( op );
-			}
-
-			Vm_Op ret_op;
-			ret_op.type= Vm_Op::Type::Ret;
-			result_.code.push_back( ret_op );
-		}
-		else if( const IfOperator* if_operator=
-			dynamic_cast<const IfOperator*>( block_element_ptr ) )
-		{
-			BuildIfOperator(
-				names,
-				*if_operator,
-				func_result_offset,
-				locals_stack_offset,
-				out_locals_stack_offset );
-		}
-		else
-		{
-			U_ASSERT(false);
+			error_count_++;
 		}
 	} // for block elements
 
@@ -469,7 +559,8 @@ U_FundamentalType CodeBuilder::BuildExpressionCode(
 					names.GetName( named_operand->name_ );
 				if( !variable_entry )
 				{
-					// TODO - register error
+					ReportNameNotFound( error_messages_, named_operand->name_ );
+					throw ProgramError();
 				}
 				const Variable& variable= variable_entry->second;
 
@@ -511,6 +602,9 @@ U_FundamentalType CodeBuilder::BuildExpressionCode(
 			else if( const NumericConstant* number=
 				dynamic_cast<const NumericConstant*>(&operand) )
 			{
+				U_UNUSED(number);
+				ReportNotImplemented( error_messages_, "numeric constants" );
+				throw ProgramError();
 				// Convert str to number
 				// push number
 			}
@@ -605,7 +699,8 @@ U_FundamentalType CodeBuilder::BuildExpressionCode(
 
 			if( type0 != type1 )
 			{
-				// TODO -register error
+				ReportTypesMismatch( error_messages_, type0, type1 );
+				throw ProgramError();
 			}
 
 			// Pop operands
@@ -639,7 +734,10 @@ U_FundamentalType CodeBuilder::BuildExpressionCode(
 						op_type= Vm_Op::Type( size_t(op_type) + 3 );
 					else
 					{
-						// TODO - register error
+						error_messages_.push_back(
+							"Expected numeric arguments for arithmetic operators. Supported 32 and 64 bit types. Got " +
+							std::string( g_fundamental_types_names[ size_t(type0) ] ) );
+						throw ProgramError();
 					}
 
 					// Result - same as operands
@@ -659,7 +757,10 @@ U_FundamentalType CodeBuilder::BuildExpressionCode(
 				{
 					if( !IsNumericType( type0 ) )
 					{
-						// TODO - register error
+						error_messages_.push_back(
+							"Expected numeric arguments for relation operators Got " +
+							std::string( g_fundamental_types_names[ size_t(type0) ] ) );
+						throw ProgramError();
 					}
 
 					bool op_needs_sign;
@@ -742,8 +843,8 @@ U_FundamentalType CodeBuilder::BuildFuncCall(
 
 	if( func.args.size() != call_operator.arguments_.size() )
 	{
-		// TODO - register error
-		return U_FundamentalType::InvalidType;
+		ReportArgumentsCountMismatch( error_messages_, call_operator.arguments_.size(), func.args.size() );
+		throw ProgramError();
 	}
 
 	// Reserve place for result
@@ -765,7 +866,8 @@ U_FundamentalType CodeBuilder::BuildFuncCall(
 
 		if( expression_type != func.args[i].fundamental )
 		{
-			// TODO - register error
+			ReportTypesMismatch( error_messages_, func.args[i].fundamental, expression_type );
+			throw ProgramError();
 		}
 
 		args_size+= g_fundamental_types_size[ size_t(func.args[i].fundamental) ];
@@ -816,7 +918,8 @@ void CodeBuilder::BuildIfOperator(
 
 			if( condition_type != U_FundamentalType::Bool )
 			{
-				// TODO - register error
+				ReportTypesMismatch( error_messages_, condition_type, U_FundamentalType::Bool );
+				throw ProgramError();
 			}
 
 			condition_jump_operations_indeces[i]= result_.code.size();

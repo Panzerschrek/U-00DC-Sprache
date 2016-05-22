@@ -83,7 +83,17 @@ private:
 	private:
 		const NamesScope* const prev_;
 		NamesMap names_map_;
+	};
 
+	class ProgramError : public std::exception
+	{
+	public:
+		virtual ~ProgramError() override{}
+
+		virtual const char* what() const noexcept override
+		{
+			return "ProgramError";
+		}
 	};
 
 private:
@@ -117,6 +127,8 @@ private:
 		unsigned int& out_locals_stack_offset );
 
 private:
+	unsigned int error_count_= 0;
+	std::vector<std::string> error_messages_;
 	VmProgram result_;
 
 	NamesScope global_names_;
