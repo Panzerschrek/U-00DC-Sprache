@@ -50,6 +50,8 @@ fn ZweiUndVierzig() : int
 	}
 	else
 	{
+		return a + b == c + d;
+		ff = a * b * c >= eeee(gr);
 	}
 	{
 	}

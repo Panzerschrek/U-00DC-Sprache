@@ -47,7 +47,7 @@ struct Lexem
 		Decrement, // --
 
 		CompareLess, // <
-		CommpareGreater, // >
+		CompareGreater, // >
 		CompareEqual, // ==
 		CompareNotEqual, // !=
 		CompareLessOrEqual, // <=

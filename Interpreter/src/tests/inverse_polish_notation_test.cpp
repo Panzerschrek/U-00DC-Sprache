@@ -311,7 +311,101 @@ static void MultiPriorityExpressionTest5()
 
 	U_ASSERT( !notation[8].operand ); // -
 	U_ASSERT( notation[8].operator_ == BinaryOperator::Sub );
+}
 
+static void ExpressionWithComparisionOperatorsTest0()
+{
+	BinaryOperatorsChain chain;
+	chain.components.resize(3);
+
+	chain.components[0].component.reset( new NamedOperand( ToProgramString( "a" ) ) );
+	chain.components[0].op= BinaryOperator::Equal;
+
+	chain.components[1].component.reset( new NamedOperand( ToProgramString( "b" ) ) );
+	chain.components[1].op= BinaryOperator::Add;
+
+	chain.components[2].component.reset( new NamedOperand( ToProgramString( "c" ) ) );
+
+	InversePolishNotation notation= ConvertToInversePolishNotation( chain );
+	Print( chain, notation );
+
+	U_ASSERT( notation.size() == 5 );
+
+	U_ASSERT( notation[0].operand ); // a
+	U_ASSERT( notation[1].operand ); // b
+	U_ASSERT( notation[2].operand ); // c
+
+	U_ASSERT( !notation[3].operand ); // +
+	U_ASSERT( notation[3].operator_ == BinaryOperator::Add );
+
+	U_ASSERT( !notation[4].operand ); // ==
+	U_ASSERT( notation[4].operator_ == BinaryOperator::Equal );
+}
+
+static void ExpressionWithComparisionOperatorsTest1()
+{
+	BinaryOperatorsChain chain;
+	chain.components.resize(3);
+
+	chain.components[0].component.reset( new NamedOperand( ToProgramString( "a" ) ) );
+	chain.components[0].op= BinaryOperator::Mul;
+
+	chain.components[1].component.reset( new NamedOperand( ToProgramString( "b" ) ) );
+	chain.components[1].op= BinaryOperator::Less;
+
+	chain.components[2].component.reset( new NamedOperand( ToProgramString( "c" ) ) );
+
+	InversePolishNotation notation= ConvertToInversePolishNotation( chain );
+	Print( chain, notation );
+
+	U_ASSERT( notation.size() == 5 );
+
+	U_ASSERT( notation[0].operand ); // a
+	U_ASSERT( notation[1].operand ); // b
+
+	U_ASSERT( !notation[2].operand ); // *
+	U_ASSERT( notation[2].operator_ == BinaryOperator::Mul );
+
+	U_ASSERT( notation[3].operand ); // c
+
+	U_ASSERT( !notation[4].operand ); // <
+	U_ASSERT( notation[4].operator_ == BinaryOperator::Less );
+}
+
+static void ExpressionWithComparisionOperatorsTest2()
+{
+	BinaryOperatorsChain chain;
+	chain.components.resize(4);
+
+	chain.components[0].component.reset( new NamedOperand( ToProgramString( "a" ) ) );
+	chain.components[0].op= BinaryOperator::NotEqual;
+
+	chain.components[1].component.reset( new NamedOperand( ToProgramString( "b" ) ) );
+	chain.components[1].op= BinaryOperator::Add;
+
+	chain.components[2].component.reset( new NamedOperand( ToProgramString( "c" ) ) );
+	chain.components[2].op= BinaryOperator::Mul;
+
+	chain.components[3].component.reset( new NamedOperand( ToProgramString( "d" ) ) );
+
+	InversePolishNotation notation= ConvertToInversePolishNotation( chain );
+	Print( chain, notation );
+
+	U_ASSERT( notation.size() == 7 );
+
+	U_ASSERT( notation[0].operand ); // a
+	U_ASSERT( notation[1].operand ); // b
+	U_ASSERT( notation[2].operand ); // c
+	U_ASSERT( notation[3].operand ); // d
+
+	U_ASSERT( !notation[4].operand ); // *
+	U_ASSERT( notation[4].operator_ == BinaryOperator::Mul );
+
+	U_ASSERT( !notation[5].operand ); // +
+	U_ASSERT( notation[5].operator_ == BinaryOperator::Add );
+
+	U_ASSERT( !notation[6].operand ); // !=
+	U_ASSERT( notation[6].operator_ == BinaryOperator::NotEqual );
 }
 
 void RunIPNTests()
@@ -326,6 +420,9 @@ void RunIPNTests()
 	MultiPriorityExpressionTest3();
 	MultiPriorityExpressionTest4();
 	MultiPriorityExpressionTest5();
+	ExpressionWithComparisionOperatorsTest0();
+	ExpressionWithComparisionOperatorsTest1();
+	ExpressionWithComparisionOperatorsTest2();
 }
 
 } // namespace Interpreter
