@@ -243,11 +243,6 @@ CodeBuilder::BuildResult CodeBuilder::BuildProgram(
 {
 	result_.code.emplace_back( Vm_Op::Type::NoOp );
 
-	{ // dummy Function
-		VmProgram::FuncCallInfo call_info{ 0, 0 };
-		result_.funcs_table.push_back( call_info );
-	}
-
 	for( const IProgramElementPtr& program_element : program_elements )
 	{
 		if( const FunctionDeclaration* func=
@@ -256,7 +251,8 @@ CodeBuilder::BuildResult CodeBuilder::BuildProgram(
 			Variable func_info;
 
 			func_info.location= Variable::Location::Global;
-			func_info.offset= ++next_func_number_;
+			func_info.offset= next_func_number_;
+			next_func_number_++;
 
 			func_info.type.kind= Type::Kind::Function;
 
