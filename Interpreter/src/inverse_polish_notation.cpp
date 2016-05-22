@@ -8,11 +8,18 @@ static const unsigned int g_operators_priority[ size_t(BinaryOperator::Last) ]=
 {
 	[ size_t( BinaryOperator::None ) ]= 0,
 
-	[ size_t( BinaryOperator::Add ) ]= 1,
-	[ size_t( BinaryOperator::Sub ) ]= 1,
+	[ size_t( BinaryOperator::Add ) ]= 2,
+	[ size_t( BinaryOperator::Sub ) ]= 2,
 
-	[ size_t( BinaryOperator::Div ) ]= 2,
-	[ size_t( BinaryOperator::Mul ) ]= 2,
+	[ size_t( BinaryOperator::Div ) ]= 3,
+	[ size_t( BinaryOperator::Mul ) ]= 3,
+
+	[ size_t( BinaryOperator::Equal ) ]= 1,
+	[ size_t( BinaryOperator::NotEqual ) ]= 1,
+	[ size_t( BinaryOperator::Less ) ]= 1,
+	[ size_t( BinaryOperator::LessEqual ) ]= 1,
+	[ size_t( BinaryOperator::Greater ) ]= 1,
+	[ size_t( BinaryOperator::GreaterEqual ) ]= 1,
 };
 
 static inline unsigned int GetOperatorPriority( BinaryOperator op )

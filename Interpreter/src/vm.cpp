@@ -15,6 +15,62 @@ struct BitInverse
 	}
 };
 
+template<class T>
+unsigned int VM::PushFromLocalStackOpBase( unsigned int op_index )
+{
+	const Vm_Op& op= program_.code[ op_index ];
+
+	std::memcpy(
+		&*stack_pointer_,
+		&*stack_frames_.back().begin() + op.param.local_stack_operations_offset,
+		sizeof(T) );
+	stack_pointer_+= sizeof(T);
+
+	return op_index + 1;
+}
+
+template<class T>
+unsigned int VM::PopToLocalStackOpBase( unsigned int op_index )
+{
+	const Vm_Op& op= program_.code[ op_index ];
+
+	stack_pointer_-= sizeof(T);
+	std::memcpy(
+		&*stack_frames_.back().begin() + op.param.caller_stack_operations_offset,
+		&*stack_pointer_,
+		sizeof(T) );
+
+	return op_index + 1;
+}
+
+template<class T>
+unsigned int VM::PushFromCallerStackOpBase( unsigned int op_index )
+{
+	const Vm_Op& op= program_.code[ op_index ];
+
+	std::memcpy(
+		&*stack_pointer_,
+		(&*caller_frame_pos_) + op.param.caller_stack_operations_offset,
+		sizeof(T) );
+	stack_pointer_+= sizeof(T);
+
+	return op_index + 1;
+}
+
+template<class T>
+unsigned int VM::PopToCallerStackOpBase( unsigned int op_index )
+{
+	const Vm_Op& op= program_.code[ op_index ];
+
+	stack_pointer_-= sizeof(T);
+	std::memcpy(
+		(&*caller_frame_pos_) + op.param.caller_stack_operations_offset,
+		&*stack_pointer_,
+		sizeof(T) );
+
+	return op_index + 1;
+}
+
 template<class T, class Func>
 unsigned int VM::BinaryOpBase( unsigned int op_index )
 {
@@ -41,6 +97,36 @@ unsigned int VM::BinaryOpBase( unsigned int op_index )
 		&result,
 		sizeof(T) );
 	stack_pointer_+= sizeof(T);
+
+	return op_index + 1;
+}
+
+template<class T, class Func>
+unsigned int VM::ComparisonOpBase( unsigned int op_index )
+{
+	T second;
+	T first;
+
+	stack_pointer_-= sizeof(T);
+	std::memcpy(
+		&second,
+		&*stack_pointer_,
+		sizeof(T) );
+
+	stack_pointer_-= sizeof(T);
+	std::memcpy(
+		&first,
+		&*stack_pointer_,
+		sizeof(T) );
+
+	Func func;
+	U_bool result= func( first, second );
+
+	std::memcpy(
+		&*stack_pointer_,
+		&result,
+		sizeof(U_bool) );
+	stack_pointer_+= sizeof(U_bool);
 
 	return op_index + 1;
 }
@@ -101,6 +187,10 @@ const VM::VMOpPoiter VM::operations_[size_t( Vm_Op::Type::LastOp ) ]=
 
 	[ size_t(Vm_Op::Type::Syscall)]= nullptr,
 
+	[ size_t(Vm_Op::Type::Jump)]= &VM::OpJump,
+	[ size_t(Vm_Op::Type::JumpIfZero)]= &VM::OpJumpIfZero,
+	[ size_t(Vm_Op::Type::JumpIfNotZero)]= &VM::OpJumpIfNotZero,
+
 	[ size_t(Vm_Op::Type::StackPointerAdd) ]= &VM::OpStackPointerAdd,
 
 	[ size_t(Vm_Op::Type::PushC8 )]= &VM::OpPushC8 ,
@@ -108,25 +198,25 @@ const VM::VMOpPoiter VM::operations_[size_t( Vm_Op::Type::LastOp ) ]=
 	[ size_t(Vm_Op::Type::PushC32)]= &VM::OpPushC32,
 	[ size_t(Vm_Op::Type::PushC64)]= &VM::OpPushC64,
 
-	[ size_t(Vm_Op::Type::PushFromLocalStack8 )]= nullptr,
-	[ size_t(Vm_Op::Type::PushFromLocalStack16)]= nullptr,
-	[ size_t(Vm_Op::Type::PushFromLocalStack32)]= nullptr,
-	[ size_t(Vm_Op::Type::PushFromLocalStack64)]= nullptr,
+	[ size_t(Vm_Op::Type::PushFromLocalStack8 )]= &VM::PushFromLocalStackOpBase<U_u8 >,
+	[ size_t(Vm_Op::Type::PushFromLocalStack16)]= &VM::PushFromLocalStackOpBase<U_u16>,
+	[ size_t(Vm_Op::Type::PushFromLocalStack32)]= &VM::PushFromLocalStackOpBase<U_u32>,
+	[ size_t(Vm_Op::Type::PushFromLocalStack64)]= &VM::PushFromLocalStackOpBase<U_u64>,
 
-	[ size_t(Vm_Op::Type::PopToLocalStack8 )]= nullptr,
-	[ size_t(Vm_Op::Type::PopToLocalStack16)]= nullptr,
-	[ size_t(Vm_Op::Type::PopToLocalStack32)]= nullptr,
-	[ size_t(Vm_Op::Type::PopToLocalStack64)]= nullptr,
+	[ size_t(Vm_Op::Type::PopToLocalStack8 )]= &VM::PopToLocalStackOpBase<U_u8 >,
+	[ size_t(Vm_Op::Type::PopToLocalStack16)]= &VM::PopToLocalStackOpBase<U_u16>,
+	[ size_t(Vm_Op::Type::PopToLocalStack32)]= &VM::PopToLocalStackOpBase<U_u32>,
+	[ size_t(Vm_Op::Type::PopToLocalStack64)]= &VM::PopToLocalStackOpBase<U_u64>,
 
-	[ size_t(Vm_Op::Type::PushFromCallerStack8 )]= &VM::OpPushFromCallerStack8 ,
-	[ size_t(Vm_Op::Type::PushFromCallerStack16)]= &VM::OpPushFromCallerStack16,
-	[ size_t(Vm_Op::Type::PushFromCallerStack32)]= &VM::OpPushFromCallerStack32,
-	[ size_t(Vm_Op::Type::PushFromCallerStack64)]= &VM::OpPushFromCallerStack64,
+	[ size_t(Vm_Op::Type::PushFromCallerStack8 )]= &VM::PushFromCallerStackOpBase<U_u8 >,
+	[ size_t(Vm_Op::Type::PushFromCallerStack16)]= &VM::PushFromCallerStackOpBase<U_u16>,
+	[ size_t(Vm_Op::Type::PushFromCallerStack32)]= &VM::PushFromCallerStackOpBase<U_u32>,
+	[ size_t(Vm_Op::Type::PushFromCallerStack64)]= &VM::PushFromCallerStackOpBase<U_u64>,
 
-	[ size_t(Vm_Op::Type::PopToCallerStack8 )]= &VM::OpPopToCallerStack8 ,
-	[ size_t(Vm_Op::Type::PopToCallerStack16)]= &VM::OpPopToCallerStack16,
-	[ size_t(Vm_Op::Type::PopToCallerStack32)]= &VM::OpPopToCallerStack32,
-	[ size_t(Vm_Op::Type::PopToCallerStack64)]= &VM::OpPopToCallerStack64,
+	[ size_t(Vm_Op::Type::PopToCallerStack8 )]= &VM::PopToCallerStackOpBase<U_u8 >,
+	[ size_t(Vm_Op::Type::PopToCallerStack16)]= &VM::PopToCallerStackOpBase<U_u16>,
+	[ size_t(Vm_Op::Type::PopToCallerStack32)]= &VM::PopToCallerStackOpBase<U_u32>,
+	[ size_t(Vm_Op::Type::PopToCallerStack64)]= &VM::PopToCallerStackOpBase<U_u64>,
 
 	[ size_t(Vm_Op::Type::And8 )]= &VM::BinaryOpBase<U_u8 , std::bit_and<U_u8 >>,
 	[ size_t(Vm_Op::Type::And16)]= &VM::BinaryOpBase<U_u16, std::bit_and<U_u16>>,
@@ -200,6 +290,51 @@ const VM::VMOpPoiter VM::operations_[size_t( Vm_Op::Type::LastOp ) ]=
 
 	[ size_t(Vm_Op::Type::Conv16To8 )]= &VM::ConvertionOpBase<U_u16, U_u8 >,
 
+	[ size_t(Vm_Op::Type::Equal8  )]= &VM::ComparisonOpBase<U_i8 , std::equal_to<U_i8 >>,
+	[ size_t(Vm_Op::Type::Equal16 )]= &VM::ComparisonOpBase<U_i16, std::equal_to<U_i16>>,
+	[ size_t(Vm_Op::Type::Equal32 )]= &VM::ComparisonOpBase<U_i32, std::equal_to<U_i32>>,
+	[ size_t(Vm_Op::Type::Equal64 )]= &VM::ComparisonOpBase<U_i64, std::equal_to<U_i64>>,
+
+	[ size_t(Vm_Op::Type::NotEqual8  )]= &VM::ComparisonOpBase<U_i8 , std::not_equal_to<U_i8 >>,
+	[ size_t(Vm_Op::Type::NotEqual16 )]= &VM::ComparisonOpBase<U_i16, std::not_equal_to<U_i16>>,
+	[ size_t(Vm_Op::Type::NotEqual32 )]= &VM::ComparisonOpBase<U_i32, std::not_equal_to<U_i32>>,
+	[ size_t(Vm_Op::Type::NotEqual64 )]= &VM::ComparisonOpBase<U_i64, std::not_equal_to<U_i64>>,
+
+	[ size_t(Vm_Op::Type::Less8i  )]= &VM::ComparisonOpBase<U_i8 , std::less<U_i8 >>,
+	[ size_t(Vm_Op::Type::Less16i )]= &VM::ComparisonOpBase<U_i16, std::less<U_i16>>,
+	[ size_t(Vm_Op::Type::Less32i )]= &VM::ComparisonOpBase<U_i32, std::less<U_i32>>,
+	[ size_t(Vm_Op::Type::Less64i )]= &VM::ComparisonOpBase<U_i64, std::less<U_i64>>,
+	[ size_t(Vm_Op::Type::Less8u  )]= &VM::ComparisonOpBase<U_u8 , std::less<U_u8 >>,
+	[ size_t(Vm_Op::Type::Less16u )]= &VM::ComparisonOpBase<U_u16, std::less<U_u16>>,
+	[ size_t(Vm_Op::Type::Less32u )]= &VM::ComparisonOpBase<U_u32, std::less<U_u32>>,
+	[ size_t(Vm_Op::Type::Less64u )]= &VM::ComparisonOpBase<U_u64, std::less<U_u64>>,
+
+	[ size_t(Vm_Op::Type::LessEqual8i  )]= &VM::ComparisonOpBase<U_i8 , std::less_equal<U_i8 >>,
+	[ size_t(Vm_Op::Type::LessEqual16i )]= &VM::ComparisonOpBase<U_i16, std::less_equal<U_i16>>,
+	[ size_t(Vm_Op::Type::LessEqual32i )]= &VM::ComparisonOpBase<U_i32, std::less_equal<U_i32>>,
+	[ size_t(Vm_Op::Type::LessEqual64i )]= &VM::ComparisonOpBase<U_i64, std::less_equal<U_i64>>,
+	[ size_t(Vm_Op::Type::LessEqual8u  )]= &VM::ComparisonOpBase<U_u8 , std::less_equal<U_u8 >>,
+	[ size_t(Vm_Op::Type::LessEqual16u )]= &VM::ComparisonOpBase<U_u16, std::less_equal<U_u16>>,
+	[ size_t(Vm_Op::Type::LessEqual32u )]= &VM::ComparisonOpBase<U_u32, std::less_equal<U_u32>>,
+	[ size_t(Vm_Op::Type::LessEqual64u )]= &VM::ComparisonOpBase<U_u64, std::less_equal<U_u64>>,
+
+	[ size_t(Vm_Op::Type::Greater8i  )]= &VM::ComparisonOpBase<U_i8 , std::greater<U_i8 >>,
+	[ size_t(Vm_Op::Type::Greater16i )]= &VM::ComparisonOpBase<U_i16, std::greater<U_i16>>,
+	[ size_t(Vm_Op::Type::Greater32i )]= &VM::ComparisonOpBase<U_i32, std::greater<U_i32>>,
+	[ size_t(Vm_Op::Type::Greater64i )]= &VM::ComparisonOpBase<U_i64, std::greater<U_i64>>,
+	[ size_t(Vm_Op::Type::Greater8u  )]= &VM::ComparisonOpBase<U_u8 , std::greater<U_u8 >>,
+	[ size_t(Vm_Op::Type::Greater16u )]= &VM::ComparisonOpBase<U_u16, std::greater<U_u16>>,
+	[ size_t(Vm_Op::Type::Greater32u )]= &VM::ComparisonOpBase<U_u32, std::greater<U_u32>>,
+	[ size_t(Vm_Op::Type::Greater64u )]= &VM::ComparisonOpBase<U_u64, std::greater<U_u64>>,
+
+	[ size_t(Vm_Op::Type::GreaterEqual8i  )]= &VM::ComparisonOpBase<U_i8 , std::greater_equal<U_i8 >>,
+	[ size_t(Vm_Op::Type::GreaterEqual16i )]= &VM::ComparisonOpBase<U_i16, std::greater_equal<U_i16>>,
+	[ size_t(Vm_Op::Type::GreaterEqual32i )]= &VM::ComparisonOpBase<U_i32, std::greater_equal<U_i32>>,
+	[ size_t(Vm_Op::Type::GreaterEqual64i )]= &VM::ComparisonOpBase<U_i64, std::greater_equal<U_i64>>,
+	[ size_t(Vm_Op::Type::GreaterEqual8u  )]= &VM::ComparisonOpBase<U_u8 , std::greater_equal<U_u8 >>,
+	[ size_t(Vm_Op::Type::GreaterEqual16u )]= &VM::ComparisonOpBase<U_u16, std::greater_equal<U_u16>>,
+	[ size_t(Vm_Op::Type::GreaterEqual32u )]= &VM::ComparisonOpBase<U_u32, std::greater_equal<U_u32>>,
+	[ size_t(Vm_Op::Type::GreaterEqual64u )]= &VM::ComparisonOpBase<U_u64, std::greater_equal<U_u64>>,
 };
 
 VM::VM( VmProgram program )
@@ -335,7 +470,47 @@ unsigned int VM::OpRet( unsigned int op_index )
 unsigned int VM::OpSysCall( unsigned int op_index )
 {
 	// TODO
+	U_UNUSED(op_index);
 	return 0;
+}
+
+unsigned int VM::OpJump( unsigned int op_index )
+{
+	const Vm_Op& op= program_.code[ op_index ];
+
+	return op.param.jump_op_index;
+}
+
+unsigned int VM::OpJumpIfZero( unsigned int op_index )
+{
+	const Vm_Op& op= program_.code[ op_index ];
+
+	U_bool condition;
+	stack_pointer_-= sizeof(U_bool);
+	std::memcpy(
+		&condition,
+		&*stack_pointer_,
+		sizeof(U_bool) );
+
+	if( !condition )
+		return op.param.jump_op_index;
+	return op_index + 1;
+}
+
+unsigned int VM::OpJumpIfNotZero( unsigned int op_index )
+{
+	const Vm_Op& op= program_.code[ op_index ];
+
+	U_bool condition;
+	stack_pointer_-= sizeof(U_bool);
+	std::memcpy(
+		&condition,
+		&*stack_pointer_,
+		sizeof(U_bool) );
+
+	if( condition )
+		return op.param.jump_op_index;
+	return op_index + 1;
 }
 
 unsigned int VM::OpStackPointerAdd( unsigned int op_index )
@@ -395,110 +570,6 @@ unsigned int VM::OpPushC64( unsigned int op_index )
 		&op.param.push_c_64,
 		sizeof(U_i32) );
 	stack_pointer_+= sizeof(U_i64);
-
-	return op_index + 1;
-}
-
-unsigned int VM::OpPushFromCallerStack8 ( unsigned int op_index )
-{
-	const Vm_Op& op= program_.code[ op_index ];
-
-	std::memcpy(
-		&*stack_pointer_,
-		(&*caller_frame_pos_) + op.param.caller_stack_operations_offset,
-		sizeof(U_i8) );
-	stack_pointer_+= sizeof(U_i8);
-
-	return op_index + 1;
-}
-
-unsigned int VM::OpPushFromCallerStack16( unsigned int op_index )
-{
-	const Vm_Op& op= program_.code[ op_index ];
-
-	std::memcpy(
-		&*stack_pointer_,
-		(&*caller_frame_pos_) + op.param.caller_stack_operations_offset,
-		sizeof(U_i16) );
-	stack_pointer_+= sizeof(U_i16);
-
-	return op_index + 1;
-}
-
-unsigned int VM::OpPushFromCallerStack32( unsigned int op_index )
-{
-	const Vm_Op& op= program_.code[ op_index ];
-
-	std::memcpy(
-		&*stack_pointer_,
-		(&*caller_frame_pos_) + op.param.caller_stack_operations_offset,
-		sizeof(U_i32) );
-	stack_pointer_+= sizeof(U_i32);
-
-	return op_index + 1;
-}
-
-unsigned int VM::OpPushFromCallerStack64( unsigned int op_index )
-{
-	const Vm_Op& op= program_.code[ op_index ];
-
-	std::memcpy(
-		&*stack_pointer_,
-		(&*caller_frame_pos_) + op.param.caller_stack_operations_offset,
-		sizeof(U_i64) );
-	stack_pointer_+= sizeof(U_i64);
-
-	return op_index + 1;
-}
-
-unsigned int VM::OpPopToCallerStack8 ( unsigned int op_index )
-{
-	const Vm_Op& op= program_.code[ op_index ];
-
-	stack_pointer_-= sizeof(U_i8);
-	std::memcpy(
-		(&*caller_frame_pos_) + op.param.caller_stack_operations_offset,
-		&*stack_pointer_,
-		sizeof(U_i8) );
-
-	return op_index + 1;
-}
-
-unsigned int VM::OpPopToCallerStack16( unsigned int op_index )
-{
-	const Vm_Op& op= program_.code[ op_index ];
-
-	stack_pointer_-= sizeof(U_i16);
-	std::memcpy(
-		(&*caller_frame_pos_) + op.param.caller_stack_operations_offset,
-		&*stack_pointer_,
-		sizeof(U_i16) );
-
-	return op_index + 1;
-}
-
-unsigned int VM::OpPopToCallerStack32( unsigned int op_index )
-{
-	const Vm_Op& op= program_.code[ op_index ];
-
-	stack_pointer_-= sizeof(U_i32);
-	std::memcpy(
-		(&*caller_frame_pos_) + op.param.caller_stack_operations_offset,
-		&*stack_pointer_,
-		sizeof(U_i32) );
-
-	return op_index + 1;
-}
-
-unsigned int VM::OpPopToCallerStack64( unsigned int op_index )
-{
-	const Vm_Op& op= program_.code[ op_index ];
-
-	stack_pointer_-= sizeof(U_i64);
-	std::memcpy(
-		(&*caller_frame_pos_) + op.param.caller_stack_operations_offset,
-		&*stack_pointer_,
-		sizeof(U_i64) );
 
 	return op_index + 1;
 }

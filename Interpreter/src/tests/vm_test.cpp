@@ -215,12 +215,100 @@ static void RetProgramWithArgsTest()
 	U_ASSERT( result == arg_a - arg_b );
 }
 
+static void ConditionsTest()
+{
+	const U_u32 arg_a= 764;
+	const U_u32 arg_b= 7584;
+
+	VmProgram program;
+
+	program.code.push_back( MakeNoOp() );
+
+	// Move args to stack
+	for( unsigned int i= 0; i < 2; i++ )
+	{
+		Vm_Op op;
+		op.type= Vm_Op::Type::PushFromCallerStack32;
+		op.param.caller_stack_operations_offset=
+			-(
+			sizeof(unsigned int) + // saved previous caller pointer.
+			sizeof(unsigned int) + // return address.
+			( 2 - i ) * sizeof(U_u32) // args
+			);
+
+		program.code.push_back( op );
+	}
+
+	// Compare
+	program.code.emplace_back( Vm_Op::Type::Less32u );
+
+	{ // Conditional jump
+		Vm_Op op{ Vm_Op::Type::JumpIfNotZero };
+		op.param.jump_op_index= program.code.size() + 1 + 3;
+
+		program.code.push_back( op );
+	}
+
+	// Return agr0 or arg1
+	for( unsigned int i= 0; i < 2; i++ )
+	{
+		Vm_Op push_op{ Vm_Op::Type::PushFromCallerStack32 };
+		push_op.param.caller_stack_operations_offset=
+			-(
+			sizeof(unsigned int) + // saved previous caller pointer.
+			sizeof(unsigned int) + // return address.
+			( 2 - i ) * sizeof(U_u32) // args
+			);
+
+		program.code.push_back( push_op );
+
+		Vm_Op pop_op{ Vm_Op::Type::PopToCallerStack32 };
+		pop_op.param.caller_stack_operations_offset=
+			-(
+			sizeof(unsigned int) + // saved previous caller pointer.
+			sizeof(unsigned int) + // return address.
+			sizeof(U_u32) * 2 + // args
+			sizeof(U_u32) // result
+			);
+
+		program.code.push_back( pop_op );
+		program.code.push_back( MakeRet() );
+	}
+
+	FuncEntry func;
+	func.func_number= 0;
+	func.name= ToProgramString( "max" );
+	func.return_type= U_FundamentalType::u32;
+	func.params.push_back(U_FundamentalType::u32);
+	func.params.push_back(U_FundamentalType::u32);
+	program.export_funcs.push_back( func );
+
+	VmProgram::FuncCallInfo call_info;
+	call_info.first_op_position= 1;
+	call_info.stack_frame_size= 16;
+	program.funcs_table.push_back( call_info );
+
+	std::sort( program.export_funcs.begin(), program.export_funcs.end() );
+
+	VM vm{ program };
+
+	U_u32 result;
+	VM::CallResult call_result= vm.CallRet( func.name, result, arg_a, arg_b );
+	U_ASSERT( call_result.ok );
+	U_ASSERT( result == std::max( arg_a, arg_b ) );
+
+	call_result= vm.CallRet( func.name, result, arg_b, arg_a );
+	U_ASSERT( call_result.ok );
+	U_ASSERT( result == std::max( arg_a, arg_b ) );
+}
+
 void RunVMTests()
 {
 	SimpleProgramTest();
 	SimpleRetProgramTest();
 	SimpleRetProgramTest2();
 	RetProgramWithArgsTest();
+	ConditionsTest();
 }
 
 } // namespace Interpreter

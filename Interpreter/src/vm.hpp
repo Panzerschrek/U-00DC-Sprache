@@ -18,6 +18,10 @@ struct Vm_Op
 
 		Syscall,
 
+		Jump,
+		JumpIfZero,
+		JumpIfNotZero,
+
 		StackPointerAdd,
 
 		// Push constant
@@ -138,6 +142,58 @@ struct Vm_Op
 		// 16 bit reduction
 		Conv16To8,
 
+		// ==
+		Equal8 ,
+		Equal16,
+		Equal32,
+		Equal64,
+
+		// !=
+		NotEqual8 ,
+		NotEqual16,
+		NotEqual32,
+		NotEqual64,
+
+		// <
+		Less8i ,
+		Less16i,
+		Less32i,
+		Less64i,
+		Less8u ,
+		Less16u,
+		Less32u,
+		Less64u,
+
+		// <=
+		LessEqual8i ,
+		LessEqual16i,
+		LessEqual32i,
+		LessEqual64i,
+		LessEqual8u ,
+		LessEqual16u,
+		LessEqual32u,
+		LessEqual64u,
+
+		// >
+		Greater8i ,
+		Greater16i,
+		Greater32i,
+		Greater64i,
+		Greater8u ,
+		Greater16u,
+		Greater32u,
+		Greater64u,
+
+		// >=
+		GreaterEqual8i ,
+		GreaterEqual16i,
+		GreaterEqual32i,
+		GreaterEqual64i,
+		GreaterEqual8u ,
+		GreaterEqual16u,
+		GreaterEqual32u,
+		GreaterEqual64u,
+
 		LastOp
 	};
 
@@ -163,10 +219,13 @@ struct Vm_Op
 
 		// Number of bytes, added to stack pointer
 		int stack_add_size;
+
+		unsigned int jump_op_index;
 	} param;
 };
 
 typedef void U_void;
+typedef bool U_bool;
 typedef std::int8_t   U_i8 ;
 typedef std::uint8_t  U_u8 ;
 typedef std::int16_t  U_i16;
@@ -180,6 +239,7 @@ enum class U_FundamentalType
 {
 	InvalidType,
 	Void,
+	Bool,
 	i8 ,
 	u8 ,
 	i16,
@@ -289,6 +349,10 @@ private:
 	unsigned int OpRet( unsigned int op_index );
 	unsigned int OpSysCall( unsigned int op_index );
 
+	unsigned int OpJump( unsigned int op_index );
+	unsigned int OpJumpIfZero( unsigned int op_index );
+	unsigned int OpJumpIfNotZero( unsigned int op_index );
+
 	unsigned int OpStackPointerAdd( unsigned int op_index );
 
 	unsigned int OpPushC8 ( unsigned int op_index );
@@ -296,18 +360,23 @@ private:
 	unsigned int OpPushC32( unsigned int op_index );
 	unsigned int OpPushC64( unsigned int op_index );
 
-	unsigned int OpPushFromCallerStack8 ( unsigned int op_index );
-	unsigned int OpPushFromCallerStack16( unsigned int op_index );
-	unsigned int OpPushFromCallerStack32( unsigned int op_index );
-	unsigned int OpPushFromCallerStack64( unsigned int op_index );
+	template<class T>
+	unsigned int PushFromLocalStackOpBase( unsigned int op_index );
 
-	unsigned int OpPopToCallerStack8 ( unsigned int op_index );
-	unsigned int OpPopToCallerStack16( unsigned int op_index );
-	unsigned int OpPopToCallerStack32( unsigned int op_index );
-	unsigned int OpPopToCallerStack64( unsigned int op_index );
+	template<class T>
+	unsigned int PopToLocalStackOpBase( unsigned int op_index );
+
+	template<class T>
+	unsigned int PushFromCallerStackOpBase( unsigned int op_index );
+
+	template<class T>
+	unsigned int PopToCallerStackOpBase( unsigned int op_index );
 
 	template<class T, class Func>
 	unsigned int BinaryOpBase( unsigned int op_index );
+
+	template<class T, class Func>
+	unsigned int ComparisonOpBase( unsigned int op_index );
 
 	template<class T, class Func>
 	unsigned int UnaryOpBase( unsigned int op_index );

@@ -94,10 +94,19 @@ private:
 enum class BinaryOperator
 {
 	None, // Special value - for end of binary operators chain.
+
 	Add,
 	Sub,
 	Div,
 	Mul,
+
+	Equal,
+	NotEqual,
+	Less,
+	LessEqual,
+	Greater,
+	GreaterEqual,
+
 	Last,
 };
 
@@ -283,7 +292,6 @@ public:
 
 	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
 
-private:
 	std::vector<Branch> branches_; // else if()
 };
 

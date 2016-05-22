@@ -30,6 +30,7 @@ struct TypeLinker<type>\
 };
 
 LINK_TYPES( U_void , Void )
+LINK_TYPES( U_bool , Bool )
 LINK_TYPES( U_i8 , i8  )
 LINK_TYPES( U_u8 , u8  )
 LINK_TYPES( U_i16, i16 )

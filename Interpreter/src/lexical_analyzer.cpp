@@ -33,7 +33,7 @@ static const FixedLexemsMap g_fixed_lexems[ g_max_fixed_lexem_size + 1 ]=
 		{ "/"_SpC, Lexem::Type::Slash },
 
 		{ "<"_SpC, Lexem::Type::CompareLess },
-		{ ">"_SpC, Lexem::Type::CommpareGreater },
+		{ ">"_SpC, Lexem::Type::CompareGreater },
 
 		{ "|"_SpC, Lexem::Type::Or },
 		{ "^"_SpC, Lexem::Type::Xor },

@@ -96,11 +96,19 @@ void PrintOperator( std::ostream& stream, BinaryOperator op )
 	const char* op_str= "";
 	switch( op )
 	{
+		case BinaryOperator::None: op_str= ""; break;
+
 		case BinaryOperator::Add: op_str= "+"; break;
 		case BinaryOperator::Sub: op_str= "-"; break;
 		case BinaryOperator::Mul: op_str= "*"; break;
 		case BinaryOperator::Div: op_str= "/"; break;
-		case BinaryOperator::None: op_str= ""; break;
+
+		case BinaryOperator::Equal: op_str= "=="; break;
+		case BinaryOperator::NotEqual: op_str= "!="; break;
+		case BinaryOperator::Less: op_str= "<"; break;
+		case BinaryOperator::LessEqual: op_str= "<="; break;
+		case BinaryOperator::Greater: op_str= ">"; break;
+		case BinaryOperator::GreaterEqual: op_str= ">="; break;
 
 		case BinaryOperator::Last: U_ASSERT(false); break;
 	};
