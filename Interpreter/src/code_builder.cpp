@@ -422,7 +422,21 @@ void CodeBuilder::BuildBlockCode(
 			ret_op.type= Vm_Op::Type::Ret;
 			result_.code.push_back( ret_op );
 		}
-	}
+		else if( const IfOperator* if_operator=
+			dynamic_cast<const IfOperator*>( block_element_ptr ) )
+		{
+			BuildIfOperator(
+				names,
+				*if_operator,
+				func_result_offset,
+				locals_stack_offset,
+				out_locals_stack_offset );
+		}
+		else
+		{
+			U_ASSERT(false);
+		}
+	} // for block elements
 
 	out_locals_stack_offset=
 		std::max(
@@ -771,6 +785,73 @@ U_FundamentalType CodeBuilder::BuildFuncCall(
 	result_.code.emplace_back( clear_args_op );
 
 	return func.return_type.fundamental;
+}
+
+void CodeBuilder::BuildIfOperator(
+	const NamesScope& names,
+	const IfOperator& if_operator,
+	unsigned int func_result_offset,
+	unsigned int locals_stack_offset,
+	unsigned int& out_locals_stack_offset )
+{
+	std::vector<unsigned int> condition_jump_operations_indeces( if_operator.branches_.size() );
+	std::vector<unsigned int> jump_from_branch_operations_indeces( if_operator.branches_.size() - 1 );
+
+	unsigned int i= 0;
+	for( const IfOperator::Branch& branch : if_operator.branches_ )
+	{
+		U_ASSERT( branch.condition || &branch == &if_operator.branches_.back() );
+
+		// Set jump point for previous condition jump
+		if( i != 0 )
+			result_.code[ condition_jump_operations_indeces[ i - 1 ] ].param.jump_op_index=
+				result_.code.size();
+
+		if( branch.condition )
+		{
+			U_FundamentalType condition_type=
+				BuildExpressionCode(
+					*branch.condition,
+					names );
+
+			if( condition_type != U_FundamentalType::Bool )
+			{
+				// TODO - register error
+			}
+
+			condition_jump_operations_indeces[i]= result_.code.size();
+			result_.code.emplace_back( Vm_Op::Type::JumpIfZero );
+		}
+
+		// TODO - handle stack size
+		BuildBlockCode(
+			*branch.block,
+			names,
+			func_result_offset,
+			locals_stack_offset,
+			out_locals_stack_offset );
+
+		// Jump from block to if-else end. Do not need for last blocks
+		if( &branch != &if_operator.branches_.back() )
+		{
+			jump_from_branch_operations_indeces[i]= result_.code.size();
+			result_.code.emplace_back( Vm_Op::Type::JumpIfZero );
+		}
+		i++;
+	}
+
+	unsigned int next_op_index= result_.code.size();
+
+	// Last if "else if" or "if"
+	if( if_operator.branches_.back().condition )
+	{
+		result_.code[ condition_jump_operations_indeces.back() ].param.jump_op_index=
+			next_op_index;
+	}
+
+	// Set jump point for blocks exit jumps
+	for( unsigned int op_index : jump_from_branch_operations_indeces )
+		result_.code[ op_index ].param.jump_op_index= next_op_index;
 }
 
 } //namespace Interpreter

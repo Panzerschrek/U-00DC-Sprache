@@ -292,7 +292,6 @@ public:
 
 	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
 
-private:
 	std::vector<Branch> branches_; // else if()
 };
 

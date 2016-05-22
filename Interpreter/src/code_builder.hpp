@@ -109,6 +109,13 @@ private:
 		const CallOperator& call_operator,
 		const NamesScope& names );
 
+	void BuildIfOperator(
+		const NamesScope& names,
+		const IfOperator& if_operator,
+		unsigned int func_result_offset,
+		unsigned int locals_stack_offset,
+		unsigned int& out_locals_stack_offset );
+
 private:
 	VmProgram result_;
 
