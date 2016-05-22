@@ -115,11 +115,36 @@ static void IfOperatorTest()
 	}
 }
 
+static void VariablesTest()
+{
+	static const char c_program_text[]=
+
+"\
+fn Foo( c : i32 ) : i32\
+{\
+	let x : i32 = c;\
+	let y : i32;\
+	return x * c + y;\
+}"
+;
+
+	VM vm{ BuildProgram( c_program_text ) };
+
+	U_i32 arg0= 100, func_result= 0;
+
+	const VM::CallResult call_result =
+		vm.CallRet( ToProgramString("Foo"), func_result, arg0 );
+	U_ASSERT( call_result.ok );
+
+	U_ASSERT( arg0 * arg0 == func_result );
+}
+
 void RunCodeBuilderTest()
 {
 	SimpleProgramTest();
 	FuncCallTest();
 	IfOperatorTest();
+	VariablesTest();
 }
 
 } // namespace Interpreter
