@@ -124,7 +124,10 @@ fn Foo( c : i32 ) : i32\
 {\
 	let x : i32 = c;\
 	let y : i32;\
-	return x * c + y;\
+	y= c;\
+	x= x - x;\
+	c= c * y;\
+	return y * c + x;\
 }"
 ;
 
@@ -136,7 +139,7 @@ fn Foo( c : i32 ) : i32\
 		vm.CallRet( ToProgramString("Foo"), func_result, arg0 );
 	U_ASSERT( call_result.ok );
 
-	U_ASSERT( arg0 * arg0 == func_result );
+	U_ASSERT( arg0 * arg0 * arg0 == func_result );
 }
 
 void RunCodeBuilderTest()

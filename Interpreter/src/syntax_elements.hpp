@@ -315,7 +315,6 @@ public:
 
 	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
 
-private:
 	BinaryOperatorsChainPtr l_value_;
 	BinaryOperatorsChainPtr r_value_;
 };

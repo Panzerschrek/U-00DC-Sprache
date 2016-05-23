@@ -41,7 +41,7 @@ const size_t g_fundamental_types_size[ size_t(U_FundamentalType::LastType) ]=
 
 const char* g_fundamental_types_names[ size_t(U_FundamentalType::LastType) ]=
 {
-	[ size_t(U_FundamentalType::InvalidType) ]= "InvalidTypr",
+	[ size_t(U_FundamentalType::InvalidType) ]= "InvalidType",
 	[ size_t(U_FundamentalType::Void) ]= "void",
 	[ size_t(U_FundamentalType::Bool) ]= "bool",
 	[ size_t(U_FundamentalType::i8 ) ]= "i8",
@@ -512,6 +512,74 @@ void CodeBuilder::BuildBlockCode(
 					inserted_variable->second.offset;
 
 				result_.code.push_back( init_var_op );
+			}
+			else if(
+				const AssignmentOperator* assignment_operator=
+				dynamic_cast<const AssignmentOperator*>( block_element_ptr ) )
+			{
+				const BinaryOperatorsChain& l_value= *assignment_operator->l_value_;
+				const BinaryOperatorsChain& r_value= *assignment_operator->r_value_;
+
+				U_ASSERT( l_value.components.size() >= 1 );
+
+				const NamedOperand* named_operand=
+					dynamic_cast<const NamedOperand*>( l_value.components[0].component.get() );
+
+				if( l_value.components.size() != 1 ||
+					!named_operand ||
+					!l_value.components[0].prefix_operators.empty() ||
+					!l_value.components[0].postfix_operators.empty() )
+				{
+					error_messages_.push_back( "Can not assign to r_value" );
+					throw ProgramError();
+				}
+
+				const NamesScope::NamesMap::value_type* variable_entry=
+					block_names.GetName( named_operand->name_ );
+				if( !variable_entry )
+				{
+					ReportNameNotFound( error_messages_, named_operand->name_ );
+					throw ProgramError();
+				}
+				const Variable& variable= variable_entry->second;
+
+				U_FundamentalType l_value_type=
+					BuildExpressionCode( r_value, block_names );
+
+				if( l_value_type != variable.type.fundamental )
+				{
+					ReportTypesMismatch( error_messages_, l_value_type, variable.type.fundamental );
+					throw ProgramError();
+				}
+
+				Vm_Op op;
+				if( variable.location == Variable::Location::FunctionArgument )
+				{
+					op.type=
+						Vm_Op::Type(
+							size_t(Vm_Op::Type::PopToCallerStack8) +
+							GetOpIndexOffsetForFundamentalType( variable.type.fundamental ) );
+					op.param.caller_stack_operations_offset= -int( variable.offset );
+				}
+				else if( variable.location == Variable::Location::Stack )
+				{
+					op.type=
+						Vm_Op::Type(
+							size_t(Vm_Op::Type::PopToLocalStack8) +
+							GetOpIndexOffsetForFundamentalType( variable.type.fundamental ) );
+					op.param.local_stack_operations_offset=variable.offset;
+				}
+				else if( variable.location == Variable::Location::Global )
+				{
+					error_messages_.push_back( "Can not assign to global variable" );
+					throw ProgramError();
+				}
+				else
+				{
+					U_ASSERT(false);
+				}
+
+				result_.code.push_back( op );
 			}
 			else if( const Block* inner_block=
 				dynamic_cast<const Block*>( block_element_ptr ) )
