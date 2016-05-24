@@ -749,7 +749,12 @@ U_FundamentalType CodeBuilder::BuildExpressionCode(
 			else if( const BracketExpression* bracket_expression=
 				dynamic_cast<const BracketExpression*>(&operand) )
 			{
-				BuildExpressionCode( *bracket_expression->expression_, names );
+				Type type;
+				type.kind= Type::Kind::Fundamental;
+				type.fundamental=
+					BuildExpressionCode( *bracket_expression->expression_, names );
+
+				types_stack.push_back( type );
 			}
 			else
 			{
