@@ -164,6 +164,15 @@ void ReportArgumentsCountMismatch(
 		std::to_string(expected) );
 }
 
+void ReportArithmeticOperationWithUnsupportedType(
+	std::vector<std::string>& error_messages,
+	U_FundamentalType type )
+{
+	error_messages.push_back(
+		"Expected numeric arguments for arithmetic operators. Supported 32 and 64 bit types. Got " +
+		std::string( g_fundamental_types_names[ size_t(type) ] ) );
+}
+
 } // namespace
 
 CodeBuilder::Type::Type()
@@ -492,7 +501,6 @@ void CodeBuilder::BuildBlockCode(
 					// TODO
 				}
 
-				// TODO - check redefinition
 				const NamesScope::NamesMap::value_type* inserted_variable=
 					block_names.AddName( variable_declaration->name, std::move(variable) );
 
@@ -768,7 +776,9 @@ U_FundamentalType CodeBuilder::BuildExpressionCode(
 				{
 					if( types_stack.back().kind != Type::Kind::Function )
 					{
-						// TODO - Register error
+						error_messages_.push_back(
+							"Can not call not function" );
+						throw ProgramError();
 					}
 
 					U_FundamentalType call_type=
@@ -804,7 +814,9 @@ U_FundamentalType CodeBuilder::BuildExpressionCode(
 					U_ASSERT( !types_stack.empty() );
 					if( types_stack.back().kind != Type::Kind::Fundamental )
 					{
-						// TODO - register error
+						error_messages_.push_back(
+							"Can not negate function" );
+						throw ProgramError();
 					}
 
 					U_FundamentalType type= types_stack.back().fundamental;
@@ -821,7 +833,8 @@ U_FundamentalType CodeBuilder::BuildExpressionCode(
 						op_type= Vm_Op::Type( size_t(op_type) + 3 );
 					else
 					{
-						// TODO - register error
+						ReportArithmeticOperationWithUnsupportedType( error_messages_, type );
+						throw ProgramError();
 					}
 
 					result_.code.emplace_back( op_type );
@@ -877,9 +890,7 @@ U_FundamentalType CodeBuilder::BuildExpressionCode(
 						op_type= Vm_Op::Type( size_t(op_type) + 3 );
 					else
 					{
-						error_messages_.push_back(
-							"Expected numeric arguments for arithmetic operators. Supported 32 and 64 bit types. Got " +
-							std::string( g_fundamental_types_names[ size_t(type0) ] ) );
+						ReportArithmeticOperationWithUnsupportedType( error_messages_, type0 );
 						throw ProgramError();
 					}
 
@@ -1071,7 +1082,6 @@ void CodeBuilder::BuildIfOperator(
 			result_.code.emplace_back( Vm_Op::Type::JumpIfZero );
 		}
 
-		// TODO - handle stack size
 		BuildBlockCode(
 			*branch.block,
 			names,
