@@ -75,10 +75,9 @@ static void SimpleRetProgramTest()
 		Vm_Op op;
 		op.type= Vm_Op::Type::PopToCallerStack8;
 		op.param.caller_stack_operations_offset=
-			-(
-			sizeof(unsigned int) + // saved previous caller pointer.
-			sizeof(unsigned int) + // return address.
-			sizeof(U_u8) // result
+			-int(
+				VM::c_saved_caller_frame_size_ +
+				sizeof(U_u8) // result
 			);
 
 		program.code.push_back( op );
@@ -118,10 +117,9 @@ static void SimpleRetProgramTest2()
 		Vm_Op op;
 		op.type= Vm_Op::Type::PopToCallerStack16;
 		op.param.caller_stack_operations_offset=
-			-(
-			sizeof(unsigned int) + // saved previous caller pointer.
-			sizeof(unsigned int) + // return address.
-			sizeof(U_u16) // result
+			-int(
+				VM::c_saved_caller_frame_size_ +
+				sizeof(U_u16) // result
 			);
 
 		program.code.push_back( op );
@@ -164,10 +162,9 @@ static void RetProgramWithArgsTest()
 		Vm_Op op;
 		op.type= Vm_Op::Type::PushFromCallerStack32;
 		op.param.caller_stack_operations_offset=
-			-(
-			sizeof(unsigned int) + // saved previous caller pointer.
-			sizeof(unsigned int) + // return address.
-			( 2 - i ) * sizeof(U_u32) // args
+			-int(
+				VM::c_saved_caller_frame_size_ +
+				( 2 - i ) * sizeof(U_u32) // args
 			);
 
 		program.code.push_back( op );
@@ -181,11 +178,10 @@ static void RetProgramWithArgsTest()
 		Vm_Op op;
 		op.type= Vm_Op::Type::PopToCallerStack32;
 		op.param.caller_stack_operations_offset=
-			-(
-			sizeof(unsigned int) + // saved previous caller pointer.
-			sizeof(unsigned int) + // return address.
-			sizeof(U_u32) * 2 + // args
-			sizeof(U_u32) // result
+			-int(
+				VM::c_saved_caller_frame_size_ +
+				sizeof(U_u32) * 2 + // args
+				sizeof(U_u32) // result
 			);
 
 		program.code.push_back( op );
@@ -230,10 +226,9 @@ static void ConditionsTest()
 		Vm_Op op;
 		op.type= Vm_Op::Type::PushFromCallerStack32;
 		op.param.caller_stack_operations_offset=
-			-(
-			sizeof(unsigned int) + // saved previous caller pointer.
-			sizeof(unsigned int) + // return address.
-			( 2 - i ) * sizeof(U_u32) // args
+			-int(
+				VM::c_saved_caller_frame_size_ +
+				( 2 - i ) * sizeof(U_u32) // args
 			);
 
 		program.code.push_back( op );
@@ -254,21 +249,19 @@ static void ConditionsTest()
 	{
 		Vm_Op push_op{ Vm_Op::Type::PushFromCallerStack32 };
 		push_op.param.caller_stack_operations_offset=
-			-(
-			sizeof(unsigned int) + // saved previous caller pointer.
-			sizeof(unsigned int) + // return address.
-			( 2 - i ) * sizeof(U_u32) // args
+			-int(
+				VM::c_saved_caller_frame_size_ +
+				( 2 - i ) * sizeof(U_u32) // args
 			);
 
 		program.code.push_back( push_op );
 
 		Vm_Op pop_op{ Vm_Op::Type::PopToCallerStack32 };
 		pop_op.param.caller_stack_operations_offset=
-			-(
-			sizeof(unsigned int) + // saved previous caller pointer.
-			sizeof(unsigned int) + // return address.
-			sizeof(U_u32) * 2 + // args
-			sizeof(U_u32) // result
+			-int(
+				VM::c_saved_caller_frame_size_ +
+				sizeof(U_u32) * 2 + // args
+				sizeof(U_u32) // result
 			);
 
 		program.code.push_back( pop_op );

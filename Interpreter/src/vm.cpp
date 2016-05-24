@@ -16,7 +16,7 @@ struct BitInverse
 };
 
 template<class T>
-unsigned int VM::PushFromLocalStackOpBase( unsigned int op_index )
+OpIndex VM::PushFromLocalStackOpBase( OpIndex op_index )
 {
 	const Vm_Op& op= program_.code[ op_index ];
 
@@ -30,7 +30,7 @@ unsigned int VM::PushFromLocalStackOpBase( unsigned int op_index )
 }
 
 template<class T>
-unsigned int VM::PopToLocalStackOpBase( unsigned int op_index )
+OpIndex VM::PopToLocalStackOpBase( OpIndex op_index )
 {
 	const Vm_Op& op= program_.code[ op_index ];
 
@@ -44,7 +44,7 @@ unsigned int VM::PopToLocalStackOpBase( unsigned int op_index )
 }
 
 template<class T>
-unsigned int VM::PushFromCallerStackOpBase( unsigned int op_index )
+OpIndex VM::PushFromCallerStackOpBase( OpIndex op_index )
 {
 	const Vm_Op& op= program_.code[ op_index ];
 
@@ -58,7 +58,7 @@ unsigned int VM::PushFromCallerStackOpBase( unsigned int op_index )
 }
 
 template<class T>
-unsigned int VM::PopToCallerStackOpBase( unsigned int op_index )
+OpIndex VM::PopToCallerStackOpBase( OpIndex op_index )
 {
 	const Vm_Op& op= program_.code[ op_index ];
 
@@ -72,7 +72,7 @@ unsigned int VM::PopToCallerStackOpBase( unsigned int op_index )
 }
 
 template<class T, class Func>
-unsigned int VM::BinaryOpBase( unsigned int op_index )
+OpIndex VM::BinaryOpBase( OpIndex op_index )
 {
 	T second;
 	T first;
@@ -102,7 +102,7 @@ unsigned int VM::BinaryOpBase( unsigned int op_index )
 }
 
 template<class T, class Func>
-unsigned int VM::ComparisonOpBase( unsigned int op_index )
+OpIndex VM::ComparisonOpBase( OpIndex op_index )
 {
 	T second;
 	T first;
@@ -132,7 +132,7 @@ unsigned int VM::ComparisonOpBase( unsigned int op_index )
 }
 
 template<class T, class Func>
-unsigned int VM::UnaryOpBase( unsigned int op_index )
+OpIndex VM::UnaryOpBase( OpIndex op_index )
 {
 	T operand;
 
@@ -153,7 +153,7 @@ unsigned int VM::UnaryOpBase( unsigned int op_index )
 }
 
 template<class From, class To>
-unsigned int VM::ConvertionOpBase( unsigned int op_index )
+OpIndex VM::ConvertionOpBase( OpIndex op_index )
 {
 	From from;
 	To to;
@@ -178,6 +178,10 @@ unsigned int VM::ConvertionOpBase( unsigned int op_index )
 const char* const VM::c_func_not_found_= "Function not found.";
 const char* const VM::c_invalid_return_type_= "Invalid return type.";
 const char* const VM::c_invalid_arguments_type_= "Invalid argument(s) type.";
+
+const unsigned int VM::c_saved_caller_frame_size_=
+	sizeof(VM::StackFrame::iterator) +
+	sizeof(OpIndex);
 
 const VM::VMOpPoiter VM::operations_[size_t( Vm_Op::Type::LastOp ) ]=
 {
@@ -375,9 +379,9 @@ bool VM::PushArgs(
 	return n == params.size();
 }
 
-void VM::OpLoop( unsigned int start_op_index )
+void VM::OpLoop( OpIndex start_op_index )
 {
-	unsigned int next_op_index= start_op_index;
+	OpIndex next_op_index= start_op_index;
 
 	while( next_op_index != 0 )
 	{
@@ -387,7 +391,7 @@ void VM::OpLoop( unsigned int start_op_index )
 	}
 }
 
-void VM::OpCallImpl( const VmProgram::FuncCallInfo& call_info, unsigned int return_index )
+void VM::OpCallImpl( const VmProgram::FuncCallInfo& call_info, OpIndex return_index )
 {
 	/* Stack frame of caller is.
 	Result.
@@ -398,11 +402,11 @@ void VM::OpCallImpl( const VmProgram::FuncCallInfo& call_info, unsigned int retu
 
 	// Save caller stack pointer of this function.
 	std::memcpy( &*stack_pointer_, &caller_frame_pos_, sizeof(caller_frame_pos_) );
-	stack_pointer_+= sizeof(unsigned int);
+	stack_pointer_+= sizeof(caller_frame_pos_);
 
 	// Push return address to stack.
-	std::memcpy( &*stack_pointer_, &return_index, sizeof(unsigned int) );
-	stack_pointer_+= sizeof(unsigned int);
+	std::memcpy( &*stack_pointer_, &return_index, sizeof(OpIndex) );
+	stack_pointer_+= sizeof(OpIndex);
 
 	// Now, caller stack pointer is stack pointer of this function.
 	caller_frame_pos_= stack_pointer_;
@@ -412,20 +416,20 @@ void VM::OpCallImpl( const VmProgram::FuncCallInfo& call_info, unsigned int retu
 	stack_pointer_= stack_frames_.back().begin();
 }
 
-unsigned int VM::OpNoOp( unsigned int op_index )
+OpIndex VM::OpNoOp( OpIndex op_index )
 {
 	return op_index + 1;
 }
 
-unsigned int VM::OpCall( unsigned int op_index )
+OpIndex VM::OpCall( OpIndex op_index )
 {
-	unsigned int func_number;
+	FuncNumber func_number;
 
-	stack_pointer_-= sizeof(unsigned int);
+	stack_pointer_-= sizeof(FuncNumber);
 	std::memcpy(
 		&func_number,
 		&*stack_pointer_,
-		sizeof(unsigned int) );
+		sizeof(FuncNumber) );
 
 	U_ASSERT( func_number < program_.funcs_table.size() );
 
@@ -437,7 +441,7 @@ unsigned int VM::OpCall( unsigned int op_index )
 	return call_info.first_op_position;
 }
 
-unsigned int VM::OpRet( unsigned int op_index )
+OpIndex VM::OpRet( OpIndex op_index )
 {
 	U_UNUSED(op_index);
 
@@ -445,20 +449,20 @@ unsigned int VM::OpRet( unsigned int op_index )
 	stack_frames_.pop_back();
 
 	// Pop return address.
-	unsigned int ret_op_index;
-	caller_frame_pos_-= sizeof(unsigned int);
+	OpIndex ret_op_index;
+	caller_frame_pos_-= sizeof(OpIndex);
 	std::memcpy(
 		&ret_op_index,
 		&*caller_frame_pos_,
-		sizeof(unsigned int) );
+		sizeof(OpIndex) );
 
 	// Pop old caller frame pos.
 	StackFrame::iterator old_caller_frame_pos;
-	caller_frame_pos_-= sizeof(unsigned int);
+	caller_frame_pos_-= sizeof(StackFrame::iterator);
 	std::memcpy(
 		&old_caller_frame_pos,
 		&*caller_frame_pos_,
-		sizeof(stack_pointer_) );
+		sizeof(StackFrame::iterator) );
 
 	// Restore all stack pointers.
 	stack_pointer_= caller_frame_pos_;
@@ -467,21 +471,21 @@ unsigned int VM::OpRet( unsigned int op_index )
 	return ret_op_index;
 }
 
-unsigned int VM::OpSysCall( unsigned int op_index )
+OpIndex VM::OpSysCall( OpIndex op_index )
 {
 	// TODO
 	U_UNUSED(op_index);
 	return 0;
 }
 
-unsigned int VM::OpJump( unsigned int op_index )
+OpIndex VM::OpJump( OpIndex op_index )
 {
 	const Vm_Op& op= program_.code[ op_index ];
 
 	return op.param.jump_op_index;
 }
 
-unsigned int VM::OpJumpIfZero( unsigned int op_index )
+OpIndex VM::OpJumpIfZero( OpIndex op_index )
 {
 	const Vm_Op& op= program_.code[ op_index ];
 
@@ -497,7 +501,7 @@ unsigned int VM::OpJumpIfZero( unsigned int op_index )
 	return op_index + 1;
 }
 
-unsigned int VM::OpJumpIfNotZero( unsigned int op_index )
+OpIndex VM::OpJumpIfNotZero( OpIndex op_index )
 {
 	const Vm_Op& op= program_.code[ op_index ];
 
@@ -513,7 +517,7 @@ unsigned int VM::OpJumpIfNotZero( unsigned int op_index )
 	return op_index + 1;
 }
 
-unsigned int VM::OpStackPointerAdd( unsigned int op_index )
+OpIndex VM::OpStackPointerAdd( OpIndex op_index )
 {
 	const Vm_Op& op= program_.code[ op_index ];
 
@@ -522,7 +526,7 @@ unsigned int VM::OpStackPointerAdd( unsigned int op_index )
 	return op_index + 1;
 }
 
-unsigned int VM::OpPushC8( unsigned int op_index )
+OpIndex VM::OpPushC8( OpIndex op_index )
 {
 	const Vm_Op& op= program_.code[ op_index ];
 
@@ -535,7 +539,7 @@ unsigned int VM::OpPushC8( unsigned int op_index )
 	return op_index + 1;
 }
 
-unsigned int VM::OpPushC16( unsigned int op_index )
+OpIndex VM::OpPushC16( OpIndex op_index )
 {
 	const Vm_Op& op= program_.code[ op_index ];
 
@@ -548,7 +552,7 @@ unsigned int VM::OpPushC16( unsigned int op_index )
 	return op_index + 1;
 }
 
-unsigned int VM::OpPushC32( unsigned int op_index )
+OpIndex VM::OpPushC32( OpIndex op_index )
 {
 	const Vm_Op& op= program_.code[ op_index ];
 
@@ -561,7 +565,7 @@ unsigned int VM::OpPushC32( unsigned int op_index )
 	return op_index + 1;
 }
 
-unsigned int VM::OpPushC64( unsigned int op_index )
+OpIndex VM::OpPushC64( OpIndex op_index )
 {
 	const Vm_Op& op= program_.code[ op_index ];
 

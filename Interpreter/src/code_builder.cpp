@@ -361,8 +361,7 @@ void CodeBuilder::BuildFuncCode(
 	NamesScope block_names( &global_names_ );
 
 	unsigned int args_offset= 0;
-	args_offset+=
-		sizeof(unsigned int) + sizeof(unsigned int);
+	args_offset+= VM::c_saved_caller_frame_size_;
 
 	unsigned int arg_n= arg_names.size() - 1;
 	for( auto it= func.args.rbegin(); it != func.args.rend(); it++, arg_n-- )
@@ -375,7 +374,7 @@ void CodeBuilder::BuildFuncCode(
 		if( var.type.kind == Type::Kind::Fundamental )
 			arg_size= g_fundamental_types_size[ size_t( var.type.fundamental ) ];
 		else
-			arg_size= sizeof(unsigned int);
+			arg_size= sizeof(FuncNumber);
 
 		args_offset+= arg_size;
 		var.offset= args_offset;
@@ -989,6 +988,9 @@ U_FundamentalType CodeBuilder::BuildFuncCall(
 	}
 
 	// Push func number
+	static_assert(
+		32/8 == sizeof(FuncNumber),
+		"You need push_c operation appropriate for FuncNumber type" );
 	Vm_Op push_func_op( Vm_Op::Type::PushC32 );
 	push_func_op.param.push_c_32= func_number;
 	result_.code.emplace_back( push_func_op );

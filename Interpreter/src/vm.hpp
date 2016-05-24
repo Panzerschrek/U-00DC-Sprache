@@ -6,6 +6,9 @@
 namespace Interpreter
 {
 
+typedef std::uint32_t OpIndex;
+typedef std::uint32_t FuncNumber;
+
 struct Vm_Op
 {
 	enum class Type : unsigned char
@@ -220,7 +223,7 @@ struct Vm_Op
 		// Number of bytes, added to stack pointer
 		int stack_add_size;
 
-		unsigned int jump_op_index;
+		OpIndex jump_op_index;
 	} param;
 };
 
@@ -255,7 +258,7 @@ enum class U_FundamentalType
 struct FuncEntry
 {
 	ProgramString name;
-	unsigned int func_number;
+	FuncNumber func_number;
 	std::vector<U_FundamentalType> params;
 	U_FundamentalType return_type;
 
@@ -278,7 +281,7 @@ struct VmProgram
 
 	struct FuncCallInfo
 	{
-		unsigned int first_op_position;
+		OpIndex first_op_position;
 		unsigned int stack_frame_size;
 	};
 
@@ -337,28 +340,28 @@ private:
 
 private:
 	void OpLoop( unsigned int start_op_index );
-	void OpCallImpl( const VmProgram::FuncCallInfo& call_info, unsigned int return_index );
+	void OpCallImpl( const VmProgram::FuncCallInfo& call_info, OpIndex return_index );
 
 	// Returns index of next op.
-	typedef unsigned (VM::* VMOpPoiter)( unsigned int op_index );
+	typedef OpIndex (VM::* VMOpPoiter)( OpIndex op_index );
 
 	static const VMOpPoiter operations_[size_t( Vm_Op::Type::LastOp ) ];
 
-	unsigned int OpNoOp( unsigned int op_index );
-	unsigned int OpCall( unsigned int op_index );
-	unsigned int OpRet( unsigned int op_index );
-	unsigned int OpSysCall( unsigned int op_index );
+	OpIndex OpNoOp( OpIndex op_index );
+	OpIndex OpCall( OpIndex op_index );
+	OpIndex OpRet( OpIndex op_index );
+	OpIndex OpSysCall( OpIndex op_index );
 
-	unsigned int OpJump( unsigned int op_index );
-	unsigned int OpJumpIfZero( unsigned int op_index );
-	unsigned int OpJumpIfNotZero( unsigned int op_index );
+	OpIndex OpJump( OpIndex op_index );
+	OpIndex OpJumpIfZero( OpIndex op_index );
+	OpIndex OpJumpIfNotZero( OpIndex op_index );
 
-	unsigned int OpStackPointerAdd( unsigned int op_index );
+	OpIndex OpStackPointerAdd( OpIndex op_index );
 
-	unsigned int OpPushC8 ( unsigned int op_index );
-	unsigned int OpPushC16( unsigned int op_index );
-	unsigned int OpPushC32( unsigned int op_index );
-	unsigned int OpPushC64( unsigned int op_index );
+	OpIndex OpPushC8 ( OpIndex op_index );
+	OpIndex OpPushC16( OpIndex op_index );
+	OpIndex OpPushC32( OpIndex op_index );
+	OpIndex OpPushC64( OpIndex op_index );
 
 	template<class T>
 	unsigned int PushFromLocalStackOpBase( unsigned int op_index );
@@ -396,6 +399,9 @@ private:
 
 	StackFrame::iterator caller_frame_pos_;
 	StackFrame::iterator stack_pointer_;
+
+public:
+	static const unsigned int c_saved_caller_frame_size_;
 };
 
 }
