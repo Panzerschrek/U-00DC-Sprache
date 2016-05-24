@@ -145,6 +145,12 @@ private:
 		unsigned int func_result_offset,
 		BlockStackContext stack_context );
 
+	void BuildWhileOperator(
+		const NamesScope& names,
+		const WhileOperator& while_operator,
+		unsigned int func_result_offset,
+		BlockStackContext stack_context );
+
 private:
 	unsigned int error_count_= 0;
 	std::vector<std::string> error_messages_;

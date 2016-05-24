@@ -257,7 +257,6 @@ public:
 
 	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
 
-private:
 	const BinaryOperatorsChainPtr condition_;
 	const BlockPtr block_;
 };

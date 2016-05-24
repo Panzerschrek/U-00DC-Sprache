@@ -663,8 +663,17 @@ void CodeBuilder::BuildBlockCode(
 				dynamic_cast<const IfOperator*>( block_element_ptr ) )
 			{
 				BuildIfOperator(
-					names,
+					block_names,
 					*if_operator,
+					func_result_offset,
+					stack_context );
+			}
+			else if( const WhileOperator* while_operator=
+				dynamic_cast<const WhileOperator*>( block_element_ptr ) )
+			{
+				BuildWhileOperator(
+					block_names,
+					*while_operator,
 					func_result_offset,
 					stack_context );
 			}
@@ -1109,6 +1118,45 @@ void CodeBuilder::BuildIfOperator(
 	// Set jump point for blocks exit jumps
 	for( unsigned int op_index : jump_from_branch_operations_indeces )
 		result_.code[ op_index ].param.jump_op_index= next_op_index;
+}
+
+void CodeBuilder::BuildWhileOperator(
+	const NamesScope& names,
+	const WhileOperator& while_operator,
+	unsigned int func_result_offset,
+	BlockStackContext stack_context )
+{
+	unsigned int while_start_op_position= result_.code.size();
+
+	U_FundamentalType condition_type=
+		BuildExpressionCode(
+			*while_operator.condition_,
+			names );
+
+	if( condition_type != U_FundamentalType::Bool )
+	{
+		ReportTypesMismatch( error_messages_, condition_type, U_FundamentalType::Bool );
+		throw ProgramError();
+	}
+
+	// Exit from loop, if condition is false.
+	unsigned int jump_if_condition_is_false_operation_index= result_.code.size();
+	result_.code.emplace_back( Vm_Op::Type::JumpIfZero );
+
+	BuildBlockCode(
+		*while_operator.block_,
+		names,
+		func_result_offset,
+		stack_context );
+
+	// Jump to condition calculation.
+	Vm_Op jump_op( Vm_Op::Type::Jump );
+	jump_op.param.jump_op_index= while_start_op_position;
+	result_.code.push_back( jump_op );
+
+	// Setup jump point for conditional jump.
+	result_.code[ jump_if_condition_is_false_operation_index ].param.jump_op_index=
+		result_.code.size();
 }
 
 } //namespace Interpreter
