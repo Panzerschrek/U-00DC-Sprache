@@ -142,12 +142,49 @@ fn Foo( c : i32 ) : i32\
 	U_ASSERT( arg0 * arg0 * arg0 == func_result );
 }
 
+static void StackVariablesPlacementTest()
+{
+	static const char c_program_text[]=
+
+"\
+fn Foo( x : i32 ) : i32\
+{\
+	let a : i32= x;\
+	{\
+		let unused_b : bool;\
+		let b : i32 = a;\
+		{\
+			{\
+				let AA : i32; let BB : i32; let CC : i32; let DD : i64;  let EE : bool;\
+			}\
+			let c : i32 = b;\
+			let unused_c : i64;\
+			{\
+				return c;\
+			}\
+		}\
+	}\
+}"
+;
+
+	VM vm{ BuildProgram( c_program_text ) };
+
+	U_i32 arg0= 1488, func_result= 0;
+
+	const VM::CallResult call_result =
+		vm.CallRet( ToProgramString("Foo"), func_result, arg0 );
+	U_ASSERT( call_result.ok );
+
+	U_ASSERT( arg0 == func_result );
+}
+
 void RunCodeBuilderTest()
 {
 	SimpleProgramTest();
 	FuncCallTest();
 	IfOperatorTest();
 	VariablesTest();
+	StackVariablesPlacementTest();
 }
 
 } // namespace Interpreter

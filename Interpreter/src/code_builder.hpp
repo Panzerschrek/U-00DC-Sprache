@@ -96,6 +96,27 @@ private:
 		}
 	};
 
+	// Class for locals variables offset calculation.
+	// Also, it calclats max needed stack size for locals.
+	class BlockStackContext final
+	{
+	public:
+		BlockStackContext();
+		BlockStackContext( BlockStackContext& parent_context );
+		~BlockStackContext();
+
+		void IncreaseStack( unsigned int size );
+
+		unsigned int GetStackSize() const;
+		unsigned int GetMaxReachedStackSize() const;
+
+	private:
+		BlockStackContext* const parent_context_;
+
+		unsigned int stack_size_;
+		unsigned int max_reached_stack_size_;
+	};
+
 private:
 	void BuildFuncCode(
 		const Function& func,
@@ -106,8 +127,7 @@ private:
 		const Block& block,
 		const NamesScope& names,
 		unsigned int func_result_offset,
-		unsigned int locals_stack_offset,
-		unsigned int& out_locals_stack_offset );
+		BlockStackContext stack_context );
 
 	U_FundamentalType BuildExpressionCode(
 		const BinaryOperatorsChain& expression,
@@ -123,8 +143,7 @@ private:
 		const NamesScope& names,
 		const IfOperator& if_operator,
 		unsigned int func_result_offset,
-		unsigned int locals_stack_offset,
-		unsigned int& out_locals_stack_offset );
+		BlockStackContext stack_context );
 
 private:
 	unsigned int error_count_= 0;

@@ -230,6 +230,46 @@ const CodeBuilder::NamesScope::NamesMap::value_type*
 	return nullptr;
 }
 
+CodeBuilder::BlockStackContext::BlockStackContext()
+	: parent_context_(nullptr)
+	, stack_size_(0)
+	, max_reached_stack_size_(0)
+{}
+
+CodeBuilder::BlockStackContext::BlockStackContext( BlockStackContext& parent_context )
+	: parent_context_( &parent_context )
+	, stack_size_( parent_context.stack_size_ )
+	, max_reached_stack_size_( parent_context.stack_size_ )
+{}
+
+CodeBuilder::BlockStackContext::~BlockStackContext()
+{
+	if( parent_context_ )
+	{
+		parent_context_->max_reached_stack_size_=
+			std::max(
+				parent_context_->max_reached_stack_size_,
+				std::max(
+					max_reached_stack_size_,
+					stack_size_ ) );
+	}
+}
+
+void CodeBuilder::BlockStackContext::IncreaseStack( unsigned int size )
+{
+	stack_size_+= size;
+}
+
+unsigned int CodeBuilder::BlockStackContext::GetStackSize() const
+{
+	return stack_size_;
+}
+
+unsigned int CodeBuilder::BlockStackContext::GetMaxReachedStackSize() const
+{
+	return max_reached_stack_size_;
+}
+
 CodeBuilder::CodeBuilder()
 {
 }
@@ -401,15 +441,15 @@ void CodeBuilder::BuildFuncCode(
 	// First instruction - stack increasing.
 	result_.code.emplace_back( Vm_Op::Type::StackPointerAdd );
 
-	unsigned int locals_offset= 0;
-	unsigned int needed_stack_size;
-	BuildBlockCode( block, block_names, func_result_offset, locals_offset, needed_stack_size );
+	BlockStackContext block_stack_context;
+	BuildBlockCode( block, block_names, func_result_offset, block_stack_context );
 
 	// Stack extension instruction - move stack for expression evaluation above local variables.
-	result_.code[ func_entry.first_op_position ].param.stack_add_size= needed_stack_size;
+	result_.code[ func_entry.first_op_position ].param.stack_add_size=
+		block_stack_context.GetMaxReachedStackSize();
 
 	// TODO - add space for expression evaluation.
-	needed_stack_size+= 256;
+	unsigned int needed_stack_size= block_stack_context.GetMaxReachedStackSize() + 256;
 
 	func_entry.stack_frame_size= needed_stack_size;
 	result_.funcs_table.emplace_back( std::move( func_entry ) );
@@ -419,12 +459,9 @@ void CodeBuilder::BuildBlockCode(
 	const Block& block,
 	const NamesScope& names,
 	unsigned int func_result_offset,
-	unsigned int locals_stack_offset,
-	unsigned int& out_locals_stack_offset )
+	BlockStackContext stack_context )
 {
 	NamesScope block_names( &names );
-
-	unsigned int max_inner_block_stack_offset= 0;
 
 	for( const IBlockElementPtr& block_element : block.elements_ )
 	{
@@ -446,10 +483,10 @@ void CodeBuilder::BuildBlockCode(
 				}
 				variable.type.kind= Type::Kind::Fundamental;
 				variable.type.fundamental= it->second;
-				variable.offset= locals_stack_offset;
+				variable.offset= stack_context.GetStackSize();
 
 				if( variable.type.kind == Type::Kind::Fundamental )
-					locals_stack_offset+= g_fundamental_types_size[ size_t( variable.type.fundamental ) ];
+					stack_context.IncreaseStack( g_fundamental_types_size[ size_t( variable.type.fundamental ) ] );
 				else
 				{
 					// TODO
@@ -583,18 +620,11 @@ void CodeBuilder::BuildBlockCode(
 			else if( const Block* inner_block=
 				dynamic_cast<const Block*>( block_element_ptr ) )
 			{
-				unsigned int inner_block_stack_offset;
 				BuildBlockCode(
 					*inner_block,
 					block_names,
 					func_result_offset,
-					locals_stack_offset,
-					inner_block_stack_offset );
-
-				max_inner_block_stack_offset=
-					std::max(
-						max_inner_block_stack_offset,
-						inner_block_stack_offset );
+					stack_context );
 			}
 			else if( const ReturnOperator* return_operator=
 				dynamic_cast<const ReturnOperator*>( block_element_ptr ) )
@@ -628,8 +658,7 @@ void CodeBuilder::BuildBlockCode(
 					names,
 					*if_operator,
 					func_result_offset,
-					locals_stack_offset,
-					out_locals_stack_offset );
+					stack_context );
 			}
 			else
 			{
@@ -641,11 +670,6 @@ void CodeBuilder::BuildBlockCode(
 			error_count_++;
 		}
 	} // for block elements
-
-	out_locals_stack_offset=
-		std::max(
-			locals_stack_offset,
-			max_inner_block_stack_offset );
 }
 
 U_FundamentalType CodeBuilder::BuildExpressionCode(
@@ -1010,8 +1034,7 @@ void CodeBuilder::BuildIfOperator(
 	const NamesScope& names,
 	const IfOperator& if_operator,
 	unsigned int func_result_offset,
-	unsigned int locals_stack_offset,
-	unsigned int& out_locals_stack_offset )
+	BlockStackContext stack_context )
 {
 	std::vector<unsigned int> condition_jump_operations_indeces( if_operator.branches_.size() );
 	std::vector<unsigned int> jump_from_branch_operations_indeces( if_operator.branches_.size() - 1 );
@@ -1048,8 +1071,7 @@ void CodeBuilder::BuildIfOperator(
 			*branch.block,
 			names,
 			func_result_offset,
-			locals_stack_offset,
-			out_locals_stack_offset );
+			stack_context );
 
 		// Jump from block to if-else end. Do not need for last blocks
 		if( &branch != &if_operator.branches_.back() )
