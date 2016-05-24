@@ -684,6 +684,33 @@ void CodeBuilder::BuildBlockCode(
 					function_context,
 					stack_context );
 			}
+			else if( dynamic_cast<const BreakOperator*>( block_element_ptr ) )
+			{
+				if( function_context.while_frames.empty() )
+				{
+					error_messages_.push_back( "break outside while loop" );
+					throw ProgramError();
+				}
+
+				function_context.while_frames.back().break_operations_indeces.push_back(
+					result_.code.size() );
+
+				result_.code.emplace_back( Vm_Op::Type::Jump );
+			}
+			else if( dynamic_cast<const ContinueOperator*>( block_element_ptr ) )
+			{
+				if( function_context.while_frames.empty() )
+				{
+					error_messages_.push_back( "continue outside while loop" );
+					throw ProgramError();
+				}
+
+				Vm_Op op( Vm_Op::Type::Jump );
+				op.param.jump_op_index=
+					function_context.while_frames.back().first_while_op_index;
+
+				result_.code.push_back( op );
+			}
 			else
 			{
 				U_ASSERT(false);
@@ -1133,7 +1160,9 @@ void CodeBuilder::BuildWhileOperator(
 	FunctionContext& function_context,
 	BlockStackContext stack_context )
 {
-	unsigned int while_start_op_position= result_.code.size();
+	function_context.while_frames.emplace_back();
+
+	function_context.while_frames.back().first_while_op_index= result_.code.size();
 
 	U_FundamentalType condition_type=
 		BuildExpressionCode(
@@ -1158,12 +1187,22 @@ void CodeBuilder::BuildWhileOperator(
 
 	// Jump to condition calculation.
 	Vm_Op jump_op( Vm_Op::Type::Jump );
-	jump_op.param.jump_op_index= while_start_op_position;
+	jump_op.param.jump_op_index= function_context.while_frames.back().first_while_op_index;
 	result_.code.push_back( jump_op );
 
 	// Setup jump point for conditional jump.
 	result_.code[ jump_if_condition_is_false_operation_index ].param.jump_op_index=
 		result_.code.size();
+
+	// Setup jump point for all "break".
+	for( OpIndex op_index : function_context.while_frames.back().break_operations_indeces )
+	{
+		Vm_Op& op= result_.code[ op_index ];
+		U_ASSERT( op.type == Vm_Op::Type::Jump );
+		op.param.jump_op_index= result_.code.size();
+	}
+
+	function_context.while_frames.pop_back();
 }
 
 } //namespace Interpreter

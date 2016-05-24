@@ -126,6 +126,7 @@ private:
 		{
 			// For "continue".
 			OpIndex first_while_op_index;
+			// Stored "break" operations indeces.
 			std::vector<OpIndex> break_operations_indeces;
 		};
 
