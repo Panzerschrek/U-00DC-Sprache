@@ -178,6 +178,107 @@ fn Foo( x : i32 ) : i32\
 	U_ASSERT( arg0 == func_result );
 }
 
+static void WhileOperatorTest()
+{
+	static const char c_program_text[]=
+
+"fn Factorial(x : u32, one : u32) : u32\
+{\
+	let result : u32 = one;\
+	let i : u32= one;\
+	while( i <= x )\
+	{\
+		while( x != x ){}\
+		result= result * i;\
+		i= i + one;\
+	}\
+	return result;\
+}"
+;
+
+	VM vm{ BuildProgram( c_program_text ) };
+
+	for( U_u32 i= 1, expected_result= 1; i < 13; i++ )
+	{
+		expected_result*= i;
+
+		U_u32 one= 1, func_result;
+
+		const VM::CallResult call_result =
+			vm.CallRet( ToProgramString("Factorial"), func_result, i, one );
+		U_ASSERT( call_result.ok );
+
+		U_ASSERT( func_result == expected_result );
+	}
+}
+
+static void BreakOperatorTest()
+{
+	static const char c_program_text[]=
+
+"\
+fn Foo( c : i32 ) : i32\
+{\
+	while( c == c )\
+	{\
+		if( c * c < c + c ) { break; }\
+		return c + c / c;\
+	}\
+	return c + c + c;\
+}"
+;
+
+	VM vm{ BuildProgram( c_program_text ) };
+
+	U_i32 arg0, func_result= 0;
+	VM::CallResult call_result;
+
+	arg0= 1;
+	call_result= vm.CallRet( ToProgramString("Foo"), func_result, arg0 );
+	U_ASSERT( call_result.ok );
+	U_ASSERT( func_result == 3);
+
+	arg0= 3;
+	call_result= vm.CallRet( ToProgramString("Foo"), func_result, arg0 );
+	U_ASSERT( call_result.ok );
+	U_ASSERT( func_result == 4);
+}
+
+static void ContinueOperatorTest()
+{
+	static const char c_program_text[]=
+
+"fn Factorial(x : u32, one : u32) : u32\
+{\
+	let result : u32 = one;\
+	let i : u32= one;\
+	while( one == one )\
+	{\
+		result= result * i;\
+		i= i + one;\
+		if( i <= x ) { continue; }\
+		break;\
+	}\
+	return result;\
+}"
+;
+
+	VM vm{ BuildProgram( c_program_text ) };
+
+	for( U_u32 i= 1, expected_result= 1; i < 13; i++ )
+	{
+		expected_result*= i;
+
+		U_u32 one= 1, func_result;
+
+		const VM::CallResult call_result =
+			vm.CallRet( ToProgramString("Factorial"), func_result, i, one );
+		U_ASSERT( call_result.ok );
+
+		U_ASSERT( func_result == expected_result );
+	}
+}
+
 void RunCodeBuilderTest()
 {
 	SimpleProgramTest();
@@ -185,6 +286,9 @@ void RunCodeBuilderTest()
 	IfOperatorTest();
 	VariablesTest();
 	StackVariablesPlacementTest();
+	WhileOperatorTest();
+	BreakOperatorTest();
+	ContinueOperatorTest();
 }
 
 } // namespace Interpreter

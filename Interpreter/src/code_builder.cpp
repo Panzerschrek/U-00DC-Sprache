@@ -440,9 +440,11 @@ void CodeBuilder::BuildFuncCode(
 		}
 	}
 
-	unsigned int func_result_offset=
+	FunctionContext function_context;
+	function_context.result_offset=
 		args_offset +
 		g_fundamental_types_size[ size_t(func.return_type.fundamental) ];
+	function_context.result_type= func.return_type.fundamental;
 
 	VmProgram::FuncCallInfo func_entry;
 	func_entry.first_op_position= result_.code.size();
@@ -451,7 +453,7 @@ void CodeBuilder::BuildFuncCode(
 	result_.code.emplace_back( Vm_Op::Type::StackPointerAdd );
 
 	BlockStackContext block_stack_context;
-	BuildBlockCode( block, block_names, func_result_offset, block_stack_context );
+	BuildBlockCode( block, block_names, function_context, block_stack_context );
 
 	// Stack extension instruction - move stack for expression evaluation above local variables.
 	result_.code[ func_entry.first_op_position ].param.stack_add_size=
@@ -467,7 +469,7 @@ void CodeBuilder::BuildFuncCode(
 void CodeBuilder::BuildBlockCode(
 	const Block& block,
 	const NamesScope& names,
-	unsigned int func_result_offset,
+	FunctionContext& function_context,
 	BlockStackContext stack_context )
 {
 	NamesScope block_names( &names );
@@ -631,7 +633,7 @@ void CodeBuilder::BuildBlockCode(
 				BuildBlockCode(
 					*inner_block,
 					block_names,
-					func_result_offset,
+					function_context,
 					stack_context );
 			}
 			else if( const ReturnOperator* return_operator=
@@ -643,14 +645,19 @@ void CodeBuilder::BuildBlockCode(
 						BuildExpressionCode(
 							*return_operator->expression_,
 							block_names );
-					// TODO - check expression and func return type
+
+					if( expression_type != function_context.result_type )
+					{
+						ReportTypesMismatch( error_messages_, expression_type, function_context.result_type );
+						throw ProgramError();
+					}
 
 					Vm_Op op{
 						Vm_Op::Type(
 							size_t(Vm_Op::Type::PopToCallerStack8) +
 							GetOpIndexOffsetForFundamentalType( expression_type ) ) };
 
-					op.param.caller_stack_operations_offset= -int( func_result_offset );
+					op.param.caller_stack_operations_offset= -int( function_context.result_offset );
 
 					result_.code.push_back( op );
 				}
@@ -663,10 +670,46 @@ void CodeBuilder::BuildBlockCode(
 				dynamic_cast<const IfOperator*>( block_element_ptr ) )
 			{
 				BuildIfOperator(
-					names,
+					block_names,
 					*if_operator,
-					func_result_offset,
+					function_context,
 					stack_context );
+			}
+			else if( const WhileOperator* while_operator=
+				dynamic_cast<const WhileOperator*>( block_element_ptr ) )
+			{
+				BuildWhileOperator(
+					block_names,
+					*while_operator,
+					function_context,
+					stack_context );
+			}
+			else if( dynamic_cast<const BreakOperator*>( block_element_ptr ) )
+			{
+				if( function_context.while_frames.empty() )
+				{
+					error_messages_.push_back( "break outside while loop" );
+					throw ProgramError();
+				}
+
+				function_context.while_frames.back().break_operations_indeces.push_back(
+					result_.code.size() );
+
+				result_.code.emplace_back( Vm_Op::Type::Jump );
+			}
+			else if( dynamic_cast<const ContinueOperator*>( block_element_ptr ) )
+			{
+				if( function_context.while_frames.empty() )
+				{
+					error_messages_.push_back( "continue outside while loop" );
+					throw ProgramError();
+				}
+
+				Vm_Op op( Vm_Op::Type::Jump );
+				op.param.jump_op_index=
+					function_context.while_frames.back().first_while_op_index;
+
+				result_.code.push_back( op );
 			}
 			else
 			{
@@ -1049,7 +1092,7 @@ U_FundamentalType CodeBuilder::BuildFuncCall(
 void CodeBuilder::BuildIfOperator(
 	const NamesScope& names,
 	const IfOperator& if_operator,
-	unsigned int func_result_offset,
+	FunctionContext& function_context,
 	BlockStackContext stack_context )
 {
 	std::vector<unsigned int> condition_jump_operations_indeces( if_operator.branches_.size() );
@@ -1085,7 +1128,7 @@ void CodeBuilder::BuildIfOperator(
 		BuildBlockCode(
 			*branch.block,
 			names,
-			func_result_offset,
+			function_context,
 			stack_context );
 
 		// Jump from block to if-else end. Do not need for last blocks
@@ -1109,6 +1152,57 @@ void CodeBuilder::BuildIfOperator(
 	// Set jump point for blocks exit jumps
 	for( unsigned int op_index : jump_from_branch_operations_indeces )
 		result_.code[ op_index ].param.jump_op_index= next_op_index;
+}
+
+void CodeBuilder::BuildWhileOperator(
+	const NamesScope& names,
+	const WhileOperator& while_operator,
+	FunctionContext& function_context,
+	BlockStackContext stack_context )
+{
+	function_context.while_frames.emplace_back();
+
+	function_context.while_frames.back().first_while_op_index= result_.code.size();
+
+	U_FundamentalType condition_type=
+		BuildExpressionCode(
+			*while_operator.condition_,
+			names );
+
+	if( condition_type != U_FundamentalType::Bool )
+	{
+		ReportTypesMismatch( error_messages_, condition_type, U_FundamentalType::Bool );
+		throw ProgramError();
+	}
+
+	// Exit from loop, if condition is false.
+	unsigned int jump_if_condition_is_false_operation_index= result_.code.size();
+	result_.code.emplace_back( Vm_Op::Type::JumpIfZero );
+
+	BuildBlockCode(
+		*while_operator.block_,
+		names,
+		function_context,
+		stack_context );
+
+	// Jump to condition calculation.
+	Vm_Op jump_op( Vm_Op::Type::Jump );
+	jump_op.param.jump_op_index= function_context.while_frames.back().first_while_op_index;
+	result_.code.push_back( jump_op );
+
+	// Setup jump point for conditional jump.
+	result_.code[ jump_if_condition_is_false_operation_index ].param.jump_op_index=
+		result_.code.size();
+
+	// Setup jump point for all "break".
+	for( OpIndex op_index : function_context.while_frames.back().break_operations_indeces )
+	{
+		Vm_Op& op= result_.code[ op_index ];
+		U_ASSERT( op.type == Vm_Op::Type::Jump );
+		op.param.jump_op_index= result_.code.size();
+	}
+
+	function_context.while_frames.pop_back();
 }
 
 } //namespace Interpreter

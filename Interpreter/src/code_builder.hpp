@@ -117,6 +117,22 @@ private:
 		unsigned int max_reached_stack_size_;
 	};
 
+	struct FunctionContext
+	{
+		unsigned int result_offset;
+		U_FundamentalType result_type;
+
+		struct WhileFrame
+		{
+			// For "continue".
+			OpIndex first_while_op_index;
+			// Stored "break" operations indeces.
+			std::vector<OpIndex> break_operations_indeces;
+		};
+
+		std::vector<WhileFrame> while_frames;
+	};
+
 private:
 	void BuildFuncCode(
 		const Function& func,
@@ -126,7 +142,7 @@ private:
 	void BuildBlockCode(
 		const Block& block,
 		const NamesScope& names,
-		unsigned int func_result_offset,
+		FunctionContext& function_context,
 		BlockStackContext stack_context );
 
 	U_FundamentalType BuildExpressionCode(
@@ -142,7 +158,13 @@ private:
 	void BuildIfOperator(
 		const NamesScope& names,
 		const IfOperator& if_operator,
-		unsigned int func_result_offset,
+		FunctionContext& function_context,
+		BlockStackContext stack_context );
+
+	void BuildWhileOperator(
+		const NamesScope& names,
+		const WhileOperator& while_operator,
+		FunctionContext& function_context,
 		BlockStackContext stack_context );
 
 private:
