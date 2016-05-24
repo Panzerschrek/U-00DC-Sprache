@@ -36,6 +36,8 @@
 		<Unit filename="src\code_builder.hpp" />
 		<Unit filename="src\inverse_polish_notation.cpp" />
 		<Unit filename="src\inverse_polish_notation.hpp" />
+		<Unit filename="src\keywords.cpp" />
+		<Unit filename="src\keywords.hpp" />
 		<Unit filename="src\lexical_analyzer.cpp" />
 		<Unit filename="src\lexical_analyzer.hpp" />
 		<Unit filename="src\main.cpp" />

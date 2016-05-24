@@ -1,22 +1,9 @@
 #include "assert.hpp"
+#include "keywords.hpp"
 #include "syntax_analyzer.hpp"
-#include <iostream>
+
 namespace Interpreter
 {
-
-namespace Keywords
-{
-
-const ProgramString fn= ToProgramString( "fn" );
-const ProgramString let= ToProgramString( "let" );
-const ProgramString return_= ToProgramString( "return" );
-const ProgramString while_= ToProgramString( "while" );
-const ProgramString break_= ToProgramString( "break" );
-const ProgramString continue_= ToProgramString( "continue" );
-const ProgramString if_= ToProgramString( "if" );
-const ProgramString else_= ToProgramString( "else" );
-
-}
 
 // Prototypes.
 static BlockPtr ParseBlock(
@@ -256,7 +243,7 @@ static VariableDeclarationPtr ParseVariableDeclaration(
 	Lexems::const_iterator& it,
 	const Lexems::const_iterator it_end )
 {
-	U_ASSERT( it->type == Lexem::Type::Identifier && it->text == Keywords::let );
+	U_ASSERT( it->type == Lexem::Type::Identifier && it->text == Keywords::let_ );
 	U_ASSERT( it < it_end );
 
 	++it;
@@ -557,7 +544,7 @@ static BlockPtr ParseBlock(
 		else if( it->type == Lexem::Type::BraceRight )
 			break;
 
-		else if( it->type == Lexem::Type::Identifier && it->text == Keywords::let )
+		else if( it->type == Lexem::Type::Identifier && it->text == Keywords::let_ )
 			elements.emplace_back( ParseVariableDeclaration( error_messages, it, it_end ) );
 
 		else if( it->type == Lexem::Type::Identifier && it->text == Keywords::return_ )
@@ -636,7 +623,7 @@ static IProgramElementPtr ParseFunction(
 	Lexems::const_iterator& it,
 	const Lexems::const_iterator it_end )
 {
-	U_ASSERT( it->text == Keywords::fn );
+	U_ASSERT( it->text == Keywords::fn_ );
 	U_ASSERT( it < it_end );
 
 	++it;
@@ -770,7 +757,7 @@ SyntaxAnalysisResult SyntaxAnalysis( const Lexems& lexems )
 
 		const Lexems::const_iterator prev_it= it;
 
-		if( lexem.type == Lexem::Type::Identifier && lexem.text == Keywords::fn )
+		if( lexem.type == Lexem::Type::Identifier && lexem.text == Keywords::fn_ )
 		{
 			if( IProgramElementPtr program_element= ParseFunction( result.error_messages, it, it_end ) )
 				result.program_elements.emplace_back( std::move( program_element ) );

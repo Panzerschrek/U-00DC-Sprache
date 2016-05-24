@@ -1,4 +1,5 @@
 #include "inverse_polish_notation.hpp"
+#include "keywords.hpp"
 
 #include "code_builder.hpp"
 
@@ -12,46 +13,46 @@ typedef std::map< ProgramString, U_FundamentalType > TypesMap;
 
 const TypesMap g_types_map=
 {
-	{ ToProgramString( "void" ), U_FundamentalType::Void },
-	{ ToProgramString( "bool" ), U_FundamentalType::Bool },
-	{ ToProgramString( "i8"  ), U_FundamentalType::i8  },
-	{ ToProgramString( "u8"  ), U_FundamentalType::u8  },
-	{ ToProgramString( "i16" ), U_FundamentalType::i16 },
-	{ ToProgramString( "u16" ), U_FundamentalType::u16 },
-	{ ToProgramString( "i32" ), U_FundamentalType::i32 },
-	{ ToProgramString( "u32" ), U_FundamentalType::u32 },
-	{ ToProgramString( "i64" ), U_FundamentalType::i64 },
-	{ ToProgramString( "u64" ), U_FundamentalType::u64 },
+	{ Keyword( Keywords::void_ ), U_FundamentalType::Void },
+	{ Keyword( Keywords::bool_ ), U_FundamentalType::Bool },
+	{ Keyword( Keywords::i8_  ), U_FundamentalType::i8  },
+	{ Keyword( Keywords::u8_  ), U_FundamentalType::u8  },
+	{ Keyword( Keywords::i16_ ), U_FundamentalType::i16 },
+	{ Keyword( Keywords::u16_ ), U_FundamentalType::u16 },
+	{ Keyword( Keywords::i32_ ), U_FundamentalType::i32 },
+	{ Keyword( Keywords::u32_ ), U_FundamentalType::u32 },
+	{ Keyword( Keywords::i64_ ), U_FundamentalType::i64 },
+	{ Keyword( Keywords::u64_ ), U_FundamentalType::u64 },
 };
 
 const size_t g_fundamental_types_size[ size_t(U_FundamentalType::LastType) ]=
 {
 	[ size_t(U_FundamentalType::InvalidType) ]= 0,
 	[ size_t(U_FundamentalType::Void) ]= 0,
-	[ size_t(U_FundamentalType::Bool) ]= 1,
-	[ size_t(U_FundamentalType::i8 ) ]= 1,
-	[ size_t(U_FundamentalType::u8 ) ]= 1,
-	[ size_t(U_FundamentalType::i16) ]= 2,
-	[ size_t(U_FundamentalType::u16) ]= 2,
-	[ size_t(U_FundamentalType::i32) ]= 4,
-	[ size_t(U_FundamentalType::u32) ]= 4,
-	[ size_t(U_FundamentalType::i64) ]= 8,
-	[ size_t(U_FundamentalType::u64) ]= 8,
+	[ size_t(U_FundamentalType::Bool) ]= sizeof(U_bool),
+	[ size_t(U_FundamentalType::i8 ) ]= sizeof(U_i8 ),
+	[ size_t(U_FundamentalType::u8 ) ]= sizeof(U_u8 ),
+	[ size_t(U_FundamentalType::i16) ]= sizeof(U_i16),
+	[ size_t(U_FundamentalType::u16) ]= sizeof(U_u16),
+	[ size_t(U_FundamentalType::i32) ]= sizeof(U_i32),
+	[ size_t(U_FundamentalType::u32) ]= sizeof(U_u32),
+	[ size_t(U_FundamentalType::i64) ]= sizeof(U_i64),
+	[ size_t(U_FundamentalType::u64) ]= sizeof(U_u64),
 };
 
-const char* g_fundamental_types_names[ size_t(U_FundamentalType::LastType) ]=
+const char* const g_fundamental_types_names[ size_t(U_FundamentalType::LastType) ]=
 {
 	[ size_t(U_FundamentalType::InvalidType) ]= "InvalidType",
-	[ size_t(U_FundamentalType::Void) ]= "void",
-	[ size_t(U_FundamentalType::Bool) ]= "bool",
-	[ size_t(U_FundamentalType::i8 ) ]= "i8",
-	[ size_t(U_FundamentalType::u8 ) ]= "u8",
-	[ size_t(U_FundamentalType::i16) ]= "i16",
-	[ size_t(U_FundamentalType::u16) ]= "u16",
-	[ size_t(U_FundamentalType::i32) ]= "i32",
-	[ size_t(U_FundamentalType::u32) ]= "u32",
-	[ size_t(U_FundamentalType::i64) ]= "i64",
-	[ size_t(U_FundamentalType::u64) ]= "u64",
+	[ size_t(U_FundamentalType::Void) ]= KeywordAscii( Keywords::void_ ),
+	[ size_t(U_FundamentalType::Bool) ]= KeywordAscii( Keywords::bool_ ),
+	[ size_t(U_FundamentalType::i8 ) ]= KeywordAscii( Keywords::i8_  ),
+	[ size_t(U_FundamentalType::u8 ) ]= KeywordAscii( Keywords::u8_  ),
+	[ size_t(U_FundamentalType::i16) ]= KeywordAscii( Keywords::i16_ ),
+	[ size_t(U_FundamentalType::u16) ]= KeywordAscii( Keywords::u16_ ),
+	[ size_t(U_FundamentalType::i32) ]= KeywordAscii( Keywords::i32_ ),
+	[ size_t(U_FundamentalType::u32) ]= KeywordAscii( Keywords::u32_ ),
+	[ size_t(U_FundamentalType::i64) ]= KeywordAscii( Keywords::i64_ ),
+	[ size_t(U_FundamentalType::u64) ]= KeywordAscii( Keywords::u64_ ),
 };
 
 // Returns 0 for 8bit, 1 for 16bit, 2 for 32bit, 3 for 64 bit, 4 - else
