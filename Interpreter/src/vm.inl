@@ -94,9 +94,7 @@ inline VM::CallResult VM::Call( const ProgramString& func_name )
 	const FuncEntry& func= *it;
 	const VmProgram::FuncCallInfo& call_info= program_.funcs_table[ func.func_number ];
 
-	// Caller stack. Size - for return address and saved previous caller.
-	stack_frames_.emplace_back(
-		sizeof( unsigned int) + sizeof(unsigned int));
+	stack_frames_.emplace_back( c_saved_caller_frame_size_ );
 
 	stack_pointer_= stack_frames_.back().begin();
 
@@ -126,9 +124,7 @@ VM::CallResult VM::Call( const ProgramString& func_name, Args&&... args )
 
 	size_t args_size= SizeOfArgs(args...);
 
-	stack_frames_.emplace_back(
-		sizeof( unsigned int) + sizeof(unsigned int)+
-		 + args_size );
+	stack_frames_.emplace_back( c_saved_caller_frame_size_ + args_size );
 
 	bool args_ok= PushArgs( stack_frames_.back().begin(), func.params, 0, args... );
 	if( !args_ok )
@@ -169,9 +165,7 @@ VM::CallResult VM::CallRet( const ProgramString& func_name, Ret& result )
 		return call_result;
 	}
 
-	// Caller stack. Size - for return address and saved previous caller + result.
-	stack_frames_.emplace_back(
-		sizeof( unsigned int) + sizeof(unsigned int) + sizeof(Ret) );
+	stack_frames_.emplace_back( c_saved_caller_frame_size_ + sizeof(Ret) );
 
 	stack_pointer_= stack_frames_.back().begin();
 	stack_pointer_+= sizeof(Ret); // Reserve result.
@@ -216,9 +210,7 @@ VM::CallResult VM::CallRet(
 
 	size_t args_and_result_size= sizeof(Ret) + SizeOfArgs(args...);
 
-	stack_frames_.emplace_back(
-		sizeof( unsigned int) + sizeof(unsigned int)+
-		 + args_and_result_size );
+	stack_frames_.emplace_back( c_saved_caller_frame_size_ + args_and_result_size );
 
 	bool args_ok= PushArgs( stack_frames_.back().begin() + sizeof(Ret), func.params, 0, args... );
 	if( !args_ok )
