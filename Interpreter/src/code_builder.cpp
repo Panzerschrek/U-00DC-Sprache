@@ -280,6 +280,28 @@ unsigned int CodeBuilder::BlockStackContext::GetMaxReachedStackSize() const
 	return max_reached_stack_size_;
 }
 
+void CodeBuilder::ExpressionStackSizeCounter::operator+=( unsigned int add_size )
+{
+	size_+= add_size;
+	max_reached_size_= std::max( size_, max_reached_size_ );
+}
+
+void CodeBuilder::ExpressionStackSizeCounter::operator-=( unsigned int sub_size )
+{
+	U_ASSERT( sub_size <= size_ );
+	size_-= sub_size;
+}
+
+unsigned int CodeBuilder::ExpressionStackSizeCounter::GetMaxReachedStackSize() const
+{
+	return max_reached_size_;
+}
+
+unsigned int CodeBuilder::ExpressionStackSizeCounter::GetCurrentStackSize() const
+{
+	return size_;
+}
+
 CodeBuilder::CodeBuilder()
 {
 }
@@ -456,12 +478,16 @@ void CodeBuilder::BuildFuncCode(
 	BlockStackContext block_stack_context;
 	BuildBlockCode( block, block_names, function_context, block_stack_context );
 
+	U_ASSERT( block_stack_context.GetStackSize() == 0 );
+	U_ASSERT( function_context.expression_stack_size_counter.GetCurrentStackSize() == 0 );
+
 	// Stack extension instruction - move stack for expression evaluation above local variables.
 	result_.code[ func_entry.first_op_position ].param.stack_add_size=
 		block_stack_context.GetMaxReachedStackSize();
 
-	// TODO - add space for expression evaluation.
-	unsigned int needed_stack_size= block_stack_context.GetMaxReachedStackSize() + 256;
+	unsigned int needed_stack_size=
+		block_stack_context.GetMaxReachedStackSize() +
+		function_context.expression_stack_size_counter.GetMaxReachedStackSize();
 
 	func_entry.stack_frame_size= needed_stack_size;
 	result_.funcs_table.emplace_back( std::move( func_entry ) );
@@ -516,7 +542,7 @@ void CodeBuilder::BuildBlockCode(
 				if( variable_declaration->initial_value )
 				{
 					U_FundamentalType init_type=
-						BuildExpressionCode( *variable_declaration->initial_value, block_names );
+						BuildExpressionCode( *variable_declaration->initial_value, block_names, function_context );
 					if( init_type != inserted_variable->second.type.fundamental )
 					{
 						ReportTypesMismatch( error_messages_, init_type, inserted_variable->second.type.fundamental );
@@ -548,6 +574,9 @@ void CodeBuilder::BuildBlockCode(
 					}
 
 					result_.code.push_back( move_zero_op );
+
+					function_context.expression_stack_size_counter+=
+						g_fundamental_types_size[ size_t(inserted_variable->second.type.fundamental) ];
 				}
 
 				Vm_Op init_var_op(
@@ -559,6 +588,9 @@ void CodeBuilder::BuildBlockCode(
 					inserted_variable->second.offset;
 
 				result_.code.push_back( init_var_op );
+
+				function_context.expression_stack_size_counter-=
+					g_fundamental_types_size[ size_t(inserted_variable->second.type.fundamental) ];
 			}
 			else if(
 				const AssignmentOperator* assignment_operator=
@@ -591,7 +623,7 @@ void CodeBuilder::BuildBlockCode(
 				const Variable& variable= variable_entry->second;
 
 				U_FundamentalType l_value_type=
-					BuildExpressionCode( r_value, block_names );
+					BuildExpressionCode( r_value, block_names, function_context );
 
 				if( l_value_type != variable.type.fundamental )
 				{
@@ -627,6 +659,9 @@ void CodeBuilder::BuildBlockCode(
 				}
 
 				result_.code.push_back( op );
+
+				function_context.expression_stack_size_counter-=
+					g_fundamental_types_size[ size_t(variable.type.fundamental) ];
 			}
 			else if( const Block* inner_block=
 				dynamic_cast<const Block*>( block_element_ptr ) )
@@ -645,7 +680,8 @@ void CodeBuilder::BuildBlockCode(
 					U_FundamentalType expression_type=
 						BuildExpressionCode(
 							*return_operator->expression_,
-							block_names );
+							block_names,
+							function_context );
 
 					if( expression_type != function_context.result_type )
 					{
@@ -661,6 +697,9 @@ void CodeBuilder::BuildBlockCode(
 					op.param.caller_stack_operations_offset= -int( function_context.result_offset );
 
 					result_.code.push_back( op );
+
+					function_context.expression_stack_size_counter-=
+						g_fundamental_types_size[ size_t(function_context.result_type) ];
 				}
 
 				Vm_Op ret_op;
@@ -726,7 +765,8 @@ void CodeBuilder::BuildBlockCode(
 
 U_FundamentalType CodeBuilder::BuildExpressionCode(
 	const BinaryOperatorsChain& expression,
-	const NamesScope& names )
+	const NamesScope& names,
+	FunctionContext& function_context )
 {
 	std::vector< Type > types_stack;
 
@@ -782,8 +822,10 @@ U_FundamentalType CodeBuilder::BuildExpressionCode(
 					op.type= Vm_Op::Type(
 						size_t(op.type) +
 						GetOpIndexOffsetForFundamentalType(variable.type.fundamental) );
-
 					result_.code.emplace_back(op);
+
+					function_context.expression_stack_size_counter+=
+						g_fundamental_types_size[ size_t(variable.type.fundamental) ];
 				}
 
 				types_stack.push_back( variable.type );
@@ -804,7 +846,7 @@ U_FundamentalType CodeBuilder::BuildExpressionCode(
 				Type type;
 				type.kind= Type::Kind::Fundamental;
 				type.fundamental=
-					BuildExpressionCode( *bracket_expression->expression_, names );
+					BuildExpressionCode( *bracket_expression->expression_, names, function_context );
 
 				types_stack.push_back( type );
 			}
@@ -830,7 +872,8 @@ U_FundamentalType CodeBuilder::BuildExpressionCode(
 							*types_stack.back().function,
 							function_number,
 							*call_operator,
-							names );
+							names,
+							function_context );
 
 					// Pop function
 					types_stack.pop_back();
@@ -906,6 +949,9 @@ U_FundamentalType CodeBuilder::BuildExpressionCode(
 			// Pop operands
 			types_stack.resize( types_stack.size() - 2 );
 
+			function_context.expression_stack_size_counter-=
+				2 * g_fundamental_types_size[ size_t(type0) ];
+
 			Vm_Op::Type op_type= Vm_Op::Type::NoOp;
 
 			switch( comp.operator_ )
@@ -943,6 +989,9 @@ U_FundamentalType CodeBuilder::BuildExpressionCode(
 					type.kind= Type::Kind::Fundamental;
 					type.fundamental= type0;
 					types_stack.push_back( type );
+
+					function_context.expression_stack_size_counter+=
+						g_fundamental_types_size[ size_t(type0) ];
 				}
 				break;
 
@@ -1010,6 +1059,9 @@ U_FundamentalType CodeBuilder::BuildExpressionCode(
 					type.kind= Type::Kind::Fundamental;
 					type.fundamental= U_FundamentalType::Bool;
 					types_stack.push_back( type );
+
+					function_context.expression_stack_size_counter+=
+						g_fundamental_types_size[ size_t(U_FundamentalType::Bool) ];
 				}
 				break;
 
@@ -1035,7 +1087,8 @@ U_FundamentalType CodeBuilder::BuildFuncCall(
 	const Function& func,
 	unsigned int func_number,
 	const CallOperator& call_operator,
-	const NamesScope& names )
+	const NamesScope& names,
+	FunctionContext& function_context )
 {
 	U_ASSERT( func.return_type.kind == Type::Kind::Fundamental );
 
@@ -1046,10 +1099,14 @@ U_FundamentalType CodeBuilder::BuildFuncCall(
 	}
 
 	// Reserve place for result
-	Vm_Op reserve_result_op( Vm_Op::Type::StackPointerAdd );
-	reserve_result_op.param.stack_add_size=
+	unsigned int result_size=
 		g_fundamental_types_size[ size_t(func.return_type.fundamental) ];
+
+	Vm_Op reserve_result_op( Vm_Op::Type::StackPointerAdd );
+	reserve_result_op.param.stack_add_size= result_size;
 	result_.code.emplace_back( reserve_result_op );
+
+	function_context.expression_stack_size_counter+= result_size;
 
 	// Push arguments
 	unsigned int args_size= 0;
@@ -1060,7 +1117,8 @@ U_FundamentalType CodeBuilder::BuildFuncCall(
 		U_FundamentalType expression_type=
 			BuildExpressionCode(
 				*call_operator.arguments_[i],
-				names );
+				names,
+				function_context );
 
 		if( expression_type != func.args[i].fundamental )
 		{
@@ -1082,10 +1140,14 @@ U_FundamentalType CodeBuilder::BuildFuncCall(
 	// Call
 	result_.code.emplace_back( Vm_Op::Type::Call );
 
+	function_context.expression_stack_size_counter+= sizeof(FuncNumber) + VM::c_saved_caller_frame_size_;
+
 	// Clear args
 	Vm_Op clear_args_op( Vm_Op::Type::StackPointerAdd );
 	clear_args_op.param.stack_add_size= -int(args_size);
 	result_.code.emplace_back( clear_args_op );
+
+	function_context.expression_stack_size_counter-= sizeof(FuncNumber) + VM::c_saved_caller_frame_size_ + args_size;
 
 	return func.return_type.fundamental;
 }
@@ -1114,7 +1176,8 @@ void CodeBuilder::BuildIfOperator(
 			U_FundamentalType condition_type=
 				BuildExpressionCode(
 					*branch.condition,
-					names );
+					names,
+					function_context );
 
 			if( condition_type != U_FundamentalType::Bool )
 			{
@@ -1124,6 +1187,9 @@ void CodeBuilder::BuildIfOperator(
 
 			condition_jump_operations_indeces[i]= result_.code.size();
 			result_.code.emplace_back( Vm_Op::Type::JumpIfZero );
+
+			function_context.expression_stack_size_counter-=
+				g_fundamental_types_size[ size_t(U_FundamentalType::Bool) ];
 		}
 
 		BuildBlockCode(
@@ -1168,7 +1234,8 @@ void CodeBuilder::BuildWhileOperator(
 	U_FundamentalType condition_type=
 		BuildExpressionCode(
 			*while_operator.condition_,
-			names );
+			names,
+			function_context );
 
 	if( condition_type != U_FundamentalType::Bool )
 	{
@@ -1179,6 +1246,9 @@ void CodeBuilder::BuildWhileOperator(
 	// Exit from loop, if condition is false.
 	unsigned int jump_if_condition_is_false_operation_index= result_.code.size();
 	result_.code.emplace_back( Vm_Op::Type::JumpIfZero );
+
+	function_context.expression_stack_size_counter-=
+		g_fundamental_types_size[ size_t(U_FundamentalType::Bool) ];
 
 	BuildBlockCode(
 		*while_operator.block_,

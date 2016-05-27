@@ -117,6 +117,20 @@ private:
 		unsigned int max_reached_stack_size_;
 	};
 
+	class ExpressionStackSizeCounter
+	{
+	public:
+		void operator+=( unsigned int add_size );
+		void operator-=( unsigned int sub_size );
+
+		unsigned int GetMaxReachedStackSize() const;
+		unsigned int GetCurrentStackSize() const;
+
+	private:
+		unsigned int size_= 0;
+		unsigned int max_reached_size_= 0;
+	};
+
 	struct FunctionContext
 	{
 		unsigned int result_offset;
@@ -131,6 +145,8 @@ private:
 		};
 
 		std::vector<WhileFrame> while_frames;
+
+		ExpressionStackSizeCounter expression_stack_size_counter;
 	};
 
 private:
@@ -147,13 +163,15 @@ private:
 
 	U_FundamentalType BuildExpressionCode(
 		const BinaryOperatorsChain& expression,
-		const NamesScope& names );
+		const NamesScope& names,
+		FunctionContext& function_context );
 
 	U_FundamentalType BuildFuncCall(
 		const Function& func,
 		unsigned int func_number,
 		const CallOperator& call_operator,
-		const NamesScope& names );
+		const NamesScope& names,
+		FunctionContext& function_context );
 
 	void BuildIfOperator(
 		const NamesScope& names,
