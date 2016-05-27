@@ -1,0 +1,35 @@
+V jazyke prisutstvujut cislennyje literaly.
+
+Suscestvujut sledyjuscije formy zapisi literalov:
+
+*) Desäticnaja:
+Sostoit iz posledovateljnosti decäticnyh çifr, vozmožno s drobnoj tockoj.
+Primery - 0, 42, 874, 0.0, 75.985
+
+*) Desäticnaja eksponençialjnaja:
+Sostav tot že, cto i v desäticnoj forme, no s desäticnoj stepenju na konçe.
+Desäticnaja stepenj - položiteljnoje ili otriçateljnoje çeloje cislo.
+Primery - 1e15, 45.85e1, 5e-2
+
+*) Dvoicnaja:
+Sostoit iz prefiksa "0b" i posledovateljnosti çifr [0;1], vozmožno s
+drobnoj tockoj.
+Primery - 0b0, 0b0001, 0b1010, 0b0111.1, 0b0.001
+
+*) Vosjmiricnaja:
+Sostoit iz prefiksa "0o" i posledovateljnosti çifr [0;7], vozmožno s
+drobnoj tockoj
+Primery - 0o0, ob7451, 0o45367, 0o45367.74
+
+*) Šestnadçatiricnaja:
+Sostoit iz prefiksa "0x" i posledovateljnosti šestnadçatiricnyh çifr
+[0;F], vozmožno s drobnoj tockoj.
+Çyfry A-F mogut bytj v raznyh registrah.
+Primery - 0xfF, 0xa085, 0xDEADC0DE, 0xF4.1a, 0xa5d80.80
+
+Cislennyj literal možet soderžatj suffiks, javno zadajuscij jego tip.
+Suffiksy imejut te že imena, cto i sootvetstvujuscije im cislennyje tipy.
+Primery cisel s suffiksami - 1i32, 0xFFu8, 1.5f32, 1e56f64.
+
+Jesli suffiks otsutstvujet, tip literala opredeläjetsä sledujuscim pravilom:
+jesli v zapisi prisutstvujed drobnaja tocka, to tip - f64, inace - i32.
