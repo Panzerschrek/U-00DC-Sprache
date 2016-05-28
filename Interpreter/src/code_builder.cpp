@@ -94,6 +94,25 @@ static bool IsSignedInteger( U_FundamentalType type )
 		type == U_FundamentalType::i64;
 }
 
+static U_FundamentalType GetNumericConstantType( const NumericConstant& number )
+{
+	if( number.type_suffix_.empty() )
+	{
+		if( number.has_fractional_point_ )
+		{
+			// TODO - floating point types
+			return U_FundamentalType::InvalidType;
+		}
+		else
+			return U_FundamentalType::i32;
+	}
+
+	auto it= g_types_map.find( number.type_suffix_ );
+	if( it == g_types_map.end() )
+		return U_FundamentalType::InvalidType;
+
+	return it->second;
+}
 
 void ReportUnknownFuncReturnType(
 	std::vector<std::string>& error_messages,
@@ -834,11 +853,65 @@ U_FundamentalType CodeBuilder::BuildExpressionCode(
 			else if( const NumericConstant* number=
 				dynamic_cast<const NumericConstant*>(&operand) )
 			{
-				U_UNUSED(number);
-				ReportNotImplemented( error_messages_, "numeric constants" );
-				throw ProgramError();
-				// Convert str to number
-				// push number
+				U_FundamentalType type= GetNumericConstantType( *number );
+				if( type == U_FundamentalType::InvalidType )
+				{
+					error_messages_.push_back( "Unknown numeric constant type" );
+					throw ProgramError();
+				}
+
+				Vm_Op op;
+				op.type=
+					Vm_Op::Type(
+						size_t(Vm_Op::Type::PushC8) +
+						GetOpIndexOffsetForFundamentalType(type) );
+
+				switch(type)
+				{
+				case U_FundamentalType::i8 :
+					op.param.push_c_8 = static_cast<U_i8 >(number->value_);
+					break;
+				case U_FundamentalType::u8 :
+					op.param.push_c_8 = static_cast<U_u8 >(number->value_);
+					break;
+
+				case U_FundamentalType::i16:
+					op.param.push_c_16 = static_cast<U_i16>(number->value_);
+					break;
+				case U_FundamentalType::u16:
+					op.param.push_c_16 = static_cast<U_u16>(number->value_);
+					break;
+
+				case U_FundamentalType::i32:
+					op.param.push_c_32 = static_cast<U_i32>(number->value_);
+					break;
+				case U_FundamentalType::u32:
+					op.param.push_c_32 = static_cast<U_u32>(number->value_);
+					break;
+
+				case U_FundamentalType::i64:
+					op.param.push_c_64 = static_cast<U_i64>(number->value_);
+					break;
+				case U_FundamentalType::u64:
+					op.param.push_c_64 = static_cast<U_u64>(number->value_);
+					break;
+
+				case U_FundamentalType::InvalidType:
+				case U_FundamentalType::Void:
+				case U_FundamentalType::Bool:
+				case U_FundamentalType::LastType:
+					U_ASSERT(false);
+				};
+
+				result_.code.push_back(op);
+
+				function_context.expression_stack_size_counter+=
+					g_fundamental_types_size[ size_t(type) ];
+
+				Type big_type;
+				big_type.kind= Type::Kind::Fundamental;
+				big_type.fundamental= type;
+				types_stack.push_back( big_type );
 			}
 			else if( const BracketExpression* bracket_expression=
 				dynamic_cast<const BracketExpression*>(&operand) )
