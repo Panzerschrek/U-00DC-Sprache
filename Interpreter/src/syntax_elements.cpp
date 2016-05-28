@@ -98,17 +98,17 @@ void PrintOperator( std::ostream& stream, BinaryOperator op )
 	{
 		case BinaryOperator::None: op_str= ""; break;
 
-		case BinaryOperator::Add: op_str= "+"; break;
-		case BinaryOperator::Sub: op_str= "-"; break;
-		case BinaryOperator::Mul: op_str= "*"; break;
-		case BinaryOperator::Div: op_str= "/"; break;
+		case BinaryOperator::Add: op_str= " + "; break;
+		case BinaryOperator::Sub: op_str= " - "; break;
+		case BinaryOperator::Mul: op_str= " * "; break;
+		case BinaryOperator::Div: op_str= " / "; break;
 
-		case BinaryOperator::Equal: op_str= "=="; break;
-		case BinaryOperator::NotEqual: op_str= "!="; break;
-		case BinaryOperator::Less: op_str= "<"; break;
-		case BinaryOperator::LessEqual: op_str= "<="; break;
-		case BinaryOperator::Greater: op_str= ">"; break;
-		case BinaryOperator::GreaterEqual: op_str= ">="; break;
+		case BinaryOperator::Equal: op_str= " == "; break;
+		case BinaryOperator::NotEqual: op_str= " != "; break;
+		case BinaryOperator::Less: op_str= " < "; break;
+		case BinaryOperator::LessEqual: op_str= " <= "; break;
+		case BinaryOperator::Greater: op_str= " > "; break;
+		case BinaryOperator::GreaterEqual: op_str= " >= "; break;
 
 		case BinaryOperator::Last: U_ASSERT(false); break;
 	};
@@ -143,15 +143,20 @@ IBinaryOperatorsChainComponentPtr NamedOperand::Clone() const
 	return IBinaryOperatorsChainComponentPtr( new NamedOperand( name_ ) );
 }
 
-NumericConstant::NumericConstant( ProgramString value )
-	: value_( std::move(value) )
+NumericConstant::NumericConstant(
+	LongFloat value,
+	ProgramString type_suffix,
+	bool has_fractional_point )
+	: value_( value )
+	, type_suffix_( std::move(type_suffix) )
+	, has_fractional_point_( has_fractional_point )
 {
 }
 
 void NumericConstant::Print( std::ostream& stream, unsigned int indent ) const
 {
 	U_UNUSED( indent );
-	stream << ToStdString( value_ );
+	stream << ((long double)value_) << ToStdString( type_suffix_ );
 }
 
 NumericConstant::~NumericConstant()
@@ -160,7 +165,12 @@ NumericConstant::~NumericConstant()
 
 IBinaryOperatorsChainComponentPtr NumericConstant::Clone() const
 {
-	return IBinaryOperatorsChainComponentPtr( new NumericConstant( value_ ) );
+	return
+		IBinaryOperatorsChainComponentPtr(
+			new NumericConstant(
+				value_,
+				type_suffix_,
+				has_fractional_point_ ) );
 }
 
 BracketExpression::BracketExpression( BinaryOperatorsChainPtr expression )

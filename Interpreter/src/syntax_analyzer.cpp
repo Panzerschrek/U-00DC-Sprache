@@ -1,3 +1,6 @@
+#include <cctype>
+#include <cmath>
+
 #include "assert.hpp"
 #include "keywords.hpp"
 #include "syntax_analyzer.hpp"
@@ -58,6 +61,152 @@ static BinaryOperator LexemToBinaryOperator( const Lexem& lexem )
 	};
 }
 
+static IBinaryOperatorsChainComponentPtr ParseNumericConstant(
+	const ProgramString& text )
+{
+	NumericConstant::LongFloat base= 10;
+	unsigned int (*number_func)( sprache_char) =
+		[]( sprache_char c ) -> unsigned int
+		{
+			U_ASSERT( c >= '0' && c <= '9' );
+			return c - '0';
+		};
+
+	bool (*is_number_func)( sprache_char) =
+		[]( sprache_char c ) -> bool { return std::isdigit(c); };
+
+	ProgramString::const_iterator it= text.begin();
+	const ProgramString::const_iterator it_end= text.end();
+
+	if( text.size() >= 2 && text[0] == '0' )
+	{
+		sprache_char d= text[1];
+		switch(d)
+		{
+		case 'b':
+			it+= 2;
+			base= 2;
+			number_func=
+				[]( sprache_char c ) -> unsigned int
+				{
+					U_ASSERT( c >= '0' && c <= '1' );
+					return c - '0';
+				};
+			is_number_func=
+				[]( sprache_char c ) -> bool
+				{
+					return c == '0' || c == '1';
+				};
+			break;
+
+		case 'o':
+			it+= 2;
+			base= 8;
+			number_func=
+				[]( sprache_char c ) -> unsigned int
+				{
+					U_ASSERT( c >= '0' && c <= '7' );
+					return c - '0';
+				};
+			is_number_func=
+				[]( sprache_char c ) -> bool
+				{
+					return c >= '0' && c <= '9';
+				};
+			break;
+
+		case 'x':
+			it+= 2;
+			base= 16;
+			number_func=
+				[]( sprache_char c ) -> unsigned int
+				{
+					if( c >= '0' && c <= '9' )
+						return c - '0';
+					else if( c >= 'a' && c <= 'f' )
+						return c - 'a';
+					else
+					{
+						U_ASSERT( c >= 'A' && c <= 'F' );
+						return c - 'A';
+					}
+				};
+			is_number_func= []( sprache_char c ) -> bool { return std::isxdigit(c); };
+			break;
+
+		default: break;
+		};
+	}
+
+	NumericConstant::LongFloat number{ 0 };
+	bool has_fraction_point= false;
+
+	ProgramString::const_iterator integer_part_end= it;
+	while( integer_part_end < it_end &&
+		is_number_func( *integer_part_end ) )
+		++integer_part_end;
+
+	{
+		NumericConstant::LongFloat pow{ 1 };
+		for( auto n= integer_part_end - 1; n >= it; --n, pow*= base )
+			number+= number_func(*n) * pow;
+	}
+
+	it= integer_part_end;
+	if( it < it_end && *it == '.' )
+	{
+		++it;
+		has_fraction_point= true;
+
+		NumericConstant::LongFloat fractional_part{ 0 };
+		NumericConstant::LongFloat pow{ 1 / base };
+
+		while( it < it_end && is_number_func(*it) )
+		{
+			fractional_part+= number_func( *it ) * pow;
+			pow/= base;
+			++it;
+		}
+
+		number+= fractional_part;
+	}
+
+	// Exponent
+	if( it < it_end && *it == 'e' )
+	{
+		++it;
+
+		U_ASSERT( base == 10 );
+		int power= 0;
+		bool is_negative= false;
+
+		if( it < it_end && *it == '-' )
+		{
+			is_negative= true;
+			++it;
+		}
+
+		while( it < it_end && is_number_func(*it) )
+		{
+			power*= base;
+			power+= number_func(*it);
+			++it;
+		}
+		if( is_negative ) power= -power;
+
+		number*= std::pow<NumericConstant::LongFloat>( base, power );
+	}
+
+	ProgramString type_suffix( it, it_end );
+
+	return
+		IBinaryOperatorsChainComponentPtr(
+			new NumericConstant(
+				number,
+				std::move( type_suffix ),
+				has_fraction_point ) );
+}
+
 static BinaryOperatorsChainPtr ParseExpression(
 	SyntaxErrorMessages& error_messages,
 	Lexems::const_iterator& it,
@@ -114,7 +263,7 @@ static BinaryOperatorsChainPtr ParseExpression(
 		}
 		else if( it->type == Lexem::Type::Number )
 		{
-			component.component.reset( new NumericConstant( it->text ) );
+			component.component= ParseNumericConstant( it->text );
 			++it;
 		}
 		else if( it->type == Lexem::Type::BracketLeft )

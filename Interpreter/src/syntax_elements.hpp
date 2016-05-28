@@ -1,4 +1,5 @@
 #pragma once
+#include <limits>
 #include <memory>
 #include <ostream>
 #include <vector>
@@ -139,15 +140,25 @@ public:
 class NumericConstant final : public IBinaryOperatorsChainComponent
 {
 public:
-	explicit NumericConstant( ProgramString value );
+	typedef long double LongFloat;
+	static_assert(
+		std::numeric_limits<LongFloat>::digits >= 64,
+		"Too short \"LongFloat\". LongFloat must store all uint64_t and int64_t values exactly." );
+
+	explicit NumericConstant(
+		LongFloat value,
+		ProgramString type_suffix,
+		bool has_fractional_point );
+
 	virtual ~NumericConstant() override;
 
 	virtual IBinaryOperatorsChainComponentPtr Clone() const override;
 
 	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
 
-private:
-	const ProgramString value_;
+	const LongFloat value_;
+	const ProgramString type_suffix_;
+	const bool has_fractional_point_;
 };
 
 class BracketExpression final : public IBinaryOperatorsChainComponent

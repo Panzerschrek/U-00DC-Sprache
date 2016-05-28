@@ -62,12 +62,12 @@ static void FuncCallTest()
 "\
 fn Bar( x : i32, y : i32 ) : i32\
 {\
-	return y + x / x - y / y;\
+	return y + 1 - 1;\
 }\
 \
 fn Foo( a : i32, b : i32 ) : i32\
 {\
-	return a * Bar(a + b - b, b + a - a) ;\
+	return a * Bar(a + 0e0, b + 0x000i32) ;\
 }"
 ;
 
@@ -86,15 +86,15 @@ static void IfOperatorTest()
 {
 	static const char c_program_text[]=
 
-"fn Factorial(a : i32, one : i32) : i32\
+"fn Factorial(a : i32) : i32\
 {\
-	if( a > one )\
+	if( a > 1e-0i32 )\
 	{\
-		return a * Factorial( a - one, one );\
+		return a * Factorial( a - 1 );\
 	}\
 	else\
 	{\
-		return one;\
+		return 0o01;\
 	}\
 }"
 ;
@@ -105,10 +105,10 @@ static void IfOperatorTest()
 	{
 		expected_result*= i;
 
-		U_i32 one= 1, func_result;
+		U_i32 func_result;
 
 		const VM::CallResult call_result =
-			vm.CallRet( ToProgramString("Factorial"), func_result, i, one );
+			vm.CallRet( ToProgramString("Factorial"), func_result, i );
 		U_ASSERT( call_result.ok );
 
 		U_ASSERT( func_result == expected_result );
@@ -125,7 +125,7 @@ fn Foo( c : i32 ) : i32\
 	let x : i32 = c;\
 	let y : i32;\
 	y= c;\
-	x= x - x;\
+	x= 0b00i32;\
 	c= c * y;\
 	return y * c + x;\
 }"
@@ -182,15 +182,15 @@ static void WhileOperatorTest()
 {
 	static const char c_program_text[]=
 
-"fn Factorial(x : u32, one : u32) : u32\
+"fn Factorial(x : u32) : u32\
 {\
-	let result : u32 = one;\
-	let i : u32= one;\
+	let result : u32 = 1u32;\
+	let i : u32= 1u32;\
 	while( i <= x )\
 	{\
 		while( x != x ){}\
 		result= result * i;\
-		i= i + one;\
+		i= i + 1u32;\
 	}\
 	return result;\
 }"
@@ -202,10 +202,10 @@ static void WhileOperatorTest()
 	{
 		expected_result*= i;
 
-		U_u32 one= 1, func_result;
+		U_u32 func_result;
 
 		const VM::CallResult call_result =
-			vm.CallRet( ToProgramString("Factorial"), func_result, i, one );
+			vm.CallRet( ToProgramString("Factorial"), func_result, i );
 		U_ASSERT( call_result.ok );
 
 		U_ASSERT( func_result == expected_result );
@@ -222,7 +222,7 @@ fn Foo( c : i32 ) : i32\
 	while( c == c )\
 	{\
 		if( c * c < c + c ) { break; }\
-		return c + c / c;\
+		return c + 1;\
 	}\
 	return c + c + c;\
 }"
@@ -248,14 +248,14 @@ static void ContinueOperatorTest()
 {
 	static const char c_program_text[]=
 
-"fn Factorial(x : u32, one : u32) : u32\
+"fn Factorial(x : u32) : u32\
 {\
-	let result : u32 = one;\
-	let i : u32= one;\
-	while( one == one )\
+	let result : u32 = 1u32;\
+	let i : u32= 1u32;\
+	while( 1u32 == 1u32 )\
 	{\
 		result= result * i;\
-		i= i + one;\
+		i= i + 1u32;\
 		if( i <= x ) { continue; }\
 		break;\
 	}\
@@ -269,10 +269,10 @@ static void ContinueOperatorTest()
 	{
 		expected_result*= i;
 
-		U_u32 one= 1, func_result;
+		U_u32 func_result;
 
 		const VM::CallResult call_result =
-			vm.CallRet( ToProgramString("Factorial"), func_result, i, one );
+			vm.CallRet( ToProgramString("Factorial"), func_result, i );
 		U_ASSERT( call_result.ok );
 
 		U_ASSERT( func_result == expected_result );
