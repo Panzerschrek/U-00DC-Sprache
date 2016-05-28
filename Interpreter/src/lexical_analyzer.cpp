@@ -82,16 +82,119 @@ static bool IsIdentifierStartChar( sprache_char c )
 	return std::isalpha(c);
 }
 
+static void ParseNumberImpl(
+		ProgramString::const_iterator& it,
+		const ProgramString::const_iterator it_end,
+		Lexem& result,
+		bool (*is_digit_func)(sprache_char c),
+		bool exponent_allowed= false )
+{
+	// Integer part
+	while( it < it_end && is_digit_func(*it) )
+	{
+		result.text.push_back(*it);
+		++it;
+	}
+
+	// Fractional part
+	if( it < it_end && *it == '.' )
+	{
+		result.text.push_back(*it);
+		++it;
+
+		while( it < it_end && is_digit_func(*it) )
+		{
+			result.text.push_back(*it);
+			++it;
+		}
+	}
+
+	// Exponent
+	if( exponent_allowed && it < it_end && *it == 'e' )
+	{
+		result.text.push_back(*it);
+		++it;
+
+		if( it < it_end && *it == '-' )
+		{
+			result.text.push_back(*it);
+			++it;
+		}
+
+		while( it < it_end && is_digit_func(*it) )
+		{
+			result.text.push_back(*it);
+			++it;
+		}
+	}
+}
+
 static Lexem ParseNumber(
 	ProgramString::const_iterator& it,
 	const ProgramString::const_iterator it_end )
 {
-	// TODO - parse floating point constants (such 1.0f, 70e27), hex constants (such 0xDEAD ).
-
 	Lexem result;
 	result.type= Lexem::Type::Number;
 
-	while( it < it_end && std::isdigit(*it) )
+	if( it_end - it >= 2 && *it == '0' )
+	{
+		sprache_char d= *(it+1);
+		switch(d)
+		{
+		case 'b':
+			result.text.append( it, it + 2 );
+			it+= 2;
+			ParseNumberImpl(
+				it, it_end, result,
+				[]( sprache_char c ) -> bool
+				{
+					return c == '0' || c == '1';
+				} );
+
+			break;
+
+		case 'o':
+			result.text.append( it, it + 2 );
+			it+= 2;
+			ParseNumberImpl(
+				it, it_end, result,
+				[]( sprache_char c ) -> bool
+				{
+					return c >= '0' && c <= '7';
+				} );
+
+			break;
+
+		case 'x':
+			result.text.append( it, it + 2 );
+			it+= 2;
+			ParseNumberImpl(
+				it, it_end, result,
+				[]( sprache_char c ) -> bool
+				{
+					return std::isxdigit(c);
+				} );
+
+			break;
+
+		default:
+			goto parse_decimal;
+		};
+	}
+	else
+	{
+	parse_decimal:
+		ParseNumberImpl(
+			it, it_end, result,
+			[]( sprache_char c ) -> bool
+			{
+				return std::isdigit(c);
+			},
+			true );
+	}
+
+	// Type suffix.
+	while( it < it_end && IsIdentifierChar(*it) )
 	{
 		result.text.push_back(*it);
 		++it;

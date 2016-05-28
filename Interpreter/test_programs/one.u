@@ -6,14 +6,14 @@ fn f( a : i32, b : f32 )
 	{
 	}
 	return;
-	let r : i8;
+	let r : i8 = 0xFe457.45faF + 1.2e-7 - 45e6 + 45i64;
 }
 
 fn l()
 {
 	let x : i32 = +-34[(09)];
 	{
-		let wadawdaw : f64;
+		let wadawdaw : f64 =  +0xF45u1488;
 	}
 	return;
 	while( forforfor(x) )
@@ -21,7 +21,7 @@ fn l()
 		break;
 	}
 
-	a[10]= ss[25] * 3 + 1;
+	a[10]= ss[25] * 3 + 0b1;
 	exit(1);
 }
 
@@ -36,7 +36,7 @@ fn ZweiUndVierzig() : int
 				continue;
 				let rrr : long_int;
 			}
-			return 34;
+			return 34 - 0o7745;
 		}
 	}
 
