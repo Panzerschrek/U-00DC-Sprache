@@ -143,6 +143,26 @@ IBinaryOperatorsChainComponentPtr NamedOperand::Clone() const
 	return IBinaryOperatorsChainComponentPtr( new NamedOperand( name_ ) );
 }
 
+BooleanConstant::BooleanConstant( bool value )
+	: value_( value )
+{
+}
+
+BooleanConstant::~BooleanConstant()
+{
+}
+
+IBinaryOperatorsChainComponentPtr BooleanConstant::Clone() const
+{
+	return IBinaryOperatorsChainComponentPtr( new BooleanConstant( value_ ) );
+}
+
+void BooleanConstant::Print( std::ostream& stream, unsigned int indent ) const
+{
+	U_UNUSED( indent );
+	stream << ( value_ ? "true" : "false" );
+}
+
 NumericConstant::NumericConstant(
 	LongFloat value,
 	ProgramString type_suffix,

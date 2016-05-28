@@ -258,7 +258,13 @@ static BinaryOperatorsChainPtr ParseExpression(
 		// Operand.
 		if( it->type == Lexem::Type::Identifier )
 		{
-			component.component.reset( new NamedOperand( it->text ) );
+			if( it->text == Keywords::true_ )
+				component.component.reset( new BooleanConstant( true ) );
+			else if( it->text == Keywords::false_ )
+				component.component.reset( new BooleanConstant( false ) );
+			else
+				component.component.reset( new NamedOperand( it->text ) );
+
 			++it;
 		}
 		else if( it->type == Lexem::Type::Number )

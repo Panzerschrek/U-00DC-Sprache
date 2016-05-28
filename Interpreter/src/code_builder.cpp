@@ -850,6 +850,22 @@ U_FundamentalType CodeBuilder::BuildExpressionCode(
 				types_stack.push_back( variable.type );
 
 			}
+			else if( const BooleanConstant* boolean_constant=
+				dynamic_cast<const BooleanConstant*>(&operand) )
+			{
+				Vm_Op op{ Vm_Op::Type::PushC8 };
+				op.param.push_c_8= boolean_constant->value_;
+
+				result_.code.push_back( op );
+
+				function_context.expression_stack_size_counter+=
+					g_fundamental_types_size[ size_t(U_FundamentalType::Bool) ];
+
+				Type type;
+				type.kind= Type::Kind::Fundamental;
+				type.fundamental= U_FundamentalType::Bool;
+				types_stack.push_back( type );
+			}
 			else if( const NumericConstant* number=
 				dynamic_cast<const NumericConstant*>(&operand) )
 			{

@@ -31,6 +31,10 @@ enum class Keywords : unsigned int
 	i64_,
 	u64_,
 
+	// Boolean constants.
+	true_,
+	false_,
+
 	LastKeyword,
 };
 

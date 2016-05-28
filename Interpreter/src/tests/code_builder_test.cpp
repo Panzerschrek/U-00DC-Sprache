@@ -155,11 +155,12 @@ fn Foo( x : i32 ) : i32\
 		let b : i32 = a;\
 		{\
 			{\
-				let AA : i32; let BB : i32; let CC : i32; let DD : i64;  let EE : bool;\
+				let AA : i32; let BB : i32; let CC : i32; let DD : i64;  let EE : bool = false;\
 			}\
 			let c : i32 = b;\
 			let unused_c : i64;\
 			{\
+				let some_boolean : bool = true;\
 				return c;\
 			}\
 		}\
@@ -188,7 +189,7 @@ static void WhileOperatorTest()
 	let i : u32= 1u32;\
 	while( i <= x )\
 	{\
-		while( x != x ){}\
+		while( false ){}\
 		result= result * i;\
 		i= i + 1u32;\
 	}\
@@ -219,7 +220,7 @@ static void BreakOperatorTest()
 "\
 fn Foo( c : i32 ) : i32\
 {\
-	while( c == c )\
+	while( true )\
 	{\
 		if( c * c < c + c ) { break; }\
 		return c + 1;\
@@ -252,7 +253,7 @@ static void ContinueOperatorTest()
 {\
 	let result : u32 = 1u32;\
 	let i : u32= 1u32;\
-	while( 1u32 == 1u32 )\
+	while( true )\
 	{\
 		result= result * i;\
 		i= i + 1u32;\

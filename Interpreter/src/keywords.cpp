@@ -40,6 +40,9 @@ static const KeywordEntry g_keywords[ size_t(Keywords::LastKeyword) ]=
 	[ size_t(Keywords::u32_) ]= "u32",
 	[ size_t(Keywords::i64_) ]= "i64",
 	[ size_t(Keywords::u64_) ]= "u64",
+
+	[ size_t(Keywords::true_) ]= "true",
+	[ size_t(Keywords::false_) ]= "false",
 };
 
 } // namespace

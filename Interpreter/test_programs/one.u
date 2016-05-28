@@ -54,5 +54,7 @@ fn ZweiUndVierzig() : int
 		ff = a * b * c >= eeee(gr);
 	}
 	{
+		let invalid : bool = false;
+		let   valid : bool = true;
 	}
 }

@@ -137,6 +137,19 @@ public:
 	const ProgramString name_;
 };
 
+class BooleanConstant final : public IBinaryOperatorsChainComponent
+{
+public:
+	explicit BooleanConstant( bool value );
+	virtual ~BooleanConstant() override;
+
+	virtual IBinaryOperatorsChainComponentPtr Clone() const override;
+
+	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
+
+	const bool value_;
+};
+
 class NumericConstant final : public IBinaryOperatorsChainComponent
 {
 public:
