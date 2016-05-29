@@ -38,8 +38,8 @@ int main()
 	for( const Interpreter::LexicalErrorMessage& error_message : lexical_result.error_messages )
 		std::cout << error_message << "\n";
 
-	for( const Interpreter::Lexem& lexem : lexical_result.lexems )
-		std::cout << Interpreter::ToStdString( lexem.text ) << "\n";
+	//for( const Interpreter::Lexem& lexem : lexical_result.lexems )
+	//	std::cout << Interpreter::ToStdString( lexem.text ) << "\n";
 
 	Interpreter::SyntaxAnalysisResult syntax_result= Interpreter::SyntaxAnalysis( lexical_result.lexems );
 
