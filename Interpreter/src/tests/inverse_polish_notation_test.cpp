@@ -408,6 +408,89 @@ static void ExpressionWithComparisionOperatorsTest2()
 	U_ASSERT( notation[6].operator_ == BinaryOperator::NotEqual );
 }
 
+static void LogicalExpressionTest0()
+{
+	BinaryOperatorsChain chain;
+	chain.components.resize(5);
+
+	chain.components[0].component.reset( new NamedOperand( ToProgramString( "a" ) ) );
+	chain.components[0].op= BinaryOperator::Add;
+
+	chain.components[1].component.reset( new NamedOperand( ToProgramString( "b" ) ) );
+	chain.components[1].op= BinaryOperator::Equal;
+
+	chain.components[2].component.reset( new NamedOperand( ToProgramString( "c" ) ) );
+	chain.components[2].op= BinaryOperator::Mul;
+
+	chain.components[3].component.reset( new NamedOperand( ToProgramString( "d" ) ) );
+	chain.components[3].op= BinaryOperator::LazyLogicalOr;
+
+	chain.components[4].component.reset( new BooleanConstant( false ) );
+
+	InversePolishNotation notation= ConvertToInversePolishNotation( chain );
+	Print( chain, notation );
+
+	U_ASSERT( notation.size() == 9 );
+
+	U_ASSERT( notation[0].operand ); // a
+	U_ASSERT( notation[1].operand ); // b
+
+	U_ASSERT( !notation[2].operand ); // +
+	U_ASSERT( notation[2].operator_ == BinaryOperator::Add );
+
+	U_ASSERT( notation[3].operand ); // c
+	U_ASSERT( notation[4].operand ); // d
+
+	U_ASSERT( !notation[5].operand ); // *
+	U_ASSERT( notation[5].operator_ == BinaryOperator::Mul );
+
+	U_ASSERT( !notation[6].operand ); // ==
+	U_ASSERT( notation[6].operator_ == BinaryOperator::Equal );
+
+	U_ASSERT( notation[7].operand ); // false
+
+	U_ASSERT( !notation[8].operand ); // ||
+	U_ASSERT( notation[8].operator_ == BinaryOperator::LazyLogicalOr );
+}
+
+static void LogicalExpressionTest1()
+{
+	BinaryOperatorsChain chain;
+	chain.components.resize(4);
+
+	chain.components[0].component.reset( new NamedOperand( ToProgramString( "a" ) ) );
+	chain.components[0].op= BinaryOperator::And;
+
+	chain.components[1].component.reset( new NamedOperand( ToProgramString( "b" ) ) );
+	chain.components[1].op= BinaryOperator::Or;
+
+	chain.components[2].component.reset( new NamedOperand( ToProgramString( "c" ) ) );
+	chain.components[2].op= BinaryOperator::LazyLogicalAnd;
+
+	chain.components[3].component.reset( new NamedOperand( ToProgramString( "d" ) ) );
+
+	InversePolishNotation notation= ConvertToInversePolishNotation( chain );
+	Print( chain, notation );
+
+	U_ASSERT( notation.size() == 7 );
+
+	U_ASSERT( notation[0].operand ); // a
+	U_ASSERT( notation[1].operand ); // b
+
+	U_ASSERT( !notation[2].operand ); // +
+	U_ASSERT( notation[2].operator_ == BinaryOperator::And );
+
+	U_ASSERT( notation[3].operand ); // c
+
+	U_ASSERT( !notation[4].operand ); // |
+	U_ASSERT( notation[4].operator_ == BinaryOperator::Or );
+
+	U_ASSERT( notation[5].operand ); // d
+
+	U_ASSERT( !notation[6].operand ); // &&
+	U_ASSERT( notation[6].operator_ == BinaryOperator::LazyLogicalAnd );
+}
+
 void RunIPNTests()
 {
 	OneOperandExpressionTest();
@@ -423,6 +506,8 @@ void RunIPNTests()
 	ExpressionWithComparisionOperatorsTest0();
 	ExpressionWithComparisionOperatorsTest1();
 	ExpressionWithComparisionOperatorsTest2();
+	LogicalExpressionTest0();
+	LogicalExpressionTest1();
 }
 
 } // namespace Interpreter
