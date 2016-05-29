@@ -498,7 +498,10 @@ void CodeBuilder::BuildFuncCode(
 	BuildBlockCode( block, block_names, function_context, block_stack_context );
 
 	U_ASSERT( block_stack_context.GetStackSize() == 0 );
-	U_ASSERT( function_context.expression_stack_size_counter.GetCurrentStackSize() == 0 );
+
+	U_ASSERT(
+		error_count_ != 0 ||
+		function_context.expression_stack_size_counter.GetCurrentStackSize() == 0 );
 
 	// Stack extension instruction - move stack for expression evaluation above local variables.
 	result_.code[ func_entry.first_op_position ].param.stack_add_size=
@@ -1151,6 +1154,45 @@ U_FundamentalType CodeBuilder::BuildExpressionCode(
 
 					function_context.expression_stack_size_counter+=
 						g_fundamental_types_size[ size_t(U_FundamentalType::Bool) ];
+				}
+				break;
+
+			case BinaryOperator::And:
+			case BinaryOperator::Or:
+			case BinaryOperator::Xor:
+				{
+					switch( comp.operator_ )
+					{
+					case BinaryOperator::And: op_type= Vm_Op::Type::And8; break;
+					case BinaryOperator::Or: op_type= Vm_Op::Type::Or8; break;
+					case BinaryOperator::Xor: op_type= Vm_Op::Type::Xor8; break;
+					default: U_ASSERT(false); break;
+					};
+
+					op_type=
+						Vm_Op::Type(
+							size_t(op_type) +
+							GetOpIndexOffsetForFundamentalType( type0 ) );
+
+					// Result - same as type0
+					Type type;
+					type.kind= Type::Kind::Fundamental;
+					type.fundamental= type0;
+					types_stack.push_back( type );
+
+					function_context.expression_stack_size_counter+=
+						g_fundamental_types_size[ size_t(type0) ];
+				}
+				break;
+
+			case BinaryOperator::LazyLogicalAnd:
+			case BinaryOperator::LazyLogicalOr:
+				{
+					// TODO - lazy operators
+					ReportNotImplemented(
+						error_messages,
+						"Lazy logical operators" );
+					throw ProgramError();
 				}
 				break;
 

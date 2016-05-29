@@ -280,6 +280,55 @@ static void ContinueOperatorTest()
 	}
 }
 
+static void BitOperatorsTest()
+{
+	static const char c_program_text[]=
+
+"\
+fn Foo( a : i32, b : i32, c : i32 ) : i32\
+{\
+	return (a | b) & c;\
+}"
+;
+
+	VM vm{ BuildProgram( c_program_text ) };
+
+	U_i32 func_result, a= 0b00110011, b= 0b11001100, c= 0b1101;
+
+	const VM::CallResult call_result =
+		vm.CallRet( ToProgramString("Foo"), func_result, a, b, c );
+	U_ASSERT( call_result.ok );
+
+	U_ASSERT( ( (a|b) & c ) == func_result );
+}
+
+static void BooleanOperatorsTest()
+{
+	static const char c_program_text[]=
+
+"\
+fn Foo( a : bool, b : bool, c : bool ) : bool\
+{\
+	return (a | b) & c;\
+}"
+;
+
+	VM vm{ BuildProgram( c_program_text ) };
+
+	for( unsigned int a= 0; a < 1; a++ )
+	for( unsigned int b= 0; b < 1; b++ )
+	for( unsigned int c= 0; c < 1; c++ )
+	{
+		bool func_result;
+
+		const VM::CallResult call_result =
+			vm.CallRet( ToProgramString("Foo"), func_result, bool(a), bool(b), bool(c) );
+		U_ASSERT( call_result.ok );
+
+		U_ASSERT( ( (bool(a) | bool(b)) & bool(c) ) == func_result );
+	}
+}
+
 void RunCodeBuilderTest()
 {
 	SimpleProgramTest();
@@ -290,6 +339,8 @@ void RunCodeBuilderTest()
 	WhileOperatorTest();
 	BreakOperatorTest();
 	ContinueOperatorTest();
+	BitOperatorsTest();
+	BooleanOperatorsTest();
 }
 
 } // namespace Interpreter
