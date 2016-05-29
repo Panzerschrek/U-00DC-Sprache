@@ -110,6 +110,13 @@ void PrintOperator( std::ostream& stream, BinaryOperator op )
 		case BinaryOperator::Greater: op_str= " > "; break;
 		case BinaryOperator::GreaterEqual: op_str= " >= "; break;
 
+		case BinaryOperator::And: op_str= "&"; break;
+		case BinaryOperator::Or: op_str= "|"; break;
+		case BinaryOperator::Xor: op_str= "^"; break;
+
+		case BinaryOperator::LazyLogicalAnd: op_str= "&&"; break;
+		case BinaryOperator::LazyLogicalOr: op_str= "||"; break;
+
 		case BinaryOperator::Last: U_ASSERT(false); break;
 	};
 
