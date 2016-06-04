@@ -1190,7 +1190,7 @@ U_FundamentalType CodeBuilder::BuildExpressionCode(
 				{
 					// TODO - lazy operators
 					ReportNotImplemented(
-						error_messages,
+						error_messages_,
 						"Lazy logical operators" );
 					throw ProgramError();
 				}
