@@ -13,7 +13,7 @@ namespace
 template<class T>
 struct TypeLinker
 {
-	static U_FundamentalType GetUFundamentalType()
+	constexpr static U_FundamentalType GetUFundamentalType()
 	{
 		return U_FundamentalType::InvalidType;
 	}
@@ -23,7 +23,7 @@ struct TypeLinker
 template<>\
 struct TypeLinker<type>\
 {\
-	static U_FundamentalType GetUFundamentalType()\
+	constexpr static U_FundamentalType GetUFundamentalType()\
 	{\
 		return U_FundamentalType::type_in_enum;\
 	}\
@@ -41,6 +41,14 @@ LINK_TYPES( U_i64, i64 )
 LINK_TYPES( U_u64, u64 )
 
 #undef LINK_TYPES
+
+template<class T>
+static void AssertFundamentalType()
+{
+	static_assert(
+		TypeLinker<T>::GetUFundamentalType() != U_FundamentalType::InvalidType,
+		"Inavalid type, expected fundamental" );
+}
 
 } // namespace
 
@@ -63,6 +71,8 @@ bool VM::PushArgs(
 	const T& arg0,
 	const Args&... args )
 {
+	AssertFundamentalType<T>();
+
 	U_ASSERT( n <= params.size() );
 	if( n == params.size() ) return false;
 
@@ -147,6 +157,8 @@ VM::CallResult VM::Call( const ProgramString& func_name, Args&&... args )
 template<class Ret>
 VM::CallResult VM::CallRet( const ProgramString& func_name, Ret& result )
 {
+	AssertFundamentalType<Ret>();
+
 	CallResult call_result;
 
 	auto it= FindExportedFunc( func_name );
@@ -190,6 +202,8 @@ VM::CallResult VM::CallRet(
 	Ret& result,
 	Args&&... args)
 {
+	AssertFundamentalType<Ret>();
+
 	CallResult call_result;
 
 	auto it= FindExportedFunc( func_name );
