@@ -507,6 +507,8 @@ void CodeBuilder::BuildFuncCode(
 	result_.code[ func_entry.first_op_position ].param.stack_add_size=
 		block_stack_context.GetMaxReachedStackSize();
 
+	result_.code.emplace_back( Vm_Op::Type::Ret );
+
 	unsigned int needed_stack_size=
 		block_stack_context.GetMaxReachedStackSize() +
 		function_context.expression_stack_size_counter.GetMaxReachedStackSize();
