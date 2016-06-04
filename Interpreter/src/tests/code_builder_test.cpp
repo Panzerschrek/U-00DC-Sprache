@@ -38,8 +38,11 @@ static void SimpleProgramTest()
 {
 	static const char c_program_text[]=
 
-"fn Foo( a : i32, b : i32, c : i32 ) : i32\
+"fn A(){}\
+fn Foo( a : i32, b : i32, c : i32 ) : i32\
 {\
+	A();\
+	a - a;\
 	return (a) - -b / c ;\
 }"
 ;

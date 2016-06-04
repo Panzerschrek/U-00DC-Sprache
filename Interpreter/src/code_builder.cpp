@@ -615,6 +615,26 @@ void CodeBuilder::BuildBlockCode(
 					g_fundamental_types_size[ size_t(inserted_variable->second.type.fundamental) ];
 			}
 			else if(
+				const SingleExpressionOperator* expression=
+				dynamic_cast<const SingleExpressionOperator*>( block_element_ptr ) )
+			{
+				U_FundamentalType result=
+					BuildExpressionCode(
+						*expression->expression_,
+						block_names,
+						function_context );
+
+				unsigned int size= g_fundamental_types_size[ size_t(result) ];
+				if( size > 0 )
+				{
+					Vm_Op op( Vm_Op::Type::StackPointerAdd );
+					op.param.stack_add_size= -int(size);
+					result_.code.push_back( op );
+				}
+
+				function_context.expression_stack_size_counter-= size;
+			}
+			else if(
 				const AssignmentOperator* assignment_operator=
 				dynamic_cast<const AssignmentOperator*>( block_element_ptr ) )
 			{
