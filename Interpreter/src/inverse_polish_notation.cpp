@@ -8,18 +8,25 @@ static const unsigned int g_operators_priority[ size_t(BinaryOperator::Last) ]=
 {
 	[ size_t( BinaryOperator::None ) ]= 0,
 
-	[ size_t( BinaryOperator::Add ) ]= 2,
-	[ size_t( BinaryOperator::Sub ) ]= 2,
+	[ size_t( BinaryOperator::Add ) ]= 9,
+	[ size_t( BinaryOperator::Sub ) ]= 9,
 
-	[ size_t( BinaryOperator::Div ) ]= 3,
-	[ size_t( BinaryOperator::Mul ) ]= 3,
+	[ size_t( BinaryOperator::Div ) ]= 10,
+	[ size_t( BinaryOperator::Mul ) ]= 10,
 
-	[ size_t( BinaryOperator::Equal ) ]= 1,
-	[ size_t( BinaryOperator::NotEqual ) ]= 1,
-	[ size_t( BinaryOperator::Less ) ]= 1,
-	[ size_t( BinaryOperator::LessEqual ) ]= 1,
-	[ size_t( BinaryOperator::Greater ) ]= 1,
-	[ size_t( BinaryOperator::GreaterEqual ) ]= 1,
+	[ size_t( BinaryOperator::Equal ) ]= 8,
+	[ size_t( BinaryOperator::NotEqual ) ]= 8,
+	[ size_t( BinaryOperator::Less ) ]= 8,
+	[ size_t( BinaryOperator::LessEqual ) ]= 8,
+	[ size_t( BinaryOperator::Greater ) ]= 8,
+	[ size_t( BinaryOperator::GreaterEqual ) ]= 8,
+
+	[ size_t( BinaryOperator::And ) ]= 7,
+	[ size_t( BinaryOperator::Or ) ]= 6,
+	[ size_t( BinaryOperator::Xor ) ]= 5,
+
+	[ size_t( BinaryOperator::LazyLogicalAnd ) ]= 4,
+	[ size_t( BinaryOperator::LazyLogicalOr ) ]= 3,
 };
 
 static inline unsigned int GetOperatorPriority( BinaryOperator op )

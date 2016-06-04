@@ -108,6 +108,13 @@ enum class BinaryOperator
 	Greater,
 	GreaterEqual,
 
+	And,
+	Or,
+	Xor,
+
+	LazyLogicalAnd,
+	LazyLogicalOr,
+
 	Last,
 };
 

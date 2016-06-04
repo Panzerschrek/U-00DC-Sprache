@@ -38,6 +38,7 @@ struct Lexem
 		Star, // *
 		Slash, // /
 
+		And, // &
 		Or, // |
 		Xor, // ^
 		Tilda, // ~

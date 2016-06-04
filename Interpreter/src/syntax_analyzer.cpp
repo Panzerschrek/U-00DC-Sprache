@@ -36,7 +36,14 @@ static bool IsBinaryOperator( const Lexem& lexem )
 		lexem.type == Lexem::Type::CompareLess ||
 		lexem.type == Lexem::Type::CompareLessOrEqual ||
 		lexem.type == Lexem::Type::CompareGreater ||
-		lexem.type == Lexem::Type::CompareGreaterOrEqual;
+		lexem.type == Lexem::Type::CompareGreaterOrEqual ||
+
+		lexem.type == Lexem::Type::And ||
+		lexem.type == Lexem::Type::Or ||
+		lexem.type == Lexem::Type::Xor ||
+
+		lexem.type == Lexem::Type::Conjunction ||
+		lexem.type == Lexem::Type::Disjunction;
 }
 
 static BinaryOperator LexemToBinaryOperator( const Lexem& lexem )
@@ -54,6 +61,13 @@ static BinaryOperator LexemToBinaryOperator( const Lexem& lexem )
 		case Lexem::Type::CompareLessOrEqual: return BinaryOperator::LessEqual;
 		case Lexem::Type::CompareGreater: return BinaryOperator::Greater;
 		case Lexem::Type::CompareGreaterOrEqual: return BinaryOperator::GreaterEqual;
+
+		case Lexem::Type::And: return BinaryOperator::And;
+		case Lexem::Type::Or: return BinaryOperator::Or;
+		case Lexem::Type::Xor: return BinaryOperator::Xor;
+
+		case Lexem::Type::Conjunction: return BinaryOperator::LazyLogicalAnd;
+		case Lexem::Type::Disjunction: return BinaryOperator::LazyLogicalOr;
 
 		default:
 		U_ASSERT(false);
