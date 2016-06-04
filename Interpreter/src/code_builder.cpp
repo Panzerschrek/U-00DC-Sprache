@@ -1251,13 +1251,16 @@ U_FundamentalType CodeBuilder::BuildFuncCall(
 		throw ProgramError();
 	}
 
-	// Reserve place for result
 	unsigned int result_size=
 		g_fundamental_types_size[ size_t(func.return_type.fundamental) ];
 
-	Vm_Op reserve_result_op( Vm_Op::Type::StackPointerAdd );
-	reserve_result_op.param.stack_add_size= result_size;
-	result_.code.emplace_back( reserve_result_op );
+	// Reserve place for result
+	if( result_size > 0 )
+	{
+		Vm_Op reserve_result_op( Vm_Op::Type::StackPointerAdd );
+		reserve_result_op.param.stack_add_size= result_size;
+		result_.code.emplace_back( reserve_result_op );
+	}
 
 	function_context.expression_stack_size_counter+= result_size;
 
@@ -1296,9 +1299,12 @@ U_FundamentalType CodeBuilder::BuildFuncCall(
 	function_context.expression_stack_size_counter+= sizeof(FuncNumber) + VM::c_saved_caller_frame_size_;
 
 	// Clear args
-	Vm_Op clear_args_op( Vm_Op::Type::StackPointerAdd );
-	clear_args_op.param.stack_add_size= -int(args_size);
-	result_.code.emplace_back( clear_args_op );
+	if( args_size > 0 )
+	{
+		Vm_Op clear_args_op( Vm_Op::Type::StackPointerAdd );
+		clear_args_op.param.stack_add_size= -int(args_size);
+		result_.code.emplace_back( clear_args_op );
+	}
 
 	function_context.expression_stack_size_counter-= sizeof(FuncNumber) + VM::c_saved_caller_frame_size_ + args_size;
 
