@@ -7,8 +7,9 @@ fn f( a : i32, b : f32 )
 	}
 	return;
 	let r : i8 = 0xFe457.45faF + 1.2e-7 - 45e6 + 45i64;
-}
+} // commnet
 
+// void func
 fn l()
 {
 	let x : i32 = +-34[(09)];

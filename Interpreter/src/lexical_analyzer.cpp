@@ -234,7 +234,19 @@ LexicalAnalysisResult LexicalAnalysis( const ProgramString& program_text )
 		const sprache_char c= *it;
 		Lexem lexem;
 
-		if( IsNumberStartChar(c) )
+		// line comment.
+		if( c == '/' && it_end - it > 1 && *(it+1) == '/' )
+		{
+			while( it < it_end && !IsNewline(*it) ) ++it;
+			if( it == it_end ) break;
+
+			line++;
+			last_newline_it= it;
+			++it;
+
+			continue;
+		}
+		else if( IsNumberStartChar(c) )
 			lexem= ParseNumber( it, it_end );
 
 		else if( IsIdentifierStartChar(c) )
