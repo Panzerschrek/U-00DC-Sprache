@@ -566,7 +566,12 @@ void CodeBuilder::BuildBlockCode(
 				if( variable_declaration->initial_value )
 				{
 					U_FundamentalType init_type=
-						BuildExpressionCode( *variable_declaration->initial_value, block_names, function_context );
+						BuildExpressionCode(
+							*variable_declaration->initial_value,
+							block_names,
+							function_context,
+							stack_context );
+
 					if( init_type != inserted_variable->second.type.fundamental )
 					{
 						ReportTypesMismatch( error_messages_, init_type, inserted_variable->second.type.fundamental );
@@ -624,7 +629,8 @@ void CodeBuilder::BuildBlockCode(
 					BuildExpressionCode(
 						*expression->expression_,
 						block_names,
-						function_context );
+						function_context,
+						stack_context );
 
 				unsigned int size= g_fundamental_types_size[ size_t(result) ];
 				if( size > 0 )
@@ -667,7 +673,7 @@ void CodeBuilder::BuildBlockCode(
 				const Variable& variable= variable_entry->second;
 
 				U_FundamentalType l_value_type=
-					BuildExpressionCode( r_value, block_names, function_context );
+					BuildExpressionCode( r_value, block_names, function_context, stack_context );
 
 				if( l_value_type != variable.type.fundamental )
 				{
@@ -725,7 +731,8 @@ void CodeBuilder::BuildBlockCode(
 						BuildExpressionCode(
 							*return_operator->expression_,
 							block_names,
-							function_context );
+							function_context,
+							stack_context );
 
 					if( expression_type != function_context.result_type )
 					{
@@ -810,7 +817,8 @@ void CodeBuilder::BuildBlockCode(
 U_FundamentalType CodeBuilder::BuildExpressionCode(
 	const BinaryOperatorsChain& expression,
 	const NamesScope& names,
-	FunctionContext& function_context )
+	FunctionContext& function_context,
+	BlockStackContext stack_context )
 {
 	std::vector< Type > types_stack;
 
@@ -821,10 +829,6 @@ U_FundamentalType CodeBuilder::BuildExpressionCode(
 		// Operand
 		if( comp.operator_ == BinaryOperator::None )
 		{
-			// HACK. Pass function number not through stack,
-			// because Vm operation 'call' takes function number from stack top.
-			unsigned int function_number= 0;
-
 			const IBinaryOperatorsChainComponent& operand= *comp.operand;
 			if( const NamedOperand* named_operand=
 				dynamic_cast<const NamedOperand*>(&operand) )
@@ -840,8 +844,11 @@ U_FundamentalType CodeBuilder::BuildExpressionCode(
 
 				if( variable.location == Variable::Location::Global &&
 					variable.type.function )
-					function_number= variable.offset;
-
+				{
+					Vm_Op op{ Vm_Op::Type::PushC32 };
+					op.param.push_c_32= variable.offset;
+					result_.code.push_back( op );
+				}
 				else
 				{
 					U_ASSERT(!variable.type.function );
@@ -960,7 +967,11 @@ U_FundamentalType CodeBuilder::BuildExpressionCode(
 				Type type;
 				type.kind= Type::Kind::Fundamental;
 				type.fundamental=
-					BuildExpressionCode( *bracket_expression->expression_, names, function_context );
+					BuildExpressionCode(
+						*bracket_expression->expression_,
+						names,
+						function_context,
+						stack_context );
 
 				types_stack.push_back( type );
 			}
@@ -984,10 +995,10 @@ U_FundamentalType CodeBuilder::BuildExpressionCode(
 					U_FundamentalType call_type=
 						BuildFuncCall(
 							*types_stack.back().function,
-							function_number,
 							*call_operator,
 							names,
-							function_context );
+							function_context,
+							stack_context );
 
 					// Pop function
 					types_stack.pop_back();
@@ -1238,10 +1249,10 @@ U_FundamentalType CodeBuilder::BuildExpressionCode(
 
 U_FundamentalType CodeBuilder::BuildFuncCall(
 	const Function& func,
-	unsigned int func_number,
 	const CallOperator& call_operator,
 	const NamesScope& names,
-	FunctionContext& function_context )
+	FunctionContext& function_context,
+	BlockStackContext stack_context )
 {
 	U_ASSERT( func.return_type.kind == Type::Kind::Fundamental );
 
@@ -1253,6 +1264,19 @@ U_FundamentalType CodeBuilder::BuildFuncCall(
 
 	unsigned int result_size=
 		g_fundamental_types_size[ size_t(func.return_type.fundamental) ];
+
+	// Pop function number and move it to temp variable.
+	// Do it only if function have any args or returns non void.
+	bool need_tmp_var_for_func_number= func.args.size() > 0 || result_size > 0;
+	unsigned int tmp_var_func_number_offset= stack_context.GetStackSize();
+	if( need_tmp_var_for_func_number )
+	{
+		stack_context.IncreaseStack( sizeof(FuncNumber) );
+
+		Vm_Op op{ Vm_Op::Type::PopToLocalStack32 };
+		op.param.local_stack_operations_offset= tmp_var_func_number_offset;
+		result_.code.push_back( op );
+	}
 
 	// Reserve place for result
 	if( result_size > 0 )
@@ -1274,7 +1298,8 @@ U_FundamentalType CodeBuilder::BuildFuncCall(
 			BuildExpressionCode(
 				*call_operator.arguments_[i],
 				names,
-				function_context );
+				function_context,
+				stack_context );
 
 		if( expression_type != func.args[i].fundamental )
 		{
@@ -1285,13 +1310,16 @@ U_FundamentalType CodeBuilder::BuildFuncCall(
 		args_size+= g_fundamental_types_size[ size_t(func.args[i].fundamental) ];
 	}
 
-	// Push func number
-	static_assert(
-		32/8 == sizeof(FuncNumber),
-		"You need push_c operation appropriate for FuncNumber type" );
-	Vm_Op push_func_op( Vm_Op::Type::PushC32 );
-	push_func_op.param.push_c_32= func_number;
-	result_.code.emplace_back( push_func_op );
+	// Push func number.
+	if( need_tmp_var_for_func_number )
+	{
+		static_assert(
+			32/8 == sizeof(FuncNumber),
+			"You need push_c operation appropriate for FuncNumber type" );
+		Vm_Op op( Vm_Op::Type::PushFromLocalStack32 );
+		op.param.local_stack_operations_offset= tmp_var_func_number_offset;
+		result_.code.emplace_back( op );
+	}
 
 	// Call
 	result_.code.emplace_back( Vm_Op::Type::Call );
@@ -1336,7 +1364,8 @@ void CodeBuilder::BuildIfOperator(
 				BuildExpressionCode(
 					*branch.condition,
 					names,
-					function_context );
+					function_context,
+					stack_context );
 
 			if( condition_type != U_FundamentalType::Bool )
 			{
@@ -1394,7 +1423,8 @@ void CodeBuilder::BuildWhileOperator(
 		BuildExpressionCode(
 			*while_operator.condition_,
 			names,
-			function_context );
+			function_context,
+			stack_context );
 
 	if( condition_type != U_FundamentalType::Bool )
 	{

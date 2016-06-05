@@ -332,6 +332,44 @@ fn Foo( a : bool, b : bool, c : bool ) : bool\
 	}
 }
 
+
+static void MultipleCallTest()
+{
+	static const char c_program_text[]=
+
+R"RAW(
+fn X0(){} // no args and void result
+fn X1() : i32 { return 1; } // no args and nonzero result
+fn X2( x : i32 ) : i32 // args and nonzero result
+{
+	return x * 2;
+}
+fn X3( x : i32 ) : i32
+{
+	return x * 3;
+}
+fn X99( x : i32 ) {} // args and void result
+fn Z( x : i32 ) : i32
+{
+	X0();
+	X99(x);
+	return X1() * X2(x) + X3(x);
+}
+
+)RAW"
+;
+
+	VM vm{ BuildProgram( c_program_text ) };
+
+	U_i32 func_result, x= 451;
+
+	const VM::CallResult call_result =
+		vm.CallRet( ToProgramString("Z"), func_result, x );
+	U_ASSERT( call_result.ok );
+
+	U_ASSERT( x * 5 == func_result );
+}
+
 void RunCodeBuilderTest()
 {
 	SimpleProgramTest();
@@ -344,6 +382,7 @@ void RunCodeBuilderTest()
 	ContinueOperatorTest();
 	BitOperatorsTest();
 	BooleanOperatorsTest();
+	MultipleCallTest();
 }
 
 } // namespace Interpreter

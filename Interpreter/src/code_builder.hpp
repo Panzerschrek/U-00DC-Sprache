@@ -164,14 +164,15 @@ private:
 	U_FundamentalType BuildExpressionCode(
 		const BinaryOperatorsChain& expression,
 		const NamesScope& names,
-		FunctionContext& function_context );
+		FunctionContext& function_context,
+		BlockStackContext stack_context );
 
 	U_FundamentalType BuildFuncCall(
 		const Function& func,
-		unsigned int func_number,
 		const CallOperator& call_operator,
 		const NamesScope& names,
-		FunctionContext& function_context );
+		FunctionContext& function_context,
+		BlockStackContext stack_context );
 
 	void BuildIfOperator(
 		const NamesScope& names,
