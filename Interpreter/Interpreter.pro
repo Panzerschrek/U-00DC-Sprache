@@ -20,6 +20,7 @@ SOURCES += \
 	src/tests/inverse_polish_notation_test.cpp \
 	src/tests/code_builder_test.cpp \
 	src/code_builder.cpp \
+	src/code_builder_types.cpp \
 	src/inverse_polish_notation.cpp \
 	src/keywords.cpp
 
@@ -35,6 +36,7 @@ HEADERS += \
 	src/tests/inverse_polish_notation_test.hpp \
 	src/tests/code_builder_test.hpp \
 	src/code_builder.hpp \
+	src/code_builder_types.hpp \
 	src/inverse_polish_notation.hpp \
 	src/keywords.cpp
 
