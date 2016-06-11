@@ -9,12 +9,15 @@
 namespace Interpreter
 {
 
-class IPrintable
+class SyntaxElementBase
 {
 public:
-	virtual ~IPrintable(){}
+	explicit SyntaxElementBase( const FilePos& file_pos );
+	virtual ~SyntaxElementBase(){}
 
 	virtual void Print( std::ostream& stream, unsigned int indent ) const= 0;
+
+	FilePos file_pos_;
 };
 
 struct BinaryOperatorsChain;
@@ -29,17 +32,19 @@ typedef std::unique_ptr<IUnaryPostfixOperator> IUnaryPostfixOperatorPtr;
 typedef std::vector<IUnaryPrefixOperatorPtr > PrefixOperators ;
 typedef std::vector<IUnaryPostfixOperatorPtr> PostfixOperators;
 
-class IUnaryPrefixOperator : public IPrintable
+class IUnaryPrefixOperator : public SyntaxElementBase
 {
 public:
+	explicit IUnaryPrefixOperator( const FilePos& file_pos );
 	virtual ~IUnaryPrefixOperator() {}
 
 	virtual IUnaryPrefixOperatorPtr Clone() const= 0;
 };
 
-class IUnaryPostfixOperator : public IPrintable
+class IUnaryPostfixOperator : public SyntaxElementBase
 {
 public:
+	explicit IUnaryPostfixOperator( const FilePos& file_pos );
 	virtual ~IUnaryPostfixOperator() {}
 
 	virtual IUnaryPostfixOperatorPtr Clone() const= 0;
@@ -48,6 +53,7 @@ public:
 class UnaryPlus final : public IUnaryPrefixOperator
 {
 public:
+	explicit UnaryPlus( const FilePos& file_pos );
 	virtual ~UnaryPlus() override;
 
 	virtual IUnaryPrefixOperatorPtr Clone() const override;
@@ -58,6 +64,7 @@ public:
 class UnaryMinus final : public IUnaryPrefixOperator
 {
 public:
+	explicit UnaryMinus( const FilePos& file_pos );
 	virtual ~UnaryMinus() override;
 
 	virtual IUnaryPrefixOperatorPtr Clone() const override;
@@ -68,7 +75,9 @@ public:
 class CallOperator final : public IUnaryPostfixOperator
 {
 public:
-	explicit CallOperator( std::vector<BinaryOperatorsChainPtr> arguments );
+	CallOperator(
+		const FilePos& file_pos,
+		std::vector<BinaryOperatorsChainPtr> arguments );
 	virtual ~CallOperator() override;
 
 	virtual IUnaryPostfixOperatorPtr Clone() const override;
@@ -81,7 +90,7 @@ public:
 class IndexationOperator final : public IUnaryPostfixOperator
 {
 public:
-	explicit IndexationOperator( BinaryOperatorsChainPtr index );
+	explicit IndexationOperator( const FilePos& file_pos, BinaryOperatorsChainPtr index );
 	virtual ~IndexationOperator() override;
 
 	virtual IUnaryPostfixOperatorPtr Clone() const override;
@@ -123,9 +132,10 @@ void PrintOperator( std::ostream& stream, BinaryOperator op );
 class IBinaryOperatorsChainComponent;
 typedef std::unique_ptr<IBinaryOperatorsChainComponent> IBinaryOperatorsChainComponentPtr;
 
-class IBinaryOperatorsChainComponent : public IPrintable
+class IBinaryOperatorsChainComponent : public SyntaxElementBase
 {
 public:
+	explicit IBinaryOperatorsChainComponent( const FilePos& file_pos );
 	virtual ~IBinaryOperatorsChainComponent(){}
 
 	virtual IBinaryOperatorsChainComponentPtr Clone() const= 0;
@@ -134,7 +144,7 @@ public:
 class NamedOperand final : public IBinaryOperatorsChainComponent
 {
 public:
-	explicit NamedOperand( ProgramString name );
+	NamedOperand( const FilePos& file_pos, ProgramString name );
 	virtual ~NamedOperand() override;
 
 	virtual IBinaryOperatorsChainComponentPtr Clone() const override;
@@ -147,7 +157,7 @@ public:
 class BooleanConstant final : public IBinaryOperatorsChainComponent
 {
 public:
-	explicit BooleanConstant( bool value );
+	BooleanConstant( const FilePos& file_pos, bool value );
 	virtual ~BooleanConstant() override;
 
 	virtual IBinaryOperatorsChainComponentPtr Clone() const override;
@@ -165,7 +175,8 @@ public:
 		std::numeric_limits<LongFloat>::digits >= 64,
 		"Too short \"LongFloat\". LongFloat must store all uint64_t and int64_t values exactly." );
 
-	explicit NumericConstant(
+	NumericConstant(
+		const FilePos& file_pos,
 		LongFloat value,
 		ProgramString type_suffix,
 		bool has_fractional_point );
@@ -184,7 +195,7 @@ public:
 class BracketExpression final : public IBinaryOperatorsChainComponent
 {
 public:
-	explicit BracketExpression( BinaryOperatorsChainPtr expression );
+	BracketExpression( const FilePos& file_pos, BinaryOperatorsChainPtr expression );
 	~BracketExpression() override;
 
 	virtual IBinaryOperatorsChainComponentPtr Clone() const override;
@@ -194,8 +205,10 @@ public:
 	const BinaryOperatorsChainPtr expression_;
 };
 
-struct BinaryOperatorsChain final : public IPrintable
+struct BinaryOperatorsChain final : public SyntaxElementBase
 {
+	explicit BinaryOperatorsChain( const FilePos& file_pos );
+
 	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
 
 	struct ComponentWithOperator
@@ -217,18 +230,20 @@ struct BinaryOperatorsChain final : public IPrintable
 	std::vector<ComponentWithOperator> components;
 };
 
-class IProgramElement : public IPrintable
+class IProgramElement : public SyntaxElementBase
 {
 public:
+	explicit IProgramElement( const FilePos& file_pos );
 	virtual ~IProgramElement(){}
 };
 
 typedef std::unique_ptr<IProgramElement> IProgramElementPtr;
 typedef std::vector<IProgramElementPtr> ProgramElements;
 
-class IBlockElement : public IPrintable
+class IBlockElement : public SyntaxElementBase
 {
 public:
+	explicit IBlockElement( const FilePos& file_pos );
 	virtual ~IBlockElement(){}
 };
 
@@ -238,7 +253,7 @@ typedef std::vector<IBlockElementPtr> BlockElements;
 class Block final : public IBlockElement
 {
 public:
-	Block( BlockElements elements );
+	Block( const FilePos& file_pos, BlockElements elements );
 	virtual ~Block() override;
 
 	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
@@ -253,7 +268,7 @@ struct VariableDeclaration final : public IBlockElement
 {
 	virtual ~VariableDeclaration() override;
 
-	VariableDeclaration();
+	VariableDeclaration( const FilePos& file_pos );
 	VariableDeclaration( const VariableDeclaration& )= delete;
 	VariableDeclaration( VariableDeclaration&& other );
 
@@ -272,7 +287,7 @@ typedef std::unique_ptr<VariableDeclaration> VariableDeclarationPtr;
 class ReturnOperator final : public IBlockElement
 {
 public:
-	ReturnOperator( BinaryOperatorsChainPtr expression );
+	ReturnOperator( const FilePos& file_pos, BinaryOperatorsChainPtr expression );
 	~ReturnOperator() override;
 
 	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
@@ -283,7 +298,7 @@ public:
 class WhileOperator final : public IBlockElement
 {
 public:
-	WhileOperator( BinaryOperatorsChainPtr condition, BlockPtr block );
+	WhileOperator( const FilePos& file_pos, BinaryOperatorsChainPtr condition, BlockPtr block );
 	~WhileOperator() override;
 
 	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
@@ -295,6 +310,7 @@ public:
 class BreakOperator final : public IBlockElement
 {
 public:
+	explicit BreakOperator( const FilePos& file_pos );
 	~BreakOperator() override;
 	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
 };
@@ -302,6 +318,7 @@ public:
 class ContinueOperator final : public IBlockElement
 {
 public:
+	explicit ContinueOperator( const FilePos& file_pos );
 	~ContinueOperator() override;
 	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
 };
@@ -316,7 +333,7 @@ public:
 		BlockPtr block;
 	};
 
-	IfOperator( std::vector<Branch> branches );
+	IfOperator( const FilePos& file_pos, std::vector<Branch> branches );
 
 	~IfOperator() override;
 
@@ -328,7 +345,7 @@ public:
 class SingleExpressionOperator final : public IBlockElement
 {
 public:
-	SingleExpressionOperator( BinaryOperatorsChainPtr expression );
+	SingleExpressionOperator( const FilePos& file_pos, BinaryOperatorsChainPtr expression );
 	virtual ~SingleExpressionOperator() override;
 
 	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
@@ -339,7 +356,7 @@ public:
 class AssignmentOperator final : public IBlockElement
 {
 public:
-	AssignmentOperator( BinaryOperatorsChainPtr l_value, BinaryOperatorsChainPtr r_value );
+	AssignmentOperator( const FilePos& file_pos, BinaryOperatorsChainPtr l_value, BinaryOperatorsChainPtr r_value );
 	virtual ~AssignmentOperator() override;
 
 	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
@@ -352,6 +369,7 @@ class FunctionDeclaration final : public IProgramElement
 {
 public:
 	FunctionDeclaration(
+		const FilePos& file_pos,
 		ProgramString name,
 		ProgramString return_type,
 		std::vector<VariableDeclaration> arguments,

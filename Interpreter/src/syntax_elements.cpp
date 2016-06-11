@@ -10,13 +10,28 @@ static void PrintIndents( std::ostream& stream, unsigned int indents )
 		stream << "    ";
 }
 
+SyntaxElementBase::SyntaxElementBase( const FilePos& file_pos )
+	: file_pos_(file_pos)
+{}
+
+IUnaryPrefixOperator::IUnaryPrefixOperator( const FilePos& file_pos )
+	: SyntaxElementBase(file_pos)
+{}
+
+IUnaryPostfixOperator::IUnaryPostfixOperator( const FilePos& file_pos )
+	: SyntaxElementBase(file_pos)
+{}
+
+UnaryPlus::UnaryPlus( const FilePos& file_pos )
+	: IUnaryPrefixOperator(file_pos)
+{}
+
 UnaryPlus::~UnaryPlus()
-{
-}
+{}
 
 IUnaryPrefixOperatorPtr UnaryPlus::Clone() const
 {
-	return IUnaryPrefixOperatorPtr( new UnaryPlus() );
+	return IUnaryPrefixOperatorPtr( new UnaryPlus( file_pos_ ) );
 }
 
 void UnaryPlus::Print( std::ostream& stream, unsigned int indent ) const
@@ -25,13 +40,16 @@ void UnaryPlus::Print( std::ostream& stream, unsigned int indent ) const
 	stream << "+" ;
 }
 
+UnaryMinus::UnaryMinus( const FilePos& file_pos )
+	: IUnaryPrefixOperator(file_pos)
+{}
+
 UnaryMinus::~UnaryMinus()
-{
-}
+{}
 
 IUnaryPrefixOperatorPtr UnaryMinus::Clone() const
 {
-	return IUnaryPrefixOperatorPtr( new UnaryMinus() );
+	return IUnaryPrefixOperatorPtr( new UnaryMinus( file_pos_ ) );
 }
 
 void UnaryMinus::Print( std::ostream& stream, unsigned int indent ) const
@@ -40,14 +58,15 @@ void UnaryMinus::Print( std::ostream& stream, unsigned int indent ) const
 	stream << "-" ;
 }
 
-CallOperator::CallOperator( std::vector<BinaryOperatorsChainPtr> arguments )
-	: arguments_( std::move( arguments ) )
-{
-}
+CallOperator::CallOperator(
+	const FilePos& file_pos,
+	std::vector<BinaryOperatorsChainPtr> arguments )
+	: IUnaryPostfixOperator(file_pos)
+	, arguments_( std::move( arguments ) )
+{}
 
 CallOperator::~CallOperator()
-{
-}
+{}
 
 IUnaryPostfixOperatorPtr CallOperator::Clone() const
 {
@@ -56,7 +75,7 @@ IUnaryPostfixOperatorPtr CallOperator::Clone() const
 	for( const BinaryOperatorsChainPtr& expression : arguments_ )
 		arguments_copy.emplace_back( new BinaryOperatorsChain( *expression ) );
 
-	return IUnaryPostfixOperatorPtr( new CallOperator( std::move( arguments_copy ) ) );
+	return IUnaryPostfixOperatorPtr( new CallOperator( file_pos_, std::move( arguments_copy ) ) );
 }
 
 void CallOperator::Print( std::ostream& stream, unsigned int indent ) const
@@ -72,15 +91,15 @@ void CallOperator::Print( std::ostream& stream, unsigned int indent ) const
 	stream << " )";
 }
 
-IndexationOperator::IndexationOperator( BinaryOperatorsChainPtr index )
-	: index_( std::move( index ) )
+IndexationOperator::IndexationOperator( const FilePos& file_pos, BinaryOperatorsChainPtr index )
+	: IUnaryPostfixOperator(file_pos)
+	,index_( std::move( index ) )
 {
 	U_ASSERT( index_ );
 }
 
 IndexationOperator::~IndexationOperator()
-{
-}
+{}
 
 IUnaryPostfixOperatorPtr IndexationOperator::Clone() const
 {
@@ -88,7 +107,7 @@ IUnaryPostfixOperatorPtr IndexationOperator::Clone() const
 
 	return
 		IUnaryPostfixOperatorPtr(
-			new IndexationOperator( std::move( index_copy ) ) );
+			new IndexationOperator( file_pos_, std::move( index_copy ) ) );
 }
 
 void PrintOperator( std::ostream& stream, BinaryOperator op )
@@ -130,10 +149,14 @@ void IndexationOperator::Print( std::ostream& stream, unsigned int indent ) cons
 	stream << " ]";
 }
 
-NamedOperand::NamedOperand( ProgramString name )
-	: name_( std::move(name) )
-{
-}
+IBinaryOperatorsChainComponent::IBinaryOperatorsChainComponent( const FilePos& file_pos )
+	: SyntaxElementBase(file_pos)
+{}
+
+NamedOperand::NamedOperand( const FilePos& file_pos, ProgramString name )
+	: IBinaryOperatorsChainComponent(file_pos)
+	, name_( std::move(name) )
+{}
 
 void NamedOperand::Print( std::ostream& stream, unsigned int indent ) const
 {
@@ -142,26 +165,24 @@ void NamedOperand::Print( std::ostream& stream, unsigned int indent ) const
 }
 
 NamedOperand::~NamedOperand()
-{
-}
+{}
 
 IBinaryOperatorsChainComponentPtr NamedOperand::Clone() const
 {
-	return IBinaryOperatorsChainComponentPtr( new NamedOperand( name_ ) );
+	return IBinaryOperatorsChainComponentPtr( new NamedOperand( file_pos_, name_ ) );
 }
 
-BooleanConstant::BooleanConstant( bool value )
-	: value_( value )
-{
-}
+BooleanConstant::BooleanConstant( const FilePos& file_pos, bool value )
+	: IBinaryOperatorsChainComponent(file_pos)
+	, value_( value )
+{}
 
 BooleanConstant::~BooleanConstant()
-{
-}
+{}
 
 IBinaryOperatorsChainComponentPtr BooleanConstant::Clone() const
 {
-	return IBinaryOperatorsChainComponentPtr( new BooleanConstant( value_ ) );
+	return IBinaryOperatorsChainComponentPtr( new BooleanConstant( file_pos_, value_ ) );
 }
 
 void BooleanConstant::Print( std::ostream& stream, unsigned int indent ) const
@@ -171,14 +192,15 @@ void BooleanConstant::Print( std::ostream& stream, unsigned int indent ) const
 }
 
 NumericConstant::NumericConstant(
+	const FilePos& file_pos,
 	LongFloat value,
 	ProgramString type_suffix,
 	bool has_fractional_point )
-	: value_( value )
+	: IBinaryOperatorsChainComponent(file_pos)
+	, value_( value )
 	, type_suffix_( std::move(type_suffix) )
 	, has_fractional_point_( has_fractional_point )
-{
-}
+{}
 
 void NumericConstant::Print( std::ostream& stream, unsigned int indent ) const
 {
@@ -187,37 +209,36 @@ void NumericConstant::Print( std::ostream& stream, unsigned int indent ) const
 }
 
 NumericConstant::~NumericConstant()
-{
-}
+{}
 
 IBinaryOperatorsChainComponentPtr NumericConstant::Clone() const
 {
 	return
 		IBinaryOperatorsChainComponentPtr(
 			new NumericConstant(
+				file_pos_,
 				value_,
 				type_suffix_,
 				has_fractional_point_ ) );
 }
 
-BracketExpression::BracketExpression( BinaryOperatorsChainPtr expression )
-	: expression_( std::move( expression ) )
-{
-}
+BracketExpression::BracketExpression( const FilePos& file_pos, BinaryOperatorsChainPtr expression )
+	: IBinaryOperatorsChainComponent(file_pos)
+	, expression_( std::move( expression ) )
+{}
 
 BracketExpression::~BracketExpression()
-{
-}
+{}
 
 IBinaryOperatorsChainComponentPtr BracketExpression::Clone() const
 {
 	BinaryOperatorsChainPtr expression_copy;
-	expression_copy.reset( new BinaryOperatorsChain() );
+	expression_copy.reset( new BinaryOperatorsChain( expression_->file_pos_ ) );
 	expression_copy->components= expression_->components;
 
 	return
 		IBinaryOperatorsChainComponentPtr(
-			new BracketExpression( std::move( expression_copy ) ) );
+			new BracketExpression( file_pos_, std::move( expression_copy ) ) );
 }
 
 void BracketExpression::Print( std::ostream& stream, unsigned int indent ) const
@@ -226,6 +247,10 @@ void BracketExpression::Print( std::ostream& stream, unsigned int indent ) const
 	expression_->Print( stream, indent );
 	stream << " )";
 }
+
+BinaryOperatorsChain::BinaryOperatorsChain( const FilePos& file_pos )
+	: SyntaxElementBase( file_pos )
+{}
 
 void BinaryOperatorsChain::Print( std::ostream& stream, unsigned int indent ) const
 {
@@ -244,8 +269,7 @@ void BinaryOperatorsChain::Print( std::ostream& stream, unsigned int indent ) co
 }
 
 BinaryOperatorsChain::ComponentWithOperator::ComponentWithOperator()
-{
-}
+{}
 
 BinaryOperatorsChain::ComponentWithOperator::ComponentWithOperator(
 	const ComponentWithOperator& other )
@@ -262,7 +286,7 @@ BinaryOperatorsChain::ComponentWithOperator::ComponentWithOperator(
 BinaryOperatorsChain::ComponentWithOperator&
 	BinaryOperatorsChain::ComponentWithOperator::operator=(
 		const ComponentWithOperator& other )
-{
+{	
 	prefix_operators.reserve( other.prefix_operators.size() );
 	for( const IUnaryPrefixOperatorPtr& op : other.prefix_operators )
 		prefix_operators.emplace_back( op->Clone() );
@@ -290,14 +314,21 @@ BinaryOperatorsChain::ComponentWithOperator&
 	return *this;
 }
 
-Block::Block( BlockElements elements )
-	: elements_( std::move( elements ) )
-{
-}
+IProgramElement::IProgramElement( const FilePos& file_pos )
+	: SyntaxElementBase(file_pos)
+{}
+
+IBlockElement::IBlockElement( const FilePos& file_pos )
+	: SyntaxElementBase(file_pos)
+{}
+
+Block::Block( const FilePos& file_pos, BlockElements elements )
+	: IBlockElement(file_pos)
+	, elements_( std::move( elements ) )
+{}
 
 Block::~Block()
-{
-}
+{}
 
 void Block::Print( std::ostream& stream, unsigned int indent ) const
 {
@@ -315,20 +346,22 @@ void Block::Print( std::ostream& stream, unsigned int indent ) const
 }
 
 VariableDeclaration::~VariableDeclaration()
-{
-}
+{}
 
-VariableDeclaration::VariableDeclaration()
-{
-}
+VariableDeclaration::VariableDeclaration( const FilePos& file_pos )
+	: IBlockElement(file_pos)
+{}
 
 VariableDeclaration::VariableDeclaration( VariableDeclaration&& other )
+	: IBlockElement(other.file_pos_)
 {
 	*this= std::move(other);
 }
 
 VariableDeclaration& VariableDeclaration::operator=( VariableDeclaration&& other )
 {
+	file_pos_= other.file_pos_;
+
 	name= std::move( other.name );
 	type= std::move( other.type );
 	initial_value= std::move( other.initial_value );
@@ -348,14 +381,13 @@ void VariableDeclaration::Print( std::ostream& stream, unsigned int indent ) con
 	stream << ";";
 }
 
-ReturnOperator::ReturnOperator( BinaryOperatorsChainPtr expression )
-	: expression_( std::move( expression ) )
-{
-}
+ReturnOperator::ReturnOperator( const FilePos& file_pos, BinaryOperatorsChainPtr expression )
+	: IBlockElement(file_pos)
+	, expression_( std::move( expression ) )
+{}
 
 ReturnOperator::~ReturnOperator()
-{
-}
+{}
 
 void ReturnOperator::Print( std::ostream& stream, unsigned int indent ) const
 {
@@ -365,15 +397,14 @@ void ReturnOperator::Print( std::ostream& stream, unsigned int indent ) const
 	stream << ";";
 }
 
-WhileOperator::WhileOperator( BinaryOperatorsChainPtr condition, BlockPtr block )
-	: condition_( std::move( condition ) )
+WhileOperator::WhileOperator( const FilePos& file_pos, BinaryOperatorsChainPtr condition, BlockPtr block )
+	: IBlockElement(file_pos)
+	, condition_( std::move( condition ) )
 	, block_( std::move( block ) )
-{
-}
+{}
 
 WhileOperator::~WhileOperator()
-{
-}
+{}
 
 void WhileOperator::Print( std::ostream& stream, unsigned int indent ) const
 {
@@ -385,9 +416,12 @@ void WhileOperator::Print( std::ostream& stream, unsigned int indent ) const
 	block_->Print( stream, indent  );
 }
 
+BreakOperator::BreakOperator( const FilePos& file_pos )
+	: IBlockElement(file_pos)
+{}
+
 BreakOperator::~BreakOperator()
-{
-}
+{}
 
 void BreakOperator::Print( std::ostream& stream, unsigned int indent ) const
 {
@@ -395,9 +429,12 @@ void BreakOperator::Print( std::ostream& stream, unsigned int indent ) const
 	stream << "break;";
 }
 
+ContinueOperator::ContinueOperator( const FilePos& file_pos )
+	: IBlockElement(file_pos)
+{}
+
 ContinueOperator::~ContinueOperator()
-{
-}
+{}
 
 void ContinueOperator::Print( std::ostream& stream, unsigned int indent ) const
 {
@@ -405,14 +442,13 @@ void ContinueOperator::Print( std::ostream& stream, unsigned int indent ) const
 	stream << "continue;";
 }
 
-IfOperator::IfOperator( std::vector<Branch> branches )
-	: branches_( std::move( branches ) )
-{
-}
+IfOperator::IfOperator( const FilePos& file_pos, std::vector<Branch> branches )
+	: IBlockElement(file_pos)
+	, branches_( std::move( branches ) )
+{}
 
 IfOperator::~IfOperator()
-{
-}
+{}
 
 void IfOperator::Print( std::ostream& stream, unsigned int indent ) const
 {
@@ -437,14 +473,13 @@ void IfOperator::Print( std::ostream& stream, unsigned int indent ) const
 	}
 }
 
-SingleExpressionOperator::SingleExpressionOperator( BinaryOperatorsChainPtr expression )
-	: expression_( std::move( expression ) )
-{
-}
+SingleExpressionOperator::SingleExpressionOperator( const FilePos& file_pos, BinaryOperatorsChainPtr expression )
+	: IBlockElement(file_pos)
+	, expression_( std::move( expression ) )
+{}
 
 SingleExpressionOperator::~SingleExpressionOperator()
-{
-}
+{}
 
 void SingleExpressionOperator::Print( std::ostream& stream, unsigned int indent ) const
 {
@@ -452,15 +487,17 @@ void SingleExpressionOperator::Print( std::ostream& stream, unsigned int indent 
 	stream << ";";
 }
 
-AssignmentOperator::AssignmentOperator( BinaryOperatorsChainPtr l_value, BinaryOperatorsChainPtr r_value )
-	: l_value_( std::move( l_value ) )
+AssignmentOperator::AssignmentOperator(
+	const FilePos& file_pos,
+	BinaryOperatorsChainPtr l_value,
+	BinaryOperatorsChainPtr r_value )
+	: IBlockElement(file_pos)
+	, l_value_( std::move( l_value ) )
 	, r_value_( std::move( r_value ) )
-{
-}
+{}
 
 AssignmentOperator::~AssignmentOperator()
-{
-}
+{}
 
 void AssignmentOperator::Print( std::ostream& stream, unsigned int indent ) const
 {
@@ -471,20 +508,20 @@ void AssignmentOperator::Print( std::ostream& stream, unsigned int indent ) cons
 }
 
 FunctionDeclaration::FunctionDeclaration(
+	const FilePos& file_pos,
 	ProgramString name,
 	ProgramString return_type,
 	std::vector<VariableDeclaration> arguments,
 	BlockPtr block )
-	: name_( std::move(name) )
+	: IProgramElement(file_pos)
+	, name_( std::move(name) )
 	, return_type_( std::move(return_type) )
 	, arguments_( std::move(arguments) )
 	, block_( std::move(block) )
-{
-}
+{}
 
 FunctionDeclaration::~FunctionDeclaration()
-{
-}
+{}
 
 void FunctionDeclaration::Print( std::ostream& stream, unsigned int indent ) const
 {

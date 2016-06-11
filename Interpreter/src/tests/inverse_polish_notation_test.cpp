@@ -8,6 +8,13 @@
 namespace Interpreter
 {
 
+static IBinaryOperatorsChainComponentPtr Op( const char* name )
+{
+	return
+		IBinaryOperatorsChainComponentPtr(
+			new NamedOperand( FilePos{ 0, 0 }, ToProgramString( name) ) );
+}
+
 static void Print( const BinaryOperatorsChain& chain, const InversePolishNotation& ipl )
 {
 	std::cout << "\n";
@@ -19,10 +26,10 @@ static void Print( const BinaryOperatorsChain& chain, const InversePolishNotatio
 
 static void OneOperandExpressionTest()
 {
-	BinaryOperatorsChain chain;
+	BinaryOperatorsChain chain( FilePos{ 0, 0 } );
 	chain.components.resize(1);
 
-	chain.components[0].component.reset( new NamedOperand( ToProgramString( "a" ) ) );
+	chain.components[0].component= Op( "a" );
 
 	InversePolishNotation notation= ConvertToInversePolishNotation( chain );
 
@@ -34,12 +41,12 @@ static void OneOperandExpressionTest()
 
 static void TwoOperandExpressionTest()
 {
-	BinaryOperatorsChain chain;
+	BinaryOperatorsChain chain( FilePos{ 0, 0 } );
 	chain.components.resize(2);
 
-	chain.components[0].component.reset( new NamedOperand( ToProgramString( "a" ) ) );
+	chain.components[0].component= Op( "a" );
 	chain.components[0].op= BinaryOperator::Add;
-	chain.components[1].component.reset( new NamedOperand( ToProgramString( "b" ) ) );
+	chain.components[1].component= Op( "b" );
 
 	InversePolishNotation notation= ConvertToInversePolishNotation( chain );
 	Print( chain, notation );
@@ -53,16 +60,16 @@ static void TwoOperandExpressionTest()
 
 static void LongFlatExpressionTest()
 {
-	BinaryOperatorsChain chain;
+	BinaryOperatorsChain chain( FilePos{ 0, 0 } );
 	chain.components.resize(4);
 
-	chain.components[0].component.reset( new NamedOperand( ToProgramString( "a" ) ) );
+	chain.components[0].component= Op( "a" );
 	chain.components[0].op= BinaryOperator::Add;
-	chain.components[1].component.reset( new NamedOperand( ToProgramString( "b" ) ) );
+	chain.components[1].component= Op( "b" );
 	chain.components[1].op= BinaryOperator::Add;
-	chain.components[2].component.reset( new NamedOperand( ToProgramString( "c" ) ) );
+	chain.components[2].component= Op( "c" );
 	chain.components[2].op= BinaryOperator::Add;
-	chain.components[3].component.reset( new NamedOperand( ToProgramString( "d" ) ) );
+	chain.components[3].component= Op( "d" );
 
 	InversePolishNotation notation= ConvertToInversePolishNotation( chain );
 	Print( chain, notation );
@@ -82,14 +89,14 @@ static void LongFlatExpressionTest()
 
 static void TriOperandEqualExpressionTest()
 {
-	BinaryOperatorsChain chain;
+	BinaryOperatorsChain chain( FilePos{ 0, 0 } );
 	chain.components.resize(3);
 
-	chain.components[0].component.reset( new NamedOperand( ToProgramString( "a" ) ) );
+	chain.components[0].component= Op( "a" );
 	chain.components[0].op= BinaryOperator::Add;
-	chain.components[1].component.reset( new NamedOperand( ToProgramString( "b" ) ) );
+	chain.components[1].component= Op( "b" );
 	chain.components[1].op= BinaryOperator::Add;
-	chain.components[2].component.reset( new NamedOperand( ToProgramString( "c" ) ) );
+	chain.components[2].component= Op( "c" );
 
 	InversePolishNotation notation= ConvertToInversePolishNotation( chain );
 	Print( chain, notation );
@@ -106,14 +113,14 @@ static void TriOperandEqualExpressionTest()
 
 static void MultiPriorityExpressionTest0()
 {
-	BinaryOperatorsChain chain;
+	BinaryOperatorsChain chain( FilePos{ 0, 0 } );
 	chain.components.resize(3);
 
-	chain.components[0].component.reset( new NamedOperand( ToProgramString( "a" ) ) );
+	chain.components[0].component= Op( "a" );
 	chain.components[0].op= BinaryOperator::Mul;
-	chain.components[1].component.reset( new NamedOperand( ToProgramString( "b" ) ) );
+	chain.components[1].component= Op( "b" );
 	chain.components[1].op= BinaryOperator::Add;
-	chain.components[2].component.reset( new NamedOperand( ToProgramString( "c" ) ) );
+	chain.components[2].component= Op( "c" );
 
 	InversePolishNotation notation= ConvertToInversePolishNotation( chain );
 	Print( chain, notation );
@@ -130,14 +137,14 @@ static void MultiPriorityExpressionTest0()
 
 static void MultiPriorityExpressionTest1()
 {
-	BinaryOperatorsChain chain;
+	BinaryOperatorsChain chain( FilePos{ 0, 0 } );
 	chain.components.resize(3);
 
-	chain.components[0].component.reset( new NamedOperand( ToProgramString( "a" ) ) );
+	chain.components[0].component= Op( "a" );
 	chain.components[0].op= BinaryOperator::Add;
-	chain.components[1].component.reset( new NamedOperand( ToProgramString( "b" ) ) );
+	chain.components[1].component= Op( "b" );
 	chain.components[1].op= BinaryOperator::Mul;
-	chain.components[2].component.reset( new NamedOperand( ToProgramString( "c" ) ) );
+	chain.components[2].component= Op( "c" );
 
 	InversePolishNotation notation= ConvertToInversePolishNotation( chain );
 	Print( chain, notation );
@@ -157,19 +164,19 @@ static void MultiPriorityExpressionTest1()
 
 static void MultiPriorityExpressionTest2()
 {
-	BinaryOperatorsChain chain;
+	BinaryOperatorsChain chain( FilePos{ 0, 0 } );
 	chain.components.resize(4);
 
-	chain.components[0].component.reset( new NamedOperand( ToProgramString( "a" ) ) );
+	chain.components[0].component= Op( "a" );
 	chain.components[0].op= BinaryOperator::Add;
 
-	chain.components[1].component.reset( new NamedOperand( ToProgramString( "b" ) ) );
+	chain.components[1].component= Op( "b" );
 	chain.components[1].op= BinaryOperator::Mul;
 
-	chain.components[2].component.reset( new NamedOperand( ToProgramString( "c" ) ) );
+	chain.components[2].component= Op( "c" );
 	chain.components[2].op= BinaryOperator::Mul;
 
-	chain.components[3].component.reset( new NamedOperand( ToProgramString( "d" ) ) );
+	chain.components[3].component= Op( "d" );
 
 	InversePolishNotation notation= ConvertToInversePolishNotation( chain );
 	Print( chain, notation );
@@ -194,19 +201,19 @@ static void MultiPriorityExpressionTest2()
 
 static void MultiPriorityExpressionTest3()
 {
-	BinaryOperatorsChain chain;
+	BinaryOperatorsChain chain( FilePos{ 0, 0 } );
 	chain.components.resize(4);
 
-	chain.components[0].component.reset( new NamedOperand( ToProgramString( "a" ) ) );
+	chain.components[0].component= Op( "a" );
 	chain.components[0].op= BinaryOperator::Mul;
 
-	chain.components[1].component.reset( new NamedOperand( ToProgramString( "b" ) ) );
+	chain.components[1].component= Op( "b" );
 	chain.components[1].op= BinaryOperator::Add;
 
-	chain.components[2].component.reset( new NamedOperand( ToProgramString( "c" ) ) );
+	chain.components[2].component= Op( "c" );
 	chain.components[2].op= BinaryOperator::Sub;
 
-	chain.components[3].component.reset( new NamedOperand( ToProgramString( "d" ) ) );
+	chain.components[3].component= Op( "d" );
 
 	InversePolishNotation notation= ConvertToInversePolishNotation( chain );
 	Print( chain, notation );
@@ -232,19 +239,19 @@ static void MultiPriorityExpressionTest3()
 
 static void MultiPriorityExpressionTest4()
 {
-	BinaryOperatorsChain chain;
+	BinaryOperatorsChain chain( FilePos{ 0, 0 } );
 	chain.components.resize(4);
 
-	chain.components[0].component.reset( new NamedOperand( ToProgramString( "a" ) ) );
+	chain.components[0].component= Op( "a" );
 	chain.components[0].op= BinaryOperator::Mul;
 
-	chain.components[1].component.reset( new NamedOperand( ToProgramString( "b" ) ) );
+	chain.components[1].component= Op( "b" );
 	chain.components[1].op= BinaryOperator::Add;
 
-	chain.components[2].component.reset( new NamedOperand( ToProgramString( "c" ) ) );
+	chain.components[2].component= Op( "c" );
 	chain.components[2].op= BinaryOperator::Mul;
 
-	chain.components[3].component.reset( new NamedOperand( ToProgramString( "d" ) ) );
+	chain.components[3].component= Op( "d" );
 
 	InversePolishNotation notation= ConvertToInversePolishNotation( chain );
 	Print( chain, notation );
@@ -270,22 +277,22 @@ static void MultiPriorityExpressionTest4()
 
 static void MultiPriorityExpressionTest5()
 {
-	BinaryOperatorsChain chain;
+	BinaryOperatorsChain chain( FilePos{ 0, 0 } );
 	chain.components.resize(5);
 
-	chain.components[0].component.reset( new NamedOperand( ToProgramString( "a" ) ) );
+	chain.components[0].component= Op( "a" );
 	chain.components[0].op= BinaryOperator::Add;
 
-	chain.components[1].component.reset( new NamedOperand( ToProgramString( "b" ) ) );
+	chain.components[1].component= Op( "b" );
 	chain.components[1].op= BinaryOperator::Mul;
 
-	chain.components[2].component.reset( new NamedOperand( ToProgramString( "c" ) ) );
+	chain.components[2].component= Op( "c" );
 	chain.components[2].op= BinaryOperator::Add;
 
-	chain.components[3].component.reset( new NamedOperand( ToProgramString( "d" ) ) );
+	chain.components[3].component= Op( "d" );
 	chain.components[3].op= BinaryOperator::Sub;
 
-	chain.components[4].component.reset( new NamedOperand( ToProgramString( "e" ) ) );
+	chain.components[4].component= Op( "e" );
 
 	InversePolishNotation notation= ConvertToInversePolishNotation( chain );
 	Print( chain, notation );
@@ -315,16 +322,16 @@ static void MultiPriorityExpressionTest5()
 
 static void ExpressionWithComparisionOperatorsTest0()
 {
-	BinaryOperatorsChain chain;
+	BinaryOperatorsChain chain( FilePos{ 0, 0 } );
 	chain.components.resize(3);
 
-	chain.components[0].component.reset( new NamedOperand( ToProgramString( "a" ) ) );
+	chain.components[0].component= Op( "a" );
 	chain.components[0].op= BinaryOperator::Equal;
 
-	chain.components[1].component.reset( new NamedOperand( ToProgramString( "b" ) ) );
+	chain.components[1].component= Op( "b" );
 	chain.components[1].op= BinaryOperator::Add;
 
-	chain.components[2].component.reset( new NamedOperand( ToProgramString( "c" ) ) );
+	chain.components[2].component= Op( "c" );
 
 	InversePolishNotation notation= ConvertToInversePolishNotation( chain );
 	Print( chain, notation );
@@ -344,16 +351,16 @@ static void ExpressionWithComparisionOperatorsTest0()
 
 static void ExpressionWithComparisionOperatorsTest1()
 {
-	BinaryOperatorsChain chain;
+	BinaryOperatorsChain chain( FilePos{ 0, 0 } );
 	chain.components.resize(3);
 
-	chain.components[0].component.reset( new NamedOperand( ToProgramString( "a" ) ) );
+	chain.components[0].component= Op( "a" );
 	chain.components[0].op= BinaryOperator::Mul;
 
-	chain.components[1].component.reset( new NamedOperand( ToProgramString( "b" ) ) );
+	chain.components[1].component= Op( "b" );
 	chain.components[1].op= BinaryOperator::Less;
 
-	chain.components[2].component.reset( new NamedOperand( ToProgramString( "c" ) ) );
+	chain.components[2].component= Op( "c" );
 
 	InversePolishNotation notation= ConvertToInversePolishNotation( chain );
 	Print( chain, notation );
@@ -374,19 +381,19 @@ static void ExpressionWithComparisionOperatorsTest1()
 
 static void ExpressionWithComparisionOperatorsTest2()
 {
-	BinaryOperatorsChain chain;
+	BinaryOperatorsChain chain( FilePos{ 0, 0 } );
 	chain.components.resize(4);
 
-	chain.components[0].component.reset( new NamedOperand( ToProgramString( "a" ) ) );
+	chain.components[0].component= Op( "a" );
 	chain.components[0].op= BinaryOperator::NotEqual;
 
-	chain.components[1].component.reset( new NamedOperand( ToProgramString( "b" ) ) );
+	chain.components[1].component= Op( "b" );
 	chain.components[1].op= BinaryOperator::Add;
 
-	chain.components[2].component.reset( new NamedOperand( ToProgramString( "c" ) ) );
+	chain.components[2].component= Op( "c" );
 	chain.components[2].op= BinaryOperator::Mul;
 
-	chain.components[3].component.reset( new NamedOperand( ToProgramString( "d" ) ) );
+	chain.components[3].component= Op( "d" );
 
 	InversePolishNotation notation= ConvertToInversePolishNotation( chain );
 	Print( chain, notation );
@@ -410,22 +417,22 @@ static void ExpressionWithComparisionOperatorsTest2()
 
 static void LogicalExpressionTest0()
 {
-	BinaryOperatorsChain chain;
+	BinaryOperatorsChain chain( FilePos{ 0, 0 } );
 	chain.components.resize(5);
 
-	chain.components[0].component.reset( new NamedOperand( ToProgramString( "a" ) ) );
+	chain.components[0].component= Op( "a" );
 	chain.components[0].op= BinaryOperator::Add;
 
-	chain.components[1].component.reset( new NamedOperand( ToProgramString( "b" ) ) );
+	chain.components[1].component= Op( "b" );
 	chain.components[1].op= BinaryOperator::Equal;
 
-	chain.components[2].component.reset( new NamedOperand( ToProgramString( "c" ) ) );
+	chain.components[2].component= Op( "c" );
 	chain.components[2].op= BinaryOperator::Mul;
 
-	chain.components[3].component.reset( new NamedOperand( ToProgramString( "d" ) ) );
+	chain.components[3].component= Op( "d" );
 	chain.components[3].op= BinaryOperator::LazyLogicalOr;
 
-	chain.components[4].component.reset( new BooleanConstant( false ) );
+	chain.components[4].component.reset( new BooleanConstant( FilePos{ 0, 0 }, false ) );
 
 	InversePolishNotation notation= ConvertToInversePolishNotation( chain );
 	Print( chain, notation );
@@ -455,19 +462,19 @@ static void LogicalExpressionTest0()
 
 static void LogicalExpressionTest1()
 {
-	BinaryOperatorsChain chain;
+	BinaryOperatorsChain chain( FilePos{ 0, 0 } );
 	chain.components.resize(4);
 
-	chain.components[0].component.reset( new NamedOperand( ToProgramString( "a" ) ) );
+	chain.components[0].component= Op( "a" );
 	chain.components[0].op= BinaryOperator::And;
 
-	chain.components[1].component.reset( new NamedOperand( ToProgramString( "b" ) ) );
+	chain.components[1].component= Op( "b" );
 	chain.components[1].op= BinaryOperator::Or;
 
-	chain.components[2].component.reset( new NamedOperand( ToProgramString( "c" ) ) );
+	chain.components[2].component= Op( "c" );
 	chain.components[2].op= BinaryOperator::LazyLogicalAnd;
 
-	chain.components[3].component.reset( new NamedOperand( ToProgramString( "d" ) ) );
+	chain.components[3].component= Op( "d" );
 
 	InversePolishNotation notation= ConvertToInversePolishNotation( chain );
 	Print( chain, notation );

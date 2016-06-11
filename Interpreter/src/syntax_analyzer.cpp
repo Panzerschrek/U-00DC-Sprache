@@ -19,7 +19,7 @@ static void PushErrorMessage(
 	const Lexem& lexem )
 {
 	error_messages.emplace_back(
-		std::to_string(lexem.line) + ":" + std::to_string(lexem.pos_in_line) +
+		std::to_string(lexem.file_pos.line) + ":" + std::to_string(lexem.file_pos.pos_in_line) +
 		" Syntax error - unexpected lexem: " + ToStdString(lexem.text) );
 }
 
@@ -76,8 +76,10 @@ static BinaryOperator LexemToBinaryOperator( const Lexem& lexem )
 }
 
 static IBinaryOperatorsChainComponentPtr ParseNumericConstant(
-	const ProgramString& text )
+	const Lexems::const_iterator num_it )
 {
+	const ProgramString& text= num_it->text;
+
 	NumericConstant::LongFloat base= 10;
 	unsigned int (*number_func)( sprache_char) =
 		[]( sprache_char c ) -> unsigned int
@@ -216,6 +218,7 @@ static IBinaryOperatorsChainComponentPtr ParseNumericConstant(
 	return
 		IBinaryOperatorsChainComponentPtr(
 			new NumericConstant(
+				num_it->file_pos,
 				number,
 				std::move( type_suffix ),
 				has_fraction_point ) );
@@ -226,7 +229,7 @@ static BinaryOperatorsChainPtr ParseExpression(
 	Lexems::const_iterator& it,
 	const Lexems::const_iterator it_end )
 {
-	BinaryOperatorsChainPtr result( new BinaryOperatorsChain );
+	BinaryOperatorsChainPtr result( new BinaryOperatorsChain( it->file_pos ) );
 
 	while(1)
 	{
@@ -243,12 +246,12 @@ static BinaryOperatorsChainPtr ParseExpression(
 				goto parse_operand;
 
 			case Lexem::Type::Plus:
-				 prefix_operators.emplace_back( new UnaryPlus() );
+				 prefix_operators.emplace_back( new UnaryPlus( it->file_pos ) );
 				++it;
 				break;
 
 			case Lexem::Type::Minus:
-				prefix_operators.emplace_back( new UnaryMinus() );
+				prefix_operators.emplace_back( new UnaryMinus( it->file_pos ) );
 				++it;
 				break;
 
@@ -273,17 +276,17 @@ static BinaryOperatorsChainPtr ParseExpression(
 		if( it->type == Lexem::Type::Identifier )
 		{
 			if( it->text == Keywords::true_ )
-				component.component.reset( new BooleanConstant( true ) );
+				component.component.reset( new BooleanConstant( it->file_pos, true ) );
 			else if( it->text == Keywords::false_ )
-				component.component.reset( new BooleanConstant( false ) );
+				component.component.reset( new BooleanConstant( it->file_pos, false ) );
 			else
-				component.component.reset( new NamedOperand( it->text ) );
+				component.component.reset( new NamedOperand( it->file_pos, it->text ) );
 
 			++it;
 		}
 		else if( it->type == Lexem::Type::Number )
 		{
-			component.component= ParseNumericConstant( it->text );
+			component.component= ParseNumericConstant( it );
 			++it;
 		}
 		else if( it->type == Lexem::Type::BracketLeft )
@@ -292,6 +295,7 @@ static BinaryOperatorsChainPtr ParseExpression(
 
 			component.component.reset(
 				new BracketExpression(
+					(it-1)->file_pos,
 					ParseExpression(
 						error_messages,
 						it,
@@ -322,6 +326,7 @@ static BinaryOperatorsChainPtr ParseExpression(
 
 					component.postfix_operators.emplace_back(
 						new IndexationOperator(
+							(it-1)->file_pos,
 							ParseExpression(
 								error_messages,
 								it,
@@ -339,6 +344,8 @@ static BinaryOperatorsChainPtr ParseExpression(
 
 			case Lexem::Type::BracketLeft:
 				{
+					const FilePos& call_operator_pos= it->file_pos;
+
 					++it;
 					U_ASSERT( it < it_end );
 
@@ -373,7 +380,10 @@ static BinaryOperatorsChainPtr ParseExpression(
 						}
 					}
 
-					component.postfix_operators.emplace_back( new CallOperator( std::move( arguments ) ) );
+					component.postfix_operators.emplace_back(
+						new CallOperator(
+							call_operator_pos,
+							std::move( arguments ) ) );
 
 				} break;
 
@@ -424,7 +434,7 @@ static VariableDeclarationPtr ParseVariableDeclaration(
 		return nullptr;
 	}
 
-	VariableDeclarationPtr decl( new VariableDeclaration() );
+	VariableDeclarationPtr decl( new VariableDeclaration( (it-1)->file_pos ) );
 	decl->name= it->text;
 
 	++it;
@@ -476,13 +486,15 @@ static IBlockElementPtr ParseReturnOperator(
 	U_ASSERT( it->type == Lexem::Type::Identifier && it->text == Keywords::return_ );
 	U_ASSERT( it < it_end );
 
+	const FilePos& op_pos= it->file_pos;
+
 	++it;
 	U_ASSERT( it < it_end );
 
 	if( it->type == Lexem::Type::Semicolon )
 	{
 		++it;
-		return IBlockElementPtr( new ReturnOperator( nullptr ) );
+		return IBlockElementPtr( new ReturnOperator( op_pos, nullptr ) );
 	}
 
 	BinaryOperatorsChainPtr expression=
@@ -500,7 +512,7 @@ static IBlockElementPtr ParseReturnOperator(
 
 	++it;
 
-	return IBlockElementPtr( new ReturnOperator( std::move( expression ) ) );
+	return IBlockElementPtr( new ReturnOperator( op_pos, std::move( expression ) ) );
 }
 
 static IBlockElementPtr ParseWhileOperator(
@@ -510,6 +522,8 @@ static IBlockElementPtr ParseWhileOperator(
 {
 	U_ASSERT( it->type == Lexem::Type::Identifier && it->text == Keywords::while_ );
 	U_ASSERT( it < it_end );
+
+	const FilePos& op_pos= it->file_pos;
 
 	++it;
 	U_ASSERT( it < it_end );
@@ -544,6 +558,7 @@ static IBlockElementPtr ParseWhileOperator(
 	return
 		IBlockElementPtr(
 			new WhileOperator(
+				op_pos,
 				std::move( condition ),
 				std::move( block ) ) );
 }
@@ -558,6 +573,8 @@ static IBlockElementPtr ParseBreakOperator(
 	U_ASSERT( it->type == Lexem::Type::Identifier && it->text == Keywords::break_ );
 	U_ASSERT( it < it_end );
 
+	const FilePos& op_pos= it->file_pos;
+
 	++it;
 	U_ASSERT( it < it_end );
 
@@ -569,7 +586,7 @@ static IBlockElementPtr ParseBreakOperator(
 
 	++it;
 
-	return IBlockElementPtr( new BreakOperator() );
+	return IBlockElementPtr( new BreakOperator( op_pos ) );
 }
 
 static IBlockElementPtr ParseContinueOperator(
@@ -581,6 +598,8 @@ static IBlockElementPtr ParseContinueOperator(
 	U_ASSERT( it->type == Lexem::Type::Identifier && it->text == Keywords::continue_ );
 	U_ASSERT( it < it_end );
 
+	const FilePos& op_pos= it->file_pos;
+
 	++it;
 	U_ASSERT( it < it_end );
 
@@ -592,7 +611,7 @@ static IBlockElementPtr ParseContinueOperator(
 
 	++it;
 
-	return IBlockElementPtr( new ContinueOperator() );
+	return IBlockElementPtr( new ContinueOperator( op_pos ) );
 }
 
 static IBlockElementPtr ParseIfOperaotr(
@@ -602,6 +621,8 @@ static IBlockElementPtr ParseIfOperaotr(
 {
 	U_ASSERT( it->type == Lexem::Type::Identifier && it->text == Keywords::if_ );
 	U_ASSERT( it < it_end );
+
+	const FilePos& op_pos= it->file_pos;
 
 	++it;
 	U_ASSERT( it < it_end );
@@ -690,6 +711,7 @@ static IBlockElementPtr ParseIfOperaotr(
 	return
 		IBlockElementPtr(
 			new IfOperator(
+				op_pos,
 				std::move( branches ) ) );
 }
 
@@ -700,6 +722,8 @@ static BlockPtr ParseBlock(
 {
 	U_ASSERT( it->type == Lexem::Type::BraceLeft );
 	U_ASSERT( it < it_end );
+
+	const FilePos& block_pos= it->file_pos;
 
 	++it;
 
@@ -754,6 +778,7 @@ static BlockPtr ParseBlock(
 
 				elements.emplace_back(
 					new AssignmentOperator(
+						(it-2)->file_pos,
 						std::move( l_expression ),
 						std::move( r_expression ) ) );
 			}
@@ -764,6 +789,7 @@ static BlockPtr ParseBlock(
 
 				elements.emplace_back(
 					new SingleExpressionOperator(
+						(it-1)->file_pos,
 						std::move( l_expression ) ) );
 			}
 			else
@@ -784,6 +810,7 @@ static BlockPtr ParseBlock(
 
 	return BlockPtr(
 		new Block(
+			block_pos,
 			std::move( elements ) ) );
 }
 
@@ -794,6 +821,8 @@ static IProgramElementPtr ParseFunction(
 {
 	U_ASSERT( it->text == Keywords::fn_ );
 	U_ASSERT( it < it_end );
+
+	const FilePos& func_pos= it->file_pos;
 
 	++it;
 	U_ASSERT( it < it_end );
@@ -831,7 +860,7 @@ static IProgramElementPtr ParseFunction(
 			PushErrorMessage( error_messages, *it );
 			return nullptr;
 		}
-		VariableDeclaration decl;
+		VariableDeclaration decl( it->file_pos );
 		decl.name= it->text;
 
 		++it;
@@ -905,6 +934,7 @@ static IProgramElementPtr ParseFunction(
 
 	return IProgramElementPtr(
 		new FunctionDeclaration(
+			func_pos,
 			std::move( fn_name ),
 			return_type,
 			std::move( arguments ),

@@ -8,6 +8,12 @@
 namespace Interpreter
 {
 
+struct FilePos
+{
+	unsigned int line; // from 1
+	unsigned int pos_in_line;
+};
+
 struct Lexem
 {
 	enum class Type
@@ -65,8 +71,7 @@ struct Lexem
 	Type type= Type::None;
 	ProgramString text;
 
-	unsigned int line= 0;
-	unsigned int pos_in_line= 0;
+	FilePos file_pos;
 };
 
 typedef std::vector<Lexem> Lexems;

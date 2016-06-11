@@ -296,8 +296,8 @@ LexicalAnalysisResult LexicalAnalysis( const ProgramString& program_text )
 		}
 
 	push_lexem:
-		lexem.line= line;
-		lexem.pos_in_line= (unsigned int)( it - last_newline_it );
+		lexem.file_pos.line= line;
+		lexem.file_pos.pos_in_line= (unsigned int)( it - last_newline_it );
 
 		result.lexems.emplace_back( std::move(lexem) );
 
@@ -306,8 +306,8 @@ LexicalAnalysisResult LexicalAnalysis( const ProgramString& program_text )
 	Lexem eof_lexem;
 	eof_lexem.type= Lexem::Type::EndOfFile;
 	eof_lexem.text= "EOF"_SpC;
-	eof_lexem.line= line;
-	eof_lexem.pos_in_line= (unsigned int)( it - last_newline_it );
+	eof_lexem.file_pos.line= line;
+	eof_lexem.file_pos.pos_in_line= (unsigned int)( it - last_newline_it );
 
 	result.lexems.emplace_back( std::move(eof_lexem) );
 
