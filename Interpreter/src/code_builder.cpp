@@ -6,6 +6,9 @@
 namespace Interpreter
 {
 
+namespace CodeBuilderPrivate
+{
+
 namespace
 {
 
@@ -23,21 +26,6 @@ const TypesMap g_types_map=
 	{ Keyword( Keywords::u32_ ), U_FundamentalType::u32 },
 	{ Keyword( Keywords::i64_ ), U_FundamentalType::i64 },
 	{ Keyword( Keywords::u64_ ), U_FundamentalType::u64 },
-};
-
-const size_t g_fundamental_types_size[ size_t(U_FundamentalType::LastType) ]=
-{
-	[ size_t(U_FundamentalType::InvalidType) ]= 0,
-	[ size_t(U_FundamentalType::Void) ]= 0,
-	[ size_t(U_FundamentalType::Bool) ]= sizeof(U_bool),
-	[ size_t(U_FundamentalType::i8 ) ]= sizeof(U_i8 ),
-	[ size_t(U_FundamentalType::u8 ) ]= sizeof(U_u8 ),
-	[ size_t(U_FundamentalType::i16) ]= sizeof(U_i16),
-	[ size_t(U_FundamentalType::u16) ]= sizeof(U_u16),
-	[ size_t(U_FundamentalType::i32) ]= sizeof(U_i32),
-	[ size_t(U_FundamentalType::u32) ]= sizeof(U_u32),
-	[ size_t(U_FundamentalType::i64) ]= sizeof(U_i64),
-	[ size_t(U_FundamentalType::u64) ]= sizeof(U_u64),
 };
 
 const char* const g_fundamental_types_names[ size_t(U_FundamentalType::LastType) ]=
@@ -58,7 +46,7 @@ const char* const g_fundamental_types_names[ size_t(U_FundamentalType::LastType)
 // Returns 0 for 8bit, 1 for 16bit, 2 for 32bit, 3 for 64 bit, 4 - else
 unsigned int GetOpIndexOffsetForFundamentalType( U_FundamentalType type )
 {
-	switch( g_fundamental_types_size[ size_t(type) ] )
+	switch( Type( type ).SizeOf() )
 	{
 		case 1: return 0;
 		case 2: return 1;
@@ -335,11 +323,7 @@ void CodeBuilder::BuildFuncCode(
 		var.type= *it;
 		var.location= Variable::Location::FunctionArgument;
 
-		unsigned int arg_size;
-		if( var.type.kind == Type::Kind::Fundamental )
-			arg_size= g_fundamental_types_size[ size_t( var.type.fundamental ) ];
-		else
-			arg_size= sizeof(FuncNumber);
+		unsigned int arg_size= var.type.SizeOf();
 
 		args_offset+= arg_size;
 		var.offset= args_offset;
@@ -357,9 +341,7 @@ void CodeBuilder::BuildFuncCode(
 	}
 
 	FunctionContext function_context;
-	function_context.result_offset=
-		args_offset +
-		g_fundamental_types_size[ size_t(func.return_type.fundamental) ];
+	function_context.result_offset= args_offset + func.return_type.SizeOf();
 	function_context.result_type= func.return_type.fundamental;
 
 	VmProgram::FuncCallInfo func_entry;
@@ -422,7 +404,7 @@ void CodeBuilder::BuildBlockCode(
 				variable.offset= stack_context.GetStackSize();
 
 				if( variable.type.kind == Type::Kind::Fundamental )
-					stack_context.IncreaseStack( g_fundamental_types_size[ size_t( variable.type.fundamental ) ] );
+					stack_context.IncreaseStack( variable.type.SizeOf() );
 				else
 				{
 					// TODO
@@ -439,16 +421,18 @@ void CodeBuilder::BuildBlockCode(
 
 				if( variable_declaration->initial_value )
 				{
-					U_FundamentalType init_type=
+					Variable init_type=
 						BuildExpressionCode(
 							*variable_declaration->initial_value,
 							block_names,
 							function_context,
 							stack_context );
 
-					if( init_type != inserted_variable->second.type.fundamental )
+					BuildMoveToStackCode( init_type, function_context );
+
+					if( init_type.type.fundamental != inserted_variable->second.type.fundamental )
 					{
-						ReportTypesMismatch( error_messages_, init_type, inserted_variable->second.type.fundamental );
+						ReportTypesMismatch( error_messages_, init_type.type.fundamental, inserted_variable->second.type.fundamental );
 						throw ProgramError();
 					}
 				} // if variable initializer
@@ -478,8 +462,7 @@ void CodeBuilder::BuildBlockCode(
 
 					result_.code.push_back( move_zero_op );
 
-					function_context.expression_stack_size_counter+=
-						g_fundamental_types_size[ size_t(inserted_variable->second.type.fundamental) ];
+					function_context.expression_stack_size_counter+= inserted_variable->second.type.SizeOf();
 				}
 
 				Vm_Op init_var_op(
@@ -493,20 +476,22 @@ void CodeBuilder::BuildBlockCode(
 				result_.code.push_back( init_var_op );
 
 				function_context.expression_stack_size_counter-=
-					g_fundamental_types_size[ size_t(inserted_variable->second.type.fundamental) ];
+					inserted_variable->second.type.SizeOf();
 			}
 			else if(
 				const SingleExpressionOperator* expression=
 				dynamic_cast<const SingleExpressionOperator*>( block_element_ptr ) )
 			{
-				U_FundamentalType result=
+				Variable result=
 					BuildExpressionCode(
 						*expression->expression_,
 						block_names,
 						function_context,
 						stack_context );
 
-				unsigned int size= g_fundamental_types_size[ size_t(result) ];
+				BuildMoveToStackCode( result, function_context );
+
+				unsigned int size= result.type.SizeOf();
 				if( size > 0 )
 				{
 					Vm_Op op( Vm_Op::Type::StackPointerAdd );
@@ -525,54 +510,38 @@ void CodeBuilder::BuildBlockCode(
 
 				U_ASSERT( l_value.components.size() >= 1 );
 
-				const NamedOperand* named_operand=
-					dynamic_cast<const NamedOperand*>( l_value.components[0].component.get() );
+				Variable l_var=
+					BuildExpressionCode( l_value, block_names, function_context, stack_context );
 
-				if( l_value.components.size() != 1 ||
-					!named_operand ||
-					!l_value.components[0].prefix_operators.empty() ||
-					!l_value.components[0].postfix_operators.empty() )
-				{
-					error_messages_.push_back( "Can not assign to r_value" );
-					throw ProgramError();
-				}
-
-				const NamesScope::NamesMap::value_type* variable_entry=
-					block_names.GetName( named_operand->name_ );
-				if( !variable_entry )
-				{
-					ReportNameNotFound( error_messages_, named_operand->name_ );
-					throw ProgramError();
-				}
-				const Variable& variable= variable_entry->second;
-
-				U_FundamentalType l_value_type=
+				Variable r_var=
 					BuildExpressionCode( r_value, block_names, function_context, stack_context );
 
-				if( l_value_type != variable.type.fundamental )
+				BuildMoveToStackCode( r_var, function_context );
+
+				if( l_var.type != r_var.type )
 				{
-					ReportTypesMismatch( error_messages_, l_value_type, variable.type.fundamental );
+					ReportTypesMismatch( error_messages_, l_var.type.fundamental, r_var.type.fundamental );
 					throw ProgramError();
 				}
 
 				Vm_Op op;
-				if( variable.location == Variable::Location::FunctionArgument )
+				if( l_var.location == Variable::Location::FunctionArgument )
 				{
 					op.type=
 						Vm_Op::Type(
 							size_t(Vm_Op::Type::PopToCallerStack8) +
-							GetOpIndexOffsetForFundamentalType( variable.type.fundamental ) );
-					op.param.caller_stack_operations_offset= -int( variable.offset );
+							GetOpIndexOffsetForFundamentalType( l_var.type.fundamental ) );
+					op.param.caller_stack_operations_offset= -int( l_var.offset );
 				}
-				else if( variable.location == Variable::Location::Stack )
+				else if( l_var.location == Variable::Location::Stack )
 				{
 					op.type=
 						Vm_Op::Type(
 							size_t(Vm_Op::Type::PopToLocalStack8) +
-							GetOpIndexOffsetForFundamentalType( variable.type.fundamental ) );
-					op.param.local_stack_operations_offset=variable.offset;
+							GetOpIndexOffsetForFundamentalType( l_var.type.fundamental ) );
+					op.param.local_stack_operations_offset= l_var.offset;
 				}
-				else if( variable.location == Variable::Location::Global )
+				else if( l_var.location == Variable::Location::Global )
 				{
 					error_messages_.push_back( "Can not assign to global variable" );
 					throw ProgramError();
@@ -584,8 +553,7 @@ void CodeBuilder::BuildBlockCode(
 
 				result_.code.push_back( op );
 
-				function_context.expression_stack_size_counter-=
-					g_fundamental_types_size[ size_t(variable.type.fundamental) ];
+				function_context.expression_stack_size_counter-= l_var.type.SizeOf();
 			}
 			else if( const Block* inner_block=
 				dynamic_cast<const Block*>( block_element_ptr ) )
@@ -601,30 +569,32 @@ void CodeBuilder::BuildBlockCode(
 			{
 				if( return_operator->expression_ )
 				{
-					U_FundamentalType expression_type=
+					Variable expression_result=
 						BuildExpressionCode(
 							*return_operator->expression_,
 							block_names,
 							function_context,
 							stack_context );
 
-					if( expression_type != function_context.result_type )
+					BuildMoveToStackCode( expression_result, function_context );
+
+					if( expression_result.type.fundamental != function_context.result_type )
 					{
-						ReportTypesMismatch( error_messages_, expression_type, function_context.result_type );
+						ReportTypesMismatch( error_messages_, expression_result.type.fundamental, function_context.result_type );
 						throw ProgramError();
 					}
 
 					Vm_Op op{
 						Vm_Op::Type(
 							size_t(Vm_Op::Type::PopToCallerStack8) +
-							GetOpIndexOffsetForFundamentalType( expression_type ) ) };
+							GetOpIndexOffsetForFundamentalType( expression_result.type.fundamental ) ) };
 
 					op.param.caller_stack_operations_offset= -int( function_context.result_offset );
 
 					result_.code.push_back( op );
 
 					function_context.expression_stack_size_counter-=
-						g_fundamental_types_size[ size_t(function_context.result_type) ];
+						Type( function_context.result_type ).SizeOf();
 				}
 
 				Vm_Op ret_op;
@@ -688,100 +658,298 @@ void CodeBuilder::BuildBlockCode(
 	} // for block elements
 }
 
-U_FundamentalType CodeBuilder::BuildExpressionCode(
+Variable CodeBuilder::BuildExpressionCode(
 	const BinaryOperatorsChain& expression,
 	const NamesScope& names,
 	FunctionContext& function_context,
-	BlockStackContext stack_context )
+	BlockStackContext stack_context,
+	bool build_code )
 {
-	std::vector< Type > types_stack;
+	const InversePolishNotation ipn = ConvertToInversePolishNotation( expression );
 
-	InversePolishNotation ipn = ConvertToInversePolishNotation( expression );
+	return BuildExpressionCode_r(
+		ipn, ipn.size() - 1,
+		names,
+		function_context, stack_context,
+		build_code );
+}
 
-	for( const InversePolishNotationComponent& comp : ipn )
+Variable CodeBuilder::BuildExpressionCode_r(
+	const InversePolishNotation& ipn,
+	const unsigned int ipn_index,
+	const NamesScope& names,
+	FunctionContext& function_context,
+	BlockStackContext stack_context,
+	bool build_code )
+{
+	U_ASSERT( ipn_index < ipn.size() );
+	const InversePolishNotationComponent& comp= ipn[ ipn_index ];
+
+	if( comp.operator_ != BinaryOperator::None )
 	{
-		// Operand
-		if( comp.operator_ == BinaryOperator::None )
-		{
-			const IBinaryOperatorsChainComponent& operand= *comp.operand;
-			if( const NamedOperand* named_operand=
-				dynamic_cast<const NamedOperand*>(&operand) )
-			{
-				const NamesScope::NamesMap::value_type* variable_entry=
-					names.GetName( named_operand->name_ );
-				if( !variable_entry )
-				{
-					ReportNameNotFound( error_messages_, named_operand->name_ );
-					throw ProgramError();
-				}
-				const Variable& variable= variable_entry->second;
+		Variable l_var=
+			BuildExpressionCode_r(
+				ipn, comp.l_index,
+				names,
+				function_context, stack_context,
+				false );
 
-				if( variable.location == Variable::Location::Global &&
-					variable.type.function )
+		Variable r_var=
+			BuildExpressionCode_r(
+				ipn, comp.r_index,
+				names,
+				function_context, stack_context,
+				false );
+
+		if( r_var.type != l_var.type )
+		{
+			ReportTypesMismatch( error_messages_, r_var.type.fundamental, l_var.type.fundamental );
+			throw ProgramError();
+		}
+
+		if( build_code )
+		{
+			BuildExpressionCode_r(
+				ipn, comp.l_index,
+				names,
+				function_context, stack_context,
+				true );
+
+			BuildMoveToStackCode( l_var, function_context, true );
+
+			BuildExpressionCode_r(
+				ipn, comp.r_index,
+				names,
+				function_context, stack_context,
+				true );
+
+			BuildMoveToStackCode( r_var, function_context, true );
+		}
+
+		if( l_var.type.kind != Type::Kind::Fundamental ||
+			r_var.type.kind != Type::Kind::Fundamental )
+		{
+			error_messages_.push_back(
+				"Expected fundamental arguments for binary operator " );
+			throw ProgramError();
+		}
+
+		U_FundamentalType type0= l_var.type.fundamental;
+		//U_FundamentalType type1= r_var.type.fundamental;
+
+		if( build_code )
+			function_context.expression_stack_size_counter-=
+				l_var.type.SizeOf() + r_var.type.SizeOf();
+
+		Vm_Op::Type op_type= Vm_Op::Type::NoOp;
+
+		Variable result;
+		result.location= Variable::Location::ValueAtExpessionStackTop;
+
+		switch( comp.operator_ )
+		{
+		case BinaryOperator::Add:
+		case BinaryOperator::Sub:
+		case BinaryOperator::Div:
+		case BinaryOperator::Mul:
+			{
+				switch( comp.operator_ )
 				{
-					Vm_Op op{ Vm_Op::Type::PushC32 };
-					op.param.push_c_32= variable.offset;
-					result_.code.push_back( op );
-				}
+				case BinaryOperator::Add: op_type= Vm_Op::Type::Addi32; break;
+				case BinaryOperator::Sub: op_type= Vm_Op::Type::Subi32; break;
+				case BinaryOperator::Div: op_type= Vm_Op::Type::Divi32; break;
+				case BinaryOperator::Mul: op_type= Vm_Op::Type::Muli32; break;
+				default: U_ASSERT(false); break;
+				};
+
+				if( type0 == U_FundamentalType::i32 )
+				{}
+				else if( type0 == U_FundamentalType::u32 )
+					op_type= Vm_Op::Type( size_t(op_type) + 1 );
+				else if( type0 == U_FundamentalType::i64 )
+					op_type= Vm_Op::Type( size_t(op_type) + 2 );
+				else if(type0 == U_FundamentalType::u64 )
+					op_type= Vm_Op::Type( size_t(op_type) + 3 );
 				else
 				{
-					U_ASSERT(!variable.type.function );
-					Vm_Op op;
-
-					if( variable.location == Variable::Location::FunctionArgument )
-					{
-						op.type= Vm_Op::Type::PushFromCallerStack8;
-						op.param.caller_stack_operations_offset= -variable.offset;
-					}
-					else if( variable.location == Variable::Location::Stack )
-					{
-						op.type= Vm_Op::Type::PushFromLocalStack8;
-						op.param.local_stack_operations_offset= variable.offset;
-					}
-					else
-					{
-						// Global variables not supported
-						U_ASSERT(false);
-					}
-
-					op.type= Vm_Op::Type(
-						size_t(op.type) +
-						GetOpIndexOffsetForFundamentalType(variable.type.fundamental) );
-					result_.code.emplace_back(op);
-
-					function_context.expression_stack_size_counter+=
-						g_fundamental_types_size[ size_t(variable.type.fundamental) ];
+					ReportArithmeticOperationWithUnsupportedType( error_messages_, type0 );
+					throw ProgramError();
 				}
 
-				types_stack.push_back( variable.type );
+				// Result - same as operands
+				result.type.fundamental= type0;
 
+				if( build_code )
+					function_context.expression_stack_size_counter+= result.type.SizeOf();
 			}
-			else if( const BooleanConstant* boolean_constant=
-				dynamic_cast<const BooleanConstant*>(&operand) )
+			break;
+
+		case BinaryOperator::Equal:
+		case BinaryOperator::NotEqual:
+		case BinaryOperator::Less:
+		case BinaryOperator::LessEqual:
+		case BinaryOperator::Greater:
+		case BinaryOperator::GreaterEqual:
+			{
+				if( !IsNumericType( type0 ) )
+				{
+					error_messages_.push_back(
+						"Expected numeric arguments for relation operators Got " +
+						std::string( g_fundamental_types_names[ size_t( type0 ) ] ) );
+					throw ProgramError();
+				}
+
+				bool op_needs_sign;
+				switch( comp.operator_ )
+				{
+				case BinaryOperator::Less:
+					op_needs_sign= true;
+					op_type= Vm_Op::Type::Less8i;
+					break;
+
+				case BinaryOperator::LessEqual:
+					op_needs_sign= true;
+					op_type= Vm_Op::Type::LessEqual8i;
+					break;
+
+				case BinaryOperator::Greater:
+					op_needs_sign= true;
+					op_type= Vm_Op::Type::Greater8i;
+					break;
+
+				case BinaryOperator::GreaterEqual:
+					op_needs_sign= true;
+					op_type= Vm_Op::Type::GreaterEqual8i;
+					break;
+
+				case BinaryOperator::Equal:
+					op_needs_sign= false;
+					op_type= Vm_Op::Type::Equal8;
+					break;
+
+				case BinaryOperator::NotEqual:
+					op_needs_sign= false;
+					op_type= Vm_Op::Type::NotEqual8;
+					break;
+
+				default: U_ASSERT(false); break;
+				}
+
+				op_type=
+					Vm_Op::Type(
+						size_t(op_type) +
+						GetOpIndexOffsetForFundamentalType( type0 ) );
+
+				if( op_needs_sign && IsUnsignedInteger( type0 ) )
+					op_type= Vm_Op::Type( size_t(op_type) + 4 );
+
+				// Result - bool
+				result.type.fundamental= U_FundamentalType::Bool;
+
+				if( build_code )
+					function_context.expression_stack_size_counter+= result.type.SizeOf();
+			}
+			break;
+
+		case BinaryOperator::And:
+		case BinaryOperator::Or:
+		case BinaryOperator::Xor:
+			{
+				switch( comp.operator_ )
+				{
+				case BinaryOperator::And: op_type= Vm_Op::Type::And8; break;
+				case BinaryOperator::Or: op_type= Vm_Op::Type::Or8; break;
+				case BinaryOperator::Xor: op_type= Vm_Op::Type::Xor8; break;
+				default: U_ASSERT(false); break;
+				};
+
+				op_type=
+					Vm_Op::Type(
+						size_t(op_type) +
+						GetOpIndexOffsetForFundamentalType( type0 ) );
+
+				// Result - same as type0
+				result.type.fundamental= type0;
+
+				if( build_code )
+					function_context.expression_stack_size_counter+= result.type.SizeOf();
+			}
+			break;
+
+		case BinaryOperator::LazyLogicalAnd:
+		case BinaryOperator::LazyLogicalOr:
+			{
+				// TODO - lazy operators
+				ReportNotImplemented(
+					error_messages_,
+					"Lazy logical operators" );
+				throw ProgramError();
+			}
+			break;
+
+		case BinaryOperator::None:
+		case BinaryOperator::Last:
+			U_ASSERT(false);
+			break;
+		};
+
+		U_ASSERT( op_type != Vm_Op::Type::NoOp );
+		if( build_code )
+			result_.code.emplace_back( op_type );
+
+		return result;
+	}
+	else
+	{
+		U_ASSERT( comp.operand );
+		U_ASSERT( comp.r_index == InversePolishNotationComponent::c_no_parent );
+		U_ASSERT( comp.l_index == InversePolishNotationComponent::c_no_parent );
+
+		const IBinaryOperatorsChainComponent& operand= *comp.operand;
+
+		Variable result;
+
+		if( const NamedOperand* named_operand=
+			dynamic_cast<const NamedOperand*>(&operand) )
+		{
+			const NamesScope::NamesMap::value_type* variable_entry=
+				names.GetName( named_operand->name_ );
+			if( !variable_entry )
+			{
+				ReportNameNotFound( error_messages_, named_operand->name_ );
+				throw ProgramError();
+			}
+			result= variable_entry->second;
+		}
+		else if( const BooleanConstant* boolean_constant=
+			dynamic_cast<const BooleanConstant*>(&operand) )
+		{
+			if( build_code )
 			{
 				Vm_Op op{ Vm_Op::Type::PushC8 };
 				op.param.push_c_8= boolean_constant->value_;
-
 				result_.code.push_back( op );
 
 				function_context.expression_stack_size_counter+=
-					g_fundamental_types_size[ size_t(U_FundamentalType::Bool) ];
-
-				Type type;
-				type.kind= Type::Kind::Fundamental;
-				type.fundamental= U_FundamentalType::Bool;
-				types_stack.push_back( type );
+					Type( U_FundamentalType::Bool ).SizeOf();
 			}
-			else if( const NumericConstant* number=
-				dynamic_cast<const NumericConstant*>(&operand) )
-			{
-				U_FundamentalType type= GetNumericConstantType( *number );
-				if( type == U_FundamentalType::InvalidType )
-				{
-					error_messages_.push_back( "Unknown numeric constant type" );
-					throw ProgramError();
-				}
 
+			result.location= Variable::Location::ValueAtExpessionStackTop;
+			result.type.kind= Type::Kind::Fundamental;
+			result.type.fundamental= U_FundamentalType::Bool;
+		}
+		else if( const NumericConstant* number=
+			dynamic_cast<const NumericConstant*>(&operand) )
+		{
+			U_FundamentalType type= GetNumericConstantType( *number );
+			if( type == U_FundamentalType::InvalidType )
+			{
+				error_messages_.push_back( "Unknown numeric constant type" );
+				throw ProgramError();
+			}
+
+			if( build_code )
+			{
 				Vm_Op op;
 				op.type=
 					Vm_Op::Type(
@@ -828,84 +996,76 @@ U_FundamentalType CodeBuilder::BuildExpressionCode(
 				result_.code.push_back(op);
 
 				function_context.expression_stack_size_counter+=
-					g_fundamental_types_size[ size_t(type) ];
-
-				Type big_type;
-				big_type.kind= Type::Kind::Fundamental;
-				big_type.fundamental= type;
-				types_stack.push_back( big_type );
+					Type( type ).SizeOf();
 			}
-			else if( const BracketExpression* bracket_expression=
-				dynamic_cast<const BracketExpression*>(&operand) )
+
+			result.location= Variable::Location::ValueAtExpessionStackTop;
+			result.type.kind= Type::Kind::Fundamental;
+			result.type.fundamental= type;
+		}
+		else if( const BracketExpression* bracket_expression=
+			dynamic_cast<const BracketExpression*>(&operand) )
+		{
+			result=
+				BuildExpressionCode(
+					*bracket_expression->expression_,
+					names,
+					function_context, stack_context, build_code );
+		}
+		else
+		{
+			U_ASSERT(false);
+		}
+
+		for( const IUnaryPostfixOperatorPtr& postfix_operator : comp.postfix_operand_operators )
+		{
+			if( const CallOperator* call_operator=
+				dynamic_cast<const CallOperator*>(postfix_operator.get()) )
 			{
-				Type type;
-				type.kind= Type::Kind::Fundamental;
-				type.fundamental=
-					BuildExpressionCode(
-						*bracket_expression->expression_,
+				if( result.type.kind != Type::Kind::Function )
+				{
+					error_messages_.push_back(
+						"Can not call not function" );
+					throw ProgramError();
+				}
+
+				BuildMoveToStackCode( result, function_context, build_code );
+
+				result=
+					BuildFuncCall(
+						*result.type.function,
+						*call_operator,
 						names,
 						function_context,
-						stack_context );
-
-				types_stack.push_back( type );
+						stack_context,
+						build_code );
 			}
 			else
 			{
+				// Unknown potfix operator
 				U_ASSERT(false);
 			}
+		} // for postfix operators
 
-			for( const IUnaryPostfixOperatorPtr& postfix_operator : comp.postfix_operand_operators )
+		for( const IUnaryPrefixOperatorPtr& prefix_operator : comp.prefix_operand_operators )
+		{
+			const IUnaryPrefixOperator* const prefix_operator_ptr= prefix_operator.get();
+			if( dynamic_cast<const UnaryPlus*>( prefix_operator_ptr ) )
+			{}
+			else if( dynamic_cast<const UnaryMinus*>( prefix_operator_ptr ) )
 			{
-				if( const CallOperator* call_operator=
-					dynamic_cast<const CallOperator*>(postfix_operator.get()) )
+				BuildMoveToStackCode( result, function_context, build_code );
+
+				if( result.type.kind != Type::Kind::Fundamental )
 				{
-					if( types_stack.back().kind != Type::Kind::Function )
-					{
-						error_messages_.push_back(
-							"Can not call not function" );
-						throw ProgramError();
-					}
-
-					U_FundamentalType call_type=
-						BuildFuncCall(
-							*types_stack.back().function,
-							*call_operator,
-							names,
-							function_context,
-							stack_context );
-
-					// Pop function
-					types_stack.pop_back();
-
-					// Push result
-					Type type;
-					type.kind= Type::Kind::Fundamental;
-					type.fundamental= call_type;
-					types_stack.push_back( type );
+					error_messages_.push_back(
+						"Can not negate function" );
+					throw ProgramError();
 				}
-				else
-				{
-					// Unknown potfix operator
-					U_ASSERT(false);
-				}
-			} // for postfix operators
 
-			for( const IUnaryPrefixOperatorPtr& prefix_operator : comp.prefix_operand_operators )
-			{
-				const IUnaryPrefixOperator* const prefix_operator_ptr= prefix_operator.get();
-				if( dynamic_cast<const UnaryPlus*>( prefix_operator_ptr ) )
-				{}
-				else if( dynamic_cast<const UnaryMinus*>( prefix_operator_ptr ) )
+				if( build_code )
 				{
-					U_ASSERT( !types_stack.empty() );
-					if( types_stack.back().kind != Type::Kind::Fundamental )
-					{
-						error_messages_.push_back(
-							"Can not negate function" );
-						throw ProgramError();
-					}
-
-					U_FundamentalType type= types_stack.back().fundamental;
+					U_FundamentalType type= result.type.fundamental;
 
 					Vm_Op::Type op_type= Vm_Op::Type::Negi32;
 
@@ -925,292 +1085,173 @@ U_FundamentalType CodeBuilder::BuildExpressionCode(
 
 					result_.code.emplace_back( op_type );
 				}
-				else
-				{
-					// Unknown prefix operator
-					U_ASSERT(false);
-				}
 
-			} // for prefix operators
-		}
-		else // Operator
-		{
-			U_ASSERT( types_stack.size() >= 2 );
-			U_FundamentalType type0= types_stack.back().fundamental;
-			U_FundamentalType type1= types_stack[ types_stack.size() - 2 ].fundamental;
-
-			if( type0 != type1 )
+				result.location= Variable::Location::ValueAtExpessionStackTop;
+			}
+			else
 			{
-				ReportTypesMismatch( error_messages_, type0, type1 );
-				throw ProgramError();
+				// Unknown prefix operator
+				U_ASSERT(false);
 			}
 
-			// Pop operands
-			types_stack.resize( types_stack.size() - 2 );
+		} // for prefix operators
 
-			function_context.expression_stack_size_counter-=
-				2 * g_fundamental_types_size[ size_t(type0) ];
-
-			Vm_Op::Type op_type= Vm_Op::Type::NoOp;
-
-			switch( comp.operator_ )
-			{
-			case BinaryOperator::Add:
-			case BinaryOperator::Sub:
-			case BinaryOperator::Div:
-			case BinaryOperator::Mul:
-				{
-					switch( comp.operator_ )
-					{
-					case BinaryOperator::Add: op_type= Vm_Op::Type::Addi32; break;
-					case BinaryOperator::Sub: op_type= Vm_Op::Type::Subi32; break;
-					case BinaryOperator::Div: op_type= Vm_Op::Type::Divi32; break;
-					case BinaryOperator::Mul: op_type= Vm_Op::Type::Muli32; break;
-					default: U_ASSERT(false); break;
-					};
-
-					if( type0 == U_FundamentalType::i32 )
-					{}
-					else if( type0 == U_FundamentalType::u32 )
-						op_type= Vm_Op::Type( size_t(op_type) + 1 );
-					else if( type0 == U_FundamentalType::i64 )
-						op_type= Vm_Op::Type( size_t(op_type) + 2 );
-					else if( type0 == U_FundamentalType::u64 )
-						op_type= Vm_Op::Type( size_t(op_type) + 3 );
-					else
-					{
-						ReportArithmeticOperationWithUnsupportedType( error_messages_, type0 );
-						throw ProgramError();
-					}
-
-					// Result - same as operands
-					Type type;
-					type.kind= Type::Kind::Fundamental;
-					type.fundamental= type0;
-					types_stack.push_back( type );
-
-					function_context.expression_stack_size_counter+=
-						g_fundamental_types_size[ size_t(type0) ];
-				}
-				break;
-
-			case BinaryOperator::Equal:
-			case BinaryOperator::NotEqual:
-			case BinaryOperator::Less:
-			case BinaryOperator::LessEqual:
-			case BinaryOperator::Greater:
-			case BinaryOperator::GreaterEqual:
-				{
-					if( !IsNumericType( type0 ) )
-					{
-						error_messages_.push_back(
-							"Expected numeric arguments for relation operators Got " +
-							std::string( g_fundamental_types_names[ size_t(type0) ] ) );
-						throw ProgramError();
-					}
-
-					bool op_needs_sign;
-					switch( comp.operator_ )
-					{
-					case BinaryOperator::Less:
-						op_needs_sign= true;
-						op_type= Vm_Op::Type::Less8i;
-						break;
-
-					case BinaryOperator::LessEqual:
-						op_needs_sign= true;
-						op_type= Vm_Op::Type::LessEqual8i;
-						break;
-
-					case BinaryOperator::Greater:
-						op_needs_sign= true;
-						op_type= Vm_Op::Type::Greater8i;
-						break;
-
-					case BinaryOperator::GreaterEqual:
-						op_needs_sign= true;
-						op_type= Vm_Op::Type::GreaterEqual8i;
-						break;
-
-					case BinaryOperator::Equal:
-						op_needs_sign= false;
-						op_type= Vm_Op::Type::Equal8;
-						break;
-
-					case BinaryOperator::NotEqual:
-						op_needs_sign= false;
-						op_type= Vm_Op::Type::NotEqual8;
-						break;
-
-					default: U_ASSERT(false); break;
-					}
-
-					op_type=
-						Vm_Op::Type(
-							size_t(op_type) +
-							GetOpIndexOffsetForFundamentalType( type0 ) );
-
-					if( op_needs_sign && IsUnsignedInteger( type0 ) )
-						op_type= Vm_Op::Type( size_t(op_type) + 4 );
-
-					// Result - bool
-					Type type;
-					type.kind= Type::Kind::Fundamental;
-					type.fundamental= U_FundamentalType::Bool;
-					types_stack.push_back( type );
-
-					function_context.expression_stack_size_counter+=
-						g_fundamental_types_size[ size_t(U_FundamentalType::Bool) ];
-				}
-				break;
-
-			case BinaryOperator::And:
-			case BinaryOperator::Or:
-			case BinaryOperator::Xor:
-				{
-					switch( comp.operator_ )
-					{
-					case BinaryOperator::And: op_type= Vm_Op::Type::And8; break;
-					case BinaryOperator::Or: op_type= Vm_Op::Type::Or8; break;
-					case BinaryOperator::Xor: op_type= Vm_Op::Type::Xor8; break;
-					default: U_ASSERT(false); break;
-					};
-
-					op_type=
-						Vm_Op::Type(
-							size_t(op_type) +
-							GetOpIndexOffsetForFundamentalType( type0 ) );
-
-					// Result - same as type0
-					Type type;
-					type.kind= Type::Kind::Fundamental;
-					type.fundamental= type0;
-					types_stack.push_back( type );
-
-					function_context.expression_stack_size_counter+=
-						g_fundamental_types_size[ size_t(type0) ];
-				}
-				break;
-
-			case BinaryOperator::LazyLogicalAnd:
-			case BinaryOperator::LazyLogicalOr:
-				{
-					// TODO - lazy operators
-					ReportNotImplemented(
-						error_messages_,
-						"Lazy logical operators" );
-					throw ProgramError();
-				}
-				break;
-
-			case BinaryOperator::None:
-			case BinaryOperator::Last:
-				U_ASSERT(false);
-				break;
-			};
-
-			U_ASSERT( op_type != Vm_Op::Type::NoOp );
-
-			result_.code.emplace_back( op_type );
-
-		} // if operator
-	} // for inverse polish notation
-
-	U_ASSERT( types_stack.size() == 1 );
-	U_ASSERT( types_stack.back().kind == Type::Kind::Fundamental );
-	return types_stack.back().fundamental;
+		return result;
+	} // if operand
 }
 
-U_FundamentalType CodeBuilder::BuildFuncCall(
+void CodeBuilder::BuildMoveToStackCode(
+	Variable& variable,
+	FunctionContext& function_context,
+	bool build_code )
+{
+	if( variable.location == Variable::Location::ValueAtExpessionStackTop )
+		return;
+
+	if( build_code )
+	{
+		function_context.expression_stack_size_counter+= variable.type.SizeOf();
+
+		Vm_Op op;
+
+		switch( variable.location )
+		{
+		case Variable::Location::FunctionArgument:
+			op.type=
+				Vm_Op::Type(
+					static_cast<unsigned int>(Vm_Op::Type::PushFromCallerStack8) +
+					GetOpIndexOffsetForFundamentalType( variable.type.fundamental ));
+			op.param.caller_stack_operations_offset= -variable.offset;
+			break;
+
+		case Variable::Location::Stack:
+			op.type=
+				Vm_Op::Type(
+					static_cast<unsigned int>(Vm_Op::Type::PushFromLocalStack8) +
+					GetOpIndexOffsetForFundamentalType( variable.type.fundamental ));
+			op.param.caller_stack_operations_offset= variable.offset;
+			break;
+
+		case Variable::Location::Global:
+			U_ASSERT( variable.type.kind == Type::Kind::Function );
+			op.type= Vm_Op::Type::PushC32;
+			op.param.push_c_32= variable.offset;
+			break;
+
+		case Variable::Location::ValueAtExpessionStackTop:
+		case Variable::Location::AddressExpessionStackTop:
+			U_ASSERT(false);
+		};
+
+		result_.code.push_back( op );
+	}
+
+	variable.location= Variable::Location::ValueAtExpessionStackTop;
+	return;
+}
+
+Variable CodeBuilder::BuildFuncCall(
 	const Function& func,
 	const CallOperator& call_operator,
 	const NamesScope& names,
 	FunctionContext& function_context,
-	BlockStackContext stack_context )
+	BlockStackContext stack_context,
+	bool build_code )
 {
 	U_ASSERT( func.return_type.kind == Type::Kind::Fundamental );
 
-	if( func.args.size() != call_operator.arguments_.size() )
+	if( build_code )
 	{
-		ReportArgumentsCountMismatch( error_messages_, call_operator.arguments_.size(), func.args.size() );
-		throw ProgramError();
-	}
-
-	unsigned int result_size=
-		g_fundamental_types_size[ size_t(func.return_type.fundamental) ];
-
-	// Pop function number and move it to temp variable.
-	// Do it only if function have any args or returns non void.
-	bool need_tmp_var_for_func_number= func.args.size() > 0 || result_size > 0;
-	unsigned int tmp_var_func_number_offset= stack_context.GetStackSize();
-	if( need_tmp_var_for_func_number )
-	{
-		stack_context.IncreaseStack( sizeof(FuncNumber) );
-
-		Vm_Op op{ Vm_Op::Type::PopToLocalStack32 };
-		op.param.local_stack_operations_offset= tmp_var_func_number_offset;
-		result_.code.push_back( op );
-	}
-
-	// Reserve place for result
-	if( result_size > 0 )
-	{
-		Vm_Op reserve_result_op( Vm_Op::Type::StackPointerAdd );
-		reserve_result_op.param.stack_add_size= result_size;
-		result_.code.emplace_back( reserve_result_op );
-	}
-
-	function_context.expression_stack_size_counter+= result_size;
-
-	// Push arguments
-	unsigned int args_size= 0;
-	for( unsigned int i= 0; i < func.args.size(); i++ )
-	{
-		U_ASSERT( func.args[i].kind == Type::Kind::Fundamental );
-
-		U_FundamentalType expression_type=
-			BuildExpressionCode(
-				*call_operator.arguments_[i],
-				names,
-				function_context,
-				stack_context );
-
-		if( expression_type != func.args[i].fundamental )
+		if( func.args.size() != call_operator.arguments_.size() )
 		{
-			ReportTypesMismatch( error_messages_, func.args[i].fundamental, expression_type );
+			ReportArgumentsCountMismatch( error_messages_, call_operator.arguments_.size(), func.args.size() );
 			throw ProgramError();
 		}
 
-		args_size+= g_fundamental_types_size[ size_t(func.args[i].fundamental) ];
+		unsigned int result_size= func.return_type.SizeOf();
+
+		// Pop function number and move it to temp variable.
+		// Do it only if function have any args or returns non void.
+		bool need_tmp_var_for_func_number= func.args.size() > 0 || result_size > 0;
+		unsigned int tmp_var_func_number_offset= stack_context.GetStackSize();
+		if( need_tmp_var_for_func_number )
+		{
+			stack_context.IncreaseStack( sizeof(FuncNumber) );
+
+			Vm_Op op{ Vm_Op::Type::PopToLocalStack32 };
+			op.param.local_stack_operations_offset= tmp_var_func_number_offset;
+			result_.code.push_back( op );
+
+			function_context.expression_stack_size_counter-= sizeof(FuncNumber);
+		}
+
+		// Reserve place for result
+		if( result_size > 0 )
+		{
+			Vm_Op reserve_result_op( Vm_Op::Type::StackPointerAdd );
+			reserve_result_op.param.stack_add_size= result_size;
+			result_.code.emplace_back( reserve_result_op );
+		}
+
+		function_context.expression_stack_size_counter+= result_size;
+
+		// Push arguments
+		unsigned int args_size= 0;
+		for( unsigned int i= 0;  i < func.args.size(); i++ )
+		{
+			U_ASSERT( func.args[i].kind == Type::Kind::Fundamental );
+
+			Variable expression_result=
+				BuildExpressionCode(
+					*call_operator.arguments_[i],
+					names,
+					function_context,
+					stack_context );
+
+			BuildMoveToStackCode( expression_result, function_context );
+
+			if( expression_result.type.fundamental != func.args[i].fundamental )
+			{
+				ReportTypesMismatch( error_messages_, func.args[i].fundamental, expression_result.type.fundamental );
+				throw ProgramError();
+			}
+
+			args_size+= func.args[i].SizeOf();
+		}
+
+		// Push func number.
+		if( need_tmp_var_for_func_number )
+		{
+			static_assert(
+				32/8 == sizeof(FuncNumber),
+				"You need push_c operation appropriate for FuncNumber type" );
+			Vm_Op op( Vm_Op::Type::PushFromLocalStack32 );
+			op.param.local_stack_operations_offset= tmp_var_func_number_offset;
+			result_.code.emplace_back( op );
+
+			function_context.expression_stack_size_counter+= sizeof(FuncNumber);
+		}
+
+		// Call
+		result_.code.emplace_back( Vm_Op::Type::Call );
+
+		function_context.expression_stack_size_counter+= VM::c_saved_caller_frame_size_;
+
+		// Clear args
+		if( args_size > 0 )
+		{
+			Vm_Op clear_args_op( Vm_Op::Type::StackPointerAdd );
+			clear_args_op.param.stack_add_size= -int(args_size);
+			result_.code.emplace_back( clear_args_op );
+		}
+
+		function_context.expression_stack_size_counter-= sizeof(FuncNumber) + VM::c_saved_caller_frame_size_ + args_size;
 	}
 
-	// Push func number.
-	if( need_tmp_var_for_func_number )
-	{
-		static_assert(
-			32/8 == sizeof(FuncNumber),
-			"You need push_c operation appropriate for FuncNumber type" );
-		Vm_Op op( Vm_Op::Type::PushFromLocalStack32 );
-		op.param.local_stack_operations_offset= tmp_var_func_number_offset;
-		result_.code.emplace_back( op );
-	}
-
-	// Call
-	result_.code.emplace_back( Vm_Op::Type::Call );
-
-	function_context.expression_stack_size_counter+= sizeof(FuncNumber) + VM::c_saved_caller_frame_size_;
-
-	// Clear args
-	if( args_size > 0 )
-	{
-		Vm_Op clear_args_op( Vm_Op::Type::StackPointerAdd );
-		clear_args_op.param.stack_add_size= -int(args_size);
-		result_.code.emplace_back( clear_args_op );
-	}
-
-	function_context.expression_stack_size_counter-= sizeof(FuncNumber) + VM::c_saved_caller_frame_size_ + args_size;
-
-	return func.return_type.fundamental;
+	Variable result;
+	result.location= Variable::Location::ValueAtExpessionStackTop;
+	result.type= func.return_type;
+	return result;
 }
 
 void CodeBuilder::BuildIfOperator(
@@ -1234,16 +1275,18 @@ void CodeBuilder::BuildIfOperator(
 
 		if( branch.condition )
 		{
-			U_FundamentalType condition_type=
+			Variable condition_type=
 				BuildExpressionCode(
 					*branch.condition,
 					names,
 					function_context,
 					stack_context );
 
-			if( condition_type != U_FundamentalType::Bool )
+			BuildMoveToStackCode( condition_type, function_context );
+
+			if( condition_type.type.fundamental != U_FundamentalType::Bool )
 			{
-				ReportTypesMismatch( error_messages_, condition_type, U_FundamentalType::Bool );
+				ReportTypesMismatch( error_messages_, condition_type.type.fundamental, U_FundamentalType::Bool );
 				throw ProgramError();
 			}
 
@@ -1251,7 +1294,7 @@ void CodeBuilder::BuildIfOperator(
 			result_.code.emplace_back( Vm_Op::Type::JumpIfZero );
 
 			function_context.expression_stack_size_counter-=
-				g_fundamental_types_size[ size_t(U_FundamentalType::Bool) ];
+				Type( U_FundamentalType::Bool ).SizeOf();
 		}
 
 		BuildBlockCode(
@@ -1293,16 +1336,18 @@ void CodeBuilder::BuildWhileOperator(
 
 	function_context.while_frames.back().first_while_op_index= result_.code.size();
 
-	U_FundamentalType condition_type=
+	Variable condition_type=
 		BuildExpressionCode(
 			*while_operator.condition_,
 			names,
 			function_context,
 			stack_context );
 
-	if( condition_type != U_FundamentalType::Bool )
+	BuildMoveToStackCode( condition_type, function_context );
+
+	if( condition_type.type.fundamental != U_FundamentalType::Bool )
 	{
-		ReportTypesMismatch( error_messages_, condition_type, U_FundamentalType::Bool );
+		ReportTypesMismatch( error_messages_, condition_type.type.fundamental, U_FundamentalType::Bool );
 		throw ProgramError();
 	}
 
@@ -1311,7 +1356,7 @@ void CodeBuilder::BuildWhileOperator(
 	result_.code.emplace_back( Vm_Op::Type::JumpIfZero );
 
 	function_context.expression_stack_size_counter-=
-		g_fundamental_types_size[ size_t(U_FundamentalType::Bool) ];
+		Type( U_FundamentalType::Bool ).SizeOf();
 
 	BuildBlockCode(
 		*while_operator.block_,
@@ -1338,5 +1383,7 @@ void CodeBuilder::BuildWhileOperator(
 
 	function_context.while_frames.pop_back();
 }
+
+} // namespace CodeBuilderPrivate
 
 } //namespace Interpreter

@@ -22,22 +22,30 @@ struct Type final
 	};
 
 	Kind kind;
-	U_FundamentalType fundamental = U_FundamentalType::InvalidType;
+	U_FundamentalType fundamental;
 	std::unique_ptr<Function> function;
 
-	Type();
+	explicit Type( U_FundamentalType in_fundamental= U_FundamentalType::InvalidType );
 	Type( const Type& other );
 	Type( Type&& other );
 
 	Type& operator=( const Type& other );
 	Type& operator=( Type&& other );
+
+	size_t SizeOf() const;
 };
+
+bool operator==( const Type& r, const Type& l );
+bool operator!=( const Type& r, const Type& l );
 
 struct Function final
 {
 	Type return_type;
 	std::vector<Type> args;
 };
+
+bool operator==( const Function& r, const Function& l );
+bool operator!=( const Function& r, const Function& l );
 
 struct Variable final
 {
@@ -46,6 +54,9 @@ struct Variable final
 		FunctionArgument,
 		Stack,
 		Global,
+
+		ValueAtExpessionStackTop,
+		AddressExpessionStackTop,
 	};
 
 	// For function argumnet - minus offset from caller frame

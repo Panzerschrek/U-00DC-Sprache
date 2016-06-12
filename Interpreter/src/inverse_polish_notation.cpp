@@ -42,6 +42,39 @@ void InversePolishNotationComponent::Print( std::ostream& stream ) const
 		PrintOperator( stream, operator_ );
 }
 
+static void SetupTreeIndeces_r(
+	InversePolishNotation& ipn,
+	InversePolishNotation::reverse_iterator& it )
+{
+	InversePolishNotationComponent& comp= *it;
+
+	++it;
+	if( comp.operator_ != BinaryOperator::None )
+	{
+		comp.r_index= static_cast<unsigned int>( &*it - &ipn.front() );
+		SetupTreeIndeces_r( ipn, it );
+		comp.l_index= static_cast<unsigned int>( &*it - &ipn.front() );
+		SetupTreeIndeces_r( ipn, it );
+	}
+	else
+	{
+		U_ASSERT( comp.operand );
+		U_ASSERT( comp.r_index == InversePolishNotationComponent::c_no_parent );
+		U_ASSERT( comp.l_index == InversePolishNotationComponent::c_no_parent );
+	}
+}
+
+static void SetupTreeIndeces( InversePolishNotation& ipn )
+{
+	U_ASSERT( !ipn.empty() );
+
+	InversePolishNotation::reverse_iterator it= ipn.rbegin();
+
+	SetupTreeIndeces_r( ipn, it );
+
+	U_ASSERT( it == ipn.rend() );
+}
+
 InversePolishNotation ConvertToInversePolishNotation(
 	const BinaryOperatorsChain& binary_operators_chain )
 {
@@ -111,6 +144,7 @@ InversePolishNotation ConvertToInversePolishNotation(
 		result.emplace_back( std::move(operator_) );
 	}
 
+	SetupTreeIndeces( result );
 	return result;
 }
 

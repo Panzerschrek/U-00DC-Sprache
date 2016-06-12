@@ -8,7 +8,29 @@ namespace Interpreter
 namespace CodeBuilderPrivate
 {
 
-Type::Type()
+namespace
+{
+
+const size_t g_fundamental_types_size[ size_t(U_FundamentalType::LastType) ]=
+{
+	[ size_t(U_FundamentalType::InvalidType) ]= 0,
+	[ size_t(U_FundamentalType::Void) ]= 0,
+	[ size_t(U_FundamentalType::Bool) ]= sizeof(U_bool),
+	[ size_t(U_FundamentalType::i8 ) ]= sizeof(U_i8 ),
+	[ size_t(U_FundamentalType::u8 ) ]= sizeof(U_u8 ),
+	[ size_t(U_FundamentalType::i16) ]= sizeof(U_i16),
+	[ size_t(U_FundamentalType::u16) ]= sizeof(U_u16),
+	[ size_t(U_FundamentalType::i32) ]= sizeof(U_i32),
+	[ size_t(U_FundamentalType::u32) ]= sizeof(U_u32),
+	[ size_t(U_FundamentalType::i64) ]= sizeof(U_i64),
+	[ size_t(U_FundamentalType::u64) ]= sizeof(U_u64),
+};
+
+} // namespace
+
+Type::Type( U_FundamentalType in_fundamental )
+	: kind( Kind::Fundamental )
+	, fundamental( in_fundamental )
 {}
 
 Type::Type( const Type& other )
@@ -39,6 +61,48 @@ Type& Type::operator=( Type&& other )
 	fundamental= other.fundamental;
 	function= std::move( other.function );
 	return *this;
+}
+
+size_t Type::SizeOf() const
+{
+	if( kind == Kind::Fundamental )
+		return g_fundamental_types_size[ size_t( fundamental ) ];
+	return sizeof(FuncNumber);
+}
+
+bool operator==( const Type& r, const Type& l )
+{
+	if( r.kind != l.kind )
+		return false;
+
+	if( r.kind == Type::Kind::Fundamental )
+		return r.fundamental == l.fundamental;
+
+	else
+	{
+		U_ASSERT( r.kind == Type::Kind::Function );
+		U_ASSERT( r.function );
+		U_ASSERT( l.function );
+
+		return *l.function == *r.function;
+	}
+}
+
+bool operator!=( const Type& r, const Type& l )
+{
+	return !( r == l );
+}
+
+bool operator==( const Function& r, const Function& l )
+{
+	return
+		r.return_type == l.return_type &&
+		r.args == l.args;
+}
+
+bool operator!=( const Function& r, const Function& l )
+{
+	return !( r == l );
 }
 
 NamesScope::NamesScope( const NamesScope* prev )
