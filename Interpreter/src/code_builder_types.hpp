@@ -33,11 +33,17 @@ struct Type final
 	Type& operator=( Type&& other );
 };
 
+bool operator==( const Type& r, const Type& l );
+bool operator!=( const Type& r, const Type& l );
+
 struct Function final
 {
 	Type return_type;
 	std::vector<Type> args;
 };
+
+bool operator==( const Function& r, const Function& l );
+bool operator!=( const Function& r, const Function& l );
 
 struct Variable final
 {
@@ -46,6 +52,9 @@ struct Variable final
 		FunctionArgument,
 		Stack,
 		Global,
+
+		ValueAtExpessionStackTop,
+		AddressExpessionStackTop,
 	};
 
 	// For function argumnet - minus offset from caller frame

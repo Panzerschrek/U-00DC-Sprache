@@ -41,6 +41,41 @@ Type& Type::operator=( Type&& other )
 	return *this;
 }
 
+bool operator==( const Type& r, const Type& l )
+{
+	if( r.kind != l.kind )
+		return false;
+
+	if( r.kind == Type::Kind::Fundamental )
+		return r.fundamental == l.fundamental;
+
+	else
+	{
+		U_ASSERT( r.kind == Type::Kind::Function );
+		U_ASSERT( r.function );
+		U_ASSERT( l.function );
+
+		return *l.function == *r.function;
+	}
+}
+
+bool operator!=( const Type& r, const Type& l )
+{
+	return !( r == l );
+}
+
+bool operator==( const Function& r, const Function& l )
+{
+	return
+		r.return_type == l.return_type &&
+		r.args == l.args;
+}
+
+bool operator!=( const Function& r, const Function& l )
+{
+	return !( r == l );
+}
+
 NamesScope::NamesScope( const NamesScope* prev )
 	: prev_(prev)
 {}

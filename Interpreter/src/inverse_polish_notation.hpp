@@ -14,6 +14,12 @@ struct InversePolishNotationComponent final
 
 	BinaryOperator operator_= BinaryOperator::None;
 
+	static const constexpr unsigned int c_no_parent= ~0;
+
+	// Index of parent component, or c_no_parent
+	unsigned int l_index= c_no_parent;
+	unsigned int r_index= c_no_parent;
+
 	void Print( std::ostream& stream ) const;
 };
 

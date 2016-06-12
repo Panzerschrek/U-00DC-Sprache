@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "code_builder_types.hpp"
+#include "inverse_polish_notation.hpp"
 #include "syntax_elements.hpp"
 #include "vm.hpp"
 
@@ -39,18 +40,34 @@ private:
 		FunctionContext& function_context,
 		BlockStackContext stack_context );
 
-	U_FundamentalType BuildExpressionCode(
+
+	Variable BuildExpressionCode(
 		const BinaryOperatorsChain& expression,
 		const NamesScope& names,
 		FunctionContext& function_context,
-		BlockStackContext stack_context );
+		BlockStackContext stack_context,
+		bool build_code= true );
 
-	U_FundamentalType BuildFuncCall(
+	Variable BuildExpressionCode_r(
+		const InversePolishNotation& ipn,
+		unsigned int ipn_index,
+		const NamesScope& names,
+		FunctionContext& function_context,
+		BlockStackContext stack_context,
+		bool build_code );
+
+	void BuildMoveToStackCode(
+		Variable& variable,
+		FunctionContext& function_context,
+		bool build_code= true );
+
+	Variable BuildFuncCall(
 		const Function& func,
 		const CallOperator& call_operator,
 		const NamesScope& names,
 		FunctionContext& function_context,
-		BlockStackContext stack_context );
+		BlockStackContext stack_context,
+		bool build_code );
 
 	void BuildIfOperator(
 		const NamesScope& names,

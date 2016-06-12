@@ -42,6 +42,7 @@ static void SimpleProgramTest()
 fn Foo( a : i32, b : i32, c : i32 ) : i32\
 {\
 	A();\
+	a;\
 	a - a;\
 	return (a) - -b / c ;\
 }"
@@ -351,6 +352,8 @@ fn X3( x : i32 ) : i32
 fn X99( x : i32 ) {} // args and void result
 fn Z( x : i32 ) : i32
 {
+	((((X0))))(); // Func name inside brackets
+	X0; // Func name without call
 	X0();
 	X99(x);
 	return X1() * X2(x) + X3(x);
