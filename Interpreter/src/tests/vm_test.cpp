@@ -295,6 +295,118 @@ static void ConditionsTest()
 	U_ASSERT( result == std::max( arg_a, arg_b ) );
 }
 
+static void AddressOperatorsTest0()
+{
+	const U_u16 c_expected_result= 256 + 42;
+
+	VmProgram program;
+	program.code.push_back( MakeNoOp() );
+
+	{
+		Vm_Op op( Vm_Op::Type::PushCallerStackAddress );
+		op.param.caller_stack_operations_offset=
+			-int(
+				VM::c_saved_caller_frame_size_ +
+				sizeof(U_u16) // param
+			);
+		program.code.push_back( op );
+	}
+	program.code.emplace_back( Vm_Op::Type::Deref16 );
+	{
+		Vm_Op op( Vm_Op::Type::PopToCallerStack16 );
+		op.param.caller_stack_operations_offset=
+			-int(
+				VM::c_saved_caller_frame_size_ +
+				sizeof(U_u16) +// param
+				sizeof(U_u16) // result
+			);
+		program.code.push_back( op );
+	}
+	program.code.push_back( MakeRet() );
+
+	FuncEntry func;
+	func.func_number= 0;
+	func.name= ToProgramString( "foo" );
+	func.return_type= U_FundamentalType::u16;
+	func.params.push_back(U_FundamentalType::u16);
+	program.export_funcs.push_back( func );
+
+	VmProgram::FuncCallInfo call_info;
+	call_info.first_op_position= 1;
+	call_info.stack_frame_size= 16;
+	program.funcs_table.push_back( call_info );
+
+	std::sort( program.export_funcs.begin(), program.export_funcs.end() );
+
+	VM vm{ program };
+
+	U_u16 result;
+	VM::CallResult call_result= vm.CallRet( func.name, result, c_expected_result );
+	U_ASSERT( call_result.ok );
+	U_ASSERT( result == c_expected_result );
+}
+
+static void AddressOperatorsTest1()
+{
+	const U_u16 c_expected_result= 256 + 1488;
+
+	VmProgram program;
+	program.code.push_back( MakeNoOp() );
+
+	{
+		Vm_Op op( Vm_Op::Type::PushFromCallerStack16 );
+		op.param.caller_stack_operations_offset=
+			-int(
+				VM::c_saved_caller_frame_size_ +
+				sizeof(U_u16) // param
+			);
+		program.code.push_back( op );
+	}
+	{
+		Vm_Op op( Vm_Op::Type::PopToLocalStack16 );
+		op.param.local_stack_operations_offset= 7;
+		program.code.push_back( op );
+	}
+	{
+		Vm_Op op( Vm_Op::Type::PushLocalStackAddress );
+		op.param.local_stack_operations_offset= 7;
+		program.code.push_back( op );
+	}
+	program.code.emplace_back( Vm_Op::Type::Deref16 );
+	{
+		Vm_Op op( Vm_Op::Type::PopToCallerStack16 );
+		op.param.caller_stack_operations_offset=
+			-int(
+				VM::c_saved_caller_frame_size_ +
+				sizeof(U_u16) +// param
+				sizeof(U_u16) // result
+			);
+		program.code.push_back( op );
+	}
+	program.code.push_back( MakeRet() );
+
+	FuncEntry func;
+	func.func_number= 0;
+	func.name= ToProgramString( "foo" );
+	func.return_type= U_FundamentalType::u16;
+	func.params.push_back(U_FundamentalType::u16);
+	program.export_funcs.push_back( func );
+
+	VmProgram::FuncCallInfo call_info;
+	call_info.first_op_position= 1;
+	call_info.stack_frame_size= 16;
+	program.funcs_table.push_back( call_info );
+
+	std::sort( program.export_funcs.begin(), program.export_funcs.end() );
+
+	VM vm{ program };
+
+	U_u16 result;
+	VM::CallResult call_result= vm.CallRet( func.name, result, c_expected_result );
+	U_ASSERT( call_result.ok );
+	U_ASSERT( result == c_expected_result );
+}
+
 void RunVMTests()
 {
 	SimpleProgramTest();
@@ -302,6 +414,8 @@ void RunVMTests()
 	SimpleRetProgramTest2();
 	RetProgramWithArgsTest();
 	ConditionsTest();
+	AddressOperatorsTest0();
+	AddressOperatorsTest1();
 }
 
 } // namespace Interpreter
