@@ -22,15 +22,17 @@ struct Type final
 	};
 
 	Kind kind;
-	U_FundamentalType fundamental = U_FundamentalType::InvalidType;
+	U_FundamentalType fundamental;
 	std::unique_ptr<Function> function;
 
-	Type();
+	explicit Type( U_FundamentalType in_fundamental= U_FundamentalType::InvalidType );
 	Type( const Type& other );
 	Type( Type&& other );
 
 	Type& operator=( const Type& other );
 	Type& operator=( Type&& other );
+
+	size_t SizeOf() const;
 };
 
 bool operator==( const Type& r, const Type& l );

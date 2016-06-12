@@ -6,6 +6,9 @@
 namespace Interpreter
 {
 
+namespace CodeBuilderPrivate
+{
+
 namespace
 {
 
@@ -23,21 +26,6 @@ const TypesMap g_types_map=
 	{ Keyword( Keywords::u32_ ), U_FundamentalType::u32 },
 	{ Keyword( Keywords::i64_ ), U_FundamentalType::i64 },
 	{ Keyword( Keywords::u64_ ), U_FundamentalType::u64 },
-};
-
-const size_t g_fundamental_types_size[ size_t(U_FundamentalType::LastType) ]=
-{
-	[ size_t(U_FundamentalType::InvalidType) ]= 0,
-	[ size_t(U_FundamentalType::Void) ]= 0,
-	[ size_t(U_FundamentalType::Bool) ]= sizeof(U_bool),
-	[ size_t(U_FundamentalType::i8 ) ]= sizeof(U_i8 ),
-	[ size_t(U_FundamentalType::u8 ) ]= sizeof(U_u8 ),
-	[ size_t(U_FundamentalType::i16) ]= sizeof(U_i16),
-	[ size_t(U_FundamentalType::u16) ]= sizeof(U_u16),
-	[ size_t(U_FundamentalType::i32) ]= sizeof(U_i32),
-	[ size_t(U_FundamentalType::u32) ]= sizeof(U_u32),
-	[ size_t(U_FundamentalType::i64) ]= sizeof(U_i64),
-	[ size_t(U_FundamentalType::u64) ]= sizeof(U_u64),
 };
 
 const char* const g_fundamental_types_names[ size_t(U_FundamentalType::LastType) ]=
@@ -58,7 +46,7 @@ const char* const g_fundamental_types_names[ size_t(U_FundamentalType::LastType)
 // Returns 0 for 8bit, 1 for 16bit, 2 for 32bit, 3 for 64 bit, 4 - else
 unsigned int GetOpIndexOffsetForFundamentalType( U_FundamentalType type )
 {
-	switch( g_fundamental_types_size[ size_t(type) ] )
+	switch( Type( type ).SizeOf() )
 	{
 		case 1: return 0;
 		case 2: return 1;
@@ -194,9 +182,6 @@ void ReportArithmeticOperationWithUnsupportedType(
 }
 
 } // namespace
-
-namespace CodeBuilderPrivate
-{
 
 CodeBuilder::CodeBuilder()
 {
@@ -338,11 +323,7 @@ void CodeBuilder::BuildFuncCode(
 		var.type= *it;
 		var.location= Variable::Location::FunctionArgument;
 
-		unsigned int arg_size;
-		if( var.type.kind == Type::Kind::Fundamental )
-			arg_size= g_fundamental_types_size[ size_t( var.type.fundamental ) ];
-		else
-			arg_size= sizeof(FuncNumber);
+		unsigned int arg_size= var.type.SizeOf();
 
 		args_offset+= arg_size;
 		var.offset= args_offset;
@@ -360,9 +341,7 @@ void CodeBuilder::BuildFuncCode(
 	}
 
 	FunctionContext function_context;
-	function_context.result_offset=
-		args_offset +
-		g_fundamental_types_size[ size_t(func.return_type.fundamental) ];
+	function_context.result_offset= args_offset + func.return_type.SizeOf();
 	function_context.result_type= func.return_type.fundamental;
 
 	VmProgram::FuncCallInfo func_entry;
@@ -425,7 +404,7 @@ void CodeBuilder::BuildBlockCode(
 				variable.offset= stack_context.GetStackSize();
 
 				if( variable.type.kind == Type::Kind::Fundamental )
-					stack_context.IncreaseStack( g_fundamental_types_size[ size_t( variable.type.fundamental ) ] );
+					stack_context.IncreaseStack( variable.type.SizeOf() );
 				else
 				{
 					// TODO
@@ -483,8 +462,7 @@ void CodeBuilder::BuildBlockCode(
 
 					result_.code.push_back( move_zero_op );
 
-					function_context.expression_stack_size_counter+=
-						g_fundamental_types_size[ size_t(inserted_variable->second.type.fundamental) ];
+					function_context.expression_stack_size_counter+= inserted_variable->second.type.SizeOf();
 				}
 
 				Vm_Op init_var_op(
@@ -498,7 +476,7 @@ void CodeBuilder::BuildBlockCode(
 				result_.code.push_back( init_var_op );
 
 				function_context.expression_stack_size_counter-=
-					g_fundamental_types_size[ size_t(inserted_variable->second.type.fundamental) ];
+					inserted_variable->second.type.SizeOf();
 			}
 			else if(
 				const SingleExpressionOperator* expression=
@@ -513,10 +491,7 @@ void CodeBuilder::BuildBlockCode(
 
 				BuildMoveToStackCode( result, function_context );
 
-				unsigned int size=
-					result.type.kind == Type::Kind::Fundamental
-						? g_fundamental_types_size[ size_t( result.type.fundamental ) ]
-						: 4/* func have 32bit index*/;
+				unsigned int size= result.type.SizeOf();
 				if( size > 0 )
 				{
 					Vm_Op op( Vm_Op::Type::StackPointerAdd );
@@ -578,8 +553,7 @@ void CodeBuilder::BuildBlockCode(
 
 				result_.code.push_back( op );
 
-				function_context.expression_stack_size_counter-=
-					g_fundamental_types_size[ size_t( l_var.type.fundamental ) ];
+				function_context.expression_stack_size_counter-= l_var.type.SizeOf();
 			}
 			else if( const Block* inner_block=
 				dynamic_cast<const Block*>( block_element_ptr ) )
@@ -620,7 +594,7 @@ void CodeBuilder::BuildBlockCode(
 					result_.code.push_back( op );
 
 					function_context.expression_stack_size_counter-=
-						g_fundamental_types_size[ size_t(function_context.result_type) ];
+						Type( function_context.result_type ).SizeOf();
 				}
 
 				Vm_Op ret_op;
@@ -761,18 +735,15 @@ Variable CodeBuilder::BuildExpressionCode_r(
 		}
 
 		U_FundamentalType type0= l_var.type.fundamental;
-		U_FundamentalType type1= r_var.type.fundamental;
+		//U_FundamentalType type1= r_var.type.fundamental;
 
 		if( build_code )
 			function_context.expression_stack_size_counter-=
-				g_fundamental_types_size[ size_t(type0) ] +
-				g_fundamental_types_size[ size_t(type1) ];
+				l_var.type.SizeOf() + r_var.type.SizeOf();
 
 		Vm_Op::Type op_type= Vm_Op::Type::NoOp;
 
 		Variable result;
-		result.type.kind= Type::Kind::Fundamental;
-		result.type.fundamental= U_FundamentalType::InvalidType;
 		result.location= Variable::Location::ValueAtExpessionStackTop;
 
 		switch( comp.operator_ )
@@ -809,8 +780,7 @@ Variable CodeBuilder::BuildExpressionCode_r(
 				result.type.fundamental= type0;
 
 				if( build_code )
-					function_context.expression_stack_size_counter+=
-						g_fundamental_types_size[ size_t(type0) ];
+					function_context.expression_stack_size_counter+= result.type.SizeOf();
 			}
 			break;
 
@@ -877,8 +847,7 @@ Variable CodeBuilder::BuildExpressionCode_r(
 				result.type.fundamental= U_FundamentalType::Bool;
 
 				if( build_code )
-					function_context.expression_stack_size_counter+=
-						g_fundamental_types_size[ size_t(U_FundamentalType::Bool) ];
+					function_context.expression_stack_size_counter+= result.type.SizeOf();
 			}
 			break;
 
@@ -903,8 +872,7 @@ Variable CodeBuilder::BuildExpressionCode_r(
 				result.type.fundamental= type0;
 
 				if( build_code )
-					function_context.expression_stack_size_counter+=
-						g_fundamental_types_size[ size_t(type0) ];
+					function_context.expression_stack_size_counter+= result.type.SizeOf();
 			}
 			break;
 
@@ -963,7 +931,7 @@ Variable CodeBuilder::BuildExpressionCode_r(
 				result_.code.push_back( op );
 
 				function_context.expression_stack_size_counter+=
-					g_fundamental_types_size[ size_t(U_FundamentalType::Bool) ];
+					Type( U_FundamentalType::Bool ).SizeOf();
 			}
 
 			result.location= Variable::Location::ValueAtExpessionStackTop;
@@ -1028,7 +996,7 @@ Variable CodeBuilder::BuildExpressionCode_r(
 				result_.code.push_back(op);
 
 				function_context.expression_stack_size_counter+=
-					g_fundamental_types_size[ size_t(type) ];
+					Type( type ).SizeOf();
 			}
 
 			result.location= Variable::Location::ValueAtExpessionStackTop;
@@ -1142,11 +1110,7 @@ void CodeBuilder::BuildMoveToStackCode(
 
 	if( build_code )
 	{
-		unsigned int size=
-			variable.type.kind == Type::Kind::Fundamental
-				? g_fundamental_types_size[ size_t( variable.type.fundamental ) ]
-				: 4;
-		function_context.expression_stack_size_counter+= size;
+		function_context.expression_stack_size_counter+= variable.type.SizeOf();
 
 		Vm_Op op;
 
@@ -1204,8 +1168,7 @@ Variable CodeBuilder::BuildFuncCall(
 			throw ProgramError();
 		}
 
-		unsigned int result_size=
-			g_fundamental_types_size[ size_t(func.return_type.fundamental) ];
+		unsigned int result_size= func.return_type.SizeOf();
 
 		// Pop function number and move it to temp variable.
 		// Do it only if function have any args or returns non void.
@@ -1253,7 +1216,7 @@ Variable CodeBuilder::BuildFuncCall(
 				throw ProgramError();
 			}
 
-			args_size+= g_fundamental_types_size[ size_t(func.args[i].fundamental) ];
+			args_size+= func.args[i].SizeOf();
 		}
 
 		// Push func number.
@@ -1331,7 +1294,7 @@ void CodeBuilder::BuildIfOperator(
 			result_.code.emplace_back( Vm_Op::Type::JumpIfZero );
 
 			function_context.expression_stack_size_counter-=
-				g_fundamental_types_size[ size_t(U_FundamentalType::Bool) ];
+				Type( U_FundamentalType::Bool ).SizeOf();
 		}
 
 		BuildBlockCode(
@@ -1393,7 +1356,7 @@ void CodeBuilder::BuildWhileOperator(
 	result_.code.emplace_back( Vm_Op::Type::JumpIfZero );
 
 	function_context.expression_stack_size_counter-=
-		g_fundamental_types_size[ size_t(U_FundamentalType::Bool) ];
+		Type( U_FundamentalType::Bool ).SizeOf();
 
 	BuildBlockCode(
 		*while_operator.block_,
