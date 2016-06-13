@@ -67,6 +67,12 @@ struct Vm_Op
 		Deref32,
 		Deref64,
 
+		// Pop value, pop address, move value to address
+		Mov8 ,
+		Mov16,
+		Mov32,
+		Mov64,
+
 		// Bit and
 		And8,
 		And16,
@@ -390,6 +396,9 @@ private:
 
 	template<class T>
 	unsigned int DerefOpBase( unsigned int op_index );
+
+	template<class T>
+	unsigned int MovOpBase( unsigned int op_index );
 
 	template<class T, class Func>
 	unsigned int BinaryOpBase( unsigned int op_index );

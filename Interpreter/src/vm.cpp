@@ -100,6 +100,32 @@ unsigned int VM::DerefOpBase( unsigned int op_index )
 	return op_index + 1;
 }
 
+template<class T>
+unsigned int VM::MovOpBase( unsigned int op_index )
+{
+	T value;
+	void* address;
+
+	stack_pointer_-= sizeof(T);
+	std::memcpy(
+		&value,
+		&*stack_pointer_,
+		sizeof(T) );
+
+	stack_pointer_-= sizeof(address);
+	std::memcpy(
+		&address,
+		&*stack_pointer_,
+		sizeof(address) );
+
+	std::memcpy(
+		address,
+		&value,
+		sizeof(T) );
+
+	return op_index + 1;
+}
+
 template<class T, class Func>
 OpIndex VM::BinaryOpBase( OpIndex op_index )
 {
@@ -258,6 +284,11 @@ const VM::VMOpPoiter VM::operations_[size_t( Vm_Op::Type::LastOp ) ]=
 	[ size_t(Vm_Op::Type::Deref16)]= &VM::DerefOpBase<U_u16>,
 	[ size_t(Vm_Op::Type::Deref32)]= &VM::DerefOpBase<U_u32>,
 	[ size_t(Vm_Op::Type::Deref64)]= &VM::DerefOpBase<U_u64>,
+
+	[ size_t(Vm_Op::Type::Mov8 )]= &VM::MovOpBase<U_u8 >,
+	[ size_t(Vm_Op::Type::Mov16)]= &VM::MovOpBase<U_u16>,
+	[ size_t(Vm_Op::Type::Mov32)]= &VM::MovOpBase<U_u32>,
+	[ size_t(Vm_Op::Type::Mov64)]= &VM::MovOpBase<U_u64>,
 
 	[ size_t(Vm_Op::Type::And8 )]= &VM::BinaryOpBase<U_u8 , std::bit_and<U_u8 >>,
 	[ size_t(Vm_Op::Type::And16)]= &VM::BinaryOpBase<U_u16, std::bit_and<U_u16>>,
