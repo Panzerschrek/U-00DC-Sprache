@@ -301,16 +301,18 @@ Type CodeBuilder::PrepareType( const TypeName& type_name )
 	Type result;
 	Type* last_type= &result;
 
-	for( const std::unique_ptr<NumericConstant>& num : type_name.array_sizes )
+	for( auto rit= type_name.array_sizes.rbegin(); rit != type_name.array_sizes.rend(); ++rit )
 	{
+		const NumericConstant& num= * *rit;
+
 		last_type->kind= Type::Kind::Array;
 		last_type->array.reset( new Array() );
 
-		U_FundamentalType size_type= GetNumericConstantType( *num );
-		if( !( IsInteger(size_type) && num->value_ >= 0 ) )
+		U_FundamentalType size_type= GetNumericConstantType( num );
+		if( !( IsInteger(size_type) && num.value_ >= 0 ) )
 			error_messages_.push_back( "Error, array size must be nonnegative integer" );
 
-		last_type->array->size= size_t(num->value_);
+		last_type->array->size= size_t(num.value_);
 
 		last_type= &last_type->array->type;
 	}
@@ -1235,27 +1237,45 @@ void CodeBuilder::BuildMoveToStackCode(
 			case Variable::Location::FunctionArgument:
 				op.type= Vm_Op::Type::PushCallerStackAddress;
 				op.param.caller_stack_operations_offset= -variable.offset;
+				result_.code.push_back( op );
 				break;
 
 			case Variable::Location::Stack:
 				op.type= Vm_Op::Type::PushLocalStackAddress;
 				op.param.caller_stack_operations_offset= variable.offset;
+				result_.code.push_back( op );
 				break;
 
 			case Variable::Location::Global:
 				U_ASSERT( false );
 				break;
 
-			case Variable::Location::ValueAtExpessionStackTop:
+			// We have already address on stack top. This is needed target array address.
 			case Variable::Location::AddressAtExpessionStackTop:
+				function_context.expression_stack_size_counter-= sizeof(void*);
+				break;
+
+			case Variable::Location::ValueAtExpessionStackTop:
 				U_ASSERT(false);
 			};
-
-			result_.code.push_back( op );
 		}
 		else
 		{
 			function_context.expression_stack_size_counter+= variable.type.SizeOf();
+
+			unsigned int op_offset;
+			switch( variable.type.kind )
+			{
+			case Type::Kind::Fundamental:
+				op_offset= GetOpIndexOffsetForFundamentalType( variable.type.fundamental );
+				break;
+			case Type::Kind::Function:
+				op_offset= sizeof(FuncNumber) == 4 ? 3 : 4;
+				break;
+			case Type::Kind::Array:
+				U_ASSERT(false);
+				op_offset= 0;
+			};
 
 			Vm_Op op;
 			switch( variable.location )
@@ -1264,7 +1284,7 @@ void CodeBuilder::BuildMoveToStackCode(
 				op.type=
 					Vm_Op::Type(
 						static_cast<unsigned int>(Vm_Op::Type::PushFromCallerStack8) +
-						GetOpIndexOffsetForFundamentalType( variable.type.fundamental ));
+						op_offset);
 				op.param.caller_stack_operations_offset= -variable.offset;
 				break;
 
@@ -1272,7 +1292,7 @@ void CodeBuilder::BuildMoveToStackCode(
 				op.type=
 					Vm_Op::Type(
 						static_cast<unsigned int>(Vm_Op::Type::PushFromLocalStack8) +
-						GetOpIndexOffsetForFundamentalType( variable.type.fundamental ));
+						op_offset );
 				op.param.caller_stack_operations_offset= variable.offset;
 				break;
 
@@ -1286,7 +1306,7 @@ void CodeBuilder::BuildMoveToStackCode(
 				op.type=
 					Vm_Op::Type(
 						static_cast<unsigned int>(Vm_Op::Type::Deref8) +
-						GetOpIndexOffsetForFundamentalType( variable.type.fundamental ));
+						op_offset );
 				function_context.expression_stack_size_counter-= sizeof(void*);
 				break;
 
