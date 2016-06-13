@@ -345,6 +345,25 @@ void Block::Print( std::ostream& stream, unsigned int indent ) const
 	stream << "}\n";
 }
 
+void TypeName::Print( std::ostream& stream ) const
+{
+	for( const std::unique_ptr<NumericConstant>& num : array_sizes )
+	{
+		U_UNUSED( num );
+		stream << "[ ";
+	}
+
+	stream << ToStdString( name );
+
+	for( const std::unique_ptr<NumericConstant>& num : array_sizes )
+	{
+		U_UNUSED( num );
+		stream << ", ";
+		num->Print( stream, 0 );
+		stream << " ]";
+	}
+}
+
 VariableDeclaration::~VariableDeclaration()
 {}
 
@@ -371,7 +390,8 @@ VariableDeclaration& VariableDeclaration::operator=( VariableDeclaration&& other
 
 void VariableDeclaration::Print( std::ostream& stream, unsigned int indent ) const
 {
-	stream << "let " << ToStdString( name ) << " : " << ToStdString( type );
+	stream << "let " << ToStdString( name ) << " : ";
+	type.Print( stream );
 	if( initial_value )
 	{
 		stream << " = ";

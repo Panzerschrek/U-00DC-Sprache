@@ -264,6 +264,15 @@ public:
 
 typedef std::unique_ptr<Block> BlockPtr;
 
+struct TypeName
+{
+	// [ [i32, 5] 7 ]
+	ProgramString name;
+	std::vector< std::unique_ptr<NumericConstant> > array_sizes;
+
+	void Print( std::ostream& stream ) const;
+};
+
 struct VariableDeclaration final : public IBlockElement
 {
 	virtual ~VariableDeclaration() override;
@@ -278,7 +287,7 @@ struct VariableDeclaration final : public IBlockElement
 	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
 
 	ProgramString name;
-	ProgramString type;
+	TypeName type;
 	BinaryOperatorsChainPtr initial_value;
 };
 

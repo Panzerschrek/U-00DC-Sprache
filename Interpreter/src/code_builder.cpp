@@ -117,7 +117,7 @@ void ReportUnknownVariableType(
 {
 	error_messages.push_back(
 		"Variable " + ToStdString( variable_declaration.name ) +
-		" has unknown type " + ToStdString( variable_declaration.type ) );
+		" has unknown type " + ToStdString( variable_declaration.type.name ) );
 }
 
 void ReportNameNotFound(
@@ -236,7 +236,7 @@ CodeBuilder::BuildResult CodeBuilder::BuildProgram(
 			func_info.type.function->args.reserve( func->arguments_.size() );
 			for( const VariableDeclaration& arg : func->arguments_ )
 			{
-				auto it= g_types_map.find( arg.type );
+				auto it= g_types_map.find( arg.type.name );
 				if( it == g_types_map.end() )
 				{
 					error_count_++;
@@ -393,7 +393,7 @@ void CodeBuilder::BuildBlockCode(
 				Variable variable;
 				variable.location= Variable::Location::Stack;
 
-				auto it= g_types_map.find( variable_declaration->type );
+				auto it= g_types_map.find( variable_declaration->type.name );
 				if( it == g_types_map.end() )
 				{
 					ReportUnknownVariableType( error_messages_, *variable_declaration );
