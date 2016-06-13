@@ -373,6 +373,23 @@ fn Z( x : i32 ) : i32
 	U_ASSERT( x * 5 == func_result );
 }
 
+static void ArraysTest()
+{
+	static const char c_program_text[]=
+
+R"RAW(
+fn Foo( a : i32 ) : i32
+{
+	let x : [ i32, 2 ];
+}
+
+)RAW"
+;
+
+	VM vm{ BuildProgram( c_program_text ) };
+
+}
+
 void RunCodeBuilderTest()
 {
 	SimpleProgramTest();
@@ -386,6 +403,7 @@ void RunCodeBuilderTest()
 	BitOperatorsTest();
 	BooleanOperatorsTest();
 	MultipleCallTest();
+	ArraysTest();
 }
 
 } // namespace Interpreter

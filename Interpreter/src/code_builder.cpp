@@ -82,6 +82,11 @@ static bool IsSignedInteger( U_FundamentalType type )
 		type == U_FundamentalType::i64;
 }
 
+static bool IsInteger( U_FundamentalType type )
+{
+	return IsSignedInteger( type ) || IsUnsignedInteger( type );
+}
+
 static U_FundamentalType GetNumericConstantType( const NumericConstant& number )
 {
 	if( number.type_suffix_.empty() )
@@ -113,11 +118,10 @@ void ReportUnknownFuncReturnType(
 
 void ReportUnknownVariableType(
 	std::vector<std::string>& error_messages,
-	const VariableDeclaration& variable_declaration )
+	const TypeName& type_name )
 {
 	error_messages.push_back(
-		"Variable " + ToStdString( variable_declaration.name ) +
-		" has unknown type " + ToStdString( variable_declaration.type.name ) );
+		"Variable has unknown type " + ToStdString( type_name.name ) );
 }
 
 void ReportNameNotFound(
@@ -236,19 +240,7 @@ CodeBuilder::BuildResult CodeBuilder::BuildProgram(
 			func_info.type.function->args.reserve( func->arguments_.size() );
 			for( const VariableDeclaration& arg : func->arguments_ )
 			{
-				auto it= g_types_map.find( arg.type.name );
-				if( it == g_types_map.end() )
-				{
-					error_count_++;
-					ReportUnknownVariableType( error_messages_, arg );
-					continue;
-				}
-
-				Type ret_type;
-				ret_type.kind= Type::Kind::Fundamental;
-				ret_type.fundamental= it->second;
-				func_info.type.function->args.push_back( std::move( ret_type ) );
-
+				func_info.type.function->args.push_back( PrepareType( arg.type ) );
 				arg_names.push_back( arg.name );
 			}
 
@@ -300,6 +292,39 @@ CodeBuilder::BuildResult CodeBuilder::BuildProgram(
 	result.error_messages= std::move( error_messages_ );
 	if( error_count_ == 0 )
 		result.program= std::move( result_ );
+
+	return result;
+}
+
+Type CodeBuilder::PrepareType( const TypeName& type_name )
+{
+	Type result;
+	Type* last_type= &result;
+
+	for( const std::unique_ptr<NumericConstant>& num : type_name.array_sizes )
+	{
+		last_type->kind= Type::Kind::Array;
+		last_type->array.reset( new Array() );
+
+		U_FundamentalType size_type= GetNumericConstantType( *num );
+		if( !( IsInteger(size_type) && num->value_ >= 0 ) )
+			error_messages_.push_back( "Error, array size must be nonnegative integer" );
+
+		last_type->array->size= size_t(num->value_);
+
+		last_type= &last_type->array->type;
+	}
+
+	last_type->kind= Type::Kind::Fundamental;
+
+	auto it= g_types_map.find( type_name.name );
+	if( it == g_types_map.end() )
+	{
+		last_type->fundamental= U_FundamentalType::i32;
+		ReportUnknownVariableType( error_messages_, type_name );
+	}
+	else
+		last_type->fundamental= it->second;
 
 	return result;
 }
@@ -393,22 +418,10 @@ void CodeBuilder::BuildBlockCode(
 				Variable variable;
 				variable.location= Variable::Location::Stack;
 
-				auto it= g_types_map.find( variable_declaration->type.name );
-				if( it == g_types_map.end() )
-				{
-					ReportUnknownVariableType( error_messages_, *variable_declaration );
-					throw ProgramError();
-				}
-				variable.type.kind= Type::Kind::Fundamental;
-				variable.type.fundamental= it->second;
-				variable.offset= stack_context.GetStackSize();
+				variable.type= PrepareType( variable_declaration->type );
 
-				if( variable.type.kind == Type::Kind::Fundamental )
-					stack_context.IncreaseStack( variable.type.SizeOf() );
-				else
-				{
-					// TODO
-				}
+				variable.offset= stack_context.GetStackSize();
+				stack_context.IncreaseStack( variable.type.SizeOf() );
 
 				const NamesScope::NamesMap::value_type* inserted_variable=
 					block_names.AddName( variable_declaration->name, std::move(variable) );
@@ -419,64 +432,67 @@ void CodeBuilder::BuildBlockCode(
 					throw ProgramError();
 				}
 
-				if( variable_declaration->initial_value )
-				{
-					Variable init_type=
-						BuildExpressionCode(
-							*variable_declaration->initial_value,
-							block_names,
-							function_context,
-							stack_context );
-
-					BuildMoveToStackCode( init_type, function_context );
-
-					if( init_type.type.fundamental != inserted_variable->second.type.fundamental )
+				if( inserted_variable->second.type.kind == Type::Kind::Fundamental )
+				{ // Initialize
+					if( variable_declaration->initial_value )
 					{
-						ReportTypesMismatch( error_messages_, init_type.type.fundamental, inserted_variable->second.type.fundamental );
-						throw ProgramError();
-					}
-				} // if variable initializer
-				else
-				{ // default initialization
+						Variable init_type=
+							BuildExpressionCode(
+								*variable_declaration->initial_value,
+								block_names,
+								function_context,
+								stack_context );
 
-					unsigned int op_index=
-						GetOpIndexOffsetForFundamentalType( inserted_variable->second.type.fundamental );
+						BuildMoveToStackCode( init_type, function_context );
 
-					Vm_Op move_zero_op(
-						Vm_Op::Type(
-							size_t(Vm_Op::Type::PushC8) +
-							op_index) );
-
-					if( op_index == 0 )
-						move_zero_op.param.push_c_8= 0;
-					else if( op_index == 1 )
-						move_zero_op.param.push_c_16= 0;
-					else if( op_index == 2 )
-						move_zero_op.param.push_c_32= 0;
-					else if( op_index == 3 )
-						move_zero_op.param.push_c_64= 0;
+						if( init_type.type.fundamental != inserted_variable->second.type.fundamental )
+						{
+							ReportTypesMismatch( error_messages_, init_type.type.fundamental, inserted_variable->second.type.fundamental );
+							throw ProgramError();
+						}
+					} // if variable initializer
 					else
-					{
-						U_ASSERT(false);
+					{ // default initialization
+
+						unsigned int op_index=
+							GetOpIndexOffsetForFundamentalType( inserted_variable->second.type.fundamental );
+
+						Vm_Op move_zero_op(
+							Vm_Op::Type(
+								size_t(Vm_Op::Type::PushC8) +
+								op_index) );
+
+						if( op_index == 0 )
+							move_zero_op.param.push_c_8= 0;
+						else if( op_index == 1 )
+							move_zero_op.param.push_c_16= 0;
+						else if( op_index == 2 )
+							move_zero_op.param.push_c_32= 0;
+						else if( op_index == 3 )
+							move_zero_op.param.push_c_64= 0;
+						else
+						{
+							U_ASSERT(false);
+						}
+
+						result_.code.push_back( move_zero_op );
+
+						function_context.expression_stack_size_counter+= inserted_variable->second.type.SizeOf();
 					}
 
-					result_.code.push_back( move_zero_op );
+					Vm_Op init_var_op(
+						Vm_Op::Type(
+							size_t(Vm_Op::Type::PopToLocalStack8) +
+							GetOpIndexOffsetForFundamentalType( inserted_variable->second.type.fundamental ) ) );
 
-					function_context.expression_stack_size_counter+= inserted_variable->second.type.SizeOf();
+					init_var_op.param.local_stack_operations_offset=
+						inserted_variable->second.offset;
+
+					result_.code.push_back( init_var_op );
+
+					function_context.expression_stack_size_counter-=
+						inserted_variable->second.type.SizeOf();
 				}
-
-				Vm_Op init_var_op(
-					Vm_Op::Type(
-						size_t(Vm_Op::Type::PopToLocalStack8) +
-						GetOpIndexOffsetForFundamentalType( inserted_variable->second.type.fundamental ) ) );
-
-				init_var_op.param.local_stack_operations_offset=
-					inserted_variable->second.offset;
-
-				result_.code.push_back( init_var_op );
-
-				function_context.expression_stack_size_counter-=
-					inserted_variable->second.type.SizeOf();
 			}
 			else if(
 				const SingleExpressionOperator* expression=
