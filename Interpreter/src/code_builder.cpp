@@ -557,6 +557,11 @@ void CodeBuilder::BuildBlockCode(
 							GetOpIndexOffsetForFundamentalType( l_var.type.fundamental ) );
 					op.param.local_stack_operations_offset= l_var.offset;
 				}
+				else if( l_var.location == Variable::Location::AddressAtExpessionStackTop )
+				{
+					error_messages_.push_back( "Can not assign to address, not implemented" );
+					throw ProgramError();
+				}
 				else if( l_var.location == Variable::Location::Global )
 				{
 					error_messages_.push_back( "Can not assign to global variable" );
@@ -1056,6 +1061,94 @@ Variable CodeBuilder::BuildExpressionCode_r(
 						stack_context,
 						build_code );
 			}
+			else if( const IndexationOperator* indexation_operator=
+				dynamic_cast<const IndexationOperator*>(postfix_operator.get()) )
+			{
+				if( result.type.kind != Type::Kind::Array )
+				{
+					error_messages_.push_back( "Error, indexation for non array" );
+					throw ProgramError();
+				}
+
+				BuildMoveToStackCode( result, function_context, build_code );
+
+				Variable indexation_result=
+					BuildExpressionCode(
+						*indexation_operator->index_,
+						names,
+						function_context,
+						stack_context,
+						build_code );
+
+				BuildMoveToStackCode( indexation_result, function_context, build_code );
+
+				if( !IsUnsignedInteger( indexation_result.type.fundamental ) )
+				{
+					error_messages_.push_back( "Error, index must be integer" );
+					throw ProgramError();
+				}
+
+				if( build_code )
+				{
+					// Convert index to integer of pointer size
+					bool is_64bit= sizeof(void*) == 8;
+					switch( indexation_result.type.fundamental )
+					{
+					case U_FundamentalType::u8:
+						result_.code.emplace_back( is_64bit ? Vm_Op::Type::Conv8To64U : Vm_Op::Type::Conv8To32U );
+						break;
+
+					case U_FundamentalType::u16:
+						result_.code.emplace_back( is_64bit ? Vm_Op::Type::Conv16To64U : Vm_Op::Type::Conv16To32U );
+						break;
+
+					case U_FundamentalType::u32:
+						if( is_64bit ) result_.code.emplace_back( Vm_Op::Type::Conv32To64U );
+						break;
+
+					case U_FundamentalType::u64:
+						if( !is_64bit ) result_.code.emplace_back( Vm_Op::Type::Conv64To32 );
+						break;
+
+					default:
+						U_ASSERT(false);
+					};
+					function_context.expression_stack_size_counter-= indexation_result.type.SizeOf();
+					function_context.expression_stack_size_counter+= sizeof(void*);
+
+					unsigned int element_size= result.type.array->type.SizeOf();
+					if( element_size != 1 )
+					{
+						Vm_Op push_c_op;
+						Vm_Op::Type mul_op_type;
+						if( is_64bit )
+						{
+							push_c_op.type= Vm_Op::Type::PushC64;
+							push_c_op.param.push_c_64= element_size;
+							mul_op_type= Vm_Op::Type::Mulu64;
+						}
+						else
+						{
+							push_c_op.type= Vm_Op::Type::PushC32;
+							push_c_op.param.push_c_32= element_size;
+							mul_op_type= Vm_Op::Type::Mulu32;
+						}
+
+						result_.code.push_back( push_c_op );
+						result_.code.emplace_back( mul_op_type );
+
+						function_context.expression_stack_size_counter+= sizeof(void*); // push size
+						function_context.expression_stack_size_counter-= sizeof(void*); // mul size
+					}
+
+					// Add to index to pointer.
+					// TODO - check range
+					result_.code.emplace_back( is_64bit ? Vm_Op::Type::Addu64 : Vm_Op::Type::Addu32 );
+					function_context.expression_stack_size_counter-= sizeof(void*);
+				}
+				result.type= result.type.array->type;
+				result.location= Variable::Location::AddressAtExpessionStackTop;
+			}
 			else
 			{
 				// Unknown potfix operator
@@ -1126,43 +1219,84 @@ void CodeBuilder::BuildMoveToStackCode(
 
 	if( build_code )
 	{
-		function_context.expression_stack_size_counter+= variable.type.SizeOf();
-
-		Vm_Op op;
-
-		switch( variable.location )
+		if( variable.type.kind == Type::Kind::Array )
 		{
-		case Variable::Location::FunctionArgument:
-			op.type=
-				Vm_Op::Type(
-					static_cast<unsigned int>(Vm_Op::Type::PushFromCallerStack8) +
-					GetOpIndexOffsetForFundamentalType( variable.type.fundamental ));
-			op.param.caller_stack_operations_offset= -variable.offset;
-			break;
+			function_context.expression_stack_size_counter+= sizeof(void*);
 
-		case Variable::Location::Stack:
-			op.type=
-				Vm_Op::Type(
-					static_cast<unsigned int>(Vm_Op::Type::PushFromLocalStack8) +
-					GetOpIndexOffsetForFundamentalType( variable.type.fundamental ));
-			op.param.caller_stack_operations_offset= variable.offset;
-			break;
+			Vm_Op op;
 
-		case Variable::Location::Global:
-			U_ASSERT( variable.type.kind == Type::Kind::Function );
-			op.type= Vm_Op::Type::PushC32;
-			op.param.push_c_32= variable.offset;
-			break;
+			switch( variable.location )
+			{
+			case Variable::Location::FunctionArgument:
+				op.type= Vm_Op::Type::PushCallerStackAddress;
+				op.param.caller_stack_operations_offset= -variable.offset;
+				break;
 
-		case Variable::Location::ValueAtExpessionStackTop:
-		case Variable::Location::AddressExpessionStackTop:
-			U_ASSERT(false);
-		};
+			case Variable::Location::Stack:
+				op.type= Vm_Op::Type::PushLocalStackAddress;
+				op.param.caller_stack_operations_offset= variable.offset;
+				break;
 
-		result_.code.push_back( op );
+			case Variable::Location::Global:
+				U_ASSERT( false );
+				break;
+
+			case Variable::Location::ValueAtExpessionStackTop:
+			case Variable::Location::AddressAtExpessionStackTop:
+				U_ASSERT(false);
+			};
+
+			result_.code.push_back( op );
+		}
+		else
+		{
+			function_context.expression_stack_size_counter+= variable.type.SizeOf();
+
+			Vm_Op op;
+			switch( variable.location )
+			{
+			case Variable::Location::FunctionArgument:
+				op.type=
+					Vm_Op::Type(
+						static_cast<unsigned int>(Vm_Op::Type::PushFromCallerStack8) +
+						GetOpIndexOffsetForFundamentalType( variable.type.fundamental ));
+				op.param.caller_stack_operations_offset= -variable.offset;
+				break;
+
+			case Variable::Location::Stack:
+				op.type=
+					Vm_Op::Type(
+						static_cast<unsigned int>(Vm_Op::Type::PushFromLocalStack8) +
+						GetOpIndexOffsetForFundamentalType( variable.type.fundamental ));
+				op.param.caller_stack_operations_offset= variable.offset;
+				break;
+
+			case Variable::Location::Global:
+				U_ASSERT( variable.type.kind == Type::Kind::Function );
+				op.type= Vm_Op::Type::PushC32;
+				op.param.push_c_32= variable.offset;
+				break;
+
+			case Variable::Location::AddressAtExpessionStackTop:
+				op.type=
+					Vm_Op::Type(
+						static_cast<unsigned int>(Vm_Op::Type::Deref8) +
+						GetOpIndexOffsetForFundamentalType( variable.type.fundamental ));
+				function_context.expression_stack_size_counter-= sizeof(void*);
+				break;
+
+			case Variable::Location::ValueAtExpessionStackTop:
+				U_ASSERT(false);
+			};
+
+			result_.code.push_back( op );
+		}
 	}
 
-	variable.location= Variable::Location::ValueAtExpessionStackTop;
+	if( variable.type.kind == Type::Kind::Array )
+		variable.location= Variable::Location::AddressAtExpessionStackTop;
+	else
+		variable.location= Variable::Location::ValueAtExpessionStackTop;
 	return;
 }
 

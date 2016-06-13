@@ -42,7 +42,6 @@ private:
 		FunctionContext& function_context,
 		BlockStackContext stack_context );
 
-
 	Variable BuildExpressionCode(
 		const BinaryOperatorsChain& expression,
 		const NamesScope& names,

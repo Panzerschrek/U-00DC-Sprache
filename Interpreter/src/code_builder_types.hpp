@@ -65,7 +65,7 @@ struct Variable final
 		Global,
 
 		ValueAtExpessionStackTop,
-		AddressExpessionStackTop,
+		AddressAtExpessionStackTop,
 	};
 
 	// For function argumnet - minus offset from caller frame

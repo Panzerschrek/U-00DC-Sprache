@@ -381,6 +381,7 @@ R"RAW(
 fn Foo( a : i32 ) : i32
 {
 	let x : [ i32, 2 ];
+	return x[ 0u32 ];
 }
 
 )RAW"
@@ -388,6 +389,11 @@ fn Foo( a : i32 ) : i32
 
 	VM vm{ BuildProgram( c_program_text ) };
 
+	U_i32 func_result, x= 42;
+
+	const VM::CallResult call_result =
+		vm.CallRet( ToProgramString("Foo"), func_result, x );
+	U_ASSERT( call_result.ok );
 }
 
 void RunCodeBuilderTest()
