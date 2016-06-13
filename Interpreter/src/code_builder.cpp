@@ -541,36 +541,41 @@ void CodeBuilder::BuildBlockCode(
 				}
 
 				Vm_Op op;
-				if( l_var.location == Variable::Location::FunctionArgument )
+
+				switch( l_var.location )
 				{
+				case Variable::Location::FunctionArgument:
 					op.type=
 						Vm_Op::Type(
 							size_t(Vm_Op::Type::PopToCallerStack8) +
 							GetOpIndexOffsetForFundamentalType( l_var.type.fundamental ) );
 					op.param.caller_stack_operations_offset= -int( l_var.offset );
-				}
-				else if( l_var.location == Variable::Location::Stack )
-				{
+					break;
+
+				case Variable::Location::Stack:
 					op.type=
 						Vm_Op::Type(
 							size_t(Vm_Op::Type::PopToLocalStack8) +
 							GetOpIndexOffsetForFundamentalType( l_var.type.fundamental ) );
 					op.param.local_stack_operations_offset= l_var.offset;
-				}
-				else if( l_var.location == Variable::Location::AddressAtExpessionStackTop )
-				{
-					error_messages_.push_back( "Can not assign to address, not implemented" );
-					throw ProgramError();
-				}
-				else if( l_var.location == Variable::Location::Global )
-				{
+					break;
+
+				case Variable::Location::Global:
 					error_messages_.push_back( "Can not assign to global variable" );
 					throw ProgramError();
-				}
-				else
-				{
-					U_ASSERT(false);
-				}
+
+				case Variable::Location::ValueAtExpessionStackTop:
+					error_messages_.push_back( "Can not assign to r_value" );
+					throw ProgramError();
+
+				case Variable::Location::AddressAtExpessionStackTop:
+					op.type=
+						Vm_Op::Type(
+							size_t(Vm_Op::Type::Mov8) +
+							GetOpIndexOffsetForFundamentalType( l_var.type.fundamental ) );
+					function_context.expression_stack_size_counter-= sizeof(void*);
+					break;
+				};
 
 				result_.code.push_back( op );
 

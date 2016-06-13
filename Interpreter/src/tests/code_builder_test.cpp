@@ -376,24 +376,23 @@ fn Z( x : i32 ) : i32
 static void ArraysTest()
 {
 	static const char c_program_text[]=
-
-R"RAW(
+R"(
 fn Foo( a : i32 ) : i32
 {
 	let x : [ i32, 2 ];
-	return x[ 0u32 ];
+	x[ 1u32 ]= a;
+	return x[ 1u8 ] * x[ 1u16 ] + x[ 0u32 ] - x[ 0u64 ];
 }
-
-)RAW"
-;
+)";
 
 	VM vm{ BuildProgram( c_program_text ) };
 
-	U_i32 func_result, x= 42;
+	U_i32 func_result, x= -42;
 
 	const VM::CallResult call_result =
 		vm.CallRet( ToProgramString("Foo"), func_result, x );
 	U_ASSERT( call_result.ok );
+	U_ASSERT( func_result == x * x );
 }
 
 void RunCodeBuilderTest()
