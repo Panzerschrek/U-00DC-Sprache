@@ -82,6 +82,11 @@ static bool IsSignedInteger( U_FundamentalType type )
 		type == U_FundamentalType::i64;
 }
 
+static bool IsInteger( U_FundamentalType type )
+{
+	return IsSignedInteger( type ) || IsUnsignedInteger( type );
+}
+
 static U_FundamentalType GetNumericConstantType( const NumericConstant& number )
 {
 	if( number.type_suffix_.empty() )
@@ -113,11 +118,10 @@ void ReportUnknownFuncReturnType(
 
 void ReportUnknownVariableType(
 	std::vector<std::string>& error_messages,
-	const VariableDeclaration& variable_declaration )
+	const TypeName& type_name )
 {
 	error_messages.push_back(
-		"Variable " + ToStdString( variable_declaration.name ) +
-		" has unknown type " + ToStdString( variable_declaration.type ) );
+		"Variable has unknown type " + ToStdString( type_name.name ) );
 }
 
 void ReportNameNotFound(
@@ -236,19 +240,7 @@ CodeBuilder::BuildResult CodeBuilder::BuildProgram(
 			func_info.type.function->args.reserve( func->arguments_.size() );
 			for( const VariableDeclaration& arg : func->arguments_ )
 			{
-				auto it= g_types_map.find( arg.type );
-				if( it == g_types_map.end() )
-				{
-					error_count_++;
-					ReportUnknownVariableType( error_messages_, arg );
-					continue;
-				}
-
-				Type ret_type;
-				ret_type.kind= Type::Kind::Fundamental;
-				ret_type.fundamental= it->second;
-				func_info.type.function->args.push_back( std::move( ret_type ) );
-
+				func_info.type.function->args.push_back( PrepareType( arg.type ) );
 				arg_names.push_back( arg.name );
 			}
 
@@ -300,6 +292,41 @@ CodeBuilder::BuildResult CodeBuilder::BuildProgram(
 	result.error_messages= std::move( error_messages_ );
 	if( error_count_ == 0 )
 		result.program= std::move( result_ );
+
+	return result;
+}
+
+Type CodeBuilder::PrepareType( const TypeName& type_name )
+{
+	Type result;
+	Type* last_type= &result;
+
+	for( auto rit= type_name.array_sizes.rbegin(); rit != type_name.array_sizes.rend(); ++rit )
+	{
+		const NumericConstant& num= * *rit;
+
+		last_type->kind= Type::Kind::Array;
+		last_type->array.reset( new Array() );
+
+		U_FundamentalType size_type= GetNumericConstantType( num );
+		if( !( IsInteger(size_type) && num.value_ >= 0 ) )
+			error_messages_.push_back( "Error, array size must be nonnegative integer" );
+
+		last_type->array->size= size_t(num.value_);
+
+		last_type= &last_type->array->type;
+	}
+
+	last_type->kind= Type::Kind::Fundamental;
+
+	auto it= g_types_map.find( type_name.name );
+	if( it == g_types_map.end() )
+	{
+		last_type->fundamental= U_FundamentalType::i32;
+		ReportUnknownVariableType( error_messages_, type_name );
+	}
+	else
+		last_type->fundamental= it->second;
 
 	return result;
 }
@@ -393,22 +420,10 @@ void CodeBuilder::BuildBlockCode(
 				Variable variable;
 				variable.location= Variable::Location::Stack;
 
-				auto it= g_types_map.find( variable_declaration->type );
-				if( it == g_types_map.end() )
-				{
-					ReportUnknownVariableType( error_messages_, *variable_declaration );
-					throw ProgramError();
-				}
-				variable.type.kind= Type::Kind::Fundamental;
-				variable.type.fundamental= it->second;
-				variable.offset= stack_context.GetStackSize();
+				variable.type= PrepareType( variable_declaration->type );
 
-				if( variable.type.kind == Type::Kind::Fundamental )
-					stack_context.IncreaseStack( variable.type.SizeOf() );
-				else
-				{
-					// TODO
-				}
+				variable.offset= stack_context.GetStackSize();
+				stack_context.IncreaseStack( variable.type.SizeOf() );
 
 				const NamesScope::NamesMap::value_type* inserted_variable=
 					block_names.AddName( variable_declaration->name, std::move(variable) );
@@ -419,64 +434,67 @@ void CodeBuilder::BuildBlockCode(
 					throw ProgramError();
 				}
 
-				if( variable_declaration->initial_value )
-				{
-					Variable init_type=
-						BuildExpressionCode(
-							*variable_declaration->initial_value,
-							block_names,
-							function_context,
-							stack_context );
-
-					BuildMoveToStackCode( init_type, function_context );
-
-					if( init_type.type.fundamental != inserted_variable->second.type.fundamental )
+				if( inserted_variable->second.type.kind == Type::Kind::Fundamental )
+				{ // Initialize
+					if( variable_declaration->initial_value )
 					{
-						ReportTypesMismatch( error_messages_, init_type.type.fundamental, inserted_variable->second.type.fundamental );
-						throw ProgramError();
-					}
-				} // if variable initializer
-				else
-				{ // default initialization
+						Variable init_type=
+							BuildExpressionCode(
+								*variable_declaration->initial_value,
+								block_names,
+								function_context,
+								stack_context );
 
-					unsigned int op_index=
-						GetOpIndexOffsetForFundamentalType( inserted_variable->second.type.fundamental );
+						BuildMoveToStackCode( init_type, function_context );
 
-					Vm_Op move_zero_op(
-						Vm_Op::Type(
-							size_t(Vm_Op::Type::PushC8) +
-							op_index) );
-
-					if( op_index == 0 )
-						move_zero_op.param.push_c_8= 0;
-					else if( op_index == 1 )
-						move_zero_op.param.push_c_16= 0;
-					else if( op_index == 2 )
-						move_zero_op.param.push_c_32= 0;
-					else if( op_index == 3 )
-						move_zero_op.param.push_c_64= 0;
+						if( init_type.type.fundamental != inserted_variable->second.type.fundamental )
+						{
+							ReportTypesMismatch( error_messages_, init_type.type.fundamental, inserted_variable->second.type.fundamental );
+							throw ProgramError();
+						}
+					} // if variable initializer
 					else
-					{
-						U_ASSERT(false);
+					{ // default initialization
+
+						unsigned int op_index=
+							GetOpIndexOffsetForFundamentalType( inserted_variable->second.type.fundamental );
+
+						Vm_Op move_zero_op(
+							Vm_Op::Type(
+								size_t(Vm_Op::Type::PushC8) +
+								op_index) );
+
+						if( op_index == 0 )
+							move_zero_op.param.push_c_8= 0;
+						else if( op_index == 1 )
+							move_zero_op.param.push_c_16= 0;
+						else if( op_index == 2 )
+							move_zero_op.param.push_c_32= 0;
+						else if( op_index == 3 )
+							move_zero_op.param.push_c_64= 0;
+						else
+						{
+							U_ASSERT(false);
+						}
+
+						result_.code.push_back( move_zero_op );
+
+						function_context.expression_stack_size_counter+= inserted_variable->second.type.SizeOf();
 					}
 
-					result_.code.push_back( move_zero_op );
+					Vm_Op init_var_op(
+						Vm_Op::Type(
+							size_t(Vm_Op::Type::PopToLocalStack8) +
+							GetOpIndexOffsetForFundamentalType( inserted_variable->second.type.fundamental ) ) );
 
-					function_context.expression_stack_size_counter+= inserted_variable->second.type.SizeOf();
+					init_var_op.param.local_stack_operations_offset=
+						inserted_variable->second.offset;
+
+					result_.code.push_back( init_var_op );
+
+					function_context.expression_stack_size_counter-=
+						inserted_variable->second.type.SizeOf();
 				}
-
-				Vm_Op init_var_op(
-					Vm_Op::Type(
-						size_t(Vm_Op::Type::PopToLocalStack8) +
-						GetOpIndexOffsetForFundamentalType( inserted_variable->second.type.fundamental ) ) );
-
-				init_var_op.param.local_stack_operations_offset=
-					inserted_variable->second.offset;
-
-				result_.code.push_back( init_var_op );
-
-				function_context.expression_stack_size_counter-=
-					inserted_variable->second.type.SizeOf();
 			}
 			else if(
 				const SingleExpressionOperator* expression=
@@ -525,31 +543,41 @@ void CodeBuilder::BuildBlockCode(
 				}
 
 				Vm_Op op;
-				if( l_var.location == Variable::Location::FunctionArgument )
+
+				switch( l_var.location )
 				{
+				case Variable::Location::FunctionArgument:
 					op.type=
 						Vm_Op::Type(
 							size_t(Vm_Op::Type::PopToCallerStack8) +
 							GetOpIndexOffsetForFundamentalType( l_var.type.fundamental ) );
 					op.param.caller_stack_operations_offset= -int( l_var.offset );
-				}
-				else if( l_var.location == Variable::Location::Stack )
-				{
+					break;
+
+				case Variable::Location::Stack:
 					op.type=
 						Vm_Op::Type(
 							size_t(Vm_Op::Type::PopToLocalStack8) +
 							GetOpIndexOffsetForFundamentalType( l_var.type.fundamental ) );
 					op.param.local_stack_operations_offset= l_var.offset;
-				}
-				else if( l_var.location == Variable::Location::Global )
-				{
+					break;
+
+				case Variable::Location::Global:
 					error_messages_.push_back( "Can not assign to global variable" );
 					throw ProgramError();
-				}
-				else
-				{
-					U_ASSERT(false);
-				}
+
+				case Variable::Location::ValueAtExpessionStackTop:
+					error_messages_.push_back( "Can not assign to r_value" );
+					throw ProgramError();
+
+				case Variable::Location::AddressAtExpessionStackTop:
+					op.type=
+						Vm_Op::Type(
+							size_t(Vm_Op::Type::Mov8) +
+							GetOpIndexOffsetForFundamentalType( l_var.type.fundamental ) );
+					function_context.expression_stack_size_counter-= sizeof(void*);
+					break;
+				};
 
 				result_.code.push_back( op );
 
@@ -1040,6 +1068,94 @@ Variable CodeBuilder::BuildExpressionCode_r(
 						stack_context,
 						build_code );
 			}
+			else if( const IndexationOperator* indexation_operator=
+				dynamic_cast<const IndexationOperator*>(postfix_operator.get()) )
+			{
+				if( result.type.kind != Type::Kind::Array )
+				{
+					error_messages_.push_back( "Error, indexation for non array" );
+					throw ProgramError();
+				}
+
+				BuildMoveToStackCode( result, function_context, build_code );
+
+				Variable indexation_result=
+					BuildExpressionCode(
+						*indexation_operator->index_,
+						names,
+						function_context,
+						stack_context,
+						build_code );
+
+				BuildMoveToStackCode( indexation_result, function_context, build_code );
+
+				if( !IsUnsignedInteger( indexation_result.type.fundamental ) )
+				{
+					error_messages_.push_back( "Error, index must be integer" );
+					throw ProgramError();
+				}
+
+				if( build_code )
+				{
+					// Convert index to integer of pointer size
+					bool is_64bit= sizeof(void*) == 8;
+					switch( indexation_result.type.fundamental )
+					{
+					case U_FundamentalType::u8:
+						result_.code.emplace_back( is_64bit ? Vm_Op::Type::Conv8To64U : Vm_Op::Type::Conv8To32U );
+						break;
+
+					case U_FundamentalType::u16:
+						result_.code.emplace_back( is_64bit ? Vm_Op::Type::Conv16To64U : Vm_Op::Type::Conv16To32U );
+						break;
+
+					case U_FundamentalType::u32:
+						if( is_64bit ) result_.code.emplace_back( Vm_Op::Type::Conv32To64U );
+						break;
+
+					case U_FundamentalType::u64:
+						if( !is_64bit ) result_.code.emplace_back( Vm_Op::Type::Conv64To32 );
+						break;
+
+					default:
+						U_ASSERT(false);
+					};
+					function_context.expression_stack_size_counter-= indexation_result.type.SizeOf();
+					function_context.expression_stack_size_counter+= sizeof(void*);
+
+					unsigned int element_size= result.type.array->type.SizeOf();
+					if( element_size != 1 )
+					{
+						Vm_Op push_c_op;
+						Vm_Op::Type mul_op_type;
+						if( is_64bit )
+						{
+							push_c_op.type= Vm_Op::Type::PushC64;
+							push_c_op.param.push_c_64= element_size;
+							mul_op_type= Vm_Op::Type::Mulu64;
+						}
+						else
+						{
+							push_c_op.type= Vm_Op::Type::PushC32;
+							push_c_op.param.push_c_32= element_size;
+							mul_op_type= Vm_Op::Type::Mulu32;
+						}
+
+						result_.code.push_back( push_c_op );
+						result_.code.emplace_back( mul_op_type );
+
+						function_context.expression_stack_size_counter+= sizeof(void*); // push size
+						function_context.expression_stack_size_counter-= sizeof(void*); // mul size
+					}
+
+					// Add to index to pointer.
+					// TODO - check range
+					result_.code.emplace_back( is_64bit ? Vm_Op::Type::Addu64 : Vm_Op::Type::Addu32 );
+					function_context.expression_stack_size_counter-= sizeof(void*);
+				}
+				result.type= result.type.array->type;
+				result.location= Variable::Location::AddressAtExpessionStackTop;
+			}
 			else
 			{
 				// Unknown potfix operator
@@ -1110,43 +1226,102 @@ void CodeBuilder::BuildMoveToStackCode(
 
 	if( build_code )
 	{
-		function_context.expression_stack_size_counter+= variable.type.SizeOf();
-
-		Vm_Op op;
-
-		switch( variable.location )
+		if( variable.type.kind == Type::Kind::Array )
 		{
-		case Variable::Location::FunctionArgument:
-			op.type=
-				Vm_Op::Type(
-					static_cast<unsigned int>(Vm_Op::Type::PushFromCallerStack8) +
-					GetOpIndexOffsetForFundamentalType( variable.type.fundamental ));
-			op.param.caller_stack_operations_offset= -variable.offset;
-			break;
+			function_context.expression_stack_size_counter+= sizeof(void*);
 
-		case Variable::Location::Stack:
-			op.type=
-				Vm_Op::Type(
-					static_cast<unsigned int>(Vm_Op::Type::PushFromLocalStack8) +
-					GetOpIndexOffsetForFundamentalType( variable.type.fundamental ));
-			op.param.caller_stack_operations_offset= variable.offset;
-			break;
+			Vm_Op op;
 
-		case Variable::Location::Global:
-			U_ASSERT( variable.type.kind == Type::Kind::Function );
-			op.type= Vm_Op::Type::PushC32;
-			op.param.push_c_32= variable.offset;
-			break;
+			switch( variable.location )
+			{
+			case Variable::Location::FunctionArgument:
+				op.type= Vm_Op::Type::PushCallerStackAddress;
+				op.param.caller_stack_operations_offset= -variable.offset;
+				result_.code.push_back( op );
+				break;
 
-		case Variable::Location::ValueAtExpessionStackTop:
-		case Variable::Location::AddressExpessionStackTop:
-			U_ASSERT(false);
-		};
+			case Variable::Location::Stack:
+				op.type= Vm_Op::Type::PushLocalStackAddress;
+				op.param.caller_stack_operations_offset= variable.offset;
+				result_.code.push_back( op );
+				break;
 
-		result_.code.push_back( op );
+			case Variable::Location::Global:
+				U_ASSERT( false );
+				break;
+
+			// We have already address on stack top. This is needed target array address.
+			case Variable::Location::AddressAtExpessionStackTop:
+				function_context.expression_stack_size_counter-= sizeof(void*);
+				break;
+
+			case Variable::Location::ValueAtExpessionStackTop:
+				U_ASSERT(false);
+			};
+		}
+		else
+		{
+			function_context.expression_stack_size_counter+= variable.type.SizeOf();
+
+			unsigned int op_offset;
+			switch( variable.type.kind )
+			{
+			case Type::Kind::Fundamental:
+				op_offset= GetOpIndexOffsetForFundamentalType( variable.type.fundamental );
+				break;
+			case Type::Kind::Function:
+				op_offset= sizeof(FuncNumber) == 4 ? 3 : 4;
+				break;
+			case Type::Kind::Array:
+				U_ASSERT(false);
+				op_offset= 0;
+			};
+
+			Vm_Op op;
+			switch( variable.location )
+			{
+			case Variable::Location::FunctionArgument:
+				op.type=
+					Vm_Op::Type(
+						static_cast<unsigned int>(Vm_Op::Type::PushFromCallerStack8) +
+						op_offset);
+				op.param.caller_stack_operations_offset= -variable.offset;
+				break;
+
+			case Variable::Location::Stack:
+				op.type=
+					Vm_Op::Type(
+						static_cast<unsigned int>(Vm_Op::Type::PushFromLocalStack8) +
+						op_offset );
+				op.param.caller_stack_operations_offset= variable.offset;
+				break;
+
+			case Variable::Location::Global:
+				U_ASSERT( variable.type.kind == Type::Kind::Function );
+				op.type= Vm_Op::Type::PushC32;
+				op.param.push_c_32= variable.offset;
+				break;
+
+			case Variable::Location::AddressAtExpessionStackTop:
+				op.type=
+					Vm_Op::Type(
+						static_cast<unsigned int>(Vm_Op::Type::Deref8) +
+						op_offset );
+				function_context.expression_stack_size_counter-= sizeof(void*);
+				break;
+
+			case Variable::Location::ValueAtExpessionStackTop:
+				U_ASSERT(false);
+			};
+
+			result_.code.push_back( op );
+		}
 	}
 
-	variable.location= Variable::Location::ValueAtExpessionStackTop;
+	if( variable.type.kind == Type::Kind::Array )
+		variable.location= Variable::Location::AddressAtExpessionStackTop;
+	else
+		variable.location= Variable::Location::ValueAtExpessionStackTop;
 	return;
 }
 

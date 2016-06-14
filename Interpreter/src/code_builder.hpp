@@ -29,6 +29,8 @@ public:
 	BuildResult BuildProgram( const ProgramElements& program_elements );
 
 private:
+	Type PrepareType( const TypeName& type_name );
+
 	void BuildFuncCode(
 		const Function& func,
 		const std::vector<ProgramString> arg_names,
@@ -39,7 +41,6 @@ private:
 		const NamesScope& names,
 		FunctionContext& function_context,
 		BlockStackContext stack_context );
-
 
 	Variable BuildExpressionCode(
 		const BinaryOperatorsChain& expression,

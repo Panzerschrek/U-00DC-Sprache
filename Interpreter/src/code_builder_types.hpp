@@ -12,6 +12,7 @@ namespace CodeBuilderPrivate
 {
 
 struct Function;
+struct Array;
 
 struct Type final
 {
@@ -19,11 +20,13 @@ struct Type final
 	{
 		Fundamental,
 		Function,
+		Array,
 	};
 
 	Kind kind;
 	U_FundamentalType fundamental;
 	std::unique_ptr<Function> function;
+	std::unique_ptr<Array> array;
 
 	explicit Type( U_FundamentalType in_fundamental= U_FundamentalType::InvalidType );
 	Type( const Type& other );
@@ -44,6 +47,12 @@ struct Function final
 	std::vector<Type> args;
 };
 
+struct Array final
+{
+	Type type;
+	size_t size;
+};
+
 bool operator==( const Function& r, const Function& l );
 bool operator!=( const Function& r, const Function& l );
 
@@ -56,7 +65,7 @@ struct Variable final
 		Global,
 
 		ValueAtExpessionStackTop,
-		AddressExpessionStackTop,
+		AddressAtExpessionStackTop,
 	};
 
 	// For function argumnet - minus offset from caller frame

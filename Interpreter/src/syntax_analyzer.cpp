@@ -75,7 +75,7 @@ static BinaryOperator LexemToBinaryOperator( const Lexem& lexem )
 	};
 }
 
-static IBinaryOperatorsChainComponentPtr ParseNumericConstant(
+static std::unique_ptr<NumericConstant> ParseNumericConstant(
 	const Lexems::const_iterator num_it )
 {
 	const ProgramString& text= num_it->text;
@@ -216,7 +216,7 @@ static IBinaryOperatorsChainComponentPtr ParseNumericConstant(
 	ProgramString type_suffix( it, it_end );
 
 	return
-		IBinaryOperatorsChainComponentPtr(
+		std::unique_ptr<NumericConstant>(
 			new NumericConstant(
 				num_it->file_pos,
 				number,
@@ -417,6 +417,58 @@ return_result:
 	return result;
 }
 
+static void ParseTypeName_r(
+	SyntaxErrorMessages& error_messages,
+	Lexems::const_iterator& it,
+	const Lexems::const_iterator it_end,
+	TypeName& result )
+{
+	if( it->type == Lexem::Type::SquareBracketLeft )
+	{
+		++it;
+		ParseTypeName_r( error_messages, it, it_end, result );
+
+		if( it->type != Lexem::Type::Comma )
+		{
+			PushErrorMessage( error_messages, *it );
+			return;
+		}
+		++it;
+
+		result.array_sizes.emplace_back( ParseNumericConstant( it ) );
+		++it;
+
+		if( it->type != Lexem::Type::SquareBracketRight )
+		{
+			PushErrorMessage( error_messages, *it );
+			return;
+		}
+
+		++it;
+	}
+	else
+	{
+		if( it->type != Lexem::Type::Identifier )
+		{
+			PushErrorMessage( error_messages, *it );
+			return;
+		}
+
+		result.name= it->text;
+		++it;
+	}
+}
+
+static TypeName ParseTypeName(
+	SyntaxErrorMessages& error_messages,
+	Lexems::const_iterator& it,
+	const Lexems::const_iterator it_end )
+{
+	TypeName result;
+	ParseTypeName_r( error_messages, it, it_end, result );
+	return result;
+}
+
 static VariableDeclarationPtr ParseVariableDeclaration(
 	SyntaxErrorMessages& error_messages,
 	Lexems::const_iterator& it,
@@ -449,17 +501,7 @@ static VariableDeclarationPtr ParseVariableDeclaration(
 	++it;
 	U_ASSERT( it < it_end );
 
-	if( it->type != Lexem::Type::Identifier )
-	{
-		PushErrorMessage( error_messages, *it );
-		return nullptr;
-	}
-
-	decl->type= it->text;
-
-	++it;
-	U_ASSERT( it < it_end );
-
+	decl->type= ParseTypeName( error_messages, it, it_end );
 
 	if( it->type == Lexem::Type::Assignment )
 	{
@@ -873,18 +915,9 @@ static IProgramElementPtr ParseFunction(
 
 		++it;
 		U_ASSERT( it < it_end );
-		if( it->type != Lexem::Type::Identifier )
-		{
-			PushErrorMessage( error_messages, *it );
-			return nullptr;
-		}
 
-		decl.type= it->text;
-
+		decl.type= ParseTypeName( error_messages, it, it_end );
 		arguments.emplace_back( std::move( decl ) );
-
-		++it;
-		U_ASSERT( it < it_end );
 
 		if( it->type == Lexem::Type::Comma )
 		{

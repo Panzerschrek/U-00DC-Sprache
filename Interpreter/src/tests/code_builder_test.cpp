@@ -373,6 +373,72 @@ fn Z( x : i32 ) : i32
 	U_ASSERT( x * 5 == func_result );
 }
 
+static void ArraysTest0()
+{
+	static const char c_program_text[]=
+R"(
+fn Foo( a : i32 ) : i32
+{
+	let x : [ i32, 2 ];
+	x[ 1u32 ]= a;
+	return x[ 1u8 ] * x[ 1u16 ] + x[ 0u32 ] - x[ 0u64 ];
+}
+)";
+
+	VM vm{ BuildProgram( c_program_text ) };
+
+	U_i32 func_result, x= -42;
+
+	const VM::CallResult call_result =
+		vm.CallRet( ToProgramString("Foo"), func_result, x );
+	U_ASSERT( call_result.ok );
+	U_ASSERT( func_result == x * x );
+}
+
+static void ArraysTest1()
+{
+	static const char c_program_text[]=
+R"(
+fn Foo( a : u8 ) : u8
+{
+	let x : [ u8, 2 ];
+	x[ 1u32 ]= a;
+	return x[ 1u32 ];
+}
+)";
+
+	VM vm{ BuildProgram( c_program_text ) };
+
+	U_u8 func_result, x= 196;
+
+	const VM::CallResult call_result =
+		vm.CallRet( ToProgramString("Foo"), func_result, x );
+	U_ASSERT( call_result.ok );
+	U_ASSERT( func_result == x );
+}
+
+static void MultidimensionalArraysTest()
+{
+	static const char c_program_text[]=
+R"(
+fn Foo( a : i32 ) : i32
+{
+	let x : [ [ [ i32, 3 ], 2 ], 2 ];
+	x[ 0u32 ][ 1u8 ][ 2u32 ]= a - 34;
+	return x[ 0u16 ][ 1u32 ][ 2u64 ] + 42;
+}
+)";
+
+	VM vm{ BuildProgram( c_program_text ) };
+
+	U_i32 func_result, x= -42 - 500264;
+
+	const VM::CallResult call_result =
+		vm.CallRet( ToProgramString("Foo"), func_result, x );
+	U_ASSERT( call_result.ok );
+	U_ASSERT( func_result == x - 34 + 42 );
+}
+
 void RunCodeBuilderTest()
 {
 	SimpleProgramTest();
@@ -386,6 +452,9 @@ void RunCodeBuilderTest()
 	BitOperatorsTest();
 	BooleanOperatorsTest();
 	MultipleCallTest();
+	ArraysTest0();
+	ArraysTest1();
+	MultidimensionalArraysTest();
 }
 
 } // namespace Interpreter

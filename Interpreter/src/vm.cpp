@@ -71,6 +71,61 @@ OpIndex VM::PopToCallerStackOpBase( OpIndex op_index )
 	return op_index + 1;
 }
 
+template<class T>
+unsigned int VM::DerefOpBase( unsigned int op_index )
+{
+	void* address;
+
+	// Fetch address
+	stack_pointer_-= sizeof(address);
+	std::memcpy(
+		&address,
+		&*stack_pointer_,
+		sizeof(address) );
+
+	// Read value
+	T value;
+	std::memcpy(
+		&value,
+		address,
+		sizeof(T) );
+
+	// Push value
+	std::memcpy(
+		&*stack_pointer_,
+		&value,
+		sizeof(T) );
+	stack_pointer_+= sizeof(T);
+
+	return op_index + 1;
+}
+
+template<class T>
+unsigned int VM::MovOpBase( unsigned int op_index )
+{
+	T value;
+	void* address;
+
+	stack_pointer_-= sizeof(T);
+	std::memcpy(
+		&value,
+		&*stack_pointer_,
+		sizeof(T) );
+
+	stack_pointer_-= sizeof(address);
+	std::memcpy(
+		&address,
+		&*stack_pointer_,
+		sizeof(address) );
+
+	std::memcpy(
+		address,
+		&value,
+		sizeof(T) );
+
+	return op_index + 1;
+}
+
 template<class T, class Func>
 OpIndex VM::BinaryOpBase( OpIndex op_index )
 {
@@ -221,6 +276,19 @@ const VM::VMOpPoiter VM::operations_[size_t( Vm_Op::Type::LastOp ) ]=
 	[ size_t(Vm_Op::Type::PopToCallerStack16)]= &VM::PopToCallerStackOpBase<U_u16>,
 	[ size_t(Vm_Op::Type::PopToCallerStack32)]= &VM::PopToCallerStackOpBase<U_u32>,
 	[ size_t(Vm_Op::Type::PopToCallerStack64)]= &VM::PopToCallerStackOpBase<U_u64>,
+
+	[ size_t(Vm_Op::Type::PushLocalStackAddress)]= &VM::OpPushLocalStackAddress,
+	[ size_t(Vm_Op::Type::PushCallerStackAddress)]= &VM::OpPushCallerStackAddress,
+
+	[ size_t(Vm_Op::Type::Deref8 )]= &VM::DerefOpBase<U_u8 >,
+	[ size_t(Vm_Op::Type::Deref16)]= &VM::DerefOpBase<U_u16>,
+	[ size_t(Vm_Op::Type::Deref32)]= &VM::DerefOpBase<U_u32>,
+	[ size_t(Vm_Op::Type::Deref64)]= &VM::DerefOpBase<U_u64>,
+
+	[ size_t(Vm_Op::Type::Mov8 )]= &VM::MovOpBase<U_u8 >,
+	[ size_t(Vm_Op::Type::Mov16)]= &VM::MovOpBase<U_u16>,
+	[ size_t(Vm_Op::Type::Mov32)]= &VM::MovOpBase<U_u32>,
+	[ size_t(Vm_Op::Type::Mov64)]= &VM::MovOpBase<U_u64>,
 
 	[ size_t(Vm_Op::Type::And8 )]= &VM::BinaryOpBase<U_u8 , std::bit_and<U_u8 >>,
 	[ size_t(Vm_Op::Type::And16)]= &VM::BinaryOpBase<U_u16, std::bit_and<U_u16>>,
@@ -574,6 +642,36 @@ OpIndex VM::OpPushC64( OpIndex op_index )
 		&op.param.push_c_64,
 		sizeof(U_i32) );
 	stack_pointer_+= sizeof(U_i64);
+
+	return op_index + 1;
+}
+
+OpIndex VM::OpPushLocalStackAddress( OpIndex op_index )
+{
+	const Vm_Op& op= program_.code[ op_index ];
+
+	void* address= stack_frames_.back().data() + op.param.local_stack_operations_offset;
+
+	std::memcpy(
+		&*stack_pointer_,
+		&address,
+		sizeof(address) );
+	stack_pointer_+= sizeof(address);
+
+	return op_index + 1;
+}
+
+OpIndex VM::OpPushCallerStackAddress( OpIndex op_index )
+{
+	const Vm_Op& op= program_.code[ op_index ];
+
+	void* address= (&*caller_frame_pos_) + op.param.caller_stack_operations_offset;
+
+	std::memcpy(
+		&*stack_pointer_,
+		&address,
+		sizeof(address) );
+	stack_pointer_+= sizeof(address);
 
 	return op_index + 1;
 }

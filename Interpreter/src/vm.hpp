@@ -57,6 +57,22 @@ struct Vm_Op
 		PopToCallerStack32,
 		PopToCallerStack64,
 
+		// Push to stack address + offset
+		PushLocalStackAddress,
+		PushCallerStackAddress,
+
+		// Dereference pointer on stack top
+		Deref8 ,
+		Deref16,
+		Deref32,
+		Deref64,
+
+		// Pop value, pop address, move value to address
+		Mov8 ,
+		Mov16,
+		Mov32,
+		Mov64,
+
 		// Bit and
 		And8,
 		And16,
@@ -363,6 +379,9 @@ private:
 	OpIndex OpPushC32( OpIndex op_index );
 	OpIndex OpPushC64( OpIndex op_index );
 
+	OpIndex OpPushLocalStackAddress( OpIndex op_index );
+	OpIndex OpPushCallerStackAddress( OpIndex op_index );
+
 	template<class T>
 	unsigned int PushFromLocalStackOpBase( unsigned int op_index );
 
@@ -374,6 +393,12 @@ private:
 
 	template<class T>
 	unsigned int PopToCallerStackOpBase( unsigned int op_index );
+
+	template<class T>
+	unsigned int DerefOpBase( unsigned int op_index );
+
+	template<class T>
+	unsigned int MovOpBase( unsigned int op_index );
 
 	template<class T, class Func>
 	unsigned int BinaryOpBase( unsigned int op_index );

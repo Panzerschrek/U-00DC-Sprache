@@ -47,10 +47,22 @@ Type& Type::operator=( const Type& other )
 {
 	kind= other.kind;
 
-	if( kind == Kind::Fundamental )
+	switch( kind )
+	{
+	case Kind::Fundamental:
 		fundamental= other.fundamental;
-	else
+		break;
+
+	case Kind::Function:
+		U_ASSERT( other.function );
 		function.reset( new Function( *other.function ) );
+		break;
+
+	case Kind::Array:
+		U_ASSERT( other.array );
+		array.reset( new Array( *other.array ) );
+		break;
+	};
 
 	return *this;
 }
@@ -60,14 +72,26 @@ Type& Type::operator=( Type&& other )
 	kind= other.kind;
 	fundamental= other.fundamental;
 	function= std::move( other.function );
+	array= std::move( other.array );
 	return *this;
 }
 
 size_t Type::SizeOf() const
 {
-	if( kind == Kind::Fundamental )
+	switch( kind )
+	{
+	case Kind::Fundamental:
 		return g_fundamental_types_size[ size_t( fundamental ) ];
-	return sizeof(FuncNumber);
+
+	case Kind::Function:
+		return sizeof(FuncNumber);
+
+	case Kind::Array:
+		return array->type.SizeOf() * array->size;
+	};
+
+	U_ASSERT(false);
+	return 0;
 }
 
 bool operator==( const Type& r, const Type& l )
