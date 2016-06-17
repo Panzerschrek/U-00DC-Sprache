@@ -24,6 +24,8 @@ const size_t g_fundamental_types_size[ size_t(U_FundamentalType::LastType) ]=
 	[ size_t(U_FundamentalType::u32) ]= sizeof(U_u32),
 	[ size_t(U_FundamentalType::i64) ]= sizeof(U_i64),
 	[ size_t(U_FundamentalType::u64) ]= sizeof(U_u64),
+	[ size_t(U_FundamentalType::f32) ]= sizeof(U_f32),
+	[ size_t(U_FundamentalType::f64) ]= sizeof(U_f64),
 };
 
 } // namespace

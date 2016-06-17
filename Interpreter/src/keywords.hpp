@@ -30,6 +30,8 @@ enum class Keywords : unsigned int
 	u32_,
 	i64_,
 	u64_,
+	f32_,
+	f64_,
 
 	// Boolean constants.
 	true_,

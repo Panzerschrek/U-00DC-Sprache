@@ -1,3 +1,4 @@
+#include <cstdlib>
 #include <iostream>
 
 #include "../code_builder.hpp"
@@ -439,6 +440,80 @@ fn Foo( a : i32 ) : i32
 	U_ASSERT( func_result == x - 34 + 42 );
 }
 
+static void FloatOperatorsTest0()
+{
+	static const char c_program_text[]=
+
+"\
+fn Foo( a : f32, b : f32, c : f32 ) : f32\
+{\
+	return a * b + c;\
+}"
+;
+
+	VM vm{ BuildProgram( c_program_text ) };
+
+	U_f32 func_result, a= 427.0f, b= 0.125f, c= -1500.18f;
+	const U_f32 c_eps= 0.1f;
+
+	const VM::CallResult call_result =
+		vm.CallRet( ToProgramString("Foo"), func_result, a, b, c );
+	U_ASSERT( call_result.ok );
+
+	U_f32 diff= ( a * b + c ) - func_result;
+	if( diff < 0.0f ) diff= -diff;
+	U_ASSERT( diff <= c_eps );
+}
+
+static void FloatOperatorsTest1()
+{
+	static const char c_program_text[]=
+
+"\
+fn Foo( a : f64, b : f64, c : f64 ) : f64\
+{\
+	return a * b - c * 1.0;\
+}"
+;
+
+	VM vm{ BuildProgram( c_program_text ) };
+
+	U_f64 func_result, a= 7854.0, b= 0.125, c= -1500.11;
+	const U_f64 c_eps= 0.1;
+
+	const VM::CallResult call_result =
+		vm.CallRet( ToProgramString("Foo"), func_result, a, b, c );
+	U_ASSERT( call_result.ok );
+
+	U_f64 diff= ( a * b - c ) - func_result;
+	if( diff < 0.0f ) diff= -diff;
+	U_ASSERT( diff <= c_eps );
+}
+
+static void FloatOperatorsTest2()
+{
+	static const char c_program_text[]=
+
+"\
+fn max( a : f32, b : f32, c : f32 ) : f32\
+{\
+	if( a >= b & a >= c ) { return a; }\
+	if( b >= c ) { return b; }\
+	return c;\
+}"
+;
+
+	VM vm{ BuildProgram( c_program_text ) };
+
+	U_f32 func_result, a= 7854.0, b= 0.125, c= -1500.11;
+
+	const VM::CallResult call_result =
+		vm.CallRet( ToProgramString("max"), func_result, a, b, c );
+	U_ASSERT( call_result.ok );
+
+	U_ASSERT( func_result == std::max( a, std::max( b, c ) ) );
+}
+
 void RunCodeBuilderTest()
 {
 	SimpleProgramTest();
@@ -455,6 +530,9 @@ void RunCodeBuilderTest()
 	ArraysTest0();
 	ArraysTest1();
 	MultidimensionalArraysTest();
+	FloatOperatorsTest0();
+	FloatOperatorsTest1();
+	FloatOperatorsTest2();
 }
 
 } // namespace Interpreter
