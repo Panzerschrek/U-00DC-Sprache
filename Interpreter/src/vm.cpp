@@ -688,7 +688,7 @@ OpIndex VM::OpPushC64( OpIndex op_index )
 	std::memcpy(
 		&*stack_pointer_,
 		&op.param.push_c_64,
-		sizeof(U_i32) );
+		sizeof(U_i64) );
 	stack_pointer_+= sizeof(U_i64);
 
 	return op_index + 1;
