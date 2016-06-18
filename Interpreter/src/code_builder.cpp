@@ -279,6 +279,14 @@ static Vm_Op::Type GetBinaryBitOperationCode(
 	return result;
 }
 
+void ReportUsingKeywordAsName(
+	std::vector<std::string>& error_messages,
+	const ProgramString& name )
+{
+	error_messages.push_back(
+	"Using keyword as name: " + ToStdString(name) );
+}
+
 void ReportUnknownFuncReturnType(
 	std::vector<std::string>& error_messages,
 	const FunctionDeclaration& func )
@@ -377,6 +385,9 @@ CodeBuilder::BuildResult CodeBuilder::BuildProgram(
 		if( const FunctionDeclaration* func=
 			dynamic_cast<const FunctionDeclaration*>( program_element.get() ) )
 		{
+			if( IsKeyword( func->name_ ) )
+				ReportUsingKeywordAsName( error_messages_, func->name_ );
+
 			Variable func_info;
 
 			func_info.location= Variable::Location::Global;
@@ -412,6 +423,9 @@ CodeBuilder::BuildResult CodeBuilder::BuildProgram(
 			func_info.type.function->args.reserve( func->arguments_.size() );
 			for( const VariableDeclaration& arg : func->arguments_ )
 			{
+				if( IsKeyword( arg.name ) )
+					ReportUsingKeywordAsName( error_messages_, arg.name );
+
 				func_info.type.function->args.push_back( PrepareType( arg.type ) );
 				arg_names.push_back( arg.name );
 			}
@@ -589,6 +603,9 @@ void CodeBuilder::BuildBlockCode(
 			if( const VariableDeclaration* variable_declaration=
 				dynamic_cast<const VariableDeclaration*>( block_element_ptr ) )
 			{
+				if( IsKeyword( variable_declaration->name ) )
+					ReportUsingKeywordAsName( error_messages_, variable_declaration->name );
+
 				Variable variable;
 				variable.location= Variable::Location::Stack;
 

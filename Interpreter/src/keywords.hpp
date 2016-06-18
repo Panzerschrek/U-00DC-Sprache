@@ -40,11 +40,13 @@ enum class Keywords : unsigned int
 	LastKeyword,
 };
 
+bool IsKeyword( const ProgramString& str );
+
 const ProgramString& Keyword( Keywords keyword );
 const char* KeywordAscii( Keywords keyword );
 
 // Relation operators for program string and keyword enum.
-// This operators make posible to write "std == Keywords::let_".
+// This operators make posible to write "str == Keywords::let_".
 bool operator==( Keywords keyword, const ProgramString& str );
 bool operator==( const ProgramString& str, Keywords keyword );
 bool operator!=( Keywords keyword, const ProgramString& str );

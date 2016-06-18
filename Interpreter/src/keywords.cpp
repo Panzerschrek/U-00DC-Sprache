@@ -1,3 +1,5 @@
+#include <set>
+
 #include "assert.hpp"
 
 #include "keywords.hpp"
@@ -47,7 +49,24 @@ static const KeywordEntry g_keywords[ size_t(Keywords::LastKeyword) ]=
 	[ size_t(Keywords::false_) ]= "false",
 };
 
+typedef std::set<ProgramString> KeywordsSet;
+
+static const KeywordsSet g_keywords_set=
+[]() -> KeywordsSet
+{
+	KeywordsSet result;
+	for( const KeywordEntry& k : g_keywords )
+		result.emplace( k.program_string );
+	return result;
+}
+();
+
 } // namespace
+
+bool IsKeyword( const ProgramString& str )
+{
+	return g_keywords_set.count( str ) != 0;
+}
 
 const ProgramString& Keyword( Keywords keyword )
 {
