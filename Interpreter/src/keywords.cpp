@@ -32,6 +32,8 @@ static const KeywordEntry g_keywords[ size_t(Keywords::LastKeyword) ]=
 	[ size_t(Keywords::if_) ]= "if",
 	[ size_t(Keywords::else_) ]= "else",
 
+	[ size_t(Keywords::class_) ]= "class",
+
 	[ size_t(Keywords::void_) ]= "void",
 	[ size_t(Keywords::bool_) ]= "bool",
 	[ size_t(Keywords::i8_ ) ]= "i8" ,
