@@ -213,6 +213,66 @@ struct Vm_Op
 		GreaterEqual32u,
 		GreaterEqual64u,
 
+		// Floating point negation
+		NegF32,
+		NegF64,
+
+		// Floating point subtraction
+		SubF32,
+		SubF64,
+
+		// Floating point addition
+		AddF32,
+		AddF64,
+
+		// Floating point multiplication
+		MulF32,
+		MulF64,
+
+		// Floating point division
+		DivF32,
+		DivF64,
+
+		// ==
+		EqualF32,
+		EqualF64,
+
+		// !=
+		NotEqualF32,
+		NotEqualF64,
+
+		// <
+		LessF32,
+		LessF64,
+
+		// <=
+		LessEqualF32,
+		LessEqualF64,
+
+		// >
+		GreaterF32,
+		GreaterF64,
+
+		// >=
+		GreaterEqualF32,
+		GreaterEqualF64,
+
+		// Floating poit conversions
+		ConvF32ToF64,
+		ConvF64ToF32,
+
+		// Float to integers conversions
+		ConvF32ToU64,
+		ConvF32ToS64,
+		ConvF64ToU64,
+		ConvF64ToS64,
+
+		// Integers to float conversions
+		ConvU64ToF32,
+		ConvS64ToF32,
+		ConvU64ToF64,
+		ConvS64ToF64,
+
 		LastOp
 	};
 
@@ -253,12 +313,15 @@ typedef std::int32_t  U_i32;
 typedef std::uint32_t U_u32;
 typedef std::int64_t  U_i64;
 typedef std::uint64_t U_u64;
+typedef float  U_f32;
+typedef double U_f64;
 
 enum class U_FundamentalType
 {
 	InvalidType,
 	Void,
 	Bool,
+
 	i8 ,
 	u8 ,
 	i16,
@@ -267,6 +330,9 @@ enum class U_FundamentalType
 	u32,
 	i64,
 	u64,
+
+	f32,
+	f64,
 
 	LastType,
 };

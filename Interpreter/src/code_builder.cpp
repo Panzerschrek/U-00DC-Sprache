@@ -26,6 +26,8 @@ const TypesMap g_types_map=
 	{ Keyword( Keywords::u32_ ), U_FundamentalType::u32 },
 	{ Keyword( Keywords::i64_ ), U_FundamentalType::i64 },
 	{ Keyword( Keywords::u64_ ), U_FundamentalType::u64 },
+	{ Keyword( Keywords::f32_ ), U_FundamentalType::f32 },
+	{ Keyword( Keywords::f64_ ), U_FundamentalType::f64 },
 };
 
 const char* const g_fundamental_types_names[ size_t(U_FundamentalType::LastType) ]=
@@ -41,6 +43,8 @@ const char* const g_fundamental_types_names[ size_t(U_FundamentalType::LastType)
 	[ size_t(U_FundamentalType::u32) ]= KeywordAscii( Keywords::u32_ ),
 	[ size_t(U_FundamentalType::i64) ]= KeywordAscii( Keywords::i64_ ),
 	[ size_t(U_FundamentalType::u64) ]= KeywordAscii( Keywords::u64_ ),
+	[ size_t(U_FundamentalType::f32) ]= KeywordAscii( Keywords::f32_ ),
+	[ size_t(U_FundamentalType::f64) ]= KeywordAscii( Keywords::f64_ ),
 };
 
 // Returns 0 for 8bit, 1 for 16bit, 2 for 32bit, 3 for 64 bit, 4 - else
@@ -60,8 +64,9 @@ unsigned int GetOpIndexOffsetForFundamentalType( U_FundamentalType type )
 static bool IsNumericType( U_FundamentalType type )
 {
 	return
-		type >= U_FundamentalType::i8 &&
-		type <= U_FundamentalType::u64;
+		( type >= U_FundamentalType::i8 && type <= U_FundamentalType::u64 ) ||
+		type == U_FundamentalType::f32 ||
+		type == U_FundamentalType::f64;
 }
 
 static bool IsUnsignedInteger( U_FundamentalType type )
@@ -87,15 +92,19 @@ static bool IsInteger( U_FundamentalType type )
 	return IsSignedInteger( type ) || IsUnsignedInteger( type );
 }
 
+static bool IsFloatingPoint( U_FundamentalType type )
+{
+	return
+		type == U_FundamentalType::f32 ||
+		type == U_FundamentalType::f64;
+}
+
 static U_FundamentalType GetNumericConstantType( const NumericConstant& number )
 {
 	if( number.type_suffix_.empty() )
 	{
 		if( number.has_fractional_point_ )
-		{
-			// TODO - floating point types
-			return U_FundamentalType::InvalidType;
-		}
+			return U_FundamentalType::f64;
 		else
 			return U_FundamentalType::i32;
 	}
@@ -105,6 +114,169 @@ static U_FundamentalType GetNumericConstantType( const NumericConstant& number )
 		return U_FundamentalType::InvalidType;
 
 	return it->second;
+}
+
+// Returns NoOp if no operator for given type
+static Vm_Op::Type GetBinaryArithmeticOperationCode(
+	U_FundamentalType operand_type,
+	BinaryOperator op )
+{
+	Vm_Op::Type result= Vm_Op::Type::NoOp;
+
+	if( IsFloatingPoint( operand_type ) )
+	{
+		switch( op )
+		{
+		case BinaryOperator::Add: result= Vm_Op::Type::AddF32; break;
+		case BinaryOperator::Sub: result= Vm_Op::Type::SubF32; break;
+		case BinaryOperator::Mul: result= Vm_Op::Type::MulF32; break;
+		case BinaryOperator::Div: result= Vm_Op::Type::DivF32; break;
+
+		default: U_ASSERT(false); break;
+		};
+
+		unsigned int op_offset= operand_type == U_FundamentalType::f32 ? 0 : 1;
+		result= Vm_Op::Type( size_t(result) + op_offset );
+	}
+	else
+	{
+		switch( op )
+		{
+		case BinaryOperator::Add: result= Vm_Op::Type::Addi32; break;
+		case BinaryOperator::Sub: result= Vm_Op::Type::Subi32; break;
+		case BinaryOperator::Div: result= Vm_Op::Type::Divi32; break;
+		case BinaryOperator::Mul: result= Vm_Op::Type::Muli32; break;
+		default: U_ASSERT(false); break;
+		};
+
+		if( operand_type == U_FundamentalType::i32 )
+		{}
+		else if( operand_type == U_FundamentalType::u32 )
+			result= Vm_Op::Type( size_t(result) + 1 );
+		else if( operand_type == U_FundamentalType::i64 )
+			result= Vm_Op::Type( size_t(result) + 2 );
+		else if( operand_type == U_FundamentalType::u64 )
+			result= Vm_Op::Type( size_t(result) + 3 );
+		else
+		{}
+	}
+
+	return result;
+}
+
+// Returns NoOp if no operator for given type
+static Vm_Op::Type GetBinaryComparisonOperationCode(
+	U_FundamentalType operand_type,
+	BinaryOperator op )
+{
+	Vm_Op::Type result= Vm_Op::Type::NoOp;
+
+	if( IsFloatingPoint( operand_type ) )
+	{
+		switch( op )
+		{
+		case BinaryOperator::Less:
+			result= Vm_Op::Type::LessF32;
+			break;
+
+		case BinaryOperator::LessEqual:
+			result= Vm_Op::Type::LessEqualF32;
+			break;
+
+		case BinaryOperator::Greater:
+			result= Vm_Op::Type::GreaterF32;
+			break;
+
+		case BinaryOperator::GreaterEqual:
+			result= Vm_Op::Type::GreaterEqualF32;
+			break;
+
+		case BinaryOperator::Equal:
+			result= Vm_Op::Type::EqualF32;
+			break;
+
+		case BinaryOperator::NotEqual:
+			result= Vm_Op::Type::NotEqualF32;
+			break;
+
+		default: U_ASSERT(false); break;
+		}
+
+		unsigned int op_offset= operand_type == U_FundamentalType::f32 ? 0 : 1;
+		result= Vm_Op::Type( size_t(result) + op_offset );
+	}
+	else
+	{
+		bool op_needs_sign;
+		switch( op )
+		{
+		case BinaryOperator::Less:
+			op_needs_sign= true;
+			result= Vm_Op::Type::Less8i;
+			break;
+
+		case BinaryOperator::LessEqual:
+			op_needs_sign= true;
+			result= Vm_Op::Type::LessEqual8i;
+			break;
+
+		case BinaryOperator::Greater:
+			op_needs_sign= true;
+			result= Vm_Op::Type::Greater8i;
+			break;
+
+		case BinaryOperator::GreaterEqual:
+			op_needs_sign= true;
+			result= Vm_Op::Type::GreaterEqual8i;
+			break;
+
+		case BinaryOperator::Equal:
+			op_needs_sign= false;
+			result= Vm_Op::Type::Equal8;
+			break;
+
+		case BinaryOperator::NotEqual:
+			op_needs_sign= false;
+			result= Vm_Op::Type::NotEqual8;
+			break;
+
+		default: U_ASSERT(false); break;
+		}
+
+		result=
+			Vm_Op::Type(
+				size_t(result) +
+				GetOpIndexOffsetForFundamentalType( operand_type ) );
+
+		if( op_needs_sign && IsUnsignedInteger( operand_type ) )
+			result= Vm_Op::Type( size_t(result) + 4 );
+	}
+
+	return result;
+}
+
+static Vm_Op::Type GetBinaryBitOperationCode(
+	U_FundamentalType operand_type,
+	BinaryOperator op )
+{
+	U_ASSERT( IsInteger( operand_type ) || operand_type == U_FundamentalType::Bool );
+
+	Vm_Op::Type result= Vm_Op::Type::NoOp;
+
+	switch( op )
+	{
+	case BinaryOperator::And: result= Vm_Op::Type::And8; break;
+	case BinaryOperator::Or : result= Vm_Op::Type::Or8 ; break;
+	case BinaryOperator::Xor: result= Vm_Op::Type::Xor8; break;
+	default: U_ASSERT(false); break;
+	};
+
+	result=
+		Vm_Op::Type(
+			size_t(result) +
+			GetOpIndexOffsetForFundamentalType( operand_type ) );
+
+	return result;
 }
 
 void ReportUnknownFuncReturnType(
@@ -781,24 +953,8 @@ Variable CodeBuilder::BuildExpressionCode_r(
 		case BinaryOperator::Div:
 		case BinaryOperator::Mul:
 			{
-				switch( comp.operator_ )
-				{
-				case BinaryOperator::Add: op_type= Vm_Op::Type::Addi32; break;
-				case BinaryOperator::Sub: op_type= Vm_Op::Type::Subi32; break;
-				case BinaryOperator::Div: op_type= Vm_Op::Type::Divi32; break;
-				case BinaryOperator::Mul: op_type= Vm_Op::Type::Muli32; break;
-				default: U_ASSERT(false); break;
-				};
-
-				if( type0 == U_FundamentalType::i32 )
-				{}
-				else if( type0 == U_FundamentalType::u32 )
-					op_type= Vm_Op::Type( size_t(op_type) + 1 );
-				else if( type0 == U_FundamentalType::i64 )
-					op_type= Vm_Op::Type( size_t(op_type) + 2 );
-				else if(type0 == U_FundamentalType::u64 )
-					op_type= Vm_Op::Type( size_t(op_type) + 3 );
-				else
+				op_type= GetBinaryArithmeticOperationCode( type0, comp.operator_ );
+				if( op_type == Vm_Op::Type::NoOp )
 				{
 					ReportArithmeticOperationWithUnsupportedType( error_messages_, type0 );
 					throw ProgramError();
@@ -827,49 +983,7 @@ Variable CodeBuilder::BuildExpressionCode_r(
 					throw ProgramError();
 				}
 
-				bool op_needs_sign;
-				switch( comp.operator_ )
-				{
-				case BinaryOperator::Less:
-					op_needs_sign= true;
-					op_type= Vm_Op::Type::Less8i;
-					break;
-
-				case BinaryOperator::LessEqual:
-					op_needs_sign= true;
-					op_type= Vm_Op::Type::LessEqual8i;
-					break;
-
-				case BinaryOperator::Greater:
-					op_needs_sign= true;
-					op_type= Vm_Op::Type::Greater8i;
-					break;
-
-				case BinaryOperator::GreaterEqual:
-					op_needs_sign= true;
-					op_type= Vm_Op::Type::GreaterEqual8i;
-					break;
-
-				case BinaryOperator::Equal:
-					op_needs_sign= false;
-					op_type= Vm_Op::Type::Equal8;
-					break;
-
-				case BinaryOperator::NotEqual:
-					op_needs_sign= false;
-					op_type= Vm_Op::Type::NotEqual8;
-					break;
-
-				default: U_ASSERT(false); break;
-				}
-
-				op_type=
-					Vm_Op::Type(
-						size_t(op_type) +
-						GetOpIndexOffsetForFundamentalType( type0 ) );
-
-				if( op_needs_sign && IsUnsignedInteger( type0 ) )
-					op_type= Vm_Op::Type( size_t(op_type) + 4 );
+				op_type= GetBinaryComparisonOperationCode( type0, comp.operator_ );
 
 				// Result - bool
 				result.type.fundamental= U_FundamentalType::Bool;
@@ -883,18 +997,15 @@ Variable CodeBuilder::BuildExpressionCode_r(
 		case BinaryOperator::Or:
 		case BinaryOperator::Xor:
 			{
-				switch( comp.operator_ )
+				if( !( IsInteger( type0 ) || type0 == U_FundamentalType::Bool ) )
 				{
-				case BinaryOperator::And: op_type= Vm_Op::Type::And8; break;
-				case BinaryOperator::Or: op_type= Vm_Op::Type::Or8; break;
-				case BinaryOperator::Xor: op_type= Vm_Op::Type::Xor8; break;
-				default: U_ASSERT(false); break;
-				};
+					error_messages_.push_back(
+						"Expected integer or boolean arguments for bit operators Got " +
+						std::string( g_fundamental_types_names[ size_t( type0 ) ] ) );
+					throw ProgramError();
+				}
 
-				op_type=
-					Vm_Op::Type(
-						size_t(op_type) +
-						GetOpIndexOffsetForFundamentalType( type0 ) );
+				op_type= GetBinaryBitOperationCode( type0, comp.operator_ );
 
 				// Result - same as type0
 				result.type.fundamental= type0;
@@ -1012,6 +1123,20 @@ Variable CodeBuilder::BuildExpressionCode_r(
 					break;
 				case U_FundamentalType::u64:
 					op.param.push_c_64 = static_cast<U_u64>(number->value_);
+					break;
+
+				case U_FundamentalType::f32:
+					{
+						U_f32 f= static_cast<U_f32>(number->value_);
+						std::memcpy( &op.param.push_c_32, &f, sizeof(U_f32));
+					}
+					break;
+
+				case U_FundamentalType::f64:
+					{
+						U_f64 f= static_cast<U_f64>(number->value_);
+						std::memcpy( &op.param.push_c_64, &f, sizeof(U_f64));
+					}
 					break;
 
 				case U_FundamentalType::InvalidType:

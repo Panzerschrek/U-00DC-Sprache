@@ -407,6 +407,54 @@ const VM::VMOpPoiter VM::operations_[size_t( Vm_Op::Type::LastOp ) ]=
 	[ size_t(Vm_Op::Type::GreaterEqual16u )]= &VM::ComparisonOpBase<U_u16, std::greater_equal<U_u16>>,
 	[ size_t(Vm_Op::Type::GreaterEqual32u )]= &VM::ComparisonOpBase<U_u32, std::greater_equal<U_u32>>,
 	[ size_t(Vm_Op::Type::GreaterEqual64u )]= &VM::ComparisonOpBase<U_u64, std::greater_equal<U_u64>>,
+
+	[ size_t(Vm_Op::Type::NegF32 )]= &VM::UnaryOpBase<U_f32, std::negate<U_f32>>,
+	[ size_t(Vm_Op::Type::NegF64 )]= &VM::UnaryOpBase<U_f64, std::negate<U_f64>>,
+
+	[ size_t(Vm_Op::Type::SubF32 )]= &VM::BinaryOpBase<U_f32, std::minus<U_f32>>,
+	[ size_t(Vm_Op::Type::SubF64 )]= &VM::BinaryOpBase<U_f64, std::minus<U_f64>>,
+
+	[ size_t(Vm_Op::Type::AddF32 )]= &VM::BinaryOpBase<U_f32, std::plus<U_f32>>,
+	[ size_t(Vm_Op::Type::AddF64 )]= &VM::BinaryOpBase<U_f64, std::plus<U_f64>>,
+
+	[ size_t(Vm_Op::Type::MulF32 )]= &VM::BinaryOpBase<U_f32, std::multiplies<U_f32>>,
+	[ size_t(Vm_Op::Type::MulF64 )]= &VM::BinaryOpBase<U_f64, std::multiplies<U_f64>>,
+
+	[ size_t(Vm_Op::Type::DivF32 )]= &VM::BinaryOpBase<U_f32, std::divides<U_f32>>,
+	[ size_t(Vm_Op::Type::DivF64 )]= &VM::BinaryOpBase<U_f64, std::divides<U_f64>>,
+
+	[ size_t(Vm_Op::Type::EqualF32 )]= &VM::ComparisonOpBase<U_f32, std::equal_to<U_f32>>,
+	[ size_t(Vm_Op::Type::EqualF64 )]= &VM::ComparisonOpBase<U_f64, std::equal_to<U_f64>>,
+
+	[ size_t(Vm_Op::Type::NotEqualF32 )]= &VM::ComparisonOpBase<U_f32, std::not_equal_to<U_f32>>,
+	[ size_t(Vm_Op::Type::NotEqualF64 )]= &VM::ComparisonOpBase<U_f64, std::not_equal_to<U_f64>>,
+
+	[ size_t(Vm_Op::Type::LessF32 )]= &VM::ComparisonOpBase<U_f32, std::less<U_f32>>,
+	[ size_t(Vm_Op::Type::LessF64 )]= &VM::ComparisonOpBase<U_f64, std::less<U_f64>>,
+
+	[ size_t(Vm_Op::Type::LessEqualF32 )]= &VM::ComparisonOpBase<U_f32, std::less_equal<U_f32>>,
+	[ size_t(Vm_Op::Type::LessEqualF64 )]= &VM::ComparisonOpBase<U_f64, std::less_equal<U_f64>>,
+
+	[ size_t(Vm_Op::Type::GreaterF32 )]= &VM::ComparisonOpBase<U_f32, std::greater<U_f32>>,
+	[ size_t(Vm_Op::Type::GreaterF64 )]= &VM::ComparisonOpBase<U_f64, std::greater<U_f64>>,
+
+	[ size_t(Vm_Op::Type::GreaterEqualF32 )]= &VM::ComparisonOpBase<U_f32, std::greater_equal<U_f32>>,
+	[ size_t(Vm_Op::Type::GreaterEqualF64 )]= &VM::ComparisonOpBase<U_f64, std::greater_equal<U_f64>>,
+
+	[ size_t(Vm_Op::Type::ConvF32ToF64 )]= &VM::ConvertionOpBase<U_f32, U_f64>,
+	[ size_t(Vm_Op::Type::ConvF64ToF32 )]= &VM::ConvertionOpBase<U_f64, U_f32>,
+
+	[ size_t(Vm_Op::Type::ConvF32ToU64 )]= &VM::ConvertionOpBase<U_f32, U_u64>,
+	[ size_t(Vm_Op::Type::ConvF32ToS64 )]= &VM::ConvertionOpBase<U_f32, U_i64>,
+
+	[ size_t(Vm_Op::Type::ConvF64ToU64 )]= &VM::ConvertionOpBase<U_f64, U_u64>,
+	[ size_t(Vm_Op::Type::ConvF64ToS64 )]= &VM::ConvertionOpBase<U_f64, U_i64>,
+
+	[ size_t(Vm_Op::Type::ConvU64ToF32 )]= &VM::ConvertionOpBase<U_u64, U_f32>,
+	[ size_t(Vm_Op::Type::ConvS64ToF32 )]= &VM::ConvertionOpBase<U_i64, U_f32>,
+
+	[ size_t(Vm_Op::Type::ConvU64ToF64 )]= &VM::ConvertionOpBase<U_u64, U_f64>,
+	[ size_t(Vm_Op::Type::ConvS64ToF64 )]= &VM::ConvertionOpBase<U_i64, U_f64>,
 };
 
 VM::VM( VmProgram program )
@@ -640,7 +688,7 @@ OpIndex VM::OpPushC64( OpIndex op_index )
 	std::memcpy(
 		&*stack_pointer_,
 		&op.param.push_c_64,
-		sizeof(U_i32) );
+		sizeof(U_i64) );
 	stack_pointer_+= sizeof(U_i64);
 
 	return op_index + 1;
