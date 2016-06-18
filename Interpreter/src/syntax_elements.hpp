@@ -393,4 +393,22 @@ public:
 	const BlockPtr block_;
 };
 
+class ClassDeclaration final : public IProgramElement
+{
+public:
+	explicit ClassDeclaration( const FilePos& file_pos );
+	virtual ~ClassDeclaration() override;
+
+	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
+
+	struct Field
+	{
+		TypeName type;
+		ProgramString name;
+	};
+
+	std::vector<Field> fields_;
+	ProgramString name_;
+};
+
 } // namespace Interpreter

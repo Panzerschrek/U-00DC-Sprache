@@ -562,4 +562,27 @@ void FunctionDeclaration::Print( std::ostream& stream, unsigned int indent ) con
 	block_->Print( stream, indent);
 }
 
+ClassDeclaration::ClassDeclaration( const FilePos& file_pos )
+	: IProgramElement( file_pos )
+{}
+
+ClassDeclaration::~ClassDeclaration()
+{}
+
+void ClassDeclaration::Print( std::ostream& stream, unsigned int indent ) const
+{
+	U_UNUSED(indent);
+
+	stream << "class " << ToStdString( name_ ) << "\n";
+	stream << "{\n";
+	for( const Field& field : fields_ )
+	{
+		PrintIndents( stream, 1 );
+		stream << ToStdString( field.name ) << " : ";
+		field.type.Print( stream );
+		stream << ";\n";
+	}
+	stream << "}\n";
+}
+
 } // namespace Interpreter

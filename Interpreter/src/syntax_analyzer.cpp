@@ -974,6 +974,74 @@ static IProgramElementPtr ParseFunction(
 			std::move( block ) ) );
 }
 
+static std::unique_ptr<ClassDeclaration> ParseClass(
+	SyntaxErrorMessages& error_messages,
+	Lexems::const_iterator& it,
+	const Lexems::const_iterator it_end )
+{
+	U_ASSERT( it->text == Keywords::class_ );
+	++it; U_ASSERT( it < it_end );
+
+	std::unique_ptr<ClassDeclaration> result( new ClassDeclaration( it->file_pos ) );
+
+	if( it->type != Lexem::Type::Identifier )
+	{
+		PushErrorMessage( error_messages, *it );
+		return nullptr;
+	}
+	result->name_= it->text;
+	++it; U_ASSERT( it < it_end );
+
+	if( it->type != Lexem::Type::BraceLeft )
+	{
+		PushErrorMessage( error_messages, *it );
+		return nullptr;
+	}
+	++it; U_ASSERT( it < it_end );
+
+	while( !(
+		it->type == Lexem::Type::BraceRight ||
+		it->type == Lexem::Type::EndOfFile ) )
+	{
+		if( it->type != Lexem::Type::Identifier )
+		{
+			PushErrorMessage( error_messages, *it );
+			return nullptr;
+		}
+
+		result->fields_.emplace_back();
+		ClassDeclaration::Field& field= result->fields_.back();
+
+		field.name= it->text;
+		++it; U_ASSERT( it < it_end );
+
+		if( it->type != Lexem::Type::Colon )
+		{
+			PushErrorMessage( error_messages, *it );
+			return nullptr;
+		}
+		++it; U_ASSERT( it < it_end );
+
+		field.type= ParseTypeName( error_messages, it, it_end );
+
+		if( it->type != Lexem::Type::Semicolon )
+		{
+			PushErrorMessage( error_messages, *it );
+			return nullptr;
+		}
+		++it; U_ASSERT( it < it_end );
+	}
+
+	if( it->type != Lexem::Type::BraceRight )
+	{
+		PushErrorMessage( error_messages, *it );
+		return nullptr;
+	}
+	++it;
+
+	return result;
+}
+
 SyntaxAnalysisResult SyntaxAnalysis( const Lexems& lexems )
 {
 	SyntaxAnalysisResult result;
@@ -992,6 +1060,13 @@ SyntaxAnalysisResult SyntaxAnalysis( const Lexems& lexems )
 		if( lexem.type == Lexem::Type::Identifier && lexem.text == Keywords::fn_ )
 		{
 			if( IProgramElementPtr program_element= ParseFunction( result.error_messages, it, it_end ) )
+				result.program_elements.emplace_back( std::move( program_element ) );
+
+			continue;
+		}
+		else if( lexem.type == Lexem::Type::Identifier && lexem.text == Keywords::class_ )
+		{
+			if( IProgramElementPtr program_element= ParseClass( result.error_messages, it, it_end ) )
 				result.program_elements.emplace_back( std::move( program_element ) );
 
 			continue;

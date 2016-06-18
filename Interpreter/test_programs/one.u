@@ -9,6 +9,13 @@ fn f( a : i32, b : f32 )
 	let r : i8 = 0xFe457.45faF + 1.2e-7 - 45e6 + 45i64;
 } // commnet
 
+class MyClass
+{
+	fff : i32;
+	rty : [ f64, 45 ];
+	lfawdawdawd : [ [f64, 7 ], 72 ];
+}
+
 // void func
 fn l()
 {
@@ -25,6 +32,8 @@ fn l()
 	a[10]= ss[25] * 3 + 0b1;
 	exit(1);
 }
+
+class Empty{}
 
 fn ZweiUndVierzig() : int
 {
