@@ -514,6 +514,27 @@ fn max( a : f32, b : f32, c : f32 ) : f32\
 	U_ASSERT( func_result == std::max( a, std::max( b, c ) ) );
 }
 
+
+static void ClassTest0()
+{
+
+static const char c_program_text[]=
+R"(
+class Point
+{
+	x : f32;
+	y : f32;
+	zzz : [ i8, 4 ];
+}
+
+fn PointSum()
+{
+}
+)";
+
+	VM vm{ BuildProgram( c_program_text ) };
+}
+
 void RunCodeBuilderTest()
 {
 	SimpleProgramTest();
@@ -533,6 +554,7 @@ void RunCodeBuilderTest()
 	FloatOperatorsTest0();
 	FloatOperatorsTest1();
 	FloatOperatorsTest2();
+	ClassTest0();
 }
 
 } // namespace Interpreter

@@ -470,6 +470,20 @@ CodeBuilder::BuildResult CodeBuilder::BuildProgram(
 				continue;
 			}
 		}
+		else if (
+			const ClassDeclaration* class_=
+			dynamic_cast<const ClassDeclaration*>( program_element.get() ) )
+		{
+			const NamesScope::InsertedName* inserted_name=
+				global_names_.AddName( class_->name_, PrepareClass( *class_ ) );
+			if( inserted_name == nullptr )
+			{
+				error_count_++;
+				error_messages_.push_back(
+					ToStdString( class_->name_ ) +
+					" redefinition" );
+			}
+		}
 		else
 		{
 			U_ASSERT(false);
@@ -515,6 +529,39 @@ Type CodeBuilder::PrepareType( const TypeName& type_name )
 	}
 	else
 		last_type->fundamental= it->second;
+
+	return result;
+}
+
+ClassPtr CodeBuilder::PrepareClass( const ClassDeclaration& class_declaration )
+{
+	ClassPtr result= std::make_shared<Class>();
+
+	result->name= class_declaration.name_;
+
+	unsigned int offset= 0;
+
+	result->fields.reserve( class_declaration.fields_.size() );
+	for( const ClassDeclaration::Field& in_field : class_declaration.fields_ )
+	{
+		if( result->GetField( in_field.name ) != nullptr )
+		{
+			error_messages_.push_back(
+				ToStdString( in_field.name ) +
+				" redefinition" );
+		}
+
+		Class::Field out_field;
+		out_field.name= in_field.name;
+		out_field.type= PrepareType( in_field.type );
+		out_field.offset= offset;
+
+		offset+= out_field.type.SizeOf();
+
+		result->fields.emplace_back( std::move( out_field ) );
+	}
+
+	result->size= offset;
 
 	return result;
 }

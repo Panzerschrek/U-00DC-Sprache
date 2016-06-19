@@ -31,6 +31,8 @@ public:
 private:
 	Type PrepareType( const TypeName& type_name );
 
+	ClassPtr PrepareClass( const ClassDeclaration& class_declaration );
+
 	void BuildFuncCode(
 		const Function& func,
 		const std::vector<ProgramString> arg_names,
