@@ -64,6 +64,10 @@ Type& Type::operator=( const Type& other )
 		U_ASSERT( other.array );
 		array.reset( new Array( *other.array ) );
 		break;
+
+	case Kind::Class:
+		U_ASSERT( other.class_ );
+		class_= other.class_;
 	};
 
 	return *this;
@@ -75,6 +79,7 @@ Type& Type::operator=( Type&& other )
 	fundamental= other.fundamental;
 	function= std::move( other.function );
 	array= std::move( other.array );
+	class_= std::move( other.class_ );
 	return *this;
 }
 
@@ -90,6 +95,9 @@ size_t Type::SizeOf() const
 
 	case Kind::Array:
 		return array->type.SizeOf() * array->size;
+
+	case Kind::Class:
+		return class_->size;
 	};
 
 	U_ASSERT(false);
@@ -101,17 +109,27 @@ bool operator==( const Type& r, const Type& l )
 	if( r.kind != l.kind )
 		return false;
 
-	if( r.kind == Type::Kind::Fundamental )
+	switch( r.kind )
+	{
+	case Type::Kind::Fundamental:
 		return r.fundamental == l.fundamental;
 
-	else
-	{
+	case Type::Kind::Function:
 		U_ASSERT( r.kind == Type::Kind::Function );
 		U_ASSERT( r.function );
 		U_ASSERT( l.function );
 
 		return *l.function == *r.function;
-	}
+
+	case Type::Kind::Array:
+		return r.array->size == l.array->size && r.array->type == l.array->type;
+
+	case Type::Kind::Class:
+		return r.class_ == l.class_;
+	};
+
+	U_ASSERT(false);
+	return false;
 }
 
 bool operator!=( const Type& r, const Type& l )
@@ -131,22 +149,54 @@ bool operator!=( const Function& r, const Function& l )
 	return !( r == l );
 }
 
+Class::Class()
+{}
+
+Class::~Class()
+{}
+
+const Class::Field* Class::GetField( const ProgramString& name )
+{
+
+	for( const Field& field : fields )
+	{
+		if( field.name == name )
+			return &field;
+	}
+
+	return nullptr;
+}
+
 NamesScope::NamesScope( const NamesScope* prev )
 	: prev_(prev)
 {}
 
-const NamesScope::NamesMap::value_type*
-	NamesScope::AddName(
-		const ProgramString& name, Variable variable )
+const NamesScope::InsertedName* NamesScope::AddName(
+		const ProgramString& name,
+		Variable variable )
 {
-	auto it_bool_pair = names_map_.emplace( name, std::move( variable ) );
+	return AddName( name, Name{ nullptr, std::move( variable ) } );
+}
+
+const NamesScope::InsertedName* NamesScope::AddName(
+	const ProgramString& name,
+	const ClassPtr& class_ )
+{
+	return AddName( name, Name{ class_, Variable() } );
+}
+
+const NamesScope::InsertedName* NamesScope::AddName(
+	const ProgramString& name,
+	const Name name_value )
+{
+	auto it_bool_pair = names_map_.emplace( name, std::move( name_value ) );
 	if( it_bool_pair.second )
 		return &*it_bool_pair.first;
 
 	return nullptr;
 }
 
-const NamesScope::NamesMap::value_type*
+const NamesScope::InsertedName*
 	NamesScope::GetName(
 		const ProgramString& name ) const
 {

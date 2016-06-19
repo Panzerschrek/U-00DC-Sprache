@@ -430,12 +430,14 @@ CodeBuilder::BuildResult CodeBuilder::BuildProgram(
 				arg_names.push_back( arg.name );
 			}
 
-			const NamesScope::NamesMap::value_type* inserted_func =
+			const NamesScope::InsertedName* inserted_func_name =
 				global_names_.AddName( func->name_, std::move( func_info ) );
-			if( inserted_func )
+			if( inserted_func_name )
 			{
+				const Variable& func_variable= inserted_func_name->second.variable;
+
 				BuildFuncCode(
-					*inserted_func->second.type.function,
+					*func_variable.type.function,
 					arg_names,
 					*func->block_ );
 
@@ -443,8 +445,8 @@ CodeBuilder::BuildResult CodeBuilder::BuildProgram(
 				// TODO - do it not for all functions
 				FuncEntry func_entry;
 				func_entry.name= func->name_;
-				func_entry.func_number= inserted_func->second.offset;
-				for( const Type& type : inserted_func->second.type.function->args )
+				func_entry.func_number= func_variable.offset;
+				for( const Type& type : func_variable.type.function->args )
 				{
 					if( type.kind != Type::Kind::Fundamental )
 					{
@@ -453,11 +455,11 @@ CodeBuilder::BuildResult CodeBuilder::BuildProgram(
 					func_entry.params.emplace_back( type.fundamental );
 				}
 
-				if( inserted_func->second.type.function->return_type.kind != Type::Kind::Fundamental )
+				if( func_variable.type.function->return_type.kind != Type::Kind::Fundamental )
 				{
 					// TODO - register error
 				}
-				func_entry.return_type= inserted_func->second.type.function->return_type.fundamental;
+				func_entry.return_type= func_variable.type.function->return_type.fundamental;
 
 				result_.export_funcs.emplace_back( std::move( func_entry ) );
 			}
@@ -541,7 +543,7 @@ void CodeBuilder::BuildFuncCode(
 		args_offset+= arg_size;
 		var.offset= args_offset;
 
-		const NamesScope::NamesMap::value_type* inserted_arg=
+		const NamesScope::InsertedName* inserted_arg=
 			block_names.AddName(
 				arg_names[ arg_n ],
 				std::move(var) );
@@ -614,16 +616,18 @@ void CodeBuilder::BuildBlockCode(
 				variable.offset= stack_context.GetStackSize();
 				stack_context.IncreaseStack( variable.type.SizeOf() );
 
-				const NamesScope::NamesMap::value_type* inserted_variable=
+				const NamesScope::InsertedName* inserted_name=
 					block_names.AddName( variable_declaration->name, std::move(variable) );
 
-				if( !inserted_variable )
+				if( !inserted_name )
 				{
 					ReportRedefinition( error_messages_, variable_declaration->name );
 					throw ProgramError();
 				}
 
-				if( inserted_variable->second.type.kind == Type::Kind::Fundamental )
+				const Variable& inserted_variable= inserted_name->second.variable;
+
+				if( inserted_variable.type.kind == Type::Kind::Fundamental )
 				{ // Initialize
 					if( variable_declaration->initial_value )
 					{
@@ -636,9 +640,9 @@ void CodeBuilder::BuildBlockCode(
 
 						BuildMoveToStackCode( init_type, function_context );
 
-						if( init_type.type.fundamental != inserted_variable->second.type.fundamental )
+						if( init_type.type.fundamental != inserted_variable.type.fundamental )
 						{
-							ReportTypesMismatch( error_messages_, init_type.type.fundamental, inserted_variable->second.type.fundamental );
+							ReportTypesMismatch( error_messages_, init_type.type.fundamental, inserted_variable.type.fundamental );
 							throw ProgramError();
 						}
 					} // if variable initializer
@@ -646,7 +650,7 @@ void CodeBuilder::BuildBlockCode(
 					{ // default initialization
 
 						unsigned int op_index=
-							GetOpIndexOffsetForFundamentalType( inserted_variable->second.type.fundamental );
+							GetOpIndexOffsetForFundamentalType( inserted_variable.type.fundamental );
 
 						Vm_Op move_zero_op(
 							Vm_Op::Type(
@@ -668,21 +672,19 @@ void CodeBuilder::BuildBlockCode(
 
 						result_.code.push_back( move_zero_op );
 
-						function_context.expression_stack_size_counter+= inserted_variable->second.type.SizeOf();
+						function_context.expression_stack_size_counter+= inserted_variable.type.SizeOf();
 					}
 
 					Vm_Op init_var_op(
 						Vm_Op::Type(
 							size_t(Vm_Op::Type::PopToLocalStack8) +
-							GetOpIndexOffsetForFundamentalType( inserted_variable->second.type.fundamental ) ) );
+							GetOpIndexOffsetForFundamentalType( inserted_variable.type.fundamental ) ) );
 
-					init_var_op.param.local_stack_operations_offset=
-						inserted_variable->second.offset;
+					init_var_op.param.local_stack_operations_offset= inserted_variable.offset;
 
 					result_.code.push_back( init_var_op );
 
-					function_context.expression_stack_size_counter-=
-						inserted_variable->second.type.SizeOf();
+					function_context.expression_stack_size_counter-= inserted_variable.type.SizeOf();
 				}
 			}
 			else if(
@@ -1068,14 +1070,19 @@ Variable CodeBuilder::BuildExpressionCode_r(
 		if( const NamedOperand* named_operand=
 			dynamic_cast<const NamedOperand*>(&operand) )
 		{
-			const NamesScope::NamesMap::value_type* variable_entry=
+			const NamesScope::InsertedName* name_entry=
 				names.GetName( named_operand->name_ );
-			if( !variable_entry )
+			if( !name_entry )
 			{
 				ReportNameNotFound( error_messages_, named_operand->name_ );
 				throw ProgramError();
 			}
-			result= variable_entry->second;
+			if( name_entry->second.class_ )
+			{
+				error_messages_.push_back( "Error, using class name as variable" );
+				throw ProgramError();
+			}
+			result= name_entry->second.variable;
 		}
 		else if( const BooleanConstant* boolean_constant=
 			dynamic_cast<const BooleanConstant*>(&operand) )
@@ -1415,6 +1422,7 @@ void CodeBuilder::BuildMoveToStackCode(
 				op_offset= sizeof(FuncNumber) == 4 ? 3 : 4;
 				break;
 			case Type::Kind::Array:
+			case Type::Kind::Class:
 				U_ASSERT(false);
 				op_offset= 0;
 			};

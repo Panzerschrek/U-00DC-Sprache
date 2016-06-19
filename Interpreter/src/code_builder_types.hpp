@@ -13,6 +13,9 @@ namespace CodeBuilderPrivate
 
 struct Function;
 struct Array;
+struct Class;
+
+typedef std::shared_ptr<Class> ClassPtr;
 
 struct Type final
 {
@@ -21,12 +24,17 @@ struct Type final
 		Fundamental,
 		Function,
 		Array,
+		Class,
 	};
 
 	Kind kind;
 	U_FundamentalType fundamental;
 	std::unique_ptr<Function> function;
 	std::unique_ptr<Array> array;
+
+	// We use one instance for Class, because class has one point of definition.
+	// Therefore, class are aquals, if equals pointers.
+	ClassPtr class_;
 
 	explicit Type( U_FundamentalType in_fundamental= U_FundamentalType::InvalidType );
 	Type( const Type& other );
@@ -47,14 +55,39 @@ struct Function final
 	std::vector<Type> args;
 };
 
+bool operator==( const Function& r, const Function& l );
+bool operator!=( const Function& r, const Function& l );
+
 struct Array final
 {
 	Type type;
 	size_t size;
 };
 
-bool operator==( const Function& r, const Function& l );
-bool operator!=( const Function& r, const Function& l );
+struct Class final
+{
+	Class();
+	~Class();
+
+	Class( const Class& )= delete;
+	Class( Class&& )= delete;
+
+	Class& operator=( const Class& )= delete;
+	Class& operator=( Class&& )= delete;
+
+	struct Field
+	{
+		ProgramString name;
+		Type type;
+		unsigned int offset;
+	};
+
+	const Field* GetField( const ProgramString& name );
+
+	ProgramString name;
+	std::vector<Field> fields;
+	unsigned int size;
+};
 
 struct Variable final
 {
@@ -77,15 +110,27 @@ struct Variable final
 	Type type;
 };
 
+struct Name final
+{
+	// If ptr not null - name is calss, else - variable
+	ClassPtr class_;
+	Variable variable;
+};
+
 class NamesScope final
 {
 public:
-	typedef std::map< ProgramString, Variable > NamesMap;
+
+	typedef std::map< ProgramString, Name > NamesMap;
+	typedef NamesMap::value_type InsertedName;
 
 	NamesScope( const NamesScope* prev= nullptr );
 
-	const NamesMap::value_type* AddName( const ProgramString& name, Variable variable );
-	const NamesMap::value_type* GetName( const ProgramString& name ) const;
+	const InsertedName* AddName( const ProgramString& name, Variable variable );
+	const InsertedName* AddName( const ProgramString& name, const ClassPtr& class_ );
+	const InsertedName* AddName( const ProgramString& name, const Name name_value );
+
+	const InsertedName* GetName( const ProgramString& name ) const;
 
 private:
 	const NamesScope* const prev_;
