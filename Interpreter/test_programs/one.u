@@ -5,7 +5,7 @@ fn f( a : i32, b : f32 )
 	return;
 	{
 	}
-	return;
+	return a.member(42).xyz;
 	let r : i8 = 0xFe457.45faF + 1.2e-7 - 45e6 + 45i64;
 } // commnet
 
@@ -29,7 +29,7 @@ fn l()
 		break;
 	}
 
-	a[10]= ss[25] * 3 + 0b1;
+	a[10].x= ss[25] * 3 + 0b1;
 	exit(1);
 }
 

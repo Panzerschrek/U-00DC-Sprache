@@ -387,6 +387,24 @@ static BinaryOperatorsChainPtr ParseExpression(
 
 				} break;
 
+			case Lexem::Type::Dot:
+				{
+					++it; U_ASSERT( it < it_end );
+
+					if( it->type != Lexem::Type::Identifier )
+					{
+						PushErrorMessage( error_messages, *it );
+						return nullptr;
+					}
+
+					component.postfix_operators.emplace_back(
+						new MemberAccessOperator(
+								(it-1)->file_pos,
+								it->text ) );
+
+					++it; U_ASSERT( it < it_end );
+				} break;
+
 				default:
 				if( IsBinaryOperator( *it ) )
 					goto parse_binary_operator;

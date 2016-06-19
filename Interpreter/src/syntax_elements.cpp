@@ -149,6 +149,31 @@ void IndexationOperator::Print( std::ostream& stream, unsigned int indent ) cons
 	stream << " ]";
 }
 
+MemberAccessOperator::MemberAccessOperator(
+	const FilePos& file_pos,
+	ProgramString member_name )
+	: IUnaryPostfixOperator( file_pos )
+	, member_name_( std::move(member_name) )
+{}
+
+MemberAccessOperator::~MemberAccessOperator()
+{}
+
+IUnaryPostfixOperatorPtr MemberAccessOperator::Clone() const
+{
+	return
+		IUnaryPostfixOperatorPtr(
+			new MemberAccessOperator(
+				file_pos_,
+				member_name_ ) );
+}
+
+void MemberAccessOperator::Print( std::ostream& stream, unsigned int indent ) const
+{
+	U_UNUSED( indent );
+	stream << "." << ToStdString( member_name_ );
+}
+
 IBinaryOperatorsChainComponent::IBinaryOperatorsChainComponent( const FilePos& file_pos )
 	: SyntaxElementBase(file_pos)
 {}
