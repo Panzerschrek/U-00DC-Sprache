@@ -524,8 +524,27 @@ Type CodeBuilder::PrepareType( const TypeName& type_name )
 	auto it= g_types_map.find( type_name.name );
 	if( it == g_types_map.end() )
 	{
-		last_type->fundamental= U_FundamentalType::i32;
-		ReportUnknownVariableType( error_messages_, type_name );
+		const NamesScope::InsertedName* custom_type_name=
+			global_names_.GetName( type_name.name );
+		if( custom_type_name != nullptr )
+		{
+			if( custom_type_name->second.class_ != nullptr )
+			{
+				last_type->class_= custom_type_name->second.class_;
+				last_type->kind= Type::Kind::Class;
+			}
+			else
+			{
+				error_messages_.push_back(
+					"Using name, which is not type, as type name: " +
+					ToStdString( type_name.name ) );
+			}
+		}
+		else
+		{
+			last_type->fundamental= U_FundamentalType::i32;
+			ReportUnknownVariableType( error_messages_, type_name );
+		}
 	}
 	else
 		last_type->fundamental= it->second;
@@ -1351,6 +1370,40 @@ Variable CodeBuilder::BuildExpressionCode_r(
 				}
 				result.type= result.type.array->type;
 				result.location= Variable::Location::AddressAtExpessionStackTop;
+			}
+			else if( const MemberAccessOperator* member_access_operator=
+				dynamic_cast<const MemberAccessOperator*>(postfix_operator.get()) )
+			{
+				if( result.type.kind != Type::Kind::Class )
+				{
+					error_messages_.push_back(
+						"Can not take member of non-class " +
+						ToStdString( member_access_operator->member_name_ ) );
+					throw ProgramError();
+				}
+
+				U_ASSERT( result.type.class_ );
+
+				const Class::Field* field= result.type.class_->GetField( member_access_operator->member_name_ );
+				if( field == nullptr )
+				{
+					error_messages_.push_back(
+						ToStdString( member_access_operator->member_name_ ) +
+						" not found in class " +
+						ToStdString( result.type.class_->name ) );
+					throw ProgramError();
+				}
+
+				if( result.location == Variable::Location::FunctionArgument )
+					result.offset-= field->offset;
+				else if( result.location == Variable::Location::Stack )
+					result.offset+= field->offset;
+				else
+				{
+					ReportNotImplemented( error_messages_, "access to member in this case" );
+					throw ProgramError();
+				}
+				result.type= field->type;
 			}
 			else
 			{

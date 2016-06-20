@@ -527,12 +527,29 @@ class Point
 	zzz : [ i8, 4 ];
 }
 
-fn PointSum()
+fn Foo( x : f32 ) : f32
 {
+	let p : Point;
+	p.x= x;
+	p.y= x * 0.25f32;
+	return p.x - p.y;
 }
 )";
 
 	VM vm{ BuildProgram( c_program_text ) };
+
+	U_f32 func_result, x= 4578.145f;
+	const U_f32 c_eps= 0.1f;
+
+	const VM::CallResult call_result =
+		vm.CallRet( ToProgramString("Foo"), func_result, x );
+	U_ASSERT( call_result.ok );
+
+	U_f64 diff= ( 0.75f * x ) - func_result;
+	if( diff < 0.0f ) diff= -diff;
+	U_ASSERT( diff <= c_eps );
+
+	U_ASSERT( func_result == x );
 }
 
 void RunCodeBuilderTest()
