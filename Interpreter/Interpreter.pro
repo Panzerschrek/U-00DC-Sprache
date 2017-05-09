@@ -9,6 +9,20 @@ CONFIG( debug, debug|release ) {
 	CONFIG+= U_DUBUG
 }
 
+
+LLVM_BASE_DIR= ../../llvm-3.7.1.src
+LLVM_BUILD_DIR= $$LLVM_BASE_DIR/build
+LLVM_LIBS_DIR= $$LLVM_BUILD_DIR/lib
+LLVM_INCLUDES_DIR= $$LLVM_BASE_DIR/include
+LLVM_GEN_INCLUDES_DIR= $$LLVM_BUILD_DIR/include
+
+# Include ALL *.a libraries from llvm build.
+# TODO - know, which libs we need.
+LIBS+= $$LLVM_LIBS_DIR/*.a
+
+INCLUDEPATH+= $$LLVM_INCLUDES_DIR
+INCLUDEPATH+= $$LLVM_GEN_INCLUDES_DIR
+
 SOURCES += \
 	src/lexical_analyzer.cpp \
 	src/main.cpp \
