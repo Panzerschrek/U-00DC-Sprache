@@ -69,6 +69,8 @@ private:
 		const NamesScope& names,
 		FunctionContext& function_context );
 
+	llvm::Type* GetFundamentalLLVMType( U_FundamentalType fundmantal_type );
+
 private:
 	llvm::LLVMContext& llvm_context_;
 
@@ -98,5 +100,8 @@ private:
 };
 
 } // namespace CodeBuilderLLVMPrivate
+
+
+using CodeBuilderLLVMPrivate::CodeBuilderLLVM;
 
 } // namespace Interpreter

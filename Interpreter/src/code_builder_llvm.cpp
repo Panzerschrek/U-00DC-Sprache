@@ -1,3 +1,4 @@
+#include <llvm/IR/Constant.h>
 #include <llvm/IR/LLVMContext.h>
 
 #include "keywords.hpp"
@@ -259,6 +260,8 @@ CodeBuilderLLVM::BuildResult CodeBuilderLLVM::BuildProgram( const ProgramElement
 				else
 					func_info.type.function->return_type.fundamental= it->second;
 			}
+			func_info.type.function->return_type.fundamental_llvm_type=
+				GetFundamentalLLVMType( func_info.type.function->return_type.fundamental );
 
 			if( global_names_.GetName( func->name_ ) != nullptr )
 			{
@@ -355,36 +358,7 @@ Type CodeBuilderLLVM::PrepareType( const TypeName& type_name )
 	else
 	{
 		last_type->fundamental= it->second;
-		switch( last_type->fundamental )
-		{
-		case U_FundamentalType::InvalidType:
-		case U_FundamentalType::LastType:
-			break;
-		case U_FundamentalType::Void:
-			last_type->fundamental_llvm_type= fundamental_llvm_types_.void_; break;
-		case U_FundamentalType::Bool:
-			last_type->fundamental_llvm_type= fundamental_llvm_types_.bool_; break;
-		case U_FundamentalType::i8 :
-			last_type->fundamental_llvm_type= fundamental_llvm_types_.i8 ; break;
-		case U_FundamentalType::u8 :
-			last_type->fundamental_llvm_type= fundamental_llvm_types_.u8 ; break;
-		case U_FundamentalType::i16:
-			last_type->fundamental_llvm_type= fundamental_llvm_types_.i16; break;
-		case U_FundamentalType::u16:
-			last_type->fundamental_llvm_type= fundamental_llvm_types_.u16; break;
-		case U_FundamentalType::i32:
-			last_type->fundamental_llvm_type= fundamental_llvm_types_.i32; break;
-		case U_FundamentalType::u32:
-			last_type->fundamental_llvm_type= fundamental_llvm_types_.u32; break;
-		case U_FundamentalType::i64:
-			last_type->fundamental_llvm_type= fundamental_llvm_types_.i64; break;
-		case U_FundamentalType::u64:
-			last_type->fundamental_llvm_type= fundamental_llvm_types_.u64; break;
-		case U_FundamentalType::f32:
-			last_type->fundamental_llvm_type= fundamental_llvm_types_.f32; break;
-		case U_FundamentalType::f64:
-			last_type->fundamental_llvm_type= fundamental_llvm_types_.f64; break;
-		};
+		last_type->fundamental_llvm_type= GetFundamentalLLVMType( last_type->fundamental );
 	}
 
 	return result;
@@ -628,6 +602,11 @@ Variable CodeBuilderLLVM::BuildExpressionCode_r(
 			}
 			result= name_entry->second.variable;
 		}
+		else if( const NumericConstant* numeric_constant=
+			dynamic_cast<const NumericConstant*>(&operand) )
+		{
+			// TODO
+		}
 		else
 		{
 			// TODO
@@ -673,6 +652,44 @@ void CodeBuilderLLVM::BuildReturnOperatorCode(
 	}
 
 	function_context.llvm_ir_builder.CreateRet( value_for_return );
+}
+
+llvm::Type* CodeBuilderLLVM::GetFundamentalLLVMType( const U_FundamentalType fundmantal_type )
+{
+	switch( fundmantal_type )
+	{
+	case U_FundamentalType::InvalidType:
+	case U_FundamentalType::LastType:
+		break;
+
+	case U_FundamentalType::Void:
+		return fundamental_llvm_types_.void_;
+	case U_FundamentalType::Bool:
+		return fundamental_llvm_types_.bool_;
+	case U_FundamentalType::i8 :
+		return fundamental_llvm_types_.i8 ;
+	case U_FundamentalType::u8 :
+		return fundamental_llvm_types_.u8 ;
+	case U_FundamentalType::i16:
+		return fundamental_llvm_types_.i16;
+	case U_FundamentalType::u16:
+		return fundamental_llvm_types_.u16;
+	case U_FundamentalType::i32:
+		return fundamental_llvm_types_.i32;
+	case U_FundamentalType::u32:
+		return fundamental_llvm_types_.u32;
+	case U_FundamentalType::i64:
+		return fundamental_llvm_types_.i64;
+	case U_FundamentalType::u64:
+		return fundamental_llvm_types_.u64;
+	case U_FundamentalType::f32:
+		return fundamental_llvm_types_.f32;
+	case U_FundamentalType::f64:
+		return fundamental_llvm_types_.f64;
+	};
+
+	U_ASSERT(false);
+	return nullptr;
 }
 
 } // namespace CodeBuilderLLVMPrivate
