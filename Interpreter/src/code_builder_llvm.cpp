@@ -507,24 +507,40 @@ Variable CodeBuilderLLVM::BuildExpressionCode_r(
 			return result;
 		}
 
+		const Type& result_type= r_var.type;
+
 		switch( comp.operator_ )
 		{
 		case BinaryOperator::Add:
+		case BinaryOperator::Sub:
+		case BinaryOperator::Div:
+		case BinaryOperator::Mul:
 
-			if( r_var.type.kind != Type::Kind::Fundamental )
+			if( result_type.kind != Type::Kind::Fundamental )
 			{
 				// TODO - emit error
 			}
 			else
 			{
-				// TODO - check types - we can add only arithmetical fundamental types of size 32 and 64.
+				if( result_type.SizeOf() < 4u )
+				{
+					// TODO - emit error
+					// Operation supported only for 32 and 64bit operands
+				}
+				// TODO - add floats support.
+				if( !IsInteger( result_type.fundamental ) )
+				{
+					// TODO - emit error
+					// this operations allowed only for integer and floating point operands.
+				}
+
+				const bool is_signed= IsSignedInteger( result_type.fundamental );
 
 				llvm::Value* l_value_for_op= nullptr;
 				if( l_var.location == Variable::Location::LLVMRegister )
 					l_value_for_op= l_var.llvm_value;
 				else if( l_var.location == Variable::Location::PointerToStack )
-					l_value_for_op=
-						function_context.llvm_ir_builder.CreateLoad( l_var.llvm_value );
+					l_value_for_op= function_context.llvm_ir_builder.CreateLoad( l_var.llvm_value );
 				else
 				{
 					U_ASSERT( false );
@@ -534,16 +550,42 @@ Variable CodeBuilderLLVM::BuildExpressionCode_r(
 				if( r_var.location == Variable::Location::LLVMRegister )
 					r_value_for_op= r_var.llvm_value;
 				else if( r_var.location == Variable::Location::PointerToStack )
-					r_value_for_op=
-						function_context.llvm_ir_builder.CreateLoad( r_var.llvm_value );
+					r_value_for_op= function_context.llvm_ir_builder.CreateLoad( r_var.llvm_value );
 				else
 				{
 					U_ASSERT( false );
 				}
 
-				llvm::Value* result_value=
-					function_context.llvm_ir_builder.CreateAdd(
-						l_value_for_op, r_value_for_op );
+				llvm::Value* result_value;
+
+				switch( comp.operator_ )
+				{
+				case BinaryOperator::Add:
+					result_value=
+						function_context.llvm_ir_builder.CreateAdd( l_value_for_op, r_value_for_op );
+					break;
+
+				case BinaryOperator::Sub:
+					result_value=
+						function_context.llvm_ir_builder.CreateSub( l_value_for_op, r_value_for_op );
+					break;
+
+				case BinaryOperator::Div:
+					if( is_signed )
+						result_value=
+							function_context.llvm_ir_builder.CreateSDiv( l_value_for_op, r_value_for_op );
+					else
+						result_value=
+							function_context.llvm_ir_builder.CreateUDiv( l_value_for_op, r_value_for_op );
+					break;
+
+				case BinaryOperator::Mul:
+					result_value=
+						function_context.llvm_ir_builder.CreateMul( l_value_for_op, r_value_for_op );
+					break;
+
+				default: U_ASSERT( false ); break;
+				};
 
 				result.location= Variable::Location::LLVMRegister;
 				result.type= r_var.type;
@@ -551,9 +593,7 @@ Variable CodeBuilderLLVM::BuildExpressionCode_r(
 			}
 			break;
 
-		case BinaryOperator::Sub:
-		case BinaryOperator::Div:
-		case BinaryOperator::Mul:
+
 		case BinaryOperator::Equal:
 		case BinaryOperator::NotEqual:
 		case BinaryOperator::Less:

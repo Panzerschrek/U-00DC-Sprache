@@ -64,7 +64,7 @@ static void SimpleProgramTest()
 	}"
 	;
 
-	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ), true );
+	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	U_i32 arg0= 100500, arg1= 1488, arg2= 42;
 
@@ -81,12 +81,43 @@ static void SimpleProgramTest()
 			function,
 			llvm::ArrayRef<llvm::GenericValue>( args, 3 ) );
 
-	U_ASSERT( arg0 + arg1 + arg2 == result_value.IntVal.getLimitedValue() );
+	U_ASSERT( static_cast<uint64_t>( arg0 + arg1 + arg2 ) == result_value.IntVal.getLimitedValue() );
+}
+
+static void BasicBinaryOperationsTest()
+{
+	static const char c_program_text[]=
+	"\
+	fn Foo( a : i32, b : i32, c : i32 ) : i32\
+	{\
+		return a * a + b / b - c;\
+	}"
+	;
+
+	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ), true );
+
+	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
+	U_ASSERT( function != nullptr );
+
+	int arg0= 77, arg1= 1488, arg2= 42;
+
+	llvm::GenericValue args[3];
+	args[0].IntVal= llvm::APInt( 32, arg0 );
+	args[1].IntVal= llvm::APInt( 32, arg1 );
+	args[2].IntVal= llvm::APInt( 32, arg2 );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>( args, 3 ) );
+
+	U_ASSERT( static_cast<uint64_t>( arg0 * arg0 + arg1 / arg1 - arg2 ) == result_value.IntVal.getLimitedValue() );
 }
 
 void RunCodeBuilderLLVMTest()
 {
 	SimpleProgramTest();
+	BasicBinaryOperationsTest();
 }
 
 } // namespace Interpreter
