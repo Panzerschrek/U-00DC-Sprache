@@ -19,6 +19,8 @@ LLVM_GEN_INCLUDES_DIR= $$LLVM_BUILD_DIR/include
 # Include ALL *.a libraries from llvm build.
 # TODO - know, which libs we need.
 LIBS+= $$LLVM_LIBS_DIR/*.a
+LIBS+= $$LLVM_LIBS_DIR/libLLVMCore.a
+LIBS+= $$LLVM_LIBS_DIR/libLLVMCodeGen.a
 
 INCLUDEPATH+= $$LLVM_INCLUDES_DIR
 INCLUDEPATH+= $$LLVM_GEN_INCLUDES_DIR
@@ -32,9 +34,7 @@ SOURCES += \
 	src/vm.cpp \
 	src/tests/vm_test.cpp \
 	src/tests/inverse_polish_notation_test.cpp \
-	src/tests/code_builder_test.cpp \
-	src/code_builder.cpp \
-	src/code_builder_types.cpp \
+	src/code_builder_llvm.cpp \
 	src/inverse_polish_notation.cpp \
 	src/keywords.cpp
 
@@ -48,13 +48,11 @@ HEADERS += \
 	src/vm.inl \
 	src/tests/vm_test.hpp \
 	src/tests/inverse_polish_notation_test.hpp \
-	src/tests/code_builder_test.hpp \
-	src/code_builder.hpp \
-	src/code_builder_types.hpp \
+	src/code_builder_llvm.hpp \
 	src/inverse_polish_notation.hpp \
 	src/keywords.cpp
 
 U_DUBUG {
-	DEFINES+= DEBUG
+	DEFINES+= U_DEBUG
 } else {
 }

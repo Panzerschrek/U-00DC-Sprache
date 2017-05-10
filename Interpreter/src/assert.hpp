@@ -3,7 +3,7 @@
 
 // Simple assert wrapper.
 // If you wish disable asserts, or do something else redefine this macro.
-#ifdef DEBUG
+#ifdef U_DEBUG
 #define U_ASSERT(x) \
 	assert(x)
 #else
