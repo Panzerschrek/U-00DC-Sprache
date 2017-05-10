@@ -700,7 +700,31 @@ Variable CodeBuilderLLVM::BuildExpressionCode_r(
 		else if( const NumericConstant* numeric_constant=
 			dynamic_cast<const NumericConstant*>(&operand) )
 		{
-			// TODO
+			U_FundamentalType type= GetNumericConstantType( *numeric_constant );
+			if( type == U_FundamentalType::InvalidType )
+			{
+				error_messages_.push_back( "Unknown numeric constant type" );
+				// TODO - throw?
+			}
+
+			result.location= Variable::Location::LLVMRegister;
+			result.type.kind= Type::Kind::Fundamental;
+			result.type.fundamental= type;
+
+			llvm::Type* llvm_type= GetFundamentalLLVMType( type );
+
+			if( IsInteger( type ) )
+				result.llvm_value=
+					llvm::Constant::getIntegerValue( llvm_type, llvm::APInt( result.type.SizeOf() * 8u, uint64_t(numeric_constant->value_) ) );
+			else if( IsFloatingPoint( type ) )
+				result.llvm_value=
+					llvm::Constant::getIntegerValue( llvm_type, llvm::APInt::doubleToBits( numeric_constant->value_ ) );
+			else
+			{
+				U_ASSERT(false);
+			}
+
+			result.type.fundamental_llvm_type= llvm_type;
 		}
 		else
 		{

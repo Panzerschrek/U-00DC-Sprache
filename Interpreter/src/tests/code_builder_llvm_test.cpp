@@ -126,7 +126,7 @@ static void VariablesTest()
 	}"
 	;
 
-	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ), true );
+	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
 	U_ASSERT( function != nullptr );
@@ -145,11 +145,66 @@ static void VariablesTest()
 	U_ASSERT( static_cast<uint64_t>( arg0 - arg1 ) == result_value.IntVal.getLimitedValue() );
 }
 
+static void NumericConstantsTest0()
+{
+	static const char c_program_text[]=
+	"\
+	fn Foo32( a : i32, b : i32 ) : i32\
+	{\
+		return a * 7 +  b - 22 / 4 + 458;\
+	}"
+	;
+
+	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "Foo32" );
+	U_ASSERT( function != nullptr );
+
+	int arg0= 1488, arg1= 77;
+
+	llvm::GenericValue args[2];
+	args[0].IntVal= llvm::APInt( 32, arg0 );
+	args[1].IntVal= llvm::APInt( 32, arg1 );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>( args, 2 ) );
+
+	U_ASSERT( static_cast<uint64_t>( arg0 * 7 + arg1 - 22 / 4 + 458 ) == result_value.IntVal.getLimitedValue() );
+}
+
+static void NumericConstantsTest1()
+{
+	static const char c_program_text[]=
+	"\
+	fn Foo64() : i64\
+	{\
+		return 45783984055402i64;\
+	}"
+	;
+
+	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "Foo64" );
+	U_ASSERT( function != nullptr );
+
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_ASSERT( static_cast<uint64_t>( 45783984055402ll ) == result_value.IntVal.getLimitedValue() );
+}
+
 void RunCodeBuilderLLVMTest()
 {
 	SimpleProgramTest();
 	BasicBinaryOperationsTest();
 	VariablesTest();
+	NumericConstantsTest0();
+	NumericConstantsTest1();
 }
 
 } // namespace Interpreter
