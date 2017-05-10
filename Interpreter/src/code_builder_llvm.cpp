@@ -192,21 +192,20 @@ namespace CodeBuilderLLVMPrivate
 CodeBuilderLLVM::CodeBuilderLLVM()
 	: llvm_context_( llvm::getGlobalContext() )
 {
-	fundamental_llvm_types_. i8= llvm::IntegerType::get( llvm_context_,  8u );
-	fundamental_llvm_types_. u8= llvm::IntegerType::get( llvm_context_,  8u );
-	fundamental_llvm_types_.i16= llvm::IntegerType::get( llvm_context_, 16u );
-	fundamental_llvm_types_.u16= llvm::IntegerType::get( llvm_context_, 16u );
-	fundamental_llvm_types_.i32= llvm::IntegerType::get( llvm_context_, 32u );
-	fundamental_llvm_types_.u32= llvm::IntegerType::get( llvm_context_, 32u );
-	fundamental_llvm_types_.i64= llvm::IntegerType::get( llvm_context_, 64u );
-	fundamental_llvm_types_.u64= llvm::IntegerType::get( llvm_context_, 64u );
+	fundamental_llvm_types_. i8= llvm::Type::getInt8Ty( llvm_context_ );
+	fundamental_llvm_types_. u8= llvm::Type::getInt8Ty( llvm_context_ );
+	fundamental_llvm_types_.i16= llvm::Type::getInt16Ty( llvm_context_ );
+	fundamental_llvm_types_.u16= llvm::Type::getInt16Ty( llvm_context_ );
+	fundamental_llvm_types_.i32= llvm::Type::getInt32Ty( llvm_context_ );
+	fundamental_llvm_types_.u32= llvm::Type::getInt32Ty( llvm_context_ );
+	fundamental_llvm_types_.i64= llvm::Type::getInt64Ty( llvm_context_ );
+	fundamental_llvm_types_.u64= llvm::Type::getInt64Ty( llvm_context_ );
 
-	// TODO - found llvm-floating types.
-	fundamental_llvm_types_.f32= fundamental_llvm_types_.i32= llvm::IntegerType::get( llvm_context_, 32u );
-	fundamental_llvm_types_.f64= fundamental_llvm_types_.i32= llvm::IntegerType::get( llvm_context_, 64u );
+	fundamental_llvm_types_.f32= llvm::Type::getFloatTy( llvm_context_ );
+	fundamental_llvm_types_.f64= llvm::Type::getDoubleTy( llvm_context_ );
 
-	fundamental_llvm_types_.void_= nullptr;
-	fundamental_llvm_types_.bool_= llvm::IntegerType::get( llvm_context_, 8u );
+	fundamental_llvm_types_.void_= llvm::Type::getVoidTy( llvm_context_ );
+	fundamental_llvm_types_.bool_= llvm::Type::getInt1Ty( llvm_context_ );
 }
 
 CodeBuilderLLVM::~CodeBuilderLLVM()

@@ -45,8 +45,8 @@ private:
 		llvm::IntegerType* i64;
 		llvm::IntegerType* u64;
 
-		llvm::IntegerType* f32;
-		llvm::IntegerType* f64;
+		llvm::Type* f32;
+		llvm::Type* f64;
 
 		llvm::Type* void_;
 		llvm::IntegerType* bool_;
