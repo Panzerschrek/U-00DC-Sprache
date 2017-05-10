@@ -435,7 +435,29 @@ void CodeBuilderLLVM::BuildBlockCode(
 	{
 		const IBlockElement* const block_element_ptr= block_element.get();
 
-		if(
+		if( const VariableDeclaration* variable_declaration=
+			dynamic_cast<const VariableDeclaration*>( block_element_ptr ) )
+		{
+			if( IsKeyword( variable_declaration->name ) )
+				ReportUsingKeywordAsName( error_messages_, variable_declaration->name );
+
+			Variable variable;
+			variable.type= PrepareType( variable_declaration->type );
+			variable.location= Variable::Location::PointerToStack;
+			variable.llvm_value= function_context.llvm_ir_builder.CreateAlloca( variable.type.GetLLVMType() );
+
+			const NamesScope::InsertedName* inserted_name=
+				block_names.AddName( variable_declaration->name, std::move(variable) );
+
+			if( !inserted_name )
+			{
+				ReportRedefinition( error_messages_, variable_declaration->name );
+				// TODO - throw?
+			}
+
+			// TODO - add initisalizer.
+		}
+		else if(
 			const SingleExpressionOperator* expression=
 			dynamic_cast<const SingleExpressionOperator*>( block_element_ptr ) )
 		{
@@ -443,6 +465,39 @@ void CodeBuilderLLVM::BuildBlockCode(
 				*expression->expression_,
 				block_names,
 				function_context );
+		}
+		else if(
+			const AssignmentOperator* assignment_operator=
+			dynamic_cast<const AssignmentOperator*>( block_element_ptr ) )
+		{
+			const BinaryOperatorsChain& l_value= *assignment_operator->l_value_;
+			const BinaryOperatorsChain& r_value= *assignment_operator->r_value_;
+
+			const Variable l_var= BuildExpressionCode( l_value, block_names, function_context );
+			const Variable r_var= BuildExpressionCode( r_value, block_names, function_context );
+
+			if( l_var.type != r_var.type )
+			{
+				ReportTypesMismatch( error_messages_, l_var.type.fundamental, r_var.type.fundamental );
+				// TODO - throw?
+			}
+
+			llvm::Value* value_for_assignment= nullptr;
+			if( r_var.location == Variable::Location::LLVMRegister )
+				value_for_assignment= r_var.llvm_value;
+			else if( r_var.location == Variable::Location::PointerToStack )
+				value_for_assignment= function_context.llvm_ir_builder.CreateLoad( r_var.llvm_value );
+			else
+			{
+				U_ASSERT( false );
+			}
+
+			if( l_var.location != Variable::Location::PointerToStack )
+			{
+				// TODO - register error.
+			}
+
+			function_context.llvm_ir_builder.CreateStore( value_for_assignment, l_var.llvm_value );
 		}
 		else if(
 				const ReturnOperator* return_operator=
