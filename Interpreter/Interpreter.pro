@@ -35,6 +35,7 @@ SOURCES += \
 	src/tests/vm_test.cpp \
 	src/tests/inverse_polish_notation_test.cpp \
 	src/code_builder_llvm.cpp \
+	src/code_builder_llvm_types.cpp \
 	src/inverse_polish_notation.cpp \
 	src/keywords.cpp
 
@@ -49,6 +50,7 @@ HEADERS += \
 	src/tests/vm_test.hpp \
 	src/tests/inverse_polish_notation_test.hpp \
 	src/code_builder_llvm.hpp \
+	src/code_builder_llvm_types.hpp \
 	src/inverse_polish_notation.hpp \
 	src/keywords.cpp
 
