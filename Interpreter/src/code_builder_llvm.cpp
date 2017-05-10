@@ -1,4 +1,5 @@
 #include <llvm/IR/LLVMContext.h>
+
 #include "keywords.hpp"
 #include "vm.hpp"
 
@@ -189,6 +190,14 @@ void ReportArithmeticOperationWithUnsupportedType(
 namespace CodeBuilderLLVMPrivate
 {
 
+CodeBuilderLLVM::FunctionContext::FunctionContext(
+	llvm::LLVMContext& llvm_context,
+	llvm::Function* function )
+	: function_basic_block( llvm::BasicBlock::Create( llvm_context, "", function ) )
+	, llvm_ir_builder( function_basic_block )
+{
+}
+
 CodeBuilderLLVM::CodeBuilderLLVM()
 	: llvm_context_( llvm::getGlobalContext() )
 {
@@ -251,36 +260,35 @@ CodeBuilderLLVM::BuildResult CodeBuilderLLVM::BuildProgram( const ProgramElement
 					func_info.type.function->return_type.fundamental= it->second;
 			}
 
-			// Args.
-			std::vector<ProgramString> arg_names;
-			arg_names.reserve( func->arguments_.size() );
-
-			func_info.type.function->args.reserve( func->arguments_.size() );
-			for( const VariableDeclaration& arg : func->arguments_ )
-			{
-				if( IsKeyword( arg.name ) )
-					ReportUsingKeywordAsName( error_messages_, arg.name );
-
-				func_info.type.function->args.push_back( PrepareType( arg.type ) );
-				arg_names.push_back( arg.name );
-			}
-
-			const NamesScope::InsertedName* inserted_func_name =
-				global_names_.AddName( func->name_, std::move( func_info ) );
-			if( inserted_func_name )
-			{
-				/*
-				Variable& func_variable= inserted_func_name->second.variable;
-				BuildFuncCode(
-					func_variable,
-					func->name_ );
-				*/
-			}
-			else
+			if( global_names_.GetName( func->name_ ) != nullptr )
 			{
 				error_count_++;
 				ReportRedefinition( error_messages_, func->name_ );
 				continue;
+			}
+			else
+			{
+				// Args.
+				std::vector<ProgramString> arg_names;
+				arg_names.reserve( func->arguments_.size() );
+
+				func_info.type.function->args.reserve( func->arguments_.size() );
+				for( const VariableDeclaration& arg : func->arguments_ )
+				{
+					if( IsKeyword( arg.name ) )
+						ReportUsingKeywordAsName( error_messages_, arg.name );
+
+					func_info.type.function->args.push_back( PrepareType( arg.type ) );
+					arg_names.push_back( arg.name );
+				}
+
+				BuildFuncCode(
+					func_info,
+					func->name_,
+					arg_names,
+					*func->block_ );
+
+				global_names_.AddName( func->name_, std::move( func_info ) );
 			}
 		}
 	} // for program elements
@@ -382,29 +390,289 @@ Type CodeBuilderLLVM::PrepareType( const TypeName& type_name )
 	return result;
 }
 
-void CodeBuilderLLVM::BuildFuncCode( Variable& func, const ProgramString& func_name )
+void CodeBuilderLLVM::BuildFuncCode(
+	Variable& func_variable,
+	const ProgramString& func_name,
+	const std::vector<ProgramString>& arg_names,
+	const Block& block )
 {
-	func.type.kind= Type::Kind::Function;
-	func.type.function.reset( new Function );
+	//func.type.kind= Type::Kind::Function;
+	//func.type.function.reset( new Function );
 
 	std::vector<llvm::Type*> args_llvm_types;
-	for( const Type& type : func.type.function->args )
+	for( const Type& type : func_variable.type.function->args )
 		args_llvm_types.push_back( type.GetLLVMType() );
 
-	func.type.function->llvm_function_type=
+	func_variable.type.function->llvm_function_type=
 		llvm::FunctionType::get(
-			func.type.function->return_type.GetLLVMType(),
+			func_variable.type.function->return_type.GetLLVMType(),
 			llvm::ArrayRef<llvm::Type*>( args_llvm_types.data(),args_llvm_types.size() ),
 			false );
 
 	llvm::Function* llvm_function=
 		llvm::Function::Create(
-			func.type.function->llvm_function_type,
+			func_variable.type.function->llvm_function_type,
 			llvm::Function::LinkageTypes::ExternalLinkage, // TODO - select linkage
 			ToStdString( func_name ),
 			module_.get() );
 
-	func.llvm_value= llvm_function;
+	NamesScope function_names( &global_names_ );
+
+	unsigned int arg_number= 0u;
+	for( llvm::Argument& llvm_arg : llvm_function->args() )
+	{
+		Variable var;
+		var.type= func_variable.type.function->args[ arg_number ];
+		var.location= Variable::Location::LLVMRegister;
+		var.llvm_value= &llvm_arg;
+
+		const NamesScope::InsertedName* inserted_arg=
+			function_names.AddName(
+				arg_names[ arg_number ],
+				std::move(var) );
+		if( !inserted_arg )
+		{
+			error_count_++;
+			ReportRedefinition( error_messages_, arg_names[ arg_number ] );
+			return;
+		}
+
+		llvm_arg.setName( ToStdString( arg_names[ arg_number ] ) );
+		++arg_number;
+	}
+
+	func_variable.llvm_value= llvm_function;
+
+	FunctionContext function_context( llvm_context_, llvm_function );
+
+	BuildBlockCode( block, function_names, function_context );
+
+
+}
+
+void CodeBuilderLLVM::BuildBlockCode(
+	const Block& block,
+	const NamesScope& names,
+	FunctionContext& function_context )
+{
+	NamesScope block_names( &names );
+
+	for( const IBlockElementPtr& block_element : block.elements_ )
+	{
+		const IBlockElement* const block_element_ptr= block_element.get();
+
+		if(
+			const SingleExpressionOperator* expression=
+			dynamic_cast<const SingleExpressionOperator*>( block_element_ptr ) )
+		{
+			BuildExpressionCode(
+				*expression->expression_,
+				block_names,
+				function_context );
+		}
+		else if(
+				const ReturnOperator* return_operator=
+				dynamic_cast<const ReturnOperator*>( block_element_ptr ) )
+		{
+			BuildReturnOperatorCode(
+				*return_operator,
+				block_names,
+				function_context );
+		}
+		else
+		{
+			U_ASSERT(false);
+		}
+	}
+}
+
+Variable CodeBuilderLLVM::BuildExpressionCode(
+	const BinaryOperatorsChain& expression,
+	const NamesScope& names,
+	FunctionContext& function_context )
+{
+	const InversePolishNotation ipn= ConvertToInversePolishNotation( expression );
+
+	return
+		BuildExpressionCode_r(
+			ipn,
+			ipn.size() - 1,
+			names,
+			function_context );
+}
+
+Variable CodeBuilderLLVM::BuildExpressionCode_r(
+	const InversePolishNotation& ipn,
+	unsigned int ipn_index,
+	const NamesScope& names,
+	FunctionContext& function_context )
+{
+	U_ASSERT( ipn_index < ipn.size() );
+	const InversePolishNotationComponent& comp= ipn[ ipn_index ];
+
+	if( comp.operator_ != BinaryOperator::None )
+	{
+		Variable l_var=
+			BuildExpressionCode_r(
+				ipn, comp.l_index,
+				names,
+				function_context );
+
+		Variable r_var=
+			BuildExpressionCode_r(
+				ipn, comp.r_index,
+				names,
+				function_context );
+
+		Variable result;
+
+		// TODO - add cast for some integers here.
+		if( r_var.type != l_var.type )
+		{
+			ReportTypesMismatch( error_messages_, r_var.type.fundamental, l_var.type.fundamental );
+			return result;
+		}
+
+		switch( comp.operator_ )
+		{
+		case BinaryOperator::Add:
+
+			if( r_var.type.kind != Type::Kind::Fundamental )
+			{
+				// TODO - emit error
+			}
+			else
+			{
+				// TODO - check types - we can add only arithmetical fundamental types of size 32 and 64.
+
+				llvm::Value* l_value_for_op= nullptr;
+				if( l_var.location == Variable::Location::LLVMRegister )
+					l_value_for_op= l_var.llvm_value;
+				else if( l_var.location == Variable::Location::PointerToStack )
+					l_value_for_op=
+						function_context.llvm_ir_builder.CreateLoad( l_var.llvm_value );
+				else
+				{
+					U_ASSERT( false );
+				}
+
+				llvm::Value* r_value_for_op= nullptr;
+				if( r_var.location == Variable::Location::LLVMRegister )
+					r_value_for_op= r_var.llvm_value;
+				else if( r_var.location == Variable::Location::PointerToStack )
+					r_value_for_op=
+						function_context.llvm_ir_builder.CreateLoad( r_var.llvm_value );
+				else
+				{
+					U_ASSERT( false );
+				}
+
+				llvm::Value* result_value=
+					function_context.llvm_ir_builder.CreateAdd(
+						l_value_for_op, r_value_for_op );
+
+				result.location= Variable::Location::LLVMRegister;
+				result.type= r_var.type;
+				result.llvm_value= result_value;
+			}
+			break;
+
+		case BinaryOperator::Sub:
+		case BinaryOperator::Div:
+		case BinaryOperator::Mul:
+		case BinaryOperator::Equal:
+		case BinaryOperator::NotEqual:
+		case BinaryOperator::Less:
+		case BinaryOperator::LessEqual:
+		case BinaryOperator::Greater:
+		case BinaryOperator::GreaterEqual:
+		case BinaryOperator::And:
+		case BinaryOperator::Or:
+		case BinaryOperator::Xor:
+		case BinaryOperator::LazyLogicalAnd:
+		case BinaryOperator::LazyLogicalOr:
+			// TODO
+			U_ASSERT(false);
+			break;
+
+		case BinaryOperator::None:
+		case BinaryOperator::Last:
+			U_ASSERT(false);
+			break;
+		};
+
+		return result;
+	}
+	else
+	{
+		U_ASSERT( comp.operand );
+		U_ASSERT( comp.r_index == InversePolishNotationComponent::c_no_parent );
+		U_ASSERT( comp.l_index == InversePolishNotationComponent::c_no_parent );
+
+		const IBinaryOperatorsChainComponent& operand= *comp.operand;
+
+		Variable result;
+
+		if( const NamedOperand* named_operand=
+			dynamic_cast<const NamedOperand*>(&operand) )
+		{
+			const NamesScope::InsertedName* name_entry=
+				names.GetName( named_operand->name_ );
+			if( !name_entry )
+			{
+				ReportNameNotFound( error_messages_, named_operand->name_ );
+			}
+			if( name_entry->second.class_ )
+			{
+				error_messages_.push_back( "Error, using class name as variable" );
+			}
+			result= name_entry->second.variable;
+		}
+		else
+		{
+			// TODO
+			U_ASSERT(false);
+		}
+
+		for( const IUnaryPostfixOperatorPtr& postfix_operator : comp.postfix_operand_operators )
+		{
+			// TODO
+		} // for unary postfix operators
+
+		for( const IUnaryPrefixOperatorPtr& prefix_operator : comp.prefix_operand_operators )
+		{
+			// TODO
+		} // for unary prefix operators
+
+		return result;
+	}
+}
+
+void CodeBuilderLLVM::BuildReturnOperatorCode(
+	const ReturnOperator& return_operator,
+	const NamesScope& names,
+	FunctionContext& function_context )
+{
+	const Variable expression_result=
+		BuildExpressionCode(
+			*return_operator.expression_,
+			names,
+			function_context );
+
+	// TODO - check function result/expression result types mismatch.
+
+	llvm::Value* value_for_return= nullptr;
+	if( expression_result.location == Variable::Location::LLVMRegister )
+		value_for_return= expression_result.llvm_value;
+	else if( expression_result.location == Variable::Location::PointerToStack )
+		value_for_return=
+			function_context.llvm_ir_builder.CreateLoad( expression_result.llvm_value );
+	else
+	{
+		U_ASSERT( false );
+	}
+
+	function_context.llvm_ir_builder.CreateRet( value_for_return );
 }
 
 } // namespace CodeBuilderLLVMPrivate

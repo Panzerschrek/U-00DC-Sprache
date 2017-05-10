@@ -1,9 +1,11 @@
 #pragma once
 #include <vector>
 
+#include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/Module.h>
 
 #include "code_builder_llvm_types.hpp"
+#include "inverse_polish_notation.hpp"
 #include "syntax_elements.hpp"
 
 namespace Interpreter
@@ -27,9 +29,45 @@ public:
 	BuildResult BuildProgram( const ProgramElements& program_elements );
 
 private:
+	struct FunctionContext
+	{
+		FunctionContext(
+			llvm::LLVMContext& llvm_context,
+			llvm::Function* function );
+
+		llvm::BasicBlock* function_basic_block;
+		llvm::IRBuilder<> llvm_ir_builder;
+	};
+
+private:
 	Type PrepareType( const TypeName& type_name );
 
-	void BuildFuncCode( Variable& func, const ProgramString& func_name );
+	void BuildFuncCode(
+		Variable& func,
+		const ProgramString& func_name,
+		const std::vector<ProgramString>& arg_names,
+		const Block& block );
+
+	void BuildBlockCode(
+		const Block& block,
+		const NamesScope& names,
+		FunctionContext& function_context );
+
+	Variable BuildExpressionCode(
+		const BinaryOperatorsChain& expression,
+		const NamesScope& names,
+		FunctionContext& function_context );
+
+	Variable BuildExpressionCode_r(
+		const InversePolishNotation& ipn,
+		unsigned int ipn_index,
+		const NamesScope& names,
+		FunctionContext& function_context );
+
+	void BuildReturnOperatorCode(
+		const ReturnOperator& return_operator,
+		const NamesScope& names,
+		FunctionContext& function_context );
 
 private:
 	llvm::LLVMContext& llvm_context_;
