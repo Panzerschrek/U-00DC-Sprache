@@ -11,6 +11,10 @@
 
 #include "code_builder_llvm_test.hpp"
 
+
+#define ASSERT_NEAR( x, y, eps ) U_ASSERT( std::abs( (x) - (y) ) <= eps )
+
+
 namespace Interpreter
 {
 
@@ -114,6 +118,36 @@ static void BasicBinaryOperationsTest()
 			llvm::ArrayRef<llvm::GenericValue>( args, 3 ) );
 
 	U_ASSERT( static_cast<uint64_t>( arg0 * arg0 + arg1 / arg1 - arg2 ) == result_value.IntVal.getLimitedValue() );
+}
+
+static void BasicBinaryOperationsFloatTest()
+{
+	static const char c_program_text[]=
+	"\
+	fn Foo( a : f32, b : f32, c : f32 ) : f32\
+	{\
+		return a * a + b / b - c;\
+	}"
+	;
+
+	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
+	U_ASSERT( function != nullptr );
+
+	float arg0= 77.0f, arg1= 1488.5f, arg2= -42.31415926535f;
+
+	llvm::GenericValue args[3];
+	args[0].FloatVal= arg0;
+	args[1].FloatVal= arg1;
+	args[2].FloatVal= arg2;
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>( args, 3 ) );
+
+	ASSERT_NEAR( arg0 * arg0 + arg1 / arg1 - arg2, result_value.FloatVal, 0.1f );
 }
 
 static void VariablesTest()
@@ -227,6 +261,35 @@ static void UnaryMinusTest()
 			llvm::ArrayRef<llvm::GenericValue>( arg ) );
 
 	U_ASSERT( static_cast<uint64_t>( - - arg_value ) == result_value.IntVal.getLimitedValue() );
+}
+
+static void UnaryMinusFloatTest()
+{
+	static const char c_program_text[]=
+	"\
+	fn Foo( x : f64 ) : f64\
+	{\
+		let tmp : f64;\
+		tmp= -x;\
+		return -tmp;\
+	}"
+	;
+
+	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
+	U_ASSERT( function != nullptr );
+
+	double arg_value= 54785;
+	llvm::GenericValue arg;
+	arg.DoubleVal= arg_value;
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>( arg ) );
+
+	ASSERT_NEAR( -( - arg_value ), result_value.DoubleVal, 0.01f );
 }
 
 static void ArraysTest0()
@@ -698,10 +761,12 @@ void RunCodeBuilderLLVMTest()
 {
 	SimpleProgramTest();
 	BasicBinaryOperationsTest();
+	BasicBinaryOperationsFloatTest();
 	VariablesTest();
 	NumericConstantsTest0();
 	NumericConstantsTest1();
 	UnaryMinusTest();
+	UnaryMinusFloatTest();
 	ArraysTest0();
 	ArraysTest1();
 	LogicalBinaryOperationsTest();

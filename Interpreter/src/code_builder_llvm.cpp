@@ -607,8 +607,8 @@ Variable CodeBuilderLLVM::BuildExpressionCode_r(
 					// Operation supported only for 32 and 64bit operands
 					throw ProgramError();
 				}
-				// TODO - add floats support.
-				if( !IsInteger( result_type.fundamental ) )
+				const bool is_float= IsFloatingPoint( result_type.fundamental );
+				if( !( IsInteger( result_type.fundamental ) || is_float ) )
 				{
 					// TODO - emit error
 					// this operations allowed only for integer and floating point operands.
@@ -624,17 +624,28 @@ Variable CodeBuilderLLVM::BuildExpressionCode_r(
 				switch( comp.operator_ )
 				{
 				case BinaryOperator::Add:
-					result_value=
-						function_context.llvm_ir_builder.CreateAdd( l_value_for_op, r_value_for_op );
+					if( is_float )
+						result_value=
+							function_context.llvm_ir_builder.CreateFAdd( l_value_for_op, r_value_for_op );
+					else
+						result_value=
+							function_context.llvm_ir_builder.CreateAdd( l_value_for_op, r_value_for_op );
 					break;
 
 				case BinaryOperator::Sub:
-					result_value=
-						function_context.llvm_ir_builder.CreateSub( l_value_for_op, r_value_for_op );
+					if( is_float )
+						result_value=
+							function_context.llvm_ir_builder.CreateFSub( l_value_for_op, r_value_for_op );
+					else
+						result_value=
+							function_context.llvm_ir_builder.CreateSub( l_value_for_op, r_value_for_op );
 					break;
 
 				case BinaryOperator::Div:
-					if( is_signed )
+					if( is_float )
+						result_value=
+							function_context.llvm_ir_builder.CreateFDiv( l_value_for_op, r_value_for_op );
+					else if( is_signed )
 						result_value=
 							function_context.llvm_ir_builder.CreateSDiv( l_value_for_op, r_value_for_op );
 					else
@@ -643,8 +654,12 @@ Variable CodeBuilderLLVM::BuildExpressionCode_r(
 					break;
 
 				case BinaryOperator::Mul:
-					result_value=
-						function_context.llvm_ir_builder.CreateMul( l_value_for_op, r_value_for_op );
+					if( is_float )
+						result_value=
+							function_context.llvm_ir_builder.CreateFMul( l_value_for_op, r_value_for_op );
+					else
+						result_value=
+							function_context.llvm_ir_builder.CreateMul( l_value_for_op, r_value_for_op );
 					break;
 
 				default: U_ASSERT( false ); break;
@@ -1012,7 +1027,8 @@ Variable CodeBuilderLLVM::BuildExpressionCode_r(
 					error_messages_.emplace_back( "Unary minus supported only for fundamental types" );
 					throw ProgramError();
 				}
-				if( !IsInteger( result.type.fundamental ) )
+				const bool is_float= IsFloatingPoint( result.type.fundamental );
+				if( !( IsInteger( result.type.fundamental ) || is_float ) )
 				{
 					ReportArithmeticOperationWithUnsupportedType( error_messages_, result.type.fundamental );
 					throw ProgramError();
@@ -1020,7 +1036,11 @@ Variable CodeBuilderLLVM::BuildExpressionCode_r(
 				// TODO - maybe not support unary minus for 8 and 16 bot integer types?
 
 				llvm::Value* value_for_neg= CreateMoveToLLVMRegisterInstruction( result, function_context );
-				result.llvm_value= function_context.llvm_ir_builder.CreateNeg( value_for_neg );
+				if( is_float )
+					result.llvm_value= function_context.llvm_ir_builder.CreateFNeg( value_for_neg );
+				else
+					result.llvm_value= function_context.llvm_ir_builder.CreateNeg( value_for_neg );
+
 				result.location= Variable::Location::LLVMRegister;
 			}
 			else if( const UnaryPlus* const unary_plus=
