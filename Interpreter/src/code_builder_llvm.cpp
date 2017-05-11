@@ -296,6 +296,9 @@ CodeBuilderLLVM::BuildResult CodeBuilderLLVM::BuildProgram( const ProgramElement
 		}
 	} // for program elements
 
+	if( error_count_ > 0u )
+		error_messages_.emplace_back( "Code build failed - there are some errors." );
+
 	BuildResult result;
 	result.error_messages= error_messages_;
 	error_messages_.clear();
@@ -888,6 +891,54 @@ Variable CodeBuilderLLVM::BuildExpressionCode_r(
 				result.llvm_value=
 					function_context.llvm_ir_builder.CreateGEP( result.llvm_value, llvm::ArrayRef< llvm::Value*> ( index_list, 2u ) );
 			}
+			else if( const CallOperator* const call_operator=
+				dynamic_cast<const CallOperator*>( postfix_operator.get() ) )
+			{
+				if( result.type.kind != Type::Kind::Function )
+				{
+					error_messages_.emplace_back( "Call of non-function." );
+					throw ProgramError();
+				}
+				if( call_operator->arguments_.size() != result.type.function->args.size() )
+				{
+					error_messages_.emplace_back( "Argument count mismatch." );
+					throw ProgramError();
+				}
+
+				std::vector<llvm::Value*> llvm_args;
+				llvm_args.resize( result.type.function->args.size() );
+
+				for( unsigned int i= 0u; i < result.type.function->args.size(); i++ )
+				{
+					Variable arg= BuildExpressionCode( *call_operator->arguments_[i], names, function_context );
+					if( arg.type != result.type.function->args[i] )
+					{
+						error_messages_.emplace_back( "Argument type mismatch for argument " + std::to_string(i) + "." );
+						throw ProgramError();
+					}
+
+					llvm::Value* value_for_call= nullptr;
+					if( arg.location == Variable::Location::LLVMRegister )
+						value_for_call= arg.llvm_value;
+					else if( arg.location == Variable::Location::PointerToStack )
+						value_for_call= function_context.llvm_ir_builder.CreateLoad( arg.llvm_value );
+					else
+					{
+						U_ASSERT(false);
+					}
+
+					llvm_args[i]= value_for_call;
+				}
+
+				llvm::Value* call_result=
+					function_context.llvm_ir_builder.CreateCall(
+						llvm::dyn_cast<llvm::Function>(result.llvm_value),
+						llvm_args );
+
+				result.type= result.type.function->return_type;
+				result.location= Variable::Location::LLVMRegister;
+				result.llvm_value= call_result;
+			}
 			else
 			{
 				//TODO
@@ -946,13 +997,21 @@ void CodeBuilderLLVM::BuildReturnOperatorCode(
 	const NamesScope& names,
 	FunctionContext& function_context )
 {
+
+	// TODO - check function result/expression result types mismatch.
+
+	if( return_operator.expression_ == nullptr )
+	{
+		// Add only return instruction for void return operators.
+		function_context.llvm_ir_builder.CreateRetVoid();
+		return;
+	}
+
 	const Variable expression_result=
 		BuildExpressionCode(
 			*return_operator.expression_,
 			names,
 			function_context );
-
-	// TODO - check function result/expression result types mismatch.
 
 	llvm::Value* value_for_return= nullptr;
 	if( expression_result.location == Variable::Location::LLVMRegister )

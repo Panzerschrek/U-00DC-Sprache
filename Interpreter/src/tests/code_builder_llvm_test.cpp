@@ -33,6 +33,8 @@ static std::unique_ptr<llvm::Module> BuildProgram( const char* const text )
 	CodeBuilderLLVM::BuildResult build_result=
 		CodeBuilderLLVM().BuildProgram( syntax_analysis_result.program_elements );
 
+	U_ASSERT( build_result.error_messages.empty() );
+
 	for( const std::string& error_message : build_result.error_messages )
 		std::cout << error_message << "\n";
 
@@ -328,7 +330,7 @@ static void BooleanBasicTest()
 		let tmp : bool;\
 		tmp = a & b;\
 		tmp= tmp & ( true );\
-		tmp= rmp | false;\
+		tmp= tmp | false;\
 		return tmp ^ c ;\
 	}"
 	;
@@ -355,6 +357,80 @@ static void BooleanBasicTest()
 		result_value.IntVal.getLimitedValue() );
 }
 
+static void CallTest0()
+{
+	static const char c_program_text[]=
+	"\
+	fn Bar( x : i32 ) : i32 \
+	{\
+		return x * x + 42;\
+	}\
+	fn Foo( a : i32, b : i32 ) : i32\
+	{\
+		return Bar( a ) + Bar( b );\
+	}"
+	;
+
+	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
+	U_ASSERT( function != nullptr );
+
+	int arg0= 77, arg1= 1488;
+
+	llvm::GenericValue args[2];
+	args[0].IntVal= llvm::APInt( 32, arg0 );
+	args[1].IntVal= llvm::APInt( 32, arg1 );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>( args, 3 ) );
+
+	U_ASSERT(
+		static_cast<uint64_t>( arg0 * arg0 + 42 + arg1 * arg1 + 42 ) ==
+		result_value.IntVal.getLimitedValue() );
+}
+
+static void CallTest1()
+{
+	static const char c_program_text[]=
+	"\
+	fn Bar( x : i32 ) : void \
+	{\
+		x + x;\
+		return;\
+	}\
+	fn FullyVoid() { return; }\
+	fn Foo( a : i32, b : i32 ) : i32\
+	{\
+		Bar( a );\
+		FullyVoid();\
+		return a / b;\
+	}"
+	;
+
+	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ), true );
+
+	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
+	U_ASSERT( function != nullptr );
+
+	int arg0= 775678, arg1= 1488;
+
+	llvm::GenericValue args[2];
+	args[0].IntVal= llvm::APInt( 32, arg0 );
+	args[1].IntVal= llvm::APInt( 32, arg1 );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>( args, 3 ) );
+
+	U_ASSERT(
+		static_cast<uint64_t>( arg0 / arg1 ) ==
+		result_value.IntVal.getLimitedValue() );
+}
+
 void RunCodeBuilderLLVMTest()
 {
 	SimpleProgramTest();
@@ -367,6 +443,8 @@ void RunCodeBuilderLLVMTest()
 	ArraysTest1();
 	LogicalBinaryOperationsTest();
 	BooleanBasicTest();
+	CallTest0();
+	CallTest1();
 }
 
 } // namespace Interpreter
