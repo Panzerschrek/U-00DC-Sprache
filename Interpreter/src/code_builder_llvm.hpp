@@ -35,7 +35,8 @@ private:
 			llvm::LLVMContext& llvm_context,
 			llvm::Function* function );
 
-		llvm::BasicBlock* function_basic_block;
+		llvm::Function* const function;
+		llvm::BasicBlock* const function_basic_block;
 		llvm::IRBuilder<> llvm_ir_builder;
 	};
 
@@ -70,6 +71,11 @@ private:
 
 	void BuildReturnOperatorCode(
 		const ReturnOperator& return_operator,
+		const NamesScope& names,
+		FunctionContext& function_context );
+
+	void BuildWhileOperatorCode(
+		const WhileOperator& while_operator,
 		const NamesScope& names,
 		FunctionContext& function_context );
 

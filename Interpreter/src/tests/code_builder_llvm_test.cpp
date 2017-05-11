@@ -11,9 +11,7 @@
 
 #include "code_builder_llvm_test.hpp"
 
-
 #define ASSERT_NEAR( x, y, eps ) U_ASSERT( std::abs( (x) - (y) ) <= eps )
-
 
 namespace Interpreter
 {
@@ -756,6 +754,43 @@ static void ComparisonFloatOperatorsTest()
 	}
 }
 
+static void WhileOperatorTest()
+{
+	static const char c_program_text[]=
+	"\
+	fn Foo( a : i32, b : i32 ) : i32\
+	{\
+		let x : i32;\
+		x= a;\
+		while( x > 0 )\
+		{\
+			x= x - 1i32;\
+		}\
+		x = x + 34i32;\
+		while( x != x ) {}\
+		return x + b;\
+	}"
+	;
+
+	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
+	U_ASSERT( function != nullptr );
+
+	int arg0= 77, arg1= 1488;
+
+	llvm::GenericValue args[2];
+	args[0].IntVal= llvm::APInt( 32, arg0 );
+	args[1].IntVal= llvm::APInt( 32, arg1 );
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>( args, 3 ) );
+
+	U_ASSERT(
+		static_cast<uint64_t>( 34 + arg1 ) ==
+		result_value.IntVal.getLimitedValue() );
+}
 
 void RunCodeBuilderLLVMTest()
 {
@@ -778,6 +813,7 @@ void RunCodeBuilderLLVMTest()
 	ComparisonSignedOperatorsTest();
 	ComparisonUnsignedOperatorsTest();
 	ComparisonFloatOperatorsTest();
+	WhileOperatorTest();
 }
 
 } // namespace Interpreter

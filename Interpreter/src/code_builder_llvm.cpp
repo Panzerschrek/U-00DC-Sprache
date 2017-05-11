@@ -193,8 +193,9 @@ namespace CodeBuilderLLVMPrivate
 
 CodeBuilderLLVM::FunctionContext::FunctionContext(
 	llvm::LLVMContext& llvm_context,
-	llvm::Function* function )
-	: function_basic_block( llvm::BasicBlock::Create( llvm_context, "", function ) )
+	llvm::Function* in_function )
+	: function(in_function)
+	, function_basic_block( llvm::BasicBlock::Create( llvm_context, "", function ) )
 	, llvm_ir_builder( function_basic_block )
 {
 }
@@ -519,11 +520,20 @@ void CodeBuilderLLVM::BuildBlockCode(
 				function_context.llvm_ir_builder.CreateStore( value_for_assignment, l_var.llvm_value );
 			}
 			else if(
-					const ReturnOperator* return_operator=
-					dynamic_cast<const ReturnOperator*>( block_element_ptr ) )
+				const ReturnOperator* return_operator=
+				dynamic_cast<const ReturnOperator*>( block_element_ptr ) )
 			{
 				BuildReturnOperatorCode(
 					*return_operator,
+					block_names,
+					function_context );
+			}
+			else if(
+				const WhileOperator* while_operator=
+				dynamic_cast<const WhileOperator*>( block_element_ptr ) )
+			{
+				BuildWhileOperatorCode(
+					*while_operator,
 					block_names,
 					function_context );
 			}
@@ -1079,6 +1089,47 @@ void CodeBuilderLLVM::BuildReturnOperatorCode(
 
 	llvm::Value* value_for_return= CreateMoveToLLVMRegisterInstruction( expression_result, function_context );
 	function_context.llvm_ir_builder.CreateRet( value_for_return );
+}
+
+void CodeBuilderLLVM::BuildWhileOperatorCode(
+	const WhileOperator& while_operator,
+	const NamesScope& names,
+	FunctionContext& function_context )
+{
+	llvm::BasicBlock* test_block= llvm::BasicBlock::Create( llvm_context_ );
+	llvm::BasicBlock* while_block= llvm::BasicBlock::Create( llvm_context_ );
+	llvm::BasicBlock* block_after_wile= llvm::BasicBlock::Create( llvm_context_ );
+
+	function_context.function->getBasicBlockList().push_back( test_block );
+	function_context.function->getBasicBlockList().push_back( while_block );
+	function_context.function->getBasicBlockList().push_back( block_after_wile );
+
+	// Break to test block. We must push terminal instruction at and of current block.
+	function_context.llvm_ir_builder.CreateBr( test_block );
+
+	// Test block code.
+	function_context.llvm_ir_builder.SetInsertPoint( test_block );
+
+	Variable condition_expression= BuildExpressionCode( *while_operator.condition_, names, function_context );
+	if( condition_expression.type.kind != Type::Kind::Fundamental ||
+		condition_expression.type.fundamental != U_FundamentalType::Bool )
+	{
+		error_messages_.emplace_back( "Unexpected type of while-loop condition. Expected bool." );
+		throw ProgramError();
+	}
+
+	llvm::Value* condition_in_register= CreateMoveToLLVMRegisterInstruction( condition_expression, function_context );
+
+	function_context.llvm_ir_builder.CreateCondBr( condition_in_register, while_block, block_after_wile );
+
+	// While block code.
+	function_context.llvm_ir_builder.SetInsertPoint( while_block );
+	BuildBlockCode( *while_operator.block_, names, function_context );
+
+	function_context.llvm_ir_builder.CreateBr( test_block );
+
+	// Block after while code.
+	function_context.llvm_ir_builder.SetInsertPoint( block_after_wile );
 }
 
 llvm::Type* CodeBuilderLLVM::GetFundamentalLLVMType( const U_FundamentalType fundmantal_type )
