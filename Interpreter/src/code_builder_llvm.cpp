@@ -688,15 +688,67 @@ Variable CodeBuilderLLVM::BuildExpressionCode_r(
 		case BinaryOperator::LessEqual:
 		case BinaryOperator::Greater:
 		case BinaryOperator::GreaterEqual:
-		case BinaryOperator::And:
-		case BinaryOperator::Or:
-		case BinaryOperator::Xor:
-		case BinaryOperator::LazyLogicalAnd:
-		case BinaryOperator::LazyLogicalOr:
-			// TODO
 			U_ASSERT(false);
 			break;
 
+		case BinaryOperator::And:
+		case BinaryOperator::Or:
+		case BinaryOperator::Xor:
+		{
+			if( !IsInteger( result_type.fundamental ) )
+			{
+				// TODO - emit error
+				// this operations allowed only for integer operands.
+				throw ProgramError();
+			}
+
+			llvm::Value* l_value_for_op= nullptr;
+			if( l_var.location == Variable::Location::LLVMRegister )
+				l_value_for_op= l_var.llvm_value;
+			else if( l_var.location == Variable::Location::PointerToStack )
+				l_value_for_op= function_context.llvm_ir_builder.CreateLoad( l_var.llvm_value );
+			else
+			{
+				U_ASSERT( false );
+			}
+
+			llvm::Value* r_value_for_op= nullptr;
+			if( r_var.location == Variable::Location::LLVMRegister )
+				r_value_for_op= r_var.llvm_value;
+			else if( r_var.location == Variable::Location::PointerToStack )
+				r_value_for_op= function_context.llvm_ir_builder.CreateLoad( r_var.llvm_value );
+			else
+			{
+				U_ASSERT( false );
+			}
+
+			llvm::Value* result_value;
+
+			switch( comp.operator_ )
+			{
+			case BinaryOperator::And:
+				result_value=
+					function_context.llvm_ir_builder.CreateAnd( l_value_for_op, r_value_for_op );
+				break;
+			case BinaryOperator::Or:
+				result_value=
+					function_context.llvm_ir_builder.CreateOr( l_value_for_op, r_value_for_op );
+				break;
+			case BinaryOperator::Xor:
+				result_value=
+					function_context.llvm_ir_builder.CreateXor( l_value_for_op, r_value_for_op );
+				break;
+			default: U_ASSERT( false ); break;
+			};
+
+			result.location= Variable::Location::LLVMRegister;
+			result.type= result_type;
+			result.llvm_value= result_value;
+		}
+			break;
+
+		case BinaryOperator::LazyLogicalAnd:
+		case BinaryOperator::LazyLogicalOr:
 		case BinaryOperator::None:
 		case BinaryOperator::Last:
 			U_ASSERT(false);
@@ -760,6 +812,11 @@ Variable CodeBuilderLLVM::BuildExpressionCode_r(
 			}
 
 			result.type.fundamental_llvm_type= llvm_type;
+		}
+		else if( const BracketExpression* bracket_expression=
+			dynamic_cast<const BracketExpression*>(&operand) )
+		{
+			result= BuildExpressionCode( *bracket_expression->expression_, names, function_context );
 		}
 		else
 		{
