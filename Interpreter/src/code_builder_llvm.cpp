@@ -749,6 +749,42 @@ Variable CodeBuilderLLVM::BuildExpressionCode_r(
 
 		for( const IUnaryPrefixOperatorPtr& prefix_operator : comp.prefix_operand_operators )
 		{
+			if( const UnaryMinus* const unary_minus=
+				dynamic_cast<const UnaryMinus*>( prefix_operator.get() ) )
+			{
+				(void)unary_minus;
+
+				if( result.type.kind != Type::Kind::Fundamental )
+				{
+					error_messages_.emplace_back( "Unary minus supported only for fundamental types" );
+					throw ProgramError();
+				}
+				if( !IsInteger( result.type.fundamental ) )
+				{
+					ReportArithmeticOperationWithUnsupportedType( error_messages_, result.type.fundamental );
+					throw ProgramError();
+				}
+				// TODO - maybe not support unary minus for 8 and 16 bot integer types?
+
+				llvm::Value* value_for_neg= nullptr;
+				if( result.location == Variable::Location::LLVMRegister )
+					value_for_neg= result.llvm_value;
+				else if( result.location == Variable::Location::PointerToStack )
+					value_for_neg= function_context.llvm_ir_builder.CreateLoad( result.llvm_value );
+				else
+				{
+					U_ASSERT(false);
+				}
+
+				result.llvm_value= function_context.llvm_ir_builder.CreateNeg( value_for_neg );
+				result.location= Variable::Location::LLVMRegister;
+			}
+			else if( const UnaryPlus* const unary_plus=
+				dynamic_cast<const UnaryPlus*>( prefix_operator.get() ) )
+			{
+				(void)unary_plus;
+				// DO NOTHING
+			}
 			// TODO
 		} // for unary prefix operators
 

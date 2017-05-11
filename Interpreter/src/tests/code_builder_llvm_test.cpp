@@ -198,6 +198,35 @@ static void NumericConstantsTest1()
 	U_ASSERT( static_cast<uint64_t>( 45783984055402ll ) == result_value.IntVal.getLimitedValue() );
 }
 
+static void UnaryMinusTest()
+{
+	static const char c_program_text[]=
+	"\
+	fn Foo( x : i32 ) : i32\
+	{\
+		let tmp : i32;\
+		tmp= -x;\
+		return -tmp;\
+	}"
+	;
+
+	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ), true );
+
+	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
+	U_ASSERT( function != nullptr );
+
+	int arg_value= 54785;
+	llvm::GenericValue arg;
+	arg.IntVal= llvm::APInt( 32, arg_value );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>( arg ) );
+
+	U_ASSERT( static_cast<uint64_t>( - - arg_value ) == result_value.IntVal.getLimitedValue() );
+}
+
 void RunCodeBuilderLLVMTest()
 {
 	SimpleProgramTest();
@@ -205,6 +234,7 @@ void RunCodeBuilderLLVMTest()
 	VariablesTest();
 	NumericConstantsTest0();
 	NumericConstantsTest1();
+	UnaryMinusTest();
 }
 
 } // namespace Interpreter
