@@ -42,16 +42,20 @@ private:
 private:
 	Type PrepareType( const TypeName& type_name );
 
+	// Code build methods.
+	// Methods without "noexcept" can throw exceptions.
+	// Methods with "noexcept" can not throw exceptions and must catch exceptions.
+
 	void BuildFuncCode(
 		Variable& func,
 		const ProgramString& func_name,
 		const std::vector<ProgramString>& arg_names,
-		const Block& block );
+		const Block& block ) noexcept;
 
 	void BuildBlockCode(
 		const Block& block,
 		const NamesScope& names,
-		FunctionContext& function_context );
+		FunctionContext& function_context ) noexcept;
 
 	Variable BuildExpressionCode(
 		const BinaryOperatorsChain& expression,

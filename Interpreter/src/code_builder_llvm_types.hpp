@@ -142,6 +142,16 @@ private:
 	NamesMap names_map_;
 };
 
+class ProgramError final : public std::exception
+{
+public:
+	virtual ~ProgramError() override{}
+
+	virtual const char* what() const noexcept override
+	{
+		return "ProgramError";
+	}
+};
 
 } //namespace CodeBuilderLLVMPrivate
 
