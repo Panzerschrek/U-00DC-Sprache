@@ -317,7 +317,7 @@ Type CodeBuilderLLVM::PrepareType( const TypeName& type_name )
 	{
 		if( arrays_count >= c_max_array_dimensions )
 		{
-			PC_ASSERT( false && "WTF?" );
+			U_ASSERT( false && "WTF?" );
 		}
 
 		arrays_stack[ arrays_count ]= last_type;
@@ -804,12 +804,14 @@ Variable CodeBuilderLLVM::BuildExpressionCode_r(
 				result.type= result.type.array->type;
 				result.location= Variable::Location::PointerToStack;
 
-				llvm::Value* indexed_array=
-					function_context.llvm_ir_builder.CreateGEP( result.llvm_value, index.llvm_value );
-				// GEP for array types returns array types. Cast array type to pointer.
+
+				// Make first index = 0 for array to pointer conversion.
+				llvm::Value* index_list[2];
+				index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
+				index_list[1]= index.llvm_value;
+
 				result.llvm_value=
-					function_context.llvm_ir_builder.CreatePointerCast(
-						 indexed_array, llvm::PointerType::getUnqual( result.type.GetLLVMType() ) );
+					function_context.llvm_ir_builder.CreateGEP( result.llvm_value, llvm::ArrayRef< llvm::Value*> ( index_list, 2u ) );
 			}
 			else
 			{
