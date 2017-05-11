@@ -308,9 +308,21 @@ Type CodeBuilderLLVM::PrepareType( const TypeName& type_name )
 	Type result;
 	Type* last_type= &result;
 
+	constexpr unsigned int c_max_array_dimensions= 16u;
+	Type* arrays_stack[ c_max_array_dimensions ];
+	unsigned int arrays_count= 0u;
+
 	// Fill arrays hierarchy.
 	for( auto rit= type_name.array_sizes.rbegin(); rit != type_name.array_sizes.rend(); ++rit )
 	{
+		if( arrays_count >= c_max_array_dimensions )
+		{
+			PC_ASSERT( false && "WTF?" );
+		}
+
+		arrays_stack[ arrays_count ]= last_type;
+		arrays_count++;
+
 		const NumericConstant& num= * *rit;
 
 		last_type->kind= Type::Kind::Array;
@@ -324,8 +336,6 @@ Type CodeBuilderLLVM::PrepareType( const TypeName& type_name )
 
 		last_type= &last_type->array->type;
 	}
-
-	// TODO - setup llvm array types.
 
 	last_type->kind= Type::Kind::Fundamental;
 
@@ -359,6 +369,21 @@ Type CodeBuilderLLVM::PrepareType( const TypeName& type_name )
 	{
 		last_type->fundamental= it->second;
 		last_type->fundamental_llvm_type= GetFundamentalLLVMType( last_type->fundamental );
+	}
+
+	// Setup arrays llvm types.
+	if( arrays_count > 0u )
+	{
+		arrays_stack[ arrays_count - 1u ]->array->llvm_type=
+			llvm::ArrayType::get(
+				last_type->GetLLVMType(),
+				arrays_stack[ arrays_count - 1u ]->array->size );
+
+		for( unsigned int i= arrays_count - 1u; i > 0u; i-- )
+			arrays_stack[ i - 1u ]->array->llvm_type=
+				llvm::ArrayType::get(
+					arrays_stack[i]->array->llvm_type,
+					arrays_stack[ i - 1u ]->array->size );
 	}
 
 	return result;
@@ -744,7 +769,54 @@ Variable CodeBuilderLLVM::BuildExpressionCode_r(
 
 		for( const IUnaryPostfixOperatorPtr& postfix_operator : comp.postfix_operand_operators )
 		{
-			// TODO
+			if( const IndexationOperator* const indexation_operator=
+				dynamic_cast<const IndexationOperator*>( postfix_operator.get() ) )
+			{
+				if( result.type.kind != Type::Kind::Array )
+				{
+					error_messages_.push_back( "Error, indexation for non array." );
+					throw ProgramError();
+				}
+
+				Variable index=
+					BuildExpressionCode(
+						*indexation_operator->index_,
+						names,
+						function_context );
+
+				if( index.type.kind != Type::Kind::Fundamental )
+				{
+					error_messages_.push_back( "Error, index must be fundamental type." );
+					throw ProgramError();
+				}
+				if( !IsUnsignedInteger( index.type.fundamental ) )
+				{
+					error_messages_.push_back( "Error, index must be unsigned integer." );
+					throw ProgramError();
+				}
+
+				if( result.location != Variable::Location::PointerToStack )
+				{
+					error_messages_.push_back( "WTF? Strange variable location." );
+					throw ProgramError();
+				}
+
+				result.type= result.type.array->type;
+				result.location= Variable::Location::PointerToStack;
+
+				llvm::Value* indexed_array=
+					function_context.llvm_ir_builder.CreateGEP( result.llvm_value, index.llvm_value );
+				// GEP for array types returns array types. Cast array type to pointer.
+				result.llvm_value=
+					function_context.llvm_ir_builder.CreatePointerCast(
+						 indexed_array, llvm::PointerType::getUnqual( result.type.GetLLVMType() ) );
+			}
+			else
+			{
+				//TODO
+				U_ASSERT(false);
+			}
+
 		} // for unary postfix operators
 
 		for( const IUnaryPrefixOperatorPtr& prefix_operator : comp.prefix_operand_operators )

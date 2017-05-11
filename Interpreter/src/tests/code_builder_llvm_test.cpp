@@ -210,7 +210,7 @@ static void UnaryMinusTest()
 	}"
 	;
 
-	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ), true );
+	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
 	U_ASSERT( function != nullptr );
@@ -227,6 +227,35 @@ static void UnaryMinusTest()
 	U_ASSERT( static_cast<uint64_t>( - - arg_value ) == result_value.IntVal.getLimitedValue() );
 }
 
+static void ArraysTest0()
+{
+	static const char c_program_text[]=
+	"\
+	fn Foo( x : i32 ) : i32\
+	{\
+		let tmp : [ i32, 17 ];\
+		tmp[5u32]= x;\
+		return tmp[5u32] + 5;\
+	}"
+	;
+
+	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ), true );
+
+	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
+	U_ASSERT( function != nullptr );
+
+	int arg_value= 54785;
+	llvm::GenericValue arg;
+	arg.IntVal= llvm::APInt( 32, arg_value );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>( arg ) );
+
+	U_ASSERT( static_cast<uint64_t>( arg_value + 5 ) == result_value.IntVal.getLimitedValue() );
+}
+
 void RunCodeBuilderLLVMTest()
 {
 	SimpleProgramTest();
@@ -235,6 +264,7 @@ void RunCodeBuilderLLVMTest()
 	NumericConstantsTest0();
 	NumericConstantsTest1();
 	UnaryMinusTest();
+	ArraysTest0();
 }
 
 } // namespace Interpreter
