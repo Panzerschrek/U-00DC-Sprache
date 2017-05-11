@@ -75,6 +75,10 @@ private:
 
 	llvm::Type* GetFundamentalLLVMType( U_FundamentalType fundmantal_type );
 
+	// If variable is on stack, creates move to rigister instruction.
+	// If variable already in register - does nothing.
+	llvm::Value* CreateMoveToLLVMRegisterInstruction( const Variable& variable, FunctionContext& function_context );
+
 private:
 	llvm::LLVMContext& llvm_context_;
 

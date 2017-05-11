@@ -410,7 +410,7 @@ static void CallTest1()
 	}"
 	;
 
-	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ), true );
+	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
 	U_ASSERT( function != nullptr );
@@ -431,6 +431,269 @@ static void CallTest1()
 		result_value.IntVal.getLimitedValue() );
 }
 
+static void EqualityOperatorsTest()
+{
+	static const char c_program_text[]=
+	"\
+	fn Foo( a : i32, b : i32, c : i32 ) : bool\
+	{\
+		return ( a == b ) | ( a != c ) ;\
+	}"
+	;
+
+	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
+	U_ASSERT( function != nullptr );
+
+	int arg0= 77, arg1= 1488, arg2= 42;
+
+	llvm::GenericValue args[3];
+	args[0].IntVal= llvm::APInt( 32, arg0 );
+	args[1].IntVal= llvm::APInt( 32, arg1 );
+	args[2].IntVal= llvm::APInt( 32, arg2 );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>( args, 3 ) );
+
+	U_ASSERT(
+		static_cast<uint64_t>( ( arg0 == arg1 ) | ( arg0 != arg2 ) ) ==
+		result_value.IntVal.getLimitedValue() );
+}
+
+static void EqualityFloatOperatorsTest()
+{
+	static const char c_program_text[]=
+	"\
+	fn Foo( a : f32, b : f32, c : f32 ) : bool\
+	{\
+		return ( a == b ) | ( a != c );\
+	}"
+	;
+
+	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
+	U_ASSERT( function != nullptr );
+
+	float arg0= 77, arg1= 1488, arg2= 42;
+
+	llvm::GenericValue args[3];
+	args[0].FloatVal= arg0;
+	args[1].FloatVal= arg1;
+	args[2].FloatVal= arg2;
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>( args, 3 ) );
+
+	U_ASSERT(
+		static_cast<uint64_t>( ( arg0 == arg1 ) | ( arg0 != arg2 ) ) ==
+		result_value.IntVal.getLimitedValue() );
+}
+
+static void ComparisonSignedOperatorsTest()
+{
+	static const char c_program_text[]=
+	"\
+	fn Less( a : i32, b : i32 ) : bool\
+	{\
+		return a < b;\
+	}\
+	fn LessOrEqual( a : i32, b : i32 ) : bool\
+	{\
+		return a <= b;\
+	}\
+	fn Greater( a : i32, b : i32 ) : bool\
+	{\
+		return a > b;\
+	}\
+	fn GreaterOrEqual( a : i32, b : i32 ) : bool\
+	{\
+		return a >= b;\
+	}"
+	;
+
+	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	// 0 means a < b, 1 means a == b, 2 means a > b
+	static const bool c_true_matrix[4][3]=
+	{
+		{ true , false, false }, // less
+		{ true , true , false }, // less    or equal
+		{ false, false, true  }, // greater
+		{ false, true , true  }, // greater or equal
+	};
+	static const char* const c_func_names[4]=
+	{
+		"Less", "LessOrEqual", "Greater", "GreaterOrEqual",
+	};
+	for( unsigned int func_n= 0u; func_n < 4u; func_n++ )
+	{
+		llvm::Function* function= engine->FindFunctionNamed( c_func_names[ func_n ] );
+		U_ASSERT( function != nullptr );
+
+		llvm::GenericValue args[2];
+		llvm::GenericValue result_value;
+
+		// TODO - add more test-cases.
+
+		// Less
+		args[0].IntVal= llvm::APInt( 32, -1488 );
+		args[1].IntVal= llvm::APInt( 32, 51478 );
+		result_value= engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>( args, 2 ) );
+		U_ASSERT( static_cast<uint64_t>( c_true_matrix[ func_n ][0] ) == result_value.IntVal.getLimitedValue() );
+
+		// Equal
+		args[0].IntVal= llvm::APInt( 32, 8596 );
+		args[1].IntVal= llvm::APInt( 32, 8596 );
+		result_value= engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>( args, 2 ) );
+		U_ASSERT( static_cast<uint64_t>( c_true_matrix[ func_n ][1] ) == result_value.IntVal.getLimitedValue() );
+
+		// Greater
+		args[0].IntVal= llvm::APInt( 32, 6545284 );
+		args[1].IntVal= llvm::APInt( 32, 6544 );
+		result_value= engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>( args, 2 ) );
+		U_ASSERT( static_cast<uint64_t>( c_true_matrix[ func_n ][2] ) == result_value.IntVal.getLimitedValue() );
+	}
+}
+
+static void ComparisonUnsignedOperatorsTest()
+{
+	static const char c_program_text[]=
+	"\
+	fn Less( a : u32, b : u32 ) : bool\
+	{\
+		return a < b;\
+	}\
+	fn LessOrEqual( a : u32, b : u32 ) : bool\
+	{\
+		return a <= b;\
+	}\
+	fn Greater( a : u32, b : u32 ) : bool\
+	{\
+		return a > b;\
+	}\
+	fn GreaterOrEqual( a : u32, b : u32 ) : bool\
+	{\
+		return a >= b;\
+	}"
+	;
+
+	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	// 0 means a < b, 1 means a == b, 2 means a > b
+	static const bool c_true_matrix[4][3]=
+	{
+		{ true , false, false }, // less
+		{ true , true , false }, // less    or equal
+		{ false, false, true  }, // greater
+		{ false, true , true  }, // greater or equal
+	};
+	static const char* const c_func_names[4]=
+	{
+		"Less", "LessOrEqual", "Greater", "GreaterOrEqual",
+	};
+	for( unsigned int func_n= 0u; func_n < 4u; func_n++ )
+	{
+		llvm::Function* function= engine->FindFunctionNamed( c_func_names[ func_n ] );
+		U_ASSERT( function != nullptr );
+
+		llvm::GenericValue args[2];
+		llvm::GenericValue result_value;
+
+		// TODO - add more test-cases.
+
+		// Less
+		args[0].IntVal= llvm::APInt( 32,  1488 );
+		args[1].IntVal= llvm::APInt( 32, 51478 );
+		result_value= engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>( args, 2 ) );
+		U_ASSERT( static_cast<uint64_t>( c_true_matrix[ func_n ][0] ) == result_value.IntVal.getLimitedValue() );
+
+		// Equal
+		args[0].IntVal= llvm::APInt( 32, 8596 );
+		args[1].IntVal= llvm::APInt( 32, 8596 );
+		result_value= engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>( args, 2 ) );
+		U_ASSERT( static_cast<uint64_t>( c_true_matrix[ func_n ][1] ) == result_value.IntVal.getLimitedValue() );
+
+		// Greater
+		args[0].IntVal= llvm::APInt( 32, 6545284 );
+		args[1].IntVal= llvm::APInt( 32, 6544 );
+		result_value= engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>( args, 2 ) );
+		U_ASSERT( static_cast<uint64_t>( c_true_matrix[ func_n ][2] ) == result_value.IntVal.getLimitedValue() );
+	}
+}
+
+static void ComparisonFloatOperatorsTest()
+{
+	static const char c_program_text[]=
+	"\
+	fn Less( a : f32, b : f32 ) : bool\
+	{\
+		return a < b;\
+	}\
+	fn LessOrEqual( a : f32, b : f32 ) : bool\
+	{\
+		return a <= b;\
+	}\
+	fn Greater( a : f32, b : f32 ) : bool\
+	{\
+		return a > b;\
+	}\
+	fn GreaterOrEqual( a : f32, b : f32 ) : bool\
+	{\
+		return a >= b;\
+	}"
+	;
+
+	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	// 0 means a < b, 1 means a == b, 2 means a > b
+	static const bool c_true_matrix[4][3]=
+	{
+		{ true , false, false }, // less
+		{ true , true , false }, // less    or equal
+		{ false, false, true  }, // greater
+		{ false, true , true  }, // greater or equal
+	};
+	static const char* const c_func_names[4]=
+	{
+		"Less", "LessOrEqual", "Greater", "GreaterOrEqual",
+	};
+	for( unsigned int func_n= 0u; func_n < 4u; func_n++ )
+	{
+		llvm::Function* function= engine->FindFunctionNamed( c_func_names[ func_n ] );
+		U_ASSERT( function != nullptr );
+
+		llvm::GenericValue args[2];
+		llvm::GenericValue result_value;
+
+		// TODO - add more test-cases.
+
+		// Less
+		args[0].FloatVal= -1488.0f;
+		args[1].FloatVal=  51255.0f;
+		result_value= engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>( args, 2 ) );
+		U_ASSERT( static_cast<uint64_t>( c_true_matrix[ func_n ][0] ) == result_value.IntVal.getLimitedValue() );
+
+		// Equal
+		args[0].FloatVal= -0.0f;
+		args[1].FloatVal= +0.0f;
+		result_value= engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>( args, 2 ) );
+		U_ASSERT( static_cast<uint64_t>( c_true_matrix[ func_n ][1] ) == result_value.IntVal.getLimitedValue() );
+
+		// Greater
+		args[0].FloatVal= 5482.3f;
+		args[1].FloatVal= 785.2f;
+		result_value= engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>( args, 2 ) );
+		U_ASSERT( static_cast<uint64_t>( c_true_matrix[ func_n ][2] ) == result_value.IntVal.getLimitedValue() );
+	}
+}
+
+
 void RunCodeBuilderLLVMTest()
 {
 	SimpleProgramTest();
@@ -445,6 +708,11 @@ void RunCodeBuilderLLVMTest()
 	BooleanBasicTest();
 	CallTest0();
 	CallTest1();
+	EqualityOperatorsTest();
+	EqualityFloatOperatorsTest();
+	ComparisonSignedOperatorsTest();
+	ComparisonUnsignedOperatorsTest();
+	ComparisonFloatOperatorsTest();
 }
 
 } // namespace Interpreter

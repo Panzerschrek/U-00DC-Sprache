@@ -510,22 +510,12 @@ void CodeBuilderLLVM::BuildBlockCode(
 					throw ProgramError();
 				}
 
-				llvm::Value* value_for_assignment= nullptr;
-				if( r_var.location == Variable::Location::LLVMRegister )
-					value_for_assignment= r_var.llvm_value;
-				else if( r_var.location == Variable::Location::PointerToStack )
-					value_for_assignment= function_context.llvm_ir_builder.CreateLoad( r_var.llvm_value );
-				else
-				{
-					U_ASSERT( false );
-				}
-
 				if( l_var.location != Variable::Location::PointerToStack )
 				{
 					// TODO - write correct lvalue/rvalue flag into variable.
 					throw ProgramError();
 				}
-
+				llvm::Value* value_for_assignment= CreateMoveToLLVMRegisterInstruction( r_var, function_context );
 				function_context.llvm_ir_builder.CreateStore( value_for_assignment, l_var.llvm_value );
 			}
 			else if(
@@ -627,26 +617,8 @@ Variable CodeBuilderLLVM::BuildExpressionCode_r(
 
 				const bool is_signed= IsSignedInteger( result_type.fundamental );
 
-				llvm::Value* l_value_for_op= nullptr;
-				if( l_var.location == Variable::Location::LLVMRegister )
-					l_value_for_op= l_var.llvm_value;
-				else if( l_var.location == Variable::Location::PointerToStack )
-					l_value_for_op= function_context.llvm_ir_builder.CreateLoad( l_var.llvm_value );
-				else
-				{
-					U_ASSERT( false );
-				}
-
-				llvm::Value* r_value_for_op= nullptr;
-				if( r_var.location == Variable::Location::LLVMRegister )
-					r_value_for_op= r_var.llvm_value;
-				else if( r_var.location == Variable::Location::PointerToStack )
-					r_value_for_op= function_context.llvm_ir_builder.CreateLoad( r_var.llvm_value );
-				else
-				{
-					U_ASSERT( false );
-				}
-
+				llvm::Value* l_value_for_op= CreateMoveToLLVMRegisterInstruction( l_var, function_context );
+				llvm::Value* r_value_for_op= CreateMoveToLLVMRegisterInstruction( r_var, function_context );
 				llvm::Value* result_value;
 
 				switch( comp.operator_ )
@@ -687,11 +659,121 @@ Variable CodeBuilderLLVM::BuildExpressionCode_r(
 
 		case BinaryOperator::Equal:
 		case BinaryOperator::NotEqual:
+		if( result_type.kind != Type::Kind::Fundamental )
+		{
+			throw ProgramError();
+		}
+		else
+		{
+			const bool if_float= IsFloatingPoint( result_type.fundamental );
+			if( !( IsInteger( result_type.fundamental ) || if_float || result_type.fundamental == U_FundamentalType::Bool ) )
+			{
+				error_messages_.emplace_back( "Exact equality operators exist only for integers, floating point, boolean types." );
+				throw ProgramError();
+			}
+
+			llvm::Value* l_value_for_op= CreateMoveToLLVMRegisterInstruction( l_var, function_context );
+			llvm::Value* r_value_for_op= CreateMoveToLLVMRegisterInstruction( r_var, function_context );
+			llvm::Value* result_value;
+
+			switch( comp.operator_ )
+			{
+			// TODO - select ordered/unordered comparision flags for floats.
+			case BinaryOperator::Equal:
+				if( if_float )
+					result_value= function_context.llvm_ir_builder.CreateFCmpUEQ( l_value_for_op, r_value_for_op );
+				else
+					result_value= function_context.llvm_ir_builder.CreateICmpEQ( l_value_for_op, r_value_for_op );
+				break;
+
+			case BinaryOperator::NotEqual:
+				if( if_float )
+					result_value= function_context.llvm_ir_builder.CreateFCmpUNE( l_value_for_op, r_value_for_op );
+				else
+					result_value= function_context.llvm_ir_builder.CreateICmpNE( l_value_for_op, r_value_for_op );
+				break;
+
+			default: U_ASSERT( false ); break;
+			};
+
+			result.location= Variable::Location::LLVMRegister;
+			result.type.kind= Type::Kind::Fundamental;
+			result.type.fundamental= U_FundamentalType::Bool;
+			result.type.fundamental_llvm_type= fundamental_llvm_types_.bool_;
+			result.llvm_value= result_value;
+		}
+			break;
+
 		case BinaryOperator::Less:
 		case BinaryOperator::LessEqual:
 		case BinaryOperator::Greater:
 		case BinaryOperator::GreaterEqual:
-			U_ASSERT(false);
+		if( result_type.kind != Type::Kind::Fundamental )
+		{
+			throw ProgramError();
+		}
+		else
+		{
+			const bool if_float= IsFloatingPoint( result_type.fundamental );
+			const bool is_signed= IsSignedInteger( result_type.fundamental );
+			if( !( IsInteger( result_type.fundamental ) || if_float ) )
+			{
+				error_messages_.emplace_back( "Equality operators exist only for integers and floating point types." );
+				throw ProgramError();
+			}
+
+			llvm::Value* l_value_for_op= CreateMoveToLLVMRegisterInstruction( l_var, function_context );
+			llvm::Value* r_value_for_op= CreateMoveToLLVMRegisterInstruction( r_var, function_context );
+			llvm::Value* result_value;
+
+			switch( comp.operator_ )
+			{
+			// TODO - select ordered/unordered comparision flags for floats.
+			case BinaryOperator::Less:
+				if( if_float )
+					result_value= function_context.llvm_ir_builder.CreateFCmpULT( l_value_for_op, r_value_for_op );
+				else if( is_signed )
+					result_value= function_context.llvm_ir_builder.CreateICmpSLT( l_value_for_op, r_value_for_op );
+				else
+					result_value= function_context.llvm_ir_builder.CreateICmpULT( l_value_for_op, r_value_for_op );
+				break;
+
+			case BinaryOperator::LessEqual:
+				if( if_float )
+					result_value= function_context.llvm_ir_builder.CreateFCmpULE( l_value_for_op, r_value_for_op );
+				else if( is_signed )
+					result_value= function_context.llvm_ir_builder.CreateICmpSLE( l_value_for_op, r_value_for_op );
+				else
+					result_value= function_context.llvm_ir_builder.CreateICmpULE( l_value_for_op, r_value_for_op );
+				break;
+
+			case BinaryOperator::Greater:
+				if( if_float )
+					result_value= function_context.llvm_ir_builder.CreateFCmpUGT( l_value_for_op, r_value_for_op );
+				else if( is_signed )
+					result_value= function_context.llvm_ir_builder.CreateICmpSGT( l_value_for_op, r_value_for_op );
+				else
+					result_value= function_context.llvm_ir_builder.CreateICmpUGT( l_value_for_op, r_value_for_op );
+				break;
+
+			case BinaryOperator::GreaterEqual:
+				if( if_float )
+					result_value= function_context.llvm_ir_builder.CreateFCmpUGE( l_value_for_op, r_value_for_op );
+				else if( is_signed )
+					result_value= function_context.llvm_ir_builder.CreateICmpSGE( l_value_for_op, r_value_for_op );
+				else
+					result_value= function_context.llvm_ir_builder.CreateICmpUGE( l_value_for_op, r_value_for_op );
+				break;
+
+			default: U_ASSERT( false ); break;
+			};
+
+			result.location= Variable::Location::LLVMRegister;
+			result.type.kind= Type::Kind::Fundamental;
+			result.type.fundamental= U_FundamentalType::Bool;
+			result.type.fundamental_llvm_type= fundamental_llvm_types_.bool_;
+			result.llvm_value= result_value;
+		}
 			break;
 
 		case BinaryOperator::And:
@@ -710,26 +792,8 @@ Variable CodeBuilderLLVM::BuildExpressionCode_r(
 				throw ProgramError();
 			}
 
-			llvm::Value* l_value_for_op= nullptr;
-			if( l_var.location == Variable::Location::LLVMRegister )
-				l_value_for_op= l_var.llvm_value;
-			else if( l_var.location == Variable::Location::PointerToStack )
-				l_value_for_op= function_context.llvm_ir_builder.CreateLoad( l_var.llvm_value );
-			else
-			{
-				U_ASSERT( false );
-			}
-
-			llvm::Value* r_value_for_op= nullptr;
-			if( r_var.location == Variable::Location::LLVMRegister )
-				r_value_for_op= r_var.llvm_value;
-			else if( r_var.location == Variable::Location::PointerToStack )
-				r_value_for_op= function_context.llvm_ir_builder.CreateLoad( r_var.llvm_value );
-			else
-			{
-				U_ASSERT( false );
-			}
-
+			llvm::Value* l_value_for_op= CreateMoveToLLVMRegisterInstruction( l_var, function_context );
+			llvm::Value* r_value_for_op= CreateMoveToLLVMRegisterInstruction( r_var, function_context );
 			llvm::Value* result_value;
 
 			switch( comp.operator_ )
@@ -882,7 +946,6 @@ Variable CodeBuilderLLVM::BuildExpressionCode_r(
 				result.type= result.type.array->type;
 				result.location= Variable::Location::PointerToStack;
 
-
 				// Make first index = 0 for array to pointer conversion.
 				llvm::Value* index_list[2];
 				index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
@@ -917,17 +980,7 @@ Variable CodeBuilderLLVM::BuildExpressionCode_r(
 						throw ProgramError();
 					}
 
-					llvm::Value* value_for_call= nullptr;
-					if( arg.location == Variable::Location::LLVMRegister )
-						value_for_call= arg.llvm_value;
-					else if( arg.location == Variable::Location::PointerToStack )
-						value_for_call= function_context.llvm_ir_builder.CreateLoad( arg.llvm_value );
-					else
-					{
-						U_ASSERT(false);
-					}
-
-					llvm_args[i]= value_for_call;
+					llvm_args[i]= CreateMoveToLLVMRegisterInstruction( arg, function_context );
 				}
 
 				llvm::Value* call_result=
@@ -966,16 +1019,7 @@ Variable CodeBuilderLLVM::BuildExpressionCode_r(
 				}
 				// TODO - maybe not support unary minus for 8 and 16 bot integer types?
 
-				llvm::Value* value_for_neg= nullptr;
-				if( result.location == Variable::Location::LLVMRegister )
-					value_for_neg= result.llvm_value;
-				else if( result.location == Variable::Location::PointerToStack )
-					value_for_neg= function_context.llvm_ir_builder.CreateLoad( result.llvm_value );
-				else
-				{
-					U_ASSERT(false);
-				}
-
+				llvm::Value* value_for_neg= CreateMoveToLLVMRegisterInstruction( result, function_context );
 				result.llvm_value= function_context.llvm_ir_builder.CreateNeg( value_for_neg );
 				result.location= Variable::Location::LLVMRegister;
 			}
@@ -1013,17 +1057,7 @@ void CodeBuilderLLVM::BuildReturnOperatorCode(
 			names,
 			function_context );
 
-	llvm::Value* value_for_return= nullptr;
-	if( expression_result.location == Variable::Location::LLVMRegister )
-		value_for_return= expression_result.llvm_value;
-	else if( expression_result.location == Variable::Location::PointerToStack )
-		value_for_return=
-			function_context.llvm_ir_builder.CreateLoad( expression_result.llvm_value );
-	else
-	{
-		U_ASSERT( false );
-	}
-
+	llvm::Value* value_for_return= CreateMoveToLLVMRegisterInstruction( expression_result, function_context );
 	function_context.llvm_ir_builder.CreateRet( value_for_return );
 }
 
@@ -1063,6 +1097,22 @@ llvm::Type* CodeBuilderLLVM::GetFundamentalLLVMType( const U_FundamentalType fun
 
 	U_ASSERT(false);
 	return nullptr;
+}
+
+llvm::Value*CodeBuilderLLVM::CreateMoveToLLVMRegisterInstruction(
+	const Variable& variable, FunctionContext& function_context )
+{
+	llvm::Value* register_value= nullptr;
+	if( variable.location == Variable::Location::LLVMRegister )
+		register_value= variable.llvm_value;
+	else if( variable.location == Variable::Location::PointerToStack )
+		register_value= function_context.llvm_ir_builder.CreateLoad( variable.llvm_value );
+	else
+	{
+		U_ASSERT(false);
+	}
+
+	return register_value;
 }
 
 } // namespace CodeBuilderLLVMPrivate
