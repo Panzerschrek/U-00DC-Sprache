@@ -694,11 +694,16 @@ Variable CodeBuilderLLVM::BuildExpressionCode_r(
 		case BinaryOperator::And:
 		case BinaryOperator::Or:
 		case BinaryOperator::Xor:
+		if( result_type.kind != Type::Kind::Fundamental )
 		{
-			if( !IsInteger( result_type.fundamental ) )
+			throw ProgramError();
+		}
+		else
+		{
+			if( !( IsInteger( result_type.fundamental ) || result_type.fundamental == U_FundamentalType::Bool ) )
 			{
 				// TODO - emit error
-				// this operations allowed only for integer operands.
+				// this operations allowed only for integer or boolean operands.
 				throw ProgramError();
 			}
 
@@ -812,6 +817,19 @@ Variable CodeBuilderLLVM::BuildExpressionCode_r(
 			}
 
 			result.type.fundamental_llvm_type= llvm_type;
+		}
+		else if( const BooleanConstant* boolean_constant=
+			dynamic_cast<const BooleanConstant*>(&operand) )
+		{
+			result.location= Variable::Location::LLVMRegister;
+			result.type.kind= Type::Kind::Fundamental;
+			result.type.fundamental= U_FundamentalType::Bool;
+			result.type.fundamental_llvm_type= fundamental_llvm_types_.bool_;
+
+			result.llvm_value=
+				llvm::Constant::getIntegerValue(
+					result.type.fundamental_llvm_type,
+					llvm::APInt( 1u, uint64_t(boolean_constant->value_) ) );
 		}
 		else if( const BracketExpression* bracket_expression=
 			dynamic_cast<const BracketExpression*>(&operand) )

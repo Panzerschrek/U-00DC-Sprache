@@ -295,7 +295,7 @@ static void LogicalBinaryOperationsTest()
 	}"
 	;
 
-	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ), true );
+	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
 	U_ASSERT( function != nullptr );
@@ -317,6 +317,44 @@ static void LogicalBinaryOperationsTest()
 		result_value.IntVal.getLimitedValue() );
 }
 
+static void BooleanBasicTest()
+{
+	static const char c_program_text[]=
+	"\
+	fn Foo( a : bool, b : bool, c : bool ) : bool\
+	{\
+		let unused : bool;\
+		unused= false;\
+		let tmp : bool;\
+		tmp = a & b;\
+		tmp= tmp & ( true );\
+		tmp= rmp | false;\
+		return tmp ^ c ;\
+	}"
+	;
+
+	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
+	U_ASSERT( function != nullptr );
+
+	bool arg0= true, arg1= false, arg2= true;
+
+	llvm::GenericValue args[3];
+	args[0].IntVal= llvm::APInt( 1, arg0 );
+	args[1].IntVal= llvm::APInt( 1, arg1 );
+	args[2].IntVal= llvm::APInt( 1, arg2 );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>( args, 3 ) );
+
+	U_ASSERT(
+		static_cast<uint64_t>(  ( arg0 & arg1 ) ^ arg2  ) ==
+		result_value.IntVal.getLimitedValue() );
+}
+
 void RunCodeBuilderLLVMTest()
 {
 	SimpleProgramTest();
@@ -328,6 +366,7 @@ void RunCodeBuilderLLVMTest()
 	ArraysTest0();
 	ArraysTest1();
 	LogicalBinaryOperationsTest();
+	BooleanBasicTest();
 }
 
 } // namespace Interpreter
