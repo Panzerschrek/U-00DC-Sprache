@@ -47,7 +47,9 @@ struct Type final
 	Type& operator=( const Type& other );
 	Type& operator=( Type&& other ) noexcept;
 
+	// TODO - does this method needs?
 	size_t SizeOf() const;
+
 	llvm::Type* GetLLVMType() const;
 };
 
@@ -88,14 +90,13 @@ struct Class final
 	{
 		ProgramString name;
 		Type type;
-		unsigned int offset;
+		unsigned int index;
 	};
 
 	const Field* GetField( const ProgramString& name );
 
 	ProgramString name;
 	std::vector<Field> fields;
-	unsigned int size;
 
 	llvm::StructType* llvm_type;
 };

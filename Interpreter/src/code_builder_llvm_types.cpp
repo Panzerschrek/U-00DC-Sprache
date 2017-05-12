@@ -96,13 +96,15 @@ size_t Type::SizeOf() const
 		return g_fundamental_types_size[ size_t( fundamental ) ];
 
 	case Kind::Function:
-		return sizeof(FuncNumber);
+		U_ASSERT( false && "SizeOf method not supported for functions." );
+		return 1u;
 
 	case Kind::Array:
 		return array->type.SizeOf() * array->size;
 
 	case Kind::Class:
-		return class_->size;
+		U_ASSERT( false && "SizeOf method not supported for classes." );
+		return 1u;
 	};
 
 	U_ASSERT(false);

@@ -45,6 +45,7 @@ private:
 
 private:
 	Type PrepareType( const TypeName& type_name );
+	ClassPtr PrepareClass( const ClassDeclaration& class_declaration );
 
 	// Code build methods.
 	// Methods without "noexcept" can throw exceptions.

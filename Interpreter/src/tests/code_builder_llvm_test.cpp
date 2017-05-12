@@ -1251,7 +1251,7 @@ static void ContinueOperatorTest1()
 			}\
 			tmp= x;\
 			counter = counter - 1;\
-		};\
+		}\
 		return tmp;\
 	}"
 	;
@@ -1268,6 +1268,95 @@ static void ContinueOperatorTest1()
 			function,
 			llvm::ArrayRef<llvm::GenericValue>( arg ) );
 	U_ASSERT( static_cast<uint64_t>( 654 ) == result_value.IntVal.getLimitedValue() );
+}
+
+static void StructTest0()
+{
+	static const char c_program_text[]=
+	R"(
+	class Point
+	{
+		x : i32;
+		zzz : [ i32, 4 ];
+		y : i32;
+	}
+	fn Foo( a : i32, b : i32, c : i32 ) : i32
+	{
+		let p : Point;
+		let index : u32;
+		p.x= a;
+		p.y = b;
+		p.zzz[0u32]= c;
+		p.zzz[1u32]= p.x * p.y;
+		index= 2u32;
+		p.zzz[index]= p.zzz[1u32] + c;
+		return p.zzz[index];
+	}
+	)";
+
+	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
+	U_ASSERT( function != nullptr );
+
+	int arg0= 1488, arg1= 77, arg2= 546;
+
+	llvm::GenericValue args[3];
+	args[0].IntVal= llvm::APInt( 32, arg0 );
+	args[1].IntVal= llvm::APInt( 32, arg1 );
+	args[2].IntVal= llvm::APInt( 32, arg2 );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>( args, 3 ) );
+
+	U_ASSERT( static_cast<uint64_t>( arg0 * arg1 + arg2 ) == result_value.IntVal.getLimitedValue() );
+}
+
+static void StructTest1()
+{
+	// Struct with struct inside.
+	static const char c_program_text[]=
+	R"(
+	class Dummy
+	{
+		x : f32;
+		y : f64;
+		z : [ f64, 2 ];
+	}
+	class Point
+	{
+		x : i32;
+		dummy : Dummy;
+		y : i32;
+	}
+	fn Foo( a : f64, b : f64 ) : f64
+	{
+		let p : Point;
+		p.dummy.y= a;
+		p.dummy.z[1u32]= b;
+		return p.dummy.y - p.dummy.z[1u32];
+	}
+	)";
+
+	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
+	U_ASSERT( function != nullptr );
+
+	double arg0= 1488, arg1= 77;
+
+	llvm::GenericValue args[2];
+	args[0].DoubleVal= arg0;
+	args[1].DoubleVal= arg1;
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>( args, 2 ) );
+
+	ASSERT_NEAR( arg0 - arg1, result_value.DoubleVal, 0.001 );
 }
 
 void RunCodeBuilderLLVMTest()
@@ -1303,6 +1392,8 @@ void RunCodeBuilderLLVMTest()
 	BreakOperatorTest2();
 	ContinueOperatorTest0();
 	ContinueOperatorTest1();
+	StructTest0();
+	StructTest1();
 }
 
 } // namespace Interpreter

@@ -43,6 +43,8 @@ const char* const g_fundamental_types_names[ size_t(U_FundamentalType::LastType)
 	U_DESIGNATED_INITIALIZER( U_FundamentalType::u32, KeywordAscii( Keywords::u32_ ) ),
 	U_DESIGNATED_INITIALIZER( U_FundamentalType::i64, KeywordAscii( Keywords::i64_ ) ),
 	U_DESIGNATED_INITIALIZER( U_FundamentalType::u64, KeywordAscii( Keywords::u64_ ) ),
+	U_DESIGNATED_INITIALIZER( U_FundamentalType::f32, KeywordAscii( Keywords::f32_ ) ),
+	U_DESIGNATED_INITIALIZER( U_FundamentalType::f64, KeywordAscii( Keywords::f64_ ) ),
 };
 
 bool IsNumericType( U_FundamentalType type )
@@ -297,6 +299,24 @@ CodeBuilderLLVM::BuildResult CodeBuilderLLVM::BuildProgram( const ProgramElement
 				global_names_.AddName( func->name_, std::move( func_info ) );
 			}
 		}
+		else if(
+			const ClassDeclaration* class_=
+			dynamic_cast<const ClassDeclaration*>( program_element.get() ) )
+		{
+			const NamesScope::InsertedName* inserted_name=
+				global_names_.AddName( class_->name_, PrepareClass( *class_ ) );
+			if( inserted_name == nullptr )
+			{
+				error_count_++;
+				error_messages_.push_back(
+					ToStdString( class_->name_ ) +
+					" redefinition" );
+			}
+		}
+		else
+		{
+			U_ASSERT(false);
+		}
 	} // for program elements
 
 	if( error_count_ > 0u )
@@ -356,7 +376,6 @@ Type CodeBuilderLLVM::PrepareType( const TypeName& type_name )
 			{
 				last_type->class_= custom_type_name->second.class_;
 				last_type->kind= Type::Kind::Class;
-				// TODO - fill llvm class type.
 			}
 			else
 			{
@@ -391,6 +410,43 @@ Type CodeBuilderLLVM::PrepareType( const TypeName& type_name )
 					arrays_stack[i]->array->llvm_type,
 					arrays_stack[ i - 1u ]->array->size );
 	}
+
+	return result;
+}
+
+ClassPtr CodeBuilderLLVM::PrepareClass( const ClassDeclaration& class_declaration )
+{
+	ClassPtr result= std::make_shared<Class>();
+
+	result->name= class_declaration.name_;
+
+	std::vector<llvm::Type*> members_llvm_types;
+
+	members_llvm_types.reserve( class_declaration.fields_.size() );
+	result->fields.reserve( class_declaration.fields_.size() );
+	for( const ClassDeclaration::Field& in_field : class_declaration.fields_ )
+	{
+		if( result->GetField( in_field.name ) != nullptr )
+		{
+			error_messages_.push_back(
+				ToStdString( in_field.name ) +
+				" redefinition" );
+		}
+
+		Class::Field out_field;
+		out_field.name= in_field.name;
+		out_field.type= PrepareType( in_field.type );
+		out_field.index= result->fields.size();
+
+		members_llvm_types.emplace_back( out_field.type.GetLLVMType() );
+		result->fields.emplace_back( std::move( out_field ) );
+	}
+
+	result->llvm_type=
+		llvm::StructType::create(
+			llvm_context_,
+			members_llvm_types,
+			ToStdString(class_declaration.name_) );
 
 	return result;
 }
@@ -1001,10 +1057,44 @@ Variable CodeBuilderLLVM::BuildExpressionCode_r(
 				// Make first index = 0 for array to pointer conversion.
 				llvm::Value* index_list[2];
 				index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
-				index_list[1]= index.llvm_value;
+				index_list[1]= CreateMoveToLLVMRegisterInstruction( index, function_context );
 
 				result.llvm_value=
 					function_context.llvm_ir_builder.CreateGEP( result.llvm_value, llvm::ArrayRef< llvm::Value*> ( index_list, 2u ) );
+			}
+			else if( const MemberAccessOperator* const member_access_operator=
+				dynamic_cast<const MemberAccessOperator*>( postfix_operator.get() ) )
+			{
+				if( result.type.kind != Type::Kind::Class )
+				{
+					error_messages_.push_back(
+						"Can not take member of non-class " +
+						ToStdString( member_access_operator->member_name_ ) );
+					throw ProgramError();
+				}
+				U_ASSERT( result.type.class_ );
+
+				const Class::Field* field= result.type.class_->GetField( member_access_operator->member_name_ );
+				if( field == nullptr )
+				{
+					error_messages_.push_back(
+						ToStdString( member_access_operator->member_name_ ) +
+						" not found in class " +
+						ToStdString( result.type.class_->name ) );
+					throw ProgramError();
+				}
+
+				U_ASSERT( result.location == Variable::Location::PointerToStack );
+
+				// Make first index = 0 for array to pointer conversion.
+				llvm::Value* index_list[2];
+				index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
+				index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(field->index) ) );
+
+				result.llvm_value=
+					function_context.llvm_ir_builder.CreateGEP( result.llvm_value, index_list );
+				result.type= field->type;
+				result.location= Variable::Location::PointerToStack;
 			}
 			else if( const CallOperator* const call_operator=
 				dynamic_cast<const CallOperator*>( postfix_operator.get() ) )
