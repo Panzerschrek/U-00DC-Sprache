@@ -99,7 +99,7 @@ static void ArgumentsAssignmentTest()
 	}"
 	;
 
-	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ), true );
+	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
 	U_ASSERT( function != nullptr );

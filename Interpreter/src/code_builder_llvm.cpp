@@ -579,13 +579,30 @@ void CodeBuilderLLVM::BuildBlockCode(
 					throw ProgramError();
 				}
 
-				if( l_var.location != Variable::Location::PointerToStack )
+				if( l_var.type.kind == Type::Kind::Fundamental )
 				{
-					// TODO - write correct lvalue/rvalue flag into variable.
+					if( l_var.location != Variable::Location::PointerToStack )
+					{
+						// TODO - write correct lvalue/rvalue flag into variable.
+						throw ProgramError();
+					}
+					llvm::Value* value_for_assignment= CreateMoveToLLVMRegisterInstruction( r_var, function_context );
+					function_context.llvm_ir_builder.CreateStore( value_for_assignment, l_var.llvm_value );
+				}
+				else if( l_var.type.kind == Type::Kind::Function )
+				{
+					error_messages_.emplace_back( "Functions are noncopyable." );
 					throw ProgramError();
 				}
-				llvm::Value* value_for_assignment= CreateMoveToLLVMRegisterInstruction( r_var, function_context );
-				function_context.llvm_ir_builder.CreateStore( value_for_assignment, l_var.llvm_value );
+				else if( l_var.type.kind == Type::Kind::Array )
+				{
+					error_messages_.emplace_back( "Arrays are noncopyable." );
+					throw ProgramError();
+				}
+				else if( l_var.type.kind == Type::Kind::Class )
+				{
+					ReportNotImplemented( error_messages_, "Struct assignmnet" );
+				}
 			}
 			else if(
 				const ReturnOperator* return_operator=
