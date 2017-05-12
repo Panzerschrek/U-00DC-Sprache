@@ -792,6 +792,304 @@ static void WhileOperatorTest()
 		result_value.IntVal.getLimitedValue() );
 }
 
+static void IfOperatorTest0()
+{
+	// Simple if without else/elseif.
+	static const char c_program_text[]=
+	"\
+	fn SimpleIf( x : i32 )\
+	{\
+		let tmp : i32;\
+		tmp= x;\
+		if( x < 0 ) { tmp= -x; }\
+		return tmp;\
+	}"
+	;
+
+	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "SimpleIf" );
+	U_ASSERT( function != nullptr );
+
+	llvm::GenericValue arg;
+
+	{
+		arg.IntVal= llvm::APInt( 32, 654 );
+		llvm::GenericValue result_value=
+			engine->runFunction(
+				function,
+				llvm::ArrayRef<llvm::GenericValue>( arg ) );
+		U_ASSERT( static_cast<uint64_t>( 654 ) == result_value.IntVal.getLimitedValue() );
+	}
+	{
+		arg.IntVal= llvm::APInt( 32, -2564 );
+		llvm::GenericValue result_value=
+			engine->runFunction(
+				function,
+				llvm::ArrayRef<llvm::GenericValue>( arg ) );
+		U_ASSERT( static_cast<uint64_t>( 2564 ) == result_value.IntVal.getLimitedValue() );
+	}
+}
+
+static void IfOperatorTest1()
+{
+	// If-else.
+	static const char c_program_text[]=
+	"\
+	fn IfElse( x : i32 )\
+	{\
+		let tmp : i32;\
+		let bits : i32;\
+		bits= x & 1;\
+		if( bits == 0 ) { tmp= x; }\
+		else { tmp= x * 2; }\
+		return tmp;\
+	}"
+	;
+
+	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "IfElse" );
+	U_ASSERT( function != nullptr );
+
+	llvm::GenericValue arg;
+
+	{
+		arg.IntVal= llvm::APInt( 32, 654 );
+		llvm::GenericValue result_value=
+			engine->runFunction(
+				function,
+				llvm::ArrayRef<llvm::GenericValue>( arg ) );
+		U_ASSERT( static_cast<uint64_t>( 654 ) == result_value.IntVal.getLimitedValue() );
+	}
+	{
+		arg.IntVal= llvm::APInt( 32, 655 );
+		llvm::GenericValue result_value=
+			engine->runFunction(
+				function,
+				llvm::ArrayRef<llvm::GenericValue>( arg ) );
+		U_ASSERT( static_cast<uint64_t>( 655 * 2 ) == result_value.IntVal.getLimitedValue() );
+	}
+}
+
+static void IfOperatorTest2()
+{
+	// If-else-if.
+	static const char c_program_text[]=
+	"\
+	fn IfElseIf( x : i32 )\
+	{\
+		let tmp : i32;\
+		let bits : i32;\
+		bits= x & 3;\
+		tmp= 1488;\
+		if( bits == 0 ) { tmp= x; }\
+		else if( bits == 1 ) { tmp= x * 2; }\
+		return tmp;\
+	}"
+	;
+
+	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "IfElseIf" );
+	U_ASSERT( function != nullptr );
+
+	llvm::GenericValue arg;
+
+	{
+		arg.IntVal= llvm::APInt( 32, 16 );
+		llvm::GenericValue result_value=
+			engine->runFunction(
+				function,
+				llvm::ArrayRef<llvm::GenericValue>( arg ) );
+		U_ASSERT( static_cast<uint64_t>( 16 ) == result_value.IntVal.getLimitedValue() );
+	}
+	{
+		arg.IntVal= llvm::APInt( 32, 17 );
+		llvm::GenericValue result_value=
+			engine->runFunction(
+				function,
+				llvm::ArrayRef<llvm::GenericValue>( arg ) );
+		U_ASSERT( static_cast<uint64_t>( 17 * 2 ) == result_value.IntVal.getLimitedValue() );
+	}
+	{
+		arg.IntVal= llvm::APInt( 32, 18 );
+		llvm::GenericValue result_value=
+			engine->runFunction(
+				function,
+				llvm::ArrayRef<llvm::GenericValue>( arg ) );
+		U_ASSERT( static_cast<uint64_t>( 1488 ) == result_value.IntVal.getLimitedValue() );
+	}
+}
+
+static void IfOperatorTest3()
+{
+	// If-else-if-else.
+	static const char c_program_text[]=
+	"\
+	fn IfElseIfElse( x : i32 )\
+	{\
+		let tmp : i32;\
+		let bits : i32;\
+		bits= x & 3;\
+		if( bits == 0 ) { tmp= x; }\
+		else if( bits == 1 ) { tmp= x * 2; }\
+		else { tmp= 1488; }\
+		return tmp;\
+	}"
+	;
+
+	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "IfElseIfElse" );
+	U_ASSERT( function != nullptr );
+
+	llvm::GenericValue arg;
+
+	{
+		arg.IntVal= llvm::APInt( 32, 16 );
+		llvm::GenericValue result_value=
+			engine->runFunction(
+				function,
+				llvm::ArrayRef<llvm::GenericValue>( arg ) );
+		U_ASSERT( static_cast<uint64_t>( 16 ) == result_value.IntVal.getLimitedValue() );
+	}
+	{
+		arg.IntVal= llvm::APInt( 32, 17 );
+		llvm::GenericValue result_value=
+			engine->runFunction(
+				function,
+				llvm::ArrayRef<llvm::GenericValue>( arg ) );
+		U_ASSERT( static_cast<uint64_t>( 17 * 2 ) == result_value.IntVal.getLimitedValue() );
+	}
+	{
+		arg.IntVal= llvm::APInt( 32, 18 );
+		llvm::GenericValue result_value=
+			engine->runFunction(
+				function,
+				llvm::ArrayRef<llvm::GenericValue>( arg ) );
+		U_ASSERT( static_cast<uint64_t>( 1488 ) == result_value.IntVal.getLimitedValue() );
+	}
+}
+
+static void IfOperatorTest4()
+{
+	// If else-if else-if.
+	static const char c_program_text[]=
+	"\
+	fn IfElseIfElseIf( x : i32 )\
+	{\
+		let tmp : i32;\
+		let bits : i32;\
+		bits= x & 3;\
+		tmp= 1488;\
+		if( bits == 0 ) { tmp= x; }\
+		else if( bits == 1 ) { tmp= x * 2; }\
+		else if( bits == 2 ) { tmp= x * 3; }\
+		return tmp;\
+	}"
+	;
+
+	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "IfElseIfElseIf" );
+	U_ASSERT( function != nullptr );
+
+	llvm::GenericValue arg;
+
+	{
+		arg.IntVal= llvm::APInt( 32, 16 );
+		llvm::GenericValue result_value=
+			engine->runFunction(
+				function,
+				llvm::ArrayRef<llvm::GenericValue>( arg ) );
+		U_ASSERT( static_cast<uint64_t>( 16 ) == result_value.IntVal.getLimitedValue() );
+	}
+	{
+		arg.IntVal= llvm::APInt( 32, 17 );
+		llvm::GenericValue result_value=
+			engine->runFunction(
+				function,
+				llvm::ArrayRef<llvm::GenericValue>( arg ) );
+		U_ASSERT( static_cast<uint64_t>( 17 * 2 ) == result_value.IntVal.getLimitedValue() );
+	}
+	{
+		arg.IntVal= llvm::APInt( 32, 18 );
+		llvm::GenericValue result_value=
+			engine->runFunction(
+				function,
+				llvm::ArrayRef<llvm::GenericValue>( arg ) );
+		U_ASSERT( static_cast<uint64_t>( 18 * 3 ) == result_value.IntVal.getLimitedValue() );
+	}
+	{
+		arg.IntVal= llvm::APInt( 32, 19 );
+		llvm::GenericValue result_value=
+			engine->runFunction(
+				function,
+				llvm::ArrayRef<llvm::GenericValue>( arg ) );
+		U_ASSERT( static_cast<uint64_t>( 1488 ) == result_value.IntVal.getLimitedValue() );
+	}
+}
+
+static void IfOperatorTest5()
+{
+	// If else-if else-if else.
+	static const char c_program_text[]=
+	"\
+	fn IfElseIfElseIf( x : i32 )\
+	{\
+		let tmp : i32;\
+		let bits : i32;\
+		bits= x & 3;\
+		if( bits == 0 ) { tmp= x; }\
+		else if( bits == 1 ) { tmp= x * 2; }\
+		else if( bits == 2 ) { tmp= x * 3; }\
+		else { tmp= 1488; }\
+		return tmp;\
+	}"
+	;
+
+	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ), true );
+
+	llvm::Function* function= engine->FindFunctionNamed( "IfElseIfElseIf" );
+	U_ASSERT( function != nullptr );
+
+	llvm::GenericValue arg;
+
+	{
+		arg.IntVal= llvm::APInt( 32, 16 );
+		llvm::GenericValue result_value=
+			engine->runFunction(
+				function,
+				llvm::ArrayRef<llvm::GenericValue>( arg ) );
+		U_ASSERT( static_cast<uint64_t>( 16 ) == result_value.IntVal.getLimitedValue() );
+	}
+	{
+		arg.IntVal= llvm::APInt( 32, 17 );
+		llvm::GenericValue result_value=
+			engine->runFunction(
+				function,
+				llvm::ArrayRef<llvm::GenericValue>( arg ) );
+		U_ASSERT( static_cast<uint64_t>( 17 * 2 ) == result_value.IntVal.getLimitedValue() );
+	}
+	{
+		arg.IntVal= llvm::APInt( 32, 18 );
+		llvm::GenericValue result_value=
+			engine->runFunction(
+				function,
+				llvm::ArrayRef<llvm::GenericValue>( arg ) );
+		U_ASSERT( static_cast<uint64_t>( 18 * 3 ) == result_value.IntVal.getLimitedValue() );
+	}
+	{
+		arg.IntVal= llvm::APInt( 32, 19 );
+		llvm::GenericValue result_value=
+			engine->runFunction(
+				function,
+				llvm::ArrayRef<llvm::GenericValue>( arg ) );
+		U_ASSERT( static_cast<uint64_t>( 1488 ) == result_value.IntVal.getLimitedValue() );
+	}
+}
+
 void RunCodeBuilderLLVMTest()
 {
 	SimpleProgramTest();
@@ -814,6 +1112,12 @@ void RunCodeBuilderLLVMTest()
 	ComparisonUnsignedOperatorsTest();
 	ComparisonFloatOperatorsTest();
 	WhileOperatorTest();
+	IfOperatorTest0();
+	IfOperatorTest1();
+	IfOperatorTest2();
+	IfOperatorTest3();
+	IfOperatorTest4();
+	IfOperatorTest5();
 }
 
 } // namespace Interpreter

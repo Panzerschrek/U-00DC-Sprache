@@ -537,6 +537,15 @@ void CodeBuilderLLVM::BuildBlockCode(
 					block_names,
 					function_context );
 			}
+			else if(
+				const IfOperator* if_operator=
+				dynamic_cast<const IfOperator*>( block_element_ptr ) )
+			{
+				BuildIfOperatorCode(
+					*if_operator,
+					block_names,
+					function_context );
+			}
 			else
 			{
 				U_ASSERT(false);
@@ -1130,6 +1139,73 @@ void CodeBuilderLLVM::BuildWhileOperatorCode(
 
 	// Block after while code.
 	function_context.llvm_ir_builder.SetInsertPoint( block_after_wile );
+}
+
+void CodeBuilderLLVM::BuildIfOperatorCode(
+	const IfOperator& if_operator,
+	const NamesScope& names,
+	FunctionContext& function_context )
+{
+	U_ASSERT( !if_operator.branches_.empty() );
+
+	// TODO - optimize this method. Make less basic blocks.
+	//
+
+	llvm::BasicBlock* block_after_if= llvm::BasicBlock::Create( llvm_context_ );
+
+	llvm::BasicBlock* next_condition_block= llvm::BasicBlock::Create( llvm_context_ );
+	// Break to first condition. We must push terminal instruction at end of current block.
+	function_context.llvm_ir_builder.CreateBr( next_condition_block );
+
+	for( unsigned int i= 0u; i < if_operator.branches_.size(); i++ )
+	{
+		const IfOperator::Branch& branch= if_operator.branches_[i];
+
+		llvm::BasicBlock* body_block= llvm::BasicBlock::Create( llvm_context_ );
+		llvm::BasicBlock* current_condition_block= next_condition_block;
+
+		if( i + 1u < if_operator.branches_.size() )
+			next_condition_block= llvm::BasicBlock::Create( llvm_context_ );
+		else
+			next_condition_block= block_after_if;
+
+		// Build condition block.
+		function_context.function->getBasicBlockList().push_back( current_condition_block );
+		function_context.llvm_ir_builder.SetInsertPoint( current_condition_block );
+
+		if( branch.condition == nullptr )
+		{
+			U_ASSERT( i + 1u == if_operator.branches_.size() );
+
+			// Make empty condition block - move to it unconditional break to body.
+			function_context.llvm_ir_builder.CreateBr( body_block );
+		}
+		else
+		{
+			Variable condition_expression= BuildExpressionCode( *branch.condition, names, function_context );
+			if( condition_expression.type.kind != Type::Kind::Fundamental ||
+				condition_expression.type.fundamental != U_FundamentalType::Bool )
+			{
+				error_messages_.emplace_back( "Unexpected type of if condition. Expected bool." );
+				throw ProgramError();
+			}
+
+			llvm::Value* condition_in_register= CreateMoveToLLVMRegisterInstruction( condition_expression, function_context );
+			function_context.llvm_ir_builder.CreateCondBr( condition_in_register, body_block, next_condition_block );
+		}
+
+		// Make body block code.
+		function_context.function->getBasicBlockList().push_back( body_block );
+		function_context.llvm_ir_builder.SetInsertPoint( body_block );
+		BuildBlockCode( *branch.block, names, function_context );
+		function_context.llvm_ir_builder.CreateBr( block_after_if );
+	}
+
+	U_ASSERT( next_condition_block == block_after_if );
+
+	// Block after if code.
+	function_context.function->getBasicBlockList().push_back( block_after_if );
+	function_context.llvm_ir_builder.SetInsertPoint( block_after_if );
 }
 
 llvm::Type* CodeBuilderLLVM::GetFundamentalLLVMType( const U_FundamentalType fundmantal_type )

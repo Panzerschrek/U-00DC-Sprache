@@ -79,6 +79,11 @@ private:
 		const NamesScope& names,
 		FunctionContext& function_context );
 
+	void BuildIfOperatorCode(
+		const IfOperator& if_operator,
+		const NamesScope& names,
+		FunctionContext& function_context );
+
 	llvm::Type* GetFundamentalLLVMType( U_FundamentalType fundmantal_type );
 
 	// If variable is on stack, creates move to rigister instruction.
