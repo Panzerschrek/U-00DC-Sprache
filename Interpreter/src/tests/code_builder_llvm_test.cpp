@@ -88,6 +88,33 @@ static void SimpleProgramTest()
 	U_ASSERT( static_cast<uint64_t>( arg0 + arg1 + arg2 ) == result_value.IntVal.getLimitedValue() );
 }
 
+static void ArgumentsAssignmentTest()
+{
+	static const char c_program_text[]=
+	"\
+	fn Foo( a : i32 ) : i32\
+	{\
+		a= a * a;\
+		return a;\
+	}"
+	;
+
+	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ), true );
+
+	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
+	U_ASSERT( function != nullptr );
+
+	llvm::GenericValue arg;
+	arg.IntVal= llvm::APInt( 32, 5648 );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>( arg ) );
+
+	U_ASSERT( static_cast<uint64_t>( 5648 * 5648 ) == result_value.IntVal.getLimitedValue() );
+}
+
 static void BasicBinaryOperationsTest()
 {
 	static const char c_program_text[]=
@@ -1362,6 +1389,7 @@ static void StructTest1()
 void RunCodeBuilderLLVMTest()
 {
 	SimpleProgramTest();
+	ArgumentsAssignmentTest();
 	BasicBinaryOperationsTest();
 	BasicBinaryOperationsFloatTest();
 	VariablesTest();

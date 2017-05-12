@@ -478,6 +478,7 @@ void CodeBuilderLLVM::BuildFuncCode(
 			module_.get() );
 
 	NamesScope function_names( &global_names_ );
+	FunctionContext function_context( llvm_context_, llvm_function );
 
 	unsigned int arg_number= 0u;
 	for( llvm::Argument& llvm_arg : llvm_function->args() )
@@ -486,6 +487,17 @@ void CodeBuilderLLVM::BuildFuncCode(
 		var.type= func_variable.type.function->args[ arg_number ];
 		var.location= Variable::Location::LLVMRegister;
 		var.llvm_value= &llvm_arg;
+
+		// Move parameters to stack for assignment possibility.
+		// TODO - do it, only if parameters are not constant.
+		if( var.location == Variable::Location::LLVMRegister )
+		{
+			llvm::Value* address= function_context.llvm_ir_builder.CreateAlloca( var.type.GetLLVMType() );
+			function_context.llvm_ir_builder.CreateStore( var.llvm_value, address );
+
+			var.llvm_value= address;
+			var.location= Variable::Location::PointerToStack;
+		}
 
 		const NamesScope::InsertedName* inserted_arg=
 			function_names.AddName(
@@ -503,8 +515,6 @@ void CodeBuilderLLVM::BuildFuncCode(
 	}
 
 	func_variable.llvm_value= llvm_function;
-
-	FunctionContext function_context( llvm_context_, llvm_function );
 
 	BuildBlockCode( block, function_names, function_context );
 }
