@@ -35,10 +35,10 @@ static std::unique_ptr<llvm::Module> BuildProgram( const char* const text )
 	CodeBuilderLLVM::BuildResult build_result=
 		CodeBuilderLLVM().BuildProgram( syntax_analysis_result.program_elements );
 
-	U_ASSERT( build_result.error_messages.empty() );
-
 	for( const std::string& error_message : build_result.error_messages )
 		std::cout << error_message << "\n";
+
+	U_ASSERT( build_result.error_messages.empty() );
 
 	return std::move( build_result.module );
 }
@@ -1049,7 +1049,7 @@ static void IfOperatorTest5()
 	}"
 	;
 
-	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ), true );
+	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "IfElseIfElseIf" );
 	U_ASSERT( function != nullptr );
@@ -1090,6 +1090,186 @@ static void IfOperatorTest5()
 	}
 }
 
+static void BreakOperatorTest0()
+{
+	static const char c_program_text[]=
+	"fn Foo( x : i32 )\
+	{\
+		let tmp : i32;\
+		tmp= x;\
+		while( x < 0 ) { tmp= -x; break; tmp= 0; }\
+		return tmp;\
+	}"
+	;
+
+	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
+	U_ASSERT( function != nullptr );
+
+	llvm::GenericValue arg;
+
+	{
+		arg.IntVal= llvm::APInt( 32, 654 );
+		llvm::GenericValue result_value=
+			engine->runFunction(
+				function,
+				llvm::ArrayRef<llvm::GenericValue>( arg ) );
+		U_ASSERT( static_cast<uint64_t>( 654 ) == result_value.IntVal.getLimitedValue() );
+	}
+	{
+		arg.IntVal= llvm::APInt( 32, -2564 );
+		llvm::GenericValue result_value=
+			engine->runFunction(
+				function,
+				llvm::ArrayRef<llvm::GenericValue>( arg ) );
+		U_ASSERT( static_cast<uint64_t>( 2564 ) == result_value.IntVal.getLimitedValue() );
+	}
+}
+
+static void BreakOperatorTest1()
+{
+	// Should break from inner loop.
+	static const char c_program_text[]=
+	"fn Foo( x : i32 )\
+	{\
+		let tmp : i32;\
+		let counter : i32;\
+		counter= 1;\
+		while( counter > 0 )\
+		{\
+			while( counter > 0 )\
+			{\
+				break;\
+				tmp= 0;\
+			}\
+			tmp= x;\
+			counter = counter - 1;\
+		}\
+		return tmp;\
+	}"
+	;
+
+	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
+	U_ASSERT( function != nullptr );
+
+	llvm::GenericValue arg;
+	arg.IntVal= llvm::APInt( 32, 654 );
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>( arg ) );
+	U_ASSERT( static_cast<uint64_t>( 654 ) == result_value.IntVal.getLimitedValue() );
+}
+
+static void BreakOperatorTest2()
+{
+	// Should break from current loop with previous inner loop.
+	static const char c_program_text[]=
+	"fn Foo( x : i32 )\
+	{\
+		let tmp : i32;\
+		tmp= 0;\
+		while( true )\
+		{\
+			while( false ){}\
+			tmp= x;\
+			break;\
+			tmp= 0;\
+		}\
+		return tmp;\
+	}"
+	;
+
+	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
+	U_ASSERT( function != nullptr );
+
+	llvm::GenericValue arg;
+	arg.IntVal= llvm::APInt( 32, 654 );
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>( arg ) );
+	U_ASSERT( static_cast<uint64_t>( 654 ) == result_value.IntVal.getLimitedValue() );
+}
+
+static void ContinueOperatorTest0()
+{
+	static const char c_program_text[]=
+	"fn Foo( x : i32 )\
+	{\
+		let tmp : i32;\
+		let counter : i32;\
+		counter= 5;\
+		tmp= 0;\
+		while( counter > 0 )\
+		{\
+			tmp= x;\
+			counter = counter - 1;\
+			continue;\
+			tmp= 0;\
+		}\
+		return tmp;\
+	}"
+	;
+
+	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
+	U_ASSERT( function != nullptr );
+
+	llvm::GenericValue arg;
+	arg.IntVal= llvm::APInt( 32, 654 );
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>( arg ) );
+	U_ASSERT( static_cast<uint64_t>( 654 ) == result_value.IntVal.getLimitedValue() );
+}
+
+static void ContinueOperatorTest1()
+{
+	// Should continue from inner loop.
+	static const char c_program_text[]=
+	"fn Foo( x : i32 )\
+	{\
+		let tmp : i32;\
+		let counter : i32;\
+		counter= 1;\
+		tmp= 0;\
+		while( counter > 0 )\
+		{\
+			while( tmp == 0 )\
+			{\
+				tmp= 5;\
+				continue;\
+				tmp= 0;\
+			}\
+			tmp= x;\
+			counter = counter - 1;\
+		};\
+		return tmp;\
+	}"
+	;
+
+	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
+	U_ASSERT( function != nullptr );
+
+	llvm::GenericValue arg;
+	arg.IntVal= llvm::APInt( 32, 654 );
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>( arg ) );
+	U_ASSERT( static_cast<uint64_t>( 654 ) == result_value.IntVal.getLimitedValue() );
+}
+
 void RunCodeBuilderLLVMTest()
 {
 	SimpleProgramTest();
@@ -1118,6 +1298,11 @@ void RunCodeBuilderLLVMTest()
 	IfOperatorTest3();
 	IfOperatorTest4();
 	IfOperatorTest5();
+	BreakOperatorTest0();
+	BreakOperatorTest1();
+	BreakOperatorTest2();
+	ContinueOperatorTest0();
+	ContinueOperatorTest1();
 }
 
 } // namespace Interpreter

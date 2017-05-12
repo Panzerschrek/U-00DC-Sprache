@@ -38,6 +38,9 @@ private:
 		llvm::Function* const function;
 		llvm::BasicBlock* const function_basic_block;
 		llvm::IRBuilder<> llvm_ir_builder;
+
+		llvm::BasicBlock* block_for_break;
+		llvm::BasicBlock* block_for_continue;
 	};
 
 private:
@@ -78,6 +81,14 @@ private:
 		const WhileOperator& while_operator,
 		const NamesScope& names,
 		FunctionContext& function_context );
+
+	void BuildBreakOperatorCode(
+		const BreakOperator& break_operator,
+		FunctionContext& function_context ) noexcept;
+
+	void BuildContinueOperatorCode(
+		const ContinueOperator& continue_operator,
+		FunctionContext& function_context ) noexcept;
 
 	void BuildIfOperatorCode(
 		const IfOperator& if_operator,

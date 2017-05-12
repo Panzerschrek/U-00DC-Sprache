@@ -197,6 +197,8 @@ CodeBuilderLLVM::FunctionContext::FunctionContext(
 	: function(in_function)
 	, function_basic_block( llvm::BasicBlock::Create( llvm_context, "", function ) )
 	, llvm_ir_builder( function_basic_block )
+	, block_for_break( nullptr )
+	, block_for_continue( nullptr )
 {
 }
 
@@ -535,6 +537,22 @@ void CodeBuilderLLVM::BuildBlockCode(
 				BuildWhileOperatorCode(
 					*while_operator,
 					block_names,
+					function_context );
+			}
+			else if(
+				const BreakOperator* break_operator=
+				dynamic_cast<const BreakOperator*>( block_element_ptr ) )
+			{
+				BuildBreakOperatorCode(
+					*break_operator,
+					function_context );
+			}
+			else if(
+				const ContinueOperator* continue_operator=
+				dynamic_cast<const ContinueOperator*>( block_element_ptr ) )
+			{
+				BuildContinueOperatorCode(
+					*continue_operator,
 					function_context );
 			}
 			else if(
@@ -1107,16 +1125,13 @@ void CodeBuilderLLVM::BuildWhileOperatorCode(
 {
 	llvm::BasicBlock* test_block= llvm::BasicBlock::Create( llvm_context_ );
 	llvm::BasicBlock* while_block= llvm::BasicBlock::Create( llvm_context_ );
-	llvm::BasicBlock* block_after_wile= llvm::BasicBlock::Create( llvm_context_ );
-
-	function_context.function->getBasicBlockList().push_back( test_block );
-	function_context.function->getBasicBlockList().push_back( while_block );
-	function_context.function->getBasicBlockList().push_back( block_after_wile );
+	llvm::BasicBlock* block_after_while= llvm::BasicBlock::Create( llvm_context_ );
 
 	// Break to test block. We must push terminal instruction at and of current block.
 	function_context.llvm_ir_builder.CreateBr( test_block );
 
 	// Test block code.
+	function_context.function->getBasicBlockList().push_back( test_block );
 	function_context.llvm_ir_builder.SetInsertPoint( test_block );
 
 	Variable condition_expression= BuildExpressionCode( *while_operator.condition_, names, function_context );
@@ -1129,16 +1144,61 @@ void CodeBuilderLLVM::BuildWhileOperatorCode(
 
 	llvm::Value* condition_in_register= CreateMoveToLLVMRegisterInstruction( condition_expression, function_context );
 
-	function_context.llvm_ir_builder.CreateCondBr( condition_in_register, while_block, block_after_wile );
+	function_context.llvm_ir_builder.CreateCondBr( condition_in_register, while_block, block_after_while );
 
 	// While block code.
-	function_context.llvm_ir_builder.SetInsertPoint( while_block );
-	BuildBlockCode( *while_operator.block_, names, function_context );
 
+	// Save previous while block break/continue labels.
+	// WARNING - between save/restore nobody should throw exceptions!!!
+	llvm::BasicBlock* const prev_block_for_break   = function_context.block_for_break   ;
+	llvm::BasicBlock* const prev_block_for_continue= function_context.block_for_continue;
+	// Set current while block labels.
+	function_context.block_for_break   = block_after_while;
+	function_context.block_for_continue= test_block;
+
+	function_context.function->getBasicBlockList().push_back( while_block );
+	function_context.llvm_ir_builder.SetInsertPoint( while_block );
+
+	BuildBlockCode( *while_operator.block_, names, function_context );
 	function_context.llvm_ir_builder.CreateBr( test_block );
 
+	// Restore previous while block break/continue labels.
+	function_context.block_for_break   = prev_block_for_break   ;
+	function_context.block_for_continue= prev_block_for_continue;
+
 	// Block after while code.
-	function_context.llvm_ir_builder.SetInsertPoint( block_after_wile );
+	function_context.function->getBasicBlockList().push_back( block_after_while );
+	function_context.llvm_ir_builder.SetInsertPoint( block_after_while );
+}
+
+void CodeBuilderLLVM::BuildBreakOperatorCode(
+	const BreakOperator& break_operator,
+	FunctionContext& function_context ) noexcept
+{
+	U_UNUSED( break_operator );
+
+	if( function_context.block_for_break == nullptr )
+	{
+		error_messages_.push_back( "Break outside while-loop." );
+		return;
+	}
+
+	function_context.llvm_ir_builder.CreateBr( function_context.block_for_break );
+}
+
+void CodeBuilderLLVM::BuildContinueOperatorCode(
+	const ContinueOperator& continue_operator,
+	FunctionContext& function_context ) noexcept
+{
+	U_UNUSED( continue_operator );
+
+	if( function_context.block_for_continue == nullptr )
+	{
+		error_messages_.push_back( "Continue outside while-loop." );
+		return;
+	}
+
+	function_context.llvm_ir_builder.CreateBr( function_context.block_for_continue );
 }
 
 void CodeBuilderLLVM::BuildIfOperatorCode(
