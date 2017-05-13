@@ -1,8 +1,9 @@
 #include <llvm/IR/Constant.h>
 #include <llvm/IR/LLVMContext.h>
 
+#include "assert.hpp"
 #include "keywords.hpp"
-#include "vm.hpp"
+#include "lang_types.hpp"
 
 #include "code_builder_llvm.hpp"
 

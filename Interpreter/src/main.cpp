@@ -7,11 +7,9 @@
 
 #include "tests/code_builder_llvm_test.hpp"
 #include "tests/inverse_polish_notation_test.hpp"
-#include "tests/vm_test.hpp"
 
 int main()
 {
-	Interpreter::RunVMTests();
 	Interpreter::RunIPNTests();
 	Interpreter::RunCodeBuilderLLVMTest();
 

@@ -5,6 +5,7 @@
 #include <llvm/ExecutionEngine/GenericValue.h>
 #include <llvm/ExecutionEngine/Interpreter.h>
 
+#include "../assert.hpp"
 #include "../code_builder_llvm.hpp"
 #include "../lexical_analyzer.hpp"
 #include "../syntax_analyzer.hpp"

@@ -5,7 +5,8 @@
 
 #include <llvm/IR/Function.h>
 
-#include "vm.hpp"
+#include "lang_types.hpp"
+#include "program_string.hpp"
 
 namespace Interpreter
 {
