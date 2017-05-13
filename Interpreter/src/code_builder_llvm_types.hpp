@@ -3,12 +3,15 @@
 #include <vector>
 #include <map>
 
-#include "vm.hpp"
+#include <llvm/IR/Function.h>
+
+#include "lang_types.hpp"
+#include "program_string.hpp"
 
 namespace Interpreter
 {
 
-namespace CodeBuilderPrivate
+namespace CodeBuilderLLVMPrivate
 {
 
 struct Function;
@@ -36,14 +39,19 @@ struct Type final
 	// Therefore, class are aquals, if equals pointers.
 	ClassPtr class_;
 
+	llvm::Type* fundamental_llvm_type= nullptr;
+
 	explicit Type( U_FundamentalType in_fundamental= U_FundamentalType::InvalidType );
 	Type( const Type& other );
-	Type( Type&& other );
+	Type( Type&& other ) noexcept;
 
 	Type& operator=( const Type& other );
-	Type& operator=( Type&& other );
+	Type& operator=( Type&& other ) noexcept;
 
+	// TODO - does this method needs?
 	size_t SizeOf() const;
+
+	llvm::Type* GetLLVMType() const;
 };
 
 bool operator==( const Type& r, const Type& l );
@@ -53,6 +61,8 @@ struct Function final
 {
 	Type return_type;
 	std::vector<Type> args;
+
+	llvm::FunctionType* llvm_function_type;
 };
 
 bool operator==( const Function& r, const Function& l );
@@ -62,6 +72,8 @@ struct Array final
 {
 	Type type;
 	size_t size;
+
+	llvm::ArrayType* llvm_type;
 };
 
 struct Class final
@@ -79,40 +91,35 @@ struct Class final
 	{
 		ProgramString name;
 		Type type;
-		unsigned int offset;
+		unsigned int index;
 	};
 
 	const Field* GetField( const ProgramString& name );
 
 	ProgramString name;
 	std::vector<Field> fields;
-	unsigned int size;
+
+	llvm::StructType* llvm_type;
 };
 
 struct Variable final
 {
 	enum class Location
 	{
-		FunctionArgument,
-		Stack,
 		Global,
-
-		ValueAtExpessionStackTop,
-		AddressAtExpessionStackTop,
+		PointerToStack,
+		LLVMRegister,
 	};
-
-	// For function argumnet - minus offset from caller frame
-	// For stack variable - offset from stack frame
-	// For Global varianle - global offset
-	unsigned int offset;
 
 	Location location;
 	Type type;
+
+	llvm::Value* llvm_value;
 };
 
 struct Name final
 {
-	// If ptr not null - name is calss, else - variable
+	// If ptr not null - name is class, else - variable
 	ClassPtr class_;
 	Variable variable;
 };
@@ -148,59 +155,6 @@ public:
 	}
 };
 
-// Class for locals variables offset calculation.
-// Also, it calclats max needed stack size for locals.
-class BlockStackContext final
-{
-public:
-	BlockStackContext();
-	BlockStackContext( BlockStackContext& parent_context );
-	~BlockStackContext();
-
-	void IncreaseStack( unsigned int size );
-
-	unsigned int GetStackSize() const;
-	unsigned int GetMaxReachedStackSize() const;
-
-private:
-	BlockStackContext* const parent_context_;
-
-	unsigned int stack_size_;
-	unsigned int max_reached_stack_size_;
-};
-
-class ExpressionStackSizeCounter
-{
-public:
-	void operator+=( unsigned int add_size );
-	void operator-=( unsigned int sub_size );
-
-	unsigned int GetMaxReachedStackSize() const;
-	unsigned int GetCurrentStackSize() const;
-
-private:
-	unsigned int size_= 0;
-	unsigned int max_reached_size_= 0;
-};
-
-struct FunctionContext final
-{
-	unsigned int result_offset;
-	U_FundamentalType result_type;
-
-	struct WhileFrame
-	{
-		// For "continue".
-		OpIndex first_while_op_index;
-		// Stored "break" operations indeces.
-		std::vector<OpIndex> break_operations_indeces;
-	};
-
-	std::vector<WhileFrame> while_frames;
-
-	ExpressionStackSizeCounter expression_stack_size_counter;
-};
-
-} //namespace CodeBuilderPrivate
+} //namespace CodeBuilderLLVMPrivate
 
 } // namespace Interpreter

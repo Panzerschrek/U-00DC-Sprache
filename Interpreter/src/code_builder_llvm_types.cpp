@@ -1,11 +1,11 @@
 #include "assert.hpp"
 
-#include "code_builder_types.hpp"
+#include "code_builder_llvm_types.hpp"
 
 namespace Interpreter
 {
 
-namespace CodeBuilderPrivate
+namespace CodeBuilderLLVMPrivate
 {
 
 namespace
@@ -13,19 +13,19 @@ namespace
 
 const size_t g_fundamental_types_size[ size_t(U_FundamentalType::LastType) ]=
 {
-	[ size_t(U_FundamentalType::InvalidType) ]= 0,
-	[ size_t(U_FundamentalType::Void) ]= 0,
-	[ size_t(U_FundamentalType::Bool) ]= sizeof(U_bool),
-	[ size_t(U_FundamentalType::i8 ) ]= sizeof(U_i8 ),
-	[ size_t(U_FundamentalType::u8 ) ]= sizeof(U_u8 ),
-	[ size_t(U_FundamentalType::i16) ]= sizeof(U_i16),
-	[ size_t(U_FundamentalType::u16) ]= sizeof(U_u16),
-	[ size_t(U_FundamentalType::i32) ]= sizeof(U_i32),
-	[ size_t(U_FundamentalType::u32) ]= sizeof(U_u32),
-	[ size_t(U_FundamentalType::i64) ]= sizeof(U_i64),
-	[ size_t(U_FundamentalType::u64) ]= sizeof(U_u64),
-	[ size_t(U_FundamentalType::f32) ]= sizeof(U_f32),
-	[ size_t(U_FundamentalType::f64) ]= sizeof(U_f64),
+	U_DESIGNATED_INITIALIZER( U_FundamentalType::InvalidType, 0u ),
+	U_DESIGNATED_INITIALIZER( U_FundamentalType::Void, 0 ),
+	U_DESIGNATED_INITIALIZER( U_FundamentalType::Bool, sizeof(U_bool) ),
+	U_DESIGNATED_INITIALIZER( U_FundamentalType::i8 , sizeof(U_i8 ) ),
+	U_DESIGNATED_INITIALIZER( U_FundamentalType::u8 , sizeof(U_u8 ) ),
+	U_DESIGNATED_INITIALIZER( U_FundamentalType::i16, sizeof(U_i16) ),
+	U_DESIGNATED_INITIALIZER( U_FundamentalType::u16, sizeof(U_u16) ),
+	U_DESIGNATED_INITIALIZER( U_FundamentalType::i32, sizeof(U_i32) ),
+	U_DESIGNATED_INITIALIZER( U_FundamentalType::u32, sizeof(U_u32) ),
+	U_DESIGNATED_INITIALIZER( U_FundamentalType::i64, sizeof(U_i64) ),
+	U_DESIGNATED_INITIALIZER( U_FundamentalType::u64, sizeof(U_u64) ),
+	U_DESIGNATED_INITIALIZER( U_FundamentalType::f32, sizeof(U_f32) ),
+	U_DESIGNATED_INITIALIZER( U_FundamentalType::f64, sizeof(U_f64) ),
 };
 
 } // namespace
@@ -40,7 +40,7 @@ Type::Type( const Type& other )
 	*this= other;
 }
 
-Type::Type( Type&& other )
+Type::Type( Type&& other ) noexcept
 {
 	*this= std::move(other);
 }
@@ -53,6 +53,7 @@ Type& Type::operator=( const Type& other )
 	{
 	case Kind::Fundamental:
 		fundamental= other.fundamental;
+		fundamental_llvm_type= other.fundamental_llvm_type;
 		break;
 
 	case Kind::Function:
@@ -73,13 +74,17 @@ Type& Type::operator=( const Type& other )
 	return *this;
 }
 
-Type& Type::operator=( Type&& other )
+Type& Type::operator=( Type&& other ) noexcept
 {
 	kind= other.kind;
 	fundamental= other.fundamental;
 	function= std::move( other.function );
 	array= std::move( other.array );
 	class_= std::move( other.class_ );
+
+	fundamental_llvm_type= other.fundamental_llvm_type;
+	other.fundamental_llvm_type= nullptr;
+
 	return *this;
 }
 
@@ -91,17 +96,37 @@ size_t Type::SizeOf() const
 		return g_fundamental_types_size[ size_t( fundamental ) ];
 
 	case Kind::Function:
-		return sizeof(FuncNumber);
+		U_ASSERT( false && "SizeOf method not supported for functions." );
+		return 1u;
 
 	case Kind::Array:
 		return array->type.SizeOf() * array->size;
 
 	case Kind::Class:
-		return class_->size;
+		U_ASSERT( false && "SizeOf method not supported for classes." );
+		return 1u;
 	};
 
 	U_ASSERT(false);
 	return 0;
+}
+
+llvm::Type* Type::GetLLVMType() const
+{
+	switch( kind )
+	{
+	case Kind::Fundamental:
+		return fundamental_llvm_type;
+	case Kind::Function:
+		return function->llvm_function_type;
+	case Kind::Array:
+		return array->llvm_type;
+	case Kind::Class:
+		return class_->llvm_type;
+	};
+
+	U_ASSERT(false);
+	return nullptr;
 }
 
 bool operator==( const Type& r, const Type& l )
@@ -210,68 +235,6 @@ const NamesScope::InsertedName*
 	return nullptr;
 }
 
-BlockStackContext::BlockStackContext()
-	: parent_context_(nullptr)
-	, stack_size_(0)
-	, max_reached_stack_size_(0)
-{}
-
-BlockStackContext::BlockStackContext( BlockStackContext& parent_context )
-	: parent_context_( &parent_context )
-	, stack_size_( parent_context.stack_size_ )
-	, max_reached_stack_size_( parent_context.stack_size_ )
-{}
-
-BlockStackContext::~BlockStackContext()
-{
-	if( parent_context_ )
-	{
-		parent_context_->max_reached_stack_size_=
-			std::max(
-				parent_context_->max_reached_stack_size_,
-				std::max(
-					max_reached_stack_size_,
-					stack_size_ ) );
-	}
-}
-
-void BlockStackContext::IncreaseStack( unsigned int size )
-{
-	stack_size_+= size;
-}
-
-unsigned int BlockStackContext::GetStackSize() const
-{
-	return stack_size_;
-}
-
-unsigned int BlockStackContext::GetMaxReachedStackSize() const
-{
-	return max_reached_stack_size_;
-}
-
-void ExpressionStackSizeCounter::operator+=( unsigned int add_size )
-{
-	size_+= add_size;
-	max_reached_size_= std::max( size_, max_reached_size_ );
-}
-
-void ExpressionStackSizeCounter::operator-=( unsigned int sub_size )
-{
-	U_ASSERT( sub_size <= size_ );
-	size_-= sub_size;
-}
-
-unsigned int ExpressionStackSizeCounter::GetMaxReachedStackSize() const
-{
-	return max_reached_size_;
-}
-
-unsigned int ExpressionStackSizeCounter::GetCurrentStackSize() const
-{
-	return size_;
-}
-
-} //namespace CodeBuilderPrivate
+} //namespace CodeBuilderLLVMPrivate
 
 } // namespace Interpreter

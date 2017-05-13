@@ -19,6 +19,8 @@ enum class Keywords : unsigned int
 	if_,
 	else_,
 
+	class_,
+
 	// Fundamental types names.
 	void_,
 	bool_,

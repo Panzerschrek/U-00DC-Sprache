@@ -100,6 +100,19 @@ public:
 	const BinaryOperatorsChainPtr index_;
 };
 
+class MemberAccessOperator final : public IUnaryPostfixOperator
+{
+public:
+	MemberAccessOperator( const FilePos& file_pos, ProgramString member_name );
+	virtual ~MemberAccessOperator() override;
+
+	virtual IUnaryPostfixOperatorPtr Clone() const override;
+
+	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
+
+	const ProgramString member_name_;
+};
+
 enum class BinaryOperator
 {
 	None, // Special value - for end of binary operators chain.
@@ -391,6 +404,24 @@ public:
 	const ProgramString return_type_;
 	const std::vector<VariableDeclaration> arguments_;
 	const BlockPtr block_;
+};
+
+class ClassDeclaration final : public IProgramElement
+{
+public:
+	explicit ClassDeclaration( const FilePos& file_pos );
+	virtual ~ClassDeclaration() override;
+
+	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
+
+	struct Field
+	{
+		TypeName type;
+		ProgramString name;
+	};
+
+	std::vector<Field> fields_;
+	ProgramString name_;
 };
 
 } // namespace Interpreter
