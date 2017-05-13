@@ -1387,6 +1387,42 @@ static void StructTest1()
 	ASSERT_NEAR( arg0 - arg1, result_value.DoubleVal, 0.001 );
 }
 
+static void BlocksTest()
+{
+	// Variable in inner block must shadow variable from outer block with same name.
+	static const char c_program_text[]=
+	R"(
+	fn Foo( a : i32, b : i32 ) : i32
+	{
+		let x : i32;
+		x = a;
+		{
+			let x : i32;
+			x = b;
+			return x;
+		}
+	}
+	)";
+
+	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
+	U_ASSERT( function != nullptr );
+
+	int arg0= 1488, arg1= 77;
+
+	llvm::GenericValue args[2];
+	args[0].IntVal= llvm::APInt( 32, arg0 );
+	args[1].IntVal= llvm::APInt( 32, arg1 );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>( args, 2 ) );
+
+	U_ASSERT( static_cast<uint64_t>( arg1 ) == result_value.IntVal.getLimitedValue() );
+}
+
 void RunCodeBuilderLLVMTest()
 {
 	SimpleProgramTest();
@@ -1423,6 +1459,7 @@ void RunCodeBuilderLLVMTest()
 	ContinueOperatorTest1();
 	StructTest0();
 	StructTest1();
+	BlocksTest();
 }
 
 } // namespace Interpreter

@@ -648,6 +648,12 @@ void CodeBuilderLLVM::BuildBlockCode(
 					block_names,
 					function_context );
 			}
+			else if(
+				const Block* block=
+				dynamic_cast<const Block*>( block_element_ptr ) )
+			{
+				BuildBlockCode( *block, block_names, function_context );
+			}
 			else
 			{
 				U_ASSERT(false);
