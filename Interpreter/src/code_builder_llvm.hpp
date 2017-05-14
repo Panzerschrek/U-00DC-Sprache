@@ -4,6 +4,7 @@
 #include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/Module.h>
 
+#include "code_builder_errors.hpp"
 #include "code_builder_llvm_types.hpp"
 #include "inverse_polish_notation.hpp"
 #include "syntax_elements.hpp"
@@ -22,7 +23,7 @@ public:
 
 	struct BuildResult
 	{
-		std::vector<std::string> error_messages;
+		std::vector<CodeBuilderError> errors;
 		std::unique_ptr<llvm::Module> module;
 	};
 
@@ -124,8 +125,8 @@ private:
 	} fundamental_llvm_types_;
 
 	std::unique_ptr<llvm::Module> module_;
-	std::vector<std::string> error_messages_;
 	unsigned int error_count_= 0u;
+	std::vector<CodeBuilderError> errors_;
 
 	NamesScope global_names_;
 };

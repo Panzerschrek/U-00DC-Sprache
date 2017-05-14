@@ -31,23 +31,6 @@ const TypesMap g_types_map=
 	{ Keyword( Keywords::f64_ ), U_FundamentalType::f64 },
 };
 
-const char* const g_fundamental_types_names[ size_t(U_FundamentalType::LastType) ]=
-{
-	U_DESIGNATED_INITIALIZER( U_FundamentalType::InvalidType, "InvalidType" ),
-	U_DESIGNATED_INITIALIZER( U_FundamentalType::Void,  KeywordAscii( Keywords::void_ ) ),
-	U_DESIGNATED_INITIALIZER( U_FundamentalType::Bool, KeywordAscii( Keywords::bool_ ) ),
-	U_DESIGNATED_INITIALIZER( U_FundamentalType::i8 , KeywordAscii( Keywords::i8_  ) ),
-	U_DESIGNATED_INITIALIZER( U_FundamentalType::u8 , KeywordAscii( Keywords::u8_  ) ),
-	U_DESIGNATED_INITIALIZER( U_FundamentalType::i16, KeywordAscii( Keywords::i16_ ) ),
-	U_DESIGNATED_INITIALIZER( U_FundamentalType::u16, KeywordAscii( Keywords::u16_ ) ),
-	U_DESIGNATED_INITIALIZER( U_FundamentalType::i32, KeywordAscii( Keywords::i32_ ) ),
-	U_DESIGNATED_INITIALIZER( U_FundamentalType::u32, KeywordAscii( Keywords::u32_ ) ),
-	U_DESIGNATED_INITIALIZER( U_FundamentalType::i64, KeywordAscii( Keywords::i64_ ) ),
-	U_DESIGNATED_INITIALIZER( U_FundamentalType::u64, KeywordAscii( Keywords::u64_ ) ),
-	U_DESIGNATED_INITIALIZER( U_FundamentalType::f32, KeywordAscii( Keywords::f32_ ) ),
-	U_DESIGNATED_INITIALIZER( U_FundamentalType::f64, KeywordAscii( Keywords::f64_ ) ),
-};
-
 bool IsNumericType( U_FundamentalType type )
 {
 	return
@@ -103,92 +86,6 @@ U_FundamentalType GetNumericConstantType( const NumericConstant& number )
 	return it->second;
 }
 
-void ReportUsingKeywordAsName(
-	std::vector<std::string>& error_messages,
-	const ProgramString& name )
-{
-	error_messages.push_back(
-		"Using keyword as name: " + ToStdString(name) );
-}
-
-void ReportUnknownFuncReturnType(
-	std::vector<std::string>& error_messages,
-	const FunctionDeclaration& func )
-{
-	error_messages.push_back(
-		"Unknown return type " + ToStdString( func.return_type_ ) +
-		" for function " + ToStdString( func.name_ ) );
-}
-
-void ReportUnknownVariableType(
-	std::vector<std::string>& error_messages,
-	const TypeName& type_name )
-{
-	error_messages.push_back(
-		"Variable has unknown type " + ToStdString( type_name.name ) );
-}
-
-void ReportNameNotFound(
-	std::vector<std::string>& error_messages,
-	const ProgramString& name )
-{
-	error_messages.push_back(
-		ToStdString( name ) +
-		" was not declarated in this scope" );
-}
-
-void ReportNotImplemented(
-	std::vector<std::string>& error_messages,
-	const char* what )
-{
-	error_messages.push_back(
-		std::string("Sorry, ") +
-		what +
-		" not implemented" );
-}
-
-void ReportRedefinition(
-	std::vector<std::string>& error_messages,
-	const ProgramString& name )
-{
-	error_messages.push_back(
-		ToStdString(name) +
-		" redifinition" );
-}
-
-void ReportTypesMismatch(
-	std::vector<std::string>& error_messages,
-	U_FundamentalType type,
-	U_FundamentalType expected_type )
-{
-	error_messages.push_back(
-		std::string("Unexpected type: ") +
-		g_fundamental_types_names[ size_t(type) ] +
-		" expected " +
-		g_fundamental_types_names[ size_t(expected_type) ]);
-}
-
-void ReportArgumentsCountMismatch(
-	std::vector<std::string>& error_messages,
-	unsigned int count,
-	unsigned int expected )
-{
-	error_messages.push_back(
-		"Arguments count mismatch. actual " +
-		std::to_string(count) +
-		" expected " +
-		std::to_string(expected) );
-}
-
-void ReportArithmeticOperationWithUnsupportedType(
-	std::vector<std::string>& error_messages,
-	U_FundamentalType type )
-{
-	error_messages.push_back(
-		"Expected numeric arguments for arithmetic operators. Supported 32 and 64 bit types. Got " +
-		std::string( g_fundamental_types_names[ size_t(type) ] ) );
-}
-
 } // namespace
 
 namespace CodeBuilderLLVMPrivate
@@ -231,6 +128,7 @@ CodeBuilderLLVM::~CodeBuilderLLVM()
 CodeBuilderLLVM::BuildResult CodeBuilderLLVM::BuildProgram( const ProgramElements& program_elements )
 {
 	module_= std::unique_ptr<llvm::Module>( new llvm::Module( "U-Module", llvm_context_ ) );
+	errors_.clear();
 	error_count_= 0u;
 
 	for( const IProgramElementPtr& program_element : program_elements )
@@ -239,7 +137,7 @@ CodeBuilderLLVM::BuildResult CodeBuilderLLVM::BuildProgram( const ProgramElement
 			dynamic_cast<const FunctionDeclaration*>( program_element.get() ) )
 		{
 			if( IsKeyword( func->name_ ) )
-				ReportUsingKeywordAsName( error_messages_, func->name_ );
+				errors_.push_back( ReportUsingKeywordAsName( func->file_pos_ ) );
 
 			Variable func_info;
 
@@ -259,8 +157,7 @@ CodeBuilderLLVM::BuildResult CodeBuilderLLVM::BuildProgram( const ProgramElement
 				auto it= g_types_map.find( func->return_type_ );
 				if( it == g_types_map.end() )
 				{
-					++error_count_;
-					ReportUnknownFuncReturnType( error_messages_, *func );
+					errors_.push_back( ReportNameNotFound( func->file_pos_, func->return_type_ ) );
 					func_info.type.function->return_type.fundamental= U_FundamentalType::Void;
 				}
 				else
@@ -271,8 +168,7 @@ CodeBuilderLLVM::BuildResult CodeBuilderLLVM::BuildProgram( const ProgramElement
 
 			if( global_names_.GetName( func->name_ ) != nullptr )
 			{
-				error_count_++;
-				ReportRedefinition( error_messages_, func->name_ );
+				errors_.push_back( ReportRedefinition( func->file_pos_, func->name_ ) );
 				continue;
 			}
 			else
@@ -285,7 +181,7 @@ CodeBuilderLLVM::BuildResult CodeBuilderLLVM::BuildProgram( const ProgramElement
 				for( const VariableDeclaration& arg : func->arguments_ )
 				{
 					if( IsKeyword( arg.name ) )
-						ReportUsingKeywordAsName( error_messages_, arg.name );
+						errors_.push_back( ReportUsingKeywordAsName( arg.file_pos_ ) );
 
 					func_info.type.function->args.push_back( PrepareType( arg.type ) );
 					arg_names.push_back( arg.name );
@@ -308,10 +204,7 @@ CodeBuilderLLVM::BuildResult CodeBuilderLLVM::BuildProgram( const ProgramElement
 				global_names_.AddName( class_->name_, PrepareClass( *class_ ) );
 			if( inserted_name == nullptr )
 			{
-				error_count_++;
-				error_messages_.push_back(
-					ToStdString( class_->name_ ) +
-					" redefinition" );
+				errors_.push_back( ReportRedefinition( class_->file_pos_, class_->name_ ) );
 			}
 		}
 		else
@@ -321,11 +214,11 @@ CodeBuilderLLVM::BuildResult CodeBuilderLLVM::BuildProgram( const ProgramElement
 	} // for program elements
 
 	if( error_count_ > 0u )
-		error_messages_.emplace_back( "Code build failed - there are some errors." );
+		errors_.push_back( ReportBuildFailed() );
 
 	BuildResult result;
-	result.error_messages= error_messages_;
-	error_messages_.clear();
+	result.errors= errors_;
+	errors_.clear();
 	result.module= std::move( module_ );
 	return result;
 }
@@ -356,10 +249,12 @@ Type CodeBuilderLLVM::PrepareType( const TypeName& type_name )
 		last_type->array.reset( new Array() );
 
 		U_FundamentalType size_type= GetNumericConstantType( num );
-		if( !( IsInteger(size_type) && num.value_ >= 0 ) )
-			error_messages_.push_back( "Error, array size must be nonnegative integer" );
+		if( !IsInteger(size_type) )
+			errors_.push_back( ReportArraySizeIsNotInteger( num.file_pos_ ) );
+		if( num.value_ < 0 )
+			errors_.push_back( ReportArraySizeIsNegative( num.file_pos_ ) );
 
-		last_type->array->size= size_t(num.value_);
+		last_type->array->size= size_t( std::max( num.value_, static_cast<NumericConstant::LongFloat>(0.0) ) );
 
 		last_type= &last_type->array->type;
 	}
@@ -380,15 +275,14 @@ Type CodeBuilderLLVM::PrepareType( const TypeName& type_name )
 			}
 			else
 			{
-				error_messages_.push_back(
-					"Using name, which is not type, as type name: " +
-					ToStdString( type_name.name ) );
+				// TODO - Report "is not type name".
+				error_count_++;
 			}
 		}
 		else
 		{
-			last_type->fundamental= U_FundamentalType::i32;
-			ReportUnknownVariableType( error_messages_, type_name );
+			FilePos dummy_file_pos; dummy_file_pos.line= 1u; dummy_file_pos.pos_in_line= 0u; // TODO - get real file pos.
+			errors_.push_back( ReportNameNotFound( dummy_file_pos, type_name.name ) );
 		}
 	}
 	else
@@ -427,12 +321,9 @@ ClassPtr CodeBuilderLLVM::PrepareClass( const ClassDeclaration& class_declaratio
 	result->fields.reserve( class_declaration.fields_.size() );
 	for( const ClassDeclaration::Field& in_field : class_declaration.fields_ )
 	{
+		// TODO - get real file_pos.
 		if( result->GetField( in_field.name ) != nullptr )
-		{
-			error_messages_.push_back(
-				ToStdString( in_field.name ) +
-				" redefinition" );
-		}
+			errors_.push_back( ReportRedefinition( class_declaration.file_pos_, in_field.name ) );
 
 		Class::Field out_field;
 		out_field.name= in_field.name;
@@ -506,8 +397,8 @@ void CodeBuilderLLVM::BuildFuncCode(
 				std::move(var) );
 		if( !inserted_arg )
 		{
-			error_count_++;
-			ReportRedefinition( error_messages_, arg_names[ arg_number ] );
+			FilePos dummy_file_pos; dummy_file_pos.line= 1u; dummy_file_pos.pos_in_line= 0u; // TODO - get real file pos.
+			errors_.push_back( ReportRedefinition( dummy_file_pos, arg_names[ arg_number ] ) );
 			return;
 		}
 
@@ -537,7 +428,7 @@ void CodeBuilderLLVM::BuildBlockCode(
 				dynamic_cast<const VariableDeclaration*>( block_element_ptr ) )
 			{
 				if( IsKeyword( variable_declaration->name ) )
-					ReportUsingKeywordAsName( error_messages_, variable_declaration->name );
+					ReportUsingKeywordAsName( variable_declaration->file_pos_ );
 
 				Variable variable;
 				variable.type= PrepareType( variable_declaration->type );
@@ -549,7 +440,7 @@ void CodeBuilderLLVM::BuildBlockCode(
 
 				if( !inserted_name )
 				{
-					ReportRedefinition( error_messages_, variable_declaration->name );
+					errors_.push_back( ReportRedefinition( variable_declaration->file_pos_, variable_declaration->name ) );
 					throw ProgramError();
 				}
 
@@ -576,7 +467,7 @@ void CodeBuilderLLVM::BuildBlockCode(
 
 				if( l_var.type != r_var.type )
 				{
-					ReportTypesMismatch( error_messages_, l_var.type.fundamental, r_var.type.fundamental );
+					// TODO - report types mismatch.
 					throw ProgramError();
 				}
 
@@ -592,17 +483,18 @@ void CodeBuilderLLVM::BuildBlockCode(
 				}
 				else if( l_var.type.kind == Type::Kind::Function )
 				{
-					error_messages_.emplace_back( "Functions are noncopyable." );
+					// TODO - functions is not copyable.
 					throw ProgramError();
 				}
 				else if( l_var.type.kind == Type::Kind::Array )
 				{
-					error_messages_.emplace_back( "Arrays are noncopyable." );
+					// TODO - arrays not copyable.
 					throw ProgramError();
 				}
 				else if( l_var.type.kind == Type::Kind::Class )
 				{
-					ReportNotImplemented( error_messages_, "Struct assignmnet" );
+					errors_.push_back( ReportNotImplemented( assignment_operator->file_pos_, "class assignment" ) );
+					throw ProgramError();
 				}
 			}
 			else if(
@@ -709,7 +601,7 @@ Variable CodeBuilderLLVM::BuildExpressionCode_r(
 		// TODO - add cast for some integers here.
 		if( r_var.type != l_var.type )
 		{
-			ReportTypesMismatch( error_messages_, r_var.type.fundamental, l_var.type.fundamental );
+			// TODO - report types mismatch.
 			throw ProgramError();
 		}
 
@@ -810,7 +702,7 @@ Variable CodeBuilderLLVM::BuildExpressionCode_r(
 			const bool if_float= IsFloatingPoint( result_type.fundamental );
 			if( !( IsInteger( result_type.fundamental ) || if_float || result_type.fundamental == U_FundamentalType::Bool ) )
 			{
-				error_messages_.emplace_back( "Exact equality operators exist only for integers, floating point, boolean types." );
+				// TODO - report unsopported operation.
 				throw ProgramError();
 			}
 
@@ -860,7 +752,7 @@ Variable CodeBuilderLLVM::BuildExpressionCode_r(
 			const bool is_signed= IsSignedInteger( result_type.fundamental );
 			if( !( IsInteger( result_type.fundamental ) || if_float ) )
 			{
-				error_messages_.emplace_back( "Equality operators exist only for integers and floating point types." );
+				// TODO - report invalid type.
 				throw ProgramError();
 			}
 
@@ -988,12 +880,12 @@ Variable CodeBuilderLLVM::BuildExpressionCode_r(
 				names.GetName( named_operand->name_ );
 			if( !name_entry )
 			{
-				ReportNameNotFound( error_messages_, named_operand->name_ );
+				errors_.push_back( ReportNameNotFound( named_operand->file_pos_, named_operand->name_ ) );
 				throw ProgramError();
 			}
 			if( name_entry->second.class_ )
 			{
-				error_messages_.push_back( "Error, using class name as variable" );
+				// TODO - using class name sa variable.
 				throw ProgramError();
 			}
 			result= name_entry->second.variable;
@@ -1004,7 +896,7 @@ Variable CodeBuilderLLVM::BuildExpressionCode_r(
 			U_FundamentalType type= GetNumericConstantType( *numeric_constant );
 			if( type == U_FundamentalType::InvalidType )
 			{
-				error_messages_.push_back( "Unknown numeric constant type" );
+				// TODO - report unknown numeric constant type.
 				throw ProgramError();
 			}
 
@@ -1058,7 +950,7 @@ Variable CodeBuilderLLVM::BuildExpressionCode_r(
 			{
 				if( result.type.kind != Type::Kind::Array )
 				{
-					error_messages_.push_back( "Error, indexation for non array." );
+					// TODO - report indexation for non-array.
 					throw ProgramError();
 				}
 
@@ -1070,18 +962,18 @@ Variable CodeBuilderLLVM::BuildExpressionCode_r(
 
 				if( index.type.kind != Type::Kind::Fundamental )
 				{
-					error_messages_.push_back( "Error, index must be fundamental type." );
+					// TODO - report index must be fundamental.
 					throw ProgramError();
 				}
 				if( !IsUnsignedInteger( index.type.fundamental ) )
 				{
-					error_messages_.push_back( "Error, index must be unsigned integer." );
+					// TODO - index must be unsigned integer.
 					throw ProgramError();
 				}
 
 				if( result.location != Variable::Location::PointerToStack )
 				{
-					error_messages_.push_back( "WTF? Strange variable location." );
+					// TODO - Strange variable location.
 					throw ProgramError();
 				}
 
@@ -1101,9 +993,7 @@ Variable CodeBuilderLLVM::BuildExpressionCode_r(
 			{
 				if( result.type.kind != Type::Kind::Class )
 				{
-					error_messages_.push_back(
-						"Can not take member of non-class " +
-						ToStdString( member_access_operator->member_name_ ) );
+					// TODO - can not take member of non-class.
 					throw ProgramError();
 				}
 				U_ASSERT( result.type.class_ );
@@ -1111,10 +1001,7 @@ Variable CodeBuilderLLVM::BuildExpressionCode_r(
 				const Class::Field* field= result.type.class_->GetField( member_access_operator->member_name_ );
 				if( field == nullptr )
 				{
-					error_messages_.push_back(
-						ToStdString( member_access_operator->member_name_ ) +
-						" not found in class " +
-						ToStdString( result.type.class_->name ) );
+					ReportNameNotFound( member_access_operator->file_pos_, member_access_operator->member_name_ );
 					throw ProgramError();
 				}
 
@@ -1135,12 +1022,12 @@ Variable CodeBuilderLLVM::BuildExpressionCode_r(
 			{
 				if( result.type.kind != Type::Kind::Function )
 				{
-					error_messages_.emplace_back( "Call of non-function." );
+					// TODO - Call of non-function.
 					throw ProgramError();
 				}
 				if( call_operator->arguments_.size() != result.type.function->args.size() )
 				{
-					error_messages_.emplace_back( "Argument count mismatch." );
+					errors_.push_back( ReportFunctionSignatureMismatch( call_operator->file_pos_ ) );
 					throw ProgramError();
 				}
 
@@ -1152,7 +1039,7 @@ Variable CodeBuilderLLVM::BuildExpressionCode_r(
 					Variable arg= BuildExpressionCode( *call_operator->arguments_[i], names, function_context );
 					if( arg.type != result.type.function->args[i] )
 					{
-						error_messages_.emplace_back( "Argument type mismatch for argument " + std::to_string(i) + "." );
+						errors_.push_back( ReportFunctionSignatureMismatch( call_operator->arguments_[i]->file_pos_ ) );
 						throw ProgramError();
 					}
 
@@ -1185,13 +1072,13 @@ Variable CodeBuilderLLVM::BuildExpressionCode_r(
 
 				if( result.type.kind != Type::Kind::Fundamental )
 				{
-					error_messages_.emplace_back( "Unary minus supported only for fundamental types" );
+					// TODO - report invalid type.
 					throw ProgramError();
 				}
 				const bool is_float= IsFloatingPoint( result.type.fundamental );
 				if( !( IsInteger( result.type.fundamental ) || is_float ) )
 				{
-					ReportArithmeticOperationWithUnsupportedType( error_messages_, result.type.fundamental );
+					errors_.push_back( ReportOperationNotSupportedForThisType( unary_minus->file_pos_, result.type.fundamental ) );
 					throw ProgramError();
 				}
 				// TODO - maybe not support unary minus for 8 and 16 bot integer types?
@@ -1262,7 +1149,7 @@ void CodeBuilderLLVM::BuildWhileOperatorCode(
 	if( condition_expression.type.kind != Type::Kind::Fundamental ||
 		condition_expression.type.fundamental != U_FundamentalType::Bool )
 	{
-		error_messages_.emplace_back( "Unexpected type of while-loop condition. Expected bool." );
+		// TODO - report unexpected type.
 		throw ProgramError();
 	}
 
@@ -1303,7 +1190,8 @@ void CodeBuilderLLVM::BuildBreakOperatorCode(
 
 	if( function_context.block_for_break == nullptr )
 	{
-		error_messages_.push_back( "Break outside while-loop." );
+		// TODO - report break outside wile loop.
+		error_count_++;
 		return;
 	}
 
@@ -1318,7 +1206,8 @@ void CodeBuilderLLVM::BuildContinueOperatorCode(
 
 	if( function_context.block_for_continue == nullptr )
 	{
-		error_messages_.push_back( "Continue outside while-loop." );
+		// TODO - report break outside wile loop.
+		error_count_++;
 		return;
 	}
 
@@ -1370,7 +1259,7 @@ void CodeBuilderLLVM::BuildIfOperatorCode(
 			if( condition_expression.type.kind != Type::Kind::Fundamental ||
 				condition_expression.type.fundamental != U_FundamentalType::Bool )
 			{
-				error_messages_.emplace_back( "Unexpected type of if condition. Expected bool." );
+				// TODO - report expected bool.
 				throw ProgramError();
 			}
 

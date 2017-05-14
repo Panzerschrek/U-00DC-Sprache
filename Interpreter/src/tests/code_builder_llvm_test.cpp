@@ -36,10 +36,10 @@ static std::unique_ptr<llvm::Module> BuildProgram( const char* const text )
 	CodeBuilderLLVM::BuildResult build_result=
 		CodeBuilderLLVM().BuildProgram( syntax_analysis_result.program_elements );
 
-	for( const std::string& error_message : build_result.error_messages )
-		std::cout << error_message << "\n";
+	for( const CodeBuilderError& error : build_result.errors )
+		std::cout << error.file_pos.line << ":" << error.file_pos.pos_in_line << " " << ToStdString( error.text ) << "\n";
 
-	U_ASSERT( build_result.error_messages.empty() );
+	U_ASSERT( build_result.errors.empty() );
 
 	return std::move( build_result.module );
 }

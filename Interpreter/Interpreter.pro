@@ -30,6 +30,7 @@ INCLUDEPATH+= $$LLVM_INCLUDES_DIR
 INCLUDEPATH+= $$LLVM_GEN_INCLUDES_DIR
 
 SOURCES += \
+	src/code_builder_errors.cpp \
 	src/code_builder_llvm.cpp \
 	src/code_builder_llvm_types.cpp \
 	src/inverse_polish_notation.cpp \
@@ -45,6 +46,7 @@ SOURCES += \
 
 HEADERS += \
 	src/assert.hpp \
+	src/code_builder_errors.hpp \
 	src/code_builder_llvm.hpp \
 	src/code_builder_llvm_types.hpp \
 	src/inverse_polish_notation.hpp \
