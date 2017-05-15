@@ -174,9 +174,6 @@ CodeBuilderLLVM::BuildResult CodeBuilderLLVM::BuildProgram( const ProgramElement
 			else
 			{
 				// Args.
-				std::vector<ProgramString> arg_names;
-				arg_names.reserve( func->arguments_.size() );
-
 				func_info.type.function->args.reserve( func->arguments_.size() );
 				for( const VariableDeclaration& arg : func->arguments_ )
 				{
@@ -184,13 +181,12 @@ CodeBuilderLLVM::BuildResult CodeBuilderLLVM::BuildProgram( const ProgramElement
 						errors_.push_back( ReportUsingKeywordAsName( arg.file_pos_ ) );
 
 					func_info.type.function->args.push_back( PrepareType( arg.file_pos_, arg.type ) );
-					arg_names.push_back( arg.name );
 				}
 
 				BuildFuncCode(
 					func_info,
 					func->name_,
-					arg_names,
+					func->arguments_,
 					*func->block_ );
 
 				global_names_.AddName( func->name_, std::move( func_info ) );
@@ -340,7 +336,7 @@ ClassPtr CodeBuilderLLVM::PrepareClass( const ClassDeclaration& class_declaratio
 void CodeBuilderLLVM::BuildFuncCode(
 	Variable& func_variable,
 	const ProgramString& func_name,
-	const std::vector<ProgramString>& arg_names,
+	const std::vector<VariableDeclaration>& args,
 	const Block& block ) noexcept
 {
 	//func.type.kind= Type::Kind::Function;
@@ -387,16 +383,15 @@ void CodeBuilderLLVM::BuildFuncCode(
 
 		const NamesScope::InsertedName* inserted_arg=
 			function_names.AddName(
-				arg_names[ arg_number ],
+				args[ arg_number ].name,
 				std::move(var) );
 		if( !inserted_arg )
 		{
-			FilePos dummy_file_pos; dummy_file_pos.line= 1u; dummy_file_pos.pos_in_line= 0u; // TODO - get real file pos.
-			errors_.push_back( ReportRedefinition( dummy_file_pos, arg_names[ arg_number ] ) );
+			errors_.push_back( ReportRedefinition( args[ arg_number ].file_pos_, args[ arg_number ].name ) );
 			return;
 		}
 
-		llvm_arg.setName( ToStdString( arg_names[ arg_number ] ) );
+		llvm_arg.setName( ToStdString( args[ arg_number ].name ) );
 		++arg_number;
 	}
 

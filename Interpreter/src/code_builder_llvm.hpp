@@ -55,7 +55,7 @@ private:
 	void BuildFuncCode(
 		Variable& func,
 		const ProgramString& func_name,
-		const std::vector<ProgramString>& arg_names,
+		const std::vector<VariableDeclaration>& args,
 		const Block& block ) noexcept;
 
 	void BuildBlockCode(
