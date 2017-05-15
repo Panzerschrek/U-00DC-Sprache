@@ -316,9 +316,8 @@ ClassPtr CodeBuilderLLVM::PrepareClass( const ClassDeclaration& class_declaratio
 	result->fields.reserve( class_declaration.fields_.size() );
 	for( const ClassDeclaration::Field& in_field : class_declaration.fields_ )
 	{
-		// TODO - get real file_pos.
 		if( result->GetField( in_field.name ) != nullptr )
-			errors_.push_back( ReportRedefinition( class_declaration.file_pos_, in_field.name ) );
+			errors_.push_back( ReportRedefinition( in_field.file_pos, in_field.name ) );
 
 		Class::Field out_field;
 		out_field.name= in_field.name;
