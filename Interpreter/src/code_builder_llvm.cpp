@@ -1019,7 +1019,7 @@ Variable CodeBuilderLLVM::BuildExpressionCode_r(
 					llvm::Constant::getIntegerValue( llvm_type, llvm::APInt( result.type.SizeOf() * 8u, uint64_t(numeric_constant->value_) ) );
 			else if( IsFloatingPoint( type ) )
 				result.llvm_value=
-					llvm::Constant::getIntegerValue( llvm_type, llvm::APInt::doubleToBits( numeric_constant->value_ ) );
+					llvm::ConstantFP::get( llvm_type, static_cast<double>( numeric_constant->value_) );
 			else
 			{
 				U_ASSERT(false);

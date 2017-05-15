@@ -260,6 +260,30 @@ static void NumericConstantsTest1()
 	U_ASSERT( static_cast<uint64_t>( 45783984055402ll ) == result_value.IntVal.getLimitedValue() );
 }
 
+static void NumericConstantsTest2()
+{
+	static const char c_program_text[]=
+	"\
+	fn Pi() : f32\
+	{\
+		return 3.1415926535f32;\
+	}"
+	;
+
+	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "Pi" );
+	U_ASSERT( function != nullptr );
+
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	ASSERT_NEAR( 3.1415926535f, result_value.FloatVal, 0.0001f );
+}
+
 static void UnaryMinusTest()
 {
 	static const char c_program_text[]=
@@ -1432,6 +1456,7 @@ void RunCodeBuilderLLVMTest()
 	VariablesTest();
 	NumericConstantsTest0();
 	NumericConstantsTest1();
+	NumericConstantsTest2();
 	UnaryMinusTest();
 	UnaryMinusFloatTest();
 	ArraysTest0();
