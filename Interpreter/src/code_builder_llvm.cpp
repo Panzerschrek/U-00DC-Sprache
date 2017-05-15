@@ -1,5 +1,7 @@
+#include "push_disable_llvm_warnings.hpp"
 #include <llvm/IR/Constant.h>
 #include <llvm/IR/LLVMContext.h>
+#include "pop_llvm_warnings.hpp"
 
 #include "assert.hpp"
 #include "keywords.hpp"

@@ -52,7 +52,9 @@ HEADERS += \
 	src/inverse_polish_notation.hpp \
 	src/keywords.cpp \
 	src/lexical_analyzer.hpp \
+	src/pop_llvm_warnings.hpp \
 	src/program_string.hpp \
+	src/push_disable_llvm_warnings.hpp \
 	src/syntax_elements.hpp \
 	src/syntax_analyzer.hpp \
 	src/tests/code_builder_llvm_test.hpp \

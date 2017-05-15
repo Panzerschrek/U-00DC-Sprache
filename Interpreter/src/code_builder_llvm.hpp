@@ -1,8 +1,10 @@
 #pragma once
 #include <vector>
 
+#include "push_disable_llvm_warnings.hpp"
 #include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/Module.h>
+#include "pop_llvm_warnings.hpp"
 
 #include "code_builder_errors.hpp"
 #include "code_builder_llvm_types.hpp"

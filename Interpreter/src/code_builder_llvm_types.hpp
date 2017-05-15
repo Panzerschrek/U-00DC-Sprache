@@ -3,7 +3,9 @@
 #include <vector>
 #include <map>
 
+#include "push_disable_llvm_warnings.hpp"
 #include <llvm/IR/Function.h>
+#include "pop_llvm_warnings.hpp"
 
 #include "lang_types.hpp"
 #include "program_string.hpp"

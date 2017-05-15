@@ -1,9 +1,11 @@
 #include <cstdlib>
 #include <iostream>
 
+#include "../push_disable_llvm_warnings.hpp"
 #include <llvm/ExecutionEngine/ExecutionEngine.h>
 #include <llvm/ExecutionEngine/GenericValue.h>
 #include <llvm/ExecutionEngine/Interpreter.h>
+#include "../pop_llvm_warnings.hpp"
 
 #include "../assert.hpp"
 #include "../code_builder_llvm.hpp"
