@@ -45,7 +45,7 @@ private:
 	};
 
 private:
-	Type PrepareType( const TypeName& type_name );
+	Type PrepareType( const FilePos& file_pos, const TypeName& type_name );
 	ClassPtr PrepareClass( const ClassDeclaration& class_declaration );
 
 	// Code build methods.

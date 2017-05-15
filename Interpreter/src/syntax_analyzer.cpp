@@ -1029,6 +1029,7 @@ static std::unique_ptr<ClassDeclaration> ParseClass(
 
 		result->fields_.emplace_back();
 		ClassDeclaration::Field& field= result->fields_.back();
+		field.file_pos= it->file_pos;
 
 		field.name= it->text;
 		++it; U_ASSERT( it < it_end );

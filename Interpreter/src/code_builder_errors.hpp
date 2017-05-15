@@ -22,6 +22,7 @@ enum class CodeBuilderErrorCode : unsigned int
 	NotImplemented,
 	ArraySizeIsNegative,
 	ArraySizeIsNotInteger,
+	NameIsNotTypeName,
 
 	// Push new error codes at back.
 };
@@ -44,5 +45,6 @@ CodeBuilderError ReportFunctionSignatureMismatch( const FilePos& file_pos );
 CodeBuilderError ReportNotImplemented( const FilePos& file_pos, const char* what );
 CodeBuilderError ReportArraySizeIsNegative( const FilePos& file_pos );
 CodeBuilderError ReportArraySizeIsNotInteger( const FilePos& file_pos );
+CodeBuilderError ReportNameIsNotTypeName( const FilePos& file_pos, const ProgramString& name );
 
 } // namespace Interpreter

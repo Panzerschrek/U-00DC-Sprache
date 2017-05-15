@@ -139,4 +139,15 @@ CodeBuilderError ReportArraySizeIsNotInteger( const FilePos& file_pos )
 	return error;
 }
 
+CodeBuilderError ReportNameIsNotTypeName( const FilePos& file_pos, const ProgramString& name )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::NameIsNotTypeName;
+
+	error.text= "\""_SpC + name + "\" is not type name."_SpC;
+
+	return error;
+}
+
 } // namespace Interpreter

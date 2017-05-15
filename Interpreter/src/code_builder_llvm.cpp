@@ -183,7 +183,7 @@ CodeBuilderLLVM::BuildResult CodeBuilderLLVM::BuildProgram( const ProgramElement
 					if( IsKeyword( arg.name ) )
 						errors_.push_back( ReportUsingKeywordAsName( arg.file_pos_ ) );
 
-					func_info.type.function->args.push_back( PrepareType( arg.type ) );
+					func_info.type.function->args.push_back( PrepareType( arg.file_pos_, arg.type ) );
 					arg_names.push_back( arg.name );
 				}
 
@@ -223,7 +223,7 @@ CodeBuilderLLVM::BuildResult CodeBuilderLLVM::BuildProgram( const ProgramElement
 	return result;
 }
 
-Type CodeBuilderLLVM::PrepareType( const TypeName& type_name )
+Type CodeBuilderLLVM::PrepareType( const FilePos& file_pos, const TypeName& type_name )
 {
 	Type result;
 	Type* last_type= &result;
@@ -274,16 +274,11 @@ Type CodeBuilderLLVM::PrepareType( const TypeName& type_name )
 				last_type->kind= Type::Kind::Class;
 			}
 			else
-			{
-				// TODO - Report "is not type name".
-				error_count_++;
-			}
+				errors_.push_back( ReportNameIsNotTypeName( file_pos, type_name.name ) );
+
 		}
 		else
-		{
-			FilePos dummy_file_pos; dummy_file_pos.line= 1u; dummy_file_pos.pos_in_line= 0u; // TODO - get real file pos.
-			errors_.push_back( ReportNameNotFound( dummy_file_pos, type_name.name ) );
-		}
+			errors_.push_back( ReportNameNotFound( file_pos, type_name.name ) );
 	}
 	else
 	{
@@ -327,7 +322,7 @@ ClassPtr CodeBuilderLLVM::PrepareClass( const ClassDeclaration& class_declaratio
 
 		Class::Field out_field;
 		out_field.name= in_field.name;
-		out_field.type= PrepareType( in_field.type );
+		out_field.type= PrepareType( in_field.file_pos, in_field.type );
 		out_field.index= result->fields.size();
 
 		members_llvm_types.emplace_back( out_field.type.GetLLVMType() );
@@ -431,7 +426,7 @@ void CodeBuilderLLVM::BuildBlockCode(
 					ReportUsingKeywordAsName( variable_declaration->file_pos_ );
 
 				Variable variable;
-				variable.type= PrepareType( variable_declaration->type );
+				variable.type= PrepareType( variable_declaration->file_pos_, variable_declaration->type );
 				variable.location= Variable::Location::PointerToStack;
 				variable.llvm_value= function_context.llvm_ir_builder.CreateAlloca( variable.type.GetLLVMType() );
 
