@@ -69,15 +69,15 @@ CodeBuilderError ReportOperationNotSupportedForThisType( const FilePos& file_pos
 CodeBuilderError ReportTypesMismatch(
 	const FilePos& file_pos,
 	const ProgramString& expected_type_name,
-	const char* const expression )
+	const ProgramString& actual_type_name )
 {
 	CodeBuilderError error;
 	error.file_pos= file_pos;
 	error.code= CodeBuilderErrorCode::TypesMismatch;
 
 	error.text=
-		"Unexpected type of expression \""_SpC + ToProgramString( expression ) +
-		"\", expected \""_SpC + expected_type_name + "\"."_SpC;
+		"Unexpected type, expected \""_SpC + expected_type_name +
+		"\", got \""_SpC + actual_type_name + "\"."_SpC;
 
 	return error;
 }

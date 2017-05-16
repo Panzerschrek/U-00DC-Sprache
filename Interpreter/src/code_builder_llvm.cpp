@@ -1140,7 +1140,11 @@ void CodeBuilderLLVM::BuildWhileOperatorCode(
 	if( condition_expression.type.kind != Type::Kind::Fundamental ||
 		condition_expression.type.fundamental != U_FundamentalType::Bool )
 	{
-		// TODO - report unexpected type.
+		errors_.push_back(
+			ReportTypesMismatch(
+				while_operator.condition_->file_pos_,
+				GetFundamentalTypeName( U_FundamentalType::Bool ),
+				condition_expression.type.ToString() ) );
 		throw ProgramError();
 	}
 
@@ -1250,7 +1254,11 @@ void CodeBuilderLLVM::BuildIfOperatorCode(
 			if( condition_expression.type.kind != Type::Kind::Fundamental ||
 				condition_expression.type.fundamental != U_FundamentalType::Bool )
 			{
-				// TODO - report expected bool.
+				errors_.push_back(
+					ReportTypesMismatch(
+						branch.condition->file_pos_,
+						GetFundamentalTypeName( U_FundamentalType::Bool ),
+						condition_expression.type.ToString() ) );
 				throw ProgramError();
 			}
 
