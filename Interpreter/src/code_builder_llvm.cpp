@@ -1069,7 +1069,7 @@ Variable CodeBuilderLLVM::BuildExpressionCode_r(
 				const bool is_float= IsFloatingPoint( result.type.fundamental );
 				if( !( IsInteger( result.type.fundamental ) || is_float ) )
 				{
-					errors_.push_back( ReportOperationNotSupportedForThisType( unary_minus->file_pos_, result.type.fundamental ) );
+					errors_.push_back( ReportOperationNotSupportedForThisType( unary_minus->file_pos_, result.type.ToString() ) );
 					throw ProgramError();
 				}
 				// TODO - maybe not support unary minus for 8 and 16 bot integer types?

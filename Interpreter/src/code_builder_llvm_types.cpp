@@ -1,4 +1,5 @@
 #include "assert.hpp"
+#include "keywords.hpp"
 
 #include "code_builder_llvm_types.hpp"
 
@@ -26,6 +27,43 @@ const size_t g_fundamental_types_size[ size_t(U_FundamentalType::LastType) ]=
 	U_DESIGNATED_INITIALIZER( U_FundamentalType::u64, sizeof(U_u64) ),
 	U_DESIGNATED_INITIALIZER( U_FundamentalType::f32, sizeof(U_f32) ),
 	U_DESIGNATED_INITIALIZER( U_FundamentalType::f64, sizeof(U_f64) ),
+};
+
+const char g_invalid_type_name_ascii[]= "InvalidType";
+const ProgramString g_invalid_type_name= ToProgramString( g_invalid_type_name_ascii );
+
+const char* const g_fundamental_types_names_ascii[ size_t(U_FundamentalType::LastType) ]=
+{
+	U_DESIGNATED_INITIALIZER( U_FundamentalType::InvalidType, g_invalid_type_name_ascii ),
+	U_DESIGNATED_INITIALIZER( U_FundamentalType::Void,  KeywordAscii( Keywords::void_ ) ),
+	U_DESIGNATED_INITIALIZER( U_FundamentalType::Bool, KeywordAscii( Keywords::bool_ ) ),
+	U_DESIGNATED_INITIALIZER( U_FundamentalType::i8 , KeywordAscii( Keywords::i8_  ) ),
+	U_DESIGNATED_INITIALIZER( U_FundamentalType::u8 , KeywordAscii( Keywords::u8_  ) ),
+	U_DESIGNATED_INITIALIZER( U_FundamentalType::i16, KeywordAscii( Keywords::i16_ ) ),
+	U_DESIGNATED_INITIALIZER( U_FundamentalType::u16, KeywordAscii( Keywords::u16_ ) ),
+	U_DESIGNATED_INITIALIZER( U_FundamentalType::i32, KeywordAscii( Keywords::i32_ ) ),
+	U_DESIGNATED_INITIALIZER( U_FundamentalType::u32, KeywordAscii( Keywords::u32_ ) ),
+	U_DESIGNATED_INITIALIZER( U_FundamentalType::i64, KeywordAscii( Keywords::i64_ ) ),
+	U_DESIGNATED_INITIALIZER( U_FundamentalType::u64, KeywordAscii( Keywords::u64_ ) ),
+	U_DESIGNATED_INITIALIZER( U_FundamentalType::f32, KeywordAscii( Keywords::f32_ ) ),
+	U_DESIGNATED_INITIALIZER( U_FundamentalType::f64, KeywordAscii( Keywords::f64_ ) ),
+};
+
+const ProgramString (&g_fundamental_types_names)[ size_t(U_FundamentalType::LastType) ]=
+{
+	U_DESIGNATED_INITIALIZER( U_FundamentalType::InvalidType, g_invalid_type_name ),
+	U_DESIGNATED_INITIALIZER( U_FundamentalType::Void,  Keyword( Keywords::void_ ) ),
+	U_DESIGNATED_INITIALIZER( U_FundamentalType::Bool, Keyword( Keywords::bool_ ) ),
+	U_DESIGNATED_INITIALIZER( U_FundamentalType::i8 , Keyword( Keywords::i8_  ) ),
+	U_DESIGNATED_INITIALIZER( U_FundamentalType::u8 , Keyword( Keywords::u8_  ) ),
+	U_DESIGNATED_INITIALIZER( U_FundamentalType::i16, Keyword( Keywords::i16_ ) ),
+	U_DESIGNATED_INITIALIZER( U_FundamentalType::u16, Keyword( Keywords::u16_ ) ),
+	U_DESIGNATED_INITIALIZER( U_FundamentalType::i32, Keyword( Keywords::i32_ ) ),
+	U_DESIGNATED_INITIALIZER( U_FundamentalType::u32, Keyword( Keywords::u32_ ) ),
+	U_DESIGNATED_INITIALIZER( U_FundamentalType::i64, Keyword( Keywords::i64_ ) ),
+	U_DESIGNATED_INITIALIZER( U_FundamentalType::u64, Keyword( Keywords::u64_ ) ),
+	U_DESIGNATED_INITIALIZER( U_FundamentalType::f32, Keyword( Keywords::f32_ ) ),
+	U_DESIGNATED_INITIALIZER( U_FundamentalType::f64, Keyword( Keywords::f64_ ) ),
 };
 
 } // namespace
@@ -127,6 +165,46 @@ llvm::Type* Type::GetLLVMType() const
 
 	U_ASSERT(false);
 	return nullptr;
+}
+
+ProgramString Type::ToString() const
+{
+	switch( kind )
+	{
+	case Kind::Fundamental:
+		return GetFundamentalTypeName( fundamental );
+
+	case Kind::Function:
+	{
+		U_ASSERT( function != nullptr );
+		ProgramString result;
+		result+= "fn "_SpC;
+		result+= function->return_type.ToString();
+		result+= " ( "_SpC;
+		for( const Type& arg_type : function->args )
+		{
+			result+= arg_type.ToString();
+			if( &arg_type != &function->args.back() )
+				result+= ", "_SpC;
+		}
+		result+= " )"_SpC;
+
+		return result;
+	}
+
+	case Kind::Array:
+		U_ASSERT( array != nullptr );
+		return
+			"[ "_SpC + array->type.ToString() + ", "_SpC +
+			ToProgramString( std::to_string( array->size ).c_str() ) + " ]"_SpC;
+
+	case Kind::Class:
+		U_ASSERT( class_ != nullptr );
+		return "class "_SpC + class_->name;
+	};
+
+	U_ASSERT(false);
+	return ""_SpC;
 }
 
 bool operator==( const Type& r, const Type& l )
@@ -233,6 +311,22 @@ const NamesScope::InsertedName*
 		return prev_->GetName( name );
 
 	return nullptr;
+}
+
+const ProgramString& GetFundamentalTypeName( const U_FundamentalType fundamental_type )
+{
+	if( fundamental_type >= U_FundamentalType::LastType )
+		return g_invalid_type_name;
+
+	return g_fundamental_types_names[ size_t( fundamental_type ) ];
+}
+
+const char* GetFundamentalTypeNameASCII( const U_FundamentalType fundamental_type )
+{
+	if( fundamental_type >= U_FundamentalType::LastType )
+		return g_invalid_type_name_ascii;
+
+	return g_fundamental_types_names_ascii[ size_t( fundamental_type ) ];
 }
 
 } //namespace CodeBuilderLLVMPrivate

@@ -54,6 +54,7 @@ struct Type final
 	size_t SizeOf() const;
 
 	llvm::Type* GetLLVMType() const;
+	ProgramString ToString() const;
 };
 
 bool operator==( const Type& r, const Type& l );
@@ -156,6 +157,9 @@ public:
 		return "ProgramError";
 	}
 };
+
+const ProgramString& GetFundamentalTypeName( U_FundamentalType fundamental_type );
+const char* GetFundamentalTypeNameASCII( U_FundamentalType fundamental_type );
 
 } //namespace CodeBuilderLLVMPrivate
 
