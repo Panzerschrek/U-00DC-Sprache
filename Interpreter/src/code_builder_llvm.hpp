@@ -123,6 +123,7 @@ private:
 		llvm::Type* f64;
 
 		llvm::Type* void_;
+		llvm::Type* invalid_type_;
 		llvm::IntegerType* bool_;
 	} fundamental_llvm_types_;
 

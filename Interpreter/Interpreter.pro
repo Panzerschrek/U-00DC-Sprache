@@ -40,6 +40,7 @@ SOURCES += \
 	src/program_string.cpp \
 	src/syntax_analyzer.cpp \
 	src/syntax_elements.cpp \
+	src/tests/code_builder_errors_test.cpp \
 	src/tests/code_builder_llvm_test.cpp \
 	src/tests/inverse_polish_notation_test.cpp \
 
@@ -57,5 +58,6 @@ HEADERS += \
 	src/push_disable_llvm_warnings.hpp \
 	src/syntax_elements.hpp \
 	src/syntax_analyzer.hpp \
+	src/tests/code_builder_errors_test.hpp \
 	src/tests/code_builder_llvm_test.hpp \
 	src/tests/inverse_polish_notation_test.hpp \

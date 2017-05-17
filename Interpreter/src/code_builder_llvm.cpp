@@ -119,6 +119,7 @@ CodeBuilderLLVM::CodeBuilderLLVM()
 	fundamental_llvm_types_.f32= llvm::Type::getFloatTy( llvm_context_ );
 	fundamental_llvm_types_.f64= llvm::Type::getDoubleTy( llvm_context_ );
 
+	fundamental_llvm_types_.invalid_type_= llvm::Type::getInt8Ty( llvm_context_ );
 	fundamental_llvm_types_.void_= llvm::Type::getVoidTy( llvm_context_ );
 	fundamental_llvm_types_.bool_= llvm::Type::getInt1Ty( llvm_context_ );
 }
@@ -160,7 +161,7 @@ CodeBuilderLLVM::BuildResult CodeBuilderLLVM::BuildProgram( const ProgramElement
 				if( it == g_types_map.end() )
 				{
 					errors_.push_back( ReportNameNotFound( func->file_pos_, func->return_type_ ) );
-					func_info.type.function->return_type.fundamental= U_FundamentalType::Void;
+					func_info.type.function->return_type.fundamental= U_FundamentalType::InvalidType;
 				}
 				else
 					func_info.type.function->return_type.fundamental= it->second;
@@ -276,7 +277,11 @@ Type CodeBuilderLLVM::PrepareType( const FilePos& file_pos, const TypeName& type
 
 		}
 		else
+		{
 			errors_.push_back( ReportNameNotFound( file_pos, type_name.name ) );
+			last_type->fundamental= U_FundamentalType::InvalidType;
+			last_type->fundamental_llvm_type= GetFundamentalLLVMType( last_type->fundamental );
+		}
 	}
 	else
 	{
@@ -992,7 +997,7 @@ Variable CodeBuilderLLVM::BuildExpressionCode_r(
 				const Class::Field* field= result.type.class_->GetField( member_access_operator->member_name_ );
 				if( field == nullptr )
 				{
-					ReportNameNotFound( member_access_operator->file_pos_, member_access_operator->member_name_ );
+					errors_.push_back( ReportNameNotFound( member_access_operator->file_pos_, member_access_operator->member_name_ ) );
 					throw ProgramError();
 				}
 
@@ -1285,6 +1290,7 @@ llvm::Type* CodeBuilderLLVM::GetFundamentalLLVMType( const U_FundamentalType fun
 	switch( fundmantal_type )
 	{
 	case U_FundamentalType::InvalidType:
+		return fundamental_llvm_types_.invalid_type_;
 	case U_FundamentalType::LastType:
 		break;
 
