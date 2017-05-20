@@ -309,6 +309,9 @@ Type CodeBuilderLLVM::PrepareType( const FilePos& file_pos, const TypeName& type
 
 ClassPtr CodeBuilderLLVM::PrepareClass( const ClassDeclaration& class_declaration )
 {
+	if( IsKeyword( class_declaration.name_ ) )
+		errors_.push_back( ReportUsingKeywordAsName( class_declaration.file_pos_ ) );
+
 	ClassPtr result= std::make_shared<Class>();
 
 	result->name= class_declaration.name_;
@@ -424,7 +427,7 @@ void CodeBuilderLLVM::BuildBlockCode(
 				dynamic_cast<const VariableDeclaration*>( block_element_ptr ) )
 			{
 				if( IsKeyword( variable_declaration->name ) )
-					ReportUsingKeywordAsName( variable_declaration->file_pos_ );
+					errors_.push_back( ReportUsingKeywordAsName( variable_declaration->file_pos_ ) );
 
 				Variable variable;
 				variable.type= PrepareType( variable_declaration->file_pos_, variable_declaration->type );

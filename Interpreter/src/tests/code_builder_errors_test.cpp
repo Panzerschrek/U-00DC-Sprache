@@ -97,11 +97,181 @@ static void NameNotFoundTest2()
 	U_ASSERT( error.file_pos.line == 6u );
 }
 
+static void UsingKeywordAsName0()
+{
+	// Function name is keyword.
+	static const char c_program_text[]=
+	R"(
+		fn let() : i32
+		{
+			return 0;
+		}
+	)";
+
+	const CodeBuilderLLVM::BuildResult build_result= BuildProgram( c_program_text );
+
+	U_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_ASSERT( error.code == CodeBuilderErrorCode::UsingKeywordAsName );
+	U_ASSERT( error.file_pos.line == 2u );
+}
+
+static void UsingKeywordAsName1()
+{
+	// Arg name is keyword.
+	static const char c_program_text[]=
+	R"(
+		fn Foo( continue : i32 ) : i32
+		{
+			return 0;
+		}
+	)";
+
+	const CodeBuilderLLVM::BuildResult build_result= BuildProgram( c_program_text );
+
+	U_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_ASSERT( error.code == CodeBuilderErrorCode::UsingKeywordAsName );
+	U_ASSERT( error.file_pos.line == 2u );
+}
+
+static void UsingKeywordAsName2()
+{
+	// class name is keyword.
+	static const char c_program_text[]=
+	R"(
+		class while{};
+	)";
+
+	const CodeBuilderLLVM::BuildResult build_result= BuildProgram( c_program_text );
+
+	U_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_ASSERT( error.code == CodeBuilderErrorCode::UsingKeywordAsName );
+	U_ASSERT( error.file_pos.line == 2u );
+}
+
+static void UsingKeywordAsName3()
+{
+	// Arg name is keyword.
+	static const char c_program_text[]=
+	R"(
+		fn Foo() : i32
+		{
+			let void : i32;
+			return 0;
+		}
+	)";
+
+	const CodeBuilderLLVM::BuildResult build_result= BuildProgram( c_program_text );
+
+	U_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_ASSERT( error.code == CodeBuilderErrorCode::UsingKeywordAsName );
+	U_ASSERT( error.file_pos.line == 4u );
+}
+
+static void Redefinition0()
+{
+	// Variable redefinition in same scope.
+	static const char c_program_text[]=
+	R"(
+		fn Foo() : i32
+		{
+			let x : i32;
+			let x : i32;
+			return 0;
+		}
+	)";
+
+	const CodeBuilderLLVM::BuildResult build_result= BuildProgram( c_program_text );
+
+	U_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_ASSERT( error.code == CodeBuilderErrorCode::Redefinition );
+	U_ASSERT( error.file_pos.line == 5u );
+}
+
+static void Redefinition1()
+{
+	// Variable redefinition in different scopes.
+	static const char c_program_text[]=
+	R"(
+		fn Foo() : i32
+		{
+			let x : i32;
+			{ let x : i32; }
+			return 0;
+		}
+	)";
+
+	const CodeBuilderLLVM::BuildResult build_result= BuildProgram( c_program_text );
+	U_ASSERT( build_result.errors.empty() );
+}
+
+static void Redefinition2()
+{
+	// Class redefinition.
+	static const char c_program_text[]=
+	R"(
+		class AA{};
+		fn Foo() : i32
+		{ return 0; }
+		class AA{};
+	)";
+
+	const CodeBuilderLLVM::BuildResult build_result= BuildProgram( c_program_text );
+
+	U_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_ASSERT( error.code == CodeBuilderErrorCode::Redefinition );
+	U_ASSERT( error.file_pos.line == 5u );
+}
+
+static void Redefinition3()
+{
+	// Function redefinition.
+	// TODO - write new tests, when functions overloading will be implemented
+	static const char c_program_text[]=
+	R"(
+		fn Foo() : i32
+		{ return 0; }
+
+		fn Bar() : i32
+		{ return 1; }
+
+		fn Foo( x : f32 ) : i32
+		{ return 42; }
+	)";
+
+	const CodeBuilderLLVM::BuildResult build_result= BuildProgram( c_program_text );
+
+	U_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_ASSERT( error.code == CodeBuilderErrorCode::Redefinition );
+	U_ASSERT( error.file_pos.line == 8u );
+}
+
 void RunCodeBuilderErrorsTests()
 {
 	NameNotFoundTest0();
 	NameNotFoundTest1();
 	NameNotFoundTest2();
+	UsingKeywordAsName0();
+	UsingKeywordAsName1();
+	UsingKeywordAsName2();
+	UsingKeywordAsName3();
+	Redefinition0();
+	Redefinition1();
+	Redefinition2();
+	Redefinition3();
 }
 
 } // namespace Interpreter
