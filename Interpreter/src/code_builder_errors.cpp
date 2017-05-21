@@ -12,6 +12,7 @@ CodeBuilderError ReportBuildFailed()
 	CodeBuilderError error;
 	error.file_pos.line= 1u;
 	error.file_pos.pos_in_line= 0u;
+	error.code = CodeBuilderErrorCode::BuildFailed;
 
 	error.text= "Build failed."_SpC;
 

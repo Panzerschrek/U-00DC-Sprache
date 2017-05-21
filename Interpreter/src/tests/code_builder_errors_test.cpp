@@ -259,6 +259,52 @@ static void Redefinition3()
 	U_ASSERT( error.file_pos.line == 8u );
 }
 
+static void FunctionSignatureMismatchTest0()
+{
+	// Argument count mismatch.
+	// TODO - support functions overloading.
+	static const char c_program_text[]=
+	R"(
+		fn Bar( a : i32, b : bool ) : bool {}
+		fn Foo()
+		{
+			Bar( 1 );
+			Bar( 1, false, 0.32f );
+		}
+	)";
+
+	const CodeBuilderLLVM::BuildResult build_result= BuildProgram( c_program_text );
+
+	U_ASSERT( build_result.errors.size() >= 2u );
+
+	U_ASSERT( build_result.errors[0].code == CodeBuilderErrorCode::FunctionSignatureMismatch );
+	U_ASSERT( build_result.errors[0].file_pos.line == 5u );
+	U_ASSERT( build_result.errors[1].code == CodeBuilderErrorCode::FunctionSignatureMismatch );
+	U_ASSERT( build_result.errors[1].file_pos.line == 6u );
+}
+
+static void FunctionSignatureMismatchTest1()
+{
+	// Argumenst type mismatch.
+	// TODO - support functions overloading.
+	static const char c_program_text[]=
+	R"(
+		fn Bar( a : i32, b : bool ) : bool {}
+		fn Foo()
+		{
+			Bar( 0.5f32, false );
+		}
+	)";
+
+	const CodeBuilderLLVM::BuildResult build_result= BuildProgram( c_program_text );
+
+	U_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_ASSERT( error.code == CodeBuilderErrorCode::FunctionSignatureMismatch );
+	U_ASSERT( error.file_pos.line == 5u );
+}
+
 static void ArraySizeIsNotInteger()
 {
 	static const char c_program_text[]=
@@ -292,6 +338,8 @@ void RunCodeBuilderErrorsTests()
 	Redefinition1();
 	Redefinition2();
 	Redefinition3();
+	FunctionSignatureMismatchTest0();
+	FunctionSignatureMismatchTest1();
 	ArraySizeIsNotInteger();
 }
 
