@@ -259,6 +259,135 @@ static void Redefinition3()
 	U_ASSERT( error.file_pos.line == 8u );
 }
 
+static void OperationNotSupportedForThisTypeTest0()
+{
+	// Binary operations errors.
+	static const char c_program_text[]=
+	R"(
+		class S{};
+		fn Bar(){}
+		fn Foo()
+		{
+			let s : S;
+			let arr : [ i32, 5 ];
+			false + true; // No binary operators for booleans.
+			1u8 - 4u8; // Operation not supported for small integers.
+			arr * arr; // Operation not supported for arrays.
+			Bar / Bar; // Operation not supported for functions.
+			0.35f32 & 1488.42f32; // Bit operator for floats.
+			false > true; // Comparision of bools.
+			Bar == Bar; // Exact comparision of functions.
+			arr <= arr; // Comparision of arrays.
+		}
+	)";
+
+	const CodeBuilderLLVM::BuildResult build_result= BuildProgram( c_program_text );
+
+	U_ASSERT( build_result.errors.size() >= 8u );
+	U_ASSERT( build_result.errors[0].code == CodeBuilderErrorCode::OperationNotSupportedForThisType );
+	U_ASSERT( build_result.errors[0].file_pos.line == 8u );
+	U_ASSERT( build_result.errors[1].code == CodeBuilderErrorCode::OperationNotSupportedForThisType );
+	U_ASSERT( build_result.errors[1].file_pos.line == 9u );
+	U_ASSERT( build_result.errors[2].code == CodeBuilderErrorCode::OperationNotSupportedForThisType );
+	U_ASSERT( build_result.errors[2].file_pos.line == 10u );
+	U_ASSERT( build_result.errors[3].code == CodeBuilderErrorCode::OperationNotSupportedForThisType );
+	U_ASSERT( build_result.errors[3].file_pos.line == 11u );
+	U_ASSERT( build_result.errors[4].code == CodeBuilderErrorCode::OperationNotSupportedForThisType );
+	U_ASSERT( build_result.errors[4].file_pos.line == 12u );
+	U_ASSERT( build_result.errors[5].code == CodeBuilderErrorCode::OperationNotSupportedForThisType );
+	U_ASSERT( build_result.errors[5].file_pos.line == 13u );
+	U_ASSERT( build_result.errors[6].code == CodeBuilderErrorCode::OperationNotSupportedForThisType );
+	U_ASSERT( build_result.errors[6].file_pos.line == 14u );
+	U_ASSERT( build_result.errors[7].code == CodeBuilderErrorCode::OperationNotSupportedForThisType );
+	U_ASSERT( build_result.errors[7].file_pos.line == 15u );
+}
+
+static void OperationNotSupportedForThisTypeTest1()
+{
+	// Indexation operators.
+	static const char c_program_text[]=
+	R"(
+		class S{};
+		fn Bar(){}
+		fn Foo()
+		{
+			let var : f32;
+			let s : S;
+			var[ 42u32 ]; // Indexation of variable.
+			Bar[ 0u32 ]; // Indexation of function.
+			s[ 45u32 ]; // Indexation of class variable.
+		}
+	)";
+
+	const CodeBuilderLLVM::BuildResult build_result= BuildProgram( c_program_text );
+
+	U_ASSERT( build_result.errors.size() >= 3u );
+	U_ASSERT( build_result.errors[0].code == CodeBuilderErrorCode::OperationNotSupportedForThisType );
+	U_ASSERT( build_result.errors[0].file_pos.line == 8u );
+	U_ASSERT( build_result.errors[1].code == CodeBuilderErrorCode::OperationNotSupportedForThisType );
+	U_ASSERT( build_result.errors[1].file_pos.line == 9u );
+	U_ASSERT( build_result.errors[2].code == CodeBuilderErrorCode::OperationNotSupportedForThisType );
+	U_ASSERT( build_result.errors[2].file_pos.line == 10u );
+}
+
+static void OperationNotSupportedForThisTypeTest2()
+{
+	// Member access operators.
+	static const char c_program_text[]=
+	R"(
+		fn Bar(){}
+		fn Foo()
+		{
+			let var : f32;
+			let s : [ u8, 16 ];
+			var.m; // Member access of variable.
+			Bar.member; // Member access of function.
+			s.size; // Member access of array.
+		}
+	)";
+
+	const CodeBuilderLLVM::BuildResult build_result= BuildProgram( c_program_text );
+
+	U_ASSERT( build_result.errors.size() >= 3u );
+	U_ASSERT( build_result.errors[0].code == CodeBuilderErrorCode::OperationNotSupportedForThisType );
+	U_ASSERT( build_result.errors[0].file_pos.line == 7u );
+	U_ASSERT( build_result.errors[1].code == CodeBuilderErrorCode::OperationNotSupportedForThisType );
+	U_ASSERT( build_result.errors[1].file_pos.line == 8u );
+	U_ASSERT( build_result.errors[2].code == CodeBuilderErrorCode::OperationNotSupportedForThisType );
+	U_ASSERT( build_result.errors[2].file_pos.line == 9u );
+}
+
+static void OperationNotSupportedForThisTypeTest3()
+{
+	// Unary minus.
+	static const char c_program_text[]=
+	R"(
+		class S{};
+		fn Bar(){}
+		fn Foo()
+		{
+			let s : S;
+			let a : [ u8, 16 ];
+			-s; // Unary minus for class variable.
+			-Bar; // Unary minus for of function.
+			-a; // Unary minus for array.
+			-false; // Unary minus for bool
+		}
+	)";
+
+	const CodeBuilderLLVM::BuildResult build_result= BuildProgram( c_program_text );
+
+	U_ASSERT( build_result.errors.size() >= 4u );
+	U_ASSERT( build_result.errors[0].code == CodeBuilderErrorCode::OperationNotSupportedForThisType );
+	U_ASSERT( build_result.errors[0].file_pos.line == 8u );
+	U_ASSERT( build_result.errors[1].code == CodeBuilderErrorCode::OperationNotSupportedForThisType );
+	U_ASSERT( build_result.errors[1].file_pos.line == 9u );
+	U_ASSERT( build_result.errors[2].code == CodeBuilderErrorCode::OperationNotSupportedForThisType );
+	U_ASSERT( build_result.errors[2].file_pos.line == 10u );
+	U_ASSERT( build_result.errors[3].code == CodeBuilderErrorCode::OperationNotSupportedForThisType );
+	U_ASSERT( build_result.errors[3].file_pos.line == 11u );
+}
+
 static void TypesMismatchTest0()
 {
 	// Expected 'bool' in 'if'.
@@ -426,6 +555,10 @@ void RunCodeBuilderErrorsTests()
 	Redefinition1();
 	Redefinition2();
 	Redefinition3();
+	OperationNotSupportedForThisTypeTest0();
+	OperationNotSupportedForThisTypeTest1();
+	OperationNotSupportedForThisTypeTest2();
+	OperationNotSupportedForThisTypeTest3();
 	TypesMismatchTest0();
 	TypesMismatchTest1();
 	FunctionSignatureMismatchTest0();

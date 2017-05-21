@@ -581,6 +581,8 @@ Variable CodeBuilderLLVM::BuildExpressionCode_r(
 	U_ASSERT( ipn_index < ipn.size() );
 	const InversePolishNotationComponent& comp= ipn[ ipn_index ];
 
+	const FilePos file_pos = ipn.front().operand->file_pos_;
+
 	if( comp.operator_ != BinaryOperator::None )
 	{
 		Variable l_var=
@@ -615,21 +617,22 @@ Variable CodeBuilderLLVM::BuildExpressionCode_r(
 
 			if( result_type.kind != Type::Kind::Fundamental )
 			{
+				errors_.push_back( ReportOperationNotSupportedForThisType( file_pos, result_type.ToString() ) );
 				throw ProgramError();
 			}
 			else
 			{
 				if( result_type.SizeOf() < 4u )
 				{
-					// TODO - emit error
 					// Operation supported only for 32 and 64bit operands
+					errors_.push_back( ReportOperationNotSupportedForThisType( file_pos, result_type.ToString() ) );
 					throw ProgramError();
 				}
 				const bool is_float= IsFloatingPoint( result_type.fundamental );
 				if( !( IsInteger( result_type.fundamental ) || is_float ) )
 				{
-					// TODO - emit error
 					// this operations allowed only for integer and floating point operands.
+					errors_.push_back( ReportOperationNotSupportedForThisType( file_pos, result_type.ToString() ) );
 					throw ProgramError();
 				}
 
@@ -694,6 +697,7 @@ Variable CodeBuilderLLVM::BuildExpressionCode_r(
 		case BinaryOperator::NotEqual:
 		if( result_type.kind != Type::Kind::Fundamental )
 		{
+			errors_.push_back( ReportOperationNotSupportedForThisType( file_pos, result_type.ToString() ) );
 			throw ProgramError();
 		}
 		else
@@ -701,7 +705,7 @@ Variable CodeBuilderLLVM::BuildExpressionCode_r(
 			const bool if_float= IsFloatingPoint( result_type.fundamental );
 			if( !( IsInteger( result_type.fundamental ) || if_float || result_type.fundamental == U_FundamentalType::Bool ) )
 			{
-				// TODO - report unsopported operation.
+				errors_.push_back( ReportOperationNotSupportedForThisType( file_pos, result_type.ToString() ) );
 				throw ProgramError();
 			}
 
@@ -743,6 +747,7 @@ Variable CodeBuilderLLVM::BuildExpressionCode_r(
 		case BinaryOperator::GreaterEqual:
 		if( result_type.kind != Type::Kind::Fundamental )
 		{
+			errors_.push_back( ReportOperationNotSupportedForThisType( file_pos, result_type.ToString() ) );
 			throw ProgramError();
 		}
 		else
@@ -751,7 +756,7 @@ Variable CodeBuilderLLVM::BuildExpressionCode_r(
 			const bool is_signed= IsSignedInteger( result_type.fundamental );
 			if( !( IsInteger( result_type.fundamental ) || if_float ) )
 			{
-				// TODO - report invalid type.
+				errors_.push_back( ReportOperationNotSupportedForThisType( file_pos, result_type.ToString() ) );
 				throw ProgramError();
 			}
 
@@ -814,14 +819,14 @@ Variable CodeBuilderLLVM::BuildExpressionCode_r(
 		case BinaryOperator::Xor:
 		if( result_type.kind != Type::Kind::Fundamental )
 		{
+			errors_.push_back( ReportOperationNotSupportedForThisType( file_pos, result_type.ToString() ) );
 			throw ProgramError();
 		}
 		else
 		{
 			if( !( IsInteger( result_type.fundamental ) || result_type.fundamental == U_FundamentalType::Bool ) )
 			{
-				// TODO - emit error
-				// this operations allowed only for integer or boolean operands.
+				errors_.push_back( ReportOperationNotSupportedForThisType( file_pos, result_type.ToString() ) );
 				throw ProgramError();
 			}
 
@@ -949,7 +954,7 @@ Variable CodeBuilderLLVM::BuildExpressionCode_r(
 			{
 				if( result.type.kind != Type::Kind::Array )
 				{
-					// TODO - report indexation for non-array.
+					errors_.push_back( ReportOperationNotSupportedForThisType( indexation_operator->file_pos_, result.type.ToString() ) );
 					throw ProgramError();
 				}
 
@@ -959,14 +964,9 @@ Variable CodeBuilderLLVM::BuildExpressionCode_r(
 						names,
 						function_context );
 
-				if( index.type.kind != Type::Kind::Fundamental )
+				if( index.type.kind != Type::Kind::Fundamental || !IsUnsignedInteger( index.type.fundamental ) )
 				{
-					// TODO - report index must be fundamental.
-					throw ProgramError();
-				}
-				if( !IsUnsignedInteger( index.type.fundamental ) )
-				{
-					// TODO - index must be unsigned integer.
+					errors_.push_back( ReportTypesMismatch( indexation_operator->file_pos_, "any unsigned integer"_SpC, index.type.ToString() ) );
 					throw ProgramError();
 				}
 
@@ -992,7 +992,7 @@ Variable CodeBuilderLLVM::BuildExpressionCode_r(
 			{
 				if( result.type.kind != Type::Kind::Class )
 				{
-					// TODO - can not take member of non-class.
+					errors_.push_back( ReportOperationNotSupportedForThisType( member_access_operator->file_pos_, result.type.ToString() ) );
 					throw ProgramError();
 				}
 				U_ASSERT( result.type.class_ );
@@ -1072,6 +1072,7 @@ Variable CodeBuilderLLVM::BuildExpressionCode_r(
 				if( result.type.kind != Type::Kind::Fundamental )
 				{
 					// TODO - report invalid type.
+					errors_.push_back( ReportOperationNotSupportedForThisType( unary_minus->file_pos_, result.type.ToString() ) );
 					throw ProgramError();
 				}
 				const bool is_float= IsFloatingPoint( result.type.fundamental );
