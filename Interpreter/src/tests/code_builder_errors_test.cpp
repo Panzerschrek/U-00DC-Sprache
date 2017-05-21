@@ -259,6 +259,26 @@ static void Redefinition3()
 	U_ASSERT( error.file_pos.line == 8u );
 }
 
+static void ArraySizeIsNotInteger()
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo()
+		{
+			let x : [ i32, 5.0f32 ];
+			return;
+		}
+	)";
+
+	const CodeBuilderLLVM::BuildResult build_result= BuildProgram( c_program_text );
+
+	U_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_ASSERT( error.code == CodeBuilderErrorCode::ArraySizeIsNotInteger );
+	U_ASSERT( error.file_pos.line == 4u );
+}
+
 void RunCodeBuilderErrorsTests()
 {
 	NameNotFoundTest0();
@@ -272,6 +292,7 @@ void RunCodeBuilderErrorsTests()
 	Redefinition1();
 	Redefinition2();
 	Redefinition3();
+	ArraySizeIsNotInteger();
 }
 
 } // namespace Interpreter
