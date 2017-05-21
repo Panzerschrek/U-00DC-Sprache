@@ -1189,12 +1189,9 @@ void CodeBuilderLLVM::BuildBreakOperatorCode(
 	const BreakOperator& break_operator,
 	FunctionContext& function_context ) noexcept
 {
-	U_UNUSED( break_operator );
-
 	if( function_context.block_for_break == nullptr )
 	{
-		// TODO - report break outside wile loop.
-		error_count_++;
+		errors_.push_back( ReportBreakOutsideLoop( break_operator.file_pos_ ) );
 		return;
 	}
 
@@ -1205,12 +1202,9 @@ void CodeBuilderLLVM::BuildContinueOperatorCode(
 	const ContinueOperator& continue_operator,
 	FunctionContext& function_context ) noexcept
 {
-	U_UNUSED( continue_operator );
-
 	if( function_context.block_for_continue == nullptr )
 	{
-		// TODO - report break outside wile loop.
-		error_count_++;
+		errors_.push_back( ReportContinueOutsideLoop( continue_operator.file_pos_ ) );
 		return;
 	}
 

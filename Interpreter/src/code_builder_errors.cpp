@@ -127,6 +127,28 @@ CodeBuilderError ReportArraySizeIsNotInteger( const FilePos& file_pos )
 	return error;
 }
 
+CodeBuilderError ReportBreakOutsideLoop( const FilePos& file_pos )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::BreakOutsideLoop;
+
+	error.text= "Break outside loop."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportContinueOutsideLoop( const FilePos& file_pos )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::ContinueOutsideLoop;
+
+	error.text= "Continue outside loop."_SpC;
+
+	return error;
+}
+
 CodeBuilderError ReportNameIsNotTypeName( const FilePos& file_pos, const ProgramString& name )
 {
 	CodeBuilderError error;

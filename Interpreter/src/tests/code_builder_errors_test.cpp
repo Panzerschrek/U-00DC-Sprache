@@ -259,6 +259,54 @@ static void Redefinition3()
 	U_ASSERT( error.file_pos.line == 8u );
 }
 
+static void TypesMismatchTest0()
+{
+	// Expected 'bool' in 'if'.
+	static const char c_program_text[]=
+	R"(
+		fn Foo()
+		{
+			if( 42 )
+			{
+			}
+			return;
+		}
+	)";
+
+	const CodeBuilderLLVM::BuildResult build_result= BuildProgram( c_program_text );
+
+	U_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_ASSERT( error.code == CodeBuilderErrorCode::TypesMismatch );
+	U_ASSERT( error.file_pos.line == 4u );
+}
+
+static void TypesMismatchTest1()
+{
+	// Expected 'bool' in 'while'.
+	static const char c_program_text[]=
+	R"(
+		fn Foo()
+		{
+			while( 0.25f32 )
+			{
+				break;
+			}
+			return;
+		}
+	)";
+
+	const CodeBuilderLLVM::BuildResult build_result= BuildProgram( c_program_text );
+
+	U_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_ASSERT( error.code == CodeBuilderErrorCode::TypesMismatch );
+	U_ASSERT( error.file_pos.line == 4u );
+}
+
+
 static void FunctionSignatureMismatchTest0()
 {
 	// Argument count mismatch.
@@ -325,6 +373,46 @@ static void ArraySizeIsNotInteger()
 	U_ASSERT( error.file_pos.line == 4u );
 }
 
+static void BreakOutsideLoopTest()
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo()
+		{
+			break;
+			return;
+		}
+	)";
+
+	const CodeBuilderLLVM::BuildResult build_result= BuildProgram( c_program_text );
+
+	U_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_ASSERT( error.code == CodeBuilderErrorCode::BreakOutsideLoop );
+	U_ASSERT( error.file_pos.line == 4u );
+}
+
+static void ContinueOutsideLoopTest()
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo()
+		{
+			continue;
+			return;
+		}
+	)";
+
+	const CodeBuilderLLVM::BuildResult build_result= BuildProgram( c_program_text );
+
+	U_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_ASSERT( error.code == CodeBuilderErrorCode::ContinueOutsideLoop );
+	U_ASSERT( error.file_pos.line == 4u );
+}
+
 void RunCodeBuilderErrorsTests()
 {
 	NameNotFoundTest0();
@@ -338,9 +426,13 @@ void RunCodeBuilderErrorsTests()
 	Redefinition1();
 	Redefinition2();
 	Redefinition3();
+	TypesMismatchTest0();
+	TypesMismatchTest1();
 	FunctionSignatureMismatchTest0();
 	FunctionSignatureMismatchTest1();
 	ArraySizeIsNotInteger();
+	BreakOutsideLoopTest();
+	ContinueOutsideLoopTest();
 }
 
 } // namespace Interpreter
