@@ -466,7 +466,7 @@ void CodeBuilderLLVM::BuildBlockCode(
 
 				if( l_var.type != r_var.type )
 				{
-					// TODO - report types mismatch.
+					errors_.push_back( ReportTypesMismatch( assignment_operator->file_pos_, l_var.type.ToString(), r_var.type.ToString() ) );
 					throw ProgramError();
 				}
 

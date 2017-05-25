@@ -435,6 +435,27 @@ static void TypesMismatchTest1()
 	U_ASSERT( error.file_pos.line == 4u );
 }
 
+static void TypesMismatchTest2()
+{
+	// Unexpected type in assignment.
+	static const char c_program_text[]=
+	R"(
+		fn Foo()
+		{
+			let x : i32;
+			x= 3.1415926535f32;
+			return;
+		}
+	)";
+
+	const CodeBuilderLLVM::BuildResult build_result= BuildProgram( c_program_text );
+
+	U_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_ASSERT( error.code == CodeBuilderErrorCode::TypesMismatch );
+	U_ASSERT( error.file_pos.line == 5u );
+}
 
 static void FunctionSignatureMismatchTest0()
 {
@@ -561,6 +582,7 @@ void RunCodeBuilderErrorsTests()
 	OperationNotSupportedForThisTypeTest3();
 	TypesMismatchTest0();
 	TypesMismatchTest1();
+	TypesMismatchTest2();
 	FunctionSignatureMismatchTest0();
 	FunctionSignatureMismatchTest1();
 	ArraySizeIsNotInteger();
