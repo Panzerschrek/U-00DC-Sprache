@@ -1,9 +1,12 @@
 #pragma once
 #include <vector>
 
+#include "push_disable_llvm_warnings.hpp"
 #include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/Module.h>
+#include "pop_llvm_warnings.hpp"
 
+#include "code_builder_errors.hpp"
 #include "code_builder_llvm_types.hpp"
 #include "inverse_polish_notation.hpp"
 #include "syntax_elements.hpp"
@@ -22,7 +25,7 @@ public:
 
 	struct BuildResult
 	{
-		std::vector<std::string> error_messages;
+		std::vector<CodeBuilderError> errors;
 		std::unique_ptr<llvm::Module> module;
 	};
 
@@ -32,8 +35,11 @@ private:
 	struct FunctionContext
 	{
 		FunctionContext(
+			const Type return_type,
 			llvm::LLVMContext& llvm_context,
 			llvm::Function* function );
+
+		Type return_type;
 
 		llvm::Function* const function;
 		llvm::BasicBlock* const function_basic_block;
@@ -44,7 +50,7 @@ private:
 	};
 
 private:
-	Type PrepareType( const TypeName& type_name );
+	Type PrepareType( const FilePos& file_pos, const TypeName& type_name );
 	ClassPtr PrepareClass( const ClassDeclaration& class_declaration );
 
 	// Code build methods.
@@ -54,7 +60,7 @@ private:
 	void BuildFuncCode(
 		Variable& func,
 		const ProgramString& func_name,
-		const std::vector<ProgramString>& arg_names,
+		const std::vector<VariableDeclaration>& args,
 		const Block& block ) noexcept;
 
 	void BuildBlockCode(
@@ -120,12 +126,13 @@ private:
 		llvm::Type* f64;
 
 		llvm::Type* void_;
+		llvm::Type* invalid_type_;
 		llvm::IntegerType* bool_;
 	} fundamental_llvm_types_;
 
 	std::unique_ptr<llvm::Module> module_;
-	std::vector<std::string> error_messages_;
 	unsigned int error_count_= 0u;
+	std::vector<CodeBuilderError> errors_;
 
 	NamesScope global_names_;
 };

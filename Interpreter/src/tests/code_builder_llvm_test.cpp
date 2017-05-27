@@ -1,9 +1,11 @@
 #include <cstdlib>
 #include <iostream>
 
+#include "../push_disable_llvm_warnings.hpp"
 #include <llvm/ExecutionEngine/ExecutionEngine.h>
 #include <llvm/ExecutionEngine/GenericValue.h>
 #include <llvm/ExecutionEngine/Interpreter.h>
+#include "../pop_llvm_warnings.hpp"
 
 #include "../assert.hpp"
 #include "../code_builder_llvm.hpp"
@@ -36,10 +38,10 @@ static std::unique_ptr<llvm::Module> BuildProgram( const char* const text )
 	CodeBuilderLLVM::BuildResult build_result=
 		CodeBuilderLLVM().BuildProgram( syntax_analysis_result.program_elements );
 
-	for( const std::string& error_message : build_result.error_messages )
-		std::cout << error_message << "\n";
+	for( const CodeBuilderError& error : build_result.errors )
+		std::cout << error.file_pos.line << ":" << error.file_pos.pos_in_line << " " << ToStdString( error.text ) << "\n";
 
-	U_ASSERT( build_result.error_messages.empty() );
+	U_ASSERT( build_result.errors.empty() );
 
 	return std::move( build_result.module );
 }
@@ -849,7 +851,7 @@ static void IfOperatorTest0()
 	// Simple if without else/elseif.
 	static const char c_program_text[]=
 	"\
-	fn SimpleIf( x : i32 )\
+	fn SimpleIf( x : i32 ) : i32\
 	{\
 		let tmp : i32;\
 		tmp= x;\
@@ -888,7 +890,7 @@ static void IfOperatorTest1()
 	// If-else.
 	static const char c_program_text[]=
 	"\
-	fn IfElse( x : i32 )\
+	fn IfElse( x : i32 ) : i32\
 	{\
 		let tmp : i32;\
 		let bits : i32;\
@@ -929,7 +931,7 @@ static void IfOperatorTest2()
 	// If-else-if.
 	static const char c_program_text[]=
 	"\
-	fn IfElseIf( x : i32 )\
+	fn IfElseIf( x : i32 ) : i32\
 	{\
 		let tmp : i32;\
 		let bits : i32;\
@@ -979,7 +981,7 @@ static void IfOperatorTest3()
 	// If-else-if-else.
 	static const char c_program_text[]=
 	"\
-	fn IfElseIfElse( x : i32 )\
+	fn IfElseIfElse( x : i32 ) : i32\
 	{\
 		let tmp : i32;\
 		let bits : i32;\
@@ -1029,7 +1031,7 @@ static void IfOperatorTest4()
 	// If else-if else-if.
 	static const char c_program_text[]=
 	"\
-	fn IfElseIfElseIf( x : i32 )\
+	fn IfElseIfElseIf( x : i32 ) : i32\
 	{\
 		let tmp : i32;\
 		let bits : i32;\
@@ -1088,7 +1090,7 @@ static void IfOperatorTest5()
 	// If else-if else-if else.
 	static const char c_program_text[]=
 	"\
-	fn IfElseIfElseIf( x : i32 )\
+	fn IfElseIfElseIf( x : i32 ) : i32\
 	{\
 		let tmp : i32;\
 		let bits : i32;\
@@ -1145,7 +1147,7 @@ static void IfOperatorTest5()
 static void BreakOperatorTest0()
 {
 	static const char c_program_text[]=
-	"fn Foo( x : i32 )\
+	"fn Foo( x : i32 ) : i32\
 	{\
 		let tmp : i32;\
 		tmp= x;\
@@ -1183,7 +1185,7 @@ static void BreakOperatorTest1()
 {
 	// Should break from inner loop.
 	static const char c_program_text[]=
-	"fn Foo( x : i32 )\
+	"fn Foo( x : i32 ) : i32\
 	{\
 		let tmp : i32;\
 		let counter : i32;\
@@ -1220,7 +1222,7 @@ static void BreakOperatorTest2()
 {
 	// Should break from current loop with previous inner loop.
 	static const char c_program_text[]=
-	"fn Foo( x : i32 )\
+	"fn Foo( x : i32 ) : i32\
 	{\
 		let tmp : i32;\
 		tmp= 0;\
@@ -1252,7 +1254,7 @@ static void BreakOperatorTest2()
 static void ContinueOperatorTest0()
 {
 	static const char c_program_text[]=
-	"fn Foo( x : i32 )\
+	"fn Foo( x : i32 ) : i32\
 	{\
 		let tmp : i32;\
 		let counter : i32;\
@@ -1287,7 +1289,7 @@ static void ContinueOperatorTest1()
 {
 	// Should continue from inner loop.
 	static const char c_program_text[]=
-	"fn Foo( x : i32 )\
+	"fn Foo( x : i32 ) : i32\
 	{\
 		let tmp : i32;\
 		let counter : i32;\

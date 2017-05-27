@@ -416,6 +416,7 @@ public:
 
 	struct Field
 	{
+		FilePos file_pos;
 		TypeName type;
 		ProgramString name;
 	};
