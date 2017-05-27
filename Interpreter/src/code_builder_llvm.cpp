@@ -1070,7 +1070,6 @@ Variable CodeBuilderLLVM::BuildExpressionCode_r(
 
 				if( result.type.kind != Type::Kind::Fundamental )
 				{
-					// TODO - report invalid type.
 					errors_.push_back( ReportOperationNotSupportedForThisType( unary_minus->file_pos_, result.type.ToString() ) );
 					throw ProgramError();
 				}
