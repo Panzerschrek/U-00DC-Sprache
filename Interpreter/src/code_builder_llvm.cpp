@@ -259,6 +259,8 @@ Type CodeBuilderLLVM::PrepareType( const FilePos& file_pos, const TypeName& type
 	}
 
 	last_type->kind= Type::Kind::Fundamental;
+	last_type->fundamental= U_FundamentalType::InvalidType;
+	last_type->fundamental_llvm_type= GetFundamentalLLVMType( last_type->fundamental );
 
 	auto it= g_types_map.find( type_name.name );
 	if( it == g_types_map.end() )
@@ -274,14 +276,9 @@ Type CodeBuilderLLVM::PrepareType( const FilePos& file_pos, const TypeName& type
 			}
 			else
 				errors_.push_back( ReportNameIsNotTypeName( file_pos, type_name.name ) );
-
 		}
 		else
-		{
 			errors_.push_back( ReportNameNotFound( file_pos, type_name.name ) );
-			last_type->fundamental= U_FundamentalType::InvalidType;
-			last_type->fundamental_llvm_type= GetFundamentalLLVMType( last_type->fundamental );
-		}
 	}
 	else
 	{

@@ -563,6 +563,27 @@ static void ContinueOutsideLoopTest()
 	U_ASSERT( error.file_pos.line == 4u );
 }
 
+static void NameIsNotTypeNameTest()
+{
+	static const char c_program_text[]=
+	R"(
+		fn Bar(){}
+		fn Foo()
+		{
+			let i : Bar;
+			return;
+		}
+	)";
+
+	const CodeBuilderLLVM::BuildResult build_result= BuildProgram( c_program_text );
+
+	U_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_ASSERT( error.code == CodeBuilderErrorCode::NameIsNotTypeName );
+	U_ASSERT( error.file_pos.line == 5u );
+}
+
 void RunCodeBuilderErrorsTests()
 {
 	NameNotFoundTest0();
@@ -588,6 +609,7 @@ void RunCodeBuilderErrorsTests()
 	ArraySizeIsNotInteger();
 	BreakOutsideLoopTest();
 	ContinueOutsideLoopTest();
+	NameIsNotTypeNameTest();
 }
 
 } // namespace Interpreter
