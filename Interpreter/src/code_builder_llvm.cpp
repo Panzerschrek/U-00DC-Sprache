@@ -94,9 +94,11 @@ namespace CodeBuilderLLVMPrivate
 {
 
 CodeBuilderLLVM::FunctionContext::FunctionContext(
+	const Type in_return_type,
 	llvm::LLVMContext& llvm_context,
 	llvm::Function* in_function )
-	: function(in_function)
+	: return_type(in_return_type)
+	, function(in_function)
 	, function_basic_block( llvm::BasicBlock::Create( llvm_context, "", function ) )
 	, llvm_ir_builder( function_basic_block )
 	, block_for_break( nullptr )
@@ -367,7 +369,7 @@ void CodeBuilderLLVM::BuildFuncCode(
 			module_.get() );
 
 	NamesScope function_names( &global_names_ );
-	FunctionContext function_context( llvm_context_, llvm_function );
+	FunctionContext function_context( func_variable.type.function->return_type, llvm_context_, llvm_function );
 
 	unsigned int arg_number= 0u;
 	for( llvm::Argument& llvm_arg : llvm_function->args() )
@@ -1106,11 +1108,18 @@ void CodeBuilderLLVM::BuildReturnOperatorCode(
 	const NamesScope& names,
 	FunctionContext& function_context )
 {
-
-	// TODO - check function result/expression result types mismatch.
-
 	if( return_operator.expression_ == nullptr )
 	{
+		Type void_type;
+		void_type.kind= Type::Kind::Fundamental;
+		void_type.fundamental= U_FundamentalType::Void;
+
+		if( void_type != function_context.return_type )
+		{
+			errors_.push_back( ReportTypesMismatch( return_operator.file_pos_, function_context.return_type.ToString(), void_type.ToString() ) );
+			return;
+		}
+
 		// Add only return instruction for void return operators.
 		function_context.llvm_ir_builder.CreateRetVoid();
 		return;
@@ -1121,6 +1130,12 @@ void CodeBuilderLLVM::BuildReturnOperatorCode(
 			*return_operator.expression_,
 			names,
 			function_context );
+
+	if( expression_result.type != function_context.return_type )
+	{
+		errors_.push_back( ReportTypesMismatch( return_operator.file_pos_, function_context.return_type.ToString(), expression_result.type.ToString() ) );
+		return;
+	}
 
 	llvm::Value* value_for_return= CreateMoveToLLVMRegisterInstruction( expression_result, function_context );
 	function_context.llvm_ir_builder.CreateRet( value_for_return );

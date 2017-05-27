@@ -457,6 +457,46 @@ static void TypesMismatchTest2()
 	U_ASSERT( error.file_pos.line == 5u );
 }
 
+static void TypesMismatchTest3()
+{
+	// Unexpected type in return.
+	static const char c_program_text[]=
+	R"(
+		fn Foo() : i32
+		{
+			return 0.25f32;
+		}
+	)";
+
+	const CodeBuilderLLVM::BuildResult build_result= BuildProgram( c_program_text );
+
+	U_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_ASSERT( error.code == CodeBuilderErrorCode::TypesMismatch );
+	U_ASSERT( error.file_pos.line == 4u );
+}
+
+static void TypesMismatchTest4()
+{
+	// Unexpected void in return.
+	static const char c_program_text[]=
+	R"(
+		fn Foo() : i32
+		{
+			return;
+		}
+	)";
+
+	const CodeBuilderLLVM::BuildResult build_result= BuildProgram( c_program_text );
+
+	U_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_ASSERT( error.code == CodeBuilderErrorCode::TypesMismatch );
+	U_ASSERT( error.file_pos.line == 4u );
+}
+
 static void FunctionSignatureMismatchTest0()
 {
 	// Argument count mismatch.
@@ -604,6 +644,8 @@ void RunCodeBuilderErrorsTests()
 	TypesMismatchTest0();
 	TypesMismatchTest1();
 	TypesMismatchTest2();
+	TypesMismatchTest3();
+	TypesMismatchTest4();
 	FunctionSignatureMismatchTest0();
 	FunctionSignatureMismatchTest1();
 	ArraySizeIsNotInteger();

@@ -851,7 +851,7 @@ static void IfOperatorTest0()
 	// Simple if without else/elseif.
 	static const char c_program_text[]=
 	"\
-	fn SimpleIf( x : i32 )\
+	fn SimpleIf( x : i32 ) : i32\
 	{\
 		let tmp : i32;\
 		tmp= x;\
@@ -890,7 +890,7 @@ static void IfOperatorTest1()
 	// If-else.
 	static const char c_program_text[]=
 	"\
-	fn IfElse( x : i32 )\
+	fn IfElse( x : i32 ) : i32\
 	{\
 		let tmp : i32;\
 		let bits : i32;\
@@ -931,7 +931,7 @@ static void IfOperatorTest2()
 	// If-else-if.
 	static const char c_program_text[]=
 	"\
-	fn IfElseIf( x : i32 )\
+	fn IfElseIf( x : i32 ) : i32\
 	{\
 		let tmp : i32;\
 		let bits : i32;\
@@ -981,7 +981,7 @@ static void IfOperatorTest3()
 	// If-else-if-else.
 	static const char c_program_text[]=
 	"\
-	fn IfElseIfElse( x : i32 )\
+	fn IfElseIfElse( x : i32 ) : i32\
 	{\
 		let tmp : i32;\
 		let bits : i32;\
@@ -1031,7 +1031,7 @@ static void IfOperatorTest4()
 	// If else-if else-if.
 	static const char c_program_text[]=
 	"\
-	fn IfElseIfElseIf( x : i32 )\
+	fn IfElseIfElseIf( x : i32 ) : i32\
 	{\
 		let tmp : i32;\
 		let bits : i32;\
@@ -1090,7 +1090,7 @@ static void IfOperatorTest5()
 	// If else-if else-if else.
 	static const char c_program_text[]=
 	"\
-	fn IfElseIfElseIf( x : i32 )\
+	fn IfElseIfElseIf( x : i32 ) : i32\
 	{\
 		let tmp : i32;\
 		let bits : i32;\
@@ -1147,7 +1147,7 @@ static void IfOperatorTest5()
 static void BreakOperatorTest0()
 {
 	static const char c_program_text[]=
-	"fn Foo( x : i32 )\
+	"fn Foo( x : i32 ) : i32\
 	{\
 		let tmp : i32;\
 		tmp= x;\
@@ -1185,7 +1185,7 @@ static void BreakOperatorTest1()
 {
 	// Should break from inner loop.
 	static const char c_program_text[]=
-	"fn Foo( x : i32 )\
+	"fn Foo( x : i32 ) : i32\
 	{\
 		let tmp : i32;\
 		let counter : i32;\
@@ -1222,7 +1222,7 @@ static void BreakOperatorTest2()
 {
 	// Should break from current loop with previous inner loop.
 	static const char c_program_text[]=
-	"fn Foo( x : i32 )\
+	"fn Foo( x : i32 ) : i32\
 	{\
 		let tmp : i32;\
 		tmp= 0;\
@@ -1254,7 +1254,7 @@ static void BreakOperatorTest2()
 static void ContinueOperatorTest0()
 {
 	static const char c_program_text[]=
-	"fn Foo( x : i32 )\
+	"fn Foo( x : i32 ) : i32\
 	{\
 		let tmp : i32;\
 		let counter : i32;\
@@ -1289,7 +1289,7 @@ static void ContinueOperatorTest1()
 {
 	// Should continue from inner loop.
 	static const char c_program_text[]=
-	"fn Foo( x : i32 )\
+	"fn Foo( x : i32 ) : i32\
 	{\
 		let tmp : i32;\
 		let counter : i32;\

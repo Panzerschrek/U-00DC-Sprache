@@ -35,8 +35,11 @@ private:
 	struct FunctionContext
 	{
 		FunctionContext(
+			const Type return_type,
 			llvm::LLVMContext& llvm_context,
 			llvm::Function* function );
+
+		Type return_type;
 
 		llvm::Function* const function;
 		llvm::BasicBlock* const function_basic_block;
