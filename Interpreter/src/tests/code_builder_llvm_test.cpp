@@ -1151,7 +1151,7 @@ static void BreakOperatorTest0()
 	{\
 		let tmp : i32;\
 		tmp= x;\
-		while( x < 0 ) { tmp= -x; break; tmp= 0; }\
+		while( x < 0 ) { tmp= -x; if( true ) { break; } else {} tmp= 0; }\
 		return tmp;\
 	}"
 	;
@@ -1194,7 +1194,7 @@ static void BreakOperatorTest1()
 		{\
 			while( counter > 0 )\
 			{\
-				break;\
+				if( true ) { break; } else {}\
 				tmp= 0;\
 			}\
 			tmp= x;\
@@ -1230,7 +1230,7 @@ static void BreakOperatorTest2()
 		{\
 			while( false ){}\
 			tmp= x;\
-			break;\
+			if( true ) { break; } else {}\
 			tmp= 0;\
 		}\
 		return tmp;\
@@ -1264,7 +1264,7 @@ static void ContinueOperatorTest0()
 		{\
 			tmp= x;\
 			counter = counter - 1;\
-			continue;\
+			if( true ) { continue; } else {}\
 			tmp= 0;\
 		}\
 		return tmp;\
@@ -1300,7 +1300,7 @@ static void ContinueOperatorTest1()
 			while( tmp == 0 )\
 			{\
 				tmp= 5;\
-				continue;\
+				if( true ) { continue; } else {}\
 				tmp= 0;\
 			}\
 			tmp= x;\

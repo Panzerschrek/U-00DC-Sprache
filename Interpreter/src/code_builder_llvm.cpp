@@ -545,6 +545,9 @@ CodeBuilderLLVM::BlockBuildInfo CodeBuilderLLVM::BuildBlockCode(
 				BuildBreakOperatorCode(
 					*break_operator,
 					function_context );
+
+				block_build_info.have_uncodnitional_break_or_continue= true;
+				try_report_unreachable_code();
 			}
 			else if(
 				const ContinueOperator* continue_operator=
@@ -553,6 +556,10 @@ CodeBuilderLLVM::BlockBuildInfo CodeBuilderLLVM::BuildBlockCode(
 				BuildContinueOperatorCode(
 					*continue_operator,
 					function_context );
+
+				block_build_info.have_uncodnitional_break_or_continue= true;
+				try_report_unreachable_code();
+
 			}
 			else if(
 				const IfOperator* if_operator=
@@ -566,8 +573,11 @@ CodeBuilderLLVM::BlockBuildInfo CodeBuilderLLVM::BuildBlockCode(
 
 				block_build_info.have_unconditional_return_inside=
 					block_build_info.have_unconditional_return_inside || if_block_info.have_unconditional_return_inside;
+				block_build_info.have_uncodnitional_break_or_continue=
+					block_build_info.have_uncodnitional_break_or_continue || if_block_info.have_uncodnitional_break_or_continue;
 
-				if( if_block_info.have_unconditional_return_inside )
+				if( if_block_info.have_unconditional_return_inside ||
+					block_build_info.have_uncodnitional_break_or_continue )
 					try_report_unreachable_code();
 			}
 			else if(
@@ -579,8 +589,11 @@ CodeBuilderLLVM::BlockBuildInfo CodeBuilderLLVM::BuildBlockCode(
 
 				block_build_info.have_unconditional_return_inside=
 					block_build_info.have_unconditional_return_inside || inner_block_build_info.have_unconditional_return_inside;
+				block_build_info.have_uncodnitional_break_or_continue=
+					block_build_info.have_uncodnitional_break_or_continue || inner_block_build_info.have_uncodnitional_break_or_continue;
 
-				if( inner_block_build_info.have_unconditional_return_inside )
+				if( inner_block_build_info.have_unconditional_return_inside ||
+					block_build_info.have_uncodnitional_break_or_continue )
 					try_report_unreachable_code();
 			}
 			else
@@ -1273,6 +1286,7 @@ CodeBuilderLLVM::BlockBuildInfo CodeBuilderLLVM::BuildIfOperatorCode(
 
 	BlockBuildInfo if_operator_blocks_build_info;
 	bool have_return_in_all_branches= true;
+	bool have_break_or_continue_in_all_branches= true;
 
 	// TODO - optimize this method. Make less basic blocks.
 	//
@@ -1332,6 +1346,7 @@ CodeBuilderLLVM::BlockBuildInfo CodeBuilderLLVM::BuildIfOperatorCode(
 			BuildBlockCode( *branch.block, names, function_context );
 
 		have_return_in_all_branches= have_return_in_all_branches && block_build_info.have_unconditional_return_inside;
+		have_break_or_continue_in_all_branches= have_break_or_continue_in_all_branches && block_build_info.have_uncodnitional_break_or_continue;
 
 		function_context.llvm_ir_builder.CreateBr( block_after_if );
 	}
@@ -1339,13 +1354,17 @@ CodeBuilderLLVM::BlockBuildInfo CodeBuilderLLVM::BuildIfOperatorCode(
 	U_ASSERT( next_condition_block == block_after_if );
 
 	if( if_operator.branches_.back().condition != nullptr )
+	{
 		have_return_in_all_branches= false;
+		have_break_or_continue_in_all_branches= false;
+	}
 
 	// Block after if code.
 	function_context.function->getBasicBlockList().push_back( block_after_if );
 	function_context.llvm_ir_builder.SetInsertPoint( block_after_if );
 
 	if_operator_blocks_build_info.have_unconditional_return_inside= have_return_in_all_branches;
+	if_operator_blocks_build_info.have_uncodnitional_break_or_continue= have_break_or_continue_in_all_branches;
 	return if_operator_blocks_build_info;
 }
 

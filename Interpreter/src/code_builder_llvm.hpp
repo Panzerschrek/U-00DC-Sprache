@@ -52,6 +52,7 @@ private:
 	struct BlockBuildInfo
 	{
 		bool have_unconditional_return_inside= false;
+		bool have_uncodnitional_break_or_continue= false;
 	};
 
 private:

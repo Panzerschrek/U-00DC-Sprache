@@ -724,6 +724,116 @@ static void UnreachableCodeTest4()
 	U_ASSERT( build_result.errors.empty() );
 }
 
+static void UnreachableCodeTest5()
+{
+	// Unreachable code, when break/continue.
+	static const char c_program_text[]=
+	R"(
+		fn Foo()
+		{
+			while( true )
+			{
+				break;
+				42;
+			}
+		}
+	)";
+
+	const CodeBuilderLLVM::BuildResult build_result= BuildProgram( c_program_text );
+
+	U_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_ASSERT( error.code == CodeBuilderErrorCode::UnreachableCode );
+	U_ASSERT( error.file_pos.line == 7u );
+}
+
+static void UnreachableCodeTest6()
+{
+	// Unreachable code, when break/continue.
+	static const char c_program_text[]=
+	R"(
+		fn Foo()
+		{
+			while( true )
+			{
+				{ continue; }
+				42;
+			}
+		}
+	)";
+
+	const CodeBuilderLLVM::BuildResult build_result= BuildProgram( c_program_text );
+
+	U_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_ASSERT( error.code == CodeBuilderErrorCode::UnreachableCode );
+	U_ASSERT( error.file_pos.line == 7u );
+}
+
+static void UnreachableCodeTest7()
+{
+	// Unreachable code, when break/continue.
+	static const char c_program_text[]=
+	R"(
+		fn Foo()
+		{
+			while( true )
+			{
+				if( true ) { continue; } else { break; }
+				42;
+			}
+		}
+	)";
+
+	const CodeBuilderLLVM::BuildResult build_result= BuildProgram( c_program_text );
+
+	U_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_ASSERT( error.code == CodeBuilderErrorCode::UnreachableCode );
+	U_ASSERT( error.file_pos.line == 7u );
+}
+
+static void UnreachableCodeTest8()
+{
+	// Should not generate unreachable code, when break or continue is not in all if-branches.
+	static const char c_program_text[]=
+	R"(
+		fn Foo()
+		{
+			while( true )
+			{
+				if( true ) { continue; } else { }
+				42;
+			}
+		}
+	)";
+
+	const CodeBuilderLLVM::BuildResult build_result= BuildProgram( c_program_text );
+	U_ASSERT( build_result.errors.empty() );
+}
+
+static void UnreachableCodeTest9()
+{
+	// Should not generate unreachable code, when "if" block does not contains unconditional "else".
+	static const char c_program_text[]=
+	R"(
+		fn Foo()
+		{
+			while( true )
+			{
+				if( true ) { continue; } else if( false ) { break; }
+				42;
+			}
+		}
+	)";
+
+	const CodeBuilderLLVM::BuildResult build_result= BuildProgram( c_program_text );
+	U_ASSERT( build_result.errors.empty() );
+}
+
 static void NoReturnInFunctionReturningNonVoidTest0()
 {
 	// No return in non-void function;
@@ -854,6 +964,11 @@ void RunCodeBuilderErrorsTests()
 	UnreachableCodeTest2();
 	UnreachableCodeTest3();
 	UnreachableCodeTest4();
+	UnreachableCodeTest5();
+	UnreachableCodeTest6();
+	UnreachableCodeTest7();
+	UnreachableCodeTest8();
+	UnreachableCodeTest9();
 	NoReturnInFunctionReturningNonVoidTest0();
 	NoReturnInFunctionReturningNonVoidTest1();
 	NoReturnInFunctionReturningNonVoidTest2();
