@@ -49,6 +49,11 @@ private:
 		llvm::BasicBlock* block_for_continue;
 	};
 
+	struct BlockBuildInfo
+	{
+		bool have_unconditional_return_inside= false;
+	};
+
 private:
 	Type PrepareType( const FilePos& file_pos, const TypeName& type_name );
 	ClassPtr PrepareClass( const ClassDeclaration& class_declaration );
@@ -63,7 +68,7 @@ private:
 		const std::vector<VariableDeclaration>& args,
 		const Block& block ) noexcept;
 
-	void BuildBlockCode(
+	BlockBuildInfo BuildBlockCode(
 		const Block& block,
 		const NamesScope& names,
 		FunctionContext& function_context ) noexcept;
@@ -97,7 +102,7 @@ private:
 		const ContinueOperator& continue_operator,
 		FunctionContext& function_context ) noexcept;
 
-	void BuildIfOperatorCode(
+	BlockBuildInfo BuildIfOperatorCode(
 		const IfOperator& if_operator,
 		const NamesScope& names,
 		FunctionContext& function_context );

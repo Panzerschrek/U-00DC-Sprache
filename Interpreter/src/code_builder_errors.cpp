@@ -160,4 +160,26 @@ CodeBuilderError ReportNameIsNotTypeName( const FilePos& file_pos, const Program
 	return error;
 }
 
+CodeBuilderError ReportUnreachableCode( const FilePos& file_pos )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::UnreachableCode;
+
+	error.text= "Unreachable code."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportNoReturnInFunctionReturningNonVoid( const FilePos& file_pos )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::NoReturnInFunctionReturningNonVoid;
+
+	error.text= "No return in function returning non-void."_SpC;
+
+	return error;
+}
+
 } // namespace Interpreter

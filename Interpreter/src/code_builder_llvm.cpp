@@ -406,19 +406,41 @@ void CodeBuilderLLVM::BuildFuncCode(
 
 	func_variable.llvm_value= llvm_function;
 
-	BuildBlockCode( block, function_names, function_context );
+	const BlockBuildInfo block_build_info=
+		BuildBlockCode( block, function_names, function_context );
+
+	const Type& return_type= func_variable.type.function->return_type;
+	if( ( return_type.kind == Type::Kind::Fundamental && return_type.fundamental == U_FundamentalType::Void ) )
+	{
+		// Manually generate "return" for void-return functions.
+		function_context.llvm_ir_builder.CreateRetVoid();
+	}
+	else
+	{
+		if( !block_build_info.have_unconditional_return_inside )
+			errors_.push_back( ReportNoReturnInFunctionReturningNonVoid( block.file_pos_ ) );
+	}
 }
 
-void CodeBuilderLLVM::BuildBlockCode(
+CodeBuilderLLVM::BlockBuildInfo CodeBuilderLLVM::BuildBlockCode(
 	const Block& block,
 	const NamesScope& names,
 	FunctionContext& function_context ) noexcept
 {
 	NamesScope block_names( &names );
+	BlockBuildInfo block_build_info;
 
 	for( const IBlockElementPtr& block_element : block.elements_ )
 	{
 		const IBlockElement* const block_element_ptr= block_element.get();
+
+		const auto try_report_unreachable_code=
+		[&]
+		{
+			const unsigned int block_element_index= &block_element - block.elements_.data();
+			if( block_element_index + 1u < block.elements_.size() )
+				errors_.push_back( ReportUnreachableCode( block.elements_[ block_element_index + 1u ]->file_pos_ ) );
+		};
 
 		try
 		{
@@ -503,6 +525,9 @@ void CodeBuilderLLVM::BuildBlockCode(
 					*return_operator,
 					block_names,
 					function_context );
+
+				block_build_info.have_unconditional_return_inside= true;
+				try_report_unreachable_code();
 			}
 			else if(
 				const WhileOperator* while_operator=
@@ -533,16 +558,30 @@ void CodeBuilderLLVM::BuildBlockCode(
 				const IfOperator* if_operator=
 				dynamic_cast<const IfOperator*>( block_element_ptr ) )
 			{
-				BuildIfOperatorCode(
-					*if_operator,
-					block_names,
-					function_context );
+				const CodeBuilderLLVM::BlockBuildInfo if_block_info=
+					BuildIfOperatorCode(
+						*if_operator,
+						block_names,
+						function_context );
+
+				block_build_info.have_unconditional_return_inside=
+					block_build_info.have_unconditional_return_inside || if_block_info.have_unconditional_return_inside;
+
+				if( if_block_info.have_unconditional_return_inside )
+					try_report_unreachable_code();
 			}
 			else if(
 				const Block* block=
 				dynamic_cast<const Block*>( block_element_ptr ) )
 			{
-				BuildBlockCode( *block, block_names, function_context );
+				const BlockBuildInfo inner_block_build_info=
+					BuildBlockCode( *block, block_names, function_context );
+
+				block_build_info.have_unconditional_return_inside=
+					block_build_info.have_unconditional_return_inside || inner_block_build_info.have_unconditional_return_inside;
+
+				if( inner_block_build_info.have_unconditional_return_inside )
+					try_report_unreachable_code();
 			}
 			else
 			{
@@ -554,6 +593,8 @@ void CodeBuilderLLVM::BuildBlockCode(
 			error_count_++;
 		}
 	}
+
+	return block_build_info;
 }
 
 Variable CodeBuilderLLVM::BuildExpressionCode(
@@ -1223,12 +1264,15 @@ void CodeBuilderLLVM::BuildContinueOperatorCode(
 	function_context.llvm_ir_builder.CreateBr( function_context.block_for_continue );
 }
 
-void CodeBuilderLLVM::BuildIfOperatorCode(
+CodeBuilderLLVM::BlockBuildInfo CodeBuilderLLVM::BuildIfOperatorCode(
 	const IfOperator& if_operator,
 	const NamesScope& names,
 	FunctionContext& function_context )
 {
 	U_ASSERT( !if_operator.branches_.empty() );
+
+	BlockBuildInfo if_operator_blocks_build_info;
+	bool have_return_in_all_branches= true;
 
 	// TODO - optimize this method. Make less basic blocks.
 	//
@@ -1283,15 +1327,26 @@ void CodeBuilderLLVM::BuildIfOperatorCode(
 		// Make body block code.
 		function_context.function->getBasicBlockList().push_back( body_block );
 		function_context.llvm_ir_builder.SetInsertPoint( body_block );
-		BuildBlockCode( *branch.block, names, function_context );
+
+		const BlockBuildInfo block_build_info=
+			BuildBlockCode( *branch.block, names, function_context );
+
+		have_return_in_all_branches= have_return_in_all_branches && block_build_info.have_unconditional_return_inside;
+
 		function_context.llvm_ir_builder.CreateBr( block_after_if );
 	}
 
 	U_ASSERT( next_condition_block == block_after_if );
 
+	if( if_operator.branches_.back().condition != nullptr )
+		have_return_in_all_branches= false;
+
 	// Block after if code.
 	function_context.function->getBasicBlockList().push_back( block_after_if );
 	function_context.llvm_ir_builder.SetInsertPoint( block_after_if );
+
+	if_operator_blocks_build_info.have_unconditional_return_inside= have_return_in_all_branches;
+	return if_operator_blocks_build_info;
 }
 
 llvm::Type* CodeBuilderLLVM::GetFundamentalLLVMType( const U_FundamentalType fundmantal_type )

@@ -25,6 +25,8 @@ enum class CodeBuilderErrorCode : unsigned int
 	BreakOutsideLoop,
 	ContinueOutsideLoop,
 	NameIsNotTypeName,
+	UnreachableCode,
+	NoReturnInFunctionReturningNonVoid,
 
 	// Push new error codes at back.
 };
@@ -50,5 +52,7 @@ CodeBuilderError ReportArraySizeIsNotInteger( const FilePos& file_pos );
 CodeBuilderError ReportBreakOutsideLoop( const FilePos& file_pos );
 CodeBuilderError ReportContinueOutsideLoop( const FilePos& file_pos );
 CodeBuilderError ReportNameIsNotTypeName( const FilePos& file_pos, const ProgramString& name );
+CodeBuilderError ReportUnreachableCode( const FilePos& file_pos );
+CodeBuilderError ReportNoReturnInFunctionReturningNonVoid( const FilePos& file_pos );
 
 } // namespace Interpreter
