@@ -487,7 +487,7 @@ static TypeName ParseTypeName(
 	return result;
 }
 
-static VariableDeclarationPtr ParseVariableDeclaration(
+static VariablesDeclarationPtr ParseVariablesDeclaration(
 	SyntaxErrorMessages& error_messages,
 	Lexems::const_iterator& it,
 	const Lexems::const_iterator it_end )
@@ -504,8 +504,13 @@ static VariableDeclarationPtr ParseVariableDeclaration(
 		return nullptr;
 	}
 
-	VariableDeclarationPtr decl( new VariableDeclaration( (it-1)->file_pos ) );
-	decl->name= it->text;
+	VariablesDeclarationPtr decl( new VariablesDeclaration( (it-1)->file_pos ) );
+
+	// TODO - add multiple variables parsing here.
+
+	decl->variables.emplace_back();
+	VariablesDeclaration::VariableEntry& variable_entry= decl->variables.back();
+	variable_entry.name= it->text;
 
 	++it;
 	U_ASSERT( it < it_end );
@@ -524,7 +529,7 @@ static VariableDeclarationPtr ParseVariableDeclaration(
 	if( it->type == Lexem::Type::Assignment )
 	{
 		++it;
-		decl->initial_value= ParseExpression( error_messages, it, it_end );
+		variable_entry.initial_value= ParseExpression( error_messages, it, it_end );
 	}
 
 	if( it->type == Lexem::Type::Semicolon )
@@ -798,7 +803,7 @@ static BlockPtr ParseBlock(
 			break;
 
 		else if( it->type == Lexem::Type::Identifier && it->text == Keywords::let_ )
-			elements.emplace_back( ParseVariableDeclaration( error_messages, it, it_end ) );
+			elements.emplace_back( ParseVariablesDeclaration( error_messages, it, it_end ) );
 
 		else if( it->type == Lexem::Type::Identifier && it->text == Keywords::return_ )
 			elements.emplace_back( ParseReturnOperator( error_messages, it, it_end ) );

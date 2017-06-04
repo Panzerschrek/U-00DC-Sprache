@@ -293,25 +293,31 @@ struct TypeName
 	TypeName& operator=( TypeName&& )= default;
 };
 
-struct VariableDeclaration final : public IBlockElement
+struct VariablesDeclaration final : public IBlockElement
 {
-	virtual ~VariableDeclaration() override;
+	virtual ~VariablesDeclaration() override;
 
-	VariableDeclaration( const FilePos& file_pos );
-	VariableDeclaration( const VariableDeclaration& )= delete;
-	VariableDeclaration( VariableDeclaration&& other );
+	VariablesDeclaration( const FilePos& file_pos );
+	VariablesDeclaration( const VariablesDeclaration& )= delete;
+	VariablesDeclaration( VariablesDeclaration&& other );
 
-	VariableDeclaration operator=( const VariableDeclaration& )= delete;
-	VariableDeclaration& operator=( VariableDeclaration&& other );
+	VariablesDeclaration operator=( const VariablesDeclaration& )= delete;
+	VariablesDeclaration& operator=( VariablesDeclaration&& other );
 
 	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
 
-	ProgramString name;
-	TypeName type;
-	BinaryOperatorsChainPtr initial_value;
+	struct VariableEntry
+	{
+		ProgramString name;
+		BinaryOperatorsChainPtr initial_value;
+		// TODO - add reference, mut/imut modifiers here.
+	};
+
+	std::vector<VariableEntry> variables;
+	TypeName type; // Type with empty name for auto-type detection.
 };
 
-typedef std::unique_ptr<VariableDeclaration> VariableDeclarationPtr;
+typedef std::unique_ptr<VariablesDeclaration> VariablesDeclarationPtr;
 
 class ReturnOperator final : public IBlockElement
 {

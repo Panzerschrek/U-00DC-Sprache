@@ -446,27 +446,31 @@ CodeBuilderLLVM::BlockBuildInfo CodeBuilderLLVM::BuildBlockCode(
 
 		try
 		{
-			if( const VariableDeclaration* variable_declaration=
-				dynamic_cast<const VariableDeclaration*>( block_element_ptr ) )
+			if( const VariablesDeclaration* variables_declaration=
+				dynamic_cast<const VariablesDeclaration*>( block_element_ptr ) )
 			{
-				if( IsKeyword( variable_declaration->name ) )
-					errors_.push_back( ReportUsingKeywordAsName( variable_declaration->file_pos_ ) );
-
-				Variable variable;
-				variable.type= PrepareType( variable_declaration->file_pos_, variable_declaration->type );
-				variable.location= Variable::Location::PointerToStack;
-				variable.llvm_value= function_context.llvm_ir_builder.CreateAlloca( variable.type.GetLLVMType() );
-
-				const NamesScope::InsertedName* inserted_name=
-					block_names.AddName( variable_declaration->name, std::move(variable) );
-
-				if( !inserted_name )
+				const Type type= PrepareType( variables_declaration->file_pos_, variables_declaration->type );
+				for( const VariablesDeclaration::VariableEntry& variable_declaration : variables_declaration->variables )
 				{
-					errors_.push_back( ReportRedefinition( variable_declaration->file_pos_, variable_declaration->name ) );
-					throw ProgramError();
-				}
+					if( IsKeyword( variable_declaration.name ) )
+						errors_.push_back( ReportUsingKeywordAsName( variables_declaration->file_pos_ ) );
 
-				// TODO - add initisalizer.
+					Variable variable;
+					variable.type= type;
+					variable.location= Variable::Location::PointerToStack;
+					variable.llvm_value= function_context.llvm_ir_builder.CreateAlloca( variable.type.GetLLVMType() );
+
+					const NamesScope::InsertedName* inserted_name=
+						block_names.AddName( variable_declaration.name, std::move(variable) );
+
+					if( !inserted_name )
+					{
+						errors_.push_back( ReportRedefinition( variables_declaration->file_pos_, variable_declaration.name ) );
+						throw ProgramError();
+					}
+
+					// TODO - add initisalizer.
+				}
 			}
 			else if(
 				const SingleExpressionOperator* expression=
