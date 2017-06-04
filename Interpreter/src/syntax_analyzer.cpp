@@ -905,7 +905,7 @@ static IProgramElementPtr ParseFunction(
 	++it;
 	U_ASSERT( it < it_end );
 
-	std::vector<VariableDeclaration> arguments;
+	std::vector<FunctionArgumentDeclarationPtr> arguments;
 
 	while(1)
 	{
@@ -920,8 +920,9 @@ static IProgramElementPtr ParseFunction(
 			PushErrorMessage( error_messages, *it );
 			return nullptr;
 		}
-		VariableDeclaration decl( it->file_pos );
-		decl.name= it->text;
+
+		const FilePos& arg_file_pos= it->file_pos;
+		const ProgramString& arg_name= it->text;
 
 		++it;
 		U_ASSERT( it < it_end );
@@ -934,8 +935,8 @@ static IProgramElementPtr ParseFunction(
 		++it;
 		U_ASSERT( it < it_end );
 
-		decl.type= ParseTypeName( error_messages, it, it_end );
-		arguments.emplace_back( std::move( decl ) );
+		TypeName arg_type= ParseTypeName( error_messages, it, it_end );
+		arguments.emplace_back( new FunctionArgumentDeclaration( arg_file_pos, arg_name, std::move(arg_type) ) );
 
 		if( it->type == Lexem::Type::Comma )
 		{

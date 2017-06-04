@@ -552,11 +552,31 @@ void AssignmentOperator::Print( std::ostream& stream, unsigned int indent ) cons
 	stream << ";";
 }
 
+FunctionArgumentDeclaration::FunctionArgumentDeclaration(
+	const FilePos& file_pos,
+	ProgramString name,
+	TypeName type )
+	: IProgramElement( file_pos )
+	, name_(std::move(name))
+	, type_(std::move(type))
+{}
+
+FunctionArgumentDeclaration::~FunctionArgumentDeclaration()
+{}
+
+void FunctionArgumentDeclaration::Print( std::ostream& stream, unsigned int indent ) const
+{
+	U_UNUSED( indent );
+
+	stream << ToStdString( name_ ) << " : ";
+	type_.Print( stream );
+}
+
 FunctionDeclaration::FunctionDeclaration(
 	const FilePos& file_pos,
 	ProgramString name,
 	ProgramString return_type,
-	std::vector<VariableDeclaration> arguments,
+	FunctionArgumentsDeclaration arguments,
 	BlockPtr block )
 	: IProgramElement(file_pos)
 	, name_( std::move(name) )
@@ -571,9 +591,9 @@ FunctionDeclaration::~FunctionDeclaration()
 void FunctionDeclaration::Print( std::ostream& stream, unsigned int indent ) const
 {
 	stream << "fn " << ToStdString( name_ ) << "( ";
-	for( const VariableDeclaration& decl : arguments_ )
+	for( const FunctionArgumentDeclarationPtr& decl : arguments_ )
 	{
-		decl.Print( stream, indent );
+		decl->Print( stream, indent );
 		if( &decl != &arguments_.back() )
 			stream << ", ";
 	}

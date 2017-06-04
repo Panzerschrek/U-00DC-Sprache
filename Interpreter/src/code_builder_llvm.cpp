@@ -180,12 +180,12 @@ CodeBuilderLLVM::BuildResult CodeBuilderLLVM::BuildProgram( const ProgramElement
 			{
 				// Args.
 				func_info.type.function->args.reserve( func->arguments_.size() );
-				for( const VariableDeclaration& arg : func->arguments_ )
+				for( const FunctionArgumentDeclarationPtr& arg : func->arguments_ )
 				{
-					if( IsKeyword( arg.name ) )
-						errors_.push_back( ReportUsingKeywordAsName( arg.file_pos_ ) );
+					if( IsKeyword( arg->name_ ) )
+						errors_.push_back( ReportUsingKeywordAsName( arg->file_pos_ ) );
 
-					func_info.type.function->args.push_back( PrepareType( arg.file_pos_, arg.type ) );
+					func_info.type.function->args.push_back( PrepareType( arg->file_pos_, arg->type_ ) );
 				}
 
 				BuildFuncCode(
@@ -345,7 +345,7 @@ ClassPtr CodeBuilderLLVM::PrepareClass( const ClassDeclaration& class_declaratio
 void CodeBuilderLLVM::BuildFuncCode(
 	Variable& func_variable,
 	const ProgramString& func_name,
-	const std::vector<VariableDeclaration>& args,
+	const FunctionArgumentsDeclaration& args,
 	const Block& block ) noexcept
 {
 	//func.type.kind= Type::Kind::Function;
@@ -390,17 +390,19 @@ void CodeBuilderLLVM::BuildFuncCode(
 			var.location= Variable::Location::PointerToStack;
 		}
 
+		const ProgramString& arg_name= args[ arg_number ]->name_;
+
 		const NamesScope::InsertedName* inserted_arg=
 			function_names.AddName(
-				args[ arg_number ].name,
+				arg_name,
 				std::move(var) );
 		if( !inserted_arg )
 		{
-			errors_.push_back( ReportRedefinition( args[ arg_number ].file_pos_, args[ arg_number ].name ) );
+			errors_.push_back( ReportRedefinition( args[ arg_number ]->file_pos_, arg_name ) );
 			return;
 		}
 
-		llvm_arg.setName( ToStdString( args[ arg_number ].name ) );
+		llvm_arg.setName( ToStdString( arg_name ) );
 		++arg_number;
 	}
 

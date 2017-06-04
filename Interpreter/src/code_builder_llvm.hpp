@@ -66,7 +66,7 @@ private:
 	void BuildFuncCode(
 		Variable& func,
 		const ProgramString& func_name,
-		const std::vector<VariableDeclaration>& args,
+		const FunctionArgumentsDeclaration& args,
 		const Block& block ) noexcept;
 
 	BlockBuildInfo BuildBlockCode(
