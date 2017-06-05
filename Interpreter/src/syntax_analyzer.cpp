@@ -498,47 +498,59 @@ static VariablesDeclarationPtr ParseVariablesDeclaration(
 	++it;
 	U_ASSERT( it < it_end );
 
-	if( it->type != Lexem::Type::Identifier )
-	{
-		PushErrorMessage( error_messages, *it );
-		return nullptr;
-	}
-
 	VariablesDeclarationPtr decl( new VariablesDeclaration( (it-1)->file_pos ) );
 
-	// TODO - add multiple variables parsing here.
-
-	decl->variables.emplace_back();
-	VariablesDeclaration::VariableEntry& variable_entry= decl->variables.back();
-	variable_entry.name= it->text;
-
-	++it;
-	U_ASSERT( it < it_end );
-
-	if( it->type != Lexem::Type::Colon )
-	{
-		PushErrorMessage( error_messages, *it );
-		return nullptr;
-	}
-
-	++it;
-	U_ASSERT( it < it_end );
-
-	decl->type= ParseTypeName( error_messages, it, it_end );
-
-	if( it->type == Lexem::Type::Assignment )
+	if( it->type == Lexem::Type::Colon ) // Implicit type
 	{
 		++it;
-		variable_entry.initial_value= ParseExpression( error_messages, it, it_end );
+		U_ASSERT( it < it_end );
+
+		decl->type= ParseTypeName( error_messages, it, it_end );
 	}
 
-	if( it->type == Lexem::Type::Semicolon )
-		++it;
-	else
+	do
 	{
-		PushErrorMessage( error_messages, *it );
-		return nullptr;
-	}
+		decl->variables.emplace_back();
+		VariablesDeclaration::VariableEntry& variable_entry= decl->variables.back();
+
+		// TODO - add reference, mut/imut modifiers marsing here.
+
+		if( it->type == Lexem::Type::Identifier )
+		{
+			variable_entry.name= it->text;
+			++it;
+			U_ASSERT( it < it_end );
+		}
+		else
+		{
+			PushErrorMessage( error_messages, *it );
+			return decl;
+		}
+
+		// TODO - add initializers parsing.
+		if( it->type == Lexem::Type::Assignment )
+		{
+			++it;
+			variable_entry.initial_value= ParseExpression( error_messages, it, it_end );
+		}
+
+		if( it->type == Lexem::Type::Comma )
+		{
+			++it;
+			U_ASSERT( it < it_end );
+		}
+		else if( it->type == Lexem::Type::Semicolon )
+		{
+			++it;
+			U_ASSERT( it < it_end );
+			break;
+		}
+		else
+		{
+			PushErrorMessage( error_messages, *it );
+			return nullptr;
+		}
+	} while( it < it_end );
 
 	return decl;
 }

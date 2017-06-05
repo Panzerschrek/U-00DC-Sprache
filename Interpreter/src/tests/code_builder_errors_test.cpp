@@ -61,7 +61,7 @@ static void NameNotFoundTest1()
 	R"(
 		fn Foo() : i32
 		{
-			let x : UnknownType;
+			let : UnknownType x;
 			return 42;
 		}
 	)";
@@ -83,7 +83,7 @@ static void NameNotFoundTest2()
 		class S{};
 		fn Foo() : i32
 		{
-			let x : S;
+			let : S x;
 			return x.unexistent_field;
 		}
 	)";
@@ -161,7 +161,7 @@ static void UsingKeywordAsName3()
 	R"(
 		fn Foo() : i32
 		{
-			let void : i32;
+			let : i32 void;
 			return 0;
 		}
 	)";
@@ -182,8 +182,8 @@ static void Redefinition0()
 	R"(
 		fn Foo() : i32
 		{
-			let x : i32;
-			let x : i32;
+			let : i32 x;
+			let : i32 x;
 			return 0;
 		}
 	)";
@@ -204,8 +204,8 @@ static void Redefinition1()
 	R"(
 		fn Foo() : i32
 		{
-			let x : i32;
-			{ let x : i32; }
+			let : i32 x;
+			{ let : i32 x; }
 			return 0;
 		}
 	)";
@@ -268,8 +268,8 @@ static void OperationNotSupportedForThisTypeTest0()
 		fn Bar(){}
 		fn Foo()
 		{
-			let s : S;
-			let arr : [ i32, 5 ];
+			let : S s;
+			let : [ i32, 5 ] arr;
 			false + true; // No binary operators for booleans.
 			1u8 - 4u8; // Operation not supported for small integers.
 			arr * arr; // Operation not supported for arrays.
@@ -311,8 +311,8 @@ static void OperationNotSupportedForThisTypeTest1()
 		fn Bar(){}
 		fn Foo()
 		{
-			let var : f32;
-			let s : S;
+			let : f32 var;
+			let : S s;
 			var[ 42u32 ]; // Indexation of variable.
 			Bar[ 0u32 ]; // Indexation of function.
 			s[ 45u32 ]; // Indexation of class variable.
@@ -338,8 +338,8 @@ static void OperationNotSupportedForThisTypeTest2()
 		fn Bar(){}
 		fn Foo()
 		{
-			let var : f32;
-			let s : [ u8, 16 ];
+			let : f32 var;
+			let : [ u8, 16 ] s;
 			var.m; // Member access of variable.
 			Bar.member; // Member access of function.
 			s.size; // Member access of array.
@@ -366,8 +366,8 @@ static void OperationNotSupportedForThisTypeTest3()
 		fn Bar(){}
 		fn Foo()
 		{
-			let s : S;
-			let a : [ u8, 16 ];
+			let : S s;
+			let : [ u8, 16 ] a;
 			-s; // Unary minus for class variable.
 			-Bar; // Unary minus for of function.
 			-a; // Unary minus for array.
@@ -442,7 +442,7 @@ static void TypesMismatchTest2()
 	R"(
 		fn Foo()
 		{
-			let x : i32;
+			let : i32 x;
 			x= 3.1415926535f32;
 			return;
 		}
@@ -549,7 +549,7 @@ static void ArraySizeIsNotInteger()
 	R"(
 		fn Foo()
 		{
-			let x : [ i32, 5.0f32 ];
+			let : [ i32, 5.0f32 ] x;
 			return;
 		}
 	)";
@@ -610,7 +610,7 @@ static void NameIsNotTypeNameTest()
 		fn Bar(){}
 		fn Foo()
 		{
-			let i : Bar;
+			let : Bar i;
 			return;
 		}
 	)";
