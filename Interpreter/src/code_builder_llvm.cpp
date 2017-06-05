@@ -460,6 +460,31 @@ CodeBuilderLLVM::BlockBuildInfo CodeBuilderLLVM::BuildBlockCode(
 					variable.location= Variable::Location::PointerToStack;
 					variable.llvm_value= function_context.llvm_ir_builder.CreateAlloca( variable.type.GetLLVMType() );
 
+					if( type.kind == Type::Kind::Fundamental )
+					{
+						if( variable_declaration.initial_value == nullptr )
+						{
+							errors_.push_back( ReportExpectedInitializer( variables_declaration->file_pos_ ) );
+							throw ProgramError();
+						}
+
+						const Variable initialzier_expression=
+							BuildExpressionCode( *variable_declaration.initial_value, block_names, function_context );
+
+						if( initialzier_expression.type !=variable.type )
+						{
+							errors_.push_back( ReportTypesMismatch( variables_declaration->file_pos_, variable.type.ToString(), initialzier_expression.type.ToString() ) );
+							throw ProgramError();
+						}
+
+						llvm::Value* value_for_assignment= CreateMoveToLLVMRegisterInstruction( initialzier_expression, function_context );
+						function_context.llvm_ir_builder.CreateStore( value_for_assignment, variable.llvm_value );
+					}
+					else
+					{
+						// TODO - support nonfundamental types initialization.
+					}
+
 					const NamesScope::InsertedName* inserted_name=
 						block_names.AddName( variable_declaration.name, std::move(variable) );
 
@@ -468,8 +493,6 @@ CodeBuilderLLVM::BlockBuildInfo CodeBuilderLLVM::BuildBlockCode(
 						errors_.push_back( ReportRedefinition( variables_declaration->file_pos_, variable_declaration.name ) );
 						throw ProgramError();
 					}
-
-					// TODO - add initisalizer.
 				}
 			}
 			else if(

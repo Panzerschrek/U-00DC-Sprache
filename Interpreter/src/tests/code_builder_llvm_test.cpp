@@ -35,6 +35,9 @@ static std::unique_ptr<llvm::Module> BuildProgram( const char* const text )
 		std::cout << syntax_error_message << "\n";
 	U_ASSERT( syntax_analysis_result.error_messages.empty() );
 
+	for( const IProgramElementPtr& element : syntax_analysis_result.program_elements )
+		element->Print( std::cout, 0u );
+
 	CodeBuilderLLVM::BuildResult build_result=
 		CodeBuilderLLVM().BuildProgram( syntax_analysis_result.program_elements );
 
@@ -184,8 +187,7 @@ static void VariablesTest0()
 	"\
 	fn Foo( a : i32, b : i32 ) : i32\
 	{\
-		let : i32 tmp;\
-		tmp = a - b;\
+		let : i32 tmp= a - b;\
 		return tmp;\
 	}"
 	;
@@ -216,9 +218,7 @@ static void VariablesTest1()
 	"\
 	fn Foo( a : i32, b : i32 ) : i32\
 	{\
-		let : i32 tmp, r;\
-		tmp = a - b;\
-		r= 1;\
+		let : i32 tmp= a - b, r= 1;\
 		tmp= tmp * r;\
 		return tmp;\
 	}"
@@ -326,8 +326,7 @@ static void UnaryMinusTest()
 	"\
 	fn Foo( x : i32 ) : i32\
 	{\
-		let : i32 tmp;\
-		tmp= -x;\
+		let : i32 tmp= -x;\
 		return -tmp;\
 	}"
 	;
@@ -355,8 +354,7 @@ static void UnaryMinusFloatTest()
 	"\
 	fn Foo( x : f64 ) : f64\
 	{\
-		let : f64 tmp;\
-		tmp= -x;\
+		let : f64 tmp= -x;\
 		return -tmp;\
 	}"
 	;
@@ -474,10 +472,8 @@ static void BooleanBasicTest()
 	"\
 	fn Foo( a : bool, b : bool, c : bool ) : bool\
 	{\
-		let : bool unused ;\
-		unused= false;\
-		let : bool tmp;\
-		tmp = a & b;\
+		let : bool unused= false;\
+		let : bool tmp= a & b;\
 		tmp= tmp & ( true );\
 		tmp= tmp | false;\
 		return tmp ^ c ;\
@@ -848,8 +844,7 @@ static void WhileOperatorTest()
 	"\
 	fn Foo( a : i32, b : i32 ) : i32\
 	{\
-		let : i32 x;\
-		x= a;\
+		let : i32 x= a;\
 		while( x > 0 )\
 		{\
 			x= x - 1i32;\
@@ -887,8 +882,7 @@ static void IfOperatorTest0()
 	"\
 	fn SimpleIf( x : i32 ) : i32\
 	{\
-		let : i32 tmp;\
-		tmp= x;\
+		let : i32 tmp= x;\
 		if( x < 0 ) { tmp= -x; }\
 		return tmp;\
 	}"
@@ -926,9 +920,8 @@ static void IfOperatorTest1()
 	"\
 	fn IfElse( x : i32 ) : i32\
 	{\
-		let : i32 tmp;\
-		let : i32 bits;\
-		bits= x & 1;\
+		let : i32 tmp= 0;\
+		let : i32 bits= x & 1;\
 		if( bits == 0 ) { tmp= x; }\
 		else { tmp= x * 2; }\
 		return tmp;\
@@ -967,9 +960,8 @@ static void IfOperatorTest2()
 	"\
 	fn IfElseIf( x : i32 ) : i32\
 	{\
-		let : i32 tmp;\
-		let : i32 bits;\
-		bits= x & 3;\
+		let : i32 tmp= 0;\
+		let : i32 bits= x & 3;\
 		tmp= 1488;\
 		if( bits == 0 ) { tmp= x; }\
 		else if( bits == 1 ) { tmp= x * 2; }\
@@ -1017,8 +1009,8 @@ static void IfOperatorTest3()
 	"\
 	fn IfElseIfElse( x : i32 ) : i32\
 	{\
-		let : i32 tmp;\
-		let : i32 bits;\
+		let : i32 tmp= 0;\
+		let : i32 bits= 0;\
 		bits= x & 3;\
 		if( bits == 0 ) { tmp= x; }\
 		else if( bits == 1 ) { tmp= x * 2; }\
@@ -1067,8 +1059,8 @@ static void IfOperatorTest4()
 	"\
 	fn IfElseIfElseIf( x : i32 ) : i32\
 	{\
-		let : i32 tmp;\
-		let : i32 bits;\
+		let : i32 tmp= 0;\
+		let : i32 bits= 0;\
 		bits= x & 3;\
 		tmp= 1488;\
 		if( bits == 0 ) { tmp= x; }\
@@ -1126,8 +1118,8 @@ static void IfOperatorTest5()
 	"\
 	fn IfElseIfElseIf( x : i32 ) : i32\
 	{\
-		let : i32 tmp;\
-		let : i32 bits;\
+		let : i32 tmp= 0;\
+		let : i32 bits= 0;\
 		bits= x & 3;\
 		if( bits == 0 ) { tmp= x; }\
 		else if( bits == 1 ) { tmp= x * 2; }\
@@ -1183,8 +1175,7 @@ static void BreakOperatorTest0()
 	static const char c_program_text[]=
 	"fn Foo( x : i32 ) : i32\
 	{\
-		let : i32 tmp;\
-		tmp= x;\
+		let : i32 tmp= x;\
 		while( x < 0 ) { tmp= -x; if( true ) { break; } else {} tmp= 0; }\
 		return tmp;\
 	}"
@@ -1221,9 +1212,8 @@ static void BreakOperatorTest1()
 	static const char c_program_text[]=
 	"fn Foo( x : i32 ) : i32\
 	{\
-		let : i32 tmp;\
-		let : i32 counter;\
-		counter= 1;\
+		let : i32 tmp= 0;\
+		let : i32 counter= 1;\
 		while( counter > 0 )\
 		{\
 			while( counter > 0 )\
@@ -1258,8 +1248,7 @@ static void BreakOperatorTest2()
 	static const char c_program_text[]=
 	"fn Foo( x : i32 ) : i32\
 	{\
-		let : i32 tmp;\
-		tmp= 0;\
+		let : i32 tmp= 0;\
 		while( true )\
 		{\
 			while( false ){}\
@@ -1290,10 +1279,8 @@ static void ContinueOperatorTest0()
 	static const char c_program_text[]=
 	"fn Foo( x : i32 ) : i32\
 	{\
-		let : i32 tmp;\
-		let : i32 counter;\
-		counter= 5;\
-		tmp= 0;\
+		let : i32 tmp= 0;\
+		let : i32 counter= 5;\
 		while( counter > 0 )\
 		{\
 			tmp= x;\
@@ -1325,10 +1312,8 @@ static void ContinueOperatorTest1()
 	static const char c_program_text[]=
 	"fn Foo( x : i32 ) : i32\
 	{\
-		let : i32 tmp;\
-		let : i32 counter;\
-		counter= 1;\
-		tmp= 0;\
+		let : i32 tmp= 0;\
+		let : i32 counter= 1;\
 		while( counter > 0 )\
 		{\
 			while( tmp == 0 )\
@@ -1371,7 +1356,7 @@ static void StructTest0()
 	fn Foo( a : i32, b : i32, c : i32 ) : i32
 	{
 		let : Point p;
-		let : u32 index;
+		let : u32 index= 0u32;
 		p.x= a;
 		p.y = b;
 		p.zzz[0u32]= c;
@@ -1454,11 +1439,9 @@ static void BlocksTest()
 	R"(
 	fn Foo( a : i32, b : i32 ) : i32
 	{
-		let : i32 x;
-		x = a;
+		let : i32 x= a;
 		{
-			let : i32 x;
-			x = b;
+			let : i32 x= b;
 			return x;
 		}
 	}

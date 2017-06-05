@@ -61,7 +61,7 @@ static void NameNotFoundTest1()
 	R"(
 		fn Foo() : i32
 		{
-			let : UnknownType x;
+			let : UnknownType x= 0;
 			return 42;
 		}
 	)";
@@ -156,12 +156,12 @@ static void UsingKeywordAsName2()
 
 static void UsingKeywordAsName3()
 {
-	// Arg name is keyword.
+	// Variable name is keyword.
 	static const char c_program_text[]=
 	R"(
 		fn Foo() : i32
 		{
-			let : i32 void;
+			let : i32 void= 0;
 			return 0;
 		}
 	)";
@@ -182,8 +182,8 @@ static void Redefinition0()
 	R"(
 		fn Foo() : i32
 		{
-			let : i32 x;
-			let : i32 x;
+			let : i32 x= 0;
+			let : i32 x= 0;
 			return 0;
 		}
 	)";
@@ -204,8 +204,8 @@ static void Redefinition1()
 	R"(
 		fn Foo() : i32
 		{
-			let : i32 x;
-			{ let : i32 x; }
+			let : i32 x= 0;
+			{ let : i32 x= 0; }
 			return 0;
 		}
 	)";
@@ -311,7 +311,7 @@ static void OperationNotSupportedForThisTypeTest1()
 		fn Bar(){}
 		fn Foo()
 		{
-			let : f32 var;
+			let : f32 var= 0.0f32;
 			let : S s;
 			var[ 42u32 ]; // Indexation of variable.
 			Bar[ 0u32 ]; // Indexation of function.
@@ -338,7 +338,7 @@ static void OperationNotSupportedForThisTypeTest2()
 		fn Bar(){}
 		fn Foo()
 		{
-			let : f32 var;
+			let : f32 var= 0.0f32;
 			let : [ u8, 16 ] s;
 			var.m; // Member access of variable.
 			Bar.member; // Member access of function.
@@ -442,7 +442,7 @@ static void TypesMismatchTest2()
 	R"(
 		fn Foo()
 		{
-			let : i32 x;
+			let : i32 x= 0;
 			x= 3.1415926535f32;
 			return;
 		}
@@ -931,6 +931,25 @@ static void NoReturnInFunctionReturningNonVoidTest4()
 	U_ASSERT( build_result.errors.empty() );
 }
 
+static void ExpectedInitializerTest0()
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo()
+		{
+			let : i32 x;
+		}
+	)";
+
+	const CodeBuilderLLVM::BuildResult build_result= BuildProgram( c_program_text );
+
+	U_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_ASSERT( error.code == CodeBuilderErrorCode::ExpectedInitializer );
+	U_ASSERT( error.file_pos.line == 4u );
+}
+
 void RunCodeBuilderErrorsTests()
 {
 	NameNotFoundTest0();
@@ -974,6 +993,7 @@ void RunCodeBuilderErrorsTests()
 	NoReturnInFunctionReturningNonVoidTest2();
 	NoReturnInFunctionReturningNonVoidTest3();
 	NoReturnInFunctionReturningNonVoidTest4();
+	ExpectedInitializerTest0();
 }
 
 } // namespace Interpreter
