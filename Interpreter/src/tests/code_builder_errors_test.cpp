@@ -122,7 +122,7 @@ static void UsingKeywordAsName1()
 	// Arg name is keyword.
 	static const char c_program_text[]=
 	R"(
-		fn Foo( continue : i32 ) : i32
+		fn Foo( i32 continue ) : i32
 		{
 			return 0;
 		}
@@ -246,7 +246,7 @@ static void Redefinition3()
 		fn Bar() : i32
 		{ return 1; }
 
-		fn Foo( x : f32 ) : i32
+		fn Foo( f32 x ) : i32
 		{ return 42; }
 	)";
 
@@ -503,7 +503,7 @@ static void FunctionSignatureMismatchTest0()
 	// TODO - support functions overloading.
 	static const char c_program_text[]=
 	R"(
-		fn Bar( a : i32, b : bool ) : bool { return false; }
+		fn Bar( i32 a, bool b ) : bool { return false; }
 		fn Foo()
 		{
 			Bar( 1 );
@@ -527,7 +527,7 @@ static void FunctionSignatureMismatchTest1()
 	// TODO - support functions overloading.
 	static const char c_program_text[]=
 	R"(
-		fn Bar( a : i32, b : bool ) : bool { return false; }
+		fn Bar( i32 a, bool b ) : bool { return false; }
 		fn Foo()
 		{
 			Bar( 0.5f32, false );

@@ -576,8 +576,8 @@ void FunctionArgumentDeclaration::Print( std::ostream& stream, unsigned int inde
 {
 	U_UNUSED( indent );
 
-	stream << ToStdString( name_ ) << " : ";
 	type_.Print( stream );
+	stream << " " << ToStdString( name_ );
 }
 
 FunctionDeclaration::FunctionDeclaration(

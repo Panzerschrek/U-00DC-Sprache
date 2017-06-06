@@ -932,6 +932,8 @@ static IProgramElementPtr ParseFunction(
 			break;
 		}
 
+		TypeName arg_type= ParseTypeName( error_messages, it, it_end );
+
 		if( it->type != Lexem::Type::Identifier )
 		{
 			PushErrorMessage( error_messages, *it );
@@ -940,19 +942,9 @@ static IProgramElementPtr ParseFunction(
 
 		const FilePos& arg_file_pos= it->file_pos;
 		const ProgramString& arg_name= it->text;
-
-		++it;
-		U_ASSERT( it < it_end );
-		if( it->type != Lexem::Type::Colon )
-		{
-			PushErrorMessage( error_messages, *it );
-			return nullptr;
-		}
-
 		++it;
 		U_ASSERT( it < it_end );
 
-		TypeName arg_type= ParseTypeName( error_messages, it, it_end );
 		arguments.emplace_back( new FunctionArgumentDeclaration( arg_file_pos, arg_name, std::move(arg_type) ) );
 
 		if( it->type == Lexem::Type::Comma )
