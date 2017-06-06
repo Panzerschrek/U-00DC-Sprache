@@ -61,7 +61,7 @@ static void NameNotFoundTest1()
 	R"(
 		fn Foo() : i32
 		{
-			let x : UnknownType;
+			let : UnknownType x= 0;
 			return 42;
 		}
 	)";
@@ -83,7 +83,7 @@ static void NameNotFoundTest2()
 		class S{};
 		fn Foo() : i32
 		{
-			let x : S;
+			let : S x;
 			return x.unexistent_field;
 		}
 	)";
@@ -122,7 +122,7 @@ static void UsingKeywordAsName1()
 	// Arg name is keyword.
 	static const char c_program_text[]=
 	R"(
-		fn Foo( continue : i32 ) : i32
+		fn Foo( i32 continue ) : i32
 		{
 			return 0;
 		}
@@ -156,12 +156,12 @@ static void UsingKeywordAsName2()
 
 static void UsingKeywordAsName3()
 {
-	// Arg name is keyword.
+	// Variable name is keyword.
 	static const char c_program_text[]=
 	R"(
 		fn Foo() : i32
 		{
-			let void : i32;
+			let : i32 void= 0;
 			return 0;
 		}
 	)";
@@ -182,8 +182,8 @@ static void Redefinition0()
 	R"(
 		fn Foo() : i32
 		{
-			let x : i32;
-			let x : i32;
+			let : i32 x= 0;
+			let : i32 x= 0;
 			return 0;
 		}
 	)";
@@ -204,8 +204,8 @@ static void Redefinition1()
 	R"(
 		fn Foo() : i32
 		{
-			let x : i32;
-			{ let x : i32; }
+			let : i32 x= 0;
+			{ let : i32 x= 0; }
 			return 0;
 		}
 	)";
@@ -246,7 +246,7 @@ static void Redefinition3()
 		fn Bar() : i32
 		{ return 1; }
 
-		fn Foo( x : f32 ) : i32
+		fn Foo( f32 x ) : i32
 		{ return 42; }
 	)";
 
@@ -268,8 +268,8 @@ static void OperationNotSupportedForThisTypeTest0()
 		fn Bar(){}
 		fn Foo()
 		{
-			let s : S;
-			let arr : [ i32, 5 ];
+			let : S s;
+			let : [ i32, 5 ] arr;
 			false + true; // No binary operators for booleans.
 			1u8 - 4u8; // Operation not supported for small integers.
 			arr * arr; // Operation not supported for arrays.
@@ -311,8 +311,8 @@ static void OperationNotSupportedForThisTypeTest1()
 		fn Bar(){}
 		fn Foo()
 		{
-			let var : f32;
-			let s : S;
+			let : f32 var= 0.0f32;
+			let : S s;
 			var[ 42u32 ]; // Indexation of variable.
 			Bar[ 0u32 ]; // Indexation of function.
 			s[ 45u32 ]; // Indexation of class variable.
@@ -338,8 +338,8 @@ static void OperationNotSupportedForThisTypeTest2()
 		fn Bar(){}
 		fn Foo()
 		{
-			let var : f32;
-			let s : [ u8, 16 ];
+			let : f32 var= 0.0f32;
+			let : [ u8, 16 ] s;
 			var.m; // Member access of variable.
 			Bar.member; // Member access of function.
 			s.size; // Member access of array.
@@ -366,8 +366,8 @@ static void OperationNotSupportedForThisTypeTest3()
 		fn Bar(){}
 		fn Foo()
 		{
-			let s : S;
-			let a : [ u8, 16 ];
+			let : S s;
+			let : [ u8, 16 ] a;
 			-s; // Unary minus for class variable.
 			-Bar; // Unary minus for of function.
 			-a; // Unary minus for array.
@@ -442,7 +442,7 @@ static void TypesMismatchTest2()
 	R"(
 		fn Foo()
 		{
-			let x : i32;
+			let : i32 x= 0;
 			x= 3.1415926535f32;
 			return;
 		}
@@ -503,7 +503,7 @@ static void FunctionSignatureMismatchTest0()
 	// TODO - support functions overloading.
 	static const char c_program_text[]=
 	R"(
-		fn Bar( a : i32, b : bool ) : bool { return false; }
+		fn Bar( i32 a, bool b ) : bool { return false; }
 		fn Foo()
 		{
 			Bar( 1 );
@@ -527,7 +527,7 @@ static void FunctionSignatureMismatchTest1()
 	// TODO - support functions overloading.
 	static const char c_program_text[]=
 	R"(
-		fn Bar( a : i32, b : bool ) : bool { return false; }
+		fn Bar( i32 a, bool b ) : bool { return false; }
 		fn Foo()
 		{
 			Bar( 0.5f32, false );
@@ -549,7 +549,7 @@ static void ArraySizeIsNotInteger()
 	R"(
 		fn Foo()
 		{
-			let x : [ i32, 5.0f32 ];
+			let : [ i32, 5.0f32 ] x;
 			return;
 		}
 	)";
@@ -610,7 +610,7 @@ static void NameIsNotTypeNameTest()
 		fn Bar(){}
 		fn Foo()
 		{
-			let i : Bar;
+			let : Bar i;
 			return;
 		}
 	)";
@@ -931,6 +931,25 @@ static void NoReturnInFunctionReturningNonVoidTest4()
 	U_ASSERT( build_result.errors.empty() );
 }
 
+static void ExpectedInitializerTest0()
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo()
+		{
+			let : i32 x;
+		}
+	)";
+
+	const CodeBuilderLLVM::BuildResult build_result= BuildProgram( c_program_text );
+
+	U_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_ASSERT( error.code == CodeBuilderErrorCode::ExpectedInitializer );
+	U_ASSERT( error.file_pos.line == 4u );
+}
+
 void RunCodeBuilderErrorsTests()
 {
 	NameNotFoundTest0();
@@ -974,6 +993,7 @@ void RunCodeBuilderErrorsTests()
 	NoReturnInFunctionReturningNonVoidTest2();
 	NoReturnInFunctionReturningNonVoidTest3();
 	NoReturnInFunctionReturningNonVoidTest4();
+	ExpectedInitializerTest0();
 }
 
 } // namespace Interpreter

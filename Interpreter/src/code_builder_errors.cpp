@@ -182,4 +182,15 @@ CodeBuilderError ReportNoReturnInFunctionReturningNonVoid( const FilePos& file_p
 	return error;
 }
 
+CodeBuilderError ReportExpectedInitializer( const FilePos& file_pos )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::ExpectedInitializer;
+
+	error.text= "Expected initializer for this variable."_SpC;
+
+	return error;
+}
+
 } // namespace Interpreter

@@ -389,41 +389,49 @@ void TypeName::Print( std::ostream& stream ) const
 	}
 }
 
-VariableDeclaration::~VariableDeclaration()
+VariablesDeclaration::~VariablesDeclaration()
 {}
 
-VariableDeclaration::VariableDeclaration( const FilePos& file_pos )
+VariablesDeclaration::VariablesDeclaration( const FilePos& file_pos )
 	: IBlockElement(file_pos)
 {}
 
-VariableDeclaration::VariableDeclaration( VariableDeclaration&& other )
+VariablesDeclaration::VariablesDeclaration( VariablesDeclaration&& other )
 	: IBlockElement(other.file_pos_)
 {
 	*this= std::move(other);
 }
 
-VariableDeclaration& VariableDeclaration::operator=( VariableDeclaration&& other )
+VariablesDeclaration& VariablesDeclaration::operator=( VariablesDeclaration&& other )
 {
 	file_pos_= other.file_pos_;
 
-	name= std::move( other.name );
+	variables= std::move( other.variables );
 	type= std::move( other.type );
-	initial_value= std::move( other.initial_value );
 
 	return *this;
 }
 
-void VariableDeclaration::Print( std::ostream& stream, unsigned int indent ) const
+void VariablesDeclaration::Print( std::ostream& stream, unsigned int indent ) const
 {
-	stream << "let " << ToStdString( name ) << " : ";
+	stream << "let : ";
 	type.Print( stream );
-	if( initial_value )
-	{
-		stream << " = ";
-		initial_value->Print( stream, indent );
-	}
+	stream << " ";
 
-	stream << ";";
+	for( const VariableEntry& variable : variables )
+	{
+		stream << ToStdString( variable.name );
+		if( variable.initial_value != nullptr )
+		{
+			stream << " = ";
+			variable.initial_value->Print( stream, indent );
+		}
+
+		if( &variable != &variables.back() )
+			stream << ", ";
+		else
+			stream << ";";
+	}
 }
 
 ReturnOperator::ReturnOperator( const FilePos& file_pos, BinaryOperatorsChainPtr expression )
@@ -552,11 +560,31 @@ void AssignmentOperator::Print( std::ostream& stream, unsigned int indent ) cons
 	stream << ";";
 }
 
+FunctionArgumentDeclaration::FunctionArgumentDeclaration(
+	const FilePos& file_pos,
+	ProgramString name,
+	TypeName type )
+	: IProgramElement( file_pos )
+	, name_(std::move(name))
+	, type_(std::move(type))
+{}
+
+FunctionArgumentDeclaration::~FunctionArgumentDeclaration()
+{}
+
+void FunctionArgumentDeclaration::Print( std::ostream& stream, unsigned int indent ) const
+{
+	U_UNUSED( indent );
+
+	type_.Print( stream );
+	stream << " " << ToStdString( name_ );
+}
+
 FunctionDeclaration::FunctionDeclaration(
 	const FilePos& file_pos,
 	ProgramString name,
 	ProgramString return_type,
-	std::vector<VariableDeclaration> arguments,
+	FunctionArgumentsDeclaration arguments,
 	BlockPtr block )
 	: IProgramElement(file_pos)
 	, name_( std::move(name) )
@@ -571,9 +599,9 @@ FunctionDeclaration::~FunctionDeclaration()
 void FunctionDeclaration::Print( std::ostream& stream, unsigned int indent ) const
 {
 	stream << "fn " << ToStdString( name_ ) << "( ";
-	for( const VariableDeclaration& decl : arguments_ )
+	for( const FunctionArgumentDeclarationPtr& decl : arguments_ )
 	{
-		decl.Print( stream, indent );
+		decl->Print( stream, indent );
 		if( &decl != &arguments_.back() )
 			stream << ", ";
 	}

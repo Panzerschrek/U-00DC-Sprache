@@ -283,27 +283,41 @@ struct TypeName
 	std::vector< std::unique_ptr<NumericConstant> > array_sizes;
 
 	void Print( std::ostream& stream ) const;
+
+	// Compiler so stupid - can not generate move constructors without noexcept. Make help for it.
+	TypeName() = default;
+	TypeName( TypeName&& ) noexcept = default;
+	TypeName( const TypeName& )= default;
+
+	TypeName& operator=( const TypeName& )= default;
+	TypeName& operator=( TypeName&& )= default;
 };
 
-struct VariableDeclaration final : public IBlockElement
+struct VariablesDeclaration final : public IBlockElement
 {
-	virtual ~VariableDeclaration() override;
+	virtual ~VariablesDeclaration() override;
 
-	VariableDeclaration( const FilePos& file_pos );
-	VariableDeclaration( const VariableDeclaration& )= delete;
-	VariableDeclaration( VariableDeclaration&& other );
+	VariablesDeclaration( const FilePos& file_pos );
+	VariablesDeclaration( const VariablesDeclaration& )= delete;
+	VariablesDeclaration( VariablesDeclaration&& other );
 
-	VariableDeclaration operator=( const VariableDeclaration& )= delete;
-	VariableDeclaration& operator=( VariableDeclaration&& other );
+	VariablesDeclaration operator=( const VariablesDeclaration& )= delete;
+	VariablesDeclaration& operator=( VariablesDeclaration&& other );
 
 	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
 
-	ProgramString name;
-	TypeName type;
-	BinaryOperatorsChainPtr initial_value;
+	struct VariableEntry
+	{
+		ProgramString name;
+		BinaryOperatorsChainPtr initial_value;
+		// TODO - add reference, mut/imut modifiers here.
+	};
+
+	std::vector<VariableEntry> variables;
+	TypeName type; // Type with empty name for auto-type detection.
 };
 
-typedef std::unique_ptr<VariableDeclaration> VariableDeclarationPtr;
+typedef std::unique_ptr<VariablesDeclaration> VariablesDeclarationPtr;
 
 class ReturnOperator final : public IBlockElement
 {
@@ -386,6 +400,27 @@ public:
 	BinaryOperatorsChainPtr r_value_;
 };
 
+class FunctionArgumentDeclaration final : public IProgramElement
+{
+public:
+	FunctionArgumentDeclaration(
+		const FilePos& file_pos,
+		ProgramString name,
+		TypeName type );
+
+	virtual ~FunctionArgumentDeclaration() override;
+
+	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
+
+public:
+	const ProgramString name_;
+	const TypeName type_;
+};
+
+
+typedef std::unique_ptr<FunctionArgumentDeclaration> FunctionArgumentDeclarationPtr;
+typedef std::vector<FunctionArgumentDeclarationPtr> FunctionArgumentsDeclaration;
+
 class FunctionDeclaration final : public IProgramElement
 {
 public:
@@ -393,7 +428,7 @@ public:
 		const FilePos& file_pos,
 		ProgramString name,
 		ProgramString return_type,
-		std::vector<VariableDeclaration> arguments,
+		FunctionArgumentsDeclaration arguments,
 		BlockPtr block );
 
 	virtual ~FunctionDeclaration() override;
@@ -402,7 +437,7 @@ public:
 
 	const ProgramString name_;
 	const ProgramString return_type_;
-	const std::vector<VariableDeclaration> arguments_;
+	const FunctionArgumentsDeclaration arguments_;
 	const BlockPtr block_;
 };
 

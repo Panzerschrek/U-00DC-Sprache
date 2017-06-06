@@ -487,7 +487,7 @@ static TypeName ParseTypeName(
 	return result;
 }
 
-static VariableDeclarationPtr ParseVariableDeclaration(
+static VariablesDeclarationPtr ParseVariablesDeclaration(
 	SyntaxErrorMessages& error_messages,
 	Lexems::const_iterator& it,
 	const Lexems::const_iterator it_end )
@@ -498,42 +498,59 @@ static VariableDeclarationPtr ParseVariableDeclaration(
 	++it;
 	U_ASSERT( it < it_end );
 
-	if( it->type != Lexem::Type::Identifier )
-	{
-		PushErrorMessage( error_messages, *it );
-		return nullptr;
-	}
+	VariablesDeclarationPtr decl( new VariablesDeclaration( (it-1)->file_pos ) );
 
-	VariableDeclarationPtr decl( new VariableDeclaration( (it-1)->file_pos ) );
-	decl->name= it->text;
-
-	++it;
-	U_ASSERT( it < it_end );
-
-	if( it->type != Lexem::Type::Colon )
-	{
-		PushErrorMessage( error_messages, *it );
-		return nullptr;
-	}
-
-	++it;
-	U_ASSERT( it < it_end );
-
-	decl->type= ParseTypeName( error_messages, it, it_end );
-
-	if( it->type == Lexem::Type::Assignment )
+	if( it->type == Lexem::Type::Colon ) // Implicit type
 	{
 		++it;
-		decl->initial_value= ParseExpression( error_messages, it, it_end );
+		U_ASSERT( it < it_end );
+
+		decl->type= ParseTypeName( error_messages, it, it_end );
 	}
 
-	if( it->type == Lexem::Type::Semicolon )
-		++it;
-	else
+	do
 	{
-		PushErrorMessage( error_messages, *it );
-		return nullptr;
-	}
+		decl->variables.emplace_back();
+		VariablesDeclaration::VariableEntry& variable_entry= decl->variables.back();
+
+		// TODO - add reference, mut/imut modifiers marsing here.
+
+		if( it->type == Lexem::Type::Identifier )
+		{
+			variable_entry.name= it->text;
+			++it;
+			U_ASSERT( it < it_end );
+		}
+		else
+		{
+			PushErrorMessage( error_messages, *it );
+			return decl;
+		}
+
+		// TODO - add initializers parsing.
+		if( it->type == Lexem::Type::Assignment )
+		{
+			++it;
+			variable_entry.initial_value= ParseExpression( error_messages, it, it_end );
+		}
+
+		if( it->type == Lexem::Type::Comma )
+		{
+			++it;
+			U_ASSERT( it < it_end );
+		}
+		else if( it->type == Lexem::Type::Semicolon )
+		{
+			++it;
+			U_ASSERT( it < it_end );
+			break;
+		}
+		else
+		{
+			PushErrorMessage( error_messages, *it );
+			return nullptr;
+		}
+	} while( it < it_end );
 
 	return decl;
 }
@@ -798,7 +815,7 @@ static BlockPtr ParseBlock(
 			break;
 
 		else if( it->type == Lexem::Type::Identifier && it->text == Keywords::let_ )
-			elements.emplace_back( ParseVariableDeclaration( error_messages, it, it_end ) );
+			elements.emplace_back( ParseVariablesDeclaration( error_messages, it, it_end ) );
 
 		else if( it->type == Lexem::Type::Identifier && it->text == Keywords::return_ )
 			elements.emplace_back( ParseReturnOperator( error_messages, it, it_end ) );
@@ -905,7 +922,7 @@ static IProgramElementPtr ParseFunction(
 	++it;
 	U_ASSERT( it < it_end );
 
-	std::vector<VariableDeclaration> arguments;
+	std::vector<FunctionArgumentDeclarationPtr> arguments;
 
 	while(1)
 	{
@@ -915,27 +932,20 @@ static IProgramElementPtr ParseFunction(
 			break;
 		}
 
+		TypeName arg_type= ParseTypeName( error_messages, it, it_end );
+
 		if( it->type != Lexem::Type::Identifier )
 		{
 			PushErrorMessage( error_messages, *it );
 			return nullptr;
 		}
-		VariableDeclaration decl( it->file_pos );
-		decl.name= it->text;
 
-		++it;
-		U_ASSERT( it < it_end );
-		if( it->type != Lexem::Type::Colon )
-		{
-			PushErrorMessage( error_messages, *it );
-			return nullptr;
-		}
-
+		const FilePos& arg_file_pos= it->file_pos;
+		const ProgramString& arg_name= it->text;
 		++it;
 		U_ASSERT( it < it_end );
 
-		decl.type= ParseTypeName( error_messages, it, it_end );
-		arguments.emplace_back( std::move( decl ) );
+		arguments.emplace_back( new FunctionArgumentDeclaration( arg_file_pos, arg_name, std::move(arg_type) ) );
 
 		if( it->type == Lexem::Type::Comma )
 		{

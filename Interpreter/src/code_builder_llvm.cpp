@@ -180,12 +180,12 @@ CodeBuilderLLVM::BuildResult CodeBuilderLLVM::BuildProgram( const ProgramElement
 			{
 				// Args.
 				func_info.type.function->args.reserve( func->arguments_.size() );
-				for( const VariableDeclaration& arg : func->arguments_ )
+				for( const FunctionArgumentDeclarationPtr& arg : func->arguments_ )
 				{
-					if( IsKeyword( arg.name ) )
-						errors_.push_back( ReportUsingKeywordAsName( arg.file_pos_ ) );
+					if( IsKeyword( arg->name_ ) )
+						errors_.push_back( ReportUsingKeywordAsName( arg->file_pos_ ) );
 
-					func_info.type.function->args.push_back( PrepareType( arg.file_pos_, arg.type ) );
+					func_info.type.function->args.push_back( PrepareType( arg->file_pos_, arg->type_ ) );
 				}
 
 				BuildFuncCode(
@@ -345,7 +345,7 @@ ClassPtr CodeBuilderLLVM::PrepareClass( const ClassDeclaration& class_declaratio
 void CodeBuilderLLVM::BuildFuncCode(
 	Variable& func_variable,
 	const ProgramString& func_name,
-	const std::vector<VariableDeclaration>& args,
+	const FunctionArgumentsDeclaration& args,
 	const Block& block ) noexcept
 {
 	//func.type.kind= Type::Kind::Function;
@@ -390,17 +390,19 @@ void CodeBuilderLLVM::BuildFuncCode(
 			var.location= Variable::Location::PointerToStack;
 		}
 
+		const ProgramString& arg_name= args[ arg_number ]->name_;
+
 		const NamesScope::InsertedName* inserted_arg=
 			function_names.AddName(
-				args[ arg_number ].name,
+				arg_name,
 				std::move(var) );
 		if( !inserted_arg )
 		{
-			errors_.push_back( ReportRedefinition( args[ arg_number ].file_pos_, args[ arg_number ].name ) );
+			errors_.push_back( ReportRedefinition( args[ arg_number ]->file_pos_, arg_name ) );
 			return;
 		}
 
-		llvm_arg.setName( ToStdString( args[ arg_number ].name ) );
+		llvm_arg.setName( ToStdString( arg_name ) );
 		++arg_number;
 	}
 
@@ -444,27 +446,54 @@ CodeBuilderLLVM::BlockBuildInfo CodeBuilderLLVM::BuildBlockCode(
 
 		try
 		{
-			if( const VariableDeclaration* variable_declaration=
-				dynamic_cast<const VariableDeclaration*>( block_element_ptr ) )
+			if( const VariablesDeclaration* variables_declaration=
+				dynamic_cast<const VariablesDeclaration*>( block_element_ptr ) )
 			{
-				if( IsKeyword( variable_declaration->name ) )
-					errors_.push_back( ReportUsingKeywordAsName( variable_declaration->file_pos_ ) );
-
-				Variable variable;
-				variable.type= PrepareType( variable_declaration->file_pos_, variable_declaration->type );
-				variable.location= Variable::Location::PointerToStack;
-				variable.llvm_value= function_context.llvm_ir_builder.CreateAlloca( variable.type.GetLLVMType() );
-
-				const NamesScope::InsertedName* inserted_name=
-					block_names.AddName( variable_declaration->name, std::move(variable) );
-
-				if( !inserted_name )
+				const Type type= PrepareType( variables_declaration->file_pos_, variables_declaration->type );
+				for( const VariablesDeclaration::VariableEntry& variable_declaration : variables_declaration->variables )
 				{
-					errors_.push_back( ReportRedefinition( variable_declaration->file_pos_, variable_declaration->name ) );
-					throw ProgramError();
-				}
+					if( IsKeyword( variable_declaration.name ) )
+						errors_.push_back( ReportUsingKeywordAsName( variables_declaration->file_pos_ ) );
 
-				// TODO - add initisalizer.
+					Variable variable;
+					variable.type= type;
+					variable.location= Variable::Location::PointerToStack;
+					variable.llvm_value= function_context.llvm_ir_builder.CreateAlloca( variable.type.GetLLVMType() );
+
+					if( type.kind == Type::Kind::Fundamental )
+					{
+						if( variable_declaration.initial_value == nullptr )
+						{
+							errors_.push_back( ReportExpectedInitializer( variables_declaration->file_pos_ ) );
+							throw ProgramError();
+						}
+
+						const Variable initialzier_expression=
+							BuildExpressionCode( *variable_declaration.initial_value, block_names, function_context );
+
+						if( initialzier_expression.type !=variable.type )
+						{
+							errors_.push_back( ReportTypesMismatch( variables_declaration->file_pos_, variable.type.ToString(), initialzier_expression.type.ToString() ) );
+							throw ProgramError();
+						}
+
+						llvm::Value* value_for_assignment= CreateMoveToLLVMRegisterInstruction( initialzier_expression, function_context );
+						function_context.llvm_ir_builder.CreateStore( value_for_assignment, variable.llvm_value );
+					}
+					else
+					{
+						// TODO - support nonfundamental types initialization.
+					}
+
+					const NamesScope::InsertedName* inserted_name=
+						block_names.AddName( variable_declaration.name, std::move(variable) );
+
+					if( !inserted_name )
+					{
+						errors_.push_back( ReportRedefinition( variables_declaration->file_pos_, variable_declaration.name ) );
+						throw ProgramError();
+					}
+				}
 			}
 			else if(
 				const SingleExpressionOperator* expression=
