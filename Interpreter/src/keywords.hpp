@@ -39,6 +39,32 @@ enum class Keywords : unsigned int
 	true_,
 	false_,
 
+	// Reserved keywords for future usage.
+	for_,
+	do_,
+	switch_,
+	case_,
+	default_,
+	template_,
+	struct_,
+	final_,
+	virtual_,
+	polymorph_,
+	override_,
+	type_,
+	typename_,
+	cast_,
+	mut_,
+	imut_,
+	const_,
+	constexpr_,
+	lambda_,
+	static_,
+	package_,
+	module_,
+	import_,
+	export_,
+
 	LastKeyword,
 };
 
