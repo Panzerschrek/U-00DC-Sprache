@@ -449,51 +449,7 @@ CodeBuilderLLVM::BlockBuildInfo CodeBuilderLLVM::BuildBlockCode(
 			if( const VariablesDeclaration* variables_declaration=
 				dynamic_cast<const VariablesDeclaration*>( block_element_ptr ) )
 			{
-				const Type type= PrepareType( variables_declaration->file_pos_, variables_declaration->type );
-				for( const VariablesDeclaration::VariableEntry& variable_declaration : variables_declaration->variables )
-				{
-					if( IsKeyword( variable_declaration.name ) )
-						errors_.push_back( ReportUsingKeywordAsName( variables_declaration->file_pos_ ) );
-
-					Variable variable;
-					variable.type= type;
-					variable.location= Variable::Location::PointerToStack;
-					variable.llvm_value= function_context.llvm_ir_builder.CreateAlloca( variable.type.GetLLVMType() );
-
-					if( type.kind == Type::Kind::Fundamental )
-					{
-						if( variable_declaration.initial_value == nullptr )
-						{
-							errors_.push_back( ReportExpectedInitializer( variables_declaration->file_pos_ ) );
-							throw ProgramError();
-						}
-
-						const Variable initialzier_expression=
-							BuildExpressionCode( *variable_declaration.initial_value, block_names, function_context );
-
-						if( initialzier_expression.type !=variable.type )
-						{
-							errors_.push_back( ReportTypesMismatch( variables_declaration->file_pos_, variable.type.ToString(), initialzier_expression.type.ToString() ) );
-							throw ProgramError();
-						}
-
-						llvm::Value* value_for_assignment= CreateMoveToLLVMRegisterInstruction( initialzier_expression, function_context );
-						function_context.llvm_ir_builder.CreateStore( value_for_assignment, variable.llvm_value );
-					}
-					else
-					{
-						// TODO - support nonfundamental types initialization.
-					}
-
-					const NamesScope::InsertedName* inserted_name=
-						block_names.AddName( variable_declaration.name, std::move(variable) );
-
-					if( !inserted_name )
-					{
-						errors_.push_back( ReportRedefinition( variables_declaration->file_pos_, variable_declaration.name ) );
-						throw ProgramError();
-					}
-				}
+				BuildVariablesDeclarationCode( *variables_declaration, block_names, function_context );
 			}
 			else if(
 				const SingleExpressionOperator* expression=
@@ -508,43 +464,7 @@ CodeBuilderLLVM::BlockBuildInfo CodeBuilderLLVM::BuildBlockCode(
 				const AssignmentOperator* assignment_operator=
 				dynamic_cast<const AssignmentOperator*>( block_element_ptr ) )
 			{
-				const BinaryOperatorsChain& l_value= *assignment_operator->l_value_;
-				const BinaryOperatorsChain& r_value= *assignment_operator->r_value_;
-
-				const Variable l_var= BuildExpressionCode( l_value, block_names, function_context );
-				const Variable r_var= BuildExpressionCode( r_value, block_names, function_context );
-
-				if( l_var.type != r_var.type )
-				{
-					errors_.push_back( ReportTypesMismatch( assignment_operator->file_pos_, l_var.type.ToString(), r_var.type.ToString() ) );
-					throw ProgramError();
-				}
-
-				if( l_var.type.kind == Type::Kind::Fundamental )
-				{
-					if( l_var.location != Variable::Location::PointerToStack )
-					{
-						// TODO - write correct lvalue/rvalue flag into variable.
-						throw ProgramError();
-					}
-					llvm::Value* value_for_assignment= CreateMoveToLLVMRegisterInstruction( r_var, function_context );
-					function_context.llvm_ir_builder.CreateStore( value_for_assignment, l_var.llvm_value );
-				}
-				else if( l_var.type.kind == Type::Kind::Function )
-				{
-					// TODO - functions is not copyable.
-					throw ProgramError();
-				}
-				else if( l_var.type.kind == Type::Kind::Array )
-				{
-					// TODO - arrays not copyable.
-					throw ProgramError();
-				}
-				else if( l_var.type.kind == Type::Kind::Class )
-				{
-					errors_.push_back( ReportNotImplemented( assignment_operator->file_pos_, "class assignment" ) );
-					throw ProgramError();
-				}
+				BuildAssignmentOperatorCode( *assignment_operator, block_names, function_context );
 			}
 			else if(
 				const ReturnOperator* return_operator=
@@ -588,7 +508,6 @@ CodeBuilderLLVM::BlockBuildInfo CodeBuilderLLVM::BuildBlockCode(
 
 				block_build_info.have_uncodnitional_break_or_continue= true;
 				try_report_unreachable_code();
-
 			}
 			else if(
 				const IfOperator* if_operator=
@@ -1182,6 +1101,102 @@ Variable CodeBuilderLLVM::BuildExpressionCode_r(
 		} // for unary prefix operators
 
 		return result;
+	}
+}
+
+void CodeBuilderLLVM::BuildVariablesDeclarationCode(
+	const VariablesDeclaration& variables_declaration,
+	NamesScope& block_names,
+	FunctionContext& function_context )
+{
+	const Type type= PrepareType( variables_declaration.file_pos_, variables_declaration.type );
+	for( const VariablesDeclaration::VariableEntry& variable_declaration : variables_declaration.variables )
+	{
+		if( IsKeyword( variable_declaration.name ) )
+			errors_.push_back( ReportUsingKeywordAsName( variables_declaration.file_pos_ ) );
+
+		Variable variable;
+		variable.type= type;
+		variable.location= Variable::Location::PointerToStack;
+		variable.llvm_value= function_context.llvm_ir_builder.CreateAlloca( variable.type.GetLLVMType() );
+
+		if( type.kind == Type::Kind::Fundamental )
+		{
+			if( variable_declaration.initial_value == nullptr )
+			{
+				errors_.push_back( ReportExpectedInitializer( variables_declaration.file_pos_ ) );
+				throw ProgramError();
+			}
+
+			const Variable initialzier_expression=
+				BuildExpressionCode( *variable_declaration.initial_value, block_names, function_context );
+
+			if( initialzier_expression.type !=variable.type )
+			{
+				errors_.push_back( ReportTypesMismatch( variables_declaration.file_pos_, variable.type.ToString(), initialzier_expression.type.ToString() ) );
+				throw ProgramError();
+			}
+
+			llvm::Value* value_for_assignment= CreateMoveToLLVMRegisterInstruction( initialzier_expression, function_context );
+			function_context.llvm_ir_builder.CreateStore( value_for_assignment, variable.llvm_value );
+		}
+		else
+		{
+			// TODO - support nonfundamental types initialization.
+		}
+
+		const NamesScope::InsertedName* inserted_name=
+			block_names.AddName( variable_declaration.name, std::move(variable) );
+
+		if( !inserted_name )
+		{
+			errors_.push_back( ReportRedefinition( variables_declaration.file_pos_, variable_declaration.name ) );
+			throw ProgramError();
+		}
+	}
+}
+
+void CodeBuilderLLVM::BuildAssignmentOperatorCode(
+	const AssignmentOperator& assignment_operator,
+	const NamesScope& block_names,
+	FunctionContext& function_context )
+{
+	const BinaryOperatorsChain& l_value= *assignment_operator.l_value_;
+	const BinaryOperatorsChain& r_value= *assignment_operator.r_value_;
+
+	const Variable l_var= BuildExpressionCode( l_value, block_names, function_context );
+	const Variable r_var= BuildExpressionCode( r_value, block_names, function_context );
+
+	if( l_var.type != r_var.type )
+	{
+		errors_.push_back( ReportTypesMismatch( assignment_operator.file_pos_, l_var.type.ToString(), r_var.type.ToString() ) );
+		throw ProgramError();
+	}
+
+	if( l_var.type.kind == Type::Kind::Fundamental )
+	{
+		if( l_var.location != Variable::Location::PointerToStack )
+		{
+			// TODO - write correct lvalue/rvalue flag into variable.
+			throw ProgramError();
+		}
+		llvm::Value* value_for_assignment= CreateMoveToLLVMRegisterInstruction( r_var, function_context );
+		function_context.llvm_ir_builder.CreateStore( value_for_assignment, l_var.llvm_value );
+	}
+	else if( l_var.type.kind == Type::Kind::Function )
+	{
+		// TODO - functions is not copyable.
+		throw ProgramError();
+	}
+	else if( l_var.type.kind == Type::Kind::Array )
+	{
+		// TODO - arrays not copyable.
+		throw ProgramError();
+	}
+	else if( l_var.type.kind == Type::Kind::Class )
+	{
+		errors_.push_back( ReportNotImplemented( assignment_operator.file_pos_, "class assignment" ) );
+		throw ProgramError();
 	}
 }
 

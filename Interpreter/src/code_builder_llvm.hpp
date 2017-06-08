@@ -85,6 +85,16 @@ private:
 		const NamesScope& names,
 		FunctionContext& function_context );
 
+	void BuildVariablesDeclarationCode(
+		const VariablesDeclaration& variables_declaration,
+		NamesScope& block_names,
+		FunctionContext& function_context );
+
+	void BuildAssignmentOperatorCode(
+		const AssignmentOperator& assignment_operator,
+		const NamesScope& block_names,
+		FunctionContext& function_context );
+
 	void BuildReturnOperatorCode(
 		const ReturnOperator& return_operator,
 		const NamesScope& names,
