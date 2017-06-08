@@ -193,4 +193,15 @@ CodeBuilderError ReportExpectedInitializer( const FilePos& file_pos )
 	return error;
 }
 
+CodeBuilderError ReportExpectedReferenceValue( const FilePos& file_pos )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::ExpectedReferenceValue;
+
+	error.text= "Expected reference value."_SpC;
+
+	return error;
+}
+
 } // namespace Interpreter

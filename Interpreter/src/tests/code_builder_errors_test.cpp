@@ -950,6 +950,68 @@ static void ExpectedInitializerTest0()
 	U_ASSERT( error.file_pos.line == 4u );
 }
 
+static void ExpectedReferenceValueTest0()
+{
+	// Assign to non-reference value.
+	static const char c_program_text[]=
+	R"(
+		fn Foo()
+		{
+			1 + 2 = 42;
+		}
+	)";
+
+	const CodeBuilderLLVM::BuildResult build_result= BuildProgram( c_program_text );
+
+	U_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_ASSERT( error.code == CodeBuilderErrorCode::ExpectedReferenceValue );
+	U_ASSERT( error.file_pos.line == 4u );
+}
+
+static void ExpectedReferenceValueTest1()
+{
+	// Assign to function. Functions is const-reference values.
+	static const char c_program_text[]=
+	R"(
+		fn Bar(){}
+		fn Baz(){}
+		fn Foo()
+		{
+			Bar= Baz;
+		}
+	)";
+
+	const CodeBuilderLLVM::BuildResult build_result= BuildProgram( c_program_text );
+
+	U_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_ASSERT( error.code == CodeBuilderErrorCode::ExpectedReferenceValue );
+	U_ASSERT( error.file_pos.line == 6u );
+}
+
+static void ExpectedReferenceValueTest2()
+{
+	// Assign to value.
+	static const char c_program_text[]=
+	R"(
+		fn Foo( i32 a, i32 b )
+		{
+			a / b = b;
+		}
+	)";
+
+	const CodeBuilderLLVM::BuildResult build_result= BuildProgram( c_program_text );
+
+	U_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_ASSERT( error.code == CodeBuilderErrorCode::ExpectedReferenceValue );
+	U_ASSERT( error.file_pos.line == 4u );
+}
+
 void RunCodeBuilderErrorsTests()
 {
 	NameNotFoundTest0();
@@ -994,6 +1056,9 @@ void RunCodeBuilderErrorsTests()
 	NoReturnInFunctionReturningNonVoidTest3();
 	NoReturnInFunctionReturningNonVoidTest4();
 	ExpectedInitializerTest0();
+	ExpectedReferenceValueTest0();
+	ExpectedReferenceValueTest1();
+	ExpectedReferenceValueTest2();
 }
 
 } // namespace Interpreter

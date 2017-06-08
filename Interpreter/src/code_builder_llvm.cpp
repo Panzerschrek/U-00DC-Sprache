@@ -148,6 +148,7 @@ CodeBuilderLLVM::BuildResult CodeBuilderLLVM::BuildProgram( const ProgramElement
 
 			func_info.location= Variable::Location::Global;
 			func_info.type.kind= Type::Kind::Function;
+			func_info.value_type= ValueType::ConstReference;
 
 			// Return type.
 			// TODO - add support for non-fundamental types.
@@ -375,8 +376,9 @@ void CodeBuilderLLVM::BuildFuncCode(
 	for( llvm::Argument& llvm_arg : llvm_function->args() )
 	{
 		Variable var;
-		var.type= func_variable.type.function->args[ arg_number ];
 		var.location= Variable::Location::LLVMRegister;
+		var.value_type= ValueType::Reference; // TODO - support immutable arguments
+		var.type= func_variable.type.function->args[ arg_number ];
 		var.llvm_value= &llvm_arg;
 
 		// Move parameters to stack for assignment possibility.
@@ -688,6 +690,7 @@ Variable CodeBuilderLLVM::BuildExpressionCode_r(
 				};
 
 				result.location= Variable::Location::LLVMRegister;
+				result.value_type= ValueType::Value;
 				result.type= r_var.type;
 				result.llvm_value= result_value;
 			}
@@ -735,6 +738,7 @@ Variable CodeBuilderLLVM::BuildExpressionCode_r(
 			};
 
 			result.location= Variable::Location::LLVMRegister;
+			result.value_type= ValueType::Value;
 			result.type.kind= Type::Kind::Fundamental;
 			result.type.fundamental= U_FundamentalType::Bool;
 			result.type.fundamental_llvm_type= fundamental_llvm_types_.bool_;
@@ -808,6 +812,7 @@ Variable CodeBuilderLLVM::BuildExpressionCode_r(
 			};
 
 			result.location= Variable::Location::LLVMRegister;
+			result.value_type= ValueType::Value;
 			result.type.kind= Type::Kind::Fundamental;
 			result.type.fundamental= U_FundamentalType::Bool;
 			result.type.fundamental_llvm_type= fundamental_llvm_types_.bool_;
@@ -853,6 +858,7 @@ Variable CodeBuilderLLVM::BuildExpressionCode_r(
 			};
 
 			result.location= Variable::Location::LLVMRegister;
+			result.value_type= ValueType::Value;
 			result.type= result_type;
 			result.llvm_value= result_value;
 		}
@@ -906,6 +912,7 @@ Variable CodeBuilderLLVM::BuildExpressionCode_r(
 			}
 
 			result.location= Variable::Location::LLVMRegister;
+			result.value_type= ValueType::Value;
 			result.type.kind= Type::Kind::Fundamental;
 			result.type.fundamental= type;
 
@@ -928,6 +935,7 @@ Variable CodeBuilderLLVM::BuildExpressionCode_r(
 			dynamic_cast<const BooleanConstant*>(&operand) )
 		{
 			result.location= Variable::Location::LLVMRegister;
+			result.value_type= ValueType::Value;
 			result.type.kind= Type::Kind::Fundamental;
 			result.type.fundamental= U_FundamentalType::Bool;
 			result.type.fundamental_llvm_type= fundamental_llvm_types_.bool_;
@@ -977,8 +985,9 @@ Variable CodeBuilderLLVM::BuildExpressionCode_r(
 					throw ProgramError();
 				}
 
-				result.type= result.type.array->type;
 				result.location= Variable::Location::PointerToStack;
+				result.value_type= ValueType::Reference;
+				result.type= result.type.array->type;
 
 				// Make first index = 0 for array to pointer conversion.
 				llvm::Value* index_list[2];
@@ -1012,10 +1021,11 @@ Variable CodeBuilderLLVM::BuildExpressionCode_r(
 				index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
 				index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(field->index) ) );
 
+				result.location= Variable::Location::PointerToStack;
+				result.value_type= ValueType::Reference;
+				result.type= field->type;
 				result.llvm_value=
 					function_context.llvm_ir_builder.CreateGEP( result.llvm_value, index_list );
-				result.type= field->type;
-				result.location= Variable::Location::PointerToStack;
 			}
 			else if( const CallOperator* const call_operator=
 				dynamic_cast<const CallOperator*>( postfix_operator.get() ) )
@@ -1051,8 +1061,9 @@ Variable CodeBuilderLLVM::BuildExpressionCode_r(
 						llvm::dyn_cast<llvm::Function>(result.llvm_value),
 						llvm_args );
 
-				result.type= result.type.function->return_type;
 				result.location= Variable::Location::LLVMRegister;
+				result.value_type= ValueType::Value; // TODO - support functions, returning references.
+				result.type= result.type.function->return_type;
 				result.llvm_value= call_result;
 			}
 			else
@@ -1116,8 +1127,9 @@ void CodeBuilderLLVM::BuildVariablesDeclarationCode(
 			errors_.push_back( ReportUsingKeywordAsName( variables_declaration.file_pos_ ) );
 
 		Variable variable;
-		variable.type= type;
 		variable.location= Variable::Location::PointerToStack;
+		variable.value_type= ValueType::Reference;
+		variable.type= type;
 		variable.llvm_value= function_context.llvm_ir_builder.CreateAlloca( variable.type.GetLLVMType() );
 
 		if( type.kind == Type::Kind::Fundamental )
@@ -1167,6 +1179,11 @@ void CodeBuilderLLVM::BuildAssignmentOperatorCode(
 	const Variable l_var= BuildExpressionCode( l_value, block_names, function_context );
 	const Variable r_var= BuildExpressionCode( r_value, block_names, function_context );
 
+	if( l_var.value_type != ValueType::Reference )
+	{
+		errors_.push_back( ReportExpectedReferenceValue( assignment_operator.file_pos_ ) );
+		throw ProgramError();
+	}
 	if( l_var.type != r_var.type )
 	{
 		errors_.push_back( ReportTypesMismatch( assignment_operator.file_pos_, l_var.type.ToString(), r_var.type.ToString() ) );

@@ -28,6 +28,7 @@ enum class CodeBuilderErrorCode : unsigned int
 	UnreachableCode,
 	NoReturnInFunctionReturningNonVoid,
 	ExpectedInitializer,
+	ExpectedReferenceValue,
 
 	// Push new error codes at back.
 };
@@ -56,5 +57,6 @@ CodeBuilderError ReportNameIsNotTypeName( const FilePos& file_pos, const Program
 CodeBuilderError ReportUnreachableCode( const FilePos& file_pos );
 CodeBuilderError ReportNoReturnInFunctionReturningNonVoid( const FilePos& file_pos );
 CodeBuilderError ReportExpectedInitializer( const FilePos& file_pos );
+CodeBuilderError ReportExpectedReferenceValue( const FilePos& file_pos );
 
 } // namespace Interpreter
