@@ -513,19 +513,34 @@ static VariablesDeclarationPtr ParseVariablesDeclaration(
 		decl->variables.emplace_back();
 		VariablesDeclaration::VariableEntry& variable_entry= decl->variables.back();
 
-		// TODO - add reference, mut/imut modifiers marsing here.
-
-		if( it->type == Lexem::Type::Identifier )
-		{
-			variable_entry.name= it->text;
-			++it;
-			U_ASSERT( it < it_end );
-		}
-		else
+		if( it->type != Lexem::Type::Identifier )
 		{
 			PushErrorMessage( error_messages, *it );
 			return decl;
 		}
+
+		if( it->text == Keywords::mut_ )
+		{
+			variable_entry.mutability_modifier= VariablesDeclaration::MutabilityModifier::Mutable;
+			++it;
+			U_ASSERT( it < it_end );
+		}
+		else if( it->text == Keywords::imut_ )
+		{
+			variable_entry.mutability_modifier= VariablesDeclaration::MutabilityModifier::Immutable;
+			++it;
+			U_ASSERT( it < it_end );
+		}
+
+		if( it->type != Lexem::Type::Identifier )
+		{
+			PushErrorMessage( error_messages, *it );
+			return decl;
+		}
+
+		variable_entry.name= it->text;
+		++it;
+		U_ASSERT( it < it_end );
 
 		// TODO - add initializers parsing.
 		if( it->type == Lexem::Type::Assignment )

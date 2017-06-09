@@ -306,11 +306,19 @@ struct VariablesDeclaration final : public IBlockElement
 
 	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
 
+	enum class MutabilityModifier
+	{
+		None,
+		Mutable,
+		Immutable,
+	};
+
 	struct VariableEntry
 	{
 		ProgramString name;
 		BinaryOperatorsChainPtr initial_value;
-		// TODO - add reference, mut/imut modifiers here.
+		MutabilityModifier mutability_modifier= MutabilityModifier::None;
+		// TODO - add reference modifiers here.
 	};
 
 	std::vector<VariableEntry> variables;

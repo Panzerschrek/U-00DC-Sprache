@@ -39,6 +39,10 @@ enum class Keywords : unsigned int
 	true_,
 	false_,
 
+	// Mutability modifiers.
+	mut_,
+	imut_,
+
 	// Reserved keywords for future usage.
 	for_,
 	do_,
@@ -54,8 +58,6 @@ enum class Keywords : unsigned int
 	type_,
 	typename_,
 	cast_,
-	mut_,
-	imut_,
 	const_,
 	constexpr_,
 	lambda_,

@@ -62,6 +62,9 @@ static const Globals& GetGlobals()
 		[ size_t(Keywords::true_) ]= "true",
 		[ size_t(Keywords::false_) ]= "false",
 
+		[ size_t(Keywords::mut_) ]= "mut",
+		[ size_t(Keywords::imut_) ]= "imut",
+
 		[ size_t(Keywords::for_) ]= "for",
 		[ size_t(Keywords::do_) ]= "do",
 		[ size_t(Keywords::switch_) ]= "switch",
@@ -76,8 +79,6 @@ static const Globals& GetGlobals()
 		[ size_t(Keywords::type_) ]= "type",
 		[ size_t(Keywords::typename_) ]= "typename",
 		[ size_t(Keywords::cast_) ]= "cast",
-		[ size_t(Keywords::mut_) ]= "mut",
-		[ size_t(Keywords::imut_) ]= "imut",
 		[ size_t(Keywords::const_) ]= "const",
 		[ size_t(Keywords::constexpr_) ]= "constexpr",
 		[ size_t(Keywords::lambda_) ]= "lambda",
