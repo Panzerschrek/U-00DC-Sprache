@@ -1012,6 +1012,27 @@ static void ExpectedReferenceValueTest2()
 	U_ASSERT( error.file_pos.line == 4u );
 }
 
+static void ExpectedReferenceValueTest3()
+{
+	// Assign to immutable value.
+	static const char c_program_text[]=
+	R"(
+		fn Foo()
+		{
+			let : f64 imut a= 3.1415926535f64;
+			a = 0.0f64;
+		}
+	)";
+
+	const CodeBuilderLLVM::BuildResult build_result= BuildProgram( c_program_text );
+
+	U_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_ASSERT( error.code == CodeBuilderErrorCode::ExpectedReferenceValue );
+	U_ASSERT( error.file_pos.line == 5u );
+}
+
 void RunCodeBuilderErrorsTests()
 {
 	NameNotFoundTest0();
@@ -1059,6 +1080,7 @@ void RunCodeBuilderErrorsTests()
 	ExpectedReferenceValueTest0();
 	ExpectedReferenceValueTest1();
 	ExpectedReferenceValueTest2();
+	ExpectedReferenceValueTest3();
 }
 
 } // namespace Interpreter
