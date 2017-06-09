@@ -521,13 +521,13 @@ static VariablesDeclarationPtr ParseVariablesDeclaration(
 
 		if( it->text == Keywords::mut_ )
 		{
-			variable_entry.mutability_modifier= VariablesDeclaration::MutabilityModifier::Mutable;
+			variable_entry.mutability_modifier= MutabilityModifier::Mutable;
 			++it;
 			U_ASSERT( it < it_end );
 		}
 		else if( it->text == Keywords::imut_ )
 		{
-			variable_entry.mutability_modifier= VariablesDeclaration::MutabilityModifier::Immutable;
+			variable_entry.mutability_modifier= MutabilityModifier::Immutable;
 			++it;
 			U_ASSERT( it < it_end );
 		}
@@ -955,12 +955,32 @@ static IProgramElementPtr ParseFunction(
 			return nullptr;
 		}
 
+		MutabilityModifier mutability_modifier= MutabilityModifier::Mutable;
+		if( it->text == Keywords::mut_ )
+		{
+			mutability_modifier= MutabilityModifier::Mutable;
+			++it;
+			U_ASSERT( it < it_end );
+		}
+		else if( it->text == Keywords::imut_ )
+		{
+			mutability_modifier= MutabilityModifier::Immutable;
+			++it;
+			U_ASSERT( it < it_end );
+		}
+
+		if( it->type != Lexem::Type::Identifier )
+		{
+			PushErrorMessage( error_messages, *it );
+			return nullptr;
+		}
+
 		const FilePos& arg_file_pos= it->file_pos;
 		const ProgramString& arg_name= it->text;
 		++it;
 		U_ASSERT( it < it_end );
 
-		arguments.emplace_back( new FunctionArgumentDeclaration( arg_file_pos, arg_name, std::move(arg_type) ) );
+		arguments.emplace_back( new FunctionArgumentDeclaration( arg_file_pos, arg_name, std::move(arg_type), mutability_modifier ) );
 
 		if( it->type == Lexem::Type::Comma )
 		{

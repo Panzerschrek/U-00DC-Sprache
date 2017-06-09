@@ -293,6 +293,13 @@ struct TypeName
 	TypeName& operator=( TypeName&& )= default;
 };
 
+enum class MutabilityModifier
+{
+	None,
+	Mutable,
+	Immutable,
+};
+
 struct VariablesDeclaration final : public IBlockElement
 {
 	virtual ~VariablesDeclaration() override;
@@ -305,13 +312,6 @@ struct VariablesDeclaration final : public IBlockElement
 	VariablesDeclaration& operator=( VariablesDeclaration&& other );
 
 	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
-
-	enum class MutabilityModifier
-	{
-		None,
-		Mutable,
-		Immutable,
-	};
 
 	struct VariableEntry
 	{
@@ -414,7 +414,8 @@ public:
 	FunctionArgumentDeclaration(
 		const FilePos& file_pos,
 		ProgramString name,
-		TypeName type );
+		TypeName type,
+		const MutabilityModifier mutability_modifier );
 
 	virtual ~FunctionArgumentDeclaration() override;
 
@@ -423,6 +424,7 @@ public:
 public:
 	const ProgramString name_;
 	const TypeName type_;
+	const MutabilityModifier mutability_modifier_;
 };
 
 

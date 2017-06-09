@@ -377,9 +377,13 @@ void CodeBuilderLLVM::BuildFuncCode(
 	{
 		Variable var;
 		var.location= Variable::Location::LLVMRegister;
-		var.value_type= ValueType::Reference; // TODO - support immutable arguments
+		var.value_type= ValueType::Reference;
 		var.type= func_variable.type.function->args[ arg_number ];
 		var.llvm_value= &llvm_arg;
+
+		// TODO - make variables without explicit mutability modifiers immutable.
+		if( args[ arg_number ]->mutability_modifier_ == MutabilityModifier::Immutable )
+			var.value_type= ValueType::ConstReference;
 
 		// Move parameters to stack for assignment possibility.
 		// TODO - do it, only if parameters are not constant.
@@ -1133,7 +1137,7 @@ void CodeBuilderLLVM::BuildVariablesDeclarationCode(
 		variable.llvm_value= function_context.llvm_ir_builder.CreateAlloca( variable.type.GetLLVMType() );
 
 		// TODO - make variables without explicit mutability modifiers immutable.
-		if( variable_declaration.mutability_modifier == VariablesDeclaration::MutabilityModifier::Immutable )
+		if( variable_declaration.mutability_modifier == MutabilityModifier::Immutable )
 			variable.value_type= ValueType::ConstReference;
 
 		if( type.kind == Type::Kind::Fundamental )
