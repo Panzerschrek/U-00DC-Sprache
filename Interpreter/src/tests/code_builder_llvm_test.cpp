@@ -1551,6 +1551,63 @@ static void ReferencesTest2()
 	U_ASSERT( static_cast<uint64_t>( arg0 * arg1 ) == result_value.IntVal.getLimitedValue() );
 }
 
+static void ReferencesTest3()
+{
+	// Reference to reference.
+	static const char c_program_text[]=
+	R"(
+	fn Foo() : i32
+	{
+		let : i32 imut x= 666;
+		let : i32 &imut x_ref= x;
+		let : i32 &imut x_ref_ref= x_ref;
+		return x_ref_ref;
+	}
+	)";
+
+	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
+	U_ASSERT( function != nullptr );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_ASSERT( static_cast<uint64_t>( 666 ) == result_value.IntVal.getLimitedValue() );
+}
+
+static void ReferencesTest4()
+{
+	// Reference to argument.
+	static const char c_program_text[]=
+	R"(
+	fn Foo( i32 a ) : i32
+	{
+		let : i32 &imut a_ref= a;
+		return a_ref * 564;
+	}
+	)";
+
+	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
+	U_ASSERT( function != nullptr );
+
+	int arg0= 148;
+
+	llvm::GenericValue args[1];
+	args[0].IntVal= llvm::APInt( 32, arg0 );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>( args, 1 ) );
+
+	U_ASSERT( static_cast<uint64_t>( arg0 * 564 ) == result_value.IntVal.getLimitedValue() );
+}
+
 void RunCodeBuilderLLVMTest()
 {
 	SimpleProgramTest();
@@ -1593,6 +1650,8 @@ void RunCodeBuilderLLVMTest()
 	ReferencesTest0();
 	ReferencesTest1();
 	ReferencesTest2();
+	ReferencesTest3();
+	ReferencesTest4();
 }
 
 } // namespace Interpreter
