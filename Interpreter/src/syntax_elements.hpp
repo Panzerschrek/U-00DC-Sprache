@@ -300,6 +300,13 @@ enum class MutabilityModifier
 	Immutable,
 };
 
+enum class ReferenceModifier
+{
+	None,
+	Reference,
+	// TODO - add "move" references here
+};
+
 struct VariablesDeclaration final : public IBlockElement
 {
 	virtual ~VariablesDeclaration() override;
@@ -318,7 +325,7 @@ struct VariablesDeclaration final : public IBlockElement
 		ProgramString name;
 		BinaryOperatorsChainPtr initial_value;
 		MutabilityModifier mutability_modifier= MutabilityModifier::None;
-		// TODO - add reference modifiers here.
+		ReferenceModifier reference_modifier= ReferenceModifier::None;
 	};
 
 	std::vector<VariableEntry> variables;

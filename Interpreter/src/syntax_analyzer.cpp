@@ -513,6 +513,13 @@ static VariablesDeclarationPtr ParseVariablesDeclaration(
 		decl->variables.emplace_back();
 		VariablesDeclaration::VariableEntry& variable_entry= decl->variables.back();
 
+		if( it->type == Lexem::Type::And )
+		{
+			variable_entry.reference_modifier= ReferenceModifier::Reference;
+			++it;
+			U_ASSERT( it < it_end );
+		}
+
 		if( it->type != Lexem::Type::Identifier )
 		{
 			PushErrorMessage( error_messages, *it );
