@@ -1132,18 +1132,49 @@ void CodeBuilderLLVM::BuildVariablesDeclarationCode(
 
 		Variable variable;
 		variable.location= Variable::Location::PointerToStack;
-		variable.value_type= ValueType::Reference;
-		variable.type= type;
-		variable.llvm_value= function_context.llvm_ir_builder.CreateAlloca( variable.type.GetLLVMType() );
 
 		// TODO - make variables without explicit mutability modifiers immutable.
 		if( variable_declaration.mutability_modifier == MutabilityModifier::Immutable )
 			variable.value_type= ValueType::ConstReference;
+		else
+			variable.value_type= ValueType::Reference;
 
-		if( type.kind == Type::Kind::Fundamental )
+		variable.type= type;
+
+		if( variable_declaration.reference_modifier == ReferenceModifier::None )
+		{
+			variable.llvm_value= function_context.llvm_ir_builder.CreateAlloca( variable.type.GetLLVMType() );
+
+			if( type.kind == Type::Kind::Fundamental )
+			{
+				if( variable_declaration.initial_value == nullptr )
+				{
+					errors_.push_back( ReportExpectedInitializer( variables_declaration.file_pos_ ) );
+					throw ProgramError();
+				}
+
+				const Variable initialzier_expression=
+					BuildExpressionCode( *variable_declaration.initial_value, block_names, function_context );
+
+				if( initialzier_expression.type !=variable.type )
+				{
+					errors_.push_back( ReportTypesMismatch( variables_declaration.file_pos_, variable.type.ToString(), initialzier_expression.type.ToString() ) );
+					throw ProgramError();
+				}
+
+				llvm::Value* value_for_assignment= CreateMoveToLLVMRegisterInstruction( initialzier_expression, function_context );
+				function_context.llvm_ir_builder.CreateStore( value_for_assignment, variable.llvm_value );
+			}
+			else
+			{
+				// TODO - support nonfundamental types initialization.
+			}
+		}
+		else if( variable_declaration.reference_modifier == ReferenceModifier::Reference )
 		{
 			if( variable_declaration.initial_value == nullptr )
 			{
+				// TODO - report "expected initializer for reference"
 				errors_.push_back( ReportExpectedInitializer( variables_declaration.file_pos_ ) );
 				throw ProgramError();
 			}
@@ -1151,18 +1182,29 @@ void CodeBuilderLLVM::BuildVariablesDeclarationCode(
 			const Variable initialzier_expression=
 				BuildExpressionCode( *variable_declaration.initial_value, block_names, function_context );
 
-			if( initialzier_expression.type !=variable.type )
+			if( initialzier_expression.type != variable.type )
 			{
 				errors_.push_back( ReportTypesMismatch( variables_declaration.file_pos_, variable.type.ToString(), initialzier_expression.type.ToString() ) );
 				throw ProgramError();
 			}
+			if( initialzier_expression.value_type == ValueType::Value )
+			{
+				errors_.push_back( ReportExpectedReferenceValue( variables_declaration.file_pos_ ) );
+				throw ProgramError();
+			}
+			if( initialzier_expression.value_type == ValueType::ConstReference &&
+				variable.value_type == ValueType::Reference )
+			{
+				errors_.push_back( ReportBindingConstReferenceToNonconstReference( variables_declaration.file_pos_ ) );
+				throw ProgramError();
+			}
 
-			llvm::Value* value_for_assignment= CreateMoveToLLVMRegisterInstruction( initialzier_expression, function_context );
-			function_context.llvm_ir_builder.CreateStore( value_for_assignment, variable.llvm_value );
+			// TODO - maybe make copy of varaible address in new llvm register?
+			variable.llvm_value= initialzier_expression.llvm_value;
 		}
 		else
 		{
-			// TODO - support nonfundamental types initialization.
+			U_ASSERT(false);
 		}
 
 		const NamesScope::InsertedName* inserted_name=

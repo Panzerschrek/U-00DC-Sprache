@@ -204,4 +204,15 @@ CodeBuilderError ReportExpectedReferenceValue( const FilePos& file_pos )
 	return error;
 }
 
+CodeBuilderError ReportBindingConstReferenceToNonconstReference( const FilePos& file_pos )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::ExpectedReferenceValue;
+
+	error.text= "Binding constant reference to non-constant reference."_SpC;
+
+	return error;
+}
+
 } // namespace Interpreter
