@@ -1105,6 +1105,7 @@ Variable CodeBuilderLLVM::BuildExpressionCode_r(
 					result.llvm_value= function_context.llvm_ir_builder.CreateNeg( value_for_neg );
 
 				result.location= Variable::Location::LLVMRegister;
+				result.value_type= ValueType::Value;
 			}
 			else if( const UnaryPlus* const unary_plus=
 				dynamic_cast<const UnaryPlus*>( prefix_operator.get() ) )

@@ -208,7 +208,7 @@ CodeBuilderError ReportBindingConstReferenceToNonconstReference( const FilePos& 
 {
 	CodeBuilderError error;
 	error.file_pos= file_pos;
-	error.code= CodeBuilderErrorCode::ExpectedReferenceValue;
+	error.code= CodeBuilderErrorCode::BindingConstReferenceToNonconstReference;
 
 	error.text= "Binding constant reference to non-constant reference."_SpC;
 
