@@ -422,7 +422,8 @@ public:
 		const FilePos& file_pos,
 		ProgramString name,
 		TypeName type,
-		const MutabilityModifier mutability_modifier );
+		MutabilityModifier mutability_modifier,
+		ReferenceModifier reference_modifier );
 
 	virtual ~FunctionArgumentDeclaration() override;
 
@@ -432,6 +433,7 @@ public:
 	const ProgramString name_;
 	const TypeName type_;
 	const MutabilityModifier mutability_modifier_;
+	const ReferenceModifier reference_modifier_;
 };
 
 
