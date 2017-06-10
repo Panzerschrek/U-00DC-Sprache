@@ -513,19 +513,34 @@ static VariablesDeclarationPtr ParseVariablesDeclaration(
 		decl->variables.emplace_back();
 		VariablesDeclaration::VariableEntry& variable_entry= decl->variables.back();
 
-		// TODO - add reference, mut/imut modifiers marsing here.
-
-		if( it->type == Lexem::Type::Identifier )
-		{
-			variable_entry.name= it->text;
-			++it;
-			U_ASSERT( it < it_end );
-		}
-		else
+		if( it->type != Lexem::Type::Identifier )
 		{
 			PushErrorMessage( error_messages, *it );
 			return decl;
 		}
+
+		if( it->text == Keywords::mut_ )
+		{
+			variable_entry.mutability_modifier= MutabilityModifier::Mutable;
+			++it;
+			U_ASSERT( it < it_end );
+		}
+		else if( it->text == Keywords::imut_ )
+		{
+			variable_entry.mutability_modifier= MutabilityModifier::Immutable;
+			++it;
+			U_ASSERT( it < it_end );
+		}
+
+		if( it->type != Lexem::Type::Identifier )
+		{
+			PushErrorMessage( error_messages, *it );
+			return decl;
+		}
+
+		variable_entry.name= it->text;
+		++it;
+		U_ASSERT( it < it_end );
 
 		// TODO - add initializers parsing.
 		if( it->type == Lexem::Type::Assignment )
@@ -940,12 +955,32 @@ static IProgramElementPtr ParseFunction(
 			return nullptr;
 		}
 
+		MutabilityModifier mutability_modifier= MutabilityModifier::Mutable;
+		if( it->text == Keywords::mut_ )
+		{
+			mutability_modifier= MutabilityModifier::Mutable;
+			++it;
+			U_ASSERT( it < it_end );
+		}
+		else if( it->text == Keywords::imut_ )
+		{
+			mutability_modifier= MutabilityModifier::Immutable;
+			++it;
+			U_ASSERT( it < it_end );
+		}
+
+		if( it->type != Lexem::Type::Identifier )
+		{
+			PushErrorMessage( error_messages, *it );
+			return nullptr;
+		}
+
 		const FilePos& arg_file_pos= it->file_pos;
 		const ProgramString& arg_name= it->text;
 		++it;
 		U_ASSERT( it < it_end );
 
-		arguments.emplace_back( new FunctionArgumentDeclaration( arg_file_pos, arg_name, std::move(arg_type) ) );
+		arguments.emplace_back( new FunctionArgumentDeclaration( arg_file_pos, arg_name, std::move(arg_type), mutability_modifier ) );
 
 		if( it->type == Lexem::Type::Comma )
 		{

@@ -105,6 +105,13 @@ struct Class final
 	llvm::StructType* llvm_type;
 };
 
+enum class ValueType
+{
+	Value,
+	Reference,
+	ConstReference,
+};
+
 struct Variable final
 {
 	enum class Location
@@ -115,6 +122,7 @@ struct Variable final
 	};
 
 	Location location;
+	ValueType value_type;
 	Type type;
 
 	llvm::Value* llvm_value;

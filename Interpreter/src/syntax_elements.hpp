@@ -293,6 +293,13 @@ struct TypeName
 	TypeName& operator=( TypeName&& )= default;
 };
 
+enum class MutabilityModifier
+{
+	None,
+	Mutable,
+	Immutable,
+};
+
 struct VariablesDeclaration final : public IBlockElement
 {
 	virtual ~VariablesDeclaration() override;
@@ -310,7 +317,8 @@ struct VariablesDeclaration final : public IBlockElement
 	{
 		ProgramString name;
 		BinaryOperatorsChainPtr initial_value;
-		// TODO - add reference, mut/imut modifiers here.
+		MutabilityModifier mutability_modifier= MutabilityModifier::None;
+		// TODO - add reference modifiers here.
 	};
 
 	std::vector<VariableEntry> variables;
@@ -406,7 +414,8 @@ public:
 	FunctionArgumentDeclaration(
 		const FilePos& file_pos,
 		ProgramString name,
-		TypeName type );
+		TypeName type,
+		const MutabilityModifier mutability_modifier );
 
 	virtual ~FunctionArgumentDeclaration() override;
 
@@ -415,6 +424,7 @@ public:
 public:
 	const ProgramString name_;
 	const TypeName type_;
+	const MutabilityModifier mutability_modifier_;
 };
 
 
