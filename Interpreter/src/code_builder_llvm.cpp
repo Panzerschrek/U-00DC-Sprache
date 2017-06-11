@@ -186,7 +186,17 @@ CodeBuilderLLVM::BuildResult CodeBuilderLLVM::BuildProgram( const ProgramElement
 					if( IsKeyword( arg->name_ ) )
 						errors_.push_back( ReportUsingKeywordAsName( arg->file_pos_ ) );
 
-					func_info.type.function->args.push_back( PrepareType( arg->file_pos_, arg->type_ ) );
+					func_info.type.function->args.emplace_back();
+					Function::Arg& out_arg= func_info.type.function->args.back();
+
+					out_arg.type= PrepareType( arg->file_pos_, arg->type_ );
+
+					// TODO - make variables without explicit mutability modifiers immutable.
+					if( arg->mutability_modifier_ == MutabilityModifier::Immutable )
+						out_arg.is_mutable= false;
+					else
+						out_arg.is_mutable= true;
+					out_arg.is_reference= arg->reference_modifier_ == ReferenceModifier::Reference;
 				}
 
 				BuildFuncCode(
@@ -353,13 +363,18 @@ void CodeBuilderLLVM::BuildFuncCode(
 	//func.type.function.reset( new Function );
 
 	std::vector<llvm::Type*> args_llvm_types;
-	for( const Type& type : func_variable.type.function->args )
-		args_llvm_types.push_back( type.GetLLVMType() );
+	for( const Function::Arg& arg : func_variable.type.function->args )
+	{
+		llvm::Type* type= arg.type.GetLLVMType();
+		if( arg.is_reference )
+			type= llvm::PointerType::get( type, 0u );
+		args_llvm_types.push_back( type );
+	}
 
 	func_variable.type.function->llvm_function_type=
 		llvm::FunctionType::get(
 			func_variable.type.function->return_type.GetLLVMType(),
-			llvm::ArrayRef<llvm::Type*>( args_llvm_types.data(),args_llvm_types.size() ),
+			llvm::ArrayRef<llvm::Type*>( args_llvm_types.data(), args_llvm_types.size() ),
 			false );
 
 	llvm::Function* llvm_function=
@@ -375,20 +390,25 @@ void CodeBuilderLLVM::BuildFuncCode(
 	unsigned int arg_number= 0u;
 	for( llvm::Argument& llvm_arg : llvm_function->args() )
 	{
+		const Function::Arg& arg= func_variable.type.function->args[ arg_number ];
+
 		Variable var;
 		var.location= Variable::Location::LLVMRegister;
 		var.value_type= ValueType::Reference;
-		var.type= func_variable.type.function->args[ arg_number ];
+		var.type= arg.type;
 		var.llvm_value= &llvm_arg;
 
 		// TODO - make variables without explicit mutability modifiers immutable.
 		if( args[ arg_number ]->mutability_modifier_ == MutabilityModifier::Immutable )
 			var.value_type= ValueType::ConstReference;
 
-		// Move parameters to stack for assignment possibility.
-		// TODO - do it, only if parameters are not constant.
-		if( var.location == Variable::Location::LLVMRegister )
+		if( arg.is_reference )
+			var.location= Variable::Location::PointerToStack;
+		else
 		{
+			// Move parameters to stack for assignment possibility.
+			// TODO - do it, only if parameters are not constant.
+
 			llvm::Value* address= function_context.llvm_ir_builder.CreateAlloca( var.type.GetLLVMType() );
 			function_context.llvm_ir_builder.CreateStore( var.llvm_value, address );
 
@@ -1050,14 +1070,34 @@ Variable CodeBuilderLLVM::BuildExpressionCode_r(
 
 				for( unsigned int i= 0u; i < result.type.function->args.size(); i++ )
 				{
-					Variable arg= BuildExpressionCode( *call_operator->arguments_[i], names, function_context );
-					if( arg.type != result.type.function->args[i] )
+					const Function::Arg& arg= result.type.function->args[i];
+					const Variable expr= BuildExpressionCode( *call_operator->arguments_[i], names, function_context );
+					if( expr.type != arg.type )
 					{
 						errors_.push_back( ReportFunctionSignatureMismatch( call_operator->arguments_[i]->file_pos_ ) );
 						throw ProgramError();
 					}
 
-					llvm_args[i]= CreateMoveToLLVMRegisterInstruction( arg, function_context );
+					if( arg.is_reference )
+					{
+						// TODO - support binding of value type to constant reference.
+						if( expr.value_type == ValueType::Value )
+						{
+							errors_.push_back( ReportExpectedReferenceValue( call_operator->arguments_[i]->file_pos_ ) );
+							throw ProgramError();
+						}
+						if( expr.value_type == ValueType::ConstReference && arg.is_mutable )
+						{
+							errors_.push_back( ReportBindingConstReferenceToNonconstReference( call_operator->arguments_[i]->file_pos_ ) );
+							throw ProgramError();
+						}
+
+						llvm_args[i]= expr.llvm_value;
+					}
+					else
+					{
+						llvm_args[i]= CreateMoveToLLVMRegisterInstruction( expr, function_context );
+					}
 				}
 
 				llvm::Value* call_result=

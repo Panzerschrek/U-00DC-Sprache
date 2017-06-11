@@ -1095,6 +1095,27 @@ static void ExpectedReferenceValueTest5()
 	U_ASSERT( error.file_pos.line == 5u );
 }
 
+static void ExpectedReferenceValueTest6()
+{
+	// Using value in reference - function argument.
+	static const char c_program_text[]=
+	R"(
+		fn Bar( i32 &x ) {}
+		fn Foo()
+		{
+			Bar(42);
+		}
+	)";
+
+	const CodeBuilderLLVM::BuildResult build_result= BuildProgram( c_program_text );
+
+	U_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_ASSERT( error.code == CodeBuilderErrorCode::ExpectedReferenceValue );
+	U_ASSERT( error.file_pos.line == 5u );
+}
+
 static void BindingConstReferenceToNonconstReferenceTest0()
 {
 	// Initialize reference using value-object.
@@ -1114,6 +1135,28 @@ static void BindingConstReferenceToNonconstReferenceTest0()
 
 	U_ASSERT( error.code == CodeBuilderErrorCode::BindingConstReferenceToNonconstReference );
 	U_ASSERT( error.file_pos.line == 5u );
+}
+
+static void BindingConstReferenceToNonconstReferenceTest1()
+{
+	// Initialize reference using value-object.
+	static const char c_program_text[]=
+	R"(
+		fn Bar( i32 &mut x ){}
+		fn Foo()
+		{
+			let : i32 imut x = 0;
+			Bar( x );
+		}
+	)";
+
+	const CodeBuilderLLVM::BuildResult build_result= BuildProgram( c_program_text );
+
+	U_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_ASSERT( error.code == CodeBuilderErrorCode::BindingConstReferenceToNonconstReference );
+	U_ASSERT( error.file_pos.line == 6u );
 }
 
 void RunCodeBuilderErrorsTests()
@@ -1167,7 +1210,9 @@ void RunCodeBuilderErrorsTests()
 	ExpectedReferenceValueTest3();
 	ExpectedReferenceValueTest4();
 	ExpectedReferenceValueTest5();
+	ExpectedReferenceValueTest6();
 	BindingConstReferenceToNonconstReferenceTest0();
+	BindingConstReferenceToNonconstReferenceTest1();
 }
 
 } // namespace Interpreter

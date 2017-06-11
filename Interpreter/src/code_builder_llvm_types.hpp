@@ -62,11 +62,21 @@ bool operator!=( const Type& r, const Type& l );
 
 struct Function final
 {
+	struct Arg
+	{
+		Type type;
+		bool is_reference;
+		bool is_mutable;
+	};
+
 	Type return_type;
-	std::vector<Type> args;
+	std::vector<Arg> args;
 
 	llvm::FunctionType* llvm_function_type;
 };
+
+bool operator==( const Function::Arg& r, const Function::Arg& l );
+bool operator!=( const Function::Arg& r, const Function::Arg& l );
 
 bool operator==( const Function& r, const Function& l );
 bool operator!=( const Function& r, const Function& l );

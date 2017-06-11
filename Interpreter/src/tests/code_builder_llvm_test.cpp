@@ -1608,6 +1608,71 @@ static void ReferencesTest4()
 	U_ASSERT( static_cast<uint64_t>( arg0 * 564 ) == result_value.IntVal.getLimitedValue() );
 }
 
+static void ReferencesTest5()
+{
+	// Reference arguments.
+	static const char c_program_text[]=
+	R"(
+	fn DoubleIt( i32 &imut x ) : i32
+	{ return x * 2; }
+	fn Foo( i32 a ) : i32
+	{
+		let : i32 triple_a= a * 3;
+		return DoubleIt( triple_a );
+	}
+	)";
+
+	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
+	U_ASSERT( function != nullptr );
+
+	int arg0= 148;
+
+	llvm::GenericValue args[1];
+	args[0].IntVal= llvm::APInt( 32, arg0 );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>( args, 1 ) );
+
+	U_ASSERT( static_cast<uint64_t>( arg0 * 3 * 2 ) == result_value.IntVal.getLimitedValue() );
+}
+
+static void ReferencesTest6()
+{
+	// Reference nonconst arguments.
+	static const char c_program_text[]=
+	R"(
+	fn DoubleIt( i32 &mut x )
+	{ x = x * 2; }
+	fn Foo( i32 a ) : i32
+	{
+		let : i32 triple_a= a * 3;
+		DoubleIt( triple_a );
+		return triple_a;
+	}
+	)";
+
+	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
+	U_ASSERT( function != nullptr );
+
+	int arg0= 148;
+
+	llvm::GenericValue args[1];
+	args[0].IntVal= llvm::APInt( 32, arg0 );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>( args, 1 ) );
+
+	U_ASSERT( static_cast<uint64_t>( arg0 * 3 * 2 ) == result_value.IntVal.getLimitedValue() );
+}
+
 void RunCodeBuilderLLVMTest()
 {
 	SimpleProgramTest();
@@ -1652,6 +1717,8 @@ void RunCodeBuilderLLVMTest()
 	ReferencesTest2();
 	ReferencesTest3();
 	ReferencesTest4();
+	ReferencesTest5();
+	ReferencesTest6();
 }
 
 } // namespace Interpreter

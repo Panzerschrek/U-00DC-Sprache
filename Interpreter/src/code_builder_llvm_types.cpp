@@ -181,10 +181,17 @@ ProgramString Type::ToString() const
 		result+= "fn "_SpC;
 		result+= function->return_type.ToString();
 		result+= " ( "_SpC;
-		for( const Type& arg_type : function->args )
+		for( const Function::Arg& arg : function->args )
 		{
-			result+= arg_type.ToString();
-			if( &arg_type != &function->args.back() )
+			if( arg.is_reference )
+				result+= "&"_SpC;
+			if( arg.is_mutable )
+				result+= "mut "_SpC;
+			else
+				result+= "imut "_SpC;
+
+			result+= arg.type.ToString();
+			if( &arg != &function->args.back() )
 				result+= ", "_SpC;
 		}
 		result+= " )"_SpC;
@@ -236,6 +243,16 @@ bool operator==( const Type& r, const Type& l )
 }
 
 bool operator!=( const Type& r, const Type& l )
+{
+	return !( r == l );
+}
+
+bool operator==( const Function::Arg& r, const Function::Arg& l )
+{
+	return r.type == l.type && r.is_mutable == l.is_mutable && r.is_reference == l.is_reference;
+}
+
+bool operator!=( const Function::Arg& r, const Function::Arg& l )
 {
 	return !( r == l );
 }
