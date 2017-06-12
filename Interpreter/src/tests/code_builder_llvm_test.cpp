@@ -1735,6 +1735,45 @@ static void ReferencesTest8()
 	U_ASSERT( static_cast<uint64_t>( 99985 ) == result_value.IntVal.getLimitedValue() );
 }
 
+static void ReferencesTest9()
+{
+	// Return reference.
+	static const char c_program_text[]=
+	R"(
+	fn Max( i32 &a, i32 &b ) : i32&
+	{
+		if( a > b ) { return a; }
+		else { return b; }
+	}
+	fn Foo( i32 x, i32 y ) : i32
+	{
+		return Max( x, y );
+	}
+	)";
+
+	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
+	U_ASSERT( function != nullptr );
+
+	static const int cases_args[3][2]= { { 7, 567 }, { 48454, 758 }, { 4468, 4468 } };
+	for( unsigned int i= 0u; i < 3u; i++ )
+	{
+		llvm::GenericValue args[2];
+		args[0].IntVal= llvm::APInt( 32, cases_args[i][0] );
+		args[1].IntVal= llvm::APInt( 32, cases_args[i][1] );
+
+		llvm::GenericValue result_value=
+			engine->runFunction(
+				function,
+				llvm::ArrayRef<llvm::GenericValue>( args, 2 ) );
+
+		U_ASSERT(
+			static_cast<uint64_t>( std::max( cases_args[i][0], cases_args[i][1] ) ) ==
+			result_value.IntVal.getLimitedValue() );
+	}
+}
+
 void RunCodeBuilderLLVMTest()
 {
 	SimpleProgramTest();
@@ -1783,6 +1822,7 @@ void RunCodeBuilderLLVMTest()
 	ReferencesTest6();
 	ReferencesTest7();
 	ReferencesTest8();
+	ReferencesTest9();
 }
 
 } // namespace Interpreter

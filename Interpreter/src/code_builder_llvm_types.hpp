@@ -70,6 +70,8 @@ struct Function final
 	};
 
 	Type return_type;
+	bool return_value_is_reference;
+	bool return_value_is_mutable;
 	std::vector<Arg> args;
 
 	llvm::FunctionType* llvm_function_type;

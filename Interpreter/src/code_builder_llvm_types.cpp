@@ -261,6 +261,8 @@ bool operator==( const Function& r, const Function& l )
 {
 	return
 		r.return_type == l.return_type &&
+		r.return_value_is_mutable == l.return_value_is_mutable &&
+		r.return_value_is_reference == l.return_value_is_reference &&
 		r.args == l.args;
 }
 

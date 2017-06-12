@@ -447,6 +447,8 @@ public:
 		const FilePos& file_pos,
 		ProgramString name,
 		ProgramString return_type,
+		MutabilityModifier return_value_mutability_modifier,
+		ReferenceModifier return_value_reference_modifier,
 		FunctionArgumentsDeclaration arguments,
 		BlockPtr block );
 
@@ -456,6 +458,8 @@ public:
 
 	const ProgramString name_;
 	const ProgramString return_type_;
+	const MutabilityModifier return_value_mutability_modifier_;
+	const ReferenceModifier return_value_reference_modifier_;
 	const FunctionArgumentsDeclaration arguments_;
 	const BlockPtr block_;
 };
