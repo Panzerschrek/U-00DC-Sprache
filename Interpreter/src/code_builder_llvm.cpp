@@ -150,7 +150,7 @@ CodeBuilderLLVM::BuildResult CodeBuilderLLVM::BuildProgram( const ProgramElement
 
 			Variable func_info;
 
-			func_info.location= Variable::Location::Global;
+			func_info.location= Variable::Location::Pointer;
 			func_info.value_type= ValueType::ConstReference;
 
 			std::unique_ptr<Function> function_type_storage( new Function() );
@@ -430,7 +430,7 @@ void CodeBuilderLLVM::BuildFuncCode(
 			var.value_type= ValueType::ConstReference;
 
 		if( arg.is_reference )
-			var.location= Variable::Location::PointerToStack;
+			var.location= Variable::Location::Pointer;
 		else
 		{
 			// Move parameters to stack for assignment possibility.
@@ -440,7 +440,7 @@ void CodeBuilderLLVM::BuildFuncCode(
 			function_context.llvm_ir_builder.CreateStore( var.llvm_value, address );
 
 			var.llvm_value= address;
-			var.location= Variable::Location::PointerToStack;
+			var.location= Variable::Location::Pointer;
 		}
 
 		const ProgramString& arg_name= args[ arg_number ]->name_;
@@ -1030,13 +1030,13 @@ Variable CodeBuilderLLVM::BuildExpressionCode_r(
 					throw ProgramError();
 				}
 
-				if( result.location != Variable::Location::PointerToStack )
+				if( result.location != Variable::Location::Pointer )
 				{
 					// TODO - Strange variable location.
 					throw ProgramError();
 				}
 
-				result.location= Variable::Location::PointerToStack;
+				result.location= Variable::Location::Pointer;
 				result.value_type= ValueType::Reference;
 				result.type= (*array_type)->type;
 
@@ -1066,14 +1066,14 @@ Variable CodeBuilderLLVM::BuildExpressionCode_r(
 					throw ProgramError();
 				}
 
-				U_ASSERT( result.location == Variable::Location::PointerToStack );
+				U_ASSERT( result.location == Variable::Location::Pointer );
 
 				// Make first index = 0 for array to pointer conversion.
 				llvm::Value* index_list[2];
 				index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
 				index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(field->index) ) );
 
-				result.location= Variable::Location::PointerToStack;
+				result.location= Variable::Location::Pointer;
 				result.value_type= ValueType::Reference;
 				result.type= field->type;
 				result.llvm_value=
@@ -1156,7 +1156,7 @@ Variable CodeBuilderLLVM::BuildExpressionCode_r(
 
 				if( function_type.return_value_is_reference )
 				{
-					result.location= Variable::Location::PointerToStack;
+					result.location= Variable::Location::Pointer;
 					if( function_type.return_value_is_mutable )
 						result.value_type= ValueType::Reference;
 					else
@@ -1233,7 +1233,7 @@ void CodeBuilderLLVM::BuildVariablesDeclarationCode(
 			errors_.push_back( ReportUsingKeywordAsName( variables_declaration.file_pos_ ) );
 
 		Variable variable;
-		variable.location= Variable::Location::PointerToStack;
+		variable.location= Variable::Location::Pointer;
 
 		// TODO - make variables without explicit mutability modifiers immutable.
 		if( variable_declaration.mutability_modifier == MutabilityModifier::Immutable )
@@ -1346,7 +1346,7 @@ void CodeBuilderLLVM::BuildAssignmentOperatorCode(
 	const FundamentalType* const fundamental_type= boost::get<FundamentalType>( &l_var.type.one_of_type_kind );
 	if( fundamental_type != nullptr )
 	{
-		if( l_var.location != Variable::Location::PointerToStack )
+		if( l_var.location != Variable::Location::Pointer )
 		{
 			// TODO - write correct lvalue/rvalue flag into variable.
 			throw ProgramError();
@@ -1640,17 +1640,16 @@ llvm::Type* CodeBuilderLLVM::GetFundamentalLLVMType( const U_FundamentalType fun
 llvm::Value*CodeBuilderLLVM::CreateMoveToLLVMRegisterInstruction(
 	const Variable& variable, FunctionContext& function_context )
 {
-	llvm::Value* register_value= nullptr;
-	if( variable.location == Variable::Location::LLVMRegister )
-		register_value= variable.llvm_value;
-	else if( variable.location == Variable::Location::PointerToStack )
-		register_value= function_context.llvm_ir_builder.CreateLoad( variable.llvm_value );
-	else
+	switch( variable.location )
 	{
-		U_ASSERT(false);
-	}
+	case Variable::Location::LLVMRegister:
+		return variable.llvm_value;
+	case Variable::Location::Pointer:
+		return function_context.llvm_ir_builder.CreateLoad( variable.llvm_value );
+	};
 
-	return register_value;
+	U_ASSERT(false);
+	return nullptr;
 }
 
 } // namespace CodeBuilderLLVMPrivate

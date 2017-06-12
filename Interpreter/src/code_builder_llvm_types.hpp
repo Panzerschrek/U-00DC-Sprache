@@ -133,16 +133,15 @@ struct Variable final
 {
 	enum class Location
 	{
-		Global,
-		PointerToStack,
+		Pointer,
 		LLVMRegister,
 	};
 
-	Location location;
-	ValueType value_type;
+	Location location= Location::Pointer;
+	ValueType value_type= ValueType::ConstReference;
 	Type type;
 
-	llvm::Value* llvm_value;
+	llvm::Value* llvm_value= nullptr;
 };
 
 // Any thing, that can have name - class, variable, namespace, label, enum, etc.
