@@ -95,9 +95,13 @@ namespace CodeBuilderLLVMPrivate
 
 CodeBuilderLLVM::FunctionContext::FunctionContext(
 	const Type in_return_type,
+	const bool in_return_value_is_mutable,
+	const bool in_return_value_is_reference,
 	llvm::LLVMContext& llvm_context,
 	llvm::Function* in_function )
 	: return_type(in_return_type)
+	, return_value_is_mutable(in_return_value_is_mutable)
+	, return_value_is_reference(in_return_value_is_reference)
 	, function(in_function)
 	, function_basic_block( llvm::BasicBlock::Create( llvm_context, "", function ) )
 	, llvm_ir_builder( function_basic_block )
@@ -172,6 +176,13 @@ CodeBuilderLLVM::BuildResult CodeBuilderLLVM::BuildProgram( const ProgramElement
 			func_info.type.function->return_type.fundamental_llvm_type=
 				GetFundamentalLLVMType( func_info.type.function->return_type.fundamental );
 
+			// TODO - make variables without explicit mutability modifiers immutable.
+			if( func->return_value_mutability_modifier_ == MutabilityModifier::Immutable )
+				func_info.type.function->return_value_is_mutable= false;
+			else
+				func_info.type.function->return_value_is_mutable= true;
+			func_info.type.function->return_value_is_reference= func->return_value_reference_modifier_ == ReferenceModifier::Reference;
+
 			if( global_names_.GetName( func->name_ ) != nullptr )
 			{
 				errors_.push_back( ReportRedefinition( func->file_pos_, func->name_ ) );
@@ -186,7 +197,17 @@ CodeBuilderLLVM::BuildResult CodeBuilderLLVM::BuildProgram( const ProgramElement
 					if( IsKeyword( arg->name_ ) )
 						errors_.push_back( ReportUsingKeywordAsName( arg->file_pos_ ) );
 
-					func_info.type.function->args.push_back( PrepareType( arg->file_pos_, arg->type_ ) );
+					func_info.type.function->args.emplace_back();
+					Function::Arg& out_arg= func_info.type.function->args.back();
+
+					out_arg.type= PrepareType( arg->file_pos_, arg->type_ );
+
+					// TODO - make variables without explicit mutability modifiers immutable.
+					if( arg->mutability_modifier_ == MutabilityModifier::Immutable )
+						out_arg.is_mutable= false;
+					else
+						out_arg.is_mutable= true;
+					out_arg.is_reference= arg->reference_modifier_ == ReferenceModifier::Reference;
 				}
 
 				BuildFuncCode(
@@ -353,13 +374,22 @@ void CodeBuilderLLVM::BuildFuncCode(
 	//func.type.function.reset( new Function );
 
 	std::vector<llvm::Type*> args_llvm_types;
-	for( const Type& type : func_variable.type.function->args )
-		args_llvm_types.push_back( type.GetLLVMType() );
+	for( const Function::Arg& arg : func_variable.type.function->args )
+	{
+		llvm::Type* type= arg.type.GetLLVMType();
+		if( arg.is_reference )
+			type= llvm::PointerType::get( type, 0u );
+		args_llvm_types.push_back( type );
+	}
+
+	llvm::Type* llvm_function_return_type= func_variable.type.function->return_type.GetLLVMType();
+	if( func_variable.type.function->return_value_is_reference )
+		llvm_function_return_type= llvm::PointerType::get( llvm_function_return_type, 0u );
 
 	func_variable.type.function->llvm_function_type=
 		llvm::FunctionType::get(
-			func_variable.type.function->return_type.GetLLVMType(),
-			llvm::ArrayRef<llvm::Type*>( args_llvm_types.data(),args_llvm_types.size() ),
+			llvm_function_return_type,
+			llvm::ArrayRef<llvm::Type*>( args_llvm_types.data(), args_llvm_types.size() ),
 			false );
 
 	llvm::Function* llvm_function=
@@ -370,25 +400,35 @@ void CodeBuilderLLVM::BuildFuncCode(
 			module_.get() );
 
 	NamesScope function_names( &global_names_ );
-	FunctionContext function_context( func_variable.type.function->return_type, llvm_context_, llvm_function );
+	FunctionContext function_context(
+		func_variable.type.function->return_type,
+		func_variable.type.function->return_value_is_mutable,
+		func_variable.type.function->return_value_is_reference,
+		llvm_context_,
+		llvm_function );
 
 	unsigned int arg_number= 0u;
 	for( llvm::Argument& llvm_arg : llvm_function->args() )
 	{
+		const Function::Arg& arg= func_variable.type.function->args[ arg_number ];
+
 		Variable var;
 		var.location= Variable::Location::LLVMRegister;
 		var.value_type= ValueType::Reference;
-		var.type= func_variable.type.function->args[ arg_number ];
+		var.type= arg.type;
 		var.llvm_value= &llvm_arg;
 
 		// TODO - make variables without explicit mutability modifiers immutable.
 		if( args[ arg_number ]->mutability_modifier_ == MutabilityModifier::Immutable )
 			var.value_type= ValueType::ConstReference;
 
-		// Move parameters to stack for assignment possibility.
-		// TODO - do it, only if parameters are not constant.
-		if( var.location == Variable::Location::LLVMRegister )
+		if( arg.is_reference )
+			var.location= Variable::Location::PointerToStack;
+		else
 		{
+			// Move parameters to stack for assignment possibility.
+			// TODO - do it, only if parameters are not constant.
+
 			llvm::Value* address= function_context.llvm_ir_builder.CreateAlloca( var.type.GetLLVMType() );
 			function_context.llvm_ir_builder.CreateStore( var.llvm_value, address );
 
@@ -1050,14 +1090,52 @@ Variable CodeBuilderLLVM::BuildExpressionCode_r(
 
 				for( unsigned int i= 0u; i < result.type.function->args.size(); i++ )
 				{
-					Variable arg= BuildExpressionCode( *call_operator->arguments_[i], names, function_context );
-					if( arg.type != result.type.function->args[i] )
+					const Function::Arg& arg= result.type.function->args[i];
+					const Variable expr= BuildExpressionCode( *call_operator->arguments_[i], names, function_context );
+					if( expr.type != arg.type )
 					{
 						errors_.push_back( ReportFunctionSignatureMismatch( call_operator->arguments_[i]->file_pos_ ) );
 						throw ProgramError();
 					}
 
-					llvm_args[i]= CreateMoveToLLVMRegisterInstruction( arg, function_context );
+					if( arg.is_reference )
+					{
+						if( arg.is_mutable )
+						{
+							if( expr.value_type == ValueType::Value )
+							{
+								errors_.push_back( ReportExpectedReferenceValue( call_operator->arguments_[i]->file_pos_ ) );
+								throw ProgramError();
+							}
+							if( expr.value_type == ValueType::ConstReference )
+							{
+								errors_.push_back( ReportBindingConstReferenceToNonconstReference( call_operator->arguments_[i]->file_pos_ ) );
+								throw ProgramError();
+							}
+
+							llvm_args[i]= expr.llvm_value;
+						}
+						else
+						{
+							if( expr.value_type == ValueType::Value )
+							{
+								// Bind value to const reference.
+								// TODO - support nonfundamental values.
+								llvm::Value* temp_storage= function_context.llvm_ir_builder.CreateAlloca( expr.type.GetLLVMType() );
+								function_context.llvm_ir_builder.CreateStore( expr.llvm_value, temp_storage );
+								llvm_args[i]= temp_storage;
+							}
+							else
+							{
+								llvm_args[i]= expr.llvm_value;
+							}
+						}
+					}
+					else
+					{
+						// TODO - support nonfundamental value-parameters.
+						llvm_args[i]= CreateMoveToLLVMRegisterInstruction( expr, function_context );
+					}
 				}
 
 				llvm::Value* call_result=
@@ -1065,8 +1143,19 @@ Variable CodeBuilderLLVM::BuildExpressionCode_r(
 						llvm::dyn_cast<llvm::Function>(result.llvm_value),
 						llvm_args );
 
-				result.location= Variable::Location::LLVMRegister;
-				result.value_type= ValueType::Value; // TODO - support functions, returning references.
+				if( result.type.function->return_value_is_reference )
+				{
+					result.location= Variable::Location::PointerToStack;
+					if( result.type.function->return_value_is_mutable )
+						result.value_type= ValueType::Reference;
+					else
+						result.value_type= ValueType::ConstReference;
+				}
+				else
+				{
+					result.location= Variable::Location::LLVMRegister;
+					result.value_type= ValueType::Value;
+				}
 				result.type= result.type.function->return_type;
 				result.llvm_value= call_result;
 			}
@@ -1105,6 +1194,7 @@ Variable CodeBuilderLLVM::BuildExpressionCode_r(
 					result.llvm_value= function_context.llvm_ir_builder.CreateNeg( value_for_neg );
 
 				result.location= Variable::Location::LLVMRegister;
+				result.value_type= ValueType::Value;
 			}
 			else if( const UnaryPlus* const unary_plus=
 				dynamic_cast<const UnaryPlus*>( prefix_operator.get() ) )
@@ -1132,18 +1222,49 @@ void CodeBuilderLLVM::BuildVariablesDeclarationCode(
 
 		Variable variable;
 		variable.location= Variable::Location::PointerToStack;
-		variable.value_type= ValueType::Reference;
-		variable.type= type;
-		variable.llvm_value= function_context.llvm_ir_builder.CreateAlloca( variable.type.GetLLVMType() );
 
 		// TODO - make variables without explicit mutability modifiers immutable.
 		if( variable_declaration.mutability_modifier == MutabilityModifier::Immutable )
 			variable.value_type= ValueType::ConstReference;
+		else
+			variable.value_type= ValueType::Reference;
 
-		if( type.kind == Type::Kind::Fundamental )
+		variable.type= type;
+
+		if( variable_declaration.reference_modifier == ReferenceModifier::None )
+		{
+			variable.llvm_value= function_context.llvm_ir_builder.CreateAlloca( variable.type.GetLLVMType() );
+
+			if( type.kind == Type::Kind::Fundamental )
+			{
+				if( variable_declaration.initial_value == nullptr )
+				{
+					errors_.push_back( ReportExpectedInitializer( variables_declaration.file_pos_ ) );
+					throw ProgramError();
+				}
+
+				const Variable initialzier_expression=
+					BuildExpressionCode( *variable_declaration.initial_value, block_names, function_context );
+
+				if( initialzier_expression.type !=variable.type )
+				{
+					errors_.push_back( ReportTypesMismatch( variables_declaration.file_pos_, variable.type.ToString(), initialzier_expression.type.ToString() ) );
+					throw ProgramError();
+				}
+
+				llvm::Value* value_for_assignment= CreateMoveToLLVMRegisterInstruction( initialzier_expression, function_context );
+				function_context.llvm_ir_builder.CreateStore( value_for_assignment, variable.llvm_value );
+			}
+			else
+			{
+				// TODO - support nonfundamental types initialization.
+			}
+		}
+		else if( variable_declaration.reference_modifier == ReferenceModifier::Reference )
 		{
 			if( variable_declaration.initial_value == nullptr )
 			{
+				// TODO - report "expected initializer for reference"
 				errors_.push_back( ReportExpectedInitializer( variables_declaration.file_pos_ ) );
 				throw ProgramError();
 			}
@@ -1151,18 +1272,29 @@ void CodeBuilderLLVM::BuildVariablesDeclarationCode(
 			const Variable initialzier_expression=
 				BuildExpressionCode( *variable_declaration.initial_value, block_names, function_context );
 
-			if( initialzier_expression.type !=variable.type )
+			if( initialzier_expression.type != variable.type )
 			{
 				errors_.push_back( ReportTypesMismatch( variables_declaration.file_pos_, variable.type.ToString(), initialzier_expression.type.ToString() ) );
 				throw ProgramError();
 			}
+			if( initialzier_expression.value_type == ValueType::Value )
+			{
+				errors_.push_back( ReportExpectedReferenceValue( variables_declaration.file_pos_ ) );
+				throw ProgramError();
+			}
+			if( initialzier_expression.value_type == ValueType::ConstReference &&
+				variable.value_type == ValueType::Reference )
+			{
+				errors_.push_back( ReportBindingConstReferenceToNonconstReference( variables_declaration.file_pos_ ) );
+				throw ProgramError();
+			}
 
-			llvm::Value* value_for_assignment= CreateMoveToLLVMRegisterInstruction( initialzier_expression, function_context );
-			function_context.llvm_ir_builder.CreateStore( value_for_assignment, variable.llvm_value );
+			// TODO - maybe make copy of varaible address in new llvm register?
+			variable.llvm_value= initialzier_expression.llvm_value;
 		}
 		else
 		{
-			// TODO - support nonfundamental types initialization.
+			U_ASSERT(false);
 		}
 
 		const NamesScope::InsertedName* inserted_name=
@@ -1258,9 +1390,26 @@ void CodeBuilderLLVM::BuildReturnOperatorCode(
 		errors_.push_back( ReportTypesMismatch( return_operator.file_pos_, function_context.return_type.ToString(), expression_result.type.ToString() ) );
 		return;
 	}
+	if( function_context.return_value_is_reference )
+	{
+		if( expression_result.value_type == ValueType::Value )
+		{
+			errors_.push_back( ReportExpectedReferenceValue( return_operator.file_pos_ ) );
+			throw ProgramError();
+		}
+		if( expression_result.value_type == ValueType::ConstReference && function_context.return_value_is_mutable )
+		{
+			errors_.push_back( ReportBindingConstReferenceToNonconstReference( return_operator.file_pos_ ) );
+			throw ProgramError();
+		}
 
-	llvm::Value* value_for_return= CreateMoveToLLVMRegisterInstruction( expression_result, function_context );
-	function_context.llvm_ir_builder.CreateRet( value_for_return );
+		function_context.llvm_ir_builder.CreateRet( expression_result.llvm_value );
+	}
+	else
+	{
+		llvm::Value* value_for_return= CreateMoveToLLVMRegisterInstruction( expression_result, function_context );
+		function_context.llvm_ir_builder.CreateRet( value_for_return );
+	}
 }
 
 void CodeBuilderLLVM::BuildWhileOperatorCode(

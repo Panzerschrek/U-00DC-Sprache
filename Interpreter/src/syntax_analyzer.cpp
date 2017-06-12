@@ -513,6 +513,13 @@ static VariablesDeclarationPtr ParseVariablesDeclaration(
 		decl->variables.emplace_back();
 		VariablesDeclaration::VariableEntry& variable_entry= decl->variables.back();
 
+		if( it->type == Lexem::Type::And )
+		{
+			variable_entry.reference_modifier= ReferenceModifier::Reference;
+			++it;
+			U_ASSERT( it < it_end );
+		}
+
 		if( it->type != Lexem::Type::Identifier )
 		{
 			PushErrorMessage( error_messages, *it );
@@ -949,13 +956,22 @@ static IProgramElementPtr ParseFunction(
 
 		TypeName arg_type= ParseTypeName( error_messages, it, it_end );
 
+		ReferenceModifier reference_modifier= ReferenceModifier::None;
+		MutabilityModifier mutability_modifier= MutabilityModifier::Mutable;
+
+		if( it->type == Lexem::Type::And )
+		{
+			reference_modifier= ReferenceModifier::Reference;
+			++it;
+			U_ASSERT( it < it_end );
+		}
+
 		if( it->type != Lexem::Type::Identifier )
 		{
 			PushErrorMessage( error_messages, *it );
 			return nullptr;
 		}
 
-		MutabilityModifier mutability_modifier= MutabilityModifier::Mutable;
 		if( it->text == Keywords::mut_ )
 		{
 			mutability_modifier= MutabilityModifier::Mutable;
@@ -980,7 +996,13 @@ static IProgramElementPtr ParseFunction(
 		++it;
 		U_ASSERT( it < it_end );
 
-		arguments.emplace_back( new FunctionArgumentDeclaration( arg_file_pos, arg_name, std::move(arg_type), mutability_modifier ) );
+		arguments.emplace_back(
+			new FunctionArgumentDeclaration(
+				arg_file_pos,
+				arg_name,
+				std::move(arg_type),
+				mutability_modifier,
+				reference_modifier ) );
 
 		if( it->type == Lexem::Type::Comma )
 		{
@@ -1002,6 +1024,8 @@ static IProgramElementPtr ParseFunction(
 	}
 
 	ProgramString return_type;
+	MutabilityModifier mutability_modifier;
+	ReferenceModifier reference_modifier;
 
 	if( it->type == Lexem::Type::Colon )
 	{
@@ -1016,6 +1040,31 @@ static IProgramElementPtr ParseFunction(
 
 		return_type= it->text;
 		++it;
+
+		if( it->type == Lexem::Type::And )
+		{
+			reference_modifier= ReferenceModifier::Reference;
+			++it;
+			U_ASSERT( it < it_end );
+		}
+
+		if( it->type == Lexem::Type::Identifier )
+		{
+			if( it->text == Keywords::mut_ )
+			{
+				mutability_modifier= MutabilityModifier::Mutable;
+				++it;
+				U_ASSERT( it < it_end );
+			}
+			else if( it->text == Keywords::imut_ )
+			{
+				mutability_modifier= MutabilityModifier::Immutable;
+				++it;
+				U_ASSERT( it < it_end );
+			}
+			else
+				PushErrorMessage( error_messages, *it );
+		}
 	}
 
 	BlockPtr block;
@@ -1033,6 +1082,8 @@ static IProgramElementPtr ParseFunction(
 			func_pos,
 			std::move( fn_name ),
 			return_type,
+			mutability_modifier,
+			reference_modifier,
 			std::move( arguments ),
 			std::move( block ) ) );
 }

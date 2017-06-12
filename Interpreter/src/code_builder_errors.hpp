@@ -29,6 +29,7 @@ enum class CodeBuilderErrorCode : unsigned int
 	NoReturnInFunctionReturningNonVoid,
 	ExpectedInitializer,
 	ExpectedReferenceValue,
+	BindingConstReferenceToNonconstReference,
 
 	// Push new error codes at back.
 };
@@ -58,5 +59,6 @@ CodeBuilderError ReportUnreachableCode( const FilePos& file_pos );
 CodeBuilderError ReportNoReturnInFunctionReturningNonVoid( const FilePos& file_pos );
 CodeBuilderError ReportExpectedInitializer( const FilePos& file_pos );
 CodeBuilderError ReportExpectedReferenceValue( const FilePos& file_pos );
+CodeBuilderError ReportBindingConstReferenceToNonconstReference( const FilePos& file_pos );
 
 } // namespace Interpreter

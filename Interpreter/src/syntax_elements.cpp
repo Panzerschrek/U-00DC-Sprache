@@ -564,11 +564,13 @@ FunctionArgumentDeclaration::FunctionArgumentDeclaration(
 	const FilePos& file_pos,
 	ProgramString name,
 	TypeName type,
-	MutabilityModifier mutability_modifier )
+	MutabilityModifier mutability_modifier,
+	ReferenceModifier reference_modifier )
 	: IProgramElement( file_pos )
 	, name_(std::move(name))
 	, type_(std::move(type))
 	, mutability_modifier_(mutability_modifier)
+	, reference_modifier_(reference_modifier)
 {}
 
 FunctionArgumentDeclaration::~FunctionArgumentDeclaration()
@@ -586,11 +588,15 @@ FunctionDeclaration::FunctionDeclaration(
 	const FilePos& file_pos,
 	ProgramString name,
 	ProgramString return_type,
+	MutabilityModifier return_value_mutability_modifier,
+	ReferenceModifier return_value_reference_modifier,
 	FunctionArgumentsDeclaration arguments,
 	BlockPtr block )
 	: IProgramElement(file_pos)
 	, name_( std::move(name) )
 	, return_type_( std::move(return_type) )
+	, return_value_mutability_modifier_(return_value_mutability_modifier)
+	, return_value_reference_modifier_(return_value_reference_modifier)
 	, arguments_( std::move(arguments) )
 	, block_( std::move(block) )
 {}

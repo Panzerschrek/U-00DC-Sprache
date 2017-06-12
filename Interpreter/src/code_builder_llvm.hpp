@@ -36,10 +36,14 @@ private:
 	{
 		FunctionContext(
 			const Type return_type,
+			bool return_value_is_mutable,
+			bool return_value_is_reference,
 			llvm::LLVMContext& llvm_context,
 			llvm::Function* function );
 
 		Type return_type;
+		bool return_value_is_mutable;
+		bool return_value_is_reference;
 
 		llvm::Function* const function;
 		llvm::BasicBlock* const function_basic_block;

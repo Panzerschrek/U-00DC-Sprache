@@ -300,6 +300,13 @@ enum class MutabilityModifier
 	Immutable,
 };
 
+enum class ReferenceModifier
+{
+	None,
+	Reference,
+	// TODO - add "move" references here
+};
+
 struct VariablesDeclaration final : public IBlockElement
 {
 	virtual ~VariablesDeclaration() override;
@@ -318,7 +325,7 @@ struct VariablesDeclaration final : public IBlockElement
 		ProgramString name;
 		BinaryOperatorsChainPtr initial_value;
 		MutabilityModifier mutability_modifier= MutabilityModifier::None;
-		// TODO - add reference modifiers here.
+		ReferenceModifier reference_modifier= ReferenceModifier::None;
 	};
 
 	std::vector<VariableEntry> variables;
@@ -415,7 +422,8 @@ public:
 		const FilePos& file_pos,
 		ProgramString name,
 		TypeName type,
-		const MutabilityModifier mutability_modifier );
+		MutabilityModifier mutability_modifier,
+		ReferenceModifier reference_modifier );
 
 	virtual ~FunctionArgumentDeclaration() override;
 
@@ -425,6 +433,7 @@ public:
 	const ProgramString name_;
 	const TypeName type_;
 	const MutabilityModifier mutability_modifier_;
+	const ReferenceModifier reference_modifier_;
 };
 
 
@@ -438,6 +447,8 @@ public:
 		const FilePos& file_pos,
 		ProgramString name,
 		ProgramString return_type,
+		MutabilityModifier return_value_mutability_modifier,
+		ReferenceModifier return_value_reference_modifier,
 		FunctionArgumentsDeclaration arguments,
 		BlockPtr block );
 
@@ -447,6 +458,8 @@ public:
 
 	const ProgramString name_;
 	const ProgramString return_type_;
+	const MutabilityModifier return_value_mutability_modifier_;
+	const ReferenceModifier return_value_reference_modifier_;
 	const FunctionArgumentsDeclaration arguments_;
 	const BlockPtr block_;
 };
