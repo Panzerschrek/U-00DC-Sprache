@@ -1100,22 +1100,40 @@ Variable CodeBuilderLLVM::BuildExpressionCode_r(
 
 					if( arg.is_reference )
 					{
-						// TODO - support binding of value type to constant reference.
-						if( expr.value_type == ValueType::Value )
+						if( arg.is_mutable )
 						{
-							errors_.push_back( ReportExpectedReferenceValue( call_operator->arguments_[i]->file_pos_ ) );
-							throw ProgramError();
-						}
-						if( expr.value_type == ValueType::ConstReference && arg.is_mutable )
-						{
-							errors_.push_back( ReportBindingConstReferenceToNonconstReference( call_operator->arguments_[i]->file_pos_ ) );
-							throw ProgramError();
-						}
+							if( expr.value_type == ValueType::Value )
+							{
+								errors_.push_back( ReportExpectedReferenceValue( call_operator->arguments_[i]->file_pos_ ) );
+								throw ProgramError();
+							}
+							if( expr.value_type == ValueType::ConstReference )
+							{
+								errors_.push_back( ReportBindingConstReferenceToNonconstReference( call_operator->arguments_[i]->file_pos_ ) );
+								throw ProgramError();
+							}
 
-						llvm_args[i]= expr.llvm_value;
+							llvm_args[i]= expr.llvm_value;
+						}
+						else
+						{
+							if( expr.value_type == ValueType::Value )
+							{
+								// Bind value to const reference.
+								// TODO - support nonfundamental values.
+								llvm::Value* temp_storage= function_context.llvm_ir_builder.CreateAlloca( expr.type.GetLLVMType() );
+								function_context.llvm_ir_builder.CreateStore( expr.llvm_value, temp_storage );
+								llvm_args[i]= temp_storage;
+							}
+							else
+							{
+								llvm_args[i]= expr.llvm_value;
+							}
+						}
 					}
 					else
 					{
+						// TODO - support nonfundamental value-parameters.
 						llvm_args[i]= CreateMoveToLLVMRegisterInstruction( expr, function_context );
 					}
 				}

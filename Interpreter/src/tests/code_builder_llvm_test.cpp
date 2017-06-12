@@ -1774,6 +1774,37 @@ static void ReferencesTest9()
 	}
 }
 
+static void BindValueToConstReferenceTest0()
+{
+	// Bind value-result to const reference parameter.
+	static const char c_program_text[]=
+	R"(
+	fn DoubleIt( i32 &imut x ) : i32
+	{ return x * 2; }
+	fn Foo( i32 a ) : i32
+	{
+		return DoubleIt( a * 3 );
+	}
+	)";
+
+	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ), true );
+
+	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
+	U_ASSERT( function != nullptr );
+
+	int arg0= 666;
+
+	llvm::GenericValue args[1];
+	args[0].IntVal= llvm::APInt( 32, arg0 );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>( args, 1 ) );
+
+	U_ASSERT( static_cast<uint64_t>( arg0 * 3 * 2 ) == result_value.IntVal.getLimitedValue() );
+}
+
 void RunCodeBuilderLLVMTest()
 {
 	SimpleProgramTest();
@@ -1823,6 +1854,7 @@ void RunCodeBuilderLLVMTest()
 	ReferencesTest7();
 	ReferencesTest8();
 	ReferencesTest9();
+	BindValueToConstReferenceTest0();
 }
 
 } // namespace Interpreter
