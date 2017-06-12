@@ -68,175 +68,229 @@ const ProgramString (&g_fundamental_types_names)[ size_t(U_FundamentalType::Last
 
 } // namespace
 
-Type::Type( U_FundamentalType in_fundamental )
-	: kind( Kind::Fundamental )
-	, fundamental( in_fundamental )
+FundamentalType::FundamentalType(
+	const U_FundamentalType in_fundamental_type,
+	llvm::Type* const in_llvm_type )
+	: fundamental_type(in_fundamental_type)
+	, llvm_type(in_llvm_type)
 {}
+
+bool operator==( const FundamentalType& r, const FundamentalType& l )
+{
+	return r.fundamental_type == l.fundamental_type;
+}
+
+bool operator!=( const FundamentalType& r, const FundamentalType& l )
+{
+	return !( r == l );
+}
 
 Type::Type( const Type& other )
 {
 	*this= other;
 }
 
-Type::Type( Type&& other ) noexcept
-{
-	*this= std::move(other);
-}
-
 Type& Type::operator=( const Type& other )
 {
-	kind= other.kind;
-
-	switch( kind )
+	struct Visitor final : public boost::static_visitor<>
 	{
-	case Kind::Fundamental:
-		fundamental= other.fundamental;
-		fundamental_llvm_type= other.fundamental_llvm_type;
-		break;
+		Type& this_;
 
-	case Kind::Function:
-		U_ASSERT( other.function );
-		function.reset( new Function( *other.function ) );
-		break;
+		explicit Visitor( Type& in_this_ )
+			: this_(in_this_)
+		{}
 
-	case Kind::Array:
-		U_ASSERT( other.array );
-		array.reset( new Array( *other.array ) );
-		break;
+		void operator()( const FundamentalType& fundamental )
+		{
+			this_.one_of_type_kind= fundamental;
+		}
 
-	case Kind::Class:
-		U_ASSERT( other.class_ );
-		class_= other.class_;
+		void operator()( const FunctionPtr& function )
+		{
+			if( function == nullptr )
+				this_.one_of_type_kind= FunctionPtr();
+			else
+				this_.one_of_type_kind= FunctionPtr( new Function( *function ) );
+		}
+
+		void operator()( const ArrayPtr& array )
+		{
+			if( array == nullptr )
+				this_.one_of_type_kind= ArrayPtr();
+			else
+				this_.one_of_type_kind= ArrayPtr( new Array( *array ) );
+		}
+
+		void operator()( const ClassPtr& class_ )
+		{
+			this_.one_of_type_kind= class_;
+		}
 	};
 
-	return *this;
-}
-
-Type& Type::operator=( Type&& other ) noexcept
-{
-	kind= other.kind;
-	fundamental= other.fundamental;
-	function= std::move( other.function );
-	array= std::move( other.array );
-	class_= std::move( other.class_ );
-
-	fundamental_llvm_type= other.fundamental_llvm_type;
-	other.fundamental_llvm_type= nullptr;
-
+	Visitor visitor( *this );
+	boost::apply_visitor( visitor, other.one_of_type_kind );
 	return *this;
 }
 
 size_t Type::SizeOf() const
 {
-	switch( kind )
+	struct Visitor final : public boost::static_visitor<>
 	{
-	case Kind::Fundamental:
-		return g_fundamental_types_size[ size_t( fundamental ) ];
+		size_t size= 1u;
 
-	case Kind::Function:
-		U_ASSERT( false && "SizeOf method not supported for functions." );
-		return 1u;
+		void operator()( const FundamentalType& fundamental )
+		{
+			size= g_fundamental_types_size[ size_t( fundamental.fundamental_type ) ];
+		}
 
-	case Kind::Array:
-		return array->type.SizeOf() * array->size;
+		void operator()( const FunctionPtr& function )
+		{
+			if( function == nullptr ) return;
+			U_ASSERT( false && "SizeOf method not supported for functions." );
+		}
 
-	case Kind::Class:
-		U_ASSERT( false && "SizeOf method not supported for classes." );
-		return 1u;
+		void operator()( const ArrayPtr& array )
+		{
+			if( array == nullptr ) return;
+			size= array->type.SizeOf() * array->size;
+		}
+
+		void operator()( const ClassPtr& class_ )
+		{
+			if( class_ == nullptr ) return;
+			U_ASSERT( false && "SizeOf method not supported for classes." );
+		}
 	};
 
-	U_ASSERT(false);
-	return 0;
+	Visitor visitor;
+	boost::apply_visitor( visitor, one_of_type_kind );
+	return visitor.size;
 }
 
 llvm::Type* Type::GetLLVMType() const
 {
-	switch( kind )
+	struct Visitor final : public boost::static_visitor<>
 	{
-	case Kind::Fundamental:
-		return fundamental_llvm_type;
-	case Kind::Function:
-		return function->llvm_function_type;
-	case Kind::Array:
-		return array->llvm_type;
-	case Kind::Class:
-		return class_->llvm_type;
+		llvm::Type* llvm_type= nullptr;
+
+		void operator()( const FundamentalType& fundamental )
+		{
+			llvm_type= fundamental.llvm_type;
+		}
+
+		void operator()( const FunctionPtr& function )
+		{
+			if( function == nullptr ) return;
+			llvm_type= function->llvm_function_type;
+		}
+
+		void operator()( const ArrayPtr& array )
+		{
+			if( array == nullptr ) return;
+			llvm_type= array->llvm_type;
+		}
+
+		void operator()( const ClassPtr& class_ )
+		{
+			if( class_ == nullptr ) return;
+			llvm_type= class_->llvm_type;
+		}
 	};
 
-	U_ASSERT(false);
-	return nullptr;
+	Visitor visitor;
+	boost::apply_visitor( visitor, one_of_type_kind );
+	return visitor.llvm_type;
 }
 
 ProgramString Type::ToString() const
 {
-	switch( kind )
+	struct Visitor final : public boost::static_visitor<>
 	{
-	case Kind::Fundamental:
-		return GetFundamentalTypeName( fundamental );
-
-	case Kind::Function:
-	{
-		U_ASSERT( function != nullptr );
 		ProgramString result;
-		result+= "fn "_SpC;
-		result+= function->return_type.ToString();
-		result+= " ( "_SpC;
-		for( const Function::Arg& arg : function->args )
+
+		void operator()( const FundamentalType& fundamental )
 		{
-			if( arg.is_reference )
-				result+= "&"_SpC;
-			if( arg.is_mutable )
-				result+= "mut "_SpC;
-			else
-				result+= "imut "_SpC;
-
-			result+= arg.type.ToString();
-			if( &arg != &function->args.back() )
-				result+= ", "_SpC;
+			result= GetFundamentalTypeName( fundamental.fundamental_type );
 		}
-		result+= " )"_SpC;
 
-		return result;
-	}
+		void operator()( const FunctionPtr& function )
+		{
+			if( function == nullptr ) return;
 
-	case Kind::Array:
-		U_ASSERT( array != nullptr );
-		return
-			"[ "_SpC + array->type.ToString() + ", "_SpC +
-			ToProgramString( std::to_string( array->size ).c_str() ) + " ]"_SpC;
+			result+= "fn "_SpC;
+			result+= function->return_type.ToString();
+			result+= " ( "_SpC;
+			for( const Function::Arg& arg : function->args )
+			{
+				if( arg.is_reference )
+					result+= "&"_SpC;
+				if( arg.is_mutable )
+					result+= "mut "_SpC;
+				else
+					result+= "imut "_SpC;
 
-	case Kind::Class:
-		U_ASSERT( class_ != nullptr );
-		return "class "_SpC + class_->name;
+				result+= arg.type.ToString();
+				if( &arg != &function->args.back() )
+					result+= ", "_SpC;
+			}
+			result+= " )"_SpC;
+		}
+
+		void operator()( const ArrayPtr& array )
+		{
+			if( array == nullptr ) return;
+
+			result=
+				"[ "_SpC + array->type.ToString() + ", "_SpC +
+				ToProgramString( std::to_string( array->size ).c_str() ) + " ]"_SpC;
+		}
+
+		void operator()( const ClassPtr& class_ )
+		{
+			if( class_ == nullptr ) return;
+
+			result= "class "_SpC + class_->name;
+		}
 	};
 
-	U_ASSERT(false);
-	return ""_SpC;
+	Visitor visitor;
+	boost::apply_visitor( visitor, one_of_type_kind );
+	return std::move( visitor.result );
 }
 
 bool operator==( const Type& r, const Type& l )
 {
-	if( r.kind != l.kind )
+	if( r.one_of_type_kind.which() != l.one_of_type_kind.which() )
 		return false;
 
-	switch( r.kind )
+	if( r.one_of_type_kind.which() == 0 )
 	{
-	case Type::Kind::Fundamental:
-		return r.fundamental == l.fundamental;
-
-	case Type::Kind::Function:
-		U_ASSERT( r.kind == Type::Kind::Function );
-		U_ASSERT( r.function );
-		U_ASSERT( l.function );
-
-		return *l.function == *r.function;
-
-	case Type::Kind::Array:
-		return r.array->size == l.array->size && r.array->type == l.array->type;
-
-	case Type::Kind::Class:
-		return r.class_ == l.class_;
-	};
+		return boost::get<FundamentalType>(r.one_of_type_kind) == boost::get<FundamentalType>(l.one_of_type_kind);
+	}
+	else if( r.one_of_type_kind.which() == 1 )
+	{
+		const FunctionPtr& r_function= boost::get< FunctionPtr >(r.one_of_type_kind);
+		const FunctionPtr& l_function= boost::get< FunctionPtr >(l.one_of_type_kind);
+		if( r_function == l_function )
+			return true;
+		if( r_function != nullptr && l_function != nullptr )
+			return *r_function == *l_function;
+		return false;
+	}
+	else if( r.one_of_type_kind.which() == 2 )
+	{
+		const ArrayPtr& r_array= boost::get< ArrayPtr >(r.one_of_type_kind);
+		const ArrayPtr& l_array= boost::get< ArrayPtr >(l.one_of_type_kind);
+		if( r_array == l_array )
+			return true;
+		if( r_array != nullptr && l_array != nullptr )
+			return *r_array == *l_array;
+		return false;
+	}
+	else if( r.one_of_type_kind.which() == 3 )
+	{
+		return r.one_of_type_kind == l.one_of_type_kind;
+	}
 
 	U_ASSERT(false);
 	return false;
@@ -267,6 +321,16 @@ bool operator==( const Function& r, const Function& l )
 }
 
 bool operator!=( const Function& r, const Function& l )
+{
+	return !( r == l );
+}
+
+bool operator==( const Array& r, const Array& l )
+{
+	return r.type == l.type && r.size == l.size;
+}
+
+bool operator!=( const Array& r, const Array& l )
 {
 	return !( r == l );
 }

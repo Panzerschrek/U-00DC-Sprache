@@ -3,6 +3,8 @@
 #include <vector>
 #include <map>
 
+#include <boost/variant.hpp>
+
 #include "push_disable_llvm_warnings.hpp"
 #include <llvm/IR/Function.h>
 #include "pop_llvm_warnings.hpp"
@@ -17,38 +19,39 @@ namespace CodeBuilderLLVMPrivate
 {
 
 struct Function;
-struct Array;
-struct Class;
+typedef std::unique_ptr<Function> FunctionPtr;
 
+struct Array;
+typedef std::unique_ptr<Array> ArrayPtr;
+
+struct Class;
 typedef std::shared_ptr<Class> ClassPtr;
+
+struct FundamentalType final
+{
+	U_FundamentalType fundamental_type;
+	llvm::Type* llvm_type;
+
+	FundamentalType( U_FundamentalType fundamental_type= U_FundamentalType::Void, llvm::Type* llvm_type= nullptr );
+};
+
+bool operator==( const FundamentalType& r, const FundamentalType& l );
+bool operator!=( const FundamentalType& r, const FundamentalType& l );
 
 struct Type final
 {
-	enum class Kind
-	{
-		Fundamental,
-		Function,
-		Array,
-		Class,
-	};
+	boost::variant<
+		FundamentalType,
+		FunctionPtr,
+		ArrayPtr,
+		ClassPtr> one_of_type_kind;
 
-	Kind kind;
-	U_FundamentalType fundamental;
-	std::unique_ptr<Function> function;
-	std::unique_ptr<Array> array;
-
-	// We use one instance for Class, because class has one point of definition.
-	// Therefore, class are aquals, if equals pointers.
-	ClassPtr class_;
-
-	llvm::Type* fundamental_llvm_type= nullptr;
-
-	explicit Type( U_FundamentalType in_fundamental= U_FundamentalType::InvalidType );
+	Type()= default;
 	Type( const Type& other );
-	Type( Type&& other ) noexcept;
+	Type( Type&& )= default;
 
 	Type& operator=( const Type& other );
-	Type& operator=( Type&& other ) noexcept;
+	Type& operator=( Type&& )= default;
 
 	// TODO - does this method needs?
 	size_t SizeOf() const;
@@ -70,26 +73,28 @@ struct Function final
 	};
 
 	Type return_type;
-	bool return_value_is_reference;
-	bool return_value_is_mutable;
+	bool return_value_is_reference= false;
+	bool return_value_is_mutable= false;
 	std::vector<Arg> args;
 
-	llvm::FunctionType* llvm_function_type;
+	llvm::FunctionType* llvm_function_type= nullptr;
 };
 
 bool operator==( const Function::Arg& r, const Function::Arg& l );
 bool operator!=( const Function::Arg& r, const Function::Arg& l );
-
 bool operator==( const Function& r, const Function& l );
 bool operator!=( const Function& r, const Function& l );
 
 struct Array final
 {
 	Type type;
-	size_t size;
+	size_t size= 0u;
 
-	llvm::ArrayType* llvm_type;
+	llvm::ArrayType* llvm_type= nullptr;
 };
+
+bool operator==( const Array& r, const Array& l );
+bool operator!=( const Array& r, const Array& l );
 
 struct Class final
 {

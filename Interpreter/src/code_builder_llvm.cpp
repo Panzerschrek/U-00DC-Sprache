@@ -151,37 +151,36 @@ CodeBuilderLLVM::BuildResult CodeBuilderLLVM::BuildProgram( const ProgramElement
 			Variable func_info;
 
 			func_info.location= Variable::Location::Global;
-			func_info.type.kind= Type::Kind::Function;
 			func_info.value_type= ValueType::ConstReference;
 
-			// Return type.
-			// TODO - add support for non-fundamental types.
-			func_info.type.function.reset( new Function() );
-			func_info.type.function->return_type.kind= Type::Kind::Fundamental;
+			std::unique_ptr<Function> function_type_storage( new Function() );
+			Function& function_type= *function_type_storage;
+			func_info.type.one_of_type_kind= std::move(function_type_storage);
+
 			if( func->return_type_.empty() )
 			{
-				func_info.type.function->return_type.fundamental= U_FundamentalType::Void;
+				function_type.return_type.one_of_type_kind=
+					FundamentalType( U_FundamentalType::Void, fundamental_llvm_types_.void_ );
 			}
 			else
 			{
+				// TODO - support nonfundamental return types.
 				auto it= g_types_map.find( func->return_type_ );
 				if( it == g_types_map.end() )
 				{
 					errors_.push_back( ReportNameNotFound( func->file_pos_, func->return_type_ ) );
-					func_info.type.function->return_type.fundamental= U_FundamentalType::InvalidType;
+					function_type.return_type.one_of_type_kind= FundamentalType( U_FundamentalType::InvalidType, fundamental_llvm_types_.invalid_type_ );
 				}
 				else
-					func_info.type.function->return_type.fundamental= it->second;
+					function_type.return_type.one_of_type_kind= FundamentalType( it->second, GetFundamentalLLVMType( it->second ) );
 			}
-			func_info.type.function->return_type.fundamental_llvm_type=
-				GetFundamentalLLVMType( func_info.type.function->return_type.fundamental );
 
 			// TODO - make variables without explicit mutability modifiers immutable.
 			if( func->return_value_mutability_modifier_ == MutabilityModifier::Immutable )
-				func_info.type.function->return_value_is_mutable= false;
+				function_type.return_value_is_mutable= false;
 			else
-				func_info.type.function->return_value_is_mutable= true;
-			func_info.type.function->return_value_is_reference= func->return_value_reference_modifier_ == ReferenceModifier::Reference;
+				function_type.return_value_is_mutable= true;
+			function_type.return_value_is_reference= func->return_value_reference_modifier_ == ReferenceModifier::Reference;
 
 			if( global_names_.GetName( func->name_ ) != nullptr )
 			{
@@ -191,14 +190,14 @@ CodeBuilderLLVM::BuildResult CodeBuilderLLVM::BuildProgram( const ProgramElement
 			else
 			{
 				// Args.
-				func_info.type.function->args.reserve( func->arguments_.size() );
+				function_type.args.reserve( func->arguments_.size() );
 				for( const FunctionArgumentDeclarationPtr& arg : func->arguments_ )
 				{
 					if( IsKeyword( arg->name_ ) )
 						errors_.push_back( ReportUsingKeywordAsName( arg->file_pos_ ) );
 
-					func_info.type.function->args.emplace_back();
-					Function::Arg& out_arg= func_info.type.function->args.back();
+					function_type.args.emplace_back();
+					Function::Arg& out_arg= function_type.args.back();
 
 					out_arg.type= PrepareType( arg->file_pos_, arg->type_ );
 
@@ -268,8 +267,9 @@ Type CodeBuilderLLVM::PrepareType( const FilePos& file_pos, const TypeName& type
 
 		const NumericConstant& num= * *rit;
 
-		last_type->kind= Type::Kind::Array;
-		last_type->array.reset( new Array() );
+		std::unique_ptr<Array> array_type_storage( new Array() );
+		Array& array_type= *array_type_storage;
+		last_type->one_of_type_kind= std::move(array_type_storage);
 
 		U_FundamentalType size_type= GetNumericConstantType( num );
 		if( !IsInteger(size_type) )
@@ -277,14 +277,12 @@ Type CodeBuilderLLVM::PrepareType( const FilePos& file_pos, const TypeName& type
 		if( num.value_ < 0 )
 			errors_.push_back( ReportArraySizeIsNegative( num.file_pos_ ) );
 
-		last_type->array->size= size_t( std::max( num.value_, static_cast<NumericConstant::LongFloat>(0.0) ) );
+		array_type.size= size_t( std::max( num.value_, static_cast<NumericConstant::LongFloat>(0.0) ) );
 
-		last_type= &last_type->array->type;
+		last_type= &array_type.type;
 	}
 
-	last_type->kind= Type::Kind::Fundamental;
-	last_type->fundamental= U_FundamentalType::InvalidType;
-	last_type->fundamental_llvm_type= GetFundamentalLLVMType( last_type->fundamental );
+	last_type->one_of_type_kind= FundamentalType( U_FundamentalType::InvalidType, fundamental_llvm_types_.invalid_type_ );
 
 	auto it= g_types_map.find( type_name.name );
 	if( it == g_types_map.end() )
@@ -295,8 +293,7 @@ Type CodeBuilderLLVM::PrepareType( const FilePos& file_pos, const TypeName& type
 		{
 			if( custom_type_name->second.class_ != nullptr )
 			{
-				last_type->class_= custom_type_name->second.class_;
-				last_type->kind= Type::Kind::Class;
+				last_type->one_of_type_kind= custom_type_name->second.class_;
 			}
 			else
 				errors_.push_back( ReportNameIsNotTypeName( file_pos, type_name.name ) );
@@ -306,23 +303,32 @@ Type CodeBuilderLLVM::PrepareType( const FilePos& file_pos, const TypeName& type
 	}
 	else
 	{
-		last_type->fundamental= it->second;
-		last_type->fundamental_llvm_type= GetFundamentalLLVMType( last_type->fundamental );
+		last_type->one_of_type_kind= FundamentalType( it->second, GetFundamentalLLVMType( it->second ) );
 	}
 
 	// Setup arrays llvm types.
 	if( arrays_count > 0u )
 	{
-		arrays_stack[ arrays_count - 1u ]->array->llvm_type=
-			llvm::ArrayType::get(
-				last_type->GetLLVMType(),
-				arrays_stack[ arrays_count - 1u ]->array->size );
+		{
+			const ArrayPtr& array_type= boost::get<ArrayPtr>( arrays_stack[ arrays_count - 1u ]->one_of_type_kind );
+			U_ASSERT( array_type != nullptr );
+
+				array_type->llvm_type=
+				llvm::ArrayType::get(
+					last_type->GetLLVMType(),
+					array_type->size );
+		}
 
 		for( unsigned int i= arrays_count - 1u; i > 0u; i-- )
-			arrays_stack[ i - 1u ]->array->llvm_type=
+		{
+			const ArrayPtr& array_type= boost::get<ArrayPtr>( arrays_stack[ i - 1u ]->one_of_type_kind );
+			U_ASSERT( array_type != nullptr );
+
+			array_type->llvm_type=
 				llvm::ArrayType::get(
-					arrays_stack[i]->array->llvm_type,
-					arrays_stack[ i - 1u ]->array->size );
+					boost::get<ArrayPtr>( arrays_stack[i]->one_of_type_kind )->llvm_type,
+					array_type->size );
+		}
 	}
 
 	return result;
@@ -370,11 +376,10 @@ void CodeBuilderLLVM::BuildFuncCode(
 	const FunctionArgumentsDeclaration& args,
 	const Block& block ) noexcept
 {
-	//func.type.kind= Type::Kind::Function;
-	//func.type.function.reset( new Function );
-
 	std::vector<llvm::Type*> args_llvm_types;
-	for( const Function::Arg& arg : func_variable.type.function->args )
+	const FunctionPtr& function_type_ptr= boost::get<FunctionPtr>( func_variable.type.one_of_type_kind );
+
+	for( const Function::Arg& arg : function_type_ptr->args )
 	{
 		llvm::Type* type= arg.type.GetLLVMType();
 		if( arg.is_reference )
@@ -382,11 +387,11 @@ void CodeBuilderLLVM::BuildFuncCode(
 		args_llvm_types.push_back( type );
 	}
 
-	llvm::Type* llvm_function_return_type= func_variable.type.function->return_type.GetLLVMType();
-	if( func_variable.type.function->return_value_is_reference )
+	llvm::Type* llvm_function_return_type= function_type_ptr->return_type.GetLLVMType();
+	if( function_type_ptr->return_value_is_reference )
 		llvm_function_return_type= llvm::PointerType::get( llvm_function_return_type, 0u );
 
-	func_variable.type.function->llvm_function_type=
+	function_type_ptr->llvm_function_type=
 		llvm::FunctionType::get(
 			llvm_function_return_type,
 			llvm::ArrayRef<llvm::Type*>( args_llvm_types.data(), args_llvm_types.size() ),
@@ -394,23 +399,23 @@ void CodeBuilderLLVM::BuildFuncCode(
 
 	llvm::Function* llvm_function=
 		llvm::Function::Create(
-			func_variable.type.function->llvm_function_type,
+			function_type_ptr->llvm_function_type,
 			llvm::Function::LinkageTypes::ExternalLinkage, // TODO - select linkage
 			ToStdString( func_name ),
 			module_.get() );
 
 	NamesScope function_names( &global_names_ );
 	FunctionContext function_context(
-		func_variable.type.function->return_type,
-		func_variable.type.function->return_value_is_mutable,
-		func_variable.type.function->return_value_is_reference,
+		function_type_ptr->return_type,
+		function_type_ptr->return_value_is_mutable,
+		function_type_ptr->return_value_is_reference,
 		llvm_context_,
 		llvm_function );
 
 	unsigned int arg_number= 0u;
 	for( llvm::Argument& llvm_arg : llvm_function->args() )
 	{
-		const Function::Arg& arg= func_variable.type.function->args[ arg_number ];
+		const Function::Arg& arg= function_type_ptr->args[ arg_number ];
 
 		Variable var;
 		var.location= Variable::Location::LLVMRegister;
@@ -457,8 +462,10 @@ void CodeBuilderLLVM::BuildFuncCode(
 	const BlockBuildInfo block_build_info=
 		BuildBlockCode( block, function_names, function_context );
 
-	const Type& return_type= func_variable.type.function->return_type;
-	if( ( return_type.kind == Type::Kind::Fundamental && return_type.fundamental == U_FundamentalType::Void ) )
+	Type void_type;
+	void_type.one_of_type_kind= FundamentalType( U_FundamentalType::Void, fundamental_llvm_types_.void_ );
+
+	if(  function_type_ptr->return_type == void_type )
 	{
 		// Manually generate "return" for void-return functions.
 		function_context.llvm_ir_builder.CreateRetVoid();
@@ -654,6 +661,7 @@ Variable CodeBuilderLLVM::BuildExpressionCode_r(
 		}
 
 		const Type& result_type= r_var.type;
+		const FundamentalType* const fundamental_type= boost::get<FundamentalType>( &result_type.one_of_type_kind );
 
 		switch( comp.operator_ )
 		{
@@ -662,7 +670,7 @@ Variable CodeBuilderLLVM::BuildExpressionCode_r(
 		case BinaryOperator::Div:
 		case BinaryOperator::Mul:
 
-			if( result_type.kind != Type::Kind::Fundamental )
+			if( fundamental_type == nullptr )
 			{
 				errors_.push_back( ReportOperationNotSupportedForThisType( file_pos, result_type.ToString() ) );
 				throw ProgramError();
@@ -675,15 +683,15 @@ Variable CodeBuilderLLVM::BuildExpressionCode_r(
 					errors_.push_back( ReportOperationNotSupportedForThisType( file_pos, result_type.ToString() ) );
 					throw ProgramError();
 				}
-				const bool is_float= IsFloatingPoint( result_type.fundamental );
-				if( !( IsInteger( result_type.fundamental ) || is_float ) )
+				const bool is_float= IsFloatingPoint( fundamental_type->fundamental_type );
+				if( !( IsInteger( fundamental_type->fundamental_type ) || is_float ) )
 				{
 					// this operations allowed only for integer and floating point operands.
 					errors_.push_back( ReportOperationNotSupportedForThisType( file_pos, result_type.ToString() ) );
 					throw ProgramError();
 				}
 
-				const bool is_signed= IsSignedInteger( result_type.fundamental );
+				const bool is_signed= IsSignedInteger( fundamental_type->fundamental_type );
 
 				llvm::Value* l_value_for_op= CreateMoveToLLVMRegisterInstruction( l_var, function_context );
 				llvm::Value* r_value_for_op= CreateMoveToLLVMRegisterInstruction( r_var, function_context );
@@ -743,15 +751,16 @@ Variable CodeBuilderLLVM::BuildExpressionCode_r(
 
 		case BinaryOperator::Equal:
 		case BinaryOperator::NotEqual:
-		if( result_type.kind != Type::Kind::Fundamental )
+
+		if( fundamental_type == nullptr )
 		{
 			errors_.push_back( ReportOperationNotSupportedForThisType( file_pos, result_type.ToString() ) );
 			throw ProgramError();
 		}
 		else
 		{
-			const bool if_float= IsFloatingPoint( result_type.fundamental );
-			if( !( IsInteger( result_type.fundamental ) || if_float || result_type.fundamental == U_FundamentalType::Bool ) )
+			const bool if_float= IsFloatingPoint( fundamental_type->fundamental_type );
+			if( !( IsInteger( fundamental_type->fundamental_type ) || if_float || fundamental_type->fundamental_type == U_FundamentalType::Bool ) )
 			{
 				errors_.push_back( ReportOperationNotSupportedForThisType( file_pos, result_type.ToString() ) );
 				throw ProgramError();
@@ -783,9 +792,7 @@ Variable CodeBuilderLLVM::BuildExpressionCode_r(
 
 			result.location= Variable::Location::LLVMRegister;
 			result.value_type= ValueType::Value;
-			result.type.kind= Type::Kind::Fundamental;
-			result.type.fundamental= U_FundamentalType::Bool;
-			result.type.fundamental_llvm_type= fundamental_llvm_types_.bool_;
+			result.type.one_of_type_kind= FundamentalType( U_FundamentalType::Bool, fundamental_llvm_types_.bool_ );
 			result.llvm_value= result_value;
 		}
 			break;
@@ -794,16 +801,16 @@ Variable CodeBuilderLLVM::BuildExpressionCode_r(
 		case BinaryOperator::LessEqual:
 		case BinaryOperator::Greater:
 		case BinaryOperator::GreaterEqual:
-		if( result_type.kind != Type::Kind::Fundamental )
+		if( fundamental_type == nullptr )
 		{
 			errors_.push_back( ReportOperationNotSupportedForThisType( file_pos, result_type.ToString() ) );
 			throw ProgramError();
 		}
 		else
 		{
-			const bool if_float= IsFloatingPoint( result_type.fundamental );
-			const bool is_signed= IsSignedInteger( result_type.fundamental );
-			if( !( IsInteger( result_type.fundamental ) || if_float ) )
+			const bool if_float= IsFloatingPoint( fundamental_type->fundamental_type );
+			const bool is_signed= IsSignedInteger( fundamental_type->fundamental_type );
+			if( !( IsInteger( fundamental_type->fundamental_type ) || if_float ) )
 			{
 				errors_.push_back( ReportOperationNotSupportedForThisType( file_pos, result_type.ToString() ) );
 				throw ProgramError();
@@ -857,9 +864,7 @@ Variable CodeBuilderLLVM::BuildExpressionCode_r(
 
 			result.location= Variable::Location::LLVMRegister;
 			result.value_type= ValueType::Value;
-			result.type.kind= Type::Kind::Fundamental;
-			result.type.fundamental= U_FundamentalType::Bool;
-			result.type.fundamental_llvm_type= fundamental_llvm_types_.bool_;
+			result.type.one_of_type_kind= FundamentalType( U_FundamentalType::Bool, fundamental_llvm_types_.bool_ );
 			result.llvm_value= result_value;
 		}
 			break;
@@ -867,14 +872,14 @@ Variable CodeBuilderLLVM::BuildExpressionCode_r(
 		case BinaryOperator::And:
 		case BinaryOperator::Or:
 		case BinaryOperator::Xor:
-		if( result_type.kind != Type::Kind::Fundamental )
+		if( fundamental_type == nullptr )
 		{
 			errors_.push_back( ReportOperationNotSupportedForThisType( file_pos, result_type.ToString() ) );
 			throw ProgramError();
 		}
 		else
 		{
-			if( !( IsInteger( result_type.fundamental ) || result_type.fundamental == U_FundamentalType::Bool ) )
+			if( !( IsInteger( fundamental_type->fundamental_type ) || fundamental_type->fundamental_type == U_FundamentalType::Bool ) )
 			{
 				errors_.push_back( ReportOperationNotSupportedForThisType( file_pos, result_type.ToString() ) );
 				throw ProgramError();
@@ -940,7 +945,7 @@ Variable CodeBuilderLLVM::BuildExpressionCode_r(
 			}
 			if( name_entry->second.class_ )
 			{
-				// TODO - using class name sa variable.
+				// TODO - using class name as variable.
 				throw ProgramError();
 			}
 			result= name_entry->second.variable;
@@ -954,13 +959,11 @@ Variable CodeBuilderLLVM::BuildExpressionCode_r(
 				// TODO - report unknown numeric constant type.
 				throw ProgramError();
 			}
+			llvm::Type* const llvm_type= GetFundamentalLLVMType( type );
 
 			result.location= Variable::Location::LLVMRegister;
 			result.value_type= ValueType::Value;
-			result.type.kind= Type::Kind::Fundamental;
-			result.type.fundamental= type;
-
-			llvm::Type* llvm_type= GetFundamentalLLVMType( type );
+			result.type.one_of_type_kind= FundamentalType( type, llvm_type );
 
 			if( IsInteger( type ) )
 				result.llvm_value=
@@ -972,21 +975,17 @@ Variable CodeBuilderLLVM::BuildExpressionCode_r(
 			{
 				U_ASSERT(false);
 			}
-
-			result.type.fundamental_llvm_type= llvm_type;
 		}
 		else if( const BooleanConstant* boolean_constant=
 			dynamic_cast<const BooleanConstant*>(&operand) )
 		{
 			result.location= Variable::Location::LLVMRegister;
 			result.value_type= ValueType::Value;
-			result.type.kind= Type::Kind::Fundamental;
-			result.type.fundamental= U_FundamentalType::Bool;
-			result.type.fundamental_llvm_type= fundamental_llvm_types_.bool_;
+			result.type.one_of_type_kind= FundamentalType( U_FundamentalType::Bool, fundamental_llvm_types_.bool_ );
 
 			result.llvm_value=
 				llvm::Constant::getIntegerValue(
-					result.type.fundamental_llvm_type,
+					fundamental_llvm_types_.bool_ ,
 					llvm::APInt( 1u, uint64_t(boolean_constant->value_) ) );
 		}
 		else if( const BracketExpression* bracket_expression=
@@ -1005,11 +1004,13 @@ Variable CodeBuilderLLVM::BuildExpressionCode_r(
 			if( const IndexationOperator* const indexation_operator=
 				dynamic_cast<const IndexationOperator*>( postfix_operator.get() ) )
 			{
-				if( result.type.kind != Type::Kind::Array )
+				const ArrayPtr* const array_type= boost::get<ArrayPtr>( &result.type.one_of_type_kind );
+				if( array_type == nullptr )
 				{
 					errors_.push_back( ReportOperationNotSupportedForThisType( indexation_operator->file_pos_, result.type.ToString() ) );
 					throw ProgramError();
 				}
+				U_ASSERT( *array_type != nullptr );
 
 				Variable index=
 					BuildExpressionCode(
@@ -1017,7 +1018,9 @@ Variable CodeBuilderLLVM::BuildExpressionCode_r(
 						names,
 						function_context );
 
-				if( index.type.kind != Type::Kind::Fundamental || !IsUnsignedInteger( index.type.fundamental ) )
+				const FundamentalType* const index_fundamental_type= boost::get<FundamentalType>( &index.type.one_of_type_kind );
+				if( index_fundamental_type == nullptr ||
+					!IsUnsignedInteger( index_fundamental_type->fundamental_type ) )
 				{
 					errors_.push_back( ReportTypesMismatch( indexation_operator->file_pos_, "any unsigned integer"_SpC, index.type.ToString() ) );
 					throw ProgramError();
@@ -1031,7 +1034,7 @@ Variable CodeBuilderLLVM::BuildExpressionCode_r(
 
 				result.location= Variable::Location::PointerToStack;
 				result.value_type= ValueType::Reference;
-				result.type= result.type.array->type;
+				result.type= (*array_type)->type;
 
 				// Make first index = 0 for array to pointer conversion.
 				llvm::Value* index_list[2];
@@ -1044,14 +1047,15 @@ Variable CodeBuilderLLVM::BuildExpressionCode_r(
 			else if( const MemberAccessOperator* const member_access_operator=
 				dynamic_cast<const MemberAccessOperator*>( postfix_operator.get() ) )
 			{
-				if( result.type.kind != Type::Kind::Class )
+				const ClassPtr* const class_type= boost::get<ClassPtr>( &result.type.one_of_type_kind );
+				if( class_type == nullptr )
 				{
 					errors_.push_back( ReportOperationNotSupportedForThisType( member_access_operator->file_pos_, result.type.ToString() ) );
 					throw ProgramError();
 				}
-				U_ASSERT( result.type.class_ );
+				U_ASSERT( *class_type != nullptr );
 
-				const Class::Field* field= result.type.class_->GetField( member_access_operator->member_name_ );
+				const Class::Field* field= (*class_type)->GetField( member_access_operator->member_name_ );
 				if( field == nullptr )
 				{
 					errors_.push_back( ReportNameNotFound( member_access_operator->file_pos_, member_access_operator->member_name_ ) );
@@ -1074,23 +1078,26 @@ Variable CodeBuilderLLVM::BuildExpressionCode_r(
 			else if( const CallOperator* const call_operator=
 				dynamic_cast<const CallOperator*>( postfix_operator.get() ) )
 			{
-				if( result.type.kind != Type::Kind::Function )
+				const FunctionPtr* const function_type_ptr= boost::get<FunctionPtr>( &result.type.one_of_type_kind );
+				if( function_type_ptr == nullptr )
 				{
 					// TODO - Call of non-function.
 					throw ProgramError();
 				}
-				if( call_operator->arguments_.size() != result.type.function->args.size() )
+				const Function& function_type= *(*function_type_ptr);
+
+				if( call_operator->arguments_.size() != function_type.args.size() )
 				{
 					errors_.push_back( ReportFunctionSignatureMismatch( call_operator->file_pos_ ) );
 					throw ProgramError();
 				}
 
 				std::vector<llvm::Value*> llvm_args;
-				llvm_args.resize( result.type.function->args.size() );
+				llvm_args.resize( function_type.args.size() );
 
-				for( unsigned int i= 0u; i < result.type.function->args.size(); i++ )
+				for( unsigned int i= 0u; i < function_type.args.size(); i++ )
 				{
-					const Function::Arg& arg= result.type.function->args[i];
+					const Function::Arg& arg= function_type.args[i];
 					const Variable expr= BuildExpressionCode( *call_operator->arguments_[i], names, function_context );
 					if( expr.type != arg.type )
 					{
@@ -1143,10 +1150,10 @@ Variable CodeBuilderLLVM::BuildExpressionCode_r(
 						llvm::dyn_cast<llvm::Function>(result.llvm_value),
 						llvm_args );
 
-				if( result.type.function->return_value_is_reference )
+				if( function_type.return_value_is_reference )
 				{
 					result.location= Variable::Location::PointerToStack;
-					if( result.type.function->return_value_is_mutable )
+					if( function_type.return_value_is_mutable )
 						result.value_type= ValueType::Reference;
 					else
 						result.value_type= ValueType::ConstReference;
@@ -1156,7 +1163,7 @@ Variable CodeBuilderLLVM::BuildExpressionCode_r(
 					result.location= Variable::Location::LLVMRegister;
 					result.value_type= ValueType::Value;
 				}
-				result.type= result.type.function->return_type;
+				result.type= function_type.return_type;
 				result.llvm_value= call_result;
 			}
 			else
@@ -1174,13 +1181,14 @@ Variable CodeBuilderLLVM::BuildExpressionCode_r(
 			{
 				(void)unary_minus;
 
-				if( result.type.kind != Type::Kind::Fundamental )
+				const FundamentalType* const fundamental_type= boost::get<FundamentalType>( &result.type.one_of_type_kind );
+				if( fundamental_type == nullptr )
 				{
 					errors_.push_back( ReportOperationNotSupportedForThisType( unary_minus->file_pos_, result.type.ToString() ) );
 					throw ProgramError();
 				}
-				const bool is_float= IsFloatingPoint( result.type.fundamental );
-				if( !( IsInteger( result.type.fundamental ) || is_float ) )
+				const bool is_float= IsFloatingPoint( fundamental_type->fundamental_type );
+				if( !( IsInteger( fundamental_type->fundamental_type ) || is_float ) )
 				{
 					errors_.push_back( ReportOperationNotSupportedForThisType( unary_minus->file_pos_, result.type.ToString() ) );
 					throw ProgramError();
@@ -1235,7 +1243,8 @@ void CodeBuilderLLVM::BuildVariablesDeclarationCode(
 		{
 			variable.llvm_value= function_context.llvm_ir_builder.CreateAlloca( variable.type.GetLLVMType() );
 
-			if( type.kind == Type::Kind::Fundamental )
+			const FundamentalType* const fundamental_type= boost::get<FundamentalType>( &type.one_of_type_kind );
+			if( fundamental_type != nullptr )
 			{
 				if( variable_declaration.initial_value == nullptr )
 				{
@@ -1330,7 +1339,8 @@ void CodeBuilderLLVM::BuildAssignmentOperatorCode(
 		throw ProgramError();
 	}
 
-	if( l_var.type.kind == Type::Kind::Fundamental )
+	const FundamentalType* const fundamental_type= boost::get<FundamentalType>( &l_var.type.one_of_type_kind );
+	if( fundamental_type != nullptr )
 	{
 		if( l_var.location != Variable::Location::PointerToStack )
 		{
@@ -1340,19 +1350,12 @@ void CodeBuilderLLVM::BuildAssignmentOperatorCode(
 		llvm::Value* value_for_assignment= CreateMoveToLLVMRegisterInstruction( r_var, function_context );
 		function_context.llvm_ir_builder.CreateStore( value_for_assignment, l_var.llvm_value );
 	}
-	else if( l_var.type.kind == Type::Kind::Function )
+	else
 	{
 		// TODO - functions is not copyable.
-		throw ProgramError();
-	}
-	else if( l_var.type.kind == Type::Kind::Array )
-	{
 		// TODO - arrays not copyable.
-		throw ProgramError();
-	}
-	else if( l_var.type.kind == Type::Kind::Class )
-	{
-		errors_.push_back( ReportNotImplemented( assignment_operator.file_pos_, "class assignment" ) );
+		// TODO - make classes copyable.
+		errors_.push_back( ReportNotImplemented( assignment_operator.file_pos_, "nonfundamental types assignment." ) );
 		throw ProgramError();
 	}
 }
@@ -1365,12 +1368,11 @@ void CodeBuilderLLVM::BuildReturnOperatorCode(
 	if( return_operator.expression_ == nullptr )
 	{
 		Type void_type;
-		void_type.kind= Type::Kind::Fundamental;
-		void_type.fundamental= U_FundamentalType::Void;
+		void_type.one_of_type_kind= FundamentalType( U_FundamentalType::Void, fundamental_llvm_types_.void_ );
 
-		if( void_type != function_context.return_type )
+		if( function_context.return_type != void_type )
 		{
-			errors_.push_back( ReportTypesMismatch( return_operator.file_pos_, function_context.return_type.ToString(), void_type.ToString() ) );
+			errors_.push_back( ReportTypesMismatch( return_operator.file_pos_, void_type.ToString(), function_context.return_type.ToString() ) );
 			return;
 		}
 
@@ -1429,13 +1431,16 @@ void CodeBuilderLLVM::BuildWhileOperatorCode(
 	function_context.llvm_ir_builder.SetInsertPoint( test_block );
 
 	Variable condition_expression= BuildExpressionCode( *while_operator.condition_, names, function_context );
-	if( condition_expression.type.kind != Type::Kind::Fundamental ||
-		condition_expression.type.fundamental != U_FundamentalType::Bool )
+
+	Type bool_type;
+	bool_type.one_of_type_kind= FundamentalType( U_FundamentalType::Bool, fundamental_llvm_types_.void_ );
+
+	if( condition_expression.type != bool_type )
 	{
 		errors_.push_back(
 			ReportTypesMismatch(
 				while_operator.condition_->file_pos_,
-				GetFundamentalTypeName( U_FundamentalType::Bool ),
+				bool_type.ToString(),
 				condition_expression.type.ToString() ) );
 		throw ProgramError();
 	}
@@ -1506,6 +1511,9 @@ CodeBuilderLLVM::BlockBuildInfo CodeBuilderLLVM::BuildIfOperatorCode(
 	bool have_return_in_all_branches= true;
 	bool have_break_or_continue_in_all_branches= true;
 
+	Type bool_type;
+	bool_type.one_of_type_kind= FundamentalType( U_FundamentalType::Bool, fundamental_llvm_types_.void_ );
+
 	// TODO - optimize this method. Make less basic blocks.
 	//
 
@@ -1541,13 +1549,13 @@ CodeBuilderLLVM::BlockBuildInfo CodeBuilderLLVM::BuildIfOperatorCode(
 		else
 		{
 			Variable condition_expression= BuildExpressionCode( *branch.condition, names, function_context );
-			if( condition_expression.type.kind != Type::Kind::Fundamental ||
-				condition_expression.type.fundamental != U_FundamentalType::Bool )
+
+			if( condition_expression.type != bool_type )
 			{
 				errors_.push_back(
 					ReportTypesMismatch(
 						branch.condition->file_pos_,
-						GetFundamentalTypeName( U_FundamentalType::Bool ),
+						bool_type.ToString(),
 						condition_expression.type.ToString() ) );
 				throw ProgramError();
 			}
