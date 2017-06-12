@@ -145,25 +145,19 @@ struct Variable final
 	llvm::Value* llvm_value;
 };
 
-struct Name final
-{
-	// If ptr not null - name is class, else - variable
-	ClassPtr class_;
-	Variable variable;
-};
+// Any thing, that can have name - class, variable, namespace, label, enum, etc.
+typedef boost::variant<ClassPtr, Variable> NamedSomething;
 
 class NamesScope final
 {
 public:
 
-	typedef std::map< ProgramString, Name > NamesMap;
+	typedef std::map< ProgramString, NamedSomething > NamesMap;
 	typedef NamesMap::value_type InsertedName;
 
 	NamesScope( const NamesScope* prev= nullptr );
 
-	const InsertedName* AddName( const ProgramString& name, Variable variable );
-	const InsertedName* AddName( const ProgramString& name, const ClassPtr& class_ );
-	const InsertedName* AddName( const ProgramString& name, const Name name_value );
+	const InsertedName* AddName( const ProgramString& name, NamedSomething something );
 
 	const InsertedName* GetName( const ProgramString& name ) const;
 

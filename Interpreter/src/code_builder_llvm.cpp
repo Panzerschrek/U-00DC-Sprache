@@ -291,9 +291,11 @@ Type CodeBuilderLLVM::PrepareType( const FilePos& file_pos, const TypeName& type
 			global_names_.GetName( type_name.name );
 		if( custom_type_name != nullptr )
 		{
-			if( custom_type_name->second.class_ != nullptr )
+			const ClassPtr* const class_= boost::get<ClassPtr>( &custom_type_name->second );
+			if( class_ != nullptr )
 			{
-				last_type->one_of_type_kind= custom_type_name->second.class_;
+				U_ASSERT( (*class_) != nullptr );
+				last_type->one_of_type_kind= *class_;
 			}
 			else
 				errors_.push_back( ReportNameIsNotTypeName( file_pos, type_name.name ) );
@@ -943,12 +945,14 @@ Variable CodeBuilderLLVM::BuildExpressionCode_r(
 				errors_.push_back( ReportNameNotFound( named_operand->file_pos_, named_operand->name_ ) );
 				throw ProgramError();
 			}
-			if( name_entry->second.class_ )
+
+			const Variable* const variable= boost::get<Variable>( &name_entry->second );
+			if( variable == nullptr )
 			{
-				// TODO - using class name as variable.
+				// TODO - expected variable name.
 				throw ProgramError();
 			}
-			result= name_entry->second.variable;
+			result= *variable;
 		}
 		else if( const NumericConstant* numeric_constant=
 			dynamic_cast<const NumericConstant*>(&operand) )

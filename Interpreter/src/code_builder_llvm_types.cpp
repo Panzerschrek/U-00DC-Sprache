@@ -358,24 +358,10 @@ NamesScope::NamesScope( const NamesScope* prev )
 {}
 
 const NamesScope::InsertedName* NamesScope::AddName(
-		const ProgramString& name,
-		Variable variable )
-{
-	return AddName( name, Name{ nullptr, std::move( variable ) } );
-}
-
-const NamesScope::InsertedName* NamesScope::AddName(
 	const ProgramString& name,
-	const ClassPtr& class_ )
+	NamedSomething something )
 {
-	return AddName( name, Name{ class_, Variable() } );
-}
-
-const NamesScope::InsertedName* NamesScope::AddName(
-	const ProgramString& name,
-	const Name name_value )
-{
-	auto it_bool_pair = names_map_.emplace( name, std::move( name_value ) );
+	auto it_bool_pair = names_map_.emplace( name, std::move( something ) );
 	if( it_bool_pair.second )
 		return &*it_bool_pair.first;
 
