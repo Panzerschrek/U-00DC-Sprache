@@ -19,6 +19,7 @@ LLVM_BUILD_DIR= $$LLVM_BASE_DIR/build
 LLVM_LIBS_DIR= $$LLVM_BUILD_DIR/lib
 LLVM_INCLUDES_DIR= $$LLVM_BASE_DIR/include
 LLVM_GEN_INCLUDES_DIR= $$LLVM_BUILD_DIR/include
+BOOST_BASE_DIR= ../../boost_1_60_0
 
 # Include ALL *.a libraries from llvm build.
 # TODO - know, which libs we need.
@@ -28,6 +29,7 @@ LIBS+= $$LLVM_LIBS_DIR/libLLVMCodeGen.a
 
 INCLUDEPATH+= $$LLVM_INCLUDES_DIR
 INCLUDEPATH+= $$LLVM_GEN_INCLUDES_DIR
+INCLUDEPATH+= $$BOOST_BASE_DIR
 
 SOURCES += \
 	src/code_builder_errors.cpp \
