@@ -144,8 +144,11 @@ struct Variable final
 	llvm::Value* llvm_value= nullptr;
 };
 
-// Any thing, that can have name - class, variable, namespace, label, enum, etc.
-typedef boost::variant<ClassPtr, Variable> NamedSomething;
+// Set of functions with same name, but different signature.
+typedef std::vector<Variable> OverloadedFunctionsSet;
+
+// Any thing, that can have name - class, variable, function, namespace, label, enum, etc.
+typedef boost::variant<ClassPtr, Variable, OverloadedFunctionsSet> NamedSomething;
 
 class NamesScope final
 {

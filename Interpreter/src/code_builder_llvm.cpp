@@ -1598,6 +1598,82 @@ CodeBuilderLLVM::BlockBuildInfo CodeBuilderLLVM::BuildIfOperatorCode(
 	return if_operator_blocks_build_info;
 }
 
+void CodeBuilderLLVM::ApplyOverloadedFunction(
+	OverloadedFunctionsSet& functions_set,
+	const Variable& function )
+{
+	if( functions_set.empty() )
+	{
+		functions_set.push_back(function);
+		return;
+	}
+
+	const FunctionPtr& function_type= boost::get<FunctionPtr>( function.type.one_of_type_kind );
+	U_ASSERT(function_type);
+
+	/*
+	Algorithm for overloading applying:
+	If parameter count differs - overload function.
+	If "Binding type" of one or more arguments differs - overload function.
+
+	"Binding type" Can be:
+	1) "immutable reference" - mutable or immutable values, immutable references.
+	2) "mutable reference" - mutable references.
+	*/
+	for( const Variable& set_function : functions_set )
+	{
+		const FunctionPtr& set_function_type= boost::get<FunctionPtr>(set_function.type.one_of_type_kind); // Must be function type 100 %
+		U_ASSERT(set_function_type);
+
+		// If argument count differs - allow overloading.
+		// SPRACHE_TODO - handle default arguments.
+		if( function_type->args.size() != set_function_type->args.size() )
+			continue;
+
+		unsigned int arg_is_same_count= 0u;
+		for( size_t i= 0u; i < function_type->args.size(); i++ )
+		{
+			const Function::Arg& arg= function_type->args[i];
+			const Function::Arg& set_arg= set_function_type->args[i];
+
+			if( arg.type != set_arg.type )
+				continue;
+
+			auto is_reference_or_value_arg=
+			[]( const Function::Arg& arg ) -> bool
+			{
+				return !arg.is_reference || ( arg.is_reference && !arg.is_mutable );
+			};
+
+			if( is_reference_or_value_arg( arg ) == is_reference_or_value_arg( set_arg ) )
+				arg_is_same_count++;
+		} // For args.
+
+		if( arg_is_same_count == function_type->args.size() )
+		{
+			errors_.push_back( ReportCouldNotOverloadFunction(FilePos()) );
+			return;
+		}
+	} // For functions in set.
+
+	// No error - add function to set.
+	functions_set.push_back(function);
+}
+
+const Variable& CodeBuilderLLVM::GetOverloadedFunction(
+	const OverloadedFunctionsSet& functions_set,
+	const std::vector<Function::Arg>& actual_args )
+{
+	U_ASSERT( !functions_set.empty() );
+
+	if( functions_set.size() == 1u )
+	{
+		return functions_set.front();
+	}
+	// TODO
+
+}
+
 llvm::Type* CodeBuilderLLVM::GetFundamentalLLVMType( const U_FundamentalType fundmantal_type )
 {
 	switch( fundmantal_type )

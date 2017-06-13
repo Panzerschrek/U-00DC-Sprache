@@ -30,6 +30,7 @@ enum class CodeBuilderErrorCode : unsigned int
 	ExpectedInitializer,
 	ExpectedReferenceValue,
 	BindingConstReferenceToNonconstReference,
+	CouldNotOverloadFunction,
 
 	// Push new error codes at back.
 };
@@ -60,5 +61,6 @@ CodeBuilderError ReportNoReturnInFunctionReturningNonVoid( const FilePos& file_p
 CodeBuilderError ReportExpectedInitializer( const FilePos& file_pos );
 CodeBuilderError ReportExpectedReferenceValue( const FilePos& file_pos );
 CodeBuilderError ReportBindingConstReferenceToNonconstReference( const FilePos& file_pos );
+CodeBuilderError ReportCouldNotOverloadFunction( const FilePos& file_pos );
 
 } // namespace Interpreter

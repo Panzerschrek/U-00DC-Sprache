@@ -215,4 +215,15 @@ CodeBuilderError ReportBindingConstReferenceToNonconstReference( const FilePos& 
 	return error;
 }
 
+CodeBuilderError ReportCouldNotOverloadFunction( const FilePos& file_pos )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::CouldNotOverloadFunction;
+
+	error.text= "Could not overload function."_SpC;
+
+	return error;
+}
+
 } // namespace Interpreter
