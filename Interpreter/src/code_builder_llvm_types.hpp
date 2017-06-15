@@ -35,6 +35,13 @@ struct FundamentalType final
 	FundamentalType( U_FundamentalType fundamental_type= U_FundamentalType::Void, llvm::Type* llvm_type= nullptr );
 };
 
+// Stub for type of non-variable "Variables".
+enum class NontypeStub
+{
+	OverloadedFunctionsSet,
+	ClassName,
+};
+
 bool operator==( const FundamentalType& r, const FundamentalType& l );
 bool operator!=( const FundamentalType& r, const FundamentalType& l );
 
@@ -44,7 +51,8 @@ struct Type final
 		FundamentalType,
 		FunctionPtr,
 		ArrayPtr,
-		ClassPtr> one_of_type_kind;
+		ClassPtr,
+		NontypeStub> one_of_type_kind;
 
 	Type()= default;
 	Type( const Type& other );
