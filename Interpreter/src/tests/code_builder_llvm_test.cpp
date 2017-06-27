@@ -573,6 +573,46 @@ static void CallTest1()
 		result_value.IntVal.getLimitedValue() );
 }
 
+static void RecursiveCallTest()
+{
+	static const char c_program_text[]=
+	R"(
+		fn Factorial( u32 x ) : u32
+		{
+			if( x <= 1u32 ) { return 1u32; }
+			else { return x * Factorial( x - 1u32 ); }
+		}
+	)";
+
+	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "Factorial" );
+	U_ASSERT( function != nullptr );
+
+	unsigned int arg_val= 9u;
+
+	const auto factorial=
+	[]( const unsigned int x ) -> unsigned int
+	{
+		unsigned int result= 1u;
+		for( unsigned int i= 2u; i <= x; i++ )
+			result*= i;
+		return result;
+	};
+
+	llvm::GenericValue arg;
+	arg.IntVal= llvm::APInt( 32, arg_val );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>( &arg, 1 ) );
+
+	U_ASSERT(
+		static_cast<uint64_t>(factorial(arg_val)) ==
+		result_value.IntVal.getLimitedValue() );
+}
+
 static void EqualityOperatorsTest()
 {
 	static const char c_program_text[]=
@@ -1824,6 +1864,7 @@ void RunCodeBuilderLLVMTest()
 	BooleanBasicTest();
 	CallTest0();
 	CallTest1();
+	RecursiveCallTest();
 	EqualityOperatorsTest();
 	EqualityFloatOperatorsTest();
 	ComparisonSignedOperatorsTest();

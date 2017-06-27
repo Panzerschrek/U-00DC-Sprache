@@ -391,7 +391,7 @@ NamesScope::NamesScope( const NamesScope* prev )
 	: prev_(prev)
 {}
 
-const NamesScope::InsertedName* NamesScope::AddName(
+NamesScope::InsertedName* NamesScope::AddName(
 	const ProgramString& name,
 	NamedSomething something )
 {
@@ -404,7 +404,7 @@ const NamesScope::InsertedName* NamesScope::AddName(
 
 const NamesScope::InsertedName*
 	NamesScope::GetName(
-		const ProgramString& name ) const
+	const ProgramString& name ) const
 {
 	auto it= names_map_.find( name );
 	if( it != names_map_.end() )
@@ -413,6 +413,14 @@ const NamesScope::InsertedName*
 	if( prev_ != nullptr )
 		return prev_->GetName( name );
 
+	return nullptr;
+}
+
+NamesScope::InsertedName* NamesScope::GetThisScopeName( const ProgramString& name )
+{
+	auto it= names_map_.find( name );
+	if( it != names_map_.end() )
+		return &*it;
 	return nullptr;
 }
 

@@ -167,9 +167,12 @@ public:
 
 	NamesScope( const NamesScope* prev= nullptr );
 
-	const InsertedName* AddName( const ProgramString& name, NamedSomething something );
+	// Returns nullptr, if name already exists in this scope.
+	InsertedName* AddName( const ProgramString& name, NamedSomething something );
 
 	const InsertedName* GetName( const ProgramString& name ) const;
+
+	InsertedName* GetThisScopeName( const ProgramString& name );
 
 private:
 	const NamesScope* const prev_;

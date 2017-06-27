@@ -209,13 +209,34 @@ CodeBuilderLLVM::BuildResult CodeBuilderLLVM::BuildProgram( const ProgramElement
 					out_arg.is_reference= arg->reference_modifier_ == ReferenceModifier::Reference;
 				}
 
-				BuildFuncCode(
-					func_info,
-					func->name_,
-					func->arguments_,
-					*func->block_ );
+				NamesScope::InsertedName* const func_name=
+					global_names_.GetThisScopeName( func->name_ );
+				if( func_name == nullptr )
+				{
+					// New name in this scope - insert it.
+					NamesScope::InsertedName* const inserted_func=
+						global_names_.AddName( func->name_, std::move( func_info ) );
+					U_ASSERT( inserted_func != nullptr );
 
-				global_names_.AddName( func->name_, std::move( func_info ) );
+					BuildFuncCode(
+						boost::get<Variable>( inserted_func->second ),
+						func->name_,
+						func->arguments_,
+						*func->block_ );
+				}
+				else
+				{
+					NamedSomething& named_something= func_name->second;
+					if( OverloadedFunctionsSet* const functions_set=
+						boost::get<OverloadedFunctionsSet>( &named_something ) )
+					{
+						// Try overload here.
+					}
+					else
+					{
+						errors_.push_back( ReportRedefinition( func->file_pos_, func_name->first ) );
+					}
+				}
 			}
 		}
 		else if(
