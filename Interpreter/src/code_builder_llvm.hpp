@@ -126,6 +126,7 @@ private:
 		OverloadedFunctionsSet& functions_set,
 		const Variable& function );
 
+	// throws, if can not select function.
 	const Variable& GetOverloadedFunction(
 		const OverloadedFunctionsSet& functions_set,
 		const std::vector<Function::Arg>& actual_args );

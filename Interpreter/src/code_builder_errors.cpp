@@ -226,4 +226,26 @@ CodeBuilderError ReportCouldNotOverloadFunction( const FilePos& file_pos )
 	return error;
 }
 
+CodeBuilderError ReportTooManySuitableOverloadedFunctions( const FilePos& file_pos )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::TooManySuitableOverloadedFunctions;
+
+	error.text= "Could not select function for overloading - too many candidates."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportCouldNotSelectOverloadedFunction( const FilePos& file_pos )
+
+{CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::CouldNotSelectOverloadedFunction;
+
+	error.text= "Could not select function for overloading - no candidates."_SpC;
+
+	return error;
+}
+
 } // namespace Interpreter

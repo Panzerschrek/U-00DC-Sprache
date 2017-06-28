@@ -1122,23 +1122,34 @@ Variable CodeBuilderLLVM::BuildExpressionCode_r(
 					// TODO - Call of non-function.
 					throw ProgramError();
 				}
-				// TODO - select overloading
-				const Variable& function= result.functions_set.front();
+				const OverloadedFunctionsSet& functions_set= result.functions_set;
+
+				std::vector<Function::Arg> actual_args( call_operator->arguments_.size() );
+				std::vector<Variable> actual_args_variables( call_operator->arguments_.size() );
+				for( unsigned int i= 0u; i < actual_args.size(); i++ )
+				{
+					Variable expr= BuildExpressionCode( *call_operator->arguments_[i], names, function_context );
+					actual_args[i].is_reference= expr.value_type != ValueType::Value;
+					actual_args[i].is_mutable= expr.value_type == ValueType::Reference;
+
+					actual_args_variables[i]= std::move(expr);
+				}
+
+				const Variable function= GetOverloadedFunction( functions_set, actual_args );
 				const Function& function_type= *boost::get<FunctionPtr>( function.type.one_of_type_kind );
 
-				if( call_operator->arguments_.size() != function_type.args.size() )
+				if( function_type.args.size() != actual_args.size( ))
 				{
 					errors_.push_back( ReportFunctionSignatureMismatch( call_operator->file_pos_ ) );
 					throw ProgramError();
 				}
 
-				std::vector<llvm::Value*> llvm_args;
-				llvm_args.resize( function_type.args.size() );
-
-				for( unsigned int i= 0u; i < function_type.args.size(); i++ )
+				std::vector<llvm::Value*> llvm_args( actual_args.size() );
+				for( unsigned int i= 0u; i < actual_args.size(); i++ )
 				{
 					const Function::Arg& arg= function_type.args[i];
-					const Variable expr= BuildExpressionCode( *call_operator->arguments_[i], names, function_context );
+					const Variable& expr= actual_args_variables[i];
+
 					if( expr.type != arg.type )
 					{
 						errors_.push_back( ReportFunctionSignatureMismatch( call_operator->arguments_[i]->file_pos_ ) );
@@ -1702,12 +1713,69 @@ const Variable& CodeBuilderLLVM::GetOverloadedFunction(
 {
 	U_ASSERT( !functions_set.empty() );
 
+	// If we have only one function - return it.
+	// Caller can generate error, if arguments does not match.
 	if( functions_set.size() == 1u )
-	{
 		return functions_set.front();
-	}
-	// TODO
 
+	// TODO - set file pos.
+	FilePos file_pos;
+
+	const Variable* match_function= nullptr;
+	for( const Variable& function : functions_set )
+	{
+		const Function& function_type= *boost::get<FunctionPtr>( function.type.one_of_type_kind );
+
+		// SPRACHE_TODO - handle functions with default arguments.
+		if( function_type.args.size() != actual_args.size() )
+			continue;
+
+		bool match= true;
+		for( unsigned int i= 0u; i < actual_args.size(); i++ )
+		{
+			// SPRACHE_TODO - support type-casting for function call.
+			// SPRACHE_TODO - support references-casting.
+			// Now - only exactly compare types.
+			if( actual_args[i].type != function_type.args[i].type )
+				continue;
+
+			if( function_type.args[i].is_reference && function_type.args[i].is_mutable )
+			{
+				if( actual_args[i].is_reference && function_type.args[i].is_mutable )
+				{
+					// We can only bind nonconst-reference arg to nonconst-reference parameter.
+					match= false;
+					break;
+				}
+			}
+			else
+			{
+				// All ok - value or const-reference parameter accept values, const and nonconst references.
+			}
+		}
+
+		if( match )
+		{
+			if( match_function == nullptr )
+				match_function= &function;
+			else
+			{
+				errors_.push_back( ReportTooManySuitableOverloadedFunctions( file_pos ) );
+				throw ProgramError();
+			}
+		}
+	} // for functions
+
+	// Not found any function.
+	if( match_function == nullptr )
+	{
+		errors_.push_back( ReportCouldNotSelectOverloadedFunction( file_pos ) );
+		throw ProgramError();
+	}
+	else
+	{
+		return *match_function;
+	}
 }
 
 llvm::Type* CodeBuilderLLVM::GetFundamentalLLVMType( const U_FundamentalType fundmantal_type )
