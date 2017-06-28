@@ -21,11 +21,15 @@ LLVM_INCLUDES_DIR= $$LLVM_BASE_DIR/include
 LLVM_GEN_INCLUDES_DIR= $$LLVM_BUILD_DIR/include
 BOOST_BASE_DIR= ../../boost_1_60_0
 
-# Include ALL *.a libraries from llvm build.
-# TODO - know, which libs we need.
-LIBS+= $$LLVM_LIBS_DIR/*.a
-LIBS+= $$LLVM_LIBS_DIR/libLLVMCore.a
+# libLLVMInterpreter and libLLVMExecutionEngine - for test.
+LIBS+= $$LLVM_LIBS_DIR/libLLVMInterpreter.a
+LIBS+= $$LLVM_LIBS_DIR/libLLVMExecutionEngine.a
+# Other - for code builder.
 LIBS+= $$LLVM_LIBS_DIR/libLLVMCodeGen.a
+LIBS+= $$LLVM_LIBS_DIR/libLLVMCore.a
+LIBS+= $$LLVM_LIBS_DIR/libLLVMMC.a
+LIBS+= $$LLVM_LIBS_DIR/libLLVMSupport.a
+LIBS+= $$LLVM_LIBS_DIR/libLLVMTarget.a
 
 INCLUDEPATH+= $$LLVM_INCLUDES_DIR
 INCLUDEPATH+= $$LLVM_GEN_INCLUDES_DIR
