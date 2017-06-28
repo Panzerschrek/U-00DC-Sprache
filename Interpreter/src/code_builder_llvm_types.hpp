@@ -27,6 +27,8 @@ typedef std::unique_ptr<Array> ArrayPtr;
 struct Class;
 typedef std::shared_ptr<Class> ClassPtr;
 
+struct Variable;
+
 struct FundamentalType final
 {
 	U_FundamentalType fundamental_type;
@@ -130,6 +132,9 @@ struct Class final
 	llvm::StructType* llvm_type;
 };
 
+// Set of functions with same name, but different signature.
+typedef std::vector<Variable> OverloadedFunctionsSet;
+
 enum class ValueType
 {
 	Value,
@@ -150,10 +155,12 @@ struct Variable final
 	Type type;
 
 	llvm::Value* llvm_value= nullptr;
-};
 
-// Set of functions with same name, but different signature.
-typedef std::vector<Variable> OverloadedFunctionsSet;
+	// Hack for nonvariable-variables.
+	// For convenience, store less-frequently used "something" inside more-frequently
+	// used thing "variable".
+	OverloadedFunctionsSet functions_set;
+};
 
 // Any thing, that can have name - class, variable, function, namespace, label, enum, etc.
 typedef boost::variant<ClassPtr, Variable, OverloadedFunctionsSet> NamedSomething;

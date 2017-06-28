@@ -213,13 +213,16 @@ CodeBuilderLLVM::BuildResult CodeBuilderLLVM::BuildProgram( const ProgramElement
 					global_names_.GetThisScopeName( func->name_ );
 				if( func_name == nullptr )
 				{
+					OverloadedFunctionsSet functions_set;
+					functions_set.push_back( std::move( func_info ) );
+
 					// New name in this scope - insert it.
 					NamesScope::InsertedName* const inserted_func=
-						global_names_.AddName( func->name_, std::move( func_info ) );
+						global_names_.AddName( func->name_, std::move( functions_set ) );
 					U_ASSERT( inserted_func != nullptr );
 
 					BuildFuncCode(
-						boost::get<Variable>( inserted_func->second ),
+						boost::get<OverloadedFunctionsSet>( inserted_func->second ).front(),
 						func->name_,
 						func->arguments_,
 						*func->block_ );
@@ -956,7 +959,7 @@ Variable CodeBuilderLLVM::BuildExpressionCode_r(
 
 		Variable result;
 
-		if( const NamedOperand* named_operand=
+		if( const NamedOperand* const named_operand=
 			dynamic_cast<const NamedOperand*>(&operand) )
 		{
 			const NamesScope::InsertedName* name_entry=
@@ -967,13 +970,23 @@ Variable CodeBuilderLLVM::BuildExpressionCode_r(
 				throw ProgramError();
 			}
 
-			const Variable* const variable= boost::get<Variable>( &name_entry->second );
-			if( variable == nullptr )
+			if( const Variable* const variable= boost::get<Variable>( &name_entry->second ) )
 			{
-				// TODO - expected variable name.
+				result= *variable;
+			}
+			else if( const OverloadedFunctionsSet* const functins_set=
+				boost::get<OverloadedFunctionsSet>( &name_entry->second ) )
+			{
+				result.type.one_of_type_kind= NontypeStub::OverloadedFunctionsSet;
+				result.functions_set= *functins_set;
+			}
+			else
+			{
+				// TODO - support typenames, etc.
+				errors_.push_back(
+					ReportNotImplemented( named_operand->file_pos_, "non variable or functions set name usage" ) );
 				throw ProgramError();
 			}
-			result= *variable;
 		}
 		else if( const NumericConstant* numeric_constant=
 			dynamic_cast<const NumericConstant*>(&operand) )
@@ -1103,13 +1116,15 @@ Variable CodeBuilderLLVM::BuildExpressionCode_r(
 			else if( const CallOperator* const call_operator=
 				dynamic_cast<const CallOperator*>( postfix_operator.get() ) )
 			{
-				const FunctionPtr* const function_type_ptr= boost::get<FunctionPtr>( &result.type.one_of_type_kind );
-				if( function_type_ptr == nullptr )
+				const NontypeStub* nontype_stub= boost::get<NontypeStub>( &result.type.one_of_type_kind );
+				if( nontype_stub == nullptr || *nontype_stub != NontypeStub::OverloadedFunctionsSet )
 				{
 					// TODO - Call of non-function.
 					throw ProgramError();
 				}
-				const Function& function_type= *(*function_type_ptr);
+				// TODO - select overloading
+				const Variable& function= result.functions_set.front();
+				const Function& function_type= *boost::get<FunctionPtr>( function.type.one_of_type_kind );
 
 				if( call_operator->arguments_.size() != function_type.args.size() )
 				{
@@ -1172,7 +1187,7 @@ Variable CodeBuilderLLVM::BuildExpressionCode_r(
 
 				llvm::Value* call_result=
 					function_context.llvm_ir_builder.CreateCall(
-						llvm::dyn_cast<llvm::Function>(result.llvm_value),
+						llvm::dyn_cast<llvm::Function>(function.llvm_value),
 						llvm_args );
 
 				if( function_type.return_value_is_reference )
