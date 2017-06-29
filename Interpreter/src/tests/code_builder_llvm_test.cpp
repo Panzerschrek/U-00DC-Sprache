@@ -1845,6 +1845,39 @@ static void BindValueToConstReferenceTest0()
 	U_ASSERT( static_cast<uint64_t>( arg0 * 3 * 2 ) == result_value.IntVal.getLimitedValue() );
 }
 
+static void FunctionsOverloadingTest0()
+{
+	// Different parameters count.
+	static const char c_program_text[]=
+	R"(
+	fn Bar() : i32
+	{
+		return 42;
+	}
+	fn Bar( bool neg ) : i32
+	{
+		if( neg ) { return -1; }
+		return 1;
+	}
+	fn Foo() : i32
+	{
+		return Bar() * Bar(false);
+	}
+	)";
+
+	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
+	U_ASSERT( function != nullptr );
+
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>());
+
+	U_ASSERT( static_cast<uint64_t>( 42 ) == result_value.IntVal.getLimitedValue() );
+}
+
 void RunCodeBuilderLLVMTest()
 {
 	SimpleProgramTest();
@@ -1896,6 +1929,7 @@ void RunCodeBuilderLLVMTest()
 	ReferencesTest8();
 	ReferencesTest9();
 	BindValueToConstReferenceTest0();
+	FunctionsOverloadingTest0();
 }
 
 } // namespace Interpreter

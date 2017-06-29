@@ -182,64 +182,66 @@ CodeBuilderLLVM::BuildResult CodeBuilderLLVM::BuildProgram( const ProgramElement
 				function_type.return_value_is_mutable= true;
 			function_type.return_value_is_reference= func->return_value_reference_modifier_ == ReferenceModifier::Reference;
 
-			if( global_names_.GetName( func->name_ ) != nullptr )
+			// Args.
+			function_type.args.reserve( func->arguments_.size() );
+			for( const FunctionArgumentDeclarationPtr& arg : func->arguments_ )
 			{
-				errors_.push_back( ReportRedefinition( func->file_pos_, func->name_ ) );
-				continue;
+				if( IsKeyword( arg->name_ ) )
+					errors_.push_back( ReportUsingKeywordAsName( arg->file_pos_ ) );
+
+				function_type.args.emplace_back();
+				Function::Arg& out_arg= function_type.args.back();
+
+				out_arg.type= PrepareType( arg->file_pos_, arg->type_ );
+
+				// TODO - make variables without explicit mutability modifiers immutable.
+				if( arg->mutability_modifier_ == MutabilityModifier::Immutable )
+					out_arg.is_mutable= false;
+				else
+					out_arg.is_mutable= true;
+				out_arg.is_reference= arg->reference_modifier_ == ReferenceModifier::Reference;
+			}
+
+			NamesScope::InsertedName* const func_name=
+				global_names_.GetThisScopeName( func->name_ );
+			if( func_name == nullptr )
+			{
+				OverloadedFunctionsSet functions_set;
+				functions_set.push_back( std::move( func_info ) );
+
+				// New name in this scope - insert it.
+				NamesScope::InsertedName* const inserted_func=
+					global_names_.AddName( func->name_, std::move( functions_set ) );
+				U_ASSERT( inserted_func != nullptr );
+
+				BuildFuncCode(
+					boost::get<OverloadedFunctionsSet>( inserted_func->second ).front(),
+					func->name_,
+					func->arguments_,
+					*func->block_ );
 			}
 			else
 			{
-				// Args.
-				function_type.args.reserve( func->arguments_.size() );
-				for( const FunctionArgumentDeclarationPtr& arg : func->arguments_ )
+				NamedSomething& named_something= func_name->second;
+				if( OverloadedFunctionsSet* const functions_set=
+					boost::get<OverloadedFunctionsSet>( &named_something ) )
 				{
-					if( IsKeyword( arg->name_ ) )
-						errors_.push_back( ReportUsingKeywordAsName( arg->file_pos_ ) );
-
-					function_type.args.emplace_back();
-					Function::Arg& out_arg= function_type.args.back();
-
-					out_arg.type= PrepareType( arg->file_pos_, arg->type_ );
-
-					// TODO - make variables without explicit mutability modifiers immutable.
-					if( arg->mutability_modifier_ == MutabilityModifier::Immutable )
-						out_arg.is_mutable= false;
-					else
-						out_arg.is_mutable= true;
-					out_arg.is_reference= arg->reference_modifier_ == ReferenceModifier::Reference;
-				}
-
-				NamesScope::InsertedName* const func_name=
-					global_names_.GetThisScopeName( func->name_ );
-				if( func_name == nullptr )
-				{
-					OverloadedFunctionsSet functions_set;
-					functions_set.push_back( std::move( func_info ) );
-
-					// New name in this scope - insert it.
-					NamesScope::InsertedName* const inserted_func=
-						global_names_.AddName( func->name_, std::move( functions_set ) );
-					U_ASSERT( inserted_func != nullptr );
+					try
+					{
+						ApplyOverloadedFunction( *functions_set, func_info );
+					} catch( const ProgramError& )
+					{
+						continue;
+					}
 
 					BuildFuncCode(
-						boost::get<OverloadedFunctionsSet>( inserted_func->second ).front(),
+						functions_set->back(),
 						func->name_,
 						func->arguments_,
 						*func->block_ );
 				}
 				else
-				{
-					NamedSomething& named_something= func_name->second;
-					if( OverloadedFunctionsSet* const functions_set=
-						boost::get<OverloadedFunctionsSet>( &named_something ) )
-					{
-						// Try overload here.
-					}
-					else
-					{
-						errors_.push_back( ReportRedefinition( func->file_pos_, func_name->first ) );
-					}
-				}
+					errors_.push_back( ReportRedefinition( func->file_pos_, func_name->first ) );
 			}
 		}
 		else if(
@@ -1699,7 +1701,7 @@ void CodeBuilderLLVM::ApplyOverloadedFunction(
 		if( arg_is_same_count == function_type->args.size() )
 		{
 			errors_.push_back( ReportCouldNotOverloadFunction(FilePos()) );
-			return;
+			throw ProgramError();
 		}
 	} // For functions in set.
 

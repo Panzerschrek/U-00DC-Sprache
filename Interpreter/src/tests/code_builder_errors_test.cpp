@@ -237,7 +237,6 @@ static void Redefinition2()
 static void Redefinition3()
 {
 	// Function redefinition.
-	// TODO - write new tests, when functions overloading will be implemented
 	static const char c_program_text[]=
 	R"(
 		fn Foo() : i32
@@ -246,8 +245,7 @@ static void Redefinition3()
 		fn Bar() : i32
 		{ return 1; }
 
-		fn Foo( f32 x ) : i32
-		{ return 42; }
+		class Foo{};
 	)";
 
 	const CodeBuilderLLVM::BuildResult build_result= BuildProgram( c_program_text );
