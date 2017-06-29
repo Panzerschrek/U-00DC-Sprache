@@ -1130,7 +1130,9 @@ Variable CodeBuilderLLVM::BuildExpressionCode_r(
 				std::vector<Variable> actual_args_variables( call_operator->arguments_.size() );
 				for( unsigned int i= 0u; i < actual_args.size(); i++ )
 				{
+
 					Variable expr= BuildExpressionCode( *call_operator->arguments_[i], names, function_context );
+					actual_args[i].type= expr.type;
 					actual_args[i].is_reference= expr.value_type != ValueType::Value;
 					actual_args[i].is_mutable= expr.value_type == ValueType::Reference;
 
@@ -1739,7 +1741,10 @@ const Variable& CodeBuilderLLVM::GetOverloadedFunction(
 			// SPRACHE_TODO - support references-casting.
 			// Now - only exactly compare types.
 			if( actual_args[i].type != function_type.args[i].type )
-				continue;
+			{
+				match= false;
+				break;
+			}
 
 			if( function_type.args[i].is_reference && function_type.args[i].is_mutable )
 			{

@@ -1878,6 +1878,37 @@ static void FunctionsOverloadingTest0()
 	U_ASSERT( static_cast<uint64_t>( 42 ) == result_value.IntVal.getLimitedValue() );
 }
 
+static void FunctionsOverloadingTest1()
+{
+	// Different parameters type.
+	static const char c_program_text[]=
+	R"(
+	fn Bar( f64 val ) : i32
+	{
+		return 42;
+	}
+	fn Bar( i32 val ) : i32
+	{
+		return 24;
+	}
+	fn Foo() : i32
+	{
+		return Bar( 1.0 ) - Bar( 1 );
+	}
+	)";
+
+	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
+	U_ASSERT( function != nullptr );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>());
+
+	U_ASSERT( static_cast<uint64_t>( 42 - 24 ) == result_value.IntVal.getLimitedValue() );
+}
+
 void RunCodeBuilderLLVMTest()
 {
 	SimpleProgramTest();
@@ -1930,6 +1961,7 @@ void RunCodeBuilderLLVMTest()
 	ReferencesTest9();
 	BindValueToConstReferenceTest0();
 	FunctionsOverloadingTest0();
+	FunctionsOverloadingTest1();
 }
 
 } // namespace Interpreter
