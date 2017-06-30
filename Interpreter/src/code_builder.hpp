@@ -7,7 +7,7 @@
 #include "pop_llvm_warnings.hpp"
 
 #include "code_builder_errors.hpp"
-#include "code_builder_llvm_types.hpp"
+#include "code_builder_types.hpp"
 #include "inverse_polish_notation.hpp"
 #include "syntax_elements.hpp"
 
@@ -17,11 +17,11 @@ namespace Interpreter
 namespace CodeBuilderLLVMPrivate
 {
 
-class CodeBuilderLLVM final
+class CodeBuilder final
 {
 public:
-	CodeBuilderLLVM();
-	~CodeBuilderLLVM();
+	CodeBuilder();
+	~CodeBuilder();
 
 	struct BuildResult
 	{
@@ -172,6 +172,6 @@ private:
 } // namespace CodeBuilderLLVMPrivate
 
 
-using CodeBuilderLLVMPrivate::CodeBuilderLLVM;
+using CodeBuilderLLVMPrivate::CodeBuilder;
 
 } // namespace Interpreter

@@ -1,5 +1,5 @@
 #include "assert.hpp"
-#include "code_builder_llvm_types.hpp"
+#include "code_builder_types.hpp"
 #include "keywords.hpp"
 
 #include "code_builder_errors.hpp"

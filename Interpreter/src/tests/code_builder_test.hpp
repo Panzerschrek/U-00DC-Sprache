@@ -3,6 +3,6 @@
 namespace Interpreter
 {
 
-void RunCodeBuilderLLVMTest();
+void RunCodeBuilderTests();
 
 } // namespace Interpreter

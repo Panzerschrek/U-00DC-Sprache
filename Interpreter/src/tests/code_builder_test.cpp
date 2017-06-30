@@ -8,11 +8,11 @@
 #include "../pop_llvm_warnings.hpp"
 
 #include "../assert.hpp"
-#include "../code_builder_llvm.hpp"
+#include "../code_builder.hpp"
 #include "../lexical_analyzer.hpp"
 #include "../syntax_analyzer.hpp"
 
-#include "code_builder_llvm_test.hpp"
+#include "code_builder_test.hpp"
 
 #define ASSERT_NEAR( x, y, eps ) U_ASSERT( std::abs( (x) - (y) ) <= eps )
 
@@ -35,8 +35,8 @@ static std::unique_ptr<llvm::Module> BuildProgram( const char* const text )
 		std::cout << syntax_error_message << "\n";
 	U_ASSERT( syntax_analysis_result.error_messages.empty() );
 
-	CodeBuilderLLVM::BuildResult build_result=
-		CodeBuilderLLVM().BuildProgram( syntax_analysis_result.program_elements );
+	CodeBuilder::BuildResult build_result=
+		CodeBuilder().BuildProgram( syntax_analysis_result.program_elements );
 
 	for( const CodeBuilderError& error : build_result.errors )
 		std::cout << error.file_pos.line << ":" << error.file_pos.pos_in_line << " " << ToStdString( error.text ) << "\n";
@@ -1971,7 +1971,7 @@ static void FunctionsOverloadingTest3()
 	U_ASSERT( static_cast<uint64_t>( 42 - 24 ) == result_value.IntVal.getLimitedValue() );
 }
 
-void RunCodeBuilderLLVMTest()
+void RunCodeBuilderTests()
 {
 	SimpleProgramTest();
 	ArgumentsAssignmentTest();

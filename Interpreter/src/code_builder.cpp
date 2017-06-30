@@ -7,7 +7,7 @@
 #include "keywords.hpp"
 #include "lang_types.hpp"
 
-#include "code_builder_llvm.hpp"
+#include "code_builder.hpp"
 
 namespace Interpreter
 {
@@ -93,7 +93,7 @@ U_FundamentalType GetNumericConstantType( const NumericConstant& number )
 namespace CodeBuilderLLVMPrivate
 {
 
-CodeBuilderLLVM::FunctionContext::FunctionContext(
+CodeBuilder::FunctionContext::FunctionContext(
 	const Type in_return_type,
 	const bool in_return_value_is_mutable,
 	const bool in_return_value_is_reference,
@@ -110,7 +110,7 @@ CodeBuilderLLVM::FunctionContext::FunctionContext(
 {
 }
 
-CodeBuilderLLVM::CodeBuilderLLVM()
+CodeBuilder::CodeBuilder()
 	: llvm_context_( llvm::getGlobalContext() )
 {
 	fundamental_llvm_types_. i8= llvm::Type::getInt8Ty( llvm_context_ );
@@ -130,11 +130,11 @@ CodeBuilderLLVM::CodeBuilderLLVM()
 	fundamental_llvm_types_.bool_= llvm::Type::getInt1Ty( llvm_context_ );
 }
 
-CodeBuilderLLVM::~CodeBuilderLLVM()
+CodeBuilder::~CodeBuilder()
 {
 }
 
-CodeBuilderLLVM::BuildResult CodeBuilderLLVM::BuildProgram( const ProgramElements& program_elements )
+CodeBuilder::BuildResult CodeBuilder::BuildProgram( const ProgramElements& program_elements )
 {
 	module_= std::unique_ptr<llvm::Module>( new llvm::Module( "U-Module", llvm_context_ ) );
 	errors_.clear();
@@ -271,7 +271,7 @@ CodeBuilderLLVM::BuildResult CodeBuilderLLVM::BuildProgram( const ProgramElement
 	return result;
 }
 
-Type CodeBuilderLLVM::PrepareType( const FilePos& file_pos, const TypeName& type_name )
+Type CodeBuilder::PrepareType( const FilePos& file_pos, const TypeName& type_name )
 {
 	Type result;
 	Type* last_type= &result;
@@ -362,7 +362,7 @@ Type CodeBuilderLLVM::PrepareType( const FilePos& file_pos, const TypeName& type
 	return result;
 }
 
-ClassPtr CodeBuilderLLVM::PrepareClass( const ClassDeclaration& class_declaration )
+ClassPtr CodeBuilder::PrepareClass( const ClassDeclaration& class_declaration )
 {
 	if( IsKeyword( class_declaration.name_ ) )
 		errors_.push_back( ReportUsingKeywordAsName( class_declaration.file_pos_ ) );
@@ -398,7 +398,7 @@ ClassPtr CodeBuilderLLVM::PrepareClass( const ClassDeclaration& class_declaratio
 	return result;
 }
 
-void CodeBuilderLLVM::BuildFuncCode(
+void CodeBuilder::BuildFuncCode(
 	Variable& func_variable,
 	const ProgramString& func_name,
 	const FunctionArgumentsDeclaration& args,
@@ -505,7 +505,7 @@ void CodeBuilderLLVM::BuildFuncCode(
 	}
 }
 
-CodeBuilderLLVM::BlockBuildInfo CodeBuilderLLVM::BuildBlockCode(
+CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockCode(
 	const Block& block,
 	const NamesScope& names,
 	FunctionContext& function_context ) noexcept
@@ -594,7 +594,7 @@ CodeBuilderLLVM::BlockBuildInfo CodeBuilderLLVM::BuildBlockCode(
 				const IfOperator* if_operator=
 				dynamic_cast<const IfOperator*>( block_element_ptr ) )
 			{
-				const CodeBuilderLLVM::BlockBuildInfo if_block_info=
+				const CodeBuilder::BlockBuildInfo if_block_info=
 					BuildIfOperatorCode(
 						*if_operator,
 						block_names,
@@ -639,7 +639,7 @@ CodeBuilderLLVM::BlockBuildInfo CodeBuilderLLVM::BuildBlockCode(
 	return block_build_info;
 }
 
-Variable CodeBuilderLLVM::BuildExpressionCode(
+Variable CodeBuilder::BuildExpressionCode(
 	const BinaryOperatorsChain& expression,
 	const NamesScope& names,
 	FunctionContext& function_context )
@@ -654,7 +654,7 @@ Variable CodeBuilderLLVM::BuildExpressionCode(
 			function_context );
 }
 
-Variable CodeBuilderLLVM::BuildExpressionCode_r(
+Variable CodeBuilder::BuildExpressionCode_r(
 	const InversePolishNotation& ipn,
 	unsigned int ipn_index,
 	const NamesScope& names,
@@ -1272,7 +1272,7 @@ Variable CodeBuilderLLVM::BuildExpressionCode_r(
 	}
 }
 
-void CodeBuilderLLVM::BuildVariablesDeclarationCode(
+void CodeBuilder::BuildVariablesDeclarationCode(
 	const VariablesDeclaration& variables_declaration,
 	NamesScope& block_names,
 	FunctionContext& function_context )
@@ -1372,7 +1372,7 @@ void CodeBuilderLLVM::BuildVariablesDeclarationCode(
 	}
 }
 
-void CodeBuilderLLVM::BuildAssignmentOperatorCode(
+void CodeBuilder::BuildAssignmentOperatorCode(
 	const AssignmentOperator& assignment_operator,
 	const NamesScope& block_names,
 	FunctionContext& function_context )
@@ -1415,7 +1415,7 @@ void CodeBuilderLLVM::BuildAssignmentOperatorCode(
 	}
 }
 
-void CodeBuilderLLVM::BuildReturnOperatorCode(
+void CodeBuilder::BuildReturnOperatorCode(
 	const ReturnOperator& return_operator,
 	const NamesScope& names,
 	FunctionContext& function_context )
@@ -1469,7 +1469,7 @@ void CodeBuilderLLVM::BuildReturnOperatorCode(
 	}
 }
 
-void CodeBuilderLLVM::BuildWhileOperatorCode(
+void CodeBuilder::BuildWhileOperatorCode(
 	const WhileOperator& while_operator,
 	const NamesScope& names,
 	FunctionContext& function_context )
@@ -1529,7 +1529,7 @@ void CodeBuilderLLVM::BuildWhileOperatorCode(
 	function_context.llvm_ir_builder.SetInsertPoint( block_after_while );
 }
 
-void CodeBuilderLLVM::BuildBreakOperatorCode(
+void CodeBuilder::BuildBreakOperatorCode(
 	const BreakOperator& break_operator,
 	FunctionContext& function_context ) noexcept
 {
@@ -1542,7 +1542,7 @@ void CodeBuilderLLVM::BuildBreakOperatorCode(
 	function_context.llvm_ir_builder.CreateBr( function_context.block_for_break );
 }
 
-void CodeBuilderLLVM::BuildContinueOperatorCode(
+void CodeBuilder::BuildContinueOperatorCode(
 	const ContinueOperator& continue_operator,
 	FunctionContext& function_context ) noexcept
 {
@@ -1555,7 +1555,7 @@ void CodeBuilderLLVM::BuildContinueOperatorCode(
 	function_context.llvm_ir_builder.CreateBr( function_context.block_for_continue );
 }
 
-CodeBuilderLLVM::BlockBuildInfo CodeBuilderLLVM::BuildIfOperatorCode(
+CodeBuilder::BlockBuildInfo CodeBuilder::BuildIfOperatorCode(
 	const IfOperator& if_operator,
 	const NamesScope& names,
 	FunctionContext& function_context )
@@ -1649,7 +1649,7 @@ CodeBuilderLLVM::BlockBuildInfo CodeBuilderLLVM::BuildIfOperatorCode(
 	return if_operator_blocks_build_info;
 }
 
-void CodeBuilderLLVM::ApplyOverloadedFunction(
+void CodeBuilder::ApplyOverloadedFunction(
 	OverloadedFunctionsSet& functions_set,
 	const Variable& function,
 	const FilePos& file_pos )
@@ -1702,7 +1702,7 @@ void CodeBuilderLLVM::ApplyOverloadedFunction(
 	functions_set.push_back(function);
 }
 
-const Variable& CodeBuilderLLVM::GetOverloadedFunction(
+const Variable& CodeBuilder::GetOverloadedFunction(
 	const OverloadedFunctionsSet& functions_set,
 	const std::vector<Function::Arg>& actual_args,
 	const FilePos& file_pos )
@@ -1773,7 +1773,7 @@ const Variable& CodeBuilderLLVM::GetOverloadedFunction(
 	}
 }
 
-llvm::Type* CodeBuilderLLVM::GetFundamentalLLVMType( const U_FundamentalType fundmantal_type )
+llvm::Type* CodeBuilder::GetFundamentalLLVMType( const U_FundamentalType fundmantal_type )
 {
 	switch( fundmantal_type )
 	{
@@ -1812,7 +1812,7 @@ llvm::Type* CodeBuilderLLVM::GetFundamentalLLVMType( const U_FundamentalType fun
 	return nullptr;
 }
 
-llvm::Value*CodeBuilderLLVM::CreateMoveToLLVMRegisterInstruction(
+llvm::Value*CodeBuilder::CreateMoveToLLVMRegisterInstruction(
 	const Variable& variable, FunctionContext& function_context )
 {
 	switch( variable.location )
