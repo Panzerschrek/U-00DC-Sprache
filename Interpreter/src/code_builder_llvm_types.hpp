@@ -162,6 +162,20 @@ struct Variable final
 	OverloadedFunctionsSet functions_set;
 };
 
+// "Class" of function argument in terms of overloading.
+enum class ArgOverloadingClass
+{
+	// Value-args (both mutable and immutable), immutable references.
+	ImmutableReference,
+	// Mutable references.
+	MutalbeReference,
+	// SPRACHE_TODO - add class for move-references here
+};
+
+ArgOverloadingClass GetArgOverloadingClass( bool is_reference, bool is_mutable );
+ArgOverloadingClass GetArgOverloadingClass( ValueType value_type );
+ArgOverloadingClass GetArgOverloadingClass( const Function::Arg& arg );
+
 // Any thing, that can have name - class, variable, function, namespace, label, enum, etc.
 typedef boost::variant<ClassPtr, Variable, OverloadedFunctionsSet> NamedSomething;
 

@@ -1666,11 +1666,7 @@ void CodeBuilderLLVM::ApplyOverloadedFunction(
 	/*
 	Algorithm for overloading applying:
 	If parameter count differs - overload function.
-	If "Binding type" of one or more arguments differs - overload function.
-
-	"Binding type" Can be:
-	1) "immutable reference" - mutable or immutable values, immutable references.
-	2) "mutable reference" - mutable references.
+	If "ArgOverloadingClass" of one or more arguments differs - overload function.
 	*/
 	for( const Variable& set_function : functions_set )
 	{
@@ -1691,13 +1687,7 @@ void CodeBuilderLLVM::ApplyOverloadedFunction(
 			if( arg.type != set_arg.type )
 				continue;
 
-			auto is_reference_or_value_arg=
-			[]( const Function::Arg& arg ) -> bool
-			{
-				return !arg.is_reference || ( arg.is_reference && !arg.is_mutable );
-			};
-
-			if( is_reference_or_value_arg( arg ) == is_reference_or_value_arg( set_arg ) )
+			if( GetArgOverloadingClass( arg ) == GetArgOverloadingClass( set_arg ) )
 				arg_is_same_count++;
 		} // For args.
 
@@ -1746,14 +1736,12 @@ const Variable& CodeBuilderLLVM::GetOverloadedFunction(
 				break;
 			}
 
-			if( function_type.args[i].is_reference && function_type.args[i].is_mutable )
+			if( GetArgOverloadingClass( function_type.args[i] ) == ArgOverloadingClass::MutalbeReference &&
+				GetArgOverloadingClass( actual_args[i] ) != ArgOverloadingClass::MutalbeReference )
 			{
-				if( actual_args[i].is_reference && function_type.args[i].is_mutable )
-				{
-					// We can only bind nonconst-reference arg to nonconst-reference parameter.
-					match= false;
-					break;
-				}
+				// We can only bind nonconst-reference arg to nonconst-reference parameter.
+				match= false;
+				break;
 			}
 			else
 			{
