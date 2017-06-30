@@ -57,7 +57,7 @@ HEADERS += \
 	src/code_builder_llvm.hpp \
 	src/code_builder_llvm_types.hpp \
 	src/inverse_polish_notation.hpp \
-	src/keywords.cpp \
+	src/keywords.hpp \
 	src/lexical_analyzer.hpp \
 	src/pop_llvm_warnings.hpp \
 	src/program_string.hpp \
