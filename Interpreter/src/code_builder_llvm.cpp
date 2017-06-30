@@ -228,7 +228,7 @@ CodeBuilderLLVM::BuildResult CodeBuilderLLVM::BuildProgram( const ProgramElement
 				{
 					try
 					{
-						ApplyOverloadedFunction( *functions_set, func_info );
+						ApplyOverloadedFunction( *functions_set, func_info, func->file_pos_ );
 					} catch( const ProgramError& )
 					{
 						continue;
@@ -1139,7 +1139,7 @@ Variable CodeBuilderLLVM::BuildExpressionCode_r(
 					actual_args_variables[i]= std::move(expr);
 				}
 
-				const Variable function= GetOverloadedFunction( functions_set, actual_args );
+				const Variable function= GetOverloadedFunction( functions_set, actual_args, call_operator->file_pos_ );
 				const Function& function_type= *boost::get<FunctionPtr>( function.type.one_of_type_kind );
 
 				if( function_type.args.size() != actual_args.size( ))
@@ -1651,7 +1651,8 @@ CodeBuilderLLVM::BlockBuildInfo CodeBuilderLLVM::BuildIfOperatorCode(
 
 void CodeBuilderLLVM::ApplyOverloadedFunction(
 	OverloadedFunctionsSet& functions_set,
-	const Variable& function )
+	const Variable& function,
+	const FilePos& file_pos )
 {
 	if( functions_set.empty() )
 	{
@@ -1702,7 +1703,7 @@ void CodeBuilderLLVM::ApplyOverloadedFunction(
 
 		if( arg_is_same_count == function_type->args.size() )
 		{
-			errors_.push_back( ReportCouldNotOverloadFunction(FilePos()) );
+			errors_.push_back( ReportCouldNotOverloadFunction(file_pos) );
 			throw ProgramError();
 		}
 	} // For functions in set.
@@ -1713,7 +1714,8 @@ void CodeBuilderLLVM::ApplyOverloadedFunction(
 
 const Variable& CodeBuilderLLVM::GetOverloadedFunction(
 	const OverloadedFunctionsSet& functions_set,
-	const std::vector<Function::Arg>& actual_args )
+	const std::vector<Function::Arg>& actual_args,
+	const FilePos& file_pos )
 {
 	U_ASSERT( !functions_set.empty() );
 
@@ -1722,8 +1724,6 @@ const Variable& CodeBuilderLLVM::GetOverloadedFunction(
 	if( functions_set.size() == 1u )
 		return functions_set.front();
 
-	// TODO - set file pos.
-	FilePos file_pos;
 
 	const Variable* match_function= nullptr;
 	for( const Variable& function : functions_set )

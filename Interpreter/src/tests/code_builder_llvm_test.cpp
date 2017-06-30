@@ -1909,6 +1909,68 @@ static void FunctionsOverloadingTest1()
 	U_ASSERT( static_cast<uint64_t>( 42 - 24 ) == result_value.IntVal.getLimitedValue() );
 }
 
+static void FunctionsOverloadingTest2()
+{
+	// Different parameters type and const-reference.
+	static const char c_program_text[]=
+	R"(
+	fn Bar( f64 &imut val ) : i32
+	{
+		return 42;
+	}
+	fn Bar( i32 &imut val ) : i32
+	{
+		return 24;
+	}
+	fn Foo() : i32
+	{
+		return Bar( 1.0 ) - Bar( 1 );
+	}
+	)";
+
+	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
+	U_ASSERT( function != nullptr );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>());
+
+	U_ASSERT( static_cast<uint64_t>( 42 - 24 ) == result_value.IntVal.getLimitedValue() );
+}
+
+static void FunctionsOverloadingTest3()
+{
+	// Different parameters type and const-reference for one of parameters.
+	static const char c_program_text[]=
+	R"(
+	fn Bar( f64 &imut val ) : i32
+	{
+		return 42;
+	}
+	fn Bar( i32 imut val ) : i32
+	{
+		return 24;
+	}
+	fn Foo() : i32
+	{
+		return Bar( 1.0 ) - Bar( 1 );
+	}
+	)";
+
+	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
+	U_ASSERT( function != nullptr );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>());
+
+	U_ASSERT( static_cast<uint64_t>( 42 - 24 ) == result_value.IntVal.getLimitedValue() );
+}
+
 void RunCodeBuilderLLVMTest()
 {
 	SimpleProgramTest();
@@ -1962,6 +2024,8 @@ void RunCodeBuilderLLVMTest()
 	BindValueToConstReferenceTest0();
 	FunctionsOverloadingTest0();
 	FunctionsOverloadingTest1();
+	FunctionsOverloadingTest2();
+	FunctionsOverloadingTest3();
 }
 
 } // namespace Interpreter
