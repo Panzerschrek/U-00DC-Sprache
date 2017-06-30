@@ -573,6 +573,46 @@ static void CallTest1()
 		result_value.IntVal.getLimitedValue() );
 }
 
+static void RecursiveCallTest()
+{
+	static const char c_program_text[]=
+	R"(
+		fn Factorial( u32 x ) : u32
+		{
+			if( x <= 1u32 ) { return 1u32; }
+			else { return x * Factorial( x - 1u32 ); }
+		}
+	)";
+
+	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "Factorial" );
+	U_ASSERT( function != nullptr );
+
+	unsigned int arg_val= 9u;
+
+	const auto factorial=
+	[]( const unsigned int x ) -> unsigned int
+	{
+		unsigned int result= 1u;
+		for( unsigned int i= 2u; i <= x; i++ )
+			result*= i;
+		return result;
+	};
+
+	llvm::GenericValue arg;
+	arg.IntVal= llvm::APInt( 32, arg_val );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>( &arg, 1 ) );
+
+	U_ASSERT(
+		static_cast<uint64_t>(factorial(arg_val)) ==
+		result_value.IntVal.getLimitedValue() );
+}
+
 static void EqualityOperatorsTest()
 {
 	static const char c_program_text[]=
@@ -1805,6 +1845,132 @@ static void BindValueToConstReferenceTest0()
 	U_ASSERT( static_cast<uint64_t>( arg0 * 3 * 2 ) == result_value.IntVal.getLimitedValue() );
 }
 
+static void FunctionsOverloadingTest0()
+{
+	// Different parameters count.
+	static const char c_program_text[]=
+	R"(
+	fn Bar() : i32
+	{
+		return 42;
+	}
+	fn Bar( bool neg ) : i32
+	{
+		if( neg ) { return -1; }
+		return 1;
+	}
+	fn Foo() : i32
+	{
+		return Bar() * Bar(false);
+	}
+	)";
+
+	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
+	U_ASSERT( function != nullptr );
+
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>());
+
+	U_ASSERT( static_cast<uint64_t>( 42 ) == result_value.IntVal.getLimitedValue() );
+}
+
+static void FunctionsOverloadingTest1()
+{
+	// Different parameters type.
+	static const char c_program_text[]=
+	R"(
+	fn Bar( f64 val ) : i32
+	{
+		return 42;
+	}
+	fn Bar( i32 val ) : i32
+	{
+		return 24;
+	}
+	fn Foo() : i32
+	{
+		return Bar( 1.0 ) - Bar( 1 );
+	}
+	)";
+
+	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
+	U_ASSERT( function != nullptr );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>());
+
+	U_ASSERT( static_cast<uint64_t>( 42 - 24 ) == result_value.IntVal.getLimitedValue() );
+}
+
+static void FunctionsOverloadingTest2()
+{
+	// Different parameters type and const-reference.
+	static const char c_program_text[]=
+	R"(
+	fn Bar( f64 &imut val ) : i32
+	{
+		return 42;
+	}
+	fn Bar( i32 &imut val ) : i32
+	{
+		return 24;
+	}
+	fn Foo() : i32
+	{
+		return Bar( 1.0 ) - Bar( 1 );
+	}
+	)";
+
+	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
+	U_ASSERT( function != nullptr );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>());
+
+	U_ASSERT( static_cast<uint64_t>( 42 - 24 ) == result_value.IntVal.getLimitedValue() );
+}
+
+static void FunctionsOverloadingTest3()
+{
+	// Different parameters type and const-reference for one of parameters.
+	static const char c_program_text[]=
+	R"(
+	fn Bar( f64 &imut val ) : i32
+	{
+		return 42;
+	}
+	fn Bar( i32 imut val ) : i32
+	{
+		return 24;
+	}
+	fn Foo() : i32
+	{
+		return Bar( 1.0 ) - Bar( 1 );
+	}
+	)";
+
+	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
+	U_ASSERT( function != nullptr );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>());
+
+	U_ASSERT( static_cast<uint64_t>( 42 - 24 ) == result_value.IntVal.getLimitedValue() );
+}
+
 void RunCodeBuilderLLVMTest()
 {
 	SimpleProgramTest();
@@ -1824,6 +1990,7 @@ void RunCodeBuilderLLVMTest()
 	BooleanBasicTest();
 	CallTest0();
 	CallTest1();
+	RecursiveCallTest();
 	EqualityOperatorsTest();
 	EqualityFloatOperatorsTest();
 	ComparisonSignedOperatorsTest();
@@ -1855,6 +2022,10 @@ void RunCodeBuilderLLVMTest()
 	ReferencesTest8();
 	ReferencesTest9();
 	BindValueToConstReferenceTest0();
+	FunctionsOverloadingTest0();
+	FunctionsOverloadingTest1();
+	FunctionsOverloadingTest2();
+	FunctionsOverloadingTest3();
 }
 
 } // namespace Interpreter

@@ -237,7 +237,6 @@ static void Redefinition2()
 static void Redefinition3()
 {
 	// Function redefinition.
-	// TODO - write new tests, when functions overloading will be implemented
 	static const char c_program_text[]=
 	R"(
 		fn Foo() : i32
@@ -246,8 +245,7 @@ static void Redefinition3()
 		fn Bar() : i32
 		{ return 1; }
 
-		fn Foo( f32 x ) : i32
-		{ return 42; }
+		class Foo{};
 	)";
 
 	const CodeBuilderLLVM::BuildResult build_result= BuildProgram( c_program_text );
@@ -528,21 +526,37 @@ static void FunctionSignatureMismatchTest0()
 		fn Foo()
 		{
 			Bar( 1 );
-			Bar( 1, false, 0.32f );
 		}
 	)";
 
 	const CodeBuilderLLVM::BuildResult build_result= BuildProgram( c_program_text );
 
-	U_ASSERT( build_result.errors.size() >= 2u );
-
+	U_ASSERT( !build_result.errors.empty() );
 	U_ASSERT( build_result.errors[0].code == CodeBuilderErrorCode::FunctionSignatureMismatch );
-	U_ASSERT( build_result.errors[0].file_pos.line == 5u );
-	U_ASSERT( build_result.errors[1].code == CodeBuilderErrorCode::FunctionSignatureMismatch );
-	U_ASSERT( build_result.errors[1].file_pos.line == 6u );
+	U_ASSERT( build_result.errors[0].file_pos.line == 5u );;
 }
 
 static void FunctionSignatureMismatchTest1()
+{
+	// Argument count mismatch.
+	// TODO - support functions overloading.
+	static const char c_program_text[]=
+	R"(
+		fn Bar( i32 a, bool b ) : bool { return false; }
+		fn Foo()
+		{
+			Bar( 1, false, 0.2 );
+		}
+	)";
+
+	const CodeBuilderLLVM::BuildResult build_result= BuildProgram( c_program_text );
+
+	U_ASSERT( !build_result.errors.empty() );
+	U_ASSERT( build_result.errors[0].code == CodeBuilderErrorCode::FunctionSignatureMismatch );
+	U_ASSERT( build_result.errors[0].file_pos.line == 5u );
+}
+
+static void FunctionSignatureMismatchTest2()
 {
 	// Argumenst type mismatch.
 	// TODO - support functions overloading.
@@ -1199,6 +1213,136 @@ static void BindingConstReferenceToNonconstReferenceTest2()
 	U_ASSERT( error.file_pos.line == 4u );
 }
 
+static void CouldNotOverloadFunctionTest0()
+{
+	// No difference.
+	static const char c_program_text[]=
+	R"(
+		fn Foo( i32 x, f64 &imut y ) {}
+		fn Foo( i32 x, f64 &imut y ) {}
+	)";
+
+	const CodeBuilderLLVM::BuildResult build_result= BuildProgram( c_program_text );
+
+	U_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_ASSERT( error.code == CodeBuilderErrorCode::CouldNotOverloadFunction );
+	U_ASSERT( error.file_pos.line == 3u );
+}
+
+static void CouldNotOverloadFunctionTest1()
+{
+	// Different are only mutability modifiers for value parameters.
+	static const char c_program_text[]=
+	R"(
+		fn Foo( i32 mut x ) {}
+		fn Foo( i32 imut x ) {}
+	)";
+
+	const CodeBuilderLLVM::BuildResult build_result= BuildProgram( c_program_text );
+
+	U_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_ASSERT( error.code == CodeBuilderErrorCode::CouldNotOverloadFunction );
+	U_ASSERT( error.file_pos.line == 3u );
+}
+
+static void CouldNotOverloadFunctionTest2()
+{
+	// One parameter is value, other is const-reference.
+	static const char c_program_text[]=
+	R"(
+		fn Foo( i32 mut x ) {}
+		fn Foo( i32 &imut x ) {}
+	)";
+
+	const CodeBuilderLLVM::BuildResult build_result= BuildProgram( c_program_text );
+
+	U_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_ASSERT( error.code == CodeBuilderErrorCode::CouldNotOverloadFunction );
+	U_ASSERT( error.file_pos.line == 3u );
+}
+
+static void CouldNotOverloadFunctionTest3()
+{
+	// Const and nonconst reference-parameters are different.
+	static const char c_program_text[]=
+	R"(
+		fn Foo( i32 &mut x ) {}
+		fn Foo( i32 &imut x ) {}
+	)";
+
+	const CodeBuilderLLVM::BuildResult build_result= BuildProgram( c_program_text );
+
+	U_ASSERT( build_result.errors.empty() );
+}
+
+static void CouldNotOverloadFunctionTest4()
+{
+	// Functions with zero args.
+	static const char c_program_text[]=
+	R"(
+		fn Foo() {}
+		fn Foo() {}
+	)";
+
+	const CodeBuilderLLVM::BuildResult build_result= BuildProgram( c_program_text );
+
+	U_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_ASSERT( error.code == CodeBuilderErrorCode::CouldNotOverloadFunction );
+	U_ASSERT( error.file_pos.line == 3u );
+}
+
+static void CouldNotSelectOverloadedFunction0()
+{
+	// Different actual args and args from functions set.
+	static const char c_program_text[]=
+	R"(
+		fn Foo( i32 x ) {}
+		fn Foo( f32 x ) {}
+		fn Bar()
+		{
+			Foo( false );
+		}
+	)";
+
+	const CodeBuilderLLVM::BuildResult build_result= BuildProgram( c_program_text );
+
+	U_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_ASSERT( error.code == CodeBuilderErrorCode::CouldNotSelectOverloadedFunction );
+	U_ASSERT( error.file_pos.line == 6u );
+}
+
+static void CouldNotSelectOverloadedFunction1()
+{
+	// Different actual args count and args from functions set.
+	static const char c_program_text[]=
+	R"(
+		fn Foo( i32 x ) {}
+		fn Foo( f32 x ) {}
+		fn Bar()
+		{
+			Foo( 1, 2, 3, 4 );
+		}
+	)";
+
+	const CodeBuilderLLVM::BuildResult build_result= BuildProgram( c_program_text );
+
+	U_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_ASSERT( error.code == CodeBuilderErrorCode::CouldNotSelectOverloadedFunction );
+	U_ASSERT( error.file_pos.line == 6u );
+}
+
 void RunCodeBuilderErrorsTests()
 {
 	NameNotFoundTest0();
@@ -1224,6 +1368,7 @@ void RunCodeBuilderErrorsTests()
 	TypesMismatchTest5();
 	FunctionSignatureMismatchTest0();
 	FunctionSignatureMismatchTest1();
+	FunctionSignatureMismatchTest2();
 	ArraySizeIsNotInteger();
 	BreakOutsideLoopTest();
 	ContinueOutsideLoopTest();
@@ -1255,6 +1400,13 @@ void RunCodeBuilderErrorsTests()
 	BindingConstReferenceToNonconstReferenceTest0();
 	BindingConstReferenceToNonconstReferenceTest1();
 	BindingConstReferenceToNonconstReferenceTest2();
+	CouldNotOverloadFunctionTest0();
+	CouldNotOverloadFunctionTest1();
+	CouldNotOverloadFunctionTest2();
+	CouldNotOverloadFunctionTest3();
+	CouldNotOverloadFunctionTest4();
+	CouldNotSelectOverloadedFunction0();
+	CouldNotSelectOverloadedFunction1();
 }
 
 } // namespace Interpreter

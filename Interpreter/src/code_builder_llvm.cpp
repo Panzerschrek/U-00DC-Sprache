@@ -182,40 +182,66 @@ CodeBuilderLLVM::BuildResult CodeBuilderLLVM::BuildProgram( const ProgramElement
 				function_type.return_value_is_mutable= true;
 			function_type.return_value_is_reference= func->return_value_reference_modifier_ == ReferenceModifier::Reference;
 
-			if( global_names_.GetName( func->name_ ) != nullptr )
+			// Args.
+			function_type.args.reserve( func->arguments_.size() );
+			for( const FunctionArgumentDeclarationPtr& arg : func->arguments_ )
 			{
-				errors_.push_back( ReportRedefinition( func->file_pos_, func->name_ ) );
-				continue;
+				if( IsKeyword( arg->name_ ) )
+					errors_.push_back( ReportUsingKeywordAsName( arg->file_pos_ ) );
+
+				function_type.args.emplace_back();
+				Function::Arg& out_arg= function_type.args.back();
+
+				out_arg.type= PrepareType( arg->file_pos_, arg->type_ );
+
+				// TODO - make variables without explicit mutability modifiers immutable.
+				if( arg->mutability_modifier_ == MutabilityModifier::Immutable )
+					out_arg.is_mutable= false;
+				else
+					out_arg.is_mutable= true;
+				out_arg.is_reference= arg->reference_modifier_ == ReferenceModifier::Reference;
 			}
-			else
+
+			NamesScope::InsertedName* const func_name=
+				global_names_.GetThisScopeName( func->name_ );
+			if( func_name == nullptr )
 			{
-				// Args.
-				function_type.args.reserve( func->arguments_.size() );
-				for( const FunctionArgumentDeclarationPtr& arg : func->arguments_ )
-				{
-					if( IsKeyword( arg->name_ ) )
-						errors_.push_back( ReportUsingKeywordAsName( arg->file_pos_ ) );
+				OverloadedFunctionsSet functions_set;
+				functions_set.push_back( std::move( func_info ) );
 
-					function_type.args.emplace_back();
-					Function::Arg& out_arg= function_type.args.back();
-
-					out_arg.type= PrepareType( arg->file_pos_, arg->type_ );
-
-					// TODO - make variables without explicit mutability modifiers immutable.
-					if( arg->mutability_modifier_ == MutabilityModifier::Immutable )
-						out_arg.is_mutable= false;
-					else
-						out_arg.is_mutable= true;
-					out_arg.is_reference= arg->reference_modifier_ == ReferenceModifier::Reference;
-				}
+				// New name in this scope - insert it.
+				NamesScope::InsertedName* const inserted_func=
+					global_names_.AddName( func->name_, std::move( functions_set ) );
+				U_ASSERT( inserted_func != nullptr );
 
 				BuildFuncCode(
-					func_info,
+					boost::get<OverloadedFunctionsSet>( inserted_func->second ).front(),
 					func->name_,
 					func->arguments_,
 					*func->block_ );
+			}
+			else
+			{
+				NamedSomething& named_something= func_name->second;
+				if( OverloadedFunctionsSet* const functions_set=
+					boost::get<OverloadedFunctionsSet>( &named_something ) )
+				{
+					try
+					{
+						ApplyOverloadedFunction( *functions_set, func_info, func->file_pos_ );
+					} catch( const ProgramError& )
+					{
+						continue;
+					}
 
-				global_names_.AddName( func->name_, std::move( func_info ) );
+					BuildFuncCode(
+						functions_set->back(),
+						func->name_,
+						func->arguments_,
+						*func->block_ );
+				}
+				else
+					errors_.push_back( ReportRedefinition( func->file_pos_, func_name->first ) );
 			}
 		}
 		else if(
@@ -935,7 +961,7 @@ Variable CodeBuilderLLVM::BuildExpressionCode_r(
 
 		Variable result;
 
-		if( const NamedOperand* named_operand=
+		if( const NamedOperand* const named_operand=
 			dynamic_cast<const NamedOperand*>(&operand) )
 		{
 			const NamesScope::InsertedName* name_entry=
@@ -946,13 +972,23 @@ Variable CodeBuilderLLVM::BuildExpressionCode_r(
 				throw ProgramError();
 			}
 
-			const Variable* const variable= boost::get<Variable>( &name_entry->second );
-			if( variable == nullptr )
+			if( const Variable* const variable= boost::get<Variable>( &name_entry->second ) )
 			{
-				// TODO - expected variable name.
+				result= *variable;
+			}
+			else if( const OverloadedFunctionsSet* const functins_set=
+				boost::get<OverloadedFunctionsSet>( &name_entry->second ) )
+			{
+				result.type.one_of_type_kind= NontypeStub::OverloadedFunctionsSet;
+				result.functions_set= *functins_set;
+			}
+			else
+			{
+				// TODO - support typenames, etc.
+				errors_.push_back(
+					ReportNotImplemented( named_operand->file_pos_, "non variable or functions set name usage" ) );
 				throw ProgramError();
 			}
-			result= *variable;
 		}
 		else if( const NumericConstant* numeric_constant=
 			dynamic_cast<const NumericConstant*>(&operand) )
@@ -1082,27 +1118,42 @@ Variable CodeBuilderLLVM::BuildExpressionCode_r(
 			else if( const CallOperator* const call_operator=
 				dynamic_cast<const CallOperator*>( postfix_operator.get() ) )
 			{
-				const FunctionPtr* const function_type_ptr= boost::get<FunctionPtr>( &result.type.one_of_type_kind );
-				if( function_type_ptr == nullptr )
+				const NontypeStub* nontype_stub= boost::get<NontypeStub>( &result.type.one_of_type_kind );
+				if( nontype_stub == nullptr || *nontype_stub != NontypeStub::OverloadedFunctionsSet )
 				{
 					// TODO - Call of non-function.
 					throw ProgramError();
 				}
-				const Function& function_type= *(*function_type_ptr);
+				const OverloadedFunctionsSet& functions_set= result.functions_set;
 
-				if( call_operator->arguments_.size() != function_type.args.size() )
+				std::vector<Function::Arg> actual_args( call_operator->arguments_.size() );
+				std::vector<Variable> actual_args_variables( call_operator->arguments_.size() );
+				for( unsigned int i= 0u; i < actual_args.size(); i++ )
+				{
+
+					Variable expr= BuildExpressionCode( *call_operator->arguments_[i], names, function_context );
+					actual_args[i].type= expr.type;
+					actual_args[i].is_reference= expr.value_type != ValueType::Value;
+					actual_args[i].is_mutable= expr.value_type == ValueType::Reference;
+
+					actual_args_variables[i]= std::move(expr);
+				}
+
+				const Variable function= GetOverloadedFunction( functions_set, actual_args, call_operator->file_pos_ );
+				const Function& function_type= *boost::get<FunctionPtr>( function.type.one_of_type_kind );
+
+				if( function_type.args.size() != actual_args.size( ))
 				{
 					errors_.push_back( ReportFunctionSignatureMismatch( call_operator->file_pos_ ) );
 					throw ProgramError();
 				}
 
-				std::vector<llvm::Value*> llvm_args;
-				llvm_args.resize( function_type.args.size() );
-
-				for( unsigned int i= 0u; i < function_type.args.size(); i++ )
+				std::vector<llvm::Value*> llvm_args( actual_args.size() );
+				for( unsigned int i= 0u; i < actual_args.size(); i++ )
 				{
 					const Function::Arg& arg= function_type.args[i];
-					const Variable expr= BuildExpressionCode( *call_operator->arguments_[i], names, function_context );
+					const Variable& expr= actual_args_variables[i];
+
 					if( expr.type != arg.type )
 					{
 						errors_.push_back( ReportFunctionSignatureMismatch( call_operator->arguments_[i]->file_pos_ ) );
@@ -1151,7 +1202,7 @@ Variable CodeBuilderLLVM::BuildExpressionCode_r(
 
 				llvm::Value* call_result=
 					function_context.llvm_ir_builder.CreateCall(
-						llvm::dyn_cast<llvm::Function>(result.llvm_value),
+						llvm::dyn_cast<llvm::Function>(function.llvm_value),
 						llvm_args );
 
 				if( function_type.return_value_is_reference )
@@ -1596,6 +1647,142 @@ CodeBuilderLLVM::BlockBuildInfo CodeBuilderLLVM::BuildIfOperatorCode(
 	if_operator_blocks_build_info.have_unconditional_return_inside= have_return_in_all_branches;
 	if_operator_blocks_build_info.have_uncodnitional_break_or_continue= have_break_or_continue_in_all_branches;
 	return if_operator_blocks_build_info;
+}
+
+void CodeBuilderLLVM::ApplyOverloadedFunction(
+	OverloadedFunctionsSet& functions_set,
+	const Variable& function,
+	const FilePos& file_pos )
+{
+	if( functions_set.empty() )
+	{
+		functions_set.push_back(function);
+		return;
+	}
+
+	const FunctionPtr& function_type= boost::get<FunctionPtr>( function.type.one_of_type_kind );
+	U_ASSERT(function_type);
+
+	/*
+	Algorithm for overloading applying:
+	If parameter count differs - overload function.
+	If "Binding type" of one or more arguments differs - overload function.
+
+	"Binding type" Can be:
+	1) "immutable reference" - mutable or immutable values, immutable references.
+	2) "mutable reference" - mutable references.
+	*/
+	for( const Variable& set_function : functions_set )
+	{
+		const FunctionPtr& set_function_type= boost::get<FunctionPtr>(set_function.type.one_of_type_kind); // Must be function type 100 %
+		U_ASSERT(set_function_type);
+
+		// If argument count differs - allow overloading.
+		// SPRACHE_TODO - handle default arguments.
+		if( function_type->args.size() != set_function_type->args.size() )
+			continue;
+
+		unsigned int arg_is_same_count= 0u;
+		for( size_t i= 0u; i < function_type->args.size(); i++ )
+		{
+			const Function::Arg& arg= function_type->args[i];
+			const Function::Arg& set_arg= set_function_type->args[i];
+
+			if( arg.type != set_arg.type )
+				continue;
+
+			auto is_reference_or_value_arg=
+			[]( const Function::Arg& arg ) -> bool
+			{
+				return !arg.is_reference || ( arg.is_reference && !arg.is_mutable );
+			};
+
+			if( is_reference_or_value_arg( arg ) == is_reference_or_value_arg( set_arg ) )
+				arg_is_same_count++;
+		} // For args.
+
+		if( arg_is_same_count == function_type->args.size() )
+		{
+			errors_.push_back( ReportCouldNotOverloadFunction(file_pos) );
+			throw ProgramError();
+		}
+	} // For functions in set.
+
+	// No error - add function to set.
+	functions_set.push_back(function);
+}
+
+const Variable& CodeBuilderLLVM::GetOverloadedFunction(
+	const OverloadedFunctionsSet& functions_set,
+	const std::vector<Function::Arg>& actual_args,
+	const FilePos& file_pos )
+{
+	U_ASSERT( !functions_set.empty() );
+
+	// If we have only one function - return it.
+	// Caller can generate error, if arguments does not match.
+	if( functions_set.size() == 1u )
+		return functions_set.front();
+
+
+	const Variable* match_function= nullptr;
+	for( const Variable& function : functions_set )
+	{
+		const Function& function_type= *boost::get<FunctionPtr>( function.type.one_of_type_kind );
+
+		// SPRACHE_TODO - handle functions with default arguments.
+		if( function_type.args.size() != actual_args.size() )
+			continue;
+
+		bool match= true;
+		for( unsigned int i= 0u; i < actual_args.size(); i++ )
+		{
+			// SPRACHE_TODO - support type-casting for function call.
+			// SPRACHE_TODO - support references-casting.
+			// Now - only exactly compare types.
+			if( actual_args[i].type != function_type.args[i].type )
+			{
+				match= false;
+				break;
+			}
+
+			if( function_type.args[i].is_reference && function_type.args[i].is_mutable )
+			{
+				if( actual_args[i].is_reference && function_type.args[i].is_mutable )
+				{
+					// We can only bind nonconst-reference arg to nonconst-reference parameter.
+					match= false;
+					break;
+				}
+			}
+			else
+			{
+				// All ok - value or const-reference parameter accept values, const and nonconst references.
+			}
+		}
+
+		if( match )
+		{
+			if( match_function == nullptr )
+				match_function= &function;
+			else
+			{
+				errors_.push_back( ReportTooManySuitableOverloadedFunctions( file_pos ) );
+				throw ProgramError();
+			}
+		}
+	} // for functions
+
+	// Not found any function.
+	if( match_function == nullptr )
+	{
+		errors_.push_back( ReportCouldNotSelectOverloadedFunction( file_pos ) );
+		throw ProgramError();
+	}
+	else
+	{
+		return *match_function;
+	}
 }
 
 llvm::Type* CodeBuilderLLVM::GetFundamentalLLVMType( const U_FundamentalType fundmantal_type )

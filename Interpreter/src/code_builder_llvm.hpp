@@ -122,6 +122,18 @@ private:
 		const NamesScope& names,
 		FunctionContext& function_context );
 
+	// Throws, if can not apply function.
+	void ApplyOverloadedFunction(
+		OverloadedFunctionsSet& functions_set,
+		const Variable& function,
+		const FilePos& file_pos );
+
+	// Throws, if can not select function.
+	const Variable& GetOverloadedFunction(
+		const OverloadedFunctionsSet& functions_set,
+		const std::vector<Function::Arg>& actual_args,
+		const FilePos& file_pos );
+
 	llvm::Type* GetFundamentalLLVMType( U_FundamentalType fundmantal_type );
 
 	// If variable is on stack, creates move to rigister instruction.

@@ -27,12 +27,21 @@ typedef std::unique_ptr<Array> ArrayPtr;
 struct Class;
 typedef std::shared_ptr<Class> ClassPtr;
 
+struct Variable;
+
 struct FundamentalType final
 {
 	U_FundamentalType fundamental_type;
 	llvm::Type* llvm_type;
 
 	FundamentalType( U_FundamentalType fundamental_type= U_FundamentalType::Void, llvm::Type* llvm_type= nullptr );
+};
+
+// Stub for type of non-variable "Variables".
+enum class NontypeStub
+{
+	OverloadedFunctionsSet,
+	ClassName,
 };
 
 bool operator==( const FundamentalType& r, const FundamentalType& l );
@@ -44,7 +53,8 @@ struct Type final
 		FundamentalType,
 		FunctionPtr,
 		ArrayPtr,
-		ClassPtr> one_of_type_kind;
+		ClassPtr,
+		NontypeStub> one_of_type_kind;
 
 	Type()= default;
 	Type( const Type& other );
@@ -122,6 +132,9 @@ struct Class final
 	llvm::StructType* llvm_type;
 };
 
+// Set of functions with same name, but different signature.
+typedef std::vector<Variable> OverloadedFunctionsSet;
+
 enum class ValueType
 {
 	Value,
@@ -142,10 +155,15 @@ struct Variable final
 	Type type;
 
 	llvm::Value* llvm_value= nullptr;
+
+	// Hack for nonvariable-variables.
+	// For convenience, store less-frequently used "something" inside more-frequently
+	// used thing "variable".
+	OverloadedFunctionsSet functions_set;
 };
 
-// Any thing, that can have name - class, variable, namespace, label, enum, etc.
-typedef boost::variant<ClassPtr, Variable> NamedSomething;
+// Any thing, that can have name - class, variable, function, namespace, label, enum, etc.
+typedef boost::variant<ClassPtr, Variable, OverloadedFunctionsSet> NamedSomething;
 
 class NamesScope final
 {
@@ -156,9 +174,12 @@ public:
 
 	NamesScope( const NamesScope* prev= nullptr );
 
-	const InsertedName* AddName( const ProgramString& name, NamedSomething something );
+	// Returns nullptr, if name already exists in this scope.
+	InsertedName* AddName( const ProgramString& name, NamedSomething something );
 
 	const InsertedName* GetName( const ProgramString& name ) const;
+
+	InsertedName* GetThisScopeName( const ProgramString& name );
 
 private:
 	const NamesScope* const prev_;

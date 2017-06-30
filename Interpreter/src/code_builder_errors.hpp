@@ -30,6 +30,9 @@ enum class CodeBuilderErrorCode : unsigned int
 	ExpectedInitializer,
 	ExpectedReferenceValue,
 	BindingConstReferenceToNonconstReference,
+	CouldNotOverloadFunction,
+	TooManySuitableOverloadedFunctions,
+	CouldNotSelectOverloadedFunction,
 
 	// Push new error codes at back.
 };
@@ -42,6 +45,8 @@ struct CodeBuilderError
 };
 
 // Helper functions for errors generation.
+
+// TODO - add more parameters for errors.
 CodeBuilderError ReportBuildFailed();
 CodeBuilderError ReportNameNotFound( const FilePos& file_pos, const ProgramString& name );
 CodeBuilderError ReportUsingKeywordAsName( const FilePos& file_pos );
@@ -60,5 +65,8 @@ CodeBuilderError ReportNoReturnInFunctionReturningNonVoid( const FilePos& file_p
 CodeBuilderError ReportExpectedInitializer( const FilePos& file_pos );
 CodeBuilderError ReportExpectedReferenceValue( const FilePos& file_pos );
 CodeBuilderError ReportBindingConstReferenceToNonconstReference( const FilePos& file_pos );
+CodeBuilderError ReportCouldNotOverloadFunction( const FilePos& file_pos );
+CodeBuilderError ReportTooManySuitableOverloadedFunctions( const FilePos& file_pos );
+CodeBuilderError ReportCouldNotSelectOverloadedFunction( const FilePos& file_pos );
 
 } // namespace Interpreter

@@ -125,6 +125,11 @@ Type& Type::operator=( const Type& other )
 		{
 			this_.one_of_type_kind= class_;
 		}
+
+		void operator()( const NontypeStub& stub )
+		{
+			this_.one_of_type_kind= stub;
+		}
 	};
 
 	Visitor visitor( *this );
@@ -160,6 +165,12 @@ size_t Type::SizeOf() const
 			if( class_ == nullptr ) return;
 			U_ASSERT( false && "SizeOf method not supported for classes." );
 		}
+
+		void operator()( const NontypeStub& stub )
+		{
+			U_UNUSED(stub);
+			U_ASSERT( false && "SizeOf method not supported for stub types." );
+		}
 	};
 
 	Visitor visitor;
@@ -194,6 +205,11 @@ llvm::Type* Type::GetLLVMType() const
 		{
 			if( class_ == nullptr ) return;
 			llvm_type= class_->llvm_type;
+		}
+
+		void operator()( const NontypeStub& stub )
+		{
+			U_UNUSED(stub);
 		}
 	};
 
@@ -251,6 +267,20 @@ ProgramString Type::ToString() const
 
 			result= "class "_SpC + class_->name;
 		}
+
+		void operator()( const NontypeStub& stub )
+		{
+			switch(stub)
+			{
+			case NontypeStub::OverloadedFunctionsSet:
+				result= "overloaded functions set"_SpC;
+				break;
+			case NontypeStub::ClassName:
+				result= "class name"_SpC;
+				break;
+			};
+			U_ASSERT(!result.empty());
+		}
 	};
 
 	Visitor visitor;
@@ -290,6 +320,10 @@ bool operator==( const Type& r, const Type& l )
 	else if( r.one_of_type_kind.which() == 3 )
 	{
 		return r.one_of_type_kind == l.one_of_type_kind;
+	}
+	else if( r.one_of_type_kind.which() == 4 )
+	{
+		return boost::get<NontypeStub>(r.one_of_type_kind) == boost::get<NontypeStub>(l.one_of_type_kind);
 	}
 
 	U_ASSERT(false);
@@ -357,7 +391,7 @@ NamesScope::NamesScope( const NamesScope* prev )
 	: prev_(prev)
 {}
 
-const NamesScope::InsertedName* NamesScope::AddName(
+NamesScope::InsertedName* NamesScope::AddName(
 	const ProgramString& name,
 	NamedSomething something )
 {
@@ -370,7 +404,7 @@ const NamesScope::InsertedName* NamesScope::AddName(
 
 const NamesScope::InsertedName*
 	NamesScope::GetName(
-		const ProgramString& name ) const
+	const ProgramString& name ) const
 {
 	auto it= names_map_.find( name );
 	if( it != names_map_.end() )
@@ -379,6 +413,14 @@ const NamesScope::InsertedName*
 	if( prev_ != nullptr )
 		return prev_->GetName( name );
 
+	return nullptr;
+}
+
+NamesScope::InsertedName* NamesScope::GetThisScopeName( const ProgramString& name )
+{
+	auto it= names_map_.find( name );
+	if( it != names_map_.end() )
+		return &*it;
 	return nullptr;
 }
 
