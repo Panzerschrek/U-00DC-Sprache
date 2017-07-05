@@ -1,4 +1,3 @@
-#include <cstdio>
 #include <iostream>
 #include <vector>
 
@@ -11,11 +10,11 @@
 
 int main()
 {
-	Interpreter::RunIPNTests();
-	Interpreter::RunCodeBuilderTests();
-	Interpreter::RunCodeBuilderErrorsTests();
+	U::RunIPNTests();
+	U::RunCodeBuilderTests();
+	U::RunCodeBuilderErrorsTests();
 
-	std::cout << u8"Ü-Sprache Interpreter" << std::endl;
+	std::cout << u8"Ü-Sprache Compiler" << std::endl;
 
 	return 0;
 }

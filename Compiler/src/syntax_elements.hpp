@@ -6,7 +6,7 @@
 
 #include "lexical_analyzer.hpp"
 
-namespace Interpreter
+namespace U
 {
 
 class SyntaxElementBase
@@ -483,4 +483,4 @@ public:
 	ProgramString name_;
 };
 
-} // namespace Interpreter
+} // namespace U

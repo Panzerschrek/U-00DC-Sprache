@@ -7,7 +7,7 @@
 
 #include "code_builder_errors_test.hpp"
 
-namespace Interpreter
+namespace U
 {
 
 static CodeBuilder::BuildResult BuildProgram( const char* const text )
@@ -1409,4 +1409,4 @@ void RunCodeBuilderErrorsTests()
 	CouldNotSelectOverloadedFunction1();
 }
 
-} // namespace Interpreter
+} // namespace U

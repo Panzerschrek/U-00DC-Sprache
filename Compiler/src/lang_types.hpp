@@ -1,6 +1,6 @@
 #pragma once
 
-namespace Interpreter
+namespace U
 {
 
 // C++ representation of language types.

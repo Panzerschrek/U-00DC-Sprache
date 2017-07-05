@@ -11,10 +11,10 @@
 #include "inverse_polish_notation.hpp"
 #include "syntax_elements.hpp"
 
-namespace Interpreter
+namespace U
 {
 
-namespace CodeBuilderLLVMPrivate
+namespace CodeBuilderPrivate
 {
 
 class CodeBuilder final
@@ -169,9 +169,9 @@ private:
 	NamesScope global_names_;
 };
 
-} // namespace CodeBuilderLLVMPrivate
+} // namespace CodeBuilderPrivate
 
 
-using CodeBuilderLLVMPrivate::CodeBuilder;
+using CodeBuilderPrivate::CodeBuilder;
 
-} // namespace Interpreter
+} // namespace U

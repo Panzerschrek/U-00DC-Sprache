@@ -2,7 +2,7 @@
 
 #include "program_string.hpp"
 
-namespace Interpreter
+namespace U
 {
 
 // Identificators of all language keywords.
@@ -82,4 +82,4 @@ bool operator==( const ProgramString& str, Keywords keyword );
 bool operator!=( Keywords keyword, const ProgramString& str );
 bool operator!=( const ProgramString& str, Keywords keyword );
 
-} // namespace Interpreter
+} // namespace U

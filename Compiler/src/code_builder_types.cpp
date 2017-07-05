@@ -3,10 +3,10 @@
 
 #include "code_builder_types.hpp"
 
-namespace Interpreter
+namespace U
 {
 
-namespace CodeBuilderLLVMPrivate
+namespace CodeBuilderPrivate
 {
 
 namespace
@@ -470,4 +470,4 @@ const char* GetFundamentalTypeNameASCII( const U_FundamentalType fundamental_typ
 
 } //namespace CodeBuilderLLVMPrivate
 
-} // namespace Interpreter
+} // namespace U

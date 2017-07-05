@@ -5,7 +5,7 @@
 #include "keywords.hpp"
 #include "syntax_analyzer.hpp"
 
-namespace Interpreter
+namespace U
 {
 
 // Prototypes.
@@ -1206,4 +1206,4 @@ SyntaxAnalysisResult SyntaxAnalysis( const Lexems& lexems )
 	return result;
 }
 
-} // namespace Interpreter
+} // namespace U

@@ -1,8 +1,8 @@
 #pragma once
 
-namespace Interpreter
+namespace U
 {
 
 void RunCodeBuilderErrorsTests();
 
-} // namespace Interpreter
+} // namespace U

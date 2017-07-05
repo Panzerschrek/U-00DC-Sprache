@@ -5,7 +5,7 @@
 
 #include "inverse_polish_notation_test.hpp"
 
-namespace Interpreter
+namespace U
 {
 
 static IBinaryOperatorsChainComponentPtr Op( const char* name )
@@ -517,4 +517,4 @@ void RunIPNTests()
 	LogicalExpressionTest1();
 }
 
-} // namespace Interpreter
+} // namespace U

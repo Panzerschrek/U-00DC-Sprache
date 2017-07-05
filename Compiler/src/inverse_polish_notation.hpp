@@ -2,7 +2,7 @@
 
 #include "syntax_elements.hpp"
 
-namespace Interpreter
+namespace U
 {
 
 struct InversePolishNotationComponent final
@@ -29,4 +29,4 @@ InversePolishNotation ConvertToInversePolishNotation( const BinaryOperatorsChain
 
 void PrintInversePolishNotation( std::ostream& stream, const InversePolishNotation& ipn );
 
-} // namespace Interpreter
+} // namespace U

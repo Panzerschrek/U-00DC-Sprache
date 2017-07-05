@@ -2,7 +2,7 @@
 
 #include "program_string.hpp"
 
-namespace Interpreter
+namespace U
 {
 
 ProgramString operator "" _SpC( const char* str, size_t size )
@@ -158,4 +158,4 @@ ProgramString DecodeUTF8( const std::string& str )
 	return DecodeUTF8( str.data(), str.data() + str.size() );
 }
 
-} // namespace Interpreter
+} // namespace U

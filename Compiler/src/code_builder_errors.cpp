@@ -4,7 +4,7 @@
 
 #include "code_builder_errors.hpp"
 
-namespace Interpreter
+namespace U
 {
 
 CodeBuilderError ReportBuildFailed()
@@ -248,4 +248,4 @@ CodeBuilderError ReportCouldNotSelectOverloadedFunction( const FilePos& file_pos
 	return error;
 }
 
-} // namespace Interpreter
+} // namespace U

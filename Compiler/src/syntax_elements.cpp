@@ -1,7 +1,7 @@
 #include "assert.hpp"
 #include "syntax_analyzer.hpp"
 
-namespace Interpreter
+namespace U
 {
 
 static void PrintIndents( std::ostream& stream, unsigned int indents )
@@ -646,4 +646,4 @@ void ClassDeclaration::Print( std::ostream& stream, unsigned int indent ) const
 	stream << "}\n";
 }
 
-} // namespace Interpreter
+} // namespace U

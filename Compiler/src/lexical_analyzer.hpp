@@ -5,7 +5,7 @@
 
 #include "program_string.hpp"
 
-namespace Interpreter
+namespace U
 {
 
 struct FilePos
@@ -87,4 +87,4 @@ struct LexicalAnalysisResult
 
 LexicalAnalysisResult LexicalAnalysis( const ProgramString& program_text );
 
-} // namespace Interpreter
+} // namespace U

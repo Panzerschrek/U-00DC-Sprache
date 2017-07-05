@@ -4,7 +4,7 @@
 
 #include "keywords.hpp"
 
-namespace Interpreter
+namespace U
 {
 
 namespace
@@ -146,4 +146,4 @@ bool operator!=( const ProgramString& str, Keywords keyword )
 	return keyword != str;
 }
 
-} // namespace Interpreter
+} // namespace U

@@ -3,7 +3,7 @@
 #include <string>
 #include <vector>
 
-namespace Interpreter
+namespace U
 {
 
 typedef std::uint16_t sprache_char;
@@ -21,4 +21,4 @@ std::string ToStdString( const ProgramString& str );
 ProgramString DecodeUTF8( const std::vector<char>& str );
 ProgramString DecodeUTF8( const std::string& str );
 
-} // namespace Interpreter
+} // namespace U

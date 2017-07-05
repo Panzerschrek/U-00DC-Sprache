@@ -4,7 +4,7 @@
 
 #include "syntax_elements.hpp"
 
-namespace Interpreter
+namespace U
 {
 
 typedef std::string SyntaxErrorMessage;
@@ -18,4 +18,4 @@ struct SyntaxAnalysisResult
 
 SyntaxAnalysisResult SyntaxAnalysis( const Lexems& lexems );
 
-} // namespace Interpreter
+} // namespace U

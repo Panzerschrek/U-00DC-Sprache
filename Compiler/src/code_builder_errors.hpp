@@ -5,7 +5,7 @@
 #include "lexical_analyzer.hpp"
 #include "program_string.hpp"
 
-namespace Interpreter
+namespace U
 {
 
 enum class CodeBuilderErrorCode : unsigned int
@@ -69,4 +69,4 @@ CodeBuilderError ReportCouldNotOverloadFunction( const FilePos& file_pos );
 CodeBuilderError ReportTooManySuitableOverloadedFunctions( const FilePos& file_pos );
 CodeBuilderError ReportCouldNotSelectOverloadedFunction( const FilePos& file_pos );
 
-} // namespace Interpreter
+} // namespace U

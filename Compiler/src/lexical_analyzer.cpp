@@ -3,7 +3,7 @@
 
 #include "lexical_analyzer.hpp"
 
-namespace Interpreter
+namespace U
 {
 
 typedef std::map<ProgramString, Lexem::Type> FixedLexemsMap;
@@ -314,4 +314,4 @@ LexicalAnalysisResult LexicalAnalysis( const ProgramString& program_text )
 	return result;
 }
 
-} // namespace Interpreter
+} // namespace U

@@ -16,7 +16,7 @@
 
 #define ASSERT_NEAR( x, y, eps ) U_ASSERT( std::abs( (x) - (y) ) <= eps )
 
-namespace Interpreter
+namespace U
 {
 
 static std::unique_ptr<llvm::Module> BuildProgram( const char* const text )
@@ -2028,4 +2028,4 @@ void RunCodeBuilderTests()
 	FunctionsOverloadingTest3();
 }
 
-} // namespace Interpreter
+} // namespace U

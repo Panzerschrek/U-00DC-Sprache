@@ -1,7 +1,7 @@
 #include "assert.hpp"
 #include "inverse_polish_notation.hpp"
 
-namespace Interpreter
+namespace U
 {
 
 static const unsigned int g_operators_priority[ size_t(BinaryOperator::Last) ]=
@@ -157,4 +157,4 @@ void PrintInversePolishNotation( std::ostream& stream, const InversePolishNotati
 	}
 }
 
-} // namespace Interpreter
+} // namespace U

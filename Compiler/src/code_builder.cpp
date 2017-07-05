@@ -9,7 +9,7 @@
 
 #include "code_builder.hpp"
 
-namespace Interpreter
+namespace U
 {
 
 namespace
@@ -90,7 +90,7 @@ U_FundamentalType GetNumericConstantType( const NumericConstant& number )
 
 } // namespace
 
-namespace CodeBuilderLLVMPrivate
+namespace CodeBuilderPrivate
 {
 
 CodeBuilder::FunctionContext::FunctionContext(
@@ -1829,4 +1829,4 @@ llvm::Value*CodeBuilder::CreateMoveToLLVMRegisterInstruction(
 
 } // namespace CodeBuilderLLVMPrivate
 
-} // namespace Interpreter
+} // namespace U

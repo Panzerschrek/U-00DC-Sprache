@@ -12,10 +12,10 @@
 #include "lang_types.hpp"
 #include "program_string.hpp"
 
-namespace Interpreter
+namespace U
 {
 
-namespace CodeBuilderLLVMPrivate
+namespace CodeBuilderPrivate
 {
 
 struct Function;
@@ -216,4 +216,4 @@ const char* GetFundamentalTypeNameASCII( U_FundamentalType fundamental_type );
 
 } //namespace CodeBuilderLLVMPrivate
 
-} // namespace Interpreter
+} // namespace U
