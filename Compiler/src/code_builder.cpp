@@ -496,12 +496,40 @@ void CodeBuilder::BuildFuncCode(
 	if(  function_type_ptr->return_type == void_type )
 	{
 		// Manually generate "return" for void-return functions.
-		function_context.llvm_ir_builder.CreateRetVoid();
+		if( !block_build_info.have_unconditional_return_inside )
+			function_context.llvm_ir_builder.CreateRetVoid();
 	}
 	else
 	{
 		if( !block_build_info.have_unconditional_return_inside )
+		{
 			errors_.push_back( ReportNoReturnInFunctionReturningNonVoid( block.file_pos_ ) );
+			return;
+		}
+	}
+
+	llvm::Function::BasicBlockListType& bb_list = llvm_function->getBasicBlockList();
+
+	// Remove duplicated terminator instructions at end of all function blocks.
+	// This needs, for example, when "return" is last operator inside "if" or "while" blocks.
+	for (llvm::BasicBlock& block : bb_list)
+	{
+		llvm::BasicBlock::InstListType& instr_list = block.getInstList();
+		while (instr_list.size() >= 2u && instr_list.back().isTerminator() &&
+			(std::next(instr_list.rbegin()))->isTerminator())
+		{
+			instr_list.pop_back();
+		}
+	}
+
+	// Remove basic blocks without instructions. Such block can exist after if/else with return in all branches, for example.
+	auto it= bb_list.begin();
+	while(it != bb_list.end())
+	{
+		if( it->empty() )
+			it= bb_list.erase(it);
+		else
+			++it;
 	}
 }
 
