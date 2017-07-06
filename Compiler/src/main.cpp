@@ -11,6 +11,7 @@
 #include <llvm/Support/TargetRegistry.h>
 #include <llvm/Support/TargetSelect.h>
 #include <llvm/Support/raw_ostream.h>
+#include <llvm/Support/raw_os_ostream.h>
 #include <llvm/Target/TargetMachine.h>
 #include "pop_llvm_warnings.hpp"
 
@@ -68,6 +69,7 @@ int main( const int argc, const char* const argv[])
 
 	const char* input_file= nullptr;
 	const char* output_file= nullptr;
+	bool print_llvm_asm= false;
 
 	for( int i = 1; i < argc; i++ )
 	{
@@ -89,6 +91,10 @@ int main( const int argc, const char* const argv[])
 				return 1;
 			}
 			output_file= argv[ i + 1 ];
+		}
+		else if( std::strcmp( argv[i], "--print-llvm-asm" ) == 0 )
+		{
+			print_llvm_asm= true;
 		}
 		else if( std::strcmp( argv[i], "--help" ) == 0 )
 		{
@@ -143,6 +149,12 @@ int main( const int argc, const char* const argv[])
 
 	if( !build_result.errors.empty() )
 		return 1;
+
+	if( print_llvm_asm )
+	{
+		llvm::raw_os_ostream stream(std::cout);
+		build_result.module->print(stream, nullptr);
+	}
 
 	// LLVM ir dump
 	std::error_code file_error_code;
