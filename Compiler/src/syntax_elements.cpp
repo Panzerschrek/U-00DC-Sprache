@@ -178,6 +178,66 @@ IBinaryOperatorsChainComponent::IBinaryOperatorsChainComponent( const FilePos& f
 	: SyntaxElementBase(file_pos)
 {}
 
+IInitializer::IInitializer( const FilePos& file_pos )
+	: SyntaxElementBase(file_pos)
+{}
+
+ArrayInitializer::ArrayInitializer( const FilePos& file_pos )
+	: IInitializer( file_pos )
+{}
+
+void ArrayInitializer::Print( std::ostream& stream, unsigned int indent ) const
+{
+	stream << "[ ";
+	for( const IInitializerPtr& initializer : initializers )
+	{
+		initializer->Print( stream, indent );
+		if( &initializer != &initializers.back() )
+			stream << ", ";
+	}
+	if( has_continious_initializer )
+		stream << "... ";
+	stream << "]";
+}
+
+StructNamedInitializer::StructNamedInitializer( const FilePos& file_pos )
+	: IInitializer( file_pos )
+{}
+
+void StructNamedInitializer::Print( std::ostream& stream, unsigned int indent ) const
+{
+	stream << "{ ";
+	for( const MemberInitializer& members_initializer : members_initializers )
+	{
+		stream << "." << ToStdString(members_initializer.name);
+		members_initializer.initializer->Print( stream, indent );
+		if( &members_initializer != &members_initializers.back() )
+			stream << ", ";
+	}
+	stream << "}";
+}
+
+ConstructorInitializer::ConstructorInitializer(
+	const FilePos& file_pos,
+	std::vector<BinaryOperatorsChainPtr> arguments )
+	: IInitializer( file_pos )
+	, call_operator( file_pos, std::move(arguments) )
+{}
+
+void ConstructorInitializer::Print( std::ostream& stream, unsigned int indent ) const
+{
+	call_operator.Print( stream, indent );
+}
+
+ExpressionInitializer::ExpressionInitializer( const FilePos& file_pos )
+	: IInitializer( file_pos )
+{}
+
+void ExpressionInitializer::Print( std::ostream& stream, unsigned int indent ) const
+{
+	expression->Print( stream, indent );
+}
+
 NamedOperand::NamedOperand( const FilePos& file_pos, ProgramString name )
 	: IBinaryOperatorsChainComponent(file_pos)
 	, name_( std::move(name) )
