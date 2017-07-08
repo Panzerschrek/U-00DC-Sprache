@@ -487,6 +487,87 @@ static TypeName ParseTypeName(
 	return result;
 }
 
+
+static IInitializerPtr ParseInitializer(
+	SyntaxErrorMessages& error_messages,
+	Lexems::const_iterator& it,
+	const Lexems::const_iterator it_end,
+	bool parse_expression_initializer );
+
+static std::unique_ptr<ArrayInitializer> ParseArrayInitializer(
+	SyntaxErrorMessages& error_messages,
+	Lexems::const_iterator& it,
+	const Lexems::const_iterator it_end )
+{
+	U_ASSERT( it < it_end );
+	U_ASSERT( it->type == Lexem::Type::SquareBracketLeft );
+
+	std::unique_ptr<ArrayInitializer> result( new ArrayInitializer( it->file_pos ) );
+	++it;
+	U_ASSERT( it < it_end );
+
+	while( it < it_end && it->type != Lexem::Type::SquareBracketRight )
+	{
+		result->initializers.push_back( ParseInitializer( error_messages, it, it_end, true ) );
+		U_ASSERT( it < it_end );
+		if( it->type == Lexem::Type::Comma )
+			++it;
+		else
+			break;
+		// TODO - parse continious flag here
+	}
+	if( it == it_end || it->type != Lexem::Type::SquareBracketRight )
+	{
+		PushErrorMessage( error_messages, *it );
+		return result;
+	}
+
+	++it;
+
+	return result;
+}
+
+static std::unique_ptr<ExpressionInitializer> ParseExpressionInitializer(
+	SyntaxErrorMessages& error_messages,
+	Lexems::const_iterator& it,
+	const Lexems::const_iterator it_end )
+{
+	std::unique_ptr<ExpressionInitializer> result(
+		new ExpressionInitializer(
+			it->file_pos,
+			ParseExpression( error_messages, it, it_end ) ) );
+
+	return result;
+}
+
+static IInitializerPtr ParseInitializer(
+	SyntaxErrorMessages& error_messages,
+	Lexems::const_iterator& it,
+	const Lexems::const_iterator it_end,
+	const bool parse_expression_initializer )
+{
+	U_ASSERT( it < it_end );
+
+	if( it->type == Lexem::Type::SquareBracketLeft )
+	{
+		return ParseArrayInitializer( error_messages, it, it_end );
+	}
+	else if( it->type == Lexem::Type::BraceLeft )
+	{
+		// TODO - object initializer
+	}
+	else if( parse_expression_initializer )
+	{
+		// In some cases usage of expression in initializer is forbidden.
+		return ParseExpressionInitializer( error_messages, it, it_end );
+	}
+	else
+	{
+		PushErrorMessage( error_messages, *it );
+		return nullptr;
+	}
+}
+
 static VariablesDeclarationPtr ParseVariablesDeclaration(
 	SyntaxErrorMessages& error_messages,
 	Lexems::const_iterator& it,
@@ -549,12 +630,18 @@ static VariablesDeclarationPtr ParseVariablesDeclaration(
 		++it;
 		U_ASSERT( it < it_end );
 
-		// TODO - add initializers parsing.
 		if( it->type == Lexem::Type::Assignment )
 		{
 			++it;
 			BinaryOperatorsChainPtr expression= ParseExpression( error_messages, it, it_end );
 			variable_entry.initializer.reset( new ExpressionInitializer( it->file_pos, std::move(expression) ) );
+		}
+		else if(
+			it->type == Lexem::Type::BracketLeft ||
+			it->type == Lexem::Type::SquareBracketLeft ||
+			it->type == Lexem::Type::BraceLeft )
+		{
+			variable_entry.initializer= ParseInitializer( error_messages, it, it_end, false );
 		}
 
 		if( it->type == Lexem::Type::Comma )
@@ -573,6 +660,7 @@ static VariablesDeclarationPtr ParseVariablesDeclaration(
 			PushErrorMessage( error_messages, *it );
 			return nullptr;
 		}
+
 	} while( it < it_end );
 
 	return decl;
