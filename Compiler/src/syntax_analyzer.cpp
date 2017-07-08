@@ -553,7 +553,8 @@ static VariablesDeclarationPtr ParseVariablesDeclaration(
 		if( it->type == Lexem::Type::Assignment )
 		{
 			++it;
-			variable_entry.initial_value= ParseExpression( error_messages, it, it_end );
+			BinaryOperatorsChainPtr expression= ParseExpression( error_messages, it, it_end );
+			variable_entry.initializer.reset( new ExpressionInitializer( it->file_pos, std::move(expression) ) );
 		}
 
 		if( it->type == Lexem::Type::Comma )

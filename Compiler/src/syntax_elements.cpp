@@ -229,8 +229,10 @@ void ConstructorInitializer::Print( std::ostream& stream, unsigned int indent ) 
 	call_operator.Print( stream, indent );
 }
 
-ExpressionInitializer::ExpressionInitializer( const FilePos& file_pos )
+ExpressionInitializer::ExpressionInitializer(
+	const FilePos& file_pos , BinaryOperatorsChainPtr in_expression )
 	: IInitializer( file_pos )
+	, expression(std::move(in_expression))
 {}
 
 void ExpressionInitializer::Print( std::ostream& stream, unsigned int indent ) const
@@ -481,10 +483,10 @@ void VariablesDeclaration::Print( std::ostream& stream, unsigned int indent ) co
 	for( const VariableEntry& variable : variables )
 	{
 		stream << ToStdString( variable.name );
-		if( variable.initial_value != nullptr )
+		if( variable.initializer != nullptr )
 		{
 			stream << " = ";
-			variable.initial_value->Print( stream, indent );
+			variable.initializer->Print( stream, indent );
 		}
 
 		if( &variable != &variables.back() )

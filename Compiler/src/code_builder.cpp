@@ -1301,14 +1301,17 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 			const FundamentalType* const fundamental_type= boost::get<FundamentalType>( &type.one_of_type_kind );
 			if( fundamental_type != nullptr )
 			{
-				if( variable_declaration.initial_value == nullptr )
+				if( variable_declaration.initializer == nullptr )
 				{
 					errors_.push_back( ReportExpectedInitializer( variables_declaration.file_pos_ ) );
 					throw ProgramError();
 				}
 
+				// TODO - process different kind of initializers.
+				const ExpressionInitializer& expression_initializer= *dynamic_cast<const ExpressionInitializer*>( variable_declaration.initializer.get() );
+
 				const Variable initialzier_expression=
-					BuildExpressionCode( *variable_declaration.initial_value, block_names, function_context );
+					BuildExpressionCode( *expression_initializer.expression, block_names, function_context );
 
 				if( initialzier_expression.type !=variable.type )
 				{
@@ -1326,15 +1329,18 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 		}
 		else if( variable_declaration.reference_modifier == ReferenceModifier::Reference )
 		{
-			if( variable_declaration.initial_value == nullptr )
+			if( variable_declaration.initializer == nullptr )
 			{
 				// TODO - report "expected initializer for reference"
 				errors_.push_back( ReportExpectedInitializer( variables_declaration.file_pos_ ) );
 				throw ProgramError();
 			}
 
+			// TODO - process different kind of initializers.
+			const ExpressionInitializer& expression_initializer= *dynamic_cast<const ExpressionInitializer*>( variable_declaration.initializer.get() );
+
 			const Variable initialzier_expression=
-				BuildExpressionCode( *variable_declaration.initial_value, block_names, function_context );
+				BuildExpressionCode( *expression_initializer.expression, block_names, function_context );
 
 			if( initialzier_expression.type != variable.type )
 			{

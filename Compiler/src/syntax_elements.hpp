@@ -32,6 +32,9 @@ typedef std::unique_ptr<IUnaryPostfixOperator> IUnaryPostfixOperatorPtr;
 typedef std::vector<IUnaryPrefixOperatorPtr > PrefixOperators ;
 typedef std::vector<IUnaryPostfixOperatorPtr> PostfixOperators;
 
+class IInitializer;
+typedef std::unique_ptr<IInitializer> IInitializerPtr;
+
 class IUnaryPrefixOperator : public SyntaxElementBase
 {
 public:
@@ -153,9 +156,6 @@ public:
 	virtual IBinaryOperatorsChainComponentPtr Clone() const= 0;
 };
 
-class IInitializer;
-typedef std::unique_ptr<IInitializer> IInitializerPtr;
-
 class IInitializer : public SyntaxElementBase
 {
 public:
@@ -208,7 +208,7 @@ public:
 class ExpressionInitializer final : public IInitializer
 {
 public:
-	explicit ExpressionInitializer( const FilePos& file_pos );
+	ExpressionInitializer( const FilePos& file_pos, BinaryOperatorsChainPtr expression );
 	virtual ~ExpressionInitializer() override= default;
 
 	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
@@ -386,7 +386,7 @@ struct VariablesDeclaration final : public IBlockElement
 	struct VariableEntry
 	{
 		ProgramString name;
-		BinaryOperatorsChainPtr initial_value;
+		IInitializerPtr initializer; // May be null for types with default constructor.
 		MutabilityModifier mutability_modifier= MutabilityModifier::None;
 		ReferenceModifier reference_modifier= ReferenceModifier::None;
 	};
