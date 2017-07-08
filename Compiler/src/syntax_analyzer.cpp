@@ -555,6 +555,7 @@ static IInitializerPtr ParseInitializer(
 	else if( it->type == Lexem::Type::BraceLeft )
 	{
 		// TODO - object initializer
+		return nullptr;
 	}
 	else if( parse_expression_initializer )
 	{
