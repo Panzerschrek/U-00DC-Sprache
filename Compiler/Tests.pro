@@ -14,8 +14,10 @@ SOURCES += \
 	src/tests/code_builder_test.cpp \
 	src/tests/inverse_polish_notation_test.cpp \
 	src/tests/tests_main.cpp \
+	src/tests/tests.cpp \
 
 HEADERS += \
 	src/tests/code_builder_errors_test.hpp \
 	src/tests/code_builder_test.hpp \
 	src/tests/inverse_polish_notation_test.hpp \
+	src/tests/tests.hpp \
