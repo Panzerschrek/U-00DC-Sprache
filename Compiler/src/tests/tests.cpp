@@ -60,7 +60,7 @@ CodeBuilder::BuildResult BuildProgramWithErrors( const char* const text )
 		CodeBuilder().BuildProgram( syntax_analysis_result.program_elements );
 }
 
-llvm::ExecutionEngine* CreateEngine( std::unique_ptr<llvm::Module> module, const bool needs_dump )
+EnginePtr CreateEngine( std::unique_ptr<llvm::Module> module, const bool needs_dump )
 {
 	U_ASSERT( module != nullptr );
 
@@ -70,8 +70,11 @@ llvm::ExecutionEngine* CreateEngine( std::unique_ptr<llvm::Module> module, const
 	llvm::EngineBuilder builder( std::move(module) );
 	llvm::ExecutionEngine* const engine= builder.create();
 
+	// llvm engine builder uses "new" operator inside it.
+	// So, we can correctly use unique_ptr for engine, because unique_ptr uses "delete" operator in destructor.
+
 	U_ASSERT( engine != nullptr );
-	return engine;
+	return EnginePtr(engine);
 }
 
 } // namespace U

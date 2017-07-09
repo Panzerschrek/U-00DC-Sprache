@@ -21,7 +21,7 @@ static void ExpressionInitializerTest0()
 	}
 	)";
 
-	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ) );
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
 	U_ASSERT( function != nullptr );
@@ -46,7 +46,7 @@ static void ExpressionInitializerTest1()
 	}
 	)";
 
-	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ) );
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
 	U_ASSERT( function != nullptr );
@@ -72,7 +72,7 @@ static void ConstructorInitializerForFundamentalTypesTest0()
 	}
 	)";
 
-	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ) );
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
 	U_ASSERT( function != nullptr );
@@ -97,7 +97,7 @@ static void ConstructorInitializerForFundamentalTypesTest1()
 	}
 	)";
 
-	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ) );
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
 	U_ASSERT( function != nullptr );
@@ -121,7 +121,7 @@ static void ArrayInitializerForFundamentalTypesTest0()
 	}
 	)";
 
-	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ) );
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
 	U_ASSERT( function != nullptr );
@@ -146,7 +146,7 @@ static void ArrayInitializerForFundamentalTypesTest1()
 	}
 	)";
 
-	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ) );
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
 	U_ASSERT( function != nullptr );
@@ -178,7 +178,7 @@ static void TwodimensionalArrayInitializerTest0()
 	}
 	)";
 
-	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ) );
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
 	U_ASSERT( function != nullptr );
