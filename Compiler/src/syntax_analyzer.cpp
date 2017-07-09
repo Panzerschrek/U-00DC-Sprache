@@ -527,6 +527,49 @@ static std::unique_ptr<ArrayInitializer> ParseArrayInitializer(
 	return result;
 }
 
+static std::unique_ptr<ConstructorInitializer> ParseConstructorInitializer(
+	SyntaxErrorMessages& error_messages,
+	Lexems::const_iterator& it,
+	const Lexems::const_iterator it_end )
+{
+	U_ASSERT( it < it_end );
+	U_ASSERT( it->type == Lexem::Type::BracketLeft );
+
+	++it;
+	U_ASSERT( it < it_end );
+
+	std::vector<BinaryOperatorsChainPtr> args;
+	while( it < it_end && it->type != Lexem::Type::BracketRight )
+	{
+		args.push_back( ParseExpression( error_messages, it, it_end ) );
+		U_ASSERT( it < it_end );
+		if( it->type == Lexem::Type::Comma )
+		{
+			++it;
+			U_ASSERT( it < it_end );
+			// Disallow comma after closing bracket
+			if( it->type == Lexem::Type::BracketRight )
+			{
+				PushErrorMessage( error_messages, *it );
+				return nullptr;
+			}
+		}
+		else
+			break;
+	}
+	if( it == it_end || it->type != Lexem::Type::BracketRight )
+	{
+		PushErrorMessage( error_messages, *it );
+		return nullptr;
+	}
+	++it;
+
+	std::unique_ptr<ConstructorInitializer> result(
+		new ConstructorInitializer( it->file_pos, std::move(args) ) );
+
+	return result;
+}
+
 static std::unique_ptr<ExpressionInitializer> ParseExpressionInitializer(
 	SyntaxErrorMessages& error_messages,
 	Lexems::const_iterator& it,
@@ -551,6 +594,10 @@ static IInitializerPtr ParseInitializer(
 	if( it->type == Lexem::Type::SquareBracketLeft )
 	{
 		return ParseArrayInitializer( error_messages, it, it_end );
+	}
+	else if( it->type == Lexem::Type::BracketLeft )
+	{
+		return ParseConstructorInitializer( error_messages, it, it_end );
 	}
 	else if( it->type == Lexem::Type::BraceLeft )
 	{
