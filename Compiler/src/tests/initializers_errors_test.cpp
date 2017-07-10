@@ -131,6 +131,68 @@ static void FundamentalTypesHaveConstructorsWithExactlyOneParameterTest1()
 	U_ASSERT( error.file_pos.line == 4u );
 }
 
+static void ReferencesHaveConstructorsWithExactlyOneParameterTest0()
+{
+	// Not enough parameters in constructor.
+	static const char c_program_text[]=
+	R"(
+		fn Foo()
+		{
+			let : i32 & x();
+		}
+	)";
+
+	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_ASSERT( error.code == CodeBuilderErrorCode::ReferencesHaveConstructorsWithExactlyOneParameter );
+	U_ASSERT( error.file_pos.line == 4u );
+}
+
+static void ReferencesHaveConstructorsWithExactlyOneParameterTest1()
+{
+	// Too much parameters in constructor.
+	static const char c_program_text[]=
+	R"(
+		fn Foo()
+		{
+			let : i32 z= 0;
+			let : i32 & x( z, z );
+		}
+	)";
+
+	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_ASSERT( error.code == CodeBuilderErrorCode::ReferencesHaveConstructorsWithExactlyOneParameter );
+	U_ASSERT( error.file_pos.line == 5u );
+}
+
+static void UnsupportedInitializerForReferenceTest0()
+{
+	// Array initializer for reference.
+	static const char c_program_text[]=
+	R"(
+		fn Foo()
+		{
+			let : i32 z= 0;
+			let : i32 & x[ z ];
+		}
+	)";
+
+	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_ASSERT( error.code == CodeBuilderErrorCode::UnsupportedInitializerForReference );
+	U_ASSERT( error.file_pos.line == 5u );
+}
+
 static void ConstructorInitializerForUnsupportedTypeTest0()
 {
 	// Constructor initializer for array.
@@ -159,6 +221,9 @@ void RunInitializersErrorsTest()
 	ArrayInitializersCountMismatchTest1();
 	FundamentalTypesHaveConstructorsWithExactlyOneParameterTest0();
 	FundamentalTypesHaveConstructorsWithExactlyOneParameterTest1();
+	ReferencesHaveConstructorsWithExactlyOneParameterTest0();
+	ReferencesHaveConstructorsWithExactlyOneParameterTest1();
+	UnsupportedInitializerForReferenceTest0();
 	ConstructorInitializerForUnsupportedTypeTest0();
 }
 

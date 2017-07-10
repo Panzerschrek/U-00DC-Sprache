@@ -1320,14 +1320,14 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 			{
 				if( constructor_initializer->call_operator.arguments_.size() != 1u )
 				{
-					// Only constructor-initializers with 1 argument allowed for references.
+					errors_.push_back( ReportReferencesHaveConstructorsWithExactlyOneParameter( constructor_initializer->file_pos_ ) );
 					throw ProgramError();
 				}
 				initializer_expression= constructor_initializer->call_operator.arguments_.front().get();
 			}
 			else
 			{
-				// This kind of initializer not supported for references.
+				errors_.push_back( ReportUnsupportedInitializerForReference( variable_declaration.initializer->file_pos_ ) );
 				throw ProgramError();
 			}
 

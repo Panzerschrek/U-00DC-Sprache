@@ -287,6 +287,28 @@ CodeBuilderError ReportFundamentalTypesHaveConstructorsWithExactlyOneParameter( 
 	return error;
 }
 
+CodeBuilderError ReportReferencesHaveConstructorsWithExactlyOneParameter( const FilePos& file_pos )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::ReferencesHaveConstructorsWithExactlyOneParameter;
+
+	error.text= "References have constructors with exactly one parameter."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportUnsupportedInitializerForReference( const FilePos& file_pos )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::UnsupportedInitializerForReference;
+
+	error.text= "Unsupported initializer for reference."_SpC;
+
+	return error;
+}
+
 CodeBuilderError ReportConstructorInitializerForUnsupportedType( const FilePos& file_pos )
 {
 	CodeBuilderError error;
