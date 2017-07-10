@@ -59,6 +59,31 @@ static void ExpressionInitializerTest1()
 	U_ASSERT( 2017.52 == result_value.DoubleVal );
 }
 
+static void ExpressionInitializerTest2()
+{
+	// Expression initializer for references
+	static const char c_program_text[]=
+	R"(
+	fn Foo() : f64
+	{
+		let : f64 x = 2017.52;
+		let : f64 &x_ref= x;
+		return x_ref;
+	}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
+	U_ASSERT( function != nullptr );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_ASSERT( 2017.52 == result_value.DoubleVal );
+}
 
 static void ConstructorInitializerForFundamentalTypesTest0()
 {
@@ -94,6 +119,32 @@ static void ConstructorInitializerForFundamentalTypesTest1()
 	{
 		let : f64 x( 2017.52 );
 		return x;
+	}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
+	U_ASSERT( function != nullptr );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_ASSERT( 2017.52 == result_value.DoubleVal );
+}
+
+static void ConstructorInitializerForReferencesTest0()
+{
+	// Constructor initializer for floats
+	static const char c_program_text[]=
+	R"(
+	fn Foo() : f64
+	{
+			let : f64 x = 2017.52;
+			let : f64 &x_ref(x);
+			return x_ref;
 	}
 	)";
 
@@ -197,8 +248,10 @@ void RunInitializersTest()
 {
 	ExpressionInitializerTest0();
 	ExpressionInitializerTest1();
+	ExpressionInitializerTest2();
 	ConstructorInitializerForFundamentalTypesTest0();
 	ConstructorInitializerForFundamentalTypesTest1();
+	ConstructorInitializerForReferencesTest0();
 	ArrayInitializerForFundamentalTypesTest0();
 	ArrayInitializerForFundamentalTypesTest1();
 	TwodimensionalArrayInitializerTest0();
