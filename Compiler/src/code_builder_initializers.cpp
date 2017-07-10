@@ -25,7 +25,7 @@ void CodeBuilder::ApplyInitializer_r(
 	{
 		if( boost::get<FundamentalType>( &variable.type.one_of_type_kind ) != nullptr )
 		{
-			// TODO -set file_pos
+			// TODO - set file_pos
 			errors_.push_back( ReportExpectedInitializer( FilePos() ) );
 			throw ProgramError();
 		}
@@ -38,7 +38,7 @@ void CodeBuilder::ApplyInitializer_r(
 		const ArrayPtr* const array_type_ptr= boost::get<ArrayPtr>( &variable.type.one_of_type_kind );
 		if( array_type_ptr == nullptr )
 		{
-			// Array initializer for non-arrays
+			errors_.push_back( ReportArrayInitializerForNonArray( array_initializer->file_pos_ ) );
 			throw ProgramError();
 		}
 		U_ASSERT( *array_type_ptr != nullptr );
@@ -46,7 +46,11 @@ void CodeBuilder::ApplyInitializer_r(
 
 		if( array_initializer->initializers.size() != array_type.size )
 		{
-			// element count in initializer does not match array size.
+			errors_.push_back(
+				ReportArrayInitializersCountMismatch(
+					array_initializer->file_pos_,
+					array_type.size,
+					array_initializer->initializers.size() ) );
 			throw ProgramError();
 			// SPRACHE_TODO - add array continious initializers.
 		}
@@ -83,7 +87,7 @@ void CodeBuilder::ApplyInitializer_r(
 
 			if( constructor_initializer->call_operator.arguments_.size() != 1u )
 			{
-				// Fundamental types have constructors with exactly 1 argument
+				errors_.push_back( ReportFundamentalTypesHaveConstructorsWithExactlyOneParameter( constructor_initializer->file_pos_ ) );
 				throw ProgramError();
 			}
 
@@ -106,7 +110,7 @@ void CodeBuilder::ApplyInitializer_r(
 		}
 		else
 		{
-			// Constructor initializer for type, that not supports constructor initialization.
+			errors_.push_back( ReportConstructorInitializerForUnsupportedType( constructor_initializer->file_pos_ ) );
 			throw ProgramError();
 		}
 	}

@@ -34,6 +34,12 @@ enum class CodeBuilderErrorCode : unsigned int
 	TooManySuitableOverloadedFunctions,
 	CouldNotSelectOverloadedFunction,
 
+	// Initializers errors.
+	ArrayInitializerForNonArray,
+	ArrayInitializersCountMismatch,
+	FundamentalTypesHaveConstructorsWithExactlyOneParameter,
+	ConstructorInitializerForUnsupportedType,
+
 	// Push new error codes at back.
 };
 
@@ -68,5 +74,9 @@ CodeBuilderError ReportBindingConstReferenceToNonconstReference( const FilePos& 
 CodeBuilderError ReportCouldNotOverloadFunction( const FilePos& file_pos );
 CodeBuilderError ReportTooManySuitableOverloadedFunctions( const FilePos& file_pos );
 CodeBuilderError ReportCouldNotSelectOverloadedFunction( const FilePos& file_pos );
+CodeBuilderError ReportArrayInitializerForNonArray( const FilePos& file_pos );
+CodeBuilderError ReportArrayInitializersCountMismatch( const FilePos& file_pos, size_t expected_initializers, size_t real_initializers );
+CodeBuilderError ReportFundamentalTypesHaveConstructorsWithExactlyOneParameter( const FilePos& file_pos );
+CodeBuilderError ReportConstructorInitializerForUnsupportedType( const FilePos& file_pos );
 
 } // namespace U
