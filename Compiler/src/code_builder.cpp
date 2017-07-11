@@ -81,6 +81,11 @@ U_FundamentalType GetNumericConstantType( const NumericConstant& number )
 			return U_FundamentalType::i32;
 	}
 
+	// Allow simple "u" suffix for unsigned 32bit values.
+	// SPRACHE_TODO - maybe add "i" suffix for i32 type?
+	if( number.type_suffix_ == "u"_SpC )
+		return U_FundamentalType::u32;
+
 	auto it= g_types_map.find( number.type_suffix_ );
 	if( it == g_types_map.end() )
 		return U_FundamentalType::InvalidType;

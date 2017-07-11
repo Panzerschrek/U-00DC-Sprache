@@ -380,8 +380,8 @@ static void ArraysTest0()
 	fn Foo(i32 x ) : i32\
 	{\
 		let : [ i32, 17 ] tmp;\
-		tmp[5u32]= x;\
-		return tmp[5u32] + 5;\
+		tmp[5u]= x;\
+		return tmp[5u] + 5;\
 	}"
 	;
 
@@ -409,8 +409,8 @@ static void ArraysTest1()
 	fn Foo( i32 x ) : i32\
 	{\
 		let : [ [ [ i32, 3 ], 5 ], 17 ]  tmp;\
-		tmp[5u32][3u32][1u32]= x;\
-		return tmp[5u32][3u32][1u32] + 5;\
+		tmp[5u][3u][1u]= x;\
+		return tmp[5u][3u][1u] + 5;\
 	}"
 	;
 
@@ -1396,10 +1396,10 @@ static void StructTest0()
 		let : u32 index= 0u32;
 		p.x= a;
 		p.y = b;
-		p.zzz[0u32]= c;
-		p.zzz[1u32]= p.x * p.y;
-		index= 2u32;
-		p.zzz[index]= p.zzz[1u32] + c;
+		p.zzz[0u]= c;
+		p.zzz[1u]= p.x * p.y;
+		index= 2u;
+		p.zzz[index]= p.zzz[1u] + c;
 		return p.zzz[index];
 	}
 	)";
@@ -1445,8 +1445,8 @@ static void StructTest1()
 	{
 		let : Point p;
 		p.dummy.y= a;
-		p.dummy.z[1u32]= b;
-		return p.dummy.y - p.dummy.z[1u32];
+		p.dummy.z[1u]= b;
+		return p.dummy.y - p.dummy.z[1u];
 	}
 	)";
 
@@ -1565,10 +1565,10 @@ static void ReferencesTest2()
 	{
 		let : [ i32, 4 ] arr;
 		let : [ i32, 4 ] &arr_ref= arr;
-		arr_ref[0u32]= a;
-		arr_ref[1u32]= b;
-		arr_ref[2u32]= arr_ref[0u32] * arr_ref[1u32];
-		return arr[2u32];
+		arr_ref[0u]= a;
+		arr_ref[1u]= b;
+		arr_ref[2u]= arr_ref[0u] * arr_ref[1u];
+		return arr[2u];
 	}
 	)";
 
@@ -1725,12 +1725,12 @@ static void ReferencesTest7()
 		y : i32;
 	}
 	fn Bar( C &mut c )
-	{ c.zzz[2u32] = 99985; }
+	{ c.zzz[2u] = 99985; }
 	fn Foo() : i32
 	{
 		let : C mut c;
 		Bar( c );
-		return c.zzz[2u32];
+		return c.zzz[2u];
 	}
 	)";
 
@@ -1753,12 +1753,12 @@ static void ReferencesTest8()
 	static const char c_program_text[]=
 	R"(
 	fn Bar( [ i32, 5 ] &mut arr )
-	{ arr[3u32] = 99985; }
+	{ arr[3u] = 99985; }
 	fn Foo() : i32
 	{
 		let : [ i32, 5 ] arr;
 		Bar( arr );
-		return arr[3u32];
+		return arr[3u];
 	}
 	)";
 
