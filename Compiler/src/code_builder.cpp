@@ -85,6 +85,9 @@ U_FundamentalType GetNumericConstantType( const NumericConstant& number )
 	// SPRACHE_TODO - maybe add "i" suffix for i32 type?
 	if( number.type_suffix_ == "u"_SpC )
 		return U_FundamentalType::u32;
+	// Simple "f" suffix for 32bit floats.
+	else if( number.type_suffix_ == "f"_SpC )
+		return U_FundamentalType::f32;
 
 	auto it= g_types_map.find( number.type_suffix_ );
 	if( it == g_types_map.end() )

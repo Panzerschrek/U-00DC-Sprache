@@ -299,7 +299,7 @@ static void NumericConstantsTest2()
 	"\
 	fn Pi() : f32\
 	{\
-		return 3.1415926535f32;\
+		return 3.1415926535f;\
 	}"
 	;
 
