@@ -1032,7 +1032,7 @@ Variable CodeBuilder::BuildExpressionCode_r(
 			U_FundamentalType type= GetNumericConstantType( *numeric_constant );
 			if( type == U_FundamentalType::InvalidType )
 			{
-				// TODO - report unknown numeric constant type.
+				errors_.push_back( ReportUnknownNumericConstantType( numeric_constant->file_pos_, numeric_constant->type_suffix_ ) );
 				throw ProgramError();
 			}
 			llvm::Type* const llvm_type= GetFundamentalLLVMType( type );

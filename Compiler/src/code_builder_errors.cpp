@@ -52,6 +52,17 @@ CodeBuilderError ReportRedefinition( const FilePos& file_pos, const ProgramStrin
 	return error;
 }
 
+CodeBuilderError ReportUnknownNumericConstantType( const FilePos& file_pos, const ProgramString& unknown_type )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::UnknownNumericConstantType;
+
+	error.text= "Unknown numeric constant type - "_SpC + unknown_type + "."_SpC;
+
+	return error;
+}
+
 CodeBuilderError ReportOperationNotSupportedForThisType( const FilePos& file_pos, const ProgramString& type_name )
 {
 	CodeBuilderError error;

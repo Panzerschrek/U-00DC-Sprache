@@ -257,6 +257,46 @@ static void Redefinition3()
 	U_ASSERT( error.file_pos.line == 8u );
 }
 
+static void UnknownNumericConstantTypeTest0()
+{
+	// unknown name
+	static const char c_program_text[]=
+	R"(
+		fn Foo() : i32
+		{
+			return 45fty584s;
+		}
+	)";
+
+	const CodeBuilder::BuildResult build_result= BuildProgram( c_program_text );
+
+	U_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_ASSERT( error.code == CodeBuilderErrorCode::UnknownNumericConstantType );
+	U_ASSERT( error.file_pos.line == 4u );
+}
+
+static void UnknownNumericConstantTypeTest1()
+{
+	// existent type name in upper case
+	static const char c_program_text[]=
+	R"(
+		fn Foo() : i32
+		{
+			return 45I32;
+		}
+	)";
+
+	const CodeBuilder::BuildResult build_result= BuildProgram( c_program_text );
+
+	U_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_ASSERT( error.code == CodeBuilderErrorCode::UnknownNumericConstantType );
+	U_ASSERT( error.file_pos.line == 4u );
+}
+
 static void OperationNotSupportedForThisTypeTest0()
 {
 	// Binary operations errors.
@@ -1356,6 +1396,8 @@ void RunCodeBuilderErrorsTests()
 	Redefinition1();
 	Redefinition2();
 	Redefinition3();
+	UnknownNumericConstantTypeTest0();
+	UnknownNumericConstantTypeTest1();
 	OperationNotSupportedForThisTypeTest0();
 	OperationNotSupportedForThisTypeTest1();
 	OperationNotSupportedForThisTypeTest2();
