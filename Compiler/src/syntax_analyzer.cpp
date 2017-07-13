@@ -527,6 +527,71 @@ static std::unique_ptr<ArrayInitializer> ParseArrayInitializer(
 	return result;
 }
 
+static std::unique_ptr<StructNamedInitializer> ParseStructNamedInitializer(
+	SyntaxErrorMessages& error_messages,
+	Lexems::const_iterator& it,
+	const Lexems::const_iterator it_end )
+{
+	U_ASSERT( it < it_end );
+	U_ASSERT( it->type == Lexem::Type::BraceLeft );
+
+	std::unique_ptr<StructNamedInitializer> result( new StructNamedInitializer( it->file_pos ) );
+	++it;
+	U_ASSERT( it < it_end );
+
+	while( it < it_end && it->type != Lexem::Type::BraceRight )
+	{
+		U_ASSERT( it < it_end );
+		if( it->type == Lexem::Type::Dot )
+			++it;
+		else
+		{
+			PushErrorMessage( error_messages, *it );
+			return result;
+		}
+
+		U_ASSERT( it < it_end );
+		if( it->type != Lexem::Type::Identifier )
+		{
+			PushErrorMessage( error_messages, *it );
+			return result;
+		}
+		ProgramString name= it->text;
+		++it;
+
+		IInitializerPtr initializer;
+		if( it->type == Lexem::Type::Assignment )
+		{
+			++it;
+			BinaryOperatorsChainPtr expression= ParseExpression( error_messages, it, it_end );
+			initializer.reset( new ExpressionInitializer( it->file_pos, std::move(expression) ) );
+		}
+		else if(
+			it->type == Lexem::Type::BracketLeft ||
+			it->type == Lexem::Type::SquareBracketLeft ||
+			it->type == Lexem::Type::BraceLeft )
+		{
+			initializer= ParseInitializer( error_messages, it, it_end, false );
+		}
+
+		result->members_initializers.emplace_back();
+		result->members_initializers.back().name= std::move(name);
+		result->members_initializers.back().initializer= std::move(initializer);
+
+		if( it->type == Lexem::Type::Comma )
+			++it;
+	}
+	if( it == it_end || it->type != Lexem::Type::SquareBracketRight )
+	{
+		PushErrorMessage( error_messages, *it );
+		return result;
+	}
+
+	++it;
+
+	return result;
+}
+
 static std::unique_ptr<ConstructorInitializer> ParseConstructorInitializer(
 	SyntaxErrorMessages& error_messages,
 	Lexems::const_iterator& it,
@@ -601,8 +666,7 @@ static IInitializerPtr ParseInitializer(
 	}
 	else if( it->type == Lexem::Type::BraceLeft )
 	{
-		// TODO - object initializer
-		return nullptr;
+		return ParseStructNamedInitializer( error_messages, it, it_end );
 	}
 	else if( parse_expression_initializer )
 	{
