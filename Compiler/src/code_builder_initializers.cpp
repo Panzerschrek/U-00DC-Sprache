@@ -98,8 +98,8 @@ void CodeBuilder::ApplyInitializer_r(
 		{
 			if( initializerd_members_names.count( member_initializer.name ) != 0 )
 			{
-				// TODO - duplicated initializer
-				throw ProgramError();
+				errors_.push_back( ReportDuplicatedStructMemberInitializer( struct_named_initializer->file_pos_, member_initializer.name ) );
+				continue;
 			}
 
 			const Class::Field* const field= class_type.GetField( member_initializer.name );
@@ -122,9 +122,12 @@ void CodeBuilder::ApplyInitializer_r(
 		U_ASSERT( initializerd_members_names.size() <= class_type.fields.size() );
 		if( initializerd_members_names.size() < class_type.fields.size() )
 		{
-			// SPRACHE_TODO - allow missed initialziers for default-constructed classes.
-
-			// TODO - print list of missed initializers.
+			for( const Class::Field& field : class_type.fields )
+			{
+				// SPRACHE_TODO - allow missed initialziers for default-constructed classes.
+				if( initializerd_members_names.count( field.name ) == 0 )
+					errors_.push_back(ReportMissingStructMemberInitializer( struct_named_initializer->file_pos_, field.name ) );
+			}
 			throw ProgramError();
 		}
 	}

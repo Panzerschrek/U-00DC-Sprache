@@ -41,6 +41,8 @@ enum class CodeBuilderErrorCode : unsigned int
 	ReferencesHaveConstructorsWithExactlyOneParameter,
 	UnsupportedInitializerForReference,
 	ConstructorInitializerForUnsupportedType,
+	DuplicatedStructMemberInitializer,
+	MissingStructMemberInitializer,
 
 	// Push new error codes at back.
 };
@@ -82,5 +84,7 @@ CodeBuilderError ReportFundamentalTypesHaveConstructorsWithExactlyOneParameter( 
 CodeBuilderError ReportReferencesHaveConstructorsWithExactlyOneParameter( const FilePos& file_pos );
 CodeBuilderError ReportUnsupportedInitializerForReference( const FilePos& file_pos );
 CodeBuilderError ReportConstructorInitializerForUnsupportedType( const FilePos& file_pos );
+CodeBuilderError ReportDuplicatedStructMemberInitializer( const FilePos& file_pos, const ProgramString& member_name );
+CodeBuilderError ReportMissingStructMemberInitializer( const FilePos& file_pos, const ProgramString& member_name );
 
 } // namespace U

@@ -213,6 +213,46 @@ static void ConstructorInitializerForUnsupportedTypeTest0()
 	U_ASSERT( error.file_pos.line == 4u );
 }
 
+static void DuplicatedStructMemberInitializerTest0()
+{
+	static const char c_program_text[]=
+	R"(
+		class Point{ x : i32; y : i32; }
+		fn Foo()
+		{
+			let : Point point{ .x= 42, .y= 34, .x= 0 };
+		}
+	)";
+
+	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_ASSERT( error.code == CodeBuilderErrorCode::DuplicatedStructMemberInitializer );
+	U_ASSERT( error.file_pos.line == 5u );
+}
+
+static void MissingStructMemberInitializerTest0()
+{
+	static const char c_program_text[]=
+	R"(
+		class Point{ xy : [ i32, 2 ]; z : i32; }
+		fn Foo()
+		{
+			let : Point point{ .xy[ 54, -785 ], };
+		}
+	)";
+
+	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_ASSERT( error.code == CodeBuilderErrorCode::MissingStructMemberInitializer );
+	U_ASSERT( error.file_pos.line == 5u );
+}
+
 void RunInitializersErrorsTest()
 {
 	ArrayInitializerForNonArrayTest0();
@@ -225,6 +265,8 @@ void RunInitializersErrorsTest()
 	ReferencesHaveConstructorsWithExactlyOneParameterTest1();
 	UnsupportedInitializerForReferenceTest0();
 	ConstructorInitializerForUnsupportedTypeTest0();
+	DuplicatedStructMemberInitializerTest0();
+	MissingStructMemberInitializerTest0();
 }
 
 } // namespace U

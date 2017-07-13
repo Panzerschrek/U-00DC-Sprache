@@ -320,4 +320,26 @@ CodeBuilderError ReportConstructorInitializerForUnsupportedType( const FilePos& 
 	return error;
 }
 
+CodeBuilderError ReportDuplicatedStructMemberInitializer( const FilePos& file_pos, const ProgramString& member_name )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::DuplicatedStructMemberInitializer;
+
+	error.text= "Duplicated initializer for"_SpC + member_name + "."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportMissingStructMemberInitializer( const FilePos& file_pos, const ProgramString& member_name )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::MissingStructMemberInitializer;
+
+	error.text= "Missing initializer for"_SpC + member_name + "."_SpC;
+
+	return error;
+}
+
 } // namespace U
