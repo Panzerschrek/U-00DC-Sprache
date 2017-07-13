@@ -244,6 +244,31 @@ static void TwodimensionalArrayInitializerTest0()
 		result_value.IntVal.getLimitedValue() );
 }
 
+static void StructNamedInitializersTest0()
+{
+	static const char c_program_text[]=
+	R"(
+	class Point{ x : i32; y : i32; }
+	fn Foo() : i32
+	{
+		let : Point point{ .x= 5877, .y(13) };
+		return point.x / point.y;
+	}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
+	U_ASSERT( function != nullptr );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_ASSERT( static_cast<uint64_t>( 5877 / 13 ) == result_value.IntVal.getLimitedValue() );
+}
+
 void RunInitializersTest()
 {
 	ExpressionInitializerTest0();
@@ -255,6 +280,7 @@ void RunInitializersTest()
 	ArrayInitializerForFundamentalTypesTest0();
 	ArrayInitializerForFundamentalTypesTest1();
 	TwodimensionalArrayInitializerTest0();
+	StructNamedInitializersTest0();
 }
 
 } // namespace U

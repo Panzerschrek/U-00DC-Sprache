@@ -124,7 +124,7 @@ struct Class final
 		unsigned int index;
 	};
 
-	const Field* GetField( const ProgramString& name );
+	const Field* GetField( const ProgramString& name ) const;
 
 	ProgramString name;
 	std::vector<Field> fields;

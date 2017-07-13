@@ -581,7 +581,7 @@ static std::unique_ptr<StructNamedInitializer> ParseStructNamedInitializer(
 		if( it->type == Lexem::Type::Comma )
 			++it;
 	}
-	if( it == it_end || it->type != Lexem::Type::SquareBracketRight )
+	if( it == it_end || it->type != Lexem::Type::BraceRight )
 	{
 		PushErrorMessage( error_messages, *it );
 		return result;

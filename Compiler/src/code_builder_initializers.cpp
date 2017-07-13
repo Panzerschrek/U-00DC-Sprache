@@ -1,3 +1,5 @@
+#include <set>
+
 #include "push_disable_llvm_warnings.hpp"
 #include <llvm/IR/Constant.h>
 #include <llvm/IR/LLVMContext.h>
@@ -75,8 +77,56 @@ void CodeBuilder::ApplyInitializer_r(
 	else if( const StructNamedInitializer* const struct_named_initializer=
 		dynamic_cast<const StructNamedInitializer*>(initializer) )
 	{
-		// TODO
-		U_UNUSED(struct_named_initializer);
+		const ClassPtr* const class_type_ptr= boost::get<ClassPtr>( &variable.type.one_of_type_kind );
+		if( class_type_ptr == nullptr )
+		{
+			// TODO  -intializer for non-struct
+			throw ProgramError();
+		}
+		U_ASSERT( *class_type_ptr != nullptr );
+		const Class& class_type= **class_type_ptr;
+
+		std::set<ProgramString> initializerd_members_names;
+
+		Variable struct_member= variable;
+		struct_member.location= Variable::Location::Pointer;
+		// Make first index = 0 for array to pointer conversion.
+		llvm::Value* index_list[2];
+		index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
+
+		for( const StructNamedInitializer::MemberInitializer& member_initializer : struct_named_initializer->members_initializers )
+		{
+			if( initializerd_members_names.count( member_initializer.name ) != 0 )
+			{
+				// TODO - duplicated initializer
+				throw ProgramError();
+			}
+
+			const Class::Field* const field= class_type.GetField( member_initializer.name );
+			if( field == nullptr )
+			{
+				errors_.push_back( ReportNameNotFound( struct_named_initializer->file_pos_, member_initializer.name ) );
+				throw ProgramError();
+			}
+
+			initializerd_members_names.insert( member_initializer.name );
+
+			struct_member.type= field->type;
+			index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(field->index) ) );
+			struct_member.llvm_value=
+				function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, llvm::ArrayRef<llvm::Value*> ( index_list, 2u ) );
+
+			ApplyInitializer_r( struct_member, member_initializer.initializer.get(), block_names, function_context );
+		}
+
+		U_ASSERT( initializerd_members_names.size() <= class_type.fields.size() );
+		if( initializerd_members_names.size() < class_type.fields.size() )
+		{
+			// SPRACHE_TODO - allow missed initialziers for default-constructed classes.
+
+			// TODO - print list of missed initializers.
+			throw ProgramError();
+		}
 	}
 	else if( const ConstructorInitializer* const constructor_initializer=
 		dynamic_cast<const ConstructorInitializer*>(initializer) )
