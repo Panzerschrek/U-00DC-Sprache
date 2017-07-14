@@ -269,6 +269,115 @@ static void StructNamedInitializersTest0()
 	U_ASSERT( static_cast<uint64_t>( 5877 / 13 ) == result_value.IntVal.getLimitedValue() );
 }
 
+static void StructNamedInitializersTest1()
+{
+	// Members may be initialized in any order.
+	static const char c_program_text[]=
+	R"(
+	class Point{ x : i32; y : i32; z : [ bool, 3 ]; }
+	fn Foo() : i32
+	{
+		let : Point point{ .y(13), .z[ false, false, true ], .x= 5877 };
+		if( point.z[0u32] == false & point.z[1u32] == false & point.z[2u32] == true )
+		{
+			return point.x / point.y;
+		}
+		return 0;
+	}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
+	U_ASSERT( function != nullptr );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_ASSERT( static_cast<uint64_t>( 5877 / 13 ) == result_value.IntVal.getLimitedValue() );
+}
+
+static void StructNamedInitializersTest2()
+{
+	// Struct inside struct.
+	static const char c_program_text[]=
+	R"(
+	class Double{ d : f64; }
+	class Point2d{ x : Double; y : Double; }
+	class Point3d{ xy : Point2d; z : Double; }
+	class Point{ x : i32; y : i32; z : [ bool, 3 ]; }
+	fn Foo() : f64
+	{
+		let : Point3d point
+		{
+			.xy
+			{
+				.y{ .d(548.7) },
+				.x{ .d= -5.4 }
+			},
+			.z { .d= 14.2, }
+		};
+		return point.xy.x.d + point.xy.y.d / point.z.d;
+	}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
+	U_ASSERT( function != nullptr );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_ASSERT( ( -5.4 + 548.7 / 14.2 ) == result_value.DoubleVal );
+}
+
+static void StructNamedInitializersTest3()
+{
+	// Array inside struct inside array inside struct.
+	static const char c_program_text[]=
+	R"(
+	class A{ arr : [ i32, 2 ]; }
+	class B{ a_arr : [ A, 3 ]; }
+	fn Foo() : i32
+	{
+		let : B bb
+		{
+			.a_arr
+			[
+				{ .arr[ 5, -7 ] },
+				{ .arr[ 874, 81 ] },
+				{ .arr[ 458, 24 ] },
+			]
+		};
+
+		return
+			bb.a_arr[0u32].arr[0u32] * bb.a_arr[0u32].arr[1u32] +
+			bb.a_arr[1u32].arr[0u32] / bb.a_arr[1u32].arr[1u32] +
+			bb.a_arr[2u32].arr[0u32] - bb.a_arr[2u32].arr[1u32];
+	}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
+	U_ASSERT( function != nullptr );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_ASSERT(
+		static_cast<uint64_t>( (5) * (-7) + (874) / 81 + 458 - 24 ) ==
+		result_value.IntVal.getLimitedValue() );
+}
+
+
 void RunInitializersTest()
 {
 	ExpressionInitializerTest0();
@@ -281,6 +390,9 @@ void RunInitializersTest()
 	ArrayInitializerForFundamentalTypesTest1();
 	TwodimensionalArrayInitializerTest0();
 	StructNamedInitializersTest0();
+	StructNamedInitializersTest1();
+	StructNamedInitializersTest2();
+	StructNamedInitializersTest3();
 }
 
 } // namespace U
