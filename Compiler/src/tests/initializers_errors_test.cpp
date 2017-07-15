@@ -213,6 +213,26 @@ static void ConstructorInitializerForUnsupportedTypeTest0()
 	U_ASSERT( error.file_pos.line == 4u );
 }
 
+static void StructInitializerForNonStructTest0()
+{
+	// Struct initializer for array.
+	static const char c_program_text[]=
+	R"(
+		fn Foo()
+		{
+			let : [ i32, 2u32 ] x{};
+		}
+	)";
+
+	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_ASSERT( error.code == CodeBuilderErrorCode::StructInitializerForNonStruct );
+	U_ASSERT( error.file_pos.line == 4u );
+}
+
 static void DuplicatedStructMemberInitializerTest0()
 {
 	static const char c_program_text[]=
@@ -265,6 +285,7 @@ void RunInitializersErrorsTest()
 	ReferencesHaveConstructorsWithExactlyOneParameterTest1();
 	UnsupportedInitializerForReferenceTest0();
 	ConstructorInitializerForUnsupportedTypeTest0();
+	StructInitializerForNonStructTest0();
 	DuplicatedStructMemberInitializerTest0();
 	MissingStructMemberInitializerTest0();
 }

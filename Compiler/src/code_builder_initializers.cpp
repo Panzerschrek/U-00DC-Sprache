@@ -29,7 +29,6 @@ void CodeBuilder::ApplyInitializer_r(
 		{
 			// TODO - set file_pos
 			errors_.push_back( ReportExpectedInitializer( FilePos() ) );
-			throw ProgramError();
 		}
 		return;
 	}
@@ -41,7 +40,7 @@ void CodeBuilder::ApplyInitializer_r(
 		if( array_type_ptr == nullptr )
 		{
 			errors_.push_back( ReportArrayInitializerForNonArray( array_initializer->file_pos_ ) );
-			throw ProgramError();
+			return;
 		}
 		U_ASSERT( *array_type_ptr != nullptr );
 		const Array& array_type= **array_type_ptr;
@@ -53,7 +52,7 @@ void CodeBuilder::ApplyInitializer_r(
 					array_initializer->file_pos_,
 					array_type.size,
 					array_initializer->initializers.size() ) );
-			throw ProgramError();
+			return;
 			// SPRACHE_TODO - add array continious initializers.
 		}
 
@@ -80,8 +79,8 @@ void CodeBuilder::ApplyInitializer_r(
 		const ClassPtr* const class_type_ptr= boost::get<ClassPtr>( &variable.type.one_of_type_kind );
 		if( class_type_ptr == nullptr )
 		{
-			// TODO  -intializer for non-struct
-			throw ProgramError();
+			errors_.push_back( ReportStructInitializerForNonStruct( struct_named_initializer->file_pos_ ) );
+			return;
 		}
 		U_ASSERT( *class_type_ptr != nullptr );
 		const Class& class_type= **class_type_ptr;
@@ -106,7 +105,7 @@ void CodeBuilder::ApplyInitializer_r(
 			if( field == nullptr )
 			{
 				errors_.push_back( ReportNameNotFound( struct_named_initializer->file_pos_, member_initializer.name ) );
-				throw ProgramError();
+				continue;
 			}
 
 			initializerd_members_names.insert( member_initializer.name );
@@ -128,7 +127,7 @@ void CodeBuilder::ApplyInitializer_r(
 				if( initializerd_members_names.count( field.name ) == 0 )
 					errors_.push_back(ReportMissingStructMemberInitializer( struct_named_initializer->file_pos_, field.name ) );
 			}
-			throw ProgramError();
+			return;
 		}
 	}
 	else if( const ConstructorInitializer* const constructor_initializer=
@@ -141,7 +140,7 @@ void CodeBuilder::ApplyInitializer_r(
 			if( constructor_initializer->call_operator.arguments_.size() != 1u )
 			{
 				errors_.push_back( ReportFundamentalTypesHaveConstructorsWithExactlyOneParameter( constructor_initializer->file_pos_ ) );
-				throw ProgramError();
+				return;
 			}
 
 			const Variable expression_result=
@@ -149,7 +148,7 @@ void CodeBuilder::ApplyInitializer_r(
 			if( expression_result.type != variable.type )
 			{
 				errors_.push_back( ReportTypesMismatch( constructor_initializer->file_pos_, variable.type.ToString(), expression_result.type.ToString() ) );
-				throw ProgramError();
+				return;
 			}
 
 			llvm::Value* const value_for_assignment= CreateMoveToLLVMRegisterInstruction( expression_result, function_context );
@@ -159,12 +158,12 @@ void CodeBuilder::ApplyInitializer_r(
 		{
 			U_UNUSED(class_type);
 			errors_.push_back( ReportNotImplemented( initializer->file_pos_, "constructors for classes" ) );
-			throw ProgramError();
+			return;
 		}
 		else
 		{
 			errors_.push_back( ReportConstructorInitializerForUnsupportedType( constructor_initializer->file_pos_ ) );
-			throw ProgramError();
+			return;
 		}
 	}
 	else if( const ExpressionInitializer* const expression_initializer=
@@ -179,7 +178,7 @@ void CodeBuilder::ApplyInitializer_r(
 			if( expression_result.type != variable.type )
 			{
 				errors_.push_back( ReportTypesMismatch( expression_initializer->file_pos_, variable.type.ToString(), expression_result.type.ToString() ) );
-				throw ProgramError();
+				return;
 			}
 
 			llvm::Value* const value_for_assignment= CreateMoveToLLVMRegisterInstruction( expression_result, function_context );
@@ -188,7 +187,7 @@ void CodeBuilder::ApplyInitializer_r(
 		else
 		{
 			errors_.push_back( ReportNotImplemented( initializer->file_pos_, "expression initialization for nonfundamental types" ) );
-			throw ProgramError();
+			return;
 		}
 	}
 	else if( const ZeroInitializer* const zero_initializer=

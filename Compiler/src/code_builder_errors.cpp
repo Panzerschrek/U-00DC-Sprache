@@ -320,6 +320,17 @@ CodeBuilderError ReportConstructorInitializerForUnsupportedType( const FilePos& 
 	return error;
 }
 
+CodeBuilderError ReportStructInitializerForNonStruct( const FilePos& file_pos )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::StructInitializerForNonStruct;
+
+	error.text= "Structure-initializer for nonstruct."_SpC;
+
+	return error;
+}
+
 CodeBuilderError ReportDuplicatedStructMemberInitializer( const FilePos& file_pos, const ProgramString& member_name )
 {
 	CodeBuilderError error;
