@@ -191,6 +191,106 @@ void CodeBuilder::ApplyInitializer_r(
 			throw ProgramError();
 		}
 	}
+	else if( const ZeroInitializer* const zero_initializer=
+		dynamic_cast<const ZeroInitializer*>(initializer) )
+	{
+		if( const FundamentalType* const fundamental_type= boost::get<FundamentalType>( &variable.type.one_of_type_kind ) )
+		{
+			llvm::Value* zero_value= nullptr;
+			switch( fundamental_type->fundamental_type )
+			{
+			case U_FundamentalType::Bool:
+				zero_value=
+					llvm::Constant::getIntegerValue(
+						fundamental_llvm_types_.bool_,
+						llvm::APInt( 1u, uint64_t(0) ) );
+				break;
+
+			case U_FundamentalType::i8:
+			case U_FundamentalType::u8:
+			case U_FundamentalType::i16:
+			case U_FundamentalType::u16:
+			case U_FundamentalType::i32:
+			case U_FundamentalType::u32:
+			case U_FundamentalType::i64:
+			case U_FundamentalType::u64:
+					zero_value=
+						llvm::Constant::getIntegerValue(
+							GetFundamentalLLVMType( fundamental_type->fundamental_type ),
+							llvm::APInt( variable.type.SizeOf() * 8u, uint64_t(0) ) );
+				break;
+
+			case U_FundamentalType::f32:
+				zero_value= llvm::ConstantFP::get( fundamental_llvm_types_.f32, 0.0 );
+				break;
+			case U_FundamentalType::f64:
+				zero_value= llvm::ConstantFP::get( fundamental_llvm_types_.f64, 0.0 );
+				break;
+
+			case U_FundamentalType::Void:
+			case U_FundamentalType::InvalidType:
+			case U_FundamentalType::LastType:
+				U_ASSERT(false);
+				break;
+			};
+
+			function_context.llvm_ir_builder.CreateStore( zero_value, variable.llvm_value );
+		}
+		else if( const ArrayPtr* const array_type_ptr= boost::get<ArrayPtr>( &variable.type.one_of_type_kind ) )
+		{
+			U_ASSERT( *array_type_ptr != nullptr );
+			const Array& array_type= **array_type_ptr;
+
+			Variable array_member= variable;
+			array_member.type= array_type.type;
+			array_member.location= Variable::Location::Pointer;
+
+			// Make first index = 0 for array to pointer conversion.
+			llvm::Value* index_list[2];
+			index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
+
+			for( size_t i= 0u; i < array_type.size; i++ )
+			{
+				index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(i) ) );
+				array_member.llvm_value=
+					function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, llvm::ArrayRef<llvm::Value*> ( index_list, 2u ) );
+
+				ApplyInitializer_r( array_member, zero_initializer, block_names, function_context );
+			}
+		}
+		else if( const ClassPtr* const class_type_ptr = boost::get<ClassPtr>( &variable.type.one_of_type_kind ) )
+		{
+			// SPRACHE_TODO - disallow zero initializers for all except structs without constructors.
+
+			U_ASSERT( *class_type_ptr != nullptr );
+			const Class& class_type= **class_type_ptr;
+
+			Variable struct_member= variable;
+			struct_member.location= Variable::Location::Pointer;
+			// Make first index = 0 for array to pointer conversion.
+			llvm::Value* index_list[2];
+			index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
+
+			for( const Class::Field& field : class_type.fields )
+			{
+				struct_member.type= field.type;
+				index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(field.index) ) );
+				struct_member.llvm_value=
+					function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, llvm::ArrayRef<llvm::Value*> ( index_list, 2u ) );
+
+				ApplyInitializer_r( struct_member, zero_initializer, block_names, function_context );
+			}
+		}
+		else
+		{
+			// REPORT unsupported type for zero initializer
+			return;
+		}
+	}
+	else
+	{
+		U_ASSERT(false);
+	}
 }
 
 } // namespace CodeBuilderPrivate
