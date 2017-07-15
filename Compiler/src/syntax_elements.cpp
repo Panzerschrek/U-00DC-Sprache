@@ -240,6 +240,17 @@ void ExpressionInitializer::Print( std::ostream& stream, unsigned int indent ) c
 	expression->Print( stream, indent );
 }
 
+ZeroInitializer::ZeroInitializer( const FilePos& file_pos )
+	: IInitializer(file_pos)
+{}
+
+
+void ZeroInitializer::Print( std::ostream& stream, const unsigned int indent ) const
+{
+	U_UNUSED(indent);
+	stream << "zero_init";
+}
+
 NamedOperand::NamedOperand( const FilePos& file_pos, ProgramString name )
 	: IBinaryOperatorsChainComponent(file_pos)
 	, name_( std::move(name) )

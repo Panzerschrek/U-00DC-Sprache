@@ -563,8 +563,14 @@ static std::unique_ptr<StructNamedInitializer> ParseStructNamedInitializer(
 		if( it->type == Lexem::Type::Assignment )
 		{
 			++it;
-			BinaryOperatorsChainPtr expression= ParseExpression( error_messages, it, it_end );
-			initializer.reset( new ExpressionInitializer( it->file_pos, std::move(expression) ) );
+			U_ASSERT( it < it_end );
+			if( it->type == Lexem::Type::Identifier && it->text == Keywords::zero_init_ )
+				initializer.reset( new ZeroInitializer( it->file_pos ) );
+			else
+			{
+				BinaryOperatorsChainPtr expression= ParseExpression( error_messages, it, it_end );
+				initializer.reset( new ExpressionInitializer( it->file_pos, std::move(expression) ) );
+			}
 		}
 		else if(
 			it->type == Lexem::Type::BracketLeft ||
@@ -745,8 +751,14 @@ static VariablesDeclarationPtr ParseVariablesDeclaration(
 		if( it->type == Lexem::Type::Assignment )
 		{
 			++it;
-			BinaryOperatorsChainPtr expression= ParseExpression( error_messages, it, it_end );
-			variable_entry.initializer.reset( new ExpressionInitializer( it->file_pos, std::move(expression) ) );
+			U_ASSERT( it < it_end );
+			if( it->type == Lexem::Type::Identifier && it->text == Keywords::zero_init_ )
+				variable_entry.initializer.reset( new ZeroInitializer( it->file_pos ) );
+			else
+			{
+				BinaryOperatorsChainPtr expression= ParseExpression( error_messages, it, it_end );
+				variable_entry.initializer.reset( new ExpressionInitializer( it->file_pos, std::move(expression) ) );
+			}
 		}
 		else if(
 			it->type == Lexem::Type::BracketLeft ||

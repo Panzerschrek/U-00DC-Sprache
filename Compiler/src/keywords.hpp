@@ -43,6 +43,8 @@ enum class Keywords : unsigned int
 	mut_,
 	imut_,
 
+	zero_init_,
+
 	// Reserved keywords for future usage.
 	for_,
 	do_,

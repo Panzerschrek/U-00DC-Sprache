@@ -216,6 +216,15 @@ public:
 	BinaryOperatorsChainPtr expression;
 };
 
+class ZeroInitializer final : public IInitializer
+{
+public:
+	explicit ZeroInitializer( const FilePos& file_pos );
+	virtual ~ZeroInitializer() override= default;
+
+	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
+};
+
 class NamedOperand final : public IBinaryOperatorsChainComponent
 {
 public:
