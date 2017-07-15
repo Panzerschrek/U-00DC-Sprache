@@ -1340,9 +1340,8 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 		{
 			if( variable_declaration.initializer == nullptr )
 			{
-				// TODO - report "expected initializer for reference"
 				errors_.push_back( ReportExpectedInitializer( variables_declaration.file_pos_ ) );
-				throw ProgramError();
+				continue;
 			}
 
 			const BinaryOperatorsChain* initializer_expression= nullptr;
@@ -1357,14 +1356,14 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 				if( constructor_initializer->call_operator.arguments_.size() != 1u )
 				{
 					errors_.push_back( ReportReferencesHaveConstructorsWithExactlyOneParameter( constructor_initializer->file_pos_ ) );
-					throw ProgramError();
+					continue;
 				}
 				initializer_expression= constructor_initializer->call_operator.arguments_.front().get();
 			}
 			else
 			{
 				errors_.push_back( ReportUnsupportedInitializerForReference( variable_declaration.initializer->file_pos_ ) );
-				throw ProgramError();
+				continue;
 			}
 
 			const Variable expression_result=
@@ -1373,18 +1372,18 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 			if( expression_result.type != variable.type )
 			{
 				errors_.push_back( ReportTypesMismatch( variables_declaration.file_pos_, variable.type.ToString(), expression_result.type.ToString() ) );
-				throw ProgramError();
+				continue;
 			}
 			if( expression_result.value_type == ValueType::Value )
 			{
 				errors_.push_back( ReportExpectedReferenceValue( variables_declaration.file_pos_ ) );
-				throw ProgramError();
+				continue;
 			}
 			if( expression_result.value_type == ValueType::ConstReference &&
 				variable.value_type == ValueType::Reference )
 			{
 				errors_.push_back( ReportBindingConstReferenceToNonconstReference( variables_declaration.file_pos_ ) );
-				throw ProgramError();
+				continue;
 			}
 
 			// TODO - maybe make copy of varaible address in new llvm register?
@@ -1401,7 +1400,7 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 		if( !inserted_name )
 		{
 			errors_.push_back( ReportRedefinition( variables_declaration.file_pos_, variable_declaration.name ) );
-			throw ProgramError();
+			return;
 		}
 	}
 }
@@ -1420,12 +1419,12 @@ void CodeBuilder::BuildAssignmentOperatorCode(
 	if( l_var.value_type != ValueType::Reference )
 	{
 		errors_.push_back( ReportExpectedReferenceValue( assignment_operator.file_pos_ ) );
-		throw ProgramError();
+		return;
 	}
 	if( l_var.type != r_var.type )
 	{
 		errors_.push_back( ReportTypesMismatch( assignment_operator.file_pos_, l_var.type.ToString(), r_var.type.ToString() ) );
-		throw ProgramError();
+		return;
 	}
 
 	const FundamentalType* const fundamental_type= boost::get<FundamentalType>( &l_var.type.one_of_type_kind );
@@ -1433,8 +1432,8 @@ void CodeBuilder::BuildAssignmentOperatorCode(
 	{
 		if( l_var.location != Variable::Location::Pointer )
 		{
-			// TODO - write correct lvalue/rvalue flag into variable.
-			throw ProgramError();
+			U_ASSERT(false);
+			return;
 		}
 		llvm::Value* value_for_assignment= CreateMoveToLLVMRegisterInstruction( r_var, function_context );
 		function_context.llvm_ir_builder.CreateStore( value_for_assignment, l_var.llvm_value );
@@ -1445,7 +1444,7 @@ void CodeBuilder::BuildAssignmentOperatorCode(
 		// TODO - arrays not copyable.
 		// TODO - make classes copyable.
 		errors_.push_back( ReportNotImplemented( assignment_operator.file_pos_, "nonfundamental types assignment." ) );
-		throw ProgramError();
+		return;
 	}
 }
 
@@ -1486,12 +1485,12 @@ void CodeBuilder::BuildReturnOperatorCode(
 		if( expression_result.value_type == ValueType::Value )
 		{
 			errors_.push_back( ReportExpectedReferenceValue( return_operator.file_pos_ ) );
-			throw ProgramError();
+			return;
 		}
 		if( expression_result.value_type == ValueType::ConstReference && function_context.return_value_is_mutable )
 		{
 			errors_.push_back( ReportBindingConstReferenceToNonconstReference( return_operator.file_pos_ ) );
-			throw ProgramError();
+			return;
 		}
 
 		function_context.llvm_ir_builder.CreateRet( expression_result.llvm_value );
@@ -1531,7 +1530,7 @@ void CodeBuilder::BuildWhileOperatorCode(
 				while_operator.condition_->file_pos_,
 				bool_type.ToString(),
 				condition_expression.type.ToString() ) );
-		throw ProgramError();
+		return;
 	}
 
 	llvm::Value* condition_in_register= CreateMoveToLLVMRegisterInstruction( condition_expression, function_context );

@@ -66,6 +66,7 @@ private:
 	// Code build methods.
 	// Methods without "noexcept" can throw exceptions.
 	// Methods with "noexcept" can not throw exceptions and must catch exceptions.
+	// Throw only in places, where you can not just make continue/return.
 
 	void BuildFuncCode(
 		Variable& func,
