@@ -243,7 +243,7 @@ static void UnknownNumericConstantTypeTest0()
 		}
 	)";
 
-	const CodeBuilder::BuildResult build_result= BuildProgram( c_program_text );
+	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
@@ -263,7 +263,7 @@ static void UnknownNumericConstantTypeTest1()
 		}
 	)";
 
-	const CodeBuilder::BuildResult build_result= BuildProgram( c_program_text );
+	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
