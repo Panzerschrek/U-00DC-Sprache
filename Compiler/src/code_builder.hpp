@@ -134,6 +134,12 @@ private:
 		const std::vector<Function::Arg>& actual_args,
 		const FilePos& file_pos );
 
+	void ApplyInitializer_r(
+		const Variable& variable,
+		const IInitializer* initializer,
+		NamesScope& block_names,
+		FunctionContext& function_context );
+
 	llvm::Type* GetFundamentalLLVMType( U_FundamentalType fundmantal_type );
 
 	// If variable is on stack, creates move to rigister instruction.

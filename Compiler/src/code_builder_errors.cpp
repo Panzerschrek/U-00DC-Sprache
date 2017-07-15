@@ -249,12 +249,117 @@ CodeBuilderError ReportTooManySuitableOverloadedFunctions( const FilePos& file_p
 }
 
 CodeBuilderError ReportCouldNotSelectOverloadedFunction( const FilePos& file_pos )
-
-{CodeBuilderError error;
+{
+	CodeBuilderError error;
 	error.file_pos= file_pos;
 	error.code= CodeBuilderErrorCode::CouldNotSelectOverloadedFunction;
 
 	error.text= "Could not select function for overloading - no candidates."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportArrayInitializerForNonArray( const FilePos& file_pos )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::ArrayInitializerForNonArray;
+
+	error.text= "Array initializer for nonarray."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportArrayInitializersCountMismatch(
+	const FilePos& file_pos,
+	const size_t expected_initializers,
+	const size_t real_initializers )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::ArrayInitializersCountMismatch;
+
+	error.text=
+		"Array initializers count mismatch. Expected "_SpC +
+		ToProgramString( std::to_string(expected_initializers).c_str() ) + ", got "_SpC +
+		ToProgramString( std::to_string(real_initializers).c_str() ) + "."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportFundamentalTypesHaveConstructorsWithExactlyOneParameter( const FilePos& file_pos )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::FundamentalTypesHaveConstructorsWithExactlyOneParameter;
+
+	error.text= "Fundamental types have constructors with exactly one parameter."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportReferencesHaveConstructorsWithExactlyOneParameter( const FilePos& file_pos )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::ReferencesHaveConstructorsWithExactlyOneParameter;
+
+	error.text= "References have constructors with exactly one parameter."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportUnsupportedInitializerForReference( const FilePos& file_pos )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::UnsupportedInitializerForReference;
+
+	error.text= "Unsupported initializer for reference."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportConstructorInitializerForUnsupportedType( const FilePos& file_pos )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::ConstructorInitializerForUnsupportedType;
+
+	error.text= "Constructor initializer for unsupported type."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportStructInitializerForNonStruct( const FilePos& file_pos )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::StructInitializerForNonStruct;
+
+	error.text= "Structure-initializer for nonstruct."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportDuplicatedStructMemberInitializer( const FilePos& file_pos, const ProgramString& member_name )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::DuplicatedStructMemberInitializer;
+
+	error.text= "Duplicated initializer for"_SpC + member_name + "."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportMissingStructMemberInitializer( const FilePos& file_pos, const ProgramString& member_name )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::MissingStructMemberInitializer;
+
+	error.text= "Missing initializer for"_SpC + member_name + "."_SpC;
 
 	return error;
 }

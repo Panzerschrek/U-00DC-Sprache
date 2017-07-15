@@ -35,6 +35,17 @@ enum class CodeBuilderErrorCode : unsigned int
 	TooManySuitableOverloadedFunctions,
 	CouldNotSelectOverloadedFunction,
 
+	// Initializers errors.
+	ArrayInitializerForNonArray,
+	ArrayInitializersCountMismatch,
+	FundamentalTypesHaveConstructorsWithExactlyOneParameter,
+	ReferencesHaveConstructorsWithExactlyOneParameter,
+	UnsupportedInitializerForReference,
+	ConstructorInitializerForUnsupportedType,
+	StructInitializerForNonStruct,
+	DuplicatedStructMemberInitializer,
+	MissingStructMemberInitializer,
+
 	// Push new error codes at back.
 };
 
@@ -70,5 +81,14 @@ CodeBuilderError ReportBindingConstReferenceToNonconstReference( const FilePos& 
 CodeBuilderError ReportCouldNotOverloadFunction( const FilePos& file_pos );
 CodeBuilderError ReportTooManySuitableOverloadedFunctions( const FilePos& file_pos );
 CodeBuilderError ReportCouldNotSelectOverloadedFunction( const FilePos& file_pos );
+CodeBuilderError ReportArrayInitializerForNonArray( const FilePos& file_pos );
+CodeBuilderError ReportArrayInitializersCountMismatch( const FilePos& file_pos, size_t expected_initializers, size_t real_initializers );
+CodeBuilderError ReportFundamentalTypesHaveConstructorsWithExactlyOneParameter( const FilePos& file_pos );
+CodeBuilderError ReportReferencesHaveConstructorsWithExactlyOneParameter( const FilePos& file_pos );
+CodeBuilderError ReportUnsupportedInitializerForReference( const FilePos& file_pos );
+CodeBuilderError ReportConstructorInitializerForUnsupportedType( const FilePos& file_pos );
+CodeBuilderError ReportStructInitializerForNonStruct( const FilePos& file_pos );
+CodeBuilderError ReportDuplicatedStructMemberInitializer( const FilePos& file_pos, const ProgramString& member_name );
+CodeBuilderError ReportMissingStructMemberInitializer( const FilePos& file_pos, const ProgramString& member_name );
 
 } // namespace U

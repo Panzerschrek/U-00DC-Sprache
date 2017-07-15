@@ -1,16 +1,8 @@
 #include <cstdlib>
 #include <iostream>
 
-#include "../push_disable_llvm_warnings.hpp"
-#include <llvm/ExecutionEngine/ExecutionEngine.h>
-#include <llvm/ExecutionEngine/GenericValue.h>
-#include <llvm/ExecutionEngine/Interpreter.h>
-#include "../pop_llvm_warnings.hpp"
-
 #include "../assert.hpp"
-#include "../code_builder.hpp"
-#include "../lexical_analyzer.hpp"
-#include "../syntax_analyzer.hpp"
+#include "tests.hpp"
 
 #include "code_builder_test.hpp"
 
@@ -18,48 +10,6 @@
 
 namespace U
 {
-
-static std::unique_ptr<llvm::Module> BuildProgram( const char* const text )
-{
-	const LexicalAnalysisResult lexical_analysis_result=
-		LexicalAnalysis( ToProgramString( text ) );
-
-	for( const std::string& lexical_error_message : lexical_analysis_result.error_messages )
-		std::cout << lexical_error_message << "\n";
-	U_ASSERT( lexical_analysis_result.error_messages.empty() );
-
-	const SyntaxAnalysisResult syntax_analysis_result=
-		SyntaxAnalysis( lexical_analysis_result.lexems );
-
-	for( const std::string& syntax_error_message : syntax_analysis_result.error_messages )
-		std::cout << syntax_error_message << "\n";
-	U_ASSERT( syntax_analysis_result.error_messages.empty() );
-
-	CodeBuilder::BuildResult build_result=
-		CodeBuilder().BuildProgram( syntax_analysis_result.program_elements );
-
-	for( const CodeBuilderError& error : build_result.errors )
-		std::cout << error.file_pos.line << ":" << error.file_pos.pos_in_line << " " << ToStdString( error.text ) << "\n";
-
-	U_ASSERT( build_result.errors.empty() );
-
-	return std::move( build_result.module );
-}
-
-static llvm::ExecutionEngine* CreateEngine(
-	std::unique_ptr<llvm::Module> module, const bool needs_dump= false )
-{
-	U_ASSERT( module != nullptr );
-
-	if( needs_dump )
-		module->dump();
-
-	llvm::EngineBuilder builder( std::move(module) );
-	llvm::ExecutionEngine* const engine= builder.create();
-
-	U_ASSERT( engine != nullptr );
-	return engine;
-}
 
 static void SimpleProgramTest()
 {
@@ -71,7 +21,7 @@ static void SimpleProgramTest()
 	}"
 	;
 
-	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ) );
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	U_i32 arg0= 100500, arg1= 1488, arg2= 42;
 
@@ -102,7 +52,7 @@ static void ArgumentsAssignmentTest()
 	}"
 	;
 
-	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ) );
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
 	U_ASSERT( function != nullptr );
@@ -128,7 +78,7 @@ static void BasicBinaryOperationsTest()
 	}"
 	;
 
-	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ) );
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
 	U_ASSERT( function != nullptr );
@@ -158,7 +108,7 @@ static void BasicBinaryOperationsFloatTest()
 	}"
 	;
 
-	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ) );
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
 	U_ASSERT( function != nullptr );
@@ -189,7 +139,7 @@ static void VariablesTest0()
 	}"
 	;
 
-	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ) );
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
 	U_ASSERT( function != nullptr );
@@ -221,7 +171,7 @@ static void VariablesTest1()
 	}"
 	;
 
-	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ) );
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
 	U_ASSERT( function != nullptr );
@@ -250,7 +200,7 @@ static void NumericConstantsTest0()
 	}"
 	;
 
-	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ) );
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo32" );
 	U_ASSERT( function != nullptr );
@@ -279,7 +229,7 @@ static void NumericConstantsTest1()
 	}"
 	;
 
-	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ) );
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo64" );
 	U_ASSERT( function != nullptr );
@@ -303,7 +253,7 @@ static void NumericConstantsTest2()
 	}"
 	;
 
-	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ) );
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Pi" );
 	U_ASSERT( function != nullptr );
@@ -328,7 +278,7 @@ static void UnaryMinusTest()
 	}"
 	;
 
-	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ) );
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
 	U_ASSERT( function != nullptr );
@@ -356,7 +306,7 @@ static void UnaryMinusFloatTest()
 	}"
 	;
 
-	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ) );
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
 	U_ASSERT( function != nullptr );
@@ -379,13 +329,13 @@ static void ArraysTest0()
 	"\
 	fn Foo(i32 x ) : i32\
 	{\
-		let : [ i32, 17 ] tmp;\
-		tmp[5u]= x;\
+		let : [ i32, 17 ] tmp= zero_init;\
+		tmp[5u32]= x;\
 		return tmp[5u] + 5;\
 	}"
 	;
 
-	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ) );
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
 	U_ASSERT( function != nullptr );
@@ -408,13 +358,13 @@ static void ArraysTest1()
 	"\
 	fn Foo( i32 x ) : i32\
 	{\
-		let : [ [ [ i32, 3 ], 5 ], 17 ]  tmp;\
-		tmp[5u][3u][1u]= x;\
+		let : [ [ [ i32, 3 ], 5 ], 17 ] tmp= zero_init;\
+		tmp[5u32][3u32][1u32]= x;\
 		return tmp[5u][3u][1u] + 5;\
 	}"
 	;
 
-	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ) );
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
 	U_ASSERT( function != nullptr );
@@ -441,7 +391,7 @@ static void LogicalBinaryOperationsTest()
 	}"
 	;
 
-	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ) );
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
 	U_ASSERT( function != nullptr );
@@ -477,7 +427,7 @@ static void BooleanBasicTest()
 	}"
 	;
 
-	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ) );
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
 	U_ASSERT( function != nullptr );
@@ -513,7 +463,7 @@ static void CallTest0()
 	}"
 	;
 
-	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ) );
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
 	U_ASSERT( function != nullptr );
@@ -552,7 +502,7 @@ static void CallTest1()
 	}"
 	;
 
-	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ) );
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
 	U_ASSERT( function != nullptr );
@@ -584,7 +534,7 @@ static void RecursiveCallTest()
 		}
 	)";
 
-	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ) );
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Factorial" );
 	U_ASSERT( function != nullptr );
@@ -623,7 +573,7 @@ static void EqualityOperatorsTest()
 	}"
 	;
 
-	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ) );
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
 	U_ASSERT( function != nullptr );
@@ -655,7 +605,7 @@ static void EqualityFloatOperatorsTest()
 	}"
 	;
 
-	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ) );
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
 	U_ASSERT( function != nullptr );
@@ -699,7 +649,7 @@ static void ComparisonSignedOperatorsTest()
 	}"
 	;
 
-	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ) );
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	// 0 means a < b, 1 means a == b, 2 means a > b
 	static const bool c_true_matrix[4][3]=
@@ -765,7 +715,7 @@ static void ComparisonUnsignedOperatorsTest()
 	}"
 	;
 
-	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ) );
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	// 0 means a < b, 1 means a == b, 2 means a > b
 	static const bool c_true_matrix[4][3]=
@@ -831,7 +781,7 @@ static void ComparisonFloatOperatorsTest()
 	}"
 	;
 
-	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ) );
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	// 0 means a < b, 1 means a == b, 2 means a > b
 	static const bool c_true_matrix[4][3]=
@@ -892,7 +842,7 @@ static void WhileOperatorTest()
 	}"
 	;
 
-	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ) );
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
 	U_ASSERT( function != nullptr );
@@ -925,7 +875,7 @@ static void IfOperatorTest0()
 	}"
 	;
 
-	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ) );
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "SimpleIf" );
 	U_ASSERT( function != nullptr );
@@ -965,7 +915,7 @@ static void IfOperatorTest1()
 	}"
 	;
 
-	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ) );
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "IfElse" );
 	U_ASSERT( function != nullptr );
@@ -1006,7 +956,7 @@ static void IfOperatorTest2()
 	}"
 	;
 
-	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ) );
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "IfElseIf" );
 	U_ASSERT( function != nullptr );
@@ -1056,7 +1006,7 @@ static void IfOperatorTest3()
 	}"
 	;
 
-	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ) );
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "IfElseIfElse" );
 	U_ASSERT( function != nullptr );
@@ -1107,7 +1057,7 @@ static void IfOperatorTest4()
 	}"
 	;
 
-	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ) );
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "IfElseIfElseIf" );
 	U_ASSERT( function != nullptr );
@@ -1166,7 +1116,7 @@ static void IfOperatorTest5()
 	}"
 	;
 
-	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ) );
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "IfElseIfElseIf" );
 	U_ASSERT( function != nullptr );
@@ -1218,7 +1168,7 @@ static void BreakOperatorTest0()
 	}"
 	;
 
-	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ) );
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
 	U_ASSERT( function != nullptr );
@@ -1265,7 +1215,7 @@ static void BreakOperatorTest1()
 	}"
 	;
 
-	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ) );
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
 	U_ASSERT( function != nullptr );
@@ -1297,7 +1247,7 @@ static void BreakOperatorTest2()
 	}"
 	;
 
-	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ) );
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
 	U_ASSERT( function != nullptr );
@@ -1329,7 +1279,7 @@ static void ContinueOperatorTest0()
 	}"
 	;
 
-	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ) );
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
 	U_ASSERT( function != nullptr );
@@ -1366,7 +1316,7 @@ static void ContinueOperatorTest1()
 	}"
 	;
 
-	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ) );
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
 	U_ASSERT( function != nullptr );
@@ -1392,7 +1342,7 @@ static void StructTest0()
 	}
 	fn Foo( i32 a, i32 b, i32 c ) : i32
 	{
-		let : Point p;
+		let : Point p= zero_init;
 		let : u32 index= 0u32;
 		p.x= a;
 		p.y = b;
@@ -1404,7 +1354,7 @@ static void StructTest0()
 	}
 	)";
 
-	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ) );
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
 	U_ASSERT( function != nullptr );
@@ -1443,14 +1393,14 @@ static void StructTest1()
 	}
 	fn Foo( f64 a, f64 b ) : f64
 	{
-		let : Point p;
+		let : Point p= zero_init;
 		p.dummy.y= a;
 		p.dummy.z[1u]= b;
 		return p.dummy.y - p.dummy.z[1u];
 	}
 	)";
 
-	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ) );
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
 	U_ASSERT( function != nullptr );
@@ -1484,7 +1434,7 @@ static void BlocksTest()
 	}
 	)";
 
-	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ) );
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
 	U_ASSERT( function != nullptr );
@@ -1517,7 +1467,7 @@ static void ReferencesTest0()
 	}
 	)";
 
-	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ) );
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
 	U_ASSERT( function != nullptr );
@@ -1543,7 +1493,7 @@ static void ReferencesTest1()
 	}
 	)";
 
-	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ) );
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
 	U_ASSERT( function != nullptr );
@@ -1563,7 +1513,7 @@ static void ReferencesTest2()
 	R"(
 	fn Foo( i32 a, i32 b ) : i32
 	{
-		let : [ i32, 4 ] arr;
+		let : [ i32, 4 ] arr= zero_init;
 		let : [ i32, 4 ] &arr_ref= arr;
 		arr_ref[0u]= a;
 		arr_ref[1u]= b;
@@ -1572,7 +1522,7 @@ static void ReferencesTest2()
 	}
 	)";
 
-	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ) );
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
 	U_ASSERT( function != nullptr );
@@ -1605,7 +1555,7 @@ static void ReferencesTest3()
 	}
 	)";
 
-	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ) );
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
 	U_ASSERT( function != nullptr );
@@ -1630,7 +1580,7 @@ static void ReferencesTest4()
 	}
 	)";
 
-	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ) );
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
 	U_ASSERT( function != nullptr );
@@ -1662,7 +1612,7 @@ static void ReferencesTest5()
 	}
 	)";
 
-	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ) );
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
 	U_ASSERT( function != nullptr );
@@ -1695,7 +1645,7 @@ static void ReferencesTest6()
 	}
 	)";
 
-	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ) );
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
 	U_ASSERT( function != nullptr );
@@ -1728,13 +1678,13 @@ static void ReferencesTest7()
 	{ c.zzz[2u] = 99985; }
 	fn Foo() : i32
 	{
-		let : C mut c;
+		let : C mut c= zero_init;
 		Bar( c );
 		return c.zzz[2u];
 	}
 	)";
 
-	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ) );
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
 	U_ASSERT( function != nullptr );
@@ -1756,13 +1706,13 @@ static void ReferencesTest8()
 	{ arr[3u] = 99985; }
 	fn Foo() : i32
 	{
-		let : [ i32, 5 ] arr;
+		let : [ i32, 5 ] arr= zero_init;
 		Bar( arr );
 		return arr[3u];
 	}
 	)";
 
-	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ) );
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
 	U_ASSERT( function != nullptr );
@@ -1791,7 +1741,7 @@ static void ReferencesTest9()
 	}
 	)";
 
-	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ) );
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
 	U_ASSERT( function != nullptr );
@@ -1827,7 +1777,7 @@ static void BindValueToConstReferenceTest0()
 	}
 	)";
 
-	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ) );
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
 	U_ASSERT( function != nullptr );
@@ -1865,7 +1815,7 @@ static void FunctionsOverloadingTest0()
 	}
 	)";
 
-	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ) );
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
 	U_ASSERT( function != nullptr );
 
@@ -1897,7 +1847,7 @@ static void FunctionsOverloadingTest1()
 	}
 	)";
 
-	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ) );
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
 	U_ASSERT( function != nullptr );
 
@@ -1928,7 +1878,7 @@ static void FunctionsOverloadingTest2()
 	}
 	)";
 
-	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ) );
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
 	U_ASSERT( function != nullptr );
 
@@ -1959,7 +1909,7 @@ static void FunctionsOverloadingTest3()
 	}
 	)";
 
-	llvm::ExecutionEngine* const engine= CreateEngine( BuildProgram( c_program_text ) );
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
 	U_ASSERT( function != nullptr );
 

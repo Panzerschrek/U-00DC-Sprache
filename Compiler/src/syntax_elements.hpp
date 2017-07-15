@@ -32,6 +32,9 @@ typedef std::unique_ptr<IUnaryPostfixOperator> IUnaryPostfixOperatorPtr;
 typedef std::vector<IUnaryPrefixOperatorPtr > PrefixOperators ;
 typedef std::vector<IUnaryPostfixOperatorPtr> PostfixOperators;
 
+class IInitializer;
+typedef std::unique_ptr<IInitializer> IInitializerPtr;
+
 class IUnaryPrefixOperator : public SyntaxElementBase
 {
 public:
@@ -151,6 +154,75 @@ public:
 	virtual ~IBinaryOperatorsChainComponent(){}
 
 	virtual IBinaryOperatorsChainComponentPtr Clone() const= 0;
+};
+
+class IInitializer : public SyntaxElementBase
+{
+public:
+	explicit IInitializer( const FilePos& file_pos );
+	virtual ~IInitializer() override= default;
+};
+
+class ArrayInitializer final : public IInitializer
+{
+public:
+	explicit ArrayInitializer( const FilePos& file_pos );
+	virtual ~ArrayInitializer() override= default;
+
+	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
+
+	std::vector<IInitializerPtr> initializers;
+	bool has_continious_initializer= false; // ... after last initializator.
+};
+
+class StructNamedInitializer final : public IInitializer
+{
+public:
+	explicit StructNamedInitializer( const FilePos& file_pos );
+	virtual ~StructNamedInitializer() override= default;
+
+	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
+
+	struct MemberInitializer
+	{
+		ProgramString name;
+		IInitializerPtr initializer;
+	};
+
+	std::vector<MemberInitializer> members_initializers;
+};
+
+class ConstructorInitializer final : public IInitializer
+{
+public:
+	ConstructorInitializer(
+		const FilePos& file_pos,
+		std::vector<BinaryOperatorsChainPtr> arguments );
+	virtual ~ConstructorInitializer() override= default;
+
+	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
+
+	const CallOperator call_operator;
+};
+
+class ExpressionInitializer final : public IInitializer
+{
+public:
+	ExpressionInitializer( const FilePos& file_pos, BinaryOperatorsChainPtr expression );
+	virtual ~ExpressionInitializer() override= default;
+
+	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
+
+	BinaryOperatorsChainPtr expression;
+};
+
+class ZeroInitializer final : public IInitializer
+{
+public:
+	explicit ZeroInitializer( const FilePos& file_pos );
+	virtual ~ZeroInitializer() override= default;
+
+	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
 };
 
 class NamedOperand final : public IBinaryOperatorsChainComponent
@@ -323,7 +395,7 @@ struct VariablesDeclaration final : public IBlockElement
 	struct VariableEntry
 	{
 		ProgramString name;
-		BinaryOperatorsChainPtr initial_value;
+		IInitializerPtr initializer; // May be null for types with default constructor.
 		MutabilityModifier mutability_modifier= MutabilityModifier::None;
 		ReferenceModifier reference_modifier= ReferenceModifier::None;
 	};

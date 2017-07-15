@@ -487,6 +487,214 @@ static TypeName ParseTypeName(
 	return result;
 }
 
+
+static IInitializerPtr ParseInitializer(
+	SyntaxErrorMessages& error_messages,
+	Lexems::const_iterator& it,
+	const Lexems::const_iterator it_end,
+	bool parse_expression_initializer );
+
+static std::unique_ptr<ArrayInitializer> ParseArrayInitializer(
+	SyntaxErrorMessages& error_messages,
+	Lexems::const_iterator& it,
+	const Lexems::const_iterator it_end )
+{
+	U_ASSERT( it < it_end );
+	U_ASSERT( it->type == Lexem::Type::SquareBracketLeft );
+
+	std::unique_ptr<ArrayInitializer> result( new ArrayInitializer( it->file_pos ) );
+	++it;
+	U_ASSERT( it < it_end );
+
+	while( it < it_end && it->type != Lexem::Type::SquareBracketRight )
+	{
+		result->initializers.push_back( ParseInitializer( error_messages, it, it_end, true ) );
+		U_ASSERT( it < it_end );
+		if( it->type == Lexem::Type::Comma )
+			++it;
+		else
+			break;
+		// TODO - parse continious flag here
+	}
+	if( it == it_end || it->type != Lexem::Type::SquareBracketRight )
+	{
+		PushErrorMessage( error_messages, *it );
+		return result;
+	}
+
+	++it;
+
+	return result;
+}
+
+static std::unique_ptr<StructNamedInitializer> ParseStructNamedInitializer(
+	SyntaxErrorMessages& error_messages,
+	Lexems::const_iterator& it,
+	const Lexems::const_iterator it_end )
+{
+	U_ASSERT( it < it_end );
+	U_ASSERT( it->type == Lexem::Type::BraceLeft );
+
+	std::unique_ptr<StructNamedInitializer> result( new StructNamedInitializer( it->file_pos ) );
+	++it;
+	U_ASSERT( it < it_end );
+
+	while( it < it_end && it->type != Lexem::Type::BraceRight )
+	{
+		U_ASSERT( it < it_end );
+		if( it->type == Lexem::Type::Dot )
+			++it;
+		else
+		{
+			PushErrorMessage( error_messages, *it );
+			return result;
+		}
+
+		U_ASSERT( it < it_end );
+		if( it->type != Lexem::Type::Identifier )
+		{
+			PushErrorMessage( error_messages, *it );
+			return result;
+		}
+		ProgramString name= it->text;
+		++it;
+
+		IInitializerPtr initializer;
+		if( it->type == Lexem::Type::Assignment )
+		{
+			++it;
+			U_ASSERT( it < it_end );
+			if( it->type == Lexem::Type::Identifier && it->text == Keywords::zero_init_ )
+			{
+				initializer.reset( new ZeroInitializer( it->file_pos ) );
+				++it;
+			}
+			else
+			{
+				BinaryOperatorsChainPtr expression= ParseExpression( error_messages, it, it_end );
+				initializer.reset( new ExpressionInitializer( it->file_pos, std::move(expression) ) );
+			}
+		}
+		else if(
+			it->type == Lexem::Type::BracketLeft ||
+			it->type == Lexem::Type::SquareBracketLeft ||
+			it->type == Lexem::Type::BraceLeft )
+		{
+			initializer= ParseInitializer( error_messages, it, it_end, false );
+		}
+
+		result->members_initializers.emplace_back();
+		result->members_initializers.back().name= std::move(name);
+		result->members_initializers.back().initializer= std::move(initializer);
+
+		if( it->type == Lexem::Type::Comma )
+			++it;
+	}
+	if( it == it_end || it->type != Lexem::Type::BraceRight )
+	{
+		PushErrorMessage( error_messages, *it );
+		return result;
+	}
+
+	++it;
+
+	return result;
+}
+
+static std::unique_ptr<ConstructorInitializer> ParseConstructorInitializer(
+	SyntaxErrorMessages& error_messages,
+	Lexems::const_iterator& it,
+	const Lexems::const_iterator it_end )
+{
+	U_ASSERT( it < it_end );
+	U_ASSERT( it->type == Lexem::Type::BracketLeft );
+
+	++it;
+	U_ASSERT( it < it_end );
+
+	std::vector<BinaryOperatorsChainPtr> args;
+	while( it < it_end && it->type != Lexem::Type::BracketRight )
+	{
+		args.push_back( ParseExpression( error_messages, it, it_end ) );
+		U_ASSERT( it < it_end );
+		if( it->type == Lexem::Type::Comma )
+		{
+			++it;
+			U_ASSERT( it < it_end );
+			// Disallow comma after closing bracket
+			if( it->type == Lexem::Type::BracketRight )
+			{
+				PushErrorMessage( error_messages, *it );
+				return nullptr;
+			}
+		}
+		else
+			break;
+	}
+	if( it == it_end || it->type != Lexem::Type::BracketRight )
+	{
+		PushErrorMessage( error_messages, *it );
+		return nullptr;
+	}
+	++it;
+
+	std::unique_ptr<ConstructorInitializer> result(
+		new ConstructorInitializer( it->file_pos, std::move(args) ) );
+
+	return result;
+}
+
+static std::unique_ptr<ExpressionInitializer> ParseExpressionInitializer(
+	SyntaxErrorMessages& error_messages,
+	Lexems::const_iterator& it,
+	const Lexems::const_iterator it_end )
+{
+	std::unique_ptr<ExpressionInitializer> result(
+		new ExpressionInitializer(
+			it->file_pos,
+			ParseExpression( error_messages, it, it_end ) ) );
+
+	return result;
+}
+
+static IInitializerPtr ParseInitializer(
+	SyntaxErrorMessages& error_messages,
+	Lexems::const_iterator& it,
+	const Lexems::const_iterator it_end,
+	const bool parse_expression_initializer )
+{
+	U_ASSERT( it < it_end );
+
+	if( it->type == Lexem::Type::SquareBracketLeft )
+	{
+		return ParseArrayInitializer( error_messages, it, it_end );
+	}
+	else if( it->type == Lexem::Type::BracketLeft )
+	{
+		return ParseConstructorInitializer( error_messages, it, it_end );
+	}
+	else if( it->type == Lexem::Type::BraceLeft )
+	{
+		return ParseStructNamedInitializer( error_messages, it, it_end );
+	}
+	else if( it->type == Lexem::Type::Identifier && it->text == Keywords::zero_init_ )
+	{
+		const auto prev_it= it;
+		++it;
+		return IInitializerPtr( new ZeroInitializer( prev_it->file_pos ) );
+	}
+	else if( parse_expression_initializer )
+	{
+		// In some cases usage of expression in initializer is forbidden.
+		return ParseExpressionInitializer( error_messages, it, it_end );
+	}
+	else
+	{
+		PushErrorMessage( error_messages, *it );
+		return nullptr;
+	}
+}
+
 static VariablesDeclarationPtr ParseVariablesDeclaration(
 	SyntaxErrorMessages& error_messages,
 	Lexems::const_iterator& it,
@@ -549,11 +757,27 @@ static VariablesDeclarationPtr ParseVariablesDeclaration(
 		++it;
 		U_ASSERT( it < it_end );
 
-		// TODO - add initializers parsing.
 		if( it->type == Lexem::Type::Assignment )
 		{
 			++it;
-			variable_entry.initial_value= ParseExpression( error_messages, it, it_end );
+			U_ASSERT( it < it_end );
+			if( it->type == Lexem::Type::Identifier && it->text == Keywords::zero_init_ )
+			{
+				variable_entry.initializer.reset( new ZeroInitializer( it->file_pos ) );
+				++it;
+			}
+			else
+			{
+				BinaryOperatorsChainPtr expression= ParseExpression( error_messages, it, it_end );
+				variable_entry.initializer.reset( new ExpressionInitializer( it->file_pos, std::move(expression) ) );
+			}
+		}
+		else if(
+			it->type == Lexem::Type::BracketLeft ||
+			it->type == Lexem::Type::SquareBracketLeft ||
+			it->type == Lexem::Type::BraceLeft )
+		{
+			variable_entry.initializer= ParseInitializer( error_messages, it, it_end, false );
 		}
 
 		if( it->type == Lexem::Type::Comma )
@@ -572,6 +796,7 @@ static VariablesDeclarationPtr ParseVariablesDeclaration(
 			PushErrorMessage( error_messages, *it );
 			return nullptr;
 		}
+
 	} while( it < it_end );
 
 	return decl;

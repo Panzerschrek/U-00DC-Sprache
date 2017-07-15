@@ -1334,55 +1334,53 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 		{
 			variable.llvm_value= function_context.llvm_ir_builder.CreateAlloca( variable.type.GetLLVMType() );
 
-			const FundamentalType* const fundamental_type= boost::get<FundamentalType>( &type.one_of_type_kind );
-			if( fundamental_type != nullptr )
-			{
-				if( variable_declaration.initial_value == nullptr )
-				{
-					errors_.push_back( ReportExpectedInitializer( variables_declaration.file_pos_ ) );
-					throw ProgramError();
-				}
-
-				const Variable initialzier_expression=
-					BuildExpressionCode( *variable_declaration.initial_value, block_names, function_context );
-
-				if( initialzier_expression.type !=variable.type )
-				{
-					errors_.push_back( ReportTypesMismatch( variables_declaration.file_pos_, variable.type.ToString(), initialzier_expression.type.ToString() ) );
-					throw ProgramError();
-				}
-
-				llvm::Value* value_for_assignment= CreateMoveToLLVMRegisterInstruction( initialzier_expression, function_context );
-				function_context.llvm_ir_builder.CreateStore( value_for_assignment, variable.llvm_value );
-			}
-			else
-			{
-				// TODO - support nonfundamental types initialization.
-			}
+			ApplyInitializer_r( variable, variable_declaration.initializer.get(), block_names, function_context );
 		}
 		else if( variable_declaration.reference_modifier == ReferenceModifier::Reference )
 		{
-			if( variable_declaration.initial_value == nullptr )
+			if( variable_declaration.initializer == nullptr )
 			{
 				// TODO - report "expected initializer for reference"
 				errors_.push_back( ReportExpectedInitializer( variables_declaration.file_pos_ ) );
 				throw ProgramError();
 			}
 
-			const Variable initialzier_expression=
-				BuildExpressionCode( *variable_declaration.initial_value, block_names, function_context );
-
-			if( initialzier_expression.type != variable.type )
+			const BinaryOperatorsChain* initializer_expression= nullptr;
+			if( const ExpressionInitializer* const expression_initializer=
+				dynamic_cast<const ExpressionInitializer*>( variable_declaration.initializer.get() ) )
 			{
-				errors_.push_back( ReportTypesMismatch( variables_declaration.file_pos_, variable.type.ToString(), initialzier_expression.type.ToString() ) );
+				initializer_expression= expression_initializer->expression.get();
+			}
+			else if( const ConstructorInitializer* const constructor_initializer=
+				dynamic_cast<const ConstructorInitializer*>( variable_declaration.initializer.get() ) )
+			{
+				if( constructor_initializer->call_operator.arguments_.size() != 1u )
+				{
+					errors_.push_back( ReportReferencesHaveConstructorsWithExactlyOneParameter( constructor_initializer->file_pos_ ) );
+					throw ProgramError();
+				}
+				initializer_expression= constructor_initializer->call_operator.arguments_.front().get();
+			}
+			else
+			{
+				errors_.push_back( ReportUnsupportedInitializerForReference( variable_declaration.initializer->file_pos_ ) );
 				throw ProgramError();
 			}
-			if( initialzier_expression.value_type == ValueType::Value )
+
+			const Variable expression_result=
+				BuildExpressionCode( *initializer_expression, block_names, function_context );
+
+			if( expression_result.type != variable.type )
+			{
+				errors_.push_back( ReportTypesMismatch( variables_declaration.file_pos_, variable.type.ToString(), expression_result.type.ToString() ) );
+				throw ProgramError();
+			}
+			if( expression_result.value_type == ValueType::Value )
 			{
 				errors_.push_back( ReportExpectedReferenceValue( variables_declaration.file_pos_ ) );
 				throw ProgramError();
 			}
-			if( initialzier_expression.value_type == ValueType::ConstReference &&
+			if( expression_result.value_type == ValueType::ConstReference &&
 				variable.value_type == ValueType::Reference )
 			{
 				errors_.push_back( ReportBindingConstReferenceToNonconstReference( variables_declaration.file_pos_ ) );
@@ -1390,7 +1388,7 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 			}
 
 			// TODO - maybe make copy of varaible address in new llvm register?
-			variable.llvm_value= initialzier_expression.llvm_value;
+			variable.llvm_value= expression_result.llvm_value;
 		}
 		else
 		{

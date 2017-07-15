@@ -375,9 +375,8 @@ Class::Class()
 Class::~Class()
 {}
 
-const Class::Field* Class::GetField( const ProgramString& name )
+const Class::Field* Class::GetField( const ProgramString& name ) const
 {
-
 	for( const Field& field : fields )
 	{
 		if( field.name == name )
