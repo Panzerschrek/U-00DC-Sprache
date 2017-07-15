@@ -58,7 +58,7 @@ static void NameNotFoundTest2()
 		class S{};
 		fn Foo() : i32
 		{
-			let : S x;
+			let : S x{};
 			return x.unexistent_field;
 		}
 	)";
@@ -241,8 +241,8 @@ static void OperationNotSupportedForThisTypeTest0()
 		fn Bar(){}
 		fn Foo()
 		{
-			let : S s;
-			let : [ i32, 5 ] arr;
+			let : S s= zero_init;
+			let : [ i32, 5 ] arr= zero_init;
 			false + true; // No binary operators for booleans.
 			1u8 - 4u8; // Operation not supported for small integers.
 			arr * arr; // Operation not supported for arrays.
@@ -285,7 +285,7 @@ static void OperationNotSupportedForThisTypeTest1()
 		fn Foo()
 		{
 			let : f32 var= 0.0f32;
-			let : S s;
+			let : S s= zero_init;
 			var[ 42u32 ]; // Indexation of variable.
 			Bar[ 0u32 ]; // Indexation of function.
 			s[ 45u32 ]; // Indexation of class variable.
@@ -312,7 +312,7 @@ static void OperationNotSupportedForThisTypeTest2()
 		fn Foo()
 		{
 			let : f32 var= 0.0f32;
-			let : [ u8, 16 ] s;
+			let : [ u8, 16 ] s= zero_init;
 			var.m; // Member access of variable.
 			Bar.member; // Member access of function.
 			s.size; // Member access of array.
@@ -339,8 +339,8 @@ static void OperationNotSupportedForThisTypeTest3()
 		fn Bar(){}
 		fn Foo()
 		{
-			let : S s;
-			let : [ u8, 16 ] a;
+			let : S s= zero_init;
+			let : [ u8, 16 ] a= zero_init;
 			-s; // Unary minus for class variable.
 			-Bar; // Unary minus for of function.
 			-a; // Unary minus for array.
@@ -941,25 +941,6 @@ static void NoReturnInFunctionReturningNonVoidTest4()
 	U_ASSERT( build_result.errors.empty() );
 }
 
-static void ExpectedInitializerTest0()
-{
-	static const char c_program_text[]=
-	R"(
-		fn Foo()
-		{
-			let : i32 x;
-		}
-	)";
-
-	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
-
-	U_ASSERT( !build_result.errors.empty() );
-	const CodeBuilderError& error= build_result.errors.front();
-
-	U_ASSERT( error.code == CodeBuilderErrorCode::ExpectedInitializer );
-	//U_ASSERT( error.file_pos.line == 4u );
-}
-
 static void ExpectedReferenceValueTest0()
 {
 	// Assign to non-reference value.
@@ -1363,7 +1344,6 @@ void RunCodeBuilderErrorsTests()
 	NoReturnInFunctionReturningNonVoidTest2();
 	NoReturnInFunctionReturningNonVoidTest3();
 	NoReturnInFunctionReturningNonVoidTest4();
-	ExpectedInitializerTest0();
 	ExpectedReferenceValueTest0();
 	ExpectedReferenceValueTest1();
 	ExpectedReferenceValueTest2();

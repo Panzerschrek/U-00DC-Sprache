@@ -9,9 +9,70 @@
 namespace U
 {
 
+static void ExpectedInitializerTest0()
+{
+	// Expected initializer for fundamental variable.
+	static const char c_program_text[]=
+	R"(
+		fn Foo()
+		{
+			let : i32 x;
+		}
+	)";
+
+	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_ASSERT( error.code == CodeBuilderErrorCode::ExpectedInitializer );
+	//U_ASSERT( error.file_pos.line == 4u );
+}
+
+static void ExpectedInitializerTest1()
+{
+	// Expected initializer for array.
+	static const char c_program_text[]=
+	R"(
+		fn Foo()
+		{
+			let : [ i32, 1024 ] x;
+		}
+	)";
+
+	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_ASSERT( error.code == CodeBuilderErrorCode::ExpectedInitializer );
+	//U_ASSERT( error.file_pos.line == 4u );
+}
+
+static void ExpectedInitializerTest2()
+{
+	// Expected initializer for struct.
+	static const char c_program_text[]=
+	R"(
+		class S{ x : i32; }
+		fn Foo()
+		{
+			let : S s;
+		}
+	)";
+
+	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_ASSERT( error.code == CodeBuilderErrorCode::ExpectedInitializer );
+	//U_ASSERT( error.file_pos.line == 4u );
+}
+
 static void ArrayInitializerForNonArrayTest0()
 {
-	// Arrai initializer for fundamental type.
+	// Array initializer for fundamental type.
 	static const char c_program_text[]=
 	R"(
 		fn Foo()
@@ -275,6 +336,9 @@ static void MissingStructMemberInitializerTest0()
 
 void RunInitializersErrorsTest()
 {
+	ExpectedInitializerTest0();
+	ExpectedInitializerTest1();
+	ExpectedInitializerTest2();
 	ArrayInitializerForNonArrayTest0();
 	ArrayInitializerForNonArrayTest1();
 	ArrayInitializersCountMismatchTest0();

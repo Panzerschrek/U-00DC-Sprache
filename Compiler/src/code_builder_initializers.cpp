@@ -23,13 +23,11 @@ void CodeBuilder::ApplyInitializer_r(
 	NamesScope& block_names,
 	FunctionContext& function_context )
 {
+	// SPRACHE_TODO - allow missing initializers for types with default constructor.
 	if( initializer == nullptr )
 	{
-		if( boost::get<FundamentalType>( &variable.type.one_of_type_kind ) != nullptr )
-		{
-			// TODO - set file_pos
-			errors_.push_back( ReportExpectedInitializer( FilePos() ) );
-		}
+		// TODO - set file_pos
+		errors_.push_back( ReportExpectedInitializer( FilePos() ) );
 		return;
 	}
 
