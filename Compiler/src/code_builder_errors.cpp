@@ -364,4 +364,15 @@ CodeBuilderError ReportMissingStructMemberInitializer( const FilePos& file_pos, 
 	return error;
 }
 
+CodeBuilderError ReportInvalidTypeForAutoVariable( const FilePos& file_pos, const ProgramString& type_name )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::InvalidTypeForAutoVariable;
+
+	error.text= "Invalid type for auto variable: "_SpC + type_name + "."_SpC;
+
+	return error;
+}
+
 } // namespace U

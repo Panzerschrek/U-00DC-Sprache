@@ -45,6 +45,7 @@ enum class CodeBuilderErrorCode : unsigned int
 	StructInitializerForNonStruct,
 	DuplicatedStructMemberInitializer,
 	MissingStructMemberInitializer,
+	InvalidTypeForAutoVariable,
 
 	// Push new error codes at back.
 };
@@ -90,5 +91,6 @@ CodeBuilderError ReportConstructorInitializerForUnsupportedType( const FilePos& 
 CodeBuilderError ReportStructInitializerForNonStruct( const FilePos& file_pos );
 CodeBuilderError ReportDuplicatedStructMemberInitializer( const FilePos& file_pos, const ProgramString& member_name );
 CodeBuilderError ReportMissingStructMemberInitializer( const FilePos& file_pos, const ProgramString& member_name );
+CodeBuilderError ReportInvalidTypeForAutoVariable( const FilePos& file_pos, const ProgramString& type_name );
 
 } // namespace U

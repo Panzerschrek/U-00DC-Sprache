@@ -95,6 +95,11 @@ private:
 		NamesScope& block_names,
 		FunctionContext& function_context );
 
+	void BuildAutoVariableDeclarationCode(
+		const AutoVariableDeclaration& auto_variable_declaration,
+		NamesScope& block_names,
+		FunctionContext& function_context );
+
 	void BuildAssignmentOperatorCode(
 		const AssignmentOperator& assignment_operator,
 		const NamesScope& block_names,

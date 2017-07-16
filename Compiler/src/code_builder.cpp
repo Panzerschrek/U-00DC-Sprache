@@ -568,6 +568,11 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockCode(
 			{
 				BuildVariablesDeclarationCode( *variables_declaration, block_names, function_context );
 			}
+			else if( const AutoVariableDeclaration* auto_variable_declaration=
+				dynamic_cast<const AutoVariableDeclaration*>( block_element_ptr ) )
+			{
+				BuildAutoVariableDeclarationCode( *auto_variable_declaration, block_names, function_context );
+			}
 			else if(
 				const SingleExpressionOperator* expression=
 				dynamic_cast<const SingleExpressionOperator*>( block_element_ptr ) )
@@ -1405,6 +1410,93 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 			errors_.push_back( ReportRedefinition( variables_declaration.file_pos_, variable_declaration.name ) );
 			continue;
 		}
+	}
+}
+
+void CodeBuilder::BuildAutoVariableDeclarationCode(
+	const AutoVariableDeclaration& auto_variable_declaration,
+	NamesScope& block_names,
+	FunctionContext& function_context )
+{
+	const Variable initializer_experrsion=
+		BuildExpressionCode( *auto_variable_declaration.initializer_expression, block_names, function_context );
+
+	{ // Check expression type. Expression can have exotic types, such "Overloading functions set", "class name", etc.
+		struct Visitor final : public boost::static_visitor<>
+		{
+			bool type_is_ok= false;
+
+			void operator()( const FundamentalType& ){ type_is_ok= true; }
+			void operator()( const FunctionPtr& ) { type_is_ok= false; }
+			void operator()( const ArrayPtr& ) { type_is_ok= false; }// TODO - support constructors for classes
+			void operator()( const ClassPtr& ) { type_is_ok= false; }
+			void operator()( const NontypeStub& ) { type_is_ok= false; }
+		};
+
+		Visitor visitor;
+		boost::apply_visitor( visitor, initializer_experrsion.type.one_of_type_kind );
+		if( !visitor.type_is_ok )
+		{
+			errors_.push_back( ReportInvalidTypeForAutoVariable( auto_variable_declaration.file_pos_, initializer_experrsion.type.ToString() ) );
+			return;
+		}
+	}
+
+	Variable variable;
+	variable.location= Variable::Location::Pointer;
+
+	// SPRACHE_TODO - make variables without explicit mutability modifiers immutable.
+	if( auto_variable_declaration.mutability_modifier == MutabilityModifier::Immutable )
+		variable.value_type= ValueType::ConstReference;
+	else
+		variable.value_type= ValueType::Reference;
+
+	variable.type= initializer_experrsion.type;
+
+	if( auto_variable_declaration.reference_modifier == ReferenceModifier::Reference )
+	{
+		if( initializer_experrsion.value_type == ValueType::Value )
+		{
+			errors_.push_back( ReportExpectedReferenceValue( auto_variable_declaration.file_pos_ ) );
+			return;
+		}
+		if( initializer_experrsion.value_type == ValueType::ConstReference &&
+			variable.value_type == ValueType::ConstReference )
+		{
+			errors_.push_back( ReportBindingConstReferenceToNonconstReference( auto_variable_declaration.file_pos_ ) );
+			return;
+		}
+
+		variable.llvm_value= initializer_experrsion.llvm_value;
+	}
+	else if( auto_variable_declaration.reference_modifier == ReferenceModifier::None )
+	{
+		variable.llvm_value= function_context.llvm_ir_builder.CreateAlloca( variable.type.GetLLVMType() );
+
+		if( const FundamentalType* const fundamental_type= boost::get<FundamentalType>( &variable.type.one_of_type_kind ) )
+		{
+			U_UNUSED(fundamental_type);
+			llvm::Value* const value_for_assignment= CreateMoveToLLVMRegisterInstruction( initializer_experrsion, function_context );
+			function_context.llvm_ir_builder.CreateStore( value_for_assignment, variable.llvm_value );
+		}
+		else
+		{
+			errors_.push_back( ReportNotImplemented( auto_variable_declaration.file_pos_, "expression initialization for nonfundamental types" ) );
+			return;
+		}
+	}
+	else
+	{
+		U_ASSERT(false);
+	}
+
+	const NamesScope::InsertedName* inserted_name=
+		block_names.AddName( auto_variable_declaration.name, std::move(variable) );
+
+	if( inserted_name == nullptr )
+	{
+		errors_.push_back( ReportRedefinition( auto_variable_declaration.file_pos_, auto_variable_declaration.name ) );
+		return;
 	}
 }
 
