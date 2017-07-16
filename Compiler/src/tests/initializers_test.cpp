@@ -587,10 +587,10 @@ static void ZeroInitilaizerTest8()
 	R"(
 	fn Foo() : i32
 	{
-		var [ i32, 65536 ] imut arr= zero_init;
+		var [ i32, 4096 ] imut arr= zero_init;
 		var u32 i= 0u;
 		var i32 result= 0;
-		while( i < 65536u )
+		while( i < 4096u )
 		{
 			result= result | arr[i];
 			i= i + 1u;
