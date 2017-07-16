@@ -92,6 +92,13 @@ private:
 		const NamesScope& names,
 		FunctionContext& function_context );
 
+	Variable BuildBinaryOperator(
+		const Variable& l_var,
+		const Variable& r_var,
+		BinaryOperator binary_operator,
+		const FilePos& file_pos,
+		FunctionContext& function_context );
+
 	Variable BuildIndexationOperator(
 		const Variable& variable,
 		const IndexationOperator& indexation_operator,

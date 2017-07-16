@@ -55,277 +55,7 @@ Variable CodeBuilder::BuildExpressionCode_r(
 				names,
 				function_context );
 
-		Variable result;
-
-		// TODO - add cast for some integers here.
-		if( r_var.type != l_var.type )
-		{
-			// TODO - report types mismatch.
-			throw ProgramError();
-		}
-
-		const Type& result_type= r_var.type;
-		const FundamentalType* const fundamental_type= boost::get<FundamentalType>( &result_type.one_of_type_kind );
-
-		switch( comp.operator_ )
-		{
-		case BinaryOperator::Add:
-		case BinaryOperator::Sub:
-		case BinaryOperator::Div:
-		case BinaryOperator::Mul:
-
-			if( fundamental_type == nullptr )
-			{
-				errors_.push_back( ReportOperationNotSupportedForThisType( file_pos, result_type.ToString() ) );
-				throw ProgramError();
-			}
-			else
-			{
-				if( result_type.SizeOf() < 4u )
-				{
-					// Operation supported only for 32 and 64bit operands
-					errors_.push_back( ReportOperationNotSupportedForThisType( file_pos, result_type.ToString() ) );
-					throw ProgramError();
-				}
-				const bool is_float= IsFloatingPoint( fundamental_type->fundamental_type );
-				if( !( IsInteger( fundamental_type->fundamental_type ) || is_float ) )
-				{
-					// this operations allowed only for integer and floating point operands.
-					errors_.push_back( ReportOperationNotSupportedForThisType( file_pos, result_type.ToString() ) );
-					throw ProgramError();
-				}
-
-				const bool is_signed= IsSignedInteger( fundamental_type->fundamental_type );
-
-				llvm::Value* l_value_for_op= CreateMoveToLLVMRegisterInstruction( l_var, function_context );
-				llvm::Value* r_value_for_op= CreateMoveToLLVMRegisterInstruction( r_var, function_context );
-				llvm::Value* result_value;
-
-				switch( comp.operator_ )
-				{
-				case BinaryOperator::Add:
-					if( is_float )
-						result_value=
-							function_context.llvm_ir_builder.CreateFAdd( l_value_for_op, r_value_for_op );
-					else
-						result_value=
-							function_context.llvm_ir_builder.CreateAdd( l_value_for_op, r_value_for_op );
-					break;
-
-				case BinaryOperator::Sub:
-					if( is_float )
-						result_value=
-							function_context.llvm_ir_builder.CreateFSub( l_value_for_op, r_value_for_op );
-					else
-						result_value=
-							function_context.llvm_ir_builder.CreateSub( l_value_for_op, r_value_for_op );
-					break;
-
-				case BinaryOperator::Div:
-					if( is_float )
-						result_value=
-							function_context.llvm_ir_builder.CreateFDiv( l_value_for_op, r_value_for_op );
-					else if( is_signed )
-						result_value=
-							function_context.llvm_ir_builder.CreateSDiv( l_value_for_op, r_value_for_op );
-					else
-						result_value=
-							function_context.llvm_ir_builder.CreateUDiv( l_value_for_op, r_value_for_op );
-					break;
-
-				case BinaryOperator::Mul:
-					if( is_float )
-						result_value=
-							function_context.llvm_ir_builder.CreateFMul( l_value_for_op, r_value_for_op );
-					else
-						result_value=
-							function_context.llvm_ir_builder.CreateMul( l_value_for_op, r_value_for_op );
-					break;
-
-				default: U_ASSERT( false ); break;
-				};
-
-				result.location= Variable::Location::LLVMRegister;
-				result.value_type= ValueType::Value;
-				result.type= r_var.type;
-				result.llvm_value= result_value;
-			}
-			break;
-
-
-		case BinaryOperator::Equal:
-		case BinaryOperator::NotEqual:
-
-		if( fundamental_type == nullptr )
-		{
-			errors_.push_back( ReportOperationNotSupportedForThisType( file_pos, result_type.ToString() ) );
-			throw ProgramError();
-		}
-		else
-		{
-			const bool if_float= IsFloatingPoint( fundamental_type->fundamental_type );
-			if( !( IsInteger( fundamental_type->fundamental_type ) || if_float || fundamental_type->fundamental_type == U_FundamentalType::Bool ) )
-			{
-				errors_.push_back( ReportOperationNotSupportedForThisType( file_pos, result_type.ToString() ) );
-				throw ProgramError();
-			}
-
-			llvm::Value* l_value_for_op= CreateMoveToLLVMRegisterInstruction( l_var, function_context );
-			llvm::Value* r_value_for_op= CreateMoveToLLVMRegisterInstruction( r_var, function_context );
-			llvm::Value* result_value;
-
-			switch( comp.operator_ )
-			{
-			// TODO - select ordered/unordered comparision flags for floats.
-			case BinaryOperator::Equal:
-				if( if_float )
-					result_value= function_context.llvm_ir_builder.CreateFCmpUEQ( l_value_for_op, r_value_for_op );
-				else
-					result_value= function_context.llvm_ir_builder.CreateICmpEQ( l_value_for_op, r_value_for_op );
-				break;
-
-			case BinaryOperator::NotEqual:
-				if( if_float )
-					result_value= function_context.llvm_ir_builder.CreateFCmpUNE( l_value_for_op, r_value_for_op );
-				else
-					result_value= function_context.llvm_ir_builder.CreateICmpNE( l_value_for_op, r_value_for_op );
-				break;
-
-			default: U_ASSERT( false ); break;
-			};
-
-			result.location= Variable::Location::LLVMRegister;
-			result.value_type= ValueType::Value;
-			result.type.one_of_type_kind= FundamentalType( U_FundamentalType::Bool, fundamental_llvm_types_.bool_ );
-			result.llvm_value= result_value;
-		}
-			break;
-
-		case BinaryOperator::Less:
-		case BinaryOperator::LessEqual:
-		case BinaryOperator::Greater:
-		case BinaryOperator::GreaterEqual:
-		if( fundamental_type == nullptr )
-		{
-			errors_.push_back( ReportOperationNotSupportedForThisType( file_pos, result_type.ToString() ) );
-			throw ProgramError();
-		}
-		else
-		{
-			const bool if_float= IsFloatingPoint( fundamental_type->fundamental_type );
-			const bool is_signed= IsSignedInteger( fundamental_type->fundamental_type );
-			if( !( IsInteger( fundamental_type->fundamental_type ) || if_float ) )
-			{
-				errors_.push_back( ReportOperationNotSupportedForThisType( file_pos, result_type.ToString() ) );
-				throw ProgramError();
-			}
-
-			llvm::Value* l_value_for_op= CreateMoveToLLVMRegisterInstruction( l_var, function_context );
-			llvm::Value* r_value_for_op= CreateMoveToLLVMRegisterInstruction( r_var, function_context );
-			llvm::Value* result_value;
-
-			switch( comp.operator_ )
-			{
-			// TODO - select ordered/unordered comparision flags for floats.
-			case BinaryOperator::Less:
-				if( if_float )
-					result_value= function_context.llvm_ir_builder.CreateFCmpULT( l_value_for_op, r_value_for_op );
-				else if( is_signed )
-					result_value= function_context.llvm_ir_builder.CreateICmpSLT( l_value_for_op, r_value_for_op );
-				else
-					result_value= function_context.llvm_ir_builder.CreateICmpULT( l_value_for_op, r_value_for_op );
-				break;
-
-			case BinaryOperator::LessEqual:
-				if( if_float )
-					result_value= function_context.llvm_ir_builder.CreateFCmpULE( l_value_for_op, r_value_for_op );
-				else if( is_signed )
-					result_value= function_context.llvm_ir_builder.CreateICmpSLE( l_value_for_op, r_value_for_op );
-				else
-					result_value= function_context.llvm_ir_builder.CreateICmpULE( l_value_for_op, r_value_for_op );
-				break;
-
-			case BinaryOperator::Greater:
-				if( if_float )
-					result_value= function_context.llvm_ir_builder.CreateFCmpUGT( l_value_for_op, r_value_for_op );
-				else if( is_signed )
-					result_value= function_context.llvm_ir_builder.CreateICmpSGT( l_value_for_op, r_value_for_op );
-				else
-					result_value= function_context.llvm_ir_builder.CreateICmpUGT( l_value_for_op, r_value_for_op );
-				break;
-
-			case BinaryOperator::GreaterEqual:
-				if( if_float )
-					result_value= function_context.llvm_ir_builder.CreateFCmpUGE( l_value_for_op, r_value_for_op );
-				else if( is_signed )
-					result_value= function_context.llvm_ir_builder.CreateICmpSGE( l_value_for_op, r_value_for_op );
-				else
-					result_value= function_context.llvm_ir_builder.CreateICmpUGE( l_value_for_op, r_value_for_op );
-				break;
-
-			default: U_ASSERT( false ); break;
-			};
-
-			result.location= Variable::Location::LLVMRegister;
-			result.value_type= ValueType::Value;
-			result.type.one_of_type_kind= FundamentalType( U_FundamentalType::Bool, fundamental_llvm_types_.bool_ );
-			result.llvm_value= result_value;
-		}
-			break;
-
-		case BinaryOperator::And:
-		case BinaryOperator::Or:
-		case BinaryOperator::Xor:
-		if( fundamental_type == nullptr )
-		{
-			errors_.push_back( ReportOperationNotSupportedForThisType( file_pos, result_type.ToString() ) );
-			throw ProgramError();
-		}
-		else
-		{
-			if( !( IsInteger( fundamental_type->fundamental_type ) || fundamental_type->fundamental_type == U_FundamentalType::Bool ) )
-			{
-				errors_.push_back( ReportOperationNotSupportedForThisType( file_pos, result_type.ToString() ) );
-				throw ProgramError();
-			}
-
-			llvm::Value* l_value_for_op= CreateMoveToLLVMRegisterInstruction( l_var, function_context );
-			llvm::Value* r_value_for_op= CreateMoveToLLVMRegisterInstruction( r_var, function_context );
-			llvm::Value* result_value;
-
-			switch( comp.operator_ )
-			{
-			case BinaryOperator::And:
-				result_value=
-					function_context.llvm_ir_builder.CreateAnd( l_value_for_op, r_value_for_op );
-				break;
-			case BinaryOperator::Or:
-				result_value=
-					function_context.llvm_ir_builder.CreateOr( l_value_for_op, r_value_for_op );
-				break;
-			case BinaryOperator::Xor:
-				result_value=
-					function_context.llvm_ir_builder.CreateXor( l_value_for_op, r_value_for_op );
-				break;
-			default: U_ASSERT( false ); break;
-			};
-
-			result.location= Variable::Location::LLVMRegister;
-			result.value_type= ValueType::Value;
-			result.type= result_type;
-			result.llvm_value= result_value;
-		}
-			break;
-
-		case BinaryOperator::LazyLogicalAnd:
-		case BinaryOperator::LazyLogicalOr:
-		case BinaryOperator::None:
-		case BinaryOperator::Last:
-			U_ASSERT(false);
-			break;
-		};
-
-		return result;
+		return BuildBinaryOperator( l_var, r_var, comp.operator_, file_pos, function_context );
 	}
 	else
 	{
@@ -455,6 +185,290 @@ Variable CodeBuilder::BuildExpressionCode_r(
 
 		return result;
 	}
+}
+
+Variable CodeBuilder::BuildBinaryOperator(
+	const Variable& l_var,
+	const Variable& r_var,
+	const BinaryOperator binary_operator,
+	const FilePos& file_pos,
+	FunctionContext& function_context )
+{
+	U_ASSERT( binary_operator != BinaryOperator::None );
+
+	Variable result;
+
+	// SPRACHE_-TODO - add cast for some integers here.
+	if( r_var.type != l_var.type )
+	{
+		// TODO - report types mismatch.
+		throw ProgramError();
+	}
+
+	const Type& result_type= r_var.type;
+	const FundamentalType* const fundamental_type= boost::get<FundamentalType>( &result_type.one_of_type_kind );
+
+	switch( binary_operator )
+	{
+	case BinaryOperator::Add:
+	case BinaryOperator::Sub:
+	case BinaryOperator::Div:
+	case BinaryOperator::Mul:
+
+		if( fundamental_type == nullptr )
+		{
+			errors_.push_back( ReportOperationNotSupportedForThisType( file_pos, result_type.ToString() ) );
+			throw ProgramError();
+		}
+		else
+		{
+			if( result_type.SizeOf() < 4u )
+			{
+				// Operation supported only for 32 and 64bit operands
+				errors_.push_back( ReportOperationNotSupportedForThisType( file_pos, result_type.ToString() ) );
+				throw ProgramError();
+			}
+			const bool is_float= IsFloatingPoint( fundamental_type->fundamental_type );
+			if( !( IsInteger( fundamental_type->fundamental_type ) || is_float ) )
+			{
+				// this operations allowed only for integer and floating point operands.
+				errors_.push_back( ReportOperationNotSupportedForThisType( file_pos, result_type.ToString() ) );
+				throw ProgramError();
+			}
+
+			const bool is_signed= IsSignedInteger( fundamental_type->fundamental_type );
+
+			llvm::Value* l_value_for_op= CreateMoveToLLVMRegisterInstruction( l_var, function_context );
+			llvm::Value* r_value_for_op= CreateMoveToLLVMRegisterInstruction( r_var, function_context );
+			llvm::Value* result_value;
+
+			switch( binary_operator )
+			{
+			case BinaryOperator::Add:
+				if( is_float )
+					result_value=
+						function_context.llvm_ir_builder.CreateFAdd( l_value_for_op, r_value_for_op );
+				else
+					result_value=
+						function_context.llvm_ir_builder.CreateAdd( l_value_for_op, r_value_for_op );
+				break;
+
+			case BinaryOperator::Sub:
+				if( is_float )
+					result_value=
+						function_context.llvm_ir_builder.CreateFSub( l_value_for_op, r_value_for_op );
+				else
+					result_value=
+						function_context.llvm_ir_builder.CreateSub( l_value_for_op, r_value_for_op );
+				break;
+
+			case BinaryOperator::Div:
+				if( is_float )
+					result_value=
+						function_context.llvm_ir_builder.CreateFDiv( l_value_for_op, r_value_for_op );
+				else if( is_signed )
+					result_value=
+						function_context.llvm_ir_builder.CreateSDiv( l_value_for_op, r_value_for_op );
+				else
+					result_value=
+						function_context.llvm_ir_builder.CreateUDiv( l_value_for_op, r_value_for_op );
+				break;
+
+			case BinaryOperator::Mul:
+				if( is_float )
+					result_value=
+						function_context.llvm_ir_builder.CreateFMul( l_value_for_op, r_value_for_op );
+				else
+					result_value=
+						function_context.llvm_ir_builder.CreateMul( l_value_for_op, r_value_for_op );
+				break;
+
+			default: U_ASSERT( false ); break;
+			};
+
+			result.location= Variable::Location::LLVMRegister;
+			result.value_type= ValueType::Value;
+			result.type= r_var.type;
+			result.llvm_value= result_value;
+		}
+		break;
+
+
+	case BinaryOperator::Equal:
+	case BinaryOperator::NotEqual:
+
+		if( fundamental_type == nullptr )
+		{
+			errors_.push_back( ReportOperationNotSupportedForThisType( file_pos, result_type.ToString() ) );
+			throw ProgramError();
+		}
+		else
+		{
+			const bool if_float= IsFloatingPoint( fundamental_type->fundamental_type );
+			if( !( IsInteger( fundamental_type->fundamental_type ) || if_float || fundamental_type->fundamental_type == U_FundamentalType::Bool ) )
+			{
+				errors_.push_back( ReportOperationNotSupportedForThisType( file_pos, result_type.ToString() ) );
+				throw ProgramError();
+			}
+
+			llvm::Value* l_value_for_op= CreateMoveToLLVMRegisterInstruction( l_var, function_context );
+			llvm::Value* r_value_for_op= CreateMoveToLLVMRegisterInstruction( r_var, function_context );
+			llvm::Value* result_value;
+
+			switch( binary_operator )
+			{
+			// TODO - select ordered/unordered comparision flags for floats.
+			case BinaryOperator::Equal:
+				if( if_float )
+					result_value= function_context.llvm_ir_builder.CreateFCmpUEQ( l_value_for_op, r_value_for_op );
+				else
+					result_value= function_context.llvm_ir_builder.CreateICmpEQ( l_value_for_op, r_value_for_op );
+				break;
+
+			case BinaryOperator::NotEqual:
+				if( if_float )
+					result_value= function_context.llvm_ir_builder.CreateFCmpUNE( l_value_for_op, r_value_for_op );
+				else
+					result_value= function_context.llvm_ir_builder.CreateICmpNE( l_value_for_op, r_value_for_op );
+				break;
+
+			default: U_ASSERT( false ); break;
+			};
+
+			result.location= Variable::Location::LLVMRegister;
+			result.value_type= ValueType::Value;
+			result.type.one_of_type_kind= FundamentalType( U_FundamentalType::Bool, fundamental_llvm_types_.bool_ );
+			result.llvm_value= result_value;
+		}
+		break;
+
+	case BinaryOperator::Less:
+	case BinaryOperator::LessEqual:
+	case BinaryOperator::Greater:
+	case BinaryOperator::GreaterEqual:
+
+		if( fundamental_type == nullptr )
+		{
+			errors_.push_back( ReportOperationNotSupportedForThisType( file_pos, result_type.ToString() ) );
+			throw ProgramError();
+		}
+		else
+		{
+			const bool if_float= IsFloatingPoint( fundamental_type->fundamental_type );
+			const bool is_signed= IsSignedInteger( fundamental_type->fundamental_type );
+			if( !( IsInteger( fundamental_type->fundamental_type ) || if_float ) )
+			{
+				errors_.push_back( ReportOperationNotSupportedForThisType( file_pos, result_type.ToString() ) );
+				throw ProgramError();
+			}
+
+			llvm::Value* l_value_for_op= CreateMoveToLLVMRegisterInstruction( l_var, function_context );
+			llvm::Value* r_value_for_op= CreateMoveToLLVMRegisterInstruction( r_var, function_context );
+			llvm::Value* result_value;
+
+			switch( binary_operator )
+			{
+			// TODO - select ordered/unordered comparision flags for floats.
+			case BinaryOperator::Less:
+				if( if_float )
+					result_value= function_context.llvm_ir_builder.CreateFCmpULT( l_value_for_op, r_value_for_op );
+				else if( is_signed )
+					result_value= function_context.llvm_ir_builder.CreateICmpSLT( l_value_for_op, r_value_for_op );
+				else
+					result_value= function_context.llvm_ir_builder.CreateICmpULT( l_value_for_op, r_value_for_op );
+				break;
+
+			case BinaryOperator::LessEqual:
+				if( if_float )
+					result_value= function_context.llvm_ir_builder.CreateFCmpULE( l_value_for_op, r_value_for_op );
+				else if( is_signed )
+					result_value= function_context.llvm_ir_builder.CreateICmpSLE( l_value_for_op, r_value_for_op );
+				else
+					result_value= function_context.llvm_ir_builder.CreateICmpULE( l_value_for_op, r_value_for_op );
+				break;
+
+			case BinaryOperator::Greater:
+				if( if_float )
+					result_value= function_context.llvm_ir_builder.CreateFCmpUGT( l_value_for_op, r_value_for_op );
+				else if( is_signed )
+					result_value= function_context.llvm_ir_builder.CreateICmpSGT( l_value_for_op, r_value_for_op );
+				else
+					result_value= function_context.llvm_ir_builder.CreateICmpUGT( l_value_for_op, r_value_for_op );
+				break;
+
+			case BinaryOperator::GreaterEqual:
+				if( if_float )
+					result_value= function_context.llvm_ir_builder.CreateFCmpUGE( l_value_for_op, r_value_for_op );
+				else if( is_signed )
+					result_value= function_context.llvm_ir_builder.CreateICmpSGE( l_value_for_op, r_value_for_op );
+				else
+					result_value= function_context.llvm_ir_builder.CreateICmpUGE( l_value_for_op, r_value_for_op );
+				break;
+
+			default: U_ASSERT( false ); break;
+			};
+
+			result.location= Variable::Location::LLVMRegister;
+			result.value_type= ValueType::Value;
+			result.type.one_of_type_kind= FundamentalType( U_FundamentalType::Bool, fundamental_llvm_types_.bool_ );
+			result.llvm_value= result_value;
+		}
+		break;
+
+	case BinaryOperator::And:
+	case BinaryOperator::Or:
+	case BinaryOperator::Xor:
+
+		if( fundamental_type == nullptr )
+		{
+			errors_.push_back( ReportOperationNotSupportedForThisType( file_pos, result_type.ToString() ) );
+			throw ProgramError();
+		}
+		else
+		{
+			if( !( IsInteger( fundamental_type->fundamental_type ) || fundamental_type->fundamental_type == U_FundamentalType::Bool ) )
+			{
+				errors_.push_back( ReportOperationNotSupportedForThisType( file_pos, result_type.ToString() ) );
+				throw ProgramError();
+			}
+
+			llvm::Value* l_value_for_op= CreateMoveToLLVMRegisterInstruction( l_var, function_context );
+			llvm::Value* r_value_for_op= CreateMoveToLLVMRegisterInstruction( r_var, function_context );
+			llvm::Value* result_value;
+
+			switch( binary_operator )
+			{
+			case BinaryOperator::And:
+				result_value=
+					function_context.llvm_ir_builder.CreateAnd( l_value_for_op, r_value_for_op );
+				break;
+			case BinaryOperator::Or:
+				result_value=
+					function_context.llvm_ir_builder.CreateOr( l_value_for_op, r_value_for_op );
+				break;
+			case BinaryOperator::Xor:
+				result_value=
+					function_context.llvm_ir_builder.CreateXor( l_value_for_op, r_value_for_op );
+				break;
+			default: U_ASSERT( false ); break;
+			};
+
+			result.location= Variable::Location::LLVMRegister;
+			result.value_type= ValueType::Value;
+			result.type= result_type;
+			result.llvm_value= result_value;
+		}
+		break;
+
+	case BinaryOperator::LazyLogicalAnd:
+	case BinaryOperator::LazyLogicalOr:
+	case BinaryOperator::None:
+	case BinaryOperator::Last:
+		U_ASSERT(false);
+		break;
+	};
+
+	return result;
 }
 
 Variable CodeBuilder::BuildIndexationOperator(
