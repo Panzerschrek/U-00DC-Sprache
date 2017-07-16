@@ -146,6 +146,36 @@ private:
 		NamesScope& block_names,
 		FunctionContext& function_context );
 
+	void ApplyArrayInitializer(
+		const Variable& variable,
+		const ArrayInitializer& initializer,
+		NamesScope& block_names,
+		FunctionContext& function_context );
+
+	void ApplyStructNamedInitializer(
+		const Variable& variable,
+		const StructNamedInitializer& initializer,
+		NamesScope& block_names,
+		FunctionContext& function_context );
+
+	void ApplyConstructorInitializer(
+		const Variable& variable,
+		const ConstructorInitializer& initializer,
+		NamesScope& block_names,
+		FunctionContext& function_context );
+
+	void ApplyExpressionInitializer(
+		const Variable& variable,
+		const ExpressionInitializer& initializer,
+		NamesScope& block_names,
+		FunctionContext& function_context );
+
+	void ApplyZeroInitializer(
+		const Variable& variable,
+		const ZeroInitializer& initializer,
+		NamesScope& block_names,
+		FunctionContext& function_context );
+
 	llvm::Type* GetFundamentalLLVMType( U_FundamentalType fundmantal_type );
 
 	// If variable is on stack, creates move to rigister instruction.
