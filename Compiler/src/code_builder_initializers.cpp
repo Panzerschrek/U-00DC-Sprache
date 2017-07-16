@@ -246,13 +246,50 @@ void CodeBuilder::ApplyInitializer_r(
 			llvm::Value* index_list[2];
 			index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
 
-			for( size_t i= 0u; i < array_type.size; i++ )
+			if( array_type.size <= 8u )
 			{
-				index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(i) ) );
-				array_member.llvm_value=
-					function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, llvm::ArrayRef<llvm::Value*> ( index_list, 2u ) );
+				for( size_t i= 0u; i < array_type.size; i++ )
+				{
+					index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(i) ) );
+					array_member.llvm_value=
+						function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, llvm::ArrayRef<llvm::Value*> ( index_list, 2u ) );
 
+					ApplyInitializer_r( array_member, zero_initializer, block_names, function_context );
+				}
+			}
+			else
+			{
+				// There are too many code for initializer.
+				// Make initialization loop.
+				llvm::Value* const zero_value=
+					llvm::Constant::getIntegerValue( fundamental_llvm_types_.u32, llvm::APInt( 32u, uint64_t(0) ) );
+				llvm::Value* const one_value=
+					llvm::Constant::getIntegerValue( fundamental_llvm_types_.u32, llvm::APInt( 32u, uint64_t(1u) ) );
+				llvm::Value* const loop_count_value=
+					llvm::Constant::getIntegerValue( fundamental_llvm_types_.u32, llvm::APInt( 32u, uint64_t(array_type.size) ) );
+				llvm::Value* const couter_address= function_context.llvm_ir_builder.CreateAlloca( fundamental_llvm_types_.u32 );
+				function_context.llvm_ir_builder.CreateStore( zero_value, couter_address );
+
+				llvm::BasicBlock* loop_block= llvm::BasicBlock::Create( llvm_context_ );
+				llvm::BasicBlock* block_after_init_loop= llvm::BasicBlock::Create( llvm_context_ );
+
+				function_context.llvm_ir_builder.CreateBr( loop_block );
+				function_context.function->getBasicBlockList().push_back( loop_block );
+				function_context.llvm_ir_builder.SetInsertPoint( loop_block );
+
+				llvm::Value* const current_counter_value= function_context.llvm_ir_builder.CreateLoad( couter_address );
+				index_list[1]= current_counter_value;
+				array_member.llvm_value=
+					function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, llvm::ArrayRef<llvm::Value*>( index_list, 2u ) );
 				ApplyInitializer_r( array_member, zero_initializer, block_names, function_context );
+
+				llvm::Value* const counter_value_plus_one= function_context.llvm_ir_builder.CreateAdd( current_counter_value, one_value );
+				function_context.llvm_ir_builder.CreateStore( counter_value_plus_one, couter_address );
+				llvm::Value* const counter_test= function_context.llvm_ir_builder.CreateICmpULT( counter_value_plus_one, loop_count_value );
+				function_context.llvm_ir_builder.CreateCondBr( counter_test, loop_block, block_after_init_loop );
+
+				function_context.function->getBasicBlockList().push_back( block_after_init_loop );
+				function_context.llvm_ir_builder.SetInsertPoint( block_after_init_loop );
 			}
 		}
 		else if( const ClassPtr* const class_type_ptr = boost::get<ClassPtr>( &variable.type.one_of_type_kind ) )

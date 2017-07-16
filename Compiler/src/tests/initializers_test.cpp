@@ -580,6 +580,38 @@ static void ZeroInitilaizerTest7()
 }
 
 
+static void ZeroInitilaizerTest8()
+{
+	// Zero-initialzier for very-large array.
+	static const char c_program_text[]=
+	R"(
+	fn Foo() : i32
+	{
+		var [ i32, 65536 ] imut arr= zero_init;
+		var u32 i= 0u;
+		var i32 result= 0;
+		while( i < 65536u )
+		{
+			result= result | arr[i];
+			i= i + 1u;
+		}
+		return result;
+	}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
+	U_ASSERT( function != nullptr );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_ASSERT( 0 == result_value.IntVal.getLimitedValue() );
+}
+
 void RunInitializersTest()
 {
 	ExpressionInitializerTest0();
@@ -603,6 +635,7 @@ void RunInitializersTest()
 	ZeroInitilaizerTest5();
 	ZeroInitilaizerTest6();
 	ZeroInitilaizerTest7();
+	ZeroInitilaizerTest8();
 }
 
 } // namespace U
