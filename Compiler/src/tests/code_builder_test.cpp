@@ -23,7 +23,7 @@ static void SimpleProgramTest()
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
-	U_i32 arg0= 100500, arg1= 1488, arg2= 42;
+	int arg0= 100500, arg1= 1488, arg2= 42;
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
 	U_ASSERT( function != nullptr );

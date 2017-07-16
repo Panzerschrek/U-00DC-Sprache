@@ -176,6 +176,8 @@ private:
 		NamesScope& block_names,
 		FunctionContext& function_context );
 
+	static U_FundamentalType GetNumericConstantType( const NumericConstant& number );
+
 	llvm::Type* GetFundamentalLLVMType( U_FundamentalType fundmantal_type );
 
 	// If variable is on stack, creates move to rigister instruction.

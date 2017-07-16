@@ -8,10 +8,12 @@ MAKEFILE= Makefile.CompilerLib
 SOURCES += \
 	src/code_builder_errors.cpp \
 	src/code_builder.cpp \
+	src/code_builder_expressions.cpp \
 	src/code_builder_initializers.cpp \
 	src/code_builder_types.cpp \
 	src/inverse_polish_notation.cpp \
 	src/keywords.cpp \
+	src/lang_types.cpp \
 	src/lexical_analyzer.cpp \
 	src/program_string.cpp \
 	src/syntax_analyzer.cpp \

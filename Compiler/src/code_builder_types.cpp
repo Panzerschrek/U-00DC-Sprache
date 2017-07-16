@@ -15,18 +15,18 @@ namespace
 const size_t g_fundamental_types_size[ size_t(U_FundamentalType::LastType) ]=
 {
 	U_DESIGNATED_INITIALIZER( U_FundamentalType::InvalidType, 0u ),
-	U_DESIGNATED_INITIALIZER( U_FundamentalType::Void, 0 ),
-	U_DESIGNATED_INITIALIZER( U_FundamentalType::Bool, sizeof(U_bool) ),
-	U_DESIGNATED_INITIALIZER( U_FundamentalType::i8 , sizeof(U_i8 ) ),
-	U_DESIGNATED_INITIALIZER( U_FundamentalType::u8 , sizeof(U_u8 ) ),
-	U_DESIGNATED_INITIALIZER( U_FundamentalType::i16, sizeof(U_i16) ),
-	U_DESIGNATED_INITIALIZER( U_FundamentalType::u16, sizeof(U_u16) ),
-	U_DESIGNATED_INITIALIZER( U_FundamentalType::i32, sizeof(U_i32) ),
-	U_DESIGNATED_INITIALIZER( U_FundamentalType::u32, sizeof(U_u32) ),
-	U_DESIGNATED_INITIALIZER( U_FundamentalType::i64, sizeof(U_i64) ),
-	U_DESIGNATED_INITIALIZER( U_FundamentalType::u64, sizeof(U_u64) ),
-	U_DESIGNATED_INITIALIZER( U_FundamentalType::f32, sizeof(U_f32) ),
-	U_DESIGNATED_INITIALIZER( U_FundamentalType::f64, sizeof(U_f64) ),
+	U_DESIGNATED_INITIALIZER( U_FundamentalType::Void, 0u ),
+	U_DESIGNATED_INITIALIZER( U_FundamentalType::Bool, 1u ),
+	U_DESIGNATED_INITIALIZER( U_FundamentalType::i8 , 1u ),
+	U_DESIGNATED_INITIALIZER( U_FundamentalType::u8 , 1u ),
+	U_DESIGNATED_INITIALIZER( U_FundamentalType::i16, 2u ),
+	U_DESIGNATED_INITIALIZER( U_FundamentalType::u16, 2u ),
+	U_DESIGNATED_INITIALIZER( U_FundamentalType::i32, 4u ),
+	U_DESIGNATED_INITIALIZER( U_FundamentalType::u32, 4u ),
+	U_DESIGNATED_INITIALIZER( U_FundamentalType::i64, 8u ),
+	U_DESIGNATED_INITIALIZER( U_FundamentalType::u64, 8u ),
+	U_DESIGNATED_INITIALIZER( U_FundamentalType::f32, 4u ),
+	U_DESIGNATED_INITIALIZER( U_FundamentalType::f64, 8u ),
 };
 
 const char g_invalid_type_name_ascii[]= "InvalidType";
