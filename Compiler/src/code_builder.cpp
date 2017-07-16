@@ -1317,7 +1317,10 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 	for( const VariablesDeclaration::VariableEntry& variable_declaration : variables_declaration.variables )
 	{
 		if( IsKeyword( variable_declaration.name ) )
+		{
 			errors_.push_back( ReportUsingKeywordAsName( variables_declaration.file_pos_ ) );
+			continue;
+		}
 
 		Variable variable;
 		variable.location= Variable::Location::Pointer;
@@ -1400,7 +1403,7 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 		if( !inserted_name )
 		{
 			errors_.push_back( ReportRedefinition( variables_declaration.file_pos_, variable_declaration.name ) );
-			return;
+			continue;
 		}
 	}
 }
