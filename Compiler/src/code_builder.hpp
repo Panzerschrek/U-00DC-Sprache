@@ -109,6 +109,11 @@ private:
 		const NamesScope& names,
 		FunctionContext& function_context );
 
+	Variable BuildUnaryMinus(
+		const Variable& variable,
+		const UnaryMinus& unary_minus,
+		FunctionContext& function_context );
+
 	void BuildVariablesDeclarationCode(
 		const VariablesDeclaration& variables_declaration,
 		NamesScope& block_names,

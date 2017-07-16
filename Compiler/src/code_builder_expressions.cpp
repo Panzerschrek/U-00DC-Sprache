@@ -442,30 +442,7 @@ Variable CodeBuilder::BuildExpressionCode_r(
 			if( const UnaryMinus* const unary_minus=
 				dynamic_cast<const UnaryMinus*>( prefix_operator.get() ) )
 			{
-				(void)unary_minus;
-
-				const FundamentalType* const fundamental_type= boost::get<FundamentalType>( &result.type.one_of_type_kind );
-				if( fundamental_type == nullptr )
-				{
-					errors_.push_back( ReportOperationNotSupportedForThisType( unary_minus->file_pos_, result.type.ToString() ) );
-					throw ProgramError();
-				}
-				const bool is_float= IsFloatingPoint( fundamental_type->fundamental_type );
-				if( !( IsInteger( fundamental_type->fundamental_type ) || is_float ) )
-				{
-					errors_.push_back( ReportOperationNotSupportedForThisType( unary_minus->file_pos_, result.type.ToString() ) );
-					throw ProgramError();
-				}
-				// TODO - maybe not support unary minus for 8 and 16 bot integer types?
-
-				llvm::Value* value_for_neg= CreateMoveToLLVMRegisterInstruction( result, function_context );
-				if( is_float )
-					result.llvm_value= function_context.llvm_ir_builder.CreateFNeg( value_for_neg );
-				else
-					result.llvm_value= function_context.llvm_ir_builder.CreateNeg( value_for_neg );
-
-				result.location= Variable::Location::LLVMRegister;
-				result.value_type= ValueType::Value;
+				result= BuildUnaryMinus( result, *unary_minus, function_context );
 			}
 			else if( const UnaryPlus* const unary_plus=
 				dynamic_cast<const UnaryPlus*>( prefix_operator.get() ) )
@@ -676,6 +653,39 @@ Variable CodeBuilder::BuildCallOperator(
 	}
 	result.type= function_type.return_type;
 	result.llvm_value= call_result;
+
+	return result;
+}
+
+Variable CodeBuilder::BuildUnaryMinus(
+	const Variable& variable,
+	const UnaryMinus& unary_minus,
+	FunctionContext& function_context )
+{
+	const FundamentalType* const fundamental_type= boost::get<FundamentalType>( &variable.type.one_of_type_kind );
+	if( fundamental_type == nullptr )
+	{
+		errors_.push_back( ReportOperationNotSupportedForThisType( unary_minus.file_pos_, variable.type.ToString() ) );
+		throw ProgramError();
+	}
+	const bool is_float= IsFloatingPoint( fundamental_type->fundamental_type );
+	if( !( IsInteger( fundamental_type->fundamental_type ) || is_float ) )
+	{
+		errors_.push_back( ReportOperationNotSupportedForThisType( unary_minus.file_pos_, variable.type.ToString() ) );
+		throw ProgramError();
+	}
+	// TODO - maybe not support unary minus for 8 and 16 bot integer types?
+
+	Variable result;
+	result.type= variable.type;
+	result.location= Variable::Location::LLVMRegister;
+	result.value_type= ValueType::Value;
+
+	llvm::Value* value_for_neg= CreateMoveToLLVMRegisterInstruction( variable, function_context );
+	if( is_float )
+		result.llvm_value= function_context.llvm_ir_builder.CreateFNeg( value_for_neg );
+	else
+		result.llvm_value= function_context.llvm_ir_builder.CreateNeg( value_for_neg );
 
 	return result;
 }
