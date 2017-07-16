@@ -16,7 +16,7 @@ static void ExpressionInitializerTest0()
 	R"(
 	fn Foo() : i32
 	{
-		let : i32 x= 2017;
+		var i32 x= 2017;
 		return x;
 	}
 	)";
@@ -41,7 +41,7 @@ static void ExpressionInitializerTest1()
 	R"(
 	fn Foo() : f64
 	{
-		let : f64 x = 2017.52;
+		var f64 x = 2017.52;
 		return x;
 	}
 	)";
@@ -66,8 +66,8 @@ static void ExpressionInitializerTest2()
 	R"(
 	fn Foo() : f64
 	{
-		let : f64 x = 2017.52;
-		let : f64 &x_ref= x;
+		var f64 x = 2017.52;
+		var f64 &x_ref= x;
 		return x_ref;
 	}
 	)";
@@ -92,7 +92,7 @@ static void ConstructorInitializerForFundamentalTypesTest0()
 	R"(
 	fn Foo() : i32
 	{
-		let : i32 x( 2017 );
+		var i32 x( 2017 );
 		return x;
 	}
 	)";
@@ -117,7 +117,7 @@ static void ConstructorInitializerForFundamentalTypesTest1()
 	R"(
 	fn Foo() : f64
 	{
-		let : f64 x( 2017.52 );
+		var f64 x( 2017.52 );
 		return x;
 	}
 	)";
@@ -142,8 +142,8 @@ static void ConstructorInitializerForReferencesTest0()
 	R"(
 	fn Foo() : f64
 	{
-			let : f64 x = 2017.52;
-			let : f64 &x_ref(x);
+			var f64 x = 2017.52;
+			var f64 &x_ref(x);
 			return x_ref;
 	}
 	)";
@@ -167,7 +167,7 @@ static void ArrayInitializerForFundamentalTypesTest0()
 	R"(
 	fn Foo() : i32
 	{
-		let : [ i32, 3u32 ] x[ 42, 34, 785 ];
+		var [ i32, 3u32 ] x[ 42, 34, 785 ];
 		return x[0u32] * x[1u32] - x[2u32];
 	}
 	)";
@@ -192,7 +192,7 @@ static void ArrayInitializerForFundamentalTypesTest1()
 	R"(
 	fn Foo() : f32
 	{
-		let : [ f32, 3u32 ] x[ 42.5f32, 34.0f32, 785.7f32, ];
+		var [ f32, 3u32 ] x[ 42.5f32, 34.0f32, 785.7f32, ];
 		return x[0u32] * x[1u32] - x[2u32];
 	}
 	)";
@@ -216,7 +216,7 @@ static void TwodimensionalArrayInitializerTest0()
 	R"(
 	fn Foo() : i32
 	{
-		let : [ [ i32, 2u32 ], 3u32 ] mat
+		var [ [ i32, 2u32 ], 3u32 ] mat
 			[
 				[ 175, -8 * 5, ],
 				[ 95684, 48 ],
@@ -251,7 +251,7 @@ static void StructNamedInitializersTest0()
 	class Point{ x : i32; y : i32; }
 	fn Foo() : i32
 	{
-		let : Point point{ .x= 5877, .y(13) };
+		var Point point{ .x= 5877, .y(13) };
 		return point.x / point.y;
 	}
 	)";
@@ -277,7 +277,7 @@ static void StructNamedInitializersTest1()
 	class Point{ x : i32; y : i32; z : [ bool, 3 ]; }
 	fn Foo() : i32
 	{
-		let : Point point{ .y(13), .z[ false, false, true ], .x= 5877 };
+		var Point point{ .y(13), .z[ false, false, true ], .x= 5877 };
 		if( point.z[0u32] == false & point.z[1u32] == false & point.z[2u32] == true )
 		{
 			return point.x / point.y;
@@ -310,7 +310,7 @@ static void StructNamedInitializersTest2()
 	class Point{ x : i32; y : i32; z : [ bool, 3 ]; }
 	fn Foo() : f64
 	{
-		let : Point3d point
+		var Point3d point
 		{
 			.xy
 			{
@@ -345,7 +345,7 @@ static void StructNamedInitializersTest3()
 	class B{ a_arr : [ A, 3 ]; }
 	fn Foo() : i32
 	{
-		let : B bb
+		var B bb
 		{
 			.a_arr
 			[
@@ -384,7 +384,7 @@ static void ZeroInitilaizerTest0()
 	R"(
 	fn Foo() : i32
 	{
-		let : i32 x= zero_init;
+		var i32 x= zero_init;
 		return x;
 	}
 	)";
@@ -409,7 +409,7 @@ static void ZeroInitilaizerTest1()
 	R"(
 	fn Foo() : f32
 	{
-		let : f32 x= zero_init;
+		var f32 x= zero_init;
 		return x;
 	}
 	)";
@@ -434,7 +434,7 @@ static void ZeroInitilaizerTest2()
 	R"(
 	fn Foo() : f64
 	{
-		let : f64 x= zero_init;
+		var f64 x= zero_init;
 		return x;
 	}
 	)";
@@ -459,7 +459,7 @@ static void ZeroInitilaizerTest3()
 	R"(
 	fn Foo() : bool
 	{
-		let : bool x= zero_init;
+		var bool x= zero_init;
 		return x;
 	}
 	)";
@@ -484,7 +484,7 @@ static void ZeroInitilaizerTest4()
 	R"(
 	fn Foo() : i32
 	{
-		let : [ i32, 4 ] x= zero_init;
+		var [ i32, 4 ] x= zero_init;
 		return x[0u32] + x[1u32] + x[2u32] + x[3u32];
 	}
 	)";
@@ -510,7 +510,7 @@ static void ZeroInitilaizerTest5()
 	class S{ x : f32; y : f32; }
 	fn Foo() : f32
 	{
-		let : S s= zero_init;
+		var S s= zero_init;
 		return s.x + s.y;
 	}
 	)";
@@ -536,7 +536,7 @@ static void ZeroInitilaizerTest6()
 	class S{ x : f32; y : f32; }
 	fn Foo() : f32
 	{
-		let : S s{ .y= 42.0f32, .x= zero_init };
+		var S s{ .y= 42.0f32, .x= zero_init };
 		return s.x;
 	}
 	)";
@@ -561,7 +561,7 @@ static void ZeroInitilaizerTest7()
 	R"(
 	fn Foo() : i32
 	{
-		let : [ i32, 2 ] x[ 42, zero_init, ];
+		var [ i32, 2 ] x[ 42, zero_init, ];
 		return x[1u32];
 	}
 	)";

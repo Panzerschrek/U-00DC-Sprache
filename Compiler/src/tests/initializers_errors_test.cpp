@@ -16,7 +16,7 @@ static void ExpectedInitializerTest0()
 	R"(
 		fn Foo()
 		{
-			let : i32 x;
+			var i32 x;
 		}
 	)";
 
@@ -36,7 +36,7 @@ static void ExpectedInitializerTest1()
 	R"(
 		fn Foo()
 		{
-			let : [ i32, 1024 ] x;
+			var [ i32, 1024 ] x;
 		}
 	)";
 
@@ -57,7 +57,7 @@ static void ExpectedInitializerTest2()
 		class S{ x : i32; }
 		fn Foo()
 		{
-			let : S s;
+			var S s;
 		}
 	)";
 
@@ -77,7 +77,7 @@ static void ArrayInitializerForNonArrayTest0()
 	R"(
 		fn Foo()
 		{
-			let : i32 x[ 5, 6, 7 ];
+			var i32 x[ 5, 6, 7 ];
 		}
 	)";
 
@@ -98,7 +98,7 @@ static void ArrayInitializerForNonArrayTest1()
 		class C{}
 		fn Foo()
 		{
-			let : C x[ 5, 6, 7 ];
+			var C x[ 5, 6, 7 ];
 		}
 	)";
 
@@ -118,7 +118,7 @@ static void ArrayInitializersCountMismatchTest0()
 	R"(
 		fn Foo()
 		{
-			let : [ i32, 3u32 ] x[ 1 ];
+			var [ i32, 3u32 ] x[ 1 ];
 		}
 	)";
 
@@ -138,7 +138,7 @@ static void ArrayInitializersCountMismatchTest1()
 	R"(
 		fn Foo()
 		{
-			let : [ i32, 3u32 ] x[ 1, 2, 3, 4, 5 ];
+			var [ i32, 3u32 ] x[ 1, 2, 3, 4, 5 ];
 		}
 	)";
 
@@ -159,7 +159,7 @@ static void FundamentalTypesHaveConstructorsWithExactlyOneParameterTest0()
 	R"(
 		fn Foo()
 		{
-			let : i32 x();
+			var i32 x();
 		}
 	)";
 
@@ -179,7 +179,7 @@ static void FundamentalTypesHaveConstructorsWithExactlyOneParameterTest1()
 	R"(
 		fn Foo()
 		{
-			let : i32 x( 0, 1, 2 );
+			var i32 x( 0, 1, 2 );
 		}
 	)";
 
@@ -199,7 +199,7 @@ static void ReferencesHaveConstructorsWithExactlyOneParameterTest0()
 	R"(
 		fn Foo()
 		{
-			let : i32 & x();
+			var i32 & x();
 		}
 	)";
 
@@ -219,8 +219,8 @@ static void ReferencesHaveConstructorsWithExactlyOneParameterTest1()
 	R"(
 		fn Foo()
 		{
-			let : i32 z= 0;
-			let : i32 & x( z, z );
+			var i32 z= 0;
+			var i32 & x( z, z );
 		}
 	)";
 
@@ -240,8 +240,8 @@ static void UnsupportedInitializerForReferenceTest0()
 	R"(
 		fn Foo()
 		{
-			let : i32 z= 0;
-			let : i32 & x[ z ];
+			var i32 z= 0;
+			var i32 & x[ z ];
 		}
 	)";
 
@@ -261,7 +261,7 @@ static void ConstructorInitializerForUnsupportedTypeTest0()
 	R"(
 		fn Foo()
 		{
-			let : [ i32, 2u32 ] x( 0, 1, 2 );
+			var [ i32, 2u32 ] x( 0, 1, 2 );
 		}
 	)";
 
@@ -281,7 +281,7 @@ static void StructInitializerForNonStructTest0()
 	R"(
 		fn Foo()
 		{
-			let : [ i32, 2u32 ] x{};
+			var [ i32, 2u32 ] x{};
 		}
 	)";
 
@@ -301,7 +301,7 @@ static void DuplicatedStructMemberInitializerTest0()
 		class Point{ x : i32; y : i32; }
 		fn Foo()
 		{
-			let : Point point{ .x= 42, .y= 34, .x= 0 };
+			var Point point{ .x= 42, .y= 34, .x= 0 };
 		}
 	)";
 
@@ -321,7 +321,7 @@ static void MissingStructMemberInitializerTest0()
 		class Point{ xy : [ i32, 2 ]; z : i32; }
 		fn Foo()
 		{
-			let : Point point{ .xy[ 54, -785 ], };
+			var Point point{ .xy[ 54, -785 ], };
 		}
 	)";
 

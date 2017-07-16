@@ -487,7 +487,7 @@ VariablesDeclaration& VariablesDeclaration::operator=( VariablesDeclaration&& ot
 
 void VariablesDeclaration::Print( std::ostream& stream, unsigned int indent ) const
 {
-	stream << "let : ";
+	stream << "var ";
 	type.Print( stream );
 	stream << " ";
 

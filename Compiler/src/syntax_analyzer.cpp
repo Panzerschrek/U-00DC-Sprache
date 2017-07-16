@@ -726,7 +726,7 @@ std::unique_ptr<ExpressionInitializer> SyntaxAnalyzer::ParseExpressionInitialize
 
 VariablesDeclarationPtr SyntaxAnalyzer::ParseVariablesDeclaration()
 {
-	U_ASSERT( it_->type == Lexem::Type::Identifier && it_->text == Keywords::let_ );
+	U_ASSERT( it_->type == Lexem::Type::Identifier && it_->text == Keywords::var_ );
 	U_ASSERT( it_ < it_end_ );
 
 	++it_;
@@ -734,13 +734,7 @@ VariablesDeclarationPtr SyntaxAnalyzer::ParseVariablesDeclaration()
 
 	VariablesDeclarationPtr decl( new VariablesDeclaration( (it_-1)->file_pos ) );
 
-	if( it_->type == Lexem::Type::Colon ) // Implicit type
-	{
-		++it_;
-		U_ASSERT( it_ < it_end_ );
-
-		decl->type= ParseTypeName();
-	}
+	decl->type= ParseTypeName();
 
 	do
 	{
@@ -1064,7 +1058,7 @@ BlockPtr SyntaxAnalyzer::ParseBlock()
 		else if( it_->type == Lexem::Type::BraceRight )
 			break;
 
-		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::let_ )
+		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::var_ )
 			elements.emplace_back( ParseVariablesDeclaration() );
 
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::return_ )

@@ -36,7 +36,7 @@ static void NameNotFoundTest1()
 	R"(
 		fn Foo() : i32
 		{
-			let : UnknownType x= 0;
+			var UnknownType x= 0;
 			return 42;
 		}
 	)";
@@ -58,7 +58,7 @@ static void NameNotFoundTest2()
 		class S{};
 		fn Foo() : i32
 		{
-			let : S x{};
+			var S x{};
 			return x.unexistent_field;
 		}
 	)";
@@ -77,7 +77,7 @@ static void UsingKeywordAsName0()
 	// Function name is keyword.
 	static const char c_program_text[]=
 	R"(
-		fn let() : i32
+		fn var() : i32
 		{
 			return 0;
 		}
@@ -136,7 +136,7 @@ static void UsingKeywordAsName3()
 	R"(
 		fn Foo() : i32
 		{
-			let : i32 void= 0;
+			var i32 void= 0;
 			return 0;
 		}
 	)";
@@ -157,8 +157,8 @@ static void Redefinition0()
 	R"(
 		fn Foo() : i32
 		{
-			let : i32 x= 0;
-			let : i32 x= 0;
+			var i32 x= 0;
+			var i32 x= 0;
 			return 0;
 		}
 	)";
@@ -179,8 +179,8 @@ static void Redefinition1()
 	R"(
 		fn Foo() : i32
 		{
-			let : i32 x= 0;
-			{ let : i32 x= 0; }
+			var i32 x= 0;
+			{ var i32 x= 0; }
 			return 0;
 		}
 	)";
@@ -281,8 +281,8 @@ static void OperationNotSupportedForThisTypeTest0()
 		fn Bar(){}
 		fn Foo()
 		{
-			let : S s= zero_init;
-			let : [ i32, 5 ] arr= zero_init;
+			var S s= zero_init;
+			var [ i32, 5 ] arr= zero_init;
 			false + true; // No binary operators for booleans.
 			1u8 - 4u8; // Operation not supported for small integers.
 			arr * arr; // Operation not supported for arrays.
@@ -324,9 +324,9 @@ static void OperationNotSupportedForThisTypeTest1()
 		fn Bar(){}
 		fn Foo()
 		{
-			let : f32 var= 0.0f32;
-			let : S s= zero_init;
-			var[ 42u32 ]; // Indexation of variable.
+			var f32 variable= 0.0f32;
+			var S s= zero_init;
+			variable[ 42u32 ]; // Indexation of variable.
 			Bar[ 0u32 ]; // Indexation of function.
 			s[ 45u32 ]; // Indexation of class variable.
 		}
@@ -351,9 +351,9 @@ static void OperationNotSupportedForThisTypeTest2()
 		fn Bar(){}
 		fn Foo()
 		{
-			let : f32 var= 0.0f32;
-			let : [ u8, 16 ] s= zero_init;
-			var.m; // Member access of variable.
+			var f32 variable= 0.0f32;
+			var [ u8, 16 ] s= zero_init;
+			variable.m; // Member access of variable.
 			Bar.member; // Member access of function.
 			s.size; // Member access of array.
 		}
@@ -379,8 +379,8 @@ static void OperationNotSupportedForThisTypeTest3()
 		fn Bar(){}
 		fn Foo()
 		{
-			let : S s= zero_init;
-			let : [ u8, 16 ] a= zero_init;
+			var S s= zero_init;
+			var [ u8, 16 ] a= zero_init;
 			-s; // Unary minus for class variable.
 			-Bar; // Unary minus for of function.
 			-a; // Unary minus for array.
@@ -455,7 +455,7 @@ static void TypesMismatchTest2()
 	R"(
 		fn Foo()
 		{
-			let : i32 x= 0;
+			var i32 x= 0;
 			x= 3.1415926535f32;
 			return;
 		}
@@ -517,8 +517,8 @@ static void TypesMismatchTest5()
 	R"(
 		fn Foo()
 		{
-			let : i32 x= 0;
-			let : i8 &x_ref= x;
+			var i32 x= 0;
+			var i8 &x_ref= x;
 		}
 	)";
 
@@ -599,7 +599,7 @@ static void ArraySizeIsNotInteger()
 	R"(
 		fn Foo()
 		{
-			let : [ i32, 5.0f32 ] x;
+			var [ i32, 5.0f32 ] x;
 			return;
 		}
 	)";
@@ -660,7 +660,7 @@ static void NameIsNotTypeNameTest()
 		fn Bar(){}
 		fn Foo()
 		{
-			let : Bar i;
+			var Bar i;
 			return;
 		}
 	)";
@@ -1050,7 +1050,7 @@ static void ExpectedReferenceValueTest3()
 	R"(
 		fn Foo()
 		{
-			let : f64 imut a= 3.1415926535f64;
+			var f64 imut a= 3.1415926535f64;
 			a = 0.0f64;
 		}
 	)";
@@ -1091,8 +1091,8 @@ static void ExpectedReferenceValueTest5()
 	R"(
 		fn Foo()
 		{
-			let : i32 a= 42, b= 24;
-			let : i32 &x= a - b;
+			var i32 a= 42, b= 24;
+			var i32 &x= a - b;
 		}
 	)";
 
@@ -1153,8 +1153,8 @@ static void BindingConstReferenceToNonconstReferenceTest0()
 	R"(
 		fn Foo()
 		{
-			let : i32 imut a= 42;
-			let : i32 &a_ref= a;
+			var i32 imut a= 42;
+			var i32 &a_ref= a;
 		}
 	)";
 
@@ -1175,7 +1175,7 @@ static void BindingConstReferenceToNonconstReferenceTest1()
 		fn Bar( i32 &mut x ){}
 		fn Foo()
 		{
-			let : i32 imut x = 0;
+			var i32 imut x = 0;
 			Bar( x );
 		}
 	)";
