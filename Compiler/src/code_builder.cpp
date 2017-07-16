@@ -1025,10 +1025,8 @@ Variable CodeBuilder::BuildExpressionCode_r(
 			}
 			else
 			{
-				// TODO - support typenames, etc.
-				errors_.push_back(
-					ReportNotImplemented( named_operand->file_pos_, "non variable or functions set name usage" ) );
-				throw ProgramError();
+				// TODO - set type name.
+				result.type.one_of_type_kind= NontypeStub::ClassName;
 			}
 		}
 		else if( const NumericConstant* numeric_constant=

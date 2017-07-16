@@ -11,6 +11,7 @@ LIBS+= $$U_BUILD_OUT_DIR/libCompilerLib.a
 
 SOURCES += \
 	src/tests/auto_variables_test.cpp \
+	src/tests/auto_variables_errors_test.cpp \
 	src/tests/code_builder_errors_test.cpp \
 	src/tests/code_builder_test.cpp \
 	src/tests/initializers_errors_test.cpp \
@@ -21,6 +22,7 @@ SOURCES += \
 
 HEADERS += \
 	src/tests/auto_variables_test.hpp \
+	src/tests/auto_variables_errors_test.hpp \
 	src/tests/code_builder_errors_test.hpp \
 	src/tests/code_builder_test.hpp \
 	src/tests/initializers_errors_test.hpp \
