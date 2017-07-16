@@ -11,7 +11,8 @@ enum class Keywords : unsigned int
 {
 	// Common keywords.
 	fn_,
-	let_,
+	var_,
+	auto_,
 	return_,
 	while_,
 	break_,
@@ -78,7 +79,7 @@ const ProgramString& Keyword( Keywords keyword );
 const char* KeywordAscii( Keywords keyword );
 
 // Relation operators for program string and keyword enum.
-// This operators make posible to write "str == Keywords::let_".
+// This operators make posible to write "str == Keywords::var_".
 bool operator==( Keywords keyword, const ProgramString& str );
 bool operator==( const ProgramString& str, Keywords keyword );
 bool operator!=( Keywords keyword, const ProgramString& str );

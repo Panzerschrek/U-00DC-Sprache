@@ -487,12 +487,19 @@ VariablesDeclaration& VariablesDeclaration::operator=( VariablesDeclaration&& ot
 
 void VariablesDeclaration::Print( std::ostream& stream, unsigned int indent ) const
 {
-	stream << "let : ";
+	stream << "var ";
 	type.Print( stream );
 	stream << " ";
 
 	for( const VariableEntry& variable : variables )
 	{
+		if( variable.reference_modifier == ReferenceModifier::Reference )
+			stream << "&";
+		if( variable.mutability_modifier == MutabilityModifier::Mutable )
+			stream << "mut ";
+		else if( variable.mutability_modifier == MutabilityModifier::Immutable )
+			stream << "imut ";
+
 		stream << ToStdString( variable.name );
 		if( variable.initializer != nullptr )
 		{
@@ -505,6 +512,27 @@ void VariablesDeclaration::Print( std::ostream& stream, unsigned int indent ) co
 		else
 			stream << ";";
 	}
+}
+
+AutoVariableDeclaration::AutoVariableDeclaration( const FilePos& file_pos )
+	: IBlockElement( file_pos )
+{}
+
+void AutoVariableDeclaration::Print( std::ostream& stream, const unsigned int indent ) const
+{
+	stream << "auto ";
+
+	if( reference_modifier == ReferenceModifier::Reference )
+		stream << "&";
+	if( mutability_modifier == MutabilityModifier::Mutable )
+		stream << "mut ";
+	else if( mutability_modifier == MutabilityModifier::Immutable )
+		stream << "imut ";
+
+	stream << ToStdString( name );
+	stream << "= ";
+	initializer_expression->Print( stream, indent );
+	stream << ";";
 }
 
 ReturnOperator::ReturnOperator( const FilePos& file_pos, BinaryOperatorsChainPtr expression )

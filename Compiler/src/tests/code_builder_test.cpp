@@ -134,7 +134,7 @@ static void VariablesTest0()
 	"\
 	fn Foo( i32 a, i32 b ) : i32\
 	{\
-		let : i32 tmp= a - b;\
+		var i32 tmp= a - b;\
 		return tmp;\
 	}"
 	;
@@ -165,7 +165,7 @@ static void VariablesTest1()
 	"\
 	fn Foo( i32 a, i32 b ) : i32\
 	{\
-		let : i32 tmp= a - b, r= 1;\
+		var i32 tmp= a - b, r= 1;\
 		tmp= tmp * r;\
 		return tmp;\
 	}"
@@ -273,7 +273,7 @@ static void UnaryMinusTest()
 	"\
 	fn Foo( i32 x ) : i32\
 	{\
-		let : i32 tmp= -x;\
+		var i32 tmp= -x;\
 		return -tmp;\
 	}"
 	;
@@ -301,7 +301,7 @@ static void UnaryMinusFloatTest()
 	"\
 	fn Foo( f64 x ) : f64\
 	{\
-		let : f64 tmp= -x;\
+		var f64 tmp= -x;\
 		return -tmp;\
 	}"
 	;
@@ -329,7 +329,7 @@ static void ArraysTest0()
 	"\
 	fn Foo(i32 x ) : i32\
 	{\
-		let : [ i32, 17 ] tmp= zero_init;\
+		var [ i32, 17 ] tmp= zero_init;\
 		tmp[5u32]= x;\
 		return tmp[5u] + 5;\
 	}"
@@ -358,7 +358,7 @@ static void ArraysTest1()
 	"\
 	fn Foo( i32 x ) : i32\
 	{\
-		let : [ [ [ i32, 3 ], 5 ], 17 ] tmp= zero_init;\
+		var [ [ [ i32, 3 ], 5 ], 17 ] tmp= zero_init;\
 		tmp[5u32][3u32][1u32]= x;\
 		return tmp[5u][3u][1u] + 5;\
 	}"
@@ -419,8 +419,8 @@ static void BooleanBasicTest()
 	"\
 	fn Foo( bool a, bool b, bool c ) : bool\
 	{\
-		let : bool unused= false;\
-		let : bool tmp= a & b;\
+		var bool unused= false;\
+		var bool tmp= a & b;\
 		tmp= tmp & ( true );\
 		tmp= tmp | false;\
 		return tmp ^ c ;\
@@ -831,7 +831,7 @@ static void WhileOperatorTest()
 	"\
 	fn Foo( i32 a, i32 b ) : i32\
 	{\
-		let : i32 x= a;\
+		var i32 x= a;\
 		while( x > 0 )\
 		{\
 			x= x - 1i32;\
@@ -869,7 +869,7 @@ static void IfOperatorTest0()
 	"\
 	fn SimpleIf( i32 x ) : i32\
 	{\
-		let : i32 tmp= x;\
+		var i32 tmp= x;\
 		if( x < 0 ) { tmp= -x; }\
 		return tmp;\
 	}"
@@ -907,8 +907,8 @@ static void IfOperatorTest1()
 	"\
 	fn IfElse( i32 x ) : i32\
 	{\
-		let : i32 tmp= 0;\
-		let : i32 bits= x & 1;\
+		var i32 tmp= 0;\
+		var i32 bits= x & 1;\
 		if( bits == 0 ) { tmp= x; }\
 		else { tmp= x * 2; }\
 		return tmp;\
@@ -947,8 +947,8 @@ static void IfOperatorTest2()
 	"\
 	fn IfElseIf( i32 x ) : i32\
 	{\
-		let : i32 tmp= 0;\
-		let : i32 bits= x & 3;\
+		var i32 tmp= 0;\
+		var i32 bits= x & 3;\
 		tmp= 1488;\
 		if( bits == 0 ) { tmp= x; }\
 		else if( bits == 1 ) { tmp= x * 2; }\
@@ -996,8 +996,8 @@ static void IfOperatorTest3()
 	"\
 	fn IfElseIfElse( i32 x ) : i32\
 	{\
-		let : i32 tmp= 0;\
-		let : i32 bits= 0;\
+		var i32 tmp= 0;\
+		var i32 bits= 0;\
 		bits= x & 3;\
 		if( bits == 0 ) { tmp= x; }\
 		else if( bits == 1 ) { tmp= x * 2; }\
@@ -1046,8 +1046,8 @@ static void IfOperatorTest4()
 	"\
 	fn IfElseIfElseIf( i32 x ) : i32\
 	{\
-		let : i32 tmp= 0;\
-		let : i32 bits= 0;\
+		var i32 tmp= 0;\
+		var i32 bits= 0;\
 		bits= x & 3;\
 		tmp= 1488;\
 		if( bits == 0 ) { tmp= x; }\
@@ -1105,8 +1105,8 @@ static void IfOperatorTest5()
 	"\
 	fn IfElseIfElseIf( i32 x ) : i32\
 	{\
-		let : i32 tmp= 0;\
-		let : i32 bits= 0;\
+		var i32 tmp= 0;\
+		var i32 bits= 0;\
 		bits= x & 3;\
 		if( bits == 0 ) { tmp= x; }\
 		else if( bits == 1 ) { tmp= x * 2; }\
@@ -1162,7 +1162,7 @@ static void BreakOperatorTest0()
 	static const char c_program_text[]=
 	"fn Foo( i32 x ) : i32\
 	{\
-		let : i32 tmp= x;\
+		var i32 tmp= x;\
 		while( x < 0 ) { tmp= -x; if( true ) { break; } else {} tmp= 0; }\
 		return tmp;\
 	}"
@@ -1199,8 +1199,8 @@ static void BreakOperatorTest1()
 	static const char c_program_text[]=
 	"fn Foo( i32 x ) : i32\
 	{\
-		let : i32 tmp= 0;\
-		let : i32 counter= 1;\
+		var i32 tmp= 0;\
+		var i32 counter= 1;\
 		while( counter > 0 )\
 		{\
 			while( counter > 0 )\
@@ -1235,7 +1235,7 @@ static void BreakOperatorTest2()
 	static const char c_program_text[]=
 	"fn Foo( i32 x ) : i32\
 	{\
-		let : i32 tmp= 0;\
+		var i32 tmp= 0;\
 		while( true )\
 		{\
 			while( false ){}\
@@ -1266,8 +1266,8 @@ static void ContinueOperatorTest0()
 	static const char c_program_text[]=
 	"fn Foo( i32 x ) : i32\
 	{\
-		let : i32 tmp= 0;\
-		let : i32 counter= 5;\
+		var i32 tmp= 0;\
+		var i32 counter= 5;\
 		while( counter > 0 )\
 		{\
 			tmp= x;\
@@ -1299,8 +1299,8 @@ static void ContinueOperatorTest1()
 	static const char c_program_text[]=
 	"fn Foo( i32 x ) : i32\
 	{\
-		let : i32 tmp= 0;\
-		let : i32 counter= 1;\
+		var i32 tmp= 0;\
+		var i32 counter= 1;\
 		while( counter > 0 )\
 		{\
 			while( tmp == 0 )\
@@ -1342,8 +1342,8 @@ static void StructTest0()
 	}
 	fn Foo( i32 a, i32 b, i32 c ) : i32
 	{
-		let : Point p= zero_init;
-		let : u32 index= 0u32;
+		var Point p= zero_init;
+		var u32 index= 0u32;
 		p.x= a;
 		p.y = b;
 		p.zzz[0u]= c;
@@ -1393,7 +1393,7 @@ static void StructTest1()
 	}
 	fn Foo( f64 a, f64 b ) : f64
 	{
-		let : Point p= zero_init;
+		var Point p= zero_init;
 		p.dummy.y= a;
 		p.dummy.z[1u]= b;
 		return p.dummy.y - p.dummy.z[1u];
@@ -1426,9 +1426,9 @@ static void BlocksTest()
 	R"(
 	fn Foo( i32 a, i32 b ) : i32
 	{
-		let : i32 x= a;
+		var i32 x= a;
 		{
-			let : i32 x= b;
+			var i32 x= b;
 			return x;
 		}
 	}
@@ -1460,8 +1460,8 @@ static void ReferencesTest0()
 	R"(
 	fn Foo() : i32
 	{
-		let : i32 x= 0;
-		let : i32 &x_ref= x;
+		var i32 x= 0;
+		var i32 &x_ref= x;
 		x_ref= 42;
 		return x;
 	}
@@ -1487,8 +1487,8 @@ static void ReferencesTest1()
 	R"(
 	fn Foo() : i32
 	{
-		let : i32 x= 56845;
-		let : i32 &x_ref= x;
+		var i32 x= 56845;
+		var i32 &x_ref= x;
 		return x_ref;
 	}
 	)";
@@ -1513,8 +1513,8 @@ static void ReferencesTest2()
 	R"(
 	fn Foo( i32 a, i32 b ) : i32
 	{
-		let : [ i32, 4 ] arr= zero_init;
-		let : [ i32, 4 ] &arr_ref= arr;
+		var [ i32, 4 ] arr= zero_init;
+		var [ i32, 4 ] &arr_ref= arr;
 		arr_ref[0u]= a;
 		arr_ref[1u]= b;
 		arr_ref[2u]= arr_ref[0u] * arr_ref[1u];
@@ -1548,9 +1548,9 @@ static void ReferencesTest3()
 	R"(
 	fn Foo() : i32
 	{
-		let : i32 imut x= 666;
-		let : i32 &imut x_ref= x;
-		let : i32 &imut x_ref_ref= x_ref;
+		var i32 imut x= 666;
+		var i32 &imut x_ref= x;
+		var i32 &imut x_ref_ref= x_ref;
 		return x_ref_ref;
 	}
 	)";
@@ -1575,7 +1575,7 @@ static void ReferencesTest4()
 	R"(
 	fn Foo( i32 a ) : i32
 	{
-		let : i32 &imut a_ref= a;
+		var i32 &imut a_ref= a;
 		return a_ref * 564;
 	}
 	)";
@@ -1607,7 +1607,7 @@ static void ReferencesTest5()
 	{ return x * 2; }
 	fn Foo( i32 a ) : i32
 	{
-		let : i32 triple_a= a * 3;
+		var i32 triple_a= a * 3;
 		return DoubleIt( triple_a );
 	}
 	)";
@@ -1639,7 +1639,7 @@ static void ReferencesTest6()
 	{ x = x * 2; }
 	fn Foo( i32 a ) : i32
 	{
-		let : i32 triple_a= a * 3;
+		var i32 triple_a= a * 3;
 		DoubleIt( triple_a );
 		return triple_a;
 	}
@@ -1678,7 +1678,7 @@ static void ReferencesTest7()
 	{ c.zzz[2u] = 99985; }
 	fn Foo() : i32
 	{
-		let : C mut c= zero_init;
+		var C mut c= zero_init;
 		Bar( c );
 		return c.zzz[2u];
 	}
@@ -1706,7 +1706,7 @@ static void ReferencesTest8()
 	{ arr[3u] = 99985; }
 	fn Foo() : i32
 	{
-		let : [ i32, 5 ] arr= zero_init;
+		var [ i32, 5 ] arr= zero_init;
 		Bar( arr );
 		return arr[3u];
 	}
