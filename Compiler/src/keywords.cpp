@@ -37,6 +37,7 @@ static const Globals& GetGlobals()
 	{
 		[ size_t(Keywords::fn_) ]= "fn",
 		[ size_t(Keywords::var_) ]= "var",
+		[ size_t(Keywords::auto_) ]= "auto",
 		[ size_t(Keywords::return_) ]= "return",
 		[ size_t(Keywords::while_) ]= "while",
 		[ size_t(Keywords::break_) ]= "break",

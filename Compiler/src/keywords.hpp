@@ -12,6 +12,7 @@ enum class Keywords : unsigned int
 	// Common keywords.
 	fn_,
 	var_,
+	auto_,
 	return_,
 	while_,
 	break_,

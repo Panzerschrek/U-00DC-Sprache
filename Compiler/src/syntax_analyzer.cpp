@@ -80,6 +80,7 @@ private:
 	std::unique_ptr<ExpressionInitializer> ParseExpressionInitializer();
 
 	VariablesDeclarationPtr ParseVariablesDeclaration();
+	std::unique_ptr<AutoVariableDeclaration> ParseAutoVariableDeclaration();
 
 	IBlockElementPtr ParseReturnOperator();
 	IBlockElementPtr ParseWhileOperator();
@@ -821,6 +822,66 @@ VariablesDeclarationPtr SyntaxAnalyzer::ParseVariablesDeclaration()
 	return decl;
 }
 
+std::unique_ptr<AutoVariableDeclaration> SyntaxAnalyzer::ParseAutoVariableDeclaration()
+{
+	U_ASSERT( it_ < it_end_ );
+	U_ASSERT( it_->type == Lexem::Type::Identifier && it_->text == Keywords::auto_ );
+	++it_;
+
+	std::unique_ptr<AutoVariableDeclaration> result( new AutoVariableDeclaration( it_->file_pos ) );
+
+	if( it_->type == Lexem::Type::And )
+	{
+		result->reference_modifier= ReferenceModifier::Reference;
+		++it_; U_ASSERT( it_ < it_end_ );
+	}
+
+	if( it_->type != Lexem::Type::Identifier )
+	{
+		PushErrorMessage( *it_ );
+		return result;
+	}
+
+	if( it_->text == Keywords::mut_ )
+	{
+		result->mutability_modifier= MutabilityModifier::Mutable;
+		++it_; U_ASSERT( it_ < it_end_ );
+	}
+	else if( it_->text == Keywords::imut_ )
+	{
+		result->mutability_modifier= MutabilityModifier::Immutable;
+		++it_; U_ASSERT( it_ < it_end_ );
+	}
+
+	if( it_->type != Lexem::Type::Identifier )
+	{
+		PushErrorMessage( *it_ );
+		return result;
+	}
+
+	result->name= it_->text;
+	++it_; U_ASSERT( it_ < it_end_ );
+
+	if( it_->type != Lexem::Type::Assignment )
+	{
+		PushErrorMessage( *it_ );
+		return result;
+	}
+	++it_; U_ASSERT( it_ < it_end_ );
+
+	result->initializer_expression = ParseExpression();
+
+	U_ASSERT( it_ < it_end_ );
+	if( it_->type != Lexem::Type::Semicolon )
+	{
+		PushErrorMessage( *it_ );
+		return result;
+	}
+	++it_;
+
+	return result;
+}
+
 IBlockElementPtr SyntaxAnalyzer::ParseReturnOperator()
 {
 	U_ASSERT( it_->type == Lexem::Type::Identifier && it_->text == Keywords::return_ );
@@ -1060,6 +1121,9 @@ BlockPtr SyntaxAnalyzer::ParseBlock()
 
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::var_ )
 			elements.emplace_back( ParseVariablesDeclaration() );
+
+		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::auto_ )
+			elements.emplace_back( ParseAutoVariableDeclaration() );
 
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::return_ )
 			elements.emplace_back( ParseReturnOperator() );

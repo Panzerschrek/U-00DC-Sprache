@@ -406,6 +406,18 @@ struct VariablesDeclaration final : public IBlockElement
 
 typedef std::unique_ptr<VariablesDeclaration> VariablesDeclarationPtr;
 
+struct AutoVariableDeclaration final : public IBlockElement
+{
+	explicit AutoVariableDeclaration( const FilePos& file_pos );
+	virtual ~AutoVariableDeclaration() override= default;
+	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
+
+	ProgramString name;
+	BinaryOperatorsChainPtr initializer_expression;
+	MutabilityModifier mutability_modifier= MutabilityModifier::None;
+	ReferenceModifier reference_modifier= ReferenceModifier::None;
+};
+
 class ReturnOperator final : public IBlockElement
 {
 public:
