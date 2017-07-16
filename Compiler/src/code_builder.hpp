@@ -84,9 +84,28 @@ private:
 		const NamesScope& names,
 		FunctionContext& function_context );
 
+	// Expressions.
+
 	Variable BuildExpressionCode_r(
 		const InversePolishNotation& ipn,
 		unsigned int ipn_index,
+		const NamesScope& names,
+		FunctionContext& function_context );
+
+	Variable BuildIndexationOperator(
+		const Variable& variable,
+		const IndexationOperator& indexation_operator,
+		const NamesScope& names,
+		FunctionContext& function_context );
+
+	Variable BuildMemberAccessOperator(
+		const Variable& variable,
+		const MemberAccessOperator& member_access_operator,
+		FunctionContext& function_context );
+
+	Variable BuildCallOperator(
+		const Variable& function_variable,
+		const CallOperator& call_operator,
 		const NamesScope& names,
 		FunctionContext& function_context );
 
@@ -139,6 +158,8 @@ private:
 		const OverloadedFunctionsSet& functions_set,
 		const std::vector<Function::Arg>& actual_args,
 		const FilePos& file_pos );
+
+	// Initializers.
 
 	void ApplyInitializer_r(
 		const Variable& variable,

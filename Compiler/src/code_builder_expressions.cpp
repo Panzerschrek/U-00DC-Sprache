@@ -418,186 +418,20 @@ Variable CodeBuilder::BuildExpressionCode_r(
 			if( const IndexationOperator* const indexation_operator=
 				dynamic_cast<const IndexationOperator*>( postfix_operator.get() ) )
 			{
-				const ArrayPtr* const array_type= boost::get<ArrayPtr>( &result.type.one_of_type_kind );
-				if( array_type == nullptr )
-				{
-					errors_.push_back( ReportOperationNotSupportedForThisType( indexation_operator->file_pos_, result.type.ToString() ) );
-					throw ProgramError();
-				}
-				U_ASSERT( *array_type != nullptr );
-
-				Variable index=
-					BuildExpressionCode(
-						*indexation_operator->index_,
-						names,
-						function_context );
-
-				const FundamentalType* const index_fundamental_type= boost::get<FundamentalType>( &index.type.one_of_type_kind );
-				if( index_fundamental_type == nullptr ||
-					!IsUnsignedInteger( index_fundamental_type->fundamental_type ) )
-				{
-					errors_.push_back( ReportTypesMismatch( indexation_operator->file_pos_, "any unsigned integer"_SpC, index.type.ToString() ) );
-					throw ProgramError();
-				}
-
-				if( result.location != Variable::Location::Pointer )
-				{
-					// TODO - Strange variable location.
-					throw ProgramError();
-				}
-
-				result.location= Variable::Location::Pointer;
-				result.value_type= ValueType::Reference;
-				result.type= (*array_type)->type;
-
-				// Make first index = 0 for array to pointer conversion.
-				llvm::Value* index_list[2];
-				index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
-				index_list[1]= CreateMoveToLLVMRegisterInstruction( index, function_context );
-
-				result.llvm_value=
-					function_context.llvm_ir_builder.CreateGEP( result.llvm_value, llvm::ArrayRef< llvm::Value*> ( index_list, 2u ) );
+				result= BuildIndexationOperator( result, *indexation_operator, names, function_context );
 			}
 			else if( const MemberAccessOperator* const member_access_operator=
 				dynamic_cast<const MemberAccessOperator*>( postfix_operator.get() ) )
 			{
-				const ClassPtr* const class_type= boost::get<ClassPtr>( &result.type.one_of_type_kind );
-				if( class_type == nullptr )
-				{
-					errors_.push_back( ReportOperationNotSupportedForThisType( member_access_operator->file_pos_, result.type.ToString() ) );
-					throw ProgramError();
-				}
-				U_ASSERT( *class_type != nullptr );
-
-				const Class::Field* field= (*class_type)->GetField( member_access_operator->member_name_ );
-				if( field == nullptr )
-				{
-					errors_.push_back( ReportNameNotFound( member_access_operator->file_pos_, member_access_operator->member_name_ ) );
-					throw ProgramError();
-				}
-
-				U_ASSERT( result.location == Variable::Location::Pointer );
-
-				// Make first index = 0 for array to pointer conversion.
-				llvm::Value* index_list[2];
-				index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
-				index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(field->index) ) );
-
-				result.location= Variable::Location::Pointer;
-				result.value_type= ValueType::Reference;
-				result.type= field->type;
-				result.llvm_value=
-					function_context.llvm_ir_builder.CreateGEP( result.llvm_value, index_list );
+				result= BuildMemberAccessOperator( result, *member_access_operator, function_context );
 			}
 			else if( const CallOperator* const call_operator=
 				dynamic_cast<const CallOperator*>( postfix_operator.get() ) )
 			{
-				const NontypeStub* nontype_stub= boost::get<NontypeStub>( &result.type.one_of_type_kind );
-				if( nontype_stub == nullptr || *nontype_stub != NontypeStub::OverloadedFunctionsSet )
-				{
-					// TODO - Call of non-function.
-					throw ProgramError();
-				}
-				const OverloadedFunctionsSet& functions_set= result.functions_set;
-
-				std::vector<Function::Arg> actual_args( call_operator->arguments_.size() );
-				std::vector<Variable> actual_args_variables( call_operator->arguments_.size() );
-				for( unsigned int i= 0u; i < actual_args.size(); i++ )
-				{
-
-					Variable expr= BuildExpressionCode( *call_operator->arguments_[i], names, function_context );
-					actual_args[i].type= expr.type;
-					actual_args[i].is_reference= expr.value_type != ValueType::Value;
-					actual_args[i].is_mutable= expr.value_type == ValueType::Reference;
-
-					actual_args_variables[i]= std::move(expr);
-				}
-
-				const Variable function= GetOverloadedFunction( functions_set, actual_args, call_operator->file_pos_ );
-				const Function& function_type= *boost::get<FunctionPtr>( function.type.one_of_type_kind );
-
-				if( function_type.args.size() != actual_args.size( ))
-				{
-					errors_.push_back( ReportFunctionSignatureMismatch( call_operator->file_pos_ ) );
-					throw ProgramError();
-				}
-
-				std::vector<llvm::Value*> llvm_args( actual_args.size() );
-				for( unsigned int i= 0u; i < actual_args.size(); i++ )
-				{
-					const Function::Arg& arg= function_type.args[i];
-					const Variable& expr= actual_args_variables[i];
-
-					if( expr.type != arg.type )
-					{
-						errors_.push_back( ReportFunctionSignatureMismatch( call_operator->arguments_[i]->file_pos_ ) );
-						throw ProgramError();
-					}
-
-					if( arg.is_reference )
-					{
-						if( arg.is_mutable )
-						{
-							if( expr.value_type == ValueType::Value )
-							{
-								errors_.push_back( ReportExpectedReferenceValue( call_operator->arguments_[i]->file_pos_ ) );
-								throw ProgramError();
-							}
-							if( expr.value_type == ValueType::ConstReference )
-							{
-								errors_.push_back( ReportBindingConstReferenceToNonconstReference( call_operator->arguments_[i]->file_pos_ ) );
-								throw ProgramError();
-							}
-
-							llvm_args[i]= expr.llvm_value;
-						}
-						else
-						{
-							if( expr.value_type == ValueType::Value )
-							{
-								// Bind value to const reference.
-								// TODO - support nonfundamental values.
-								llvm::Value* temp_storage= function_context.llvm_ir_builder.CreateAlloca( expr.type.GetLLVMType() );
-								function_context.llvm_ir_builder.CreateStore( expr.llvm_value, temp_storage );
-								llvm_args[i]= temp_storage;
-							}
-							else
-							{
-								llvm_args[i]= expr.llvm_value;
-							}
-						}
-					}
-					else
-					{
-						// TODO - support nonfundamental value-parameters.
-						llvm_args[i]= CreateMoveToLLVMRegisterInstruction( expr, function_context );
-					}
-				}
-
-				llvm::Value* call_result=
-					function_context.llvm_ir_builder.CreateCall(
-						llvm::dyn_cast<llvm::Function>(function.llvm_value),
-						llvm_args );
-
-				if( function_type.return_value_is_reference )
-				{
-					result.location= Variable::Location::Pointer;
-					if( function_type.return_value_is_mutable )
-						result.value_type= ValueType::Reference;
-					else
-						result.value_type= ValueType::ConstReference;
-				}
-				else
-				{
-					result.location= Variable::Location::LLVMRegister;
-					result.value_type= ValueType::Value;
-				}
-				result.type= function_type.return_type;
-				result.llvm_value= call_result;
+				result= BuildCallOperator( result, *call_operator, names, function_context );
 			}
 			else
 			{
-				//TODO
 				U_ASSERT(false);
 			}
 
@@ -644,6 +478,206 @@ Variable CodeBuilder::BuildExpressionCode_r(
 
 		return result;
 	}
+}
+
+Variable CodeBuilder::BuildIndexationOperator(
+	const Variable& variable,
+	const IndexationOperator& indexation_operator,
+	const NamesScope& names,
+	FunctionContext& function_context )
+{
+	const ArrayPtr* const array_type= boost::get<ArrayPtr>( &variable.type.one_of_type_kind );
+	if( array_type == nullptr )
+	{
+		errors_.push_back( ReportOperationNotSupportedForThisType( indexation_operator.file_pos_, variable.type.ToString() ) );
+		throw ProgramError();
+	}
+	U_ASSERT( *array_type != nullptr );
+
+	Variable index=
+		BuildExpressionCode(
+			*indexation_operator.index_,
+			names,
+			function_context );
+
+	const FundamentalType* const index_fundamental_type= boost::get<FundamentalType>( &index.type.one_of_type_kind );
+	if( index_fundamental_type == nullptr ||
+		!IsUnsignedInteger( index_fundamental_type->fundamental_type ) )
+	{
+		errors_.push_back( ReportTypesMismatch( indexation_operator.file_pos_, "any unsigned integer"_SpC, index.type.ToString() ) );
+		throw ProgramError();
+	}
+
+	if( variable.location != Variable::Location::Pointer )
+	{
+		// TODO - Strange variable location.
+		throw ProgramError();
+	}
+
+	Variable result;
+	result.location= Variable::Location::Pointer;
+	result.value_type= ValueType::Reference;
+	result.type= (*array_type)->type;
+
+	// Make first index = 0 for array to pointer conversion.
+	llvm::Value* index_list[2];
+	index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
+	index_list[1]= CreateMoveToLLVMRegisterInstruction( index, function_context );
+
+	result.llvm_value=
+		function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, llvm::ArrayRef< llvm::Value*> ( index_list, 2u ) );
+
+	return result;
+}
+
+Variable CodeBuilder::BuildMemberAccessOperator(
+	const Variable& variable,
+	const MemberAccessOperator& member_access_operator,
+	FunctionContext& function_context )
+{
+	const ClassPtr* const class_type= boost::get<ClassPtr>( &variable.type.one_of_type_kind );
+	if( class_type == nullptr )
+	{
+		errors_.push_back( ReportOperationNotSupportedForThisType( member_access_operator.file_pos_, variable.type.ToString() ) );
+		throw ProgramError();
+	}
+	U_ASSERT( *class_type != nullptr );
+
+	const Class::Field* field= (*class_type)->GetField( member_access_operator.member_name_ );
+	if( field == nullptr )
+	{
+		errors_.push_back( ReportNameNotFound( member_access_operator.file_pos_, member_access_operator.member_name_ ) );
+		throw ProgramError();
+	}
+
+	U_ASSERT( variable.location == Variable::Location::Pointer );
+
+	// Make first index = 0 for array to pointer conversion.
+	llvm::Value* index_list[2];
+	index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
+	index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(field->index) ) );
+
+	Variable result;
+	result.location= Variable::Location::Pointer;
+	result.value_type= ValueType::Reference;
+	result.type= field->type;
+	result.llvm_value=
+		function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, index_list );
+	return result;
+}
+
+Variable CodeBuilder::BuildCallOperator(
+	const Variable& function_variable,
+	const CallOperator& call_operator,
+	const NamesScope& names,
+	FunctionContext& function_context )
+{
+	const NontypeStub* nontype_stub= boost::get<NontypeStub>( &function_variable.type.one_of_type_kind );
+	if( nontype_stub == nullptr || *nontype_stub != NontypeStub::OverloadedFunctionsSet )
+	{
+		// TODO - Call of non-function.
+		throw ProgramError();
+	}
+	const OverloadedFunctionsSet& functions_set= function_variable.functions_set;
+
+	std::vector<Function::Arg> actual_args( call_operator.arguments_.size() );
+	std::vector<Variable> actual_args_variables( call_operator.arguments_.size() );
+	for( unsigned int i= 0u; i < actual_args.size(); i++ )
+	{
+
+		Variable expr= BuildExpressionCode( *call_operator.arguments_[i], names, function_context );
+		actual_args[i].type= expr.type;
+		actual_args[i].is_reference= expr.value_type != ValueType::Value;
+		actual_args[i].is_mutable= expr.value_type == ValueType::Reference;
+
+		actual_args_variables[i]= std::move(expr);
+	}
+
+	const Variable function= GetOverloadedFunction( functions_set, actual_args, call_operator.file_pos_ );
+	const Function& function_type= *boost::get<FunctionPtr>( function.type.one_of_type_kind );
+
+	if( function_type.args.size() != actual_args.size( ))
+	{
+		errors_.push_back( ReportFunctionSignatureMismatch( call_operator.file_pos_ ) );
+		throw ProgramError();
+	}
+
+	std::vector<llvm::Value*> llvm_args( actual_args.size() );
+	for( unsigned int i= 0u; i < actual_args.size(); i++ )
+	{
+		const Function::Arg& arg= function_type.args[i];
+		const Variable& expr= actual_args_variables[i];
+
+		if( expr.type != arg.type )
+		{
+			errors_.push_back( ReportFunctionSignatureMismatch( call_operator.arguments_[i]->file_pos_ ) );
+			throw ProgramError();
+		}
+
+		if( arg.is_reference )
+		{
+			if( arg.is_mutable )
+			{
+				if( expr.value_type == ValueType::Value )
+				{
+					errors_.push_back( ReportExpectedReferenceValue( call_operator.arguments_[i]->file_pos_ ) );
+					throw ProgramError();
+				}
+				if( expr.value_type == ValueType::ConstReference )
+				{
+					errors_.push_back( ReportBindingConstReferenceToNonconstReference( call_operator.arguments_[i]->file_pos_ ) );
+					throw ProgramError();
+				}
+
+				llvm_args[i]= expr.llvm_value;
+			}
+			else
+			{
+				if( expr.value_type == ValueType::Value )
+				{
+					// Bind value to const reference.
+					// TODO - support nonfundamental values.
+					llvm::Value* temp_storage= function_context.llvm_ir_builder.CreateAlloca( expr.type.GetLLVMType() );
+					function_context.llvm_ir_builder.CreateStore( expr.llvm_value, temp_storage );
+					llvm_args[i]= temp_storage;
+				}
+				else
+				{
+					llvm_args[i]= expr.llvm_value;
+				}
+			}
+		}
+		else
+		{
+			// TODO - support nonfundamental value-parameters.
+			llvm_args[i]= CreateMoveToLLVMRegisterInstruction( expr, function_context );
+		}
+	}
+
+	llvm::Value* call_result=
+		function_context.llvm_ir_builder.CreateCall(
+			llvm::dyn_cast<llvm::Function>(function.llvm_value),
+			llvm_args );
+
+	Variable result;
+
+	if( function_type.return_value_is_reference )
+	{
+		result.location= Variable::Location::Pointer;
+		if( function_type.return_value_is_mutable )
+			result.value_type= ValueType::Reference;
+		else
+			result.value_type= ValueType::ConstReference;
+	}
+	else
+	{
+		result.location= Variable::Location::LLVMRegister;
+		result.value_type= ValueType::Value;
+	}
+	result.type= function_type.return_type;
+	result.llvm_value= call_result;
+
+	return result;
 }
 
 } // namespace CodeBuilderPrivate
