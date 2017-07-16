@@ -1428,8 +1428,8 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 
 			void operator()( const FundamentalType& ){ type_is_ok= true; }
 			void operator()( const FunctionPtr& ) { type_is_ok= false; }
-			void operator()( const ArrayPtr& ) { type_is_ok= false; }// TODO - support constructors for classes
-			void operator()( const ClassPtr& ) { type_is_ok= false; }
+			void operator()( const ArrayPtr& ) { type_is_ok= true; }
+			void operator()( const ClassPtr& ) { type_is_ok= true; }
 			void operator()( const NontypeStub& ) { type_is_ok= false; }
 		};
 
@@ -1461,7 +1461,7 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 			return;
 		}
 		if( initializer_experrsion.value_type == ValueType::ConstReference &&
-			variable.value_type == ValueType::ConstReference )
+			variable.value_type != ValueType::ConstReference )
 		{
 			errors_.push_back( ReportBindingConstReferenceToNonconstReference( auto_variable_declaration.file_pos_ ) );
 			return;
