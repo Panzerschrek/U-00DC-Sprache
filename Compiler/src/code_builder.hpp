@@ -79,12 +79,12 @@ private:
 		const NamesScope& names,
 		FunctionContext& function_context ) noexcept;
 
+	// Expressions.
+
 	Variable BuildExpressionCode(
 		const BinaryOperatorsChain& expression,
 		const NamesScope& names,
 		FunctionContext& function_context );
-
-	// Expressions.
 
 	Variable BuildExpressionCode_r(
 		const InversePolishNotation& ipn,
@@ -98,6 +98,10 @@ private:
 		BinaryOperator binary_operator,
 		const FilePos& file_pos,
 		FunctionContext& function_context );
+
+	Variable BuildNamedOperand( const NamedOperand& named_operand, const NamesScope& names );
+	Variable BuildNumericConstant( const NumericConstant& numeric_constant );
+	Variable BuildBooleanConstant( const BooleanConstant& boolean_constant );
 
 	Variable BuildIndexationOperator(
 		const Variable& variable,
@@ -120,6 +124,8 @@ private:
 		const Variable& variable,
 		const UnaryMinus& unary_minus,
 		FunctionContext& function_context );
+
+	// Block elements
 
 	void BuildVariablesDeclarationCode(
 		const VariablesDeclaration& variables_declaration,

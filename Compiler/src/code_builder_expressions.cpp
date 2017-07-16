@@ -70,67 +70,17 @@ Variable CodeBuilder::BuildExpressionCode_r(
 		if( const NamedOperand* const named_operand=
 			dynamic_cast<const NamedOperand*>(&operand) )
 		{
-			const NamesScope::InsertedName* name_entry=
-				names.GetName( named_operand->name_ );
-			if( !name_entry )
-			{
-				errors_.push_back( ReportNameNotFound( named_operand->file_pos_, named_operand->name_ ) );
-				throw ProgramError();
-			}
-
-			if( const Variable* const variable= boost::get<Variable>( &name_entry->second ) )
-			{
-				result= *variable;
-			}
-			else if( const OverloadedFunctionsSet* const functins_set=
-				boost::get<OverloadedFunctionsSet>( &name_entry->second ) )
-			{
-				result.type.one_of_type_kind= NontypeStub::OverloadedFunctionsSet;
-				result.functions_set= *functins_set;
-			}
-			else
-			{
-				// TODO - set type name.
-				result.type.one_of_type_kind= NontypeStub::ClassName;
-			}
+			result= BuildNamedOperand( *named_operand, names );
 		}
 		else if( const NumericConstant* numeric_constant=
 			dynamic_cast<const NumericConstant*>(&operand) )
 		{
-			U_FundamentalType type= GetNumericConstantType( *numeric_constant );
-			if( type == U_FundamentalType::InvalidType )
-			{
-				errors_.push_back( ReportUnknownNumericConstantType( numeric_constant->file_pos_, numeric_constant->type_suffix_ ) );
-				throw ProgramError();
-			}
-			llvm::Type* const llvm_type= GetFundamentalLLVMType( type );
-
-			result.location= Variable::Location::LLVMRegister;
-			result.value_type= ValueType::Value;
-			result.type.one_of_type_kind= FundamentalType( type, llvm_type );
-
-			if( IsInteger( type ) )
-				result.llvm_value=
-					llvm::Constant::getIntegerValue( llvm_type, llvm::APInt( result.type.SizeOf() * 8u, uint64_t(numeric_constant->value_) ) );
-			else if( IsFloatingPoint( type ) )
-				result.llvm_value=
-					llvm::ConstantFP::get( llvm_type, static_cast<double>( numeric_constant->value_) );
-			else
-			{
-				U_ASSERT(false);
-			}
+			result= BuildNumericConstant( *numeric_constant );
 		}
 		else if( const BooleanConstant* boolean_constant=
 			dynamic_cast<const BooleanConstant*>(&operand) )
 		{
-			result.location= Variable::Location::LLVMRegister;
-			result.value_type= ValueType::Value;
-			result.type.one_of_type_kind= FundamentalType( U_FundamentalType::Bool, fundamental_llvm_types_.bool_ );
-
-			result.llvm_value=
-				llvm::Constant::getIntegerValue(
-					fundamental_llvm_types_.bool_ ,
-					llvm::APInt( 1u, uint64_t(boolean_constant->value_) ) );
+			result= BuildBooleanConstant( *boolean_constant );
 		}
 		else if( const BracketExpression* bracket_expression=
 			dynamic_cast<const BracketExpression*>(&operand) )
@@ -467,6 +417,83 @@ Variable CodeBuilder::BuildBinaryOperator(
 		U_ASSERT(false);
 		break;
 	};
+
+	return result;
+}
+
+Variable CodeBuilder::BuildNamedOperand(
+	const NamedOperand& named_operand,
+	const NamesScope& names )
+{
+	Variable result;
+
+	const NamesScope::InsertedName* name_entry=
+		names.GetName( named_operand.name_ );
+	if( !name_entry )
+	{
+		errors_.push_back( ReportNameNotFound( named_operand.file_pos_, named_operand.name_ ) );
+		throw ProgramError();
+	}
+
+	if( const Variable* const variable= boost::get<Variable>( &name_entry->second ) )
+	{
+		result= *variable;
+	}
+	else if( const OverloadedFunctionsSet* const functins_set=
+		boost::get<OverloadedFunctionsSet>( &name_entry->second ) )
+	{
+		result.type.one_of_type_kind= NontypeStub::OverloadedFunctionsSet;
+		result.functions_set= *functins_set;
+	}
+	else
+	{
+		// TODO - set type name.
+		result.type.one_of_type_kind= NontypeStub::ClassName;
+	}
+
+	return result;
+}
+
+Variable CodeBuilder::BuildNumericConstant( const NumericConstant& numeric_constant )
+{
+	U_FundamentalType type= GetNumericConstantType( numeric_constant );
+	if( type == U_FundamentalType::InvalidType )
+	{
+		errors_.push_back( ReportUnknownNumericConstantType( numeric_constant.file_pos_, numeric_constant.type_suffix_ ) );
+		throw ProgramError();
+	}
+	llvm::Type* const llvm_type= GetFundamentalLLVMType( type );
+
+	Variable result;
+	result.location= Variable::Location::LLVMRegister;
+	result.value_type= ValueType::Value;
+	result.type.one_of_type_kind= FundamentalType( type, llvm_type );
+
+	if( IsInteger( type ) )
+		result.llvm_value=
+			llvm::Constant::getIntegerValue( llvm_type, llvm::APInt( result.type.SizeOf() * 8u, uint64_t(numeric_constant.value_) ) );
+	else if( IsFloatingPoint( type ) )
+		result.llvm_value=
+			llvm::ConstantFP::get( llvm_type, static_cast<double>( numeric_constant.value_) );
+	else
+	{
+		U_ASSERT(false);
+	}
+
+	return result;
+}
+
+Variable CodeBuilder::BuildBooleanConstant( const BooleanConstant& boolean_constant )
+{
+	Variable result;
+	result.location= Variable::Location::LLVMRegister;
+	result.value_type= ValueType::Value;
+	result.type.one_of_type_kind= FundamentalType( U_FundamentalType::Bool, fundamental_llvm_types_.bool_ );
+
+	result.llvm_value=
+		llvm::Constant::getIntegerValue(
+			fundamental_llvm_types_.bool_ ,
+			llvm::APInt( 1u, uint64_t(boolean_constant.value_) ) );
 
 	return result;
 }
