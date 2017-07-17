@@ -5,5 +5,11 @@
 *.dll
 *.so
 
-# Code::BLocks shit.
+# Code::Blocks shit.
 *.layout
+
+# Build directories
+build*/
+
+# QtCreator settings
+*.pro.user
