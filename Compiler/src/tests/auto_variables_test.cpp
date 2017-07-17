@@ -1,15 +1,12 @@
 #include <cstdlib>
 #include <iostream>
 
-#include "../assert.hpp"
 #include "tests.hpp"
-
-#include "auto_variables_test.hpp"
 
 namespace U
 {
 
-static void AutoVariableTest0()
+U_TEST(AutoVariableTest0)
 {
 	// Value-variable with value-expression assignment.
 	static const char c_program_text[]=
@@ -24,17 +21,17 @@ static void AutoVariableTest0()
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
-	U_ASSERT( function != nullptr );
+	U_TEST_ASSERT( function != nullptr );
 
 	llvm::GenericValue result_value=
 		engine->runFunction(
 			function,
 			llvm::ArrayRef<llvm::GenericValue>() );
 
-	U_ASSERT( static_cast<uint64_t>( 2017 ) == result_value.IntVal.getLimitedValue() );
+	U_TEST_ASSERT( static_cast<uint64_t>( 2017 ) == result_value.IntVal.getLimitedValue() );
 }
 
-static void AutoVariableTest1()
+U_TEST(AutoVariableTest1)
 {
 	// Value-variable with reference-expression assignment.
 	static const char c_program_text[]=
@@ -50,17 +47,17 @@ static void AutoVariableTest1()
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
-	U_ASSERT( function != nullptr );
+	U_TEST_ASSERT( function != nullptr );
 
 	llvm::GenericValue result_value=
 		engine->runFunction(
 			function,
 			llvm::ArrayRef<llvm::GenericValue>() );
 
-	U_ASSERT( static_cast<uint64_t>( 1237 ) == result_value.IntVal.getLimitedValue() );
+	U_TEST_ASSERT( static_cast<uint64_t>( 1237 ) == result_value.IntVal.getLimitedValue() );
 }
 
-static void AutoVariableTest2()
+U_TEST(AutoVariableTest2)
 {
 	// Immutable value-variable with reference-expression assignment.
 	static const char c_program_text[]=
@@ -76,17 +73,17 @@ static void AutoVariableTest2()
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
-	U_ASSERT( function != nullptr );
+	U_TEST_ASSERT( function != nullptr );
 
 	llvm::GenericValue result_value=
 		engine->runFunction(
 			function,
 			llvm::ArrayRef<llvm::GenericValue>() );
 
-	U_ASSERT( static_cast<uint64_t>( 1237 ) == result_value.IntVal.getLimitedValue() );
+	U_TEST_ASSERT( static_cast<uint64_t>( 1237 ) == result_value.IntVal.getLimitedValue() );
 }
 
-static void AutoVariableTest3()
+U_TEST(AutoVariableTest3)
 {
 	// Mutable reference to array.
 	static const char c_program_text[]=
@@ -103,17 +100,17 @@ static void AutoVariableTest3()
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
-	U_ASSERT( function != nullptr );
+	U_TEST_ASSERT( function != nullptr );
 
 	llvm::GenericValue result_value=
 		engine->runFunction(
 			function,
 			llvm::ArrayRef<llvm::GenericValue>() );
 
-	U_ASSERT( static_cast<uint64_t>( 1242 ) == result_value.IntVal.getLimitedValue() );
+	U_TEST_ASSERT( static_cast<uint64_t>( 1242 ) == result_value.IntVal.getLimitedValue() );
 }
 
-static void AutoVariableTest4()
+U_TEST(AutoVariableTest4)
 {
 	// Immutalbe reference to struct.
 	static const char c_program_text[]=
@@ -130,23 +127,14 @@ static void AutoVariableTest4()
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
-	U_ASSERT( function != nullptr );
+	U_TEST_ASSERT( function != nullptr );
 
 	llvm::GenericValue result_value=
 		engine->runFunction(
 			function,
 			llvm::ArrayRef<llvm::GenericValue>() );
 
-	U_ASSERT( 0.5f == result_value.FloatVal );
-}
-
-void RunAutoVariablesTest()
-{
-	AutoVariableTest0();
-	AutoVariableTest1();
-	AutoVariableTest2();
-	AutoVariableTest3();
-	AutoVariableTest4();
+	U_TEST_ASSERT( 0.5f == result_value.FloatVal );
 }
 
 } // namespace U

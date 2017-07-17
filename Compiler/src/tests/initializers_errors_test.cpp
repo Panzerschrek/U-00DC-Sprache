@@ -1,15 +1,12 @@
 #include <cstdlib>
 #include <iostream>
 
-#include "../assert.hpp"
 #include "tests.hpp"
-
-#include "initializers_errors_test.hpp"
 
 namespace U
 {
 
-static void ExpectedInitializerTest0()
+U_TEST(ExpectedInitializerTest0)
 {
 	// Expected initializer for fundamental variable.
 	static const char c_program_text[]=
@@ -22,14 +19,14 @@ static void ExpectedInitializerTest0()
 
 	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_ASSERT( error.code == CodeBuilderErrorCode::ExpectedInitializer );
-	//U_ASSERT( error.file_pos.line == 4u );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedInitializer );
+	//U_TEST_ASSERT( error.file_pos.line == 4u );
 }
 
-static void ExpectedInitializerTest1()
+U_TEST(ExpectedInitializerTest1)
 {
 	// Expected initializer for array.
 	static const char c_program_text[]=
@@ -42,14 +39,14 @@ static void ExpectedInitializerTest1()
 
 	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_ASSERT( error.code == CodeBuilderErrorCode::ExpectedInitializer );
-	//U_ASSERT( error.file_pos.line == 4u );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedInitializer );
+	//U_TEST_ASSERT( error.file_pos.line == 4u );
 }
 
-static void ExpectedInitializerTest2()
+U_TEST(ExpectedInitializerTest2)
 {
 	// Expected initializer for struct.
 	static const char c_program_text[]=
@@ -63,14 +60,14 @@ static void ExpectedInitializerTest2()
 
 	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_ASSERT( error.code == CodeBuilderErrorCode::ExpectedInitializer );
-	//U_ASSERT( error.file_pos.line == 4u );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedInitializer );
+	//U_TEST_ASSERT( error.file_pos.line == 4u );
 }
 
-static void ArrayInitializerForNonArrayTest0()
+U_TEST(ArrayInitializerForNonArrayTest0)
 {
 	// Array initializer for fundamental type.
 	static const char c_program_text[]=
@@ -83,14 +80,14 @@ static void ArrayInitializerForNonArrayTest0()
 
 	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_ASSERT( error.code == CodeBuilderErrorCode::ArrayInitializerForNonArray );
-	U_ASSERT( error.file_pos.line == 4u );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ArrayInitializerForNonArray );
+	U_TEST_ASSERT( error.file_pos.line == 4u );
 }
 
-static void ArrayInitializerForNonArrayTest1()
+U_TEST(ArrayInitializerForNonArrayTest1)
 {
 	// Array initializer for classes.
 	static const char c_program_text[]=
@@ -104,14 +101,14 @@ static void ArrayInitializerForNonArrayTest1()
 
 	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_ASSERT( error.code == CodeBuilderErrorCode::ArrayInitializerForNonArray );
-	U_ASSERT( error.file_pos.line == 5u );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ArrayInitializerForNonArray );
+	U_TEST_ASSERT( error.file_pos.line == 5u );
 }
 
-static void ArrayInitializersCountMismatchTest0()
+U_TEST(ArrayInitializersCountMismatchTest0)
 {
 	// Not enough initializers.
 	static const char c_program_text[]=
@@ -124,14 +121,14 @@ static void ArrayInitializersCountMismatchTest0()
 
 	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_ASSERT( error.code == CodeBuilderErrorCode::ArrayInitializersCountMismatch );
-	U_ASSERT( error.file_pos.line == 4u );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ArrayInitializersCountMismatch );
+	U_TEST_ASSERT( error.file_pos.line == 4u );
 }
 
-static void ArrayInitializersCountMismatchTest1()
+U_TEST(ArrayInitializersCountMismatchTest1)
 {
 	// Too much initializers.
 	static const char c_program_text[]=
@@ -144,15 +141,15 @@ static void ArrayInitializersCountMismatchTest1()
 
 	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_ASSERT( error.code == CodeBuilderErrorCode::ArrayInitializersCountMismatch );
-	U_ASSERT( error.file_pos.line == 4u );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ArrayInitializersCountMismatch );
+	U_TEST_ASSERT( error.file_pos.line == 4u );
 }
 
 
-static void FundamentalTypesHaveConstructorsWithExactlyOneParameterTest0()
+U_TEST(FundamentalTypesHaveConstructorsWithExactlyOneParameterTest0)
 {
 	// Not enough parameters in constructor.
 	static const char c_program_text[]=
@@ -165,14 +162,14 @@ static void FundamentalTypesHaveConstructorsWithExactlyOneParameterTest0()
 
 	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_ASSERT( error.code == CodeBuilderErrorCode::FundamentalTypesHaveConstructorsWithExactlyOneParameter );
-	U_ASSERT( error.file_pos.line == 4u );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::FundamentalTypesHaveConstructorsWithExactlyOneParameter );
+	U_TEST_ASSERT( error.file_pos.line == 4u );
 }
 
-static void FundamentalTypesHaveConstructorsWithExactlyOneParameterTest1()
+U_TEST(FundamentalTypesHaveConstructorsWithExactlyOneParameterTest1)
 {
 	// Too much parameters in constructor.
 	static const char c_program_text[]=
@@ -185,14 +182,14 @@ static void FundamentalTypesHaveConstructorsWithExactlyOneParameterTest1()
 
 	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_ASSERT( error.code == CodeBuilderErrorCode::FundamentalTypesHaveConstructorsWithExactlyOneParameter );
-	U_ASSERT( error.file_pos.line == 4u );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::FundamentalTypesHaveConstructorsWithExactlyOneParameter );
+	U_TEST_ASSERT( error.file_pos.line == 4u );
 }
 
-static void ReferencesHaveConstructorsWithExactlyOneParameterTest0()
+U_TEST(ReferencesHaveConstructorsWithExactlyOneParameterTest0)
 {
 	// Not enough parameters in constructor.
 	static const char c_program_text[]=
@@ -205,14 +202,14 @@ static void ReferencesHaveConstructorsWithExactlyOneParameterTest0()
 
 	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_ASSERT( error.code == CodeBuilderErrorCode::ReferencesHaveConstructorsWithExactlyOneParameter );
-	U_ASSERT( error.file_pos.line == 4u );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferencesHaveConstructorsWithExactlyOneParameter );
+	U_TEST_ASSERT( error.file_pos.line == 4u );
 }
 
-static void ReferencesHaveConstructorsWithExactlyOneParameterTest1()
+U_TEST(ReferencesHaveConstructorsWithExactlyOneParameterTest1)
 {
 	// Too much parameters in constructor.
 	static const char c_program_text[]=
@@ -226,14 +223,14 @@ static void ReferencesHaveConstructorsWithExactlyOneParameterTest1()
 
 	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_ASSERT( error.code == CodeBuilderErrorCode::ReferencesHaveConstructorsWithExactlyOneParameter );
-	U_ASSERT( error.file_pos.line == 5u );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferencesHaveConstructorsWithExactlyOneParameter );
+	U_TEST_ASSERT( error.file_pos.line == 5u );
 }
 
-static void UnsupportedInitializerForReferenceTest0()
+U_TEST(UnsupportedInitializerForReferenceTest0)
 {
 	// Array initializer for reference.
 	static const char c_program_text[]=
@@ -247,14 +244,14 @@ static void UnsupportedInitializerForReferenceTest0()
 
 	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_ASSERT( error.code == CodeBuilderErrorCode::UnsupportedInitializerForReference );
-	U_ASSERT( error.file_pos.line == 5u );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::UnsupportedInitializerForReference );
+	U_TEST_ASSERT( error.file_pos.line == 5u );
 }
 
-static void ConstructorInitializerForUnsupportedTypeTest0()
+U_TEST(ConstructorInitializerForUnsupportedTypeTest0)
 {
 	// Constructor initializer for array.
 	static const char c_program_text[]=
@@ -267,14 +264,14 @@ static void ConstructorInitializerForUnsupportedTypeTest0()
 
 	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_ASSERT( error.code == CodeBuilderErrorCode::ConstructorInitializerForUnsupportedType );
-	U_ASSERT( error.file_pos.line == 4u );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ConstructorInitializerForUnsupportedType );
+	U_TEST_ASSERT( error.file_pos.line == 4u );
 }
 
-static void StructInitializerForNonStructTest0()
+U_TEST(StructInitializerForNonStructTest0)
 {
 	// Struct initializer for array.
 	static const char c_program_text[]=
@@ -287,14 +284,14 @@ static void StructInitializerForNonStructTest0()
 
 	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_ASSERT( error.code == CodeBuilderErrorCode::StructInitializerForNonStruct );
-	U_ASSERT( error.file_pos.line == 4u );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::StructInitializerForNonStruct );
+	U_TEST_ASSERT( error.file_pos.line == 4u );
 }
 
-static void DuplicatedStructMemberInitializerTest0()
+U_TEST(DuplicatedStructMemberInitializerTest0)
 {
 	static const char c_program_text[]=
 	R"(
@@ -307,14 +304,14 @@ static void DuplicatedStructMemberInitializerTest0()
 
 	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_ASSERT( error.code == CodeBuilderErrorCode::DuplicatedStructMemberInitializer );
-	U_ASSERT( error.file_pos.line == 5u );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::DuplicatedStructMemberInitializer );
+	U_TEST_ASSERT( error.file_pos.line == 5u );
 }
 
-static void MissingStructMemberInitializerTest0()
+U_TEST(MissingStructMemberInitializerTest0)
 {
 	static const char c_program_text[]=
 	R"(
@@ -327,31 +324,12 @@ static void MissingStructMemberInitializerTest0()
 
 	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_ASSERT( error.code == CodeBuilderErrorCode::MissingStructMemberInitializer );
-	U_ASSERT( error.file_pos.line == 5u );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::MissingStructMemberInitializer );
+	U_TEST_ASSERT( error.file_pos.line == 5u );
 }
 
-void RunInitializersErrorsTest()
-{
-	ExpectedInitializerTest0();
-	ExpectedInitializerTest1();
-	ExpectedInitializerTest2();
-	ArrayInitializerForNonArrayTest0();
-	ArrayInitializerForNonArrayTest1();
-	ArrayInitializersCountMismatchTest0();
-	ArrayInitializersCountMismatchTest1();
-	FundamentalTypesHaveConstructorsWithExactlyOneParameterTest0();
-	FundamentalTypesHaveConstructorsWithExactlyOneParameterTest1();
-	ReferencesHaveConstructorsWithExactlyOneParameterTest0();
-	ReferencesHaveConstructorsWithExactlyOneParameterTest1();
-	UnsupportedInitializerForReferenceTest0();
-	ConstructorInitializerForUnsupportedTypeTest0();
-	StructInitializerForNonStructTest0();
-	DuplicatedStructMemberInitializerTest0();
-	MissingStructMemberInitializerTest0();
-}
 
 } // namespace U

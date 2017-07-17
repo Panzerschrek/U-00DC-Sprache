@@ -1,15 +1,11 @@
 #include <iostream>
 
-#include "../assert.hpp"
 #include "tests.hpp"
-
-#include "code_builder_errors_test.hpp"
-
 
 namespace U
 {
 
-static void NameNotFoundTest0()
+U_TEST(NameNotFoundTest0)
 {
 	// Unknown named oberand.
 	static const char c_program_text[]=
@@ -22,14 +18,14 @@ static void NameNotFoundTest0()
 
 	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_ASSERT( error.code == CodeBuilderErrorCode::NameNotFound );
-	U_ASSERT( error.file_pos.line == 4u );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NameNotFound );
+	U_TEST_ASSERT( error.file_pos.line == 4u );
 }
 
-static void NameNotFoundTest1()
+U_TEST(NameNotFoundTest1)
 {
 	// Unknown type name.
 	static const char c_program_text[]=
@@ -43,14 +39,14 @@ static void NameNotFoundTest1()
 
 	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_ASSERT( error.code == CodeBuilderErrorCode::NameNotFound );
-	U_ASSERT( error.file_pos.line == 4u );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NameNotFound );
+	U_TEST_ASSERT( error.file_pos.line == 4u );
 }
 
-static void NameNotFoundTest2()
+U_TEST(NameNotFoundTest2)
 {
 	// Unknown member name.
 	static const char c_program_text[]=
@@ -65,14 +61,14 @@ static void NameNotFoundTest2()
 
 	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_ASSERT( error.code == CodeBuilderErrorCode::NameNotFound );
-	U_ASSERT( error.file_pos.line == 6u );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NameNotFound );
+	U_TEST_ASSERT( error.file_pos.line == 6u );
 }
 
-static void UsingKeywordAsName0()
+U_TEST(UsingKeywordAsName0)
 {
 	// Function name is keyword.
 	static const char c_program_text[]=
@@ -85,14 +81,14 @@ static void UsingKeywordAsName0()
 
 	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_ASSERT( error.code == CodeBuilderErrorCode::UsingKeywordAsName );
-	U_ASSERT( error.file_pos.line == 2u );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::UsingKeywordAsName );
+	U_TEST_ASSERT( error.file_pos.line == 2u );
 }
 
-static void UsingKeywordAsName1()
+U_TEST(UsingKeywordAsName1)
 {
 	// Arg name is keyword.
 	static const char c_program_text[]=
@@ -105,14 +101,14 @@ static void UsingKeywordAsName1()
 
 	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_ASSERT( error.code == CodeBuilderErrorCode::UsingKeywordAsName );
-	U_ASSERT( error.file_pos.line == 2u );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::UsingKeywordAsName );
+	U_TEST_ASSERT( error.file_pos.line == 2u );
 }
 
-static void UsingKeywordAsName2()
+U_TEST(UsingKeywordAsName2)
 {
 	// class name is keyword.
 	static const char c_program_text[]=
@@ -122,14 +118,14 @@ static void UsingKeywordAsName2()
 
 	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_ASSERT( error.code == CodeBuilderErrorCode::UsingKeywordAsName );
-	U_ASSERT( error.file_pos.line == 2u );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::UsingKeywordAsName );
+	U_TEST_ASSERT( error.file_pos.line == 2u );
 }
 
-static void UsingKeywordAsName3()
+U_TEST(UsingKeywordAsName3)
 {
 	// Variable name is keyword.
 	static const char c_program_text[]=
@@ -143,14 +139,14 @@ static void UsingKeywordAsName3()
 
 	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_ASSERT( error.code == CodeBuilderErrorCode::UsingKeywordAsName );
-	U_ASSERT( error.file_pos.line == 4u );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::UsingKeywordAsName );
+	U_TEST_ASSERT( error.file_pos.line == 4u );
 }
 
-static void Redefinition0()
+U_TEST(Redefinition0)
 {
 	// Variable redefinition in same scope.
 	static const char c_program_text[]=
@@ -165,14 +161,14 @@ static void Redefinition0()
 
 	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_ASSERT( error.code == CodeBuilderErrorCode::Redefinition );
-	U_ASSERT( error.file_pos.line == 5u );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::Redefinition );
+	U_TEST_ASSERT( error.file_pos.line == 5u );
 }
 
-static void Redefinition1()
+U_TEST(Redefinition1)
 {
 	// Variable redefinition in different scopes.
 	static const char c_program_text[]=
@@ -186,10 +182,10 @@ static void Redefinition1()
 	)";
 
 	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_ASSERT( build_result.errors.empty() );
+	U_TEST_ASSERT( build_result.errors.empty() );
 }
 
-static void Redefinition2()
+U_TEST(Redefinition2)
 {
 	// Class redefinition.
 	static const char c_program_text[]=
@@ -202,14 +198,14 @@ static void Redefinition2()
 
 	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_ASSERT( error.code == CodeBuilderErrorCode::Redefinition );
-	U_ASSERT( error.file_pos.line == 5u );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::Redefinition );
+	U_TEST_ASSERT( error.file_pos.line == 5u );
 }
 
-static void Redefinition3()
+U_TEST(Redefinition3)
 {
 	// Function redefinition.
 	static const char c_program_text[]=
@@ -225,14 +221,14 @@ static void Redefinition3()
 
 	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_ASSERT( error.code == CodeBuilderErrorCode::Redefinition );
-	U_ASSERT( error.file_pos.line == 8u );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::Redefinition );
+	U_TEST_ASSERT( error.file_pos.line == 8u );
 }
 
-static void UnknownNumericConstantTypeTest0()
+U_TEST(UnknownNumericConstantTypeTest0)
 {
 	// unknown name
 	static const char c_program_text[]=
@@ -245,14 +241,14 @@ static void UnknownNumericConstantTypeTest0()
 
 	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_ASSERT( error.code == CodeBuilderErrorCode::UnknownNumericConstantType );
-	U_ASSERT( error.file_pos.line == 4u );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::UnknownNumericConstantType );
+	U_TEST_ASSERT( error.file_pos.line == 4u );
 }
 
-static void UnknownNumericConstantTypeTest1()
+U_TEST(UnknownNumericConstantTypeTest1)
 {
 	// existent type name in upper case
 	static const char c_program_text[]=
@@ -265,14 +261,14 @@ static void UnknownNumericConstantTypeTest1()
 
 	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_ASSERT( error.code == CodeBuilderErrorCode::UnknownNumericConstantType );
-	U_ASSERT( error.file_pos.line == 4u );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::UnknownNumericConstantType );
+	U_TEST_ASSERT( error.file_pos.line == 4u );
 }
 
-static void OperationNotSupportedForThisTypeTest0()
+U_TEST(OperationNotSupportedForThisTypeTest0)
 {
 	// Binary operations errors.
 	static const char c_program_text[]=
@@ -296,26 +292,26 @@ static void OperationNotSupportedForThisTypeTest0()
 
 	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_ASSERT( build_result.errors.size() >= 8u );
-	U_ASSERT( build_result.errors[0].code == CodeBuilderErrorCode::OperationNotSupportedForThisType );
-	U_ASSERT( build_result.errors[0].file_pos.line == 8u );
-	U_ASSERT( build_result.errors[1].code == CodeBuilderErrorCode::OperationNotSupportedForThisType );
-	U_ASSERT( build_result.errors[1].file_pos.line == 9u );
-	U_ASSERT( build_result.errors[2].code == CodeBuilderErrorCode::OperationNotSupportedForThisType );
-	U_ASSERT( build_result.errors[2].file_pos.line == 10u );
-	U_ASSERT( build_result.errors[3].code == CodeBuilderErrorCode::OperationNotSupportedForThisType );
-	U_ASSERT( build_result.errors[3].file_pos.line == 11u );
-	U_ASSERT( build_result.errors[4].code == CodeBuilderErrorCode::OperationNotSupportedForThisType );
-	U_ASSERT( build_result.errors[4].file_pos.line == 12u );
-	U_ASSERT( build_result.errors[5].code == CodeBuilderErrorCode::OperationNotSupportedForThisType );
-	U_ASSERT( build_result.errors[5].file_pos.line == 13u );
-	U_ASSERT( build_result.errors[6].code == CodeBuilderErrorCode::OperationNotSupportedForThisType );
-	U_ASSERT( build_result.errors[6].file_pos.line == 14u );
-	U_ASSERT( build_result.errors[7].code == CodeBuilderErrorCode::OperationNotSupportedForThisType );
-	U_ASSERT( build_result.errors[7].file_pos.line == 15u );
+	U_TEST_ASSERT( build_result.errors.size() >= 8u );
+	U_TEST_ASSERT( build_result.errors[0].code == CodeBuilderErrorCode::OperationNotSupportedForThisType );
+	U_TEST_ASSERT( build_result.errors[0].file_pos.line == 8u );
+	U_TEST_ASSERT( build_result.errors[1].code == CodeBuilderErrorCode::OperationNotSupportedForThisType );
+	U_TEST_ASSERT( build_result.errors[1].file_pos.line == 9u );
+	U_TEST_ASSERT( build_result.errors[2].code == CodeBuilderErrorCode::OperationNotSupportedForThisType );
+	U_TEST_ASSERT( build_result.errors[2].file_pos.line == 10u );
+	U_TEST_ASSERT( build_result.errors[3].code == CodeBuilderErrorCode::OperationNotSupportedForThisType );
+	U_TEST_ASSERT( build_result.errors[3].file_pos.line == 11u );
+	U_TEST_ASSERT( build_result.errors[4].code == CodeBuilderErrorCode::OperationNotSupportedForThisType );
+	U_TEST_ASSERT( build_result.errors[4].file_pos.line == 12u );
+	U_TEST_ASSERT( build_result.errors[5].code == CodeBuilderErrorCode::OperationNotSupportedForThisType );
+	U_TEST_ASSERT( build_result.errors[5].file_pos.line == 13u );
+	U_TEST_ASSERT( build_result.errors[6].code == CodeBuilderErrorCode::OperationNotSupportedForThisType );
+	U_TEST_ASSERT( build_result.errors[6].file_pos.line == 14u );
+	U_TEST_ASSERT( build_result.errors[7].code == CodeBuilderErrorCode::OperationNotSupportedForThisType );
+	U_TEST_ASSERT( build_result.errors[7].file_pos.line == 15u );
 }
 
-static void OperationNotSupportedForThisTypeTest1()
+U_TEST(OperationNotSupportedForThisTypeTest1)
 {
 	// Indexation operators.
 	static const char c_program_text[]=
@@ -334,16 +330,16 @@ static void OperationNotSupportedForThisTypeTest1()
 
 	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_ASSERT( build_result.errors.size() >= 3u );
-	U_ASSERT( build_result.errors[0].code == CodeBuilderErrorCode::OperationNotSupportedForThisType );
-	U_ASSERT( build_result.errors[0].file_pos.line == 8u );
-	U_ASSERT( build_result.errors[1].code == CodeBuilderErrorCode::OperationNotSupportedForThisType );
-	U_ASSERT( build_result.errors[1].file_pos.line == 9u );
-	U_ASSERT( build_result.errors[2].code == CodeBuilderErrorCode::OperationNotSupportedForThisType );
-	U_ASSERT( build_result.errors[2].file_pos.line == 10u );
+	U_TEST_ASSERT( build_result.errors.size() >= 3u );
+	U_TEST_ASSERT( build_result.errors[0].code == CodeBuilderErrorCode::OperationNotSupportedForThisType );
+	U_TEST_ASSERT( build_result.errors[0].file_pos.line == 8u );
+	U_TEST_ASSERT( build_result.errors[1].code == CodeBuilderErrorCode::OperationNotSupportedForThisType );
+	U_TEST_ASSERT( build_result.errors[1].file_pos.line == 9u );
+	U_TEST_ASSERT( build_result.errors[2].code == CodeBuilderErrorCode::OperationNotSupportedForThisType );
+	U_TEST_ASSERT( build_result.errors[2].file_pos.line == 10u );
 }
 
-static void OperationNotSupportedForThisTypeTest2()
+U_TEST(OperationNotSupportedForThisTypeTest2)
 {
 	// Member access operators.
 	static const char c_program_text[]=
@@ -361,16 +357,16 @@ static void OperationNotSupportedForThisTypeTest2()
 
 	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_ASSERT( build_result.errors.size() >= 3u );
-	U_ASSERT( build_result.errors[0].code == CodeBuilderErrorCode::OperationNotSupportedForThisType );
-	U_ASSERT( build_result.errors[0].file_pos.line == 7u );
-	U_ASSERT( build_result.errors[1].code == CodeBuilderErrorCode::OperationNotSupportedForThisType );
-	U_ASSERT( build_result.errors[1].file_pos.line == 8u );
-	U_ASSERT( build_result.errors[2].code == CodeBuilderErrorCode::OperationNotSupportedForThisType );
-	U_ASSERT( build_result.errors[2].file_pos.line == 9u );
+	U_TEST_ASSERT( build_result.errors.size() >= 3u );
+	U_TEST_ASSERT( build_result.errors[0].code == CodeBuilderErrorCode::OperationNotSupportedForThisType );
+	U_TEST_ASSERT( build_result.errors[0].file_pos.line == 7u );
+	U_TEST_ASSERT( build_result.errors[1].code == CodeBuilderErrorCode::OperationNotSupportedForThisType );
+	U_TEST_ASSERT( build_result.errors[1].file_pos.line == 8u );
+	U_TEST_ASSERT( build_result.errors[2].code == CodeBuilderErrorCode::OperationNotSupportedForThisType );
+	U_TEST_ASSERT( build_result.errors[2].file_pos.line == 9u );
 }
 
-static void OperationNotSupportedForThisTypeTest3()
+U_TEST(OperationNotSupportedForThisTypeTest3)
 {
 	// Unary minus.
 	static const char c_program_text[]=
@@ -390,18 +386,18 @@ static void OperationNotSupportedForThisTypeTest3()
 
 	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_ASSERT( build_result.errors.size() >= 4u );
-	U_ASSERT( build_result.errors[0].code == CodeBuilderErrorCode::OperationNotSupportedForThisType );
-	U_ASSERT( build_result.errors[0].file_pos.line == 8u );
-	U_ASSERT( build_result.errors[1].code == CodeBuilderErrorCode::OperationNotSupportedForThisType );
-	U_ASSERT( build_result.errors[1].file_pos.line == 9u );
-	U_ASSERT( build_result.errors[2].code == CodeBuilderErrorCode::OperationNotSupportedForThisType );
-	U_ASSERT( build_result.errors[2].file_pos.line == 10u );
-	U_ASSERT( build_result.errors[3].code == CodeBuilderErrorCode::OperationNotSupportedForThisType );
-	U_ASSERT( build_result.errors[3].file_pos.line == 11u );
+	U_TEST_ASSERT( build_result.errors.size() >= 4u );
+	U_TEST_ASSERT( build_result.errors[0].code == CodeBuilderErrorCode::OperationNotSupportedForThisType );
+	U_TEST_ASSERT( build_result.errors[0].file_pos.line == 8u );
+	U_TEST_ASSERT( build_result.errors[1].code == CodeBuilderErrorCode::OperationNotSupportedForThisType );
+	U_TEST_ASSERT( build_result.errors[1].file_pos.line == 9u );
+	U_TEST_ASSERT( build_result.errors[2].code == CodeBuilderErrorCode::OperationNotSupportedForThisType );
+	U_TEST_ASSERT( build_result.errors[2].file_pos.line == 10u );
+	U_TEST_ASSERT( build_result.errors[3].code == CodeBuilderErrorCode::OperationNotSupportedForThisType );
+	U_TEST_ASSERT( build_result.errors[3].file_pos.line == 11u );
 }
 
-static void TypesMismatchTest0()
+U_TEST(TypesMismatchTest0)
 {
 	// Expected 'bool' in 'if'.
 	static const char c_program_text[]=
@@ -417,14 +413,14 @@ static void TypesMismatchTest0()
 
 	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_ASSERT( error.code == CodeBuilderErrorCode::TypesMismatch );
-	U_ASSERT( error.file_pos.line == 4u );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::TypesMismatch );
+	U_TEST_ASSERT( error.file_pos.line == 4u );
 }
 
-static void TypesMismatchTest1()
+U_TEST(TypesMismatchTest1)
 {
 	// Expected 'bool' in 'while'.
 	static const char c_program_text[]=
@@ -441,14 +437,14 @@ static void TypesMismatchTest1()
 
 	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_ASSERT( error.code == CodeBuilderErrorCode::TypesMismatch );
-	U_ASSERT( error.file_pos.line == 4u );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::TypesMismatch );
+	U_TEST_ASSERT( error.file_pos.line == 4u );
 }
 
-static void TypesMismatchTest2()
+U_TEST(TypesMismatchTest2)
 {
 	// Unexpected type in assignment.
 	static const char c_program_text[]=
@@ -463,14 +459,14 @@ static void TypesMismatchTest2()
 
 	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_ASSERT( error.code == CodeBuilderErrorCode::TypesMismatch );
-	U_ASSERT( error.file_pos.line == 5u );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::TypesMismatch );
+	U_TEST_ASSERT( error.file_pos.line == 5u );
 }
 
-static void TypesMismatchTest3()
+U_TEST(TypesMismatchTest3)
 {
 	// Unexpected type in return.
 	static const char c_program_text[]=
@@ -483,14 +479,14 @@ static void TypesMismatchTest3()
 
 	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_ASSERT( error.code == CodeBuilderErrorCode::TypesMismatch );
-	U_ASSERT( error.file_pos.line == 4u );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::TypesMismatch );
+	U_TEST_ASSERT( error.file_pos.line == 4u );
 }
 
-static void TypesMismatchTest4()
+U_TEST(TypesMismatchTest4)
 {
 	// Unexpected void in return.
 	static const char c_program_text[]=
@@ -503,14 +499,14 @@ static void TypesMismatchTest4()
 
 	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_ASSERT( error.code == CodeBuilderErrorCode::TypesMismatch );
-	U_ASSERT( error.file_pos.line == 4u );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::TypesMismatch );
+	U_TEST_ASSERT( error.file_pos.line == 4u );
 }
 
-static void TypesMismatchTest5()
+U_TEST(TypesMismatchTest5)
 {
 	// Unexpected type in bindind to reference.
 	static const char c_program_text[]=
@@ -524,14 +520,14 @@ static void TypesMismatchTest5()
 
 	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_ASSERT( error.code == CodeBuilderErrorCode::TypesMismatch );
-	U_ASSERT( error.file_pos.line == 5u );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::TypesMismatch );
+	U_TEST_ASSERT( error.file_pos.line == 5u );
 }
 
-static void FunctionSignatureMismatchTest0()
+U_TEST(FunctionSignatureMismatchTest0)
 {
 	// Argument count mismatch.
 	// TODO - support functions overloading.
@@ -546,12 +542,12 @@ static void FunctionSignatureMismatchTest0()
 
 	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_ASSERT( !build_result.errors.empty() );
-	U_ASSERT( build_result.errors[0].code == CodeBuilderErrorCode::FunctionSignatureMismatch );
-	U_ASSERT( build_result.errors[0].file_pos.line == 5u );;
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( build_result.errors[0].code == CodeBuilderErrorCode::FunctionSignatureMismatch );
+	U_TEST_ASSERT( build_result.errors[0].file_pos.line == 5u );;
 }
 
-static void FunctionSignatureMismatchTest1()
+U_TEST(FunctionSignatureMismatchTest1)
 {
 	// Argument count mismatch.
 	// TODO - support functions overloading.
@@ -566,12 +562,12 @@ static void FunctionSignatureMismatchTest1()
 
 	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_ASSERT( !build_result.errors.empty() );
-	U_ASSERT( build_result.errors[0].code == CodeBuilderErrorCode::FunctionSignatureMismatch );
-	U_ASSERT( build_result.errors[0].file_pos.line == 5u );
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( build_result.errors[0].code == CodeBuilderErrorCode::FunctionSignatureMismatch );
+	U_TEST_ASSERT( build_result.errors[0].file_pos.line == 5u );
 }
 
-static void FunctionSignatureMismatchTest2()
+U_TEST(FunctionSignatureMismatchTest2)
 {
 	// Argumenst type mismatch.
 	// TODO - support functions overloading.
@@ -586,14 +582,14 @@ static void FunctionSignatureMismatchTest2()
 
 	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_ASSERT( error.code == CodeBuilderErrorCode::FunctionSignatureMismatch );
-	U_ASSERT( error.file_pos.line == 5u );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::FunctionSignatureMismatch );
+	U_TEST_ASSERT( error.file_pos.line == 5u );
 }
 
-static void ArraySizeIsNotInteger()
+U_TEST(ArraySizeIsNotInteger)
 {
 	static const char c_program_text[]=
 	R"(
@@ -606,14 +602,14 @@ static void ArraySizeIsNotInteger()
 
 	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_ASSERT( error.code == CodeBuilderErrorCode::ArraySizeIsNotInteger );
-	U_ASSERT( error.file_pos.line == 4u );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ArraySizeIsNotInteger );
+	U_TEST_ASSERT( error.file_pos.line == 4u );
 }
 
-static void BreakOutsideLoopTest()
+U_TEST(BreakOutsideLoopTest)
 {
 	static const char c_program_text[]=
 	R"(
@@ -626,14 +622,14 @@ static void BreakOutsideLoopTest()
 
 	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_ASSERT( error.code == CodeBuilderErrorCode::BreakOutsideLoop );
-	U_ASSERT( error.file_pos.line == 4u );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::BreakOutsideLoop );
+	U_TEST_ASSERT( error.file_pos.line == 4u );
 }
 
-static void ContinueOutsideLoopTest()
+U_TEST(ContinueOutsideLoopTest)
 {
 	static const char c_program_text[]=
 	R"(
@@ -646,14 +642,14 @@ static void ContinueOutsideLoopTest()
 
 	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_ASSERT( error.code == CodeBuilderErrorCode::ContinueOutsideLoop );
-	U_ASSERT( error.file_pos.line == 4u );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ContinueOutsideLoop );
+	U_TEST_ASSERT( error.file_pos.line == 4u );
 }
 
-static void NameIsNotTypeNameTest()
+U_TEST(NameIsNotTypeNameTest)
 {
 	static const char c_program_text[]=
 	R"(
@@ -667,14 +663,14 @@ static void NameIsNotTypeNameTest()
 
 	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_ASSERT( error.code == CodeBuilderErrorCode::NameIsNotTypeName );
-	U_ASSERT( error.file_pos.line == 5u );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NameIsNotTypeName );
+	U_TEST_ASSERT( error.file_pos.line == 5u );
 }
 
-static void UnreachableCodeTest0()
+U_TEST(UnreachableCodeTest0)
 {
 	// Simple unreachable code.
 	static const char c_program_text[]=
@@ -688,14 +684,14 @@ static void UnreachableCodeTest0()
 
 	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_ASSERT( error.code == CodeBuilderErrorCode::UnreachableCode );
-	U_ASSERT( error.file_pos.line == 5u );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::UnreachableCode );
+	U_TEST_ASSERT( error.file_pos.line == 5u );
 }
 
-static void UnreachableCodeTest1()
+U_TEST(UnreachableCodeTest1)
 {
 	// Unreachable code, when return is in inner block.
 	static const char c_program_text[]=
@@ -709,14 +705,14 @@ static void UnreachableCodeTest1()
 
 	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_ASSERT( error.code == CodeBuilderErrorCode::UnreachableCode );
-	U_ASSERT( error.file_pos.line == 5u );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::UnreachableCode );
+	U_TEST_ASSERT( error.file_pos.line == 5u );
 }
 
-static void UnreachableCodeTest2()
+U_TEST(UnreachableCodeTest2)
 {
 	// Unreachable code, when return is in if-else block.
 	static const char c_program_text[]=
@@ -731,14 +727,14 @@ static void UnreachableCodeTest2()
 
 	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_ASSERT( error.code == CodeBuilderErrorCode::UnreachableCode );
-	U_ASSERT( error.file_pos.line == 6u );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::UnreachableCode );
+	U_TEST_ASSERT( error.file_pos.line == 6u );
 }
 
-static void UnreachableCodeTest3()
+U_TEST(UnreachableCodeTest3)
 {
 	// Should not generate unreachable code, when if-else block returns not in all cases.
 	static const char c_program_text[]=
@@ -753,10 +749,10 @@ static void UnreachableCodeTest3()
 	)";
 
 	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_ASSERT( build_result.errors.empty() );
+	U_TEST_ASSERT( build_result.errors.empty() );
 }
 
-static void UnreachableCodeTest4()
+U_TEST(UnreachableCodeTest4)
 {
 	// Should not generate unreachable code, when "if" block does not contains unconditional "else".
 	static const char c_program_text[]=
@@ -771,10 +767,10 @@ static void UnreachableCodeTest4()
 	)";
 
 	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_ASSERT( build_result.errors.empty() );
+	U_TEST_ASSERT( build_result.errors.empty() );
 }
 
-static void UnreachableCodeTest5()
+U_TEST(UnreachableCodeTest5)
 {
 	// Unreachable code, when break/continue.
 	static const char c_program_text[]=
@@ -791,14 +787,14 @@ static void UnreachableCodeTest5()
 
 	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_ASSERT( error.code == CodeBuilderErrorCode::UnreachableCode );
-	U_ASSERT( error.file_pos.line == 7u );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::UnreachableCode );
+	U_TEST_ASSERT( error.file_pos.line == 7u );
 }
 
-static void UnreachableCodeTest6()
+U_TEST(UnreachableCodeTest6)
 {
 	// Unreachable code, when break/continue.
 	static const char c_program_text[]=
@@ -815,14 +811,14 @@ static void UnreachableCodeTest6()
 
 	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_ASSERT( error.code == CodeBuilderErrorCode::UnreachableCode );
-	U_ASSERT( error.file_pos.line == 7u );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::UnreachableCode );
+	U_TEST_ASSERT( error.file_pos.line == 7u );
 }
 
-static void UnreachableCodeTest7()
+U_TEST(UnreachableCodeTest7)
 {
 	// Unreachable code, when break/continue.
 	static const char c_program_text[]=
@@ -839,14 +835,14 @@ static void UnreachableCodeTest7()
 
 	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_ASSERT( error.code == CodeBuilderErrorCode::UnreachableCode );
-	U_ASSERT( error.file_pos.line == 7u );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::UnreachableCode );
+	U_TEST_ASSERT( error.file_pos.line == 7u );
 }
 
-static void UnreachableCodeTest8()
+U_TEST(UnreachableCodeTest8)
 {
 	// Should not generate unreachable code, when break or continue is not in all if-branches.
 	static const char c_program_text[]=
@@ -862,10 +858,10 @@ static void UnreachableCodeTest8()
 	)";
 
 	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_ASSERT( build_result.errors.empty() );
+	U_TEST_ASSERT( build_result.errors.empty() );
 }
 
-static void UnreachableCodeTest9()
+U_TEST(UnreachableCodeTest9)
 {
 	// Should not generate unreachable code, when "if" block does not contains unconditional "else".
 	static const char c_program_text[]=
@@ -881,10 +877,10 @@ static void UnreachableCodeTest9()
 	)";
 
 	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_ASSERT( build_result.errors.empty() );
+	U_TEST_ASSERT( build_result.errors.empty() );
 }
 
-static void NoReturnInFunctionReturningNonVoidTest0()
+U_TEST(NoReturnInFunctionReturningNonVoidTest0)
 {
 	// No return in non-void function;
 	static const char c_program_text[]=
@@ -896,14 +892,14 @@ static void NoReturnInFunctionReturningNonVoidTest0()
 
 	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_ASSERT( error.code == CodeBuilderErrorCode::NoReturnInFunctionReturningNonVoid );
-	U_ASSERT( error.file_pos.line == 3u );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NoReturnInFunctionReturningNonVoid );
+	U_TEST_ASSERT( error.file_pos.line == 3u );
 }
 
-static void NoReturnInFunctionReturningNonVoidTest1()
+U_TEST(NoReturnInFunctionReturningNonVoidTest1)
 {
 	// Return not in all branches.
 	static const char c_program_text[]=
@@ -916,14 +912,14 @@ static void NoReturnInFunctionReturningNonVoidTest1()
 
 	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_ASSERT( error.code == CodeBuilderErrorCode::NoReturnInFunctionReturningNonVoid );
-	U_ASSERT( error.file_pos.line == 3u );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NoReturnInFunctionReturningNonVoid );
+	U_TEST_ASSERT( error.file_pos.line == 3u );
 }
 
-static void NoReturnInFunctionReturningNonVoidTest2()
+U_TEST(NoReturnInFunctionReturningNonVoidTest2)
 {
 	// Return not in all branches.
 	static const char c_program_text[]=
@@ -937,14 +933,14 @@ static void NoReturnInFunctionReturningNonVoidTest2()
 
 	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_ASSERT( error.code == CodeBuilderErrorCode::NoReturnInFunctionReturningNonVoid );
-	U_ASSERT( error.file_pos.line == 3u );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NoReturnInFunctionReturningNonVoid );
+	U_TEST_ASSERT( error.file_pos.line == 3u );
 }
 
-static void NoReturnInFunctionReturningNonVoidTest3()
+U_TEST(NoReturnInFunctionReturningNonVoidTest3)
 {
 	// Return exists in all branches.
 	static const char c_program_text[]=
@@ -960,10 +956,10 @@ static void NoReturnInFunctionReturningNonVoidTest3()
 	)";
 
 	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_ASSERT( build_result.errors.empty() );
+	U_TEST_ASSERT( build_result.errors.empty() );
 }
 
-static void NoReturnInFunctionReturningNonVoidTest4()
+U_TEST(NoReturnInFunctionReturningNonVoidTest4)
 {
 	// Return exists in all branches.
 	static const char c_program_text[]=
@@ -978,10 +974,10 @@ static void NoReturnInFunctionReturningNonVoidTest4()
 	)";
 
 	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_ASSERT( build_result.errors.empty() );
+	U_TEST_ASSERT( build_result.errors.empty() );
 }
 
-static void ExpectedReferenceValueTest0()
+U_TEST(ExpectedReferenceValueTest0)
 {
 	// Assign to non-reference value.
 	static const char c_program_text[]=
@@ -994,14 +990,14 @@ static void ExpectedReferenceValueTest0()
 
 	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_ASSERT( error.code == CodeBuilderErrorCode::ExpectedReferenceValue );
-	U_ASSERT( error.file_pos.line == 4u );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedReferenceValue );
+	U_TEST_ASSERT( error.file_pos.line == 4u );
 }
 
-static void ExpectedReferenceValueTest1()
+U_TEST(ExpectedReferenceValueTest1)
 {
 	// Assign to function. Functions is const-reference values.
 	static const char c_program_text[]=
@@ -1016,14 +1012,14 @@ static void ExpectedReferenceValueTest1()
 
 	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_ASSERT( error.code == CodeBuilderErrorCode::ExpectedReferenceValue );
-	U_ASSERT( error.file_pos.line == 6u );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedReferenceValue );
+	U_TEST_ASSERT( error.file_pos.line == 6u );
 }
 
-static void ExpectedReferenceValueTest2()
+U_TEST(ExpectedReferenceValueTest2)
 {
 	// Assign to value.
 	static const char c_program_text[]=
@@ -1036,14 +1032,14 @@ static void ExpectedReferenceValueTest2()
 
 	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_ASSERT( error.code == CodeBuilderErrorCode::ExpectedReferenceValue );
-	U_ASSERT( error.file_pos.line == 4u );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedReferenceValue );
+	U_TEST_ASSERT( error.file_pos.line == 4u );
 }
 
-static void ExpectedReferenceValueTest3()
+U_TEST(ExpectedReferenceValueTest3)
 {
 	// Assign to immutable value.
 	static const char c_program_text[]=
@@ -1057,14 +1053,14 @@ static void ExpectedReferenceValueTest3()
 
 	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_ASSERT( error.code == CodeBuilderErrorCode::ExpectedReferenceValue );
-	U_ASSERT( error.file_pos.line == 5u );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedReferenceValue );
+	U_TEST_ASSERT( error.file_pos.line == 5u );
 }
 
-static void ExpectedReferenceValueTest4()
+U_TEST(ExpectedReferenceValueTest4)
 {
 	// Assign to immutable argument.
 	static const char c_program_text[]=
@@ -1077,14 +1073,14 @@ static void ExpectedReferenceValueTest4()
 
 	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_ASSERT( error.code == CodeBuilderErrorCode::ExpectedReferenceValue );
-	U_ASSERT( error.file_pos.line == 4u );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedReferenceValue );
+	U_TEST_ASSERT( error.file_pos.line == 4u );
 }
 
-static void ExpectedReferenceValueTest5()
+U_TEST(ExpectedReferenceValueTest5)
 {
 	// Initialize reference using value-object.
 	static const char c_program_text[]=
@@ -1098,14 +1094,14 @@ static void ExpectedReferenceValueTest5()
 
 	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_ASSERT( error.code == CodeBuilderErrorCode::ExpectedReferenceValue );
-	U_ASSERT( error.file_pos.line == 5u );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedReferenceValue );
+	U_TEST_ASSERT( error.file_pos.line == 5u );
 }
 
-static void ExpectedReferenceValueTest6()
+U_TEST(ExpectedReferenceValueTest6)
 {
 	// Using value in reference - function argument.
 	static const char c_program_text[]=
@@ -1119,14 +1115,14 @@ static void ExpectedReferenceValueTest6()
 
 	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_ASSERT( error.code == CodeBuilderErrorCode::ExpectedReferenceValue );
-	U_ASSERT( error.file_pos.line == 5u );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedReferenceValue );
+	U_TEST_ASSERT( error.file_pos.line == 5u );
 }
 
-static void ExpectedReferenceValueTest7()
+U_TEST(ExpectedReferenceValueTest7)
 {
 	// Using value in reference - function return value.
 	static const char c_program_text[]=
@@ -1139,14 +1135,14 @@ static void ExpectedReferenceValueTest7()
 
 	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_ASSERT( error.code == CodeBuilderErrorCode::ExpectedReferenceValue );
-	U_ASSERT( error.file_pos.line == 4u );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedReferenceValue );
+	U_TEST_ASSERT( error.file_pos.line == 4u );
 }
 
-static void BindingConstReferenceToNonconstReferenceTest0()
+U_TEST(BindingConstReferenceToNonconstReferenceTest0)
 {
 	// Initialize reference using value-object.
 	static const char c_program_text[]=
@@ -1160,14 +1156,14 @@ static void BindingConstReferenceToNonconstReferenceTest0()
 
 	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_ASSERT( error.code == CodeBuilderErrorCode::BindingConstReferenceToNonconstReference );
-	U_ASSERT( error.file_pos.line == 5u );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::BindingConstReferenceToNonconstReference );
+	U_TEST_ASSERT( error.file_pos.line == 5u );
 }
 
-static void BindingConstReferenceToNonconstReferenceTest1()
+U_TEST(BindingConstReferenceToNonconstReferenceTest1)
 {
 	// Initialize reference using value-object.
 	static const char c_program_text[]=
@@ -1182,14 +1178,14 @@ static void BindingConstReferenceToNonconstReferenceTest1()
 
 	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_ASSERT( error.code == CodeBuilderErrorCode::BindingConstReferenceToNonconstReference );
-	U_ASSERT( error.file_pos.line == 6u );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::BindingConstReferenceToNonconstReference );
+	U_TEST_ASSERT( error.file_pos.line == 6u );
 }
 
-static void BindingConstReferenceToNonconstReferenceTest2()
+U_TEST(BindingConstReferenceToNonconstReferenceTest2)
 {
 	// Return reference, when return value is const reference.
 	static const char c_program_text[]=
@@ -1202,14 +1198,14 @@ static void BindingConstReferenceToNonconstReferenceTest2()
 
 	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_ASSERT( error.code == CodeBuilderErrorCode::BindingConstReferenceToNonconstReference );
-	U_ASSERT( error.file_pos.line == 4u );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::BindingConstReferenceToNonconstReference );
+	U_TEST_ASSERT( error.file_pos.line == 4u );
 }
 
-static void CouldNotOverloadFunctionTest0()
+U_TEST(CouldNotOverloadFunctionTest0)
 {
 	// No difference.
 	static const char c_program_text[]=
@@ -1220,14 +1216,14 @@ static void CouldNotOverloadFunctionTest0()
 
 	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_ASSERT( error.code == CodeBuilderErrorCode::CouldNotOverloadFunction );
-	U_ASSERT( error.file_pos.line == 3u );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::CouldNotOverloadFunction );
+	U_TEST_ASSERT( error.file_pos.line == 3u );
 }
 
-static void CouldNotOverloadFunctionTest1()
+U_TEST(CouldNotOverloadFunctionTest1)
 {
 	// Different are only mutability modifiers for value parameters.
 	static const char c_program_text[]=
@@ -1238,14 +1234,14 @@ static void CouldNotOverloadFunctionTest1()
 
 	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_ASSERT( error.code == CodeBuilderErrorCode::CouldNotOverloadFunction );
-	U_ASSERT( error.file_pos.line == 3u );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::CouldNotOverloadFunction );
+	U_TEST_ASSERT( error.file_pos.line == 3u );
 }
 
-static void CouldNotOverloadFunctionTest2()
+U_TEST(CouldNotOverloadFunctionTest2)
 {
 	// One parameter is value, other is const-reference.
 	static const char c_program_text[]=
@@ -1256,14 +1252,14 @@ static void CouldNotOverloadFunctionTest2()
 
 	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_ASSERT( error.code == CodeBuilderErrorCode::CouldNotOverloadFunction );
-	U_ASSERT( error.file_pos.line == 3u );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::CouldNotOverloadFunction );
+	U_TEST_ASSERT( error.file_pos.line == 3u );
 }
 
-static void CouldNotOverloadFunctionTest3()
+U_TEST(CouldNotOverloadFunctionTest3)
 {
 	// Const and nonconst reference-parameters are different.
 	static const char c_program_text[]=
@@ -1274,10 +1270,10 @@ static void CouldNotOverloadFunctionTest3()
 
 	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_ASSERT( build_result.errors.empty() );
+	U_TEST_ASSERT( build_result.errors.empty() );
 }
 
-static void CouldNotOverloadFunctionTest4()
+U_TEST(ouldNotOverloadFunctionTest4)
 {
 	// Functions with zero args.
 	static const char c_program_text[]=
@@ -1288,14 +1284,14 @@ static void CouldNotOverloadFunctionTest4()
 
 	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_ASSERT( error.code == CodeBuilderErrorCode::CouldNotOverloadFunction );
-	U_ASSERT( error.file_pos.line == 3u );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::CouldNotOverloadFunction );
+	U_TEST_ASSERT( error.file_pos.line == 3u );
 }
 
-static void CouldNotSelectOverloadedFunction0()
+U_TEST(CouldNotSelectOverloadedFunction0)
 {
 	// Different actual args and args from functions set.
 	static const char c_program_text[]=
@@ -1310,14 +1306,14 @@ static void CouldNotSelectOverloadedFunction0()
 
 	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_ASSERT( error.code == CodeBuilderErrorCode::CouldNotSelectOverloadedFunction );
-	U_ASSERT( error.file_pos.line == 6u );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::CouldNotSelectOverloadedFunction );
+	U_TEST_ASSERT( error.file_pos.line == 6u );
 }
 
-static void CouldNotSelectOverloadedFunction1()
+U_TEST(CouldNotSelectOverloadedFunction1)
 {
 	// Different actual args count and args from functions set.
 	static const char c_program_text[]=
@@ -1332,78 +1328,11 @@ static void CouldNotSelectOverloadedFunction1()
 
 	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_ASSERT( error.code == CodeBuilderErrorCode::CouldNotSelectOverloadedFunction );
-	U_ASSERT( error.file_pos.line == 6u );
-}
-
-void RunCodeBuilderErrorsTests()
-{
-	NameNotFoundTest0();
-	NameNotFoundTest1();
-	NameNotFoundTest2();
-	UsingKeywordAsName0();
-	UsingKeywordAsName1();
-	UsingKeywordAsName2();
-	UsingKeywordAsName3();
-	Redefinition0();
-	Redefinition1();
-	Redefinition2();
-	Redefinition3();
-	UnknownNumericConstantTypeTest0();
-	UnknownNumericConstantTypeTest1();
-	OperationNotSupportedForThisTypeTest0();
-	OperationNotSupportedForThisTypeTest1();
-	OperationNotSupportedForThisTypeTest2();
-	OperationNotSupportedForThisTypeTest3();
-	TypesMismatchTest0();
-	TypesMismatchTest1();
-	TypesMismatchTest2();
-	TypesMismatchTest3();
-	TypesMismatchTest4();
-	TypesMismatchTest5();
-	FunctionSignatureMismatchTest0();
-	FunctionSignatureMismatchTest1();
-	FunctionSignatureMismatchTest2();
-	ArraySizeIsNotInteger();
-	BreakOutsideLoopTest();
-	ContinueOutsideLoopTest();
-	NameIsNotTypeNameTest();
-	UnreachableCodeTest0();
-	UnreachableCodeTest1();
-	UnreachableCodeTest2();
-	UnreachableCodeTest3();
-	UnreachableCodeTest4();
-	UnreachableCodeTest5();
-	UnreachableCodeTest6();
-	UnreachableCodeTest7();
-	UnreachableCodeTest8();
-	UnreachableCodeTest9();
-	NoReturnInFunctionReturningNonVoidTest0();
-	NoReturnInFunctionReturningNonVoidTest1();
-	NoReturnInFunctionReturningNonVoidTest2();
-	NoReturnInFunctionReturningNonVoidTest3();
-	NoReturnInFunctionReturningNonVoidTest4();
-	ExpectedReferenceValueTest0();
-	ExpectedReferenceValueTest1();
-	ExpectedReferenceValueTest2();
-	ExpectedReferenceValueTest3();
-	ExpectedReferenceValueTest4();
-	ExpectedReferenceValueTest5();
-	ExpectedReferenceValueTest6();
-	ExpectedReferenceValueTest7();
-	BindingConstReferenceToNonconstReferenceTest0();
-	BindingConstReferenceToNonconstReferenceTest1();
-	BindingConstReferenceToNonconstReferenceTest2();
-	CouldNotOverloadFunctionTest0();
-	CouldNotOverloadFunctionTest1();
-	CouldNotOverloadFunctionTest2();
-	CouldNotOverloadFunctionTest3();
-	CouldNotOverloadFunctionTest4();
-	CouldNotSelectOverloadedFunction0();
-	CouldNotSelectOverloadedFunction1();
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::CouldNotSelectOverloadedFunction );
+	U_TEST_ASSERT( error.file_pos.line == 6u );
 }
 
 } // namespace U

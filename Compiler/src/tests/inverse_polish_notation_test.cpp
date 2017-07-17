@@ -1,9 +1,8 @@
 #include <iostream>
 
-#include "../assert.hpp"
 #include "../inverse_polish_notation.hpp"
 
-#include "inverse_polish_notation_test.hpp"
+#include "tests.hpp"
 
 namespace U
 {
@@ -24,7 +23,7 @@ static void Print( const BinaryOperatorsChain& chain, const InversePolishNotatio
 	std::cout << "\n";
 }
 
-static void OneOperandExpressionTest()
+U_TEST(OneOperandExpressionTest)
 {
 	BinaryOperatorsChain chain( FilePos{ 0, 0 } );
 	chain.components.resize(1);
@@ -33,13 +32,13 @@ static void OneOperandExpressionTest()
 
 	InversePolishNotation notation= ConvertToInversePolishNotation( chain );
 
-	U_ASSERT( notation.size() == 1 );
-	U_ASSERT( notation[0].operand );
+	U_TEST_ASSERT( notation.size() == 1 );
+	U_TEST_ASSERT( notation[0].operand );
 
 	Print( chain, notation );
 }
 
-static void TwoOperandExpressionTest()
+U_TEST(TwoOperandExpressionTest)
 {
 	BinaryOperatorsChain chain( FilePos{ 0, 0 } );
 	chain.components.resize(2);
@@ -51,14 +50,14 @@ static void TwoOperandExpressionTest()
 	InversePolishNotation notation= ConvertToInversePolishNotation( chain );
 	Print( chain, notation );
 
-	U_ASSERT( notation.size() == 3 );
-	U_ASSERT( notation[0].operand );
-	U_ASSERT( notation[1].operand );
-	U_ASSERT( !notation[2].operand );
-	U_ASSERT( notation[2].operator_ == chain.components[0].op );
+	U_TEST_ASSERT( notation.size() == 3 );
+	U_TEST_ASSERT( notation[0].operand );
+	U_TEST_ASSERT( notation[1].operand );
+	U_TEST_ASSERT( !notation[2].operand );
+	U_TEST_ASSERT( notation[2].operator_ == chain.components[0].op );
 }
 
-static void LongFlatExpressionTest()
+U_TEST(LongFlatExpressionTest)
 {
 	BinaryOperatorsChain chain( FilePos{ 0, 0 } );
 	chain.components.resize(4);
@@ -74,20 +73,20 @@ static void LongFlatExpressionTest()
 	InversePolishNotation notation= ConvertToInversePolishNotation( chain );
 	Print( chain, notation );
 
-	U_ASSERT( notation.size() == 7 );
-	U_ASSERT( notation[0].operand ); // a
-	U_ASSERT( notation[1].operand ); // b
+	U_TEST_ASSERT( notation.size() == 7 );
+	U_TEST_ASSERT( notation[0].operand ); // a
+	U_TEST_ASSERT( notation[1].operand ); // b
 
-	U_ASSERT( !notation[2].operand ); // +
-	U_ASSERT( notation[2].operator_ == BinaryOperator::Add );
+	U_TEST_ASSERT( !notation[2].operand ); // +
+	U_TEST_ASSERT( notation[2].operator_ == BinaryOperator::Add );
 
-	U_ASSERT( notation[3].operand ); // d
+	U_TEST_ASSERT( notation[3].operand ); // d
 
-	U_ASSERT( !notation[4].operand ); // +
-	U_ASSERT( notation[4].operator_ == BinaryOperator::Add );
+	U_TEST_ASSERT( !notation[4].operand ); // +
+	U_TEST_ASSERT( notation[4].operator_ == BinaryOperator::Add );
 }
 
-static void TriOperandEqualExpressionTest()
+U_TEST(TriOperandEqualExpressionTest)
 {
 	BinaryOperatorsChain chain( FilePos{ 0, 0 } );
 	chain.components.resize(3);
@@ -101,17 +100,17 @@ static void TriOperandEqualExpressionTest()
 	InversePolishNotation notation= ConvertToInversePolishNotation( chain );
 	Print( chain, notation );
 
-	U_ASSERT( notation.size() == 5 );
-	U_ASSERT( notation[0].operand );
-	U_ASSERT( notation[1].operand );
-	U_ASSERT( !notation[2].operand );
-	U_ASSERT( notation[2].operator_ == chain.components[0].op );
-	U_ASSERT( notation[3].operand );
-	U_ASSERT( !notation[4].operand );
-	U_ASSERT( notation[4].operator_ == chain.components[1].op );
+	U_TEST_ASSERT( notation.size() == 5 );
+	U_TEST_ASSERT( notation[0].operand );
+	U_TEST_ASSERT( notation[1].operand );
+	U_TEST_ASSERT( !notation[2].operand );
+	U_TEST_ASSERT( notation[2].operator_ == chain.components[0].op );
+	U_TEST_ASSERT( notation[3].operand );
+	U_TEST_ASSERT( !notation[4].operand );
+	U_TEST_ASSERT( notation[4].operator_ == chain.components[1].op );
 }
 
-static void MultiPriorityExpressionTest0()
+U_TEST(MultiPriorityExpressionTest0)
 {
 	BinaryOperatorsChain chain( FilePos{ 0, 0 } );
 	chain.components.resize(3);
@@ -125,17 +124,17 @@ static void MultiPriorityExpressionTest0()
 	InversePolishNotation notation= ConvertToInversePolishNotation( chain );
 	Print( chain, notation );
 
-	U_ASSERT( notation.size() == 5 );
-	U_ASSERT( notation[0].operand );
-	U_ASSERT( notation[1].operand );
-	U_ASSERT( !notation[2].operand );
-	U_ASSERT( notation[2].operator_ == chain.components[0].op );
-	U_ASSERT( notation[3].operand );
-	U_ASSERT( !notation[4].operand );
-	U_ASSERT( notation[4].operator_ == chain.components[1].op );
+	U_TEST_ASSERT( notation.size() == 5 );
+	U_TEST_ASSERT( notation[0].operand );
+	U_TEST_ASSERT( notation[1].operand );
+	U_TEST_ASSERT( !notation[2].operand );
+	U_TEST_ASSERT( notation[2].operator_ == chain.components[0].op );
+	U_TEST_ASSERT( notation[3].operand );
+	U_TEST_ASSERT( !notation[4].operand );
+	U_TEST_ASSERT( notation[4].operator_ == chain.components[1].op );
 }
 
-static void MultiPriorityExpressionTest1()
+U_TEST(MultiPriorityExpressionTest1)
 {
 	BinaryOperatorsChain chain( FilePos{ 0, 0 } );
 	chain.components.resize(3);
@@ -149,20 +148,20 @@ static void MultiPriorityExpressionTest1()
 	InversePolishNotation notation= ConvertToInversePolishNotation( chain );
 	Print( chain, notation );
 
-	U_ASSERT( notation.size() == 5 );
+	U_TEST_ASSERT( notation.size() == 5 );
 
-	U_ASSERT( notation[0].operand ); // a
-	U_ASSERT( notation[1].operand ); // b
-	U_ASSERT( notation[2].operand ); // c
+	U_TEST_ASSERT( notation[0].operand ); // a
+	U_TEST_ASSERT( notation[1].operand ); // b
+	U_TEST_ASSERT( notation[2].operand ); // c
 
-	U_ASSERT( !notation[3].operand ); // *
-	U_ASSERT( notation[3].operator_ == BinaryOperator::Mul );
+	U_TEST_ASSERT( !notation[3].operand ); // *
+	U_TEST_ASSERT( notation[3].operator_ == BinaryOperator::Mul );
 
-	U_ASSERT( !notation[4].operand ); // +
-	U_ASSERT( notation[4].operator_ == BinaryOperator::Add );
+	U_TEST_ASSERT( !notation[4].operand ); // +
+	U_TEST_ASSERT( notation[4].operator_ == BinaryOperator::Add );
 }
 
-static void MultiPriorityExpressionTest2()
+U_TEST(MultiPriorityExpressionTest2)
 {
 	BinaryOperatorsChain chain( FilePos{ 0, 0 } );
 	chain.components.resize(4);
@@ -181,25 +180,25 @@ static void MultiPriorityExpressionTest2()
 	InversePolishNotation notation= ConvertToInversePolishNotation( chain );
 	Print( chain, notation );
 
-	U_ASSERT( notation.size() == 7 );
+	U_TEST_ASSERT( notation.size() == 7 );
 
-	U_ASSERT( notation[0].operand ); // a
-	U_ASSERT( notation[1].operand ); // b
-	U_ASSERT( notation[2].operand ); // c
+	U_TEST_ASSERT( notation[0].operand ); // a
+	U_TEST_ASSERT( notation[1].operand ); // b
+	U_TEST_ASSERT( notation[2].operand ); // c
 
-	U_ASSERT( !notation[3].operand ); // *
-	U_ASSERT( notation[3].operator_ == BinaryOperator::Mul );
+	U_TEST_ASSERT( !notation[3].operand ); // *
+	U_TEST_ASSERT( notation[3].operator_ == BinaryOperator::Mul );
 
-	U_ASSERT( notation[4].operand ); // d
+	U_TEST_ASSERT( notation[4].operand ); // d
 
-	U_ASSERT( !notation[5].operand ); // *
-	U_ASSERT( notation[5].operator_ == BinaryOperator::Mul );
+	U_TEST_ASSERT( !notation[5].operand ); // *
+	U_TEST_ASSERT( notation[5].operator_ == BinaryOperator::Mul );
 
-	U_ASSERT( !notation[6].operand ); // +
-	U_ASSERT( notation[6].operator_ == BinaryOperator::Add );
+	U_TEST_ASSERT( !notation[6].operand ); // +
+	U_TEST_ASSERT( notation[6].operator_ == BinaryOperator::Add );
 }
 
-static void MultiPriorityExpressionTest3()
+U_TEST(MultiPriorityExpressionTest3)
 {
 	BinaryOperatorsChain chain( FilePos{ 0, 0 } );
 	chain.components.resize(4);
@@ -218,26 +217,26 @@ static void MultiPriorityExpressionTest3()
 	InversePolishNotation notation= ConvertToInversePolishNotation( chain );
 	Print( chain, notation );
 
-	U_ASSERT( notation.size() == 7 );
+	U_TEST_ASSERT( notation.size() == 7 );
 
-	U_ASSERT( notation[0].operand ); // a
-	U_ASSERT( notation[1].operand ); // b
+	U_TEST_ASSERT( notation[0].operand ); // a
+	U_TEST_ASSERT( notation[1].operand ); // b
 
-	U_ASSERT( !notation[2].operand ); // *
-	U_ASSERT( notation[2].operator_ == BinaryOperator::Mul );
+	U_TEST_ASSERT( !notation[2].operand ); // *
+	U_TEST_ASSERT( notation[2].operator_ == BinaryOperator::Mul );
 
-	U_ASSERT( notation[3].operand ); // c
+	U_TEST_ASSERT( notation[3].operand ); // c
 
-	U_ASSERT( !notation[4].operand ); // +
-	U_ASSERT( notation[4].operator_ == BinaryOperator::Add );
+	U_TEST_ASSERT( !notation[4].operand ); // +
+	U_TEST_ASSERT( notation[4].operator_ == BinaryOperator::Add );
 
-	U_ASSERT( notation[5].operand ); // d
+	U_TEST_ASSERT( notation[5].operand ); // d
 
-	U_ASSERT( !notation[6].operand ); // -
-	U_ASSERT( notation[6].operator_ == BinaryOperator::Sub );
+	U_TEST_ASSERT( !notation[6].operand ); // -
+	U_TEST_ASSERT( notation[6].operator_ == BinaryOperator::Sub );
 }
 
-static void MultiPriorityExpressionTest4()
+U_TEST(MultiPriorityExpressionTest4)
 {
 	BinaryOperatorsChain chain( FilePos{ 0, 0 } );
 	chain.components.resize(4);
@@ -256,26 +255,26 @@ static void MultiPriorityExpressionTest4()
 	InversePolishNotation notation= ConvertToInversePolishNotation( chain );
 	Print( chain, notation );
 
-	U_ASSERT( notation.size() == 7 );
+	U_TEST_ASSERT( notation.size() == 7 );
 
-	U_ASSERT( notation[0].operand ); // a
-	U_ASSERT( notation[1].operand ); // b
+	U_TEST_ASSERT( notation[0].operand ); // a
+	U_TEST_ASSERT( notation[1].operand ); // b
 
-	U_ASSERT( !notation[2].operand ); // *
-	U_ASSERT( notation[2].operator_ == BinaryOperator::Mul );
+	U_TEST_ASSERT( !notation[2].operand ); // *
+	U_TEST_ASSERT( notation[2].operator_ == BinaryOperator::Mul );
 
-	U_ASSERT( notation[3].operand ); // c
+	U_TEST_ASSERT( notation[3].operand ); // c
 
-	U_ASSERT( notation[4].operand ); // d
+	U_TEST_ASSERT( notation[4].operand ); // d
 
-	U_ASSERT( !notation[5].operand ); // *
-	U_ASSERT( notation[5].operator_ == BinaryOperator::Mul );
+	U_TEST_ASSERT( !notation[5].operand ); // *
+	U_TEST_ASSERT( notation[5].operator_ == BinaryOperator::Mul );
 
-	U_ASSERT( !notation[6].operand ); // +
-	U_ASSERT( notation[6].operator_ == BinaryOperator::Add );
+	U_TEST_ASSERT( !notation[6].operand ); // +
+	U_TEST_ASSERT( notation[6].operator_ == BinaryOperator::Add );
 }
 
-static void MultiPriorityExpressionTest5()
+U_TEST(MultiPriorityExpressionTest5)
 {
 	BinaryOperatorsChain chain( FilePos{ 0, 0 } );
 	chain.components.resize(5);
@@ -297,30 +296,30 @@ static void MultiPriorityExpressionTest5()
 	InversePolishNotation notation= ConvertToInversePolishNotation( chain );
 	Print( chain, notation );
 
-	U_ASSERT( notation.size() == 9 );
+	U_TEST_ASSERT( notation.size() == 9 );
 
-	U_ASSERT( notation[0].operand ); // a
-	U_ASSERT( notation[1].operand ); // b
-	U_ASSERT( notation[2].operand ); // c
+	U_TEST_ASSERT( notation[0].operand ); // a
+	U_TEST_ASSERT( notation[1].operand ); // b
+	U_TEST_ASSERT( notation[2].operand ); // c
 
-	U_ASSERT( !notation[3].operand ); // *
-	U_ASSERT( notation[3].operator_ == BinaryOperator::Mul );
+	U_TEST_ASSERT( !notation[3].operand ); // *
+	U_TEST_ASSERT( notation[3].operator_ == BinaryOperator::Mul );
 
-	U_ASSERT( !notation[4].operand ); // +
-	U_ASSERT( notation[4].operator_ == BinaryOperator::Add );
+	U_TEST_ASSERT( !notation[4].operand ); // +
+	U_TEST_ASSERT( notation[4].operator_ == BinaryOperator::Add );
 
-	U_ASSERT( notation[5].operand ); // d
+	U_TEST_ASSERT( notation[5].operand ); // d
 
-	U_ASSERT( !notation[6].operand ); // +
-	U_ASSERT( notation[6].operator_ == BinaryOperator::Add );
+	U_TEST_ASSERT( !notation[6].operand ); // +
+	U_TEST_ASSERT( notation[6].operator_ == BinaryOperator::Add );
 
-	U_ASSERT( notation[7].operand ); // e
+	U_TEST_ASSERT( notation[7].operand ); // e
 
-	U_ASSERT( !notation[8].operand ); // -
-	U_ASSERT( notation[8].operator_ == BinaryOperator::Sub );
+	U_TEST_ASSERT( !notation[8].operand ); // -
+	U_TEST_ASSERT( notation[8].operator_ == BinaryOperator::Sub );
 }
 
-static void ExpressionWithComparisionOperatorsTest0()
+U_TEST(ExpressionWithComparisionOperatorsTest0)
 {
 	BinaryOperatorsChain chain( FilePos{ 0, 0 } );
 	chain.components.resize(3);
@@ -336,20 +335,20 @@ static void ExpressionWithComparisionOperatorsTest0()
 	InversePolishNotation notation= ConvertToInversePolishNotation( chain );
 	Print( chain, notation );
 
-	U_ASSERT( notation.size() == 5 );
+	U_TEST_ASSERT( notation.size() == 5 );
 
-	U_ASSERT( notation[0].operand ); // a
-	U_ASSERT( notation[1].operand ); // b
-	U_ASSERT( notation[2].operand ); // c
+	U_TEST_ASSERT( notation[0].operand ); // a
+	U_TEST_ASSERT( notation[1].operand ); // b
+	U_TEST_ASSERT( notation[2].operand ); // c
 
-	U_ASSERT( !notation[3].operand ); // +
-	U_ASSERT( notation[3].operator_ == BinaryOperator::Add );
+	U_TEST_ASSERT( !notation[3].operand ); // +
+	U_TEST_ASSERT( notation[3].operator_ == BinaryOperator::Add );
 
-	U_ASSERT( !notation[4].operand ); // ==
-	U_ASSERT( notation[4].operator_ == BinaryOperator::Equal );
+	U_TEST_ASSERT( !notation[4].operand ); // ==
+	U_TEST_ASSERT( notation[4].operator_ == BinaryOperator::Equal );
 }
 
-static void ExpressionWithComparisionOperatorsTest1()
+U_TEST(ExpressionWithComparisionOperatorsTest1)
 {
 	BinaryOperatorsChain chain( FilePos{ 0, 0 } );
 	chain.components.resize(3);
@@ -365,21 +364,21 @@ static void ExpressionWithComparisionOperatorsTest1()
 	InversePolishNotation notation= ConvertToInversePolishNotation( chain );
 	Print( chain, notation );
 
-	U_ASSERT( notation.size() == 5 );
+	U_TEST_ASSERT( notation.size() == 5 );
 
-	U_ASSERT( notation[0].operand ); // a
-	U_ASSERT( notation[1].operand ); // b
+	U_TEST_ASSERT( notation[0].operand ); // a
+	U_TEST_ASSERT( notation[1].operand ); // b
 
-	U_ASSERT( !notation[2].operand ); // *
-	U_ASSERT( notation[2].operator_ == BinaryOperator::Mul );
+	U_TEST_ASSERT( !notation[2].operand ); // *
+	U_TEST_ASSERT( notation[2].operator_ == BinaryOperator::Mul );
 
-	U_ASSERT( notation[3].operand ); // c
+	U_TEST_ASSERT( notation[3].operand ); // c
 
-	U_ASSERT( !notation[4].operand ); // <
-	U_ASSERT( notation[4].operator_ == BinaryOperator::Less );
+	U_TEST_ASSERT( !notation[4].operand ); // <
+	U_TEST_ASSERT( notation[4].operator_ == BinaryOperator::Less );
 }
 
-static void ExpressionWithComparisionOperatorsTest2()
+U_TEST(ExpressionWithComparisionOperatorsTest2)
 {
 	BinaryOperatorsChain chain( FilePos{ 0, 0 } );
 	chain.components.resize(4);
@@ -398,24 +397,24 @@ static void ExpressionWithComparisionOperatorsTest2()
 	InversePolishNotation notation= ConvertToInversePolishNotation( chain );
 	Print( chain, notation );
 
-	U_ASSERT( notation.size() == 7 );
+	U_TEST_ASSERT( notation.size() == 7 );
 
-	U_ASSERT( notation[0].operand ); // a
-	U_ASSERT( notation[1].operand ); // b
-	U_ASSERT( notation[2].operand ); // c
-	U_ASSERT( notation[3].operand ); // d
+	U_TEST_ASSERT( notation[0].operand ); // a
+	U_TEST_ASSERT( notation[1].operand ); // b
+	U_TEST_ASSERT( notation[2].operand ); // c
+	U_TEST_ASSERT( notation[3].operand ); // d
 
-	U_ASSERT( !notation[4].operand ); // *
-	U_ASSERT( notation[4].operator_ == BinaryOperator::Mul );
+	U_TEST_ASSERT( !notation[4].operand ); // *
+	U_TEST_ASSERT( notation[4].operator_ == BinaryOperator::Mul );
 
-	U_ASSERT( !notation[5].operand ); // +
-	U_ASSERT( notation[5].operator_ == BinaryOperator::Add );
+	U_TEST_ASSERT( !notation[5].operand ); // +
+	U_TEST_ASSERT( notation[5].operator_ == BinaryOperator::Add );
 
-	U_ASSERT( !notation[6].operand ); // !=
-	U_ASSERT( notation[6].operator_ == BinaryOperator::NotEqual );
+	U_TEST_ASSERT( !notation[6].operand ); // !=
+	U_TEST_ASSERT( notation[6].operator_ == BinaryOperator::NotEqual );
 }
 
-static void LogicalExpressionTest0()
+U_TEST(LogicalExpressionTest0)
 {
 	BinaryOperatorsChain chain( FilePos{ 0, 0 } );
 	chain.components.resize(5);
@@ -437,30 +436,30 @@ static void LogicalExpressionTest0()
 	InversePolishNotation notation= ConvertToInversePolishNotation( chain );
 	Print( chain, notation );
 
-	U_ASSERT( notation.size() == 9 );
+	U_TEST_ASSERT( notation.size() == 9 );
 
-	U_ASSERT( notation[0].operand ); // a
-	U_ASSERT( notation[1].operand ); // b
+	U_TEST_ASSERT( notation[0].operand ); // a
+	U_TEST_ASSERT( notation[1].operand ); // b
 
-	U_ASSERT( !notation[2].operand ); // +
-	U_ASSERT( notation[2].operator_ == BinaryOperator::Add );
+	U_TEST_ASSERT( !notation[2].operand ); // +
+	U_TEST_ASSERT( notation[2].operator_ == BinaryOperator::Add );
 
-	U_ASSERT( notation[3].operand ); // c
-	U_ASSERT( notation[4].operand ); // d
+	U_TEST_ASSERT( notation[3].operand ); // c
+	U_TEST_ASSERT( notation[4].operand ); // d
 
-	U_ASSERT( !notation[5].operand ); // *
-	U_ASSERT( notation[5].operator_ == BinaryOperator::Mul );
+	U_TEST_ASSERT( !notation[5].operand ); // *
+	U_TEST_ASSERT( notation[5].operator_ == BinaryOperator::Mul );
 
-	U_ASSERT( !notation[6].operand ); // ==
-	U_ASSERT( notation[6].operator_ == BinaryOperator::Equal );
+	U_TEST_ASSERT( !notation[6].operand ); // ==
+	U_TEST_ASSERT( notation[6].operator_ == BinaryOperator::Equal );
 
-	U_ASSERT( notation[7].operand ); // false
+	U_TEST_ASSERT( notation[7].operand ); // false
 
-	U_ASSERT( !notation[8].operand ); // ||
-	U_ASSERT( notation[8].operator_ == BinaryOperator::LazyLogicalOr );
+	U_TEST_ASSERT( !notation[8].operand ); // ||
+	U_TEST_ASSERT( notation[8].operator_ == BinaryOperator::LazyLogicalOr );
 }
 
-static void LogicalExpressionTest1()
+U_TEST(LogicalExpressionTest1)
 {
 	BinaryOperatorsChain chain( FilePos{ 0, 0 } );
 	chain.components.resize(4);
@@ -479,42 +478,23 @@ static void LogicalExpressionTest1()
 	InversePolishNotation notation= ConvertToInversePolishNotation( chain );
 	Print( chain, notation );
 
-	U_ASSERT( notation.size() == 7 );
+	U_TEST_ASSERT( notation.size() == 7 );
 
-	U_ASSERT( notation[0].operand ); // a
-	U_ASSERT( notation[1].operand ); // b
+	U_TEST_ASSERT( notation[0].operand ); // a
+	U_TEST_ASSERT( notation[1].operand ); // b
 
-	U_ASSERT( !notation[2].operand ); // +
-	U_ASSERT( notation[2].operator_ == BinaryOperator::And );
+	U_TEST_ASSERT( !notation[2].operand ); // +
+	U_TEST_ASSERT( notation[2].operator_ == BinaryOperator::And );
 
-	U_ASSERT( notation[3].operand ); // c
+	U_TEST_ASSERT( notation[3].operand ); // c
 
-	U_ASSERT( !notation[4].operand ); // |
-	U_ASSERT( notation[4].operator_ == BinaryOperator::Or );
+	U_TEST_ASSERT( !notation[4].operand ); // |
+	U_TEST_ASSERT( notation[4].operator_ == BinaryOperator::Or );
 
-	U_ASSERT( notation[5].operand ); // d
+	U_TEST_ASSERT( notation[5].operand ); // d
 
-	U_ASSERT( !notation[6].operand ); // &&
-	U_ASSERT( notation[6].operator_ == BinaryOperator::LazyLogicalAnd );
-}
-
-void RunIPNTests()
-{
-	OneOperandExpressionTest();
-	TwoOperandExpressionTest();
-	LongFlatExpressionTest();
-	TriOperandEqualExpressionTest();
-	MultiPriorityExpressionTest0();
-	MultiPriorityExpressionTest1();
-	MultiPriorityExpressionTest2();
-	MultiPriorityExpressionTest3();
-	MultiPriorityExpressionTest4();
-	MultiPriorityExpressionTest5();
-	ExpressionWithComparisionOperatorsTest0();
-	ExpressionWithComparisionOperatorsTest1();
-	ExpressionWithComparisionOperatorsTest2();
-	LogicalExpressionTest0();
-	LogicalExpressionTest1();
+	U_TEST_ASSERT( !notation[6].operand ); // &&
+	U_TEST_ASSERT( notation[6].operator_ == BinaryOperator::LazyLogicalAnd );
 }
 
 } // namespace U

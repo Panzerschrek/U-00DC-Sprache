@@ -1,17 +1,14 @@
 #include <cstdlib>
 #include <iostream>
 
-#include "../assert.hpp"
 #include "tests.hpp"
 
-#include "code_builder_test.hpp"
-
-#define ASSERT_NEAR( x, y, eps ) U_ASSERT( std::abs( (x) - (y) ) <= eps )
+#define ASSERT_NEAR( x, y, eps ) U_TEST_ASSERT( std::abs( (x) - (y) ) <= eps )
 
 namespace U
 {
 
-static void SimpleProgramTest()
+U_TEST(SimpleProgramTest)
 {
 	static const char c_program_text[]=
 	"\
@@ -26,7 +23,7 @@ static void SimpleProgramTest()
 	int arg0= 100500, arg1= 1488, arg2= 42;
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
-	U_ASSERT( function != nullptr );
+	U_TEST_ASSERT( function != nullptr );
 
 	llvm::GenericValue args[3];
 	args[0].IntVal= llvm::APInt( 32, arg0 );
@@ -38,10 +35,10 @@ static void SimpleProgramTest()
 			function,
 			llvm::ArrayRef<llvm::GenericValue>( args, 3 ) );
 
-	U_ASSERT( static_cast<uint64_t>( arg0 + arg1 + arg2 ) == result_value.IntVal.getLimitedValue() );
+	U_TEST_ASSERT( static_cast<uint64_t>( arg0 + arg1 + arg2 ) == result_value.IntVal.getLimitedValue() );
 }
 
-static void ArgumentsAssignmentTest()
+U_TEST(ArgumentsAssignmentTest)
 {
 	static const char c_program_text[]=
 	"\
@@ -55,7 +52,7 @@ static void ArgumentsAssignmentTest()
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
-	U_ASSERT( function != nullptr );
+	U_TEST_ASSERT( function != nullptr );
 
 	llvm::GenericValue arg;
 	arg.IntVal= llvm::APInt( 32, 5648 );
@@ -65,10 +62,10 @@ static void ArgumentsAssignmentTest()
 			function,
 			llvm::ArrayRef<llvm::GenericValue>( arg ) );
 
-	U_ASSERT( static_cast<uint64_t>( 5648 * 5648 ) == result_value.IntVal.getLimitedValue() );
+	U_TEST_ASSERT( static_cast<uint64_t>( 5648 * 5648 ) == result_value.IntVal.getLimitedValue() );
 }
 
-static void BasicBinaryOperationsTest()
+U_TEST(BasicBinaryOperationsTest)
 {
 	static const char c_program_text[]=
 	"\
@@ -81,7 +78,7 @@ static void BasicBinaryOperationsTest()
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
-	U_ASSERT( function != nullptr );
+	U_TEST_ASSERT( function != nullptr );
 
 	int arg0= 77, arg1= 1488, arg2= 42;
 
@@ -95,10 +92,10 @@ static void BasicBinaryOperationsTest()
 			function,
 			llvm::ArrayRef<llvm::GenericValue>( args, 3 ) );
 
-	U_ASSERT( static_cast<uint64_t>( arg0 * arg0 + arg1 / arg1 - arg2 ) == result_value.IntVal.getLimitedValue() );
+	U_TEST_ASSERT( static_cast<uint64_t>( arg0 * arg0 + arg1 / arg1 - arg2 ) == result_value.IntVal.getLimitedValue() );
 }
 
-static void BasicBinaryOperationsFloatTest()
+U_TEST(BasicBinaryOperationsFloatTest)
 {
 	static const char c_program_text[]=
 	"\
@@ -111,7 +108,7 @@ static void BasicBinaryOperationsFloatTest()
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
-	U_ASSERT( function != nullptr );
+	U_TEST_ASSERT( function != nullptr );
 
 	float arg0= 77.0f, arg1= 1488.5f, arg2= -42.31415926535f;
 
@@ -128,7 +125,7 @@ static void BasicBinaryOperationsFloatTest()
 	ASSERT_NEAR( arg0 * arg0 + arg1 / arg1 - arg2, result_value.FloatVal, 0.1f );
 }
 
-static void VariablesTest0()
+U_TEST(VariablesTest0)
 {
 	static const char c_program_text[]=
 	"\
@@ -142,7 +139,7 @@ static void VariablesTest0()
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
-	U_ASSERT( function != nullptr );
+	U_TEST_ASSERT( function != nullptr );
 
 	int arg0= 1488, arg1= 77;
 
@@ -155,10 +152,10 @@ static void VariablesTest0()
 			function,
 			llvm::ArrayRef<llvm::GenericValue>( args, 2 ) );
 
-	U_ASSERT( static_cast<uint64_t>( arg0 - arg1 ) == result_value.IntVal.getLimitedValue() );
+	U_TEST_ASSERT( static_cast<uint64_t>( arg0 - arg1 ) == result_value.IntVal.getLimitedValue() );
 }
 
-static void VariablesTest1()
+U_TEST(VariablesTest1)
 {
 	// Multiple variables declaration.
 	static const char c_program_text[]=
@@ -174,7 +171,7 @@ static void VariablesTest1()
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
-	U_ASSERT( function != nullptr );
+	U_TEST_ASSERT( function != nullptr );
 
 	int arg0= 1488, arg1= 77;
 
@@ -187,10 +184,10 @@ static void VariablesTest1()
 			function,
 			llvm::ArrayRef<llvm::GenericValue>( args, 2 ) );
 
-	U_ASSERT( static_cast<uint64_t>( arg0 - arg1 ) == result_value.IntVal.getLimitedValue() );
+	U_TEST_ASSERT( static_cast<uint64_t>( arg0 - arg1 ) == result_value.IntVal.getLimitedValue() );
 }
 
-static void NumericConstantsTest0()
+U_TEST(NumericConstantsTest0)
 {
 	static const char c_program_text[]=
 	"\
@@ -203,7 +200,7 @@ static void NumericConstantsTest0()
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo32" );
-	U_ASSERT( function != nullptr );
+	U_TEST_ASSERT( function != nullptr );
 
 	int arg0= 1488, arg1= 77;
 
@@ -216,10 +213,10 @@ static void NumericConstantsTest0()
 			function,
 			llvm::ArrayRef<llvm::GenericValue>( args, 2 ) );
 
-	U_ASSERT( static_cast<uint64_t>( arg0 * 7 + arg1 - 22 / 4 + 458 ) == result_value.IntVal.getLimitedValue() );
+	U_TEST_ASSERT( static_cast<uint64_t>( arg0 * 7 + arg1 - 22 / 4 + 458 ) == result_value.IntVal.getLimitedValue() );
 }
 
-static void NumericConstantsTest1()
+U_TEST(NumericConstantsTest1)
 {
 	static const char c_program_text[]=
 	"\
@@ -232,7 +229,7 @@ static void NumericConstantsTest1()
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo64" );
-	U_ASSERT( function != nullptr );
+	U_TEST_ASSERT( function != nullptr );
 
 
 	llvm::GenericValue result_value=
@@ -240,10 +237,10 @@ static void NumericConstantsTest1()
 			function,
 			llvm::ArrayRef<llvm::GenericValue>() );
 
-	U_ASSERT( static_cast<uint64_t>( 45783984055402ll ) == result_value.IntVal.getLimitedValue() );
+	U_TEST_ASSERT( static_cast<uint64_t>( 45783984055402ll ) == result_value.IntVal.getLimitedValue() );
 }
 
-static void NumericConstantsTest2()
+U_TEST(NumericConstantsTest2)
 {
 	static const char c_program_text[]=
 	"\
@@ -256,7 +253,7 @@ static void NumericConstantsTest2()
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Pi" );
-	U_ASSERT( function != nullptr );
+	U_TEST_ASSERT( function != nullptr );
 
 
 	llvm::GenericValue result_value=
@@ -267,7 +264,7 @@ static void NumericConstantsTest2()
 	ASSERT_NEAR( 3.1415926535f, result_value.FloatVal, 0.0001f );
 }
 
-static void UnaryMinusTest()
+U_TEST(UnaryMinusTest)
 {
 	static const char c_program_text[]=
 	"\
@@ -281,7 +278,7 @@ static void UnaryMinusTest()
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
-	U_ASSERT( function != nullptr );
+	U_TEST_ASSERT( function != nullptr );
 
 	int arg_value= 54785;
 	llvm::GenericValue arg;
@@ -292,10 +289,10 @@ static void UnaryMinusTest()
 			function,
 			llvm::ArrayRef<llvm::GenericValue>( arg ) );
 
-	U_ASSERT( static_cast<uint64_t>( - - arg_value ) == result_value.IntVal.getLimitedValue() );
+	U_TEST_ASSERT( static_cast<uint64_t>( - - arg_value ) == result_value.IntVal.getLimitedValue() );
 }
 
-static void UnaryMinusFloatTest()
+U_TEST(UnaryMinusFloatTest)
 {
 	static const char c_program_text[]=
 	"\
@@ -309,7 +306,7 @@ static void UnaryMinusFloatTest()
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
-	U_ASSERT( function != nullptr );
+	U_TEST_ASSERT( function != nullptr );
 
 	double arg_value= 54785;
 	llvm::GenericValue arg;
@@ -323,7 +320,7 @@ static void UnaryMinusFloatTest()
 	ASSERT_NEAR( -( - arg_value ), result_value.DoubleVal, 0.01f );
 }
 
-static void ArraysTest0()
+U_TEST(ArraysTest0)
 {
 	static const char c_program_text[]=
 	"\
@@ -338,7 +335,7 @@ static void ArraysTest0()
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
-	U_ASSERT( function != nullptr );
+	U_TEST_ASSERT( function != nullptr );
 
 	int arg_value= 54785;
 	llvm::GenericValue arg;
@@ -349,10 +346,10 @@ static void ArraysTest0()
 			function,
 			llvm::ArrayRef<llvm::GenericValue>( arg ) );
 
-	U_ASSERT( static_cast<uint64_t>( arg_value + 5 ) == result_value.IntVal.getLimitedValue() );
+	U_TEST_ASSERT( static_cast<uint64_t>( arg_value + 5 ) == result_value.IntVal.getLimitedValue() );
 }
 
-static void ArraysTest1()
+U_TEST(ArraysTest1)
 {
 	static const char c_program_text[]=
 	"\
@@ -367,7 +364,7 @@ static void ArraysTest1()
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
-	U_ASSERT( function != nullptr );
+	U_TEST_ASSERT( function != nullptr );
 
 	int arg_value= 54785;
 	llvm::GenericValue arg;
@@ -378,10 +375,10 @@ static void ArraysTest1()
 			function,
 			llvm::ArrayRef<llvm::GenericValue>( arg ) );
 
-	U_ASSERT( static_cast<uint64_t>( arg_value + 5 ) == result_value.IntVal.getLimitedValue() );
+	U_TEST_ASSERT( static_cast<uint64_t>( arg_value + 5 ) == result_value.IntVal.getLimitedValue() );
 }
 
-static void LogicalBinaryOperationsTest()
+U_TEST(LogicalBinaryOperationsTest)
 {
 	static const char c_program_text[]=
 	"\
@@ -394,7 +391,7 @@ static void LogicalBinaryOperationsTest()
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
-	U_ASSERT( function != nullptr );
+	U_TEST_ASSERT( function != nullptr );
 
 	int arg0= 77, arg1= 1488, arg2= 42;
 
@@ -408,12 +405,12 @@ static void LogicalBinaryOperationsTest()
 			function,
 			llvm::ArrayRef<llvm::GenericValue>( args, 3 ) );
 
-	U_ASSERT(
+	U_TEST_ASSERT(
 		static_cast<uint64_t>( ( (arg0 & arg1) ^ arg2 ) + ( arg0 | arg1 | arg2 ) ) ==
 		result_value.IntVal.getLimitedValue() );
 }
 
-static void BooleanBasicTest()
+U_TEST(BooleanBasicTest)
 {
 	static const char c_program_text[]=
 	"\
@@ -430,7 +427,7 @@ static void BooleanBasicTest()
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
-	U_ASSERT( function != nullptr );
+	U_TEST_ASSERT( function != nullptr );
 
 	bool arg0= true, arg1= false, arg2= true;
 
@@ -444,12 +441,12 @@ static void BooleanBasicTest()
 			function,
 			llvm::ArrayRef<llvm::GenericValue>( args, 3 ) );
 
-	U_ASSERT(
+	U_TEST_ASSERT(
 		static_cast<uint64_t>(  ( arg0 & arg1 ) ^ arg2  ) ==
 		result_value.IntVal.getLimitedValue() );
 }
 
-static void CallTest0()
+U_TEST(CallTest0)
 {
 	static const char c_program_text[]=
 	"\
@@ -466,7 +463,7 @@ static void CallTest0()
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
-	U_ASSERT( function != nullptr );
+	U_TEST_ASSERT( function != nullptr );
 
 	int arg0= 77, arg1= 1488;
 
@@ -479,12 +476,12 @@ static void CallTest0()
 			function,
 			llvm::ArrayRef<llvm::GenericValue>( args, 3 ) );
 
-	U_ASSERT(
+	U_TEST_ASSERT(
 		static_cast<uint64_t>( arg0 * arg0 + 42 + arg1 * arg1 + 42 ) ==
 		result_value.IntVal.getLimitedValue() );
 }
 
-static void CallTest1()
+U_TEST(CallTest1)
 {
 	static const char c_program_text[]=
 	"\
@@ -505,7 +502,7 @@ static void CallTest1()
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
-	U_ASSERT( function != nullptr );
+	U_TEST_ASSERT( function != nullptr );
 
 	int arg0= 775678, arg1= 1488;
 
@@ -518,12 +515,12 @@ static void CallTest1()
 			function,
 			llvm::ArrayRef<llvm::GenericValue>( args, 3 ) );
 
-	U_ASSERT(
+	U_TEST_ASSERT(
 		static_cast<uint64_t>( arg0 / arg1 ) ==
 		result_value.IntVal.getLimitedValue() );
 }
 
-static void RecursiveCallTest()
+U_TEST(RecursiveCallTest)
 {
 	static const char c_program_text[]=
 	R"(
@@ -537,7 +534,7 @@ static void RecursiveCallTest()
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Factorial" );
-	U_ASSERT( function != nullptr );
+	U_TEST_ASSERT( function != nullptr );
 
 	unsigned int arg_val= 9u;
 
@@ -558,12 +555,12 @@ static void RecursiveCallTest()
 			function,
 			llvm::ArrayRef<llvm::GenericValue>( &arg, 1 ) );
 
-	U_ASSERT(
+	U_TEST_ASSERT(
 		static_cast<uint64_t>(factorial(arg_val)) ==
 		result_value.IntVal.getLimitedValue() );
 }
 
-static void EqualityOperatorsTest()
+U_TEST(EqualityOperatorsTest)
 {
 	static const char c_program_text[]=
 	"\
@@ -576,7 +573,7 @@ static void EqualityOperatorsTest()
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
-	U_ASSERT( function != nullptr );
+	U_TEST_ASSERT( function != nullptr );
 
 	int arg0= 77, arg1= 1488, arg2= 42;
 
@@ -590,12 +587,12 @@ static void EqualityOperatorsTest()
 			function,
 			llvm::ArrayRef<llvm::GenericValue>( args, 3 ) );
 
-	U_ASSERT(
+	U_TEST_ASSERT(
 		static_cast<uint64_t>( ( arg0 == arg1 ) | ( arg0 != arg2 ) ) ==
 		result_value.IntVal.getLimitedValue() );
 }
 
-static void EqualityFloatOperatorsTest()
+U_TEST(EqualityFloatOperatorsTest)
 {
 	static const char c_program_text[]=
 	"\
@@ -608,7 +605,7 @@ static void EqualityFloatOperatorsTest()
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
-	U_ASSERT( function != nullptr );
+	U_TEST_ASSERT( function != nullptr );
 
 	float arg0= 77, arg1= 1488, arg2= 42;
 
@@ -622,12 +619,12 @@ static void EqualityFloatOperatorsTest()
 			function,
 			llvm::ArrayRef<llvm::GenericValue>( args, 3 ) );
 
-	U_ASSERT(
+	U_TEST_ASSERT(
 		static_cast<uint64_t>( ( arg0 == arg1 ) | ( arg0 != arg2 ) ) ==
 		result_value.IntVal.getLimitedValue() );
 }
 
-static void ComparisonSignedOperatorsTest()
+U_TEST(ComparisonSignedOperatorsTest)
 {
 	static const char c_program_text[]=
 	"\
@@ -666,7 +663,7 @@ static void ComparisonSignedOperatorsTest()
 	for( unsigned int func_n= 0u; func_n < 4u; func_n++ )
 	{
 		llvm::Function* function= engine->FindFunctionNamed( c_func_names[ func_n ] );
-		U_ASSERT( function != nullptr );
+		U_TEST_ASSERT( function != nullptr );
 
 		llvm::GenericValue args[2];
 		llvm::GenericValue result_value;
@@ -677,23 +674,23 @@ static void ComparisonSignedOperatorsTest()
 		args[0].IntVal= llvm::APInt( 32, -1488 );
 		args[1].IntVal= llvm::APInt( 32, 51478 );
 		result_value= engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>( args, 2 ) );
-		U_ASSERT( static_cast<uint64_t>( c_true_matrix[ func_n ][0] ) == result_value.IntVal.getLimitedValue() );
+		U_TEST_ASSERT( static_cast<uint64_t>( c_true_matrix[ func_n ][0] ) == result_value.IntVal.getLimitedValue() );
 
 		// Equal
 		args[0].IntVal= llvm::APInt( 32, 8596 );
 		args[1].IntVal= llvm::APInt( 32, 8596 );
 		result_value= engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>( args, 2 ) );
-		U_ASSERT( static_cast<uint64_t>( c_true_matrix[ func_n ][1] ) == result_value.IntVal.getLimitedValue() );
+		U_TEST_ASSERT( static_cast<uint64_t>( c_true_matrix[ func_n ][1] ) == result_value.IntVal.getLimitedValue() );
 
 		// Greater
 		args[0].IntVal= llvm::APInt( 32, 6545284 );
 		args[1].IntVal= llvm::APInt( 32, 6544 );
 		result_value= engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>( args, 2 ) );
-		U_ASSERT( static_cast<uint64_t>( c_true_matrix[ func_n ][2] ) == result_value.IntVal.getLimitedValue() );
+		U_TEST_ASSERT( static_cast<uint64_t>( c_true_matrix[ func_n ][2] ) == result_value.IntVal.getLimitedValue() );
 	}
 }
 
-static void ComparisonUnsignedOperatorsTest()
+U_TEST(ComparisonUnsignedOperatorsTest)
 {
 	static const char c_program_text[]=
 	"\
@@ -732,7 +729,7 @@ static void ComparisonUnsignedOperatorsTest()
 	for( unsigned int func_n= 0u; func_n < 4u; func_n++ )
 	{
 		llvm::Function* function= engine->FindFunctionNamed( c_func_names[ func_n ] );
-		U_ASSERT( function != nullptr );
+		U_TEST_ASSERT( function != nullptr );
 
 		llvm::GenericValue args[2];
 		llvm::GenericValue result_value;
@@ -743,23 +740,23 @@ static void ComparisonUnsignedOperatorsTest()
 		args[0].IntVal= llvm::APInt( 32,  1488 );
 		args[1].IntVal= llvm::APInt( 32, 51478 );
 		result_value= engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>( args, 2 ) );
-		U_ASSERT( static_cast<uint64_t>( c_true_matrix[ func_n ][0] ) == result_value.IntVal.getLimitedValue() );
+		U_TEST_ASSERT( static_cast<uint64_t>( c_true_matrix[ func_n ][0] ) == result_value.IntVal.getLimitedValue() );
 
 		// Equal
 		args[0].IntVal= llvm::APInt( 32, 8596 );
 		args[1].IntVal= llvm::APInt( 32, 8596 );
 		result_value= engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>( args, 2 ) );
-		U_ASSERT( static_cast<uint64_t>( c_true_matrix[ func_n ][1] ) == result_value.IntVal.getLimitedValue() );
+		U_TEST_ASSERT( static_cast<uint64_t>( c_true_matrix[ func_n ][1] ) == result_value.IntVal.getLimitedValue() );
 
 		// Greater
 		args[0].IntVal= llvm::APInt( 32, 6545284 );
 		args[1].IntVal= llvm::APInt( 32, 6544 );
 		result_value= engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>( args, 2 ) );
-		U_ASSERT( static_cast<uint64_t>( c_true_matrix[ func_n ][2] ) == result_value.IntVal.getLimitedValue() );
+		U_TEST_ASSERT( static_cast<uint64_t>( c_true_matrix[ func_n ][2] ) == result_value.IntVal.getLimitedValue() );
 	}
 }
 
-static void ComparisonFloatOperatorsTest()
+U_TEST(ComparisonFloatOperatorsTest)
 {
 	static const char c_program_text[]=
 	"\
@@ -798,7 +795,7 @@ static void ComparisonFloatOperatorsTest()
 	for( unsigned int func_n= 0u; func_n < 4u; func_n++ )
 	{
 		llvm::Function* function= engine->FindFunctionNamed( c_func_names[ func_n ] );
-		U_ASSERT( function != nullptr );
+		U_TEST_ASSERT( function != nullptr );
 
 		llvm::GenericValue args[2];
 		llvm::GenericValue result_value;
@@ -809,23 +806,23 @@ static void ComparisonFloatOperatorsTest()
 		args[0].FloatVal= -1488.0f;
 		args[1].FloatVal=  51255.0f;
 		result_value= engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>( args, 2 ) );
-		U_ASSERT( static_cast<uint64_t>( c_true_matrix[ func_n ][0] ) == result_value.IntVal.getLimitedValue() );
+		U_TEST_ASSERT( static_cast<uint64_t>( c_true_matrix[ func_n ][0] ) == result_value.IntVal.getLimitedValue() );
 
 		// Equal
 		args[0].FloatVal= -0.0f;
 		args[1].FloatVal= +0.0f;
 		result_value= engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>( args, 2 ) );
-		U_ASSERT( static_cast<uint64_t>( c_true_matrix[ func_n ][1] ) == result_value.IntVal.getLimitedValue() );
+		U_TEST_ASSERT( static_cast<uint64_t>( c_true_matrix[ func_n ][1] ) == result_value.IntVal.getLimitedValue() );
 
 		// Greater
 		args[0].FloatVal= 5482.3f;
 		args[1].FloatVal= 785.2f;
 		result_value= engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>( args, 2 ) );
-		U_ASSERT( static_cast<uint64_t>( c_true_matrix[ func_n ][2] ) == result_value.IntVal.getLimitedValue() );
+		U_TEST_ASSERT( static_cast<uint64_t>( c_true_matrix[ func_n ][2] ) == result_value.IntVal.getLimitedValue() );
 	}
 }
 
-static void WhileOperatorTest()
+U_TEST(WhileOperatorTest)
 {
 	static const char c_program_text[]=
 	"\
@@ -845,7 +842,7 @@ static void WhileOperatorTest()
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
-	U_ASSERT( function != nullptr );
+	U_TEST_ASSERT( function != nullptr );
 
 	int arg0= 77, arg1= 1488;
 
@@ -857,12 +854,12 @@ static void WhileOperatorTest()
 			function,
 			llvm::ArrayRef<llvm::GenericValue>( args, 3 ) );
 
-	U_ASSERT(
+	U_TEST_ASSERT(
 		static_cast<uint64_t>( 34 + arg1 ) ==
 		result_value.IntVal.getLimitedValue() );
 }
 
-static void IfOperatorTest0()
+U_TEST(IfOperatorTest0)
 {
 	// Simple if without else/elseif.
 	static const char c_program_text[]=
@@ -878,7 +875,7 @@ static void IfOperatorTest0()
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "SimpleIf" );
-	U_ASSERT( function != nullptr );
+	U_TEST_ASSERT( function != nullptr );
 
 	llvm::GenericValue arg;
 
@@ -888,7 +885,7 @@ static void IfOperatorTest0()
 			engine->runFunction(
 				function,
 				llvm::ArrayRef<llvm::GenericValue>( arg ) );
-		U_ASSERT( static_cast<uint64_t>( 654 ) == result_value.IntVal.getLimitedValue() );
+		U_TEST_ASSERT( static_cast<uint64_t>( 654 ) == result_value.IntVal.getLimitedValue() );
 	}
 	{
 		arg.IntVal= llvm::APInt( 32, -2564 );
@@ -896,11 +893,11 @@ static void IfOperatorTest0()
 			engine->runFunction(
 				function,
 				llvm::ArrayRef<llvm::GenericValue>( arg ) );
-		U_ASSERT( static_cast<uint64_t>( 2564 ) == result_value.IntVal.getLimitedValue() );
+		U_TEST_ASSERT( static_cast<uint64_t>( 2564 ) == result_value.IntVal.getLimitedValue() );
 	}
 }
 
-static void IfOperatorTest1()
+U_TEST(IfOperatorTest1)
 {
 	// If-else.
 	static const char c_program_text[]=
@@ -918,7 +915,7 @@ static void IfOperatorTest1()
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "IfElse" );
-	U_ASSERT( function != nullptr );
+	U_TEST_ASSERT( function != nullptr );
 
 	llvm::GenericValue arg;
 
@@ -928,7 +925,7 @@ static void IfOperatorTest1()
 			engine->runFunction(
 				function,
 				llvm::ArrayRef<llvm::GenericValue>( arg ) );
-		U_ASSERT( static_cast<uint64_t>( 654 ) == result_value.IntVal.getLimitedValue() );
+		U_TEST_ASSERT( static_cast<uint64_t>( 654 ) == result_value.IntVal.getLimitedValue() );
 	}
 	{
 		arg.IntVal= llvm::APInt( 32, 655 );
@@ -936,11 +933,11 @@ static void IfOperatorTest1()
 			engine->runFunction(
 				function,
 				llvm::ArrayRef<llvm::GenericValue>( arg ) );
-		U_ASSERT( static_cast<uint64_t>( 655 * 2 ) == result_value.IntVal.getLimitedValue() );
+		U_TEST_ASSERT( static_cast<uint64_t>( 655 * 2 ) == result_value.IntVal.getLimitedValue() );
 	}
 }
 
-static void IfOperatorTest2()
+U_TEST(IfOperatorTest2)
 {
 	// If-else-if.
 	static const char c_program_text[]=
@@ -959,7 +956,7 @@ static void IfOperatorTest2()
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "IfElseIf" );
-	U_ASSERT( function != nullptr );
+	U_TEST_ASSERT( function != nullptr );
 
 	llvm::GenericValue arg;
 
@@ -969,7 +966,7 @@ static void IfOperatorTest2()
 			engine->runFunction(
 				function,
 				llvm::ArrayRef<llvm::GenericValue>( arg ) );
-		U_ASSERT( static_cast<uint64_t>( 16 ) == result_value.IntVal.getLimitedValue() );
+		U_TEST_ASSERT( static_cast<uint64_t>( 16 ) == result_value.IntVal.getLimitedValue() );
 	}
 	{
 		arg.IntVal= llvm::APInt( 32, 17 );
@@ -977,7 +974,7 @@ static void IfOperatorTest2()
 			engine->runFunction(
 				function,
 				llvm::ArrayRef<llvm::GenericValue>( arg ) );
-		U_ASSERT( static_cast<uint64_t>( 17 * 2 ) == result_value.IntVal.getLimitedValue() );
+		U_TEST_ASSERT( static_cast<uint64_t>( 17 * 2 ) == result_value.IntVal.getLimitedValue() );
 	}
 	{
 		arg.IntVal= llvm::APInt( 32, 18 );
@@ -985,11 +982,11 @@ static void IfOperatorTest2()
 			engine->runFunction(
 				function,
 				llvm::ArrayRef<llvm::GenericValue>( arg ) );
-		U_ASSERT( static_cast<uint64_t>( 1488 ) == result_value.IntVal.getLimitedValue() );
+		U_TEST_ASSERT( static_cast<uint64_t>( 1488 ) == result_value.IntVal.getLimitedValue() );
 	}
 }
 
-static void IfOperatorTest3()
+U_TEST(IfOperatorTest3)
 {
 	// If-else-if-else.
 	static const char c_program_text[]=
@@ -1009,7 +1006,7 @@ static void IfOperatorTest3()
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "IfElseIfElse" );
-	U_ASSERT( function != nullptr );
+	U_TEST_ASSERT( function != nullptr );
 
 	llvm::GenericValue arg;
 
@@ -1019,7 +1016,7 @@ static void IfOperatorTest3()
 			engine->runFunction(
 				function,
 				llvm::ArrayRef<llvm::GenericValue>( arg ) );
-		U_ASSERT( static_cast<uint64_t>( 16 ) == result_value.IntVal.getLimitedValue() );
+		U_TEST_ASSERT( static_cast<uint64_t>( 16 ) == result_value.IntVal.getLimitedValue() );
 	}
 	{
 		arg.IntVal= llvm::APInt( 32, 17 );
@@ -1027,7 +1024,7 @@ static void IfOperatorTest3()
 			engine->runFunction(
 				function,
 				llvm::ArrayRef<llvm::GenericValue>( arg ) );
-		U_ASSERT( static_cast<uint64_t>( 17 * 2 ) == result_value.IntVal.getLimitedValue() );
+		U_TEST_ASSERT( static_cast<uint64_t>( 17 * 2 ) == result_value.IntVal.getLimitedValue() );
 	}
 	{
 		arg.IntVal= llvm::APInt( 32, 18 );
@@ -1035,11 +1032,11 @@ static void IfOperatorTest3()
 			engine->runFunction(
 				function,
 				llvm::ArrayRef<llvm::GenericValue>( arg ) );
-		U_ASSERT( static_cast<uint64_t>( 1488 ) == result_value.IntVal.getLimitedValue() );
+		U_TEST_ASSERT( static_cast<uint64_t>( 1488 ) == result_value.IntVal.getLimitedValue() );
 	}
 }
 
-static void IfOperatorTest4()
+U_TEST(IfOperatorTest4)
 {
 	// If else-if else-if.
 	static const char c_program_text[]=
@@ -1060,7 +1057,7 @@ static void IfOperatorTest4()
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "IfElseIfElseIf" );
-	U_ASSERT( function != nullptr );
+	U_TEST_ASSERT( function != nullptr );
 
 	llvm::GenericValue arg;
 
@@ -1070,7 +1067,7 @@ static void IfOperatorTest4()
 			engine->runFunction(
 				function,
 				llvm::ArrayRef<llvm::GenericValue>( arg ) );
-		U_ASSERT( static_cast<uint64_t>( 16 ) == result_value.IntVal.getLimitedValue() );
+		U_TEST_ASSERT( static_cast<uint64_t>( 16 ) == result_value.IntVal.getLimitedValue() );
 	}
 	{
 		arg.IntVal= llvm::APInt( 32, 17 );
@@ -1078,7 +1075,7 @@ static void IfOperatorTest4()
 			engine->runFunction(
 				function,
 				llvm::ArrayRef<llvm::GenericValue>( arg ) );
-		U_ASSERT( static_cast<uint64_t>( 17 * 2 ) == result_value.IntVal.getLimitedValue() );
+		U_TEST_ASSERT( static_cast<uint64_t>( 17 * 2 ) == result_value.IntVal.getLimitedValue() );
 	}
 	{
 		arg.IntVal= llvm::APInt( 32, 18 );
@@ -1086,7 +1083,7 @@ static void IfOperatorTest4()
 			engine->runFunction(
 				function,
 				llvm::ArrayRef<llvm::GenericValue>( arg ) );
-		U_ASSERT( static_cast<uint64_t>( 18 * 3 ) == result_value.IntVal.getLimitedValue() );
+		U_TEST_ASSERT( static_cast<uint64_t>( 18 * 3 ) == result_value.IntVal.getLimitedValue() );
 	}
 	{
 		arg.IntVal= llvm::APInt( 32, 19 );
@@ -1094,11 +1091,11 @@ static void IfOperatorTest4()
 			engine->runFunction(
 				function,
 				llvm::ArrayRef<llvm::GenericValue>( arg ) );
-		U_ASSERT( static_cast<uint64_t>( 1488 ) == result_value.IntVal.getLimitedValue() );
+		U_TEST_ASSERT( static_cast<uint64_t>( 1488 ) == result_value.IntVal.getLimitedValue() );
 	}
 }
 
-static void IfOperatorTest5()
+U_TEST(IfOperatorTest5)
 {
 	// If else-if else-if else.
 	static const char c_program_text[]=
@@ -1119,7 +1116,7 @@ static void IfOperatorTest5()
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "IfElseIfElseIf" );
-	U_ASSERT( function != nullptr );
+	U_TEST_ASSERT( function != nullptr );
 
 	llvm::GenericValue arg;
 
@@ -1129,7 +1126,7 @@ static void IfOperatorTest5()
 			engine->runFunction(
 				function,
 				llvm::ArrayRef<llvm::GenericValue>( arg ) );
-		U_ASSERT( static_cast<uint64_t>( 16 ) == result_value.IntVal.getLimitedValue() );
+		U_TEST_ASSERT( static_cast<uint64_t>( 16 ) == result_value.IntVal.getLimitedValue() );
 	}
 	{
 		arg.IntVal= llvm::APInt( 32, 17 );
@@ -1137,7 +1134,7 @@ static void IfOperatorTest5()
 			engine->runFunction(
 				function,
 				llvm::ArrayRef<llvm::GenericValue>( arg ) );
-		U_ASSERT( static_cast<uint64_t>( 17 * 2 ) == result_value.IntVal.getLimitedValue() );
+		U_TEST_ASSERT( static_cast<uint64_t>( 17 * 2 ) == result_value.IntVal.getLimitedValue() );
 	}
 	{
 		arg.IntVal= llvm::APInt( 32, 18 );
@@ -1145,7 +1142,7 @@ static void IfOperatorTest5()
 			engine->runFunction(
 				function,
 				llvm::ArrayRef<llvm::GenericValue>( arg ) );
-		U_ASSERT( static_cast<uint64_t>( 18 * 3 ) == result_value.IntVal.getLimitedValue() );
+		U_TEST_ASSERT( static_cast<uint64_t>( 18 * 3 ) == result_value.IntVal.getLimitedValue() );
 	}
 	{
 		arg.IntVal= llvm::APInt( 32, 19 );
@@ -1153,11 +1150,11 @@ static void IfOperatorTest5()
 			engine->runFunction(
 				function,
 				llvm::ArrayRef<llvm::GenericValue>( arg ) );
-		U_ASSERT( static_cast<uint64_t>( 1488 ) == result_value.IntVal.getLimitedValue() );
+		U_TEST_ASSERT( static_cast<uint64_t>( 1488 ) == result_value.IntVal.getLimitedValue() );
 	}
 }
 
-static void BreakOperatorTest0()
+U_TEST(BreakOperatorTest0)
 {
 	static const char c_program_text[]=
 	"fn Foo( i32 x ) : i32\
@@ -1171,7 +1168,7 @@ static void BreakOperatorTest0()
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
-	U_ASSERT( function != nullptr );
+	U_TEST_ASSERT( function != nullptr );
 
 	llvm::GenericValue arg;
 
@@ -1181,7 +1178,7 @@ static void BreakOperatorTest0()
 			engine->runFunction(
 				function,
 				llvm::ArrayRef<llvm::GenericValue>( arg ) );
-		U_ASSERT( static_cast<uint64_t>( 654 ) == result_value.IntVal.getLimitedValue() );
+		U_TEST_ASSERT( static_cast<uint64_t>( 654 ) == result_value.IntVal.getLimitedValue() );
 	}
 	{
 		arg.IntVal= llvm::APInt( 32, -2564 );
@@ -1189,11 +1186,11 @@ static void BreakOperatorTest0()
 			engine->runFunction(
 				function,
 				llvm::ArrayRef<llvm::GenericValue>( arg ) );
-		U_ASSERT( static_cast<uint64_t>( 2564 ) == result_value.IntVal.getLimitedValue() );
+		U_TEST_ASSERT( static_cast<uint64_t>( 2564 ) == result_value.IntVal.getLimitedValue() );
 	}
 }
 
-static void BreakOperatorTest1()
+U_TEST(BreakOperatorTest1)
 {
 	// Should break from inner loop.
 	static const char c_program_text[]=
@@ -1218,7 +1215,7 @@ static void BreakOperatorTest1()
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
-	U_ASSERT( function != nullptr );
+	U_TEST_ASSERT( function != nullptr );
 
 	llvm::GenericValue arg;
 	arg.IntVal= llvm::APInt( 32, 654 );
@@ -1226,10 +1223,10 @@ static void BreakOperatorTest1()
 		engine->runFunction(
 			function,
 			llvm::ArrayRef<llvm::GenericValue>( arg ) );
-	U_ASSERT( static_cast<uint64_t>( 654 ) == result_value.IntVal.getLimitedValue() );
+	U_TEST_ASSERT( static_cast<uint64_t>( 654 ) == result_value.IntVal.getLimitedValue() );
 }
 
-static void BreakOperatorTest2()
+U_TEST(BreakOperatorTest2)
 {
 	// Should break from current loop with previous inner loop.
 	static const char c_program_text[]=
@@ -1250,7 +1247,7 @@ static void BreakOperatorTest2()
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
-	U_ASSERT( function != nullptr );
+	U_TEST_ASSERT( function != nullptr );
 
 	llvm::GenericValue arg;
 	arg.IntVal= llvm::APInt( 32, 654 );
@@ -1258,10 +1255,10 @@ static void BreakOperatorTest2()
 		engine->runFunction(
 			function,
 			llvm::ArrayRef<llvm::GenericValue>( arg ) );
-	U_ASSERT( static_cast<uint64_t>( 654 ) == result_value.IntVal.getLimitedValue() );
+	U_TEST_ASSERT( static_cast<uint64_t>( 654 ) == result_value.IntVal.getLimitedValue() );
 }
 
-static void ContinueOperatorTest0()
+U_TEST(ContinueOperatorTest0)
 {
 	static const char c_program_text[]=
 	"fn Foo( i32 x ) : i32\
@@ -1282,7 +1279,7 @@ static void ContinueOperatorTest0()
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
-	U_ASSERT( function != nullptr );
+	U_TEST_ASSERT( function != nullptr );
 
 	llvm::GenericValue arg;
 	arg.IntVal= llvm::APInt( 32, 654 );
@@ -1290,10 +1287,10 @@ static void ContinueOperatorTest0()
 		engine->runFunction(
 			function,
 			llvm::ArrayRef<llvm::GenericValue>( arg ) );
-	U_ASSERT( static_cast<uint64_t>( 654 ) == result_value.IntVal.getLimitedValue() );
+	U_TEST_ASSERT( static_cast<uint64_t>( 654 ) == result_value.IntVal.getLimitedValue() );
 }
 
-static void ContinueOperatorTest1()
+U_TEST(ContinueOperatorTest1)
 {
 	// Should continue from inner loop.
 	static const char c_program_text[]=
@@ -1319,7 +1316,7 @@ static void ContinueOperatorTest1()
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
-	U_ASSERT( function != nullptr );
+	U_TEST_ASSERT( function != nullptr );
 
 	llvm::GenericValue arg;
 	arg.IntVal= llvm::APInt( 32, 654 );
@@ -1327,10 +1324,10 @@ static void ContinueOperatorTest1()
 		engine->runFunction(
 			function,
 			llvm::ArrayRef<llvm::GenericValue>( arg ) );
-	U_ASSERT( static_cast<uint64_t>( 654 ) == result_value.IntVal.getLimitedValue() );
+	U_TEST_ASSERT( static_cast<uint64_t>( 654 ) == result_value.IntVal.getLimitedValue() );
 }
 
-static void StructTest0()
+U_TEST(StructTest0)
 {
 	static const char c_program_text[]=
 	R"(
@@ -1357,7 +1354,7 @@ static void StructTest0()
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
-	U_ASSERT( function != nullptr );
+	U_TEST_ASSERT( function != nullptr );
 
 	int arg0= 1488, arg1= 77, arg2= 546;
 
@@ -1371,10 +1368,10 @@ static void StructTest0()
 			function,
 			llvm::ArrayRef<llvm::GenericValue>( args, 3 ) );
 
-	U_ASSERT( static_cast<uint64_t>( arg0 * arg1 + arg2 ) == result_value.IntVal.getLimitedValue() );
+	U_TEST_ASSERT( static_cast<uint64_t>( arg0 * arg1 + arg2 ) == result_value.IntVal.getLimitedValue() );
 }
 
-static void StructTest1()
+U_TEST(StructTest1)
 {
 	// Struct with struct inside.
 	static const char c_program_text[]=
@@ -1403,7 +1400,7 @@ static void StructTest1()
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
-	U_ASSERT( function != nullptr );
+	U_TEST_ASSERT( function != nullptr );
 
 	double arg0= 1488, arg1= 77;
 
@@ -1419,7 +1416,7 @@ static void StructTest1()
 	ASSERT_NEAR( arg0 - arg1, result_value.DoubleVal, 0.001 );
 }
 
-static void BlocksTest()
+U_TEST(BlocksTest)
 {
 	// Variable in inner block must shadow variable from outer block with same name.
 	static const char c_program_text[]=
@@ -1437,7 +1434,7 @@ static void BlocksTest()
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
-	U_ASSERT( function != nullptr );
+	U_TEST_ASSERT( function != nullptr );
 
 	int arg0= 1488, arg1= 77;
 
@@ -1450,10 +1447,10 @@ static void BlocksTest()
 			function,
 			llvm::ArrayRef<llvm::GenericValue>( args, 2 ) );
 
-	U_ASSERT( static_cast<uint64_t>( arg1 ) == result_value.IntVal.getLimitedValue() );
+	U_TEST_ASSERT( static_cast<uint64_t>( arg1 ) == result_value.IntVal.getLimitedValue() );
 }
 
-static void ReferencesTest0()
+U_TEST(ReferencesTest0)
 {
 	// Assignment to reference must affect referenced variable.
 	static const char c_program_text[]=
@@ -1470,17 +1467,17 @@ static void ReferencesTest0()
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
-	U_ASSERT( function != nullptr );
+	U_TEST_ASSERT( function != nullptr );
 
 	llvm::GenericValue result_value=
 		engine->runFunction(
 			function,
 			llvm::ArrayRef<llvm::GenericValue>() );
 
-	U_ASSERT( static_cast<uint64_t>( 42 ) == result_value.IntVal.getLimitedValue() );
+	U_TEST_ASSERT( static_cast<uint64_t>( 42 ) == result_value.IntVal.getLimitedValue() );
 }
 
-static void ReferencesTest1()
+U_TEST(ReferencesTest1)
 {
 	// Must read variable value, using reference.
 	static const char c_program_text[]=
@@ -1496,17 +1493,17 @@ static void ReferencesTest1()
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
-	U_ASSERT( function != nullptr );
+	U_TEST_ASSERT( function != nullptr );
 
 	llvm::GenericValue result_value=
 		engine->runFunction(
 			function,
 			llvm::ArrayRef<llvm::GenericValue>() );
 
-	U_ASSERT( static_cast<uint64_t>( 56845 ) == result_value.IntVal.getLimitedValue() );
+	U_TEST_ASSERT( static_cast<uint64_t>( 56845 ) == result_value.IntVal.getLimitedValue() );
 }
 
-static void ReferencesTest2()
+U_TEST(ReferencesTest2)
 {
 	// References must correctly work with arrays.
 	static const char c_program_text[]=
@@ -1525,7 +1522,7 @@ static void ReferencesTest2()
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
-	U_ASSERT( function != nullptr );
+	U_TEST_ASSERT( function != nullptr );
 
 	int arg0= 1488, arg1= 77;
 
@@ -1538,10 +1535,10 @@ static void ReferencesTest2()
 			function,
 			llvm::ArrayRef<llvm::GenericValue>( args, 2 ) );
 
-	U_ASSERT( static_cast<uint64_t>( arg0 * arg1 ) == result_value.IntVal.getLimitedValue() );
+	U_TEST_ASSERT( static_cast<uint64_t>( arg0 * arg1 ) == result_value.IntVal.getLimitedValue() );
 }
 
-static void ReferencesTest3()
+U_TEST(ReferencesTest3)
 {
 	// Reference to reference.
 	static const char c_program_text[]=
@@ -1558,17 +1555,17 @@ static void ReferencesTest3()
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
-	U_ASSERT( function != nullptr );
+	U_TEST_ASSERT( function != nullptr );
 
 	llvm::GenericValue result_value=
 		engine->runFunction(
 			function,
 			llvm::ArrayRef<llvm::GenericValue>() );
 
-	U_ASSERT( static_cast<uint64_t>( 666 ) == result_value.IntVal.getLimitedValue() );
+	U_TEST_ASSERT( static_cast<uint64_t>( 666 ) == result_value.IntVal.getLimitedValue() );
 }
 
-static void ReferencesTest4()
+U_TEST(ReferencesTest4)
 {
 	// Reference to argument.
 	static const char c_program_text[]=
@@ -1583,7 +1580,7 @@ static void ReferencesTest4()
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
-	U_ASSERT( function != nullptr );
+	U_TEST_ASSERT( function != nullptr );
 
 	int arg0= 148;
 
@@ -1595,10 +1592,10 @@ static void ReferencesTest4()
 			function,
 			llvm::ArrayRef<llvm::GenericValue>( args, 1 ) );
 
-	U_ASSERT( static_cast<uint64_t>( arg0 * 564 ) == result_value.IntVal.getLimitedValue() );
+	U_TEST_ASSERT( static_cast<uint64_t>( arg0 * 564 ) == result_value.IntVal.getLimitedValue() );
 }
 
-static void ReferencesTest5()
+U_TEST(ReferencesTest5)
 {
 	// Reference arguments.
 	static const char c_program_text[]=
@@ -1615,7 +1612,7 @@ static void ReferencesTest5()
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
-	U_ASSERT( function != nullptr );
+	U_TEST_ASSERT( function != nullptr );
 
 	int arg0= 148;
 
@@ -1627,10 +1624,10 @@ static void ReferencesTest5()
 			function,
 			llvm::ArrayRef<llvm::GenericValue>( args, 1 ) );
 
-	U_ASSERT( static_cast<uint64_t>( arg0 * 3 * 2 ) == result_value.IntVal.getLimitedValue() );
+	U_TEST_ASSERT( static_cast<uint64_t>( arg0 * 3 * 2 ) == result_value.IntVal.getLimitedValue() );
 }
 
-static void ReferencesTest6()
+U_TEST(ReferencesTest6)
 {
 	// Reference nonconst arguments.
 	static const char c_program_text[]=
@@ -1648,7 +1645,7 @@ static void ReferencesTest6()
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
-	U_ASSERT( function != nullptr );
+	U_TEST_ASSERT( function != nullptr );
 
 	int arg0= 148;
 
@@ -1660,10 +1657,10 @@ static void ReferencesTest6()
 			function,
 			llvm::ArrayRef<llvm::GenericValue>( args, 1 ) );
 
-	U_ASSERT( static_cast<uint64_t>( arg0 * 3 * 2 ) == result_value.IntVal.getLimitedValue() );
+	U_TEST_ASSERT( static_cast<uint64_t>( arg0 * 3 * 2 ) == result_value.IntVal.getLimitedValue() );
 }
 
-static void ReferencesTest7()
+U_TEST(ReferencesTest7)
 {
 	// Reference nonconst argument of class type.
 	static const char c_program_text[]=
@@ -1687,17 +1684,17 @@ static void ReferencesTest7()
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
-	U_ASSERT( function != nullptr );
+	U_TEST_ASSERT( function != nullptr );
 
 	llvm::GenericValue result_value=
 		engine->runFunction(
 			function,
 			llvm::ArrayRef<llvm::GenericValue>() );
 
-	U_ASSERT( static_cast<uint64_t>( 99985 ) == result_value.IntVal.getLimitedValue() );
+	U_TEST_ASSERT( static_cast<uint64_t>( 99985 ) == result_value.IntVal.getLimitedValue() );
 }
 
-static void ReferencesTest8()
+U_TEST(ReferencesTest8)
 {
 	// Reference nonconst argument of array type.
 	static const char c_program_text[]=
@@ -1715,17 +1712,17 @@ static void ReferencesTest8()
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
-	U_ASSERT( function != nullptr );
+	U_TEST_ASSERT( function != nullptr );
 
 	llvm::GenericValue result_value=
 		engine->runFunction(
 			function,
 			llvm::ArrayRef<llvm::GenericValue>() );
 
-	U_ASSERT( static_cast<uint64_t>( 99985 ) == result_value.IntVal.getLimitedValue() );
+	U_TEST_ASSERT( static_cast<uint64_t>( 99985 ) == result_value.IntVal.getLimitedValue() );
 }
 
-static void ReferencesTest9()
+U_TEST(ReferencesTest9)
 {
 	// Return reference.
 	static const char c_program_text[]=
@@ -1744,7 +1741,7 @@ static void ReferencesTest9()
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
-	U_ASSERT( function != nullptr );
+	U_TEST_ASSERT( function != nullptr );
 
 	static const int cases_args[3][2]= { { 7, 567 }, { 48454, 758 }, { 4468, 4468 } };
 	for( unsigned int i= 0u; i < 3u; i++ )
@@ -1758,13 +1755,13 @@ static void ReferencesTest9()
 				function,
 				llvm::ArrayRef<llvm::GenericValue>( args, 2 ) );
 
-		U_ASSERT(
+		U_TEST_ASSERT(
 			static_cast<uint64_t>( std::max( cases_args[i][0], cases_args[i][1] ) ) ==
 			result_value.IntVal.getLimitedValue() );
 	}
 }
 
-static void BindValueToConstReferenceTest0()
+U_TEST(BindValueToConstReferenceTest0)
 {
 	// Bind value-result to const reference parameter.
 	static const char c_program_text[]=
@@ -1780,7 +1777,7 @@ static void BindValueToConstReferenceTest0()
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
-	U_ASSERT( function != nullptr );
+	U_TEST_ASSERT( function != nullptr );
 
 	int arg0= 666;
 
@@ -1792,10 +1789,10 @@ static void BindValueToConstReferenceTest0()
 			function,
 			llvm::ArrayRef<llvm::GenericValue>( args, 1 ) );
 
-	U_ASSERT( static_cast<uint64_t>( arg0 * 3 * 2 ) == result_value.IntVal.getLimitedValue() );
+	U_TEST_ASSERT( static_cast<uint64_t>( arg0 * 3 * 2 ) == result_value.IntVal.getLimitedValue() );
 }
 
-static void FunctionsOverloadingTest0()
+U_TEST(FunctionsOverloadingTest0)
 {
 	// Different parameters count.
 	static const char c_program_text[]=
@@ -1817,7 +1814,7 @@ static void FunctionsOverloadingTest0()
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
-	U_ASSERT( function != nullptr );
+	U_TEST_ASSERT( function != nullptr );
 
 
 	llvm::GenericValue result_value=
@@ -1825,10 +1822,10 @@ static void FunctionsOverloadingTest0()
 			function,
 			llvm::ArrayRef<llvm::GenericValue>());
 
-	U_ASSERT( static_cast<uint64_t>( 42 ) == result_value.IntVal.getLimitedValue() );
+	U_TEST_ASSERT( static_cast<uint64_t>( 42 ) == result_value.IntVal.getLimitedValue() );
 }
 
-static void FunctionsOverloadingTest1()
+U_TEST(FunctionsOverloadingTest1)
 {
 	// Different parameters type.
 	static const char c_program_text[]=
@@ -1849,17 +1846,17 @@ static void FunctionsOverloadingTest1()
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
-	U_ASSERT( function != nullptr );
+	U_TEST_ASSERT( function != nullptr );
 
 	llvm::GenericValue result_value=
 		engine->runFunction(
 			function,
 			llvm::ArrayRef<llvm::GenericValue>());
 
-	U_ASSERT( static_cast<uint64_t>( 42 - 24 ) == result_value.IntVal.getLimitedValue() );
+	U_TEST_ASSERT( static_cast<uint64_t>( 42 - 24 ) == result_value.IntVal.getLimitedValue() );
 }
 
-static void FunctionsOverloadingTest2()
+U_TEST(FunctionsOverloadingTest2)
 {
 	// Different parameters type and const-reference.
 	static const char c_program_text[]=
@@ -1880,17 +1877,17 @@ static void FunctionsOverloadingTest2()
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
-	U_ASSERT( function != nullptr );
+	U_TEST_ASSERT( function != nullptr );
 
 	llvm::GenericValue result_value=
 		engine->runFunction(
 			function,
 			llvm::ArrayRef<llvm::GenericValue>());
 
-	U_ASSERT( static_cast<uint64_t>( 42 - 24 ) == result_value.IntVal.getLimitedValue() );
+	U_TEST_ASSERT( static_cast<uint64_t>( 42 - 24 ) == result_value.IntVal.getLimitedValue() );
 }
 
-static void FunctionsOverloadingTest3()
+U_TEST(FunctionsOverloadingTest3)
 {
 	// Different parameters type and const-reference for one of parameters.
 	static const char c_program_text[]=
@@ -1911,71 +1908,14 @@ static void FunctionsOverloadingTest3()
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
-	U_ASSERT( function != nullptr );
+	U_TEST_ASSERT( function != nullptr );
 
 	llvm::GenericValue result_value=
 		engine->runFunction(
 			function,
 			llvm::ArrayRef<llvm::GenericValue>());
 
-	U_ASSERT( static_cast<uint64_t>( 42 - 24 ) == result_value.IntVal.getLimitedValue() );
-}
-
-void RunCodeBuilderTests()
-{
-	SimpleProgramTest();
-	ArgumentsAssignmentTest();
-	BasicBinaryOperationsTest();
-	BasicBinaryOperationsFloatTest();
-	VariablesTest0();
-	VariablesTest1();
-	NumericConstantsTest0();
-	NumericConstantsTest1();
-	NumericConstantsTest2();
-	UnaryMinusTest();
-	UnaryMinusFloatTest();
-	ArraysTest0();
-	ArraysTest1();
-	LogicalBinaryOperationsTest();
-	BooleanBasicTest();
-	CallTest0();
-	CallTest1();
-	RecursiveCallTest();
-	EqualityOperatorsTest();
-	EqualityFloatOperatorsTest();
-	ComparisonSignedOperatorsTest();
-	ComparisonUnsignedOperatorsTest();
-	ComparisonFloatOperatorsTest();
-	WhileOperatorTest();
-	IfOperatorTest0();
-	IfOperatorTest1();
-	IfOperatorTest2();
-	IfOperatorTest3();
-	IfOperatorTest4();
-	IfOperatorTest5();
-	BreakOperatorTest0();
-	BreakOperatorTest1();
-	BreakOperatorTest2();
-	ContinueOperatorTest0();
-	ContinueOperatorTest1();
-	StructTest0();
-	StructTest1();
-	BlocksTest();
-	ReferencesTest0();
-	ReferencesTest1();
-	ReferencesTest2();
-	ReferencesTest3();
-	ReferencesTest4();
-	ReferencesTest5();
-	ReferencesTest6();
-	ReferencesTest7();
-	ReferencesTest8();
-	ReferencesTest9();
-	BindValueToConstReferenceTest0();
-	FunctionsOverloadingTest0();
-	FunctionsOverloadingTest1();
-	FunctionsOverloadingTest2();
-	FunctionsOverloadingTest3();
+	U_TEST_ASSERT( static_cast<uint64_t>( 42 - 24 ) == result_value.IntVal.getLimitedValue() );
 }
 
 } // namespace U

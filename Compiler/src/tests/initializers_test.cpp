@@ -1,15 +1,12 @@
 #include <cstdlib>
 #include <iostream>
 
-#include "../assert.hpp"
 #include "tests.hpp"
-
-#include "initializers_test.hpp"
 
 namespace U
 {
 
-static void ExpressionInitializerTest0()
+U_TEST(ExpressionInitializerTest0)
 {
 	// Expression initializer for integers
 	static const char c_program_text[]=
@@ -24,17 +21,17 @@ static void ExpressionInitializerTest0()
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
-	U_ASSERT( function != nullptr );
+	U_TEST_ASSERT( function != nullptr );
 
 	llvm::GenericValue result_value=
 		engine->runFunction(
 			function,
 			llvm::ArrayRef<llvm::GenericValue>() );
 
-	U_ASSERT( static_cast<uint64_t>( 2017 ) == result_value.IntVal.getLimitedValue() );
+	U_TEST_ASSERT( static_cast<uint64_t>( 2017 ) == result_value.IntVal.getLimitedValue() );
 }
 
-static void ExpressionInitializerTest1()
+U_TEST(ExpressionInitializerTest1)
 {
 	// Expression initializer for floats
 	static const char c_program_text[]=
@@ -49,17 +46,17 @@ static void ExpressionInitializerTest1()
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
-	U_ASSERT( function != nullptr );
+	U_TEST_ASSERT( function != nullptr );
 
 	llvm::GenericValue result_value=
 		engine->runFunction(
 			function,
 			llvm::ArrayRef<llvm::GenericValue>() );
 
-	U_ASSERT( 2017.52 == result_value.DoubleVal );
+	U_TEST_ASSERT( 2017.52 == result_value.DoubleVal );
 }
 
-static void ExpressionInitializerTest2()
+U_TEST(ExpressionInitializerTest2)
 {
 	// Expression initializer for references
 	static const char c_program_text[]=
@@ -75,17 +72,17 @@ static void ExpressionInitializerTest2()
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
-	U_ASSERT( function != nullptr );
+	U_TEST_ASSERT( function != nullptr );
 
 	llvm::GenericValue result_value=
 		engine->runFunction(
 			function,
 			llvm::ArrayRef<llvm::GenericValue>() );
 
-	U_ASSERT( 2017.52 == result_value.DoubleVal );
+	U_TEST_ASSERT( 2017.52 == result_value.DoubleVal );
 }
 
-static void ConstructorInitializerForFundamentalTypesTest0()
+U_TEST(ConstructorInitializerForFundamentalTypesTest0)
 {
 	// Constructor initializer for integers
 	static const char c_program_text[]=
@@ -100,17 +97,17 @@ static void ConstructorInitializerForFundamentalTypesTest0()
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
-	U_ASSERT( function != nullptr );
+	U_TEST_ASSERT( function != nullptr );
 
 	llvm::GenericValue result_value=
 		engine->runFunction(
 			function,
 			llvm::ArrayRef<llvm::GenericValue>() );
 
-	U_ASSERT( static_cast<uint64_t>( 2017 ) == result_value.IntVal.getLimitedValue() );
+	U_TEST_ASSERT( static_cast<uint64_t>( 2017 ) == result_value.IntVal.getLimitedValue() );
 }
 
-static void ConstructorInitializerForFundamentalTypesTest1()
+U_TEST(ConstructorInitializerForFundamentalTypesTest1)
 {
 	// Constructor initializer for floats
 	static const char c_program_text[]=
@@ -125,17 +122,17 @@ static void ConstructorInitializerForFundamentalTypesTest1()
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
-	U_ASSERT( function != nullptr );
+	U_TEST_ASSERT( function != nullptr );
 
 	llvm::GenericValue result_value=
 		engine->runFunction(
 			function,
 			llvm::ArrayRef<llvm::GenericValue>() );
 
-	U_ASSERT( 2017.52 == result_value.DoubleVal );
+	U_TEST_ASSERT( 2017.52 == result_value.DoubleVal );
 }
 
-static void ConstructorInitializerForReferencesTest0()
+U_TEST(ConstructorInitializerForReferencesTest0)
 {
 	// Constructor initializer for floats
 	static const char c_program_text[]=
@@ -151,17 +148,17 @@ static void ConstructorInitializerForReferencesTest0()
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
-	U_ASSERT( function != nullptr );
+	U_TEST_ASSERT( function != nullptr );
 
 	llvm::GenericValue result_value=
 		engine->runFunction(
 			function,
 			llvm::ArrayRef<llvm::GenericValue>() );
 
-	U_ASSERT( 2017.52 == result_value.DoubleVal );
+	U_TEST_ASSERT( 2017.52 == result_value.DoubleVal );
 }
 
-static void ArrayInitializerForFundamentalTypesTest0()
+U_TEST(ArrayInitializerForFundamentalTypesTest0)
 {
 	static const char c_program_text[]=
 	R"(
@@ -175,17 +172,17 @@ static void ArrayInitializerForFundamentalTypesTest0()
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
-	U_ASSERT( function != nullptr );
+	U_TEST_ASSERT( function != nullptr );
 
 	llvm::GenericValue result_value=
 		engine->runFunction(
 			function,
 			llvm::ArrayRef<llvm::GenericValue>() );
 
-	U_ASSERT( static_cast<uint64_t>( 42 * 34 - 785 ) == result_value.IntVal.getLimitedValue() );
+	U_TEST_ASSERT( static_cast<uint64_t>( 42 * 34 - 785 ) == result_value.IntVal.getLimitedValue() );
 }
 
-static void ArrayInitializerForFundamentalTypesTest1()
+U_TEST(ArrayInitializerForFundamentalTypesTest1)
 {
 	// Array initializer with comma at end must works correctly
 	static const char c_program_text[]=
@@ -200,17 +197,17 @@ static void ArrayInitializerForFundamentalTypesTest1()
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
-	U_ASSERT( function != nullptr );
+	U_TEST_ASSERT( function != nullptr );
 
 	llvm::GenericValue result_value=
 		engine->runFunction(
 			function,
 			llvm::ArrayRef<llvm::GenericValue>() );
 
-	U_ASSERT( 42.5f * 34.0f - 785.7f == result_value.FloatVal );
+	U_TEST_ASSERT( 42.5f * 34.0f - 785.7f == result_value.FloatVal );
 }
 
-static void TwodimensionalArrayInitializerTest0()
+U_TEST(TwodimensionalArrayInitializerTest0)
 {
 	static const char c_program_text[]=
 	R"(
@@ -232,19 +229,19 @@ static void TwodimensionalArrayInitializerTest0()
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
-	U_ASSERT( function != nullptr );
+	U_TEST_ASSERT( function != nullptr );
 
 	llvm::GenericValue result_value=
 		engine->runFunction(
 			function,
 			llvm::ArrayRef<llvm::GenericValue>() );
 
-	U_ASSERT(
+	U_TEST_ASSERT(
 		static_cast<uint64_t>( (175) + (-8 * 5) + (95684) + (48) + (-14) * (2 + 2 * 2 ) ) ==
 		result_value.IntVal.getLimitedValue() );
 }
 
-static void StructNamedInitializersTest0()
+U_TEST(StructNamedInitializersTest0)
 {
 	static const char c_program_text[]=
 	R"(
@@ -259,17 +256,17 @@ static void StructNamedInitializersTest0()
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
-	U_ASSERT( function != nullptr );
+	U_TEST_ASSERT( function != nullptr );
 
 	llvm::GenericValue result_value=
 		engine->runFunction(
 			function,
 			llvm::ArrayRef<llvm::GenericValue>() );
 
-	U_ASSERT( static_cast<uint64_t>( 5877 / 13 ) == result_value.IntVal.getLimitedValue() );
+	U_TEST_ASSERT( static_cast<uint64_t>( 5877 / 13 ) == result_value.IntVal.getLimitedValue() );
 }
 
-static void StructNamedInitializersTest1()
+U_TEST(StructNamedInitializersTest1)
 {
 	// Members may be initialized in any order.
 	static const char c_program_text[]=
@@ -289,17 +286,17 @@ static void StructNamedInitializersTest1()
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
-	U_ASSERT( function != nullptr );
+	U_TEST_ASSERT( function != nullptr );
 
 	llvm::GenericValue result_value=
 		engine->runFunction(
 			function,
 			llvm::ArrayRef<llvm::GenericValue>() );
 
-	U_ASSERT( static_cast<uint64_t>( 5877 / 13 ) == result_value.IntVal.getLimitedValue() );
+	U_TEST_ASSERT( static_cast<uint64_t>( 5877 / 13 ) == result_value.IntVal.getLimitedValue() );
 }
 
-static void StructNamedInitializersTest2()
+U_TEST(StructNamedInitializersTest2)
 {
 	// Struct inside struct.
 	static const char c_program_text[]=
@@ -326,17 +323,17 @@ static void StructNamedInitializersTest2()
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
-	U_ASSERT( function != nullptr );
+	U_TEST_ASSERT( function != nullptr );
 
 	llvm::GenericValue result_value=
 		engine->runFunction(
 			function,
 			llvm::ArrayRef<llvm::GenericValue>() );
 
-	U_ASSERT( ( -5.4 + 548.7 / 14.2 ) == result_value.DoubleVal );
+	U_TEST_ASSERT( ( -5.4 + 548.7 / 14.2 ) == result_value.DoubleVal );
 }
 
-static void StructNamedInitializersTest3()
+U_TEST(StructNamedInitializersTest3)
 {
 	// Array inside struct inside array inside struct.
 	static const char c_program_text[]=
@@ -365,19 +362,19 @@ static void StructNamedInitializersTest3()
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
-	U_ASSERT( function != nullptr );
+	U_TEST_ASSERT( function != nullptr );
 
 	llvm::GenericValue result_value=
 		engine->runFunction(
 			function,
 			llvm::ArrayRef<llvm::GenericValue>() );
 
-	U_ASSERT(
+	U_TEST_ASSERT(
 		static_cast<uint64_t>( (5) * (-7) + (874) / 81 + 458 - 24 ) ==
 		result_value.IntVal.getLimitedValue() );
 }
 
-static void ZeroInitilaizerTest0()
+U_TEST(ZeroInitilaizerTest0)
 {
 	// Zero-initialzier for int.
 	static const char c_program_text[]=
@@ -392,17 +389,17 @@ static void ZeroInitilaizerTest0()
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
-	U_ASSERT( function != nullptr );
+	U_TEST_ASSERT( function != nullptr );
 
 	llvm::GenericValue result_value=
 		engine->runFunction(
 			function,
 			llvm::ArrayRef<llvm::GenericValue>() );
 
-	U_ASSERT( 0 == result_value.IntVal.getLimitedValue() );
+	U_TEST_ASSERT( 0 == result_value.IntVal.getLimitedValue() );
 }
 
-static void ZeroInitilaizerTest1()
+U_TEST(ZeroInitilaizerTest1)
 {
 	// Zero-initialzier for float.
 	static const char c_program_text[]=
@@ -417,17 +414,17 @@ static void ZeroInitilaizerTest1()
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
-	U_ASSERT( function != nullptr );
+	U_TEST_ASSERT( function != nullptr );
 
 	llvm::GenericValue result_value=
 		engine->runFunction(
 			function,
 			llvm::ArrayRef<llvm::GenericValue>() );
 
-	U_ASSERT( 0.0f == result_value.FloatVal );
+	U_TEST_ASSERT( 0.0f == result_value.FloatVal );
 }
 
-static void ZeroInitilaizerTest2()
+U_TEST(ZeroInitilaizerTest2)
 {
 	// Zero-initialzier for double.
 	static const char c_program_text[]=
@@ -442,17 +439,17 @@ static void ZeroInitilaizerTest2()
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
-	U_ASSERT( function != nullptr );
+	U_TEST_ASSERT( function != nullptr );
 
 	llvm::GenericValue result_value=
 		engine->runFunction(
 			function,
 			llvm::ArrayRef<llvm::GenericValue>() );
 
-	U_ASSERT( 0.0 == result_value.DoubleVal );
+	U_TEST_ASSERT( 0.0 == result_value.DoubleVal );
 }
 
-static void ZeroInitilaizerTest3()
+U_TEST(ZeroInitilaizerTest3)
 {
 	// Zero-initialzier for bool.
 	static const char c_program_text[]=
@@ -467,17 +464,17 @@ static void ZeroInitilaizerTest3()
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
-	U_ASSERT( function != nullptr );
+	U_TEST_ASSERT( function != nullptr );
 
 	llvm::GenericValue result_value=
 		engine->runFunction(
 			function,
 			llvm::ArrayRef<llvm::GenericValue>() );
 
-	U_ASSERT( 0 == result_value.IntVal.getLimitedValue() );
+	U_TEST_ASSERT( 0 == result_value.IntVal.getLimitedValue() );
 }
 
-static void ZeroInitilaizerTest4()
+U_TEST(ZeroInitilaizerTest4)
 {
 	// Zero-initialzier for int array.
 	static const char c_program_text[]=
@@ -492,17 +489,17 @@ static void ZeroInitilaizerTest4()
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
-	U_ASSERT( function != nullptr );
+	U_TEST_ASSERT( function != nullptr );
 
 	llvm::GenericValue result_value=
 		engine->runFunction(
 			function,
 			llvm::ArrayRef<llvm::GenericValue>() );
 
-	U_ASSERT( 0 == result_value.IntVal.getLimitedValue() );
+	U_TEST_ASSERT( 0 == result_value.IntVal.getLimitedValue() );
 }
 
-static void ZeroInitilaizerTest5()
+U_TEST(ZeroInitilaizerTest5)
 {
 	// Zero-initialzier for struct.
 	static const char c_program_text[]=
@@ -518,17 +515,17 @@ static void ZeroInitilaizerTest5()
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
-	U_ASSERT( function != nullptr );
+	U_TEST_ASSERT( function != nullptr );
 
 	llvm::GenericValue result_value=
 		engine->runFunction(
 			function,
 			llvm::ArrayRef<llvm::GenericValue>() );
 
-	U_ASSERT( 0.0f == result_value.FloatVal );
+	U_TEST_ASSERT( 0.0f == result_value.FloatVal );
 }
 
-static void ZeroInitilaizerTest6()
+U_TEST(ZeroInitilaizerTest6)
 {
 	// Zero-initialzier for struct member.
 	static const char c_program_text[]=
@@ -544,17 +541,17 @@ static void ZeroInitilaizerTest6()
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
-	U_ASSERT( function != nullptr );
+	U_TEST_ASSERT( function != nullptr );
 
 	llvm::GenericValue result_value=
 		engine->runFunction(
 			function,
 			llvm::ArrayRef<llvm::GenericValue>() );
 
-	U_ASSERT( 0.0f == result_value.FloatVal );
+	U_TEST_ASSERT( 0.0f == result_value.FloatVal );
 }
 
-static void ZeroInitilaizerTest7()
+U_TEST(ZeroInitilaizerTest7)
 {
 	// Zero-initialzier for array member.
 	static const char c_program_text[]=
@@ -569,18 +566,18 @@ static void ZeroInitilaizerTest7()
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
-	U_ASSERT( function != nullptr );
+	U_TEST_ASSERT( function != nullptr );
 
 	llvm::GenericValue result_value=
 		engine->runFunction(
 			function,
 			llvm::ArrayRef<llvm::GenericValue>() );
 
-	U_ASSERT( 0 == result_value.IntVal.getLimitedValue() );
+	U_TEST_ASSERT( 0 == result_value.IntVal.getLimitedValue() );
 }
 
 
-static void ZeroInitilaizerTest8()
+U_TEST(ZeroInitilaizerTest8)
 {
 	// Zero-initialzier for very-large array.
 	static const char c_program_text[]=
@@ -602,40 +599,14 @@ static void ZeroInitilaizerTest8()
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
-	U_ASSERT( function != nullptr );
+	U_TEST_ASSERT( function != nullptr );
 
 	llvm::GenericValue result_value=
 		engine->runFunction(
 			function,
 			llvm::ArrayRef<llvm::GenericValue>() );
 
-	U_ASSERT( 0 == result_value.IntVal.getLimitedValue() );
-}
-
-void RunInitializersTest()
-{
-	ExpressionInitializerTest0();
-	ExpressionInitializerTest1();
-	ExpressionInitializerTest2();
-	ConstructorInitializerForFundamentalTypesTest0();
-	ConstructorInitializerForFundamentalTypesTest1();
-	ConstructorInitializerForReferencesTest0();
-	ArrayInitializerForFundamentalTypesTest0();
-	ArrayInitializerForFundamentalTypesTest1();
-	TwodimensionalArrayInitializerTest0();
-	StructNamedInitializersTest0();
-	StructNamedInitializersTest1();
-	StructNamedInitializersTest2();
-	StructNamedInitializersTest3();
-	ZeroInitilaizerTest0();
-	ZeroInitilaizerTest1();
-	ZeroInitilaizerTest2();
-	ZeroInitilaizerTest3();
-	ZeroInitilaizerTest4();
-	ZeroInitilaizerTest5();
-	ZeroInitilaizerTest6();
-	ZeroInitilaizerTest7();
-	ZeroInitilaizerTest8();
+	U_TEST_ASSERT( 0 == result_value.IntVal.getLimitedValue() );
 }
 
 } // namespace U

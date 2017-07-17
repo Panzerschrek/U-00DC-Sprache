@@ -21,11 +21,4 @@ SOURCES += \
 	src/tests/tests.cpp \
 
 HEADERS += \
-	src/tests/auto_variables_test.hpp \
-	src/tests/auto_variables_errors_test.hpp \
-	src/tests/code_builder_errors_test.hpp \
-	src/tests/code_builder_test.hpp \
-	src/tests/initializers_errors_test.hpp \
-	src/tests/initializers_test.hpp \
-	src/tests/inverse_polish_notation_test.hpp \
 	src/tests/tests.hpp \
