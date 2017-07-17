@@ -147,6 +147,7 @@ SyntaxAnalysisResult SyntaxAnalyzer::DoAnalyzis( const Lexems& lexems )
 		++it_;
 	}
 
+	result.error_messages.swap( error_messages_ );
 	return result;
 }
 
