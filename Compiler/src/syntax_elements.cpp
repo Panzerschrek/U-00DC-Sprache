@@ -110,36 +110,36 @@ IUnaryPostfixOperatorPtr IndexationOperator::Clone() const
 			new IndexationOperator( file_pos_, std::move( index_copy ) ) );
 }
 
-void PrintOperator( std::ostream& stream, BinaryOperator op )
+ProgramString BinaryOperatorToString( const BinaryOperator op )
 {
 	const char* op_str= "";
 	switch( op )
 	{
 		case BinaryOperator::None: op_str= ""; break;
 
-		case BinaryOperator::Add: op_str= " + "; break;
-		case BinaryOperator::Sub: op_str= " - "; break;
-		case BinaryOperator::Mul: op_str= " * "; break;
-		case BinaryOperator::Div: op_str= " / "; break;
+		case BinaryOperator::Add: op_str= "+"; break;
+		case BinaryOperator::Sub: op_str= "-"; break;
+		case BinaryOperator::Mul: op_str= "*"; break;
+		case BinaryOperator::Div: op_str= "/"; break;
 
-		case BinaryOperator::Equal: op_str= " == "; break;
-		case BinaryOperator::NotEqual: op_str= " != "; break;
-		case BinaryOperator::Less: op_str= " < "; break;
-		case BinaryOperator::LessEqual: op_str= " <= "; break;
-		case BinaryOperator::Greater: op_str= " > "; break;
-		case BinaryOperator::GreaterEqual: op_str= " >= "; break;
+		case BinaryOperator::Equal: op_str= "=="; break;
+		case BinaryOperator::NotEqual: op_str= "!="; break;
+		case BinaryOperator::Less: op_str= "<"; break;
+		case BinaryOperator::LessEqual: op_str= "<="; break;
+		case BinaryOperator::Greater: op_str= ">"; break;
+		case BinaryOperator::GreaterEqual: op_str= ">="; break;
 
-		case BinaryOperator::And: op_str= " & "; break;
-		case BinaryOperator::Or: op_str= " | "; break;
-		case BinaryOperator::Xor: op_str= " ^ "; break;
+		case BinaryOperator::And: op_str= "&"; break;
+		case BinaryOperator::Or: op_str= "|"; break;
+		case BinaryOperator::Xor: op_str= "^"; break;
 
-		case BinaryOperator::LazyLogicalAnd: op_str= " && "; break;
-		case BinaryOperator::LazyLogicalOr: op_str= " || "; break;
+		case BinaryOperator::LazyLogicalAnd: op_str= "&&"; break;
+		case BinaryOperator::LazyLogicalOr: op_str= "||"; break;
 
 		case BinaryOperator::Last: U_ASSERT(false); break;
 	};
 
-	stream << op_str;
+	return ToProgramString( op_str );
 }
 
 void IndexationOperator::Print( std::ostream& stream, unsigned int indent ) const
@@ -362,7 +362,8 @@ void BinaryOperatorsChain::Print( std::ostream& stream, unsigned int indent ) co
 		for( const IUnaryPostfixOperatorPtr& postfix_operator : comp.postfix_operators )
 			postfix_operator->Print( stream, indent );
 
-		PrintOperator( stream, comp.op );
+		if( comp.op != BinaryOperator::None )
+			stream << " " << ToStdString(BinaryOperatorToString( comp.op )) << " ";
 	}
 }
 

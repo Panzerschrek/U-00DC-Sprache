@@ -527,6 +527,50 @@ U_TEST(TypesMismatchTest5)
 	U_TEST_ASSERT( error.file_pos.line == 5u );
 }
 
+U_TEST(NoMatchBinaryOperatorForGivenTypesTest0)
+{
+	// Add for array and int.
+	static const char c_program_text[]=
+	R"(
+		fn Foo()
+		{
+			var i32 x= 0;
+			var [ i32, 4 ] y= zero_init;
+			x + y;
+		}
+	)";
+
+	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NoMatchBinaryOperatorForGivenTypes );
+	U_TEST_ASSERT( error.file_pos.line == 6u );
+}
+
+U_TEST(NoMatchBinaryOperatorForGivenTypesTest1)
+{
+	// Add for structs.
+	static const char c_program_text[]=
+	R"(
+		fn Foo()
+		{
+			var i32 x= 0;
+			var [ i32, 4 ] y= zero_init;
+			x + y;
+		}
+	)";
+
+	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NoMatchBinaryOperatorForGivenTypes );
+	U_TEST_ASSERT( error.file_pos.line == 6u );
+}
+
 U_TEST(FunctionSignatureMismatchTest0)
 {
 	// Argument count mismatch.

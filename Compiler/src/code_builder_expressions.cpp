@@ -151,7 +151,7 @@ Variable CodeBuilder::BuildBinaryOperator(
 	// SPRACHE_-TODO - add cast for some integers here.
 	if( r_var.type != l_var.type )
 	{
-		// TODO - report types mismatch.
+		errors_.push_back( ReportNoMatchBinaryOperatorForGivenTypes( file_pos, r_var.type.ToString(), l_var.type.ToString(), BinaryOperatorToString( binary_operator ) ) );
 		throw ProgramError();
 	}
 

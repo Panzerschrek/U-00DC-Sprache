@@ -142,7 +142,7 @@ enum class BinaryOperator
 	Last,
 };
 
-void PrintOperator( std::ostream& stream, BinaryOperator op );
+ProgramString BinaryOperatorToString( BinaryOperator op );
 
 class IBinaryOperatorsChainComponent;
 typedef std::unique_ptr<IBinaryOperatorsChainComponent> IBinaryOperatorsChainComponentPtr;

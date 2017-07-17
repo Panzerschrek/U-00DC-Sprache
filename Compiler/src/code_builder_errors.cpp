@@ -94,6 +94,22 @@ CodeBuilderError ReportTypesMismatch(
 	return error;
 }
 
+CodeBuilderError ReportNoMatchBinaryOperatorForGivenTypes(
+	const FilePos& file_pos,
+	const ProgramString& type_l_name, const ProgramString& type_r_name,
+	const ProgramString& binary_operator )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::NoMatchBinaryOperatorForGivenTypes;
+
+	error.text=
+		"No match operator \""_SpC + binary_operator + "\" for types \""_SpC +
+		type_l_name + "\" and \""_SpC + type_r_name + "\"."_SpC;
+
+	return error;
+}
+
 CodeBuilderError ReportFunctionSignatureMismatch( const FilePos& file_pos )
 {
 	CodeBuilderError error;

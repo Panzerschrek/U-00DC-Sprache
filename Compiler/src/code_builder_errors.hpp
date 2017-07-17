@@ -19,6 +19,7 @@ enum class CodeBuilderErrorCode : unsigned int
 	UnknownNumericConstantType,
 	OperationNotSupportedForThisType,
 	TypesMismatch,
+	NoMatchBinaryOperatorForGivenTypes,
 	FunctionSignatureMismatch,
 	NotImplemented,
 	ArraySizeIsNegative,
@@ -67,6 +68,7 @@ CodeBuilderError ReportRedefinition( const FilePos& file_pos, const ProgramStrin
 CodeBuilderError ReportUnknownNumericConstantType( const FilePos& file_pos, const ProgramString& unknown_type );
 CodeBuilderError ReportOperationNotSupportedForThisType( const FilePos& file_pos, const ProgramString& type_name );
 CodeBuilderError ReportTypesMismatch( const FilePos& file_pos, const ProgramString& expected_type_name, const ProgramString& actual_type_name );
+CodeBuilderError ReportNoMatchBinaryOperatorForGivenTypes( const FilePos& file_pos, const ProgramString& type_l_name, const ProgramString& type_r_name, const ProgramString& binary_operator );
 CodeBuilderError ReportFunctionSignatureMismatch( const FilePos& file_pos );
 CodeBuilderError ReportNotImplemented( const FilePos& file_pos, const char* what );
 CodeBuilderError ReportArraySizeIsNegative( const FilePos& file_pos );

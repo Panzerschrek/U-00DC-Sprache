@@ -39,7 +39,7 @@ void InversePolishNotationComponent::Print( std::ostream& stream ) const
 	if( operand )
 		operand->Print( stream, 0 );
 	else
-		PrintOperator( stream, operator_ );
+		stream << ToStdString(BinaryOperatorToString( operator_ ));
 }
 
 static void SetupTreeIndeces_r(
