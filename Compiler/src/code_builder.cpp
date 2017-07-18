@@ -163,7 +163,7 @@ CodeBuilder::BuildResult CodeBuilder::BuildProgram( const ProgramElements& progr
 					boost::get<OverloadedFunctionsSet>( inserted_func->second ).front(),
 					func->name_,
 					func->arguments_,
-					*func->block_ );
+					func->block_.get() );
 			}
 			else
 			{
@@ -171,19 +171,39 @@ CodeBuilder::BuildResult CodeBuilder::BuildProgram( const ProgramElements& progr
 				if( OverloadedFunctionsSet* const functions_set=
 					boost::get<OverloadedFunctionsSet>( &named_something ) )
 				{
-					try
+					if( Variable* const same_function=
+						GetFunctionWithExactType(
+							*boost::get<FunctionPtr>( func_info.type.one_of_type_kind ),
+							*functions_set ) )
 					{
-						ApplyOverloadedFunction( *functions_set, func_info, func->file_pos_ );
-					} catch( const ProgramError& )
+						if( same_function->have_body )
+						{
+							// TODO - error "function already have a body"
+							continue;
+						}
+						if( func->block_ == nullptr )
+						{
+							// TODO - error "prototype duplication is forbidden"
+							continue;
+						}
+					}
+					else
 					{
-						continue;
+						try
+						{
+							ApplyOverloadedFunction( *functions_set, func_info, func->file_pos_ );
+						}
+						catch( const ProgramError& )
+						{
+							continue;
+						}
 					}
 
 					BuildFuncCode(
 						functions_set->back(),
 						func->name_,
 						func->arguments_,
-						*func->block_ );
+						func->block_.get() );
 				}
 				else
 					errors_.push_back( ReportRedefinition( func->file_pos_, func_name->first ) );
@@ -347,7 +367,7 @@ void CodeBuilder::BuildFuncCode(
 	Variable& func_variable,
 	const ProgramString& func_name,
 	const FunctionArgumentsDeclaration& args,
-	const Block& block ) noexcept
+	const Block* const block ) noexcept
 {
 	std::vector<llvm::Type*> args_llvm_types;
 	const FunctionPtr& function_type_ptr= boost::get<FunctionPtr>( func_variable.type.one_of_type_kind );
@@ -370,12 +390,29 @@ void CodeBuilder::BuildFuncCode(
 			llvm::ArrayRef<llvm::Type*>( args_llvm_types.data(), args_llvm_types.size() ),
 			false );
 
-	llvm::Function* llvm_function=
-		llvm::Function::Create(
-			function_type_ptr->llvm_function_type,
-			llvm::Function::LinkageTypes::ExternalLinkage, // TODO - select linkage
-			ToStdString( func_name ),
-			module_.get() );
+	llvm::Function* llvm_function;
+	if( func_variable.llvm_value == nullptr )
+	{
+		llvm_function=
+			llvm::Function::Create(
+				function_type_ptr->llvm_function_type,
+				llvm::Function::LinkageTypes::ExternalLinkage, // TODO - select linkage
+				ToStdString( func_name ),
+				module_.get() );
+
+		func_variable.llvm_value= llvm_function;
+	}
+	else
+		llvm_function= llvm::dyn_cast<llvm::Function>( func_variable.llvm_value );
+
+	if( block == nullptr )
+	{
+		// This is only prototype, then, function preparing work is done.
+		func_variable.have_body= false;
+		return;
+	}
+
+	func_variable.have_body= true;
 
 	NamesScope function_names( &global_names_ );
 	FunctionContext function_context(
@@ -430,10 +467,8 @@ void CodeBuilder::BuildFuncCode(
 		++arg_number;
 	}
 
-	func_variable.llvm_value= llvm_function;
-
 	const BlockBuildInfo block_build_info=
-		BuildBlockCode( block, function_names, function_context );
+		BuildBlockCode( *block, function_names, function_context );
 
 	Type void_type;
 	void_type.one_of_type_kind= FundamentalType( U_FundamentalType::Void, fundamental_llvm_types_.void_ );
@@ -448,7 +483,7 @@ void CodeBuilder::BuildFuncCode(
 	{
 		if( !block_build_info.have_unconditional_return_inside )
 		{
-			errors_.push_back( ReportNoReturnInFunctionReturningNonVoid( block.file_pos_ ) );
+			errors_.push_back( ReportNoReturnInFunctionReturningNonVoid( block->file_pos_ ) );
 			return;
 		}
 	}
@@ -1079,6 +1114,36 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildIfOperatorCode(
 	if_operator_blocks_build_info.have_unconditional_return_inside= have_return_in_all_branches;
 	if_operator_blocks_build_info.have_uncodnitional_break_or_continue= have_break_or_continue_in_all_branches;
 	return if_operator_blocks_build_info;
+}
+
+Variable* CodeBuilder::GetFunctionWithExactType(
+	const Function& function_type,
+	OverloadedFunctionsSet& functions_set )
+{
+	for( Variable& function_varaible : functions_set )
+	{
+		const FunctionPtr& set_function_type_ptr= boost::get<FunctionPtr>( function_varaible.type.one_of_type_kind ); // Must be function type 100 %
+		U_ASSERT(set_function_type_ptr);
+		const Function& set_function_type= *set_function_type_ptr;
+
+		if( set_function_type.args.size() != function_type.args.size() )
+			continue;
+
+		bool is_equal= true;
+		for( size_t i= 0u; i < function_type.args.size(); ++i )
+		{
+			if( function_type.args[i] != set_function_type.args[i] )
+			{
+				is_equal= false;
+				break;
+			}
+		}
+
+		if( is_equal )
+			return &function_varaible;
+	}
+
+	return nullptr;
 }
 
 void CodeBuilder::ApplyOverloadedFunction(

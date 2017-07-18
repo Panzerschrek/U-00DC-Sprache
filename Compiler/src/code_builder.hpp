@@ -72,7 +72,7 @@ private:
 		Variable& func,
 		const ProgramString& func_name,
 		const FunctionArgumentsDeclaration& args,
-		const Block& block ) noexcept;
+		const Block* block ) noexcept;
 
 	BlockBuildInfo BuildBlockCode(
 		const Block& block,
@@ -164,6 +164,13 @@ private:
 		const IfOperator& if_operator,
 		const NamesScope& names,
 		FunctionContext& function_context );
+
+	// Functions
+
+	// Returns true, if there asre no functions in set with type, exactly equal to given.s
+	Variable* GetFunctionWithExactType(
+		const Function& function_type,
+		OverloadedFunctionsSet& functions_set );
 
 	// Throws, if can not apply function.
 	void ApplyOverloadedFunction(

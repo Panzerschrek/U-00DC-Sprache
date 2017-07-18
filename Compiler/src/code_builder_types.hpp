@@ -153,6 +153,7 @@ struct Variable final
 	Location location= Location::Pointer;
 	ValueType value_type= ValueType::ConstReference;
 	Type type;
+	bool have_body= true; // For functions and their prototypes
 
 	llvm::Value* llvm_value= nullptr;
 
