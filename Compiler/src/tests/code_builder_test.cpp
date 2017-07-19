@@ -1942,7 +1942,7 @@ U_TEST(FunctionPrototypeTest0)
 		}
 	)";
 
-	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ), true );
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
 	U_TEST_ASSERT( function != nullptr );
 

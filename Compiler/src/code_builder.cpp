@@ -176,16 +176,22 @@ CodeBuilder::BuildResult CodeBuilder::BuildProgram( const ProgramElements& progr
 							*boost::get<FunctionPtr>( func_info.type.one_of_type_kind ),
 							*functions_set ) )
 					{
-						if( same_function->have_body )
-						{
-							// TODO - error "function already have a body"
-							continue;
-						}
 						if( func->block_ == nullptr )
 						{
-							// TODO - error "prototype duplication is forbidden"
+							errors_.push_back( ReportFunctionPrototypeDuplication( func->file_pos_, func->name_ ) );
 							continue;
 						}
+						if( same_function->have_body )
+						{
+							errors_.push_back( ReportFunctionBodyDuplication( func->file_pos_, func->name_ ) );
+							continue;
+						}
+
+						BuildFuncCode(
+							*same_function,
+							func->name_,
+							func->arguments_,
+							func->block_.get() );
 					}
 					else
 					{
@@ -197,13 +203,13 @@ CodeBuilder::BuildResult CodeBuilder::BuildProgram( const ProgramElements& progr
 						{
 							continue;
 						}
-					}
 
-					BuildFuncCode(
-						functions_set->back(),
-						func->name_,
-						func->arguments_,
-						func->block_.get() );
+						BuildFuncCode(
+							functions_set->back(),
+							func->name_,
+							func->arguments_,
+							func->block_.get() );
+					}
 				}
 				else
 					errors_.push_back( ReportRedefinition( func->file_pos_, func_name->first ) );

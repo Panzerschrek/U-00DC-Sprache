@@ -1249,24 +1249,6 @@ U_TEST(BindingConstReferenceToNonconstReferenceTest2)
 	U_TEST_ASSERT( error.file_pos.line == 4u );
 }
 
-U_TEST(CouldNotOverloadFunctionTest0)
-{
-	// No difference.
-	static const char c_program_text[]=
-	R"(
-		fn Foo( i32 x, f64 &imut y ) {}
-		fn Foo( i32 x, f64 &imut y ) {}
-	)";
-
-	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
-
-	U_TEST_ASSERT( !build_result.errors.empty() );
-	const CodeBuilderError& error= build_result.errors.front();
-
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::CouldNotOverloadFunction );
-	U_TEST_ASSERT( error.file_pos.line == 3u );
-}
-
 U_TEST(CouldNotOverloadFunctionTest1)
 {
 	// Different are only mutability modifiers for value parameters.
@@ -1317,24 +1299,6 @@ U_TEST(CouldNotOverloadFunctionTest3)
 	U_TEST_ASSERT( build_result.errors.empty() );
 }
 
-U_TEST(ouldNotOverloadFunctionTest4)
-{
-	// Functions with zero args.
-	static const char c_program_text[]=
-	R"(
-		fn Foo() {}
-		fn Foo() {}
-	)";
-
-	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
-
-	U_TEST_ASSERT( !build_result.errors.empty() );
-	const CodeBuilderError& error= build_result.errors.front();
-
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::CouldNotOverloadFunction );
-	U_TEST_ASSERT( error.file_pos.line == 3u );
-}
-
 U_TEST(CouldNotSelectOverloadedFunction0)
 {
 	// Different actual args and args from functions set.
@@ -1377,6 +1341,60 @@ U_TEST(CouldNotSelectOverloadedFunction1)
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::CouldNotSelectOverloadedFunction );
 	U_TEST_ASSERT( error.file_pos.line == 6u );
+}
+
+U_TEST(FunctionPrototypeDuplicationTest0)
+{
+	// Simple prototype duplication.
+	static const char c_program_text[]=
+	R"(
+		fn Bar();
+		fn Bar();
+	)";
+
+	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::FunctionPrototypeDuplication );
+	U_TEST_ASSERT( error.file_pos.line == 3u );
+}
+
+U_TEST(FunctionPrototypeDuplicationTest1)
+{
+	// Functions with args of same type but different name is same.
+	static const char c_program_text[]=
+	R"(
+		fn Bar( i32 x, f64 y );
+		fn Bar( i32 xx, f64 yy );
+	)";
+
+	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::FunctionPrototypeDuplication );
+	U_TEST_ASSERT( error.file_pos.line == 3u );
+}
+
+U_TEST(FunctionPrototypeDuplicationTest2)
+{
+	// Prototype after body
+	static const char c_program_text[]=
+	R"(
+		fn Bar( i32 x ){}
+		fn Bar( i32 x );
+	)";
+
+	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::FunctionPrototypeDuplication );
+	U_TEST_ASSERT( error.file_pos.line == 3u );
 }
 
 } // namespace U

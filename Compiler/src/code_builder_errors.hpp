@@ -35,6 +35,8 @@ enum class CodeBuilderErrorCode : unsigned int
 	CouldNotOverloadFunction,
 	TooManySuitableOverloadedFunctions,
 	CouldNotSelectOverloadedFunction,
+	FunctionPrototypeDuplication,
+	FunctionBodyDuplication,
 
 	// Initializers errors.
 	ArrayInitializerForNonArray,
@@ -84,6 +86,8 @@ CodeBuilderError ReportBindingConstReferenceToNonconstReference( const FilePos& 
 CodeBuilderError ReportCouldNotOverloadFunction( const FilePos& file_pos );
 CodeBuilderError ReportTooManySuitableOverloadedFunctions( const FilePos& file_pos );
 CodeBuilderError ReportCouldNotSelectOverloadedFunction( const FilePos& file_pos );
+CodeBuilderError ReportFunctionPrototypeDuplication( const FilePos& file_pos, const ProgramString& func_name );
+CodeBuilderError ReportFunctionBodyDuplication( const FilePos& file_pos, const ProgramString& func_name );
 CodeBuilderError ReportArrayInitializerForNonArray( const FilePos& file_pos );
 CodeBuilderError ReportArrayInitializersCountMismatch( const FilePos& file_pos, size_t expected_initializers, size_t real_initializers );
 CodeBuilderError ReportFundamentalTypesHaveConstructorsWithExactlyOneParameter( const FilePos& file_pos );
