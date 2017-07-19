@@ -1954,4 +1954,29 @@ U_TEST(FunctionPrototypeTest0)
 	U_TEST_ASSERT( static_cast<uint64_t>( 666 ) == result_value.IntVal.getLimitedValue() );
 }
 
+U_TEST(FunctionPrototypeTest1)
+{
+	// Different parameter name.
+	static const char c_program_text[]=
+	R"(
+		fn Bar( i32 x ) : i32;
+		fn Foo() : i32
+		{
+			return Bar( 79 );
+		}
+		fn Bar( i32 xxx ) : i32 { return xxx * 2; }
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
+	U_TEST_ASSERT( function != nullptr );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>());
+
+	U_TEST_ASSERT( static_cast<uint64_t>( 79 * 2 ) == result_value.IntVal.getLimitedValue() );
+}
+
 } // namespace U
