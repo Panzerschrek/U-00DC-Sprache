@@ -172,7 +172,7 @@ CodeBuilder::BuildResult CodeBuilder::BuildProgram( const ProgramElements& progr
 					boost::get<OverloadedFunctionsSet>( &named_something ) )
 				{
 					if( Variable* const same_function=
-						GetFunctionWithExactType(
+						GetFunctionWithExactSignature(
 							*boost::get<FunctionPtr>( func_info.type.one_of_type_kind ),
 							*functions_set ) )
 					{
@@ -1128,7 +1128,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildIfOperatorCode(
 	return if_operator_blocks_build_info;
 }
 
-Variable* CodeBuilder::GetFunctionWithExactType(
+Variable* CodeBuilder::GetFunctionWithExactSignature(
 	const Function& function_type,
 	OverloadedFunctionsSet& functions_set )
 {

@@ -1979,4 +1979,37 @@ U_TEST(FunctionPrototypeTest1)
 	U_TEST_ASSERT( static_cast<uint64_t>( 79 * 2 ) == result_value.IntVal.getLimitedValue() );
 }
 
+U_TEST(FunctionPrototypeTest3)
+{
+	// Prototypes must correctly work with overloading.
+	static const char c_program_text[]=
+	R"(
+		fn Bar( i32 x ) : i32;
+		fn Bar( f32 x ) : i32;
+		fn Foo() : i32
+		{
+			return Bar(0) * Bar(0.0f);
+		}
+		fn Bar( i32 x ) : i32
+		{
+			return 666;
+		}
+		fn Bar( f32 x ) : i32
+		{
+			return 1937;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
+	U_TEST_ASSERT( function != nullptr );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>());
+
+	U_TEST_ASSERT( static_cast<uint64_t>( 666 * 1937 ) == result_value.IntVal.getLimitedValue() );
+}
+
 } // namespace U

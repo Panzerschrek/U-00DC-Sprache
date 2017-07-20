@@ -167,8 +167,7 @@ private:
 
 	// Functions
 
-	// Returns true, if there asre no functions in set with type, exactly equal to given.s
-	Variable* GetFunctionWithExactType(
+	Variable* GetFunctionWithExactSignature(
 		const Function& function_type,
 		OverloadedFunctionsSet& functions_set );
 
