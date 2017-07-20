@@ -297,6 +297,17 @@ CodeBuilderError ReportFunctionBodyDuplication( const FilePos& file_pos, const P
 	return error;
 }
 
+CodeBuilderError ReportReturnValueDiffersFromPrototype( const FilePos& file_pos )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::ReturnValueDiffersFromPrototype;
+
+	error.text= "Function return value differs from prototype."_SpC;
+
+	return error;
+}
+
 CodeBuilderError ReportArrayInitializerForNonArray( const FilePos& file_pos )
 {
 	CodeBuilderError error;

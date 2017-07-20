@@ -186,6 +186,12 @@ CodeBuilder::BuildResult CodeBuilder::BuildProgram( const ProgramElements& progr
 							errors_.push_back( ReportFunctionBodyDuplication( func->file_pos_, func->name_ ) );
 							continue;
 						}
+						if( same_function->type != func_info.type )
+						{
+							// In this place we have only possible error
+							errors_.push_back( ReportReturnValueDiffersFromPrototype( func->file_pos_ ) );
+							continue;
+						}
 
 						BuildFuncCode(
 							*same_function,
