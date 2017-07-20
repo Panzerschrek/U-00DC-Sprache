@@ -381,6 +381,14 @@ void CodeBuilder::BuildFuncCode(
 	// We doesn`t need different addresses for different functions.
 	llvm_function->setUnnamedAddr( true );
 
+	// Mark reference-parameters as nonnull.
+	// TODO - maybe mark immutable reference-parameters as "noalias"?
+	for( unsigned int i= 0u; i < function_type_ptr->args.size(); i++ )
+	{
+		if (function_type_ptr->args[i].is_reference )
+			llvm_function->addAttribute( i + 1u, llvm::Attribute::NonNull );
+	}
+
 	NamesScope function_names( &global_names_ );
 	FunctionContext function_context(
 		function_type_ptr->return_type,
