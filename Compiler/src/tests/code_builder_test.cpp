@@ -1918,4 +1918,98 @@ U_TEST(FunctionsOverloadingTest3)
 	U_TEST_ASSERT( static_cast<uint64_t>( 42 - 24 ) == result_value.IntVal.getLimitedValue() );
 }
 
+U_TEST(FunctionPrototypeTest0)
+{
+	static const char c_program_text[]=
+	R"(
+		fn Minus2( i32 x ) : i32;
+		fn Minus3( i32 x ) : i32;
+
+		fn Foo() : i32
+		{
+			return Minus2( 79 );
+		}
+
+		fn Minus2( i32 x ) : i32
+		{
+			if( x < 2 ){ return 666; }
+			return Minus3( x - 2 );
+		}
+		fn Minus3( i32 x ) : i32
+		{
+			if( x < 3 ){ return 666; }
+			return Minus2( x - 3 );
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
+	U_TEST_ASSERT( function != nullptr );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>());
+
+	U_TEST_ASSERT( static_cast<uint64_t>( 666 ) == result_value.IntVal.getLimitedValue() );
+}
+
+U_TEST(FunctionPrototypeTest1)
+{
+	// Different parameter name.
+	static const char c_program_text[]=
+	R"(
+		fn Bar( i32 x ) : i32;
+		fn Foo() : i32
+		{
+			return Bar( 79 );
+		}
+		fn Bar( i32 xxx ) : i32 { return xxx * 2; }
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
+	U_TEST_ASSERT( function != nullptr );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>());
+
+	U_TEST_ASSERT( static_cast<uint64_t>( 79 * 2 ) == result_value.IntVal.getLimitedValue() );
+}
+
+U_TEST(FunctionPrototypeTest3)
+{
+	// Prototypes must correctly work with overloading.
+	static const char c_program_text[]=
+	R"(
+		fn Bar( i32 x ) : i32;
+		fn Bar( f32 x ) : i32;
+		fn Foo() : i32
+		{
+			return Bar(0) * Bar(0.0f);
+		}
+		fn Bar( i32 x ) : i32
+		{
+			return 666;
+		}
+		fn Bar( f32 x ) : i32
+		{
+			return 1937;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
+	U_TEST_ASSERT( function != nullptr );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>());
+
+	U_TEST_ASSERT( static_cast<uint64_t>( 666 * 1937 ) == result_value.IntVal.getLimitedValue() );
+}
+
 } // namespace U

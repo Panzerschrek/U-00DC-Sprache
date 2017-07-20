@@ -275,6 +275,39 @@ CodeBuilderError ReportCouldNotSelectOverloadedFunction( const FilePos& file_pos
 	return error;
 }
 
+CodeBuilderError ReportFunctionPrototypeDuplication( const FilePos& file_pos, const ProgramString& func_name )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::FunctionPrototypeDuplication;
+
+	error.text= "Duplicated prototype of function \""_SpC + func_name + "\"."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportFunctionBodyDuplication( const FilePos& file_pos, const ProgramString& func_name )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::FunctionBodyDuplication;
+
+	error.text= "Body fo function \""_SpC + func_name + "\" already exists."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportReturnValueDiffersFromPrototype( const FilePos& file_pos )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::ReturnValueDiffersFromPrototype;
+
+	error.text= "Function return value differs from prototype."_SpC;
+
+	return error;
+}
+
 CodeBuilderError ReportArrayInitializerForNonArray( const FilePos& file_pos )
 {
 	CodeBuilderError error;
