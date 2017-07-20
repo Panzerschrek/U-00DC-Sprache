@@ -412,6 +412,18 @@ void CodeBuilder::BuildFuncCode(
 				ToStdString( func_name ),
 				module_.get() );
 
+		// Merge functions with identical code.
+		// We doesn`t need different addresses for different functions.
+		llvm_function->setUnnamedAddr( true );
+
+		// Mark reference-parameters as nonnull.
+		// TODO - maybe mark immutable reference-parameters as "noalias"?
+		for( unsigned int i= 0u; i < function_type_ptr->args.size(); i++ )
+		{
+			if (function_type_ptr->args[i].is_reference )
+				llvm_function->addAttribute( i + 1u, llvm::Attribute::NonNull );
+		}
+
 		func_variable.llvm_value= llvm_function;
 	}
 	else
@@ -425,18 +437,6 @@ void CodeBuilder::BuildFuncCode(
 	}
 
 	func_variable.have_body= true;
-
-	// Merge functions with identical code.
-	// We doesn`t need different addresses for different functions.
-	llvm_function->setUnnamedAddr( true );
-
-	// Mark reference-parameters as nonnull.
-	// TODO - maybe mark immutable reference-parameters as "noalias"?
-	for( unsigned int i= 0u; i < function_type_ptr->args.size(); i++ )
-	{
-		if (function_type_ptr->args[i].is_reference )
-			llvm_function->addAttribute( i + 1u, llvm::Attribute::NonNull );
-	}
 
 	NamesScope function_names( &global_names_ );
 	FunctionContext function_context(
