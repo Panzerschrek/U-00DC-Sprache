@@ -377,6 +377,10 @@ void CodeBuilder::BuildFuncCode(
 			ToStdString( func_name ),
 			module_.get() );
 
+	// Merge functions with identical code.
+	// We doesn`t need different addresses for different functions.
+	llvm_function->setUnnamedAddr( true );
+
 	NamesScope function_names( &global_names_ );
 	FunctionContext function_context(
 		function_type_ptr->return_type,
