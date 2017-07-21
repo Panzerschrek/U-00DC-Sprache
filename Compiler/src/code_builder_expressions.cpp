@@ -15,7 +15,7 @@ namespace U
 namespace CodeBuilderPrivate
 {
 
-Variable CodeBuilder::BuildExpressionCode(
+Value CodeBuilder::BuildExpressionCode(
 	const BinaryOperatorsChain& expression,
 	const NamesScope& names,
 	FunctionContext& function_context )
@@ -30,7 +30,7 @@ Variable CodeBuilder::BuildExpressionCode(
 			function_context );
 }
 
-Variable CodeBuilder::BuildExpressionCode_r(
+Value CodeBuilder::BuildExpressionCode_r(
 	const InversePolishNotation& ipn,
 	unsigned int ipn_index,
 	const NamesScope& names,
@@ -43,19 +43,27 @@ Variable CodeBuilder::BuildExpressionCode_r(
 
 	if( comp.operator_ != BinaryOperator::None )
 	{
-		Variable l_var=
+		const Value l_var_value=
 			BuildExpressionCode_r(
 				ipn, comp.l_index,
 				names,
 				function_context );
 
-		Variable r_var=
+		const Value r_var_value=
 			BuildExpressionCode_r(
 				ipn, comp.r_index,
 				names,
 				function_context );
 
-		return BuildBinaryOperator( l_var, r_var, comp.operator_, file_pos, function_context );
+		const Variable* const l_var= l_var_value.GetVariable();
+		const Variable* const r_var= r_var_value.GetVariable();
+		if( l_var == nullptr || r_var == nullptr )
+		{
+			errors_.push_back( ReportOperationNotSupportedForThisType( file_pos, l_var_value.GetType().ToString() ) );
+			throw ProgramError();
+		}
+
+		return BuildBinaryOperator( *l_var, *r_var, comp.operator_, file_pos, function_context );
 	}
 	else
 	{
@@ -65,7 +73,7 @@ Variable CodeBuilder::BuildExpressionCode_r(
 
 		const IBinaryOperatorsChainComponent& operand= *comp.operand;
 
-		Variable result;
+		Value result;
 
 		if( const NamedOperand* const named_operand=
 			dynamic_cast<const NamedOperand*>(&operand) )
@@ -421,12 +429,10 @@ Variable CodeBuilder::BuildBinaryOperator(
 	return result;
 }
 
-Variable CodeBuilder::BuildNamedOperand(
+Value CodeBuilder::BuildNamedOperand(
 	const NamedOperand& named_operand,
 	const NamesScope& names )
 {
-	Variable result;
-
 	const NamesScope::InsertedName* name_entry=
 		names.GetName( named_operand.name_ );
 	if( !name_entry )
@@ -435,23 +441,7 @@ Variable CodeBuilder::BuildNamedOperand(
 		throw ProgramError();
 	}
 
-	if( const Variable* const variable= boost::get<Variable>( &name_entry->second ) )
-	{
-		result= *variable;
-	}
-	else if( const OverloadedFunctionsSet* const functins_set=
-		boost::get<OverloadedFunctionsSet>( &name_entry->second ) )
-	{
-		result.type.one_of_type_kind= NontypeStub::OverloadedFunctionsSet;
-		result.functions_set= *functins_set;
-	}
-	else
-	{
-		// TODO - set type name.
-		result.type.one_of_type_kind= NontypeStub::ClassName;
-	}
-
-	return result;
+	return name_entry->second;
 }
 
 Variable CodeBuilder::BuildNumericConstant( const NumericConstant& numeric_constant )
@@ -499,32 +489,34 @@ Variable CodeBuilder::BuildBooleanConstant( const BooleanConstant& boolean_const
 }
 
 Variable CodeBuilder::BuildIndexationOperator(
-	const Variable& variable,
+	const Value& value,
 	const IndexationOperator& indexation_operator,
 	const NamesScope& names,
 	FunctionContext& function_context )
 {
-	const ArrayPtr* const array_type= boost::get<ArrayPtr>( &variable.type.one_of_type_kind );
+	const ArrayPtr* const array_type= boost::get<ArrayPtr>( &value.GetType().one_of_type_kind );
 	if( array_type == nullptr )
 	{
-		errors_.push_back( ReportOperationNotSupportedForThisType( indexation_operator.file_pos_, variable.type.ToString() ) );
+		errors_.push_back( ReportOperationNotSupportedForThisType( indexation_operator.file_pos_, value.GetType().ToString() ) );
 		throw ProgramError();
 	}
 	U_ASSERT( *array_type != nullptr );
+	const Variable& variable= *value.GetVariable();
 
-	Variable index=
+	const Value index_value=
 		BuildExpressionCode(
 			*indexation_operator.index_,
 			names,
 			function_context );
 
-	const FundamentalType* const index_fundamental_type= boost::get<FundamentalType>( &index.type.one_of_type_kind );
+	const FundamentalType* const index_fundamental_type= boost::get<FundamentalType>( & index_value.GetType().one_of_type_kind );
 	if( index_fundamental_type == nullptr ||
 		!IsUnsignedInteger( index_fundamental_type->fundamental_type ) )
 	{
-		errors_.push_back( ReportTypesMismatch( indexation_operator.file_pos_, "any unsigned integer"_SpC, index.type.ToString() ) );
+		errors_.push_back( ReportTypesMismatch( indexation_operator.file_pos_, "any unsigned integer"_SpC, index_value.GetType().ToString() ) );
 		throw ProgramError();
 	}
+	const Variable& index= *index_value.GetVariable();
 
 	if( variable.location != Variable::Location::Pointer )
 	{
@@ -549,17 +541,18 @@ Variable CodeBuilder::BuildIndexationOperator(
 }
 
 Variable CodeBuilder::BuildMemberAccessOperator(
-	const Variable& variable,
+	const Value& value,
 	const MemberAccessOperator& member_access_operator,
 	FunctionContext& function_context )
 {
-	const ClassPtr* const class_type= boost::get<ClassPtr>( &variable.type.one_of_type_kind );
+	const ClassPtr* const class_type= boost::get<ClassPtr>( &value.GetType().one_of_type_kind );
 	if( class_type == nullptr )
 	{
-		errors_.push_back( ReportOperationNotSupportedForThisType( member_access_operator.file_pos_, variable.type.ToString() ) );
+		errors_.push_back( ReportOperationNotSupportedForThisType( member_access_operator.file_pos_, value.GetType().ToString() ) );
 		throw ProgramError();
 	}
 	U_ASSERT( *class_type != nullptr );
+	const Variable& variable= *value.GetVariable();
 
 	const Class::Field* field= (*class_type)->GetField( member_access_operator.member_name_ );
 	if( field == nullptr )
@@ -585,33 +578,38 @@ Variable CodeBuilder::BuildMemberAccessOperator(
 }
 
 Variable CodeBuilder::BuildCallOperator(
-	const Variable& function_variable,
+	const Value& function_value,
 	const CallOperator& call_operator,
 	const NamesScope& names,
 	FunctionContext& function_context )
 {
-	const NontypeStub* nontype_stub= boost::get<NontypeStub>( &function_variable.type.one_of_type_kind );
-	if( nontype_stub == nullptr || *nontype_stub != NontypeStub::OverloadedFunctionsSet )
+	const OverloadedFunctionsSet* const functions_set= function_value.GetFunctionsSet();
+	if( functions_set == nullptr )
 	{
-		// TODO - Call of non-function.
+		errors_.push_back( ReportOperationNotSupportedForThisType( call_operator.file_pos_, function_value.GetType().ToString() ) );
 		throw ProgramError();
 	}
-	const OverloadedFunctionsSet& functions_set= function_variable.functions_set;
 
 	std::vector<Function::Arg> actual_args( call_operator.arguments_.size() );
 	std::vector<Variable> actual_args_variables( call_operator.arguments_.size() );
 	for( unsigned int i= 0u; i < actual_args.size(); i++ )
 	{
+		const Value expr_value= BuildExpressionCode( *call_operator.arguments_[i], names, function_context );
+		const Variable* const expr= expr_value.GetVariable();
+		if( expr == nullptr )
+		{
+			// TODO
+			throw ProgramError();
+		}
 
-		Variable expr= BuildExpressionCode( *call_operator.arguments_[i], names, function_context );
-		actual_args[i].type= expr.type;
-		actual_args[i].is_reference= expr.value_type != ValueType::Value;
-		actual_args[i].is_mutable= expr.value_type == ValueType::Reference;
+		actual_args[i].type= expr->type;
+		actual_args[i].is_reference= expr->value_type != ValueType::Value;
+		actual_args[i].is_mutable= expr->value_type == ValueType::Reference;
 
-		actual_args_variables[i]= std::move(expr);
+		actual_args_variables[i]= std::move(*expr);
 	}
 
-	const Variable function= GetOverloadedFunction( functions_set, actual_args, call_operator.file_pos_ );
+	const FunctionVariable& function= GetOverloadedFunction( *functions_set, actual_args, call_operator.file_pos_ );
 	const Function& function_type= *boost::get<FunctionPtr>( function.type.one_of_type_kind );
 
 	if( function_type.args.size() != actual_args.size( ))
@@ -674,7 +672,7 @@ Variable CodeBuilder::BuildCallOperator(
 
 	llvm::Value* call_result=
 		function_context.llvm_ir_builder.CreateCall(
-			llvm::dyn_cast<llvm::Function>(function.llvm_value),
+			llvm::dyn_cast<llvm::Function>(function.llvm_function),
 			llvm_args );
 
 	Variable result;
@@ -699,16 +697,18 @@ Variable CodeBuilder::BuildCallOperator(
 }
 
 Variable CodeBuilder::BuildUnaryMinus(
-	const Variable& variable,
+	const Value& value,
 	const UnaryMinus& unary_minus,
 	FunctionContext& function_context )
 {
-	const FundamentalType* const fundamental_type= boost::get<FundamentalType>( &variable.type.one_of_type_kind );
+	const FundamentalType* const fundamental_type= boost::get<FundamentalType>( &value.GetType().one_of_type_kind );
 	if( fundamental_type == nullptr )
 	{
-		errors_.push_back( ReportOperationNotSupportedForThisType( unary_minus.file_pos_, variable.type.ToString() ) );
+		errors_.push_back( ReportOperationNotSupportedForThisType( unary_minus.file_pos_, value.GetType().ToString() ) );
 		throw ProgramError();
 	}
+	const Variable variable= *value.GetVariable();
+
 	const bool is_float= IsFloatingPoint( fundamental_type->fundamental_type );
 	if( !( IsInteger( fundamental_type->fundamental_type ) || is_float ) )
 	{

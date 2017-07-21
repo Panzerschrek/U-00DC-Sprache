@@ -386,6 +386,119 @@ const Class::Field* Class::GetField( const ProgramString& name ) const
 	return nullptr;
 }
 
+Value::Value()
+{}
+
+Value::Value( Variable variable )
+{
+	something_= std::move(variable);
+}
+
+Value::Value( FunctionVariable function_variable )
+{
+	something_= std::move(function_variable);
+}
+
+Value::Value( OverloadedFunctionsSet functions_set )
+{
+	OverloadedFunctionsSetWithTypeStub s;
+	s.set= std::move( functions_set );
+	something_= std::move(s);
+}
+
+Value::Value( const ClassPtr& class_ )
+{
+	ClassWithTypeStub s;
+	s.class_= class_;
+	something_= std::move(s);
+}
+
+const Type& Value::GetType() const
+{
+	struct Visitor final : public boost::static_visitor<>
+	{
+		const Type* type;
+
+		void operator()( const Variable& variable )
+		{ type= &variable.type; }
+
+		void operator()( const FunctionVariable& function_variable )
+		{ type= &function_variable.type; }
+
+		void operator()( const OverloadedFunctionsSetWithTypeStub& functions_set )
+		{ type= &functions_set.type; }
+
+		void operator()( const ClassWithTypeStub& class_ )
+		{ type= &class_.type; }
+	};
+
+	Visitor visitor;
+	boost::apply_visitor( visitor, something_ );
+	return *visitor.type;
+}
+
+Variable* Value::GetVariable()
+{
+	return boost::get<Variable>( &something_ );
+}
+
+const Variable* Value::GetVariable() const
+{
+	return boost::get<Variable>( &something_ );
+}
+
+FunctionVariable* Value::GetFunctionVariable()
+{
+	return boost::get<FunctionVariable>( &something_ );
+}
+
+const FunctionVariable* Value::GetFunctionVariable() const
+{
+	return boost::get<FunctionVariable>( &something_ );
+}
+
+OverloadedFunctionsSet* Value::GetFunctionsSet()
+{
+	OverloadedFunctionsSetWithTypeStub* set= boost::get<OverloadedFunctionsSetWithTypeStub>( &something_ );
+	if( set == nullptr )
+		return nullptr;
+	return &set->set;
+}
+
+const OverloadedFunctionsSet* Value::GetFunctionsSet() const
+{
+	const OverloadedFunctionsSetWithTypeStub* set= boost::get<OverloadedFunctionsSetWithTypeStub>( &something_ );
+	if( set == nullptr )
+		return nullptr;
+	return &set->set;
+}
+
+ClassPtr* Value::GetClass()
+{
+	ClassWithTypeStub* class_= boost::get<ClassWithTypeStub>( &something_ );
+	if( class_ == nullptr )
+		return nullptr;
+	return &class_->class_;
+}
+
+const ClassPtr* Value::GetClass() const
+{
+	const ClassWithTypeStub* class_= boost::get<ClassWithTypeStub>( &something_ );
+	if( class_ == nullptr )
+		return nullptr;
+	return &class_->class_;
+}
+
+Value::OverloadedFunctionsSetWithTypeStub::OverloadedFunctionsSetWithTypeStub()
+{
+	type.one_of_type_kind= NontypeStub::OverloadedFunctionsSet;
+}
+
+Value::ClassWithTypeStub::ClassWithTypeStub()
+{
+	type.one_of_type_kind= NontypeStub::ClassName;
+}
+
 ArgOverloadingClass GetArgOverloadingClass( const bool is_reference, const bool is_mutable )
 {
 	if( is_reference && is_mutable )
@@ -420,9 +533,9 @@ NamesScope::NamesScope( const NamesScope* prev )
 
 NamesScope::InsertedName* NamesScope::AddName(
 	const ProgramString& name,
-	NamedSomething something )
+	Value value )
 {
-	auto it_bool_pair = names_map_.emplace( name, std::move( something ) );
+	auto it_bool_pair = names_map_.emplace( name, std::move( value ) );
 	if( it_bool_pair.second )
 		return &*it_bool_pair.first;
 

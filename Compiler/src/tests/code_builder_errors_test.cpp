@@ -1041,28 +1041,6 @@ U_TEST(ExpectedReferenceValueTest0)
 	U_TEST_ASSERT( error.file_pos.line == 4u );
 }
 
-U_TEST(ExpectedReferenceValueTest1)
-{
-	// Assign to function. Functions is const-reference values.
-	static const char c_program_text[]=
-	R"(
-		fn Bar(){}
-		fn Baz(){}
-		fn Foo()
-		{
-			Bar= Baz;
-		}
-	)";
-
-	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
-
-	U_TEST_ASSERT( !build_result.errors.empty() );
-	const CodeBuilderError& error= build_result.errors.front();
-
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedReferenceValue );
-	U_TEST_ASSERT( error.file_pos.line == 6u );
-}
-
 U_TEST(ExpectedReferenceValueTest2)
 {
 	// Assign to value.

@@ -93,14 +93,11 @@ CodeBuilder::BuildResult CodeBuilder::BuildProgram( const ProgramElements& progr
 			if( IsKeyword( func->name_ ) )
 				errors_.push_back( ReportUsingKeywordAsName( func->file_pos_ ) );
 
-			Variable func_info;
-
-			func_info.location= Variable::Location::Pointer;
-			func_info.value_type= ValueType::ConstReference;
+			FunctionVariable func_variable;
 
 			std::unique_ptr<Function> function_type_storage( new Function() );
 			Function& function_type= *function_type_storage;
-			func_info.type.one_of_type_kind= std::move(function_type_storage);
+			func_variable.type.one_of_type_kind= std::move(function_type_storage);
 
 			if( func->return_type_.empty() )
 			{
@@ -152,7 +149,7 @@ CodeBuilder::BuildResult CodeBuilder::BuildProgram( const ProgramElements& progr
 			if( func_name == nullptr )
 			{
 				OverloadedFunctionsSet functions_set;
-				functions_set.push_back( std::move( func_info ) );
+				functions_set.push_back( std::move( func_variable ) );
 
 				// New name in this scope - insert it.
 				NamesScope::InsertedName* const inserted_func=
@@ -160,20 +157,19 @@ CodeBuilder::BuildResult CodeBuilder::BuildProgram( const ProgramElements& progr
 				U_ASSERT( inserted_func != nullptr );
 
 				BuildFuncCode(
-					boost::get<OverloadedFunctionsSet>( inserted_func->second ).front(),
+					inserted_func->second.GetFunctionsSet()->front(),
 					func->name_,
 					func->arguments_,
 					func->block_.get() );
 			}
 			else
 			{
-				NamedSomething& named_something= func_name->second;
-				if( OverloadedFunctionsSet* const functions_set=
-					boost::get<OverloadedFunctionsSet>( &named_something ) )
+				Value& value= func_name->second;
+				if( OverloadedFunctionsSet* const functions_set= value.GetFunctionsSet() )
 				{
-					if( Variable* const same_function=
+					if( FunctionVariable* const same_function=
 						GetFunctionWithExactSignature(
-							*boost::get<FunctionPtr>( func_info.type.one_of_type_kind ),
+							*boost::get<FunctionPtr>( func_variable.type.one_of_type_kind ),
 							*functions_set ) )
 					{
 						if( func->block_ == nullptr )
@@ -186,7 +182,7 @@ CodeBuilder::BuildResult CodeBuilder::BuildProgram( const ProgramElements& progr
 							errors_.push_back( ReportFunctionBodyDuplication( func->file_pos_, func->name_ ) );
 							continue;
 						}
-						if( same_function->type != func_info.type )
+						if( same_function->type != func_variable.type )
 						{
 							// In this place we have only possible error
 							errors_.push_back( ReportReturnValueDiffersFromPrototype( func->file_pos_ ) );
@@ -203,7 +199,7 @@ CodeBuilder::BuildResult CodeBuilder::BuildProgram( const ProgramElements& progr
 					{
 						try
 						{
-							ApplyOverloadedFunction( *functions_set, func_info, func->file_pos_ );
+							ApplyOverloadedFunction( *functions_set, func_variable, func->file_pos_ );
 						}
 						catch( const ProgramError& )
 						{
@@ -294,7 +290,7 @@ Type CodeBuilder::PrepareType( const FilePos& file_pos, const TypeName& type_nam
 			global_names_.GetName( type_name.name );
 		if( custom_type_name != nullptr )
 		{
-			const ClassPtr* const class_= boost::get<ClassPtr>( &custom_type_name->second );
+			const ClassPtr* const class_= custom_type_name->second.GetClass();
 			if( class_ != nullptr )
 			{
 				U_ASSERT( (*class_) != nullptr );
@@ -376,7 +372,7 @@ ClassPtr CodeBuilder::PrepareClass( const ClassDeclaration& class_declaration )
 }
 
 void CodeBuilder::BuildFuncCode(
-	Variable& func_variable,
+	FunctionVariable& func_variable,
 	const ProgramString& func_name,
 	const FunctionArgumentsDeclaration& args,
 	const Block* const block ) noexcept
@@ -403,7 +399,7 @@ void CodeBuilder::BuildFuncCode(
 			false );
 
 	llvm::Function* llvm_function;
-	if( func_variable.llvm_value == nullptr )
+	if( func_variable.llvm_function == nullptr )
 	{
 		llvm_function=
 			llvm::Function::Create(
@@ -424,10 +420,10 @@ void CodeBuilder::BuildFuncCode(
 				llvm_function->addAttribute( i + 1u, llvm::Attribute::NonNull );
 		}
 
-		func_variable.llvm_value= llvm_function;
+		func_variable.llvm_function= llvm_function;
 	}
 	else
-		llvm_function= llvm::dyn_cast<llvm::Function>( func_variable.llvm_value );
+		llvm_function= llvm::dyn_cast<llvm::Function>( func_variable.llvm_function );
 
 	if( block == nullptr )
 	{
@@ -737,14 +733,16 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 				continue;
 			}
 
-			const Variable expression_result=
+			const Value expression_result_value=
 				BuildExpressionCode( *initializer_expression, block_names, function_context );
 
-			if( expression_result.type != variable.type )
+			if( expression_result_value.GetType() != variable.type )
 			{
-				errors_.push_back( ReportTypesMismatch( variables_declaration.file_pos_, variable.type.ToString(), expression_result.type.ToString() ) );
+				errors_.push_back( ReportTypesMismatch( variables_declaration.file_pos_, variable.type.ToString(), expression_result_value.GetType().ToString() ) );
 				continue;
 			}
+			const Variable& expression_result= *expression_result_value.GetVariable();
+
 			if( expression_result.value_type == ValueType::Value )
 			{
 				errors_.push_back( ReportExpectedReferenceValue( variables_declaration.file_pos_ ) );
@@ -781,7 +779,7 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 	NamesScope& block_names,
 	FunctionContext& function_context )
 {
-	const Variable initializer_experrsion=
+	const Value initializer_experrsion_value=
 		BuildExpressionCode( *auto_variable_declaration.initializer_expression, block_names, function_context );
 
 	{ // Check expression type. Expression can have exotic types, such "Overloading functions set", "class name", etc.
@@ -797,13 +795,15 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 		};
 
 		Visitor visitor;
-		boost::apply_visitor( visitor, initializer_experrsion.type.one_of_type_kind );
+		boost::apply_visitor( visitor, initializer_experrsion_value.GetType().one_of_type_kind );
 		if( !visitor.type_is_ok )
 		{
-			errors_.push_back( ReportInvalidTypeForAutoVariable( auto_variable_declaration.file_pos_, initializer_experrsion.type.ToString() ) );
+			errors_.push_back( ReportInvalidTypeForAutoVariable( auto_variable_declaration.file_pos_, initializer_experrsion_value.GetType().ToString() ) );
 			return;
 		}
 	}
+
+	const Variable& initializer_experrsion= *initializer_experrsion_value.GetVariable();
 
 	Variable variable;
 	variable.location= Variable::Location::Pointer;
@@ -871,30 +871,37 @@ void CodeBuilder::BuildAssignmentOperatorCode(
 	const BinaryOperatorsChain& l_value= *assignment_operator.l_value_;
 	const BinaryOperatorsChain& r_value= *assignment_operator.r_value_;
 
-	const Variable l_var= BuildExpressionCode( l_value, block_names, function_context );
-	const Variable r_var= BuildExpressionCode( r_value, block_names, function_context );
+	const Value l_var_value= BuildExpressionCode( l_value, block_names, function_context );
+	const Value r_var_value= BuildExpressionCode( r_value, block_names, function_context );
+	const Variable* const l_var= l_var_value.GetVariable();
+	const Variable* const r_var= r_var_value.GetVariable();
+	if( l_var == nullptr || r_var == nullptr )
+	{
+		// TODO
+		return;
+	}
 
-	if( l_var.value_type != ValueType::Reference )
+	if( l_var->value_type != ValueType::Reference )
 	{
 		errors_.push_back( ReportExpectedReferenceValue( assignment_operator.file_pos_ ) );
 		return;
 	}
-	if( l_var.type != r_var.type )
+	if( l_var->type != r_var->type )
 	{
-		errors_.push_back( ReportTypesMismatch( assignment_operator.file_pos_, l_var.type.ToString(), r_var.type.ToString() ) );
+		errors_.push_back( ReportTypesMismatch( assignment_operator.file_pos_, l_var->type.ToString(), r_var->type.ToString() ) );
 		return;
 	}
 
-	const FundamentalType* const fundamental_type= boost::get<FundamentalType>( &l_var.type.one_of_type_kind );
+	const FundamentalType* const fundamental_type= boost::get<FundamentalType>( &l_var->type.one_of_type_kind );
 	if( fundamental_type != nullptr )
 	{
-		if( l_var.location != Variable::Location::Pointer )
+		if( l_var->location != Variable::Location::Pointer )
 		{
 			U_ASSERT(false);
 			return;
 		}
-		llvm::Value* value_for_assignment= CreateMoveToLLVMRegisterInstruction( r_var, function_context );
-		function_context.llvm_ir_builder.CreateStore( value_for_assignment, l_var.llvm_value );
+		llvm::Value* value_for_assignment= CreateMoveToLLVMRegisterInstruction( *r_var, function_context );
+		function_context.llvm_ir_builder.CreateStore( value_for_assignment, l_var->llvm_value );
 	}
 	else
 	{
@@ -927,17 +934,19 @@ void CodeBuilder::BuildReturnOperatorCode(
 		return;
 	}
 
-	const Variable expression_result=
+	const Value expression_result_value=
 		BuildExpressionCode(
 			*return_operator.expression_,
 			names,
 			function_context );
 
-	if( expression_result.type != function_context.return_type )
+	if( expression_result_value.GetType() != function_context.return_type )
 	{
-		errors_.push_back( ReportTypesMismatch( return_operator.file_pos_, function_context.return_type.ToString(), expression_result.type.ToString() ) );
+		errors_.push_back( ReportTypesMismatch( return_operator.file_pos_, function_context.return_type.ToString(), expression_result_value.GetType().ToString() ) );
 		return;
 	}
+	const Variable& expression_result= *expression_result_value.GetVariable();
+
 	if( function_context.return_value_is_reference )
 	{
 		if( expression_result.value_type == ValueType::Value )
@@ -976,22 +985,22 @@ void CodeBuilder::BuildWhileOperatorCode(
 	function_context.function->getBasicBlockList().push_back( test_block );
 	function_context.llvm_ir_builder.SetInsertPoint( test_block );
 
-	Variable condition_expression= BuildExpressionCode( *while_operator.condition_, names, function_context );
+	const Value condition_expression= BuildExpressionCode( *while_operator.condition_, names, function_context );
 
 	Type bool_type;
 	bool_type.one_of_type_kind= FundamentalType( U_FundamentalType::Bool, fundamental_llvm_types_.void_ );
 
-	if( condition_expression.type != bool_type )
+	if( condition_expression.GetType() != bool_type )
 	{
 		errors_.push_back(
 			ReportTypesMismatch(
 				while_operator.condition_->file_pos_,
 				bool_type.ToString(),
-				condition_expression.type.ToString() ) );
+				condition_expression.GetType().ToString() ) );
 		return;
 	}
 
-	llvm::Value* condition_in_register= CreateMoveToLLVMRegisterInstruction( condition_expression, function_context );
+	llvm::Value* condition_in_register= CreateMoveToLLVMRegisterInstruction( *condition_expression.GetVariable(), function_context );
 
 	function_context.llvm_ir_builder.CreateCondBr( condition_in_register, while_block, block_after_while );
 
@@ -1094,19 +1103,19 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildIfOperatorCode(
 		}
 		else
 		{
-			Variable condition_expression= BuildExpressionCode( *branch.condition, names, function_context );
+			const Value condition_expression= BuildExpressionCode( *branch.condition, names, function_context );
 
-			if( condition_expression.type != bool_type )
+			if( condition_expression.GetType() != bool_type )
 			{
 				errors_.push_back(
 					ReportTypesMismatch(
 						branch.condition->file_pos_,
 						bool_type.ToString(),
-						condition_expression.type.ToString() ) );
+						condition_expression.GetType().ToString() ) );
 				throw ProgramError();
 			}
 
-			llvm::Value* condition_in_register= CreateMoveToLLVMRegisterInstruction( condition_expression, function_context );
+			llvm::Value* condition_in_register= CreateMoveToLLVMRegisterInstruction( *condition_expression.GetVariable(), function_context );
 			function_context.llvm_ir_builder.CreateCondBr( condition_in_register, body_block, next_condition_block );
 		}
 
@@ -1140,11 +1149,11 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildIfOperatorCode(
 	return if_operator_blocks_build_info;
 }
 
-Variable* CodeBuilder::GetFunctionWithExactSignature(
+FunctionVariable* CodeBuilder::GetFunctionWithExactSignature(
 	const Function& function_type,
 	OverloadedFunctionsSet& functions_set )
 {
-	for( Variable& function_varaible : functions_set )
+	for( FunctionVariable& function_varaible : functions_set )
 	{
 		const FunctionPtr& set_function_type_ptr= boost::get<FunctionPtr>( function_varaible.type.one_of_type_kind ); // Must be function type 100 %
 		U_ASSERT(set_function_type_ptr);
@@ -1172,7 +1181,7 @@ Variable* CodeBuilder::GetFunctionWithExactSignature(
 
 void CodeBuilder::ApplyOverloadedFunction(
 	OverloadedFunctionsSet& functions_set,
-	const Variable& function,
+	const FunctionVariable& function,
 	const FilePos& file_pos )
 {
 	if( functions_set.empty() )
@@ -1189,7 +1198,7 @@ void CodeBuilder::ApplyOverloadedFunction(
 	If parameter count differs - overload function.
 	If "ArgOverloadingClass" of one or more arguments differs - overload function.
 	*/
-	for( const Variable& set_function : functions_set )
+	for( const FunctionVariable& set_function : functions_set )
 	{
 		const FunctionPtr& set_function_type= boost::get<FunctionPtr>(set_function.type.one_of_type_kind); // Must be function type 100 %
 		U_ASSERT(set_function_type);
@@ -1223,7 +1232,7 @@ void CodeBuilder::ApplyOverloadedFunction(
 	functions_set.push_back(function);
 }
 
-const Variable& CodeBuilder::GetOverloadedFunction(
+const FunctionVariable& CodeBuilder::GetOverloadedFunction(
 	const OverloadedFunctionsSet& functions_set,
 	const std::vector<Function::Arg>& actual_args,
 	const FilePos& file_pos )
@@ -1235,9 +1244,8 @@ const Variable& CodeBuilder::GetOverloadedFunction(
 	if( functions_set.size() == 1u )
 		return functions_set.front();
 
-
-	const Variable* match_function= nullptr;
-	for( const Variable& function : functions_set )
+	const FunctionVariable* match_function= nullptr;
+	for( const FunctionVariable& function : functions_set )
 	{
 		const Function& function_type= *boost::get<FunctionPtr>( function.type.one_of_type_kind );
 

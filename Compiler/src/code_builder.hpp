@@ -69,7 +69,7 @@ private:
 	// Throw only in places, where you can not just make continue/return.
 
 	void BuildFuncCode(
-		Variable& func,
+		FunctionVariable& func,
 		const ProgramString& func_name,
 		const FunctionArgumentsDeclaration& args,
 		const Block* block ) noexcept;
@@ -81,12 +81,12 @@ private:
 
 	// Expressions.
 
-	Variable BuildExpressionCode(
+	Value BuildExpressionCode(
 		const BinaryOperatorsChain& expression,
 		const NamesScope& names,
 		FunctionContext& function_context );
 
-	Variable BuildExpressionCode_r(
+	Value BuildExpressionCode_r(
 		const InversePolishNotation& ipn,
 		unsigned int ipn_index,
 		const NamesScope& names,
@@ -99,29 +99,29 @@ private:
 		const FilePos& file_pos,
 		FunctionContext& function_context );
 
-	Variable BuildNamedOperand( const NamedOperand& named_operand, const NamesScope& names );
+	Value BuildNamedOperand( const NamedOperand& named_operand, const NamesScope& names );
 	Variable BuildNumericConstant( const NumericConstant& numeric_constant );
 	Variable BuildBooleanConstant( const BooleanConstant& boolean_constant );
 
 	Variable BuildIndexationOperator(
-		const Variable& variable,
+		const Value& value,
 		const IndexationOperator& indexation_operator,
 		const NamesScope& names,
 		FunctionContext& function_context );
 
 	Variable BuildMemberAccessOperator(
-		const Variable& variable,
+		const Value& value,
 		const MemberAccessOperator& member_access_operator,
 		FunctionContext& function_context );
 
 	Variable BuildCallOperator(
-		const Variable& function_variable,
+		const Value& function_value,
 		const CallOperator& call_operator,
 		const NamesScope& names,
 		FunctionContext& function_context );
 
 	Variable BuildUnaryMinus(
-		const Variable& variable,
+		const Value& value,
 		const UnaryMinus& unary_minus,
 		FunctionContext& function_context );
 
@@ -167,18 +167,18 @@ private:
 
 	// Functions
 
-	Variable* GetFunctionWithExactSignature(
+	FunctionVariable* GetFunctionWithExactSignature(
 		const Function& function_type,
 		OverloadedFunctionsSet& functions_set );
 
 	// Throws, if can not apply function.
 	void ApplyOverloadedFunction(
 		OverloadedFunctionsSet& functions_set,
-		const Variable& function,
+		const FunctionVariable& function,
 		const FilePos& file_pos );
 
 	// Throws, if can not select function.
-	const Variable& GetOverloadedFunction(
+	const FunctionVariable& GetOverloadedFunction(
 		const OverloadedFunctionsSet& functions_set,
 		const std::vector<Function::Arg>& actual_args,
 		const FilePos& file_pos );

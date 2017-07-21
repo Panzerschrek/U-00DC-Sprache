@@ -27,8 +27,6 @@ typedef std::unique_ptr<Array> ArrayPtr;
 struct Class;
 typedef std::shared_ptr<Class> ClassPtr;
 
-struct Variable;
-
 struct FundamentalType final
 {
 	U_FundamentalType fundamental_type;
@@ -132,8 +130,15 @@ struct Class final
 	llvm::StructType* llvm_type;
 };
 
+struct FunctionVariable final
+{
+	Type type;
+	llvm::Function* llvm_function= nullptr;
+	bool have_body= true;
+};
+
 // Set of functions with same name, but different signature.
-typedef std::vector<Variable> OverloadedFunctionsSet;
+typedef std::vector<FunctionVariable> OverloadedFunctionsSet;
 
 enum class ValueType
 {
@@ -150,17 +155,54 @@ struct Variable final
 		LLVMRegister,
 	};
 
+	Type type;
 	Location location= Location::Pointer;
 	ValueType value_type= ValueType::ConstReference;
-	Type type;
-	bool have_body= true; // For functions and their prototypes
-
 	llvm::Value* llvm_value= nullptr;
+};
 
-	// Hack for nonvariable-variables.
-	// For convenience, store less-frequently used "something" inside more-frequently
-	// used thing "variable".
-	OverloadedFunctionsSet functions_set;
+class Value final
+{
+public:
+	Value();
+	Value( Variable variable );
+	Value( FunctionVariable function_variable );
+	Value( OverloadedFunctionsSet functions_set );
+	Value( const ClassPtr& class_ );
+
+	const Type& GetType() const;
+
+	// Fundamental, class, array types
+	Variable* GetVariable();
+	const Variable* GetVariable() const;
+	// Function types
+	FunctionVariable* GetFunctionVariable();
+	const FunctionVariable* GetFunctionVariable() const;
+	// Function set stub type
+	OverloadedFunctionsSet* GetFunctionsSet();
+	const OverloadedFunctionsSet* GetFunctionsSet() const;
+	// Class stub type
+	ClassPtr* GetClass();
+	const ClassPtr* GetClass() const;
+
+private:
+	struct OverloadedFunctionsSetWithTypeStub
+	{
+		OverloadedFunctionsSetWithTypeStub();
+
+		Type type;
+		OverloadedFunctionsSet set;
+	};
+	struct ClassWithTypeStub
+	{
+		ClassWithTypeStub();
+
+		Type type;
+		ClassPtr class_;
+	};
+
+private:
+	boost::variant< Variable, FunctionVariable, OverloadedFunctionsSetWithTypeStub, ClassWithTypeStub > something_;
 };
 
 // "Class" of function argument in terms of overloading.
@@ -177,20 +219,17 @@ ArgOverloadingClass GetArgOverloadingClass( bool is_reference, bool is_mutable )
 ArgOverloadingClass GetArgOverloadingClass( ValueType value_type );
 ArgOverloadingClass GetArgOverloadingClass( const Function::Arg& arg );
 
-// Any thing, that can have name - class, variable, function, namespace, label, enum, etc.
-typedef boost::variant<ClassPtr, Variable, OverloadedFunctionsSet> NamedSomething;
-
 class NamesScope final
 {
 public:
 
-	typedef std::map< ProgramString, NamedSomething > NamesMap;
+	typedef std::map< ProgramString, Value > NamesMap;
 	typedef NamesMap::value_type InsertedName;
 
 	NamesScope( const NamesScope* prev= nullptr );
 
 	// Returns nullptr, if name already exists in this scope.
-	InsertedName* AddName( const ProgramString& name, NamedSomething something );
+	InsertedName* AddName( const ProgramString& name, Value value );
 
 	const InsertedName* GetName( const ProgramString& name ) const;
 

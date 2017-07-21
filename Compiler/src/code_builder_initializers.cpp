@@ -183,15 +183,15 @@ void CodeBuilder::ApplyConstructorInitializer(
 			return;
 		}
 
-		const Variable expression_result=
+		const Value expression_result=
 			BuildExpressionCode( *initializer.call_operator.arguments_.front(), block_names, function_context );
-		if( expression_result.type != variable.type )
+		if( expression_result.GetType() != variable.type )
 		{
-			errors_.push_back( ReportTypesMismatch( initializer.file_pos_, variable.type.ToString(), expression_result.type.ToString() ) );
+			errors_.push_back( ReportTypesMismatch( initializer.file_pos_, variable.type.ToString(), expression_result.GetType().ToString() ) );
 			return;
 		}
 
-		llvm::Value* const value_for_assignment= CreateMoveToLLVMRegisterInstruction( expression_result, function_context );
+		llvm::Value* const value_for_assignment= CreateMoveToLLVMRegisterInstruction( *expression_result.GetVariable(), function_context );
 		function_context.llvm_ir_builder.CreateStore( value_for_assignment, variable.llvm_value );
 	}
 	else if( const ClassPtr* const class_type= boost::get<ClassPtr>( &variable.type.one_of_type_kind ) )
@@ -217,15 +217,15 @@ void CodeBuilder::ApplyExpressionInitializer(
 	{
 		U_UNUSED(fundamental_type);
 
-		const Variable expression_result=
+		const Value expression_result=
 			BuildExpressionCode( *initializer.expression, block_names, function_context );
-		if( expression_result.type != variable.type )
+		if( expression_result.GetType() != variable.type )
 		{
-			errors_.push_back( ReportTypesMismatch( initializer.file_pos_, variable.type.ToString(), expression_result.type.ToString() ) );
+			errors_.push_back( ReportTypesMismatch( initializer.file_pos_, variable.type.ToString(), expression_result.GetType().ToString() ) );
 			return;
 		}
 
-		llvm::Value* const value_for_assignment= CreateMoveToLLVMRegisterInstruction( expression_result, function_context );
+		llvm::Value* const value_for_assignment= CreateMoveToLLVMRegisterInstruction( *expression_result.GetVariable(), function_context );
 		function_context.llvm_ir_builder.CreateStore( value_for_assignment, variable.llvm_value );
 	}
 	else
@@ -261,10 +261,10 @@ void CodeBuilder::ApplyZeroInitializer(
 		case U_FundamentalType::u32:
 		case U_FundamentalType::i64:
 		case U_FundamentalType::u64:
-				zero_value=
-					llvm::Constant::getIntegerValue(
-						GetFundamentalLLVMType( fundamental_type->fundamental_type ),
-						llvm::APInt( variable.type.SizeOf() * 8u, uint64_t(0) ) );
+			zero_value=
+				llvm::Constant::getIntegerValue(
+					GetFundamentalLLVMType( fundamental_type->fundamental_type ),
+					llvm::APInt( variable.type.SizeOf() * 8u, uint64_t(0) ) );
 			break;
 
 		case U_FundamentalType::f32:
