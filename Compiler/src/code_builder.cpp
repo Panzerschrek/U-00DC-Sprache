@@ -875,6 +875,10 @@ void CodeBuilder::BuildAssignmentOperatorCode(
 	const Value r_var_value= BuildExpressionCode( r_value, block_names, function_context );
 	const Variable* const l_var= l_var_value.GetVariable();
 	const Variable* const r_var= r_var_value.GetVariable();
+	if( l_var == nullptr )
+		errors_.push_back( ReportExpectedVariableInAssignment( assignment_operator.file_pos_, l_var_value.GetType().ToString() ) );
+	if( r_var == nullptr )
+		errors_.push_back( ReportExpectedVariableInAssignment( assignment_operator.file_pos_, r_var_value.GetType().ToString() ) );
 	if( l_var == nullptr || r_var == nullptr )
 	{
 		// TODO

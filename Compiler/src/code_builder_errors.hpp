@@ -32,6 +32,9 @@ enum class CodeBuilderErrorCode : unsigned int
 	ExpectedInitializer,
 	ExpectedReferenceValue,
 	BindingConstReferenceToNonconstReference,
+	ExpectedVariableInAssignment,
+	ExpectedVariableInBinaryOperator,
+	ExpectedVariableAsArgument,
 	CouldNotOverloadFunction,
 	TooManySuitableOverloadedFunctions,
 	CouldNotSelectOverloadedFunction,
@@ -84,6 +87,9 @@ CodeBuilderError ReportNoReturnInFunctionReturningNonVoid( const FilePos& file_p
 CodeBuilderError ReportExpectedInitializer( const FilePos& file_pos );
 CodeBuilderError ReportExpectedReferenceValue( const FilePos& file_pos );
 CodeBuilderError ReportBindingConstReferenceToNonconstReference( const FilePos& file_pos );
+CodeBuilderError ReportExpectedVariableInAssignment( const FilePos& file_pos, const ProgramString& got );
+CodeBuilderError ReportExpectedVariableInBinaryOperator( const FilePos& file_pos, const ProgramString& got );
+CodeBuilderError ReportExpectedVariableAsArgument( const FilePos& file_pos, const ProgramString& got );
 CodeBuilderError ReportCouldNotOverloadFunction( const FilePos& file_pos );
 CodeBuilderError ReportTooManySuitableOverloadedFunctions( const FilePos& file_pos );
 CodeBuilderError ReportCouldNotSelectOverloadedFunction( const FilePos& file_pos );

@@ -274,7 +274,6 @@ U_TEST(OperationNotSupportedForThisTypeTest0)
 	static const char c_program_text[]=
 	R"(
 		class S{};
-		fn Bar(){}
 		fn Foo()
 		{
 			var S s= zero_init;
@@ -282,33 +281,27 @@ U_TEST(OperationNotSupportedForThisTypeTest0)
 			false + true; // No binary operators for booleans.
 			1u8 - 4u8; // Operation not supported for small integers.
 			arr * arr; // Operation not supported for arrays.
-			Bar / Bar; // Operation not supported for functions.
 			0.35f32 & 1488.42f32; // Bit operator for floats.
 			false > true; // Comparision of bools.
-			Bar == Bar; // Exact comparision of functions.
 			arr <= arr; // Comparision of arrays.
 		}
 	)";
 
 	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_TEST_ASSERT( build_result.errors.size() >= 8u );
+	U_TEST_ASSERT( build_result.errors.size() >= 6u );
 	U_TEST_ASSERT( build_result.errors[0].code == CodeBuilderErrorCode::OperationNotSupportedForThisType );
-	U_TEST_ASSERT( build_result.errors[0].file_pos.line == 8u );
+	U_TEST_ASSERT( build_result.errors[0].file_pos.line == 7u );
 	U_TEST_ASSERT( build_result.errors[1].code == CodeBuilderErrorCode::OperationNotSupportedForThisType );
-	U_TEST_ASSERT( build_result.errors[1].file_pos.line == 9u );
+	U_TEST_ASSERT( build_result.errors[1].file_pos.line == 8u );
 	U_TEST_ASSERT( build_result.errors[2].code == CodeBuilderErrorCode::OperationNotSupportedForThisType );
-	U_TEST_ASSERT( build_result.errors[2].file_pos.line == 10u );
+	U_TEST_ASSERT( build_result.errors[2].file_pos.line == 9u );
 	U_TEST_ASSERT( build_result.errors[3].code == CodeBuilderErrorCode::OperationNotSupportedForThisType );
-	U_TEST_ASSERT( build_result.errors[3].file_pos.line == 11u );
+	U_TEST_ASSERT( build_result.errors[3].file_pos.line == 10u );
 	U_TEST_ASSERT( build_result.errors[4].code == CodeBuilderErrorCode::OperationNotSupportedForThisType );
-	U_TEST_ASSERT( build_result.errors[4].file_pos.line == 12u );
+	U_TEST_ASSERT( build_result.errors[4].file_pos.line == 11u );
 	U_TEST_ASSERT( build_result.errors[5].code == CodeBuilderErrorCode::OperationNotSupportedForThisType );
-	U_TEST_ASSERT( build_result.errors[5].file_pos.line == 13u );
-	U_TEST_ASSERT( build_result.errors[6].code == CodeBuilderErrorCode::OperationNotSupportedForThisType );
-	U_TEST_ASSERT( build_result.errors[6].file_pos.line == 14u );
-	U_TEST_ASSERT( build_result.errors[7].code == CodeBuilderErrorCode::OperationNotSupportedForThisType );
-	U_TEST_ASSERT( build_result.errors[7].file_pos.line == 15u );
+	U_TEST_ASSERT( build_result.errors[5].file_pos.line == 12u );
 }
 
 U_TEST(OperationNotSupportedForThisTypeTest1)
@@ -1225,6 +1218,100 @@ U_TEST(BindingConstReferenceToNonconstReferenceTest2)
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::BindingConstReferenceToNonconstReference );
 	U_TEST_ASSERT( error.file_pos.line == 4u );
+}
+
+U_TEST(ExpectedVariableInAssignmentTest0)
+{
+	static const char c_program_text[]=
+	R"(
+		class C{}
+		fn Bar(){}
+		fn Foo()
+		{
+			var i32 x= 0;
+			Bar= x; // assign variable to function
+			x= Bar; // assign function to variable
+			C= x;   // assign variable to class
+			x= C;   // assign class to variable
+			C= Bar; // assign function to class
+		}
+	)";
+
+	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( build_result.errors.size() >= 6u );
+
+	U_TEST_ASSERT( build_result.errors[0].code == CodeBuilderErrorCode::ExpectedVariableInAssignment );
+	U_TEST_ASSERT( build_result.errors[0].file_pos.line == 7u );
+	U_TEST_ASSERT( build_result.errors[1].code == CodeBuilderErrorCode::ExpectedVariableInAssignment );
+	U_TEST_ASSERT( build_result.errors[1].file_pos.line == 8u );
+	U_TEST_ASSERT( build_result.errors[2].code == CodeBuilderErrorCode::ExpectedVariableInAssignment );
+	U_TEST_ASSERT( build_result.errors[2].file_pos.line == 9u );
+	U_TEST_ASSERT( build_result.errors[3].code == CodeBuilderErrorCode::ExpectedVariableInAssignment );
+	U_TEST_ASSERT( build_result.errors[3].file_pos.line == 10u );
+	U_TEST_ASSERT( build_result.errors[4].code == CodeBuilderErrorCode::ExpectedVariableInAssignment );
+	U_TEST_ASSERT( build_result.errors[4].file_pos.line == 11u );
+	U_TEST_ASSERT( build_result.errors[5].code == CodeBuilderErrorCode::ExpectedVariableInAssignment );
+	U_TEST_ASSERT( build_result.errors[5].file_pos.line == 11u );
+}
+
+U_TEST(ExpectedVariableInBinaryOperatorTest0)
+{
+	static const char c_program_text[]=
+	R"(
+		class C{}
+		fn Bar(){}
+		fn Foo()
+		{
+			var i32 x= 0;
+			Bar + x;  // variable and function
+			x / Bar;  // function and variable
+			C * x;    // variable and class
+			x - C;    // class and variable
+			C == Bar; // function and class
+		}
+	)";
+
+	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( build_result.errors.size() >= 6u );
+
+	U_TEST_ASSERT( build_result.errors[0].code == CodeBuilderErrorCode::ExpectedVariableInBinaryOperator );
+	U_TEST_ASSERT( build_result.errors[0].file_pos.line == 7u );
+	U_TEST_ASSERT( build_result.errors[1].code == CodeBuilderErrorCode::ExpectedVariableInBinaryOperator );
+	U_TEST_ASSERT( build_result.errors[1].file_pos.line == 8u );
+	U_TEST_ASSERT( build_result.errors[2].code == CodeBuilderErrorCode::ExpectedVariableInBinaryOperator );
+	U_TEST_ASSERT( build_result.errors[2].file_pos.line == 9u );
+	U_TEST_ASSERT( build_result.errors[3].code == CodeBuilderErrorCode::ExpectedVariableInBinaryOperator );
+	U_TEST_ASSERT( build_result.errors[3].file_pos.line == 10u );
+	U_TEST_ASSERT( build_result.errors[4].code == CodeBuilderErrorCode::ExpectedVariableInBinaryOperator );
+	U_TEST_ASSERT( build_result.errors[4].file_pos.line == 11u );
+	U_TEST_ASSERT( build_result.errors[5].code == CodeBuilderErrorCode::ExpectedVariableInBinaryOperator );
+	U_TEST_ASSERT( build_result.errors[5].file_pos.line == 11u );
+}
+
+U_TEST(ExpectedVariableAsArgumentTest0)
+{
+	static const char c_program_text[]=
+	R"(
+		class C{}
+		fn Bar( i32 x ){}
+		fn Foo()
+		{
+			var i32 x= 0;
+			Bar( Bar ); // Function as argument
+			Bar( C ); // Class as argument
+		}
+	)";
+
+	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( build_result.errors.size() >= 2u );
+
+	U_TEST_ASSERT( build_result.errors[0].code == CodeBuilderErrorCode::ExpectedVariableAsArgument );
+	U_TEST_ASSERT( build_result.errors[0].file_pos.line == 7u );
+	U_TEST_ASSERT( build_result.errors[1].code == CodeBuilderErrorCode::ExpectedVariableAsArgument );
+	U_TEST_ASSERT( build_result.errors[1].file_pos.line == 8u );
 }
 
 U_TEST(CouldNotOverloadFunctionTest1)

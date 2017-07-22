@@ -57,11 +57,13 @@ Value CodeBuilder::BuildExpressionCode_r(
 
 		const Variable* const l_var= l_var_value.GetVariable();
 		const Variable* const r_var= r_var_value.GetVariable();
+
+		if( l_var == nullptr )
+			errors_.push_back( ReportExpectedVariableInBinaryOperator( file_pos, l_var_value.GetType().ToString() ) );
+		if( r_var == nullptr )
+			errors_.push_back( ReportExpectedVariableInBinaryOperator( file_pos, r_var_value.GetType().ToString() ) );
 		if( l_var == nullptr || r_var == nullptr )
-		{
-			errors_.push_back( ReportOperationNotSupportedForThisType( file_pos, l_var_value.GetType().ToString() ) );
 			throw ProgramError();
-		}
 
 		return BuildBinaryOperator( *l_var, *r_var, comp.operator_, file_pos, function_context );
 	}
@@ -598,7 +600,7 @@ Variable CodeBuilder::BuildCallOperator(
 		const Variable* const expr= expr_value.GetVariable();
 		if( expr == nullptr )
 		{
-			// TODO
+			errors_.push_back( ReportExpectedVariableAsArgument( call_operator.file_pos_, expr_value.GetType().ToString() ) );
 			throw ProgramError();
 		}
 
