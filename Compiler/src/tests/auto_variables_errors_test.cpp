@@ -33,7 +33,7 @@ U_TEST(InvalidTypeForAutoVariableTest1)
 	// Assign function.
 	static const char c_program_text[]=
 	R"(
-		class C{}
+		struct C{}
 		fn Foo()
 		{
 			auto x= C;

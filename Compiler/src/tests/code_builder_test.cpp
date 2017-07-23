@@ -1331,7 +1331,7 @@ U_TEST(StructTest0)
 {
 	static const char c_program_text[]=
 	R"(
-	class Point
+	struct Point
 	{
 		x : i32;
 		zzz : [ i32, 4 ];
@@ -1376,13 +1376,13 @@ U_TEST(StructTest1)
 	// Struct with struct inside.
 	static const char c_program_text[]=
 	R"(
-	class Dummy
+	struct Dummy
 	{
 		x : f32;
 		y : f64;
 		z : [ f64, 2 ];
 	}
-	class Point
+	struct Point
 	{
 		x : i32;
 		dummy : Dummy;
@@ -1662,10 +1662,10 @@ U_TEST(ReferencesTest6)
 
 U_TEST(ReferencesTest7)
 {
-	// Reference nonconst argument of class type.
+	// Reference nonconst argument of struct type.
 	static const char c_program_text[]=
 	R"(
-	class C
+	struct C
 	{
 		x : i32;
 		zzz : [ i32, 4 ];

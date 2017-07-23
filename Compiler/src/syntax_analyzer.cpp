@@ -123,7 +123,7 @@ SyntaxAnalysisResult SyntaxAnalyzer::DoAnalyzis( const Lexems& lexems )
 
 			continue;
 		}
-		else if( lexem.type == Lexem::Type::Identifier && lexem.text == Keywords::class_ )
+		else if( lexem.type == Lexem::Type::Identifier && ( lexem.text == Keywords::struct_ || lexem.text == Keywords::class_ ) )
 		{
 			if( IProgramElementPtr program_element= ParseClass() )
 				result.program_elements.emplace_back( std::move( program_element ) );
@@ -1376,7 +1376,7 @@ std::unique_ptr<FunctionDeclaration> SyntaxAnalyzer::ParseFunction()
 
 std::unique_ptr<ClassDeclaration> SyntaxAnalyzer::ParseClass()
 {
-	U_ASSERT( it_->text == Keywords::class_ );
+	U_ASSERT( it_->text == Keywords::struct_ || it_->text == Keywords::class_ );
 	++it_; U_ASSERT( it_ < it_end_ );
 
 	std::unique_ptr<ClassDeclaration> result( new ClassDeclaration( it_->file_pos ) );

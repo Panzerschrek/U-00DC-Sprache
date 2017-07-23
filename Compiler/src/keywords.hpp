@@ -20,6 +20,7 @@ enum class Keywords : unsigned int
 	if_,
 	else_,
 
+	struct_,
 	class_,
 
 	// Fundamental types names.
@@ -53,7 +54,6 @@ enum class Keywords : unsigned int
 	case_,
 	default_,
 	template_,
-	struct_,
 	final_,
 	virtual_,
 	polymorph_,

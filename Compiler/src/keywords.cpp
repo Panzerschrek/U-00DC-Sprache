@@ -45,6 +45,7 @@ static const Globals& GetGlobals()
 		[ size_t(Keywords::if_) ]= "if",
 		[ size_t(Keywords::else_) ]= "else",
 
+		[ size_t(Keywords::struct_) ]= "struct",
 		[ size_t(Keywords::class_) ]= "class",
 
 		[ size_t(Keywords::void_) ]= "void",
@@ -74,7 +75,6 @@ static const Globals& GetGlobals()
 		[ size_t(Keywords::case_) ]= "case",
 		[ size_t(Keywords::default_) ]= "default",
 		[ size_t(Keywords::template_) ]= "template",
-		[ size_t(Keywords::struct_) ]= "struct",
 		[ size_t(Keywords::final_) ]= "final",
 		[ size_t(Keywords::virtual_) ]= "virtual",
 		[ size_t(Keywords::polymorph_) ]= "polymorph",

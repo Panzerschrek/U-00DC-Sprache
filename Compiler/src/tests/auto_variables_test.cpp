@@ -115,7 +115,7 @@ U_TEST(AutoVariableTest4)
 	// Immutalbe reference to struct.
 	static const char c_program_text[]=
 	R"(
-	class S{ x : f32; y : f32; }
+	struct S{ x : f32; y : f32; }
 	fn Foo() : f32
 	{
 		var S imut s{ .x(34.5f), .y= -34.0f };
