@@ -1333,9 +1333,9 @@ U_TEST(StructTest0)
 	R"(
 	struct Point
 	{
-		x : i32;
-		zzz : [ i32, 4 ];
-		y : i32;
+		i32 x;
+		[ i32, 4 ] zzz;
+		i32 y;
 	}
 	fn Foo( i32 a, i32 b, i32 c ) : i32
 	{
@@ -1378,15 +1378,15 @@ U_TEST(StructTest1)
 	R"(
 	struct Dummy
 	{
-		x : f32;
-		y : f64;
-		z : [ f64, 2 ];
+		f32 x;
+		f64 y;
+		[ f64, 2 ] z;
 	}
 	struct Point
 	{
-		x : i32;
-		dummy : Dummy;
-		y : i32;
+		i32 x;
+		Dummy dummy;
+		i32 y;
 	}
 	fn Foo( f64 a, f64 b ) : f64
 	{
@@ -1667,9 +1667,9 @@ U_TEST(ReferencesTest7)
 	R"(
 	struct C
 	{
-		x : i32;
-		zzz : [ i32, 4 ];
-		y : i32;
+		i32 x;
+		[ i32, 4 ] zzz;
+		i32 y;
 	}
 	fn Bar( C &mut c )
 	{ c.zzz[2u] = 99985; }

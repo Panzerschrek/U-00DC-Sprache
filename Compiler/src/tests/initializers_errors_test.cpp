@@ -51,7 +51,7 @@ U_TEST(ExpectedInitializerTest2)
 	// Expected initializer for struct.
 	static const char c_program_text[]=
 	R"(
-		struct S{ x : i32; }
+		struct S{ i32 x; }
 		fn Foo()
 		{
 			var S s;
@@ -295,7 +295,7 @@ U_TEST(DuplicatedStructMemberInitializerTest0)
 {
 	static const char c_program_text[]=
 	R"(
-		struct Point{ x : i32; y : i32; }
+		struct Point{ i32 x; i32 y; }
 		fn Foo()
 		{
 			var Point point{ .x= 42, .y= 34, .x= 0 };
@@ -315,7 +315,7 @@ U_TEST(MissingStructMemberInitializerTest0)
 {
 	static const char c_program_text[]=
 	R"(
-		struct Point{ xy : [ i32, 2 ]; z : i32; }
+		struct Point{ [ i32, 2 ] xy; i32 z; }
 		fn Foo()
 		{
 			var Point point{ .xy[ 54, -785 ], };

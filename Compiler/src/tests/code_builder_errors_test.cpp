@@ -544,7 +544,7 @@ U_TEST(NoMatchBinaryOperatorForGivenTypesTest0)
 
 U_TEST(NoMatchBinaryOperatorForGivenTypesTest1)
 {
-	// Add for structs.
+	// Add for arrays.
 	static const char c_program_text[]=
 	R"(
 		fn Foo()
