@@ -1400,23 +1400,26 @@ std::unique_ptr<ClassDeclaration> SyntaxAnalyzer::ParseClass()
 		it_->type == Lexem::Type::BraceRight ||
 		it_->type == Lexem::Type::EndOfFile ) )
 	{
-		// SPRACHE_TODO - try parse here member-functions, subclasses, typedefs, etc.
-		// Try parse variables at last moment.
-
-		result->fields_.emplace_back();
-		ClassDeclaration::Field& field= result->fields_.back();
-		field.file_pos= it_->file_pos;
-
-		field.type= ParseTypeName();
-
-		U_ASSERT( it_ < it_end_ );
-		if( it_->type != Lexem::Type::Identifier )
+		// SPRACHE_TODO - try parse here, subclasses, typedefs, etc.
+		if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::fn_ )
+			result->functions_.push_back( ParseFunction() );
+		else
 		{
-			PushErrorMessage( *it_ );
-			return nullptr;
+			result->fields_.emplace_back();
+			ClassDeclaration::Field& field= result->fields_.back();
+			field.file_pos= it_->file_pos;
+
+			field.type= ParseTypeName();
+
+			U_ASSERT( it_ < it_end_ );
+			if( it_->type != Lexem::Type::Identifier )
+			{
+				PushErrorMessage( *it_ );
+				return nullptr;
+			}
+			field.name= it_->text;
+			++it_;
 		}
-		field.name= it_->text;
-		++it_;
 
 		if( it_->type != Lexem::Type::Semicolon )
 		{

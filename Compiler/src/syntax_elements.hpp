@@ -564,6 +564,7 @@ public:
 	};
 
 	std::vector<Field> fields_;
+	std::vector< std::unique_ptr<FunctionDeclaration> > functions_;
 	ProgramString name_;
 };
 
