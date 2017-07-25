@@ -291,6 +291,34 @@ U_TEST(StructInitializerForNonStructTest0)
 	U_TEST_ASSERT( error.file_pos.line == 4u );
 }
 
+// TODO - enable test, when member functions will be implimented.
+/*
+U_TEST(InitializerForNonfieldStructMemberTest0)
+{
+	// Struct initializer for array.
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			i32 x;
+			fn Foo(){}
+		};
+		fn Foo()
+		{
+			var S s{ .x= 0, .Foo= 0 };
+		}
+	)";
+
+	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::InitializerForNonfieldStructMember );
+	U_TEST_ASSERT( error.file_pos.line == 9u );
+}
+*/
+
 U_TEST(DuplicatedStructMemberInitializerTest0)
 {
 	static const char c_program_text[]=

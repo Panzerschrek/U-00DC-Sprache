@@ -375,17 +375,6 @@ Class::Class()
 Class::~Class()
 {}
 
-const Class::Field* Class::GetField( const ProgramString& name ) const
-{
-	for( const Field& field : fields )
-	{
-		if( field.name == name )
-			return &field;
-	}
-
-	return nullptr;
-}
-
 Value::Value()
 {}
 
@@ -413,6 +402,11 @@ Value::Value( const ClassPtr& class_ )
 	something_= std::move(s);
 }
 
+Value::Value( ClassField class_field )
+{
+	something_= std::move( class_field );
+}
+
 const Type& Value::GetType() const
 {
 	struct Visitor final : public boost::static_visitor<>
@@ -430,6 +424,9 @@ const Type& Value::GetType() const
 
 		void operator()( const ClassWithTypeStub& class_ )
 		{ type= &class_.type; }
+
+		void operator()( const ClassField& class_field )
+		{ type= &class_field.type; }
 	};
 
 	Visitor visitor;
@@ -487,6 +484,11 @@ const ClassPtr* Value::GetClass() const
 	if( class_ == nullptr )
 		return nullptr;
 	return &class_->class_;
+}
+
+const ClassField* Value::GetClassField() const
+{
+	return boost::get<ClassField>( &something_ );
 }
 
 Value::OverloadedFunctionsSetWithTypeStub::OverloadedFunctionsSetWithTypeStub()

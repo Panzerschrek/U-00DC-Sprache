@@ -347,19 +347,20 @@ ClassPtr CodeBuilder::PrepareClass( const ClassDeclaration& class_declaration )
 	std::vector<llvm::Type*> members_llvm_types;
 
 	members_llvm_types.reserve( class_declaration.fields_.size() );
-	result->fields.reserve( class_declaration.fields_.size() );
 	for( const ClassDeclaration::Field& in_field : class_declaration.fields_ )
 	{
-		if( result->GetField( in_field.name ) != nullptr )
-			errors_.push_back( ReportRedefinition( in_field.file_pos, in_field.name ) );
-
-		Class::Field out_field;
-		out_field.name= in_field.name;
+		ClassField out_field;
 		out_field.type= PrepareType( in_field.file_pos, in_field.type );
-		out_field.index= result->fields.size();
+		out_field.index= result->field_count;
 
 		members_llvm_types.emplace_back( out_field.type.GetLLVMType() );
-		result->fields.emplace_back( std::move( out_field ) );
+
+		const NamesScope::InsertedName* const inserted_field=
+			result->members.AddName( in_field.name, std::move( out_field ) );
+		if( inserted_field == nullptr )
+			errors_.push_back( ReportRedefinition( in_field.file_pos, in_field.name ) );
+
+		result->field_count++;
 	}
 
 	result->llvm_type=

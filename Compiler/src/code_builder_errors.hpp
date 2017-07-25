@@ -50,6 +50,7 @@ enum class CodeBuilderErrorCode : unsigned int
 	UnsupportedInitializerForReference,
 	ConstructorInitializerForUnsupportedType,
 	StructInitializerForNonStruct,
+	InitializerForNonfieldStructMember,
 	DuplicatedStructMemberInitializer,
 	MissingStructMemberInitializer,
 	InvalidTypeForAutoVariable,
@@ -103,6 +104,7 @@ CodeBuilderError ReportReferencesHaveConstructorsWithExactlyOneParameter( const 
 CodeBuilderError ReportUnsupportedInitializerForReference( const FilePos& file_pos );
 CodeBuilderError ReportConstructorInitializerForUnsupportedType( const FilePos& file_pos );
 CodeBuilderError ReportStructInitializerForNonStruct( const FilePos& file_pos );
+CodeBuilderError ReportInitializerForNonfieldStructMember( const FilePos& file_pos, const ProgramString& member_name );
 CodeBuilderError ReportDuplicatedStructMemberInitializer( const FilePos& file_pos, const ProgramString& member_name );
 CodeBuilderError ReportMissingStructMemberInitializer( const FilePos& file_pos, const ProgramString& member_name );
 CodeBuilderError ReportInvalidTypeForAutoVariable( const FilePos& file_pos, const ProgramString& type_name );

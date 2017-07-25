@@ -556,14 +556,18 @@ Variable CodeBuilder::BuildMemberAccessOperator(
 	U_ASSERT( *class_type != nullptr );
 	const Variable& variable= *value.GetVariable();
 
-	const Class::Field* field= (*class_type)->GetField( member_access_operator.member_name_ );
-	if( field == nullptr )
+	const NamesScope::InsertedName* const class_member= (*class_type)->members.GetName( member_access_operator.member_name_ );
+	if( class_member == nullptr )
 	{
 		errors_.push_back( ReportNameNotFound( member_access_operator.file_pos_, member_access_operator.member_name_ ) );
 		throw ProgramError();
 	}
-
-	U_ASSERT( variable.location == Variable::Location::Pointer );
+	const ClassField* const field= class_member->second.GetClassField();
+	if( field == nullptr )
+	{
+		// TODO
+		throw ProgramError();
+	}
 
 	// Make first index = 0 for array to pointer conversion.
 	llvm::Value* index_list[2];

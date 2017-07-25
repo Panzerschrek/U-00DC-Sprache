@@ -424,6 +424,19 @@ CodeBuilderError ReportStructInitializerForNonStruct( const FilePos& file_pos )
 	return error;
 }
 
+CodeBuilderError ReportInitializerForNonfieldStructMember(
+	const FilePos& file_pos,
+	const ProgramString& member_name )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::StructInitializerForNonStruct;
+
+	error.text= "Initializer for \"."_SpC + member_name + "\" which is not a field."_SpC;
+
+	return error;
+}
+
 CodeBuilderError ReportDuplicatedStructMemberInitializer( const FilePos& file_pos, const ProgramString& member_name )
 {
 	CodeBuilderError error;
