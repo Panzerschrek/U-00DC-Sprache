@@ -430,7 +430,7 @@ CodeBuilderError ReportInitializerForNonfieldStructMember(
 {
 	CodeBuilderError error;
 	error.file_pos= file_pos;
-	error.code= CodeBuilderErrorCode::StructInitializerForNonStruct;
+	error.code= CodeBuilderErrorCode::InitializerForNonfieldStructMember;
 
 	error.text= "Initializer for \"."_SpC + member_name + "\" which is not a field."_SpC;
 

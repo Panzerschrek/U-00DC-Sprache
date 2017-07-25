@@ -1419,14 +1419,14 @@ std::unique_ptr<ClassDeclaration> SyntaxAnalyzer::ParseClass()
 			}
 			field.name= it_->text;
 			++it_;
-		}
 
-		if( it_->type != Lexem::Type::Semicolon )
-		{
-			PushErrorMessage( *it_ );
-			return nullptr;
+			if( it_->type != Lexem::Type::Semicolon )
+			{
+				PushErrorMessage( *it_ );
+				return nullptr;
+			}
+			++it_;U_ASSERT( it_ < it_end_ );
 		}
-		++it_;U_ASSERT( it_ < it_end_ );
 	}
 
 	if( it_->type != Lexem::Type::BraceRight )

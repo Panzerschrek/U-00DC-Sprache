@@ -291,8 +291,6 @@ U_TEST(StructInitializerForNonStructTest0)
 	U_TEST_ASSERT( error.file_pos.line == 4u );
 }
 
-// TODO - enable test, when member functions will be implimented.
-/*
 U_TEST(InitializerForNonfieldStructMemberTest0)
 {
 	// Struct initializer for array.
@@ -302,7 +300,7 @@ U_TEST(InitializerForNonfieldStructMemberTest0)
 		{
 			i32 x;
 			fn Foo(){}
-		};
+		}
 		fn Foo()
 		{
 			var S s{ .x= 0, .Foo= 0 };
@@ -317,7 +315,6 @@ U_TEST(InitializerForNonfieldStructMemberTest0)
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::InitializerForNonfieldStructMember );
 	U_TEST_ASSERT( error.file_pos.line == 9u );
 }
-*/
 
 U_TEST(DuplicatedStructMemberInitializerTest0)
 {

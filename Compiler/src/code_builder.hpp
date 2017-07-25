@@ -63,6 +63,8 @@ private:
 	Type PrepareType( const FilePos& file_pos, const TypeName& type_name );
 	ClassPtr PrepareClass( const ClassDeclaration& class_declaration );
 
+	void PrepareFunction( const FunctionDeclaration& func, NamesScope& scope );
+
 	// Code build methods.
 	// Methods without "noexcept" can throw exceptions.
 	// Methods with "noexcept" can not throw exceptions and must catch exceptions.
@@ -70,6 +72,7 @@ private:
 
 	void BuildFuncCode(
 		FunctionVariable& func,
+		const NamesScope& parent_names_scope,
 		const ProgramString& func_name,
 		const FunctionArgumentsDeclaration& args,
 		const Block* block ) noexcept;
