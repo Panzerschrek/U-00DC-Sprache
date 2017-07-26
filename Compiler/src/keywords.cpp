@@ -68,6 +68,7 @@ static const Globals& GetGlobals()
 		[ size_t(Keywords::imut_) ]= "imut",
 
 		[ size_t(Keywords::zero_init_) ]= "zero_init",
+		[ size_t(Keywords::this_) ]= "this",
 
 		[ size_t(Keywords::for_) ]= "for",
 		[ size_t(Keywords::do_) ]= "do",

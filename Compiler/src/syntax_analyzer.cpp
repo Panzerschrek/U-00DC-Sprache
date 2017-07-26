@@ -1230,6 +1230,66 @@ std::unique_ptr<FunctionDeclaration> SyntaxAnalyzer::ParseFunction()
 
 	std::vector<FunctionArgumentDeclarationPtr> arguments;
 
+	// Try parse "this"
+	if( it_->type == Lexem::Type::Identifier )
+	{
+		bool is_this= false;
+		MutabilityModifier mutability_modifier= MutabilityModifier::None;
+		if( it_->text == Keywords::mut_ )
+		{
+			++it_; U_ASSERT( it_ < it_end_ );
+			if( !( it_->type == Lexem::Type::Identifier && it_->text == Keywords::this_ ) )
+			{
+				PushErrorMessage( *it_ );
+				return nullptr;
+			}
+			++it_; U_ASSERT( it_ < it_end_ );
+
+			is_this= true;
+			mutability_modifier= MutabilityModifier::Mutable;
+		}
+		else if( it_->text == Keywords::imut_ )
+		{
+			++it_; U_ASSERT( it_ < it_end_ );
+			if( !( it_->type == Lexem::Type::Identifier && it_->text == Keywords::this_ ) )
+			{
+				PushErrorMessage( *it_ );
+				return nullptr;
+			}
+			++it_; U_ASSERT( it_ < it_end_ );
+
+			is_this= true;
+			mutability_modifier= MutabilityModifier::Immutable;
+		}
+		else if( it_->text == Keywords::this_ )
+		{
+			is_this= true;
+			++it_; U_ASSERT( it_ < it_end_ );
+		}
+
+		if( is_this )
+		{
+			arguments.emplace_back(
+				new FunctionArgumentDeclaration(
+					it_->file_pos,
+					Keyword( Keywords::this_ ),
+					TypeName(),
+					mutability_modifier,
+					ReferenceModifier::Reference ) );
+
+			if( it_->type == Lexem::Type::Comma )
+			{
+				++it_;
+				// Disallov constructions, like "fn f( mut this, ){}"
+				if( it_->type == Lexem::Type::BracketRight )
+				{
+					PushErrorMessage( *it_ );
+					return nullptr;
+				}
+			}
+		}
+	}
+
 	while(1)
 	{
 		if( it_->type == Lexem::Type::BracketRight )

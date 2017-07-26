@@ -47,6 +47,8 @@ enum class Keywords : unsigned int
 
 	zero_init_,
 
+	this_,
+
 	// Reserved keywords for future usage.
 	for_,
 	do_,
