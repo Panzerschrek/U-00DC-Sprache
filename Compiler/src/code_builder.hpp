@@ -191,6 +191,7 @@ private:
 	const FunctionVariable& GetOverloadedFunction(
 		const OverloadedFunctionsSet& functions_set,
 		const std::vector<Function::Arg>& actual_args,
+		bool first_actual_arg_is_this,
 		const FilePos& file_pos );
 
 	// Initializers.

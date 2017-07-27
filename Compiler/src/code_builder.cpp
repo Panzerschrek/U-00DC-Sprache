@@ -1297,9 +1297,11 @@ void CodeBuilder::ApplyOverloadedFunction(
 const FunctionVariable& CodeBuilder::GetOverloadedFunction(
 	const OverloadedFunctionsSet& functions_set,
 	const std::vector<Function::Arg>& actual_args,
+	const bool first_actual_arg_is_this,
 	const FilePos& file_pos )
 {
 	U_ASSERT( !functions_set.empty() );
+	U_ASSERT( !( first_actual_arg_is_this && actual_args.empty() ) );
 
 	// If we have only one function - return it.
 	// Caller can generate error, if arguments does not match.
@@ -1311,24 +1313,38 @@ const FunctionVariable& CodeBuilder::GetOverloadedFunction(
 	{
 		const Function& function_type= *boost::get<FunctionPtr>( function.type.one_of_type_kind );
 
+		size_t actial_arg_count;
+		const Function::Arg* actual_args_begin;
+		if( first_actual_arg_is_this && !function.is_this_call )
+		{
+			// In case of static function call via "this" compare actual args without "this".
+			actual_args_begin= actual_args.data() + 1u;
+			actial_arg_count= actual_args.size() - 1u;
+		}
+		else
+		{
+			actual_args_begin= actual_args.data();
+			actial_arg_count= actual_args.size();
+		}
+
 		// SPRACHE_TODO - handle functions with default arguments.
-		if( function_type.args.size() != actual_args.size() )
+		if( function_type.args.size() != actial_arg_count )
 			continue;
 
 		bool match= true;
-		for( unsigned int i= 0u; i < actual_args.size(); i++ )
+		for( unsigned int i= 0u; i < actial_arg_count; i++ )
 		{
 			// SPRACHE_TODO - support type-casting for function call.
 			// SPRACHE_TODO - support references-casting.
 			// Now - only exactly compare types.
-			if( actual_args[i].type != function_type.args[i].type )
+			if( actual_args_begin[i].type != function_type.args[i].type )
 			{
 				match= false;
 				break;
 			}
 
 			if( GetArgOverloadingClass( function_type.args[i] ) == ArgOverloadingClass::MutalbeReference &&
-				GetArgOverloadingClass( actual_args[i] ) != ArgOverloadingClass::MutalbeReference )
+				GetArgOverloadingClass( actual_args_begin[i] ) != ArgOverloadingClass::MutalbeReference )
 			{
 				// We can only bind nonconst-reference arg to nonconst-reference parameter.
 				match= false;

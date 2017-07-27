@@ -617,8 +617,8 @@ Variable CodeBuilder::BuildCallOperator(
 		throw ProgramError();
 	}
 
-	const size_t this_count= this_ == nullptr ? 0u : 1u;
-	const size_t total_args= this_count + call_operator.arguments_.size();
+	size_t this_count= this_ == nullptr ? 0u : 1u;
+	size_t total_args= this_count + call_operator.arguments_.size();
 	std::vector<Function::Arg> actual_args;
 	std::vector<Variable> actual_args_variables;
 	actual_args.reserve( total_args );
@@ -656,10 +656,28 @@ Variable CodeBuilder::BuildCallOperator(
 
 	// SPRACHE_TODO - try get function with "this" parameter in signature and without it.
 	// We must support static functions call using "this".
-	const FunctionVariable& function= GetOverloadedFunction( *functions_set, actual_args, call_operator.file_pos_ );
+	const FunctionVariable& function=
+		GetOverloadedFunction( *functions_set, actual_args, this_ != nullptr, call_operator.file_pos_ );
 	const Function& function_type= *boost::get<FunctionPtr>( function.type.one_of_type_kind );
 
-	if( function_type.args.size() != actual_args.size( ))
+	if( this_ != nullptr && !function.is_this_call )
+	{
+		// Static function call via "this".
+		// Just dump first "this" arg.
+		this_count--;
+		total_args--;
+		actual_args.erase( actual_args.begin() );
+		actual_args_variables.erase( actual_args_variables.begin() );
+	}
+
+	if( this_ == nullptr && function.is_this_call )
+	{
+		// TODO - error
+		// Somewhere trying to call "this_call" function, passing "fake this" as first argument.
+		throw ProgramError();
+	}
+
+	if( function_type.args.size() != actual_args.size() )
 	{
 		errors_.push_back( ReportFunctionSignatureMismatch( call_operator.file_pos_ ) );
 		throw ProgramError();
