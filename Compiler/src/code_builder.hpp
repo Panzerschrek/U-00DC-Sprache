@@ -45,6 +45,8 @@ private:
 		bool return_value_is_mutable;
 		bool return_value_is_reference;
 
+		const Variable* this_= nullptr; // null for nonclass functions or static member functions.
+
 		llvm::Function* const function;
 		llvm::BasicBlock* const function_basic_block;
 		llvm::IRBuilder<> llvm_ir_builder;
@@ -63,7 +65,11 @@ private:
 	Type PrepareType( const FilePos& file_pos, const TypeName& type_name );
 	ClassPtr PrepareClass( const ClassDeclaration& class_declaration );
 
-	void PrepareFunction( const FunctionDeclaration& func, NamesScope& scope );
+	void PrepareFunction(
+		const FunctionDeclaration& func,
+		bool force_prototype,
+		ClassPtr base_class,
+		NamesScope& scope );
 
 	// Code build methods.
 	// Methods without "noexcept" can throw exceptions.
@@ -72,6 +78,7 @@ private:
 
 	void BuildFuncCode(
 		FunctionVariable& func,
+		ClassPtr base_class,
 		const NamesScope& parent_names_scope,
 		const ProgramString& func_name,
 		const FunctionArgumentsDeclaration& args,

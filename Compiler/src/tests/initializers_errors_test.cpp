@@ -299,7 +299,7 @@ U_TEST(InitializerForNonfieldStructMemberTest0)
 		struct S
 		{
 			i32 x;
-			fn Foo(){}
+			fn Foo( this ){}
 		}
 		fn Foo()
 		{

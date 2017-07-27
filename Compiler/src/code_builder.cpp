@@ -90,7 +90,7 @@ CodeBuilder::BuildResult CodeBuilder::BuildProgram( const ProgramElements& progr
 		if( const FunctionDeclaration* func=
 			dynamic_cast<const FunctionDeclaration*>( program_element.get() ) )
 		{
-			PrepareFunction( *func, global_names_ );
+			PrepareFunction( *func, false, nullptr, global_names_ );
 		}
 		else if(
 			const ClassDeclaration* class_=
@@ -216,9 +216,9 @@ ClassPtr CodeBuilder::PrepareClass( const ClassDeclaration& class_declaration )
 	if( IsKeyword( class_declaration.name_ ) )
 		errors_.push_back( ReportUsingKeywordAsName( class_declaration.file_pos_ ) );
 
-	ClassPtr result= std::make_shared<Class>();
+	ClassPtr the_class= std::make_shared<Class>();
 
-	result->name= class_declaration.name_;
+	the_class->name= class_declaration.name_;
 
 	std::vector<llvm::Type*> members_llvm_types;
 
@@ -227,37 +227,51 @@ ClassPtr CodeBuilder::PrepareClass( const ClassDeclaration& class_declaration )
 	{
 		ClassField out_field;
 		out_field.type= PrepareType( in_field.file_pos, in_field.type );
-		out_field.index= result->field_count;
+		out_field.index= the_class->field_count;
 
 		members_llvm_types.emplace_back( out_field.type.GetLLVMType() );
 
 		const NamesScope::InsertedName* const inserted_field=
-			result->members.AddName( in_field.name, std::move( out_field ) );
+			the_class->members.AddName( in_field.name, std::move( out_field ) );
 		if( inserted_field == nullptr )
 			errors_.push_back( ReportRedefinition( in_field.file_pos, in_field.name ) );
 
-		result->field_count++;
+		the_class->field_count++;
 	}
 
-	for( const std::unique_ptr<FunctionDeclaration>& member_function : class_declaration.functions_ )
-	{
-		U_ASSERT( member_function != nullptr );
-		PrepareFunction( *member_function, result->members );
-	}
-
-	result->llvm_type=
+	the_class->llvm_type=
 		llvm::StructType::create(
 			llvm_context_,
 			members_llvm_types,
 			ToStdString(class_declaration.name_) );
 
-	return result;
+	// First time, push only prototypes.
+	for( const std::unique_ptr<FunctionDeclaration>& member_function : class_declaration.functions_ )
+	{
+		U_ASSERT( member_function != nullptr );
+		PrepareFunction( *member_function, true, the_class, the_class->members );
+	}
+	// Build functions with body.
+	for( const std::unique_ptr<FunctionDeclaration>& member_function : class_declaration.functions_ )
+	{
+		U_ASSERT( member_function != nullptr );
+		if( member_function->block_ != nullptr )
+			PrepareFunction( *member_function, false, the_class, the_class->members );
+	}
+
+	return the_class;
 }
 
-void CodeBuilder::PrepareFunction( const FunctionDeclaration& func, NamesScope& names_scope )
+void CodeBuilder::PrepareFunction(
+	const FunctionDeclaration& func,
+	const bool force_prototype,
+	const ClassPtr base_class,
+	NamesScope& names_scope )
 {
 	if( IsKeyword( func.name_ ) )
 		errors_.push_back( ReportUsingKeywordAsName( func.file_pos_ ) );
+
+	const Block* const block= force_prototype ? nullptr : func.block_.get();
 
 	FunctionVariable func_variable;
 
@@ -294,20 +308,31 @@ void CodeBuilder::PrepareFunction( const FunctionDeclaration& func, NamesScope& 
 	function_type.args.reserve( func.arguments_.size() );
 	for( const FunctionArgumentDeclarationPtr& arg : func.arguments_ )
 	{
-		if( IsKeyword( arg->name_ ) )
+		const bool is_this= arg == func.arguments_.front() && arg->name_ == Keywords::this_;
+
+		if( !is_this && IsKeyword( arg->name_ ) )
 			errors_.push_back( ReportUsingKeywordAsName( arg->file_pos_ ) );
 
 		function_type.args.emplace_back();
 		Function::Arg& out_arg= function_type.args.back();
 
-		out_arg.type= PrepareType( arg->file_pos_, arg->type_ );
+		if( is_this )
+		{
+			if( base_class == nullptr )
+			{
+				// TODO - report "this in nonclass function"
+			}
+			out_arg.type.one_of_type_kind= base_class;
+		}
+		else
+			out_arg.type= PrepareType( arg->file_pos_, arg->type_ );
 
 		// TODO - make variables without explicit mutability modifiers immutable.
 		if( arg->mutability_modifier_ == MutabilityModifier::Immutable )
 			out_arg.is_mutable= false;
 		else
 			out_arg.is_mutable= true;
-		out_arg.is_reference= arg->reference_modifier_ == ReferenceModifier::Reference;
+		out_arg.is_reference= is_this || arg->reference_modifier_ == ReferenceModifier::Reference;
 	}
 
 	NamesScope::InsertedName* const func_name=
@@ -324,10 +349,11 @@ void CodeBuilder::PrepareFunction( const FunctionDeclaration& func, NamesScope& 
 
 		BuildFuncCode(
 			inserted_func->second.GetFunctionsSet()->front(),
+			base_class,
 			&names_scope,
 			func.name_,
 			func.arguments_,
-			func.block_.get() );
+			block );
 	}
 	else
 	{
@@ -339,7 +365,7 @@ void CodeBuilder::PrepareFunction( const FunctionDeclaration& func, NamesScope& 
 					*boost::get<FunctionPtr>( func_variable.type.one_of_type_kind ),
 					*functions_set ) )
 			{
-				if( func.block_ == nullptr )
+				if( block == nullptr )
 				{
 					errors_.push_back( ReportFunctionPrototypeDuplication( func.file_pos_, func.name_ ) );
 					return;
@@ -358,10 +384,11 @@ void CodeBuilder::PrepareFunction( const FunctionDeclaration& func, NamesScope& 
 
 				BuildFuncCode(
 					*same_function,
+					base_class,
 					&names_scope,
 					func.name_,
 					func.arguments_,
-					func.block_.get() );
+					block );
 			}
 			else
 			{
@@ -376,10 +403,11 @@ void CodeBuilder::PrepareFunction( const FunctionDeclaration& func, NamesScope& 
 
 				BuildFuncCode(
 					functions_set->back(),
+					base_class,
 					&names_scope,
 					func.name_,
 					func.arguments_,
-					func.block_.get() );
+					block );
 			}
 		}
 		else
@@ -389,6 +417,7 @@ void CodeBuilder::PrepareFunction( const FunctionDeclaration& func, NamesScope& 
 
 void CodeBuilder::BuildFuncCode(
 	FunctionVariable& func_variable,
+	const ClassPtr base_class,
 	const NamesScope& parent_names_scope,
 	const ProgramString& func_name,
 	const FunctionArgumentsDeclaration& args,
@@ -459,10 +488,14 @@ void CodeBuilder::BuildFuncCode(
 		llvm_context_,
 		llvm_function );
 
+	// push args
 	unsigned int arg_number= 0u;
 	for( llvm::Argument& llvm_arg : llvm_function->args() )
 	{
 		const Function::Arg& arg= function_type_ptr->args[ arg_number ];
+
+		const bool is_this= arg_number == 0u && args[ arg_number ]->name_ == Keywords::this_;
+		U_ASSERT( !( is_this && !arg.is_reference ) );
 
 		Variable var;
 		var.location= Variable::Location::LLVMRegister;
@@ -489,8 +522,7 @@ void CodeBuilder::BuildFuncCode(
 		}
 
 		const ProgramString& arg_name= args[ arg_number ]->name_;
-
-		const NamesScope::InsertedName* inserted_arg=
+		const NamesScope::InsertedName* const inserted_arg=
 			function_names.AddName(
 				arg_name,
 				std::move(var) );
@@ -498,6 +530,14 @@ void CodeBuilder::BuildFuncCode(
 		{
 			errors_.push_back( ReportRedefinition( args[ arg_number ]->file_pos_, arg_name ) );
 			return;
+		}
+
+		// Save "this" in function context for accessing inside class methods.
+		// "This" inserted to names scope for accessing via "this.member".
+		if( is_this )
+		{
+			function_context.this_= inserted_arg->second.GetVariable();
+			U_ASSERT( function_context.this_ != nullptr );
 		}
 
 		llvm_arg.setName( ToStdString( arg_name ) );
