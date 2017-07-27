@@ -556,7 +556,7 @@ Value CodeBuilder::BuildMemberAccessOperator(
 	U_ASSERT( *class_type != nullptr );
 	const Variable& variable= *value.GetVariable();
 
-	const NamesScope::InsertedName* const class_member= (*class_type)->members.GetName( member_access_operator.member_name_ );
+	const NamesScope::InsertedName* const class_member= (*class_type)->members.GetThisScopeName( member_access_operator.member_name_ );
 	if( class_member == nullptr )
 	{
 		errors_.push_back( ReportNameNotFound( member_access_operator.file_pos_, member_access_operator.member_name_ ) );
