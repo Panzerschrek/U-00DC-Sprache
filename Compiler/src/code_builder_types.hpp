@@ -26,6 +26,7 @@ typedef std::unique_ptr<Array> ArrayPtr;
 
 struct Class;
 typedef std::shared_ptr<Class> ClassPtr;
+typedef std::weak_ptr<Class> ClassWeakPtr;
 
 struct FundamentalType final
 {
@@ -140,7 +141,8 @@ struct Variable final
 struct ClassField final
 {
 	Type type;
-	unsigned int index;
+	unsigned int index= 0u;
+	ClassWeakPtr class_;
 };
 
 // "this" + functions set of class of "this"

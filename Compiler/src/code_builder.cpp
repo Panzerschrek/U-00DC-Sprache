@@ -228,6 +228,7 @@ ClassPtr CodeBuilder::PrepareClass( const ClassDeclaration& class_declaration )
 		ClassField out_field;
 		out_field.type= PrepareType( in_field.file_pos, in_field.type );
 		out_field.index= the_class->field_count;
+		out_field.class_= the_class;
 
 		members_llvm_types.emplace_back( out_field.type.GetLLVMType() );
 

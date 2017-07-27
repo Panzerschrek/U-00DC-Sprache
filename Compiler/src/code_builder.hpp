@@ -109,7 +109,7 @@ private:
 		const FilePos& file_pos,
 		FunctionContext& function_context );
 
-	Value BuildNamedOperand( const NamedOperand& named_operand, const NamesScope& names );
+	Value BuildNamedOperand( const NamedOperand& named_operand, const NamesScope& names, FunctionContext& function_context );
 	Variable BuildNumericConstant( const NumericConstant& numeric_constant );
 	Variable BuildBooleanConstant( const BooleanConstant& boolean_constant );
 

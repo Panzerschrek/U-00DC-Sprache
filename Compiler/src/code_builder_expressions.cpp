@@ -80,7 +80,7 @@ Value CodeBuilder::BuildExpressionCode_r(
 		if( const NamedOperand* const named_operand=
 			dynamic_cast<const NamedOperand*>(&operand) )
 		{
-			result= BuildNamedOperand( *named_operand, names );
+			result= BuildNamedOperand( *named_operand, names, function_context );
 		}
 		else if( const NumericConstant* numeric_constant=
 			dynamic_cast<const NumericConstant*>(&operand) )
@@ -433,7 +433,8 @@ Variable CodeBuilder::BuildBinaryOperator(
 
 Value CodeBuilder::BuildNamedOperand(
 	const NamedOperand& named_operand,
-	const NamesScope& names )
+	const NamesScope& names,
+	FunctionContext& function_context )
 {
 	const NamesScope::InsertedName* name_entry=
 		names.GetName( named_operand.name_ );
@@ -441,6 +442,45 @@ Value CodeBuilder::BuildNamedOperand(
 	{
 		errors_.push_back( ReportNameNotFound( named_operand.file_pos_, named_operand.name_ ) );
 		throw ProgramError();
+	}
+
+	if( const ClassField* const field= name_entry->second.GetClassField() )
+	{
+		if( function_context.this_ == nullptr )
+		{
+			// TODO - accessing class field in static function.
+			throw ProgramError();
+		}
+
+		if( const ClassPtr class_= field->class_.lock() )
+		{
+			// SPRACHE_TODO - allow access to parents fields here.
+			Type class_type;
+			class_type.one_of_type_kind= class_;
+			if( class_type != function_context.this_->type )
+			{
+				// TODO - accessing field of non-this class.
+				throw ProgramError();
+			}
+
+			Variable field_variable;
+			field_variable.type= field->type;
+			field_variable.location= Variable::Location::Pointer;
+			field_variable.value_type= function_context.this_->value_type;
+
+			// Make first index = 0 for array to pointer conversion.
+			llvm::Value* index_list[2];
+			index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
+			index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(field->index) ) );
+			field_variable.llvm_value=
+				function_context.llvm_ir_builder.CreateGEP( function_context.this_->llvm_value, index_list );
+
+			return field_variable;
+		}
+		else
+		{
+			U_ASSERT( false && "Class is dead? WTF?" );
+		}
 	}
 
 	return name_entry->second;
