@@ -563,17 +563,19 @@ Value CodeBuilder::BuildMemberAccessOperator(
 		throw ProgramError();
 	}
 
-	// hack for static members.
-	// TODO - return "this + functions set" value.
-	if( const OverloadedFunctionsSet* const functions_set = class_member->second.GetFunctionsSet() )
+	if( const OverloadedFunctionsSet* const functions_set= class_member->second.GetFunctionsSet() )
 	{
-		return *functions_set;
+		ThisOverloadedMethodsSet this_overloaded_methods_set;
+		this_overloaded_methods_set.this_= variable;
+		this_overloaded_methods_set.overloaded_methods_set= *functions_set;
+		return this_overloaded_methods_set;
 	}
 
 	const ClassField* const field= class_member->second.GetClassField();
 	if( field == nullptr )
 	{
-		// TODO
+		// TODO - error
+		// TODO - maybe return type values?
 		throw ProgramError();
 	}
 
@@ -597,32 +599,63 @@ Variable CodeBuilder::BuildCallOperator(
 	const NamesScope& names,
 	FunctionContext& function_context )
 {
-	const OverloadedFunctionsSet* const functions_set= function_value.GetFunctionsSet();
+	const Variable* this_= nullptr;
+
+	const OverloadedFunctionsSet* functions_set= function_value.GetFunctionsSet();
+	if( functions_set != nullptr )
+	{}
+	else if( const ThisOverloadedMethodsSet* const this_overloaded_methods_set=
+		function_value.GetThisOverloadedMethodsSet() )
+	{
+		functions_set= &this_overloaded_methods_set->overloaded_methods_set;
+		this_= &this_overloaded_methods_set->this_;
+	}
+
 	if( functions_set == nullptr )
 	{
 		errors_.push_back( ReportOperationNotSupportedForThisType( call_operator.file_pos_, function_value.GetType().ToString() ) );
 		throw ProgramError();
 	}
 
-	std::vector<Function::Arg> actual_args( call_operator.arguments_.size() );
-	std::vector<Variable> actual_args_variables( call_operator.arguments_.size() );
-	for( unsigned int i= 0u; i < actual_args.size(); i++ )
+	const size_t this_count= this_ == nullptr ? 0u : 1u;
+	const size_t total_args= this_count + call_operator.arguments_.size();
+	std::vector<Function::Arg> actual_args;
+	std::vector<Variable> actual_args_variables;
+	actual_args.reserve( total_args );
+	actual_args_variables.reserve( total_args );
+
+	// Push "this" argument.
+	if( this_ != nullptr )
 	{
-		const Value expr_value= BuildExpressionCode( *call_operator.arguments_[i], names, function_context );
+		actual_args.emplace_back();
+		actual_args.back().type= this_->type;
+		actual_args.back().is_reference= true;
+		actual_args.back().is_mutable= this_->value_type == ValueType::Reference;
+
+		actual_args_variables.push_back( *this_ );
+	}
+	// Push arguments from call operator.
+	for( const BinaryOperatorsChainPtr& arg_expression : call_operator.arguments_ )
+	{
+		U_ASSERT( arg_expression != nullptr );
+		const Value expr_value= BuildExpressionCode( *arg_expression, names, function_context );
 		const Variable* const expr= expr_value.GetVariable();
 		if( expr == nullptr )
 		{
-			errors_.push_back( ReportExpectedVariableAsArgument( call_operator.file_pos_, expr_value.GetType().ToString() ) );
+			errors_.push_back( ReportExpectedVariableAsArgument( arg_expression->file_pos_, expr_value.GetType().ToString() ) );
 			throw ProgramError();
 		}
 
-		actual_args[i].type= expr->type;
-		actual_args[i].is_reference= expr->value_type != ValueType::Value;
-		actual_args[i].is_mutable= expr->value_type == ValueType::Reference;
+		actual_args.emplace_back();
+		actual_args.back().type= expr->type;
+		actual_args.back().is_reference= expr->value_type != ValueType::Value;
+		actual_args.back().is_mutable= expr->value_type == ValueType::Reference;
 
-		actual_args_variables[i]= std::move(*expr);
+		actual_args_variables.push_back( std::move(*expr) );
 	}
 
+	// SPRACHE_TODO - try get function with "this" parameter in signature and without it.
+	// We must support static functions call using "this".
 	const FunctionVariable& function= GetOverloadedFunction( *functions_set, actual_args, call_operator.file_pos_ );
 	const Function& function_type= *boost::get<FunctionPtr>( function.type.one_of_type_kind );
 
@@ -638,9 +671,14 @@ Variable CodeBuilder::BuildCallOperator(
 		const Function::Arg& arg= function_type.args[i];
 		const Variable& expr= actual_args_variables[i];
 
+		const FilePos& file_pos=
+			( this_count != 0u && i == 0u )
+				? call_operator.file_pos_
+				: call_operator.arguments_[i - this_count]->file_pos_;
+
 		if( expr.type != arg.type )
 		{
-			errors_.push_back( ReportFunctionSignatureMismatch( call_operator.arguments_[i]->file_pos_ ) );
+			errors_.push_back( ReportFunctionSignatureMismatch( file_pos ) );
 			throw ProgramError();
 		}
 
@@ -650,12 +688,12 @@ Variable CodeBuilder::BuildCallOperator(
 			{
 				if( expr.value_type == ValueType::Value )
 				{
-					errors_.push_back( ReportExpectedReferenceValue( call_operator.arguments_[i]->file_pos_ ) );
+					errors_.push_back( ReportExpectedReferenceValue( file_pos ) );
 					throw ProgramError();
 				}
 				if( expr.value_type == ValueType::ConstReference )
 				{
-					errors_.push_back( ReportBindingConstReferenceToNonconstReference( call_operator.arguments_[i]->file_pos_ ) );
+					errors_.push_back( ReportBindingConstReferenceToNonconstReference( file_pos ) );
 					throw ProgramError();
 				}
 

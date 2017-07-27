@@ -318,6 +318,7 @@ void CodeBuilder::PrepareFunction(
 
 		if( is_this )
 		{
+			func_variable.is_this_call= true;
 			if( base_class == nullptr )
 			{
 				// TODO - report "this in nonclass function"

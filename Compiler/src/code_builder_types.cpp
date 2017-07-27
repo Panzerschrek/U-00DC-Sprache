@@ -275,6 +275,9 @@ ProgramString Type::ToString() const
 			case NontypeStub::OverloadedFunctionsSet:
 				result= "overloaded functions set"_SpC;
 				break;
+			case NontypeStub::ThisOverloadedMethodsSet:
+				result= "this + overloaded methods set"_SpC;
+				break;
 			case NontypeStub::ClassName:
 				result= "class name"_SpC;
 				break;
@@ -407,6 +410,13 @@ Value::Value( ClassField class_field )
 	something_= std::move( class_field );
 }
 
+Value::Value( ThisOverloadedMethodsSet this_overloaded_methods_set )
+{
+	ThisOverloadedMethodsSetWithTypeStub s;
+	s.set= std::move( this_overloaded_methods_set );
+	something_= std::move( s );
+}
+
 const Type& Value::GetType() const
 {
 	struct Visitor final : public boost::static_visitor<>
@@ -427,6 +437,9 @@ const Type& Value::GetType() const
 
 		void operator()( const ClassField& class_field )
 		{ type= &class_field.type; }
+
+		void operator()( const ThisOverloadedMethodsSetWithTypeStub& overloded_methods_set )
+		{ type= &overloded_methods_set.type; }
 	};
 
 	Visitor visitor;
@@ -491,9 +504,30 @@ const ClassField* Value::GetClassField() const
 	return boost::get<ClassField>( &something_ );
 }
 
+ThisOverloadedMethodsSet* Value::GetThisOverloadedMethodsSet()
+{
+	ThisOverloadedMethodsSetWithTypeStub* const set= boost::get<ThisOverloadedMethodsSetWithTypeStub>( &something_ );
+	if( set == nullptr )
+		return nullptr;
+	return &set->set;
+}
+
+const ThisOverloadedMethodsSet* Value::GetThisOverloadedMethodsSet() const
+{
+	const ThisOverloadedMethodsSetWithTypeStub* const set= boost::get<ThisOverloadedMethodsSetWithTypeStub>( &something_ );
+	if( set == nullptr )
+		return nullptr;
+	return &set->set;
+}
+
 Value::OverloadedFunctionsSetWithTypeStub::OverloadedFunctionsSetWithTypeStub()
 {
 	type.one_of_type_kind= NontypeStub::OverloadedFunctionsSet;
+}
+
+Value::ThisOverloadedMethodsSetWithTypeStub::ThisOverloadedMethodsSetWithTypeStub()
+{
+	type.one_of_type_kind= NontypeStub::ThisOverloadedMethodsSet;
 }
 
 Value::ClassWithTypeStub::ClassWithTypeStub()

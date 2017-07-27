@@ -39,6 +39,7 @@ struct FundamentalType final
 enum class NontypeStub
 {
 	OverloadedFunctionsSet,
+	ThisOverloadedMethodsSet,
 	ClassName,
 };
 
@@ -109,6 +110,7 @@ struct FunctionVariable final
 	Type type;
 	llvm::Function* llvm_function= nullptr;
 	bool have_body= true;
+	bool is_this_call= false;
 };
 
 // Set of functions with same name, but different signature.
@@ -141,6 +143,13 @@ struct ClassField final
 	unsigned int index;
 };
 
+// "this" + functions set of class of "this"
+struct ThisOverloadedMethodsSet final
+{
+	Variable this_;
+	OverloadedFunctionsSet overloaded_methods_set;
+};
+
 class Value final
 {
 public:
@@ -150,6 +159,7 @@ public:
 	Value( OverloadedFunctionsSet functions_set );
 	Value( const ClassPtr& class_ );
 	Value( ClassField class_field );
+	Value( ThisOverloadedMethodsSet class_field );
 
 	const Type& GetType() const;
 
@@ -168,6 +178,9 @@ public:
 	// Class fields
 	const ClassField* GetClassField() const;
 
+	ThisOverloadedMethodsSet* GetThisOverloadedMethodsSet();
+	const ThisOverloadedMethodsSet* GetThisOverloadedMethodsSet() const;
+
 private:
 	struct OverloadedFunctionsSetWithTypeStub
 	{
@@ -175,6 +188,13 @@ private:
 
 		Type type;
 		OverloadedFunctionsSet set;
+	};
+	struct ThisOverloadedMethodsSetWithTypeStub
+	{
+		ThisOverloadedMethodsSetWithTypeStub();
+
+		Type type;
+		ThisOverloadedMethodsSet set;
 	};
 	struct ClassWithTypeStub
 	{
@@ -185,7 +205,13 @@ private:
 	};
 
 private:
-	boost::variant< Variable, FunctionVariable, OverloadedFunctionsSetWithTypeStub, ClassWithTypeStub, ClassField > something_;
+	boost::variant<
+		Variable,
+		FunctionVariable,
+		OverloadedFunctionsSetWithTypeStub,
+		ClassWithTypeStub,
+		ClassField,
+		ThisOverloadedMethodsSetWithTypeStub > something_;
 };
 
 // "Class" of function argument in terms of overloading.
