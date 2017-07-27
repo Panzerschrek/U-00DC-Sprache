@@ -542,7 +542,7 @@ Variable CodeBuilder::BuildIndexationOperator(
 	return result;
 }
 
-Variable CodeBuilder::BuildMemberAccessOperator(
+Value CodeBuilder::BuildMemberAccessOperator(
 	const Value& value,
 	const MemberAccessOperator& member_access_operator,
 	FunctionContext& function_context )
@@ -562,6 +562,14 @@ Variable CodeBuilder::BuildMemberAccessOperator(
 		errors_.push_back( ReportNameNotFound( member_access_operator.file_pos_, member_access_operator.member_name_ ) );
 		throw ProgramError();
 	}
+
+	// hack for static members.
+	// TODO - return "this + functions set" value.
+	if( const OverloadedFunctionsSet* const functions_set = class_member->second.GetFunctionsSet() )
+	{
+		return *functions_set;
+	}
+
 	const ClassField* const field= class_member->second.GetClassField();
 	if( field == nullptr )
 	{

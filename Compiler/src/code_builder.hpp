@@ -119,7 +119,7 @@ private:
 		const NamesScope& names,
 		FunctionContext& function_context );
 
-	Variable BuildMemberAccessOperator(
+	Value BuildMemberAccessOperator(
 		const Value& value,
 		const MemberAccessOperator& member_access_operator,
 		FunctionContext& function_context );
