@@ -452,34 +452,50 @@ Value CodeBuilder::BuildNamedOperand(
 			throw ProgramError();
 		}
 
-		if( const ClassPtr class_= field->class_.lock() )
+		const ClassPtr class_= field->class_.lock();
+		U_ASSERT( class_ != nullptr  && "Class is dead? WTF?" );
+
+		// SPRACHE_TODO - allow access to parents fields here.
+		Type class_type;
+		class_type.one_of_type_kind= class_;
+		if( class_type != function_context.this_->type )
 		{
-			// SPRACHE_TODO - allow access to parents fields here.
-			Type class_type;
-			class_type.one_of_type_kind= class_;
-			if( class_type != function_context.this_->type )
-			{
-				// TODO - accessing field of non-this class.
-				throw ProgramError();
-			}
-
-			Variable field_variable;
-			field_variable.type= field->type;
-			field_variable.location= Variable::Location::Pointer;
-			field_variable.value_type= function_context.this_->value_type;
-
-			// Make first index = 0 for array to pointer conversion.
-			llvm::Value* index_list[2];
-			index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
-			index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(field->index) ) );
-			field_variable.llvm_value=
-				function_context.llvm_ir_builder.CreateGEP( function_context.this_->llvm_value, index_list );
-
-			return field_variable;
+			// TODO - accessing field of non-this class.
+			throw ProgramError();
 		}
-		else
+
+		Variable field_variable;
+		field_variable.type= field->type;
+		field_variable.location= Variable::Location::Pointer;
+		field_variable.value_type= function_context.this_->value_type;
+
+		// Make first index = 0 for array to pointer conversion.
+		llvm::Value* index_list[2];
+		index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
+		index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(field->index) ) );
+		field_variable.llvm_value=
+			function_context.llvm_ir_builder.CreateGEP( function_context.this_->llvm_value, index_list );
+
+		return field_variable;
+	}
+	else if( const OverloadedFunctionsSet* const overloaded_functions_set=
+		name_entry->second.GetFunctionsSet() )
+	{
+		if( function_context.this_ != nullptr )
 		{
-			U_ASSERT( false && "Class is dead? WTF?" );
+			// Trying add "this" to functions set.
+			const ClassPtr class_= boost::get<ClassPtr>( function_context.this_->type.one_of_type_kind );
+
+			const NamesScope::InsertedName* const same_set_in_class=
+				class_->members.GetThisScopeName( named_operand.name_ );
+			// SPRACHE_TODO - add "this" for functions from parent classes.
+			if( name_entry == same_set_in_class )
+			{
+				ThisOverloadedMethodsSet this_overloaded_methods_set;
+				this_overloaded_methods_set.this_= *function_context.this_;
+				this_overloaded_methods_set.overloaded_methods_set= *overloaded_functions_set;
+				return this_overloaded_methods_set;
+			}
 		}
 	}
 
@@ -626,7 +642,7 @@ Value CodeBuilder::BuildMemberAccessOperator(
 
 	Variable result;
 	result.location= Variable::Location::Pointer;
-	result.value_type= ValueType::Reference;
+	result.value_type= variable.value_type;
 	result.type= field->type;
 	result.llvm_value=
 		function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, index_list );

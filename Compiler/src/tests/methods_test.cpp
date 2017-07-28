@@ -109,7 +109,7 @@ U_TEST(MethodTest3)
 		}
 	)";
 
-	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ), true );
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
 	U_TEST_ASSERT( function != nullptr );
@@ -120,6 +120,114 @@ U_TEST(MethodTest3)
 			llvm::ArrayRef<llvm::GenericValue>() );
 
 	U_TEST_ASSERT( 84167.1 == result_value.DoubleVal );
+}
+
+U_TEST(MethodTest4)
+{
+	// Call one class function from another.
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			f64 x_;
+			fn GetX( this ) : f64 { return GetXImpl(); }
+			fn GetXImpl( this ) : f64 { return x_; }
+		}
+		fn Foo() : f64
+		{
+			var S s{ .x_= -5687.31 };
+			return s.GetX();
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
+	U_TEST_ASSERT( function != nullptr );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( -5687.31 == result_value.DoubleVal );
+}
+
+U_TEST(MethodTest5)
+{
+	// Methods overloading
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			f64 x_;
+			fn GetX( this, f64 scale ) : f64
+			{
+				return x_ * scale;
+			}
+			fn GetX( this, bool negate_it ) : f64
+			{
+				if( negate_it ) { return -x_; }
+				return x_;
+			}
+		}
+		fn Foo() : f64
+		{
+			var S s{ .x_= 13.0 };
+			return s.GetX( 3.0 ) * s.GetX( true );
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
+	U_TEST_ASSERT( function != nullptr );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( ( 13.0 * 3.0 ) * ( -13.0 ) == result_value.DoubleVal );
+}
+
+U_TEST(MethodTest6)
+{
+	// mut/imut this overloading.
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			f64 x_;
+			fn GetX( mut this ) : f64
+			{
+				return x_ * 2.0;
+			}
+			fn GetX( imut this ) : f64
+			{
+				return x_ / 7.0;
+			}
+		}
+		fn Foo() : f64
+		{
+			var S s{ .x_= 13.0 };
+			var S & mut s_mut = s;
+			var S &imut s_imut= s;
+			return s_mut.GetX() - s_imut.GetX();
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
+	U_TEST_ASSERT( function != nullptr );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( ( 13.0 * 2.0 ) - ( 13.0 / 7.0 ) == result_value.DoubleVal );
 }
 
 } // namespace U
