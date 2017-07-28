@@ -448,7 +448,7 @@ Value CodeBuilder::BuildNamedOperand(
 	{
 		if( function_context.this_ == nullptr )
 		{
-			// TODO - accessing class field in static function.
+			errors_.push_back( ReportClassFiledAccessInStaticMethod( named_operand.file_pos_, named_operand.name_ ) );
 			throw ProgramError();
 		}
 
@@ -460,7 +460,8 @@ Value CodeBuilder::BuildNamedOperand(
 		class_type.one_of_type_kind= class_;
 		if( class_type != function_context.this_->type )
 		{
-			// TODO - accessing field of non-this class.
+			// SPRACHE_TODO - accessing field of non-this class.
+			errors_.push_back( ReportNotImplemented( named_operand.file_pos_, "classes inside other classes" ) );
 			throw ProgramError();
 		}
 
@@ -630,8 +631,7 @@ Value CodeBuilder::BuildMemberAccessOperator(
 	const ClassField* const field= class_member->second.GetClassField();
 	if( field == nullptr )
 	{
-		// TODO - error
-		// TODO - maybe return type values?
+		errors_.push_back( ReportNotImplemented( member_access_operator.file_pos_, "class members, except fields or methods" ) );
 		throw ProgramError();
 	}
 
@@ -728,8 +728,7 @@ Variable CodeBuilder::BuildCallOperator(
 
 	if( this_ == nullptr && function.is_this_call )
 	{
-		// TODO - error
-		// Somewhere trying to call "this_call" function, passing "fake this" as first argument.
+		errors_.push_back( ReportCallOfThiscallFunctionUsingNonthisArgument( call_operator.file_pos_ ) );
 		throw ProgramError();
 	}
 

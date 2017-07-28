@@ -470,4 +470,26 @@ CodeBuilderError ReportInvalidTypeForAutoVariable( const FilePos& file_pos, cons
 	return error;
 }
 
+CodeBuilderError ReportCallOfThiscallFunctionUsingNonthisArgument( const FilePos& file_pos )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::CallOfThiscallFunctionUsingNonthisArgument;
+
+	error.text= "Call of \"thiscall\" function using nonthis argument."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportClassFiledAccessInStaticMethod( const FilePos& file_pos, const ProgramString& field_name )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::ClassFiledAccessInStaticMethod;
+
+	error.text= "Accessing field \""_SpC + field_name + "\" in static method."_SpC;
+
+	return error;
+}
+
 } // namespace U
