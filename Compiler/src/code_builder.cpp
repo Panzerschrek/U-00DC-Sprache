@@ -265,14 +265,14 @@ ClassPtr CodeBuilder::PrepareClass( const ClassDeclaration& class_declaration )
 
 void CodeBuilder::PrepareFunction(
 	const FunctionDeclaration& func,
-	const bool force_prototype,
+	const bool is_class_method_predeclaration,
 	const ClassPtr base_class,
 	NamesScope& names_scope )
 {
 	if( IsKeyword( func.name_ ) )
 		errors_.push_back( ReportUsingKeywordAsName( func.file_pos_ ) );
 
-	const Block* const block= force_prototype ? nullptr : func.block_.get();
+	const Block* const block= is_class_method_predeclaration ? nullptr : func.block_.get();
 
 	FunctionVariable func_variable;
 
@@ -367,7 +367,7 @@ void CodeBuilder::PrepareFunction(
 					*boost::get<FunctionPtr>( func_variable.type.one_of_type_kind ),
 					*functions_set ) )
 			{
-				if( block == nullptr )
+				if( func.block_ == nullptr )
 				{
 					errors_.push_back( ReportFunctionPrototypeDuplication( func.file_pos_, func.name_ ) );
 					return;

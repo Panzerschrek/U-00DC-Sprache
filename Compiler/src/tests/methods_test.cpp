@@ -261,4 +261,35 @@ U_TEST(MethodTest7)
 	U_TEST_ASSERT( 84167.1 == result_value.DoubleVal );
 }
 
+U_TEST(MethodTes8)
+{
+	// Prototype for method and realization inside class.
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			f64 x_;
+			fn GetX( this ) : f64;
+			fn GetX( this ) : f64 { return x_; }
+		}
+		fn Foo() : f64
+		{
+			var S s{ .x_= 84167.1, };
+			return s.GetX();
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
+	U_TEST_ASSERT( function != nullptr );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( 84167.1 == result_value.DoubleVal );
+}
+
 } // namespace U

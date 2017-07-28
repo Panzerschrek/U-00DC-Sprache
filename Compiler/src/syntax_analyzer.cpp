@@ -1416,7 +1416,9 @@ std::unique_ptr<FunctionDeclaration> SyntaxAnalyzer::ParseFunction()
 	if( it_ < it_end_ && it_->type == Lexem::Type::BraceLeft )
 		block= ParseBlock();
 	else if( it_ < it_end_ && it_->type == Lexem::Type::Semicolon )
-	{} // function prototype
+	{
+		++it_; U_ASSERT( it_ < it_end_ );
+	} // function prototype
 	else
 	{
 		PushErrorMessage( *it_ );

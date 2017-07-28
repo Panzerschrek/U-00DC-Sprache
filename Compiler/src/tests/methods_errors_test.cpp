@@ -82,4 +82,45 @@ U_TEST( ClassFiledAccessInStaticMethodTest0 )
 	U_TEST_ASSERT( error.file_pos.line == 7u );
 }
 
+U_TEST(FunctionBodyDuplication_ForMethods_Test0)
+{
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			f64 x_;
+			fn GetX( this ) : f64 { return x_; }
+			fn GetX( this ) : f64 { return -x_; }
+		}
+	)";
+
+	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::FunctionBodyDuplication );
+	U_TEST_ASSERT( error.file_pos.line == 6u );
+}
+
+U_TEST(FunctionPrototypeDuplication_ForMethods_Test0)
+{
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			f64 x_;
+			fn GetX( this ) : f64;
+			fn GetX( this ) : f64;
+			fn GetX( this ) : f64 { return -x_; }
+		}
+	)";
+
+	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::FunctionPrototypeDuplication );
+	U_TEST_ASSERT( error.file_pos.line == 6u );
+}
+
 } // namespace U
