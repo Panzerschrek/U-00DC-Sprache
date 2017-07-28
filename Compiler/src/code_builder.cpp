@@ -220,44 +220,56 @@ ClassPtr CodeBuilder::PrepareClass( const ClassDeclaration& class_declaration )
 
 	the_class->name= class_declaration.name_;
 
-	std::vector<llvm::Type*> members_llvm_types;
-
-	members_llvm_types.reserve( class_declaration.fields_.size() );
-	for( const ClassDeclaration::Field& in_field : class_declaration.fields_ )
-	{
-		ClassField out_field;
-		out_field.type= PrepareType( in_field.file_pos, in_field.type );
-		out_field.index= the_class->field_count;
-		out_field.class_= the_class;
-
-		members_llvm_types.emplace_back( out_field.type.GetLLVMType() );
-
-		const NamesScope::InsertedName* const inserted_field=
-			the_class->members.AddName( in_field.name, std::move( out_field ) );
-		if( inserted_field == nullptr )
-			errors_.push_back( ReportRedefinition( in_field.file_pos, in_field.name ) );
-
-		the_class->field_count++;
-	}
-
 	the_class->llvm_type=
-		llvm::StructType::create(
-			llvm_context_,
-			members_llvm_types,
-			ToStdString(class_declaration.name_) );
+		llvm::StructType::create( llvm_context_, ToStdString(class_declaration.name_) );
 
-	// First time, push only prototypes.
-	for( const std::unique_ptr<FunctionDeclaration>& member_function : class_declaration.functions_ )
+	std::vector<llvm::Type*> fields_llvm_types;
+
+	for( const ClassDeclaration::Member& member : class_declaration.members_ )
 	{
-		U_ASSERT( member_function != nullptr );
-		PrepareFunction( *member_function, true, the_class, the_class->members );
+		// TODO - maybe apply visitor?
+		if( const ClassDeclaration::Field* const in_field=
+			boost::get< ClassDeclaration::Field >( &member ) )
+		{
+			ClassField out_field;
+			out_field.type= PrepareType( in_field->file_pos, in_field->type );
+			out_field.index= the_class->field_count;
+			out_field.class_= the_class;
+
+			fields_llvm_types.emplace_back( out_field.type.GetLLVMType() );
+
+			const NamesScope::InsertedName* const inserted_field=
+				the_class->members.AddName( in_field->name, std::move( out_field ) );
+			if( inserted_field == nullptr )
+				errors_.push_back( ReportRedefinition( in_field->file_pos, in_field->name ) );
+
+			the_class->field_count++;
+		}
+		else if( const std::unique_ptr<FunctionDeclaration>* const function_declaration=
+			boost::get< std::unique_ptr<FunctionDeclaration> >( &member ) )
+		{
+			// First time, push only prototypes.
+			U_ASSERT( *function_declaration != nullptr );
+			PrepareFunction( **function_declaration, true, the_class, the_class->members );
+		}
+		else
+		{
+			U_ASSERT( false );
+		}
 	}
+
+	the_class->llvm_type->setBody( fields_llvm_types );
+
 	// Build functions with body.
-	for( const std::unique_ptr<FunctionDeclaration>& member_function : class_declaration.functions_ )
+	for( const ClassDeclaration::Member& member : class_declaration.members_ )
 	{
-		U_ASSERT( member_function != nullptr );
-		if( member_function->block_ != nullptr )
-			PrepareFunction( *member_function, false, the_class, the_class->members );
+		if( const std::unique_ptr<FunctionDeclaration>* const function_declaration=
+			boost::get< std::unique_ptr<FunctionDeclaration> >( &member ) )
+		{
+			U_ASSERT( *function_declaration != nullptr );
+			if( (*function_declaration)->block_ != nullptr )
+				PrepareFunction( **function_declaration, false, the_class, the_class->members );
+		}
 	}
 
 	return the_class;

@@ -1464,11 +1464,12 @@ std::unique_ptr<ClassDeclaration> SyntaxAnalyzer::ParseClass()
 	{
 		// SPRACHE_TODO - try parse here, subclasses, typedefs, etc.
 		if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::fn_ )
-			result->functions_.push_back( ParseFunction() );
+		{
+			result->members_.push_back( ParseFunction() );
+		}
 		else
 		{
-			result->fields_.emplace_back();
-			ClassDeclaration::Field& field= result->fields_.back();
+			ClassDeclaration::Field field;
 			field.file_pos= it_->file_pos;
 
 			field.type= ParseTypeName();
@@ -1488,6 +1489,8 @@ std::unique_ptr<ClassDeclaration> SyntaxAnalyzer::ParseClass()
 				return nullptr;
 			}
 			++it_;U_ASSERT( it_ < it_end_ );
+
+			result->members_.push_back( std::move( field ) );
 		}
 	}
 

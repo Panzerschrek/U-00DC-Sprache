@@ -738,12 +738,25 @@ void ClassDeclaration::Print( std::ostream& stream, unsigned int indent ) const
 
 	stream << "class " << ToStdString( name_ ) << "\n";
 	stream << "{\n";
-	for( const Field& field : fields_ )
+	for( const Member& member : members_ )
 	{
-		PrintIndents( stream, 1 );
-		stream << ToStdString( field.name ) << " : ";
-		field.type.Print( stream );
-		stream << ";\n";
+		if( const Field* const field=
+			boost::get< Field >( &member ) )
+		{
+			PrintIndents( stream, 1 );
+			field->type.Print( stream );
+			stream << " " << ToStdString( field->name ) << ";\n";
+		}
+		else if( const std::unique_ptr<FunctionDeclaration>* const function_declaration=
+			boost::get< std::unique_ptr<FunctionDeclaration> >( &member ) )
+		{
+			(*function_declaration)->Print( stream, indent );
+		}
+		else
+		{
+			U_ASSERT( false );
+		}
+
 	}
 	stream << "}\n";
 }
