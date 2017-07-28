@@ -275,6 +275,9 @@ ProgramString Type::ToString() const
 			case NontypeStub::OverloadedFunctionsSet:
 				result= "overloaded functions set"_SpC;
 				break;
+			case NontypeStub::ThisOverloadedMethodsSet:
+				result= "this + overloaded methods set"_SpC;
+				break;
 			case NontypeStub::ClassName:
 				result= "class name"_SpC;
 				break;
@@ -375,17 +378,6 @@ Class::Class()
 Class::~Class()
 {}
 
-const Class::Field* Class::GetField( const ProgramString& name ) const
-{
-	for( const Field& field : fields )
-	{
-		if( field.name == name )
-			return &field;
-	}
-
-	return nullptr;
-}
-
 Value::Value()
 {}
 
@@ -413,6 +405,18 @@ Value::Value( const ClassPtr& class_ )
 	something_= std::move(s);
 }
 
+Value::Value( ClassField class_field )
+{
+	something_= std::move( class_field );
+}
+
+Value::Value( ThisOverloadedMethodsSet this_overloaded_methods_set )
+{
+	ThisOverloadedMethodsSetWithTypeStub s;
+	s.set= std::move( this_overloaded_methods_set );
+	something_= std::move( s );
+}
+
 const Type& Value::GetType() const
 {
 	struct Visitor final : public boost::static_visitor<>
@@ -430,6 +434,12 @@ const Type& Value::GetType() const
 
 		void operator()( const ClassWithTypeStub& class_ )
 		{ type= &class_.type; }
+
+		void operator()( const ClassField& class_field )
+		{ type= &class_field.type; }
+
+		void operator()( const ThisOverloadedMethodsSetWithTypeStub& overloded_methods_set )
+		{ type= &overloded_methods_set.type; }
 	};
 
 	Visitor visitor;
@@ -489,9 +499,35 @@ const ClassPtr* Value::GetClass() const
 	return &class_->class_;
 }
 
+const ClassField* Value::GetClassField() const
+{
+	return boost::get<ClassField>( &something_ );
+}
+
+ThisOverloadedMethodsSet* Value::GetThisOverloadedMethodsSet()
+{
+	ThisOverloadedMethodsSetWithTypeStub* const set= boost::get<ThisOverloadedMethodsSetWithTypeStub>( &something_ );
+	if( set == nullptr )
+		return nullptr;
+	return &set->set;
+}
+
+const ThisOverloadedMethodsSet* Value::GetThisOverloadedMethodsSet() const
+{
+	const ThisOverloadedMethodsSetWithTypeStub* const set= boost::get<ThisOverloadedMethodsSetWithTypeStub>( &something_ );
+	if( set == nullptr )
+		return nullptr;
+	return &set->set;
+}
+
 Value::OverloadedFunctionsSetWithTypeStub::OverloadedFunctionsSetWithTypeStub()
 {
 	type.one_of_type_kind= NontypeStub::OverloadedFunctionsSet;
+}
+
+Value::ThisOverloadedMethodsSetWithTypeStub::ThisOverloadedMethodsSetWithTypeStub()
+{
+	type.one_of_type_kind= NontypeStub::ThisOverloadedMethodsSet;
 }
 
 Value::ClassWithTypeStub::ClassWithTypeStub()

@@ -121,7 +121,7 @@ void CodeBuilder::ApplyStructNamedInitializer(
 	U_ASSERT( *class_type_ptr != nullptr );
 	const Class& class_type= **class_type_ptr;
 
-	std::set<ProgramString> initializerd_members_names;
+	std::set<ProgramString> initialized_members_names;
 
 	Variable struct_member= variable;
 	struct_member.location= Variable::Location::Pointer;
@@ -131,20 +131,26 @@ void CodeBuilder::ApplyStructNamedInitializer(
 
 	for( const StructNamedInitializer::MemberInitializer& member_initializer : initializer.members_initializers )
 	{
-		if( initializerd_members_names.count( member_initializer.name ) != 0 )
+		if( initialized_members_names.count( member_initializer.name ) != 0 )
 		{
 			errors_.push_back( ReportDuplicatedStructMemberInitializer( initializer.file_pos_, member_initializer.name ) );
 			continue;
 		}
 
-		const Class::Field* const field= class_type.GetField( member_initializer.name );
-		if( field == nullptr )
+		const NamesScope::InsertedName* const class_member= class_type.members.GetName( member_initializer.name );
+		if( class_member == nullptr )
 		{
 			errors_.push_back( ReportNameNotFound( initializer.file_pos_, member_initializer.name ) );
 			continue;
 		}
+		const ClassField* const field= class_member->second.GetClassField();
+		if( field == nullptr )
+		{
+			errors_.push_back( ReportInitializerForNonfieldStructMember( initializer.file_pos_, member_initializer.name ) );
+			continue;
+		}
 
-		initializerd_members_names.insert( member_initializer.name );
+		initialized_members_names.insert( member_initializer.name );
 
 		struct_member.type= field->type;
 		index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(field->index) ) );
@@ -154,17 +160,18 @@ void CodeBuilder::ApplyStructNamedInitializer(
 		ApplyInitializer_r( struct_member, member_initializer.initializer.get(), block_names, function_context );
 	}
 
-	U_ASSERT( initializerd_members_names.size() <= class_type.fields.size() );
-	if( initializerd_members_names.size() < class_type.fields.size() )
-	{
-		for( const Class::Field& field : class_type.fields )
+	U_ASSERT( initialized_members_names.size() <= class_type.field_count );
+	class_type.members.ForEachInThisScope(
+		[&]( const NamesScope::InsertedName& class_member )
 		{
-			// SPRACHE_TODO - allow missed initialziers for default-constructed classes.
-			if( initializerd_members_names.count( field.name ) == 0 )
-				errors_.push_back(ReportMissingStructMemberInitializer( initializer.file_pos_, field.name ) );
-		}
-		return;
-	}
+			if( const ClassField* const field = class_member.second.GetClassField() )
+			{
+				U_UNUSED(field);
+				// SPRACHE_TODO - allow missed initialziers for default-constructed classes.
+				if( initialized_members_names.count( class_member.first ) == 0 )
+					errors_.push_back(ReportMissingStructMemberInitializer( initializer.file_pos_, class_member.first ) );
+			}
+		});
 }
 
 void CodeBuilder::ApplyConstructorInitializer(
@@ -355,15 +362,20 @@ void CodeBuilder::ApplyZeroInitializer(
 		llvm::Value* index_list[2];
 		index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
 
-		for( const Class::Field& field : class_type.fields )
-		{
-			struct_member.type= field.type;
-			index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(field.index) ) );
-			struct_member.llvm_value=
-				function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, llvm::ArrayRef<llvm::Value*> ( index_list, 2u ) );
+		class_type.members.ForEachInThisScope(
+			[&]( const NamesScope::InsertedName& member )
+			{
+				const ClassField* const field= member.second.GetClassField();
+				if( field == nullptr )
+					return;
 
-			ApplyZeroInitializer( struct_member, initializer, block_names, function_context );
-		}
+				struct_member.type= field->type;
+				index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(field->index) ) );
+				struct_member.llvm_value=
+					function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, llvm::ArrayRef<llvm::Value*> ( index_list, 2u ) );
+
+				ApplyZeroInitializer( struct_member, initializer, block_names, function_context );
+			});
 	}
 	else
 	{

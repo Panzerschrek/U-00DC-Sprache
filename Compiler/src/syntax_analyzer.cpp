@@ -123,7 +123,7 @@ SyntaxAnalysisResult SyntaxAnalyzer::DoAnalyzis( const Lexems& lexems )
 
 			continue;
 		}
-		else if( lexem.type == Lexem::Type::Identifier && lexem.text == Keywords::class_ )
+		else if( lexem.type == Lexem::Type::Identifier && ( lexem.text == Keywords::struct_ || lexem.text == Keywords::class_ ) )
 		{
 			if( IProgramElementPtr program_element= ParseClass() )
 				result.program_elements.emplace_back( std::move( program_element ) );
@@ -1230,6 +1230,66 @@ std::unique_ptr<FunctionDeclaration> SyntaxAnalyzer::ParseFunction()
 
 	std::vector<FunctionArgumentDeclarationPtr> arguments;
 
+	// Try parse "this"
+	if( it_->type == Lexem::Type::Identifier )
+	{
+		bool is_this= false;
+		MutabilityModifier mutability_modifier= MutabilityModifier::None;
+		if( it_->text == Keywords::mut_ )
+		{
+			++it_; U_ASSERT( it_ < it_end_ );
+			if( !( it_->type == Lexem::Type::Identifier && it_->text == Keywords::this_ ) )
+			{
+				PushErrorMessage( *it_ );
+				return nullptr;
+			}
+			++it_; U_ASSERT( it_ < it_end_ );
+
+			is_this= true;
+			mutability_modifier= MutabilityModifier::Mutable;
+		}
+		else if( it_->text == Keywords::imut_ )
+		{
+			++it_; U_ASSERT( it_ < it_end_ );
+			if( !( it_->type == Lexem::Type::Identifier && it_->text == Keywords::this_ ) )
+			{
+				PushErrorMessage( *it_ );
+				return nullptr;
+			}
+			++it_; U_ASSERT( it_ < it_end_ );
+
+			is_this= true;
+			mutability_modifier= MutabilityModifier::Immutable;
+		}
+		else if( it_->text == Keywords::this_ )
+		{
+			is_this= true;
+			++it_; U_ASSERT( it_ < it_end_ );
+		}
+
+		if( is_this )
+		{
+			arguments.emplace_back(
+				new FunctionArgumentDeclaration(
+					it_->file_pos,
+					Keyword( Keywords::this_ ),
+					TypeName(),
+					mutability_modifier,
+					ReferenceModifier::Reference ) );
+
+			if( it_->type == Lexem::Type::Comma )
+			{
+				++it_;
+				// Disallov constructions, like "fn f( mut this, ){}"
+				if( it_->type == Lexem::Type::BracketRight )
+				{
+					PushErrorMessage( *it_ );
+					return nullptr;
+				}
+			}
+		}
+	}
+
 	while(1)
 	{
 		if( it_->type == Lexem::Type::BracketRight )
@@ -1356,7 +1416,9 @@ std::unique_ptr<FunctionDeclaration> SyntaxAnalyzer::ParseFunction()
 	if( it_ < it_end_ && it_->type == Lexem::Type::BraceLeft )
 		block= ParseBlock();
 	else if( it_ < it_end_ && it_->type == Lexem::Type::Semicolon )
-	{} // function prototype
+	{
+		++it_; U_ASSERT( it_ < it_end_ );
+	} // function prototype
 	else
 	{
 		PushErrorMessage( *it_ );
@@ -1376,7 +1438,7 @@ std::unique_ptr<FunctionDeclaration> SyntaxAnalyzer::ParseFunction()
 
 std::unique_ptr<ClassDeclaration> SyntaxAnalyzer::ParseClass()
 {
-	U_ASSERT( it_->text == Keywords::class_ );
+	U_ASSERT( it_->text == Keywords::struct_ || it_->text == Keywords::class_ );
 	++it_; U_ASSERT( it_ < it_end_ );
 
 	std::unique_ptr<ClassDeclaration> result( new ClassDeclaration( it_->file_pos ) );
@@ -1400,34 +1462,36 @@ std::unique_ptr<ClassDeclaration> SyntaxAnalyzer::ParseClass()
 		it_->type == Lexem::Type::BraceRight ||
 		it_->type == Lexem::Type::EndOfFile ) )
 	{
-		if( it_->type != Lexem::Type::Identifier )
+		// SPRACHE_TODO - try parse here, subclasses, typedefs, etc.
+		if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::fn_ )
 		{
-			PushErrorMessage( *it_ );
-			return nullptr;
+			result->members_.push_back( ParseFunction() );
 		}
-
-		result->fields_.emplace_back();
-		ClassDeclaration::Field& field= result->fields_.back();
-		field.file_pos= it_->file_pos;
-
-		field.name= it_->text;
-		++it_; U_ASSERT( it_ < it_end_ );
-
-		if( it_->type != Lexem::Type::Colon )
+		else
 		{
-			PushErrorMessage( *it_ );
-			return nullptr;
-		}
-		++it_; U_ASSERT( it_ < it_end_ );
+			ClassDeclaration::Field field;
+			field.file_pos= it_->file_pos;
 
-		field.type= ParseTypeName();
+			field.type= ParseTypeName();
 
-		if( it_->type != Lexem::Type::Semicolon )
-		{
-			PushErrorMessage( *it_ );
-			return nullptr;
+			U_ASSERT( it_ < it_end_ );
+			if( it_->type != Lexem::Type::Identifier )
+			{
+				PushErrorMessage( *it_ );
+				return nullptr;
+			}
+			field.name= it_->text;
+			++it_;
+
+			if( it_->type != Lexem::Type::Semicolon )
+			{
+				PushErrorMessage( *it_ );
+				return nullptr;
+			}
+			++it_;U_ASSERT( it_ < it_end_ );
+
+			result->members_.push_back( std::move( field ) );
 		}
-		++it_; U_ASSERT( it_ < it_end_ );
 	}
 
 	if( it_->type != Lexem::Type::BraceRight )

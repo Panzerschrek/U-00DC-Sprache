@@ -26,6 +26,7 @@ typedef std::unique_ptr<Array> ArrayPtr;
 
 struct Class;
 typedef std::shared_ptr<Class> ClassPtr;
+typedef std::weak_ptr<Class> ClassWeakPtr;
 
 struct FundamentalType final
 {
@@ -39,6 +40,7 @@ struct FundamentalType final
 enum class NontypeStub
 {
 	OverloadedFunctionsSet,
+	ThisOverloadedMethodsSet,
 	ClassName,
 };
 
@@ -104,37 +106,12 @@ struct Array final
 bool operator==( const Array& r, const Array& l );
 bool operator!=( const Array& r, const Array& l );
 
-struct Class final
-{
-	Class();
-	~Class();
-
-	Class( const Class& )= delete;
-	Class( Class&& )= delete;
-
-	Class& operator=( const Class& )= delete;
-	Class& operator=( Class&& )= delete;
-
-	struct Field
-	{
-		ProgramString name;
-		Type type;
-		unsigned int index;
-	};
-
-	const Field* GetField( const ProgramString& name ) const;
-
-	ProgramString name;
-	std::vector<Field> fields;
-
-	llvm::StructType* llvm_type;
-};
-
 struct FunctionVariable final
 {
 	Type type;
 	llvm::Function* llvm_function= nullptr;
 	bool have_body= true;
+	bool is_this_call= false;
 };
 
 // Set of functions with same name, but different signature.
@@ -161,6 +138,20 @@ struct Variable final
 	llvm::Value* llvm_value= nullptr;
 };
 
+struct ClassField final
+{
+	Type type;
+	unsigned int index= 0u;
+	ClassWeakPtr class_;
+};
+
+// "this" + functions set of class of "this"
+struct ThisOverloadedMethodsSet final
+{
+	Variable this_;
+	OverloadedFunctionsSet overloaded_methods_set;
+};
+
 class Value final
 {
 public:
@@ -169,6 +160,8 @@ public:
 	Value( FunctionVariable function_variable );
 	Value( OverloadedFunctionsSet functions_set );
 	Value( const ClassPtr& class_ );
+	Value( ClassField class_field );
+	Value( ThisOverloadedMethodsSet class_field );
 
 	const Type& GetType() const;
 
@@ -184,6 +177,11 @@ public:
 	// Class stub type
 	ClassPtr* GetClass();
 	const ClassPtr* GetClass() const;
+	// Class fields
+	const ClassField* GetClassField() const;
+
+	ThisOverloadedMethodsSet* GetThisOverloadedMethodsSet();
+	const ThisOverloadedMethodsSet* GetThisOverloadedMethodsSet() const;
 
 private:
 	struct OverloadedFunctionsSetWithTypeStub
@@ -192,6 +190,13 @@ private:
 
 		Type type;
 		OverloadedFunctionsSet set;
+	};
+	struct ThisOverloadedMethodsSetWithTypeStub
+	{
+		ThisOverloadedMethodsSetWithTypeStub();
+
+		Type type;
+		ThisOverloadedMethodsSet set;
 	};
 	struct ClassWithTypeStub
 	{
@@ -202,7 +207,13 @@ private:
 	};
 
 private:
-	boost::variant< Variable, FunctionVariable, OverloadedFunctionsSetWithTypeStub, ClassWithTypeStub > something_;
+	boost::variant<
+		Variable,
+		FunctionVariable,
+		OverloadedFunctionsSetWithTypeStub,
+		ClassWithTypeStub,
+		ClassField,
+		ThisOverloadedMethodsSetWithTypeStub > something_;
 };
 
 // "Class" of function argument in terms of overloading.
@@ -235,6 +246,15 @@ public:
 
 	InsertedName* GetThisScopeName( const ProgramString& name );
 
+	template<class Func>
+	void ForEachInThisScope( const Func& func ) const
+	{
+		for( const InsertedName& inserted_name : names_map_ )
+			func( inserted_name );
+	}
+
+	// TODO - maybe add for_each in all scopes?
+
 private:
 	const NamesScope* const prev_;
 	NamesMap names_map_;
@@ -249,6 +269,24 @@ public:
 	{
 		return "ProgramError";
 	}
+};
+
+struct Class final
+{
+	Class();
+	~Class();
+
+	Class( const Class& )= delete;
+	Class( Class&& )= delete;
+
+	Class& operator=( const Class& )= delete;
+	Class& operator=( Class&& )= delete;
+
+	ProgramString name;
+	NamesScope members;
+	size_t field_count= 0u;
+
+	llvm::StructType* llvm_type;
 };
 
 const ProgramString& GetFundamentalTypeName( U_FundamentalType fundamental_type );

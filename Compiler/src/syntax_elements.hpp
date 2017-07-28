@@ -4,6 +4,8 @@
 #include <ostream>
 #include <vector>
 
+#include <boost/variant.hpp>
+
 #include "lexical_analyzer.hpp"
 
 namespace U
@@ -563,7 +565,9 @@ public:
 		ProgramString name;
 	};
 
-	std::vector<Field> fields_;
+	typedef boost::variant< std::unique_ptr<FunctionDeclaration>, Field > Member;
+
+	std::vector<Member> members_;
 	ProgramString name_;
 };
 

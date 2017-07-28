@@ -51,7 +51,7 @@ U_TEST(ExpectedInitializerTest2)
 	// Expected initializer for struct.
 	static const char c_program_text[]=
 	R"(
-		class S{ x : i32; }
+		struct S{ i32 x; }
 		fn Foo()
 		{
 			var S s;
@@ -89,10 +89,10 @@ U_TEST(ArrayInitializerForNonArrayTest0)
 
 U_TEST(ArrayInitializerForNonArrayTest1)
 {
-	// Array initializer for classes.
+	// Array initializer for structes.
 	static const char c_program_text[]=
 	R"(
-		class C{}
+		struct C{}
 		fn Foo()
 		{
 			var C x[ 5, 6, 7 ];
@@ -291,11 +291,36 @@ U_TEST(StructInitializerForNonStructTest0)
 	U_TEST_ASSERT( error.file_pos.line == 4u );
 }
 
+U_TEST(InitializerForNonfieldStructMemberTest0)
+{
+	// Struct initializer for array.
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			i32 x;
+			fn Foo( this ){}
+		}
+		fn Foo()
+		{
+			var S s{ .x= 0, .Foo= 0 };
+		}
+	)";
+
+	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::InitializerForNonfieldStructMember );
+	U_TEST_ASSERT( error.file_pos.line == 9u );
+}
+
 U_TEST(DuplicatedStructMemberInitializerTest0)
 {
 	static const char c_program_text[]=
 	R"(
-		class Point{ x : i32; y : i32; }
+		struct Point{ i32 x; i32 y; }
 		fn Foo()
 		{
 			var Point point{ .x= 42, .y= 34, .x= 0 };
@@ -315,7 +340,7 @@ U_TEST(MissingStructMemberInitializerTest0)
 {
 	static const char c_program_text[]=
 	R"(
-		class Point{ xy : [ i32, 2 ]; z : i32; }
+		struct Point{ [ i32, 2 ] xy; i32 z; }
 		fn Foo()
 		{
 			var Point point{ .xy[ 54, -785 ], };

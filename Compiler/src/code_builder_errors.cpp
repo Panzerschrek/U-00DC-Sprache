@@ -424,6 +424,19 @@ CodeBuilderError ReportStructInitializerForNonStruct( const FilePos& file_pos )
 	return error;
 }
 
+CodeBuilderError ReportInitializerForNonfieldStructMember(
+	const FilePos& file_pos,
+	const ProgramString& member_name )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::InitializerForNonfieldStructMember;
+
+	error.text= "Initializer for \"."_SpC + member_name + "\" which is not a field."_SpC;
+
+	return error;
+}
+
 CodeBuilderError ReportDuplicatedStructMemberInitializer( const FilePos& file_pos, const ProgramString& member_name )
 {
 	CodeBuilderError error;
@@ -453,6 +466,28 @@ CodeBuilderError ReportInvalidTypeForAutoVariable( const FilePos& file_pos, cons
 	error.code= CodeBuilderErrorCode::InvalidTypeForAutoVariable;
 
 	error.text= "Invalid type for auto variable: "_SpC + type_name + "."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportCallOfThiscallFunctionUsingNonthisArgument( const FilePos& file_pos )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::CallOfThiscallFunctionUsingNonthisArgument;
+
+	error.text= "Call of \"thiscall\" function using nonthis argument."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportClassFiledAccessInStaticMethod( const FilePos& file_pos, const ProgramString& field_name )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::ClassFiledAccessInStaticMethod;
+
+	error.text= "Accessing field \""_SpC + field_name + "\" in static method."_SpC;
 
 	return error;
 }

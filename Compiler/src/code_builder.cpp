@@ -90,132 +90,7 @@ CodeBuilder::BuildResult CodeBuilder::BuildProgram( const ProgramElements& progr
 		if( const FunctionDeclaration* func=
 			dynamic_cast<const FunctionDeclaration*>( program_element.get() ) )
 		{
-			if( IsKeyword( func->name_ ) )
-				errors_.push_back( ReportUsingKeywordAsName( func->file_pos_ ) );
-
-			FunctionVariable func_variable;
-
-			std::unique_ptr<Function> function_type_storage( new Function() );
-			Function& function_type= *function_type_storage;
-			func_variable.type.one_of_type_kind= std::move(function_type_storage);
-
-			if( func->return_type_.empty() )
-			{
-				function_type.return_type.one_of_type_kind=
-					FundamentalType( U_FundamentalType::Void, fundamental_llvm_types_.void_ );
-			}
-			else
-			{
-				// TODO - support nonfundamental return types.
-				auto it= g_types_map.find( func->return_type_ );
-				if( it == g_types_map.end() )
-				{
-					errors_.push_back( ReportNameNotFound( func->file_pos_, func->return_type_ ) );
-					function_type.return_type.one_of_type_kind= FundamentalType( U_FundamentalType::InvalidType, fundamental_llvm_types_.invalid_type_ );
-				}
-				else
-					function_type.return_type.one_of_type_kind= FundamentalType( it->second, GetFundamentalLLVMType( it->second ) );
-			}
-
-			// TODO - make variables without explicit mutability modifiers immutable.
-			if( func->return_value_mutability_modifier_ == MutabilityModifier::Immutable )
-				function_type.return_value_is_mutable= false;
-			else
-				function_type.return_value_is_mutable= true;
-			function_type.return_value_is_reference= func->return_value_reference_modifier_ == ReferenceModifier::Reference;
-
-			// Args.
-			function_type.args.reserve( func->arguments_.size() );
-			for( const FunctionArgumentDeclarationPtr& arg : func->arguments_ )
-			{
-				if( IsKeyword( arg->name_ ) )
-					errors_.push_back( ReportUsingKeywordAsName( arg->file_pos_ ) );
-
-				function_type.args.emplace_back();
-				Function::Arg& out_arg= function_type.args.back();
-
-				out_arg.type= PrepareType( arg->file_pos_, arg->type_ );
-
-				// TODO - make variables without explicit mutability modifiers immutable.
-				if( arg->mutability_modifier_ == MutabilityModifier::Immutable )
-					out_arg.is_mutable= false;
-				else
-					out_arg.is_mutable= true;
-				out_arg.is_reference= arg->reference_modifier_ == ReferenceModifier::Reference;
-			}
-
-			NamesScope::InsertedName* const func_name=
-				global_names_.GetThisScopeName( func->name_ );
-			if( func_name == nullptr )
-			{
-				OverloadedFunctionsSet functions_set;
-				functions_set.push_back( std::move( func_variable ) );
-
-				// New name in this scope - insert it.
-				NamesScope::InsertedName* const inserted_func=
-					global_names_.AddName( func->name_, std::move( functions_set ) );
-				U_ASSERT( inserted_func != nullptr );
-
-				BuildFuncCode(
-					inserted_func->second.GetFunctionsSet()->front(),
-					func->name_,
-					func->arguments_,
-					func->block_.get() );
-			}
-			else
-			{
-				Value& value= func_name->second;
-				if( OverloadedFunctionsSet* const functions_set= value.GetFunctionsSet() )
-				{
-					if( FunctionVariable* const same_function=
-						GetFunctionWithExactSignature(
-							*boost::get<FunctionPtr>( func_variable.type.one_of_type_kind ),
-							*functions_set ) )
-					{
-						if( func->block_ == nullptr )
-						{
-							errors_.push_back( ReportFunctionPrototypeDuplication( func->file_pos_, func->name_ ) );
-							continue;
-						}
-						if( same_function->have_body )
-						{
-							errors_.push_back( ReportFunctionBodyDuplication( func->file_pos_, func->name_ ) );
-							continue;
-						}
-						if( same_function->type != func_variable.type )
-						{
-							// In this place we have only possible error
-							errors_.push_back( ReportReturnValueDiffersFromPrototype( func->file_pos_ ) );
-							continue;
-						}
-
-						BuildFuncCode(
-							*same_function,
-							func->name_,
-							func->arguments_,
-							func->block_.get() );
-					}
-					else
-					{
-						try
-						{
-							ApplyOverloadedFunction( *functions_set, func_variable, func->file_pos_ );
-						}
-						catch( const ProgramError& )
-						{
-							continue;
-						}
-
-						BuildFuncCode(
-							functions_set->back(),
-							func->name_,
-							func->arguments_,
-							func->block_.get() );
-					}
-				}
-				else
-					errors_.push_back( ReportRedefinition( func->file_pos_, func_name->first ) );
-			}
+			PrepareFunction( *func, false, nullptr, global_names_ );
 		}
 		else if(
 			const ClassDeclaration* class_=
@@ -286,6 +161,7 @@ Type CodeBuilder::PrepareType( const FilePos& file_pos, const TypeName& type_nam
 	auto it= g_types_map.find( type_name.name );
 	if( it == g_types_map.end() )
 	{
+		// TODO - use here not only global names.
 		const NamesScope::InsertedName* custom_type_name=
 			global_names_.GetName( type_name.name );
 		if( custom_type_name != nullptr )
@@ -340,39 +216,223 @@ ClassPtr CodeBuilder::PrepareClass( const ClassDeclaration& class_declaration )
 	if( IsKeyword( class_declaration.name_ ) )
 		errors_.push_back( ReportUsingKeywordAsName( class_declaration.file_pos_ ) );
 
-	ClassPtr result= std::make_shared<Class>();
+	ClassPtr the_class= std::make_shared<Class>();
 
-	result->name= class_declaration.name_;
+	the_class->name= class_declaration.name_;
 
-	std::vector<llvm::Type*> members_llvm_types;
+	the_class->llvm_type=
+		llvm::StructType::create( llvm_context_, ToStdString(class_declaration.name_) );
 
-	members_llvm_types.reserve( class_declaration.fields_.size() );
-	result->fields.reserve( class_declaration.fields_.size() );
-	for( const ClassDeclaration::Field& in_field : class_declaration.fields_ )
+	std::vector<llvm::Type*> fields_llvm_types;
+
+	for( const ClassDeclaration::Member& member : class_declaration.members_ )
 	{
-		if( result->GetField( in_field.name ) != nullptr )
-			errors_.push_back( ReportRedefinition( in_field.file_pos, in_field.name ) );
+		// TODO - maybe apply visitor?
+		if( const ClassDeclaration::Field* const in_field=
+			boost::get< ClassDeclaration::Field >( &member ) )
+		{
+			ClassField out_field;
+			out_field.type= PrepareType( in_field->file_pos, in_field->type );
+			out_field.index= the_class->field_count;
+			out_field.class_= the_class;
 
-		Class::Field out_field;
-		out_field.name= in_field.name;
-		out_field.type= PrepareType( in_field.file_pos, in_field.type );
-		out_field.index= result->fields.size();
+			fields_llvm_types.emplace_back( out_field.type.GetLLVMType() );
 
-		members_llvm_types.emplace_back( out_field.type.GetLLVMType() );
-		result->fields.emplace_back( std::move( out_field ) );
+			const NamesScope::InsertedName* const inserted_field=
+				the_class->members.AddName( in_field->name, std::move( out_field ) );
+			if( inserted_field == nullptr )
+				errors_.push_back( ReportRedefinition( in_field->file_pos, in_field->name ) );
+
+			the_class->field_count++;
+		}
+		else if( const std::unique_ptr<FunctionDeclaration>* const function_declaration=
+			boost::get< std::unique_ptr<FunctionDeclaration> >( &member ) )
+		{
+			// First time, push only prototypes.
+			U_ASSERT( *function_declaration != nullptr );
+			PrepareFunction( **function_declaration, true, the_class, the_class->members );
+		}
+		else
+		{
+			U_ASSERT( false );
+		}
 	}
 
-	result->llvm_type=
-		llvm::StructType::create(
-			llvm_context_,
-			members_llvm_types,
-			ToStdString(class_declaration.name_) );
+	the_class->llvm_type->setBody( fields_llvm_types );
 
-	return result;
+	// Build functions with body.
+	for( const ClassDeclaration::Member& member : class_declaration.members_ )
+	{
+		if( const std::unique_ptr<FunctionDeclaration>* const function_declaration=
+			boost::get< std::unique_ptr<FunctionDeclaration> >( &member ) )
+		{
+			U_ASSERT( *function_declaration != nullptr );
+			if( (*function_declaration)->block_ != nullptr )
+				PrepareFunction( **function_declaration, false, the_class, the_class->members );
+		}
+	}
+
+	return the_class;
+}
+
+void CodeBuilder::PrepareFunction(
+	const FunctionDeclaration& func,
+	const bool is_class_method_predeclaration,
+	const ClassPtr base_class,
+	NamesScope& names_scope )
+{
+	if( IsKeyword( func.name_ ) )
+		errors_.push_back( ReportUsingKeywordAsName( func.file_pos_ ) );
+
+	const Block* const block= is_class_method_predeclaration ? nullptr : func.block_.get();
+
+	FunctionVariable func_variable;
+
+	std::unique_ptr<Function> function_type_storage( new Function() );
+	Function& function_type= *function_type_storage;
+	func_variable.type.one_of_type_kind= std::move(function_type_storage);
+
+	if( func.return_type_.empty() )
+	{
+		function_type.return_type.one_of_type_kind=
+			FundamentalType( U_FundamentalType::Void, fundamental_llvm_types_.void_ );
+	}
+	else
+	{
+		// TODO - support nonfundamental return types.
+		auto it= g_types_map.find( func.return_type_ );
+		if( it == g_types_map.end() )
+		{
+			errors_.push_back( ReportNameNotFound( func.file_pos_, func.return_type_ ) );
+			function_type.return_type.one_of_type_kind= FundamentalType( U_FundamentalType::InvalidType, fundamental_llvm_types_.invalid_type_ );
+		}
+		else
+			function_type.return_type.one_of_type_kind= FundamentalType( it->second, GetFundamentalLLVMType( it->second ) );
+	}
+
+	// SPRACHE_TODO - make variables without explicit mutability modifiers immutable.
+	if( func.return_value_mutability_modifier_ == MutabilityModifier::Immutable )
+		function_type.return_value_is_mutable= false;
+	else
+		function_type.return_value_is_mutable= true;
+	function_type.return_value_is_reference= func.return_value_reference_modifier_ == ReferenceModifier::Reference;
+
+	// Args.
+	function_type.args.reserve( func.arguments_.size() );
+	for( const FunctionArgumentDeclarationPtr& arg : func.arguments_ )
+	{
+		const bool is_this= arg == func.arguments_.front() && arg->name_ == Keywords::this_;
+
+		if( !is_this && IsKeyword( arg->name_ ) )
+			errors_.push_back( ReportUsingKeywordAsName( arg->file_pos_ ) );
+
+		function_type.args.emplace_back();
+		Function::Arg& out_arg= function_type.args.back();
+
+		if( is_this )
+		{
+			func_variable.is_this_call= true;
+			if( base_class == nullptr )
+			{
+				// TODO - report "this in nonclass function"
+			}
+			out_arg.type.one_of_type_kind= base_class;
+		}
+		else
+			out_arg.type= PrepareType( arg->file_pos_, arg->type_ );
+
+		// TODO - make variables without explicit mutability modifiers immutable.
+		if( arg->mutability_modifier_ == MutabilityModifier::Immutable )
+			out_arg.is_mutable= false;
+		else
+			out_arg.is_mutable= true;
+		out_arg.is_reference= is_this || arg->reference_modifier_ == ReferenceModifier::Reference;
+	}
+
+	NamesScope::InsertedName* const func_name=
+		names_scope.GetThisScopeName( func.name_ );
+	if( func_name == nullptr )
+	{
+		OverloadedFunctionsSet functions_set;
+		functions_set.push_back( std::move( func_variable ) );
+
+		// New name in this scope - insert it.
+		NamesScope::InsertedName* const inserted_func=
+			names_scope.AddName( func.name_, std::move( functions_set ) );
+		U_ASSERT( inserted_func != nullptr );
+
+		BuildFuncCode(
+			inserted_func->second.GetFunctionsSet()->front(),
+			base_class,
+			&names_scope,
+			func.name_,
+			func.arguments_,
+			block );
+	}
+	else
+	{
+		Value& value= func_name->second;
+		if( OverloadedFunctionsSet* const functions_set= value.GetFunctionsSet() )
+		{
+			if( FunctionVariable* const same_function=
+				GetFunctionWithExactSignature(
+					*boost::get<FunctionPtr>( func_variable.type.one_of_type_kind ),
+					*functions_set ) )
+			{
+				if( func.block_ == nullptr )
+				{
+					errors_.push_back( ReportFunctionPrototypeDuplication( func.file_pos_, func.name_ ) );
+					return;
+				}
+				if( same_function->have_body )
+				{
+					errors_.push_back( ReportFunctionBodyDuplication( func.file_pos_, func.name_ ) );
+					return;
+				}
+				if( same_function->type != func_variable.type )
+				{
+					// In this place we have only possible error
+					errors_.push_back( ReportReturnValueDiffersFromPrototype( func.file_pos_ ) );
+					return;
+				}
+
+				BuildFuncCode(
+					*same_function,
+					base_class,
+					&names_scope,
+					func.name_,
+					func.arguments_,
+					block );
+			}
+			else
+			{
+				try
+				{
+					ApplyOverloadedFunction( *functions_set, func_variable, func.file_pos_ );
+				}
+				catch( const ProgramError& )
+				{
+					return;
+				}
+
+				BuildFuncCode(
+					functions_set->back(),
+					base_class,
+					&names_scope,
+					func.name_,
+					func.arguments_,
+					block );
+			}
+		}
+		else
+			errors_.push_back( ReportRedefinition( func.file_pos_, func_name->first ) );
+	}
 }
 
 void CodeBuilder::BuildFuncCode(
 	FunctionVariable& func_variable,
+	const ClassPtr base_class,
+	const NamesScope& parent_names_scope,
 	const ProgramString& func_name,
 	const FunctionArgumentsDeclaration& args,
 	const Block* const block ) noexcept
@@ -434,7 +494,7 @@ void CodeBuilder::BuildFuncCode(
 
 	func_variable.have_body= true;
 
-	NamesScope function_names( &global_names_ );
+	NamesScope function_names( &parent_names_scope );
 	FunctionContext function_context(
 		function_type_ptr->return_type,
 		function_type_ptr->return_value_is_mutable,
@@ -442,10 +502,14 @@ void CodeBuilder::BuildFuncCode(
 		llvm_context_,
 		llvm_function );
 
+	// push args
 	unsigned int arg_number= 0u;
 	for( llvm::Argument& llvm_arg : llvm_function->args() )
 	{
 		const Function::Arg& arg= function_type_ptr->args[ arg_number ];
+
+		const bool is_this= arg_number == 0u && args[ arg_number ]->name_ == Keywords::this_;
+		U_ASSERT( !( is_this && !arg.is_reference ) );
 
 		Variable var;
 		var.location= Variable::Location::LLVMRegister;
@@ -472,8 +536,7 @@ void CodeBuilder::BuildFuncCode(
 		}
 
 		const ProgramString& arg_name= args[ arg_number ]->name_;
-
-		const NamesScope::InsertedName* inserted_arg=
+		const NamesScope::InsertedName* const inserted_arg=
 			function_names.AddName(
 				arg_name,
 				std::move(var) );
@@ -481,6 +544,14 @@ void CodeBuilder::BuildFuncCode(
 		{
 			errors_.push_back( ReportRedefinition( args[ arg_number ]->file_pos_, arg_name ) );
 			return;
+		}
+
+		// Save "this" in function context for accessing inside class methods.
+		// "This" inserted to names scope for accessing via "this.member".
+		if( is_this )
+		{
+			function_context.this_= inserted_arg->second.GetVariable();
+			U_ASSERT( function_context.this_ != nullptr );
 		}
 
 		llvm_arg.setName( ToStdString( arg_name ) );
@@ -1239,70 +1310,144 @@ void CodeBuilder::ApplyOverloadedFunction(
 const FunctionVariable& CodeBuilder::GetOverloadedFunction(
 	const OverloadedFunctionsSet& functions_set,
 	const std::vector<Function::Arg>& actual_args,
+	const bool first_actual_arg_is_this,
 	const FilePos& file_pos )
 {
 	U_ASSERT( !functions_set.empty() );
+	U_ASSERT( !( first_actual_arg_is_this && actual_args.empty() ) );
 
 	// If we have only one function - return it.
 	// Caller can generate error, if arguments does not match.
 	if( functions_set.size() == 1u )
 		return functions_set.front();
 
-	const FunctionVariable* match_function= nullptr;
+	enum class MatchType
+	{
+		// Overloading class and type match for all parameters.
+		Exact,
+		// Exact types match for all parameters and mutable reference to immutable reference conversions for some parameters.
+		MutToImutReferenceConversion,
+		// Types conversion for some parameters ( including references conversion ) and possible mutable to immutable references conversion.
+		TypeConversions,
+		NoMatch,
+	};
+
+	// TODO - use here something like small vectors, or cache this vectors.
+	std::vector<unsigned int> exact_match_functions;
+	std::vector<unsigned int> match_with_mut_to_imut_cast_functions;
+	std::vector<unsigned int> match_with_types_conversion_functions;
+
 	for( const FunctionVariable& function : functions_set )
 	{
 		const Function& function_type= *boost::get<FunctionPtr>( function.type.one_of_type_kind );
 
+		size_t actial_arg_count;
+		const Function::Arg* actual_args_begin;
+		if( first_actual_arg_is_this && !function.is_this_call )
+		{
+			// In case of static function call via "this" compare actual args without "this".
+			actual_args_begin= actual_args.data() + 1u;
+			actial_arg_count= actual_args.size() - 1u;
+		}
+		else
+		{
+			actual_args_begin= actual_args.data();
+			actial_arg_count= actual_args.size();
+		}
+
 		// SPRACHE_TODO - handle functions with default arguments.
-		if( function_type.args.size() != actual_args.size() )
+		if( function_type.args.size() != actial_arg_count )
 			continue;
 
-		bool match= true;
-		for( unsigned int i= 0u; i < actual_args.size(); i++ )
+		MatchType match_type= MatchType::Exact;
+		for( unsigned int i= 0u; i < actial_arg_count; i++ )
 		{
 			// SPRACHE_TODO - support type-casting for function call.
 			// SPRACHE_TODO - support references-casting.
 			// Now - only exactly compare types.
-			if( actual_args[i].type != function_type.args[i].type )
+			if( actual_args_begin[i].type != function_type.args[i].type )
 			{
-				match= false;
+				match_type= MatchType::NoMatch;
 				break;
 			}
 
-			if( GetArgOverloadingClass( function_type.args[i] ) == ArgOverloadingClass::MutalbeReference &&
-				GetArgOverloadingClass( actual_args[i] ) != ArgOverloadingClass::MutalbeReference )
+			const ArgOverloadingClass arg_overloading_class= GetArgOverloadingClass( actual_args_begin[i] );
+			const ArgOverloadingClass parameter_overloading_class= GetArgOverloadingClass( function_type.args[i] );
+			if( arg_overloading_class == parameter_overloading_class )
+			{
+				// All ok, exact match
+			}
+			else if( parameter_overloading_class == ArgOverloadingClass::MutalbeReference &&
+				arg_overloading_class != ArgOverloadingClass::MutalbeReference )
 			{
 				// We can only bind nonconst-reference arg to nonconst-reference parameter.
-				match= false;
+				match_type= MatchType::NoMatch;
 				break;
 			}
+			else if( parameter_overloading_class == ArgOverloadingClass::ImmutableReference &&
+				arg_overloading_class == ArgOverloadingClass::MutalbeReference )
+			{
+				if( match_type == MatchType::Exact )
+					match_type= MatchType::MutToImutReferenceConversion;
+			}
 			else
 			{
-				// All ok - value or const-reference parameter accept values, const and nonconst references.
+				U_ASSERT(false);
 			}
-		}
+		} // for candidate function args.
 
-		if( match )
+		const unsigned int function_index= &function - functions_set.data();
+		switch( match_type )
 		{
-			if( match_function == nullptr )
-				match_function= &function;
-			else
-			{
-				errors_.push_back( ReportTooManySuitableOverloadedFunctions( file_pos ) );
-				throw ProgramError();
-			}
-		}
+		case MatchType::Exact:
+			exact_match_functions.push_back( function_index );
+			break;
+		case MatchType::MutToImutReferenceConversion:
+			match_with_mut_to_imut_cast_functions.push_back( function_index );
+			break;
+		case MatchType::TypeConversions:
+			match_with_types_conversion_functions.push_back( function_index );
+			break;
+		case MatchType::NoMatch:
+			break;
+		};
 	} // for functions
 
-	// Not found any function.
-	if( match_function == nullptr )
+	if( !exact_match_functions.empty() )
 	{
-		errors_.push_back( ReportCouldNotSelectOverloadedFunction( file_pos ) );
-		throw ProgramError();
+		if( exact_match_functions.size() == 1u )
+			return functions_set[ exact_match_functions.front() ];
+		else
+		{
+			errors_.push_back( ReportTooManySuitableOverloadedFunctions( file_pos ) );
+			throw ProgramError();
+		}
+	}
+	else if( !match_with_mut_to_imut_cast_functions.empty() )
+	{
+		if( match_with_mut_to_imut_cast_functions.size() == 1u )
+			return functions_set[ match_with_mut_to_imut_cast_functions.front() ];
+		else
+		{
+			errors_.push_back( ReportTooManySuitableOverloadedFunctions( file_pos ) );
+			throw ProgramError();
+		}
+	}
+	else if( !match_with_types_conversion_functions.empty() )
+	{
+		if( match_with_types_conversion_functions.size() == 1u )
+			return functions_set[ match_with_types_conversion_functions.front() ];
+		else
+		{
+			errors_.push_back( ReportTooManySuitableOverloadedFunctions( file_pos ) );
+			throw ProgramError();
+		}
 	}
 	else
 	{
-		return *match_function;
+		// Not found any function.
+		errors_.push_back( ReportCouldNotSelectOverloadedFunction( file_pos ) );
+		throw ProgramError();
 	}
 }
 

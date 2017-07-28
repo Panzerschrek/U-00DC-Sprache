@@ -245,7 +245,7 @@ U_TEST(StructNamedInitializersTest0)
 {
 	static const char c_program_text[]=
 	R"(
-	class Point{ x : i32; y : i32; }
+	struct Point{ i32 x; i32 y; }
 	fn Foo() : i32
 	{
 		var Point point{ .x= 5877, .y(13) };
@@ -271,7 +271,7 @@ U_TEST(StructNamedInitializersTest1)
 	// Members may be initialized in any order.
 	static const char c_program_text[]=
 	R"(
-	class Point{ x : i32; y : i32; z : [ bool, 3 ]; }
+	struct Point{ i32 x; i32 y; [ bool, 3 ] z; }
 	fn Foo() : i32
 	{
 		var Point point{ .y(13), .z[ false, false, true ], .x= 5877 };
@@ -301,10 +301,10 @@ U_TEST(StructNamedInitializersTest2)
 	// Struct inside struct.
 	static const char c_program_text[]=
 	R"(
-	class Double{ d : f64; }
-	class Point2d{ x : Double; y : Double; }
-	class Point3d{ xy : Point2d; z : Double; }
-	class Point{ x : i32; y : i32; z : [ bool, 3 ]; }
+	struct Double{ f64 d; }
+	struct Point2d{ Double x; Double y; }
+	struct Point3d{ Point2d xy; Double z; }
+	struct Point{ i32 x; i32 y; [ bool, 3 ] z; }
 	fn Foo() : f64
 	{
 		var Point3d point
@@ -338,8 +338,8 @@ U_TEST(StructNamedInitializersTest3)
 	// Array inside struct inside array inside struct.
 	static const char c_program_text[]=
 	R"(
-	class A{ arr : [ i32, 2 ]; }
-	class B{ a_arr : [ A, 3 ]; }
+	struct A{ [ i32, 2 ] arr; }
+	struct B{ [ A, 3 ] a_arr; }
 	fn Foo() : i32
 	{
 		var B bb
@@ -504,7 +504,7 @@ U_TEST(ZeroInitilaizerTest5)
 	// Zero-initialzier for struct.
 	static const char c_program_text[]=
 	R"(
-	class S{ x : f32; y : f32; }
+	struct S{ f32 x; f32 y; }
 	fn Foo() : f32
 	{
 		var S s= zero_init;
@@ -530,7 +530,7 @@ U_TEST(ZeroInitilaizerTest6)
 	// Zero-initialzier for struct member.
 	static const char c_program_text[]=
 	R"(
-	class S{ x : f32; y : f32; }
+	struct S{ f32 x; f32 y; }
 	fn Foo() : f32
 	{
 		var S s{ .y= 42.0f32, .x= zero_init };

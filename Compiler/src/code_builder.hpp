@@ -45,6 +45,8 @@ private:
 		bool return_value_is_mutable;
 		bool return_value_is_reference;
 
+		const Variable* this_= nullptr; // null for nonclass functions or static member functions.
+
 		llvm::Function* const function;
 		llvm::BasicBlock* const function_basic_block;
 		llvm::IRBuilder<> llvm_ir_builder;
@@ -63,6 +65,12 @@ private:
 	Type PrepareType( const FilePos& file_pos, const TypeName& type_name );
 	ClassPtr PrepareClass( const ClassDeclaration& class_declaration );
 
+	void PrepareFunction(
+		const FunctionDeclaration& func,
+		bool force_prototype,
+		ClassPtr base_class,
+		NamesScope& scope );
+
 	// Code build methods.
 	// Methods without "noexcept" can throw exceptions.
 	// Methods with "noexcept" can not throw exceptions and must catch exceptions.
@@ -70,6 +78,8 @@ private:
 
 	void BuildFuncCode(
 		FunctionVariable& func,
+		ClassPtr base_class,
+		const NamesScope& parent_names_scope,
 		const ProgramString& func_name,
 		const FunctionArgumentsDeclaration& args,
 		const Block* block ) noexcept;
@@ -99,7 +109,7 @@ private:
 		const FilePos& file_pos,
 		FunctionContext& function_context );
 
-	Value BuildNamedOperand( const NamedOperand& named_operand, const NamesScope& names );
+	Value BuildNamedOperand( const NamedOperand& named_operand, const NamesScope& names, FunctionContext& function_context );
 	Variable BuildNumericConstant( const NumericConstant& numeric_constant );
 	Variable BuildBooleanConstant( const BooleanConstant& boolean_constant );
 
@@ -109,7 +119,7 @@ private:
 		const NamesScope& names,
 		FunctionContext& function_context );
 
-	Variable BuildMemberAccessOperator(
+	Value BuildMemberAccessOperator(
 		const Value& value,
 		const MemberAccessOperator& member_access_operator,
 		FunctionContext& function_context );
@@ -181,6 +191,7 @@ private:
 	const FunctionVariable& GetOverloadedFunction(
 		const OverloadedFunctionsSet& functions_set,
 		const std::vector<Function::Arg>& actual_args,
+		bool first_actual_arg_is_this,
 		const FilePos& file_pos );
 
 	// Initializers.

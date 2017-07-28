@@ -80,7 +80,7 @@ Value CodeBuilder::BuildExpressionCode_r(
 		if( const NamedOperand* const named_operand=
 			dynamic_cast<const NamedOperand*>(&operand) )
 		{
-			result= BuildNamedOperand( *named_operand, names );
+			result= BuildNamedOperand( *named_operand, names, function_context );
 		}
 		else if( const NumericConstant* numeric_constant=
 			dynamic_cast<const NumericConstant*>(&operand) )
@@ -433,7 +433,8 @@ Variable CodeBuilder::BuildBinaryOperator(
 
 Value CodeBuilder::BuildNamedOperand(
 	const NamedOperand& named_operand,
-	const NamesScope& names )
+	const NamesScope& names,
+	FunctionContext& function_context )
 {
 	const NamesScope::InsertedName* name_entry=
 		names.GetName( named_operand.name_ );
@@ -441,6 +442,62 @@ Value CodeBuilder::BuildNamedOperand(
 	{
 		errors_.push_back( ReportNameNotFound( named_operand.file_pos_, named_operand.name_ ) );
 		throw ProgramError();
+	}
+
+	if( const ClassField* const field= name_entry->second.GetClassField() )
+	{
+		if( function_context.this_ == nullptr )
+		{
+			errors_.push_back( ReportClassFiledAccessInStaticMethod( named_operand.file_pos_, named_operand.name_ ) );
+			throw ProgramError();
+		}
+
+		const ClassPtr class_= field->class_.lock();
+		U_ASSERT( class_ != nullptr  && "Class is dead? WTF?" );
+
+		// SPRACHE_TODO - allow access to parents fields here.
+		Type class_type;
+		class_type.one_of_type_kind= class_;
+		if( class_type != function_context.this_->type )
+		{
+			// SPRACHE_TODO - accessing field of non-this class.
+			errors_.push_back( ReportNotImplemented( named_operand.file_pos_, "classes inside other classes" ) );
+			throw ProgramError();
+		}
+
+		Variable field_variable;
+		field_variable.type= field->type;
+		field_variable.location= Variable::Location::Pointer;
+		field_variable.value_type= function_context.this_->value_type;
+
+		// Make first index = 0 for array to pointer conversion.
+		llvm::Value* index_list[2];
+		index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
+		index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(field->index) ) );
+		field_variable.llvm_value=
+			function_context.llvm_ir_builder.CreateGEP( function_context.this_->llvm_value, index_list );
+
+		return field_variable;
+	}
+	else if( const OverloadedFunctionsSet* const overloaded_functions_set=
+		name_entry->second.GetFunctionsSet() )
+	{
+		if( function_context.this_ != nullptr )
+		{
+			// Trying add "this" to functions set.
+			const ClassPtr class_= boost::get<ClassPtr>( function_context.this_->type.one_of_type_kind );
+
+			const NamesScope::InsertedName* const same_set_in_class=
+				class_->members.GetThisScopeName( named_operand.name_ );
+			// SPRACHE_TODO - add "this" for functions from parent classes.
+			if( name_entry == same_set_in_class )
+			{
+				ThisOverloadedMethodsSet this_overloaded_methods_set;
+				this_overloaded_methods_set.this_= *function_context.this_;
+				this_overloaded_methods_set.overloaded_methods_set= *overloaded_functions_set;
+				return this_overloaded_methods_set;
+			}
+		}
 	}
 
 	return name_entry->second;
@@ -542,7 +599,7 @@ Variable CodeBuilder::BuildIndexationOperator(
 	return result;
 }
 
-Variable CodeBuilder::BuildMemberAccessOperator(
+Value CodeBuilder::BuildMemberAccessOperator(
 	const Value& value,
 	const MemberAccessOperator& member_access_operator,
 	FunctionContext& function_context )
@@ -556,14 +613,27 @@ Variable CodeBuilder::BuildMemberAccessOperator(
 	U_ASSERT( *class_type != nullptr );
 	const Variable& variable= *value.GetVariable();
 
-	const Class::Field* field= (*class_type)->GetField( member_access_operator.member_name_ );
-	if( field == nullptr )
+	const NamesScope::InsertedName* const class_member= (*class_type)->members.GetThisScopeName( member_access_operator.member_name_ );
+	if( class_member == nullptr )
 	{
 		errors_.push_back( ReportNameNotFound( member_access_operator.file_pos_, member_access_operator.member_name_ ) );
 		throw ProgramError();
 	}
 
-	U_ASSERT( variable.location == Variable::Location::Pointer );
+	if( const OverloadedFunctionsSet* const functions_set= class_member->second.GetFunctionsSet() )
+	{
+		ThisOverloadedMethodsSet this_overloaded_methods_set;
+		this_overloaded_methods_set.this_= variable;
+		this_overloaded_methods_set.overloaded_methods_set= *functions_set;
+		return this_overloaded_methods_set;
+	}
+
+	const ClassField* const field= class_member->second.GetClassField();
+	if( field == nullptr )
+	{
+		errors_.push_back( ReportNotImplemented( member_access_operator.file_pos_, "class members, except fields or methods" ) );
+		throw ProgramError();
+	}
 
 	// Make first index = 0 for array to pointer conversion.
 	llvm::Value* index_list[2];
@@ -572,7 +642,7 @@ Variable CodeBuilder::BuildMemberAccessOperator(
 
 	Variable result;
 	result.location= Variable::Location::Pointer;
-	result.value_type= ValueType::Reference;
+	result.value_type= variable.value_type;
 	result.type= field->type;
 	result.llvm_value=
 		function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, index_list );
@@ -585,36 +655,84 @@ Variable CodeBuilder::BuildCallOperator(
 	const NamesScope& names,
 	FunctionContext& function_context )
 {
-	const OverloadedFunctionsSet* const functions_set= function_value.GetFunctionsSet();
+	const Variable* this_= nullptr;
+
+	const OverloadedFunctionsSet* functions_set= function_value.GetFunctionsSet();
+	if( functions_set != nullptr )
+	{}
+	else if( const ThisOverloadedMethodsSet* const this_overloaded_methods_set=
+		function_value.GetThisOverloadedMethodsSet() )
+	{
+		functions_set= &this_overloaded_methods_set->overloaded_methods_set;
+		this_= &this_overloaded_methods_set->this_;
+	}
+
 	if( functions_set == nullptr )
 	{
 		errors_.push_back( ReportOperationNotSupportedForThisType( call_operator.file_pos_, function_value.GetType().ToString() ) );
 		throw ProgramError();
 	}
 
-	std::vector<Function::Arg> actual_args( call_operator.arguments_.size() );
-	std::vector<Variable> actual_args_variables( call_operator.arguments_.size() );
-	for( unsigned int i= 0u; i < actual_args.size(); i++ )
+	size_t this_count= this_ == nullptr ? 0u : 1u;
+	size_t total_args= this_count + call_operator.arguments_.size();
+	std::vector<Function::Arg> actual_args;
+	std::vector<Variable> actual_args_variables;
+	actual_args.reserve( total_args );
+	actual_args_variables.reserve( total_args );
+
+	// Push "this" argument.
+	if( this_ != nullptr )
 	{
-		const Value expr_value= BuildExpressionCode( *call_operator.arguments_[i], names, function_context );
+		actual_args.emplace_back();
+		actual_args.back().type= this_->type;
+		actual_args.back().is_reference= true;
+		actual_args.back().is_mutable= this_->value_type == ValueType::Reference;
+
+		actual_args_variables.push_back( *this_ );
+	}
+	// Push arguments from call operator.
+	for( const BinaryOperatorsChainPtr& arg_expression : call_operator.arguments_ )
+	{
+		U_ASSERT( arg_expression != nullptr );
+		const Value expr_value= BuildExpressionCode( *arg_expression, names, function_context );
 		const Variable* const expr= expr_value.GetVariable();
 		if( expr == nullptr )
 		{
-			errors_.push_back( ReportExpectedVariableAsArgument( call_operator.file_pos_, expr_value.GetType().ToString() ) );
+			errors_.push_back( ReportExpectedVariableAsArgument( arg_expression->file_pos_, expr_value.GetType().ToString() ) );
 			throw ProgramError();
 		}
 
-		actual_args[i].type= expr->type;
-		actual_args[i].is_reference= expr->value_type != ValueType::Value;
-		actual_args[i].is_mutable= expr->value_type == ValueType::Reference;
+		actual_args.emplace_back();
+		actual_args.back().type= expr->type;
+		actual_args.back().is_reference= expr->value_type != ValueType::Value;
+		actual_args.back().is_mutable= expr->value_type == ValueType::Reference;
 
-		actual_args_variables[i]= std::move(*expr);
+		actual_args_variables.push_back( std::move(*expr) );
 	}
 
-	const FunctionVariable& function= GetOverloadedFunction( *functions_set, actual_args, call_operator.file_pos_ );
+	// SPRACHE_TODO - try get function with "this" parameter in signature and without it.
+	// We must support static functions call using "this".
+	const FunctionVariable& function=
+		GetOverloadedFunction( *functions_set, actual_args, this_ != nullptr, call_operator.file_pos_ );
 	const Function& function_type= *boost::get<FunctionPtr>( function.type.one_of_type_kind );
 
-	if( function_type.args.size() != actual_args.size( ))
+	if( this_ != nullptr && !function.is_this_call )
+	{
+		// Static function call via "this".
+		// Just dump first "this" arg.
+		this_count--;
+		total_args--;
+		actual_args.erase( actual_args.begin() );
+		actual_args_variables.erase( actual_args_variables.begin() );
+	}
+
+	if( this_ == nullptr && function.is_this_call )
+	{
+		errors_.push_back( ReportCallOfThiscallFunctionUsingNonthisArgument( call_operator.file_pos_ ) );
+		throw ProgramError();
+	}
+
+	if( function_type.args.size() != actual_args.size() )
 	{
 		errors_.push_back( ReportFunctionSignatureMismatch( call_operator.file_pos_ ) );
 		throw ProgramError();
@@ -626,9 +744,14 @@ Variable CodeBuilder::BuildCallOperator(
 		const Function::Arg& arg= function_type.args[i];
 		const Variable& expr= actual_args_variables[i];
 
+		const FilePos& file_pos=
+			( this_count != 0u && i == 0u )
+				? call_operator.file_pos_
+				: call_operator.arguments_[i - this_count]->file_pos_;
+
 		if( expr.type != arg.type )
 		{
-			errors_.push_back( ReportFunctionSignatureMismatch( call_operator.arguments_[i]->file_pos_ ) );
+			errors_.push_back( ReportFunctionSignatureMismatch( file_pos ) );
 			throw ProgramError();
 		}
 
@@ -638,12 +761,12 @@ Variable CodeBuilder::BuildCallOperator(
 			{
 				if( expr.value_type == ValueType::Value )
 				{
-					errors_.push_back( ReportExpectedReferenceValue( call_operator.arguments_[i]->file_pos_ ) );
+					errors_.push_back( ReportExpectedReferenceValue( file_pos ) );
 					throw ProgramError();
 				}
 				if( expr.value_type == ValueType::ConstReference )
 				{
-					errors_.push_back( ReportBindingConstReferenceToNonconstReference( call_operator.arguments_[i]->file_pos_ ) );
+					errors_.push_back( ReportBindingConstReferenceToNonconstReference( file_pos ) );
 					throw ProgramError();
 				}
 

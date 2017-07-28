@@ -51,7 +51,7 @@ U_TEST(NameNotFoundTest2)
 	// Unknown member name.
 	static const char c_program_text[]=
 	R"(
-		class S{};
+		struct S{};
 		fn Foo() : i32
 		{
 			var S x{};
@@ -110,10 +110,10 @@ U_TEST(UsingKeywordAsName1)
 
 U_TEST(UsingKeywordAsName2)
 {
-	// class name is keyword.
+	// struct name is keyword.
 	static const char c_program_text[]=
 	R"(
-		class while{};
+		struct while{};
 	)";
 
 	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
@@ -187,13 +187,13 @@ U_TEST(Redefinition1)
 
 U_TEST(Redefinition2)
 {
-	// Class redefinition.
+	// struct redefinition.
 	static const char c_program_text[]=
 	R"(
-		class AA{};
+		struct AA{};
 		fn Foo() : i32
 		{ return 0; }
-		class AA{};
+		struct AA{};
 	)";
 
 	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
@@ -216,7 +216,7 @@ U_TEST(Redefinition3)
 		fn Bar() : i32
 		{ return 1; }
 
-		class Foo{};
+		struct Foo{};
 	)";
 
 	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
@@ -273,7 +273,7 @@ U_TEST(OperationNotSupportedForThisTypeTest0)
 	// Binary operations errors.
 	static const char c_program_text[]=
 	R"(
-		class S{};
+		struct S{};
 		fn Foo()
 		{
 			var S s= zero_init;
@@ -309,7 +309,7 @@ U_TEST(OperationNotSupportedForThisTypeTest1)
 	// Indexation operators.
 	static const char c_program_text[]=
 	R"(
-		class S{};
+		struct S{};
 		fn Bar(){}
 		fn Foo()
 		{
@@ -317,7 +317,7 @@ U_TEST(OperationNotSupportedForThisTypeTest1)
 			var S s= zero_init;
 			variable[ 42u32 ]; // Indexation of variable.
 			Bar[ 0u32 ]; // Indexation of function.
-			s[ 45u32 ]; // Indexation of class variable.
+			s[ 45u32 ]; // Indexation of struct variable.
 		}
 	)";
 
@@ -364,13 +364,13 @@ U_TEST(OperationNotSupportedForThisTypeTest3)
 	// Unary minus.
 	static const char c_program_text[]=
 	R"(
-		class S{};
+		struct S{};
 		fn Bar(){}
 		fn Foo()
 		{
 			var S s= zero_init;
 			var [ u8, 16 ] a= zero_init;
-			-s; // Unary minus for class variable.
+			-s; // Unary minus for struct variable.
 			-Bar; // Unary minus for of function.
 			-a; // Unary minus for array.
 			-false; // Unary minus for bool
@@ -544,7 +544,7 @@ U_TEST(NoMatchBinaryOperatorForGivenTypesTest0)
 
 U_TEST(NoMatchBinaryOperatorForGivenTypesTest1)
 {
-	// Add for structs.
+	// Add for arrays.
 	static const char c_program_text[]=
 	R"(
 		fn Foo()
@@ -1224,16 +1224,16 @@ U_TEST(ExpectedVariableInAssignmentTest0)
 {
 	static const char c_program_text[]=
 	R"(
-		class C{}
+		struct C{}
 		fn Bar(){}
 		fn Foo()
 		{
 			var i32 x= 0;
 			Bar= x; // assign variable to function
 			x= Bar; // assign function to variable
-			C= x;   // assign variable to class
-			x= C;   // assign class to variable
-			C= Bar; // assign function to class
+			C= x;   // assign variable to struct
+			x= C;   // assign struct to variable
+			C= Bar; // assign function to struct
 		}
 	)";
 
@@ -1259,16 +1259,16 @@ U_TEST(ExpectedVariableInBinaryOperatorTest0)
 {
 	static const char c_program_text[]=
 	R"(
-		class C{}
+		struct C{}
 		fn Bar(){}
 		fn Foo()
 		{
 			var i32 x= 0;
 			Bar + x;  // variable and function
 			x / Bar;  // function and variable
-			C * x;    // variable and class
-			x - C;    // class and variable
-			C == Bar; // function and class
+			C * x;    // variable and struct
+			x - C;    // struct and variable
+			C == Bar; // function and struct
 		}
 	)";
 
@@ -1294,13 +1294,13 @@ U_TEST(ExpectedVariableAsArgumentTest0)
 {
 	static const char c_program_text[]=
 	R"(
-		class C{}
+		struct C{}
 		fn Bar( i32 x ){}
 		fn Foo()
 		{
 			var i32 x= 0;
 			Bar( Bar ); // Function as argument
-			Bar( C ); // Class as argument
+			Bar( C ); // struct as argument
 		}
 	)";
 
