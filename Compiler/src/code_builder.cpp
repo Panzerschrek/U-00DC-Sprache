@@ -1309,7 +1309,22 @@ const FunctionVariable& CodeBuilder::GetOverloadedFunction(
 	if( functions_set.size() == 1u )
 		return functions_set.front();
 
-	const FunctionVariable* match_function= nullptr;
+	enum class MatchType
+	{
+		// Overloading class and type match for all parameters.
+		Exact,
+		// Exact types match for all parameters and mutable reference to immutable reference conversions for some parameters.
+		MutToImutReferenceConversion,
+		// Types conversion for some parameters ( including references conversion ) and possible mutable to immutable references conversion.
+		TypeConversions,
+		NoMatch,
+	};
+
+	// TODO - use here something like small vectors, or cache this vectors.
+	std::vector<unsigned int> exact_match_functions;
+	std::vector<unsigned int> match_with_mut_to_imut_cast_functions;
+	std::vector<unsigned int> match_with_types_conversion_functions;
+
 	for( const FunctionVariable& function : functions_set )
 	{
 		const Function& function_type= *boost::get<FunctionPtr>( function.type.one_of_type_kind );
@@ -1332,7 +1347,7 @@ const FunctionVariable& CodeBuilder::GetOverloadedFunction(
 		if( function_type.args.size() != actial_arg_count )
 			continue;
 
-		bool match= true;
+		MatchType match_type= MatchType::Exact;
 		for( unsigned int i= 0u; i < actial_arg_count; i++ )
 		{
 			// SPRACHE_TODO - support type-casting for function call.
@@ -1340,44 +1355,87 @@ const FunctionVariable& CodeBuilder::GetOverloadedFunction(
 			// Now - only exactly compare types.
 			if( actual_args_begin[i].type != function_type.args[i].type )
 			{
-				match= false;
+				match_type= MatchType::NoMatch;
 				break;
 			}
 
-			if( GetArgOverloadingClass( function_type.args[i] ) == ArgOverloadingClass::MutalbeReference &&
-				GetArgOverloadingClass( actual_args_begin[i] ) != ArgOverloadingClass::MutalbeReference )
+			const ArgOverloadingClass arg_overloading_class= GetArgOverloadingClass( actual_args_begin[i] );
+			const ArgOverloadingClass parameter_overloading_class= GetArgOverloadingClass( function_type.args[i] );
+			if( arg_overloading_class == parameter_overloading_class )
+			{
+				// All ok, exact match
+			}
+			else if( parameter_overloading_class == ArgOverloadingClass::MutalbeReference &&
+				arg_overloading_class != ArgOverloadingClass::MutalbeReference )
 			{
 				// We can only bind nonconst-reference arg to nonconst-reference parameter.
-				match= false;
+				match_type= MatchType::NoMatch;
 				break;
 			}
+			else if( parameter_overloading_class == ArgOverloadingClass::ImmutableReference &&
+				arg_overloading_class == ArgOverloadingClass::MutalbeReference )
+			{
+				if( match_type == MatchType::Exact )
+					match_type= MatchType::MutToImutReferenceConversion;
+			}
 			else
 			{
-				// All ok - value or const-reference parameter accept values, const and nonconst references.
+				U_ASSERT(false);
 			}
-		}
+		} // for candidate function args.
 
-		if( match )
+		const unsigned int function_index= &function - functions_set.data();
+		switch( match_type )
 		{
-			if( match_function == nullptr )
-				match_function= &function;
-			else
-			{
-				errors_.push_back( ReportTooManySuitableOverloadedFunctions( file_pos ) );
-				throw ProgramError();
-			}
-		}
+		case MatchType::Exact:
+			exact_match_functions.push_back( function_index );
+			break;
+		case MatchType::MutToImutReferenceConversion:
+			match_with_mut_to_imut_cast_functions.push_back( function_index );
+			break;
+		case MatchType::TypeConversions:
+			match_with_types_conversion_functions.push_back( function_index );
+			break;
+		case MatchType::NoMatch:
+			break;
+		};
 	} // for functions
 
-	// Not found any function.
-	if( match_function == nullptr )
+	if( !exact_match_functions.empty() )
 	{
-		errors_.push_back( ReportCouldNotSelectOverloadedFunction( file_pos ) );
-		throw ProgramError();
+		if( exact_match_functions.size() == 1u )
+			return functions_set[ exact_match_functions.front() ];
+		else
+		{
+			errors_.push_back( ReportTooManySuitableOverloadedFunctions( file_pos ) );
+			throw ProgramError();
+		}
+	}
+	else if( !match_with_mut_to_imut_cast_functions.empty() )
+	{
+		if( match_with_mut_to_imut_cast_functions.size() == 1u )
+			return functions_set[ match_with_mut_to_imut_cast_functions.front() ];
+		else
+		{
+			errors_.push_back( ReportTooManySuitableOverloadedFunctions( file_pos ) );
+			throw ProgramError();
+		}
+	}
+	else if( !match_with_types_conversion_functions.empty() )
+	{
+		if( match_with_types_conversion_functions.size() == 1u )
+			return functions_set[ match_with_types_conversion_functions.front() ];
+		else
+		{
+			errors_.push_back( ReportTooManySuitableOverloadedFunctions( file_pos ) );
+			throw ProgramError();
+		}
 	}
 	else
 	{
-		return *match_function;
+		// Not found any function.
+		errors_.push_back( ReportCouldNotSelectOverloadedFunction( file_pos ) );
+		throw ProgramError();
 	}
 }
 
