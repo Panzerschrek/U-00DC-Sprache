@@ -86,25 +86,7 @@ CodeBuilder::BuildResult CodeBuilder::BuildProgram( const ProgramElements& progr
 	error_count_= 0u;
 
 	NamesScope global_names;
-
-	for( const IProgramElementPtr& program_element : program_elements )
-	{
-		if( const FunctionDeclaration* func=
-			dynamic_cast<const FunctionDeclaration*>( program_element.get() ) )
-		{
-			PrepareFunction( *func, false, nullptr, global_names );
-		}
-		else if(
-			const ClassDeclaration* class_=
-			dynamic_cast<const ClassDeclaration*>( program_element.get() ) )
-		{
-			PrepareClass( *class_, global_names );
-		}
-		else
-		{
-			U_ASSERT(false);
-		}
-	} // for program elements
+	BuildNamespaceBody( program_elements, global_names );
 
 	if( error_count_ > 0u )
 		errors_.push_back( ReportBuildFailed() );
@@ -277,6 +259,44 @@ void CodeBuilder::PrepareClass( const ClassDeclaration& class_declaration, Names
 	{
 		errors_.push_back( ReportRedefinition( class_declaration.file_pos_, class_declaration.name_ ) );
 	}
+}
+
+void CodeBuilder::BuildNamespaceBody(
+	const ProgramElements& body_elements,
+	NamesScope& names_scope )
+{
+	for( const IProgramElementPtr& program_element : body_elements )
+	{
+		if( const FunctionDeclaration* const func=
+			dynamic_cast<const FunctionDeclaration*>( program_element.get() ) )
+		{
+			PrepareFunction( *func, false, nullptr, names_scope );
+		}
+		else if(
+			const ClassDeclaration* const class_=
+			dynamic_cast<const ClassDeclaration*>( program_element.get() ) )
+		{
+			PrepareClass( *class_, names_scope );
+		}
+		else if(
+			const Namespace* const namespace_=
+			dynamic_cast<const Namespace*>( program_element.get() ) )
+		{
+			const NamesScopePtr new_names_scope= std::make_shared<NamesScope>( names_scope );
+			const NamesScope::InsertedName* const inserted_namespace=
+				names_scope.AddName( namespace_->name_, new_names_scope );
+			if( inserted_namespace == nullptr )
+			{
+				errors_.push_back( ReportRedefinition( namespace_->file_pos_, namespace_->name_ ) );
+			}
+			BuildNamespaceBody( namespace_->elements_, *new_names_scope );
+		}
+		else
+		{
+			U_ASSERT(false);
+		}
+	} // for program elements
+
 }
 
 void CodeBuilder::PrepareFunction(

@@ -281,6 +281,9 @@ ProgramString Type::ToString() const
 			case NontypeStub::ClassName:
 				result= "class name"_SpC;
 				break;
+			case NontypeStub::Namespace:
+				result= "namespace"_SpC;
+				break;
 			};
 			U_ASSERT(!result.empty());
 		}
@@ -417,6 +420,14 @@ Value::Value( ThisOverloadedMethodsSet this_overloaded_methods_set )
 	something_= std::move( s );
 }
 
+Value::Value( const NamesScopePtr& namespace_ )
+{
+	U_ASSERT( namespace_ != nullptr );
+	NamespaceWithTypeStub s;
+	s.namespace_= namespace_;
+	something_= std::move( s );
+}
+
 const Type& Value::GetType() const
 {
 	struct Visitor final : public boost::static_visitor<>
@@ -440,6 +451,9 @@ const Type& Value::GetType() const
 
 		void operator()( const ThisOverloadedMethodsSetWithTypeStub& overloded_methods_set )
 		{ type= &overloded_methods_set.type; }
+
+		void operator()( const NamespaceWithTypeStub& namespace_ )
+		{ type= &namespace_.type; }
 	};
 
 	Visitor visitor;
@@ -520,6 +534,22 @@ const ThisOverloadedMethodsSet* Value::GetThisOverloadedMethodsSet() const
 	return &set->set;
 }
 
+NamesScopePtr Value::GetNamespace()
+{
+	NamespaceWithTypeStub* const namespace_= boost::get<NamespaceWithTypeStub>( &something_ );
+	if( namespace_ == nullptr )
+		return nullptr;
+	return namespace_->namespace_;
+}
+
+NamesScopeConstPtr Value::GetNamespace() const
+{
+	const NamespaceWithTypeStub* const namespace_= boost::get<NamespaceWithTypeStub>( &something_ );
+	if( namespace_ == nullptr )
+		return nullptr;
+	return namespace_->namespace_;
+}
+
 Value::OverloadedFunctionsSetWithTypeStub::OverloadedFunctionsSetWithTypeStub()
 {
 	type.one_of_type_kind= NontypeStub::OverloadedFunctionsSet;
@@ -533,6 +563,11 @@ Value::ThisOverloadedMethodsSetWithTypeStub::ThisOverloadedMethodsSetWithTypeStu
 Value::ClassWithTypeStub::ClassWithTypeStub()
 {
 	type.one_of_type_kind= NontypeStub::ClassName;
+}
+
+Value::NamespaceWithTypeStub::NamespaceWithTypeStub()
+{
+	type.one_of_type_kind= NontypeStub::Namespace;
 }
 
 ArgOverloadingClass GetArgOverloadingClass( const bool is_reference, const bool is_mutable )

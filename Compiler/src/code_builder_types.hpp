@@ -28,6 +28,10 @@ struct Class;
 typedef std::shared_ptr<Class> ClassPtr;
 typedef std::weak_ptr<Class> ClassWeakPtr;
 
+class NamesScope;
+typedef std::shared_ptr<NamesScope> NamesScopePtr;
+typedef std::shared_ptr<const NamesScope> NamesScopeConstPtr;
+
 struct FundamentalType final
 {
 	U_FundamentalType fundamental_type;
@@ -42,6 +46,7 @@ enum class NontypeStub
 	OverloadedFunctionsSet,
 	ThisOverloadedMethodsSet,
 	ClassName,
+	Namespace,
 };
 
 bool operator==( const FundamentalType& r, const FundamentalType& l );
@@ -162,6 +167,7 @@ public:
 	Value( const ClassPtr& class_ );
 	Value( ClassField class_field );
 	Value( ThisOverloadedMethodsSet class_field );
+	Value( const NamesScopePtr& namespace_ );
 
 	const Type& GetType() const;
 
@@ -179,9 +185,12 @@ public:
 	const ClassPtr* GetClass() const;
 	// Class fields
 	const ClassField* GetClassField() const;
-
+	// This + methods set
 	ThisOverloadedMethodsSet* GetThisOverloadedMethodsSet();
 	const ThisOverloadedMethodsSet* GetThisOverloadedMethodsSet() const;
+	// Namespace
+	NamesScopePtr GetNamespace();
+	NamesScopeConstPtr GetNamespace() const;
 
 private:
 	struct OverloadedFunctionsSetWithTypeStub
@@ -205,6 +214,13 @@ private:
 		Type type;
 		ClassPtr class_;
 	};
+	struct NamespaceWithTypeStub
+	{
+		 NamespaceWithTypeStub();
+
+		Type type;
+		NamesScopePtr namespace_;
+	};
 
 private:
 	boost::variant<
@@ -213,7 +229,8 @@ private:
 		OverloadedFunctionsSetWithTypeStub,
 		ClassWithTypeStub,
 		ClassField,
-		ThisOverloadedMethodsSetWithTypeStub > something_;
+		ThisOverloadedMethodsSetWithTypeStub,
+		NamespaceWithTypeStub > something_;
 };
 
 // "Class" of function argument in terms of overloading.

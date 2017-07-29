@@ -64,6 +64,10 @@ private:
 	Type PrepareType( const FilePos& file_pos, const TypeName& type_name, const NamesScope& names_scope );
 	void PrepareClass( const ClassDeclaration& class_declaration, NamesScope& names_scope );
 
+	void BuildNamespaceBody(
+		const ProgramElements& body_elements,
+		NamesScope& names_scope );
+
 	void PrepareFunction(
 		const FunctionDeclaration& func,
 		bool force_prototype,
