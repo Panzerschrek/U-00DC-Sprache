@@ -663,7 +663,7 @@ ProgramString NamesScope::GetFunctionMangledName( const ProgramString& func_name
 void NamesScope::GetNamespacePrefix_r( ProgramString& func_name ) const
 {
 	if( parent_ != nullptr )
-		parent_->GetFunctionMangledName( func_name );
+		parent_->GetNamespacePrefix_r( func_name );
 	if( !name_.empty() )
 	{
 		func_name+= ToProgramString( std::to_string( name_.size() ).c_str() );
