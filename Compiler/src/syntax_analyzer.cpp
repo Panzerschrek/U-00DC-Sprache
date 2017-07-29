@@ -91,6 +91,8 @@ public:
 	SyntaxAnalysisResult DoAnalyzis( const Lexems& lexems );
 
 private:
+	ProgramElements ParseNamespaceBody( Lexem::Type end_lexem );
+
 	std::unique_ptr<NumericConstant> ParseNumericConstant();
 
 	IExpressionComponentPtr ParseExpression();
@@ -133,47 +135,71 @@ SyntaxAnalysisResult SyntaxAnalyzer::DoAnalyzis( const Lexems& lexems )
 	it_= lexems.begin();
 	it_end_= lexems.end();
 
-	Lexems::const_iterator unexpected_lexem= it_end_;
-
 	while( it_ < it_end_ )
 	{
-		const Lexem& lexem= *it_;
-
-		const Lexems::const_iterator prev_it= it_;
-
-		if( lexem.type == Lexem::Type::Identifier && lexem.text == Keywords::fn_ )
-		{
-			if( IProgramElementPtr program_element= ParseFunction() )
-				result.program_elements.emplace_back( std::move( program_element ) );
-
-			continue;
-		}
-		else if( lexem.type == Lexem::Type::Identifier && ( lexem.text == Keywords::struct_ || lexem.text == Keywords::class_ ) )
-		{
-			if( IProgramElementPtr program_element= ParseClass() )
-				result.program_elements.emplace_back( std::move( program_element ) );
-
-			continue;
-		}
-		else if( lexem.type == Lexem::Type::EndOfFile )
-			break;
-
-		if( unexpected_lexem == it_end_ )
-			unexpected_lexem= it_;
-		else
-		{
-			// Iterator changed => end of unexpected lexems block;
-			if( prev_it < it_ || it_ + 1 == it_end_ )
-			{
-				PushErrorMessage( *unexpected_lexem );
-				unexpected_lexem= it_end_;
-			}
-		}
+		result.program_elements= ParseNamespaceBody( Lexem::Type::EndOfFile );
 		++it_;
 	}
 
 	result.error_messages.swap( error_messages_ );
 	return result;
+}
+
+ProgramElements SyntaxAnalyzer::ParseNamespaceBody( const Lexem::Type end_lexem )
+{
+	ProgramElements program_elements;
+
+	while( it_ < it_end_ )
+	{
+		if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::fn_ )
+		{
+			if( IProgramElementPtr program_element= ParseFunction() )
+				program_elements.emplace_back( std::move( program_element ) );
+		}
+		else if( it_->type == Lexem::Type::Identifier && ( it_->text == Keywords::struct_ || it_->text == Keywords::class_ ) )
+		{
+			if( IProgramElementPtr program_element= ParseClass() )
+				program_elements.emplace_back( std::move( program_element ) );;
+		}
+		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::namespace_ )
+		{
+			++it_; U_ASSERT( it_ < it_end_ );
+
+			ProgramString name;
+			if( it_->type != Lexem::Type::Identifier )
+			{
+				PushErrorMessage( *it_ );
+				return program_elements;
+			}
+			name= it_->text;
+			++it_; U_ASSERT( it_ < it_end_ );
+
+			if( it_->type != Lexem::Type::BraceLeft )
+			{
+				PushErrorMessage( *it_ );
+				return program_elements;
+			}
+			++it_; U_ASSERT( it_ < it_end_ );
+
+			std::unique_ptr<Namespace> namespace_( new Namespace( (it_-2)->file_pos ) );
+			namespace_->name_= std::move(name);
+			namespace_->elements_= ParseNamespaceBody( Lexem::Type::BraceRight );
+			program_elements.push_back( std::move( namespace_ ) );
+		}
+		else if( it_->type == end_lexem )
+		{
+			// End of namespace
+			++it_;
+			return program_elements;
+		}
+		else
+		{
+			PushErrorMessage( *it_ );
+			return program_elements;
+		}
+	} // while not end of file
+
+	return program_elements;
 }
 
 std::unique_ptr<NumericConstant> SyntaxAnalyzer::ParseNumericConstant()

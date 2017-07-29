@@ -545,4 +545,16 @@ public:
 	ProgramString name_;
 };
 
+class Namespace final : public IProgramElement
+{
+public:
+	explicit Namespace( const FilePos& file_pos );
+	virtual ~Namespace() override= default;
+
+	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
+
+	ProgramString name_;
+	ProgramElements elements_;
+};
+
 } // namespace U

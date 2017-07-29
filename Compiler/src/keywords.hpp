@@ -23,6 +23,8 @@ enum class Keywords : unsigned int
 	struct_,
 	class_,
 
+	namespace_,
+
 	// Fundamental types names.
 	void_,
 	bool_,

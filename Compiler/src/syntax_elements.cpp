@@ -637,4 +637,16 @@ void ClassDeclaration::Print( std::ostream& stream, unsigned int indent ) const
 	stream << "}\n";
 }
 
+Namespace::Namespace( const FilePos& file_pos )
+	: IProgramElement(file_pos)
+{}
+
+void Namespace::Print(std::ostream& stream, const unsigned int indent ) const
+{
+	stream << "namespace " << ToStdString( name_ ) << "\n{\n";
+	for( const IProgramElementPtr& element : elements_ )
+		element->Print( stream, indent );
+	stream << "}\n";
+}
+
 } // namespace U
