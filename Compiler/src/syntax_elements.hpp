@@ -44,8 +44,6 @@ class IUnaryPrefixOperator : public SyntaxElementBase
 public:
 	explicit IUnaryPrefixOperator( const FilePos& file_pos );
 	virtual ~IUnaryPrefixOperator() {}
-
-	virtual IUnaryPrefixOperatorPtr Clone() const= 0;
 };
 
 class IUnaryPostfixOperator : public SyntaxElementBase
@@ -53,8 +51,6 @@ class IUnaryPostfixOperator : public SyntaxElementBase
 public:
 	explicit IUnaryPostfixOperator( const FilePos& file_pos );
 	virtual ~IUnaryPostfixOperator() {}
-
-	virtual IUnaryPostfixOperatorPtr Clone() const= 0;
 };
 
 class UnaryPlus final : public IUnaryPrefixOperator
@@ -62,8 +58,6 @@ class UnaryPlus final : public IUnaryPrefixOperator
 public:
 	explicit UnaryPlus( const FilePos& file_pos );
 	virtual ~UnaryPlus() override;
-
-	virtual IUnaryPrefixOperatorPtr Clone() const override;
 
 	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
 };
@@ -73,8 +67,6 @@ class UnaryMinus final : public IUnaryPrefixOperator
 public:
 	explicit UnaryMinus( const FilePos& file_pos );
 	virtual ~UnaryMinus() override;
-
-	virtual IUnaryPrefixOperatorPtr Clone() const override;
 
 	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
 };
@@ -87,8 +79,6 @@ public:
 		std::vector<IExpressionComponentPtr> arguments );
 	virtual ~CallOperator() override;
 
-	virtual IUnaryPostfixOperatorPtr Clone() const override;
-
 	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
 
 	const std::vector<IExpressionComponentPtr> arguments_;
@@ -100,8 +90,6 @@ public:
 	explicit IndexationOperator( const FilePos& file_pos, IExpressionComponentPtr index );
 	virtual ~IndexationOperator() override;
 
-	virtual IUnaryPostfixOperatorPtr Clone() const override;
-
 	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
 
 	const IExpressionComponentPtr index_;
@@ -112,8 +100,6 @@ class MemberAccessOperator final : public IUnaryPostfixOperator
 public:
 	MemberAccessOperator( const FilePos& file_pos, ProgramString member_name );
 	virtual ~MemberAccessOperator() override;
-
-	virtual IUnaryPostfixOperatorPtr Clone() const override;
 
 	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
 
@@ -154,8 +140,6 @@ class IExpressionComponent : public SyntaxElementBase
 public:
 	explicit IExpressionComponent( const FilePos& file_pos );
 	virtual ~IExpressionComponent(){}
-
-	virtual IExpressionComponentPtr Clone() const= 0;
 };
 
 class IInitializer : public SyntaxElementBase
@@ -233,8 +217,6 @@ public:
 	explicit BinaryOperator( const FilePos& file_pos );
 	virtual ~BinaryOperator() override= default;
 
-	virtual IExpressionComponentPtr Clone() const override;
-
 	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
 
 	BinaryOperatorType operator_type_;
@@ -258,8 +240,6 @@ public:
 	NamedOperand( const FilePos& file_pos, ProgramString name );
 	virtual ~NamedOperand() override;
 
-	virtual IExpressionComponentPtr Clone() const override;
-
 	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
 
 	const ProgramString name_;
@@ -270,8 +250,6 @@ class BooleanConstant final : public ExpressionComponentWithUnaryOperators
 public:
 	BooleanConstant( const FilePos& file_pos, bool value );
 	virtual ~BooleanConstant() override;
-
-	virtual IExpressionComponentPtr Clone() const override;
 
 	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
 
@@ -294,8 +272,6 @@ public:
 
 	virtual ~NumericConstant() override;
 
-	virtual IExpressionComponentPtr Clone() const override;
-
 	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
 
 	const LongFloat value_;
@@ -308,8 +284,6 @@ class BracketExpression final : public ExpressionComponentWithUnaryOperators
 public:
 	BracketExpression( const FilePos& file_pos, IExpressionComponentPtr expression );
 	~BracketExpression() override;
-
-	virtual IExpressionComponentPtr Clone() const override;
 
 	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
 

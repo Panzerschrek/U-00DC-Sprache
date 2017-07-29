@@ -29,11 +29,6 @@ UnaryPlus::UnaryPlus( const FilePos& file_pos )
 UnaryPlus::~UnaryPlus()
 {}
 
-IUnaryPrefixOperatorPtr UnaryPlus::Clone() const
-{
-	return IUnaryPrefixOperatorPtr( new UnaryPlus( file_pos_ ) );
-}
-
 void UnaryPlus::Print( std::ostream& stream, unsigned int indent ) const
 {
 	U_UNUSED( indent );
@@ -46,11 +41,6 @@ UnaryMinus::UnaryMinus( const FilePos& file_pos )
 
 UnaryMinus::~UnaryMinus()
 {}
-
-IUnaryPrefixOperatorPtr UnaryMinus::Clone() const
-{
-	return IUnaryPrefixOperatorPtr( new UnaryMinus( file_pos_ ) );
-}
 
 void UnaryMinus::Print( std::ostream& stream, unsigned int indent ) const
 {
@@ -67,16 +57,6 @@ CallOperator::CallOperator(
 
 CallOperator::~CallOperator()
 {}
-
-IUnaryPostfixOperatorPtr CallOperator::Clone() const
-{
-	std::vector<IExpressionComponentPtr> arguments_copy;
-	arguments_copy.reserve( arguments_.size() );
-	for( const IExpressionComponentPtr& expression : arguments_ )
-		arguments_copy.emplace_back( expression->Clone() );
-
-	return IUnaryPostfixOperatorPtr( new CallOperator( file_pos_, std::move( arguments_copy ) ) );
-}
 
 void CallOperator::Print( std::ostream& stream, unsigned int indent ) const
 {
@@ -100,15 +80,6 @@ IndexationOperator::IndexationOperator( const FilePos& file_pos, IExpressionComp
 
 IndexationOperator::~IndexationOperator()
 {}
-
-IUnaryPostfixOperatorPtr IndexationOperator::Clone() const
-{
-	IExpressionComponentPtr index_copy= index_->Clone();
-
-	return
-		IUnaryPostfixOperatorPtr(
-			new IndexationOperator( file_pos_, std::move( index_copy ) ) );
-}
 
 ProgramString BinaryOperatorToString( const BinaryOperatorType op )
 {
@@ -156,15 +127,6 @@ MemberAccessOperator::MemberAccessOperator(
 
 MemberAccessOperator::~MemberAccessOperator()
 {}
-
-IUnaryPostfixOperatorPtr MemberAccessOperator::Clone() const
-{
-	return
-		IUnaryPostfixOperatorPtr(
-			new MemberAccessOperator(
-				file_pos_,
-				member_name_ ) );
-}
 
 void MemberAccessOperator::Print( std::ostream& stream, unsigned int indent ) const
 {
@@ -253,16 +215,6 @@ BinaryOperator::BinaryOperator( const FilePos& file_pos )
 	: IExpressionComponent( file_pos )
 {}
 
-IExpressionComponentPtr BinaryOperator::Clone() const
-{
-	std::unique_ptr<BinaryOperator> copy( new BinaryOperator( file_pos_ ) );
-	copy->operator_type_= operator_type_;
-	copy->left_ = left_ ->Clone();
-	copy->right_= right_->Clone();
-
-	return std::move( copy );
-}
-
 void BinaryOperator::Print( std::ostream& stream, unsigned int indent ) const
 {
 	left_ ->Print( stream, indent );
@@ -288,11 +240,6 @@ void NamedOperand::Print( std::ostream& stream, unsigned int indent ) const
 NamedOperand::~NamedOperand()
 {}
 
-IExpressionComponentPtr NamedOperand::Clone() const
-{
-	return IExpressionComponentPtr( new NamedOperand( file_pos_, name_ ) );
-}
-
 BooleanConstant::BooleanConstant( const FilePos& file_pos, bool value )
 	: ExpressionComponentWithUnaryOperators(file_pos)
 	, value_( value )
@@ -300,11 +247,6 @@ BooleanConstant::BooleanConstant( const FilePos& file_pos, bool value )
 
 BooleanConstant::~BooleanConstant()
 {}
-
-IExpressionComponentPtr BooleanConstant::Clone() const
-{
-	return IExpressionComponentPtr( new BooleanConstant( file_pos_, value_ ) );
-}
 
 void BooleanConstant::Print( std::ostream& stream, unsigned int indent ) const
 {
@@ -332,17 +274,6 @@ void NumericConstant::Print( std::ostream& stream, unsigned int indent ) const
 NumericConstant::~NumericConstant()
 {}
 
-IExpressionComponentPtr NumericConstant::Clone() const
-{
-	return
-		IExpressionComponentPtr(
-			new NumericConstant(
-				file_pos_,
-				value_,
-				type_suffix_,
-				has_fractional_point_ ) );
-}
-
 BracketExpression::BracketExpression( const FilePos& file_pos, IExpressionComponentPtr expression )
 	: ExpressionComponentWithUnaryOperators(file_pos)
 	, expression_( std::move( expression ) )
@@ -350,13 +281,6 @@ BracketExpression::BracketExpression( const FilePos& file_pos, IExpressionCompon
 
 BracketExpression::~BracketExpression()
 {}
-
-IExpressionComponentPtr BracketExpression::Clone() const
-{
-	return
-		IExpressionComponentPtr(
-			new BracketExpression( file_pos_,  expression_->Clone() ) );
-}
 
 void BracketExpression::Print( std::ostream& stream, unsigned int indent ) const
 {
