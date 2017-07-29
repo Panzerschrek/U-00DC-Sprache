@@ -475,7 +475,7 @@ public:
 	IExpressionComponentPtr r_value_;
 };
 
-class FunctionArgumentDeclaration final : public IProgramElement
+class FunctionArgumentDeclaration final : public SyntaxElementBase
 {
 public:
 	FunctionArgumentDeclaration(

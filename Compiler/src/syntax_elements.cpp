@@ -544,7 +544,7 @@ FunctionArgumentDeclaration::FunctionArgumentDeclaration(
 	TypeName type,
 	MutabilityModifier mutability_modifier,
 	ReferenceModifier reference_modifier )
-	: IProgramElement( file_pos )
+	: SyntaxElementBase( file_pos )
 	, name_(std::move(name))
 	, type_(std::move(type))
 	, mutability_modifier_(mutability_modifier)
