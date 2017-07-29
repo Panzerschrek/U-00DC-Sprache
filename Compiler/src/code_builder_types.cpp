@@ -265,7 +265,7 @@ ProgramString Type::ToString() const
 		{
 			if( class_ == nullptr ) return;
 
-			result= "class "_SpC + class_->name;
+			result= "class "_SpC + class_->members.GetThisNamespaceName();
 		}
 
 		void operator()( const NontypeStub& stub )
@@ -375,7 +375,8 @@ bool operator!=( const Array& r, const Array& l )
 	return !( r == l );
 }
 
-Class::Class()
+Class::Class( const ProgramString& in_name, const NamesScope* const parent_scope )
+	: members( in_name, parent_scope )
 {}
 
 Class::~Class()
@@ -598,9 +599,17 @@ ArgOverloadingClass GetArgOverloadingClass( const Function::Arg& arg )
 	return GetArgOverloadingClass( arg.is_mutable, arg.is_reference );
 }
 
-NamesScope::NamesScope( const NamesScope* prev )
-	: prev_(prev)
+NamesScope::NamesScope(
+	ProgramString name,
+	const NamesScope* const parent )
+	: name_(std::move(name) )
+	, parent_(parent)
 {}
+
+const ProgramString& NamesScope::GetThisNamespaceName() const
+{
+	return name_;
+}
 
 NamesScope::InsertedName* NamesScope::AddName(
 	const ProgramString& name,
@@ -621,8 +630,8 @@ const NamesScope::InsertedName*
 	if( it != names_map_.end() )
 		return &*it;
 
-	if( prev_ != nullptr )
-		return prev_->GetName( name );
+	if( parent_ != nullptr )
+		return parent_->GetName( name );
 
 	return nullptr;
 }
@@ -633,6 +642,33 @@ NamesScope::InsertedName* NamesScope::GetThisScopeName( const ProgramString& nam
 	if( it != names_map_.end() )
 		return &*it;
 	return nullptr;
+}
+
+ProgramString NamesScope::GetFunctionMangledName( const ProgramString& func_name ) const
+{
+	U_ASSERT( !func_name.empty() );
+
+	// TODO - support full Itanium ABI mangling here, inlcude arguments and template parameters.
+
+	ProgramString result;
+	result+= "_Z"_SpC;
+	GetNamespacePrefix_r( result );
+
+	result+= ToProgramString( std::to_string( func_name.size() ).c_str() );
+	result+= func_name;
+
+	return result;
+}
+
+void NamesScope::GetNamespacePrefix_r( ProgramString& func_name ) const
+{
+	if( parent_ != nullptr )
+		parent_->GetFunctionMangledName( func_name );
+	if( !name_.empty() )
+	{
+		func_name+= ToProgramString( std::to_string( name_.size() ).c_str() );
+		func_name+= name_;
+	}
 }
 
 const ProgramString& GetFundamentalTypeName( const U_FundamentalType fundamental_type )

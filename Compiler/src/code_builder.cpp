@@ -85,7 +85,7 @@ CodeBuilder::BuildResult CodeBuilder::BuildProgram( const ProgramElements& progr
 	errors_.clear();
 	error_count_= 0u;
 
-	NamesScope global_names;
+	NamesScope global_names( ""_SpC, nullptr );
 	BuildNamespaceBody( program_elements, global_names );
 
 	if( error_count_ > 0u )
@@ -197,9 +197,7 @@ void CodeBuilder::PrepareClass( const ClassDeclaration& class_declaration, Names
 	if( IsKeyword( class_declaration.name_ ) )
 		errors_.push_back( ReportUsingKeywordAsName( class_declaration.file_pos_ ) );
 
-	ClassPtr the_class= std::make_shared<Class>();
-
-	the_class->name= class_declaration.name_;
+	ClassPtr the_class= std::make_shared<Class>(class_declaration.name_, &names_scope );
 
 	the_class->llvm_type=
 		llvm::StructType::create( llvm_context_, ToStdString(class_declaration.name_) );
@@ -282,7 +280,7 @@ void CodeBuilder::BuildNamespaceBody(
 			const Namespace* const namespace_=
 			dynamic_cast<const Namespace*>( program_element.get() ) )
 		{
-			const NamesScopePtr new_names_scope= std::make_shared<NamesScope>( names_scope );
+			const NamesScopePtr new_names_scope= std::make_shared<NamesScope>( namespace_->name_, &names_scope );
 			const NamesScope::InsertedName* const inserted_namespace=
 				names_scope.AddName( namespace_->name_, new_names_scope );
 			if( inserted_namespace == nullptr )
@@ -388,7 +386,7 @@ void CodeBuilder::PrepareFunction(
 		BuildFuncCode(
 			inserted_func->second.GetFunctionsSet()->front(),
 			base_class,
-			&names_scope,
+			names_scope,
 			func.name_,
 			func.arguments_,
 			block );
@@ -423,7 +421,7 @@ void CodeBuilder::PrepareFunction(
 				BuildFuncCode(
 					*same_function,
 					base_class,
-					&names_scope,
+					names_scope,
 					func.name_,
 					func.arguments_,
 					block );
@@ -442,7 +440,7 @@ void CodeBuilder::PrepareFunction(
 				BuildFuncCode(
 					functions_set->back(),
 					base_class,
-					&names_scope,
+					names_scope,
 					func.name_,
 					func.arguments_,
 					block );
@@ -489,7 +487,7 @@ void CodeBuilder::BuildFuncCode(
 			llvm::Function::Create(
 				function_type_ptr->llvm_function_type,
 				llvm::Function::LinkageTypes::ExternalLinkage, // TODO - select linkage
-				ToStdString( func_name ),
+				ToStdString( parent_names_scope.GetFunctionMangledName( func_name ) ),
 				module_.get() );
 
 		// Merge functions with identical code.
@@ -518,7 +516,7 @@ void CodeBuilder::BuildFuncCode(
 
 	func_variable.have_body= true;
 
-	NamesScope function_names( &parent_names_scope );
+	NamesScope function_names( ""_SpC, &parent_names_scope );
 	FunctionContext function_context(
 		function_type_ptr->return_type,
 		function_type_ptr->return_value_is_mutable,
@@ -633,7 +631,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockCode(
 	const NamesScope& names,
 	FunctionContext& function_context ) noexcept
 {
-	NamesScope block_names( &names );
+	NamesScope block_names( ""_SpC, &names );
 	BlockBuildInfo block_build_info;
 
 	for( const IBlockElementPtr& block_element : block.elements_ )

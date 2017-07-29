@@ -254,7 +254,14 @@ public:
 	typedef std::map< ProgramString, Value > NamesMap;
 	typedef NamesMap::value_type InsertedName;
 
-	NamesScope( const NamesScope* prev= nullptr );
+	NamesScope(
+		ProgramString name,
+		const NamesScope* parent );
+
+	NamesScope( const NamesScope&)= delete;
+	NamesScope& operator=( const NamesScope&)= delete;
+
+	const ProgramString& GetThisNamespaceName() const;
 
 	// Returns nullptr, if name already exists in this scope.
 	InsertedName* AddName( const ProgramString& name, Value value );
@@ -270,10 +277,16 @@ public:
 			func( inserted_name );
 	}
 
+	ProgramString GetFunctionMangledName( const ProgramString& func_name ) const;
+
 	// TODO - maybe add for_each in all scopes?
 
 private:
-	const NamesScope* const prev_;
+	void GetNamespacePrefix_r( ProgramString& out_name ) const;
+
+private:
+	const ProgramString name_;
+	const NamesScope* const parent_;
 	NamesMap names_map_;
 };
 
@@ -290,7 +303,7 @@ public:
 
 struct Class final
 {
-	Class();
+	Class( const ProgramString& name, const NamesScope* parent_scope );
 	~Class();
 
 	Class( const Class& )= delete;
@@ -299,7 +312,6 @@ struct Class final
 	Class& operator=( const Class& )= delete;
 	Class& operator=( Class&& )= delete;
 
-	ProgramString name;
 	NamesScope members;
 	size_t field_count= 0u;
 
