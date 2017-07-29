@@ -8,7 +8,6 @@
 
 #include "code_builder_errors.hpp"
 #include "code_builder_types.hpp"
-#include "inverse_polish_notation.hpp"
 #include "syntax_elements.hpp"
 
 namespace U
@@ -92,20 +91,14 @@ private:
 	// Expressions.
 
 	Value BuildExpressionCode(
-		const BinaryOperatorsChain& expression,
-		const NamesScope& names,
-		FunctionContext& function_context );
-
-	Value BuildExpressionCode_r(
-		const InversePolishNotation& ipn,
-		unsigned int ipn_index,
+		const IExpressionComponent& expression,
 		const NamesScope& names,
 		FunctionContext& function_context );
 
 	Variable BuildBinaryOperator(
 		const Variable& l_var,
 		const Variable& r_var,
-		BinaryOperator binary_operator,
+		BinaryOperatorType binary_operator,
 		const FilePos& file_pos,
 		FunctionContext& function_context );
 

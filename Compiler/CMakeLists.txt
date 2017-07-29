@@ -19,7 +19,6 @@ set( COMPILER_LIB_SOURCES
 	src/code_builder_expressions.cpp
 	src/code_builder_initializers.cpp
 	src/code_builder_types.cpp
-	src/inverse_polish_notation.cpp
 	src/keywords.cpp
 	src/lang_types.cpp
 	src/lexical_analyzer.cpp
@@ -32,7 +31,6 @@ set( COMPILER_LIB_HEADERS
 	src/code_builder_errors.hpp
 	src/code_builder.hpp
 	src/code_builder_types.hpp
-	src/inverse_polish_notation.hpp
 	src/keywords.hpp
 	src/lexical_analyzer.hpp
 	src/pop_llvm_warnings.hpp
@@ -90,9 +88,9 @@ set( TESTS_SOURCES
 	src/tests/code_builder_test.cpp
 	src/tests/initializers_errors_test.cpp
 	src/tests/initializers_test.cpp
-	src/tests/inverse_polish_notation_test.cpp
 	src/tests/methods_errors_test.cpp
 	src/tests/methods_test.cpp
+	src/tests/operators_priority_test.cpp
 	src/tests/tests_main.cpp
 	src/tests/tests.cpp )
 

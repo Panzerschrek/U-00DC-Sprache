@@ -8,6 +8,31 @@
 namespace U
 {
 
+static int GetBinaryOperatorPriority( const BinaryOperatorType binary_operator )
+{
+	switch( binary_operator )
+	{
+	case BinaryOperatorType::Div:
+	case BinaryOperatorType::Mul:
+		return 10;
+	case BinaryOperatorType::Add:
+	case BinaryOperatorType::Sub:
+		return 9;
+	case BinaryOperatorType::Equal:
+	case BinaryOperatorType::NotEqual:
+	case BinaryOperatorType::Less:
+	case BinaryOperatorType::LessEqual:
+	case BinaryOperatorType::Greater:
+	case BinaryOperatorType::GreaterEqual:
+		return 8;
+	case BinaryOperatorType::And: return 7;
+	case BinaryOperatorType::Or: return 6;
+	case BinaryOperatorType::Xor: return 5;
+	case BinaryOperatorType::LazyLogicalAnd: return 4;
+	case BinaryOperatorType::LazyLogicalOr: return 3;
+	};
+};
+
 static bool IsBinaryOperator( const Lexem& lexem )
 {
 	return
@@ -31,32 +56,32 @@ static bool IsBinaryOperator( const Lexem& lexem )
 		lexem.type == Lexem::Type::Disjunction;
 }
 
-static BinaryOperator LexemToBinaryOperator( const Lexem& lexem )
+static BinaryOperatorType LexemToBinaryOperator( const Lexem& lexem )
 {
 	switch( lexem.type )
 	{
-		case Lexem::Type::Plus: return BinaryOperator::Add;
-		case Lexem::Type::Minus: return BinaryOperator::Sub;
-		case Lexem::Type::Star: return BinaryOperator::Mul;
-		case Lexem::Type::Slash: return BinaryOperator::Div;
+		case Lexem::Type::Plus: return BinaryOperatorType::Add;
+		case Lexem::Type::Minus: return BinaryOperatorType::Sub;
+		case Lexem::Type::Star: return BinaryOperatorType::Mul;
+		case Lexem::Type::Slash: return BinaryOperatorType::Div;
 
-		case Lexem::Type::CompareEqual: return BinaryOperator::Equal;
-		case Lexem::Type::CompareNotEqual: return BinaryOperator::NotEqual;
-		case Lexem::Type::CompareLess: return BinaryOperator::Less;
-		case Lexem::Type::CompareLessOrEqual: return BinaryOperator::LessEqual;
-		case Lexem::Type::CompareGreater: return BinaryOperator::Greater;
-		case Lexem::Type::CompareGreaterOrEqual: return BinaryOperator::GreaterEqual;
+		case Lexem::Type::CompareEqual: return BinaryOperatorType::Equal;
+		case Lexem::Type::CompareNotEqual: return BinaryOperatorType::NotEqual;
+		case Lexem::Type::CompareLess: return BinaryOperatorType::Less;
+		case Lexem::Type::CompareLessOrEqual: return BinaryOperatorType::LessEqual;
+		case Lexem::Type::CompareGreater: return BinaryOperatorType::Greater;
+		case Lexem::Type::CompareGreaterOrEqual: return BinaryOperatorType::GreaterEqual;
 
-		case Lexem::Type::And: return BinaryOperator::And;
-		case Lexem::Type::Or: return BinaryOperator::Or;
-		case Lexem::Type::Xor: return BinaryOperator::Xor;
+		case Lexem::Type::And: return BinaryOperatorType::And;
+		case Lexem::Type::Or: return BinaryOperatorType::Or;
+		case Lexem::Type::Xor: return BinaryOperatorType::Xor;
 
-		case Lexem::Type::Conjunction: return BinaryOperator::LazyLogicalAnd;
-		case Lexem::Type::Disjunction: return BinaryOperator::LazyLogicalOr;
+		case Lexem::Type::Conjunction: return BinaryOperatorType::LazyLogicalAnd;
+		case Lexem::Type::Disjunction: return BinaryOperatorType::LazyLogicalOr;
 
 		default:
 		U_ASSERT(false);
-		return BinaryOperator::None;
+		return BinaryOperatorType::Add;
 	};
 }
 
@@ -68,7 +93,7 @@ public:
 private:
 	std::unique_ptr<NumericConstant> ParseNumericConstant();
 
-	BinaryOperatorsChainPtr ParseExpression();
+	IExpressionComponentPtr ParseExpression();
 
 	void ParseTypeName_r( TypeName& result );
 	TypeName ParseTypeName();
@@ -299,9 +324,9 @@ std::unique_ptr<NumericConstant> SyntaxAnalyzer::ParseNumericConstant()
 				has_fraction_point ) );
 }
 
-BinaryOperatorsChainPtr SyntaxAnalyzer::ParseExpression()
+IExpressionComponentPtr SyntaxAnalyzer::ParseExpression()
 {
-	BinaryOperatorsChainPtr result( new BinaryOperatorsChain( it_->file_pos ) );
+	IExpressionComponentPtr root;
 
 	while(1)
 	{
@@ -329,7 +354,7 @@ BinaryOperatorsChainPtr SyntaxAnalyzer::ParseExpression()
 
 			default:
 				if( prefix_operators.empty() )
-					goto return_result;
+					return root;
 				else
 				{
 					PushErrorMessage( *it_ );
@@ -339,33 +364,30 @@ BinaryOperatorsChainPtr SyntaxAnalyzer::ParseExpression()
 		}
 
 	parse_operand:
-		result->components.emplace_back();
-		BinaryOperatorsChain::ComponentWithOperator& component= result->components.back();
-
-		component.prefix_operators= std::move( prefix_operators );
+		ExpressionComponentWithUnaryOperatorsPtr current_node;
 
 		// Operand.
 		if( it_->type == Lexem::Type::Identifier )
 		{
 			if( it_->text == Keywords::true_ )
-				component.component.reset( new BooleanConstant( it_->file_pos, true ) );
+				current_node.reset( new BooleanConstant( it_->file_pos, true ) );
 			else if( it_->text == Keywords::false_ )
-				component.component.reset( new BooleanConstant( it_->file_pos, false ) );
+				current_node.reset( new BooleanConstant( it_->file_pos, false ) );
 			else
-				component.component.reset( new NamedOperand( it_->file_pos, it_->text ) );
+				current_node.reset( new NamedOperand( it_->file_pos, it_->text ) );
 
 			++it_;
 		}
 		else if( it_->type == Lexem::Type::Number )
 		{
-			component.component= ParseNumericConstant();
+			current_node= ParseNumericConstant();
 			++it_;
 		}
 		else if( it_->type == Lexem::Type::BracketLeft )
 		{
 			++it_;
 
-			component.component.reset(
+			current_node.reset(
 				new BracketExpression(
 					(it_-1)->file_pos,
 					ParseExpression() ) );
@@ -383,8 +405,12 @@ BinaryOperatorsChainPtr SyntaxAnalyzer::ParseExpression()
 			U_ASSERT(false);
 		}
 
+		current_node->prefix_operators_= std::move( prefix_operators );
+
+		bool is_binary_operator= false;
 		// Postfix operators.
-		while(1)
+		bool end_postfix_operators= false;
+		while( !end_postfix_operators )
 		{
 			switch( it_->type )
 			{
@@ -393,7 +419,7 @@ BinaryOperatorsChainPtr SyntaxAnalyzer::ParseExpression()
 					++it_;
 					U_ASSERT( it_ < it_end_ );
 
-					component.postfix_operators.emplace_back(
+					current_node->postfix_operators_.emplace_back(
 						new IndexationOperator(
 							(it_-1)->file_pos,
 							ParseExpression() ) );
@@ -415,7 +441,7 @@ BinaryOperatorsChainPtr SyntaxAnalyzer::ParseExpression()
 					++it_;
 					U_ASSERT( it_ < it_end_ );
 
-					std::vector<BinaryOperatorsChainPtr> arguments;
+					std::vector<IExpressionComponentPtr> arguments;
 					while(1)
 					{
 						if( it_->type == Lexem::Type::BracketRight )
@@ -442,7 +468,7 @@ BinaryOperatorsChainPtr SyntaxAnalyzer::ParseExpression()
 						}
 					}
 
-					component.postfix_operators.emplace_back(
+					current_node->postfix_operators_.emplace_back(
 						new CallOperator(
 							call_operator_pos,
 							std::move( arguments ) ) );
@@ -459,7 +485,7 @@ BinaryOperatorsChainPtr SyntaxAnalyzer::ParseExpression()
 						return nullptr;
 					}
 
-					component.postfix_operators.emplace_back(
+					current_node->postfix_operators_.emplace_back(
 						new MemberAccessOperator(
 								(it_-1)->file_pos,
 								it_->text ) );
@@ -467,34 +493,79 @@ BinaryOperatorsChainPtr SyntaxAnalyzer::ParseExpression()
 					++it_; U_ASSERT( it_ < it_end_ );
 				} break;
 
-				default:
-				if( IsBinaryOperator( *it_ ) )
-					goto parse_binary_operator;
-				else // End of postfix operators.
-					goto return_result;
+			default:
+				is_binary_operator= IsBinaryOperator( *it_ );
+				end_postfix_operators= true;
+				break;
 			};
+
+			if( end_postfix_operators )
+				break;
 		}
 
-	parse_binary_operator:;
-		component.op= LexemToBinaryOperator( *it_ );
+		if( root == nullptr )
+		{
+			root= std::move( current_node );
+		}
+		else
+		{
+			BinaryOperator* const root_as_binary_operator= dynamic_cast<BinaryOperator*>( root.get() );
+			U_ASSERT( root_as_binary_operator != nullptr );
 
-		++it_;
-		U_ASSERT( it_ < it_end_ );
+			// Place to existent tree last component.
+			BinaryOperator* most_right_with_null= root_as_binary_operator;
+			while( most_right_with_null->right_ != nullptr )
+			{
+				BinaryOperator* const right_as_binary_operator= dynamic_cast<BinaryOperator*>( most_right_with_null->right_.get() );
+				U_ASSERT( right_as_binary_operator != nullptr );
+				most_right_with_null= right_as_binary_operator;
+			}
+			most_right_with_null->right_= std::move( current_node );
+		}
+
+		if( is_binary_operator )
+		{
+			const BinaryOperatorType binary_operator_type= LexemToBinaryOperator( *it_ );
+			std::unique_ptr<BinaryOperator> binary_operator( new BinaryOperator( it_->file_pos ) );
+			binary_operator->operator_type_= binary_operator_type;
+			++it_;
+			U_ASSERT( it_ < it_end_ );
+
+			if( BinaryOperator* const root_as_binary_operator= dynamic_cast<BinaryOperator*>( root.get() ) )
+			{
+				BinaryOperator* node_to_replace_parent= nullptr;
+				BinaryOperator* node_to_replace= root_as_binary_operator;
+				while( GetBinaryOperatorPriority( binary_operator->operator_type_ ) > GetBinaryOperatorPriority( node_to_replace->operator_type_ ) )
+				{
+					node_to_replace_parent= node_to_replace;
+					BinaryOperator* const right_as_binary_operator= dynamic_cast<BinaryOperator*>( node_to_replace->right_.get() );
+					if( right_as_binary_operator == nullptr )
+						break;
+					node_to_replace= right_as_binary_operator;
+				}
+
+				if( node_to_replace_parent != nullptr )
+				{
+					binary_operator->left_= std::move( node_to_replace_parent->right_ );
+					node_to_replace_parent->right_= std::move( binary_operator );
+				}
+				else
+				{
+					binary_operator->left_= std::move( root );
+					root= std::move( binary_operator );
+				}
+			}
+			else
+			{
+				binary_operator->left_= std::move( root );
+				root= std::move( binary_operator );
+			}
+		}
+		else
+			break;
 	}
 
-return_result:
-	if( result->components.empty() )
-	{
-		PushErrorMessage( *it_ );
-		return nullptr;
-	}
-	if( result->components.back().op != BinaryOperator::None )
-	{
-		PushErrorMessage( *it_ );
-		return nullptr;
-	}
-
-	return result;
+	return root;
 }
 
 void SyntaxAnalyzer::ParseTypeName_r( TypeName& result )
@@ -684,7 +755,7 @@ std::unique_ptr<ConstructorInitializer> SyntaxAnalyzer::ParseConstructorInitiali
 	++it_;
 	U_ASSERT( it_ < it_end_ );
 
-	std::vector<BinaryOperatorsChainPtr> args;
+	std::vector<IExpressionComponentPtr> args;
 	while( it_ < it_end_ && it_->type != Lexem::Type::BracketRight )
 	{
 		args.push_back( ParseExpression() );
@@ -899,7 +970,7 @@ IBlockElementPtr SyntaxAnalyzer::ParseReturnOperator()
 		return IBlockElementPtr( new ReturnOperator( op_pos, nullptr ) );
 	}
 
-	BinaryOperatorsChainPtr expression= ParseExpression();
+	IExpressionComponentPtr expression= ParseExpression();
 
 	U_ASSERT( it_ < it_end_ );
 	if( it_->type != Lexem::Type::Semicolon  )
@@ -931,7 +1002,7 @@ IBlockElementPtr SyntaxAnalyzer::ParseWhileOperator()
 	++it_;
 	U_ASSERT( it_ < it_end_ );
 
-	BinaryOperatorsChainPtr condition= ParseExpression();
+	IExpressionComponentPtr condition= ParseExpression();
 
 	if( it_->type != Lexem::Type::BracketRight )
 	{
@@ -1144,7 +1215,7 @@ BlockPtr SyntaxAnalyzer::ParseBlock()
 
 		else
 		{
-			BinaryOperatorsChainPtr l_expression= ParseExpression();
+			IExpressionComponentPtr l_expression= ParseExpression();
 
 			U_ASSERT( it_ < it_end_ );
 			if( it_->type == Lexem::Type::Assignment )
@@ -1152,7 +1223,7 @@ BlockPtr SyntaxAnalyzer::ParseBlock()
 				++it_;
 				U_ASSERT( it_ < it_end_ );
 
-				BinaryOperatorsChainPtr r_expression= ParseExpression();
+				IExpressionComponentPtr r_expression= ParseExpression();
 
 				if( it_->type != Lexem::Type::Semicolon )
 				{

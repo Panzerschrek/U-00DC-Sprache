@@ -16,9 +16,9 @@ SOURCES += \
 	src/tests/code_builder_test.cpp \
 	src/tests/initializers_errors_test.cpp \
 	src/tests/initializers_test.cpp \
-	src/tests/inverse_polish_notation_test.cpp \
 	src/tests/methods_errors_test.cpp \
 	src/tests/methods_test.cpp \
+	src/tests/operators_priority_test.cpp \
 	src/tests/tests_main.cpp \
 	src/tests/tests.cpp \
 

@@ -22,8 +22,10 @@ public:
 	FilePos file_pos_;
 };
 
-struct BinaryOperatorsChain;
-typedef std::unique_ptr<BinaryOperatorsChain> BinaryOperatorsChainPtr;
+class IExpressionComponent;
+typedef std::unique_ptr<IExpressionComponent> IExpressionComponentPtr;
+class ExpressionComponentWithUnaryOperators;
+typedef std::unique_ptr<ExpressionComponentWithUnaryOperators> ExpressionComponentWithUnaryOperatorsPtr;
 
 class IUnaryPrefixOperator ;
 class IUnaryPostfixOperator;
@@ -82,27 +84,27 @@ class CallOperator final : public IUnaryPostfixOperator
 public:
 	CallOperator(
 		const FilePos& file_pos,
-		std::vector<BinaryOperatorsChainPtr> arguments );
+		std::vector<IExpressionComponentPtr> arguments );
 	virtual ~CallOperator() override;
 
 	virtual IUnaryPostfixOperatorPtr Clone() const override;
 
 	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
 
-	const std::vector<BinaryOperatorsChainPtr> arguments_;
+	const std::vector<IExpressionComponentPtr> arguments_;
 };
 
 class IndexationOperator final : public IUnaryPostfixOperator
 {
 public:
-	explicit IndexationOperator( const FilePos& file_pos, BinaryOperatorsChainPtr index );
+	explicit IndexationOperator( const FilePos& file_pos, IExpressionComponentPtr index );
 	virtual ~IndexationOperator() override;
 
 	virtual IUnaryPostfixOperatorPtr Clone() const override;
 
 	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
 
-	const BinaryOperatorsChainPtr index_;
+	const IExpressionComponentPtr index_;
 };
 
 class MemberAccessOperator final : public IUnaryPostfixOperator
@@ -118,10 +120,8 @@ public:
 	const ProgramString member_name_;
 };
 
-enum class BinaryOperator
+enum class BinaryOperatorType
 {
-	None, // Special value - for end of binary operators chain.
-
 	Add,
 	Sub,
 	Div,
@@ -144,18 +144,18 @@ enum class BinaryOperator
 	Last,
 };
 
-ProgramString BinaryOperatorToString( BinaryOperator op );
+ProgramString BinaryOperatorToString( BinaryOperatorType op );
 
-class IBinaryOperatorsChainComponent;
-typedef std::unique_ptr<IBinaryOperatorsChainComponent> IBinaryOperatorsChainComponentPtr;
+class IExpressionComponent;
+typedef std::unique_ptr<IExpressionComponent> IExpressionComponentPtr;
 
-class IBinaryOperatorsChainComponent : public SyntaxElementBase
+class IExpressionComponent : public SyntaxElementBase
 {
 public:
-	explicit IBinaryOperatorsChainComponent( const FilePos& file_pos );
-	virtual ~IBinaryOperatorsChainComponent(){}
+	explicit IExpressionComponent( const FilePos& file_pos );
+	virtual ~IExpressionComponent(){}
 
-	virtual IBinaryOperatorsChainComponentPtr Clone() const= 0;
+	virtual IExpressionComponentPtr Clone() const= 0;
 };
 
 class IInitializer : public SyntaxElementBase
@@ -199,7 +199,7 @@ class ConstructorInitializer final : public IInitializer
 public:
 	ConstructorInitializer(
 		const FilePos& file_pos,
-		std::vector<BinaryOperatorsChainPtr> arguments );
+		std::vector<IExpressionComponentPtr> arguments );
 	virtual ~ConstructorInitializer() override= default;
 
 	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
@@ -210,12 +210,12 @@ public:
 class ExpressionInitializer final : public IInitializer
 {
 public:
-	ExpressionInitializer( const FilePos& file_pos, BinaryOperatorsChainPtr expression );
+	ExpressionInitializer( const FilePos& file_pos, IExpressionComponentPtr expression );
 	virtual ~ExpressionInitializer() override= default;
 
 	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
 
-	BinaryOperatorsChainPtr expression;
+	IExpressionComponentPtr expression;
 };
 
 class ZeroInitializer final : public IInitializer
@@ -227,33 +227,58 @@ public:
 	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
 };
 
-class NamedOperand final : public IBinaryOperatorsChainComponent
+class BinaryOperator final : public IExpressionComponent
+{
+public:
+	explicit BinaryOperator( const FilePos& file_pos );
+	virtual ~BinaryOperator() override= default;
+
+	virtual IExpressionComponentPtr Clone() const override;
+
+	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
+
+	BinaryOperatorType operator_type_;
+	IExpressionComponentPtr left_;
+	IExpressionComponentPtr right_;
+};
+
+class ExpressionComponentWithUnaryOperators : public IExpressionComponent
+{
+public:
+	explicit ExpressionComponentWithUnaryOperators( const FilePos& file_pos );
+	virtual ~ExpressionComponentWithUnaryOperators() override= default;
+
+	std::vector<IUnaryPrefixOperatorPtr > prefix_operators_ ;
+	std::vector<IUnaryPostfixOperatorPtr> postfix_operators_;
+};
+
+class NamedOperand final : public ExpressionComponentWithUnaryOperators
 {
 public:
 	NamedOperand( const FilePos& file_pos, ProgramString name );
 	virtual ~NamedOperand() override;
 
-	virtual IBinaryOperatorsChainComponentPtr Clone() const override;
+	virtual IExpressionComponentPtr Clone() const override;
 
 	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
 
 	const ProgramString name_;
 };
 
-class BooleanConstant final : public IBinaryOperatorsChainComponent
+class BooleanConstant final : public ExpressionComponentWithUnaryOperators
 {
 public:
 	BooleanConstant( const FilePos& file_pos, bool value );
 	virtual ~BooleanConstant() override;
 
-	virtual IBinaryOperatorsChainComponentPtr Clone() const override;
+	virtual IExpressionComponentPtr Clone() const override;
 
 	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
 
 	const bool value_;
 };
 
-class NumericConstant final : public IBinaryOperatorsChainComponent
+class NumericConstant final : public ExpressionComponentWithUnaryOperators
 {
 public:
 	typedef long double LongFloat;
@@ -269,7 +294,7 @@ public:
 
 	virtual ~NumericConstant() override;
 
-	virtual IBinaryOperatorsChainComponentPtr Clone() const override;
+	virtual IExpressionComponentPtr Clone() const override;
 
 	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
 
@@ -278,42 +303,17 @@ public:
 	const bool has_fractional_point_;
 };
 
-class BracketExpression final : public IBinaryOperatorsChainComponent
+class BracketExpression final : public ExpressionComponentWithUnaryOperators
 {
 public:
-	BracketExpression( const FilePos& file_pos, BinaryOperatorsChainPtr expression );
+	BracketExpression( const FilePos& file_pos, IExpressionComponentPtr expression );
 	~BracketExpression() override;
 
-	virtual IBinaryOperatorsChainComponentPtr Clone() const override;
+	virtual IExpressionComponentPtr Clone() const override;
 
 	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
 
-	const BinaryOperatorsChainPtr expression_;
-};
-
-struct BinaryOperatorsChain final : public SyntaxElementBase
-{
-	explicit BinaryOperatorsChain( const FilePos& file_pos );
-
-	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
-
-	struct ComponentWithOperator
-	{
-		PrefixOperators prefix_operators;
-		IBinaryOperatorsChainComponentPtr component;
-		PostfixOperators postfix_operators;
-
-		BinaryOperator op= BinaryOperator::None;
-
-		ComponentWithOperator();
-		ComponentWithOperator( const ComponentWithOperator& other );
-		ComponentWithOperator( ComponentWithOperator&& other );
-
-		ComponentWithOperator& operator=( const ComponentWithOperator& other );
-		ComponentWithOperator& operator=( ComponentWithOperator&& other );
-	};
-
-	std::vector<ComponentWithOperator> components;
+	const IExpressionComponentPtr expression_;
 };
 
 class IProgramElement : public SyntaxElementBase
@@ -415,7 +415,7 @@ struct AutoVariableDeclaration final : public IBlockElement
 	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
 
 	ProgramString name;
-	BinaryOperatorsChainPtr initializer_expression;
+	IExpressionComponentPtr initializer_expression;
 	MutabilityModifier mutability_modifier= MutabilityModifier::None;
 	ReferenceModifier reference_modifier= ReferenceModifier::None;
 };
@@ -423,23 +423,23 @@ struct AutoVariableDeclaration final : public IBlockElement
 class ReturnOperator final : public IBlockElement
 {
 public:
-	ReturnOperator( const FilePos& file_pos, BinaryOperatorsChainPtr expression );
+	ReturnOperator( const FilePos& file_pos, IExpressionComponentPtr expression );
 	~ReturnOperator() override;
 
 	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
 
-	const BinaryOperatorsChainPtr expression_;
+	const IExpressionComponentPtr expression_;
 };
 
 class WhileOperator final : public IBlockElement
 {
 public:
-	WhileOperator( const FilePos& file_pos, BinaryOperatorsChainPtr condition, BlockPtr block );
+	WhileOperator( const FilePos& file_pos, IExpressionComponentPtr condition, BlockPtr block );
 	~WhileOperator() override;
 
 	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
 
-	const BinaryOperatorsChainPtr condition_;
+	const IExpressionComponentPtr condition_;
 	const BlockPtr block_;
 };
 
@@ -465,7 +465,7 @@ public:
 	struct Branch
 	{
 		// Condition - nullptr for last if.
-		BinaryOperatorsChainPtr condition;
+		IExpressionComponentPtr condition;
 		BlockPtr block;
 	};
 
@@ -481,24 +481,24 @@ public:
 class SingleExpressionOperator final : public IBlockElement
 {
 public:
-	SingleExpressionOperator( const FilePos& file_pos, BinaryOperatorsChainPtr expression );
+	SingleExpressionOperator( const FilePos& file_pos, IExpressionComponentPtr expression );
 	virtual ~SingleExpressionOperator() override;
 
 	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
 
-	const BinaryOperatorsChainPtr expression_;
+	const IExpressionComponentPtr expression_;
 };
 
 class AssignmentOperator final : public IBlockElement
 {
 public:
-	AssignmentOperator( const FilePos& file_pos, BinaryOperatorsChainPtr l_value, BinaryOperatorsChainPtr r_value );
+	AssignmentOperator( const FilePos& file_pos, IExpressionComponentPtr l_value, IExpressionComponentPtr r_value );
 	virtual ~AssignmentOperator() override;
 
 	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
 
-	BinaryOperatorsChainPtr l_value_;
-	BinaryOperatorsChainPtr r_value_;
+	IExpressionComponentPtr l_value_;
+	IExpressionComponentPtr r_value_;
 };
 
 class FunctionArgumentDeclaration final : public IProgramElement

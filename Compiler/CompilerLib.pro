@@ -11,7 +11,6 @@ SOURCES += \
 	src/code_builder_expressions.cpp \
 	src/code_builder_initializers.cpp \
 	src/code_builder_types.cpp \
-	src/inverse_polish_notation.cpp \
 	src/keywords.cpp \
 	src/lang_types.cpp \
 	src/lexical_analyzer.cpp \
@@ -24,7 +23,6 @@ HEADERS += \
 	src/code_builder_errors.hpp \
 	src/code_builder.hpp \
 	src/code_builder_types.hpp \
-	src/inverse_polish_notation.hpp \
 	src/keywords.hpp \
 	src/lexical_analyzer.hpp \
 	src/pop_llvm_warnings.hpp \

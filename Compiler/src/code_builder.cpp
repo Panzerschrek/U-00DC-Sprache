@@ -782,7 +782,7 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 				continue;
 			}
 
-			const BinaryOperatorsChain* initializer_expression= nullptr;
+			const IExpressionComponent* initializer_expression= nullptr;
 			if( const ExpressionInitializer* const expression_initializer=
 				dynamic_cast<const ExpressionInitializer*>( variable_declaration.initializer.get() ) )
 			{
@@ -939,8 +939,8 @@ void CodeBuilder::BuildAssignmentOperatorCode(
 	const NamesScope& block_names,
 	FunctionContext& function_context )
 {
-	const BinaryOperatorsChain& l_value= *assignment_operator.l_value_;
-	const BinaryOperatorsChain& r_value= *assignment_operator.r_value_;
+	const IExpressionComponent& l_value= *assignment_operator.l_value_;
+	const IExpressionComponent& r_value= *assignment_operator.r_value_;
 
 	const Value l_var_value= BuildExpressionCode( l_value, block_names, function_context );
 	const Value r_var_value= BuildExpressionCode( r_value, block_names, function_context );

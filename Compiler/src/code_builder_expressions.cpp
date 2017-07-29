@@ -16,42 +16,26 @@ namespace CodeBuilderPrivate
 {
 
 Value CodeBuilder::BuildExpressionCode(
-	const BinaryOperatorsChain& expression,
+	const IExpressionComponent& expression,
 	const NamesScope& names,
 	FunctionContext& function_context )
 {
-	const InversePolishNotation ipn= ConvertToInversePolishNotation( expression );
+	const FilePos file_pos = expression.file_pos_;
 
-	return
-		BuildExpressionCode_r(
-			ipn,
-			ipn.size() - 1,
-			names,
-			function_context );
-}
+	Value result;
 
-Value CodeBuilder::BuildExpressionCode_r(
-	const InversePolishNotation& ipn,
-	unsigned int ipn_index,
-	const NamesScope& names,
-	FunctionContext& function_context )
-{
-	U_ASSERT( ipn_index < ipn.size() );
-	const InversePolishNotationComponent& comp= ipn[ ipn_index ];
-
-	const FilePos file_pos = ipn.front().operand->file_pos_;
-
-	if( comp.operator_ != BinaryOperator::None )
+	if( const BinaryOperator* const binary_operator=
+		dynamic_cast<const BinaryOperator*>(&expression) )
 	{
 		const Value l_var_value=
-			BuildExpressionCode_r(
-				ipn, comp.l_index,
+			BuildExpressionCode(
+				*binary_operator->left_,
 				names,
 				function_context );
 
 		const Value r_var_value=
-			BuildExpressionCode_r(
-				ipn, comp.r_index,
+			BuildExpressionCode(
+				*binary_operator->right_,
 				names,
 				function_context );
 
@@ -65,45 +49,38 @@ Value CodeBuilder::BuildExpressionCode_r(
 		if( l_var == nullptr || r_var == nullptr )
 			throw ProgramError();
 
-		return BuildBinaryOperator( *l_var, *r_var, comp.operator_, file_pos, function_context );
+		return BuildBinaryOperator( *l_var, *r_var, binary_operator->operator_type_, file_pos, function_context );
+	}
+	else if( const NamedOperand* const named_operand=
+		dynamic_cast<const NamedOperand*>(&expression) )
+	{
+		result= BuildNamedOperand( *named_operand, names, function_context );
+	}
+	else if( const NumericConstant* numeric_constant=
+		dynamic_cast<const NumericConstant*>(&expression) )
+	{
+		result= BuildNumericConstant( *numeric_constant );
+	}
+	else if( const BooleanConstant* boolean_constant=
+		dynamic_cast<const BooleanConstant*>(&expression) )
+	{
+		result= BuildBooleanConstant( *boolean_constant );
+	}
+	else if( const BracketExpression* bracket_expression=
+		dynamic_cast<const BracketExpression*>(&expression) )
+	{
+		result= BuildExpressionCode( *bracket_expression->expression_, names, function_context );
 	}
 	else
 	{
-		U_ASSERT( comp.operand );
-		U_ASSERT( comp.r_index == InversePolishNotationComponent::c_no_parent );
-		U_ASSERT( comp.l_index == InversePolishNotationComponent::c_no_parent );
+		// TODO
+		U_ASSERT(false);
+	}
 
-		const IBinaryOperatorsChainComponent& operand= *comp.operand;
-
-		Value result;
-
-		if( const NamedOperand* const named_operand=
-			dynamic_cast<const NamedOperand*>(&operand) )
-		{
-			result= BuildNamedOperand( *named_operand, names, function_context );
-		}
-		else if( const NumericConstant* numeric_constant=
-			dynamic_cast<const NumericConstant*>(&operand) )
-		{
-			result= BuildNumericConstant( *numeric_constant );
-		}
-		else if( const BooleanConstant* boolean_constant=
-			dynamic_cast<const BooleanConstant*>(&operand) )
-		{
-			result= BuildBooleanConstant( *boolean_constant );
-		}
-		else if( const BracketExpression* bracket_expression=
-			dynamic_cast<const BracketExpression*>(&operand) )
-		{
-			result= BuildExpressionCode( *bracket_expression->expression_, names, function_context );
-		}
-		else
-		{
-			// TODO
-			U_ASSERT(false);
-		}
-
-		for( const IUnaryPostfixOperatorPtr& postfix_operator : comp.postfix_operand_operators )
+	if( const ExpressionComponentWithUnaryOperators* const expression_with_unary_operators=
+		dynamic_cast<const ExpressionComponentWithUnaryOperators*>( &expression ) )
+	{
+		for( const IUnaryPostfixOperatorPtr& postfix_operator : expression_with_unary_operators->postfix_operators_ )
 		{
 			if( const IndexationOperator* const indexation_operator=
 				dynamic_cast<const IndexationOperator*>( postfix_operator.get() ) )
@@ -124,10 +101,9 @@ Value CodeBuilder::BuildExpressionCode_r(
 			{
 				U_ASSERT(false);
 			}
-
 		} // for unary postfix operators
 
-		for( const IUnaryPrefixOperatorPtr& prefix_operator : comp.prefix_operand_operators )
+		for( const IUnaryPrefixOperatorPtr& prefix_operator : expression_with_unary_operators->prefix_operators_ )
 		{
 			if( const UnaryMinus* const unary_minus=
 				dynamic_cast<const UnaryMinus*>( prefix_operator.get() ) )
@@ -150,12 +126,10 @@ Value CodeBuilder::BuildExpressionCode_r(
 Variable CodeBuilder::BuildBinaryOperator(
 	const Variable& l_var,
 	const Variable& r_var,
-	const BinaryOperator binary_operator,
+	const BinaryOperatorType binary_operator,
 	const FilePos& file_pos,
 	FunctionContext& function_context )
 {
-	U_ASSERT( binary_operator != BinaryOperator::None );
-
 	Variable result;
 
 	// SPRACHE_-TODO - add cast for some integers here.
@@ -170,10 +144,10 @@ Variable CodeBuilder::BuildBinaryOperator(
 
 	switch( binary_operator )
 	{
-	case BinaryOperator::Add:
-	case BinaryOperator::Sub:
-	case BinaryOperator::Div:
-	case BinaryOperator::Mul:
+	case BinaryOperatorType::Add:
+	case BinaryOperatorType::Sub:
+	case BinaryOperatorType::Div:
+	case BinaryOperatorType::Mul:
 
 		if( fundamental_type == nullptr )
 		{
@@ -204,7 +178,7 @@ Variable CodeBuilder::BuildBinaryOperator(
 
 			switch( binary_operator )
 			{
-			case BinaryOperator::Add:
+			case BinaryOperatorType::Add:
 				if( is_float )
 					result_value=
 						function_context.llvm_ir_builder.CreateFAdd( l_value_for_op, r_value_for_op );
@@ -213,7 +187,7 @@ Variable CodeBuilder::BuildBinaryOperator(
 						function_context.llvm_ir_builder.CreateAdd( l_value_for_op, r_value_for_op );
 				break;
 
-			case BinaryOperator::Sub:
+			case BinaryOperatorType::Sub:
 				if( is_float )
 					result_value=
 						function_context.llvm_ir_builder.CreateFSub( l_value_for_op, r_value_for_op );
@@ -222,7 +196,7 @@ Variable CodeBuilder::BuildBinaryOperator(
 						function_context.llvm_ir_builder.CreateSub( l_value_for_op, r_value_for_op );
 				break;
 
-			case BinaryOperator::Div:
+			case BinaryOperatorType::Div:
 				if( is_float )
 					result_value=
 						function_context.llvm_ir_builder.CreateFDiv( l_value_for_op, r_value_for_op );
@@ -234,7 +208,7 @@ Variable CodeBuilder::BuildBinaryOperator(
 						function_context.llvm_ir_builder.CreateUDiv( l_value_for_op, r_value_for_op );
 				break;
 
-			case BinaryOperator::Mul:
+			case BinaryOperatorType::Mul:
 				if( is_float )
 					result_value=
 						function_context.llvm_ir_builder.CreateFMul( l_value_for_op, r_value_for_op );
@@ -254,8 +228,8 @@ Variable CodeBuilder::BuildBinaryOperator(
 		break;
 
 
-	case BinaryOperator::Equal:
-	case BinaryOperator::NotEqual:
+	case BinaryOperatorType::Equal:
+	case BinaryOperatorType::NotEqual:
 
 		if( fundamental_type == nullptr )
 		{
@@ -278,14 +252,14 @@ Variable CodeBuilder::BuildBinaryOperator(
 			switch( binary_operator )
 			{
 			// TODO - select ordered/unordered comparision flags for floats.
-			case BinaryOperator::Equal:
+			case BinaryOperatorType::Equal:
 				if( if_float )
 					result_value= function_context.llvm_ir_builder.CreateFCmpUEQ( l_value_for_op, r_value_for_op );
 				else
 					result_value= function_context.llvm_ir_builder.CreateICmpEQ( l_value_for_op, r_value_for_op );
 				break;
 
-			case BinaryOperator::NotEqual:
+			case BinaryOperatorType::NotEqual:
 				if( if_float )
 					result_value= function_context.llvm_ir_builder.CreateFCmpUNE( l_value_for_op, r_value_for_op );
 				else
@@ -302,10 +276,10 @@ Variable CodeBuilder::BuildBinaryOperator(
 		}
 		break;
 
-	case BinaryOperator::Less:
-	case BinaryOperator::LessEqual:
-	case BinaryOperator::Greater:
-	case BinaryOperator::GreaterEqual:
+	case BinaryOperatorType::Less:
+	case BinaryOperatorType::LessEqual:
+	case BinaryOperatorType::Greater:
+	case BinaryOperatorType::GreaterEqual:
 
 		if( fundamental_type == nullptr )
 		{
@@ -329,7 +303,7 @@ Variable CodeBuilder::BuildBinaryOperator(
 			switch( binary_operator )
 			{
 			// TODO - select ordered/unordered comparision flags for floats.
-			case BinaryOperator::Less:
+			case BinaryOperatorType::Less:
 				if( if_float )
 					result_value= function_context.llvm_ir_builder.CreateFCmpULT( l_value_for_op, r_value_for_op );
 				else if( is_signed )
@@ -338,7 +312,7 @@ Variable CodeBuilder::BuildBinaryOperator(
 					result_value= function_context.llvm_ir_builder.CreateICmpULT( l_value_for_op, r_value_for_op );
 				break;
 
-			case BinaryOperator::LessEqual:
+			case BinaryOperatorType::LessEqual:
 				if( if_float )
 					result_value= function_context.llvm_ir_builder.CreateFCmpULE( l_value_for_op, r_value_for_op );
 				else if( is_signed )
@@ -347,7 +321,7 @@ Variable CodeBuilder::BuildBinaryOperator(
 					result_value= function_context.llvm_ir_builder.CreateICmpULE( l_value_for_op, r_value_for_op );
 				break;
 
-			case BinaryOperator::Greater:
+			case BinaryOperatorType::Greater:
 				if( if_float )
 					result_value= function_context.llvm_ir_builder.CreateFCmpUGT( l_value_for_op, r_value_for_op );
 				else if( is_signed )
@@ -356,7 +330,7 @@ Variable CodeBuilder::BuildBinaryOperator(
 					result_value= function_context.llvm_ir_builder.CreateICmpUGT( l_value_for_op, r_value_for_op );
 				break;
 
-			case BinaryOperator::GreaterEqual:
+			case BinaryOperatorType::GreaterEqual:
 				if( if_float )
 					result_value= function_context.llvm_ir_builder.CreateFCmpUGE( l_value_for_op, r_value_for_op );
 				else if( is_signed )
@@ -375,9 +349,9 @@ Variable CodeBuilder::BuildBinaryOperator(
 		}
 		break;
 
-	case BinaryOperator::And:
-	case BinaryOperator::Or:
-	case BinaryOperator::Xor:
+	case BinaryOperatorType::And:
+	case BinaryOperatorType::Or:
+	case BinaryOperatorType::Xor:
 
 		if( fundamental_type == nullptr )
 		{
@@ -398,15 +372,15 @@ Variable CodeBuilder::BuildBinaryOperator(
 
 			switch( binary_operator )
 			{
-			case BinaryOperator::And:
+			case BinaryOperatorType::And:
 				result_value=
 					function_context.llvm_ir_builder.CreateAnd( l_value_for_op, r_value_for_op );
 				break;
-			case BinaryOperator::Or:
+			case BinaryOperatorType::Or:
 				result_value=
 					function_context.llvm_ir_builder.CreateOr( l_value_for_op, r_value_for_op );
 				break;
-			case BinaryOperator::Xor:
+			case BinaryOperatorType::Xor:
 				result_value=
 					function_context.llvm_ir_builder.CreateXor( l_value_for_op, r_value_for_op );
 				break;
@@ -420,11 +394,9 @@ Variable CodeBuilder::BuildBinaryOperator(
 		}
 		break;
 
-	case BinaryOperator::LazyLogicalAnd:
-	case BinaryOperator::LazyLogicalOr:
-	case BinaryOperator::None:
-	case BinaryOperator::Last:
-		U_ASSERT(false);
+	case BinaryOperatorType::LazyLogicalAnd:
+	case BinaryOperatorType::LazyLogicalOr:
+	case BinaryOperatorType::Last:
 		break;
 	};
 
@@ -691,7 +663,7 @@ Variable CodeBuilder::BuildCallOperator(
 		actual_args_variables.push_back( *this_ );
 	}
 	// Push arguments from call operator.
-	for( const BinaryOperatorsChainPtr& arg_expression : call_operator.arguments_ )
+	for( const IExpressionComponentPtr& arg_expression : call_operator.arguments_ )
 	{
 		U_ASSERT( arg_expression != nullptr );
 		const Value expr_value= BuildExpressionCode( *arg_expression, names, function_context );
