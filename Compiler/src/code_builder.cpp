@@ -85,23 +85,20 @@ CodeBuilder::BuildResult CodeBuilder::BuildProgram( const ProgramElements& progr
 	errors_.clear();
 	error_count_= 0u;
 
+	NamesScope global_names;
+
 	for( const IProgramElementPtr& program_element : program_elements )
 	{
 		if( const FunctionDeclaration* func=
 			dynamic_cast<const FunctionDeclaration*>( program_element.get() ) )
 		{
-			PrepareFunction( *func, false, nullptr, global_names_ );
+			PrepareFunction( *func, false, nullptr, global_names );
 		}
 		else if(
 			const ClassDeclaration* class_=
 			dynamic_cast<const ClassDeclaration*>( program_element.get() ) )
 		{
-			const NamesScope::InsertedName* inserted_name=
-				global_names_.AddName( class_->name_, PrepareClass( *class_ ) );
-			if( inserted_name == nullptr )
-			{
-				errors_.push_back( ReportRedefinition( class_->file_pos_, class_->name_ ) );
-			}
+			PrepareClass( *class_, global_names );
 		}
 		else
 		{
@@ -119,7 +116,10 @@ CodeBuilder::BuildResult CodeBuilder::BuildProgram( const ProgramElements& progr
 	return result;
 }
 
-Type CodeBuilder::PrepareType( const FilePos& file_pos, const TypeName& type_name )
+Type CodeBuilder::PrepareType(
+	const FilePos& file_pos,
+	const TypeName& type_name,
+	const NamesScope& names_scope )
 {
 	Type result;
 	Type* last_type= &result;
@@ -161,9 +161,8 @@ Type CodeBuilder::PrepareType( const FilePos& file_pos, const TypeName& type_nam
 	auto it= g_types_map.find( type_name.name );
 	if( it == g_types_map.end() )
 	{
-		// TODO - use here not only global names.
 		const NamesScope::InsertedName* custom_type_name=
-			global_names_.GetName( type_name.name );
+			names_scope.GetName( type_name.name );
 		if( custom_type_name != nullptr )
 		{
 			const ClassPtr* const class_= custom_type_name->second.GetClass();
@@ -211,7 +210,7 @@ Type CodeBuilder::PrepareType( const FilePos& file_pos, const TypeName& type_nam
 	return result;
 }
 
-ClassPtr CodeBuilder::PrepareClass( const ClassDeclaration& class_declaration )
+void CodeBuilder::PrepareClass( const ClassDeclaration& class_declaration, NamesScope& names_scope )
 {
 	if( IsKeyword( class_declaration.name_ ) )
 		errors_.push_back( ReportUsingKeywordAsName( class_declaration.file_pos_ ) );
@@ -232,7 +231,7 @@ ClassPtr CodeBuilder::PrepareClass( const ClassDeclaration& class_declaration )
 			boost::get< ClassDeclaration::Field >( &member ) )
 		{
 			ClassField out_field;
-			out_field.type= PrepareType( in_field->file_pos, in_field->type );
+			out_field.type= PrepareType( in_field->file_pos, in_field->type, names_scope );
 			out_field.index= the_class->field_count;
 			out_field.class_= the_class;
 
@@ -272,7 +271,12 @@ ClassPtr CodeBuilder::PrepareClass( const ClassDeclaration& class_declaration )
 		}
 	}
 
-	return the_class;
+	const NamesScope::InsertedName* inserted_name=
+		names_scope.AddName( class_declaration.name_, the_class );
+	if( inserted_name == nullptr )
+	{
+		errors_.push_back( ReportRedefinition( class_declaration.file_pos_, class_declaration.name_ ) );
+	}
 }
 
 void CodeBuilder::PrepareFunction(
@@ -339,7 +343,7 @@ void CodeBuilder::PrepareFunction(
 			out_arg.type.one_of_type_kind= base_class;
 		}
 		else
-			out_arg.type= PrepareType( arg->file_pos_, arg->type_ );
+			out_arg.type= PrepareType( arg->file_pos_, arg->type_, names_scope );
 
 		// TODO - make variables without explicit mutability modifiers immutable.
 		if( arg->mutability_modifier_ == MutabilityModifier::Immutable )
@@ -748,7 +752,7 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 	NamesScope& block_names,
 	FunctionContext& function_context )
 {
-	const Type type= PrepareType( variables_declaration.file_pos_, variables_declaration.type );
+	const Type type= PrepareType( variables_declaration.file_pos_, variables_declaration.type, block_names );
 	for( const VariablesDeclaration::VariableEntry& variable_declaration : variables_declaration.variables )
 	{
 		if( IsKeyword( variable_declaration.name ) )
