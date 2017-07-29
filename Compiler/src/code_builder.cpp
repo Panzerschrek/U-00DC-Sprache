@@ -140,21 +140,22 @@ Type CodeBuilder::PrepareType(
 
 	last_type->one_of_type_kind= FundamentalType( U_FundamentalType::InvalidType, fundamental_llvm_types_.invalid_type_ );
 
-	auto it= g_types_map.find( type_name.name );
+	const auto it=
+		type_name.name.components.size() == 1u
+			? g_types_map.find( type_name.name.components.front() )
+			: g_types_map.end();
 	if( it == g_types_map.end() )
 	{
 		const NamesScope::InsertedName* custom_type_name=
-			names_scope.GetName( type_name.name );
+			names_scope.ResolveName( type_name.name );
 		if( custom_type_name != nullptr )
 		{
-			const ClassPtr* const class_= custom_type_name->second.GetClass();
-			if( class_ != nullptr )
+			if( const ClassPtr class_= custom_type_name->second.GetClass() )
 			{
-				U_ASSERT( (*class_) != nullptr );
-				last_type->one_of_type_kind= *class_;
+				last_type->one_of_type_kind= class_;
 			}
 			else
-				errors_.push_back( ReportNameIsNotTypeName( file_pos, type_name.name ) );
+				errors_.push_back( ReportNameIsNotTypeName( file_pos, type_name.name.components.front() ) );
 		}
 		else
 			errors_.push_back( ReportNameNotFound( file_pos, type_name.name ) );
@@ -194,13 +195,21 @@ Type CodeBuilder::PrepareType(
 
 void CodeBuilder::PrepareClass( const ClassDeclaration& class_declaration, NamesScope& names_scope )
 {
-	if( IsKeyword( class_declaration.name_ ) )
+	if( class_declaration.name_.components.size() > 1u )
+	{
+		// TODO - check complex name.
+		return;
+	}
+
+	const ProgramString& class_name= class_declaration.name_.components.back();
+
+	if( IsKeyword( class_name ) )
 		errors_.push_back( ReportUsingKeywordAsName( class_declaration.file_pos_ ) );
 
-	ClassPtr the_class= std::make_shared<Class>(class_declaration.name_, &names_scope );
+	ClassPtr the_class= std::make_shared<Class>( class_name, &names_scope );
 
 	the_class->llvm_type=
-		llvm::StructType::create( llvm_context_, ToStdString(class_declaration.name_) );
+		llvm::StructType::create( llvm_context_, ToStdString(class_name) );
 
 	std::vector<llvm::Type*> fields_llvm_types;
 
@@ -252,10 +261,10 @@ void CodeBuilder::PrepareClass( const ClassDeclaration& class_declaration, Names
 	}
 
 	const NamesScope::InsertedName* inserted_name=
-		names_scope.AddName( class_declaration.name_, the_class );
+		names_scope.AddName( class_name, the_class );
 	if( inserted_name == nullptr )
 	{
-		errors_.push_back( ReportRedefinition( class_declaration.file_pos_, class_declaration.name_ ) );
+		errors_.push_back( ReportRedefinition( class_declaration.file_pos_, class_name ) );
 	}
 }
 
@@ -303,7 +312,10 @@ void CodeBuilder::PrepareFunction(
 	const ClassPtr base_class,
 	NamesScope& names_scope )
 {
-	if( IsKeyword( func.name_ ) )
+	// TODO - check complex name.
+	const ProgramString& func_name= func.name_.components.back();
+
+	if( IsKeyword( func_name ) )
 		errors_.push_back( ReportUsingKeywordAsName( func.file_pos_ ) );
 
 	const Block* const block= is_class_method_predeclaration ? nullptr : func.block_.get();
@@ -371,29 +383,29 @@ void CodeBuilder::PrepareFunction(
 		out_arg.is_reference= is_this || arg->reference_modifier_ == ReferenceModifier::Reference;
 	}
 
-	NamesScope::InsertedName* const func_name=
-		names_scope.GetThisScopeName( func.name_ );
-	if( func_name == nullptr )
+	NamesScope::InsertedName* const previously_inserted_func=
+		names_scope.GetThisScopeName( func_name );
+	if( previously_inserted_func == nullptr )
 	{
 		OverloadedFunctionsSet functions_set;
 		functions_set.push_back( std::move( func_variable ) );
 
 		// New name in this scope - insert it.
 		NamesScope::InsertedName* const inserted_func=
-			names_scope.AddName( func.name_, std::move( functions_set ) );
+			names_scope.AddName( func_name, std::move( functions_set ) );
 		U_ASSERT( inserted_func != nullptr );
 
 		BuildFuncCode(
 			inserted_func->second.GetFunctionsSet()->front(),
 			base_class,
 			names_scope,
-			func.name_,
+			func_name,
 			func.arguments_,
 			block );
 	}
 	else
 	{
-		Value& value= func_name->second;
+		Value& value= previously_inserted_func->second;
 		if( OverloadedFunctionsSet* const functions_set= value.GetFunctionsSet() )
 		{
 			if( FunctionVariable* const same_function=
@@ -403,12 +415,12 @@ void CodeBuilder::PrepareFunction(
 			{
 				if( func.block_ == nullptr )
 				{
-					errors_.push_back( ReportFunctionPrototypeDuplication( func.file_pos_, func.name_ ) );
+					errors_.push_back( ReportFunctionPrototypeDuplication( func.file_pos_, func_name ) );
 					return;
 				}
 				if( same_function->have_body )
 				{
-					errors_.push_back( ReportFunctionBodyDuplication( func.file_pos_, func.name_ ) );
+					errors_.push_back( ReportFunctionBodyDuplication( func.file_pos_, func_name ) );
 					return;
 				}
 				if( same_function->type != func_variable.type )
@@ -422,7 +434,7 @@ void CodeBuilder::PrepareFunction(
 					*same_function,
 					base_class,
 					names_scope,
-					func.name_,
+					func_name,
 					func.arguments_,
 					block );
 			}
@@ -441,13 +453,13 @@ void CodeBuilder::PrepareFunction(
 					functions_set->back(),
 					base_class,
 					names_scope,
-					func.name_,
+					func_name,
 					func.arguments_,
 					block );
 			}
 		}
 		else
-			errors_.push_back( ReportRedefinition( func.file_pos_, func_name->first ) );
+			errors_.push_back( ReportRedefinition( func.file_pos_, previously_inserted_func->first ) );
 	}
 }
 

@@ -30,6 +30,23 @@ CodeBuilderError ReportNameNotFound( const FilePos& file_pos, const ProgramStrin
 	return error;
 }
 
+CodeBuilderError ReportNameNotFound( const FilePos& file_pos, const ComplexName& name )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::NameNotFound;
+
+	for( const ProgramString& component : name.components )
+	{
+		error.text+= component;
+		if( &component != name.components.back() )
+			error.text+= "::"_SpC;
+	}
+	error.text= "TODO"_SpC + name.components.front() + " was not declarated in this scope"_SpC;
+
+	return error;
+}
+
 CodeBuilderError ReportUsingKeywordAsName( const FilePos& file_pos )
 {
 	CodeBuilderError error;

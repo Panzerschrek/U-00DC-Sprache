@@ -99,6 +99,7 @@ private:
 
 	void ParseTypeName_r( TypeName& result );
 	TypeName ParseTypeName();
+	ComplexName ParseComplexName();
 
 	IInitializerPtr ParseInitializer( bool parse_expression_initializer );
 	std::unique_ptr<ArrayInitializer> ParseArrayInitializer();
@@ -396,13 +397,21 @@ IExpressionComponentPtr SyntaxAnalyzer::ParseExpression()
 		if( it_->type == Lexem::Type::Identifier )
 		{
 			if( it_->text == Keywords::true_ )
+			{
 				current_node.reset( new BooleanConstant( it_->file_pos, true ) );
+				++it_;
+			}
 			else if( it_->text == Keywords::false_ )
+			{
 				current_node.reset( new BooleanConstant( it_->file_pos, false ) );
+				++it_;
+			}
 			else
-				current_node.reset( new NamedOperand( it_->file_pos, it_->text ) );
-
-			++it_;
+				current_node.reset( new NamedOperand( it_->file_pos, ParseComplexName() ) );
+		}
+		else if( it_->type == Lexem::Type::Scope )
+		{
+			current_node.reset( new NamedOperand( it_->file_pos, ParseComplexName() ) );
 		}
 		else if( it_->type == Lexem::Type::Number )
 		{
@@ -620,16 +629,7 @@ void SyntaxAnalyzer::ParseTypeName_r( TypeName& result )
 		++it_;
 	}
 	else
-	{
-		if( it_->type != Lexem::Type::Identifier )
-		{
-			PushErrorMessage( *it_ );
-			return;
-		}
-
-		result.name= it_->text;
-		++it_;
-	}
+		result.name= ParseComplexName();
 }
 
 TypeName SyntaxAnalyzer::ParseTypeName()
@@ -637,6 +637,44 @@ TypeName SyntaxAnalyzer::ParseTypeName()
 	TypeName result;
 	ParseTypeName_r( result );
 	return result;
+}
+
+ComplexName SyntaxAnalyzer::ParseComplexName()
+{
+	ComplexName complex_name;
+
+	if( !( it_->type == Lexem::Type::Identifier || it_->type == Lexem::Type::Scope ) )
+	{
+		PushErrorMessage( *it_ );
+		return complex_name;
+	}
+
+	if( it_->type == Lexem::Type::Scope )
+	{
+		complex_name.components.emplace_back();
+		++it_; U_ASSERT( it_ < it_end_ );
+	}
+
+	do
+	{
+		if( it_->type != Lexem::Type::Identifier )
+		{
+			PushErrorMessage( *it_ );
+			return complex_name;
+		}
+		complex_name.components.push_back( it_->text );
+		++it_; U_ASSERT( it_ < it_end_ );
+
+		if( it_->type == Lexem::Type::Scope )
+		{
+			++it_; U_ASSERT( it_ < it_end_ );
+		}
+		else
+			break;
+
+	} while(true);
+
+	return complex_name;
 }
 
 IInitializerPtr SyntaxAnalyzer::ParseInitializer( const bool parse_expression_initializer )
@@ -1303,19 +1341,10 @@ std::unique_ptr<FunctionDeclaration> SyntaxAnalyzer::ParseFunction()
 	U_ASSERT( it_ < it_end_ );
 
 	const FilePos& func_pos= it_->file_pos;
+	++it_; U_ASSERT( it_ < it_end_ );
 
-	++it_;
-	U_ASSERT( it_ < it_end_ );
-	if( it_->type != Lexem::Type::Identifier )
-	{
-		PushErrorMessage( *it_ );
-		return nullptr;
-	}
+	ComplexName fn_name= ParseComplexName();
 
-	const ProgramString& fn_name= it_->text;
-
-	++it_;
-	U_ASSERT( it_ < it_end_ );
 	if( it_->type != Lexem::Type::BracketLeft )
 	{
 		PushErrorMessage( *it_ );
@@ -1540,13 +1569,7 @@ std::unique_ptr<ClassDeclaration> SyntaxAnalyzer::ParseClass()
 
 	std::unique_ptr<ClassDeclaration> result( new ClassDeclaration( it_->file_pos ) );
 
-	if( it_->type != Lexem::Type::Identifier )
-	{
-		PushErrorMessage( *it_ );
-		return nullptr;
-	}
-	result->name_= it_->text;
-	++it_; U_ASSERT( it_ < it_end_ );
+	result->name_= ParseComplexName();
 
 	if( it_->type != Lexem::Type::BraceLeft )
 	{

@@ -11,6 +11,7 @@
 
 #include "lang_types.hpp"
 #include "program_string.hpp"
+#include "syntax_elements.hpp"
 
 namespace U
 {
@@ -30,7 +31,6 @@ typedef std::weak_ptr<Class> ClassWeakPtr;
 
 class NamesScope;
 typedef std::shared_ptr<NamesScope> NamesScopePtr;
-typedef std::shared_ptr<const NamesScope> NamesScopeConstPtr;
 
 struct FundamentalType final
 {
@@ -181,16 +181,14 @@ public:
 	OverloadedFunctionsSet* GetFunctionsSet();
 	const OverloadedFunctionsSet* GetFunctionsSet() const;
 	// Class stub type
-	ClassPtr* GetClass();
-	const ClassPtr* GetClass() const;
+	ClassPtr GetClass() const;
 	// Class fields
 	const ClassField* GetClassField() const;
 	// This + methods set
 	ThisOverloadedMethodsSet* GetThisOverloadedMethodsSet();
 	const ThisOverloadedMethodsSet* GetThisOverloadedMethodsSet() const;
 	// Namespace
-	NamesScopePtr GetNamespace();
-	NamesScopeConstPtr GetNamespace() const;
+	NamesScopePtr GetNamespace() const;
 
 private:
 	struct OverloadedFunctionsSetWithTypeStub
@@ -266,9 +264,11 @@ public:
 	// Returns nullptr, if name already exists in this scope.
 	InsertedName* AddName( const ProgramString& name, Value value );
 
-	const InsertedName* GetName( const ProgramString& name ) const;
-
+	// Performs full name resolving.
+	const InsertedName* ResolveName( const ComplexName& name ) const;
+	// Resolve simple name only in this scope.
 	InsertedName* GetThisScopeName( const ProgramString& name );
+	const InsertedName* GetThisScopeName( const ProgramString& name ) const;
 
 	template<class Func>
 	void ForEachInThisScope( const Func& func ) const
@@ -283,6 +283,7 @@ public:
 
 private:
 	void GetNamespacePrefix_r( ProgramString& out_name ) const;
+	const InsertedName* ResolveName_r( const ProgramString* components, size_t component_count ) const;
 
 private:
 	const ProgramString name_;

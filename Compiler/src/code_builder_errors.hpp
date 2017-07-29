@@ -4,6 +4,7 @@
 #include "lang_types.hpp"
 #include "lexical_analyzer.hpp"
 #include "program_string.hpp"
+#include "syntax_elements.hpp"
 
 namespace U
 {
@@ -74,6 +75,7 @@ struct CodeBuilderError
 // TODO - add more parameters for errors.
 CodeBuilderError ReportBuildFailed();
 CodeBuilderError ReportNameNotFound( const FilePos& file_pos, const ProgramString& name );
+CodeBuilderError ReportNameNotFound( const FilePos& file_pos, const ComplexName& name );
 CodeBuilderError ReportUsingKeywordAsName( const FilePos& file_pos );
 CodeBuilderError ReportRedefinition( const FilePos& file_pos, const ProgramString& name );
 CodeBuilderError ReportUnknownNumericConstantType( const FilePos& file_pos, const ProgramString& unknown_type );
