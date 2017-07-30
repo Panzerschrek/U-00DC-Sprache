@@ -46,6 +46,7 @@ set( LLVM_BUILD_DIR ${LLVM_BASE_DIR}/build )
 set( LLVM_LIBS_DIR ${LLVM_BUILD_DIR}/lib )
 set( LLVM_INCLUDES_DIR ${LLVM_BASE_DIR}/include )
 set( LLVM_GEN_INCLUDES_DIR ${LLVM_BUILD_DIR}/include )
+get_filename_component( LLVM_UTILS_DIR ${LLVM_BUILD_DIR}/bin ABSOLUTE )
 set( BOOST_BASE_DIR ../../boost_1_60_0 )
 
 include_directories( ${LLVM_INCLUDES_DIR} )
@@ -106,3 +107,21 @@ set( TESTS_HEADERS
 add_executable( Tests ${TESTS_SOURCES} ${TESTS_HEADERS} )
 target_link_libraries( Tests CompilerLib )
 
+#
+# CPP-Linkage test
+#
+
+# Compile simple program on "Ü-Sprache", link it together with C++ program.
+
+set( CPP_LINKAGE_U_SOURCE test_programs/cpp_linkage.u )
+set( CPP_LINKAGE_U_MODULE cpp_linkage_u.obj )
+set( CPP_LINKAGE_CPP_SOURCE test_programs/cpp_linkage.cpp )
+
+add_custom_command(
+	OUTPUT ${CPP_LINKAGE_U_MODULE}
+	DEPENDS ${CPP_LINKAGE_U_SOURCE}
+	COMMAND Compiler -i ${CMAKE_SOURCE_DIR}/test_programs/cpp_linkage.u -o cpp_linkage.ir &&
+	${LLVM_UTILS_DIR}/llc cpp_linkage.ir -filetype=obj -o=${CPP_LINKAGE_U_MODULE} )
+
+add_executable( CPPLinkageTest ${CPP_LINKAGE_U_MODULE} ${CPP_LINKAGE_CPP_SOURCE} )
+add_dependencies( CPPLinkageTest Compiler )

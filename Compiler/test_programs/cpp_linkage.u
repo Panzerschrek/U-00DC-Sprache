@@ -1,0 +1,9 @@
+// Extern C++ function
+fn CallCPP( i32 x );
+
+// Function, exported to C++ module
+fn Do( i32 x ) : f64
+{
+	CallCPP( x );
+	return 1.251;
+}
