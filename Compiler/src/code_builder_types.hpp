@@ -265,10 +265,9 @@ public:
 	InsertedName* AddName( const ProgramString& name, Value value );
 
 	// Performs full name resolving.
-	const InsertedName* ResolveName( const ComplexName& name ) const;
+	InsertedName* ResolveName( const ComplexName& name ) const;
 	// Resolve simple name only in this scope.
-	InsertedName* GetThisScopeName( const ProgramString& name );
-	const InsertedName* GetThisScopeName( const ProgramString& name ) const;
+	InsertedName* GetThisScopeName( const ProgramString& name ) const;
 
 	template<class Func>
 	void ForEachInThisScope( const Func& func ) const
@@ -283,7 +282,7 @@ public:
 
 private:
 	void GetNamespacePrefix_r( ProgramString& out_name ) const;
-	const InsertedName* ResolveName_r( const ProgramString* components, size_t component_count ) const;
+	InsertedName* ResolveName_r( const ProgramString* components, size_t component_count ) const;
 
 private:
 	const ProgramString name_;

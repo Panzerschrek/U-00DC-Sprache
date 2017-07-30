@@ -39,7 +39,7 @@ CodeBuilderError ReportNameNotFound( const FilePos& file_pos, const ComplexName&
 	for( const ProgramString& component : name.components )
 	{
 		error.text+= component;
-		if( &component != name.components.back() )
+		if( &component != &name.components.back() )
 			error.text+= "::"_SpC;
 	}
 	error.text= "TODO"_SpC + name.components.front() + " was not declarated in this scope"_SpC;
@@ -354,6 +354,17 @@ CodeBuilderError ReportReturnValueDiffersFromPrototype( const FilePos& file_pos 
 	error.code= CodeBuilderErrorCode::ReturnValueDiffersFromPrototype;
 
 	error.text= "Function return value differs from prototype."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportFunctionDeclarationOutsideItsScope( const FilePos& file_pos )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::FunctionDeclarationOutsideItsScope;
+
+	error.text= "Function declaration outside its scope."_SpC;
 
 	return error;
 }

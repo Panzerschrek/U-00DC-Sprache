@@ -606,7 +606,7 @@ NamesScope::InsertedName* NamesScope::AddName(
 	return nullptr;
 }
 
-const NamesScope::InsertedName* NamesScope::ResolveName( const ComplexName& name ) const
+NamesScope::InsertedName* NamesScope::ResolveName( const ComplexName& name ) const
 {
 	U_ASSERT( !name.components.empty() );
 	if( name.components.front().empty() )
@@ -623,14 +623,14 @@ const NamesScope::InsertedName* NamesScope::ResolveName( const ComplexName& name
 	else
 	{
 		const ProgramString& start= name.components.front();
-		const InsertedName* start_resolved= nullptr;
+		InsertedName* start_resolved= nullptr;
 		const NamesScope* space= this;
 		while(true)
 		{
 			const auto it= space->names_map_.find( start );
 			if( it != space->names_map_.end() )
 			{
-				start_resolved= &*it;
+				start_resolved= const_cast<InsertedName*>(&*it);
 				break;
 			}
 			space= space->parent_;
@@ -645,19 +645,11 @@ const NamesScope::InsertedName* NamesScope::ResolveName( const ComplexName& name
 	}
 }
 
-NamesScope::InsertedName* NamesScope::GetThisScopeName( const ProgramString& name )
+NamesScope::InsertedName* NamesScope::GetThisScopeName( const ProgramString& name ) const
 {
 	const auto it= names_map_.find( name );
 	if( it != names_map_.end() )
-		return &*it;
-	return nullptr;
-}
-
-const NamesScope::InsertedName* NamesScope::GetThisScopeName( const ProgramString& name ) const
-{
-	const auto it= names_map_.find( name );
-	if( it != names_map_.end() )
-		return &*it;
+		return const_cast<InsertedName*>(&*it);
 	return nullptr;
 }
 
@@ -688,7 +680,7 @@ void NamesScope::GetNamespacePrefix_r( ProgramString& func_name ) const
 	}
 }
 
-const NamesScope::InsertedName* NamesScope::ResolveName_r(
+NamesScope::InsertedName* NamesScope::ResolveName_r(
 	const ProgramString* const components,
 	const size_t component_count ) const
 {
@@ -700,7 +692,7 @@ const NamesScope::InsertedName* NamesScope::ResolveName_r(
 		return nullptr;
 
 	if( component_count == 1u )
-		return &*it;
+		return const_cast<InsertedName*>(&*it);
 
 	if( const NamesScopePtr child_namespace= it->second.GetNamespace() )
 		return child_namespace->ResolveName_r( components + 1u, component_count - 1u );

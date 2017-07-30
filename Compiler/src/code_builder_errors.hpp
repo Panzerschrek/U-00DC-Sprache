@@ -42,6 +42,7 @@ enum class CodeBuilderErrorCode : unsigned int
 	FunctionPrototypeDuplication,
 	FunctionBodyDuplication,
 	ReturnValueDiffersFromPrototype,
+	FunctionDeclarationOutsideItsScope,
 
 	// Initializers errors.
 	ArrayInitializerForNonArray,
@@ -103,6 +104,7 @@ CodeBuilderError ReportCouldNotSelectOverloadedFunction( const FilePos& file_pos
 CodeBuilderError ReportFunctionPrototypeDuplication( const FilePos& file_pos, const ProgramString& func_name );
 CodeBuilderError ReportFunctionBodyDuplication( const FilePos& file_pos, const ProgramString& func_name );
 CodeBuilderError ReportReturnValueDiffersFromPrototype( const FilePos& file_pos );
+CodeBuilderError ReportFunctionDeclarationOutsideItsScope( const FilePos& file_pos );
 CodeBuilderError ReportArrayInitializerForNonArray( const FilePos& file_pos );
 CodeBuilderError ReportArrayInitializersCountMismatch( const FilePos& file_pos, size_t expected_initializers, size_t real_initializers );
 CodeBuilderError ReportFundamentalTypesHaveConstructorsWithExactlyOneParameter( const FilePos& file_pos );

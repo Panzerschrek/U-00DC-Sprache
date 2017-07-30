@@ -384,9 +384,15 @@ void CodeBuilder::PrepareFunction(
 	}
 
 	NamesScope::InsertedName* const previously_inserted_func=
-		names_scope.GetThisScopeName( func_name );
+		names_scope.ResolveName( func.name_ );
 	if( previously_inserted_func == nullptr )
 	{
+		if( func.name_.components.size() > 1u )
+		{
+			errors_.push_back( ReportFunctionDeclarationOutsideItsScope( func.file_pos_ ) );
+			return;
+		}
+
 		OverloadedFunctionsSet functions_set;
 		functions_set.push_back( std::move( func_variable ) );
 
@@ -440,6 +446,12 @@ void CodeBuilder::PrepareFunction(
 			}
 			else
 			{
+				if( func.name_.components.size() > 1u )
+				{
+					errors_.push_back( ReportFunctionDeclarationOutsideItsScope( func.file_pos_ ) );
+					return;
+				}
+
 				try
 				{
 					ApplyOverloadedFunction( *functions_set, func_variable, func.file_pos_ );
