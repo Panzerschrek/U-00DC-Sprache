@@ -51,7 +51,7 @@ U_TEST(NameNotFoundTest2)
 	// Unknown member name.
 	static const char c_program_text[]=
 	R"(
-		struct S{};
+		struct S{}
 		fn Foo() : i32
 		{
 			var S x{};
@@ -113,7 +113,7 @@ U_TEST(UsingKeywordAsName2)
 	// struct name is keyword.
 	static const char c_program_text[]=
 	R"(
-		struct while{};
+		struct while{}
 	)";
 
 	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
@@ -190,10 +190,10 @@ U_TEST(Redefinition2)
 	// struct redefinition.
 	static const char c_program_text[]=
 	R"(
-		struct AA{};
+		struct AA{}
 		fn Foo() : i32
 		{ return 0; }
-		struct AA{};
+		struct AA{}
 	)";
 
 	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
@@ -216,7 +216,7 @@ U_TEST(Redefinition3)
 		fn Bar() : i32
 		{ return 1; }
 
-		struct Foo{};
+		struct Foo{}
 	)";
 
 	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
@@ -273,7 +273,7 @@ U_TEST(OperationNotSupportedForThisTypeTest0)
 	// Binary operations errors.
 	static const char c_program_text[]=
 	R"(
-		struct S{};
+		struct S{}
 		fn Foo()
 		{
 			var S s= zero_init;
@@ -309,7 +309,7 @@ U_TEST(OperationNotSupportedForThisTypeTest1)
 	// Indexation operators.
 	static const char c_program_text[]=
 	R"(
-		struct S{};
+		struct S{}
 		fn Bar(){}
 		fn Foo()
 		{
@@ -364,7 +364,7 @@ U_TEST(OperationNotSupportedForThisTypeTest3)
 	// Unary minus.
 	static const char c_program_text[]=
 	R"(
-		struct S{};
+		struct S{}
 		fn Bar(){}
 		fn Foo()
 		{

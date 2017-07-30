@@ -137,7 +137,7 @@ void CodeBuilder::ApplyStructNamedInitializer(
 			continue;
 		}
 
-		const NamesScope::InsertedName* const class_member= class_type.members.GetName( member_initializer.name );
+		const NamesScope::InsertedName* const class_member= class_type.members.GetThisScopeName( member_initializer.name );
 		if( class_member == nullptr )
 		{
 			errors_.push_back( ReportNameNotFound( initializer.file_pos_, member_initializer.name ) );

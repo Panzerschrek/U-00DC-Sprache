@@ -21,7 +21,7 @@ U_TEST(MethodTest0)
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
-	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foo" );
 	U_TEST_ASSERT( function != nullptr );
 
 	llvm::GenericValue result_value=
@@ -50,7 +50,7 @@ U_TEST(MethodTest1)
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
-	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foo" );
 	U_TEST_ASSERT( function != nullptr );
 
 	llvm::GenericValue result_value=
@@ -80,7 +80,7 @@ U_TEST(MethodTest2)
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
-	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foo" );
 	U_TEST_ASSERT( function != nullptr );
 
 	llvm::GenericValue result_value=
@@ -111,7 +111,7 @@ U_TEST(MethodTest3)
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
-	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foo" );
 	U_TEST_ASSERT( function != nullptr );
 
 	llvm::GenericValue result_value=
@@ -142,7 +142,7 @@ U_TEST(MethodTest4)
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
-	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foo" );
 	U_TEST_ASSERT( function != nullptr );
 
 	llvm::GenericValue result_value=
@@ -180,7 +180,7 @@ U_TEST(MethodTest5)
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
-	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foo" );
 	U_TEST_ASSERT( function != nullptr );
 
 	llvm::GenericValue result_value=
@@ -219,7 +219,7 @@ U_TEST(MethodTest6)
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
-	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foo" );
 	U_TEST_ASSERT( function != nullptr );
 
 	llvm::GenericValue result_value=
@@ -250,7 +250,7 @@ U_TEST(MethodTest7)
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
-	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foo" );
 	U_TEST_ASSERT( function != nullptr );
 
 	llvm::GenericValue result_value=
@@ -281,7 +281,7 @@ U_TEST(MethodTes8)
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
-	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foo" );
 	U_TEST_ASSERT( function != nullptr );
 
 	llvm::GenericValue result_value=
@@ -290,6 +290,65 @@ U_TEST(MethodTes8)
 			llvm::ArrayRef<llvm::GenericValue>() );
 
 	U_TEST_ASSERT( 84167.1 == result_value.DoubleVal );
+}
+
+U_TEST(MethodTes9)
+{
+	// Prototype for method and realization outside class.
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			f64 x_;
+			fn GetX( this ) : f64;
+		}
+		fn S::GetX( this ) : f64 { return x_; }
+		fn Foo() : f64
+		{
+			var S s{ .x_= 84167.1, };
+			return s.GetX();
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foo" );
+	U_TEST_ASSERT( function != nullptr );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( 84167.1 == result_value.DoubleVal );
+}
+
+U_TEST(MethodTest10)
+{
+	// Call of static class function without object.
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			fn Get42() : i32 { return 42; }
+		}
+		fn Foo() : i32
+		{
+			return S::Get42();
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foo" );
+	U_TEST_ASSERT( function != nullptr );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( static_cast<uint64_t>( 42 ) == result_value.IntVal.getLimitedValue() );
 }
 
 } // namespace U

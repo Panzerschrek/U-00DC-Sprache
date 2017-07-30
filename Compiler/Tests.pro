@@ -18,6 +18,8 @@ SOURCES += \
 	src/tests/initializers_test.cpp \
 	src/tests/methods_errors_test.cpp \
 	src/tests/methods_test.cpp \
+	src/tests/namespaces_errors_test.cpp \
+	src/tests/namespaces_test.cpp \
 	src/tests/operators_priority_test.cpp \
 	src/tests/tests_main.cpp \
 	src/tests/tests.cpp \

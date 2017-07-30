@@ -39,6 +39,18 @@ typedef std::vector<IUnaryPostfixOperatorPtr> PostfixOperators;
 class IInitializer;
 typedef std::unique_ptr<IInitializer> IInitializerPtr;
 
+struct ComplexName final
+{
+	// A
+	// A::b
+	// TheClass::Method
+	// ::Absolute::Name
+	// ::C_Function
+
+	// If first component is empty, name starts with "::".
+	std::vector<ProgramString> components;
+};
+
 class IUnaryPrefixOperator : public SyntaxElementBase
 {
 public:
@@ -237,12 +249,12 @@ public:
 class NamedOperand final : public ExpressionComponentWithUnaryOperators
 {
 public:
-	NamedOperand( const FilePos& file_pos, ProgramString name );
+	NamedOperand( const FilePos& file_pos, ComplexName name );
 	virtual ~NamedOperand() override;
 
 	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
 
-	const ProgramString name_;
+	const ComplexName name_;
 };
 
 class BooleanConstant final : public ExpressionComponentWithUnaryOperators
@@ -327,7 +339,7 @@ typedef std::unique_ptr<Block> BlockPtr;
 struct TypeName
 {
 	// [ [i32, 5] 7 ]
-	ProgramString name;
+	ComplexName name;
 	std::vector< std::unique_ptr<NumericConstant> > array_sizes;
 
 	void Print( std::ostream& stream ) const;
@@ -475,7 +487,7 @@ public:
 	IExpressionComponentPtr r_value_;
 };
 
-class FunctionArgumentDeclaration final : public IProgramElement
+class FunctionArgumentDeclaration final : public SyntaxElementBase
 {
 public:
 	FunctionArgumentDeclaration(
@@ -505,7 +517,7 @@ class FunctionDeclaration final : public IProgramElement
 public:
 	FunctionDeclaration(
 		const FilePos& file_pos,
-		ProgramString name,
+		ComplexName name,
 		ProgramString return_type,
 		MutabilityModifier return_value_mutability_modifier,
 		ReferenceModifier return_value_reference_modifier,
@@ -516,7 +528,7 @@ public:
 
 	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
 
-	const ProgramString name_;
+	const ComplexName name_;
 	const ProgramString return_type_;
 	const MutabilityModifier return_value_mutability_modifier_;
 	const ReferenceModifier return_value_reference_modifier_;
@@ -542,7 +554,19 @@ public:
 	typedef boost::variant< std::unique_ptr<FunctionDeclaration>, Field > Member;
 
 	std::vector<Member> members_;
+	ComplexName name_;
+};
+
+class Namespace final : public IProgramElement
+{
+public:
+	explicit Namespace( const FilePos& file_pos );
+	virtual ~Namespace() override= default;
+
+	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
+
 	ProgramString name_;
+	ProgramElements elements_;
 };
 
 } // namespace U

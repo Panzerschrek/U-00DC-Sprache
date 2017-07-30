@@ -48,6 +48,8 @@ static const Globals& GetGlobals()
 		[ size_t(Keywords::struct_) ]= "struct",
 		[ size_t(Keywords::class_) ]= "class",
 
+		[ size_t(Keywords::namespace_) ]= "namespace",
+
 		[ size_t(Keywords::void_) ]= "void",
 		[ size_t(Keywords::bool_) ]= "bool",
 		[ size_t(Keywords::i8_ ) ]= "i8" ,

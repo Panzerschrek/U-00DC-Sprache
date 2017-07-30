@@ -409,7 +409,7 @@ Value CodeBuilder::BuildNamedOperand(
 	FunctionContext& function_context )
 {
 	const NamesScope::InsertedName* name_entry=
-		names.GetName( named_operand.name_ );
+		names.ResolveName( named_operand.name_ );
 	if( !name_entry )
 	{
 		errors_.push_back( ReportNameNotFound( named_operand.file_pos_, named_operand.name_ ) );
@@ -420,7 +420,7 @@ Value CodeBuilder::BuildNamedOperand(
 	{
 		if( function_context.this_ == nullptr )
 		{
-			errors_.push_back( ReportClassFiledAccessInStaticMethod( named_operand.file_pos_, named_operand.name_ ) );
+			errors_.push_back( ReportClassFiledAccessInStaticMethod( named_operand.file_pos_, named_operand.name_.components.back() ) );
 			throw ProgramError();
 		}
 
@@ -460,7 +460,7 @@ Value CodeBuilder::BuildNamedOperand(
 			const ClassPtr class_= boost::get<ClassPtr>( function_context.this_->type.one_of_type_kind );
 
 			const NamesScope::InsertedName* const same_set_in_class=
-				class_->members.GetThisScopeName( named_operand.name_ );
+				class_->members.GetThisScopeName( named_operand.name_.components.back() );
 			// SPRACHE_TODO - add "this" for functions from parent classes.
 			if( name_entry == same_set_in_class )
 			{

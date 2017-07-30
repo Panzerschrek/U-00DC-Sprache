@@ -85,29 +85,8 @@ CodeBuilder::BuildResult CodeBuilder::BuildProgram( const ProgramElements& progr
 	errors_.clear();
 	error_count_= 0u;
 
-	for( const IProgramElementPtr& program_element : program_elements )
-	{
-		if( const FunctionDeclaration* func=
-			dynamic_cast<const FunctionDeclaration*>( program_element.get() ) )
-		{
-			PrepareFunction( *func, false, nullptr, global_names_ );
-		}
-		else if(
-			const ClassDeclaration* class_=
-			dynamic_cast<const ClassDeclaration*>( program_element.get() ) )
-		{
-			const NamesScope::InsertedName* inserted_name=
-				global_names_.AddName( class_->name_, PrepareClass( *class_ ) );
-			if( inserted_name == nullptr )
-			{
-				errors_.push_back( ReportRedefinition( class_->file_pos_, class_->name_ ) );
-			}
-		}
-		else
-		{
-			U_ASSERT(false);
-		}
-	} // for program elements
+	NamesScope global_names( ""_SpC, nullptr );
+	BuildNamespaceBody( program_elements, global_names );
 
 	if( error_count_ > 0u )
 		errors_.push_back( ReportBuildFailed() );
@@ -119,7 +98,10 @@ CodeBuilder::BuildResult CodeBuilder::BuildProgram( const ProgramElements& progr
 	return result;
 }
 
-Type CodeBuilder::PrepareType( const FilePos& file_pos, const TypeName& type_name )
+Type CodeBuilder::PrepareType(
+	const FilePos& file_pos,
+	const TypeName& type_name,
+	const NamesScope& names_scope )
 {
 	Type result;
 	Type* last_type= &result;
@@ -158,22 +140,22 @@ Type CodeBuilder::PrepareType( const FilePos& file_pos, const TypeName& type_nam
 
 	last_type->one_of_type_kind= FundamentalType( U_FundamentalType::InvalidType, fundamental_llvm_types_.invalid_type_ );
 
-	auto it= g_types_map.find( type_name.name );
+	const auto it=
+		type_name.name.components.size() == 1u
+			? g_types_map.find( type_name.name.components.front() )
+			: g_types_map.end();
 	if( it == g_types_map.end() )
 	{
-		// TODO - use here not only global names.
 		const NamesScope::InsertedName* custom_type_name=
-			global_names_.GetName( type_name.name );
+			names_scope.ResolveName( type_name.name );
 		if( custom_type_name != nullptr )
 		{
-			const ClassPtr* const class_= custom_type_name->second.GetClass();
-			if( class_ != nullptr )
+			if( const ClassPtr class_= custom_type_name->second.GetClass() )
 			{
-				U_ASSERT( (*class_) != nullptr );
-				last_type->one_of_type_kind= *class_;
+				last_type->one_of_type_kind= class_;
 			}
 			else
-				errors_.push_back( ReportNameIsNotTypeName( file_pos, type_name.name ) );
+				errors_.push_back( ReportNameIsNotTypeName( file_pos, type_name.name.components.front() ) );
 		}
 		else
 			errors_.push_back( ReportNameNotFound( file_pos, type_name.name ) );
@@ -211,17 +193,23 @@ Type CodeBuilder::PrepareType( const FilePos& file_pos, const TypeName& type_nam
 	return result;
 }
 
-ClassPtr CodeBuilder::PrepareClass( const ClassDeclaration& class_declaration )
+void CodeBuilder::PrepareClass( const ClassDeclaration& class_declaration, NamesScope& names_scope )
 {
-	if( IsKeyword( class_declaration.name_ ) )
+	if( class_declaration.name_.components.size() > 1u )
+	{
+		// TODO - check complex name.
+		return;
+	}
+
+	const ProgramString& class_name= class_declaration.name_.components.back();
+
+	if( IsKeyword( class_name ) )
 		errors_.push_back( ReportUsingKeywordAsName( class_declaration.file_pos_ ) );
 
-	ClassPtr the_class= std::make_shared<Class>();
-
-	the_class->name= class_declaration.name_;
+	ClassPtr the_class= std::make_shared<Class>( class_name, &names_scope );
 
 	the_class->llvm_type=
-		llvm::StructType::create( llvm_context_, ToStdString(class_declaration.name_) );
+		llvm::StructType::create( llvm_context_, ToStdString(class_name) );
 
 	std::vector<llvm::Type*> fields_llvm_types;
 
@@ -232,7 +220,7 @@ ClassPtr CodeBuilder::PrepareClass( const ClassDeclaration& class_declaration )
 			boost::get< ClassDeclaration::Field >( &member ) )
 		{
 			ClassField out_field;
-			out_field.type= PrepareType( in_field->file_pos, in_field->type );
+			out_field.type= PrepareType( in_field->file_pos, in_field->type, names_scope );
 			out_field.index= the_class->field_count;
 			out_field.class_= the_class;
 
@@ -272,19 +260,109 @@ ClassPtr CodeBuilder::PrepareClass( const ClassDeclaration& class_declaration )
 		}
 	}
 
-	return the_class;
+	const NamesScope::InsertedName* inserted_name=
+		names_scope.AddName( class_name, the_class );
+	if( inserted_name == nullptr )
+	{
+		errors_.push_back( ReportRedefinition( class_declaration.file_pos_, class_name ) );
+	}
+}
+
+void CodeBuilder::BuildNamespaceBody(
+	const ProgramElements& body_elements,
+	NamesScope& names_scope )
+{
+	for( const IProgramElementPtr& program_element : body_elements )
+	{
+		if( const FunctionDeclaration* const func=
+			dynamic_cast<const FunctionDeclaration*>( program_element.get() ) )
+		{
+			PrepareFunction( *func, false, nullptr, names_scope );
+		}
+		else if(
+			const ClassDeclaration* const class_=
+			dynamic_cast<const ClassDeclaration*>( program_element.get() ) )
+		{
+			PrepareClass( *class_, names_scope );
+		}
+		else if(
+			const Namespace* const namespace_=
+			dynamic_cast<const Namespace*>( program_element.get() ) )
+		{
+			NamesScope* result_scope= &names_scope;
+
+			const NamesScope::InsertedName* const same_name=
+				names_scope.GetThisScopeName( namespace_->name_ );
+			if( same_name != nullptr )
+			{
+				if( const NamesScopePtr same_namespace= same_name->second.GetNamespace() )
+					result_scope= same_namespace.get(); // Extend existend namespace.
+				else
+					errors_.push_back( ReportRedefinition( namespace_->file_pos_, namespace_->name_ ) );
+			}
+			else
+			{
+				const NamesScopePtr new_names_scope= std::make_shared<NamesScope>( namespace_->name_, &names_scope );
+				names_scope.AddName( namespace_->name_, new_names_scope );
+				result_scope= new_names_scope.get();
+			}
+
+			BuildNamespaceBody( namespace_->elements_, *result_scope );
+		}
+		else
+		{
+			U_ASSERT(false);
+		}
+	} // for program elements
+
 }
 
 void CodeBuilder::PrepareFunction(
 	const FunctionDeclaration& func,
 	const bool is_class_method_predeclaration,
-	const ClassPtr base_class,
-	NamesScope& names_scope )
+	ClassPtr base_class,
+	NamesScope& func_definition_names_scope /* scope, where this function appears */ )
 {
-	if( IsKeyword( func.name_ ) )
+	const ProgramString& func_name= func.name_.components.back();
+
+	if( IsKeyword( func_name ) )
 		errors_.push_back( ReportUsingKeywordAsName( func.file_pos_ ) );
 
 	const Block* const block= is_class_method_predeclaration ? nullptr : func.block_.get();
+
+	// Base scope (class, namespace), where function is declared.
+	// Arguments, return value, body names all resolved from this scope.
+	NamesScope* func_base_names_scope= &func_definition_names_scope;
+
+	if( func.name_.components.size() >= 2u )
+	{
+		// Complex name - search scope for this function.
+		ComplexName base_space_name= func.name_;
+		base_space_name.components.pop_back();
+		if( const NamesScope::InsertedName* const scope_name=
+			func_definition_names_scope.ResolveName( base_space_name ) )
+		{
+			if( const ClassPtr class_= scope_name->second.GetClass() )
+			{
+				func_base_names_scope= &class_->members;
+				base_class= class_; // TODO - check here if base_class nonnull and diffrs from class_?
+			}
+			else if( const NamesScopePtr namespace_= scope_name->second.GetNamespace() )
+			{
+				func_base_names_scope= namespace_.get();
+			}
+			else
+			{
+				errors_.push_back( ReportNameNotFound( func.file_pos_, base_space_name ) );
+				return;
+			}
+		}
+		else
+		{
+			errors_.push_back( ReportFunctionDeclarationOutsideItsScope( func.file_pos_ ) );
+			return;
+		}
+	}
 
 	FunctionVariable func_variable;
 
@@ -339,7 +417,7 @@ void CodeBuilder::PrepareFunction(
 			out_arg.type.one_of_type_kind= base_class;
 		}
 		else
-			out_arg.type= PrepareType( arg->file_pos_, arg->type_ );
+			out_arg.type= PrepareType( arg->file_pos_, arg->type_, *func_base_names_scope );
 
 		// TODO - make variables without explicit mutability modifiers immutable.
 		if( arg->mutability_modifier_ == MutabilityModifier::Immutable )
@@ -349,29 +427,35 @@ void CodeBuilder::PrepareFunction(
 		out_arg.is_reference= is_this || arg->reference_modifier_ == ReferenceModifier::Reference;
 	}
 
-	NamesScope::InsertedName* const func_name=
-		names_scope.GetThisScopeName( func.name_ );
-	if( func_name == nullptr )
+	NamesScope::InsertedName* const previously_inserted_func=
+		func_base_names_scope->GetThisScopeName( func_name );
+	if( previously_inserted_func == nullptr )
 	{
+		if( func.name_.components.size() > 1u )
+		{
+			errors_.push_back( ReportFunctionDeclarationOutsideItsScope( func.file_pos_ ) );
+			return;
+		}
+
 		OverloadedFunctionsSet functions_set;
 		functions_set.push_back( std::move( func_variable ) );
 
 		// New name in this scope - insert it.
 		NamesScope::InsertedName* const inserted_func=
-			names_scope.AddName( func.name_, std::move( functions_set ) );
+			func_base_names_scope->AddName( func_name, std::move( functions_set ) );
 		U_ASSERT( inserted_func != nullptr );
 
 		BuildFuncCode(
 			inserted_func->second.GetFunctionsSet()->front(),
 			base_class,
-			&names_scope,
-			func.name_,
+			*func_base_names_scope,
+			func_name,
 			func.arguments_,
 			block );
 	}
 	else
 	{
-		Value& value= func_name->second;
+		Value& value= previously_inserted_func->second;
 		if( OverloadedFunctionsSet* const functions_set= value.GetFunctionsSet() )
 		{
 			if( FunctionVariable* const same_function=
@@ -381,12 +465,12 @@ void CodeBuilder::PrepareFunction(
 			{
 				if( func.block_ == nullptr )
 				{
-					errors_.push_back( ReportFunctionPrototypeDuplication( func.file_pos_, func.name_ ) );
+					errors_.push_back( ReportFunctionPrototypeDuplication( func.file_pos_, func_name ) );
 					return;
 				}
 				if( same_function->have_body )
 				{
-					errors_.push_back( ReportFunctionBodyDuplication( func.file_pos_, func.name_ ) );
+					errors_.push_back( ReportFunctionBodyDuplication( func.file_pos_, func_name ) );
 					return;
 				}
 				if( same_function->type != func_variable.type )
@@ -399,13 +483,19 @@ void CodeBuilder::PrepareFunction(
 				BuildFuncCode(
 					*same_function,
 					base_class,
-					&names_scope,
-					func.name_,
+					*func_base_names_scope,
+					func_name,
 					func.arguments_,
 					block );
 			}
 			else
 			{
+				if( func.name_.components.size() > 1u )
+				{
+					errors_.push_back( ReportFunctionDeclarationOutsideItsScope( func.file_pos_ ) );
+					return;
+				}
+
 				try
 				{
 					ApplyOverloadedFunction( *functions_set, func_variable, func.file_pos_ );
@@ -418,14 +508,14 @@ void CodeBuilder::PrepareFunction(
 				BuildFuncCode(
 					functions_set->back(),
 					base_class,
-					&names_scope,
-					func.name_,
+					*func_base_names_scope,
+					func_name,
 					func.arguments_,
 					block );
 			}
 		}
 		else
-			errors_.push_back( ReportRedefinition( func.file_pos_, func_name->first ) );
+			errors_.push_back( ReportRedefinition( func.file_pos_, previously_inserted_func->first ) );
 	}
 }
 
@@ -465,7 +555,7 @@ void CodeBuilder::BuildFuncCode(
 			llvm::Function::Create(
 				function_type_ptr->llvm_function_type,
 				llvm::Function::LinkageTypes::ExternalLinkage, // TODO - select linkage
-				ToStdString( func_name ),
+				ToStdString( parent_names_scope.GetFunctionMangledName( func_name ) ),
 				module_.get() );
 
 		// Merge functions with identical code.
@@ -494,7 +584,7 @@ void CodeBuilder::BuildFuncCode(
 
 	func_variable.have_body= true;
 
-	NamesScope function_names( &parent_names_scope );
+	NamesScope function_names( ""_SpC, &parent_names_scope );
 	FunctionContext function_context(
 		function_type_ptr->return_type,
 		function_type_ptr->return_value_is_mutable,
@@ -609,7 +699,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockCode(
 	const NamesScope& names,
 	FunctionContext& function_context ) noexcept
 {
-	NamesScope block_names( &names );
+	NamesScope block_names( ""_SpC, &names );
 	BlockBuildInfo block_build_info;
 
 	for( const IBlockElementPtr& block_element : block.elements_ )
@@ -748,7 +838,7 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 	NamesScope& block_names,
 	FunctionContext& function_context )
 {
-	const Type type= PrepareType( variables_declaration.file_pos_, variables_declaration.type );
+	const Type type= PrepareType( variables_declaration.file_pos_, variables_declaration.type, block_names );
 	for( const VariablesDeclaration::VariableEntry& variable_declaration : variables_declaration.variables )
 	{
 		if( IsKeyword( variable_declaration.name ) )

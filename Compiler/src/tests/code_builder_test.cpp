@@ -22,7 +22,7 @@ U_TEST(SimpleProgramTest)
 
 	int arg0= 100500, arg1= 1488, arg2= 42;
 
-	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foo" );
 	U_TEST_ASSERT( function != nullptr );
 
 	llvm::GenericValue args[3];
@@ -51,7 +51,7 @@ U_TEST(ArgumentsAssignmentTest)
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
-	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foo" );
 	U_TEST_ASSERT( function != nullptr );
 
 	llvm::GenericValue arg;
@@ -77,7 +77,7 @@ U_TEST(BasicBinaryOperationsTest)
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
-	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foo" );
 	U_TEST_ASSERT( function != nullptr );
 
 	int arg0= 77, arg1= 1488, arg2= 42;
@@ -107,7 +107,7 @@ U_TEST(BasicBinaryOperationsFloatTest)
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
-	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foo" );
 	U_TEST_ASSERT( function != nullptr );
 
 	float arg0= 77.0f, arg1= 1488.5f, arg2= -42.31415926535f;
@@ -138,7 +138,7 @@ U_TEST(VariablesTest0)
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
-	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foo" );
 	U_TEST_ASSERT( function != nullptr );
 
 	int arg0= 1488, arg1= 77;
@@ -170,7 +170,7 @@ U_TEST(VariablesTest1)
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
-	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foo" );
 	U_TEST_ASSERT( function != nullptr );
 
 	int arg0= 1488, arg1= 77;
@@ -199,7 +199,7 @@ U_TEST(NumericConstantsTest0)
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
-	llvm::Function* function= engine->FindFunctionNamed( "Foo32" );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z5Foo32" );
 	U_TEST_ASSERT( function != nullptr );
 
 	int arg0= 1488, arg1= 77;
@@ -228,7 +228,7 @@ U_TEST(NumericConstantsTest1)
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
-	llvm::Function* function= engine->FindFunctionNamed( "Foo64" );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z5Foo64" );
 	U_TEST_ASSERT( function != nullptr );
 
 
@@ -252,7 +252,7 @@ U_TEST(NumericConstantsTest2)
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
-	llvm::Function* function= engine->FindFunctionNamed( "Pi" );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z2Pi" );
 	U_TEST_ASSERT( function != nullptr );
 
 
@@ -277,7 +277,7 @@ U_TEST(UnaryMinusTest)
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
-	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foo" );
 	U_TEST_ASSERT( function != nullptr );
 
 	int arg_value= 54785;
@@ -305,7 +305,7 @@ U_TEST(UnaryMinusFloatTest)
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
-	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foo" );
 	U_TEST_ASSERT( function != nullptr );
 
 	double arg_value= 54785;
@@ -334,7 +334,7 @@ U_TEST(ArraysTest0)
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
-	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foo" );
 	U_TEST_ASSERT( function != nullptr );
 
 	int arg_value= 54785;
@@ -363,7 +363,7 @@ U_TEST(ArraysTest1)
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
-	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foo" );
 	U_TEST_ASSERT( function != nullptr );
 
 	int arg_value= 54785;
@@ -390,7 +390,7 @@ U_TEST(LogicalBinaryOperationsTest)
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
-	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foo" );
 	U_TEST_ASSERT( function != nullptr );
 
 	int arg0= 77, arg1= 1488, arg2= 42;
@@ -426,7 +426,7 @@ U_TEST(BooleanBasicTest)
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
-	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foo" );
 	U_TEST_ASSERT( function != nullptr );
 
 	bool arg0= true, arg1= false, arg2= true;
@@ -462,7 +462,7 @@ U_TEST(CallTest0)
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
-	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foo" );
 	U_TEST_ASSERT( function != nullptr );
 
 	int arg0= 77, arg1= 1488;
@@ -501,7 +501,7 @@ U_TEST(CallTest1)
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
-	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foo" );
 	U_TEST_ASSERT( function != nullptr );
 
 	int arg0= 775678, arg1= 1488;
@@ -533,7 +533,7 @@ U_TEST(RecursiveCallTest)
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
-	llvm::Function* function= engine->FindFunctionNamed( "Factorial" );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z9Factorial" );
 	U_TEST_ASSERT( function != nullptr );
 
 	unsigned int arg_val= 9u;
@@ -572,7 +572,7 @@ U_TEST(EqualityOperatorsTest)
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
-	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foo" );
 	U_TEST_ASSERT( function != nullptr );
 
 	int arg0= 77, arg1= 1488, arg2= 42;
@@ -604,7 +604,7 @@ U_TEST(EqualityFloatOperatorsTest)
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
-	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foo" );
 	U_TEST_ASSERT( function != nullptr );
 
 	float arg0= 77, arg1= 1488, arg2= 42;
@@ -658,7 +658,7 @@ U_TEST(ComparisonSignedOperatorsTest)
 	};
 	static const char* const c_func_names[4]=
 	{
-		"Less", "LessOrEqual", "Greater", "GreaterOrEqual",
+		"_Z4Less", "_Z11LessOrEqual", "_Z7Greater", "_Z14GreaterOrEqual",
 	};
 	for( unsigned int func_n= 0u; func_n < 4u; func_n++ )
 	{
@@ -724,7 +724,7 @@ U_TEST(ComparisonUnsignedOperatorsTest)
 	};
 	static const char* const c_func_names[4]=
 	{
-		"Less", "LessOrEqual", "Greater", "GreaterOrEqual",
+		"_Z4Less", "_Z11LessOrEqual", "_Z7Greater", "_Z14GreaterOrEqual",
 	};
 	for( unsigned int func_n= 0u; func_n < 4u; func_n++ )
 	{
@@ -790,7 +790,7 @@ U_TEST(ComparisonFloatOperatorsTest)
 	};
 	static const char* const c_func_names[4]=
 	{
-		"Less", "LessOrEqual", "Greater", "GreaterOrEqual",
+		"_Z4Less", "_Z11LessOrEqual", "_Z7Greater", "_Z14GreaterOrEqual",
 	};
 	for( unsigned int func_n= 0u; func_n < 4u; func_n++ )
 	{
@@ -841,7 +841,7 @@ U_TEST(WhileOperatorTest)
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
-	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foo" );
 	U_TEST_ASSERT( function != nullptr );
 
 	int arg0= 77, arg1= 1488;
@@ -864,7 +864,7 @@ U_TEST(IfOperatorTest0)
 	// Simple if without else/elseif.
 	static const char c_program_text[]=
 	"\
-	fn SimpleIf( i32 x ) : i32\
+	fn Foo( i32 x ) : i32\
 	{\
 		var i32 tmp= x;\
 		if( x < 0 ) { tmp= -x; }\
@@ -874,7 +874,7 @@ U_TEST(IfOperatorTest0)
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
-	llvm::Function* function= engine->FindFunctionNamed( "SimpleIf" );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foo" );
 	U_TEST_ASSERT( function != nullptr );
 
 	llvm::GenericValue arg;
@@ -902,7 +902,7 @@ U_TEST(IfOperatorTest1)
 	// If-else.
 	static const char c_program_text[]=
 	"\
-	fn IfElse( i32 x ) : i32\
+	fn Foo( i32 x ) : i32\
 	{\
 		var i32 tmp= 0;\
 		var i32 bits= x & 1;\
@@ -914,7 +914,7 @@ U_TEST(IfOperatorTest1)
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
-	llvm::Function* function= engine->FindFunctionNamed( "IfElse" );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foo" );
 	U_TEST_ASSERT( function != nullptr );
 
 	llvm::GenericValue arg;
@@ -942,7 +942,7 @@ U_TEST(IfOperatorTest2)
 	// If-else-if.
 	static const char c_program_text[]=
 	"\
-	fn IfElseIf( i32 x ) : i32\
+	fn Foo( i32 x ) : i32\
 	{\
 		var i32 tmp= 0;\
 		var i32 bits= x & 3;\
@@ -955,7 +955,7 @@ U_TEST(IfOperatorTest2)
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
-	llvm::Function* function= engine->FindFunctionNamed( "IfElseIf" );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foo" );
 	U_TEST_ASSERT( function != nullptr );
 
 	llvm::GenericValue arg;
@@ -991,7 +991,7 @@ U_TEST(IfOperatorTest3)
 	// If-else-if-else.
 	static const char c_program_text[]=
 	"\
-	fn IfElseIfElse( i32 x ) : i32\
+	fn Foo( i32 x ) : i32\
 	{\
 		var i32 tmp= 0;\
 		var i32 bits= 0;\
@@ -1005,7 +1005,7 @@ U_TEST(IfOperatorTest3)
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
-	llvm::Function* function= engine->FindFunctionNamed( "IfElseIfElse" );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foo" );
 	U_TEST_ASSERT( function != nullptr );
 
 	llvm::GenericValue arg;
@@ -1041,7 +1041,7 @@ U_TEST(IfOperatorTest4)
 	// If else-if else-if.
 	static const char c_program_text[]=
 	"\
-	fn IfElseIfElseIf( i32 x ) : i32\
+	fn Foo( i32 x ) : i32\
 	{\
 		var i32 tmp= 0;\
 		var i32 bits= 0;\
@@ -1056,7 +1056,7 @@ U_TEST(IfOperatorTest4)
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
-	llvm::Function* function= engine->FindFunctionNamed( "IfElseIfElseIf" );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foo" );
 	U_TEST_ASSERT( function != nullptr );
 
 	llvm::GenericValue arg;
@@ -1100,7 +1100,7 @@ U_TEST(IfOperatorTest5)
 	// If else-if else-if else.
 	static const char c_program_text[]=
 	"\
-	fn IfElseIfElseIf( i32 x ) : i32\
+	fn Foo( i32 x ) : i32\
 	{\
 		var i32 tmp= 0;\
 		var i32 bits= 0;\
@@ -1115,7 +1115,7 @@ U_TEST(IfOperatorTest5)
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
-	llvm::Function* function= engine->FindFunctionNamed( "IfElseIfElseIf" );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foo" );
 	U_TEST_ASSERT( function != nullptr );
 
 	llvm::GenericValue arg;
@@ -1167,7 +1167,7 @@ U_TEST(BreakOperatorTest0)
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
-	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foo" );
 	U_TEST_ASSERT( function != nullptr );
 
 	llvm::GenericValue arg;
@@ -1214,7 +1214,7 @@ U_TEST(BreakOperatorTest1)
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
-	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foo" );
 	U_TEST_ASSERT( function != nullptr );
 
 	llvm::GenericValue arg;
@@ -1246,7 +1246,7 @@ U_TEST(BreakOperatorTest2)
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
-	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foo" );
 	U_TEST_ASSERT( function != nullptr );
 
 	llvm::GenericValue arg;
@@ -1278,7 +1278,7 @@ U_TEST(ContinueOperatorTest0)
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
-	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foo" );
 	U_TEST_ASSERT( function != nullptr );
 
 	llvm::GenericValue arg;
@@ -1315,7 +1315,7 @@ U_TEST(ContinueOperatorTest1)
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
-	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foo" );
 	U_TEST_ASSERT( function != nullptr );
 
 	llvm::GenericValue arg;
@@ -1353,7 +1353,7 @@ U_TEST(StructTest0)
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
-	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foo" );
 	U_TEST_ASSERT( function != nullptr );
 
 	int arg0= 1488, arg1= 77, arg2= 546;
@@ -1399,7 +1399,7 @@ U_TEST(StructTest1)
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
-	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foo" );
 	U_TEST_ASSERT( function != nullptr );
 
 	double arg0= 1488, arg1= 77;
@@ -1433,7 +1433,7 @@ U_TEST(BlocksTest)
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
-	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foo" );
 	U_TEST_ASSERT( function != nullptr );
 
 	int arg0= 1488, arg1= 77;
@@ -1466,7 +1466,7 @@ U_TEST(ReferencesTest0)
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
-	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foo" );
 	U_TEST_ASSERT( function != nullptr );
 
 	llvm::GenericValue result_value=
@@ -1492,7 +1492,7 @@ U_TEST(ReferencesTest1)
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
-	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foo" );
 	U_TEST_ASSERT( function != nullptr );
 
 	llvm::GenericValue result_value=
@@ -1521,7 +1521,7 @@ U_TEST(ReferencesTest2)
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
-	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foo" );
 	U_TEST_ASSERT( function != nullptr );
 
 	int arg0= 1488, arg1= 77;
@@ -1554,7 +1554,7 @@ U_TEST(ReferencesTest3)
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
-	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foo" );
 	U_TEST_ASSERT( function != nullptr );
 
 	llvm::GenericValue result_value=
@@ -1579,7 +1579,7 @@ U_TEST(ReferencesTest4)
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
-	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foo" );
 	U_TEST_ASSERT( function != nullptr );
 
 	int arg0= 148;
@@ -1611,7 +1611,7 @@ U_TEST(ReferencesTest5)
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
-	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foo" );
 	U_TEST_ASSERT( function != nullptr );
 
 	int arg0= 148;
@@ -1644,7 +1644,7 @@ U_TEST(ReferencesTest6)
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
-	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foo" );
 	U_TEST_ASSERT( function != nullptr );
 
 	int arg0= 148;
@@ -1683,7 +1683,7 @@ U_TEST(ReferencesTest7)
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
-	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foo" );
 	U_TEST_ASSERT( function != nullptr );
 
 	llvm::GenericValue result_value=
@@ -1711,7 +1711,7 @@ U_TEST(ReferencesTest8)
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
-	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foo" );
 	U_TEST_ASSERT( function != nullptr );
 
 	llvm::GenericValue result_value=
@@ -1740,7 +1740,7 @@ U_TEST(ReferencesTest9)
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
-	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foo" );
 	U_TEST_ASSERT( function != nullptr );
 
 	static const int cases_args[3][2]= { { 7, 567 }, { 48454, 758 }, { 4468, 4468 } };
@@ -1776,7 +1776,7 @@ U_TEST(BindValueToConstReferenceTest0)
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
-	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foo" );
 	U_TEST_ASSERT( function != nullptr );
 
 	int arg0= 666;
@@ -1813,7 +1813,7 @@ U_TEST(FunctionsOverloadingTest0)
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
-	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foo" );
 	U_TEST_ASSERT( function != nullptr );
 
 
@@ -1845,7 +1845,7 @@ U_TEST(FunctionsOverloadingTest1)
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
-	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foo" );
 	U_TEST_ASSERT( function != nullptr );
 
 	llvm::GenericValue result_value=
@@ -1876,7 +1876,7 @@ U_TEST(FunctionsOverloadingTest2)
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
-	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foo" );
 	U_TEST_ASSERT( function != nullptr );
 
 	llvm::GenericValue result_value=
@@ -1907,7 +1907,7 @@ U_TEST(FunctionsOverloadingTest3)
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
-	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foo" );
 	U_TEST_ASSERT( function != nullptr );
 
 	llvm::GenericValue result_value=
@@ -1943,7 +1943,7 @@ U_TEST(FunctionPrototypeTest0)
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
-	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foo" );
 	U_TEST_ASSERT( function != nullptr );
 
 	llvm::GenericValue result_value=
@@ -1968,7 +1968,7 @@ U_TEST(FunctionPrototypeTest1)
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
-	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foo" );
 	U_TEST_ASSERT( function != nullptr );
 
 	llvm::GenericValue result_value=
@@ -2001,7 +2001,7 @@ U_TEST(FunctionPrototypeTest3)
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
-	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foo" );
 	U_TEST_ASSERT( function != nullptr );
 
 	llvm::GenericValue result_value=

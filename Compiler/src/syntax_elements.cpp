@@ -226,7 +226,7 @@ ExpressionComponentWithUnaryOperators::ExpressionComponentWithUnaryOperators( co
 	: IExpressionComponent( file_pos )
 {}
 
-NamedOperand::NamedOperand( const FilePos& file_pos, ProgramString name )
+NamedOperand::NamedOperand( const FilePos& file_pos, ComplexName name )
 	: ExpressionComponentWithUnaryOperators(file_pos)
 	, name_( std::move(name) )
 {}
@@ -234,7 +234,7 @@ NamedOperand::NamedOperand( const FilePos& file_pos, ProgramString name )
 void NamedOperand::Print( std::ostream& stream, unsigned int indent ) const
 {
 	U_UNUSED( indent );
-	stream << ToStdString( name_ );
+	stream << ToStdString( name_.components.front() ); // TODO
 }
 
 NamedOperand::~NamedOperand()
@@ -328,7 +328,7 @@ void TypeName::Print( std::ostream& stream ) const
 		stream << "[ ";
 	}
 
-	stream << ToStdString( name );
+	stream << ToStdString( name.components.back() ); // TODO
 
 	for( const std::unique_ptr<NumericConstant>& num : array_sizes )
 	{
@@ -544,7 +544,7 @@ FunctionArgumentDeclaration::FunctionArgumentDeclaration(
 	TypeName type,
 	MutabilityModifier mutability_modifier,
 	ReferenceModifier reference_modifier )
-	: IProgramElement( file_pos )
+	: SyntaxElementBase( file_pos )
 	, name_(std::move(name))
 	, type_(std::move(type))
 	, mutability_modifier_(mutability_modifier)
@@ -564,7 +564,7 @@ void FunctionArgumentDeclaration::Print( std::ostream& stream, unsigned int inde
 
 FunctionDeclaration::FunctionDeclaration(
 	const FilePos& file_pos,
-	ProgramString name,
+	ComplexName name,
 	ProgramString return_type,
 	MutabilityModifier return_value_mutability_modifier,
 	ReferenceModifier return_value_reference_modifier,
@@ -584,7 +584,7 @@ FunctionDeclaration::~FunctionDeclaration()
 
 void FunctionDeclaration::Print( std::ostream& stream, unsigned int indent ) const
 {
-	stream << "fn " << ToStdString( name_ ) << "( ";
+	stream << "fn " << ToStdString( name_.components.back() ) << "( "; // TODO
 	for( const FunctionArgumentDeclarationPtr& decl : arguments_ )
 	{
 		decl->Print( stream, indent );
@@ -612,7 +612,7 @@ void ClassDeclaration::Print( std::ostream& stream, unsigned int indent ) const
 {
 	U_UNUSED(indent);
 
-	stream << "class " << ToStdString( name_ ) << "\n";
+	stream << "class " << ToStdString( name_.components.back() ) << "\n";
 	stream << "{\n";
 	for( const Member& member : members_ )
 	{
@@ -634,6 +634,18 @@ void ClassDeclaration::Print( std::ostream& stream, unsigned int indent ) const
 		}
 
 	}
+	stream << "}\n";
+}
+
+Namespace::Namespace( const FilePos& file_pos )
+	: IProgramElement(file_pos)
+{}
+
+void Namespace::Print(std::ostream& stream, const unsigned int indent ) const
+{
+	stream << "namespace " << ToStdString( name_ ) << "\n{\n";
+	for( const IProgramElementPtr& element : elements_ )
+		element->Print( stream, indent );
 	stream << "}\n";
 }
 

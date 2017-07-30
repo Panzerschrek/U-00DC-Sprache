@@ -11,6 +11,7 @@
 
 #include "lang_types.hpp"
 #include "program_string.hpp"
+#include "syntax_elements.hpp"
 
 namespace U
 {
@@ -28,6 +29,9 @@ struct Class;
 typedef std::shared_ptr<Class> ClassPtr;
 typedef std::weak_ptr<Class> ClassWeakPtr;
 
+class NamesScope;
+typedef std::shared_ptr<NamesScope> NamesScopePtr;
+
 struct FundamentalType final
 {
 	U_FundamentalType fundamental_type;
@@ -42,6 +46,7 @@ enum class NontypeStub
 	OverloadedFunctionsSet,
 	ThisOverloadedMethodsSet,
 	ClassName,
+	Namespace,
 };
 
 bool operator==( const FundamentalType& r, const FundamentalType& l );
@@ -109,9 +114,10 @@ bool operator!=( const Array& r, const Array& l );
 struct FunctionVariable final
 {
 	Type type;
-	llvm::Function* llvm_function= nullptr;
 	bool have_body= true;
 	bool is_this_call= false;
+
+	llvm::Function* llvm_function= nullptr;
 };
 
 // Set of functions with same name, but different signature.
@@ -162,6 +168,7 @@ public:
 	Value( const ClassPtr& class_ );
 	Value( ClassField class_field );
 	Value( ThisOverloadedMethodsSet class_field );
+	Value( const NamesScopePtr& namespace_ );
 
 	const Type& GetType() const;
 
@@ -175,13 +182,14 @@ public:
 	OverloadedFunctionsSet* GetFunctionsSet();
 	const OverloadedFunctionsSet* GetFunctionsSet() const;
 	// Class stub type
-	ClassPtr* GetClass();
-	const ClassPtr* GetClass() const;
+	ClassPtr GetClass() const;
 	// Class fields
 	const ClassField* GetClassField() const;
-
+	// This + methods set
 	ThisOverloadedMethodsSet* GetThisOverloadedMethodsSet();
 	const ThisOverloadedMethodsSet* GetThisOverloadedMethodsSet() const;
+	// Namespace
+	NamesScopePtr GetNamespace() const;
 
 private:
 	struct OverloadedFunctionsSetWithTypeStub
@@ -205,6 +213,13 @@ private:
 		Type type;
 		ClassPtr class_;
 	};
+	struct NamespaceWithTypeStub
+	{
+		 NamespaceWithTypeStub();
+
+		Type type;
+		NamesScopePtr namespace_;
+	};
 
 private:
 	boost::variant<
@@ -213,7 +228,8 @@ private:
 		OverloadedFunctionsSetWithTypeStub,
 		ClassWithTypeStub,
 		ClassField,
-		ThisOverloadedMethodsSetWithTypeStub > something_;
+		ThisOverloadedMethodsSetWithTypeStub,
+		NamespaceWithTypeStub > something_;
 };
 
 // "Class" of function argument in terms of overloading.
@@ -237,14 +253,22 @@ public:
 	typedef std::map< ProgramString, Value > NamesMap;
 	typedef NamesMap::value_type InsertedName;
 
-	NamesScope( const NamesScope* prev= nullptr );
+	NamesScope(
+		ProgramString name,
+		const NamesScope* parent );
+
+	NamesScope( const NamesScope&)= delete;
+	NamesScope& operator=( const NamesScope&)= delete;
+
+	const ProgramString& GetThisNamespaceName() const;
 
 	// Returns nullptr, if name already exists in this scope.
 	InsertedName* AddName( const ProgramString& name, Value value );
 
-	const InsertedName* GetName( const ProgramString& name ) const;
-
-	InsertedName* GetThisScopeName( const ProgramString& name );
+	// Performs full name resolving.
+	InsertedName* ResolveName( const ComplexName& name ) const;
+	// Resolve simple name only in this scope.
+	InsertedName* GetThisScopeName( const ProgramString& name ) const;
 
 	template<class Func>
 	void ForEachInThisScope( const Func& func ) const
@@ -253,10 +277,17 @@ public:
 			func( inserted_name );
 	}
 
+	ProgramString GetFunctionMangledName( const ProgramString& func_name ) const;
+
 	// TODO - maybe add for_each in all scopes?
 
 private:
-	const NamesScope* const prev_;
+	void GetNamespacePrefix_r( ProgramString& out_name ) const;
+	InsertedName* ResolveName_r( const ProgramString* components, size_t component_count ) const;
+
+private:
+	const ProgramString name_;
+	const NamesScope* const parent_;
 	NamesMap names_map_;
 };
 
@@ -273,7 +304,7 @@ public:
 
 struct Class final
 {
-	Class();
+	Class( const ProgramString& name, const NamesScope* parent_scope );
 	~Class();
 
 	Class( const Class& )= delete;
@@ -282,7 +313,6 @@ struct Class final
 	Class& operator=( const Class& )= delete;
 	Class& operator=( Class&& )= delete;
 
-	ProgramString name;
 	NamesScope members;
 	size_t field_count= 0u;
 

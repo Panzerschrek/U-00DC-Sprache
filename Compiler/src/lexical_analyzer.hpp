@@ -33,6 +33,8 @@ struct Lexem
 		BraceLeft, // {
 		BraceRight, // }
 
+		Scope, // ::
+
 		Comma, // ,
 		Dot, // .
 		Colon, // :

@@ -51,7 +51,7 @@ static void DoTest(
 {
 	const EnginePtr engine= CreateEngine( BuildProgram( program_text ) );
 
-	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foo" );
 	U_TEST_ASSERT( function != nullptr );
 
 	for( const std::vector<T>& args : args_set )

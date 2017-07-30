@@ -4,6 +4,7 @@
 #include "lang_types.hpp"
 #include "lexical_analyzer.hpp"
 #include "program_string.hpp"
+#include "syntax_elements.hpp"
 
 namespace U
 {
@@ -41,6 +42,7 @@ enum class CodeBuilderErrorCode : unsigned int
 	FunctionPrototypeDuplication,
 	FunctionBodyDuplication,
 	ReturnValueDiffersFromPrototype,
+	FunctionDeclarationOutsideItsScope,
 
 	// Initializers errors.
 	ArrayInitializerForNonArray,
@@ -74,6 +76,7 @@ struct CodeBuilderError
 // TODO - add more parameters for errors.
 CodeBuilderError ReportBuildFailed();
 CodeBuilderError ReportNameNotFound( const FilePos& file_pos, const ProgramString& name );
+CodeBuilderError ReportNameNotFound( const FilePos& file_pos, const ComplexName& name );
 CodeBuilderError ReportUsingKeywordAsName( const FilePos& file_pos );
 CodeBuilderError ReportRedefinition( const FilePos& file_pos, const ProgramString& name );
 CodeBuilderError ReportUnknownNumericConstantType( const FilePos& file_pos, const ProgramString& unknown_type );
@@ -101,6 +104,7 @@ CodeBuilderError ReportCouldNotSelectOverloadedFunction( const FilePos& file_pos
 CodeBuilderError ReportFunctionPrototypeDuplication( const FilePos& file_pos, const ProgramString& func_name );
 CodeBuilderError ReportFunctionBodyDuplication( const FilePos& file_pos, const ProgramString& func_name );
 CodeBuilderError ReportReturnValueDiffersFromPrototype( const FilePos& file_pos );
+CodeBuilderError ReportFunctionDeclarationOutsideItsScope( const FilePos& file_pos );
 CodeBuilderError ReportArrayInitializerForNonArray( const FilePos& file_pos );
 CodeBuilderError ReportArrayInitializersCountMismatch( const FilePos& file_pos, size_t expected_initializers, size_t real_initializers );
 CodeBuilderError ReportFundamentalTypesHaveConstructorsWithExactlyOneParameter( const FilePos& file_pos );

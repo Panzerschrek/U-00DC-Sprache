@@ -265,7 +265,7 @@ ProgramString Type::ToString() const
 		{
 			if( class_ == nullptr ) return;
 
-			result= "class "_SpC + class_->name;
+			result= "class "_SpC + class_->members.GetThisNamespaceName();
 		}
 
 		void operator()( const NontypeStub& stub )
@@ -280,6 +280,9 @@ ProgramString Type::ToString() const
 				break;
 			case NontypeStub::ClassName:
 				result= "class name"_SpC;
+				break;
+			case NontypeStub::Namespace:
+				result= "namespace"_SpC;
 				break;
 			};
 			U_ASSERT(!result.empty());
@@ -372,7 +375,8 @@ bool operator!=( const Array& r, const Array& l )
 	return !( r == l );
 }
 
-Class::Class()
+Class::Class( const ProgramString& in_name, const NamesScope* const parent_scope )
+	: members( in_name, parent_scope )
 {}
 
 Class::~Class()
@@ -417,6 +421,14 @@ Value::Value( ThisOverloadedMethodsSet this_overloaded_methods_set )
 	something_= std::move( s );
 }
 
+Value::Value( const NamesScopePtr& namespace_ )
+{
+	U_ASSERT( namespace_ != nullptr );
+	NamespaceWithTypeStub s;
+	s.namespace_= namespace_;
+	something_= std::move( s );
+}
+
 const Type& Value::GetType() const
 {
 	struct Visitor final : public boost::static_visitor<>
@@ -440,6 +452,9 @@ const Type& Value::GetType() const
 
 		void operator()( const ThisOverloadedMethodsSetWithTypeStub& overloded_methods_set )
 		{ type= &overloded_methods_set.type; }
+
+		void operator()( const NamespaceWithTypeStub& namespace_ )
+		{ type= &namespace_.type; }
 	};
 
 	Visitor visitor;
@@ -483,20 +498,12 @@ const OverloadedFunctionsSet* Value::GetFunctionsSet() const
 	return &set->set;
 }
 
-ClassPtr* Value::GetClass()
-{
-	ClassWithTypeStub* class_= boost::get<ClassWithTypeStub>( &something_ );
-	if( class_ == nullptr )
-		return nullptr;
-	return &class_->class_;
-}
-
-const ClassPtr* Value::GetClass() const
+ClassPtr Value::GetClass() const
 {
 	const ClassWithTypeStub* class_= boost::get<ClassWithTypeStub>( &something_ );
 	if( class_ == nullptr )
 		return nullptr;
-	return &class_->class_;
+	return class_->class_;
 }
 
 const ClassField* Value::GetClassField() const
@@ -520,6 +527,14 @@ const ThisOverloadedMethodsSet* Value::GetThisOverloadedMethodsSet() const
 	return &set->set;
 }
 
+NamesScopePtr Value::GetNamespace() const
+{
+	const NamespaceWithTypeStub* const namespace_= boost::get<NamespaceWithTypeStub>( &something_ );
+	if( namespace_ == nullptr )
+		return nullptr;
+	return namespace_->namespace_;
+}
+
 Value::OverloadedFunctionsSetWithTypeStub::OverloadedFunctionsSetWithTypeStub()
 {
 	type.one_of_type_kind= NontypeStub::OverloadedFunctionsSet;
@@ -533,6 +548,11 @@ Value::ThisOverloadedMethodsSetWithTypeStub::ThisOverloadedMethodsSetWithTypeStu
 Value::ClassWithTypeStub::ClassWithTypeStub()
 {
 	type.one_of_type_kind= NontypeStub::ClassName;
+}
+
+Value::NamespaceWithTypeStub::NamespaceWithTypeStub()
+{
+	type.one_of_type_kind= NontypeStub::Namespace;
 }
 
 ArgOverloadingClass GetArgOverloadingClass( const bool is_reference, const bool is_mutable )
@@ -563,9 +583,17 @@ ArgOverloadingClass GetArgOverloadingClass( const Function::Arg& arg )
 	return GetArgOverloadingClass( arg.is_mutable, arg.is_reference );
 }
 
-NamesScope::NamesScope( const NamesScope* prev )
-	: prev_(prev)
+NamesScope::NamesScope(
+	ProgramString name,
+	const NamesScope* const parent )
+	: name_(std::move(name) )
+	, parent_(parent)
 {}
+
+const ProgramString& NamesScope::GetThisNamespaceName() const
+{
+	return name_;
+}
 
 NamesScope::InsertedName* NamesScope::AddName(
 	const ProgramString& name,
@@ -578,26 +606,100 @@ NamesScope::InsertedName* NamesScope::AddName(
 	return nullptr;
 }
 
-const NamesScope::InsertedName*
-	NamesScope::GetName(
-	const ProgramString& name ) const
+NamesScope::InsertedName* NamesScope::ResolveName( const ComplexName& name ) const
 {
-	auto it= names_map_.find( name );
+	U_ASSERT( !name.components.empty() );
+	if( name.components.front().empty() )
+	{
+		U_ASSERT( name.components.size() >= 2u );
+
+		// TODO - maybe save root pointer somewhere?
+		const NamesScope* root= this;
+		while( root->parent_ != nullptr )
+			root= root->parent_;
+
+		return root->ResolveName_r( name.components.data() + 1u, name.components.size() - 1u );
+	}
+	else
+	{
+		const ProgramString& start= name.components.front();
+		InsertedName* start_resolved= nullptr;
+		const NamesScope* space= this;
+		while(true)
+		{
+			const auto it= space->names_map_.find( start );
+			if( it != space->names_map_.end() )
+			{
+				start_resolved= const_cast<InsertedName*>(&*it);
+				break;
+			}
+			space= space->parent_;
+			if( space == nullptr )
+				return nullptr;
+		}
+
+		if( name.components.size() == 1u )
+			return start_resolved;
+
+		return space->ResolveName_r( name.components.data() , name.components.size() );
+	}
+}
+
+NamesScope::InsertedName* NamesScope::GetThisScopeName( const ProgramString& name ) const
+{
+	const auto it= names_map_.find( name );
 	if( it != names_map_.end() )
-		return &*it;
-
-	if( prev_ != nullptr )
-		return prev_->GetName( name );
-
+		return const_cast<InsertedName*>(&*it);
 	return nullptr;
 }
 
-NamesScope::InsertedName* NamesScope::GetThisScopeName( const ProgramString& name )
+ProgramString NamesScope::GetFunctionMangledName( const ProgramString& func_name ) const
 {
-	auto it= names_map_.find( name );
-	if( it != names_map_.end() )
-		return &*it;
-	return nullptr;
+	U_ASSERT( !func_name.empty() );
+
+	// TODO - support full Itanium ABI mangling here, inlcude arguments and template parameters.
+
+	ProgramString result;
+	result+= "_Z"_SpC;
+	GetNamespacePrefix_r( result );
+
+	result+= ToProgramString( std::to_string( func_name.size() ).c_str() );
+	result+= func_name;
+
+	return result;
+}
+
+void NamesScope::GetNamespacePrefix_r( ProgramString& func_name ) const
+{
+	if( parent_ != nullptr )
+		parent_->GetNamespacePrefix_r( func_name );
+	if( !name_.empty() )
+	{
+		func_name+= ToProgramString( std::to_string( name_.size() ).c_str() );
+		func_name+= name_;
+	}
+}
+
+NamesScope::InsertedName* NamesScope::ResolveName_r(
+	const ProgramString* const components,
+	const size_t component_count ) const
+{
+	U_ASSERT( component_count >= 1u );
+	U_ASSERT( !components[0].empty() );
+
+	const auto it= names_map_.find( components[0] );
+	if( it == names_map_.end() )
+		return nullptr;
+
+	if( component_count == 1u )
+		return const_cast<InsertedName*>(&*it);
+
+	if( const NamesScopePtr child_namespace= it->second.GetNamespace() )
+		return child_namespace->ResolveName_r( components + 1u, component_count - 1u );
+	else if( const ClassPtr class_= it->second.GetClass() )
+		return class_->members.ResolveName_r( components + 1u, component_count - 1u );
+	else
+		return nullptr;
 }
 
 const ProgramString& GetFundamentalTypeName( const U_FundamentalType fundamental_type )

@@ -61,8 +61,12 @@ private:
 	};
 
 private:
-	Type PrepareType( const FilePos& file_pos, const TypeName& type_name );
-	ClassPtr PrepareClass( const ClassDeclaration& class_declaration );
+	Type PrepareType( const FilePos& file_pos, const TypeName& type_name, const NamesScope& names_scope );
+	void PrepareClass( const ClassDeclaration& class_declaration, NamesScope& names_scope );
+
+	void BuildNamespaceBody(
+		const ProgramElements& body_elements,
+		NamesScope& names_scope );
 
 	void PrepareFunction(
 		const FunctionDeclaration& func,
@@ -258,8 +262,6 @@ private:
 	std::unique_ptr<llvm::Module> module_;
 	unsigned int error_count_= 0u;
 	std::vector<CodeBuilderError> errors_;
-
-	NamesScope global_names_;
 };
 
 } // namespace CodeBuilderPrivate
