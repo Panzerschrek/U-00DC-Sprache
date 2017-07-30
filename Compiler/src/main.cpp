@@ -59,11 +59,15 @@ static bool ReadFile( const char* const name, U::ProgramString& out_file_content
 
 int main( const int argc, const char* const argv[])
 {
-	std::cout << u8"Ü-Sprache Compiler" << std::endl;
+	static const char help_message[]=
+	R"(
+Ü-Sprache compiler
+Usage:
+	Compiler -i [input_file] -o [output_ir_file] [--print-llvm-asm])";
 
 	if( argc <= 1 )
 	{
-		std::cout << "No input" << std::endl;
+		std::cout << help_message << std::endl;
 		return 1;
 	}
 
@@ -98,7 +102,7 @@ int main( const int argc, const char* const argv[])
 		}
 		else if( std::strcmp( argv[i], "--help" ) == 0 )
 		{
-			std::cout << "Usage:\n" << "-i [input_file] -o [output_ir_file]" << std::endl;
+			std::cout << help_message << std::endl;
 			return 0;
 		}
 	}
@@ -118,7 +122,7 @@ int main( const int argc, const char* const argv[])
 	if( ! ReadFile( input_file, input_file_content ) )
 	{
 		std::cout << "Can not read input file \"" << input_file << "\"" << std::endl;
-		return false;
+		return 1;
 	}
 
 	// lex
@@ -141,11 +145,12 @@ int main( const int argc, const char* const argv[])
 	if( !syntax_analysis_result.error_messages.empty() )
 		return 1;
 
+	// Code build
 	U::CodeBuilder::BuildResult build_result=
 		U::CodeBuilder().BuildProgram( syntax_analysis_result.program_elements );
 
 	for( const U::CodeBuilderError& error : build_result.errors )
-		std::cout << error.file_pos.line << ":" << error.file_pos.pos_in_line << " " << U::ToStdString( error.text ) << "\n";
+		std::cout << input_file << ":" << error.file_pos.line << ":" << error.file_pos.pos_in_line << " " << U::ToStdString( error.text ) << "\n";
 
 	if( !build_result.errors.empty() )
 		return 1;
@@ -163,7 +168,11 @@ int main( const int argc, const char* const argv[])
 	llvm::WriteBitcodeToFile( build_result.module.get(), file );
 	file.flush();
 
-	// TODO - maybe add some file write error messages?
+	if( file.has_error() )
+	{
+		std::cout << "Error while writing output file \"" << output_file << "\"" << std::endl;
+		return 1;
+	}
 
 	return 0;
 }
