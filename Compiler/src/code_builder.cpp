@@ -289,14 +289,25 @@ void CodeBuilder::BuildNamespaceBody(
 			const Namespace* const namespace_=
 			dynamic_cast<const Namespace*>( program_element.get() ) )
 		{
-			const NamesScopePtr new_names_scope= std::make_shared<NamesScope>( namespace_->name_, &names_scope );
-			const NamesScope::InsertedName* const inserted_namespace=
-				names_scope.AddName( namespace_->name_, new_names_scope );
-			if( inserted_namespace == nullptr )
+			NamesScope* result_scope= &names_scope;
+
+			const NamesScope::InsertedName* const same_name=
+				names_scope.GetThisScopeName( namespace_->name_ );
+			if( same_name != nullptr )
 			{
-				errors_.push_back( ReportRedefinition( namespace_->file_pos_, namespace_->name_ ) );
+				if( const NamesScopePtr same_namespace= same_name->second.GetNamespace() )
+					result_scope= same_namespace.get(); // Extend existend namespace.
+				else
+					errors_.push_back( ReportRedefinition( namespace_->file_pos_, namespace_->name_ ) );
 			}
-			BuildNamespaceBody( namespace_->elements_, *new_names_scope );
+			else
+			{
+				const NamesScopePtr new_names_scope= std::make_shared<NamesScope>( namespace_->name_, &names_scope );
+				names_scope.AddName( namespace_->name_, new_names_scope );
+				result_scope= new_names_scope.get();
+			}
+
+			BuildNamespaceBody( namespace_->elements_, *result_scope );
 		}
 		else
 		{
