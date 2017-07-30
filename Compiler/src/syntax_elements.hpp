@@ -1,7 +1,6 @@
 #pragma once
 #include <limits>
 #include <memory>
-#include <ostream>
 #include <vector>
 
 #include <boost/variant.hpp>
@@ -16,8 +15,6 @@ class SyntaxElementBase
 public:
 	explicit SyntaxElementBase( const FilePos& file_pos );
 	virtual ~SyntaxElementBase(){}
-
-	virtual void Print( std::ostream& stream, unsigned int indent ) const= 0;
 
 	FilePos file_pos_;
 };
@@ -70,8 +67,6 @@ class UnaryPlus final : public IUnaryPrefixOperator
 public:
 	explicit UnaryPlus( const FilePos& file_pos );
 	virtual ~UnaryPlus() override;
-
-	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
 };
 
 class UnaryMinus final : public IUnaryPrefixOperator
@@ -79,8 +74,6 @@ class UnaryMinus final : public IUnaryPrefixOperator
 public:
 	explicit UnaryMinus( const FilePos& file_pos );
 	virtual ~UnaryMinus() override;
-
-	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
 };
 
 class CallOperator final : public IUnaryPostfixOperator
@@ -91,8 +84,6 @@ public:
 		std::vector<IExpressionComponentPtr> arguments );
 	virtual ~CallOperator() override;
 
-	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
-
 	const std::vector<IExpressionComponentPtr> arguments_;
 };
 
@@ -102,8 +93,6 @@ public:
 	explicit IndexationOperator( const FilePos& file_pos, IExpressionComponentPtr index );
 	virtual ~IndexationOperator() override;
 
-	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
-
 	const IExpressionComponentPtr index_;
 };
 
@@ -112,8 +101,6 @@ class MemberAccessOperator final : public IUnaryPostfixOperator
 public:
 	MemberAccessOperator( const FilePos& file_pos, ProgramString member_name );
 	virtual ~MemberAccessOperator() override;
-
-	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
 
 	const ProgramString member_name_;
 };
@@ -167,8 +154,6 @@ public:
 	explicit ArrayInitializer( const FilePos& file_pos );
 	virtual ~ArrayInitializer() override= default;
 
-	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
-
 	std::vector<IInitializerPtr> initializers;
 	bool has_continious_initializer= false; // ... after last initializator.
 };
@@ -178,8 +163,6 @@ class StructNamedInitializer final : public IInitializer
 public:
 	explicit StructNamedInitializer( const FilePos& file_pos );
 	virtual ~StructNamedInitializer() override= default;
-
-	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
 
 	struct MemberInitializer
 	{
@@ -198,8 +181,6 @@ public:
 		std::vector<IExpressionComponentPtr> arguments );
 	virtual ~ConstructorInitializer() override= default;
 
-	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
-
 	const CallOperator call_operator;
 };
 
@@ -209,8 +190,6 @@ public:
 	ExpressionInitializer( const FilePos& file_pos, IExpressionComponentPtr expression );
 	virtual ~ExpressionInitializer() override= default;
 
-	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
-
 	IExpressionComponentPtr expression;
 };
 
@@ -219,8 +198,6 @@ class ZeroInitializer final : public IInitializer
 public:
 	explicit ZeroInitializer( const FilePos& file_pos );
 	virtual ~ZeroInitializer() override= default;
-
-	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
 };
 
 class BinaryOperator final : public IExpressionComponent
@@ -228,8 +205,6 @@ class BinaryOperator final : public IExpressionComponent
 public:
 	explicit BinaryOperator( const FilePos& file_pos );
 	virtual ~BinaryOperator() override= default;
-
-	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
 
 	BinaryOperatorType operator_type_;
 	IExpressionComponentPtr left_;
@@ -252,8 +227,6 @@ public:
 	NamedOperand( const FilePos& file_pos, ComplexName name );
 	virtual ~NamedOperand() override;
 
-	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
-
 	const ComplexName name_;
 };
 
@@ -262,8 +235,6 @@ class BooleanConstant final : public ExpressionComponentWithUnaryOperators
 public:
 	BooleanConstant( const FilePos& file_pos, bool value );
 	virtual ~BooleanConstant() override;
-
-	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
 
 	const bool value_;
 };
@@ -284,8 +255,6 @@ public:
 
 	virtual ~NumericConstant() override;
 
-	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
-
 	const LongFloat value_;
 	const ProgramString type_suffix_;
 	const bool has_fractional_point_;
@@ -296,8 +265,6 @@ class BracketExpression final : public ExpressionComponentWithUnaryOperators
 public:
 	BracketExpression( const FilePos& file_pos, IExpressionComponentPtr expression );
 	~BracketExpression() override;
-
-	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
 
 	const IExpressionComponentPtr expression_;
 };
@@ -328,8 +295,6 @@ public:
 	Block( const FilePos& file_pos, BlockElements elements );
 	virtual ~Block() override;
 
-	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
-
 public:
 	const BlockElements elements_;
 };
@@ -341,8 +306,6 @@ struct TypeName
 	// [ [i32, 5] 7 ]
 	ComplexName name;
 	std::vector< std::unique_ptr<NumericConstant> > array_sizes;
-
-	void Print( std::ostream& stream ) const;
 
 	// Compiler so stupid - can not generate move constructors without noexcept. Make help for it.
 	TypeName() = default;
@@ -378,8 +341,6 @@ struct VariablesDeclaration final : public IBlockElement
 	VariablesDeclaration operator=( const VariablesDeclaration& )= delete;
 	VariablesDeclaration& operator=( VariablesDeclaration&& other );
 
-	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
-
 	struct VariableEntry
 	{
 		ProgramString name;
@@ -398,7 +359,6 @@ struct AutoVariableDeclaration final : public IBlockElement
 {
 	explicit AutoVariableDeclaration( const FilePos& file_pos );
 	virtual ~AutoVariableDeclaration() override= default;
-	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
 
 	ProgramString name;
 	IExpressionComponentPtr initializer_expression;
@@ -412,8 +372,6 @@ public:
 	ReturnOperator( const FilePos& file_pos, IExpressionComponentPtr expression );
 	~ReturnOperator() override;
 
-	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
-
 	const IExpressionComponentPtr expression_;
 };
 
@@ -422,8 +380,6 @@ class WhileOperator final : public IBlockElement
 public:
 	WhileOperator( const FilePos& file_pos, IExpressionComponentPtr condition, BlockPtr block );
 	~WhileOperator() override;
-
-	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
 
 	const IExpressionComponentPtr condition_;
 	const BlockPtr block_;
@@ -434,7 +390,6 @@ class BreakOperator final : public IBlockElement
 public:
 	explicit BreakOperator( const FilePos& file_pos );
 	~BreakOperator() override;
-	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
 };
 
 class ContinueOperator final : public IBlockElement
@@ -442,7 +397,6 @@ class ContinueOperator final : public IBlockElement
 public:
 	explicit ContinueOperator( const FilePos& file_pos );
 	~ContinueOperator() override;
-	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
 };
 
 class IfOperator final : public IBlockElement
@@ -459,8 +413,6 @@ public:
 
 	~IfOperator() override;
 
-	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
-
 	std::vector<Branch> branches_; // else if()
 };
 
@@ -470,8 +422,6 @@ public:
 	SingleExpressionOperator( const FilePos& file_pos, IExpressionComponentPtr expression );
 	virtual ~SingleExpressionOperator() override;
 
-	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
-
 	const IExpressionComponentPtr expression_;
 };
 
@@ -480,8 +430,6 @@ class AssignmentOperator final : public IBlockElement
 public:
 	AssignmentOperator( const FilePos& file_pos, IExpressionComponentPtr l_value, IExpressionComponentPtr r_value );
 	virtual ~AssignmentOperator() override;
-
-	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
 
 	IExpressionComponentPtr l_value_;
 	IExpressionComponentPtr r_value_;
@@ -498,8 +446,6 @@ public:
 		ReferenceModifier reference_modifier );
 
 	virtual ~FunctionArgumentDeclaration() override;
-
-	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
 
 public:
 	const ProgramString name_;
@@ -526,8 +472,6 @@ public:
 
 	virtual ~FunctionDeclaration() override;
 
-	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
-
 	const ComplexName name_;
 	const ProgramString return_type_;
 	const MutabilityModifier return_value_mutability_modifier_;
@@ -541,8 +485,6 @@ class ClassDeclaration final : public IProgramElement
 public:
 	explicit ClassDeclaration( const FilePos& file_pos );
 	virtual ~ClassDeclaration() override;
-
-	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
 
 	struct Field
 	{
@@ -562,8 +504,6 @@ class Namespace final : public IProgramElement
 public:
 	explicit Namespace( const FilePos& file_pos );
 	virtual ~Namespace() override= default;
-
-	virtual void Print( std::ostream& stream, unsigned int indent ) const override;
 
 	ProgramString name_;
 	ProgramElements elements_;
