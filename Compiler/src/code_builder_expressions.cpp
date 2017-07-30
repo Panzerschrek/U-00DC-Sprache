@@ -583,6 +583,13 @@ Value CodeBuilder::BuildMemberAccessOperator(
 		throw ProgramError();
 	}
 	U_ASSERT( *class_type != nullptr );
+
+	if( (*class_type)->is_incomplete )
+	{
+		errors_.push_back( ReportUsingIncompleteType( member_access_operator.file_pos_, value.GetType().ToString() ) );
+		throw ProgramError();
+	}
+
 	const Variable& variable= *value.GetVariable();
 
 	const NamesScope::InsertedName* const class_member= (*class_type)->members.GetThisScopeName( member_access_operator.member_name_ );

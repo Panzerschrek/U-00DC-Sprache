@@ -195,21 +195,69 @@ Type CodeBuilder::PrepareType(
 
 void CodeBuilder::PrepareClass( const ClassDeclaration& class_declaration, NamesScope& names_scope )
 {
-	if( class_declaration.name_.components.size() > 1u )
-	{
-		// TODO - check complex name.
-		return;
-	}
-
 	const ProgramString& class_name= class_declaration.name_.components.back();
-
 	if( IsKeyword( class_name ) )
 		errors_.push_back( ReportUsingKeywordAsName( class_declaration.file_pos_ ) );
 
-	ClassPtr the_class= std::make_shared<Class>( class_name, &names_scope );
+	if( class_declaration.is_forward_declaration_ )
+	{
+		if( class_declaration.name_.components.size() != 1u )
+		{
+			errors_.push_back( ReportClassDeclarationOutsideItsScope( class_declaration.file_pos_ ) );
+			return;
+		}
 
-	the_class->llvm_type=
-		llvm::StructType::create( llvm_context_, ToStdString(class_name) );
+		const ClassPtr the_class= std::make_shared<Class>( class_name, &names_scope );
+		the_class->llvm_type= llvm::StructType::create( llvm_context_, ToStdString(class_name) );
+
+		const NamesScope::InsertedName* const inserted_name= names_scope.AddName( class_name, the_class );
+		if( inserted_name == nullptr )
+		{
+			errors_.push_back( ReportRedefinition( class_declaration.file_pos_, class_name ) );
+			return;
+		}
+		return;
+	}
+
+	ClassPtr the_class;
+
+	if( const NamesScope::InsertedName* const previous_declaration=
+		names_scope.ResolveName( class_declaration.name_ ) )
+	{
+		if( const ClassPtr previous_class= previous_declaration->second.GetClass() )
+		{
+			if( !previous_class->is_incomplete )
+			{
+				errors_.push_back( ReportClassBodyDuplication( class_declaration.file_pos_ ) );
+				return;
+			}
+			the_class= previous_class;
+		}
+		else
+		{
+			errors_.push_back( ReportRedefinition( class_declaration.file_pos_, class_name ) );
+			return;
+		}
+	}
+	else
+	{
+		if( class_declaration.name_.components.size() != 1u )
+		{
+			errors_.push_back( ReportClassDeclarationOutsideItsScope( class_declaration.file_pos_ ) );
+			return;
+		}
+
+		the_class= std::make_shared<Class>( class_name, &names_scope );
+		the_class->llvm_type= llvm::StructType::create( llvm_context_, ToStdString(class_name) );
+
+		const NamesScope::InsertedName* const inserted_name= names_scope.AddName( class_name, the_class );
+		if( inserted_name == nullptr )
+		{
+			errors_.push_back( ReportRedefinition( class_declaration.file_pos_, class_name ) );
+			return;
+		}
+	}
+	U_ASSERT( the_class != nullptr );
 
 	std::vector<llvm::Type*> fields_llvm_types;
 
@@ -220,9 +268,15 @@ void CodeBuilder::PrepareClass( const ClassDeclaration& class_declaration, Names
 			boost::get< ClassDeclaration::Field >( &member ) )
 		{
 			ClassField out_field;
-			out_field.type= PrepareType( in_field->file_pos, in_field->type, names_scope );
+			out_field.type= PrepareType( in_field->file_pos, in_field->type, the_class->members );
 			out_field.index= the_class->field_count;
 			out_field.class_= the_class;
+
+			if( out_field.type.IsIncomplete() )
+			{
+				errors_.push_back( ReportUsingIncompleteType( class_declaration.file_pos_, out_field.type.ToString() ) );
+				continue;
+			}
 
 			fields_llvm_types.emplace_back( out_field.type.GetLLVMType() );
 
@@ -247,6 +301,7 @@ void CodeBuilder::PrepareClass( const ClassDeclaration& class_declaration, Names
 	}
 
 	the_class->llvm_type->setBody( fields_llvm_types );
+	the_class->is_incomplete= false;
 
 	// Build functions with body.
 	for( const ClassDeclaration::Member& member : class_declaration.members_ )
@@ -258,13 +313,6 @@ void CodeBuilder::PrepareClass( const ClassDeclaration& class_declaration, Names
 			if( (*function_declaration)->block_ != nullptr )
 				PrepareFunction( **function_declaration, false, the_class, the_class->members );
 		}
-	}
-
-	const NamesScope::InsertedName* inserted_name=
-		names_scope.AddName( class_name, the_class );
-	if( inserted_name == nullptr )
-	{
-		errors_.push_back( ReportRedefinition( class_declaration.file_pos_, class_name ) );
 	}
 }
 
@@ -425,6 +473,11 @@ void CodeBuilder::PrepareFunction(
 		else
 			out_arg.is_mutable= true;
 		out_arg.is_reference= is_this || arg->reference_modifier_ == ReferenceModifier::Reference;
+
+		if( out_arg.type.IsIncomplete() && !out_arg.is_reference )
+		{
+			errors_.push_back( ReportUsingIncompleteType( arg->file_pos_, out_arg.type.ToString() ) );
+		}
 	}
 
 	NamesScope::InsertedName* const previously_inserted_func=
@@ -839,6 +892,12 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 	FunctionContext& function_context )
 {
 	const Type type= PrepareType( variables_declaration.file_pos_, variables_declaration.type, block_names );
+	if( type.IsIncomplete() )
+	{
+		errors_.push_back( ReportUsingIncompleteType( variables_declaration.file_pos_, type.ToString() ) );
+		return;
+	}
+
 	for( const VariablesDeclaration::VariableEntry& variable_declaration : variables_declaration.variables )
 	{
 		if( IsKeyword( variable_declaration.name ) )

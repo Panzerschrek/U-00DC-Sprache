@@ -42,7 +42,7 @@ CodeBuilderError ReportNameNotFound( const FilePos& file_pos, const ComplexName&
 		if( &component != &name.components.back() )
 			error.text+= "::"_SpC;
 	}
-	error.text= "TODO"_SpC + name.components.front() + " was not declarated in this scope"_SpC;
+	error.text= " was not declarated in this scope"_SpC;
 
 	return error;
 }
@@ -365,6 +365,39 @@ CodeBuilderError ReportFunctionDeclarationOutsideItsScope( const FilePos& file_p
 	error.code= CodeBuilderErrorCode::FunctionDeclarationOutsideItsScope;
 
 	error.text= "Function declaration outside its scope."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportClassDeclarationOutsideItsScope( const FilePos& file_pos )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::ClassDeclarationOutsideItsScope;
+
+	error.text= "Class declaration outside its scope."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportClassBodyDuplication( const FilePos& file_pos )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::ClassBodyDuplication;
+
+	error.text= "Class body duplication."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportUsingIncompleteType( const FilePos& file_pos, const ProgramString& type_name )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::UsingIncompleteType;
+
+	error.text= "Using incomplete type \""_SpC + type_name + "\", expected complete type."_SpC;
 
 	return error;
 }

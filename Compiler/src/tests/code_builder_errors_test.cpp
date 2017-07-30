@@ -185,26 +185,6 @@ U_TEST(Redefinition1)
 	U_TEST_ASSERT( build_result.errors.empty() );
 }
 
-U_TEST(Redefinition2)
-{
-	// struct redefinition.
-	static const char c_program_text[]=
-	R"(
-		struct AA{}
-		fn Foo() : i32
-		{ return 0; }
-		struct AA{}
-	)";
-
-	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
-
-	U_TEST_ASSERT( !build_result.errors.empty() );
-	const CodeBuilderError& error= build_result.errors.front();
-
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::Redefinition );
-	U_TEST_ASSERT( error.file_pos.line == 5u );
-}
-
 U_TEST(Redefinition3)
 {
 	// Function redefinition.

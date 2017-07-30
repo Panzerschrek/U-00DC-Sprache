@@ -119,4 +119,50 @@ U_TEST( NamespacesTest3 )
 	U_TEST_ASSERT( static_cast<uint64_t>( 666*666 ) == result_value.IntVal.getLimitedValue() );
 }
 
+U_TEST( NamespacesTest4 )
+{
+	// Class body, defined outside parent scope, can access to it.
+	static const char c_program_text[]=
+	R"(
+		namespace A
+		{
+			struct B;
+			struct Internal
+			{
+				i32 x;
+			}
+		}
+		struct A::B
+		{
+			Internal i; // should see "Internal" type
+			::A::Internal ii;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+}
+
+U_TEST( NamespacesTest5 )
+{
+	// Function, defined outside parent scope, can access to it.
+	static const char c_program_text[]=
+	R"(
+		namespace A
+		{
+			fn Foo();
+			struct Internal
+			{
+				i32 x;
+			}
+		}
+		fn A::Foo()
+		{
+			var Internal i= zero_init;
+			var ::A::Internal ii= zero_init;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+}
+
 } // namespace U

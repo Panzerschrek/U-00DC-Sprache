@@ -71,6 +71,8 @@ struct Type final
 	// TODO - does this method needs?
 	size_t SizeOf() const;
 
+	bool IsIncomplete() const;
+
 	llvm::Type* GetLLVMType() const;
 	ProgramString ToString() const;
 };
@@ -315,6 +317,7 @@ struct Class final
 
 	NamesScope members;
 	size_t field_count= 0u;
+	bool is_incomplete= true;
 
 	llvm::StructType* llvm_type;
 };

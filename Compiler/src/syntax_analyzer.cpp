@@ -1571,12 +1571,21 @@ std::unique_ptr<ClassDeclaration> SyntaxAnalyzer::ParseClass()
 
 	result->name_= ParseComplexName();
 
-	if( it_->type != Lexem::Type::BraceLeft )
+	if( it_->type == Lexem::Type::Semicolon )
+	{
+		++it_; U_ASSERT( it_ < it_end_ );
+		result->is_forward_declaration_= true;
+		return result;
+	}
+	else if( it_->type == Lexem::Type::BraceLeft )
+	{
+		++it_; U_ASSERT( it_ < it_end_ );
+	}
+	else
 	{
 		PushErrorMessage( *it_ );
 		return nullptr;
 	}
-	++it_; U_ASSERT( it_ < it_end_ );
 
 	while( !(
 		it_->type == Lexem::Type::BraceRight ||

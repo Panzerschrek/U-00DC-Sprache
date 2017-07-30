@@ -43,6 +43,9 @@ enum class CodeBuilderErrorCode : unsigned int
 	FunctionBodyDuplication,
 	ReturnValueDiffersFromPrototype,
 	FunctionDeclarationOutsideItsScope,
+	ClassDeclarationOutsideItsScope,
+	ClassBodyDuplication,
+	UsingIncompleteType,
 
 	// Initializers errors.
 	ArrayInitializerForNonArray,
@@ -105,6 +108,9 @@ CodeBuilderError ReportFunctionPrototypeDuplication( const FilePos& file_pos, co
 CodeBuilderError ReportFunctionBodyDuplication( const FilePos& file_pos, const ProgramString& func_name );
 CodeBuilderError ReportReturnValueDiffersFromPrototype( const FilePos& file_pos );
 CodeBuilderError ReportFunctionDeclarationOutsideItsScope( const FilePos& file_pos );
+CodeBuilderError ReportClassDeclarationOutsideItsScope( const FilePos& file_pos );
+CodeBuilderError ReportClassBodyDuplication( const FilePos& file_pos );
+CodeBuilderError ReportUsingIncompleteType( const FilePos& file_pos, const ProgramString& type_name );
 CodeBuilderError ReportArrayInitializerForNonArray( const FilePos& file_pos );
 CodeBuilderError ReportArrayInitializersCountMismatch( const FilePos& file_pos, size_t expected_initializers, size_t real_initializers );
 CodeBuilderError ReportFundamentalTypesHaveConstructorsWithExactlyOneParameter( const FilePos& file_pos );

@@ -84,6 +84,8 @@ target_link_libraries( Compiler CompilerLib )
 set( TESTS_SOURCES
 	src/tests/auto_variables_test.cpp
 	src/tests/auto_variables_errors_test.cpp
+	src/tests/classes_declaration_errors_test.cpp
+	src/tests/classes_declaration_test.cpp
 	src/tests/code_builder_errors_test.cpp
 	src/tests/code_builder_test.cpp
 	src/tests/initializers_errors_test.cpp

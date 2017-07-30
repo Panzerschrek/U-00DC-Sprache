@@ -497,6 +497,7 @@ public:
 
 	std::vector<Member> members_;
 	ComplexName name_;
+	bool is_forward_declaration_= false;
 };
 
 class Namespace final : public IProgramElement
