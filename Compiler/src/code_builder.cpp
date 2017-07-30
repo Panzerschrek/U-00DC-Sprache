@@ -320,16 +320,49 @@ void CodeBuilder::BuildNamespaceBody(
 void CodeBuilder::PrepareFunction(
 	const FunctionDeclaration& func,
 	const bool is_class_method_predeclaration,
-	const ClassPtr base_class,
-	NamesScope& names_scope )
+	ClassPtr base_class,
+	NamesScope& func_definition_names_scope /* scope, where this function appears */ )
 {
-	// TODO - check complex name.
 	const ProgramString& func_name= func.name_.components.back();
 
 	if( IsKeyword( func_name ) )
 		errors_.push_back( ReportUsingKeywordAsName( func.file_pos_ ) );
 
 	const Block* const block= is_class_method_predeclaration ? nullptr : func.block_.get();
+
+	// Base scope (class, namespace), where function is declared.
+	// Arguments, return value, body names all resolved from this scope.
+	NamesScope* func_base_names_scope= &func_definition_names_scope;
+
+	if( func.name_.components.size() >= 2u )
+	{
+		// Complex name - search scope for this function.
+		ComplexName base_space_name= func.name_;
+		base_space_name.components.pop_back();
+		if( const NamesScope::InsertedName* const scope_name=
+			func_definition_names_scope.ResolveName( base_space_name ) )
+		{
+			if( const ClassPtr class_= scope_name->second.GetClass() )
+			{
+				func_base_names_scope= &class_->members;
+				base_class= class_; // TODO - check here if base_class nonnull and diffrs from class_?
+			}
+			else if( const NamesScopePtr namespace_= scope_name->second.GetNamespace() )
+			{
+				func_base_names_scope= namespace_.get();
+			}
+			else
+			{
+				errors_.push_back( ReportNameNotFound( func.file_pos_, base_space_name ) );
+				return;
+			}
+		}
+		else
+		{
+			errors_.push_back( ReportFunctionDeclarationOutsideItsScope( func.file_pos_ ) );
+			return;
+		}
+	}
 
 	FunctionVariable func_variable;
 
@@ -384,7 +417,7 @@ void CodeBuilder::PrepareFunction(
 			out_arg.type.one_of_type_kind= base_class;
 		}
 		else
-			out_arg.type= PrepareType( arg->file_pos_, arg->type_, names_scope );
+			out_arg.type= PrepareType( arg->file_pos_, arg->type_, *func_base_names_scope );
 
 		// TODO - make variables without explicit mutability modifiers immutable.
 		if( arg->mutability_modifier_ == MutabilityModifier::Immutable )
@@ -395,7 +428,7 @@ void CodeBuilder::PrepareFunction(
 	}
 
 	NamesScope::InsertedName* const previously_inserted_func=
-		names_scope.ResolveName( func.name_ );
+		func_base_names_scope->GetThisScopeName( func_name );
 	if( previously_inserted_func == nullptr )
 	{
 		if( func.name_.components.size() > 1u )
@@ -409,13 +442,13 @@ void CodeBuilder::PrepareFunction(
 
 		// New name in this scope - insert it.
 		NamesScope::InsertedName* const inserted_func=
-			names_scope.AddName( func_name, std::move( functions_set ) );
+			func_base_names_scope->AddName( func_name, std::move( functions_set ) );
 		U_ASSERT( inserted_func != nullptr );
 
 		BuildFuncCode(
 			inserted_func->second.GetFunctionsSet()->front(),
 			base_class,
-			names_scope,
+			*func_base_names_scope,
 			func_name,
 			func.arguments_,
 			block );
@@ -450,7 +483,7 @@ void CodeBuilder::PrepareFunction(
 				BuildFuncCode(
 					*same_function,
 					base_class,
-					names_scope,
+					*func_base_names_scope,
 					func_name,
 					func.arguments_,
 					block );
@@ -475,7 +508,7 @@ void CodeBuilder::PrepareFunction(
 				BuildFuncCode(
 					functions_set->back(),
 					base_class,
-					names_scope,
+					*func_base_names_scope,
 					func_name,
 					func.arguments_,
 					block );

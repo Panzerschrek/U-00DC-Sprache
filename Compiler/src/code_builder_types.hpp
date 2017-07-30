@@ -114,9 +114,10 @@ bool operator!=( const Array& r, const Array& l );
 struct FunctionVariable final
 {
 	Type type;
-	llvm::Function* llvm_function= nullptr;
 	bool have_body= true;
 	bool is_this_call= false;
+
+	llvm::Function* llvm_function= nullptr;
 };
 
 // Set of functions with same name, but different signature.
