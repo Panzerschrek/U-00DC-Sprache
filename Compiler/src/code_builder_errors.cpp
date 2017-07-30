@@ -42,7 +42,7 @@ CodeBuilderError ReportNameNotFound( const FilePos& file_pos, const ComplexName&
 		if( &component != &name.components.back() )
 			error.text+= "::"_SpC;
 	}
-	error.text= " was not declarated in this scope"_SpC;
+	error.text+= " was not declarated in this scope"_SpC;
 
 	return error;
 }
