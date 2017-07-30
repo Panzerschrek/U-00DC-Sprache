@@ -272,6 +272,8 @@ public:
 	// Resolve simple name only in this scope.
 	InsertedName* GetThisScopeName( const ProgramString& name ) const;
 
+	const NamesScope* GetParent() const;
+
 	template<class Func>
 	void ForEachInThisScope( const Func& func ) const
 	{
@@ -279,12 +281,9 @@ public:
 			func( inserted_name );
 	}
 
-	ProgramString GetFunctionMangledName( const ProgramString& func_name ) const;
-
 	// TODO - maybe add for_each in all scopes?
 
 private:
-	void GetNamespacePrefix_r( ProgramString& out_name ) const;
 	InsertedName* ResolveName_r( const ProgramString* components, size_t component_count ) const;
 
 private:

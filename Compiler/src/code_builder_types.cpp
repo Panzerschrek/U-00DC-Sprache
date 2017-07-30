@@ -669,31 +669,9 @@ NamesScope::InsertedName* NamesScope::GetThisScopeName( const ProgramString& nam
 	return nullptr;
 }
 
-ProgramString NamesScope::GetFunctionMangledName( const ProgramString& func_name ) const
+const NamesScope* NamesScope::GetParent() const
 {
-	U_ASSERT( !func_name.empty() );
-
-	// TODO - support full Itanium ABI mangling here, inlcude arguments and template parameters.
-
-	ProgramString result;
-	result+= "_Z"_SpC;
-	GetNamespacePrefix_r( result );
-
-	result+= ToProgramString( std::to_string( func_name.size() ).c_str() );
-	result+= func_name;
-
-	return result;
-}
-
-void NamesScope::GetNamespacePrefix_r( ProgramString& func_name ) const
-{
-	if( parent_ != nullptr )
-		parent_->GetNamespacePrefix_r( func_name );
-	if( !name_.empty() )
-	{
-		func_name+= ToProgramString( std::to_string( name_.size() ).c_str() );
-		func_name+= name_;
-	}
+	return parent_;
 }
 
 NamesScope::InsertedName* NamesScope::ResolveName_r(

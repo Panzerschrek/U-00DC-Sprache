@@ -22,6 +22,7 @@ set( COMPILER_LIB_SOURCES
 	src/keywords.cpp
 	src/lang_types.cpp
 	src/lexical_analyzer.cpp
+	src/mangling.cpp
 	src/program_string.cpp
 	src/syntax_analyzer.cpp
 	src/syntax_elements.cpp )
@@ -33,6 +34,7 @@ set( COMPILER_LIB_HEADERS
 	src/code_builder_types.hpp
 	src/keywords.hpp
 	src/lexical_analyzer.hpp
+	src/mangling.hpp
 	src/pop_llvm_warnings.hpp
 	src/program_string.hpp
 	src/push_disable_llvm_warnings.hpp

@@ -6,6 +6,7 @@
 #include "assert.hpp"
 #include "keywords.hpp"
 #include "lang_types.hpp"
+#include "mangling.hpp"
 
 #include "code_builder.hpp"
 
@@ -208,7 +209,7 @@ void CodeBuilder::PrepareClass( const ClassDeclaration& class_declaration, Names
 		}
 
 		const ClassPtr the_class= std::make_shared<Class>( class_name, &names_scope );
-		the_class->llvm_type= llvm::StructType::create( llvm_context_, ToStdString(class_name) );
+		the_class->llvm_type= llvm::StructType::create( llvm_context_, MangleClass( names_scope, class_name ) );
 
 		const NamesScope::InsertedName* const inserted_name= names_scope.AddName( class_name, the_class );
 		if( inserted_name == nullptr )
@@ -248,7 +249,7 @@ void CodeBuilder::PrepareClass( const ClassDeclaration& class_declaration, Names
 		}
 
 		the_class= std::make_shared<Class>( class_name, &names_scope );
-		the_class->llvm_type= llvm::StructType::create( llvm_context_, ToStdString(class_name) );
+		the_class->llvm_type= llvm::StructType::create( llvm_context_, MangleClass( names_scope, class_name ) );
 
 		const NamesScope::InsertedName* const inserted_name= names_scope.AddName( class_name, the_class );
 		if( inserted_name == nullptr )
@@ -608,7 +609,7 @@ void CodeBuilder::BuildFuncCode(
 			llvm::Function::Create(
 				function_type_ptr->llvm_function_type,
 				llvm::Function::LinkageTypes::ExternalLinkage, // TODO - select linkage
-				ToStdString( parent_names_scope.GetFunctionMangledName( func_name ) ),
+				MangleFunction( parent_names_scope, func_name, *function_type_ptr ),
 				module_.get() );
 
 		// Merge functions with identical code.
