@@ -553,4 +553,15 @@ CodeBuilderError ReportClassFiledAccessInStaticMethod( const FilePos& file_pos, 
 	return error;
 }
 
+CodeBuilderError ReportThisInNonclassFunction( const FilePos& file_pos, const ProgramString& func_name )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::ThisInNonclassFunction;
+
+	error.text= "This in nonclass function \""_SpC + func_name + "\"."_SpC;
+
+	return error;
+}
+
 } // namespace U

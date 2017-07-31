@@ -63,6 +63,7 @@ enum class CodeBuilderErrorCode : unsigned int
 	// Methods errors.
 	CallOfThiscallFunctionUsingNonthisArgument,
 	ClassFiledAccessInStaticMethod,
+	ThisInNonclassFunction,
 
 	// Push new error codes at back.
 };
@@ -124,5 +125,6 @@ CodeBuilderError ReportMissingStructMemberInitializer( const FilePos& file_pos, 
 CodeBuilderError ReportInvalidTypeForAutoVariable( const FilePos& file_pos, const ProgramString& type_name );
 CodeBuilderError ReportCallOfThiscallFunctionUsingNonthisArgument( const FilePos& file_pos );
 CodeBuilderError ReportClassFiledAccessInStaticMethod( const FilePos& file_pos, const ProgramString& field_name );
+CodeBuilderError ReportThisInNonclassFunction( const FilePos& file_pos, const ProgramString& func_name );
 
 } // namespace U

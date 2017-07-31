@@ -461,7 +461,8 @@ void CodeBuilder::PrepareFunction(
 			func_variable.is_this_call= true;
 			if( base_class == nullptr )
 			{
-				// TODO - report "this in nonclass function"
+				errors_.push_back( ReportThisInNonclassFunction( func.file_pos_, func_name ) );
+				return;
 			}
 			out_arg.type.one_of_type_kind= base_class;
 		}
