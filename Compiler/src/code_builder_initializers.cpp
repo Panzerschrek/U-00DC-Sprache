@@ -235,10 +235,14 @@ void CodeBuilder::ApplyStructNamedInitializer(
 		{
 			if( const ClassField* const field = class_member.second.GetClassField() )
 			{
-				U_UNUSED(field);
-				// SPRACHE_TODO - allow missed initialziers for default-constructed classes.
 				if( initialized_members_names.count( class_member.first ) == 0 )
-					errors_.push_back(ReportMissingStructMemberInitializer( initializer.file_pos_, class_member.first ) );
+				{
+					struct_member.type= field->type;
+					index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(field->index) ) );
+					struct_member.llvm_value=
+						function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, llvm::ArrayRef<llvm::Value*> ( index_list, 2u ) );
+					ApplyEmptyInitializer( struct_member, block_names, function_context );
+				}
 			}
 		});
 }

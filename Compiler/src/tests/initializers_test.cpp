@@ -576,7 +576,6 @@ U_TEST(ZeroInitilaizerTest7)
 	U_TEST_ASSERT( 0 == result_value.IntVal.getLimitedValue() );
 }
 
-
 U_TEST(ZeroInitilaizerTest8)
 {
 	// Zero-initialzier for very-large array.
@@ -607,6 +606,72 @@ U_TEST(ZeroInitilaizerTest8)
 			llvm::ArrayRef<llvm::GenericValue>() );
 
 	U_TEST_ASSERT( 0 == result_value.IntVal.getLimitedValue() );
+}
+
+U_TEST(DefaultInitializationForStructMembersTest0)
+{
+	static const char c_program_text[]=
+	R"(
+	struct vec
+	{
+		[ i32, 3 ] xyz;
+		fn constructor() ( xyz[ 0, zero_init, 0 ] ) {}
+	}
+	struct S
+	{
+		vec min; vec max;
+	}
+	fn Foo() : i32
+	{
+		var S s{}; // S members default-initialized.
+		return s.min.xyz[0u] + s.min.xyz[1u] + s.min.xyz[2u] + s.max.xyz[0u] + s.max.xyz[1u] + s.max.xyz[2u];
+	}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foo" );
+	U_TEST_ASSERT( function != nullptr );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( 0 == result_value.IntVal.getLimitedValue() );
+}
+
+U_TEST(DefaultInitializationForStructMembersTest1)
+{
+	static const char c_program_text[]=
+	R"(
+	struct vec
+	{
+		[ i32, 3 ] xyz;
+		fn constructor() ( xyz[ 0, zero_init, 0 ] ) {}
+	}
+	struct S
+	{
+		vec min; i32 c;
+	}
+	fn Foo() : i32
+	{
+		var S s{ .c= 5 }; // "min" member default-initialized.
+		return s.min.xyz[0u] + s.min.xyz[1u] + s.min.xyz[2u] + s.c;
+	}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foo" );
+	U_TEST_ASSERT( function != nullptr );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( 5 == result_value.IntVal.getLimitedValue() );
 }
 
 } // namespace U

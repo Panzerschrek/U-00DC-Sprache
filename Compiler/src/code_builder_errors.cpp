@@ -509,17 +509,6 @@ CodeBuilderError ReportDuplicatedStructMemberInitializer( const FilePos& file_po
 	return error;
 }
 
-CodeBuilderError ReportMissingStructMemberInitializer( const FilePos& file_pos, const ProgramString& member_name )
-{
-	CodeBuilderError error;
-	error.file_pos= file_pos;
-	error.code= CodeBuilderErrorCode::MissingStructMemberInitializer;
-
-	error.text= "Missing initializer for"_SpC + member_name + "."_SpC;
-
-	return error;
-}
-
 CodeBuilderError ReportInvalidTypeForAutoVariable( const FilePos& file_pos, const ProgramString& type_name )
 {
 	CodeBuilderError error;

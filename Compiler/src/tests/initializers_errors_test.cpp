@@ -336,25 +336,4 @@ U_TEST(DuplicatedStructMemberInitializerTest0)
 	U_TEST_ASSERT( error.file_pos.line == 5u );
 }
 
-U_TEST(MissingStructMemberInitializerTest0)
-{
-	static const char c_program_text[]=
-	R"(
-		struct Point{ [ i32, 2 ] xy; i32 z; }
-		fn Foo()
-		{
-			var Point point{ .xy[ 54, -785 ], };
-		}
-	)";
-
-	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
-
-	U_TEST_ASSERT( !build_result.errors.empty() );
-	const CodeBuilderError& error= build_result.errors.front();
-
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::MissingStructMemberInitializer );
-	U_TEST_ASSERT( error.file_pos.line == 5u );
-}
-
-
 } // namespace U
