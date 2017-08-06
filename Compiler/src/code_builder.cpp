@@ -458,12 +458,30 @@ void CodeBuilder::PrepareFunction(
 
 	// Args.
 	function_type.args.reserve( func.arguments_.size() );
+
+	// Generate "this" arg for constructors.
+	if( is_constructor )
+	{
+		func_variable.is_this_call= true;
+
+		function_type.args.emplace_back();
+		Function::Arg& arg= function_type.args.back();
+		arg.type.one_of_type_kind= base_class;
+		arg.is_reference= true;
+		arg.is_mutable= true;
+	}
+
 	for( const FunctionArgumentDeclarationPtr& arg : func.arguments_ )
 	{
 		const bool is_this= arg == func.arguments_.front() && arg->name_ == Keywords::this_;
 
 		if( !is_this && IsKeyword( arg->name_ ) )
 			errors_.push_back( ReportUsingKeywordAsName( arg->file_pos_ ) );
+
+		if( is_this && is_constructor )
+		{
+			// TODO - error, explicit "this" in constructor.
+		}
 
 		function_type.args.emplace_back();
 		Function::Arg& out_arg= function_type.args.back();
@@ -663,15 +681,33 @@ void CodeBuilder::BuildFuncCode(
 		llvm_context_,
 		llvm_function );
 
-	Variable this_;
 	// push args
+	Variable this_;
 	unsigned int arg_number= 0u;
+
+	const bool is_constructor= func_name == Keywords::constructor_;
+
 	for( llvm::Argument& llvm_arg : llvm_function->args() )
 	{
 		const Function::Arg& arg= function_type_ptr->args[ arg_number ];
 
-		const bool is_this= arg_number == 0u && args[ arg_number ]->name_ == Keywords::this_;
+		if( is_constructor && arg_number == 0u )
+		{
+			this_.location= Variable::Location::Pointer;
+			this_.value_type= ValueType::Reference;
+			this_.type= arg.type;
+			this_.llvm_value= &llvm_arg;
+			llvm_arg.setName( KeywordAscii( Keywords::this_ ) );
+			function_context.this_= &this_;
+			arg_number++;
+			continue;
+		}
+
+		const FunctionArgumentDeclaration& declaration_arg= *args[ is_constructor ? ( arg_number - 1u ) : arg_number ];
+
+		const bool is_this= arg_number == 0u && declaration_arg.name_ == Keywords::this_;
 		U_ASSERT( !( is_this && !arg.is_reference ) );
+		U_ASSERT( !( is_constructor && is_this ) );
 
 		Variable var;
 		var.location= Variable::Location::LLVMRegister;
@@ -680,7 +716,7 @@ void CodeBuilder::BuildFuncCode(
 		var.llvm_value= &llvm_arg;
 
 		// TODO - make variables without explicit mutability modifiers immutable.
-		if( args[ arg_number ]->mutability_modifier_ == MutabilityModifier::Immutable )
+		if( declaration_arg.mutability_modifier_ == MutabilityModifier::Immutable )
 			var.value_type= ValueType::ConstReference;
 
 		if( arg.is_reference )
@@ -697,7 +733,7 @@ void CodeBuilder::BuildFuncCode(
 			var.location= Variable::Location::Pointer;
 		}
 
-		const ProgramString& arg_name= args[ arg_number ]->name_;
+		const ProgramString& arg_name= declaration_arg.name_;
 
 		if( is_this )
 		{
@@ -713,7 +749,7 @@ void CodeBuilder::BuildFuncCode(
 					std::move(var) );
 			if( !inserted_arg )
 			{
-				errors_.push_back( ReportRedefinition( args[ arg_number ]->file_pos_, arg_name ) );
+				errors_.push_back( ReportRedefinition( declaration_arg.file_pos_, arg_name ) );
 				return;
 			}
 		}
@@ -722,7 +758,7 @@ void CodeBuilder::BuildFuncCode(
 		++arg_number;
 	}
 
-	if( func_name == Keywords::constructor_ )
+	if( is_constructor )
 	{
 		U_ASSERT( base_class != nullptr );
 		U_ASSERT( function_context.this_ != nullptr );

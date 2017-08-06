@@ -10,7 +10,7 @@ U_TEST(ConstructorTest0)
 		struct S
 		{
 			i32 x;
-			fn constructor( this )
+			fn constructor()
 			( x(42) )
 			{
 			}
