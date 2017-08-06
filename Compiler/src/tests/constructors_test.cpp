@@ -34,4 +34,76 @@ U_TEST(ConstructorTest0)
 	U_TEST_ASSERT( static_cast<uint64_t>( 42 ) == result_value.IntVal.getLimitedValue() );
 }
 
+U_TEST(ConstructorTest1)
+{
+	// Constructor with nonzero arguments.
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			i32 x;
+			i32 y;
+			fn constructor( i32 a )
+			( x(a), y(a * 5) )
+			{
+			}
+		}
+		fn Foo() : i32
+		{
+			var S s( 5741 );
+			return s.x * s.y;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foo" );
+	U_TEST_ASSERT( function != nullptr );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT(
+		static_cast<uint64_t>( 5741 * 5741 * 5 ) ==
+		result_value.IntVal.getLimitedValue() );
+}
+
+U_TEST(ConstructorTest2)
+{
+	// Constructors overloading.
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			i32 x;
+			i32 y;
+			fn constructor( i32 a )
+			( x(a), y(0) )
+			{}
+			fn constructor( i32 a, i32 b )
+			( x(a), y(b) )
+			{}
+		}
+		fn Foo() : i32
+		{
+			var S a( 58 ), b( -184, 9854 );
+			if( a.x == 58 & a.y == 0 & b.x == -184 & b.y == 9854 )
+			{ return 1; }
+			return 0;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ), true );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foo" );
+	U_TEST_ASSERT( function != nullptr );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( static_cast<uint64_t>( 1 ) == result_value.IntVal.getLimitedValue() );
+}
+
 } // namespace U
