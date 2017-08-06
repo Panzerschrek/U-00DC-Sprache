@@ -106,4 +106,41 @@ U_TEST(ConstructorTest2)
 	U_TEST_ASSERT( static_cast<uint64_t>( 1 ) == result_value.IntVal.getLimitedValue() );
 }
 
+U_TEST(ConstructorTest3)
+{
+	// Initialize one field, using another field
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			i32 x;
+			i32 y;
+			fn constructor()
+			(
+				x( 458 ),
+				y( 0 - x )
+			)
+			{}
+		}
+		fn Foo() : i32
+		{
+			var S s();
+			if( s.x == 458 & s.y == -458 )
+			{ return 1; }
+			return 0;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foo" );
+	U_TEST_ASSERT( function != nullptr );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( static_cast<uint64_t>(1) == result_value.IntVal.getLimitedValue() );
+}
+
 } // namespace U

@@ -120,6 +120,125 @@ U_TEST(ExplicitThisInConstructorParamtersTest0)
 	U_TEST_ASSERT( error.file_pos.line == 5u );
 }
 
+U_TEST(FieldIsNotInitializedYetTest0)
+{
+	// Initialize field, using unitialized field value.
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			i32 x; i32 y;
+			fn constructor()
+			(
+				x(y),
+				y(0) )
+			{}
+		}
+	)";
+
+	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::FieldIsNotInitializedYet );
+	U_TEST_ASSERT( error.file_pos.line == 7u );
+}
+
+U_TEST(FieldIsNotInitializedYetTest1)
+{
+	// Field self-initialization.
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			i32 x;
+			fn constructor()
+			( x(x) )
+			{}
+		}
+	)";
+
+	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::FieldIsNotInitializedYet );
+	U_TEST_ASSERT( error.file_pos.line == 6u );
+}
+
+U_TEST(MethodsCallInConstructorInitializerListIsForbiddenTest0)
+{
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			i32 x;
+			fn Bar( this ) : i32{ return 0; }
+			fn constructor()
+			( x(Bar()) )
+			{}
+		}
+	)";
+
+	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::MethodsCallInConstructorInitializerListIsForbidden );
+	U_TEST_ASSERT( error.file_pos.line == 7u );
+}
+
+
+U_TEST( ThisUnavailable_InConstructors_Test0 )
+{
+	// Field self-initialization.
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			i32 x;
+			fn constructor()
+			( x(this.x) )
+			{}
+		}
+	)";
+
+	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ThisUnavailable );
+	U_TEST_ASSERT( error.file_pos.line == 6u );
+}
+
+U_TEST( ThisUnavailable_InConstructors_Test1 )
+{
+	// Access to method in constructor, using "this".
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			i32 x;
+			fn Bar( this ) : i32 { return 0; }
+			fn constructor()
+			( x(this.Bar()) )
+			{}
+		}
+	)";
+
+	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ThisUnavailable );
+	U_TEST_ASSERT( error.file_pos.line == 7u );
+}
+
 U_TEST( MissingStructMemberInitializer_InConstructors_Test0 )
 {
 	static const char c_program_text[]=

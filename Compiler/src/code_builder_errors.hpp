@@ -65,6 +65,8 @@ enum class CodeBuilderErrorCode : unsigned int
 	InitializationListInNonconstructor,
 	ClassHaveNoConstructors,
 	ExplicitThisInConstructorParamters,
+	FieldIsNotInitializedYet,
+	MethodsCallInConstructorInitializerListIsForbidden,
 
 	// Methods errors.
 	CallOfThiscallFunctionUsingNonthisArgument,
@@ -132,6 +134,8 @@ CodeBuilderError ReportConstructorOutsideClass( const FilePos& file_pos );
 CodeBuilderError ReportInitializationListInNonconstructor( const FilePos& file_pos );
 CodeBuilderError ReportClassHaveNoConstructors( const FilePos& file_pos );
 CodeBuilderError ReportExplicitThisInConstructorParamters( const FilePos& file_pos );
+CodeBuilderError ReportFieldIsNotInitializedYet( const FilePos& file_pos, const ProgramString& field_name );
+CodeBuilderError ReportMethodsCallInConstructorInitializerListIsForbidden( const FilePos& file_pos, const ProgramString& method_name );
 CodeBuilderError ReportCallOfThiscallFunctionUsingNonthisArgument( const FilePos& file_pos );
 CodeBuilderError ReportClassFiledAccessInStaticMethod( const FilePos& file_pos, const ProgramString& field_name );
 CodeBuilderError ReportThisInNonclassFunction( const FilePos& file_pos, const ProgramString& func_name );

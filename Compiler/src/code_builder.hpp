@@ -1,4 +1,5 @@
 #pragma once
+#include <set>
 #include <vector>
 
 #include "push_disable_llvm_warnings.hpp"
@@ -45,6 +46,9 @@ private:
 		bool return_value_is_reference;
 
 		const Variable* this_= nullptr; // null for nonclass functions or static member functions.
+
+		std::set<const ClassField*> uninitialized_this_fields;
+		bool is_constructor_initializer_list_now= false;
 
 		llvm::Function* const function;
 		llvm::BasicBlock* const function_basic_block;

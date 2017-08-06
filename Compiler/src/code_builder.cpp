@@ -1,5 +1,3 @@
-#include <set>
-
 #include "push_disable_llvm_warnings.hpp"
 #include <llvm/IR/Constant.h>
 #include <llvm/IR/LLVMContext.h>
@@ -763,6 +761,8 @@ void CodeBuilder::BuildFuncCode(
 		U_ASSERT( base_class != nullptr );
 		U_ASSERT( function_context.this_ != nullptr );
 
+		function_context.is_constructor_initializer_list_now= true;
+
 		if( constructor_initialization_list == nullptr )
 		{
 			// Create dummy initialization list for constructors without explicit initialization list.
@@ -782,6 +782,8 @@ void CodeBuilder::BuildFuncCode(
 				function_names,
 				function_context,
 				*constructor_initialization_list );
+
+		function_context.is_constructor_initializer_list_now= false;
 	}
 
 	const BlockBuildInfo block_build_info=
@@ -869,6 +871,7 @@ void CodeBuilder::BuildConstructorInitialization(
 		}
 
 		initialized_fields.insert( field_initializer.name );
+		function_context.uninitialized_this_fields.insert( field );
 	} // for fields initializers
 
 	std::set<ProgramString> uninitialized_fields;
@@ -919,6 +922,8 @@ void CodeBuilder::BuildConstructorInitialization(
 			ApplyInitializer_r( field_variable, field_initializer.initializer.get(), names_scope, function_context );
 		}
 		catch( const ProgramError& ){}
+
+		function_context.uninitialized_this_fields.erase( field );
 	} // for fields initializers
 }
 
