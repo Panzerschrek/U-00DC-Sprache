@@ -647,6 +647,7 @@ void CodeBuilder::BuildFuncCode(
 		llvm_context_,
 		llvm_function );
 
+	Variable this_;
 	// push args
 	unsigned int arg_number= 0u;
 	for( llvm::Argument& llvm_arg : llvm_function->args() )
@@ -681,22 +682,24 @@ void CodeBuilder::BuildFuncCode(
 		}
 
 		const ProgramString& arg_name= args[ arg_number ]->name_;
-		const NamesScope::InsertedName* const inserted_arg=
-			function_names.AddName(
-				arg_name,
-				std::move(var) );
-		if( !inserted_arg )
-		{
-			errors_.push_back( ReportRedefinition( args[ arg_number ]->file_pos_, arg_name ) );
-			return;
-		}
 
-		// Save "this" in function context for accessing inside class methods.
-		// "This" inserted to names scope for accessing via "this.member".
 		if( is_this )
 		{
-			function_context.this_= inserted_arg->second.GetVariable();
-			U_ASSERT( function_context.this_ != nullptr );
+			// Save "this" in function context for accessing inside class methods.
+			this_= std::move(var);
+			function_context.this_= &this_;
+		}
+		else
+		{
+			const NamesScope::InsertedName* const inserted_arg=
+				function_names.AddName(
+					arg_name,
+					std::move(var) );
+			if( !inserted_arg )
+			{
+				errors_.push_back( ReportRedefinition( args[ arg_number ]->file_pos_, arg_name ) );
+				return;
+			}
 		}
 
 		llvm_arg.setName( ToStdString( arg_name ) );

@@ -564,4 +564,15 @@ CodeBuilderError ReportThisInNonclassFunction( const FilePos& file_pos, const Pr
 	return error;
 }
 
+CodeBuilderError ReportThisUnavailable( const FilePos& file_pos )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::ThisUnavailable;
+
+	error.text= "\"this\" unavailable."_SpC;
+
+	return error;
+}
+
 } // namespace U

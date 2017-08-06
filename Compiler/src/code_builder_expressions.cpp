@@ -408,6 +408,17 @@ Value CodeBuilder::BuildNamedOperand(
 	const NamesScope& names,
 	FunctionContext& function_context )
 {
+	if( named_operand.name_.components.size() == 1u &&
+		named_operand.name_.components.back() == Keywords::this_ )
+	{
+		if( function_context.this_ == nullptr )
+		{
+			errors_.push_back( ReportThisUnavailable( named_operand.file_pos_ ) );
+			throw ProgramError();
+		}
+		return *function_context.this_;
+	}
+
 	const NamesScope::InsertedName* name_entry=
 		names.ResolveName( named_operand.name_ );
 	if( !name_entry )
