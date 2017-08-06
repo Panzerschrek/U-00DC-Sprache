@@ -887,12 +887,31 @@ void CodeBuilder::BuildConstructorInitialization(
 				uninitialized_fields.insert( member.first );
 		} );
 
+	// Initialize fields, missing in initializer list.
 	for( const ProgramString& field_name : uninitialized_fields )
 	{
-		// SPRACHE_TODO - allow missed initialziers for default-constructed classes.
-		errors_.push_back( ReportMissingStructMemberInitializer( constructor_initialization_list.file_pos_, field_name ) );
+		const NamesScope::InsertedName* const class_member=
+			base_class.members.GetThisScopeName( field_name );
+		U_ASSERT( class_member != nullptr );
+		const ClassField* const field= class_member->second.GetClassField();
+		U_ASSERT( field != nullptr );
 
-		// TODO - fill list of already initialized fields.
+		try
+		{
+			Variable field_variable;
+			field_variable.type= field->type;
+			field_variable.location= Variable::Location::Pointer;
+			field_variable.value_type= ValueType::Reference;
+
+			llvm::Value* index_list[2];
+			index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
+			index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(field->index) ) );
+			field_variable.llvm_value=
+				function_context.llvm_ir_builder.CreateGEP( this_.llvm_value, llvm::ArrayRef<llvm::Value*> ( index_list, 2u ) );
+
+			ApplyEmptyInitializer( field_variable, names_scope, function_context );
+		}
+		catch( const ProgramError& ){}
 	}
 
 	if( have_fields_errors )

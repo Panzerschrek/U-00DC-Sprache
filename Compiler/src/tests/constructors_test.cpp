@@ -205,4 +205,169 @@ U_TEST(ConstructorTest5)
 	U_TEST_ASSERT( static_cast<uint64_t>(458) == result_value.IntVal.getLimitedValue() );
 }
 
+U_TEST(ConstructorTest6)
+{
+	// Implicit call of field default constructor in other constructor.
+	static const char c_program_text[]=
+	R"(
+		struct A
+		{
+			i32 x;
+			fn constructor()
+			( x(-1) )
+			{}
+		}
+		struct B
+		{
+			A x;
+			i32 y;
+			fn constructor()
+			( y(1) ) // constructor for "x" called implicitly.
+			{}
+		}
+		fn Foo() : i32
+		{
+			var B b;
+			if( b.x.x == -1 & b.y == 1 )
+			{ return 1; }
+			return -1;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foo" );
+	U_TEST_ASSERT( function != nullptr );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( static_cast<uint64_t>(1) == result_value.IntVal.getLimitedValue() );
+}
+
+U_TEST(ConstructorTest7)
+{
+	// Implicit call of field default constructor in other constructor.
+	static const char c_program_text[]=
+	R"(
+		struct A
+		{
+			i32 x;
+			fn constructor()
+			( x(-1) )
+			{}
+		}
+		struct B
+		{
+			[ A, 3 ] x;
+			i32 y;
+			fn constructor()
+			( y(1) ) // constructor for "x" called implicitly.
+			{}
+		}
+		fn Foo() : i32
+		{
+			var B b;
+			if( b.x[1u].x == -1 & b.y == 1 )
+			{ return 1; }
+			return -1;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foo" );
+	U_TEST_ASSERT( function != nullptr );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( static_cast<uint64_t>(1) == result_value.IntVal.getLimitedValue() );
+}
+
+U_TEST(ConstructorTest8)
+{
+	// Using default-initialized filed for other filed initialization.
+	static const char c_program_text[]=
+	R"(
+		struct A
+		{
+			i32 x;
+			fn constructor()
+			( x(-1) )
+			{}
+		}
+		struct B
+		{
+			A x;
+			i32 y;
+			fn constructor()
+			( y(x.x) )
+			{}
+		}
+		fn Foo() : i32
+		{
+			var B b;
+			if( b.x.x == -1 & b.y == -1 )
+			{ return 1; }
+			return -1;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foo" );
+	U_TEST_ASSERT( function != nullptr );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( static_cast<uint64_t>(1) == result_value.IntVal.getLimitedValue() );
+}
+
+U_TEST(ConstructorTest9)
+{
+	// Call method of default-initialized filed for other filed initialization.
+	static const char c_program_text[]=
+	R"(
+		struct A
+		{
+			i32 x;
+			fn constructor()
+			( x(-1) )
+			{}
+			fn GetDoubleX( imut this ) : i32 { return x * 2; }
+		}
+		struct B
+		{
+			A x;
+			i32 y;
+			fn constructor()
+			( y( x.GetDoubleX() ) )
+			{}
+		}
+		fn Foo() : i32
+		{
+			var B b;
+			if( b.x.x == -1 & b.y == -2 )
+			{ return 1; }
+			return -1;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ), true );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foo" );
+	U_TEST_ASSERT( function != nullptr );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( static_cast<uint64_t>(1) == result_value.IntVal.getLimitedValue() );
+}
+
 } // namespace U
