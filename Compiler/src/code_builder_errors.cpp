@@ -531,6 +531,17 @@ CodeBuilderError ReportConstructorOutsideClass( const FilePos& file_pos )
 	return error;
 }
 
+CodeBuilderError ReportConstructorMustReturnVoid( const FilePos& file_pos )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::ConstructorMustReturnVoid;
+
+	error.text= "Constructor must return void."_SpC;
+
+	return error;
+}
+
 CodeBuilderError ReportInitializationListInNonconstructor( const FilePos& file_pos )
 {
 	CodeBuilderError error;

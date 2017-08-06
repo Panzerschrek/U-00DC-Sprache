@@ -74,6 +74,9 @@ CodeBuilder::CodeBuilder()
 	fundamental_llvm_types_.invalid_type_= llvm::Type::getInt8Ty( llvm_context_ );
 	fundamental_llvm_types_.void_= llvm::Type::getVoidTy( llvm_context_ );
 	fundamental_llvm_types_.bool_= llvm::Type::getInt1Ty( llvm_context_ );
+
+	void_type_.one_of_type_kind= FundamentalType( U_FundamentalType::Void, fundamental_llvm_types_.void_ );
+	bool_type_.one_of_type_kind= FundamentalType( U_FundamentalType::Bool, fundamental_llvm_types_.bool_ );
 }
 
 CodeBuilder::~CodeBuilder()
@@ -432,10 +435,7 @@ void CodeBuilder::PrepareFunction(
 	func_variable.type.one_of_type_kind= std::move(function_type_storage);
 
 	if( func.return_type_.empty() )
-	{
-		function_type.return_type.one_of_type_kind=
-			FundamentalType( U_FundamentalType::Void, fundamental_llvm_types_.void_ );
-	}
+		function_type.return_type= void_type_;
 	else
 	{
 		// TODO - support nonfundamental return types.
@@ -455,6 +455,9 @@ void CodeBuilder::PrepareFunction(
 	else
 		function_type.return_value_is_mutable= true;
 	function_type.return_value_is_reference= func.return_value_reference_modifier_ == ReferenceModifier::Reference;
+
+	if( is_constructor && function_type.return_type != void_type_ )
+		errors_.push_back( ReportConstructorMustReturnVoid( func.file_pos_ ) );
 
 	// Args.
 	function_type.args.reserve( func.arguments_.size() );
@@ -789,10 +792,7 @@ void CodeBuilder::BuildFuncCode(
 	const BlockBuildInfo block_build_info=
 		BuildBlockCode( *block, function_names, function_context );
 
-	Type void_type;
-	void_type.one_of_type_kind= FundamentalType( U_FundamentalType::Void, fundamental_llvm_types_.void_ );
-
-	if(  function_type_ptr->return_type == void_type )
+	if(  function_type_ptr->return_type == void_type_ )
 	{
 		// Manually generate "return" for void-return functions.
 		if( !block_build_info.have_unconditional_return_inside )
@@ -1343,12 +1343,9 @@ void CodeBuilder::BuildReturnOperatorCode(
 {
 	if( return_operator.expression_ == nullptr )
 	{
-		Type void_type;
-		void_type.one_of_type_kind= FundamentalType( U_FundamentalType::Void, fundamental_llvm_types_.void_ );
-
-		if( function_context.return_type != void_type )
+		if( function_context.return_type != void_type_ )
 		{
-			errors_.push_back( ReportTypesMismatch( return_operator.file_pos_, void_type.ToString(), function_context.return_type.ToString() ) );
+			errors_.push_back( ReportTypesMismatch( return_operator.file_pos_, void_type_.ToString(), function_context.return_type.ToString() ) );
 			return;
 		}
 

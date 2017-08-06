@@ -61,6 +61,7 @@ enum class CodeBuilderErrorCode : unsigned int
 
 	// Constructors errors
 	ConstructorOutsideClass,
+	ConstructorMustReturnVoid,
 	InitializationListInNonconstructor,
 	ClassHaveNoConstructors,
 	ExplicitThisInConstructorParamters,
@@ -129,6 +130,7 @@ CodeBuilderError ReportInitializerForNonfieldStructMember( const FilePos& file_p
 CodeBuilderError ReportDuplicatedStructMemberInitializer( const FilePos& file_pos, const ProgramString& member_name );
 CodeBuilderError ReportInvalidTypeForAutoVariable( const FilePos& file_pos, const ProgramString& type_name );
 CodeBuilderError ReportConstructorOutsideClass( const FilePos& file_pos );
+CodeBuilderError ReportConstructorMustReturnVoid( const FilePos& file_pos );
 CodeBuilderError ReportInitializationListInNonconstructor( const FilePos& file_pos );
 CodeBuilderError ReportClassHaveNoConstructors( const FilePos& file_pos );
 CodeBuilderError ReportExplicitThisInConstructorParamters( const FilePos& file_pos );

@@ -276,6 +276,9 @@ private:
 		llvm::IntegerType* bool_;
 	} fundamental_llvm_types_;
 
+	Type void_type_;
+	Type bool_type_; // TODO - use this
+
 	std::unique_ptr<llvm::Module> module_;
 	unsigned int error_count_= 0u;
 	std::vector<CodeBuilderError> errors_;
