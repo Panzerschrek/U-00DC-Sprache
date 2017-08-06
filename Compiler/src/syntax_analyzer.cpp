@@ -1567,10 +1567,24 @@ std::unique_ptr<FunctionDeclaration> SyntaxAnalyzer::ParseFunction()
 				}
 				constructor_initialization_list->members_initializers.emplace_back();
 				constructor_initialization_list->members_initializers.back().name= it_->text;
+				IInitializerPtr& initializer= constructor_initialization_list->members_initializers.back().initializer;
 
 				++it_; U_ASSERT( it_ < it_end_ );
 
-				constructor_initialization_list->members_initializers.back().initializer= ParseInitializer( false );
+				if( it_->type == Lexem::Type::Assignment )
+				{
+					++it_;
+					U_ASSERT( it_ < it_end_ );
+					if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::zero_init_ )
+					{
+						initializer.reset( new ZeroInitializer( it_->file_pos ) );
+						++it_;
+					}
+					else
+						initializer.reset( new ExpressionInitializer( it_->file_pos, ParseExpression() ) );
+				}
+				else
+					initializer= ParseInitializer( false );
 
 				if( it_->type == Lexem::Type::Comma )
 					++it_; U_ASSERT( it_ < it_end_ );

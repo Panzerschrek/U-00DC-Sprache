@@ -358,7 +358,43 @@ U_TEST(ConstructorTest9)
 		}
 	)";
 
-	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ), true );
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foo" );
+	U_TEST_ASSERT( function != nullptr );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( static_cast<uint64_t>(1) == result_value.IntVal.getLimitedValue() );
+}
+
+U_TEST(ConstructorTest10)
+{
+	// Zero initializers, assignemnt initializers in initializers list.
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			i32 x;
+			i32 y;
+			i32 z;
+			fn constructor()
+			( x= zero_init, y=x + 5, z(x * y + 42) )
+			{
+			}
+		}
+		fn Foo() : i32
+		{
+			var S s;
+			if( s.x == 0 & s.y == 5 & s.z == 42 )
+			{ return 1; }
+			return 0;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foo" );
 	U_TEST_ASSERT( function != nullptr );
 
