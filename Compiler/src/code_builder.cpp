@@ -1,3 +1,5 @@
+#include <set>
+
 #include "push_disable_llvm_warnings.hpp"
 #include <llvm/IR/Constant.h>
 #include <llvm/IR/LLVMContext.h>
@@ -374,7 +376,9 @@ void CodeBuilder::PrepareFunction(
 {
 	const ProgramString& func_name= func.name_.components.back();
 
-	if( IsKeyword( func_name ) )
+	const bool is_constructor= func_name == Keywords::constructor_;
+
+	if( !is_constructor && IsKeyword( func_name ) )
 		errors_.push_back( ReportUsingKeywordAsName( func.file_pos_ ) );
 
 	const Block* const block= is_class_method_predeclaration ? nullptr : func.block_.get();
@@ -411,6 +415,15 @@ void CodeBuilder::PrepareFunction(
 			errors_.push_back( ReportFunctionDeclarationOutsideItsScope( func.file_pos_ ) );
 			return;
 		}
+	}
+
+	if( is_constructor && base_class == nullptr )
+	{
+		// TODO - error, constructor outside any class.
+	}
+	if( !is_constructor && func.constructor_initialization_list_ != nullptr )
+	{
+		// TODO - error, initialization list in non-constructor.
 	}
 
 	FunctionVariable func_variable;
@@ -506,7 +519,8 @@ void CodeBuilder::PrepareFunction(
 			*func_base_names_scope,
 			func_name,
 			func.arguments_,
-			block );
+			block,
+			func.constructor_initialization_list_.get() );
 	}
 	else
 	{
@@ -541,7 +555,8 @@ void CodeBuilder::PrepareFunction(
 					*func_base_names_scope,
 					func_name,
 					func.arguments_,
-					block );
+					block,
+					func.constructor_initialization_list_.get() );
 			}
 			else
 			{
@@ -566,7 +581,8 @@ void CodeBuilder::PrepareFunction(
 					*func_base_names_scope,
 					func_name,
 					func.arguments_,
-					block );
+					block,
+					func.constructor_initialization_list_.get() );
 			}
 		}
 		else
@@ -580,7 +596,8 @@ void CodeBuilder::BuildFuncCode(
 	const NamesScope& parent_names_scope,
 	const ProgramString& func_name,
 	const FunctionArgumentsDeclaration& args,
-	const Block* const block ) noexcept
+	const Block* const block,
+	const StructNamedInitializer* const constructor_initialization_list ) noexcept
 {
 	std::vector<llvm::Type*> args_llvm_types;
 	const FunctionPtr& function_type_ptr= boost::get<FunctionPtr>( func_variable.type.one_of_type_kind );
@@ -706,6 +723,19 @@ void CodeBuilder::BuildFuncCode(
 		++arg_number;
 	}
 
+	if( constructor_initialization_list != nullptr )
+	{
+		U_ASSERT( base_class != nullptr );
+		U_ASSERT( function_context.this_ != nullptr );
+
+		BuildConstructorInitialization(
+			*function_context.this_,
+			*base_class,
+			function_names,
+			function_context,
+			constructor_initialization_list );
+	}
+
 	const BlockBuildInfo block_build_info=
 		BuildBlockCode( *block, function_names, function_context );
 
@@ -750,6 +780,98 @@ void CodeBuilder::BuildFuncCode(
 		else
 			++it;
 	}
+}
+
+void CodeBuilder::BuildConstructorInitialization(
+	const Variable& this_,
+	const Class& base_class,
+	NamesScope& names_scope,
+	FunctionContext& function_context,
+	const StructNamedInitializer* const constructor_initialization_list ) noexcept
+{
+	std::set<ProgramString> initialized_fields;
+
+	// Check for errors, build list of initialized fields.
+	bool have_fields_errors= false;
+	for( const StructNamedInitializer::MemberInitializer& field_initializer : constructor_initialization_list->members_initializers )
+	{
+		const NamesScope::InsertedName* const class_member=
+			base_class.members.GetThisScopeName( field_initializer.name );
+
+		if( class_member == nullptr )
+		{
+			have_fields_errors= true;
+			errors_.push_back( ReportNameNotFound( constructor_initialization_list->file_pos_, field_initializer.name ) );
+			continue;
+		}
+
+		const ClassField* const field= class_member->second.GetClassField();
+		if( field == nullptr )
+		{
+			have_fields_errors= true;
+			errors_.push_back( ReportInitializerForNonfieldStructMember( constructor_initialization_list->file_pos_, field_initializer.name ) );
+			continue;
+		}
+
+		if( initialized_fields.find( field_initializer.name ) != initialized_fields.end() )
+		{
+			have_fields_errors= true;
+			errors_.push_back( ReportDuplicatedStructMemberInitializer( constructor_initialization_list->file_pos_, field_initializer.name ) );
+			continue;
+		}
+
+		initialized_fields.insert( field_initializer.name );
+	} // for fields initializers
+
+	std::set<ProgramString> uninitialized_fields;
+
+	base_class.members.ForEachInThisScope(
+		[&]( const NamesScope::InsertedName& member )
+		{
+			const ClassField* const field= member.second.GetClassField();
+			if( field == nullptr )
+				return;
+
+			if( initialized_fields.find( member.first ) == initialized_fields.end() )
+				uninitialized_fields.insert( member.first );
+		} );
+
+	for( const ProgramString& field_name : uninitialized_fields )
+	{
+		// TODO - check for default constructor and call it.
+		// Generate error, if default constructor not found.
+
+		// TODO - fill list of already initialized fields.
+	}
+
+	if( have_fields_errors )
+		return;
+
+	for( const StructNamedInitializer::MemberInitializer& field_initializer : constructor_initialization_list->members_initializers )
+	{
+		const NamesScope::InsertedName* const class_member=
+			base_class.members.GetThisScopeName( field_initializer.name );
+		U_ASSERT( class_member != nullptr );
+		const ClassField* const field= class_member->second.GetClassField();
+		U_ASSERT( field != nullptr );
+
+		try
+		{
+			Variable field_variable;
+			field_variable.type= field->type;
+			field_variable.location= Variable::Location::Pointer;
+			field_variable.value_type= ValueType::Reference;
+
+			llvm::Value* index_list[2];
+			index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
+			index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(field->index) ) );
+			field_variable.llvm_value=
+				function_context.llvm_ir_builder.CreateGEP( this_.llvm_value, llvm::ArrayRef<llvm::Value*> ( index_list, 2u ) );
+
+			ApplyInitializer_r( field_variable, field_initializer.initializer.get(), names_scope, function_context );
+		}
+		catch( const ProgramError& ){}
+	} // for fields initializers
 }
 
 CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockCode(

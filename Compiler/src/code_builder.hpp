@@ -85,7 +85,15 @@ private:
 		const NamesScope& parent_names_scope,
 		const ProgramString& func_name,
 		const FunctionArgumentsDeclaration& args,
-		const Block* block ) noexcept;
+		const Block* block, // null for prototypes.
+		const StructNamedInitializer* constructor_initialization_list ) noexcept;
+
+	void BuildConstructorInitialization(
+		const Variable& this_,
+		const Class& base_class,
+		NamesScope& names_scope,
+		FunctionContext& function_context,
+		const StructNamedInitializer* constructor_initialization_list ) noexcept;
 
 	BlockBuildInfo BuildBlockCode(
 		const Block& block,
