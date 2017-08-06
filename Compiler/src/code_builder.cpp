@@ -365,7 +365,6 @@ void CodeBuilder::BuildNamespaceBody(
 			U_ASSERT(false);
 		}
 	} // for program elements
-
 }
 
 void CodeBuilder::PrepareFunction(
@@ -723,17 +722,30 @@ void CodeBuilder::BuildFuncCode(
 		++arg_number;
 	}
 
-	if( constructor_initialization_list != nullptr )
+	if( func_name == Keywords::constructor_ )
 	{
 		U_ASSERT( base_class != nullptr );
 		U_ASSERT( function_context.this_ != nullptr );
 
-		BuildConstructorInitialization(
-			*function_context.this_,
-			*base_class,
-			function_names,
-			function_context,
-			constructor_initialization_list );
+		if( constructor_initialization_list == nullptr )
+		{
+			// Create dummy initialization list for constructors without explicit initialization list.
+			const StructNamedInitializer dumy_initialization_list{ FilePos() };
+
+			BuildConstructorInitialization(
+				*function_context.this_,
+				*base_class,
+				function_names,
+				function_context,
+				dumy_initialization_list );
+		}
+		else
+			BuildConstructorInitialization(
+				*function_context.this_,
+				*base_class,
+				function_names,
+				function_context,
+				*constructor_initialization_list );
 	}
 
 	const BlockBuildInfo block_build_info=
@@ -787,13 +799,13 @@ void CodeBuilder::BuildConstructorInitialization(
 	const Class& base_class,
 	NamesScope& names_scope,
 	FunctionContext& function_context,
-	const StructNamedInitializer* const constructor_initialization_list ) noexcept
+	const StructNamedInitializer& constructor_initialization_list ) noexcept
 {
 	std::set<ProgramString> initialized_fields;
 
 	// Check for errors, build list of initialized fields.
 	bool have_fields_errors= false;
-	for( const StructNamedInitializer::MemberInitializer& field_initializer : constructor_initialization_list->members_initializers )
+	for( const StructNamedInitializer::MemberInitializer& field_initializer : constructor_initialization_list.members_initializers )
 	{
 		const NamesScope::InsertedName* const class_member=
 			base_class.members.GetThisScopeName( field_initializer.name );
@@ -801,7 +813,7 @@ void CodeBuilder::BuildConstructorInitialization(
 		if( class_member == nullptr )
 		{
 			have_fields_errors= true;
-			errors_.push_back( ReportNameNotFound( constructor_initialization_list->file_pos_, field_initializer.name ) );
+			errors_.push_back( ReportNameNotFound( constructor_initialization_list.file_pos_, field_initializer.name ) );
 			continue;
 		}
 
@@ -809,14 +821,14 @@ void CodeBuilder::BuildConstructorInitialization(
 		if( field == nullptr )
 		{
 			have_fields_errors= true;
-			errors_.push_back( ReportInitializerForNonfieldStructMember( constructor_initialization_list->file_pos_, field_initializer.name ) );
+			errors_.push_back( ReportInitializerForNonfieldStructMember( constructor_initialization_list.file_pos_, field_initializer.name ) );
 			continue;
 		}
 
 		if( initialized_fields.find( field_initializer.name ) != initialized_fields.end() )
 		{
 			have_fields_errors= true;
-			errors_.push_back( ReportDuplicatedStructMemberInitializer( constructor_initialization_list->file_pos_, field_initializer.name ) );
+			errors_.push_back( ReportDuplicatedStructMemberInitializer( constructor_initialization_list.file_pos_, field_initializer.name ) );
 			continue;
 		}
 
@@ -838,8 +850,8 @@ void CodeBuilder::BuildConstructorInitialization(
 
 	for( const ProgramString& field_name : uninitialized_fields )
 	{
-		// TODO - check for default constructor and call it.
-		// Generate error, if default constructor not found.
+		// SPRACHE_TODO - allow missed initialziers for default-constructed classes.
+		errors_.push_back( ReportMissingStructMemberInitializer( constructor_initialization_list.file_pos_, field_name ) );
 
 		// TODO - fill list of already initialized fields.
 	}
@@ -847,7 +859,7 @@ void CodeBuilder::BuildConstructorInitialization(
 	if( have_fields_errors )
 		return;
 
-	for( const StructNamedInitializer::MemberInitializer& field_initializer : constructor_initialization_list->members_initializers )
+	for( const StructNamedInitializer::MemberInitializer& field_initializer : constructor_initialization_list.members_initializers )
 	{
 		const NamesScope::InsertedName* const class_member=
 			base_class.members.GetThisScopeName( field_initializer.name );

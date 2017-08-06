@@ -93,7 +93,7 @@ private:
 		const Class& base_class,
 		NamesScope& names_scope,
 		FunctionContext& function_context,
-		const StructNamedInitializer* constructor_initialization_list ) noexcept;
+		const StructNamedInitializer& constructor_initialization_list ) noexcept;
 
 	BlockBuildInfo BuildBlockCode(
 		const Block& block,
