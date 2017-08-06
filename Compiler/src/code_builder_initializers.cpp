@@ -201,11 +201,29 @@ void CodeBuilder::ApplyConstructorInitializer(
 		llvm::Value* const value_for_assignment= CreateMoveToLLVMRegisterInstruction( *expression_result.GetVariable(), function_context );
 		function_context.llvm_ir_builder.CreateStore( value_for_assignment, variable.llvm_value );
 	}
-	else if( const ClassPtr* const class_type= boost::get<ClassPtr>( &variable.type.one_of_type_kind ) )
+	else if( const ClassPtr* const class_type_ptr= boost::get<ClassPtr>( &variable.type.one_of_type_kind ) )
 	{
-		U_UNUSED(class_type);
-		errors_.push_back( ReportNotImplemented( initializer.file_pos_, "constructors for classes" ) );
-		return;
+		U_UNUSED(class_type_ptr);
+		const Class& class_type= **class_type_ptr;
+
+		const NamesScope::InsertedName* constructor_name=
+			class_type.members.GetThisScopeName( Keyword( Keywords::constructor_ ) );
+
+		if( constructor_name == nullptr )
+		{
+			// TODO - error, class have no constructors
+			return;
+		}
+
+		const OverloadedFunctionsSet* const constructors_set= constructor_name->second.GetFunctionsSet();
+		U_ASSERT( constructors_set != nullptr );
+
+		ThisOverloadedMethodsSet this_overloaded_methods_set;
+		this_overloaded_methods_set.this_= variable;
+		this_overloaded_methods_set.overloaded_methods_set= *constructors_set;
+
+		// TODO - disallow explicit constructors calls.
+		BuildCallOperator( this_overloaded_methods_set, initializer.call_operator, block_names, function_context );
 	}
 	else
 	{

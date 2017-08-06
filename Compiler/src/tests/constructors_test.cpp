@@ -15,10 +15,23 @@ U_TEST(ConstructorTest0)
 			{
 			}
 		}
+		fn Foo() : i32
+		{
+			var S s();
+			return s.x;
+		}
 	)";
 
-	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ), true );
-	// Must just be compiled.
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foo" );
+	U_TEST_ASSERT( function != nullptr );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( static_cast<uint64_t>( 42 ) == result_value.IntVal.getLimitedValue() );
 }
 
 } // namespace U
