@@ -143,4 +143,66 @@ U_TEST(ConstructorTest3)
 	U_TEST_ASSERT( static_cast<uint64_t>(1) == result_value.IntVal.getLimitedValue() );
 }
 
+U_TEST(ConstructorTest4)
+{
+	// Implicit call of default constructor.
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			i32 x;
+			fn constructor()
+			( x( 458 ) )
+			{}
+		}
+		fn Foo() : i32
+		{
+			var S s;
+			return s.x;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foo" );
+	U_TEST_ASSERT( function != nullptr );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( static_cast<uint64_t>(458) == result_value.IntVal.getLimitedValue() );
+}
+
+U_TEST(ConstructorTest5)
+{
+	// Implicit call of default constructor for array of structures.
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			i32 x;
+			fn constructor()
+			( x( 458 ) )
+			{}
+		}
+		fn Foo() : i32
+		{
+			var [ S, 3 ] s;
+			return s[2u].x;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foo" );
+	U_TEST_ASSERT( function != nullptr );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( static_cast<uint64_t>(458) == result_value.IntVal.getLimitedValue() );
+}
+
 } // namespace U

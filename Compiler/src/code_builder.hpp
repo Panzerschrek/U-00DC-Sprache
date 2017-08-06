@@ -211,6 +211,11 @@ private:
 		NamesScope& block_names,
 		FunctionContext& function_context );
 
+	void ApplyEmptyInitializer(
+		const Variable& variable,
+		NamesScope& block_names,
+		FunctionContext& function_context );
+
 	void ApplyArrayInitializer(
 		const Variable& variable,
 		const ArrayInitializer& initializer,

@@ -17,17 +17,17 @@ namespace U
 namespace CodeBuilderPrivate
 {
 
+static const size_t g_max_array_size_to_linear_initialization= 8u;
+
 void CodeBuilder::ApplyInitializer_r(
 	const Variable& variable,
 	const IInitializer* const initializer,
 	NamesScope& block_names,
 	FunctionContext& function_context )
 {
-	// SPRACHE_TODO - allow missing initializers for types with default constructor.
 	if( initializer == nullptr )
 	{
-		// TODO - set file_pos
-		errors_.push_back( ReportExpectedInitializer( FilePos() ) );
+		ApplyEmptyInitializer( variable, block_names, function_context );
 		return;
 	}
 
@@ -60,6 +60,75 @@ void CodeBuilder::ApplyInitializer_r(
 	{
 		U_ASSERT(false);
 	}
+}
+
+
+void CodeBuilder::ApplyEmptyInitializer(
+	const Variable& variable,
+	NamesScope& block_names,
+	FunctionContext& function_context )
+{
+	// TODO - set file_pos.
+	const FilePos file_pos= FilePos();
+
+	if( const FundamentalType* const fundamental_type= boost::get<FundamentalType>( &variable.type.one_of_type_kind ) )
+	{
+		U_UNUSED( fundamental_type );
+		// Fundamental types must have initializer.
+		errors_.push_back( ReportExpectedInitializer( file_pos ) );
+		return;
+	}
+	else if( const ArrayPtr* const array_type_ptr= boost::get<ArrayPtr>( &variable.type.one_of_type_kind ) )
+	{
+		U_ASSERT( *array_type_ptr != nullptr );
+		const Array& array_type= **array_type_ptr;
+
+		Variable array_member= variable;
+		array_member.type= array_type.type;
+		array_member.location= Variable::Location::Pointer;
+
+		// Make first index = 0 for array to pointer conversion.
+		llvm::Value* index_list[2];
+		index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
+
+		// TODO - generate initialization loop for arrays with big size.
+		for( size_t i= 0u; i < array_type.size; i++ )
+		{
+			index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(i) ) );
+			array_member.llvm_value=
+				function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, llvm::ArrayRef<llvm::Value*> ( index_list, 2u ) );
+
+			ApplyEmptyInitializer( array_member, block_names, function_context );
+		}
+	}
+	else if( const ClassPtr* const class_type_ptr = boost::get<ClassPtr>( &variable.type.one_of_type_kind ) )
+	{
+		// If initializer for class variable is empty, try to call default constructor.
+
+		U_ASSERT( *class_type_ptr != nullptr );
+		const Class& class_type= **class_type_ptr;
+
+		const NamesScope::InsertedName* constructor_name=
+			class_type.members.GetThisScopeName( Keyword( Keywords::constructor_ ) );
+
+		if( constructor_name == nullptr )
+		{
+			errors_.push_back( ReportExpectedInitializer( file_pos ) );
+			return;
+		}
+
+		const OverloadedFunctionsSet* const constructors_set= constructor_name->second.GetFunctionsSet();
+		U_ASSERT( constructors_set != nullptr );
+
+		ThisOverloadedMethodsSet this_overloaded_methods_set;
+		this_overloaded_methods_set.this_= variable;
+		this_overloaded_methods_set.overloaded_methods_set= *constructors_set;
+
+		const CallOperator call_operator( file_pos, std::vector<IExpressionComponentPtr>() );
+		BuildCallOperator( this_overloaded_methods_set, call_operator, block_names, function_context );
+	}
+	else
+		return;
 }
 
 void CodeBuilder::ApplyArrayInitializer(
@@ -321,7 +390,7 @@ void CodeBuilder::ApplyZeroInitializer(
 		llvm::Value* index_list[2];
 		index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
 
-		if( array_type.size <= 8u )
+		if( array_type.size <= g_max_array_size_to_linear_initialization )
 		{
 			for( size_t i= 0u; i < array_type.size; i++ )
 			{

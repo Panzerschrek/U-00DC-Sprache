@@ -306,4 +306,30 @@ U_TEST( DuplicatedStructMemberInitializer_InConstructors_Test0 )
 	U_TEST_ASSERT( error.file_pos.line == 6u );
 }
 
+U_TEST( DefaultConstructorNotFoundTest0 )
+{
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			i32 x;
+			fn constructor( i32 a )
+			( x(a) )
+			{}
+		}
+		fn Foo()
+		{
+			var S s; // Default constructor is missing - needs explicit initialization.
+		}
+	)";
+
+	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::FunctionSignatureMismatch );
+	//U_TEST_ASSERT( error.file_pos.line == 11u );
+}
+
 } // namespace U
