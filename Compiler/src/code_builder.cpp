@@ -418,11 +418,13 @@ void CodeBuilder::PrepareFunction(
 
 	if( is_constructor && base_class == nullptr )
 	{
-		// TODO - error, constructor outside any class.
+		errors_.push_back( ReportConstructorOutsideClass( func.file_pos_ ) );
+		return;
 	}
 	if( !is_constructor && func.constructor_initialization_list_ != nullptr )
 	{
-		// TODO - error, initialization list in non-constructor.
+		errors_.push_back( ReportInitializationListInNonconstructor(  func.constructor_initialization_list_->file_pos_ ) );
+		return;
 	}
 
 	FunctionVariable func_variable;
@@ -479,9 +481,7 @@ void CodeBuilder::PrepareFunction(
 			errors_.push_back( ReportUsingKeywordAsName( arg->file_pos_ ) );
 
 		if( is_this && is_constructor )
-		{
-			// TODO - error, explicit "this" in constructor.
-		}
+			errors_.push_back( ReportExplicitThisInConstructorParamters( arg->file_pos_ ) );
 
 		function_type.args.emplace_back();
 		Function::Arg& out_arg= function_type.args.back();

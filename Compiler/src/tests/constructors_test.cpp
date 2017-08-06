@@ -94,7 +94,7 @@ U_TEST(ConstructorTest2)
 		}
 	)";
 
-	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ), true );
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foo" );
 	U_TEST_ASSERT( function != nullptr );
 

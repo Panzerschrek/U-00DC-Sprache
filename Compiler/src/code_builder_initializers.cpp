@@ -211,7 +211,7 @@ void CodeBuilder::ApplyConstructorInitializer(
 
 		if( constructor_name == nullptr )
 		{
-			// TODO - error, class have no constructors
+			errors_.push_back( ReportClassHaveNoConstructors( initializer.file_pos_ ) );
 			return;
 		}
 

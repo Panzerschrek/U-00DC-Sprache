@@ -60,13 +60,17 @@ enum class CodeBuilderErrorCode : unsigned int
 	MissingStructMemberInitializer,
 	InvalidTypeForAutoVariable,
 
+	// Constructors errors
+	ConstructorOutsideClass,
+	InitializationListInNonconstructor,
+	ClassHaveNoConstructors,
+	ExplicitThisInConstructorParamters,
+
 	// Methods errors.
 	CallOfThiscallFunctionUsingNonthisArgument,
 	ClassFiledAccessInStaticMethod,
 	ThisInNonclassFunction,
 	ThisUnavailable,
-
-	// Push new error codes at back.
 };
 
 struct CodeBuilderError
@@ -124,6 +128,10 @@ CodeBuilderError ReportInitializerForNonfieldStructMember( const FilePos& file_p
 CodeBuilderError ReportDuplicatedStructMemberInitializer( const FilePos& file_pos, const ProgramString& member_name );
 CodeBuilderError ReportMissingStructMemberInitializer( const FilePos& file_pos, const ProgramString& member_name );
 CodeBuilderError ReportInvalidTypeForAutoVariable( const FilePos& file_pos, const ProgramString& type_name );
+CodeBuilderError ReportConstructorOutsideClass( const FilePos& file_pos );
+CodeBuilderError ReportInitializationListInNonconstructor( const FilePos& file_pos );
+CodeBuilderError ReportClassHaveNoConstructors( const FilePos& file_pos );
+CodeBuilderError ReportExplicitThisInConstructorParamters( const FilePos& file_pos );
 CodeBuilderError ReportCallOfThiscallFunctionUsingNonthisArgument( const FilePos& file_pos );
 CodeBuilderError ReportClassFiledAccessInStaticMethod( const FilePos& file_pos, const ProgramString& field_name );
 CodeBuilderError ReportThisInNonclassFunction( const FilePos& file_pos, const ProgramString& func_name );

@@ -531,6 +531,50 @@ CodeBuilderError ReportInvalidTypeForAutoVariable( const FilePos& file_pos, cons
 	return error;
 }
 
+CodeBuilderError ReportConstructorOutsideClass( const FilePos& file_pos )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::ConstructorOutsideClass;
+
+	error.text= "Constructor outside class."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportInitializationListInNonconstructor( const FilePos& file_pos )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::InitializationListInNonconstructor;
+
+	error.text= "Constructor outside class."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportClassHaveNoConstructors( const FilePos& file_pos )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::ClassHaveNoConstructors;
+
+	error.text= "Class have no constructors."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportExplicitThisInConstructorParamters( const FilePos& file_pos )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::ExplicitThisInConstructorParamters;
+
+	error.text= "Explicit \"this\" in constructor parameters."_SpC;
+
+	return error;
+}
+
 CodeBuilderError ReportCallOfThiscallFunctionUsingNonthisArgument( const FilePos& file_pos )
 {
 	CodeBuilderError error;
