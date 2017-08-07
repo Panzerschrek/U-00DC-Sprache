@@ -47,8 +47,12 @@ private:
 		const Variable* this_= nullptr; // null for nonclass functions or static member functions.
 
 		llvm::Function* const function;
-		llvm::BasicBlock* const function_basic_block;
-		llvm::IRBuilder<> llvm_ir_builder;
+
+		llvm::BasicBlock* const alloca_basic_block; // Block #0 in function. Contains all "alloca" instructions.
+		llvm::IRBuilder<> alloca_ir_builder; // Use this builder for "alloca" instructions.
+
+		llvm::BasicBlock* const function_basic_block; // Next block after all "alloca" instructions.
+		llvm::IRBuilder<> llvm_ir_builder; // Use this builder for all instructions, except "alloca"
 
 		llvm::BasicBlock* block_for_break;
 		llvm::BasicBlock* block_for_continue;

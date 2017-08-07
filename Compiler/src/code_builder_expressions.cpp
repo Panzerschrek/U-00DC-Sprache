@@ -757,7 +757,7 @@ Variable CodeBuilder::BuildCallOperator(
 				{
 					// Bind value to const reference.
 					// TODO - support nonfundamental values.
-					llvm::Value* temp_storage= function_context.llvm_ir_builder.CreateAlloca( expr.type.GetLLVMType() );
+					llvm::Value* temp_storage= function_context.alloca_ir_builder.CreateAlloca( expr.type.GetLLVMType() );
 					function_context.llvm_ir_builder.CreateStore( expr.llvm_value, temp_storage );
 					llvm_args[i]= temp_storage;
 				}

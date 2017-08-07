@@ -49,7 +49,9 @@ CodeBuilder::FunctionContext::FunctionContext(
 	, return_value_is_mutable(in_return_value_is_mutable)
 	, return_value_is_reference(in_return_value_is_reference)
 	, function(in_function)
-	, function_basic_block( llvm::BasicBlock::Create( llvm_context, "", function ) )
+	, alloca_basic_block( llvm::BasicBlock::Create( llvm_context, "allocations", function ) )
+	, alloca_ir_builder( alloca_basic_block )
+	, function_basic_block( llvm::BasicBlock::Create( llvm_context, "func_code", function ) )
 	, llvm_ir_builder( function_basic_block )
 	, block_for_break( nullptr )
 	, block_for_continue( nullptr )
@@ -673,7 +675,7 @@ void CodeBuilder::BuildFuncCode(
 			// Move parameters to stack for assignment possibility.
 			// TODO - do it, only if parameters are not constant.
 
-			llvm::Value* address= function_context.llvm_ir_builder.CreateAlloca( var.type.GetLLVMType() );
+			llvm::Value* address= function_context.alloca_ir_builder.CreateAlloca( var.type.GetLLVMType() );
 			function_context.llvm_ir_builder.CreateStore( var.llvm_value, address );
 
 			var.llvm_value= address;
@@ -726,6 +728,8 @@ void CodeBuilder::BuildFuncCode(
 
 	llvm::Function::BasicBlockListType& bb_list = llvm_function->getBasicBlockList();
 
+	function_context.alloca_ir_builder.CreateBr( function_context.function_basic_block );
+
 	// Remove duplicated terminator instructions at end of all function blocks.
 	// This needs, for example, when "return" is last operator inside "if" or "while" blocks.
 	for (llvm::BasicBlock& block : bb_list)
@@ -742,7 +746,7 @@ void CodeBuilder::BuildFuncCode(
 	auto it= bb_list.begin();
 	while(it != bb_list.end())
 	{
-		if( it->empty() )
+		if( &*it != function_context.function_basic_block && it->empty() )
 			it= bb_list.erase(it);
 		else
 			++it;
@@ -921,7 +925,7 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 
 		if( variable_declaration.reference_modifier == ReferenceModifier::None )
 		{
-			variable.llvm_value= function_context.llvm_ir_builder.CreateAlloca( variable.type.GetLLVMType() );
+			variable.llvm_value= function_context.alloca_ir_builder.CreateAlloca( variable.type.GetLLVMType() );
 
 			ApplyInitializer_r( variable, variable_declaration.initializer.get(), block_names, function_context );
 		}
@@ -1056,7 +1060,7 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 	}
 	else if( auto_variable_declaration.reference_modifier == ReferenceModifier::None )
 	{
-		variable.llvm_value= function_context.llvm_ir_builder.CreateAlloca( variable.type.GetLLVMType() );
+		variable.llvm_value= function_context.alloca_ir_builder.CreateAlloca( variable.type.GetLLVMType() );
 
 		if( const FundamentalType* const fundamental_type= boost::get<FundamentalType>( &variable.type.one_of_type_kind ) )
 		{
