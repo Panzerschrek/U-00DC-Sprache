@@ -190,6 +190,9 @@ void CodeBuilder::ApplyStructNamedInitializer(
 	U_ASSERT( *class_type_ptr != nullptr );
 	const Class& class_type= **class_type_ptr;
 
+	if( class_type.have_explicit_noncopy_constructors )
+		errors_.push_back( ReportInitializerDisabledBecauseClassHaveExplicitNoncopyConstructors( initializer.file_pos_ ) );
+
 	std::set<ProgramString> initialized_members_names;
 
 	Variable struct_member= variable;
@@ -442,10 +445,11 @@ void CodeBuilder::ApplyZeroInitializer(
 	}
 	else if( const ClassPtr* const class_type_ptr = boost::get<ClassPtr>( &variable.type.one_of_type_kind ) )
 	{
-		// SPRACHE_TODO - disallow zero initializers for all except structs without constructors.
-
 		U_ASSERT( *class_type_ptr != nullptr );
 		const Class& class_type= **class_type_ptr;
+
+		if( class_type.have_explicit_noncopy_constructors )
+			errors_.push_back( ReportInitializerDisabledBecauseClassHaveExplicitNoncopyConstructors( initializer.file_pos_ ) );
 
 		Variable struct_member= variable;
 		struct_member.location= Variable::Location::Pointer;

@@ -509,6 +509,17 @@ CodeBuilderError ReportDuplicatedStructMemberInitializer( const FilePos& file_po
 	return error;
 }
 
+CodeBuilderError ReportInitializerDisabledBecauseClassHaveExplicitNoncopyConstructors( const FilePos& file_pos )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::InitializerDisabledBecauseClassHaveExplicitNoncopyConstructors;
+
+	error.text= "This kind of initializer disabled for this class, because it have explicit noncopy constructor(s)."_SpC;
+
+	return error;
+}
+
 CodeBuilderError ReportInvalidTypeForAutoVariable( const FilePos& file_pos, const ProgramString& type_name )
 {
 	CodeBuilderError error;

@@ -317,6 +317,7 @@ struct Class final
 	NamesScope members;
 	size_t field_count= 0u;
 	bool is_incomplete= true;
+	bool have_explicit_noncopy_constructors= false;
 
 	llvm::StructType* llvm_type;
 };

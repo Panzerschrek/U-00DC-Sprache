@@ -406,4 +406,66 @@ U_TEST(ConstructorTest10)
 	U_TEST_ASSERT( static_cast<uint64_t>(1) == result_value.IntVal.getLimitedValue() );
 }
 
+U_TEST(ConstructorTest11)
+{
+	// Struct named initializer enabled, because struct have no explicit noncopy constructors.
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			i32 x;
+			fn constructor( S &imut other )
+			( x( -other.x ) )
+			{}
+		}
+		fn Foo() : i32
+		{
+			var S s{ .x= 5 };
+			return s.x;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foo" );
+	U_TEST_ASSERT( function != nullptr );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( static_cast<uint64_t>(5) == result_value.IntVal.getLimitedValue() );
+}
+
+U_TEST(ConstructorTest12)
+{
+	// Zero-initializer enabled, because struct have no explicit noncopy constructors.
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			i32 x;
+			fn constructor( S &imut other )
+			( x= -other.x )
+			{}
+		}
+		fn Foo() : i32
+		{
+			var S s= zero_init;
+			return s.x;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foo" );
+	U_TEST_ASSERT( function != nullptr );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( static_cast<uint64_t>(0) == result_value.IntVal.getLimitedValue() );
+}
+
 } // namespace U

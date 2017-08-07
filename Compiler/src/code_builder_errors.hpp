@@ -57,6 +57,7 @@ enum class CodeBuilderErrorCode : unsigned int
 	StructInitializerForNonStruct,
 	InitializerForNonfieldStructMember,
 	DuplicatedStructMemberInitializer,
+	InitializerDisabledBecauseClassHaveExplicitNoncopyConstructors,
 	InvalidTypeForAutoVariable,
 
 	// Constructors errors
@@ -128,6 +129,7 @@ CodeBuilderError ReportConstructorInitializerForUnsupportedType( const FilePos& 
 CodeBuilderError ReportStructInitializerForNonStruct( const FilePos& file_pos );
 CodeBuilderError ReportInitializerForNonfieldStructMember( const FilePos& file_pos, const ProgramString& member_name );
 CodeBuilderError ReportDuplicatedStructMemberInitializer( const FilePos& file_pos, const ProgramString& member_name );
+CodeBuilderError ReportInitializerDisabledBecauseClassHaveExplicitNoncopyConstructors( const FilePos& file_pos );
 CodeBuilderError ReportInvalidTypeForAutoVariable( const FilePos& file_pos, const ProgramString& type_name );
 CodeBuilderError ReportConstructorOutsideClass( const FilePos& file_pos );
 CodeBuilderError ReportConstructorMustReturnVoid( const FilePos& file_pos );

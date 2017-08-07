@@ -262,6 +262,8 @@ void CodeBuilder::PrepareClass( const ClassDeclaration& class_declaration, Names
 		}
 	}
 	U_ASSERT( the_class != nullptr );
+	Type class_type;
+	class_type.one_of_type_kind= the_class;
 
 	std::vector<llvm::Type*> fields_llvm_types;
 
@@ -302,6 +304,27 @@ void CodeBuilder::PrepareClass( const ClassDeclaration& class_declaration, Names
 		{
 			U_ASSERT( false );
 		}
+	}
+
+	// Search for explicit noncopy constructors.
+	if( const NamesScope::InsertedName* const constructors_name=
+		the_class->members.GetThisScopeName( Keyword( Keywords::constructor_ ) ) )
+	{
+		const OverloadedFunctionsSet* const constructors= constructors_name->second.GetFunctionsSet();
+		U_ASSERT( constructors != nullptr );
+		for( const FunctionVariable& constructor : *constructors )
+		{
+			const FunctionPtr* const constructor_type_ptr= boost::get<FunctionPtr>( &constructor.type.one_of_type_kind );
+			U_ASSERT( constructor_type_ptr != nullptr && *constructor_type_ptr != nullptr );
+			const Function& constructor_type= **constructor_type_ptr;
+
+			U_ASSERT( constructor_type.args.size() >= 1u && constructor_type.args.front().type == class_type );
+			if( !( constructor_type.args.size() == 2u && constructor_type.args.back().type == class_type ) )
+			{
+				the_class->have_explicit_noncopy_constructors= true;
+				break;
+			}
+		};
 	}
 
 	the_class->llvm_type->setBody( fields_llvm_types );
