@@ -664,6 +664,8 @@ void CodeBuilder::BuildFuncCode(
 		var.type= arg.type;
 		var.llvm_value= &llvm_arg;
 
+		const ProgramString& arg_name= args[ arg_number ]->name_;
+
 		// TODO - make variables without explicit mutability modifiers immutable.
 		if( args[ arg_number ]->mutability_modifier_ == MutabilityModifier::Immutable )
 			var.value_type= ValueType::ConstReference;
@@ -676,13 +678,13 @@ void CodeBuilder::BuildFuncCode(
 			// TODO - do it, only if parameters are not constant.
 
 			llvm::Value* address= function_context.alloca_ir_builder.CreateAlloca( var.type.GetLLVMType() );
+			address->setName( ToStdString( arg_name ) );
 			function_context.llvm_ir_builder.CreateStore( var.llvm_value, address );
 
 			var.llvm_value= address;
 			var.location= Variable::Location::Pointer;
 		}
 
-		const ProgramString& arg_name= args[ arg_number ]->name_;
 		const NamesScope::InsertedName* const inserted_arg=
 			function_names.AddName(
 				arg_name,
@@ -701,7 +703,7 @@ void CodeBuilder::BuildFuncCode(
 			U_ASSERT( function_context.this_ != nullptr );
 		}
 
-		llvm_arg.setName( ToStdString( arg_name ) );
+		llvm_arg.setName( "_arg_" + ToStdString( arg_name ) );
 		++arg_number;
 	}
 
@@ -926,6 +928,7 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 		if( variable_declaration.reference_modifier == ReferenceModifier::None )
 		{
 			variable.llvm_value= function_context.alloca_ir_builder.CreateAlloca( variable.type.GetLLVMType() );
+			variable.llvm_value->setName( ToStdString( variable_declaration.name ) );
 
 			ApplyInitializer_r( variable, variable_declaration.initializer.get(), block_names, function_context );
 		}
@@ -1061,6 +1064,7 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 	else if( auto_variable_declaration.reference_modifier == ReferenceModifier::None )
 	{
 		variable.llvm_value= function_context.alloca_ir_builder.CreateAlloca( variable.type.GetLLVMType() );
+		variable.llvm_value->setName( ToStdString( auto_variable_declaration.name ) );
 
 		if( const FundamentalType* const fundamental_type= boost::get<FundamentalType>( &variable.type.one_of_type_kind ) )
 		{

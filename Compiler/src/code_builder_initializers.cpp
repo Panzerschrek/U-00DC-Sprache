@@ -325,6 +325,7 @@ void CodeBuilder::ApplyZeroInitializer(
 			llvm::Value* const loop_count_value=
 				llvm::Constant::getIntegerValue( fundamental_llvm_types_.u32, llvm::APInt( 32u, uint64_t(array_type.size) ) );
 			llvm::Value* const couter_address= function_context.alloca_ir_builder.CreateAlloca( fundamental_llvm_types_.u32 );
+			couter_address->setName( "array_init_counter" );
 			function_context.llvm_ir_builder.CreateStore( zero_value, couter_address );
 
 			llvm::BasicBlock* loop_block= llvm::BasicBlock::Create( llvm_context_ );
