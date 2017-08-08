@@ -118,6 +118,7 @@ struct FunctionVariable final
 	Type type;
 	bool have_body= true;
 	bool is_this_call= false;
+	bool is_generated= false;
 
 	llvm::Function* llvm_function= nullptr;
 };
@@ -318,6 +319,7 @@ struct Class final
 	size_t field_count= 0u;
 	bool is_incomplete= true;
 	bool have_explicit_noncopy_constructors= false;
+	bool is_default_constructible= false;
 
 	llvm::StructType* llvm_type;
 };

@@ -468,4 +468,123 @@ U_TEST(ConstructorTest12)
 	U_TEST_ASSERT( static_cast<uint64_t>(0) == result_value.IntVal.getLimitedValue() );
 }
 
+U_TEST(ConstructorTest13)
+{
+	// Generate default-constructor for struct with all fields default-constructible.
+	static const char c_program_text[]=
+	R"(
+		struct A
+		{
+			i32 x;
+			fn constructor() ( x= 2017 ) {}
+		}
+		struct B
+		{
+			A a;
+		}
+		fn Foo() : i32
+		{
+			var B b; // should find and call generated default constructor
+			return b.a.x;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foo" );
+	U_TEST_ASSERT( function != nullptr );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( static_cast<uint64_t>(2017) == result_value.IntVal.getLimitedValue() );
+}
+
+U_TEST(ConstructorTest14)
+{
+	// Generate default-constructor for struct with all fields default-constructible and explicit copy-constructor.
+	static const char c_program_text[]=
+	R"(
+		struct A
+		{
+			i32 x;
+			fn constructor() ( x= 5555578 ) {}
+		}
+		struct B
+		{
+			A a;
+			fn constructor( B &imut other )
+			{
+				a.x= other.a.x;
+			}
+		}
+		fn Foo() : i32
+		{
+			var B b; // should find and call generated default constructor
+			return b.a.x;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foo" );
+	U_TEST_ASSERT( function != nullptr );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( static_cast<uint64_t>(5555578) == result_value.IntVal.getLimitedValue() );
+}
+
+U_TEST(ConstructorTest15)
+{
+	// Generate default-constructor for struct with all fields default-constructible.
+	static const char c_program_text[]=
+	R"(
+		struct A
+		{
+			i32 x;
+			fn constructor() ( x= 2017 ) {}
+		}
+		struct B
+		{
+			[ A, 4 ] a; // Should generate default-constructor, because array of default-constructivle classes is default constructible.
+			[ [ [ A, 5 ], 2 ], 3 ] a_3d; // And for multidimensional arrays too.
+		}
+		fn Foo() : i32
+		{
+			var B b; // should find and call generated default constructor
+			return b.a[2u].x;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foo" );
+	U_TEST_ASSERT( function != nullptr );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( static_cast<uint64_t>(2017) == result_value.IntVal.getLimitedValue() );
+}
+
+U_TEST(ConstructorTest16)
+{
+	// Empty struct is default constructible.
+	static const char c_program_text[]=
+	R"(
+		struct A {}
+		fn Foo()
+		{
+			var A a;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+}
+
 } // namespace U

@@ -330,6 +330,8 @@ void CodeBuilder::PrepareClass( const ClassDeclaration& class_declaration, Names
 	the_class->llvm_type->setBody( fields_llvm_types );
 	the_class->is_incomplete= false;
 
+	TryGenerateDefaultConstructor( *the_class, class_type );
+
 	// Build functions with body.
 	for( const ClassDeclaration::Member& member : class_declaration.members_ )
 	{
@@ -340,6 +342,156 @@ void CodeBuilder::PrepareClass( const ClassDeclaration& class_declaration, Names
 			if( (*function_declaration)->block_ != nullptr )
 				PrepareFunction( **function_declaration, false, the_class, the_class->members );
 		}
+	}
+}
+
+void CodeBuilder::TryGenerateDefaultConstructor( Class& the_class, const Type& class_type )
+{
+	// Search for explicit default constructor.
+	if( const NamesScope::InsertedName* const constructors_name=
+		the_class.members.GetThisScopeName( Keyword( Keywords::constructor_ ) ) )
+	{
+		const OverloadedFunctionsSet* const constructors= constructors_name->second.GetFunctionsSet();
+		U_ASSERT( constructors != nullptr );
+		for( const FunctionVariable& constructor : *constructors )
+		{
+			const FunctionPtr* const constructor_type_ptr= boost::get<FunctionPtr>( &constructor.type.one_of_type_kind );
+			U_ASSERT( constructor_type_ptr != nullptr && *constructor_type_ptr != nullptr );
+			const Function& constructor_type= **constructor_type_ptr;
+
+			U_ASSERT( constructor_type.args.size() >= 1u && constructor_type.args.front().type == class_type );
+			if( ( constructor_type.args.size() == 1u ) )
+			{
+				the_class.is_default_constructible= true;
+				return;
+			}
+		};
+	}
+
+	// Generating of default constructor disabled, if class have other explicit constructors, except copy constructors.
+	if( the_class.have_explicit_noncopy_constructors )
+		return;
+
+	// Generate default constructor, if all fields is default constructible.
+	bool all_fields_is_default_constructible= true;
+
+	the_class.members.ForEachInThisScope(
+		[&]( const NamesScope::InsertedName& member )
+		{
+			const ClassField* const field= member.second.GetClassField();
+			if( field == nullptr )
+				return;
+
+			const ClassPtr* class_type_ptr = boost::get<ClassPtr>( &field->type.one_of_type_kind );
+			if( class_type_ptr == nullptr )
+			{
+				const ArrayPtr* array_type_ptr= boost::get<ArrayPtr>( &field->type.one_of_type_kind );
+				while( array_type_ptr != nullptr )
+				{
+					U_ASSERT( *array_type_ptr != nullptr );
+					class_type_ptr= boost::get<ClassPtr>( &( (*array_type_ptr)->type.one_of_type_kind ) );
+					if( class_type_ptr != nullptr )
+						break;
+
+					array_type_ptr= boost::get<ArrayPtr>( &( (*array_type_ptr)->type.one_of_type_kind ) );
+				}
+			}
+
+			if( class_type_ptr == nullptr ) // Not class or array of classes
+				all_fields_is_default_constructible= false;
+			else
+			{
+				U_ASSERT( *class_type_ptr != nullptr );
+				if( !(*class_type_ptr)->is_default_constructible )
+					all_fields_is_default_constructible= false;
+			}
+
+		} );
+
+	if( !all_fields_is_default_constructible )
+		return;
+
+	// Generate function
+
+	FunctionPtr constructor_type_ptr( new Function );
+	constructor_type_ptr->return_type= void_type_;
+	constructor_type_ptr->args.emplace_back();
+	constructor_type_ptr->args.back().type= class_type;
+	constructor_type_ptr->args.back().is_mutable= true;
+	constructor_type_ptr->args.back().is_reference= true;
+
+	std::vector<llvm::Type*> args_llvm_types;
+	args_llvm_types.push_back( llvm::PointerType::get( class_type.GetLLVMType(), 0u ) );
+
+	constructor_type_ptr->llvm_function_type=
+		llvm::FunctionType::get(
+			fundamental_llvm_types_.void_,
+			llvm::ArrayRef<llvm::Type*>( args_llvm_types.data(), args_llvm_types.size() ),
+			false );
+
+	llvm::Function* const llvm_constructor_function=
+		llvm::Function::Create(
+			constructor_type_ptr->llvm_function_type,
+			llvm::Function::LinkageTypes::ExternalLinkage, // TODO - select linkage
+			MangleFunction( the_class.members, Keyword( Keywords::constructor_ ), *constructor_type_ptr ),
+			module_.get() );
+
+	llvm_constructor_function->setUnnamedAddr( true );
+	llvm_constructor_function->addAttribute( 1u, llvm::Attribute::NonNull ); // this is nonnull
+
+	NamesScope dummy_names_scope( ""_SpC, nullptr );
+	FunctionContext function_context(
+		constructor_type_ptr->return_type,
+		constructor_type_ptr->return_value_is_mutable,
+		constructor_type_ptr->return_value_is_reference,
+		llvm_context_,
+		llvm_constructor_function );
+
+	llvm::Value* const this_llvm_value= llvm_constructor_function->args().begin();
+	this_llvm_value->setName( KeywordAscii( Keywords::this_ ) );
+
+	the_class.members.ForEachInThisScope(
+		[&]( const NamesScope::InsertedName& member )
+		{
+			const ClassField* const field= member.second.GetClassField();
+			if( field == nullptr )
+				return;
+
+			Variable field_variable;
+			field_variable.type= field->type;
+			field_variable.value_type= ValueType::Reference;
+
+			llvm::Value* index_list[2];
+			index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
+			index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(field->index) ) );
+			field_variable.llvm_value=
+				function_context.llvm_ir_builder.CreateGEP( this_llvm_value, llvm::ArrayRef<llvm::Value*> ( index_list, 2u ) );
+
+			ApplyEmptyInitializer( field_variable, dummy_names_scope, function_context );
+		} );
+
+	function_context.llvm_ir_builder.CreateRetVoid();
+
+	// Add generated constructor
+	FunctionVariable constructor_variable;
+	constructor_variable.type.one_of_type_kind= std::move( constructor_type_ptr );
+	constructor_variable.have_body= true;
+	constructor_variable.is_this_call= true;
+	constructor_variable.is_generated= true;
+	constructor_variable.llvm_function= llvm_constructor_function;
+
+	if( NamesScope::InsertedName* const constructors_name=
+		the_class.members.GetThisScopeName( Keyword( Keywords::constructor_ ) ) )
+	{
+		OverloadedFunctionsSet* const constructors= constructors_name->second.GetFunctionsSet();
+		U_ASSERT( constructors != nullptr );
+		constructors->push_back( std::move( constructor_variable ) );
+	}
+	else
+	{
+		OverloadedFunctionsSet constructors;
+		constructors.push_back( std::move( constructor_variable ) );
+		the_class.members.AddName( Keyword( Keywords::constructor_ ), std::move( constructors ) );
 	}
 }
 

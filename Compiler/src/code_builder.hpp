@@ -68,6 +68,8 @@ private:
 	Type PrepareType( const FilePos& file_pos, const TypeName& type_name, const NamesScope& names_scope );
 	void PrepareClass( const ClassDeclaration& class_declaration, NamesScope& names_scope );
 
+	void TryGenerateDefaultConstructor( Class& the_class, const Type& class_type );
+
 	void BuildNamespaceBody(
 		const ProgramElements& body_elements,
 		NamesScope& names_scope );

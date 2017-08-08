@@ -351,4 +351,59 @@ U_TEST( DefaultConstructorNotFoundTest0 )
 	//U_TEST_ASSERT( error.file_pos.line == 11u );
 }
 
+U_TEST( DefaultConstructorNotFoundTest1 )
+{
+	static const char c_program_text[]=
+	R"(
+		struct A
+		{
+			i32 x;
+			fn constructor() ( x= 2017 ) {}
+		}
+		struct B
+		{
+			A a;
+			fn constructor( i32 x )
+			{
+				a.x= x;
+			}
+		}
+		fn Foo()
+		{
+			var B b; // Default consructor for class "B" not generated, because this class have explicit noncopy constructor.
+		}
+	)";
+
+	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::FunctionSignatureMismatch );
+	//U_TEST_ASSERT( error.file_pos.line == 171u );
+}
+
+U_TEST( DefaultConstructorNotFoundTest2 )
+{
+	static const char c_program_text[]=
+	R"(
+		struct A
+		{
+			[ [ [ i32, 2 ], 3 ], 5 ] arr_3d;
+		}
+		fn Foo()
+		{
+			var A a; // Default consructor for class "B" not generated, because it contains non-default-constructible members.
+		}
+	)";
+
+	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedInitializer );
+	//U_TEST_ASSERT( error.file_pos.line == 171u );
+}
+
 } // namespace U
