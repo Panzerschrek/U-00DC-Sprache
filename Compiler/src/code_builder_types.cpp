@@ -194,6 +194,22 @@ bool Type::IsIncomplete() const
 	return false;
 }
 
+bool Type::IsDefaultConstructible() const
+{
+	if( const ClassPtr* const class_= boost::get<ClassPtr>( &one_of_type_kind ) )
+	{
+		U_ASSERT( *class_ != nullptr );
+		return (*class_)->is_default_constructible;
+	}
+	else if( const ArrayPtr* const array= boost::get<ArrayPtr>( &one_of_type_kind ) )
+	{
+		U_ASSERT( *array != nullptr );
+		return (*array)->type.IsDefaultConstructible();
+	}
+
+	return false;
+}
+
 llvm::Type* Type::GetLLVMType() const
 {
 	struct Visitor final : public boost::static_visitor<>

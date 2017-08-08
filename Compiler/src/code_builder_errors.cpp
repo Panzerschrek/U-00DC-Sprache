@@ -232,7 +232,7 @@ CodeBuilderError ReportExpectedInitializer( const FilePos& file_pos )
 	error.file_pos= file_pos;
 	error.code= CodeBuilderErrorCode::ExpectedInitializer;
 
-	error.text= "Expected initializer for this variable."_SpC;
+	error.text= "Expected initializer or constructor for this variable."_SpC;
 
 	return error;
 }

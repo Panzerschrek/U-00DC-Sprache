@@ -19,40 +19,34 @@ namespace CodeBuilderPrivate
 
 static const size_t g_max_array_size_to_linear_initialization= 8u;
 
-void CodeBuilder::ApplyInitializer_r(
+void CodeBuilder::ApplyInitializer(
 	const Variable& variable,
-	const IInitializer* const initializer,
+	const IInitializer& initializer,
 	NamesScope& block_names,
 	FunctionContext& function_context )
 {
-	if( initializer == nullptr )
-	{
-		ApplyEmptyInitializer( variable, block_names, function_context );
-		return;
-	}
-
 	if( const ArrayInitializer* const array_initializer=
-		dynamic_cast<const ArrayInitializer*>(initializer) )
+		dynamic_cast<const ArrayInitializer*>(&initializer) )
 	{
 		ApplyArrayInitializer( variable, *array_initializer, block_names, function_context );
 	}
 	else if( const StructNamedInitializer* const struct_named_initializer=
-		dynamic_cast<const StructNamedInitializer*>(initializer) )
+		dynamic_cast<const StructNamedInitializer*>(&initializer) )
 	{
 		ApplyStructNamedInitializer( variable, *struct_named_initializer, block_names, function_context );
 	}
 	else if( const ConstructorInitializer* const constructor_initializer=
-		dynamic_cast<const ConstructorInitializer*>(initializer) )
+		dynamic_cast<const ConstructorInitializer*>(&initializer) )
 	{
 		ApplyConstructorInitializer( variable, *constructor_initializer, block_names, function_context );
 	}
 	else if( const ExpressionInitializer* const expression_initializer=
-		dynamic_cast<const ExpressionInitializer*>(initializer) )
+		dynamic_cast<const ExpressionInitializer*>(&initializer) )
 	{
 		ApplyExpressionInitializer( variable, *expression_initializer, block_names, function_context );
 	}
 	else if( const ZeroInitializer* const zero_initializer=
-		dynamic_cast<const ZeroInitializer*>(initializer) )
+		dynamic_cast<const ZeroInitializer*>(&initializer) )
 	{
 		ApplyZeroInitializer( variable, *zero_initializer, block_names, function_context );
 	}
@@ -62,21 +56,24 @@ void CodeBuilder::ApplyInitializer_r(
 	}
 }
 
-
 void CodeBuilder::ApplyEmptyInitializer(
 	const Variable& variable,
-	NamesScope& block_names,
 	FunctionContext& function_context )
 {
 	// TODO - set file_pos.
 	const FilePos file_pos= FilePos();
 
-	if( const FundamentalType* const fundamental_type= boost::get<FundamentalType>( &variable.type.one_of_type_kind ) )
+	if( !variable.type.IsDefaultConstructible() )
 	{
-		U_UNUSED( fundamental_type );
-		// Fundamental types must have initializer.
 		errors_.push_back( ReportExpectedInitializer( file_pos ) );
 		return;
+	}
+
+	if( const FundamentalType* const fundamental_type= boost::get<FundamentalType>( &variable.type.one_of_type_kind ) )
+	{
+		// Fundamentals is not default-constructible, we should generate error about it before.
+		U_UNUSED( fundamental_type );
+		U_ASSERT( false );
 	}
 	else if( const ArrayPtr* const array_type_ptr= boost::get<ArrayPtr>( &variable.type.one_of_type_kind ) )
 	{
@@ -98,7 +95,7 @@ void CodeBuilder::ApplyEmptyInitializer(
 			array_member.llvm_value=
 				function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, llvm::ArrayRef<llvm::Value*> ( index_list, 2u ) );
 
-			ApplyEmptyInitializer( array_member, block_names, function_context );
+			ApplyEmptyInitializer( array_member, function_context );
 		}
 	}
 	else if( const ClassPtr* const class_type_ptr = boost::get<ClassPtr>( &variable.type.one_of_type_kind ) )
@@ -110,13 +107,7 @@ void CodeBuilder::ApplyEmptyInitializer(
 
 		const NamesScope::InsertedName* constructor_name=
 			class_type.members.GetThisScopeName( Keyword( Keywords::constructor_ ) );
-
-		if( constructor_name == nullptr )
-		{
-			errors_.push_back( ReportExpectedInitializer( file_pos ) );
-			return;
-		}
-
+		U_ASSERT( constructor_name != nullptr );
 		const OverloadedFunctionsSet* const constructors_set= constructor_name->second.GetFunctionsSet();
 		U_ASSERT( constructors_set != nullptr );
 
@@ -125,7 +116,8 @@ void CodeBuilder::ApplyEmptyInitializer(
 		this_overloaded_methods_set.overloaded_methods_set= *constructors_set;
 
 		const CallOperator call_operator( file_pos, std::vector<IExpressionComponentPtr>() );
-		BuildCallOperator( this_overloaded_methods_set, call_operator, block_names, function_context );
+		NamesScope dummy_names_scope( ProgramString(), nullptr );
+		BuildCallOperator( this_overloaded_methods_set, call_operator, dummy_names_scope, function_context );
 	}
 	else
 		return;
@@ -171,7 +163,8 @@ void CodeBuilder::ApplyArrayInitializer(
 		array_member.llvm_value=
 			function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, llvm::ArrayRef<llvm::Value*> ( index_list, 2u ) );
 
-		ApplyInitializer_r( array_member, initializer.initializers[i].get(), block_names, function_context );
+		U_ASSERT( initializer.initializers[i] != nullptr );
+		ApplyInitializer( array_member, *initializer.initializers[i], block_names, function_context );
 	}
 }
 
@@ -229,7 +222,8 @@ void CodeBuilder::ApplyStructNamedInitializer(
 		struct_member.llvm_value=
 			function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, llvm::ArrayRef<llvm::Value*> ( index_list, 2u ) );
 
-		ApplyInitializer_r( struct_member, member_initializer.initializer.get(), block_names, function_context );
+		U_ASSERT( member_initializer.initializer != nullptr );
+		ApplyInitializer( struct_member, *member_initializer.initializer, block_names, function_context );
 	}
 
 	U_ASSERT( initialized_members_names.size() <= class_type.field_count );
@@ -244,7 +238,7 @@ void CodeBuilder::ApplyStructNamedInitializer(
 					index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(field->index) ) );
 					struct_member.llvm_value=
 						function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, llvm::ArrayRef<llvm::Value*> ( index_list, 2u ) );
-					ApplyEmptyInitializer( struct_member, block_names, function_context );
+					ApplyEmptyInitializer( struct_member, function_context );
 				}
 			}
 		});

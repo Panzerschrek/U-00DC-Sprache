@@ -72,6 +72,7 @@ struct Type final
 	size_t SizeOf() const;
 
 	bool IsIncomplete() const;
+	bool IsDefaultConstructible() const;
 
 	llvm::Type* GetLLVMType() const;
 	ProgramString ToString() const;

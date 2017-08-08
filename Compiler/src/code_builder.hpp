@@ -207,15 +207,14 @@ private:
 
 	// Initializers.
 
-	void ApplyInitializer_r(
+	void ApplyInitializer(
 		const Variable& variable,
-		const IInitializer* initializer,
+		const IInitializer& initializer,
 		NamesScope& block_names,
 		FunctionContext& function_context );
 
 	void ApplyEmptyInitializer(
 		const Variable& variable,
-		NamesScope& block_names,
 		FunctionContext& function_context );
 
 	void ApplyArrayInitializer(

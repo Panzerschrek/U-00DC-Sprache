@@ -382,30 +382,8 @@ void CodeBuilder::TryGenerateDefaultConstructor( Class& the_class, const Type& c
 			if( field == nullptr )
 				return;
 
-			const ClassPtr* class_type_ptr = boost::get<ClassPtr>( &field->type.one_of_type_kind );
-			if( class_type_ptr == nullptr )
-			{
-				const ArrayPtr* array_type_ptr= boost::get<ArrayPtr>( &field->type.one_of_type_kind );
-				while( array_type_ptr != nullptr )
-				{
-					U_ASSERT( *array_type_ptr != nullptr );
-					class_type_ptr= boost::get<ClassPtr>( &( (*array_type_ptr)->type.one_of_type_kind ) );
-					if( class_type_ptr != nullptr )
-						break;
-
-					array_type_ptr= boost::get<ArrayPtr>( &( (*array_type_ptr)->type.one_of_type_kind ) );
-				}
-			}
-
-			if( class_type_ptr == nullptr ) // Not class or array of classes
+			if( !field->type.IsDefaultConstructible() )
 				all_fields_is_default_constructible= false;
-			else
-			{
-				U_ASSERT( *class_type_ptr != nullptr );
-				if( !(*class_type_ptr)->is_default_constructible )
-					all_fields_is_default_constructible= false;
-			}
-
 		} );
 
 	if( !all_fields_is_default_constructible )
@@ -439,7 +417,6 @@ void CodeBuilder::TryGenerateDefaultConstructor( Class& the_class, const Type& c
 	llvm_constructor_function->setUnnamedAddr( true );
 	llvm_constructor_function->addAttribute( 1u, llvm::Attribute::NonNull ); // this is nonnull
 
-	NamesScope dummy_names_scope( ""_SpC, nullptr );
 	FunctionContext function_context(
 		constructor_type_ptr->return_type,
 		constructor_type_ptr->return_value_is_mutable,
@@ -467,7 +444,7 @@ void CodeBuilder::TryGenerateDefaultConstructor( Class& the_class, const Type& c
 			field_variable.llvm_value=
 				function_context.llvm_ir_builder.CreateGEP( this_llvm_value, llvm::ArrayRef<llvm::Value*> ( index_list, 2u ) );
 
-			ApplyEmptyInitializer( field_variable, dummy_names_scope, function_context );
+			ApplyEmptyInitializer( field_variable, function_context );
 		} );
 
 	function_context.llvm_ir_builder.CreateRetVoid();
@@ -493,6 +470,9 @@ void CodeBuilder::TryGenerateDefaultConstructor( Class& the_class, const Type& c
 		constructors.push_back( std::move( constructor_variable ) );
 		the_class.members.AddName( Keyword( Keywords::constructor_ ), std::move( constructors ) );
 	}
+
+	// After default constructor generation, class is default-constructible.
+	the_class.is_default_constructible= true;
 }
 
 void CodeBuilder::BuildNamespaceBody(
@@ -1084,7 +1064,7 @@ void CodeBuilder::BuildConstructorInitialization(
 			field_variable.llvm_value=
 				function_context.llvm_ir_builder.CreateGEP( this_.llvm_value, llvm::ArrayRef<llvm::Value*> ( index_list, 2u ) );
 
-			ApplyEmptyInitializer( field_variable, names_scope, function_context );
+			ApplyEmptyInitializer( field_variable, function_context );
 		}
 		catch( const ProgramError& ){}
 	}
@@ -1113,7 +1093,8 @@ void CodeBuilder::BuildConstructorInitialization(
 			field_variable.llvm_value=
 				function_context.llvm_ir_builder.CreateGEP( this_.llvm_value, llvm::ArrayRef<llvm::Value*> ( index_list, 2u ) );
 
-			ApplyInitializer_r( field_variable, field_initializer.initializer.get(), names_scope, function_context );
+			U_ASSERT( field_initializer.initializer != nullptr );
+			ApplyInitializer( field_variable, *field_initializer.initializer, names_scope, function_context );
 		}
 		catch( const ProgramError& ){}
 
@@ -1295,7 +1276,10 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 		{
 			variable.llvm_value= function_context.llvm_ir_builder.CreateAlloca( variable.type.GetLLVMType() );
 
-			ApplyInitializer_r( variable, variable_declaration.initializer.get(), block_names, function_context );
+			if( variable_declaration.initializer != nullptr )
+				ApplyInitializer( variable, *variable_declaration.initializer, block_names, function_context );
+			else
+				ApplyEmptyInitializer( variable, function_context );
 		}
 		else if( variable_declaration.reference_modifier == ReferenceModifier::Reference )
 		{
