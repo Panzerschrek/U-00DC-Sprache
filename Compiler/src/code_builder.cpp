@@ -76,6 +76,9 @@ CodeBuilder::CodeBuilder()
 	fundamental_llvm_types_.invalid_type_= llvm::Type::getInt8Ty( llvm_context_ );
 	fundamental_llvm_types_.void_= llvm::Type::getVoidTy( llvm_context_ );
 	fundamental_llvm_types_.bool_= llvm::Type::getInt1Ty( llvm_context_ );
+
+	void_type_.one_of_type_kind= FundamentalType( U_FundamentalType::Void, fundamental_llvm_types_.void_ );
+	bool_type_.one_of_type_kind= FundamentalType( U_FundamentalType::Bool, fundamental_llvm_types_.bool_ );
 }
 
 CodeBuilder::~CodeBuilder()
@@ -261,6 +264,8 @@ void CodeBuilder::PrepareClass( const ClassDeclaration& class_declaration, Names
 		}
 	}
 	U_ASSERT( the_class != nullptr );
+	Type class_type;
+	class_type.one_of_type_kind= the_class;
 
 	std::vector<llvm::Type*> fields_llvm_types;
 
@@ -303,8 +308,32 @@ void CodeBuilder::PrepareClass( const ClassDeclaration& class_declaration, Names
 		}
 	}
 
+	// Search for explicit noncopy constructors.
+	if( const NamesScope::InsertedName* const constructors_name=
+		the_class->members.GetThisScopeName( Keyword( Keywords::constructor_ ) ) )
+	{
+		const OverloadedFunctionsSet* const constructors= constructors_name->second.GetFunctionsSet();
+		U_ASSERT( constructors != nullptr );
+		for( const FunctionVariable& constructor : *constructors )
+		{
+			const FunctionPtr* const constructor_type_ptr= boost::get<FunctionPtr>( &constructor.type.one_of_type_kind );
+			U_ASSERT( constructor_type_ptr != nullptr && *constructor_type_ptr != nullptr );
+			const Function& constructor_type= **constructor_type_ptr;
+
+			U_ASSERT( constructor_type.args.size() >= 1u && constructor_type.args.front().type == class_type );
+			if( !( constructor_type.args.size() == 2u && constructor_type.args.back().type == class_type && !constructor_type.args.back().is_mutable ) )
+			{
+				the_class->have_explicit_noncopy_constructors= true;
+				break;
+			}
+		};
+	}
+
 	the_class->llvm_type->setBody( fields_llvm_types );
 	the_class->is_incomplete= false;
+
+	TryGenerateDefaultConstructor( *the_class, class_type );
+	TryGenerateCopyConstructor( *the_class, class_type );
 
 	// Build functions with body.
 	for( const ClassDeclaration::Member& member : class_declaration.members_ )
@@ -316,6 +345,342 @@ void CodeBuilder::PrepareClass( const ClassDeclaration& class_declaration, Names
 			if( (*function_declaration)->block_ != nullptr )
 				PrepareFunction( **function_declaration, false, the_class, the_class->members );
 		}
+	}
+}
+
+void CodeBuilder::TryGenerateDefaultConstructor( Class& the_class, const Type& class_type )
+{
+	// Search for explicit default constructor.
+	if( const NamesScope::InsertedName* const constructors_name=
+		the_class.members.GetThisScopeName( Keyword( Keywords::constructor_ ) ) )
+	{
+		const OverloadedFunctionsSet* const constructors= constructors_name->second.GetFunctionsSet();
+		U_ASSERT( constructors != nullptr );
+		for( const FunctionVariable& constructor : *constructors )
+		{
+			const FunctionPtr* const constructor_type_ptr= boost::get<FunctionPtr>( &constructor.type.one_of_type_kind );
+			U_ASSERT( constructor_type_ptr != nullptr && *constructor_type_ptr != nullptr );
+			const Function& constructor_type= **constructor_type_ptr;
+
+			U_ASSERT( constructor_type.args.size() >= 1u && constructor_type.args.front().type == class_type );
+			if( ( constructor_type.args.size() == 1u ) )
+			{
+				the_class.is_default_constructible= true;
+				return;
+			}
+		};
+	}
+
+	// Generating of default constructor disabled, if class have other explicit constructors, except copy constructors.
+	if( the_class.have_explicit_noncopy_constructors )
+		return;
+
+	// Generate default constructor, if all fields is default constructible.
+	bool all_fields_is_default_constructible= true;
+
+	the_class.members.ForEachInThisScope(
+		[&]( const NamesScope::InsertedName& member )
+		{
+			const ClassField* const field= member.second.GetClassField();
+			if( field == nullptr )
+				return;
+
+			if( !field->type.IsDefaultConstructible() )
+				all_fields_is_default_constructible= false;
+		} );
+
+	if( !all_fields_is_default_constructible )
+		return;
+
+	// Generate function
+
+	FunctionPtr constructor_type_ptr( new Function );
+	constructor_type_ptr->return_type= void_type_;
+	constructor_type_ptr->args.emplace_back();
+	constructor_type_ptr->args.back().type= class_type;
+	constructor_type_ptr->args.back().is_mutable= true;
+	constructor_type_ptr->args.back().is_reference= true;
+
+	std::vector<llvm::Type*> args_llvm_types;
+	args_llvm_types.push_back( llvm::PointerType::get( class_type.GetLLVMType(), 0u ) );
+
+	constructor_type_ptr->llvm_function_type=
+		llvm::FunctionType::get(
+			fundamental_llvm_types_.void_,
+			llvm::ArrayRef<llvm::Type*>( args_llvm_types.data(), args_llvm_types.size() ),
+			false );
+
+	llvm::Function* const llvm_constructor_function=
+		llvm::Function::Create(
+			constructor_type_ptr->llvm_function_type,
+			llvm::Function::LinkageTypes::ExternalLinkage, // TODO - select linkage
+			MangleFunction( the_class.members, Keyword( Keywords::constructor_ ), *constructor_type_ptr ),
+			module_.get() );
+
+	llvm_constructor_function->setUnnamedAddr( true );
+	llvm_constructor_function->addAttribute( 1u, llvm::Attribute::NonNull ); // this is nonnull
+
+	FunctionContext function_context(
+		constructor_type_ptr->return_type,
+		constructor_type_ptr->return_value_is_mutable,
+		constructor_type_ptr->return_value_is_reference,
+		llvm_context_,
+		llvm_constructor_function );
+
+	llvm::Value* const this_llvm_value= llvm_constructor_function->args().begin();
+	this_llvm_value->setName( KeywordAscii( Keywords::this_ ) );
+
+	the_class.members.ForEachInThisScope(
+		[&]( const NamesScope::InsertedName& member )
+		{
+			const ClassField* const field= member.second.GetClassField();
+			if( field == nullptr )
+				return;
+
+			Variable field_variable;
+			field_variable.type= field->type;
+			field_variable.value_type= ValueType::Reference;
+
+			llvm::Value* index_list[2];
+			index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
+			index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(field->index) ) );
+			field_variable.llvm_value=
+				function_context.llvm_ir_builder.CreateGEP( this_llvm_value, llvm::ArrayRef<llvm::Value*> ( index_list, 2u ) );
+
+			ApplyEmptyInitializer( field_variable, function_context );
+		} );
+
+	function_context.llvm_ir_builder.CreateRetVoid();
+
+	// Add generated constructor
+	FunctionVariable constructor_variable;
+	constructor_variable.type.one_of_type_kind= std::move( constructor_type_ptr );
+	constructor_variable.have_body= true;
+	constructor_variable.is_this_call= true;
+	constructor_variable.is_generated= true;
+	constructor_variable.llvm_function= llvm_constructor_function;
+
+	if( NamesScope::InsertedName* const constructors_name=
+		the_class.members.GetThisScopeName( Keyword( Keywords::constructor_ ) ) )
+	{
+		OverloadedFunctionsSet* const constructors= constructors_name->second.GetFunctionsSet();
+		U_ASSERT( constructors != nullptr );
+		constructors->push_back( std::move( constructor_variable ) );
+	}
+	else
+	{
+		OverloadedFunctionsSet constructors;
+		constructors.push_back( std::move( constructor_variable ) );
+		the_class.members.AddName( Keyword( Keywords::constructor_ ), std::move( constructors ) );
+	}
+
+	// After default constructor generation, class is default-constructible.
+	the_class.is_default_constructible= true;
+}
+
+void CodeBuilder::TryGenerateCopyConstructor( Class& the_class, const Type& class_type )
+{
+	// Search for explicit copy constructor.
+	if( const NamesScope::InsertedName* const constructors_name=
+		the_class.members.GetThisScopeName( Keyword( Keywords::constructor_ ) ) )
+	{
+		const OverloadedFunctionsSet* const constructors= constructors_name->second.GetFunctionsSet();
+		U_ASSERT( constructors != nullptr );
+		for( const FunctionVariable& constructor : *constructors )
+		{
+			const FunctionPtr* const constructor_type_ptr= boost::get<FunctionPtr>( &constructor.type.one_of_type_kind );
+			U_ASSERT( constructor_type_ptr != nullptr && *constructor_type_ptr != nullptr );
+			const Function& constructor_type= **constructor_type_ptr;
+
+			U_ASSERT( constructor_type.args.size() >= 1u && constructor_type.args.front().type == class_type );
+			if( constructor_type.args.size() == 2u &&
+				constructor_type.args.back().type == class_type && !constructor_type.args.back().is_mutable )
+			{
+				the_class.is_copy_constructible= true;
+				return;
+			}
+		}
+	}
+
+	bool all_fields_is_copy_constructible= true;
+
+	the_class.members.ForEachInThisScope(
+		[&]( const NamesScope::InsertedName& member )
+		{
+			const ClassField* const field= member.second.GetClassField();
+			if( field == nullptr )
+				return;
+
+			if( !field->type.IsCopyConstructible() )
+				all_fields_is_copy_constructible= false;
+		} );
+
+	if( !all_fields_is_copy_constructible )
+		return;
+
+	// Generate copy-constructor
+	FunctionPtr constructor_type_ptr( new Function );
+	constructor_type_ptr->return_type= void_type_;
+	constructor_type_ptr->args.resize(2u);
+	constructor_type_ptr->args[0].type= class_type;
+	constructor_type_ptr->args[0].is_mutable= true;
+	constructor_type_ptr->args[0].is_reference= true;
+	constructor_type_ptr->args[1].type= class_type;
+	constructor_type_ptr->args[1].is_mutable= false;
+	constructor_type_ptr->args[1].is_reference= true;
+
+	std::vector<llvm::Type*> args_llvm_types;
+	args_llvm_types.push_back( llvm::PointerType::get( class_type.GetLLVMType(), 0u ) );
+	args_llvm_types.push_back( llvm::PointerType::get( class_type.GetLLVMType(), 0u ) );
+
+	constructor_type_ptr->llvm_function_type=
+		llvm::FunctionType::get(
+			fundamental_llvm_types_.void_,
+			llvm::ArrayRef<llvm::Type*>( args_llvm_types.data(), args_llvm_types.size() ),
+			false );
+
+	llvm::Function* const llvm_constructor_function=
+		llvm::Function::Create(
+			constructor_type_ptr->llvm_function_type,
+			llvm::Function::LinkageTypes::ExternalLinkage, // TODO - select linkage
+			MangleFunction( the_class.members, Keyword( Keywords::constructor_ ), *constructor_type_ptr ),
+			module_.get() );
+
+	llvm_constructor_function->setUnnamedAddr( true );
+	llvm_constructor_function->addAttribute( 1u, llvm::Attribute::NonNull ); // this is nonnull
+	llvm_constructor_function->addAttribute( 2u, llvm::Attribute::NonNull ); // and src is nonnull
+
+	FunctionContext function_context(
+		constructor_type_ptr->return_type,
+		constructor_type_ptr->return_value_is_mutable,
+		constructor_type_ptr->return_value_is_reference,
+		llvm_context_,
+		llvm_constructor_function );
+
+	llvm::Value* const this_llvm_value= &*llvm_constructor_function->args().begin();
+	this_llvm_value->setName( KeywordAscii( Keywords::this_ ) );
+	llvm::Value* const src_llvm_value= &*(++llvm_constructor_function->args().begin());
+	src_llvm_value->setName( "src" );
+
+	the_class.members.ForEachInThisScope(
+		[&]( const NamesScope::InsertedName& member )
+		{
+			const ClassField* const field= member.second.GetClassField();
+			if( field == nullptr )
+				return;
+			U_ASSERT( field->type.IsCopyConstructible() );
+
+			llvm::Value* index_list[2];
+			index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
+			index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(field->index) ) );
+
+			BuildCopyConstructorPart(
+				function_context.llvm_ir_builder.CreateGEP( src_llvm_value , llvm::ArrayRef<llvm::Value*>( index_list, 2u ) ),
+				function_context.llvm_ir_builder.CreateGEP( this_llvm_value, llvm::ArrayRef<llvm::Value*>( index_list, 2u ) ),
+				field->type,
+				function_context );
+
+		} ); // For fields.
+
+	function_context.llvm_ir_builder.CreateRetVoid();
+
+	// Add generated constructor
+	FunctionVariable constructor_variable;
+	constructor_variable.type.one_of_type_kind= std::move( constructor_type_ptr );
+	constructor_variable.have_body= true;
+	constructor_variable.is_this_call= true;
+	constructor_variable.is_generated= true;
+	constructor_variable.llvm_function= llvm_constructor_function;
+
+	if( NamesScope::InsertedName* const constructors_name=
+		the_class.members.GetThisScopeName( Keyword( Keywords::constructor_ ) ) )
+	{
+		OverloadedFunctionsSet* const constructors= constructors_name->second.GetFunctionsSet();
+		U_ASSERT( constructors != nullptr );
+		constructors->push_back( std::move( constructor_variable ) );
+	}
+	else
+	{
+		OverloadedFunctionsSet constructors;
+		constructors.push_back( std::move( constructor_variable ) );
+		the_class.members.AddName( Keyword( Keywords::constructor_ ), std::move( constructors ) );
+	}
+
+	// After default constructor generation, class is copy-constructible.
+	the_class.is_copy_constructible= true;
+}
+
+void CodeBuilder::BuildCopyConstructorPart(
+	llvm::Value* const src, llvm::Value* const dst,
+	const Type& type,
+	FunctionContext& function_context )
+{
+	if( const FundamentalType* const fundamental_type= boost::get<FundamentalType>( &type.one_of_type_kind ) )
+	{
+		// Create simple load-store.
+		U_UNUSED( fundamental_type );
+		llvm::Value* const val= function_context.llvm_ir_builder.CreateLoad( src );
+		function_context.llvm_ir_builder.CreateStore( val, dst );
+	}
+	else if( const ArrayPtr* const array_type_ptr= boost::get<ArrayPtr>( &type.one_of_type_kind ) )
+	{
+		U_ASSERT( *array_type_ptr != nullptr );
+		const Array& array_type= **array_type_ptr;
+
+		// TODO - generate loop code
+		for( size_t i= 0u; i < array_type.size; i++ )
+		{
+			llvm::Value* index_list[2];
+			index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
+			index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(i) ) );
+
+			BuildCopyConstructorPart(
+				function_context.llvm_ir_builder.CreateGEP( src, llvm::ArrayRef<llvm::Value*>( index_list, 2u ) ),
+				function_context.llvm_ir_builder.CreateGEP( dst, llvm::ArrayRef<llvm::Value*>( index_list, 2u ) ),
+				array_type.type,
+				function_context );
+		}
+	}
+	else if( const ClassPtr* const class_type_ptr = boost::get<ClassPtr>( &type.one_of_type_kind ) )
+	{
+		U_ASSERT( *class_type_ptr != nullptr );
+		Type filed_class_type;
+		filed_class_type.one_of_type_kind= *class_type_ptr;
+
+		// Search copy constructor.
+		const NamesScope::InsertedName* constructor_name=
+			(*class_type_ptr)->members.GetThisScopeName( Keyword( Keywords::constructor_ ) );
+		U_ASSERT( constructor_name != nullptr );
+		const OverloadedFunctionsSet* const constructors_set= constructor_name->second.GetFunctionsSet();
+		U_ASSERT( constructors_set != nullptr );
+
+		const FunctionVariable* constructor= nullptr;;
+		for( const FunctionVariable& candidate_constructor : *constructors_set )
+		{
+			const FunctionPtr* const constructor_type_ptr= boost::get<FunctionPtr>( &candidate_constructor.type.one_of_type_kind );
+			U_ASSERT( constructor_type_ptr != nullptr && *constructor_type_ptr != nullptr );
+			const Function& constructor_type= **constructor_type_ptr;
+
+			if( constructor_type.args.size() == 2u &&
+				constructor_type.args.back().type == filed_class_type && !constructor_type.args.back().is_mutable )
+			{
+				constructor= &candidate_constructor;
+				break;
+			}
+		}
+		U_ASSERT( constructor != nullptr );
+
+		// Call it.
+		std::vector<llvm::Value*> llvm_args;
+		llvm_args.push_back( dst );
+		llvm_args.push_back( src );
+		function_context.llvm_ir_builder.CreateCall(
+			llvm::dyn_cast<llvm::Function>(constructor->llvm_function),
+			llvm_args );
+	}
+	else
+	{
+		U_ASSERT(false);
 	}
 }
 
@@ -365,7 +730,6 @@ void CodeBuilder::BuildNamespaceBody(
 			U_ASSERT(false);
 		}
 	} // for program elements
-
 }
 
 void CodeBuilder::PrepareFunction(
@@ -376,7 +740,9 @@ void CodeBuilder::PrepareFunction(
 {
 	const ProgramString& func_name= func.name_.components.back();
 
-	if( IsKeyword( func_name ) )
+	const bool is_constructor= func_name == Keywords::constructor_;
+
+	if( !is_constructor && IsKeyword( func_name ) )
 		errors_.push_back( ReportUsingKeywordAsName( func.file_pos_ ) );
 
 	const Block* const block= is_class_method_predeclaration ? nullptr : func.block_.get();
@@ -415,6 +781,17 @@ void CodeBuilder::PrepareFunction(
 		}
 	}
 
+	if( is_constructor && base_class == nullptr )
+	{
+		errors_.push_back( ReportConstructorOutsideClass( func.file_pos_ ) );
+		return;
+	}
+	if( !is_constructor && func.constructor_initialization_list_ != nullptr )
+	{
+		errors_.push_back( ReportInitializationListInNonconstructor(  func.constructor_initialization_list_->file_pos_ ) );
+		return;
+	}
+
 	FunctionVariable func_variable;
 
 	std::unique_ptr<Function> function_type_storage( new Function() );
@@ -422,10 +799,7 @@ void CodeBuilder::PrepareFunction(
 	func_variable.type.one_of_type_kind= std::move(function_type_storage);
 
 	if( func.return_type_.empty() )
-	{
-		function_type.return_type.one_of_type_kind=
-			FundamentalType( U_FundamentalType::Void, fundamental_llvm_types_.void_ );
-	}
+		function_type.return_type= void_type_;
 	else
 	{
 		// TODO - support nonfundamental return types.
@@ -446,14 +820,33 @@ void CodeBuilder::PrepareFunction(
 		function_type.return_value_is_mutable= true;
 	function_type.return_value_is_reference= func.return_value_reference_modifier_ == ReferenceModifier::Reference;
 
+	if( is_constructor && function_type.return_type != void_type_ )
+		errors_.push_back( ReportConstructorMustReturnVoid( func.file_pos_ ) );
+
 	// Args.
 	function_type.args.reserve( func.arguments_.size() );
+
+	// Generate "this" arg for constructors.
+	if( is_constructor )
+	{
+		func_variable.is_this_call= true;
+
+		function_type.args.emplace_back();
+		Function::Arg& arg= function_type.args.back();
+		arg.type.one_of_type_kind= base_class;
+		arg.is_reference= true;
+		arg.is_mutable= true;
+	}
+
 	for( const FunctionArgumentDeclarationPtr& arg : func.arguments_ )
 	{
 		const bool is_this= arg == func.arguments_.front() && arg->name_ == Keywords::this_;
 
 		if( !is_this && IsKeyword( arg->name_ ) )
 			errors_.push_back( ReportUsingKeywordAsName( arg->file_pos_ ) );
+
+		if( is_this && is_constructor )
+			errors_.push_back( ReportExplicitThisInConstructorParamters( arg->file_pos_ ) );
 
 		function_type.args.emplace_back();
 		Function::Arg& out_arg= function_type.args.back();
@@ -508,7 +901,8 @@ void CodeBuilder::PrepareFunction(
 			*func_base_names_scope,
 			func_name,
 			func.arguments_,
-			block );
+			block,
+			func.constructor_initialization_list_.get() );
 	}
 	else
 	{
@@ -543,7 +937,8 @@ void CodeBuilder::PrepareFunction(
 					*func_base_names_scope,
 					func_name,
 					func.arguments_,
-					block );
+					block,
+					func.constructor_initialization_list_.get() );
 			}
 			else
 			{
@@ -568,7 +963,8 @@ void CodeBuilder::PrepareFunction(
 					*func_base_names_scope,
 					func_name,
 					func.arguments_,
-					block );
+					block,
+					func.constructor_initialization_list_.get() );
 			}
 		}
 		else
@@ -582,7 +978,8 @@ void CodeBuilder::BuildFuncCode(
 	const NamesScope& parent_names_scope,
 	const ProgramString& func_name,
 	const FunctionArgumentsDeclaration& args,
-	const Block* const block ) noexcept
+	const Block* const block,
+	const StructNamedInitializer* const constructor_initialization_list ) noexcept
 {
 	std::vector<llvm::Type*> args_llvm_types;
 	const FunctionPtr& function_type_ptr= boost::get<FunctionPtr>( func_variable.type.one_of_type_kind );
@@ -650,13 +1047,33 @@ void CodeBuilder::BuildFuncCode(
 		llvm_function );
 
 	// push args
+	Variable this_;
 	unsigned int arg_number= 0u;
+
+	const bool is_constructor= func_name == Keywords::constructor_;
+
 	for( llvm::Argument& llvm_arg : llvm_function->args() )
 	{
 		const Function::Arg& arg= function_type_ptr->args[ arg_number ];
 
-		const bool is_this= arg_number == 0u && args[ arg_number ]->name_ == Keywords::this_;
+		if( is_constructor && arg_number == 0u )
+		{
+			this_.location= Variable::Location::Pointer;
+			this_.value_type= ValueType::Reference;
+			this_.type= arg.type;
+			this_.llvm_value= &llvm_arg;
+			llvm_arg.setName( KeywordAscii( Keywords::this_ ) );
+			function_context.this_= &this_;
+			arg_number++;
+			continue;
+		}
+
+		const FunctionArgumentDeclaration& declaration_arg= *args[ is_constructor ? ( arg_number - 1u ) : arg_number ];
+		const ProgramString& arg_name= declaration_arg.name_;
+
+		const bool is_this= arg_number == 0u && arg_name == Keywords::this_;
 		U_ASSERT( !( is_this && !arg.is_reference ) );
+		U_ASSERT( !( is_constructor && is_this ) );
 
 		Variable var;
 		var.location= Variable::Location::LLVMRegister;
@@ -664,10 +1081,8 @@ void CodeBuilder::BuildFuncCode(
 		var.type= arg.type;
 		var.llvm_value= &llvm_arg;
 
-		const ProgramString& arg_name= args[ arg_number ]->name_;
-
 		// TODO - make variables without explicit mutability modifiers immutable.
-		if( args[ arg_number ]->mutability_modifier_ == MutabilityModifier::Immutable )
+		if( declaration_arg.mutability_modifier_ == MutabilityModifier::Immutable )
 			var.value_type= ValueType::ConstReference;
 
 		if( arg.is_reference )
@@ -685,35 +1100,63 @@ void CodeBuilder::BuildFuncCode(
 			var.location= Variable::Location::Pointer;
 		}
 
-		const NamesScope::InsertedName* const inserted_arg=
-			function_names.AddName(
-				arg_name,
-				std::move(var) );
-		if( !inserted_arg )
-		{
-			errors_.push_back( ReportRedefinition( args[ arg_number ]->file_pos_, arg_name ) );
-			return;
-		}
-
-		// Save "this" in function context for accessing inside class methods.
-		// "This" inserted to names scope for accessing via "this.member".
 		if( is_this )
 		{
-			function_context.this_= inserted_arg->second.GetVariable();
-			U_ASSERT( function_context.this_ != nullptr );
+			// Save "this" in function context for accessing inside class methods.
+			this_= std::move(var);
+			function_context.this_= &this_;
+		}
+		else
+		{
+			const NamesScope::InsertedName* const inserted_arg=
+				function_names.AddName(
+					arg_name,
+					std::move(var) );
+			if( !inserted_arg )
+			{
+				errors_.push_back( ReportRedefinition( declaration_arg.file_pos_, arg_name ) );
+				return;
+			}
 		}
 
 		llvm_arg.setName( "_arg_" + ToStdString( arg_name ) );
 		++arg_number;
 	}
 
+	if( is_constructor )
+	{
+		U_ASSERT( base_class != nullptr );
+		U_ASSERT( function_context.this_ != nullptr );
+
+		function_context.is_constructor_initializer_list_now= true;
+
+		if( constructor_initialization_list == nullptr )
+		{
+			// Create dummy initialization list for constructors without explicit initialization list.
+			const StructNamedInitializer dumy_initialization_list{ FilePos() };
+
+			BuildConstructorInitialization(
+				*function_context.this_,
+				*base_class,
+				function_names,
+				function_context,
+				dumy_initialization_list );
+		}
+		else
+			BuildConstructorInitialization(
+				*function_context.this_,
+				*base_class,
+				function_names,
+				function_context,
+				*constructor_initialization_list );
+
+		function_context.is_constructor_initializer_list_now= false;
+	}
+
 	const BlockBuildInfo block_build_info=
 		BuildBlockCode( *block, function_names, function_context );
 
-	Type void_type;
-	void_type.one_of_type_kind= FundamentalType( U_FundamentalType::Void, fundamental_llvm_types_.void_ );
-
-	if(  function_type_ptr->return_type == void_type )
+	if(  function_type_ptr->return_type == void_type_ )
 	{
 		// Manually generate "return" for void-return functions.
 		if( !block_build_info.have_unconditional_return_inside )
@@ -753,6 +1196,121 @@ void CodeBuilder::BuildFuncCode(
 		else
 			++it;
 	}
+}
+
+void CodeBuilder::BuildConstructorInitialization(
+	const Variable& this_,
+	const Class& base_class,
+	NamesScope& names_scope,
+	FunctionContext& function_context,
+	const StructNamedInitializer& constructor_initialization_list ) noexcept
+{
+	std::set<ProgramString> initialized_fields;
+
+	// Check for errors, build list of initialized fields.
+	bool have_fields_errors= false;
+	for( const StructNamedInitializer::MemberInitializer& field_initializer : constructor_initialization_list.members_initializers )
+	{
+		const NamesScope::InsertedName* const class_member=
+			base_class.members.GetThisScopeName( field_initializer.name );
+
+		if( class_member == nullptr )
+		{
+			have_fields_errors= true;
+			errors_.push_back( ReportNameNotFound( constructor_initialization_list.file_pos_, field_initializer.name ) );
+			continue;
+		}
+
+		const ClassField* const field= class_member->second.GetClassField();
+		if( field == nullptr )
+		{
+			have_fields_errors= true;
+			errors_.push_back( ReportInitializerForNonfieldStructMember( constructor_initialization_list.file_pos_, field_initializer.name ) );
+			continue;
+		}
+
+		if( initialized_fields.find( field_initializer.name ) != initialized_fields.end() )
+		{
+			have_fields_errors= true;
+			errors_.push_back( ReportDuplicatedStructMemberInitializer( constructor_initialization_list.file_pos_, field_initializer.name ) );
+			continue;
+		}
+
+		initialized_fields.insert( field_initializer.name );
+		function_context.uninitialized_this_fields.insert( field );
+	} // for fields initializers
+
+	std::set<ProgramString> uninitialized_fields;
+
+	base_class.members.ForEachInThisScope(
+		[&]( const NamesScope::InsertedName& member )
+		{
+			const ClassField* const field= member.second.GetClassField();
+			if( field == nullptr )
+				return;
+
+			if( initialized_fields.find( member.first ) == initialized_fields.end() )
+				uninitialized_fields.insert( member.first );
+		} );
+
+	// Initialize fields, missing in initializer list.
+	for( const ProgramString& field_name : uninitialized_fields )
+	{
+		const NamesScope::InsertedName* const class_member=
+			base_class.members.GetThisScopeName( field_name );
+		U_ASSERT( class_member != nullptr );
+		const ClassField* const field= class_member->second.GetClassField();
+		U_ASSERT( field != nullptr );
+
+		try
+		{
+			Variable field_variable;
+			field_variable.type= field->type;
+			field_variable.location= Variable::Location::Pointer;
+			field_variable.value_type= ValueType::Reference;
+
+			llvm::Value* index_list[2];
+			index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
+			index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(field->index) ) );
+			field_variable.llvm_value=
+				function_context.llvm_ir_builder.CreateGEP( this_.llvm_value, llvm::ArrayRef<llvm::Value*> ( index_list, 2u ) );
+
+			ApplyEmptyInitializer( field_variable, function_context );
+		}
+		catch( const ProgramError& ){}
+	}
+
+	if( have_fields_errors )
+		return;
+
+	for( const StructNamedInitializer::MemberInitializer& field_initializer : constructor_initialization_list.members_initializers )
+	{
+		const NamesScope::InsertedName* const class_member=
+			base_class.members.GetThisScopeName( field_initializer.name );
+		U_ASSERT( class_member != nullptr );
+		const ClassField* const field= class_member->second.GetClassField();
+		U_ASSERT( field != nullptr );
+
+		try
+		{
+			Variable field_variable;
+			field_variable.type= field->type;
+			field_variable.location= Variable::Location::Pointer;
+			field_variable.value_type= ValueType::Reference;
+
+			llvm::Value* index_list[2];
+			index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
+			index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(field->index) ) );
+			field_variable.llvm_value=
+				function_context.llvm_ir_builder.CreateGEP( this_.llvm_value, llvm::ArrayRef<llvm::Value*> ( index_list, 2u ) );
+
+			U_ASSERT( field_initializer.initializer != nullptr );
+			ApplyInitializer( field_variable, *field_initializer.initializer, names_scope, function_context );
+		}
+		catch( const ProgramError& ){}
+
+		function_context.uninitialized_this_fields.erase( field );
+	} // for fields initializers
 }
 
 CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockCode(
@@ -930,7 +1488,10 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 			variable.llvm_value= function_context.alloca_ir_builder.CreateAlloca( variable.type.GetLLVMType() );
 			variable.llvm_value->setName( ToStdString( variable_declaration.name ) );
 
-			ApplyInitializer_r( variable, variable_declaration.initializer.get(), block_names, function_context );
+			if( variable_declaration.initializer != nullptr )
+				ApplyInitializer( variable, *variable_declaration.initializer, block_names, function_context );
+			else
+				ApplyEmptyInitializer( variable, function_context );
 		}
 		else if( variable_declaration.reference_modifier == ReferenceModifier::Reference )
 		{
@@ -1154,12 +1715,9 @@ void CodeBuilder::BuildReturnOperatorCode(
 {
 	if( return_operator.expression_ == nullptr )
 	{
-		Type void_type;
-		void_type.one_of_type_kind= FundamentalType( U_FundamentalType::Void, fundamental_llvm_types_.void_ );
-
-		if( function_context.return_type != void_type )
+		if( function_context.return_type != void_type_ )
 		{
-			errors_.push_back( ReportTypesMismatch( return_operator.file_pos_, void_type.ToString(), function_context.return_type.ToString() ) );
+			errors_.push_back( ReportTypesMismatch( return_operator.file_pos_, void_type_.ToString(), function_context.return_type.ToString() ) );
 			return;
 		}
 

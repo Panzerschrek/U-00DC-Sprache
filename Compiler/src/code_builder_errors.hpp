@@ -57,15 +57,23 @@ enum class CodeBuilderErrorCode : unsigned int
 	StructInitializerForNonStruct,
 	InitializerForNonfieldStructMember,
 	DuplicatedStructMemberInitializer,
-	MissingStructMemberInitializer,
+	InitializerDisabledBecauseClassHaveExplicitNoncopyConstructors,
 	InvalidTypeForAutoVariable,
+
+	// Constructors errors
+	ConstructorOutsideClass,
+	ConstructorMustReturnVoid,
+	InitializationListInNonconstructor,
+	ClassHaveNoConstructors,
+	ExplicitThisInConstructorParamters,
+	FieldIsNotInitializedYet,
+	MethodsCallInConstructorInitializerListIsForbidden,
 
 	// Methods errors.
 	CallOfThiscallFunctionUsingNonthisArgument,
 	ClassFiledAccessInStaticMethod,
 	ThisInNonclassFunction,
-
-	// Push new error codes at back.
+	ThisUnavailable,
 };
 
 struct CodeBuilderError
@@ -121,10 +129,18 @@ CodeBuilderError ReportConstructorInitializerForUnsupportedType( const FilePos& 
 CodeBuilderError ReportStructInitializerForNonStruct( const FilePos& file_pos );
 CodeBuilderError ReportInitializerForNonfieldStructMember( const FilePos& file_pos, const ProgramString& member_name );
 CodeBuilderError ReportDuplicatedStructMemberInitializer( const FilePos& file_pos, const ProgramString& member_name );
-CodeBuilderError ReportMissingStructMemberInitializer( const FilePos& file_pos, const ProgramString& member_name );
+CodeBuilderError ReportInitializerDisabledBecauseClassHaveExplicitNoncopyConstructors( const FilePos& file_pos );
 CodeBuilderError ReportInvalidTypeForAutoVariable( const FilePos& file_pos, const ProgramString& type_name );
+CodeBuilderError ReportConstructorOutsideClass( const FilePos& file_pos );
+CodeBuilderError ReportConstructorMustReturnVoid( const FilePos& file_pos );
+CodeBuilderError ReportInitializationListInNonconstructor( const FilePos& file_pos );
+CodeBuilderError ReportClassHaveNoConstructors( const FilePos& file_pos );
+CodeBuilderError ReportExplicitThisInConstructorParamters( const FilePos& file_pos );
+CodeBuilderError ReportFieldIsNotInitializedYet( const FilePos& file_pos, const ProgramString& field_name );
+CodeBuilderError ReportMethodsCallInConstructorInitializerListIsForbidden( const FilePos& file_pos, const ProgramString& method_name );
 CodeBuilderError ReportCallOfThiscallFunctionUsingNonthisArgument( const FilePos& file_pos );
 CodeBuilderError ReportClassFiledAccessInStaticMethod( const FilePos& file_pos, const ProgramString& field_name );
 CodeBuilderError ReportThisInNonclassFunction( const FilePos& file_pos, const ProgramString& func_name );
+CodeBuilderError ReportThisUnavailable( const FilePos& file_pos );
 
 } // namespace U

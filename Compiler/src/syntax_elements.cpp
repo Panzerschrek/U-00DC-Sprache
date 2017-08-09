@@ -294,6 +294,7 @@ FunctionDeclaration::FunctionDeclaration(
 	MutabilityModifier return_value_mutability_modifier,
 	ReferenceModifier return_value_reference_modifier,
 	FunctionArgumentsDeclaration arguments,
+	std::unique_ptr<StructNamedInitializer> constructor_initialization_list,
 	BlockPtr block )
 	: IProgramElement(file_pos)
 	, name_( std::move(name) )
@@ -301,6 +302,7 @@ FunctionDeclaration::FunctionDeclaration(
 	, return_value_mutability_modifier_(return_value_mutability_modifier)
 	, return_value_reference_modifier_(return_value_reference_modifier)
 	, arguments_( std::move(arguments) )
+	, constructor_initialization_list_( std::move(constructor_initialization_list) )
 	, block_( std::move(block) )
 {}
 

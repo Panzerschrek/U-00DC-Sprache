@@ -91,6 +91,8 @@ set( TESTS_SOURCES
 	src/tests/classes_declaration_test.cpp
 	src/tests/code_builder_errors_test.cpp
 	src/tests/code_builder_test.cpp
+	src/tests/constructors_errors_test.cpp
+	src/tests/constructors_test.cpp
 	src/tests/initializers_errors_test.cpp
 	src/tests/initializers_test.cpp
 	src/tests/methods_errors_test.cpp

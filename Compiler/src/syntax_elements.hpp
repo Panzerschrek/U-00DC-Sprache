@@ -468,6 +468,7 @@ public:
 		MutabilityModifier return_value_mutability_modifier,
 		ReferenceModifier return_value_reference_modifier,
 		FunctionArgumentsDeclaration arguments,
+		std::unique_ptr<StructNamedInitializer> constructor_initialization_list,
 		BlockPtr block );
 
 	virtual ~FunctionDeclaration() override;
@@ -477,6 +478,7 @@ public:
 	const MutabilityModifier return_value_mutability_modifier_;
 	const ReferenceModifier return_value_reference_modifier_;
 	const FunctionArgumentsDeclaration arguments_;
+	const std::unique_ptr<StructNamedInitializer> constructor_initialization_list_;
 	const BlockPtr block_;
 };
 

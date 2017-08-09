@@ -408,6 +408,17 @@ Value CodeBuilder::BuildNamedOperand(
 	const NamesScope& names,
 	FunctionContext& function_context )
 {
+	if( named_operand.name_.components.size() == 1u &&
+		named_operand.name_.components.back() == Keywords::this_ )
+	{
+		if( function_context.this_ == nullptr || function_context.is_constructor_initializer_list_now )
+		{
+			errors_.push_back( ReportThisUnavailable( named_operand.file_pos_ ) );
+			throw ProgramError();
+		}
+		return *function_context.this_;
+	}
+
 	const NamesScope::InsertedName* name_entry=
 		names.ResolveName( named_operand.name_ );
 	if( !name_entry )
@@ -437,6 +448,13 @@ Value CodeBuilder::BuildNamedOperand(
 			throw ProgramError();
 		}
 
+		if( function_context.is_constructor_initializer_list_now &&
+			function_context.uninitialized_this_fields.find( field ) != function_context.uninitialized_this_fields.end() )
+		{
+			errors_.push_back( ReportFieldIsNotInitializedYet( named_operand.file_pos_, named_operand.name_.components.back() ) );
+			throw ProgramError();
+		}
+
 		Variable field_variable;
 		field_variable.type= field->type;
 		field_variable.location= Variable::Location::Pointer;
@@ -456,6 +474,13 @@ Value CodeBuilder::BuildNamedOperand(
 	{
 		if( function_context.this_ != nullptr )
 		{
+			if( function_context.is_constructor_initializer_list_now )
+			{
+				// SPRACHE_TODO - allow call of static methods and parents methods.
+				errors_.push_back( ReportMethodsCallInConstructorInitializerListIsForbidden( named_operand.file_pos_, named_operand.name_.components.back() ) );
+				throw ProgramError();
+			}
+
 			// Trying add "this" to functions set.
 			const ClassPtr class_= boost::get<ClassPtr>( function_context.this_->type.one_of_type_kind );
 

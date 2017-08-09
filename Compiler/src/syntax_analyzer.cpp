@@ -1537,18 +1537,67 @@ std::unique_ptr<FunctionDeclaration> SyntaxAnalyzer::ParseFunction()
 		}
 	}
 
+	std::unique_ptr<StructNamedInitializer> constructor_initialization_list;
 	BlockPtr block;
 
-	if( it_ < it_end_ && it_->type == Lexem::Type::BraceLeft )
-		block= ParseBlock();
-	else if( it_ < it_end_ && it_->type == Lexem::Type::Semicolon )
+	if( it_->type == Lexem::Type::Semicolon )
 	{
+		// function prototype
 		++it_; U_ASSERT( it_ < it_end_ );
-	} // function prototype
+	}
 	else
 	{
-		PushErrorMessage( *it_ );
-		return nullptr;
+		if( it_->type == Lexem::Type::BracketLeft )
+		{
+			constructor_initialization_list.reset( new StructNamedInitializer( it_->file_pos ) );
+			++it_; U_ASSERT( it_ < it_end_ );
+
+			while( true )
+			{
+				if( it_->type == Lexem::Type::BracketRight )
+				{
+					++it_; U_ASSERT( it_ < it_end_ );
+					break;
+				}
+
+				if( it_->type != Lexem::Type::Identifier )
+				{
+					PushErrorMessage( *it_ );
+					return nullptr;
+				}
+				constructor_initialization_list->members_initializers.emplace_back();
+				constructor_initialization_list->members_initializers.back().name= it_->text;
+				IInitializerPtr& initializer= constructor_initialization_list->members_initializers.back().initializer;
+
+				++it_; U_ASSERT( it_ < it_end_ );
+
+				if( it_->type == Lexem::Type::Assignment )
+				{
+					++it_;
+					U_ASSERT( it_ < it_end_ );
+					if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::zero_init_ )
+					{
+						initializer.reset( new ZeroInitializer( it_->file_pos ) );
+						++it_;
+					}
+					else
+						initializer.reset( new ExpressionInitializer( it_->file_pos, ParseExpression() ) );
+				}
+				else
+					initializer= ParseInitializer( false );
+
+				if( it_->type == Lexem::Type::Comma )
+					++it_; U_ASSERT( it_ < it_end_ );
+			}
+		}
+
+		if( it_->type == Lexem::Type::BraceLeft )
+			block= ParseBlock();
+		else
+		{
+			PushErrorMessage( *it_ );
+			return nullptr;
+		}
 	}
 
 	return std::unique_ptr<FunctionDeclaration>(
@@ -1559,6 +1608,7 @@ std::unique_ptr<FunctionDeclaration> SyntaxAnalyzer::ParseFunction()
 			mutability_modifier,
 			reference_modifier,
 			std::move( arguments ),
+			std::move( constructor_initialization_list ),
 			std::move( block ) ) );
 }
 

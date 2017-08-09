@@ -1,4 +1,5 @@
 #pragma once
+#include <set>
 #include <vector>
 
 #include "push_disable_llvm_warnings.hpp"
@@ -46,6 +47,9 @@ private:
 
 		const Variable* this_= nullptr; // null for nonclass functions or static member functions.
 
+		std::set<const ClassField*> uninitialized_this_fields;
+		bool is_constructor_initializer_list_now= false;
+
 		llvm::Function* const function;
 
 		llvm::BasicBlock* const alloca_basic_block; // Block #0 in function. Contains all "alloca" instructions.
@@ -68,6 +72,14 @@ private:
 	Type PrepareType( const FilePos& file_pos, const TypeName& type_name, const NamesScope& names_scope );
 	void PrepareClass( const ClassDeclaration& class_declaration, NamesScope& names_scope );
 
+	void TryGenerateDefaultConstructor( Class& the_class, const Type& class_type );
+	void TryGenerateCopyConstructor( Class& the_class, const Type& class_type );
+
+	void BuildCopyConstructorPart(
+		llvm::Value* src, llvm::Value* dst,
+		const Type& type,
+		FunctionContext& function_context );
+
 	void BuildNamespaceBody(
 		const ProgramElements& body_elements,
 		NamesScope& names_scope );
@@ -89,7 +101,15 @@ private:
 		const NamesScope& parent_names_scope,
 		const ProgramString& func_name,
 		const FunctionArgumentsDeclaration& args,
-		const Block* block ) noexcept;
+		const Block* block, // null for prototypes.
+		const StructNamedInitializer* constructor_initialization_list ) noexcept;
+
+	void BuildConstructorInitialization(
+		const Variable& this_,
+		const Class& base_class,
+		NamesScope& names_scope,
+		FunctionContext& function_context,
+		const StructNamedInitializer& constructor_initialization_list ) noexcept;
 
 	BlockBuildInfo BuildBlockCode(
 		const Block& block,
@@ -197,10 +217,14 @@ private:
 
 	// Initializers.
 
-	void ApplyInitializer_r(
+	void ApplyInitializer(
 		const Variable& variable,
-		const IInitializer* initializer,
+		const IInitializer& initializer,
 		NamesScope& block_names,
+		FunctionContext& function_context );
+
+	void ApplyEmptyInitializer(
+		const Variable& variable,
 		FunctionContext& function_context );
 
 	void ApplyArrayInitializer(
@@ -262,6 +286,9 @@ private:
 		llvm::Type* invalid_type_;
 		llvm::IntegerType* bool_;
 	} fundamental_llvm_types_;
+
+	Type void_type_;
+	Type bool_type_; // TODO - use this
 
 	std::unique_ptr<llvm::Module> module_;
 	unsigned int error_count_= 0u;

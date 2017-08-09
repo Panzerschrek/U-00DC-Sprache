@@ -50,6 +50,7 @@ enum class Keywords : unsigned int
 	zero_init_,
 
 	this_,
+	constructor_,
 
 	// Reserved keywords for future usage.
 	for_,

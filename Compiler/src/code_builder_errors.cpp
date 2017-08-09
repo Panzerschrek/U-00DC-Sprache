@@ -232,7 +232,7 @@ CodeBuilderError ReportExpectedInitializer( const FilePos& file_pos )
 	error.file_pos= file_pos;
 	error.code= CodeBuilderErrorCode::ExpectedInitializer;
 
-	error.text= "Expected initializer for this variable."_SpC;
+	error.text= "Expected initializer or constructor for this variable."_SpC;
 
 	return error;
 }
@@ -509,13 +509,13 @@ CodeBuilderError ReportDuplicatedStructMemberInitializer( const FilePos& file_po
 	return error;
 }
 
-CodeBuilderError ReportMissingStructMemberInitializer( const FilePos& file_pos, const ProgramString& member_name )
+CodeBuilderError ReportInitializerDisabledBecauseClassHaveExplicitNoncopyConstructors( const FilePos& file_pos )
 {
 	CodeBuilderError error;
 	error.file_pos= file_pos;
-	error.code= CodeBuilderErrorCode::MissingStructMemberInitializer;
+	error.code= CodeBuilderErrorCode::InitializerDisabledBecauseClassHaveExplicitNoncopyConstructors;
 
-	error.text= "Missing initializer for"_SpC + member_name + "."_SpC;
+	error.text= "This kind of initializer disabled for this class, because it have explicit noncopy constructor(s)."_SpC;
 
 	return error;
 }
@@ -527,6 +527,83 @@ CodeBuilderError ReportInvalidTypeForAutoVariable( const FilePos& file_pos, cons
 	error.code= CodeBuilderErrorCode::InvalidTypeForAutoVariable;
 
 	error.text= "Invalid type for auto variable: "_SpC + type_name + "."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportConstructorOutsideClass( const FilePos& file_pos )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::ConstructorOutsideClass;
+
+	error.text= "Constructor outside class."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportConstructorMustReturnVoid( const FilePos& file_pos )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::ConstructorMustReturnVoid;
+
+	error.text= "Constructor must return void."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportInitializationListInNonconstructor( const FilePos& file_pos )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::InitializationListInNonconstructor;
+
+	error.text= "Constructor outside class."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportClassHaveNoConstructors( const FilePos& file_pos )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::ClassHaveNoConstructors;
+
+	error.text= "Class have no constructors."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportExplicitThisInConstructorParamters( const FilePos& file_pos )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::ExplicitThisInConstructorParamters;
+
+	error.text= "Explicit \"this\" in constructor parameters."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportFieldIsNotInitializedYet( const FilePos& file_pos, const ProgramString& field_name )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::FieldIsNotInitializedYet;
+
+	error.text= "Field \""_SpC + field_name + "\" in not initialized yet."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportMethodsCallInConstructorInitializerListIsForbidden( const FilePos& file_pos, const ProgramString& method_name )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::MethodsCallInConstructorInitializerListIsForbidden;
+
+	error.text= "Call of method \""_SpC + method_name + "\" in constructor."_SpC;
 
 	return error;
 }
@@ -560,6 +637,17 @@ CodeBuilderError ReportThisInNonclassFunction( const FilePos& file_pos, const Pr
 	error.code= CodeBuilderErrorCode::ThisInNonclassFunction;
 
 	error.text= "This in nonclass function \""_SpC + func_name + "\"."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportThisUnavailable( const FilePos& file_pos )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::ThisUnavailable;
+
+	error.text= "\"this\" unavailable."_SpC;
 
 	return error;
 }

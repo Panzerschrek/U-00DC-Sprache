@@ -17,42 +17,36 @@ namespace U
 namespace CodeBuilderPrivate
 {
 
-void CodeBuilder::ApplyInitializer_r(
+static const size_t g_max_array_size_to_linear_initialization= 8u;
+
+void CodeBuilder::ApplyInitializer(
 	const Variable& variable,
-	const IInitializer* const initializer,
+	const IInitializer& initializer,
 	NamesScope& block_names,
 	FunctionContext& function_context )
 {
-	// SPRACHE_TODO - allow missing initializers for types with default constructor.
-	if( initializer == nullptr )
-	{
-		// TODO - set file_pos
-		errors_.push_back( ReportExpectedInitializer( FilePos() ) );
-		return;
-	}
-
 	if( const ArrayInitializer* const array_initializer=
-		dynamic_cast<const ArrayInitializer*>(initializer) )
+		dynamic_cast<const ArrayInitializer*>(&initializer) )
 	{
 		ApplyArrayInitializer( variable, *array_initializer, block_names, function_context );
 	}
 	else if( const StructNamedInitializer* const struct_named_initializer=
-		dynamic_cast<const StructNamedInitializer*>(initializer) )
+		dynamic_cast<const StructNamedInitializer*>(&initializer) )
 	{
 		ApplyStructNamedInitializer( variable, *struct_named_initializer, block_names, function_context );
 	}
 	else if( const ConstructorInitializer* const constructor_initializer=
-		dynamic_cast<const ConstructorInitializer*>(initializer) )
+		dynamic_cast<const ConstructorInitializer*>(&initializer) )
 	{
 		ApplyConstructorInitializer( variable, *constructor_initializer, block_names, function_context );
 	}
 	else if( const ExpressionInitializer* const expression_initializer=
-		dynamic_cast<const ExpressionInitializer*>(initializer) )
+		dynamic_cast<const ExpressionInitializer*>(&initializer) )
 	{
 		ApplyExpressionInitializer( variable, *expression_initializer, block_names, function_context );
 	}
 	else if( const ZeroInitializer* const zero_initializer=
-		dynamic_cast<const ZeroInitializer*>(initializer) )
+		dynamic_cast<const ZeroInitializer*>(&initializer) )
 	{
 		ApplyZeroInitializer( variable, *zero_initializer, block_names, function_context );
 	}
@@ -60,6 +54,73 @@ void CodeBuilder::ApplyInitializer_r(
 	{
 		U_ASSERT(false);
 	}
+}
+
+void CodeBuilder::ApplyEmptyInitializer(
+	const Variable& variable,
+	FunctionContext& function_context )
+{
+	// TODO - set file_pos.
+	const FilePos file_pos= FilePos();
+
+	if( !variable.type.IsDefaultConstructible() )
+	{
+		errors_.push_back( ReportExpectedInitializer( file_pos ) );
+		return;
+	}
+
+	if( const FundamentalType* const fundamental_type= boost::get<FundamentalType>( &variable.type.one_of_type_kind ) )
+	{
+		// Fundamentals is not default-constructible, we should generate error about it before.
+		U_UNUSED( fundamental_type );
+		U_ASSERT( false );
+	}
+	else if( const ArrayPtr* const array_type_ptr= boost::get<ArrayPtr>( &variable.type.one_of_type_kind ) )
+	{
+		U_ASSERT( *array_type_ptr != nullptr );
+		const Array& array_type= **array_type_ptr;
+
+		Variable array_member= variable;
+		array_member.type= array_type.type;
+		array_member.location= Variable::Location::Pointer;
+
+		// Make first index = 0 for array to pointer conversion.
+		llvm::Value* index_list[2];
+		index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
+
+		// TODO - generate initialization loop for arrays with big size.
+		for( size_t i= 0u; i < array_type.size; i++ )
+		{
+			index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(i) ) );
+			array_member.llvm_value=
+				function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, llvm::ArrayRef<llvm::Value*> ( index_list, 2u ) );
+
+			ApplyEmptyInitializer( array_member, function_context );
+		}
+	}
+	else if( const ClassPtr* const class_type_ptr = boost::get<ClassPtr>( &variable.type.one_of_type_kind ) )
+	{
+		// If initializer for class variable is empty, try to call default constructor.
+
+		U_ASSERT( *class_type_ptr != nullptr );
+		const Class& class_type= **class_type_ptr;
+
+		const NamesScope::InsertedName* constructor_name=
+			class_type.members.GetThisScopeName( Keyword( Keywords::constructor_ ) );
+		U_ASSERT( constructor_name != nullptr );
+		const OverloadedFunctionsSet* const constructors_set= constructor_name->second.GetFunctionsSet();
+		U_ASSERT( constructors_set != nullptr );
+
+		ThisOverloadedMethodsSet this_overloaded_methods_set;
+		this_overloaded_methods_set.this_= variable;
+		this_overloaded_methods_set.overloaded_methods_set= *constructors_set;
+
+		const CallOperator call_operator( file_pos, std::vector<IExpressionComponentPtr>() );
+		NamesScope dummy_names_scope( ProgramString(), nullptr );
+		BuildCallOperator( this_overloaded_methods_set, call_operator, dummy_names_scope, function_context );
+	}
+	else
+		return;
 }
 
 void CodeBuilder::ApplyArrayInitializer(
@@ -102,7 +163,8 @@ void CodeBuilder::ApplyArrayInitializer(
 		array_member.llvm_value=
 			function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, llvm::ArrayRef<llvm::Value*> ( index_list, 2u ) );
 
-		ApplyInitializer_r( array_member, initializer.initializers[i].get(), block_names, function_context );
+		U_ASSERT( initializer.initializers[i] != nullptr );
+		ApplyInitializer( array_member, *initializer.initializers[i], block_names, function_context );
 	}
 }
 
@@ -120,6 +182,9 @@ void CodeBuilder::ApplyStructNamedInitializer(
 	}
 	U_ASSERT( *class_type_ptr != nullptr );
 	const Class& class_type= **class_type_ptr;
+
+	if( class_type.have_explicit_noncopy_constructors )
+		errors_.push_back( ReportInitializerDisabledBecauseClassHaveExplicitNoncopyConstructors( initializer.file_pos_ ) );
 
 	std::set<ProgramString> initialized_members_names;
 
@@ -157,7 +222,8 @@ void CodeBuilder::ApplyStructNamedInitializer(
 		struct_member.llvm_value=
 			function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, llvm::ArrayRef<llvm::Value*> ( index_list, 2u ) );
 
-		ApplyInitializer_r( struct_member, member_initializer.initializer.get(), block_names, function_context );
+		U_ASSERT( member_initializer.initializer != nullptr );
+		ApplyInitializer( struct_member, *member_initializer.initializer, block_names, function_context );
 	}
 
 	U_ASSERT( initialized_members_names.size() <= class_type.field_count );
@@ -166,10 +232,14 @@ void CodeBuilder::ApplyStructNamedInitializer(
 		{
 			if( const ClassField* const field = class_member.second.GetClassField() )
 			{
-				U_UNUSED(field);
-				// SPRACHE_TODO - allow missed initialziers for default-constructed classes.
 				if( initialized_members_names.count( class_member.first ) == 0 )
-					errors_.push_back(ReportMissingStructMemberInitializer( initializer.file_pos_, class_member.first ) );
+				{
+					struct_member.type= field->type;
+					index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(field->index) ) );
+					struct_member.llvm_value=
+						function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, llvm::ArrayRef<llvm::Value*> ( index_list, 2u ) );
+					ApplyEmptyInitializer( struct_member, function_context );
+				}
 			}
 		});
 }
@@ -201,11 +271,29 @@ void CodeBuilder::ApplyConstructorInitializer(
 		llvm::Value* const value_for_assignment= CreateMoveToLLVMRegisterInstruction( *expression_result.GetVariable(), function_context );
 		function_context.llvm_ir_builder.CreateStore( value_for_assignment, variable.llvm_value );
 	}
-	else if( const ClassPtr* const class_type= boost::get<ClassPtr>( &variable.type.one_of_type_kind ) )
+	else if( const ClassPtr* const class_type_ptr= boost::get<ClassPtr>( &variable.type.one_of_type_kind ) )
 	{
-		U_UNUSED(class_type);
-		errors_.push_back( ReportNotImplemented( initializer.file_pos_, "constructors for classes" ) );
-		return;
+		U_UNUSED(class_type_ptr);
+		const Class& class_type= **class_type_ptr;
+
+		const NamesScope::InsertedName* constructor_name=
+			class_type.members.GetThisScopeName( Keyword( Keywords::constructor_ ) );
+
+		if( constructor_name == nullptr )
+		{
+			errors_.push_back( ReportClassHaveNoConstructors( initializer.file_pos_ ) );
+			return;
+		}
+
+		const OverloadedFunctionsSet* const constructors_set= constructor_name->second.GetFunctionsSet();
+		U_ASSERT( constructors_set != nullptr );
+
+		ThisOverloadedMethodsSet this_overloaded_methods_set;
+		this_overloaded_methods_set.this_= variable;
+		this_overloaded_methods_set.overloaded_methods_set= *constructors_set;
+
+		// TODO - disallow explicit constructors calls.
+		BuildCallOperator( this_overloaded_methods_set, initializer.call_operator, block_names, function_context );
 	}
 	else
 	{
@@ -303,7 +391,7 @@ void CodeBuilder::ApplyZeroInitializer(
 		llvm::Value* index_list[2];
 		index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
 
-		if( array_type.size <= 8u )
+		if( array_type.size <= g_max_array_size_to_linear_initialization )
 		{
 			for( size_t i= 0u; i < array_type.size; i++ )
 			{
@@ -352,10 +440,11 @@ void CodeBuilder::ApplyZeroInitializer(
 	}
 	else if( const ClassPtr* const class_type_ptr = boost::get<ClassPtr>( &variable.type.one_of_type_kind ) )
 	{
-		// SPRACHE_TODO - disallow zero initializers for all except structs without constructors.
-
 		U_ASSERT( *class_type_ptr != nullptr );
 		const Class& class_type= **class_type_ptr;
+
+		if( class_type.have_explicit_noncopy_constructors )
+			errors_.push_back( ReportInitializerDisabledBecauseClassHaveExplicitNoncopyConstructors( initializer.file_pos_ ) );
 
 		Variable struct_member= variable;
 		struct_member.location= Variable::Location::Pointer;
