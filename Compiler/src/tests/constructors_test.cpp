@@ -587,4 +587,91 @@ U_TEST(ConstructorTest16)
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 }
 
+U_TEST(ConstructorTest17)
+{
+	static const char c_program_text[]=
+	R"(
+		struct A
+		{
+			i32 x;
+			f64 y;
+		}
+		fn Foo() : i32
+		{
+			var A a{ .x= 58, .y= 11.0 };
+			var A a_copy( a ); // "A" class must have auto-generated copy constructor.
+			return a_copy.x;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foo" );
+	U_TEST_ASSERT( function != nullptr );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( static_cast<uint64_t>(58) == result_value.IntVal.getLimitedValue() );
+}
+
+U_TEST(ConstructorTest18)
+{
+	static const char c_program_text[]=
+	R"(
+		struct A
+		{
+			[ [ i32, 2 ], 5 ] x;
+		}
+		fn Foo() : i32
+		{
+			var A a= zero_init;
+			a.x[2u][1u]= 54741;
+			var A a_copy( a ); // Array fields must be copied.
+			return a_copy.x[2u][1u];
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foo" );
+	U_TEST_ASSERT( function != nullptr );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( static_cast<uint64_t>(54741) == result_value.IntVal.getLimitedValue() );
+}
+
+U_TEST(ConstructorTest19)
+{
+	static const char c_program_text[]=
+	R"(
+		struct AA{ i32 x; }
+		struct A
+		{
+			AA aa;
+		}
+		fn Foo() : i32
+		{
+			var A a{ .aa{ .x= 111112 } };
+			var A a_copy( a ); // Copy constructor must copy class field.
+			return a_copy.aa.x;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foo" );
+	U_TEST_ASSERT( function != nullptr );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( static_cast<uint64_t>(111112) == result_value.IntVal.getLimitedValue() );
+}
+
 } // namespace U

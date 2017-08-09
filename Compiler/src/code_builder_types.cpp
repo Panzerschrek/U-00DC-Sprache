@@ -210,6 +210,27 @@ bool Type::IsDefaultConstructible() const
 	return false;
 }
 
+bool Type::IsCopyConstructible() const
+{
+	if( const FundamentalType* const fundamental_type= boost::get<FundamentalType>( &one_of_type_kind ) )
+	{
+		U_UNUSED(fundamental_type);
+		return true;
+	}
+	else if( const ClassPtr* const class_= boost::get<ClassPtr>( &one_of_type_kind ) )
+	{
+		U_ASSERT( *class_ != nullptr );
+		return (*class_)->is_copy_constructible;
+	}
+	else if( const ArrayPtr* const array= boost::get<ArrayPtr>( &one_of_type_kind ) )
+	{
+		U_ASSERT( *array != nullptr );
+		return (*array)->type.IsCopyConstructible();
+	}
+
+	return false;
+}
+
 llvm::Type* Type::GetLLVMType() const
 {
 	struct Visitor final : public boost::static_visitor<>

@@ -69,6 +69,12 @@ private:
 	void PrepareClass( const ClassDeclaration& class_declaration, NamesScope& names_scope );
 
 	void TryGenerateDefaultConstructor( Class& the_class, const Type& class_type );
+	void TryGenerateCopyConstructor( Class& the_class, const Type& class_type );
+
+	void BuildCopyConstructorPart(
+		llvm::Value* src, llvm::Value* dst,
+		const Type& type,
+		FunctionContext& function_context );
 
 	void BuildNamespaceBody(
 		const ProgramElements& body_elements,

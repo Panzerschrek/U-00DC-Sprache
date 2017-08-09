@@ -73,6 +73,7 @@ struct Type final
 
 	bool IsIncomplete() const;
 	bool IsDefaultConstructible() const;
+	bool IsCopyConstructible() const;
 
 	llvm::Type* GetLLVMType() const;
 	ProgramString ToString() const;
@@ -321,6 +322,7 @@ struct Class final
 	bool is_incomplete= true;
 	bool have_explicit_noncopy_constructors= false;
 	bool is_default_constructible= false;
+	bool is_copy_constructible= false;
 
 	llvm::StructType* llvm_type;
 };
