@@ -451,6 +451,7 @@ void CodeBuilder::TryGenerateDefaultConstructor( Class& the_class, const Type& c
 		} );
 
 	function_context.llvm_ir_builder.CreateRetVoid();
+	function_context.alloca_ir_builder.CreateBr( function_context.function_basic_block );
 
 	// Add generated constructor
 	FunctionVariable constructor_variable;
@@ -583,6 +584,7 @@ void CodeBuilder::TryGenerateCopyConstructor( Class& the_class, const Type& clas
 		} ); // For fields.
 
 	function_context.llvm_ir_builder.CreateRetVoid();
+	function_context.alloca_ir_builder.CreateBr( function_context.function_basic_block );
 
 	// Add generated constructor
 	FunctionVariable constructor_variable;
