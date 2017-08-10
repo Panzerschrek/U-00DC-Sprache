@@ -57,15 +57,14 @@ void CodeBuilder::ApplyInitializer(
 }
 
 void CodeBuilder::ApplyEmptyInitializer(
+	const ProgramString& variable_name,
+	const FilePos& file_pos,
 	const Variable& variable,
 	FunctionContext& function_context )
 {
-	// TODO - set file_pos.
-	const FilePos file_pos= FilePos();
-
 	if( !variable.type.IsDefaultConstructible() )
 	{
-		errors_.push_back( ReportExpectedInitializer( file_pos ) );
+		errors_.push_back( ReportExpectedInitializer( file_pos, variable_name ) );
 		return;
 	}
 
@@ -94,7 +93,7 @@ void CodeBuilder::ApplyEmptyInitializer(
 				array_member.llvm_value=
 					function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, llvm::ArrayRef<llvm::Value*> ( index_list, 2u ) );
 
-				ApplyEmptyInitializer( array_member, function_context );
+				ApplyEmptyInitializer( variable_name, file_pos, array_member, function_context );
 			},
 			function_context);
 	}
@@ -238,7 +237,7 @@ void CodeBuilder::ApplyStructNamedInitializer(
 					index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(field->index) ) );
 					struct_member.llvm_value=
 						function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, llvm::ArrayRef<llvm::Value*> ( index_list, 2u ) );
-					ApplyEmptyInitializer( struct_member, function_context );
+					ApplyEmptyInitializer( class_member.first, initializer.file_pos_, struct_member, function_context );
 				}
 			}
 		});

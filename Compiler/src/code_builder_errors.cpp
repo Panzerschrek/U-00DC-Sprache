@@ -226,13 +226,13 @@ CodeBuilderError ReportNoReturnInFunctionReturningNonVoid( const FilePos& file_p
 	return error;
 }
 
-CodeBuilderError ReportExpectedInitializer( const FilePos& file_pos )
+CodeBuilderError ReportExpectedInitializer( const FilePos& file_pos, const ProgramString& variable_name )
 {
 	CodeBuilderError error;
 	error.file_pos= file_pos;
 	error.code= CodeBuilderErrorCode::ExpectedInitializer;
 
-	error.text= "Expected initializer or constructor for this variable."_SpC;
+	error.text= "Expected initializer or constructor for \""_SpC + variable_name + "\"."_SpC;
 
 	return error;
 }

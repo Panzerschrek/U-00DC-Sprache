@@ -258,7 +258,7 @@ U_TEST( ExpectedInitializer_InConstructors_Test0 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedInitializer );
-	//U_TEST_ASSERT( error.file_pos.line == 7u );
+	U_TEST_ASSERT( error.file_pos.line == 7u );
 }
 
 U_TEST( InitializerForNonfieldStructMember_InConstructors_Test0 )
@@ -328,7 +328,7 @@ U_TEST( DefaultConstructorNotFoundTest0 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedInitializer );
-	//U_TEST_ASSERT( error.file_pos.line == 11u );
+	U_TEST_ASSERT( error.file_pos.line == 11u );
 }
 
 U_TEST( DefaultConstructorNotFoundTest1 )
@@ -360,7 +360,7 @@ U_TEST( DefaultConstructorNotFoundTest1 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedInitializer );
-	//U_TEST_ASSERT( error.file_pos.line == 171u );
+	U_TEST_ASSERT( error.file_pos.line == 17u );
 }
 
 U_TEST( DefaultConstructorNotFoundTest2 )
@@ -383,7 +383,7 @@ U_TEST( DefaultConstructorNotFoundTest2 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedInitializer );
-	//U_TEST_ASSERT( error.file_pos.line == 171u );
+	U_TEST_ASSERT( error.file_pos.line == 8u );
 }
 
 } // namespace U

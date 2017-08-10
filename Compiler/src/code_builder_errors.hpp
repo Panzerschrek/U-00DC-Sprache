@@ -104,7 +104,7 @@ CodeBuilderError ReportContinueOutsideLoop( const FilePos& file_pos );
 CodeBuilderError ReportNameIsNotTypeName( const FilePos& file_pos, const ProgramString& name );
 CodeBuilderError ReportUnreachableCode( const FilePos& file_pos );
 CodeBuilderError ReportNoReturnInFunctionReturningNonVoid( const FilePos& file_pos );
-CodeBuilderError ReportExpectedInitializer( const FilePos& file_pos );
+CodeBuilderError ReportExpectedInitializer( const FilePos& file_pos, const ProgramString& variable_name );
 CodeBuilderError ReportExpectedReferenceValue( const FilePos& file_pos );
 CodeBuilderError ReportBindingConstReferenceToNonconstReference( const FilePos& file_pos );
 CodeBuilderError ReportExpectedVariableInAssignment( const FilePos& file_pos, const ProgramString& got );

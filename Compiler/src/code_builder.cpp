@@ -447,7 +447,7 @@ void CodeBuilder::TryGenerateDefaultConstructor( Class& the_class, const Type& c
 			field_variable.llvm_value=
 				function_context.llvm_ir_builder.CreateGEP( this_llvm_value, llvm::ArrayRef<llvm::Value*> ( index_list, 2u ) );
 
-			ApplyEmptyInitializer( field_variable, function_context );
+			ApplyEmptyInitializer( member.first, FilePos()/*TODO*/, field_variable, function_context );
 		} );
 
 	function_context.llvm_ir_builder.CreateRetVoid();
@@ -1317,7 +1317,7 @@ void CodeBuilder::BuildConstructorInitialization(
 			field_variable.llvm_value=
 				function_context.llvm_ir_builder.CreateGEP( this_.llvm_value, llvm::ArrayRef<llvm::Value*> ( index_list, 2u ) );
 
-			ApplyEmptyInitializer( field_variable, function_context );
+			ApplyEmptyInitializer( field_name, constructor_initialization_list.file_pos_, field_variable, function_context );
 		}
 		catch( const ProgramError& ){}
 	}
@@ -1533,13 +1533,13 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 			if( variable_declaration.initializer != nullptr )
 				ApplyInitializer( variable, *variable_declaration.initializer, block_names, function_context );
 			else
-				ApplyEmptyInitializer( variable, function_context );
+				ApplyEmptyInitializer( variable_declaration.name, variables_declaration.file_pos_, variable, function_context );
 		}
 		else if( variable_declaration.reference_modifier == ReferenceModifier::Reference )
 		{
 			if( variable_declaration.initializer == nullptr )
 			{
-				errors_.push_back( ReportExpectedInitializer( variables_declaration.file_pos_ ) );
+				errors_.push_back( ReportExpectedInitializer( variables_declaration.file_pos_, variable_declaration.name ) );
 				continue;
 			}
 

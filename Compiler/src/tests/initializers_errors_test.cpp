@@ -23,7 +23,7 @@ U_TEST(ExpectedInitializerTest0)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedInitializer );
-	//U_TEST_ASSERT( error.file_pos.line == 4u );
+	U_TEST_ASSERT( error.file_pos.line == 4u );
 }
 
 U_TEST(ExpectedInitializerTest1)
@@ -43,7 +43,7 @@ U_TEST(ExpectedInitializerTest1)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedInitializer );
-	//U_TEST_ASSERT( error.file_pos.line == 4u );
+	U_TEST_ASSERT( error.file_pos.line == 4u );
 }
 
 U_TEST(ExpectedInitializerTest2)
@@ -64,7 +64,7 @@ U_TEST(ExpectedInitializerTest2)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedInitializer );
-	//U_TEST_ASSERT( error.file_pos.line == 4u );
+	U_TEST_ASSERT( error.file_pos.line == 5u );
 }
 
 U_TEST(ArrayInitializerForNonArrayTest0)

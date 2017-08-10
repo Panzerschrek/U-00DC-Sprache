@@ -233,6 +233,8 @@ private:
 		FunctionContext& function_context );
 
 	void ApplyEmptyInitializer(
+		const ProgramString& variable_name,
+		const FilePos& file_pos,
 		const Variable& variable,
 		FunctionContext& function_context );
 
