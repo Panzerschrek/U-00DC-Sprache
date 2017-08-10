@@ -582,7 +582,7 @@ Variable CodeBuilder::BuildIndexationOperator(
 
 	Variable result;
 	result.location= Variable::Location::Pointer;
-	result.value_type= ValueType::Reference;
+	result.value_type= variable.value_type;
 	result.type= (*array_type)->type;
 
 	// Make first index = 0 for array to pointer conversion.

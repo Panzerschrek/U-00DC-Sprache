@@ -1137,69 +1137,6 @@ U_TEST(ExpectedReferenceValueTest7)
 	U_TEST_ASSERT( error.file_pos.line == 4u );
 }
 
-U_TEST(BindingConstReferenceToNonconstReferenceTest0)
-{
-	// Initialize reference using value-object.
-	static const char c_program_text[]=
-	R"(
-		fn Foo()
-		{
-			var i32 imut a= 42;
-			var i32 &a_ref= a;
-		}
-	)";
-
-	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
-
-	U_TEST_ASSERT( !build_result.errors.empty() );
-	const CodeBuilderError& error= build_result.errors.front();
-
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::BindingConstReferenceToNonconstReference );
-	U_TEST_ASSERT( error.file_pos.line == 5u );
-}
-
-U_TEST(BindingConstReferenceToNonconstReferenceTest1)
-{
-	// Initialize reference using value-object.
-	static const char c_program_text[]=
-	R"(
-		fn Bar( i32 &mut x ){}
-		fn Foo()
-		{
-			var i32 imut x = 0;
-			Bar( x );
-		}
-	)";
-
-	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
-
-	U_TEST_ASSERT( !build_result.errors.empty() );
-	const CodeBuilderError& error= build_result.errors.front();
-
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::BindingConstReferenceToNonconstReference );
-	U_TEST_ASSERT( error.file_pos.line == 6u );
-}
-
-U_TEST(BindingConstReferenceToNonconstReferenceTest2)
-{
-	// Return reference, when return value is const reference.
-	static const char c_program_text[]=
-	R"(
-		fn Foo( i32 &imut x ) : i32 &mut
-		{
-			return x;
-		}
-	)";
-
-	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
-
-	U_TEST_ASSERT( !build_result.errors.empty() );
-	const CodeBuilderError& error= build_result.errors.front();
-
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::BindingConstReferenceToNonconstReference );
-	U_TEST_ASSERT( error.file_pos.line == 4u );
-}
-
 U_TEST(ExpectedVariableInAssignmentTest0)
 {
 	static const char c_program_text[]=
