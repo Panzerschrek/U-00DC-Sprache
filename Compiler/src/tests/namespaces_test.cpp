@@ -22,7 +22,7 @@ U_TEST( NamespacesTest0 )
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
-	llvm::Function* function= engine->FindFunctionNamed( "_ZN6SpaceA1B3CFF11DoSomethingE" );
+	llvm::Function* function= engine->FindFunctionNamed( "_ZN6SpaceA1B3CFF11DoSomethingEv" );
 	U_TEST_ASSERT( function != nullptr );
 }
 
@@ -52,7 +52,7 @@ U_TEST( NamespacesTest1 )
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
-	llvm::Function* function= engine->FindFunctionNamed( "_ZN7CCCombo3FooE" );
+	llvm::Function* function= engine->FindFunctionNamed( "_ZN7CCCombo3FooEv" );
 	U_TEST_ASSERT( function != nullptr );
 
 	const llvm::GenericValue result_value=
@@ -80,7 +80,7 @@ U_TEST( NamespacesTest2 )
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
-	llvm::Function* function= engine->FindFunctionNamed( "_ZN6SpaceA11DoSomethingE" );
+	llvm::Function* function= engine->FindFunctionNamed( "_ZN6SpaceA11DoSomethingEv" );
 	U_TEST_ASSERT( function != nullptr );
 
 	const llvm::GenericValue result_value=
@@ -108,7 +108,7 @@ U_TEST( NamespacesTest3 )
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
-	llvm::Function* function= engine->FindFunctionNamed( "_ZN6SpaceA3FooE" );
+	llvm::Function* function= engine->FindFunctionNamed( "_ZN6SpaceA3FooEv" );
 	U_TEST_ASSERT( function != nullptr );
 
 	const llvm::GenericValue result_value=

@@ -51,7 +51,25 @@ static void DoTest(
 {
 	const EnginePtr engine= CreateEngine( BuildProgram( program_text ) );
 
-	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foo" );
+	std::string func_name= "_Z3Foo";
+	if( args_set[0].empty() )
+		func_name+= "v";
+	else
+	{
+		for( size_t i= 0u; i < args_set[0].size(); i++ )
+		{
+			if( std::is_same<T, int>::value )
+				func_name+= "i";
+			if( std::is_same<T, unsigned int>::value )
+				func_name+= "j";
+			if( std::is_same<T, float>::value )
+				func_name+= "f";
+			if( std::is_same<T, double>::value )
+				func_name+= "d";
+		}
+	}
+
+	llvm::Function* function= engine->FindFunctionNamed( func_name.c_str() );
 	U_TEST_ASSERT( function != nullptr );
 
 	for( const std::vector<T>& args : args_set )

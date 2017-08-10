@@ -414,7 +414,7 @@ void CodeBuilder::TryGenerateDefaultConstructor( Class& the_class, const Type& c
 		llvm::Function::Create(
 			constructor_type_ptr->llvm_function_type,
 			llvm::Function::LinkageTypes::ExternalLinkage, // TODO - select linkage
-			MangleFunction( the_class.members, Keyword( Keywords::constructor_ ), *constructor_type_ptr ),
+			MangleFunction( the_class.members, Keyword( Keywords::constructor_ ), *constructor_type_ptr, true ),
 			module_.get() );
 
 	llvm_constructor_function->setUnnamedAddr( true );
@@ -544,7 +544,7 @@ void CodeBuilder::TryGenerateCopyConstructor( Class& the_class, const Type& clas
 		llvm::Function::Create(
 			constructor_type_ptr->llvm_function_type,
 			llvm::Function::LinkageTypes::ExternalLinkage, // TODO - select linkage
-			MangleFunction( the_class.members, Keyword( Keywords::constructor_ ), *constructor_type_ptr ),
+			MangleFunction( the_class.members, Keyword( Keywords::constructor_ ), *constructor_type_ptr, true ),
 			module_.get() );
 
 	llvm_constructor_function->setUnnamedAddr( true );
@@ -1051,7 +1051,7 @@ void CodeBuilder::BuildFuncCode(
 			llvm::Function::Create(
 				function_type_ptr->llvm_function_type,
 				llvm::Function::LinkageTypes::ExternalLinkage, // TODO - select linkage
-				MangleFunction( parent_names_scope, func_name, *function_type_ptr ),
+				MangleFunction( parent_names_scope, func_name, *function_type_ptr, func_variable.is_this_call ),
 				module_.get() );
 
 		// Merge functions with identical code.

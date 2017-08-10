@@ -1,20 +1,52 @@
 #include <iostream>
 
-// SPRACHE_TODO - tune mangling and remove "extern C" trash.
-// In result, we must have same mangling, as C++.
-
 // Imported from Ü-Sprache func.
-extern "C" double _Z2Do( int x );
+double Do( int x );
 
 // Function, exported to Ü-Sprache
-extern "C" void _Z7CallCPP( int x )
+void CallCPP( int x )
 {
 	std::cout << "Call " << x << " CPP!" << std::endl;
 }
 
+namespace NameSpace
+{
+	extern void Nested();
+
+	struct S{};
+}
+
+extern void TakeS( const NameSpace::S& );
+
+struct TheClass final
+{
+	void Method();
+	void ImutMethod() const;
+
+	static void StaticMethod();
+	static void StaticMethod2();
+};
+
+void TheClass::ImutMethod() const
+{
+	std::cout << "Call ImutMethod" << std::endl;
+}
+
+void TheClass::StaticMethod2()
+{
+	std::cout << "Call StaticMethod2" << std::endl;
+}
+
 int main()
 {
-	const double res= _Z2Do( 42 );
+	// Call some Ü-Sprache functions
+	NameSpace::Nested();
+	TakeS( NameSpace::S() );
+	TheClass the_class;
+	the_class.Method();
+	the_class.StaticMethod();
+
+	const double res= Do( 42 );
 	std::cout << "Res: " << res << std::endl;
 	return 0;
 }

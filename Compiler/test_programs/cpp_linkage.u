@@ -7,3 +7,35 @@ fn Do( i32 x ) : f64
 	CallCPP( x );
 	return 1.251;
 }
+
+namespace NameSpace
+{
+	fn Nested()
+	{
+	}
+
+	struct S{}
+}
+
+fn TakeS( NameSpace::S &imut s )
+{
+}
+
+struct TheClass
+{
+	fn Method( this );
+	fn ImutMethod( imut this );
+
+	fn StaticMethod();
+	fn StaticMethod2();
+}
+
+fn TheClass::Method( this )
+{
+	ImutMethod();
+}
+
+fn TheClass::StaticMethod()
+{
+	StaticMethod2();
+}
