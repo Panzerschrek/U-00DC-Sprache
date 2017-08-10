@@ -10,6 +10,28 @@ else()
 endif()
 
 #
+# External dependencies
+#
+
+# Boost
+set( BOOST_BASE_DIR ../../boost_1_60_0 )
+include_directories( ${BOOST_BASE_DIR} )
+
+# LLVM
+set( LLVM_INSTALL_DIR ../../llvm-install/ ) # Set path to your LLVM here.
+set( LLVM_DIR ${LLVM_INSTALL_DIR}/share/llvm/cmake/ )
+find_package(LLVM REQUIRED CONFIG)
+
+include_directories(${LLVM_INCLUDE_DIRS})
+add_definitions(${LLVM_DEFINITIONS})
+
+llvm_map_components_to_libnames( LLVM_LIBS_FOR_COMPILER_LIB Core )
+llvm_map_components_to_libnames( LLVM_LIBS_FOR_COMPILER BitWriter )
+llvm_map_components_to_libnames( LLVM_LIBS_FOR_TESTS ExecutionEngine Interpreter )
+
+get_filename_component( LLVM_UTILS_DIR ${LLVM_INSTALL_DIR}/bin ABSOLUTE )
+
+#
 # CompilerLib
 #
 
@@ -41,34 +63,8 @@ set( COMPILER_LIB_HEADERS
 	src/syntax_elements.hpp
 	src/syntax_analyzer.hpp )
 
-set( LLVM_BASE_DIR ../../llvm-3.7.1.src )
-set( LLVM_BUILD_DIR ${LLVM_BASE_DIR}/build )
-set( LLVM_LIBS_DIR ${LLVM_BUILD_DIR}/lib )
-set( LLVM_INCLUDES_DIR ${LLVM_BASE_DIR}/include )
-set( LLVM_GEN_INCLUDES_DIR ${LLVM_BUILD_DIR}/include )
-get_filename_component( LLVM_UTILS_DIR ${LLVM_BUILD_DIR}/bin ABSOLUTE )
-set( BOOST_BASE_DIR ../../boost_1_60_0 )
-
-include_directories( ${LLVM_INCLUDES_DIR} )
-include_directories( ${LLVM_GEN_INCLUDES_DIR} )
-include_directories( ${BOOST_BASE_DIR} )
-
-# We use separate-compiled llvm libraries here, because using llvm-cmake project is too slow.
-
-set( LLVM_LIBS
-	libLLVMInterpreter.a
-	libLLVMExecutionEngine.a
-	libLLVMCodeGen.a
-	libLLVMCore.a
-	libLLVMMC.a
-	libLLVMSupport.a
-	libLLVMTarget.a
-	libLLVMAsmParser.a
-	libLLVMBitWriter.a )
-
 add_library( CompilerLib ${COMPILER_LIB_SOURCES} ${COMPILER_LIB_HEADERS} )
-target_link_libraries( CompilerLib ${LLVM_LIBS} )
-link_directories( ${LLVM_LIBS_DIR} )
+target_link_libraries( CompilerLib ${LLVM_LIBS_FOR_COMPILER_LIB} )
 
 #
 # Compiler
@@ -78,7 +74,7 @@ set( COMPILER_SOURCES
 	src/main.cpp )
 
 add_executable( Compiler ${COMPILER_SOURCES} )
-target_link_libraries( Compiler CompilerLib )
+target_link_libraries( Compiler CompilerLib ${LLVM_LIBS_FOR_COMPILER} )
 
 #
 # Tests
@@ -107,7 +103,7 @@ set( TESTS_HEADERS
 	src/tests/tests.hpp )
 
 add_executable( Tests ${TESTS_SOURCES} ${TESTS_HEADERS} )
-target_link_libraries( Tests CompilerLib )
+target_link_libraries( Tests CompilerLib ${LLVM_LIBS_FOR_TESTS} )
 
 #
 # CPP-Linkage test
