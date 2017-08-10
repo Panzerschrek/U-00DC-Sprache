@@ -118,7 +118,7 @@ set( CPP_LINKAGE_CPP_SOURCE test_programs/cpp_linkage.cpp )
 
 add_custom_command(
 	OUTPUT ${CPP_LINKAGE_U_MODULE}
-	DEPENDS ${CPP_LINKAGE_U_SOURCE}
+	DEPENDS ${CPP_LINKAGE_U_SOURCE} Compiler
 	COMMAND Compiler -i ${CMAKE_SOURCE_DIR}/test_programs/cpp_linkage.u -o cpp_linkage.ir &&
 	${LLVM_UTILS_DIR}/llc cpp_linkage.ir -filetype=obj -o=${CPP_LINKAGE_U_MODULE} )
 
