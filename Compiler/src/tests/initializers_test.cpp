@@ -608,6 +608,59 @@ U_TEST(ZeroInitilaizerTest8)
 	U_TEST_ASSERT( 0 == result_value.IntVal.getLimitedValue() );
 }
 
+U_TEST(EmptyInitializerTest0)
+{
+	// Initialize array of empty structs with default constructor.
+	static const char c_program_text[]=
+	R"(
+	struct S{}
+	fn Foo()
+	{
+		var [ S, 64 ] s;
+	}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+}
+
+U_TEST(EmptyInitializerTest1)
+{
+	// Initialize struct with default contructor.
+	static const char c_program_text[]=
+	R"(
+	struct A
+	{
+		[ i32, 24 ] a;
+		fn constructor()
+		( a=zero_init )
+		{
+			a[17u]= 586;
+		}
+	}
+	struct S // this struct must have generated default constructor, because it have all fields default-constructible
+	{
+		[ A, 11 ] as;
+	}
+	fn Foo() : i32
+	{
+		var S s;
+		return s.as[5u].a[17u];
+	}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foo" );
+	U_TEST_ASSERT( function != nullptr );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( 586 == result_value.IntVal.getLimitedValue() );
+}
+
 U_TEST(DefaultInitializationForStructMembersTest0)
 {
 	static const char c_program_text[]=

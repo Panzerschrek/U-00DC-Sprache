@@ -41,6 +41,8 @@ private:
 			llvm::LLVMContext& llvm_context,
 			llvm::Function* function );
 
+		FunctionContext(const FunctionContext&)= delete;
+
 		Type return_type;
 		bool return_value_is_mutable;
 		bool return_value_is_reference;
@@ -79,6 +81,13 @@ private:
 		llvm::Value* src, llvm::Value* dst,
 		const Type& type,
 		FunctionContext& function_context );
+
+	// Generates for loop from 0 to iteration_count - 1
+	// Calls callback with argument - i32 with index
+	void GenerateLoop(
+		size_t iteration_count,
+		const std::function<void(llvm::Value* counter_value)>& loop_body,
+		FunctionContext& function_context);
 
 	void BuildNamespaceBody(
 		const ProgramElements& body_elements,

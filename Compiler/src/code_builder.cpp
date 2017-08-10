@@ -629,19 +629,21 @@ void CodeBuilder::BuildCopyConstructorPart(
 		U_ASSERT( *array_type_ptr != nullptr );
 		const Array& array_type= **array_type_ptr;
 
-		// TODO - generate loop code
-		for( size_t i= 0u; i < array_type.size; i++ )
-		{
-			llvm::Value* index_list[2];
-			index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
-			index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(i) ) );
+		GenerateLoop(
+			array_type.size,
+			[&](llvm::Value* const counter_value)
+			{
+				llvm::Value* index_list[2];
+				index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
+				index_list[1]= counter_value;
 
-			BuildCopyConstructorPart(
-				function_context.llvm_ir_builder.CreateGEP( src, llvm::ArrayRef<llvm::Value*>( index_list, 2u ) ),
-				function_context.llvm_ir_builder.CreateGEP( dst, llvm::ArrayRef<llvm::Value*>( index_list, 2u ) ),
-				array_type.type,
-				function_context );
-		}
+				BuildCopyConstructorPart(
+					function_context.llvm_ir_builder.CreateGEP( src, llvm::ArrayRef<llvm::Value*>( index_list, 2u ) ),
+					function_context.llvm_ir_builder.CreateGEP( dst, llvm::ArrayRef<llvm::Value*>( index_list, 2u ) ),
+					array_type.type,
+					function_context );
+			},
+			function_context);
 	}
 	else if( const ClassPtr* const class_type_ptr = boost::get<ClassPtr>( &type.one_of_type_kind ) )
 	{
@@ -684,6 +686,44 @@ void CodeBuilder::BuildCopyConstructorPart(
 	{
 		U_ASSERT(false);
 	}
+}
+
+void CodeBuilder::GenerateLoop(
+	const size_t iteration_count,
+	const std::function<void(llvm::Value* counter_value)>& loop_body,
+	FunctionContext& function_context)
+{
+	U_ASSERT( loop_body != nullptr );
+	if( iteration_count == 0u )
+		return;
+
+	llvm::Value* const zero_value=
+		llvm::Constant::getIntegerValue( fundamental_llvm_types_.u32, llvm::APInt( 32u, uint64_t(0) ) );
+	llvm::Value* const one_value=
+		llvm::Constant::getIntegerValue( fundamental_llvm_types_.u32, llvm::APInt( 32u, uint64_t(1u) ) );
+	llvm::Value* const loop_count_value=
+		llvm::Constant::getIntegerValue( fundamental_llvm_types_.u32, llvm::APInt( 32u, uint64_t(iteration_count) ) );
+	llvm::Value* const couter_address= function_context.alloca_ir_builder.CreateAlloca( fundamental_llvm_types_.u32 );
+	couter_address->setName( "loop_counter" );
+	function_context.llvm_ir_builder.CreateStore( zero_value, couter_address );
+
+	llvm::BasicBlock* const loop_block= llvm::BasicBlock::Create( llvm_context_ );
+	llvm::BasicBlock* const block_after_loop= llvm::BasicBlock::Create( llvm_context_ );
+
+	function_context.llvm_ir_builder.CreateBr( loop_block );
+	function_context.function->getBasicBlockList().push_back( loop_block );
+	function_context.llvm_ir_builder.SetInsertPoint( loop_block );
+
+	llvm::Value* const current_counter_value= function_context.llvm_ir_builder.CreateLoad( couter_address );
+	loop_body( current_counter_value );
+
+	llvm::Value* const counter_value_plus_one= function_context.llvm_ir_builder.CreateAdd( current_counter_value, one_value );
+	function_context.llvm_ir_builder.CreateStore( counter_value_plus_one, couter_address );
+	llvm::Value* const counter_test= function_context.llvm_ir_builder.CreateICmpULT( counter_value_plus_one, loop_count_value );
+	function_context.llvm_ir_builder.CreateCondBr( counter_test, loop_block, block_after_loop );
+
+	function_context.function->getBasicBlockList().push_back( block_after_loop );
+	function_context.llvm_ir_builder.SetInsertPoint( block_after_loop );
 }
 
 void CodeBuilder::BuildNamespaceBody(
