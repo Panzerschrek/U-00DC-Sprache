@@ -794,8 +794,55 @@ Variable CodeBuilder::BuildCallOperator(
 		}
 		else
 		{
-			// TODO - support nonfundamental value-parameters.
-			llvm_args[i]= CreateMoveToLLVMRegisterInstruction( expr, function_context );
+			if( const FundamentalType* const fundamental_type= boost::get<FundamentalType>( &arg.type.one_of_type_kind ) )
+			{
+				U_UNUSED(fundamental_type);
+				llvm_args[i]= CreateMoveToLLVMRegisterInstruction( expr, function_context );
+			}
+			else if( const ClassPtr* const class_type_ptr= boost::get<ClassPtr>( &arg.type.one_of_type_kind ) )
+			{
+				U_ASSERT( *class_type_ptr != nullptr );
+				const Class& class_type= **class_type_ptr;
+
+				if( !arg.type.IsCopyConstructible() )
+				{
+					// Can not call function with value parameter, because for value parameter needs copy, but parameter type is not copyable.
+					// TODO - print more reliable message.
+					errors_.push_back( ReportOperationNotSupportedForThisType( call_operator.file_pos_, arg.type.ToString() ) );
+					continue;
+				}
+
+				// Create copy of class value. Call copy constructor.
+				llvm::Value* const arg_copy= function_context.alloca_ir_builder.CreateAlloca( arg.type.GetLLVMType() );
+
+				// Search for copy-constructor.
+				const NamesScope::InsertedName* const constructos_name= class_type.members.GetThisScopeName( Keyword( Keywords::constructor_ ) );
+				U_ASSERT( constructos_name != nullptr );
+				const OverloadedFunctionsSet* const constructors= constructos_name->second.GetFunctionsSet();
+				U_ASSERT(constructors != nullptr );
+				const FunctionVariable* constructor= nullptr;
+				for( const FunctionVariable& candidate : *constructors )
+				{
+					const Function& constructor_type= *boost::get<FunctionPtr>( candidate.type.one_of_type_kind );
+					if( candidate.is_this_call && constructor_type.args.size() == 2u &&
+						constructor_type.args.back().type == arg.type && constructor_type.args.back().is_reference && !constructor_type.args.back().is_mutable )
+					{
+						constructor= &candidate;
+						break;
+					}
+				}
+
+				// Call it
+				U_ASSERT(constructor != nullptr);
+				llvm::Value* const constructor_args[2u]= { arg_copy, expr.llvm_value };
+				function_context.llvm_ir_builder.CreateCall(
+					constructor->llvm_function,
+					llvm::ArrayRef<llvm::Value*>( constructor_args, 2u ) );
+
+				llvm_args[i]= arg_copy;
+			}
+			else
+			{ U_ASSERT( false );}
 		}
 	}
 

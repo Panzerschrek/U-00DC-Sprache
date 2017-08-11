@@ -908,6 +908,14 @@ void CodeBuilder::PrepareFunction(
 			out_arg.is_mutable= true;
 		out_arg.is_reference= is_this || arg->reference_modifier_ == ReferenceModifier::Reference;
 
+		if( !out_arg.is_reference &&
+			!( boost::get<FundamentalType>( &out_arg.type.one_of_type_kind ) != nullptr ||
+			   boost::get<ClassPtr>( &out_arg.type.one_of_type_kind ) != nullptr ) )
+		{
+			errors_.push_back( ReportNotImplemented( func.file_pos_, "parameters types except fundamental and classes" ) );
+			return;
+		}
+
 		if( out_arg.type.IsIncomplete() && !out_arg.is_reference )
 		{
 			errors_.push_back( ReportUsingIncompleteType( arg->file_pos_, out_arg.type.ToString() ) );
@@ -1026,6 +1034,21 @@ void CodeBuilder::BuildFuncCode(
 		llvm::Type* type= arg.type.GetLLVMType();
 		if( arg.is_reference )
 			type= llvm::PointerType::get( type, 0u );
+		else
+		{
+			if( const FundamentalType* const fundamental_type= boost::get<FundamentalType>( &arg.type.one_of_type_kind ) )
+			{
+				U_UNUSED(fundamental_type);
+			}
+			else if( const ClassPtr* const class_type_ptr= boost::get<ClassPtr>( &arg.type.one_of_type_kind ) )
+			{
+				// Mark value-parameters of class types as pointer. Lately this parameters will be marked as "byval".
+				U_ASSERT( *class_type_ptr != nullptr );
+				type= llvm::PointerType::get( type, 0u );
+			}
+			else
+			{ U_ASSERT( false ); }
+		}
 		args_llvm_types.push_back( type );
 	}
 
@@ -1054,11 +1077,22 @@ void CodeBuilder::BuildFuncCode(
 		llvm_function->setUnnamedAddr( true );
 
 		// Mark reference-parameters as nonnull.
+		// Mark fake-pointer parameters of struct type as "byvall".
 		// TODO - maybe mark immutable reference-parameters as "noalias"?
-		for( unsigned int i= 0u; i < function_type_ptr->args.size(); i++ )
+		for( size_t i= 0u; i < function_type_ptr->args.size(); i++ )
 		{
+			const size_t arg_attr_index= i + 1u;
 			if (function_type_ptr->args[i].is_reference )
-				llvm_function->addAttribute( i + 1u, llvm::Attribute::NonNull );
+				llvm_function->addAttribute( arg_attr_index, llvm::Attribute::NonNull );
+			else
+			{
+				if( const ClassPtr* const class_type_ptr= boost::get<ClassPtr>( &function_type_ptr->args[i].type.one_of_type_kind ) )
+				{
+					U_UNUSED(class_type_ptr);
+					llvm_function->addAttribute( arg_attr_index, llvm::Attribute::NonNull );
+					llvm_function->addAttribute( arg_attr_index, llvm::Attribute::ByVal );
+				}
+			}
 		}
 
 		func_variable.llvm_function= llvm_function;
@@ -1126,15 +1160,26 @@ void CodeBuilder::BuildFuncCode(
 			var.location= Variable::Location::Pointer;
 		else
 		{
-			// Move parameters to stack for assignment possibility.
-			// TODO - do it, only if parameters are not constant.
+			if( const FundamentalType* const fundamental_type= boost::get<FundamentalType>( &arg.type.one_of_type_kind ) )
+			{
+				U_UNUSED(fundamental_type);
+				// Move parameters to stack for assignment possibility.
+				// TODO - do it, only if parameters are not constant.
+				llvm::Value* address= function_context.alloca_ir_builder.CreateAlloca( var.type.GetLLVMType() );
+				address->setName( ToStdString( arg_name ) );
+				function_context.llvm_ir_builder.CreateStore( var.llvm_value, address );
 
-			llvm::Value* address= function_context.alloca_ir_builder.CreateAlloca( var.type.GetLLVMType() );
-			address->setName( ToStdString( arg_name ) );
-			function_context.llvm_ir_builder.CreateStore( var.llvm_value, address );
-
-			var.llvm_value= address;
-			var.location= Variable::Location::Pointer;
+				var.llvm_value= address;
+				var.location= Variable::Location::Pointer;
+			}
+			else if( const ClassPtr* const class_type_ptr= boost::get<ClassPtr>( &arg.type.one_of_type_kind ) )
+			{
+				// Value classes parameters using llvm-pointers with "byval" attribute.
+				U_UNUSED(class_type_ptr);
+				var.location= Variable::Location::Pointer;
+			}
+			else
+			{ U_ASSERT( false ); }
 		}
 
 		if( is_this )
