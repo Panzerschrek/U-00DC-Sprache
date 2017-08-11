@@ -679,6 +679,115 @@ U_TEST(CallTest6)
 	U_TEST_ASSERT( static_cast<uint64_t>(888) == result_value.IntVal.getLimitedValue() );
 }
 
+U_TEST(CallTest7)
+{
+	// Return value of struct type in thiscall method.
+	static const char c_program_text[]=
+	R"(
+		struct S { [ f32, 17 ] arr; i32 x; }
+		struct A
+		{
+			i32 x;
+			fn Bar( this ) : S
+			{
+				var S result= zero_init;
+				result.x= 888 * x;
+				return result;
+			}
+		}
+		fn Foo() : i32
+		{
+			var A a{ .x= 21 };
+			return a.Bar().x;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( static_cast<uint64_t>(21 * 888) == result_value.IntVal.getLimitedValue() );
+}
+
+U_TEST(CallTest8)
+{
+	// Value-parameter of struct type in thiscall method.
+	static const char c_program_text[]=
+	R"(
+		struct S { [ f32, 17 ] arr; i32 x; }
+		struct A
+		{
+			i32 x;
+			fn Bar( this, S s ) : i32
+			{
+				return s.x * x;
+			}
+		}
+		fn Foo() : i32
+		{
+			var A a{ .x= 17 };
+			var S s= zero_init;
+			s.x= 555874;
+			return a.Bar( s );
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( static_cast<uint64_t>(17 * 555874) == result_value.IntVal.getLimitedValue() );
+}
+
+U_TEST(CallTest9)
+{
+	// Value-parameter of struct type and return value of struct type in thiscall method.
+	static const char c_program_text[]=
+	R"(
+		struct S { [ f32, 17 ] arr; i32 x; }
+		struct A
+		{
+			i32 x;
+			fn Bar( this, S s ) : S
+			{
+				s.x= s.x * x; // Function changes value of parameter
+				return s;
+			}
+		}
+		fn Foo() : i32
+		{
+			var A a{ .x= 746984 };
+			var S s= zero_init;
+			s.x= 25;
+			return a.Bar( s ).x + s.x; // s.x must left unchanged after call.
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( static_cast<uint64_t>(25 * 746984 + 25) == result_value.IntVal.getLimitedValue() );
+}
+
 U_TEST(EqualityOperatorsTest)
 {
 	static const char c_program_text[]=
