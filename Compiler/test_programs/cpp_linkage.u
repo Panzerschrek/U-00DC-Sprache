@@ -24,7 +24,7 @@ fn TakeS( NameSpace::S &imut s )
 struct TheClass
 {
 	fn Method( this );
-	fn ImutMethod( imut this );
+	fn ImutMethod( imut this, TheClass& other );
 
 	fn StaticMethod();
 	fn StaticMethod2();
@@ -32,7 +32,7 @@ struct TheClass
 
 fn TheClass::Method( this )
 {
-	ImutMethod();
+	ImutMethod( this );
 }
 
 fn TheClass::StaticMethod()

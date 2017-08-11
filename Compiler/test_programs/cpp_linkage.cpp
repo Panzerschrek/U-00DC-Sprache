@@ -21,13 +21,13 @@ extern void TakeS( const NameSpace::S& );
 struct TheClass final
 {
 	void Method();
-	void ImutMethod() const;
+	void ImutMethod( TheClass& ) const;
 
 	static void StaticMethod();
 	static void StaticMethod2();
 };
 
-void TheClass::ImutMethod() const
+void TheClass::ImutMethod( TheClass& ) const
 {
 	std::cout << "Call ImutMethod" << std::endl;
 }
