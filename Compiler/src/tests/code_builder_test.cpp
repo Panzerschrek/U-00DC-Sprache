@@ -1761,6 +1761,87 @@ U_TEST(ReferencesTest9)
 	}
 }
 
+U_TEST(ReferencesTest10)
+{
+	// Return reference of class type.
+	static const char c_program_text[]=
+	R"(
+	struct S{ i32 x; }
+	fn Max( S &a, S &b ) : S&
+	{
+		if( a.x > b.x ) { return a; }
+		else { return b; }
+	}
+	fn Foo( i32 x, i32 y ) : i32
+	{
+		var S a{ .x= x }, b{ .x= y };
+		return Max( a, b ).x;
+	}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Fooii" );
+	U_TEST_ASSERT( function != nullptr );
+
+	static const int cases_args[3][2]= { { 7, 567 }, { 48454, 758 }, { 4468, 4468 } };
+	for( unsigned int i= 0u; i < 3u; i++ )
+	{
+		llvm::GenericValue args[2];
+		args[0].IntVal= llvm::APInt( 32, cases_args[i][0] );
+		args[1].IntVal= llvm::APInt( 32, cases_args[i][1] );
+
+		llvm::GenericValue result_value=
+			engine->runFunction(
+				function,
+				llvm::ArrayRef<llvm::GenericValue>( args, 2 ) );
+
+		U_TEST_ASSERT(
+			static_cast<uint64_t>( std::max( cases_args[i][0], cases_args[i][1] ) ) ==
+			result_value.IntVal.getLimitedValue() );
+	}
+}
+
+U_TEST(ReferencesTest11)
+{
+	// Return reference of array type.
+	static const char c_program_text[]=
+	R"(
+	fn Max( [i32, 3] &a, [i32, 3] &b ) : [i32, 3] &
+	{
+		if( a[1u] > b[1u] ) { return a; }
+		else { return b; }
+	}
+	fn Foo( i32 x, i32 y ) : i32
+	{
+		var [i32, 3] a[0,x,0], b[0,y,0];
+		return Max( a, b )[1u];
+	}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Fooii" );
+	U_TEST_ASSERT( function != nullptr );
+
+	static const int cases_args[3][2]= { { 7, 567 }, { 48454, 758 }, { 4468, 4468 } };
+	for( unsigned int i= 0u; i < 3u; i++ )
+	{
+		llvm::GenericValue args[2];
+		args[0].IntVal= llvm::APInt( 32, cases_args[i][0] );
+		args[1].IntVal= llvm::APInt( 32, cases_args[i][1] );
+
+		llvm::GenericValue result_value=
+			engine->runFunction(
+				function,
+				llvm::ArrayRef<llvm::GenericValue>( args, 2 ) );
+
+		U_TEST_ASSERT(
+			static_cast<uint64_t>( std::max( cases_args[i][0], cases_args[i][1] ) ) ==
+			result_value.IntVal.getLimitedValue() );
+	}
+}
+
 U_TEST(BindValueToConstReferenceTest0)
 {
 	// Bind value-result to const reference parameter.

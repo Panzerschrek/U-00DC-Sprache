@@ -304,7 +304,7 @@ typedef std::unique_ptr<Block> BlockPtr;
 struct TypeName
 {
 	// [ [i32, 5] 7 ]
-	ComplexName name;
+	ComplexName name; // Can be empty in some cases.
 	std::vector< std::unique_ptr<NumericConstant> > array_sizes;
 
 	// Compiler so stupid - can not generate move constructors without noexcept. Make help for it.
@@ -464,7 +464,7 @@ public:
 	FunctionDeclaration(
 		const FilePos& file_pos,
 		ComplexName name,
-		ProgramString return_type,
+		TypeName return_type,
 		MutabilityModifier return_value_mutability_modifier,
 		ReferenceModifier return_value_reference_modifier,
 		FunctionArgumentsDeclaration arguments,
@@ -474,7 +474,7 @@ public:
 	virtual ~FunctionDeclaration() override;
 
 	const ComplexName name_;
-	const ProgramString return_type_;
+	const TypeName return_type_;
 	const MutabilityModifier return_value_mutability_modifier_;
 	const ReferenceModifier return_value_reference_modifier_;
 	const FunctionArgumentsDeclaration arguments_;

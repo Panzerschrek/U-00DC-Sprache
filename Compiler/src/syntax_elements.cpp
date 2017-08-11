@@ -290,7 +290,7 @@ FunctionArgumentDeclaration::~FunctionArgumentDeclaration()
 FunctionDeclaration::FunctionDeclaration(
 	const FilePos& file_pos,
 	ComplexName name,
-	ProgramString return_type,
+	TypeName return_type,
 	MutabilityModifier return_value_mutability_modifier,
 	ReferenceModifier return_value_reference_modifier,
 	FunctionArgumentsDeclaration arguments,

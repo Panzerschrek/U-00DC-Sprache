@@ -77,6 +77,7 @@ CodeBuilder::CodeBuilder()
 	fundamental_llvm_types_.void_= llvm::Type::getVoidTy( llvm_context_ );
 	fundamental_llvm_types_.bool_= llvm::Type::getInt1Ty( llvm_context_ );
 
+	invalid_type_.one_of_type_kind= FundamentalType( U_FundamentalType::InvalidType, fundamental_llvm_types_.invalid_type_ );
 	void_type_.one_of_type_kind= FundamentalType( U_FundamentalType::Void, fundamental_llvm_types_.void_ );
 	bool_type_.one_of_type_kind= FundamentalType( U_FundamentalType::Bool, fundamental_llvm_types_.bool_ );
 }
@@ -840,19 +841,13 @@ void CodeBuilder::PrepareFunction(
 	Function& function_type= *function_type_storage;
 	func_variable.type.one_of_type_kind= std::move(function_type_storage);
 
-	if( func.return_type_.empty() )
+	if( func.return_type_.name.components.empty() )
 		function_type.return_type= void_type_;
 	else
 	{
-		// TODO - support nonfundamental return types.
-		auto it= g_types_map.find( func.return_type_ );
-		if( it == g_types_map.end() )
-		{
-			errors_.push_back( ReportNameNotFound( func.file_pos_, func.return_type_ ) );
-			function_type.return_type.one_of_type_kind= FundamentalType( U_FundamentalType::InvalidType, fundamental_llvm_types_.invalid_type_ );
-		}
-		else
-			function_type.return_type.one_of_type_kind= FundamentalType( it->second, GetFundamentalLLVMType( it->second ) );
+		function_type.return_type= PrepareType( func.file_pos_, func.return_type_, *func_base_names_scope );
+		if( function_type.return_type == invalid_type_ )
+			return;
 	}
 
 	// SPRACHE_TODO - make variables without explicit mutability modifiers immutable.

@@ -1493,23 +1493,16 @@ std::unique_ptr<FunctionDeclaration> SyntaxAnalyzer::ParseFunction()
 		}
 	}
 
-	ProgramString return_type;
-	MutabilityModifier mutability_modifier;
-	ReferenceModifier reference_modifier;
+	TypeName return_type;
+	MutabilityModifier mutability_modifier= MutabilityModifier::None;
+	ReferenceModifier reference_modifier= ReferenceModifier::None;
 
 	if( it_->type == Lexem::Type::Colon )
 	{
 		++it_;
 		U_ASSERT( it_ < it_end_ );
 
-		if( it_->type != Lexem::Type::Identifier )
-		{
-			PushErrorMessage( *it_ );
-			return nullptr;
-		}
-
-		return_type= it_->text;
-		++it_;
+		return_type= ParseTypeName();
 
 		if( it_->type == Lexem::Type::And )
 		{
@@ -1604,7 +1597,7 @@ std::unique_ptr<FunctionDeclaration> SyntaxAnalyzer::ParseFunction()
 		new FunctionDeclaration(
 			func_pos,
 			std::move( fn_name ),
-			return_type,
+			std::move(return_type),
 			mutability_modifier,
 			reference_modifier,
 			std::move( arguments ),
