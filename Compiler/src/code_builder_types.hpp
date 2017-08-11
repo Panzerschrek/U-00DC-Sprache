@@ -121,6 +121,7 @@ struct FunctionVariable final
 	bool have_body= true;
 	bool is_this_call= false;
 	bool is_generated= false;
+	bool return_value_is_sret= false;
 
 	llvm::Function* llvm_function= nullptr;
 };

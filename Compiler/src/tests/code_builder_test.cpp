@@ -615,6 +615,70 @@ U_TEST(CallTest4)
 	U_TEST_ASSERT( static_cast<uint64_t>(11145) == result_value.IntVal.getLimitedValue() );
 }
 
+
+U_TEST(CallTest5)
+{
+	// return structure.
+	static const char c_program_text[]=
+	R"(
+		struct S { [ f32, 17 ] arr; i32 x; }
+		fn Bar() : S
+		{
+			var S result= zero_init;
+			result.x= 888;
+			return result;
+		}
+		fn Foo() : i32
+		{
+			return Bar().x;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( static_cast<uint64_t>(888) == result_value.IntVal.getLimitedValue() );
+}
+
+U_TEST(CallTest6)
+{
+	// return structure and copy it.
+	static const char c_program_text[]=
+	R"(
+		struct S { [ f32, 17 ] arr; i32 x; }
+		fn Bar() : S
+		{
+			var S result= zero_init;
+			result.x= 888;
+			return result;
+		}
+		fn Foo() : i32
+		{
+			var S s( Bar() );
+			return s.x;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( static_cast<uint64_t>(888) == result_value.IntVal.getLimitedValue() );
+}
+
 U_TEST(EqualityOperatorsTest)
 {
 	static const char c_program_text[]=

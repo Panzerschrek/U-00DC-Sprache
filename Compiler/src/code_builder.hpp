@@ -48,6 +48,7 @@ private:
 		bool return_value_is_reference;
 
 		const Variable* this_= nullptr; // null for nonclass functions or static member functions.
+		const Variable* s_ret_= nullptr; // Value for assignment for "sret" functions.
 
 		std::set<const ClassField*> uninitialized_this_fields;
 		bool is_constructor_initializer_list_now= false;
@@ -80,6 +81,12 @@ private:
 	void BuildCopyConstructorPart(
 		llvm::Value* src, llvm::Value* dst,
 		const Type& type,
+		FunctionContext& function_context );
+
+	void TryCallCopyConstructor(
+		const FilePos& file_pos,
+		llvm::Value* this_, llvm::Value* src,
+		const ClassPtr& class_,
 		FunctionContext& function_context );
 
 	// Generates for loop from 0 to iteration_count - 1

@@ -742,7 +742,15 @@ Variable CodeBuilder::BuildCallOperator(
 		throw ProgramError();
 	}
 
-	std::vector<llvm::Value*> llvm_args( actual_args.size() );
+	std::vector<llvm::Value*> llvm_args;
+
+	llvm::Value* s_ret_value= nullptr;
+	if( function.return_value_is_sret )
+	{
+		s_ret_value= function_context.alloca_ir_builder.CreateAlloca( function_type.return_type.GetLLVMType() );
+		llvm_args.push_back( s_ret_value );
+	}
+
 	for( unsigned int i= 0u; i < actual_args.size(); i++ )
 	{
 		const Function::Arg& arg= function_type.args[i];
@@ -774,7 +782,7 @@ Variable CodeBuilder::BuildCallOperator(
 					throw ProgramError();
 				}
 
-				llvm_args[i]= expr.llvm_value;
+				llvm_args.push_back(expr.llvm_value);
 			}
 			else
 			{
@@ -782,13 +790,18 @@ Variable CodeBuilder::BuildCallOperator(
 				{
 					// Bind value to const reference.
 					// TODO - support nonfundamental values.
-					llvm::Value* temp_storage= function_context.alloca_ir_builder.CreateAlloca( expr.type.GetLLVMType() );
-					function_context.llvm_ir_builder.CreateStore( expr.llvm_value, temp_storage );
-					llvm_args[i]= temp_storage;
+					if( expr.location == Variable::Location::LLVMRegister )
+					{
+						llvm::Value* temp_storage= function_context.alloca_ir_builder.CreateAlloca( expr.type.GetLLVMType() );
+						function_context.llvm_ir_builder.CreateStore( expr.llvm_value, temp_storage );
+						llvm_args.push_back( temp_storage );
+					}
+					else
+						llvm_args.push_back( expr.llvm_value );
 				}
 				else
 				{
-					llvm_args[i]= expr.llvm_value;
+					llvm_args.push_back( expr.llvm_value );
 				}
 			}
 		}
@@ -797,7 +810,7 @@ Variable CodeBuilder::BuildCallOperator(
 			if( const FundamentalType* const fundamental_type= boost::get<FundamentalType>( &arg.type.one_of_type_kind ) )
 			{
 				U_UNUSED(fundamental_type);
-				llvm_args[i]= CreateMoveToLLVMRegisterInstruction( expr, function_context );
+				llvm_args.push_back( CreateMoveToLLVMRegisterInstruction( expr, function_context ) );
 			}
 			else if( const ClassPtr* const class_type_ptr= boost::get<ClassPtr>( &arg.type.one_of_type_kind ) )
 			{
@@ -815,31 +828,8 @@ Variable CodeBuilder::BuildCallOperator(
 				// Create copy of class value. Call copy constructor.
 				llvm::Value* const arg_copy= function_context.alloca_ir_builder.CreateAlloca( arg.type.GetLLVMType() );
 
-				// Search for copy-constructor.
-				const NamesScope::InsertedName* const constructos_name= class_type.members.GetThisScopeName( Keyword( Keywords::constructor_ ) );
-				U_ASSERT( constructos_name != nullptr );
-				const OverloadedFunctionsSet* const constructors= constructos_name->second.GetFunctionsSet();
-				U_ASSERT(constructors != nullptr );
-				const FunctionVariable* constructor= nullptr;
-				for( const FunctionVariable& candidate : *constructors )
-				{
-					const Function& constructor_type= *boost::get<FunctionPtr>( candidate.type.one_of_type_kind );
-					if( candidate.is_this_call && constructor_type.args.size() == 2u &&
-						constructor_type.args.back().type == arg.type && constructor_type.args.back().is_reference && !constructor_type.args.back().is_mutable )
-					{
-						constructor= &candidate;
-						break;
-					}
-				}
-
-				// Call it
-				U_ASSERT(constructor != nullptr);
-				llvm::Value* const constructor_args[2u]= { arg_copy, expr.llvm_value };
-				function_context.llvm_ir_builder.CreateCall(
-					constructor->llvm_function,
-					llvm::ArrayRef<llvm::Value*>( constructor_args, 2u ) );
-
-				llvm_args[i]= arg_copy;
+				TryCallCopyConstructor( call_operator.file_pos_, arg_copy, expr.llvm_value, *class_type_ptr, function_context );
+				llvm_args.push_back( arg_copy );
 			}
 			else
 			{ U_ASSERT( false );}
@@ -850,6 +840,12 @@ Variable CodeBuilder::BuildCallOperator(
 		function_context.llvm_ir_builder.CreateCall(
 			llvm::dyn_cast<llvm::Function>(function.llvm_function),
 			llvm_args );
+
+	if( function.return_value_is_sret )
+	{
+		U_ASSERT( s_ret_value != nullptr );
+		call_result= s_ret_value;
+	}
 
 	Variable result;
 
@@ -863,7 +859,7 @@ Variable CodeBuilder::BuildCallOperator(
 	}
 	else
 	{
-		result.location= Variable::Location::LLVMRegister;
+		result.location= function.return_value_is_sret ? Variable::Location::Pointer : Variable::Location::LLVMRegister;
 		result.value_type= ValueType::Value;
 	}
 	result.type= function_type.return_type;

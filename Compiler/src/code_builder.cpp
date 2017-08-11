@@ -689,6 +689,48 @@ void CodeBuilder::BuildCopyConstructorPart(
 	}
 }
 
+void CodeBuilder::TryCallCopyConstructor(
+	const FilePos& file_pos,
+	llvm::Value* const this_, llvm::Value* const src,
+	const ClassPtr& class_,
+	FunctionContext& function_context )
+{
+	U_ASSERT( class_ != nullptr );
+	Type class_type;
+	class_type.one_of_type_kind= class_;
+
+	if( !class_->is_copy_constructible )
+	{
+		// TODO - print more reliable message.
+		errors_.push_back( ReportOperationNotSupportedForThisType( file_pos, class_type.ToString() ) );
+		return;
+	}
+
+	// Search for copy-constructor.
+	const NamesScope::InsertedName* const constructos_name= class_->members.GetThisScopeName( Keyword( Keywords::constructor_ ) );
+	U_ASSERT( constructos_name != nullptr );
+	const OverloadedFunctionsSet* const constructors= constructos_name->second.GetFunctionsSet();
+	U_ASSERT(constructors != nullptr );
+	const FunctionVariable* constructor= nullptr;
+	for( const FunctionVariable& candidate : *constructors )
+	{
+		const Function& constructor_type= *boost::get<FunctionPtr>( candidate.type.one_of_type_kind );
+		if( candidate.is_this_call && constructor_type.args.size() == 2u &&
+			constructor_type.args.back().type == class_type && constructor_type.args.back().is_reference && !constructor_type.args.back().is_mutable )
+		{
+			constructor= &candidate;
+			break;
+		}
+	}
+
+	// Call it
+	U_ASSERT(constructor != nullptr);
+	llvm::Value* const constructor_args[2u]= { this_, src };
+	function_context.llvm_ir_builder.CreateCall(
+		constructor->llvm_function,
+		llvm::ArrayRef<llvm::Value*>( constructor_args, 2u ) );
+}
+
 void CodeBuilder::GenerateLoop(
 	const size_t iteration_count,
 	const std::function<void(llvm::Value* counter_value)>& loop_body,
@@ -856,6 +898,14 @@ void CodeBuilder::PrepareFunction(
 	else
 		function_type.return_value_is_mutable= true;
 	function_type.return_value_is_reference= func.return_value_reference_modifier_ == ReferenceModifier::Reference;
+
+	if( !function_type.return_value_is_reference &&
+		!( boost::get<FundamentalType>( &function_type.return_type.one_of_type_kind ) != nullptr ||
+		   boost::get<ClassPtr>( &function_type.return_type.one_of_type_kind ) != nullptr ) )
+	{
+		errors_.push_back( ReportNotImplemented( func.file_pos_, "return value types except fundamental and classes" ) );
+		return;
+	}
 
 	if( is_constructor && function_type.return_type != void_type_ )
 		errors_.push_back( ReportConstructorMustReturnVoid( func.file_pos_ ) );
@@ -1029,6 +1079,25 @@ void CodeBuilder::BuildFuncCode(
 	std::vector<llvm::Type*> args_llvm_types;
 	const FunctionPtr& function_type_ptr= boost::get<FunctionPtr>( func_variable.type.one_of_type_kind );
 
+	bool first_arg_is_sret= false;
+	if( !function_type_ptr->return_value_is_reference )
+	{
+		if( const FundamentalType* const fundamental_type= boost::get<FundamentalType>( &function_type_ptr->return_type.one_of_type_kind ) )
+		{
+			U_UNUSED(fundamental_type);
+		}
+		else if( const ClassPtr* const class_type_ptr= boost::get<ClassPtr>( &function_type_ptr->return_type.one_of_type_kind ) )
+		{
+			// Add return-value ponter as "sret" argument for class types.
+			U_ASSERT( *class_type_ptr != nullptr );
+			args_llvm_types.push_back( llvm::PointerType::get( (*class_type_ptr)->llvm_type, 0u ) );
+			first_arg_is_sret= true;
+			func_variable.return_value_is_sret= true;
+		}
+		else
+		{ U_ASSERT( false ); }
+	}
+
 	for( const Function::Arg& arg : function_type_ptr->args )
 	{
 		llvm::Type* type= arg.type.GetLLVMType();
@@ -1052,9 +1121,15 @@ void CodeBuilder::BuildFuncCode(
 		args_llvm_types.push_back( type );
 	}
 
-	llvm::Type* llvm_function_return_type= function_type_ptr->return_type.GetLLVMType();
-	if( function_type_ptr->return_value_is_reference )
-		llvm_function_return_type= llvm::PointerType::get( llvm_function_return_type, 0u );
+	llvm::Type* llvm_function_return_type;
+	if( first_arg_is_sret )
+		llvm_function_return_type= fundamental_llvm_types_.void_;
+	else
+	{
+		llvm_function_return_type= function_type_ptr->return_type.GetLLVMType();
+		if( function_type_ptr->return_value_is_reference )
+			llvm_function_return_type= llvm::PointerType::get( llvm_function_return_type, 0u );
+	}
 
 	function_type_ptr->llvm_function_type=
 		llvm::FunctionType::get(
@@ -1081,7 +1156,7 @@ void CodeBuilder::BuildFuncCode(
 		// TODO - maybe mark immutable reference-parameters as "noalias"?
 		for( size_t i= 0u; i < function_type_ptr->args.size(); i++ )
 		{
-			const size_t arg_attr_index= i + 1u;
+			const size_t arg_attr_index= i + 1u + (first_arg_is_sret ? 1u : 0u );
 			if (function_type_ptr->args[i].is_reference )
 				llvm_function->addAttribute( arg_attr_index, llvm::Attribute::NonNull );
 			else
@@ -1094,6 +1169,9 @@ void CodeBuilder::BuildFuncCode(
 				}
 			}
 		}
+
+		if( first_arg_is_sret )
+			llvm_function->addAttribute( 1u, llvm::Attribute::StructRet );
 
 		func_variable.llvm_function= llvm_function;
 	}
@@ -1119,12 +1197,25 @@ void CodeBuilder::BuildFuncCode(
 
 	// push args
 	Variable this_;
+	Variable s_ret;
 	unsigned int arg_number= 0u;
 
 	const bool is_constructor= func_name == Keywords::constructor_;
 
 	for( llvm::Argument& llvm_arg : llvm_function->args() )
 	{
+		// Skip "sret".
+		if( first_arg_is_sret && &llvm_arg == &*llvm_function->arg_begin() )
+		{
+			s_ret.location= Variable::Location::Pointer;
+			s_ret.value_type= ValueType::Reference;
+			s_ret.type= function_type_ptr->return_type;
+			s_ret.llvm_value= &llvm_arg;
+			llvm_arg.setName( "_return_value" );
+			function_context.s_ret_= &s_ret;
+			continue;
+		}
+
 		const Function::Arg& arg= function_type_ptr->args[ arg_number ];
 
 		if( is_constructor && arg_number == 0u )
@@ -1838,8 +1929,17 @@ void CodeBuilder::BuildReturnOperatorCode(
 	}
 	else
 	{
-		llvm::Value* value_for_return= CreateMoveToLLVMRegisterInstruction( expression_result, function_context );
-		function_context.llvm_ir_builder.CreateRet( value_for_return );
+		if( function_context.s_ret_ != nullptr )
+		{
+			const ClassPtr class_= boost::get<ClassPtr>( function_context.s_ret_->type.one_of_type_kind );
+			TryCallCopyConstructor( return_operator.file_pos_, function_context.s_ret_->llvm_value, expression_result.llvm_value, class_, function_context );
+			function_context.llvm_ir_builder.CreateRetVoid();
+		}
+		else
+		{
+			llvm::Value* value_for_return= CreateMoveToLLVMRegisterInstruction( expression_result, function_context );
+			function_context.llvm_ir_builder.CreateRet( value_for_return );
+		}
 	}
 }
 
