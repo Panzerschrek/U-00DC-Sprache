@@ -45,7 +45,7 @@ endif()
 
 # Boost
 set( Boost_USE_STATIC_LIBS yes )
-set( BOOST_ROOT ../../boost_1_60_0 ) # Set path to your boost here.
+set( BOOST_ROOT ../../boost_1_65_1 ) # Set path to your boost here.
 find_package( Boost COMPONENTS system filesystem REQUIRED )
 include_directories( ${Boost_INCLUDE_DIRS} )
 
@@ -108,6 +108,7 @@ set( COMPILER_LIB_HEADERS
 
 add_library( CompilerLib ${COMPILER_LIB_SOURCES} ${COMPILER_LIB_HEADERS} )
 target_link_libraries( CompilerLib ${LLVM_LIBS_FOR_COMPILER_LIB} )
+target_link_libraries( CompilerLib pthread dl )
 
 #
 # Compiler
