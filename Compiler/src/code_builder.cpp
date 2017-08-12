@@ -1980,15 +1980,12 @@ void CodeBuilder::BuildWhileOperatorCode(
 
 	const Value condition_expression= BuildExpressionCode( *while_operator.condition_, names, function_context );
 
-	Type bool_type;
-	bool_type.one_of_type_kind= FundamentalType( U_FundamentalType::Bool, fundamental_llvm_types_.void_ );
-
-	if( condition_expression.GetType() != bool_type )
+	if( condition_expression.GetType() != bool_type_ )
 	{
 		errors_.push_back(
 			ReportTypesMismatch(
 				while_operator.condition_->file_pos_,
-				bool_type.ToString(),
+				bool_type_.ToString(),
 				condition_expression.GetType().ToString() ) );
 		return;
 	}
@@ -2059,9 +2056,6 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildIfOperatorCode(
 	bool have_return_in_all_branches= true;
 	bool have_break_or_continue_in_all_branches= true;
 
-	Type bool_type;
-	bool_type.one_of_type_kind= FundamentalType( U_FundamentalType::Bool, fundamental_llvm_types_.void_ );
-
 	// TODO - optimize this method. Make less basic blocks.
 	//
 
@@ -2098,12 +2092,12 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildIfOperatorCode(
 		{
 			const Value condition_expression= BuildExpressionCode( *branch.condition, names, function_context );
 
-			if( condition_expression.GetType() != bool_type )
+			if( condition_expression.GetType() != bool_type_ )
 			{
 				errors_.push_back(
 					ReportTypesMismatch(
 						branch.condition->file_pos_,
-						bool_type.ToString(),
+						bool_type_.ToString(),
 						condition_expression.GetType().ToString() ) );
 				throw ProgramError();
 			}

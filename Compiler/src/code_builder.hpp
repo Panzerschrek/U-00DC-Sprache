@@ -321,7 +321,7 @@ private:
 
 	Type invalid_type_;
 	Type void_type_;
-	Type bool_type_; // TODO - use this
+	Type bool_type_;
 
 	std::unique_ptr<llvm::Module> module_;
 	unsigned int error_count_= 0u;
