@@ -93,6 +93,7 @@ CodeBuilder::BuildResult CodeBuilder::BuildProgram( const ProgramElements& progr
 	error_count_= 0u;
 
 	NamesScope global_names( ""_SpC, nullptr );
+	FillGlobalNamesScope( global_names );
 	BuildNamespaceBody( program_elements, global_names );
 
 	if( error_count_ > 0u )
@@ -103,6 +104,16 @@ CodeBuilder::BuildResult CodeBuilder::BuildProgram( const ProgramElements& progr
 	errors_.clear();
 	result.module= std::move( module_ );
 	return result;
+}
+
+void CodeBuilder::FillGlobalNamesScope( NamesScope& global_names_scope )
+{
+	Type type;
+	for( const auto& fundamental_type_value : g_types_map )
+	{
+		type.one_of_type_kind= FundamentalType( fundamental_type_value.second, GetFundamentalLLVMType( fundamental_type_value.second ) );
+		global_names_scope.AddName( fundamental_type_value.first, type );
+	}
 }
 
 Type CodeBuilder::PrepareType(
@@ -147,30 +158,17 @@ Type CodeBuilder::PrepareType(
 
 	last_type->one_of_type_kind= FundamentalType( U_FundamentalType::InvalidType, fundamental_llvm_types_.invalid_type_ );
 
-	const auto it=
-		type_name.name.components.size() == 1u
-			? g_types_map.find( type_name.name.components.front() )
-			: g_types_map.end();
-	if( it == g_types_map.end() )
+
+	if( const NamesScope::InsertedName* name=
+		names_scope.ResolveName( type_name.name ) )
 	{
-		const NamesScope::InsertedName* custom_type_name=
-			names_scope.ResolveName( type_name.name );
-		if( custom_type_name != nullptr )
-		{
-			if( const ClassPtr class_= custom_type_name->second.GetClass() )
-			{
-				last_type->one_of_type_kind= class_;
-			}
-			else
-				errors_.push_back( ReportNameIsNotTypeName( file_pos, type_name.name.components.front() ) );
-		}
+		if( const Type* const type= name->second.GetTypeName() )
+			*last_type= *type;
 		else
-			errors_.push_back( ReportNameNotFound( file_pos, type_name.name ) );
+			errors_.push_back( ReportNameIsNotTypeName( file_pos, name->first ) );
 	}
 	else
-	{
-		last_type->one_of_type_kind= FundamentalType( it->second, GetFundamentalLLVMType( it->second ) );
-	}
+		errors_.push_back( ReportNameNotFound( file_pos, type_name.name ) );
 
 	// Setup arrays llvm types.
 	if( arrays_count > 0u )
@@ -216,8 +214,10 @@ void CodeBuilder::PrepareClass( const ClassDeclaration& class_declaration, Names
 
 		const ClassPtr the_class= std::make_shared<Class>( class_name, &names_scope );
 		the_class->llvm_type= llvm::StructType::create( llvm_context_, MangleClass( names_scope, class_name ) );
+		Type class_type;
+		class_type.one_of_type_kind= the_class;
 
-		const NamesScope::InsertedName* const inserted_name= names_scope.AddName( class_name, the_class );
+		const NamesScope::InsertedName* const inserted_name= names_scope.AddName( class_name, class_type );
 		if( inserted_name == nullptr )
 		{
 			errors_.push_back( ReportRedefinition( class_declaration.file_pos_, class_name ) );
@@ -231,14 +231,23 @@ void CodeBuilder::PrepareClass( const ClassDeclaration& class_declaration, Names
 	if( const NamesScope::InsertedName* const previous_declaration=
 		names_scope.ResolveName( class_declaration.name_ ) )
 	{
-		if( const ClassPtr previous_class= previous_declaration->second.GetClass() )
+		if( const Type* const previous_type= previous_declaration->second.GetTypeName() )
 		{
-			if( !previous_class->is_incomplete )
+			if( const ClassPtr* const previous_calss_ptr= boost::get<ClassPtr>( &previous_type->one_of_type_kind ) )
 			{
-				errors_.push_back( ReportClassBodyDuplication( class_declaration.file_pos_ ) );
+				U_ASSERT( *previous_calss_ptr != nullptr );
+				if( !(*previous_calss_ptr)->is_incomplete )
+				{
+					errors_.push_back( ReportClassBodyDuplication( class_declaration.file_pos_ ) );
+					return;
+				}
+				the_class= *previous_calss_ptr;
+			}
+			else
+			{
+				errors_.push_back( ReportRedefinition( class_declaration.file_pos_, class_name ) );
 				return;
 			}
-			the_class= previous_class;
 		}
 		else
 		{
@@ -256,8 +265,10 @@ void CodeBuilder::PrepareClass( const ClassDeclaration& class_declaration, Names
 
 		the_class= std::make_shared<Class>( class_name, &names_scope );
 		the_class->llvm_type= llvm::StructType::create( llvm_context_, MangleClass( names_scope, class_name ) );
+		Type class_type;
+		class_type.one_of_type_kind= the_class;
 
-		const NamesScope::InsertedName* const inserted_name= names_scope.AddName( class_name, the_class );
+		const NamesScope::InsertedName* const inserted_name= names_scope.AddName( class_name, class_type );
 		if( inserted_name == nullptr )
 		{
 			errors_.push_back( ReportRedefinition( class_declaration.file_pos_, class_name ) );
@@ -844,11 +855,19 @@ void CodeBuilder::PrepareFunction(
 		if( const NamesScope::InsertedName* const scope_name=
 			func_definition_names_scope.ResolveName( base_space_name ) )
 		{
-			if( const ClassPtr class_= scope_name->second.GetClass() )
+			bool base_space_is_class= false;
+			if( const Type* const type= scope_name->second.GetTypeName() )
 			{
-				func_base_names_scope= &class_->members;
-				base_class= class_; // TODO - check here if base_class nonnull and diffrs from class_?
+				if( const ClassPtr* const class_ptr= boost::get<ClassPtr>( &type->one_of_type_kind ) )
+				{
+					U_ASSERT( *class_ptr != nullptr );
+					func_base_names_scope= &(*class_ptr)->members;
+					base_class= *class_ptr; // TODO - check here if base_class nonnull and diffrs from class_?
+					base_space_is_class= true;
+				}
 			}
+
+			if( base_space_is_class ) {}
 			else if( const NamesScopePtr namespace_= scope_name->second.GetNamespace() )
 			{
 				func_base_names_scope= namespace_.get();

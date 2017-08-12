@@ -331,7 +331,7 @@ ProgramString Type::ToString() const
 			case NontypeStub::ThisOverloadedMethodsSet:
 				result= "this + overloaded methods set"_SpC;
 				break;
-			case NontypeStub::ClassName:
+			case NontypeStub::TypeName:
 				result= "class name"_SpC;
 				break;
 			case NontypeStub::Namespace:
@@ -455,10 +455,10 @@ Value::Value( OverloadedFunctionsSet functions_set )
 	something_= std::move(s);
 }
 
-Value::Value( const ClassPtr& class_ )
+Value::Value( Type type )
 {
-	ClassWithTypeStub s;
-	s.class_= class_;
+	TypeNameWithTypeStub s;
+	s.type= std::move(type);
 	something_= std::move(s);
 }
 
@@ -497,8 +497,8 @@ const Type& Value::GetType() const
 		void operator()( const OverloadedFunctionsSetWithTypeStub& functions_set )
 		{ type= &functions_set.type; }
 
-		void operator()( const ClassWithTypeStub& class_ )
-		{ type= &class_.type; }
+		void operator()( const TypeNameWithTypeStub& type_name )
+		{ type= &type_name.stub_type; }
 
 		void operator()( const ClassField& class_field )
 		{ type= &class_field.type; }
@@ -551,12 +551,20 @@ const OverloadedFunctionsSet* Value::GetFunctionsSet() const
 	return &set->set;
 }
 
-ClassPtr Value::GetClass() const
+Type* Value::GetTypeName()
 {
-	const ClassWithTypeStub* class_= boost::get<ClassWithTypeStub>( &something_ );
-	if( class_ == nullptr )
+	TypeNameWithTypeStub* type= boost::get<TypeNameWithTypeStub>( &something_ );
+	if( type == nullptr )
 		return nullptr;
-	return class_->class_;
+	return &type->type;
+}
+
+const Type* Value::GetTypeName() const
+{
+	const TypeNameWithTypeStub* type= boost::get<TypeNameWithTypeStub>( &something_ );
+	if( type == nullptr )
+		return nullptr;
+	return &type->type;
 }
 
 const ClassField* Value::GetClassField() const
@@ -598,9 +606,9 @@ Value::ThisOverloadedMethodsSetWithTypeStub::ThisOverloadedMethodsSetWithTypeStu
 	type.one_of_type_kind= NontypeStub::ThisOverloadedMethodsSet;
 }
 
-Value::ClassWithTypeStub::ClassWithTypeStub()
+Value::TypeNameWithTypeStub::TypeNameWithTypeStub()
 {
-	type.one_of_type_kind= NontypeStub::ClassName;
+	stub_type.one_of_type_kind= NontypeStub::TypeName;
 }
 
 Value::NamespaceWithTypeStub::NamespaceWithTypeStub()
@@ -727,10 +735,16 @@ NamesScope::InsertedName* NamesScope::ResolveName_r(
 
 	if( const NamesScopePtr child_namespace= it->second.GetNamespace() )
 		return child_namespace->ResolveName_r( components + 1u, component_count - 1u );
-	else if( const ClassPtr class_= it->second.GetClass() )
-		return class_->members.ResolveName_r( components + 1u, component_count - 1u );
-	else
-		return nullptr;
+	else if( const Type* const type= it->second.GetTypeName() )
+	{
+		if( const ClassPtr* class_ptr= boost::get<ClassPtr>( &type->one_of_type_kind ) )
+		{
+			U_ASSERT( *class_ptr != nullptr );
+			return (*class_ptr)->members.ResolveName_r( components + 1u, component_count - 1u );
+		}
+	}
+
+	return nullptr;
 }
 
 const ProgramString& GetFundamentalTypeName( const U_FundamentalType fundamental_type )
