@@ -38,7 +38,7 @@ void CodeBuilder::ApplyInitializer(
 	else if( const ConstructorInitializer* const constructor_initializer=
 		dynamic_cast<const ConstructorInitializer*>(&initializer) )
 	{
-		ApplyConstructorInitializer( variable, *constructor_initializer, block_names, function_context );
+		ApplyConstructorInitializer( variable, constructor_initializer->call_operator, block_names, function_context );
 	}
 	else if( const ExpressionInitializer* const expression_initializer=
 		dynamic_cast<const ExpressionInitializer*>(&initializer) )
@@ -245,29 +245,94 @@ void CodeBuilder::ApplyStructNamedInitializer(
 
 void CodeBuilder::ApplyConstructorInitializer(
 	const Variable& variable,
-	const ConstructorInitializer& initializer,
-	NamesScope& block_names,
+	const CallOperator& call_operator,
+	const NamesScope& block_names,
 	FunctionContext& function_context )
 {
-	if( const FundamentalType* const fundamental_type= boost::get<FundamentalType>( &variable.type.one_of_type_kind ) )
+	if( const FundamentalType* const dst_type= boost::get<FundamentalType>( &variable.type.one_of_type_kind ) )
 	{
-		U_UNUSED(fundamental_type);
-
-		if( initializer.call_operator.arguments_.size() != 1u )
+		if( call_operator.arguments_.size() != 1u )
 		{
-			errors_.push_back( ReportFundamentalTypesHaveConstructorsWithExactlyOneParameter( initializer.file_pos_ ) );
+			errors_.push_back( ReportFundamentalTypesHaveConstructorsWithExactlyOneParameter( call_operator.file_pos_ ) );
 			return;
 		}
 
 		const Value expression_result=
-			BuildExpressionCode( *initializer.call_operator.arguments_.front(), block_names, function_context );
-		if( expression_result.GetType() != variable.type )
+			BuildExpressionCode( *call_operator.arguments_.front(), block_names, function_context );
+		const Type expression_type= expression_result.GetType();
+		const FundamentalType* src_type= boost::get<FundamentalType>( &expression_type.one_of_type_kind );
+
+		if( src_type == nullptr )
 		{
-			errors_.push_back( ReportTypesMismatch( initializer.file_pos_, variable.type.ToString(), expression_result.GetType().ToString() ) );
+			errors_.push_back( ReportTypesMismatch( call_operator.file_pos_, variable.type.ToString(), expression_result.GetType().ToString() ) );
 			return;
 		}
 
-		llvm::Value* const value_for_assignment= CreateMoveToLLVMRegisterInstruction( *expression_result.GetVariable(), function_context );
+		llvm::Value* value_for_assignment= CreateMoveToLLVMRegisterInstruction( *expression_result.GetVariable(), function_context );
+
+		if( dst_type->fundamental_type != src_type->fundamental_type )
+		{
+			// Perform fundamental types conversion.
+
+			const size_t src_size= expression_type.SizeOf();
+			const size_t dst_size= variable.type.SizeOf();
+			if( IsInteger( dst_type->fundamental_type ) &&
+				IsInteger( src_type->fundamental_type ) )
+			{
+				// int to int
+				if( src_size < dst_size )
+				{
+					if( IsUnsignedInteger( dst_type->fundamental_type ) )
+					{
+						// We lost here some values in conversions, such i16 => u32, if src_type is signed.
+						value_for_assignment= function_context.llvm_ir_builder.CreateZExt( value_for_assignment, dst_type->llvm_type );
+					}
+					else
+						value_for_assignment= function_context.llvm_ir_builder.CreateSExt( value_for_assignment, dst_type->llvm_type );
+				}
+				else if( src_size > dst_size )
+					value_for_assignment= function_context.llvm_ir_builder.CreateTrunc( value_for_assignment, dst_type->llvm_type );
+				else {} // Same size integers - do nothing.
+			}
+			else if( IsFloatingPoint( dst_type->fundamental_type ) &&
+				IsFloatingPoint( src_type->fundamental_type ) )
+			{
+				// float to float
+				if( src_size < dst_size )
+					value_for_assignment= function_context.llvm_ir_builder.CreateFPExt( value_for_assignment, dst_type->llvm_type );
+				else if( src_size > dst_size )
+					value_for_assignment= function_context.llvm_ir_builder.CreateFPTrunc( value_for_assignment, dst_type->llvm_type );
+				else{ U_ASSERT(false); }
+			}
+			else if( IsFloatingPoint( dst_type->fundamental_type ) &&
+				IsInteger( src_type->fundamental_type ) )
+			{
+				// int to float
+				if( IsSignedInteger( src_type->fundamental_type ) )
+					value_for_assignment= function_context.llvm_ir_builder.CreateSIToFP( value_for_assignment, dst_type->llvm_type );
+				else
+					value_for_assignment= function_context.llvm_ir_builder.CreateUIToFP( value_for_assignment, dst_type->llvm_type );
+			}
+			else if( IsInteger( dst_type->fundamental_type ) &&
+				IsFloatingPoint( src_type->fundamental_type ) )
+			{
+				// float to int
+				if( IsSignedInteger( dst_type->fundamental_type ) )
+					value_for_assignment= function_context.llvm_ir_builder.CreateFPToSI( value_for_assignment, dst_type->llvm_type );
+				else
+					value_for_assignment= function_context.llvm_ir_builder.CreateFPToUI( value_for_assignment, dst_type->llvm_type );
+			}
+			else
+			{
+				if( dst_type->fundamental_type == U_FundamentalType::Bool )
+				{
+					// TODO - error, bool have no constructors from other types
+				}
+				errors_.push_back( ReportTypesMismatch( call_operator.file_pos_, variable.type.ToString(), expression_result.GetType().ToString() ) );
+				return;
+			}
+		} // If needs conversion
+
 		function_context.llvm_ir_builder.CreateStore( value_for_assignment, variable.llvm_value );
 	}
 	else if( const ClassPtr* const class_type_ptr= boost::get<ClassPtr>( &variable.type.one_of_type_kind ) )
@@ -280,7 +345,7 @@ void CodeBuilder::ApplyConstructorInitializer(
 
 		if( constructor_name == nullptr )
 		{
-			errors_.push_back( ReportClassHaveNoConstructors( initializer.file_pos_ ) );
+			errors_.push_back( ReportClassHaveNoConstructors( call_operator.file_pos_ ) );
 			return;
 		}
 
@@ -292,11 +357,11 @@ void CodeBuilder::ApplyConstructorInitializer(
 		this_overloaded_methods_set.overloaded_methods_set= *constructors_set;
 
 		// TODO - disallow explicit constructors calls.
-		BuildCallOperator( this_overloaded_methods_set, initializer.call_operator, block_names, function_context );
+		BuildCallOperator( this_overloaded_methods_set, call_operator, block_names, function_context );
 	}
 	else
 	{
-		errors_.push_back( ReportConstructorInitializerForUnsupportedType( initializer.file_pos_ ) );
+		errors_.push_back( ReportConstructorInitializerForUnsupportedType( call_operator.file_pos_ ) );
 		return;
 	}
 }
@@ -304,7 +369,7 @@ void CodeBuilder::ApplyConstructorInitializer(
 void CodeBuilder::ApplyExpressionInitializer(
 	const Variable& variable,
 	const ExpressionInitializer& initializer,
-	NamesScope& block_names,
+	const NamesScope& block_names,
 	FunctionContext& function_context )
 {
 	if( const FundamentalType* const fundamental_type= boost::get<FundamentalType>( &variable.type.one_of_type_kind ) )
@@ -332,7 +397,7 @@ void CodeBuilder::ApplyExpressionInitializer(
 void CodeBuilder::ApplyZeroInitializer(
 	const Variable& variable,
 	const ZeroInitializer& initializer,
-	NamesScope& block_names,
+	const NamesScope& block_names,
 	FunctionContext& function_context )
 {
 	if( const FundamentalType* const fundamental_type= boost::get<FundamentalType>( &variable.type.one_of_type_kind ) )

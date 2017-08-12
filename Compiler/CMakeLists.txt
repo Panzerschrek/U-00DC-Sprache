@@ -98,7 +98,8 @@ set( TESTS_SOURCES
 	src/tests/namespaces_test.cpp
 	src/tests/operators_priority_test.cpp
 	src/tests/tests_main.cpp
-	src/tests/tests.cpp )
+	src/tests/tests.cpp
+	src/tests/type_conversions_test.cpp )
 
 set( TESTS_HEADERS
 	src/tests/tests.hpp )

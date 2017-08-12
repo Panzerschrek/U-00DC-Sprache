@@ -45,7 +45,7 @@ enum class NontypeStub
 {
 	OverloadedFunctionsSet,
 	ThisOverloadedMethodsSet,
-	ClassName,
+	TypeName,
 	Namespace,
 };
 
@@ -171,7 +171,7 @@ public:
 	Value( Variable variable );
 	Value( FunctionVariable function_variable );
 	Value( OverloadedFunctionsSet functions_set );
-	Value( const ClassPtr& class_ );
+	Value( Type type );
 	Value( ClassField class_field );
 	Value( ThisOverloadedMethodsSet class_field );
 	Value( const NamesScopePtr& namespace_ );
@@ -187,8 +187,9 @@ public:
 	// Function set stub type
 	OverloadedFunctionsSet* GetFunctionsSet();
 	const OverloadedFunctionsSet* GetFunctionsSet() const;
-	// Class stub type
-	ClassPtr GetClass() const;
+	// Typename
+	Type* GetTypeName();
+	const Type* GetTypeName() const;
 	// Class fields
 	const ClassField* GetClassField() const;
 	// This + methods set
@@ -212,12 +213,12 @@ private:
 		Type type;
 		ThisOverloadedMethodsSet set;
 	};
-	struct ClassWithTypeStub
+	struct TypeNameWithTypeStub
 	{
-		ClassWithTypeStub();
+		TypeNameWithTypeStub();
 
+		Type stub_type;
 		Type type;
-		ClassPtr class_;
 	};
 	struct NamespaceWithTypeStub
 	{
@@ -232,7 +233,7 @@ private:
 		Variable,
 		FunctionVariable,
 		OverloadedFunctionsSetWithTypeStub,
-		ClassWithTypeStub,
+		TypeNameWithTypeStub,
 		ClassField,
 		ThisOverloadedMethodsSetWithTypeStub,
 		NamespaceWithTypeStub > something_;

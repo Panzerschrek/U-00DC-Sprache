@@ -788,6 +788,70 @@ U_TEST(CallTest9)
 	U_TEST_ASSERT( static_cast<uint64_t>(25 * 746984 + 25) == result_value.IntVal.getLimitedValue() );
 }
 
+U_TEST(TempVariableConstructionTest0)
+{
+	// Construction of temp variable of int type.
+	static const char c_program_text[]=
+	R"(
+		fn Sum( i32 a, i32 b ) : i32 { return a + b; }
+		fn Foo() : i32
+		{
+			return Sum( i32(455), i32(-35) );
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( static_cast<uint64_t>(455 - 35) == result_value.IntVal.getLimitedValue() );
+}
+
+U_TEST(TempVariableConstructionTest1)
+{
+	// Construction of temp variable of struct type, using constructor.
+	static const char c_program_text[]=
+	R"(
+		struct fixed16
+		{
+			i32 x;
+			fn constructor( i32 i )
+			( x= i * 65536 )
+			{}
+		}
+		fn Fixed16ToInt( fixed16 f ) : i32
+		{
+			return f.x / 65536;
+		}
+		fn Fixed16ToIntRef( fixed16 &imut f ) : i32
+		{
+			return f.x / 65536;
+		}
+		fn Foo() : i32
+		{
+			return Fixed16ToInt( fixed16( 6211 ) ) + Fixed16ToIntRef( fixed16( 412 ) );
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( static_cast<uint64_t>(6211 + 412) == result_value.IntVal.getLimitedValue() );
+}
+
 U_TEST(EqualityOperatorsTest)
 {
 	static const char c_program_text[]=

@@ -72,6 +72,7 @@ private:
 	};
 
 private:
+	void FillGlobalNamesScope( NamesScope& global_names_scope );
 	Type PrepareType( const FilePos& file_pos, const TypeName& type_name, const NamesScope& names_scope );
 	void PrepareClass( const ClassDeclaration& class_declaration, NamesScope& names_scope );
 
@@ -163,6 +164,12 @@ private:
 
 	Variable BuildCallOperator(
 		const Value& function_value,
+		const CallOperator& call_operator,
+		const NamesScope& names,
+		FunctionContext& function_context );
+
+	Variable BuildTempVariableConstruction(
+		const Type& type,
 		const CallOperator& call_operator,
 		const NamesScope& names,
 		FunctionContext& function_context );
@@ -259,20 +266,20 @@ private:
 
 	void ApplyConstructorInitializer(
 		const Variable& variable,
-		const ConstructorInitializer& initializer,
-		NamesScope& block_names,
+		const CallOperator& call_operator,
+		const NamesScope& block_names,
 		FunctionContext& function_context );
 
 	void ApplyExpressionInitializer(
 		const Variable& variable,
 		const ExpressionInitializer& initializer,
-		NamesScope& block_names,
+		const NamesScope& block_names,
 		FunctionContext& function_context );
 
 	void ApplyZeroInitializer(
 		const Variable& variable,
 		const ZeroInitializer& initializer,
-		NamesScope& block_names,
+		const NamesScope& block_names,
 		FunctionContext& function_context );
 
 	static U_FundamentalType GetNumericConstantType( const NumericConstant& number );

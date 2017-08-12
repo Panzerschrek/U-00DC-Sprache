@@ -659,9 +659,12 @@ Variable CodeBuilder::BuildCallOperator(
 	const NamesScope& names,
 	FunctionContext& function_context )
 {
-	const Variable* this_= nullptr;
+	if( const Type* const type= function_value.GetTypeName() )
+		return BuildTempVariableConstruction( *type, call_operator, names, function_context );
 
+	const Variable* this_= nullptr;
 	const OverloadedFunctionsSet* functions_set= function_value.GetFunctionsSet();
+
 	if( functions_set != nullptr )
 	{}
 	else if( const ThisOverloadedMethodsSet* const this_overloaded_methods_set=
@@ -866,6 +869,23 @@ Variable CodeBuilder::BuildCallOperator(
 	result.llvm_value= call_result;
 
 	return result;
+}
+
+Variable CodeBuilder::BuildTempVariableConstruction(
+	const Type& type,
+	const CallOperator& call_operator,
+	const NamesScope& names,
+	FunctionContext& function_context )
+{
+	Variable variable;
+	variable.type= type;
+	variable.location= Variable::Location::Pointer;
+	variable.value_type= ValueType::Reference;
+	variable.llvm_value= function_context.alloca_ir_builder.CreateAlloca( type.GetLLVMType() );
+	ApplyConstructorInitializer( variable, call_operator, names, function_context );
+	variable.value_type= ValueType::Value; // Make value efter construction
+
+	return variable;
 }
 
 Variable CodeBuilder::BuildUnaryMinus(
