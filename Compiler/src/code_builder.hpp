@@ -168,6 +168,12 @@ private:
 		const NamesScope& names,
 		FunctionContext& function_context );
 
+	Variable BuildTempVariableConstruction(
+		const Type& type,
+		const CallOperator& call_operator,
+		const NamesScope& names,
+		FunctionContext& function_context );
+
 	Variable BuildUnaryMinus(
 		const Value& value,
 		const UnaryMinus& unary_minus,
@@ -260,20 +266,20 @@ private:
 
 	void ApplyConstructorInitializer(
 		const Variable& variable,
-		const ConstructorInitializer& initializer,
-		NamesScope& block_names,
+		const CallOperator& call_operator,
+		const NamesScope& block_names,
 		FunctionContext& function_context );
 
 	void ApplyExpressionInitializer(
 		const Variable& variable,
 		const ExpressionInitializer& initializer,
-		NamesScope& block_names,
+		const NamesScope& block_names,
 		FunctionContext& function_context );
 
 	void ApplyZeroInitializer(
 		const Variable& variable,
 		const ZeroInitializer& initializer,
-		NamesScope& block_names,
+		const NamesScope& block_names,
 		FunctionContext& function_context );
 
 	static U_FundamentalType GetNumericConstantType( const NumericConstant& number );

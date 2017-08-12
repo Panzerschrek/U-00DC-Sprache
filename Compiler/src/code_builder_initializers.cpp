@@ -38,7 +38,7 @@ void CodeBuilder::ApplyInitializer(
 	else if( const ConstructorInitializer* const constructor_initializer=
 		dynamic_cast<const ConstructorInitializer*>(&initializer) )
 	{
-		ApplyConstructorInitializer( variable, *constructor_initializer, block_names, function_context );
+		ApplyConstructorInitializer( variable, constructor_initializer->call_operator, block_names, function_context );
 	}
 	else if( const ExpressionInitializer* const expression_initializer=
 		dynamic_cast<const ExpressionInitializer*>(&initializer) )
@@ -245,25 +245,25 @@ void CodeBuilder::ApplyStructNamedInitializer(
 
 void CodeBuilder::ApplyConstructorInitializer(
 	const Variable& variable,
-	const ConstructorInitializer& initializer,
-	NamesScope& block_names,
+	const CallOperator& call_operator,
+	const NamesScope& block_names,
 	FunctionContext& function_context )
 {
 	if( const FundamentalType* const fundamental_type= boost::get<FundamentalType>( &variable.type.one_of_type_kind ) )
 	{
 		U_UNUSED(fundamental_type);
 
-		if( initializer.call_operator.arguments_.size() != 1u )
+		if( call_operator.arguments_.size() != 1u )
 		{
-			errors_.push_back( ReportFundamentalTypesHaveConstructorsWithExactlyOneParameter( initializer.file_pos_ ) );
+			errors_.push_back( ReportFundamentalTypesHaveConstructorsWithExactlyOneParameter( call_operator.file_pos_ ) );
 			return;
 		}
 
 		const Value expression_result=
-			BuildExpressionCode( *initializer.call_operator.arguments_.front(), block_names, function_context );
+			BuildExpressionCode( *call_operator.arguments_.front(), block_names, function_context );
 		if( expression_result.GetType() != variable.type )
 		{
-			errors_.push_back( ReportTypesMismatch( initializer.file_pos_, variable.type.ToString(), expression_result.GetType().ToString() ) );
+			errors_.push_back( ReportTypesMismatch( call_operator.file_pos_, variable.type.ToString(), expression_result.GetType().ToString() ) );
 			return;
 		}
 
@@ -280,7 +280,7 @@ void CodeBuilder::ApplyConstructorInitializer(
 
 		if( constructor_name == nullptr )
 		{
-			errors_.push_back( ReportClassHaveNoConstructors( initializer.file_pos_ ) );
+			errors_.push_back( ReportClassHaveNoConstructors( call_operator.file_pos_ ) );
 			return;
 		}
 
@@ -292,11 +292,11 @@ void CodeBuilder::ApplyConstructorInitializer(
 		this_overloaded_methods_set.overloaded_methods_set= *constructors_set;
 
 		// TODO - disallow explicit constructors calls.
-		BuildCallOperator( this_overloaded_methods_set, initializer.call_operator, block_names, function_context );
+		BuildCallOperator( this_overloaded_methods_set, call_operator, block_names, function_context );
 	}
 	else
 	{
-		errors_.push_back( ReportConstructorInitializerForUnsupportedType( initializer.file_pos_ ) );
+		errors_.push_back( ReportConstructorInitializerForUnsupportedType( call_operator.file_pos_ ) );
 		return;
 	}
 }
@@ -304,7 +304,7 @@ void CodeBuilder::ApplyConstructorInitializer(
 void CodeBuilder::ApplyExpressionInitializer(
 	const Variable& variable,
 	const ExpressionInitializer& initializer,
-	NamesScope& block_names,
+	const NamesScope& block_names,
 	FunctionContext& function_context )
 {
 	if( const FundamentalType* const fundamental_type= boost::get<FundamentalType>( &variable.type.one_of_type_kind ) )
@@ -332,7 +332,7 @@ void CodeBuilder::ApplyExpressionInitializer(
 void CodeBuilder::ApplyZeroInitializer(
 	const Variable& variable,
 	const ZeroInitializer& initializer,
-	NamesScope& block_names,
+	const NamesScope& block_names,
 	FunctionContext& function_context )
 {
 	if( const FundamentalType* const fundamental_type= boost::get<FundamentalType>( &variable.type.one_of_type_kind ) )
