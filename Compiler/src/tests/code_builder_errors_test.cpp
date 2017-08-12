@@ -500,6 +500,107 @@ U_TEST(TypesMismatchTest5)
 	U_TEST_ASSERT( error.file_pos.line == 5u );
 }
 
+U_TEST(TypesMismatchTest6)
+{
+	// Unexpected type in construction - "bool" to integer.
+	static const char c_program_text[]=
+	R"(
+		fn Foo()
+		{
+			var i32 i(false);
+		}
+	)";
+
+	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::TypesMismatch );
+	U_TEST_ASSERT( error.file_pos.line == 4u );
+}
+
+U_TEST(TypesMismatchTest7)
+{
+	// Unexpected type in construction - "bool" to float.
+	static const char c_program_text[]=
+	R"(
+		fn Foo()
+		{
+			var f32 f(true);
+		}
+	)";
+
+	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::TypesMismatch );
+	U_TEST_ASSERT( error.file_pos.line == 4u );
+}
+
+U_TEST(TypesMismatchTest8)
+{
+	// Unexpected type in construction - integer to "bool".
+	static const char c_program_text[]=
+	R"(
+		fn Foo()
+		{
+			var bool b(58i16);
+		}
+	)";
+
+	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::TypesMismatch );
+	U_TEST_ASSERT( error.file_pos.line == 4u );
+}
+
+U_TEST(TypesMismatchTest9)
+{
+	// Unexpected type in construction - float to "bool".
+	static const char c_program_text[]=
+	R"(
+		fn Foo()
+		{
+			var bool b( 0.5f64 );
+		}
+	)";
+
+	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::TypesMismatch );
+	U_TEST_ASSERT( error.file_pos.line == 4u );
+}
+
+U_TEST(TypesMismatchTest10)
+{
+	// Unexpected type in assignment - assign struct to integer.
+	static const char c_program_text[]=
+	R"(
+		struct S{}
+		fn Foo()
+		{
+			var bool b= S();
+		}
+	)";
+
+	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::TypesMismatch );
+	U_TEST_ASSERT( error.file_pos.line == 5u );
+}
+
 U_TEST(NoMatchBinaryOperatorForGivenTypesTest0)
 {
 	// Add for array and int.
