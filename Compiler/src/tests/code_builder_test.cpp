@@ -320,6 +320,146 @@ U_TEST(UnaryMinusFloatTest)
 	ASSERT_NEAR( -( - arg_value ), result_value.DoubleVal, 0.01f );
 }
 
+U_TEST(LazyLogicalAndTest0)
+{
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			i32 x;
+			fn GetAndMutate( this, bool v, i32 i ) : bool
+			{
+				x= i;
+				return v;
+			}
+		}
+		fn Foo() : i32
+		{
+			var S s{ .x= 896 };
+			if( true && s.GetAndMutate( true, 42 ) ) // Must call function and mutate
+			{ return s.x; }
+			return 0;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	const llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>( ) );
+
+	U_TEST_ASSERT( static_cast<uint64_t>(42) == result_value.IntVal.getLimitedValue() );
+}
+
+U_TEST(LazyLogicalAndTest1)
+{
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			i32 x;
+			fn GetAndMutate( this, bool v, i32 i ) : bool
+			{
+				x= i;
+				return v;
+			}
+		}
+		fn Foo() : i32
+		{
+			var S s{ .x= 896 };
+			if( false && s.GetAndMutate( false, 42 ) ) // Must not call function
+			{ return 0; }
+			return s.x;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	const llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>( ) );
+
+	U_TEST_ASSERT( static_cast<uint64_t>(896) == result_value.IntVal.getLimitedValue() );
+}
+
+U_TEST(LazyLogicalOrTest0)
+{
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			i32 x;
+			fn GetAndMutate( this, bool v, i32 i ) : bool
+			{
+				x= i;
+				return v;
+			}
+		}
+		fn Foo() : i32
+		{
+			var S s{ .x= 896 };
+			if( true || s.GetAndMutate( true, 42 ) ) // Must not call function
+			{ return s.x; }
+			return 0;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	const llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>( ) );
+
+	U_TEST_ASSERT( static_cast<uint64_t>(896) == result_value.IntVal.getLimitedValue() );
+}
+
+U_TEST(LazyLogicalOrTest1)
+{
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			i32 x;
+			fn GetAndMutate( this, bool v, i32 i ) : bool
+			{
+				x= i;
+				return v;
+			}
+		}
+		fn Foo() : i32
+		{
+			var S s{ .x= 896 };
+			if( false || s.GetAndMutate( true, 42 ) ) // Must call function and mutate
+			{ return s.x; }
+			return 0;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	const llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>( ) );
+
+	U_TEST_ASSERT( static_cast<uint64_t>(42) == result_value.IntVal.getLimitedValue() );
+}
+
 U_TEST(ArraysTest0)
 {
 	static const char c_program_text[]=

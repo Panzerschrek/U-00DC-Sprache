@@ -146,6 +146,13 @@ private:
 		BinaryOperatorType binary_operator,
 		const FilePos& file_pos,
 		FunctionContext& function_context );
+		
+	Variable BuildLazyBinaryOperator(
+		const IExpressionComponent& l_expression,
+		const IExpressionComponent& r_expression,
+		const BinaryOperator& binary_operator,
+		const NamesScope& names,
+		FunctionContext& function_context );
 
 	Value BuildNamedOperand( const NamedOperand& named_operand, const NamesScope& names, FunctionContext& function_context );
 	Variable BuildNumericConstant( const NumericConstant& numeric_constant );

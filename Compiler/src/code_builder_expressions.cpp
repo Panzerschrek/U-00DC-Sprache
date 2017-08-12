@@ -20,36 +20,48 @@ Value CodeBuilder::BuildExpressionCode(
 	const NamesScope& names,
 	FunctionContext& function_context )
 {
-	const FilePos file_pos = expression.file_pos_;
-
 	Value result;
 
 	if( const BinaryOperator* const binary_operator=
 		dynamic_cast<const BinaryOperator*>(&expression) )
 	{
-		const Value l_var_value=
-			BuildExpressionCode(
-				*binary_operator->left_,
-				names,
-				function_context );
+		if( binary_operator->operator_type_ == BinaryOperatorType::LazyLogicalAnd ||
+			binary_operator->operator_type_ == BinaryOperatorType::LazyLogicalOr )
+		{
+			return
+				BuildLazyBinaryOperator(
+					*binary_operator->left_,
+					*binary_operator->right_,
+					*binary_operator,
+					names,
+					function_context );
+		}
+		else
+		{
+			const Value l_var_value=
+				BuildExpressionCode(
+					*binary_operator->left_,
+					names,
+					function_context );
 
-		const Value r_var_value=
-			BuildExpressionCode(
-				*binary_operator->right_,
-				names,
-				function_context );
+			const Value r_var_value=
+				BuildExpressionCode(
+					*binary_operator->right_,
+					names,
+					function_context );
 
-		const Variable* const l_var= l_var_value.GetVariable();
-		const Variable* const r_var= r_var_value.GetVariable();
+			const Variable* const l_var= l_var_value.GetVariable();
+			const Variable* const r_var= r_var_value.GetVariable();
 
-		if( l_var == nullptr )
-			errors_.push_back( ReportExpectedVariableInBinaryOperator( file_pos, l_var_value.GetType().ToString() ) );
-		if( r_var == nullptr )
-			errors_.push_back( ReportExpectedVariableInBinaryOperator( file_pos, r_var_value.GetType().ToString() ) );
-		if( l_var == nullptr || r_var == nullptr )
-			throw ProgramError();
+			if( l_var == nullptr )
+				errors_.push_back( ReportExpectedVariableInBinaryOperator( binary_operator->file_pos_, l_var_value.GetType().ToString() ) );
+			if( r_var == nullptr )
+				errors_.push_back( ReportExpectedVariableInBinaryOperator( binary_operator->file_pos_, r_var_value.GetType().ToString() ) );
+			if( l_var == nullptr || r_var == nullptr )
+				throw ProgramError();
 
-		return BuildBinaryOperator( *l_var, *r_var, binary_operator->operator_type_, file_pos, function_context );
+			return BuildBinaryOperator( *l_var, *r_var, binary_operator->operator_type_, binary_operator->file_pos_, function_context );
+		}
 	}
 	else if( const NamedOperand* const named_operand=
 		dynamic_cast<const NamedOperand*>(&expression) )
@@ -396,10 +408,64 @@ Variable CodeBuilder::BuildBinaryOperator(
 
 	case BinaryOperatorType::LazyLogicalAnd:
 	case BinaryOperatorType::LazyLogicalOr:
+	U_ASSERT(false); break;
+
 	case BinaryOperatorType::Last:
 		break;
 	};
 
+	return result;
+}
+
+Variable CodeBuilder::BuildLazyBinaryOperator(
+	const IExpressionComponent& l_expression,
+	const IExpressionComponent& r_expression,
+	const BinaryOperator& binary_operator,
+	const NamesScope& names,
+	FunctionContext& function_context )
+{
+	const Value l_var_value= BuildExpressionCode( l_expression, names, function_context );
+	if( l_var_value.GetType() != bool_type_ )
+	{
+		errors_.push_back( ReportTypesMismatch( binary_operator.file_pos_, bool_type_.ToString(), l_var_value.GetType().ToString() ) );
+		throw ProgramError();
+	}
+	const Variable l_var= *l_var_value.GetVariable();
+
+	llvm::BasicBlock* const l_part_block= function_context.llvm_ir_builder.GetInsertBlock();
+	llvm::BasicBlock* const r_part_block= llvm::BasicBlock::Create( llvm_context_ );
+	llvm::BasicBlock* const block_after_operator= llvm::BasicBlock::Create( llvm_context_ );
+
+	if( binary_operator.operator_type_ == BinaryOperatorType::LazyLogicalAnd )
+		function_context.llvm_ir_builder.CreateCondBr( l_var.llvm_value, r_part_block, block_after_operator );
+	else if( binary_operator.operator_type_ == BinaryOperatorType::LazyLogicalOr )
+		function_context.llvm_ir_builder.CreateCondBr( l_var.llvm_value, block_after_operator, r_part_block );
+	else{ U_ASSERT(false); }
+
+	function_context.function->getBasicBlockList().push_back( r_part_block );
+	function_context.llvm_ir_builder.SetInsertPoint( r_part_block );
+
+	const Value r_var_value= BuildExpressionCode( r_expression, names, function_context );
+	if( r_var_value.GetType() != bool_type_ )
+	{
+		errors_.push_back( ReportTypesMismatch( binary_operator.file_pos_, bool_type_.ToString(), r_var_value.GetType().ToString() ) );
+		throw ProgramError();
+	}
+	const Variable r_var= *r_var_value.GetVariable();
+
+	function_context.llvm_ir_builder.CreateBr( block_after_operator );
+	function_context.function->getBasicBlockList().push_back( block_after_operator );
+	function_context.llvm_ir_builder.SetInsertPoint( block_after_operator );
+
+	llvm::PHINode* const phi= function_context.llvm_ir_builder.CreatePHI( fundamental_llvm_types_.bool_, 2u );
+	phi->addIncoming( l_var.llvm_value, l_part_block );
+	phi->addIncoming( r_var.llvm_value, r_part_block );
+
+	Variable result;
+	result.type= bool_type_;
+	result.location= Variable::Location::LLVMRegister;
+	result.value_type= ValueType::Value;
+	result.llvm_value= phi;
 	return result;
 }
 
