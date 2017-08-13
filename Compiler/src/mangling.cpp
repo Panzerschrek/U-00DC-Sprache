@@ -157,7 +157,7 @@ static NamePair GetTypeName_r( const Type& type, NamesCache& names_cache )
 	}
 	else if( const Array* const array_type= type.GetArrayType() )
 	{
-		ProgramString array_prefix= "A"_SpC + ToProgramString( std::to_string( array_type->size ).c_str() );
+		ProgramString array_prefix= "A"_SpC + ToProgramString( std::to_string( array_type->size ).c_str() ) + "_"_SpC;
 
 		const NamePair type_name= GetTypeName_r( array_type->type, names_cache );
 		result.full= array_prefix + type_name.full;
