@@ -68,23 +68,20 @@ void CodeBuilder::ApplyEmptyInitializer(
 		return;
 	}
 
-	if( const FundamentalType* const fundamental_type= boost::get<FundamentalType>( &variable.type.one_of_type_kind ) )
+	if( const FundamentalType* const fundamental_type= variable.type.GetFundamentalType() )
 	{
 		// Fundamentals is not default-constructible, we should generate error about it before.
 		U_UNUSED( fundamental_type );
 		U_ASSERT( false );
 	}
-	else if( const ArrayPtr* const array_type_ptr= boost::get<ArrayPtr>( &variable.type.one_of_type_kind ) )
+	else if( const Array* const array_type= variable.type.GetArrayType() )
 	{
-		U_ASSERT( *array_type_ptr != nullptr );
-		const Array& array_type= **array_type_ptr;
-
 		Variable array_member= variable;
-		array_member.type= array_type.type;
+		array_member.type= array_type->type;
 		array_member.location= Variable::Location::Pointer;
 
 		GenerateLoop(
-			array_type.size,
+			array_type->size,
 			[&](llvm::Value* const counter_value)
 			{
 				llvm::Value* index_list[2];
@@ -97,15 +94,12 @@ void CodeBuilder::ApplyEmptyInitializer(
 			},
 			function_context);
 	}
-	else if( const ClassPtr* const class_type_ptr = boost::get<ClassPtr>( &variable.type.one_of_type_kind ) )
+	else if( const ClassPtr class_type= variable.type.GetClassType() )
 	{
 		// If initializer for class variable is empty, try to call default constructor.
 
-		U_ASSERT( *class_type_ptr != nullptr );
-		const Class& class_type= **class_type_ptr;
-
 		const NamesScope::InsertedName* constructor_name=
-			class_type.members.GetThisScopeName( Keyword( Keywords::constructor_ ) );
+			class_type->members.GetThisScopeName( Keyword( Keywords::constructor_ ) );
 		U_ASSERT( constructor_name != nullptr );
 		const OverloadedFunctionsSet* const constructors_set= constructor_name->second.GetFunctionsSet();
 		U_ASSERT( constructors_set != nullptr );
@@ -128,28 +122,26 @@ void CodeBuilder::ApplyArrayInitializer(
 	NamesScope& block_names,
 	FunctionContext& function_context )
 {
-	const ArrayPtr* const array_type_ptr= boost::get<ArrayPtr>( &variable.type.one_of_type_kind );
-	if( array_type_ptr == nullptr )
+	const Array* const array_type= variable.type.GetArrayType();
+	if( array_type == nullptr )
 	{
 		errors_.push_back( ReportArrayInitializerForNonArray( initializer.file_pos_ ) );
 		return;
 	}
-	U_ASSERT( *array_type_ptr != nullptr );
-	const Array& array_type= **array_type_ptr;
 
-	if( initializer.initializers.size() != array_type.size )
+	if( initializer.initializers.size() != array_type->size )
 	{
 		errors_.push_back(
 			ReportArrayInitializersCountMismatch(
 				initializer.file_pos_,
-				array_type.size,
+				array_type->size,
 				initializer.initializers.size() ) );
 		return;
 		// SPRACHE_TODO - add array continious initializers.
 	}
 
 	Variable array_member= variable;
-	array_member.type= array_type.type;
+	array_member.type= array_type->type;
 	array_member.location= Variable::Location::Pointer;
 
 	// Make first index = 0 for array to pointer conversion.
@@ -173,16 +165,14 @@ void CodeBuilder::ApplyStructNamedInitializer(
 	NamesScope& block_names,
 	FunctionContext& function_context )
 {
-	const ClassPtr* const class_type_ptr= boost::get<ClassPtr>( &variable.type.one_of_type_kind );
-	if( class_type_ptr == nullptr )
+	const ClassPtr class_type= variable.type.GetClassType();
+	if( class_type == nullptr )
 	{
 		errors_.push_back( ReportStructInitializerForNonStruct( initializer.file_pos_ ) );
 		return;
 	}
-	U_ASSERT( *class_type_ptr != nullptr );
-	const Class& class_type= **class_type_ptr;
 
-	if( class_type.have_explicit_noncopy_constructors )
+	if( class_type->have_explicit_noncopy_constructors )
 		errors_.push_back( ReportInitializerDisabledBecauseClassHaveExplicitNoncopyConstructors( initializer.file_pos_ ) );
 
 	std::set<ProgramString> initialized_members_names;
@@ -201,7 +191,7 @@ void CodeBuilder::ApplyStructNamedInitializer(
 			continue;
 		}
 
-		const NamesScope::InsertedName* const class_member= class_type.members.GetThisScopeName( member_initializer.name );
+		const NamesScope::InsertedName* const class_member= class_type->members.GetThisScopeName( member_initializer.name );
 		if( class_member == nullptr )
 		{
 			errors_.push_back( ReportNameNotFound( initializer.file_pos_, member_initializer.name ) );
@@ -225,8 +215,8 @@ void CodeBuilder::ApplyStructNamedInitializer(
 		ApplyInitializer( struct_member, *member_initializer.initializer, block_names, function_context );
 	}
 
-	U_ASSERT( initialized_members_names.size() <= class_type.field_count );
-	class_type.members.ForEachInThisScope(
+	U_ASSERT( initialized_members_names.size() <= class_type->field_count );
+	class_type->members.ForEachInThisScope(
 		[&]( const NamesScope::InsertedName& class_member )
 		{
 			if( const ClassField* const field = class_member.second.GetClassField() )
@@ -249,7 +239,7 @@ void CodeBuilder::ApplyConstructorInitializer(
 	const NamesScope& block_names,
 	FunctionContext& function_context )
 {
-	if( const FundamentalType* const dst_type= boost::get<FundamentalType>( &variable.type.one_of_type_kind ) )
+	if( const FundamentalType* const dst_type= variable.type.GetFundamentalType() )
 	{
 		if( call_operator.arguments_.size() != 1u )
 		{
@@ -260,7 +250,7 @@ void CodeBuilder::ApplyConstructorInitializer(
 		const Value expression_result=
 			BuildExpressionCode( *call_operator.arguments_.front(), block_names, function_context );
 		const Type expression_type= expression_result.GetType();
-		const FundamentalType* src_type= boost::get<FundamentalType>( &expression_type.one_of_type_kind );
+		const FundamentalType* const src_type= expression_type.GetFundamentalType();
 
 		if( src_type == nullptr )
 		{
@@ -335,13 +325,10 @@ void CodeBuilder::ApplyConstructorInitializer(
 
 		function_context.llvm_ir_builder.CreateStore( value_for_assignment, variable.llvm_value );
 	}
-	else if( const ClassPtr* const class_type_ptr= boost::get<ClassPtr>( &variable.type.one_of_type_kind ) )
+	else if( const ClassPtr class_type= variable.type.GetClassType() )
 	{
-		U_UNUSED(class_type_ptr);
-		const Class& class_type= **class_type_ptr;
-
 		const NamesScope::InsertedName* constructor_name=
-			class_type.members.GetThisScopeName( Keyword( Keywords::constructor_ ) );
+			class_type->members.GetThisScopeName( Keyword( Keywords::constructor_ ) );
 
 		if( constructor_name == nullptr )
 		{
@@ -372,7 +359,7 @@ void CodeBuilder::ApplyExpressionInitializer(
 	const NamesScope& block_names,
 	FunctionContext& function_context )
 {
-	if( const FundamentalType* const fundamental_type= boost::get<FundamentalType>( &variable.type.one_of_type_kind ) )
+	if( const FundamentalType* const fundamental_type= variable.type.GetFundamentalType() )
 	{
 		U_UNUSED(fundamental_type);
 
@@ -400,7 +387,7 @@ void CodeBuilder::ApplyZeroInitializer(
 	const NamesScope& block_names,
 	FunctionContext& function_context )
 {
-	if( const FundamentalType* const fundamental_type= boost::get<FundamentalType>( &variable.type.one_of_type_kind ) )
+	if( const FundamentalType* const fundamental_type= variable.type.GetFundamentalType() )
 	{
 		llvm::Value* zero_value= nullptr;
 		switch( fundamental_type->fundamental_type )
@@ -442,17 +429,14 @@ void CodeBuilder::ApplyZeroInitializer(
 
 		function_context.llvm_ir_builder.CreateStore( zero_value, variable.llvm_value );
 	}
-	else if( const ArrayPtr* const array_type_ptr= boost::get<ArrayPtr>( &variable.type.one_of_type_kind ) )
+	else if( const Array* const array_type= variable.type.GetArrayType() )
 	{
-		U_ASSERT( *array_type_ptr != nullptr );
-		const Array& array_type= **array_type_ptr;
-
 		Variable array_member= variable;
-		array_member.type= array_type.type;
+		array_member.type= array_type->type;
 		array_member.location= Variable::Location::Pointer;
 
 		GenerateLoop(
-			array_type.size,
+			array_type->size,
 			[&](llvm::Value* const counter_value)
 			{
 				llvm::Value* index_list[2];
@@ -464,12 +448,9 @@ void CodeBuilder::ApplyZeroInitializer(
 			},
 			function_context);
 	}
-	else if( const ClassPtr* const class_type_ptr = boost::get<ClassPtr>( &variable.type.one_of_type_kind ) )
+	else if( const ClassPtr class_type= variable.type.GetClassType() )
 	{
-		U_ASSERT( *class_type_ptr != nullptr );
-		const Class& class_type= **class_type_ptr;
-
-		if( class_type.have_explicit_noncopy_constructors )
+		if( class_type->have_explicit_noncopy_constructors )
 			errors_.push_back( ReportInitializerDisabledBecauseClassHaveExplicitNoncopyConstructors( initializer.file_pos_ ) );
 
 		Variable struct_member= variable;
@@ -478,7 +459,7 @@ void CodeBuilder::ApplyZeroInitializer(
 		llvm::Value* index_list[2];
 		index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
 
-		class_type.members.ForEachInThisScope(
+		class_type->members.ForEachInThisScope(
 			[&]( const NamesScope::InsertedName& member )
 			{
 				const ClassField* const field= member.second.GetClassField();

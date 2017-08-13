@@ -52,21 +52,31 @@ enum class NontypeStub
 bool operator==( const FundamentalType& r, const FundamentalType& l );
 bool operator!=( const FundamentalType& r, const FundamentalType& l );
 
-struct Type final
+class Type final
 {
-	boost::variant<
-		FundamentalType,
-		FunctionPtr,
-		ArrayPtr,
-		ClassPtr,
-		NontypeStub> one_of_type_kind;
-
+public:
 	Type()= default;
 	Type( const Type& other );
 	Type( Type&& )= default;
 
 	Type& operator=( const Type& other );
 	Type& operator=( Type&& )= default;
+
+	// Construct from different type kinds.
+	Type( FundamentalType fundamental_type );
+	Type( FunctionPtr function_type );
+	Type( ArrayPtr array_type );
+	Type( ClassPtr class_type );
+	Type( NontypeStub nontype_strub );
+
+	// Get different type kinds.
+	FundamentalType* GetFundamentalType();
+	const FundamentalType* GetFundamentalType() const;
+	Function* GetFunctionType();
+	const Function* GetFunctionType() const;
+	Array* GetArrayType();
+	const Array* GetArrayType() const;
+	ClassPtr GetClassType() const;
 
 	// TODO - does this method needs?
 	size_t SizeOf() const;
@@ -77,6 +87,16 @@ struct Type final
 
 	llvm::Type* GetLLVMType() const;
 	ProgramString ToString() const;
+
+private:
+	friend bool operator==( const Type&, const Type&);
+
+	boost::variant<
+		FundamentalType,
+		FunctionPtr,
+		ArrayPtr,
+		ClassPtr,
+		NontypeStub> something_;
 };
 
 bool operator==( const Type& r, const Type& l );

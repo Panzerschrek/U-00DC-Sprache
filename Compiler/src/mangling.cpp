@@ -134,7 +134,7 @@ static NamePair GetTypeName_r( const Type& type, NamesCache& names_cache )
 {
 	NamePair result;
 
-	if( const FundamentalType* const fundamental_type= boost::get<FundamentalType>( &type.one_of_type_kind ) )
+	if( const FundamentalType* const fundamental_type= type.GetFundamentalType() )
 	{
 		switch( fundamental_type->fundamental_type )
 		{
@@ -155,12 +155,11 @@ static NamePair GetTypeName_r( const Type& type, NamesCache& names_cache )
 		};
 		result.compressed_and_escaped= result.full;
 	}
-	else if( const ArrayPtr* const array_type_ptr= boost::get<ArrayPtr>( &type.one_of_type_kind ) )
+	else if( const Array* const array_type= type.GetArrayType() )
 	{
-		U_ASSERT( *array_type_ptr != nullptr );
-		ProgramString array_prefix= "A"_SpC + ToProgramString( std::to_string( (*array_type_ptr)->size ).c_str() );
+		ProgramString array_prefix= "A"_SpC + ToProgramString( std::to_string( array_type->size ).c_str() );
 
-		const NamePair type_name= GetTypeName_r( (*array_type_ptr)->type, names_cache );
+		const NamePair type_name= GetTypeName_r( array_type->type, names_cache );
 		result.full= array_prefix + type_name.full;
 
 		const size_t replacement_candidate= names_cache.GetRepalcement( result.full );
@@ -172,11 +171,9 @@ static NamePair GetTypeName_r( const Type& type, NamesCache& names_cache )
 			names_cache.AddName( result.full );
 		}
 	}
-	else if( const ClassPtr* const class_type_ptr= boost::get<ClassPtr>( &type.one_of_type_kind ) )
+	else if( const ClassPtr class_type= type.GetClassType() )
 	{
-		U_ASSERT( *class_type_ptr != nullptr );
-		const Class& class_type= **class_type_ptr;
-		result= GetNestedName( class_type.members.GetThisNamespaceName(), *class_type.members.GetParent(), false, names_cache );
+		result= GetNestedName( class_type->members.GetThisNamespaceName(), *class_type->members.GetParent(), false, names_cache );
 	}
 
 	return result;

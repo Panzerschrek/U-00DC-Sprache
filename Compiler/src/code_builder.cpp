@@ -77,9 +77,9 @@ CodeBuilder::CodeBuilder()
 	fundamental_llvm_types_.void_= llvm::Type::getVoidTy( llvm_context_ );
 	fundamental_llvm_types_.bool_= llvm::Type::getInt1Ty( llvm_context_ );
 
-	invalid_type_.one_of_type_kind= FundamentalType( U_FundamentalType::InvalidType, fundamental_llvm_types_.invalid_type_ );
-	void_type_.one_of_type_kind= FundamentalType( U_FundamentalType::Void, fundamental_llvm_types_.void_ );
-	bool_type_.one_of_type_kind= FundamentalType( U_FundamentalType::Bool, fundamental_llvm_types_.bool_ );
+	invalid_type_= FundamentalType( U_FundamentalType::InvalidType, fundamental_llvm_types_.invalid_type_ );
+	void_type_= FundamentalType( U_FundamentalType::Void, fundamental_llvm_types_.void_ );
+	bool_type_= FundamentalType( U_FundamentalType::Bool, fundamental_llvm_types_.bool_ );
 }
 
 CodeBuilder::~CodeBuilder()
@@ -108,11 +108,11 @@ CodeBuilder::BuildResult CodeBuilder::BuildProgram( const ProgramElements& progr
 
 void CodeBuilder::FillGlobalNamesScope( NamesScope& global_names_scope )
 {
-	Type type;
 	for( const auto& fundamental_type_value : g_types_map )
 	{
-		type.one_of_type_kind= FundamentalType( fundamental_type_value.second, GetFundamentalLLVMType( fundamental_type_value.second ) );
-		global_names_scope.AddName( fundamental_type_value.first, type );
+		global_names_scope.AddName(
+			fundamental_type_value.first,
+			Type( FundamentalType( fundamental_type_value.second, GetFundamentalLLVMType( fundamental_type_value.second ) ) ) );
 	}
 }
 
@@ -143,7 +143,7 @@ Type CodeBuilder::PrepareType(
 
 		std::unique_ptr<Array> array_type_storage( new Array() );
 		Array& array_type= *array_type_storage;
-		last_type->one_of_type_kind= std::move(array_type_storage);
+		*last_type= std::move(array_type_storage);
 
 		U_FundamentalType size_type= GetNumericConstantType( num );
 		if( !IsInteger(size_type) )
@@ -156,8 +156,7 @@ Type CodeBuilder::PrepareType(
 		last_type= &array_type.type;
 	}
 
-	last_type->one_of_type_kind= FundamentalType( U_FundamentalType::InvalidType, fundamental_llvm_types_.invalid_type_ );
-
+	*last_type= FundamentalType( U_FundamentalType::InvalidType, fundamental_llvm_types_.invalid_type_ );
 
 	if( const NamesScope::InsertedName* name=
 		names_scope.ResolveName( type_name.name ) )
@@ -174,7 +173,7 @@ Type CodeBuilder::PrepareType(
 	if( arrays_count > 0u )
 	{
 		{
-			const ArrayPtr& array_type= boost::get<ArrayPtr>( arrays_stack[ arrays_count - 1u ]->one_of_type_kind );
+			Array* const array_type= arrays_stack[ arrays_count - 1u ]->GetArrayType();
 			U_ASSERT( array_type != nullptr );
 
 				array_type->llvm_type=
@@ -185,12 +184,12 @@ Type CodeBuilder::PrepareType(
 
 		for( unsigned int i= arrays_count - 1u; i > 0u; i-- )
 		{
-			const ArrayPtr& array_type= boost::get<ArrayPtr>( arrays_stack[ i - 1u ]->one_of_type_kind );
+			Array* const array_type= arrays_stack[ i - 1u ]->GetArrayType();
 			U_ASSERT( array_type != nullptr );
 
 			array_type->llvm_type=
 				llvm::ArrayType::get(
-					boost::get<ArrayPtr>( arrays_stack[i]->one_of_type_kind )->llvm_type,
+					arrays_stack[i]->GetLLVMType(),
 					array_type->size );
 		}
 	}
@@ -214,8 +213,7 @@ void CodeBuilder::PrepareClass( const ClassDeclaration& class_declaration, Names
 
 		const ClassPtr the_class= std::make_shared<Class>( class_name, &names_scope );
 		the_class->llvm_type= llvm::StructType::create( llvm_context_, MangleClass( names_scope, class_name ) );
-		Type class_type;
-		class_type.one_of_type_kind= the_class;
+		const Type class_type= the_class;
 
 		const NamesScope::InsertedName* const inserted_name= names_scope.AddName( class_name, class_type );
 		if( inserted_name == nullptr )
@@ -233,15 +231,14 @@ void CodeBuilder::PrepareClass( const ClassDeclaration& class_declaration, Names
 	{
 		if( const Type* const previous_type= previous_declaration->second.GetTypeName() )
 		{
-			if( const ClassPtr* const previous_calss_ptr= boost::get<ClassPtr>( &previous_type->one_of_type_kind ) )
+			if( const ClassPtr previous_calss_ptr= previous_type->GetClassType() )
 			{
-				U_ASSERT( *previous_calss_ptr != nullptr );
-				if( !(*previous_calss_ptr)->is_incomplete )
+				if( !previous_calss_ptr->is_incomplete )
 				{
 					errors_.push_back( ReportClassBodyDuplication( class_declaration.file_pos_ ) );
 					return;
 				}
-				the_class= *previous_calss_ptr;
+				the_class= previous_calss_ptr;
 			}
 			else
 			{
@@ -266,7 +263,7 @@ void CodeBuilder::PrepareClass( const ClassDeclaration& class_declaration, Names
 		the_class= std::make_shared<Class>( class_name, &names_scope );
 		the_class->llvm_type= llvm::StructType::create( llvm_context_, MangleClass( names_scope, class_name ) );
 		Type class_type;
-		class_type.one_of_type_kind= the_class;
+		class_type= the_class;
 
 		const NamesScope::InsertedName* const inserted_name= names_scope.AddName( class_name, class_type );
 		if( inserted_name == nullptr )
@@ -277,7 +274,7 @@ void CodeBuilder::PrepareClass( const ClassDeclaration& class_declaration, Names
 	}
 	U_ASSERT( the_class != nullptr );
 	Type class_type;
-	class_type.one_of_type_kind= the_class;
+	class_type= the_class;
 
 	std::vector<llvm::Type*> fields_llvm_types;
 
@@ -328,9 +325,7 @@ void CodeBuilder::PrepareClass( const ClassDeclaration& class_declaration, Names
 		U_ASSERT( constructors != nullptr );
 		for( const FunctionVariable& constructor : *constructors )
 		{
-			const FunctionPtr* const constructor_type_ptr= boost::get<FunctionPtr>( &constructor.type.one_of_type_kind );
-			U_ASSERT( constructor_type_ptr != nullptr && *constructor_type_ptr != nullptr );
-			const Function& constructor_type= **constructor_type_ptr;
+			const Function& constructor_type= *constructor.type.GetFunctionType();
 
 			U_ASSERT( constructor_type.args.size() >= 1u && constructor_type.args.front().type == class_type );
 			if( !( constructor_type.args.size() == 2u && constructor_type.args.back().type == class_type && !constructor_type.args.back().is_mutable ) )
@@ -370,9 +365,7 @@ void CodeBuilder::TryGenerateDefaultConstructor( Class& the_class, const Type& c
 		U_ASSERT( constructors != nullptr );
 		for( const FunctionVariable& constructor : *constructors )
 		{
-			const FunctionPtr* const constructor_type_ptr= boost::get<FunctionPtr>( &constructor.type.one_of_type_kind );
-			U_ASSERT( constructor_type_ptr != nullptr && *constructor_type_ptr != nullptr );
-			const Function& constructor_type= **constructor_type_ptr;
+			const Function& constructor_type= *constructor.type.GetFunctionType();
 
 			U_ASSERT( constructor_type.args.size() >= 1u && constructor_type.args.front().type == class_type );
 			if( ( constructor_type.args.size() == 1u ) )
@@ -467,7 +460,7 @@ void CodeBuilder::TryGenerateDefaultConstructor( Class& the_class, const Type& c
 
 	// Add generated constructor
 	FunctionVariable constructor_variable;
-	constructor_variable.type.one_of_type_kind= std::move( constructor_type_ptr );
+	constructor_variable.type= std::move( constructor_type_ptr );
 	constructor_variable.have_body= true;
 	constructor_variable.is_this_call= true;
 	constructor_variable.is_generated= true;
@@ -501,9 +494,7 @@ void CodeBuilder::TryGenerateCopyConstructor( Class& the_class, const Type& clas
 		U_ASSERT( constructors != nullptr );
 		for( const FunctionVariable& constructor : *constructors )
 		{
-			const FunctionPtr* const constructor_type_ptr= boost::get<FunctionPtr>( &constructor.type.one_of_type_kind );
-			U_ASSERT( constructor_type_ptr != nullptr && *constructor_type_ptr != nullptr );
-			const Function& constructor_type= **constructor_type_ptr;
+			const Function& constructor_type= *constructor.type.GetFunctionType();
 
 			U_ASSERT( constructor_type.args.size() >= 1u && constructor_type.args.front().type == class_type );
 			if( constructor_type.args.size() == 2u &&
@@ -600,7 +591,7 @@ void CodeBuilder::TryGenerateCopyConstructor( Class& the_class, const Type& clas
 
 	// Add generated constructor
 	FunctionVariable constructor_variable;
-	constructor_variable.type.one_of_type_kind= std::move( constructor_type_ptr );
+	constructor_variable.type= std::move( constructor_type_ptr );
 	constructor_variable.have_body= true;
 	constructor_variable.is_this_call= true;
 	constructor_variable.is_generated= true;
@@ -629,17 +620,16 @@ void CodeBuilder::BuildCopyConstructorPart(
 	const Type& type,
 	FunctionContext& function_context )
 {
-	if( const FundamentalType* const fundamental_type= boost::get<FundamentalType>( &type.one_of_type_kind ) )
+	if( const FundamentalType* const fundamental_type= type.GetFundamentalType() )
 	{
 		// Create simple load-store.
 		U_UNUSED( fundamental_type );
 		llvm::Value* const val= function_context.llvm_ir_builder.CreateLoad( src );
 		function_context.llvm_ir_builder.CreateStore( val, dst );
 	}
-	else if( const ArrayPtr* const array_type_ptr= boost::get<ArrayPtr>( &type.one_of_type_kind ) )
+	else if( const Array* const array_type_ptr= type.GetArrayType() )
 	{
-		U_ASSERT( *array_type_ptr != nullptr );
-		const Array& array_type= **array_type_ptr;
+		const Array& array_type= *array_type_ptr;
 
 		GenerateLoop(
 			array_type.size,
@@ -657,15 +647,13 @@ void CodeBuilder::BuildCopyConstructorPart(
 			},
 			function_context);
 	}
-	else if( const ClassPtr* const class_type_ptr = boost::get<ClassPtr>( &type.one_of_type_kind ) )
+	else if( const ClassPtr class_type= type.GetClassType() )
 	{
-		U_ASSERT( *class_type_ptr != nullptr );
-		Type filed_class_type;
-		filed_class_type.one_of_type_kind= *class_type_ptr;
+		const Type filed_class_type= class_type;
 
 		// Search copy constructor.
 		const NamesScope::InsertedName* constructor_name=
-			(*class_type_ptr)->members.GetThisScopeName( Keyword( Keywords::constructor_ ) );
+			class_type->members.GetThisScopeName( Keyword( Keywords::constructor_ ) );
 		U_ASSERT( constructor_name != nullptr );
 		const OverloadedFunctionsSet* const constructors_set= constructor_name->second.GetFunctionsSet();
 		U_ASSERT( constructors_set != nullptr );
@@ -673,9 +661,7 @@ void CodeBuilder::BuildCopyConstructorPart(
 		const FunctionVariable* constructor= nullptr;;
 		for( const FunctionVariable& candidate_constructor : *constructors_set )
 		{
-			const FunctionPtr* const constructor_type_ptr= boost::get<FunctionPtr>( &candidate_constructor.type.one_of_type_kind );
-			U_ASSERT( constructor_type_ptr != nullptr && *constructor_type_ptr != nullptr );
-			const Function& constructor_type= **constructor_type_ptr;
+			const Function& constructor_type= *candidate_constructor.type.GetFunctionType();
 
 			if( constructor_type.args.size() == 2u &&
 				constructor_type.args.back().type == filed_class_type && !constructor_type.args.back().is_mutable )
@@ -707,8 +693,7 @@ void CodeBuilder::TryCallCopyConstructor(
 	FunctionContext& function_context )
 {
 	U_ASSERT( class_ != nullptr );
-	Type class_type;
-	class_type.one_of_type_kind= class_;
+	const Type class_type= class_;
 
 	if( !class_->is_copy_constructible )
 	{
@@ -725,7 +710,7 @@ void CodeBuilder::TryCallCopyConstructor(
 	const FunctionVariable* constructor= nullptr;
 	for( const FunctionVariable& candidate : *constructors )
 	{
-		const Function& constructor_type= *boost::get<FunctionPtr>( candidate.type.one_of_type_kind );
+		const Function& constructor_type= *candidate.type.GetFunctionType();
 		if( candidate.is_this_call && constructor_type.args.size() == 2u &&
 			constructor_type.args.back().type == class_type && constructor_type.args.back().is_reference && !constructor_type.args.back().is_mutable )
 		{
@@ -858,11 +843,10 @@ void CodeBuilder::PrepareFunction(
 			bool base_space_is_class= false;
 			if( const Type* const type= scope_name->second.GetTypeName() )
 			{
-				if( const ClassPtr* const class_ptr= boost::get<ClassPtr>( &type->one_of_type_kind ) )
+				if( const ClassPtr class_= type->GetClassType() )
 				{
-					U_ASSERT( *class_ptr != nullptr );
-					func_base_names_scope= &(*class_ptr)->members;
-					base_class= *class_ptr; // TODO - check here if base_class nonnull and diffrs from class_?
+					func_base_names_scope= &class_->members;
+					base_class= class_; // TODO - check here if base_class nonnull and diffrs from class_?
 					base_space_is_class= true;
 				}
 			}
@@ -900,7 +884,7 @@ void CodeBuilder::PrepareFunction(
 
 	std::unique_ptr<Function> function_type_storage( new Function() );
 	Function& function_type= *function_type_storage;
-	func_variable.type.one_of_type_kind= std::move(function_type_storage);
+	func_variable.type= std::move(function_type_storage);
 
 	if( func.return_type_.name.components.empty() )
 		function_type.return_type= void_type_;
@@ -919,8 +903,8 @@ void CodeBuilder::PrepareFunction(
 	function_type.return_value_is_reference= func.return_value_reference_modifier_ == ReferenceModifier::Reference;
 
 	if( !function_type.return_value_is_reference &&
-		!( boost::get<FundamentalType>( &function_type.return_type.one_of_type_kind ) != nullptr ||
-		   boost::get<ClassPtr>( &function_type.return_type.one_of_type_kind ) != nullptr ) )
+		!( function_type.return_type.GetFundamentalType() != nullptr ||
+		   function_type.return_type.GetClassType() != nullptr ) )
 	{
 		errors_.push_back( ReportNotImplemented( func.file_pos_, "return value types except fundamental and classes" ) );
 		return;
@@ -939,7 +923,7 @@ void CodeBuilder::PrepareFunction(
 
 		function_type.args.emplace_back();
 		Function::Arg& arg= function_type.args.back();
-		arg.type.one_of_type_kind= base_class;
+		arg.type= base_class;
 		arg.is_reference= true;
 		arg.is_mutable= true;
 	}
@@ -965,7 +949,7 @@ void CodeBuilder::PrepareFunction(
 				errors_.push_back( ReportThisInNonclassFunction( func.file_pos_, func_name ) );
 				return;
 			}
-			out_arg.type.one_of_type_kind= base_class;
+			out_arg.type= base_class;
 		}
 		else
 			out_arg.type= PrepareType( arg->file_pos_, arg->type_, *func_base_names_scope );
@@ -978,8 +962,8 @@ void CodeBuilder::PrepareFunction(
 		out_arg.is_reference= is_this || arg->reference_modifier_ == ReferenceModifier::Reference;
 
 		if( !out_arg.is_reference &&
-			!( boost::get<FundamentalType>( &out_arg.type.one_of_type_kind ) != nullptr ||
-			   boost::get<ClassPtr>( &out_arg.type.one_of_type_kind ) != nullptr ) )
+			!( out_arg.type.GetFundamentalType() != nullptr ||
+			   out_arg.type.GetClassType() != nullptr ) )
 		{
 			errors_.push_back( ReportNotImplemented( func.file_pos_, "parameters types except fundamental and classes" ) );
 			return;
@@ -1025,7 +1009,7 @@ void CodeBuilder::PrepareFunction(
 		{
 			if( FunctionVariable* const same_function=
 				GetFunctionWithExactSignature(
-					*boost::get<FunctionPtr>( func_variable.type.one_of_type_kind ),
+					*func_variable.type.GetFunctionType(),
 					*functions_set ) )
 			{
 				if( func.block_ == nullptr )
@@ -1096,20 +1080,17 @@ void CodeBuilder::BuildFuncCode(
 	const StructNamedInitializer* const constructor_initialization_list ) noexcept
 {
 	std::vector<llvm::Type*> args_llvm_types;
-	const FunctionPtr& function_type_ptr= boost::get<FunctionPtr>( func_variable.type.one_of_type_kind );
+	Function* const function_type= func_variable.type.GetFunctionType();
 
 	bool first_arg_is_sret= false;
-	if( !function_type_ptr->return_value_is_reference )
+	if( !function_type->return_value_is_reference )
 	{
-		if( const FundamentalType* const fundamental_type= boost::get<FundamentalType>( &function_type_ptr->return_type.one_of_type_kind ) )
-		{
-			U_UNUSED(fundamental_type);
-		}
-		else if( const ClassPtr* const class_type_ptr= boost::get<ClassPtr>( &function_type_ptr->return_type.one_of_type_kind ) )
+		if( function_type->return_type.GetFundamentalType() != nullptr )
+		{}
+		else if( const ClassPtr class_type= function_type->return_type.GetClassType() )
 		{
 			// Add return-value ponter as "sret" argument for class types.
-			U_ASSERT( *class_type_ptr != nullptr );
-			args_llvm_types.push_back( llvm::PointerType::get( (*class_type_ptr)->llvm_type, 0u ) );
+			args_llvm_types.push_back( llvm::PointerType::get( class_type->llvm_type, 0u ) );
 			first_arg_is_sret= true;
 			func_variable.return_value_is_sret= true;
 		}
@@ -1117,21 +1098,18 @@ void CodeBuilder::BuildFuncCode(
 		{ U_ASSERT( false ); }
 	}
 
-	for( const Function::Arg& arg : function_type_ptr->args )
+	for( const Function::Arg& arg : function_type->args )
 	{
 		llvm::Type* type= arg.type.GetLLVMType();
 		if( arg.is_reference )
 			type= llvm::PointerType::get( type, 0u );
 		else
 		{
-			if( const FundamentalType* const fundamental_type= boost::get<FundamentalType>( &arg.type.one_of_type_kind ) )
-			{
-				U_UNUSED(fundamental_type);
-			}
-			else if( const ClassPtr* const class_type_ptr= boost::get<ClassPtr>( &arg.type.one_of_type_kind ) )
+			if( arg.type.GetFundamentalType() != nullptr )
+			{}
+			else if( arg.type.GetClassType() != nullptr )
 			{
 				// Mark value-parameters of class types as pointer. Lately this parameters will be marked as "byval".
-				U_ASSERT( *class_type_ptr != nullptr );
 				type= llvm::PointerType::get( type, 0u );
 			}
 			else
@@ -1145,12 +1123,12 @@ void CodeBuilder::BuildFuncCode(
 		llvm_function_return_type= fundamental_llvm_types_.void_;
 	else
 	{
-		llvm_function_return_type= function_type_ptr->return_type.GetLLVMType();
-		if( function_type_ptr->return_value_is_reference )
+		llvm_function_return_type= function_type->return_type.GetLLVMType();
+		if( function_type->return_value_is_reference )
 			llvm_function_return_type= llvm::PointerType::get( llvm_function_return_type, 0u );
 	}
 
-	function_type_ptr->llvm_function_type=
+	function_type->llvm_function_type=
 		llvm::FunctionType::get(
 			llvm_function_return_type,
 			llvm::ArrayRef<llvm::Type*>( args_llvm_types.data(), args_llvm_types.size() ),
@@ -1161,9 +1139,9 @@ void CodeBuilder::BuildFuncCode(
 	{
 		llvm_function=
 			llvm::Function::Create(
-				function_type_ptr->llvm_function_type,
+				function_type->llvm_function_type,
 				llvm::Function::LinkageTypes::ExternalLinkage, // TODO - select linkage
-				MangleFunction( parent_names_scope, func_name, *function_type_ptr, func_variable.is_this_call ),
+				MangleFunction( parent_names_scope, func_name, *function_type, func_variable.is_this_call ),
 				module_.get() );
 
 		// Merge functions with identical code.
@@ -1173,16 +1151,15 @@ void CodeBuilder::BuildFuncCode(
 		// Mark reference-parameters as nonnull.
 		// Mark fake-pointer parameters of struct type as "byvall".
 		// TODO - maybe mark immutable reference-parameters as "noalias"?
-		for( size_t i= 0u; i < function_type_ptr->args.size(); i++ )
+		for( size_t i= 0u; i < function_type->args.size(); i++ )
 		{
 			const size_t arg_attr_index= i + 1u + (first_arg_is_sret ? 1u : 0u );
-			if (function_type_ptr->args[i].is_reference )
+			if (function_type->args[i].is_reference )
 				llvm_function->addAttribute( arg_attr_index, llvm::Attribute::NonNull );
 			else
 			{
-				if( const ClassPtr* const class_type_ptr= boost::get<ClassPtr>( &function_type_ptr->args[i].type.one_of_type_kind ) )
+				if( function_type->args[i].type.GetClassType() != nullptr )
 				{
-					U_UNUSED(class_type_ptr);
 					llvm_function->addAttribute( arg_attr_index, llvm::Attribute::NonNull );
 					llvm_function->addAttribute( arg_attr_index, llvm::Attribute::ByVal );
 				}
@@ -1208,9 +1185,9 @@ void CodeBuilder::BuildFuncCode(
 
 	NamesScope function_names( ""_SpC, &parent_names_scope );
 	FunctionContext function_context(
-		function_type_ptr->return_type,
-		function_type_ptr->return_value_is_mutable,
-		function_type_ptr->return_value_is_reference,
+		function_type->return_type,
+		function_type->return_value_is_mutable,
+		function_type->return_value_is_reference,
 		llvm_context_,
 		llvm_function );
 
@@ -1228,14 +1205,14 @@ void CodeBuilder::BuildFuncCode(
 		{
 			s_ret.location= Variable::Location::Pointer;
 			s_ret.value_type= ValueType::Reference;
-			s_ret.type= function_type_ptr->return_type;
+			s_ret.type= function_type->return_type;
 			s_ret.llvm_value= &llvm_arg;
 			llvm_arg.setName( "_return_value" );
 			function_context.s_ret_= &s_ret;
 			continue;
 		}
 
-		const Function::Arg& arg= function_type_ptr->args[ arg_number ];
+		const Function::Arg& arg= function_type->args[ arg_number ];
 
 		if( is_constructor && arg_number == 0u )
 		{
@@ -1270,9 +1247,8 @@ void CodeBuilder::BuildFuncCode(
 			var.location= Variable::Location::Pointer;
 		else
 		{
-			if( const FundamentalType* const fundamental_type= boost::get<FundamentalType>( &arg.type.one_of_type_kind ) )
+			if( arg.type.GetFundamentalType() != nullptr )
 			{
-				U_UNUSED(fundamental_type);
 				// Move parameters to stack for assignment possibility.
 				// TODO - do it, only if parameters are not constant.
 				llvm::Value* address= function_context.alloca_ir_builder.CreateAlloca( var.type.GetLLVMType() );
@@ -1282,10 +1258,9 @@ void CodeBuilder::BuildFuncCode(
 				var.llvm_value= address;
 				var.location= Variable::Location::Pointer;
 			}
-			else if( const ClassPtr* const class_type_ptr= boost::get<ClassPtr>( &arg.type.one_of_type_kind ) )
+			else if( arg.type.GetClassType() != nullptr )
 			{
 				// Value classes parameters using llvm-pointers with "byval" attribute.
-				U_UNUSED(class_type_ptr);
 				var.location= Variable::Location::Pointer;
 			}
 			else
@@ -1348,7 +1323,7 @@ void CodeBuilder::BuildFuncCode(
 	const BlockBuildInfo block_build_info=
 		BuildBlockCode( *block, function_names, function_context );
 
-	if(  function_type_ptr->return_type == void_type_ )
+	if(  function_type->return_type == void_type_ )
 	{
 		// Manually generate "return" for void-return functions.
 		if( !block_build_info.have_unconditional_return_inside )
@@ -1765,20 +1740,12 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 		BuildExpressionCode( *auto_variable_declaration.initializer_expression, block_names, function_context );
 
 	{ // Check expression type. Expression can have exotic types, such "Overloading functions set", "class name", etc.
-		struct Visitor final : public boost::static_visitor<>
-		{
-			bool type_is_ok= false;
-
-			void operator()( const FundamentalType& ){ type_is_ok= true; }
-			void operator()( const FunctionPtr& ) { type_is_ok= false; }
-			void operator()( const ArrayPtr& ) { type_is_ok= true; }
-			void operator()( const ClassPtr& ) { type_is_ok= true; }
-			void operator()( const NontypeStub& ) { type_is_ok= false; }
-		};
-
-		Visitor visitor;
-		boost::apply_visitor( visitor, initializer_experrsion_value.GetType().one_of_type_kind );
-		if( !visitor.type_is_ok )
+		const Type& type= initializer_experrsion_value.GetType();
+		const bool type_is_ok=
+			type.GetFundamentalType() != nullptr ||
+			type.GetArrayType() != nullptr ||
+			type.GetClassType() != nullptr;
+		if( !type_is_ok )
 		{
 			errors_.push_back( ReportInvalidTypeForAutoVariable( auto_variable_declaration.file_pos_, initializer_experrsion_value.GetType().ToString() ) );
 			return;
@@ -1819,7 +1786,7 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 		variable.llvm_value= function_context.alloca_ir_builder.CreateAlloca( variable.type.GetLLVMType() );
 		variable.llvm_value->setName( ToStdString( auto_variable_declaration.name ) );
 
-		if( const FundamentalType* const fundamental_type= boost::get<FundamentalType>( &variable.type.one_of_type_kind ) )
+		if( const FundamentalType* const fundamental_type= variable.type.GetFundamentalType() )
 		{
 			U_UNUSED(fundamental_type);
 			llvm::Value* const value_for_assignment= CreateMoveToLLVMRegisterInstruction( initializer_experrsion, function_context );
@@ -1879,7 +1846,7 @@ void CodeBuilder::BuildAssignmentOperatorCode(
 		return;
 	}
 
-	const FundamentalType* const fundamental_type= boost::get<FundamentalType>( &l_var->type.one_of_type_kind );
+	const FundamentalType* const fundamental_type= l_var->type.GetFundamentalType();
 	if( fundamental_type != nullptr )
 	{
 		if( l_var->location != Variable::Location::Pointer )
@@ -1950,7 +1917,7 @@ void CodeBuilder::BuildReturnOperatorCode(
 	{
 		if( function_context.s_ret_ != nullptr )
 		{
-			const ClassPtr class_= boost::get<ClassPtr>( function_context.s_ret_->type.one_of_type_kind );
+			const ClassPtr class_= function_context.s_ret_->type.GetClassType();
 			TryCallCopyConstructor( return_operator.file_pos_, function_context.s_ret_->llvm_value, expression_result.llvm_value, class_, function_context );
 			function_context.llvm_ir_builder.CreateRetVoid();
 		}
@@ -2142,9 +2109,7 @@ FunctionVariable* CodeBuilder::GetFunctionWithExactSignature(
 {
 	for( FunctionVariable& function_varaible : functions_set )
 	{
-		const FunctionPtr& set_function_type_ptr= boost::get<FunctionPtr>( function_varaible.type.one_of_type_kind ); // Must be function type 100 %
-		U_ASSERT(set_function_type_ptr);
-		const Function& set_function_type= *set_function_type_ptr;
+		const Function& set_function_type= *function_varaible.type.GetFunctionType();
 
 		if( set_function_type.args.size() != function_type.args.size() )
 			continue;
@@ -2177,7 +2142,7 @@ void CodeBuilder::ApplyOverloadedFunction(
 		return;
 	}
 
-	const FunctionPtr& function_type= boost::get<FunctionPtr>( function.type.one_of_type_kind );
+	const Function* function_type= function.type.GetFunctionType();
 	U_ASSERT(function_type);
 
 	/*
@@ -2187,19 +2152,18 @@ void CodeBuilder::ApplyOverloadedFunction(
 	*/
 	for( const FunctionVariable& set_function : functions_set )
 	{
-		const FunctionPtr& set_function_type= boost::get<FunctionPtr>(set_function.type.one_of_type_kind); // Must be function type 100 %
-		U_ASSERT(set_function_type);
+		const Function& set_function_type= *set_function.type.GetFunctionType(); // Must be function type 100 %
 
 		// If argument count differs - allow overloading.
 		// SPRACHE_TODO - handle default arguments.
-		if( function_type->args.size() != set_function_type->args.size() )
+		if( function_type->args.size() != set_function_type.args.size() )
 			continue;
 
 		unsigned int arg_is_same_count= 0u;
 		for( size_t i= 0u; i < function_type->args.size(); i++ )
 		{
 			const Function::Arg& arg= function_type->args[i];
-			const Function::Arg& set_arg= set_function_type->args[i];
+			const Function::Arg& set_arg= set_function_type.args[i];
 
 			if( arg.type != set_arg.type )
 				continue;
@@ -2251,7 +2215,7 @@ const FunctionVariable& CodeBuilder::GetOverloadedFunction(
 
 	for( const FunctionVariable& function : functions_set )
 	{
-		const Function& function_type= *boost::get<FunctionPtr>( function.type.one_of_type_kind );
+		const Function& function_type= *function.type.GetFunctionType();
 
 		size_t actial_arg_count;
 		const Function::Arg* actual_args_begin;

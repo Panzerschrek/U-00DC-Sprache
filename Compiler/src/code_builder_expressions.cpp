@@ -152,7 +152,7 @@ Variable CodeBuilder::BuildBinaryOperator(
 	}
 
 	const Type& result_type= r_var.type;
-	const FundamentalType* const fundamental_type= boost::get<FundamentalType>( &result_type.one_of_type_kind );
+	const FundamentalType* const fundamental_type= result_type.GetFundamentalType();
 
 	switch( binary_operator )
 	{
@@ -283,7 +283,7 @@ Variable CodeBuilder::BuildBinaryOperator(
 
 			result.location= Variable::Location::LLVMRegister;
 			result.value_type= ValueType::Value;
-			result.type.one_of_type_kind= FundamentalType( U_FundamentalType::Bool, fundamental_llvm_types_.bool_ );
+			result.type= FundamentalType( U_FundamentalType::Bool, fundamental_llvm_types_.bool_ );
 			result.llvm_value= result_value;
 		}
 		break;
@@ -356,7 +356,7 @@ Variable CodeBuilder::BuildBinaryOperator(
 
 			result.location= Variable::Location::LLVMRegister;
 			result.value_type= ValueType::Value;
-			result.type.one_of_type_kind= FundamentalType( U_FundamentalType::Bool, fundamental_llvm_types_.bool_ );
+			result.type= FundamentalType( U_FundamentalType::Bool, fundamental_llvm_types_.bool_ );
 			result.llvm_value= result_value;
 		}
 		break;
@@ -505,8 +505,7 @@ Value CodeBuilder::BuildNamedOperand(
 		U_ASSERT( class_ != nullptr  && "Class is dead? WTF?" );
 
 		// SPRACHE_TODO - allow access to parents fields here.
-		Type class_type;
-		class_type.one_of_type_kind= class_;
+		const Type class_type= class_;
 		if( class_type != function_context.this_->type )
 		{
 			// SPRACHE_TODO - accessing field of non-this class.
@@ -548,7 +547,7 @@ Value CodeBuilder::BuildNamedOperand(
 			}
 
 			// Trying add "this" to functions set.
-			const ClassPtr class_= boost::get<ClassPtr>( function_context.this_->type.one_of_type_kind );
+			const ClassPtr class_= function_context.this_->type.GetClassType();
 
 			const NamesScope::InsertedName* const same_set_in_class=
 				class_->members.GetThisScopeName( named_operand.name_.components.back() );
@@ -579,7 +578,7 @@ Variable CodeBuilder::BuildNumericConstant( const NumericConstant& numeric_const
 	Variable result;
 	result.location= Variable::Location::LLVMRegister;
 	result.value_type= ValueType::Value;
-	result.type.one_of_type_kind= FundamentalType( type, llvm_type );
+	result.type= FundamentalType( type, llvm_type );
 
 	if( IsInteger( type ) )
 		result.llvm_value=
@@ -600,7 +599,7 @@ Variable CodeBuilder::BuildBooleanConstant( const BooleanConstant& boolean_const
 	Variable result;
 	result.location= Variable::Location::LLVMRegister;
 	result.value_type= ValueType::Value;
-	result.type.one_of_type_kind= FundamentalType( U_FundamentalType::Bool, fundamental_llvm_types_.bool_ );
+	result.type= FundamentalType( U_FundamentalType::Bool, fundamental_llvm_types_.bool_ );
 
 	result.llvm_value=
 		llvm::Constant::getIntegerValue(
@@ -616,13 +615,12 @@ Variable CodeBuilder::BuildIndexationOperator(
 	const NamesScope& names,
 	FunctionContext& function_context )
 {
-	const ArrayPtr* const array_type= boost::get<ArrayPtr>( &value.GetType().one_of_type_kind );
+	const Array* array_type= value.GetType().GetArrayType();
 	if( array_type == nullptr )
 	{
 		errors_.push_back( ReportOperationNotSupportedForThisType( indexation_operator.file_pos_, value.GetType().ToString() ) );
 		throw ProgramError();
 	}
-	U_ASSERT( *array_type != nullptr );
 	const Variable& variable= *value.GetVariable();
 
 	const Value index_value=
@@ -631,7 +629,7 @@ Variable CodeBuilder::BuildIndexationOperator(
 			names,
 			function_context );
 
-	const FundamentalType* const index_fundamental_type= boost::get<FundamentalType>( & index_value.GetType().one_of_type_kind );
+	const FundamentalType* const index_fundamental_type= index_value.GetType().GetFundamentalType();
 	if( index_fundamental_type == nullptr ||
 		!IsUnsignedInteger( index_fundamental_type->fundamental_type ) )
 	{
@@ -649,7 +647,7 @@ Variable CodeBuilder::BuildIndexationOperator(
 	Variable result;
 	result.location= Variable::Location::Pointer;
 	result.value_type= variable.value_type;
-	result.type= (*array_type)->type;
+	result.type= array_type->type;
 
 	// Make first index = 0 for array to pointer conversion.
 	llvm::Value* index_list[2];
@@ -667,15 +665,14 @@ Value CodeBuilder::BuildMemberAccessOperator(
 	const MemberAccessOperator& member_access_operator,
 	FunctionContext& function_context )
 {
-	const ClassPtr* const class_type= boost::get<ClassPtr>( &value.GetType().one_of_type_kind );
+	const ClassPtr class_type= value.GetType().GetClassType();
 	if( class_type == nullptr )
 	{
 		errors_.push_back( ReportOperationNotSupportedForThisType( member_access_operator.file_pos_, value.GetType().ToString() ) );
 		throw ProgramError();
 	}
-	U_ASSERT( *class_type != nullptr );
 
-	if( (*class_type)->is_incomplete )
+	if( class_type->is_incomplete )
 	{
 		errors_.push_back( ReportUsingIncompleteType( member_access_operator.file_pos_, value.GetType().ToString() ) );
 		throw ProgramError();
@@ -683,7 +680,7 @@ Value CodeBuilder::BuildMemberAccessOperator(
 
 	const Variable& variable= *value.GetVariable();
 
-	const NamesScope::InsertedName* const class_member= (*class_type)->members.GetThisScopeName( member_access_operator.member_name_ );
+	const NamesScope::InsertedName* const class_member= class_type->members.GetThisScopeName( member_access_operator.member_name_ );
 	if( class_member == nullptr )
 	{
 		errors_.push_back( ReportNameNotFound( member_access_operator.file_pos_, member_access_operator.member_name_ ) );
@@ -787,7 +784,7 @@ Variable CodeBuilder::BuildCallOperator(
 	// We must support static functions call using "this".
 	const FunctionVariable& function=
 		GetOverloadedFunction( *functions_set, actual_args, this_ != nullptr, call_operator.file_pos_ );
-	const Function& function_type= *boost::get<FunctionPtr>( function.type.one_of_type_kind );
+	const Function& function_type= *function.type.GetFunctionType();
 
 	if( this_ != nullptr && !function.is_this_call )
 	{
@@ -876,16 +873,13 @@ Variable CodeBuilder::BuildCallOperator(
 		}
 		else
 		{
-			if( const FundamentalType* const fundamental_type= boost::get<FundamentalType>( &arg.type.one_of_type_kind ) )
+			if( const FundamentalType* const fundamental_type= arg.type.GetFundamentalType() )
 			{
 				U_UNUSED(fundamental_type);
 				llvm_args.push_back( CreateMoveToLLVMRegisterInstruction( expr, function_context ) );
 			}
-			else if( const ClassPtr* const class_type_ptr= boost::get<ClassPtr>( &arg.type.one_of_type_kind ) )
+			else if( const ClassPtr class_type= arg.type.GetClassType() )
 			{
-				U_ASSERT( *class_type_ptr != nullptr );
-				const Class& class_type= **class_type_ptr;
-
 				if( !arg.type.IsCopyConstructible() )
 				{
 					// Can not call function with value parameter, because for value parameter needs copy, but parameter type is not copyable.
@@ -897,7 +891,7 @@ Variable CodeBuilder::BuildCallOperator(
 				// Create copy of class value. Call copy constructor.
 				llvm::Value* const arg_copy= function_context.alloca_ir_builder.CreateAlloca( arg.type.GetLLVMType() );
 
-				TryCallCopyConstructor( call_operator.file_pos_, arg_copy, expr.llvm_value, *class_type_ptr, function_context );
+				TryCallCopyConstructor( call_operator.file_pos_, arg_copy, expr.llvm_value, class_type, function_context );
 				llvm_args.push_back( arg_copy );
 			}
 			else
@@ -959,7 +953,7 @@ Variable CodeBuilder::BuildUnaryMinus(
 	const UnaryMinus& unary_minus,
 	FunctionContext& function_context )
 {
-	const FundamentalType* const fundamental_type= boost::get<FundamentalType>( &value.GetType().one_of_type_kind );
+	const FundamentalType* const fundamental_type= value.GetType().GetFundamentalType();
 	if( fundamental_type == nullptr )
 	{
 		errors_.push_back( ReportOperationNotSupportedForThisType( unary_minus.file_pos_, value.GetType().ToString() ) );

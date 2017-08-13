@@ -68,6 +68,10 @@ const ProgramString (&g_fundamental_types_names)[ size_t(U_FundamentalType::Last
 
 } // namespace
 
+//
+// Fundamental type
+//
+
 FundamentalType::FundamentalType(
 	const U_FundamentalType in_fundamental_type,
 	llvm::Type* const in_llvm_type )
@@ -90,6 +94,31 @@ Type::Type( const Type& other )
 	*this= other;
 }
 
+Type::Type( FundamentalType fundamental_type )
+{
+	something_= std::move( fundamental_type );
+}
+
+Type::Type( FunctionPtr function_type )
+{
+	something_= std::move( function_type );
+}
+
+Type::Type( ArrayPtr array_type )
+{
+	something_= std::move( array_type );
+}
+
+Type::Type( ClassPtr class_type )
+{
+	something_= std::move( class_type );
+}
+
+Type::Type( const NontypeStub nontype_strub )
+{
+	something_= nontype_strub;
+}
+
 Type& Type::operator=( const Type& other )
 {
 	struct Visitor final : public boost::static_visitor<>
@@ -102,39 +131,89 @@ Type& Type::operator=( const Type& other )
 
 		void operator()( const FundamentalType& fundamental )
 		{
-			this_.one_of_type_kind= fundamental;
+			this_.something_= fundamental;
 		}
 
 		void operator()( const FunctionPtr& function )
 		{
 			if( function == nullptr )
-				this_.one_of_type_kind= FunctionPtr();
+				this_.something_= FunctionPtr();
 			else
-				this_.one_of_type_kind= FunctionPtr( new Function( *function ) );
+				this_.something_= FunctionPtr( new Function( *function ) );
 		}
 
 		void operator()( const ArrayPtr& array )
 		{
 			if( array == nullptr )
-				this_.one_of_type_kind= ArrayPtr();
+				this_.something_= ArrayPtr();
 			else
-				this_.one_of_type_kind= ArrayPtr( new Array( *array ) );
+				this_.something_= ArrayPtr( new Array( *array ) );
 		}
 
 		void operator()( const ClassPtr& class_ )
 		{
-			this_.one_of_type_kind= class_;
+			this_.something_= class_;
 		}
 
 		void operator()( const NontypeStub& stub )
 		{
-			this_.one_of_type_kind= stub;
+			this_.something_= stub;
 		}
 	};
 
 	Visitor visitor( *this );
-	boost::apply_visitor( visitor, other.one_of_type_kind );
+	boost::apply_visitor( visitor, other.something_ );
 	return *this;
+}
+
+FundamentalType* Type::GetFundamentalType()
+{
+	return boost::get<FundamentalType>( &something_ );
+}
+
+const FundamentalType* Type::GetFundamentalType() const
+{
+	return boost::get<FundamentalType>( &something_ );
+}
+
+Function* Type::GetFunctionType()
+{
+	FunctionPtr* const function_type= boost::get<FunctionPtr>( &something_ );
+	if( function_type == nullptr )
+		return nullptr;
+	return function_type->get();
+}
+
+const Function* Type::GetFunctionType() const
+{
+	const FunctionPtr* const function_type= boost::get<FunctionPtr>( &something_ );
+	if( function_type == nullptr )
+		return nullptr;
+	return function_type->get();
+}
+
+Array* Type::GetArrayType()
+{
+	ArrayPtr* const array_type= boost::get<ArrayPtr>( &something_ );
+	if( array_type == nullptr )
+		return nullptr;
+	return array_type->get();
+}
+
+const Array* Type::GetArrayType() const
+{
+	const ArrayPtr* const array_type= boost::get<ArrayPtr>( &something_ );
+	if( array_type == nullptr )
+		return nullptr;
+	return array_type->get();
+}
+
+ClassPtr Type::GetClassType() const
+{
+	const ClassPtr* const class_type= boost::get<ClassPtr>( &something_ );
+	if( class_type == nullptr )
+		return nullptr;
+	return *class_type;
 }
 
 size_t Type::SizeOf() const
@@ -174,18 +253,18 @@ size_t Type::SizeOf() const
 	};
 
 	Visitor visitor;
-	boost::apply_visitor( visitor, one_of_type_kind );
+	boost::apply_visitor( visitor, something_ );
 	return visitor.size;
 }
 
 bool Type::IsIncomplete() const
 {
-	if( const ClassPtr* const class_= boost::get<ClassPtr>( &one_of_type_kind ) )
+	if( const ClassPtr* const class_= boost::get<ClassPtr>( &something_ ) )
 	{
 		U_ASSERT( *class_ != nullptr );
 		return (*class_)->is_incomplete;
 	}
-	else if( const ArrayPtr* const array= boost::get<ArrayPtr>( &one_of_type_kind ) )
+	else if( const ArrayPtr* const array= boost::get<ArrayPtr>( &something_ ) )
 	{
 		U_ASSERT( *array != nullptr );
 		return (*array)->type.IsIncomplete();
@@ -196,12 +275,12 @@ bool Type::IsIncomplete() const
 
 bool Type::IsDefaultConstructible() const
 {
-	if( const ClassPtr* const class_= boost::get<ClassPtr>( &one_of_type_kind ) )
+	if( const ClassPtr* const class_= boost::get<ClassPtr>( &something_ ) )
 	{
 		U_ASSERT( *class_ != nullptr );
 		return (*class_)->is_default_constructible;
 	}
-	else if( const ArrayPtr* const array= boost::get<ArrayPtr>( &one_of_type_kind ) )
+	else if( const ArrayPtr* const array= boost::get<ArrayPtr>( &something_ ) )
 	{
 		U_ASSERT( *array != nullptr );
 		return (*array)->type.IsDefaultConstructible();
@@ -212,17 +291,17 @@ bool Type::IsDefaultConstructible() const
 
 bool Type::IsCopyConstructible() const
 {
-	if( const FundamentalType* const fundamental_type= boost::get<FundamentalType>( &one_of_type_kind ) )
+	if( const FundamentalType* const fundamental_type= boost::get<FundamentalType>( &something_ ) )
 	{
 		U_UNUSED(fundamental_type);
 		return true;
 	}
-	else if( const ClassPtr* const class_= boost::get<ClassPtr>( &one_of_type_kind ) )
+	else if( const ClassPtr* const class_= boost::get<ClassPtr>( &something_ ) )
 	{
 		U_ASSERT( *class_ != nullptr );
 		return (*class_)->is_copy_constructible;
 	}
-	else if( const ArrayPtr* const array= boost::get<ArrayPtr>( &one_of_type_kind ) )
+	else if( const ArrayPtr* const array= boost::get<ArrayPtr>( &something_ ) )
 	{
 		U_ASSERT( *array != nullptr );
 		return (*array)->type.IsCopyConstructible();
@@ -267,7 +346,7 @@ llvm::Type* Type::GetLLVMType() const
 	};
 
 	Visitor visitor;
-	boost::apply_visitor( visitor, one_of_type_kind );
+	boost::apply_visitor( visitor, something_ );
 	return visitor.llvm_type;
 }
 
@@ -343,46 +422,46 @@ ProgramString Type::ToString() const
 	};
 
 	Visitor visitor;
-	boost::apply_visitor( visitor, one_of_type_kind );
+	boost::apply_visitor( visitor, something_ );
 	return std::move( visitor.result );
 }
 
 bool operator==( const Type& r, const Type& l )
 {
-	if( r.one_of_type_kind.which() != l.one_of_type_kind.which() )
+	if( r.something_.which() != l.something_.which() )
 		return false;
 
-	if( r.one_of_type_kind.which() == 0 )
+	if( r.something_.which() == 0 )
 	{
-		return boost::get<FundamentalType>(r.one_of_type_kind) == boost::get<FundamentalType>(l.one_of_type_kind);
+		return boost::get<FundamentalType>(r.something_) == boost::get<FundamentalType>(l.something_);
 	}
-	else if( r.one_of_type_kind.which() == 1 )
+	else if( r.something_.which() == 1 )
 	{
-		const FunctionPtr& r_function= boost::get< FunctionPtr >(r.one_of_type_kind);
-		const FunctionPtr& l_function= boost::get< FunctionPtr >(l.one_of_type_kind);
+		const FunctionPtr& r_function= boost::get< FunctionPtr >(r.something_);
+		const FunctionPtr& l_function= boost::get< FunctionPtr >(l.something_);
 		if( r_function == l_function )
 			return true;
 		if( r_function != nullptr && l_function != nullptr )
 			return *r_function == *l_function;
 		return false;
 	}
-	else if( r.one_of_type_kind.which() == 2 )
+	else if( r.something_.which() == 2 )
 	{
-		const ArrayPtr& r_array= boost::get< ArrayPtr >(r.one_of_type_kind);
-		const ArrayPtr& l_array= boost::get< ArrayPtr >(l.one_of_type_kind);
+		const ArrayPtr& r_array= boost::get< ArrayPtr >(r.something_);
+		const ArrayPtr& l_array= boost::get< ArrayPtr >(l.something_);
 		if( r_array == l_array )
 			return true;
 		if( r_array != nullptr && l_array != nullptr )
 			return *r_array == *l_array;
 		return false;
 	}
-	else if( r.one_of_type_kind.which() == 3 )
+	else if( r.something_.which() == 3 )
 	{
-		return r.one_of_type_kind == l.one_of_type_kind;
+		return r.something_ == l.something_;
 	}
-	else if( r.one_of_type_kind.which() == 4 )
+	else if( r.something_.which() == 4 )
 	{
-		return boost::get<NontypeStub>(r.one_of_type_kind) == boost::get<NontypeStub>(l.one_of_type_kind);
+		return boost::get<NontypeStub>(r.something_) == boost::get<NontypeStub>(l.something_);
 	}
 
 	U_ASSERT(false);
@@ -440,37 +519,10 @@ Class::~Class()
 // Value
 //
 
-static const Type g_overloaded_functions_set_stub_type=
-[]()
-{
-	Type type;
-	type.one_of_type_kind= NontypeStub::OverloadedFunctionsSet;
-	return type;
-}();
-
-static const Type g_this_overloaded_methods_set_stub_type=
-[]()
-{
-	Type type;
-	type.one_of_type_kind= NontypeStub::ThisOverloadedMethodsSet;
-	return type;
-}();
-
-static const Type g_typename_type_stub=
-[]()
-{
-	Type type;
-	type.one_of_type_kind= NontypeStub::TypeName;
-	return type;
-}();
-
-static const Type g_namespace_type_stub=
-[]()
-{
-	Type type;
-	type.one_of_type_kind= NontypeStub::Namespace;
-	return type;
-}();
+static const Type g_overloaded_functions_set_stub_type= NontypeStub::OverloadedFunctionsSet;
+static const Type g_this_overloaded_methods_set_stub_type=NontypeStub::ThisOverloadedMethodsSet;
+static const Type g_typename_type_stub= NontypeStub::TypeName;
+static const Type g_namespace_type_stub= NontypeStub::Namespace;
 
 Value::Value()
 {}
@@ -728,10 +780,9 @@ NamesScope::InsertedName* NamesScope::ResolveName_r(
 		return child_namespace->ResolveName_r( components + 1u, component_count - 1u );
 	else if( const Type* const type= it->second.GetTypeName() )
 	{
-		if( const ClassPtr* class_ptr= boost::get<ClassPtr>( &type->one_of_type_kind ) )
+		if( const ClassPtr class_= type->GetClassType() )
 		{
-			U_ASSERT( *class_ptr != nullptr );
-			return (*class_ptr)->members.ResolveName_r( components + 1u, component_count - 1u );
+			return class_->members.ResolveName_r( components + 1u, component_count - 1u );
 		}
 	}
 
