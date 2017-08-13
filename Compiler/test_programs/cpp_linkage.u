@@ -39,3 +39,31 @@ fn TheClass::StaticMethod()
 {
 	StaticMethod2();
 }
+
+fn U32ToStr( u32 x, [ i8, 64 ]& out_str )
+{
+	auto imut zero_char= 48u;
+	if( x == 0u )
+	{
+		out_str[0u]= i8(zero_char);
+		out_str[1u]= 0i8;
+		return;
+	}
+	var u32 dst= 0u;
+	var u32 div= 1000000000u;
+
+	while( div > x )
+	{
+		div= div / 10u;
+	}
+
+	while( div > 0u )
+	{
+		auto imut digit= x / div;
+		out_str[dst]= i8( digit + zero_char );
+		dst= dst + 1u;
+		x= x - digit * div;
+		div= div / 10u;
+	}
+	out_str[dst]= 0i8;
+}
