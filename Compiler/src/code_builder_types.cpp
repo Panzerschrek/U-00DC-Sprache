@@ -99,9 +99,14 @@ Type::Type( FundamentalType fundamental_type )
 	something_= std::move( fundamental_type );
 }
 
-Type::Type( FunctionPtr function_type )
+Type::Type( const Function& function_type )
 {
-	something_= std::move( function_type );
+	something_= std::unique_ptr<Function>( new Function( function_type ) );
+}
+
+Type::Type( Function&& function_type )
+{
+	something_= std::unique_ptr<Function>( new Function( std::move( function_type ) ) );
 }
 
 Type::Type( ArrayPtr array_type )
@@ -136,10 +141,8 @@ Type& Type::operator=( const Type& other )
 
 		void operator()( const FunctionPtr& function )
 		{
-			if( function == nullptr )
-				this_.something_= FunctionPtr();
-			else
-				this_.something_= FunctionPtr( new Function( *function ) );
+			U_ASSERT( function != nullptr );
+			this_.something_= FunctionPtr( new Function( *function ) );
 		}
 
 		void operator()( const ArrayPtr& array )
@@ -323,7 +326,7 @@ llvm::Type* Type::GetLLVMType() const
 
 		void operator()( const FunctionPtr& function )
 		{
-			if( function == nullptr ) return;
+			U_ASSERT( function != nullptr );
 			llvm_type= function->llvm_function_type;
 		}
 
@@ -433,31 +436,19 @@ bool operator==( const Type& r, const Type& l )
 
 	if( r.something_.which() == 0 )
 	{
-		return boost::get<FundamentalType>(r.something_) == boost::get<FundamentalType>(l.something_);
+		return *r.GetFundamentalType() == *l.GetFundamentalType();
 	}
 	else if( r.something_.which() == 1 )
 	{
-		const FunctionPtr& r_function= boost::get< FunctionPtr >(r.something_);
-		const FunctionPtr& l_function= boost::get< FunctionPtr >(l.something_);
-		if( r_function == l_function )
-			return true;
-		if( r_function != nullptr && l_function != nullptr )
-			return *r_function == *l_function;
-		return false;
+		return *r.GetFunctionType() == *l.GetFunctionType();
 	}
 	else if( r.something_.which() == 2 )
 	{
-		const ArrayPtr& r_array= boost::get< ArrayPtr >(r.something_);
-		const ArrayPtr& l_array= boost::get< ArrayPtr >(l.something_);
-		if( r_array == l_array )
-			return true;
-		if( r_array != nullptr && l_array != nullptr )
-			return *r_array == *l_array;
-		return false;
+		return *r.GetArrayType() == *l.GetArrayType();
 	}
 	else if( r.something_.which() == 3 )
 	{
-		return r.something_ == l.something_;
+		return r.GetClassType() == l.GetClassType();
 	}
 	else if( r.something_.which() == 4 )
 	{

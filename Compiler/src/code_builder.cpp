@@ -399,17 +399,17 @@ void CodeBuilder::TryGenerateDefaultConstructor( Class& the_class, const Type& c
 
 	// Generate function
 
-	FunctionPtr constructor_type_ptr( new Function );
-	constructor_type_ptr->return_type= void_type_;
-	constructor_type_ptr->args.emplace_back();
-	constructor_type_ptr->args.back().type= class_type;
-	constructor_type_ptr->args.back().is_mutable= true;
-	constructor_type_ptr->args.back().is_reference= true;
+	Function constructor_type;
+	constructor_type.return_type= void_type_;
+	constructor_type.args.emplace_back();
+	constructor_type.args.back().type= class_type;
+	constructor_type.args.back().is_mutable= true;
+	constructor_type.args.back().is_reference= true;
 
 	std::vector<llvm::Type*> args_llvm_types;
 	args_llvm_types.push_back( llvm::PointerType::get( class_type.GetLLVMType(), 0u ) );
 
-	constructor_type_ptr->llvm_function_type=
+	constructor_type.llvm_function_type=
 		llvm::FunctionType::get(
 			fundamental_llvm_types_.void_,
 			llvm::ArrayRef<llvm::Type*>( args_llvm_types.data(), args_llvm_types.size() ),
@@ -417,18 +417,18 @@ void CodeBuilder::TryGenerateDefaultConstructor( Class& the_class, const Type& c
 
 	llvm::Function* const llvm_constructor_function=
 		llvm::Function::Create(
-			constructor_type_ptr->llvm_function_type,
+			constructor_type.llvm_function_type,
 			llvm::Function::LinkageTypes::ExternalLinkage, // TODO - select linkage
-			MangleFunction( the_class.members, Keyword( Keywords::constructor_ ), *constructor_type_ptr, true ),
+			MangleFunction( the_class.members, Keyword( Keywords::constructor_ ), constructor_type, true ),
 			module_.get() );
 
 	llvm_constructor_function->setUnnamedAddr( true );
 	llvm_constructor_function->addAttribute( 1u, llvm::Attribute::NonNull ); // this is nonnull
 
 	FunctionContext function_context(
-		constructor_type_ptr->return_type,
-		constructor_type_ptr->return_value_is_mutable,
-		constructor_type_ptr->return_value_is_reference,
+		constructor_type.return_type,
+		constructor_type.return_value_is_mutable,
+		constructor_type.return_value_is_reference,
 		llvm_context_,
 		llvm_constructor_function );
 
@@ -460,7 +460,7 @@ void CodeBuilder::TryGenerateDefaultConstructor( Class& the_class, const Type& c
 
 	// Add generated constructor
 	FunctionVariable constructor_variable;
-	constructor_variable.type= std::move( constructor_type_ptr );
+	constructor_variable.type= std::move( constructor_type );
 	constructor_variable.have_body= true;
 	constructor_variable.is_this_call= true;
 	constructor_variable.is_generated= true;
@@ -523,21 +523,21 @@ void CodeBuilder::TryGenerateCopyConstructor( Class& the_class, const Type& clas
 		return;
 
 	// Generate copy-constructor
-	FunctionPtr constructor_type_ptr( new Function );
-	constructor_type_ptr->return_type= void_type_;
-	constructor_type_ptr->args.resize(2u);
-	constructor_type_ptr->args[0].type= class_type;
-	constructor_type_ptr->args[0].is_mutable= true;
-	constructor_type_ptr->args[0].is_reference= true;
-	constructor_type_ptr->args[1].type= class_type;
-	constructor_type_ptr->args[1].is_mutable= false;
-	constructor_type_ptr->args[1].is_reference= true;
+	Function constructor_type;
+	constructor_type.return_type= void_type_;
+	constructor_type.args.resize(2u);
+	constructor_type.args[0].type= class_type;
+	constructor_type.args[0].is_mutable= true;
+	constructor_type.args[0].is_reference= true;
+	constructor_type.args[1].type= class_type;
+	constructor_type.args[1].is_mutable= false;
+	constructor_type.args[1].is_reference= true;
 
 	std::vector<llvm::Type*> args_llvm_types;
 	args_llvm_types.push_back( llvm::PointerType::get( class_type.GetLLVMType(), 0u ) );
 	args_llvm_types.push_back( llvm::PointerType::get( class_type.GetLLVMType(), 0u ) );
 
-	constructor_type_ptr->llvm_function_type=
+	constructor_type.llvm_function_type=
 		llvm::FunctionType::get(
 			fundamental_llvm_types_.void_,
 			llvm::ArrayRef<llvm::Type*>( args_llvm_types.data(), args_llvm_types.size() ),
@@ -545,9 +545,9 @@ void CodeBuilder::TryGenerateCopyConstructor( Class& the_class, const Type& clas
 
 	llvm::Function* const llvm_constructor_function=
 		llvm::Function::Create(
-			constructor_type_ptr->llvm_function_type,
+			constructor_type.llvm_function_type,
 			llvm::Function::LinkageTypes::ExternalLinkage, // TODO - select linkage
-			MangleFunction( the_class.members, Keyword( Keywords::constructor_ ), *constructor_type_ptr, true ),
+			MangleFunction( the_class.members, Keyword( Keywords::constructor_ ), constructor_type, true ),
 			module_.get() );
 
 	llvm_constructor_function->setUnnamedAddr( true );
@@ -555,9 +555,9 @@ void CodeBuilder::TryGenerateCopyConstructor( Class& the_class, const Type& clas
 	llvm_constructor_function->addAttribute( 2u, llvm::Attribute::NonNull ); // and src is nonnull
 
 	FunctionContext function_context(
-		constructor_type_ptr->return_type,
-		constructor_type_ptr->return_value_is_mutable,
-		constructor_type_ptr->return_value_is_reference,
+		constructor_type.return_type,
+		constructor_type.return_value_is_mutable,
+		constructor_type.return_value_is_reference,
 		llvm_context_,
 		llvm_constructor_function );
 
@@ -591,7 +591,7 @@ void CodeBuilder::TryGenerateCopyConstructor( Class& the_class, const Type& clas
 
 	// Add generated constructor
 	FunctionVariable constructor_variable;
-	constructor_variable.type= std::move( constructor_type_ptr );
+	constructor_variable.type= std::move( constructor_type );
 	constructor_variable.have_body= true;
 	constructor_variable.is_this_call= true;
 	constructor_variable.is_generated= true;
@@ -881,10 +881,8 @@ void CodeBuilder::PrepareFunction(
 	}
 
 	FunctionVariable func_variable;
-
-	std::unique_ptr<Function> function_type_storage( new Function() );
-	Function& function_type= *function_type_storage;
-	func_variable.type= std::move(function_type_storage);
+	func_variable.type= Function();
+	Function& function_type= *func_variable.type.GetFunctionType();
 
 	if( func.return_type_.name.components.empty() )
 		function_type.return_type= void_type_;

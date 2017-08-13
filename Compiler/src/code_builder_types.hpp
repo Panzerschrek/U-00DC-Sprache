@@ -20,7 +20,6 @@ namespace CodeBuilderPrivate
 {
 
 struct Function;
-typedef std::unique_ptr<Function> FunctionPtr;
 
 struct Array;
 typedef std::unique_ptr<Array> ArrayPtr;
@@ -64,7 +63,8 @@ public:
 
 	// Construct from different type kinds.
 	Type( FundamentalType fundamental_type );
-	Type( FunctionPtr function_type );
+	Type( const Function& function_type );
+	Type( Function&& function_type );
 	Type( ArrayPtr array_type );
 	Type( ClassPtr class_type );
 	Type( NontypeStub nontype_strub );
@@ -90,6 +90,8 @@ public:
 
 private:
 	friend bool operator==( const Type&, const Type&);
+
+	typedef std::unique_ptr<Function> FunctionPtr;
 
 	boost::variant<
 		FundamentalType,
@@ -137,7 +139,7 @@ bool operator!=( const Array& r, const Array& l );
 
 struct FunctionVariable final
 {
-	Type type;
+	Type type; // Function type 100%
 	bool have_body= true;
 	bool is_this_call= false;
 	bool is_generated= false;
