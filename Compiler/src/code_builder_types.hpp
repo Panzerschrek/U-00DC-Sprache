@@ -198,45 +198,16 @@ public:
 	// Namespace
 	NamesScopePtr GetNamespace() const;
 
-private:
-	struct OverloadedFunctionsSetWithTypeStub
-	{
-		OverloadedFunctionsSetWithTypeStub();
-
-		Type type;
-		OverloadedFunctionsSet set;
-	};
-	struct ThisOverloadedMethodsSetWithTypeStub
-	{
-		ThisOverloadedMethodsSetWithTypeStub();
-
-		Type type;
-		ThisOverloadedMethodsSet set;
-	};
-	struct TypeNameWithTypeStub
-	{
-		TypeNameWithTypeStub();
-
-		Type stub_type;
-		Type type;
-	};
-	struct NamespaceWithTypeStub
-	{
-		 NamespaceWithTypeStub();
-
-		Type type;
-		NamesScopePtr namespace_;
-	};
 
 private:
 	boost::variant<
 		Variable,
 		FunctionVariable,
-		OverloadedFunctionsSetWithTypeStub,
-		TypeNameWithTypeStub,
+		OverloadedFunctionsSet,
+		Type,
 		ClassField,
-		ThisOverloadedMethodsSetWithTypeStub,
-		NamespaceWithTypeStub > something_;
+		ThisOverloadedMethodsSet,
+		NamesScopePtr > something_;
 };
 
 // "Class" of function argument in terms of overloading.

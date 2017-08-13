@@ -435,6 +435,43 @@ Class::Class( const ProgramString& in_name, const NamesScope* const parent_scope
 Class::~Class()
 {}
 
+
+//
+// Value
+//
+
+static const Type g_overloaded_functions_set_stub_type=
+[]()
+{
+	Type type;
+	type.one_of_type_kind= NontypeStub::OverloadedFunctionsSet;
+	return type;
+}();
+
+static const Type g_this_overloaded_methods_set_stub_type=
+[]()
+{
+	Type type;
+	type.one_of_type_kind= NontypeStub::ThisOverloadedMethodsSet;
+	return type;
+}();
+
+static const Type g_typename_type_stub=
+[]()
+{
+	Type type;
+	type.one_of_type_kind= NontypeStub::TypeName;
+	return type;
+}();
+
+static const Type g_namespace_type_stub=
+[]()
+{
+	Type type;
+	type.one_of_type_kind= NontypeStub::Namespace;
+	return type;
+}();
+
 Value::Value()
 {}
 
@@ -450,16 +487,12 @@ Value::Value( FunctionVariable function_variable )
 
 Value::Value( OverloadedFunctionsSet functions_set )
 {
-	OverloadedFunctionsSetWithTypeStub s;
-	s.set= std::move( functions_set );
-	something_= std::move(s);
+	something_= std::move(functions_set);
 }
 
 Value::Value( Type type )
 {
-	TypeNameWithTypeStub s;
-	s.type= std::move(type);
-	something_= std::move(s);
+	something_= std::move(type);
 }
 
 Value::Value( ClassField class_field )
@@ -469,17 +502,13 @@ Value::Value( ClassField class_field )
 
 Value::Value( ThisOverloadedMethodsSet this_overloaded_methods_set )
 {
-	ThisOverloadedMethodsSetWithTypeStub s;
-	s.set= std::move( this_overloaded_methods_set );
-	something_= std::move( s );
+	something_= std::move( this_overloaded_methods_set );
 }
 
 Value::Value( const NamesScopePtr& namespace_ )
 {
 	U_ASSERT( namespace_ != nullptr );
-	NamespaceWithTypeStub s;
-	s.namespace_= namespace_;
-	something_= std::move( s );
+	something_= namespace_;
 }
 
 const Type& Value::GetType() const
@@ -494,20 +523,20 @@ const Type& Value::GetType() const
 		void operator()( const FunctionVariable& function_variable )
 		{ type= &function_variable.type; }
 
-		void operator()( const OverloadedFunctionsSetWithTypeStub& functions_set )
-		{ type= &functions_set.type; }
+		void operator()( const OverloadedFunctionsSet& )
+		{ type= &g_overloaded_functions_set_stub_type; }
 
-		void operator()( const TypeNameWithTypeStub& type_name )
-		{ type= &type_name.stub_type; }
+		void operator()( const Type& )
+		{ type= &g_typename_type_stub; }
 
 		void operator()( const ClassField& class_field )
 		{ type= &class_field.type; }
 
-		void operator()( const ThisOverloadedMethodsSetWithTypeStub& overloded_methods_set )
-		{ type= &overloded_methods_set.type; }
+		void operator()( const ThisOverloadedMethodsSet& )
+		{ type= &g_this_overloaded_methods_set_stub_type; }
 
-		void operator()( const NamespaceWithTypeStub& namespace_ )
-		{ type= &namespace_.type; }
+		void operator()( const NamesScopePtr& )
+		{ type= &g_namespace_type_stub; }
 	};
 
 	Visitor visitor;
@@ -537,34 +566,22 @@ const FunctionVariable* Value::GetFunctionVariable() const
 
 OverloadedFunctionsSet* Value::GetFunctionsSet()
 {
-	OverloadedFunctionsSetWithTypeStub* set= boost::get<OverloadedFunctionsSetWithTypeStub>( &something_ );
-	if( set == nullptr )
-		return nullptr;
-	return &set->set;
+	return boost::get<OverloadedFunctionsSet>( &something_ );
 }
 
 const OverloadedFunctionsSet* Value::GetFunctionsSet() const
 {
-	const OverloadedFunctionsSetWithTypeStub* set= boost::get<OverloadedFunctionsSetWithTypeStub>( &something_ );
-	if( set == nullptr )
-		return nullptr;
-	return &set->set;
+	return boost::get<OverloadedFunctionsSet>( &something_ );
 }
 
 Type* Value::GetTypeName()
 {
-	TypeNameWithTypeStub* type= boost::get<TypeNameWithTypeStub>( &something_ );
-	if( type == nullptr )
-		return nullptr;
-	return &type->type;
+	return boost::get<Type>( &something_ );
 }
 
 const Type* Value::GetTypeName() const
 {
-	const TypeNameWithTypeStub* type= boost::get<TypeNameWithTypeStub>( &something_ );
-	if( type == nullptr )
-		return nullptr;
-	return &type->type;
+	return boost::get<Type>( &something_ );
 }
 
 const ClassField* Value::GetClassField() const
@@ -574,46 +591,20 @@ const ClassField* Value::GetClassField() const
 
 ThisOverloadedMethodsSet* Value::GetThisOverloadedMethodsSet()
 {
-	ThisOverloadedMethodsSetWithTypeStub* const set= boost::get<ThisOverloadedMethodsSetWithTypeStub>( &something_ );
-	if( set == nullptr )
-		return nullptr;
-	return &set->set;
+	return boost::get<ThisOverloadedMethodsSet>( &something_ );
 }
 
 const ThisOverloadedMethodsSet* Value::GetThisOverloadedMethodsSet() const
 {
-	const ThisOverloadedMethodsSetWithTypeStub* const set= boost::get<ThisOverloadedMethodsSetWithTypeStub>( &something_ );
-	if( set == nullptr )
-		return nullptr;
-	return &set->set;
+	return boost::get<ThisOverloadedMethodsSet>( &something_ );
 }
 
 NamesScopePtr Value::GetNamespace() const
 {
-	const NamespaceWithTypeStub* const namespace_= boost::get<NamespaceWithTypeStub>( &something_ );
+	const NamesScopePtr* const namespace_= boost::get<NamesScopePtr>( &something_ );
 	if( namespace_ == nullptr )
 		return nullptr;
-	return namespace_->namespace_;
-}
-
-Value::OverloadedFunctionsSetWithTypeStub::OverloadedFunctionsSetWithTypeStub()
-{
-	type.one_of_type_kind= NontypeStub::OverloadedFunctionsSet;
-}
-
-Value::ThisOverloadedMethodsSetWithTypeStub::ThisOverloadedMethodsSetWithTypeStub()
-{
-	type.one_of_type_kind= NontypeStub::ThisOverloadedMethodsSet;
-}
-
-Value::TypeNameWithTypeStub::TypeNameWithTypeStub()
-{
-	stub_type.one_of_type_kind= NontypeStub::TypeName;
-}
-
-Value::NamespaceWithTypeStub::NamespaceWithTypeStub()
-{
-	type.one_of_type_kind= NontypeStub::Namespace;
+	return *namespace_;
 }
 
 ArgOverloadingClass GetArgOverloadingClass( const bool is_reference, const bool is_mutable )
