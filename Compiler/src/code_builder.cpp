@@ -141,9 +141,8 @@ Type CodeBuilder::PrepareType(
 
 		const NumericConstant& num= * *rit;
 
-		std::unique_ptr<Array> array_type_storage( new Array() );
-		Array& array_type= *array_type_storage;
-		*last_type= std::move(array_type_storage);
+		*last_type= Array();
+		Array& array_type= *last_type->GetArrayType();
 
 		U_FundamentalType size_type= GetNumericConstantType( num );
 		if( !IsInteger(size_type) )

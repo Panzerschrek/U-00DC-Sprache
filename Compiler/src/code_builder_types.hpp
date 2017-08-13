@@ -20,9 +20,7 @@ namespace CodeBuilderPrivate
 {
 
 struct Function;
-
 struct Array;
-typedef std::unique_ptr<Array> ArrayPtr;
 
 struct Class;
 typedef std::shared_ptr<Class> ClassPtr;
@@ -65,7 +63,8 @@ public:
 	Type( FundamentalType fundamental_type );
 	Type( const Function& function_type );
 	Type( Function&& function_type );
-	Type( ArrayPtr array_type );
+	Type( const Array& array_type );
+	Type( Array&& array_type );
 	Type( ClassPtr class_type );
 	Type( NontypeStub nontype_strub );
 
@@ -92,6 +91,7 @@ private:
 	friend bool operator==( const Type&, const Type&);
 
 	typedef std::unique_ptr<Function> FunctionPtr;
+	typedef std::unique_ptr<Array> ArrayPtr;
 
 	boost::variant<
 		FundamentalType,

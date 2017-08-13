@@ -101,17 +101,22 @@ Type::Type( FundamentalType fundamental_type )
 
 Type::Type( const Function& function_type )
 {
-	something_= std::unique_ptr<Function>( new Function( function_type ) );
+	something_= FunctionPtr( new Function( function_type ) );
 }
 
 Type::Type( Function&& function_type )
 {
-	something_= std::unique_ptr<Function>( new Function( std::move( function_type ) ) );
+	something_= FunctionPtr( new Function( std::move( function_type ) ) );
 }
 
-Type::Type( ArrayPtr array_type )
+Type::Type( const Array& array_type )
 {
-	something_= std::move( array_type );
+	something_= ArrayPtr( new Array( array_type ) );
+}
+
+Type::Type( Array&& array_type )
+{
+	something_= ArrayPtr( new Array( std::move( array_type ) ) );
 }
 
 Type::Type( ClassPtr class_type )
@@ -147,10 +152,8 @@ Type& Type::operator=( const Type& other )
 
 		void operator()( const ArrayPtr& array )
 		{
-			if( array == nullptr )
-				this_.something_= ArrayPtr();
-			else
-				this_.something_= ArrayPtr( new Array( *array ) );
+			U_ASSERT( array != nullptr );
+			this_.something_= ArrayPtr( new Array( *array ) );
 		}
 
 		void operator()( const ClassPtr& class_ )
