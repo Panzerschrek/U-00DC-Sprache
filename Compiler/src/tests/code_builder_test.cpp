@@ -460,6 +460,72 @@ U_TEST(LazyLogicalOrTest1)
 	U_TEST_ASSERT( static_cast<uint64_t>(42) == result_value.IntVal.getLimitedValue() );
 }
 
+U_TEST(LazyLogicalAndTest2)
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo( bool a, bool b, bool c ) : bool
+		{
+			return a && b && c;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foobbb" );
+	U_TEST_ASSERT( function != nullptr );
+
+	llvm::GenericValue args[3];
+	for( unsigned int i= 0u; i < 8u; i++ )
+	{
+		const bool a= ( i & 1u ) != 0u;
+		const bool b= ( i & 2u ) != 0u;
+		const bool c= ( i & 4u ) != 0u;
+		args[0].IntVal= llvm::APInt( 1, a );
+		args[1].IntVal= llvm::APInt( 1, b );
+		args[2].IntVal= llvm::APInt( 1, c );
+
+		const llvm::GenericValue result_value=
+			engine->runFunction(
+				function,
+				llvm::ArrayRef<llvm::GenericValue>( args, 3u ) );
+
+		U_TEST_ASSERT( ( a && b && c ) == (result_value.IntVal.getLimitedValue() != 0) );
+	}
+}
+
+U_TEST(LazyLogicalOrTest2)
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo( bool a, bool b, bool c ) : bool
+		{
+			return a || b || c;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foobbb" );
+	U_TEST_ASSERT( function != nullptr );
+
+	llvm::GenericValue args[3];
+	for( unsigned int i= 0u; i < 8u; i++ )
+	{
+		const bool a= ( i & 1u ) != 0u;
+		const bool b= ( i & 2u ) != 0u;
+		const bool c= ( i & 4u ) != 0u;
+		args[0].IntVal= llvm::APInt( 1, a );
+		args[1].IntVal= llvm::APInt( 1, b );
+		args[2].IntVal= llvm::APInt( 1, c );
+
+		const llvm::GenericValue result_value=
+			engine->runFunction(
+				function,
+				llvm::ArrayRef<llvm::GenericValue>( args, 3u ) );
+
+		U_TEST_ASSERT( ( a || b || c ) == (result_value.IntVal.getLimitedValue() != 0) );
+	}
+}
+
 U_TEST(ArraysTest0)
 {
 	static const char c_program_text[]=

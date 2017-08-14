@@ -436,10 +436,11 @@ Variable CodeBuilder::BuildLazyBinaryOperator(
 	llvm::BasicBlock* const r_part_block= llvm::BasicBlock::Create( llvm_context_ );
 	llvm::BasicBlock* const block_after_operator= llvm::BasicBlock::Create( llvm_context_ );
 
+	llvm::Value* const l_var_in_register= CreateMoveToLLVMRegisterInstruction( l_var, function_context );
 	if( binary_operator.operator_type_ == BinaryOperatorType::LazyLogicalAnd )
-		function_context.llvm_ir_builder.CreateCondBr( l_var.llvm_value, r_part_block, block_after_operator );
+		function_context.llvm_ir_builder.CreateCondBr( l_var_in_register, r_part_block, block_after_operator );
 	else if( binary_operator.operator_type_ == BinaryOperatorType::LazyLogicalOr )
-		function_context.llvm_ir_builder.CreateCondBr( l_var.llvm_value, block_after_operator, r_part_block );
+		function_context.llvm_ir_builder.CreateCondBr( l_var_in_register, block_after_operator, r_part_block );
 	else{ U_ASSERT(false); }
 
 	function_context.function->getBasicBlockList().push_back( r_part_block );
@@ -452,14 +453,15 @@ Variable CodeBuilder::BuildLazyBinaryOperator(
 		throw ProgramError();
 	}
 	const Variable r_var= *r_var_value.GetVariable();
+	llvm::Value* const r_var_in_register= CreateMoveToLLVMRegisterInstruction( r_var, function_context );
 
 	function_context.llvm_ir_builder.CreateBr( block_after_operator );
 	function_context.function->getBasicBlockList().push_back( block_after_operator );
 	function_context.llvm_ir_builder.SetInsertPoint( block_after_operator );
 
 	llvm::PHINode* const phi= function_context.llvm_ir_builder.CreatePHI( fundamental_llvm_types_.bool_, 2u );
-	phi->addIncoming( l_var.llvm_value, l_part_block );
-	phi->addIncoming( r_var.llvm_value, r_part_block );
+	phi->addIncoming( l_var_in_register, l_part_block );
+	phi->addIncoming( r_var_in_register, r_part_block );
 
 	Variable result;
 	result.type= bool_type_;
