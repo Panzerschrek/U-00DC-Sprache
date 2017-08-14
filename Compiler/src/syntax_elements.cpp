@@ -30,6 +30,13 @@ UnaryMinus::UnaryMinus( const FilePos& file_pos )
 UnaryMinus::~UnaryMinus()
 {}
 
+LogicalNot::LogicalNot( const FilePos& file_pos )
+	: IUnaryPrefixOperator(file_pos)
+{}
+
+LogicalNot::~LogicalNot()
+{}
+
 CallOperator::CallOperator(
 	const FilePos& file_pos,
 	std::vector<IExpressionComponentPtr> arguments )

@@ -76,6 +76,13 @@ public:
 	virtual ~UnaryMinus() override;
 };
 
+class LogicalNot final : public IUnaryPrefixOperator
+{
+public:
+	explicit LogicalNot( const FilePos& file_pos );
+	virtual ~LogicalNot() override;
+};
+
 class CallOperator final : public IUnaryPostfixOperator
 {
 public:

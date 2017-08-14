@@ -128,6 +128,11 @@ Value CodeBuilder::BuildExpressionCode(
 				(void)unary_plus;
 				// DO NOTHING
 			}
+			else if( const LogicalNot* const logical_not=
+				dynamic_cast<const LogicalNot*>( prefix_operator.get() ) )
+			{
+				result= BuildLogicalNot( result, *logical_not, function_context );
+			}
 			// TODO
 		} // for unary prefix operators
 
@@ -981,6 +986,29 @@ Variable CodeBuilder::BuildUnaryMinus(
 		result.llvm_value= function_context.llvm_ir_builder.CreateFNeg( value_for_neg );
 	else
 		result.llvm_value= function_context.llvm_ir_builder.CreateNeg( value_for_neg );
+
+	return result;
+}
+
+Variable CodeBuilder::BuildLogicalNot(
+	const Value& value,
+	const LogicalNot& logical_not,
+	FunctionContext& function_context )
+{
+	if( value.GetType() != bool_type_ )
+	{
+		errors_.push_back( ReportOperationNotSupportedForThisType( logical_not.file_pos_, value.GetType().ToString() ) );
+		throw ProgramError();
+	}
+	const Variable& variable= *value.GetVariable();
+
+	Variable result;
+	result.type= variable.type;
+	result.location= Variable::Location::LLVMRegister;
+	result.value_type= ValueType::Value;
+
+	llvm::Value* const value_in_register= CreateMoveToLLVMRegisterInstruction( variable, function_context );
+	result.llvm_value= function_context.llvm_ir_builder.CreateNot( value_in_register );
 
 	return result;
 }

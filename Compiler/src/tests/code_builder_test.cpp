@@ -292,6 +292,34 @@ U_TEST(UnaryMinusTest)
 	U_TEST_ASSERT( static_cast<uint64_t>( - - arg_value ) == result_value.IntVal.getLimitedValue() );
 }
 
+U_TEST(LogicalNotTest)
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo( bool b ) : bool
+		{
+			return !b;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foob" );
+	U_TEST_ASSERT( function != nullptr );
+
+	for( unsigned int i= 0u; i < 2u; i++ )
+	{
+		llvm::GenericValue arg;
+		arg.IntVal= llvm::APInt( 1, i );
+
+		llvm::GenericValue result_value=
+			engine->runFunction(
+				function,
+				llvm::ArrayRef<llvm::GenericValue>( arg ) );
+
+		U_TEST_ASSERT( static_cast<uint64_t>(i^1u) == result_value.IntVal.getLimitedValue() );
+	}
+}
+
 U_TEST(UnaryMinusFloatTest)
 {
 	static const char c_program_text[]=

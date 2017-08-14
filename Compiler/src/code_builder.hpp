@@ -186,6 +186,11 @@ private:
 		const UnaryMinus& unary_minus,
 		FunctionContext& function_context );
 
+	Variable BuildLogicalNot(
+		const Value& value,
+		const LogicalNot& logical_not,
+		FunctionContext& function_context );
+
 	// Block elements
 
 	void BuildVariablesDeclarationCode(
