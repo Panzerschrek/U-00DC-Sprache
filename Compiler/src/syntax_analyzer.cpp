@@ -384,6 +384,11 @@ IExpressionComponentPtr SyntaxAnalyzer::ParseExpression()
 				++it_;
 				break;
 
+			case Lexem::Type::Tilda:
+				prefix_operators.emplace_back( new BitwiseNot( it_->file_pos ) );
+				++it_;
+				break;
+
 			default:
 				if( prefix_operators.empty() )
 					return root;

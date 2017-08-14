@@ -37,6 +37,13 @@ LogicalNot::LogicalNot( const FilePos& file_pos )
 LogicalNot::~LogicalNot()
 {}
 
+BitwiseNot::BitwiseNot( const FilePos& file_pos )
+	: IUnaryPrefixOperator(file_pos)
+{}
+
+BitwiseNot::~BitwiseNot()
+{}
+
 CallOperator::CallOperator(
 	const FilePos& file_pos,
 	std::vector<IExpressionComponentPtr> arguments )

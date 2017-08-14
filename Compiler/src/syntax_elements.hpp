@@ -83,6 +83,13 @@ public:
 	virtual ~LogicalNot() override;
 };
 
+class BitwiseNot final : public IUnaryPrefixOperator
+{
+public:
+	explicit BitwiseNot( const FilePos& file_pos );
+	virtual ~BitwiseNot() override;
+};
+
 class CallOperator final : public IUnaryPostfixOperator
 {
 public:

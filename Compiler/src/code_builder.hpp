@@ -191,6 +191,11 @@ private:
 		const LogicalNot& logical_not,
 		FunctionContext& function_context );
 
+	Variable BuildBitwiseNot(
+		const Value& value,
+		const BitwiseNot& logical_not,
+		FunctionContext& function_context );
+
 	// Block elements
 
 	void BuildVariablesDeclarationCode(

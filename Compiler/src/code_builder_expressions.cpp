@@ -133,6 +133,11 @@ Value CodeBuilder::BuildExpressionCode(
 			{
 				result= BuildLogicalNot( result, *logical_not, function_context );
 			}
+			else if( const BitwiseNot* const bitwise_not=
+				dynamic_cast<const BitwiseNot*>( prefix_operator.get() ) )
+			{
+				result= BuildBitwiseNot( result, *bitwise_not, function_context );
+			}
 			// TODO
 		} // for unary prefix operators
 
@@ -1001,6 +1006,36 @@ Variable CodeBuilder::BuildLogicalNot(
 		throw ProgramError();
 	}
 	const Variable& variable= *value.GetVariable();
+
+	Variable result;
+	result.type= variable.type;
+	result.location= Variable::Location::LLVMRegister;
+	result.value_type= ValueType::Value;
+
+	llvm::Value* const value_in_register= CreateMoveToLLVMRegisterInstruction( variable, function_context );
+	result.llvm_value= function_context.llvm_ir_builder.CreateNot( value_in_register );
+
+	return result;
+}
+
+Variable CodeBuilder::BuildBitwiseNot(
+	const Value& value,
+	const BitwiseNot& bitwise_not,
+	FunctionContext& function_context )
+{
+	const FundamentalType* const fundamental_type= value.GetType().GetFundamentalType();
+	if( fundamental_type == nullptr )
+	{
+		errors_.push_back( ReportOperationNotSupportedForThisType( bitwise_not.file_pos_, value.GetType().ToString() ) );
+		throw ProgramError();
+	}
+	if( !IsInteger( fundamental_type->fundamental_type ) )
+	{
+		errors_.push_back( ReportOperationNotSupportedForThisType( bitwise_not.file_pos_, value.GetType().ToString() ) );
+		throw ProgramError();
+	}
+
+	const Variable variable= *value.GetVariable();
 
 	Variable result;
 	result.type= variable.type;

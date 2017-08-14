@@ -320,6 +320,40 @@ U_TEST(LogicalNotTest)
 	}
 }
 
+U_TEST(BitwiseNotTest)
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo( u32 x ) : u32
+		{
+			return ~x;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Fooj" );
+	U_TEST_ASSERT( function != nullptr );
+
+	static const uint32_t values[]=
+	{
+		0u, std::numeric_limits<uint32_t>::max(),
+		1u, 2u, 3u, 4u, 5u, 6u, 7u, 8u, 9u, 10u,
+		1024u, 55564u, 123u, 98567u, 46489641u, 3999999998u, 255u
+	};
+	for( const uint32_t value : values )
+	{
+		llvm::GenericValue arg;
+		arg.IntVal= llvm::APInt( 32u, value );
+
+		llvm::GenericValue result_value=
+			engine->runFunction(
+				function,
+				llvm::ArrayRef<llvm::GenericValue>( arg ) );
+
+		U_TEST_ASSERT( (~value) == static_cast<uint32_t>(result_value.IntVal.getLimitedValue()) );
+	}
+}
+
 U_TEST(UnaryMinusFloatTest)
 {
 	static const char c_program_text[]=
