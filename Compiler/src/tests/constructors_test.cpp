@@ -17,7 +17,7 @@ U_TEST(ConstructorTest0)
 		}
 		fn Foo() : i32
 		{
-			var S s();
+			var S imut s();
 			return s.x;
 		}
 	)";
@@ -50,7 +50,7 @@ U_TEST(ConstructorTest1)
 		}
 		fn Foo() : i32
 		{
-			var S s( 5741 );
+			var S imut s( 5741 );
 			return s.x * s.y;
 		}
 	)";

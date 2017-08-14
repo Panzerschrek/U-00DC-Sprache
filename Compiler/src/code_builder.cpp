@@ -1637,15 +1637,9 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 		}
 
 		Variable variable;
-		variable.location= Variable::Location::Pointer;
-
-		// TODO - make variables without explicit mutability modifiers immutable.
-		if( variable_declaration.mutability_modifier == MutabilityModifier::Immutable )
-			variable.value_type= ValueType::ConstReference;
-		else
-			variable.value_type= ValueType::Reference;
-
 		variable.type= type;
+		variable.location= Variable::Location::Pointer;
+		variable.value_type= ValueType::Reference;
 
 		if( variable_declaration.reference_modifier == ReferenceModifier::None )
 		{
@@ -1656,9 +1650,19 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 				ApplyInitializer( variable, *variable_declaration.initializer, block_names, function_context );
 			else
 				ApplyEmptyInitializer( variable_declaration.name, variables_declaration.file_pos_, variable, function_context );
+
+			// Make immutable, if needed, only after initialization, because in initialization we need call constructors, which is mutable methods.
+			// SPRACHE_TODO - make variables without explicit mutability modifiers immutable.
+			if( variable_declaration.mutability_modifier == MutabilityModifier::Immutable )
+				variable.value_type= ValueType::ConstReference;
 		}
 		else if( variable_declaration.reference_modifier == ReferenceModifier::Reference )
 		{
+			// Mark references immutable before initialization.
+			// SPRACHE_TODO - make variables without explicit mutability modifiers immutable.
+			if( variable_declaration.mutability_modifier == MutabilityModifier::Immutable )
+				variable.value_type= ValueType::ConstReference;
+
 			if( variable_declaration.initializer == nullptr )
 			{
 				errors_.push_back( ReportExpectedInitializer( variables_declaration.file_pos_, variable_declaration.name ) );
