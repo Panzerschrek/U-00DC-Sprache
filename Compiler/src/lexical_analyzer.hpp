@@ -73,6 +73,9 @@ struct Lexem
 		AssignOr,  // |=
 		AssignXor, // ^=
 
+		ShiftLeft , // <<
+		ShiftRight, // >>
+
 		// TODO - add other lexems.
 
 		EndOfFile,

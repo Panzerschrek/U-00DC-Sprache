@@ -137,6 +137,9 @@ enum class BinaryOperatorType
 	Or,
 	Xor,
 
+	ShiftLeft ,
+	ShiftRight,
+
 	LazyLogicalAnd,
 	LazyLogicalOr,
 

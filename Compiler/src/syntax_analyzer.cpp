@@ -52,6 +52,9 @@ static bool IsBinaryOperator( const Lexem& lexem )
 		lexem.type == Lexem::Type::Or ||
 		lexem.type == Lexem::Type::Xor ||
 
+		lexem.type == Lexem::Type::ShiftLeft  ||
+		lexem.type == Lexem::Type::ShiftRight ||
+
 		lexem.type == Lexem::Type::Conjunction ||
 		lexem.type == Lexem::Type::Disjunction;
 }
@@ -75,6 +78,9 @@ static BinaryOperatorType LexemToBinaryOperator( const Lexem& lexem )
 		case Lexem::Type::And: return BinaryOperatorType::And;
 		case Lexem::Type::Or: return BinaryOperatorType::Or;
 		case Lexem::Type::Xor: return BinaryOperatorType::Xor;
+
+		case Lexem::Type::ShiftLeft : return BinaryOperatorType::ShiftLeft ;
+		case Lexem::Type::ShiftRight: return BinaryOperatorType::ShiftRight;
 
 		case Lexem::Type::Conjunction: return BinaryOperatorType::LazyLogicalAnd;
 		case Lexem::Type::Disjunction: return BinaryOperatorType::LazyLogicalOr;
