@@ -1346,7 +1346,7 @@ BlockPtr SyntaxAnalyzer::ParseBlock()
 				++it_; U_ASSERT( it_ < it_end_ );
 
 				op->l_value_= std::move(l_expression);
-				op->l_value_= ParseExpression();
+				op->r_value_= ParseExpression();
 
 				elements.push_back( std::move(op) );
 

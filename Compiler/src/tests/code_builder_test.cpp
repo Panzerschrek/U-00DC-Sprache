@@ -187,6 +187,103 @@ U_TEST(VariablesTest1)
 	U_TEST_ASSERT( static_cast<uint64_t>( arg0 - arg1 ) == result_value.IntVal.getLimitedValue() );
 }
 
+U_TEST(AdditiveOperationsTest0)
+{
+	// += test
+	static const char c_program_text[]=
+	R"(
+		fn Foo( i32 x, i32 y ) : i32
+		{
+			auto result= x;
+			result+= y;
+			return result;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Fooii" );
+	U_TEST_ASSERT( function != nullptr );
+
+	int arg0= 1488, arg1= 77;
+
+	llvm::GenericValue args[2];
+	args[0].IntVal= llvm::APInt( 32, arg0 );
+	args[1].IntVal= llvm::APInt( 32, arg1 );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>( args, 2 ) );
+
+	U_TEST_ASSERT( static_cast<uint64_t>( arg0 + arg1 ) == result_value.IntVal.getLimitedValue() );
+}
+
+U_TEST(AdditiveOperationsTest1)
+{
+	// -= test
+	static const char c_program_text[]=
+	R"(
+		fn Foo( i32 x, i32 y ) : i32
+		{
+			auto result= x;
+			result-= y;
+			return result;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Fooii" );
+	U_TEST_ASSERT( function != nullptr );
+
+	int arg0= 1488, arg1= 77;
+
+	llvm::GenericValue args[2];
+	args[0].IntVal= llvm::APInt( 32, arg0 );
+	args[1].IntVal= llvm::APInt( 32, arg1 );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>( args, 2 ) );
+
+	U_TEST_ASSERT( static_cast<uint64_t>( arg0 - arg1 ) == result_value.IntVal.getLimitedValue() );
+}
+
+U_TEST(AdditiveOperationsTest2)
+{
+	// /= for array member
+	static const char c_program_text[]=
+	R"(
+		fn Foo( i32 x, i32 y ) : i32
+		{
+			var [ i32, 8 ] result= zero_init;
+			result[5u]= x;
+			result[5u]/= y;
+			return result[5u];
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Fooii" );
+	U_TEST_ASSERT( function != nullptr );
+
+	int arg0= 1488, arg1= 77;
+
+	llvm::GenericValue args[2];
+	args[0].IntVal= llvm::APInt( 32, arg0 );
+	args[1].IntVal= llvm::APInt( 32, arg1 );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>( args, 2 ) );
+
+	U_TEST_ASSERT( static_cast<uint64_t>( arg0 / arg1 ) == result_value.IntVal.getLimitedValue() );
+}
+
 U_TEST(NumericConstantsTest0)
 {
 	static const char c_program_text[]=

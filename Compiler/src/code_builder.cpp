@@ -1528,7 +1528,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockCode(
 				const AdditiveAssignmentOperator* additive_assignment_operator=
 				dynamic_cast<const AdditiveAssignmentOperator*>( block_element_ptr ) )
 			{
-				// TODO
+				BuildAdditiveAssignmentOperatorCode( *additive_assignment_operator, block_names, function_context );
 			}
 			else if(
 				const ReturnOperator* return_operator=
@@ -1870,6 +1870,69 @@ void CodeBuilder::BuildAssignmentOperatorCode(
 		// TODO - arrays not copyable.
 		// TODO - make classes copyable.
 		errors_.push_back( ReportNotImplemented( assignment_operator.file_pos_, "nonfundamental types assignment." ) );
+		return;
+	}
+}
+
+void CodeBuilder::BuildAdditiveAssignmentOperatorCode(
+	const AdditiveAssignmentOperator& additive_assignment_operator,
+	const NamesScope& block_names,
+	FunctionContext& function_context )
+{
+	const Value l_var_value=
+		BuildExpressionCode(
+			*additive_assignment_operator.l_value_,
+			block_names,
+			function_context );
+	const Value r_var_value=
+		BuildExpressionCode(
+			*additive_assignment_operator.r_value_,
+			block_names,
+			function_context );
+
+	const Variable* const l_var= l_var_value.GetVariable();
+	const Variable* const r_var= r_var_value.GetVariable();
+
+	// TODO - maybe add new error code?
+	if( l_var == nullptr )
+		errors_.push_back( ReportExpectedVariableInAssignment( additive_assignment_operator.file_pos_, l_var_value.GetType().ToString() ) );
+	if( r_var == nullptr )
+		errors_.push_back( ReportExpectedVariableInAssignment( additive_assignment_operator.file_pos_, r_var_value.GetType().ToString() ) );
+	if( l_var == nullptr || r_var == nullptr )
+		throw ProgramError();
+
+	const FundamentalType* const l_var_fundamental_type= l_var->type.GetFundamentalType();
+	const FundamentalType* const r_var_fundamental_type= r_var->type.GetFundamentalType();
+	if( l_var_fundamental_type != nullptr && r_var_fundamental_type != nullptr )
+	{
+		// Generate binary operator and assignment for fundamental types.
+		// SPRACHE_TODO - do not call "BuildBinaryOperator", when operators overloading will be implemented.
+		const Variable operation_result=
+			BuildBinaryOperator(
+				*l_var, *r_var,
+				additive_assignment_operator.additive_operation_,
+				additive_assignment_operator.file_pos_,
+				function_context );
+
+		if( l_var->value_type != ValueType::Reference )
+		{
+			errors_.push_back( ReportExpectedReferenceValue( additive_assignment_operator.file_pos_ ) );
+			return;
+		}
+		if( operation_result.type != l_var->type )
+		{
+			errors_.push_back( ReportTypesMismatch( additive_assignment_operator.file_pos_, l_var->type.ToString(), operation_result.type.ToString() ) );
+			return;
+		}
+
+		U_ASSERT( l_var->location == Variable::Location::Pointer );
+		llvm::Value* const value_in_register= CreateMoveToLLVMRegisterInstruction( operation_result, function_context );
+		function_context.llvm_ir_builder.CreateStore( value_in_register, l_var->llvm_value );
+	}
+	else
+	{
+		// SPRACHE_TODO - search for overloaded operators.
+		errors_.push_back( ReportNotImplemented( additive_assignment_operator.file_pos_, "additive operations for nonfundamental types" ) );
 		return;
 	}
 }

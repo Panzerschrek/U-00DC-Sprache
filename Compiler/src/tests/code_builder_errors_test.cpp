@@ -1238,6 +1238,47 @@ U_TEST(ExpectedReferenceValueTest7)
 	U_TEST_ASSERT( error.file_pos.line == 4u );
 }
 
+U_TEST(ExpectedReferenceValueTest8)
+{
+	// Non "const reference" value used in additive assignment.
+	static const char c_program_text[]=
+	R"(
+		fn Foo()
+		{
+			var i32 imut x= 2;
+			x/= 5;
+		}
+	)";
+
+	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedReferenceValue );
+	U_TEST_ASSERT( error.file_pos.line == 5u );
+}
+
+U_TEST(ExpectedReferenceValueTest9)
+{
+	// Non "const reference" value used in additive assignment.
+	static const char c_program_text[]=
+	R"(
+		fn Foo()
+		{
+			5/= 5;
+		}
+	)";
+
+	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedReferenceValue );
+	U_TEST_ASSERT( error.file_pos.line == 4u );
+}
+
 U_TEST(ExpectedVariableInAssignmentTest0)
 {
 	static const char c_program_text[]=
