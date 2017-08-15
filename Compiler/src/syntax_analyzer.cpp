@@ -85,6 +85,24 @@ static BinaryOperatorType LexemToBinaryOperator( const Lexem& lexem )
 	};
 }
 
+static BinaryOperatorType GetAdditiveAssignmentOperator( const Lexem& lexem )
+{
+	switch(lexem.type)
+	{
+		case Lexem::Type::AssignAdd: return BinaryOperatorType::Add;
+		case Lexem::Type::AssignSub: return BinaryOperatorType::Sub;
+		case Lexem::Type::AssignMul: return BinaryOperatorType::Mul;
+		case Lexem::Type::AssignDiv: return BinaryOperatorType::Div;
+		case Lexem::Type::AssignAnd: return BinaryOperatorType::And;
+		case Lexem::Type::AssignOr : return BinaryOperatorType::Or;
+		case Lexem::Type::AssignXor: return BinaryOperatorType::Xor;
+
+		default:
+		U_ASSERT(false);
+		return BinaryOperatorType::Add;
+	};
+}
+
 class SyntaxAnalyzer final
 {
 public:
@@ -1312,6 +1330,32 @@ BlockPtr SyntaxAnalyzer::ParseBlock()
 						(it_-2)->file_pos,
 						std::move( l_expression ),
 						std::move( r_expression ) ) );
+			}
+			else if(
+				it_->type == Lexem::Type::AssignAdd ||
+				it_->type == Lexem::Type::AssignSub ||
+				it_->type == Lexem::Type::AssignMul ||
+				it_->type == Lexem::Type::AssignDiv ||
+				it_->type == Lexem::Type::AssignAnd ||
+				it_->type == Lexem::Type::AssignOr  ||
+				it_->type == Lexem::Type::AssignXor )
+			{
+				std::unique_ptr<AdditiveAssignmentOperator> op( new AdditiveAssignmentOperator( it_->file_pos ) );
+
+				op->additive_operation_= GetAdditiveAssignmentOperator( *it_ );
+				++it_; U_ASSERT( it_ < it_end_ );
+
+				op->l_value_= std::move(l_expression);
+				op->l_value_= ParseExpression();
+
+				elements.push_back( std::move(op) );
+
+				if( it_->type != Lexem::Type::Semicolon )
+				{
+					PushErrorMessage( *it_ );
+					return nullptr;
+				}
+				++it_; U_ASSERT( it_ < it_end_ );
 			}
 			else if( it_->type == Lexem::Type::Semicolon )
 			{

@@ -1525,6 +1525,12 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockCode(
 				BuildAssignmentOperatorCode( *assignment_operator, block_names, function_context );
 			}
 			else if(
+				const AdditiveAssignmentOperator* additive_assignment_operator=
+				dynamic_cast<const AdditiveAssignmentOperator*>( block_element_ptr ) )
+			{
+				// TODO
+			}
+			else if(
 				const ReturnOperator* return_operator=
 				dynamic_cast<const ReturnOperator*>( block_element_ptr ) )
 			{

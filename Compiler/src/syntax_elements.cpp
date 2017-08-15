@@ -285,6 +285,10 @@ AssignmentOperator::AssignmentOperator(
 AssignmentOperator::~AssignmentOperator()
 {}
 
+AdditiveAssignmentOperator::AdditiveAssignmentOperator( const FilePos& file_pos )
+	: IBlockElement(file_pos)
+{}
+
 FunctionArgumentDeclaration::FunctionArgumentDeclaration(
 	const FilePos& file_pos,
 	ProgramString name,

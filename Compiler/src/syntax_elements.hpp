@@ -449,6 +449,16 @@ public:
 	IExpressionComponentPtr r_value_;
 };
 
+class AdditiveAssignmentOperator final : public IBlockElement
+{
+public:
+	explicit AdditiveAssignmentOperator( const FilePos& file_pos );
+
+	IExpressionComponentPtr l_value_;
+	IExpressionComponentPtr r_value_;
+	BinaryOperatorType additive_operation_;
+};
+
 class FunctionArgumentDeclaration final : public SyntaxElementBase
 {
 public:
