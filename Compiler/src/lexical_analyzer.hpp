@@ -76,6 +76,9 @@ struct Lexem
 		ShiftLeft , // <<
 		ShiftRight, // >>
 
+		AssignShiftLeft , // <<=
+		AssignShiftRight, // >>=
+
 		// TODO - add other lexems.
 
 		EndOfFile,

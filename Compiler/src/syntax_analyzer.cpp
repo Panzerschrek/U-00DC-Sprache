@@ -102,6 +102,8 @@ static BinaryOperatorType GetAdditiveAssignmentOperator( const Lexem& lexem )
 		case Lexem::Type::AssignAnd: return BinaryOperatorType::And;
 		case Lexem::Type::AssignOr : return BinaryOperatorType::Or;
 		case Lexem::Type::AssignXor: return BinaryOperatorType::Xor;
+		case Lexem::Type::AssignShiftLeft : return BinaryOperatorType::ShiftLeft;
+		case Lexem::Type::AssignShiftRight: return BinaryOperatorType::ShiftRight;
 
 		default:
 		U_ASSERT(false);
@@ -1344,7 +1346,9 @@ BlockPtr SyntaxAnalyzer::ParseBlock()
 				it_->type == Lexem::Type::AssignDiv ||
 				it_->type == Lexem::Type::AssignAnd ||
 				it_->type == Lexem::Type::AssignOr  ||
-				it_->type == Lexem::Type::AssignXor )
+				it_->type == Lexem::Type::AssignXor ||
+				it_->type == Lexem::Type::AssignShiftLeft  ||
+				it_->type == Lexem::Type::AssignShiftRight )
 			{
 				std::unique_ptr<AdditiveAssignmentOperator> op( new AdditiveAssignmentOperator( it_->file_pos ) );
 
