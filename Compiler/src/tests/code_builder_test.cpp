@@ -187,6 +187,471 @@ U_TEST(VariablesTest1)
 	U_TEST_ASSERT( static_cast<uint64_t>( arg0 - arg1 ) == result_value.IntVal.getLimitedValue() );
 }
 
+U_TEST(AdditiveOperationsTest0)
+{
+	// += test
+	static const char c_program_text[]=
+	R"(
+		fn Foo( i32 x, i32 y ) : i32
+		{
+			auto result= x;
+			result+= y;
+			return result;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Fooii" );
+	U_TEST_ASSERT( function != nullptr );
+
+	int arg0= 1488, arg1= 77;
+
+	llvm::GenericValue args[2];
+	args[0].IntVal= llvm::APInt( 32, arg0 );
+	args[1].IntVal= llvm::APInt( 32, arg1 );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>( args, 2 ) );
+
+	U_TEST_ASSERT( static_cast<uint64_t>( arg0 + arg1 ) == result_value.IntVal.getLimitedValue() );
+}
+
+U_TEST(AdditiveOperationsTest1)
+{
+	// -= test
+	static const char c_program_text[]=
+	R"(
+		fn Foo( i32 x, i32 y ) : i32
+		{
+			auto result= x;
+			result-= y;
+			return result;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Fooii" );
+	U_TEST_ASSERT( function != nullptr );
+
+	int arg0= 1488, arg1= 77;
+
+	llvm::GenericValue args[2];
+	args[0].IntVal= llvm::APInt( 32, arg0 );
+	args[1].IntVal= llvm::APInt( 32, arg1 );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>( args, 2 ) );
+
+	U_TEST_ASSERT( static_cast<uint64_t>( arg0 - arg1 ) == result_value.IntVal.getLimitedValue() );
+}
+
+U_TEST(AdditiveOperationsTest2)
+{
+	// /= for array member
+	static const char c_program_text[]=
+	R"(
+		fn Foo( i32 x, i32 y ) : i32
+		{
+			var [ i32, 8 ] result= zero_init;
+			result[5u]= x;
+			result[5u]/= y;
+			return result[5u];
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Fooii" );
+	U_TEST_ASSERT( function != nullptr );
+
+	int arg0= 1488, arg1= 77;
+
+	llvm::GenericValue args[2];
+	args[0].IntVal= llvm::APInt( 32, arg0 );
+	args[1].IntVal= llvm::APInt( 32, arg1 );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>( args, 2 ) );
+
+	U_TEST_ASSERT( static_cast<uint64_t>( arg0 / arg1 ) == result_value.IntVal.getLimitedValue() );
+}
+
+U_TEST(LeftShiftTest0)
+{
+	// Shift signed value.
+	static const char c_program_text[]=
+	R"(
+		fn Foo( i32 x, u32 y ) : i32
+		{
+			return x << y;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Fooij" );
+	U_TEST_ASSERT( function != nullptr );
+
+	static const int32_t values[]=
+	{
+		std::numeric_limits<int32_t>::min(), std::numeric_limits<int32_t>::max(), 0,
+		1, -1, 2, -2, 3, 12, 17, 65536, 54284964, -2000000000, 2000000000, -58, 84, 1831516318,
+	};
+	for( const int32_t value : values )
+	{
+		llvm::GenericValue args[2];
+		args[0].IntVal= llvm::APInt( 32, value );
+		for( unsigned int shift= 0u; shift < 32u; shift++ )
+		{
+			args[1].IntVal= llvm::APInt( 32, shift );
+
+			llvm::GenericValue result_value=
+				engine->runFunction(
+					function,
+					llvm::ArrayRef<llvm::GenericValue>( args, 2 ) );
+
+			U_TEST_ASSERT( ( value << shift ) == static_cast<int32_t>(result_value.IntVal.getLimitedValue()) );
+		}
+	}
+}
+
+U_TEST(LeftShiftTest1)
+{
+	// Shift unsigned value.
+	static const char c_program_text[]=
+	R"(
+		fn Foo( u32 x, u8 y ) : u32
+		{
+			return x << y;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foojh" );
+	U_TEST_ASSERT( function != nullptr );
+
+	static const uint32_t values[]=
+	{
+		std::numeric_limits<uint32_t>::min(), std::numeric_limits<uint32_t>::max(),
+		1, 2, 34, 5, 10, 12, 16, 256, 8461631, 161681818, 4000000000, 65536, 256, 854716, 41894198,
+	};
+	for( const uint32_t value : values )
+	{
+		llvm::GenericValue args[2];
+		args[0].IntVal= llvm::APInt( 32, value );
+		for( unsigned int shift= 0u; shift < 32u; shift++ )
+		{
+			args[1].IntVal= llvm::APInt( 8, shift );
+
+			llvm::GenericValue result_value=
+				engine->runFunction(
+					function,
+					llvm::ArrayRef<llvm::GenericValue>( args, 2 ) );
+
+			U_TEST_ASSERT( ( value << shift ) == static_cast<uint32_t>(result_value.IntVal.getLimitedValue()) );
+		}
+	}
+}
+
+U_TEST(RightShiftTest0)
+{
+	// Shift signed value.
+	static const char c_program_text[]=
+	R"(
+		fn Foo( i32 x, u32 y ) : i32
+		{
+			return x >>  y;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Fooij" );
+	U_TEST_ASSERT( function != nullptr );
+
+	static const int32_t values[]=
+	{
+		std::numeric_limits<int32_t>::min(), std::numeric_limits<int32_t>::max(), 0,
+		1, -1, 2, -2, 3, 12, 17, 65536, 54284964, -2000000000, 2000000000, -58, 84, 1831516318,
+	};
+	for( const int32_t value : values )
+	{
+		llvm::GenericValue args[2];
+		args[0].IntVal= llvm::APInt( 32, value );
+		for( unsigned int shift= 0u; shift < 32u; shift++ )
+		{
+			args[1].IntVal= llvm::APInt( 32, shift );
+
+			llvm::GenericValue result_value=
+				engine->runFunction(
+					function,
+					llvm::ArrayRef<llvm::GenericValue>( args, 2 ) );
+
+			U_TEST_ASSERT( ( value >> shift ) == static_cast<int32_t>(result_value.IntVal.getLimitedValue()) );
+		}
+	}
+}
+
+U_TEST(RightShiftTest1)
+{
+	// Shift unsigned value.
+	static const char c_program_text[]=
+	R"(
+		fn Foo( u32 x, u64 y ) : u32
+		{
+			return x >> y;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foojy" );
+	U_TEST_ASSERT( function != nullptr );
+
+	static const uint32_t values[]=
+	{
+		std::numeric_limits<uint32_t>::min(), std::numeric_limits<uint32_t>::max(),
+		1, 2, 34, 5, 10, 12, 16, 256, 8461631, 161681818, 4000000000, 65536, 256, 854716, 41894198,
+	};
+	for( const uint32_t value : values )
+	{
+		llvm::GenericValue args[2];
+		args[0].IntVal= llvm::APInt( 32, value );
+		for( unsigned int shift= 0u; shift < 32u; shift++ )
+		{
+			args[1].IntVal= llvm::APInt( 64, shift );
+
+			llvm::GenericValue result_value=
+				engine->runFunction(
+					function,
+					llvm::ArrayRef<llvm::GenericValue>( args, 2 ) );
+
+			U_TEST_ASSERT( ( value >> shift ) == static_cast<uint32_t>(result_value.IntVal.getLimitedValue()) );
+		}
+	}
+}
+
+U_TEST(RightShiftAndAssignTest0)
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo( u32 x, u16 y ) : u32
+		{
+			x>>= y;
+			return x;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foojt" );
+	U_TEST_ASSERT( function != nullptr );
+
+	static const uint32_t values[]=
+	{
+		std::numeric_limits<uint32_t>::min(), std::numeric_limits<uint32_t>::max(),
+		1, 2, 34, 5, 10, 12, 16, 256, 8461631, 161681818, 4000000000, 65536, 256, 854716, 41894198,
+	};
+	for( const uint32_t value : values )
+	{
+		llvm::GenericValue args[2];
+		args[0].IntVal= llvm::APInt( 32, value );
+		for( unsigned int shift= 0u; shift < 32u; shift++ )
+		{
+			args[1].IntVal= llvm::APInt( 16, shift );
+
+			llvm::GenericValue result_value=
+				engine->runFunction(
+					function,
+					llvm::ArrayRef<llvm::GenericValue>( args, 2 ) );
+
+			U_TEST_ASSERT( ( value >> shift ) == static_cast<uint32_t>(result_value.IntVal.getLimitedValue()) );
+		}
+	}
+}
+
+U_TEST(LeftShiftAndAssignTest0)
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo( i32 x, u32 y ) : i32
+		{
+			x<<= y;
+			return x;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Fooij" );
+	U_TEST_ASSERT( function != nullptr );
+
+	static const int32_t values[]=
+	{
+		std::numeric_limits<int32_t>::min(), std::numeric_limits<int32_t>::max(), 0,
+		1, -1, 2, -2, 3, 12, 17, 65536, 54284964, -2000000000, 2000000000, -58, 84, 1831516318,
+	};
+	for( const int32_t value : values )
+	{
+		llvm::GenericValue args[2];
+		args[0].IntVal= llvm::APInt( 32, value );
+		for( unsigned int shift= 0u; shift < 32u; shift++ )
+		{
+			args[1].IntVal= llvm::APInt( 32, shift );
+
+			llvm::GenericValue result_value=
+				engine->runFunction(
+					function,
+					llvm::ArrayRef<llvm::GenericValue>( args, 2 ) );
+
+			U_TEST_ASSERT( ( value << shift ) == static_cast<int32_t>(result_value.IntVal.getLimitedValue()) );
+		}
+	}
+}
+
+U_TEST(IncrementTest0)
+{
+	// Increment for signed value.
+	static const char c_program_text[]=
+	R"(
+		fn Foo( i32 x ) : i32
+		{
+			++x;
+			return x;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Fooi" );
+	U_TEST_ASSERT( function != nullptr );
+
+	static const int32_t values[]=
+	{
+		std::numeric_limits<int32_t>::min(), std::numeric_limits<int32_t>::max(), 0,
+		1, -1, 2, -2, 3, 12, 17, 65536, 54284964, -2000000000, 2000000000, -58, 84, 1831516318,
+	};
+	for( const int32_t value : values )
+	{
+		llvm::GenericValue arg;
+		arg.IntVal= llvm::APInt( 32, value );
+
+		const llvm::GenericValue result_value=
+			engine->runFunction(
+				function,
+				llvm::ArrayRef<llvm::GenericValue>( &arg, 1u ) );
+
+		U_TEST_ASSERT( ( value + 1 ) == static_cast<int32_t>(result_value.IntVal.getLimitedValue()) );
+	}
+}
+
+U_TEST(IncrementTest1)
+{
+	// Increment for unsigned value.
+	static const char c_program_text[]=
+	R"(
+		fn Foo( u64 x ) : u64
+		{
+			++x;
+			return x;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Fooy" );
+	U_TEST_ASSERT( function != nullptr );
+
+	static const uint64_t values[]=
+	{
+		std::numeric_limits<uint64_t>::min(), std::numeric_limits<uint64_t>::max(), 0,
+		1u, 2u, 3u, 12u, 17u, 65536u, 54284964u, 2000000000, 58u, 84u, 1831516318u,
+	};
+	for( const uint64_t value : values )
+	{
+		llvm::GenericValue arg;
+		arg.IntVal= llvm::APInt( 64, value );
+
+		const llvm::GenericValue result_value=
+			engine->runFunction(
+				function,
+				llvm::ArrayRef<llvm::GenericValue>( &arg, 1u ) );
+
+		U_TEST_ASSERT( ( value + 1u ) == static_cast<uint64_t>(result_value.IntVal.getLimitedValue()) );
+	}
+}
+
+U_TEST(DecrementTest0)
+{
+	// Decrement for signed value.
+	static const char c_program_text[]=
+	R"(
+		fn Foo( i8 x ) : i8
+		{
+			--x;
+			return x;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Fooa" );
+	U_TEST_ASSERT( function != nullptr );
+
+	static const int8_t values[]=
+	{
+		std::numeric_limits<int8_t>::min(), std::numeric_limits<int8_t>::max(), 0,
+		1, -1, 2, -2, 3, 12, 17, -84, 84, -126, -127, 126, 127,
+	};
+	for( const int8_t value : values )
+	{
+		llvm::GenericValue arg;
+		arg.IntVal= llvm::APInt( 8, value );
+
+		const llvm::GenericValue result_value=
+			engine->runFunction(
+				function,
+				llvm::ArrayRef<llvm::GenericValue>( &arg, 1u ) );
+
+		U_TEST_ASSERT( static_cast<int8_t>( value - 1 ) == static_cast<int8_t>(result_value.IntVal.getLimitedValue()) );
+	}
+}
+
+U_TEST(DecrementTest1)
+{
+	// Decrement for unsigned value.
+	static const char c_program_text[]=
+	R"(
+		fn Foo( u16 x ) : u16
+		{
+			--x;
+			return x;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foot" );
+	U_TEST_ASSERT( function != nullptr );
+
+	static const uint64_t values[]=
+	{
+		std::numeric_limits<uint16_t>::min(), std::numeric_limits<uint16_t>::max(), 0u,
+		1u, 2u, 3u, 12u, 17u, 65534u, 58u, 84u,
+	};
+	for( const uint16_t value : values )
+	{
+		llvm::GenericValue arg;
+		arg.IntVal= llvm::APInt( 16, value );
+
+		const llvm::GenericValue result_value=
+			engine->runFunction(
+				function,
+				llvm::ArrayRef<llvm::GenericValue>( &arg, 1u ) );
+
+		U_TEST_ASSERT( static_cast<uint16_t>( value - 1u ) == static_cast<uint16_t>(result_value.IntVal.getLimitedValue()) );
+	}
+}
+
 U_TEST(NumericConstantsTest0)
 {
 	static const char c_program_text[]=

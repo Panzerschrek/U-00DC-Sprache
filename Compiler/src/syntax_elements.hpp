@@ -137,6 +137,9 @@ enum class BinaryOperatorType
 	Or,
 	Xor,
 
+	ShiftLeft ,
+	ShiftRight,
+
 	LazyLogicalAnd,
 	LazyLogicalOr,
 
@@ -447,6 +450,32 @@ public:
 
 	IExpressionComponentPtr l_value_;
 	IExpressionComponentPtr r_value_;
+};
+
+class AdditiveAssignmentOperator final : public IBlockElement
+{
+public:
+	explicit AdditiveAssignmentOperator( const FilePos& file_pos );
+
+	IExpressionComponentPtr l_value_;
+	IExpressionComponentPtr r_value_;
+	BinaryOperatorType additive_operation_;
+};
+
+class IncrementOperator final : public IBlockElement
+{
+public:
+	explicit IncrementOperator( const FilePos& file_pos );
+
+	IExpressionComponentPtr expression;
+};
+
+class DecrementOperator final : public IBlockElement
+{
+public:
+	explicit DecrementOperator( const FilePos& file_pos );
+
+	IExpressionComponentPtr expression;
 };
 
 class FunctionArgumentDeclaration final : public SyntaxElementBase

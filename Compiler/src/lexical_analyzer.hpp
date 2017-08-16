@@ -65,6 +65,20 @@ struct Lexem
 		Conjunction, // &&
 		Disjunction, // ||
 
+		AssignAdd, // +=
+		AssignSub, // -=
+		AssignMul, // *=
+		AssignDiv, // /=
+		AssignAnd, // &=
+		AssignOr,  // |=
+		AssignXor, // ^=
+
+		ShiftLeft , // <<
+		ShiftRight, // >>
+
+		AssignShiftLeft , // <<=
+		AssignShiftRight, // >>=
+
 		// TODO - add other lexems.
 
 		EndOfFile,

@@ -54,8 +54,21 @@ static const FixedLexemsMap g_fixed_lexems[ g_max_fixed_lexem_size + 1 ]=
 
 		{ "&&"_SpC, Lexem::Type::Conjunction },
 		{ "||"_SpC, Lexem::Type::Disjunction },
+
+		{ "+="_SpC, Lexem::Type::AssignAdd },
+		{ "-="_SpC, Lexem::Type::AssignSub },
+		{ "*="_SpC, Lexem::Type::AssignMul },
+		{ "/="_SpC, Lexem::Type::AssignDiv },
+		{ "&="_SpC, Lexem::Type::AssignAnd },
+		{ "|="_SpC, Lexem::Type::AssignOr  },
+		{ "^="_SpC, Lexem::Type::AssignXor },
+
+		{ "<<"_SpC, Lexem::Type::ShiftLeft  },
+		{ ">>"_SpC, Lexem::Type::ShiftRight },
 	},
-	{
+	{ // Three symbol lexems.
+		{ "<<="_SpC, Lexem::Type::AssignShiftLeft  },
+		{ ">>="_SpC, Lexem::Type::AssignShiftRight },
 	},
 };
 

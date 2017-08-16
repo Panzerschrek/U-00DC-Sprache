@@ -52,6 +52,9 @@ static bool IsBinaryOperator( const Lexem& lexem )
 		lexem.type == Lexem::Type::Or ||
 		lexem.type == Lexem::Type::Xor ||
 
+		lexem.type == Lexem::Type::ShiftLeft  ||
+		lexem.type == Lexem::Type::ShiftRight ||
+
 		lexem.type == Lexem::Type::Conjunction ||
 		lexem.type == Lexem::Type::Disjunction;
 }
@@ -76,8 +79,31 @@ static BinaryOperatorType LexemToBinaryOperator( const Lexem& lexem )
 		case Lexem::Type::Or: return BinaryOperatorType::Or;
 		case Lexem::Type::Xor: return BinaryOperatorType::Xor;
 
+		case Lexem::Type::ShiftLeft : return BinaryOperatorType::ShiftLeft ;
+		case Lexem::Type::ShiftRight: return BinaryOperatorType::ShiftRight;
+
 		case Lexem::Type::Conjunction: return BinaryOperatorType::LazyLogicalAnd;
 		case Lexem::Type::Disjunction: return BinaryOperatorType::LazyLogicalOr;
+
+		default:
+		U_ASSERT(false);
+		return BinaryOperatorType::Add;
+	};
+}
+
+static BinaryOperatorType GetAdditiveAssignmentOperator( const Lexem& lexem )
+{
+	switch(lexem.type)
+	{
+		case Lexem::Type::AssignAdd: return BinaryOperatorType::Add;
+		case Lexem::Type::AssignSub: return BinaryOperatorType::Sub;
+		case Lexem::Type::AssignMul: return BinaryOperatorType::Mul;
+		case Lexem::Type::AssignDiv: return BinaryOperatorType::Div;
+		case Lexem::Type::AssignAnd: return BinaryOperatorType::And;
+		case Lexem::Type::AssignOr : return BinaryOperatorType::Or;
+		case Lexem::Type::AssignXor: return BinaryOperatorType::Xor;
+		case Lexem::Type::AssignShiftLeft : return BinaryOperatorType::ShiftLeft;
+		case Lexem::Type::AssignShiftRight: return BinaryOperatorType::ShiftRight;
 
 		default:
 		U_ASSERT(false);
@@ -1267,25 +1293,49 @@ BlockPtr SyntaxAnalyzer::ParseBlock()
 
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::var_ )
 			elements.emplace_back( ParseVariablesDeclaration() );
-
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::auto_ )
 			elements.emplace_back( ParseAutoVariableDeclaration() );
-
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::return_ )
 			elements.emplace_back( ParseReturnOperator() );
-
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::while_ )
 			elements.emplace_back( ParseWhileOperator() );
-
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::break_ )
 			elements.emplace_back( ParseBreakOperator() );
-
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::continue_ )
 			elements.emplace_back( ParseContinueOperator() );
-
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::if_ )
 			elements.emplace_back( ParseIfOperator() );
 
+		else if( it_->type == Lexem::Type::Increment )
+		{
+			std::unique_ptr<IncrementOperator> op( new IncrementOperator( it_->file_pos ) );
+			++it_; U_ASSERT( it_ < it_end_ );
+
+			op->expression= ParseExpression();
+			elements.push_back( std::move(op) );
+
+			if( it_->type != Lexem::Type::Semicolon )
+			{
+				PushErrorMessage( *it_ );
+				return nullptr;
+			}
+			++it_; U_ASSERT( it_ < it_end_ );
+		}
+		else if( it_->type == Lexem::Type::Decrement )
+		{
+			std::unique_ptr<DecrementOperator> op( new DecrementOperator( it_->file_pos ) );
+			++it_; U_ASSERT( it_ < it_end_ );
+
+			op->expression= ParseExpression();
+			elements.push_back( std::move(op) );
+
+			if( it_->type != Lexem::Type::Semicolon )
+			{
+				PushErrorMessage( *it_ );
+				return nullptr;
+			}
+			++it_; U_ASSERT( it_ < it_end_ );
+		}
 
 		else
 		{
@@ -1312,6 +1362,34 @@ BlockPtr SyntaxAnalyzer::ParseBlock()
 						(it_-2)->file_pos,
 						std::move( l_expression ),
 						std::move( r_expression ) ) );
+			}
+			else if(
+				it_->type == Lexem::Type::AssignAdd ||
+				it_->type == Lexem::Type::AssignSub ||
+				it_->type == Lexem::Type::AssignMul ||
+				it_->type == Lexem::Type::AssignDiv ||
+				it_->type == Lexem::Type::AssignAnd ||
+				it_->type == Lexem::Type::AssignOr  ||
+				it_->type == Lexem::Type::AssignXor ||
+				it_->type == Lexem::Type::AssignShiftLeft  ||
+				it_->type == Lexem::Type::AssignShiftRight )
+			{
+				std::unique_ptr<AdditiveAssignmentOperator> op( new AdditiveAssignmentOperator( it_->file_pos ) );
+
+				op->additive_operation_= GetAdditiveAssignmentOperator( *it_ );
+				++it_; U_ASSERT( it_ < it_end_ );
+
+				op->l_value_= std::move(l_expression);
+				op->r_value_= ParseExpression();
+
+				elements.push_back( std::move(op) );
+
+				if( it_->type != Lexem::Type::Semicolon )
+				{
+					PushErrorMessage( *it_ );
+					return nullptr;
+				}
+				++it_; U_ASSERT( it_ < it_end_ );
 			}
 			else if( it_->type == Lexem::Type::Semicolon )
 			{
