@@ -1373,6 +1373,71 @@ U_TEST(ExpectedVariableAsArgumentTest0)
 	U_TEST_ASSERT( build_result.errors[1].file_pos.line == 8u );
 }
 
+U_TEST(ExpectedVariableInAdditiveAssignmentTest0)
+{
+	static const char c_program_text[]=
+	R"(
+		struct C{}
+		fn Bar(){}
+		fn Foo()
+		{
+			var i32 x= 0;
+			Bar+= x;  // variable and function
+			x/= Bar;  // function and variable
+			C*= x;    // variable and struct
+			x-= C;    // struct and variable
+			C|= Bar; // function and struct
+		}
+	)";
+
+	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( build_result.errors.size() >= 6u );
+
+	U_TEST_ASSERT( build_result.errors[0].code == CodeBuilderErrorCode::ExpectedVariableInAdditiveAssignment );
+	U_TEST_ASSERT( build_result.errors[0].file_pos.line == 7u );
+	U_TEST_ASSERT( build_result.errors[1].code == CodeBuilderErrorCode::ExpectedVariableInAdditiveAssignment );
+	U_TEST_ASSERT( build_result.errors[1].file_pos.line == 8u );
+	U_TEST_ASSERT( build_result.errors[2].code == CodeBuilderErrorCode::ExpectedVariableInAdditiveAssignment );
+	U_TEST_ASSERT( build_result.errors[2].file_pos.line == 9u );
+	U_TEST_ASSERT( build_result.errors[3].code == CodeBuilderErrorCode::ExpectedVariableInAdditiveAssignment );
+	U_TEST_ASSERT( build_result.errors[3].file_pos.line == 10u );
+	U_TEST_ASSERT( build_result.errors[4].code == CodeBuilderErrorCode::ExpectedVariableInAdditiveAssignment );
+	U_TEST_ASSERT( build_result.errors[4].file_pos.line == 11u );
+	U_TEST_ASSERT( build_result.errors[5].code == CodeBuilderErrorCode::ExpectedVariableInAdditiveAssignment );
+	U_TEST_ASSERT( build_result.errors[5].file_pos.line == 11u );
+}
+
+U_TEST(ExpectedVariableInIncrementOrDecrementTest0)
+{
+	static const char c_program_text[]=
+	R"(
+		struct C{}
+		fn Bar(){}
+		namespace NS{}
+		fn Foo()
+		{
+			++Bar; // function
+			--C;   // class name
+			++u32; // type name
+			--NS;  // namespace
+		}
+	)";
+
+	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( build_result.errors.size() >= 4u );
+
+	U_TEST_ASSERT( build_result.errors[0].code == CodeBuilderErrorCode::ExpectedVariableInIncrementOrDecrement );
+	U_TEST_ASSERT( build_result.errors[0].file_pos.line == 7u );
+	U_TEST_ASSERT( build_result.errors[1].code == CodeBuilderErrorCode::ExpectedVariableInIncrementOrDecrement );
+	U_TEST_ASSERT( build_result.errors[1].file_pos.line == 8u );
+	U_TEST_ASSERT( build_result.errors[2].code == CodeBuilderErrorCode::ExpectedVariableInIncrementOrDecrement );
+	U_TEST_ASSERT( build_result.errors[2].file_pos.line == 9u );
+	U_TEST_ASSERT( build_result.errors[3].code == CodeBuilderErrorCode::ExpectedVariableInIncrementOrDecrement );
+	U_TEST_ASSERT( build_result.errors[3].file_pos.line == 10u );
+}
+
 U_TEST(CouldNotOverloadFunctionTest1)
 {
 	// Different are only mutability modifiers for value parameters.

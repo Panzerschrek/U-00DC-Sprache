@@ -1915,11 +1915,10 @@ void CodeBuilder::BuildAdditiveAssignmentOperatorCode(
 	const Variable* const l_var= l_var_value.GetVariable();
 	const Variable* const r_var= r_var_value.GetVariable();
 
-	// TODO - maybe add new error code?
 	if( l_var == nullptr )
-		errors_.push_back( ReportExpectedVariableInAssignment( additive_assignment_operator.file_pos_, l_var_value.GetType().ToString() ) );
+		errors_.push_back( ReportExpectedVariableInAdditiveAssignment( additive_assignment_operator.file_pos_, l_var_value.GetType().ToString() ) );
 	if( r_var == nullptr )
-		errors_.push_back( ReportExpectedVariableInAssignment( additive_assignment_operator.file_pos_, r_var_value.GetType().ToString() ) );
+		errors_.push_back( ReportExpectedVariableInAdditiveAssignment( additive_assignment_operator.file_pos_, r_var_value.GetType().ToString() ) );
 	if( l_var == nullptr || r_var == nullptr )
 		throw ProgramError();
 
@@ -1970,7 +1969,7 @@ void CodeBuilder::BuildDeltaOneOperatorCode(
 	const Variable* const variable= value.GetVariable();
 	if( variable == nullptr )
 	{
-		// TODO - emit error, expected variable
+		errors_.push_back( ReportExpectedVariableInIncrementOrDecrement( file_pos, value.GetType().ToString() ) );
 		return;
 	}
 

@@ -36,6 +36,8 @@ enum class CodeBuilderErrorCode : unsigned int
 	ExpectedVariableInAssignment,
 	ExpectedVariableInBinaryOperator,
 	ExpectedVariableAsArgument,
+	ExpectedVariableInAdditiveAssignment,
+	ExpectedVariableInIncrementOrDecrement,
 	CouldNotOverloadFunction,
 	TooManySuitableOverloadedFunctions,
 	CouldNotSelectOverloadedFunction,
@@ -110,6 +112,8 @@ CodeBuilderError ReportBindingConstReferenceToNonconstReference( const FilePos& 
 CodeBuilderError ReportExpectedVariableInAssignment( const FilePos& file_pos, const ProgramString& got );
 CodeBuilderError ReportExpectedVariableInBinaryOperator( const FilePos& file_pos, const ProgramString& got );
 CodeBuilderError ReportExpectedVariableAsArgument( const FilePos& file_pos, const ProgramString& got );
+CodeBuilderError ReportExpectedVariableInAdditiveAssignment( const FilePos& file_pos, const ProgramString& got );
+CodeBuilderError ReportExpectedVariableInIncrementOrDecrement( const FilePos& file_pos, const ProgramString& got );
 CodeBuilderError ReportCouldNotOverloadFunction( const FilePos& file_pos );
 CodeBuilderError ReportTooManySuitableOverloadedFunctions( const FilePos& file_pos );
 CodeBuilderError ReportCouldNotSelectOverloadedFunction( const FilePos& file_pos );

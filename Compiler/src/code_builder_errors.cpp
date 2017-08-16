@@ -292,6 +292,28 @@ CodeBuilderError ReportExpectedVariableAsArgument( const FilePos& file_pos, cons
 	return error;
 }
 
+CodeBuilderError ReportExpectedVariableInAdditiveAssignment( const FilePos& file_pos, const ProgramString& got )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::ExpectedVariableInAdditiveAssignment;
+
+	error.text= "Expected variable in additive assignment, got \"."_SpC + got + "\"."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportExpectedVariableInIncrementOrDecrement( const FilePos& file_pos, const ProgramString& got )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::ExpectedVariableInIncrementOrDecrement;
+
+	error.text= "Expected variable in increment or decrement, got \"."_SpC + got + "\"."_SpC;
+
+	return error;
+}
+
 CodeBuilderError ReportCouldNotOverloadFunction( const FilePos& file_pos )
 {
 	CodeBuilderError error;
