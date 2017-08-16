@@ -289,6 +289,14 @@ AdditiveAssignmentOperator::AdditiveAssignmentOperator( const FilePos& file_pos 
 	: IBlockElement(file_pos)
 {}
 
+IncrementOperator::IncrementOperator( const FilePos& file_pos )
+	: IBlockElement(file_pos)
+{}
+
+DecrementOperator::DecrementOperator( const FilePos& file_pos )
+	: IBlockElement(file_pos)
+{}
+
 FunctionArgumentDeclaration::FunctionArgumentDeclaration(
 	const FilePos& file_pos,
 	ProgramString name,

@@ -1531,6 +1531,28 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockCode(
 				BuildAdditiveAssignmentOperatorCode( *additive_assignment_operator, block_names, function_context );
 			}
 			else if(
+				const IncrementOperator* increment_operator=
+				dynamic_cast<const IncrementOperator*>( block_element_ptr ) )
+			{
+				BuildDeltaOneOperatorCode(
+					*increment_operator->expression,
+					increment_operator->file_pos_,
+					true,
+					block_names,
+					function_context );
+			}
+			else if(
+				const DecrementOperator* decrement_operator=
+				dynamic_cast<const DecrementOperator*>( block_element_ptr ) )
+			{
+				BuildDeltaOneOperatorCode(
+					*decrement_operator->expression,
+					decrement_operator->file_pos_,
+					false,
+					block_names,
+					function_context );
+			}
+			else if(
 				const ReturnOperator* return_operator=
 				dynamic_cast<const ReturnOperator*>( block_element_ptr ) )
 			{
@@ -1933,6 +1955,56 @@ void CodeBuilder::BuildAdditiveAssignmentOperatorCode(
 	{
 		// SPRACHE_TODO - search for overloaded operators.
 		errors_.push_back( ReportNotImplemented( additive_assignment_operator.file_pos_, "additive operations for nonfundamental types" ) );
+		return;
+	}
+}
+
+void CodeBuilder::BuildDeltaOneOperatorCode(
+	const IExpressionComponent& expression,
+	const FilePos& file_pos,
+	bool positive, // true - increment, false - decrement
+	const NamesScope& block_names,
+	FunctionContext& function_context )
+{
+	const Value value= BuildExpressionCode( expression, block_names, function_context );
+	const Variable* const variable= value.GetVariable();
+	if( variable == nullptr )
+	{
+		// TODO - emit error, expected variable
+		return;
+	}
+
+	if( const FundamentalType* const fundamental_type= variable->type.GetFundamentalType() )
+	{
+		if( !IsInteger( fundamental_type->fundamental_type ) )
+		{
+			errors_.push_back( ReportOperationNotSupportedForThisType( file_pos, variable->type.ToString() ) );
+			return;
+		}
+		if( variable->value_type != ValueType::Reference )
+		{
+			errors_.push_back( ReportExpectedReferenceValue( file_pos ) );
+			return;
+		}
+
+		llvm::Value* const value_in_register= CreateMoveToLLVMRegisterInstruction( *variable, function_context );
+		llvm::Value* const one=
+			llvm::Constant::getIntegerValue(
+				fundamental_type->llvm_type,
+				llvm::APInt( variable->type.SizeOf() * 8u, uint64_t(1u) ) );
+
+		llvm::Value* const new_value=
+			positive
+				? function_context.llvm_ir_builder.CreateAdd( value_in_register, one )
+				: function_context.llvm_ir_builder.CreateSub( value_in_register, one );
+
+		U_ASSERT( variable->location == Variable::Location::Pointer );
+		function_context.llvm_ir_builder.CreateStore( new_value, variable->llvm_value );
+	}
+	else
+	{
+		// SPRACHE_TODO - search for overloaded operators.
+		errors_.push_back( ReportNotImplemented( file_pos, "++ and -- for nonfundamental types" ) );
 		return;
 	}
 }

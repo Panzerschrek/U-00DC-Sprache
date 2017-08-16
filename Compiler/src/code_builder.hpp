@@ -218,6 +218,14 @@ private:
 		const NamesScope& block_names,
 		FunctionContext& function_context );
 
+	// ++ and -- operations
+	void BuildDeltaOneOperatorCode(
+		const IExpressionComponent& expression,
+		const FilePos& file_pos,
+		bool positive, // true - increment, false - decrement
+		const NamesScope& block_names,
+		FunctionContext& function_context );
+
 	void BuildReturnOperatorCode(
 		const ReturnOperator& return_operator,
 		const NamesScope& names,

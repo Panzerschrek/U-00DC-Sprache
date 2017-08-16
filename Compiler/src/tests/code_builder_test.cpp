@@ -512,6 +512,146 @@ U_TEST(LeftShiftAndAssignTest0)
 	}
 }
 
+U_TEST(IncrementTest0)
+{
+	// Increment for signed value.
+	static const char c_program_text[]=
+	R"(
+		fn Foo( i32 x ) : i32
+		{
+			++x;
+			return x;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Fooi" );
+	U_TEST_ASSERT( function != nullptr );
+
+	static const int32_t values[]=
+	{
+		std::numeric_limits<int32_t>::min(), std::numeric_limits<int32_t>::max(), 0,
+		1, -1, 2, -2, 3, 12, 17, 65536, 54284964, -2000000000, 2000000000, -58, 84, 1831516318,
+	};
+	for( const int32_t value : values )
+	{
+		llvm::GenericValue arg;
+		arg.IntVal= llvm::APInt( 32, value );
+
+		const llvm::GenericValue result_value=
+			engine->runFunction(
+				function,
+				llvm::ArrayRef<llvm::GenericValue>( &arg, 1u ) );
+
+		U_TEST_ASSERT( ( value + 1 ) == static_cast<int32_t>(result_value.IntVal.getLimitedValue()) );
+	}
+}
+
+U_TEST(IncrementTest1)
+{
+	// Increment for unsigned value.
+	static const char c_program_text[]=
+	R"(
+		fn Foo( u64 x ) : u64
+		{
+			++x;
+			return x;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Fooy" );
+	U_TEST_ASSERT( function != nullptr );
+
+	static const uint64_t values[]=
+	{
+		std::numeric_limits<uint64_t>::min(), std::numeric_limits<uint64_t>::max(), 0,
+		1u, 2u, 3u, 12u, 17u, 65536u, 54284964u, 2000000000, 58u, 84u, 1831516318u,
+	};
+	for( const uint64_t value : values )
+	{
+		llvm::GenericValue arg;
+		arg.IntVal= llvm::APInt( 64, value );
+
+		const llvm::GenericValue result_value=
+			engine->runFunction(
+				function,
+				llvm::ArrayRef<llvm::GenericValue>( &arg, 1u ) );
+
+		U_TEST_ASSERT( ( value + 1u ) == static_cast<uint64_t>(result_value.IntVal.getLimitedValue()) );
+	}
+}
+
+U_TEST(DecrementTest0)
+{
+	// Decrement for signed value.
+	static const char c_program_text[]=
+	R"(
+		fn Foo( i8 x ) : i8
+		{
+			--x;
+			return x;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Fooa" );
+	U_TEST_ASSERT( function != nullptr );
+
+	static const int8_t values[]=
+	{
+		std::numeric_limits<int8_t>::min(), std::numeric_limits<int8_t>::max(), 0,
+		1, -1, 2, -2, 3, 12, 17, -84, 84, -126, -127, 126, 127,
+	};
+	for( const int8_t value : values )
+	{
+		llvm::GenericValue arg;
+		arg.IntVal= llvm::APInt( 8, value );
+
+		const llvm::GenericValue result_value=
+			engine->runFunction(
+				function,
+				llvm::ArrayRef<llvm::GenericValue>( &arg, 1u ) );
+
+		U_TEST_ASSERT( static_cast<int8_t>( value - 1 ) == static_cast<int8_t>(result_value.IntVal.getLimitedValue()) );
+	}
+}
+
+U_TEST(DecrementTest1)
+{
+	// Decrement for unsigned value.
+	static const char c_program_text[]=
+	R"(
+		fn Foo( u16 x ) : u16
+		{
+			--x;
+			return x;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foot" );
+	U_TEST_ASSERT( function != nullptr );
+
+	static const uint64_t values[]=
+	{
+		std::numeric_limits<uint16_t>::min(), std::numeric_limits<uint16_t>::max(), 0u,
+		1u, 2u, 3u, 12u, 17u, 65534u, 58u, 84u,
+	};
+	for( const uint16_t value : values )
+	{
+		llvm::GenericValue arg;
+		arg.IntVal= llvm::APInt( 16, value );
+
+		const llvm::GenericValue result_value=
+			engine->runFunction(
+				function,
+				llvm::ArrayRef<llvm::GenericValue>( &arg, 1u ) );
+
+		U_TEST_ASSERT( static_cast<uint16_t>( value - 1u ) == static_cast<uint16_t>(result_value.IntVal.getLimitedValue()) );
+	}
+}
+
 U_TEST(NumericConstantsTest0)
 {
 	static const char c_program_text[]=

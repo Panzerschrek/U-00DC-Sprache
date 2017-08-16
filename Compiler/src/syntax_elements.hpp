@@ -462,6 +462,22 @@ public:
 	BinaryOperatorType additive_operation_;
 };
 
+class IncrementOperator final : public IBlockElement
+{
+public:
+	explicit IncrementOperator( const FilePos& file_pos );
+
+	IExpressionComponentPtr expression;
+};
+
+class DecrementOperator final : public IBlockElement
+{
+public:
+	explicit DecrementOperator( const FilePos& file_pos );
+
+	IExpressionComponentPtr expression;
+};
+
 class FunctionArgumentDeclaration final : public SyntaxElementBase
 {
 public:
