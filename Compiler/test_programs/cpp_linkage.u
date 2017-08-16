@@ -54,16 +54,16 @@ fn U32ToStr( u32 x, [ i8, 64 ]& out_str )
 
 	while( div > x )
 	{
-		div= div / 10u;
+		div/= 10u;
 	}
 
 	while( div > 0u )
 	{
 		auto imut digit= x / div;
 		out_str[dst]= i8( digit + zero_char );
-		dst= dst + 1u;
-		x= x - digit * div;
-		div= div / 10u;
+		++dst;
+		x-= digit * div;
+		div/= 10u;
 	}
 	out_str[dst]= 0i8;
 }
