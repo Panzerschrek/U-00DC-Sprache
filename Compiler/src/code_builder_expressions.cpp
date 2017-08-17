@@ -163,8 +163,9 @@ Variable CodeBuilder::BuildBinaryOperator(
 	{
 	case BinaryOperatorType::Add:
 	case BinaryOperatorType::Sub:
-	case BinaryOperatorType::Div:
 	case BinaryOperatorType::Mul:
+	case BinaryOperatorType::Div:
+	case BinaryOperatorType::Rem:
 
 		if( r_var.type != l_var.type )
 		{
@@ -237,6 +238,18 @@ Variable CodeBuilder::BuildBinaryOperator(
 				else
 					result_value=
 						function_context.llvm_ir_builder.CreateMul( l_value_for_op, r_value_for_op );
+				break;
+
+			case BinaryOperatorType::Rem:
+				if( is_float )
+					result_value=
+						function_context.llvm_ir_builder.CreateFRem( l_value_for_op, r_value_for_op );
+				else if( is_signed )
+					result_value=
+						function_context.llvm_ir_builder.CreateSRem( l_value_for_op, r_value_for_op );
+				else
+					result_value=
+						function_context.llvm_ir_builder.CreateURem( l_value_for_op, r_value_for_op );
 				break;
 
 			default: U_ASSERT( false ); break;

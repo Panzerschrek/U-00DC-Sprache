@@ -31,6 +31,7 @@ static const FixedLexemsMap g_fixed_lexems[ g_max_fixed_lexem_size + 1 ]=
 		{ "-"_SpC, Lexem::Type::Minus },
 		{ "*"_SpC, Lexem::Type::Star },
 		{ "/"_SpC, Lexem::Type::Slash },
+		{ "%"_SpC, Lexem::Type::Percent },
 
 		{ "<"_SpC, Lexem::Type::CompareLess },
 		{ ">"_SpC, Lexem::Type::CompareGreater },
@@ -59,6 +60,7 @@ static const FixedLexemsMap g_fixed_lexems[ g_max_fixed_lexem_size + 1 ]=
 		{ "-="_SpC, Lexem::Type::AssignSub },
 		{ "*="_SpC, Lexem::Type::AssignMul },
 		{ "/="_SpC, Lexem::Type::AssignDiv },
+		{ "%="_SpC, Lexem::Type::AssignRem },
 		{ "&="_SpC, Lexem::Type::AssignAnd },
 		{ "|="_SpC, Lexem::Type::AssignOr  },
 		{ "^="_SpC, Lexem::Type::AssignXor },

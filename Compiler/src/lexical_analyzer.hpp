@@ -45,6 +45,7 @@ struct Lexem
 		Minus, // -
 		Star, // *
 		Slash, // /
+		Percent, // %
 
 		And, // &
 		Or, // |
@@ -69,6 +70,7 @@ struct Lexem
 		AssignSub, // -=
 		AssignMul, // *=
 		AssignDiv, // /=
+		AssignRem, // %=
 		AssignAnd, // &=
 		AssignOr,  // |=
 		AssignXor, // ^=

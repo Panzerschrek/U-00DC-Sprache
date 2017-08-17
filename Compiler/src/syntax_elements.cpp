@@ -73,6 +73,7 @@ ProgramString BinaryOperatorToString( const BinaryOperatorType op )
 		case BinaryOperatorType::Sub: op_str= "-"; break;
 		case BinaryOperatorType::Mul: op_str= "*"; break;
 		case BinaryOperatorType::Div: op_str= "/"; break;
+		case BinaryOperatorType::Rem: op_str= "%"; break;
 
 		case BinaryOperatorType::Equal: op_str= "=="; break;
 		case BinaryOperatorType::NotEqual: op_str= "!="; break;

@@ -123,8 +123,9 @@ enum class BinaryOperatorType
 {
 	Add,
 	Sub,
-	Div,
 	Mul,
+	Div,
+	Rem,
 
 	Equal,
 	NotEqual,

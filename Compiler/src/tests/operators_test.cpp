@@ -1,4 +1,4 @@
-#include <iostream>
+#include <cmath>
 
 #include "tests.hpp"
 
@@ -1147,5 +1147,131 @@ U_TEST(EqualityFloatOperatorsTest)
 		static_cast<uint64_t>( ( arg0 == arg1 ) | ( arg0 != arg2 ) ) ==
 		result_value.IntVal.getLimitedValue() );
 }
+
+U_TEST( RemOperatorTest0 )
+{
+	// % for unsigned integers
+	static const char c_program_text[]=
+	R"(
+		fn Foo( u32 x, u32 y ) : u32
+		{
+			return x % y;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foojj" );
+	U_TEST_ASSERT( function != nullptr );
+
+	static const uint32_t values[]=
+	{
+		std::numeric_limits<uint32_t>::min(), std::numeric_limits<uint32_t>::max(),
+		1, 2, 34, 5, 10, 12, 16, 256, 8461631, 161681818, 4000000000, 65536, 256, 854716, 41894198,
+	};
+
+	for( const uint32_t x : values )
+	for( const uint32_t y : values )
+	{
+		if( y == 0u )
+			continue;
+		llvm::GenericValue args[2];
+		args[0].IntVal= llvm::APInt( 32, x );
+		args[1].IntVal= llvm::APInt( 32, y );
+		const llvm::GenericValue result=
+			engine->runFunction(
+				function,
+				llvm::ArrayRef<llvm::GenericValue>( args, 2u ) );
+		U_TEST_ASSERT( (x % y) == static_cast<uint32_t>(result.IntVal.getLimitedValue()) );
+	}
+}
+
+U_TEST( RemOperatorTest1 )
+{
+	// %= for signed integers
+	static const char c_program_text[]=
+	R"(
+		fn Foo( i32 x, i32 y ) : i32
+		{
+			x%= y;
+			return x;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Fooii" );
+	U_TEST_ASSERT( function != nullptr );
+
+	static const int32_t values[]=
+	{
+		std::numeric_limits<int32_t>::min(), std::numeric_limits<int32_t>::max(), 0,
+		1, -1, 2, -2, 3, 12, 17, 65536, 54284964, -2000000000, 2000000000, -58, 84, 1831516318,
+	};
+
+	for( const int32_t x : values )
+	for( const int32_t y : values )
+	{
+		if( y == 0 )
+			continue;
+		if( x ==  std::numeric_limits<int32_t>::min() && y == -1 ) // Case of overflow is undefined behaviour
+			continue;
+
+		llvm::GenericValue args[2];
+		args[0].IntVal= llvm::APInt( 32, x );
+		args[1].IntVal= llvm::APInt( 32, y );
+		const llvm::GenericValue result=
+			engine->runFunction(
+				function,
+				llvm::ArrayRef<llvm::GenericValue>( args, 2u ) );
+		U_TEST_ASSERT( (x % y) == static_cast<int32_t>(result.IntVal.getLimitedValue()) );
+	}
+}
+
+U_TEST( RemOperatorTest2 )
+{
+	// % for floats
+	static const char c_program_text[]=
+	R"(
+		fn Foo( f32 x, f32 y ) : f32
+		{
+			return x % y;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Fooff" );
+	U_TEST_ASSERT( function != nullptr );
+
+	static const float values[]=
+	{
+		+std::numeric_limits<float>::min(), +std::numeric_limits<float>::max(),
+		-std::numeric_limits<float>::min(), -std::numeric_limits<float>::max(),
+		0.0f, +1.0f, -1.0f,
+		+0.1f, +0.2f, +0.4f, +0.5f, +0.7f, +0.99f, +584.4f, +8464984.0f, +1e24f, +3.1415926535f,
+		-0.1f, -0.2f, -0.4f, -0.5f, -0.7f, -0.99f, -584.4f, -8464984.0f, -1e24f, -3.1415926535f,
+	};
+
+	for( const float x : values )
+	for( const float y : values )
+	{
+		llvm::GenericValue args[2];
+		args[0].FloatVal= x;
+		args[1].FloatVal= y;
+		const llvm::GenericValue result=
+			engine->runFunction(
+				function,
+				llvm::ArrayRef<llvm::GenericValue>( args, 2u ) );
+		const float cpp_rem= std::fmod(x, y);
+		if( cpp_rem != cpp_rem  /* cpp_rem == NaN */ )
+		{
+			U_TEST_ASSERT( result.FloatVal != result.FloatVal );
+		}
+		else
+		{
+			const float eps= std::abs( cpp_rem ) / ( 1024.0f * 1024.0f );
+			ASSERT_NEAR( cpp_rem, result.FloatVal, eps );
+		}
+	}
+}
+
 
 } // namespace U

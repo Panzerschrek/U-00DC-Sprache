@@ -51,7 +51,7 @@ void RunAllTests();
 
 // Utility tests functions.
 
-#define ASSERT_NEAR( x, y, eps ) U_TEST_ASSERT( std::abs( (x) - (y) ) <= eps )
+#define ASSERT_NEAR( x, y, eps ) U_TEST_ASSERT( std::abs( (x) - (y) ) <= (eps) )
 
 typedef std::unique_ptr<llvm::ExecutionEngine> EnginePtr;
 

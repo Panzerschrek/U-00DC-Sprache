@@ -10,27 +10,38 @@ namespace U
 
 static int GetBinaryOperatorPriority( const BinaryOperatorType binary_operator )
 {
+	#define PRIORITY ( - __LINE__ )
+
 	switch( binary_operator )
 	{
 	case BinaryOperatorType::Div:
 	case BinaryOperatorType::Mul:
-		return 10;
+	case BinaryOperatorType::Rem:
+		return PRIORITY;
 	case BinaryOperatorType::Add:
 	case BinaryOperatorType::Sub:
-		return 9;
+		return PRIORITY;
+	case BinaryOperatorType::ShiftLeft :
+	case BinaryOperatorType::ShiftRight:
+		return PRIORITY;
 	case BinaryOperatorType::Equal:
 	case BinaryOperatorType::NotEqual:
 	case BinaryOperatorType::Less:
 	case BinaryOperatorType::LessEqual:
 	case BinaryOperatorType::Greater:
 	case BinaryOperatorType::GreaterEqual:
-		return 8;
-	case BinaryOperatorType::And: return 7;
-	case BinaryOperatorType::Or: return 6;
-	case BinaryOperatorType::Xor: return 5;
-	case BinaryOperatorType::LazyLogicalAnd: return 4;
-	case BinaryOperatorType::LazyLogicalOr: return 3;
+		return PRIORITY;
+	case BinaryOperatorType::And: return PRIORITY;
+	case BinaryOperatorType::Or: return PRIORITY;
+	case BinaryOperatorType::Xor: return PRIORITY;
+	case BinaryOperatorType::LazyLogicalAnd: return PRIORITY;
+	case BinaryOperatorType::LazyLogicalOr: return PRIORITY;
 	};
+
+	U_ASSERT(false);
+	return PRIORITY;
+
+	#undef PRIORITY
 };
 
 static bool IsBinaryOperator( const Lexem& lexem )
@@ -40,6 +51,7 @@ static bool IsBinaryOperator( const Lexem& lexem )
 		lexem.type == Lexem::Type::Minus ||
 		lexem.type == Lexem::Type::Star ||
 		lexem.type == Lexem::Type::Slash ||
+		lexem.type == Lexem::Type::Percent ||
 
 		lexem.type == Lexem::Type::CompareEqual ||
 		lexem.type == Lexem::Type::CompareNotEqual ||
@@ -67,6 +79,7 @@ static BinaryOperatorType LexemToBinaryOperator( const Lexem& lexem )
 		case Lexem::Type::Minus: return BinaryOperatorType::Sub;
 		case Lexem::Type::Star: return BinaryOperatorType::Mul;
 		case Lexem::Type::Slash: return BinaryOperatorType::Div;
+		case Lexem::Type::Percent: return BinaryOperatorType::Rem;
 
 		case Lexem::Type::CompareEqual: return BinaryOperatorType::Equal;
 		case Lexem::Type::CompareNotEqual: return BinaryOperatorType::NotEqual;
@@ -100,6 +113,7 @@ static BinaryOperatorType GetAdditiveAssignmentOperator( const Lexem& lexem )
 		case Lexem::Type::AssignMul: return BinaryOperatorType::Mul;
 		case Lexem::Type::AssignDiv: return BinaryOperatorType::Div;
 		case Lexem::Type::AssignAnd: return BinaryOperatorType::And;
+		case Lexem::Type::AssignRem: return BinaryOperatorType::Rem;
 		case Lexem::Type::AssignOr : return BinaryOperatorType::Or;
 		case Lexem::Type::AssignXor: return BinaryOperatorType::Xor;
 		case Lexem::Type::AssignShiftLeft : return BinaryOperatorType::ShiftLeft;
@@ -1368,6 +1382,7 @@ BlockPtr SyntaxAnalyzer::ParseBlock()
 				it_->type == Lexem::Type::AssignSub ||
 				it_->type == Lexem::Type::AssignMul ||
 				it_->type == Lexem::Type::AssignDiv ||
+				it_->type == Lexem::Type::AssignRem ||
 				it_->type == Lexem::Type::AssignAnd ||
 				it_->type == Lexem::Type::AssignOr  ||
 				it_->type == Lexem::Type::AssignXor ||
