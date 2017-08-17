@@ -85,6 +85,9 @@ ProgramString BinaryOperatorToString( const BinaryOperatorType op )
 		case BinaryOperatorType::Or: op_str= "|"; break;
 		case BinaryOperatorType::Xor: op_str= "^"; break;
 
+		case BinaryOperatorType::ShiftLeft : op_str= "<<"; break;
+		case BinaryOperatorType::ShiftRight: op_str= ">>"; break;
+
 		case BinaryOperatorType::LazyLogicalAnd: op_str= "&&"; break;
 		case BinaryOperatorType::LazyLogicalOr: op_str= "||"; break;
 
