@@ -32,6 +32,14 @@ public:
 	BuildResult BuildProgram( const ProgramElements& program_elements );
 
 private:
+	struct DestructiblesStorage final
+	{
+		// Input variable must live longer, then this class.
+		void RegisterVariable( const Variable& variable );
+
+		std::vector<const Variable*> variables;
+	};
+
 	struct FunctionContext
 	{
 		FunctionContext(
@@ -63,20 +71,19 @@ private:
 
 		llvm::BasicBlock* block_for_break;
 		llvm::BasicBlock* block_for_continue;
+
+		// Stack for distructibles.
+		// First entry is set of function arguments.
+		// Each block adds new storage for it`s destructible variables.
+		std::vector<DestructiblesStorage> destructibles_stack;
+		// Number of destructibles storages at stack before loop block creation.
+		size_t destructibles_stack_size_in_last_loop= 0u;
 	};
 
 	struct BlockBuildInfo
 	{
 		bool have_unconditional_return_inside= false;
 		bool have_uncodnitional_break_or_continue= false;
-	};
-
-	struct DestructiblesStorage final
-	{
-		// Input variable must live longer, then this class.
-		void RegisterVariable( const Variable& variable );
-
-		std::vector<const Variable*> variables;
 	};
 
 private:
@@ -113,6 +120,9 @@ private:
 		llvm::Value* ptr,
 		const Type& type,
 		FunctionContext& function_context );
+
+	void CallDestructorsForLoopInnerVariables( FunctionContext& function_context );
+	void CallDestructorsBeforeReturn( FunctionContext& function_context );
 
 	void BuildNamespaceBody(
 		const ProgramElements& body_elements,
@@ -217,13 +227,11 @@ private:
 
 	void BuildVariablesDeclarationCode(
 		const VariablesDeclaration& variables_declaration,
-		DestructiblesStorage& destructibles_storage,
 		NamesScope& block_names,
 		FunctionContext& function_context );
 
 	void BuildAutoVariableDeclarationCode(
 		const AutoVariableDeclaration& auto_variable_declaration,
-		DestructiblesStorage& destructibles_storage,
 		NamesScope& block_names,
 		FunctionContext& function_context );
 

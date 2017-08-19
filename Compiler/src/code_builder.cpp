@@ -822,6 +822,26 @@ void CodeBuilder::CallDestructor(
 	}
 }
 
+void CodeBuilder::CallDestructorsForLoopInnerVariables( FunctionContext& function_context )
+{
+	// Destroy all local variables before "break"/"continue" in all blocks inside loop.
+	size_t undestructed_stack_size= function_context.destructibles_stack.size();
+	for(
+		auto it= function_context.destructibles_stack.rbegin();
+		it != function_context.destructibles_stack.rend() && undestructed_stack_size > function_context.destructibles_stack_size_in_last_loop;
+		++it, --undestructed_stack_size )
+	{
+		CallDestructors( *it, function_context );
+	}
+}
+
+void CodeBuilder::CallDestructorsBeforeReturn( FunctionContext& function_context )
+{
+	// We must call ALL destructors of local variables, arguments, etc before each return.
+	for( auto it= function_context.destructibles_stack.rbegin(); it != function_context.destructibles_stack.rend(); ++it )
+		CallDestructors( *it, function_context );
+}
+
 void CodeBuilder::BuildNamespaceBody(
 	const ProgramElements& body_elements,
 	NamesScope& names_scope )
@@ -1259,8 +1279,9 @@ void CodeBuilder::BuildFuncCode(
 		llvm_context_,
 		llvm_function );
 
+	function_context.destructibles_stack.emplace_back();
+
 	// push args
-	DestructiblesStorage destructible_args_storage;
 	Variable this_;
 	Variable s_ret;
 	unsigned int arg_number= 0u;
@@ -1357,7 +1378,7 @@ void CodeBuilder::BuildFuncCode(
 			}
 
 			if( !arg.is_reference )
-				destructible_args_storage.RegisterVariable( *inserted_arg->second.GetVariable() );
+				function_context.destructibles_stack.back().RegisterVariable( *inserted_arg->second.GetVariable() );
 		}
 
 		llvm_arg.setName( "_arg_" + ToStdString( arg_name ) );
@@ -1396,14 +1417,19 @@ void CodeBuilder::BuildFuncCode(
 
 	const BlockBuildInfo block_build_info=
 		BuildBlockCode( *block, function_names, function_context );
+	U_ASSERT( function_context.destructibles_stack.size() == 1u );
 
-	CallDestructors( destructible_args_storage, function_context );
+	// We need call destructors for arguments only if function returns "void".
+	// In other case, we have "return" in all branches and destructors call before each "return".
 
 	if(  function_type->return_type == void_type_ )
 	{
 		// Manually generate "return" for void-return functions.
 		if( !block_build_info.have_unconditional_return_inside )
+		{
+			CallDestructors( function_context.destructibles_stack.back(), function_context );
 			function_context.llvm_ir_builder.CreateRetVoid();
+		}
 	}
 	else
 	{
@@ -1564,7 +1590,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockCode(
 	NamesScope block_names( ""_SpC, &names );
 	BlockBuildInfo block_build_info;
 
-	DestructiblesStorage block_destructibles;
+	function_context.destructibles_stack.emplace_back();
 
 	for( const IBlockElementPtr& block_element : block.elements_ )
 	{
@@ -1583,12 +1609,12 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockCode(
 			if( const VariablesDeclaration* variables_declaration=
 				dynamic_cast<const VariablesDeclaration*>( block_element_ptr ) )
 			{
-				BuildVariablesDeclarationCode( *variables_declaration, block_destructibles, block_names, function_context );
+				BuildVariablesDeclarationCode( *variables_declaration, block_names, function_context );
 			}
 			else if( const AutoVariableDeclaration* auto_variable_declaration=
 				dynamic_cast<const AutoVariableDeclaration*>( block_element_ptr ) )
 			{
-				BuildAutoVariableDeclarationCode( *auto_variable_declaration, block_destructibles, block_names, function_context );
+				BuildAutoVariableDeclarationCode( *auto_variable_declaration, block_names, function_context );
 			}
 			else if(
 				const SingleExpressionOperator* expression=
@@ -1722,14 +1748,18 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockCode(
 		}
 	}
 
-	CallDestructors( block_destructibles, function_context );
+	// If there are undconditional "break", "continue", "return" operators,
+	// we didn`t need call destructors, it must be called in this operators.
+	if( !( block_build_info.have_uncodnitional_break_or_continue || block_build_info.have_unconditional_return_inside ) )
+		CallDestructors( function_context.destructibles_stack.back(), function_context );
+
+	function_context.destructibles_stack.pop_back();
 
 	return block_build_info;
 }
 
 void CodeBuilder::BuildVariablesDeclarationCode(
 	const VariablesDeclaration& variables_declaration,
-	DestructiblesStorage& destructibles_storage,
 	NamesScope& block_names,
 	FunctionContext& function_context )
 {
@@ -1843,13 +1873,12 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 		}
 
 		if( variable_declaration.reference_modifier == ReferenceModifier::None )
-			destructibles_storage.RegisterVariable( *inserted_name->second.GetVariable() );
+			function_context.destructibles_stack.back().RegisterVariable( *inserted_name->second.GetVariable() );
 	}
 }
 
 void CodeBuilder::BuildAutoVariableDeclarationCode(
 	const AutoVariableDeclaration& auto_variable_declaration,
-	DestructiblesStorage& destructibles_storage,
 	NamesScope& block_names,
 	FunctionContext& function_context )
 {
@@ -1930,7 +1959,7 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 	}
 
 	if( auto_variable_declaration.reference_modifier == ReferenceModifier::None )
-		destructibles_storage.RegisterVariable( *inserted_name->second.GetVariable() );
+		function_context.destructibles_stack.back().RegisterVariable( *inserted_name->second.GetVariable() );
 }
 
 void CodeBuilder::BuildAssignmentOperatorCode(
@@ -2112,6 +2141,7 @@ void CodeBuilder::BuildReturnOperatorCode(
 			return;
 		}
 
+		CallDestructorsBeforeReturn( function_context );
 		// Add only return instruction for void return operators.
 		function_context.llvm_ir_builder.CreateRetVoid();
 		return;
@@ -2143,6 +2173,7 @@ void CodeBuilder::BuildReturnOperatorCode(
 			return;
 		}
 
+		CallDestructorsBeforeReturn( function_context );
 		function_context.llvm_ir_builder.CreateRet( expression_result.llvm_value );
 	}
 	else
@@ -2151,10 +2182,14 @@ void CodeBuilder::BuildReturnOperatorCode(
 		{
 			const ClassPtr class_= function_context.s_ret_->type.GetClassType();
 			TryCallCopyConstructor( return_operator.file_pos_, function_context.s_ret_->llvm_value, expression_result.llvm_value, class_, function_context );
+
+			CallDestructorsBeforeReturn( function_context );
 			function_context.llvm_ir_builder.CreateRetVoid();
 		}
 		else
 		{
+			CallDestructorsBeforeReturn( function_context );
+
 			llvm::Value* value_for_return= CreateMoveToLLVMRegisterInstruction( expression_result, function_context );
 			function_context.llvm_ir_builder.CreateRet( value_for_return );
 		}
@@ -2199,9 +2234,11 @@ void CodeBuilder::BuildWhileOperatorCode(
 	// WARNING - between save/restore nobody should throw exceptions!!!
 	llvm::BasicBlock* const prev_block_for_break   = function_context.block_for_break   ;
 	llvm::BasicBlock* const prev_block_for_continue= function_context.block_for_continue;
+	const size_t prev_block_destructibles_stack_size= function_context.destructibles_stack_size_in_last_loop;
 	// Set current while block labels.
 	function_context.block_for_break   = block_after_while;
 	function_context.block_for_continue= test_block;
+	function_context.destructibles_stack_size_in_last_loop= function_context.destructibles_stack.size();
 
 	function_context.function->getBasicBlockList().push_back( while_block );
 	function_context.llvm_ir_builder.SetInsertPoint( while_block );
@@ -2212,6 +2249,7 @@ void CodeBuilder::BuildWhileOperatorCode(
 	// Restore previous while block break/continue labels.
 	function_context.block_for_break   = prev_block_for_break   ;
 	function_context.block_for_continue= prev_block_for_continue;
+	function_context.destructibles_stack_size_in_last_loop= prev_block_destructibles_stack_size;
 
 	// Block after while code.
 	function_context.function->getBasicBlockList().push_back( block_after_while );
@@ -2228,6 +2266,7 @@ void CodeBuilder::BuildBreakOperatorCode(
 		return;
 	}
 
+	CallDestructorsForLoopInnerVariables( function_context );
 	function_context.llvm_ir_builder.CreateBr( function_context.block_for_break );
 }
 
@@ -2241,6 +2280,7 @@ void CodeBuilder::BuildContinueOperatorCode(
 		return;
 	}
 
+	CallDestructorsForLoopInnerVariables( function_context );
 	function_context.llvm_ir_builder.CreateBr( function_context.block_for_continue );
 }
 
