@@ -58,6 +58,12 @@ CodeBuilder::FunctionContext::FunctionContext(
 {
 }
 
+void CodeBuilder::DestructiblesStorage::RegisterVariable( const Variable& variable )
+{
+	if( variable.type.HaveDestructor() )
+		variables.push_back( &variable );
+}
+
 CodeBuilder::CodeBuilder()
 	: llvm_context_( llvm::getGlobalContext() )
 {
@@ -764,6 +770,58 @@ void CodeBuilder::GenerateLoop(
 	function_context.llvm_ir_builder.SetInsertPoint( block_after_loop );
 }
 
+void CodeBuilder::CallDestructors(
+	const DestructiblesStorage& destructibles_storage,
+	FunctionContext& function_context )
+{
+	// Call destructors in reverse order.
+	for( auto it = destructibles_storage.variables.rbegin(); it != destructibles_storage.variables.rend(); ++it )
+		CallDestructor( (*it)->llvm_value, (*it)->type, function_context );
+}
+
+void CodeBuilder::CallDestructor(
+	llvm::Value* const ptr,
+	const Type& type,
+	FunctionContext& function_context )
+{
+	U_ASSERT( type.HaveDestructor() );
+
+	if( const ClassPtr class_= type.GetClassType() )
+	{
+		const NamesScope::InsertedName* const destructor_name= class_->members.GetThisScopeName( Keyword( Keywords::destructor_ ) );
+		U_ASSERT( destructor_name != nullptr );
+		const OverloadedFunctionsSet* const destructors= destructor_name->second.GetFunctionsSet();
+		U_ASSERT(destructors != nullptr && destructors->size() == 1u );
+
+		const FunctionVariable& destructor= destructors->front();
+		llvm::Value* const destructor_args[]= { ptr };
+		function_context.llvm_ir_builder.CreateCall(
+			destructor.llvm_function,
+			llvm::ArrayRef<llvm::Value*>( destructor_args, 1u ) );
+	}
+	else if( const Array* const array_type= type.GetArrayType() )
+	{
+		// SPRACHE_TODO - maybe call destructors of arrays in reverse order?
+		GenerateLoop(
+			array_type->size,
+			[&]( llvm::Value* const index )
+			{
+				llvm::Value* index_list[2];
+				index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
+				index_list[1]= index;
+				CallDestructor(
+					function_context.llvm_ir_builder.CreateGEP( ptr, llvm::ArrayRef<llvm::Value*> ( index_list, 2u ) ),
+					array_type->type,
+					function_context );
+			},
+			function_context );
+	}
+	else
+	{
+		U_ASSERT( false && "WTF? strange type for variable" );
+	}
+}
+
 void CodeBuilder::BuildNamespaceBody(
 	const ProgramElements& body_elements,
 	NamesScope& names_scope )
@@ -1202,6 +1260,7 @@ void CodeBuilder::BuildFuncCode(
 		llvm_function );
 
 	// push args
+	DestructiblesStorage destructible_args_storage;
 	Variable this_;
 	Variable s_ret;
 	unsigned int arg_number= 0u;
@@ -1296,6 +1355,9 @@ void CodeBuilder::BuildFuncCode(
 				errors_.push_back( ReportRedefinition( declaration_arg.file_pos_, arg_name ) );
 				return;
 			}
+
+			if( !arg.is_reference )
+				destructible_args_storage.RegisterVariable( *inserted_arg->second.GetVariable() );
 		}
 
 		llvm_arg.setName( "_arg_" + ToStdString( arg_name ) );
@@ -1334,6 +1396,8 @@ void CodeBuilder::BuildFuncCode(
 
 	const BlockBuildInfo block_build_info=
 		BuildBlockCode( *block, function_names, function_context );
+
+	CallDestructors( destructible_args_storage, function_context );
 
 	if(  function_type->return_type == void_type_ )
 	{
@@ -1500,6 +1564,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockCode(
 	NamesScope block_names( ""_SpC, &names );
 	BlockBuildInfo block_build_info;
 
+	DestructiblesStorage block_destructibles;
+
 	for( const IBlockElementPtr& block_element : block.elements_ )
 	{
 		const IBlockElement* const block_element_ptr= block_element.get();
@@ -1517,12 +1583,12 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockCode(
 			if( const VariablesDeclaration* variables_declaration=
 				dynamic_cast<const VariablesDeclaration*>( block_element_ptr ) )
 			{
-				BuildVariablesDeclarationCode( *variables_declaration, block_names, function_context );
+				BuildVariablesDeclarationCode( *variables_declaration, block_destructibles, block_names, function_context );
 			}
 			else if( const AutoVariableDeclaration* auto_variable_declaration=
 				dynamic_cast<const AutoVariableDeclaration*>( block_element_ptr ) )
 			{
-				BuildAutoVariableDeclarationCode( *auto_variable_declaration, block_names, function_context );
+				BuildAutoVariableDeclarationCode( *auto_variable_declaration, block_destructibles, block_names, function_context );
 			}
 			else if(
 				const SingleExpressionOperator* expression=
@@ -1656,11 +1722,14 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockCode(
 		}
 	}
 
+	CallDestructors( block_destructibles, function_context );
+
 	return block_build_info;
 }
 
 void CodeBuilder::BuildVariablesDeclarationCode(
 	const VariablesDeclaration& variables_declaration,
+	DestructiblesStorage& destructibles_storage,
 	NamesScope& block_names,
 	FunctionContext& function_context )
 {
@@ -1772,11 +1841,15 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 			errors_.push_back( ReportRedefinition( variables_declaration.file_pos_, variable_declaration.name ) );
 			continue;
 		}
+
+		if( variable_declaration.reference_modifier == ReferenceModifier::None )
+			destructibles_storage.RegisterVariable( *inserted_name->second.GetVariable() );
 	}
 }
 
 void CodeBuilder::BuildAutoVariableDeclarationCode(
 	const AutoVariableDeclaration& auto_variable_declaration,
+	DestructiblesStorage& destructibles_storage,
 	NamesScope& block_names,
 	FunctionContext& function_context )
 {
@@ -1855,6 +1928,9 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 		errors_.push_back( ReportRedefinition( auto_variable_declaration.file_pos_, auto_variable_declaration.name ) );
 		return;
 	}
+
+	if( auto_variable_declaration.reference_modifier == ReferenceModifier::None )
+		destructibles_storage.RegisterVariable( *inserted_name->second.GetVariable() );
 }
 
 void CodeBuilder::BuildAssignmentOperatorCode(

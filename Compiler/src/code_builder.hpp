@@ -71,6 +71,14 @@ private:
 		bool have_uncodnitional_break_or_continue= false;
 	};
 
+	struct DestructiblesStorage final
+	{
+		// Input variable must live longer, then this class.
+		void RegisterVariable( const Variable& variable );
+
+		std::vector<const Variable*> variables;
+	};
+
 private:
 	void FillGlobalNamesScope( NamesScope& global_names_scope );
 	Type PrepareType( const FilePos& file_pos, const TypeName& type_name, const NamesScope& names_scope );
@@ -96,6 +104,15 @@ private:
 		size_t iteration_count,
 		const std::function<void(llvm::Value* counter_value)>& loop_body,
 		FunctionContext& function_context);
+
+	void CallDestructors(
+		const DestructiblesStorage& destructibles_storage,
+		FunctionContext& function_context );
+
+	void CallDestructor(
+		llvm::Value* ptr,
+		const Type& type,
+		FunctionContext& function_context );
 
 	void BuildNamespaceBody(
 		const ProgramElements& body_elements,
@@ -200,11 +217,13 @@ private:
 
 	void BuildVariablesDeclarationCode(
 		const VariablesDeclaration& variables_declaration,
+		DestructiblesStorage& destructibles_storage,
 		NamesScope& block_names,
 		FunctionContext& function_context );
 
 	void BuildAutoVariableDeclarationCode(
 		const AutoVariableDeclaration& auto_variable_declaration,
+		DestructiblesStorage& destructibles_storage,
 		NamesScope& block_names,
 		FunctionContext& function_context );
 
