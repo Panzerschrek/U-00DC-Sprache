@@ -979,6 +979,12 @@ void CodeBuilder::PrepareFunction(
 		}
 	}
 
+	if( is_destructor )
+	{
+		U_ASSERT( base_class != nullptr );
+		base_class->have_destructor= true;
+	}
+
 	NamesScope::InsertedName* const previously_inserted_func=
 		func_base_names_scope->GetThisScopeName( func_name );
 	if( previously_inserted_func == nullptr )
