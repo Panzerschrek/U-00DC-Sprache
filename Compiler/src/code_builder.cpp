@@ -842,6 +842,31 @@ void CodeBuilder::CallDestructorsBeforeReturn( FunctionContext& function_context
 		CallDestructors( *it, function_context );
 }
 
+void CodeBuilder::CallMembersDestructors( FunctionContext& function_context )
+{
+	U_ASSERT( function_context.this_ != nullptr );
+	const ClassPtr class_= function_context.this_->type.GetClassType();
+	U_ASSERT( class_ != nullptr );
+
+	class_->members.ForEachInThisScope(
+		[&]( const NamesScope::InsertedName& member )
+		{
+			const ClassField* const field= member.second.GetClassField();
+			if( field == nullptr )
+				return;
+			if( !field->type.HaveDestructor() )
+				return;
+
+			llvm::Value* index_list[2];
+			index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
+			index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(field->index) ) );
+			CallDestructor(
+				function_context.llvm_ir_builder.CreateGEP( function_context.this_->llvm_value, index_list ),
+				field->type,
+				function_context );
+		} );
+}
+
 void CodeBuilder::BuildNamespaceBody(
 	const ProgramElements& body_elements,
 	NamesScope& names_scope )
@@ -1415,6 +1440,9 @@ void CodeBuilder::BuildFuncCode(
 		function_context.is_constructor_initializer_list_now= false;
 	}
 
+	if( is_destructor )
+		function_context.destructor_end_block= llvm::BasicBlock::Create( llvm_context_ );
+
 	const BlockBuildInfo block_build_info=
 		BuildBlockCode( *block, function_names, function_context );
 	U_ASSERT( function_context.destructibles_stack.size() == 1u );
@@ -1428,7 +1456,14 @@ void CodeBuilder::BuildFuncCode(
 		if( !block_build_info.have_unconditional_return_inside )
 		{
 			CallDestructors( function_context.destructibles_stack.back(), function_context );
-			function_context.llvm_ir_builder.CreateRetVoid();
+
+			if( function_context.destructor_end_block == nullptr )
+				function_context.llvm_ir_builder.CreateRetVoid();
+			else
+			{
+				// In explicit destructor, break to block with destructor calls for class members.
+				function_context.llvm_ir_builder.CreateBr( function_context.destructor_end_block );
+			}
 		}
 	}
 	else
@@ -1443,6 +1478,17 @@ void CodeBuilder::BuildFuncCode(
 	llvm::Function::BasicBlockListType& bb_list = llvm_function->getBasicBlockList();
 
 	function_context.alloca_ir_builder.CreateBr( function_context.function_basic_block );
+
+	if( is_destructor )
+	{
+		// Fill destructors block.
+		U_ASSERT( function_context.destructor_end_block != nullptr );
+		function_context.llvm_ir_builder.SetInsertPoint( function_context.destructor_end_block );
+		bb_list.push_back( function_context.destructor_end_block );
+
+		CallMembersDestructors( function_context );
+		function_context.llvm_ir_builder.CreateRetVoid();
+	}
 
 	// Remove duplicated terminator instructions at end of all function blocks.
 	// This needs, for example, when "return" is last operator inside "if" or "while" blocks.
@@ -2142,8 +2188,15 @@ void CodeBuilder::BuildReturnOperatorCode(
 		}
 
 		CallDestructorsBeforeReturn( function_context );
-		// Add only return instruction for void return operators.
-		function_context.llvm_ir_builder.CreateRetVoid();
+
+		if( function_context.destructor_end_block == nullptr )
+			function_context.llvm_ir_builder.CreateRetVoid();
+		else
+		{
+			// In explicit destructor, break to block with destructor calls for class members.
+			function_context.llvm_ir_builder.CreateBr( function_context.destructor_end_block );
+		}
+
 		return;
 	}
 

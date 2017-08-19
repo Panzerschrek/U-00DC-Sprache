@@ -382,4 +382,100 @@ U_TEST(DestructorsTest7)
 		std::vector<int>( { 6, 5, 4, 7, 3, 2, 1, 0 } ) );
 }
 
+U_TEST(DestructorsTest8)
+{
+	DestructorTestPrepare();
+
+	// Explicit destructor must contains implicit calls to destructors of members.
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+
+		class S
+		{
+			i32 x;
+			fn constructor( i32 in_x ) ( x= in_x ) {}
+			fn destructor() { DestructorCalled(x); }
+		}
+		class T
+		{
+			S s; i32 y;
+			fn constructor( i32 x, i32 in_y ) ( s(x), y(in_y) ) {}
+			fn destructor()
+			{
+				DestructorCalled(y);
+			}
+		}
+		fn Foo()
+		{
+			var T t(111, 666);
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction(
+		function,
+		llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT(
+		g_destructors_call_sequence ==
+		std::vector<int>( { 666, 111} ) );
+}
+
+U_TEST(DestructorsTest9)
+{
+	DestructorTestPrepare();
+
+	// Explicit destructor must contains implicit calls to destructors of members.
+	// Members destructors must be called in all return ways.
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+
+		class S
+		{
+			i32 x;
+			fn constructor( i32 in_x ) ( x= in_x ) {}
+			fn destructor() { DestructorCalled(x); }
+		}
+		class T
+		{
+			S s; i32 y;
+			fn constructor( i32 x, i32 in_y ) ( s(x), y(in_y) ) {}
+			fn destructor()
+			{
+				if( ( y & 1 ) != 0 )
+				{
+					DestructorCalled(y);
+					return;
+				}
+				else
+				{
+					DestructorCalled( -y );
+				}
+			}
+		}
+		fn Foo()
+		{
+			var T t0(111, 666);
+			var T t1(500, 999);
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction(
+		function,
+		llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT(
+		g_destructors_call_sequence ==
+		std::vector<int>( { 999, 500, -666, 111 } ) );
+}
+
 } // namespace U

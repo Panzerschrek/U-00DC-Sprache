@@ -78,6 +78,7 @@ private:
 		std::vector<DestructiblesStorage> destructibles_stack;
 		// Number of destructibles storages at stack before loop block creation.
 		size_t destructibles_stack_size_in_last_loop= 0u;
+		llvm::BasicBlock* destructor_end_block= nullptr; // exists, if function is destructor
 	};
 
 	struct BlockBuildInfo
@@ -123,6 +124,7 @@ private:
 
 	void CallDestructorsForLoopInnerVariables( FunctionContext& function_context );
 	void CallDestructorsBeforeReturn( FunctionContext& function_context );
+	void CallMembersDestructors( FunctionContext& function_context );
 
 	void BuildNamespaceBody(
 		const ProgramElements& body_elements,
