@@ -51,6 +51,7 @@ enum class Keywords : unsigned int
 
 	this_,
 	constructor_,
+	destructor_,
 
 	// Reserved keywords for future usage.
 	for_,

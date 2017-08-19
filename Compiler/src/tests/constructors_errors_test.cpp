@@ -16,7 +16,7 @@ U_TEST(ConstructorOutsideClassTest0)
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ConstructorOutsideClass );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ConstructorOrDestructorOutsideClass );
 	U_TEST_ASSERT( error.file_pos.line == 2u );
 }
 
@@ -33,7 +33,7 @@ U_TEST(ConstructorOutsideClassTest1)
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ConstructorOutsideClass );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ConstructorOrDestructorOutsideClass );
 	U_TEST_ASSERT( error.file_pos.line == 2u );
 }
 
@@ -52,7 +52,7 @@ U_TEST(ConstructorMustReturnVoidTest0)
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ConstructorMustReturnVoid );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ConstructorAndDestructorMustReturnVoid );
 	U_TEST_ASSERT( error.file_pos.line == 4u );
 }
 
@@ -115,7 +115,7 @@ U_TEST(ExplicitThisInConstructorParamtersTest0)
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExplicitThisInConstructorParamters );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExplicitThisInConstructorOrDestructor );
 	U_TEST_ASSERT( error.file_pos.line == 5u );
 }
 

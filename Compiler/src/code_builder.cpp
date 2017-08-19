@@ -821,8 +821,10 @@ void CodeBuilder::PrepareFunction(
 	const ProgramString& func_name= func.name_.components.back();
 
 	const bool is_constructor= func_name == Keywords::constructor_;
+	const bool is_destructor= func_name == Keywords::destructor_;
+	const bool is_special_method= is_constructor || is_destructor;
 
-	if( !is_constructor && IsKeyword( func_name ) )
+	if( !is_special_method && IsKeyword( func_name ) )
 		errors_.push_back( ReportUsingKeywordAsName( func.file_pos_ ) );
 
 	const Block* const block= is_class_method_predeclaration ? nullptr : func.block_.get();
@@ -868,14 +870,19 @@ void CodeBuilder::PrepareFunction(
 		}
 	}
 
-	if( is_constructor && base_class == nullptr )
+	if( is_special_method && base_class == nullptr )
 	{
-		errors_.push_back( ReportConstructorOutsideClass( func.file_pos_ ) );
+		errors_.push_back( ReportConstructorOrDestructorOutsideClass( func.file_pos_ ) );
 		return;
 	}
 	if( !is_constructor && func.constructor_initialization_list_ != nullptr )
 	{
 		errors_.push_back( ReportInitializationListInNonconstructor(  func.constructor_initialization_list_->file_pos_ ) );
+		return;
+	}
+	if( is_destructor && !func.arguments_.empty() )
+	{
+		errors_.push_back( ReportExplicitArgumentsInDestructor( func.file_pos_ ) );
 		return;
 	}
 
@@ -907,14 +914,14 @@ void CodeBuilder::PrepareFunction(
 		return;
 	}
 
-	if( is_constructor && function_type.return_type != void_type_ )
-		errors_.push_back( ReportConstructorMustReturnVoid( func.file_pos_ ) );
+	if( is_special_method && function_type.return_type != void_type_ )
+		errors_.push_back( ReportConstructorAndDestructorMustReturnVoid( func.file_pos_ ) );
 
 	// Args.
 	function_type.args.reserve( func.arguments_.size() );
 
 	// Generate "this" arg for constructors.
-	if( is_constructor )
+	if( is_special_method )
 	{
 		func_variable.is_this_call= true;
 
@@ -932,8 +939,8 @@ void CodeBuilder::PrepareFunction(
 		if( !is_this && IsKeyword( arg->name_ ) )
 			errors_.push_back( ReportUsingKeywordAsName( arg->file_pos_ ) );
 
-		if( is_this && is_constructor )
-			errors_.push_back( ReportExplicitThisInConstructorParamters( arg->file_pos_ ) );
+		if( is_this && is_special_method )
+			errors_.push_back( ReportExplicitThisInConstructorOrDestructor( arg->file_pos_ ) );
 
 		function_type.args.emplace_back();
 		Function::Arg& out_arg= function_type.args.back();
@@ -1194,6 +1201,8 @@ void CodeBuilder::BuildFuncCode(
 	unsigned int arg_number= 0u;
 
 	const bool is_constructor= func_name == Keywords::constructor_;
+	const bool is_destructor= func_name == Keywords::destructor_;
+	const bool is_special_method= is_constructor || is_destructor;
 
 	for( llvm::Argument& llvm_arg : llvm_function->args() )
 	{
@@ -1211,7 +1220,7 @@ void CodeBuilder::BuildFuncCode(
 
 		const Function::Arg& arg= function_type->args[ arg_number ];
 
-		if( is_constructor && arg_number == 0u )
+		if( is_special_method && arg_number == 0u )
 		{
 			this_.location= Variable::Location::Pointer;
 			this_.value_type= ValueType::Reference;
@@ -1223,12 +1232,12 @@ void CodeBuilder::BuildFuncCode(
 			continue;
 		}
 
-		const FunctionArgumentDeclaration& declaration_arg= *args[ is_constructor ? ( arg_number - 1u ) : arg_number ];
+		const FunctionArgumentDeclaration& declaration_arg= *args[ is_special_method ? ( arg_number - 1u ) : arg_number ];
 		const ProgramString& arg_name= declaration_arg.name_;
 
 		const bool is_this= arg_number == 0u && arg_name == Keywords::this_;
 		U_ASSERT( !( is_this && !arg.is_reference ) );
-		U_ASSERT( !( is_constructor && is_this ) );
+		U_ASSERT( !( is_special_method && is_this ) );
 
 		Variable var;
 		var.location= Variable::Location::LLVMRegister;

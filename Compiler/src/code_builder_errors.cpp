@@ -553,24 +553,24 @@ CodeBuilderError ReportInvalidTypeForAutoVariable( const FilePos& file_pos, cons
 	return error;
 }
 
-CodeBuilderError ReportConstructorOutsideClass( const FilePos& file_pos )
+CodeBuilderError ReportConstructorOrDestructorOutsideClass( const FilePos& file_pos )
 {
 	CodeBuilderError error;
 	error.file_pos= file_pos;
-	error.code= CodeBuilderErrorCode::ConstructorOutsideClass;
+	error.code= CodeBuilderErrorCode::ConstructorOrDestructorOutsideClass;
 
-	error.text= "Constructor outside class."_SpC;
+	error.text= "Constructor or destructor outside class."_SpC;
 
 	return error;
 }
 
-CodeBuilderError ReportConstructorMustReturnVoid( const FilePos& file_pos )
+CodeBuilderError ReportConstructorAndDestructorMustReturnVoid( const FilePos& file_pos )
 {
 	CodeBuilderError error;
 	error.file_pos= file_pos;
-	error.code= CodeBuilderErrorCode::ConstructorMustReturnVoid;
+	error.code= CodeBuilderErrorCode::ConstructorAndDestructorMustReturnVoid;
 
-	error.text= "Constructor must return void."_SpC;
+	error.text= "Constructors and destructors must return void."_SpC;
 
 	return error;
 }
@@ -597,13 +597,13 @@ CodeBuilderError ReportClassHaveNoConstructors( const FilePos& file_pos )
 	return error;
 }
 
-CodeBuilderError ReportExplicitThisInConstructorParamters( const FilePos& file_pos )
+CodeBuilderError ReportExplicitThisInConstructorOrDestructor( const FilePos& file_pos )
 {
 	CodeBuilderError error;
 	error.file_pos= file_pos;
-	error.code= CodeBuilderErrorCode::ExplicitThisInConstructorParamters;
+	error.code= CodeBuilderErrorCode::ExplicitThisInConstructorOrDestructor;
 
-	error.text= "Explicit \"this\" in constructor parameters."_SpC;
+	error.text= "Explicit \"this\" in constructor or destructor parameters."_SpC;
 
 	return error;
 }
@@ -626,6 +626,17 @@ CodeBuilderError ReportMethodsCallInConstructorInitializerListIsForbidden( const
 	error.code= CodeBuilderErrorCode::MethodsCallInConstructorInitializerListIsForbidden;
 
 	error.text= "Call of method \""_SpC + method_name + "\" in constructor."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportExplicitArgumentsInDestructor( const FilePos& file_pos )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::ExplicitArgumentsInDestructor;
+
+	error.text= "Explicit arguments in destructor."_SpC;
 
 	return error;
 }

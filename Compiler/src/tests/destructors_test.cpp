@@ -34,11 +34,20 @@ U_TEST(DestructorsTest0)
 
 	static const char c_program_text[]=
 	R"(
-		// TODO - call destructors.
 		fn DestructorCalled(i32 x);
+
+		struct S
+		{
+			i32 x;
+			fn destructor()
+			{
+				x= 854;
+				DestructorCalled(x);
+			}
+		}
 		fn Foo() : i32
 		{
-			DestructorCalled(42);
+			var S s{ .x= 0 };
 			return 0;
 		}
 	)";
