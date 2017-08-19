@@ -346,6 +346,7 @@ void CodeBuilder::PrepareClass( const ClassDeclaration& class_declaration, Names
 
 	TryGenerateDefaultConstructor( *the_class, class_type );
 	TryGenerateCopyConstructor( *the_class, class_type );
+	TryGenerateDestructor( *the_class, class_type );
 
 	// Build functions with body.
 	for( const ClassDeclaration::Member& member : class_declaration.members_ )
@@ -618,6 +619,87 @@ void CodeBuilder::TryGenerateCopyConstructor( Class& the_class, const Type& clas
 
 	// After default constructor generation, class is copy-constructible.
 	the_class.is_copy_constructible= true;
+}
+
+void CodeBuilder::TryGenerateDestructor( Class& the_class, const Type& class_type )
+{
+	// Search for explicit destructor.
+	if( const NamesScope::InsertedName* const destructor_name=
+		the_class.members.GetThisScopeName( Keyword( Keywords::destructor_ ) ) )
+	{
+		const OverloadedFunctionsSet* const destructors= destructor_name->second.GetFunctionsSet();
+		U_ASSERT( destructors != nullptr && destructors->size() == 1u );
+		U_UNUSED( destructors );
+		the_class.have_destructor= true;
+		return;
+	}
+
+	// SPRACHE_TODO - maybe not generate default destructor for classes, that have no fields with destructors?
+	// SPRACHE_TODO - maybe mark generated destructor for this cases as "empty"?
+
+	// Generate destructor.
+	Function destructor_type;
+	destructor_type.return_type= void_type_;
+	destructor_type.args.resize(1u);
+	destructor_type.args[0].type= class_type;
+	destructor_type.args[0].is_mutable= true;
+	destructor_type.args[0].is_reference= true;
+
+	llvm::Type* const this_llvm_type= llvm::PointerType::get( class_type.GetLLVMType(), 0u );
+	destructor_type.llvm_function_type=
+		llvm::FunctionType::get(
+			fundamental_llvm_types_.void_,
+			llvm::ArrayRef<llvm::Type*>( &this_llvm_type, 1u ),
+			false );
+
+	llvm::Function* const llvm_destructor_function=
+		llvm::Function::Create(
+			destructor_type.llvm_function_type,
+			llvm::Function::LinkageTypes::ExternalLinkage, // TODO - select linkage
+			MangleFunction( the_class.members, Keyword( Keywords::destructor_ ), destructor_type, true ),
+			module_.get() );
+	llvm_destructor_function->setUnnamedAddr( true );
+	llvm_destructor_function->addAttribute( 1u, llvm::Attribute::NonNull ); // this is nonnull
+
+	llvm::Value* const this_llvm_value= &*llvm_destructor_function->args().begin();
+	this_llvm_value->setName( KeywordAscii( Keywords::this_ ) );
+
+	Variable this_;
+	this_.type= class_type;
+	this_.location= Variable::Location::Pointer;
+	this_.value_type= ValueType::Reference;
+	this_.llvm_value= this_llvm_value;
+
+	FunctionContext function_context(
+		destructor_type.return_type,
+		destructor_type.return_value_is_mutable,
+		destructor_type.return_value_is_reference,
+		llvm_context_,
+		llvm_destructor_function );
+	function_context.this_= &this_;
+
+	CallMembersDestructors( function_context );
+	function_context.alloca_ir_builder.CreateBr( function_context.function_basic_block );
+	function_context.llvm_ir_builder.CreateRetVoid();
+
+	// Add generated destructor.
+	FunctionVariable destructor_variable;
+	destructor_variable.type= std::move( destructor_type );
+	destructor_variable.have_body= true;
+	destructor_variable.is_this_call= true;
+	destructor_variable.is_generated= true;
+	destructor_variable.llvm_function= llvm_destructor_function;
+
+	// TODO - destructor have no overloads. Maybe store it as FunctionVariable, not as FunctionsSet?
+	OverloadedFunctionsSet destructors;
+	destructors.push_back( std::move( destructor_variable ) );
+
+	the_class.members.AddName(
+		Keyword( Keywords::destructor_ ),
+		Value( std::move( destructors ) ) );
+
+	// Say "we have destructor".
+	the_class.have_destructor= true;
 }
 
 void CodeBuilder::BuildCopyConstructorPart(
@@ -1080,12 +1162,6 @@ void CodeBuilder::PrepareFunction(
 		{
 			errors_.push_back( ReportUsingIncompleteType( arg->file_pos_, out_arg.type.ToString() ) );
 		}
-	}
-
-	if( is_destructor )
-	{
-		U_ASSERT( base_class != nullptr );
-		base_class->have_destructor= true;
 	}
 
 	NamesScope::InsertedName* const previously_inserted_func=
