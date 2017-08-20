@@ -32,6 +32,13 @@ public:
 	BuildResult BuildProgram( const ProgramElements& program_elements );
 
 private:
+	struct DestructiblesStorage final
+	{
+		void RegisterVariable( Variable variable );
+
+		std::vector<Variable> variables;
+	};
+
 	struct FunctionContext
 	{
 		FunctionContext(
@@ -63,6 +70,14 @@ private:
 
 		llvm::BasicBlock* block_for_break;
 		llvm::BasicBlock* block_for_continue;
+
+		// Stack for distructibles.
+		// First entry is set of function arguments.
+		// Each block adds new storage for it`s destructible variables.
+		std::vector<DestructiblesStorage> destructibles_stack;
+		// Number of destructibles storages at stack before loop block creation.
+		size_t destructibles_stack_size_in_last_loop= 0u;
+		llvm::BasicBlock* destructor_end_block= nullptr; // exists, if function is destructor
 	};
 
 	struct BlockBuildInfo
@@ -78,6 +93,7 @@ private:
 
 	void TryGenerateDefaultConstructor( Class& the_class, const Type& class_type );
 	void TryGenerateCopyConstructor( Class& the_class, const Type& class_type );
+	void TryGenerateDestructor( Class& the_class, const Type& class_type );
 
 	void BuildCopyConstructorPart(
 		llvm::Value* src, llvm::Value* dst,
@@ -96,6 +112,19 @@ private:
 		size_t iteration_count,
 		const std::function<void(llvm::Value* counter_value)>& loop_body,
 		FunctionContext& function_context);
+
+	void CallDestructors(
+		const DestructiblesStorage& destructibles_storage,
+		FunctionContext& function_context );
+
+	void CallDestructor(
+		llvm::Value* ptr,
+		const Type& type,
+		FunctionContext& function_context );
+
+	void CallDestructorsForLoopInnerVariables( FunctionContext& function_context );
+	void CallDestructorsBeforeReturn( FunctionContext& function_context );
+	void CallMembersDestructors( FunctionContext& function_context );
 
 	void BuildNamespaceBody(
 		const ProgramElements& body_elements,
@@ -134,6 +163,11 @@ private:
 		FunctionContext& function_context ) noexcept;
 
 	// Expressions.
+
+	Value BuildExpressionCodeAndDestroyTemporaries(
+		const IExpressionComponent& expression,
+		const NamesScope& names,
+		FunctionContext& function_context );
 
 	Value BuildExpressionCode(
 		const IExpressionComponent& expression,

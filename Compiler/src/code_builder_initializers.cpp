@@ -247,8 +247,9 @@ void CodeBuilder::ApplyConstructorInitializer(
 			return;
 		}
 
+		// SPRACHE_TODO - maybe we need save temporaries of this expression?
 		const Value expression_result=
-			BuildExpressionCode( *call_operator.arguments_.front(), block_names, function_context );
+			BuildExpressionCodeAndDestroyTemporaries( *call_operator.arguments_.front(), block_names, function_context );
 		const Type expression_type= expression_result.GetType();
 		const FundamentalType* const src_type= expression_type.GetFundamentalType();
 
@@ -363,8 +364,9 @@ void CodeBuilder::ApplyExpressionInitializer(
 	{
 		U_UNUSED(fundamental_type);
 
+		// SPRACHE_TODO - maybe we need save temporaries of this expression?
 		const Value expression_result=
-			BuildExpressionCode( *initializer.expression, block_names, function_context );
+			BuildExpressionCodeAndDestroyTemporaries( *initializer.expression, block_names, function_context );
 		if( expression_result.GetType() != variable.type )
 		{
 			errors_.push_back( ReportTypesMismatch( initializer.file_pos_, variable.type.ToString(), expression_result.GetType().ToString() ) );

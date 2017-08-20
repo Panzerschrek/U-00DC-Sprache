@@ -58,6 +58,12 @@ CodeBuilder::FunctionContext::FunctionContext(
 {
 }
 
+void CodeBuilder::DestructiblesStorage::RegisterVariable( Variable variable )
+{
+	if( variable.type.HaveDestructor() )
+		variables.push_back( std::move( variable ) );
+}
+
 CodeBuilder::CodeBuilder()
 	: llvm_context_( llvm::getGlobalContext() )
 {
@@ -340,6 +346,7 @@ void CodeBuilder::PrepareClass( const ClassDeclaration& class_declaration, Names
 
 	TryGenerateDefaultConstructor( *the_class, class_type );
 	TryGenerateCopyConstructor( *the_class, class_type );
+	TryGenerateDestructor( *the_class, class_type );
 
 	// Build functions with body.
 	for( const ClassDeclaration::Member& member : class_declaration.members_ )
@@ -614,6 +621,87 @@ void CodeBuilder::TryGenerateCopyConstructor( Class& the_class, const Type& clas
 	the_class.is_copy_constructible= true;
 }
 
+void CodeBuilder::TryGenerateDestructor( Class& the_class, const Type& class_type )
+{
+	// Search for explicit destructor.
+	if( const NamesScope::InsertedName* const destructor_name=
+		the_class.members.GetThisScopeName( Keyword( Keywords::destructor_ ) ) )
+	{
+		const OverloadedFunctionsSet* const destructors= destructor_name->second.GetFunctionsSet();
+		U_ASSERT( destructors != nullptr && destructors->size() == 1u );
+		U_UNUSED( destructors );
+		the_class.have_destructor= true;
+		return;
+	}
+
+	// SPRACHE_TODO - maybe not generate default destructor for classes, that have no fields with destructors?
+	// SPRACHE_TODO - maybe mark generated destructor for this cases as "empty"?
+
+	// Generate destructor.
+	Function destructor_type;
+	destructor_type.return_type= void_type_;
+	destructor_type.args.resize(1u);
+	destructor_type.args[0].type= class_type;
+	destructor_type.args[0].is_mutable= true;
+	destructor_type.args[0].is_reference= true;
+
+	llvm::Type* const this_llvm_type= llvm::PointerType::get( class_type.GetLLVMType(), 0u );
+	destructor_type.llvm_function_type=
+		llvm::FunctionType::get(
+			fundamental_llvm_types_.void_,
+			llvm::ArrayRef<llvm::Type*>( &this_llvm_type, 1u ),
+			false );
+
+	llvm::Function* const llvm_destructor_function=
+		llvm::Function::Create(
+			destructor_type.llvm_function_type,
+			llvm::Function::LinkageTypes::ExternalLinkage, // TODO - select linkage
+			MangleFunction( the_class.members, Keyword( Keywords::destructor_ ), destructor_type, true ),
+			module_.get() );
+	llvm_destructor_function->setUnnamedAddr( true );
+	llvm_destructor_function->addAttribute( 1u, llvm::Attribute::NonNull ); // this is nonnull
+
+	llvm::Value* const this_llvm_value= &*llvm_destructor_function->args().begin();
+	this_llvm_value->setName( KeywordAscii( Keywords::this_ ) );
+
+	Variable this_;
+	this_.type= class_type;
+	this_.location= Variable::Location::Pointer;
+	this_.value_type= ValueType::Reference;
+	this_.llvm_value= this_llvm_value;
+
+	FunctionContext function_context(
+		destructor_type.return_type,
+		destructor_type.return_value_is_mutable,
+		destructor_type.return_value_is_reference,
+		llvm_context_,
+		llvm_destructor_function );
+	function_context.this_= &this_;
+
+	CallMembersDestructors( function_context );
+	function_context.alloca_ir_builder.CreateBr( function_context.function_basic_block );
+	function_context.llvm_ir_builder.CreateRetVoid();
+
+	// Add generated destructor.
+	FunctionVariable destructor_variable;
+	destructor_variable.type= std::move( destructor_type );
+	destructor_variable.have_body= true;
+	destructor_variable.is_this_call= true;
+	destructor_variable.is_generated= true;
+	destructor_variable.llvm_function= llvm_destructor_function;
+
+	// TODO - destructor have no overloads. Maybe store it as FunctionVariable, not as FunctionsSet?
+	OverloadedFunctionsSet destructors;
+	destructors.push_back( std::move( destructor_variable ) );
+
+	the_class.members.AddName(
+		Keyword( Keywords::destructor_ ),
+		Value( std::move( destructors ) ) );
+
+	// Say "we have destructor".
+	the_class.have_destructor= true;
+}
+
 void CodeBuilder::BuildCopyConstructorPart(
 	llvm::Value* const src, llvm::Value* const dst,
 	const Type& type,
@@ -764,6 +852,103 @@ void CodeBuilder::GenerateLoop(
 	function_context.llvm_ir_builder.SetInsertPoint( block_after_loop );
 }
 
+void CodeBuilder::CallDestructors(
+	const DestructiblesStorage& destructibles_storage,
+	FunctionContext& function_context )
+{
+	// Call destructors in reverse order.
+	for( auto it = destructibles_storage.variables.rbegin(); it != destructibles_storage.variables.rend(); ++it )
+		CallDestructor( it->llvm_value, it->type, function_context );
+}
+
+void CodeBuilder::CallDestructor(
+	llvm::Value* const ptr,
+	const Type& type,
+	FunctionContext& function_context )
+{
+	U_ASSERT( type.HaveDestructor() );
+
+	if( const ClassPtr class_= type.GetClassType() )
+	{
+		const NamesScope::InsertedName* const destructor_name= class_->members.GetThisScopeName( Keyword( Keywords::destructor_ ) );
+		U_ASSERT( destructor_name != nullptr );
+		const OverloadedFunctionsSet* const destructors= destructor_name->second.GetFunctionsSet();
+		U_ASSERT(destructors != nullptr && destructors->size() == 1u );
+
+		const FunctionVariable& destructor= destructors->front();
+		llvm::Value* const destructor_args[]= { ptr };
+		function_context.llvm_ir_builder.CreateCall(
+			destructor.llvm_function,
+			llvm::ArrayRef<llvm::Value*>( destructor_args, 1u ) );
+	}
+	else if( const Array* const array_type= type.GetArrayType() )
+	{
+		// SPRACHE_TODO - maybe call destructors of arrays in reverse order?
+		GenerateLoop(
+			array_type->size,
+			[&]( llvm::Value* const index )
+			{
+				llvm::Value* index_list[2];
+				index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
+				index_list[1]= index;
+				CallDestructor(
+					function_context.llvm_ir_builder.CreateGEP( ptr, llvm::ArrayRef<llvm::Value*> ( index_list, 2u ) ),
+					array_type->type,
+					function_context );
+			},
+			function_context );
+	}
+	else
+	{
+		U_ASSERT( false && "WTF? strange type for variable" );
+	}
+}
+
+void CodeBuilder::CallDestructorsForLoopInnerVariables( FunctionContext& function_context )
+{
+	// Destroy all local variables before "break"/"continue" in all blocks inside loop.
+	size_t undestructed_stack_size= function_context.destructibles_stack.size();
+	for(
+		auto it= function_context.destructibles_stack.rbegin();
+		it != function_context.destructibles_stack.rend() && undestructed_stack_size > function_context.destructibles_stack_size_in_last_loop;
+		++it, --undestructed_stack_size )
+	{
+		CallDestructors( *it, function_context );
+	}
+}
+
+void CodeBuilder::CallDestructorsBeforeReturn( FunctionContext& function_context )
+{
+	// We must call ALL destructors of local variables, arguments, etc before each return.
+	for( auto it= function_context.destructibles_stack.rbegin(); it != function_context.destructibles_stack.rend(); ++it )
+		CallDestructors( *it, function_context );
+}
+
+void CodeBuilder::CallMembersDestructors( FunctionContext& function_context )
+{
+	U_ASSERT( function_context.this_ != nullptr );
+	const ClassPtr class_= function_context.this_->type.GetClassType();
+	U_ASSERT( class_ != nullptr );
+
+	class_->members.ForEachInThisScope(
+		[&]( const NamesScope::InsertedName& member )
+		{
+			const ClassField* const field= member.second.GetClassField();
+			if( field == nullptr )
+				return;
+			if( !field->type.HaveDestructor() )
+				return;
+
+			llvm::Value* index_list[2];
+			index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
+			index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(field->index) ) );
+			CallDestructor(
+				function_context.llvm_ir_builder.CreateGEP( function_context.this_->llvm_value, index_list ),
+				field->type,
+				function_context );
+		} );
+}
+
 void CodeBuilder::BuildNamespaceBody(
 	const ProgramElements& body_elements,
 	NamesScope& names_scope )
@@ -821,8 +1006,10 @@ void CodeBuilder::PrepareFunction(
 	const ProgramString& func_name= func.name_.components.back();
 
 	const bool is_constructor= func_name == Keywords::constructor_;
+	const bool is_destructor= func_name == Keywords::destructor_;
+	const bool is_special_method= is_constructor || is_destructor;
 
-	if( !is_constructor && IsKeyword( func_name ) )
+	if( !is_special_method && IsKeyword( func_name ) )
 		errors_.push_back( ReportUsingKeywordAsName( func.file_pos_ ) );
 
 	const Block* const block= is_class_method_predeclaration ? nullptr : func.block_.get();
@@ -868,14 +1055,19 @@ void CodeBuilder::PrepareFunction(
 		}
 	}
 
-	if( is_constructor && base_class == nullptr )
+	if( is_special_method && base_class == nullptr )
 	{
-		errors_.push_back( ReportConstructorOutsideClass( func.file_pos_ ) );
+		errors_.push_back( ReportConstructorOrDestructorOutsideClass( func.file_pos_ ) );
 		return;
 	}
 	if( !is_constructor && func.constructor_initialization_list_ != nullptr )
 	{
 		errors_.push_back( ReportInitializationListInNonconstructor(  func.constructor_initialization_list_->file_pos_ ) );
+		return;
+	}
+	if( is_destructor && !func.arguments_.empty() )
+	{
+		errors_.push_back( ReportExplicitArgumentsInDestructor( func.file_pos_ ) );
 		return;
 	}
 
@@ -907,14 +1099,14 @@ void CodeBuilder::PrepareFunction(
 		return;
 	}
 
-	if( is_constructor && function_type.return_type != void_type_ )
-		errors_.push_back( ReportConstructorMustReturnVoid( func.file_pos_ ) );
+	if( is_special_method && function_type.return_type != void_type_ )
+		errors_.push_back( ReportConstructorAndDestructorMustReturnVoid( func.file_pos_ ) );
 
 	// Args.
 	function_type.args.reserve( func.arguments_.size() );
 
 	// Generate "this" arg for constructors.
-	if( is_constructor )
+	if( is_special_method )
 	{
 		func_variable.is_this_call= true;
 
@@ -932,8 +1124,8 @@ void CodeBuilder::PrepareFunction(
 		if( !is_this && IsKeyword( arg->name_ ) )
 			errors_.push_back( ReportUsingKeywordAsName( arg->file_pos_ ) );
 
-		if( is_this && is_constructor )
-			errors_.push_back( ReportExplicitThisInConstructorParamters( arg->file_pos_ ) );
+		if( is_this && is_special_method )
+			errors_.push_back( ReportExplicitThisInConstructorOrDestructor( arg->file_pos_ ) );
 
 		function_type.args.emplace_back();
 		Function::Arg& out_arg= function_type.args.back();
@@ -1188,12 +1380,16 @@ void CodeBuilder::BuildFuncCode(
 		llvm_context_,
 		llvm_function );
 
+	function_context.destructibles_stack.emplace_back();
+
 	// push args
 	Variable this_;
 	Variable s_ret;
 	unsigned int arg_number= 0u;
 
 	const bool is_constructor= func_name == Keywords::constructor_;
+	const bool is_destructor= func_name == Keywords::destructor_;
+	const bool is_special_method= is_constructor || is_destructor;
 
 	for( llvm::Argument& llvm_arg : llvm_function->args() )
 	{
@@ -1211,7 +1407,7 @@ void CodeBuilder::BuildFuncCode(
 
 		const Function::Arg& arg= function_type->args[ arg_number ];
 
-		if( is_constructor && arg_number == 0u )
+		if( is_special_method && arg_number == 0u )
 		{
 			this_.location= Variable::Location::Pointer;
 			this_.value_type= ValueType::Reference;
@@ -1223,12 +1419,12 @@ void CodeBuilder::BuildFuncCode(
 			continue;
 		}
 
-		const FunctionArgumentDeclaration& declaration_arg= *args[ is_constructor ? ( arg_number - 1u ) : arg_number ];
+		const FunctionArgumentDeclaration& declaration_arg= *args[ is_special_method ? ( arg_number - 1u ) : arg_number ];
 		const ProgramString& arg_name= declaration_arg.name_;
 
 		const bool is_this= arg_number == 0u && arg_name == Keywords::this_;
 		U_ASSERT( !( is_this && !arg.is_reference ) );
-		U_ASSERT( !( is_constructor && is_this ) );
+		U_ASSERT( !( is_special_method && is_this ) );
 
 		Variable var;
 		var.location= Variable::Location::LLVMRegister;
@@ -1281,6 +1477,9 @@ void CodeBuilder::BuildFuncCode(
 				errors_.push_back( ReportRedefinition( declaration_arg.file_pos_, arg_name ) );
 				return;
 			}
+
+			if( !arg.is_reference )
+				function_context.destructibles_stack.back().RegisterVariable( *inserted_arg->second.GetVariable() );
 		}
 
 		llvm_arg.setName( "_arg_" + ToStdString( arg_name ) );
@@ -1317,14 +1516,31 @@ void CodeBuilder::BuildFuncCode(
 		function_context.is_constructor_initializer_list_now= false;
 	}
 
+	if( is_destructor )
+		function_context.destructor_end_block= llvm::BasicBlock::Create( llvm_context_ );
+
 	const BlockBuildInfo block_build_info=
 		BuildBlockCode( *block, function_names, function_context );
+	U_ASSERT( function_context.destructibles_stack.size() == 1u || !errors_.empty() || error_count_ > 0u );
+
+	// We need call destructors for arguments only if function returns "void".
+	// In other case, we have "return" in all branches and destructors call before each "return".
 
 	if(  function_type->return_type == void_type_ )
 	{
 		// Manually generate "return" for void-return functions.
 		if( !block_build_info.have_unconditional_return_inside )
-			function_context.llvm_ir_builder.CreateRetVoid();
+		{
+			CallDestructors( function_context.destructibles_stack.back(), function_context );
+
+			if( function_context.destructor_end_block == nullptr )
+				function_context.llvm_ir_builder.CreateRetVoid();
+			else
+			{
+				// In explicit destructor, break to block with destructor calls for class members.
+				function_context.llvm_ir_builder.CreateBr( function_context.destructor_end_block );
+			}
+		}
 	}
 	else
 	{
@@ -1338,6 +1554,17 @@ void CodeBuilder::BuildFuncCode(
 	llvm::Function::BasicBlockListType& bb_list = llvm_function->getBasicBlockList();
 
 	function_context.alloca_ir_builder.CreateBr( function_context.function_basic_block );
+
+	if( is_destructor )
+	{
+		// Fill destructors block.
+		U_ASSERT( function_context.destructor_end_block != nullptr );
+		function_context.llvm_ir_builder.SetInsertPoint( function_context.destructor_end_block );
+		bb_list.push_back( function_context.destructor_end_block );
+
+		CallMembersDestructors( function_context );
+		function_context.llvm_ir_builder.CreateRetVoid();
+	}
 
 	// Remove duplicated terminator instructions at end of all function blocks.
 	// This needs, for example, when "return" is last operator inside "if" or "while" blocks.
@@ -1485,6 +1712,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockCode(
 	NamesScope block_names( ""_SpC, &names );
 	BlockBuildInfo block_build_info;
 
+	function_context.destructibles_stack.emplace_back();
+
 	for( const IBlockElementPtr& block_element : block.elements_ )
 	{
 		const IBlockElement* const block_element_ptr= block_element.get();
@@ -1513,7 +1742,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockCode(
 				const SingleExpressionOperator* expression=
 				dynamic_cast<const SingleExpressionOperator*>( block_element_ptr ) )
 			{
-				BuildExpressionCode(
+				BuildExpressionCodeAndDestroyTemporaries(
 					*expression->expression_,
 					block_names,
 					function_context );
@@ -1641,6 +1870,13 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockCode(
 		}
 	}
 
+	// If there are undconditional "break", "continue", "return" operators,
+	// we didn`t need call destructors, it must be called in this operators.
+	if( !( block_build_info.have_uncodnitional_break_or_continue || block_build_info.have_unconditional_return_inside ) )
+		CallDestructors( function_context.destructibles_stack.back(), function_context );
+
+	function_context.destructibles_stack.pop_back();
+
 	return block_build_info;
 }
 
@@ -1720,7 +1956,7 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 			}
 
 			const Value expression_result_value=
-				BuildExpressionCode( *initializer_expression, block_names, function_context );
+				BuildExpressionCodeAndDestroyTemporaries( *initializer_expression, block_names, function_context );
 
 			if( expression_result_value.GetType() != variable.type )
 			{
@@ -1757,6 +1993,9 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 			errors_.push_back( ReportRedefinition( variables_declaration.file_pos_, variable_declaration.name ) );
 			continue;
 		}
+
+		if( variable_declaration.reference_modifier == ReferenceModifier::None )
+			function_context.destructibles_stack.back().RegisterVariable( *inserted_name->second.GetVariable() );
 	}
 }
 
@@ -1766,7 +2005,7 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 	FunctionContext& function_context )
 {
 	const Value initializer_experrsion_value=
-		BuildExpressionCode( *auto_variable_declaration.initializer_expression, block_names, function_context );
+		BuildExpressionCodeAndDestroyTemporaries( *auto_variable_declaration.initializer_expression, block_names, function_context );
 
 	{ // Check expression type. Expression can have exotic types, such "Overloading functions set", "class name", etc.
 		const Type& type= initializer_experrsion_value.GetType();
@@ -1840,6 +2079,9 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 		errors_.push_back( ReportRedefinition( auto_variable_declaration.file_pos_, auto_variable_declaration.name ) );
 		return;
 	}
+
+	if( auto_variable_declaration.reference_modifier == ReferenceModifier::None )
+		function_context.destructibles_stack.back().RegisterVariable( *inserted_name->second.GetVariable() );
 }
 
 void CodeBuilder::BuildAssignmentOperatorCode(
@@ -1847,6 +2089,9 @@ void CodeBuilder::BuildAssignmentOperatorCode(
 	const NamesScope& block_names,
 	FunctionContext& function_context )
 {
+	// Destruction frame for temporary variables of expressions.
+	function_context.destructibles_stack.emplace_back();
+
 	const IExpressionComponent& l_value= *assignment_operator.l_value_;
 	const IExpressionComponent& r_value= *assignment_operator.r_value_;
 
@@ -1894,6 +2139,10 @@ void CodeBuilder::BuildAssignmentOperatorCode(
 		errors_.push_back( ReportNotImplemented( assignment_operator.file_pos_, "nonfundamental types assignment." ) );
 		return;
 	}
+
+	// Destruct temporary variables of right and left expressions.
+	CallDestructors( function_context.destructibles_stack.back(), function_context );
+	function_context.destructibles_stack.pop_back();
 }
 
 void CodeBuilder::BuildAdditiveAssignmentOperatorCode(
@@ -1901,6 +2150,9 @@ void CodeBuilder::BuildAdditiveAssignmentOperatorCode(
 	const NamesScope& block_names,
 	FunctionContext& function_context )
 {
+	// Destruction frame for temporary variables of expressions.
+	function_context.destructibles_stack.emplace_back();
+
 	const Value l_var_value=
 		BuildExpressionCode(
 			*additive_assignment_operator.l_value_,
@@ -1956,6 +2208,10 @@ void CodeBuilder::BuildAdditiveAssignmentOperatorCode(
 		errors_.push_back( ReportNotImplemented( additive_assignment_operator.file_pos_, "additive operations for nonfundamental types" ) );
 		return;
 	}
+
+	// Destruct temporary variables of right and left expressions.
+	CallDestructors( function_context.destructibles_stack.back(), function_context );
+	function_context.destructibles_stack.pop_back();
 }
 
 void CodeBuilder::BuildDeltaOneOperatorCode(
@@ -1965,7 +2221,7 @@ void CodeBuilder::BuildDeltaOneOperatorCode(
 	const NamesScope& block_names,
 	FunctionContext& function_context )
 {
-	const Value value= BuildExpressionCode( expression, block_names, function_context );
+	const Value value= BuildExpressionCodeAndDestroyTemporaries( expression, block_names, function_context );
 	const Variable* const variable= value.GetVariable();
 	if( variable == nullptr )
 	{
@@ -2021,16 +2277,38 @@ void CodeBuilder::BuildReturnOperatorCode(
 			return;
 		}
 
-		// Add only return instruction for void return operators.
-		function_context.llvm_ir_builder.CreateRetVoid();
+		CallDestructorsBeforeReturn( function_context );
+
+		if( function_context.destructor_end_block == nullptr )
+			function_context.llvm_ir_builder.CreateRetVoid();
+		else
+		{
+			// In explicit destructor, break to block with destructor calls for class members.
+			function_context.llvm_ir_builder.CreateBr( function_context.destructor_end_block );
+		}
+
 		return;
 	}
+
+	// Destruction frame for temporary variables of result expression.
+	function_context.destructibles_stack.emplace_back();
 
 	const Value expression_result_value=
 		BuildExpressionCode(
 			*return_operator.expression_,
 			names,
 			function_context );
+
+	// Destruct temporary variables of return expression only after assignment of
+	// return value. Destroy all other function variables after this.
+	const auto call_destructors=
+	[&]()
+	{
+		CallDestructors( function_context.destructibles_stack.back(), function_context );
+		function_context.destructibles_stack.pop_back();
+
+		CallDestructorsBeforeReturn( function_context );
+	};
 
 	if( expression_result_value.GetType() != function_context.return_type )
 	{
@@ -2052,6 +2330,7 @@ void CodeBuilder::BuildReturnOperatorCode(
 			return;
 		}
 
+		call_destructors();
 		function_context.llvm_ir_builder.CreateRet( expression_result.llvm_value );
 	}
 	else
@@ -2060,10 +2339,17 @@ void CodeBuilder::BuildReturnOperatorCode(
 		{
 			const ClassPtr class_= function_context.s_ret_->type.GetClassType();
 			TryCallCopyConstructor( return_operator.file_pos_, function_context.s_ret_->llvm_value, expression_result.llvm_value, class_, function_context );
+
+			call_destructors();
 			function_context.llvm_ir_builder.CreateRetVoid();
 		}
 		else
 		{
+			// Now we can return by value only fundamentals.
+			U_ASSERT( expression_result.type.GetFundamentalType() != nullptr );
+
+			call_destructors();
+
 			llvm::Value* value_for_return= CreateMoveToLLVMRegisterInstruction( expression_result, function_context );
 			function_context.llvm_ir_builder.CreateRet( value_for_return );
 		}
@@ -2086,7 +2372,7 @@ void CodeBuilder::BuildWhileOperatorCode(
 	function_context.function->getBasicBlockList().push_back( test_block );
 	function_context.llvm_ir_builder.SetInsertPoint( test_block );
 
-	const Value condition_expression= BuildExpressionCode( *while_operator.condition_, names, function_context );
+	const Value condition_expression= BuildExpressionCodeAndDestroyTemporaries( *while_operator.condition_, names, function_context );
 
 	if( condition_expression.GetType() != bool_type_ )
 	{
@@ -2108,9 +2394,11 @@ void CodeBuilder::BuildWhileOperatorCode(
 	// WARNING - between save/restore nobody should throw exceptions!!!
 	llvm::BasicBlock* const prev_block_for_break   = function_context.block_for_break   ;
 	llvm::BasicBlock* const prev_block_for_continue= function_context.block_for_continue;
+	const size_t prev_block_destructibles_stack_size= function_context.destructibles_stack_size_in_last_loop;
 	// Set current while block labels.
 	function_context.block_for_break   = block_after_while;
 	function_context.block_for_continue= test_block;
+	function_context.destructibles_stack_size_in_last_loop= function_context.destructibles_stack.size();
 
 	function_context.function->getBasicBlockList().push_back( while_block );
 	function_context.llvm_ir_builder.SetInsertPoint( while_block );
@@ -2121,6 +2409,7 @@ void CodeBuilder::BuildWhileOperatorCode(
 	// Restore previous while block break/continue labels.
 	function_context.block_for_break   = prev_block_for_break   ;
 	function_context.block_for_continue= prev_block_for_continue;
+	function_context.destructibles_stack_size_in_last_loop= prev_block_destructibles_stack_size;
 
 	// Block after while code.
 	function_context.function->getBasicBlockList().push_back( block_after_while );
@@ -2137,6 +2426,7 @@ void CodeBuilder::BuildBreakOperatorCode(
 		return;
 	}
 
+	CallDestructorsForLoopInnerVariables( function_context );
 	function_context.llvm_ir_builder.CreateBr( function_context.block_for_break );
 }
 
@@ -2150,6 +2440,7 @@ void CodeBuilder::BuildContinueOperatorCode(
 		return;
 	}
 
+	CallDestructorsForLoopInnerVariables( function_context );
 	function_context.llvm_ir_builder.CreateBr( function_context.block_for_continue );
 }
 
@@ -2198,7 +2489,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildIfOperatorCode(
 		}
 		else
 		{
-			const Value condition_expression= BuildExpressionCode( *branch.condition, names, function_context );
+			const Value condition_expression= BuildExpressionCodeAndDestroyTemporaries( *branch.condition, names, function_context );
 
 			if( condition_expression.GetType() != bool_type_ )
 			{

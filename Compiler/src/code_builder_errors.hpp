@@ -63,13 +63,16 @@ enum class CodeBuilderErrorCode : unsigned int
 	InvalidTypeForAutoVariable,
 
 	// Constructors errors
-	ConstructorOutsideClass,
-	ConstructorMustReturnVoid,
+	ConstructorOrDestructorOutsideClass,
+	ConstructorAndDestructorMustReturnVoid,
 	InitializationListInNonconstructor,
 	ClassHaveNoConstructors,
-	ExplicitThisInConstructorParamters,
+	ExplicitThisInConstructorOrDestructor,
 	FieldIsNotInitializedYet,
 	MethodsCallInConstructorInitializerListIsForbidden,
+
+	// Destructors errors
+	ExplicitArgumentsInDestructor,
 
 	// Methods errors.
 	CallOfThiscallFunctionUsingNonthisArgument,
@@ -135,13 +138,14 @@ CodeBuilderError ReportInitializerForNonfieldStructMember( const FilePos& file_p
 CodeBuilderError ReportDuplicatedStructMemberInitializer( const FilePos& file_pos, const ProgramString& member_name );
 CodeBuilderError ReportInitializerDisabledBecauseClassHaveExplicitNoncopyConstructors( const FilePos& file_pos );
 CodeBuilderError ReportInvalidTypeForAutoVariable( const FilePos& file_pos, const ProgramString& type_name );
-CodeBuilderError ReportConstructorOutsideClass( const FilePos& file_pos );
-CodeBuilderError ReportConstructorMustReturnVoid( const FilePos& file_pos );
+CodeBuilderError ReportConstructorOrDestructorOutsideClass( const FilePos& file_pos );
+CodeBuilderError ReportConstructorAndDestructorMustReturnVoid( const FilePos& file_pos );
 CodeBuilderError ReportInitializationListInNonconstructor( const FilePos& file_pos );
 CodeBuilderError ReportClassHaveNoConstructors( const FilePos& file_pos );
-CodeBuilderError ReportExplicitThisInConstructorParamters( const FilePos& file_pos );
+CodeBuilderError ReportExplicitThisInConstructorOrDestructor( const FilePos& file_pos );
 CodeBuilderError ReportFieldIsNotInitializedYet( const FilePos& file_pos, const ProgramString& field_name );
 CodeBuilderError ReportMethodsCallInConstructorInitializerListIsForbidden( const FilePos& file_pos, const ProgramString& method_name );
+CodeBuilderError ReportExplicitArgumentsInDestructor( const FilePos& file_pos );
 CodeBuilderError ReportCallOfThiscallFunctionUsingNonthisArgument( const FilePos& file_pos );
 CodeBuilderError ReportClassFiledAccessInStaticMethod( const FilePos& file_pos, const ProgramString& field_name );
 CodeBuilderError ReportThisInNonclassFunction( const FilePos& file_pos, const ProgramString& func_name );

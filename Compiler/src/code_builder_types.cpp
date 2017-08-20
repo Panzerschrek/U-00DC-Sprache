@@ -316,6 +316,22 @@ bool Type::IsCopyConstructible() const
 	return false;
 }
 
+bool Type::HaveDestructor() const
+{
+	if( const ClassPtr* const class_= boost::get<ClassPtr>( &something_ ) )
+	{
+		U_ASSERT( *class_ != nullptr );
+		return (*class_)->have_destructor;
+	}
+	else if( const ArrayPtr* const array= boost::get<ArrayPtr>( &something_ ) )
+	{
+		U_ASSERT( *array != nullptr );
+		return (*array)->type.HaveDestructor();
+	}
+
+	return false;
+}
+
 llvm::Type* Type::GetLLVMType() const
 {
 	struct Visitor final : public boost::static_visitor<>
