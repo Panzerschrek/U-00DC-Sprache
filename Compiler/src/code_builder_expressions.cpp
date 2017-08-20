@@ -1170,11 +1170,21 @@ Variable CodeBuilder::BuildUnaryMinus(
 	result.location= Variable::Location::LLVMRegister;
 	result.value_type= ValueType::Value;
 
-	llvm::Value* value_for_neg= CreateMoveToLLVMRegisterInstruction( variable, function_context );
-	if( is_float )
-		result.llvm_value= function_context.llvm_ir_builder.CreateFNeg( value_for_neg );
+	if( variable.constexpr_value != nullptr )
+	{
+		if( is_float )
+			result.llvm_value= result.constexpr_value= llvm::ConstantExpr::getFNeg( variable.constexpr_value );
+		else
+			result.llvm_value= result.constexpr_value= llvm::ConstantExpr::getNeg( variable.constexpr_value );
+	}
 	else
-		result.llvm_value= function_context.llvm_ir_builder.CreateNeg( value_for_neg );
+	{
+		llvm::Value* const value_for_neg= CreateMoveToLLVMRegisterInstruction( variable, function_context );
+		if( is_float )
+			result.llvm_value= function_context.llvm_ir_builder.CreateFNeg( value_for_neg );
+		else
+			result.llvm_value= function_context.llvm_ir_builder.CreateNeg( value_for_neg );
+	}
 
 	return result;
 }
