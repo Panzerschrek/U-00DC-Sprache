@@ -314,6 +314,17 @@ CodeBuilderError ReportExpectedVariableInIncrementOrDecrement( const FilePos& fi
 	return error;
 }
 
+CodeBuilderError ReprotExpectedVariableInArraySize( const FilePos& file_pos, const ProgramString& got )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::ExpectedVariableInArraySize;
+
+	error.text= "Expected variable in array size expression, got \"."_SpC + got + "\"."_SpC;
+
+	return error;
+}
+
 CodeBuilderError ReportCouldNotOverloadFunction( const FilePos& file_pos )
 {
 	CodeBuilderError error;
@@ -420,6 +431,17 @@ CodeBuilderError ReportUsingIncompleteType( const FilePos& file_pos, const Progr
 	error.code= CodeBuilderErrorCode::UsingIncompleteType;
 
 	error.text= "Using incomplete type \""_SpC + type_name + "\", expected complete type."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportExpectedConstantExpression( const FilePos& file_pos )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::ExpectedConstantExpression;
+
+	error.text= "Expected constant expression."_SpC;
 
 	return error;
 }

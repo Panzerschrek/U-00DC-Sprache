@@ -161,6 +161,7 @@ Type CodeBuilder::PrepareType(
 			false, false,
 			llvm_context_,
 			dummy_function );
+		dummy_function_context.destructibles_stack.emplace_back();
 
 		const Value size_expression= BuildExpressionCode( num, names_scope, dummy_function_context );
 		if( const Variable* const size_variable= size_expression.GetVariable() )
@@ -181,22 +182,13 @@ Type CodeBuilder::PrepareType(
 						errors_.push_back( ReportArraySizeIsNotInteger( num.file_pos_ ) );
 				}
 				else
-				{
-					// TODO - report constexpr is not fundamental
-					errors_.push_back( ReportNotImplemented( num.file_pos_, "shitty arrays" ) );
-				}
+					U_ASSERT( false && "Nonfundamental constexpr? WTF?" );
 			}
 			else
-			{
-				// TODO - report not contexpr
-				errors_.push_back( ReportNotImplemented( num.file_pos_, "shitty arrays" ) );
-			}
+				errors_.push_back( ReportExpectedConstantExpression( num.file_pos_ ) );
 		}
 		else
-		{
-			// TODO - report not variable
-			errors_.push_back( ReportNotImplemented( num.file_pos_, "shitty arrays" ) );
-		}
+			errors_.push_back( ReprotExpectedVariableInArraySize( num.file_pos_, size_expression.GetType().ToString() ) );
 
 		dummy_function->eraseFromParent(); // kill dummy function
 
