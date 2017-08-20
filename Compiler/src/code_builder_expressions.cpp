@@ -665,29 +665,54 @@ Variable CodeBuilder::BuildBinaryOperator(
 				throw ProgramError();
 			}
 
-			llvm::Value* const l_value_for_op= CreateMoveToLLVMRegisterInstruction( l_var, function_context );
-			llvm::Value* r_value_for_op= CreateMoveToLLVMRegisterInstruction( r_var, function_context );
+			if( l_var.constexpr_value != nullptr && r_var.constexpr_value != nullptr )
+			{
+				// Convert value of shift to type of shifted value. LLVM Reuqired this.
+				llvm::Constant* r_value_for_op= r_var.constexpr_value;
+				if( r_var.type.SizeOf() > l_var.type.SizeOf() )
+					r_value_for_op= llvm::ConstantExpr::getTrunc( r_value_for_op, l_var.type.GetLLVMType() );
+				else if( r_var.type.SizeOf() < l_var.type.SizeOf() )
+					r_value_for_op= llvm::ConstantExpr::getZExt( r_value_for_op, l_var.type.GetLLVMType() );
 
-			// Convert value of shift to type of shifted value. LLVM Reuqired this.
-			if( r_var.type.SizeOf() > l_var.type.SizeOf() )
-				r_value_for_op= function_context.llvm_ir_builder.CreateTrunc( r_value_for_op, l_var.type.GetLLVMType() );
-			else if( r_var.type.SizeOf() < l_var.type.SizeOf() )
-				r_value_for_op= function_context.llvm_ir_builder.CreateZExt( r_value_for_op, l_var.type.GetLLVMType() );
+				if( binary_operator == BinaryOperatorType::ShiftLeft )
+					result.constexpr_value= llvm::ConstantExpr::getShl( l_var.constexpr_value, r_value_for_op );
+				else if( binary_operator == BinaryOperatorType::ShiftRight )
+				{
+					if( IsSignedInteger( l_fundamental_type->fundamental_type ) )
+						result.constexpr_value= llvm::ConstantExpr::getAShr( l_var.constexpr_value, r_value_for_op );
+					else
+						result.constexpr_value= llvm::ConstantExpr::getLShr( l_var.constexpr_value, r_value_for_op );
+				}
+				else U_ASSERT(false);
+
+				result.llvm_value= result.constexpr_value;
+			}
+			else
+			{
+				llvm::Value* const l_value_for_op= CreateMoveToLLVMRegisterInstruction( l_var, function_context );
+				llvm::Value* r_value_for_op= CreateMoveToLLVMRegisterInstruction( r_var, function_context );
+
+				// Convert value of shift to type of shifted value. LLVM Reuqired this.
+				if( r_var.type.SizeOf() > l_var.type.SizeOf() )
+					r_value_for_op= function_context.llvm_ir_builder.CreateTrunc( r_value_for_op, l_var.type.GetLLVMType() );
+				else if( r_var.type.SizeOf() < l_var.type.SizeOf() )
+					r_value_for_op= function_context.llvm_ir_builder.CreateZExt( r_value_for_op, l_var.type.GetLLVMType() );
+
+				if( binary_operator == BinaryOperatorType::ShiftLeft )
+					result.llvm_value= function_context.llvm_ir_builder.CreateShl( l_value_for_op, r_value_for_op );
+				else if( binary_operator == BinaryOperatorType::ShiftRight )
+				{
+					if( IsSignedInteger( l_fundamental_type->fundamental_type ) )
+						result.llvm_value= function_context.llvm_ir_builder.CreateAShr( l_value_for_op, r_value_for_op );
+					else
+						result.llvm_value= function_context.llvm_ir_builder.CreateLShr( l_value_for_op, r_value_for_op );
+				}
+				else U_ASSERT(false);
+			}
 
 			result.location= Variable::Location::LLVMRegister;
 			result.value_type= ValueType::Value;
 			result.type= l_type;
-
-			if( binary_operator == BinaryOperatorType::ShiftLeft )
-				result.llvm_value= function_context.llvm_ir_builder.CreateShl( l_value_for_op, r_value_for_op );
-			else if( binary_operator == BinaryOperatorType::ShiftRight )
-			{
-				if( IsSignedInteger( l_fundamental_type->fundamental_type ) )
-					result.llvm_value= function_context.llvm_ir_builder.CreateAShr( l_value_for_op, r_value_for_op );
-				else
-					result.llvm_value= function_context.llvm_ir_builder.CreateLShr( l_value_for_op, r_value_for_op );
-			}
-			else{ U_ASSERT(false); }
 		}
 		break;
 
