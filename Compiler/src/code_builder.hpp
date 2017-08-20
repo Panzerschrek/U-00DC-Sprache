@@ -39,6 +39,14 @@ private:
 		std::vector<Variable> variables;
 	};
 
+	struct LoopFrame final
+	{
+		llvm::BasicBlock* block_for_break= nullptr;
+		llvm::BasicBlock* block_for_continue= nullptr;
+		// Number of destructibles storages at stack before loop block creation.
+		size_t destructibles_stack_size= 0u;
+	};
+
 	struct FunctionContext
 	{
 		FunctionContext(
@@ -68,15 +76,13 @@ private:
 		llvm::BasicBlock* const function_basic_block; // Next block after all "alloca" instructions.
 		llvm::IRBuilder<> llvm_ir_builder; // Use this builder for all instructions, except "alloca"
 
-		llvm::BasicBlock* block_for_break;
-		llvm::BasicBlock* block_for_continue;
+		std::vector<LoopFrame> loops_stack;
 
 		// Stack for distructibles.
 		// First entry is set of function arguments.
 		// Each block adds new storage for it`s destructible variables.
+		// Also, evaluation of some operators and expressions adds their destructibles storages.
 		std::vector<DestructiblesStorage> destructibles_stack;
-		// Number of destructibles storages at stack before loop block creation.
-		size_t destructibles_stack_size_in_last_loop= 0u;
 		llvm::BasicBlock* destructor_end_block= nullptr; // exists, if function is destructor
 	};
 

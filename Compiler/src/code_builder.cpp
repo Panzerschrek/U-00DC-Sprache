@@ -53,8 +53,6 @@ CodeBuilder::FunctionContext::FunctionContext(
 	, alloca_ir_builder( alloca_basic_block )
 	, function_basic_block( llvm::BasicBlock::Create( llvm_context, "func_code", function ) )
 	, llvm_ir_builder( function_basic_block )
-	, block_for_break( nullptr )
-	, block_for_continue( nullptr )
 {
 }
 
@@ -906,11 +904,14 @@ void CodeBuilder::CallDestructor(
 
 void CodeBuilder::CallDestructorsForLoopInnerVariables( FunctionContext& function_context )
 {
+	U_ASSERT( !function_context.loops_stack.empty() );
+
 	// Destroy all local variables before "break"/"continue" in all blocks inside loop.
 	size_t undestructed_stack_size= function_context.destructibles_stack.size();
 	for(
 		auto it= function_context.destructibles_stack.rbegin();
-		it != function_context.destructibles_stack.rend() && undestructed_stack_size > function_context.destructibles_stack_size_in_last_loop;
+		it != function_context.destructibles_stack.rend() &&
+		undestructed_stack_size > function_context.loops_stack.back().destructibles_stack_size;
 		++it, --undestructed_stack_size )
 	{
 		CallDestructors( *it, function_context );
@@ -2390,15 +2391,10 @@ void CodeBuilder::BuildWhileOperatorCode(
 
 	// While block code.
 
-	// Save previous while block break/continue labels.
-	// WARNING - between save/restore nobody should throw exceptions!!!
-	llvm::BasicBlock* const prev_block_for_break   = function_context.block_for_break   ;
-	llvm::BasicBlock* const prev_block_for_continue= function_context.block_for_continue;
-	const size_t prev_block_destructibles_stack_size= function_context.destructibles_stack_size_in_last_loop;
-	// Set current while block labels.
-	function_context.block_for_break   = block_after_while;
-	function_context.block_for_continue= test_block;
-	function_context.destructibles_stack_size_in_last_loop= function_context.destructibles_stack.size();
+	function_context.loops_stack.emplace_back();
+	function_context.loops_stack.back().block_for_break= block_after_while;
+	function_context.loops_stack.back().block_for_continue= test_block;
+	function_context.loops_stack.back().destructibles_stack_size= function_context.destructibles_stack.size();
 
 	function_context.function->getBasicBlockList().push_back( while_block );
 	function_context.llvm_ir_builder.SetInsertPoint( while_block );
@@ -2406,10 +2402,7 @@ void CodeBuilder::BuildWhileOperatorCode(
 	BuildBlockCode( *while_operator.block_, names, function_context );
 	function_context.llvm_ir_builder.CreateBr( test_block );
 
-	// Restore previous while block break/continue labels.
-	function_context.block_for_break   = prev_block_for_break   ;
-	function_context.block_for_continue= prev_block_for_continue;
-	function_context.destructibles_stack_size_in_last_loop= prev_block_destructibles_stack_size;
+	function_context.loops_stack.pop_back();
 
 	// Block after while code.
 	function_context.function->getBasicBlockList().push_back( block_after_while );
@@ -2420,28 +2413,30 @@ void CodeBuilder::BuildBreakOperatorCode(
 	const BreakOperator& break_operator,
 	FunctionContext& function_context ) noexcept
 {
-	if( function_context.block_for_break == nullptr )
+	if( function_context.loops_stack.empty() )
 	{
 		errors_.push_back( ReportBreakOutsideLoop( break_operator.file_pos_ ) );
 		return;
 	}
+	U_ASSERT( function_context.loops_stack.back().block_for_break != nullptr );
 
 	CallDestructorsForLoopInnerVariables( function_context );
-	function_context.llvm_ir_builder.CreateBr( function_context.block_for_break );
+	function_context.llvm_ir_builder.CreateBr( function_context.loops_stack.back().block_for_break );
 }
 
 void CodeBuilder::BuildContinueOperatorCode(
 	const ContinueOperator& continue_operator,
 	FunctionContext& function_context ) noexcept
 {
-	if( function_context.block_for_continue == nullptr )
+	if( function_context.loops_stack.empty() )
 	{
 		errors_.push_back( ReportContinueOutsideLoop( continue_operator.file_pos_ ) );
 		return;
 	}
+	U_ASSERT( function_context.loops_stack.back().block_for_continue != nullptr );
 
 	CallDestructorsForLoopInnerVariables( function_context );
-	function_context.llvm_ir_builder.CreateBr( function_context.block_for_continue );
+	function_context.llvm_ir_builder.CreateBr( function_context.loops_stack.back().block_for_continue );
 }
 
 CodeBuilder::BlockBuildInfo CodeBuilder::BuildIfOperatorCode(
