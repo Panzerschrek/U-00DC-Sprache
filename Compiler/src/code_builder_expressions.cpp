@@ -15,6 +15,22 @@ namespace U
 namespace CodeBuilderPrivate
 {
 
+Value CodeBuilder::BuildExpressionCodeAndDestroyTemporaries(
+	const IExpressionComponent& expression,
+	const NamesScope& names,
+	FunctionContext& function_context )
+{
+	// Destruction frame for temporary variables of expression.
+	function_context.destructibles_stack.emplace_back();
+
+	const Value result= BuildExpressionCode( expression, names, function_context );
+
+	CallDestructors( function_context.destructibles_stack.back(), function_context );
+	function_context.destructibles_stack.pop_back();
+
+	return result;
+}
+
 Value CodeBuilder::BuildExpressionCode(
 	const IExpressionComponent& expression,
 	const NamesScope& names,
@@ -523,7 +539,9 @@ Variable CodeBuilder::BuildLazyBinaryOperator(
 	function_context.function->getBasicBlockList().push_back( r_part_block );
 	function_context.llvm_ir_builder.SetInsertPoint( r_part_block );
 
-	const Value r_var_value= BuildExpressionCode( r_expression, names, function_context );
+	// Right part of lazy operator is conditinal. So, we must destroy it temporaries only in this condition.
+	// We doesn`t needs longer lifetime of epxression temporaries, because we use only bool result.
+	const Value r_var_value= BuildExpressionCodeAndDestroyTemporaries( r_expression, names, function_context );
 	if( r_var_value.GetType() != bool_type_ )
 	{
 		errors_.push_back( ReportTypesMismatch( binary_operator.file_pos_, bool_type_.ToString(), r_var_value.GetType().ToString() ) );
@@ -1003,6 +1021,8 @@ Variable CodeBuilder::BuildCallOperator(
 	{
 		result.location= function.return_value_is_sret ? Variable::Location::Pointer : Variable::Location::LLVMRegister;
 		result.value_type= ValueType::Value;
+
+		function_context.destructibles_stack.back().RegisterVariable( result );
 	}
 	result.type= function_type.return_type;
 	result.llvm_value= call_result;
@@ -1023,6 +1043,8 @@ Variable CodeBuilder::BuildTempVariableConstruction(
 	variable.llvm_value= function_context.alloca_ir_builder.CreateAlloca( type.GetLLVMType() );
 	ApplyConstructorInitializer( variable, call_operator, names, function_context );
 	variable.value_type= ValueType::Value; // Make value efter construction
+
+	function_context.destructibles_stack.back().RegisterVariable( variable );
 
 	return variable;
 }

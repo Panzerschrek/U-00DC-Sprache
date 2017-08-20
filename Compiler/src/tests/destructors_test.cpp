@@ -138,7 +138,7 @@ U_TEST(DestructorsTest2)
 		function,
 		llvm::ArrayRef<llvm::GenericValue>() );
 
-	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 0, 66, 88 } ) );
+	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 0,  66, 88,   66, 88 } ) );
 }
 
 U_TEST(DestructorsTest3)
@@ -276,7 +276,7 @@ U_TEST(DestructorsTest5)
 
 	U_TEST_ASSERT(
 		g_destructors_call_sequence ==
-		std::vector<int>( { 0,    1,    2,    555, 3 } ) );
+		std::vector<int>( { 0, 0,   1, 1,   2, 2,   555, 3, 3 } ) );
 }
 
 U_TEST(DestructorsTest6)
@@ -516,6 +516,62 @@ U_TEST(DestructorsTest10)
 	U_TEST_ASSERT(
 		g_destructors_call_sequence ==
 		std::vector<int>( { 14789325 } ) );
+}
+
+U_TEST(DestructorsTest11)
+{
+	DestructorTestPrepare();
+
+	// Destructors for temporaries must be called.
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+
+		class S
+		{
+			i32 x;
+			fn constructor( i32 in_x ) ( x= in_x ) {}
+			fn destructor() { DestructorCalled(x); }
+		}
+		fn Bar( i32 x ) : S
+		{
+			return S(x);
+		}
+		fn Baz( S s ){}
+		fn Fuz( S &imut s ){}
+		fn Foo()
+		{
+			var i32 x= S(0).x + S(1).x; // Must destroy S(0) and S(1)
+			var bool y= S(2).x == 0 || S(3).x == 0; // Must destroy both S(3) and S(2)
+			var bool z= S(4).x == 0 && S(5).x == 0; // Must destroy only S(4)
+
+			var [ i32, 2 ] arr= zero_init;
+			// Type conversion to u32 must destroy temporary variable of class type.
+			arr[ u32( S(6).x / 10 ) ]= S(7).x;  // Must destroy index and temporary in right part
+			arr[ u32( S(8).x / 10 ) ]+= S(9).x;  // Must destroy index and temporary in right part
+
+			auto i= Bar(10).x; // Must destroy returned from function result.
+			Baz( S(11) ); // Must destroy argument in function, than temporary variable.
+			Fuz( S(12) ); // Bind value to immutable reference parameter. Must destroy only temporary.
+
+			var S nontemporary(13);
+			Baz( nontemporary ); // Value copied to argument. Must call destructor for argument.
+
+			S(14); // Simple expression - must destroy temporary.
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction(
+		function,
+		llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT(
+		g_destructors_call_sequence ==
+		std::vector<int>( { 1, 0,   3, 2,   4,   6, 7,   8, 9,   10,   11, 11,   12,   13,   14,   13 } ) );
 }
 
 } // namespace U

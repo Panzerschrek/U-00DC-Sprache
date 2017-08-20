@@ -34,10 +34,9 @@ public:
 private:
 	struct DestructiblesStorage final
 	{
-		// Input variable must live longer, then this class.
-		void RegisterVariable( const Variable& variable );
+		void RegisterVariable( Variable variable );
 
-		std::vector<const Variable*> variables;
+		std::vector<Variable> variables;
 	};
 
 	struct FunctionContext
@@ -164,6 +163,11 @@ private:
 		FunctionContext& function_context ) noexcept;
 
 	// Expressions.
+
+	Value BuildExpressionCodeAndDestroyTemporaries(
+		const IExpressionComponent& expression,
+		const NamesScope& names,
+		FunctionContext& function_context );
 
 	Value BuildExpressionCode(
 		const IExpressionComponent& expression,

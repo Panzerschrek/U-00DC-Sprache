@@ -58,10 +58,10 @@ CodeBuilder::FunctionContext::FunctionContext(
 {
 }
 
-void CodeBuilder::DestructiblesStorage::RegisterVariable( const Variable& variable )
+void CodeBuilder::DestructiblesStorage::RegisterVariable( Variable variable )
 {
 	if( variable.type.HaveDestructor() )
-		variables.push_back( &variable );
+		variables.push_back( std::move( variable ) );
 }
 
 CodeBuilder::CodeBuilder()
@@ -858,7 +858,7 @@ void CodeBuilder::CallDestructors(
 {
 	// Call destructors in reverse order.
 	for( auto it = destructibles_storage.variables.rbegin(); it != destructibles_storage.variables.rend(); ++it )
-		CallDestructor( (*it)->llvm_value, (*it)->type, function_context );
+		CallDestructor( it->llvm_value, it->type, function_context );
 }
 
 void CodeBuilder::CallDestructor(
@@ -1521,7 +1521,7 @@ void CodeBuilder::BuildFuncCode(
 
 	const BlockBuildInfo block_build_info=
 		BuildBlockCode( *block, function_names, function_context );
-	U_ASSERT( function_context.destructibles_stack.size() == 1u );
+	U_ASSERT( function_context.destructibles_stack.size() == 1u || !errors_.empty() || error_count_ > 0u );
 
 	// We need call destructors for arguments only if function returns "void".
 	// In other case, we have "return" in all branches and destructors call before each "return".
@@ -1742,7 +1742,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockCode(
 				const SingleExpressionOperator* expression=
 				dynamic_cast<const SingleExpressionOperator*>( block_element_ptr ) )
 			{
-				BuildExpressionCode(
+				BuildExpressionCodeAndDestroyTemporaries(
 					*expression->expression_,
 					block_names,
 					function_context );
@@ -1956,7 +1956,7 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 			}
 
 			const Value expression_result_value=
-				BuildExpressionCode( *initializer_expression, block_names, function_context );
+				BuildExpressionCodeAndDestroyTemporaries( *initializer_expression, block_names, function_context );
 
 			if( expression_result_value.GetType() != variable.type )
 			{
@@ -2005,7 +2005,7 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 	FunctionContext& function_context )
 {
 	const Value initializer_experrsion_value=
-		BuildExpressionCode( *auto_variable_declaration.initializer_expression, block_names, function_context );
+		BuildExpressionCodeAndDestroyTemporaries( *auto_variable_declaration.initializer_expression, block_names, function_context );
 
 	{ // Check expression type. Expression can have exotic types, such "Overloading functions set", "class name", etc.
 		const Type& type= initializer_experrsion_value.GetType();
@@ -2089,6 +2089,9 @@ void CodeBuilder::BuildAssignmentOperatorCode(
 	const NamesScope& block_names,
 	FunctionContext& function_context )
 {
+	// Destruction frame for temporary variables of expressions.
+	function_context.destructibles_stack.emplace_back();
+
 	const IExpressionComponent& l_value= *assignment_operator.l_value_;
 	const IExpressionComponent& r_value= *assignment_operator.r_value_;
 
@@ -2136,6 +2139,10 @@ void CodeBuilder::BuildAssignmentOperatorCode(
 		errors_.push_back( ReportNotImplemented( assignment_operator.file_pos_, "nonfundamental types assignment." ) );
 		return;
 	}
+
+	// Destruct temporary variables of right and left expressions.
+	CallDestructors( function_context.destructibles_stack.back(), function_context );
+	function_context.destructibles_stack.pop_back();
 }
 
 void CodeBuilder::BuildAdditiveAssignmentOperatorCode(
@@ -2143,6 +2150,9 @@ void CodeBuilder::BuildAdditiveAssignmentOperatorCode(
 	const NamesScope& block_names,
 	FunctionContext& function_context )
 {
+	// Destruction frame for temporary variables of expressions.
+	function_context.destructibles_stack.emplace_back();
+
 	const Value l_var_value=
 		BuildExpressionCode(
 			*additive_assignment_operator.l_value_,
@@ -2198,6 +2208,10 @@ void CodeBuilder::BuildAdditiveAssignmentOperatorCode(
 		errors_.push_back( ReportNotImplemented( additive_assignment_operator.file_pos_, "additive operations for nonfundamental types" ) );
 		return;
 	}
+
+	// Destruct temporary variables of right and left expressions.
+	CallDestructors( function_context.destructibles_stack.back(), function_context );
+	function_context.destructibles_stack.pop_back();
 }
 
 void CodeBuilder::BuildDeltaOneOperatorCode(
@@ -2207,7 +2221,7 @@ void CodeBuilder::BuildDeltaOneOperatorCode(
 	const NamesScope& block_names,
 	FunctionContext& function_context )
 {
-	const Value value= BuildExpressionCode( expression, block_names, function_context );
+	const Value value= BuildExpressionCodeAndDestroyTemporaries( expression, block_names, function_context );
 	const Variable* const variable= value.GetVariable();
 	if( variable == nullptr )
 	{
@@ -2276,11 +2290,25 @@ void CodeBuilder::BuildReturnOperatorCode(
 		return;
 	}
 
+	// Destruction frame for temporary variables of result expression.
+	function_context.destructibles_stack.emplace_back();
+
 	const Value expression_result_value=
 		BuildExpressionCode(
 			*return_operator.expression_,
 			names,
 			function_context );
+
+	// Destruct temporary variables of return expression only after assignment of
+	// return value. Destroy all other function variables after this.
+	const auto call_destructors=
+	[&]()
+	{
+		CallDestructors( function_context.destructibles_stack.back(), function_context );
+		function_context.destructibles_stack.pop_back();
+
+		CallDestructorsBeforeReturn( function_context );
+	};
 
 	if( expression_result_value.GetType() != function_context.return_type )
 	{
@@ -2302,7 +2330,7 @@ void CodeBuilder::BuildReturnOperatorCode(
 			return;
 		}
 
-		CallDestructorsBeforeReturn( function_context );
+		call_destructors();
 		function_context.llvm_ir_builder.CreateRet( expression_result.llvm_value );
 	}
 	else
@@ -2312,12 +2340,15 @@ void CodeBuilder::BuildReturnOperatorCode(
 			const ClassPtr class_= function_context.s_ret_->type.GetClassType();
 			TryCallCopyConstructor( return_operator.file_pos_, function_context.s_ret_->llvm_value, expression_result.llvm_value, class_, function_context );
 
-			CallDestructorsBeforeReturn( function_context );
+			call_destructors();
 			function_context.llvm_ir_builder.CreateRetVoid();
 		}
 		else
 		{
-			CallDestructorsBeforeReturn( function_context );
+			// Now we can return by value only fundamentals.
+			U_ASSERT( expression_result.type.GetFundamentalType() != nullptr );
+
+			call_destructors();
 
 			llvm::Value* value_for_return= CreateMoveToLLVMRegisterInstruction( expression_result, function_context );
 			function_context.llvm_ir_builder.CreateRet( value_for_return );
@@ -2341,7 +2372,7 @@ void CodeBuilder::BuildWhileOperatorCode(
 	function_context.function->getBasicBlockList().push_back( test_block );
 	function_context.llvm_ir_builder.SetInsertPoint( test_block );
 
-	const Value condition_expression= BuildExpressionCode( *while_operator.condition_, names, function_context );
+	const Value condition_expression= BuildExpressionCodeAndDestroyTemporaries( *while_operator.condition_, names, function_context );
 
 	if( condition_expression.GetType() != bool_type_ )
 	{
@@ -2458,7 +2489,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildIfOperatorCode(
 		}
 		else
 		{
-			const Value condition_expression= BuildExpressionCode( *branch.condition, names, function_context );
+			const Value condition_expression= BuildExpressionCodeAndDestroyTemporaries( *branch.condition, names, function_context );
 
 			if( condition_expression.GetType() != bool_type_ )
 			{
