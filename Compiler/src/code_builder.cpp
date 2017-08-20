@@ -143,18 +143,62 @@ Type CodeBuilder::PrepareType(
 		arrays_stack[ arrays_count ]= last_type;
 		arrays_count++;
 
-		const NumericConstant& num= * *rit;
+		const IExpressionComponent& num= * *rit;
 
 		*last_type= Array();
 		Array& array_type= *last_type->GetArrayType();
+		array_type.size= 1u;
 
-		U_FundamentalType size_type= GetNumericConstantType( num );
-		if( !IsInteger(size_type) )
-			errors_.push_back( ReportArraySizeIsNotInteger( num.file_pos_ ) );
-		if( num.value_ < 0 )
-			errors_.push_back( ReportArraySizeIsNegative( num.file_pos_ ) );
+		// Expression code building requered function. So, create for this dummy function.
+		llvm::Function* const dummy_function=
+			llvm::Function::Create(
+				llvm::FunctionType::get( fundamental_llvm_types_.void_, false ),
+				llvm::Function::LinkageTypes::ExternalLinkage,
+				"",
+				module_.get() );
+		FunctionContext dummy_function_context(
+			void_type_,
+			false, false,
+			llvm_context_,
+			dummy_function );
 
-		array_type.size= size_t( std::max( num.value_, static_cast<NumericConstant::LongFloat>(0.0) ) );
+		const Value size_expression= BuildExpressionCode( num, names_scope, dummy_function_context );
+		if( const Variable* const size_variable= size_expression.GetVariable() )
+		{
+			if( size_variable->constexpr_value != nullptr )
+			{
+				if( const FundamentalType* const size_fundamental_type= size_variable->type.GetFundamentalType() )
+				{
+					if( IsInteger( size_fundamental_type->fundamental_type ) )
+					{
+						const llvm::APInt& size_value= size_variable->constexpr_value->getUniqueInteger();
+						if( IsSignedInteger( size_fundamental_type->fundamental_type ) && size_value.isNegative() )
+							errors_.push_back( ReportArraySizeIsNegative( num.file_pos_ ) );
+						else
+							array_type.size= size_t( size_value.getLimitedValue() );
+					}
+					else
+						errors_.push_back( ReportArraySizeIsNotInteger( num.file_pos_ ) );
+				}
+				else
+				{
+					// TODO - report constexpr is not fundamental
+					errors_.push_back( ReportNotImplemented( num.file_pos_, "shitty arrays" ) );
+				}
+			}
+			else
+			{
+				// TODO - report not contexpr
+				errors_.push_back( ReportNotImplemented( num.file_pos_, "shitty arrays" ) );
+			}
+		}
+		else
+		{
+			// TODO - report not variable
+			errors_.push_back( ReportNotImplemented( num.file_pos_, "shitty arrays" ) );
+		}
+
+		dummy_function->eraseFromParent(); // kill dummy function
 
 		last_type= &array_type.type;
 	}

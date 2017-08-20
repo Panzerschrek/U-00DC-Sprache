@@ -667,8 +667,7 @@ void SyntaxAnalyzer::ParseTypeName_r( TypeName& result )
 		}
 		++it_;
 
-		result.array_sizes.emplace_back( ParseNumericConstant() );
-		++it_;
+		result.array_sizes.emplace_back( ParseExpression() );
 
 		if( it_->type != Lexem::Type::SquareBracketRight )
 		{

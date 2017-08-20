@@ -323,7 +323,7 @@ struct TypeName
 {
 	// [ [i32, 5] 7 ]
 	ComplexName name; // Can be empty in some cases.
-	std::vector< std::unique_ptr<NumericConstant> > array_sizes;
+	std::vector< IExpressionComponentPtr > array_sizes;
 
 	// Compiler so stupid - can not generate move constructors without noexcept. Make help for it.
 	TypeName() = default;
