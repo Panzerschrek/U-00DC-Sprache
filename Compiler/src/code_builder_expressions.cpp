@@ -656,6 +656,19 @@ Variable CodeBuilder::BuildLazyBinaryOperator(
 	result.location= Variable::Location::LLVMRegister;
 	result.value_type= ValueType::Value;
 	result.llvm_value= phi;
+
+	// Evaluate constexpr value.
+	// TODO - remove all blocks code in case of constexpr?
+	if( l_var.constexpr_value != nullptr && r_var.constexpr_value != nullptr )
+	{
+		if( binary_operator.operator_type_ == BinaryOperatorType::LazyLogicalAnd )
+			result.constexpr_value= llvm::ConstantExpr::getAnd( l_var.constexpr_value, r_var.constexpr_value );
+		else if( binary_operator.operator_type_ == BinaryOperatorType::LazyLogicalOr )
+			result.constexpr_value= llvm::ConstantExpr::getOr ( l_var.constexpr_value, r_var.constexpr_value );
+		else
+			U_ASSERT(false);
+	}
+
 	return result;
 }
 
