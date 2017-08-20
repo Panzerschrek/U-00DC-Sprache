@@ -791,9 +791,9 @@ Variable CodeBuilder::BuildBooleanConstant( const BooleanConstant& boolean_const
 	Variable result;
 	result.location= Variable::Location::LLVMRegister;
 	result.value_type= ValueType::Value;
-	result.type= FundamentalType( U_FundamentalType::Bool, fundamental_llvm_types_.bool_ );
+	result.type= bool_type_;
 
-	result.llvm_value=
+	result.llvm_value= result.constexpr_value=
 		llvm::Constant::getIntegerValue(
 			fundamental_llvm_types_.bool_ ,
 			llvm::APInt( 1u, uint64_t(boolean_constant.value_) ) );
