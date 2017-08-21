@@ -446,11 +446,11 @@ CodeBuilderError ReportExpectedConstantExpression( const FilePos& file_pos )
 	return error;
 }
 
-CodeBuilderError ReportViariableInitializerIsNotConstantExpression( const FilePos& file_pos )
+CodeBuilderError ReportVariableInitializerIsNotConstantExpression( const FilePos& file_pos )
 {
 	CodeBuilderError error;
 	error.file_pos= file_pos;
-	error.code= CodeBuilderErrorCode::ViariableInitializerIsNotConstantExpression;
+	error.code= CodeBuilderErrorCode::VariableInitializerIsNotConstantExpression;
 
 	error.text= "Variable declaration is nor constant expression."_SpC;
 
@@ -464,17 +464,6 @@ CodeBuilderError ReportInvalidTypeForConstantExpressionVariable( const FilePos& 
 	error.code= CodeBuilderErrorCode::InvalidTypeForConstantExpressionVariable;
 
 	error.text= "Invalid type for constant expression variable."_SpC;
-
-	return error;
-}
-
-CodeBuilderError ReportConstantExpressionVariableMustBeImmutable( const FilePos& file_pos )
-{
-	CodeBuilderError error;
-	error.file_pos= file_pos;
-	error.code= CodeBuilderErrorCode::ConstantExpressionVariableMustBeImmutable;
-
-	error.text= "Constant expression variable must be immutable."_SpC;
 
 	return error;
 }

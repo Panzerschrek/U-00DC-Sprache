@@ -450,6 +450,8 @@ llvm::Constant* CodeBuilder::ApplyExpressionInitializer(
 		errors_.push_back( ReportNotImplemented( initializer.file_pos_, "expression initialization for nonfundamental types" ) );
 		return nullptr;
 	}
+
+	return nullptr;
 }
 
 void CodeBuilder::ApplyZeroInitializer(

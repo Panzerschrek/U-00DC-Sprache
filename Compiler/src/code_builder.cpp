@@ -2043,7 +2043,7 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 		if( variable_declaration.mutability_modifier == MutabilityModifier::Constexpr &&
 			variable.constexpr_value == nullptr )
 		{
-			errors_.push_back( ReportViariableInitializerIsNotConstantExpression( variables_declaration.file_pos_ ) );
+			errors_.push_back( ReportVariableInitializerIsNotConstantExpression( variables_declaration.file_pos_ ) );
 			continue;
 		}
 
@@ -2152,7 +2152,7 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 	if( auto_variable_declaration.mutability_modifier == MutabilityModifier::Constexpr &&
 		variable.constexpr_value == nullptr )
 	{
-		errors_.push_back( ReportViariableInitializerIsNotConstantExpression( auto_variable_declaration.file_pos_ ) );
+		errors_.push_back( ReportVariableInitializerIsNotConstantExpression( auto_variable_declaration.file_pos_ ) );
 		return;
 	}
 
