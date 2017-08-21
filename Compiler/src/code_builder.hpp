@@ -387,6 +387,8 @@ private:
 	Type void_type_;
 	Type bool_type_;
 
+	FunctionContext* dummy_function_context_= nullptr;
+
 	std::unique_ptr<llvm::Module> module_;
 	unsigned int error_count_= 0u;
 	std::vector<CodeBuilderError> errors_;

@@ -156,4 +156,31 @@ U_TEST(ConstexprTest5)
 	U_TEST_ASSERT( static_cast<uint64_t>( 58457 ) == result_value.IntVal.getLimitedValue() );
 }
 
+U_TEST(ConstexprTest6)
+{
+	// Constexpr varable used for array size.
+	static const char c_program_text[]=
+	R"(
+		fn Foo() : i32
+		{
+			var i32 constexpr s= 3 + 2;
+			var [ i32, s ] arr= zero_init;
+			arr[4u]= 85124;
+			return arr[4u];
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( static_cast<uint64_t>( 85124 ) == result_value.IntVal.getLimitedValue() );
+}
+
 } // namespace U

@@ -96,9 +96,32 @@ CodeBuilder::BuildResult CodeBuilder::BuildProgram( const ProgramElements& progr
 	errors_.clear();
 	error_count_= 0u;
 
+	// In some places outside functions we need to execute expression evaluation.
+	// Create for this dummy function context.
+	llvm::Function* const dummy_function=
+		llvm::Function::Create(
+			llvm::FunctionType::get( fundamental_llvm_types_.void_, false ),
+			llvm::Function::LinkageTypes::ExternalLinkage,
+			"",
+			module_.get() );
+
+	FunctionContext dummy_function_context(
+		void_type_,
+		false, false,
+		llvm_context_,
+		dummy_function );
+	dummy_function_context.destructibles_stack.emplace_back();
+
+	dummy_function_context_= &dummy_function_context;
+
+	// Create global namespace.
 	NamesScope global_names( ""_SpC, nullptr );
 	FillGlobalNamesScope( global_names );
+
+	// Build program body.
 	BuildNamespaceBody( program_elements, global_names );
+
+	dummy_function->eraseFromParent(); // Kill dummy function.
 
 	if( error_count_ > 0u )
 		errors_.push_back( ReportBuildFailed() );
@@ -149,21 +172,7 @@ Type CodeBuilder::PrepareType(
 		Array& array_type= *last_type->GetArrayType();
 		array_type.size= 1u;
 
-		// Expression code building requered function. So, create for this dummy function.
-		llvm::Function* const dummy_function=
-			llvm::Function::Create(
-				llvm::FunctionType::get( fundamental_llvm_types_.void_, false ),
-				llvm::Function::LinkageTypes::ExternalLinkage,
-				"",
-				module_.get() );
-		FunctionContext dummy_function_context(
-			void_type_,
-			false, false,
-			llvm_context_,
-			dummy_function );
-		dummy_function_context.destructibles_stack.emplace_back();
-
-		const Value size_expression= BuildExpressionCode( num, names_scope, dummy_function_context );
+		const Value size_expression= BuildExpressionCode( num, names_scope, *dummy_function_context_ );
 		if( const Variable* const size_variable= size_expression.GetVariable() )
 		{
 			if( size_variable->constexpr_value != nullptr )
@@ -189,8 +198,6 @@ Type CodeBuilder::PrepareType(
 		}
 		else
 			errors_.push_back( ReprotExpectedVariableInArraySize( num.file_pos_, size_expression.GetType().ToString() ) );
-
-		dummy_function->eraseFromParent(); // kill dummy function
 
 		last_type= &array_type.type;
 	}
