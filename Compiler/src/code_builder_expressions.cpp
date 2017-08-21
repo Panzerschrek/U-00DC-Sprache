@@ -1272,7 +1272,7 @@ Variable CodeBuilder::BuildTempVariableConstruction(
 	variable.location= Variable::Location::Pointer;
 	variable.value_type= ValueType::Reference;
 	variable.llvm_value= function_context.alloca_ir_builder.CreateAlloca( type.GetLLVMType() );
-	ApplyConstructorInitializer( variable, call_operator, names, function_context );
+	variable.constexpr_value= ApplyConstructorInitializer( variable, call_operator, names, function_context );
 	variable.value_type= ValueType::Value; // Make value efter construction
 
 	function_context.destructibles_stack.back().RegisterVariable( variable );

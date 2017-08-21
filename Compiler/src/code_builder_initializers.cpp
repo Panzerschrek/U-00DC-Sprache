@@ -19,7 +19,7 @@ namespace CodeBuilderPrivate
 
 static const size_t g_max_array_size_to_linear_initialization= 8u;
 
-void CodeBuilder::ApplyInitializer(
+llvm::Constant* CodeBuilder::ApplyInitializer(
 	const Variable& variable,
 	const IInitializer& initializer,
 	NamesScope& block_names,
@@ -38,12 +38,12 @@ void CodeBuilder::ApplyInitializer(
 	else if( const ConstructorInitializer* const constructor_initializer=
 		dynamic_cast<const ConstructorInitializer*>(&initializer) )
 	{
-		ApplyConstructorInitializer( variable, constructor_initializer->call_operator, block_names, function_context );
+		return ApplyConstructorInitializer( variable, constructor_initializer->call_operator, block_names, function_context );
 	}
 	else if( const ExpressionInitializer* const expression_initializer=
 		dynamic_cast<const ExpressionInitializer*>(&initializer) )
 	{
-		ApplyExpressionInitializer( variable, *expression_initializer, block_names, function_context );
+		return ApplyExpressionInitializer( variable, *expression_initializer, block_names, function_context );
 	}
 	else if( const ZeroInitializer* const zero_initializer=
 		dynamic_cast<const ZeroInitializer*>(&initializer) )
@@ -54,6 +54,8 @@ void CodeBuilder::ApplyInitializer(
 	{
 		U_ASSERT(false);
 	}
+
+	return nullptr;
 }
 
 void CodeBuilder::ApplyEmptyInitializer(
@@ -233,7 +235,7 @@ void CodeBuilder::ApplyStructNamedInitializer(
 		});
 }
 
-void CodeBuilder::ApplyConstructorInitializer(
+llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 	const Variable& variable,
 	const CallOperator& call_operator,
 	const NamesScope& block_names,
@@ -244,7 +246,7 @@ void CodeBuilder::ApplyConstructorInitializer(
 		if( call_operator.arguments_.size() != 1u )
 		{
 			errors_.push_back( ReportFundamentalTypesHaveConstructorsWithExactlyOneParameter( call_operator.file_pos_ ) );
-			return;
+			return nullptr;
 		}
 
 		// SPRACHE_TODO - maybe we need save temporaries of this expression?
@@ -256,10 +258,14 @@ void CodeBuilder::ApplyConstructorInitializer(
 		if( src_type == nullptr )
 		{
 			errors_.push_back( ReportTypesMismatch( call_operator.file_pos_, variable.type.ToString(), expression_result.GetType().ToString() ) );
-			return;
+			return nullptr;
 		}
 
-		llvm::Value* value_for_assignment= CreateMoveToLLVMRegisterInstruction( *expression_result.GetVariable(), function_context );
+		const Variable& src_var= *expression_result.GetVariable();
+		llvm::Value* value_for_assignment= CreateMoveToLLVMRegisterInstruction( src_var, function_context );
+
+		llvm::Constant* constant_value= nullptr;
+		const bool src_is_constant= src_var.constexpr_value != nullptr;
 
 		if( dst_type->fundamental_type != src_type->fundamental_type )
 		{
@@ -276,42 +282,90 @@ void CodeBuilder::ApplyConstructorInitializer(
 					if( IsUnsignedInteger( dst_type->fundamental_type ) )
 					{
 						// We lost here some values in conversions, such i16 => u32, if src_type is signed.
-						value_for_assignment= function_context.llvm_ir_builder.CreateZExt( value_for_assignment, dst_type->llvm_type );
+						if( src_is_constant )
+							constant_value= llvm::ConstantExpr::getZExt( src_var.constexpr_value, dst_type->llvm_type );
+						else
+							value_for_assignment= function_context.llvm_ir_builder.CreateZExt( value_for_assignment, dst_type->llvm_type );
 					}
 					else
-						value_for_assignment= function_context.llvm_ir_builder.CreateSExt( value_for_assignment, dst_type->llvm_type );
+					{
+						if( src_is_constant )
+							constant_value= llvm::ConstantExpr::getSExt( src_var.constexpr_value, dst_type->llvm_type );
+						else
+							value_for_assignment= function_context.llvm_ir_builder.CreateSExt( value_for_assignment, dst_type->llvm_type );
+					}
 				}
 				else if( src_size > dst_size )
-					value_for_assignment= function_context.llvm_ir_builder.CreateTrunc( value_for_assignment, dst_type->llvm_type );
-				else {} // Same size integers - do nothing.
+				{
+					if( src_is_constant )
+						constant_value= llvm::ConstantExpr::getTrunc( src_var.constexpr_value, dst_type->llvm_type );
+					else
+						value_for_assignment= function_context.llvm_ir_builder.CreateTrunc( value_for_assignment, dst_type->llvm_type );
+				}
+				else
+				{
+					if( src_is_constant )
+						constant_value= src_var.constexpr_value;
+					// Same size integers - do nothing.
+				}
 			}
 			else if( IsFloatingPoint( dst_type->fundamental_type ) &&
 				IsFloatingPoint( src_type->fundamental_type ) )
 			{
 				// float to float
 				if( src_size < dst_size )
-					value_for_assignment= function_context.llvm_ir_builder.CreateFPExt( value_for_assignment, dst_type->llvm_type );
+				{
+					if( src_is_constant )
+						constant_value= llvm::ConstantExpr::getFPExtend( src_var.constexpr_value, dst_type->llvm_type );
+					else
+						value_for_assignment= function_context.llvm_ir_builder.CreateFPExt( value_for_assignment, dst_type->llvm_type );
+				}
 				else if( src_size > dst_size )
-					value_for_assignment= function_context.llvm_ir_builder.CreateFPTrunc( value_for_assignment, dst_type->llvm_type );
-				else{ U_ASSERT(false); }
+				{
+					if( src_is_constant )
+						constant_value= llvm::ConstantExpr::getFPTrunc( src_var.constexpr_value, dst_type->llvm_type );
+					else
+						value_for_assignment= function_context.llvm_ir_builder.CreateFPTrunc( value_for_assignment, dst_type->llvm_type );
+				}
+				else U_ASSERT(false);
 			}
 			else if( IsFloatingPoint( dst_type->fundamental_type ) &&
 				IsInteger( src_type->fundamental_type ) )
 			{
 				// int to float
 				if( IsSignedInteger( src_type->fundamental_type ) )
-					value_for_assignment= function_context.llvm_ir_builder.CreateSIToFP( value_for_assignment, dst_type->llvm_type );
+				{
+					if( src_is_constant )
+						constant_value= llvm::ConstantExpr::getSIToFP( src_var.constexpr_value, dst_type->llvm_type );
+					else
+						value_for_assignment= function_context.llvm_ir_builder.CreateSIToFP( value_for_assignment, dst_type->llvm_type );
+				}
 				else
-					value_for_assignment= function_context.llvm_ir_builder.CreateUIToFP( value_for_assignment, dst_type->llvm_type );
+				{
+					if( src_is_constant )
+						constant_value= llvm::ConstantExpr::getUIToFP( src_var.constexpr_value, dst_type->llvm_type );
+					else
+						value_for_assignment= function_context.llvm_ir_builder.CreateUIToFP( value_for_assignment, dst_type->llvm_type );
+				}
 			}
 			else if( IsInteger( dst_type->fundamental_type ) &&
 				IsFloatingPoint( src_type->fundamental_type ) )
 			{
 				// float to int
 				if( IsSignedInteger( dst_type->fundamental_type ) )
-					value_for_assignment= function_context.llvm_ir_builder.CreateFPToSI( value_for_assignment, dst_type->llvm_type );
+				{
+					if( src_is_constant )
+						constant_value= llvm::ConstantExpr::getFPToSI( src_var.constexpr_value, dst_type->llvm_type );
+					else
+						value_for_assignment= function_context.llvm_ir_builder.CreateFPToSI( value_for_assignment, dst_type->llvm_type );
+				}
 				else
-					value_for_assignment= function_context.llvm_ir_builder.CreateFPToUI( value_for_assignment, dst_type->llvm_type );
+				{
+					if( src_is_constant )
+						constant_value= llvm::ConstantExpr::getFPToUI( src_var.constexpr_value, dst_type->llvm_type );
+					else
+						value_for_assignment= function_context.llvm_ir_builder.CreateFPToUI( value_for_assignment, dst_type->llvm_type );
+				}
 			}
 			else
 			{
@@ -320,11 +374,23 @@ void CodeBuilder::ApplyConstructorInitializer(
 					// TODO - error, bool have no constructors from other types
 				}
 				errors_.push_back( ReportTypesMismatch( call_operator.file_pos_, variable.type.ToString(), expression_result.GetType().ToString() ) );
-				return;
+				return nullptr;
 			}
 		} // If needs conversion
+		else
+		{
+			if( src_is_constant )
+				constant_value= src_var.constexpr_value;
+		}
+
+		if( src_is_constant )
+		{
+			U_ASSERT( constant_value != nullptr );
+			value_for_assignment= constant_value;
+		}
 
 		function_context.llvm_ir_builder.CreateStore( value_for_assignment, variable.llvm_value );
+		return constant_value;
 	}
 	else if( const ClassPtr class_type= variable.type.GetClassType() )
 	{
@@ -334,7 +400,7 @@ void CodeBuilder::ApplyConstructorInitializer(
 		if( constructor_name == nullptr )
 		{
 			errors_.push_back( ReportClassHaveNoConstructors( call_operator.file_pos_ ) );
-			return;
+			return nullptr;
 		}
 
 		const OverloadedFunctionsSet* const constructors_set= constructor_name->second.GetFunctionsSet();
@@ -350,11 +416,11 @@ void CodeBuilder::ApplyConstructorInitializer(
 	else
 	{
 		errors_.push_back( ReportConstructorInitializerForUnsupportedType( call_operator.file_pos_ ) );
-		return;
+		return nullptr;
 	}
 }
 
-void CodeBuilder::ApplyExpressionInitializer(
+llvm::Constant* CodeBuilder::ApplyExpressionInitializer(
 	const Variable& variable,
 	const ExpressionInitializer& initializer,
 	const NamesScope& block_names,
@@ -370,16 +436,19 @@ void CodeBuilder::ApplyExpressionInitializer(
 		if( expression_result.GetType() != variable.type )
 		{
 			errors_.push_back( ReportTypesMismatch( initializer.file_pos_, variable.type.ToString(), expression_result.GetType().ToString() ) );
-			return;
+			return nullptr;
 		}
 
 		llvm::Value* const value_for_assignment= CreateMoveToLLVMRegisterInstruction( *expression_result.GetVariable(), function_context );
 		function_context.llvm_ir_builder.CreateStore( value_for_assignment, variable.llvm_value );
+
+		if( llvm::Constant* const constexpr_value= expression_result.GetVariable()->constexpr_value )
+			return constexpr_value;
 	}
 	else
 	{
 		errors_.push_back( ReportNotImplemented( initializer.file_pos_, "expression initialization for nonfundamental types" ) );
-		return;
+		return nullptr;
 	}
 }
 

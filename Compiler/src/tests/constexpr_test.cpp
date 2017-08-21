@@ -81,4 +81,79 @@ U_TEST(ConstexprTest2)
 	U_TEST_ASSERT( static_cast<uint64_t>( 42 ) == result_value.IntVal.getLimitedValue() );
 }
 
+U_TEST(ConstexprTest3)
+{
+	// Simple constexpr variable, "=" initializer.
+	static const char c_program_text[]=
+	R"(
+		fn Foo() : i32
+		{
+			var i32 constexpr x= 42;
+			return x;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( static_cast<uint64_t>( 42 ) == result_value.IntVal.getLimitedValue() );
+}
+
+U_TEST(ConstexprTest4)
+{
+	// Simple constexpr variable, constructor initializer.
+	static const char c_program_text[]=
+	R"(
+		fn Foo() : i32
+		{
+			var i32 constexpr x(77758);
+			return x;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( static_cast<uint64_t>( 77758 ) == result_value.IntVal.getLimitedValue() );
+}
+
+U_TEST(ConstexprTest5)
+{
+	// constexpr auto variable.
+	static const char c_program_text[]=
+	R"(
+		fn Foo() : i32
+		{
+			auto constexpr x= 58457;
+			return x;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( static_cast<uint64_t>( 58457 ) == result_value.IntVal.getLimitedValue() );
+}
+
 } // namespace U

@@ -1937,6 +1937,13 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 			continue;
 		}
 
+		if( variable_declaration.mutability_modifier == MutabilityModifier::Constexpr &&
+			!type.CanBeConstexpr() )
+		{
+			errors_.push_back( ReportInvalidTypeForConstantExpressionVariable( variables_declaration.file_pos_ ) );
+			continue;
+		}
+
 		Variable variable;
 		variable.type= type;
 		variable.location= Variable::Location::Pointer;
@@ -1948,20 +1955,23 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 			variable.llvm_value->setName( ToStdString( variable_declaration.name ) );
 
 			if( variable_declaration.initializer != nullptr )
-				ApplyInitializer( variable, *variable_declaration.initializer, block_names, function_context );
+				variable.constexpr_value=
+					ApplyInitializer( variable, *variable_declaration.initializer, block_names, function_context );
 			else
 				ApplyEmptyInitializer( variable_declaration.name, variables_declaration.file_pos_, variable, function_context );
 
 			// Make immutable, if needed, only after initialization, because in initialization we need call constructors, which is mutable methods.
 			// SPRACHE_TODO - make variables without explicit mutability modifiers immutable.
-			if( variable_declaration.mutability_modifier == MutabilityModifier::Immutable )
+			if( variable_declaration.mutability_modifier == MutabilityModifier::Immutable ||
+				variable_declaration.mutability_modifier == MutabilityModifier::Constexpr )
 				variable.value_type= ValueType::ConstReference;
 		}
 		else if( variable_declaration.reference_modifier == ReferenceModifier::Reference )
 		{
 			// Mark references immutable before initialization.
 			// SPRACHE_TODO - make variables without explicit mutability modifiers immutable.
-			if( variable_declaration.mutability_modifier == MutabilityModifier::Immutable )
+			if( variable_declaration.mutability_modifier == MutabilityModifier::Immutable ||
+				variable_declaration.mutability_modifier == MutabilityModifier::Constexpr )
 				variable.value_type= ValueType::ConstReference;
 
 			if( variable_declaration.initializer == nullptr )
@@ -2016,11 +2026,23 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 
 			// TODO - maybe make copy of varaible address in new llvm register?
 			variable.llvm_value= expression_result.llvm_value;
+			variable.constexpr_value= expression_result.constexpr_value;
 		}
 		else
 		{
 			U_ASSERT(false);
 		}
+
+		if( variable_declaration.mutability_modifier == MutabilityModifier::Constexpr &&
+			variable.constexpr_value == nullptr )
+		{
+			errors_.push_back( ReportViariableInitializerIsNotConstantExpression( variables_declaration.file_pos_ ) );
+			continue;
+		}
+
+		// Reset constexpr initial value for mutable variables.
+		if( variable.value_type != ValueType::ConstReference )
+			variable.constexpr_value= nullptr;
 
 		const NamesScope::InsertedName* inserted_name=
 			block_names.AddName( variable_declaration.name, std::move(variable) );
@@ -2063,12 +2085,20 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 	variable.location= Variable::Location::Pointer;
 
 	// SPRACHE_TODO - make variables without explicit mutability modifiers immutable.
-	if( auto_variable_declaration.mutability_modifier == MutabilityModifier::Immutable )
+	if( auto_variable_declaration.mutability_modifier == MutabilityModifier::Immutable||
+		auto_variable_declaration.mutability_modifier == MutabilityModifier::Constexpr )
 		variable.value_type= ValueType::ConstReference;
 	else
 		variable.value_type= ValueType::Reference;
 
 	variable.type= initializer_experrsion.type;
+
+	if( auto_variable_declaration.mutability_modifier == MutabilityModifier::Constexpr &&
+		!variable.type.CanBeConstexpr() )
+	{
+		errors_.push_back( ReportInvalidTypeForConstantExpressionVariable( auto_variable_declaration.file_pos_ ) );
+		return;
+	}
 
 	if( auto_variable_declaration.reference_modifier == ReferenceModifier::Reference )
 	{
@@ -2096,6 +2126,10 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 			U_UNUSED(fundamental_type);
 			llvm::Value* const value_for_assignment= CreateMoveToLLVMRegisterInstruction( initializer_experrsion, function_context );
 			function_context.llvm_ir_builder.CreateStore( value_for_assignment, variable.llvm_value );
+
+			// Set constepxr
+			if( initializer_experrsion.constexpr_value != nullptr )
+				variable.constexpr_value= initializer_experrsion.constexpr_value;
 		}
 		else
 		{
@@ -2107,6 +2141,17 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 	{
 		U_ASSERT(false);
 	}
+
+	if( auto_variable_declaration.mutability_modifier == MutabilityModifier::Constexpr &&
+		variable.constexpr_value == nullptr )
+	{
+		errors_.push_back( ReportViariableInitializerIsNotConstantExpression( auto_variable_declaration.file_pos_ ) );
+		return;
+	}
+
+	// Reset constexpr initial value for mutable variables.
+	if( variable.value_type != ValueType::ConstReference )
+		variable.constexpr_value= nullptr;
 
 	const NamesScope::InsertedName* inserted_name=
 		block_names.AddName( auto_variable_declaration.name, std::move(variable) );
@@ -2857,6 +2902,10 @@ llvm::Type* CodeBuilder::GetFundamentalLLVMType( const U_FundamentalType fundman
 llvm::Value*CodeBuilder::CreateMoveToLLVMRegisterInstruction(
 	const Variable& variable, FunctionContext& function_context )
 {
+	// Contant values always are register-values.
+	if( variable.constexpr_value != nullptr )
+		return variable.constexpr_value;
+
 	switch( variable.location )
 	{
 	case Variable::Location::LLVMRegister:

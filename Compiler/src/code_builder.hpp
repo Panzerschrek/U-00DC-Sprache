@@ -309,8 +309,9 @@ private:
 		const FilePos& file_pos );
 
 	// Initializers.
+	// Some initializers returns nonnul constant, if initializer is constant.
 
-	void ApplyInitializer(
+	llvm::Constant* ApplyInitializer(
 		const Variable& variable,
 		const IInitializer& initializer,
 		NamesScope& block_names,
@@ -334,13 +335,13 @@ private:
 		NamesScope& block_names,
 		FunctionContext& function_context );
 
-	void ApplyConstructorInitializer(
+	llvm::Constant* ApplyConstructorInitializer(
 		const Variable& variable,
 		const CallOperator& call_operator,
 		const NamesScope& block_names,
 		FunctionContext& function_context );
 
-	void ApplyExpressionInitializer(
+	llvm::Constant* ApplyExpressionInitializer(
 		const Variable& variable,
 		const ExpressionInitializer& initializer,
 		const NamesScope& block_names,

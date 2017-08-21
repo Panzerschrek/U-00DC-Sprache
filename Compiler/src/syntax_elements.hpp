@@ -339,6 +339,7 @@ enum class MutabilityModifier
 	None,
 	Mutable,
 	Immutable,
+	Constexpr,
 };
 
 enum class ReferenceModifier

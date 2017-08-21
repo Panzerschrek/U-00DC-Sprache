@@ -332,6 +332,12 @@ bool Type::HaveDestructor() const
 	return false;
 }
 
+bool Type::CanBeConstexpr() const
+{
+	// SPRACHE_TODO - allow arrays of fundamentals.
+	return GetFundamentalType() != nullptr;
+}
+
 llvm::Type* Type::GetLLVMType() const
 {
 	struct Visitor final : public boost::static_visitor<>

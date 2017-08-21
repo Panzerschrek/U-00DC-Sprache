@@ -85,6 +85,7 @@ public:
 	bool IsDefaultConstructible() const;
 	bool IsCopyConstructible() const;
 	bool HaveDestructor() const;
+	bool CanBeConstexpr() const;
 
 	llvm::Type* GetLLVMType() const;
 	ProgramString ToString() const;

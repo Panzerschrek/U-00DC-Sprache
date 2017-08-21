@@ -52,7 +52,12 @@ enum class CodeBuilderErrorCode : unsigned int
 	ClassDeclarationOutsideItsScope,
 	ClassBodyDuplication,
 	UsingIncompleteType,
+
+	// Constexpr errors.
 	ExpectedConstantExpression,
+	ViariableInitializerIsNotConstantExpression,
+	InvalidTypeForConstantExpressionVariable,
+	ConstantExpressionVariableMustBeImmutable,
 
 	// Initializers errors.
 	ArrayInitializerForNonArray,
@@ -134,6 +139,9 @@ CodeBuilderError ReportClassDeclarationOutsideItsScope( const FilePos& file_pos 
 CodeBuilderError ReportClassBodyDuplication( const FilePos& file_pos );
 CodeBuilderError ReportUsingIncompleteType( const FilePos& file_pos, const ProgramString& type_name );
 CodeBuilderError ReportExpectedConstantExpression( const FilePos& file_pos );
+CodeBuilderError ReportViariableInitializerIsNotConstantExpression( const FilePos& file_pos );
+CodeBuilderError ReportInvalidTypeForConstantExpressionVariable( const FilePos& file_pos );
+CodeBuilderError ReportConstantExpressionVariableMustBeImmutable( const FilePos& file_pos );
 CodeBuilderError ReportArrayInitializerForNonArray( const FilePos& file_pos );
 CodeBuilderError ReportArrayInitializersCountMismatch( const FilePos& file_pos, size_t expected_initializers, size_t real_initializers );
 CodeBuilderError ReportFundamentalTypesHaveConstructorsWithExactlyOneParameter( const FilePos& file_pos );

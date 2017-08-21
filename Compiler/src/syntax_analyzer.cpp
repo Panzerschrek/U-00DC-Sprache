@@ -952,6 +952,12 @@ VariablesDeclarationPtr SyntaxAnalyzer::ParseVariablesDeclaration()
 			++it_;
 			U_ASSERT( it_ < it_end_ );
 		}
+		else if( it_->text == Keywords::constexpr_ )
+		{
+			variable_entry.mutability_modifier= MutabilityModifier::Constexpr;
+			++it_;
+			U_ASSERT( it_ < it_end_ );
+		}
 
 		if( it_->type != Lexem::Type::Identifier )
 		{
@@ -1035,6 +1041,11 @@ std::unique_ptr<AutoVariableDeclaration> SyntaxAnalyzer::ParseAutoVariableDeclar
 	else if( it_->text == Keywords::imut_ )
 	{
 		result->mutability_modifier= MutabilityModifier::Immutable;
+		++it_; U_ASSERT( it_ < it_end_ );
+	}
+	else if( it_->text == Keywords::constexpr_ )
+	{
+		result->mutability_modifier= MutabilityModifier::Constexpr;
 		++it_; U_ASSERT( it_ < it_end_ );
 	}
 
