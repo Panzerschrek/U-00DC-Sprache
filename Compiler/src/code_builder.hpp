@@ -233,7 +233,7 @@ private:
 
 	Variable BuildBitwiseNot(
 		const Value& value,
-		const BitwiseNot& logical_not,
+		const BitwiseNot& bitwise_not,
 		FunctionContext& function_context );
 
 	// Block elements

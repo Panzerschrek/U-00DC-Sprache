@@ -1342,8 +1342,13 @@ Variable CodeBuilder::BuildLogicalNot(
 	result.location= Variable::Location::LLVMRegister;
 	result.value_type= ValueType::Value;
 
-	llvm::Value* const value_in_register= CreateMoveToLLVMRegisterInstruction( variable, function_context );
-	result.llvm_value= function_context.llvm_ir_builder.CreateNot( value_in_register );
+	if( variable.constexpr_value != nullptr )
+		result.llvm_value= result.constexpr_value= llvm::ConstantExpr::getNot( variable.constexpr_value );
+	else
+	{
+		llvm::Value* const value_in_register= CreateMoveToLLVMRegisterInstruction( variable, function_context );
+		result.llvm_value= function_context.llvm_ir_builder.CreateNot( value_in_register );
+	}
 
 	return result;
 }
@@ -1372,8 +1377,13 @@ Variable CodeBuilder::BuildBitwiseNot(
 	result.location= Variable::Location::LLVMRegister;
 	result.value_type= ValueType::Value;
 
-	llvm::Value* const value_in_register= CreateMoveToLLVMRegisterInstruction( variable, function_context );
-	result.llvm_value= function_context.llvm_ir_builder.CreateNot( value_in_register );
+	if( variable.constexpr_value != nullptr )
+		result.llvm_value= result.constexpr_value= llvm::ConstantExpr::getNot( variable.constexpr_value );
+	else
+	{
+		llvm::Value* const value_in_register= CreateMoveToLLVMRegisterInstruction( variable, function_context );
+		result.llvm_value= function_context.llvm_ir_builder.CreateNot( value_in_register );
+	}
 
 	return result;
 }
