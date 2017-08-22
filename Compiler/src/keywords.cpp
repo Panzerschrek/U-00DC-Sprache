@@ -68,11 +68,14 @@ static const Globals& GetGlobals()
 
 		[ size_t(Keywords::mut_) ]= "mut",
 		[ size_t(Keywords::imut_) ]= "imut",
+		[ size_t(Keywords::constexpr_) ]= "constexpr",
 
 		[ size_t(Keywords::zero_init_) ]= "zero_init",
 		[ size_t(Keywords::this_) ]= "this",
 		[ size_t(Keywords::constructor_) ]= "constructor",
 		[ size_t(Keywords::destructor_) ]= "destructor",
+
+		[ size_t(Keywords::static_assert_) ]= "static_assert",
 
 		[ size_t(Keywords::for_) ]= "for",
 		[ size_t(Keywords::do_) ]= "do",
@@ -88,7 +91,6 @@ static const Globals& GetGlobals()
 		[ size_t(Keywords::typename_) ]= "typename",
 		[ size_t(Keywords::cast_) ]= "cast",
 		[ size_t(Keywords::const_) ]= "const",
-		[ size_t(Keywords::constexpr_) ]= "constexpr",
 		[ size_t(Keywords::lambda_) ]= "lambda",
 		[ size_t(Keywords::static_) ]= "static",
 		[ size_t(Keywords::package_) ]= "package",

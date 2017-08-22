@@ -289,6 +289,10 @@ private:
 		const NamesScope& names,
 		FunctionContext& function_context );
 
+	void BuildStaticAssert(
+		const StaticAssert& static_assert_,
+		const NamesScope& names );
+
 	// Functions
 
 	FunctionVariable* GetFunctionWithExactSignature(

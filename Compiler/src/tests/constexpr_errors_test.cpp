@@ -129,4 +129,102 @@ U_TEST( InvalidTypeForConstantExpressionVariableTest0 )
 	U_TEST_ASSERT( error.file_pos.line == 5u );
 }
 
+U_TEST( StaticAssertExpressionMustHaveBoolTypeTest0 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo()
+		{
+			static_assert( 42 ); // Int value
+		}
+	)";
+
+	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::StaticAssertExpressionMustHaveBoolType );
+	U_TEST_ASSERT( error.file_pos.line == 4u );
+}
+
+U_TEST( StaticAssertExpressionMustHaveBoolTypeTest1 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo()
+		{
+			var f32 constexpr pi= 3.1415926535f;
+			static_assert( pi ); // float variable
+		}
+	)";
+
+	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::StaticAssertExpressionMustHaveBoolType );
+	U_TEST_ASSERT( error.file_pos.line == 5u );
+}
+
+U_TEST( StaticAssertExpressionMustHaveBoolTypeTest2 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo()
+		{
+			static_assert( i64 ); // typename
+		}
+	)";
+
+	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::StaticAssertExpressionMustHaveBoolType );
+	U_TEST_ASSERT( error.file_pos.line == 4u );
+}
+
+U_TEST( StaticAssertExpressionIsNotConstantTest0 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo()
+		{
+			var f32 pi= 3.14f;
+			static_assert( pi == 3.14f ); // pi is not constant
+		}
+	)";
+
+	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::StaticAssertExpressionIsNotConstant );
+	U_TEST_ASSERT( error.file_pos.line == 5u );
+}
+
+U_TEST( StaticAssertExpressionIsNotConstantTest1 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn Bar() : bool { return true; }
+		fn Foo()
+		{
+			static_assert( Bar() ); // function call result is not constant
+		}
+	)";
+
+	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::StaticAssertExpressionIsNotConstant );
+	U_TEST_ASSERT( error.file_pos.line == 5u );
+}
+
 } // namespace U

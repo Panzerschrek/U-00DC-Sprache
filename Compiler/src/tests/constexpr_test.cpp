@@ -258,4 +258,66 @@ U_TEST(ConstexprTest9)
 	U_TEST_ASSERT( 666.0f == result_value.FloatVal );
 }
 
+U_TEST( StaticAssertTest0 )
+{
+	// Simple static assert with "true" expression.
+	static const char c_program_text[]=
+	R"(
+		fn Foo()
+		{
+			static_assert( true );
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+}
+
+U_TEST( StaticAssertTest1 )
+{
+	// Simple static assert with "false" expression - must produce error.
+	static const char c_program_text[]=
+	R"(
+		fn Foo()
+		{
+			static_assert( false );
+		}
+	)";
+
+	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	U_TEST_ASSERT( !build_result.errors.empty() );
+
+	U_TEST_ASSERT( build_result.errors[0].code == CodeBuilderErrorCode::StaticAssertionFailed );
+	U_TEST_ASSERT( build_result.errors[0].file_pos.line == 4u );
+}
+
+U_TEST( StaticAssertTest2 )
+{
+	// All expressions must be constant and true.
+	static const char c_program_text[]=
+	R"(
+		fn Foo()
+		{
+			static_assert( true );
+			static_assert( !false );
+			static_assert( !!true );
+			static_assert( true && !false && true == true && false == false && false != true && true != false );
+			static_assert( 0 == 0 );
+			static_assert( 0u == 0u );
+			static_assert( 0.0f == 0.0f );
+			static_assert( 1 != 2 );
+			static_assert( 1 > 0 );
+			static_assert( -1 <= 2 );
+			static_assert( 5869 <= 5869 );
+			static_assert( -857 > -11545 );
+			static_assert( 1 + 1 > 1 );
+			static_assert( ~0u == 4294967295u );
+			static_assert( i32( 3.1415926535f ) == 3 );
+			static_assert( f32( 1993u ) == 1993.0f );
+			static_assert( 2.0 * 2.0 == 4.0 );
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+}
+
 } // namespace U

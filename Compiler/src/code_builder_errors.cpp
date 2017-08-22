@@ -468,6 +468,39 @@ CodeBuilderError ReportInvalidTypeForConstantExpressionVariable( const FilePos& 
 	return error;
 }
 
+CodeBuilderError ReportStaticAssertExpressionMustHaveBoolType( const FilePos& file_pos )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::StaticAssertExpressionMustHaveBoolType;
+
+	error.text= "static_assert expression must have bool type."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportStaticAssertExpressionIsNotConstant( const FilePos& file_pos )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::StaticAssertExpressionIsNotConstant;
+
+	error.text= "Expression in static_assert is non constant."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportStaticAssertionFailed( const FilePos& file_pos )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::StaticAssertionFailed;
+
+	error.text= "Static assertion failed."_SpC;
+
+	return error;
+}
+
 CodeBuilderError ReportArrayInitializerForNonArray( const FilePos& file_pos )
 {
 	CodeBuilderError error;

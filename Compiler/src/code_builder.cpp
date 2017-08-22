@@ -1888,6 +1888,12 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockCode(
 					try_report_unreachable_code();
 			}
 			else if(
+				const StaticAssert* static_assert_=
+				dynamic_cast<const StaticAssert*>( block_element_ptr ) )
+			{
+				BuildStaticAssert( *static_assert_, block_names );
+			}
+			else if(
 				const Block* block=
 				dynamic_cast<const Block*>( block_element_ptr ) )
 			{
@@ -2616,6 +2622,33 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildIfOperatorCode(
 	if_operator_blocks_build_info.have_unconditional_return_inside= have_return_in_all_branches;
 	if_operator_blocks_build_info.have_uncodnitional_break_or_continue= have_break_or_continue_in_all_branches;
 	return if_operator_blocks_build_info;
+}
+
+void CodeBuilder::BuildStaticAssert(
+	const StaticAssert& static_assert_,
+	const NamesScope& names )
+{
+	const Value expression_result= BuildExpressionCode( *static_assert_.expression, names, *dummy_function_context_ );
+	if( expression_result.GetType() != bool_type_ )
+	{
+		errors_.push_back( ReportStaticAssertExpressionMustHaveBoolType( static_assert_.file_pos_ ) );
+		return;
+	}
+
+	const Variable* const variable= expression_result.GetVariable();
+	U_ASSERT( variable != nullptr );
+
+	if( variable->constexpr_value == nullptr )
+	{
+		errors_.push_back( ReportStaticAssertExpressionIsNotConstant( static_assert_.file_pos_ ) );
+		return;
+	}
+
+	if( !variable->constexpr_value->isOneValue() )
+	{
+		errors_.push_back( ReportStaticAssertionFailed( static_assert_.file_pos_ ) );
+		return;
+	}
 }
 
 FunctionVariable* CodeBuilder::GetFunctionWithExactSignature(

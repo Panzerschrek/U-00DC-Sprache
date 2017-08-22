@@ -46,12 +46,15 @@ enum class Keywords : unsigned int
 	// Mutability modifiers.
 	mut_,
 	imut_,
+	constexpr_,
 
 	zero_init_,
 
 	this_,
 	constructor_,
 	destructor_,
+
+	static_assert_,
 
 	// Reserved keywords for future usage.
 	for_,
@@ -68,7 +71,6 @@ enum class Keywords : unsigned int
 	typename_,
 	cast_,
 	const_,
-	constexpr_,
 	lambda_,
 	static_,
 	package_,

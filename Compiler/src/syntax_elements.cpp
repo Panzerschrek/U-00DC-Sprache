@@ -301,6 +301,10 @@ DecrementOperator::DecrementOperator( const FilePos& file_pos )
 	: IBlockElement(file_pos)
 {}
 
+StaticAssert::StaticAssert( const FilePos& file_pos )
+	: IBlockElement(file_pos)
+{}
+
 FunctionArgumentDeclaration::FunctionArgumentDeclaration(
 	const FilePos& file_pos,
 	ProgramString name,

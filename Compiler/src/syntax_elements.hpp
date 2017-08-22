@@ -480,6 +480,14 @@ public:
 	IExpressionComponentPtr expression;
 };
 
+class StaticAssert final : public IBlockElement
+{
+public:
+	explicit StaticAssert( const FilePos& file_pos );
+
+	IExpressionComponentPtr expression;
+};
+
 class FunctionArgumentDeclaration final : public SyntaxElementBase
 {
 public:
