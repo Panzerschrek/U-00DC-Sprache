@@ -327,7 +327,7 @@ private:
 		const Variable& variable,
 		FunctionContext& function_context );
 
-	void ApplyArrayInitializer(
+	llvm::Constant* ApplyArrayInitializer(
 		const Variable& variable,
 		const ArrayInitializer& initializer,
 		NamesScope& block_names,

@@ -334,8 +334,17 @@ bool Type::HaveDestructor() const
 
 bool Type::CanBeConstexpr() const
 {
-	// SPRACHE_TODO - allow arrays of fundamentals.
-	return GetFundamentalType() != nullptr;
+	if( boost::get<FundamentalType>( &something_ ) != nullptr )
+	{
+		return true;
+	}
+	else if( const ArrayPtr* const array= boost::get<ArrayPtr>( &something_ ) )
+	{
+		U_ASSERT( *array != nullptr );
+		return (*array)->type.CanBeConstexpr();
+	}
+
+	return false;
 }
 
 llvm::Type* Type::GetLLVMType() const

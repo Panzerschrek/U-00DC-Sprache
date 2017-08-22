@@ -108,6 +108,27 @@ U_TEST( ViariableInitializerIsNotConstantExpressionTest2 )
 	U_TEST_ASSERT( error.file_pos.line == 5u );
 }
 
+U_TEST( ViariableInitializerIsNotConstantExpressionTest3 )
+{
+	// Non-constexpr initializer for constexpr array.
+	static const char c_program_text[]=
+	R"(
+		fn Foo()
+		{
+			var i32 x= 42;
+			var [ i32, 3 ] constexpr arr[ 5, x, 854 ];
+		}
+	)";
+
+	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::VariableInitializerIsNotConstantExpression );
+	U_TEST_ASSERT( error.file_pos.line == 5u );
+}
+
 U_TEST( InvalidTypeForConstantExpressionVariableTest0 )
 {
 	// Constexpr variable of struct type.

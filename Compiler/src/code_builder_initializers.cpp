@@ -28,7 +28,7 @@ llvm::Constant* CodeBuilder::ApplyInitializer(
 	if( const ArrayInitializer* const array_initializer=
 		dynamic_cast<const ArrayInitializer*>(&initializer) )
 	{
-		ApplyArrayInitializer( variable, *array_initializer, block_names, function_context );
+		return ApplyArrayInitializer( variable, *array_initializer, block_names, function_context );
 	}
 	else if( const StructNamedInitializer* const struct_named_initializer=
 		dynamic_cast<const StructNamedInitializer*>(&initializer) )
@@ -118,7 +118,7 @@ void CodeBuilder::ApplyEmptyInitializer(
 		return;
 }
 
-void CodeBuilder::ApplyArrayInitializer(
+llvm::Constant* CodeBuilder::ApplyArrayInitializer(
 	const Variable& variable,
 	const ArrayInitializer& initializer,
 	NamesScope& block_names,
@@ -128,7 +128,7 @@ void CodeBuilder::ApplyArrayInitializer(
 	if( array_type == nullptr )
 	{
 		errors_.push_back( ReportArrayInitializerForNonArray( initializer.file_pos_ ) );
-		return;
+		return nullptr;
 	}
 
 	if( initializer.initializers.size() != array_type->size )
@@ -138,7 +138,7 @@ void CodeBuilder::ApplyArrayInitializer(
 				initializer.file_pos_,
 				array_type->size,
 				initializer.initializers.size() ) );
-		return;
+		return nullptr;
 		// SPRACHE_TODO - add array continious initializers.
 	}
 
@@ -150,6 +150,9 @@ void CodeBuilder::ApplyArrayInitializer(
 	llvm::Value* index_list[2];
 	index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
 
+	bool is_constant= array_type->type.CanBeConstexpr();
+	std::vector<llvm::Constant*> members_constants;
+
 	for( size_t i= 0u; i < initializer.initializers.size(); i++ )
 	{
 		index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(i) ) );
@@ -157,8 +160,21 @@ void CodeBuilder::ApplyArrayInitializer(
 			function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, llvm::ArrayRef<llvm::Value*> ( index_list, 2u ) );
 
 		U_ASSERT( initializer.initializers[i] != nullptr );
-		ApplyInitializer( array_member, *initializer.initializers[i], block_names, function_context );
+		llvm::Constant* const member_constant=
+			ApplyInitializer( array_member, *initializer.initializers[i], block_names, function_context );
+
+		if( is_constant && member_constant != nullptr )
+			members_constants.push_back( member_constant );
+		else
+			is_constant= false;
 	}
+
+	U_ASSERT( members_constants.size() == initializer.initializers.size() || !is_constant );
+
+	if( is_constant )
+		return llvm::ConstantArray::get( array_type->llvm_type, members_constants );
+
+	return nullptr;
 }
 
 void CodeBuilder::ApplyStructNamedInitializer(

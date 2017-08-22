@@ -977,13 +977,21 @@ Variable CodeBuilder::BuildIndexationOperator(
 	result.value_type= variable.value_type;
 	result.type= array_type->type;
 
-	// Make first index = 0 for array to pointer conversion.
-	llvm::Value* index_list[2];
-	index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
-	index_list[1]= CreateMoveToLLVMRegisterInstruction( index, function_context );
+	if( variable.constexpr_value != nullptr && index.constexpr_value != nullptr )
+	{
+		result.llvm_value= result.constexpr_value=
+			variable.constexpr_value->getAggregateElement( index.constexpr_value );
+	}
+	else
+	{
+		// Make first index = 0 for array to pointer conversion.
+		llvm::Value* index_list[2];
+		index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
+		index_list[1]= CreateMoveToLLVMRegisterInstruction( index, function_context );
 
-	result.llvm_value=
-		function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, llvm::ArrayRef< llvm::Value*> ( index_list, 2u ) );
+		result.llvm_value=
+			function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, llvm::ArrayRef< llvm::Value*> ( index_list, 2u ) );
+	}
 
 	return result;
 }

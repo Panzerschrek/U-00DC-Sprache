@@ -320,4 +320,68 @@ U_TEST( StaticAssertTest2 )
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 }
 
+U_TEST(ConstexprTest10)
+{
+	// constexpr array.
+	static const char c_program_text[]=
+	R"(
+		fn Foo() : i32
+		{
+			var [ i32, 3 ] constexpr arr[ 2, 5, -8 ];
+			static_assert( arr[0u] == 2 );
+			static_assert( arr[1u] == 5 );
+			static_assert( arr[2u] == -8 );
+			var u32 i2= 2u;
+			return arr[0u] + arr[1u] * arr[i2]; // Also, accessing constexpr value using non-constexpr index.
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT(
+		( 2 + 5 * (-8) ) ==
+		static_cast<int32_t>(result_value.IntVal.getLimitedValue()) );
+}
+
+U_TEST(ConstexprTest11)
+{
+	// constexpr twodimensional array.
+	static const char c_program_text[]=
+	R"(
+		fn Foo() : i32
+		{
+			var [ [ i32, 2 ], 3 ] constexpr arr[ [2, 4 - 5], [5, -0 ], [-8, 887] ];
+			static_assert( arr[0u][0u] == 2 );
+			static_assert( arr[0u][1u] == 4 - 5 );
+			static_assert( arr[1u][0u] == 5 );
+			static_assert( arr[1u][1u] == -0 );
+			static_assert( arr[2u][0u] == -8 );
+			static_assert( arr[2u][1u] == 887 );
+			return arr[0u][1u] - arr[2u][0u];
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT(
+		( ( 4 - 5 ) - (-8) ) ==
+		static_cast<int32_t>(result_value.IntVal.getLimitedValue()) );
+}
+
 } // namespace U
