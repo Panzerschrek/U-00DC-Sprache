@@ -183,4 +183,79 @@ U_TEST(ConstexprTest6)
 	U_TEST_ASSERT( static_cast<uint64_t>( 85124 ) == result_value.IntVal.getLimitedValue() );
 }
 
+U_TEST(ConstexprTest7)
+{
+	// Fundamental to fundamental cast must produce constant values for constant arguments.
+	static const char c_program_text[]=
+	R"(
+		fn Foo() : i32
+		{
+			var i32 constexpr s= i32( 3.1f + 2.7f ); // float to int
+			return s;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( static_cast<uint64_t>( 5 ) == result_value.IntVal.getLimitedValue() );
+}
+
+U_TEST(ConstexprTest8)
+{
+	// Fundamental to fundamental cast must produce constant values for constant arguments.
+	static const char c_program_text[]=
+	R"(
+		fn Foo() : i32
+		{
+			var i32 constexpr s= i32( 3u + 2u ); // int to int
+			return s;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( static_cast<uint64_t>( 5 ) == result_value.IntVal.getLimitedValue() );
+}
+
+U_TEST(ConstexprTest9)
+{
+	// Fundamental to fundamental cast must produce constant values for constant arguments.
+	static const char c_program_text[]=
+	R"(
+		fn Foo() : f32
+		{
+			var f32 constexpr s= f32( i32(444u) + 222 ); // int to int + int to float
+			return s;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( 666.0f == result_value.FloatVal );
+}
+
 } // namespace U
