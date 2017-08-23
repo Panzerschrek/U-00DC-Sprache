@@ -384,4 +384,30 @@ U_TEST(ConstexprTest11)
 		static_cast<int32_t>(result_value.IntVal.getLimitedValue()) );
 }
 
+U_TEST(ConstexprTest12)
+{
+	// Taking immutable reference to constant array must work.
+	static const char c_program_text[]=
+	R"(
+		fn Bar( i32 &imut x ) : i32 { return x; }
+		fn Foo() : i32
+		{
+			var [ i32, 2 ] constexpr arr[ 158546, 9856 ];
+			return Bar( arr[1u] );
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( 9856 == static_cast<int32_t>(result_value.IntVal.getLimitedValue()) );
+}
+
 } // namespace U
