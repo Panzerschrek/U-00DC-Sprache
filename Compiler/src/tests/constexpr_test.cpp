@@ -537,4 +537,56 @@ U_TEST( ConstexprReferenceTest2 )
 	U_TEST_ASSERT( 99999u == static_cast<uint32_t>(result_value.IntVal.getLimitedValue()) );
 }
 
+U_TEST( ZeroInitConstexprTest0 )
+{
+	// Zero initializer must produce constant values.
+	static const char c_program_text[]=
+	R"(
+		fn Foo() : i32
+		{
+			var i32 constexpr x= zero_init;
+			static_assert( x == 0 );
+			return 0;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( 0 == static_cast<int32_t>(result_value.IntVal.getLimitedValue()) );
+}
+
+U_TEST( ZeroInitConstexprTest1 )
+{
+	// Zero initializer for array must produce constant values.
+	static const char c_program_text[]=
+	R"(
+		fn Foo() : f32
+		{
+			var [ f32, 16 ] constexpr x= zero_init;
+			static_assert( x[9u] == 0.0f );
+			return x[9u];
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( 0.0f == result_value.FloatVal );
+}
+
 } // namespace U

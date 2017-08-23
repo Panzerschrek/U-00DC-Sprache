@@ -48,7 +48,7 @@ llvm::Constant* CodeBuilder::ApplyInitializer(
 	else if( const ZeroInitializer* const zero_initializer=
 		dynamic_cast<const ZeroInitializer*>(&initializer) )
 	{
-		ApplyZeroInitializer( variable, *zero_initializer, block_names, function_context );
+		return ApplyZeroInitializer( variable, *zero_initializer, block_names, function_context );
 	}
 	else
 	{
@@ -470,7 +470,7 @@ llvm::Constant* CodeBuilder::ApplyExpressionInitializer(
 	return nullptr;
 }
 
-void CodeBuilder::ApplyZeroInitializer(
+llvm::Constant* CodeBuilder::ApplyZeroInitializer(
 	const Variable& variable,
 	const ZeroInitializer& initializer,
 	const NamesScope& block_names,
@@ -478,7 +478,7 @@ void CodeBuilder::ApplyZeroInitializer(
 {
 	if( const FundamentalType* const fundamental_type= variable.type.GetFundamentalType() )
 	{
-		llvm::Value* zero_value= nullptr;
+		llvm::Constant* zero_value= nullptr;
 		switch( fundamental_type->fundamental_type )
 		{
 		case U_FundamentalType::Bool:
@@ -517,12 +517,15 @@ void CodeBuilder::ApplyZeroInitializer(
 		};
 
 		function_context.llvm_ir_builder.CreateStore( zero_value, variable.llvm_value );
+		return zero_value;
 	}
 	else if( const Array* const array_type= variable.type.GetArrayType() )
 	{
 		Variable array_member= variable;
 		array_member.type= array_type->type;
 		array_member.location= Variable::Location::Pointer;
+
+		llvm::Constant* const_value= nullptr;
 
 		GenerateLoop(
 			array_type->size,
@@ -533,9 +536,15 @@ void CodeBuilder::ApplyZeroInitializer(
 				index_list[1]= counter_value;
 				array_member.llvm_value=
 					function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, llvm::ArrayRef<llvm::Value*>( index_list, 2u ) );
-				ApplyZeroInitializer( array_member, initializer, block_names, function_context );
+				const_value= ApplyZeroInitializer( array_member, initializer, block_names, function_context );
 			},
 			function_context);
+
+		if( const_value != nullptr && array_type->type.CanBeConstexpr() )
+			return
+				llvm::ConstantArray::get(
+					array_type->llvm_type,
+					std::vector<llvm::Constant*>( array_type->size, const_value ) );
 	}
 	else if( const ClassPtr class_type= variable.type.GetClassType() )
 	{
@@ -566,8 +575,10 @@ void CodeBuilder::ApplyZeroInitializer(
 	else
 	{
 		// REPORT unsupported type for zero initializer
-		return;
+		return nullptr;
 	}
+
+	return nullptr;
 }
 
 } // namespace CodeBuilderPrivate

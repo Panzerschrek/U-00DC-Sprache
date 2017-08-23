@@ -351,7 +351,7 @@ private:
 		const NamesScope& block_names,
 		FunctionContext& function_context );
 
-	void ApplyZeroInitializer(
+	llvm::Constant* ApplyZeroInitializer(
 		const Variable& variable,
 		const ZeroInitializer& initializer,
 		const NamesScope& block_names,
