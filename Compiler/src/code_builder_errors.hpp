@@ -63,6 +63,9 @@ enum class CodeBuilderErrorCode : unsigned int
 	StaticAssertExpressionIsNotConstant,
 	StaticAssertionFailed,
 
+	// Compile-time checks.
+	ArrayIndexOutOfBounds,
+
 	// Initializers errors.
 	ArrayInitializerForNonArray,
 	ArrayInitializersCountMismatch,
@@ -148,6 +151,7 @@ CodeBuilderError ReportInvalidTypeForConstantExpressionVariable( const FilePos& 
 CodeBuilderError ReportStaticAssertExpressionMustHaveBoolType( const FilePos& file_pos );
 CodeBuilderError ReportStaticAssertExpressionIsNotConstant( const FilePos& file_pos );
 CodeBuilderError ReportStaticAssertionFailed( const FilePos& file_pos );
+CodeBuilderError ReportArrayIndexOutOfBounds( const FilePos& file_pos, size_t index, size_t array_size );
 CodeBuilderError ReportArrayInitializerForNonArray( const FilePos& file_pos );
 CodeBuilderError ReportArrayInitializersCountMismatch( const FilePos& file_pos, size_t expected_initializers, size_t real_initializers );
 CodeBuilderError ReportFundamentalTypesHaveConstructorsWithExactlyOneParameter( const FilePos& file_pos );

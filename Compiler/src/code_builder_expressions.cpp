@@ -972,6 +972,13 @@ Variable CodeBuilder::BuildIndexationOperator(
 		throw ProgramError();
 	}
 
+	if( index.constexpr_value != nullptr )
+	{
+		const size_t index_value= size_t( index.constexpr_value->getUniqueInteger().getLimitedValue() );
+		if( index_value >= array_type->size )
+			errors_.push_back( ReportArrayIndexOutOfBounds( indexation_operator.file_pos_, index_value, array_type->size ) );
+	}
+
 	Variable result;
 	result.location= Variable::Location::Pointer;
 	result.value_type= variable.value_type;

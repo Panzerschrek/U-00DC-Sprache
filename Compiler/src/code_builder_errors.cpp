@@ -501,6 +501,19 @@ CodeBuilderError ReportStaticAssertionFailed( const FilePos& file_pos )
 	return error;
 }
 
+CodeBuilderError ReportArrayIndexOutOfBounds( const FilePos& file_pos, const size_t index, const size_t array_size )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::ArrayIndexOutOfBounds;
+
+	error.text=
+		"Array inex out of bounds. Index is \""_SpC + ToProgramString(std::to_string(index).c_str()) +
+		"\", but aray constains only \""_SpC + ToProgramString(std::to_string(array_size).c_str()) + "\" elements."_SpC;
+
+	return error;
+}
+
 CodeBuilderError ReportArrayInitializerForNonArray( const FilePos& file_pos )
 {
 	CodeBuilderError error;

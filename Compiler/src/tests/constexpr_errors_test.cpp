@@ -300,4 +300,32 @@ U_TEST( ExpectedReferenceValue_ForConstexpr_Test1 )
 	U_TEST_ASSERT( build_result.errors[2u].file_pos.line == 8u );
 }
 
+U_TEST( ArrayIndexOutOfBoundsTest0 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo()
+		{
+			var [ i32, 5 ] arr= zero_init;
+			var [ i32, 0 ] zero_arr= zero_init;
+			arr[5u]; // index= size
+			arr[6u]; // index > size
+			arr[8278282u]; // index >> size
+			zero_arr[0u]; // indexation of zero-size array
+		}
+	)";
+
+	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	U_TEST_ASSERT( build_result.errors.size() >= 4u );
+
+	U_TEST_ASSERT( build_result.errors[0u].code == CodeBuilderErrorCode::ArrayIndexOutOfBounds );
+	U_TEST_ASSERT( build_result.errors[0u].file_pos.line == 6u );
+	U_TEST_ASSERT( build_result.errors[1u].code == CodeBuilderErrorCode::ArrayIndexOutOfBounds );
+	U_TEST_ASSERT( build_result.errors[1u].file_pos.line == 7u );
+	U_TEST_ASSERT( build_result.errors[2u].code == CodeBuilderErrorCode::ArrayIndexOutOfBounds );
+	U_TEST_ASSERT( build_result.errors[2u].file_pos.line == 8u );
+	U_TEST_ASSERT( build_result.errors[3u].code == CodeBuilderErrorCode::ArrayIndexOutOfBounds );
+	U_TEST_ASSERT( build_result.errors[3u].file_pos.line == 9u );
+}
+
 } // namespace U
