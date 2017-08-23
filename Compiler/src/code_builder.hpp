@@ -233,7 +233,7 @@ private:
 
 	Variable BuildBitwiseNot(
 		const Value& value,
-		const BitwiseNot& logical_not,
+		const BitwiseNot& bitwise_not,
 		FunctionContext& function_context );
 
 	// Block elements
@@ -289,6 +289,10 @@ private:
 		const NamesScope& names,
 		FunctionContext& function_context );
 
+	void BuildStaticAssert(
+		const StaticAssert& static_assert_,
+		const NamesScope& names );
+
 	// Functions
 
 	FunctionVariable* GetFunctionWithExactSignature(
@@ -309,8 +313,9 @@ private:
 		const FilePos& file_pos );
 
 	// Initializers.
+	// Some initializers returns nonnul constant, if initializer is constant.
 
-	void ApplyInitializer(
+	llvm::Constant* ApplyInitializer(
 		const Variable& variable,
 		const IInitializer& initializer,
 		NamesScope& block_names,
@@ -322,7 +327,7 @@ private:
 		const Variable& variable,
 		FunctionContext& function_context );
 
-	void ApplyArrayInitializer(
+	llvm::Constant* ApplyArrayInitializer(
 		const Variable& variable,
 		const ArrayInitializer& initializer,
 		NamesScope& block_names,
@@ -334,19 +339,19 @@ private:
 		NamesScope& block_names,
 		FunctionContext& function_context );
 
-	void ApplyConstructorInitializer(
+	llvm::Constant* ApplyConstructorInitializer(
 		const Variable& variable,
 		const CallOperator& call_operator,
 		const NamesScope& block_names,
 		FunctionContext& function_context );
 
-	void ApplyExpressionInitializer(
+	llvm::Constant* ApplyExpressionInitializer(
 		const Variable& variable,
 		const ExpressionInitializer& initializer,
 		const NamesScope& block_names,
 		FunctionContext& function_context );
 
-	void ApplyZeroInitializer(
+	llvm::Constant* ApplyZeroInitializer(
 		const Variable& variable,
 		const ZeroInitializer& initializer,
 		const NamesScope& block_names,
@@ -385,6 +390,8 @@ private:
 	Type invalid_type_;
 	Type void_type_;
 	Type bool_type_;
+
+	FunctionContext* dummy_function_context_= nullptr;
 
 	std::unique_ptr<llvm::Module> module_;
 	unsigned int error_count_= 0u;

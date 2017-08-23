@@ -323,7 +323,7 @@ struct TypeName
 {
 	// [ [i32, 5] 7 ]
 	ComplexName name; // Can be empty in some cases.
-	std::vector< std::unique_ptr<NumericConstant> > array_sizes;
+	std::vector< IExpressionComponentPtr > array_sizes;
 
 	// Compiler so stupid - can not generate move constructors without noexcept. Make help for it.
 	TypeName() = default;
@@ -339,6 +339,7 @@ enum class MutabilityModifier
 	None,
 	Mutable,
 	Immutable,
+	Constexpr,
 };
 
 enum class ReferenceModifier
@@ -475,6 +476,14 @@ class DecrementOperator final : public IBlockElement
 {
 public:
 	explicit DecrementOperator( const FilePos& file_pos );
+
+	IExpressionComponentPtr expression;
+};
+
+class StaticAssert final : public IBlockElement
+{
+public:
+	explicit StaticAssert( const FilePos& file_pos );
 
 	IExpressionComponentPtr expression;
 };

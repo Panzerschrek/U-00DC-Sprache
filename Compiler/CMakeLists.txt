@@ -87,6 +87,8 @@ set( TESTS_SOURCES
 	src/tests/classes_declaration_test.cpp
 	src/tests/code_builder_errors_test.cpp
 	src/tests/code_builder_test.cpp
+	src/tests/constexpr_errors_test.cpp
+	src/tests/constexpr_test.cpp
 	src/tests/constructors_errors_test.cpp
 	src/tests/constructors_test.cpp
 	src/tests/destructors_errors_test.cpp

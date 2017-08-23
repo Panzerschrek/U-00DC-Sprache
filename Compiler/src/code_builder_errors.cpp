@@ -314,6 +314,17 @@ CodeBuilderError ReportExpectedVariableInIncrementOrDecrement( const FilePos& fi
 	return error;
 }
 
+CodeBuilderError ReprotExpectedVariableInArraySize( const FilePos& file_pos, const ProgramString& got )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::ExpectedVariableInArraySize;
+
+	error.text= "Expected variable in array size expression, got \"."_SpC + got + "\"."_SpC;
+
+	return error;
+}
+
 CodeBuilderError ReportCouldNotOverloadFunction( const FilePos& file_pos )
 {
 	CodeBuilderError error;
@@ -420,6 +431,72 @@ CodeBuilderError ReportUsingIncompleteType( const FilePos& file_pos, const Progr
 	error.code= CodeBuilderErrorCode::UsingIncompleteType;
 
 	error.text= "Using incomplete type \""_SpC + type_name + "\", expected complete type."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportExpectedConstantExpression( const FilePos& file_pos )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::ExpectedConstantExpression;
+
+	error.text= "Expected constant expression."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportVariableInitializerIsNotConstantExpression( const FilePos& file_pos )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::VariableInitializerIsNotConstantExpression;
+
+	error.text= "Variable declaration is nor constant expression."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportInvalidTypeForConstantExpressionVariable( const FilePos& file_pos )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::InvalidTypeForConstantExpressionVariable;
+
+	error.text= "Invalid type for constant expression variable."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportStaticAssertExpressionMustHaveBoolType( const FilePos& file_pos )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::StaticAssertExpressionMustHaveBoolType;
+
+	error.text= "static_assert expression must have bool type."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportStaticAssertExpressionIsNotConstant( const FilePos& file_pos )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::StaticAssertExpressionIsNotConstant;
+
+	error.text= "Expression in static_assert is non constant."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportStaticAssertionFailed( const FilePos& file_pos )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::StaticAssertionFailed;
+
+	error.text= "Static assertion failed."_SpC;
 
 	return error;
 }

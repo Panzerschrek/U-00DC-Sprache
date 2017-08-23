@@ -7,6 +7,7 @@
 
 #include "push_disable_llvm_warnings.hpp"
 #include <llvm/IR/Function.h>
+#include <llvm/IR/Constants.h>
 #include "pop_llvm_warnings.hpp"
 
 #include "lang_types.hpp"
@@ -84,6 +85,7 @@ public:
 	bool IsDefaultConstructible() const;
 	bool IsCopyConstructible() const;
 	bool HaveDestructor() const;
+	bool CanBeConstexpr() const;
 
 	llvm::Type* GetLLVMType() const;
 	ProgramString ToString() const;
@@ -171,6 +173,9 @@ struct Variable final
 	Location location= Location::Pointer;
 	ValueType value_type= ValueType::ConstReference;
 	llvm::Value* llvm_value= nullptr;
+
+	// Exists only for constant expressions of fundamental types.
+	llvm::Constant* constexpr_value= nullptr;
 };
 
 struct ClassField final

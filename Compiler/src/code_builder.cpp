@@ -96,9 +96,32 @@ CodeBuilder::BuildResult CodeBuilder::BuildProgram( const ProgramElements& progr
 	errors_.clear();
 	error_count_= 0u;
 
+	// In some places outside functions we need to execute expression evaluation.
+	// Create for this dummy function context.
+	llvm::Function* const dummy_function=
+		llvm::Function::Create(
+			llvm::FunctionType::get( fundamental_llvm_types_.void_, false ),
+			llvm::Function::LinkageTypes::ExternalLinkage,
+			"",
+			module_.get() );
+
+	FunctionContext dummy_function_context(
+		void_type_,
+		false, false,
+		llvm_context_,
+		dummy_function );
+	dummy_function_context.destructibles_stack.emplace_back();
+
+	dummy_function_context_= &dummy_function_context;
+
+	// Create global namespace.
 	NamesScope global_names( ""_SpC, nullptr );
 	FillGlobalNamesScope( global_names );
+
+	// Build program body.
 	BuildNamespaceBody( program_elements, global_names );
+
+	dummy_function->eraseFromParent(); // Kill dummy function.
 
 	if( error_count_ > 0u )
 		errors_.push_back( ReportBuildFailed() );
@@ -143,18 +166,38 @@ Type CodeBuilder::PrepareType(
 		arrays_stack[ arrays_count ]= last_type;
 		arrays_count++;
 
-		const NumericConstant& num= * *rit;
+		const IExpressionComponent& num= * *rit;
 
 		*last_type= Array();
 		Array& array_type= *last_type->GetArrayType();
+		array_type.size= 1u;
 
-		U_FundamentalType size_type= GetNumericConstantType( num );
-		if( !IsInteger(size_type) )
-			errors_.push_back( ReportArraySizeIsNotInteger( num.file_pos_ ) );
-		if( num.value_ < 0 )
-			errors_.push_back( ReportArraySizeIsNegative( num.file_pos_ ) );
-
-		array_type.size= size_t( std::max( num.value_, static_cast<NumericConstant::LongFloat>(0.0) ) );
+		const Value size_expression= BuildExpressionCode( num, names_scope, *dummy_function_context_ );
+		if( const Variable* const size_variable= size_expression.GetVariable() )
+		{
+			if( size_variable->constexpr_value != nullptr )
+			{
+				if( const FundamentalType* const size_fundamental_type= size_variable->type.GetFundamentalType() )
+				{
+					if( IsInteger( size_fundamental_type->fundamental_type ) )
+					{
+						const llvm::APInt& size_value= size_variable->constexpr_value->getUniqueInteger();
+						if( IsSignedInteger( size_fundamental_type->fundamental_type ) && size_value.isNegative() )
+							errors_.push_back( ReportArraySizeIsNegative( num.file_pos_ ) );
+						else
+							array_type.size= size_t( size_value.getLimitedValue() );
+					}
+					else
+						errors_.push_back( ReportArraySizeIsNotInteger( num.file_pos_ ) );
+				}
+				else
+					U_ASSERT( false && "Nonfundamental constexpr? WTF?" );
+			}
+			else
+				errors_.push_back( ReportExpectedConstantExpression( num.file_pos_ ) );
+		}
+		else
+			errors_.push_back( ReprotExpectedVariableInArraySize( num.file_pos_, size_expression.GetType().ToString() ) );
 
 		last_type= &array_type.type;
 	}
@@ -1845,6 +1888,12 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockCode(
 					try_report_unreachable_code();
 			}
 			else if(
+				const StaticAssert* static_assert_=
+				dynamic_cast<const StaticAssert*>( block_element_ptr ) )
+			{
+				BuildStaticAssert( *static_assert_, block_names );
+			}
+			else if(
 				const Block* block=
 				dynamic_cast<const Block*>( block_element_ptr ) )
 			{
@@ -1901,6 +1950,13 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 			continue;
 		}
 
+		if( variable_declaration.mutability_modifier == MutabilityModifier::Constexpr &&
+			!type.CanBeConstexpr() )
+		{
+			errors_.push_back( ReportInvalidTypeForConstantExpressionVariable( variables_declaration.file_pos_ ) );
+			continue;
+		}
+
 		Variable variable;
 		variable.type= type;
 		variable.location= Variable::Location::Pointer;
@@ -1912,20 +1968,23 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 			variable.llvm_value->setName( ToStdString( variable_declaration.name ) );
 
 			if( variable_declaration.initializer != nullptr )
-				ApplyInitializer( variable, *variable_declaration.initializer, block_names, function_context );
+				variable.constexpr_value=
+					ApplyInitializer( variable, *variable_declaration.initializer, block_names, function_context );
 			else
 				ApplyEmptyInitializer( variable_declaration.name, variables_declaration.file_pos_, variable, function_context );
 
 			// Make immutable, if needed, only after initialization, because in initialization we need call constructors, which is mutable methods.
 			// SPRACHE_TODO - make variables without explicit mutability modifiers immutable.
-			if( variable_declaration.mutability_modifier == MutabilityModifier::Immutable )
+			if( variable_declaration.mutability_modifier == MutabilityModifier::Immutable ||
+				variable_declaration.mutability_modifier == MutabilityModifier::Constexpr )
 				variable.value_type= ValueType::ConstReference;
 		}
 		else if( variable_declaration.reference_modifier == ReferenceModifier::Reference )
 		{
 			// Mark references immutable before initialization.
 			// SPRACHE_TODO - make variables without explicit mutability modifiers immutable.
-			if( variable_declaration.mutability_modifier == MutabilityModifier::Immutable )
+			if( variable_declaration.mutability_modifier == MutabilityModifier::Immutable ||
+				variable_declaration.mutability_modifier == MutabilityModifier::Constexpr )
 				variable.value_type= ValueType::ConstReference;
 
 			if( variable_declaration.initializer == nullptr )
@@ -1980,11 +2039,23 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 
 			// TODO - maybe make copy of varaible address in new llvm register?
 			variable.llvm_value= expression_result.llvm_value;
+			variable.constexpr_value= expression_result.constexpr_value;
 		}
 		else
 		{
 			U_ASSERT(false);
 		}
+
+		if( variable_declaration.mutability_modifier == MutabilityModifier::Constexpr &&
+			variable.constexpr_value == nullptr )
+		{
+			errors_.push_back( ReportVariableInitializerIsNotConstantExpression( variables_declaration.file_pos_ ) );
+			continue;
+		}
+
+		// Reset constexpr initial value for mutable variables.
+		if( variable.value_type != ValueType::ConstReference )
+			variable.constexpr_value= nullptr;
 
 		const NamesScope::InsertedName* inserted_name=
 			block_names.AddName( variable_declaration.name, std::move(variable) );
@@ -2027,12 +2098,20 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 	variable.location= Variable::Location::Pointer;
 
 	// SPRACHE_TODO - make variables without explicit mutability modifiers immutable.
-	if( auto_variable_declaration.mutability_modifier == MutabilityModifier::Immutable )
+	if( auto_variable_declaration.mutability_modifier == MutabilityModifier::Immutable||
+		auto_variable_declaration.mutability_modifier == MutabilityModifier::Constexpr )
 		variable.value_type= ValueType::ConstReference;
 	else
 		variable.value_type= ValueType::Reference;
 
 	variable.type= initializer_experrsion.type;
+
+	if( auto_variable_declaration.mutability_modifier == MutabilityModifier::Constexpr &&
+		!variable.type.CanBeConstexpr() )
+	{
+		errors_.push_back( ReportInvalidTypeForConstantExpressionVariable( auto_variable_declaration.file_pos_ ) );
+		return;
+	}
 
 	if( auto_variable_declaration.reference_modifier == ReferenceModifier::Reference )
 	{
@@ -2049,6 +2128,7 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 		}
 
 		variable.llvm_value= initializer_experrsion.llvm_value;
+		variable.constexpr_value= initializer_experrsion.constexpr_value;
 	}
 	else if( auto_variable_declaration.reference_modifier == ReferenceModifier::None )
 	{
@@ -2060,6 +2140,8 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 			U_UNUSED(fundamental_type);
 			llvm::Value* const value_for_assignment= CreateMoveToLLVMRegisterInstruction( initializer_experrsion, function_context );
 			function_context.llvm_ir_builder.CreateStore( value_for_assignment, variable.llvm_value );
+
+			variable.constexpr_value= initializer_experrsion.constexpr_value;
 		}
 		else
 		{
@@ -2071,6 +2153,17 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 	{
 		U_ASSERT(false);
 	}
+
+	if( auto_variable_declaration.mutability_modifier == MutabilityModifier::Constexpr &&
+		variable.constexpr_value == nullptr )
+	{
+		errors_.push_back( ReportVariableInitializerIsNotConstantExpression( auto_variable_declaration.file_pos_ ) );
+		return;
+	}
+
+	// Reset constexpr initial value for mutable variables.
+	if( variable.value_type != ValueType::ConstReference )
+		variable.constexpr_value= nullptr;
 
 	const NamesScope::InsertedName* inserted_name=
 		block_names.AddName( auto_variable_declaration.name, std::move(variable) );
@@ -2530,6 +2623,33 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildIfOperatorCode(
 	return if_operator_blocks_build_info;
 }
 
+void CodeBuilder::BuildStaticAssert(
+	const StaticAssert& static_assert_,
+	const NamesScope& names )
+{
+	const Value expression_result= BuildExpressionCode( *static_assert_.expression, names, *dummy_function_context_ );
+	if( expression_result.GetType() != bool_type_ )
+	{
+		errors_.push_back( ReportStaticAssertExpressionMustHaveBoolType( static_assert_.file_pos_ ) );
+		return;
+	}
+
+	const Variable* const variable= expression_result.GetVariable();
+	U_ASSERT( variable != nullptr );
+
+	if( variable->constexpr_value == nullptr )
+	{
+		errors_.push_back( ReportStaticAssertExpressionIsNotConstant( static_assert_.file_pos_ ) );
+		return;
+	}
+
+	if( !variable->constexpr_value->isOneValue() )
+	{
+		errors_.push_back( ReportStaticAssertionFailed( static_assert_.file_pos_ ) );
+		return;
+	}
+}
+
 FunctionVariable* CodeBuilder::GetFunctionWithExactSignature(
 	const Function& function_type,
 	OverloadedFunctionsSet& functions_set )
@@ -2821,6 +2941,10 @@ llvm::Type* CodeBuilder::GetFundamentalLLVMType( const U_FundamentalType fundman
 llvm::Value*CodeBuilder::CreateMoveToLLVMRegisterInstruction(
 	const Variable& variable, FunctionContext& function_context )
 {
+	// Contant values always are register-values.
+	if( variable.constexpr_value != nullptr )
+		return variable.constexpr_value;
+
 	switch( variable.location )
 	{
 	case Variable::Location::LLVMRegister:

@@ -33,11 +33,15 @@ enum class CodeBuilderErrorCode : unsigned int
 	ExpectedInitializer,
 	ExpectedReferenceValue,
 	BindingConstReferenceToNonconstReference,
+
+	// ExpectedVariable* errors
 	ExpectedVariableInAssignment,
 	ExpectedVariableInBinaryOperator,
 	ExpectedVariableAsArgument,
 	ExpectedVariableInAdditiveAssignment,
 	ExpectedVariableInIncrementOrDecrement,
+	ExpectedVariableInArraySize,
+
 	CouldNotOverloadFunction,
 	TooManySuitableOverloadedFunctions,
 	CouldNotSelectOverloadedFunction,
@@ -48,6 +52,16 @@ enum class CodeBuilderErrorCode : unsigned int
 	ClassDeclarationOutsideItsScope,
 	ClassBodyDuplication,
 	UsingIncompleteType,
+
+	// Constexpr errors.
+	ExpectedConstantExpression,
+	VariableInitializerIsNotConstantExpression,
+	InvalidTypeForConstantExpressionVariable,
+
+	// Static assert errors.
+	StaticAssertExpressionMustHaveBoolType,
+	StaticAssertExpressionIsNotConstant,
+	StaticAssertionFailed,
 
 	// Initializers errors.
 	ArrayInitializerForNonArray,
@@ -117,6 +131,7 @@ CodeBuilderError ReportExpectedVariableInBinaryOperator( const FilePos& file_pos
 CodeBuilderError ReportExpectedVariableAsArgument( const FilePos& file_pos, const ProgramString& got );
 CodeBuilderError ReportExpectedVariableInAdditiveAssignment( const FilePos& file_pos, const ProgramString& got );
 CodeBuilderError ReportExpectedVariableInIncrementOrDecrement( const FilePos& file_pos, const ProgramString& got );
+CodeBuilderError ReprotExpectedVariableInArraySize( const FilePos& file_pos, const ProgramString& got );
 CodeBuilderError ReportCouldNotOverloadFunction( const FilePos& file_pos );
 CodeBuilderError ReportTooManySuitableOverloadedFunctions( const FilePos& file_pos );
 CodeBuilderError ReportCouldNotSelectOverloadedFunction( const FilePos& file_pos );
@@ -127,6 +142,12 @@ CodeBuilderError ReportFunctionDeclarationOutsideItsScope( const FilePos& file_p
 CodeBuilderError ReportClassDeclarationOutsideItsScope( const FilePos& file_pos );
 CodeBuilderError ReportClassBodyDuplication( const FilePos& file_pos );
 CodeBuilderError ReportUsingIncompleteType( const FilePos& file_pos, const ProgramString& type_name );
+CodeBuilderError ReportExpectedConstantExpression( const FilePos& file_pos );
+CodeBuilderError ReportVariableInitializerIsNotConstantExpression( const FilePos& file_pos );
+CodeBuilderError ReportInvalidTypeForConstantExpressionVariable( const FilePos& file_pos );
+CodeBuilderError ReportStaticAssertExpressionMustHaveBoolType( const FilePos& file_pos );
+CodeBuilderError ReportStaticAssertExpressionIsNotConstant( const FilePos& file_pos );
+CodeBuilderError ReportStaticAssertionFailed( const FilePos& file_pos );
 CodeBuilderError ReportArrayInitializerForNonArray( const FilePos& file_pos );
 CodeBuilderError ReportArrayInitializersCountMismatch( const FilePos& file_pos, size_t expected_initializers, size_t real_initializers );
 CodeBuilderError ReportFundamentalTypesHaveConstructorsWithExactlyOneParameter( const FilePos& file_pos );

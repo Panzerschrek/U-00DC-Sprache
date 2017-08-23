@@ -332,6 +332,21 @@ bool Type::HaveDestructor() const
 	return false;
 }
 
+bool Type::CanBeConstexpr() const
+{
+	if( boost::get<FundamentalType>( &something_ ) != nullptr )
+	{
+		return true;
+	}
+	else if( const ArrayPtr* const array= boost::get<ArrayPtr>( &something_ ) )
+	{
+		U_ASSERT( *array != nullptr );
+		return (*array)->type.CanBeConstexpr();
+	}
+
+	return false;
+}
+
 llvm::Type* Type::GetLLVMType() const
 {
 	struct Visitor final : public boost::static_visitor<>
