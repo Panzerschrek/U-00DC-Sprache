@@ -2128,6 +2128,7 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 		}
 
 		variable.llvm_value= initializer_experrsion.llvm_value;
+		variable.constexpr_value= initializer_experrsion.constexpr_value;
 	}
 	else if( auto_variable_declaration.reference_modifier == ReferenceModifier::None )
 	{
@@ -2140,9 +2141,7 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 			llvm::Value* const value_for_assignment= CreateMoveToLLVMRegisterInstruction( initializer_experrsion, function_context );
 			function_context.llvm_ir_builder.CreateStore( value_for_assignment, variable.llvm_value );
 
-			// Set constepxr
-			if( initializer_experrsion.constexpr_value != nullptr )
-				variable.constexpr_value= initializer_experrsion.constexpr_value;
+			variable.constexpr_value= initializer_experrsion.constexpr_value;
 		}
 		else
 		{

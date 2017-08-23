@@ -248,4 +248,56 @@ U_TEST( StaticAssertExpressionIsNotConstantTest1 )
 	U_TEST_ASSERT( error.file_pos.line == 5u );
 }
 
+U_TEST( ExpectedReferenceValue_ForConstexpr_Test0 )
+{
+	// Try mutate constexpr value.
+	static const char c_program_text[]=
+	R"(
+		fn Foo()
+		{
+			var i32 constexpr x= 42;
+			static_assert( x == 42 );
+			++x;
+			x+= 1;
+			x= x + 1;
+		}
+	)";
+
+	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	U_TEST_ASSERT( build_result.errors.size() >= 3u );
+
+	U_TEST_ASSERT( build_result.errors[0u].code == CodeBuilderErrorCode::ExpectedReferenceValue );
+	U_TEST_ASSERT( build_result.errors[0u].file_pos.line == 6u );
+	U_TEST_ASSERT( build_result.errors[1u].code == CodeBuilderErrorCode::ExpectedReferenceValue );
+	U_TEST_ASSERT( build_result.errors[1u].file_pos.line == 7u );
+	U_TEST_ASSERT( build_result.errors[2u].code == CodeBuilderErrorCode::ExpectedReferenceValue );
+	U_TEST_ASSERT( build_result.errors[2u].file_pos.line == 8u );
+}
+
+U_TEST( ExpectedReferenceValue_ForConstexpr_Test1 )
+{
+	// Try mutate constexpr array.
+	static const char c_program_text[]=
+	R"(
+		fn Foo()
+		{
+			var [ i32, 3u ] constexpr x[ 4, 8, 15 ];
+			static_assert( x[0u] == 4 && x[1u] == 8 && x[2u] == 15 );
+			++x[0u];
+			x[1u]+= 1;
+			x[2u]= x[2u] + 1;
+		}
+	)";
+
+	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	U_TEST_ASSERT( build_result.errors.size() >= 3u );
+
+	U_TEST_ASSERT( build_result.errors[0u].code == CodeBuilderErrorCode::ExpectedReferenceValue );
+	U_TEST_ASSERT( build_result.errors[0u].file_pos.line == 6u );
+	U_TEST_ASSERT( build_result.errors[1u].code == CodeBuilderErrorCode::ExpectedReferenceValue );
+	U_TEST_ASSERT( build_result.errors[1u].file_pos.line == 7u );
+	U_TEST_ASSERT( build_result.errors[2u].code == CodeBuilderErrorCode::ExpectedReferenceValue );
+	U_TEST_ASSERT( build_result.errors[2u].file_pos.line == 8u );
+}
+
 } // namespace U
