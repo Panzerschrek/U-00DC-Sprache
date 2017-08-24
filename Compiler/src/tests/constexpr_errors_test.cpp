@@ -150,6 +150,37 @@ U_TEST( InvalidTypeForConstantExpressionVariableTest0 )
 	U_TEST_ASSERT( error.file_pos.line == 5u );
 }
 
+U_TEST( ConstantExpressionResultIsUndefinedTest0 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo()
+		{
+			84 / 0; // i32 division by zero
+			1u / 0u; // u32 division by zero
+			1.0f / 0.0f; // floating point division by zero should NOT produce undefined value
+			1.0  % 0.0 ; // floating point remainder for zero should NOT produce undefined value
+			85i64 % 0i64; // i64 remainder take for zero
+			i32( - (1i64 << 31u) ) / -1; // min_int / -1
+			i32( - (1i64 << 31u) ) % -1; // min_int / -1 remainder
+		}
+	)";
+
+	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	U_TEST_ASSERT( build_result.errors.size() == 5u );
+
+	U_TEST_ASSERT( build_result.errors[0u].code == CodeBuilderErrorCode::ConstantExpressionResultIsUndefined );
+	U_TEST_ASSERT( build_result.errors[0u].file_pos.line == 4u );
+	U_TEST_ASSERT( build_result.errors[1u].code == CodeBuilderErrorCode::ConstantExpressionResultIsUndefined );
+	U_TEST_ASSERT( build_result.errors[1u].file_pos.line == 5u );
+	U_TEST_ASSERT( build_result.errors[2u].code == CodeBuilderErrorCode::ConstantExpressionResultIsUndefined );
+	U_TEST_ASSERT( build_result.errors[2u].file_pos.line == 8u );
+	U_TEST_ASSERT( build_result.errors[3u].code == CodeBuilderErrorCode::ConstantExpressionResultIsUndefined );
+	U_TEST_ASSERT( build_result.errors[3u].file_pos.line == 9u );
+	U_TEST_ASSERT( build_result.errors[4u].code == CodeBuilderErrorCode::ConstantExpressionResultIsUndefined );
+	U_TEST_ASSERT( build_result.errors[4u].file_pos.line ==10u );
+}
+
 U_TEST( StaticAssertExpressionMustHaveBoolTypeTest0 )
 {
 	static const char c_program_text[]=

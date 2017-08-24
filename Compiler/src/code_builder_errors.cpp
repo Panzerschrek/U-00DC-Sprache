@@ -468,6 +468,17 @@ CodeBuilderError ReportInvalidTypeForConstantExpressionVariable( const FilePos& 
 	return error;
 }
 
+CodeBuilderError ReportConstantExpressionResultIsUndefined( const FilePos& file_pos )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::ConstantExpressionResultIsUndefined;
+
+	error.text= "Constant expression result is undefined."_SpC;
+
+	return error;
+}
+
 CodeBuilderError ReportStaticAssertExpressionMustHaveBoolType( const FilePos& file_pos )
 {
 	CodeBuilderError error;

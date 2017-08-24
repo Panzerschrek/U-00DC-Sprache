@@ -723,6 +723,16 @@ Variable CodeBuilder::BuildBinaryOperator(
 		break;
 	};
 
+	if( result.constexpr_value != nullptr )
+	{
+		// Undef value can occurs in integer division by zero or something like it.
+		if( llvm::dyn_cast<llvm::UndefValue >(result.constexpr_value) )
+		{
+			errors_.push_back( ReportConstantExpressionResultIsUndefined( file_pos ) );
+			result.constexpr_value= nullptr;
+		}
+	}
+
 	return result;
 }
 
