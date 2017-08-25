@@ -187,10 +187,6 @@ BracketExpression::BracketExpression( const FilePos& file_pos, IExpressionCompon
 BracketExpression::~BracketExpression()
 {}
 
-IProgramElement::IProgramElement( const FilePos& file_pos )
-	: SyntaxElementBase(file_pos)
-{}
-
 IBlockElement::IBlockElement( const FilePos& file_pos )
 	: SyntaxElementBase(file_pos)
 {}
@@ -330,7 +326,7 @@ FunctionDeclaration::FunctionDeclaration(
 	FunctionArgumentsDeclaration arguments,
 	std::unique_ptr<StructNamedInitializer> constructor_initialization_list,
 	BlockPtr block )
-	: IProgramElement(file_pos)
+	: SyntaxElementBase(file_pos)
 	, name_( std::move(name) )
 	, return_type_( std::move(return_type) )
 	, return_value_mutability_modifier_(return_value_mutability_modifier)
@@ -344,14 +340,14 @@ FunctionDeclaration::~FunctionDeclaration()
 {}
 
 ClassDeclaration::ClassDeclaration( const FilePos& file_pos )
-	: IProgramElement( file_pos )
+	: SyntaxElementBase( file_pos )
 {}
 
 ClassDeclaration::~ClassDeclaration()
 {}
 
 Namespace::Namespace( const FilePos& file_pos )
-	: IProgramElement(file_pos)
+	: SyntaxElementBase(file_pos)
 {}
 
 } // namespace U

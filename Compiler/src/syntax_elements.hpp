@@ -287,10 +287,9 @@ public:
 	const IExpressionComponentPtr expression_;
 };
 
-class IProgramElement : public SyntaxElementBase
+class IProgramElement
 {
 public:
-	explicit IProgramElement( const FilePos& file_pos );
 	virtual ~IProgramElement(){}
 };
 
@@ -511,7 +510,9 @@ public:
 typedef std::unique_ptr<FunctionArgumentDeclaration> FunctionArgumentDeclarationPtr;
 typedef std::vector<FunctionArgumentDeclarationPtr> FunctionArgumentsDeclaration;
 
-class FunctionDeclaration final : public IProgramElement
+class FunctionDeclaration final
+	: public SyntaxElementBase
+	, public IProgramElement
 {
 public:
 	FunctionDeclaration(
@@ -535,7 +536,9 @@ public:
 	const BlockPtr block_;
 };
 
-class ClassDeclaration final : public IProgramElement
+class ClassDeclaration final
+	: public SyntaxElementBase
+	, public IProgramElement
 {
 public:
 	explicit ClassDeclaration( const FilePos& file_pos );
@@ -555,7 +558,9 @@ public:
 	bool is_forward_declaration_= false;
 };
 
-class Namespace final : public IProgramElement
+class Namespace final
+	: public SyntaxElementBase
+	, public IProgramElement
 {
 public:
 	explicit Namespace( const FilePos& file_pos );
