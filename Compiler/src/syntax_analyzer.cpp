@@ -1789,6 +1789,10 @@ std::unique_ptr<ClassDeclaration> SyntaxAnalyzer::ParseClass()
 		{
 			result->members_.push_back( ParseFunction() );
 		}
+		else if( it_->type == Lexem::Type::Identifier && ( it_->text == Keywords::struct_ || it_->text == Keywords::class_ ) )
+		{
+			result->members_.push_back( ParseClass() );
+		}
 		else
 		{
 			ClassDeclaration::Field field;
