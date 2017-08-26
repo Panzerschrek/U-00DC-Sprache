@@ -351,4 +351,150 @@ U_TEST(MethodTest10)
 	U_TEST_ASSERT( static_cast<uint64_t>( 42 ) == result_value.IntVal.getLimitedValue() );
 }
 
+U_TEST( InnerClassTest0 )
+{
+	static const char c_program_text[]=
+	R"(
+		class S
+		{
+			struct I
+			{
+				i32 x;
+			}
+		}
+
+		fn Foo() : i32
+		{
+			var S::I i{ .x= 88884 }; // Use inner class.
+			return i.x;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( static_cast<uint64_t>( 88884 ) == result_value.IntVal.getLimitedValue() );
+}
+
+U_TEST( InnerClassTest1 )
+{
+	static const char c_program_text[]=
+	R"(
+		class S
+		{
+			struct I
+			{
+				i32 x;
+			}
+
+			fn Foo() : i32
+			{
+				var I      i0{ .x= 999512 }; // Use inner class, using its name relative this class.
+				var ::S::I i1{ .x=  2 }; // Use inner class, using its full name.
+				var S::I   i2{ .x= -8 }; // Use inner class, using its partial name.
+				return i0.x / i1.x - i2.x;
+			}
+		}
+
+		fn Foo() : i32
+		{
+			return S::Foo();
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( static_cast<uint64_t>( 999512 / 2 - (-8) ) == result_value.IntVal.getLimitedValue() );
+}
+
+U_TEST( InnerClassTest2 )
+{
+	static const char c_program_text[]=
+	R"(
+		class S
+		{
+			struct I
+			{
+				class KKK
+				{
+					fn Foo() : i32 { return 1125894; }
+				}
+			}
+		}
+
+		fn Foo() : i32
+		{
+			return S::I::KKK::Foo(); // Call static function of inner class.
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( static_cast<uint64_t>( 1125894 ) == result_value.IntVal.getLimitedValue() );
+}
+
+U_TEST( InnerClassTest3 )
+{
+	static const char c_program_text[]=
+	R"(
+		class S
+		{
+			i32 x; f32 y;
+
+			struct T
+			{
+				i32 x;
+				fn Get( this ) : i32
+				{
+					// Accessing "this" member, using some different ways.
+					return ::S::T::x / 2 - S::T::x / 5 + T::x * 1 + x * 2;
+				}
+			}
+		}
+
+		fn Foo() : i32
+		{
+			var S::T t {.x= 854 };
+			return t.Get();
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT(
+		( 854 / 2 - 854 / 5 + 854 + 854 * 2 ) ==
+		static_cast<int32_t>(result_value.IntVal.getLimitedValue()) );
+}
+
 } // namespace U
