@@ -138,6 +138,38 @@ U_TEST(ThisInNonclassFunctionTest0)
 	U_TEST_ASSERT( error.file_pos.line == 2u );
 }
 
+U_TEST( AccessOfNonThisClassFieldTest0 )
+{
+	static const char c_program_text[]=
+	R"(
+		struct A
+		{
+			f32 x;
+
+			struct B
+			{
+				fn Method( this )
+				{
+					// Access "x", which is member of parent class.
+					x; // simple name
+					::A::x; // full name
+					A::x; // partial name
+				}
+			}
+		}
+	)";
+
+	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	U_TEST_ASSERT( build_result.errors.size() >= 3 );
+
+	U_TEST_ASSERT( build_result.errors[0].code == CodeBuilderErrorCode::AccessOfNonThisClassField );
+	U_TEST_ASSERT( build_result.errors[0].file_pos.line == 11u );
+	U_TEST_ASSERT( build_result.errors[1].code == CodeBuilderErrorCode::AccessOfNonThisClassField );
+	U_TEST_ASSERT( build_result.errors[1].file_pos.line == 12u );
+	U_TEST_ASSERT( build_result.errors[2].code == CodeBuilderErrorCode::AccessOfNonThisClassField );
+	U_TEST_ASSERT( build_result.errors[2].file_pos.line == 13u );
+}
+
 U_TEST(ThisUnavailableTest0)
 {
 	// "this" in nonclass fnction.

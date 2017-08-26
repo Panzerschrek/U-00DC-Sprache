@@ -551,7 +551,12 @@ public:
 		ProgramString name;
 	};
 
-	typedef boost::variant< std::unique_ptr<FunctionDeclaration>, Field > Member;
+	typedef
+		boost::variant<
+			std::unique_ptr<FunctionDeclaration>,
+			std::unique_ptr<ClassDeclaration>,
+			Field >
+		Member;
 
 	std::vector<Member> members_;
 	ComplexName name_;

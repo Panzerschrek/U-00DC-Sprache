@@ -357,6 +357,12 @@ void CodeBuilder::PrepareClass( const ClassDeclaration& class_declaration, Names
 			U_ASSERT( *function_declaration != nullptr );
 			PrepareFunction( **function_declaration, true, the_class, the_class->members );
 		}
+		else if( const std::unique_ptr<ClassDeclaration>* const inner_class=
+			boost::get< std::unique_ptr<ClassDeclaration> >( &member ) )
+		{
+			U_ASSERT( *inner_class != nullptr );
+			PrepareClass( **inner_class, the_class->members );
+		}
 		else
 		{
 			U_ASSERT( false );

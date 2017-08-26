@@ -838,14 +838,12 @@ Value CodeBuilder::BuildNamedOperand(
 		}
 
 		const ClassPtr class_= field->class_.lock();
-		U_ASSERT( class_ != nullptr  && "Class is dead? WTF?" );
+		U_ASSERT( class_ != nullptr && "Class is dead? WTF?" );
 
 		// SPRACHE_TODO - allow access to parents fields here.
-		const Type class_type= class_;
-		if( class_type != function_context.this_->type )
+		if( Type(class_) != function_context.this_->type )
 		{
-			// SPRACHE_TODO - accessing field of non-this class.
-			errors_.push_back( ReportNotImplemented( named_operand.file_pos_, "classes inside other classes" ) );
+			errors_.push_back( ReportAccessOfNonThisClassField( named_operand.file_pos_, named_operand.name_.components.back() ) );
 			throw ProgramError();
 		}
 

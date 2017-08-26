@@ -775,6 +775,17 @@ CodeBuilderError ReportThisInNonclassFunction( const FilePos& file_pos, const Pr
 	return error;
 }
 
+CodeBuilderError ReportAccessOfNonThisClassField( const FilePos& file_pos, const ProgramString& field_name )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::AccessOfNonThisClassField;
+
+	error.text= "Access filed \""_SpC + field_name + "\" of non-this class."_SpC;
+
+	return error;
+}
+
 CodeBuilderError ReportThisUnavailable( const FilePos& file_pos )
 {
 	CodeBuilderError error;

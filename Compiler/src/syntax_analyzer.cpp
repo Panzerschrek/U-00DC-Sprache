@@ -406,6 +406,7 @@ IExpressionComponentPtr SyntaxAnalyzer::ParseExpression()
 			switch( it_->type )
 			{
 			case Lexem::Type::Identifier:
+			case Lexem::Type::Scope:
 			case Lexem::Type::Number:
 			case Lexem::Type::BracketLeft:
 				goto parse_operand;
@@ -1788,6 +1789,10 @@ std::unique_ptr<ClassDeclaration> SyntaxAnalyzer::ParseClass()
 		if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::fn_ )
 		{
 			result->members_.push_back( ParseFunction() );
+		}
+		else if( it_->type == Lexem::Type::Identifier && ( it_->text == Keywords::struct_ || it_->text == Keywords::class_ ) )
+		{
+			result->members_.push_back( ParseClass() );
 		}
 		else
 		{
