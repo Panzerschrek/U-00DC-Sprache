@@ -406,6 +406,7 @@ IExpressionComponentPtr SyntaxAnalyzer::ParseExpression()
 			switch( it_->type )
 			{
 			case Lexem::Type::Identifier:
+			case Lexem::Type::Scope:
 			case Lexem::Type::Number:
 			case Lexem::Type::BracketLeft:
 				goto parse_operand;
