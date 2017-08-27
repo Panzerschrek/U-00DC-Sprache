@@ -33,6 +33,9 @@ struct Lexem
 		BraceLeft, // {
 		BraceRight, // }
 
+		TemplateBracketLeft , // </
+		TemplateBrachetRight, // />
+
 		Scope, // ::
 
 		Comma, // ,
