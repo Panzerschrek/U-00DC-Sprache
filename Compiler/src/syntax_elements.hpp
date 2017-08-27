@@ -563,6 +563,35 @@ public:
 	bool is_forward_declaration_= false;
 };
 
+class ClassTemplate final
+	: public SyntaxElementBase
+	, public IProgramElement
+{
+public:
+	explicit ClassTemplate( const FilePos& file_pos );
+
+	// For type arguments, like template</ type A, type B />, arg_type is empty.
+	// For value arguments, like template</ type A, A x, i32 y />, arg_type is comples name of argument.
+	struct Arg
+	{
+		ComplexName arg_type;
+		ProgramString name;
+	};
+
+	// Argument in template signature.
+	struct SignatureArg
+	{
+		// TODO - support more comples names, like std::vector</T/>.
+		// TODO - support default arguments.
+		ProgramString name;
+	};
+
+	std::vector<Arg> args_;
+	std::vector<SignatureArg> signature_args_;
+	std::unique_ptr<ClassDeclaration> class_;
+
+};
+
 class Namespace final
 	: public SyntaxElementBase
 	, public IProgramElement

@@ -1040,6 +1040,13 @@ void CodeBuilder::BuildNamespaceBody(
 
 			BuildNamespaceBody( namespace_->elements_, *result_scope );
 		}
+		else if(
+			const ClassTemplate* const class_template=
+			dynamic_cast<const ClassTemplate*>( program_element.get() ) )
+		{
+			U_UNUSED(class_template);
+			// TODO
+		}
 		else
 		{
 			U_ASSERT(false);

@@ -77,6 +77,8 @@ static const Globals& GetGlobals()
 
 		[ size_t(Keywords::static_assert_) ]= "static_assert",
 
+		[ size_t(Keywords::type_) ]= "type",
+
 		[ size_t(Keywords::for_) ]= "for",
 		[ size_t(Keywords::do_) ]= "do",
 		[ size_t(Keywords::switch_) ]= "switch",
@@ -87,7 +89,6 @@ static const Globals& GetGlobals()
 		[ size_t(Keywords::virtual_) ]= "virtual",
 		[ size_t(Keywords::polymorph_) ]= "polymorph",
 		[ size_t(Keywords::override_) ]= "override",
-		[ size_t(Keywords::type_) ]= "type",
 		[ size_t(Keywords::typename_) ]= "typename",
 		[ size_t(Keywords::cast_) ]= "cast",
 		[ size_t(Keywords::const_) ]= "const",
