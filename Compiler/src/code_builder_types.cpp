@@ -453,6 +453,9 @@ ProgramString Type::ToString() const
 			case NontypeStub::Namespace:
 				result= "namespace"_SpC;
 				break;
+			case NontypeStub::ClassTemplate:
+				result= "class template"_SpC;
+				break;
 			};
 			U_ASSERT(!result.empty());
 		}
@@ -548,6 +551,7 @@ static const Type g_overloaded_functions_set_stub_type= NontypeStub::OverloadedF
 static const Type g_this_overloaded_methods_set_stub_type=NontypeStub::ThisOverloadedMethodsSet;
 static const Type g_typename_type_stub= NontypeStub::TypeName;
 static const Type g_namespace_type_stub= NontypeStub::Namespace;
+static const Type g_class_template_type_stub= NontypeStub::ClassTemplate;
 
 Value::Value()
 {}
@@ -588,6 +592,12 @@ Value::Value( const NamesScopePtr& namespace_ )
 	something_= namespace_;
 }
 
+Value::Value( const ClassTemplatePtr& class_template )
+{
+	U_ASSERT( class_template != nullptr );
+	something_= class_template;
+}
+
 const Type& Value::GetType() const
 {
 	struct Visitor final : public boost::static_visitor<>
@@ -614,6 +624,9 @@ const Type& Value::GetType() const
 
 		void operator()( const NamesScopePtr& )
 		{ type= &g_namespace_type_stub; }
+
+		void operator()( const ClassTemplatePtr& )
+		{ type= &g_class_template_type_stub; }
 	};
 
 	Visitor visitor;
@@ -682,6 +695,14 @@ NamesScopePtr Value::GetNamespace() const
 	if( namespace_ == nullptr )
 		return nullptr;
 	return *namespace_;
+}
+
+ClassTemplatePtr Value::GetClassTemplate() const
+{
+	const ClassTemplatePtr* const class_template= boost::get<ClassTemplatePtr>( &something_ );
+	if( class_template == nullptr )
+		return nullptr;
+	return *class_template;
 }
 
 ArgOverloadingClass GetArgOverloadingClass( const bool is_reference, const bool is_mutable )

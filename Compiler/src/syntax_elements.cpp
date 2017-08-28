@@ -346,7 +346,7 @@ ClassDeclaration::ClassDeclaration( const FilePos& file_pos )
 ClassDeclaration::~ClassDeclaration()
 {}
 
-ClassTemplate::ClassTemplate( const FilePos& file_pos )
+ClassTemplateDeclaration::ClassTemplateDeclaration( const FilePos& file_pos )
 	: SyntaxElementBase( file_pos )
 {}
 

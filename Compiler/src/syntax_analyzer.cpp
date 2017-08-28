@@ -1858,7 +1858,7 @@ IProgramElementPtr SyntaxAnalyzer::ParseTemplate()
 	U_ASSERT( it_->type == Lexem::Type::Identifier && it_->text == Keywords::template_ );
 	++it_; U_ASSERT( it_ < it_end_ );
 
-	std::unique_ptr<ClassTemplate> result( new ClassTemplate( it_->file_pos ) );
+	std::unique_ptr<ClassTemplateDeclaration> result( new ClassTemplateDeclaration( it_->file_pos ) );
 
 	if( it_->type != Lexem::Type::TemplateBracketLeft )
 	{

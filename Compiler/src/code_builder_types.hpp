@@ -3,6 +3,7 @@
 #include <vector>
 #include <map>
 
+#include <boost/optional.hpp>
 #include <boost/variant.hpp>
 
 #include "push_disable_llvm_warnings.hpp"
@@ -30,6 +31,9 @@ typedef std::weak_ptr<Class> ClassWeakPtr;
 class NamesScope;
 typedef std::shared_ptr<NamesScope> NamesScopePtr;
 
+struct ClassTemplate;
+typedef std::shared_ptr<ClassTemplate> ClassTemplatePtr;
+
 struct FundamentalType final
 {
 	U_FundamentalType fundamental_type;
@@ -45,6 +49,7 @@ enum class NontypeStub
 	ThisOverloadedMethodsSet,
 	TypeName,
 	Namespace,
+	ClassTemplate,
 };
 
 bool operator==( const FundamentalType& r, const FundamentalType& l );
@@ -203,6 +208,7 @@ public:
 	Value( ClassField class_field );
 	Value( ThisOverloadedMethodsSet class_field );
 	Value( const NamesScopePtr& namespace_ );
+	Value( const ClassTemplatePtr& class_template );
 
 	const Type& GetType() const;
 
@@ -225,7 +231,8 @@ public:
 	const ThisOverloadedMethodsSet* GetThisOverloadedMethodsSet() const;
 	// Namespace
 	NamesScopePtr GetNamespace() const;
-
+	// Class Template
+	ClassTemplatePtr GetClassTemplate() const;
 
 private:
 	boost::variant<
@@ -235,7 +242,8 @@ private:
 		Type,
 		ClassField,
 		ThisOverloadedMethodsSet,
-		NamesScopePtr > something_;
+		NamesScopePtr,
+		ClassTemplatePtr> something_;
 };
 
 // "Class" of function argument in terms of overloading.
@@ -327,6 +335,23 @@ struct Class final
 	bool have_destructor= false;
 
 	llvm::StructType* llvm_type;
+};
+
+struct ClassTemplate final
+{
+	struct TemplateParameter
+	{
+		//ProgramString name;
+		boost::optional<Type> type; // Exists for value parameters.
+	};
+
+	std::map<ProgramString, TemplateParameter > template_parameters;
+
+	std::vector< ComplexName > signature_arguments;
+
+	// Store syntax tree element for instantiation.
+	// Syntax tree must live longer, than this struct.
+	const ClassTemplateDeclaration* class_syntax_element= nullptr;
 };
 
 const ProgramString& GetFundamentalTypeName( U_FundamentalType fundamental_type );

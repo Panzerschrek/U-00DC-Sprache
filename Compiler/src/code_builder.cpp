@@ -1041,11 +1041,23 @@ void CodeBuilder::BuildNamespaceBody(
 			BuildNamespaceBody( namespace_->elements_, *result_scope );
 		}
 		else if(
-			const ClassTemplate* const class_template=
-			dynamic_cast<const ClassTemplate*>( program_element.get() ) )
+			const ClassTemplateDeclaration* const class_template_declaration=
+			dynamic_cast<const ClassTemplateDeclaration*>( program_element.get() ) )
 		{
-			U_UNUSED(class_template);
+			ClassTemplatePtr class_template( new ClassTemplate );
+			class_template->class_syntax_element= class_template_declaration;
+
+			const ComplexName& name= class_template_declaration->class_->name_;
+			if( name.components.size() == 1u )
+			{
+				names_scope.AddName(  name.components.front(), Value( class_template ) );
+			}
+			else
+			{
+				// TODO - search, using complex name
+			}
 			// TODO
+			//names_scope.AddName( class_template_declaration->class_->name_, Value( class_template ) );
 		}
 		else
 		{
