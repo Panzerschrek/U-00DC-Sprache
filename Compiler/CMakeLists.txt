@@ -40,6 +40,7 @@ set( COMPILER_LIB_SOURCES
 	src/code_builder.cpp
 	src/code_builder_expressions.cpp
 	src/code_builder_initializers.cpp
+	src/code_builder_templates.cpp
 	src/code_builder_types.cpp
 	src/keywords.cpp
 	src/lang_types.cpp

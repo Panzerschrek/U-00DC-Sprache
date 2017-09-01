@@ -243,7 +243,7 @@ Type CodeBuilder::PrepareType(
 	return result;
 }
 
-void CodeBuilder::PrepareClass( const ClassDeclaration& class_declaration, NamesScope& names_scope )
+ClassPtr CodeBuilder::PrepareClass( const ClassDeclaration& class_declaration, NamesScope& names_scope )
 {
 	const ProgramString& class_name= class_declaration.name_.components.back().name;
 	if( IsKeyword( class_name ) )
@@ -254,7 +254,7 @@ void CodeBuilder::PrepareClass( const ClassDeclaration& class_declaration, Names
 		if( class_declaration.name_.components.size() != 1u )
 		{
 			errors_.push_back( ReportClassDeclarationOutsideItsScope( class_declaration.file_pos_ ) );
-			return;
+			return nullptr;
 		}
 
 		const ClassPtr the_class= std::make_shared<Class>( class_name, &names_scope );
@@ -265,9 +265,9 @@ void CodeBuilder::PrepareClass( const ClassDeclaration& class_declaration, Names
 		if( inserted_name == nullptr )
 		{
 			errors_.push_back( ReportRedefinition( class_declaration.file_pos_, class_name ) );
-			return;
+			return nullptr;
 		}
-		return;
+		return nullptr;
 	}
 
 	ClassPtr the_class;
@@ -282,20 +282,20 @@ void CodeBuilder::PrepareClass( const ClassDeclaration& class_declaration, Names
 				if( !previous_calss_ptr->is_incomplete )
 				{
 					errors_.push_back( ReportClassBodyDuplication( class_declaration.file_pos_ ) );
-					return;
+					return nullptr;
 				}
 				the_class= previous_calss_ptr;
 			}
 			else
 			{
 				errors_.push_back( ReportRedefinition( class_declaration.file_pos_, class_name ) );
-				return;
+				return nullptr;
 			}
 		}
 		else
 		{
 			errors_.push_back( ReportRedefinition( class_declaration.file_pos_, class_name ) );
-			return;
+			return nullptr;
 		}
 	}
 	else
@@ -303,7 +303,7 @@ void CodeBuilder::PrepareClass( const ClassDeclaration& class_declaration, Names
 		if( class_declaration.name_.components.size() != 1u )
 		{
 			errors_.push_back( ReportClassDeclarationOutsideItsScope( class_declaration.file_pos_ ) );
-			return;
+			return nullptr;
 		}
 
 		the_class= std::make_shared<Class>( class_name, &names_scope );
@@ -315,7 +315,7 @@ void CodeBuilder::PrepareClass( const ClassDeclaration& class_declaration, Names
 		if( inserted_name == nullptr )
 		{
 			errors_.push_back( ReportRedefinition( class_declaration.file_pos_, class_name ) );
-			return;
+			return nullptr;
 		}
 	}
 	U_ASSERT( the_class != nullptr );
@@ -406,123 +406,8 @@ void CodeBuilder::PrepareClass( const ClassDeclaration& class_declaration, Names
 				PrepareFunction( **function_declaration, false, the_class, the_class->members );
 		}
 	}
-}
 
-void CodeBuilder::PrepareClassTemplate(
-	const ClassTemplateDeclaration& class_template_declaration,
-	NamesScope& names_scope )
-{
-	const ClassTemplatePtr class_template( new ClassTemplate );
-	const ProgramString& class_template_name= class_template_declaration.class_->name_.components.back().name;
-
-	// SPRACHE_TODO - add class templates overloading.
-	if( names_scope.AddName( class_template_name, Value(class_template) ) == nullptr )
-	{
-		errors_.push_back( ReportRedefinition( class_template_declaration.file_pos_, class_template_name ) );
-		return;
-	}
-
-	class_template->class_syntax_element= &class_template_declaration;
-
-	std::vector<ClassTemplate::TemplateParameter> template_parameters;
-	template_parameters.reserve( class_template_declaration.args_.size() );
-
-	// Check and fill template parameters.
-	for( const ClassTemplateDeclaration::Arg& arg : class_template_declaration.args_ )
-	{
-		// Check redefinition
-		for( const auto& prev_arg : template_parameters )
-		{
-			if( prev_arg.name == arg.name )
-			{
-				errors_.push_back( ReportRedefinition( class_template_declaration.file_pos_, arg.name ) );
-				return;
-			}
-		}
-
-		template_parameters.emplace_back();
-		template_parameters.back().name= arg.name;
-		if( !arg.arg_type.components.empty() )
-		{
-			// If template parameter is value.
-
-			// Search type in template type-arguments.
-			const ClassTemplate::TemplateParameter* template_arg= nullptr;
-			for( const auto& prev_arg : template_parameters )
-			{
-				if( prev_arg.type_name == nullptr &&
-					prev_arg.name == arg.name )
-				{
-					template_arg= &prev_arg;
-					break;
-				}
-			}
-
-			if( template_arg == nullptr )
-			{
-				// Search for external type name.
-				const NamesScope::InsertedName* const name= ResolveName( names_scope, arg.arg_type );
-				if( name == nullptr )
-				{
-					errors_.push_back( ReportNameNotFound( class_template_declaration.file_pos_, arg.arg_type ) );
-					return;
-				}
-				const Type* const type= name->second.GetTypeName();
-				if( type == nullptr )
-				{
-					errors_.push_back( ReportNameIsNotTypeName( class_template_declaration.file_pos_, name->first ) );
-					return;
-				}
-			}
-			template_parameters.back().type_name= &arg.arg_type;
-		}
-	}
-
-	// Check and fill signature args.
-	for( const ClassTemplateDeclaration::SignatureArg& signature_arg : class_template_declaration.signature_args_ )
-	{
-		ClassTemplate::TemplateParameter* existent_template_param= nullptr;
-		if( signature_arg.name.components.size() == 1u )
-		{
-			for( auto& template_param : template_parameters )
-			{
-				if( template_param.name == signature_arg.name.components.front().name )
-				{
-					existent_template_param= &template_param;
-					break;
-				}
-			}
-		}
-
-		if( existent_template_param != nullptr )
-		{
-		}
-		else
-		{
-			const NamesScope::InsertedName* const name= ResolveName( names_scope, signature_arg.name );
-			if( name == nullptr )
-			{
-				errors_.push_back( ReportNameNotFound( class_template_declaration.file_pos_, signature_arg.name ) );
-				return;
-			}
-			const Type* const type= name->second.GetTypeName();
-			if( type == nullptr )
-			{
-				errors_.push_back( ReportNameIsNotTypeName( class_template_declaration.file_pos_, name->first ) );
-				return;
-			}
-		}
-		class_template->signature_arguments.push_back(&signature_arg.name);
-	}
-
-	class_template->template_parameters= std::move(template_parameters);
-
-	// SPRACHE_TODO:
-	// *) Check signature arguments for template arguments.
-	// *) Convert signature and template arguments to "default form" for equality comparison.
-	// *) More and more checks.
-	// *) Resolve all class template names at template definition point.
-	// *) Make more and more other stuff.
+	return the_class;
 }
 
 void CodeBuilder::TryGenerateDefaultConstructor( Class& the_class, const Type& class_type )
@@ -3044,27 +2929,61 @@ const NamesScope::InsertedName* CodeBuilder::ResolveName(
 				return nullptr;
 		}
 
-		if( component_count == 1u )
-			return start_resolved;
-
 		resolve_start_point= space;
 	}
 
 	while( component_count > 0u )
 	{
 		NamesScope::InsertedName* const name= resolve_start_point->GetThisScopeName( components[0].name );
-		if( name == nullptr || component_count == 1u )
+		if( name == nullptr )
 			return name;
 
+		bool is_class_template= false;
 		if( const NamesScopePtr child_namespace= name->second.GetNamespace() )
+		{
+			if( component_count == 1u )
+				return name;
 			resolve_start_point= child_namespace.get();
+		}
 		else if( const Type* const type= name->second.GetTypeName() )
 		{
+			if( component_count == 1u )
+				return name;
+
 			if( const ClassPtr class_= type->GetClassType() )
 				resolve_start_point= &class_->members;
 		}
+		else if( const ClassTemplatePtr class_template = name->second.GetClassTemplate() )
+		{
+			is_class_template= true;
+			const NamesScope::InsertedName* generated_class= GenTemplateClass( *class_template, components[0].template_parameters, *resolve_start_point );
+			if( generated_class == nullptr )
+				return nullptr;
+			const Type* const type= generated_class->second.GetTypeName();
+			U_ASSERT( type != nullptr );
+			const ClassPtr class_= type->GetClassType();
+			// SPRACHE_TODO - allow non-class types as result of template.
+			U_ASSERT( class_ != nullptr );
+			resolve_start_point= &class_->members;
+
+			if( component_count == 1u )
+				return generated_class;
+		}
 		else
+		{
+			if( component_count == 1u )
+				return name;
+		}
+
+		if( !is_class_template && !components[0].template_parameters.empty() )
+		{
+			// TODO - register error.
+			error_count_++;
 			return nullptr;
+		}
+
+		if( component_count == 1u )
+			return name;
 
 		++components;
 		--component_count;

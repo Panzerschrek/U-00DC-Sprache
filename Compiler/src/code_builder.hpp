@@ -95,8 +95,18 @@ private:
 private:
 	void FillGlobalNamesScope( NamesScope& global_names_scope );
 	Type PrepareType( const FilePos& file_pos, const TypeName& type_name, NamesScope& names_scope );
-	void PrepareClass( const ClassDeclaration& class_declaration, NamesScope& names_scope );
+
+	// Returns nullptr on fail.
+	ClassPtr PrepareClass( const ClassDeclaration& class_declaration, NamesScope& names_scope );
+
+	// Templates
 	void PrepareClassTemplate( const ClassTemplateDeclaration& class_template_declaration, NamesScope& names_scope );
+
+	// Returns nullptr in case of fail.
+	NamesScope::InsertedName* GenTemplateClass(
+		const ClassTemplate& class_template,
+		const std::vector<IExpressionComponentPtr>& template_arguments,
+		NamesScope& names_scope );
 
 	void TryGenerateDefaultConstructor( Class& the_class, const Type& class_type );
 	void TryGenerateCopyConstructor( Class& the_class, const Type& class_type );

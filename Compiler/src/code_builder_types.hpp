@@ -342,7 +342,7 @@ struct ClassTemplate final
 
 	struct SignatureParameter
 	{
-		std::vector<size_t> dependent_args_parameters;
+		//std::vector<size_t> dependent_args_parameters;
 		const ComplexName* name;
 	};
 
@@ -353,7 +353,7 @@ struct ClassTemplate final
 
 	// Store syntax tree element for instantiation.
 	// Syntax tree must live longer, than this struct.
-	const ClassTemplateDeclaration* class_syntax_element= nullptr;
+	const ClassDeclaration* class_syntax_element= nullptr;
 };
 
 const ProgramString& GetFundamentalTypeName( U_FundamentalType fundamental_type );
