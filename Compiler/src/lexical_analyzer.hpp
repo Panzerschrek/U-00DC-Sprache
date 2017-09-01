@@ -34,7 +34,7 @@ struct Lexem
 		BraceRight, // }
 
 		TemplateBracketLeft , // </
-		TemplateBrachetRight, // />
+		TemplateBracketRight, // />
 
 		Scope, // ::
 

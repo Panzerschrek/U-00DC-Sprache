@@ -730,7 +730,7 @@ ComplexName SyntaxAnalyzer::ParseComplexName()
 			++it_; U_ASSERT( it_ < it_end_ );
 			while(true)
 			{
-				if( it_->type == Lexem::Type::TemplateBrachetRight )
+				if( it_->type == Lexem::Type::TemplateBracketRight )
 				{
 					++it_; U_ASSERT( it_ < it_end_ );
 					break;
@@ -741,7 +741,7 @@ ComplexName SyntaxAnalyzer::ParseComplexName()
 				if( it_->type == Lexem::Type::Colon )
 				{
 					++it_; U_ASSERT( it_ < it_end_ );
-					if( it_->type == Lexem::Type::TemplateBrachetRight )
+					if( it_->type == Lexem::Type::TemplateBracketRight )
 					{
 						PushErrorMessage( *it_ );
 						return complex_name;
@@ -1895,7 +1895,7 @@ IProgramElementPtr SyntaxAnalyzer::ParseTemplate()
 
 	while( true )
 	{
-		if( it_->type == Lexem::Type::TemplateBrachetRight )
+		if( it_->type == Lexem::Type::TemplateBracketRight )
 		{
 			++it_; U_ASSERT( it_ < it_end_ );
 			break;
@@ -1921,7 +1921,7 @@ IProgramElementPtr SyntaxAnalyzer::ParseTemplate()
 		if( it_->type == Lexem::Type::Comma )
 		{
 			++it_; U_ASSERT( it_ < it_end_ );
-			if( it_->type == Lexem::Type::TemplateBrachetRight )
+			if( it_->type == Lexem::Type::TemplateBracketRight )
 			{
 				PushErrorMessage( *it_ );
 				return std::move(result);
@@ -1967,7 +1967,7 @@ IProgramElementPtr SyntaxAnalyzer::ParseTemplate()
 	// Parse signature args
 	while( true )
 	{
-		if( it_->type == Lexem::Type::TemplateBrachetRight )
+		if( it_->type == Lexem::Type::TemplateBracketRight )
 		{
 			++it_; U_ASSERT( it_ < it_end_ );
 			break;
@@ -1979,7 +1979,7 @@ IProgramElementPtr SyntaxAnalyzer::ParseTemplate()
 		if( it_->type == Lexem::Type::Comma )
 		{
 			++it_; U_ASSERT( it_ < it_end_ );
-			if( it_->type == Lexem::Type::TemplateBrachetRight )
+			if( it_->type == Lexem::Type::TemplateBracketRight )
 			{
 				PushErrorMessage( *it_ );
 				return std::move(result);
