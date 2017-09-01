@@ -756,53 +756,6 @@ NamesScope::InsertedName* NamesScope::AddName(
 	return nullptr;
 }
 
-NamesScope::InsertedName* NamesScope::ResolveName( const ComplexName& name ) const
-{
-	return ResolveName( name.components.data(), name.components.size() );
-}
-
-NamesScope::InsertedName* NamesScope::ResolveName(
-	const ComplexName::Component* const components,
-	const size_t component_count ) const
-{
-	U_ASSERT( component_count > 0u );
-
-	if( components[0].name.empty() )
-	{
-		U_ASSERT( component_count >= 2u );
-
-		// TODO - maybe save root pointer somewhere?
-		const NamesScope* root= this;
-		while( root->parent_ != nullptr )
-			root= root->parent_;
-
-		return root->ResolveName_r( components + 1u, component_count - 1u );
-	}
-	else
-	{
-		const ProgramString& start= components[0].name;
-		InsertedName* start_resolved= nullptr;
-		const NamesScope* space= this;
-		while(true)
-		{
-			const auto it= space->names_map_.find( start );
-			if( it != space->names_map_.end() )
-			{
-				start_resolved= const_cast<InsertedName*>(&*it);
-				break;
-			}
-			space= space->parent_;
-			if( space == nullptr )
-				return nullptr;
-		}
-
-		if( component_count == 1u )
-			return start_resolved;
-
-		return space->ResolveName_r( components, component_count );
-	}
-}
-
 NamesScope::InsertedName* NamesScope::GetThisScopeName( const ProgramString& name ) const
 {
 	const auto it= names_map_.find( name );
@@ -814,33 +767,6 @@ NamesScope::InsertedName* NamesScope::GetThisScopeName( const ProgramString& nam
 const NamesScope* NamesScope::GetParent() const
 {
 	return parent_;
-}
-
-NamesScope::InsertedName* NamesScope::ResolveName_r(
-	const ComplexName::Component* const components,
-	const size_t component_count ) const
-{
-	U_ASSERT( component_count >= 1u );
-	U_ASSERT( !components[0].name.empty() );
-
-	const auto it= names_map_.find( components[0].name );
-	if( it == names_map_.end() )
-		return nullptr;
-
-	if( component_count == 1u )
-		return const_cast<InsertedName*>(&*it);
-
-	if( const NamesScopePtr child_namespace= it->second.GetNamespace() )
-		return child_namespace->ResolveName_r( components + 1u, component_count - 1u );
-	else if( const Type* const type= it->second.GetTypeName() )
-	{
-		if( const ClassPtr class_= type->GetClassType() )
-		{
-			return class_->members.ResolveName_r( components + 1u, component_count - 1u );
-		}
-	}
-
-	return nullptr;
 }
 
 const ProgramString& GetFundamentalTypeName( const U_FundamentalType fundamental_type )

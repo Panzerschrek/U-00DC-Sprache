@@ -254,7 +254,7 @@ void CodeBuilder::ApplyStructNamedInitializer(
 llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 	const Variable& variable,
 	const CallOperator& call_operator,
-	const NamesScope& block_names,
+	NamesScope& block_names,
 	FunctionContext& function_context )
 {
 	if( const FundamentalType* const dst_type= variable.type.GetFundamentalType() )
@@ -439,7 +439,7 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 llvm::Constant* CodeBuilder::ApplyExpressionInitializer(
 	const Variable& variable,
 	const ExpressionInitializer& initializer,
-	const NamesScope& block_names,
+	NamesScope& block_names,
 	FunctionContext& function_context )
 {
 	if( const FundamentalType* const fundamental_type= variable.type.GetFundamentalType() )
@@ -473,7 +473,7 @@ llvm::Constant* CodeBuilder::ApplyExpressionInitializer(
 llvm::Constant* CodeBuilder::ApplyZeroInitializer(
 	const Variable& variable,
 	const ZeroInitializer& initializer,
-	const NamesScope& block_names,
+	NamesScope& block_names,
 	FunctionContext& function_context )
 {
 	if( const FundamentalType* const fundamental_type= variable.type.GetFundamentalType() )

@@ -279,9 +279,6 @@ public:
 	// Returns nullptr, if name already exists in this scope.
 	InsertedName* AddName( const ProgramString& name, Value value );
 
-	// Performs full name resolving.
-	InsertedName* ResolveName( const ComplexName& name ) const;
-	InsertedName* ResolveName( const ComplexName::Component* components, size_t component_count ) const;
 	// Resolve simple name only in this scope.
 	InsertedName* GetThisScopeName( const ProgramString& name ) const;
 
@@ -295,9 +292,6 @@ public:
 	}
 
 	// TODO - maybe add for_each in all scopes?
-
-private:
-	InsertedName* ResolveName_r( const ComplexName::Component* components, size_t component_count ) const;
 
 private:
 	const ProgramString name_;

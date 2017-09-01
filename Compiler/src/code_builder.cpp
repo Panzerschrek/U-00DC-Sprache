@@ -146,7 +146,7 @@ void CodeBuilder::FillGlobalNamesScope( NamesScope& global_names_scope )
 Type CodeBuilder::PrepareType(
 	const FilePos& file_pos,
 	const TypeName& type_name,
-	const NamesScope& names_scope )
+	NamesScope& names_scope )
 {
 	Type result;
 	Type* last_type= &result;
@@ -205,7 +205,7 @@ Type CodeBuilder::PrepareType(
 	*last_type= FundamentalType( U_FundamentalType::InvalidType, fundamental_llvm_types_.invalid_type_ );
 
 	if( const NamesScope::InsertedName* name=
-		names_scope.ResolveName( type_name.name ) )
+		ResolveName( names_scope, type_name.name ) )
 	{
 		if( const Type* const type= name->second.GetTypeName() )
 			*last_type= *type;
@@ -273,7 +273,7 @@ void CodeBuilder::PrepareClass( const ClassDeclaration& class_declaration, Names
 	ClassPtr the_class;
 
 	if( const NamesScope::InsertedName* const previous_declaration=
-		names_scope.ResolveName( class_declaration.name_ ) )
+		ResolveName( names_scope, class_declaration.name_ ) )
 	{
 		if( const Type* const previous_type= previous_declaration->second.GetTypeName() )
 		{
@@ -461,7 +461,7 @@ void CodeBuilder::PrepareClassTemplate(
 			if( template_arg == nullptr )
 			{
 				// Search for external type name.
-				const NamesScope::InsertedName* const name= names_scope.ResolveName( arg.arg_type );
+				const NamesScope::InsertedName* const name= ResolveName( names_scope, arg.arg_type );
 				if( name == nullptr )
 				{
 					errors_.push_back( ReportNameNotFound( class_template_declaration.file_pos_, arg.arg_type ) );
@@ -499,7 +499,7 @@ void CodeBuilder::PrepareClassTemplate(
 		}
 		else
 		{
-			const NamesScope::InsertedName* const name= names_scope.ResolveName( signature_arg.name );
+			const NamesScope::InsertedName* const name= ResolveName( names_scope, signature_arg.name );
 			if( name == nullptr )
 			{
 				errors_.push_back( ReportNameNotFound( class_template_declaration.file_pos_, signature_arg.name ) );
@@ -1195,7 +1195,7 @@ void CodeBuilder::PrepareFunction(
 	{
 		// Complex name - search scope for this function.
 		if( const NamesScope::InsertedName* const scope_name=
-			func_definition_names_scope.ResolveName( func.name_.components.data(), func.name_.components.size() - 1u ) )
+			ResolveName( func_definition_names_scope, func.name_.components.data(), func.name_.components.size() - 1u ) )
 		{
 			bool base_space_is_class= false;
 			if( const Type* const type= scope_name->second.GetTypeName() )
@@ -1433,7 +1433,7 @@ void CodeBuilder::PrepareFunction(
 void CodeBuilder::BuildFuncCode(
 	FunctionVariable& func_variable,
 	const ClassPtr base_class,
-	const NamesScope& parent_names_scope,
+	NamesScope& parent_names_scope,
 	const ProgramString& func_name,
 	const FunctionArgumentsDeclaration& args,
 	const Block* const block,
@@ -1877,7 +1877,7 @@ void CodeBuilder::BuildConstructorInitialization(
 
 CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockCode(
 	const Block& block,
-	const NamesScope& names,
+	NamesScope& names,
 	FunctionContext& function_context ) noexcept
 {
 	NamesScope block_names( ""_SpC, &names );
@@ -2307,7 +2307,7 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 
 void CodeBuilder::BuildAssignmentOperatorCode(
 	const AssignmentOperator& assignment_operator,
-	const NamesScope& block_names,
+	NamesScope& block_names,
 	FunctionContext& function_context )
 {
 	// Destruction frame for temporary variables of expressions.
@@ -2368,7 +2368,7 @@ void CodeBuilder::BuildAssignmentOperatorCode(
 
 void CodeBuilder::BuildAdditiveAssignmentOperatorCode(
 	const AdditiveAssignmentOperator& additive_assignment_operator,
-	const NamesScope& block_names,
+	NamesScope& block_names,
 	FunctionContext& function_context )
 {
 	// Destruction frame for temporary variables of expressions.
@@ -2439,7 +2439,7 @@ void CodeBuilder::BuildDeltaOneOperatorCode(
 	const IExpressionComponent& expression,
 	const FilePos& file_pos,
 	bool positive, // true - increment, false - decrement
-	const NamesScope& block_names,
+	NamesScope& block_names,
 	FunctionContext& function_context )
 {
 	const Value value= BuildExpressionCodeAndDestroyTemporaries( expression, block_names, function_context );
@@ -2487,7 +2487,7 @@ void CodeBuilder::BuildDeltaOneOperatorCode(
 
 void CodeBuilder::BuildReturnOperatorCode(
 	const ReturnOperator& return_operator,
-	const NamesScope& names,
+	NamesScope& names,
 	FunctionContext& function_context )
 {
 	if( return_operator.expression_ == nullptr )
@@ -2579,7 +2579,7 @@ void CodeBuilder::BuildReturnOperatorCode(
 
 void CodeBuilder::BuildWhileOperatorCode(
 	const WhileOperator& while_operator,
-	const NamesScope& names,
+	NamesScope& names,
 	FunctionContext& function_context )
 {
 	llvm::BasicBlock* test_block= llvm::BasicBlock::Create( llvm_context_ );
@@ -2661,7 +2661,7 @@ void CodeBuilder::BuildContinueOperatorCode(
 
 CodeBuilder::BlockBuildInfo CodeBuilder::BuildIfOperatorCode(
 	const IfOperator& if_operator,
-	const NamesScope& names,
+	NamesScope& names,
 	FunctionContext& function_context )
 {
 	U_ASSERT( !if_operator.branches_.empty() );
@@ -2752,7 +2752,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildIfOperatorCode(
 
 void CodeBuilder::BuildStaticAssert(
 	const StaticAssert& static_assert_,
-	const NamesScope& names )
+	NamesScope& names )
 {
 	const Value expression_result= BuildExpressionCode( *static_assert_.expression, names, *dummy_function_context_ );
 	if( expression_result.GetType() != bool_type_ )
@@ -2999,6 +2999,78 @@ const FunctionVariable& CodeBuilder::GetOverloadedFunction(
 		errors_.push_back( ReportCouldNotSelectOverloadedFunction( file_pos ) );
 		throw ProgramError();
 	}
+}
+
+const NamesScope::InsertedName* CodeBuilder::ResolveName( NamesScope& names_scope, const ComplexName& complex_name )
+{
+	return ResolveName( names_scope, complex_name.components.data(), complex_name.components.size() );
+}
+
+const NamesScope::InsertedName* CodeBuilder::ResolveName(
+	NamesScope& names_scope,
+	const ComplexName::Component* components, size_t component_count )
+{
+	U_ASSERT( component_count > 0u );
+
+	NamesScope* resolve_start_point= nullptr;
+	if( components[0].name.empty() )
+	{
+		U_ASSERT( component_count >= 2u );
+
+		// TODO - maybe save root pointer somewhere?
+		NamesScope* root= const_cast<NamesScope*>(names_scope.GetParent());
+		while( root->GetParent() != nullptr )
+			root= const_cast<NamesScope*>(root->GetParent());
+
+		resolve_start_point= root;
+		++components;
+		-- component_count;
+	}
+	else
+	{
+		const ProgramString& start= components[0].name;
+		NamesScope::InsertedName* start_resolved= nullptr;
+		NamesScope* space= &names_scope;
+		while(true)
+		{
+			NamesScope::InsertedName* const find= space->GetThisScopeName( start );
+			if( find != nullptr )
+			{
+				start_resolved= find;
+				break;
+			}
+			space= const_cast<NamesScope*>(space->GetParent());
+			if( space == nullptr )
+				return nullptr;
+		}
+
+		if( component_count == 1u )
+			return start_resolved;
+
+		resolve_start_point= space;
+	}
+
+	while( component_count > 0u )
+	{
+		NamesScope::InsertedName* const name= resolve_start_point->GetThisScopeName( components[0].name );
+		if( name == nullptr || component_count == 1u )
+			return name;
+
+		if( const NamesScopePtr child_namespace= name->second.GetNamespace() )
+			resolve_start_point= child_namespace.get();
+		else if( const Type* const type= name->second.GetTypeName() )
+		{
+			if( const ClassPtr class_= type->GetClassType() )
+				resolve_start_point= &class_->members;
+		}
+		else
+			return nullptr;
+
+		++components;
+		--component_count;
+	}
+
+	return nullptr;
 }
 
 U_FundamentalType CodeBuilder::GetNumericConstantType( const NumericConstant& number )

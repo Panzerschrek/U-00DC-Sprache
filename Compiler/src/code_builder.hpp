@@ -94,7 +94,7 @@ private:
 
 private:
 	void FillGlobalNamesScope( NamesScope& global_names_scope );
-	Type PrepareType( const FilePos& file_pos, const TypeName& type_name, const NamesScope& names_scope );
+	Type PrepareType( const FilePos& file_pos, const TypeName& type_name, NamesScope& names_scope );
 	void PrepareClass( const ClassDeclaration& class_declaration, NamesScope& names_scope );
 	void PrepareClassTemplate( const ClassTemplateDeclaration& class_template_declaration, NamesScope& names_scope );
 
@@ -151,7 +151,7 @@ private:
 	void BuildFuncCode(
 		FunctionVariable& func,
 		ClassPtr base_class,
-		const NamesScope& parent_names_scope,
+		NamesScope& parent_names_scope,
 		const ProgramString& func_name,
 		const FunctionArgumentsDeclaration& args,
 		const Block* block, // null for prototypes.
@@ -166,19 +166,19 @@ private:
 
 	BlockBuildInfo BuildBlockCode(
 		const Block& block,
-		const NamesScope& names,
+		NamesScope& names,
 		FunctionContext& function_context ) noexcept;
 
 	// Expressions.
 
 	Value BuildExpressionCodeAndDestroyTemporaries(
 		const IExpressionComponent& expression,
-		const NamesScope& names,
+		NamesScope& names,
 		FunctionContext& function_context );
 
 	Value BuildExpressionCode(
 		const IExpressionComponent& expression,
-		const NamesScope& names,
+		NamesScope& names,
 		FunctionContext& function_context );
 
 	Variable BuildBinaryOperator(
@@ -192,17 +192,17 @@ private:
 		const IExpressionComponent& l_expression,
 		const IExpressionComponent& r_expression,
 		const BinaryOperator& binary_operator,
-		const NamesScope& names,
+		NamesScope& names,
 		FunctionContext& function_context );
 
-	Value BuildNamedOperand( const NamedOperand& named_operand, const NamesScope& names, FunctionContext& function_context );
+	Value BuildNamedOperand( const NamedOperand& named_operand, NamesScope& names, FunctionContext& function_context );
 	Variable BuildNumericConstant( const NumericConstant& numeric_constant );
 	Variable BuildBooleanConstant( const BooleanConstant& boolean_constant );
 
 	Variable BuildIndexationOperator(
 		const Value& value,
 		const IndexationOperator& indexation_operator,
-		const NamesScope& names,
+		NamesScope& names,
 		FunctionContext& function_context );
 
 	Value BuildMemberAccessOperator(
@@ -213,13 +213,13 @@ private:
 	Variable BuildCallOperator(
 		const Value& function_value,
 		const CallOperator& call_operator,
-		const NamesScope& names,
+		NamesScope& names,
 		FunctionContext& function_context );
 
 	Variable BuildTempVariableConstruction(
 		const Type& type,
 		const CallOperator& call_operator,
-		const NamesScope& names,
+		NamesScope& names,
 		FunctionContext& function_context );
 
 	Variable BuildUnaryMinus(
@@ -251,12 +251,12 @@ private:
 
 	void BuildAssignmentOperatorCode(
 		const AssignmentOperator& assignment_operator,
-		const NamesScope& block_names,
+		NamesScope& block_names,
 		FunctionContext& function_context );
 
 	void BuildAdditiveAssignmentOperatorCode(
 		const AdditiveAssignmentOperator& additive_assignment_operator,
-		const NamesScope& block_names,
+		NamesScope& block_names,
 		FunctionContext& function_context );
 
 	// ++ and -- operations
@@ -264,17 +264,17 @@ private:
 		const IExpressionComponent& expression,
 		const FilePos& file_pos,
 		bool positive, // true - increment, false - decrement
-		const NamesScope& block_names,
+		NamesScope& block_names,
 		FunctionContext& function_context );
 
 	void BuildReturnOperatorCode(
 		const ReturnOperator& return_operator,
-		const NamesScope& names,
+		NamesScope& names,
 		FunctionContext& function_context );
 
 	void BuildWhileOperatorCode(
 		const WhileOperator& while_operator,
-		const NamesScope& names,
+		NamesScope& names,
 		FunctionContext& function_context );
 
 	void BuildBreakOperatorCode(
@@ -287,12 +287,12 @@ private:
 
 	BlockBuildInfo BuildIfOperatorCode(
 		const IfOperator& if_operator,
-		const NamesScope& names,
+		NamesScope& names,
 		FunctionContext& function_context );
 
 	void BuildStaticAssert(
 		const StaticAssert& static_assert_,
-		const NamesScope& names );
+		NamesScope& names );
 
 	// Functions
 
@@ -343,20 +343,25 @@ private:
 	llvm::Constant* ApplyConstructorInitializer(
 		const Variable& variable,
 		const CallOperator& call_operator,
-		const NamesScope& block_names,
+		NamesScope& block_names,
 		FunctionContext& function_context );
 
 	llvm::Constant* ApplyExpressionInitializer(
 		const Variable& variable,
 		const ExpressionInitializer& initializer,
-		const NamesScope& block_names,
+		NamesScope& block_names,
 		FunctionContext& function_context );
 
 	llvm::Constant* ApplyZeroInitializer(
 		const Variable& variable,
 		const ZeroInitializer& initializer,
-		const NamesScope& block_names,
+		NamesScope& block_names,
 		FunctionContext& function_context );
+
+	const NamesScope::InsertedName* ResolveName( NamesScope& names_scope, const ComplexName& complex_name );
+	const NamesScope::InsertedName* ResolveName(
+		NamesScope& names_scope,
+		const ComplexName::Component* components, size_t component_count );
 
 	static U_FundamentalType GetNumericConstantType( const NumericConstant& number );
 

@@ -17,7 +17,7 @@ namespace CodeBuilderPrivate
 
 Value CodeBuilder::BuildExpressionCodeAndDestroyTemporaries(
 	const IExpressionComponent& expression,
-	const NamesScope& names,
+	NamesScope& names,
 	FunctionContext& function_context )
 {
 	// Destruction frame for temporary variables of expression.
@@ -33,7 +33,7 @@ Value CodeBuilder::BuildExpressionCodeAndDestroyTemporaries(
 
 Value CodeBuilder::BuildExpressionCode(
 	const IExpressionComponent& expression,
-	const NamesScope& names,
+	NamesScope& names,
 	FunctionContext& function_context )
 {
 	Value result;
@@ -740,7 +740,7 @@ Variable CodeBuilder::BuildLazyBinaryOperator(
 	const IExpressionComponent& l_expression,
 	const IExpressionComponent& r_expression,
 	const BinaryOperator& binary_operator,
-	const NamesScope& names,
+	NamesScope& names,
 	FunctionContext& function_context )
 {
 	const Value l_var_value= BuildExpressionCode( l_expression, names, function_context );
@@ -807,7 +807,7 @@ Variable CodeBuilder::BuildLazyBinaryOperator(
 
 Value CodeBuilder::BuildNamedOperand(
 	const NamedOperand& named_operand,
-	const NamesScope& names,
+	NamesScope& names,
 	FunctionContext& function_context )
 {
 	if( named_operand.name_.components.size() == 1u &&
@@ -822,8 +822,7 @@ Value CodeBuilder::BuildNamedOperand(
 		return *function_context.this_;
 	}
 
-	const NamesScope::InsertedName* name_entry=
-		names.ResolveName( named_operand.name_ );
+	const NamesScope::InsertedName* name_entry= ResolveName( names, named_operand.name_ );
 	if( !name_entry )
 	{
 		errors_.push_back( ReportNameNotFound( named_operand.file_pos_, named_operand.name_ ) );
@@ -949,7 +948,7 @@ Variable CodeBuilder::BuildBooleanConstant( const BooleanConstant& boolean_const
 Variable CodeBuilder::BuildIndexationOperator(
 	const Value& value,
 	const IndexationOperator& indexation_operator,
-	const NamesScope& names,
+	NamesScope& names,
 	FunctionContext& function_context )
 {
 	const Array* array_type= value.GetType().GetArrayType();
@@ -1066,7 +1065,7 @@ Value CodeBuilder::BuildMemberAccessOperator(
 Variable CodeBuilder::BuildCallOperator(
 	const Value& function_value,
 	const CallOperator& call_operator,
-	const NamesScope& names,
+	NamesScope& names,
 	FunctionContext& function_context )
 {
 	if( const Type* const type= function_value.GetTypeName() )
@@ -1283,7 +1282,7 @@ Variable CodeBuilder::BuildCallOperator(
 Variable CodeBuilder::BuildTempVariableConstruction(
 	const Type& type,
 	const CallOperator& call_operator,
-	const NamesScope& names,
+	NamesScope& names,
 	FunctionContext& function_context )
 {
 	Variable variable;
