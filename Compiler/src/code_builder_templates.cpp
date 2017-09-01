@@ -1,6 +1,7 @@
 #include "push_disable_llvm_warnings.hpp"
 #include <llvm/IR/Constant.h>
 #include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/GlobalVariable.h>
 #include "pop_llvm_warnings.hpp"
 
 #include "assert.hpp"
@@ -197,7 +198,7 @@ NamesScope::InsertedName* CodeBuilder::GenTemplateClass(
 			else if( const Variable* const variable= value.GetVariable() )
 			{
 				const FundamentalType* const fundamental_type= variable->type.GetFundamentalType();
-				if( fundamental_type == nullptr )
+				if( fundamental_type == nullptr || !IsInteger( fundamental_type->fundamental_type ) )
 				{
 					// SPRACHE_TODO - allow non-fundamental value arguments.
 					//TODO - error
@@ -208,6 +209,52 @@ NamesScope::InsertedName* CodeBuilder::GenTemplateClass(
 				{
 					errors_.push_back( ReportExpectedConstantExpression( file_pos ) );
 					return nullptr;
+				}
+				if( dependend_arg_index != ~0u )
+				{
+					// TODO - perform type checks earlier, when template defined.
+					const ComplexName* const type_complex_name= class_template.template_parameters[ dependend_arg_index ].type_name;
+					if( type_complex_name == nullptr )
+					{
+						errors_.push_back( ReportNotImplemented( file_pos, "Template parameter is type, but argument is variable" ) );
+						return nullptr;
+					}
+					const NamesScope::InsertedName* const type_name=
+						ResolveName( names_scope, *type_complex_name );
+					if( type_name == nullptr )
+					{
+						ReportNameNotFound( file_pos, *type_complex_name );
+						return nullptr;
+					}
+					const Type* const type= type_name->second.GetTypeName();
+					if( type_name == nullptr )
+					{
+						errors_.push_back( ReportNameIsNotTypeName( file_pos, type_complex_name->components.back().name ) );
+						return nullptr;
+					}
+					if( *type != variable->type )
+					{
+						errors_.push_back( ReportTypesMismatch( file_pos, type->ToString(), variable->type.ToString() ) );
+						return nullptr;
+					}
+
+					// Allocate global variable, because we needs address.
+
+					Variable variable_for_insertion;
+					variable_for_insertion.type= *type;
+					variable_for_insertion.location= Variable::Location::Pointer;
+					variable_for_insertion.value_type= ValueType::ConstReference;
+					variable_for_insertion.llvm_value=
+						new llvm::GlobalVariable(
+							*module_,
+							variable->type.GetLLVMType(),
+							true,
+							llvm::GlobalValue::LinkageTypes::InternalLinkage,
+							variable->constexpr_value,
+							ToStdString( class_template.template_parameters[ dependend_arg_index ].name ) );
+					variable_for_insertion.constexpr_value= variable->constexpr_value;
+
+					deduced_template_args[dependend_arg_index]= std::move( variable_for_insertion );
 				}
 			}
 			else
@@ -239,15 +286,11 @@ NamesScope::InsertedName* CodeBuilder::GenTemplateClass(
 
 		const ProgramString& name= class_template.template_parameters[i].name;
 		if( const Type* const  type= boost::get<Type>( &arg ) )
-		{
 			names_scope.AddName( name, Value(*type) );
-		}
+
 		else if( const Variable* const variable= boost::get<Variable>( &arg ) )
-		{
-			// TODO - set global address for variable.
-			// NOW this not works.
 			names_scope.AddName( name, Value(*variable) );
-		}
+
 		else U_ASSERT(false);
 	}
 
@@ -262,8 +305,12 @@ NamesScope::InsertedName* CodeBuilder::GenTemplateClass(
 		}
 		else if( const Variable* const variable= boost::get<Variable>( &arg ) )
 		{
-			// TODO
-			U_ASSERT(false);
+			// Currently, can be only integer.
+			const llvm::APInt& int_value= variable->constexpr_value->getUniqueInteger();
+			if( IsSignedInteger( variable->type.GetFundamentalType()->fundamental_type ) && int_value.isNegative() )
+				name_encoded+= ToProgramString( std::to_string(  int64_t(int_value.getLimitedValue()) ).c_str() );
+			else
+				name_encoded+= ToProgramString( std::to_string( uint64_t(int_value.getLimitedValue()) ).c_str() );
 		}
 		else U_ASSERT(false);
 	}

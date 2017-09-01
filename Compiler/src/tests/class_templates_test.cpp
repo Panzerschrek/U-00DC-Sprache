@@ -95,4 +95,42 @@ U_TEST( ClassTemplateTest2 )
 	U_TEST_ASSERT( static_cast<uint64_t>( (-58) * (-58) + 854 * 854 ) == result_value.IntVal.getLimitedValue() );
 }
 
+U_TEST( ClassTemplateTest3 )
+{
+	// Parameter of variable type
+	static const char c_program_text[]=
+	R"(
+		fn Bar( i32 &imut x ) : i32 { return x; }
+
+		template</ i32 S />
+		struct RRR</ S />
+		{
+			i32 ss;
+			fn constructor()
+			( ss= S )
+			{
+				Bar(S); // We can take address of template value-parameter.
+			}
+		}
+
+		fn Foo() : i32
+		{
+			var RRR</ 42 /> rrr;
+			return rrr.ss;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( static_cast<uint64_t>( 42 ) == result_value.IntVal.getLimitedValue() );
+}
+
 } // namespace U
