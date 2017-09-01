@@ -43,9 +43,16 @@ struct ComplexName final
 	// TheClass::Method
 	// ::Absolute::Name
 	// ::C_Function
+	// std::vector</i32/>
+	// std::map</f32, T/>::value_type
 
-	// If first component is empty, name starts with "::".
-	std::vector<ProgramString> components;
+	// If first component name is empty, name starts with "::".
+	struct Component
+	{
+		ProgramString name;
+		std::vector<IExpressionComponentPtr> template_parameters; // Empty for non-templates
+	};
+	std::vector<Component> components;
 };
 
 class IUnaryPrefixOperator : public SyntaxElementBase
@@ -583,7 +590,7 @@ public:
 	{
 		// TODO - support more comples names, like std::vector</T/>.
 		// TODO - support default arguments.
-		ProgramString name;
+		ComplexName name;
 	};
 
 	std::vector<Arg> args_;

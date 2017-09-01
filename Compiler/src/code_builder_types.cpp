@@ -758,21 +758,29 @@ NamesScope::InsertedName* NamesScope::AddName(
 
 NamesScope::InsertedName* NamesScope::ResolveName( const ComplexName& name ) const
 {
-	U_ASSERT( !name.components.empty() );
-	if( name.components.front().empty() )
+	return ResolveName( name.components.data(), name.components.size() );
+}
+
+NamesScope::InsertedName* NamesScope::ResolveName(
+	const ComplexName::Component* const components,
+	const size_t component_count ) const
+{
+	U_ASSERT( component_count > 0u );
+
+	if( components[0].name.empty() )
 	{
-		U_ASSERT( name.components.size() >= 2u );
+		U_ASSERT( component_count >= 2u );
 
 		// TODO - maybe save root pointer somewhere?
 		const NamesScope* root= this;
 		while( root->parent_ != nullptr )
 			root= root->parent_;
 
-		return root->ResolveName_r( name.components.data() + 1u, name.components.size() - 1u );
+		return root->ResolveName_r( components + 1u, component_count - 1u );
 	}
 	else
 	{
-		const ProgramString& start= name.components.front();
+		const ProgramString& start= components[0].name;
 		InsertedName* start_resolved= nullptr;
 		const NamesScope* space= this;
 		while(true)
@@ -788,10 +796,10 @@ NamesScope::InsertedName* NamesScope::ResolveName( const ComplexName& name ) con
 				return nullptr;
 		}
 
-		if( name.components.size() == 1u )
+		if( component_count == 1u )
 			return start_resolved;
 
-		return space->ResolveName_r( name.components.data() , name.components.size() );
+		return space->ResolveName_r( components, component_count );
 	}
 }
 
@@ -809,13 +817,13 @@ const NamesScope* NamesScope::GetParent() const
 }
 
 NamesScope::InsertedName* NamesScope::ResolveName_r(
-	const ProgramString* const components,
+	const ComplexName::Component* const components,
 	const size_t component_count ) const
 {
 	U_ASSERT( component_count >= 1u );
-	U_ASSERT( !components[0].empty() );
+	U_ASSERT( !components[0].name.empty() );
 
-	const auto it= names_map_.find( components[0] );
+	const auto it= names_map_.find( components[0].name );
 	if( it == names_map_.end() )
 		return nullptr;
 

@@ -96,6 +96,7 @@ private:
 	void FillGlobalNamesScope( NamesScope& global_names_scope );
 	Type PrepareType( const FilePos& file_pos, const TypeName& type_name, const NamesScope& names_scope );
 	void PrepareClass( const ClassDeclaration& class_declaration, NamesScope& names_scope );
+	void PrepareClassTemplate( const ClassTemplateDeclaration& class_template_declaration, NamesScope& names_scope );
 
 	void TryGenerateDefaultConstructor( Class& the_class, const Type& class_type );
 	void TryGenerateCopyConstructor( Class& the_class, const Type& class_type );

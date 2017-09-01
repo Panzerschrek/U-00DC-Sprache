@@ -281,6 +281,7 @@ public:
 
 	// Performs full name resolving.
 	InsertedName* ResolveName( const ComplexName& name ) const;
+	InsertedName* ResolveName( const ComplexName::Component* components, size_t component_count ) const;
 	// Resolve simple name only in this scope.
 	InsertedName* GetThisScopeName( const ProgramString& name ) const;
 
@@ -296,7 +297,7 @@ public:
 	// TODO - maybe add for_each in all scopes?
 
 private:
-	InsertedName* ResolveName_r( const ProgramString* components, size_t component_count ) const;
+	InsertedName* ResolveName_r( const ComplexName::Component* components, size_t component_count ) const;
 
 private:
 	const ProgramString name_;
@@ -341,13 +342,20 @@ struct ClassTemplate final
 {
 	struct TemplateParameter
 	{
-		//ProgramString name;
-		boost::optional<Type> type; // Exists for value parameters.
+		ProgramString name;
+		const ComplexName* type_name= nullptr; // Exists for value parameters.
 	};
 
-	std::map<ProgramString, TemplateParameter > template_parameters;
+	struct SignatureParameter
+	{
+		std::vector<size_t> dependent_args_parameters;
+		const ComplexName* name;
+	};
 
-	std::vector< ComplexName > signature_arguments;
+	// Sorted in order of first parameter usage in signature.
+	std::vector< TemplateParameter > template_parameters;
+
+	std::vector< const ComplexName* > signature_arguments;
 
 	// Store syntax tree element for instantiation.
 	// Syntax tree must live longer, than this struct.

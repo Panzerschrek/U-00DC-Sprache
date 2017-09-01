@@ -721,8 +721,34 @@ ComplexName SyntaxAnalyzer::ParseComplexName()
 			PushErrorMessage( *it_ );
 			return complex_name;
 		}
-		complex_name.components.push_back( it_->text );
+		complex_name.components.emplace_back();
+		complex_name.components.back().name= it_->text;
 		++it_; U_ASSERT( it_ < it_end_ );
+
+		if( it_->type == Lexem::Type::TemplateBracketLeft )
+		{
+			++it_; U_ASSERT( it_ < it_end_ );
+			while(true)
+			{
+				if( it_->type == Lexem::Type::TemplateBrachetRight )
+				{
+					++it_; U_ASSERT( it_ < it_end_ );
+					break;
+				}
+
+				complex_name.components.back().template_parameters.push_back( ParseExpression() );
+
+				if( it_->type == Lexem::Type::Colon )
+				{
+					++it_; U_ASSERT( it_ < it_end_ );
+					if( it_->type == Lexem::Type::TemplateBrachetRight )
+					{
+						PushErrorMessage( *it_ );
+						return complex_name;
+					}
+				}
+			}
+		}
 
 		if( it_->type == Lexem::Type::Scope )
 		{
@@ -1880,24 +1906,15 @@ IProgramElementPtr SyntaxAnalyzer::ParseTemplate()
 		if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::type_ )
 		{
 			++it_; U_ASSERT( it_ < it_end_ );
-
-			if( it_->type != Lexem::Type::Identifier )
-			{
-				PushErrorMessage( *it_ );
-				return std::move(result);
-			}
 		}
 		else
-		{
 			result->args_.back().arg_type= ParseComplexName();
 
-			if( it_->type != Lexem::Type::Identifier )
-			{
-				PushErrorMessage( *it_ );
-				return std::move(result);
-			}
+		if( it_->type != Lexem::Type::Identifier )
+		{
+			PushErrorMessage( *it_ );
+			return std::move(result);
 		}
-
 		result->args_.back().name= it_->text;
 		++it_; U_ASSERT( it_ < it_end_ );
 
@@ -1922,7 +1939,16 @@ IProgramElementPtr SyntaxAnalyzer::ParseTemplate()
 	if( it_->text == Keywords::struct_ || it_->text == Keywords::class_ )
 	{
 		++it_; U_ASSERT( it_ < it_end_ );
-		name= ParseComplexName();
+
+		//name= ParseComplexName();
+		if( it_->type != Lexem::Type::Identifier )
+		{
+			PushErrorMessage( *it_ );
+			return std::move(result);
+		}
+		name.components.emplace_back();
+		name.components.back().name= it_->text;
+		++it_; U_ASSERT( it_ < it_end_ );
 	}
 	else
 	{
@@ -1947,16 +1973,8 @@ IProgramElementPtr SyntaxAnalyzer::ParseTemplate()
 			break;
 		}
 
-		if( it_->type != Lexem::Type::Identifier )
-		{
-			PushErrorMessage( *it_ );
-			return std::move(result);
-		}
-
 		result->signature_args_.emplace_back();
-		result->signature_args_.back().name= it_->text;
-
-		++it_; U_ASSERT( it_ < it_end_ );
+		result->signature_args_.back().name= ParseComplexName();
 
 		if( it_->type == Lexem::Type::Comma )
 		{

@@ -245,7 +245,7 @@ Type CodeBuilder::PrepareType(
 
 void CodeBuilder::PrepareClass( const ClassDeclaration& class_declaration, NamesScope& names_scope )
 {
-	const ProgramString& class_name= class_declaration.name_.components.back();
+	const ProgramString& class_name= class_declaration.name_.components.back().name;
 	if( IsKeyword( class_name ) )
 		errors_.push_back( ReportUsingKeywordAsName( class_declaration.file_pos_ ) );
 
@@ -406,6 +406,123 @@ void CodeBuilder::PrepareClass( const ClassDeclaration& class_declaration, Names
 				PrepareFunction( **function_declaration, false, the_class, the_class->members );
 		}
 	}
+}
+
+void CodeBuilder::PrepareClassTemplate(
+	const ClassTemplateDeclaration& class_template_declaration,
+	NamesScope& names_scope )
+{
+	const ClassTemplatePtr class_template( new ClassTemplate );
+	const ProgramString& class_template_name= class_template_declaration.class_->name_.components.back().name;
+
+	// SPRACHE_TODO - add class templates overloading.
+	if( names_scope.AddName( class_template_name, Value(class_template) ) == nullptr )
+	{
+		errors_.push_back( ReportRedefinition( class_template_declaration.file_pos_, class_template_name ) );
+		return;
+	}
+
+	class_template->class_syntax_element= &class_template_declaration;
+
+	std::vector<ClassTemplate::TemplateParameter> template_parameters;
+	template_parameters.reserve( class_template_declaration.args_.size() );
+
+	// Check and fill template parameters.
+	for( const ClassTemplateDeclaration::Arg& arg : class_template_declaration.args_ )
+	{
+		// Check redefinition
+		for( const auto& prev_arg : template_parameters )
+		{
+			if( prev_arg.name == arg.name )
+			{
+				errors_.push_back( ReportRedefinition( class_template_declaration.file_pos_, arg.name ) );
+				return;
+			}
+		}
+
+		template_parameters.emplace_back();
+		template_parameters.back().name= arg.name;
+		if( !arg.arg_type.components.empty() )
+		{
+			// If template parameter is value.
+
+			// Search type in template type-arguments.
+			const ClassTemplate::TemplateParameter* template_arg= nullptr;
+			for( const auto& prev_arg : template_parameters )
+			{
+				if( prev_arg.type_name == nullptr &&
+					prev_arg.name == arg.name )
+				{
+					template_arg= &prev_arg;
+					break;
+				}
+			}
+
+			if( template_arg == nullptr )
+			{
+				// Search for external type name.
+				const NamesScope::InsertedName* const name= names_scope.ResolveName( arg.arg_type );
+				if( name == nullptr )
+				{
+					errors_.push_back( ReportNameNotFound( class_template_declaration.file_pos_, arg.arg_type ) );
+					return;
+				}
+				const Type* const type= name->second.GetTypeName();
+				if( type == nullptr )
+				{
+					errors_.push_back( ReportNameIsNotTypeName( class_template_declaration.file_pos_, name->first ) );
+					return;
+				}
+			}
+			template_parameters.back().type_name= &arg.arg_type;
+		}
+	}
+
+	// Check and fill signature args.
+	for( const ClassTemplateDeclaration::SignatureArg& signature_arg : class_template_declaration.signature_args_ )
+	{
+		ClassTemplate::TemplateParameter* existent_template_param= nullptr;
+		if( signature_arg.name.components.size() == 1u )
+		{
+			for( auto& template_param : template_parameters )
+			{
+				if( template_param.name == signature_arg.name.components.front().name )
+				{
+					existent_template_param= &template_param;
+					break;
+				}
+			}
+		}
+
+		if( existent_template_param != nullptr )
+		{
+		}
+		else
+		{
+			const NamesScope::InsertedName* const name= names_scope.ResolveName( signature_arg.name );
+			if( name == nullptr )
+			{
+				errors_.push_back( ReportNameNotFound( class_template_declaration.file_pos_, signature_arg.name ) );
+				return;
+			}
+			const Type* const type= name->second.GetTypeName();
+			if( type == nullptr )
+			{
+				errors_.push_back( ReportNameIsNotTypeName( class_template_declaration.file_pos_, name->first ) );
+				return;
+			}
+		}
+		class_template->signature_arguments.push_back(&signature_arg.name);
+	}
+
+	class_template->template_parameters= std::move(template_parameters);
+
+	// SPRACHE_TODO:
+	// *) Check signature arguments for template arguments.
+	// *) Convert signature and template arguments to "default form" for equality comparison.
+	// *) More and more checks.
+	// *) Resolve all class template names at template definition point.
+	// *) Make more and more other stuff.
 }
 
 void CodeBuilder::TryGenerateDefaultConstructor( Class& the_class, const Type& class_type )
@@ -1044,20 +1161,7 @@ void CodeBuilder::BuildNamespaceBody(
 			const ClassTemplateDeclaration* const class_template_declaration=
 			dynamic_cast<const ClassTemplateDeclaration*>( program_element.get() ) )
 		{
-			ClassTemplatePtr class_template( new ClassTemplate );
-			class_template->class_syntax_element= class_template_declaration;
-
-			const ComplexName& name= class_template_declaration->class_->name_;
-			if( name.components.size() == 1u )
-			{
-				names_scope.AddName(  name.components.front(), Value( class_template ) );
-			}
-			else
-			{
-				// TODO - search, using complex name
-			}
-			// TODO
-			//names_scope.AddName( class_template_declaration->class_->name_, Value( class_template ) );
+			PrepareClassTemplate( *class_template_declaration, names_scope );
 		}
 		else
 		{
@@ -1072,7 +1176,7 @@ void CodeBuilder::PrepareFunction(
 	ClassPtr base_class,
 	NamesScope& func_definition_names_scope /* scope, where this function appears */ )
 {
-	const ProgramString& func_name= func.name_.components.back();
+	const ProgramString& func_name= func.name_.components.back().name;
 
 	const bool is_constructor= func_name == Keywords::constructor_;
 	const bool is_destructor= func_name == Keywords::destructor_;
@@ -1090,10 +1194,8 @@ void CodeBuilder::PrepareFunction(
 	if( func.name_.components.size() >= 2u )
 	{
 		// Complex name - search scope for this function.
-		ComplexName base_space_name= func.name_;
-		base_space_name.components.pop_back();
 		if( const NamesScope::InsertedName* const scope_name=
-			func_definition_names_scope.ResolveName( base_space_name ) )
+			func_definition_names_scope.ResolveName( func.name_.components.data(), func.name_.components.size() - 1u ) )
 		{
 			bool base_space_is_class= false;
 			if( const Type* const type= scope_name->second.GetTypeName() )
@@ -1113,7 +1215,7 @@ void CodeBuilder::PrepareFunction(
 			}
 			else
 			{
-				errors_.push_back( ReportNameNotFound( func.file_pos_, base_space_name ) );
+				errors_.push_back( ReportNameNotFound( func.file_pos_, func.name_ ) );
 				return;
 			}
 		}

@@ -811,7 +811,8 @@ Value CodeBuilder::BuildNamedOperand(
 	FunctionContext& function_context )
 {
 	if( named_operand.name_.components.size() == 1u &&
-		named_operand.name_.components.back() == Keywords::this_ )
+		named_operand.name_.components.back().name == Keywords::this_ &&
+		named_operand.name_.components.back().template_parameters.empty() )
 	{
 		if( function_context.this_ == nullptr || function_context.is_constructor_initializer_list_now )
 		{
@@ -833,7 +834,7 @@ Value CodeBuilder::BuildNamedOperand(
 	{
 		if( function_context.this_ == nullptr )
 		{
-			errors_.push_back( ReportClassFiledAccessInStaticMethod( named_operand.file_pos_, named_operand.name_.components.back() ) );
+			errors_.push_back( ReportClassFiledAccessInStaticMethod( named_operand.file_pos_, named_operand.name_.components.back().name ) );
 			throw ProgramError();
 		}
 
@@ -843,14 +844,14 @@ Value CodeBuilder::BuildNamedOperand(
 		// SPRACHE_TODO - allow access to parents fields here.
 		if( Type(class_) != function_context.this_->type )
 		{
-			errors_.push_back( ReportAccessOfNonThisClassField( named_operand.file_pos_, named_operand.name_.components.back() ) );
+			errors_.push_back( ReportAccessOfNonThisClassField( named_operand.file_pos_, named_operand.name_.components.back().name ) );
 			throw ProgramError();
 		}
 
 		if( function_context.is_constructor_initializer_list_now &&
 			function_context.uninitialized_this_fields.find( field ) != function_context.uninitialized_this_fields.end() )
 		{
-			errors_.push_back( ReportFieldIsNotInitializedYet( named_operand.file_pos_, named_operand.name_.components.back() ) );
+			errors_.push_back( ReportFieldIsNotInitializedYet( named_operand.file_pos_, named_operand.name_.components.back().name ) );
 			throw ProgramError();
 		}
 
@@ -876,7 +877,7 @@ Value CodeBuilder::BuildNamedOperand(
 			if( function_context.is_constructor_initializer_list_now )
 			{
 				// SPRACHE_TODO - allow call of static methods and parents methods.
-				errors_.push_back( ReportMethodsCallInConstructorInitializerListIsForbidden( named_operand.file_pos_, named_operand.name_.components.back() ) );
+				errors_.push_back( ReportMethodsCallInConstructorInitializerListIsForbidden( named_operand.file_pos_, named_operand.name_.components.back().name ) );
 				throw ProgramError();
 			}
 
@@ -884,7 +885,7 @@ Value CodeBuilder::BuildNamedOperand(
 			const ClassPtr class_= function_context.this_->type.GetClassType();
 
 			const NamesScope::InsertedName* const same_set_in_class=
-				class_->members.GetThisScopeName( named_operand.name_.components.back() );
+				class_->members.GetThisScopeName( named_operand.name_.components.back().name );
 			// SPRACHE_TODO - add "this" for functions from parent classes.
 			if( name_entry == same_set_in_class )
 			{

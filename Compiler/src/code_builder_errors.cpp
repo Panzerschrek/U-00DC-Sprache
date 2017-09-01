@@ -36,9 +36,9 @@ CodeBuilderError ReportNameNotFound( const FilePos& file_pos, const ComplexName&
 	error.file_pos= file_pos;
 	error.code= CodeBuilderErrorCode::NameNotFound;
 
-	for( const ProgramString& component : name.components )
+	for( const ComplexName::Component& component : name.components )
 	{
-		error.text+= component;
+		error.text+= component.name;
 		if( &component != &name.components.back() )
 			error.text+= "::"_SpC;
 	}
