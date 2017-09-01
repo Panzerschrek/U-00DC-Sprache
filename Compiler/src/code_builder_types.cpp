@@ -769,6 +769,11 @@ const NamesScope* NamesScope::GetParent() const
 	return parent_;
 }
 
+void NamesScope::SetParent( const NamesScope* const parent )
+{
+	parent_= parent;
+}
+
 const ProgramString& GetFundamentalTypeName( const U_FundamentalType fundamental_type )
 {
 	if( fundamental_type >= U_FundamentalType::LastType )

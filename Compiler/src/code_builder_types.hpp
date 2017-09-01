@@ -283,6 +283,7 @@ public:
 	InsertedName* GetThisScopeName( const ProgramString& name ) const;
 
 	const NamesScope* GetParent() const;
+	void SetParent( const NamesScope* parent );
 
 	template<class Func>
 	void ForEachInThisScope( const Func& func ) const
@@ -295,7 +296,7 @@ public:
 
 private:
 	const ProgramString name_;
-	const NamesScope* const parent_;
+	const NamesScope* parent_;
 	NamesMap names_map_;
 };
 

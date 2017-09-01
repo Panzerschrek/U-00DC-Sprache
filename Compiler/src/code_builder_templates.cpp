@@ -282,6 +282,9 @@ NamesScope::InsertedName* CodeBuilder::GenTemplateClass(
 	// TODO - generate correct mangled name for template.
 	the_class->llvm_type->setName( MangleClass( names_scope, name_encoded ) );
 
+	// Set correct scope, not fake temporary names scope for template parameters.
+	the_class->members.SetParent( &names_scope );
+
 	// TODO - check here class members.
 
 	return names_scope.AddName( name_encoded, Value( the_class ) );
