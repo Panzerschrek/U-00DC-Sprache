@@ -104,7 +104,7 @@ private:
 
 	// Returns nullptr in case of fail.
 	NamesScope::InsertedName* GenTemplateClass(
-		const ClassTemplate& class_template,
+		const ClassTemplatePtr& class_template_ptr,
 		const std::vector<IExpressionComponentPtr>& template_arguments,
 		NamesScope& names_scope );
 

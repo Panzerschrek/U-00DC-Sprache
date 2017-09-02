@@ -2956,7 +2956,7 @@ const NamesScope::InsertedName* CodeBuilder::ResolveName(
 		else if( const ClassTemplatePtr class_template = name->second.GetClassTemplate() )
 		{
 			is_class_template= true;
-			const NamesScope::InsertedName* generated_class= GenTemplateClass( *class_template, components[0].template_parameters, *resolve_start_point );
+			const NamesScope::InsertedName* generated_class= GenTemplateClass( class_template, components[0].template_parameters, *resolve_start_point );
 			if( generated_class == nullptr )
 				return nullptr;
 			const Type* const type= generated_class->second.GetTypeName();

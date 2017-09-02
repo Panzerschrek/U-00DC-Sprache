@@ -135,10 +135,12 @@ void CodeBuilder::PrepareClassTemplate(
 }
 
 NamesScope::InsertedName* CodeBuilder::GenTemplateClass(
-	const ClassTemplate& class_template,
+	const ClassTemplatePtr& class_template_ptr,
 	const std::vector<IExpressionComponentPtr>& template_arguments,
 	NamesScope& names_scope )
 {
+	const ClassTemplate& class_template= *class_template_ptr;
+
 	const FilePos file_pos= FilePos();
 
 	if( class_template.signature_arguments.size() != template_arguments.size() )
@@ -192,7 +194,6 @@ NamesScope::InsertedName* CodeBuilder::GenTemplateClass(
 						// WTF?
 						U_ASSERT( false );
 					}
-
 				}
 			}
 			else if( const Variable* const variable= value.GetVariable() )
@@ -331,6 +332,18 @@ NamesScope::InsertedName* CodeBuilder::GenTemplateClass(
 
 	// Set correct scope, not fake temporary names scope for template parameters.
 	the_class->members.SetParent( &names_scope );
+
+	// Save in class info about it.
+	the_class->base_template.emplace();
+	the_class->base_template->class_template= class_template_ptr;
+	for( const TemplateArg& arg : deduced_template_args )
+	{
+		if( const Type* const type= boost::get<Type>( &arg ) )
+			the_class->base_template->template_parameters.push_back( *type );
+		else if( const Variable* const variable= boost::get<Variable>( &arg ) )
+			the_class->base_template->template_parameters.push_back( *variable );
+		else U_ASSERT(false);
+	}
 
 	// TODO - check here class members.
 

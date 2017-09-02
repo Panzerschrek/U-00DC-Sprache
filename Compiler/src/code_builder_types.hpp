@@ -331,6 +331,17 @@ struct Class final
 	bool have_destructor= false;
 
 	llvm::StructType* llvm_type;
+
+	struct BaseTemplate
+	{
+		typedef boost::variant< Variable, Type > TemplateParameter;
+
+		ClassTemplatePtr class_template;
+		std::vector<TemplateParameter> template_parameters;
+	};
+
+	// Exists only for classes, generated from class templates.
+	boost::optional<BaseTemplate> base_template;
 };
 
 struct ClassTemplate final
