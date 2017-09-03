@@ -134,6 +134,152 @@ void CodeBuilder::PrepareClassTemplate(
 	// *) Make more and more other stuff.
 }
 
+bool CodeBuilder::DuduceTemplateArguments(
+	const ClassTemplatePtr& class_template_ptr,
+	const IExpressionComponent& expression,
+	const ClassTemplate::SignatureParameter& signature_parameter,
+	DeducibleTemplateParameters& deducible_template_parameters,
+	NamesScope& names_scope )
+{
+	const FilePos file_pos= FilePos(); // TODO
+
+	Value value;
+	try
+	{
+		 // TODO - use here correct names_scope
+		value= BuildExpressionCode( expression, names_scope, *dummy_function_context_ );
+	}
+	catch( const ProgramError& )
+	{
+		return false;
+	}
+
+	// Process variable parameter.
+	if( const Variable* const variable= value.GetVariable() )
+	{
+		return true;
+	}
+	else if( const Type* const type_value= value.GetTypeName() )
+	{/*TODO*/}
+	else
+	{
+		errors_.push_back( ReportInvalidValueAsTemplateArgument( file_pos, value.GetType().ToString() ) );
+		return false;
+	}
+
+	// Process type parameter.
+	const Type given_type= *value.GetTypeName();
+
+	const ClassTemplate& class_template= *class_template_ptr;
+
+	// Try deduce fundamental type.
+	if( const FundamentalType* const fundamental_type= given_type.GetFundamentalType() )
+	{
+		if( signature_parameter.name->components.size() == 1u &&
+			signature_parameter.name->components.front().template_parameters.empty() )
+		{
+			size_t dependend_arg_index= ~0u;
+			for( const ClassTemplate::TemplateParameter& param : class_template.template_parameters )
+			{
+				if( param.name == signature_parameter.name->components.front().name )
+				{
+					dependend_arg_index= &param - class_template.template_parameters.data();
+					break;
+				}
+			}
+
+			if( dependend_arg_index != ~0u )
+			{
+				if( class_template.template_parameters[ dependend_arg_index ].type_name != nullptr )
+				{
+					// Expected variable, but type given.
+					return false;
+				}
+				else if( boost::get<int>( &deducible_template_parameters[ dependend_arg_index ] ) != nullptr )
+				{
+					// Set empty arg.
+					deducible_template_parameters[ dependend_arg_index ]= given_type;
+				}
+				else if( const Type* const prev_type= boost::get<Type>( &deducible_template_parameters[ dependend_arg_index ] ) )
+				{
+					// Type already known. Check conflicts.
+					if( *prev_type != given_type )
+						return false;
+				}
+				else if( boost::get<Variable>( &deducible_template_parameters[ dependend_arg_index ] ) != nullptr )
+				{
+					// Bind type argument to variable parameter.
+					return false;
+				}
+			}
+		}
+		else
+			return false;
+		return true;
+	}
+
+	// Try deduce other type kind.
+	// Curently, can work only with class types.
+	const ClassPtr class_type= given_type.GetClassType();
+	if( class_type == nullptr )
+		return false;
+
+	typedef boost::variant<NamesScopePtr, ClassPtr> TypePathComponent;
+	// Sequence of namespaces/classes, where given type placed.
+	std::vector<TypePathComponent> given_type_predecessors;
+	{
+		const NamesScope* n= &class_type->members;
+		while( n->GetParent() != nullptr )
+		{
+			const NamesScope* const parent= n->GetParent();
+			const NamesScope::InsertedName* const name= parent->GetThisScopeName( n->GetThisNamespaceName() );
+			U_ASSERT( name != nullptr );
+			if( const NamesScopePtr names_scope= name->second.GetNamespace() )
+				given_type_predecessors.insert( given_type_predecessors.begin(), 1u, names_scope );
+			else if( const Type* const type= name->second.GetTypeName() )
+			{
+				if( const ClassPtr class_= type->GetClassType() )
+					given_type_predecessors.insert( given_type_predecessors.begin(), 1u,class_ );
+				else U_ASSERT(false);
+
+			}
+			else U_ASSERT(false);
+
+			n= parent;
+		}
+	}
+
+	const NamesScope::InsertedName* const start_name= ResolveName( names_scope, signature_parameter.name->components.data(), 1u );
+	if( start_name == nullptr )
+		return false;
+	std::vector<TypePathComponent> start_name_predecessors;
+	{
+		// UNFINISHED
+		// CYKABLAT - know parent names scope.
+		const NamesScope* n= &class_type->members;
+		while( n->GetParent() != nullptr )
+		{
+			const NamesScope* const parent= n->GetParent();
+			const NamesScope::InsertedName* const name= parent->GetThisScopeName( n->GetThisNamespaceName() );
+			U_ASSERT( name != nullptr );
+			if( const NamesScopePtr names_scope= name->second.GetNamespace() )
+				start_name_predecessors.insert( start_name_predecessors.begin(), 1u, names_scope );
+			else if( const Type* const type= name->second.GetTypeName() )
+			{
+				if( const ClassPtr class_= type->GetClassType() )
+					start_name_predecessors.insert( start_name_predecessors.begin(), 1u,class_ );
+				else U_ASSERT(false);
+
+			}
+			else U_ASSERT(false);
+
+			n= parent;
+		}
+	}
+
+	return true;
+}
+
 NamesScope::InsertedName* CodeBuilder::GenTemplateClass(
 	const ClassTemplatePtr& class_template_ptr,
 	const std::vector<IExpressionComponentPtr>& template_arguments,
@@ -151,8 +297,7 @@ NamesScope::InsertedName* CodeBuilder::GenTemplateClass(
 		return nullptr;
 	}
 
-	typedef boost::variant< int, Type, Variable > TemplateArg;
-	std::vector<TemplateArg> deduced_template_args( class_template.template_parameters.size() );
+	DeducibleTemplateParameters deduced_template_args( class_template.template_parameters.size() );
 
 	for( size_t i= 0u; i < class_template.signature_arguments.size(); ++i )
 	{
@@ -238,7 +383,7 @@ NamesScope::InsertedName* CodeBuilder::GenTemplateClass(
 					}
 					if( *type != variable->type )
 					{
-						errors_.push_back( ReportTypesMismatch( file_pos, type->ToString(), variable->type.ToString() ) );
+						// Given type does not match actual type.
 						return nullptr;
 					}
 
@@ -322,7 +467,11 @@ NamesScope::InsertedName* CodeBuilder::GenTemplateClass(
 		return inserted_name;
 	}
 
-	ClassPtr the_class= PrepareClass( *class_template.class_syntax_element, template_parameters_names_scope );
+	ComplexName dummy_complex_name;
+	dummy_complex_name.components.emplace_back();
+	dummy_complex_name.components.back().name= name_encoded;
+
+	ClassPtr the_class= PrepareClass( *class_template.class_syntax_element, dummy_complex_name, template_parameters_names_scope );
 	if( the_class == nullptr )
 		return nullptr;
 
@@ -335,7 +484,7 @@ NamesScope::InsertedName* CodeBuilder::GenTemplateClass(
 	// Save in class info about it.
 	the_class->base_template.emplace();
 	the_class->base_template->class_template= class_template_ptr;
-	for( const TemplateArg& arg : deduced_template_args )
+	for( const DeducibleTemplateParameter& arg : deduced_template_args )
 	{
 		if( const Type* const type= boost::get<Type>( &arg ) )
 			the_class->base_template->template_parameters.push_back( *type );

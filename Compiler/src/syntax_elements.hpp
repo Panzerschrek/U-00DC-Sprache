@@ -50,7 +50,8 @@ struct ComplexName final
 	struct Component
 	{
 		ProgramString name;
-		std::vector<IExpressionComponentPtr> template_parameters; // Empty for non-templates
+		std::vector<IExpressionComponentPtr> template_parameters;
+		bool have_template_parameters= false;
 	};
 	std::vector<Component> components;
 };

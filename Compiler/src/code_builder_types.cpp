@@ -769,6 +769,14 @@ const NamesScope* NamesScope::GetParent() const
 	return parent_;
 }
 
+const NamesScope* NamesScope::GetRoot() const
+{
+	const NamesScope* root= this;
+	while( root->parent_ != nullptr )
+		root= root->parent_;
+	return root;
+}
+
 void NamesScope::SetParent( const NamesScope* const parent )
 {
 	parent_= parent;

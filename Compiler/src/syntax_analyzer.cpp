@@ -727,6 +727,8 @@ ComplexName SyntaxAnalyzer::ParseComplexName()
 
 		if( it_->type == Lexem::Type::TemplateBracketLeft )
 		{
+			complex_name.components.back().have_template_parameters= true;
+
 			++it_; U_ASSERT( it_ < it_end_ );
 			while(true)
 			{

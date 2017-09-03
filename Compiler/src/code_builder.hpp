@@ -97,10 +97,21 @@ private:
 	Type PrepareType( const FilePos& file_pos, const TypeName& type_name, NamesScope& names_scope );
 
 	// Returns nullptr on fail.
-	ClassPtr PrepareClass( const ClassDeclaration& class_declaration, NamesScope& names_scope );
+	ClassPtr PrepareClass(
+		const ClassDeclaration& class_declaration,
+		const ComplexName& class_complex_name,
+		NamesScope& names_scope );
 
 	// Templates
 	void PrepareClassTemplate( const ClassTemplateDeclaration& class_template_declaration, NamesScope& names_scope );
+
+	// Returns true, if all ok.
+	bool DuduceTemplateArguments(
+		const ClassTemplatePtr& class_template_ptr,
+		const IExpressionComponent& expression,
+		const ClassTemplate::SignatureParameter& signature_parameter,
+		DeducibleTemplateParameters& deducible_template_parameters,
+		NamesScope& names_scope );
 
 	// Returns nullptr in case of fail.
 	NamesScope::InsertedName* GenTemplateClass(

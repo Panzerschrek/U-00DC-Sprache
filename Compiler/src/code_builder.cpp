@@ -243,9 +243,12 @@ Type CodeBuilder::PrepareType(
 	return result;
 }
 
-ClassPtr CodeBuilder::PrepareClass( const ClassDeclaration& class_declaration, NamesScope& names_scope )
+ClassPtr CodeBuilder::PrepareClass(
+	const ClassDeclaration& class_declaration,
+	const ComplexName& class_complex_name,
+	NamesScope& names_scope )
 {
-	const ProgramString& class_name= class_declaration.name_.components.back().name;
+	const ProgramString& class_name= class_complex_name.components.back().name;
 	if( IsKeyword( class_name ) )
 		errors_.push_back( ReportUsingKeywordAsName( class_declaration.file_pos_ ) );
 
@@ -273,7 +276,7 @@ ClassPtr CodeBuilder::PrepareClass( const ClassDeclaration& class_declaration, N
 	ClassPtr the_class;
 
 	if( const NamesScope::InsertedName* const previous_declaration=
-		ResolveName( names_scope, class_declaration.name_ ) )
+		ResolveName( names_scope, class_complex_name ) )
 	{
 		if( const Type* const previous_type= previous_declaration->second.GetTypeName() )
 		{
@@ -300,7 +303,7 @@ ClassPtr CodeBuilder::PrepareClass( const ClassDeclaration& class_declaration, N
 	}
 	else
 	{
-		if( class_declaration.name_.components.size() != 1u )
+		if( class_complex_name.components.size() != 1u )
 		{
 			errors_.push_back( ReportClassDeclarationOutsideItsScope( class_declaration.file_pos_ ) );
 			return nullptr;
@@ -361,7 +364,7 @@ ClassPtr CodeBuilder::PrepareClass( const ClassDeclaration& class_declaration, N
 			boost::get< std::unique_ptr<ClassDeclaration> >( &member ) )
 		{
 			U_ASSERT( *inner_class != nullptr );
-			PrepareClass( **inner_class, the_class->members );
+			PrepareClass( **inner_class, (*inner_class)->name_, the_class->members );
 		}
 		else
 		{
@@ -1016,7 +1019,7 @@ void CodeBuilder::BuildNamespaceBody(
 			const ClassDeclaration* const class_=
 			dynamic_cast<const ClassDeclaration*>( program_element.get() ) )
 		{
-			PrepareClass( *class_, names_scope );
+			PrepareClass( *class_, class_->name_, names_scope );
 		}
 		else if(
 			const Namespace* const namespace_=
@@ -2956,18 +2959,27 @@ const NamesScope::InsertedName* CodeBuilder::ResolveName(
 		else if( const ClassTemplatePtr class_template = name->second.GetClassTemplate() )
 		{
 			is_class_template= true;
-			const NamesScope::InsertedName* generated_class= GenTemplateClass( class_template, components[0].template_parameters, *resolve_start_point );
-			if( generated_class == nullptr )
-				return nullptr;
-			const Type* const type= generated_class->second.GetTypeName();
-			U_ASSERT( type != nullptr );
-			const ClassPtr class_= type->GetClassType();
-			// SPRACHE_TODO - allow non-class types as result of template.
-			U_ASSERT( class_ != nullptr );
-			resolve_start_point= &class_->members;
+
+			if( components[0].have_template_parameters ) // TODO - turn on this
+			{
+				const NamesScope::InsertedName* generated_class= GenTemplateClass( class_template, components[0].template_parameters, *resolve_start_point );
+				if( generated_class == nullptr )
+					return nullptr;
+				const Type* const type= generated_class->second.GetTypeName();
+				U_ASSERT( type != nullptr );
+				const ClassPtr class_= type->GetClassType();
+				// SPRACHE_TODO - allow non-class types as result of template.
+				U_ASSERT( class_ != nullptr );
+				resolve_start_point= &class_->members;
+
+				if( component_count == 1u )
+					return generated_class;
+			}
 
 			if( component_count == 1u )
-				return generated_class;
+				return name;
+			else
+				return nullptr; // If class template is not last - do nto resolve. We don`t know what is inside class template.
 		}
 		else
 		{

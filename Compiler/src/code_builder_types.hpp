@@ -283,6 +283,7 @@ public:
 	InsertedName* GetThisScopeName( const ProgramString& name ) const;
 
 	const NamesScope* GetParent() const;
+	const NamesScope* GetRoot() const;
 	void SetParent( const NamesScope* parent );
 
 	template<class Func>
@@ -367,6 +368,9 @@ struct ClassTemplate final
 	// Syntax tree must live longer, than this struct.
 	const ClassDeclaration* class_syntax_element= nullptr;
 };
+
+typedef boost::variant< int, Type, Variable > DeducibleTemplateParameter; // int means not deduced
+typedef std::vector<DeducibleTemplateParameter> DeducibleTemplateParameters;
 
 const ProgramString& GetFundamentalTypeName( U_FundamentalType fundamental_type );
 const char* GetFundamentalTypeNameASCII( U_FundamentalType fundamental_type );
