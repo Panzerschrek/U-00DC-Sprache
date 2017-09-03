@@ -224,8 +224,9 @@ bool CodeBuilder::DuduceTemplateArguments(
 	if( class_type == nullptr )
 		return false;
 
-	typedef boost::variant<NamesScopePtr, ClassPtr> TypePathComponent;
+	typedef boost::variant<NamesScope*, ClassPtr> TypePathComponent;
 	// Sequence of namespaces/classes, where given type placed.
+	// TODO - add root namespace.
 	std::vector<TypePathComponent> given_type_predecessors;
 	{
 		const NamesScope* n= &class_type->members;
@@ -235,7 +236,7 @@ bool CodeBuilder::DuduceTemplateArguments(
 			const NamesScope::InsertedName* const name= parent->GetThisScopeName( n->GetThisNamespaceName() );
 			U_ASSERT( name != nullptr );
 			if( const NamesScopePtr names_scope= name->second.GetNamespace() )
-				given_type_predecessors.insert( given_type_predecessors.begin(), 1u, names_scope );
+				given_type_predecessors.insert( given_type_predecessors.begin(), 1u, names_scope.get() );
 			else if( const Type* const type= name->second.GetTypeName() )
 			{
 				if( const ClassPtr class_= type->GetClassType() )
@@ -249,21 +250,21 @@ bool CodeBuilder::DuduceTemplateArguments(
 		}
 	}
 
-	const NamesScope::InsertedName* const start_name= ResolveName( names_scope, signature_parameter.name->components.data(), 1u );
-	if( start_name == nullptr )
+	// TODO - use name resolving with parent space here.
+	const std::pair< const NamesScope::InsertedName*, NamesScope* > start_name=
+		ResolveNameWithParentSpace( names_scope, signature_parameter.name->components.data(), 1u );
+	if( start_name.first == nullptr )
 		return false;
 	std::vector<TypePathComponent> start_name_predecessors;
 	{
-		// UNFINISHED
-		// CYKABLAT - know parent names scope.
-		const NamesScope* n= &class_type->members;
+		const NamesScope* n= start_name.second;
 		while( n->GetParent() != nullptr )
 		{
 			const NamesScope* const parent= n->GetParent();
 			const NamesScope::InsertedName* const name= parent->GetThisScopeName( n->GetThisNamespaceName() );
 			U_ASSERT( name != nullptr );
 			if( const NamesScopePtr names_scope= name->second.GetNamespace() )
-				start_name_predecessors.insert( start_name_predecessors.begin(), 1u, names_scope );
+				start_name_predecessors.insert( start_name_predecessors.begin(), 1u, names_scope.get() );
 			else if( const Type* const type= name->second.GetTypeName() )
 			{
 				if( const ClassPtr class_= type->GetClassType() )

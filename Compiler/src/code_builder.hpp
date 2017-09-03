@@ -383,6 +383,9 @@ private:
 	const NamesScope::InsertedName* ResolveName(
 		NamesScope& names_scope,
 		const ComplexName::Component* components, size_t component_count );
+	std::pair<const NamesScope::InsertedName*, NamesScope*> ResolveNameWithParentSpace(
+		NamesScope& names_scope,
+		const ComplexName::Component* components, size_t component_count );
 
 	static U_FundamentalType GetNumericConstantType( const NumericConstant& number );
 

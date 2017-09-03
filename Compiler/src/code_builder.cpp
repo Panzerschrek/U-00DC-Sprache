@@ -2898,21 +2898,26 @@ const NamesScope::InsertedName* CodeBuilder::ResolveName(
 	NamesScope& names_scope,
 	const ComplexName::Component* components, size_t component_count )
 {
+	return ResolveNameWithParentSpace( names_scope, components, component_count ).first;
+}
+
+std::pair<const NamesScope::InsertedName*, NamesScope*> CodeBuilder::ResolveNameWithParentSpace(
+	NamesScope& names_scope,
+	const ComplexName::Component* components, size_t component_count )
+{
+	// TODO - generate resolving errors inside this method, not silently return null.
+
+	typedef std::pair<const NamesScope::InsertedName*, NamesScope*> ResultType;
+
 	U_ASSERT( component_count > 0u );
 
 	NamesScope* resolve_start_point= nullptr;
 	if( components[0].name.empty() )
 	{
 		U_ASSERT( component_count >= 2u );
-
-		// TODO - maybe save root pointer somewhere?
-		NamesScope* root= const_cast<NamesScope*>(names_scope.GetParent());
-		while( root->GetParent() != nullptr )
-			root= const_cast<NamesScope*>(root->GetParent());
-
-		resolve_start_point= root;
+		resolve_start_point= const_cast<NamesScope*>(names_scope.GetRoot());
 		++components;
-		-- component_count;
+		--component_count;
 	}
 	else
 	{
@@ -2929,7 +2934,7 @@ const NamesScope::InsertedName* CodeBuilder::ResolveName(
 			}
 			space= const_cast<NamesScope*>(space->GetParent());
 			if( space == nullptr )
-				return nullptr;
+				return ResultType( nullptr, nullptr );
 		}
 
 		resolve_start_point= space;
@@ -2937,34 +2942,38 @@ const NamesScope::InsertedName* CodeBuilder::ResolveName(
 
 	while( component_count > 0u )
 	{
+		NamesScope* const current_space= resolve_start_point;
 		NamesScope::InsertedName* const name= resolve_start_point->GetThisScopeName( components[0].name );
 		if( name == nullptr )
-			return name;
+			return ResultType( nullptr, nullptr );
 
-		bool is_class_template= false;
+		if( components[0].have_template_parameters && name->second.GetClassTemplate() == nullptr )
+		{
+			error_count_++; // TODO - register error - template parameters for non-template.
+			return ResultType( nullptr, nullptr );
+		}
+
+		bool name_is_namespace_like= false;
 		if( const NamesScopePtr child_namespace= name->second.GetNamespace() )
 		{
-			if( component_count == 1u )
-				return name;
 			resolve_start_point= child_namespace.get();
+			name_is_namespace_like= true;
 		}
 		else if( const Type* const type= name->second.GetTypeName() )
 		{
-			if( component_count == 1u )
-				return name;
-
 			if( const ClassPtr class_= type->GetClassType() )
+			{
 				resolve_start_point= &class_->members;
+				name_is_namespace_like= true;
+			}
 		}
 		else if( const ClassTemplatePtr class_template = name->second.GetClassTemplate() )
 		{
-			is_class_template= true;
-
 			if( components[0].have_template_parameters ) // TODO - turn on this
 			{
 				const NamesScope::InsertedName* generated_class= GenTemplateClass( class_template, components[0].template_parameters, *resolve_start_point );
 				if( generated_class == nullptr )
-					return nullptr;
+					return ResultType( nullptr, nullptr );
 				const Type* const type= generated_class->second.GetTypeName();
 				U_ASSERT( type != nullptr );
 				const ClassPtr class_= type->GetClassType();
@@ -2973,35 +2982,22 @@ const NamesScope::InsertedName* CodeBuilder::ResolveName(
 				resolve_start_point= &class_->members;
 
 				if( component_count == 1u )
-					return generated_class;
+					return ResultType( generated_class, current_space );
+
+				name_is_namespace_like= true;
 			}
-
-			if( component_count == 1u )
-				return name;
-			else
-				return nullptr; // If class template is not last - do nto resolve. We don`t know what is inside class template.
-		}
-		else
-		{
-			if( component_count == 1u )
-				return name;
-		}
-
-		if( !is_class_template && !components[0].template_parameters.empty() )
-		{
-			// TODO - register error.
-			error_count_++;
-			return nullptr;
 		}
 
 		if( component_count == 1u )
-			return name;
+			return ResultType( name, current_space );
+		else if( !name_is_namespace_like )
+			return ResultType( nullptr, nullptr );
 
 		++components;
 		--component_count;
 	}
 
-	return nullptr;
+	return ResultType( nullptr, nullptr );
 }
 
 U_FundamentalType CodeBuilder::GetNumericConstantType( const NumericConstant& number )
