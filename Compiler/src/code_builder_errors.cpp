@@ -797,4 +797,37 @@ CodeBuilderError ReportThisUnavailable( const FilePos& file_pos )
 	return error;
 }
 
+CodeBuilderError ReportInvalidValueAsTemplateArgument( const FilePos& file_pos, const ProgramString& got )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::InvalidValueAsTemplateArgument;
+
+	error.text= "Invalid value as template argument. Expected variable of type, got \""_SpC + got + "\"."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportInvalidTypeOfTemplateVariableArgument( const FilePos& file_pos, const ProgramString& type_name )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::InvalidTypeOfTemplateVariableArgument;
+
+	error.text= "Invalid type for template variable-argument: \""_SpC + type_name + "\"."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportTemplateParametersDeductionFailed( const FilePos& file_pos )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::TemplateParametersDeductionFailed;
+
+	error.text= "Template parameters deduction failed."_SpC;
+
+	return error;
+}
+
 } // namespace U

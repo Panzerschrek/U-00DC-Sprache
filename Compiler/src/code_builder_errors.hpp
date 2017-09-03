@@ -98,6 +98,11 @@ enum class CodeBuilderErrorCode : unsigned int
 	ThisInNonclassFunction,
 	AccessOfNonThisClassField,
 	ThisUnavailable,
+
+	// Template errors.
+	InvalidValueAsTemplateArgument,
+	InvalidTypeOfTemplateVariableArgument,
+	TemplateParametersDeductionFailed,
 };
 
 struct CodeBuilderError
@@ -179,5 +184,7 @@ CodeBuilderError ReportClassFiledAccessInStaticMethod( const FilePos& file_pos, 
 CodeBuilderError ReportThisInNonclassFunction( const FilePos& file_pos, const ProgramString& func_name );
 CodeBuilderError ReportAccessOfNonThisClassField( const FilePos& file_pos, const ProgramString& field_name );
 CodeBuilderError ReportThisUnavailable( const FilePos& file_pos );
-
+CodeBuilderError ReportInvalidValueAsTemplateArgument( const FilePos& file_pos, const ProgramString& got );
+CodeBuilderError ReportInvalidTypeOfTemplateVariableArgument( const FilePos& file_pos, const ProgramString& type_name );
+CodeBuilderError ReportTemplateParametersDeductionFailed( const FilePos& file_pos );
 } // namespace U

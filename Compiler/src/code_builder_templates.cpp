@@ -139,9 +139,12 @@ NamesScope::InsertedName* CodeBuilder::GenTemplateClass(
 	const std::vector<IExpressionComponentPtr>& template_arguments,
 	NamesScope& names_scope )
 {
+	// This method does not generate some errors, because instantiation may fail
+	// for one class template, but success for other.
+
 	const ClassTemplate& class_template= *class_template_ptr;
 
-	const FilePos file_pos= FilePos();
+	const FilePos file_pos= FilePos(); // TODO - set file_pos
 
 	if( class_template.signature_arguments.size() != template_arguments.size() )
 	{
@@ -169,7 +172,7 @@ NamesScope::InsertedName* CodeBuilder::GenTemplateClass(
 
 		try
 		{
-			Value value= BuildExpressionCode( *template_arguments[i], names_scope, *dummy_function_context_ );
+			Value value= BuildExpressionCode( *template_arguments[i], names_scope, *dummy_function_context_ ); // TODO - use here correct names_scope
 			if( const Type* const type_name= value.GetTypeName() )
 			{
 				if( dependend_arg_index != ~0u )
@@ -177,22 +180,23 @@ NamesScope::InsertedName* CodeBuilder::GenTemplateClass(
 					if( class_template.template_parameters[ dependend_arg_index ].type_name != nullptr )
 					{
 						// Expected variable, but type given.
-						error_count_++;
+						return nullptr;
 					}
 					else if( boost::get<int>( &deduced_template_args[ dependend_arg_index ] ) != nullptr )
 					{
-						// Set empty arg
+						// Set empty arg.
 						deduced_template_args[ dependend_arg_index ]= *type_name;
 					}
-					else if( boost::get<Type>( &deduced_template_args[ dependend_arg_index ] ) != nullptr )
+					else if( const Type* const prev_type= boost::get<Type>( &deduced_template_args[ dependend_arg_index ] ) )
 					{
-						// Conflict.
-						error_count_++;
+						// Type already known. Check conflicts.
+						if( *prev_type != *type_name )
+							return nullptr;
 					}
 					else if( boost::get<Variable>( &deduced_template_args[ dependend_arg_index ] ) != nullptr )
 					{
-						// WTF?
-						U_ASSERT( false );
+						// Bind type argument to variable parameter.
+						return nullptr;
 					}
 				}
 			}
@@ -202,8 +206,7 @@ NamesScope::InsertedName* CodeBuilder::GenTemplateClass(
 				if( fundamental_type == nullptr || !IsInteger( fundamental_type->fundamental_type ) )
 				{
 					// SPRACHE_TODO - allow non-fundamental value arguments.
-					//TODO - error
-					error_count_++;
+					errors_.push_back( ReportInvalidTypeOfTemplateVariableArgument( file_pos, variable->type.ToString() ) );
 					return nullptr;
 				}
 				if( variable->constexpr_value == nullptr )
@@ -217,7 +220,7 @@ NamesScope::InsertedName* CodeBuilder::GenTemplateClass(
 					const ComplexName* const type_complex_name= class_template.template_parameters[ dependend_arg_index ].type_name;
 					if( type_complex_name == nullptr )
 					{
-						errors_.push_back( ReportNotImplemented( file_pos, "Template parameter is type, but argument is variable" ) );
+						// Expected variable, but type given.
 						return nullptr;
 					}
 					const NamesScope::InsertedName* const type_name=
@@ -260,11 +263,9 @@ NamesScope::InsertedName* CodeBuilder::GenTemplateClass(
 			}
 			else
 			{
-				// error
+				errors_.push_back( ReportInvalidValueAsTemplateArgument( file_pos, value.GetType().ToString() ) );
 				return nullptr;
 			}
-			// TODO
-
 		}
 		catch( const ProgramError& )
 		{
@@ -281,17 +282,15 @@ NamesScope::InsertedName* CodeBuilder::GenTemplateClass(
 
 		if( boost::get<int>( &arg ) != nullptr )
 		{
-			errors_.push_back( ReportNotImplemented( file_pos, "argumnet not deduced!" ) );
+			errors_.push_back( ReportTemplateParametersDeductionFailed( file_pos ) );
 			return nullptr;
 		}
 
 		const ProgramString& name= class_template.template_parameters[i].name;
-		if( const Type* const  type= boost::get<Type>( &arg ) )
+		if( const Type* const type= boost::get<Type>( &arg ) )
 			names_scope.AddName( name, Value(*type) );
-
 		else if( const Variable* const variable= boost::get<Variable>( &arg ) )
 			names_scope.AddName( name, Value(*variable) );
-
 		else U_ASSERT(false);
 	}
 
