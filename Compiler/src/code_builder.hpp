@@ -108,8 +108,8 @@ private:
 	// Returns true, if all ok.
 	bool DuduceTemplateArguments(
 		const ClassTemplatePtr& class_template_ptr,
-		const IExpressionComponent& expression,
-		const ClassTemplate::SignatureParameter& signature_parameter,
+		const TemplateParameter& template_parameter,
+		const ComplexName& signature_parameter,
 		DeducibleTemplateParameters& deducible_template_parameters,
 		NamesScope& names_scope );
 

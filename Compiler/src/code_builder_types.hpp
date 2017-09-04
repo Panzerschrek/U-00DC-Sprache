@@ -312,6 +312,8 @@ public:
 	}
 };
 
+typedef boost::variant< Variable, Type > TemplateParameter;
+
 struct Class final
 {
 	Class( const ProgramString& name, const NamesScope* parent_scope );
@@ -335,8 +337,6 @@ struct Class final
 
 	struct BaseTemplate
 	{
-		typedef boost::variant< Variable, Type > TemplateParameter;
-
 		ClassTemplatePtr class_template;
 		std::vector<TemplateParameter> template_parameters;
 	};
@@ -353,11 +353,6 @@ struct ClassTemplate final
 		const ComplexName* type_name= nullptr; // Exists for value parameters.
 	};
 
-	struct SignatureParameter
-	{
-		//std::vector<size_t> dependent_args_parameters;
-		const ComplexName* name;
-	};
 
 	// Sorted in order of first parameter usage in signature.
 	std::vector< TemplateParameter > template_parameters;
