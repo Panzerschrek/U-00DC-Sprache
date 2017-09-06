@@ -740,7 +740,7 @@ ComplexName SyntaxAnalyzer::ParseComplexName()
 
 				complex_name.components.back().template_parameters.push_back( ParseExpression() );
 
-				if( it_->type == Lexem::Type::Colon )
+				if( it_->type == Lexem::Type::Comma )
 				{
 					++it_; U_ASSERT( it_ < it_end_ );
 					if( it_->type == Lexem::Type::TemplateBracketRight )

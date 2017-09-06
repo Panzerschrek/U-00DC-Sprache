@@ -144,23 +144,14 @@ bool CodeBuilder::DuduceTemplateArguments(
 	NamesScope& names_scope )
 {
 	const FilePos file_pos= FilePos(); // TODO
+	const ClassTemplate& class_template= *class_template_ptr;
 
 	if( const Variable* const variable= boost::get<Variable>(&template_parameter) )
 	{
-		return true;
-	}
-
-	const ClassTemplate& class_template= *class_template_ptr;
-
-	const Type& given_type= boost::get<Type>(template_parameter);
-
-	// Try deduce fundamental type.
-	if( const FundamentalType* const fundamental_type= given_type.GetFundamentalType() )
-	{
+		size_t dependend_arg_index= ~0u;
 		if( signature_parameter.components.size() == 1u &&
 			signature_parameter.components.front().template_parameters.empty() )
 		{
-			size_t dependend_arg_index= ~0u;
 			for( const ClassTemplate::TemplateParameter& param : class_template.template_parameters )
 			{
 				if( param.name == signature_parameter.components.front().name )
@@ -169,35 +160,113 @@ bool CodeBuilder::DuduceTemplateArguments(
 					break;
 				}
 			}
+		}
 
-			if( dependend_arg_index != ~0u )
+		const FundamentalType* const fundamental_type= variable->type.GetFundamentalType();
+		if( fundamental_type == nullptr || !IsInteger( fundamental_type->fundamental_type ) )
+		{
+			// SPRACHE_TODO - allow non-fundamental value arguments.
+			errors_.push_back( ReportInvalidTypeOfTemplateVariableArgument( file_pos, variable->type.ToString() ) );
+			return false;
+		}
+		if( variable->constexpr_value == nullptr )
+		{
+			errors_.push_back( ReportExpectedConstantExpression( file_pos ) );
+			return false;
+		}
+		if( dependend_arg_index != ~0u )
+		{
+			// TODO - perform type checks earlier, when template defined.
+			const ComplexName* const type_complex_name= class_template.template_parameters[ dependend_arg_index ].type_name;
+			if( type_complex_name == nullptr )
 			{
-				if( class_template.template_parameters[ dependend_arg_index ].type_name != nullptr )
-				{
-					// Expected variable, but type given.
-					return false;
-				}
-				else if( boost::get<int>( &deducible_template_parameters[ dependend_arg_index ] ) != nullptr )
-				{
-					// Set empty arg.
-					deducible_template_parameters[ dependend_arg_index ]= given_type;
-				}
-				else if( const Type* const prev_type= boost::get<Type>( &deducible_template_parameters[ dependend_arg_index ] ) )
-				{
-					// Type already known. Check conflicts.
-					if( *prev_type != given_type )
-						return false;
-				}
-				else if( boost::get<Variable>( &deducible_template_parameters[ dependend_arg_index ] ) != nullptr )
-				{
-					// Bind type argument to variable parameter.
-					return false;
-				}
+				// Expected variable, but type given.
+				return false;
 			}
+			const NamesScope::InsertedName* const type_name=
+				ResolveName( names_scope, *type_complex_name );
+			if( type_name == nullptr )
+			{
+				ReportNameNotFound( file_pos, *type_complex_name );
+				return false;
+			}
+			const Type* const type= type_name->second.GetTypeName();
+			if( type_name == nullptr )
+			{
+				errors_.push_back( ReportNameIsNotTypeName( file_pos, type_complex_name->components.back().name ) );
+				return false;
+			}
+			if( *type != variable->type )
+			{
+				// Given type does not match actual type.
+				return false;
+			}
+
+			// Allocate global variable, because we needs address.
+
+			Variable variable_for_insertion;
+			variable_for_insertion.type= *type;
+			variable_for_insertion.location= Variable::Location::Pointer;
+			variable_for_insertion.value_type= ValueType::ConstReference;
+			variable_for_insertion.llvm_value=
+				new llvm::GlobalVariable(
+					*module_,
+					variable->type.GetLLVMType(),
+					true,
+					llvm::GlobalValue::LinkageTypes::InternalLinkage,
+					variable->constexpr_value,
+					ToStdString( class_template.template_parameters[ dependend_arg_index ].name ) );
+			variable_for_insertion.constexpr_value= variable->constexpr_value;
+
+			deducible_template_parameters[dependend_arg_index]= std::move( variable_for_insertion );
+
+			return true;
 		}
 		else
 			return false;
-		return true;
+	}
+
+	const Type& given_type= boost::get<Type>(template_parameter);
+
+	// Try deduce simple arg.
+	if( signature_parameter.components.size() == 1u &&
+		signature_parameter.components.front().template_parameters.empty() )
+	{
+		size_t dependend_arg_index= ~0u;
+		for( const ClassTemplate::TemplateParameter& param : class_template.template_parameters )
+		{
+			if( param.name == signature_parameter.components.front().name )
+			{
+				dependend_arg_index= &param - class_template.template_parameters.data();
+				break;
+			}
+		}
+
+		if( dependend_arg_index != ~0u )
+		{
+			if( class_template.template_parameters[ dependend_arg_index ].type_name != nullptr )
+			{
+				// Expected variable, but type given.
+				return false;
+			}
+			else if( boost::get<int>( &deducible_template_parameters[ dependend_arg_index ] ) != nullptr )
+			{
+				// Set empty arg.
+				deducible_template_parameters[ dependend_arg_index ]= given_type;
+			}
+			else if( const Type* const prev_type= boost::get<Type>( &deducible_template_parameters[ dependend_arg_index ] ) )
+			{
+				// Type already known. Check conflicts.
+				if( *prev_type != given_type )
+					return false;
+			}
+			else if( boost::get<Variable>( &deducible_template_parameters[ dependend_arg_index ] ) != nullptr )
+			{
+				// Bind type argument to variable parameter.
+				return false;
+			}
+			return true;
+		}
 	}
 
 	// Try deduce other type kind.
@@ -211,7 +280,7 @@ bool CodeBuilder::DuduceTemplateArguments(
 	// TODO - add root namespace.
 	std::vector<TypePathComponent> given_type_predecessors;
 	{
-		const NamesScope* n= class_type->members.GetParent();
+		const NamesScope* n= &class_type->members;
 		while( n->GetParent() != nullptr )
 		{
 			const NamesScope* const parent= n->GetParent();
@@ -329,13 +398,20 @@ bool CodeBuilder::DuduceTemplateArguments(
 
 					for( size_t i= 0u; i < name_component.template_parameters.size(); ++i)
 					{
-						const bool deduced= DuduceTemplateArguments(
-							class_template,
-							class_.base_template->template_parameters[i],
-							*class_template->signature_arguments[i],
-							deducible_template_parameters,
-							names_scope );
-						if( !deduced )
+						// TODO - process signature_args as expression.
+						const IExpressionComponent* const expr= name_component.template_parameters[i].get();
+						if( const NamedOperand* const named_operand= dynamic_cast<const NamedOperand*>(expr) )
+						{
+							const bool deduced= DuduceTemplateArguments(
+								class_template,
+								class_.base_template->template_parameters[i],
+								named_operand->name_,
+								deducible_template_parameters,
+								names_scope );
+							if( !deduced )
+								return false;
+						}
+						else
 							return false;
 					}
 				}
@@ -395,91 +471,13 @@ NamesScope::InsertedName* CodeBuilder::GenTemplateClass(
 			Value value= BuildExpressionCode( *template_arguments[i], names_scope, *dummy_function_context_ ); // TODO - use here correct names_scope
 			if( const Type* const type_name= value.GetTypeName() )
 			{
-				if( dependend_arg_index != ~0u )
-				{
-					if( class_template.template_parameters[ dependend_arg_index ].type_name != nullptr )
-					{
-						// Expected variable, but type given.
-						return nullptr;
-					}
-					else if( boost::get<int>( &deduced_template_args[ dependend_arg_index ] ) != nullptr )
-					{
-						// Set empty arg.
-						deduced_template_args[ dependend_arg_index ]= *type_name;
-					}
-					else if( const Type* const prev_type= boost::get<Type>( &deduced_template_args[ dependend_arg_index ] ) )
-					{
-						// Type already known. Check conflicts.
-						if( *prev_type != *type_name )
-							return nullptr;
-					}
-					else if( boost::get<Variable>( &deduced_template_args[ dependend_arg_index ] ) != nullptr )
-					{
-						// Bind type argument to variable parameter.
-						return nullptr;
-					}
-				}
+				if( !DuduceTemplateArguments( class_template_ptr, *type_name, name, deduced_template_args, names_scope ) )
+					return nullptr;
 			}
 			else if( const Variable* const variable= value.GetVariable() )
 			{
-				const FundamentalType* const fundamental_type= variable->type.GetFundamentalType();
-				if( fundamental_type == nullptr || !IsInteger( fundamental_type->fundamental_type ) )
-				{
-					// SPRACHE_TODO - allow non-fundamental value arguments.
-					errors_.push_back( ReportInvalidTypeOfTemplateVariableArgument( file_pos, variable->type.ToString() ) );
+				if( !DuduceTemplateArguments( class_template_ptr, *variable, name, deduced_template_args, names_scope ) )
 					return nullptr;
-				}
-				if( variable->constexpr_value == nullptr )
-				{
-					errors_.push_back( ReportExpectedConstantExpression( file_pos ) );
-					return nullptr;
-				}
-				if( dependend_arg_index != ~0u )
-				{
-					// TODO - perform type checks earlier, when template defined.
-					const ComplexName* const type_complex_name= class_template.template_parameters[ dependend_arg_index ].type_name;
-					if( type_complex_name == nullptr )
-					{
-						// Expected variable, but type given.
-						return nullptr;
-					}
-					const NamesScope::InsertedName* const type_name=
-						ResolveName( names_scope, *type_complex_name );
-					if( type_name == nullptr )
-					{
-						ReportNameNotFound( file_pos, *type_complex_name );
-						return nullptr;
-					}
-					const Type* const type= type_name->second.GetTypeName();
-					if( type_name == nullptr )
-					{
-						errors_.push_back( ReportNameIsNotTypeName( file_pos, type_complex_name->components.back().name ) );
-						return nullptr;
-					}
-					if( *type != variable->type )
-					{
-						// Given type does not match actual type.
-						return nullptr;
-					}
-
-					// Allocate global variable, because we needs address.
-
-					Variable variable_for_insertion;
-					variable_for_insertion.type= *type;
-					variable_for_insertion.location= Variable::Location::Pointer;
-					variable_for_insertion.value_type= ValueType::ConstReference;
-					variable_for_insertion.llvm_value=
-						new llvm::GlobalVariable(
-							*module_,
-							variable->type.GetLLVMType(),
-							true,
-							llvm::GlobalValue::LinkageTypes::InternalLinkage,
-							variable->constexpr_value,
-							ToStdString( class_template.template_parameters[ dependend_arg_index ].name ) );
-					variable_for_insertion.constexpr_value= variable->constexpr_value;
-
-					deduced_template_args[dependend_arg_index]= std::move( variable_for_insertion );
-				}
 			}
 			else
 			{

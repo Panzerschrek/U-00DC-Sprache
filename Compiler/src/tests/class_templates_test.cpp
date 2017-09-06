@@ -133,4 +133,74 @@ U_TEST( ClassTemplateTest3 )
 	U_TEST_ASSERT( static_cast<uint64_t>( 42 ) == result_value.IntVal.getLimitedValue() );
 }
 
+U_TEST( ClassTemplateTest4 )
+{
+	// Template argument is struct type.
+	static const char c_program_text[]=
+	R"(
+		struct SSS{ i32 a; }
+
+		template</ type T />
+		struct Point</ T />
+		{
+			T x;
+			T y;
+		}
+
+		fn Foo() : i32
+		{
+			var Point</ SSS /> p= zero_init;
+			p.x.a= 1145874;
+			return p.x.a;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( static_cast<uint64_t>( 1145874 ) == result_value.IntVal.getLimitedValue() );
+}
+
+U_TEST( ClassTemplateTest5 )
+{
+	// Partial-specialized template.
+	static const char c_program_text[]=
+	R"(
+		struct SSS{ i32 a; }
+
+		template</ type T />
+		struct Point</ SSS, T />
+		{
+			SSS x;
+			SSS y;
+		}
+
+		fn Foo() : i32
+		{
+			var Point</ SSS, i32 /> p= zero_init;
+			p.x.a= 1145874;
+			return p.x.a;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( static_cast<uint64_t>( 1145874 ) == result_value.IntVal.getLimitedValue() );
+}
+
 } // namespace U
