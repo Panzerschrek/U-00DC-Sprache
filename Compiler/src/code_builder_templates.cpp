@@ -110,6 +110,7 @@ void CodeBuilder::PrepareClassTemplate(
 		}
 		else
 		{
+			/* // TODO
 			const NamesScope::InsertedName* const name= ResolveName( names_scope, signature_arg.name );
 			if( name == nullptr )
 			{
@@ -122,6 +123,7 @@ void CodeBuilder::PrepareClassTemplate(
 				errors_.push_back( ReportNameIsNotTypeName( class_template_declaration.file_pos_, name->first ) );
 				return;
 			}
+			*/
 		}
 		class_template->signature_arguments.push_back(&signature_arg.name);
 	}
@@ -301,9 +303,11 @@ bool CodeBuilder::DuduceTemplateArguments(
 		}
 	}
 
-	// TODO - use name resolving with parent space here.
+	// Resolve first component without template parameters.
+	ComplexName::Component start_name_first_component;
+	start_name_first_component.name= signature_parameter.components.front().name;
 	const std::pair< const NamesScope::InsertedName*, NamesScope* > start_name=
-		ResolveNameWithParentSpace( names_scope, signature_parameter.components.data(), 1u );
+		ResolveNameWithParentSpace( names_scope, &start_name_first_component, 1u );
 	if( start_name.first == nullptr )
 		return false;
 	std::vector<TypePathComponent> start_name_predecessors;

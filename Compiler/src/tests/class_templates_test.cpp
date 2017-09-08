@@ -203,4 +203,38 @@ U_TEST( ClassTemplateTest5 )
 	U_TEST_ASSERT( static_cast<uint64_t>( 1145874 ) == result_value.IntVal.getLimitedValue() );
 }
 
+U_TEST( ClassTemplateTest6 )
+{
+	// Type deduction from template instance.
+	static const char c_program_text[]=
+	R"(
+		template</ type T /> struct Box</ T /> { T t; }
+
+		template</ type T />
+		struct Point</ Box</ T /> />
+		{
+			T x;
+		}
+
+		fn Foo() : i32
+		{
+			var Point</ Box</ i32 /> /> p= zero_init;
+			p.x= 8884;
+			return p.x;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( static_cast<uint64_t>( 8884 ) == result_value.IntVal.getLimitedValue() );
+}
+
 } // namespace U
