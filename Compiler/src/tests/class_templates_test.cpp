@@ -456,4 +456,43 @@ U_TEST( ClassTemplateTest12 )
 	U_TEST_ASSERT( -3.14f == result_value.FloatVal );
 }
 
+U_TEST( ClassTemplateTest13 )
+{
+	// Type deduction from template instance. Type is given and placed in namespace.
+	static const char c_program_text[]=
+	R"(
+		namespace RR{ struct VV{} }
+
+		template</ type T /> class Box</ T />
+		{
+			T t;
+		}
+
+		template</  />
+		struct Point</ Box</ RR::VV /> />
+		{
+			f32 x;
+		}
+
+		fn Foo() : f32
+		{
+			var Point</ Box</ RR::VV /> /> p= zero_init;
+			p.x= -3.14f;
+			return p.x;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( -3.14f == result_value.FloatVal );
+}
+
 } // namespace U
