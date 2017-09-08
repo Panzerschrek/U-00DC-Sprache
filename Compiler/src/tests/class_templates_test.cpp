@@ -379,4 +379,81 @@ U_TEST( ClassTemplateTest10 )
 	U_TEST_ASSERT( -3.14f == result_value.FloatVal );
 }
 
+U_TEST( ClassTemplateTest11 )
+{
+	// Type deduction from template instance. Both templates placed inside common namespace.
+	static const char c_program_text[]=
+	R"(
+		namespace Br
+		{
+			template</ type T /> struct Box</ T /> { T t; }
+
+			namespace NNN
+			{
+				template</ type T />
+				struct Point</ Box</ T /> />
+				{
+					T x;
+				}
+
+				fn Foo() : i32
+				{
+					var Point</ Box</ i32 /> /> p= zero_init;
+					p.x= 1996;
+					return p.x;
+				}
+			}
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "_ZN2Br3NNN3FooEv" );
+	U_TEST_ASSERT( function != nullptr );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( static_cast<uint64_t>( 1996 ) == result_value.IntVal.getLimitedValue() );
+}
+
+U_TEST( ClassTemplateTest12 )
+{
+	// Type deduction from template instance. Type is given.
+	static const char c_program_text[]=
+	R"(
+		template</ type T /> class Box</ T />
+		{
+			T t;
+		}
+
+		template</  />
+		struct Point</ Box</ f32 /> />
+		{
+			f32 x;
+		}
+
+		fn Foo() : f32
+		{
+			var Point</ Box</ f32 /> /> p= zero_init;
+			p.x= -3.14f;
+			return p.x;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( -3.14f == result_value.FloatVal );
+}
+
 } // namespace U

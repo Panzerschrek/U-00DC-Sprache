@@ -271,6 +271,19 @@ bool CodeBuilder::DuduceTemplateArguments(
 		}
 	}
 
+	// Process simple fundamental type.
+	if( given_type.GetFundamentalType() != nullptr )
+	{
+		if( const NamesScope::InsertedName* const inserted_name= ResolveName( names_scope, signature_parameter ) )
+		{
+			if( const Type* type= inserted_name->second.GetTypeName() )
+			{
+				if( *type == given_type )
+					return true;
+			}
+		}
+	}
+
 	// Try deduce other type kind.
 	// Curently, can work only with class types.
 	const ClassPtr class_type= given_type.GetClassType();
