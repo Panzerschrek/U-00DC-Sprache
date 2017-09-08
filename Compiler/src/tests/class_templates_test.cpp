@@ -268,4 +268,115 @@ U_TEST( ClassTemplateTest7 )
 	U_TEST_ASSERT( static_cast<uint64_t>( 1145874 ) == result_value.IntVal.getLimitedValue() );
 }
 
+U_TEST( ClassTemplateTest8 )
+{
+	// Type deduction from template instance. Template placed inside namespace.
+	static const char c_program_text[]=
+	R"(
+		namespace std
+		{
+			template</ type T /> struct Box</ T /> { T t; }
+		}
+
+		template</ type T />
+		struct Point</ std::Box</ T /> />
+		{
+			T x;
+		}
+
+		fn Foo() : i32
+		{
+			var Point</ std::Box</ i32 /> /> p= zero_init;
+			p.x= 666;
+			return p.x;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( static_cast<uint64_t>( 666 ) == result_value.IntVal.getLimitedValue() );
+}
+
+U_TEST( ClassTemplateTest9 )
+{
+	// Type deduction from template instance. First template placed in outer namespace, relative to second template.
+	static const char c_program_text[]=
+	R"(
+		template</ type T /> struct Box</ T /> { T t; }
+
+		namespace NNN
+		{
+			template</ type T />
+			struct Point</ Box</ T /> />
+			{
+				T x;
+			}
+
+			fn Foo() : i32
+			{
+				var Point</ Box</ i32 /> /> p= zero_init;
+				p.x= 9998565;
+				return p.x;
+			}
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "_ZN3NNN3FooEv" );
+	U_TEST_ASSERT( function != nullptr );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( static_cast<uint64_t>( 9998565 ) == result_value.IntVal.getLimitedValue() );
+}
+
+U_TEST( ClassTemplateTest10 )
+{
+	// Type deduction from template instance. Use struct from template class.
+	static const char c_program_text[]=
+	R"(
+		template</ type T /> class Baz</ T />
+		{
+			struct Feed{ T t; }
+		}
+
+		template</ type T />
+		struct Point</ Baz</ T />::Feed />
+		{
+			T x;
+		}
+
+		fn Foo() : f32
+		{
+			var Point</ Baz</ f32 />::Feed /> p= zero_init;
+			p.x= -3.14f;
+			return p.x;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( -3.14f == result_value.FloatVal );
+}
+
 } // namespace U

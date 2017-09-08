@@ -369,6 +369,9 @@ bool CodeBuilder::DuduceTemplateArguments(
 				else
 					return false;
 			}
+
+			if( n + 1u < signature_parameter.components.size() )
+				current_name= component_names_scope->GetThisScopeName(signature_parameter.components[n+1u].name);
 		}
 		else if( const Type* const type= current_name->second.GetTypeName() )
 		{
@@ -380,6 +383,9 @@ bool CodeBuilder::DuduceTemplateArguments(
 				{
 					if( given_class_ == *class_ptr ){} // All ok
 					else return false; // different classes
+
+					if( n + 1u < signature_parameter.components.size() )
+						current_name= given_class_->members.GetThisScopeName( signature_parameter.components[n+1u].name );
 				}
 			}
 			else
@@ -418,6 +424,9 @@ bool CodeBuilder::DuduceTemplateArguments(
 						else
 							return false;
 					}
+
+					if( n + 1u < signature_parameter.components.size() )
+						current_name= class_.members.GetThisScopeName( signature_parameter.components[n+1u].name );
 				}
 				else
 					return false;
@@ -429,7 +438,13 @@ bool CodeBuilder::DuduceTemplateArguments(
 		{
 			if( name_component.have_template_parameters )
 				return false;
+
+			current_name= nullptr;
 		}
+
+
+		if( n + 1u < signature_parameter.components.size() && current_name == nullptr )
+			return false;
 	}
 
 	return true;
