@@ -517,7 +517,7 @@ NamesScope::InsertedName* CodeBuilder::GenTemplateClass(
 	}
 
 	// Encode name.
-	ProgramString name_encoded= class_template.class_syntax_element->name_.components.back().name;
+	ProgramString name_encoded= "_template"_SpC + class_template.class_syntax_element->name_.components.back().name;
 	for( size_t i = 0u; i < deduced_template_args.size() ; ++i )
 	{
 		const auto& arg = deduced_template_args[i];
