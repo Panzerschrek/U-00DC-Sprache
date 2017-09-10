@@ -84,6 +84,7 @@ target_link_libraries( Compiler CompilerLib ${LLVM_LIBS_FOR_COMPILER} )
 set( TESTS_SOURCES
 	src/tests/auto_variables_test.cpp
 	src/tests/auto_variables_errors_test.cpp
+	src/tests/class_templates_errors_test.cpp
 	src/tests/class_templates_test.cpp
 	src/tests/classes_declaration_errors_test.cpp
 	src/tests/classes_declaration_test.cpp

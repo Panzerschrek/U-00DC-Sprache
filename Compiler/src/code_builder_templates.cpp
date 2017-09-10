@@ -466,7 +466,8 @@ bool CodeBuilder::DuduceTemplateArguments(
 NamesScope::InsertedName* CodeBuilder::GenTemplateClass(
 	const ClassTemplatePtr& class_template_ptr,
 	const std::vector<IExpressionComponentPtr>& template_arguments,
-	NamesScope& names_scope )
+	NamesScope& template_names_scope,
+	NamesScope& arguments_names_scope )
 {
 	// This method does not generate some errors, because instantiation may fail
 	// for one class template, but success for other.
@@ -498,32 +499,34 @@ NamesScope::InsertedName* CodeBuilder::GenTemplateClass(
 			}
 		}
 
+		Value value;
 		try
 		{
-			Value value= BuildExpressionCode( *template_arguments[i], names_scope, *dummy_function_context_ ); // TODO - use here correct names_scope
-			if( const Type* const type_name= value.GetTypeName() )
-			{
-				if( !DuduceTemplateArguments( class_template_ptr, *type_name, name, deduced_template_args, names_scope ) )
-					return nullptr;
-			}
-			else if( const Variable* const variable= value.GetVariable() )
-			{
-				if( !DuduceTemplateArguments( class_template_ptr, *variable, name, deduced_template_args, names_scope ) )
-					return nullptr;
-			}
-			else
-			{
-				errors_.push_back( ReportInvalidValueAsTemplateArgument( file_pos, value.GetType().ToString() ) );
-				return nullptr;
-			}
+			value= BuildExpressionCode( *template_arguments[i], arguments_names_scope, *dummy_function_context_ );
 		}
 		catch( const ProgramError& )
 		{
 			return nullptr;
 		}
-	}
 
-	NamesScope template_parameters_names_scope( ""_SpC, &names_scope );
+		if( const Type* const type_name= value.GetTypeName() )
+		{
+			if( !DuduceTemplateArguments( class_template_ptr, *type_name, name, deduced_template_args, template_names_scope ) )
+				return nullptr;
+		}
+		else if( const Variable* const variable= value.GetVariable() )
+		{
+			if( !DuduceTemplateArguments( class_template_ptr, *variable, name, deduced_template_args, template_names_scope ) )
+				return nullptr;
+		}
+		else
+		{
+			errors_.push_back( ReportInvalidValueAsTemplateArgument( file_pos, value.GetType().ToString() ) );
+			return nullptr;
+		}
+	} // for arguments
+
+	NamesScope template_parameters_names_scope( ""_SpC, &template_names_scope );
 
 	//for( const auto& arg : deduced_template_args )
 	for( size_t i = 0u; i < deduced_template_args.size() ; ++i )
@@ -538,9 +541,9 @@ NamesScope::InsertedName* CodeBuilder::GenTemplateClass(
 
 		const ProgramString& name= class_template.template_parameters[i].name;
 		if( const Type* const type= boost::get<Type>( &arg ) )
-			names_scope.AddName( name, Value(*type) );
+			template_names_scope.AddName( name, Value(*type) );
 		else if( const Variable* const variable= boost::get<Variable>( &arg ) )
-			names_scope.AddName( name, Value(*variable) );
+			template_names_scope.AddName( name, Value(*variable) );
 		else U_ASSERT(false);
 	}
 
@@ -566,7 +569,7 @@ NamesScope::InsertedName* CodeBuilder::GenTemplateClass(
 	}
 
 	// Check, if already class generated.
-	if( NamesScope::InsertedName* const inserted_name= names_scope.GetThisScopeName( name_encoded ) )
+	if( NamesScope::InsertedName* const inserted_name= template_names_scope.GetThisScopeName( name_encoded ) )
 	{
 		// Already generated.
 		return inserted_name;
@@ -581,10 +584,10 @@ NamesScope::InsertedName* CodeBuilder::GenTemplateClass(
 		return nullptr;
 
 	// TODO - generate correct mangled name for template.
-	the_class->llvm_type->setName( MangleClass( names_scope, name_encoded ) );
+	the_class->llvm_type->setName( MangleClass( template_names_scope, name_encoded ) );
 
 	// Set correct scope, not fake temporary names scope for template parameters.
-	the_class->members.SetParent( &names_scope );
+	the_class->members.SetParent( &template_names_scope );
 
 	// Save in class info about it.
 	the_class->base_template.emplace();
@@ -600,7 +603,7 @@ NamesScope::InsertedName* CodeBuilder::GenTemplateClass(
 
 	// TODO - check here class members.
 
-	return names_scope.AddName( name_encoded, Value( the_class ) );
+	return template_names_scope.AddName( name_encoded, Value( the_class ) );
 }
 
 } // namespace CodeBuilderPrivate

@@ -495,4 +495,70 @@ U_TEST( ClassTemplateTest13 )
 	U_TEST_ASSERT( -3.14f == result_value.FloatVal );
 }
 
+U_TEST( ClassTemplateTest14 )
+{
+	// Use local constexpr variable as template value-argument.
+	static const char c_program_text[]=
+	R"(
+		template</ type T, u32 size />
+		struct Box</ T, size />
+		{
+			[ T, size ] x;
+		}
+
+		fn Foo() : i32
+		{
+			auto constexpr c_size= 14u;
+			var Box</ i32, c_size /> p= zero_init;
+			p.x[13u]= 2017;
+			return p.x[13u];
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( static_cast<uint64_t>( 2017 ) == result_value.IntVal.getLimitedValue() );
+}
+
+U_TEST( ClassTemplateTest15 )
+{
+	// Use type for template argument, not visible in template space, but visible in instantiation point.
+	static const char c_program_text[]=
+	R"(
+		template</ type T />
+		struct Box</ T /> { T t; }
+
+		namespace DDR
+		{
+			struct XXX{ u32 x; }
+			fn Foo() : u32
+			{
+				var Box</ XXX /> p= zero_init;
+				p.t.x= 733u;
+				return p.t.x;
+			}
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "_ZN3DDR3FooEv" );
+	U_TEST_ASSERT( function != nullptr );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( static_cast<uint64_t>( 733 ) == result_value.IntVal.getLimitedValue() );
+}
+
 } // namespace U

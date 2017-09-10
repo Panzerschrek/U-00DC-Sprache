@@ -2971,7 +2971,12 @@ std::pair<const NamesScope::InsertedName*, NamesScope*> CodeBuilder::ResolveName
 		{
 			if( components[0].have_template_parameters ) // TODO - turn on this
 			{
-				const NamesScope::InsertedName* generated_class= GenTemplateClass( class_template, components[0].template_parameters, *resolve_start_point );
+				const NamesScope::InsertedName* generated_class=
+					GenTemplateClass(
+						class_template,
+						components[0].template_parameters,
+						*resolve_start_point,
+						names_scope );
 				if( generated_class == nullptr )
 					return ResultType( nullptr, nullptr );
 				const Type* const type= generated_class->second.GetTypeName();

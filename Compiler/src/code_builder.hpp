@@ -117,7 +117,8 @@ private:
 	NamesScope::InsertedName* GenTemplateClass(
 		const ClassTemplatePtr& class_template_ptr,
 		const std::vector<IExpressionComponentPtr>& template_arguments,
-		NamesScope& names_scope );
+		NamesScope& template_names_scope,
+		NamesScope& arguments_names_scope );
 
 	void TryGenerateDefaultConstructor( Class& the_class, const Type& class_type );
 	void TryGenerateCopyConstructor( Class& the_class, const Type& class_type );
