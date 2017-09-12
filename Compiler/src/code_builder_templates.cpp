@@ -210,7 +210,7 @@ bool CodeBuilder::DuduceTemplateArguments(
 			variable_for_insertion.type= *type;
 			variable_for_insertion.location= Variable::Location::Pointer;
 			variable_for_insertion.value_type= ValueType::ConstReference;
-			variable_for_insertion.llvm_value=
+			llvm::GlobalValue* const global_value=
 				new llvm::GlobalVariable(
 					*module_,
 					variable->type.GetLLVMType(),
@@ -218,6 +218,8 @@ bool CodeBuilder::DuduceTemplateArguments(
 					llvm::GlobalValue::LinkageTypes::InternalLinkage,
 					variable->constexpr_value,
 					ToStdString( class_template.template_parameters[ dependend_arg_index ].name ) );
+			global_value->setUnnamedAddr(true); // We do not require unique address.
+			variable_for_insertion.llvm_value= global_value;
 			variable_for_insertion.constexpr_value= variable->constexpr_value;
 
 			deducible_template_parameters[dependend_arg_index]= std::move( variable_for_insertion );
