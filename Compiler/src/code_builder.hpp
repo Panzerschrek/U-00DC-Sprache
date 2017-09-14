@@ -210,7 +210,7 @@ private:
 		const FilePos& file_pos,
 		FunctionContext& function_context );
 		
-	Variable BuildLazyBinaryOperator(
+	Value BuildLazyBinaryOperator(
 		const IExpressionComponent& l_expression,
 		const IExpressionComponent& r_expression,
 		const BinaryOperator& binary_operator,
@@ -221,7 +221,7 @@ private:
 	Variable BuildNumericConstant( const NumericConstant& numeric_constant );
 	Variable BuildBooleanConstant( const BooleanConstant& boolean_constant );
 
-	Variable BuildIndexationOperator(
+	Value BuildIndexationOperator(
 		const Value& value,
 		const IndexationOperator& indexation_operator,
 		NamesScope& names,
@@ -232,7 +232,7 @@ private:
 		const MemberAccessOperator& member_access_operator,
 		FunctionContext& function_context );
 
-	Variable BuildCallOperator(
+	Value BuildCallOperator(
 		const Value& function_value,
 		const CallOperator& call_operator,
 		NamesScope& names,
@@ -244,17 +244,17 @@ private:
 		NamesScope& names,
 		FunctionContext& function_context );
 
-	Variable BuildUnaryMinus(
+	Value BuildUnaryMinus(
 		const Value& value,
 		const UnaryMinus& unary_minus,
 		FunctionContext& function_context );
 
-	Variable BuildLogicalNot(
+	Value BuildLogicalNot(
 		const Value& value,
 		const LogicalNot& logical_not,
 		FunctionContext& function_context );
 
-	Variable BuildBitwiseNot(
+	Value BuildBitwiseNot(
 		const Value& value,
 		const BitwiseNot& bitwise_not,
 		FunctionContext& function_context );

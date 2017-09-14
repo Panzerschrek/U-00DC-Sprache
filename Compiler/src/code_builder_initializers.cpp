@@ -64,6 +64,9 @@ void CodeBuilder::ApplyEmptyInitializer(
 	const Variable& variable,
 	FunctionContext& function_context )
 {
+	if( variable.type == NontypeStub::TemplateDependentValue )
+		return;
+
 	if( !variable.type.IsDefaultConstructible() )
 	{
 		errors_.push_back( ReportExpectedInitializer( file_pos, variable_name ) );
@@ -124,6 +127,13 @@ llvm::Constant* CodeBuilder::ApplyArrayInitializer(
 	NamesScope& block_names,
 	FunctionContext& function_context )
 {
+	if( variable.type == NontypeStub::TemplateDependentValue )
+	{
+		for( const IInitializerPtr& sub_initializer : initializer.initializers )
+			ApplyInitializer( variable, *sub_initializer, block_names, function_context );
+		return nullptr;
+	}
+
 	const Array* const array_type= variable.type.GetArrayType();
 	if( array_type == nullptr )
 	{
@@ -183,6 +193,13 @@ void CodeBuilder::ApplyStructNamedInitializer(
 	NamesScope& block_names,
 	FunctionContext& function_context )
 {
+	if( variable.type == NontypeStub::TemplateDependentValue )
+	{
+		for( const StructNamedInitializer::MemberInitializer& member_initializer : initializer.members_initializers )
+			ApplyInitializer( variable, *member_initializer.initializer, block_names, function_context );
+		return;
+	}
+
 	const ClassPtr class_type= variable.type.GetClassType();
 	if( class_type == nullptr )
 	{
@@ -257,6 +274,13 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 	NamesScope& block_names,
 	FunctionContext& function_context )
 {
+	if( variable.type == NontypeStub::TemplateDependentValue )
+	{
+		for( const IExpressionComponentPtr& arg : call_operator.arguments_ )
+			BuildExpressionCode( *arg, block_names, function_context );
+		return nullptr;
+	}
+
 	if( const FundamentalType* const dst_type= variable.type.GetFundamentalType() )
 	{
 		if( call_operator.arguments_.size() != 1u )
@@ -442,6 +466,12 @@ llvm::Constant* CodeBuilder::ApplyExpressionInitializer(
 	NamesScope& block_names,
 	FunctionContext& function_context )
 {
+	if( variable.type == NontypeStub::TemplateDependentValue )
+	{
+		BuildExpressionCode( *initializer.expression, block_names, function_context );
+		return nullptr;
+	}
+
 	if( const FundamentalType* const fundamental_type= variable.type.GetFundamentalType() )
 	{
 		U_UNUSED(fundamental_type);
@@ -476,6 +506,9 @@ llvm::Constant* CodeBuilder::ApplyZeroInitializer(
 	NamesScope& block_names,
 	FunctionContext& function_context )
 {
+	if( variable.type == NontypeStub::TemplateDependentValue )
+		return nullptr;
+
 	if( const FundamentalType* const fundamental_type= variable.type.GetFundamentalType() )
 	{
 		llvm::Constant* zero_value= nullptr;

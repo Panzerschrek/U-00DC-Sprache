@@ -455,6 +455,8 @@ ProgramString Type::ToString() const
 				break;
 			case NontypeStub::ClassTemplate:
 				result= "class template"_SpC;
+			case NontypeStub::TemplateDependentValue:
+				result= "template-dependent value"_SpC;
 				break;
 			};
 			U_ASSERT(!result.empty());
@@ -552,6 +554,7 @@ static const Type g_this_overloaded_methods_set_stub_type=NontypeStub::ThisOverl
 static const Type g_typename_type_stub= NontypeStub::TypeName;
 static const Type g_namespace_type_stub= NontypeStub::Namespace;
 static const Type g_class_template_type_stub= NontypeStub::ClassTemplate;
+static const Type g_template_dependent_type_stub= NontypeStub::TemplateDependentValue;
 
 Value::Value()
 {}
@@ -598,6 +601,11 @@ Value::Value( const ClassTemplatePtr& class_template )
 	something_= class_template;
 }
 
+Value::Value( TemplateDependentValue template_dependent_value )
+{
+	something_= std::move(template_dependent_value);
+}
+
 const Type& Value::GetType() const
 {
 	struct Visitor final : public boost::static_visitor<>
@@ -627,6 +635,9 @@ const Type& Value::GetType() const
 
 		void operator()( const ClassTemplatePtr& )
 		{ type= &g_class_template_type_stub; }
+
+		void operator()( const TemplateDependentValue& )
+		{ type= &g_template_dependent_type_stub; }
 	};
 
 	Visitor visitor;
@@ -703,6 +714,16 @@ ClassTemplatePtr Value::GetClassTemplate() const
 	if( class_template == nullptr )
 		return nullptr;
 	return *class_template;
+}
+
+TemplateDependentValue* Value::GetTemplateDependentValue()
+{
+	return boost::get<TemplateDependentValue>( &something_ );
+}
+
+const TemplateDependentValue* Value::GetTemplateDependentValue() const
+{
+	return boost::get<TemplateDependentValue>( &something_ );
 }
 
 ArgOverloadingClass GetArgOverloadingClass( const bool is_reference, const bool is_mutable )

@@ -173,7 +173,9 @@ Type CodeBuilder::PrepareType(
 		array_type.size= 1u;
 
 		const Value size_expression= BuildExpressionCode( num, names_scope, *dummy_function_context_ );
-		if( const Variable* const size_variable= size_expression.GetVariable() )
+		if (size_expression.GetType() == NontypeStub::TemplateDependentValue)
+		{}
+		else if( const Variable* const size_variable= size_expression.GetVariable() )
 		{
 			if( size_variable->constexpr_value != nullptr )
 			{
@@ -207,7 +209,9 @@ Type CodeBuilder::PrepareType(
 	if( const NamesScope::InsertedName* name=
 		ResolveName( names_scope, type_name.name ) )
 	{
-		if( const Type* const type= name->second.GetTypeName() )
+		if (name->second.GetType() == NontypeStub::TemplateDependentValue)
+			*last_type= NontypeStub::TemplateDependentValue;
+		else if( const Type* const type= name->second.GetTypeName() )
 			*last_type= *type;
 		else
 			errors_.push_back( ReportNameIsNotTypeName( file_pos, name->first ) );
@@ -1966,6 +1970,7 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 		}
 
 		if( variable_declaration.mutability_modifier == MutabilityModifier::Constexpr &&
+			type != NontypeStub::TemplateDependentValue &&
 			!type.CanBeConstexpr() )
 		{
 			errors_.push_back( ReportInvalidTypeForConstantExpressionVariable( variables_declaration.file_pos_ ) );
@@ -1977,7 +1982,12 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 		variable.location= Variable::Location::Pointer;
 		variable.value_type= ValueType::Reference;
 
-		if( variable_declaration.reference_modifier == ReferenceModifier::None )
+		if( type == NontypeStub::TemplateDependentValue )
+		{
+			if( variable_declaration.initializer != nullptr )
+				ApplyInitializer( variable, *variable_declaration.initializer, block_names, function_context );
+		}
+		else if( variable_declaration.reference_modifier == ReferenceModifier::None )
 		{
 			variable.llvm_value= function_context.alloca_ir_builder.CreateAlloca( variable.type.GetLLVMType() );
 			variable.llvm_value->setName( ToStdString( variable_declaration.name ) );
@@ -2061,7 +2071,8 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 			U_ASSERT(false);
 		}
 
-		if( variable_declaration.mutability_modifier == MutabilityModifier::Constexpr &&
+		if( type != NontypeStub::TemplateDependentValue &&
+			variable_declaration.mutability_modifier == MutabilityModifier::Constexpr &&
 			variable.constexpr_value == nullptr )
 		{
 			errors_.push_back( ReportVariableInitializerIsNotConstantExpression( variables_declaration.file_pos_ ) );
@@ -2093,6 +2104,19 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 {
 	const Value initializer_experrsion_value=
 		BuildExpressionCodeAndDestroyTemporaries( *auto_variable_declaration.initializer_expression, block_names, function_context );
+
+	if( initializer_experrsion_value.GetType() == NontypeStub::TemplateDependentValue )
+	{
+		const NamesScope::InsertedName* inserted_name=
+			block_names.AddName( auto_variable_declaration.name, TemplateDependentValue() );
+
+		if( inserted_name == nullptr )
+		{
+			errors_.push_back( ReportRedefinition( auto_variable_declaration.file_pos_, auto_variable_declaration.name ) );
+			return;
+		}
+		return;
+	}
 
 	{ // Check expression type. Expression can have exotic types, such "Overloading functions set", "class name", etc.
 		const Type& type= initializer_experrsion_value.GetType();
@@ -2206,6 +2230,10 @@ void CodeBuilder::BuildAssignmentOperatorCode(
 
 	const Value l_var_value= BuildExpressionCode( l_value, block_names, function_context );
 	const Value r_var_value= BuildExpressionCode( r_value, block_names, function_context );
+
+	if( l_var_value.GetType() == NontypeStub::TemplateDependentValue || r_var_value.GetType() == NontypeStub::TemplateDependentValue )
+		return;
+
 	const Variable* const l_var= l_var_value.GetVariable();
 	const Variable* const r_var= r_var_value.GetVariable();
 	if( l_var == nullptr )
@@ -2273,6 +2301,9 @@ void CodeBuilder::BuildAdditiveAssignmentOperatorCode(
 			block_names,
 			function_context );
 
+	if( l_var_value.GetType() == NontypeStub::TemplateDependentValue || r_var_value.GetType() == NontypeStub::TemplateDependentValue )
+		return;
+
 	const Variable* const l_var= l_var_value.GetVariable();
 	const Variable* const r_var= r_var_value.GetVariable();
 
@@ -2330,7 +2361,10 @@ void CodeBuilder::BuildDeltaOneOperatorCode(
 	NamesScope& block_names,
 	FunctionContext& function_context )
 {
-	const Value value= BuildExpressionCodeAndDestroyTemporaries( expression, block_names, function_context );
+	const Value value= BuildExpressionCodeAndDestroyTemporaries( expression, block_names, function_context );\
+	if( value.GetType() == NontypeStub::TemplateDependentValue )
+		return;
+
 	const Variable* const variable= value.GetVariable();
 	if( variable == nullptr )
 	{
@@ -2408,6 +2442,9 @@ void CodeBuilder::BuildReturnOperatorCode(
 			names,
 			function_context );
 
+	if( expression_result_value.GetType() == NontypeStub::TemplateDependentValue )
+		return;
+
 	// Destruct temporary variables of return expression only after assignment of
 	// return value. Destroy all other function variables after this.
 	const auto call_destructors=
@@ -2483,19 +2520,21 @@ void CodeBuilder::BuildWhileOperatorCode(
 
 	const Value condition_expression= BuildExpressionCodeAndDestroyTemporaries( *while_operator.condition_, names, function_context );
 
-	if( condition_expression.GetType() != bool_type_ )
+	if( condition_expression.GetType() != NontypeStub::TemplateDependentValue )
 	{
-		errors_.push_back(
-			ReportTypesMismatch(
-				while_operator.condition_->file_pos_,
-				bool_type_.ToString(),
-				condition_expression.GetType().ToString() ) );
-		return;
+		if( condition_expression.GetType() != bool_type_ )
+		{
+			errors_.push_back(
+				ReportTypesMismatch(
+					while_operator.condition_->file_pos_,
+					bool_type_.ToString(),
+					condition_expression.GetType().ToString() ) );
+			return;
+		}
+
+		llvm::Value* condition_in_register= CreateMoveToLLVMRegisterInstruction( *condition_expression.GetVariable(), function_context );
+		function_context.llvm_ir_builder.CreateCondBr( condition_in_register, while_block, block_after_while );
 	}
-
-	llvm::Value* condition_in_register= CreateMoveToLLVMRegisterInstruction( *condition_expression.GetVariable(), function_context );
-
-	function_context.llvm_ir_builder.CreateCondBr( condition_in_register, while_block, block_after_while );
 
 	// While block code.
 
@@ -2594,18 +2633,21 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildIfOperatorCode(
 		{
 			const Value condition_expression= BuildExpressionCodeAndDestroyTemporaries( *branch.condition, names, function_context );
 
-			if( condition_expression.GetType() != bool_type_ )
+			if( condition_expression.GetType() != NontypeStub::TemplateDependentValue )
 			{
-				errors_.push_back(
-					ReportTypesMismatch(
-						branch.condition->file_pos_,
-						bool_type_.ToString(),
-						condition_expression.GetType().ToString() ) );
-				throw ProgramError();
-			}
+				if( condition_expression.GetType() != bool_type_ )
+				{
+					errors_.push_back(
+						ReportTypesMismatch(
+							branch.condition->file_pos_,
+							bool_type_.ToString(),
+							condition_expression.GetType().ToString() ) );
+					throw ProgramError();
+				}
 
-			llvm::Value* condition_in_register= CreateMoveToLLVMRegisterInstruction( *condition_expression.GetVariable(), function_context );
-			function_context.llvm_ir_builder.CreateCondBr( condition_in_register, body_block, next_condition_block );
+				llvm::Value* condition_in_register= CreateMoveToLLVMRegisterInstruction( *condition_expression.GetVariable(), function_context );
+				function_context.llvm_ir_builder.CreateCondBr( condition_in_register, body_block, next_condition_block );
+			}
 		}
 
 		// Make body block code.
@@ -2643,6 +2685,9 @@ void CodeBuilder::BuildStaticAssert(
 	NamesScope& names )
 {
 	const Value expression_result= BuildExpressionCode( *static_assert_.expression, names, *dummy_function_context_ );
+	if( expression_result.GetType() == NontypeStub::TemplateDependentValue )
+		return;
+
 	if( expression_result.GetType() != bool_type_ )
 	{
 		errors_.push_back( ReportStaticAssertExpressionMustHaveBoolType( static_assert_.file_pos_ ) );

@@ -42,7 +42,7 @@ struct FundamentalType final
 	FundamentalType( U_FundamentalType fundamental_type= U_FundamentalType::Void, llvm::Type* llvm_type= nullptr );
 };
 
-// Stub for type of non-variable "Variables".
+// Stub for type of non-variable "Values".
 enum class NontypeStub
 {
 	OverloadedFunctionsSet,
@@ -50,6 +50,7 @@ enum class NontypeStub
 	TypeName,
 	Namespace,
 	ClassTemplate,
+	TemplateDependentValue,
 };
 
 bool operator==( const FundamentalType& r, const FundamentalType& l );
@@ -197,6 +198,10 @@ struct ThisOverloadedMethodsSet final
 	OverloadedFunctionsSet overloaded_methods_set;
 };
 
+struct TemplateDependentValue final
+{
+};
+
 class Value final
 {
 public:
@@ -209,6 +214,7 @@ public:
 	Value( ThisOverloadedMethodsSet class_field );
 	Value( const NamesScopePtr& namespace_ );
 	Value( const ClassTemplatePtr& class_template );
+	Value( TemplateDependentValue template_dependent_value );
 
 	const Type& GetType() const;
 
@@ -233,6 +239,9 @@ public:
 	NamesScopePtr GetNamespace() const;
 	// Class Template
 	ClassTemplatePtr GetClassTemplate() const;
+	// Template-dependent value
+	TemplateDependentValue* GetTemplateDependentValue();
+	const TemplateDependentValue* GetTemplateDependentValue() const;
 
 private:
 	boost::variant<
@@ -243,7 +252,8 @@ private:
 		ClassField,
 		ThisOverloadedMethodsSet,
 		NamesScopePtr,
-		ClassTemplatePtr> something_;
+		ClassTemplatePtr,
+		TemplateDependentValue> something_;
 };
 
 // "Class" of function argument in terms of overloading.

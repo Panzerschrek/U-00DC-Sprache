@@ -9,6 +9,8 @@
 
 #include "code_builder.hpp"
 
+#define CHECK_RETURN_TEMPLATE_DEPENDENT_VALUE(value) if( value.GetType() == NontypeStub::TemplateDependentValue ) { return value; }
+
 namespace U
 {
 
@@ -65,6 +67,9 @@ Value CodeBuilder::BuildExpressionCode(
 					*binary_operator->right_,
 					names,
 					function_context );
+
+			CHECK_RETURN_TEMPLATE_DEPENDENT_VALUE(l_var_value);
+			CHECK_RETURN_TEMPLATE_DEPENDENT_VALUE(r_var_value);
 
 			const Variable* const l_var= l_var_value.GetVariable();
 			const Variable* const r_var= r_var_value.GetVariable();
@@ -736,7 +741,7 @@ Variable CodeBuilder::BuildBinaryOperator(
 	return result;
 }
 
-Variable CodeBuilder::BuildLazyBinaryOperator(
+Value CodeBuilder::BuildLazyBinaryOperator(
 	const IExpressionComponent& l_expression,
 	const IExpressionComponent& r_expression,
 	const BinaryOperator& binary_operator,
@@ -744,6 +749,12 @@ Variable CodeBuilder::BuildLazyBinaryOperator(
 	FunctionContext& function_context )
 {
 	const Value l_var_value= BuildExpressionCode( l_expression, names, function_context );
+	if( l_var_value.GetType() == NontypeStub::TemplateDependentValue )
+	{
+		BuildExpressionCodeAndDestroyTemporaries( r_expression, names, function_context );
+		return l_var_value;
+	}
+
 	if( l_var_value.GetType() != bool_type_ )
 	{
 		errors_.push_back( ReportTypesMismatch( binary_operator.file_pos_, bool_type_.ToString(), l_var_value.GetType().ToString() ) );
@@ -945,12 +956,21 @@ Variable CodeBuilder::BuildBooleanConstant( const BooleanConstant& boolean_const
 	return result;
 }
 
-Variable CodeBuilder::BuildIndexationOperator(
+Value CodeBuilder::BuildIndexationOperator(
 	const Value& value,
 	const IndexationOperator& indexation_operator,
 	NamesScope& names,
 	FunctionContext& function_context )
 {
+	if( value.GetType() == NontypeStub::TemplateDependentValue )
+	{
+		BuildExpressionCode(
+			*indexation_operator.index_,
+			names,
+			function_context );
+		return value;
+	}
+
 	const Array* array_type= value.GetType().GetArrayType();
 	if( array_type == nullptr )
 	{
@@ -964,6 +984,7 @@ Variable CodeBuilder::BuildIndexationOperator(
 			*indexation_operator.index_,
 			names,
 			function_context );
+	CHECK_RETURN_TEMPLATE_DEPENDENT_VALUE(index_value);
 
 	const FundamentalType* const index_fundamental_type= index_value.GetType().GetFundamentalType();
 	if( index_fundamental_type == nullptr ||
@@ -1011,6 +1032,8 @@ Value CodeBuilder::BuildMemberAccessOperator(
 	const MemberAccessOperator& member_access_operator,
 	FunctionContext& function_context )
 {
+	CHECK_RETURN_TEMPLATE_DEPENDENT_VALUE(value);
+
 	const ClassPtr class_type= value.GetType().GetClassType();
 	if( class_type == nullptr )
 	{
@@ -1062,12 +1085,19 @@ Value CodeBuilder::BuildMemberAccessOperator(
 	return result;
 }
 
-Variable CodeBuilder::BuildCallOperator(
+Value CodeBuilder::BuildCallOperator(
 	const Value& function_value,
 	const CallOperator& call_operator,
 	NamesScope& names,
 	FunctionContext& function_context )
 {
+	if( function_value.GetType() == NontypeStub::TemplateDependentValue )
+	{
+		for( const IExpressionComponentPtr& arg_expression : call_operator.arguments_ )
+			BuildExpressionCode( *arg_expression, names, function_context );
+		return function_value;
+	}
+
 	if( const Type* const type= function_value.GetTypeName() )
 		return BuildTempVariableConstruction( *type, call_operator, names, function_context );
 
@@ -1106,11 +1136,19 @@ Variable CodeBuilder::BuildCallOperator(
 
 		actual_args_variables.push_back( *this_ );
 	}
+
 	// Push arguments from call operator.
+	bool args_are_template_dependent= false;
 	for( const IExpressionComponentPtr& arg_expression : call_operator.arguments_ )
 	{
 		U_ASSERT( arg_expression != nullptr );
 		const Value expr_value= BuildExpressionCode( *arg_expression, names, function_context );
+		if( expr_value.GetType() == NontypeStub::TemplateDependentValue)
+		{
+			args_are_template_dependent= true;
+			continue;
+		}
+
 		const Variable* const expr= expr_value.GetVariable();
 		if( expr == nullptr )
 		{
@@ -1125,6 +1163,8 @@ Variable CodeBuilder::BuildCallOperator(
 
 		actual_args_variables.push_back( std::move(*expr) );
 	}
+	if( args_are_template_dependent )
+		return Type(NontypeStub::TemplateDependentValue);
 
 	// SPRACHE_TODO - try get function with "this" parameter in signature and without it.
 	// We must support static functions call using "this".
@@ -1298,11 +1338,13 @@ Variable CodeBuilder::BuildTempVariableConstruction(
 	return variable;
 }
 
-Variable CodeBuilder::BuildUnaryMinus(
+Value CodeBuilder::BuildUnaryMinus(
 	const Value& value,
 	const UnaryMinus& unary_minus,
 	FunctionContext& function_context )
 {
+	CHECK_RETURN_TEMPLATE_DEPENDENT_VALUE(value);
+
 	const FundamentalType* const fundamental_type= value.GetType().GetFundamentalType();
 	if( fundamental_type == nullptr )
 	{
@@ -1343,11 +1385,13 @@ Variable CodeBuilder::BuildUnaryMinus(
 	return result;
 }
 
-Variable CodeBuilder::BuildLogicalNot(
+Value CodeBuilder::BuildLogicalNot(
 	const Value& value,
 	const LogicalNot& logical_not,
 	FunctionContext& function_context )
 {
+	CHECK_RETURN_TEMPLATE_DEPENDENT_VALUE(value);
+
 	if( value.GetType() != bool_type_ )
 	{
 		errors_.push_back( ReportOperationNotSupportedForThisType( logical_not.file_pos_, value.GetType().ToString() ) );
@@ -1371,11 +1415,13 @@ Variable CodeBuilder::BuildLogicalNot(
 	return result;
 }
 
-Variable CodeBuilder::BuildBitwiseNot(
+Value CodeBuilder::BuildBitwiseNot(
 	const Value& value,
 	const BitwiseNot& bitwise_not,
 	FunctionContext& function_context )
 {
+	CHECK_RETURN_TEMPLATE_DEPENDENT_VALUE(value);
+
 	const FundamentalType* const fundamental_type= value.GetType().GetFundamentalType();
 	if( fundamental_type == nullptr )
 	{
