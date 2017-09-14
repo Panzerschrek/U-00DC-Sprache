@@ -136,6 +136,18 @@ void CodeBuilder::PrepareClassTemplate(
 	// *) More and more checks.
 	// *) Resolve all class template names at template definition point.
 	// *) Make more and more other stuff.
+
+	// Make first check-pass for template. Resolve all names in this pass.
+
+	NamesScope temp_names_scope( ""_SpC, &names_scope );
+
+	for( const ClassTemplate::TemplateParameter& param : class_template->template_parameters )
+		temp_names_scope.AddName( param.name, TemplateDependentValue() );
+
+	ComplexName dummy_complex_name;
+	dummy_complex_name.components.emplace_back();
+	dummy_complex_name.components.back().name= "_temp"_SpC;
+	PrepareClass( *class_template->class_syntax_element, dummy_complex_name, temp_names_scope );
 }
 
 bool CodeBuilder::DuduceTemplateArguments(

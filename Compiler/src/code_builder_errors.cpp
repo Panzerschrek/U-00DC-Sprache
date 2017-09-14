@@ -452,7 +452,7 @@ CodeBuilderError ReportVariableInitializerIsNotConstantExpression( const FilePos
 	error.file_pos= file_pos;
 	error.code= CodeBuilderErrorCode::VariableInitializerIsNotConstantExpression;
 
-	error.text= "Variable declaration is nor constant expression."_SpC;
+	error.text= "Variable declaration is not constant expression."_SpC;
 
 	return error;
 }

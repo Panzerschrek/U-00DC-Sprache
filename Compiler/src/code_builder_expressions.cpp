@@ -779,6 +779,7 @@ Value CodeBuilder::BuildLazyBinaryOperator(
 	// Right part of lazy operator is conditinal. So, we must destroy it temporaries only in this condition.
 	// We doesn`t needs longer lifetime of epxression temporaries, because we use only bool result.
 	const Value r_var_value= BuildExpressionCodeAndDestroyTemporaries( r_expression, names, function_context );
+	CHECK_RETURN_TEMPLATE_DEPENDENT_VALUE(r_var_value);
 	if( r_var_value.GetType() != bool_type_ )
 	{
 		errors_.push_back( ReportTypesMismatch( binary_operator.file_pos_, bool_type_.ToString(), r_var_value.GetType().ToString() ) );

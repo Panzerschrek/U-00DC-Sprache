@@ -561,4 +561,76 @@ U_TEST( ClassTemplateTest15 )
 	U_TEST_ASSERT( static_cast<uint64_t>( 733 ) == result_value.IntVal.getLimitedValue() );
 }
 
+U_TEST( ClassPrepass_Test0 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn Baz( f32 x ){}
+		template</ type T />
+		class CC</ T />
+		{
+			fn Ret( i32 x ) : T
+			{
+				// Some initializers.
+				var T loc0= zero_init;
+				var T loc1(45, 58);
+				var T loc2{ .x= 45, .y= 34 };
+				var T loc3= 45 / 2;
+
+				loc3( 45 ); // dependent on T call operator.
+				Baz( loc1 ); // dependent on T argument.
+				loc0[42u]; // dependent on T indexation
+
+				// dependent on T indexation
+				var [ i32, 2 ] arr= zero_init;
+				arr[ loc3 ];
+
+				// Accessing members of T
+				loc0.x;
+				loc2.func( 42 );
+				loc0.func( loc1, loc2, 536.5 );
+
+				// dependent on T lazy logical expression components
+				loc0 && true;
+				false || loc1;
+				loc2 && loc3;
+
+				x + T( 0.0f ); // dependent on T temporary variable construction.
+				return x; // dependent on T return.
+			}
+		}
+	)";
+
+	BuildProgram( c_program_text );
+}
+
+U_TEST( ClassPrepass_Test1 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn Baz( f32 x ){}
+		template</ type T />
+		class CC</ T />
+		{
+			fn Ret( i32 x ) : T
+			{
+				// Should work correctly with "if/else", "while" with template-dependent value as arguments.
+				if( T ){} // As codnition
+				var T t;
+				while(t){} // Variable as condition
+				if( T(0) ){} else if( false ) {} // template-dependent expression as condition
+
+				while(!t)
+				{
+					Baz( T ); // call function in while block with template-dependent condition.
+					Baz( 0.0f );
+				}
+				return 0;
+			}
+		}
+	)";
+
+	BuildProgram( c_program_text );
+}
+
 } // namespace U

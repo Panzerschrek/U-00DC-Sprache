@@ -209,8 +209,8 @@ Type CodeBuilder::PrepareType(
 	if( const NamesScope::InsertedName* name=
 		ResolveName( names_scope, type_name.name ) )
 	{
-		if (name->second.GetType() == NontypeStub::TemplateDependentValue)
-			*last_type= NontypeStub::TemplateDependentValue;
+		if( name->second.GetType() == NontypeStub::TemplateDependentValue )
+			return NontypeStub::TemplateDependentValue;
 		else if( const Type* const type= name->second.GetTypeName() )
 			*last_type= *type;
 		else
@@ -1154,7 +1154,8 @@ void CodeBuilder::PrepareFunction(
 		function_type.return_value_is_mutable= true;
 	function_type.return_value_is_reference= func.return_value_reference_modifier_ == ReferenceModifier::Reference;
 
-	if( !function_type.return_value_is_reference &&
+	if( function_type.return_type != NontypeStub::TemplateDependentValue &&
+		!function_type.return_value_is_reference &&
 		!( function_type.return_type.GetFundamentalType() != nullptr ||
 		   function_type.return_type.GetClassType() != nullptr ) )
 	{
@@ -1337,7 +1338,9 @@ void CodeBuilder::BuildFuncCode(
 	bool first_arg_is_sret= false;
 	if( !function_type->return_value_is_reference )
 	{
-		if( function_type->return_type.GetFundamentalType() != nullptr )
+		if( function_type->return_type == NontypeStub::TemplateDependentValue )
+		{}
+		else if( function_type->return_type.GetFundamentalType() != nullptr )
 		{}
 		else if( const ClassPtr class_type= function_type->return_type.GetClassType() )
 		{
@@ -1357,7 +1360,9 @@ void CodeBuilder::BuildFuncCode(
 			type= llvm::PointerType::get( type, 0u );
 		else
 		{
-			if( arg.type.GetFundamentalType() != nullptr )
+			if( arg.type == NontypeStub::TemplateDependentValue )
+				type= fundamental_llvm_types_.invalid_type_;
+			else if( arg.type.GetFundamentalType() != nullptr )
 			{}
 			else if( arg.type.GetClassType() != nullptr )
 			{
@@ -1371,7 +1376,9 @@ void CodeBuilder::BuildFuncCode(
 	}
 
 	llvm::Type* llvm_function_return_type;
-	if( first_arg_is_sret )
+	if( function_type->return_type == NontypeStub::TemplateDependentValue )
+		llvm_function_return_type= fundamental_llvm_types_.void_;
+	else if( first_arg_is_sret )
 		llvm_function_return_type= fundamental_llvm_types_.void_;
 	else
 	{
@@ -1584,7 +1591,9 @@ void CodeBuilder::BuildFuncCode(
 
 	const BlockBuildInfo block_build_info=
 		BuildBlockCode( *block, function_names, function_context );
-	U_ASSERT( function_context.destructibles_stack.size() == 1u || !errors_.empty() || error_count_ > 0u );
+
+	// TODO - turn on this. We can damage stack, in template prepass.
+	//U_ASSERT( function_context.destructibles_stack.size() == 1u || !errors_.empty() || error_count_ > 0u );
 
 	// We need call destructors for arguments only if function returns "void".
 	// In other case, we have "return" in all branches and destructors call before each "return".
@@ -2442,8 +2451,13 @@ void CodeBuilder::BuildReturnOperatorCode(
 			names,
 			function_context );
 
-	if( expression_result_value.GetType() == NontypeStub::TemplateDependentValue )
+	if( expression_result_value.GetType() == NontypeStub::TemplateDependentValue ||
+		function_context.return_type == NontypeStub::TemplateDependentValue )
+	{
+		// Add "ret void", because we do not need to break llvm basic blocks structure.
+		function_context.llvm_ir_builder.CreateRetVoid();
 		return;
+	}
 
 	// Destruct temporary variables of return expression only after assignment of
 	// return value. Destroy all other function variables after this.
@@ -2535,6 +2549,8 @@ void CodeBuilder::BuildWhileOperatorCode(
 		llvm::Value* condition_in_register= CreateMoveToLLVMRegisterInstruction( *condition_expression.GetVariable(), function_context );
 		function_context.llvm_ir_builder.CreateCondBr( condition_in_register, while_block, block_after_while );
 	}
+	else
+		function_context.llvm_ir_builder.CreateCondBr( llvm::ConstantInt::getTrue( llvm_context_ ), while_block, block_after_while );
 
 	// While block code.
 
@@ -2648,6 +2664,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildIfOperatorCode(
 				llvm::Value* condition_in_register= CreateMoveToLLVMRegisterInstruction( *condition_expression.GetVariable(), function_context );
 				function_context.llvm_ir_builder.CreateCondBr( condition_in_register, body_block, next_condition_block );
 			}
+			else
+				function_context.llvm_ir_builder.CreateCondBr( llvm::ConstantInt::getTrue( llvm_context_ ), body_block, next_condition_block );
 		}
 
 		// Make body block code.

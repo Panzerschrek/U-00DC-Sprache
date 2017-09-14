@@ -479,6 +479,9 @@ llvm::Constant* CodeBuilder::ApplyExpressionInitializer(
 		// SPRACHE_TODO - maybe we need save temporaries of this expression?
 		const Value expression_result=
 			BuildExpressionCodeAndDestroyTemporaries( *initializer.expression, block_names, function_context );
+		if( expression_result.GetType() == NontypeStub::TemplateDependentValue )
+			return nullptr;
+
 		if( expression_result.GetType() != variable.type )
 		{
 			errors_.push_back( ReportTypesMismatch( initializer.file_pos_, variable.type.ToString(), expression_result.GetType().ToString() ) );
