@@ -595,6 +595,20 @@ U_TEST( ClassPrepass_Test0 )
 				false || loc1;
 				loc2 && loc3;
 
+				// constexpr for template-dependent stuff
+				var i32 constexpr xxx= loc0; // Ok, because not known, constexpr loc0 or not
+				var T constexpr yyy= 536; // Ok, because not known, supports T constexpr or not
+				auto constexpr zzz= xxx; // Ok, because xxx is template-dependent.
+
+				// Size of array dependent of T
+				var [ i32, T(5).x ] arr0= zero_init;
+				arr0[45u]= 55; // Size check must not work, because array size is undefined
+				var [ i32, xxx ] arr1[ 5, 6, 7, 8, 8, 8, 2564, 846 ]; // Initializer count check must not work, because size is undefined
+				var [ i32, 2 ] arr2= zero_init;
+				arr[ u32(xxx) ]= 58; // Size check must not work, because index is undefined
+				var [ i32, T(7) ] constexpr arr3[];
+				auto constexpr arr3_member= arr3[1u]; // Constexpr value is undefined, because initializer is undefined, because it depends on T
+
 				x + T( 0.0f ); // dependent on T temporary variable construction.
 				return x; // dependent on T return.
 			}

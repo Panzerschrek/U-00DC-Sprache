@@ -779,14 +779,21 @@ Value CodeBuilder::BuildLazyBinaryOperator(
 	// Right part of lazy operator is conditinal. So, we must destroy it temporaries only in this condition.
 	// We doesn`t needs longer lifetime of epxression temporaries, because we use only bool result.
 	const Value r_var_value= BuildExpressionCodeAndDestroyTemporaries( r_expression, names, function_context );
-	CHECK_RETURN_TEMPLATE_DEPENDENT_VALUE(r_var_value);
-	if( r_var_value.GetType() != bool_type_ )
+	llvm::Value* r_var_in_register= nullptr;
+	llvm::Constant* r_var_constepxr_value= nullptr;
+	if( r_var_value.GetType() == NontypeStub::TemplateDependentValue )
+		r_var_in_register= r_var_constepxr_value= llvm::UndefValue::get( fundamental_llvm_types_.bool_ );
+	else
 	{
-		errors_.push_back( ReportTypesMismatch( binary_operator.file_pos_, bool_type_.ToString(), r_var_value.GetType().ToString() ) );
-		throw ProgramError();
+		if( r_var_value.GetType() != bool_type_ )
+		{
+			errors_.push_back( ReportTypesMismatch( binary_operator.file_pos_, bool_type_.ToString(), r_var_value.GetType().ToString() ) );
+			throw ProgramError();
+		}
+		const Variable& r_var= *r_var_value.GetVariable();
+		r_var_constepxr_value= r_var.constexpr_value;
+		r_var_in_register= CreateMoveToLLVMRegisterInstruction( r_var, function_context );
 	}
-	const Variable r_var= *r_var_value.GetVariable();
-	llvm::Value* const r_var_in_register= CreateMoveToLLVMRegisterInstruction( r_var, function_context );
 
 	function_context.llvm_ir_builder.CreateBr( block_after_operator );
 	function_context.function->getBasicBlockList().push_back( block_after_operator );
@@ -804,12 +811,12 @@ Value CodeBuilder::BuildLazyBinaryOperator(
 
 	// Evaluate constexpr value.
 	// TODO - remove all blocks code in case of constexpr?
-	if( l_var.constexpr_value != nullptr && r_var.constexpr_value != nullptr )
+	if( l_var.constexpr_value != nullptr && r_var_constepxr_value != nullptr )
 	{
 		if( binary_operator.operator_type_ == BinaryOperatorType::LazyLogicalAnd )
-			result.constexpr_value= llvm::ConstantExpr::getAnd( l_var.constexpr_value, r_var.constexpr_value );
+			result.constexpr_value= llvm::ConstantExpr::getAnd( l_var.constexpr_value, r_var_constepxr_value );
 		else if( binary_operator.operator_type_ == BinaryOperatorType::LazyLogicalOr )
-			result.constexpr_value= llvm::ConstantExpr::getOr ( l_var.constexpr_value, r_var.constexpr_value );
+			result.constexpr_value= llvm::ConstantExpr::getOr ( l_var.constexpr_value, r_var_constepxr_value );
 		else
 			U_ASSERT(false);
 	}
@@ -1002,7 +1009,9 @@ Value CodeBuilder::BuildIndexationOperator(
 		throw ProgramError();
 	}
 
-	if( index.constexpr_value != nullptr )
+	// If index is constant and not undefined and array size is not undefined - statically check index.
+	if( index.constexpr_value != nullptr && llvm::dyn_cast<llvm::UndefValue>(index.constexpr_value) == nullptr &&
+		array_type->size != Array::c_undefined_size )
 	{
 		const size_t index_value= size_t( index.constexpr_value->getUniqueInteger().getLimitedValue() );
 		if( index_value >= array_type->size )
@@ -1015,7 +1024,13 @@ Value CodeBuilder::BuildIndexationOperator(
 	result.type= array_type->type;
 
 	if( variable.constexpr_value != nullptr && index.constexpr_value != nullptr )
-		result.constexpr_value= variable.constexpr_value->getAggregateElement( index.constexpr_value );
+	{
+		if( llvm::dyn_cast<llvm::UndefValue>(variable.constexpr_value) != nullptr ||
+			llvm::dyn_cast<llvm::UndefValue>(index.constexpr_value) != nullptr )
+			result.constexpr_value= llvm::UndefValue::get( array_type->llvm_type )->getElementValue( index.constexpr_value );
+		else
+			result.constexpr_value= variable.constexpr_value->getAggregateElement( index.constexpr_value );
+	}
 
 	// Make first index = 0 for array to pointer conversion.
 	llvm::Value* index_list[2];

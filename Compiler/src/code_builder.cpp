@@ -170,7 +170,6 @@ Type CodeBuilder::PrepareType(
 
 		*last_type= Array();
 		Array& array_type= *last_type->GetArrayType();
-		array_type.size= 1u;
 
 		const Value size_expression= BuildExpressionCode( num, names_scope, *dummy_function_context_ );
 		if (size_expression.GetType() == NontypeStub::TemplateDependentValue)
@@ -179,15 +178,21 @@ Type CodeBuilder::PrepareType(
 		{
 			if( size_variable->constexpr_value != nullptr )
 			{
+
 				if( const FundamentalType* const size_fundamental_type= size_variable->type.GetFundamentalType() )
 				{
 					if( IsInteger( size_fundamental_type->fundamental_type ) )
 					{
-						const llvm::APInt& size_value= size_variable->constexpr_value->getUniqueInteger();
-						if( IsSignedInteger( size_fundamental_type->fundamental_type ) && size_value.isNegative() )
-							errors_.push_back( ReportArraySizeIsNegative( num.file_pos_ ) );
+						if( llvm::dyn_cast<llvm::UndefValue>(size_variable->constexpr_value) != nullptr )
+							array_type.size= Array::c_undefined_size;
 						else
-							array_type.size= size_t( size_value.getLimitedValue() );
+						{
+							const llvm::APInt& size_value= size_variable->constexpr_value->getUniqueInteger();
+							if( IsSignedInteger( size_fundamental_type->fundamental_type ) && size_value.isNegative() )
+								errors_.push_back( ReportArraySizeIsNegative( num.file_pos_ ) );
+							else
+								array_type.size= size_t( size_value.getLimitedValue() );
+						}
 					}
 					else
 						errors_.push_back( ReportArraySizeIsNotInteger( num.file_pos_ ) );
@@ -229,7 +234,7 @@ Type CodeBuilder::PrepareType(
 				array_type->llvm_type=
 				llvm::ArrayType::get(
 					last_type->GetLLVMType(),
-					array_type->size );
+					array_type->ArraySizeOrZero() );
 		}
 
 		for( unsigned int i= arrays_count - 1u; i > 0u; i-- )
@@ -240,7 +245,7 @@ Type CodeBuilder::PrepareType(
 			array_type->llvm_type=
 				llvm::ArrayType::get(
 					arrays_stack[i]->GetLLVMType(),
-					array_type->size );
+					array_type->ArraySizeOrZero() );
 		}
 	}
 
@@ -775,7 +780,7 @@ void CodeBuilder::BuildCopyConstructorPart(
 		const Array& array_type= *array_type_ptr;
 
 		GenerateLoop(
-			array_type.size,
+			array_type.ArraySizeOrZero(),
 			[&](llvm::Value* const counter_value)
 			{
 				llvm::Value* index_list[2];
@@ -941,7 +946,7 @@ void CodeBuilder::CallDestructor(
 	{
 		// SPRACHE_TODO - maybe call destructors of arrays in reverse order?
 		GenerateLoop(
-			array_type->size,
+			array_type->ArraySizeOrZero(),
 			[&]( llvm::Value* const index )
 			{
 				llvm::Value* index_list[2];
@@ -2718,6 +2723,11 @@ void CodeBuilder::BuildStaticAssert(
 	if( variable->constexpr_value == nullptr )
 	{
 		errors_.push_back( ReportStaticAssertExpressionIsNotConstant( static_assert_.file_pos_ ) );
+		return;
+	}
+	if( llvm::dyn_cast<llvm::UndefValue>(variable->constexpr_value) != nullptr )
+	{
+		// Undef value means, that value is constexpr, but we are in template prepass, and exact value is unknown. Skip this static_assert
 		return;
 	}
 

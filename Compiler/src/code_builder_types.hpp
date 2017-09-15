@@ -137,10 +137,15 @@ bool operator!=( const Function& r, const Function& l );
 
 struct Array final
 {
+	// "size" in case, when size is not known yet, when size depends on template parameter, for example.
+	static constexpr size_t c_undefined_size= std::numeric_limits<size_t>::max();
+
 	Type type;
-	size_t size= 0u;
+	size_t size= c_undefined_size;
 
 	llvm::ArrayType* llvm_type= nullptr;
+
+	size_t ArraySizeOrZero() const { return size == c_undefined_size ? 0u : size; }
 };
 
 bool operator==( const Array& r, const Array& l );
