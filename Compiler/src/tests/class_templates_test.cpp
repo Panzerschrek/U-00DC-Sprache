@@ -686,4 +686,84 @@ U_TEST( PreResolveTest0 )
 	U_TEST_ASSERT( static_cast<uint64_t>( 5 ) == result_value.IntVal.getLimitedValue() );
 }
 
+U_TEST( PreResolveTest1 )
+{
+	// Inside template must be visible only function from outer space, but not function from inner space, defined later.
+	static const char c_program_text[]=
+	R"(
+		fn Bar() : i32 { return 6666; }
+
+		namespace Baz
+		{
+			template</ type T />
+			struct Box</ T />
+			{
+				fn Worker() : i32
+				{
+					return Bar();
+				}
+			}
+
+			fn Bar() : i32 { return 42; }
+		}
+
+		fn Foo() : i32
+		{
+			return Baz::Box</f32/>().Worker();
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( static_cast<uint64_t>( 6666 ) == result_value.IntVal.getLimitedValue() );
+}
+
+U_TEST( PreResolveTest2 )
+{
+	// Inside template must be visible only class template from outer space, but not class template from inner space, defined later.
+	static const char c_program_text[]=
+	R"(
+		template</ type T /> struct S</ T /> { fn Bar() : i32 { return 5552; } }
+
+		namespace Baz
+		{
+			template</ type T />
+			struct Box</ T />
+			{
+				fn Worker() : i32
+				{
+					return S</ i32 />().Bar();
+				}
+			}
+
+			template</ type T, type F /> struct S</ T, Box</F/> /> { fn Bar() : i32 { return 5552; } }
+		}
+
+		fn Foo() : i32
+		{
+			return Baz::Box</f32/>().Worker();
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( static_cast<uint64_t>( 5552 ) == result_value.IntVal.getLimitedValue() );
+}
+
 } // namespace U

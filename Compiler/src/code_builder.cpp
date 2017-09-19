@@ -86,14 +86,14 @@ CodeBuilder::CodeBuilder()
 	bool_type_= FundamentalType( U_FundamentalType::Bool, fundamental_llvm_types_.bool_ );
 
 	// Default resolve handler - push first to stack.
-	resolving_funcs_stack_.push_back(
+	resolving_funcs_stack_.emplace_back( new ResolveFunc(
 		[this](
 			NamesScope& names_scope,
 			const ComplexName::Component* const components,
 			const size_t component_count )
 		{
 			return ResolveNameWithParentSpaceWorker( names_scope, components, component_count );
-		});
+		} ) );
 }
 
 CodeBuilder::~CodeBuilder()
@@ -2977,14 +2977,14 @@ void CodeBuilder::PushCacheFillResolveHandler( ResolvingCache& resolving_cache, 
 {
 	const size_t prev_handler_index= resolving_funcs_stack_.size() - 1u;
 
-	resolving_funcs_stack_.push_back(
+	resolving_funcs_stack_.emplace_back( new ResolveFunc(
 		[this, &resolving_cache, &start_namespace, prev_handler_index](
 			NamesScope& names_scope,
 			const ComplexName::Component* const components,
 			const size_t component_count ) mutable -> std::pair<const NamesScope::InsertedName*, NamesScope*>
 		{
 			std::pair<const NamesScope::InsertedName*, NamesScope*> result=
-				resolving_funcs_stack_[prev_handler_index]( names_scope, components, component_count );
+				(*resolving_funcs_stack_[prev_handler_index])( names_scope, components, component_count );
 			if( result.first == nullptr )
 				return std::make_pair( nullptr, nullptr );
 
@@ -2998,14 +2998,14 @@ void CodeBuilder::PushCacheFillResolveHandler( ResolvingCache& resolving_cache, 
 			resolving_cache.emplace( key, std::make_pair( *result.first, result.second ) );
 
 			return result;
-		} );
+		} ) );
 }
 
 void CodeBuilder::PushCacheGetResolveHandelr( const ResolvingCache& resolving_cache )
 {
 	const size_t prev_handler_index= resolving_funcs_stack_.size() - 1u;
 
-	resolving_funcs_stack_.push_back(
+	resolving_funcs_stack_.emplace_back( new ResolveFunc(
 		[this, &resolving_cache, prev_handler_index](
 			NamesScope& names_scope,
 			const ComplexName::Component* const components,
@@ -3017,10 +3017,10 @@ void CodeBuilder::PushCacheGetResolveHandelr( const ResolvingCache& resolving_ca
 			key.component_count= component_count;
 			const auto it= resolving_cache.find(key);
 			if( it == resolving_cache.end() )
-				return resolving_funcs_stack_[prev_handler_index]( names_scope, components, component_count );
+				return (*resolving_funcs_stack_[prev_handler_index])( names_scope, components, component_count );
 
 			return std::make_pair( &it->second.first, it->second.second );
-		} );
+		} ) );
 }
 
 void CodeBuilder::PopResolveHandler()
@@ -3047,7 +3047,7 @@ std::pair<const NamesScope::InsertedName*, NamesScope*> CodeBuilder::ResolveName
 	const size_t component_count )
 {
 	U_ASSERT( !resolving_funcs_stack_.empty() );
-	return resolving_funcs_stack_.back()( names_scope, components, component_count );
+	return (*resolving_funcs_stack_.back())( names_scope, components, component_count );
 }
 
 std::pair<const NamesScope::InsertedName*, NamesScope*> CodeBuilder::ResolveNameWithParentSpaceWorker(

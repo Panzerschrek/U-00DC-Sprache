@@ -445,7 +445,7 @@ private:
 	unsigned int error_count_= 0u;
 	std::vector<CodeBuilderError> errors_;
 
-	std::vector<ResolveFunc> resolving_funcs_stack_;
+	std::vector<std::unique_ptr<ResolveFunc>> resolving_funcs_stack_;
 };
 
 } // namespace CodeBuilderPrivate
