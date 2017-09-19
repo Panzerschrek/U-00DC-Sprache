@@ -364,7 +364,10 @@ ClassPtr CodeBuilder::PrepareClass(
 				continue;
 			}
 
-			fields_llvm_types.emplace_back( out_field.type.GetLLVMType() );
+			if( out_field.type == NontypeStub::TemplateDependentValue )
+				fields_llvm_types.emplace_back( fundamental_llvm_types_.invalid_type_ );
+			else
+				fields_llvm_types.emplace_back( out_field.type.GetLLVMType() );
 
 			const NamesScope::InsertedName* const inserted_field=
 				the_class->members.AddName( in_field->name, std::move( out_field ) );
