@@ -561,6 +561,44 @@ U_TEST( ClassTemplateTest15 )
 	U_TEST_ASSERT( static_cast<uint64_t>( 733 ) == result_value.IntVal.getLimitedValue() );
 }
 
+U_TEST( ClassTemplateTest16 )
+{
+	// Reference to self-type inside class template.
+	static const char c_program_text[]=
+	R"(
+		template</ type T />
+		struct Box</ T />
+		{
+			T t;
+
+			fn Foo() : f64
+			{
+				var Box</ T /> r= zero_init;
+				r.t= T(458);
+				return r.t;
+			}
+		}
+
+		fn Foo() : u32
+		{
+			var Box</ f64 /> p= zero_init;
+			return u32(p.Foo());
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( static_cast<uint64_t>( 458 ) == result_value.IntVal.getLimitedValue() );
+}
+
 U_TEST( ClassPrepass_Test0 )
 {
 	static const char c_program_text[]=
