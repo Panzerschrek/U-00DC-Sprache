@@ -647,6 +647,29 @@ U_TEST( ClassPrepass_Test1 )
 	BuildProgram( c_program_text );
 }
 
+U_TEST( ClassPrepass_Test2 )
+{
+	static const char c_program_text[]=
+	R"(
+		template</ type T /> class CC</ T />{}
+		template</ type T />
+		class Baz</ T />
+		{
+			fn Foo() : i32
+			{
+				// instantiation of template with tempate-dependent value as signature argument is template-dependent value
+				var CC</ T /> cc;
+				cc.Foo();
+				cc + 42;
+				cc.x.y= 4447.0f;
+				return cc;
+			}
+		}
+	)";
+
+	BuildProgram( c_program_text );
+}
+
 U_TEST( PreResolveTest0 )
 {
 	// Inside template must be visible only one of two overloaded functions.

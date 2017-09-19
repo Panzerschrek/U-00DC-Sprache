@@ -298,6 +298,7 @@ public:
 
 	// Resolve simple name only in this scope.
 	InsertedName* GetThisScopeName( const ProgramString& name ) const;
+	InsertedName& GetTemplateDependentValue();
 
 	const NamesScope* GetParent() const;
 	const NamesScope* GetRoot() const;

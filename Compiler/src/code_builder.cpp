@@ -3129,6 +3129,9 @@ std::pair<const NamesScope::InsertedName*, NamesScope*> CodeBuilder::ResolveName
 						names_scope );
 				if( generated_class == nullptr )
 					return ResultType( nullptr, nullptr );
+				if( generated_class->second.GetType() == NontypeStub::TemplateDependentValue )
+					return ResultType( generated_class, current_space );
+
 				const Type* const type= generated_class->second.GetTypeName();
 				U_ASSERT( type != nullptr );
 				const ClassPtr class_= type->GetClassType();

@@ -502,20 +502,6 @@ NamesScope::InsertedName* CodeBuilder::GenTemplateClass(
 
 	for( size_t i= 0u; i < class_template.signature_arguments.size(); ++i )
 	{
-		size_t dependend_arg_index= ~0u;
-		const ComplexName& name= *class_template.signature_arguments[i];
-		if( name.components.size() == 1u && name.components.front().template_parameters.empty() )
-		{
-			for( const ClassTemplate::TemplateParameter& param : class_template.template_parameters )
-			{
-				if( param.name == name.components.front().name )
-				{
-					dependend_arg_index= &param - class_template.template_parameters.data();
-					break;
-				}
-			}
-		}
-
 		Value value;
 		try
 		{
@@ -525,6 +511,12 @@ NamesScope::InsertedName* CodeBuilder::GenTemplateClass(
 		{
 			return nullptr;
 		}
+
+		// Each template with template-dependent signature arguments is template-dependent values.
+		if( value.GetType() == NontypeStub::TemplateDependentValue )
+			return &template_names_scope.GetTemplateDependentValue();
+
+		const ComplexName& name= *class_template.signature_arguments[i];
 
 		if( const Type* const type_name= value.GetTypeName() )
 		{
@@ -545,7 +537,6 @@ NamesScope::InsertedName* CodeBuilder::GenTemplateClass(
 
 	NamesScope template_parameters_names_scope( ""_SpC, &template_names_scope );
 
-	//for( const auto& arg : deduced_template_args )
 	for( size_t i = 0u; i < deduced_template_args.size() ; ++i )
 	{
 		const auto& arg = deduced_template_args[i];

@@ -814,6 +814,16 @@ NamesScope::InsertedName* NamesScope::GetThisScopeName( const ProgramString& nam
 	return nullptr;
 }
 
+NamesScope::InsertedName& NamesScope::GetTemplateDependentValue()
+{
+	const ProgramString name= "0_tdv"_SpC; // use identifier with number start - that can not exists in real program.
+	const auto it= names_map_.find(name);
+	if( it != names_map_.end() )
+		return *it;
+
+	return *names_map_.emplace( name, TemplateDependentValue() ).first;
+}
+
 const NamesScope* NamesScope::GetParent() const
 {
 	return parent_;
