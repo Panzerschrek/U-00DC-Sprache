@@ -1,7 +1,8 @@
 #pragma once
-#include <memory>
-#include <vector>
 #include <map>
+#include <memory>
+#include <unordered_map>
+#include <vector>
 
 #include <boost/optional.hpp>
 #include <boost/variant.hpp>
@@ -289,6 +290,7 @@ public:
 	NamesScope( const NamesScope&)= delete;
 	NamesScope& operator=( const NamesScope&)= delete;
 
+	bool IsAncestorFor( const NamesScope& other ) const;
 	const ProgramString& GetThisNamespaceName() const;
 
 	// Returns nullptr, if name already exists in this scope.
@@ -315,6 +317,27 @@ private:
 	const NamesScope* parent_;
 	NamesMap names_map_;
 };
+
+struct NameResolvingKey final
+{
+	const ComplexName::Component* components;
+	size_t component_count;
+};
+
+struct NameResolvingKeyHasher
+{
+	size_t operator()( const NameResolvingKey& key ) const;
+	bool operator()( const NameResolvingKey& a, const NameResolvingKey& b ) const;
+};
+
+bool NameResolvingKeyCompare( const NameResolvingKey& a, const NameResolvingKey& b );
+
+typedef
+	std::unordered_map<
+		NameResolvingKey,
+		std::pair< NamesScope::InsertedName, NamesScope* >,
+		NameResolvingKeyHasher,
+		NameResolvingKeyHasher > ResolvingCache;
 
 class ProgramError final : public std::exception
 {
@@ -377,6 +400,8 @@ struct ClassTemplate final
 	// Store syntax tree element for instantiation.
 	// Syntax tree must live longer, than this struct.
 	const ClassDeclaration* class_syntax_element= nullptr;
+
+	ResolvingCache resolving_cache;
 };
 
 typedef boost::variant< int, Type, Variable > DeducibleTemplateParameter; // int means not deduced

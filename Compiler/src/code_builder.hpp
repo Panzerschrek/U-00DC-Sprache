@@ -380,13 +380,30 @@ private:
 		NamesScope& block_names,
 		FunctionContext& function_context );
 
+	// Name resolving.
+
+	typedef std::function< std::pair<const NamesScope::InsertedName*, NamesScope*>( NamesScope& names_scope, const ComplexName::Component*, size_t ) > ResolveFunc;
+
+	void PushCacheFillResolveHandler( ResolvingCache& resolving_cache, NamesScope& start_namespace );
+	void PushCacheGetResolveHandelr( const ResolvingCache& resolving_cache );
+	void PopResolveHandler();
+
 	const NamesScope::InsertedName* ResolveName( NamesScope& names_scope, const ComplexName& complex_name );
+
 	const NamesScope::InsertedName* ResolveName(
 		NamesScope& names_scope,
-		const ComplexName::Component* components, size_t component_count );
+		const ComplexName::Component* components,
+		size_t component_count );
+
 	std::pair<const NamesScope::InsertedName*, NamesScope*> ResolveNameWithParentSpace(
 		NamesScope& names_scope,
-		const ComplexName::Component* components, size_t component_count );
+		const ComplexName::Component* components,
+		size_t component_count );
+
+	std::pair<const NamesScope::InsertedName*, NamesScope*> ResolveNameWithParentSpaceWorker(
+		NamesScope& names_scope,
+		const ComplexName::Component* components,
+		size_t component_count );
 
 	static U_FundamentalType GetNumericConstantType( const NumericConstant& number );
 
@@ -427,6 +444,8 @@ private:
 	std::unique_ptr<llvm::Module> module_;
 	unsigned int error_count_= 0u;
 	std::vector<CodeBuilderError> errors_;
+
+	std::vector<ResolveFunc> resolving_funcs_stack_;
 };
 
 } // namespace CodeBuilderPrivate

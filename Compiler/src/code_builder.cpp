@@ -84,6 +84,16 @@ CodeBuilder::CodeBuilder()
 	invalid_type_= FundamentalType( U_FundamentalType::InvalidType, fundamental_llvm_types_.invalid_type_ );
 	void_type_= FundamentalType( U_FundamentalType::Void, fundamental_llvm_types_.void_ );
 	bool_type_= FundamentalType( U_FundamentalType::Bool, fundamental_llvm_types_.bool_ );
+
+	// Default resolve handler - push first to stack.
+	resolving_funcs_stack_.push_back(
+		[this](
+			NamesScope& names_scope,
+			const ComplexName::Component* const components,
+			const size_t component_count )
+		{
+			return ResolveNameWithParentSpaceWorker( names_scope, components, component_count );
+		});
 }
 
 CodeBuilder::~CodeBuilder()
@@ -284,6 +294,7 @@ ClassPtr CodeBuilder::PrepareClass(
 
 	ClassPtr the_class;
 
+	// TODO - check this, because it may be wrong.
 	if( const NamesScope::InsertedName* const previous_declaration=
 		ResolveName( names_scope, class_complex_name ) )
 	{
@@ -2962,6 +2973,62 @@ const FunctionVariable& CodeBuilder::GetOverloadedFunction(
 	}
 }
 
+void CodeBuilder::PushCacheFillResolveHandler( ResolvingCache& resolving_cache, NamesScope& start_namespace )
+{
+	const size_t prev_handler_index= resolving_funcs_stack_.size() - 1u;
+
+	resolving_funcs_stack_.push_back(
+		[this, &resolving_cache, &start_namespace, prev_handler_index](
+			NamesScope& names_scope,
+			const ComplexName::Component* const components,
+			const size_t component_count ) mutable -> std::pair<const NamesScope::InsertedName*, NamesScope*>
+		{
+			std::pair<const NamesScope::InsertedName*, NamesScope*> result=
+				resolving_funcs_stack_[prev_handler_index]( names_scope, components, component_count );
+			if( result.first == nullptr )
+				return std::make_pair( nullptr, nullptr );
+
+			// Do not push to cache names from child relative "start_namespace" spaces.
+			if( !( result.second == &start_namespace || result.second->IsAncestorFor( start_namespace ) ) )
+				return result;
+
+			NameResolvingKey key;
+			key.components= components;
+			key.component_count= component_count;
+			resolving_cache.emplace( key, std::make_pair( *result.first, result.second ) );
+
+			return result;
+		} );
+}
+
+void CodeBuilder::PushCacheGetResolveHandelr( const ResolvingCache& resolving_cache )
+{
+	const size_t prev_handler_index= resolving_funcs_stack_.size() - 1u;
+
+	resolving_funcs_stack_.push_back(
+		[this, &resolving_cache, prev_handler_index](
+			NamesScope& names_scope,
+			const ComplexName::Component* const components,
+			const size_t component_count )
+			-> std::pair<const NamesScope::InsertedName*, NamesScope*>
+		{
+			NameResolvingKey key;
+			key.components= components;
+			key.component_count= component_count;
+			const auto it= resolving_cache.find(key);
+			if( it == resolving_cache.end() )
+				return resolving_funcs_stack_[prev_handler_index]( names_scope, components, component_count );
+
+			return std::make_pair( &it->second.first, it->second.second );
+		} );
+}
+
+void CodeBuilder::PopResolveHandler()
+{
+	U_ASSERT( resolving_funcs_stack_.size() >= 2u );
+	resolving_funcs_stack_.pop_back();
+}
+
 const NamesScope::InsertedName* CodeBuilder::ResolveName( NamesScope& names_scope, const ComplexName& complex_name )
 {
 	return ResolveName( names_scope, complex_name.components.data(), complex_name.components.size() );
@@ -2976,7 +3043,17 @@ const NamesScope::InsertedName* CodeBuilder::ResolveName(
 
 std::pair<const NamesScope::InsertedName*, NamesScope*> CodeBuilder::ResolveNameWithParentSpace(
 	NamesScope& names_scope,
-	const ComplexName::Component* components, size_t component_count )
+	const ComplexName::Component* const components,
+	const size_t component_count )
+{
+	U_ASSERT( !resolving_funcs_stack_.empty() );
+	return resolving_funcs_stack_.back()( names_scope, components, component_count );
+}
+
+std::pair<const NamesScope::InsertedName*, NamesScope*> CodeBuilder::ResolveNameWithParentSpaceWorker(
+	NamesScope& names_scope,
+	const ComplexName::Component* components,
+	size_t component_count )
 {
 	// TODO - generate resolving errors inside this method, not silently return null.
 

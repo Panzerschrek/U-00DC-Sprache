@@ -647,4 +647,43 @@ U_TEST( ClassPrepass_Test1 )
 	BuildProgram( c_program_text );
 }
 
+U_TEST( PreResolveTest0 )
+{
+	// Inside template must be visible only one of two overloaded functions.
+	static const char c_program_text[]=
+	R"(
+		fn Bar( i32 &mut x ) : i32 { return 5; }
+
+		template</ type T />
+		struct Box</ T />
+		{
+			fn Worker() : i32
+			{
+				var i32 x= 0;
+				return Bar(x);
+			}
+		}
+
+		fn Bar( i32 &imut x ) : i32 { return 536; }
+
+		fn Foo() : i32
+		{
+			var Box</f32/> b;
+			return b.Worker();
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( static_cast<uint64_t>( 5 ) == result_value.IntVal.getLimitedValue() );
+}
+
 } // namespace U

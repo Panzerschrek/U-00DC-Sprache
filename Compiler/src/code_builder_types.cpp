@@ -1,3 +1,5 @@
+#include "boost/functional/hash.hpp"
+
 #include "assert.hpp"
 #include "keywords.hpp"
 
@@ -537,6 +539,20 @@ bool operator!=( const Array& r, const Array& l )
 	return !( r == l );
 }
 
+size_t NameResolvingKeyHasher::operator()( const NameResolvingKey& key ) const
+{
+	size_t result= 0u;
+	boost::hash_combine( result, key.components );
+	boost::hash_combine( result, key.component_count );
+
+	return result;
+}
+
+bool NameResolvingKeyHasher::operator()( const NameResolvingKey& a, const NameResolvingKey& b ) const
+{
+	return a.components == b.components && a.component_count == b.component_count;
+}
+
 Class::Class( const ProgramString& in_name, const NamesScope* const parent_scope )
 	: members( in_name, parent_scope )
 {}
@@ -760,6 +776,19 @@ NamesScope::NamesScope(
 	: name_(std::move(name) )
 	, parent_(parent)
 {}
+
+bool NamesScope::IsAncestorFor( const NamesScope& other ) const
+{
+	const NamesScope* n= other.parent_;
+	while( n != nullptr )
+	{
+		if( this == n )
+			return true;
+		n= n->parent_;
+	}
+
+	return false;
+}
 
 const ProgramString& NamesScope::GetThisNamespaceName() const
 {
