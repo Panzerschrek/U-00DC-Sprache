@@ -333,10 +333,17 @@ struct NameResolvingKeyHasher
 
 bool NameResolvingKeyCompare( const NameResolvingKey& a, const NameResolvingKey& b );
 
+struct ResolvingCacheValue final
+{
+	NamesScope::InsertedName name;
+	NamesScope* parent_namespace;
+	size_t name_components_cut;
+};
+
 typedef
 	std::unordered_map<
 		NameResolvingKey,
-		std::pair< NamesScope::InsertedName, NamesScope* >,
+		ResolvingCacheValue,
 		NameResolvingKeyHasher,
 		NameResolvingKeyHasher > ResolvingCache;
 

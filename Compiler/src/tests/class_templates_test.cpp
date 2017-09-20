@@ -713,7 +713,7 @@ U_TEST( PreResolveTest0 )
 	// Inside template must be visible only one of two overloaded functions.
 	static const char c_program_text[]=
 	R"(
-		fn Bar( i32 &mut x ) : i32 { return 5; }
+		fn Bar( i32 &imut x ) : i32 { return 5; }
 
 		template</ type T />
 		struct Box</ T />
@@ -725,7 +725,7 @@ U_TEST( PreResolveTest0 )
 			}
 		}
 
-		fn Bar( i32 &imut x ) : i32 { return 536; }
+		fn Bar( i32 &mut x ) : i32 { return 536; }
 
 		fn Foo() : i32
 		{

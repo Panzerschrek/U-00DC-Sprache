@@ -400,8 +400,21 @@ private:
 		const ComplexName::Component* components,
 		size_t component_count );
 
-	std::pair<const NamesScope::InsertedName*, NamesScope*> ResolveNameWithParentSpaceWorker(
+	std::pair<const NamesScope::InsertedName*, NamesScope*> ResolveDefault(
 		NamesScope& names_scope,
+		const ComplexName::Component* components,
+		size_t component_count );
+
+	// Finds namespace, where are name. Do not search in classes (returns class itself)
+	std::pair<const NamesScope::InsertedName*, NamesScope*> PreResolve(
+		NamesScope& names_scope,
+		const ComplexName::Component* components,
+		size_t component_count,
+		size_t& out_skip_components );
+
+	std::pair<const NamesScope::InsertedName*, NamesScope*> FinishResolve(
+		NamesScope& names_scope,
+		NamesScope& resolve_from,
 		const ComplexName::Component* components,
 		size_t component_count );
 
