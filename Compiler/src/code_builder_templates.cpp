@@ -144,12 +144,8 @@ void CodeBuilder::PrepareClassTemplate(
 	for( const ClassTemplate::TemplateParameter& param : class_template->template_parameters )
 		temp_names_scope.AddName( param.name, TemplateDependentValue() );
 
-	ComplexName dummy_complex_name; // TODO - remove this. We must use only complex name from syntax tree.
-	dummy_complex_name.components.emplace_back();
-	dummy_complex_name.components.back().name= "_temp"_SpC;
-
 	PushCacheFillResolveHandler( class_template->resolving_cache, names_scope );
-	PrepareClass( *class_template->class_syntax_element, dummy_complex_name, temp_names_scope );
+	PrepareClass( *class_template->class_syntax_element, class_template_declaration.class_->name_, temp_names_scope );
 	PopResolveHandler();
 }
 
