@@ -294,9 +294,38 @@ ClassPtr CodeBuilder::PrepareClass(
 
 	ClassPtr the_class;
 
-	// TODO - check this, because it may be wrong.
-	if( const NamesScope::InsertedName* const previous_declaration=
-		ResolveName( names_scope, class_complex_name ) )
+	const NamesScope::InsertedName* previous_declaration= nullptr;
+	if( class_complex_name.components.size() == 1u )
+	{
+		// Simple name - look only in current namespace.
+		previous_declaration= names_scope.GetThisScopeName( class_complex_name.components.front().name );
+	}
+	else
+	{
+		// Complex name - make full name resolving.
+		previous_declaration= ResolveName( names_scope, class_complex_name );
+		if( previous_declaration == nullptr )
+		{
+			errors_.push_back( ReportClassDeclarationOutsideItsScope( class_declaration.file_pos_ ) );
+			return nullptr;
+		}
+	}
+
+	if( previous_declaration == nullptr )
+	{
+		the_class= std::make_shared<Class>( class_name, &names_scope );
+		the_class->llvm_type= llvm::StructType::create( llvm_context_, MangleClass( names_scope, class_name ) );
+		Type class_type;
+		class_type= the_class;
+
+		const NamesScope::InsertedName* const inserted_name= names_scope.AddName( class_name, class_type );
+		if( inserted_name == nullptr )
+		{
+			errors_.push_back( ReportRedefinition( class_declaration.file_pos_, class_name ) );
+			return nullptr;
+		}
+	}
+	else
 	{
 		if( const Type* const previous_type= previous_declaration->second.GetTypeName() )
 		{
@@ -316,26 +345,6 @@ ClassPtr CodeBuilder::PrepareClass(
 			}
 		}
 		else
-		{
-			errors_.push_back( ReportRedefinition( class_declaration.file_pos_, class_name ) );
-			return nullptr;
-		}
-	}
-	else
-	{
-		if( class_complex_name.components.size() != 1u )
-		{
-			errors_.push_back( ReportClassDeclarationOutsideItsScope( class_declaration.file_pos_ ) );
-			return nullptr;
-		}
-
-		the_class= std::make_shared<Class>( class_name, &names_scope );
-		the_class->llvm_type= llvm::StructType::create( llvm_context_, MangleClass( names_scope, class_name ) );
-		Type class_type;
-		class_type= the_class;
-
-		const NamesScope::InsertedName* const inserted_name= names_scope.AddName( class_name, class_type );
-		if( inserted_name == nullptr )
 		{
 			errors_.push_back( ReportRedefinition( class_declaration.file_pos_, class_name ) );
 			return nullptr;
