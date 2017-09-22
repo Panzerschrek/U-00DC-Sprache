@@ -292,6 +292,7 @@ public:
 
 	bool IsAncestorFor( const NamesScope& other ) const;
 	const ProgramString& GetThisNamespaceName() const;
+	void SetThisNamespaceName( ProgramString name );
 
 	// Returns nullptr, if name already exists in this scope.
 	InsertedName* AddName( const ProgramString& name, Value value );
@@ -314,7 +315,7 @@ public:
 	// TODO - maybe add for_each in all scopes?
 
 private:
-	const ProgramString name_;
+	ProgramString name_;
 	const NamesScope* parent_;
 	NamesMap names_map_;
 };

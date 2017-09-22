@@ -86,13 +86,14 @@ CodeBuilder::CodeBuilder()
 	bool_type_= FundamentalType( U_FundamentalType::Bool, fundamental_llvm_types_.bool_ );
 
 	// Default resolve handler - push first to stack.
-	resolving_funcs_stack_.emplace_back( new ResolveFunc(
+	resolving_funcs_stack_.emplace_back( new PreResolveFunc(
 		[this](
 			NamesScope& names_scope,
-			const ComplexName::Component* const components,
-			const size_t component_count )
+			const ComplexName::Component* components,
+			size_t component_count,
+			size_t& out_skip_components  )
 		{
-			return ResolveDefault( names_scope, components, component_count );
+			return PreResolveDefault( names_scope, components, component_count, out_skip_components );
 		} ) );
 }
 
@@ -2989,18 +2990,19 @@ void CodeBuilder::PushCacheFillResolveHandler( ResolvingCache& resolving_cache, 
 {
 	const size_t prev_handler_index= resolving_funcs_stack_.size() - 1u;
 
-	resolving_funcs_stack_.emplace_back( new ResolveFunc(
+	resolving_funcs_stack_.emplace_back( new PreResolveFunc(
 		[this, &resolving_cache, &start_namespace, prev_handler_index](
 			NamesScope& names_scope,
-			const ComplexName::Component* const components,
-			const size_t component_count ) mutable -> std::pair<const NamesScope::InsertedName*, NamesScope*>
+			const ComplexName::Component* components,
+			size_t component_count,
+			size_t& out_skip_components )
+			-> std::pair<const NamesScope::InsertedName*, NamesScope*>
 		{
-			size_t skip_components= 0u;
 			const std::pair<const NamesScope::InsertedName*, NamesScope*> resolve_start_point=
-				PreResolve( names_scope, components, component_count, skip_components );
+				(*resolving_funcs_stack_[prev_handler_index])( names_scope, components, component_count, out_skip_components );
 			if( resolve_start_point.first == nullptr )
 				return std::make_pair( nullptr, nullptr );
-			U_ASSERT( skip_components <= component_count );
+			U_ASSERT( out_skip_components > 0u && out_skip_components <= component_count );
 
 			// Do not push to cache names from child relative "start_namespace" spaces.
 			if( resolve_start_point.second == &start_namespace || resolve_start_point.second->IsAncestorFor( start_namespace ) )
@@ -3011,11 +3013,10 @@ void CodeBuilder::PushCacheFillResolveHandler( ResolvingCache& resolving_cache, 
 
 				resolving_cache.emplace(
 					std::move(key),
-					ResolvingCacheValue{ *resolve_start_point.first, resolve_start_point.second, skip_components } );
+					ResolvingCacheValue{ *resolve_start_point.first, resolve_start_point.second, out_skip_components } );
 			}
 
-			--skip_components;
-			return FinishResolve( names_scope, *resolve_start_point.second, components + skip_components, component_count - skip_components );
+			return resolve_start_point;
 
 		} ) );
 }
@@ -3024,11 +3025,12 @@ void CodeBuilder::PushCacheGetResolveHandelr( const ResolvingCache& resolving_ca
 {
 	const size_t prev_handler_index= resolving_funcs_stack_.size() - 1u;
 
-	resolving_funcs_stack_.emplace_back( new ResolveFunc(
+	resolving_funcs_stack_.emplace_back( new PreResolveFunc(
 		[this, &resolving_cache, prev_handler_index](
 			NamesScope& names_scope,
-			const ComplexName::Component* const components,
-			const size_t component_count )
+			const ComplexName::Component* components,
+			size_t component_count,
+			size_t& out_skip_components )
 			-> std::pair<const NamesScope::InsertedName*, NamesScope*>
 		{
 			NameResolvingKey key;
@@ -3036,64 +3038,11 @@ void CodeBuilder::PushCacheGetResolveHandelr( const ResolvingCache& resolving_ca
 			key.component_count= component_count;
 			const auto it= resolving_cache.find(key);
 			if( it == resolving_cache.end() )
-				return (*resolving_funcs_stack_[prev_handler_index])( names_scope, components, component_count );
+				return (*resolving_funcs_stack_[prev_handler_index])( names_scope, components, component_count, out_skip_components );
 
 			const ResolvingCacheValue& cache_value= it->second;
-
-			const ComplexName::Component& component= components[ cache_value.name_components_cut - 1u ];
-			const size_t minus_one= cache_value.name_components_cut - 1u;
-
-			if( const ClassTemplatePtr class_template= cache_value.name.second.GetClassTemplate() )
-			{
-				if( component.have_template_parameters )
-				{
-					const NamesScope::InsertedName* generated_class=
-						GenTemplateClass(
-							class_template,
-							component.template_parameters,
-							*cache_value.parent_namespace,
-							names_scope );
-					if( generated_class == nullptr )
-						return std::make_pair( nullptr, nullptr );
-					if( generated_class->second.GetType() == NontypeStub::TemplateDependentValue )
-						return std::make_pair( generated_class, cache_value.parent_namespace );
-
-					const Type* const type= generated_class->second.GetTypeName();
-					U_ASSERT( type != nullptr );
-					const ClassPtr class_= type->GetClassType();
-					// SPRACHE_TODO - allow non-class types as result of template.
-					U_ASSERT( class_ != nullptr );
-
-					if( cache_value.name_components_cut == component_count )
-						return std::make_pair( generated_class, cache_value.parent_namespace );
-					return FinishResolve( names_scope, class_->members, components + minus_one, component_count - minus_one );
-				}
-				else
-				{
-					if( cache_value.name_components_cut == component_count )
-						return std::make_pair( &cache_value.name, cache_value.parent_namespace ); // Return template itself
-					else
-					{
-						// TODO - register error, look inside template without instantiation
-						error_count_++;
-						return std::make_pair( nullptr, nullptr );
-					}
-				}
-			}
-			else
-			{
-				if( component.have_template_parameters )
-				{
-					error_count_++; // TODO - register error - template parameters for non-template.
-					return std::make_pair( nullptr, nullptr );
-				}
-
-				const size_t minus_one= cache_value.name_components_cut - 1u;
-				if( cache_value.name_components_cut == component_count )
-					return std::make_pair( &cache_value.name, cache_value.parent_namespace );
-
-				return FinishResolve( names_scope, *cache_value.parent_namespace, components + minus_one, component_count - minus_one );
-			}
+			out_skip_components= cache_value.name_components_cut;
+			return std::make_pair( &cache_value.name, cache_value.parent_namespace );
 
 		} ) );
 }
@@ -3119,29 +3068,76 @@ const NamesScope::InsertedName* CodeBuilder::ResolveName(
 std::pair<const NamesScope::InsertedName*, NamesScope*> CodeBuilder::ResolveNameWithParentSpace(
 	NamesScope& names_scope,
 	const ComplexName::Component* const components,
-	const size_t component_count )
+	const size_t component_count,
+	const bool only_primary_resolove )
 {
 	U_ASSERT( !resolving_funcs_stack_.empty() );
-	return (*resolving_funcs_stack_.back())( names_scope, components, component_count );
-}
 
-std::pair<const NamesScope::InsertedName*, NamesScope*> CodeBuilder::ResolveDefault(
-	NamesScope& names_scope,
-	const ComplexName::Component* components,
-	size_t component_count )
-{
 	size_t skip_components= 0u;
 	const std::pair<const NamesScope::InsertedName*, NamesScope*> resolve_start_point=
-		PreResolve( names_scope, components, component_count, skip_components );
+		(*resolving_funcs_stack_.back())( names_scope, components, component_count, skip_components );
 	if( resolve_start_point.first == nullptr )
 		return std::make_pair( nullptr, nullptr );
-	U_ASSERT( skip_components <= component_count );
+	U_ASSERT( skip_components > 0u && skip_components <= component_count );
 
-	--skip_components;
-	return FinishResolve( names_scope, *resolve_start_point.second, components + skip_components, component_count - skip_components );
+	if( only_primary_resolove )
+		return resolve_start_point;
+
+	const ComplexName::Component& component= components[ skip_components - 1u ];
+	if( const ClassTemplatePtr class_template= resolve_start_point.first->second.GetClassTemplate() )
+	{
+		if( component.have_template_parameters )
+		{
+			const NamesScope::InsertedName* generated_class=
+				GenTemplateClass(
+					class_template,
+					component.template_parameters,
+					*resolve_start_point.second,
+					names_scope );
+			if( generated_class == nullptr )
+				return std::make_pair( nullptr, nullptr );
+			if( generated_class->second.GetType() == NontypeStub::TemplateDependentValue )
+				return std::make_pair( generated_class, resolve_start_point.second );
+
+			const Type* const type= generated_class->second.GetTypeName();
+			U_ASSERT( type != nullptr );
+			const ClassPtr class_= type->GetClassType();
+			// SPRACHE_TODO - allow non-class types as result of template.
+			U_ASSERT( class_ != nullptr );
+
+			if( skip_components == component_count )
+				return std::make_pair( generated_class, resolve_start_point.second );
+			return FinishResolve( names_scope, class_->members, components + skip_components, component_count  - skip_components );
+		}
+		else
+		{
+			if( skip_components == component_count )
+				return resolve_start_point; // Return template itself
+			else
+			{
+				// TODO - register error, look inside template without instantiation
+				error_count_++;
+				return std::make_pair( nullptr, nullptr );
+			}
+		}
+	}
+	else
+	{
+		if( component.have_template_parameters )
+		{
+			error_count_++; // TODO - register error - template parameters for non-template.
+			return std::make_pair( nullptr, nullptr );
+		}
+
+		const size_t minus_one= skip_components - 1u;
+		if( skip_components == component_count )
+			return resolve_start_point;
+
+		return FinishResolve( names_scope, *resolve_start_point.second, components + minus_one, component_count - minus_one );
+	}
 }
 
-std::pair<const NamesScope::InsertedName*, NamesScope*> CodeBuilder::PreResolve(
+std::pair<const NamesScope::InsertedName*, NamesScope*> CodeBuilder::PreResolveDefault(
 	NamesScope& names_scope,
 	const ComplexName::Component* components,
 	size_t component_count,

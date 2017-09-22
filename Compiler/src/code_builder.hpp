@@ -382,7 +382,13 @@ private:
 
 	// Name resolving.
 
-	typedef std::function< std::pair<const NamesScope::InsertedName*, NamesScope*>( NamesScope& names_scope, const ComplexName::Component*, size_t ) > ResolveFunc;
+	typedef
+		std::function<
+			std::pair<const NamesScope::InsertedName*, NamesScope*>(
+				NamesScope& names_scope,
+				const ComplexName::Component* components,
+				size_t component_count,
+				size_t& out_skip_components ) > PreResolveFunc;
 
 	void PushCacheFillResolveHandler( ResolvingCache& resolving_cache, NamesScope& start_namespace );
 	void PushCacheGetResolveHandelr( const ResolvingCache& resolving_cache );
@@ -398,15 +404,11 @@ private:
 	std::pair<const NamesScope::InsertedName*, NamesScope*> ResolveNameWithParentSpace(
 		NamesScope& names_scope,
 		const ComplexName::Component* components,
-		size_t component_count );
-
-	std::pair<const NamesScope::InsertedName*, NamesScope*> ResolveDefault(
-		NamesScope& names_scope,
-		const ComplexName::Component* components,
-		size_t component_count );
+		size_t component_count,
+		bool only_primary_resolove= false );
 
 	// Finds namespace, where are name. Do not search in classes (returns class itself)
-	std::pair<const NamesScope::InsertedName*, NamesScope*> PreResolve(
+	std::pair<const NamesScope::InsertedName*, NamesScope*> PreResolveDefault(
 		NamesScope& names_scope,
 		const ComplexName::Component* components,
 		size_t component_count,
@@ -458,7 +460,7 @@ private:
 	unsigned int error_count_= 0u;
 	std::vector<CodeBuilderError> errors_;
 
-	std::vector<std::unique_ptr<ResolveFunc>> resolving_funcs_stack_;
+	std::vector<std::unique_ptr<PreResolveFunc>> resolving_funcs_stack_;
 };
 
 } // namespace CodeBuilderPrivate

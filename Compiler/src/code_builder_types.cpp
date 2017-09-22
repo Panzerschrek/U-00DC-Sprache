@@ -795,6 +795,11 @@ const ProgramString& NamesScope::GetThisNamespaceName() const
 	return name_;
 }
 
+void NamesScope::SetThisNamespaceName( ProgramString name )
+{
+	name_= std::move(name);
+}
+
 NamesScope::InsertedName* NamesScope::AddName(
 	const ProgramString& name,
 	Value value )

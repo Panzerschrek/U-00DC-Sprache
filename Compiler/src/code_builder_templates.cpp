@@ -330,10 +330,8 @@ bool CodeBuilder::DuduceTemplateArguments(
 	}
 
 	// Resolve first component without template parameters.
-	ComplexName::Component start_name_first_component;
-	start_name_first_component.name= signature_parameter.components.front().name;
 	const std::pair< const NamesScope::InsertedName*, NamesScope* > start_name=
-		ResolveNameWithParentSpace( names_scope, &start_name_first_component, 1u );
+		ResolveNameWithParentSpace( names_scope, signature_parameter.components.data(), 1u, true );
 	if( start_name.first == nullptr )
 		return false;
 	std::vector<TypePathComponent> start_name_predecessors;
@@ -545,9 +543,9 @@ NamesScope::InsertedName* CodeBuilder::GenTemplateClass(
 
 		const ProgramString& name= class_template.template_parameters[i].name;
 		if( const Type* const type= boost::get<Type>( &arg ) )
-			template_names_scope.AddName( name, Value(*type) );
+			template_parameters_names_scope.AddName( name, Value(*type) );
 		else if( const Variable* const variable= boost::get<Variable>( &arg ) )
-			template_names_scope.AddName( name, Value(*variable) );
+			template_parameters_names_scope.AddName( name, Value(*variable) );
 		else U_ASSERT(false);
 	}
 
@@ -581,12 +579,8 @@ NamesScope::InsertedName* CodeBuilder::GenTemplateClass(
 
 	// TODO - catch recursive instantiation here.
 
-	ComplexName dummy_complex_name; // TODO - remove this. We must use only complex name from syntax tree.
-	dummy_complex_name.components.emplace_back();
-	dummy_complex_name.components.back().name= name_encoded;
-
 	PushCacheGetResolveHandelr( class_template.resolving_cache );
-	ClassPtr the_class= PrepareClass( *class_template.class_syntax_element, dummy_complex_name, template_parameters_names_scope );
+	ClassPtr the_class= PrepareClass( *class_template.class_syntax_element, class_template.class_syntax_element->name_, template_parameters_names_scope );
 	PopResolveHandler();
 	if( the_class == nullptr )
 		return nullptr;
@@ -596,6 +590,8 @@ NamesScope::InsertedName* CodeBuilder::GenTemplateClass(
 
 	// Set correct scope, not fake temporary names scope for template parameters.
 	the_class->members.SetParent( &template_names_scope );
+	// Set correct name.
+	the_class->members.SetThisNamespaceName( name_encoded );
 
 	// Save in class info about it.
 	the_class->base_template.emplace();
