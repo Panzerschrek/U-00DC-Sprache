@@ -126,6 +126,7 @@ private:
 
 	NamesScope& PushTemplateArgumentsSpace();
 	void PopTemplateArgumentsSpace();
+	bool NameShadowsTemplateArgument( const ProgramString& name );
 
 	void TryGenerateDefaultConstructor( Class& the_class, const Type& class_type );
 	void TryGenerateCopyConstructor( Class& the_class, const Type& class_type );

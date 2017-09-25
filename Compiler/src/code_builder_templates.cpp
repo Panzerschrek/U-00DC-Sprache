@@ -50,6 +50,8 @@ void CodeBuilder::PrepareClassTemplate(
 				return;
 			}
 		}
+		if( NameShadowsTemplateArgument( arg.name ) )
+			errors_.push_back( ReportDeclarationShadowsTemplateArgument( class_template_declaration.file_pos_, arg.name ) );
 
 		template_parameters.emplace_back();
 		template_parameters.back().name= arg.name;
@@ -655,6 +657,17 @@ NamesScope& CodeBuilder::PushTemplateArgumentsSpace()
 void CodeBuilder::PopTemplateArgumentsSpace()
 {
 	template_arguments_stack_.pop_back();
+}
+
+bool CodeBuilder::NameShadowsTemplateArgument( const ProgramString& name )
+{
+	for( const std::unique_ptr<NamesScope>& names_scope : template_arguments_stack_ )
+	{
+		if( names_scope->GetThisScopeName( name ) != nullptr )
+			return true;
+	}
+
+	return false;
 }
 
 } // namespace CodeBuilderPrivate

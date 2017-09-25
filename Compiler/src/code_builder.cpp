@@ -290,6 +290,12 @@ ClassPtr CodeBuilder::PrepareClass(
 			errors_.push_back( ReportRedefinition( class_declaration.file_pos_, class_name ) );
 			return nullptr;
 		}
+		else if( NameShadowsTemplateArgument( class_name ) )
+		{
+			errors_.push_back( ReportDeclarationShadowsTemplateArgument( class_declaration.file_pos_, class_name ) );
+			return nullptr;
+		}
+
 		return nullptr;
 	}
 
@@ -323,6 +329,11 @@ ClassPtr CodeBuilder::PrepareClass(
 		if( inserted_name == nullptr )
 		{
 			errors_.push_back( ReportRedefinition( class_declaration.file_pos_, class_name ) );
+			return nullptr;
+		}
+		else if( NameShadowsTemplateArgument( class_name ) )
+		{
+			errors_.push_back( ReportDeclarationShadowsTemplateArgument( class_declaration.file_pos_, class_name ) );
 			return nullptr;
 		}
 	}
@@ -383,6 +394,8 @@ ClassPtr CodeBuilder::PrepareClass(
 				the_class->members.AddName( in_field->name, std::move( out_field ) );
 			if( inserted_field == nullptr )
 				errors_.push_back( ReportRedefinition( in_field->file_pos, in_field->name ) );
+			else if( NameShadowsTemplateArgument( in_field->name ) )
+				errors_.push_back( ReportDeclarationShadowsTemplateArgument( in_field->file_pos, in_field->name ) );
 
 			the_class->field_count++;
 		}
@@ -1071,6 +1084,10 @@ void CodeBuilder::BuildNamespaceBody(
 			}
 			else
 			{
+
+				// There are no templates abowe namespace. Namespaces inside classes does not exists.
+				U_ASSERT( !NameShadowsTemplateArgument( namespace_->name_ ) );
+
 				const NamesScopePtr new_names_scope= std::make_shared<NamesScope>( namespace_->name_, &names_scope );
 				names_scope.AddName( namespace_->name_, new_names_scope );
 				result_scope= new_names_scope.get();
@@ -1286,6 +1303,9 @@ void CodeBuilder::PrepareFunction(
 	}
 	else
 	{
+		if( NameShadowsTemplateArgument( func_name ) )
+			errors_.push_back( ReportDeclarationShadowsTemplateArgument( func.file_pos_, func_name ) );
+
 		Value& value= previously_inserted_func->second;
 		if( OverloadedFunctionsSet* const functions_set= value.GetFunctionsSet() )
 		{
@@ -1574,6 +1594,11 @@ void CodeBuilder::BuildFuncCode(
 			if( !inserted_arg )
 			{
 				errors_.push_back( ReportRedefinition( declaration_arg.file_pos_, arg_name ) );
+				return;
+			}
+			else if( NameShadowsTemplateArgument( arg_name ) )
+			{
+				errors_.push_back( ReportDeclarationShadowsTemplateArgument( declaration_arg.file_pos_, arg_name ) );
 				return;
 			}
 
@@ -2129,6 +2154,11 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 			errors_.push_back( ReportRedefinition( variables_declaration.file_pos_, variable_declaration.name ) );
 			continue;
 		}
+		else if( NameShadowsTemplateArgument( variable_declaration.name ) )
+		{
+			errors_.push_back( ReportDeclarationShadowsTemplateArgument( variables_declaration.file_pos_, variable_declaration.name ) );
+			return;
+		}
 
 		if( variable_declaration.reference_modifier == ReferenceModifier::None )
 			function_context.destructibles_stack.back().RegisterVariable( *inserted_name->second.GetVariable() );
@@ -2151,6 +2181,11 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 		if( inserted_name == nullptr )
 		{
 			errors_.push_back( ReportRedefinition( auto_variable_declaration.file_pos_, auto_variable_declaration.name ) );
+			return;
+		}
+		else if( NameShadowsTemplateArgument( auto_variable_declaration.name ) )
+		{
+			errors_.push_back( ReportDeclarationShadowsTemplateArgument( auto_variable_declaration.file_pos_, auto_variable_declaration.name ) );
 			return;
 		}
 		return;
@@ -2248,6 +2283,11 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 	if( inserted_name == nullptr )
 	{
 		errors_.push_back( ReportRedefinition( auto_variable_declaration.file_pos_, auto_variable_declaration.name ) );
+		return;
+	}
+	else if( NameShadowsTemplateArgument( auto_variable_declaration.name ) )
+	{
+		errors_.push_back( ReportDeclarationShadowsTemplateArgument( auto_variable_declaration.file_pos_, auto_variable_declaration.name ) );
 		return;
 	}
 

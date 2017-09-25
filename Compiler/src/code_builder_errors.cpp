@@ -830,4 +830,15 @@ CodeBuilderError ReportTemplateParametersDeductionFailed( const FilePos& file_po
 	return error;
 }
 
+CodeBuilderError ReportDeclarationShadowsTemplateArgument( const FilePos& file_pos, const ProgramString& name )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::DeclarationShadowsTemplateArgument;
+
+	error.text= "Declaration of \""_SpC + name + "\" shadows template argument."_SpC;
+
+	return error;
+}
+
 } // namespace U
