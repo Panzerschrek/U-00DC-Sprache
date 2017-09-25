@@ -120,6 +120,13 @@ private:
 		NamesScope& template_names_scope,
 		NamesScope& arguments_names_scope );
 
+	std::pair<const NamesScope::InsertedName*, NamesScope*> ResolveTemplateArgument(
+		const ComplexName::Component* components,
+		size_t component_count );
+
+	NamesScope& PushTemplateArgumentsSpace();
+	void PopTemplateArgumentsSpace();
+
 	void TryGenerateDefaultConstructor( Class& the_class, const Type& class_type );
 	void TryGenerateCopyConstructor( Class& the_class, const Type& class_type );
 	void TryGenerateDestructor( Class& the_class, const Type& class_type );
@@ -461,6 +468,7 @@ private:
 	std::vector<CodeBuilderError> errors_;
 
 	std::vector<std::unique_ptr<PreResolveFunc>> resolving_funcs_stack_;
+	std::vector< std::unique_ptr<NamesScope> > template_arguments_stack_;
 };
 
 } // namespace CodeBuilderPrivate

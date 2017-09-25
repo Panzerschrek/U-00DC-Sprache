@@ -3005,7 +3005,8 @@ void CodeBuilder::PushCacheFillResolveHandler( ResolvingCache& resolving_cache, 
 			U_ASSERT( out_skip_components > 0u && out_skip_components <= component_count );
 
 			// Do not push to cache names from child relative "start_namespace" spaces.
-			if( resolve_start_point.second == &start_namespace || resolve_start_point.second->IsAncestorFor( start_namespace ) )
+			if( !components[0].is_generated &&
+				( resolve_start_point.second == &start_namespace || resolve_start_point.second->IsAncestorFor( start_namespace ) ) )
 			{
 				NameResolvingKey key;
 				key.components= components;
@@ -3071,6 +3072,11 @@ std::pair<const NamesScope::InsertedName*, NamesScope*> CodeBuilder::ResolveName
 	const size_t component_count,
 	const bool only_primary_resolove )
 {
+	const std::pair<const NamesScope::InsertedName*, NamesScope*> template_argument=
+		ResolveTemplateArgument( components, component_count );
+	if( template_argument.first != nullptr )
+		return template_argument;
+
 	U_ASSERT( !resolving_funcs_stack_.empty() );
 
 	size_t skip_components= 0u;
