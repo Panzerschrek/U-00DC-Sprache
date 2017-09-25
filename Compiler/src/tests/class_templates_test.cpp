@@ -805,12 +805,52 @@ U_TEST( PreResolveTest2 )
 				}
 			}
 
-			template</ type T, type F /> struct S</ T, Box</F/> /> { fn Bar() : i32 { return 5552; } }
+			template</ type T, type F /> struct S</ T, Box</F/> /> { fn Bar() : i32 { return 857; } }
 		}
 
 		fn Foo() : i32
 		{
 			return Baz::Box</f32/>().Worker();
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( static_cast<uint64_t>( 5552 ) == result_value.IntVal.getLimitedValue() );
+}
+
+U_TEST( PreResolveTest3 )
+{
+	// In template signature must be visible only template from outer space.
+	static const char c_program_text[]=
+	R"(
+		template</ type T /> struct S</ T /> { struct Mem{}   fn Bar() : i32 { return 5552; } }
+
+		namespace Baz
+		{
+			template</ type T />
+			struct Box</ S</ T />::Mem />
+			{
+				fn Worker() : i32
+				{
+					return S</ T />::Bar();
+				}
+			}
+
+			template</ type T, type F /> struct S</ T, Box</F/> /> { struct Mem{}   fn Bar() : i32 { return 441; } }
+		}
+
+		fn Foo() : i32
+		{
+			return Baz::Box</ S</ f32 />::Mem />().Worker();
 		}
 	)";
 

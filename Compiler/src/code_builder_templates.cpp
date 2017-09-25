@@ -456,7 +456,7 @@ bool CodeBuilder::DuduceTemplateArguments(
 							template_file_pos,
 							deducible_template_parameters,
 							names_scope );
-						if( !deduced )
+						if( !d )
 							return false;
 					}
 
@@ -502,9 +502,11 @@ NamesScope::InsertedName* CodeBuilder::GenTemplateClass(
 		return nullptr;
 	}
 
-	// TODO - PushCacheGetResolveHandelr for template signature arguments here
 	DeducibleTemplateParameters deduced_template_args( class_template.template_parameters.size() );
 
+	PushCacheGetResolveHandelr( class_template.resolving_cache );
+
+	bool is_template_dependent= false;
 	for( size_t i= 0u; i < class_template.signature_arguments.size(); ++i )
 	{
 		Value value;
@@ -514,31 +516,41 @@ NamesScope::InsertedName* CodeBuilder::GenTemplateClass(
 		}
 		catch( const ProgramError& )
 		{
-			return nullptr;
+			continue;
 		}
 
 		// Each template with template-dependent signature arguments is template-dependent values.
 		if( value.GetType() == NontypeStub::TemplateDependentValue )
-			return &template_names_scope.GetTemplateDependentValue();
+		{
+			is_template_dependent= true;
+			continue;
+		}
 
 		const ComplexName& name= *class_template.signature_arguments[i];
 
+		// TODO - maybe add some errors, if not deduced?
 		if( const Type* const type_name= value.GetTypeName() )
 		{
 			if( !DuduceTemplateArguments( class_template_ptr, *type_name, name, file_pos, deduced_template_args, template_names_scope ) )
-				return nullptr;
+				continue;
 		}
 		else if( const Variable* const variable= value.GetVariable() )
 		{
 			if( !DuduceTemplateArguments( class_template_ptr, *variable, name, file_pos, deduced_template_args, template_names_scope ) )
-				return nullptr;
+				continue;
 		}
 		else
 		{
 			errors_.push_back( ReportInvalidValueAsTemplateArgument( file_pos, value.GetType().ToString() ) );
-			return nullptr;
+			continue;
 		}
 	} // for arguments
+
+	if( is_template_dependent )
+	{
+		PopResolveHandler();
+		return &template_names_scope.GetTemplateDependentValue();
+	}
 
 	NamesScope& template_arguments_space= PushTemplateArgumentsSpace();
 
@@ -549,6 +561,7 @@ NamesScope::InsertedName* CodeBuilder::GenTemplateClass(
 		if( boost::get<int>( &arg ) != nullptr )
 		{
 			errors_.push_back( ReportTemplateParametersDeductionFailed( file_pos ) );
+			PopResolveHandler();
 			PopTemplateArgumentsSpace();
 			return nullptr;
 		}
@@ -587,11 +600,10 @@ NamesScope::InsertedName* CodeBuilder::GenTemplateClass(
 	if( NamesScope::InsertedName* const inserted_name= template_names_scope.GetThisScopeName( name_encoded ) )
 	{
 		// Already generated.
+		PopResolveHandler();
 		PopTemplateArgumentsSpace();
 		return inserted_name;
 	}
-
-	PushCacheGetResolveHandelr( class_template.resolving_cache );
 
 	ComplexName generated_class_complex_name;
 	generated_class_complex_name.components.emplace_back();
