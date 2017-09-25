@@ -110,11 +110,13 @@ private:
 		const ClassTemplatePtr& class_template_ptr,
 		const TemplateParameter& template_parameter,
 		const ComplexName& signature_parameter,
+		const FilePos& signature_parameter_file_pos,
 		DeducibleTemplateParameters& deducible_template_parameters,
 		NamesScope& names_scope );
 
 	// Returns nullptr in case of fail.
 	NamesScope::InsertedName* GenTemplateClass(
+		const FilePos& file_pos,
 		const ClassTemplatePtr& class_template_ptr,
 		const std::vector<IExpressionComponentPtr>& template_arguments,
 		NamesScope& template_names_scope,
@@ -402,14 +404,16 @@ private:
 	void PushCacheGetResolveHandelr( const ResolvingCache& resolving_cache );
 	void PopResolveHandler();
 
-	const NamesScope::InsertedName* ResolveName( NamesScope& names_scope, const ComplexName& complex_name );
+	const NamesScope::InsertedName* ResolveName( const FilePos& file_pos, NamesScope& names_scope, const ComplexName& complex_name );
 
 	const NamesScope::InsertedName* ResolveName(
+		const FilePos& file_pos,
 		NamesScope& names_scope,
 		const ComplexName::Component* components,
 		size_t component_count );
 
 	std::pair<const NamesScope::InsertedName*, NamesScope*> ResolveNameWithParentSpace(
+		const FilePos& file_pos,
 		NamesScope& names_scope,
 		const ComplexName::Component* components,
 		size_t component_count,
@@ -423,6 +427,7 @@ private:
 		size_t& out_skip_components );
 
 	std::pair<const NamesScope::InsertedName*, NamesScope*> FinishResolve(
+		const FilePos& file_pos,
 		NamesScope& names_scope,
 		NamesScope& resolve_from,
 		const ComplexName::Component* components,

@@ -841,7 +841,7 @@ Value CodeBuilder::BuildNamedOperand(
 		return *function_context.this_;
 	}
 
-	const NamesScope::InsertedName* name_entry= ResolveName( names, named_operand.name_ );
+	const NamesScope::InsertedName* name_entry= ResolveName( named_operand.file_pos_, names, named_operand.name_ );
 	if( !name_entry )
 	{
 		errors_.push_back( ReportNameNotFound( named_operand.file_pos_, named_operand.name_ ) );

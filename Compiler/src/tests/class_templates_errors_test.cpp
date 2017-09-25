@@ -21,7 +21,7 @@ U_TEST( InvalidValueAsTemplateArgumentTest0 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::InvalidValueAsTemplateArgument );
-	//U_TEST_ASSERT( error.file_pos.line == 6u );
+	U_TEST_ASSERT( error.file_pos.line == 6u );
 }
 
 U_TEST( InvalidTypeOfTemplateVariableArgumentTest0 )
@@ -41,7 +41,7 @@ U_TEST( InvalidTypeOfTemplateVariableArgumentTest0 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::InvalidTypeOfTemplateVariableArgument );
-	//U_TEST_ASSERT( error.file_pos.line == 6u );
+	U_TEST_ASSERT( error.file_pos.line == 5u );
 }
 
 // TODO - InvalidTypeOfTemplateVariableArgument for arrays, structs.
@@ -189,7 +189,6 @@ U_TEST( NameNotFound_ForClassTemplateSingatureArguments_Test0 )
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NameNotFound );
 	U_TEST_ASSERT( error.file_pos.line == 2u );
-
 }
 
 U_TEST( NameNotFound_ForClassTemplateArguments_Test0 )
@@ -209,7 +208,49 @@ U_TEST( NameNotFound_ForClassTemplateArguments_Test0 )
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NameNotFound );
 	U_TEST_ASSERT( error.file_pos.line == 2u );
+}
 
+U_TEST( ValueIsNotTemplateTest0 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo()
+		{
+			auto this_is_not_template= 0;
+			var this_is_not_template</ i32 /> some_var;
+		}
+	)";
+
+	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ValueIsNotTemplate );
+	U_TEST_ASSERT( error.file_pos.line == 5u );
+}
+
+U_TEST( TemplateInstantiationRequiredTest0 )
+{
+	static const char c_program_text[]=
+	R"(
+		template</ type T /> struct Box</ T /> { struct Tag{} T t; }
+
+		fn Foo()
+		{
+			var Box::Tag x;
+		}
+	)";
+
+	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::TemplateInstantiationRequired );
+	U_TEST_ASSERT( error.file_pos.line == 6u );
 }
 
 } // namespace U

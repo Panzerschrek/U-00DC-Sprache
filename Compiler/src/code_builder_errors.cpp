@@ -841,4 +841,26 @@ CodeBuilderError ReportDeclarationShadowsTemplateArgument( const FilePos& file_p
 	return error;
 }
 
+CodeBuilderError ReportValueIsNotTemplate( const FilePos& file_pos )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::ValueIsNotTemplate;
+
+	error.text= "Value is not template."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportTemplateInstantiationRequired( const FilePos& file_pos, const ProgramString& template_name )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::TemplateInstantiationRequired;
+
+	error.text= "\""_SpC + template_name + "\" template instantiation required."_SpC;
+
+	return error;
+}
+
 } // namespace U

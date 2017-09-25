@@ -223,7 +223,7 @@ Type CodeBuilder::PrepareType(
 	*last_type= FundamentalType( U_FundamentalType::InvalidType, fundamental_llvm_types_.invalid_type_ );
 
 	if( const NamesScope::InsertedName* name=
-		ResolveName( names_scope, type_name.name ) )
+		ResolveName( file_pos, names_scope, type_name.name ) )
 	{
 		if( name->second.GetType() == NontypeStub::TemplateDependentValue )
 			return NontypeStub::TemplateDependentValue;
@@ -310,7 +310,7 @@ ClassPtr CodeBuilder::PrepareClass(
 	else
 	{
 		// Complex name - make full name resolving.
-		previous_declaration= ResolveName( names_scope, class_complex_name );
+		previous_declaration= ResolveName( class_declaration.file_pos_, names_scope, class_complex_name );
 		if( previous_declaration == nullptr )
 		{
 			errors_.push_back( ReportClassDeclarationOutsideItsScope( class_declaration.file_pos_ ) );
@@ -1133,7 +1133,7 @@ void CodeBuilder::PrepareFunction(
 	{
 		// Complex name - search scope for this function.
 		if( const NamesScope::InsertedName* const scope_name=
-			ResolveName( func_definition_names_scope, func.name_.components.data(), func.name_.components.size() - 1u ) )
+			ResolveName( func.file_pos_, func_definition_names_scope, func.name_.components.data(), func.name_.components.size() - 1u ) )
 		{
 			bool base_space_is_class= false;
 			if( const Type* const type= scope_name->second.GetTypeName() )
@@ -3094,19 +3094,21 @@ void CodeBuilder::PopResolveHandler()
 	resolving_funcs_stack_.pop_back();
 }
 
-const NamesScope::InsertedName* CodeBuilder::ResolveName( NamesScope& names_scope, const ComplexName& complex_name )
+const NamesScope::InsertedName* CodeBuilder::ResolveName( const FilePos& file_pos, NamesScope& names_scope, const ComplexName& complex_name )
 {
-	return ResolveName( names_scope, complex_name.components.data(), complex_name.components.size() );
+	return ResolveName( file_pos, names_scope, complex_name.components.data(), complex_name.components.size() );
 }
 
 const NamesScope::InsertedName* CodeBuilder::ResolveName(
+	const FilePos& file_pos,
 	NamesScope& names_scope,
 	const ComplexName::Component* components, size_t component_count )
 {
-	return ResolveNameWithParentSpace( names_scope, components, component_count ).first;
+	return ResolveNameWithParentSpace( file_pos, names_scope, components, component_count ).first;
 }
 
 std::pair<const NamesScope::InsertedName*, NamesScope*> CodeBuilder::ResolveNameWithParentSpace(
+	const FilePos& file_pos,
 	NamesScope& names_scope,
 	const ComplexName::Component* const components,
 	const size_t component_count,
@@ -3136,6 +3138,7 @@ std::pair<const NamesScope::InsertedName*, NamesScope*> CodeBuilder::ResolveName
 		{
 			const NamesScope::InsertedName* generated_class=
 				GenTemplateClass(
+					file_pos,
 					class_template,
 					component.template_parameters,
 					*resolve_start_point.second,
@@ -3153,7 +3156,7 @@ std::pair<const NamesScope::InsertedName*, NamesScope*> CodeBuilder::ResolveName
 
 			if( skip_components == component_count )
 				return std::make_pair( generated_class, resolve_start_point.second );
-			return FinishResolve( names_scope, class_->members, components + skip_components, component_count  - skip_components );
+			return FinishResolve( file_pos, names_scope, class_->members, components + skip_components, component_count  - skip_components );
 		}
 		else
 		{
@@ -3161,8 +3164,7 @@ std::pair<const NamesScope::InsertedName*, NamesScope*> CodeBuilder::ResolveName
 				return resolve_start_point; // Return template itself
 			else
 			{
-				// TODO - register error, look inside template without instantiation
-				error_count_++;
+				errors_.push_back( ReportTemplateInstantiationRequired( file_pos, class_template->class_syntax_element->name_.components.back().name ) );
 				return std::make_pair( nullptr, nullptr );
 			}
 		}
@@ -3171,7 +3173,7 @@ std::pair<const NamesScope::InsertedName*, NamesScope*> CodeBuilder::ResolveName
 	{
 		if( component.have_template_parameters )
 		{
-			error_count_++; // TODO - register error - template parameters for non-template.
+			errors_.push_back( ReportValueIsNotTemplate( file_pos ) );
 			return std::make_pair( nullptr, nullptr );
 		}
 
@@ -3179,7 +3181,7 @@ std::pair<const NamesScope::InsertedName*, NamesScope*> CodeBuilder::ResolveName
 		if( skip_components == component_count )
 			return resolve_start_point;
 
-		return FinishResolve( names_scope, *resolve_start_point.second, components + minus_one, component_count - minus_one );
+		return FinishResolve( file_pos, names_scope, *resolve_start_point.second, components + minus_one, component_count - minus_one );
 	}
 }
 
@@ -3228,11 +3230,7 @@ std::pair<const NamesScope::InsertedName*, NamesScope*> CodeBuilder::PreResolveD
 		if( name == nullptr )
 			return std::make_pair( nullptr, nullptr );
 
-		if( components[0].have_template_parameters && name->second.GetClassTemplate() == nullptr )
-		{
-			error_count_++; // TODO - register error - template parameters for non-template.
-			return std::make_pair( nullptr, nullptr );
-		}
+		// TODO - generate error, for :: look inside non-class or namespace.
 
 		if( const NamesScopePtr child_namespace= name->second.GetNamespace() )
 		{
@@ -3255,6 +3253,7 @@ std::pair<const NamesScope::InsertedName*, NamesScope*> CodeBuilder::PreResolveD
 }
 
 std::pair<const NamesScope::InsertedName*, NamesScope*> CodeBuilder::FinishResolve(
+	const FilePos& file_pos,
 	NamesScope& names_scope, // Point, where resolve starts
 	NamesScope& resolve_from, // From which namespace we must start resolving.
 	const ComplexName::Component* components,
@@ -3272,7 +3271,7 @@ std::pair<const NamesScope::InsertedName*, NamesScope*> CodeBuilder::FinishResol
 
 		if( components[0].have_template_parameters && name->second.GetClassTemplate() == nullptr )
 		{
-			error_count_++; // TODO - register error - template parameters for non-template.
+			errors_.push_back( ReportValueIsNotTemplate( file_pos ) );
 			return ResultType( nullptr, nullptr );
 		}
 
@@ -3296,6 +3295,7 @@ std::pair<const NamesScope::InsertedName*, NamesScope*> CodeBuilder::FinishResol
 			{
 				const NamesScope::InsertedName* generated_class=
 					GenTemplateClass(
+						file_pos,
 						class_template,
 						components[0].template_parameters,
 						*resolve_start_point,
@@ -3318,6 +3318,8 @@ std::pair<const NamesScope::InsertedName*, NamesScope*> CodeBuilder::FinishResol
 				name_is_namespace_like= true;
 			}
 		}
+
+		// TODO - generate error, for :: look inside non-class or namespace.
 
 		if( component_count == 1u )
 			return ResultType( name, current_space );

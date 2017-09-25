@@ -104,6 +104,8 @@ enum class CodeBuilderErrorCode : unsigned int
 	InvalidTypeOfTemplateVariableArgument,
 	TemplateParametersDeductionFailed,
 	DeclarationShadowsTemplateArgument,
+	ValueIsNotTemplate,
+	TemplateInstantiationRequired,
 };
 
 struct CodeBuilderError
@@ -189,4 +191,7 @@ CodeBuilderError ReportInvalidValueAsTemplateArgument( const FilePos& file_pos, 
 CodeBuilderError ReportInvalidTypeOfTemplateVariableArgument( const FilePos& file_pos, const ProgramString& type_name );
 CodeBuilderError ReportTemplateParametersDeductionFailed( const FilePos& file_pos );
 CodeBuilderError ReportDeclarationShadowsTemplateArgument( const FilePos& file_pos, const ProgramString& name );
+CodeBuilderError ReportValueIsNotTemplate( const FilePos& file_pos );
+CodeBuilderError ReportTemplateInstantiationRequired( const FilePos& file_pos, const ProgramString& template_name );
+
 } // namespace U

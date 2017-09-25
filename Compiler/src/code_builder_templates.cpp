@@ -79,10 +79,12 @@ void CodeBuilder::PrepareClassTemplate(
 				}
 			}
 
+			// SPRACHE_TODO - support template-dependent template arguments, such template</ type T, Foo<T>::some_constant />
+
 			if( template_arg == nullptr )
 			{
 				// Search for external type name.
-				const NamesScope::InsertedName* const name= ResolveName( names_scope, arg.arg_type );
+				const NamesScope::InsertedName* const name= ResolveName( class_template_declaration.file_pos_, names_scope, arg.arg_type );
 				if( name == nullptr )
 				{
 					errors_.push_back( ReportNameNotFound( class_template_declaration.file_pos_, arg.arg_type ) );
@@ -124,7 +126,7 @@ void CodeBuilder::PrepareClassTemplate(
 			// Pre-resolve complex signature parameters.
 			// TODO - save this name in signature args, instead using raw ComplexName from syntax tree?
 			const std::pair< const NamesScope::InsertedName*, NamesScope* > start_name=
-				ResolveNameWithParentSpace( names_scope, signature_arg.name.components.data(), 1u, true );
+				ResolveNameWithParentSpace( class_template_declaration.file_pos_, names_scope, signature_arg.name.components.data(), 1u, true );
 			if( start_name.first == nullptr )
 				errors_.push_back( ReportNameNotFound( class_template_declaration.file_pos_, signature_arg.name ) );
 			// TODO - check start name kind?
@@ -166,11 +168,12 @@ bool CodeBuilder::DuduceTemplateArguments(
 	const ClassTemplatePtr& class_template_ptr,
 	const TemplateParameter& template_parameter,
 	const ComplexName& signature_parameter,
+	const FilePos& signature_parameter_file_pos,
 	DeducibleTemplateParameters& deducible_template_parameters,
 	NamesScope& names_scope )
 {
-	const FilePos file_pos= FilePos(); // TODO
 	const ClassTemplate& class_template= *class_template_ptr;
+	const FilePos& template_file_pos= class_template.class_syntax_element->file_pos_;
 
 	if( const Variable* const variable= boost::get<Variable>(&template_parameter) )
 	{
@@ -192,12 +195,12 @@ bool CodeBuilder::DuduceTemplateArguments(
 		if( fundamental_type == nullptr || !IsInteger( fundamental_type->fundamental_type ) )
 		{
 			// SPRACHE_TODO - allow non-fundamental value arguments.
-			errors_.push_back( ReportInvalidTypeOfTemplateVariableArgument( file_pos, variable->type.ToString() ) );
+			errors_.push_back( ReportInvalidTypeOfTemplateVariableArgument( signature_parameter_file_pos, variable->type.ToString() ) );
 			return false;
 		}
 		if( variable->constexpr_value == nullptr )
 		{
-			errors_.push_back( ReportExpectedConstantExpression( file_pos ) );
+			errors_.push_back( ReportExpectedConstantExpression( signature_parameter_file_pos ) );
 			return false;
 		}
 		if( dependend_arg_index != ~0u )
@@ -210,16 +213,16 @@ bool CodeBuilder::DuduceTemplateArguments(
 				return false;
 			}
 			const NamesScope::InsertedName* const type_name=
-				ResolveName( names_scope, *type_complex_name );
+				ResolveName( template_file_pos, names_scope, *type_complex_name );
 			if( type_name == nullptr )
 			{
-				ReportNameNotFound( file_pos, *type_complex_name );
+				ReportNameNotFound( template_file_pos, *type_complex_name );
 				return false;
 			}
 			const Type* const type= type_name->second.GetTypeName();
 			if( type_name == nullptr )
 			{
-				errors_.push_back( ReportNameIsNotTypeName( file_pos, type_complex_name->components.back().name ) );
+				errors_.push_back( ReportNameIsNotTypeName( template_file_pos, type_complex_name->components.back().name ) );
 				return false;
 			}
 			if( *type != variable->type )
@@ -300,7 +303,7 @@ bool CodeBuilder::DuduceTemplateArguments(
 	// Process simple fundamental type.
 	if( given_type.GetFundamentalType() != nullptr )
 	{
-		if( const NamesScope::InsertedName* const inserted_name= ResolveName( names_scope, signature_parameter ) )
+		if( const NamesScope::InsertedName* const inserted_name= ResolveName( template_file_pos, names_scope, signature_parameter ) )
 		{
 			if( const Type* type= inserted_name->second.GetTypeName() )
 			{
@@ -344,7 +347,7 @@ bool CodeBuilder::DuduceTemplateArguments(
 
 	// Resolve first component without template parameters.
 	const std::pair< const NamesScope::InsertedName*, NamesScope* > start_name=
-		ResolveNameWithParentSpace( names_scope, signature_parameter.components.data(), 1u, true );
+		ResolveNameWithParentSpace( template_file_pos, names_scope, signature_parameter.components.data(), 1u, true );
 	if( start_name.first == nullptr )
 		return false;
 	std::vector<TypePathComponent> start_name_predecessors;
@@ -450,6 +453,7 @@ bool CodeBuilder::DuduceTemplateArguments(
 							class_template,
 							class_.base_template->template_parameters[i],
 							*class_template->signature_arguments[i],
+							template_file_pos,
 							deducible_template_parameters,
 							names_scope );
 						if( !deduced )
@@ -482,6 +486,7 @@ bool CodeBuilder::DuduceTemplateArguments(
 }
 
 NamesScope::InsertedName* CodeBuilder::GenTemplateClass(
+	const FilePos& file_pos,
 	const ClassTemplatePtr& class_template_ptr,
 	const std::vector<IExpressionComponentPtr>& template_arguments,
 	NamesScope& template_names_scope,
@@ -491,8 +496,6 @@ NamesScope::InsertedName* CodeBuilder::GenTemplateClass(
 	// for one class template, but success for other.
 
 	const ClassTemplate& class_template= *class_template_ptr;
-
-	const FilePos file_pos= FilePos(); // TODO - set file_pos
 
 	if( class_template.signature_arguments.size() != template_arguments.size() )
 	{
@@ -522,12 +525,12 @@ NamesScope::InsertedName* CodeBuilder::GenTemplateClass(
 
 		if( const Type* const type_name= value.GetTypeName() )
 		{
-			if( !DuduceTemplateArguments( class_template_ptr, *type_name, name, deduced_template_args, template_names_scope ) )
+			if( !DuduceTemplateArguments( class_template_ptr, *type_name, name, file_pos, deduced_template_args, template_names_scope ) )
 				return nullptr;
 		}
 		else if( const Variable* const variable= value.GetVariable() )
 		{
-			if( !DuduceTemplateArguments( class_template_ptr, *variable, name, deduced_template_args, template_names_scope ) )
+			if( !DuduceTemplateArguments( class_template_ptr, *variable, name, file_pos, deduced_template_args, template_names_scope ) )
 				return nullptr;
 		}
 		else
