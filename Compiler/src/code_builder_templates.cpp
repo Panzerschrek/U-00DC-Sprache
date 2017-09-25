@@ -445,20 +445,14 @@ bool CodeBuilder::DuduceTemplateArguments(
 
 					for( size_t i= 0u; i < name_component.template_parameters.size(); ++i)
 					{
-						// TODO - process signature_args as expression.
-						const IExpressionComponent* const expr= name_component.template_parameters[i].get();
-						if( const NamedOperand* const named_operand= dynamic_cast<const NamedOperand*>(expr) )
-						{
-							const bool deduced= DuduceTemplateArguments(
-								class_template,
-								class_.base_template->template_parameters[i],
-								named_operand->name_,
-								deducible_template_parameters,
-								names_scope );
-							if( !deduced )
-								return false;
-						}
-						else
+						// TODO - Allow expressions as signature arguments - allow value-signature-arguments.
+						const bool deduced= DuduceTemplateArguments(
+							class_template,
+							class_.base_template->template_parameters[i],
+							*class_template->signature_arguments[i],
+							deducible_template_parameters,
+							names_scope );
+						if( !deduced )
 							return false;
 					}
 
