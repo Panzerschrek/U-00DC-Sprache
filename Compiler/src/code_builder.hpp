@@ -130,6 +130,11 @@ private:
 	void PopTemplateArgumentsSpace();
 	bool NameShadowsTemplateArgument( const ProgramString& name );
 
+	// Removes llvm-functions and functions of subclasses.
+	// Warning! Class must be not used after call of this function!
+	void RemoveTempClassLLVMValues( Class& class_ );
+
+	// Constructors/destructors
 	void TryGenerateDefaultConstructor( Class& the_class, const Type& class_type );
 	void TryGenerateCopyConstructor( Class& the_class, const Type& class_type );
 	void TryGenerateDestructor( Class& the_class, const Type& class_type );

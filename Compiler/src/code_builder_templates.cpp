@@ -157,11 +157,14 @@ void CodeBuilder::PrepareClassTemplate(
 	temp_class_name.components.back().name = "_temp"_SpC + class_template_declaration.class_->name_.components.back().name;
 	temp_class_name.components.back().is_generated= true;
 
-	PrepareClass( *class_template->class_syntax_element, temp_class_name, names_scope );
+	const ClassPtr the_class= PrepareClass( *class_template->class_syntax_element, temp_class_name, names_scope );
 
 	PopResolveHandler();
 
 	PopTemplateArgumentsSpace();
+
+	if( the_class != nullptr )
+		RemoveTempClassLLVMValues( *the_class );
 }
 
 bool CodeBuilder::DuduceTemplateArguments(
@@ -456,7 +459,7 @@ bool CodeBuilder::DuduceTemplateArguments(
 							template_file_pos,
 							deducible_template_parameters,
 							names_scope );
-						if( !d )
+						if( !deduced )
 							return false;
 					}
 
@@ -678,6 +681,30 @@ bool CodeBuilder::NameShadowsTemplateArgument( const ProgramString& name )
 	}
 
 	return false;
+}
+
+void CodeBuilder::RemoveTempClassLLVMValues( Class& class_ )
+{
+	class_.members.ForEachInThisScope(
+		[this]( const NamesScope::InsertedName& name )
+		{
+			if( const Type* const type= name.second.GetTypeName() )
+			{
+				if( const ClassPtr subclass= type->GetClassType() )
+					RemoveTempClassLLVMValues( *subclass );
+			}
+			else if( const OverloadedFunctionsSet* const functions_set= name.second.GetFunctionsSet() )
+			{
+				for( const FunctionVariable& function : *functions_set )
+					function.llvm_function->eraseFromParent();
+			}
+			else if( name.second.GetClassField() != nullptr )
+			{}
+			else
+			{
+				U_ASSERT(false);
+			}
+		} );
 }
 
 } // namespace CodeBuilderPrivate
