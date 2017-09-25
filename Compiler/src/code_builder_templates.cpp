@@ -38,6 +38,8 @@ void CodeBuilder::PrepareClassTemplate(
 	std::vector<ClassTemplate::TemplateParameter> template_parameters;
 	template_parameters.reserve( class_template_declaration.args_.size() );
 
+	PushCacheFillResolveHandler( class_template->resolving_cache, names_scope );
+
 	// Check and fill template parameters.
 	for( const ClassTemplateDeclaration::Arg& arg : class_template_declaration.args_ )
 	{
@@ -47,7 +49,7 @@ void CodeBuilder::PrepareClassTemplate(
 			if( prev_arg.name == arg.name )
 			{
 				errors_.push_back( ReportRedefinition( class_template_declaration.file_pos_, arg.name ) );
-				return;
+				continue;
 			}
 		}
 		if( NameShadowsTemplateArgument( arg.name ) )
@@ -59,15 +61,21 @@ void CodeBuilder::PrepareClassTemplate(
 		{
 			// If template parameter is value.
 
-			// Search type in template type-arguments.
 			const ClassTemplate::TemplateParameter* template_arg= nullptr;
-			for( const auto& prev_arg : template_parameters )
+			if( arg.arg_type.components.size() == 1u && !arg.arg_type.components.front().have_template_parameters )
 			{
-				if( prev_arg.type_name == nullptr &&
-					prev_arg.name == arg.name )
+				// Search type in template type-arguments.
+				for( const auto& prev_arg : template_parameters )
 				{
-					template_arg= &prev_arg;
-					break;
+					if( &prev_arg == &template_parameters.back() )
+						break;
+
+					if( prev_arg.type_name == nullptr &&
+						prev_arg.name == arg.arg_type.components.front().name )
+					{
+						template_arg= &prev_arg;
+						break;
+					}
 				}
 			}
 
@@ -78,13 +86,13 @@ void CodeBuilder::PrepareClassTemplate(
 				if( name == nullptr )
 				{
 					errors_.push_back( ReportNameNotFound( class_template_declaration.file_pos_, arg.arg_type ) );
-					return;
+					continue;
 				}
 				const Type* const type= name->second.GetTypeName();
 				if( type == nullptr )
 				{
 					errors_.push_back( ReportNameIsNotTypeName( class_template_declaration.file_pos_, name->first ) );
-					return;
+					continue;
 				}
 			}
 			template_parameters.back().type_name= &arg.arg_type;
@@ -109,23 +117,17 @@ void CodeBuilder::PrepareClassTemplate(
 
 		if( existent_template_param != nullptr )
 		{
+			// All ok - signature arg refers to template arg.
 		}
 		else
 		{
-			/* // TODO
-			const NamesScope::InsertedName* const name= ResolveName( names_scope, signature_arg.name );
-			if( name == nullptr )
-			{
+			// Pre-resolve complex signature parameters.
+			// TODO - save this name in signature args, instead using raw ComplexName from syntax tree?
+			const std::pair< const NamesScope::InsertedName*, NamesScope* > start_name=
+				ResolveNameWithParentSpace( names_scope, signature_arg.name.components.data(), 1u, true );
+			if( start_name.first == nullptr )
 				errors_.push_back( ReportNameNotFound( class_template_declaration.file_pos_, signature_arg.name ) );
-				return;
-			}
-			const Type* const type= name->second.GetTypeName();
-			if( type == nullptr )
-			{
-				errors_.push_back( ReportNameIsNotTypeName( class_template_declaration.file_pos_, name->first ) );
-				return;
-			}
-			*/
+			// TODO - check start name kind?
 		}
 		class_template->signature_arguments.push_back(&signature_arg.name);
 	}
@@ -145,8 +147,6 @@ void CodeBuilder::PrepareClassTemplate(
 	NamesScope& template_arguments_space= PushTemplateArgumentsSpace();
 	for( const ClassTemplate::TemplateParameter& param : class_template->template_parameters )
 		template_arguments_space.AddName( param.name, TemplateDependentValue() );
-
-	PushCacheFillResolveHandler( class_template->resolving_cache, names_scope );
 
 	// SPRACHE_TODO - pre-resolve signature paramters here too.
 
@@ -499,6 +499,7 @@ NamesScope::InsertedName* CodeBuilder::GenTemplateClass(
 		return nullptr;
 	}
 
+	// TODO - PushCacheGetResolveHandelr for template signature arguments here
 	DeducibleTemplateParameters deduced_template_args( class_template.template_parameters.size() );
 
 	for( size_t i= 0u; i < class_template.signature_arguments.size(); ++i )
