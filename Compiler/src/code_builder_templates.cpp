@@ -104,53 +104,22 @@ void CodeBuilder::PrepareClassTemplate(
 	// Check and fill signature args.
 	for( const ClassTemplateDeclaration::SignatureArg& signature_arg : class_template_declaration.signature_args_ )
 	{
-		ClassTemplate::TemplateParameter* existent_template_param= nullptr;
-		if( signature_arg.name.components.size() == 1u )
-		{
-			for( auto& template_param : template_parameters )
-			{
-				if( template_param.name == signature_arg.name.components.front().name )
-				{
-					existent_template_param= &template_param;
-					break;
-				}
-			}
-		}
-
-		if( existent_template_param != nullptr )
-		{
-			// All ok - signature arg refers to template arg.
-		}
-		else
-		{
-			// Pre-resolve complex signature parameters.
-			// TODO - save this name in signature args, instead using raw ComplexName from syntax tree?
-			const std::pair< const NamesScope::InsertedName*, NamesScope* > start_name=
-				ResolveNameWithParentSpace( class_template_declaration.file_pos_, names_scope, signature_arg.name.components.data(), 1u, true );
-			if( start_name.first == nullptr )
-				errors_.push_back( ReportNameNotFound( class_template_declaration.file_pos_, signature_arg.name ) );
-			// TODO - check start name kind?
-		}
+		PrepareTemplateSignatureParameter( class_template_declaration.file_pos_, signature_arg.name, names_scope, template_parameters );
 		class_template->signature_arguments.push_back(&signature_arg.name);
 	}
 
 	class_template->template_parameters= std::move(template_parameters);
 
 	// SPRACHE_TODO:
-	// *) Check signature arguments for template arguments.
 	// *) Convert signature and template arguments to "default form" for equality comparison.
 	// *) More and more checks.
-	// *) Resolve all class template names at template definition point.
 	// *) Make more and more other stuff.
 
 	// Make first check-pass for template. Resolve all names in this pass.
 
-
 	NamesScope& template_arguments_space= PushTemplateArgumentsSpace();
 	for( const ClassTemplate::TemplateParameter& param : class_template->template_parameters )
 		template_arguments_space.AddName( param.name, TemplateDependentValue() );
-
-	// SPRACHE_TODO - pre-resolve signature paramters here too.
 
 	ComplexName temp_class_name;
 	temp_class_name.components.emplace_back();
@@ -165,6 +134,40 @@ void CodeBuilder::PrepareClassTemplate(
 
 	if( the_class != nullptr )
 		RemoveTempClassLLVMValues( *the_class );
+}
+
+void CodeBuilder::PrepareTemplateSignatureParameter(
+	const FilePos& file_pos,
+	const ComplexName& signature_parameter,
+	NamesScope& names_scope,
+	const std::vector<ClassTemplate::TemplateParameter>& template_parameters )
+{
+	// Check if signature parameter is template parameter.
+	if( signature_parameter.components.size() == 1u && !signature_parameter.components.front().have_template_parameters )
+	{
+		for( auto& template_param : template_parameters )
+			if( template_param.name == signature_parameter.components.front().name )
+				return;
+	}
+
+	// TODO - try resolve template parameters from outer templates here
+
+	// Do recursive preresolve for subsequent deduction.
+
+	size_t skip_components= 0u;
+	const std::pair< const NamesScope::InsertedName*, NamesScope* > start_name=
+		PreResolve( names_scope, signature_parameter.components.data(), signature_parameter.components.size(), skip_components );
+	if( start_name.first == nullptr )
+		errors_.push_back( ReportNameNotFound( file_pos, signature_parameter ) );
+	for( const ComplexName::Component& component : signature_parameter.components )
+	{
+		for( const IExpressionComponentPtr& template_parameter : component.template_parameters )
+		{
+			if( const NamedOperand* const named_operand= dynamic_cast<const NamedOperand*>(template_parameter.get()))
+				PrepareTemplateSignatureParameter( file_pos, named_operand->name_, names_scope, template_parameters );
+			// SPRACHE_TODO - allow value-expressions here
+		}
+	}
 }
 
 bool CodeBuilder::DuduceTemplateArguments(
@@ -348,11 +351,13 @@ bool CodeBuilder::DuduceTemplateArguments(
 		}
 	}
 
-	// Resolve first component without template parameters.
+	size_t signature_name_components_skip= 0u;
+	// TODO - try get template parameters from outer templates here
 	const std::pair< const NamesScope::InsertedName*, NamesScope* > start_name=
-		ResolveNameWithParentSpace( template_file_pos, names_scope, signature_parameter.components.data(), 1u, true );
+		PreResolve( names_scope, signature_parameter.components.data(), signature_parameter.components.size(), signature_name_components_skip );
 	if( start_name.first == nullptr )
 		return false;
+	U_ASSERT( signature_name_components_skip > 0u && signature_name_components_skip <= signature_parameter.components.size() );
 	std::vector<TypePathComponent> start_name_predecessors;
 	{
 		const NamesScope* n= start_name.second;
@@ -377,7 +382,7 @@ bool CodeBuilder::DuduceTemplateArguments(
 	}
 
 	{
-		// Now, we have two squaences - for given type and for start part of complex name in template signature parameter.
+		// Now, we have two sequences - for given type and for start part of complex name in template signature parameter.
 		// Check, if template signature parameter predecessors is a subsequence of actual type predecessors.
 		if( start_name_predecessors.size() > given_type_predecessors.size() )
 			return false;
@@ -391,9 +396,9 @@ bool CodeBuilder::DuduceTemplateArguments(
 	}
 
 	const NamesScope::InsertedName* current_name= start_name.first;
-	for( size_t n= 0u; n < signature_parameter.components.size(); ++n)
+	for( size_t n= signature_name_components_skip - 1u; n < signature_parameter.components.size(); ++n)
 	{
-		const size_t given_type_n= n + start_name_predecessors.size(); // TODO - check this
+		const size_t given_type_n= n + start_name_predecessors.size() - (signature_name_components_skip - 1u); // TODO - check this
 		const TypePathComponent& given_type_component= given_type_predecessors[given_type_n];
 		const ComplexName::Component& name_component= signature_parameter.components[n];
 
@@ -451,15 +456,20 @@ bool CodeBuilder::DuduceTemplateArguments(
 
 					for( size_t i= 0u; i < name_component.template_parameters.size(); ++i)
 					{
-						// TODO - Allow expressions as signature arguments - allow value-signature-arguments.
-						const bool deduced= DuduceTemplateArguments(
-							class_template,
-							class_.base_template->template_parameters[i],
-							*class_template->signature_arguments[i],
-							template_file_pos,
-							deducible_template_parameters,
-							names_scope );
-						if( !deduced )
+						// TODO - Allow expressions as signature arguments - value-signature-arguments.
+						if( const NamedOperand* const named_operand= dynamic_cast<const NamedOperand*>( name_component.template_parameters[i].get() ) )
+						{
+							const bool deduced= DuduceTemplateArguments(
+								class_template,
+								class_.base_template->template_parameters[i],
+								named_operand->name_,
+								template_file_pos,
+								deducible_template_parameters,
+								names_scope );
+							if( !deduced )
+								return false;
+						}
+						else
 							return false;
 					}
 

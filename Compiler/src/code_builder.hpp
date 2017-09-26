@@ -105,6 +105,12 @@ private:
 	// Templates
 	void PrepareClassTemplate( const ClassTemplateDeclaration& class_template_declaration, NamesScope& names_scope );
 
+	void PrepareTemplateSignatureParameter(
+		const FilePos& file_pos,
+		const ComplexName& signature_parameter,
+		NamesScope& names_scope,
+		const std::vector<ClassTemplate::TemplateParameter>& template_parameters );
+
 	// Returns true, if all ok.
 	bool DuduceTemplateArguments(
 		const ClassTemplatePtr& class_template_ptr,

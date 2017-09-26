@@ -599,6 +599,46 @@ U_TEST( ClassTemplateTest16 )
 	U_TEST_ASSERT( static_cast<uint64_t>( 458 ) == result_value.IntVal.getLimitedValue() );
 }
 
+U_TEST( ClassTemplateTest17 )
+{
+	// Recursive deduction preresolve test.
+	static const char c_program_text[]=
+	R"(
+		template</ type T /> struct Baz</ T /> { T t; }
+		template</ type T /> struct Box</ T /> { T t; } // Must see here
+
+		namespace MMM
+		{
+			template</ type T />
+			struct Point</ Baz</ Box</ T /> /> />
+			{
+				T x;
+			}
+
+			template</ type T /> struct Box</ T /> { T t; } // Not here
+		}
+
+		fn Foo() : i32
+		{
+			var MMM::Point</ Baz</ Box</ i32 /> /> /> p= zero_init;
+			p.x= 55474;
+			return p.x;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( static_cast<uint64_t>( 55474 ) == result_value.IntVal.getLimitedValue() );
+}
+
 U_TEST( ClassPrepass_Test0 )
 {
 	static const char c_program_text[]=
