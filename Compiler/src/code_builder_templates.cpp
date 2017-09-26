@@ -209,58 +209,50 @@ bool CodeBuilder::DuduceTemplateArguments(
 			errors_.push_back( ReportExpectedConstantExpression( signature_parameter_file_pos ) );
 			return false;
 		}
-		if( dependend_arg_index != ~0u )
-		{
-			// TODO - perform type checks earlier, when template defined.
-			const ComplexName* const type_complex_name= class_template.template_parameters[ dependend_arg_index ].type_name;
-			if( type_complex_name == nullptr )
-			{
-				// Expected variable, but type given.
-				return false;
-			}
-			const NamesScope::InsertedName* const type_name=
-				ResolveName( template_file_pos, names_scope, *type_complex_name );
-			if( type_name == nullptr )
-			{
-				ReportNameNotFound( template_file_pos, *type_complex_name );
-				return false;
-			}
-			const Type* const type= type_name->second.GetTypeName();
-			if( type_name == nullptr )
-			{
-				errors_.push_back( ReportNameIsNotTypeName( template_file_pos, type_complex_name->components.back().name ) );
-				return false;
-			}
-			if( *type != variable->type )
-			{
-				// Given type does not match actual type.
-				return false;
-			}
-
-			// Allocate global variable, because we needs address.
-
-			Variable variable_for_insertion;
-			variable_for_insertion.type= *type;
-			variable_for_insertion.location= Variable::Location::Pointer;
-			variable_for_insertion.value_type= ValueType::ConstReference;
-			llvm::GlobalValue* const global_value=
-				new llvm::GlobalVariable(
-					*module_,
-					variable->type.GetLLVMType(),
-					true,
-					llvm::GlobalValue::LinkageTypes::InternalLinkage,
-					variable->constexpr_value,
-					ToStdString( class_template.template_parameters[ dependend_arg_index ].name ) );
-			global_value->setUnnamedAddr(true); // We do not require unique address.
-			variable_for_insertion.llvm_value= global_value;
-			variable_for_insertion.constexpr_value= variable->constexpr_value;
-
-			deducible_template_parameters[dependend_arg_index]= std::move( variable_for_insertion );
-
-			return true;
-		}
-		else
+		if( dependend_arg_index == ~0u )
 			return false;
+
+		// Check given type and type from signature, deduce also some complex names.
+		if( !DuduceTemplateArguments(
+				class_template_ptr,
+				variable->type,
+				*class_template.template_parameters[ dependend_arg_index ].type_name,
+				signature_parameter_file_pos,
+				deducible_template_parameters,
+				names_scope ) )
+			return false;
+
+		// Allocate global variable, because we needs address.
+
+		Variable variable_for_insertion;
+		variable_for_insertion.type= variable->type;
+		variable_for_insertion.location= Variable::Location::Pointer;
+		variable_for_insertion.value_type= ValueType::ConstReference;
+		llvm::GlobalValue* const global_value=
+			new llvm::GlobalVariable(
+				*module_,
+				variable->type.GetLLVMType(),
+				true,
+				llvm::GlobalValue::LinkageTypes::InternalLinkage,
+				variable->constexpr_value,
+				ToStdString( class_template.template_parameters[ dependend_arg_index ].name ) );
+		global_value->setUnnamedAddr(true); // We do not require unique address.
+		variable_for_insertion.llvm_value= global_value;
+		variable_for_insertion.constexpr_value= variable->constexpr_value;
+
+		if( boost::get<int>( &deducible_template_parameters[ dependend_arg_index ] ) != nullptr )
+			deducible_template_parameters[ dependend_arg_index ]= std::move( variable_for_insertion ); // Set empty arg.
+		else if( boost::get<Type>( &deducible_template_parameters[ dependend_arg_index ] ) != nullptr )
+			return false; // WTF?
+		else if( const Variable* const prev_variable_value= boost::get<Variable>( &deducible_template_parameters[ dependend_arg_index ] )  )
+		{
+			// Variable already known, Check conflicts.
+			// TODO - do real comparision
+			if( prev_variable_value->constexpr_value->getUniqueInteger() != variable_for_insertion.constexpr_value->getUniqueInteger() )
+				return false;
+		}
+
+		return true;
 	}
 
 	const Type& given_type= boost::get<Type>(template_parameter);

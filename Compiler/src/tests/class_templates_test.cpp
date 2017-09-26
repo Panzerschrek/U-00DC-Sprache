@@ -639,6 +639,36 @@ U_TEST( ClassTemplateTest17 )
 	U_TEST_ASSERT( static_cast<uint64_t>( 55474 ) == result_value.IntVal.getLimitedValue() );
 }
 
+U_TEST( ClassTemplateTest18_DeduceAlsoTypeParameterFromValueParameter )
+{
+	static const char c_program_text[]=
+	R"(
+		template</ type T, T val />
+		struct ConstantKeeper</ val />
+		{
+			fn Get() : T { return val; }
+			fn GetZero() : T { return T(0); }
+		}
+
+		fn Foo() : u32
+		{
+			return ConstantKeeper</ 666u />::Get() + ConstantKeeper</ 44u />::GetZero();
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( static_cast<uint64_t>( 666 ) == result_value.IntVal.getLimitedValue() );
+}
+
 U_TEST( ClassPrepass_Test0 )
 {
 	static const char c_program_text[]=
