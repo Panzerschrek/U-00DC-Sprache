@@ -3110,8 +3110,8 @@ const NamesScope::InsertedName* CodeBuilder::ResolveName(
 std::pair<const NamesScope::InsertedName*, NamesScope*> CodeBuilder::ResolveNameWithParentSpace(
 	const FilePos& file_pos,
 	NamesScope& names_scope,
-	const ComplexName::Component* const components,
-	const size_t component_count,
+	const ComplexName::Component* components,
+	size_t component_count,
 	const bool only_primary_resolove )
 {
 	const std::pair<const NamesScope::InsertedName*, NamesScope*> template_argument=
@@ -3123,7 +3123,7 @@ std::pair<const NamesScope::InsertedName*, NamesScope*> CodeBuilder::ResolveName
 
 	size_t skip_components= 0u;
 	const std::pair<const NamesScope::InsertedName*, NamesScope*> resolve_start_point=
-		(*resolving_funcs_stack_.back())( names_scope, components, component_count, skip_components );
+		PreResolve( names_scope, components, component_count, skip_components );
 	if( resolve_start_point.first == nullptr )
 		return std::make_pair( nullptr, nullptr );
 	U_ASSERT( skip_components > 0u && skip_components <= component_count );
@@ -3131,58 +3131,82 @@ std::pair<const NamesScope::InsertedName*, NamesScope*> CodeBuilder::ResolveName
 	if( only_primary_resolove )
 		return resolve_start_point;
 
-	const ComplexName::Component& component= components[ skip_components - 1u ];
-	if( const ClassTemplatePtr class_template= resolve_start_point.first->second.GetClassTemplate() )
+	components+= skip_components - 1u;
+	component_count-= skip_components - 1u;
+	const NamesScope::InsertedName* name= resolve_start_point.first;
+	NamesScope* current_space= resolve_start_point.second;
+	do
 	{
-		if( component.have_template_parameters )
-		{
-			const NamesScope::InsertedName* generated_class=
-				GenTemplateClass(
-					file_pos,
-					class_template,
-					component.template_parameters,
-					*resolve_start_point.second,
-					names_scope );
-			if( generated_class == nullptr )
-				return std::make_pair( nullptr, nullptr );
-			if( generated_class->second.GetType() == NontypeStub::TemplateDependentValue )
-				return std::make_pair( generated_class, resolve_start_point.second );
-
-			const Type* const type= generated_class->second.GetTypeName();
-			U_ASSERT( type != nullptr );
-			const ClassPtr class_= type->GetClassType();
-			// SPRACHE_TODO - allow non-class types as result of template.
-			U_ASSERT( class_ != nullptr );
-
-			if( skip_components == component_count )
-				return std::make_pair( generated_class, resolve_start_point.second );
-			return FinishResolve( file_pos, names_scope, class_->members, components + skip_components, component_count  - skip_components );
-		}
-		else
-		{
-			if( skip_components == component_count )
-				return resolve_start_point; // Return template itself
-			else
-			{
-				errors_.push_back( ReportTemplateInstantiationRequired( file_pos, class_template->class_syntax_element->name_.components.back().name ) );
-				return std::make_pair( nullptr, nullptr );
-			}
-		}
-	}
-	else
-	{
-		if( component.have_template_parameters )
+		if( components[0].have_template_parameters && name->second.GetClassTemplate() == nullptr )
 		{
 			errors_.push_back( ReportValueIsNotTemplate( file_pos ) );
 			return std::make_pair( nullptr, nullptr );
 		}
 
-		const size_t minus_one= skip_components - 1u;
-		if( skip_components == component_count )
-			return resolve_start_point;
+		NamesScope* next_space= nullptr;
 
-		return FinishResolve( file_pos, names_scope, *resolve_start_point.second, components + minus_one, component_count - minus_one );
-	}
+		if( const NamesScopePtr inner_namespace= name->second.GetNamespace() )
+			next_space= inner_namespace.get();
+		else if( const Type* const type= name->second.GetTypeName() )
+		{
+			if( const ClassPtr class_= type->GetClassType() )
+				next_space= &class_->members;
+		}
+		else if( const ClassTemplatePtr class_template = name->second.GetClassTemplate() )
+		{
+			if( components[0].have_template_parameters )
+			{
+				const NamesScope::InsertedName* generated_class=
+					GenTemplateClass(
+						file_pos,
+						class_template,
+						components[0].template_parameters,
+						*current_space,
+						names_scope );
+				if( generated_class == nullptr )
+					return std::make_pair( nullptr, nullptr );
+				if( generated_class->second.GetType() == NontypeStub::TemplateDependentValue )
+					return std::make_pair( generated_class, current_space );
+
+				const Type* const type= generated_class->second.GetTypeName();
+				U_ASSERT( type != nullptr );
+				const ClassPtr class_= type->GetClassType();
+				// SPRACHE_TODO - allow non-class types as result of template.
+				U_ASSERT( class_ != nullptr );
+				next_space= &class_->members;
+				name= generated_class;
+			}
+			else if( component_count >= 2u )
+			{
+				errors_.push_back( ReportTemplateInstantiationRequired( file_pos, class_template->class_syntax_element->name_.components.back().name ) );
+				return std::make_pair( nullptr, nullptr );
+			}
+		}
+
+		if( component_count == 1u )
+			break;
+		else if( next_space != nullptr )
+		{
+			name= next_space->GetThisScopeName( components[1].name );
+			current_space= next_space;
+		}
+		else
+			return std::make_pair( nullptr, nullptr );
+
+		++components;
+		--component_count;
+	} while ( component_count > 0u );
+
+	return std::make_pair( name, current_space );
+}
+
+std::pair<const NamesScope::InsertedName*, NamesScope*> CodeBuilder::PreResolve(
+	NamesScope& names_scope,
+	const ComplexName::Component* const components,
+	const size_t component_count,
+	size_t& out_skip_components )
+{
+	return (*resolving_funcs_stack_.back())( names_scope, components, component_count, out_skip_components );
 }
 
 std::pair<const NamesScope::InsertedName*, NamesScope*> CodeBuilder::PreResolveDefault(
@@ -3250,87 +3274,6 @@ std::pair<const NamesScope::InsertedName*, NamesScope*> CodeBuilder::PreResolveD
 	}
 
 	return std::make_pair( nullptr, nullptr );
-}
-
-std::pair<const NamesScope::InsertedName*, NamesScope*> CodeBuilder::FinishResolve(
-	const FilePos& file_pos,
-	NamesScope& names_scope, // Point, where resolve starts
-	NamesScope& resolve_from, // From which namespace we must start resolving.
-	const ComplexName::Component* components,
-	size_t component_count )
-{
-	typedef std::pair<const NamesScope::InsertedName*, NamesScope*> ResultType;
-
-	NamesScope* resolve_start_point= &resolve_from;
-	while( component_count > 0u )
-	{
-		NamesScope* const current_space= resolve_start_point;
-		NamesScope::InsertedName* const name= resolve_start_point->GetThisScopeName( components[0].name );
-		if( name == nullptr )
-			return ResultType( nullptr, nullptr );
-
-		if( components[0].have_template_parameters && name->second.GetClassTemplate() == nullptr )
-		{
-			errors_.push_back( ReportValueIsNotTemplate( file_pos ) );
-			return ResultType( nullptr, nullptr );
-		}
-
-		bool name_is_namespace_like= false;
-		if( const NamesScopePtr inner_namespace= name->second.GetNamespace() )
-		{
-			resolve_start_point= inner_namespace.get();
-			name_is_namespace_like= true;
-		}
-		else if( const Type* const type= name->second.GetTypeName() )
-		{
-			if( const ClassPtr class_= type->GetClassType() )
-			{
-				resolve_start_point= &class_->members;
-				name_is_namespace_like= true;
-			}
-		}
-		else if( const ClassTemplatePtr class_template = name->second.GetClassTemplate() )
-		{
-			if( components[0].have_template_parameters ) // TODO - turn on this
-			{
-				const NamesScope::InsertedName* generated_class=
-					GenTemplateClass(
-						file_pos,
-						class_template,
-						components[0].template_parameters,
-						*resolve_start_point,
-						names_scope );
-				if( generated_class == nullptr )
-					return ResultType( nullptr, nullptr );
-				if( generated_class->second.GetType() == NontypeStub::TemplateDependentValue )
-					return ResultType( generated_class, current_space );
-
-				const Type* const type= generated_class->second.GetTypeName();
-				U_ASSERT( type != nullptr );
-				const ClassPtr class_= type->GetClassType();
-				// SPRACHE_TODO - allow non-class types as result of template.
-				U_ASSERT( class_ != nullptr );
-				resolve_start_point= &class_->members;
-
-				if( component_count == 1u )
-					return ResultType( generated_class, current_space );
-
-				name_is_namespace_like= true;
-			}
-		}
-
-		// TODO - generate error, for :: look inside non-class or namespace.
-
-		if( component_count == 1u )
-			return ResultType( name, current_space );
-		else if( !name_is_namespace_like )
-			return ResultType( nullptr, nullptr );
-
-		++components;
-		--component_count;
-	}
-
-	return ResultType( nullptr, nullptr );
 }
 
 U_FundamentalType CodeBuilder::GetNumericConstantType( const NumericConstant& number )

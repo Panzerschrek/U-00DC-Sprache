@@ -424,19 +424,18 @@ private:
 		size_t component_count,
 		bool only_primary_resolove= false );
 
+	std::pair<const NamesScope::InsertedName*, NamesScope*> PreResolve(
+		NamesScope& names_scope,
+		const ComplexName::Component* components,
+		size_t component_count,
+		size_t& out_skip_components );
+
 	// Finds namespace, where are name. Do not search in classes (returns class itself)
 	std::pair<const NamesScope::InsertedName*, NamesScope*> PreResolveDefault(
 		NamesScope& names_scope,
 		const ComplexName::Component* components,
 		size_t component_count,
 		size_t& out_skip_components );
-
-	std::pair<const NamesScope::InsertedName*, NamesScope*> FinishResolve(
-		const FilePos& file_pos,
-		NamesScope& names_scope,
-		NamesScope& resolve_from,
-		const ComplexName::Component* components,
-		size_t component_count );
 
 	static U_FundamentalType GetNumericConstantType( const NumericConstant& number );
 
