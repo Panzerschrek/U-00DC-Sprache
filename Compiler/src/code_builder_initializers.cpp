@@ -64,7 +64,7 @@ void CodeBuilder::ApplyEmptyInitializer(
 	const Variable& variable,
 	FunctionContext& function_context )
 {
-	if( variable.type == NontypeStub::TemplateDependentValue )
+	if( variable.type.GetTemplateDependentType() != nullptr )
 		return;
 
 	if( !variable.type.IsDefaultConstructible() )
@@ -127,7 +127,7 @@ llvm::Constant* CodeBuilder::ApplyArrayInitializer(
 	NamesScope& block_names,
 	FunctionContext& function_context )
 {
-	if( variable.type == NontypeStub::TemplateDependentValue )
+	if( variable.type.GetTemplateDependentType() != nullptr )
 	{
 		for( const IInitializerPtr& sub_initializer : initializer.initializers )
 			ApplyInitializer( variable, *sub_initializer, block_names, function_context );
@@ -198,7 +198,7 @@ void CodeBuilder::ApplyStructNamedInitializer(
 	NamesScope& block_names,
 	FunctionContext& function_context )
 {
-	if( variable.type == NontypeStub::TemplateDependentValue )
+	if( variable.type.GetTemplateDependentType() != nullptr )
 	{
 		for( const StructNamedInitializer::MemberInitializer& member_initializer : initializer.members_initializers )
 			ApplyInitializer( variable, *member_initializer.initializer, block_names, function_context );
@@ -279,7 +279,7 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 	NamesScope& block_names,
 	FunctionContext& function_context )
 {
-	if( variable.type == NontypeStub::TemplateDependentValue )
+	if( variable.type.GetTemplateDependentType() != nullptr )
 	{
 		for( const IExpressionComponentPtr& arg : call_operator.arguments_ )
 			BuildExpressionCode( *arg, block_names, function_context );
@@ -297,7 +297,8 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 		// SPRACHE_TODO - maybe we need save temporaries of this expression?
 		const Value expression_result=
 			BuildExpressionCodeAndDestroyTemporaries( *call_operator.arguments_.front(), block_names, function_context );
-		if( expression_result.GetType() == NontypeStub::TemplateDependentValue )
+		if( expression_result.GetType() == NontypeStub::TemplateDependentValue ||
+			expression_result.GetType().GetTemplateDependentType() != nullptr )
 			return llvm::UndefValue::get( dst_type->llvm_type );
 
 		const Type expression_type= expression_result.GetType();
@@ -476,7 +477,7 @@ llvm::Constant* CodeBuilder::ApplyExpressionInitializer(
 	NamesScope& block_names,
 	FunctionContext& function_context )
 {
-	if( variable.type == NontypeStub::TemplateDependentValue )
+	if( variable.type.GetTemplateDependentType() != nullptr )
 	{
 		BuildExpressionCode( *initializer.expression, block_names, function_context );
 		return nullptr;
@@ -489,7 +490,8 @@ llvm::Constant* CodeBuilder::ApplyExpressionInitializer(
 		// SPRACHE_TODO - maybe we need save temporaries of this expression?
 		const Value expression_result=
 			BuildExpressionCodeAndDestroyTemporaries( *initializer.expression, block_names, function_context );
-		if( expression_result.GetType() == NontypeStub::TemplateDependentValue )
+		if( expression_result.GetType() == NontypeStub::TemplateDependentValue ||
+			expression_result.GetType().GetTemplateDependentType() != nullptr )
 			return llvm::UndefValue::get( fundamental_type->llvm_type );
 
 		if( expression_result.GetType() != variable.type )
@@ -519,7 +521,7 @@ llvm::Constant* CodeBuilder::ApplyZeroInitializer(
 	NamesScope& block_names,
 	FunctionContext& function_context )
 {
-	if( variable.type == NontypeStub::TemplateDependentValue )
+	if( variable.type.GetTemplateDependentType() != nullptr )
 		return nullptr;
 
 	if( const FundamentalType* const fundamental_type= variable.type.GetFundamentalType() )

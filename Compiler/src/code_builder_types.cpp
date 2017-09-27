@@ -81,12 +81,27 @@ FundamentalType::FundamentalType(
 	, llvm_type(in_llvm_type)
 {}
 
+TemplateDependentType::TemplateDependentType( const size_t in_index, llvm::Type* const in_llvm_type )
+	: index(in_index)
+	, llvm_type( in_llvm_type )
+{}
+
 bool operator==( const FundamentalType& r, const FundamentalType& l )
 {
 	return r.fundamental_type == l.fundamental_type;
 }
 
 bool operator!=( const FundamentalType& r, const FundamentalType& l )
+{
+	return !( r == l );
+}
+
+bool operator==( const TemplateDependentType& r, const TemplateDependentType& l )
+{
+	return r.index == l.index;
+}
+
+bool operator!=( const TemplateDependentType& r, const TemplateDependentType& l )
 {
 	return !( r == l );
 }
@@ -131,6 +146,12 @@ Type::Type( const NontypeStub nontype_strub )
 	something_= nontype_strub;
 }
 
+
+Type::Type( TemplateDependentType template_dependent_type )
+{
+	something_= std::move( template_dependent_type );
+}
+
 Type& Type::operator=( const Type& other )
 {
 	struct Visitor final : public boost::static_visitor<>
@@ -166,6 +187,11 @@ Type& Type::operator=( const Type& other )
 		void operator()( const NontypeStub& stub )
 		{
 			this_.something_= stub;
+		}
+
+		void operator()( const TemplateDependentType& template_dependent_type )
+		{
+			this_.something_= template_dependent_type;
 		}
 	};
 
@@ -224,6 +250,16 @@ ClassPtr Type::GetClassType() const
 	return *class_type;
 }
 
+TemplateDependentType* Type::GetTemplateDependentType()
+{
+	return boost::get<TemplateDependentType>( &something_ );
+}
+
+const TemplateDependentType* Type::GetTemplateDependentType() const
+{
+	return boost::get<TemplateDependentType>( &something_ );
+}
+
 size_t Type::SizeOf() const
 {
 	struct Visitor final : public boost::static_visitor<>
@@ -257,6 +293,12 @@ size_t Type::SizeOf() const
 		{
 			U_UNUSED(stub);
 			U_ASSERT( false && "SizeOf method not supported for stub types." );
+		}
+
+		void operator()( const TemplateDependentType& template_dependent_type )
+		{
+			U_UNUSED(template_dependent_type);
+			U_ASSERT( false && "SizeOf method not supported for template-dependent types." );
 		}
 	};
 
@@ -382,6 +424,11 @@ llvm::Type* Type::GetLLVMType() const
 		{
 			U_UNUSED(stub);
 		}
+
+		void operator()( const TemplateDependentType& template_dependent_type )
+		{
+			llvm_type= template_dependent_type.llvm_type;
+		}
 	};
 
 	Visitor visitor;
@@ -463,6 +510,11 @@ ProgramString Type::ToString() const
 			};
 			U_ASSERT(!result.empty());
 		}
+
+		void operator()( const TemplateDependentType& )
+		{
+			result= "template dependent type"_SpC;
+		}
 	};
 
 	Visitor visitor;
@@ -494,6 +546,10 @@ bool operator==( const Type& r, const Type& l )
 	else if( r.something_.which() == 4 )
 	{
 		return boost::get<NontypeStub>(r.something_) == boost::get<NontypeStub>(l.something_);
+	}
+	else if( r.something_.which() == 5 )
+	{
+		return boost::get<TemplateDependentType>(r.something_) == boost::get<TemplateDependentType>(l.something_);
 	}
 
 	U_ASSERT(false);

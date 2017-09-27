@@ -43,6 +43,14 @@ struct FundamentalType final
 	FundamentalType( U_FundamentalType fundamental_type= U_FundamentalType::Void, llvm::Type* llvm_type= nullptr );
 };
 
+struct TemplateDependentType
+{
+	size_t index;
+	llvm::Type* llvm_type;
+
+	TemplateDependentType( size_t in_index, llvm::Type* in_llvm_type );
+};
+
 // Stub for type of non-variable "Values".
 enum class NontypeStub
 {
@@ -56,6 +64,9 @@ enum class NontypeStub
 
 bool operator==( const FundamentalType& r, const FundamentalType& l );
 bool operator!=( const FundamentalType& r, const FundamentalType& l );
+
+bool operator==( const TemplateDependentType& r, const TemplateDependentType& l );
+bool operator!=( const TemplateDependentType& r, const TemplateDependentType& l );
 
 class Type final
 {
@@ -75,6 +86,7 @@ public:
 	Type( Array&& array_type );
 	Type( ClassPtr class_type );
 	Type( NontypeStub nontype_strub );
+	Type( TemplateDependentType template_dependent_type );
 
 	// Get different type kinds.
 	FundamentalType* GetFundamentalType();
@@ -84,6 +96,8 @@ public:
 	Array* GetArrayType();
 	const Array* GetArrayType() const;
 	ClassPtr GetClassType() const;
+	TemplateDependentType* GetTemplateDependentType();
+	const TemplateDependentType* GetTemplateDependentType() const;
 
 	// TODO - does this method needs?
 	size_t SizeOf() const;
@@ -108,7 +122,8 @@ private:
 		FunctionPtr,
 		ArrayPtr,
 		ClassPtr,
-		NontypeStub> something_;
+		NontypeStub,
+		TemplateDependentType> something_;
 };
 
 bool operator==( const Type& r, const Type& l );

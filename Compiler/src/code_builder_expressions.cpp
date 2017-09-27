@@ -81,6 +81,14 @@ Value CodeBuilder::BuildExpressionCode(
 			if( l_var == nullptr || r_var == nullptr )
 				throw ProgramError();
 
+			if( l_var->type.GetTemplateDependentType() != nullptr || r_var->type.GetTemplateDependentType() )
+			{
+				Variable result;
+				result.type= GetNextTemplateDependentType();
+				result.value_type= ValueType::Value;
+				return result;
+			}
+
 			return BuildBinaryOperator( *l_var, *r_var, binary_operator->operator_type_, binary_operator->file_pos_, function_context );
 		}
 	}
@@ -748,11 +756,26 @@ Value CodeBuilder::BuildLazyBinaryOperator(
 	NamesScope& names,
 	FunctionContext& function_context )
 {
+	#define RETURN_UNDEF_BOOL\
+	{\
+		Variable result;\
+		result.value_type= ValueType::Value;\
+		result.location= Variable::Location::LLVMRegister;\
+		result.type= bool_type_;\
+		result.llvm_value= llvm::UndefValue::get( fundamental_llvm_types_.bool_ );\
+		return result;\
+	}
+
 	const Value l_var_value= BuildExpressionCode( l_expression, names, function_context );
 	if( l_var_value.GetType() == NontypeStub::TemplateDependentValue )
 	{
 		BuildExpressionCodeAndDestroyTemporaries( r_expression, names, function_context );
 		return l_var_value;
+	}
+	if( l_var_value.GetType().GetTemplateDependentType() != nullptr )
+	{
+		BuildExpressionCodeAndDestroyTemporaries( r_expression, names, function_context );
+		RETURN_UNDEF_BOOL
 	}
 
 	if( l_var_value.GetType() != bool_type_ )
@@ -781,6 +804,8 @@ Value CodeBuilder::BuildLazyBinaryOperator(
 	const Value r_var_value= BuildExpressionCodeAndDestroyTemporaries( r_expression, names, function_context );
 	llvm::Value* r_var_in_register= nullptr;
 	llvm::Constant* r_var_constepxr_value= nullptr;
+	if( r_var_value.GetType().GetTemplateDependentType() != nullptr )
+		RETURN_UNDEF_BOOL
 	if( r_var_value.GetType() == NontypeStub::TemplateDependentValue )
 		r_var_in_register= r_var_constepxr_value= llvm::UndefValue::get( fundamental_llvm_types_.bool_ );
 	else
@@ -822,6 +847,8 @@ Value CodeBuilder::BuildLazyBinaryOperator(
 	}
 
 	return result;
+
+	#undef RETURN_UNDEF_BOOL
 }
 
 Value CodeBuilder::BuildNamedOperand(
@@ -978,6 +1005,17 @@ Value CodeBuilder::BuildIndexationOperator(
 			function_context );
 		return value;
 	}
+	if( value.GetType().GetTemplateDependentType() != nullptr )
+	{
+		BuildExpressionCode(
+			*indexation_operator.index_,
+			names,
+			function_context );
+		Variable result;
+		result.value_type= value.GetVariable()->value_type;
+		result.type= GetNextTemplateDependentType();
+		return value;
+	}
 
 	const Array* array_type= value.GetType().GetArrayType();
 	if( array_type == nullptr )
@@ -993,6 +1031,15 @@ Value CodeBuilder::BuildIndexationOperator(
 			names,
 			function_context );
 	CHECK_RETURN_TEMPLATE_DEPENDENT_VALUE(index_value);
+
+	if( index_value.GetType().GetTemplateDependentType() != nullptr )
+	{
+		Variable result;
+		result.location= Variable::Location::Pointer;
+		result.value_type= variable.value_type;
+		result.type= array_type->type;
+		return result;
+	}
 
 	const FundamentalType* const index_fundamental_type= index_value.GetType().GetFundamentalType();
 	if( index_fundamental_type == nullptr ||
@@ -1049,6 +1096,8 @@ Value CodeBuilder::BuildMemberAccessOperator(
 	FunctionContext& function_context )
 {
 	CHECK_RETURN_TEMPLATE_DEPENDENT_VALUE(value);
+	if( value.GetType().GetTemplateDependentType() != nullptr )
+		return TemplateDependentValue();
 
 	const ClassPtr class_type= value.GetType().GetClassType();
 	if( class_type == nullptr )
@@ -1112,6 +1161,14 @@ Value CodeBuilder::BuildCallOperator(
 		for( const IExpressionComponentPtr& arg_expression : call_operator.arguments_ )
 			BuildExpressionCode( *arg_expression, names, function_context );
 		return function_value;
+	}
+	if( function_value.GetType().GetTemplateDependentType() != nullptr )
+	{
+		for( const IExpressionComponentPtr& arg_expression : call_operator.arguments_ )
+			BuildExpressionCode( *arg_expression, names, function_context );
+		Variable result;
+		result.type= GetNextTemplateDependentType();
+		return result;
 	}
 
 	if( const Type* const type= function_value.GetTypeName() )
@@ -1219,6 +1276,7 @@ Value CodeBuilder::BuildCallOperator(
 		llvm_args.push_back( s_ret_value );
 	}
 
+	bool function_result_have_template_dependent_type= false;
 	for( unsigned int i= 0u; i < actual_args.size(); i++ )
 	{
 		const Function::Arg& arg= function_type.args[i];
@@ -1229,7 +1287,10 @@ Value CodeBuilder::BuildCallOperator(
 				? call_operator.file_pos_
 				: call_operator.arguments_[i - this_count]->file_pos_;
 
-		if( expr.type != arg.type )
+		const bool something_have_template_dependent_type= expr.type.GetTemplateDependentType() != nullptr || arg.type.GetTemplateDependentType() != nullptr;
+		function_result_have_template_dependent_type= function_result_have_template_dependent_type || something_have_template_dependent_type;
+
+		if( !something_have_template_dependent_type && expr.type != arg.type )
 		{
 			errors_.push_back( ReportFunctionSignatureMismatch( file_pos ) );
 			throw ProgramError();
@@ -1260,25 +1321,26 @@ Value CodeBuilder::BuildCallOperator(
 					// TODO - support nonfundamental values.
 					if( expr.location == Variable::Location::LLVMRegister )
 					{
-						llvm::Value* temp_storage= function_context.alloca_ir_builder.CreateAlloca( expr.type.GetLLVMType() );
-						function_context.llvm_ir_builder.CreateStore( expr.llvm_value, temp_storage );
-						llvm_args.push_back( temp_storage );
+						if( !something_have_template_dependent_type )
+						{
+							llvm::Value* temp_storage= function_context.alloca_ir_builder.CreateAlloca( expr.type.GetLLVMType() );
+							function_context.llvm_ir_builder.CreateStore( expr.llvm_value, temp_storage );
+							llvm_args.push_back( temp_storage );
+						}
 					}
 					else
 						llvm_args.push_back( expr.llvm_value );
 				}
 				else
-				{
 					llvm_args.push_back( expr.llvm_value );
-				}
 			}
 		}
 		else
 		{
-			if( const FundamentalType* const fundamental_type= arg.type.GetFundamentalType() )
+			if( arg.type.GetFundamentalType() != nullptr )
 			{
-				U_UNUSED(fundamental_type);
-				llvm_args.push_back( CreateMoveToLLVMRegisterInstruction( expr, function_context ) );
+				if( !something_have_template_dependent_type )
+					llvm_args.push_back( CreateMoveToLLVMRegisterInstruction( expr, function_context ) );
 			}
 			else if( const ClassPtr class_type= arg.type.GetClassType() )
 			{
@@ -1290,15 +1352,37 @@ Value CodeBuilder::BuildCallOperator(
 					continue;
 				}
 
-				// Create copy of class value. Call copy constructor.
-				llvm::Value* const arg_copy= function_context.alloca_ir_builder.CreateAlloca( arg.type.GetLLVMType() );
+				if( !something_have_template_dependent_type )
+				{
+					// Create copy of class value. Call copy constructor.
+					llvm::Value* const arg_copy= function_context.alloca_ir_builder.CreateAlloca( arg.type.GetLLVMType() );
 
-				TryCallCopyConstructor( call_operator.file_pos_, arg_copy, expr.llvm_value, class_type, function_context );
-				llvm_args.push_back( arg_copy );
+					TryCallCopyConstructor( call_operator.file_pos_, arg_copy, expr.llvm_value, class_type, function_context );
+					llvm_args.push_back( arg_copy );
+				}
 			}
+			else if( something_have_template_dependent_type )
+			{}
 			else
-			{ U_ASSERT( false );}
+				U_ASSERT( false );
 		}
+	}
+
+	if( function_result_have_template_dependent_type )
+	{
+		Variable dummy_result;
+		if( function_type.return_value_is_reference )
+		{
+			dummy_result.location= Variable::Location::Pointer;
+			if( function_type.return_value_is_mutable )
+				dummy_result.value_type= ValueType::Reference;
+			else
+				dummy_result.value_type= ValueType::ConstReference;
+		}
+		else
+			dummy_result.location= function.return_value_is_sret ? Variable::Location::Pointer : Variable::Location::LLVMRegister;
+		dummy_result.type= GetNextTemplateDependentType();
+		return dummy_result;
 	}
 
 	llvm::Value* call_result=
@@ -1360,6 +1444,13 @@ Value CodeBuilder::BuildUnaryMinus(
 	FunctionContext& function_context )
 {
 	CHECK_RETURN_TEMPLATE_DEPENDENT_VALUE(value);
+	if( value.GetType().GetTemplateDependentType() != nullptr )
+	{
+		Variable result;
+		result.value_type= ValueType::Value;
+		result.type= GetNextTemplateDependentType();
+		return result;
+	}
 
 	const FundamentalType* const fundamental_type= value.GetType().GetFundamentalType();
 	if( fundamental_type == nullptr )
@@ -1407,6 +1498,13 @@ Value CodeBuilder::BuildLogicalNot(
 	FunctionContext& function_context )
 {
 	CHECK_RETURN_TEMPLATE_DEPENDENT_VALUE(value);
+	if( value.GetType().GetTemplateDependentType() != nullptr )
+	{
+		Variable result;
+		result.value_type= ValueType::Value;
+		result.type= GetNextTemplateDependentType();
+		return result;
+	}
 
 	if( value.GetType() != bool_type_ )
 	{
@@ -1437,6 +1535,13 @@ Value CodeBuilder::BuildBitwiseNot(
 	FunctionContext& function_context )
 {
 	CHECK_RETURN_TEMPLATE_DEPENDENT_VALUE(value);
+	if( value.GetType().GetTemplateDependentType() != nullptr )
+	{
+		Variable result;
+		result.value_type= ValueType::Value;
+		result.type= GetNextTemplateDependentType();
+		return result;
+	}
 
 	const FundamentalType* const fundamental_type= value.GetType().GetFundamentalType();
 	if( fundamental_type == nullptr )

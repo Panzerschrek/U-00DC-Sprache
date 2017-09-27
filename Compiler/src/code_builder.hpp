@@ -136,6 +136,8 @@ private:
 	void PopTemplateArgumentsSpace();
 	bool NameShadowsTemplateArgument( const ProgramString& name );
 
+	TemplateDependentType GetNextTemplateDependentType();
+
 	// Removes llvm-functions and functions of subclasses.
 	// Warning! Class must be not used after call of this function!
 	void RemoveTempClassLLVMValues( Class& class_ );
@@ -485,6 +487,7 @@ private:
 
 	std::vector<std::unique_ptr<PreResolveFunc>> resolving_funcs_stack_;
 	std::vector< std::unique_ptr<NamesScope> > template_arguments_stack_;
+	size_t next_template_dependent_type_index_= 1u;
 };
 
 } // namespace CodeBuilderPrivate

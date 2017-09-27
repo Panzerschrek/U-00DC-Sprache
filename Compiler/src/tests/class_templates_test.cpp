@@ -669,6 +669,87 @@ U_TEST( ClassTemplateTest18_DeduceAlsoTypeParameterFromValueParameter )
 	U_TEST_ASSERT( static_cast<uint64_t>( 666 ) == result_value.IntVal.getLimitedValue() );
 }
 
+U_TEST( ClassTemplateTest19_StaticAssertForVariableOfTempateDependentType )
+{
+	static const char c_program_text[]=
+	R"(
+		template</ type T />
+		struct ZeroInitChecker</ T />
+		{
+			fn Foo()
+			{
+				static_assert( T(-0.0f) == T(+0.0f) );
+			}
+		}
+
+		fn Foo()
+		{
+			ZeroInitChecker</ i16 />;
+		}
+	)";
+
+	BuildProgram( c_program_text );
+}
+
+U_TEST( ClassTemplateTest20_OverloadingWithTemplateDependentType )
+{
+	// Should correctly process functinos and generate class withoute errors (for given arguments).
+	static const char c_program_text[]=
+	R"(
+		template</ type T, type U, type V />
+		struct FuncsStroage</ T, U, V />
+		{
+			fn Foo( T t );
+			fn Foo( U u );
+			fn Foo( V v );
+			fn Foo( i32 i );
+			fn Foo( i8 i );
+
+			fn Baz( T t, U u );
+			fn Baz( U u, T t );
+		}
+
+		fn Foo()
+		{
+			var FuncsStroage</ f32, f64, bool /> fs;
+		}
+	)";
+
+	BuildProgram( c_program_text );
+}
+
+U_TEST( ClassTemplateTest20_CallOverloadedFunctionWithTemplateDependentSignature )
+{
+	// Should correctly process calls to overloaded functions with template-dependent parameters in class prepass.
+	static const char c_program_text[]=
+	R"(
+		template</ type T, type U, type V />
+		struct FuncsStroage</ T, U, V />
+		{
+			fn Foo( T t );
+			fn Foo( U u );
+			fn Foo( V v );
+			fn Foo( i32 i );
+			fn Foo( i8 i );
+
+			fn Baz( T t, U u );
+			fn Baz( U u, T t );
+
+			fn Worker()
+			{
+				Foo( T() );
+				Foo( U() );
+				Foo( 42.0f );
+				Foo( 0u64 );
+				Baz( 5, 4.0f );
+				Baz( 14.0, 1u8 );
+			}
+		}
+	)";
+
+	BuildProgram( c_program_text );
+}
+
 U_TEST( ClassPrepass_Test0 )
 {
 	static const char c_program_text[]=
@@ -702,6 +783,20 @@ U_TEST( ClassPrepass_Test0 )
 				loc0 && true;
 				false || loc1;
 				loc2 && loc3;
+
+				// dependent on T ++ and --
+				++loc0;
+				--loc1;
+
+				// dependent on T additive assignment operators
+				loc0+= loc1;
+				arr[0u]*= loc0;
+				loc1+= arr[0u];
+
+				// dependent on T unary operators
+				loc0= -loc1;
+				loc1= ~loc1;
+				!loc2;
 
 				// constexpr for template-dependent stuff
 				var i32 constexpr xxx= loc0; // Ok, because not known, constexpr loc0 or not
@@ -737,14 +832,14 @@ U_TEST( ClassPrepass_Test1 )
 			fn Ret( i32 x ) : T
 			{
 				// Should work correctly with "if/else", "while" with template-dependent value as arguments.
-				if( T ){} // As codnition
+				if( T() ){} // As codnition
 				var T t;
 				while(t){} // Variable as condition
 				if( T(0) ){} else if( false ) {} // template-dependent expression as condition
 
 				while(!t)
 				{
-					Baz( T ); // call function in while block with template-dependent condition.
+					Baz( T() ); // call function in while block with template-dependent condition.
 					Baz( 0.0f );
 				}
 				return 0;

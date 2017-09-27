@@ -183,7 +183,8 @@ Type CodeBuilder::PrepareType(
 		Array& array_type= *last_type->GetArrayType();
 
 		const Value size_expression= BuildExpressionCode( num, names_scope, *dummy_function_context_ );
-		if (size_expression.GetType() == NontypeStub::TemplateDependentValue)
+		if( size_expression.GetType() == NontypeStub::TemplateDependentValue ||
+			size_expression.GetType().GetTemplateDependentType() != nullptr )
 		{}
 		else if( const Variable* const size_variable= size_expression.GetVariable() )
 		{
@@ -226,7 +227,7 @@ Type CodeBuilder::PrepareType(
 		ResolveName( file_pos, names_scope, type_name.name ) )
 	{
 		if( name->second.GetType() == NontypeStub::TemplateDependentValue )
-			return NontypeStub::TemplateDependentValue;
+			return GetNextTemplateDependentType();
 		else if( const Type* const type= name->second.GetTypeName() )
 			*last_type= *type;
 		else
@@ -385,10 +386,7 @@ ClassPtr CodeBuilder::PrepareClass(
 				continue;
 			}
 
-			if( out_field.type == NontypeStub::TemplateDependentValue )
-				fields_llvm_types.emplace_back( fundamental_llvm_types_.invalid_type_ );
-			else
-				fields_llvm_types.emplace_back( out_field.type.GetLLVMType() );
+			fields_llvm_types.emplace_back( out_field.type.GetLLVMType() );
 
 			const NamesScope::InsertedName* const inserted_field=
 				the_class->members.AddName( in_field->name, std::move( out_field ) );
@@ -1200,7 +1198,7 @@ void CodeBuilder::PrepareFunction(
 		function_type.return_value_is_mutable= true;
 	function_type.return_value_is_reference= func.return_value_reference_modifier_ == ReferenceModifier::Reference;
 
-	if( function_type.return_type != NontypeStub::TemplateDependentValue &&
+	if( function_type.return_type.GetTemplateDependentType() == nullptr &&
 		!function_type.return_value_is_reference &&
 		!( function_type.return_type.GetFundamentalType() != nullptr ||
 		   function_type.return_type.GetClassType() != nullptr ) )
@@ -1262,7 +1260,8 @@ void CodeBuilder::PrepareFunction(
 
 		if( !out_arg.is_reference &&
 			!( out_arg.type.GetFundamentalType() != nullptr ||
-			   out_arg.type.GetClassType() != nullptr ) )
+			   out_arg.type.GetClassType() != nullptr ||
+			   out_arg.type.GetTemplateDependentType() != nullptr ) )
 		{
 			errors_.push_back( ReportNotImplemented( func.file_pos_, "parameters types except fundamental and classes" ) );
 			return;
@@ -1387,7 +1386,7 @@ void CodeBuilder::BuildFuncCode(
 	bool first_arg_is_sret= false;
 	if( !function_type->return_value_is_reference )
 	{
-		if( function_type->return_type == NontypeStub::TemplateDependentValue )
+		if( function_type->return_type.GetTemplateDependentType() != nullptr )
 		{}
 		else if( function_type->return_type.GetFundamentalType() != nullptr )
 		{}
@@ -1409,7 +1408,7 @@ void CodeBuilder::BuildFuncCode(
 			type= llvm::PointerType::get( type, 0u );
 		else
 		{
-			if( arg.type == NontypeStub::TemplateDependentValue )
+			if( arg.type.GetTemplateDependentType() != nullptr )
 				type= fundamental_llvm_types_.invalid_type_;
 			else if( arg.type.GetFundamentalType() != nullptr )
 			{}
@@ -1425,7 +1424,7 @@ void CodeBuilder::BuildFuncCode(
 	}
 
 	llvm::Type* llvm_function_return_type;
-	if( function_type->return_type == NontypeStub::TemplateDependentValue )
+	if( function_type->return_type.GetTemplateDependentType() != nullptr )
 		llvm_function_return_type= fundamental_llvm_types_.void_;
 	else if( first_arg_is_sret )
 		llvm_function_return_type= fundamental_llvm_types_.void_;
@@ -2033,7 +2032,7 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 		}
 
 		if( variable_declaration.mutability_modifier == MutabilityModifier::Constexpr &&
-			type != NontypeStub::TemplateDependentValue &&
+			type.GetTemplateDependentType() == nullptr &&
 			!type.CanBeConstexpr() )
 		{
 			errors_.push_back( ReportInvalidTypeForConstantExpressionVariable( variables_declaration.file_pos_ ) );
@@ -2045,7 +2044,7 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 		variable.location= Variable::Location::Pointer;
 		variable.value_type= ValueType::Reference;
 
-		if( type == NontypeStub::TemplateDependentValue )
+		if( type.GetTemplateDependentType() != nullptr )
 		{
 			if( variable_declaration.initializer != nullptr )
 				ApplyInitializer( variable, *variable_declaration.initializer, block_names, function_context );
@@ -2106,7 +2105,8 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 			const Value expression_result_value=
 				BuildExpressionCodeAndDestroyTemporaries( *initializer_expression, block_names, function_context );
 
-			if( expression_result_value.GetType() != variable.type )
+			if( expression_result_value.GetType() != variable.type &&
+				expression_result_value.GetType().GetTemplateDependentType() == nullptr && variable.type.GetTemplateDependentType() == nullptr )
 			{
 				errors_.push_back( ReportTypesMismatch( variables_declaration.file_pos_, variable.type.ToString(), expression_result_value.GetType().ToString() ) );
 				continue;
@@ -2134,7 +2134,7 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 			U_ASSERT(false);
 		}
 
-		if( type != NontypeStub::TemplateDependentValue &&
+		if( type.GetTemplateDependentType() == nullptr &&
 			variable_declaration.mutability_modifier == MutabilityModifier::Constexpr &&
 			variable.constexpr_value == nullptr )
 		{
@@ -2175,8 +2175,18 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 
 	if( initializer_experrsion_value.GetType() == NontypeStub::TemplateDependentValue )
 	{
-		const NamesScope::InsertedName* inserted_name=
-			block_names.AddName( auto_variable_declaration.name, TemplateDependentValue() );
+		// Stub, if initializer expression is something strange.
+
+		Variable variable;
+		// SPRACHE_TODO - make variables without explicit mutability modifiers immutable.
+		if( auto_variable_declaration.mutability_modifier == MutabilityModifier::Immutable||
+			auto_variable_declaration.mutability_modifier == MutabilityModifier::Constexpr )
+			variable.value_type= ValueType::ConstReference;
+		else
+			variable.value_type= ValueType::Reference;
+		variable.type= GetNextTemplateDependentType();
+
+		const NamesScope::InsertedName* inserted_name= block_names.AddName( auto_variable_declaration.name, variable );
 
 		if( inserted_name == nullptr )
 		{
@@ -2196,7 +2206,8 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 		const bool type_is_ok=
 			type.GetFundamentalType() != nullptr ||
 			type.GetArrayType() != nullptr ||
-			type.GetClassType() != nullptr;
+			type.GetClassType() != nullptr ||
+			type.GetTemplateDependentType() != nullptr;
 		if( !type_is_ok )
 		{
 			errors_.push_back( ReportInvalidTypeForAutoVariable( auto_variable_declaration.file_pos_, initializer_experrsion_value.GetType().ToString() ) );
@@ -2266,7 +2277,8 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 		U_ASSERT(false);
 	}
 
-	if( auto_variable_declaration.mutability_modifier == MutabilityModifier::Constexpr &&
+	if( variable.type.GetTemplateDependentType() == nullptr &&
+		auto_variable_declaration.mutability_modifier == MutabilityModifier::Constexpr &&
 		variable.constexpr_value == nullptr )
 	{
 		errors_.push_back( ReportVariableInitializerIsNotConstantExpression( auto_variable_declaration.file_pos_ ) );
@@ -2329,7 +2341,7 @@ void CodeBuilder::BuildAssignmentOperatorCode(
 		errors_.push_back( ReportExpectedReferenceValue( assignment_operator.file_pos_ ) );
 		return;
 	}
-	if( l_var->type != r_var->type )
+	if( l_var->type.GetTemplateDependentType() == nullptr && r_var->type.GetTemplateDependentType() == nullptr && l_var->type != r_var->type )
 	{
 		errors_.push_back( ReportTypesMismatch( assignment_operator.file_pos_, l_var->type.ToString(), r_var->type.ToString() ) );
 		return;
@@ -2346,6 +2358,8 @@ void CodeBuilder::BuildAssignmentOperatorCode(
 		llvm::Value* value_for_assignment= CreateMoveToLLVMRegisterInstruction( *r_var, function_context );
 		function_context.llvm_ir_builder.CreateStore( value_for_assignment, l_var->llvm_value );
 	}
+	else if( l_var->type.GetTemplateDependentType() != nullptr || r_var->type.GetTemplateDependentType() != nullptr )
+	{}
 	else
 	{
 		// TODO - functions is not copyable.
@@ -2410,16 +2424,22 @@ void CodeBuilder::BuildAdditiveAssignmentOperatorCode(
 			errors_.push_back( ReportExpectedReferenceValue( additive_assignment_operator.file_pos_ ) );
 			return;
 		}
-		if( operation_result.type != l_var->type )
-		{
-			errors_.push_back( ReportTypesMismatch( additive_assignment_operator.file_pos_, l_var->type.ToString(), operation_result.type.ToString() ) );
-			return;
-		}
 
-		U_ASSERT( l_var->location == Variable::Location::Pointer );
-		llvm::Value* const value_in_register= CreateMoveToLLVMRegisterInstruction( operation_result, function_context );
-		function_context.llvm_ir_builder.CreateStore( value_in_register, l_var->llvm_value );
+		if( operation_result.type.GetTemplateDependentType() == nullptr && l_var->type.GetTemplateDependentType() == nullptr )
+		{
+			if( operation_result.type != l_var->type )
+			{
+				errors_.push_back( ReportTypesMismatch( additive_assignment_operator.file_pos_, l_var->type.ToString(), operation_result.type.ToString() ) );
+				return;
+			}
+
+			U_ASSERT( l_var->location == Variable::Location::Pointer );
+			llvm::Value* const value_in_register= CreateMoveToLLVMRegisterInstruction( operation_result, function_context );
+			function_context.llvm_ir_builder.CreateStore( value_in_register, l_var->llvm_value );
+		}
 	}
+	else if( l_var->type.GetTemplateDependentType() != nullptr || r_var->type.GetTemplateDependentType() != nullptr )
+	{}
 	else
 	{
 		// SPRACHE_TODO - search for overloaded operators.
@@ -2439,7 +2459,7 @@ void CodeBuilder::BuildDeltaOneOperatorCode(
 	NamesScope& block_names,
 	FunctionContext& function_context )
 {
-	const Value value= BuildExpressionCodeAndDestroyTemporaries( expression, block_names, function_context );\
+	const Value value= BuildExpressionCodeAndDestroyTemporaries( expression, block_names, function_context );
 	if( value.GetType() == NontypeStub::TemplateDependentValue )
 		return;
 
@@ -2477,6 +2497,8 @@ void CodeBuilder::BuildDeltaOneOperatorCode(
 		U_ASSERT( variable->location == Variable::Location::Pointer );
 		function_context.llvm_ir_builder.CreateStore( new_value, variable->llvm_value );
 	}
+	else if( variable->type.GetTemplateDependentType() != nullptr )
+	{}
 	else
 	{
 		// SPRACHE_TODO - search for overloaded operators.
@@ -2539,7 +2561,8 @@ void CodeBuilder::BuildReturnOperatorCode(
 		CallDestructorsBeforeReturn( function_context );
 	};
 
-	if( expression_result_value.GetType() != function_context.return_type )
+	if( expression_result_value.GetType().GetTemplateDependentType() == nullptr && function_context.return_type.GetTemplateDependentType() == nullptr &&
+		expression_result_value.GetType() != function_context.return_type )
 	{
 		errors_.push_back( ReportTypesMismatch( return_operator.file_pos_, function_context.return_type.ToString(), expression_result_value.GetType().ToString() ) );
 		return;
@@ -2572,6 +2595,8 @@ void CodeBuilder::BuildReturnOperatorCode(
 			call_destructors();
 			function_context.llvm_ir_builder.CreateRetVoid();
 		}
+		else if( expression_result.type.GetTemplateDependentType() != nullptr )
+			function_context.llvm_ir_builder.CreateRetVoid();
 		else
 		{
 			// Now we can return by value only fundamentals.
@@ -2603,7 +2628,8 @@ void CodeBuilder::BuildWhileOperatorCode(
 
 	const Value condition_expression= BuildExpressionCodeAndDestroyTemporaries( *while_operator.condition_, names, function_context );
 
-	if( condition_expression.GetType() != NontypeStub::TemplateDependentValue )
+	if( condition_expression.GetType() != NontypeStub::TemplateDependentValue &&
+		condition_expression.GetType().GetTemplateDependentType() == nullptr )
 	{
 		if( condition_expression.GetType() != bool_type_ )
 		{
@@ -2619,7 +2645,7 @@ void CodeBuilder::BuildWhileOperatorCode(
 		function_context.llvm_ir_builder.CreateCondBr( condition_in_register, while_block, block_after_while );
 	}
 	else
-		function_context.llvm_ir_builder.CreateCondBr( llvm::ConstantInt::getTrue( llvm_context_ ), while_block, block_after_while );
+		function_context.llvm_ir_builder.CreateCondBr( llvm::UndefValue::get( fundamental_llvm_types_.bool_ ), while_block, block_after_while );
 
 	// While block code.
 
@@ -2718,7 +2744,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildIfOperatorCode(
 		{
 			const Value condition_expression= BuildExpressionCodeAndDestroyTemporaries( *branch.condition, names, function_context );
 
-			if( condition_expression.GetType() != NontypeStub::TemplateDependentValue )
+			if( condition_expression.GetType() != NontypeStub::TemplateDependentValue &&
+				condition_expression.GetType().GetTemplateDependentType() == nullptr )
 			{
 				if( condition_expression.GetType() != bool_type_ )
 				{
@@ -2734,7 +2761,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildIfOperatorCode(
 				function_context.llvm_ir_builder.CreateCondBr( condition_in_register, body_block, next_condition_block );
 			}
 			else
-				function_context.llvm_ir_builder.CreateCondBr( llvm::ConstantInt::getTrue( llvm_context_ ), body_block, next_condition_block );
+				function_context.llvm_ir_builder.CreateCondBr( llvm::UndefValue::get( fundamental_llvm_types_.bool_ ), body_block, next_condition_block );
 		}
 
 		// Make body block code.
@@ -2772,7 +2799,8 @@ void CodeBuilder::BuildStaticAssert(
 	NamesScope& names )
 {
 	const Value expression_result= BuildExpressionCode( *static_assert_.expression, names, *dummy_function_context_ );
-	if( expression_result.GetType() == NontypeStub::TemplateDependentValue )
+	if( expression_result.GetType() == NontypeStub::TemplateDependentValue ||
+		expression_result.GetType().GetTemplateDependentType() != nullptr )
 		return;
 
 	if( expression_result.GetType() != bool_type_ )
@@ -2810,20 +2838,7 @@ FunctionVariable* CodeBuilder::GetFunctionWithExactSignature(
 	{
 		const Function& set_function_type= *function_varaible.type.GetFunctionType();
 
-		if( set_function_type.args.size() != function_type.args.size() )
-			continue;
-
-		bool is_equal= true;
-		for( size_t i= 0u; i < function_type.args.size(); ++i )
-		{
-			if( function_type.args[i] != set_function_type.args[i] )
-			{
-				is_equal= false;
-				break;
-			}
-		}
-
-		if( is_equal )
+		if( set_function_type.args == function_type.args )
 			return &function_varaible;
 	}
 
@@ -2937,6 +2952,12 @@ const FunctionVariable& CodeBuilder::GetOverloadedFunction(
 		MatchType match_type= MatchType::Exact;
 		for( unsigned int i= 0u; i < actial_arg_count; i++ )
 		{
+			// Function signature is template-dependent. Just return this function.
+			// Something is template-dependent. In this case we can return any function with proper number of arguments.
+			if( function_type.args[i].type.GetTemplateDependentType() != nullptr ||
+				actual_args_begin[i].type.GetTemplateDependentType() != nullptr )
+				return function;
+
 			// SPRACHE_TODO - support type-casting for function call.
 			// SPRACHE_TODO - support references-casting.
 			// Now - only exactly compare types.
@@ -3169,6 +3190,13 @@ std::pair<const NamesScope::InsertedName*, NamesScope*> CodeBuilder::ResolveName
 					return std::make_pair( generated_class, current_space );
 
 				const Type* const type= generated_class->second.GetTypeName();
+				if( type->GetTemplateDependentType() != nullptr )
+				{
+					if( component_count >= 2u )
+						return std::make_pair( generated_class, current_space ); // If this name is last, we know, that this is type
+					else
+						return std::make_pair( &current_space->GetTemplateDependentValue(), current_space ); // Else it is something really template-dependent
+				}
 				U_ASSERT( type != nullptr );
 				const ClassPtr class_= type->GetClassType();
 				// SPRACHE_TODO - allow non-class types as result of template.

@@ -119,7 +119,43 @@ void CodeBuilder::PrepareClassTemplate(
 
 	NamesScope& template_arguments_space= PushTemplateArgumentsSpace();
 	for( const ClassTemplate::TemplateParameter& param : class_template->template_parameters )
-		template_arguments_space.AddName( param.name, TemplateDependentValue() );
+	{
+		if( param.type_name == nullptr )
+			template_arguments_space.AddName( param.name, Type( GetNextTemplateDependentType() ) );
+		else
+		{
+			const NamesScope::InsertedName* type_name= nullptr;
+			if( param.type_name->components.size() == 1u && !param.type_name->components.front().name.empty() && !param.type_name->components.front().have_template_parameters )
+				type_name= template_arguments_space.GetThisScopeName( param.type_name->components.front().name );
+			if( type_name == nullptr )
+				type_name= ResolveName( class_template_declaration.file_pos_, names_scope, *param.type_name );
+			if( type_name == nullptr )
+				continue;
+			const Type* const type= type_name->second.GetTypeName();
+			if( type == nullptr )
+				continue;
+
+			Variable var;
+			var.type= *type;
+
+			if( type->GetTemplateDependentType() != nullptr )
+			{}
+			else
+			{
+				var.constexpr_value= llvm::UndefValue::get( type->GetLLVMType() );
+				var.llvm_value=
+					new llvm::GlobalVariable(
+						*module_,
+						type->GetLLVMType(),
+						true,
+						llvm::GlobalValue::LinkageTypes::InternalLinkage,
+						var.constexpr_value,
+						ToStdString( param.name ) );
+			}
+
+			template_arguments_space.AddName( param.name, std::move(var) );
+		}
+	}
 
 	ComplexName temp_class_name;
 	temp_class_name.components.emplace_back();
@@ -525,10 +561,19 @@ NamesScope::InsertedName* CodeBuilder::GenTemplateClass(
 		}
 
 		// Each template with template-dependent signature arguments is template-dependent values.
-		if( value.GetType() == NontypeStub::TemplateDependentValue )
+		if( value.GetType() == NontypeStub::TemplateDependentValue ||
+			value.GetType().GetTemplateDependentType() != nullptr )
 		{
 			is_template_dependent= true;
 			continue;
+		}
+		if( const Type* const type_name= value.GetTypeName() )
+		{
+			if( type_name->GetTemplateDependentType() != nullptr )
+			{
+				is_template_dependent= true;
+				continue;
+			}
 		}
 
 		const ComplexName& name= *class_template.signature_arguments[i];
@@ -554,7 +599,10 @@ NamesScope::InsertedName* CodeBuilder::GenTemplateClass(
 	if( is_template_dependent )
 	{
 		PopResolveHandler();
-		return &template_names_scope.GetTemplateDependentValue();
+		return
+			template_names_scope.AddName(
+				"_tdv"_SpC + ToProgramString( std::to_string(next_template_dependent_type_index_).c_str() ),
+				Type( GetNextTemplateDependentType() ) );
 	}
 
 	NamesScope& template_arguments_space= PushTemplateArgumentsSpace();
@@ -683,6 +731,11 @@ bool CodeBuilder::NameShadowsTemplateArgument( const ProgramString& name )
 	}
 
 	return false;
+}
+
+TemplateDependentType CodeBuilder::GetNextTemplateDependentType()
+{
+	return TemplateDependentType( next_template_dependent_type_index_++, fundamental_llvm_types_.invalid_type_ );
 }
 
 void CodeBuilder::RemoveTempClassLLVMValues( Class& class_ )

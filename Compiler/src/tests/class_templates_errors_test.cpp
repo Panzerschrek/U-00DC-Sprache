@@ -253,4 +253,65 @@ U_TEST( TemplateInstantiationRequiredTest0 )
 	U_TEST_ASSERT( error.file_pos.line == 6u );
 }
 
+U_TEST( CouldNotOverloadFunction_ForClassTemplates_Test0 )
+{
+	static const char c_program_text[]=
+	R"(
+		template</ type T />
+		struct FuncsStroage</ T />
+		{
+			fn Foo( T t );
+			fn Foo( T &imut t );
+		}
+
+		fn Foo()
+		{
+			var FuncsStroage</ i32 /> fs;
+		}
+	)";
+
+	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::CouldNotOverloadFunction );
+	U_TEST_ASSERT( error.file_pos.line == 6u );
+}
+
+U_TEST( CouldNotOverloadFunction_ForClassTemplates_Test1 )
+{
+	static const char c_program_text[]=
+	R"(
+		template</ type T, type U />
+		struct FuncsStroage</ T, U />
+		{
+			fn Foo( T t );
+			fn Foo( U &imut u ); // Generates error, if U == T
+			fn Foo( i32 i ); // Generates error, if T or U is i32
+
+			fn Baz( T       t, U &imut u );
+			fn Baz( U &imut u, T       t ); // Generates error, if T and U is same
+		}
+
+		fn Foo()
+		{
+			var FuncsStroage</ i32, i32 /> fs;
+		}
+	)";
+
+	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( build_result.errors.size() >= 3u );
+
+	U_TEST_ASSERT( build_result.errors[0].code == CodeBuilderErrorCode::CouldNotOverloadFunction );
+	U_TEST_ASSERT( build_result.errors[0].file_pos.line == 6u );
+	U_TEST_ASSERT( build_result.errors[1].code == CodeBuilderErrorCode::FunctionPrototypeDuplication );
+	U_TEST_ASSERT( build_result.errors[1].file_pos.line == 7u );
+	U_TEST_ASSERT( build_result.errors[2].code == CodeBuilderErrorCode::CouldNotOverloadFunction );
+	U_TEST_ASSERT( build_result.errors[2].file_pos.line == 10u );
+}
+
 } // namespace U
