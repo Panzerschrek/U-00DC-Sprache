@@ -185,21 +185,24 @@ bool CodeBuilder::DuduceTemplateArguments(
 	const ClassTemplate& class_template= *class_template_ptr;
 	const FilePos& template_file_pos= class_template.class_syntax_element->file_pos_;
 
-	if( const Variable* const variable= boost::get<Variable>(&template_parameter) )
+	// Look if signature argument refers to template argument.
+	size_t dependend_arg_index= ~0u;
+	if( signature_parameter.components.size() == 1u && !signature_parameter.components.front().have_template_parameters )
 	{
-		size_t dependend_arg_index= ~0u;
-		if( signature_parameter.components.size() == 1u &&
-			signature_parameter.components.front().template_parameters.empty() )
+		for( const ClassTemplate::TemplateParameter& param : class_template.template_parameters )
 		{
-			for( const ClassTemplate::TemplateParameter& param : class_template.template_parameters )
+			if( param.name == signature_parameter.components.front().name )
 			{
-				if( param.name == signature_parameter.components.front().name )
-				{
-					dependend_arg_index= &param - class_template.template_parameters.data();
-					break;
-				}
+				dependend_arg_index= &param - class_template.template_parameters.data();
+				break;
 			}
 		}
+	}
+
+	if( const Variable* const variable= boost::get<Variable>(&template_parameter) )
+	{
+		// Currently, we can bind variables only to signature arguments, which refers to template arguments.
+		// SPRACHE_TODO - maybe allow signatures, like </ A, B, 42 /> ?
 		if( dependend_arg_index == ~0u )
 			return false;
 
@@ -226,7 +229,6 @@ bool CodeBuilder::DuduceTemplateArguments(
 				deducible_template_parameters,
 				names_scope ) )
 			return false;
-
 
 		// Allocate global variable, because we needs address.
 
@@ -264,44 +266,30 @@ bool CodeBuilder::DuduceTemplateArguments(
 	const Type& given_type= boost::get<Type>(template_parameter);
 
 	// Try deduce simple arg.
-	if( signature_parameter.components.size() == 1u &&
-		signature_parameter.components.front().template_parameters.empty() )
+	if( dependend_arg_index != ~0u )
 	{
-		size_t dependend_arg_index= ~0u;
-		for( const ClassTemplate::TemplateParameter& param : class_template.template_parameters )
+		if( class_template.template_parameters[ dependend_arg_index ].type_name != nullptr )
 		{
-			if( param.name == signature_parameter.components.front().name )
-			{
-				dependend_arg_index= &param - class_template.template_parameters.data();
-				break;
-			}
+			// Expected variable, but type given.
+			return false;
 		}
-
-		if( dependend_arg_index != ~0u )
+		else if( boost::get<int>( &deducible_template_parameters[ dependend_arg_index ] ) != nullptr )
 		{
-			if( class_template.template_parameters[ dependend_arg_index ].type_name != nullptr )
-			{
-				// Expected variable, but type given.
-				return false;
-			}
-			else if( boost::get<int>( &deducible_template_parameters[ dependend_arg_index ] ) != nullptr )
-			{
-				// Set empty arg.
-				deducible_template_parameters[ dependend_arg_index ]= given_type;
-			}
-			else if( const Type* const prev_type= boost::get<Type>( &deducible_template_parameters[ dependend_arg_index ] ) )
-			{
-				// Type already known. Check conflicts.
-				if( *prev_type != given_type )
-					return false;
-			}
-			else if( boost::get<Variable>( &deducible_template_parameters[ dependend_arg_index ] ) != nullptr )
-			{
-				// Bind type argument to variable parameter.
-				return false;
-			}
-			return true;
+			// Set empty arg.
+			deducible_template_parameters[ dependend_arg_index ]= given_type;
 		}
+		else if( const Type* const prev_type= boost::get<Type>( &deducible_template_parameters[ dependend_arg_index ] ) )
+		{
+			// Type already known. Check conflicts.
+			if( *prev_type != given_type )
+				return false;
+		}
+		else if( boost::get<Variable>( &deducible_template_parameters[ dependend_arg_index ] ) != nullptr )
+		{
+			// Bind type argument to variable parameter.
+			return false;
+		}
+		return true;
 	}
 
 	// Process simple fundamental type.
