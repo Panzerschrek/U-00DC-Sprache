@@ -137,6 +137,7 @@ private:
 	bool NameShadowsTemplateArgument( const ProgramString& name );
 
 	TemplateDependentType GetNextTemplateDependentType();
+	bool TypeIsValidForTemplateVariableArgument( const Type& type );
 
 	// Removes llvm-functions and functions of subclasses.
 	// Warning! Class must be not used after call of this function!

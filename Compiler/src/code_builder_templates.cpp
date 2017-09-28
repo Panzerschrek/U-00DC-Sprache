@@ -74,11 +74,9 @@ void CodeBuilder::PrepareClassTemplate(
 				continue;
 			}
 
-			const FundamentalType* const fundamental_type= type->GetFundamentalType();
 			if( type->GetTemplateDependentType() == nullptr &&
-				( fundamental_type == nullptr || !IsInteger( fundamental_type->fundamental_type ) ) )
+				!TypeIsValidForTemplateVariableArgument( *type ) )
 			{
-				// SPRACHE_TODO - allow non-fundamental value arguments.
 				errors_.push_back( ReportInvalidTypeOfTemplateVariableArgument( class_template_declaration.file_pos_, type->ToString() ) );
 				continue;
 			}
@@ -206,10 +204,8 @@ bool CodeBuilder::DuduceTemplateArguments(
 		if( dependend_arg_index == ~0u )
 			return false;
 
-		const FundamentalType* const fundamental_type= variable->type.GetFundamentalType();
-		if( fundamental_type == nullptr || !IsInteger( fundamental_type->fundamental_type ) )
+		if( !TypeIsValidForTemplateVariableArgument( variable->type ) )
 		{
-			// SPRACHE_TODO - allow non-fundamental value arguments.
 			errors_.push_back( ReportInvalidTypeOfTemplateVariableArgument( signature_parameter_file_pos, variable->type.ToString() ) );
 			return false;
 		}
@@ -694,6 +690,18 @@ bool CodeBuilder::NameShadowsTemplateArgument( const ProgramString& name )
 TemplateDependentType CodeBuilder::GetNextTemplateDependentType()
 {
 	return TemplateDependentType( next_template_dependent_type_index_++, fundamental_llvm_types_.invalid_type_ );
+}
+
+bool CodeBuilder::TypeIsValidForTemplateVariableArgument( const Type& type )
+{
+	if( const FundamentalType* const fundamental= type.GetFundamentalType() )
+	{
+		// SPRACHE_TODO - allow non-fundamental value arguments.
+		if( IsInteger( fundamental->fundamental_type ) || fundamental->fundamental_type == U_FundamentalType::Bool )
+			return true;
+	}
+
+	return false;
 }
 
 void CodeBuilder::RemoveTempClassLLVMValues( Class& class_ )
