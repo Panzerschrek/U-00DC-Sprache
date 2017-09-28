@@ -314,4 +314,20 @@ U_TEST( CouldNotOverloadFunction_ForClassTemplates_Test1 )
 	U_TEST_ASSERT( build_result.errors[2].file_pos.line == 10u );
 }
 
+U_TEST( MandatoryTemplateSignatureArgumentAfterOptionalArgument_Test0 )
+{
+	static const char c_program_text[]=
+	R"(
+		template</ type T, type V /> struct Box</ T= i32, V /> { }
+	)";
+
+	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::MandatoryTemplateSignatureArgumentAfterOptionalArgument );
+	U_TEST_ASSERT( error.file_pos.line == 2u );
+}
+
 } // namespace U

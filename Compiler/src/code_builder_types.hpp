@@ -415,11 +415,12 @@ struct ClassTemplate final
 		const ComplexName* type_name= nullptr; // Exists for value parameters.
 	};
 
-
 	// Sorted in order of first parameter usage in signature.
 	std::vector< TemplateParameter > template_parameters;
 
 	std::vector< const ComplexName* > signature_arguments;
+	std::vector< const ComplexName* > default_signature_arguments;
+	size_t first_optional_signature_argument= ~0u;
 
 	// Store syntax tree element for instantiation.
 	// Syntax tree must live longer, than this struct.

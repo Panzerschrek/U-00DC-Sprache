@@ -117,11 +117,26 @@ void CodeBuilder::PrepareClassTemplate(
 	}
 
 	// Check and fill signature args.
+	class_template->first_optional_signature_argument= 0u;
 	for( const ClassTemplateDeclaration::SignatureArg& signature_arg : class_template_declaration.signature_args_ )
 	{
 		PrepareTemplateSignatureParameter( class_template_declaration.file_pos_, signature_arg.name, names_scope, template_parameters );
 		class_template->signature_arguments.push_back(&signature_arg.name);
+
+		if( signature_arg.default_value != boost::none )
+			class_template->default_signature_arguments.push_back(signature_arg.default_value.get_ptr());
+		else
+		{
+			const size_t index= class_template->signature_arguments.size() - 1u;
+			if (index > class_template->first_optional_signature_argument )
+				errors_.push_back( ReportMandatoryTemplateSignatureArgumentAfterOptionalArgument( class_template_declaration.file_pos_ ) );
+
+			class_template->default_signature_arguments.push_back(nullptr);
+			++class_template->first_optional_signature_argument;
+		}
 	}
+	U_ASSERT( class_template->signature_arguments.size() == class_template->default_signature_arguments.size() );
+	U_ASSERT( class_template->first_optional_signature_argument <= class_template->default_signature_arguments.size() );
 
 	// SPRACHE_TODO:
 	// *) Convert signature and template arguments to "default form" for equality comparison.

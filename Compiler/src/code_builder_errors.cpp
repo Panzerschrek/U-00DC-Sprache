@@ -863,4 +863,15 @@ CodeBuilderError ReportTemplateInstantiationRequired( const FilePos& file_pos, c
 	return error;
 }
 
+CodeBuilderError ReportMandatoryTemplateSignatureArgumentAfterOptionalArgument( const FilePos& file_pos )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::MandatoryTemplateSignatureArgumentAfterOptionalArgument;
+
+	error.text= "Mandatory template signature argument after optional argument."_SpC;
+
+	return error;
+}
+
 } // namespace U
