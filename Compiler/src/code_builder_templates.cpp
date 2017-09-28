@@ -35,10 +35,11 @@ void CodeBuilder::PrepareClassTemplate(
 
 	class_template->class_syntax_element= class_template_declaration.class_.get();
 
-	std::vector<ClassTemplate::TemplateParameter> template_parameters;
+	std::vector<ClassTemplate::TemplateParameter>& template_parameters= class_template->template_parameters;
 	template_parameters.reserve( class_template_declaration.args_.size() );
 
 	PushCacheFillResolveHandler( class_template->resolving_cache, names_scope );
+	NamesScope& template_arguments_space= PushTemplateArgumentsSpace();
 
 	// Check and fill template parameters.
 	for( const ClassTemplateDeclaration::Arg& arg : class_template_declaration.args_ )
@@ -55,49 +56,65 @@ void CodeBuilder::PrepareClassTemplate(
 		if( NameShadowsTemplateArgument( arg.name ) )
 			errors_.push_back( ReportDeclarationShadowsTemplateArgument( class_template_declaration.file_pos_, arg.name ) );
 
-		template_parameters.emplace_back();
-		template_parameters.back().name= arg.name;
 		if( !arg.arg_type.components.empty() )
 		{
 			// If template parameter is value.
 
-			const ClassTemplate::TemplateParameter* template_arg= nullptr;
-			if( arg.arg_type.components.size() == 1u && !arg.arg_type.components.front().have_template_parameters )
+			// Resolve from outer space or from this template parameters.
+			const NamesScope::InsertedName* const type_name= ResolveName( class_template_declaration.file_pos_, names_scope, arg.arg_type );
+			if( type_name == nullptr )
 			{
-				// Search type in template type-arguments.
-				for( const auto& prev_arg : template_parameters )
-				{
-					if( &prev_arg == &template_parameters.back() )
-						break;
-
-					if( prev_arg.type_name == nullptr &&
-						prev_arg.name == arg.arg_type.components.front().name )
-					{
-						template_arg= &prev_arg;
-						break;
-					}
-				}
+				errors_.push_back( ReportNameNotFound( class_template_declaration.file_pos_, arg.arg_type ) );
+				continue;
 			}
+			const Type* const type= type_name->second.GetTypeName();
+			if( type == nullptr )
+			{
+				errors_.push_back( ReportNameIsNotTypeName( class_template_declaration.file_pos_, type_name->first ) );
+				continue;
+			}
+
+			const FundamentalType* const fundamental_type= type->GetFundamentalType();
+			if( type->GetTemplateDependentType() == nullptr &&
+				( fundamental_type == nullptr || !IsInteger( fundamental_type->fundamental_type ) ) )
+			{
+				// SPRACHE_TODO - allow non-fundamental value arguments.
+				errors_.push_back( ReportInvalidTypeOfTemplateVariableArgument( class_template_declaration.file_pos_, type->ToString() ) );
+				continue;
+			}
+
+			template_parameters.emplace_back();
+			template_parameters.back().name= arg.name;
+			template_parameters.back().type_name= &arg.arg_type;
 
 			// SPRACHE_TODO - support template-dependent template arguments, such template</ type T, Foo<T>::some_constant />
 
-			if( template_arg == nullptr )
+			Variable variable;
+			variable.type= *type;
+			if( type->GetTemplateDependentType() != nullptr )
+			{}
+			else
 			{
-				// Search for external type name.
-				const NamesScope::InsertedName* const name= ResolveName( class_template_declaration.file_pos_, names_scope, arg.arg_type );
-				if( name == nullptr )
-				{
-					errors_.push_back( ReportNameNotFound( class_template_declaration.file_pos_, arg.arg_type ) );
-					continue;
-				}
-				const Type* const type= name->second.GetTypeName();
-				if( type == nullptr )
-				{
-					errors_.push_back( ReportNameIsNotTypeName( class_template_declaration.file_pos_, name->first ) );
-					continue;
-				}
+				variable.constexpr_value= llvm::UndefValue::get( type->GetLLVMType() );
+				variable.llvm_value=
+					new llvm::GlobalVariable(
+						*module_,
+						type->GetLLVMType(),
+						true,
+						llvm::GlobalValue::LinkageTypes::InternalLinkage,
+						variable.constexpr_value,
+						ToStdString( arg.name ) );
 			}
-			template_parameters.back().type_name= &arg.arg_type;
+
+			template_arguments_space.AddName( arg.name, std::move(variable) );
+		}
+		else
+		{
+			// If template parameter is variable.
+
+			template_parameters.emplace_back();
+			template_parameters.back().name= arg.name;
+			template_arguments_space.AddName( arg.name, Type( GetNextTemplateDependentType() ) );
 		}
 	}
 
@@ -108,54 +125,12 @@ void CodeBuilder::PrepareClassTemplate(
 		class_template->signature_arguments.push_back(&signature_arg.name);
 	}
 
-	class_template->template_parameters= std::move(template_parameters);
-
 	// SPRACHE_TODO:
 	// *) Convert signature and template arguments to "default form" for equality comparison.
 	// *) More and more checks.
 	// *) Make more and more other stuff.
 
 	// Make first check-pass for template. Resolve all names in this pass.
-
-	NamesScope& template_arguments_space= PushTemplateArgumentsSpace();
-	for( const ClassTemplate::TemplateParameter& param : class_template->template_parameters )
-	{
-		if( param.type_name == nullptr )
-			template_arguments_space.AddName( param.name, Type( GetNextTemplateDependentType() ) );
-		else
-		{
-			const NamesScope::InsertedName* type_name= nullptr;
-			if( param.type_name->components.size() == 1u && !param.type_name->components.front().name.empty() && !param.type_name->components.front().have_template_parameters )
-				type_name= template_arguments_space.GetThisScopeName( param.type_name->components.front().name );
-			if( type_name == nullptr )
-				type_name= ResolveName( class_template_declaration.file_pos_, names_scope, *param.type_name );
-			if( type_name == nullptr )
-				continue;
-			const Type* const type= type_name->second.GetTypeName();
-			if( type == nullptr )
-				continue;
-
-			Variable var;
-			var.type= *type;
-
-			if( type->GetTemplateDependentType() != nullptr )
-			{}
-			else
-			{
-				var.constexpr_value= llvm::UndefValue::get( type->GetLLVMType() );
-				var.llvm_value=
-					new llvm::GlobalVariable(
-						*module_,
-						type->GetLLVMType(),
-						true,
-						llvm::GlobalValue::LinkageTypes::InternalLinkage,
-						var.constexpr_value,
-						ToStdString( param.name ) );
-			}
-
-			template_arguments_space.AddName( param.name, std::move(var) );
-		}
-	}
 
 	ComplexName temp_class_name;
 	temp_class_name.components.emplace_back();
@@ -178,15 +153,8 @@ void CodeBuilder::PrepareTemplateSignatureParameter(
 	NamesScope& names_scope,
 	const std::vector<ClassTemplate::TemplateParameter>& template_parameters )
 {
-	// Check if signature parameter is template parameter.
-	if( signature_parameter.components.size() == 1u && !signature_parameter.components.front().have_template_parameters )
-	{
-		for( auto& template_param : template_parameters )
-			if( template_param.name == signature_parameter.components.front().name )
-				return;
-	}
-
-	// TODO - try resolve template parameters from outer templates here
+	if( ResolveTemplateArgument( signature_parameter.components.data(), signature_parameter.components.size() ).first != nullptr )
+		return; // This signature argument is template argument of this or outer template.
 
 	// Do recursive preresolve for subsequent deduction.
 
@@ -232,6 +200,8 @@ bool CodeBuilder::DuduceTemplateArguments(
 				}
 			}
 		}
+		if( dependend_arg_index == ~0u )
+			return false;
 
 		const FundamentalType* const fundamental_type= variable->type.GetFundamentalType();
 		if( fundamental_type == nullptr || !IsInteger( fundamental_type->fundamental_type ) )
@@ -240,13 +210,12 @@ bool CodeBuilder::DuduceTemplateArguments(
 			errors_.push_back( ReportInvalidTypeOfTemplateVariableArgument( signature_parameter_file_pos, variable->type.ToString() ) );
 			return false;
 		}
+
 		if( variable->constexpr_value == nullptr )
 		{
 			errors_.push_back( ReportExpectedConstantExpression( signature_parameter_file_pos ) );
 			return false;
 		}
-		if( dependend_arg_index == ~0u )
-			return false;
 
 		// Check given type and type from signature, deduce also some complex names.
 		if( !DuduceTemplateArguments(
@@ -257,6 +226,7 @@ bool CodeBuilder::DuduceTemplateArguments(
 				deducible_template_parameters,
 				names_scope ) )
 			return false;
+
 
 		// Allocate global variable, because we needs address.
 
