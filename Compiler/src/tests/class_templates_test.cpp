@@ -1064,7 +1064,7 @@ U_TEST( PreResolveTest3 )
 
 U_TEST( DefaultSignatureArguments_Test0 )
 {
-	// In template signature must be visible only template from outer space.
+	// Second argument is default.
 	static const char c_program_text[]=
 	R"(
 		template</ type T, type P />
@@ -1092,6 +1092,75 @@ U_TEST( DefaultSignatureArguments_Test0 )
 			llvm::ArrayRef<llvm::GenericValue>() );
 
 	U_TEST_ASSERT( static_cast<uint64_t>( 42 ) == result_value.IntVal.getLimitedValue() );
+}
+
+U_TEST( DefaultSignatureArguments_Test1 )
+{
+	// Should select actual arg instead default arg.
+	static const char c_program_text[]=
+	R"(
+		template</ type T />
+		struct S</ T= i32 />
+		{
+			T t;
+		}
+
+		fn Foo() : f32
+		{
+			var S</ f32 /> s{ .t= 3.14f };
+			return s.t;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( 3.14f == result_value.FloatVal );
+}
+
+U_TEST( DefaultSignatureArguments_Test2 )
+{
+	// Should select type for default argument, visible at template declaration point.
+	static const char c_program_text[]=
+	R"(
+		struct Box{ i32 x; } // Must be visble
+
+		namespace F
+		{
+			template</ type T />
+			struct S</ T= Box /> // from here,
+			{
+				T t;
+			}
+
+			struct Box{} // nut this must not be visible.
+		}
+
+		fn Foo() : i32
+		{
+			var F::S</ /> s{ .t{ .x= 1536 } };
+			return s.t.x;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( static_cast<uint64_t>( 1536 ) == result_value.IntVal.getLimitedValue() );
 }
 
 } // namespace U
