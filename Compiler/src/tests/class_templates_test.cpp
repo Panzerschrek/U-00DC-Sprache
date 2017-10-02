@@ -1062,4 +1062,36 @@ U_TEST( PreResolveTest3 )
 	U_TEST_ASSERT( static_cast<uint64_t>( 5552 ) == result_value.IntVal.getLimitedValue() );
 }
 
+U_TEST( DefaultSignatureArguments_Test0 )
+{
+	// In template signature must be visible only template from outer space.
+	static const char c_program_text[]=
+	R"(
+		template</ type T, type P />
+		struct S</ T, P= i32 />
+		{
+			T t; P p;
+		}
+
+		fn Foo() : i32
+		{
+			var S</ f64 /> s= zero_init;
+			s.p= 42;
+			return s.p;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( static_cast<uint64_t>( 42 ) == result_value.IntVal.getLimitedValue() );
+}
+
 } // namespace U

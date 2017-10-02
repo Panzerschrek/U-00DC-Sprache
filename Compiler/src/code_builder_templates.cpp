@@ -124,7 +124,10 @@ void CodeBuilder::PrepareClassTemplate(
 		class_template->signature_arguments.push_back(&signature_arg.name);
 
 		if( signature_arg.default_value != boost::none )
+		{
+			PrepareTemplateSignatureParameter( class_template_declaration.file_pos_, *signature_arg.default_value, names_scope, template_parameters );
 			class_template->default_signature_arguments.push_back(signature_arg.default_value.get_ptr());
+		}
 		else
 		{
 			const size_t index= class_template->signature_arguments.size() - 1u;
@@ -507,7 +510,7 @@ NamesScope::InsertedName* CodeBuilder::GenTemplateClass(
 
 	const ClassTemplate& class_template= *class_template_ptr;
 
-	if( class_template.signature_arguments.size() != template_arguments.size() )
+	if( template_arguments.size() < class_template.first_optional_signature_argument )
 	{
 		return nullptr;
 	}
@@ -522,7 +525,16 @@ NamesScope::InsertedName* CodeBuilder::GenTemplateClass(
 		Value value;
 		try
 		{
-			value= BuildExpressionCode( *template_arguments[i], arguments_names_scope, *dummy_function_context_ );
+			if( i < template_arguments.size() )
+				value= BuildExpressionCode( *template_arguments[i], arguments_names_scope, *dummy_function_context_ );
+			else
+			{
+				const NamesScope::InsertedName* const name=
+					ResolveName( class_template_ptr->class_syntax_element->file_pos_, template_names_scope, *class_template.default_signature_arguments[i] );
+				if( name == nullptr )
+					throw ProgramError();
+				value= name->second;
+			}
 		}
 		catch( const ProgramError& )
 		{
@@ -563,7 +575,7 @@ NamesScope::InsertedName* CodeBuilder::GenTemplateClass(
 			errors_.push_back( ReportInvalidValueAsTemplateArgument( file_pos, value.GetType().ToString() ) );
 			continue;
 		}
-	} // for arguments
+	} // for signature arguments
 
 	if( is_template_dependent )
 	{
