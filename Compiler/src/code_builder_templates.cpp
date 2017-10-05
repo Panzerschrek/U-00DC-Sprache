@@ -39,6 +39,8 @@ static const ProgramString& GetNameForGeneratedClass()
 	return GetComplexNameForGeneratedClass().components.front().name;
 }
 
+static const ProgramString g_template_parameters_namespace_prefix= "_tp_ns-"_SpC;
+
 void CodeBuilder::PrepareClassTemplate(
 	const ClassTemplateDeclaration& class_template_declaration,
 	NamesScope& names_scope )
@@ -59,7 +61,7 @@ void CodeBuilder::PrepareClassTemplate(
 	template_parameters.reserve( class_template_declaration.args_.size() );
 
 	PushCacheFillResolveHandler( class_template->resolving_cache, names_scope );
-	const NamesScopePtr template_parameters_namespace = std::make_shared<NamesScope>( ""_SpC, &names_scope );
+	const NamesScopePtr template_parameters_namespace = std::make_shared<NamesScope>( g_template_parameters_namespace_prefix, &names_scope );
 
 	// Check and fill template parameters.
 	for( const ClassTemplateDeclaration::Arg& arg : class_template_declaration.args_ )
@@ -650,7 +652,7 @@ NamesScope::InsertedName* CodeBuilder::GenTemplateClass(
 	}
 
 	// Encode name.
-	ProgramString name_encoded= "_template"_SpC + class_template.class_syntax_element->name_.components.back().name;
+	ProgramString name_encoded= g_template_parameters_namespace_prefix + class_template.class_syntax_element->name_.components.back().name;
 	for( size_t i = 0u; i < deduced_template_args.size() ; ++i )
 	{
 		const auto& arg = deduced_template_args[i];
@@ -711,19 +713,29 @@ NamesScope::InsertedName* CodeBuilder::GenTemplateClass(
 	return template_parameters_namespace->GetThisScopeName( GetNameForGeneratedClass() );
 }
 
-bool CodeBuilder::NameShadowsTemplateArgument( const ProgramString& name, const NamesScope& names_scope )
+bool CodeBuilder::NameShadowsTemplateArgument( const ProgramString& name, NamesScope& names_scope )
 {
-	/*
 	ComplexName::Component component;
 	component.name= name;
 	component.is_generated= true;
-	const NamesScope::InsertedName* const name= ResolveName( FilePos(), names_scope, &component, 1u );
-	if( name == nullptr )
+	const std::pair<const NamesScope::InsertedName*, NamesScope*> name_with_parent_space=
+		ResolveNameWithParentSpace( FilePos(), names_scope, &component, 1u );
+	if( name_with_parent_space.second == nullptr )
 		return false;
-	*/
-	// TODO - finsih this
 
-	return false;
+	const ProgramString& name_of_namespace= name_with_parent_space.second->GetThisNamespaceName();
+
+	if( name_of_namespace.size() < g_template_parameters_namespace_prefix.size() )
+		return false;
+
+	const auto it_pair= std::mismatch(
+		g_template_parameters_namespace_prefix.begin(), g_template_parameters_namespace_prefix.end(),
+		name_of_namespace.begin());
+
+	if( it_pair.first != g_template_parameters_namespace_prefix.end() ) // Is not subsequence.
+		return false;
+
+	return true;
 }
 
 TemplateDependentType CodeBuilder::GetNextTemplateDependentType()

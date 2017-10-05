@@ -130,7 +130,7 @@ private:
 
 	NamesScope& PushTemplateArgumentsSpace();
 	void PopTemplateArgumentsSpace();
-	bool NameShadowsTemplateArgument( const ProgramString& name, const NamesScope& names_scope );
+	bool NameShadowsTemplateArgument( const ProgramString& name, NamesScope& names_scope );
 
 	TemplateDependentType GetNextTemplateDependentType();
 	bool TypeIsValidForTemplateVariableArgument( const Type& type );

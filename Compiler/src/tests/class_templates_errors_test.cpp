@@ -129,7 +129,7 @@ U_TEST( DeclarationShadowsTemplateArgument_Test0 )
 		template</ type T />
 		class DD</ T />
 		{
-			fn T(){} // function
+			fn T(); // function
 			fn Bar()
 			{
 				{ var i32 T= 0; } // variable
