@@ -863,4 +863,26 @@ CodeBuilderError ReportTemplateInstantiationRequired( const FilePos& file_pos, c
 	return error;
 }
 
+CodeBuilderError ReportMandatoryTemplateSignatureArgumentAfterOptionalArgument( const FilePos& file_pos )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::MandatoryTemplateSignatureArgumentAfterOptionalArgument;
+
+	error.text= "Mandatory template signature argument after optional argument."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportTemplateArgumentIsNotDeducedYet( const FilePos& file_pos, const ProgramString& name )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::TemplateArgumentIsNotDeducedYet;
+
+	error.text= name + " is not deduced yet."_SpC;
+
+	return error;
+}
+
 } // namespace U

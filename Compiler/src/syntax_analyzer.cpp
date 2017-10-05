@@ -1978,6 +1978,13 @@ IProgramElementPtr SyntaxAnalyzer::ParseTemplate()
 		result->signature_args_.emplace_back();
 		result->signature_args_.back().name= ParseComplexName();
 
+		U_ASSERT( it_ < it_end_ );
+		if( it_->type == Lexem::Type::Assignment )
+		{
+			++it_; U_ASSERT( it_ < it_end_ );
+			result->signature_args_.back().default_value= ParseComplexName();
+		}
+
 		if( it_->type == Lexem::Type::Comma )
 		{
 			++it_; U_ASSERT( it_ < it_end_ );

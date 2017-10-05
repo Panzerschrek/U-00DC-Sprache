@@ -128,13 +128,9 @@ private:
 		NamesScope& template_names_scope,
 		NamesScope& arguments_names_scope );
 
-	std::pair<const NamesScope::InsertedName*, NamesScope*> ResolveTemplateArgument(
-		const ComplexName::Component* components,
-		size_t component_count );
-
 	NamesScope& PushTemplateArgumentsSpace();
 	void PopTemplateArgumentsSpace();
-	bool NameShadowsTemplateArgument( const ProgramString& name );
+	bool NameShadowsTemplateArgument( const ProgramString& name, NamesScope& names_scope );
 
 	TemplateDependentType GetNextTemplateDependentType();
 	bool TypeIsValidForTemplateVariableArgument( const Type& type );
@@ -487,7 +483,6 @@ private:
 	std::vector<CodeBuilderError> errors_;
 
 	std::vector<std::unique_ptr<PreResolveFunc>> resolving_funcs_stack_;
-	std::vector< std::unique_ptr<NamesScope> > template_arguments_stack_;
 	size_t next_template_dependent_type_index_= 1u;
 };
 

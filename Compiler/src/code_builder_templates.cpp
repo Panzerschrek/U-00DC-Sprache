@@ -19,6 +19,28 @@ namespace U
 namespace CodeBuilderPrivate
 {
 
+static const ComplexName& GetComplexNameForGeneratedClass()
+{
+	static ComplexName name;
+	static bool init= false;
+	if( !init )
+	{
+		name.components.emplace_back();
+		name.components.back().name= "_"_SpC;
+		name.components.back().is_generated= true;
+
+		init= true;
+	}
+	return name;
+}
+
+static const ProgramString& GetNameForGeneratedClass()
+{
+	return GetComplexNameForGeneratedClass().components.front().name;
+}
+
+static const ProgramString g_template_parameters_namespace_prefix= "_tp_ns-"_SpC;
+
 void CodeBuilder::PrepareClassTemplate(
 	const ClassTemplateDeclaration& class_template_declaration,
 	NamesScope& names_scope )
@@ -39,7 +61,7 @@ void CodeBuilder::PrepareClassTemplate(
 	template_parameters.reserve( class_template_declaration.args_.size() );
 
 	PushCacheFillResolveHandler( class_template->resolving_cache, names_scope );
-	NamesScope& template_arguments_space= PushTemplateArgumentsSpace();
+	const NamesScopePtr template_parameters_namespace = std::make_shared<NamesScope>( g_template_parameters_namespace_prefix, &names_scope );
 
 	// Check and fill template parameters.
 	for( const ClassTemplateDeclaration::Arg& arg : class_template_declaration.args_ )
@@ -53,7 +75,7 @@ void CodeBuilder::PrepareClassTemplate(
 				continue;
 			}
 		}
-		if( NameShadowsTemplateArgument( arg.name ) )
+		if( NameShadowsTemplateArgument( arg.name, names_scope ) )
 			errors_.push_back( ReportDeclarationShadowsTemplateArgument( class_template_declaration.file_pos_, arg.name ) );
 
 		if( !arg.arg_type.components.empty() )
@@ -61,7 +83,7 @@ void CodeBuilder::PrepareClassTemplate(
 			// If template parameter is value.
 
 			// Resolve from outer space or from this template parameters.
-			const NamesScope::InsertedName* const type_name= ResolveName( class_template_declaration.file_pos_, names_scope, arg.arg_type );
+			const NamesScope::InsertedName* const type_name= ResolveName( class_template_declaration.file_pos_, *template_parameters_namespace, arg.arg_type );
 			if( type_name == nullptr )
 			{
 				errors_.push_back( ReportNameNotFound( class_template_declaration.file_pos_, arg.arg_type ) );
@@ -104,7 +126,7 @@ void CodeBuilder::PrepareClassTemplate(
 						ToStdString( arg.name ) );
 			}
 
-			template_arguments_space.AddName( arg.name, std::move(variable) );
+			template_parameters_namespace->AddName( arg.name, std::move(variable) );
 		}
 		else
 		{
@@ -112,16 +134,34 @@ void CodeBuilder::PrepareClassTemplate(
 
 			template_parameters.emplace_back();
 			template_parameters.back().name= arg.name;
-			template_arguments_space.AddName( arg.name, Type( GetNextTemplateDependentType() ) );
+			template_parameters_namespace->AddName( arg.name, Type( GetNextTemplateDependentType() ) );
 		}
 	}
 
 	// Check and fill signature args.
+	class_template->first_optional_signature_argument= 0u;
 	for( const ClassTemplateDeclaration::SignatureArg& signature_arg : class_template_declaration.signature_args_ )
 	{
-		PrepareTemplateSignatureParameter( class_template_declaration.file_pos_, signature_arg.name, names_scope, template_parameters );
+		PrepareTemplateSignatureParameter( class_template_declaration.file_pos_, signature_arg.name, *template_parameters_namespace, template_parameters );
 		class_template->signature_arguments.push_back(&signature_arg.name);
+
+		if( signature_arg.default_value != boost::none )
+		{
+			PrepareTemplateSignatureParameter( class_template_declaration.file_pos_, *signature_arg.default_value, *template_parameters_namespace, template_parameters );
+			class_template->default_signature_arguments.push_back(signature_arg.default_value.get_ptr());
+		}
+		else
+		{
+			const size_t index= class_template->signature_arguments.size() - 1u;
+			if (index > class_template->first_optional_signature_argument )
+				errors_.push_back( ReportMandatoryTemplateSignatureArgumentAfterOptionalArgument( class_template_declaration.file_pos_ ) );
+
+			class_template->default_signature_arguments.push_back(nullptr);
+			++class_template->first_optional_signature_argument;
+		}
 	}
+	U_ASSERT( class_template->signature_arguments.size() == class_template->default_signature_arguments.size() );
+	U_ASSERT( class_template->first_optional_signature_argument <= class_template->default_signature_arguments.size() );
 
 	// SPRACHE_TODO:
 	// *) Convert signature and template arguments to "default form" for equality comparison.
@@ -135,11 +175,9 @@ void CodeBuilder::PrepareClassTemplate(
 	temp_class_name.components.back().name = "_temp"_SpC + class_template_declaration.class_->name_.components.back().name;
 	temp_class_name.components.back().is_generated= true;
 
-	const ClassPtr the_class= PrepareClass( *class_template->class_syntax_element, temp_class_name, names_scope );
+	const ClassPtr the_class= PrepareClass( *class_template->class_syntax_element, temp_class_name, *template_parameters_namespace );
 
 	PopResolveHandler();
-
-	PopTemplateArgumentsSpace();
 
 	if( the_class != nullptr )
 		RemoveTempClassLLVMValues( *the_class );
@@ -151,9 +189,6 @@ void CodeBuilder::PrepareTemplateSignatureParameter(
 	NamesScope& names_scope,
 	const std::vector<ClassTemplate::TemplateParameter>& template_parameters )
 {
-	if( ResolveTemplateArgument( signature_parameter.components.data(), signature_parameter.components.size() ).first != nullptr )
-		return; // This signature argument is template argument of this or outer template.
-
 	// Do recursive preresolve for subsequent deduction.
 
 	size_t skip_components= 0u;
@@ -378,9 +413,9 @@ bool CodeBuilder::DuduceTemplateArguments(
 	}
 
 	const NamesScope::InsertedName* current_name= start_name.first;
-	for( size_t n= signature_name_components_skip - 1u; n < signature_parameter.components.size(); ++n)
+	for( size_t n= signature_name_components_skip - 1u, given_type_n_skip= 0u; n < signature_parameter.components.size(); ++n)
 	{
-		const size_t given_type_n= n + start_name_predecessors.size() - (signature_name_components_skip - 1u); // TODO - check this
+		const size_t given_type_n= given_type_n_skip + n + start_name_predecessors.size() - (signature_name_components_skip - 1u); // TODO - check this
 		const TypePathComponent& given_type_component= given_type_predecessors[given_type_n];
 		const ComplexName::Component& name_component= signature_parameter.components[n];
 
@@ -394,7 +429,8 @@ bool CodeBuilder::DuduceTemplateArguments(
 				{
 					if( *namespace_ptr == component_names_scope )
 					{} // All ok
-					else return false;
+					else
+						return false;
 				}
 				else
 					return false;
@@ -412,7 +448,8 @@ bool CodeBuilder::DuduceTemplateArguments(
 				if( const ClassPtr* const class_ptr= boost::get<ClassPtr>(&given_type_component) )
 				{
 					if( given_class_ == *class_ptr ){} // All ok
-					else return false; // different classes
+					else
+						return false; // different classes
 
 					if( n + 1u < signature_parameter.components.size() )
 						current_name= given_class_->members.GetThisScopeName( signature_parameter.components[n+1u].name );
@@ -426,40 +463,47 @@ bool CodeBuilder::DuduceTemplateArguments(
 			if( !name_component.have_template_parameters )
 				return false;
 
-			if( const ClassPtr* const given_type_class_ptr= boost::get<ClassPtr>(&given_type_component) )
+			if( const NamesScopePtr* const namespace_= boost::get<NamesScopePtr>(&given_type_component))
 			{
-				const Class& class_= **given_type_class_ptr;
-				if( class_.base_template == boost::none )
+				// TODO - know, whics checks wi can replace by asserts.
+				const NamesScope::InsertedName* const class_name= (*namespace_)->GetThisScopeName( GetNameForGeneratedClass() );
+				if( class_name == nullptr )
 					return false;
-				if( class_.base_template->class_template == class_template ) // Ak, same template
-				{
-					if( class_template->signature_arguments.size() != name_component.template_parameters.size() )
-						return false;
+				const Type* const class_type= class_name->second.GetTypeName();
+				if( class_type == nullptr )
+					return false;
+				const ClassPtr given_type_class= class_type->GetClassType();
+				if( given_type_class == nullptr )
+					return false;
 
-					for( size_t i= 0u; i < name_component.template_parameters.size(); ++i)
+				if( given_type_class->base_template == boost::none || given_type_class->base_template->class_template != class_template )
+					return false;
+
+				if( class_template->signature_arguments.size() != name_component.template_parameters.size() )
+					return false;
+
+				for( size_t i= 0u; i < name_component.template_parameters.size(); ++i)
+				{
+					// TODO - Allow expressions as signature arguments - value-signature-arguments.
+					if( const NamedOperand* const named_operand= dynamic_cast<const NamedOperand*>( name_component.template_parameters[i].get() ) )
 					{
-						// TODO - Allow expressions as signature arguments - value-signature-arguments.
-						if( const NamedOperand* const named_operand= dynamic_cast<const NamedOperand*>( name_component.template_parameters[i].get() ) )
-						{
-							const bool deduced= DuduceTemplateArguments(
-								class_template,
-								class_.base_template->template_parameters[i],
-								named_operand->name_,
-								template_file_pos,
-								deducible_template_parameters,
-								names_scope );
-							if( !deduced )
-								return false;
-						}
-						else
+						const bool deduced= DuduceTemplateArguments(
+							class_template,
+							given_type_class->base_template->template_parameters[i],
+							named_operand->name_,
+							template_file_pos,
+							deducible_template_parameters,
+							names_scope );
+						if( !deduced )
 							return false;
 					}
-
-					if( n + 1u < signature_parameter.components.size() )
-						current_name= class_.members.GetThisScopeName( signature_parameter.components[n+1u].name );
+					else
+						return false;
 				}
-				else
-					return false;
+
+				if( n + 1u < signature_parameter.components.size() )
+					current_name= given_type_class->members.GetThisScopeName( signature_parameter.components[n+1u].name );
+				++given_type_n_skip;
 			}
 			else
 				return false;
@@ -492,7 +536,7 @@ NamesScope::InsertedName* CodeBuilder::GenTemplateClass(
 
 	const ClassTemplate& class_template= *class_template_ptr;
 
-	if( class_template.signature_arguments.size() != template_arguments.size() )
+	if( template_arguments.size() < class_template.first_optional_signature_argument )
 	{
 		return nullptr;
 	}
@@ -501,13 +545,26 @@ NamesScope::InsertedName* CodeBuilder::GenTemplateClass(
 
 	PushCacheGetResolveHandelr( class_template.resolving_cache );
 
+	const NamesScopePtr template_parameters_namespace = std::make_shared<NamesScope>( ""_SpC, &template_names_scope );
+	for( const ClassTemplate::TemplateParameter& param : class_template.template_parameters )
+		template_parameters_namespace->AddName( param.name, YetNotDeducedTemplateArg() );
+
 	bool is_template_dependent= false;
 	for( size_t i= 0u; i < class_template.signature_arguments.size(); ++i )
 	{
 		Value value;
 		try
 		{
-			value= BuildExpressionCode( *template_arguments[i], arguments_names_scope, *dummy_function_context_ );
+			if( i < template_arguments.size() )
+				value= BuildExpressionCode( *template_arguments[i], arguments_names_scope, *dummy_function_context_ );
+			else
+			{
+				const NamesScope::InsertedName* const name=
+					ResolveName( class_template_ptr->class_syntax_element->file_pos_, *template_parameters_namespace, *class_template.default_signature_arguments[i] );
+				if( name == nullptr )
+					throw ProgramError();
+				value= name->second;
+			}
 		}
 		catch( const ProgramError& )
 		{
@@ -548,7 +605,30 @@ NamesScope::InsertedName* CodeBuilder::GenTemplateClass(
 			errors_.push_back( ReportInvalidValueAsTemplateArgument( file_pos, value.GetType().ToString() ) );
 			continue;
 		}
-	} // for arguments
+
+		// Update known arguments.
+		for( size_t j= 0u; j < deduced_template_args.size(); ++j )
+		{
+			const DeducibleTemplateParameter& arg= deduced_template_args[j];
+			NamesScope::InsertedName* const name= template_parameters_namespace->GetThisScopeName( class_template.template_parameters[j].name );
+			U_ASSERT( name != nullptr );
+
+			if( boost::get<int>( &arg ) != nullptr )
+			{} // Not deduced yet.
+			else if( const Type* const type= boost::get<Type>( &arg ) )
+			{
+				if( name->second.GetYetNotDeducedTemplateArg() != nullptr )
+					name->second= *type;
+			}
+			else if( const Variable* const variable= boost::get<Variable>( &arg ) )
+			{
+				if( name->second.GetYetNotDeducedTemplateArg() != nullptr )
+					name->second= *variable;
+			}
+			else U_ASSERT( false );
+		}
+
+	} // for signature arguments
 
 	if( is_template_dependent )
 	{
@@ -559,8 +639,6 @@ NamesScope::InsertedName* CodeBuilder::GenTemplateClass(
 				Type( GetNextTemplateDependentType() ) );
 	}
 
-	NamesScope& template_arguments_space= PushTemplateArgumentsSpace();
-
 	for( size_t i = 0u; i < deduced_template_args.size() ; ++i )
 	{
 		const auto& arg = deduced_template_args[i];
@@ -569,20 +647,12 @@ NamesScope::InsertedName* CodeBuilder::GenTemplateClass(
 		{
 			errors_.push_back( ReportTemplateParametersDeductionFailed( file_pos ) );
 			PopResolveHandler();
-			PopTemplateArgumentsSpace();
 			return nullptr;
 		}
-
-		const ProgramString& name= class_template.template_parameters[i].name;
-		if( const Type* const type= boost::get<Type>( &arg ) )
-			template_arguments_space.AddName( name, Value(*type) );
-		else if( const Variable* const variable= boost::get<Variable>( &arg ) )
-			template_arguments_space.AddName( name, Value(*variable) );
-		else U_ASSERT(false);
 	}
 
 	// Encode name.
-	ProgramString name_encoded= "_template"_SpC + class_template.class_syntax_element->name_.components.back().name;
+	ProgramString name_encoded= g_template_parameters_namespace_prefix + class_template.class_syntax_element->name_.components.back().name;
 	for( size_t i = 0u; i < deduced_template_args.size() ; ++i )
 	{
 		const auto& arg = deduced_template_args[i];
@@ -608,19 +678,18 @@ NamesScope::InsertedName* CodeBuilder::GenTemplateClass(
 	{
 		// Already generated.
 		PopResolveHandler();
-		PopTemplateArgumentsSpace();
-		return inserted_name;
+
+		const NamesScopePtr template_parameters_space= inserted_name->second.GetNamespace();
+		U_ASSERT( template_parameters_space != nullptr );
+		return template_parameters_space->GetThisScopeName( GetNameForGeneratedClass() );
 	}
 
-	ComplexName generated_class_complex_name;
-	generated_class_complex_name.components.emplace_back();
-	generated_class_complex_name.components.back().name= name_encoded;
-	generated_class_complex_name.components.back().is_generated= true;
+	template_parameters_namespace->SetThisNamespaceName( name_encoded );
+	template_names_scope.AddName( name_encoded, template_parameters_namespace );
 
-	ClassPtr the_class= PrepareClass( *class_template.class_syntax_element, generated_class_complex_name, template_names_scope );
+	ClassPtr the_class= PrepareClass( *class_template.class_syntax_element, GetComplexNameForGeneratedClass(), *template_parameters_namespace );
 
 	PopResolveHandler();
-	PopTemplateArgumentsSpace();
 
 	if( the_class == nullptr )
 		return nullptr;
@@ -641,50 +710,32 @@ NamesScope::InsertedName* CodeBuilder::GenTemplateClass(
 
 	// TODO - check here class members.
 
-	return template_names_scope.GetThisScopeName( name_encoded );
+	return template_parameters_namespace->GetThisScopeName( GetNameForGeneratedClass() );
 }
 
-std::pair<const NamesScope::InsertedName*, NamesScope*> CodeBuilder::ResolveTemplateArgument(
-	const ComplexName::Component* components,
-	const size_t component_count )
+bool CodeBuilder::NameShadowsTemplateArgument( const ProgramString& name, NamesScope& names_scope )
 {
-	// TODO - also, check shadowing of template parameters.
+	ComplexName::Component component;
+	component.name= name;
+	component.is_generated= true;
+	const std::pair<const NamesScope::InsertedName*, NamesScope*> name_with_parent_space=
+		ResolveNameWithParentSpace( FilePos(), names_scope, &component, 1u );
+	if( name_with_parent_space.second == nullptr )
+		return false;
 
-	U_ASSERT( component_count >= 1u );
+	const ProgramString& name_of_namespace= name_with_parent_space.second->GetThisNamespaceName();
 
-	if( component_count != 1u || components[0].name.empty() || components[0].have_template_parameters )
-		return std::make_pair( nullptr, nullptr );
+	if( name_of_namespace.size() < g_template_parameters_namespace_prefix.size() )
+		return false;
 
-	for( auto it= template_arguments_stack_.rbegin(); it != template_arguments_stack_.rend(); ++it )
-	{
-		NamesScope& names_scope= **it;
-		if( const NamesScope::InsertedName* const name= names_scope.GetThisScopeName( components[0].name ) )
-			return std::make_pair( name, &names_scope );
-	}
+	const auto it_pair= std::mismatch(
+		g_template_parameters_namespace_prefix.begin(), g_template_parameters_namespace_prefix.end(),
+		name_of_namespace.begin());
 
-	return std::make_pair( nullptr, nullptr );
-}
+	if( it_pair.first != g_template_parameters_namespace_prefix.end() ) // Is not subsequence.
+		return false;
 
-NamesScope& CodeBuilder::PushTemplateArgumentsSpace()
-{
-	template_arguments_stack_.emplace_back( new NamesScope( ProgramString(), nullptr ) );
-	return *template_arguments_stack_.back();
-}
-
-void CodeBuilder::PopTemplateArgumentsSpace()
-{
-	template_arguments_stack_.pop_back();
-}
-
-bool CodeBuilder::NameShadowsTemplateArgument( const ProgramString& name )
-{
-	for( const std::unique_ptr<NamesScope>& names_scope : template_arguments_stack_ )
-	{
-		if( names_scope->GetThisScopeName( name ) != nullptr )
-			return true;
-	}
-
-	return false;
+	return true;
 }
 
 TemplateDependentType CodeBuilder::GetNextTemplateDependentType()

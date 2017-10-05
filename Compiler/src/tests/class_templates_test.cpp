@@ -1062,4 +1062,180 @@ U_TEST( PreResolveTest3 )
 	U_TEST_ASSERT( static_cast<uint64_t>( 5552 ) == result_value.IntVal.getLimitedValue() );
 }
 
+U_TEST( DefaultSignatureArguments_Test0 )
+{
+	// Second argument is default.
+	static const char c_program_text[]=
+	R"(
+		template</ type T, type P />
+		struct S</ T, P= i32 />
+		{
+			T t; P p;
+		}
+
+		fn Foo() : i32
+		{
+			var S</ f64 /> s= zero_init;
+			s.p= 42;
+			return s.p;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( static_cast<uint64_t>( 42 ) == result_value.IntVal.getLimitedValue() );
+}
+
+U_TEST( DefaultSignatureArguments_Test1 )
+{
+	// Should select actual arg instead default arg.
+	static const char c_program_text[]=
+	R"(
+		template</ type T />
+		struct S</ T= i32 />
+		{
+			T t;
+		}
+
+		fn Foo() : f32
+		{
+			var S</ f32 /> s{ .t= 3.14f };
+			return s.t;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( 3.14f == result_value.FloatVal );
+}
+
+U_TEST( DefaultSignatureArguments_Test2 )
+{
+	// Should select type for default argument, visible at template declaration point.
+	static const char c_program_text[]=
+	R"(
+		struct Box{ i32 x; } // Must be visble
+
+		namespace F
+		{
+			template</ type T />
+			struct S</ T= Box /> // from here,
+			{
+				T t;
+			}
+
+			struct Box{} // nut this must not be visible.
+		}
+
+		fn Foo() : i32
+		{
+			var F::S</ /> s{ .t{ .x= 1536 } };
+			return s.t.x;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( static_cast<uint64_t>( 1536 ) == result_value.IntVal.getLimitedValue() );
+}
+
+U_TEST( DefaultSignatureArguments_Test3 )
+{
+	// Default signature argument use already deduced template arguments.
+	static const char c_program_text[]=
+	R"(
+		template</ type T, type Diff />
+		struct Vec2</ T, Diff= T />
+		{
+			T x;
+			T y;
+			fn GetDiffX( Vec2</ T, Diff /> &imut a, Vec2</ T, Diff /> &imut b ) : Diff
+			{
+				return Diff(a.x - b.x);
+			}
+		}
+
+		fn Foo() : i32
+		{
+			var Vec2</ i32 /> a{ .x= 42, .y=34 }, b{ .y= 12, .x= 12 };
+			return a.GetDiffX( a, b );
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( static_cast<uint64_t>( 42 - 12 ) == result_value.IntVal.getLimitedValue() );
+}
+
+U_TEST( DefaultSignatureArguments_Test4 )
+{
+	// Default signature argument use already deduced template arguments.
+	static const char c_program_text[]=
+	R"(
+		template</ type T /> struct Box</ T /> { T t; }
+
+		template</ type T, type Boxed />
+		struct Wrapper</ T, Boxed= Box</ T /> />
+		{
+			T x;
+			fn GetBoxed( imut this ) : Boxed
+			{
+				var Boxed r{ .t= x };
+				return r;
+			}
+		}
+
+		fn Foo() : i32
+		{
+			var Wrapper</ i32 /> w{ .x= 8854 };
+			var Box</ i32 /> boxed( w.GetBoxed() );
+			return boxed.t;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( static_cast<uint64_t>( 8854 ) == result_value.IntVal.getLimitedValue() );
+}
+
 } // namespace U

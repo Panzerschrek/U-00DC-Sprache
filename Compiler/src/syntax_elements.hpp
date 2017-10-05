@@ -3,6 +3,7 @@
 #include <memory>
 #include <vector>
 
+#include <boost/optional.hpp>
 #include <boost/variant.hpp>
 
 #include "lexical_analyzer.hpp"
@@ -595,6 +596,7 @@ public:
 		// TODO - support more comples names, like std::vector</T/>.
 		// TODO - support default arguments.
 		ComplexName name;
+		boost::optional<ComplexName> default_value;
 	};
 
 	std::vector<Arg> args_;

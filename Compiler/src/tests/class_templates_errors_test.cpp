@@ -129,7 +129,7 @@ U_TEST( DeclarationShadowsTemplateArgument_Test0 )
 		template</ type T />
 		class DD</ T />
 		{
-			fn T(){} // function
+			fn T(); // function
 			fn Bar()
 			{
 				{ var i32 T= 0; } // variable
@@ -196,6 +196,25 @@ U_TEST( NameNotFound_ForClassTemplateArguments_Test0 )
 	static const char c_program_text[]=
 	R"(
 		template</ SSS xx /> class CC</ xx /> {} // Name in type of value-argument not known yet.
+
+		struct SSS{}
+	)";
+
+	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NameNotFound );
+	U_TEST_ASSERT( error.file_pos.line == 2u );
+}
+
+U_TEST( NameNotFound_ForClassTemplateDefaultSignatureArguments_Test0 )
+{
+	static const char c_program_text[]=
+	R"(
+		template</ type T /> class CC</ T= SSS /> {} // Name of default signature argument not known here yet.
 
 		struct SSS{}
 	)";
@@ -312,6 +331,68 @@ U_TEST( CouldNotOverloadFunction_ForClassTemplates_Test1 )
 	U_TEST_ASSERT( build_result.errors[1].file_pos.line == 7u );
 	U_TEST_ASSERT( build_result.errors[2].code == CodeBuilderErrorCode::CouldNotOverloadFunction );
 	U_TEST_ASSERT( build_result.errors[2].file_pos.line == 10u );
+}
+
+U_TEST( MandatoryTemplateSignatureArgumentAfterOptionalArgument_Test0 )
+{
+	static const char c_program_text[]=
+	R"(
+		template</ type T, type V /> struct Box</ T= i32, V /> { }
+	)";
+
+	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::MandatoryTemplateSignatureArgumentAfterOptionalArgument );
+	U_TEST_ASSERT( error.file_pos.line == 2u );
+}
+
+U_TEST( TemplateArgumentIsNotDeducedYet_Test0 )
+{
+	static const char c_program_text[]=
+	R"(
+		template</ type T, type V />
+		struct Box</ T= V, V= i32 /> { }
+
+		fn Foo()
+		{
+			var Box</ /> box;
+		}
+	)";
+
+	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::TemplateArgumentIsNotDeducedYet );
+	U_TEST_ASSERT( error.file_pos.line == 3u );
+}
+
+U_TEST( TemplateArgumentIsNotDeducedYet_Test1 )
+{
+	static const char c_program_text[]=
+	R"(
+		template</ type T /> struct Wrapper</ T /> { T t; }
+
+		template</ type T, type V />
+		struct Box</ T= Wrapper</ V />, V= i32 /> { }
+
+		fn Foo()
+		{
+			var Box</ /> box;
+		}
+	)";
+
+	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::TemplateArgumentIsNotDeducedYet );
+	U_TEST_ASSERT( error.file_pos.line == 5u );
 }
 
 } // namespace U
