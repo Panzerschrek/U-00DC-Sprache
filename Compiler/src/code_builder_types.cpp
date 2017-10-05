@@ -507,6 +507,9 @@ ProgramString Type::ToString() const
 			case NontypeStub::TemplateDependentValue:
 				result= "template-dependent value"_SpC;
 				break;
+			case NontypeStub::YetNotDeducedTemplateArg:
+				result= "yet not deduced template arg"_SpC;
+				break;
 			};
 			U_ASSERT(!result.empty());
 		}
@@ -627,6 +630,7 @@ static const Type g_typename_type_stub= NontypeStub::TypeName;
 static const Type g_namespace_type_stub= NontypeStub::Namespace;
 static const Type g_class_template_type_stub= NontypeStub::ClassTemplate;
 static const Type g_template_dependent_type_stub= NontypeStub::TemplateDependentValue;
+static const Type g_yet_not_deduced_template_arg_type_stub= NontypeStub::YetNotDeducedTemplateArg;
 
 Value::Value()
 {}
@@ -678,6 +682,11 @@ Value::Value( TemplateDependentValue template_dependent_value )
 	something_= std::move(template_dependent_value);
 }
 
+Value::Value( YetNotDeducedTemplateArg yet_not_deduced_template_arg )
+{
+	something_= std::move(yet_not_deduced_template_arg);
+}
+
 const Type& Value::GetType() const
 {
 	struct Visitor final : public boost::static_visitor<>
@@ -710,6 +719,9 @@ const Type& Value::GetType() const
 
 		void operator()( const TemplateDependentValue& )
 		{ type= &g_template_dependent_type_stub; }
+
+		void operator()( const YetNotDeducedTemplateArg& )
+		{ type= &g_yet_not_deduced_template_arg_type_stub; }
 	};
 
 	Visitor visitor;
@@ -796,6 +808,16 @@ TemplateDependentValue* Value::GetTemplateDependentValue()
 const TemplateDependentValue* Value::GetTemplateDependentValue() const
 {
 	return boost::get<TemplateDependentValue>( &something_ );
+}
+
+YetNotDeducedTemplateArg* Value::GetYetNotDeducedTemplateArg()
+{
+	return boost::get<YetNotDeducedTemplateArg>( &something_ );
+}
+
+const YetNotDeducedTemplateArg* Value::GetYetNotDeducedTemplateArg() const
+{
+	return boost::get<YetNotDeducedTemplateArg>( &something_ );
 }
 
 ArgOverloadingClass GetArgOverloadingClass( const bool is_reference, const bool is_mutable )

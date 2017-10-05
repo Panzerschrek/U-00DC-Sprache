@@ -291,7 +291,7 @@ ClassPtr CodeBuilder::PrepareClass(
 			errors_.push_back( ReportRedefinition( class_declaration.file_pos_, class_name ) );
 			return nullptr;
 		}
-		else if( NameShadowsTemplateArgument( class_name ) )
+		else if( NameShadowsTemplateArgument( class_name, names_scope ) )
 		{
 			errors_.push_back( ReportDeclarationShadowsTemplateArgument( class_declaration.file_pos_, class_name ) );
 			return nullptr;
@@ -332,7 +332,7 @@ ClassPtr CodeBuilder::PrepareClass(
 			errors_.push_back( ReportRedefinition( class_declaration.file_pos_, class_name ) );
 			return nullptr;
 		}
-		else if( NameShadowsTemplateArgument( class_name ) )
+		else if( NameShadowsTemplateArgument( class_name, names_scope ) )
 		{
 			errors_.push_back( ReportDeclarationShadowsTemplateArgument( class_declaration.file_pos_, class_name ) );
 			return nullptr;
@@ -392,7 +392,7 @@ ClassPtr CodeBuilder::PrepareClass(
 				the_class->members.AddName( in_field->name, std::move( out_field ) );
 			if( inserted_field == nullptr )
 				errors_.push_back( ReportRedefinition( in_field->file_pos, in_field->name ) );
-			else if( NameShadowsTemplateArgument( in_field->name ) )
+			else if( NameShadowsTemplateArgument( in_field->name, the_class->members ) )
 				errors_.push_back( ReportDeclarationShadowsTemplateArgument( in_field->file_pos, in_field->name ) );
 
 			the_class->field_count++;
@@ -1084,7 +1084,7 @@ void CodeBuilder::BuildNamespaceBody(
 			{
 
 				// There are no templates abowe namespace. Namespaces inside classes does not exists.
-				U_ASSERT( !NameShadowsTemplateArgument( namespace_->name_ ) );
+				U_ASSERT( !NameShadowsTemplateArgument( namespace_->name_, names_scope ) );
 
 				const NamesScopePtr new_names_scope= std::make_shared<NamesScope>( namespace_->name_, &names_scope );
 				names_scope.AddName( namespace_->name_, new_names_scope );
@@ -1302,7 +1302,7 @@ void CodeBuilder::PrepareFunction(
 	}
 	else
 	{
-		if( NameShadowsTemplateArgument( func_name ) )
+		if( NameShadowsTemplateArgument( func_name, *func_base_names_scope ) )
 			errors_.push_back( ReportDeclarationShadowsTemplateArgument( func.file_pos_, func_name ) );
 
 		Value& value= previously_inserted_func->second;
@@ -1595,7 +1595,7 @@ void CodeBuilder::BuildFuncCode(
 				errors_.push_back( ReportRedefinition( declaration_arg.file_pos_, arg_name ) );
 				return;
 			}
-			else if( NameShadowsTemplateArgument( arg_name ) )
+			else if( NameShadowsTemplateArgument( arg_name, function_names ) )
 			{
 				errors_.push_back( ReportDeclarationShadowsTemplateArgument( declaration_arg.file_pos_, arg_name ) );
 				return;
@@ -2154,7 +2154,7 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 			errors_.push_back( ReportRedefinition( variables_declaration.file_pos_, variable_declaration.name ) );
 			continue;
 		}
-		else if( NameShadowsTemplateArgument( variable_declaration.name ) )
+		else if( NameShadowsTemplateArgument( variable_declaration.name, block_names ) )
 		{
 			errors_.push_back( ReportDeclarationShadowsTemplateArgument( variables_declaration.file_pos_, variable_declaration.name ) );
 			return;
@@ -2193,7 +2193,7 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 			errors_.push_back( ReportRedefinition( auto_variable_declaration.file_pos_, auto_variable_declaration.name ) );
 			return;
 		}
-		else if( NameShadowsTemplateArgument( auto_variable_declaration.name ) )
+		else if( NameShadowsTemplateArgument( auto_variable_declaration.name, block_names ) )
 		{
 			errors_.push_back( ReportDeclarationShadowsTemplateArgument( auto_variable_declaration.file_pos_, auto_variable_declaration.name ) );
 			return;
@@ -2297,7 +2297,7 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 		errors_.push_back( ReportRedefinition( auto_variable_declaration.file_pos_, auto_variable_declaration.name ) );
 		return;
 	}
-	else if( NameShadowsTemplateArgument( auto_variable_declaration.name ) )
+	else if( NameShadowsTemplateArgument( auto_variable_declaration.name, block_names ) )
 	{
 		errors_.push_back( ReportDeclarationShadowsTemplateArgument( auto_variable_declaration.file_pos_, auto_variable_declaration.name ) );
 		return;
@@ -3135,11 +3135,6 @@ std::pair<const NamesScope::InsertedName*, NamesScope*> CodeBuilder::ResolveName
 	size_t component_count,
 	const bool only_primary_resolove )
 {
-	const std::pair<const NamesScope::InsertedName*, NamesScope*> template_argument=
-		ResolveTemplateArgument( components, component_count );
-	if( template_argument.first != nullptr )
-		return template_argument;
-
 	U_ASSERT( !resolving_funcs_stack_.empty() );
 
 	size_t skip_components= 0u;

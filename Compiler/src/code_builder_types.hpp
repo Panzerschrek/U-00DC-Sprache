@@ -60,6 +60,7 @@ enum class NontypeStub
 	Namespace,
 	ClassTemplate,
 	TemplateDependentValue,
+	YetNotDeducedTemplateArg,
 };
 
 bool operator==( const FundamentalType& r, const FundamentalType& l );
@@ -220,8 +221,10 @@ struct ThisOverloadedMethodsSet final
 };
 
 struct TemplateDependentValue final
-{
-};
+{};
+
+struct YetNotDeducedTemplateArg final
+{};
 
 class Value final
 {
@@ -236,6 +239,7 @@ public:
 	Value( const NamesScopePtr& namespace_ );
 	Value( const ClassTemplatePtr& class_template );
 	Value( TemplateDependentValue template_dependent_value );
+	Value( YetNotDeducedTemplateArg yet_not_deduced_template_arg );
 
 	const Type& GetType() const;
 
@@ -263,6 +267,9 @@ public:
 	// Template-dependent value
 	TemplateDependentValue* GetTemplateDependentValue();
 	const TemplateDependentValue* GetTemplateDependentValue() const;
+	// Yet not deduced template arg
+	YetNotDeducedTemplateArg* GetYetNotDeducedTemplateArg();
+	const YetNotDeducedTemplateArg* GetYetNotDeducedTemplateArg() const;
 
 private:
 	boost::variant<
@@ -274,7 +281,8 @@ private:
 		ThisOverloadedMethodsSet,
 		NamesScopePtr,
 		ClassTemplatePtr,
-		TemplateDependentValue> something_;
+		TemplateDependentValue,
+		YetNotDeducedTemplateArg > something_;
 };
 
 // "Class" of function argument in terms of overloading.
