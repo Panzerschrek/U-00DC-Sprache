@@ -3230,6 +3230,9 @@ std::pair<const NamesScope::InsertedName*, NamesScope*> CodeBuilder::ResolveName
 		--component_count;
 	} while ( component_count > 0u );
 
+	if( name != nullptr && name->second.GetType() == NontypeStub::YetNotDeducedTemplateArg )
+		errors_.push_back( ReportTemplateArgumentIsNotDeducedYet( file_pos, name == nullptr ? ""_SpC : name->first ) );
+
 	return std::make_pair( name, current_space );
 }
 

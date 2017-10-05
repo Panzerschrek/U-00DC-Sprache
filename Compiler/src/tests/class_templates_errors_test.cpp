@@ -349,4 +349,50 @@ U_TEST( MandatoryTemplateSignatureArgumentAfterOptionalArgument_Test0 )
 	U_TEST_ASSERT( error.file_pos.line == 2u );
 }
 
+U_TEST( TemplateArgumentIsNotDeducedYet_Test0 )
+{
+	static const char c_program_text[]=
+	R"(
+		template</ type T, type V />
+		struct Box</ T= V, V= i32 /> { }
+
+		fn Foo()
+		{
+			var Box</ /> box;
+		}
+	)";
+
+	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::TemplateArgumentIsNotDeducedYet );
+	U_TEST_ASSERT( error.file_pos.line == 3u );
+}
+
+U_TEST( TemplateArgumentIsNotDeducedYet_Test1 )
+{
+	static const char c_program_text[]=
+	R"(
+		template</ type T /> struct Wrapper</ T /> { T t; }
+
+		template</ type T, type V />
+		struct Box</ T= Wrapper</ V />, V= i32 /> { }
+
+		fn Foo()
+		{
+			var Box</ /> box;
+		}
+	)";
+
+	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::TemplateArgumentIsNotDeducedYet );
+	U_TEST_ASSERT( error.file_pos.line == 5u );
+}
+
 } // namespace U

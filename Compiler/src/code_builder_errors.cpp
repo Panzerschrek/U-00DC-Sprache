@@ -874,4 +874,15 @@ CodeBuilderError ReportMandatoryTemplateSignatureArgumentAfterOptionalArgument( 
 	return error;
 }
 
+CodeBuilderError ReportTemplateArgumentIsNotDeducedYet( const FilePos& file_pos, const ProgramString& name )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::TemplateArgumentIsNotDeducedYet;
+
+	error.text= name + " is not deduced yet."_SpC;
+
+	return error;
+}
+
 } // namespace U
