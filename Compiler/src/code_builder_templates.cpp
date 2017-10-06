@@ -458,14 +458,14 @@ bool CodeBuilder::DuduceTemplateArguments(
 			else
 				return false;
 		}
-		else if( const ClassTemplatePtr class_template= current_name->second.GetClassTemplate() )
+		else if( const ClassTemplatePtr inner_class_template= current_name->second.GetClassTemplate() )
 		{
 			if( !name_component.have_template_parameters )
 				return false;
 
 			if( const NamesScopePtr* const namespace_= boost::get<NamesScopePtr>(&given_type_component))
 			{
-				// TODO - know, whics checks wi can replace by asserts.
+				// TODO - know, whics checks we can replace by asserts.
 				const NamesScope::InsertedName* const class_name= (*namespace_)->GetThisScopeName( GetNameForGeneratedClass() );
 				if( class_name == nullptr )
 					return false;
@@ -476,10 +476,10 @@ bool CodeBuilder::DuduceTemplateArguments(
 				if( given_type_class == nullptr )
 					return false;
 
-				if( given_type_class->base_template == boost::none || given_type_class->base_template->class_template != class_template )
+				if( given_type_class->base_template == boost::none || given_type_class->base_template->class_template != inner_class_template )
 					return false;
 
-				if( class_template->signature_arguments.size() != name_component.template_parameters.size() )
+				if( inner_class_template->signature_arguments.size() != name_component.template_parameters.size() )
 					return false;
 
 				for( size_t i= 0u; i < name_component.template_parameters.size(); ++i)
@@ -488,7 +488,7 @@ bool CodeBuilder::DuduceTemplateArguments(
 					if( const NamedOperand* const named_operand= dynamic_cast<const NamedOperand*>( name_component.template_parameters[i].get() ) )
 					{
 						const bool deduced= DuduceTemplateArguments(
-							class_template,
+							class_template_ptr,
 							given_type_class->base_template->template_parameters[i],
 							named_operand->name_,
 							template_file_pos,
@@ -735,6 +735,9 @@ bool CodeBuilder::NameShadowsTemplateArgument( const ProgramString& name, NamesS
 	if( it_pair.first != g_template_parameters_namespace_prefix.end() ) // Is not subsequence.
 		return false;
 
+	if( name == GetNameForGeneratedClass() ) // Name is in template parameters namespace, but it is class template instantiation.
+		return false;
+
 	return true;
 }
 
@@ -772,6 +775,27 @@ void CodeBuilder::RemoveTempClassLLVMValues( Class& class_ )
 			}
 			else if( name.second.GetClassField() != nullptr )
 			{}
+			else if( name.second.GetClassTemplate() != nullptr )
+			{}
+			else if( const NamesScopePtr inner_namespace= name.second.GetNamespace() )
+			{
+				const ProgramString& generated_class_name= GetNameForGeneratedClass();
+
+				// This must be only namespace for class template instantiation.
+				inner_namespace->ForEachInThisScope(
+					[&]( const NamesScope::InsertedName& inner_namespace_name )
+					{
+						if( inner_namespace_name.first == generated_class_name )
+						{
+							const Type* const generated_class_type= inner_namespace_name.second.GetTypeName();
+							U_ASSERT( generated_class_type != nullptr );
+							const ClassPtr generated_class= generated_class_type->GetClassType();
+							U_ASSERT( generated_class != nullptr );
+							U_ASSERT( generated_class->base_template != boost::none );
+							RemoveTempClassLLVMValues( *generated_class );
+						}
+					});
+			}
 			else
 			{
 				U_ASSERT(false);

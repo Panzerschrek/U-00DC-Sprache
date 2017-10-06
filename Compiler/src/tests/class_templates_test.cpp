@@ -1344,4 +1344,129 @@ U_TEST( ClassTemplateInsideClass_Test2 )
 	U_TEST_ASSERT( static_cast<uint64_t>( 124 ) == result_value.IntVal.getLimitedValue() );
 }
 
+U_TEST( ClassTemplateInsideClassTemplate_Test0 )
+{
+	static const char c_program_text[]=
+	R"(
+		template</ type T />
+		struct A</ T />
+		{
+			template</ type U />
+			struct B</ U />
+			{
+				T t;
+				U u;
+			}
+		}
+
+		fn Foo() : i32
+		{
+			var A</ u32 />::B</ f32 /> b{ .t= 584u, .u= 58.128f };
+			return i32(b.t) + i32(b.u);
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( static_cast<uint64_t>( 584 + 58 ) == result_value.IntVal.getLimitedValue() );
+}
+
+U_TEST( ClassTemplateInsideClassTemplate_Test1 )
+{
+	static const char c_program_text[]=
+	R"(
+		template</ type T />
+		struct A</ T />
+		{
+			struct B
+			{
+				template</ type U />
+				struct C</ U />
+				{
+					T t;
+					U u;
+				}
+			}
+		}
+
+		template</ type T, type U />
+		struct RevBox</ A</ T />::B::C</ U /> /> // Should deduce template inside template
+		{
+			T u;
+			U t;
+		}
+
+		fn Foo() : i32
+		{
+			var RevBox</   A</ u32 />::B::C</ f32 />   />  b{ .u= 8954u, .t= -54.128f };
+			return i32(b.t) + i32(b.u);
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( static_cast<uint64_t>( 8954 - 54 ) == result_value.IntVal.getLimitedValue() );
+}
+
+U_TEST( ClassTemplateInsideClassTemplate_Test2 )
+{
+	static const char c_program_text[]=
+	R"(
+		template</ type T />
+		struct A</ T />
+		{
+			struct B
+			{
+				template</ type U />
+				struct C</ U />
+				{
+					T t;
+					U u;
+				}
+			}
+		}
+
+		template</ type T />
+		struct RevBox</ A</ u32 />::B::C</ T /> /> // Should deduce template inside template
+		{
+			u32 u;
+			T t;
+		}
+
+		fn Foo() : i32
+		{
+			var RevBox</   A</ u32 />::B::C</ f32 />   />  b{ .u= 1584u, .t= 158.128f };
+			return i32(b.t) + i32(b.u);
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( static_cast<uint64_t>( 1584 + 158 ) == result_value.IntVal.getLimitedValue() );
+}
+
 } // namespace U

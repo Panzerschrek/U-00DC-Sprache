@@ -3169,6 +3169,9 @@ std::pair<const NamesScope::InsertedName*, NamesScope*> CodeBuilder::ResolveName
 	NamesScope* current_space= resolve_start_point.second;
 	do
 	{
+		if( name == nullptr )
+			return std::make_pair( nullptr, nullptr );
+
 		if( components[0].have_template_parameters && name->second.GetClassTemplate() == nullptr )
 		{
 			errors_.push_back( ReportValueIsNotTemplate( file_pos ) );
