@@ -282,7 +282,7 @@ ClassPtr CodeBuilder::PrepareClass(
 		}
 
 		const ClassPtr the_class= std::make_shared<Class>( class_name, &names_scope );
-		the_class->llvm_type= llvm::StructType::create( llvm_context_, MangleClass( names_scope, class_name ) );
+		the_class->llvm_type= llvm::StructType::create( llvm_context_, MangleType( names_scope, class_name ) );
 		const Type class_type= the_class;
 
 		if( NameShadowsTemplateArgument( class_name, names_scope ) )
@@ -323,7 +323,7 @@ ClassPtr CodeBuilder::PrepareClass(
 	if( previous_declaration == nullptr )
 	{
 		the_class= std::make_shared<Class>( class_name, &names_scope );
-		the_class->llvm_type= llvm::StructType::create( llvm_context_, MangleClass( names_scope, class_name ) );
+		the_class->llvm_type= llvm::StructType::create( llvm_context_, MangleType( names_scope, class_name ) );
 		Type class_type;
 		class_type= the_class;
 

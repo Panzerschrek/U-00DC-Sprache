@@ -690,13 +690,15 @@ NamesScope::InsertedName* CodeBuilder::GenTemplateClass(
 	}
 
 	// Encode name.
+	// TODO - maybe generate correct mangled name for template?
 	ProgramString name_encoded= g_template_parameters_namespace_prefix + class_template.class_syntax_element->name_.components.back().name;
 	for( size_t i = 0u; i < deduced_template_args.size() ; ++i )
 	{
 		const auto& arg = deduced_template_args[i];
-		if( const Type* const  type= boost::get<Type>( &arg ) )
+		if( const Type* const type= boost::get<Type>( &arg ) )
 		{
-			name_encoded+= type->ToString();
+			// We needs full mangled name of template parameter here, because short type names from different spaces may coincide.
+			name_encoded+= ToProgramString( MangleType( template_names_scope, type->ToString() ).c_str() );
 		}
 		else if( const Variable* const variable= boost::get<Variable>( &arg ) )
 		{
@@ -731,8 +733,6 @@ NamesScope::InsertedName* CodeBuilder::GenTemplateClass(
 
 	if( the_class == nullptr )
 		return nullptr;
-
-	// TODO - generate correct mangled name for template.
 
 	// Save in class info about it.
 	the_class->base_template.emplace();
