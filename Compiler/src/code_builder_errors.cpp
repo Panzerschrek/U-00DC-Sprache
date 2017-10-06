@@ -885,4 +885,15 @@ CodeBuilderError ReportTemplateArgumentIsNotDeducedYet( const FilePos& file_pos,
 	return error;
 }
 
+CodeBuilderError ReportUnsupportedExpressionTypeForTemplateSignatureArgument( const FilePos& file_pos )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::UnsupportedExpressionTypeForTemplateSignatureArgument;
+
+	error.text= "Unsupported kind of expression in class template signature argument. Supported only named operands."_SpC;
+
+	return error;
+}
+
 } // namespace U

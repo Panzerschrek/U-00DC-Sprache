@@ -201,7 +201,9 @@ void CodeBuilder::PrepareTemplateSignatureParameter(
 		for( const IExpressionComponentPtr& template_parameter : component.template_parameters )
 		{
 			if( const NamedOperand* const named_operand= dynamic_cast<const NamedOperand*>(template_parameter.get()))
-				PrepareTemplateSignatureParameter( file_pos, named_operand->name_, names_scope, template_parameters );
+				PrepareTemplateSignatureParameter( named_operand->file_pos_, named_operand->name_, names_scope, template_parameters );
+			else
+				errors_.push_back( ReportUnsupportedExpressionTypeForTemplateSignatureArgument( file_pos ) );
 			// SPRACHE_TODO - allow value-expressions here
 		}
 	}

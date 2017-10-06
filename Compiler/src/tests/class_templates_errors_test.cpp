@@ -395,4 +395,25 @@ U_TEST( TemplateArgumentIsNotDeducedYet_Test1 )
 	U_TEST_ASSERT( error.file_pos.line == 5u );
 }
 
+U_TEST( UnsupportedExpressionTypeForTemplateSignatureArgument_Test0 )
+{
+	static const char c_program_text[]=
+	R"(
+		template</ u32 size /> struct BoolArray</ size />
+		{
+			[ bool, size ] bools;
+		}
+
+		template</ /> struct X</ BoolArray</ 42 /> /> {}
+	)";
+
+	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::UnsupportedExpressionTypeForTemplateSignatureArgument );
+	U_TEST_ASSERT( error.file_pos.line == 7u );
+}
+
 } // namespace U
