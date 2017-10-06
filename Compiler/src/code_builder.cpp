@@ -415,6 +415,12 @@ ClassPtr CodeBuilder::PrepareClass(
 			U_ASSERT( *inner_class != nullptr );
 			PrepareClass( **inner_class, (*inner_class)->name_, the_class->members );
 		}
+		else if( const std::unique_ptr<ClassTemplateDeclaration>* const inner_class_template=
+			boost::get< std::unique_ptr<ClassTemplateDeclaration> >( &member ) )
+		{
+			U_ASSERT( *inner_class_template != nullptr );
+			PrepareClassTemplate( **inner_class_template, the_class->members );
+		}
 		else
 		{
 			U_ASSERT( false );

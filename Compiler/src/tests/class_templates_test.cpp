@@ -1238,4 +1238,110 @@ U_TEST( DefaultSignatureArguments_Test4 )
 	U_TEST_ASSERT( static_cast<uint64_t>( 8854 ) == result_value.IntVal.getLimitedValue() );
 }
 
+U_TEST( ClassTemplateInsideClass_Test0 )
+{
+	static const char c_program_text[]=
+	R"(
+		struct A
+		{
+			template</ type T /> struct Box</ T /> { T t; }
+		}
+
+		fn Foo() : i32
+		{
+			var A::Box</ i32 /> box{ .t= 588 };
+			return box.t;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( static_cast<uint64_t>( 588 ) == result_value.IntVal.getLimitedValue() );
+}
+
+U_TEST( ClassTemplateInsideClass_Test1 )
+{
+	static const char c_program_text[]=
+	R"(
+		struct A
+		{
+			template</ type T /> struct Box</ T /> { T t; }
+		}
+
+		template</ type T />
+		struct Wrapper</ A::Box</ T /> />     // Should deduce template parameter here.
+		{
+			T t;
+		}
+
+		fn Foo() : i32
+		{
+			var Wrapper</ A::Box</ i32 /> /> wrapper{ .t= 226587 };
+			return wrapper.t;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( static_cast<uint64_t>( 226587 ) == result_value.IntVal.getLimitedValue() );
+}
+
+U_TEST( ClassTemplateInsideClass_Test2 )
+{
+	static const char c_program_text[]=
+	R"(
+		struct A
+		{
+			struct B
+			{
+				template</ type T />
+				struct Box</ T />
+				{
+					struct C{}
+				}
+			}
+		}
+
+		template</ type T />
+		struct Wrapper</ A::B::Box</ T />::C />     // Should deduce template parameter here.
+		{
+			T t;
+		}
+
+		fn Foo() : i32
+		{
+			var Wrapper</ A::B::Box</ i32 />::C /> wrapper{ .t= 124 };
+			return wrapper.t;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( static_cast<uint64_t>( 124 ) == result_value.IntVal.getLimitedValue() );
+}
+
 } // namespace U

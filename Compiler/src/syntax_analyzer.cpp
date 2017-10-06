@@ -163,7 +163,7 @@ private:
 	std::unique_ptr<ClassDeclaration> ParseClass();
 	std::unique_ptr<ClassDeclaration> ParseClassBody();
 
-	IProgramElementPtr ParseTemplate();
+	std::unique_ptr<ClassTemplateDeclaration> ParseTemplate();
 
 	void PushErrorMessage( const Lexem& lexem );
 
@@ -1842,7 +1842,9 @@ std::unique_ptr<ClassDeclaration> SyntaxAnalyzer::ParseClassBody()
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::template_ )
 		{
 			// TODO
-			//result->members_.push_back( ParseTemplate() );
+			auto class_template=  ParseTemplate();
+			if( class_template != nullptr )
+			result->members_.push_back( std::move(class_template) );
 		}
 		else
 		{
@@ -1881,7 +1883,7 @@ std::unique_ptr<ClassDeclaration> SyntaxAnalyzer::ParseClassBody()
 	return result;
 }
 
-IProgramElementPtr SyntaxAnalyzer::ParseTemplate()
+std::unique_ptr<ClassTemplateDeclaration> SyntaxAnalyzer::ParseTemplate()
 {
 	U_ASSERT( it_->type == Lexem::Type::Identifier && it_->text == Keywords::template_ );
 	++it_; U_ASSERT( it_ < it_end_ );

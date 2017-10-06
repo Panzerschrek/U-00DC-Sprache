@@ -548,6 +548,8 @@ public:
 	const BlockPtr block_;
 };
 
+class ClassTemplateDeclaration;
+
 class ClassDeclaration final
 	: public SyntaxElementBase
 	, public IProgramElement
@@ -567,6 +569,7 @@ public:
 		boost::variant<
 			std::unique_ptr<FunctionDeclaration>,
 			std::unique_ptr<ClassDeclaration>,
+			std::unique_ptr<ClassTemplateDeclaration>,
 			Field >
 		Member;
 
