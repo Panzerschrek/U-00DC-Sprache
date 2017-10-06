@@ -896,4 +896,15 @@ CodeBuilderError ReportUnsupportedExpressionTypeForTemplateSignatureArgument( co
 	return error;
 }
 
+CodeBuilderError ReportTemplateArgumentNotUsedInSignature( const FilePos& file_pos, const ProgramString& name )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::TemplateArgumentNotUsedInSignature;
+
+	error.text= "Template argument \""_SpC + name + "\" not used in signature."_SpC;
+
+	return error;
+}
+
 } // namespace U

@@ -109,7 +109,8 @@ private:
 		const FilePos& file_pos,
 		const ComplexName& signature_parameter,
 		NamesScope& names_scope,
-		const std::vector<ClassTemplate::TemplateParameter>& template_parameters );
+		const std::vector<ClassTemplate::TemplateParameter>& template_parameters,
+		std::vector<bool>& template_parameters_usage_flags );
 
 	// Returns true, if all ok.
 	bool DuduceTemplateArguments(

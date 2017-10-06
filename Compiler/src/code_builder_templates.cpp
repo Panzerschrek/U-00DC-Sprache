@@ -59,6 +59,7 @@ void CodeBuilder::PrepareClassTemplate(
 
 	std::vector<ClassTemplate::TemplateParameter>& template_parameters= class_template->template_parameters;
 	template_parameters.reserve( class_template_declaration.args_.size() );
+	std::vector<bool> template_parameters_usage_flags;
 
 	PushCacheFillResolveHandler( class_template->resolving_cache, names_scope );
 	const NamesScopePtr template_parameters_namespace = std::make_shared<NamesScope>( g_template_parameters_namespace_prefix, &names_scope );
@@ -103,9 +104,23 @@ void CodeBuilder::PrepareClassTemplate(
 				continue;
 			}
 
+			// If type is template parameter, set usage flag.
+			if( arg.arg_type.components.size() == 1u && !arg.arg_type.components.front().have_template_parameters )
+			{
+				for( const ClassTemplate::TemplateParameter& template_parameter : template_parameters )
+				{
+					if( template_parameter.name == arg.arg_type.components.front().name )
+					{
+						template_parameters_usage_flags[ &template_parameter - template_parameters.data() ]= true;
+						break;
+					}
+				}
+			}
+
 			template_parameters.emplace_back();
 			template_parameters.back().name= arg.name;
 			template_parameters.back().type_name= &arg.arg_type;
+			template_parameters_usage_flags.push_back(false);
 
 			// SPRACHE_TODO - support template-dependent template arguments, such template</ type T, Foo<T>::some_constant />
 
@@ -135,19 +150,22 @@ void CodeBuilder::PrepareClassTemplate(
 			template_parameters.emplace_back();
 			template_parameters.back().name= arg.name;
 			template_parameters_namespace->AddName( arg.name, Type( GetNextTemplateDependentType() ) );
+			template_parameters_usage_flags.push_back(false);
 		}
 	}
+
+	U_ASSERT( template_parameters_usage_flags.size() == class_template->template_parameters.size() );
 
 	// Check and fill signature args.
 	class_template->first_optional_signature_argument= 0u;
 	for( const ClassTemplateDeclaration::SignatureArg& signature_arg : class_template_declaration.signature_args_ )
 	{
-		PrepareTemplateSignatureParameter( class_template_declaration.file_pos_, signature_arg.name, *template_parameters_namespace, template_parameters );
+		PrepareTemplateSignatureParameter( class_template_declaration.file_pos_, signature_arg.name, *template_parameters_namespace, template_parameters, template_parameters_usage_flags );
 		class_template->signature_arguments.push_back(&signature_arg.name);
 
 		if( signature_arg.default_value != boost::none )
 		{
-			PrepareTemplateSignatureParameter( class_template_declaration.file_pos_, *signature_arg.default_value, *template_parameters_namespace, template_parameters );
+			PrepareTemplateSignatureParameter( class_template_declaration.file_pos_, *signature_arg.default_value, *template_parameters_namespace, template_parameters, template_parameters_usage_flags );
 			class_template->default_signature_arguments.push_back(signature_arg.default_value.get_ptr());
 		}
 		else
@@ -162,6 +180,10 @@ void CodeBuilder::PrepareClassTemplate(
 	}
 	U_ASSERT( class_template->signature_arguments.size() == class_template->default_signature_arguments.size() );
 	U_ASSERT( class_template->first_optional_signature_argument <= class_template->default_signature_arguments.size() );
+
+	for( size_t i= 0u; i < class_template->template_parameters.size(); ++i )
+		if( !template_parameters_usage_flags[i] )
+			errors_.push_back( ReportTemplateArgumentNotUsedInSignature( class_template_declaration.file_pos_, class_template->template_parameters[i].name ) );
 
 	// SPRACHE_TODO:
 	// *) Convert signature and template arguments to "default form" for equality comparison.
@@ -187,8 +209,22 @@ void CodeBuilder::PrepareTemplateSignatureParameter(
 	const FilePos& file_pos,
 	const ComplexName& signature_parameter,
 	NamesScope& names_scope,
-	const std::vector<ClassTemplate::TemplateParameter>& template_parameters )
+	const std::vector<ClassTemplate::TemplateParameter>& template_parameters,
+	std::vector<bool>& template_parameters_usage_flags )
 {
+	// If signature parameter is template parameter, set usage flag.
+	if( signature_parameter.components.size() == 1u && !signature_parameter.components.front().have_template_parameters )
+	{
+		for( const ClassTemplate::TemplateParameter& template_parameter : template_parameters )
+		{
+			if( template_parameter.name == signature_parameter.components.front().name )
+			{
+				template_parameters_usage_flags[ &template_parameter - template_parameters.data() ]= true;
+				break;
+			}
+		}
+	}
+
 	// Do recursive preresolve for subsequent deduction.
 
 	size_t skip_components= 0u;
@@ -201,7 +237,7 @@ void CodeBuilder::PrepareTemplateSignatureParameter(
 		for( const IExpressionComponentPtr& template_parameter : component.template_parameters )
 		{
 			if( const NamedOperand* const named_operand= dynamic_cast<const NamedOperand*>(template_parameter.get()))
-				PrepareTemplateSignatureParameter( named_operand->file_pos_, named_operand->name_, names_scope, template_parameters );
+				PrepareTemplateSignatureParameter( named_operand->file_pos_, named_operand->name_, names_scope, template_parameters, template_parameters_usage_flags );
 			else
 				errors_.push_back( ReportUnsupportedExpressionTypeForTemplateSignatureArgument( file_pos ) );
 			// SPRACHE_TODO - allow value-expressions here
