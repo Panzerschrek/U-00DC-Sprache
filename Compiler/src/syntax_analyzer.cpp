@@ -1833,25 +1833,24 @@ std::unique_ptr<ClassDeclaration> SyntaxAnalyzer::ParseClassBody()
 		// SPRACHE_TODO - try parse here, subclasses, typedefs, etc.
 		if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::fn_ )
 		{
-			result->members_.push_back( ParseFunction() );
+			result->elements_.emplace_back( ParseFunction() );
 		}
 		else if( it_->type == Lexem::Type::Identifier && ( it_->text == Keywords::struct_ || it_->text == Keywords::class_ ) )
 		{
-			result->members_.push_back( ParseClass() );
+			result->elements_.emplace_back( ParseClass() );
 		}
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::template_ )
 		{
 			// TODO
 			auto class_template=  ParseTemplate();
 			if( class_template != nullptr )
-			result->members_.push_back( std::move(class_template) );
+			result->elements_.push_back( std::move(class_template) );
 		}
 		else
 		{
-			ClassDeclaration::Field field;
-			field.file_pos= it_->file_pos;
+			std::unique_ptr<ClassFieldDeclaration> field( new ClassFieldDeclaration( it_->file_pos ) );
 
-			field.type= ParseTypeName();
+			field->type= ParseTypeName();
 
 			U_ASSERT( it_ < it_end_ );
 			if( it_->type != Lexem::Type::Identifier )
@@ -1859,7 +1858,7 @@ std::unique_ptr<ClassDeclaration> SyntaxAnalyzer::ParseClassBody()
 				PushErrorMessage( *it_ );
 				return nullptr;
 			}
-			field.name= it_->text;
+			field->name= it_->text;
 			++it_;
 
 			if( it_->type != Lexem::Type::Semicolon )
@@ -1869,7 +1868,7 @@ std::unique_ptr<ClassDeclaration> SyntaxAnalyzer::ParseClassBody()
 			}
 			++it_;U_ASSERT( it_ < it_end_ );
 
-			result->members_.push_back( std::move( field ) );
+			result->elements_.emplace_back( std::move( field ) );
 		}
 	}
 

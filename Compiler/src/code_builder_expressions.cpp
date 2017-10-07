@@ -1225,7 +1225,7 @@ Value CodeBuilder::BuildCallOperator(
 		const Variable* const expr= expr_value.GetVariable();
 		if( expr == nullptr )
 		{
-			errors_.push_back( ReportExpectedVariableAsArgument( arg_expression->file_pos_, expr_value.GetType().ToString() ) );
+			errors_.push_back( ReportExpectedVariableAsArgument( arg_expression->GetFilePos(), expr_value.GetType().ToString() ) );
 			throw ProgramError();
 		}
 
@@ -1285,7 +1285,7 @@ Value CodeBuilder::BuildCallOperator(
 		const FilePos& file_pos=
 			( this_count != 0u && i == 0u )
 				? call_operator.file_pos_
-				: call_operator.arguments_[i - this_count]->file_pos_;
+				: call_operator.arguments_[i - this_count]->GetFilePos();
 
 		const bool something_have_template_dependent_type= expr.type.GetTemplateDependentType() != nullptr || arg.type.GetTemplateDependentType() != nullptr;
 		function_result_have_template_dependent_type= function_result_have_template_dependent_type || something_have_template_dependent_type;

@@ -180,6 +180,7 @@ Type CodeBuilder::PrepareType(
 		arrays_count++;
 
 		const IExpressionComponent& num= * *rit;
+		const FilePos& num_file_pos= num.GetFilePos();
 
 		*last_type= Array();
 		Array& array_type= *last_type->GetArrayType();
@@ -203,22 +204,22 @@ Type CodeBuilder::PrepareType(
 						{
 							const llvm::APInt& size_value= size_variable->constexpr_value->getUniqueInteger();
 							if( IsSignedInteger( size_fundamental_type->fundamental_type ) && size_value.isNegative() )
-								errors_.push_back( ReportArraySizeIsNegative( num.file_pos_ ) );
+								errors_.push_back( ReportArraySizeIsNegative( num_file_pos ) );
 							else
 								array_type.size= size_t( size_value.getLimitedValue() );
 						}
 					}
 					else
-						errors_.push_back( ReportArraySizeIsNotInteger( num.file_pos_ ) );
+						errors_.push_back( ReportArraySizeIsNotInteger( num_file_pos ) );
 				}
 				else
 					U_ASSERT( false && "Nonfundamental constexpr? WTF?" );
 			}
 			else
-				errors_.push_back( ReportExpectedConstantExpression( num.file_pos_ ) );
+				errors_.push_back( ReportExpectedConstantExpression( num_file_pos ) );
 		}
 		else
-			errors_.push_back( ReprotExpectedVariableInArraySize( num.file_pos_, size_expression.GetType().ToString() ) );
+			errors_.push_back( ReprotExpectedVariableInArraySize( num_file_pos, size_expression.GetType().ToString() ) );
 
 		last_type= &array_type.type;
 	}
@@ -375,14 +376,14 @@ ClassPtr CodeBuilder::PrepareClass(
 
 	std::vector<PrepareFunctionResult> class_functions;
 
-	for( const ClassDeclaration::Member& member : class_declaration.members_ )
+	for( const IClassElementPtr& member : class_declaration.elements_ )
 	{
 		// TODO - maybe apply visitor?
-		if( const ClassDeclaration::Field* const in_field=
-			boost::get< ClassDeclaration::Field >( &member ) )
+		if( const ClassFieldDeclaration* const in_field=
+			dynamic_cast<const ClassFieldDeclaration*>( member.get() ) )
 		{
 			ClassField out_field;
-			out_field.type= PrepareType( in_field->file_pos, in_field->type, the_class->members );
+			out_field.type= PrepareType( in_field->file_pos_, in_field->type, the_class->members );
 			out_field.index= the_class->field_count;
 			out_field.class_= the_class;
 
@@ -395,41 +396,36 @@ ClassPtr CodeBuilder::PrepareClass(
 			fields_llvm_types.emplace_back( out_field.type.GetLLVMType() );
 
 			if( NameShadowsTemplateArgument( in_field->name, the_class->members ) )
-				errors_.push_back( ReportDeclarationShadowsTemplateArgument( in_field->file_pos, in_field->name ) );
+				errors_.push_back( ReportDeclarationShadowsTemplateArgument( in_field->file_pos_, in_field->name ) );
 			else
 			{
 				const NamesScope::InsertedName* const inserted_field=
 					the_class->members.AddName( in_field->name, std::move( out_field ) );
 				if( inserted_field == nullptr )
-					errors_.push_back( ReportRedefinition( in_field->file_pos, in_field->name ) );
+					errors_.push_back( ReportRedefinition( in_field->file_pos_, in_field->name ) );
 
 				the_class->field_count++;
 			}
 		}
-		else if( const std::unique_ptr<FunctionDeclaration>* const function_declaration=
-			boost::get< std::unique_ptr<FunctionDeclaration> >( &member ) )
+		else if( const FunctionDeclaration* const function_declaration=
+			dynamic_cast<const FunctionDeclaration*>( member.get() ) )
 		{
 			// First time, push only prototypes.
-			U_ASSERT( *function_declaration != nullptr );
-			class_functions.push_back( PrepareFunction( **function_declaration, true, the_class, the_class->members ) );
+			class_functions.push_back( PrepareFunction( *function_declaration, true, the_class, the_class->members ) );
 		}
-		else if( const std::unique_ptr<ClassDeclaration>* const inner_class=
-			boost::get< std::unique_ptr<ClassDeclaration> >( &member ) )
+		else if( const ClassDeclaration* const inner_class=
+			dynamic_cast<const ClassDeclaration*>( member.get() ) )
 		{
 			// SPRACHE_TODO - maybe process classes like functions - after class completion?
-			U_ASSERT( *inner_class != nullptr );
-			PrepareClass( **inner_class, (*inner_class)->name_, the_class->members );
+			PrepareClass( *inner_class, inner_class->name_, the_class->members );
 		}
-		else if( const std::unique_ptr<ClassTemplateDeclaration>* const inner_class_template=
-			boost::get< std::unique_ptr<ClassTemplateDeclaration> >( &member ) )
+		else if( const ClassTemplateDeclaration* const inner_class_template=
+			dynamic_cast<const ClassTemplateDeclaration*>( member.get() ) )
 		{
-			U_ASSERT( *inner_class_template != nullptr );
-			PrepareClassTemplate( **inner_class_template, the_class->members );
+			PrepareClassTemplate( *inner_class_template, the_class->members );
 		}
 		else
-		{
 			U_ASSERT( false );
-		}
 	}
 
 	// Search for explicit noncopy constructors.
@@ -1899,7 +1895,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockCode(
 		{
 			const unsigned int block_element_index= &block_element - block.elements_.data();
 			if( block_element_index + 1u < block.elements_.size() )
-				errors_.push_back( ReportUnreachableCode( block.elements_[ block_element_index + 1u ]->file_pos_ ) );
+				errors_.push_back( ReportUnreachableCode( block.elements_[ block_element_index + 1u ]->GetFilePos() ) );
 		};
 
 		try
@@ -2149,7 +2145,7 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 			}
 			else
 			{
-				errors_.push_back( ReportUnsupportedInitializerForReference( variable_declaration.initializer->file_pos_ ) );
+				errors_.push_back( ReportUnsupportedInitializerForReference( variable_declaration.initializer->GetFilePos() ) );
 				continue;
 			}
 
@@ -2687,7 +2683,7 @@ void CodeBuilder::BuildWhileOperatorCode(
 		{
 			errors_.push_back(
 				ReportTypesMismatch(
-					while_operator.condition_->file_pos_,
+					while_operator.condition_->GetFilePos(),
 					bool_type_.ToString(),
 					condition_expression.GetType().ToString() ) );
 			return;
@@ -2803,7 +2799,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildIfOperatorCode(
 				{
 					errors_.push_back(
 						ReportTypesMismatch(
-							branch.condition->file_pos_,
+							branch.condition->GetFilePos(),
 							bool_type_.ToString(),
 							condition_expression.GetType().ToString() ) );
 					throw ProgramError();

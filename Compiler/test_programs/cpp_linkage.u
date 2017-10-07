@@ -42,7 +42,7 @@ fn TheClass::StaticMethod()
 
 fn U32ToStr( u32 x, [ i8, 64 ]& out_str )
 {
-	auto imut zero_char= 48u;
+	auto constexpr zero_char= 48u;
 	if( x == 0u )
 	{
 		out_str[0u]= i8(zero_char);

@@ -4,7 +4,6 @@
 #include <vector>
 
 #include <boost/optional.hpp>
-#include <boost/variant.hpp>
 
 #include "lexical_analyzer.hpp"
 
@@ -15,7 +14,7 @@ class SyntaxElementBase
 {
 public:
 	explicit SyntaxElementBase( const FilePos& file_pos );
-	virtual ~SyntaxElementBase(){}
+	virtual ~SyntaxElementBase()= default;
 
 	FilePos file_pos_;
 };
@@ -60,73 +59,64 @@ struct ComplexName final
 	std::vector<Component> components;
 };
 
-class IUnaryPrefixOperator : public SyntaxElementBase
+class IUnaryPrefixOperator
 {
 public:
-	explicit IUnaryPrefixOperator( const FilePos& file_pos );
-	virtual ~IUnaryPrefixOperator() {}
+	virtual ~IUnaryPrefixOperator()= default;
 };
 
-class IUnaryPostfixOperator : public SyntaxElementBase
+class IUnaryPostfixOperator
 {
 public:
-	explicit IUnaryPostfixOperator( const FilePos& file_pos );
-	virtual ~IUnaryPostfixOperator() {}
+	virtual ~IUnaryPostfixOperator()= default;
 };
 
-class UnaryPlus final : public IUnaryPrefixOperator
+class UnaryPlus final : public SyntaxElementBase, public IUnaryPrefixOperator
 {
 public:
 	explicit UnaryPlus( const FilePos& file_pos );
-	virtual ~UnaryPlus() override;
 };
 
-class UnaryMinus final : public IUnaryPrefixOperator
+class UnaryMinus final : public SyntaxElementBase, public IUnaryPrefixOperator
 {
 public:
 	explicit UnaryMinus( const FilePos& file_pos );
-	virtual ~UnaryMinus() override;
 };
 
-class LogicalNot final : public IUnaryPrefixOperator
+class LogicalNot final : public SyntaxElementBase, public IUnaryPrefixOperator
 {
 public:
 	explicit LogicalNot( const FilePos& file_pos );
-	virtual ~LogicalNot() override;
 };
 
-class BitwiseNot final : public IUnaryPrefixOperator
+class BitwiseNot final : public SyntaxElementBase, public IUnaryPrefixOperator
 {
 public:
 	explicit BitwiseNot( const FilePos& file_pos );
-	virtual ~BitwiseNot() override;
 };
 
-class CallOperator final : public IUnaryPostfixOperator
+class CallOperator final : public SyntaxElementBase, public IUnaryPostfixOperator
 {
 public:
 	CallOperator(
 		const FilePos& file_pos,
 		std::vector<IExpressionComponentPtr> arguments );
-	virtual ~CallOperator() override;
 
 	const std::vector<IExpressionComponentPtr> arguments_;
 };
 
-class IndexationOperator final : public IUnaryPostfixOperator
+class IndexationOperator final : public SyntaxElementBase, public IUnaryPostfixOperator
 {
 public:
 	explicit IndexationOperator( const FilePos& file_pos, IExpressionComponentPtr index );
-	virtual ~IndexationOperator() override;
 
 	const IExpressionComponentPtr index_;
 };
 
-class MemberAccessOperator final : public IUnaryPostfixOperator
+class MemberAccessOperator final : public SyntaxElementBase, public IUnaryPostfixOperator
 {
 public:
 	MemberAccessOperator( const FilePos& file_pos, ProgramString member_name );
-	virtual ~MemberAccessOperator() override;
 
 	const ProgramString member_name_;
 };
@@ -161,38 +151,35 @@ enum class BinaryOperatorType
 
 ProgramString BinaryOperatorToString( BinaryOperatorType op );
 
-class IExpressionComponent;
-typedef std::unique_ptr<IExpressionComponent> IExpressionComponentPtr;
-
-class IExpressionComponent : public SyntaxElementBase
+class IExpressionComponent
 {
 public:
-	explicit IExpressionComponent( const FilePos& file_pos );
-	virtual ~IExpressionComponent(){}
+	virtual ~IExpressionComponent()= default;
+
+	const FilePos& GetFilePos() const;
 };
 
-class IInitializer : public SyntaxElementBase
+class IInitializer
 {
 public:
-	explicit IInitializer( const FilePos& file_pos );
-	virtual ~IInitializer() override= default;
+	virtual ~IInitializer()= default;
+
+	const FilePos& GetFilePos() const;
 };
 
-class ArrayInitializer final : public IInitializer
+class ArrayInitializer final : public SyntaxElementBase, public IInitializer
 {
 public:
 	explicit ArrayInitializer( const FilePos& file_pos );
-	virtual ~ArrayInitializer() override= default;
 
 	std::vector<IInitializerPtr> initializers;
 	bool has_continious_initializer= false; // ... after last initializator.
 };
 
-class StructNamedInitializer final : public IInitializer
+class StructNamedInitializer final : public SyntaxElementBase, public IInitializer
 {
 public:
 	explicit StructNamedInitializer( const FilePos& file_pos );
-	virtual ~StructNamedInitializer() override= default;
 
 	struct MemberInitializer
 	{
@@ -203,49 +190,44 @@ public:
 	std::vector<MemberInitializer> members_initializers;
 };
 
-class ConstructorInitializer final : public IInitializer
+class ConstructorInitializer final : public SyntaxElementBase, public IInitializer
 {
 public:
 	ConstructorInitializer(
 		const FilePos& file_pos,
 		std::vector<IExpressionComponentPtr> arguments );
-	virtual ~ConstructorInitializer() override= default;
 
 	const CallOperator call_operator;
 };
 
-class ExpressionInitializer final : public IInitializer
+class ExpressionInitializer final : public SyntaxElementBase, public IInitializer
 {
 public:
 	ExpressionInitializer( const FilePos& file_pos, IExpressionComponentPtr expression );
-	virtual ~ExpressionInitializer() override= default;
 
 	IExpressionComponentPtr expression;
 };
 
-class ZeroInitializer final : public IInitializer
+class ZeroInitializer final : public SyntaxElementBase, public IInitializer
 {
 public:
 	explicit ZeroInitializer( const FilePos& file_pos );
-	virtual ~ZeroInitializer() override= default;
 };
 
-class BinaryOperator final : public IExpressionComponent
+class BinaryOperator final : public SyntaxElementBase, public IExpressionComponent
 {
 public:
 	explicit BinaryOperator( const FilePos& file_pos );
-	virtual ~BinaryOperator() override= default;
 
 	BinaryOperatorType operator_type_;
 	IExpressionComponentPtr left_;
 	IExpressionComponentPtr right_;
 };
 
-class ExpressionComponentWithUnaryOperators : public IExpressionComponent
+class ExpressionComponentWithUnaryOperators : public SyntaxElementBase, public IExpressionComponent
 {
 public:
 	explicit ExpressionComponentWithUnaryOperators( const FilePos& file_pos );
-	virtual ~ExpressionComponentWithUnaryOperators() override= default;
 
 	std::vector<IUnaryPrefixOperatorPtr > prefix_operators_ ;
 	std::vector<IUnaryPostfixOperatorPtr> postfix_operators_;
@@ -255,7 +237,6 @@ class NamedOperand final : public ExpressionComponentWithUnaryOperators
 {
 public:
 	NamedOperand( const FilePos& file_pos, ComplexName name );
-	virtual ~NamedOperand() override;
 
 	const ComplexName name_;
 };
@@ -264,7 +245,6 @@ class BooleanConstant final : public ExpressionComponentWithUnaryOperators
 {
 public:
 	BooleanConstant( const FilePos& file_pos, bool value );
-	virtual ~BooleanConstant() override;
 
 	const bool value_;
 };
@@ -283,8 +263,6 @@ public:
 		ProgramString type_suffix,
 		bool has_fractional_point );
 
-	virtual ~NumericConstant() override;
-
 	const LongFloat value_;
 	const ProgramString type_suffix_;
 	const bool has_fractional_point_;
@@ -294,7 +272,6 @@ class BracketExpression final : public ExpressionComponentWithUnaryOperators
 {
 public:
 	BracketExpression( const FilePos& file_pos, IExpressionComponentPtr expression );
-	~BracketExpression() override;
 
 	const IExpressionComponentPtr expression_;
 };
@@ -308,21 +285,30 @@ public:
 typedef std::unique_ptr<IProgramElement> IProgramElementPtr;
 typedef std::vector<IProgramElementPtr> ProgramElements;
 
-class IBlockElement : public SyntaxElementBase
+class IClassElement
 {
 public:
-	explicit IBlockElement( const FilePos& file_pos );
-	virtual ~IBlockElement(){}
+	virtual ~IClassElement(){}
+};
+
+typedef std::unique_ptr<IClassElement> IClassElementPtr;
+typedef std::vector<IClassElementPtr> ClassElements;
+
+class IBlockElement
+{
+public:
+	virtual ~IBlockElement()= default;
+
+	const FilePos& GetFilePos() const;
 };
 
 typedef std::unique_ptr<IBlockElement> IBlockElementPtr;
 typedef std::vector<IBlockElementPtr> BlockElements;
 
-class Block final : public IBlockElement
+class Block final : public SyntaxElementBase, public IBlockElement
 {
 public:
 	Block( const FilePos& file_pos, BlockElements elements );
-	virtual ~Block() override;
 
 public:
 	const BlockElements elements_;
@@ -357,13 +343,11 @@ enum class ReferenceModifier
 {
 	None,
 	Reference,
-	// TODO - add "move" references here
+	// SPRACE_TODO - add "move" references here
 };
 
-struct VariablesDeclaration final : public IBlockElement
+struct VariablesDeclaration final : public SyntaxElementBase, public IBlockElement
 {
-	virtual ~VariablesDeclaration() override;
-
 	VariablesDeclaration( const FilePos& file_pos );
 	VariablesDeclaration( const VariablesDeclaration& )= delete;
 	VariablesDeclaration( VariablesDeclaration&& other );
@@ -380,15 +364,14 @@ struct VariablesDeclaration final : public IBlockElement
 	};
 
 	std::vector<VariableEntry> variables;
-	TypeName type; // Type with empty name for auto-type detection.
+	TypeName type;
 };
 
 typedef std::unique_ptr<VariablesDeclaration> VariablesDeclarationPtr;
 
-struct AutoVariableDeclaration final : public IBlockElement
+struct AutoVariableDeclaration final : public SyntaxElementBase, public IBlockElement
 {
 	explicit AutoVariableDeclaration( const FilePos& file_pos );
-	virtual ~AutoVariableDeclaration() override= default;
 
 	ProgramString name;
 	IExpressionComponentPtr initializer_expression;
@@ -396,40 +379,36 @@ struct AutoVariableDeclaration final : public IBlockElement
 	ReferenceModifier reference_modifier= ReferenceModifier::None;
 };
 
-class ReturnOperator final : public IBlockElement
+class ReturnOperator final : public SyntaxElementBase, public IBlockElement
 {
 public:
 	ReturnOperator( const FilePos& file_pos, IExpressionComponentPtr expression );
-	~ReturnOperator() override;
 
 	const IExpressionComponentPtr expression_;
 };
 
-class WhileOperator final : public IBlockElement
+class WhileOperator final : public SyntaxElementBase, public IBlockElement
 {
 public:
 	WhileOperator( const FilePos& file_pos, IExpressionComponentPtr condition, BlockPtr block );
-	~WhileOperator() override;
 
 	const IExpressionComponentPtr condition_;
 	const BlockPtr block_;
 };
 
-class BreakOperator final : public IBlockElement
+class BreakOperator final : public SyntaxElementBase, public IBlockElement
 {
 public:
 	explicit BreakOperator( const FilePos& file_pos );
-	~BreakOperator() override;
 };
 
-class ContinueOperator final : public IBlockElement
+class ContinueOperator final : public SyntaxElementBase, public IBlockElement
 {
 public:
 	explicit ContinueOperator( const FilePos& file_pos );
-	~ContinueOperator() override;
 };
 
-class IfOperator final : public IBlockElement
+class IfOperator final : public SyntaxElementBase, public IBlockElement
 {
 public:
 	struct Branch
@@ -441,31 +420,27 @@ public:
 
 	IfOperator( const FilePos& file_pos, std::vector<Branch> branches );
 
-	~IfOperator() override;
-
 	std::vector<Branch> branches_; // else if()
 };
 
-class SingleExpressionOperator final : public IBlockElement
+class SingleExpressionOperator final : public SyntaxElementBase, public IBlockElement
 {
 public:
 	SingleExpressionOperator( const FilePos& file_pos, IExpressionComponentPtr expression );
-	virtual ~SingleExpressionOperator() override;
 
 	const IExpressionComponentPtr expression_;
 };
 
-class AssignmentOperator final : public IBlockElement
+class AssignmentOperator final : public SyntaxElementBase, public IBlockElement
 {
 public:
 	AssignmentOperator( const FilePos& file_pos, IExpressionComponentPtr l_value, IExpressionComponentPtr r_value );
-	virtual ~AssignmentOperator() override;
 
 	IExpressionComponentPtr l_value_;
 	IExpressionComponentPtr r_value_;
 };
 
-class AdditiveAssignmentOperator final : public IBlockElement
+class AdditiveAssignmentOperator final : public SyntaxElementBase, public IBlockElement
 {
 public:
 	explicit AdditiveAssignmentOperator( const FilePos& file_pos );
@@ -475,7 +450,7 @@ public:
 	BinaryOperatorType additive_operation_;
 };
 
-class IncrementOperator final : public IBlockElement
+class IncrementOperator final : public SyntaxElementBase, public IBlockElement
 {
 public:
 	explicit IncrementOperator( const FilePos& file_pos );
@@ -483,7 +458,7 @@ public:
 	IExpressionComponentPtr expression;
 };
 
-class DecrementOperator final : public IBlockElement
+class DecrementOperator final : public SyntaxElementBase, public IBlockElement
 {
 public:
 	explicit DecrementOperator( const FilePos& file_pos );
@@ -491,7 +466,7 @@ public:
 	IExpressionComponentPtr expression;
 };
 
-class StaticAssert final : public IBlockElement
+class StaticAssert final : public SyntaxElementBase, public IBlockElement
 {
 public:
 	explicit StaticAssert( const FilePos& file_pos );
@@ -509,8 +484,6 @@ public:
 		MutabilityModifier mutability_modifier,
 		ReferenceModifier reference_modifier );
 
-	virtual ~FunctionArgumentDeclaration() override;
-
 public:
 	const ProgramString name_;
 	const TypeName type_;
@@ -518,13 +491,13 @@ public:
 	const ReferenceModifier reference_modifier_;
 };
 
-
 typedef std::unique_ptr<FunctionArgumentDeclaration> FunctionArgumentDeclarationPtr;
 typedef std::vector<FunctionArgumentDeclarationPtr> FunctionArgumentsDeclaration;
 
 class FunctionDeclaration final
 	: public SyntaxElementBase
 	, public IProgramElement
+	, public IClassElement
 {
 public:
 	FunctionDeclaration(
@@ -537,8 +510,6 @@ public:
 		std::unique_ptr<StructNamedInitializer> constructor_initialization_list,
 		BlockPtr block );
 
-	virtual ~FunctionDeclaration() override;
-
 	const ComplexName name_;
 	const TypeName return_type_;
 	const MutabilityModifier return_value_mutability_modifier_;
@@ -550,30 +521,26 @@ public:
 
 class ClassTemplateDeclaration;
 
+class ClassFieldDeclaration final
+	: public SyntaxElementBase
+	, public IClassElement
+{
+public:
+	explicit ClassFieldDeclaration( const FilePos& file_pos );
+
+	TypeName type;
+	ProgramString name;
+};
+
 class ClassDeclaration final
 	: public SyntaxElementBase
 	, public IProgramElement
+	, public IClassElement
 {
 public:
 	explicit ClassDeclaration( const FilePos& file_pos );
-	virtual ~ClassDeclaration() override;
 
-	struct Field
-	{
-		FilePos file_pos;
-		TypeName type;
-		ProgramString name;
-	};
-
-	typedef
-		boost::variant<
-			std::unique_ptr<FunctionDeclaration>,
-			std::unique_ptr<ClassDeclaration>,
-			std::unique_ptr<ClassTemplateDeclaration>,
-			Field >
-		Member;
-
-	std::vector<Member> members_;
+	ClassElements elements_;
 	ComplexName name_;
 	bool is_forward_declaration_= false;
 };
@@ -581,6 +548,7 @@ public:
 class ClassTemplateDeclaration final
 	: public SyntaxElementBase
 	, public IProgramElement
+	, public IClassElement
 {
 public:
 	explicit ClassTemplateDeclaration( const FilePos& file_pos );
@@ -596,8 +564,6 @@ public:
 	// Argument in template signature.
 	struct SignatureArg
 	{
-		// TODO - support more comples names, like std::vector</T/>.
-		// TODO - support default arguments.
 		ComplexName name;
 		boost::optional<ComplexName> default_value;
 	};
@@ -613,7 +579,6 @@ class Namespace final
 {
 public:
 	explicit Namespace( const FilePos& file_pos );
-	virtual ~Namespace() override= default;
 
 	ProgramString name_;
 	ProgramElements elements_;
