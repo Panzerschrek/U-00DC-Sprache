@@ -36,9 +36,9 @@ CodeBuilderError ReportNameNotFound( const FilePos& file_pos, const ComplexName&
 	error.file_pos= file_pos;
 	error.code= CodeBuilderErrorCode::NameNotFound;
 
-	for( const ProgramString& component : name.components )
+	for( const ComplexName::Component& component : name.components )
 	{
-		error.text+= component;
+		error.text+= component.name;
 		if( &component != &name.components.back() )
 			error.text+= "::"_SpC;
 	}
@@ -452,7 +452,7 @@ CodeBuilderError ReportVariableInitializerIsNotConstantExpression( const FilePos
 	error.file_pos= file_pos;
 	error.code= CodeBuilderErrorCode::VariableInitializerIsNotConstantExpression;
 
-	error.text= "Variable declaration is nor constant expression."_SpC;
+	error.text= "Variable declaration is not constant expression."_SpC;
 
 	return error;
 }
@@ -793,6 +793,127 @@ CodeBuilderError ReportThisUnavailable( const FilePos& file_pos )
 	error.code= CodeBuilderErrorCode::ThisUnavailable;
 
 	error.text= "\"this\" unavailable."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportInvalidValueAsTemplateArgument( const FilePos& file_pos, const ProgramString& got )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::InvalidValueAsTemplateArgument;
+
+	error.text= "Invalid value as template argument. Expected variable of type, got \""_SpC + got + "\"."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportInvalidTypeOfTemplateVariableArgument( const FilePos& file_pos, const ProgramString& type_name )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::InvalidTypeOfTemplateVariableArgument;
+
+	error.text= "Invalid type for template variable-argument: \""_SpC + type_name + "\"."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportTemplateParametersDeductionFailed( const FilePos& file_pos )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::TemplateParametersDeductionFailed;
+
+	error.text= "Template parameters deduction failed."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportDeclarationShadowsTemplateArgument( const FilePos& file_pos, const ProgramString& name )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::DeclarationShadowsTemplateArgument;
+
+	error.text= "Declaration of \""_SpC + name + "\" shadows template argument."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportValueIsNotTemplate( const FilePos& file_pos )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::ValueIsNotTemplate;
+
+	error.text= "Value is not template."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportTemplateInstantiationRequired( const FilePos& file_pos, const ProgramString& template_name )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::TemplateInstantiationRequired;
+
+	error.text= "\""_SpC + template_name + "\" template instantiation required."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportMandatoryTemplateSignatureArgumentAfterOptionalArgument( const FilePos& file_pos )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::MandatoryTemplateSignatureArgumentAfterOptionalArgument;
+
+	error.text= "Mandatory template signature argument after optional argument."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportTemplateArgumentIsNotDeducedYet( const FilePos& file_pos, const ProgramString& name )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::TemplateArgumentIsNotDeducedYet;
+
+	error.text= name + " is not deduced yet."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportUnsupportedExpressionTypeForTemplateSignatureArgument( const FilePos& file_pos )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::UnsupportedExpressionTypeForTemplateSignatureArgument;
+
+	error.text= "Unsupported kind of expression in class template signature argument. Supported only named operands."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportTemplateArgumentNotUsedInSignature( const FilePos& file_pos, const ProgramString& name )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::TemplateArgumentNotUsedInSignature;
+
+	error.text= "Template argument \""_SpC + name + "\" not used in signature."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportIncompleteMemberOfClassTemplate( const FilePos& file_pos, const ProgramString& name )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::IncompleteMemberOfClassTemplate;
+
+	error.text= "\""_SpC + name + "\" is incomplete."_SpC;
 
 	return error;
 }

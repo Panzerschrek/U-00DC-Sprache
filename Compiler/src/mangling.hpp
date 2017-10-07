@@ -15,7 +15,7 @@ std::string MangleFunction(
 	const Function& function_type,
 	bool is_this_call_method );
 
-std::string MangleClass(
+std::string MangleType(
 	const NamesScope& parent_scope,
 	const ProgramString& class_name );
 

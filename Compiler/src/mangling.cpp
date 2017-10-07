@@ -262,7 +262,7 @@ std::string MangleFunction(
 	return ToStdString( result );
 }
 
-std::string MangleClass(
+std::string MangleType(
 	const NamesScope& parent_scope,
 	const ProgramString& class_name )
 {

@@ -84,6 +84,17 @@ CodeBuilder::CodeBuilder()
 	invalid_type_= FundamentalType( U_FundamentalType::InvalidType, fundamental_llvm_types_.invalid_type_ );
 	void_type_= FundamentalType( U_FundamentalType::Void, fundamental_llvm_types_.void_ );
 	bool_type_= FundamentalType( U_FundamentalType::Bool, fundamental_llvm_types_.bool_ );
+
+	// Default resolve handler - push first to stack.
+	resolving_funcs_stack_.emplace_back( new PreResolveFunc(
+		[this](
+			NamesScope& names_scope,
+			const ComplexName::Component* components,
+			size_t component_count,
+			size_t& out_skip_components  )
+		{
+			return PreResolveDefault( names_scope, components, component_count, out_skip_components );
+		} ) );
 }
 
 CodeBuilder::~CodeBuilder()
@@ -126,6 +137,8 @@ CodeBuilder::BuildResult CodeBuilder::BuildProgram( const ProgramElements& progr
 	if( error_count_ > 0u )
 		errors_.push_back( ReportBuildFailed() );
 
+	// TODO - sort errors, using file_pos.
+
 	BuildResult result;
 	result.errors= errors_;
 	errors_.clear();
@@ -146,7 +159,7 @@ void CodeBuilder::FillGlobalNamesScope( NamesScope& global_names_scope )
 Type CodeBuilder::PrepareType(
 	const FilePos& file_pos,
 	const TypeName& type_name,
-	const NamesScope& names_scope )
+	NamesScope& names_scope )
 {
 	Type result;
 	Type* last_type= &result;
@@ -170,22 +183,30 @@ Type CodeBuilder::PrepareType(
 
 		*last_type= Array();
 		Array& array_type= *last_type->GetArrayType();
-		array_type.size= 1u;
 
 		const Value size_expression= BuildExpressionCode( num, names_scope, *dummy_function_context_ );
-		if( const Variable* const size_variable= size_expression.GetVariable() )
+		if( size_expression.GetType() == NontypeStub::TemplateDependentValue ||
+			size_expression.GetType().GetTemplateDependentType() != nullptr )
+		{}
+		else if( const Variable* const size_variable= size_expression.GetVariable() )
 		{
 			if( size_variable->constexpr_value != nullptr )
 			{
+
 				if( const FundamentalType* const size_fundamental_type= size_variable->type.GetFundamentalType() )
 				{
 					if( IsInteger( size_fundamental_type->fundamental_type ) )
 					{
-						const llvm::APInt& size_value= size_variable->constexpr_value->getUniqueInteger();
-						if( IsSignedInteger( size_fundamental_type->fundamental_type ) && size_value.isNegative() )
-							errors_.push_back( ReportArraySizeIsNegative( num.file_pos_ ) );
+						if( llvm::dyn_cast<llvm::UndefValue>(size_variable->constexpr_value) != nullptr )
+							array_type.size= Array::c_undefined_size;
 						else
-							array_type.size= size_t( size_value.getLimitedValue() );
+						{
+							const llvm::APInt& size_value= size_variable->constexpr_value->getUniqueInteger();
+							if( IsSignedInteger( size_fundamental_type->fundamental_type ) && size_value.isNegative() )
+								errors_.push_back( ReportArraySizeIsNegative( num.file_pos_ ) );
+							else
+								array_type.size= size_t( size_value.getLimitedValue() );
+						}
 					}
 					else
 						errors_.push_back( ReportArraySizeIsNotInteger( num.file_pos_ ) );
@@ -205,9 +226,11 @@ Type CodeBuilder::PrepareType(
 	*last_type= FundamentalType( U_FundamentalType::InvalidType, fundamental_llvm_types_.invalid_type_ );
 
 	if( const NamesScope::InsertedName* name=
-		names_scope.ResolveName( type_name.name ) )
+		ResolveName( file_pos, names_scope, type_name.name ) )
 	{
-		if( const Type* const type= name->second.GetTypeName() )
+		if( name->second.GetType() == NontypeStub::TemplateDependentValue )
+			return GetNextTemplateDependentType();
+		else if( const Type* const type= name->second.GetTypeName() )
 			*last_type= *type;
 		else
 			errors_.push_back( ReportNameIsNotTypeName( file_pos, name->first ) );
@@ -225,7 +248,7 @@ Type CodeBuilder::PrepareType(
 				array_type->llvm_type=
 				llvm::ArrayType::get(
 					last_type->GetLLVMType(),
-					array_type->size );
+					array_type->ArraySizeOrZero() );
 		}
 
 		for( unsigned int i= arrays_count - 1u; i > 0u; i-- )
@@ -236,16 +259,19 @@ Type CodeBuilder::PrepareType(
 			array_type->llvm_type=
 				llvm::ArrayType::get(
 					arrays_stack[i]->GetLLVMType(),
-					array_type->size );
+					array_type->ArraySizeOrZero() );
 		}
 	}
 
 	return result;
 }
 
-void CodeBuilder::PrepareClass( const ClassDeclaration& class_declaration, NamesScope& names_scope )
+ClassPtr CodeBuilder::PrepareClass(
+	const ClassDeclaration& class_declaration,
+	const ComplexName& class_complex_name,
+	NamesScope& names_scope )
 {
-	const ProgramString& class_name= class_declaration.name_.components.back();
+	const ProgramString& class_name= class_complex_name.components.back().name;
 	if( IsKeyword( class_name ) )
 		errors_.push_back( ReportUsingKeywordAsName( class_declaration.file_pos_ ) );
 
@@ -254,26 +280,69 @@ void CodeBuilder::PrepareClass( const ClassDeclaration& class_declaration, Names
 		if( class_declaration.name_.components.size() != 1u )
 		{
 			errors_.push_back( ReportClassDeclarationOutsideItsScope( class_declaration.file_pos_ ) );
-			return;
+			return nullptr;
 		}
 
 		const ClassPtr the_class= std::make_shared<Class>( class_name, &names_scope );
-		the_class->llvm_type= llvm::StructType::create( llvm_context_, MangleClass( names_scope, class_name ) );
+		the_class->llvm_type= llvm::StructType::create( llvm_context_, MangleType( names_scope, class_name ) );
 		const Type class_type= the_class;
+
+		if( NameShadowsTemplateArgument( class_name, names_scope ) )
+		{
+			errors_.push_back( ReportDeclarationShadowsTemplateArgument( class_declaration.file_pos_, class_name ) );
+			return nullptr;
+		}
 
 		const NamesScope::InsertedName* const inserted_name= names_scope.AddName( class_name, class_type );
 		if( inserted_name == nullptr )
 		{
 			errors_.push_back( ReportRedefinition( class_declaration.file_pos_, class_name ) );
-			return;
+			return nullptr;
 		}
-		return;
+
+		return nullptr;
 	}
 
 	ClassPtr the_class;
 
-	if( const NamesScope::InsertedName* const previous_declaration=
-		names_scope.ResolveName( class_declaration.name_ ) )
+	const NamesScope::InsertedName* previous_declaration= nullptr;
+	if( class_complex_name.components.size() == 1u )
+	{
+		// Simple name - look only in current namespace.
+		previous_declaration= names_scope.GetThisScopeName( class_complex_name.components.front().name );
+	}
+	else
+	{
+		// Complex name - make full name resolving.
+		previous_declaration= ResolveName( class_declaration.file_pos_, names_scope, class_complex_name );
+		if( previous_declaration == nullptr )
+		{
+			errors_.push_back( ReportClassDeclarationOutsideItsScope( class_declaration.file_pos_ ) );
+			return nullptr;
+		}
+	}
+
+	if( previous_declaration == nullptr )
+	{
+		the_class= std::make_shared<Class>( class_name, &names_scope );
+		the_class->llvm_type= llvm::StructType::create( llvm_context_, MangleType( names_scope, class_name ) );
+		Type class_type;
+		class_type= the_class;
+
+		if( NameShadowsTemplateArgument( class_name, names_scope ) )
+		{
+			errors_.push_back( ReportDeclarationShadowsTemplateArgument( class_declaration.file_pos_, class_name ) );
+			return nullptr;
+		}
+
+		const NamesScope::InsertedName* const inserted_name= names_scope.AddName( class_name, class_type );
+		if( inserted_name == nullptr )
+		{
+			errors_.push_back( ReportRedefinition( class_declaration.file_pos_, class_name ) );
+			return nullptr;
+		}
+	}
+	else
 	{
 		if( const Type* const previous_type= previous_declaration->second.GetTypeName() )
 		{
@@ -282,40 +351,20 @@ void CodeBuilder::PrepareClass( const ClassDeclaration& class_declaration, Names
 				if( !previous_calss_ptr->is_incomplete )
 				{
 					errors_.push_back( ReportClassBodyDuplication( class_declaration.file_pos_ ) );
-					return;
+					return nullptr;
 				}
 				the_class= previous_calss_ptr;
 			}
 			else
 			{
 				errors_.push_back( ReportRedefinition( class_declaration.file_pos_, class_name ) );
-				return;
+				return nullptr;
 			}
 		}
 		else
 		{
 			errors_.push_back( ReportRedefinition( class_declaration.file_pos_, class_name ) );
-			return;
-		}
-	}
-	else
-	{
-		if( class_declaration.name_.components.size() != 1u )
-		{
-			errors_.push_back( ReportClassDeclarationOutsideItsScope( class_declaration.file_pos_ ) );
-			return;
-		}
-
-		the_class= std::make_shared<Class>( class_name, &names_scope );
-		the_class->llvm_type= llvm::StructType::create( llvm_context_, MangleClass( names_scope, class_name ) );
-		Type class_type;
-		class_type= the_class;
-
-		const NamesScope::InsertedName* const inserted_name= names_scope.AddName( class_name, class_type );
-		if( inserted_name == nullptr )
-		{
-			errors_.push_back( ReportRedefinition( class_declaration.file_pos_, class_name ) );
-			return;
+			return nullptr;
 		}
 	}
 	U_ASSERT( the_class != nullptr );
@@ -323,6 +372,8 @@ void CodeBuilder::PrepareClass( const ClassDeclaration& class_declaration, Names
 	class_type= the_class;
 
 	std::vector<llvm::Type*> fields_llvm_types;
+
+	std::vector<PrepareFunctionResult> class_functions;
 
 	for( const ClassDeclaration::Member& member : class_declaration.members_ )
 	{
@@ -343,25 +394,37 @@ void CodeBuilder::PrepareClass( const ClassDeclaration& class_declaration, Names
 
 			fields_llvm_types.emplace_back( out_field.type.GetLLVMType() );
 
-			const NamesScope::InsertedName* const inserted_field=
-				the_class->members.AddName( in_field->name, std::move( out_field ) );
-			if( inserted_field == nullptr )
-				errors_.push_back( ReportRedefinition( in_field->file_pos, in_field->name ) );
+			if( NameShadowsTemplateArgument( in_field->name, the_class->members ) )
+				errors_.push_back( ReportDeclarationShadowsTemplateArgument( in_field->file_pos, in_field->name ) );
+			else
+			{
+				const NamesScope::InsertedName* const inserted_field=
+					the_class->members.AddName( in_field->name, std::move( out_field ) );
+				if( inserted_field == nullptr )
+					errors_.push_back( ReportRedefinition( in_field->file_pos, in_field->name ) );
 
-			the_class->field_count++;
+				the_class->field_count++;
+			}
 		}
 		else if( const std::unique_ptr<FunctionDeclaration>* const function_declaration=
 			boost::get< std::unique_ptr<FunctionDeclaration> >( &member ) )
 		{
 			// First time, push only prototypes.
 			U_ASSERT( *function_declaration != nullptr );
-			PrepareFunction( **function_declaration, true, the_class, the_class->members );
+			class_functions.push_back( PrepareFunction( **function_declaration, true, the_class, the_class->members ) );
 		}
 		else if( const std::unique_ptr<ClassDeclaration>* const inner_class=
 			boost::get< std::unique_ptr<ClassDeclaration> >( &member ) )
 		{
+			// SPRACHE_TODO - maybe process classes like functions - after class completion?
 			U_ASSERT( *inner_class != nullptr );
-			PrepareClass( **inner_class, the_class->members );
+			PrepareClass( **inner_class, (*inner_class)->name_, the_class->members );
+		}
+		else if( const std::unique_ptr<ClassTemplateDeclaration>* const inner_class_template=
+			boost::get< std::unique_ptr<ClassTemplateDeclaration> >( &member ) )
+		{
+			U_ASSERT( *inner_class_template != nullptr );
+			PrepareClassTemplate( **inner_class_template, the_class->members );
 		}
 		else
 		{
@@ -396,16 +459,34 @@ void CodeBuilder::PrepareClass( const ClassDeclaration& class_declaration, Names
 	TryGenerateDestructor( *the_class, class_type );
 
 	// Build functions with body.
-	for( const ClassDeclaration::Member& member : class_declaration.members_ )
+	for( const PrepareFunctionResult& func : class_functions )
 	{
-		if( const std::unique_ptr<FunctionDeclaration>* const function_declaration=
-			boost::get< std::unique_ptr<FunctionDeclaration> >( &member ) )
+		if( func.functions_set != nullptr )
 		{
-			U_ASSERT( *function_declaration != nullptr );
-			if( (*function_declaration)->block_ != nullptr )
-				PrepareFunction( **function_declaration, false, the_class, the_class->members );
+			U_ASSERT( func.func_syntax_element != nullptr );
+			if( func.func_syntax_element->block_ == nullptr )
+				continue; // This is prototype, it is already processed.
+
+			const ProgramString& func_name= func.func_syntax_element->name_.components.back().name;
+			FunctionVariable& function_variable= (*func.functions_set)[ func.function_index ];
+			if( function_variable.have_body && func.func_syntax_element->block_ != nullptr )
+			{
+				errors_.push_back( ReportFunctionBodyDuplication( func.func_syntax_element->file_pos_, func_name ) );
+				continue;
+			}
+
+			BuildFuncCode(
+				(*func.functions_set)[ func.function_index ],
+				the_class,
+				the_class->members,
+				func_name,
+				func.func_syntax_element->arguments_,
+				func.func_syntax_element->block_.get(),
+				func.func_syntax_element->constructor_initialization_list_.get() );
 		}
 	}
+
+	return the_class;
 }
 
 void CodeBuilder::TryGenerateDefaultConstructor( Class& the_class, const Type& class_type )
@@ -766,7 +847,7 @@ void CodeBuilder::BuildCopyConstructorPart(
 		const Array& array_type= *array_type_ptr;
 
 		GenerateLoop(
-			array_type.size,
+			array_type.ArraySizeOrZero(),
 			[&](llvm::Value* const counter_value)
 			{
 				llvm::Value* index_list[2];
@@ -932,7 +1013,7 @@ void CodeBuilder::CallDestructor(
 	{
 		// SPRACHE_TODO - maybe call destructors of arrays in reverse order?
 		GenerateLoop(
-			array_type->size,
+			array_type->ArraySizeOrZero(),
 			[&]( llvm::Value* const index )
 			{
 				llvm::Value* index_list[2];
@@ -1014,7 +1095,7 @@ void CodeBuilder::BuildNamespaceBody(
 			const ClassDeclaration* const class_=
 			dynamic_cast<const ClassDeclaration*>( program_element.get() ) )
 		{
-			PrepareClass( *class_, names_scope );
+			PrepareClass( *class_, class_->name_, names_scope );
 		}
 		else if(
 			const Namespace* const namespace_=
@@ -1033,12 +1114,22 @@ void CodeBuilder::BuildNamespaceBody(
 			}
 			else
 			{
+
+				// There are no templates abowe namespace. Namespaces inside classes does not exists.
+				U_ASSERT( !NameShadowsTemplateArgument( namespace_->name_, names_scope ) );
+
 				const NamesScopePtr new_names_scope= std::make_shared<NamesScope>( namespace_->name_, &names_scope );
 				names_scope.AddName( namespace_->name_, new_names_scope );
 				result_scope= new_names_scope.get();
 			}
 
 			BuildNamespaceBody( namespace_->elements_, *result_scope );
+		}
+		else if(
+			const ClassTemplateDeclaration* const class_template_declaration=
+			dynamic_cast<const ClassTemplateDeclaration*>( program_element.get() ) )
+		{
+			PrepareClassTemplate( *class_template_declaration, names_scope );
 		}
 		else
 		{
@@ -1047,13 +1138,15 @@ void CodeBuilder::BuildNamespaceBody(
 	} // for program elements
 }
 
-void CodeBuilder::PrepareFunction(
+CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 	const FunctionDeclaration& func,
 	const bool is_class_method_predeclaration,
 	ClassPtr base_class,
 	NamesScope& func_definition_names_scope /* scope, where this function appears */ )
 {
-	const ProgramString& func_name= func.name_.components.back();
+	PrepareFunctionResult result;
+
+	const ProgramString& func_name= func.name_.components.back().name;
 
 	const bool is_constructor= func_name == Keywords::constructor_;
 	const bool is_destructor= func_name == Keywords::destructor_;
@@ -1071,10 +1164,8 @@ void CodeBuilder::PrepareFunction(
 	if( func.name_.components.size() >= 2u )
 	{
 		// Complex name - search scope for this function.
-		ComplexName base_space_name= func.name_;
-		base_space_name.components.pop_back();
 		if( const NamesScope::InsertedName* const scope_name=
-			func_definition_names_scope.ResolveName( base_space_name ) )
+			ResolveName( func.file_pos_, func_definition_names_scope, func.name_.components.data(), func.name_.components.size() - 1u ) )
 		{
 			bool base_space_is_class= false;
 			if( const Type* const type= scope_name->second.GetTypeName() )
@@ -1094,31 +1185,31 @@ void CodeBuilder::PrepareFunction(
 			}
 			else
 			{
-				errors_.push_back( ReportNameNotFound( func.file_pos_, base_space_name ) );
-				return;
+				errors_.push_back( ReportNameNotFound( func.file_pos_, func.name_ ) );
+				return result;
 			}
 		}
 		else
 		{
 			errors_.push_back( ReportFunctionDeclarationOutsideItsScope( func.file_pos_ ) );
-			return;
+			return result;
 		}
 	}
 
 	if( is_special_method && base_class == nullptr )
 	{
 		errors_.push_back( ReportConstructorOrDestructorOutsideClass( func.file_pos_ ) );
-		return;
+		return result;
 	}
 	if( !is_constructor && func.constructor_initialization_list_ != nullptr )
 	{
 		errors_.push_back( ReportInitializationListInNonconstructor(  func.constructor_initialization_list_->file_pos_ ) );
-		return;
+		return result;
 	}
 	if( is_destructor && !func.arguments_.empty() )
 	{
 		errors_.push_back( ReportExplicitArgumentsInDestructor( func.file_pos_ ) );
-		return;
+		return result;
 	}
 
 	FunctionVariable func_variable;
@@ -1131,7 +1222,7 @@ void CodeBuilder::PrepareFunction(
 	{
 		function_type.return_type= PrepareType( func.file_pos_, func.return_type_, *func_base_names_scope );
 		if( function_type.return_type == invalid_type_ )
-			return;
+			return result;
 	}
 
 	// SPRACHE_TODO - make variables without explicit mutability modifiers immutable.
@@ -1141,12 +1232,13 @@ void CodeBuilder::PrepareFunction(
 		function_type.return_value_is_mutable= true;
 	function_type.return_value_is_reference= func.return_value_reference_modifier_ == ReferenceModifier::Reference;
 
-	if( !function_type.return_value_is_reference &&
+	if( function_type.return_type.GetTemplateDependentType() == nullptr &&
+		!function_type.return_value_is_reference &&
 		!( function_type.return_type.GetFundamentalType() != nullptr ||
 		   function_type.return_type.GetClassType() != nullptr ) )
 	{
 		errors_.push_back( ReportNotImplemented( func.file_pos_, "return value types except fundamental and classes" ) );
-		return;
+		return result;
 	}
 
 	if( is_special_method && function_type.return_type != void_type_ )
@@ -1186,7 +1278,7 @@ void CodeBuilder::PrepareFunction(
 			if( base_class == nullptr )
 			{
 				errors_.push_back( ReportThisInNonclassFunction( func.file_pos_, func_name ) );
-				return;
+				return result;
 			}
 			out_arg.type= base_class;
 		}
@@ -1202,17 +1294,18 @@ void CodeBuilder::PrepareFunction(
 
 		if( !out_arg.is_reference &&
 			!( out_arg.type.GetFundamentalType() != nullptr ||
-			   out_arg.type.GetClassType() != nullptr ) )
+			   out_arg.type.GetClassType() != nullptr ||
+			   out_arg.type.GetTemplateDependentType() != nullptr ) )
 		{
 			errors_.push_back( ReportNotImplemented( func.file_pos_, "parameters types except fundamental and classes" ) );
-			return;
+			return result;
 		}
 
 		if( out_arg.type.IsIncomplete() && !out_arg.is_reference )
 		{
 			errors_.push_back( ReportUsingIncompleteType( arg->file_pos_, out_arg.type.ToString() ) );
 		}
-	}
+	} // for arguments
 
 	NamesScope::InsertedName* const previously_inserted_func=
 		func_base_names_scope->GetThisScopeName( func_name );
@@ -1221,11 +1314,17 @@ void CodeBuilder::PrepareFunction(
 		if( func.name_.components.size() > 1u )
 		{
 			errors_.push_back( ReportFunctionDeclarationOutsideItsScope( func.file_pos_ ) );
-			return;
+			return result;
 		}
 
 		OverloadedFunctionsSet functions_set;
 		functions_set.push_back( std::move( func_variable ) );
+
+		if( NameShadowsTemplateArgument( func_name, *func_base_names_scope ) )
+		{
+			errors_.push_back( ReportDeclarationShadowsTemplateArgument( func.file_pos_, func_name ) );
+			return result;
+		}
 
 		// New name in this scope - insert it.
 		NamesScope::InsertedName* const inserted_func=
@@ -1240,6 +1339,11 @@ void CodeBuilder::PrepareFunction(
 			func.arguments_,
 			block,
 			func.constructor_initialization_list_.get() );
+
+		result.func_syntax_element= &func;
+		result.functions_set= inserted_func->second.GetFunctionsSet();
+		result.function_index= result.functions_set->size() - 1u;
+		return result;
 	}
 	else
 	{
@@ -1254,18 +1358,18 @@ void CodeBuilder::PrepareFunction(
 				if( func.block_ == nullptr )
 				{
 					errors_.push_back( ReportFunctionPrototypeDuplication( func.file_pos_, func_name ) );
-					return;
+					return result;
 				}
 				if( same_function->have_body )
 				{
 					errors_.push_back( ReportFunctionBodyDuplication( func.file_pos_, func_name ) );
-					return;
+					return result;
 				}
 				if( same_function->type != func_variable.type )
 				{
 					// In this place we have only possible error
 					errors_.push_back( ReportReturnValueDiffersFromPrototype( func.file_pos_ ) );
-					return;
+					return result;
 				}
 
 				BuildFuncCode(
@@ -1282,7 +1386,7 @@ void CodeBuilder::PrepareFunction(
 				if( func.name_.components.size() > 1u )
 				{
 					errors_.push_back( ReportFunctionDeclarationOutsideItsScope( func.file_pos_ ) );
-					return;
+					return result;
 				}
 
 				try
@@ -1291,7 +1395,7 @@ void CodeBuilder::PrepareFunction(
 				}
 				catch( const ProgramError& )
 				{
-					return;
+					return result;
 				}
 
 				BuildFuncCode(
@@ -1303,16 +1407,23 @@ void CodeBuilder::PrepareFunction(
 					block,
 					func.constructor_initialization_list_.get() );
 			}
+
+			result.func_syntax_element= &func;
+			result.functions_set= functions_set;
+			result.function_index= result.functions_set->size() - 1u;
+			return result;
 		}
 		else
 			errors_.push_back( ReportRedefinition( func.file_pos_, previously_inserted_func->first ) );
 	}
+
+	return result;
 }
 
 void CodeBuilder::BuildFuncCode(
 	FunctionVariable& func_variable,
 	const ClassPtr base_class,
-	const NamesScope& parent_names_scope,
+	NamesScope& parent_names_scope,
 	const ProgramString& func_name,
 	const FunctionArgumentsDeclaration& args,
 	const Block* const block,
@@ -1324,7 +1435,9 @@ void CodeBuilder::BuildFuncCode(
 	bool first_arg_is_sret= false;
 	if( !function_type->return_value_is_reference )
 	{
-		if( function_type->return_type.GetFundamentalType() != nullptr )
+		if( function_type->return_type.GetTemplateDependentType() != nullptr )
+		{}
+		else if( function_type->return_type.GetFundamentalType() != nullptr )
 		{}
 		else if( const ClassPtr class_type= function_type->return_type.GetClassType() )
 		{
@@ -1344,7 +1457,9 @@ void CodeBuilder::BuildFuncCode(
 			type= llvm::PointerType::get( type, 0u );
 		else
 		{
-			if( arg.type.GetFundamentalType() != nullptr )
+			if( arg.type.GetTemplateDependentType() != nullptr )
+				type= fundamental_llvm_types_.invalid_type_;
+			else if( arg.type.GetFundamentalType() != nullptr )
 			{}
 			else if( arg.type.GetClassType() != nullptr )
 			{
@@ -1358,7 +1473,9 @@ void CodeBuilder::BuildFuncCode(
 	}
 
 	llvm::Type* llvm_function_return_type;
-	if( first_arg_is_sret )
+	if( function_type->return_type.GetTemplateDependentType() != nullptr )
+		llvm_function_return_type= fundamental_llvm_types_.void_;
+	else if( first_arg_is_sret )
 		llvm_function_return_type= fundamental_llvm_types_.void_;
 	else
 	{
@@ -1490,7 +1607,8 @@ void CodeBuilder::BuildFuncCode(
 			var.location= Variable::Location::Pointer;
 		else
 		{
-			if( arg.type.GetFundamentalType() != nullptr )
+			if( arg.type.GetFundamentalType() != nullptr ||
+				arg.type.GetTemplateDependentType() != nullptr )
 			{
 				// Move parameters to stack for assignment possibility.
 				// TODO - do it, only if parameters are not constant.
@@ -1518,6 +1636,12 @@ void CodeBuilder::BuildFuncCode(
 		}
 		else
 		{
+			if( NameShadowsTemplateArgument( arg_name, function_names ) )
+			{
+				errors_.push_back( ReportDeclarationShadowsTemplateArgument( declaration_arg.file_pos_, arg_name ) );
+				return;
+			}
+
 			const NamesScope::InsertedName* const inserted_arg=
 				function_names.AddName(
 					arg_name,
@@ -1571,7 +1695,9 @@ void CodeBuilder::BuildFuncCode(
 
 	const BlockBuildInfo block_build_info=
 		BuildBlockCode( *block, function_names, function_context );
-	U_ASSERT( function_context.destructibles_stack.size() == 1u || !errors_.empty() || error_count_ > 0u );
+
+	// TODO - turn on this. We can damage stack, in template prepass.
+	//U_ASSERT( function_context.destructibles_stack.size() == 1u || !errors_.empty() || error_count_ > 0u );
 
 	// We need call destructors for arguments only if function returns "void".
 	// In other case, we have "return" in all branches and destructors call before each "return".
@@ -1756,7 +1882,7 @@ void CodeBuilder::BuildConstructorInitialization(
 
 CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockCode(
 	const Block& block,
-	const NamesScope& names,
+	NamesScope& names,
 	FunctionContext& function_context ) noexcept
 {
 	NamesScope block_names( ""_SpC, &names );
@@ -1957,6 +2083,7 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 		}
 
 		if( variable_declaration.mutability_modifier == MutabilityModifier::Constexpr &&
+			type.GetTemplateDependentType() == nullptr &&
 			!type.CanBeConstexpr() )
 		{
 			errors_.push_back( ReportInvalidTypeForConstantExpressionVariable( variables_declaration.file_pos_ ) );
@@ -1968,7 +2095,12 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 		variable.location= Variable::Location::Pointer;
 		variable.value_type= ValueType::Reference;
 
-		if( variable_declaration.reference_modifier == ReferenceModifier::None )
+		if( type.GetTemplateDependentType() != nullptr )
+		{
+			if( variable_declaration.initializer != nullptr )
+				ApplyInitializer( variable, *variable_declaration.initializer, block_names, function_context );
+		}
+		else if( variable_declaration.reference_modifier == ReferenceModifier::None )
 		{
 			variable.llvm_value= function_context.alloca_ir_builder.CreateAlloca( variable.type.GetLLVMType() );
 			variable.llvm_value->setName( ToStdString( variable_declaration.name ) );
@@ -2024,7 +2156,8 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 			const Value expression_result_value=
 				BuildExpressionCodeAndDestroyTemporaries( *initializer_expression, block_names, function_context );
 
-			if( expression_result_value.GetType() != variable.type )
+			if( expression_result_value.GetType() != variable.type &&
+				expression_result_value.GetType().GetTemplateDependentType() == nullptr && variable.type.GetTemplateDependentType() == nullptr )
 			{
 				errors_.push_back( ReportTypesMismatch( variables_declaration.file_pos_, variable.type.ToString(), expression_result_value.GetType().ToString() ) );
 				continue;
@@ -2052,7 +2185,8 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 			U_ASSERT(false);
 		}
 
-		if( variable_declaration.mutability_modifier == MutabilityModifier::Constexpr &&
+		if( type.GetTemplateDependentType() == nullptr &&
+			variable_declaration.mutability_modifier == MutabilityModifier::Constexpr &&
 			variable.constexpr_value == nullptr )
 		{
 			errors_.push_back( ReportVariableInitializerIsNotConstantExpression( variables_declaration.file_pos_ ) );
@@ -2062,6 +2196,12 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 		// Reset constexpr initial value for mutable variables.
 		if( variable.value_type != ValueType::ConstReference )
 			variable.constexpr_value= nullptr;
+
+		if( NameShadowsTemplateArgument( variable_declaration.name, block_names ) )
+		{
+			errors_.push_back( ReportDeclarationShadowsTemplateArgument( variables_declaration.file_pos_, variable_declaration.name ) );
+			return;
+		}
 
 		const NamesScope::InsertedName* inserted_name=
 			block_names.AddName( variable_declaration.name, std::move(variable) );
@@ -2085,12 +2225,40 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 	const Value initializer_experrsion_value=
 		BuildExpressionCodeAndDestroyTemporaries( *auto_variable_declaration.initializer_expression, block_names, function_context );
 
+	if( initializer_experrsion_value.GetType() == NontypeStub::TemplateDependentValue )
+	{
+		// Stub, if initializer expression is something strange.
+
+		Variable variable;
+		// SPRACHE_TODO - make variables without explicit mutability modifiers immutable.
+		if( auto_variable_declaration.mutability_modifier == MutabilityModifier::Immutable||
+			auto_variable_declaration.mutability_modifier == MutabilityModifier::Constexpr )
+			variable.value_type= ValueType::ConstReference;
+		else
+			variable.value_type= ValueType::Reference;
+		variable.type= GetNextTemplateDependentType();
+
+		if( NameShadowsTemplateArgument( auto_variable_declaration.name, block_names ) )
+		{
+			errors_.push_back( ReportDeclarationShadowsTemplateArgument( auto_variable_declaration.file_pos_, auto_variable_declaration.name ) );
+			return;
+		}
+		const NamesScope::InsertedName* inserted_name= block_names.AddName( auto_variable_declaration.name, variable );
+		if( inserted_name == nullptr )
+		{
+			errors_.push_back( ReportRedefinition( auto_variable_declaration.file_pos_, auto_variable_declaration.name ) );
+			return;
+		}
+		return;
+	}
+
 	{ // Check expression type. Expression can have exotic types, such "Overloading functions set", "class name", etc.
 		const Type& type= initializer_experrsion_value.GetType();
 		const bool type_is_ok=
 			type.GetFundamentalType() != nullptr ||
 			type.GetArrayType() != nullptr ||
-			type.GetClassType() != nullptr;
+			type.GetClassType() != nullptr ||
+			type.GetTemplateDependentType() != nullptr;
 		if( !type_is_ok )
 		{
 			errors_.push_back( ReportInvalidTypeForAutoVariable( auto_variable_declaration.file_pos_, initializer_experrsion_value.GetType().ToString() ) );
@@ -2160,7 +2328,8 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 		U_ASSERT(false);
 	}
 
-	if( auto_variable_declaration.mutability_modifier == MutabilityModifier::Constexpr &&
+	if( variable.type.GetTemplateDependentType() == nullptr &&
+		auto_variable_declaration.mutability_modifier == MutabilityModifier::Constexpr &&
 		variable.constexpr_value == nullptr )
 	{
 		errors_.push_back( ReportVariableInitializerIsNotConstantExpression( auto_variable_declaration.file_pos_ ) );
@@ -2170,6 +2339,12 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 	// Reset constexpr initial value for mutable variables.
 	if( variable.value_type != ValueType::ConstReference )
 		variable.constexpr_value= nullptr;
+
+	if( NameShadowsTemplateArgument( auto_variable_declaration.name, block_names ) )
+	{
+		errors_.push_back( ReportDeclarationShadowsTemplateArgument( auto_variable_declaration.file_pos_, auto_variable_declaration.name ) );
+		return;
+	}
 
 	const NamesScope::InsertedName* inserted_name=
 		block_names.AddName( auto_variable_declaration.name, std::move(variable) );
@@ -2186,7 +2361,7 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 
 void CodeBuilder::BuildAssignmentOperatorCode(
 	const AssignmentOperator& assignment_operator,
-	const NamesScope& block_names,
+	NamesScope& block_names,
 	FunctionContext& function_context )
 {
 	// Destruction frame for temporary variables of expressions.
@@ -2197,6 +2372,10 @@ void CodeBuilder::BuildAssignmentOperatorCode(
 
 	const Value l_var_value= BuildExpressionCode( l_value, block_names, function_context );
 	const Value r_var_value= BuildExpressionCode( r_value, block_names, function_context );
+
+	if( l_var_value.GetType() == NontypeStub::TemplateDependentValue || r_var_value.GetType() == NontypeStub::TemplateDependentValue )
+		return;
+
 	const Variable* const l_var= l_var_value.GetVariable();
 	const Variable* const r_var= r_var_value.GetVariable();
 	if( l_var == nullptr )
@@ -2214,7 +2393,7 @@ void CodeBuilder::BuildAssignmentOperatorCode(
 		errors_.push_back( ReportExpectedReferenceValue( assignment_operator.file_pos_ ) );
 		return;
 	}
-	if( l_var->type != r_var->type )
+	if( l_var->type.GetTemplateDependentType() == nullptr && r_var->type.GetTemplateDependentType() == nullptr && l_var->type != r_var->type )
 	{
 		errors_.push_back( ReportTypesMismatch( assignment_operator.file_pos_, l_var->type.ToString(), r_var->type.ToString() ) );
 		return;
@@ -2231,6 +2410,8 @@ void CodeBuilder::BuildAssignmentOperatorCode(
 		llvm::Value* value_for_assignment= CreateMoveToLLVMRegisterInstruction( *r_var, function_context );
 		function_context.llvm_ir_builder.CreateStore( value_for_assignment, l_var->llvm_value );
 	}
+	else if( l_var->type.GetTemplateDependentType() != nullptr || r_var->type.GetTemplateDependentType() != nullptr )
+	{}
 	else
 	{
 		// TODO - functions is not copyable.
@@ -2247,7 +2428,7 @@ void CodeBuilder::BuildAssignmentOperatorCode(
 
 void CodeBuilder::BuildAdditiveAssignmentOperatorCode(
 	const AdditiveAssignmentOperator& additive_assignment_operator,
-	const NamesScope& block_names,
+	NamesScope& block_names,
 	FunctionContext& function_context )
 {
 	// Destruction frame for temporary variables of expressions.
@@ -2263,6 +2444,9 @@ void CodeBuilder::BuildAdditiveAssignmentOperatorCode(
 			*additive_assignment_operator.r_value_,
 			block_names,
 			function_context );
+
+	if( l_var_value.GetType() == NontypeStub::TemplateDependentValue || r_var_value.GetType() == NontypeStub::TemplateDependentValue )
+		return;
 
 	const Variable* const l_var= l_var_value.GetVariable();
 	const Variable* const r_var= r_var_value.GetVariable();
@@ -2292,16 +2476,22 @@ void CodeBuilder::BuildAdditiveAssignmentOperatorCode(
 			errors_.push_back( ReportExpectedReferenceValue( additive_assignment_operator.file_pos_ ) );
 			return;
 		}
-		if( operation_result.type != l_var->type )
-		{
-			errors_.push_back( ReportTypesMismatch( additive_assignment_operator.file_pos_, l_var->type.ToString(), operation_result.type.ToString() ) );
-			return;
-		}
 
-		U_ASSERT( l_var->location == Variable::Location::Pointer );
-		llvm::Value* const value_in_register= CreateMoveToLLVMRegisterInstruction( operation_result, function_context );
-		function_context.llvm_ir_builder.CreateStore( value_in_register, l_var->llvm_value );
+		if( operation_result.type.GetTemplateDependentType() == nullptr && l_var->type.GetTemplateDependentType() == nullptr )
+		{
+			if( operation_result.type != l_var->type )
+			{
+				errors_.push_back( ReportTypesMismatch( additive_assignment_operator.file_pos_, l_var->type.ToString(), operation_result.type.ToString() ) );
+				return;
+			}
+
+			U_ASSERT( l_var->location == Variable::Location::Pointer );
+			llvm::Value* const value_in_register= CreateMoveToLLVMRegisterInstruction( operation_result, function_context );
+			function_context.llvm_ir_builder.CreateStore( value_in_register, l_var->llvm_value );
+		}
 	}
+	else if( l_var->type.GetTemplateDependentType() != nullptr || r_var->type.GetTemplateDependentType() != nullptr )
+	{}
 	else
 	{
 		// SPRACHE_TODO - search for overloaded operators.
@@ -2318,10 +2508,13 @@ void CodeBuilder::BuildDeltaOneOperatorCode(
 	const IExpressionComponent& expression,
 	const FilePos& file_pos,
 	bool positive, // true - increment, false - decrement
-	const NamesScope& block_names,
+	NamesScope& block_names,
 	FunctionContext& function_context )
 {
 	const Value value= BuildExpressionCodeAndDestroyTemporaries( expression, block_names, function_context );
+	if( value.GetType() == NontypeStub::TemplateDependentValue )
+		return;
+
 	const Variable* const variable= value.GetVariable();
 	if( variable == nullptr )
 	{
@@ -2356,6 +2549,8 @@ void CodeBuilder::BuildDeltaOneOperatorCode(
 		U_ASSERT( variable->location == Variable::Location::Pointer );
 		function_context.llvm_ir_builder.CreateStore( new_value, variable->llvm_value );
 	}
+	else if( variable->type.GetTemplateDependentType() != nullptr )
+	{}
 	else
 	{
 		// SPRACHE_TODO - search for overloaded operators.
@@ -2366,7 +2561,7 @@ void CodeBuilder::BuildDeltaOneOperatorCode(
 
 void CodeBuilder::BuildReturnOperatorCode(
 	const ReturnOperator& return_operator,
-	const NamesScope& names,
+	NamesScope& names,
 	FunctionContext& function_context )
 {
 	if( return_operator.expression_ == nullptr )
@@ -2399,6 +2594,14 @@ void CodeBuilder::BuildReturnOperatorCode(
 			names,
 			function_context );
 
+	if( expression_result_value.GetType() == NontypeStub::TemplateDependentValue ||
+		function_context.return_type == NontypeStub::TemplateDependentValue )
+	{
+		// Add "ret void", because we do not need to break llvm basic blocks structure.
+		function_context.llvm_ir_builder.CreateRetVoid();
+		return;
+	}
+
 	// Destruct temporary variables of return expression only after assignment of
 	// return value. Destroy all other function variables after this.
 	const auto call_destructors=
@@ -2410,7 +2613,8 @@ void CodeBuilder::BuildReturnOperatorCode(
 		CallDestructorsBeforeReturn( function_context );
 	};
 
-	if( expression_result_value.GetType() != function_context.return_type )
+	if( expression_result_value.GetType().GetTemplateDependentType() == nullptr && function_context.return_type.GetTemplateDependentType() == nullptr &&
+		expression_result_value.GetType() != function_context.return_type )
 	{
 		errors_.push_back( ReportTypesMismatch( return_operator.file_pos_, function_context.return_type.ToString(), expression_result_value.GetType().ToString() ) );
 		return;
@@ -2443,6 +2647,8 @@ void CodeBuilder::BuildReturnOperatorCode(
 			call_destructors();
 			function_context.llvm_ir_builder.CreateRetVoid();
 		}
+		else if( expression_result.type.GetTemplateDependentType() != nullptr )
+			function_context.llvm_ir_builder.CreateRetVoid();
 		else
 		{
 			// Now we can return by value only fundamentals.
@@ -2458,7 +2664,7 @@ void CodeBuilder::BuildReturnOperatorCode(
 
 void CodeBuilder::BuildWhileOperatorCode(
 	const WhileOperator& while_operator,
-	const NamesScope& names,
+	NamesScope& names,
 	FunctionContext& function_context )
 {
 	llvm::BasicBlock* test_block= llvm::BasicBlock::Create( llvm_context_ );
@@ -2474,19 +2680,24 @@ void CodeBuilder::BuildWhileOperatorCode(
 
 	const Value condition_expression= BuildExpressionCodeAndDestroyTemporaries( *while_operator.condition_, names, function_context );
 
-	if( condition_expression.GetType() != bool_type_ )
+	if( condition_expression.GetType() != NontypeStub::TemplateDependentValue &&
+		condition_expression.GetType().GetTemplateDependentType() == nullptr )
 	{
-		errors_.push_back(
-			ReportTypesMismatch(
-				while_operator.condition_->file_pos_,
-				bool_type_.ToString(),
-				condition_expression.GetType().ToString() ) );
-		return;
+		if( condition_expression.GetType() != bool_type_ )
+		{
+			errors_.push_back(
+				ReportTypesMismatch(
+					while_operator.condition_->file_pos_,
+					bool_type_.ToString(),
+					condition_expression.GetType().ToString() ) );
+			return;
+		}
+
+		llvm::Value* condition_in_register= CreateMoveToLLVMRegisterInstruction( *condition_expression.GetVariable(), function_context );
+		function_context.llvm_ir_builder.CreateCondBr( condition_in_register, while_block, block_after_while );
 	}
-
-	llvm::Value* condition_in_register= CreateMoveToLLVMRegisterInstruction( *condition_expression.GetVariable(), function_context );
-
-	function_context.llvm_ir_builder.CreateCondBr( condition_in_register, while_block, block_after_while );
+	else
+		function_context.llvm_ir_builder.CreateCondBr( llvm::UndefValue::get( fundamental_llvm_types_.bool_ ), while_block, block_after_while );
 
 	// While block code.
 
@@ -2540,7 +2751,7 @@ void CodeBuilder::BuildContinueOperatorCode(
 
 CodeBuilder::BlockBuildInfo CodeBuilder::BuildIfOperatorCode(
 	const IfOperator& if_operator,
-	const NamesScope& names,
+	NamesScope& names,
 	FunctionContext& function_context )
 {
 	U_ASSERT( !if_operator.branches_.empty() );
@@ -2585,18 +2796,24 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildIfOperatorCode(
 		{
 			const Value condition_expression= BuildExpressionCodeAndDestroyTemporaries( *branch.condition, names, function_context );
 
-			if( condition_expression.GetType() != bool_type_ )
+			if( condition_expression.GetType() != NontypeStub::TemplateDependentValue &&
+				condition_expression.GetType().GetTemplateDependentType() == nullptr )
 			{
-				errors_.push_back(
-					ReportTypesMismatch(
-						branch.condition->file_pos_,
-						bool_type_.ToString(),
-						condition_expression.GetType().ToString() ) );
-				throw ProgramError();
-			}
+				if( condition_expression.GetType() != bool_type_ )
+				{
+					errors_.push_back(
+						ReportTypesMismatch(
+							branch.condition->file_pos_,
+							bool_type_.ToString(),
+							condition_expression.GetType().ToString() ) );
+					throw ProgramError();
+				}
 
-			llvm::Value* condition_in_register= CreateMoveToLLVMRegisterInstruction( *condition_expression.GetVariable(), function_context );
-			function_context.llvm_ir_builder.CreateCondBr( condition_in_register, body_block, next_condition_block );
+				llvm::Value* condition_in_register= CreateMoveToLLVMRegisterInstruction( *condition_expression.GetVariable(), function_context );
+				function_context.llvm_ir_builder.CreateCondBr( condition_in_register, body_block, next_condition_block );
+			}
+			else
+				function_context.llvm_ir_builder.CreateCondBr( llvm::UndefValue::get( fundamental_llvm_types_.bool_ ), body_block, next_condition_block );
 		}
 
 		// Make body block code.
@@ -2631,9 +2848,13 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildIfOperatorCode(
 
 void CodeBuilder::BuildStaticAssert(
 	const StaticAssert& static_assert_,
-	const NamesScope& names )
+	NamesScope& names )
 {
 	const Value expression_result= BuildExpressionCode( *static_assert_.expression, names, *dummy_function_context_ );
+	if( expression_result.GetType() == NontypeStub::TemplateDependentValue ||
+		expression_result.GetType().GetTemplateDependentType() != nullptr )
+		return;
+
 	if( expression_result.GetType() != bool_type_ )
 	{
 		errors_.push_back( ReportStaticAssertExpressionMustHaveBoolType( static_assert_.file_pos_ ) );
@@ -2646,6 +2867,11 @@ void CodeBuilder::BuildStaticAssert(
 	if( variable->constexpr_value == nullptr )
 	{
 		errors_.push_back( ReportStaticAssertExpressionIsNotConstant( static_assert_.file_pos_ ) );
+		return;
+	}
+	if( llvm::dyn_cast<llvm::UndefValue>(variable->constexpr_value) != nullptr )
+	{
+		// Undef value means, that value is constexpr, but we are in template prepass, and exact value is unknown. Skip this static_assert
 		return;
 	}
 
@@ -2664,20 +2890,7 @@ FunctionVariable* CodeBuilder::GetFunctionWithExactSignature(
 	{
 		const Function& set_function_type= *function_varaible.type.GetFunctionType();
 
-		if( set_function_type.args.size() != function_type.args.size() )
-			continue;
-
-		bool is_equal= true;
-		for( size_t i= 0u; i < function_type.args.size(); ++i )
-		{
-			if( function_type.args[i] != set_function_type.args[i] )
-			{
-				is_equal= false;
-				break;
-			}
-		}
-
-		if( is_equal )
+		if( set_function_type.args == function_type.args )
 			return &function_varaible;
 	}
 
@@ -2791,6 +3004,12 @@ const FunctionVariable& CodeBuilder::GetOverloadedFunction(
 		MatchType match_type= MatchType::Exact;
 		for( unsigned int i= 0u; i < actial_arg_count; i++ )
 		{
+			// Function signature is template-dependent. Just return this function.
+			// Something is template-dependent. In this case we can return any function with proper number of arguments.
+			if( function_type.args[i].type.GetTemplateDependentType() != nullptr ||
+				actual_args_begin[i].type.GetTemplateDependentType() != nullptr )
+				return function;
+
 			// SPRACHE_TODO - support type-casting for function call.
 			// SPRACHE_TODO - support references-casting.
 			// Now - only exactly compare types.
@@ -2878,6 +3097,264 @@ const FunctionVariable& CodeBuilder::GetOverloadedFunction(
 		errors_.push_back( ReportCouldNotSelectOverloadedFunction( file_pos ) );
 		throw ProgramError();
 	}
+}
+
+void CodeBuilder::PushCacheFillResolveHandler( ResolvingCache& resolving_cache, NamesScope& start_namespace )
+{
+	const size_t prev_handler_index= resolving_funcs_stack_.size() - 1u;
+
+	resolving_funcs_stack_.emplace_back( new PreResolveFunc(
+		[this, &resolving_cache, &start_namespace, prev_handler_index](
+			NamesScope& names_scope,
+			const ComplexName::Component* components,
+			size_t component_count,
+			size_t& out_skip_components )
+			-> std::pair<const NamesScope::InsertedName*, NamesScope*>
+		{
+			const std::pair<const NamesScope::InsertedName*, NamesScope*> resolve_start_point=
+				(*resolving_funcs_stack_[prev_handler_index])( names_scope, components, component_count, out_skip_components );
+			if( resolve_start_point.first == nullptr )
+				return std::make_pair( nullptr, nullptr );
+			U_ASSERT( out_skip_components > 0u && out_skip_components <= component_count );
+
+			// Do not push to cache names from child relative "start_namespace" spaces.
+			if( !components[0].is_generated &&
+				( resolve_start_point.second == &start_namespace || resolve_start_point.second->IsAncestorFor( start_namespace ) ) )
+			{
+				NameResolvingKey key;
+				key.components= components;
+				key.component_count= component_count;
+
+				resolving_cache.emplace(
+					std::move(key),
+					ResolvingCacheValue{ *resolve_start_point.first, resolve_start_point.second, out_skip_components } );
+			}
+
+			return resolve_start_point;
+
+		} ) );
+}
+
+void CodeBuilder::PushCacheGetResolveHandelr( const ResolvingCache& resolving_cache )
+{
+	const size_t prev_handler_index= resolving_funcs_stack_.size() - 1u;
+
+	resolving_funcs_stack_.emplace_back( new PreResolveFunc(
+		[this, &resolving_cache, prev_handler_index](
+			NamesScope& names_scope,
+			const ComplexName::Component* components,
+			size_t component_count,
+			size_t& out_skip_components )
+			-> std::pair<const NamesScope::InsertedName*, NamesScope*>
+		{
+			NameResolvingKey key;
+			key.components= components;
+			key.component_count= component_count;
+			const auto it= resolving_cache.find(key);
+			if( it == resolving_cache.end() )
+				return (*resolving_funcs_stack_[prev_handler_index])( names_scope, components, component_count, out_skip_components );
+
+			const ResolvingCacheValue& cache_value= it->second;
+			out_skip_components= cache_value.name_components_cut;
+			return std::make_pair( &cache_value.name, cache_value.parent_namespace );
+
+		} ) );
+}
+
+void CodeBuilder::PopResolveHandler()
+{
+	U_ASSERT( resolving_funcs_stack_.size() >= 2u );
+	resolving_funcs_stack_.pop_back();
+}
+
+const NamesScope::InsertedName* CodeBuilder::ResolveName( const FilePos& file_pos, NamesScope& names_scope, const ComplexName& complex_name )
+{
+	return ResolveName( file_pos, names_scope, complex_name.components.data(), complex_name.components.size() );
+}
+
+const NamesScope::InsertedName* CodeBuilder::ResolveName(
+	const FilePos& file_pos,
+	NamesScope& names_scope,
+	const ComplexName::Component* components, size_t component_count )
+{
+	return ResolveNameWithParentSpace( file_pos, names_scope, components, component_count ).first;
+}
+
+std::pair<const NamesScope::InsertedName*, NamesScope*> CodeBuilder::ResolveNameWithParentSpace(
+	const FilePos& file_pos,
+	NamesScope& names_scope,
+	const ComplexName::Component* components,
+	size_t component_count,
+	const bool only_primary_resolove )
+{
+	U_ASSERT( !resolving_funcs_stack_.empty() );
+
+	size_t skip_components= 0u;
+	const std::pair<const NamesScope::InsertedName*, NamesScope*> resolve_start_point=
+		PreResolve( names_scope, components, component_count, skip_components );
+	if( resolve_start_point.first == nullptr )
+		return std::make_pair( nullptr, nullptr );
+	U_ASSERT( skip_components > 0u && skip_components <= component_count );
+
+	if( only_primary_resolove )
+		return resolve_start_point;
+
+	components+= skip_components - 1u;
+	component_count-= skip_components - 1u;
+	const NamesScope::InsertedName* name= resolve_start_point.first;
+	NamesScope* current_space= resolve_start_point.second;
+	do
+	{
+		if( name == nullptr )
+			return std::make_pair( nullptr, nullptr );
+
+		if( components[0].have_template_parameters && name->second.GetClassTemplate() == nullptr )
+		{
+			errors_.push_back( ReportValueIsNotTemplate( file_pos ) );
+			return std::make_pair( nullptr, nullptr );
+		}
+
+		NamesScope* next_space= nullptr;
+
+		if( const NamesScopePtr inner_namespace= name->second.GetNamespace() )
+			next_space= inner_namespace.get();
+		else if( const Type* const type= name->second.GetTypeName() )
+		{
+			if( const ClassPtr class_= type->GetClassType() )
+				next_space= &class_->members;
+		}
+		else if( const ClassTemplatePtr class_template = name->second.GetClassTemplate() )
+		{
+			if( components[0].have_template_parameters )
+			{
+				const NamesScope::InsertedName* generated_class=
+					GenTemplateClass(
+						file_pos,
+						class_template,
+						components[0].template_parameters,
+						*current_space,
+						names_scope );
+				if( generated_class == nullptr )
+					return std::make_pair( nullptr, nullptr );
+				if( generated_class->second.GetType() == NontypeStub::TemplateDependentValue )
+					return std::make_pair( generated_class, current_space );
+
+				const Type* const type= generated_class->second.GetTypeName();
+				if( type->GetTemplateDependentType() != nullptr )
+				{
+					if( component_count >= 2u )
+						return std::make_pair( generated_class, current_space ); // If this name is last, we know, that this is type
+					else
+						return std::make_pair( &current_space->GetTemplateDependentValue(), current_space ); // Else it is something really template-dependent
+				}
+				U_ASSERT( type != nullptr );
+				const ClassPtr class_= type->GetClassType();
+				// SPRACHE_TODO - allow non-class types as result of template.
+				U_ASSERT( class_ != nullptr );
+				next_space= &class_->members;
+				name= generated_class;
+			}
+			else if( component_count >= 2u )
+			{
+				errors_.push_back( ReportTemplateInstantiationRequired( file_pos, class_template->class_syntax_element->name_.components.back().name ) );
+				return std::make_pair( nullptr, nullptr );
+			}
+		}
+
+		if( component_count == 1u )
+			break;
+		else if( next_space != nullptr )
+		{
+			name= next_space->GetThisScopeName( components[1].name );
+			current_space= next_space;
+		}
+		else
+			return std::make_pair( nullptr, nullptr );
+
+		++components;
+		--component_count;
+	} while ( component_count > 0u );
+
+	if( name != nullptr && name->second.GetType() == NontypeStub::YetNotDeducedTemplateArg )
+		errors_.push_back( ReportTemplateArgumentIsNotDeducedYet( file_pos, name == nullptr ? ""_SpC : name->first ) );
+
+	return std::make_pair( name, current_space );
+}
+
+std::pair<const NamesScope::InsertedName*, NamesScope*> CodeBuilder::PreResolve(
+	NamesScope& names_scope,
+	const ComplexName::Component* const components,
+	const size_t component_count,
+	size_t& out_skip_components )
+{
+	return (*resolving_funcs_stack_.back())( names_scope, components, component_count, out_skip_components );
+}
+
+std::pair<const NamesScope::InsertedName*, NamesScope*> CodeBuilder::PreResolveDefault(
+	NamesScope& names_scope,
+	const ComplexName::Component* components,
+	size_t component_count,
+	size_t& out_skip_components )
+{
+	out_skip_components= 0u;
+
+	NamesScope* resolve_start_point= nullptr;
+	if( components[0].name.empty() )
+	{
+		U_ASSERT( component_count >= 2u );
+		resolve_start_point= const_cast<NamesScope*>(names_scope.GetRoot());
+		++components;
+		++out_skip_components;
+		--component_count;
+	}
+	else
+	{
+		const ProgramString& start= components[0].name;
+		NamesScope::InsertedName* start_resolved= nullptr;
+		NamesScope* space= &names_scope;
+		while(true)
+		{
+			NamesScope::InsertedName* const find= space->GetThisScopeName( start );
+			if( find != nullptr )
+			{
+				start_resolved= find;
+				break;
+			}
+			space= const_cast<NamesScope*>(space->GetParent());
+			if( space == nullptr )
+				return std::make_pair( nullptr, nullptr );
+		}
+
+		resolve_start_point= space;
+	}
+
+	// Resolve to first non-namespace.
+	while( component_count > 0u )
+	{
+		NamesScope::InsertedName* const name= resolve_start_point->GetThisScopeName( components[0].name );
+		if( name == nullptr )
+			return std::make_pair( nullptr, nullptr );
+
+		// TODO - generate error, for :: look inside non-class or namespace.
+
+		if( const NamesScopePtr child_namespace= name->second.GetNamespace() )
+		{
+			++components;
+			++out_skip_components;
+			--component_count;
+			if( component_count == 0u )
+				return std::make_pair( name, resolve_start_point );
+			resolve_start_point= child_namespace.get();
+
+		}
+		else
+		{
+			++out_skip_components; // Found class, class template, variable, functions set, etc.
+			return std::make_pair( name, resolve_start_point );
+		}
+	}
+
+	return std::make_pair( nullptr, nullptr );
 }
 
 U_FundamentalType CodeBuilder::GetNumericConstantType( const NumericConstant& number )

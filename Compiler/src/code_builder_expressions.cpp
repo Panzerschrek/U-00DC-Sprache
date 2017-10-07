@@ -9,6 +9,8 @@
 
 #include "code_builder.hpp"
 
+#define CHECK_RETURN_TEMPLATE_DEPENDENT_VALUE(value) if( value.GetType() == NontypeStub::TemplateDependentValue ) { return value; }
+
 namespace U
 {
 
@@ -17,7 +19,7 @@ namespace CodeBuilderPrivate
 
 Value CodeBuilder::BuildExpressionCodeAndDestroyTemporaries(
 	const IExpressionComponent& expression,
-	const NamesScope& names,
+	NamesScope& names,
 	FunctionContext& function_context )
 {
 	// Destruction frame for temporary variables of expression.
@@ -33,7 +35,7 @@ Value CodeBuilder::BuildExpressionCodeAndDestroyTemporaries(
 
 Value CodeBuilder::BuildExpressionCode(
 	const IExpressionComponent& expression,
-	const NamesScope& names,
+	NamesScope& names,
 	FunctionContext& function_context )
 {
 	Value result;
@@ -66,6 +68,9 @@ Value CodeBuilder::BuildExpressionCode(
 					names,
 					function_context );
 
+			CHECK_RETURN_TEMPLATE_DEPENDENT_VALUE(l_var_value);
+			CHECK_RETURN_TEMPLATE_DEPENDENT_VALUE(r_var_value);
+
 			const Variable* const l_var= l_var_value.GetVariable();
 			const Variable* const r_var= r_var_value.GetVariable();
 
@@ -75,6 +80,14 @@ Value CodeBuilder::BuildExpressionCode(
 				errors_.push_back( ReportExpectedVariableInBinaryOperator( binary_operator->file_pos_, r_var_value.GetType().ToString() ) );
 			if( l_var == nullptr || r_var == nullptr )
 				throw ProgramError();
+
+			if( l_var->type.GetTemplateDependentType() != nullptr || r_var->type.GetTemplateDependentType() )
+			{
+				Variable result;
+				result.type= GetNextTemplateDependentType();
+				result.value_type= ValueType::Value;
+				return result;
+			}
 
 			return BuildBinaryOperator( *l_var, *r_var, binary_operator->operator_type_, binary_operator->file_pos_, function_context );
 		}
@@ -736,14 +749,35 @@ Variable CodeBuilder::BuildBinaryOperator(
 	return result;
 }
 
-Variable CodeBuilder::BuildLazyBinaryOperator(
+Value CodeBuilder::BuildLazyBinaryOperator(
 	const IExpressionComponent& l_expression,
 	const IExpressionComponent& r_expression,
 	const BinaryOperator& binary_operator,
-	const NamesScope& names,
+	NamesScope& names,
 	FunctionContext& function_context )
 {
+	#define RETURN_UNDEF_BOOL\
+	{\
+		Variable result;\
+		result.value_type= ValueType::Value;\
+		result.location= Variable::Location::LLVMRegister;\
+		result.type= bool_type_;\
+		result.llvm_value= llvm::UndefValue::get( fundamental_llvm_types_.bool_ );\
+		return result;\
+	}
+
 	const Value l_var_value= BuildExpressionCode( l_expression, names, function_context );
+	if( l_var_value.GetType() == NontypeStub::TemplateDependentValue )
+	{
+		BuildExpressionCodeAndDestroyTemporaries( r_expression, names, function_context );
+		return l_var_value;
+	}
+	if( l_var_value.GetType().GetTemplateDependentType() != nullptr )
+	{
+		BuildExpressionCodeAndDestroyTemporaries( r_expression, names, function_context );
+		RETURN_UNDEF_BOOL
+	}
+
 	if( l_var_value.GetType() != bool_type_ )
 	{
 		errors_.push_back( ReportTypesMismatch( binary_operator.file_pos_, bool_type_.ToString(), l_var_value.GetType().ToString() ) );
@@ -768,13 +802,23 @@ Variable CodeBuilder::BuildLazyBinaryOperator(
 	// Right part of lazy operator is conditinal. So, we must destroy it temporaries only in this condition.
 	// We doesn`t needs longer lifetime of epxression temporaries, because we use only bool result.
 	const Value r_var_value= BuildExpressionCodeAndDestroyTemporaries( r_expression, names, function_context );
-	if( r_var_value.GetType() != bool_type_ )
+	llvm::Value* r_var_in_register= nullptr;
+	llvm::Constant* r_var_constepxr_value= nullptr;
+	if( r_var_value.GetType().GetTemplateDependentType() != nullptr )
+		RETURN_UNDEF_BOOL
+	if( r_var_value.GetType() == NontypeStub::TemplateDependentValue )
+		r_var_in_register= r_var_constepxr_value= llvm::UndefValue::get( fundamental_llvm_types_.bool_ );
+	else
 	{
-		errors_.push_back( ReportTypesMismatch( binary_operator.file_pos_, bool_type_.ToString(), r_var_value.GetType().ToString() ) );
-		throw ProgramError();
+		if( r_var_value.GetType() != bool_type_ )
+		{
+			errors_.push_back( ReportTypesMismatch( binary_operator.file_pos_, bool_type_.ToString(), r_var_value.GetType().ToString() ) );
+			throw ProgramError();
+		}
+		const Variable& r_var= *r_var_value.GetVariable();
+		r_var_constepxr_value= r_var.constexpr_value;
+		r_var_in_register= CreateMoveToLLVMRegisterInstruction( r_var, function_context );
 	}
-	const Variable r_var= *r_var_value.GetVariable();
-	llvm::Value* const r_var_in_register= CreateMoveToLLVMRegisterInstruction( r_var, function_context );
 
 	function_context.llvm_ir_builder.CreateBr( block_after_operator );
 	function_context.function->getBasicBlockList().push_back( block_after_operator );
@@ -792,26 +836,29 @@ Variable CodeBuilder::BuildLazyBinaryOperator(
 
 	// Evaluate constexpr value.
 	// TODO - remove all blocks code in case of constexpr?
-	if( l_var.constexpr_value != nullptr && r_var.constexpr_value != nullptr )
+	if( l_var.constexpr_value != nullptr && r_var_constepxr_value != nullptr )
 	{
 		if( binary_operator.operator_type_ == BinaryOperatorType::LazyLogicalAnd )
-			result.constexpr_value= llvm::ConstantExpr::getAnd( l_var.constexpr_value, r_var.constexpr_value );
+			result.constexpr_value= llvm::ConstantExpr::getAnd( l_var.constexpr_value, r_var_constepxr_value );
 		else if( binary_operator.operator_type_ == BinaryOperatorType::LazyLogicalOr )
-			result.constexpr_value= llvm::ConstantExpr::getOr ( l_var.constexpr_value, r_var.constexpr_value );
+			result.constexpr_value= llvm::ConstantExpr::getOr ( l_var.constexpr_value, r_var_constepxr_value );
 		else
 			U_ASSERT(false);
 	}
 
 	return result;
+
+	#undef RETURN_UNDEF_BOOL
 }
 
 Value CodeBuilder::BuildNamedOperand(
 	const NamedOperand& named_operand,
-	const NamesScope& names,
+	NamesScope& names,
 	FunctionContext& function_context )
 {
 	if( named_operand.name_.components.size() == 1u &&
-		named_operand.name_.components.back() == Keywords::this_ )
+		named_operand.name_.components.back().name == Keywords::this_ &&
+		named_operand.name_.components.back().template_parameters.empty() )
 	{
 		if( function_context.this_ == nullptr || function_context.is_constructor_initializer_list_now )
 		{
@@ -821,8 +868,7 @@ Value CodeBuilder::BuildNamedOperand(
 		return *function_context.this_;
 	}
 
-	const NamesScope::InsertedName* name_entry=
-		names.ResolveName( named_operand.name_ );
+	const NamesScope::InsertedName* name_entry= ResolveName( named_operand.file_pos_, names, named_operand.name_ );
 	if( !name_entry )
 	{
 		errors_.push_back( ReportNameNotFound( named_operand.file_pos_, named_operand.name_ ) );
@@ -833,7 +879,7 @@ Value CodeBuilder::BuildNamedOperand(
 	{
 		if( function_context.this_ == nullptr )
 		{
-			errors_.push_back( ReportClassFiledAccessInStaticMethod( named_operand.file_pos_, named_operand.name_.components.back() ) );
+			errors_.push_back( ReportClassFiledAccessInStaticMethod( named_operand.file_pos_, named_operand.name_.components.back().name ) );
 			throw ProgramError();
 		}
 
@@ -843,14 +889,14 @@ Value CodeBuilder::BuildNamedOperand(
 		// SPRACHE_TODO - allow access to parents fields here.
 		if( Type(class_) != function_context.this_->type )
 		{
-			errors_.push_back( ReportAccessOfNonThisClassField( named_operand.file_pos_, named_operand.name_.components.back() ) );
+			errors_.push_back( ReportAccessOfNonThisClassField( named_operand.file_pos_, named_operand.name_.components.back().name ) );
 			throw ProgramError();
 		}
 
 		if( function_context.is_constructor_initializer_list_now &&
 			function_context.uninitialized_this_fields.find( field ) != function_context.uninitialized_this_fields.end() )
 		{
-			errors_.push_back( ReportFieldIsNotInitializedYet( named_operand.file_pos_, named_operand.name_.components.back() ) );
+			errors_.push_back( ReportFieldIsNotInitializedYet( named_operand.file_pos_, named_operand.name_.components.back().name ) );
 			throw ProgramError();
 		}
 
@@ -876,7 +922,7 @@ Value CodeBuilder::BuildNamedOperand(
 			if( function_context.is_constructor_initializer_list_now )
 			{
 				// SPRACHE_TODO - allow call of static methods and parents methods.
-				errors_.push_back( ReportMethodsCallInConstructorInitializerListIsForbidden( named_operand.file_pos_, named_operand.name_.components.back() ) );
+				errors_.push_back( ReportMethodsCallInConstructorInitializerListIsForbidden( named_operand.file_pos_, named_operand.name_.components.back().name ) );
 				throw ProgramError();
 			}
 
@@ -884,7 +930,7 @@ Value CodeBuilder::BuildNamedOperand(
 			const ClassPtr class_= function_context.this_->type.GetClassType();
 
 			const NamesScope::InsertedName* const same_set_in_class=
-				class_->members.GetThisScopeName( named_operand.name_.components.back() );
+				class_->members.GetThisScopeName( named_operand.name_.components.back().name );
 			// SPRACHE_TODO - add "this" for functions from parent classes.
 			if( name_entry == same_set_in_class )
 			{
@@ -945,12 +991,32 @@ Variable CodeBuilder::BuildBooleanConstant( const BooleanConstant& boolean_const
 	return result;
 }
 
-Variable CodeBuilder::BuildIndexationOperator(
+Value CodeBuilder::BuildIndexationOperator(
 	const Value& value,
 	const IndexationOperator& indexation_operator,
-	const NamesScope& names,
+	NamesScope& names,
 	FunctionContext& function_context )
 {
+	if( value.GetType() == NontypeStub::TemplateDependentValue )
+	{
+		BuildExpressionCode(
+			*indexation_operator.index_,
+			names,
+			function_context );
+		return value;
+	}
+	if( value.GetType().GetTemplateDependentType() != nullptr )
+	{
+		BuildExpressionCode(
+			*indexation_operator.index_,
+			names,
+			function_context );
+		Variable result;
+		result.value_type= value.GetVariable()->value_type;
+		result.type= GetNextTemplateDependentType();
+		return value;
+	}
+
 	const Array* array_type= value.GetType().GetArrayType();
 	if( array_type == nullptr )
 	{
@@ -964,6 +1030,16 @@ Variable CodeBuilder::BuildIndexationOperator(
 			*indexation_operator.index_,
 			names,
 			function_context );
+	CHECK_RETURN_TEMPLATE_DEPENDENT_VALUE(index_value);
+
+	if( index_value.GetType().GetTemplateDependentType() != nullptr )
+	{
+		Variable result;
+		result.location= Variable::Location::Pointer;
+		result.value_type= variable.value_type;
+		result.type= array_type->type;
+		return result;
+	}
 
 	const FundamentalType* const index_fundamental_type= index_value.GetType().GetFundamentalType();
 	if( index_fundamental_type == nullptr ||
@@ -980,7 +1056,9 @@ Variable CodeBuilder::BuildIndexationOperator(
 		throw ProgramError();
 	}
 
-	if( index.constexpr_value != nullptr )
+	// If index is constant and not undefined and array size is not undefined - statically check index.
+	if( index.constexpr_value != nullptr && llvm::dyn_cast<llvm::UndefValue>(index.constexpr_value) == nullptr &&
+		array_type->size != Array::c_undefined_size )
 	{
 		const size_t index_value= size_t( index.constexpr_value->getUniqueInteger().getLimitedValue() );
 		if( index_value >= array_type->size )
@@ -993,7 +1071,13 @@ Variable CodeBuilder::BuildIndexationOperator(
 	result.type= array_type->type;
 
 	if( variable.constexpr_value != nullptr && index.constexpr_value != nullptr )
-		result.constexpr_value= variable.constexpr_value->getAggregateElement( index.constexpr_value );
+	{
+		if( llvm::dyn_cast<llvm::UndefValue>(variable.constexpr_value) != nullptr ||
+			llvm::dyn_cast<llvm::UndefValue>(index.constexpr_value) != nullptr )
+			result.constexpr_value= llvm::UndefValue::get( array_type->llvm_type )->getElementValue( index.constexpr_value );
+		else
+			result.constexpr_value= variable.constexpr_value->getAggregateElement( index.constexpr_value );
+	}
 
 	// Make first index = 0 for array to pointer conversion.
 	llvm::Value* index_list[2];
@@ -1011,6 +1095,10 @@ Value CodeBuilder::BuildMemberAccessOperator(
 	const MemberAccessOperator& member_access_operator,
 	FunctionContext& function_context )
 {
+	CHECK_RETURN_TEMPLATE_DEPENDENT_VALUE(value);
+	if( value.GetType().GetTemplateDependentType() != nullptr )
+		return TemplateDependentValue();
+
 	const ClassPtr class_type= value.GetType().GetClassType();
 	if( class_type == nullptr )
 	{
@@ -1062,12 +1150,27 @@ Value CodeBuilder::BuildMemberAccessOperator(
 	return result;
 }
 
-Variable CodeBuilder::BuildCallOperator(
+Value CodeBuilder::BuildCallOperator(
 	const Value& function_value,
 	const CallOperator& call_operator,
-	const NamesScope& names,
+	NamesScope& names,
 	FunctionContext& function_context )
 {
+	if( function_value.GetType() == NontypeStub::TemplateDependentValue )
+	{
+		for( const IExpressionComponentPtr& arg_expression : call_operator.arguments_ )
+			BuildExpressionCode( *arg_expression, names, function_context );
+		return function_value;
+	}
+	if( function_value.GetType().GetTemplateDependentType() != nullptr )
+	{
+		for( const IExpressionComponentPtr& arg_expression : call_operator.arguments_ )
+			BuildExpressionCode( *arg_expression, names, function_context );
+		Variable result;
+		result.type= GetNextTemplateDependentType();
+		return result;
+	}
+
 	if( const Type* const type= function_value.GetTypeName() )
 		return BuildTempVariableConstruction( *type, call_operator, names, function_context );
 
@@ -1106,11 +1209,19 @@ Variable CodeBuilder::BuildCallOperator(
 
 		actual_args_variables.push_back( *this_ );
 	}
+
 	// Push arguments from call operator.
+	bool args_are_template_dependent= false;
 	for( const IExpressionComponentPtr& arg_expression : call_operator.arguments_ )
 	{
 		U_ASSERT( arg_expression != nullptr );
 		const Value expr_value= BuildExpressionCode( *arg_expression, names, function_context );
+		if( expr_value.GetType() == NontypeStub::TemplateDependentValue)
+		{
+			args_are_template_dependent= true;
+			continue;
+		}
+
 		const Variable* const expr= expr_value.GetVariable();
 		if( expr == nullptr )
 		{
@@ -1125,6 +1236,8 @@ Variable CodeBuilder::BuildCallOperator(
 
 		actual_args_variables.push_back( std::move(*expr) );
 	}
+	if( args_are_template_dependent )
+		return Type(NontypeStub::TemplateDependentValue);
 
 	// SPRACHE_TODO - try get function with "this" parameter in signature and without it.
 	// We must support static functions call using "this".
@@ -1163,6 +1276,7 @@ Variable CodeBuilder::BuildCallOperator(
 		llvm_args.push_back( s_ret_value );
 	}
 
+	bool function_result_have_template_dependent_type= false;
 	for( unsigned int i= 0u; i < actual_args.size(); i++ )
 	{
 		const Function::Arg& arg= function_type.args[i];
@@ -1173,7 +1287,10 @@ Variable CodeBuilder::BuildCallOperator(
 				? call_operator.file_pos_
 				: call_operator.arguments_[i - this_count]->file_pos_;
 
-		if( expr.type != arg.type )
+		const bool something_have_template_dependent_type= expr.type.GetTemplateDependentType() != nullptr || arg.type.GetTemplateDependentType() != nullptr;
+		function_result_have_template_dependent_type= function_result_have_template_dependent_type || something_have_template_dependent_type;
+
+		if( !something_have_template_dependent_type && expr.type != arg.type )
 		{
 			errors_.push_back( ReportFunctionSignatureMismatch( file_pos ) );
 			throw ProgramError();
@@ -1204,25 +1321,26 @@ Variable CodeBuilder::BuildCallOperator(
 					// TODO - support nonfundamental values.
 					if( expr.location == Variable::Location::LLVMRegister )
 					{
-						llvm::Value* temp_storage= function_context.alloca_ir_builder.CreateAlloca( expr.type.GetLLVMType() );
-						function_context.llvm_ir_builder.CreateStore( expr.llvm_value, temp_storage );
-						llvm_args.push_back( temp_storage );
+						if( !something_have_template_dependent_type )
+						{
+							llvm::Value* temp_storage= function_context.alloca_ir_builder.CreateAlloca( expr.type.GetLLVMType() );
+							function_context.llvm_ir_builder.CreateStore( expr.llvm_value, temp_storage );
+							llvm_args.push_back( temp_storage );
+						}
 					}
 					else
 						llvm_args.push_back( expr.llvm_value );
 				}
 				else
-				{
 					llvm_args.push_back( expr.llvm_value );
-				}
 			}
 		}
 		else
 		{
-			if( const FundamentalType* const fundamental_type= arg.type.GetFundamentalType() )
+			if( arg.type.GetFundamentalType() != nullptr )
 			{
-				U_UNUSED(fundamental_type);
-				llvm_args.push_back( CreateMoveToLLVMRegisterInstruction( expr, function_context ) );
+				if( !something_have_template_dependent_type )
+					llvm_args.push_back( CreateMoveToLLVMRegisterInstruction( expr, function_context ) );
 			}
 			else if( const ClassPtr class_type= arg.type.GetClassType() )
 			{
@@ -1234,15 +1352,37 @@ Variable CodeBuilder::BuildCallOperator(
 					continue;
 				}
 
-				// Create copy of class value. Call copy constructor.
-				llvm::Value* const arg_copy= function_context.alloca_ir_builder.CreateAlloca( arg.type.GetLLVMType() );
+				if( !something_have_template_dependent_type )
+				{
+					// Create copy of class value. Call copy constructor.
+					llvm::Value* const arg_copy= function_context.alloca_ir_builder.CreateAlloca( arg.type.GetLLVMType() );
 
-				TryCallCopyConstructor( call_operator.file_pos_, arg_copy, expr.llvm_value, class_type, function_context );
-				llvm_args.push_back( arg_copy );
+					TryCallCopyConstructor( call_operator.file_pos_, arg_copy, expr.llvm_value, class_type, function_context );
+					llvm_args.push_back( arg_copy );
+				}
 			}
+			else if( something_have_template_dependent_type )
+			{}
 			else
-			{ U_ASSERT( false );}
+				U_ASSERT( false );
 		}
+	}
+
+	if( function_result_have_template_dependent_type )
+	{
+		Variable dummy_result;
+		if( function_type.return_value_is_reference )
+		{
+			dummy_result.location= Variable::Location::Pointer;
+			if( function_type.return_value_is_mutable )
+				dummy_result.value_type= ValueType::Reference;
+			else
+				dummy_result.value_type= ValueType::ConstReference;
+		}
+		else
+			dummy_result.location= function.return_value_is_sret ? Variable::Location::Pointer : Variable::Location::LLVMRegister;
+		dummy_result.type= GetNextTemplateDependentType();
+		return dummy_result;
 	}
 
 	llvm::Value* call_result=
@@ -1282,7 +1422,7 @@ Variable CodeBuilder::BuildCallOperator(
 Variable CodeBuilder::BuildTempVariableConstruction(
 	const Type& type,
 	const CallOperator& call_operator,
-	const NamesScope& names,
+	NamesScope& names,
 	FunctionContext& function_context )
 {
 	Variable variable;
@@ -1298,11 +1438,20 @@ Variable CodeBuilder::BuildTempVariableConstruction(
 	return variable;
 }
 
-Variable CodeBuilder::BuildUnaryMinus(
+Value CodeBuilder::BuildUnaryMinus(
 	const Value& value,
 	const UnaryMinus& unary_minus,
 	FunctionContext& function_context )
 {
+	CHECK_RETURN_TEMPLATE_DEPENDENT_VALUE(value);
+	if( value.GetType().GetTemplateDependentType() != nullptr )
+	{
+		Variable result;
+		result.value_type= ValueType::Value;
+		result.type= GetNextTemplateDependentType();
+		return result;
+	}
+
 	const FundamentalType* const fundamental_type= value.GetType().GetFundamentalType();
 	if( fundamental_type == nullptr )
 	{
@@ -1343,11 +1492,20 @@ Variable CodeBuilder::BuildUnaryMinus(
 	return result;
 }
 
-Variable CodeBuilder::BuildLogicalNot(
+Value CodeBuilder::BuildLogicalNot(
 	const Value& value,
 	const LogicalNot& logical_not,
 	FunctionContext& function_context )
 {
+	CHECK_RETURN_TEMPLATE_DEPENDENT_VALUE(value);
+	if( value.GetType().GetTemplateDependentType() != nullptr )
+	{
+		Variable result;
+		result.value_type= ValueType::Value;
+		result.type= GetNextTemplateDependentType();
+		return result;
+	}
+
 	if( value.GetType() != bool_type_ )
 	{
 		errors_.push_back( ReportOperationNotSupportedForThisType( logical_not.file_pos_, value.GetType().ToString() ) );
@@ -1371,11 +1529,20 @@ Variable CodeBuilder::BuildLogicalNot(
 	return result;
 }
 
-Variable CodeBuilder::BuildBitwiseNot(
+Value CodeBuilder::BuildBitwiseNot(
 	const Value& value,
 	const BitwiseNot& bitwise_not,
 	FunctionContext& function_context )
 {
+	CHECK_RETURN_TEMPLATE_DEPENDENT_VALUE(value);
+	if( value.GetType().GetTemplateDependentType() != nullptr )
+	{
+		Variable result;
+		result.value_type= ValueType::Value;
+		result.type= GetNextTemplateDependentType();
+		return result;
+	}
+
 	const FundamentalType* const fundamental_type= value.GetType().GetFundamentalType();
 	if( fundamental_type == nullptr )
 	{

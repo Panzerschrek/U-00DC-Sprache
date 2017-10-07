@@ -94,9 +94,55 @@ private:
 
 private:
 	void FillGlobalNamesScope( NamesScope& global_names_scope );
-	Type PrepareType( const FilePos& file_pos, const TypeName& type_name, const NamesScope& names_scope );
-	void PrepareClass( const ClassDeclaration& class_declaration, NamesScope& names_scope );
+	Type PrepareType( const FilePos& file_pos, const TypeName& type_name, NamesScope& names_scope );
 
+	// Returns nullptr on fail.
+	ClassPtr PrepareClass(
+		const ClassDeclaration& class_declaration,
+		const ComplexName& class_complex_name,
+		NamesScope& names_scope );
+
+	// Templates
+	void PrepareClassTemplate( const ClassTemplateDeclaration& class_template_declaration, NamesScope& names_scope );
+
+	void PrepareTemplateSignatureParameter(
+		const FilePos& file_pos,
+		const ComplexName& signature_parameter,
+		NamesScope& names_scope,
+		const std::vector<ClassTemplate::TemplateParameter>& template_parameters,
+		std::vector<bool>& template_parameters_usage_flags );
+
+	// Returns true, if all ok.
+	bool DuduceTemplateArguments(
+		const ClassTemplatePtr& class_template_ptr,
+		const TemplateParameter& template_parameter,
+		const ComplexName& signature_parameter,
+		const FilePos& signature_parameter_file_pos,
+		DeducibleTemplateParameters& deducible_template_parameters,
+		NamesScope& names_scope );
+
+	// Returns nullptr in case of fail.
+	NamesScope::InsertedName* GenTemplateClass(
+		const FilePos& file_pos,
+		const ClassTemplatePtr& class_template_ptr,
+		const std::vector<IExpressionComponentPtr>& template_arguments,
+		NamesScope& template_names_scope,
+		NamesScope& arguments_names_scope );
+
+	NamesScope& PushTemplateArgumentsSpace();
+	void PopTemplateArgumentsSpace();
+	bool NameShadowsTemplateArgument( const ProgramString& name, NamesScope& names_scope );
+
+	TemplateDependentType GetNextTemplateDependentType();
+	bool TypeIsValidForTemplateVariableArgument( const Type& type );
+
+	// Removes llvm-functions and functions of subclasses.
+	// Warning! Class must be not used after call of this function!
+	void RemoveTempClassLLVMValues( Class& class_ );
+
+	void ReportAboutIncompleteMembersOfTemplateClass( const FilePos& file_pos, Class& class_ );
+
+	// Constructors/destructors
 	void TryGenerateDefaultConstructor( Class& the_class, const Type& class_type );
 	void TryGenerateCopyConstructor( Class& the_class, const Type& class_type );
 	void TryGenerateDestructor( Class& the_class, const Type& class_type );
@@ -136,7 +182,14 @@ private:
 		const ProgramElements& body_elements,
 		NamesScope& names_scope );
 
-	void PrepareFunction(
+	struct PrepareFunctionResult
+	{
+		const FunctionDeclaration* func_syntax_element= nullptr;
+		OverloadedFunctionsSet* functions_set= nullptr;
+		size_t function_index= 0u;
+	};
+
+	PrepareFunctionResult PrepareFunction(
 		const FunctionDeclaration& func,
 		bool force_prototype,
 		ClassPtr base_class,
@@ -150,7 +203,7 @@ private:
 	void BuildFuncCode(
 		FunctionVariable& func,
 		ClassPtr base_class,
-		const NamesScope& parent_names_scope,
+		NamesScope& parent_names_scope,
 		const ProgramString& func_name,
 		const FunctionArgumentsDeclaration& args,
 		const Block* block, // null for prototypes.
@@ -165,19 +218,19 @@ private:
 
 	BlockBuildInfo BuildBlockCode(
 		const Block& block,
-		const NamesScope& names,
+		NamesScope& names,
 		FunctionContext& function_context ) noexcept;
 
 	// Expressions.
 
 	Value BuildExpressionCodeAndDestroyTemporaries(
 		const IExpressionComponent& expression,
-		const NamesScope& names,
+		NamesScope& names,
 		FunctionContext& function_context );
 
 	Value BuildExpressionCode(
 		const IExpressionComponent& expression,
-		const NamesScope& names,
+		NamesScope& names,
 		FunctionContext& function_context );
 
 	Variable BuildBinaryOperator(
@@ -187,21 +240,21 @@ private:
 		const FilePos& file_pos,
 		FunctionContext& function_context );
 		
-	Variable BuildLazyBinaryOperator(
+	Value BuildLazyBinaryOperator(
 		const IExpressionComponent& l_expression,
 		const IExpressionComponent& r_expression,
 		const BinaryOperator& binary_operator,
-		const NamesScope& names,
+		NamesScope& names,
 		FunctionContext& function_context );
 
-	Value BuildNamedOperand( const NamedOperand& named_operand, const NamesScope& names, FunctionContext& function_context );
+	Value BuildNamedOperand( const NamedOperand& named_operand, NamesScope& names, FunctionContext& function_context );
 	Variable BuildNumericConstant( const NumericConstant& numeric_constant );
 	Variable BuildBooleanConstant( const BooleanConstant& boolean_constant );
 
-	Variable BuildIndexationOperator(
+	Value BuildIndexationOperator(
 		const Value& value,
 		const IndexationOperator& indexation_operator,
-		const NamesScope& names,
+		NamesScope& names,
 		FunctionContext& function_context );
 
 	Value BuildMemberAccessOperator(
@@ -209,29 +262,29 @@ private:
 		const MemberAccessOperator& member_access_operator,
 		FunctionContext& function_context );
 
-	Variable BuildCallOperator(
+	Value BuildCallOperator(
 		const Value& function_value,
 		const CallOperator& call_operator,
-		const NamesScope& names,
+		NamesScope& names,
 		FunctionContext& function_context );
 
 	Variable BuildTempVariableConstruction(
 		const Type& type,
 		const CallOperator& call_operator,
-		const NamesScope& names,
+		NamesScope& names,
 		FunctionContext& function_context );
 
-	Variable BuildUnaryMinus(
+	Value BuildUnaryMinus(
 		const Value& value,
 		const UnaryMinus& unary_minus,
 		FunctionContext& function_context );
 
-	Variable BuildLogicalNot(
+	Value BuildLogicalNot(
 		const Value& value,
 		const LogicalNot& logical_not,
 		FunctionContext& function_context );
 
-	Variable BuildBitwiseNot(
+	Value BuildBitwiseNot(
 		const Value& value,
 		const BitwiseNot& bitwise_not,
 		FunctionContext& function_context );
@@ -250,12 +303,12 @@ private:
 
 	void BuildAssignmentOperatorCode(
 		const AssignmentOperator& assignment_operator,
-		const NamesScope& block_names,
+		NamesScope& block_names,
 		FunctionContext& function_context );
 
 	void BuildAdditiveAssignmentOperatorCode(
 		const AdditiveAssignmentOperator& additive_assignment_operator,
-		const NamesScope& block_names,
+		NamesScope& block_names,
 		FunctionContext& function_context );
 
 	// ++ and -- operations
@@ -263,17 +316,17 @@ private:
 		const IExpressionComponent& expression,
 		const FilePos& file_pos,
 		bool positive, // true - increment, false - decrement
-		const NamesScope& block_names,
+		NamesScope& block_names,
 		FunctionContext& function_context );
 
 	void BuildReturnOperatorCode(
 		const ReturnOperator& return_operator,
-		const NamesScope& names,
+		NamesScope& names,
 		FunctionContext& function_context );
 
 	void BuildWhileOperatorCode(
 		const WhileOperator& while_operator,
-		const NamesScope& names,
+		NamesScope& names,
 		FunctionContext& function_context );
 
 	void BuildBreakOperatorCode(
@@ -286,12 +339,12 @@ private:
 
 	BlockBuildInfo BuildIfOperatorCode(
 		const IfOperator& if_operator,
-		const NamesScope& names,
+		NamesScope& names,
 		FunctionContext& function_context );
 
 	void BuildStaticAssert(
 		const StaticAssert& static_assert_,
-		const NamesScope& names );
+		NamesScope& names );
 
 	// Functions
 
@@ -342,20 +395,62 @@ private:
 	llvm::Constant* ApplyConstructorInitializer(
 		const Variable& variable,
 		const CallOperator& call_operator,
-		const NamesScope& block_names,
+		NamesScope& block_names,
 		FunctionContext& function_context );
 
 	llvm::Constant* ApplyExpressionInitializer(
 		const Variable& variable,
 		const ExpressionInitializer& initializer,
-		const NamesScope& block_names,
+		NamesScope& block_names,
 		FunctionContext& function_context );
 
 	llvm::Constant* ApplyZeroInitializer(
 		const Variable& variable,
 		const ZeroInitializer& initializer,
-		const NamesScope& block_names,
+		NamesScope& block_names,
 		FunctionContext& function_context );
+
+	// Name resolving.
+
+	typedef
+		std::function<
+			std::pair<const NamesScope::InsertedName*, NamesScope*>(
+				NamesScope& names_scope,
+				const ComplexName::Component* components,
+				size_t component_count,
+				size_t& out_skip_components ) > PreResolveFunc;
+
+	void PushCacheFillResolveHandler( ResolvingCache& resolving_cache, NamesScope& start_namespace );
+	void PushCacheGetResolveHandelr( const ResolvingCache& resolving_cache );
+	void PopResolveHandler();
+
+	const NamesScope::InsertedName* ResolveName( const FilePos& file_pos, NamesScope& names_scope, const ComplexName& complex_name );
+
+	const NamesScope::InsertedName* ResolveName(
+		const FilePos& file_pos,
+		NamesScope& names_scope,
+		const ComplexName::Component* components,
+		size_t component_count );
+
+	std::pair<const NamesScope::InsertedName*, NamesScope*> ResolveNameWithParentSpace(
+		const FilePos& file_pos,
+		NamesScope& names_scope,
+		const ComplexName::Component* components,
+		size_t component_count,
+		bool only_primary_resolove= false );
+
+	std::pair<const NamesScope::InsertedName*, NamesScope*> PreResolve(
+		NamesScope& names_scope,
+		const ComplexName::Component* components,
+		size_t component_count,
+		size_t& out_skip_components );
+
+	// Finds namespace, where are name. Do not search in classes (returns class itself)
+	std::pair<const NamesScope::InsertedName*, NamesScope*> PreResolveDefault(
+		NamesScope& names_scope,
+		const ComplexName::Component* components,
+		size_t component_count,
+		size_t& out_skip_components );
 
 	static U_FundamentalType GetNumericConstantType( const NumericConstant& number );
 
@@ -396,6 +491,9 @@ private:
 	std::unique_ptr<llvm::Module> module_;
 	unsigned int error_count_= 0u;
 	std::vector<CodeBuilderError> errors_;
+
+	std::vector<std::unique_ptr<PreResolveFunc>> resolving_funcs_stack_;
+	size_t next_template_dependent_type_index_= 1u;
 };
 
 } // namespace CodeBuilderPrivate

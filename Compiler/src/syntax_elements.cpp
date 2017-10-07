@@ -346,6 +346,10 @@ ClassDeclaration::ClassDeclaration( const FilePos& file_pos )
 ClassDeclaration::~ClassDeclaration()
 {}
 
+ClassTemplateDeclaration::ClassTemplateDeclaration( const FilePos& file_pos )
+	: SyntaxElementBase( file_pos )
+{}
+
 Namespace::Namespace( const FilePos& file_pos )
 	: SyntaxElementBase(file_pos)
 {}

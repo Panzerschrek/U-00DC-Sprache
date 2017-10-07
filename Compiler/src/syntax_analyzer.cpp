@@ -161,6 +161,9 @@ private:
 
 	std::unique_ptr<FunctionDeclaration> ParseFunction();
 	std::unique_ptr<ClassDeclaration> ParseClass();
+	std::unique_ptr<ClassDeclaration> ParseClassBody();
+
+	std::unique_ptr<ClassTemplateDeclaration> ParseTemplate();
 
 	void PushErrorMessage( const Lexem& lexem );
 
@@ -201,7 +204,12 @@ ProgramElements SyntaxAnalyzer::ParseNamespaceBody( const Lexem::Type end_lexem 
 		else if( it_->type == Lexem::Type::Identifier && ( it_->text == Keywords::struct_ || it_->text == Keywords::class_ ) )
 		{
 			if( IProgramElementPtr program_element= ParseClass() )
-				program_elements.emplace_back( std::move( program_element ) );;
+				program_elements.emplace_back( std::move( program_element ) );
+		}
+		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::template_ )
+		{
+			if( IProgramElementPtr program_element= ParseTemplate() )
+				program_elements.emplace_back( std::move( program_element ) );
 		}
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::namespace_ )
 		{
@@ -713,8 +721,36 @@ ComplexName SyntaxAnalyzer::ParseComplexName()
 			PushErrorMessage( *it_ );
 			return complex_name;
 		}
-		complex_name.components.push_back( it_->text );
+		complex_name.components.emplace_back();
+		complex_name.components.back().name= it_->text;
 		++it_; U_ASSERT( it_ < it_end_ );
+
+		if( it_->type == Lexem::Type::TemplateBracketLeft )
+		{
+			complex_name.components.back().have_template_parameters= true;
+
+			++it_; U_ASSERT( it_ < it_end_ );
+			while(true)
+			{
+				if( it_->type == Lexem::Type::TemplateBracketRight )
+				{
+					++it_; U_ASSERT( it_ < it_end_ );
+					break;
+				}
+
+				complex_name.components.back().template_parameters.push_back( ParseExpression() );
+
+				if( it_->type == Lexem::Type::Comma )
+				{
+					++it_; U_ASSERT( it_ < it_end_ );
+					if( it_->type == Lexem::Type::TemplateBracketRight )
+					{
+						PushErrorMessage( *it_ );
+						return complex_name;
+					}
+				}
+			}
+		}
 
 		if( it_->type == Lexem::Type::Scope )
 		{
@@ -1761,9 +1797,18 @@ std::unique_ptr<ClassDeclaration> SyntaxAnalyzer::ParseClass()
 	U_ASSERT( it_->text == Keywords::struct_ || it_->text == Keywords::class_ );
 	++it_; U_ASSERT( it_ < it_end_ );
 
-	std::unique_ptr<ClassDeclaration> result( new ClassDeclaration( it_->file_pos ) );
+	ComplexName name= ParseComplexName();
 
-	result->name_= ParseComplexName();
+	std::unique_ptr<ClassDeclaration> result= ParseClassBody();
+	if( result != nullptr )
+		result->name_= std::move(name);
+
+	return result;
+}
+
+std::unique_ptr<ClassDeclaration> SyntaxAnalyzer::ParseClassBody()
+{
+	std::unique_ptr<ClassDeclaration> result( new ClassDeclaration( it_->file_pos ) );
 
 	if( it_->type == Lexem::Type::Semicolon )
 	{
@@ -1793,6 +1838,13 @@ std::unique_ptr<ClassDeclaration> SyntaxAnalyzer::ParseClass()
 		else if( it_->type == Lexem::Type::Identifier && ( it_->text == Keywords::struct_ || it_->text == Keywords::class_ ) )
 		{
 			result->members_.push_back( ParseClass() );
+		}
+		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::template_ )
+		{
+			// TODO
+			auto class_template=  ParseTemplate();
+			if( class_template != nullptr )
+			result->members_.push_back( std::move(class_template) );
 		}
 		else
 		{
@@ -1829,6 +1881,128 @@ std::unique_ptr<ClassDeclaration> SyntaxAnalyzer::ParseClass()
 	++it_;
 
 	return result;
+}
+
+std::unique_ptr<ClassTemplateDeclaration> SyntaxAnalyzer::ParseTemplate()
+{
+	U_ASSERT( it_->type == Lexem::Type::Identifier && it_->text == Keywords::template_ );
+	++it_; U_ASSERT( it_ < it_end_ );
+
+	std::unique_ptr<ClassTemplateDeclaration> result( new ClassTemplateDeclaration( it_->file_pos ) );
+
+	if( it_->type != Lexem::Type::TemplateBracketLeft )
+	{
+		PushErrorMessage( *it_ );
+		return std::move(result);
+	}
+	++it_; U_ASSERT( it_ < it_end_ );
+
+	while( true )
+	{
+		if( it_->type == Lexem::Type::TemplateBracketRight )
+		{
+			++it_; U_ASSERT( it_ < it_end_ );
+			break;
+		}
+
+		result->args_.emplace_back();
+
+		if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::type_ )
+		{
+			++it_; U_ASSERT( it_ < it_end_ );
+		}
+		else
+			result->args_.back().arg_type= ParseComplexName();
+
+		if( it_->type != Lexem::Type::Identifier )
+		{
+			PushErrorMessage( *it_ );
+			return std::move(result);
+		}
+		result->args_.back().name= it_->text;
+		++it_; U_ASSERT( it_ < it_end_ );
+
+		if( it_->type == Lexem::Type::Comma )
+		{
+			++it_; U_ASSERT( it_ < it_end_ );
+			if( it_->type == Lexem::Type::TemplateBracketRight )
+			{
+				PushErrorMessage( *it_ );
+				return std::move(result);
+			}
+		}
+	} // for arg parameters
+
+	if( it_->type != Lexem::Type::Identifier )
+	{
+		PushErrorMessage( *it_ );
+		return std::move(result);
+	}
+
+	ComplexName name;
+	if( it_->text == Keywords::struct_ || it_->text == Keywords::class_ )
+	{
+		++it_; U_ASSERT( it_ < it_end_ );
+
+		//name= ParseComplexName();
+		if( it_->type != Lexem::Type::Identifier )
+		{
+			PushErrorMessage( *it_ );
+			return std::move(result);
+		}
+		name.components.emplace_back();
+		name.components.back().name= it_->text;
+		++it_; U_ASSERT( it_ < it_end_ );
+	}
+	else
+	{
+		// TODO - parse functions templates here
+		PushErrorMessage( *it_ );
+		return std::move(result);
+	}
+
+	if( it_->type != Lexem::Type::TemplateBracketLeft )
+	{
+		PushErrorMessage( *it_ );
+		return std::move(result);
+	}
+	++it_; U_ASSERT( it_ < it_end_ );
+
+	// Parse signature args
+	while( true )
+	{
+		if( it_->type == Lexem::Type::TemplateBracketRight )
+		{
+			++it_; U_ASSERT( it_ < it_end_ );
+			break;
+		}
+
+		result->signature_args_.emplace_back();
+		result->signature_args_.back().name= ParseComplexName();
+
+		U_ASSERT( it_ < it_end_ );
+		if( it_->type == Lexem::Type::Assignment )
+		{
+			++it_; U_ASSERT( it_ < it_end_ );
+			result->signature_args_.back().default_value= ParseComplexName();
+		}
+
+		if( it_->type == Lexem::Type::Comma )
+		{
+			++it_; U_ASSERT( it_ < it_end_ );
+			if( it_->type == Lexem::Type::TemplateBracketRight )
+			{
+				PushErrorMessage( *it_ );
+				return std::move(result);
+			}
+		}
+	} // for signature args
+
+	result->class_= ParseClassBody();
+	if( result->class_ != nullptr )
+		result->class_->name_= std::move(name);
+
+	return std::move(result);
 }
 
 void SyntaxAnalyzer::PushErrorMessage( const Lexem& lexem )

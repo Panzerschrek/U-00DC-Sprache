@@ -1,8 +1,10 @@
 #pragma once
-#include <memory>
-#include <vector>
 #include <map>
+#include <memory>
+#include <unordered_map>
+#include <vector>
 
+#include <boost/optional.hpp>
 #include <boost/variant.hpp>
 
 #include "push_disable_llvm_warnings.hpp"
@@ -30,6 +32,9 @@ typedef std::weak_ptr<Class> ClassWeakPtr;
 class NamesScope;
 typedef std::shared_ptr<NamesScope> NamesScopePtr;
 
+struct ClassTemplate;
+typedef std::shared_ptr<ClassTemplate> ClassTemplatePtr;
+
 struct FundamentalType final
 {
 	U_FundamentalType fundamental_type;
@@ -38,17 +43,31 @@ struct FundamentalType final
 	FundamentalType( U_FundamentalType fundamental_type= U_FundamentalType::Void, llvm::Type* llvm_type= nullptr );
 };
 
-// Stub for type of non-variable "Variables".
+struct TemplateDependentType
+{
+	size_t index;
+	llvm::Type* llvm_type;
+
+	TemplateDependentType( size_t in_index, llvm::Type* in_llvm_type );
+};
+
+// Stub for type of non-variable "Values".
 enum class NontypeStub
 {
 	OverloadedFunctionsSet,
 	ThisOverloadedMethodsSet,
 	TypeName,
 	Namespace,
+	ClassTemplate,
+	TemplateDependentValue,
+	YetNotDeducedTemplateArg,
 };
 
 bool operator==( const FundamentalType& r, const FundamentalType& l );
 bool operator!=( const FundamentalType& r, const FundamentalType& l );
+
+bool operator==( const TemplateDependentType& r, const TemplateDependentType& l );
+bool operator!=( const TemplateDependentType& r, const TemplateDependentType& l );
 
 class Type final
 {
@@ -68,6 +87,7 @@ public:
 	Type( Array&& array_type );
 	Type( ClassPtr class_type );
 	Type( NontypeStub nontype_strub );
+	Type( TemplateDependentType template_dependent_type );
 
 	// Get different type kinds.
 	FundamentalType* GetFundamentalType();
@@ -77,6 +97,8 @@ public:
 	Array* GetArrayType();
 	const Array* GetArrayType() const;
 	ClassPtr GetClassType() const;
+	TemplateDependentType* GetTemplateDependentType();
+	const TemplateDependentType* GetTemplateDependentType() const;
 
 	// TODO - does this method needs?
 	size_t SizeOf() const;
@@ -101,7 +123,8 @@ private:
 		FunctionPtr,
 		ArrayPtr,
 		ClassPtr,
-		NontypeStub> something_;
+		NontypeStub,
+		TemplateDependentType> something_;
 };
 
 bool operator==( const Type& r, const Type& l );
@@ -131,10 +154,15 @@ bool operator!=( const Function& r, const Function& l );
 
 struct Array final
 {
+	// "size" in case, when size is not known yet, when size depends on template parameter, for example.
+	static constexpr size_t c_undefined_size= std::numeric_limits<size_t>::max();
+
 	Type type;
-	size_t size= 0u;
+	size_t size= c_undefined_size;
 
 	llvm::ArrayType* llvm_type= nullptr;
+
+	size_t ArraySizeOrZero() const { return size == c_undefined_size ? 0u : size; }
 };
 
 bool operator==( const Array& r, const Array& l );
@@ -192,6 +220,12 @@ struct ThisOverloadedMethodsSet final
 	OverloadedFunctionsSet overloaded_methods_set;
 };
 
+struct TemplateDependentValue final
+{};
+
+struct YetNotDeducedTemplateArg final
+{};
+
 class Value final
 {
 public:
@@ -203,6 +237,9 @@ public:
 	Value( ClassField class_field );
 	Value( ThisOverloadedMethodsSet class_field );
 	Value( const NamesScopePtr& namespace_ );
+	Value( const ClassTemplatePtr& class_template );
+	Value( TemplateDependentValue template_dependent_value );
+	Value( YetNotDeducedTemplateArg yet_not_deduced_template_arg );
 
 	const Type& GetType() const;
 
@@ -225,7 +262,14 @@ public:
 	const ThisOverloadedMethodsSet* GetThisOverloadedMethodsSet() const;
 	// Namespace
 	NamesScopePtr GetNamespace() const;
-
+	// Class Template
+	ClassTemplatePtr GetClassTemplate() const;
+	// Template-dependent value
+	TemplateDependentValue* GetTemplateDependentValue();
+	const TemplateDependentValue* GetTemplateDependentValue() const;
+	// Yet not deduced template arg
+	YetNotDeducedTemplateArg* GetYetNotDeducedTemplateArg();
+	const YetNotDeducedTemplateArg* GetYetNotDeducedTemplateArg() const;
 
 private:
 	boost::variant<
@@ -235,7 +279,10 @@ private:
 		Type,
 		ClassField,
 		ThisOverloadedMethodsSet,
-		NamesScopePtr > something_;
+		NamesScopePtr,
+		ClassTemplatePtr,
+		TemplateDependentValue,
+		YetNotDeducedTemplateArg > something_;
 };
 
 // "Class" of function argument in terms of overloading.
@@ -266,17 +313,20 @@ public:
 	NamesScope( const NamesScope&)= delete;
 	NamesScope& operator=( const NamesScope&)= delete;
 
+	bool IsAncestorFor( const NamesScope& other ) const;
 	const ProgramString& GetThisNamespaceName() const;
+	void SetThisNamespaceName( ProgramString name );
 
 	// Returns nullptr, if name already exists in this scope.
 	InsertedName* AddName( const ProgramString& name, Value value );
 
-	// Performs full name resolving.
-	InsertedName* ResolveName( const ComplexName& name ) const;
 	// Resolve simple name only in this scope.
 	InsertedName* GetThisScopeName( const ProgramString& name ) const;
+	InsertedName& GetTemplateDependentValue();
 
 	const NamesScope* GetParent() const;
+	const NamesScope* GetRoot() const;
+	void SetParent( const NamesScope* parent );
 
 	template<class Func>
 	void ForEachInThisScope( const Func& func ) const
@@ -288,13 +338,38 @@ public:
 	// TODO - maybe add for_each in all scopes?
 
 private:
-	InsertedName* ResolveName_r( const ProgramString* components, size_t component_count ) const;
-
-private:
-	const ProgramString name_;
-	const NamesScope* const parent_;
+	ProgramString name_;
+	const NamesScope* parent_;
 	NamesMap names_map_;
 };
+
+struct NameResolvingKey final
+{
+	const ComplexName::Component* components;
+	size_t component_count;
+};
+
+struct NameResolvingKeyHasher
+{
+	size_t operator()( const NameResolvingKey& key ) const;
+	bool operator()( const NameResolvingKey& a, const NameResolvingKey& b ) const;
+};
+
+bool NameResolvingKeyCompare( const NameResolvingKey& a, const NameResolvingKey& b );
+
+struct ResolvingCacheValue final
+{
+	NamesScope::InsertedName name;
+	NamesScope* parent_namespace;
+	size_t name_components_cut;
+};
+
+typedef
+	std::unordered_map<
+		NameResolvingKey,
+		ResolvingCacheValue,
+		NameResolvingKeyHasher,
+		NameResolvingKeyHasher > ResolvingCache;
 
 class ProgramError final : public std::exception
 {
@@ -306,6 +381,8 @@ public:
 		return "ProgramError";
 	}
 };
+
+typedef boost::variant< Variable, Type > TemplateParameter;
 
 struct Class final
 {
@@ -327,7 +404,41 @@ struct Class final
 	bool have_destructor= false;
 
 	llvm::StructType* llvm_type;
+
+	struct BaseTemplate
+	{
+		ClassTemplatePtr class_template;
+		std::vector<TemplateParameter> template_parameters;
+	};
+
+	// Exists only for classes, generated from class templates.
+	boost::optional<BaseTemplate> base_template;
 };
+
+struct ClassTemplate final
+{
+	struct TemplateParameter
+	{
+		ProgramString name;
+		const ComplexName* type_name= nullptr; // Exists for value parameters.
+	};
+
+	// Sorted in order of first parameter usage in signature.
+	std::vector< TemplateParameter > template_parameters;
+
+	std::vector< const ComplexName* > signature_arguments;
+	std::vector< const ComplexName* > default_signature_arguments;
+	size_t first_optional_signature_argument= ~0u;
+
+	// Store syntax tree element for instantiation.
+	// Syntax tree must live longer, than this struct.
+	const ClassDeclaration* class_syntax_element= nullptr;
+
+	ResolvingCache resolving_cache;
+};
+
+typedef boost::variant< int, Type, Variable > DeducibleTemplateParameter; // int means not deduced
+typedef std::vector<DeducibleTemplateParameter> DeducibleTemplateParameters;
 
 const ProgramString& GetFundamentalTypeName( U_FundamentalType fundamental_type );
 const char* GetFundamentalTypeNameASCII( U_FundamentalType fundamental_type );

@@ -98,6 +98,19 @@ enum class CodeBuilderErrorCode : unsigned int
 	ThisInNonclassFunction,
 	AccessOfNonThisClassField,
 	ThisUnavailable,
+
+	// Template errors.
+	InvalidValueAsTemplateArgument,
+	InvalidTypeOfTemplateVariableArgument,
+	TemplateParametersDeductionFailed,
+	DeclarationShadowsTemplateArgument,
+	ValueIsNotTemplate,
+	TemplateInstantiationRequired,
+	MandatoryTemplateSignatureArgumentAfterOptionalArgument,
+	TemplateArgumentIsNotDeducedYet,
+	UnsupportedExpressionTypeForTemplateSignatureArgument,
+	TemplateArgumentNotUsedInSignature,
+	IncompleteMemberOfClassTemplate,
 };
 
 struct CodeBuilderError
@@ -179,5 +192,16 @@ CodeBuilderError ReportClassFiledAccessInStaticMethod( const FilePos& file_pos, 
 CodeBuilderError ReportThisInNonclassFunction( const FilePos& file_pos, const ProgramString& func_name );
 CodeBuilderError ReportAccessOfNonThisClassField( const FilePos& file_pos, const ProgramString& field_name );
 CodeBuilderError ReportThisUnavailable( const FilePos& file_pos );
+CodeBuilderError ReportInvalidValueAsTemplateArgument( const FilePos& file_pos, const ProgramString& got );
+CodeBuilderError ReportInvalidTypeOfTemplateVariableArgument( const FilePos& file_pos, const ProgramString& type_name );
+CodeBuilderError ReportTemplateParametersDeductionFailed( const FilePos& file_pos );
+CodeBuilderError ReportDeclarationShadowsTemplateArgument( const FilePos& file_pos, const ProgramString& name );
+CodeBuilderError ReportValueIsNotTemplate( const FilePos& file_pos );
+CodeBuilderError ReportTemplateInstantiationRequired( const FilePos& file_pos, const ProgramString& template_name );
+CodeBuilderError ReportMandatoryTemplateSignatureArgumentAfterOptionalArgument( const FilePos& file_pos );
+CodeBuilderError ReportTemplateArgumentIsNotDeducedYet( const FilePos& file_pos, const ProgramString& name );
+CodeBuilderError ReportUnsupportedExpressionTypeForTemplateSignatureArgument( const FilePos& file_pos );
+CodeBuilderError ReportTemplateArgumentNotUsedInSignature( const FilePos& file_pos, const ProgramString& name );
+CodeBuilderError ReportIncompleteMemberOfClassTemplate( const FilePos& file_pos, const ProgramString& name );
 
 } // namespace U

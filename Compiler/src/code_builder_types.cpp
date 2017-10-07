@@ -1,3 +1,5 @@
+#include "boost/functional/hash.hpp"
+
 #include "assert.hpp"
 #include "keywords.hpp"
 
@@ -79,12 +81,27 @@ FundamentalType::FundamentalType(
 	, llvm_type(in_llvm_type)
 {}
 
+TemplateDependentType::TemplateDependentType( const size_t in_index, llvm::Type* const in_llvm_type )
+	: index(in_index)
+	, llvm_type( in_llvm_type )
+{}
+
 bool operator==( const FundamentalType& r, const FundamentalType& l )
 {
 	return r.fundamental_type == l.fundamental_type;
 }
 
 bool operator!=( const FundamentalType& r, const FundamentalType& l )
+{
+	return !( r == l );
+}
+
+bool operator==( const TemplateDependentType& r, const TemplateDependentType& l )
+{
+	return r.index == l.index;
+}
+
+bool operator!=( const TemplateDependentType& r, const TemplateDependentType& l )
 {
 	return !( r == l );
 }
@@ -129,6 +146,12 @@ Type::Type( const NontypeStub nontype_strub )
 	something_= nontype_strub;
 }
 
+
+Type::Type( TemplateDependentType template_dependent_type )
+{
+	something_= std::move( template_dependent_type );
+}
+
 Type& Type::operator=( const Type& other )
 {
 	struct Visitor final : public boost::static_visitor<>
@@ -164,6 +187,11 @@ Type& Type::operator=( const Type& other )
 		void operator()( const NontypeStub& stub )
 		{
 			this_.something_= stub;
+		}
+
+		void operator()( const TemplateDependentType& template_dependent_type )
+		{
+			this_.something_= template_dependent_type;
 		}
 	};
 
@@ -222,6 +250,16 @@ ClassPtr Type::GetClassType() const
 	return *class_type;
 }
 
+TemplateDependentType* Type::GetTemplateDependentType()
+{
+	return boost::get<TemplateDependentType>( &something_ );
+}
+
+const TemplateDependentType* Type::GetTemplateDependentType() const
+{
+	return boost::get<TemplateDependentType>( &something_ );
+}
+
 size_t Type::SizeOf() const
 {
 	struct Visitor final : public boost::static_visitor<>
@@ -255,6 +293,12 @@ size_t Type::SizeOf() const
 		{
 			U_UNUSED(stub);
 			U_ASSERT( false && "SizeOf method not supported for stub types." );
+		}
+
+		void operator()( const TemplateDependentType& template_dependent_type )
+		{
+			U_UNUSED(template_dependent_type);
+			U_ASSERT( false && "SizeOf method not supported for template-dependent types." );
 		}
 	};
 
@@ -380,6 +424,11 @@ llvm::Type* Type::GetLLVMType() const
 		{
 			U_UNUSED(stub);
 		}
+
+		void operator()( const TemplateDependentType& template_dependent_type )
+		{
+			llvm_type= template_dependent_type.llvm_type;
+		}
 	};
 
 	Visitor visitor;
@@ -453,8 +502,21 @@ ProgramString Type::ToString() const
 			case NontypeStub::Namespace:
 				result= "namespace"_SpC;
 				break;
+			case NontypeStub::ClassTemplate:
+				result= "class template"_SpC;
+			case NontypeStub::TemplateDependentValue:
+				result= "template-dependent value"_SpC;
+				break;
+			case NontypeStub::YetNotDeducedTemplateArg:
+				result= "yet not deduced template arg"_SpC;
+				break;
 			};
 			U_ASSERT(!result.empty());
+		}
+
+		void operator()( const TemplateDependentType& )
+		{
+			result= "template dependent type"_SpC;
 		}
 	};
 
@@ -487,6 +549,10 @@ bool operator==( const Type& r, const Type& l )
 	else if( r.something_.which() == 4 )
 	{
 		return boost::get<NontypeStub>(r.something_) == boost::get<NontypeStub>(l.something_);
+	}
+	else if( r.something_.which() == 5 )
+	{
+		return boost::get<TemplateDependentType>(r.something_) == boost::get<TemplateDependentType>(l.something_);
 	}
 
 	U_ASSERT(false);
@@ -532,6 +598,20 @@ bool operator!=( const Array& r, const Array& l )
 	return !( r == l );
 }
 
+size_t NameResolvingKeyHasher::operator()( const NameResolvingKey& key ) const
+{
+	size_t result= 0u;
+	boost::hash_combine( result, key.components );
+	boost::hash_combine( result, key.component_count );
+
+	return result;
+}
+
+bool NameResolvingKeyHasher::operator()( const NameResolvingKey& a, const NameResolvingKey& b ) const
+{
+	return a.components == b.components && a.component_count == b.component_count;
+}
+
 Class::Class( const ProgramString& in_name, const NamesScope* const parent_scope )
 	: members( in_name, parent_scope )
 {}
@@ -548,6 +628,9 @@ static const Type g_overloaded_functions_set_stub_type= NontypeStub::OverloadedF
 static const Type g_this_overloaded_methods_set_stub_type=NontypeStub::ThisOverloadedMethodsSet;
 static const Type g_typename_type_stub= NontypeStub::TypeName;
 static const Type g_namespace_type_stub= NontypeStub::Namespace;
+static const Type g_class_template_type_stub= NontypeStub::ClassTemplate;
+static const Type g_template_dependent_type_stub= NontypeStub::TemplateDependentValue;
+static const Type g_yet_not_deduced_template_arg_type_stub= NontypeStub::YetNotDeducedTemplateArg;
 
 Value::Value()
 {}
@@ -588,6 +671,22 @@ Value::Value( const NamesScopePtr& namespace_ )
 	something_= namespace_;
 }
 
+Value::Value( const ClassTemplatePtr& class_template )
+{
+	U_ASSERT( class_template != nullptr );
+	something_= class_template;
+}
+
+Value::Value( TemplateDependentValue template_dependent_value )
+{
+	something_= std::move(template_dependent_value);
+}
+
+Value::Value( YetNotDeducedTemplateArg yet_not_deduced_template_arg )
+{
+	something_= std::move(yet_not_deduced_template_arg);
+}
+
 const Type& Value::GetType() const
 {
 	struct Visitor final : public boost::static_visitor<>
@@ -614,6 +713,15 @@ const Type& Value::GetType() const
 
 		void operator()( const NamesScopePtr& )
 		{ type= &g_namespace_type_stub; }
+
+		void operator()( const ClassTemplatePtr& )
+		{ type= &g_class_template_type_stub; }
+
+		void operator()( const TemplateDependentValue& )
+		{ type= &g_template_dependent_type_stub; }
+
+		void operator()( const YetNotDeducedTemplateArg& )
+		{ type= &g_yet_not_deduced_template_arg_type_stub; }
 	};
 
 	Visitor visitor;
@@ -684,6 +792,34 @@ NamesScopePtr Value::GetNamespace() const
 	return *namespace_;
 }
 
+ClassTemplatePtr Value::GetClassTemplate() const
+{
+	const ClassTemplatePtr* const class_template= boost::get<ClassTemplatePtr>( &something_ );
+	if( class_template == nullptr )
+		return nullptr;
+	return *class_template;
+}
+
+TemplateDependentValue* Value::GetTemplateDependentValue()
+{
+	return boost::get<TemplateDependentValue>( &something_ );
+}
+
+const TemplateDependentValue* Value::GetTemplateDependentValue() const
+{
+	return boost::get<TemplateDependentValue>( &something_ );
+}
+
+YetNotDeducedTemplateArg* Value::GetYetNotDeducedTemplateArg()
+{
+	return boost::get<YetNotDeducedTemplateArg>( &something_ );
+}
+
+const YetNotDeducedTemplateArg* Value::GetYetNotDeducedTemplateArg() const
+{
+	return boost::get<YetNotDeducedTemplateArg>( &something_ );
+}
+
 ArgOverloadingClass GetArgOverloadingClass( const bool is_reference, const bool is_mutable )
 {
 	if( is_reference && is_mutable )
@@ -719,9 +855,27 @@ NamesScope::NamesScope(
 	, parent_(parent)
 {}
 
+bool NamesScope::IsAncestorFor( const NamesScope& other ) const
+{
+	const NamesScope* n= other.parent_;
+	while( n != nullptr )
+	{
+		if( this == n )
+			return true;
+		n= n->parent_;
+	}
+
+	return false;
+}
+
 const ProgramString& NamesScope::GetThisNamespaceName() const
 {
 	return name_;
+}
+
+void NamesScope::SetThisNamespaceName( ProgramString name )
+{
+	name_= std::move(name);
 }
 
 NamesScope::InsertedName* NamesScope::AddName(
@@ -735,45 +889,6 @@ NamesScope::InsertedName* NamesScope::AddName(
 	return nullptr;
 }
 
-NamesScope::InsertedName* NamesScope::ResolveName( const ComplexName& name ) const
-{
-	U_ASSERT( !name.components.empty() );
-	if( name.components.front().empty() )
-	{
-		U_ASSERT( name.components.size() >= 2u );
-
-		// TODO - maybe save root pointer somewhere?
-		const NamesScope* root= this;
-		while( root->parent_ != nullptr )
-			root= root->parent_;
-
-		return root->ResolveName_r( name.components.data() + 1u, name.components.size() - 1u );
-	}
-	else
-	{
-		const ProgramString& start= name.components.front();
-		InsertedName* start_resolved= nullptr;
-		const NamesScope* space= this;
-		while(true)
-		{
-			const auto it= space->names_map_.find( start );
-			if( it != space->names_map_.end() )
-			{
-				start_resolved= const_cast<InsertedName*>(&*it);
-				break;
-			}
-			space= space->parent_;
-			if( space == nullptr )
-				return nullptr;
-		}
-
-		if( name.components.size() == 1u )
-			return start_resolved;
-
-		return space->ResolveName_r( name.components.data() , name.components.size() );
-	}
-}
-
 NamesScope::InsertedName* NamesScope::GetThisScopeName( const ProgramString& name ) const
 {
 	const auto it= names_map_.find( name );
@@ -782,36 +897,32 @@ NamesScope::InsertedName* NamesScope::GetThisScopeName( const ProgramString& nam
 	return nullptr;
 }
 
+NamesScope::InsertedName& NamesScope::GetTemplateDependentValue()
+{
+	const ProgramString name= "0_tdv"_SpC; // use identifier with number start - that can not exists in real program.
+	const auto it= names_map_.find(name);
+	if( it != names_map_.end() )
+		return *it;
+
+	return *names_map_.emplace( name, TemplateDependentValue() ).first;
+}
+
 const NamesScope* NamesScope::GetParent() const
 {
 	return parent_;
 }
 
-NamesScope::InsertedName* NamesScope::ResolveName_r(
-	const ProgramString* const components,
-	const size_t component_count ) const
+const NamesScope* NamesScope::GetRoot() const
 {
-	U_ASSERT( component_count >= 1u );
-	U_ASSERT( !components[0].empty() );
+	const NamesScope* root= this;
+	while( root->parent_ != nullptr )
+		root= root->parent_;
+	return root;
+}
 
-	const auto it= names_map_.find( components[0] );
-	if( it == names_map_.end() )
-		return nullptr;
-
-	if( component_count == 1u )
-		return const_cast<InsertedName*>(&*it);
-
-	if( const NamesScopePtr child_namespace= it->second.GetNamespace() )
-		return child_namespace->ResolveName_r( components + 1u, component_count - 1u );
-	else if( const Type* const type= it->second.GetTypeName() )
-	{
-		if( const ClassPtr class_= type->GetClassType() )
-		{
-			return class_->members.ResolveName_r( components + 1u, component_count - 1u );
-		}
-	}
-
-	return nullptr;
+void NamesScope::SetParent( const NamesScope* const parent )
+{
+	parent_= parent;
 }
 
 const ProgramString& GetFundamentalTypeName( const U_FundamentalType fundamental_type )

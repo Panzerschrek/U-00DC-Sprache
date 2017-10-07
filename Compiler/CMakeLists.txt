@@ -40,6 +40,7 @@ set( COMPILER_LIB_SOURCES
 	src/code_builder.cpp
 	src/code_builder_expressions.cpp
 	src/code_builder_initializers.cpp
+	src/code_builder_templates.cpp
 	src/code_builder_types.cpp
 	src/keywords.cpp
 	src/lang_types.cpp
@@ -83,6 +84,8 @@ target_link_libraries( Compiler CompilerLib ${LLVM_LIBS_FOR_COMPILER} )
 set( TESTS_SOURCES
 	src/tests/auto_variables_test.cpp
 	src/tests/auto_variables_errors_test.cpp
+	src/tests/class_templates_errors_test.cpp
+	src/tests/class_templates_test.cpp
 	src/tests/classes_declaration_errors_test.cpp
 	src/tests/classes_declaration_test.cpp
 	src/tests/code_builder_errors_test.cpp

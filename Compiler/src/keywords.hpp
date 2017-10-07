@@ -56,6 +56,8 @@ enum class Keywords : unsigned int
 
 	static_assert_,
 
+	type_,
+
 	// Reserved keywords for future usage.
 	for_,
 	do_,
@@ -67,7 +69,6 @@ enum class Keywords : unsigned int
 	virtual_,
 	polymorph_,
 	override_,
-	type_,
 	typename_,
 	cast_,
 	const_,

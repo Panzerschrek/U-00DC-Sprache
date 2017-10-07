@@ -64,6 +64,9 @@ void CodeBuilder::ApplyEmptyInitializer(
 	const Variable& variable,
 	FunctionContext& function_context )
 {
+	if( variable.type.GetTemplateDependentType() != nullptr )
+		return;
+
 	if( !variable.type.IsDefaultConstructible() )
 	{
 		errors_.push_back( ReportExpectedInitializer( file_pos, variable_name ) );
@@ -83,7 +86,7 @@ void CodeBuilder::ApplyEmptyInitializer(
 		array_member.location= Variable::Location::Pointer;
 
 		GenerateLoop(
-			array_type->size,
+			array_type->ArraySizeOrZero(),
 			[&](llvm::Value* const counter_value)
 			{
 				llvm::Value* index_list[2];
@@ -124,6 +127,13 @@ llvm::Constant* CodeBuilder::ApplyArrayInitializer(
 	NamesScope& block_names,
 	FunctionContext& function_context )
 {
+	if( variable.type.GetTemplateDependentType() != nullptr )
+	{
+		for( const IInitializerPtr& sub_initializer : initializer.initializers )
+			ApplyInitializer( variable, *sub_initializer, block_names, function_context );
+		return nullptr;
+	}
+
 	const Array* const array_type= variable.type.GetArrayType();
 	if( array_type == nullptr )
 	{
@@ -131,7 +141,7 @@ llvm::Constant* CodeBuilder::ApplyArrayInitializer(
 		return nullptr;
 	}
 
-	if( initializer.initializers.size() != array_type->size )
+	if( array_type->size != Array::c_undefined_size && initializer.initializers.size() != array_type->size )
 	{
 		errors_.push_back(
 			ReportArrayInitializersCountMismatch(
@@ -172,7 +182,12 @@ llvm::Constant* CodeBuilder::ApplyArrayInitializer(
 	U_ASSERT( members_constants.size() == initializer.initializers.size() || !is_constant );
 
 	if( is_constant )
-		return llvm::ConstantArray::get( array_type->llvm_type, members_constants );
+	{
+		if( array_type->size == Array::c_undefined_size )
+			return llvm::UndefValue::get( array_type->llvm_type );
+		else
+			return llvm::ConstantArray::get( array_type->llvm_type, members_constants );
+	}
 
 	return nullptr;
 }
@@ -183,6 +198,13 @@ void CodeBuilder::ApplyStructNamedInitializer(
 	NamesScope& block_names,
 	FunctionContext& function_context )
 {
+	if( variable.type.GetTemplateDependentType() != nullptr )
+	{
+		for( const StructNamedInitializer::MemberInitializer& member_initializer : initializer.members_initializers )
+			ApplyInitializer( variable, *member_initializer.initializer, block_names, function_context );
+		return;
+	}
+
 	const ClassPtr class_type= variable.type.GetClassType();
 	if( class_type == nullptr )
 	{
@@ -254,9 +276,16 @@ void CodeBuilder::ApplyStructNamedInitializer(
 llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 	const Variable& variable,
 	const CallOperator& call_operator,
-	const NamesScope& block_names,
+	NamesScope& block_names,
 	FunctionContext& function_context )
 {
+	if( variable.type.GetTemplateDependentType() != nullptr )
+	{
+		for( const IExpressionComponentPtr& arg : call_operator.arguments_ )
+			BuildExpressionCode( *arg, block_names, function_context );
+		return nullptr;
+	}
+
 	if( const FundamentalType* const dst_type= variable.type.GetFundamentalType() )
 	{
 		if( call_operator.arguments_.size() != 1u )
@@ -268,6 +297,10 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 		// SPRACHE_TODO - maybe we need save temporaries of this expression?
 		const Value expression_result=
 			BuildExpressionCodeAndDestroyTemporaries( *call_operator.arguments_.front(), block_names, function_context );
+		if( expression_result.GetType() == NontypeStub::TemplateDependentValue ||
+			expression_result.GetType().GetTemplateDependentType() != nullptr )
+			return llvm::UndefValue::get( dst_type->llvm_type );
+
 		const Type expression_type= expression_result.GetType();
 		const FundamentalType* const src_type= expression_type.GetFundamentalType();
 
@@ -434,14 +467,22 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 		errors_.push_back( ReportConstructorInitializerForUnsupportedType( call_operator.file_pos_ ) );
 		return nullptr;
 	}
+
+	return nullptr;
 }
 
 llvm::Constant* CodeBuilder::ApplyExpressionInitializer(
 	const Variable& variable,
 	const ExpressionInitializer& initializer,
-	const NamesScope& block_names,
+	NamesScope& block_names,
 	FunctionContext& function_context )
 {
+	if( variable.type.GetTemplateDependentType() != nullptr )
+	{
+		BuildExpressionCode( *initializer.expression, block_names, function_context );
+		return nullptr;
+	}
+
 	if( const FundamentalType* const fundamental_type= variable.type.GetFundamentalType() )
 	{
 		U_UNUSED(fundamental_type);
@@ -449,6 +490,10 @@ llvm::Constant* CodeBuilder::ApplyExpressionInitializer(
 		// SPRACHE_TODO - maybe we need save temporaries of this expression?
 		const Value expression_result=
 			BuildExpressionCodeAndDestroyTemporaries( *initializer.expression, block_names, function_context );
+		if( expression_result.GetType() == NontypeStub::TemplateDependentValue ||
+			expression_result.GetType().GetTemplateDependentType() != nullptr )
+			return llvm::UndefValue::get( fundamental_type->llvm_type );
+
 		if( expression_result.GetType() != variable.type )
 		{
 			errors_.push_back( ReportTypesMismatch( initializer.file_pos_, variable.type.ToString(), expression_result.GetType().ToString() ) );
@@ -473,9 +518,12 @@ llvm::Constant* CodeBuilder::ApplyExpressionInitializer(
 llvm::Constant* CodeBuilder::ApplyZeroInitializer(
 	const Variable& variable,
 	const ZeroInitializer& initializer,
-	const NamesScope& block_names,
+	NamesScope& block_names,
 	FunctionContext& function_context )
 {
+	if( variable.type.GetTemplateDependentType() != nullptr )
+		return nullptr;
+
 	if( const FundamentalType* const fundamental_type= variable.type.GetFundamentalType() )
 	{
 		llvm::Constant* zero_value= nullptr;
@@ -528,7 +576,7 @@ llvm::Constant* CodeBuilder::ApplyZeroInitializer(
 		llvm::Constant* const_value= nullptr;
 
 		GenerateLoop(
-			array_type->size,
+			array_type->ArraySizeOrZero(),
 			[&](llvm::Value* const counter_value)
 			{
 				llvm::Value* index_list[2];
@@ -541,10 +589,15 @@ llvm::Constant* CodeBuilder::ApplyZeroInitializer(
 			function_context);
 
 		if( const_value != nullptr && array_type->type.CanBeConstexpr() )
-			return
-				llvm::ConstantArray::get(
-					array_type->llvm_type,
-					std::vector<llvm::Constant*>( array_type->size, const_value ) );
+		{
+			if( array_type->size == Array::c_undefined_size )
+				return llvm::UndefValue::get( array_type->llvm_type );
+			else
+				return
+					llvm::ConstantArray::get(
+						array_type->llvm_type,
+						std::vector<llvm::Constant*>( array_type->size, const_value ) );
+		}
 	}
 	else if( const ClassPtr class_type= variable.type.GetClassType() )
 	{
