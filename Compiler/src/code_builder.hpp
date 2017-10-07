@@ -140,6 +140,8 @@ private:
 	// Warning! Class must be not used after call of this function!
 	void RemoveTempClassLLVMValues( Class& class_ );
 
+	void ReportAboutIncompleteMembersOfTemplateClass( const FilePos& file_pos, Class& class_ );
+
 	// Constructors/destructors
 	void TryGenerateDefaultConstructor( Class& the_class, const Type& class_type );
 	void TryGenerateCopyConstructor( Class& the_class, const Type& class_type );

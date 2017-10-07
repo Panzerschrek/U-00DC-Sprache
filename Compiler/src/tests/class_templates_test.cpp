@@ -699,14 +699,14 @@ U_TEST( ClassTemplateTest20_OverloadingWithTemplateDependentType )
 		template</ type T, type U, type V />
 		struct FuncsStroage</ T, U, V />
 		{
-			fn Foo( T t );
-			fn Foo( U u );
-			fn Foo( V v );
-			fn Foo( i32 i );
-			fn Foo( i8 i );
+			fn Foo( T t ){}
+			fn Foo( U u ){}
+			fn Foo( V v ){}
+			fn Foo( i32 i ){}
+			fn Foo( i8 i ){}
 
-			fn Baz( T t, U u );
-			fn Baz( U u, T t );
+			fn Baz( T t, U u ){}
+			fn Baz( U u, T t ){}
 		}
 
 		fn Foo()
@@ -726,14 +726,14 @@ U_TEST( ClassTemplateTest21_CallOverloadedFunctionWithTemplateDependentSignature
 		template</ type T, type U, type V />
 		struct FuncsStroage</ T, U, V />
 		{
-			fn Foo( T t );
-			fn Foo( U u );
-			fn Foo( V v );
-			fn Foo( i32 i );
-			fn Foo( i8 i );
+			fn Foo( T t ){}
+			fn Foo( U u ){}
+			fn Foo( V v ){}
+			fn Foo( i32 i ){}
+			fn Foo( i8 i ){}
 
-			fn Baz( T t, U u );
-			fn Baz( U u, T t );
+			fn Baz( T t, U u ){}
+			fn Baz( U u, T t ){}
 
 			fn Worker()
 			{

@@ -307,12 +307,12 @@ U_TEST( CouldNotOverloadFunction_ForClassTemplates_Test1 )
 		template</ type T, type U />
 		struct FuncsStroage</ T, U />
 		{
-			fn Foo( T t );
-			fn Foo( U &imut u ); // Generates error, if U == T
-			fn Foo( i32 i ); // Generates error, if T or U is i32
+			fn Foo( T t ){}
+			fn Foo( U &imut u ){} // Generates error, if U == T
+			fn Foo( i32 i ){} // Generates error, if T or U is i32
 
-			fn Baz( T       t, U &imut u );
-			fn Baz( U &imut u, T       t ); // Generates error, if T and U is same
+			fn Baz( T       t, U &imut u ){}
+			fn Baz( U &imut u, T       t ){} // Generates error, if T and U is same
 		}
 
 		fn Foo()
@@ -430,6 +430,39 @@ U_TEST( TemplateArgumentNotUsedInSignature_Test0 )
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::TemplateArgumentNotUsedInSignature );
 	U_TEST_ASSERT( error.file_pos.line == 2u );
+}
+
+U_TEST( IncompleteMemberOfClassTemplate_Test0 )
+{
+	static const char c_program_text[]=
+	R"(
+		template</ type T /> struct Box</ T />
+		{
+			fn A(); // <- incomplete
+
+			fn B();
+			fn B(){}
+
+			struct C; // <- incomplete
+
+			struct D
+			{
+				struct E; // <- incomplete
+			}
+		}
+	)";
+
+	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	U_TEST_ASSERT( build_result.errors.size() >= 3u );
+
+	// TODO - correct line numbers.
+	// We must write correct file_pos of incomplete member.
+	U_TEST_ASSERT( build_result.errors[0].code == CodeBuilderErrorCode::IncompleteMemberOfClassTemplate );
+	U_TEST_ASSERT( build_result.errors[0].file_pos.line == 2u );
+	U_TEST_ASSERT( build_result.errors[1].code == CodeBuilderErrorCode::IncompleteMemberOfClassTemplate );
+	U_TEST_ASSERT( build_result.errors[1].file_pos.line == 2u );
+	U_TEST_ASSERT( build_result.errors[2].code == CodeBuilderErrorCode::IncompleteMemberOfClassTemplate );
+	U_TEST_ASSERT( build_result.errors[2].file_pos.line == 2u );
 }
 
 } // namespace U

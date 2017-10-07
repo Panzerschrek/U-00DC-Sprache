@@ -1572,7 +1572,8 @@ void CodeBuilder::BuildFuncCode(
 			var.location= Variable::Location::Pointer;
 		else
 		{
-			if( arg.type.GetFundamentalType() != nullptr )
+			if( arg.type.GetFundamentalType() != nullptr ||
+				arg.type.GetTemplateDependentType() != nullptr )
 			{
 				// Move parameters to stack for assignment possibility.
 				// TODO - do it, only if parameters are not constant.

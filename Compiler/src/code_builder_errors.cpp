@@ -907,4 +907,15 @@ CodeBuilderError ReportTemplateArgumentNotUsedInSignature( const FilePos& file_p
 	return error;
 }
 
+CodeBuilderError ReportIncompleteMemberOfClassTemplate( const FilePos& file_pos, const ProgramString& name )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::IncompleteMemberOfClassTemplate;
+
+	error.text= "\""_SpC + name + "\" is incomplete."_SpC;
+
+	return error;
+}
+
 } // namespace U

@@ -202,7 +202,10 @@ void CodeBuilder::PrepareClassTemplate(
 	PopResolveHandler();
 
 	if( the_class != nullptr )
+	{
+		ReportAboutIncompleteMembersOfTemplateClass( class_template_declaration.file_pos_, *the_class );
 		RemoveTempClassLLVMValues( *the_class );
+	}
 }
 
 void CodeBuilder::PrepareTemplateSignatureParameter(
@@ -838,6 +841,57 @@ void CodeBuilder::RemoveTempClassLLVMValues( Class& class_ )
 			{
 				U_ASSERT(false);
 			}
+		} );
+}
+
+void CodeBuilder::ReportAboutIncompleteMembersOfTemplateClass( const FilePos& file_pos, Class& class_ )
+{
+	class_.members.ForEachInThisScope(
+		[this, file_pos]( const NamesScope::InsertedName& name )
+		{
+			if( const Type* const type= name.second.GetTypeName() )
+			{
+				if( const ClassPtr subclass= type->GetClassType() )
+				{
+					if( subclass->is_incomplete )
+						errors_.push_back( ReportIncompleteMemberOfClassTemplate( file_pos, name.first ) );
+					else
+						ReportAboutIncompleteMembersOfTemplateClass( file_pos, *subclass );
+				}
+			}
+			else if( const OverloadedFunctionsSet* const functions_set= name.second.GetFunctionsSet() )
+			{
+				for( const FunctionVariable& function : *functions_set )
+				{
+					if( !function.have_body )
+						errors_.push_back( ReportIncompleteMemberOfClassTemplate( file_pos, name.first ) );
+				}
+			}
+			else if( name.second.GetClassField() != nullptr )
+			{}
+			else if( name.second.GetClassTemplate() != nullptr )
+			{}
+			else if( const NamesScopePtr inner_namespace= name.second.GetNamespace() )
+			{
+				const ProgramString& generated_class_name= GetNameForGeneratedClass();
+
+				// This must be only namespace for class template instantiation.
+				inner_namespace->ForEachInThisScope(
+					[&]( const NamesScope::InsertedName& inner_namespace_name )
+					{
+						if( inner_namespace_name.first == generated_class_name )
+						{
+							const Type* const generated_class_type= inner_namespace_name.second.GetTypeName();
+							U_ASSERT( generated_class_type != nullptr );
+							const ClassPtr generated_class= generated_class_type->GetClassType();
+							U_ASSERT( generated_class != nullptr );
+							U_ASSERT( generated_class->base_template != boost::none );
+							ReportAboutIncompleteMembersOfTemplateClass( file_pos, *generated_class );
+						}
+					});
+			}
+			else
+				U_ASSERT(false);
 		} );
 }
 
