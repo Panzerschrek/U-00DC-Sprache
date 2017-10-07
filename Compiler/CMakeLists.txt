@@ -96,6 +96,8 @@ set( TESTS_SOURCES
 	src/tests/constructors_test.cpp
 	src/tests/destructors_errors_test.cpp
 	src/tests/destructors_test.cpp
+	src/tests/global_variables_errors_test.cpp
+	src/tests/global_variables_test.cpp
 	src/tests/initializers_errors_test.cpp
 	src/tests/initializers_test.cpp
 	src/tests/methods_errors_test.cpp

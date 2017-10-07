@@ -211,6 +211,16 @@ ProgramElements SyntaxAnalyzer::ParseNamespaceBody( const Lexem::Type end_lexem 
 			if( IProgramElementPtr program_element= ParseTemplate() )
 				program_elements.emplace_back( std::move( program_element ) );
 		}
+		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::var_ )
+		{
+			if( IProgramElementPtr program_element= ParseVariablesDeclaration() )
+				program_elements.emplace_back( std::move(program_element) );
+		}
+		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::auto_ )
+		{
+			if( IProgramElementPtr program_element= ParseAutoVariableDeclaration() )
+				program_elements.emplace_back( std::move(program_element) );
+		}
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::namespace_ )
 		{
 			++it_; U_ASSERT( it_ < it_end_ );
