@@ -2154,7 +2154,7 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 				variable_declaration.mutability_modifier == MutabilityModifier::Constexpr )
 				variable.value_type= ValueType::ConstReference;
 
-			if( variable.constexpr_value != nullptr && global_variable != nullptr )
+			if( global_variable != nullptr && variable.constexpr_value != nullptr )
 				global_variable->setInitializer( variable.constexpr_value );
 		}
 		else if( variable_declaration.reference_modifier == ReferenceModifier::Reference )
@@ -2353,8 +2353,24 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 	}
 	else if( auto_variable_declaration.reference_modifier == ReferenceModifier::None )
 	{
-		variable.llvm_value= function_context.alloca_ir_builder.CreateAlloca( variable.type.GetLLVMType() );
-		variable.llvm_value->setName( ToStdString( auto_variable_declaration.name ) );
+		llvm::GlobalVariable* global_variable= nullptr;
+		if( global )
+		{
+			variable.llvm_value=
+			global_variable=
+				new llvm::GlobalVariable(
+					*module_,
+					variable.type.GetLLVMType(),
+					true,
+					llvm::GlobalValue::LinkageTypes::InternalLinkage, // TODO - set linjage
+					nullptr,
+					ToStdString( auto_variable_declaration.name ) ); // TODO - maybe mangle name?
+		}
+		else
+		{
+			variable.llvm_value= function_context.alloca_ir_builder.CreateAlloca( variable.type.GetLLVMType() );
+			variable.llvm_value->setName( ToStdString( auto_variable_declaration.name ) );
+		}
 
 		if( const FundamentalType* const fundamental_type= variable.type.GetFundamentalType() )
 		{
@@ -2369,6 +2385,9 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 			errors_.push_back( ReportNotImplemented( auto_variable_declaration.file_pos_, "expression initialization for nonfundamental types" ) );
 			return;
 		}
+
+		if( global_variable != nullptr && variable.constexpr_value != nullptr )
+			global_variable->setInitializer( variable.constexpr_value );
 	}
 	else
 	{
