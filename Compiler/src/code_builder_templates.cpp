@@ -45,10 +45,18 @@ void CodeBuilder::PrepareClassTemplate(
 	const ClassTemplateDeclaration& class_template_declaration,
 	NamesScope& names_scope )
 {
+	/* SPRACHE_TODO:
+	 *) Convert signature and template arguments to "default form" for equality comparison.
+	 *) Support templates overloading.
+	 *) Add "enable_if".
+	 *) Support short template form, where template parameters are also signature parameters.
+	 *) Support signature parameters with expressions inside template parameters, different, than NamedOperand.
+	 *) Support template-dependent types for value parameters, such template</ type T, U</ T /> ut />.
+	*/
+
 	const ClassTemplatePtr class_template( new ClassTemplate );
 	const ProgramString& class_template_name= class_template_declaration.class_->name_.components.back().name;
 
-	// SPRACHE_TODO - add class templates overloading.
 	if( names_scope.AddName( class_template_name, Value(class_template) ) == nullptr )
 	{
 		errors_.push_back( ReportRedefinition( class_template_declaration.file_pos_, class_template_name ) );
@@ -81,7 +89,7 @@ void CodeBuilder::PrepareClassTemplate(
 
 		if( !arg.arg_type.components.empty() )
 		{
-			// If template parameter is value.
+			// If template parameter is variable.
 
 			// Resolve from outer space or from this template parameters.
 			const NamesScope::InsertedName* const type_name= ResolveName( class_template_declaration.file_pos_, *template_parameters_namespace, arg.arg_type );
@@ -122,8 +130,6 @@ void CodeBuilder::PrepareClassTemplate(
 			template_parameters.back().type_name= &arg.arg_type;
 			template_parameters_usage_flags.push_back(false);
 
-			// SPRACHE_TODO - support template-dependent template arguments, such template</ type T, Foo<T>::some_constant />
-
 			Variable variable;
 			variable.type= *type;
 			if( type->GetTemplateDependentType() != nullptr )
@@ -145,7 +151,7 @@ void CodeBuilder::PrepareClassTemplate(
 		}
 		else
 		{
-			// If template parameter is variable.
+			// If template parameter is type.
 
 			template_parameters.emplace_back();
 			template_parameters.back().name= arg.name;
@@ -184,11 +190,6 @@ void CodeBuilder::PrepareClassTemplate(
 	for( size_t i= 0u; i < class_template->template_parameters.size(); ++i )
 		if( !template_parameters_usage_flags[i] )
 			errors_.push_back( ReportTemplateArgumentNotUsedInSignature( class_template_declaration.file_pos_, class_template->template_parameters[i].name ) );
-
-	// SPRACHE_TODO:
-	// *) Convert signature and template arguments to "default form" for equality comparison.
-	// *) More and more checks.
-	// *) Make more and more other stuff.
 
 	// Make first check-pass for template. Resolve all names in this pass.
 
@@ -328,6 +329,7 @@ bool CodeBuilder::DuduceTemplateArguments(
 		{
 			// Variable already known, Check conflicts.
 			// TODO - do real comparision
+			// TODO - maybe generate error in this case?
 			if( prev_variable_value->constexpr_value->getUniqueInteger() != variable_for_insertion.constexpr_value->getUniqueInteger() )
 				return false;
 		}
@@ -759,7 +761,7 @@ NamesScope::InsertedName* CodeBuilder::GenTemplateClass(
 	if( the_class == nullptr )
 		return nullptr;
 
-	// Save in class info about it.
+	// Save in class info about it`s base template.
 	the_class->base_template.emplace();
 	the_class->base_template->class_template= class_template_ptr;
 	for( const DeducibleTemplateParameter& arg : deduced_template_args )
@@ -770,8 +772,6 @@ NamesScope::InsertedName* CodeBuilder::GenTemplateClass(
 			the_class->base_template->template_parameters.push_back( *variable );
 		else U_ASSERT(false);
 	}
-
-	// TODO - check here class members.
 
 	return template_parameters_namespace->GetThisScopeName( GetNameForGeneratedClass() );
 }
@@ -813,7 +813,7 @@ bool CodeBuilder::TypeIsValidForTemplateVariableArgument( const Type& type )
 {
 	if( const FundamentalType* const fundamental= type.GetFundamentalType() )
 	{
-		// SPRACHE_TODO - allow non-fundamental value arguments.
+		// SPRACHE_TODO - allow non-fundamental value arguments, such enums, for example.
 		if( IsInteger( fundamental->fundamental_type ) || fundamental->fundamental_type == U_FundamentalType::Bool )
 			return true;
 	}
@@ -860,9 +860,7 @@ void CodeBuilder::RemoveTempClassLLVMValues( Class& class_ )
 					});
 			}
 			else
-			{
 				U_ASSERT(false);
-			}
 		} );
 }
 
