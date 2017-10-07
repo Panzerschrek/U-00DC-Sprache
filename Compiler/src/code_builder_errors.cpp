@@ -654,6 +654,17 @@ CodeBuilderError ReportInvalidTypeForAutoVariable( const FilePos& file_pos, cons
 	return error;
 }
 
+CodeBuilderError ReportGlobalVariableMustBeConstexpr( const FilePos& file_pos, const ProgramString& variable_name )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::GlobalVariableMustBeConstexpr;
+
+	error.text= "Global variable \""_SpC + variable_name + "\" must be constexpr."_SpC;
+
+	return error;
+}
+
 CodeBuilderError ReportConstructorOrDestructorOutsideClass( const FilePos& file_pos )
 {
 	CodeBuilderError error;

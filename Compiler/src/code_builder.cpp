@@ -1127,6 +1127,24 @@ void CodeBuilder::BuildNamespaceBody(
 		{
 			PrepareClassTemplate( *class_template_declaration, names_scope );
 		}
+		else if( const VariablesDeclaration* variables_declaration=
+			dynamic_cast<const VariablesDeclaration*>( program_element.get() ) )
+		{
+			try
+			{
+				BuildVariablesDeclarationCode( *variables_declaration, names_scope, *dummy_function_context_, true );
+			}
+			catch( const ProgramError& ) {}
+		}
+		else if( const AutoVariableDeclaration* auto_variable_declaration=
+			dynamic_cast<const AutoVariableDeclaration*>( program_element.get() ) )
+		{
+			try
+			{
+				BuildAutoVariableDeclarationCode( *auto_variable_declaration, names_scope, *dummy_function_context_, true );
+			}
+			catch( const ProgramError& ) {}
+		}
 		else
 		{
 			U_ASSERT(false);
@@ -2061,7 +2079,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockCode(
 void CodeBuilder::BuildVariablesDeclarationCode(
 	const VariablesDeclaration& variables_declaration,
 	NamesScope& block_names,
-	FunctionContext& function_context )
+	FunctionContext& function_context,
+	const bool global )
 {
 	const Type type= PrepareType( variables_declaration.file_pos_, variables_declaration.type, block_names );
 	if( type.IsIncomplete() )
@@ -2091,6 +2110,12 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 		variable.location= Variable::Location::Pointer;
 		variable.value_type= ValueType::Reference;
 
+		if( global && variable_declaration.mutability_modifier != MutabilityModifier::Constexpr )
+		{
+			errors_.push_back( ReportGlobalVariableMustBeConstexpr( variables_declaration.file_pos_, variable_declaration.name ) );
+			continue;
+		}
+
 		if( type.GetTemplateDependentType() != nullptr )
 		{
 			if( variable_declaration.initializer != nullptr )
@@ -2098,8 +2123,24 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 		}
 		else if( variable_declaration.reference_modifier == ReferenceModifier::None )
 		{
-			variable.llvm_value= function_context.alloca_ir_builder.CreateAlloca( variable.type.GetLLVMType() );
-			variable.llvm_value->setName( ToStdString( variable_declaration.name ) );
+			llvm::GlobalVariable* global_variable= nullptr;
+			if( global )
+			{
+				variable.llvm_value=
+				global_variable=
+					new llvm::GlobalVariable(
+						*module_,
+						type.GetLLVMType(),
+						true,
+						llvm::GlobalValue::LinkageTypes::InternalLinkage, // TODO - set linjage
+						nullptr,
+						ToStdString( variable_declaration.name ) ); // TODO - maybe mangle name?
+			}
+			else
+			{
+				variable.llvm_value= function_context.alloca_ir_builder.CreateAlloca( variable.type.GetLLVMType() );
+				variable.llvm_value->setName( ToStdString( variable_declaration.name ) );
+			}
 
 			if( variable_declaration.initializer != nullptr )
 				variable.constexpr_value=
@@ -2112,6 +2153,9 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 			if( variable_declaration.mutability_modifier == MutabilityModifier::Immutable ||
 				variable_declaration.mutability_modifier == MutabilityModifier::Constexpr )
 				variable.value_type= ValueType::ConstReference;
+
+			if( variable.constexpr_value != nullptr && global_variable != nullptr )
+				global_variable->setInitializer( variable.constexpr_value );
 		}
 		else if( variable_declaration.reference_modifier == ReferenceModifier::Reference )
 		{
@@ -2216,7 +2260,8 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 void CodeBuilder::BuildAutoVariableDeclarationCode(
 	const AutoVariableDeclaration& auto_variable_declaration,
 	NamesScope& block_names,
-	FunctionContext& function_context )
+	FunctionContext& function_context,
+	const bool global )
 {
 	const Value initializer_experrsion_value=
 		BuildExpressionCodeAndDestroyTemporaries( *auto_variable_declaration.initializer_expression, block_names, function_context );
@@ -2268,7 +2313,7 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 	variable.location= Variable::Location::Pointer;
 
 	// SPRACHE_TODO - make variables without explicit mutability modifiers immutable.
-	if( auto_variable_declaration.mutability_modifier == MutabilityModifier::Immutable||
+	if( auto_variable_declaration.mutability_modifier == MutabilityModifier::Immutable ||
 		auto_variable_declaration.mutability_modifier == MutabilityModifier::Constexpr )
 		variable.value_type= ValueType::ConstReference;
 	else
@@ -2280,6 +2325,12 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 		!variable.type.CanBeConstexpr() )
 	{
 		errors_.push_back( ReportInvalidTypeForConstantExpressionVariable( auto_variable_declaration.file_pos_ ) );
+		return;
+	}
+
+	if( global && auto_variable_declaration.mutability_modifier != MutabilityModifier::Constexpr )
+	{
+		errors_.push_back( ReportGlobalVariableMustBeConstexpr( auto_variable_declaration.file_pos_, auto_variable_declaration.name ) );
 		return;
 	}
 

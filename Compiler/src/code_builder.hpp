@@ -294,12 +294,14 @@ private:
 	void BuildVariablesDeclarationCode(
 		const VariablesDeclaration& variables_declaration,
 		NamesScope& block_names,
-		FunctionContext& function_context );
+		FunctionContext& function_context,
+		bool global= false );
 
 	void BuildAutoVariableDeclarationCode(
 		const AutoVariableDeclaration& auto_variable_declaration,
 		NamesScope& block_names,
-		FunctionContext& function_context );
+		FunctionContext& function_context,
+		bool global= false );
 
 	void BuildAssignmentOperatorCode(
 		const AssignmentOperator& assignment_operator,
