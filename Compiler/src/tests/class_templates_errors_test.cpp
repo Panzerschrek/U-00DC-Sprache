@@ -465,4 +465,227 @@ U_TEST( IncompleteMemberOfClassTemplate_Test0 )
 	U_TEST_ASSERT( build_result.errors[2].file_pos.line == 2u );
 }
 
+U_TEST( TemplateParametersDeductionFailed_Test0 )
+{
+	static const char c_program_text[]=
+	R"(
+		template</ /> struct Box</ i32 /> {}
+
+		fn Foo( Box</ f32 /> &imut b ) {}  // Template requires i32, but f32 given
+	)";
+
+	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NameNotFound );
+	U_TEST_ASSERT( error.file_pos.line == 4u );
+}
+
+U_TEST( TemplateParametersDeductionFailed_Test1 )
+{
+	static const char c_program_text[]=
+	R"(
+		struct X{}
+		template</ /> struct Box</ X /> {}
+
+		namespace N
+		{
+			struct X{}
+			fn Foo( Box</ X /> &imut b ) {}  // Template requires ::X, but N::X given.
+		}
+	)";
+
+	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NameNotFound );
+	U_TEST_ASSERT( error.file_pos.line == 8u );
+}
+
+U_TEST( TemplateParametersDeductionFailed_Test2 )
+{
+	static const char c_program_text[]=
+	R"(
+		namespace N
+		{
+			struct X{}
+			template</ /> struct Box</ X /> {}
+		}
+
+		struct X{}
+		fn Foo( Box</ X /> &imut b ) {}  // Template requires N::X, but ::X given.
+	)";
+
+	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NameNotFound );
+	U_TEST_ASSERT( error.file_pos.line == 9u );
+}
+
+U_TEST( TemplateParametersDeductionFailed_Test3 )
+{
+	static const char c_program_text[]=
+	R"(
+		struct A
+		{
+			struct B{}
+		}
+		template</ /> struct Box</ A />{}
+
+		fn Foo( Box</ A::B /> &imut b ) {}  // Template requires A, but A::B given.
+	)";
+
+	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NameNotFound );
+	U_TEST_ASSERT( error.file_pos.line == 8u );
+}
+
+U_TEST( TemplateParametersDeductionFailed_Test4 )
+{
+	static const char c_program_text[]=
+	R"(
+		struct A
+		{
+			struct B{}
+		}
+		template</ /> struct Box</ A::B />{}
+
+		fn Foo( Box</ A /> &imut b ) {}  // Template requires A::B, but A given.
+	)";
+
+	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NameNotFound );
+	U_TEST_ASSERT( error.file_pos.line == 8u );
+}
+
+U_TEST( TemplateParametersDeductionFailed_Test5 )
+{
+	static const char c_program_text[]=
+	R"(
+		template</ type T /> struct Ball</ T />{}
+		template</ type T /> struct Box</ T />{}
+
+		template</ type T /> struct Baz</ Ball</ T /> /> {}
+
+		fn Foo( Baz</ Box</ f32 /> /> &imut b ) {}  // Template requires Ball</T/>, but Box</T/> given.
+	)";
+
+	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NameNotFound );
+	U_TEST_ASSERT( error.file_pos.line == 7u );
+}
+
+U_TEST( TemplateParametersDeductionFailed_Test6 )
+{
+	static const char c_program_text[]=
+	R"(
+		struct Ball{ template</ type T /> struct FFF</ T />{} }
+		struct  Box{ template</ type T /> struct FFF</ T />{} }
+
+		template</ type T /> struct Baz</ Ball::FFF</ T /> /> {}
+
+		fn Foo( Baz</ Box::FFF</ f32 /> /> &imut b ) {}  // Template requires Ball::FFF</T/>, but Box::FFF</T/> given.
+	)";
+
+	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NameNotFound );
+	U_TEST_ASSERT( error.file_pos.line == 7u );
+}
+
+U_TEST( TemplateParametersDeductionFailed_Test7 )
+{
+	static const char c_program_text[]=
+	R"(
+		template</ type T />
+		struct FFF</ T />
+		{
+			struct Ball{}
+			struct Box{}
+		}
+
+		template</ type T /> struct Baz</ FFF</ T />::Ball /> {}
+
+		fn Foo( Baz</ FFF</ T />::Box /> &imut b ) {}  // Template requires FFF</T/>::Ball, but FFF</T/>::Box given.
+	)";
+
+	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NameNotFound );
+	U_TEST_ASSERT( error.file_pos.line == 11u );
+}
+
+U_TEST( TemplateParametersDeductionFailed_Test8 )
+{
+	static const char c_program_text[]=
+	R"(
+		template</ type T />
+		struct FFF</ T />
+		{
+			struct Ball{}
+		}
+
+		template</ type T /> struct Baz</ FFF</ T />::Ball /> {}
+
+		fn Foo( Baz</ FFF</ T /> /> &imut b ) {}  // Template requires FFF</T/>::Ball, but FFF</T/> given.
+	)";
+
+	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NameNotFound );
+	U_TEST_ASSERT( error.file_pos.line == 10u );
+}
+
+U_TEST( TemplateParametersDeductionFailed_Test9 )
+{
+	static const char c_program_text[]=
+	R"(
+		template</ type T />
+		struct FFF</ T />
+		{
+			struct Ball{}
+		}
+
+		template</ type T /> struct Baz</ FFF</ T /> /> {}
+
+		fn Foo( Baz</ FFF</ T />::Ball /> &imut b ) {}  // Template requires FFF</T/>, but FFF</T/>::Ball given.
+	)";
+
+	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NameNotFound );
+	U_TEST_ASSERT( error.file_pos.line == 10u );
+}
+
 } // namespace U
