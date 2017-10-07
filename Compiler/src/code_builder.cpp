@@ -137,6 +137,8 @@ CodeBuilder::BuildResult CodeBuilder::BuildProgram( const ProgramElements& progr
 	if( error_count_ > 0u )
 		errors_.push_back( ReportBuildFailed() );
 
+	// TODO - sort errors, using file_pos.
+
 	BuildResult result;
 	result.errors= errors_;
 	errors_.clear();
@@ -371,6 +373,8 @@ ClassPtr CodeBuilder::PrepareClass(
 
 	std::vector<llvm::Type*> fields_llvm_types;
 
+	std::vector<PrepareFunctionResult> class_functions;
+
 	for( const ClassDeclaration::Member& member : class_declaration.members_ )
 	{
 		// TODO - maybe apply visitor?
@@ -407,11 +411,12 @@ ClassPtr CodeBuilder::PrepareClass(
 		{
 			// First time, push only prototypes.
 			U_ASSERT( *function_declaration != nullptr );
-			PrepareFunction( **function_declaration, true, the_class, the_class->members );
+			class_functions.push_back( PrepareFunction( **function_declaration, true, the_class, the_class->members ) );
 		}
 		else if( const std::unique_ptr<ClassDeclaration>* const inner_class=
 			boost::get< std::unique_ptr<ClassDeclaration> >( &member ) )
 		{
+			// SPRACHE_TODO - maybe process classes like functions - after class completion?
 			U_ASSERT( *inner_class != nullptr );
 			PrepareClass( **inner_class, (*inner_class)->name_, the_class->members );
 		}
@@ -454,14 +459,30 @@ ClassPtr CodeBuilder::PrepareClass(
 	TryGenerateDestructor( *the_class, class_type );
 
 	// Build functions with body.
-	for( const ClassDeclaration::Member& member : class_declaration.members_ )
+	for( const PrepareFunctionResult& func : class_functions )
 	{
-		if( const std::unique_ptr<FunctionDeclaration>* const function_declaration=
-			boost::get< std::unique_ptr<FunctionDeclaration> >( &member ) )
+		if( func.functions_set != nullptr )
 		{
-			U_ASSERT( *function_declaration != nullptr );
-			if( (*function_declaration)->block_ != nullptr )
-				PrepareFunction( **function_declaration, false, the_class, the_class->members );
+			U_ASSERT( func.func_syntax_element != nullptr );
+			if( func.func_syntax_element->block_ == nullptr )
+				continue; // This is prototype, it is already processed.
+
+			const ProgramString& func_name= func.func_syntax_element->name_.components.back().name;
+			FunctionVariable& function_variable= (*func.functions_set)[ func.function_index ];
+			if( function_variable.have_body && func.func_syntax_element->block_ != nullptr )
+			{
+				errors_.push_back( ReportFunctionBodyDuplication( func.func_syntax_element->file_pos_, func_name ) );
+				continue;
+			}
+
+			BuildFuncCode(
+				(*func.functions_set)[ func.function_index ],
+				the_class,
+				the_class->members,
+				func_name,
+				func.func_syntax_element->arguments_,
+				func.func_syntax_element->block_.get(),
+				func.func_syntax_element->constructor_initialization_list_.get() );
 		}
 	}
 
@@ -1117,12 +1138,14 @@ void CodeBuilder::BuildNamespaceBody(
 	} // for program elements
 }
 
-void CodeBuilder::PrepareFunction(
+CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 	const FunctionDeclaration& func,
 	const bool is_class_method_predeclaration,
 	ClassPtr base_class,
 	NamesScope& func_definition_names_scope /* scope, where this function appears */ )
 {
+	PrepareFunctionResult result;
+
 	const ProgramString& func_name= func.name_.components.back().name;
 
 	const bool is_constructor= func_name == Keywords::constructor_;
@@ -1163,30 +1186,30 @@ void CodeBuilder::PrepareFunction(
 			else
 			{
 				errors_.push_back( ReportNameNotFound( func.file_pos_, func.name_ ) );
-				return;
+				return result;
 			}
 		}
 		else
 		{
 			errors_.push_back( ReportFunctionDeclarationOutsideItsScope( func.file_pos_ ) );
-			return;
+			return result;
 		}
 	}
 
 	if( is_special_method && base_class == nullptr )
 	{
 		errors_.push_back( ReportConstructorOrDestructorOutsideClass( func.file_pos_ ) );
-		return;
+		return result;
 	}
 	if( !is_constructor && func.constructor_initialization_list_ != nullptr )
 	{
 		errors_.push_back( ReportInitializationListInNonconstructor(  func.constructor_initialization_list_->file_pos_ ) );
-		return;
+		return result;
 	}
 	if( is_destructor && !func.arguments_.empty() )
 	{
 		errors_.push_back( ReportExplicitArgumentsInDestructor( func.file_pos_ ) );
-		return;
+		return result;
 	}
 
 	FunctionVariable func_variable;
@@ -1199,7 +1222,7 @@ void CodeBuilder::PrepareFunction(
 	{
 		function_type.return_type= PrepareType( func.file_pos_, func.return_type_, *func_base_names_scope );
 		if( function_type.return_type == invalid_type_ )
-			return;
+			return result;
 	}
 
 	// SPRACHE_TODO - make variables without explicit mutability modifiers immutable.
@@ -1215,7 +1238,7 @@ void CodeBuilder::PrepareFunction(
 		   function_type.return_type.GetClassType() != nullptr ) )
 	{
 		errors_.push_back( ReportNotImplemented( func.file_pos_, "return value types except fundamental and classes" ) );
-		return;
+		return result;
 	}
 
 	if( is_special_method && function_type.return_type != void_type_ )
@@ -1255,7 +1278,7 @@ void CodeBuilder::PrepareFunction(
 			if( base_class == nullptr )
 			{
 				errors_.push_back( ReportThisInNonclassFunction( func.file_pos_, func_name ) );
-				return;
+				return result;
 			}
 			out_arg.type= base_class;
 		}
@@ -1275,14 +1298,14 @@ void CodeBuilder::PrepareFunction(
 			   out_arg.type.GetTemplateDependentType() != nullptr ) )
 		{
 			errors_.push_back( ReportNotImplemented( func.file_pos_, "parameters types except fundamental and classes" ) );
-			return;
+			return result;
 		}
 
 		if( out_arg.type.IsIncomplete() && !out_arg.is_reference )
 		{
 			errors_.push_back( ReportUsingIncompleteType( arg->file_pos_, out_arg.type.ToString() ) );
 		}
-	}
+	} // for arguments
 
 	NamesScope::InsertedName* const previously_inserted_func=
 		func_base_names_scope->GetThisScopeName( func_name );
@@ -1291,7 +1314,7 @@ void CodeBuilder::PrepareFunction(
 		if( func.name_.components.size() > 1u )
 		{
 			errors_.push_back( ReportFunctionDeclarationOutsideItsScope( func.file_pos_ ) );
-			return;
+			return result;
 		}
 
 		OverloadedFunctionsSet functions_set;
@@ -1300,7 +1323,7 @@ void CodeBuilder::PrepareFunction(
 		if( NameShadowsTemplateArgument( func_name, *func_base_names_scope ) )
 		{
 			errors_.push_back( ReportDeclarationShadowsTemplateArgument( func.file_pos_, func_name ) );
-			return;
+			return result;
 		}
 
 		// New name in this scope - insert it.
@@ -1316,6 +1339,11 @@ void CodeBuilder::PrepareFunction(
 			func.arguments_,
 			block,
 			func.constructor_initialization_list_.get() );
+
+		result.func_syntax_element= &func;
+		result.functions_set= inserted_func->second.GetFunctionsSet();
+		result.function_index= result.functions_set->size() - 1u;
+		return result;
 	}
 	else
 	{
@@ -1330,18 +1358,18 @@ void CodeBuilder::PrepareFunction(
 				if( func.block_ == nullptr )
 				{
 					errors_.push_back( ReportFunctionPrototypeDuplication( func.file_pos_, func_name ) );
-					return;
+					return result;
 				}
 				if( same_function->have_body )
 				{
 					errors_.push_back( ReportFunctionBodyDuplication( func.file_pos_, func_name ) );
-					return;
+					return result;
 				}
 				if( same_function->type != func_variable.type )
 				{
 					// In this place we have only possible error
 					errors_.push_back( ReportReturnValueDiffersFromPrototype( func.file_pos_ ) );
-					return;
+					return result;
 				}
 
 				BuildFuncCode(
@@ -1358,7 +1386,7 @@ void CodeBuilder::PrepareFunction(
 				if( func.name_.components.size() > 1u )
 				{
 					errors_.push_back( ReportFunctionDeclarationOutsideItsScope( func.file_pos_ ) );
-					return;
+					return result;
 				}
 
 				try
@@ -1367,7 +1395,7 @@ void CodeBuilder::PrepareFunction(
 				}
 				catch( const ProgramError& )
 				{
-					return;
+					return result;
 				}
 
 				BuildFuncCode(
@@ -1379,10 +1407,17 @@ void CodeBuilder::PrepareFunction(
 					block,
 					func.constructor_initialization_list_.get() );
 			}
+
+			result.func_syntax_element= &func;
+			result.functions_set= functions_set;
+			result.function_index= result.functions_set->size() - 1u;
+			return result;
 		}
 		else
 			errors_.push_back( ReportRedefinition( func.file_pos_, previously_inserted_func->first ) );
 	}
+
+	return result;
 }
 
 void CodeBuilder::BuildFuncCode(

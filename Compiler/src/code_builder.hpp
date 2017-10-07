@@ -182,7 +182,14 @@ private:
 		const ProgramElements& body_elements,
 		NamesScope& names_scope );
 
-	void PrepareFunction(
+	struct PrepareFunctionResult
+	{
+		const FunctionDeclaration* func_syntax_element= nullptr;
+		OverloadedFunctionsSet* functions_set= nullptr;
+		size_t function_index= 0u;
+	};
+
+	PrepareFunctionResult PrepareFunction(
 		const FunctionDeclaration& func,
 		bool force_prototype,
 		ClassPtr base_class,

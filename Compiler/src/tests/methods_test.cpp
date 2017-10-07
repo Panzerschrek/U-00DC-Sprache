@@ -351,6 +351,44 @@ U_TEST(MethodTest10)
 	U_TEST_ASSERT( static_cast<uint64_t>( 42 ) == result_value.IntVal.getLimitedValue() );
 }
 
+U_TEST(MethodTest11)
+{
+	// Test of visibility in members bodies.
+	static const char c_program_text[]=
+	R"(
+		struct X{ i32 x; }
+		struct S
+		{
+			fn GetX( X &imut x ) : i32  // <- here must be visible outer X
+			{
+				var X other_x{ .y= x.x };   // <- but here must be visible inner X, because we process functions bodies after full class preprocession.
+				return other_x.y;
+			}
+
+			struct X{ i32 y; }
+		}
+
+		fn Foo() : i32
+		{
+			var X x{ .x= 55568 };
+			return S::GetX( x );
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( static_cast<uint64_t>( 55568 ) == result_value.IntVal.getLimitedValue() );
+}
+
+
 U_TEST( InnerClassTest0 )
 {
 	static const char c_program_text[]=

@@ -327,10 +327,10 @@ U_TEST( CouldNotOverloadFunction_ForClassTemplates_Test1 )
 
 	U_TEST_ASSERT( build_result.errors[0].code == CodeBuilderErrorCode::CouldNotOverloadFunction );
 	U_TEST_ASSERT( build_result.errors[0].file_pos.line == 6u );
-	U_TEST_ASSERT( build_result.errors[1].code == CodeBuilderErrorCode::FunctionPrototypeDuplication );
-	U_TEST_ASSERT( build_result.errors[1].file_pos.line == 7u );
-	U_TEST_ASSERT( build_result.errors[2].code == CodeBuilderErrorCode::CouldNotOverloadFunction );
-	U_TEST_ASSERT( build_result.errors[2].file_pos.line == 10u );
+	U_TEST_ASSERT( build_result.errors[1].code == CodeBuilderErrorCode::CouldNotOverloadFunction );
+	U_TEST_ASSERT( build_result.errors[1].file_pos.line == 10u );
+	U_TEST_ASSERT( build_result.errors[2].code == CodeBuilderErrorCode::FunctionBodyDuplication );
+	U_TEST_ASSERT( build_result.errors[2].file_pos.line == 7u );
 }
 
 U_TEST( MandatoryTemplateSignatureArgumentAfterOptionalArgument_Test0 )
