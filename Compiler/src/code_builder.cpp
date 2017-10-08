@@ -2144,9 +2144,9 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 						*module_,
 						type.GetLLVMType(),
 						true,
-						llvm::GlobalValue::LinkageTypes::InternalLinkage, // TODO - set linjage
+						llvm::GlobalValue::LinkageTypes::LinkOnceODRLinkage,
 						nullptr,
-						ToStdString( variable_declaration.name ) ); // TODO - maybe mangle name?
+						MangleGlobalVariable( block_names, variable_declaration.name ) );
 			}
 			else
 			{
@@ -2375,9 +2375,9 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 					*module_,
 					variable.type.GetLLVMType(),
 					true,
-					llvm::GlobalValue::LinkageTypes::InternalLinkage, // TODO - set linjage
+					llvm::GlobalValue::LinkageTypes::LinkOnceODRLinkage,
 					nullptr,
-					ToStdString( auto_variable_declaration.name ) ); // TODO - maybe mangle name?
+					MangleGlobalVariable( block_names, auto_variable_declaration.name ) );
 		}
 		else
 		{

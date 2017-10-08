@@ -262,6 +262,22 @@ std::string MangleFunction(
 	return ToStdString( result );
 }
 
+std::string MangleGlobalVariable(
+	const NamesScope& parent_scope,
+	const ProgramString& variable_name )
+{
+	// Variables inside global namespace have simple names.
+	if( parent_scope.GetParent() == nullptr )
+		return ToStdString( variable_name );
+
+	NamesCache names_cache;
+	ProgramString result= "_Z"_SpC;
+
+	result+= GetNestedName( variable_name, parent_scope, false, names_cache ).compressed_and_escaped;
+
+	return ToStdString( result );
+}
+
 std::string MangleType(
 	const NamesScope& parent_scope,
 	const ProgramString& class_name )
