@@ -859,6 +859,11 @@ void CodeBuilder::RemoveTempClassLLVMValues( Class& class_ )
 						}
 					});
 			}
+			else if( const Variable* const variable= name.second.GetVariable() )
+			{
+				U_UNUSED(variable);
+				// TODO - maybe we can delete global variable without breaking llvm code structure?
+			}
 			else
 				U_ASSERT(false);
 		} );
@@ -910,6 +915,8 @@ void CodeBuilder::ReportAboutIncompleteMembersOfTemplateClass( const FilePos& fi
 						}
 					});
 			}
+			else if( name.second.GetVariable() != nullptr )
+			{}
 			else
 				U_ASSERT(false);
 		} );

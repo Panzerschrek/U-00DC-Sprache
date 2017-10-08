@@ -15,6 +15,10 @@ std::string MangleFunction(
 	const Function& function_type,
 	bool is_this_call_method );
 
+std::string MangleGlobalVariable(
+	const NamesScope& parent_scope,
+	const ProgramString& variable_name );
+
 std::string MangleType(
 	const NamesScope& parent_scope,
 	const ProgramString& class_name );

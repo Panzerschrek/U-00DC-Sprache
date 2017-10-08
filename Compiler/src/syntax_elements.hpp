@@ -346,7 +346,11 @@ enum class ReferenceModifier
 	// SPRACE_TODO - add "move" references here
 };
 
-struct VariablesDeclaration final : public SyntaxElementBase, public IBlockElement
+struct VariablesDeclaration final
+	: public SyntaxElementBase
+	, public IBlockElement
+	, public IProgramElement
+	, public IClassElement
 {
 	VariablesDeclaration( const FilePos& file_pos );
 	VariablesDeclaration( const VariablesDeclaration& )= delete;
@@ -369,7 +373,11 @@ struct VariablesDeclaration final : public SyntaxElementBase, public IBlockEleme
 
 typedef std::unique_ptr<VariablesDeclaration> VariablesDeclarationPtr;
 
-struct AutoVariableDeclaration final : public SyntaxElementBase, public IBlockElement
+struct AutoVariableDeclaration final
+	: public SyntaxElementBase
+	, public IBlockElement
+	, public IProgramElement
+	, public IClassElement
 {
 	explicit AutoVariableDeclaration( const FilePos& file_pos );
 
@@ -466,7 +474,11 @@ public:
 	IExpressionComponentPtr expression;
 };
 
-class StaticAssert final : public SyntaxElementBase, public IBlockElement
+class StaticAssert final
+	: public SyntaxElementBase
+	, public IBlockElement
+	, public IProgramElement
+	, public IClassElement
 {
 public:
 	explicit StaticAssert( const FilePos& file_pos );

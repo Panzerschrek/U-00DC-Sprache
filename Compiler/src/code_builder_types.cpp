@@ -387,6 +387,10 @@ bool Type::CanBeConstexpr() const
 		U_ASSERT( *array != nullptr );
 		return (*array)->type.CanBeConstexpr();
 	}
+	else if( boost::get<TemplateDependentType>( &something_ ) != nullptr )
+	{
+		return true;
+	}
 
 	return false;
 }

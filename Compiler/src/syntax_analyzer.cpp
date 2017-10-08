@@ -155,7 +155,7 @@ private:
 	IBlockElementPtr ParseBreakOperator();
 	IBlockElementPtr ParseContinueOperator();
 	IBlockElementPtr ParseIfOperator();
-	IBlockElementPtr ParseStaticAssert();
+	std::unique_ptr<StaticAssert> ParseStaticAssert();
 
 	BlockPtr ParseBlock();
 
@@ -210,6 +210,21 @@ ProgramElements SyntaxAnalyzer::ParseNamespaceBody( const Lexem::Type end_lexem 
 		{
 			if( IProgramElementPtr program_element= ParseTemplate() )
 				program_elements.emplace_back( std::move( program_element ) );
+		}
+		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::var_ )
+		{
+			if( IProgramElementPtr program_element= ParseVariablesDeclaration() )
+				program_elements.emplace_back( std::move(program_element) );
+		}
+		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::auto_ )
+		{
+			if( IProgramElementPtr program_element= ParseAutoVariableDeclaration() )
+				program_elements.emplace_back( std::move(program_element) );
+		}
+		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::static_assert_ )
+		{
+			if( IProgramElementPtr program_element= ParseStaticAssert() )
+				program_elements.emplace_back( std::move(program_element) );
 		}
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::namespace_ )
 		{
@@ -1334,7 +1349,7 @@ IBlockElementPtr SyntaxAnalyzer::ParseIfOperator()
 				std::move( branches ) ) );
 }
 
-IBlockElementPtr SyntaxAnalyzer::ParseStaticAssert()
+std::unique_ptr<StaticAssert> SyntaxAnalyzer::ParseStaticAssert()
 {
 	U_ASSERT( it_->type == Lexem::Type::Identifier && it_->text == Keywords::static_assert_ );
 
@@ -1838,6 +1853,21 @@ std::unique_ptr<ClassDeclaration> SyntaxAnalyzer::ParseClassBody()
 		else if( it_->type == Lexem::Type::Identifier && ( it_->text == Keywords::struct_ || it_->text == Keywords::class_ ) )
 		{
 			result->elements_.emplace_back( ParseClass() );
+		}
+		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::var_ )
+		{
+			if( IClassElementPtr class_element= ParseVariablesDeclaration() )
+				result->elements_.emplace_back( std::move(class_element) );
+		}
+		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::auto_ )
+		{
+			if( IClassElementPtr class_element= ParseAutoVariableDeclaration() )
+				result->elements_.emplace_back( std::move(class_element) );
+		}
+		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::static_assert_ )
+		{
+			if( IClassElementPtr class_element= ParseStaticAssert() )
+				result->elements_.emplace_back( std::move(class_element) );;
 		}
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::template_ )
 		{
