@@ -288,4 +288,64 @@ U_TEST( GlobalVariablesTest10_GlobalVariablesInsideClassTemplates )
 	U_TEST_ASSERT( 3.1415926535f * 2.718281828f == result_value.FloatVal );
 }
 
+U_TEST( GlobalStaticAssert_Test0 )
+{
+	static const char c_program_text[]=
+	R"(
+		auto constexpr pi= 3.1415;
+		static_assert( pi > 3.0 && pi < 4.0 );
+	)";
+
+	BuildProgram( c_program_text );
+}
+
+U_TEST( GlobalStaticAssert_Test1 )
+{
+	static const char c_program_text[]=
+	R"(
+		auto constexpr pi= 3.1415;
+		static_assert( pi < 0.0 );
+	)";
+
+	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::StaticAssertionFailed );
+	U_TEST_ASSERT( error.file_pos.line == 3u );
+}
+
+U_TEST( StaticAssertInsideClass_Test0 )
+{
+	static const char c_program_text[]=
+	R"(
+		auto constexpr pi= 3.1415;
+		struct S
+		{
+			static_assert( pi > 3.0 && pi < 4.0 );
+		}
+	)";
+
+	BuildProgram( c_program_text );
+}
+
+U_TEST( StaticAssertInsideClass_Test1 )
+{
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			auto constexpr pi= 3.1415;
+			static_assert( pi < 0.0 );
+		}
+	)";
+
+	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::StaticAssertionFailed );
+	U_TEST_ASSERT( error.file_pos.line == 5u );
+}
+
 } // namespace U

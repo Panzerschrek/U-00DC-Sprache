@@ -474,7 +474,11 @@ public:
 	IExpressionComponentPtr expression;
 };
 
-class StaticAssert final : public SyntaxElementBase, public IBlockElement
+class StaticAssert final
+	: public SyntaxElementBase
+	, public IBlockElement
+	, public IProgramElement
+	, public IClassElement
 {
 public:
 	explicit StaticAssert( const FilePos& file_pos );

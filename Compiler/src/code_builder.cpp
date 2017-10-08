@@ -442,6 +442,12 @@ ClassPtr CodeBuilder::PrepareClass(
 			}
 			catch( const ProgramError& ) {}
 		}
+		else if(
+			const StaticAssert* static_assert_=
+			dynamic_cast<const StaticAssert*>( member.get() ) )
+		{
+			BuildStaticAssert( *static_assert_, the_class->members );
+		}
 		else
 			U_ASSERT( false );
 	}
@@ -1162,6 +1168,12 @@ void CodeBuilder::BuildNamespaceBody(
 				BuildAutoVariableDeclarationCode( *auto_variable_declaration, names_scope, *dummy_function_context_, true );
 			}
 			catch( const ProgramError& ) {}
+		}
+		else if(
+			const StaticAssert* static_assert_=
+			dynamic_cast<const StaticAssert*>( program_element.get() ) )
+		{
+			BuildStaticAssert( *static_assert_, names_scope );
 		}
 		else
 		{
