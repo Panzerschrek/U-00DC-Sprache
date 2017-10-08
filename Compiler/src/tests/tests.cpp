@@ -2,6 +2,7 @@
 
 #include "../lexical_analyzer.hpp"
 #include "../syntax_analyzer.hpp"
+#include "../code_builder.hpp"
 
 #include "tests.hpp"
 
@@ -24,7 +25,7 @@ std::unique_ptr<llvm::Module> BuildProgram( const char* const text )
 		std::cout << syntax_error_message << "\n";
 	U_TEST_ASSERT( syntax_analysis_result.error_messages.empty() );
 
-	CodeBuilder::BuildResult build_result=
+	ICodeBuilder::BuildResult build_result=
 		CodeBuilder().BuildProgram( syntax_analysis_result.program_elements );
 
 	for( const CodeBuilderError& error : build_result.errors )
@@ -35,7 +36,7 @@ std::unique_ptr<llvm::Module> BuildProgram( const char* const text )
 	return std::move( build_result.module );
 }
 
-CodeBuilder::BuildResult BuildProgramWithErrors( const char* const text )
+ICodeBuilder::BuildResult BuildProgramWithErrors( const char* const text )
 {
 	const LexicalAnalysisResult lexical_analysis_result=
 		LexicalAnalysis( ToProgramString( text ) );

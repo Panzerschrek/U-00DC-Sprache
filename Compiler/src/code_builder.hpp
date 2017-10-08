@@ -9,6 +9,7 @@
 
 #include "code_builder_errors.hpp"
 #include "code_builder_types.hpp"
+#include "i_code_builder.hpp"
 #include "syntax_elements.hpp"
 
 namespace U
@@ -17,19 +18,13 @@ namespace U
 namespace CodeBuilderPrivate
 {
 
-class CodeBuilder final
+class CodeBuilder final : public ICodeBuilder
 {
 public:
 	CodeBuilder();
-	~CodeBuilder();
+	virtual ~CodeBuilder() override;
 
-	struct BuildResult
-	{
-		std::vector<CodeBuilderError> errors;
-		std::unique_ptr<llvm::Module> module;
-	};
-
-	BuildResult BuildProgram( const ProgramElements& program_elements );
+	virtual BuildResult BuildProgram( const ProgramElements& program_elements ) override;
 
 private:
 	struct DestructiblesStorage final

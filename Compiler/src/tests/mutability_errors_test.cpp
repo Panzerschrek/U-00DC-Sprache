@@ -15,7 +15,7 @@ U_TEST(BindingConstReferenceToNonconstReferenceTest0)
 		}
 	)";
 
-	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
@@ -37,7 +37,7 @@ U_TEST(BindingConstReferenceToNonconstReferenceTest1)
 		}
 	)";
 
-	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
@@ -57,7 +57,7 @@ U_TEST(BindingConstReferenceToNonconstReferenceTest2)
 		}
 	)";
 
-	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
@@ -80,7 +80,7 @@ U_TEST(BindingConstReferenceToNonconstReferenceTest3)
 		}
 	)";
 
-	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
@@ -105,7 +105,7 @@ U_TEST(BindingConstReferenceToNonconstReferenceTest4)
 		}
 	)";
 
-	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
@@ -129,7 +129,7 @@ U_TEST(BindingConstReferenceToNonconstReferenceTest5)
 		}
 	)";
 
-	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
@@ -153,7 +153,7 @@ U_TEST(BindingConstReferenceToNonconstReferenceTest6)
 		}
 	)";
 
-	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
@@ -178,7 +178,7 @@ U_TEST(BindingConstReferenceToNonconstReferenceTest7)
 		}
 	)";
 
-	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
@@ -203,7 +203,7 @@ U_TEST(BindingConstReferenceToNonconstReferenceTest8)
 		}
 	)";
 
-	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();

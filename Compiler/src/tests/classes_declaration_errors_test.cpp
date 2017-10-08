@@ -10,7 +10,7 @@ U_TEST( ClassDeclarationOutsideItsScopeTest0 )
 		struct Foo::Bar;
 	)";
 
-	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
@@ -26,7 +26,7 @@ U_TEST( ClassDeclarationOutsideItsScopeTest1 )
 		struct Foo::Bar{}
 	)";
 
-	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
@@ -43,7 +43,7 @@ U_TEST( ClassBodyDuplicationTest0 )
 		struct Bar{}
 	)";
 
-	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
@@ -60,7 +60,7 @@ U_TEST( ClassBodyDuplicationTest1 )
 		struct Foo::Bar{}
 	)";
 
-	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
@@ -77,7 +77,7 @@ U_TEST( Redefinition_ForClassDeclarations_Test0 )
 		struct Foo;
 	)";
 
-	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
@@ -98,7 +98,7 @@ U_TEST( UsingIncompleteTypeTest0 )
 		}
 	)";
 
-	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
@@ -119,7 +119,7 @@ U_TEST( UsingIncompleteTypeTest1 )
 		}
 	)";
 
-	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
@@ -140,7 +140,7 @@ U_TEST( UsingIncompleteTypeTest2 )
 		}
 	)";
 
-	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
@@ -158,7 +158,7 @@ U_TEST( UsingIncompleteTypeTest3 )
 		struct Bar{ S s; }
 	)";
 
-	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
@@ -175,7 +175,7 @@ U_TEST( UsingIncompleteTypeTest4 )
 		struct Bar{ Bar bar; }
 	)";
 
-	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();

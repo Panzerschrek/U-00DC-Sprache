@@ -7,7 +7,8 @@
 #include <llvm/ExecutionEngine/Interpreter.h>
 #include "../pop_llvm_warnings.hpp"
 
-#include "../code_builder.hpp"
+#include "../i_code_builder.hpp"
+#include "../code_builder_errors.hpp"
 
 namespace U
 {
@@ -56,7 +57,7 @@ void RunAllTests();
 typedef std::unique_ptr<llvm::ExecutionEngine> EnginePtr;
 
 std::unique_ptr<llvm::Module> BuildProgram( const char* text );
-CodeBuilder::BuildResult BuildProgramWithErrors( const char* text );
+ICodeBuilder::BuildResult BuildProgramWithErrors( const char* text );
 EnginePtr CreateEngine( std::unique_ptr<llvm::Module> module, bool needs_dump= false );
 
 } // namespace U

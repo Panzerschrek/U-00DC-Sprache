@@ -101,7 +101,7 @@ CodeBuilder::~CodeBuilder()
 {
 }
 
-CodeBuilder::BuildResult CodeBuilder::BuildProgram( const ProgramElements& program_elements )
+ICodeBuilder::BuildResult CodeBuilder::BuildProgram( const ProgramElements& program_elements )
 {
 	module_= std::unique_ptr<llvm::Module>( new llvm::Module( "U-Module", llvm_context_ ) );
 	errors_.clear();

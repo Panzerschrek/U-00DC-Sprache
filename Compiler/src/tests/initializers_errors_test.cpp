@@ -17,7 +17,7 @@ U_TEST(ExpectedInitializerTest0)
 		}
 	)";
 
-	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
@@ -37,7 +37,7 @@ U_TEST(ExpectedInitializerTest1)
 		}
 	)";
 
-	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
@@ -58,7 +58,7 @@ U_TEST(ExpectedInitializerTest2)
 		}
 	)";
 
-	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
@@ -78,7 +78,7 @@ U_TEST(ArrayInitializerForNonArrayTest0)
 		}
 	)";
 
-	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
@@ -99,7 +99,7 @@ U_TEST(ArrayInitializerForNonArrayTest1)
 		}
 	)";
 
-	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
@@ -119,7 +119,7 @@ U_TEST(ArrayInitializersCountMismatchTest0)
 		}
 	)";
 
-	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
@@ -139,7 +139,7 @@ U_TEST(ArrayInitializersCountMismatchTest1)
 		}
 	)";
 
-	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
@@ -160,7 +160,7 @@ U_TEST(FundamentalTypesHaveConstructorsWithExactlyOneParameterTest0)
 		}
 	)";
 
-	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
@@ -180,7 +180,7 @@ U_TEST(FundamentalTypesHaveConstructorsWithExactlyOneParameterTest1)
 		}
 	)";
 
-	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
@@ -200,7 +200,7 @@ U_TEST(ReferencesHaveConstructorsWithExactlyOneParameterTest0)
 		}
 	)";
 
-	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
@@ -221,7 +221,7 @@ U_TEST(ReferencesHaveConstructorsWithExactlyOneParameterTest1)
 		}
 	)";
 
-	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
@@ -242,7 +242,7 @@ U_TEST(UnsupportedInitializerForReferenceTest0)
 		}
 	)";
 
-	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
@@ -262,7 +262,7 @@ U_TEST(ConstructorInitializerForUnsupportedTypeTest0)
 		}
 	)";
 
-	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
@@ -282,7 +282,7 @@ U_TEST(StructInitializerForNonStructTest0)
 		}
 	)";
 
-	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
@@ -307,7 +307,7 @@ U_TEST(InitializerForNonfieldStructMemberTest0)
 		}
 	)";
 
-	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
@@ -327,7 +327,7 @@ U_TEST(DuplicatedStructMemberInitializerTest0)
 		}
 	)";
 
-	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
@@ -352,7 +352,7 @@ U_TEST(InitializerDisabledBecauseClassHaveExplicitNoncopyConstructorsTest0)
 		}
 	)";
 
-	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
@@ -377,7 +377,7 @@ U_TEST(InitializerDisabledBecauseClassHaveExplicitNoncopyConstructorsTest1)
 		}
 	)";
 
-	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();

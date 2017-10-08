@@ -55,6 +55,7 @@ set( COMPILER_LIB_HEADERS
 	src/code_builder_errors.hpp
 	src/code_builder.hpp
 	src/code_builder_types.hpp
+	src/i_code_builder.hpp
 	src/keywords.hpp
 	src/lexical_analyzer.hpp
 	src/mangling.hpp

@@ -11,7 +11,7 @@ U_TEST( GlobalVariableMustBeConstexpr_Test0 )
 		var i32 x= Foo();  // Initializer expression is not constant.
 	)";
 
-	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
@@ -28,7 +28,7 @@ U_TEST( GlobalVariableMustBeConstexpr_Test1 )
 		var f32 &imut pi_ref= GetPi();  // Initializer expression for global reference is not constant.
 	)";
 
-	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
@@ -44,7 +44,7 @@ U_TEST( GlobalVariableMustBeConstexpr_Test2 )
 		auto imut x= 2u * GetTwo();  // Initializer expression is not constant.
 	)";
 
-	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();

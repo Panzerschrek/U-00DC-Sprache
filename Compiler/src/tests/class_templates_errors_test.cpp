@@ -15,7 +15,7 @@ U_TEST( InvalidValueAsTemplateArgumentTest0 )
 		}
 	)";
 
-	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
@@ -35,7 +35,7 @@ U_TEST( InvalidTypeOfTemplateVariableArgumentTest0 )
 		}
 	)";
 
-	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
@@ -60,7 +60,7 @@ U_TEST( ClassPrepass_ErrorsTest0 )
 		}
 	)";
 
-	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
@@ -83,7 +83,7 @@ U_TEST( ClassPrepass_ErrorsTest1 )
 		}
 	)";
 
-	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
@@ -107,7 +107,7 @@ U_TEST( ClassPrepass_ErrorsTest2 )
 		}
 	)";
 
-	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
@@ -152,7 +152,7 @@ U_TEST( DeclarationShadowsTemplateArgument_Test0 )
 		}
 	)";
 
-	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( build_result.errors.size() >= /* 7u */ 6u );
 
@@ -181,7 +181,7 @@ U_TEST( NameNotFound_ForClassTemplateSingatureArguments_Test0 )
 		struct SSSS{}
 	)";
 
-	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
@@ -200,7 +200,7 @@ U_TEST( NameNotFound_ForClassTemplateArguments_Test0 )
 		struct SSS{}
 	)";
 
-	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
@@ -219,7 +219,7 @@ U_TEST( NameNotFound_ForClassTemplateDefaultSignatureArguments_Test0 )
 		struct SSS{}
 	)";
 
-	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
@@ -240,7 +240,7 @@ U_TEST( ValueIsNotTemplateTest0 )
 		}
 	)";
 
-	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
@@ -262,7 +262,7 @@ U_TEST( TemplateInstantiationRequiredTest0 )
 		}
 	)";
 
-	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
@@ -289,7 +289,7 @@ U_TEST( CouldNotOverloadFunction_ForClassTemplates_Test0 )
 		}
 	)";
 
-	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
@@ -321,7 +321,7 @@ U_TEST( CouldNotOverloadFunction_ForClassTemplates_Test1 )
 		}
 	)";
 
-	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( build_result.errors.size() >= 3u );
 
@@ -340,7 +340,7 @@ U_TEST( MandatoryTemplateSignatureArgumentAfterOptionalArgument_Test0 )
 		template</ type T, type V /> struct Box</ T= i32, V /> { }
 	)";
 
-	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
@@ -362,7 +362,7 @@ U_TEST( TemplateArgumentIsNotDeducedYet_Test0 )
 		}
 	)";
 
-	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
@@ -386,7 +386,7 @@ U_TEST( TemplateArgumentIsNotDeducedYet_Test1 )
 		}
 	)";
 
-	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
@@ -407,7 +407,7 @@ U_TEST( UnsupportedExpressionTypeForTemplateSignatureArgument_Test0 )
 		template</ /> struct X</ BoolArray</ 42 /> /> {}
 	)";
 
-	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
@@ -423,7 +423,7 @@ U_TEST( TemplateArgumentNotUsedInSignature_Test0 )
 		template</ type T /> struct Box</ /> {}
 	)";
 
-	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
@@ -452,7 +452,7 @@ U_TEST( IncompleteMemberOfClassTemplate_Test0 )
 		}
 	)";
 
-	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 	U_TEST_ASSERT( build_result.errors.size() >= 3u );
 
 	// TODO - correct line numbers.
@@ -474,7 +474,7 @@ U_TEST( TemplateParametersDeductionFailed_Test0 )
 		fn Foo( Box</ f32 /> &imut b ) {}  // Template requires i32, but f32 given
 	)";
 
-	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
@@ -497,7 +497,7 @@ U_TEST( TemplateParametersDeductionFailed_Test1 )
 		}
 	)";
 
-	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
@@ -520,7 +520,7 @@ U_TEST( TemplateParametersDeductionFailed_Test2 )
 		fn Foo( Box</ X /> &imut b ) {}  // Template requires N::X, but ::X given.
 	)";
 
-	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
@@ -542,7 +542,7 @@ U_TEST( TemplateParametersDeductionFailed_Test3 )
 		fn Foo( Box</ A::B /> &imut b ) {}  // Template requires A, but A::B given.
 	)";
 
-	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
@@ -564,7 +564,7 @@ U_TEST( TemplateParametersDeductionFailed_Test4 )
 		fn Foo( Box</ A /> &imut b ) {}  // Template requires A::B, but A given.
 	)";
 
-	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
@@ -585,7 +585,7 @@ U_TEST( TemplateParametersDeductionFailed_Test5 )
 		fn Foo( Baz</ Box</ f32 /> /> &imut b ) {}  // Template requires Ball</T/>, but Box</T/> given.
 	)";
 
-	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
@@ -606,7 +606,7 @@ U_TEST( TemplateParametersDeductionFailed_Test6 )
 		fn Foo( Baz</ Box::FFF</ f32 /> /> &imut b ) {}  // Template requires Ball::FFF</T/>, but Box::FFF</T/> given.
 	)";
 
-	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
@@ -631,7 +631,7 @@ U_TEST( TemplateParametersDeductionFailed_Test7 )
 		fn Foo( Baz</ FFF</ T />::Box /> &imut b ) {}  // Template requires FFF</T/>::Ball, but FFF</T/>::Box given.
 	)";
 
-	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
@@ -655,7 +655,7 @@ U_TEST( TemplateParametersDeductionFailed_Test8 )
 		fn Foo( Baz</ FFF</ T /> /> &imut b ) {}  // Template requires FFF</T/>::Ball, but FFF</T/> given.
 	)";
 
-	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
@@ -679,7 +679,7 @@ U_TEST( TemplateParametersDeductionFailed_Test9 )
 		fn Foo( Baz</ FFF</ T />::Ball /> &imut b ) {}  // Template requires FFF</T/>, but FFF</T/>::Ball given.
 	)";
 
-	const CodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
