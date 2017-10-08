@@ -262,4 +262,30 @@ U_TEST( GlobalVariablesTest9_GlobalVariablesInsideClasses )
 	U_TEST_ASSERT( 3.1415926535f * 2.718281828f == result_value.FloatVal );
 }
 
+U_TEST( GlobalVariablesTest10_GlobalVariablesInsideClassTemplates )
+{
+	static const char c_program_text[]=
+	R"(
+		template</ type T />
+		struct MathConstants</ T />
+		{
+			var T imut pi= T(3.1415926535);
+			auto constexpr e= T(2.718281828);
+		}
+
+		fn Foo() : f32
+		{
+			return MathConstants</f32/>::pi * MathConstants</f32/>::e;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	const llvm::GenericValue result_value= engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( 3.1415926535f * 2.718281828f == result_value.FloatVal );
+}
+
 } // namespace U

@@ -2136,7 +2136,7 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 		else if( variable_declaration.reference_modifier == ReferenceModifier::None )
 		{
 			llvm::GlobalVariable* global_variable= nullptr;
-			if( global )
+			if( global && type.GetTemplateDependentType() == nullptr )
 			{
 				variable.llvm_value=
 				global_variable=
@@ -2367,7 +2367,7 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 	else if( auto_variable_declaration.reference_modifier == ReferenceModifier::None )
 	{
 		llvm::GlobalVariable* global_variable= nullptr;
-		if( global )
+		if( global && variable.type.GetTemplateDependentType() == nullptr )
 		{
 			variable.llvm_value=
 			global_variable=
@@ -2393,6 +2393,8 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 
 			variable.constexpr_value= initializer_experrsion.constexpr_value;
 		}
+		else if( variable.type.GetTemplateDependentType() != nullptr )
+		{}
 		else
 		{
 			errors_.push_back( ReportNotImplemented( auto_variable_declaration.file_pos_, "expression initialization for nonfundamental types" ) );

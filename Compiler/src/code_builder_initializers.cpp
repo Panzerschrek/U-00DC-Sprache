@@ -506,6 +506,8 @@ llvm::Constant* CodeBuilder::ApplyExpressionInitializer(
 		if( llvm::Constant* const constexpr_value= expression_result.GetVariable()->constexpr_value )
 			return constexpr_value;
 	}
+	else if( variable.type.GetTemplateDependentType() != nullptr )
+	{}
 	else
 	{
 		errors_.push_back( ReportNotImplemented( initializer.file_pos_, "expression initialization for nonfundamental types" ) );
