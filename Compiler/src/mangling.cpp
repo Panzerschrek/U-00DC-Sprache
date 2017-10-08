@@ -278,12 +278,10 @@ std::string MangleGlobalVariable(
 	return ToStdString( result );
 }
 
-std::string MangleType(
-	const NamesScope& parent_scope,
-	const ProgramString& class_name )
+std::string MangleType( const Type& type )
 {
 	NamesCache names_cache;
-	return ToStdString( GetNestedName( class_name, parent_scope, false, names_cache ).compressed_and_escaped );
+	return ToStdString( GetTypeName_r( type, names_cache ).compressed_and_escaped );
 }
 
 } // namespace CodeBuilderPrivate

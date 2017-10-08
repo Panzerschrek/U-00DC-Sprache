@@ -154,6 +154,10 @@ BracketExpression::BracketExpression( const FilePos& file_pos, IExpressionCompon
 	, expression_( std::move( expression ) )
 {}
 
+TypeNameInExpression::TypeNameInExpression( const FilePos& file_pos )
+	: ExpressionComponentWithUnaryOperators( file_pos )
+{}
+
 const FilePos& IBlockElement::GetFilePos() const
 {
 	// All non-abstract childs must be based on SyntaxElementBase.

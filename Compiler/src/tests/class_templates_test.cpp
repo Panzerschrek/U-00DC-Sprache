@@ -1469,4 +1469,34 @@ U_TEST( ClassTemplateInsideClassTemplate_Test2 )
 	U_TEST_ASSERT( static_cast<uint64_t>( 1584 + 158 ) == result_value.IntVal.getLimitedValue() );
 }
 
+U_TEST( ArrayAsClassTemplateParameter_Test0 )
+{
+	static const char c_program_text[]=
+	R"(
+		template</ type T />
+		struct Box</ T />
+		{
+			T t;
+		}
+
+		fn Foo() : i32
+		{
+			var Box</ [ i32, 4 ] /> box{ .t[ 5, 84, 996, 5412 ] };
+			return box.t[0u] + box.t[1u] + box.t[2u] + box.t[3u];
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( static_cast<uint64_t>( 5 + 84 + 996 + 5412 ) == result_value.IntVal.getLimitedValue() );
+}
+
 } // namespace U

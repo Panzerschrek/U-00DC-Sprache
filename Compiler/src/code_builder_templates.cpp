@@ -725,7 +725,7 @@ NamesScope::InsertedName* CodeBuilder::GenTemplateClass(
 		if( const Type* const type= boost::get<Type>( &arg ) )
 		{
 			// We needs full mangled name of template parameter here, because short type names from different spaces may coincide.
-			name_encoded+= ToProgramString( MangleType( template_names_scope, type->ToString() ).c_str() );
+			name_encoded+= ToProgramString( MangleType( *type ).c_str() );
 		}
 		else if( const Variable* const variable= boost::get<Variable>( &arg ) )
 		{

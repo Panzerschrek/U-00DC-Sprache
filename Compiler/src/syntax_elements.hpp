@@ -59,6 +59,21 @@ struct ComplexName final
 	std::vector<Component> components;
 };
 
+struct TypeName
+{
+	// [ [i32, 5] 7 ]
+	ComplexName name; // Can be empty in some cases.
+	std::vector< IExpressionComponentPtr > array_sizes;
+
+	// Compiler so stupid - can not generate move constructors without noexcept. Make help for it.
+	TypeName() = default;
+	TypeName( TypeName&& ) noexcept = default;
+	TypeName( const TypeName& )= default;
+
+	TypeName& operator=( const TypeName& )= default;
+	TypeName& operator=( TypeName&& )= default;
+};
+
 class IUnaryPrefixOperator
 {
 public:
@@ -276,6 +291,14 @@ public:
 	const IExpressionComponentPtr expression_;
 };
 
+class TypeNameInExpression final : public ExpressionComponentWithUnaryOperators
+{
+public:
+	explicit TypeNameInExpression( const FilePos& file_pos );
+
+	TypeName type_name;
+};
+
 class IProgramElement
 {
 public:
@@ -315,21 +338,6 @@ public:
 };
 
 typedef std::unique_ptr<Block> BlockPtr;
-
-struct TypeName
-{
-	// [ [i32, 5] 7 ]
-	ComplexName name; // Can be empty in some cases.
-	std::vector< IExpressionComponentPtr > array_sizes;
-
-	// Compiler so stupid - can not generate move constructors without noexcept. Make help for it.
-	TypeName() = default;
-	TypeName( TypeName&& ) noexcept = default;
-	TypeName( const TypeName& )= default;
-
-	TypeName& operator=( const TypeName& )= default;
-	TypeName& operator=( TypeName&& )= default;
-};
 
 enum class MutabilityModifier
 {

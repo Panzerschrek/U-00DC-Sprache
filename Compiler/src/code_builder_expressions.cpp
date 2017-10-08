@@ -112,6 +112,11 @@ Value CodeBuilder::BuildExpressionCode(
 	{
 		result= BuildExpressionCode( *bracket_expression->expression_, names, function_context );
 	}
+	else if( const TypeNameInExpression* type_name_in_expression=
+		dynamic_cast<const TypeNameInExpression*>(&expression) )
+	{
+		result= PrepareType( type_name_in_expression->file_pos_, type_name_in_expression->type_name, names );
+	}
 	else
 	{
 		// TODO

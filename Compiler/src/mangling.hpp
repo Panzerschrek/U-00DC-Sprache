@@ -19,9 +19,7 @@ std::string MangleGlobalVariable(
 	const NamesScope& parent_scope,
 	const ProgramString& variable_name );
 
-std::string MangleType(
-	const NamesScope& parent_scope,
-	const ProgramString& class_name );
+std::string MangleType( const Type& type );
 
 } // namespace CodeBuilderPrivate
 

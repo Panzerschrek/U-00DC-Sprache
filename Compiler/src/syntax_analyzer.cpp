@@ -432,6 +432,7 @@ IExpressionComponentPtr SyntaxAnalyzer::ParseExpression()
 			case Lexem::Type::Scope:
 			case Lexem::Type::Number:
 			case Lexem::Type::BracketLeft:
+			case Lexem::Type::SquareBracketLeft:
 				goto parse_operand;
 
 			case Lexem::Type::Plus:
@@ -509,6 +510,13 @@ IExpressionComponentPtr SyntaxAnalyzer::ParseExpression()
 				return nullptr;
 			}
 			++it_;
+		}
+		else if( it_->type == Lexem::Type::SquareBracketLeft )
+		{
+			// Parse array type name: [ ElementType, 42 ]
+			std::unique_ptr<TypeNameInExpression> type_name_in_expression( new TypeNameInExpression( it_->file_pos ) );
+			type_name_in_expression->type_name= ParseTypeName();
+			current_node= std::move(type_name_in_expression);
 		}
 		else
 		{
