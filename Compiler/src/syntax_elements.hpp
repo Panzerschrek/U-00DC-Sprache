@@ -350,6 +350,7 @@ struct VariablesDeclaration final
 	: public SyntaxElementBase
 	, public IBlockElement
 	, public IProgramElement
+	, public IClassElement
 {
 	VariablesDeclaration( const FilePos& file_pos );
 	VariablesDeclaration( const VariablesDeclaration& )= delete;
@@ -376,6 +377,7 @@ struct AutoVariableDeclaration final
 	: public SyntaxElementBase
 	, public IBlockElement
 	, public IProgramElement
+	, public IClassElement
 {
 	explicit AutoVariableDeclaration( const FilePos& file_pos );
 

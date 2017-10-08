@@ -424,6 +424,24 @@ ClassPtr CodeBuilder::PrepareClass(
 		{
 			PrepareClassTemplate( *inner_class_template, the_class->members );
 		}
+		else if( const VariablesDeclaration* variables_declaration=
+			dynamic_cast<const VariablesDeclaration*>( member.get() ) )
+		{
+			try
+			{
+				BuildVariablesDeclarationCode( *variables_declaration, the_class->members, *dummy_function_context_, true );
+			}
+			catch( const ProgramError& ) {}
+		}
+		else if( const AutoVariableDeclaration* auto_variable_declaration=
+			dynamic_cast<const AutoVariableDeclaration*>( member.get() ) )
+		{
+			try
+			{
+				BuildAutoVariableDeclarationCode( *auto_variable_declaration, the_class->members, *dummy_function_context_, true );
+			}
+			catch( const ProgramError& ) {}
+		}
 		else
 			U_ASSERT( false );
 	}

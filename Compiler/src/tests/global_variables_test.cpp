@@ -212,4 +212,54 @@ U_TEST( GlobalVariablesTest7_ImutGlobalVariablesWithConstantInitializers )
 	U_TEST_ASSERT( static_cast<uint64_t>( 8845 - 55 ) == result_value.IntVal.getLimitedValue() );
 }
 
+U_TEST( GlobalVariablesTest8_GlobalVariablesInsideNamespaces )
+{
+	static const char c_program_text[]=
+	R"(
+		namespace Math
+		{
+			var f32 imut pi= 3.1415926535f;
+			auto constexpr e= 2.718281828f;
+		}
+
+		fn Foo() : f32
+		{
+			return Math::pi * Math::e;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	const llvm::GenericValue result_value= engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( 3.1415926535f * 2.718281828f == result_value.FloatVal );
+}
+
+U_TEST( GlobalVariablesTest9_GlobalVariablesInsideClasses )
+{
+	static const char c_program_text[]=
+	R"(
+		struct Math
+		{
+			var f32 imut pi= 3.1415926535f;
+			auto constexpr e= 2.718281828f;
+		}
+
+		fn Foo() : f32
+		{
+			return Math::pi * Math::e;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	const llvm::GenericValue result_value= engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( 3.1415926535f * 2.718281828f == result_value.FloatVal );
+}
+
 } // namespace U

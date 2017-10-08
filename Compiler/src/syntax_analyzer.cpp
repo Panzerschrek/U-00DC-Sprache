@@ -1849,6 +1849,16 @@ std::unique_ptr<ClassDeclaration> SyntaxAnalyzer::ParseClassBody()
 		{
 			result->elements_.emplace_back( ParseClass() );
 		}
+		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::var_ )
+		{
+			if( IClassElementPtr class_element= ParseVariablesDeclaration() )
+				result->elements_.emplace_back( std::move(class_element) );
+		}
+		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::auto_ )
+		{
+			if( IClassElementPtr class_element= ParseAutoVariableDeclaration() )
+				result->elements_.emplace_back( std::move(class_element) );
+		}
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::template_ )
 		{
 			// TODO
