@@ -2110,12 +2110,6 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 		variable.location= Variable::Location::Pointer;
 		variable.value_type= ValueType::Reference;
 
-		if( global && variable_declaration.mutability_modifier != MutabilityModifier::Constexpr )
-		{
-			errors_.push_back( ReportGlobalVariableMustBeConstexpr( variables_declaration.file_pos_, variable_declaration.name ) );
-			continue;
-		}
-
 		if( type.GetTemplateDependentType() != nullptr )
 		{
 			if( variable_declaration.initializer != nullptr )
@@ -2237,6 +2231,13 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 		if( variable.value_type != ValueType::ConstReference )
 			variable.constexpr_value= nullptr;
 
+		if( variable.type.GetTemplateDependentType() == nullptr &&
+			global && variable.constexpr_value == nullptr )
+		{
+			errors_.push_back( ReportGlobalVariableMustBeConstexpr( variables_declaration.file_pos_, variable_declaration.name ) );
+			continue;
+		}
+
 		if( NameShadowsTemplateArgument( variable_declaration.name, block_names ) )
 		{
 			errors_.push_back( ReportDeclarationShadowsTemplateArgument( variables_declaration.file_pos_, variable_declaration.name ) );
@@ -2328,12 +2329,6 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 		return;
 	}
 
-	if( global && auto_variable_declaration.mutability_modifier != MutabilityModifier::Constexpr )
-	{
-		errors_.push_back( ReportGlobalVariableMustBeConstexpr( auto_variable_declaration.file_pos_, auto_variable_declaration.name ) );
-		return;
-	}
-
 	if( auto_variable_declaration.reference_modifier == ReferenceModifier::Reference )
 	{
 		if( initializer_experrsion.value_type == ValueType::Value )
@@ -2405,6 +2400,13 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 	// Reset constexpr initial value for mutable variables.
 	if( variable.value_type != ValueType::ConstReference )
 		variable.constexpr_value= nullptr;
+
+	if( variable.type.GetTemplateDependentType() == nullptr &&
+		global && variable.constexpr_value == nullptr )
+	{
+		errors_.push_back( ReportGlobalVariableMustBeConstexpr( auto_variable_declaration.file_pos_, auto_variable_declaration.name ) );
+		return;
+	}
 
 	if( NameShadowsTemplateArgument( auto_variable_declaration.name, block_names ) )
 	{

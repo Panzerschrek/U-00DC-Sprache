@@ -189,4 +189,27 @@ U_TEST( GlobalVariablesTest6_GlobalVariableUsedInOtherGlobalVariableInitializer 
 	U_TEST_ASSERT( static_cast<uint64_t>( ( 42 * 558 + 55847 ) / int(3.14) ) == result_value.IntVal.getLimitedValue() );
 }
 
+U_TEST( GlobalVariablesTest7_ImutGlobalVariablesWithConstantInitializers )
+{
+	static const char c_program_text[]=
+	R"(
+		// "imut" here implicitly convertred into "constexpr", because initializers are constant.
+		var i32 imut g_x= 55;
+		auto imut g_y= 8845;
+
+		fn Foo() : i32
+		{
+			return g_y - g_x;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	const llvm::GenericValue result_value= engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( static_cast<uint64_t>( 8845 - 55 ) == result_value.IntVal.getLimitedValue() );
+}
+
 } // namespace U
