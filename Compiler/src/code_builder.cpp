@@ -3369,32 +3369,30 @@ std::pair<const NamesScope::InsertedName*, NamesScope*> CodeBuilder::ResolveName
 		{
 			if( components[0].have_template_parameters )
 			{
-				const NamesScope::InsertedName* generated_class=
+				const NamesScope::InsertedName* generated_type=
 					GenTemplateType(
 						file_pos,
 						type_template,
 						components[0].template_parameters,
 						*current_space,
 						names_scope );
-				if( generated_class == nullptr )
+				if( generated_type == nullptr )
 					return std::make_pair( nullptr, nullptr );
-				if( generated_class->second.GetType() == NontypeStub::TemplateDependentValue )
-					return std::make_pair( generated_class, current_space );
+				if( generated_type->second.GetType() == NontypeStub::TemplateDependentValue )
+					return std::make_pair( generated_type, current_space );
 
-				const Type* const type= generated_class->second.GetTypeName();
+				const Type* const type= generated_type->second.GetTypeName();
 				if( type->GetTemplateDependentType() != nullptr )
 				{
 					if( component_count >= 2u )
-						return std::make_pair( generated_class, current_space ); // If this name is last, we know, that this is type
+						return std::make_pair( generated_type, current_space ); // If this name is last, we know, that this is type
 					else
 						return std::make_pair( &current_space->GetTemplateDependentValue(), current_space ); // Else it is something really template-dependent
 				}
 				U_ASSERT( type != nullptr );
-				const ClassPtr class_= type->GetClassType();
-				// SPRACHE_TODO - allow non-class types as result of template.
-				U_ASSERT( class_ != nullptr );
-				next_space= &class_->members;
-				name= generated_class;
+				if( const ClassPtr class_= type->GetClassType() )
+					next_space= &class_->members;
+				name= generated_type;
 			}
 			else if( component_count >= 2u )
 			{

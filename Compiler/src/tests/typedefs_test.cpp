@@ -186,4 +186,28 @@ U_TEST( TypedefsTemplates_Test0 )
 	BuildProgram( c_program_text );
 }
 
+U_TEST( TypedefsTemplates_Test1 )
+{
+	static const char c_program_text[]=
+	R"(
+		template</ type T /> struct Box</ T /> { T t; }   // base template
+
+		template</ type T /> type Box_alias</ T /> = Box</ T />;   // alias for this template
+
+		fn Foo() : i32
+		{
+			var Box_alias</ i32 /> box{ .t= 88884 };    // usage of alias
+			return box.t;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	const llvm::GenericValue result_value= engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( static_cast<uint64_t>( 88884 ) == result_value.IntVal.getLimitedValue() );
+}
+
 } // namespace U

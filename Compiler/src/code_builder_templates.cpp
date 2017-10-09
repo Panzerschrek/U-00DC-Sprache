@@ -210,8 +210,7 @@ void CodeBuilder::PrepareTypeTemplate(
 	}
 	else if( const TypedefTemplate* const typedef_template= dynamic_cast<const TypedefTemplate*>( &type_template_declaration ) )
 	{
-		// TODO
-		U_UNUSED(typedef_template);
+		PrepareType( typedef_template->file_pos_, typedef_template->typedef_->value, *template_parameters_namespace );
 	}
 	else
 		U_ASSERT(false);
@@ -789,11 +788,20 @@ NamesScope::InsertedName* CodeBuilder::GenTemplateType(
 	}
 	else if( const TypedefTemplate* const typedef_template= dynamic_cast<const TypedefTemplate*>( type_template.syntax_element ) )
 	{
-		// TODO
-		U_UNUSED(typedef_template);
+		const Type type= PrepareType( typedef_template->file_pos_, typedef_template->typedef_->value, *template_parameters_namespace );
+
+		PopResolveHandler();
+
+		if( type == invalid_type_ )
+			return nullptr;
+
+		// HACK - add name to map for correct result returning.
+		return template_parameters_namespace->AddName( GetNameForGeneratedClass(), type );
 	}
 	else
 		U_ASSERT(false);
+
+	return nullptr;
 }
 
 bool CodeBuilder::NameShadowsTemplateArgument( const ProgramString& name, NamesScope& names_scope )
