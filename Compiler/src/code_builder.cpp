@@ -452,8 +452,7 @@ ClassPtr CodeBuilder::PrepareClass(
 			const Typedef* typedef_=
 			dynamic_cast<const Typedef*>( member.get() ) )
 		{
-			// TODO
-			U_UNUSED(typedef_);
+			BuildTypedef( *typedef_, the_class->members );
 		}
 		else
 			U_ASSERT( false );
@@ -1186,8 +1185,7 @@ void CodeBuilder::BuildNamespaceBody(
 			const Typedef* typedef_=
 			dynamic_cast<const Typedef*>( program_element.get() ) )
 		{
-			// TODO
-			U_UNUSED(typedef_);
+			BuildTypedef( *typedef_, names_scope );
 		}
 		else
 		{
@@ -2994,6 +2992,31 @@ void CodeBuilder::BuildStaticAssert(
 		errors_.push_back( ReportStaticAssertionFailed( static_assert_.file_pos_ ) );
 		return;
 	}
+}
+
+void CodeBuilder::BuildTypedef(
+	const Typedef& typedef_,
+	NamesScope& names )
+{
+	const NamesScope::InsertedName* const value= ResolveName( typedef_.file_pos_, names, typedef_.value );
+	if( value == nullptr )
+	{
+		ReportNameNotFound( typedef_.file_pos_, typedef_.name );
+		return;
+	}
+
+	if( value->second.GetTypeName() == nullptr )
+	{
+		errors_.push_back( ReportNameIsNotTypeName( typedef_.file_pos_, typedef_.name ) );
+		return;
+	}
+
+	if( NameShadowsTemplateArgument( typedef_.name, names ) )
+		ReportDeclarationShadowsTemplateArgument( typedef_.file_pos_, typedef_.name );
+
+	const NamesScope::InsertedName* const inserted_name= names.AddName( typedef_.name, value->second );
+	if( inserted_name == nullptr )
+		ReportRedefinition( typedef_.file_pos_, typedef_.name );
 }
 
 FunctionVariable* CodeBuilder::GetFunctionWithExactSignature(

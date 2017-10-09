@@ -343,6 +343,10 @@ private:
 		const StaticAssert& static_assert_,
 		NamesScope& names );
 
+	void BuildTypedef(
+		const Typedef& typedef_,
+		NamesScope& names );
+
 	// Functions
 
 	FunctionVariable* GetFunctionWithExactSignature(
