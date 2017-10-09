@@ -1575,7 +1575,7 @@ std::unique_ptr<Typedef> SyntaxAnalyzer::ParseTypedef()
 	}
 	++it_; U_ASSERT( it_ < it_end_ );
 
-	result->value= ParseComplexName();
+	result->value= ParseTypeName();
 
 	if( it_->type != Lexem::Type::Semicolon )
 	{

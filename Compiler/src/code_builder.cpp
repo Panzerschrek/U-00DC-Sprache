@@ -2998,23 +2998,14 @@ void CodeBuilder::BuildTypedef(
 	const Typedef& typedef_,
 	NamesScope& names )
 {
-	const NamesScope::InsertedName* const value= ResolveName( typedef_.file_pos_, names, typedef_.value );
-	if( value == nullptr )
-	{
-		ReportNameNotFound( typedef_.file_pos_, typedef_.name );
+	const Type type= PrepareType( typedef_.file_pos_, typedef_.value, names );
+	if( type == invalid_type_ )
 		return;
-	}
-
-	if( value->second.GetTypeName() == nullptr )
-	{
-		errors_.push_back( ReportNameIsNotTypeName( typedef_.file_pos_, typedef_.name ) );
-		return;
-	}
 
 	if( NameShadowsTemplateArgument( typedef_.name, names ) )
 		ReportDeclarationShadowsTemplateArgument( typedef_.file_pos_, typedef_.name );
 
-	const NamesScope::InsertedName* const inserted_name= names.AddName( typedef_.name, value->second );
+	const NamesScope::InsertedName* const inserted_name= names.AddName( typedef_.name, type );
 	if( inserted_name == nullptr )
 		ReportRedefinition( typedef_.file_pos_, typedef_.name );
 }

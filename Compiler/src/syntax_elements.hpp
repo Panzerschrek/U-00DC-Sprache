@@ -503,7 +503,7 @@ public:
 	explicit Typedef( const FilePos& file_pos );
 
 	ProgramString name;
-	ComplexName value;
+	TypeName value;
 };
 
 class FunctionArgumentDeclaration final : public SyntaxElementBase

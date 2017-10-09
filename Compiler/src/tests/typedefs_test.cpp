@@ -118,4 +118,53 @@ U_TEST( TypedefsTest4_TypedefForGeneratedFromTemplateClass )
 	U_TEST_ASSERT( 541.2f * 0.25f == result_value.FloatVal );
 }
 
+U_TEST( TypedefsTest5_TypedefForArray )
+{
+	static const char c_program_text[]=
+	R"(
+		type vec3= [ f32, 3 ];
+
+		fn Foo() : f32
+		{
+			var vec3 result[ 0.334f, 8457.1f, 8874.5f ];
+			return result[0u] * result[1u] + result[2u];
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	const llvm::GenericValue result_value= engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( 0.334f * 8457.1f +  8874.5f == result_value.FloatVal );
+}
+
+U_TEST( TypedefsTest6_TypedefForTwodimensionalArray )
+{
+	static const char c_program_text[]=
+	R"(
+		type mat2x2= [ [ f32, 2 ], 2 ];
+
+		fn Det( mat2x2 &imut m ) : f32
+		{
+			return m[0u][0u] * m[1u][1u] - m[0u][1u] * m[1u][0u];
+		}
+
+		fn Foo() : f32
+		{
+			var mat2x2 mat[ [ 5.0f, 45.0f ], [ 7.0f, 41.0f ] ];
+			return Det(mat);
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	const llvm::GenericValue result_value= engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( 5.0f * 41.0f - 45.0f * 7.0f == result_value.FloatVal );
+}
+
 } // namespace U
