@@ -454,6 +454,13 @@ ClassPtr CodeBuilder::PrepareClass(
 		{
 			BuildTypedef( *typedef_, the_class->members );
 		}
+		else if(
+			const TypedefTemplate* const typedef_template=
+			dynamic_cast<const TypedefTemplate*>( member.get() ) )
+		{
+			U_UNUSED( typedef_template );
+			// TODO
+		}
 		else
 			U_ASSERT( false );
 	}
@@ -1186,6 +1193,13 @@ void CodeBuilder::BuildNamespaceBody(
 			dynamic_cast<const Typedef*>( program_element.get() ) )
 		{
 			BuildTypedef( *typedef_, names_scope );
+		}
+		else if(
+			const TypedefTemplate* const typedef_template=
+			dynamic_cast<const TypedefTemplate*>( program_element.get() ) )
+		{
+			U_UNUSED( typedef_template );
+			// TODO
 		}
 		else
 		{

@@ -167,4 +167,23 @@ U_TEST( TypedefsTest6_TypedefForTwodimensionalArray )
 	U_TEST_ASSERT( 5.0f * 41.0f - 45.0f * 7.0f == result_value.FloatVal );
 }
 
+U_TEST( TypedefsTemplates_Test0 )
+{
+	static const char c_program_text[]=
+	R"(
+		template</ type T, u64 size /> struct ArrayWrapper</ T, size /> { [ T, size ] a; }
+
+		template</ type T />
+		type vec4</ T />= ArrayWrapper</ T, 4u64 />;
+
+		struct SSS
+		{
+			template</ type T />
+			type vec4_of_vec4</ T />= vec4</ vec4</ T /> />;
+		}
+	)";
+
+	BuildProgram( c_program_text );
+}
+
 } // namespace U
