@@ -3003,11 +3003,11 @@ void CodeBuilder::BuildTypedef(
 		return;
 
 	if( NameShadowsTemplateArgument( typedef_.name, names ) )
-		ReportDeclarationShadowsTemplateArgument( typedef_.file_pos_, typedef_.name );
+		errors_.push_back( ReportDeclarationShadowsTemplateArgument( typedef_.file_pos_, typedef_.name ) );
 
 	const NamesScope::InsertedName* const inserted_name= names.AddName( typedef_.name, type );
 	if( inserted_name == nullptr )
-		ReportRedefinition( typedef_.file_pos_, typedef_.name );
+		errors_.push_back( ReportRedefinition( typedef_.file_pos_, typedef_.name ) );
 }
 
 FunctionVariable* CodeBuilder::GetFunctionWithExactSignature(

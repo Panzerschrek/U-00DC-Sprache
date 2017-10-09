@@ -112,6 +112,7 @@ set( TESTS_SOURCES
 	src/tests/tests_main.cpp
 	src/tests/tests.cpp
 	src/tests/type_conversions_test.cpp
+	src/tests/typedefs_errors_test.cpp
 	src/tests/typedefs_test.cpp )
 
 set( TESTS_HEADERS
