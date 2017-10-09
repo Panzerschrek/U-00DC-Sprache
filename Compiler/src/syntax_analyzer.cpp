@@ -2142,6 +2142,7 @@ std::unique_ptr<TemplateBase> SyntaxAnalyzer::ParseTemplate()
 			std::unique_ptr<ClassTemplateDeclaration> class_template( new ClassTemplateDeclaration( result->file_pos_ ) );
 			class_template->args_= std::move(result->args_);
 			class_template->signature_args_= std::move(result->signature_args_);
+			class_template->name_= name;
 
 			class_template->class_= ParseClassBody();
 			if( class_template->class_ != nullptr )
@@ -2157,6 +2158,7 @@ std::unique_ptr<TemplateBase> SyntaxAnalyzer::ParseTemplate()
 			std::unique_ptr<TypedefTemplate> typedef_template( new TypedefTemplate( result->file_pos_ ) );
 			typedef_template->args_= std::move(result->args_);
 			typedef_template->signature_args_= std::move(result->signature_args_);
+			typedef_template->name_= name;
 
 			typedef_template->typedef_= ParseTypedefBody();
 			if( typedef_template->typedef_ != nullptr )

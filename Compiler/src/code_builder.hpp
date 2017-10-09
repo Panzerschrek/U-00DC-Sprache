@@ -98,18 +98,18 @@ private:
 		NamesScope& names_scope );
 
 	// Templates
-	void PrepareClassTemplate( const ClassTemplateDeclaration& class_template_declaration, NamesScope& names_scope );
+	void PrepareTypeTemplate( const TemplateBase& type_template_declaration, NamesScope& names_scope );
 
 	void PrepareTemplateSignatureParameter(
 		const FilePos& file_pos,
 		const ComplexName& signature_parameter,
 		NamesScope& names_scope,
-		const std::vector<ClassTemplate::TemplateParameter>& template_parameters,
+		const std::vector<TypeTemplate::TemplateParameter>& template_parameters,
 		std::vector<bool>& template_parameters_usage_flags );
 
 	// Returns true, if all ok.
 	bool DuduceTemplateArguments(
-		const ClassTemplatePtr& class_template_ptr,
+		const TypeTemplatePtr& class_template_ptr,
 		const TemplateParameter& template_parameter,
 		const ComplexName& signature_parameter,
 		const FilePos& signature_parameter_file_pos,
@@ -117,9 +117,9 @@ private:
 		NamesScope& names_scope );
 
 	// Returns nullptr in case of fail.
-	NamesScope::InsertedName* GenTemplateClass(
+	NamesScope::InsertedName* GenTemplateType(
 		const FilePos& file_pos,
-		const ClassTemplatePtr& class_template_ptr,
+		const TypeTemplatePtr& type_template_ptr,
 		const std::vector<IExpressionComponentPtr>& template_arguments,
 		NamesScope& template_names_scope,
 		NamesScope& arguments_names_scope );

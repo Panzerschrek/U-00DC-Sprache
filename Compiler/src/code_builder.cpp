@@ -419,10 +419,10 @@ ClassPtr CodeBuilder::PrepareClass(
 			// SPRACHE_TODO - maybe process classes like functions - after class completion?
 			PrepareClass( *inner_class, inner_class->name_, the_class->members );
 		}
-		else if( const ClassTemplateDeclaration* const inner_class_template=
-			dynamic_cast<const ClassTemplateDeclaration*>( member.get() ) )
+		else if( const TemplateBase* const template_=
+			dynamic_cast<const TemplateBase*>( member.get() ) )
 		{
-			PrepareClassTemplate( *inner_class_template, the_class->members );
+			PrepareTypeTemplate( *template_, the_class->members );
 		}
 		else if( const VariablesDeclaration* variables_declaration=
 			dynamic_cast<const VariablesDeclaration*>( member.get() ) )
@@ -1159,10 +1159,10 @@ void CodeBuilder::BuildNamespaceBody(
 			BuildNamespaceBody( namespace_->elements_, *result_scope );
 		}
 		else if(
-			const ClassTemplateDeclaration* const class_template_declaration=
-			dynamic_cast<const ClassTemplateDeclaration*>( program_element.get() ) )
+			const TemplateBase* const tempate_=
+			dynamic_cast<const TemplateBase*>( program_element.get() ) )
 		{
-			PrepareClassTemplate( *class_template_declaration, names_scope );
+			PrepareTypeTemplate( *tempate_, names_scope );
 		}
 		else if( const VariablesDeclaration* variables_declaration=
 			dynamic_cast<const VariablesDeclaration*>( program_element.get() ) )
@@ -3350,7 +3350,7 @@ std::pair<const NamesScope::InsertedName*, NamesScope*> CodeBuilder::ResolveName
 		if( name == nullptr )
 			return std::make_pair( nullptr, nullptr );
 
-		if( components[0].have_template_parameters && name->second.GetClassTemplate() == nullptr )
+		if( components[0].have_template_parameters && name->second.GetTypeTemplate() == nullptr )
 		{
 			errors_.push_back( ReportValueIsNotTemplate( file_pos ) );
 			return std::make_pair( nullptr, nullptr );
@@ -3365,14 +3365,14 @@ std::pair<const NamesScope::InsertedName*, NamesScope*> CodeBuilder::ResolveName
 			if( const ClassPtr class_= type->GetClassType() )
 				next_space= &class_->members;
 		}
-		else if( const ClassTemplatePtr class_template = name->second.GetClassTemplate() )
+		else if( const TypeTemplatePtr type_template = name->second.GetTypeTemplate() )
 		{
 			if( components[0].have_template_parameters )
 			{
 				const NamesScope::InsertedName* generated_class=
-					GenTemplateClass(
+					GenTemplateType(
 						file_pos,
-						class_template,
+						type_template,
 						components[0].template_parameters,
 						*current_space,
 						names_scope );
@@ -3398,7 +3398,7 @@ std::pair<const NamesScope::InsertedName*, NamesScope*> CodeBuilder::ResolveName
 			}
 			else if( component_count >= 2u )
 			{
-				errors_.push_back( ReportTemplateInstantiationRequired( file_pos, class_template->class_syntax_element->name_.components.back().name ) );
+				errors_.push_back( ReportTemplateInstantiationRequired( file_pos, type_template->syntax_element->name_ ) );
 				return std::make_pair( nullptr, nullptr );
 			}
 		}

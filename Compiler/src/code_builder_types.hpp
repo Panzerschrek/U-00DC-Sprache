@@ -32,8 +32,8 @@ typedef std::weak_ptr<Class> ClassWeakPtr;
 class NamesScope;
 typedef std::shared_ptr<NamesScope> NamesScopePtr;
 
-struct ClassTemplate;
-typedef std::shared_ptr<ClassTemplate> ClassTemplatePtr;
+struct TypeTemplate;
+typedef std::shared_ptr<TypeTemplate> TypeTemplatePtr;
 
 struct FundamentalType final
 {
@@ -58,7 +58,7 @@ enum class NontypeStub
 	ThisOverloadedMethodsSet,
 	TypeName,
 	Namespace,
-	ClassTemplate,
+	TypeTemplate,
 	TemplateDependentValue,
 	YetNotDeducedTemplateArg,
 };
@@ -237,7 +237,7 @@ public:
 	Value( ClassField class_field );
 	Value( ThisOverloadedMethodsSet class_field );
 	Value( const NamesScopePtr& namespace_ );
-	Value( const ClassTemplatePtr& class_template );
+	Value( const TypeTemplatePtr& type_template );
 	Value( TemplateDependentValue template_dependent_value );
 	Value( YetNotDeducedTemplateArg yet_not_deduced_template_arg );
 
@@ -263,7 +263,7 @@ public:
 	// Namespace
 	NamesScopePtr GetNamespace() const;
 	// Class Template
-	ClassTemplatePtr GetClassTemplate() const;
+	TypeTemplatePtr GetTypeTemplate() const;
 	// Template-dependent value
 	TemplateDependentValue* GetTemplateDependentValue();
 	const TemplateDependentValue* GetTemplateDependentValue() const;
@@ -280,7 +280,7 @@ private:
 		ClassField,
 		ThisOverloadedMethodsSet,
 		NamesScopePtr,
-		ClassTemplatePtr,
+		TypeTemplatePtr,
 		TemplateDependentValue,
 		YetNotDeducedTemplateArg > something_;
 };
@@ -407,7 +407,7 @@ struct Class final
 
 	struct BaseTemplate
 	{
-		ClassTemplatePtr class_template;
+		TypeTemplatePtr class_template;
 		std::vector<TemplateParameter> template_parameters;
 	};
 
@@ -415,7 +415,7 @@ struct Class final
 	boost::optional<BaseTemplate> base_template;
 };
 
-struct ClassTemplate final
+struct TypeTemplate final
 {
 	struct TemplateParameter
 	{
@@ -432,7 +432,7 @@ struct ClassTemplate final
 
 	// Store syntax tree element for instantiation.
 	// Syntax tree must live longer, than this struct.
-	const ClassDeclaration* class_syntax_element= nullptr;
+	const TemplateBase* syntax_element= nullptr;
 
 	ResolvingCache resolving_cache;
 };

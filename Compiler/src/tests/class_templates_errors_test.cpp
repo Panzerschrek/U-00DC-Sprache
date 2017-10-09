@@ -368,7 +368,7 @@ U_TEST( TemplateArgumentIsNotDeducedYet_Test0 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::TemplateArgumentIsNotDeducedYet );
-	U_TEST_ASSERT( error.file_pos.line == 3u );
+	U_TEST_ASSERT( error.file_pos.line == 2u );
 }
 
 U_TEST( TemplateArgumentIsNotDeducedYet_Test1 )

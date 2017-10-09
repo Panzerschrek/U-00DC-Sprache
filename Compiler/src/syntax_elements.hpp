@@ -599,6 +599,7 @@ public:
 
 	std::vector<Arg> args_;
 	std::vector<SignatureArg> signature_args_;
+	ProgramString name_;
 };
 
 typedef std::unique_ptr<TemplateBase> TemplateBasePtr;
