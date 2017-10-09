@@ -249,6 +249,10 @@ StaticAssert::StaticAssert( const FilePos& file_pos )
 	: SyntaxElementBase(file_pos)
 {}
 
+Typedef::Typedef( const FilePos& file_pos )
+	: SyntaxElementBase(file_pos)
+{}
+
 FunctionArgumentDeclaration::FunctionArgumentDeclaration(
 	const FilePos& file_pos,
 	ProgramString name,

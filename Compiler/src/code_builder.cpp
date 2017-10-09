@@ -448,6 +448,13 @@ ClassPtr CodeBuilder::PrepareClass(
 		{
 			BuildStaticAssert( *static_assert_, the_class->members );
 		}
+		else if(
+			const Typedef* typedef_=
+			dynamic_cast<const Typedef*>( member.get() ) )
+		{
+			// TODO
+			U_UNUSED(typedef_);
+		}
 		else
 			U_ASSERT( false );
 	}
@@ -1174,6 +1181,13 @@ void CodeBuilder::BuildNamespaceBody(
 			dynamic_cast<const StaticAssert*>( program_element.get() ) )
 		{
 			BuildStaticAssert( *static_assert_, names_scope );
+		}
+		else if(
+			const Typedef* typedef_=
+			dynamic_cast<const Typedef*>( program_element.get() ) )
+		{
+			// TODO
+			U_UNUSED(typedef_);
 		}
 		else
 		{

@@ -159,6 +159,7 @@ private:
 
 	BlockPtr ParseBlock();
 
+	std::unique_ptr<Typedef> ParseTypedef();
 	std::unique_ptr<FunctionDeclaration> ParseFunction();
 	std::unique_ptr<ClassDeclaration> ParseClass();
 	std::unique_ptr<ClassDeclaration> ParseClassBody();
@@ -224,6 +225,11 @@ ProgramElements SyntaxAnalyzer::ParseNamespaceBody( const Lexem::Type end_lexem 
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::static_assert_ )
 		{
 			if( IProgramElementPtr program_element= ParseStaticAssert() )
+				program_elements.emplace_back( std::move(program_element) );
+		}
+		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::type_ )
+		{
+			if( IProgramElementPtr program_element= ParseTypedef() )
 				program_elements.emplace_back( std::move(program_element) );
 		}
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::namespace_ )
@@ -1545,6 +1551,42 @@ BlockPtr SyntaxAnalyzer::ParseBlock()
 			std::move( elements ) ) );
 }
 
+std::unique_ptr<Typedef> SyntaxAnalyzer::ParseTypedef()
+{
+	U_ASSERT( it_->text == Keywords::type_ );
+	U_ASSERT( it_ < it_end_ );
+
+	std::unique_ptr<Typedef> result( new Typedef( it_->file_pos ) );
+	++it_; U_ASSERT( it_ < it_end_ );
+
+	if( it_->type != Lexem::Type::Identifier )
+	{
+		PushErrorMessage( *it_ );
+		return result;
+	}
+
+	result->name= it_->text;
+	++it_; U_ASSERT( it_ < it_end_ );
+
+	if( it_->type != Lexem::Type::Assignment )
+	{
+		PushErrorMessage( *it_ );
+		return result;
+	}
+	++it_; U_ASSERT( it_ < it_end_ );
+
+	result->value= ParseComplexName();
+
+	if( it_->type != Lexem::Type::Semicolon )
+	{
+		PushErrorMessage( *it_ );
+		return result;
+	}
+	++it_; U_ASSERT( it_ < it_end_ );
+
+	return result;
+}
+
 std::unique_ptr<FunctionDeclaration> SyntaxAnalyzer::ParseFunction()
 {
 	U_ASSERT( it_->text == Keywords::fn_ );
@@ -1875,6 +1917,11 @@ std::unique_ptr<ClassDeclaration> SyntaxAnalyzer::ParseClassBody()
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::static_assert_ )
 		{
 			if( IClassElementPtr class_element= ParseStaticAssert() )
+				result->elements_.emplace_back( std::move(class_element) );;
+		}
+		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::type_ )
+		{
+			if( IClassElementPtr class_element= ParseTypedef() )
 				result->elements_.emplace_back( std::move(class_element) );;
 		}
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::template_ )
