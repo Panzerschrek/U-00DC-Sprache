@@ -73,7 +73,7 @@ void CodeBuilder::PrepareTypeTemplate(
 	const NamesScopePtr template_parameters_namespace = std::make_shared<NamesScope>( g_template_parameters_namespace_prefix, &names_scope );
 
 	// Check and fill template parameters.
-	for( const ClassTemplateDeclaration::Arg& arg : type_template_declaration.args_ )
+	for( const TemplateBase::Arg& arg : type_template_declaration.args_ )
 	{
 		// Check redefinition
 		for( const auto& prev_arg : template_parameters )
@@ -164,7 +164,7 @@ void CodeBuilder::PrepareTypeTemplate(
 
 	// Check and fill signature args.
 	type_template->first_optional_signature_argument= 0u;
-	for( const ClassTemplateDeclaration::SignatureArg& signature_arg : type_template_declaration.signature_args_ )
+	for( const TemplateBase::SignatureArg& signature_arg : type_template_declaration.signature_args_ )
 	{
 		PrepareTemplateSignatureParameter( type_template_declaration.file_pos_, signature_arg.name, *template_parameters_namespace, template_parameters, template_parameters_usage_flags );
 		type_template->signature_arguments.push_back(&signature_arg.name);
@@ -210,7 +210,7 @@ void CodeBuilder::PrepareTypeTemplate(
 	}
 	else if( const TypedefTemplate* const typedef_template= dynamic_cast<const TypedefTemplate*>( &type_template_declaration ) )
 	{
-		PrepareType( typedef_template->file_pos_, typedef_template->typedef_->value, *template_parameters_namespace );
+		PrepareType( typedef_template->typedef_->file_pos_, typedef_template->typedef_->value, *template_parameters_namespace );
 	}
 	else
 		U_ASSERT(false);
@@ -788,7 +788,7 @@ NamesScope::InsertedName* CodeBuilder::GenTemplateType(
 	}
 	else if( const TypedefTemplate* const typedef_template= dynamic_cast<const TypedefTemplate*>( type_template.syntax_element ) )
 	{
-		const Type type= PrepareType( typedef_template->file_pos_, typedef_template->typedef_->value, *template_parameters_namespace );
+		const Type type= PrepareType( typedef_template->typedef_->file_pos_, typedef_template->typedef_->value, *template_parameters_namespace );
 
 		PopResolveHandler();
 

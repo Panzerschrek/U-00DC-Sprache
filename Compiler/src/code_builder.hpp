@@ -109,7 +109,7 @@ private:
 
 	// Returns true, if all ok.
 	bool DuduceTemplateArguments(
-		const TypeTemplatePtr& class_template_ptr,
+		const TypeTemplatePtr& type_template_ptr,
 		const TemplateParameter& template_parameter,
 		const ComplexName& signature_parameter,
 		const FilePos& signature_parameter_file_pos,

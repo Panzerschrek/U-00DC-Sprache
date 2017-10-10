@@ -210,4 +210,97 @@ U_TEST( TypedefsTemplates_Test1 )
 	U_TEST_ASSERT( static_cast<uint64_t>( 88884 ) == result_value.IntVal.getLimitedValue() );
 }
 
+U_TEST( TypedefsTemplates_Test2_TypedefTemplateForArray )
+{
+	static const char c_program_text[]=
+	R"(
+		template</ type T /> type Pair</ T /> = [ T, 2 ];
+
+		fn Foo() : f64
+		{
+			var Pair</ f64 /> p[ 4.5, 0.25 ];
+			return p[0u] / p[1u];
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	const llvm::GenericValue result_value= engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( 4.5 / 0.25 == result_value.DoubleVal );
+}
+
+U_TEST( TypedefsTemplates_Test4_TypedefTemplateForArray )
+{
+	static const char c_program_text[]=
+	R"(
+		template</ type size_type, size_type size /> type Fvec</ size /> = [ f32, size ];
+
+		fn Foo() : f32
+		{
+			var Fvec</ 3 /> v[ 4.5f, 0.25f, 54.1f ];
+			return v[0u] + v[1u] + v[2u];
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	const llvm::GenericValue result_value= engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( 4.5f + 0.25f + 54.1f == result_value.FloatVal );
+}
+
+U_TEST( TypedefsTemplates_Test5_ComplexSignatureArgument )
+{
+	static const char c_program_text[]=
+	R"(
+		template</ type T /> struct Box</ T /> { T t; }
+
+		template</ type T /> type Unbox</ Box</ T /> /> = T;
+
+		fn Foo() : i32
+		{
+			var Unbox</ Box</ i32 /> /> unboxed= 5584;
+			return unboxed;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	const llvm::GenericValue result_value= engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( static_cast<uint64_t>( 5584 ) == result_value.IntVal.getLimitedValue() );
+}
+
+U_TEST( TypedefsTemplates_Test6_TypedefTemplateForTypedefTemplate )
+{
+	static const char c_program_text[]=
+	R"(
+		template</ type T /> struct Box</ T /> { T t; }   // base template
+
+		template</ type T /> type Box_alias</ T /> = Box</ T />;   // alias for this template
+		template</ type T /> type Box_alias_alias</ T /> = Box_alias</ T />;   // alias for alias
+
+		fn Foo() : i32
+		{
+			var Box_alias_alias</ i32 /> box{ .t= 88884 };    // usage of alias of alias
+			return box.t;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	const llvm::GenericValue result_value= engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( static_cast<uint64_t>( 88884 ) == result_value.IntVal.getLimitedValue() );
+}
+
 } // namespace U
