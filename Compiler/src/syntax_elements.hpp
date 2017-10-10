@@ -494,6 +494,18 @@ public:
 	IExpressionComponentPtr expression;
 };
 
+class Typedef final
+	: public SyntaxElementBase
+	, public IProgramElement
+	, public IClassElement
+{
+public:
+	explicit Typedef( const FilePos& file_pos );
+
+	ProgramString name;
+	TypeName value;
+};
+
 class FunctionArgumentDeclaration final : public SyntaxElementBase
 {
 public:
@@ -565,13 +577,10 @@ public:
 	bool is_forward_declaration_= false;
 };
 
-class ClassTemplateDeclaration final
-	: public SyntaxElementBase
-	, public IProgramElement
-	, public IClassElement
+class TemplateBase : public SyntaxElementBase
 {
 public:
-	explicit ClassTemplateDeclaration( const FilePos& file_pos );
+	explicit TemplateBase( const FilePos& file_pos );
 
 	// For type arguments, like template</ type A, type B />, arg_type is empty.
 	// For value arguments, like template</ type A, A x, i32 y />, arg_type is comples name of argument.
@@ -590,7 +599,31 @@ public:
 
 	std::vector<Arg> args_;
 	std::vector<SignatureArg> signature_args_;
+	ProgramString name_;
+};
+
+typedef std::unique_ptr<TemplateBase> TemplateBasePtr;
+
+class ClassTemplateDeclaration final
+	: public TemplateBase
+	, public IProgramElement
+	, public IClassElement
+{
+public:
+	explicit ClassTemplateDeclaration( const FilePos& file_pos );
+
 	std::unique_ptr<ClassDeclaration> class_;
+};
+
+class TypedefTemplate final
+	: public TemplateBase
+	, public IProgramElement
+	, public IClassElement
+{
+public:
+	explicit TypedefTemplate( const FilePos& file_pos );
+
+	std::unique_ptr<Typedef> typedef_;
 };
 
 class Namespace final

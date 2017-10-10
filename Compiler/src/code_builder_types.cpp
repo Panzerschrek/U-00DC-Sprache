@@ -506,8 +506,8 @@ ProgramString Type::ToString() const
 			case NontypeStub::Namespace:
 				result= "namespace"_SpC;
 				break;
-			case NontypeStub::ClassTemplate:
-				result= "class template"_SpC;
+			case NontypeStub::TypeTemplate:
+				result= "type template"_SpC;
 			case NontypeStub::TemplateDependentValue:
 				result= "template-dependent value"_SpC;
 				break;
@@ -632,7 +632,7 @@ static const Type g_overloaded_functions_set_stub_type= NontypeStub::OverloadedF
 static const Type g_this_overloaded_methods_set_stub_type=NontypeStub::ThisOverloadedMethodsSet;
 static const Type g_typename_type_stub= NontypeStub::TypeName;
 static const Type g_namespace_type_stub= NontypeStub::Namespace;
-static const Type g_class_template_type_stub= NontypeStub::ClassTemplate;
+static const Type g_type_template_type_stub= NontypeStub::TypeTemplate;
 static const Type g_template_dependent_type_stub= NontypeStub::TemplateDependentValue;
 static const Type g_yet_not_deduced_template_arg_type_stub= NontypeStub::YetNotDeducedTemplateArg;
 
@@ -675,10 +675,10 @@ Value::Value( const NamesScopePtr& namespace_ )
 	something_= namespace_;
 }
 
-Value::Value( const ClassTemplatePtr& class_template )
+Value::Value( const TypeTemplatePtr& type_template )
 {
-	U_ASSERT( class_template != nullptr );
-	something_= class_template;
+	U_ASSERT( type_template != nullptr );
+	something_= type_template;
 }
 
 Value::Value( TemplateDependentValue template_dependent_value )
@@ -718,8 +718,8 @@ const Type& Value::GetType() const
 		void operator()( const NamesScopePtr& )
 		{ type= &g_namespace_type_stub; }
 
-		void operator()( const ClassTemplatePtr& )
-		{ type= &g_class_template_type_stub; }
+		void operator()( const TypeTemplatePtr& )
+		{ type= &g_type_template_type_stub; }
 
 		void operator()( const TemplateDependentValue& )
 		{ type= &g_template_dependent_type_stub; }
@@ -796,12 +796,12 @@ NamesScopePtr Value::GetNamespace() const
 	return *namespace_;
 }
 
-ClassTemplatePtr Value::GetClassTemplate() const
+TypeTemplatePtr Value::GetTypeTemplate() const
 {
-	const ClassTemplatePtr* const class_template= boost::get<ClassTemplatePtr>( &something_ );
-	if( class_template == nullptr )
+	const TypeTemplatePtr* const type_template= boost::get<TypeTemplatePtr>( &something_ );
+	if( type_template == nullptr )
 		return nullptr;
-	return *class_template;
+	return *type_template;
 }
 
 TemplateDependentValue* Value::GetTemplateDependentValue()

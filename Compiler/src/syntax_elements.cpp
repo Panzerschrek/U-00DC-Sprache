@@ -249,6 +249,10 @@ StaticAssert::StaticAssert( const FilePos& file_pos )
 	: SyntaxElementBase(file_pos)
 {}
 
+Typedef::Typedef( const FilePos& file_pos )
+	: SyntaxElementBase(file_pos)
+{}
+
 FunctionArgumentDeclaration::FunctionArgumentDeclaration(
 	const FilePos& file_pos,
 	ProgramString name,
@@ -289,8 +293,16 @@ ClassDeclaration::ClassDeclaration( const FilePos& file_pos )
 	: SyntaxElementBase( file_pos )
 {}
 
-ClassTemplateDeclaration::ClassTemplateDeclaration( const FilePos& file_pos )
+TemplateBase::TemplateBase( const FilePos& file_pos )
 	: SyntaxElementBase( file_pos )
+{}
+
+ClassTemplateDeclaration::ClassTemplateDeclaration( const FilePos& file_pos )
+	: TemplateBase( file_pos )
+{}
+
+TypedefTemplate::TypedefTemplate( const FilePos& file_pos )
+	: TemplateBase( file_pos )
 {}
 
 Namespace::Namespace( const FilePos& file_pos )

@@ -419,10 +419,10 @@ ClassPtr CodeBuilder::PrepareClass(
 			// SPRACHE_TODO - maybe process classes like functions - after class completion?
 			PrepareClass( *inner_class, inner_class->name_, the_class->members );
 		}
-		else if( const ClassTemplateDeclaration* const inner_class_template=
-			dynamic_cast<const ClassTemplateDeclaration*>( member.get() ) )
+		else if( const TemplateBase* const template_=
+			dynamic_cast<const TemplateBase*>( member.get() ) )
 		{
-			PrepareClassTemplate( *inner_class_template, the_class->members );
+			PrepareTypeTemplate( *template_, the_class->members );
 		}
 		else if( const VariablesDeclaration* variables_declaration=
 			dynamic_cast<const VariablesDeclaration*>( member.get() ) )
@@ -447,6 +447,19 @@ ClassPtr CodeBuilder::PrepareClass(
 			dynamic_cast<const StaticAssert*>( member.get() ) )
 		{
 			BuildStaticAssert( *static_assert_, the_class->members );
+		}
+		else if(
+			const Typedef* typedef_=
+			dynamic_cast<const Typedef*>( member.get() ) )
+		{
+			BuildTypedef( *typedef_, the_class->members );
+		}
+		else if(
+			const TypedefTemplate* const typedef_template=
+			dynamic_cast<const TypedefTemplate*>( member.get() ) )
+		{
+			U_UNUSED( typedef_template );
+			// TODO
 		}
 		else
 			U_ASSERT( false );
@@ -1146,10 +1159,10 @@ void CodeBuilder::BuildNamespaceBody(
 			BuildNamespaceBody( namespace_->elements_, *result_scope );
 		}
 		else if(
-			const ClassTemplateDeclaration* const class_template_declaration=
-			dynamic_cast<const ClassTemplateDeclaration*>( program_element.get() ) )
+			const TemplateBase* const tempate_=
+			dynamic_cast<const TemplateBase*>( program_element.get() ) )
 		{
-			PrepareClassTemplate( *class_template_declaration, names_scope );
+			PrepareTypeTemplate( *tempate_, names_scope );
 		}
 		else if( const VariablesDeclaration* variables_declaration=
 			dynamic_cast<const VariablesDeclaration*>( program_element.get() ) )
@@ -1174,6 +1187,19 @@ void CodeBuilder::BuildNamespaceBody(
 			dynamic_cast<const StaticAssert*>( program_element.get() ) )
 		{
 			BuildStaticAssert( *static_assert_, names_scope );
+		}
+		else if(
+			const Typedef* typedef_=
+			dynamic_cast<const Typedef*>( program_element.get() ) )
+		{
+			BuildTypedef( *typedef_, names_scope );
+		}
+		else if(
+			const TypedefTemplate* const typedef_template=
+			dynamic_cast<const TypedefTemplate*>( program_element.get() ) )
+		{
+			U_UNUSED( typedef_template );
+			// TODO
 		}
 		else
 		{
@@ -2982,6 +3008,22 @@ void CodeBuilder::BuildStaticAssert(
 	}
 }
 
+void CodeBuilder::BuildTypedef(
+	const Typedef& typedef_,
+	NamesScope& names )
+{
+	const Type type= PrepareType( typedef_.file_pos_, typedef_.value, names );
+	if( type == invalid_type_ )
+		return;
+
+	if( NameShadowsTemplateArgument( typedef_.name, names ) )
+		errors_.push_back( ReportDeclarationShadowsTemplateArgument( typedef_.file_pos_, typedef_.name ) );
+
+	const NamesScope::InsertedName* const inserted_name= names.AddName( typedef_.name, type );
+	if( inserted_name == nullptr )
+		errors_.push_back( ReportRedefinition( typedef_.file_pos_, typedef_.name ) );
+}
+
 FunctionVariable* CodeBuilder::GetFunctionWithExactSignature(
 	const Function& function_type,
 	OverloadedFunctionsSet& functions_set )
@@ -3308,7 +3350,7 @@ std::pair<const NamesScope::InsertedName*, NamesScope*> CodeBuilder::ResolveName
 		if( name == nullptr )
 			return std::make_pair( nullptr, nullptr );
 
-		if( components[0].have_template_parameters && name->second.GetClassTemplate() == nullptr )
+		if( components[0].have_template_parameters && name->second.GetTypeTemplate() == nullptr )
 		{
 			errors_.push_back( ReportValueIsNotTemplate( file_pos ) );
 			return std::make_pair( nullptr, nullptr );
@@ -3323,40 +3365,38 @@ std::pair<const NamesScope::InsertedName*, NamesScope*> CodeBuilder::ResolveName
 			if( const ClassPtr class_= type->GetClassType() )
 				next_space= &class_->members;
 		}
-		else if( const ClassTemplatePtr class_template = name->second.GetClassTemplate() )
+		else if( const TypeTemplatePtr type_template = name->second.GetTypeTemplate() )
 		{
 			if( components[0].have_template_parameters )
 			{
-				const NamesScope::InsertedName* generated_class=
-					GenTemplateClass(
+				const NamesScope::InsertedName* generated_type=
+					GenTemplateType(
 						file_pos,
-						class_template,
+						type_template,
 						components[0].template_parameters,
 						*current_space,
 						names_scope );
-				if( generated_class == nullptr )
+				if( generated_type == nullptr )
 					return std::make_pair( nullptr, nullptr );
-				if( generated_class->second.GetType() == NontypeStub::TemplateDependentValue )
-					return std::make_pair( generated_class, current_space );
+				if( generated_type->second.GetType() == NontypeStub::TemplateDependentValue )
+					return std::make_pair( generated_type, current_space );
 
-				const Type* const type= generated_class->second.GetTypeName();
+				const Type* const type= generated_type->second.GetTypeName();
 				if( type->GetTemplateDependentType() != nullptr )
 				{
 					if( component_count >= 2u )
-						return std::make_pair( generated_class, current_space ); // If this name is last, we know, that this is type
+						return std::make_pair( generated_type, current_space ); // If this name is last, we know, that this is type
 					else
 						return std::make_pair( &current_space->GetTemplateDependentValue(), current_space ); // Else it is something really template-dependent
 				}
 				U_ASSERT( type != nullptr );
-				const ClassPtr class_= type->GetClassType();
-				// SPRACHE_TODO - allow non-class types as result of template.
-				U_ASSERT( class_ != nullptr );
-				next_space= &class_->members;
-				name= generated_class;
+				if( const ClassPtr class_= type->GetClassType() )
+					next_space= &class_->members;
+				name= generated_type;
 			}
 			else if( component_count >= 2u )
 			{
-				errors_.push_back( ReportTemplateInstantiationRequired( file_pos, class_template->class_syntax_element->name_.components.back().name ) );
+				errors_.push_back( ReportTemplateInstantiationRequired( file_pos, type_template->syntax_element->name_ ) );
 				return std::make_pair( nullptr, nullptr );
 			}
 		}
