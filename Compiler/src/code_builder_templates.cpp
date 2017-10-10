@@ -394,6 +394,8 @@ bool CodeBuilder::DuduceTemplateArguments(
 	if( class_type == nullptr )
 		return false;
 
+	// SPRACHE_TODO - support type aliases as signature complex arguments.
+
 	typedef boost::variant<NamesScopePtr, ClassPtr> TypePathComponent;
 
 	// Sequence of namespaces/classes, where given type placed. Given type included.

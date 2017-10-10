@@ -167,6 +167,33 @@ U_TEST( TypedefsTest6_TypedefForTwodimensionalArray )
 	U_TEST_ASSERT( 5.0f * 41.0f - 45.0f * 7.0f == result_value.FloatVal );
 }
 
+U_TEST( TypedefsTest7_TypedefForTemplateparameter )
+{
+	static const char c_program_text[]=
+	R"(
+		template</ type T />
+		struct Box</ T />
+		{
+			type Boxed= T;
+			Boxed t;
+		}
+
+		fn Foo() : f32
+		{
+			var Box</ f64 /> box{ .t= 1.457 };
+			return Box</ f32 />::Boxed( box.t );
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	const llvm::GenericValue result_value= engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( 1.457f == result_value.FloatVal );
+}
+
 U_TEST( TypedefsTemplates_Test0 )
 {
 	static const char c_program_text[]=
