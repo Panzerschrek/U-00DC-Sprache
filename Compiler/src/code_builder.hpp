@@ -190,11 +190,6 @@ private:
 		ClassPtr base_class,
 		NamesScope& scope );
 
-	// Code build methods.
-	// Methods without "noexcept" can throw exceptions.
-	// Methods with "noexcept" can not throw exceptions and must catch exceptions.
-	// Throw only in places, where you can not just make continue/return.
-
 	void BuildFuncCode(
 		FunctionVariable& func,
 		ClassPtr base_class,
@@ -202,19 +197,19 @@ private:
 		const ProgramString& func_name,
 		const FunctionArgumentsDeclaration& args,
 		const Block* block, // null for prototypes.
-		const StructNamedInitializer* constructor_initialization_list ) noexcept;
+		const StructNamedInitializer* constructor_initialization_list );
 
 	void BuildConstructorInitialization(
 		const Variable& this_,
 		const Class& base_class,
 		NamesScope& names_scope,
 		FunctionContext& function_context,
-		const StructNamedInitializer& constructor_initialization_list ) noexcept;
+		const StructNamedInitializer& constructor_initialization_list );
 
 	BlockBuildInfo BuildBlockCode(
 		const Block& block,
 		NamesScope& names,
-		FunctionContext& function_context ) noexcept;
+		FunctionContext& function_context );
 
 	// Expressions.
 
@@ -228,7 +223,7 @@ private:
 		NamesScope& names,
 		FunctionContext& function_context );
 
-	Variable BuildBinaryOperator(
+	Value BuildBinaryOperator(
 		const Variable& l_var,
 		const Variable& r_var,
 		BinaryOperatorType binary_operator,
@@ -243,7 +238,7 @@ private:
 		FunctionContext& function_context );
 
 	Value BuildNamedOperand( const NamedOperand& named_operand, NamesScope& names, FunctionContext& function_context );
-	Variable BuildNumericConstant( const NumericConstant& numeric_constant );
+	Value BuildNumericConstant( const NumericConstant& numeric_constant );
 	Variable BuildBooleanConstant( const BooleanConstant& boolean_constant );
 
 	Value BuildIndexationOperator(
@@ -328,11 +323,11 @@ private:
 
 	void BuildBreakOperatorCode(
 		const BreakOperator& break_operator,
-		FunctionContext& function_context ) noexcept;
+		FunctionContext& function_context );
 
 	void BuildContinueOperatorCode(
 		const ContinueOperator& continue_operator,
-		FunctionContext& function_context ) noexcept;
+		FunctionContext& function_context );
 
 	BlockBuildInfo BuildIfOperatorCode(
 		const IfOperator& if_operator,
@@ -353,14 +348,13 @@ private:
 		const Function& function_type,
 		OverloadedFunctionsSet& functions_set );
 
-	// Throws, if can not apply function.
-	void ApplyOverloadedFunction(
+	// Returns "false" on error.
+	bool ApplyOverloadedFunction(
 		OverloadedFunctionsSet& functions_set,
 		const FunctionVariable& function,
 		const FilePos& file_pos );
 
-	// Throws, if can not select function.
-	const FunctionVariable& GetOverloadedFunction(
+	const FunctionVariable* GetOverloadedFunction(
 		const OverloadedFunctionsSet& functions_set,
 		const std::vector<Function::Arg>& actual_args,
 		bool first_actual_arg_is_this,

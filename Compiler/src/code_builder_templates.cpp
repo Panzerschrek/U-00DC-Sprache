@@ -618,23 +618,18 @@ NamesScope::InsertedName* CodeBuilder::GenTemplateType(
 	for( size_t i= 0u; i < type_template.signature_arguments.size(); ++i )
 	{
 		Value value;
-		try
+		if( i < template_arguments.size() )
+			value= BuildExpressionCode( *template_arguments[i], arguments_names_scope, *dummy_function_context_ );
+		else
 		{
-			if( i < template_arguments.size() )
-				value= BuildExpressionCode( *template_arguments[i], arguments_names_scope, *dummy_function_context_ );
-			else
-			{
-				const NamesScope::InsertedName* const name=
-					ResolveName( type_template_ptr->syntax_element->file_pos_, *template_parameters_namespace, *type_template.default_signature_arguments[i] );
-				if( name == nullptr )
-					throw ProgramError();
-				value= name->second;
-			}
+			const NamesScope::InsertedName* const name=
+				ResolveName( type_template_ptr->syntax_element->file_pos_, *template_parameters_namespace, *type_template.default_signature_arguments[i] );
+			if( name == nullptr )
+				continue;
+			value= name->second;
 		}
-		catch( const ProgramError& )
-		{
+		if( value.GetErrorValue() != nullptr )
 			continue;
-		}
 
 		// Each template with template-dependent signature arguments is template-dependent values.
 		if( value.GetType() == NontypeStub::TemplateDependentValue ||

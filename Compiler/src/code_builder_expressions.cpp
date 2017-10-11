@@ -9,6 +9,7 @@
 
 #include "code_builder.hpp"
 
+#define CHECK_RETURN_ERROR_VALUE(value) if( value.GetErrorValue() != nullptr ) { return value; }
 #define CHECK_RETURN_TEMPLATE_DEPENDENT_VALUE(value) if( value.GetType() == NontypeStub::TemplateDependentValue ) { return value; }
 
 namespace U
@@ -68,6 +69,8 @@ Value CodeBuilder::BuildExpressionCode(
 					names,
 					function_context );
 
+			CHECK_RETURN_ERROR_VALUE(l_var_value);
+			CHECK_RETURN_ERROR_VALUE(l_var_value);
 			CHECK_RETURN_TEMPLATE_DEPENDENT_VALUE(l_var_value);
 			CHECK_RETURN_TEMPLATE_DEPENDENT_VALUE(r_var_value);
 
@@ -79,7 +82,7 @@ Value CodeBuilder::BuildExpressionCode(
 			if( r_var == nullptr )
 				errors_.push_back( ReportExpectedVariableInBinaryOperator( binary_operator->file_pos_, r_var_value.GetType().ToString() ) );
 			if( l_var == nullptr || r_var == nullptr )
-				throw ProgramError();
+				return ErrorValue();
 
 			if( l_var->type.GetTemplateDependentType() != nullptr || r_var->type.GetTemplateDependentType() )
 			{
@@ -179,7 +182,7 @@ Value CodeBuilder::BuildExpressionCode(
 	}
 }
 
-Variable CodeBuilder::BuildBinaryOperator(
+Value CodeBuilder::BuildBinaryOperator(
 	const Variable& l_var,
 	const Variable& r_var,
 	const BinaryOperatorType binary_operator,
@@ -206,12 +209,12 @@ Variable CodeBuilder::BuildBinaryOperator(
 		if( r_var.type != l_var.type )
 		{
 			errors_.push_back( ReportNoMatchBinaryOperatorForGivenTypes( file_pos, r_var.type.ToString(), l_var.type.ToString(), BinaryOperatorToString( binary_operator ) ) );
-			throw ProgramError();
+			return ErrorValue();
 		}
 		if( l_fundamental_type == nullptr )
 		{
 			errors_.push_back( ReportOperationNotSupportedForThisType( file_pos, l_type.ToString() ) );
-			throw ProgramError();
+			return ErrorValue();
 		}
 		else
 		{
@@ -219,14 +222,14 @@ Variable CodeBuilder::BuildBinaryOperator(
 			{
 				// Operation supported only for 32 and 64bit operands
 				errors_.push_back( ReportOperationNotSupportedForThisType( file_pos, l_type.ToString() ) );
-				throw ProgramError();
+				return ErrorValue();
 			}
 			const bool is_float= IsFloatingPoint( l_fundamental_type->fundamental_type );
 			if( !( IsInteger( l_fundamental_type->fundamental_type ) || is_float ) )
 			{
 				// this operations allowed only for integer and floating point operands.
 				errors_.push_back( ReportOperationNotSupportedForThisType( file_pos, l_type.ToString() ) );
-				throw ProgramError();
+				return ErrorValue();
 			}
 
 			const bool is_signed= IsSignedInteger( l_fundamental_type->fundamental_type );
@@ -375,12 +378,12 @@ Variable CodeBuilder::BuildBinaryOperator(
 		if( r_var.type != l_var.type )
 		{
 			errors_.push_back( ReportNoMatchBinaryOperatorForGivenTypes( file_pos, r_var.type.ToString(), l_var.type.ToString(), BinaryOperatorToString( binary_operator ) ) );
-			throw ProgramError();
+			return ErrorValue();
 		}
 		if( l_fundamental_type == nullptr )
 		{
 			errors_.push_back( ReportOperationNotSupportedForThisType( file_pos, l_type.ToString() ) );
-			throw ProgramError();
+			return ErrorValue();
 		}
 		else
 		{
@@ -388,7 +391,7 @@ Variable CodeBuilder::BuildBinaryOperator(
 			if( !( IsInteger( l_fundamental_type->fundamental_type ) || if_float || l_fundamental_type->fundamental_type == U_FundamentalType::Bool ) )
 			{
 				errors_.push_back( ReportOperationNotSupportedForThisType( file_pos, l_type.ToString() ) );
-				throw ProgramError();
+				return ErrorValue();
 			}
 
 			llvm::Value* l_value_for_op= nullptr;
@@ -459,12 +462,12 @@ Variable CodeBuilder::BuildBinaryOperator(
 		if( r_var.type != l_var.type )
 		{
 			errors_.push_back( ReportNoMatchBinaryOperatorForGivenTypes( file_pos, r_var.type.ToString(), l_var.type.ToString(), BinaryOperatorToString( binary_operator ) ) );
-			throw ProgramError();
+			return ErrorValue();
 		}
 		if( l_fundamental_type == nullptr )
 		{
 			errors_.push_back( ReportOperationNotSupportedForThisType( file_pos, l_type.ToString() ) );
-			throw ProgramError();
+			return ErrorValue();
 		}
 		else
 		{
@@ -473,7 +476,7 @@ Variable CodeBuilder::BuildBinaryOperator(
 			if( !( IsInteger( l_fundamental_type->fundamental_type ) || if_float ) )
 			{
 				errors_.push_back( ReportOperationNotSupportedForThisType( file_pos, l_type.ToString() ) );
-				throw ProgramError();
+				return ErrorValue();
 			}
 
 			llvm::Value* l_value_for_op= nullptr;
@@ -605,19 +608,19 @@ Variable CodeBuilder::BuildBinaryOperator(
 		if( r_var.type != l_var.type )
 		{
 			errors_.push_back( ReportNoMatchBinaryOperatorForGivenTypes( file_pos, r_var.type.ToString(), l_var.type.ToString(), BinaryOperatorToString( binary_operator ) ) );
-			throw ProgramError();
+			return ErrorValue();
 		}
 		if( l_fundamental_type == nullptr )
 		{
 			errors_.push_back( ReportOperationNotSupportedForThisType( file_pos, l_type.ToString() ) );
-			throw ProgramError();
+			return ErrorValue();
 		}
 		else
 		{
 			if( !( IsInteger( l_fundamental_type->fundamental_type ) || l_fundamental_type->fundamental_type == U_FundamentalType::Bool ) )
 			{
 				errors_.push_back( ReportOperationNotSupportedForThisType( file_pos, l_type.ToString() ) );
-				throw ProgramError();
+				return ErrorValue();
 			}
 
 			llvm::Value* l_value_for_op= nullptr;
@@ -675,12 +678,12 @@ Variable CodeBuilder::BuildBinaryOperator(
 			if( l_fundamental_type == nullptr || !IsInteger( l_fundamental_type->fundamental_type ) )
 			{
 				errors_.push_back( ReportOperationNotSupportedForThisType( file_pos, l_type.ToString() ) );
-				throw ProgramError();
+				return ErrorValue();
 			}
 			if( r_fundamental_type == nullptr || !IsUnsignedInteger( r_fundamental_type->fundamental_type ) )
 			{
 				errors_.push_back( ReportOperationNotSupportedForThisType( file_pos, r_type.ToString() ) );
-				throw ProgramError();
+				return ErrorValue();
 			}
 
 			if( l_var.constexpr_value != nullptr && r_var.constexpr_value != nullptr )
@@ -772,6 +775,8 @@ Value CodeBuilder::BuildLazyBinaryOperator(
 	}
 
 	const Value l_var_value= BuildExpressionCode( l_expression, names, function_context );
+	CHECK_RETURN_ERROR_VALUE(l_var_value);
+
 	if( l_var_value.GetType() == NontypeStub::TemplateDependentValue )
 	{
 		BuildExpressionCodeAndDestroyTemporaries( r_expression, names, function_context );
@@ -786,7 +791,7 @@ Value CodeBuilder::BuildLazyBinaryOperator(
 	if( l_var_value.GetType() != bool_type_ )
 	{
 		errors_.push_back( ReportTypesMismatch( binary_operator.file_pos_, bool_type_.ToString(), l_var_value.GetType().ToString() ) );
-		throw ProgramError();
+		return ErrorValue();
 	}
 	const Variable l_var= *l_var_value.GetVariable();
 
@@ -807,6 +812,8 @@ Value CodeBuilder::BuildLazyBinaryOperator(
 	// Right part of lazy operator is conditinal. So, we must destroy it temporaries only in this condition.
 	// We doesn`t needs longer lifetime of epxression temporaries, because we use only bool result.
 	const Value r_var_value= BuildExpressionCodeAndDestroyTemporaries( r_expression, names, function_context );
+	CHECK_RETURN_ERROR_VALUE(r_var_value);
+
 	llvm::Value* r_var_in_register= nullptr;
 	llvm::Constant* r_var_constepxr_value= nullptr;
 	if( r_var_value.GetType().GetTemplateDependentType() != nullptr )
@@ -818,7 +825,7 @@ Value CodeBuilder::BuildLazyBinaryOperator(
 		if( r_var_value.GetType() != bool_type_ )
 		{
 			errors_.push_back( ReportTypesMismatch( binary_operator.file_pos_, bool_type_.ToString(), r_var_value.GetType().ToString() ) );
-			throw ProgramError();
+			return ErrorValue();
 		}
 		const Variable& r_var= *r_var_value.GetVariable();
 		r_var_constepxr_value= r_var.constexpr_value;
@@ -868,7 +875,7 @@ Value CodeBuilder::BuildNamedOperand(
 		if( function_context.this_ == nullptr || function_context.is_constructor_initializer_list_now )
 		{
 			errors_.push_back( ReportThisUnavailable( named_operand.file_pos_ ) );
-			throw ProgramError();
+			return ErrorValue();
 		}
 		return *function_context.this_;
 	}
@@ -877,7 +884,7 @@ Value CodeBuilder::BuildNamedOperand(
 	if( !name_entry )
 	{
 		errors_.push_back( ReportNameNotFound( named_operand.file_pos_, named_operand.name_ ) );
-		throw ProgramError();
+		return ErrorValue();
 	}
 
 	if( const ClassField* const field= name_entry->second.GetClassField() )
@@ -885,7 +892,7 @@ Value CodeBuilder::BuildNamedOperand(
 		if( function_context.this_ == nullptr )
 		{
 			errors_.push_back( ReportClassFiledAccessInStaticMethod( named_operand.file_pos_, named_operand.name_.components.back().name ) );
-			throw ProgramError();
+			return ErrorValue();
 		}
 
 		const ClassPtr class_= field->class_.lock();
@@ -895,14 +902,14 @@ Value CodeBuilder::BuildNamedOperand(
 		if( Type(class_) != function_context.this_->type )
 		{
 			errors_.push_back( ReportAccessOfNonThisClassField( named_operand.file_pos_, named_operand.name_.components.back().name ) );
-			throw ProgramError();
+			return ErrorValue();
 		}
 
 		if( function_context.is_constructor_initializer_list_now &&
 			function_context.uninitialized_this_fields.find( field ) != function_context.uninitialized_this_fields.end() )
 		{
 			errors_.push_back( ReportFieldIsNotInitializedYet( named_operand.file_pos_, named_operand.name_.components.back().name ) );
-			throw ProgramError();
+			return ErrorValue();
 		}
 
 		Variable field_variable;
@@ -928,7 +935,7 @@ Value CodeBuilder::BuildNamedOperand(
 			{
 				// SPRACHE_TODO - allow call of static methods and parents methods.
 				errors_.push_back( ReportMethodsCallInConstructorInitializerListIsForbidden( named_operand.file_pos_, named_operand.name_.components.back().name ) );
-				throw ProgramError();
+				return ErrorValue();
 			}
 
 			// Trying add "this" to functions set.
@@ -950,13 +957,13 @@ Value CodeBuilder::BuildNamedOperand(
 	return name_entry->second;
 }
 
-Variable CodeBuilder::BuildNumericConstant( const NumericConstant& numeric_constant )
+Value CodeBuilder::BuildNumericConstant( const NumericConstant& numeric_constant )
 {
 	U_FundamentalType type= GetNumericConstantType( numeric_constant );
 	if( type == U_FundamentalType::InvalidType )
 	{
 		errors_.push_back( ReportUnknownNumericConstantType( numeric_constant.file_pos_, numeric_constant.type_suffix_ ) );
-		throw ProgramError();
+		return ErrorValue();
 	}
 	llvm::Type* const llvm_type= GetFundamentalLLVMType( type );
 
@@ -1002,6 +1009,8 @@ Value CodeBuilder::BuildIndexationOperator(
 	NamesScope& names,
 	FunctionContext& function_context )
 {
+	CHECK_RETURN_ERROR_VALUE(value);
+
 	if( value.GetType() == NontypeStub::TemplateDependentValue )
 	{
 		BuildExpressionCode(
@@ -1026,7 +1035,7 @@ Value CodeBuilder::BuildIndexationOperator(
 	if( array_type == nullptr )
 	{
 		errors_.push_back( ReportOperationNotSupportedForThisType( indexation_operator.file_pos_, value.GetType().ToString() ) );
-		throw ProgramError();
+		return ErrorValue();
 	}
 	const Variable& variable= *value.GetVariable();
 
@@ -1035,6 +1044,7 @@ Value CodeBuilder::BuildIndexationOperator(
 			*indexation_operator.index_,
 			names,
 			function_context );
+	CHECK_RETURN_ERROR_VALUE(index_value);
 	CHECK_RETURN_TEMPLATE_DEPENDENT_VALUE(index_value);
 
 	if( index_value.GetType().GetTemplateDependentType() != nullptr )
@@ -1051,14 +1061,14 @@ Value CodeBuilder::BuildIndexationOperator(
 		!IsUnsignedInteger( index_fundamental_type->fundamental_type ) )
 	{
 		errors_.push_back( ReportTypesMismatch( indexation_operator.file_pos_, "any unsigned integer"_SpC, index_value.GetType().ToString() ) );
-		throw ProgramError();
+		return ErrorValue();
 	}
 	const Variable& index= *index_value.GetVariable();
 
 	if( variable.location != Variable::Location::Pointer )
 	{
 		// TODO - Strange variable location.
-		throw ProgramError();
+		return ErrorValue();
 	}
 
 	// If index is constant and not undefined and array size is not undefined - statically check index.
@@ -1100,6 +1110,7 @@ Value CodeBuilder::BuildMemberAccessOperator(
 	const MemberAccessOperator& member_access_operator,
 	FunctionContext& function_context )
 {
+	CHECK_RETURN_ERROR_VALUE(value);
 	CHECK_RETURN_TEMPLATE_DEPENDENT_VALUE(value);
 	if( value.GetType().GetTemplateDependentType() != nullptr )
 		return TemplateDependentValue();
@@ -1108,13 +1119,13 @@ Value CodeBuilder::BuildMemberAccessOperator(
 	if( class_type == nullptr )
 	{
 		errors_.push_back( ReportOperationNotSupportedForThisType( member_access_operator.file_pos_, value.GetType().ToString() ) );
-		throw ProgramError();
+		return ErrorValue();
 	}
 
 	if( class_type->is_incomplete )
 	{
 		errors_.push_back( ReportUsingIncompleteType( member_access_operator.file_pos_, value.GetType().ToString() ) );
-		throw ProgramError();
+		return ErrorValue();
 	}
 
 	const Variable& variable= *value.GetVariable();
@@ -1123,7 +1134,7 @@ Value CodeBuilder::BuildMemberAccessOperator(
 	if( class_member == nullptr )
 	{
 		errors_.push_back( ReportNameNotFound( member_access_operator.file_pos_, member_access_operator.member_name_ ) );
-		throw ProgramError();
+		return ErrorValue();
 	}
 
 	if( const OverloadedFunctionsSet* const functions_set= class_member->second.GetFunctionsSet() )
@@ -1138,7 +1149,7 @@ Value CodeBuilder::BuildMemberAccessOperator(
 	if( field == nullptr )
 	{
 		errors_.push_back( ReportNotImplemented( member_access_operator.file_pos_, "class members, except fields or methods" ) );
-		throw ProgramError();
+		return ErrorValue();
 	}
 
 	// Make first index = 0 for array to pointer conversion.
@@ -1161,6 +1172,8 @@ Value CodeBuilder::BuildCallOperator(
 	NamesScope& names,
 	FunctionContext& function_context )
 {
+	CHECK_RETURN_ERROR_VALUE(function_value);
+
 	if( function_value.GetType() == NontypeStub::TemplateDependentValue )
 	{
 		for( const IExpressionComponentPtr& arg_expression : call_operator.arguments_ )
@@ -1194,7 +1207,7 @@ Value CodeBuilder::BuildCallOperator(
 	if( functions_set == nullptr )
 	{
 		errors_.push_back( ReportOperationNotSupportedForThisType( call_operator.file_pos_, function_value.GetType().ToString() ) );
-		throw ProgramError();
+		return ErrorValue();
 	}
 
 	size_t this_count= this_ == nullptr ? 0u : 1u;
@@ -1221,6 +1234,8 @@ Value CodeBuilder::BuildCallOperator(
 	{
 		U_ASSERT( arg_expression != nullptr );
 		const Value expr_value= BuildExpressionCode( *arg_expression, names, function_context );
+		CHECK_RETURN_ERROR_VALUE(expr_value);
+
 		if( expr_value.GetType() == NontypeStub::TemplateDependentValue)
 		{
 			args_are_template_dependent= true;
@@ -1231,7 +1246,7 @@ Value CodeBuilder::BuildCallOperator(
 		if( expr == nullptr )
 		{
 			errors_.push_back( ReportExpectedVariableAsArgument( arg_expression->GetFilePos(), expr_value.GetType().ToString() ) );
-			throw ProgramError();
+			return ErrorValue();
 		}
 
 		actual_args.emplace_back();
@@ -1246,8 +1261,11 @@ Value CodeBuilder::BuildCallOperator(
 
 	// SPRACHE_TODO - try get function with "this" parameter in signature and without it.
 	// We must support static functions call using "this".
-	const FunctionVariable& function=
+	const FunctionVariable* function_ptr=
 		GetOverloadedFunction( *functions_set, actual_args, this_ != nullptr, call_operator.file_pos_ );
+	if( function_ptr == nullptr )
+		return ErrorValue();
+	const FunctionVariable& function= *function_ptr;
 	const Function& function_type= *function.type.GetFunctionType();
 
 	if( this_ != nullptr && !function.is_this_call )
@@ -1263,13 +1281,13 @@ Value CodeBuilder::BuildCallOperator(
 	if( this_ == nullptr && function.is_this_call )
 	{
 		errors_.push_back( ReportCallOfThiscallFunctionUsingNonthisArgument( call_operator.file_pos_ ) );
-		throw ProgramError();
+		return ErrorValue();
 	}
 
 	if( function_type.args.size() != actual_args.size() )
 	{
 		errors_.push_back( ReportFunctionSignatureMismatch( call_operator.file_pos_ ) );
-		throw ProgramError();
+		return ErrorValue();
 	}
 
 	std::vector<llvm::Value*> llvm_args;
@@ -1298,7 +1316,7 @@ Value CodeBuilder::BuildCallOperator(
 		if( !something_have_template_dependent_type && expr.type != arg.type )
 		{
 			errors_.push_back( ReportFunctionSignatureMismatch( file_pos ) );
-			throw ProgramError();
+			return ErrorValue();
 		}
 
 		if( arg.is_reference )
@@ -1308,12 +1326,12 @@ Value CodeBuilder::BuildCallOperator(
 				if( expr.value_type == ValueType::Value )
 				{
 					errors_.push_back( ReportExpectedReferenceValue( file_pos ) );
-					throw ProgramError();
+					return ErrorValue();
 				}
 				if( expr.value_type == ValueType::ConstReference )
 				{
 					errors_.push_back( ReportBindingConstReferenceToNonconstReference( file_pos ) );
-					throw ProgramError();
+					return ErrorValue();
 				}
 
 				llvm_args.push_back(expr.llvm_value);
@@ -1448,7 +1466,9 @@ Value CodeBuilder::BuildUnaryMinus(
 	const UnaryMinus& unary_minus,
 	FunctionContext& function_context )
 {
+	CHECK_RETURN_ERROR_VALUE(value);
 	CHECK_RETURN_TEMPLATE_DEPENDENT_VALUE(value);
+
 	if( value.GetType().GetTemplateDependentType() != nullptr )
 	{
 		Variable result;
@@ -1461,7 +1481,7 @@ Value CodeBuilder::BuildUnaryMinus(
 	if( fundamental_type == nullptr )
 	{
 		errors_.push_back( ReportOperationNotSupportedForThisType( unary_minus.file_pos_, value.GetType().ToString() ) );
-		throw ProgramError();
+		return ErrorValue();
 	}
 	const Variable variable= *value.GetVariable();
 
@@ -1469,7 +1489,7 @@ Value CodeBuilder::BuildUnaryMinus(
 	if( !( IsInteger( fundamental_type->fundamental_type ) || is_float ) )
 	{
 		errors_.push_back( ReportOperationNotSupportedForThisType( unary_minus.file_pos_, variable.type.ToString() ) );
-		throw ProgramError();
+		return ErrorValue();
 	}
 	// TODO - maybe not support unary minus for 8 and 16 bot integer types?
 
@@ -1502,7 +1522,9 @@ Value CodeBuilder::BuildLogicalNot(
 	const LogicalNot& logical_not,
 	FunctionContext& function_context )
 {
+	CHECK_RETURN_ERROR_VALUE(value);
 	CHECK_RETURN_TEMPLATE_DEPENDENT_VALUE(value);
+
 	if( value.GetType().GetTemplateDependentType() != nullptr )
 	{
 		Variable result;
@@ -1514,7 +1536,7 @@ Value CodeBuilder::BuildLogicalNot(
 	if( value.GetType() != bool_type_ )
 	{
 		errors_.push_back( ReportOperationNotSupportedForThisType( logical_not.file_pos_, value.GetType().ToString() ) );
-		throw ProgramError();
+		return ErrorValue();
 	}
 	const Variable& variable= *value.GetVariable();
 
@@ -1539,7 +1561,9 @@ Value CodeBuilder::BuildBitwiseNot(
 	const BitwiseNot& bitwise_not,
 	FunctionContext& function_context )
 {
+	CHECK_RETURN_ERROR_VALUE(value);
 	CHECK_RETURN_TEMPLATE_DEPENDENT_VALUE(value);
+
 	if( value.GetType().GetTemplateDependentType() != nullptr )
 	{
 		Variable result;
@@ -1552,12 +1576,12 @@ Value CodeBuilder::BuildBitwiseNot(
 	if( fundamental_type == nullptr )
 	{
 		errors_.push_back( ReportOperationNotSupportedForThisType( bitwise_not.file_pos_, value.GetType().ToString() ) );
-		throw ProgramError();
+		return ErrorValue();
 	}
 	if( !IsInteger( fundamental_type->fundamental_type ) )
 	{
 		errors_.push_back( ReportOperationNotSupportedForThisType( bitwise_not.file_pos_, value.GetType().ToString() ) );
-		throw ProgramError();
+		return ErrorValue();
 	}
 
 	const Variable variable= *value.GetVariable();

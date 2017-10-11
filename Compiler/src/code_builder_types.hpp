@@ -61,6 +61,7 @@ enum class NontypeStub
 	TypeTemplate,
 	TemplateDependentValue,
 	YetNotDeducedTemplateArg,
+	ErrorValue,
 };
 
 bool operator==( const FundamentalType& r, const FundamentalType& l );
@@ -226,6 +227,9 @@ struct TemplateDependentValue final
 struct YetNotDeducedTemplateArg final
 {};
 
+struct ErrorValue final
+{};
+
 class Value final
 {
 public:
@@ -240,6 +244,7 @@ public:
 	Value( const TypeTemplatePtr& type_template );
 	Value( TemplateDependentValue template_dependent_value );
 	Value( YetNotDeducedTemplateArg yet_not_deduced_template_arg );
+	Value( ErrorValue error_value );
 
 	const Type& GetType() const;
 
@@ -270,6 +275,9 @@ public:
 	// Yet not deduced template arg
 	YetNotDeducedTemplateArg* GetYetNotDeducedTemplateArg();
 	const YetNotDeducedTemplateArg* GetYetNotDeducedTemplateArg() const;
+	// Error value
+	ErrorValue* GetErrorValue();
+	const ErrorValue* GetErrorValue() const;
 
 private:
 	boost::variant<
@@ -282,7 +290,8 @@ private:
 		NamesScopePtr,
 		TypeTemplatePtr,
 		TemplateDependentValue,
-		YetNotDeducedTemplateArg > something_;
+		YetNotDeducedTemplateArg,
+		ErrorValue > something_;
 };
 
 // "Class" of function argument in terms of overloading.
@@ -370,17 +379,6 @@ typedef
 		ResolvingCacheValue,
 		NameResolvingKeyHasher,
 		NameResolvingKeyHasher > ResolvingCache;
-
-class ProgramError final : public std::exception
-{
-public:
-	virtual ~ProgramError() override{}
-
-	virtual const char* what() const noexcept override
-	{
-		return "ProgramError";
-	}
-};
 
 typedef boost::variant< Variable, Type > TemplateParameter;
 

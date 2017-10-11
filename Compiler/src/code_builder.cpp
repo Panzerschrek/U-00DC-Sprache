@@ -427,20 +427,12 @@ ClassPtr CodeBuilder::PrepareClass(
 		else if( const VariablesDeclaration* variables_declaration=
 			dynamic_cast<const VariablesDeclaration*>( member.get() ) )
 		{
-			try
-			{
-				BuildVariablesDeclarationCode( *variables_declaration, the_class->members, *dummy_function_context_, true );
-			}
-			catch( const ProgramError& ) {}
+			BuildVariablesDeclarationCode( *variables_declaration, the_class->members, *dummy_function_context_, true );
 		}
 		else if( const AutoVariableDeclaration* auto_variable_declaration=
 			dynamic_cast<const AutoVariableDeclaration*>( member.get() ) )
 		{
-			try
-			{
-				BuildAutoVariableDeclarationCode( *auto_variable_declaration, the_class->members, *dummy_function_context_, true );
-			}
-			catch( const ProgramError& ) {}
+			BuildAutoVariableDeclarationCode( *auto_variable_declaration, the_class->members, *dummy_function_context_, true );
 		}
 		else if(
 			const StaticAssert* static_assert_=
@@ -1167,20 +1159,12 @@ void CodeBuilder::BuildNamespaceBody(
 		else if( const VariablesDeclaration* variables_declaration=
 			dynamic_cast<const VariablesDeclaration*>( program_element.get() ) )
 		{
-			try
-			{
-				BuildVariablesDeclarationCode( *variables_declaration, names_scope, *dummy_function_context_, true );
-			}
-			catch( const ProgramError& ) {}
+			BuildVariablesDeclarationCode( *variables_declaration, names_scope, *dummy_function_context_, true );
 		}
 		else if( const AutoVariableDeclaration* auto_variable_declaration=
 			dynamic_cast<const AutoVariableDeclaration*>( program_element.get() ) )
 		{
-			try
-			{
-				BuildAutoVariableDeclarationCode( *auto_variable_declaration, names_scope, *dummy_function_context_, true );
-			}
-			catch( const ProgramError& ) {}
+			BuildAutoVariableDeclarationCode( *auto_variable_declaration, names_scope, *dummy_function_context_, true );
 		}
 		else if(
 			const StaticAssert* static_assert_=
@@ -1459,14 +1443,10 @@ CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 					return result;
 				}
 
-				try
-				{
+				const bool overloading_ok=
 					ApplyOverloadedFunction( *functions_set, func_variable, func.file_pos_ );
-				}
-				catch( const ProgramError& )
-				{
+				if( !overloading_ok )
 					return result;
-				}
 
 				BuildFuncCode(
 					functions_set->back(),
@@ -1497,7 +1477,7 @@ void CodeBuilder::BuildFuncCode(
 	const ProgramString& func_name,
 	const FunctionArgumentsDeclaration& args,
 	const Block* const block,
-	const StructNamedInitializer* const constructor_initialization_list ) noexcept
+	const StructNamedInitializer* const constructor_initialization_list )
 {
 	std::vector<llvm::Type*> args_llvm_types;
 	Function* const function_type= func_variable.type.GetFunctionType();
@@ -1840,7 +1820,7 @@ void CodeBuilder::BuildConstructorInitialization(
 	const Class& base_class,
 	NamesScope& names_scope,
 	FunctionContext& function_context,
-	const StructNamedInitializer& constructor_initialization_list ) noexcept
+	const StructNamedInitializer& constructor_initialization_list )
 {
 	std::set<ProgramString> initialized_fields;
 
@@ -1899,22 +1879,18 @@ void CodeBuilder::BuildConstructorInitialization(
 		const ClassField* const field= class_member->second.GetClassField();
 		U_ASSERT( field != nullptr );
 
-		try
-		{
-			Variable field_variable;
-			field_variable.type= field->type;
-			field_variable.location= Variable::Location::Pointer;
-			field_variable.value_type= ValueType::Reference;
+		Variable field_variable;
+		field_variable.type= field->type;
+		field_variable.location= Variable::Location::Pointer;
+		field_variable.value_type= ValueType::Reference;
 
-			llvm::Value* index_list[2];
-			index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
-			index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(field->index) ) );
-			field_variable.llvm_value=
-				function_context.llvm_ir_builder.CreateGEP( this_.llvm_value, llvm::ArrayRef<llvm::Value*> ( index_list, 2u ) );
+		llvm::Value* index_list[2];
+		index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
+		index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(field->index) ) );
+		field_variable.llvm_value=
+			function_context.llvm_ir_builder.CreateGEP( this_.llvm_value, llvm::ArrayRef<llvm::Value*> ( index_list, 2u ) );
 
-			ApplyEmptyInitializer( field_name, constructor_initialization_list.file_pos_, field_variable, function_context );
-		}
-		catch( const ProgramError& ){}
+		ApplyEmptyInitializer( field_name, constructor_initialization_list.file_pos_, field_variable, function_context );
 	}
 
 	if( have_fields_errors )
@@ -1928,23 +1904,19 @@ void CodeBuilder::BuildConstructorInitialization(
 		const ClassField* const field= class_member->second.GetClassField();
 		U_ASSERT( field != nullptr );
 
-		try
-		{
-			Variable field_variable;
-			field_variable.type= field->type;
-			field_variable.location= Variable::Location::Pointer;
-			field_variable.value_type= ValueType::Reference;
+		Variable field_variable;
+		field_variable.type= field->type;
+		field_variable.location= Variable::Location::Pointer;
+		field_variable.value_type= ValueType::Reference;
 
-			llvm::Value* index_list[2];
-			index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
-			index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(field->index) ) );
-			field_variable.llvm_value=
-				function_context.llvm_ir_builder.CreateGEP( this_.llvm_value, llvm::ArrayRef<llvm::Value*> ( index_list, 2u ) );
+		llvm::Value* index_list[2];
+		index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
+		index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(field->index) ) );
+		field_variable.llvm_value=
+			function_context.llvm_ir_builder.CreateGEP( this_.llvm_value, llvm::ArrayRef<llvm::Value*> ( index_list, 2u ) );
 
-			U_ASSERT( field_initializer.initializer != nullptr );
-			ApplyInitializer( field_variable, *field_initializer.initializer, names_scope, function_context );
-		}
-		catch( const ProgramError& ){}
+		U_ASSERT( field_initializer.initializer != nullptr );
+		ApplyInitializer( field_variable, *field_initializer.initializer, names_scope, function_context );
 
 		function_context.uninitialized_this_fields.erase( field );
 	} // for fields initializers
@@ -1953,7 +1925,7 @@ void CodeBuilder::BuildConstructorInitialization(
 CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockCode(
 	const Block& block,
 	NamesScope& names,
-	FunctionContext& function_context ) noexcept
+	FunctionContext& function_context )
 {
 	NamesScope block_names( ""_SpC, &names );
 	BlockBuildInfo block_build_info;
@@ -1972,154 +1944,145 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockCode(
 				errors_.push_back( ReportUnreachableCode( block.elements_[ block_element_index + 1u ]->GetFilePos() ) );
 		};
 
-		try
+		if( const VariablesDeclaration* variables_declaration=
+			dynamic_cast<const VariablesDeclaration*>( block_element_ptr ) )
 		{
-			if( const VariablesDeclaration* variables_declaration=
-				dynamic_cast<const VariablesDeclaration*>( block_element_ptr ) )
-			{
-				BuildVariablesDeclarationCode( *variables_declaration, block_names, function_context );
-			}
-			else if( const AutoVariableDeclaration* auto_variable_declaration=
-				dynamic_cast<const AutoVariableDeclaration*>( block_element_ptr ) )
-			{
-				BuildAutoVariableDeclarationCode( *auto_variable_declaration, block_names, function_context );
-			}
-			else if(
-				const SingleExpressionOperator* expression=
-				dynamic_cast<const SingleExpressionOperator*>( block_element_ptr ) )
-			{
-				BuildExpressionCodeAndDestroyTemporaries(
-					*expression->expression_,
-					block_names,
-					function_context );
-			}
-			else if(
-				const AssignmentOperator* assignment_operator=
-				dynamic_cast<const AssignmentOperator*>( block_element_ptr ) )
-			{
-				BuildAssignmentOperatorCode( *assignment_operator, block_names, function_context );
-			}
-			else if(
-				const AdditiveAssignmentOperator* additive_assignment_operator=
-				dynamic_cast<const AdditiveAssignmentOperator*>( block_element_ptr ) )
-			{
-				BuildAdditiveAssignmentOperatorCode( *additive_assignment_operator, block_names, function_context );
-			}
-			else if(
-				const IncrementOperator* increment_operator=
-				dynamic_cast<const IncrementOperator*>( block_element_ptr ) )
-			{
-				BuildDeltaOneOperatorCode(
-					*increment_operator->expression,
-					increment_operator->file_pos_,
-					true,
-					block_names,
-					function_context );
-			}
-			else if(
-				const DecrementOperator* decrement_operator=
-				dynamic_cast<const DecrementOperator*>( block_element_ptr ) )
-			{
-				BuildDeltaOneOperatorCode(
-					*decrement_operator->expression,
-					decrement_operator->file_pos_,
-					false,
-					block_names,
-					function_context );
-			}
-			else if(
-				const ReturnOperator* return_operator=
-				dynamic_cast<const ReturnOperator*>( block_element_ptr ) )
-			{
-				BuildReturnOperatorCode(
-					*return_operator,
-					block_names,
-					function_context );
-
-				block_build_info.have_unconditional_return_inside= true;
-				try_report_unreachable_code();
-			}
-			else if(
-				const WhileOperator* while_operator=
-				dynamic_cast<const WhileOperator*>( block_element_ptr ) )
-			{
-				BuildWhileOperatorCode(
-					*while_operator,
-					block_names,
-					function_context );
-			}
-			else if(
-				const BreakOperator* break_operator=
-				dynamic_cast<const BreakOperator*>( block_element_ptr ) )
-			{
-				BuildBreakOperatorCode(
-					*break_operator,
-					function_context );
-
-				block_build_info.have_uncodnitional_break_or_continue= true;
-				try_report_unreachable_code();
-			}
-			else if(
-				const ContinueOperator* continue_operator=
-				dynamic_cast<const ContinueOperator*>( block_element_ptr ) )
-			{
-				BuildContinueOperatorCode(
-					*continue_operator,
-					function_context );
-
-				block_build_info.have_uncodnitional_break_or_continue= true;
-				try_report_unreachable_code();
-			}
-			else if(
-				const IfOperator* if_operator=
-				dynamic_cast<const IfOperator*>( block_element_ptr ) )
-			{
-				const CodeBuilder::BlockBuildInfo if_block_info=
-					BuildIfOperatorCode(
-						*if_operator,
-						block_names,
-						function_context );
-
-				block_build_info.have_unconditional_return_inside=
-					block_build_info.have_unconditional_return_inside || if_block_info.have_unconditional_return_inside;
-				block_build_info.have_uncodnitional_break_or_continue=
-					block_build_info.have_uncodnitional_break_or_continue || if_block_info.have_uncodnitional_break_or_continue;
-
-				if( if_block_info.have_unconditional_return_inside ||
-					block_build_info.have_uncodnitional_break_or_continue )
-					try_report_unreachable_code();
-			}
-			else if(
-				const StaticAssert* static_assert_=
-				dynamic_cast<const StaticAssert*>( block_element_ptr ) )
-			{
-				BuildStaticAssert( *static_assert_, block_names );
-			}
-			else if(
-				const Block* block=
-				dynamic_cast<const Block*>( block_element_ptr ) )
-			{
-				const BlockBuildInfo inner_block_build_info=
-					BuildBlockCode( *block, block_names, function_context );
-
-				block_build_info.have_unconditional_return_inside=
-					block_build_info.have_unconditional_return_inside || inner_block_build_info.have_unconditional_return_inside;
-				block_build_info.have_uncodnitional_break_or_continue=
-					block_build_info.have_uncodnitional_break_or_continue || inner_block_build_info.have_uncodnitional_break_or_continue;
-
-				if( inner_block_build_info.have_unconditional_return_inside ||
-					block_build_info.have_uncodnitional_break_or_continue )
-					try_report_unreachable_code();
-			}
-			else
-			{
-				U_ASSERT(false);
-			}
+			BuildVariablesDeclarationCode( *variables_declaration, block_names, function_context );
 		}
-		catch( const ProgramError& )
+		else if( const AutoVariableDeclaration* auto_variable_declaration=
+			dynamic_cast<const AutoVariableDeclaration*>( block_element_ptr ) )
 		{
-			error_count_++;
+			BuildAutoVariableDeclarationCode( *auto_variable_declaration, block_names, function_context );
 		}
+		else if(
+			const SingleExpressionOperator* expression=
+			dynamic_cast<const SingleExpressionOperator*>( block_element_ptr ) )
+		{
+			BuildExpressionCodeAndDestroyTemporaries(
+				*expression->expression_,
+				block_names,
+				function_context );
+		}
+		else if(
+			const AssignmentOperator* assignment_operator=
+			dynamic_cast<const AssignmentOperator*>( block_element_ptr ) )
+		{
+			BuildAssignmentOperatorCode( *assignment_operator, block_names, function_context );
+		}
+		else if(
+			const AdditiveAssignmentOperator* additive_assignment_operator=
+			dynamic_cast<const AdditiveAssignmentOperator*>( block_element_ptr ) )
+		{
+			BuildAdditiveAssignmentOperatorCode( *additive_assignment_operator, block_names, function_context );
+		}
+		else if(
+			const IncrementOperator* increment_operator=
+			dynamic_cast<const IncrementOperator*>( block_element_ptr ) )
+		{
+			BuildDeltaOneOperatorCode(
+				*increment_operator->expression,
+				increment_operator->file_pos_,
+				true,
+				block_names,
+				function_context );
+		}
+		else if(
+			const DecrementOperator* decrement_operator=
+			dynamic_cast<const DecrementOperator*>( block_element_ptr ) )
+		{
+			BuildDeltaOneOperatorCode(
+				*decrement_operator->expression,
+				decrement_operator->file_pos_,
+				false,
+				block_names,
+				function_context );
+		}
+		else if(
+			const ReturnOperator* return_operator=
+			dynamic_cast<const ReturnOperator*>( block_element_ptr ) )
+		{
+			BuildReturnOperatorCode(
+				*return_operator,
+				block_names,
+				function_context );
+
+			block_build_info.have_unconditional_return_inside= true;
+			try_report_unreachable_code();
+		}
+		else if(
+			const WhileOperator* while_operator=
+			dynamic_cast<const WhileOperator*>( block_element_ptr ) )
+		{
+			BuildWhileOperatorCode(
+				*while_operator,
+				block_names,
+				function_context );
+		}
+		else if(
+			const BreakOperator* break_operator=
+			dynamic_cast<const BreakOperator*>( block_element_ptr ) )
+		{
+			BuildBreakOperatorCode(
+				*break_operator,
+				function_context );
+
+			block_build_info.have_uncodnitional_break_or_continue= true;
+			try_report_unreachable_code();
+		}
+		else if(
+			const ContinueOperator* continue_operator=
+			dynamic_cast<const ContinueOperator*>( block_element_ptr ) )
+		{
+			BuildContinueOperatorCode(
+				*continue_operator,
+				function_context );
+
+			block_build_info.have_uncodnitional_break_or_continue= true;
+			try_report_unreachable_code();
+		}
+		else if(
+			const IfOperator* if_operator=
+			dynamic_cast<const IfOperator*>( block_element_ptr ) )
+		{
+			const CodeBuilder::BlockBuildInfo if_block_info=
+				BuildIfOperatorCode(
+					*if_operator,
+					block_names,
+					function_context );
+
+			block_build_info.have_unconditional_return_inside=
+				block_build_info.have_unconditional_return_inside || if_block_info.have_unconditional_return_inside;
+			block_build_info.have_uncodnitional_break_or_continue=
+				block_build_info.have_uncodnitional_break_or_continue || if_block_info.have_uncodnitional_break_or_continue;
+
+			if( if_block_info.have_unconditional_return_inside ||
+				block_build_info.have_uncodnitional_break_or_continue )
+				try_report_unreachable_code();
+		}
+		else if(
+			const StaticAssert* static_assert_=
+			dynamic_cast<const StaticAssert*>( block_element_ptr ) )
+		{
+			BuildStaticAssert( *static_assert_, block_names );
+		}
+		else if(
+			const Block* block=
+			dynamic_cast<const Block*>( block_element_ptr ) )
+		{
+			const BlockBuildInfo inner_block_build_info=
+				BuildBlockCode( *block, block_names, function_context );
+
+			block_build_info.have_unconditional_return_inside=
+				block_build_info.have_unconditional_return_inside || inner_block_build_info.have_unconditional_return_inside;
+			block_build_info.have_uncodnitional_break_or_continue=
+				block_build_info.have_uncodnitional_break_or_continue || inner_block_build_info.have_uncodnitional_break_or_continue;
+
+			if( inner_block_build_info.have_unconditional_return_inside ||
+				block_build_info.have_uncodnitional_break_or_continue )
+				try_report_unreachable_code();
+		}
+		else
+			U_ASSERT(false);
 	}
 
 	// If there are undconditional "break", "continue", "return" operators,
@@ -2582,7 +2545,7 @@ void CodeBuilder::BuildAdditiveAssignmentOperatorCode(
 	if( r_var == nullptr )
 		errors_.push_back( ReportExpectedVariableInAdditiveAssignment( additive_assignment_operator.file_pos_, r_var_value.GetType().ToString() ) );
 	if( l_var == nullptr || r_var == nullptr )
-		throw ProgramError();
+		return;
 
 	const FundamentalType* const l_var_fundamental_type= l_var->type.GetFundamentalType();
 	const FundamentalType* const r_var_fundamental_type= r_var->type.GetFundamentalType();
@@ -2590,12 +2553,15 @@ void CodeBuilder::BuildAdditiveAssignmentOperatorCode(
 	{
 		// Generate binary operator and assignment for fundamental types.
 		// SPRACHE_TODO - do not call "BuildBinaryOperator", when operators overloading will be implemented.
-		const Variable operation_result=
+		const Value operation_result_value=
 			BuildBinaryOperator(
 				*l_var, *r_var,
 				additive_assignment_operator.additive_operation_,
 				additive_assignment_operator.file_pos_,
 				function_context );
+		if( operation_result_value.GetVariable() == nullptr ) // Not variable in case of error or if template-dependent stuff.
+			return;
+		const Variable& operation_result= *operation_result_value.GetVariable();
 
 		if( l_var->value_type != ValueType::Reference )
 		{
@@ -2847,7 +2813,7 @@ void CodeBuilder::BuildWhileOperatorCode(
 
 void CodeBuilder::BuildBreakOperatorCode(
 	const BreakOperator& break_operator,
-	FunctionContext& function_context ) noexcept
+	FunctionContext& function_context )
 {
 	if( function_context.loops_stack.empty() )
 	{
@@ -2862,7 +2828,7 @@ void CodeBuilder::BuildBreakOperatorCode(
 
 void CodeBuilder::BuildContinueOperatorCode(
 	const ContinueOperator& continue_operator,
-	FunctionContext& function_context ) noexcept
+	FunctionContext& function_context )
 {
 	if( function_context.loops_stack.empty() )
 	{
@@ -2932,7 +2898,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildIfOperatorCode(
 							branch.condition->GetFilePos(),
 							bool_type_.ToString(),
 							condition_expression.GetType().ToString() ) );
-					throw ProgramError();
+					return if_operator_blocks_build_info;
 				}
 
 				llvm::Value* condition_in_register= CreateMoveToLLVMRegisterInstruction( *condition_expression.GetVariable(), function_context );
@@ -3039,7 +3005,7 @@ FunctionVariable* CodeBuilder::GetFunctionWithExactSignature(
 	return nullptr;
 }
 
-void CodeBuilder::ApplyOverloadedFunction(
+bool CodeBuilder::ApplyOverloadedFunction(
 	OverloadedFunctionsSet& functions_set,
 	const FunctionVariable& function,
 	const FilePos& file_pos )
@@ -3047,7 +3013,7 @@ void CodeBuilder::ApplyOverloadedFunction(
 	if( functions_set.empty() )
 	{
 		functions_set.push_back(function);
-		return;
+		return true;
 	}
 
 	const Function* function_type= function.type.GetFunctionType();
@@ -3083,15 +3049,16 @@ void CodeBuilder::ApplyOverloadedFunction(
 		if( arg_is_same_count == function_type->args.size() )
 		{
 			errors_.push_back( ReportCouldNotOverloadFunction(file_pos) );
-			throw ProgramError();
+			return false;
 		}
 	} // For functions in set.
 
 	// No error - add function to set.
 	functions_set.push_back(function);
+	return true;
 }
 
-const FunctionVariable& CodeBuilder::GetOverloadedFunction(
+const FunctionVariable* CodeBuilder::GetOverloadedFunction(
 	const OverloadedFunctionsSet& functions_set,
 	const std::vector<Function::Arg>& actual_args,
 	const bool first_actual_arg_is_this,
@@ -3103,7 +3070,7 @@ const FunctionVariable& CodeBuilder::GetOverloadedFunction(
 	// If we have only one function - return it.
 	// Caller can generate error, if arguments does not match.
 	if( functions_set.size() == 1u )
-		return functions_set.front();
+		return &functions_set.front();
 
 	enum class MatchType
 	{
@@ -3150,7 +3117,7 @@ const FunctionVariable& CodeBuilder::GetOverloadedFunction(
 			// Something is template-dependent. In this case we can return any function with proper number of arguments.
 			if( function_type.args[i].type.GetTemplateDependentType() != nullptr ||
 				actual_args_begin[i].type.GetTemplateDependentType() != nullptr )
-				return function;
+				return &function;
 
 			// SPRACHE_TODO - support type-casting for function call.
 			// SPRACHE_TODO - support references-casting.
@@ -3206,38 +3173,38 @@ const FunctionVariable& CodeBuilder::GetOverloadedFunction(
 	if( !exact_match_functions.empty() )
 	{
 		if( exact_match_functions.size() == 1u )
-			return functions_set[ exact_match_functions.front() ];
+			return &functions_set[ exact_match_functions.front() ];
 		else
 		{
 			errors_.push_back( ReportTooManySuitableOverloadedFunctions( file_pos ) );
-			throw ProgramError();
+			return nullptr;
 		}
 	}
 	else if( !match_with_mut_to_imut_cast_functions.empty() )
 	{
 		if( match_with_mut_to_imut_cast_functions.size() == 1u )
-			return functions_set[ match_with_mut_to_imut_cast_functions.front() ];
+			return &functions_set[ match_with_mut_to_imut_cast_functions.front() ];
 		else
 		{
 			errors_.push_back( ReportTooManySuitableOverloadedFunctions( file_pos ) );
-			throw ProgramError();
+			return nullptr;
 		}
 	}
 	else if( !match_with_types_conversion_functions.empty() )
 	{
 		if( match_with_types_conversion_functions.size() == 1u )
-			return functions_set[ match_with_types_conversion_functions.front() ];
+			return &functions_set[ match_with_types_conversion_functions.front() ];
 		else
 		{
 			errors_.push_back( ReportTooManySuitableOverloadedFunctions( file_pos ) );
-			throw ProgramError();
+			return nullptr;
 		}
 	}
 	else
 	{
 		// Not found any function.
 		errors_.push_back( ReportCouldNotSelectOverloadedFunction( file_pos ) );
-		throw ProgramError();
+		return nullptr;
 	}
 }
 
