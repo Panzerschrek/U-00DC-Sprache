@@ -78,13 +78,13 @@ static const Globals& GetGlobals()
 		[ size_t(Keywords::static_assert_) ]= "static_assert",
 
 		[ size_t(Keywords::type_) ]= "type",
+		[ size_t(Keywords::template_) ]= "template",
 
 		[ size_t(Keywords::for_) ]= "for",
 		[ size_t(Keywords::do_) ]= "do",
 		[ size_t(Keywords::switch_) ]= "switch",
 		[ size_t(Keywords::case_) ]= "case",
 		[ size_t(Keywords::default_) ]= "default",
-		[ size_t(Keywords::template_) ]= "template",
 		[ size_t(Keywords::final_) ]= "final",
 		[ size_t(Keywords::virtual_) ]= "virtual",
 		[ size_t(Keywords::polymorph_) ]= "polymorph",
@@ -114,7 +114,6 @@ static const Globals& GetGlobals()
 
 	return c_globals;
 }
-
 
 } // namespace
 
