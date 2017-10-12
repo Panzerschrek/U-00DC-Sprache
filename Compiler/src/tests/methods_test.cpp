@@ -388,6 +388,39 @@ U_TEST(MethodTest11)
 	U_TEST_ASSERT( static_cast<uint64_t>( 55568 ) == result_value.IntVal.getLimitedValue() );
 }
 
+U_TEST(MethodTest12_ValueArgumentOfCurrentClassInMethod)
+{
+	static const char c_program_text[]=
+	R"(
+		struct I
+		{
+			fn Add( I a, I b ) : I
+			{
+				var I result { .i( a.i + b.i ) };
+				return result;
+			}
+			i32 i;
+		}
+
+		fn Foo() : i32
+		{
+			var I a{ .i= 584 }, b{ .i= 41257 };
+			return I::Add( a, b ).i;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( static_cast<uint64_t>( 584 + 41257 ) == result_value.IntVal.getLimitedValue() );
+}
 
 U_TEST( InnerClassTest0 )
 {

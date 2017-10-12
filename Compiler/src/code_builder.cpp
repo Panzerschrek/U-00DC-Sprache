@@ -1355,10 +1355,9 @@ CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 			return result;
 		}
 
-		if( out_arg.type.IsIncomplete() && !out_arg.is_reference )
-		{
+		// If this is not prototype, value-args must have complete type.
+		if( block != nullptr && out_arg.type.IsIncomplete() && !out_arg.is_reference )
 			errors_.push_back( ReportUsingIncompleteType( arg->file_pos_, out_arg.type.ToString() ) );
-		}
 	} // for arguments
 
 	NamesScope::InsertedName* const previously_inserted_func=
@@ -1638,6 +1637,12 @@ void CodeBuilder::BuildFuncCode(
 
 		const FunctionArgumentDeclaration& declaration_arg= *args[ is_special_method ? ( arg_number - 1u ) : arg_number ];
 		const ProgramString& arg_name= declaration_arg.name_;
+
+		if( !arg.is_reference && arg.type.IsIncomplete() )
+		{
+			errors_.push_back( ReportUsingIncompleteType( declaration_arg.file_pos_, arg.type.ToString() ) );
+			continue;
+		}
 
 		const bool is_this= arg_number == 0u && arg_name == Keywords::this_;
 		U_ASSERT( !( is_this && !arg.is_reference ) );
