@@ -637,4 +637,12 @@ public:
 	ProgramElements elements_;
 };
 
+class Import final : public SyntaxElementBase
+{
+public:
+	explicit Import( const FilePos& file_pos );
+
+	ProgramString import_name;
+};
+
 } // namespace U
