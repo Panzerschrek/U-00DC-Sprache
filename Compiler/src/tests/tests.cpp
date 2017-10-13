@@ -3,30 +3,55 @@
 #include "../lexical_analyzer.hpp"
 #include "../syntax_analyzer.hpp"
 #include "../code_builder.hpp"
+#include "../source_tree_loader.hpp"
 
 #include "tests.hpp"
 
 namespace U
 {
 
+namespace
+{
+
+class SingleFileVfs final : public IVfs
+{
+public:
+	SingleFileVfs( const ProgramString& file_name, const char* const file_content )
+		: file_name_(file_name)
+		, file_content_(file_content)
+	{}
+
+	virtual boost::optional<ProgramString> LoadFileContent( const Path& path ) override
+	{
+		if( path == file_name_ )
+			return ToProgramString( file_content_ );
+		return boost::none;
+	}
+
+	virtual Path NormalizePath( const Path& path ) override
+	{
+		// TODO
+		return path;
+	}
+
+private:
+	const ProgramString file_name_;
+	const char* const file_content_;
+};
+
+} // namespace
+
 std::unique_ptr<llvm::Module> BuildProgram( const char* const text )
 {
-	const LexicalAnalysisResult lexical_analysis_result=
-		LexicalAnalysis( ToProgramString( text ) );
+	const ProgramString file_path= "_"_SpC;
+	const SourceTreePtr source_tree=
+		SourceTreeLoader( std::make_shared<SingleFileVfs>( file_path, text ) ).LoadSource( file_path);
 
-	for( const std::string& lexical_error_message : lexical_analysis_result.error_messages )
-		std::cout << lexical_error_message << "\n";
-	U_TEST_ASSERT( lexical_analysis_result.error_messages.empty() );
+	U_TEST_ASSERT( source_tree != nullptr );
+	U_TEST_ASSERT( source_tree->lexical_errors.empty() );
+	U_TEST_ASSERT( source_tree->syntax_errors.empty() );
 
-	const SyntaxAnalysisResult syntax_analysis_result=
-		SyntaxAnalysis( lexical_analysis_result.lexems );
-
-	for( const std::string& syntax_error_message : syntax_analysis_result.error_messages )
-		std::cout << syntax_error_message << "\n";
-	U_TEST_ASSERT( syntax_analysis_result.error_messages.empty() );
-
-	ICodeBuilder::BuildResult build_result=
-		CodeBuilder().BuildProgram( syntax_analysis_result.program_elements );
+	ICodeBuilder::BuildResult build_result= CodeBuilder().BuildProgram( *source_tree );
 
 	for( const CodeBuilderError& error : build_result.errors )
 		std::cout << error.file_pos.line << ":" << error.file_pos.pos_in_line << " " << ToStdString( error.text ) << "\n";
@@ -38,26 +63,15 @@ std::unique_ptr<llvm::Module> BuildProgram( const char* const text )
 
 ICodeBuilder::BuildResult BuildProgramWithErrors( const char* const text )
 {
-	const LexicalAnalysisResult lexical_analysis_result=
-		LexicalAnalysis( ToProgramString( text ) );
+	const ProgramString file_path= "_"_SpC;
+	const SourceTreePtr source_tree=
+		SourceTreeLoader( std::make_shared<SingleFileVfs>( file_path, text ) ).LoadSource( file_path);
 
-	for( const std::string& lexical_error_message : lexical_analysis_result.error_messages )
-		std::cout << lexical_error_message << "\n";
-	U_TEST_ASSERT( lexical_analysis_result.error_messages.empty() );
+	U_TEST_ASSERT( source_tree != nullptr );
+	U_TEST_ASSERT( source_tree->lexical_errors.empty() );
+	U_TEST_ASSERT( source_tree->syntax_errors.empty() );
 
-	const SyntaxAnalysisResult syntax_analysis_result=
-		SyntaxAnalysis( lexical_analysis_result.lexems );
-
-	for( const SyntaxErrorMessage& syntax_error_message : syntax_analysis_result.error_messages )
-		std::cout << syntax_error_message << "\n";
-	U_TEST_ASSERT( syntax_analysis_result.error_messages.empty() );
-
-	for( const std::string& syntax_error_message : syntax_analysis_result.error_messages )
-		std::cout << syntax_error_message << "\n";
-	U_TEST_ASSERT( syntax_analysis_result.error_messages.empty() );
-
-	return
-		CodeBuilder().BuildProgram( syntax_analysis_result.program_elements );
+	return CodeBuilder().BuildProgram( *source_tree );
 }
 
 EnginePtr CreateEngine( std::unique_ptr<llvm::Module> module, const bool needs_dump )

@@ -101,7 +101,7 @@ CodeBuilder::~CodeBuilder()
 {
 }
 
-ICodeBuilder::BuildResult CodeBuilder::BuildProgram( const ProgramElements& program_elements )
+ICodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceTree& source_tree )
 {
 	module_= std::unique_ptr<llvm::Module>( new llvm::Module( "U-Module", llvm_context_ ) );
 	errors_.clear();
@@ -130,7 +130,7 @@ ICodeBuilder::BuildResult CodeBuilder::BuildProgram( const ProgramElements& prog
 	FillGlobalNamesScope( global_names );
 
 	// Build program body.
-	BuildNamespaceBody( program_elements, global_names );
+	BuildNamespaceBody( source_tree.nodes_storage[ source_tree.root_node_index ].ast.program_elements, global_names );
 
 	dummy_function->eraseFromParent(); // Kill dummy function.
 

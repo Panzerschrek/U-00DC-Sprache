@@ -24,7 +24,7 @@ public:
 	CodeBuilder();
 	virtual ~CodeBuilder() override;
 
-	virtual BuildResult BuildProgram( const ProgramElements& program_elements ) override;
+	virtual BuildResult BuildProgram( const SourceTree& source_tree ) override;
 
 private:
 	struct DestructiblesStorage final
