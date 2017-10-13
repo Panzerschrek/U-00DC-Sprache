@@ -178,6 +178,9 @@ struct FunctionVariable final
 	bool return_value_is_sret= false;
 
 	llvm::Function* llvm_function= nullptr;
+
+	// TODO - fill this.
+	FilePos file_pos;
 };
 
 // Set of functions with same name, but different signature.
@@ -234,14 +237,14 @@ class Value final
 {
 public:
 	Value();
-	Value( Variable variable );
+	Value( Variable variable, const FilePos& file_pos );
 	Value( FunctionVariable function_variable );
 	Value( OverloadedFunctionsSet functions_set );
-	Value( Type type );
-	Value( ClassField class_field );
+	Value( Type type, const FilePos& file_pos );
+	Value( ClassField class_field, const FilePos& file_pos );
 	Value( ThisOverloadedMethodsSet class_field );
-	Value( const NamesScopePtr& namespace_ );
-	Value( const TypeTemplatePtr& type_template );
+	Value( const NamesScopePtr& namespace_, const FilePos& file_pos );
+	Value( const TypeTemplatePtr& type_template, const FilePos& file_pos );
 	Value( TemplateDependentValue template_dependent_value );
 	Value( YetNotDeducedTemplateArg yet_not_deduced_template_arg );
 	Value( ErrorValue error_value );
@@ -292,6 +295,11 @@ private:
 		TemplateDependentValue,
 		YetNotDeducedTemplateArg,
 		ErrorValue > something_;
+
+	// File_pos used as unique id for entry, needed for imports merging.
+	// Two values are 100% same, if their file_pos are identical.
+	// Not for all values file_pos required, so, fill it with zeros for it.
+	FilePos file_pos_= { 0u, 0u, 0u };
 };
 
 // "Class" of function argument in terms of overloading.

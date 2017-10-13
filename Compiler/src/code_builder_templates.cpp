@@ -57,7 +57,7 @@ void CodeBuilder::PrepareTypeTemplate(
 	const TypeTemplatePtr type_template( new TypeTemplate );
 	const ProgramString& type_template_name= type_template_declaration.name_;
 
-	if( names_scope.AddName( type_template_name, Value(type_template) ) == nullptr )
+	if( names_scope.AddName( type_template_name, Value( type_template, type_template_declaration.file_pos_ ) ) == nullptr )
 	{
 		errors_.push_back( ReportRedefinition( type_template_declaration.file_pos_, type_template_name ) );
 		return;
@@ -147,7 +147,7 @@ void CodeBuilder::PrepareTypeTemplate(
 						ToStdString( arg.name ) );
 			}
 
-			template_parameters_namespace->AddName( arg.name, std::move(variable) );
+			template_parameters_namespace->AddName( arg.name, Value( std::move(variable), type_template_declaration.file_pos_ ) /* TODO - set correct file_pos */ );
 		}
 		else
 		{
@@ -155,7 +155,7 @@ void CodeBuilder::PrepareTypeTemplate(
 
 			template_parameters.emplace_back();
 			template_parameters.back().name= arg.name;
-			template_parameters_namespace->AddName( arg.name, Type( GetNextTemplateDependentType() ) );
+			template_parameters_namespace->AddName( arg.name, Value( GetNextTemplateDependentType(), type_template_declaration.file_pos_ /* TODO - set correct file_pos */ ) );
 			template_parameters_usage_flags.push_back(false);
 		}
 	}
@@ -684,12 +684,12 @@ NamesScope::InsertedName* CodeBuilder::GenTemplateType(
 			else if( const Type* const type= boost::get<Type>( &arg ) )
 			{
 				if( name->second.GetYetNotDeducedTemplateArg() != nullptr )
-					name->second= *type;
+					name->second= Value( *type, type_template_ptr->syntax_element->file_pos_ /*TODO - set correctfile_pos */ );
 			}
 			else if( const Variable* const variable= boost::get<Variable>( &arg ) )
 			{
 				if( name->second.GetYetNotDeducedTemplateArg() != nullptr )
-					name->second= *variable;
+					name->second= Value( *variable, type_template_ptr->syntax_element->file_pos_ /*TODO - set correctfile_pos */ );
 			}
 			else U_ASSERT( false );
 		}
@@ -707,7 +707,7 @@ NamesScope::InsertedName* CodeBuilder::GenTemplateType(
 		return
 			template_names_scope.AddName(
 				"_tdv"_SpC + ToProgramString( std::to_string(next_template_dependent_type_index_).c_str() ),
-				Type( GetNextTemplateDependentType() ) );
+				Value( GetNextTemplateDependentType(), type_template_ptr->syntax_element->file_pos_ /*TODO - set correctfile_pos */ ) );
 	}
 
 	for( size_t i = 0u; i < deduced_template_args.size() ; ++i )
@@ -758,7 +758,7 @@ NamesScope::InsertedName* CodeBuilder::GenTemplateType(
 	}
 
 	template_parameters_namespace->SetThisNamespaceName( name_encoded );
-	template_names_scope.AddName( name_encoded, template_parameters_namespace );
+	template_names_scope.AddName( name_encoded, Value( template_parameters_namespace, type_template_ptr->syntax_element->file_pos_ /* TODO - check file_pos */ ) );
 
 	if( const ClassTemplateDeclaration* const template_class= dynamic_cast<const ClassTemplateDeclaration*>( type_template.syntax_element ) )
 	{
@@ -793,7 +793,7 @@ NamesScope::InsertedName* CodeBuilder::GenTemplateType(
 			return nullptr;
 
 		// HACK - add name to map for correct result returning.
-		return template_parameters_namespace->AddName( GetNameForGeneratedClass(), type );
+		return template_parameters_namespace->AddName( GetNameForGeneratedClass(), Value( type, file_pos /* TODO - check file_pos */ ) );
 	}
 	else
 		U_ASSERT(false);

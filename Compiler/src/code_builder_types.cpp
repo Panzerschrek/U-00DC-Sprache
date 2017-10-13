@@ -643,7 +643,8 @@ static const Type g_error_value_type_stub= NontypeStub::ErrorValue;
 Value::Value()
 {}
 
-Value::Value( Variable variable )
+Value::Value( Variable variable, const FilePos& file_pos )
+	: file_pos_(file_pos)
 {
 	something_= std::move(variable);
 }
@@ -658,12 +659,14 @@ Value::Value( OverloadedFunctionsSet functions_set )
 	something_= std::move(functions_set);
 }
 
-Value::Value( Type type )
+Value::Value( Type type, const FilePos& file_pos )
+	: file_pos_(file_pos)
 {
 	something_= std::move(type);
 }
 
-Value::Value( ClassField class_field )
+Value::Value( ClassField class_field, const FilePos& file_pos )
+	: file_pos_(file_pos)
 {
 	something_= std::move( class_field );
 }
@@ -673,13 +676,15 @@ Value::Value( ThisOverloadedMethodsSet this_overloaded_methods_set )
 	something_= std::move( this_overloaded_methods_set );
 }
 
-Value::Value( const NamesScopePtr& namespace_ )
+Value::Value( const NamesScopePtr& namespace_, const FilePos& file_pos )
+	: file_pos_(file_pos)
 {
 	U_ASSERT( namespace_ != nullptr );
 	something_= namespace_;
 }
 
-Value::Value( const TypeTemplatePtr& type_template )
+Value::Value( const TypeTemplatePtr& type_template, const FilePos& file_pos )
+	: file_pos_(file_pos)
 {
 	U_ASSERT( type_template != nullptr );
 	something_= type_template;

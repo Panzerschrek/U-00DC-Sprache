@@ -234,6 +234,7 @@ private:
 		const IExpressionComponent& l_expression,
 		const IExpressionComponent& r_expression,
 		const BinaryOperator& binary_operator,
+		const FilePos& file_pos,
 		NamesScope& names,
 		FunctionContext& function_context );
 

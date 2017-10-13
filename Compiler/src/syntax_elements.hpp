@@ -369,6 +369,7 @@ struct VariablesDeclaration final
 
 	struct VariableEntry
 	{
+		FilePos file_pos;
 		ProgramString name;
 		IInitializerPtr initializer; // May be null for types with default constructor.
 		MutabilityModifier mutability_modifier= MutabilityModifier::None;

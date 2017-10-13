@@ -1022,6 +1022,7 @@ VariablesDeclarationPtr SyntaxAnalyzer::ParseVariablesDeclaration()
 	{
 		decl->variables.emplace_back();
 		VariablesDeclaration::VariableEntry& variable_entry= decl->variables.back();
+		variable_entry.file_pos= it_->file_pos;
 
 		if( it_->type == Lexem::Type::And )
 		{

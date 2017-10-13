@@ -52,6 +52,7 @@ Value CodeBuilder::BuildExpressionCode(
 					*binary_operator->left_,
 					*binary_operator->right_,
 					*binary_operator,
+					binary_operator->file_pos_,
 					names,
 					function_context );
 		}
@@ -89,7 +90,7 @@ Value CodeBuilder::BuildExpressionCode(
 				Variable result;
 				result.type= GetNextTemplateDependentType();
 				result.value_type= ValueType::Value;
-				return result;
+				return Value( result, binary_operator->file_pos_ );
 			}
 
 			return BuildBinaryOperator( *l_var, *r_var, binary_operator->operator_type_, binary_operator->file_pos_, function_context );
@@ -108,7 +109,7 @@ Value CodeBuilder::BuildExpressionCode(
 	else if( const BooleanConstant* boolean_constant=
 		dynamic_cast<const BooleanConstant*>(&expression) )
 	{
-		result= BuildBooleanConstant( *boolean_constant );
+		result= Value( BuildBooleanConstant( *boolean_constant ), boolean_constant->file_pos_ );
 	}
 	else if( const BracketExpression* bracket_expression=
 		dynamic_cast<const BracketExpression*>(&expression) )
@@ -118,7 +119,10 @@ Value CodeBuilder::BuildExpressionCode(
 	else if( const TypeNameInExpression* type_name_in_expression=
 		dynamic_cast<const TypeNameInExpression*>(&expression) )
 	{
-		result= PrepareType( type_name_in_expression->file_pos_, type_name_in_expression->type_name, names );
+		result=
+			Value(
+				PrepareType( type_name_in_expression->file_pos_, type_name_in_expression->type_name, names ),
+				type_name_in_expression->file_pos_ );
 	}
 	else
 	{
@@ -754,13 +758,14 @@ Value CodeBuilder::BuildBinaryOperator(
 		}
 	}
 
-	return result;
+	return Value( result, file_pos );
 }
 
 Value CodeBuilder::BuildLazyBinaryOperator(
 	const IExpressionComponent& l_expression,
 	const IExpressionComponent& r_expression,
 	const BinaryOperator& binary_operator,
+	const FilePos& file_pos,
 	NamesScope& names,
 	FunctionContext& function_context )
 {
@@ -771,7 +776,7 @@ Value CodeBuilder::BuildLazyBinaryOperator(
 		result.location= Variable::Location::LLVMRegister;\
 		result.type= bool_type_;\
 		result.llvm_value= llvm::UndefValue::get( fundamental_llvm_types_.bool_ );\
-		return result;\
+		return Value( result, file_pos );\
 	}
 
 	const Value l_var_value= BuildExpressionCode( l_expression, names, function_context );
@@ -858,7 +863,7 @@ Value CodeBuilder::BuildLazyBinaryOperator(
 			U_ASSERT(false);
 	}
 
-	return result;
+	return Value( result, file_pos );
 
 	#undef RETURN_UNDEF_BOOL
 }
@@ -877,7 +882,7 @@ Value CodeBuilder::BuildNamedOperand(
 			errors_.push_back( ReportThisUnavailable( named_operand.file_pos_ ) );
 			return ErrorValue();
 		}
-		return *function_context.this_;
+		return Value( *function_context.this_, named_operand.file_pos_ );
 	}
 
 	const NamesScope::InsertedName* name_entry= ResolveName( named_operand.file_pos_, names, named_operand.name_ );
@@ -924,7 +929,7 @@ Value CodeBuilder::BuildNamedOperand(
 		field_variable.llvm_value=
 			function_context.llvm_ir_builder.CreateGEP( function_context.this_->llvm_value, index_list );
 
-		return field_variable;
+		return Value( field_variable, named_operand.file_pos_ );
 	}
 	else if( const OverloadedFunctionsSet* const overloaded_functions_set=
 		name_entry->second.GetFunctionsSet() )
@@ -985,7 +990,7 @@ Value CodeBuilder::BuildNumericConstant( const NumericConstant& numeric_constant
 
 	result.llvm_value= result.constexpr_value;
 
-	return result;
+	return Value( result, numeric_constant.file_pos_ );
 }
 
 Variable CodeBuilder::BuildBooleanConstant( const BooleanConstant& boolean_constant )
@@ -1053,7 +1058,7 @@ Value CodeBuilder::BuildIndexationOperator(
 		result.location= Variable::Location::Pointer;
 		result.value_type= variable.value_type;
 		result.type= array_type->type;
-		return result;
+		return Value( result, indexation_operator.file_pos_ );
 	}
 
 	const FundamentalType* const index_fundamental_type= index_value.GetType().GetFundamentalType();
@@ -1102,7 +1107,7 @@ Value CodeBuilder::BuildIndexationOperator(
 	result.llvm_value=
 		function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, llvm::ArrayRef< llvm::Value*> ( index_list, 2u ) );
 
-	return result;
+	return Value( result, indexation_operator.file_pos_ );
 }
 
 Value CodeBuilder::BuildMemberAccessOperator(
@@ -1163,7 +1168,7 @@ Value CodeBuilder::BuildMemberAccessOperator(
 	result.type= field->type;
 	result.llvm_value=
 		function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, index_list );
-	return result;
+	return Value( result, member_access_operator.file_pos_ );
 }
 
 Value CodeBuilder::BuildCallOperator(
@@ -1186,11 +1191,11 @@ Value CodeBuilder::BuildCallOperator(
 			BuildExpressionCode( *arg_expression, names, function_context );
 		Variable result;
 		result.type= GetNextTemplateDependentType();
-		return result;
+		return Value( result, call_operator.file_pos_ );
 	}
 
 	if( const Type* const type= function_value.GetTypeName() )
-		return BuildTempVariableConstruction( *type, call_operator, names, function_context );
+		return Value( BuildTempVariableConstruction( *type, call_operator, names, function_context ), call_operator.file_pos_ );
 
 	const Variable* this_= nullptr;
 	const OverloadedFunctionsSet* functions_set= function_value.GetFunctionsSet();
@@ -1257,7 +1262,7 @@ Value CodeBuilder::BuildCallOperator(
 		actual_args_variables.push_back( std::move(*expr) );
 	}
 	if( args_are_template_dependent )
-		return Type(NontypeStub::TemplateDependentValue);
+		return Value( Type(NontypeStub::TemplateDependentValue), call_operator.file_pos_ );
 
 	// SPRACHE_TODO - try get function with "this" parameter in signature and without it.
 	// We must support static functions call using "this".
@@ -1405,7 +1410,7 @@ Value CodeBuilder::BuildCallOperator(
 		else
 			dummy_result.location= function.return_value_is_sret ? Variable::Location::Pointer : Variable::Location::LLVMRegister;
 		dummy_result.type= GetNextTemplateDependentType();
-		return dummy_result;
+		return Value( dummy_result, call_operator.file_pos_ );
 	}
 
 	llvm::Value* call_result=
@@ -1439,7 +1444,7 @@ Value CodeBuilder::BuildCallOperator(
 	result.type= function_type.return_type;
 	result.llvm_value= call_result;
 
-	return result;
+	return Value( result, call_operator.file_pos_ );
 }
 
 Variable CodeBuilder::BuildTempVariableConstruction(
@@ -1474,7 +1479,7 @@ Value CodeBuilder::BuildUnaryMinus(
 		Variable result;
 		result.value_type= ValueType::Value;
 		result.type= GetNextTemplateDependentType();
-		return result;
+		return Value( result, unary_minus.file_pos_ );
 	}
 
 	const FundamentalType* const fundamental_type= value.GetType().GetFundamentalType();
@@ -1514,7 +1519,7 @@ Value CodeBuilder::BuildUnaryMinus(
 			result.llvm_value= function_context.llvm_ir_builder.CreateNeg( value_for_neg );
 	}
 
-	return result;
+	return Value( result, unary_minus.file_pos_ );
 }
 
 Value CodeBuilder::BuildLogicalNot(
@@ -1530,7 +1535,7 @@ Value CodeBuilder::BuildLogicalNot(
 		Variable result;
 		result.value_type= ValueType::Value;
 		result.type= GetNextTemplateDependentType();
-		return result;
+		return Value( result, logical_not.file_pos_ );
 	}
 
 	if( value.GetType() != bool_type_ )
@@ -1553,7 +1558,7 @@ Value CodeBuilder::BuildLogicalNot(
 		result.llvm_value= function_context.llvm_ir_builder.CreateNot( value_in_register );
 	}
 
-	return result;
+	return Value( result, logical_not.file_pos_ );
 }
 
 Value CodeBuilder::BuildBitwiseNot(
@@ -1569,7 +1574,7 @@ Value CodeBuilder::BuildBitwiseNot(
 		Variable result;
 		result.value_type= ValueType::Value;
 		result.type= GetNextTemplateDependentType();
-		return result;
+		return Value( result, bitwise_not.file_pos_ );
 	}
 
 	const FundamentalType* const fundamental_type= value.GetType().GetFundamentalType();
@@ -1599,7 +1604,7 @@ Value CodeBuilder::BuildBitwiseNot(
 		result.llvm_value= function_context.llvm_ir_builder.CreateNot( value_in_register );
 	}
 
-	return result;
+	return Value( result, bitwise_not.file_pos_ );
 }
 
 } // namespace CodeBuilderPrivate

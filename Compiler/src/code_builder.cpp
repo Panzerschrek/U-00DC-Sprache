@@ -148,11 +148,18 @@ ICodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceTree& source_tr
 
 void CodeBuilder::FillGlobalNamesScope( NamesScope& global_names_scope )
 {
+	FilePos fundamental_globals_file_pos;
+	fundamental_globals_file_pos.file_index= static_cast<unsigned short>(~0u);
+	fundamental_globals_file_pos.line= static_cast<unsigned short>(~0u);
+	fundamental_globals_file_pos.pos_in_line= static_cast<unsigned short>(~0u);
+
 	for( const auto& fundamental_type_value : g_types_map )
 	{
 		global_names_scope.AddName(
 			fundamental_type_value.first,
-			Type( FundamentalType( fundamental_type_value.second, GetFundamentalLLVMType( fundamental_type_value.second ) ) ) );
+			Value(
+				FundamentalType( fundamental_type_value.second, GetFundamentalLLVMType( fundamental_type_value.second ) ),
+				fundamental_globals_file_pos ) );
 	}
 }
 
@@ -294,7 +301,7 @@ ClassPtr CodeBuilder::PrepareClass(
 			return nullptr;
 		}
 
-		const NamesScope::InsertedName* const inserted_name= names_scope.AddName( class_name, class_type );
+		const NamesScope::InsertedName* const inserted_name= names_scope.AddName( class_name, Value( class_type, class_declaration.file_pos_ ) );
 		if( inserted_name == nullptr )
 		{
 			errors_.push_back( ReportRedefinition( class_declaration.file_pos_, class_name ) );
@@ -336,7 +343,7 @@ ClassPtr CodeBuilder::PrepareClass(
 			return nullptr;
 		}
 
-		const NamesScope::InsertedName* const inserted_name= names_scope.AddName( class_name, class_type );
+		const NamesScope::InsertedName* const inserted_name= names_scope.AddName( class_name, Value( class_type, class_declaration.file_pos_ ) );
 		if( inserted_name == nullptr )
 		{
 			errors_.push_back( ReportRedefinition( class_declaration.file_pos_, class_name ) );
@@ -400,7 +407,7 @@ ClassPtr CodeBuilder::PrepareClass(
 			else
 			{
 				const NamesScope::InsertedName* const inserted_field=
-					the_class->members.AddName( in_field->name, std::move( out_field ) );
+					the_class->members.AddName( in_field->name, Value( std::move( out_field ), in_field->file_pos_ ) );
 				if( inserted_field == nullptr )
 					errors_.push_back( ReportRedefinition( in_field->file_pos_, in_field->name ) );
 
@@ -1144,7 +1151,7 @@ void CodeBuilder::BuildNamespaceBody(
 				U_ASSERT( !NameShadowsTemplateArgument( namespace_->name_, names_scope ) );
 
 				const NamesScopePtr new_names_scope= std::make_shared<NamesScope>( namespace_->name_, &names_scope );
-				names_scope.AddName( namespace_->name_, new_names_scope );
+				names_scope.AddName( namespace_->name_, Value( new_names_scope, namespace_->file_pos_ ) );
 				result_scope= new_names_scope.get();
 			}
 
@@ -1700,7 +1707,7 @@ void CodeBuilder::BuildFuncCode(
 			const NamesScope::InsertedName* const inserted_arg=
 				function_names.AddName(
 					arg_name,
-					std::move(var) );
+					Value( std::move(var), declaration_arg.file_pos_ ) );
 			if( !inserted_arg )
 			{
 				errors_.push_back( ReportRedefinition( declaration_arg.file_pos_, arg_name ) );
@@ -2269,7 +2276,7 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 		}
 
 		const NamesScope::InsertedName* inserted_name=
-			block_names.AddName( variable_declaration.name, std::move(variable) );
+			block_names.AddName( variable_declaration.name, Value( std::move(variable), variable_declaration.file_pos ) );
 
 		if( !inserted_name )
 		{
@@ -2309,7 +2316,7 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 			errors_.push_back( ReportDeclarationShadowsTemplateArgument( auto_variable_declaration.file_pos_, auto_variable_declaration.name ) );
 			return;
 		}
-		const NamesScope::InsertedName* inserted_name= block_names.AddName( auto_variable_declaration.name, variable );
+		const NamesScope::InsertedName* inserted_name= block_names.AddName( auto_variable_declaration.name, Value( variable, auto_variable_declaration.file_pos_ ) );
 		if( inserted_name == nullptr )
 		{
 			errors_.push_back( ReportRedefinition( auto_variable_declaration.file_pos_, auto_variable_declaration.name ) );
@@ -2441,7 +2448,7 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 	}
 
 	const NamesScope::InsertedName* inserted_name=
-		block_names.AddName( auto_variable_declaration.name, std::move(variable) );
+		block_names.AddName( auto_variable_declaration.name, Value( std::move(variable), auto_variable_declaration.file_pos_ ) );
 
 	if( inserted_name == nullptr )
 	{
@@ -2990,7 +2997,7 @@ void CodeBuilder::BuildTypedef(
 	if( NameShadowsTemplateArgument( typedef_.name, names ) )
 		errors_.push_back( ReportDeclarationShadowsTemplateArgument( typedef_.file_pos_, typedef_.name ) );
 
-	const NamesScope::InsertedName* const inserted_name= names.AddName( typedef_.name, type );
+	const NamesScope::InsertedName* const inserted_name= names.AddName( typedef_.name, Value( type, typedef_.file_pos_ ) );
 	if( inserted_name == nullptr )
 		errors_.push_back( ReportRedefinition( typedef_.file_pos_, typedef_.name ) );
 }
