@@ -39,6 +39,33 @@ private:
 	const char* const file_content_;
 };
 
+class MultiFileVfs final : public IVfs
+{
+public:
+	explicit MultiFileVfs( std::vector<SourceEntry> sources )
+		: sources_(std::move(sources))
+	{}
+
+	virtual boost::optional<ProgramString> LoadFileContent( const Path& path ) override
+	{
+		for( const SourceEntry& source_entry : sources_ )
+		{
+			if( path == source_entry.file_path )
+				return ToProgramString( source_entry.text );
+		}
+		return boost::none;
+	}
+
+	virtual Path NormalizePath( const Path& path ) override
+	{
+		// TODO
+		return path;
+	}
+
+private:
+	const std::vector<SourceEntry> sources_;
+};
+
 } // namespace
 
 std::unique_ptr<llvm::Module> BuildProgram( const char* const text )
@@ -50,6 +77,7 @@ std::unique_ptr<llvm::Module> BuildProgram( const char* const text )
 	U_TEST_ASSERT( source_tree != nullptr );
 	U_TEST_ASSERT( source_tree->lexical_errors.empty() );
 	U_TEST_ASSERT( source_tree->syntax_errors.empty() );
+	U_TEST_ASSERT( source_tree->root_node_index < source_tree->nodes_storage.size() );
 
 	ICodeBuilder::BuildResult build_result= CodeBuilder().BuildProgram( *source_tree );
 
@@ -72,6 +100,25 @@ ICodeBuilder::BuildResult BuildProgramWithErrors( const char* const text )
 	U_TEST_ASSERT( source_tree->syntax_errors.empty() );
 
 	return CodeBuilder().BuildProgram( *source_tree );
+}
+
+std::unique_ptr<llvm::Module> BuildMultisourceProgram( std::vector<SourceEntry> sources, const ProgramString& root_file_path )
+{
+	const SourceTreePtr source_tree=
+		SourceTreeLoader( std::make_shared<MultiFileVfs>( std::move(sources) ) ).LoadSource( root_file_path );
+
+	U_TEST_ASSERT( source_tree != nullptr );
+	U_TEST_ASSERT( source_tree->lexical_errors.empty() );
+	U_TEST_ASSERT( source_tree->syntax_errors.empty() );
+
+	ICodeBuilder::BuildResult build_result= CodeBuilder().BuildProgram( *source_tree );
+
+	for( const CodeBuilderError& error : build_result.errors )
+		std::cout << error.file_pos.line << ":" << error.file_pos.pos_in_line << " " << ToStdString( error.text ) << "\n";
+
+	U_TEST_ASSERT( build_result.errors.empty() );
+
+	return std::move( build_result.module );
 }
 
 EnginePtr CreateEngine( std::unique_ptr<llvm::Module> module, const bool needs_dump )

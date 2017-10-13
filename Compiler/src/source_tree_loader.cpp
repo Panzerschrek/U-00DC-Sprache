@@ -26,7 +26,10 @@ size_t SourceTreeLoader::LoadNode_r( const IVfs::Path& file_path, SourceTree& re
 	const ProgramString path_normalized= vfs_->NormalizePath( file_path );
 	boost::optional<ProgramString> file_content= vfs_->LoadFileContent( path_normalized );
 	if( file_content == boost::none )
+	{
+		std::cout << "Con not open file \"" << ToStdString( path_normalized ) << "\"" << std::endl;
 		return ~0u;
+	}
 
 	const LexicalAnalysisResult lex_result= LexicalAnalysis( *file_content );
 	for( const std::string& lexical_error_message : lex_result.error_messages )
@@ -51,7 +54,6 @@ size_t SourceTreeLoader::LoadNode_r( const IVfs::Path& file_path, SourceTree& re
 	result.nodes_storage.emplace_back();
 
 	result.nodes_storage[node_index].file_path= path_normalized;
-	result.nodes_storage[node_index].ast= std::move( synt_result );
 
 	result.nodes_storage[node_index].child_nodes_indeces.resize( synt_result.imports.size() );
 	for( size_t i= 0; i  < result.nodes_storage[node_index].child_nodes_indeces.size(); ++i )
@@ -62,6 +64,8 @@ size_t SourceTreeLoader::LoadNode_r( const IVfs::Path& file_path, SourceTree& re
 	}
 
 	processed_files_stack_.pop_back();
+
+	result.nodes_storage[node_index].ast= std::move( synt_result );
 
 	return node_index;
 }

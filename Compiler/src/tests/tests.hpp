@@ -58,6 +58,15 @@ typedef std::unique_ptr<llvm::ExecutionEngine> EnginePtr;
 
 std::unique_ptr<llvm::Module> BuildProgram( const char* text );
 ICodeBuilder::BuildResult BuildProgramWithErrors( const char* text );
+
+struct SourceEntry
+{
+	ProgramString file_path;
+	const char* text;
+};
+
+std::unique_ptr<llvm::Module> BuildMultisourceProgram( std::vector<SourceEntry> sources, const ProgramString& root_file_path );
+
 EnginePtr CreateEngine( std::unique_ptr<llvm::Module> module, bool needs_dump= false );
 
 } // namespace U
