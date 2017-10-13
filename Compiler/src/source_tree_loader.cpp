@@ -23,6 +23,8 @@ SourceTreePtr SourceTreeLoader::LoadSource( const IVfs::Path& root_file_path )
 
 size_t SourceTreeLoader::LoadNode_r( const IVfs::Path& file_path, SourceTree& result )
 {
+	const size_t node_index= result.nodes_storage.size();
+
 	const ProgramString path_normalized= vfs_->NormalizePath( file_path );
 	boost::optional<ProgramString> file_content= vfs_->LoadFileContent( path_normalized );
 	if( file_content == boost::none )
@@ -31,12 +33,15 @@ size_t SourceTreeLoader::LoadNode_r( const IVfs::Path& file_path, SourceTree& re
 		return ~0u;
 	}
 
-	const LexicalAnalysisResult lex_result= LexicalAnalysis( *file_content );
+	LexicalAnalysisResult lex_result= LexicalAnalysis( *file_content );
 	for( const std::string& lexical_error_message : lex_result.error_messages )
 		std::cout << lexical_error_message << "\n";
 	result.lexical_errors.insert( result.lexical_errors.end(), lex_result.error_messages.begin(), lex_result.error_messages.end() );
 	if( !lex_result.error_messages.empty() )
 		return ~0u;
+
+	for( Lexem& lexem :lex_result.lexems )
+		lexem.file_pos.file_index= static_cast<unsigned short>(node_index);
 
 	SyntaxAnalysisResult synt_result= SyntaxAnalysis( lex_result.lexems );
 	for( const std::string& syntax_error_message : synt_result.error_messages )
@@ -50,7 +55,6 @@ size_t SourceTreeLoader::LoadNode_r( const IVfs::Path& file_path, SourceTree& re
 
 	// TODO - handle case of non-tree graph
 
-	const size_t node_index= result.nodes_storage.size();
 	result.nodes_storage.emplace_back();
 
 	result.nodes_storage[node_index].file_path= path_normalized;

@@ -10,8 +10,9 @@ namespace U
 
 struct FilePos
 {
-	unsigned int line; // from 1
-	unsigned int pos_in_line;
+	unsigned short line; // from 1
+	unsigned short pos_in_line;
+	unsigned short file_index;
 };
 
 struct Lexem
