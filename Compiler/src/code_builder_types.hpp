@@ -250,6 +250,8 @@ public:
 	Value( ErrorValue error_value );
 
 	const Type& GetType() const;
+	int GetKindIndex() const;
+	const FilePos& GetFilePos() const;
 
 	// Fundamental, class, array types
 	Variable* GetVariable();

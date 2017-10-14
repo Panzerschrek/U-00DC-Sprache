@@ -15,6 +15,9 @@ struct FilePos
 	unsigned short file_index;
 };
 
+bool operator==( const FilePos& l, const FilePos& r );
+bool operator!=( const FilePos& l, const FilePos& r );
+
 struct Lexem
 {
 	enum class Type

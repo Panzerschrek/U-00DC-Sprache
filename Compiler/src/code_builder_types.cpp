@@ -750,6 +750,16 @@ const Type& Value::GetType() const
 	return *visitor.type;
 }
 
+int Value::GetKindIndex() const
+{
+	return something_.which();
+}
+
+const FilePos& Value::GetFilePos() const
+{
+	return file_pos_;
+}
+
 Variable* Value::GetVariable()
 {
 	return boost::get<Variable>( &something_ );

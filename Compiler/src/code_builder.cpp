@@ -103,9 +103,7 @@ CodeBuilder::~CodeBuilder()
 
 ICodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceTree& source_tree )
 {
-	module_= std::unique_ptr<llvm::Module>( new llvm::Module( "U-Module", llvm_context_ ) );
-	errors_.clear();
-	error_count_= 0u;
+	module_.reset( new llvm::Module( "U-Module", llvm_context_ ) );
 
 	// In some places outside functions we need to execute expression evaluation.
 	// Create for this dummy function context.
@@ -122,28 +120,94 @@ ICodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceTree& source_tr
 		llvm_context_,
 		dummy_function );
 	dummy_function_context.destructibles_stack.emplace_back();
-
 	dummy_function_context_= &dummy_function_context;
 
-	// Create global namespace.
-	NamesScope global_names( ""_SpC, nullptr );
-	FillGlobalNamesScope( global_names );
-
-	// Build program body.
-	BuildNamespaceBody( source_tree.nodes_storage[ source_tree.root_node_index ].ast.program_elements, global_names );
+	// Build tree.
+	BuildResultInternal build_result_internal=
+		BuildProgramInternal( source_tree, source_tree.root_node_index );
 
 	dummy_function->eraseFromParent(); // Kill dummy function.
 
-	if( error_count_ > 0u )
-		errors_.push_back( ReportBuildFailed() );
+	BuildResult build_result;
+	build_result.errors= std::move( build_result_internal.errors );
+	build_result.module= std::move( module_ );
 
-	// TODO - sort errors, using file_pos.
+	return build_result;
+}
 
-	BuildResult result;
+CodeBuilder::BuildResultInternal CodeBuilder::BuildProgramInternal(
+	const SourceTree& source_tree,
+	const size_t node_index )
+{
+	BuildResultInternal result;
+
+	result.names_map.reset( new NamesScope( ""_SpC, nullptr ) );
+	FillGlobalNamesScope( *result.names_map );
+
+	U_ASSERT( node_index < source_tree.nodes_storage.size() );
+	const SourceTree::Node& source_tree_node= source_tree.nodes_storage[ node_index ];
+	for( const size_t child_node_inex : source_tree_node.child_nodes_indeces )
+	{
+		BuildResultInternal child_result=
+			BuildProgramInternal( source_tree, child_node_inex );
+
+		MergeNameScopes( *result.names_map, *child_result.names_map );
+
+		result.errors.insert(
+			result.errors.end(),
+			child_result.errors.begin(), child_result.errors.end() );
+	}
+
+	// Reset state after recursive call.
+	errors_.clear();
+	error_count_= 0u;
+
+	// Do work for this node.
+	BuildNamespaceBody( source_tree_node.ast.program_elements, *result.names_map );
+
+	// Clear globals and return result.
 	result.errors= errors_;
 	errors_.clear();
-	result.module= std::move( module_ );
+
 	return result;
+}
+
+void CodeBuilder::MergeNameScopes( NamesScope& dst, const NamesScope& src )
+{
+	src.ForEachInThisScope(
+		[&]( const NamesScope::InsertedName& src_member )
+		{
+			const NamesScope::InsertedName* const dst_member= dst.GetThisScopeName( src_member.first );
+			if( dst_member == nullptr )
+			{
+				// All ok - name form "src" does not exists in "dst".
+				dst.AddName( src_member.first, src_member.second );
+				return;
+			}
+
+			if( dst_member->second.GetKindIndex() != src_member.second.GetKindIndex() )
+			{
+				// Different kind of symbols - 100% error.
+				errors_.push_back( ReportRedefinition( src_member.second.GetFilePos(), src_member.first ) );
+				return;
+			}
+
+			if( dst_member->second.GetFilePos() == src_member.second.GetFilePos() )
+				return; // All ok - things from one source.
+
+			{
+				// Merge namespaces.
+				const NamesScopePtr sub_namespace= src_member.second.GetNamespace();
+				if( sub_namespace != nullptr )
+				{
+					const NamesScopePtr dst_sub_namespace= dst_member->second.GetNamespace();
+					U_ASSERT( dst_sub_namespace != nullptr );
+					MergeNameScopes( *dst_sub_namespace, *sub_namespace );
+				}
+			}
+			// TODO
+
+		} );
 }
 
 void CodeBuilder::FillGlobalNamesScope( NamesScope& global_names_scope )

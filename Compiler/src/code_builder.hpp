@@ -27,6 +27,12 @@ public:
 	virtual BuildResult BuildProgram( const SourceTree& source_tree ) override;
 
 private:
+	struct BuildResultInternal
+	{
+		std::unique_ptr<NamesScope> names_map;
+		std::vector<CodeBuilderError> errors;
+	};
+
 	struct DestructiblesStorage final
 	{
 		void RegisterVariable( Variable variable );
@@ -88,6 +94,10 @@ private:
 	};
 
 private:
+	BuildResultInternal BuildProgramInternal( const SourceTree& source_tree, size_t node_index );
+
+	void MergeNameScopes( NamesScope& dst, const NamesScope& src );
+
 	void FillGlobalNamesScope( NamesScope& global_names_scope );
 	Type PrepareType( const FilePos& file_pos, const TypeName& type_name, NamesScope& names_scope );
 

@@ -8,6 +8,16 @@
 namespace U
 {
 
+bool operator==( const FilePos& l, const FilePos& r )
+{
+	return l.file_index == r.file_index && l.line == r.line && r.pos_in_line == l.pos_in_line;
+}
+
+bool operator!=( const FilePos& l, const FilePos& r )
+{
+	return !( l == r );
+}
+
 typedef std::map<ProgramString, Lexem::Type> FixedLexemsMap;
 static const size_t g_max_fixed_lexem_size= 3;
 
