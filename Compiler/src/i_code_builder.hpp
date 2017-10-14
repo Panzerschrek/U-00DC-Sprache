@@ -5,7 +5,7 @@
 #include <llvm/IR/Module.h>
 #include "pop_llvm_warnings.hpp"
 
-#include "source_tree_loader.hpp"
+#include "source_graph_loader.hpp"
 
 namespace U
 {
@@ -29,7 +29,7 @@ public:
 		std::unique_ptr<llvm::Module> module;
 	};
 
-	virtual BuildResult BuildProgram( const SourceTree& source_tree )= 0;
+	virtual BuildResult BuildProgram( const SourceGraph& source_graph )= 0;
 };
 
 } // namespace U

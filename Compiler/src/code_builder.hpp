@@ -1,6 +1,7 @@
 #pragma once
 #include <set>
 #include <vector>
+#include <unordered_map>
 
 #include "push_disable_llvm_warnings.hpp"
 #include <llvm/IR/IRBuilder.h>
@@ -24,13 +25,12 @@ public:
 	CodeBuilder();
 	virtual ~CodeBuilder() override;
 
-	virtual BuildResult BuildProgram( const SourceTree& source_tree ) override;
+	virtual BuildResult BuildProgram( const SourceGraph& source_graph ) override;
 
 private:
 	struct BuildResultInternal
 	{
 		std::unique_ptr<NamesScope> names_map;
-		std::vector<CodeBuilderError> errors;
 	};
 
 	struct DestructiblesStorage final
@@ -94,7 +94,7 @@ private:
 	};
 
 private:
-	BuildResultInternal BuildProgramInternal( const SourceTree& source_tree, size_t node_index );
+	BuildResultInternal BuildProgramInternal( const SourceGraph& source_graph, size_t node_index );
 
 	void MergeNameScopes( NamesScope& dst, const NamesScope& src );
 
@@ -497,6 +497,8 @@ private:
 	std::unique_ptr<llvm::Module> module_;
 	unsigned int error_count_= 0u;
 	std::vector<CodeBuilderError> errors_;
+
+	std::unordered_map< size_t, BuildResultInternal > compiled_sources_cache_;
 
 	std::vector<std::unique_ptr<PreResolveFunc>> resolving_funcs_stack_;
 	size_t next_template_dependent_type_index_= 1u;

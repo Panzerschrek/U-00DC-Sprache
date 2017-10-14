@@ -47,7 +47,7 @@ set( COMPILER_LIB_SOURCES
 	src/lexical_analyzer.cpp
 	src/mangling.cpp
 	src/program_string.cpp
-	src/source_tree_loader.cpp
+	src/source_graph_loader.cpp
 	src/syntax_analyzer.cpp
 	src/syntax_elements.cpp )
 
@@ -63,7 +63,7 @@ set( COMPILER_LIB_HEADERS
 	src/pop_llvm_warnings.hpp
 	src/program_string.hpp
 	src/push_disable_llvm_warnings.hpp
-	src/source_tree_loader.hpp
+	src/source_graph_loader.hpp
 	src/syntax_elements.hpp
 	src/syntax_analyzer.hpp )
 

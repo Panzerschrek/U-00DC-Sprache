@@ -2,26 +2,26 @@
 
 #include "assert.hpp"
 
-#include "source_tree_loader.hpp"
+#include "source_graph_loader.hpp"
 
 namespace U
 {
 
-SourceTreeLoader::SourceTreeLoader( IVfsPtr vfs )
+SourceGraphLoader::SourceGraphLoader( IVfsPtr vfs )
 	: vfs_(std::move(vfs))
 {
 	U_ASSERT( vfs_ != nullptr );
 }
 
-SourceTreePtr SourceTreeLoader::LoadSource( const IVfs::Path& root_file_path )
+SourceGraphPtr SourceGraphLoader::LoadSource( const IVfs::Path& root_file_path )
 {
-	SourceTreePtr result( new SourceTree );
+	SourceGraphPtr result( new SourceGraph );
 	result->root_node_index= LoadNode_r( root_file_path, *result );
 
 	return result;
 }
 
-size_t SourceTreeLoader::LoadNode_r( const IVfs::Path& file_path, SourceTree& result )
+size_t SourceGraphLoader::LoadNode_r( const IVfs::Path& file_path, SourceGraph& result )
 {
 	const size_t node_index= result.nodes_storage.size();
 
@@ -53,15 +53,27 @@ size_t SourceTreeLoader::LoadNode_r( const IVfs::Path& file_path, SourceTree& re
 	processed_files_stack_.push_back( path_normalized );
 	// TODO - check loops
 
-	// TODO - handle case of non-tree graph
-
 	result.nodes_storage.emplace_back();
 
 	result.nodes_storage[node_index].file_path= path_normalized;
 
 	result.nodes_storage[node_index].child_nodes_indeces.resize( synt_result.imports.size() );
-	for( size_t i= 0; i  < result.nodes_storage[node_index].child_nodes_indeces.size(); ++i )
+	for( size_t i= 0; i < result.nodes_storage[node_index].child_nodes_indeces.size(); ++i )
 	{
+		// Search for already loaded file.
+		bool prev_found= false;
+		for( size_t j= 0u; j < result.nodes_storage.size(); ++j )
+		{
+			if( result.nodes_storage[j].file_path == synt_result.imports[i].import_name )
+			{
+				result.nodes_storage[node_index].child_nodes_indeces[i]= j;
+				prev_found= true;
+				break;
+			}
+		}
+		if( prev_found )
+			continue;
+
 		const size_t child_node_index= LoadNode_r( synt_result.imports[i].import_name, result );
 		if( child_node_index != ~0u )
 			result.nodes_storage[node_index].child_nodes_indeces[i]= child_node_index;

@@ -54,13 +54,13 @@ U_TEST( ImportsTest1_FunctionPrototypeInOneFileAndBodyInAnother )
 	)";
 
 	const EnginePtr engine=
-	CreateEngine(
-		BuildMultisourceProgram(
-			{
-				{ "a"_SpC, c_program_text_a },
-				{ "root"_SpC, c_program_text_root }
-			},
-			"root"_SpC ) );
+		CreateEngine(
+			BuildMultisourceProgram(
+				{
+					{ "a"_SpC, c_program_text_a },
+					{ "root"_SpC, c_program_text_root }
+				},
+				"root"_SpC ) );
 
 	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
@@ -96,13 +96,13 @@ U_TEST( ImportsTest2_FunctionsWithDifferentSignaturesInDifferentFiles )
 	)";
 
 	const EnginePtr engine=
-	CreateEngine(
-		BuildMultisourceProgram(
-			{
-				{ "a"_SpC, c_program_text_a },
-				{ "root"_SpC, c_program_text_root }
-			},
-			"root"_SpC ) );
+		CreateEngine(
+			BuildMultisourceProgram(
+				{
+					{ "a"_SpC, c_program_text_a },
+					{ "root"_SpC, c_program_text_root }
+				},
+				"root"_SpC ) );
 
 	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
@@ -110,6 +110,63 @@ U_TEST( ImportsTest2_FunctionsWithDifferentSignaturesInDifferentFiles )
 	const llvm::GenericValue result_value= engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
 
 	U_TEST_ASSERT( static_cast<uint64_t>(8854) == result_value.IntVal.getLimitedValue() );
+}
+
+U_TEST( ImportsTest2_MultipleInportOfSameFile_Test0 )
+{
+	static const char c_program_text_a[]=
+	R"(
+		fn Bar() : i32
+		{
+			return  586;
+		}
+	)";
+
+	static const char c_program_text_root[]=
+	R"(
+		import "a"
+		import "a" // Should discard this import.
+
+		fn Foo() : i32
+		{
+			return Bar();
+		}
+	)";
+
+	BuildMultisourceProgram(
+		{
+			{ "a"_SpC, c_program_text_a },
+			{ "root"_SpC, c_program_text_root }
+		},
+		"root"_SpC );
+}
+
+U_TEST( ImportsTest3_MultipleInportOfSameFile_Test1 )
+{
+	static const char c_program_text_a[]=
+	R"(
+		struct X{}
+	)";
+
+	static const char c_program_text_b[]=
+	R"(
+		import "a"
+		struct Y{}
+	)";
+
+	static const char c_program_text_root[]=
+	R"(
+		import "a"
+		import "b" // "b" already contains "a", so, it does not loads twice.
+	)";
+
+	BuildMultisourceProgram(
+		{
+			{ "a"_SpC, c_program_text_a },
+			{ "b"_SpC, c_program_text_b },
+			{ "root"_SpC, c_program_text_root }
+		},
+		"root"_SpC );
 }
 
 } // namespace U

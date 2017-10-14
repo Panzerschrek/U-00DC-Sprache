@@ -101,8 +101,11 @@ CodeBuilder::~CodeBuilder()
 {
 }
 
-ICodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceTree& source_tree )
+ICodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_graph )
 {
+	errors_.clear();
+	error_count_= 0u;
+
 	module_.reset( new llvm::Module( "U-Module", llvm_context_ ) );
 
 	// In some places outside functions we need to execute expression evaluation.
@@ -122,21 +125,23 @@ ICodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceTree& source_tr
 	dummy_function_context.destructibles_stack.emplace_back();
 	dummy_function_context_= &dummy_function_context;
 
-	// Build tree.
+	// Build graph.
 	BuildResultInternal build_result_internal=
-		BuildProgramInternal( source_tree, source_tree.root_node_index );
+		BuildProgramInternal( source_graph, source_graph.root_node_index );
 
 	dummy_function->eraseFromParent(); // Kill dummy function.
 
+	compiled_sources_cache_.clear();
+
 	BuildResult build_result;
-	build_result.errors= std::move( build_result_internal.errors );
+	build_result.errors= errors_;
 	build_result.module= std::move( module_ );
 
 	return build_result;
 }
 
 CodeBuilder::BuildResultInternal CodeBuilder::BuildProgramInternal(
-	const SourceTree& source_tree,
+	const SourceGraph& source_graph,
 	const size_t node_index )
 {
 	BuildResultInternal result;
@@ -144,30 +149,28 @@ CodeBuilder::BuildResultInternal CodeBuilder::BuildProgramInternal(
 	result.names_map.reset( new NamesScope( ""_SpC, nullptr ) );
 	FillGlobalNamesScope( *result.names_map );
 
-	U_ASSERT( node_index < source_tree.nodes_storage.size() );
-	const SourceTree::Node& source_tree_node= source_tree.nodes_storage[ node_index ];
-	for( const size_t child_node_inex : source_tree_node.child_nodes_indeces )
+	U_ASSERT( node_index < source_graph.nodes_storage.size() );
+	const SourceGraph::Node& source_graph_node= source_graph.nodes_storage[ node_index ];
+	for( const size_t child_node_inex : source_graph_node.child_nodes_indeces )
 	{
+		// Compile each source once and put it to cache.
+		const auto it= compiled_sources_cache_.find( child_node_inex );
+		if( it != compiled_sources_cache_.end() )
+		{
+			MergeNameScopes( *result.names_map, *it->second.names_map );
+			continue;
+		}
+
 		BuildResultInternal child_result=
-			BuildProgramInternal( source_tree, child_node_inex );
+			BuildProgramInternal( source_graph, child_node_inex );
 
 		MergeNameScopes( *result.names_map, *child_result.names_map );
 
-		result.errors.insert(
-			result.errors.end(),
-			child_result.errors.begin(), child_result.errors.end() );
+		compiled_sources_cache_.emplace( child_node_inex, std::move( child_result ) );
 	}
 
-	// Reset state after recursive call.
-	errors_.clear();
-	error_count_= 0u;
-
 	// Do work for this node.
-	BuildNamespaceBody( source_tree_node.ast.program_elements, *result.names_map );
-
-	// Clear globals and return result.
-	result.errors= errors_;
-	errors_.clear();
+	BuildNamespaceBody( source_graph_node.ast.program_elements, *result.names_map );
 
 	return result;
 }

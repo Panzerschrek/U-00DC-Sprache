@@ -3,7 +3,7 @@
 #include "../lexical_analyzer.hpp"
 #include "../syntax_analyzer.hpp"
 #include "../code_builder.hpp"
-#include "../source_tree_loader.hpp"
+#include "../source_graph_loader.hpp"
 
 #include "tests.hpp"
 
@@ -71,15 +71,15 @@ private:
 std::unique_ptr<llvm::Module> BuildProgram( const char* const text )
 {
 	const ProgramString file_path= "_"_SpC;
-	const SourceTreePtr source_tree=
-		SourceTreeLoader( std::make_shared<SingleFileVfs>( file_path, text ) ).LoadSource( file_path);
+	const SourceGraphPtr source_graph=
+		SourceGraphLoader( std::make_shared<SingleFileVfs>( file_path, text ) ).LoadSource( file_path);
 
-	U_TEST_ASSERT( source_tree != nullptr );
-	U_TEST_ASSERT( source_tree->lexical_errors.empty() );
-	U_TEST_ASSERT( source_tree->syntax_errors.empty() );
-	U_TEST_ASSERT( source_tree->root_node_index < source_tree->nodes_storage.size() );
+	U_TEST_ASSERT( source_graph != nullptr );
+	U_TEST_ASSERT( source_graph->lexical_errors.empty() );
+	U_TEST_ASSERT( source_graph->syntax_errors.empty() );
+	U_TEST_ASSERT( source_graph->root_node_index < source_graph->nodes_storage.size() );
 
-	ICodeBuilder::BuildResult build_result= CodeBuilder().BuildProgram( *source_tree );
+	ICodeBuilder::BuildResult build_result= CodeBuilder().BuildProgram( *source_graph );
 
 	for( const CodeBuilderError& error : build_result.errors )
 		std::cout << error.file_pos.line << ":" << error.file_pos.pos_in_line << " " << ToStdString( error.text ) << "\n";
@@ -92,26 +92,26 @@ std::unique_ptr<llvm::Module> BuildProgram( const char* const text )
 ICodeBuilder::BuildResult BuildProgramWithErrors( const char* const text )
 {
 	const ProgramString file_path= "_"_SpC;
-	const SourceTreePtr source_tree=
-		SourceTreeLoader( std::make_shared<SingleFileVfs>( file_path, text ) ).LoadSource( file_path);
+	const SourceGraphPtr source_graph=
+		SourceGraphLoader( std::make_shared<SingleFileVfs>( file_path, text ) ).LoadSource( file_path);
 
-	U_TEST_ASSERT( source_tree != nullptr );
-	U_TEST_ASSERT( source_tree->lexical_errors.empty() );
-	U_TEST_ASSERT( source_tree->syntax_errors.empty() );
+	U_TEST_ASSERT( source_graph != nullptr );
+	U_TEST_ASSERT( source_graph->lexical_errors.empty() );
+	U_TEST_ASSERT( source_graph->syntax_errors.empty() );
 
-	return CodeBuilder().BuildProgram( *source_tree );
+	return CodeBuilder().BuildProgram( *source_graph );
 }
 
 std::unique_ptr<llvm::Module> BuildMultisourceProgram( std::vector<SourceEntry> sources, const ProgramString& root_file_path )
 {
-	const SourceTreePtr source_tree=
-		SourceTreeLoader( std::make_shared<MultiFileVfs>( std::move(sources) ) ).LoadSource( root_file_path );
+	const SourceGraphPtr source_graph=
+		SourceGraphLoader( std::make_shared<MultiFileVfs>( std::move(sources) ) ).LoadSource( root_file_path );
 
-	U_TEST_ASSERT( source_tree != nullptr );
-	U_TEST_ASSERT( source_tree->lexical_errors.empty() );
-	U_TEST_ASSERT( source_tree->syntax_errors.empty() );
+	U_TEST_ASSERT( source_graph != nullptr );
+	U_TEST_ASSERT( source_graph->lexical_errors.empty() );
+	U_TEST_ASSERT( source_graph->syntax_errors.empty() );
 
-	ICodeBuilder::BuildResult build_result= CodeBuilder().BuildProgram( *source_tree );
+	ICodeBuilder::BuildResult build_result= CodeBuilder().BuildProgram( *source_graph );
 
 	for( const CodeBuilderError& error : build_result.errors )
 		std::cout << error.file_pos.line << ":" << error.file_pos.pos_in_line << " " << ToStdString( error.text ) << "\n";

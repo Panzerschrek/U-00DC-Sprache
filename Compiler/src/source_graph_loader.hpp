@@ -21,7 +21,8 @@ public:
 
 typedef  std::shared_ptr<IVfs> IVfsPtr;
 
-struct SourceTree
+// Directed acyclic graph of sources.
+struct SourceGraph final
 {
 	struct Node
 	{
@@ -38,17 +39,17 @@ struct SourceTree
 	SyntaxErrorMessages syntax_errors;
 };
 
-typedef std::unique_ptr<SourceTree> SourceTreePtr;
+typedef std::unique_ptr<SourceGraph> SourceGraphPtr;
 
-class SourceTreeLoader final
+class SourceGraphLoader final
 {
 public:
-	explicit SourceTreeLoader( IVfsPtr vfs );
+	explicit SourceGraphLoader( IVfsPtr vfs );
 
-	SourceTreePtr LoadSource( const IVfs::Path& root_file_path );
+	SourceGraphPtr LoadSource( const IVfs::Path& root_file_path );
 
 private:
-	size_t LoadNode_r( const IVfs::Path& file_path, SourceTree& result );
+	size_t LoadNode_r( const IVfs::Path& file_path, SourceGraph& result );
 
 private:
 	IVfsPtr vfs_;
