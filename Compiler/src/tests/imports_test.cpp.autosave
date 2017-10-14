@@ -54,13 +54,13 @@ U_TEST( ImportsTest1_FunctionPrototypeInOneFileAndBodyInAnother )
 	)";
 
 	const EnginePtr engine=
-	CreateEngine(
-		BuildMultisourceProgram(
-			{
-				{ "a"_SpC, c_program_text_a },
-				{ "root"_SpC, c_program_text_root }
-			},
-			"root"_SpC ) );
+		CreateEngine(
+			BuildMultisourceProgram(
+				{
+					{ "a"_SpC, c_program_text_a },
+					{ "root"_SpC, c_program_text_root }
+				},
+				"root"_SpC ) );
 
 	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
@@ -96,13 +96,13 @@ U_TEST( ImportsTest2_FunctionsWithDifferentSignaturesInDifferentFiles )
 	)";
 
 	const EnginePtr engine=
-	CreateEngine(
-		BuildMultisourceProgram(
-			{
-				{ "a"_SpC, c_program_text_a },
-				{ "root"_SpC, c_program_text_root }
-			},
-			"root"_SpC ) );
+		CreateEngine(
+			BuildMultisourceProgram(
+				{
+					{ "a"_SpC, c_program_text_a },
+					{ "root"_SpC, c_program_text_root }
+				},
+				"root"_SpC ) );
 
 	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );

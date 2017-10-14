@@ -177,7 +177,7 @@ void CodeBuilder::MergeNameScopes( NamesScope& dst, const NamesScope& src )
 	src.ForEachInThisScope(
 		[&]( const NamesScope::InsertedName& src_member )
 		{
-			const NamesScope::InsertedName* const dst_member= dst.GetThisScopeName( src_member.first );
+			NamesScope::InsertedName* const dst_member= dst.GetThisScopeName( src_member.first );
 			if( dst_member == nullptr )
 			{
 				// All ok - name form "src" does not exists in "dst".
@@ -195,17 +195,50 @@ void CodeBuilder::MergeNameScopes( NamesScope& dst, const NamesScope& src )
 			if( dst_member->second.GetFilePos() == src_member.second.GetFilePos() )
 				return; // All ok - things from one source.
 
+			if( const NamesScopePtr sub_namespace= src_member.second.GetNamespace() )
 			{
 				// Merge namespaces.
-				const NamesScopePtr sub_namespace= src_member.second.GetNamespace();
-				if( sub_namespace != nullptr )
+				// TODO - detect here template instantiation namespaces.
+				const NamesScopePtr dst_sub_namespace= dst_member->second.GetNamespace();
+				U_ASSERT( dst_sub_namespace != nullptr );
+				MergeNameScopes( *dst_sub_namespace, *sub_namespace );
+			}
+			else if(
+				OverloadedFunctionsSet* const dst_funcs_set=
+				dst_member->second.GetFunctionsSet() )
+			{
+				const OverloadedFunctionsSet* const src_funcs_set= src_member.second.GetFunctionsSet();
+				U_ASSERT( src_funcs_set != nullptr );
+
+				for( const FunctionVariable& src_func : *src_funcs_set )
 				{
-					const NamesScopePtr dst_sub_namespace= dst_member->second.GetNamespace();
-					U_ASSERT( dst_sub_namespace != nullptr );
-					MergeNameScopes( *dst_sub_namespace, *sub_namespace );
+					FunctionVariable* same_dst_func=
+						GetFunctionWithExactSignature( *src_func.type.GetFunctionType(), *dst_funcs_set );
+					if( same_dst_func != nullptr )
+					{
+						if( src_func.type != same_dst_func->type )
+							errors_.push_back( ReportReturnValueDiffersFromPrototype( src_func.file_pos ) );
+						else
+						{
+							if( !same_dst_func->have_body &&  src_func.have_body )
+								same_dst_func->have_body= true; // All ok, add body.
+							if(  same_dst_func->have_body && !src_func.have_body )
+								{} // All ok, add body + prototype from other file.
+							if( !same_dst_func->have_body && !src_func.have_body )
+								errors_.push_back( ReportFunctionPrototypeDuplication( src_func.file_pos, src_member.first ) );
+							if(  same_dst_func->have_body &&  src_func.have_body )
+								errors_.push_back( ReportFunctionBodyDuplication( src_func.file_pos, src_member.first ) );
+						}
+					}
+					else
+						ApplyOverloadedFunction( *dst_funcs_set, src_func, src_func.file_pos );
 				}
 			}
-			// TODO
+			else
+			{
+				// Can not merge other kinds of values.
+				errors_.push_back( ReportRedefinition( src_member.second.GetFilePos(), src_member.first ) );
+			}
 
 		} );
 }
