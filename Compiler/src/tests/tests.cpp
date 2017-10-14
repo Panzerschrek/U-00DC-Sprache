@@ -121,6 +121,18 @@ std::unique_ptr<llvm::Module> BuildMultisourceProgram( std::vector<SourceEntry> 
 	return std::move( build_result.module );
 }
 
+ICodeBuilder::BuildResult BuildMultisourceProgramWithErrors( std::vector<SourceEntry> sources, const ProgramString& root_file_path )
+{
+	const SourceGraphPtr source_graph=
+		SourceGraphLoader( std::make_shared<MultiFileVfs>( std::move(sources) ) ).LoadSource( root_file_path );
+
+	U_TEST_ASSERT( source_graph != nullptr );
+	U_TEST_ASSERT( source_graph->lexical_errors.empty() );
+	U_TEST_ASSERT( source_graph->syntax_errors.empty() );
+
+	return CodeBuilder().BuildProgram( *source_graph );
+}
+
 EnginePtr CreateEngine( std::unique_ptr<llvm::Module> module, const bool needs_dump )
 {
 	U_TEST_ASSERT( module != nullptr );

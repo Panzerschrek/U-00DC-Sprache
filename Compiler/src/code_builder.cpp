@@ -184,7 +184,16 @@ void CodeBuilder::MergeNameScopes( NamesScope& dst, const NamesScope& src )
 			if( dst_member == nullptr )
 			{
 				// All ok - name form "src" does not exists in "dst".
-				dst.AddName( src_member.first, src_member.second );
+				if( const NamesScopePtr names_scope= src_member.second.GetNamespace() )
+				{
+					// We copy namespaces, instead of taking same shared pointer,
+					// because using same shared pointer we can change state of "src".
+					const NamesScopePtr names_scope_copy=
+						MakeRecursiveNamespaceCopy( *names_scope, dst );
+					dst.AddName( src_member.first, Value( names_scope_copy, src_member.second.GetFilePos() ) );
+				}
+				else
+					dst.AddName( src_member.first, src_member.second );
 				return;
 			}
 
@@ -244,6 +253,26 @@ void CodeBuilder::MergeNameScopes( NamesScope& dst, const NamesScope& src )
 			}
 
 		} );
+}
+
+NamesScopePtr CodeBuilder::MakeRecursiveNamespaceCopy( const NamesScope& src, NamesScope& parent )
+{
+	NamesScopePtr copy= std::make_shared<NamesScope>( src.GetThisNamespaceName(), &parent );
+
+	src.ForEachInThisScope(
+		[&]( const NamesScope::InsertedName& src_member )
+		{
+			if( const NamesScopePtr names_scope= src_member.second.GetNamespace() )
+			{
+				const NamesScopePtr inner_scope_copy=
+					MakeRecursiveNamespaceCopy( *names_scope, *copy );
+				copy->AddName( src_member.first, Value( inner_scope_copy, src_member.second.GetFilePos() ) );
+			}
+			else
+				copy->AddName( src_member.first, src_member.second );
+		} );
+
+	return copy;
 }
 
 void CodeBuilder::FillGlobalNamesScope( NamesScope& global_names_scope )

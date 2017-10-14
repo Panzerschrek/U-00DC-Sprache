@@ -97,6 +97,7 @@ private:
 	BuildResultInternal BuildProgramInternal( const SourceGraph& source_graph, size_t node_index );
 
 	void MergeNameScopes( NamesScope& dst, const NamesScope& src );
+	NamesScopePtr MakeRecursiveNamespaceCopy( const NamesScope& src, NamesScope& parent );
 
 	void FillGlobalNamesScope( NamesScope& global_names_scope );
 	Type PrepareType( const FilePos& file_pos, const TypeName& type_name, NamesScope& names_scope );
