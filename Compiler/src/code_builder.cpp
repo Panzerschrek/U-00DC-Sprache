@@ -147,6 +147,7 @@ CodeBuilder::BuildResultInternal CodeBuilder::BuildProgramInternal(
 	BuildResultInternal result;
 
 	result.names_map.reset( new NamesScope( ""_SpC, nullptr ) );
+	result.class_table.reset( new ClassTable );
 	FillGlobalNamesScope( *result.names_map );
 
 	U_ASSERT( node_index < source_graph.nodes_storage.size() );
@@ -157,17 +158,20 @@ CodeBuilder::BuildResultInternal CodeBuilder::BuildProgramInternal(
 		const auto it= compiled_sources_cache_.find( child_node_inex );
 		if( it != compiled_sources_cache_.end() )
 		{
-			MergeNameScopes( *result.names_map, *it->second.names_map );
+			SetCurrentClassTable( *it->second.class_table ); // Before merge each ClassProxy must points to members of "dst.names_map".
+			MergeNameScopes( *result.names_map, *it->second.names_map, *result.class_table );
 			continue;
 		}
 
 		BuildResultInternal child_result=
 			BuildProgramInternal( source_graph, child_node_inex );
 
-		MergeNameScopes( *result.names_map, *child_result.names_map );
+		MergeNameScopes( *result.names_map, *child_result.names_map, *result.class_table );
 
 		compiled_sources_cache_.emplace( child_node_inex, std::move( child_result ) );
 	}
+
+	SetCurrentClassTable( *result.class_table );
 
 	// Do work for this node.
 	BuildNamespaceBody( source_graph_node.ast.program_elements, *result.names_map );
@@ -175,7 +179,7 @@ CodeBuilder::BuildResultInternal CodeBuilder::BuildProgramInternal(
 	return result;
 }
 
-void CodeBuilder::MergeNameScopes( NamesScope& dst, const NamesScope& src )
+void CodeBuilder::MergeNameScopes( NamesScope& dst, const NamesScope& src, ClassTable& dst_class_table )
 {
 	src.ForEachInThisScope(
 		[&]( const NamesScope::InsertedName& src_member )
@@ -188,12 +192,30 @@ void CodeBuilder::MergeNameScopes( NamesScope& dst, const NamesScope& src )
 				{
 					// We copy namespaces, instead of taking same shared pointer,
 					// because using same shared pointer we can change state of "src".
-					const NamesScopePtr names_scope_copy=
-						MakeRecursiveNamespaceCopy( *names_scope, dst );
+					const NamesScopePtr names_scope_copy= std::make_shared<NamesScope>( names_scope->GetThisNamespaceName(), &dst );
+					MergeNameScopes( *names_scope_copy, *names_scope, dst_class_table );
 					dst.AddName( src_member.first, Value( names_scope_copy, src_member.second.GetFilePos() ) );
 				}
 				else
-					dst.AddName( src_member.first, src_member.second );
+				{
+					bool class_copied= false;
+					if( const Type* const type= src_member.second.GetTypeName() )
+					{
+						if( const ClassProxyPtr class_proxy= type->GetClassTypeProxy() )
+						{
+							// If current namespace is parent for this class and name is primary.
+							if( class_proxy->class_->members.GetParent() == &src &&
+								class_proxy->class_->members.GetThisNamespaceName() == src_member.first )
+							{
+								CopyClass( src_member.second.GetFilePos(), class_proxy, dst_class_table, dst );
+								class_copied= true;
+							}
+						}
+					}
+
+					if( !class_copied )
+						dst.AddName( src_member.first, src_member.second );
+				}
 				return;
 			}
 
@@ -213,7 +235,7 @@ void CodeBuilder::MergeNameScopes( NamesScope& dst, const NamesScope& src )
 				// TODO - detect here template instantiation namespaces.
 				const NamesScopePtr dst_sub_namespace= dst_member->second.GetNamespace();
 				U_ASSERT( dst_sub_namespace != nullptr );
-				MergeNameScopes( *dst_sub_namespace, *sub_namespace );
+				MergeNameScopes( *dst_sub_namespace, *sub_namespace, dst_class_table );
 			}
 			else if(
 				OverloadedFunctionsSet* const dst_funcs_set=
@@ -255,24 +277,46 @@ void CodeBuilder::MergeNameScopes( NamesScope& dst, const NamesScope& src )
 		} );
 }
 
-NamesScopePtr CodeBuilder::MakeRecursiveNamespaceCopy( const NamesScope& src, NamesScope& parent )
+void CodeBuilder::CopyClass(
+	const FilePos& file_pos,
+	const ClassProxyPtr& src_class,
+	ClassTable& dst_class_table,
+	NamesScope& dst_namespace )
 {
-	NamesScopePtr copy= std::make_shared<NamesScope>( src.GetThisNamespaceName(), &parent );
+	// We make deep copy of Class, imported from other file.
+	// This needs for prevention of modification of source class and affection of imported file.
 
-	src.ForEachInThisScope(
-		[&]( const NamesScope::InsertedName& src_member )
-		{
-			if( const NamesScopePtr names_scope= src_member.second.GetNamespace() )
-			{
-				const NamesScopePtr inner_scope_copy=
-					MakeRecursiveNamespaceCopy( *names_scope, *copy );
-				copy->AddName( src_member.first, Value( inner_scope_copy, src_member.second.GetFilePos() ) );
-			}
-			else
-				copy->AddName( src_member.first, src_member.second );
-		} );
+	const Class& src= *src_class->class_;
+	const std::shared_ptr<Class> copy=
+		std::make_shared<Class>( src.members.GetThisNamespaceName(), &dst_namespace );
 
-	return copy;
+	// Make deep copy of inner namespace.
+	MergeNameScopes( copy->members, src.members, dst_class_table );
+
+	// Copy fields.
+	copy->field_count= src.field_count;
+	copy->is_incomplete= src.is_incomplete;
+
+	copy->have_explicit_noncopy_constructors= src.have_explicit_noncopy_constructors;
+	copy->is_default_constructible= src.is_default_constructible;
+	copy->is_copy_constructible= src.is_copy_constructible;
+	copy->have_destructor= src.have_destructor;
+
+	copy->llvm_type= src.llvm_type;
+	copy->base_template= src.base_template;
+
+	// Register copy in destination namespace and current class table.
+	dst_namespace.AddName( src.members.GetThisNamespaceName(), Value( src_class, file_pos ) );
+	dst_class_table[ src_class ]= copy;
+}
+
+void CodeBuilder::SetCurrentClassTable( ClassTable& table )
+{
+	current_class_table_= &table;
+
+	// Make all ClassProxy pointed to Classes from current table.
+	for( const ClassTable::value_type& table_entry : table )
+		table_entry.first->class_= table_entry.second;
 }
 
 void CodeBuilder::FillGlobalNamesScope( NamesScope& global_names_scope )
@@ -422,6 +466,7 @@ Class* CodeBuilder::PrepareClass(
 
 		const ClassProxyPtr the_class_proxy= std::make_shared<ClassProxy>( new Class( class_name, &names_scope ) );
 		Class* const the_class= the_class_proxy->class_.get();
+		(*current_class_table_)[ the_class_proxy ]= the_class_proxy->class_;
 		the_class->llvm_type= llvm::StructType::create( llvm_context_, MangleType( the_class_proxy ) );
 		const Type class_type= the_class_proxy;
 
@@ -465,6 +510,7 @@ Class* CodeBuilder::PrepareClass(
 	{
 		the_class_proxy= std::make_shared<ClassProxy>( new Class( class_name, &names_scope ) );
 		the_class= the_class_proxy->class_.get();
+		(*current_class_table_)[ the_class_proxy ]= the_class_proxy->class_;
 		the_class->llvm_type= llvm::StructType::create( llvm_context_, MangleType( the_class_proxy ) );
 		Type class_type;
 		class_type= the_class_proxy;

@@ -205,4 +205,47 @@ U_TEST( ImportsTest5_ImportContentOfNamespace )
 	U_TEST_ASSERT( static_cast<uint64_t>(44512) == result_value.IntVal.getLimitedValue() );
 }
 
+U_TEST( ImportsTest6_ImportClass )
+{
+	static const char c_program_text_a[]=
+	R"(
+		struct X
+		{
+			fn Foo() : i32;
+		}
+	)";
+
+	static const char c_program_text_root[]=
+	R"(
+		import "a"
+
+		fn X::Foo() : i32 // Add body for function prototype from imported class.
+		{
+			return 8826545;
+		}
+
+		fn Foo() : i32
+		{
+			return X::Foo();
+		}
+	)";
+
+	const EnginePtr engine=
+		CreateEngine(
+			BuildMultisourceProgram(
+				{
+					{ "a"_SpC, c_program_text_a },
+					{ "root"_SpC, c_program_text_root }
+				},
+				"root"_SpC ) );
+
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	const llvm::GenericValue result_value= engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( static_cast<uint64_t>(8826545) == result_value.IntVal.getLimitedValue() );
+}
+
+
 } // namespace U

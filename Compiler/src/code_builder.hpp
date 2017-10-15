@@ -28,9 +28,11 @@ public:
 	virtual BuildResult BuildProgram( const SourceGraph& source_graph ) override;
 
 private:
+	typedef std::unordered_map< ClassProxyPtr, std::shared_ptr<Class> > ClassTable;
 	struct BuildResultInternal
 	{
 		std::unique_ptr<NamesScope> names_map;
+		std::unique_ptr<ClassTable> class_table;
 	};
 
 	struct DestructiblesStorage final
@@ -96,8 +98,14 @@ private:
 private:
 	BuildResultInternal BuildProgramInternal( const SourceGraph& source_graph, size_t node_index );
 
-	void MergeNameScopes( NamesScope& dst, const NamesScope& src );
-	NamesScopePtr MakeRecursiveNamespaceCopy( const NamesScope& src, NamesScope& parent );
+	void MergeNameScopes( NamesScope& dst, const NamesScope& src, ClassTable& dst_class_table );
+
+	void CopyClass(
+		const FilePos& file_pos, // FilePos or original class.
+		const ClassProxyPtr& src_class,
+		ClassTable& dst_class_table,
+		NamesScope& dst_namespace );
+	void SetCurrentClassTable( ClassTable& table );
 
 	void FillGlobalNamesScope( NamesScope& global_names_scope );
 	Type PrepareType( const FilePos& file_pos, const TypeName& type_name, NamesScope& names_scope );
@@ -500,6 +508,7 @@ private:
 	std::vector<CodeBuilderError> errors_;
 
 	std::unordered_map< size_t, BuildResultInternal > compiled_sources_cache_;
+	ClassTable* current_class_table_= nullptr;
 
 	std::vector<std::unique_ptr<PreResolveFunc>> resolving_funcs_stack_;
 	size_t next_template_dependent_type_index_= 1u;
