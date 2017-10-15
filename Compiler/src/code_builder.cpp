@@ -421,8 +421,9 @@ ClassPtr CodeBuilder::PrepareClass(
 		}
 
 		const ClassPtr the_class= std::make_shared<Class>( class_name, &names_scope );
-		the_class->llvm_type= llvm::StructType::create( llvm_context_, MangleType( the_class ) );
-		const Type class_type= the_class;
+		const ClassProxyPtr the_class_proxy= std::make_shared<ClassProxy>( the_class );
+		the_class->llvm_type= llvm::StructType::create( llvm_context_, MangleType( the_class_proxy ) );
+		const Type class_type= the_class_proxy;
 
 		if( NameShadowsTemplateArgument( class_name, names_scope ) )
 		{
@@ -441,6 +442,7 @@ ClassPtr CodeBuilder::PrepareClass(
 	}
 
 	ClassPtr the_class;
+	ClassProxyPtr the_class_proxy;
 
 	const NamesScope::InsertedName* previous_declaration= nullptr;
 	if( class_complex_name.components.size() == 1u )
@@ -462,9 +464,10 @@ ClassPtr CodeBuilder::PrepareClass(
 	if( previous_declaration == nullptr )
 	{
 		the_class= std::make_shared<Class>( class_name, &names_scope );
-		the_class->llvm_type= llvm::StructType::create( llvm_context_, MangleType( the_class ) );
+		the_class_proxy= std::make_shared<ClassProxy>( the_class );
+		the_class->llvm_type= llvm::StructType::create( llvm_context_, MangleType( the_class_proxy ) );
 		Type class_type;
-		class_type= the_class;
+		class_type= the_class_proxy;
 
 		if( NameShadowsTemplateArgument( class_name, names_scope ) )
 		{
@@ -483,14 +486,15 @@ ClassPtr CodeBuilder::PrepareClass(
 	{
 		if( const Type* const previous_type= previous_declaration->second.GetTypeName() )
 		{
-			if( const ClassPtr previous_calss_ptr= previous_type->GetClassType() )
+			if( const ClassProxyPtr previous_class= previous_type->GetClassTypeProxy() )
 			{
-				if( !previous_calss_ptr->is_incomplete )
+				if( !previous_class->class_->is_incomplete )
 				{
 					errors_.push_back( ReportClassBodyDuplication( class_declaration.file_pos_ ) );
 					return nullptr;
 				}
-				the_class= previous_calss_ptr;
+				the_class_proxy= previous_class;
+				the_class= previous_class->class_;
 			}
 			else
 			{
@@ -506,7 +510,7 @@ ClassPtr CodeBuilder::PrepareClass(
 	}
 	U_ASSERT( the_class != nullptr );
 	Type class_type;
-	class_type= the_class;
+	class_type= the_class_proxy;
 
 	std::vector<llvm::Type*> fields_llvm_types;
 
@@ -521,7 +525,7 @@ ClassPtr CodeBuilder::PrepareClass(
 			ClassField out_field;
 			out_field.type= PrepareType( in_field->file_pos_, in_field->type, the_class->members );
 			out_field.index= the_class->field_count;
-			out_field.class_= the_class;
+			out_field.class_= the_class_proxy;
 
 			if( out_field.type.IsIncomplete() )
 			{
@@ -547,7 +551,7 @@ ClassPtr CodeBuilder::PrepareClass(
 			dynamic_cast<const FunctionDeclaration*>( member.get() ) )
 		{
 			// First time, push only prototypes.
-			class_functions.push_back( PrepareFunction( *function_declaration, true, the_class, the_class->members ) );
+			class_functions.push_back( PrepareFunction( *function_declaration, true, the_class_proxy, the_class->members ) );
 		}
 		else if( const ClassDeclaration* const inner_class=
 			dynamic_cast<const ClassDeclaration*>( member.get() ) )
@@ -638,7 +642,7 @@ ClassPtr CodeBuilder::PrepareClass(
 
 			BuildFuncCode(
 				(*func.functions_set)[ func.function_index ],
-				the_class,
+				the_class_proxy,
 				the_class->members,
 				func_name,
 				func.func_syntax_element->arguments_,
@@ -1023,13 +1027,14 @@ void CodeBuilder::BuildCopyConstructorPart(
 			},
 			function_context);
 	}
-	else if( const ClassPtr class_type= type.GetClassType() )
+	else if( const ClassProxyPtr class_type_proxy= type.GetClassTypeProxy() )
 	{
-		const Type filed_class_type= class_type;
+		const Type filed_class_type= class_type_proxy;
+		const Class& class_type= *class_type_proxy->class_;
 
 		// Search copy constructor.
 		const NamesScope::InsertedName* constructor_name=
-			class_type->members.GetThisScopeName( Keyword( Keywords::constructor_ ) );
+			class_type.members.GetThisScopeName( Keyword( Keywords::constructor_ ) );
 		U_ASSERT( constructor_name != nullptr );
 		const OverloadedFunctionsSet* const constructors_set= constructor_name->second.GetFunctionsSet();
 		U_ASSERT( constructors_set != nullptr );
@@ -1065,13 +1070,14 @@ void CodeBuilder::BuildCopyConstructorPart(
 void CodeBuilder::TryCallCopyConstructor(
 	const FilePos& file_pos,
 	llvm::Value* const this_, llvm::Value* const src,
-	const ClassPtr& class_,
+	const ClassProxyPtr& class_proxy,
 	FunctionContext& function_context )
 {
-	U_ASSERT( class_ != nullptr );
-	const Type class_type= class_;
+	U_ASSERT( class_proxy != nullptr );
+	const Type class_type= class_proxy;
+	const Class& class_= *class_proxy->class_;
 
-	if( !class_->is_copy_constructible )
+	if( !class_.is_copy_constructible )
 	{
 		// TODO - print more reliable message.
 		errors_.push_back( ReportOperationNotSupportedForThisType( file_pos, class_type.ToString() ) );
@@ -1079,7 +1085,7 @@ void CodeBuilder::TryCallCopyConstructor(
 	}
 
 	// Search for copy-constructor.
-	const NamesScope::InsertedName* const constructos_name= class_->members.GetThisScopeName( Keyword( Keywords::constructor_ ) );
+	const NamesScope::InsertedName* const constructos_name= class_.members.GetThisScopeName( Keyword( Keywords::constructor_ ) );
 	U_ASSERT( constructos_name != nullptr );
 	const OverloadedFunctionsSet* const constructors= constructos_name->second.GetFunctionsSet();
 	U_ASSERT(constructors != nullptr );
@@ -1331,7 +1337,7 @@ void CodeBuilder::BuildNamespaceBody(
 CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 	const FunctionDeclaration& func,
 	const bool is_class_method_predeclaration,
-	ClassPtr base_class,
+	ClassProxyPtr base_class,
 	NamesScope& func_definition_names_scope /* scope, where this function appears */ )
 {
 	PrepareFunctionResult result;
@@ -1360,9 +1366,9 @@ CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 			bool base_space_is_class= false;
 			if( const Type* const type= scope_name->second.GetTypeName() )
 			{
-				if( const ClassPtr class_= type->GetClassType() )
+				if( const ClassProxyPtr class_= type->GetClassTypeProxy() )
 				{
-					func_base_names_scope= &class_->members;
+					func_base_names_scope= &class_->class_->members;
 					base_class= class_; // TODO - check here if base_class nonnull and diffrs from class_?
 					base_space_is_class= true;
 				}
@@ -1607,7 +1613,7 @@ CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 
 void CodeBuilder::BuildFuncCode(
 	FunctionVariable& func_variable,
-	const ClassPtr base_class,
+	const ClassProxyPtr base_class,
 	NamesScope& parent_names_scope,
 	const ProgramString& func_name,
 	const FunctionArgumentsDeclaration& args,
@@ -1865,7 +1871,7 @@ void CodeBuilder::BuildFuncCode(
 
 			BuildConstructorInitialization(
 				*function_context.this_,
-				*base_class,
+				*base_class->class_,
 				function_names,
 				function_context,
 				dumy_initialization_list );
@@ -1873,7 +1879,7 @@ void CodeBuilder::BuildFuncCode(
 		else
 			BuildConstructorInitialization(
 				*function_context.this_,
-				*base_class,
+				*base_class->class_,
 				function_names,
 				function_context,
 				*constructor_initialization_list );
@@ -2874,7 +2880,7 @@ void CodeBuilder::BuildReturnOperatorCode(
 	{
 		if( function_context.s_ret_ != nullptr )
 		{
-			const ClassPtr class_= function_context.s_ret_->type.GetClassType();
+			const ClassProxyPtr class_= function_context.s_ret_->type.GetClassTypeProxy();
 			TryCallCopyConstructor( return_operator.file_pos_, function_context.s_ret_->llvm_value, expression_result.llvm_value, class_, function_context );
 
 			call_destructors();

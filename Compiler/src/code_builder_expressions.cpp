@@ -900,7 +900,7 @@ Value CodeBuilder::BuildNamedOperand(
 			return ErrorValue();
 		}
 
-		const ClassPtr class_= field->class_.lock();
+		const ClassProxyPtr class_= field->class_.lock();
 		U_ASSERT( class_ != nullptr && "Class is dead? WTF?" );
 
 		// SPRACHE_TODO - allow access to parents fields here.
@@ -1370,7 +1370,7 @@ Value CodeBuilder::BuildCallOperator(
 				if( !something_have_template_dependent_type )
 					llvm_args.push_back( CreateMoveToLLVMRegisterInstruction( expr, function_context ) );
 			}
-			else if( const ClassPtr class_type= arg.type.GetClassType() )
+			else if( const ClassProxyPtr class_type= arg.type.GetClassTypeProxy() )
 			{
 				if( !arg.type.IsCopyConstructible() )
 				{

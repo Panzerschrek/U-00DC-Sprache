@@ -161,7 +161,7 @@ private:
 	void TryCallCopyConstructor(
 		const FilePos& file_pos,
 		llvm::Value* this_, llvm::Value* src,
-		const ClassPtr& class_,
+		const ClassProxyPtr& class_proxy,
 		FunctionContext& function_context );
 
 	// Generates for loop from 0 to iteration_count - 1
@@ -198,12 +198,12 @@ private:
 	PrepareFunctionResult PrepareFunction(
 		const FunctionDeclaration& func,
 		bool force_prototype,
-		ClassPtr base_class,
+		ClassProxyPtr base_class,
 		NamesScope& scope );
 
 	void BuildFuncCode(
 		FunctionVariable& func,
-		ClassPtr base_class,
+		ClassProxyPtr base_class,
 		NamesScope& parent_names_scope,
 		const ProgramString& func_name,
 		const FunctionArgumentsDeclaration& args,

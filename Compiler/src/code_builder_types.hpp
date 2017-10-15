@@ -27,7 +27,16 @@ struct Array;
 
 struct Class;
 typedef std::shared_ptr<Class> ClassPtr;
-typedef std::weak_ptr<Class> ClassWeakPtr;
+
+struct ClassProxy
+{
+	ClassProxy( ClassPtr in_class )
+		: class_( std::move(in_class) )
+	{}
+	ClassPtr class_;
+};
+typedef std::shared_ptr<ClassProxy> ClassProxyPtr;
+typedef std::weak_ptr<ClassProxy> ClassProxyWeakPtr;
 
 class NamesScope;
 typedef std::shared_ptr<NamesScope> NamesScopePtr;
@@ -86,7 +95,7 @@ public:
 	Type( Function&& function_type );
 	Type( const Array& array_type );
 	Type( Array&& array_type );
-	Type( ClassPtr class_type );
+	Type( ClassProxyPtr class_type );
 	Type( NontypeStub nontype_strub );
 	Type( TemplateDependentType template_dependent_type );
 
@@ -97,6 +106,7 @@ public:
 	const Function* GetFunctionType() const;
 	Array* GetArrayType();
 	const Array* GetArrayType() const;
+	ClassProxyPtr GetClassTypeProxy() const;
 	ClassPtr GetClassType() const;
 	TemplateDependentType* GetTemplateDependentType();
 	const TemplateDependentType* GetTemplateDependentType() const;
@@ -123,7 +133,7 @@ private:
 		FundamentalType,
 		FunctionPtr,
 		ArrayPtr,
-		ClassPtr,
+		ClassProxyPtr,
 		NontypeStub,
 		TemplateDependentType> something_;
 };
@@ -214,7 +224,7 @@ struct ClassField final
 {
 	Type type;
 	unsigned int index= 0u;
-	ClassWeakPtr class_;
+	ClassProxyWeakPtr class_;
 };
 
 // "this" + functions set of class of "this"
