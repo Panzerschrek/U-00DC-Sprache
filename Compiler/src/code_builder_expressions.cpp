@@ -944,7 +944,7 @@ Value CodeBuilder::BuildNamedOperand(
 			}
 
 			// Trying add "this" to functions set.
-			const ClassPtr class_= function_context.this_->type.GetClassType();
+			const Class* const class_= function_context.this_->type.GetClassType();
 
 			const NamesScope::InsertedName* const same_set_in_class=
 				class_->members.GetThisScopeName( named_operand.name_.components.back().name );
@@ -1120,7 +1120,7 @@ Value CodeBuilder::BuildMemberAccessOperator(
 	if( value.GetType().GetTemplateDependentType() != nullptr )
 		return TemplateDependentValue();
 
-	const ClassPtr class_type= value.GetType().GetClassType();
+	const Class* const class_type= value.GetType().GetClassType();
 	if( class_type == nullptr )
 	{
 		errors_.push_back( ReportOperationNotSupportedForThisType( member_access_operator.file_pos_, value.GetType().ToString() ) );

@@ -171,7 +171,7 @@ static NamePair GetTypeName_r( const Type& type, NamesCache& names_cache )
 			names_cache.AddName( result.full );
 		}
 	}
-	else if( const ClassPtr class_type= type.GetClassType() )
+	else if( const Class* const class_type= type.GetClassType() )
 	{
 		result= GetNestedName( class_type->members.GetThisNamespaceName(), *class_type->members.GetParent(), false, names_cache );
 	}

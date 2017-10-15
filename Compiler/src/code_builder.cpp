@@ -403,7 +403,7 @@ Type CodeBuilder::PrepareType(
 	return result;
 }
 
-ClassPtr CodeBuilder::PrepareClass(
+Class* CodeBuilder::PrepareClass(
 	const ClassDeclaration& class_declaration,
 	const ComplexName& class_complex_name,
 	NamesScope& names_scope )
@@ -420,8 +420,8 @@ ClassPtr CodeBuilder::PrepareClass(
 			return nullptr;
 		}
 
-		const ClassPtr the_class= std::make_shared<Class>( class_name, &names_scope );
-		const ClassProxyPtr the_class_proxy= std::make_shared<ClassProxy>( the_class );
+		const ClassProxyPtr the_class_proxy= std::make_shared<ClassProxy>( new Class( class_name, &names_scope ) );
+		Class* const the_class= the_class_proxy->class_.get();
 		the_class->llvm_type= llvm::StructType::create( llvm_context_, MangleType( the_class_proxy ) );
 		const Type class_type= the_class_proxy;
 
@@ -441,7 +441,7 @@ ClassPtr CodeBuilder::PrepareClass(
 		return nullptr;
 	}
 
-	ClassPtr the_class;
+	Class* the_class= nullptr;
 	ClassProxyPtr the_class_proxy;
 
 	const NamesScope::InsertedName* previous_declaration= nullptr;
@@ -463,8 +463,8 @@ ClassPtr CodeBuilder::PrepareClass(
 
 	if( previous_declaration == nullptr )
 	{
-		the_class= std::make_shared<Class>( class_name, &names_scope );
-		the_class_proxy= std::make_shared<ClassProxy>( the_class );
+		the_class_proxy= std::make_shared<ClassProxy>( new Class( class_name, &names_scope ) );
+		the_class= the_class_proxy->class_.get();
 		the_class->llvm_type= llvm::StructType::create( llvm_context_, MangleType( the_class_proxy ) );
 		Type class_type;
 		class_type= the_class_proxy;
@@ -494,7 +494,7 @@ ClassPtr CodeBuilder::PrepareClass(
 					return nullptr;
 				}
 				the_class_proxy= previous_class;
-				the_class= previous_class->class_;
+				the_class= previous_class->class_.get();
 			}
 			else
 			{
@@ -1163,7 +1163,7 @@ void CodeBuilder::CallDestructor(
 {
 	U_ASSERT( type.HaveDestructor() );
 
-	if( const ClassPtr class_= type.GetClassType() )
+	if( const Class* const class_= type.GetClassType() )
 	{
 		const NamesScope::InsertedName* const destructor_name= class_->members.GetThisScopeName( Keyword( Keywords::destructor_ ) );
 		U_ASSERT( destructor_name != nullptr );
@@ -1225,7 +1225,7 @@ void CodeBuilder::CallDestructorsBeforeReturn( FunctionContext& function_context
 void CodeBuilder::CallMembersDestructors( FunctionContext& function_context )
 {
 	U_ASSERT( function_context.this_ != nullptr );
-	const ClassPtr class_= function_context.this_->type.GetClassType();
+	const Class* const class_= function_context.this_->type.GetClassType();
 	U_ASSERT( class_ != nullptr );
 
 	class_->members.ForEachInThisScope(
@@ -1630,7 +1630,7 @@ void CodeBuilder::BuildFuncCode(
 		{}
 		else if( function_type->return_type.GetFundamentalType() != nullptr )
 		{}
-		else if( const ClassPtr class_type= function_type->return_type.GetClassType() )
+		else if( const Class* const class_type= function_type->return_type.GetClassType() )
 		{
 			// Add return-value ponter as "sret" argument for class types.
 			args_llvm_types.push_back( llvm::PointerType::get( class_type->llvm_type, 0u ) );
@@ -3476,7 +3476,7 @@ std::pair<const NamesScope::InsertedName*, NamesScope*> CodeBuilder::ResolveName
 			next_space= inner_namespace.get();
 		else if( const Type* const type= name->second.GetTypeName() )
 		{
-			if( const ClassPtr class_= type->GetClassType() )
+			if( Class* const class_= type->GetClassType() )
 				next_space= &class_->members;
 		}
 		else if( const TypeTemplatePtr type_template = name->second.GetTypeTemplate() )
@@ -3504,7 +3504,7 @@ std::pair<const NamesScope::InsertedName*, NamesScope*> CodeBuilder::ResolveName
 						return std::make_pair( &current_space->GetTemplateDependentValue(), current_space ); // Else it is something really template-dependent
 				}
 				U_ASSERT( type != nullptr );
-				if( const ClassPtr class_= type->GetClassType() )
+				if( Class* const class_= type->GetClassType() )
 					next_space= &class_->members;
 				name= generated_type;
 			}

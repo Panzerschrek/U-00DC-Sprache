@@ -200,7 +200,7 @@ void CodeBuilder::PrepareTypeTemplate(
 
 	if( const ClassTemplateDeclaration* const template_class= dynamic_cast<const ClassTemplateDeclaration*>( &type_template_declaration ) )
 	{
-		const ClassPtr the_class= PrepareClass( *template_class->class_, temp_class_name, *template_parameters_namespace );
+		Class* const the_class= PrepareClass( *template_class->class_, temp_class_name, *template_parameters_namespace );
 
 		if( the_class != nullptr )
 		{
@@ -390,13 +390,13 @@ bool CodeBuilder::DuduceTemplateArguments(
 
 	// Try deduce other type kind.
 	// Curently, can work only with class types.
-	const ClassPtr class_type= given_type.GetClassType();
+	const Class* const class_type= given_type.GetClassType();
 	if( class_type == nullptr )
 		return false;
 
 	// SPRACHE_TODO - support type aliases as signature complex arguments.
 
-	typedef boost::variant<NamesScopePtr, ClassPtr> TypePathComponent;
+	typedef boost::variant<NamesScopePtr, Class*> TypePathComponent;
 
 	// Sequence of namespaces/classes, where given type placed. Given type included.
 	std::vector<TypePathComponent> given_type_predecessors;
@@ -411,7 +411,7 @@ bool CodeBuilder::DuduceTemplateArguments(
 				given_type_predecessors.insert( given_type_predecessors.begin(), 1u, names_scope );
 			else if( const Type* const type= name->second.GetTypeName() )
 			{
-				if( const ClassPtr class_= type->GetClassType() )
+				if( Class* const class_= type->GetClassType() )
 					given_type_predecessors.insert( given_type_predecessors.begin(), 1u, class_ );
 				else U_ASSERT(false);
 			}
@@ -439,8 +439,8 @@ bool CodeBuilder::DuduceTemplateArguments(
 				start_name_predecessors.insert( start_name_predecessors.begin(), 1u, names_scope );
 			else if( const Type* const type= name->second.GetTypeName() )
 			{
-				if( const ClassPtr class_= type->GetClassType() )
-					start_name_predecessors.insert( start_name_predecessors.begin(), 1u,class_ );
+				if( Class* const class_= type->GetClassType() )
+					start_name_predecessors.insert( start_name_predecessors.begin(), 1u, class_ );
 				else U_ASSERT(false);
 			}
 			else
@@ -498,9 +498,9 @@ bool CodeBuilder::DuduceTemplateArguments(
 		{
 			if( name_component.have_template_parameters )
 				return false;
-			if( const ClassPtr given_class_= type->GetClassType() )
+			if( const Class* const given_class_= type->GetClassType() )
 			{
-				if( const ClassPtr* const class_ptr= boost::get<ClassPtr>(given_type_component) )
+				if( Class* const* const class_ptr= boost::get<Class*>(given_type_component) )
 				{
 					if( given_class_ == *class_ptr )
 						++given_type_component; // All ok
@@ -527,7 +527,7 @@ bool CodeBuilder::DuduceTemplateArguments(
 				// This is generated from template class.
 				const Type* const class_type= class_name->second.GetTypeName();
 				U_ASSERT( class_type != nullptr );
-				const ClassPtr given_type_class= class_type->GetClassType();
+				const Class* const given_type_class= class_type->GetClassType();
 				U_ASSERT( given_type_class != nullptr );
 				U_ASSERT( given_type_class->base_template != boost::none );
 
@@ -762,7 +762,7 @@ NamesScope::InsertedName* CodeBuilder::GenTemplateType(
 
 	if( const ClassTemplateDeclaration* const template_class= dynamic_cast<const ClassTemplateDeclaration*>( type_template.syntax_element ) )
 	{
-		ClassPtr the_class= PrepareClass( *template_class->class_, GetComplexNameForGeneratedClass(), *template_parameters_namespace );
+		Class* const the_class= PrepareClass( *template_class->class_, GetComplexNameForGeneratedClass(), *template_parameters_namespace );
 
 		PopResolveHandler();
 
@@ -853,7 +853,7 @@ void CodeBuilder::RemoveTempClassLLVMValues( Class& class_ )
 		{
 			if( const Type* const type= name.second.GetTypeName() )
 			{
-				if( const ClassPtr subclass= type->GetClassType() )
+				if( Class* const subclass= type->GetClassType() )
 					RemoveTempClassLLVMValues( *subclass );
 			}
 			else if( const OverloadedFunctionsSet* const functions_set= name.second.GetFunctionsSet() )
@@ -877,7 +877,7 @@ void CodeBuilder::RemoveTempClassLLVMValues( Class& class_ )
 						{
 							const Type* const generated_class_type= inner_namespace_name.second.GetTypeName();
 							U_ASSERT( generated_class_type != nullptr );
-							const ClassPtr generated_class= generated_class_type->GetClassType();
+							Class* const generated_class= generated_class_type->GetClassType();
 							U_ASSERT( generated_class != nullptr );
 							U_ASSERT( generated_class->base_template != boost::none );
 							RemoveTempClassLLVMValues( *generated_class );
@@ -901,7 +901,7 @@ void CodeBuilder::ReportAboutIncompleteMembersOfTemplateClass( const FilePos& fi
 		{
 			if( const Type* const type= name.second.GetTypeName() )
 			{
-				if( const ClassPtr subclass= type->GetClassType() )
+				if( Class* const subclass= type->GetClassType() )
 				{
 					if( subclass->is_incomplete )
 						errors_.push_back( ReportIncompleteMemberOfClassTemplate( file_pos, name.first ) );
@@ -933,7 +933,7 @@ void CodeBuilder::ReportAboutIncompleteMembersOfTemplateClass( const FilePos& fi
 						{
 							const Type* const generated_class_type= inner_namespace_name.second.GetTypeName();
 							U_ASSERT( generated_class_type != nullptr );
-							const ClassPtr generated_class= generated_class_type->GetClassType();
+							Class* const generated_class= generated_class_type->GetClassType();
 							U_ASSERT( generated_class != nullptr );
 							U_ASSERT( generated_class->base_template != boost::none );
 							ReportAboutIncompleteMembersOfTemplateClass( file_pos, *generated_class );

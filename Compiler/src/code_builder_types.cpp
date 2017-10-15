@@ -249,12 +249,12 @@ ClassProxyPtr Type::GetClassTypeProxy() const
 	return *class_type;
 }
 
-ClassPtr Type::GetClassType() const
+Class* Type::GetClassType() const
 {
 	const ClassProxyPtr class_proxy= GetClassTypeProxy();
 	if( class_proxy == nullptr )
 		return nullptr;
-	return class_proxy->class_;
+	return class_proxy->class_.get();
 }
 
 TemplateDependentType* Type::GetTemplateDependentType()

@@ -24,16 +24,14 @@ namespace CodeBuilderPrivate
 
 struct Function;
 struct Array;
-
-struct Class;
-typedef std::shared_ptr<Class> ClassPtr;
+class Class;
 
 struct ClassProxy
 {
-	ClassProxy( ClassPtr in_class )
-		: class_( std::move(in_class) )
+	ClassProxy( Class* in_class ) // Poiter must be new-allocated. Takes ownership.
+		: class_( in_class )
 	{}
-	ClassPtr class_;
+	std::shared_ptr<Class> class_;
 };
 typedef std::shared_ptr<ClassProxy> ClassProxyPtr;
 typedef std::weak_ptr<ClassProxy> ClassProxyWeakPtr;
@@ -107,7 +105,7 @@ public:
 	Array* GetArrayType();
 	const Array* GetArrayType() const;
 	ClassProxyPtr GetClassTypeProxy() const;
-	ClassPtr GetClassType() const;
+	Class* GetClassType() const;
 	TemplateDependentType* GetTemplateDependentType();
 	const TemplateDependentType* GetTemplateDependentType() const;
 

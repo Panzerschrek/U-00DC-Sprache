@@ -103,7 +103,7 @@ private:
 	Type PrepareType( const FilePos& file_pos, const TypeName& type_name, NamesScope& names_scope );
 
 	// Returns nullptr on fail.
-	ClassPtr PrepareClass(
+	Class* PrepareClass(
 		const ClassDeclaration& class_declaration,
 		const ComplexName& class_complex_name,
 		NamesScope& names_scope );
