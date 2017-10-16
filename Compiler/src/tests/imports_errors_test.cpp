@@ -187,4 +187,148 @@ U_TEST( ImportedClassShouldNotBeModified_Test1 )
 	U_TEST_ASSERT( result.errors[0u].file_pos.line == 5u );
 }
 
+U_TEST( FunctionPrototypeDuplication_ForImports_Test0 )
+{
+	// Function prototype defined in different files.
+
+	static const char c_program_text_a[]=
+	R"(
+		fn Foo();
+	)";
+
+	static const char c_program_text_b[]=
+	R"(
+		fn Foo();
+	)";
+
+	static const char c_program_text_root[]=
+	R"(
+		import "a"
+		import "b"
+	)";
+
+	ICodeBuilder::BuildResult result=
+		BuildMultisourceProgramWithErrors(
+			{
+				{ "a"_SpC, c_program_text_a },
+				{ "b"_SpC, c_program_text_b },
+				{ "root"_SpC, c_program_text_root }
+			},
+			"root"_SpC );
+
+	U_TEST_ASSERT( !result.errors.empty() );
+	U_TEST_ASSERT( result.errors[0u].code == CodeBuilderErrorCode::FunctionPrototypeDuplication );
+	U_TEST_ASSERT( result.errors[0u].file_pos.line == 2u );
+}
+
+U_TEST( FunctionPrototypeDuplication_ForImports_Test1 )
+{
+	// File with function body does not imports file with prototype.
+
+	static const char c_program_text_a[]=
+	R"(
+		fn Foo();
+	)";
+
+	static const char c_program_text_b[]=
+	R"(
+		fn Foo(){}
+	)";
+
+	static const char c_program_text_root[]=
+	R"(
+		import "a" // Prototype
+		import "b" // than function with body
+	)";
+
+	ICodeBuilder::BuildResult result=
+		BuildMultisourceProgramWithErrors(
+			{
+				{ "a"_SpC, c_program_text_a },
+				{ "b"_SpC, c_program_text_b },
+				{ "root"_SpC, c_program_text_root }
+			},
+			"root"_SpC );
+
+	U_TEST_ASSERT( !result.errors.empty() );
+	U_TEST_ASSERT( result.errors[0u].code == CodeBuilderErrorCode::FunctionPrototypeDuplication );
+	U_TEST_ASSERT( result.errors[0u].file_pos.line == 2u );
+}
+
+U_TEST( FunctionPrototypeDuplication_ForImports_Test2 )
+{
+	// File with function body does not imports file with prototype.
+
+	static const char c_program_text_a[]=
+	R"(
+		fn Foo();
+	)";
+
+	static const char c_program_text_b[]=
+	R"(
+		fn Foo(){}
+	)";
+
+	static const char c_program_text_root[]=
+	R"(
+		import "b" // Function with body
+		import "a" // than prototype
+	)";
+
+	ICodeBuilder::BuildResult result=
+		BuildMultisourceProgramWithErrors(
+			{
+				{ "a"_SpC, c_program_text_a },
+				{ "b"_SpC, c_program_text_b },
+				{ "root"_SpC, c_program_text_root }
+			},
+			"root"_SpC );
+
+	U_TEST_ASSERT( !result.errors.empty() );
+	U_TEST_ASSERT( result.errors[0u].code == CodeBuilderErrorCode::FunctionPrototypeDuplication );
+	U_TEST_ASSERT( result.errors[0u].file_pos.line == 2u );
+}
+
+U_TEST( FunctionBodyDuplication_ForImports_Test0 )
+{
+	// Body of function defined in different files.
+
+	static const char c_program_text_a[]=
+	R"(
+		fn Foo();
+	)";
+
+	static const char c_program_text_b[]=
+	R"(
+		import "a"
+		fn Foo(){}
+	)";
+
+	static const char c_program_text_c[]=
+	R"(
+		import "a"
+		fn Foo(){}
+	)";
+
+	static const char c_program_text_root[]=
+	R"(
+		import "b"
+		import "c"
+	)";
+
+	ICodeBuilder::BuildResult result=
+		BuildMultisourceProgramWithErrors(
+			{
+				{ "a"_SpC, c_program_text_a },
+				{ "b"_SpC, c_program_text_b },
+				{ "c"_SpC, c_program_text_c },
+				{ "root"_SpC, c_program_text_root }
+			},
+			"root"_SpC );
+
+	U_TEST_ASSERT( !result.errors.empty() );
+	U_TEST_ASSERT( result.errors[0u].code == CodeBuilderErrorCode::FunctionBodyDuplication );
+	U_TEST_ASSERT( result.errors[0u].file_pos.line == 3u );
+}
+
 } // namespace U

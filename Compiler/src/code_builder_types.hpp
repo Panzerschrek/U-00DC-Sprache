@@ -187,8 +187,8 @@ struct FunctionVariable final
 
 	llvm::Function* llvm_function= nullptr;
 
-	// TODO - fill this.
-	FilePos file_pos;
+	FilePos prototype_file_pos= FilePos{ 0u, 0u, 0u };
+	FilePos body_file_pos= FilePos{ 0u, 0u, 0u };
 };
 
 // Set of functions with same name, but different signature.

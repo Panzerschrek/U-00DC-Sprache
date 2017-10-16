@@ -226,9 +226,6 @@ void CodeBuilder::MergeNameScopes( NamesScope& dst, const NamesScope& src, Class
 				return;
 			}
 
-			if( dst_member->second.GetFilePos() == src_member.second.GetFilePos() )
-				return; // All ok - things from one source.
-
 			if( const NamesScopePtr sub_namespace= src_member.second.GetNamespace() )
 			{
 				// Merge namespaces.
@@ -236,6 +233,7 @@ void CodeBuilder::MergeNameScopes( NamesScope& dst, const NamesScope& src, Class
 				const NamesScopePtr dst_sub_namespace= dst_member->second.GetNamespace();
 				U_ASSERT( dst_sub_namespace != nullptr );
 				MergeNameScopes( *dst_sub_namespace, *sub_namespace, dst_class_table );
+				return;
 			}
 			else if(
 				OverloadedFunctionsSet* const dst_funcs_set=
@@ -250,25 +248,30 @@ void CodeBuilder::MergeNameScopes( NamesScope& dst, const NamesScope& src, Class
 						GetFunctionWithExactSignature( *src_func.type.GetFunctionType(), *dst_funcs_set );
 					if( same_dst_func != nullptr )
 					{
-						if( src_func.type != same_dst_func->type )
-							errors_.push_back( ReportReturnValueDiffersFromPrototype( src_func.file_pos ) );
-						else
+						if( same_dst_func->prototype_file_pos != src_func.prototype_file_pos )
 						{
-							if( !same_dst_func->have_body &&  src_func.have_body )
-								same_dst_func->have_body= true; // All ok, add body.
-							if(  same_dst_func->have_body && !src_func.have_body )
-								{} // All ok, add body + prototype from other file.
-							if( !same_dst_func->have_body && !src_func.have_body )
-								errors_.push_back( ReportFunctionPrototypeDuplication( src_func.file_pos, src_member.first ) );
-							if(  same_dst_func->have_body &&  src_func.have_body )
-								errors_.push_back( ReportFunctionBodyDuplication( src_func.file_pos, src_member.first ) );
+							// Prototypes are in differrent files.
+							errors_.push_back( ReportFunctionPrototypeDuplication( src_func.prototype_file_pos, src_member.first ) );
+							continue;
 						}
+
+						if( !same_dst_func->have_body &&  src_func.have_body )
+							*same_dst_func= src_func; // Take this function - it have body.
+						if(  same_dst_func->have_body && !src_func.have_body )
+						{} // Ok, prototype imported later.
+						if(  same_dst_func->have_body &&  src_func.have_body &&
+							same_dst_func->body_file_pos != src_func.body_file_pos )
+							errors_.push_back( ReportFunctionBodyDuplication( src_func.body_file_pos, src_member.first ) );
 					}
 					else
-						ApplyOverloadedFunction( *dst_funcs_set, src_func, src_func.file_pos );
+						ApplyOverloadedFunction( *dst_funcs_set, src_func, src_func.prototype_file_pos );
 				}
+				return;
 			}
-			else
+
+			if( dst_member->second.GetFilePos() == src_member.second.GetFilePos() )
+				return; // All ok - things from one source.
+
 			{
 				// Can not merge other kinds of values.
 				errors_.push_back( ReportRedefinition( src_member.second.GetFilePos(), src_member.first ) );
@@ -686,8 +689,10 @@ Class* CodeBuilder::PrepareClass(
 				continue;
 			}
 
+			function_variable.body_file_pos= func.func_syntax_element->file_pos_;
+
 			BuildFuncCode(
-				(*func.functions_set)[ func.function_index ],
+				function_variable,
 				the_class_proxy,
 				the_class->members,
 				func_name,
@@ -1558,6 +1563,10 @@ CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 			return result;
 		}
 
+		func_variable.prototype_file_pos= func.file_pos_;
+		if( block != nullptr )
+			func_variable.body_file_pos= func.file_pos_;
+
 		OverloadedFunctionsSet functions_set;
 		functions_set.push_back( std::move( func_variable ) );
 
@@ -1613,6 +1622,8 @@ CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 					return result;
 				}
 
+				same_function->body_file_pos= func.file_pos_;
+
 				BuildFuncCode(
 					*same_function,
 					base_class,
@@ -1635,8 +1646,13 @@ CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 				if( !overloading_ok )
 					return result;
 
+				FunctionVariable& inserted_func_variable= functions_set->back();
+				inserted_func_variable.prototype_file_pos= func.file_pos_;
+				if( block != nullptr )
+					inserted_func_variable.body_file_pos= func.file_pos_;
+
 				BuildFuncCode(
-					functions_set->back(),
+					inserted_func_variable,
 					base_class,
 					*func_base_names_scope,
 					func_name,

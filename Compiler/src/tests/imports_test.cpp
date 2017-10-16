@@ -247,5 +247,86 @@ U_TEST( ImportsTest6_ImportClass )
 	U_TEST_ASSERT( static_cast<uint64_t>(8826545) == result_value.IntVal.getLimitedValue() );
 }
 
+U_TEST( ImportsTest7_ImportFileWithFunctionPrototypeAfterFileWithFunctionBody )
+{
+	static const char c_program_text_a[]=
+	R"(
+		fn Bar() : i32;
+	)";
+
+	static const char c_program_text_b[]=
+	R"(
+		import "a"
+		fn Bar() : i32 { return 11145; }
+	)";
+
+	static const char c_program_text_root[]=
+	R"(
+		import "b" // function with body
+		import "a" // only prototype
+		fn Foo() : i32
+		{
+			return Bar();
+		}
+	)";
+
+	const EnginePtr engine=
+		CreateEngine(
+			BuildMultisourceProgram(
+				{
+					{ "a"_SpC, c_program_text_a },
+					{ "b"_SpC, c_program_text_b },
+					{ "root"_SpC, c_program_text_root }
+				},
+				"root"_SpC ) );
+
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	const llvm::GenericValue result_value= engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( static_cast<uint64_t>(11145) == result_value.IntVal.getLimitedValue() );
+}
+
+U_TEST( ImportsTest8_ImportFileWithFunctionBodyAfterFileWithFunctionPrototype )
+{
+	static const char c_program_text_a[]=
+	R"(
+		fn Bar() : i32;
+	)";
+
+	static const char c_program_text_b[]=
+	R"(
+		import "a"
+		fn Bar() : i32 { return 5641289; }
+	)";
+
+	static const char c_program_text_root[]=
+	R"(
+		import "a" // only prototype
+		import "b" // function with body
+		fn Foo() : i32
+		{
+			return Bar();
+		}
+	)";
+
+	const EnginePtr engine=
+		CreateEngine(
+			BuildMultisourceProgram(
+				{
+					{ "a"_SpC, c_program_text_a },
+					{ "b"_SpC, c_program_text_b },
+					{ "root"_SpC, c_program_text_root }
+				},
+				"root"_SpC ) );
+
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	const llvm::GenericValue result_value= engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( static_cast<uint64_t>(5641289) == result_value.IntVal.getLimitedValue() );
+}
 
 } // namespace U
