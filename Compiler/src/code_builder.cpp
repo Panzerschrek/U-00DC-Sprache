@@ -268,15 +268,50 @@ void CodeBuilder::MergeNameScopes( NamesScope& dst, const NamesScope& src, Class
 				}
 				return;
 			}
+			else if( const Type* const type= dst_member->second.GetTypeName() )
+			{
+				if( const ClassProxyPtr dst_class_proxy= type->GetClassTypeProxy() )
+				{
+					const ClassProxyPtr src_class_proxy= src_member.second.GetTypeName()->GetClassTypeProxy();
+
+					if( src_class_proxy == nullptr || dst_class_proxy != src_class_proxy )
+					{
+						// Differnet proxy means 100% different classes.
+						errors_.push_back( ReportRedefinition( src_member.second.GetFilePos(), src_member.first ) );
+						return;
+					}
+
+					const std::shared_ptr<Class> dst_class= dst_class_table[dst_class_proxy];
+					U_ASSERT( dst_class != nullptr );
+					const Class& src_class= *src_class_proxy->class_;
+
+					U_ASSERT( dst_class->forward_declaration_file_pos == src_class.forward_declaration_file_pos );
+
+					if(  dst_class->is_incomplete &&  src_class.is_incomplete )
+					{} // Ok
+					if( !dst_class->is_incomplete &&  src_class.is_incomplete )
+					{} // Dst class is complete, so, use it.
+					if( !dst_class->is_incomplete && !src_class.is_incomplete &&
+						 dst_class->body_file_pos != src_class.body_file_pos )
+					{
+						// Different bodies from different files.
+						errors_.push_back( ReportClassBodyDuplication( src_class.body_file_pos ) );
+					}
+					if(  dst_class->is_incomplete && !src_class.is_incomplete )
+					{
+						// Take body of more complete class and store in destintation class table.
+						CopyClass( src_class.forward_declaration_file_pos, src_class_proxy, dst_class_table, dst );
+					}
+
+					return;
+				}
+			}
 
 			if( dst_member->second.GetFilePos() == src_member.second.GetFilePos() )
 				return; // All ok - things from one source.
 
-			{
-				// Can not merge other kinds of values.
-				errors_.push_back( ReportRedefinition( src_member.second.GetFilePos(), src_member.first ) );
-			}
-
+			// Can not merge other kinds of values.
+			errors_.push_back( ReportRedefinition( src_member.second.GetFilePos(), src_member.first ) );
 		} );
 }
 
@@ -304,6 +339,9 @@ void CodeBuilder::CopyClass(
 	copy->is_default_constructible= src.is_default_constructible;
 	copy->is_copy_constructible= src.is_copy_constructible;
 	copy->have_destructor= src.have_destructor;
+
+	copy->forward_declaration_file_pos= src.forward_declaration_file_pos;
+	copy->body_file_pos= src.body_file_pos;
 
 	copy->llvm_type= src.llvm_type;
 	copy->base_template= src.base_template;
@@ -471,6 +509,7 @@ Class* CodeBuilder::PrepareClass(
 		Class* const the_class= the_class_proxy->class_.get();
 		(*current_class_table_)[ the_class_proxy ]= the_class_proxy->class_;
 		the_class->llvm_type= llvm::StructType::create( llvm_context_, MangleType( the_class_proxy ) );
+		the_class->forward_declaration_file_pos= class_declaration.file_pos_;
 		const Type class_type= the_class_proxy;
 
 		if( NameShadowsTemplateArgument( class_name, names_scope ) )
@@ -515,6 +554,7 @@ Class* CodeBuilder::PrepareClass(
 		the_class= the_class_proxy->class_.get();
 		(*current_class_table_)[ the_class_proxy ]= the_class_proxy->class_;
 		the_class->llvm_type= llvm::StructType::create( llvm_context_, MangleType( the_class_proxy ) );
+		the_class->forward_declaration_file_pos= class_declaration.file_pos_;
 		Type class_type;
 		class_type= the_class_proxy;
 
@@ -560,6 +600,7 @@ Class* CodeBuilder::PrepareClass(
 	U_ASSERT( the_class != nullptr );
 	Type class_type;
 	class_type= the_class_proxy;
+	the_class->body_file_pos= class_declaration.file_pos_;
 
 	std::vector<llvm::Type*> fields_llvm_types;
 
@@ -665,7 +706,10 @@ Class* CodeBuilder::PrepareClass(
 		};
 	}
 
-	the_class->llvm_type->setBody( fields_llvm_types );
+	// Check opaque before set body for cases of errors (class body duplication).
+	if( the_class->llvm_type->isOpaque() )
+		the_class->llvm_type->setBody( fields_llvm_types );
+
 	the_class->is_incomplete= false;
 
 	TryGenerateDefaultConstructor( *the_class, class_type );

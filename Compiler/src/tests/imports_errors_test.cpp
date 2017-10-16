@@ -331,4 +331,114 @@ U_TEST( FunctionBodyDuplication_ForImports_Test0 )
 	U_TEST_ASSERT( result.errors[0u].file_pos.line == 3u );
 }
 
+U_TEST( ClassPrototypeDuplication_ForImports_Test0 )
+{
+	// Class prototype defined in different files.
+
+	static const char c_program_text_a[]=
+	R"(
+		struct FRT;
+	)";
+
+	static const char c_program_text_b[]=
+	R"(
+		struct FRT;
+	)";
+
+	static const char c_program_text_root[]=
+	R"(
+		import "a"
+		import "b"
+	)";
+
+	ICodeBuilder::BuildResult result=
+		BuildMultisourceProgramWithErrors(
+			{
+				{ "a"_SpC, c_program_text_a },
+				{ "b"_SpC, c_program_text_b },
+				{ "root"_SpC, c_program_text_root }
+			},
+			"root"_SpC );
+
+	U_TEST_ASSERT( !result.errors.empty() );
+	U_TEST_ASSERT( result.errors[0u].code == CodeBuilderErrorCode::Redefinition );
+	U_TEST_ASSERT( result.errors[0u].file_pos.line == 2u );
+}
+
+U_TEST( ClassPrototypeDuplication_ForImports_Test1 )
+{
+	// File with class body does not imports file with prototype.
+
+	static const char c_program_text_a[]=
+	R"(
+		struct FRT;
+	)";
+
+	static const char c_program_text_b[]=
+	R"(
+		struct FRT{}
+	)";
+
+	static const char c_program_text_root[]=
+	R"(
+		import "a"
+		import "b"
+	)";
+
+	ICodeBuilder::BuildResult result=
+		BuildMultisourceProgramWithErrors(
+			{
+				{ "a"_SpC, c_program_text_a },
+				{ "b"_SpC, c_program_text_b },
+				{ "root"_SpC, c_program_text_root }
+			},
+			"root"_SpC );
+
+	U_TEST_ASSERT( !result.errors.empty() );
+	U_TEST_ASSERT( result.errors[0u].code == CodeBuilderErrorCode::Redefinition );
+	U_TEST_ASSERT( result.errors[0u].file_pos.line == 2u );
+}
+
+U_TEST( ClassBodyDuplication_ForImports_Test0 )
+{
+	// Body of class defined in different files.
+
+	static const char c_program_text_a[]=
+	R"(
+		struct ODR_BREAKER;
+	)";
+
+	static const char c_program_text_b[]=
+	R"(
+		import "a"
+		struct ODR_BREAKER{}
+	)";
+
+	static const char c_program_text_c[]=
+	R"(
+		import "a"
+		struct ODR_BREAKER{}
+	)";
+
+	static const char c_program_text_root[]=
+	R"(
+		import "b"
+		import "c"
+	)";
+
+	ICodeBuilder::BuildResult result=
+		BuildMultisourceProgramWithErrors(
+			{
+				{ "a"_SpC, c_program_text_a },
+				{ "b"_SpC, c_program_text_b },
+				{ "c"_SpC, c_program_text_c },
+				{ "root"_SpC, c_program_text_root }
+			},
+			"root"_SpC );
+
+	U_TEST_ASSERT( !result.errors.empty() );
+	U_TEST_ASSERT( result.errors[0u].code == CodeBuilderErrorCode::ClassBodyDuplication );
+	U_TEST_ASSERT( result.errors[0u].file_pos.line == 3u );
+}
+
 } // namespace U

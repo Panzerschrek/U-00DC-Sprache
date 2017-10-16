@@ -419,6 +419,9 @@ struct Class final
 	bool is_copy_constructible= false;
 	bool have_destructor= false;
 
+	FilePos forward_declaration_file_pos= FilePos{ 0u, 0u, 0u };
+	FilePos body_file_pos= FilePos{ 0u, 0u, 0u };
+
 	llvm::StructType* llvm_type;
 
 	struct BaseTemplate
