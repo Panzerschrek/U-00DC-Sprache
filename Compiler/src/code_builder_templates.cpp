@@ -200,12 +200,12 @@ void CodeBuilder::PrepareTypeTemplate(
 
 	if( const ClassTemplateDeclaration* const template_class= dynamic_cast<const ClassTemplateDeclaration*>( &type_template_declaration ) )
 	{
-		Class* const the_class= PrepareClass( *template_class->class_, temp_class_name, *template_parameters_namespace );
+		const ClassProxyPtr class_proxy= PrepareClass( *template_class->class_, temp_class_name, *template_parameters_namespace );
 
-		if( the_class != nullptr )
+		if( class_proxy != nullptr )
 		{
-			ReportAboutIncompleteMembersOfTemplateClass( type_template_declaration.file_pos_, *the_class );
-			RemoveTempClassLLVMValues( *the_class );
+			ReportAboutIncompleteMembersOfTemplateClass( type_template_declaration.file_pos_, *class_proxy->class_ );
+			RemoveTempClassLLVMValues( *class_proxy->class_ );
 		}
 	}
 	else if( const TypedefTemplate* const typedef_template= dynamic_cast<const TypedefTemplate*>( &type_template_declaration ) )
@@ -762,25 +762,41 @@ NamesScope::InsertedName* CodeBuilder::GenTemplateType(
 
 	if( const ClassTemplateDeclaration* const template_class= dynamic_cast<const ClassTemplateDeclaration*>( type_template.syntax_element ) )
 	{
-		Class* const the_class= PrepareClass( *template_class->class_, GetComplexNameForGeneratedClass(), *template_parameters_namespace );
+		const TemplateClassKey class_key{ type_template_ptr, name_encoded };
+		const auto cache_class_it= template_classes_cache_.find( class_key );
+		if( cache_class_it != template_classes_cache_.end() )
+		{
+			PopResolveHandler();
+
+			return
+				template_parameters_namespace->AddName(
+					GetNameForGeneratedClass(),
+					Value(
+						cache_class_it->second,
+						type_template_ptr->syntax_element->file_pos_ /* TODO - check file_pos */ ) );
+		}
+
+		const ClassProxyPtr class_proxy= PrepareClass( *template_class->class_, GetComplexNameForGeneratedClass(), *template_parameters_namespace );
 
 		PopResolveHandler();
 
-		if( the_class == nullptr )
+		if( class_proxy == nullptr )
 			return nullptr;
 
+		Class& the_class= *class_proxy->class_;
 		// Save in class info about it`s base template.
-		the_class->base_template.emplace();
-		the_class->base_template->class_template= type_template_ptr;
+		the_class.base_template.emplace();
+		the_class.base_template->class_template= type_template_ptr;
 		for( const DeducibleTemplateParameter& arg : deduced_template_args )
 		{
 			if( const Type* const type= boost::get<Type>( &arg ) )
-				the_class->base_template->template_parameters.push_back( *type );
+				the_class.base_template->template_parameters.push_back( *type );
 			else if( const Variable* const variable= boost::get<Variable>( &arg ) )
-				the_class->base_template->template_parameters.push_back( *variable );
+				the_class.base_template->template_parameters.push_back( *variable );
 			else U_ASSERT(false);
 		}
 
+		template_classes_cache_[class_key]= class_proxy;
 		return template_parameters_namespace->GetThisScopeName( GetNameForGeneratedClass() );
 	}
 	else if( const TypedefTemplate* const typedef_template= dynamic_cast<const TypedefTemplate*>( type_template.syntax_element ) )

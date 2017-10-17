@@ -400,6 +400,17 @@ typedef
 
 typedef boost::variant< Variable, Type > TemplateParameter;
 
+struct TemplateClassKey
+{
+	TypeTemplatePtr template_;
+	ProgramString class_name_encoded;
+
+	size_t operator()( const TemplateClassKey& key ) const;
+	bool operator()( const TemplateClassKey& a, const TemplateClassKey& b ) const;
+};
+
+typedef std::unordered_map< TemplateClassKey, ClassProxyPtr, TemplateClassKey, TemplateClassKey > TemplateClassesCache;
+
 struct Class final
 {
 	Class( const ProgramString& name, const NamesScope* parent_scope );

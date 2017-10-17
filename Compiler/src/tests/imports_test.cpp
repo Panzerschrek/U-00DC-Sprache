@@ -419,4 +419,176 @@ U_TEST( ImportsTest10_ImportFileWithClassBodyAfterFileWithClassprototype )
 	U_TEST_ASSERT( static_cast<uint64_t>(84562) == result_value.IntVal.getLimitedValue() );
 }
 
+U_TEST( ImportsTest11_MultipleImportOfSameGeneratedTemplateClass )
+{
+	static const char c_program_text_a[]=
+	R"(
+		template</ type T />
+		struct TypeLimits</ T />
+		{
+			fn Zero() : T { return T(0); }
+		}
+	)";
+
+	static const char c_program_text_b[]=
+	R"(
+		import "a"
+		fn Bar() : i32
+		{
+			return TypeLimits</ i32 />::Zero();
+		}
+	)";
+
+	static const char c_program_text_c[]=
+	R"(
+		import "a"
+		fn Baz() : i32
+		{
+			return TypeLimits</ i32 />::Zero();
+		}
+	)";
+
+	static const char c_program_text_root[]=
+	R"(
+		import "b"
+		import "c" // Each import contains same instance of template class "TypeLimits".
+		fn Foo() : i32
+		{
+			return 5474 + Bar() + Baz() * 42;
+		}
+	)";
+
+	const EnginePtr engine=
+		CreateEngine(
+			BuildMultisourceProgram(
+				{
+					{ "a"_SpC, c_program_text_a },
+					{ "b"_SpC, c_program_text_b },
+					{ "c"_SpC, c_program_text_c },
+					{ "root"_SpC, c_program_text_root }
+				},
+				"root"_SpC ) );
+
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	const llvm::GenericValue result_value= engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( static_cast<uint64_t>(5474) == result_value.IntVal.getLimitedValue() );
+}
+
+U_TEST( ImportsTest12_MultipleImportOfSameGeneratedTemplateClass )
+{
+	static const char c_program_text_a[]=
+	R"(
+		template</ type T />
+		struct Box</ T />
+		{
+			T t;
+		}
+	)";
+
+	static const char c_program_text_b[]=
+	R"(
+		import "a"
+		type f_box= Box</ f32 />;
+	)";
+
+	static const char c_program_text_c[]=
+	R"(
+		import "a"
+		type f32_box= Box</ f32 />;
+	)";
+
+	static const char c_program_text_root[]=
+	R"(
+		import "b"
+		import "c" // Each import contains same instance of template class "Box</ f32 />".
+		fn Foo() : i32
+		{
+			var f_box box0{ .t= 54125.1f };
+			var f32_box box1( box0 ); // f_box and f32_box are same types - so, copy constructor call must be ok.
+			return i32( box1.t );
+		}
+	)";
+
+	const EnginePtr engine=
+		CreateEngine(
+			BuildMultisourceProgram(
+				{
+					{ "a"_SpC, c_program_text_a },
+					{ "b"_SpC, c_program_text_b },
+					{ "c"_SpC, c_program_text_c },
+					{ "root"_SpC, c_program_text_root }
+				},
+				"root"_SpC ) );
+
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	const llvm::GenericValue result_value= engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( static_cast<uint64_t>(54125) == result_value.IntVal.getLimitedValue() );
+}
+
+U_TEST( ImportsTest13_MultipleImportOfSameGeneratedTemplateClassInsideTemplateClass )
+{
+	static const char c_program_text_a[]=
+	R"(
+		template</ type T />
+		struct Box</ T />
+		{
+			template</ type U />
+			struct Pair</ U />
+			{
+				T first;
+				U second;
+			}
+			T t;
+		}
+	)";
+
+	static const char c_program_text_b[]=
+	R"(
+		import "a"
+		type b_pair= Box</ i32 />::Pair</ f32 />;
+	)";
+
+	static const char c_program_text_c[]=
+	R"(
+		import "a"
+		type c_pair= Box</ i32 />::Pair</ f32 />;
+	)";
+
+	static const char c_program_text_root[]=
+	R"(
+		import "b"
+		import "c" // Each import contains same instance of template class "Box</ i32 />::Pair</ f32 />".
+		fn Foo() : i32
+		{
+			var b_pair p0{ .first= 42, .second= 3.14f };
+			var c_pair p1( p0 ); // c_pair and b_pair are same types - so, copy constructor call must be ok.
+			return p1.first - i32(p1.second);
+		}
+	)";
+
+	const EnginePtr engine=
+		CreateEngine(
+			BuildMultisourceProgram(
+				{
+					{ "a"_SpC, c_program_text_a },
+					{ "b"_SpC, c_program_text_b },
+					{ "c"_SpC, c_program_text_c },
+					{ "root"_SpC, c_program_text_root }
+				},
+				"root"_SpC ) );
+
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	const llvm::GenericValue result_value= engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( static_cast<uint64_t>(42 - 3) == result_value.IntVal.getLimitedValue() );
+}
+
 } // namespace U

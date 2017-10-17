@@ -111,7 +111,7 @@ private:
 	Type PrepareType( const FilePos& file_pos, const TypeName& type_name, NamesScope& names_scope );
 
 	// Returns nullptr on fail.
-	Class* PrepareClass(
+	ClassProxyPtr PrepareClass(
 		const ClassDeclaration& class_declaration,
 		const ComplexName& class_complex_name,
 		NamesScope& names_scope );
@@ -509,6 +509,11 @@ private:
 
 	std::unordered_map< size_t, BuildResultInternal > compiled_sources_cache_;
 	ClassTable* current_class_table_= nullptr;
+
+	// Cache needs for generating same classes as template instantiation result in different source files.
+	// We can use same classes in different files, because template classes are logically unchangeable after instantiation.
+	// Unchangeable they are because incomplete template classes ( or classes inside template classes, etc. ) currently forbidden.
+	TemplateClassesCache template_classes_cache_;
 
 	std::vector<std::unique_ptr<PreResolveFunc>> resolving_funcs_stack_;
 	size_t next_template_dependent_type_index_= 1u;

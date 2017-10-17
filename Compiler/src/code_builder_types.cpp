@@ -626,13 +626,24 @@ bool NameResolvingKeyHasher::operator()( const NameResolvingKey& a, const NameRe
 	return a.components == b.components && a.component_count == b.component_count;
 }
 
+size_t TemplateClassKey::operator()( const TemplateClassKey& key ) const
+{
+	size_t result= 0u;
+	boost::hash_combine( result, key.template_ );
+	boost::hash_combine( result, key.class_name_encoded );
+	return result;
+}
+bool TemplateClassKey::operator()( const TemplateClassKey& a, const TemplateClassKey& b ) const
+{
+	return a.template_ == b.template_ && a.class_name_encoded == b.class_name_encoded;
+}
+
 Class::Class( const ProgramString& in_name, const NamesScope* const parent_scope )
 	: members( in_name, parent_scope )
 {}
 
 Class::~Class()
 {}
-
 
 //
 // Value

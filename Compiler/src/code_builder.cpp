@@ -488,7 +488,7 @@ Type CodeBuilder::PrepareType(
 	return result;
 }
 
-Class* CodeBuilder::PrepareClass(
+ClassProxyPtr CodeBuilder::PrepareClass(
 	const ClassDeclaration& class_declaration,
 	const ComplexName& class_complex_name,
 	NamesScope& names_scope )
@@ -525,7 +525,7 @@ Class* CodeBuilder::PrepareClass(
 			return nullptr;
 		}
 
-		return nullptr;
+		return the_class_proxy;
 	}
 
 	Class* the_class= nullptr;
@@ -746,7 +746,7 @@ Class* CodeBuilder::PrepareClass(
 		}
 	}
 
-	return the_class;
+	return the_class_proxy;
 }
 
 void CodeBuilder::TryGenerateDefaultConstructor( Class& the_class, const Type& class_type )
