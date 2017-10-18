@@ -46,6 +46,7 @@ class SourceGraphLoader final
 public:
 	explicit SourceGraphLoader( IVfsPtr vfs );
 
+	// Never returns nullptr.
 	SourceGraphPtr LoadSource( const IVfs::Path& root_file_path );
 
 private:

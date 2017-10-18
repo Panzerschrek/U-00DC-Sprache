@@ -15,10 +15,9 @@
 #include <llvm/Target/TargetMachine.h>
 #include "pop_llvm_warnings.hpp"
 
+#include "assert.hpp"
 #include "code_builder.hpp"
-#include "lexical_analyzer.hpp"
-#include "program_string.hpp"
-#include "syntax_analyzer.hpp"
+#include "source_graph_loader.hpp"
 
 static bool ReadFile( const char* const name, U::ProgramString& out_file_content )
 {
@@ -56,6 +55,31 @@ static bool ReadFile( const char* const name, U::ProgramString& out_file_content
 	out_file_content= U::DecodeUTF8( file_content_raw );
 	return true;
 }
+
+namespace U
+{
+
+class VfsOverSystemFS final : public IVfs
+{
+public:
+	virtual boost::optional<ProgramString> LoadFileContent( const Path& path ) override
+	{
+		ProgramString result;
+		if( !ReadFile( ToStdString( path ).c_str(), result ) )
+			return boost::none;
+
+		return std::move(result);
+	}
+
+	virtual Path NormalizePath( const Path& path ) override
+	{
+		// TODO
+		return path;
+	}
+};
+
+} // namespace U
+
 
 int main( const int argc, const char* const argv[])
 {
@@ -118,36 +142,16 @@ Usage:
 		return 1;
 	}
 
-	U::ProgramString input_file_content;
-	if( ! ReadFile( input_file, input_file_content ) )
-	{
-		std::cout << "Can not read input file \"" << input_file << "\"" << std::endl;
-		return 1;
-	}
-
-	// lex
-	const U::LexicalAnalysisResult lexical_analysis_result=
-		U::LexicalAnalysis( input_file_content );
-
-	for( const std::string& lexical_error_message : lexical_analysis_result.error_messages )
-		std::cout << lexical_error_message << "\n";
-
-	if( !lexical_analysis_result.error_messages.empty() )
-		return 1;
-
-	// Syntax
-	const U::SyntaxAnalysisResult syntax_analysis_result=
-		U::SyntaxAnalysis( lexical_analysis_result.lexems );
-
-	for( const std::string& syntax_error_message : syntax_analysis_result.error_messages )
-		std::cout << syntax_error_message << "\n";
-
-	if( !syntax_analysis_result.error_messages.empty() )
+	// Source graph loading (inluding lex & synth).
+	U::SourceGraphLoader source_gramph_loader( std::make_shared<U::VfsOverSystemFS>() );
+	const U::SourceGraphPtr source_graph= source_gramph_loader.LoadSource( U::ToProgramString( input_file ) );
+	U_ASSERT( source_graph != nullptr );
+	if( !source_graph->lexical_errors.empty() || !source_graph->syntax_errors.empty() )
 		return 1;
 
 	// Code build
 	U::CodeBuilder::BuildResult build_result=
-		U::CodeBuilder().BuildProgram( syntax_analysis_result.program_elements );
+		U::CodeBuilder().BuildProgram( *source_graph );
 
 	for( const U::CodeBuilderError& error : build_result.errors )
 		std::cout << input_file << ":" << error.file_pos.line << ":" << error.file_pos.pos_in_line << " " << U::ToStdString( error.text ) << "\n";

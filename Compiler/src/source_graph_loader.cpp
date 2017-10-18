@@ -29,7 +29,7 @@ size_t SourceGraphLoader::LoadNode_r( const IVfs::Path& file_path, SourceGraph& 
 	boost::optional<ProgramString> file_content= vfs_->LoadFileContent( path_normalized );
 	if( file_content == boost::none )
 	{
-		std::cout << "Con not open file \"" << ToStdString( path_normalized ) << "\"" << std::endl;
+		std::cout << "Can not read file \"" << ToStdString( path_normalized ) << "\"" << std::endl;
 		return ~0u;
 	}
 
