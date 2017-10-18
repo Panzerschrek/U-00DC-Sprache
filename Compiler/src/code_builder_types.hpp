@@ -404,12 +404,15 @@ struct TemplateClassKey
 {
 	TypeTemplatePtr template_;
 	ProgramString class_name_encoded;
+};
 
+struct TemplateClassKeyHasher
+{
 	size_t operator()( const TemplateClassKey& key ) const;
 	bool operator()( const TemplateClassKey& a, const TemplateClassKey& b ) const;
 };
 
-typedef std::unordered_map< TemplateClassKey, ClassProxyPtr, TemplateClassKey, TemplateClassKey > TemplateClassesCache;
+typedef std::unordered_map< TemplateClassKey, ClassProxyPtr, TemplateClassKeyHasher, TemplateClassKeyHasher > TemplateClassesCache;
 
 struct Class final
 {
