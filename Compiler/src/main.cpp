@@ -2,6 +2,8 @@
 #include <cstring>
 #include <iostream>
 
+#include <boost/filesystem/path.hpp>
+
 #include "push_disable_llvm_warnings.hpp"
 #include <llvm/Bitcode/ReaderWriter.h>
 #include <llvm/IR/LegacyPassManager.h>
@@ -59,27 +61,41 @@ static bool ReadFile( const char* const name, U::ProgramString& out_file_content
 namespace U
 {
 
+namespace fs= boost::filesystem;
+
 class VfsOverSystemFS final : public IVfs
 {
 public:
-	virtual boost::optional<ProgramString> LoadFileContent( const Path& path ) override
+	virtual boost::optional<LoadFileResult> LoadFileContent( const Path& file_path, const Path& full_parent_file_path ) override
 	{
-		ProgramString result;
-		if( !ReadFile( ToStdString( path ).c_str(), result ) )
-			return boost::none;
+		try
+		{
+			const fs::path file_path_r( ToStdString(file_path) );
+			fs::path result_path;
+			if( full_parent_file_path.empty() || file_path_r.is_absolute() )
+				result_path= file_path_r;
+			else
+			{
+				const fs::path base_dir= fs::path( ToStdString(full_parent_file_path) ).parent_path();
+				result_path= base_dir / file_path_r;
+			}
 
-		return std::move(result);
-	}
+			LoadFileResult result;
+			if( !ReadFile( result_path.c_str(), result.file_content ) )
+				return boost::none;
 
-	virtual Path NormalizePath( const Path& path ) override
-	{
-		// TODO
-		return path;
+			return std::move(result);
+		}
+		catch( const std::exception& e )
+		{
+			std::cout << e.what() << std::endl;
+		}
+
+		return boost::none;
 	}
 };
 
 } // namespace U
-
 
 int main( const int argc, const char* const argv[])
 {

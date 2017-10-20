@@ -14,8 +14,11 @@ endif()
 #
 
 # Boost
-set( BOOST_BASE_DIR ../../boost_1_60_0 )
-include_directories( ${BOOST_BASE_DIR} )
+set( Boost_USE_STATIC_LIBS yes )
+set( BOOST_ROOT ../../boost_1_60_0 ) # Set path to your boost here.
+find_package( Boost REQUIRED )
+find_package( Boost COMPONENTS system filesystem REQUIRED )
+include_directories( ${Boost_INCLUDE_DIRS} )
 
 # LLVM
 set( LLVM_INSTALL_DIR ../../llvm-install/ ) # Set path to your LLVM here.
@@ -79,6 +82,7 @@ set( COMPILER_SOURCES
 
 add_executable( Compiler ${COMPILER_SOURCES} )
 target_link_libraries( Compiler CompilerLib ${LLVM_LIBS_FOR_COMPILER} )
+target_link_libraries( Compiler ${Boost_LIBRARIES} )
 
 #
 # Tests

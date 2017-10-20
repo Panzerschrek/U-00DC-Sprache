@@ -1,5 +1,6 @@
 #include <iostream>
 
+#include "../assert.hpp"
 #include "../lexical_analyzer.hpp"
 #include "../syntax_analyzer.hpp"
 #include "../code_builder.hpp"
@@ -13,32 +14,6 @@ namespace U
 namespace
 {
 
-class SingleFileVfs final : public IVfs
-{
-public:
-	SingleFileVfs( const ProgramString& file_name, const char* const file_content )
-		: file_name_(file_name)
-		, file_content_(file_content)
-	{}
-
-	virtual boost::optional<ProgramString> LoadFileContent( const Path& path ) override
-	{
-		if( path == file_name_ )
-			return ToProgramString( file_content_ );
-		return boost::none;
-	}
-
-	virtual Path NormalizePath( const Path& path ) override
-	{
-		// TODO
-		return path;
-	}
-
-private:
-	const ProgramString file_name_;
-	const char* const file_content_;
-};
-
 class MultiFileVfs final : public IVfs
 {
 public:
@@ -46,20 +21,19 @@ public:
 		: sources_(std::move(sources))
 	{}
 
-	virtual boost::optional<ProgramString> LoadFileContent( const Path& path ) override
+	MultiFileVfs( ProgramString file_path, const char* text )
+		: sources_( { SourceEntry{ file_path, text } } )
+	{}
+
+	virtual boost::optional<LoadFileResult> LoadFileContent( const Path& file_path, const Path& full_parent_file_path ) override
 	{
+		U_UNUSED( full_parent_file_path );
 		for( const SourceEntry& source_entry : sources_ )
 		{
-			if( path == source_entry.file_path )
-				return ToProgramString( source_entry.text );
+			if( file_path == source_entry.file_path )
+				return LoadFileResult{ file_path, ToProgramString( source_entry.text ) };
 		}
 		return boost::none;
-	}
-
-	virtual Path NormalizePath( const Path& path ) override
-	{
-		// TODO
-		return path;
 	}
 
 private:
@@ -72,7 +46,7 @@ std::unique_ptr<llvm::Module> BuildProgram( const char* const text )
 {
 	const ProgramString file_path= "_"_SpC;
 	const SourceGraphPtr source_graph=
-		SourceGraphLoader( std::make_shared<SingleFileVfs>( file_path, text ) ).LoadSource( file_path);
+		SourceGraphLoader( std::make_shared<MultiFileVfs>( file_path, text ) ).LoadSource( file_path );
 
 	U_TEST_ASSERT( source_graph != nullptr );
 	U_TEST_ASSERT( source_graph->lexical_errors.empty() );
@@ -93,7 +67,7 @@ ICodeBuilder::BuildResult BuildProgramWithErrors( const char* const text )
 {
 	const ProgramString file_path= "_"_SpC;
 	const SourceGraphPtr source_graph=
-		SourceGraphLoader( std::make_shared<SingleFileVfs>( file_path, text ) ).LoadSource( file_path);
+		SourceGraphLoader( std::make_shared<MultiFileVfs>( file_path, text ) ).LoadSource( file_path );
 
 	U_TEST_ASSERT( source_graph != nullptr );
 	U_TEST_ASSERT( source_graph->lexical_errors.empty() );

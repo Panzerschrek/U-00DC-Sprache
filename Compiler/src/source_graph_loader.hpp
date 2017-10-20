@@ -12,11 +12,16 @@ class IVfs
 {
 public:
 	typedef ProgramString Path;
+	struct LoadFileResult
+	{
+		Path full_file_path;
+		ProgramString file_content;
+	};
 
 	virtual ~IVfs()= default;
 
-	virtual boost::optional<ProgramString> LoadFileContent( const Path& path )= 0;
-	virtual Path NormalizePath( const Path& path )= 0;
+	// Empty "full_parent_file_path" means root file.
+	virtual boost::optional<LoadFileResult> LoadFileContent( const Path& file_path, const Path& full_parent_file_path )= 0;
 };
 
 typedef  std::shared_ptr<IVfs> IVfsPtr;
@@ -50,7 +55,7 @@ public:
 	SourceGraphPtr LoadSource( const IVfs::Path& root_file_path );
 
 private:
-	size_t LoadNode_r( const IVfs::Path& file_path, SourceGraph& result );
+	size_t LoadNode_r( const IVfs::Path& file_path, const IVfs::Path& parent_file_path, SourceGraph& result );
 
 private:
 	IVfsPtr vfs_;

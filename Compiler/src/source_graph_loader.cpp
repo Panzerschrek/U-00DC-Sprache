@@ -16,24 +16,28 @@ SourceGraphLoader::SourceGraphLoader( IVfsPtr vfs )
 SourceGraphPtr SourceGraphLoader::LoadSource( const IVfs::Path& root_file_path )
 {
 	SourceGraphPtr result( new SourceGraph );
-	result->root_node_index= LoadNode_r( root_file_path, *result );
+	result->root_node_index= LoadNode_r( root_file_path, ""_SpC, *result );
 
 	return result;
 }
 
-size_t SourceGraphLoader::LoadNode_r( const IVfs::Path& file_path, SourceGraph& result )
+size_t SourceGraphLoader::LoadNode_r(
+	const IVfs::Path& file_path,
+	const IVfs::Path& parent_file_path,
+	SourceGraph& result )
 {
 	const size_t node_index= result.nodes_storage.size();
 
-	const ProgramString path_normalized= vfs_->NormalizePath( file_path );
-	boost::optional<ProgramString> file_content= vfs_->LoadFileContent( path_normalized );
-	if( file_content == boost::none )
+	boost::optional<IVfs::LoadFileResult> loaded_file= vfs_->LoadFileContent( file_path, parent_file_path );
+	if( loaded_file == boost::none )
 	{
-		std::cout << "Can not read file \"" << ToStdString( path_normalized ) << "\"" << std::endl;
+		const std::string error_message= "Can not read file \"" + ToStdString( file_path ) +"\"";
+		std::cout << error_message << std::endl;
+		result.syntax_errors.push_back( error_message );
 		return ~0u;
 	}
 
-	LexicalAnalysisResult lex_result= LexicalAnalysis( *file_content );
+	LexicalAnalysisResult lex_result= LexicalAnalysis( loaded_file->file_content );
 	for( const std::string& lexical_error_message : lex_result.error_messages )
 		std::cout << lexical_error_message << "\n";
 	result.lexical_errors.insert( result.lexical_errors.end(), lex_result.error_messages.begin(), lex_result.error_messages.end() );
@@ -50,12 +54,12 @@ size_t SourceGraphLoader::LoadNode_r( const IVfs::Path& file_path, SourceGraph& 
 	if( !synt_result.error_messages.empty() )
 		return ~0u;
 
-	processed_files_stack_.push_back( path_normalized );
+	processed_files_stack_.push_back( file_path );
 	// TODO - check loops
 
 	result.nodes_storage.emplace_back();
 
-	result.nodes_storage[node_index].file_path= path_normalized;
+	result.nodes_storage[node_index].file_path= file_path;
 
 	result.nodes_storage[node_index].child_nodes_indeces.resize( synt_result.imports.size() );
 	for( size_t i= 0; i < result.nodes_storage[node_index].child_nodes_indeces.size(); ++i )
@@ -74,7 +78,7 @@ size_t SourceGraphLoader::LoadNode_r( const IVfs::Path& file_path, SourceGraph& 
 		if( prev_found )
 			continue;
 
-		const size_t child_node_index= LoadNode_r( synt_result.imports[i].import_name, result );
+		const size_t child_node_index= LoadNode_r( synt_result.imports[i].import_name, loaded_file->full_file_path, result );
 		if( child_node_index != ~0u )
 			result.nodes_storage[node_index].child_nodes_indeces[i]= child_node_index;
 	}
