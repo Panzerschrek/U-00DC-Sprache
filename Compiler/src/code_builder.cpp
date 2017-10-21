@@ -491,13 +491,14 @@ Type CodeBuilder::PrepareType(
 ClassProxyPtr CodeBuilder::PrepareClass(
 	const ClassDeclaration& class_declaration,
 	const ComplexName& class_complex_name,
-	NamesScope& names_scope )
+	NamesScope& names_scope,
+	const bool force_forward_declaration )
 {
 	const ProgramString& class_name= class_complex_name.components.back().name;
 	if( IsKeyword( class_name ) )
 		errors_.push_back( ReportUsingKeywordAsName( class_declaration.file_pos_ ) );
 
-	if( class_declaration.is_forward_declaration_ )
+	if( class_declaration.is_forward_declaration_ || force_forward_declaration )
 	{
 		if( class_declaration.name_.components.size() != 1u )
 		{
@@ -605,6 +606,7 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 	std::vector<llvm::Type*> fields_llvm_types;
 
 	std::vector<PrepareFunctionResult> class_functions;
+	std::vector<const ClassDeclaration*> inner_classes;
 
 	for( const IClassElementPtr& member : class_declaration.elements_ )
 	{
@@ -646,8 +648,8 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 		else if( const ClassDeclaration* const inner_class=
 			dynamic_cast<const ClassDeclaration*>( member.get() ) )
 		{
-			// SPRACHE_TODO - maybe process classes like functions - after class completion?
-			PrepareClass( *inner_class, inner_class->name_, the_class->members );
+			inner_classes.push_back( inner_class );
+			PrepareClass( *inner_class, inner_class->name_, the_class->members, true );
 		}
 		else if( const TemplateBase* const template_=
 			dynamic_cast<const TemplateBase*>( member.get() ) )
@@ -715,6 +717,13 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 	TryGenerateDefaultConstructor( *the_class, class_type );
 	TryGenerateCopyConstructor( *the_class, class_type );
 	TryGenerateDestructor( *the_class, class_type );
+
+	// Prepare inner classes.
+	for( const ClassDeclaration* const inner_class : inner_classes )
+	{
+		if( !inner_class->is_forward_declaration_ )
+			PrepareClass( *inner_class, inner_class->name_, the_class->members );
+	}
 
 	// Build functions with body.
 	for( const PrepareFunctionResult& func : class_functions )

@@ -114,7 +114,8 @@ private:
 	ClassProxyPtr PrepareClass(
 		const ClassDeclaration& class_declaration,
 		const ComplexName& class_complex_name,
-		NamesScope& names_scope );
+		NamesScope& names_scope,
+		bool force_forward_declaration= false );
 
 	// Templates
 	void PrepareTypeTemplate( const TemplateBase& type_template_declaration, NamesScope& names_scope );
