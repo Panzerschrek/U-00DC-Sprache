@@ -14,8 +14,11 @@ endif()
 #
 
 # Boost
-set( BOOST_BASE_DIR ../../boost_1_60_0 )
-include_directories( ${BOOST_BASE_DIR} )
+set( Boost_USE_STATIC_LIBS yes )
+set( BOOST_ROOT ../../boost_1_60_0 ) # Set path to your boost here.
+find_package( Boost REQUIRED )
+find_package( Boost COMPONENTS system filesystem REQUIRED )
+include_directories( ${Boost_INCLUDE_DIRS} )
 
 # LLVM
 set( LLVM_INSTALL_DIR ../../llvm-install/ ) # Set path to your LLVM here.
@@ -47,6 +50,7 @@ set( COMPILER_LIB_SOURCES
 	src/lexical_analyzer.cpp
 	src/mangling.cpp
 	src/program_string.cpp
+	src/source_graph_loader.cpp
 	src/syntax_analyzer.cpp
 	src/syntax_elements.cpp )
 
@@ -62,6 +66,7 @@ set( COMPILER_LIB_HEADERS
 	src/pop_llvm_warnings.hpp
 	src/program_string.hpp
 	src/push_disable_llvm_warnings.hpp
+	src/source_graph_loader.hpp
 	src/syntax_elements.hpp
 	src/syntax_analyzer.hpp )
 
@@ -77,6 +82,7 @@ set( COMPILER_SOURCES
 
 add_executable( Compiler ${COMPILER_SOURCES} )
 target_link_libraries( Compiler CompilerLib ${LLVM_LIBS_FOR_COMPILER} )
+target_link_libraries( Compiler ${Boost_LIBRARIES} )
 
 #
 # Tests
@@ -99,6 +105,8 @@ set( TESTS_SOURCES
 	src/tests/destructors_test.cpp
 	src/tests/global_variables_errors_test.cpp
 	src/tests/global_variables_test.cpp
+	src/tests/imports_errors_test.cpp
+	src/tests/imports_test.cpp
 	src/tests/initializers_errors_test.cpp
 	src/tests/initializers_test.cpp
 	src/tests/mangling_test.cpp

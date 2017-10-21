@@ -101,11 +101,12 @@ CodeBuilder::~CodeBuilder()
 {
 }
 
-ICodeBuilder::BuildResult CodeBuilder::BuildProgram( const ProgramElements& program_elements )
+ICodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_graph )
 {
-	module_= std::unique_ptr<llvm::Module>( new llvm::Module( "U-Module", llvm_context_ ) );
 	errors_.clear();
 	error_count_= 0u;
+
+	module_.reset( new llvm::Module( "U-Module", llvm_context_ ) );
 
 	// In some places outside functions we need to execute expression evaluation.
 	// Create for this dummy function context.
@@ -122,37 +123,257 @@ ICodeBuilder::BuildResult CodeBuilder::BuildProgram( const ProgramElements& prog
 		llvm_context_,
 		dummy_function );
 	dummy_function_context.destructibles_stack.emplace_back();
-
 	dummy_function_context_= &dummy_function_context;
 
-	// Create global namespace.
-	NamesScope global_names( ""_SpC, nullptr );
-	FillGlobalNamesScope( global_names );
-
-	// Build program body.
-	BuildNamespaceBody( program_elements, global_names );
+	// Build graph.
+	BuildResultInternal build_result_internal=
+		BuildProgramInternal( source_graph, source_graph.root_node_index );
 
 	dummy_function->eraseFromParent(); // Kill dummy function.
 
-	if( error_count_ > 0u )
-		errors_.push_back( ReportBuildFailed() );
+	compiled_sources_cache_.clear();
 
-	// TODO - sort errors, using file_pos.
+	BuildResult build_result;
+	build_result.errors= errors_;
+	build_result.module= std::move( module_ );
 
-	BuildResult result;
-	result.errors= errors_;
-	errors_.clear();
-	result.module= std::move( module_ );
+	return build_result;
+}
+
+CodeBuilder::BuildResultInternal CodeBuilder::BuildProgramInternal(
+	const SourceGraph& source_graph,
+	const size_t node_index )
+{
+	BuildResultInternal result;
+
+	result.names_map.reset( new NamesScope( ""_SpC, nullptr ) );
+	result.class_table.reset( new ClassTable );
+	FillGlobalNamesScope( *result.names_map );
+
+	U_ASSERT( node_index < source_graph.nodes_storage.size() );
+	const SourceGraph::Node& source_graph_node= source_graph.nodes_storage[ node_index ];
+	for( const size_t child_node_inex : source_graph_node.child_nodes_indeces )
+	{
+		// Compile each source once and put it to cache.
+		const auto it= compiled_sources_cache_.find( child_node_inex );
+		if( it != compiled_sources_cache_.end() )
+		{
+			SetCurrentClassTable( *it->second.class_table ); // Before merge each ClassProxy must points to members of "dst.names_map".
+			MergeNameScopes( *result.names_map, *it->second.names_map, *result.class_table );
+			continue;
+		}
+
+		BuildResultInternal child_result=
+			BuildProgramInternal( source_graph, child_node_inex );
+
+		MergeNameScopes( *result.names_map, *child_result.names_map, *result.class_table );
+
+		compiled_sources_cache_.emplace( child_node_inex, std::move( child_result ) );
+	}
+
+	SetCurrentClassTable( *result.class_table );
+
+	// Do work for this node.
+	BuildNamespaceBody( source_graph_node.ast.program_elements, *result.names_map );
+
 	return result;
+}
+
+void CodeBuilder::MergeNameScopes( NamesScope& dst, const NamesScope& src, ClassTable& dst_class_table )
+{
+	src.ForEachInThisScope(
+		[&]( const NamesScope::InsertedName& src_member )
+		{
+			NamesScope::InsertedName* const dst_member= dst.GetThisScopeName( src_member.first );
+			if( dst_member == nullptr )
+			{
+				// All ok - name form "src" does not exists in "dst".
+				if( const NamesScopePtr names_scope= src_member.second.GetNamespace() )
+				{
+					// We copy namespaces, instead of taking same shared pointer,
+					// because using same shared pointer we can change state of "src".
+					const NamesScopePtr names_scope_copy= std::make_shared<NamesScope>( names_scope->GetThisNamespaceName(), &dst );
+					MergeNameScopes( *names_scope_copy, *names_scope, dst_class_table );
+					dst.AddName( src_member.first, Value( names_scope_copy, src_member.second.GetFilePos() ) );
+				}
+				else
+				{
+					bool class_copied= false;
+					if( const Type* const type= src_member.second.GetTypeName() )
+					{
+						if( const ClassProxyPtr class_proxy= type->GetClassTypeProxy() )
+						{
+							// If current namespace is parent for this class and name is primary.
+							if( class_proxy->class_->members.GetParent() == &src &&
+								class_proxy->class_->members.GetThisNamespaceName() == src_member.first )
+							{
+								CopyClass( src_member.second.GetFilePos(), class_proxy, dst_class_table, dst );
+								class_copied= true;
+							}
+						}
+					}
+
+					if( !class_copied )
+						dst.AddName( src_member.first, src_member.second );
+				}
+				return;
+			}
+
+			if( dst_member->second.GetKindIndex() != src_member.second.GetKindIndex() )
+			{
+				// Different kind of symbols - 100% error.
+				errors_.push_back( ReportRedefinition( src_member.second.GetFilePos(), src_member.first ) );
+				return;
+			}
+
+			if( const NamesScopePtr sub_namespace= src_member.second.GetNamespace() )
+			{
+				// Merge namespaces.
+				// TODO - detect here template instantiation namespaces.
+				const NamesScopePtr dst_sub_namespace= dst_member->second.GetNamespace();
+				U_ASSERT( dst_sub_namespace != nullptr );
+				MergeNameScopes( *dst_sub_namespace, *sub_namespace, dst_class_table );
+				return;
+			}
+			else if(
+				OverloadedFunctionsSet* const dst_funcs_set=
+				dst_member->second.GetFunctionsSet() )
+			{
+				const OverloadedFunctionsSet* const src_funcs_set= src_member.second.GetFunctionsSet();
+				U_ASSERT( src_funcs_set != nullptr );
+
+				for( const FunctionVariable& src_func : *src_funcs_set )
+				{
+					FunctionVariable* same_dst_func=
+						GetFunctionWithExactSignature( *src_func.type.GetFunctionType(), *dst_funcs_set );
+					if( same_dst_func != nullptr )
+					{
+						if( same_dst_func->prototype_file_pos != src_func.prototype_file_pos )
+						{
+							// Prototypes are in differrent files.
+							errors_.push_back( ReportFunctionPrototypeDuplication( src_func.prototype_file_pos, src_member.first ) );
+							continue;
+						}
+
+						if( !same_dst_func->have_body &&  src_func.have_body )
+							*same_dst_func= src_func; // Take this function - it have body.
+						if(  same_dst_func->have_body && !src_func.have_body )
+						{} // Ok, prototype imported later.
+						if(  same_dst_func->have_body &&  src_func.have_body &&
+							same_dst_func->body_file_pos != src_func.body_file_pos )
+							errors_.push_back( ReportFunctionBodyDuplication( src_func.body_file_pos, src_member.first ) );
+					}
+					else
+						ApplyOverloadedFunction( *dst_funcs_set, src_func, src_func.prototype_file_pos );
+				}
+				return;
+			}
+			else if( const Type* const type= dst_member->second.GetTypeName() )
+			{
+				if( const ClassProxyPtr dst_class_proxy= type->GetClassTypeProxy() )
+				{
+					const ClassProxyPtr src_class_proxy= src_member.second.GetTypeName()->GetClassTypeProxy();
+
+					if( src_class_proxy == nullptr || dst_class_proxy != src_class_proxy )
+					{
+						// Differnet proxy means 100% different classes.
+						errors_.push_back( ReportRedefinition( src_member.second.GetFilePos(), src_member.first ) );
+						return;
+					}
+
+					const std::shared_ptr<Class> dst_class= dst_class_table[dst_class_proxy];
+					U_ASSERT( dst_class != nullptr );
+					const Class& src_class= *src_class_proxy->class_;
+
+					U_ASSERT( dst_class->forward_declaration_file_pos == src_class.forward_declaration_file_pos );
+
+					if(  dst_class->is_incomplete &&  src_class.is_incomplete )
+					{} // Ok
+					if( !dst_class->is_incomplete &&  src_class.is_incomplete )
+					{} // Dst class is complete, so, use it.
+					if( !dst_class->is_incomplete && !src_class.is_incomplete &&
+						 dst_class->body_file_pos != src_class.body_file_pos )
+					{
+						// Different bodies from different files.
+						errors_.push_back( ReportClassBodyDuplication( src_class.body_file_pos ) );
+					}
+					if(  dst_class->is_incomplete && !src_class.is_incomplete )
+					{
+						// Take body of more complete class and store in destintation class table.
+						CopyClass( src_class.forward_declaration_file_pos, src_class_proxy, dst_class_table, dst );
+					}
+
+					return;
+				}
+			}
+
+			if( dst_member->second.GetFilePos() == src_member.second.GetFilePos() )
+				return; // All ok - things from one source.
+
+			// Can not merge other kinds of values.
+			errors_.push_back( ReportRedefinition( src_member.second.GetFilePos(), src_member.first ) );
+		} );
+}
+
+void CodeBuilder::CopyClass(
+	const FilePos& file_pos,
+	const ClassProxyPtr& src_class,
+	ClassTable& dst_class_table,
+	NamesScope& dst_namespace )
+{
+	// We make deep copy of Class, imported from other file.
+	// This needs for prevention of modification of source class and affection of imported file.
+
+	const Class& src= *src_class->class_;
+	const std::shared_ptr<Class> copy=
+		std::make_shared<Class>( src.members.GetThisNamespaceName(), &dst_namespace );
+
+	// Make deep copy of inner namespace.
+	MergeNameScopes( copy->members, src.members, dst_class_table );
+
+	// Copy fields.
+	copy->field_count= src.field_count;
+	copy->is_incomplete= src.is_incomplete;
+
+	copy->have_explicit_noncopy_constructors= src.have_explicit_noncopy_constructors;
+	copy->is_default_constructible= src.is_default_constructible;
+	copy->is_copy_constructible= src.is_copy_constructible;
+	copy->have_destructor= src.have_destructor;
+
+	copy->forward_declaration_file_pos= src.forward_declaration_file_pos;
+	copy->body_file_pos= src.body_file_pos;
+
+	copy->llvm_type= src.llvm_type;
+	copy->base_template= src.base_template;
+
+	// Register copy in destination namespace and current class table.
+	dst_namespace.AddName( src.members.GetThisNamespaceName(), Value( src_class, file_pos ) );
+	dst_class_table[ src_class ]= copy;
+}
+
+void CodeBuilder::SetCurrentClassTable( ClassTable& table )
+{
+	current_class_table_= &table;
+
+	// Make all ClassProxy pointed to Classes from current table.
+	for( const ClassTable::value_type& table_entry : table )
+		table_entry.first->class_= table_entry.second;
 }
 
 void CodeBuilder::FillGlobalNamesScope( NamesScope& global_names_scope )
 {
+	FilePos fundamental_globals_file_pos;
+	fundamental_globals_file_pos.file_index= static_cast<unsigned short>(~0u);
+	fundamental_globals_file_pos.line= static_cast<unsigned short>(~0u);
+	fundamental_globals_file_pos.pos_in_line= static_cast<unsigned short>(~0u);
+
 	for( const auto& fundamental_type_value : g_types_map )
 	{
 		global_names_scope.AddName(
 			fundamental_type_value.first,
-			Type( FundamentalType( fundamental_type_value.second, GetFundamentalLLVMType( fundamental_type_value.second ) ) ) );
+			Value(
+				FundamentalType( fundamental_type_value.second, GetFundamentalLLVMType( fundamental_type_value.second ) ),
+				fundamental_globals_file_pos ) );
 	}
 }
 
@@ -267,7 +488,7 @@ Type CodeBuilder::PrepareType(
 	return result;
 }
 
-ClassPtr CodeBuilder::PrepareClass(
+ClassProxyPtr CodeBuilder::PrepareClass(
 	const ClassDeclaration& class_declaration,
 	const ComplexName& class_complex_name,
 	NamesScope& names_scope )
@@ -284,9 +505,12 @@ ClassPtr CodeBuilder::PrepareClass(
 			return nullptr;
 		}
 
-		const ClassPtr the_class= std::make_shared<Class>( class_name, &names_scope );
-		the_class->llvm_type= llvm::StructType::create( llvm_context_, MangleType( the_class ) );
-		const Type class_type= the_class;
+		const ClassProxyPtr the_class_proxy= std::make_shared<ClassProxy>( new Class( class_name, &names_scope ) );
+		Class* const the_class= the_class_proxy->class_.get();
+		(*current_class_table_)[ the_class_proxy ]= the_class_proxy->class_;
+		the_class->llvm_type= llvm::StructType::create( llvm_context_, MangleType( the_class_proxy ) );
+		the_class->forward_declaration_file_pos= class_declaration.file_pos_;
+		const Type class_type= the_class_proxy;
 
 		if( NameShadowsTemplateArgument( class_name, names_scope ) )
 		{
@@ -294,17 +518,18 @@ ClassPtr CodeBuilder::PrepareClass(
 			return nullptr;
 		}
 
-		const NamesScope::InsertedName* const inserted_name= names_scope.AddName( class_name, class_type );
+		const NamesScope::InsertedName* const inserted_name= names_scope.AddName( class_name, Value( class_type, class_declaration.file_pos_ ) );
 		if( inserted_name == nullptr )
 		{
 			errors_.push_back( ReportRedefinition( class_declaration.file_pos_, class_name ) );
 			return nullptr;
 		}
 
-		return nullptr;
+		return the_class_proxy;
 	}
 
-	ClassPtr the_class;
+	Class* the_class= nullptr;
+	ClassProxyPtr the_class_proxy;
 
 	const NamesScope::InsertedName* previous_declaration= nullptr;
 	if( class_complex_name.components.size() == 1u )
@@ -325,10 +550,13 @@ ClassPtr CodeBuilder::PrepareClass(
 
 	if( previous_declaration == nullptr )
 	{
-		the_class= std::make_shared<Class>( class_name, &names_scope );
-		the_class->llvm_type= llvm::StructType::create( llvm_context_, MangleType( the_class ) );
+		the_class_proxy= std::make_shared<ClassProxy>( new Class( class_name, &names_scope ) );
+		the_class= the_class_proxy->class_.get();
+		(*current_class_table_)[ the_class_proxy ]= the_class_proxy->class_;
+		the_class->llvm_type= llvm::StructType::create( llvm_context_, MangleType( the_class_proxy ) );
+		the_class->forward_declaration_file_pos= class_declaration.file_pos_;
 		Type class_type;
-		class_type= the_class;
+		class_type= the_class_proxy;
 
 		if( NameShadowsTemplateArgument( class_name, names_scope ) )
 		{
@@ -336,7 +564,7 @@ ClassPtr CodeBuilder::PrepareClass(
 			return nullptr;
 		}
 
-		const NamesScope::InsertedName* const inserted_name= names_scope.AddName( class_name, class_type );
+		const NamesScope::InsertedName* const inserted_name= names_scope.AddName( class_name, Value( class_type, class_declaration.file_pos_ ) );
 		if( inserted_name == nullptr )
 		{
 			errors_.push_back( ReportRedefinition( class_declaration.file_pos_, class_name ) );
@@ -347,14 +575,15 @@ ClassPtr CodeBuilder::PrepareClass(
 	{
 		if( const Type* const previous_type= previous_declaration->second.GetTypeName() )
 		{
-			if( const ClassPtr previous_calss_ptr= previous_type->GetClassType() )
+			if( const ClassProxyPtr previous_class= previous_type->GetClassTypeProxy() )
 			{
-				if( !previous_calss_ptr->is_incomplete )
+				if( !previous_class->class_->is_incomplete )
 				{
 					errors_.push_back( ReportClassBodyDuplication( class_declaration.file_pos_ ) );
 					return nullptr;
 				}
-				the_class= previous_calss_ptr;
+				the_class_proxy= previous_class;
+				the_class= previous_class->class_.get();
 			}
 			else
 			{
@@ -370,7 +599,8 @@ ClassPtr CodeBuilder::PrepareClass(
 	}
 	U_ASSERT( the_class != nullptr );
 	Type class_type;
-	class_type= the_class;
+	class_type= the_class_proxy;
+	the_class->body_file_pos= class_declaration.file_pos_;
 
 	std::vector<llvm::Type*> fields_llvm_types;
 
@@ -385,7 +615,7 @@ ClassPtr CodeBuilder::PrepareClass(
 			ClassField out_field;
 			out_field.type= PrepareType( in_field->file_pos_, in_field->type, the_class->members );
 			out_field.index= the_class->field_count;
-			out_field.class_= the_class;
+			out_field.class_= the_class_proxy;
 
 			if( out_field.type.IsIncomplete() )
 			{
@@ -400,7 +630,7 @@ ClassPtr CodeBuilder::PrepareClass(
 			else
 			{
 				const NamesScope::InsertedName* const inserted_field=
-					the_class->members.AddName( in_field->name, std::move( out_field ) );
+					the_class->members.AddName( in_field->name, Value( std::move( out_field ), in_field->file_pos_ ) );
 				if( inserted_field == nullptr )
 					errors_.push_back( ReportRedefinition( in_field->file_pos_, in_field->name ) );
 
@@ -411,7 +641,7 @@ ClassPtr CodeBuilder::PrepareClass(
 			dynamic_cast<const FunctionDeclaration*>( member.get() ) )
 		{
 			// First time, push only prototypes.
-			class_functions.push_back( PrepareFunction( *function_declaration, true, the_class, the_class->members ) );
+			class_functions.push_back( PrepareFunction( *function_declaration, true, the_class_proxy, the_class->members ) );
 		}
 		else if( const ClassDeclaration* const inner_class=
 			dynamic_cast<const ClassDeclaration*>( member.get() ) )
@@ -476,7 +706,10 @@ ClassPtr CodeBuilder::PrepareClass(
 		};
 	}
 
-	the_class->llvm_type->setBody( fields_llvm_types );
+	// Check opaque before set body for cases of errors (class body duplication).
+	if( the_class->llvm_type->isOpaque() )
+		the_class->llvm_type->setBody( fields_llvm_types );
+
 	the_class->is_incomplete= false;
 
 	TryGenerateDefaultConstructor( *the_class, class_type );
@@ -500,9 +733,11 @@ ClassPtr CodeBuilder::PrepareClass(
 				continue;
 			}
 
+			function_variable.body_file_pos= func.func_syntax_element->file_pos_;
+
 			BuildFuncCode(
-				(*func.functions_set)[ func.function_index ],
-				the_class,
+				function_variable,
+				the_class_proxy,
 				the_class->members,
 				func_name,
 				func.func_syntax_element->arguments_,
@@ -511,7 +746,7 @@ ClassPtr CodeBuilder::PrepareClass(
 		}
 	}
 
-	return the_class;
+	return the_class_proxy;
 }
 
 void CodeBuilder::TryGenerateDefaultConstructor( Class& the_class, const Type& class_type )
@@ -887,13 +1122,14 @@ void CodeBuilder::BuildCopyConstructorPart(
 			},
 			function_context);
 	}
-	else if( const ClassPtr class_type= type.GetClassType() )
+	else if( const ClassProxyPtr class_type_proxy= type.GetClassTypeProxy() )
 	{
-		const Type filed_class_type= class_type;
+		const Type filed_class_type= class_type_proxy;
+		const Class& class_type= *class_type_proxy->class_;
 
 		// Search copy constructor.
 		const NamesScope::InsertedName* constructor_name=
-			class_type->members.GetThisScopeName( Keyword( Keywords::constructor_ ) );
+			class_type.members.GetThisScopeName( Keyword( Keywords::constructor_ ) );
 		U_ASSERT( constructor_name != nullptr );
 		const OverloadedFunctionsSet* const constructors_set= constructor_name->second.GetFunctionsSet();
 		U_ASSERT( constructors_set != nullptr );
@@ -929,13 +1165,14 @@ void CodeBuilder::BuildCopyConstructorPart(
 void CodeBuilder::TryCallCopyConstructor(
 	const FilePos& file_pos,
 	llvm::Value* const this_, llvm::Value* const src,
-	const ClassPtr& class_,
+	const ClassProxyPtr& class_proxy,
 	FunctionContext& function_context )
 {
-	U_ASSERT( class_ != nullptr );
-	const Type class_type= class_;
+	U_ASSERT( class_proxy != nullptr );
+	const Type class_type= class_proxy;
+	const Class& class_= *class_proxy->class_;
 
-	if( !class_->is_copy_constructible )
+	if( !class_.is_copy_constructible )
 	{
 		// TODO - print more reliable message.
 		errors_.push_back( ReportOperationNotSupportedForThisType( file_pos, class_type.ToString() ) );
@@ -943,7 +1180,7 @@ void CodeBuilder::TryCallCopyConstructor(
 	}
 
 	// Search for copy-constructor.
-	const NamesScope::InsertedName* const constructos_name= class_->members.GetThisScopeName( Keyword( Keywords::constructor_ ) );
+	const NamesScope::InsertedName* const constructos_name= class_.members.GetThisScopeName( Keyword( Keywords::constructor_ ) );
 	U_ASSERT( constructos_name != nullptr );
 	const OverloadedFunctionsSet* const constructors= constructos_name->second.GetFunctionsSet();
 	U_ASSERT(constructors != nullptr );
@@ -1021,7 +1258,7 @@ void CodeBuilder::CallDestructor(
 {
 	U_ASSERT( type.HaveDestructor() );
 
-	if( const ClassPtr class_= type.GetClassType() )
+	if( const Class* const class_= type.GetClassType() )
 	{
 		const NamesScope::InsertedName* const destructor_name= class_->members.GetThisScopeName( Keyword( Keywords::destructor_ ) );
 		U_ASSERT( destructor_name != nullptr );
@@ -1083,7 +1320,7 @@ void CodeBuilder::CallDestructorsBeforeReturn( FunctionContext& function_context
 void CodeBuilder::CallMembersDestructors( FunctionContext& function_context )
 {
 	U_ASSERT( function_context.this_ != nullptr );
-	const ClassPtr class_= function_context.this_->type.GetClassType();
+	const Class* const class_= function_context.this_->type.GetClassType();
 	U_ASSERT( class_ != nullptr );
 
 	class_->members.ForEachInThisScope(
@@ -1144,7 +1381,7 @@ void CodeBuilder::BuildNamespaceBody(
 				U_ASSERT( !NameShadowsTemplateArgument( namespace_->name_, names_scope ) );
 
 				const NamesScopePtr new_names_scope= std::make_shared<NamesScope>( namespace_->name_, &names_scope );
-				names_scope.AddName( namespace_->name_, new_names_scope );
+				names_scope.AddName( namespace_->name_, Value( new_names_scope, namespace_->file_pos_ ) );
 				result_scope= new_names_scope.get();
 			}
 
@@ -1195,7 +1432,7 @@ void CodeBuilder::BuildNamespaceBody(
 CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 	const FunctionDeclaration& func,
 	const bool is_class_method_predeclaration,
-	ClassPtr base_class,
+	ClassProxyPtr base_class,
 	NamesScope& func_definition_names_scope /* scope, where this function appears */ )
 {
 	PrepareFunctionResult result;
@@ -1224,9 +1461,9 @@ CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 			bool base_space_is_class= false;
 			if( const Type* const type= scope_name->second.GetTypeName() )
 			{
-				if( const ClassPtr class_= type->GetClassType() )
+				if( const ClassProxyPtr class_= type->GetClassTypeProxy() )
 				{
-					func_base_names_scope= &class_->members;
+					func_base_names_scope= &class_->class_->members;
 					base_class= class_; // TODO - check here if base_class nonnull and diffrs from class_?
 					base_space_is_class= true;
 				}
@@ -1370,6 +1607,10 @@ CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 			return result;
 		}
 
+		func_variable.prototype_file_pos= func.file_pos_;
+		if( block != nullptr )
+			func_variable.body_file_pos= func.file_pos_;
+
 		OverloadedFunctionsSet functions_set;
 		functions_set.push_back( std::move( func_variable ) );
 
@@ -1425,6 +1666,8 @@ CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 					return result;
 				}
 
+				same_function->body_file_pos= func.file_pos_;
+
 				BuildFuncCode(
 					*same_function,
 					base_class,
@@ -1447,8 +1690,13 @@ CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 				if( !overloading_ok )
 					return result;
 
+				FunctionVariable& inserted_func_variable= functions_set->back();
+				inserted_func_variable.prototype_file_pos= func.file_pos_;
+				if( block != nullptr )
+					inserted_func_variable.body_file_pos= func.file_pos_;
+
 				BuildFuncCode(
-					functions_set->back(),
+					inserted_func_variable,
 					base_class,
 					*func_base_names_scope,
 					func_name,
@@ -1471,7 +1719,7 @@ CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 
 void CodeBuilder::BuildFuncCode(
 	FunctionVariable& func_variable,
-	const ClassPtr base_class,
+	const ClassProxyPtr base_class,
 	NamesScope& parent_names_scope,
 	const ProgramString& func_name,
 	const FunctionArgumentsDeclaration& args,
@@ -1488,7 +1736,7 @@ void CodeBuilder::BuildFuncCode(
 		{}
 		else if( function_type->return_type.GetFundamentalType() != nullptr )
 		{}
-		else if( const ClassPtr class_type= function_type->return_type.GetClassType() )
+		else if( const Class* const class_type= function_type->return_type.GetClassType() )
 		{
 			// Add return-value ponter as "sret" argument for class types.
 			args_llvm_types.push_back( llvm::PointerType::get( class_type->llvm_type, 0u ) );
@@ -1700,7 +1948,7 @@ void CodeBuilder::BuildFuncCode(
 			const NamesScope::InsertedName* const inserted_arg=
 				function_names.AddName(
 					arg_name,
-					std::move(var) );
+					Value( std::move(var), declaration_arg.file_pos_ ) );
 			if( !inserted_arg )
 			{
 				errors_.push_back( ReportRedefinition( declaration_arg.file_pos_, arg_name ) );
@@ -1729,7 +1977,7 @@ void CodeBuilder::BuildFuncCode(
 
 			BuildConstructorInitialization(
 				*function_context.this_,
-				*base_class,
+				*base_class->class_,
 				function_names,
 				function_context,
 				dumy_initialization_list );
@@ -1737,7 +1985,7 @@ void CodeBuilder::BuildFuncCode(
 		else
 			BuildConstructorInitialization(
 				*function_context.this_,
-				*base_class,
+				*base_class->class_,
 				function_names,
 				function_context,
 				*constructor_initialization_list );
@@ -2269,7 +2517,7 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 		}
 
 		const NamesScope::InsertedName* inserted_name=
-			block_names.AddName( variable_declaration.name, std::move(variable) );
+			block_names.AddName( variable_declaration.name, Value( std::move(variable), variable_declaration.file_pos ) );
 
 		if( !inserted_name )
 		{
@@ -2309,7 +2557,7 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 			errors_.push_back( ReportDeclarationShadowsTemplateArgument( auto_variable_declaration.file_pos_, auto_variable_declaration.name ) );
 			return;
 		}
-		const NamesScope::InsertedName* inserted_name= block_names.AddName( auto_variable_declaration.name, variable );
+		const NamesScope::InsertedName* inserted_name= block_names.AddName( auto_variable_declaration.name, Value( variable, auto_variable_declaration.file_pos_ ) );
 		if( inserted_name == nullptr )
 		{
 			errors_.push_back( ReportRedefinition( auto_variable_declaration.file_pos_, auto_variable_declaration.name ) );
@@ -2441,7 +2689,7 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 	}
 
 	const NamesScope::InsertedName* inserted_name=
-		block_names.AddName( auto_variable_declaration.name, std::move(variable) );
+		block_names.AddName( auto_variable_declaration.name, Value( std::move(variable), auto_variable_declaration.file_pos_ ) );
 
 	if( inserted_name == nullptr )
 	{
@@ -2738,7 +2986,7 @@ void CodeBuilder::BuildReturnOperatorCode(
 	{
 		if( function_context.s_ret_ != nullptr )
 		{
-			const ClassPtr class_= function_context.s_ret_->type.GetClassType();
+			const ClassProxyPtr class_= function_context.s_ret_->type.GetClassTypeProxy();
 			TryCallCopyConstructor( return_operator.file_pos_, function_context.s_ret_->llvm_value, expression_result.llvm_value, class_, function_context );
 
 			call_destructors();
@@ -2990,7 +3238,7 @@ void CodeBuilder::BuildTypedef(
 	if( NameShadowsTemplateArgument( typedef_.name, names ) )
 		errors_.push_back( ReportDeclarationShadowsTemplateArgument( typedef_.file_pos_, typedef_.name ) );
 
-	const NamesScope::InsertedName* const inserted_name= names.AddName( typedef_.name, type );
+	const NamesScope::InsertedName* const inserted_name= names.AddName( typedef_.name, Value( type, typedef_.file_pos_ ) );
 	if( inserted_name == nullptr )
 		errors_.push_back( ReportRedefinition( typedef_.file_pos_, typedef_.name ) );
 }
@@ -3334,7 +3582,7 @@ std::pair<const NamesScope::InsertedName*, NamesScope*> CodeBuilder::ResolveName
 			next_space= inner_namespace.get();
 		else if( const Type* const type= name->second.GetTypeName() )
 		{
-			if( const ClassPtr class_= type->GetClassType() )
+			if( Class* const class_= type->GetClassType() )
 				next_space= &class_->members;
 		}
 		else if( const TypeTemplatePtr type_template = name->second.GetTypeTemplate() )
@@ -3362,7 +3610,7 @@ std::pair<const NamesScope::InsertedName*, NamesScope*> CodeBuilder::ResolveName
 						return std::make_pair( &current_space->GetTemplateDependentValue(), current_space ); // Else it is something really template-dependent
 				}
 				U_ASSERT( type != nullptr );
-				if( const ClassPtr class_= type->GetClassType() )
+				if( Class* const class_= type->GetClassType() )
 					next_space= &class_->members;
 				name= generated_type;
 			}

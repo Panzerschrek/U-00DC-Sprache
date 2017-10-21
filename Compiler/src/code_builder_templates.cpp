@@ -57,7 +57,7 @@ void CodeBuilder::PrepareTypeTemplate(
 	const TypeTemplatePtr type_template( new TypeTemplate );
 	const ProgramString& type_template_name= type_template_declaration.name_;
 
-	if( names_scope.AddName( type_template_name, Value(type_template) ) == nullptr )
+	if( names_scope.AddName( type_template_name, Value( type_template, type_template_declaration.file_pos_ ) ) == nullptr )
 	{
 		errors_.push_back( ReportRedefinition( type_template_declaration.file_pos_, type_template_name ) );
 		return;
@@ -147,7 +147,7 @@ void CodeBuilder::PrepareTypeTemplate(
 						ToStdString( arg.name ) );
 			}
 
-			template_parameters_namespace->AddName( arg.name, std::move(variable) );
+			template_parameters_namespace->AddName( arg.name, Value( std::move(variable), type_template_declaration.file_pos_ ) /* TODO - set correct file_pos */ );
 		}
 		else
 		{
@@ -155,7 +155,7 @@ void CodeBuilder::PrepareTypeTemplate(
 
 			template_parameters.emplace_back();
 			template_parameters.back().name= arg.name;
-			template_parameters_namespace->AddName( arg.name, Type( GetNextTemplateDependentType() ) );
+			template_parameters_namespace->AddName( arg.name, Value( GetNextTemplateDependentType(), type_template_declaration.file_pos_ /* TODO - set correct file_pos */ ) );
 			template_parameters_usage_flags.push_back(false);
 		}
 	}
@@ -200,12 +200,12 @@ void CodeBuilder::PrepareTypeTemplate(
 
 	if( const ClassTemplateDeclaration* const template_class= dynamic_cast<const ClassTemplateDeclaration*>( &type_template_declaration ) )
 	{
-		const ClassPtr the_class= PrepareClass( *template_class->class_, temp_class_name, *template_parameters_namespace );
+		const ClassProxyPtr class_proxy= PrepareClass( *template_class->class_, temp_class_name, *template_parameters_namespace );
 
-		if( the_class != nullptr )
+		if( class_proxy != nullptr )
 		{
-			ReportAboutIncompleteMembersOfTemplateClass( type_template_declaration.file_pos_, *the_class );
-			RemoveTempClassLLVMValues( *the_class );
+			ReportAboutIncompleteMembersOfTemplateClass( type_template_declaration.file_pos_, *class_proxy->class_ );
+			RemoveTempClassLLVMValues( *class_proxy->class_ );
 		}
 	}
 	else if( const TypedefTemplate* const typedef_template= dynamic_cast<const TypedefTemplate*>( &type_template_declaration ) )
@@ -390,13 +390,13 @@ bool CodeBuilder::DuduceTemplateArguments(
 
 	// Try deduce other type kind.
 	// Curently, can work only with class types.
-	const ClassPtr class_type= given_type.GetClassType();
+	const Class* const class_type= given_type.GetClassType();
 	if( class_type == nullptr )
 		return false;
 
 	// SPRACHE_TODO - support type aliases as signature complex arguments.
 
-	typedef boost::variant<NamesScopePtr, ClassPtr> TypePathComponent;
+	typedef boost::variant<NamesScopePtr, Class*> TypePathComponent;
 
 	// Sequence of namespaces/classes, where given type placed. Given type included.
 	std::vector<TypePathComponent> given_type_predecessors;
@@ -411,7 +411,7 @@ bool CodeBuilder::DuduceTemplateArguments(
 				given_type_predecessors.insert( given_type_predecessors.begin(), 1u, names_scope );
 			else if( const Type* const type= name->second.GetTypeName() )
 			{
-				if( const ClassPtr class_= type->GetClassType() )
+				if( Class* const class_= type->GetClassType() )
 					given_type_predecessors.insert( given_type_predecessors.begin(), 1u, class_ );
 				else U_ASSERT(false);
 			}
@@ -439,8 +439,8 @@ bool CodeBuilder::DuduceTemplateArguments(
 				start_name_predecessors.insert( start_name_predecessors.begin(), 1u, names_scope );
 			else if( const Type* const type= name->second.GetTypeName() )
 			{
-				if( const ClassPtr class_= type->GetClassType() )
-					start_name_predecessors.insert( start_name_predecessors.begin(), 1u,class_ );
+				if( Class* const class_= type->GetClassType() )
+					start_name_predecessors.insert( start_name_predecessors.begin(), 1u, class_ );
 				else U_ASSERT(false);
 			}
 			else
@@ -498,9 +498,9 @@ bool CodeBuilder::DuduceTemplateArguments(
 		{
 			if( name_component.have_template_parameters )
 				return false;
-			if( const ClassPtr given_class_= type->GetClassType() )
+			if( const Class* const given_class_= type->GetClassType() )
 			{
-				if( const ClassPtr* const class_ptr= boost::get<ClassPtr>(given_type_component) )
+				if( Class* const* const class_ptr= boost::get<Class*>(given_type_component) )
 				{
 					if( given_class_ == *class_ptr )
 						++given_type_component; // All ok
@@ -527,7 +527,7 @@ bool CodeBuilder::DuduceTemplateArguments(
 				// This is generated from template class.
 				const Type* const class_type= class_name->second.GetTypeName();
 				U_ASSERT( class_type != nullptr );
-				const ClassPtr given_type_class= class_type->GetClassType();
+				const Class* const given_type_class= class_type->GetClassType();
 				U_ASSERT( given_type_class != nullptr );
 				U_ASSERT( given_type_class->base_template != boost::none );
 
@@ -684,12 +684,12 @@ NamesScope::InsertedName* CodeBuilder::GenTemplateType(
 			else if( const Type* const type= boost::get<Type>( &arg ) )
 			{
 				if( name->second.GetYetNotDeducedTemplateArg() != nullptr )
-					name->second= *type;
+					name->second= Value( *type, type_template_ptr->syntax_element->file_pos_ /*TODO - set correctfile_pos */ );
 			}
 			else if( const Variable* const variable= boost::get<Variable>( &arg ) )
 			{
 				if( name->second.GetYetNotDeducedTemplateArg() != nullptr )
-					name->second= *variable;
+					name->second= Value( *variable, type_template_ptr->syntax_element->file_pos_ /*TODO - set correctfile_pos */ );
 			}
 			else U_ASSERT( false );
 		}
@@ -707,7 +707,7 @@ NamesScope::InsertedName* CodeBuilder::GenTemplateType(
 		return
 			template_names_scope.AddName(
 				"_tdv"_SpC + ToProgramString( std::to_string(next_template_dependent_type_index_).c_str() ),
-				Type( GetNextTemplateDependentType() ) );
+				Value( GetNextTemplateDependentType(), type_template_ptr->syntax_element->file_pos_ /*TODO - set correctfile_pos */ ) );
 	}
 
 	for( size_t i = 0u; i < deduced_template_args.size() ; ++i )
@@ -758,29 +758,45 @@ NamesScope::InsertedName* CodeBuilder::GenTemplateType(
 	}
 
 	template_parameters_namespace->SetThisNamespaceName( name_encoded );
-	template_names_scope.AddName( name_encoded, template_parameters_namespace );
+	template_names_scope.AddName( name_encoded, Value( template_parameters_namespace, type_template_ptr->syntax_element->file_pos_ /* TODO - check file_pos */ ) );
 
 	if( const ClassTemplateDeclaration* const template_class= dynamic_cast<const ClassTemplateDeclaration*>( type_template.syntax_element ) )
 	{
-		ClassPtr the_class= PrepareClass( *template_class->class_, GetComplexNameForGeneratedClass(), *template_parameters_namespace );
+		const TemplateClassKey class_key{ type_template_ptr, name_encoded };
+		const auto cache_class_it= template_classes_cache_.find( class_key );
+		if( cache_class_it != template_classes_cache_.end() )
+		{
+			PopResolveHandler();
+
+			return
+				template_parameters_namespace->AddName(
+					GetNameForGeneratedClass(),
+					Value(
+						cache_class_it->second,
+						type_template_ptr->syntax_element->file_pos_ /* TODO - check file_pos */ ) );
+		}
+
+		const ClassProxyPtr class_proxy= PrepareClass( *template_class->class_, GetComplexNameForGeneratedClass(), *template_parameters_namespace );
 
 		PopResolveHandler();
 
-		if( the_class == nullptr )
+		if( class_proxy == nullptr )
 			return nullptr;
 
+		Class& the_class= *class_proxy->class_;
 		// Save in class info about it`s base template.
-		the_class->base_template.emplace();
-		the_class->base_template->class_template= type_template_ptr;
+		the_class.base_template.emplace();
+		the_class.base_template->class_template= type_template_ptr;
 		for( const DeducibleTemplateParameter& arg : deduced_template_args )
 		{
 			if( const Type* const type= boost::get<Type>( &arg ) )
-				the_class->base_template->template_parameters.push_back( *type );
+				the_class.base_template->template_parameters.push_back( *type );
 			else if( const Variable* const variable= boost::get<Variable>( &arg ) )
-				the_class->base_template->template_parameters.push_back( *variable );
+				the_class.base_template->template_parameters.push_back( *variable );
 			else U_ASSERT(false);
 		}
 
+		template_classes_cache_[class_key]= class_proxy;
 		return template_parameters_namespace->GetThisScopeName( GetNameForGeneratedClass() );
 	}
 	else if( const TypedefTemplate* const typedef_template= dynamic_cast<const TypedefTemplate*>( type_template.syntax_element ) )
@@ -793,7 +809,7 @@ NamesScope::InsertedName* CodeBuilder::GenTemplateType(
 			return nullptr;
 
 		// HACK - add name to map for correct result returning.
-		return template_parameters_namespace->AddName( GetNameForGeneratedClass(), type );
+		return template_parameters_namespace->AddName( GetNameForGeneratedClass(), Value( type, file_pos /* TODO - check file_pos */ ) );
 	}
 	else
 		U_ASSERT(false);
@@ -853,7 +869,7 @@ void CodeBuilder::RemoveTempClassLLVMValues( Class& class_ )
 		{
 			if( const Type* const type= name.second.GetTypeName() )
 			{
-				if( const ClassPtr subclass= type->GetClassType() )
+				if( Class* const subclass= type->GetClassType() )
 					RemoveTempClassLLVMValues( *subclass );
 			}
 			else if( const OverloadedFunctionsSet* const functions_set= name.second.GetFunctionsSet() )
@@ -877,7 +893,7 @@ void CodeBuilder::RemoveTempClassLLVMValues( Class& class_ )
 						{
 							const Type* const generated_class_type= inner_namespace_name.second.GetTypeName();
 							U_ASSERT( generated_class_type != nullptr );
-							const ClassPtr generated_class= generated_class_type->GetClassType();
+							Class* const generated_class= generated_class_type->GetClassType();
 							U_ASSERT( generated_class != nullptr );
 							U_ASSERT( generated_class->base_template != boost::none );
 							RemoveTempClassLLVMValues( *generated_class );
@@ -901,7 +917,7 @@ void CodeBuilder::ReportAboutIncompleteMembersOfTemplateClass( const FilePos& fi
 		{
 			if( const Type* const type= name.second.GetTypeName() )
 			{
-				if( const ClassPtr subclass= type->GetClassType() )
+				if( Class* const subclass= type->GetClassType() )
 				{
 					if( subclass->is_incomplete )
 						errors_.push_back( ReportIncompleteMemberOfClassTemplate( file_pos, name.first ) );
@@ -933,7 +949,7 @@ void CodeBuilder::ReportAboutIncompleteMembersOfTemplateClass( const FilePos& fi
 						{
 							const Type* const generated_class_type= inner_namespace_name.second.GetTypeName();
 							U_ASSERT( generated_class_type != nullptr );
-							const ClassPtr generated_class= generated_class_type->GetClassType();
+							Class* const generated_class= generated_class_type->GetClassType();
 							U_ASSERT( generated_class != nullptr );
 							U_ASSERT( generated_class->base_template != boost::none );
 							ReportAboutIncompleteMembersOfTemplateClass( file_pos, *generated_class );

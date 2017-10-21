@@ -184,6 +184,23 @@ SyntaxAnalysisResult SyntaxAnalyzer::DoAnalyzis( const Lexems& lexems )
 
 	while( it_ < it_end_ )
 	{
+		if( !( it_->type == Lexem::Type::Identifier && it_->text == Keywords::import_ ) )
+			break;
+		++it_; U_ASSERT( it_ < it_end_ );
+
+		if( it_->type != Lexem::Type::String )
+		{
+			PushErrorMessage( *it_ );
+			break;
+		}
+
+		result.imports.emplace_back( it_->file_pos );
+		result.imports.back().import_name= it_->text;
+		++it_;
+	}
+
+	while( it_ < it_end_ )
+	{
 		result.program_elements= ParseNamespaceBody( Lexem::Type::EndOfFile );
 		++it_;
 	}
@@ -1005,6 +1022,7 @@ VariablesDeclarationPtr SyntaxAnalyzer::ParseVariablesDeclaration()
 	{
 		decl->variables.emplace_back();
 		VariablesDeclaration::VariableEntry& variable_entry= decl->variables.back();
+		variable_entry.file_pos= it_->file_pos;
 
 		if( it_->type == Lexem::Type::And )
 		{

@@ -136,7 +136,7 @@ Type::Type( Array&& array_type )
 	something_= ArrayPtr( new Array( std::move( array_type ) ) );
 }
 
-Type::Type( ClassPtr class_type )
+Type::Type( ClassProxyPtr class_type )
 {
 	something_= std::move( class_type );
 }
@@ -145,7 +145,6 @@ Type::Type( const NontypeStub nontype_strub )
 {
 	something_= nontype_strub;
 }
-
 
 Type::Type( TemplateDependentType template_dependent_type )
 {
@@ -179,7 +178,7 @@ Type& Type::operator=( const Type& other )
 			this_.something_= ArrayPtr( new Array( *array ) );
 		}
 
-		void operator()( const ClassPtr& class_ )
+		void operator()( const ClassProxyPtr& class_ )
 		{
 			this_.something_= class_;
 		}
@@ -242,12 +241,20 @@ const Array* Type::GetArrayType() const
 	return array_type->get();
 }
 
-ClassPtr Type::GetClassType() const
+ClassProxyPtr Type::GetClassTypeProxy() const
 {
-	const ClassPtr* const class_type= boost::get<ClassPtr>( &something_ );
+	const ClassProxyPtr* const class_type= boost::get<ClassProxyPtr>( &something_ );
 	if( class_type == nullptr )
 		return nullptr;
 	return *class_type;
+}
+
+Class* Type::GetClassType() const
+{
+	const ClassProxyPtr class_proxy= GetClassTypeProxy();
+	if( class_proxy == nullptr )
+		return nullptr;
+	return class_proxy->class_.get();
 }
 
 TemplateDependentType* Type::GetTemplateDependentType()
@@ -283,7 +290,7 @@ size_t Type::SizeOf() const
 			size= array->type.SizeOf() * array->size;
 		}
 
-		void operator()( const ClassPtr& class_ )
+		void operator()( const ClassProxyPtr& class_ )
 		{
 			if( class_ == nullptr ) return;
 			U_ASSERT( false && "SizeOf method not supported for classes." );
@@ -309,10 +316,10 @@ size_t Type::SizeOf() const
 
 bool Type::IsIncomplete() const
 {
-	if( const ClassPtr* const class_= boost::get<ClassPtr>( &something_ ) )
+	if( const ClassProxyPtr* const class_= boost::get<ClassProxyPtr>( &something_ ) )
 	{
-		U_ASSERT( *class_ != nullptr );
-		return (*class_)->is_incomplete;
+		U_ASSERT( *class_ != nullptr && (*class_)->class_ != nullptr );
+		return (*class_)->class_->is_incomplete;
 	}
 	else if( const ArrayPtr* const array= boost::get<ArrayPtr>( &something_ ) )
 	{
@@ -325,10 +332,10 @@ bool Type::IsIncomplete() const
 
 bool Type::IsDefaultConstructible() const
 {
-	if( const ClassPtr* const class_= boost::get<ClassPtr>( &something_ ) )
+	if( const ClassProxyPtr* const class_= boost::get<ClassProxyPtr>( &something_ ) )
 	{
-		U_ASSERT( *class_ != nullptr );
-		return (*class_)->is_default_constructible;
+		U_ASSERT( *class_ != nullptr && (*class_)->class_ != nullptr );
+		return (*class_)->class_->is_default_constructible;
 	}
 	else if( const ArrayPtr* const array= boost::get<ArrayPtr>( &something_ ) )
 	{
@@ -346,10 +353,10 @@ bool Type::IsCopyConstructible() const
 		U_UNUSED(fundamental_type);
 		return true;
 	}
-	else if( const ClassPtr* const class_= boost::get<ClassPtr>( &something_ ) )
+	else if( const ClassProxyPtr* const class_= boost::get<ClassProxyPtr>( &something_ ) )
 	{
-		U_ASSERT( *class_ != nullptr );
-		return (*class_)->is_copy_constructible;
+		U_ASSERT( *class_ != nullptr && (*class_)->class_ != nullptr );
+		return (*class_)->class_->is_copy_constructible;
 	}
 	else if( const ArrayPtr* const array= boost::get<ArrayPtr>( &something_ ) )
 	{
@@ -362,10 +369,10 @@ bool Type::IsCopyConstructible() const
 
 bool Type::HaveDestructor() const
 {
-	if( const ClassPtr* const class_= boost::get<ClassPtr>( &something_ ) )
+	if( const ClassProxyPtr* const class_= boost::get<ClassProxyPtr>( &something_ ) )
 	{
-		U_ASSERT( *class_ != nullptr );
-		return (*class_)->have_destructor;
+		U_ASSERT( *class_ != nullptr && (*class_)->class_ != nullptr );
+		return (*class_)->class_->have_destructor;
 	}
 	else if( const ArrayPtr* const array= boost::get<ArrayPtr>( &something_ ) )
 	{
@@ -418,10 +425,10 @@ llvm::Type* Type::GetLLVMType() const
 			llvm_type= array->llvm_type;
 		}
 
-		void operator()( const ClassPtr& class_ )
+		void operator()( const ClassProxyPtr& class_ )
 		{
 			if( class_ == nullptr ) return;
-			llvm_type= class_->llvm_type;
+			llvm_type= class_->class_->llvm_type;
 		}
 
 		void operator()( const NontypeStub& stub )
@@ -483,11 +490,11 @@ ProgramString Type::ToString() const
 				ToProgramString( std::to_string( array->size ).c_str() ) + " ]"_SpC;
 		}
 
-		void operator()( const ClassPtr& class_ )
+		void operator()( const ClassProxyPtr& class_ )
 		{
 			if( class_ == nullptr ) return;
 
-			result= "class "_SpC + class_->members.GetThisNamespaceName();
+			result= "class "_SpC + class_->class_->members.GetThisNamespaceName();
 		}
 
 		void operator()( const NontypeStub& stub )
@@ -551,7 +558,7 @@ bool operator==( const Type& r, const Type& l )
 	}
 	else if( r.something_.which() == 3 )
 	{
-		return r.GetClassType() == l.GetClassType();
+		return r.GetClassTypeProxy() == l.GetClassTypeProxy();
 	}
 	else if( r.something_.which() == 4 )
 	{
@@ -619,13 +626,24 @@ bool NameResolvingKeyHasher::operator()( const NameResolvingKey& a, const NameRe
 	return a.components == b.components && a.component_count == b.component_count;
 }
 
+size_t TemplateClassKeyHasher::operator()( const TemplateClassKey& key ) const
+{
+	size_t result= 0u;
+	boost::hash_combine( result, key.template_ );
+	boost::hash_combine( result, key.class_name_encoded );
+	return result;
+}
+bool TemplateClassKeyHasher::operator()( const TemplateClassKey& a, const TemplateClassKey& b ) const
+{
+	return a.template_ == b.template_ && a.class_name_encoded == b.class_name_encoded;
+}
+
 Class::Class( const ProgramString& in_name, const NamesScope* const parent_scope )
 	: members( in_name, parent_scope )
 {}
 
 Class::~Class()
 {}
-
 
 //
 // Value
@@ -643,7 +661,8 @@ static const Type g_error_value_type_stub= NontypeStub::ErrorValue;
 Value::Value()
 {}
 
-Value::Value( Variable variable )
+Value::Value( Variable variable, const FilePos& file_pos )
+	: file_pos_(file_pos)
 {
 	something_= std::move(variable);
 }
@@ -658,12 +677,14 @@ Value::Value( OverloadedFunctionsSet functions_set )
 	something_= std::move(functions_set);
 }
 
-Value::Value( Type type )
+Value::Value( Type type, const FilePos& file_pos )
+	: file_pos_(file_pos)
 {
 	something_= std::move(type);
 }
 
-Value::Value( ClassField class_field )
+Value::Value( ClassField class_field, const FilePos& file_pos )
+	: file_pos_(file_pos)
 {
 	something_= std::move( class_field );
 }
@@ -673,13 +694,15 @@ Value::Value( ThisOverloadedMethodsSet this_overloaded_methods_set )
 	something_= std::move( this_overloaded_methods_set );
 }
 
-Value::Value( const NamesScopePtr& namespace_ )
+Value::Value( const NamesScopePtr& namespace_, const FilePos& file_pos )
+	: file_pos_(file_pos)
 {
 	U_ASSERT( namespace_ != nullptr );
 	something_= namespace_;
 }
 
-Value::Value( const TypeTemplatePtr& type_template )
+Value::Value( const TypeTemplatePtr& type_template, const FilePos& file_pos )
+	: file_pos_(file_pos)
 {
 	U_ASSERT( type_template != nullptr );
 	something_= type_template;
@@ -743,6 +766,16 @@ const Type& Value::GetType() const
 	Visitor visitor;
 	boost::apply_visitor( visitor, something_ );
 	return *visitor.type;
+}
+
+int Value::GetKindIndex() const
+{
+	return something_.which();
+}
+
+const FilePos& Value::GetFilePos() const
+{
+	return file_pos_;
 }
 
 Variable* Value::GetVariable()

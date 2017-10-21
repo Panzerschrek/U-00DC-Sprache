@@ -1,6 +1,7 @@
 #pragma once
 #include <set>
 #include <vector>
+#include <unordered_map>
 
 #include "push_disable_llvm_warnings.hpp"
 #include <llvm/IR/IRBuilder.h>
@@ -24,9 +25,16 @@ public:
 	CodeBuilder();
 	virtual ~CodeBuilder() override;
 
-	virtual BuildResult BuildProgram( const ProgramElements& program_elements ) override;
+	virtual BuildResult BuildProgram( const SourceGraph& source_graph ) override;
 
 private:
+	typedef std::unordered_map< ClassProxyPtr, std::shared_ptr<Class> > ClassTable;
+	struct BuildResultInternal
+	{
+		std::unique_ptr<NamesScope> names_map;
+		std::unique_ptr<ClassTable> class_table;
+	};
+
 	struct DestructiblesStorage final
 	{
 		void RegisterVariable( Variable variable );
@@ -88,11 +96,22 @@ private:
 	};
 
 private:
+	BuildResultInternal BuildProgramInternal( const SourceGraph& source_graph, size_t node_index );
+
+	void MergeNameScopes( NamesScope& dst, const NamesScope& src, ClassTable& dst_class_table );
+
+	void CopyClass(
+		const FilePos& file_pos, // FilePos or original class.
+		const ClassProxyPtr& src_class,
+		ClassTable& dst_class_table,
+		NamesScope& dst_namespace );
+	void SetCurrentClassTable( ClassTable& table );
+
 	void FillGlobalNamesScope( NamesScope& global_names_scope );
 	Type PrepareType( const FilePos& file_pos, const TypeName& type_name, NamesScope& names_scope );
 
 	// Returns nullptr on fail.
-	ClassPtr PrepareClass(
+	ClassProxyPtr PrepareClass(
 		const ClassDeclaration& class_declaration,
 		const ComplexName& class_complex_name,
 		NamesScope& names_scope );
@@ -150,7 +169,7 @@ private:
 	void TryCallCopyConstructor(
 		const FilePos& file_pos,
 		llvm::Value* this_, llvm::Value* src,
-		const ClassPtr& class_,
+		const ClassProxyPtr& class_proxy,
 		FunctionContext& function_context );
 
 	// Generates for loop from 0 to iteration_count - 1
@@ -187,12 +206,12 @@ private:
 	PrepareFunctionResult PrepareFunction(
 		const FunctionDeclaration& func,
 		bool force_prototype,
-		ClassPtr base_class,
+		ClassProxyPtr base_class,
 		NamesScope& scope );
 
 	void BuildFuncCode(
 		FunctionVariable& func,
-		ClassPtr base_class,
+		ClassProxyPtr base_class,
 		NamesScope& parent_names_scope,
 		const ProgramString& func_name,
 		const FunctionArgumentsDeclaration& args,
@@ -234,6 +253,7 @@ private:
 		const IExpressionComponent& l_expression,
 		const IExpressionComponent& r_expression,
 		const BinaryOperator& binary_operator,
+		const FilePos& file_pos,
 		NamesScope& names,
 		FunctionContext& function_context );
 
@@ -486,6 +506,14 @@ private:
 	std::unique_ptr<llvm::Module> module_;
 	unsigned int error_count_= 0u;
 	std::vector<CodeBuilderError> errors_;
+
+	std::unordered_map< size_t, BuildResultInternal > compiled_sources_cache_;
+	ClassTable* current_class_table_= nullptr;
+
+	// Cache needs for generating same classes as template instantiation result in different source files.
+	// We can use same classes in different files, because template classes are logically unchangeable after instantiation.
+	// Unchangeable they are because incomplete template classes ( or classes inside template classes, etc. ) currently forbidden.
+	TemplateClassesCache template_classes_cache_;
 
 	std::vector<std::unique_ptr<PreResolveFunc>> resolving_funcs_stack_;
 	size_t next_template_dependent_type_index_= 1u;

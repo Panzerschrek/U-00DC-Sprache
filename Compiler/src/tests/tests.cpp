@@ -1,32 +1,59 @@
 #include <iostream>
 
+#include "../assert.hpp"
 #include "../lexical_analyzer.hpp"
 #include "../syntax_analyzer.hpp"
 #include "../code_builder.hpp"
+#include "../source_graph_loader.hpp"
 
 #include "tests.hpp"
 
 namespace U
 {
 
+namespace
+{
+
+class MultiFileVfs final : public IVfs
+{
+public:
+	explicit MultiFileVfs( std::vector<SourceEntry> sources )
+		: sources_(std::move(sources))
+	{}
+
+	MultiFileVfs( ProgramString file_path, const char* text )
+		: sources_( { SourceEntry{ file_path, text } } )
+	{}
+
+	virtual boost::optional<LoadFileResult> LoadFileContent( const Path& file_path, const Path& full_parent_file_path ) override
+	{
+		U_UNUSED( full_parent_file_path );
+		for( const SourceEntry& source_entry : sources_ )
+		{
+			if( file_path == source_entry.file_path )
+				return LoadFileResult{ file_path, ToProgramString( source_entry.text ) };
+		}
+		return boost::none;
+	}
+
+private:
+	const std::vector<SourceEntry> sources_;
+};
+
+} // namespace
+
 std::unique_ptr<llvm::Module> BuildProgram( const char* const text )
 {
-	const LexicalAnalysisResult lexical_analysis_result=
-		LexicalAnalysis( ToProgramString( text ) );
+	const ProgramString file_path= "_"_SpC;
+	const SourceGraphPtr source_graph=
+		SourceGraphLoader( std::make_shared<MultiFileVfs>( file_path, text ) ).LoadSource( file_path );
 
-	for( const std::string& lexical_error_message : lexical_analysis_result.error_messages )
-		std::cout << lexical_error_message << "\n";
-	U_TEST_ASSERT( lexical_analysis_result.error_messages.empty() );
+	U_TEST_ASSERT( source_graph != nullptr );
+	U_TEST_ASSERT( source_graph->lexical_errors.empty() );
+	U_TEST_ASSERT( source_graph->syntax_errors.empty() );
+	U_TEST_ASSERT( source_graph->root_node_index < source_graph->nodes_storage.size() );
 
-	const SyntaxAnalysisResult syntax_analysis_result=
-		SyntaxAnalysis( lexical_analysis_result.lexems );
-
-	for( const std::string& syntax_error_message : syntax_analysis_result.error_messages )
-		std::cout << syntax_error_message << "\n";
-	U_TEST_ASSERT( syntax_analysis_result.error_messages.empty() );
-
-	ICodeBuilder::BuildResult build_result=
-		CodeBuilder().BuildProgram( syntax_analysis_result.program_elements );
+	ICodeBuilder::BuildResult build_result= CodeBuilder().BuildProgram( *source_graph );
 
 	for( const CodeBuilderError& error : build_result.errors )
 		std::cout << error.file_pos.line << ":" << error.file_pos.pos_in_line << " " << ToStdString( error.text ) << "\n";
@@ -38,26 +65,46 @@ std::unique_ptr<llvm::Module> BuildProgram( const char* const text )
 
 ICodeBuilder::BuildResult BuildProgramWithErrors( const char* const text )
 {
-	const LexicalAnalysisResult lexical_analysis_result=
-		LexicalAnalysis( ToProgramString( text ) );
+	const ProgramString file_path= "_"_SpC;
+	const SourceGraphPtr source_graph=
+		SourceGraphLoader( std::make_shared<MultiFileVfs>( file_path, text ) ).LoadSource( file_path );
 
-	for( const std::string& lexical_error_message : lexical_analysis_result.error_messages )
-		std::cout << lexical_error_message << "\n";
-	U_TEST_ASSERT( lexical_analysis_result.error_messages.empty() );
+	U_TEST_ASSERT( source_graph != nullptr );
+	U_TEST_ASSERT( source_graph->lexical_errors.empty() );
+	U_TEST_ASSERT( source_graph->syntax_errors.empty() );
 
-	const SyntaxAnalysisResult syntax_analysis_result=
-		SyntaxAnalysis( lexical_analysis_result.lexems );
+	return CodeBuilder().BuildProgram( *source_graph );
+}
 
-	for( const SyntaxErrorMessage& syntax_error_message : syntax_analysis_result.error_messages )
-		std::cout << syntax_error_message << "\n";
-	U_TEST_ASSERT( syntax_analysis_result.error_messages.empty() );
+std::unique_ptr<llvm::Module> BuildMultisourceProgram( std::vector<SourceEntry> sources, const ProgramString& root_file_path )
+{
+	const SourceGraphPtr source_graph=
+		SourceGraphLoader( std::make_shared<MultiFileVfs>( std::move(sources) ) ).LoadSource( root_file_path );
 
-	for( const std::string& syntax_error_message : syntax_analysis_result.error_messages )
-		std::cout << syntax_error_message << "\n";
-	U_TEST_ASSERT( syntax_analysis_result.error_messages.empty() );
+	U_TEST_ASSERT( source_graph != nullptr );
+	U_TEST_ASSERT( source_graph->lexical_errors.empty() );
+	U_TEST_ASSERT( source_graph->syntax_errors.empty() );
 
-	return
-		CodeBuilder().BuildProgram( syntax_analysis_result.program_elements );
+	ICodeBuilder::BuildResult build_result= CodeBuilder().BuildProgram( *source_graph );
+
+	for( const CodeBuilderError& error : build_result.errors )
+		std::cout << error.file_pos.line << ":" << error.file_pos.pos_in_line << " " << ToStdString( error.text ) << "\n";
+
+	U_TEST_ASSERT( build_result.errors.empty() );
+
+	return std::move( build_result.module );
+}
+
+ICodeBuilder::BuildResult BuildMultisourceProgramWithErrors( std::vector<SourceEntry> sources, const ProgramString& root_file_path )
+{
+	const SourceGraphPtr source_graph=
+		SourceGraphLoader( std::make_shared<MultiFileVfs>( std::move(sources) ) ).LoadSource( root_file_path );
+
+	U_TEST_ASSERT( source_graph != nullptr );
+	U_TEST_ASSERT( source_graph->lexical_errors.empty() );
+	U_TEST_ASSERT( source_graph->syntax_errors.empty() );
+
+	return CodeBuilder().BuildProgram( *source_graph );
 }
 
 EnginePtr CreateEngine( std::unique_ptr<llvm::Module> module, const bool needs_dump )

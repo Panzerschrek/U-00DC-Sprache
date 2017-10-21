@@ -369,6 +369,7 @@ struct VariablesDeclaration final
 
 	struct VariableEntry
 	{
+		FilePos file_pos;
 		ProgramString name;
 		IInitializerPtr initializer; // May be null for types with default constructor.
 		MutabilityModifier mutability_modifier= MutabilityModifier::None;
@@ -635,6 +636,14 @@ public:
 
 	ProgramString name_;
 	ProgramElements elements_;
+};
+
+class Import final : public SyntaxElementBase
+{
+public:
+	explicit Import( const FilePos& file_pos );
+
+	ProgramString import_name;
 };
 
 } // namespace U

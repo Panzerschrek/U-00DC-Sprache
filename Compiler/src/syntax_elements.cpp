@@ -309,4 +309,8 @@ Namespace::Namespace( const FilePos& file_pos )
 	: SyntaxElementBase(file_pos)
 {}
 
+Import::Import( const FilePos& file_pos )
+	: SyntaxElementBase(file_pos)
+{}
+
 } // namespace U

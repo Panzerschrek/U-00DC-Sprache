@@ -1,10 +1,22 @@
 #include <cctype>
 #include <map>
 
+#include "assert.hpp"
+
 #include "lexical_analyzer.hpp"
 
 namespace U
 {
+
+bool operator==( const FilePos& l, const FilePos& r )
+{
+	return l.file_index == r.file_index && l.line == r.line && r.pos_in_line == l.pos_in_line;
+}
+
+bool operator!=( const FilePos& l, const FilePos& r )
+{
+	return !( l == r );
+}
 
 typedef std::map<ProgramString, Lexem::Type> FixedLexemsMap;
 static const size_t g_max_fixed_lexem_size= 3;
@@ -149,6 +161,47 @@ static void ParseNumberImpl(
 	}
 }
 
+static Lexem ParseString(
+	ProgramString::const_iterator& it,
+	const ProgramString::const_iterator it_end )
+{
+	U_ASSERT( *it == '"' );
+	++it;
+
+	Lexem result;
+	result.type= Lexem::Type::String;
+
+	while(true)
+	{
+		if( it == it_end )
+			break;
+
+		if( *it == '"' )
+		{
+			++it;
+			break;
+		}
+
+		if( *it == '\\' )
+		{
+			++it;
+			if( it == it_end )
+				break;
+			if( *it != '"' )
+				break;
+			result.text.push_back(*it);
+			++it;
+		}
+		else
+		{
+			result.text.push_back(*it);
+			++it;
+		}
+	}
+
+	return result;
+}
+
 static Lexem ParseNumber(
 	ProgramString::const_iterator& it,
 	const ProgramString::const_iterator it_end )
@@ -266,6 +319,9 @@ LexicalAnalysisResult LexicalAnalysis( const ProgramString& program_text )
 
 			continue;
 		}
+		else if( c == '"' )
+			lexem= ParseString( it, it_end );
+
 		else if( IsNumberStartChar(c) )
 			lexem= ParseNumber( it, it_end );
 

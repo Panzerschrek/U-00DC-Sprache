@@ -24,10 +24,17 @@ namespace CodeBuilderPrivate
 
 struct Function;
 struct Array;
+class Class;
 
-struct Class;
-typedef std::shared_ptr<Class> ClassPtr;
-typedef std::weak_ptr<Class> ClassWeakPtr;
+struct ClassProxy
+{
+	ClassProxy( Class* in_class ) // Poiter must be new-allocated. Takes ownership.
+		: class_( in_class )
+	{}
+	std::shared_ptr<Class> class_;
+};
+typedef std::shared_ptr<ClassProxy> ClassProxyPtr;
+typedef std::weak_ptr<ClassProxy> ClassProxyWeakPtr;
 
 class NamesScope;
 typedef std::shared_ptr<NamesScope> NamesScopePtr;
@@ -86,7 +93,7 @@ public:
 	Type( Function&& function_type );
 	Type( const Array& array_type );
 	Type( Array&& array_type );
-	Type( ClassPtr class_type );
+	Type( ClassProxyPtr class_type );
 	Type( NontypeStub nontype_strub );
 	Type( TemplateDependentType template_dependent_type );
 
@@ -97,7 +104,8 @@ public:
 	const Function* GetFunctionType() const;
 	Array* GetArrayType();
 	const Array* GetArrayType() const;
-	ClassPtr GetClassType() const;
+	ClassProxyPtr GetClassTypeProxy() const;
+	Class* GetClassType() const;
 	TemplateDependentType* GetTemplateDependentType();
 	const TemplateDependentType* GetTemplateDependentType() const;
 
@@ -123,7 +131,7 @@ private:
 		FundamentalType,
 		FunctionPtr,
 		ArrayPtr,
-		ClassPtr,
+		ClassProxyPtr,
 		NontypeStub,
 		TemplateDependentType> something_;
 };
@@ -178,6 +186,9 @@ struct FunctionVariable final
 	bool return_value_is_sret= false;
 
 	llvm::Function* llvm_function= nullptr;
+
+	FilePos prototype_file_pos= FilePos{ 0u, 0u, 0u };
+	FilePos body_file_pos= FilePos{ 0u, 0u, 0u };
 };
 
 // Set of functions with same name, but different signature.
@@ -211,7 +222,7 @@ struct ClassField final
 {
 	Type type;
 	unsigned int index= 0u;
-	ClassWeakPtr class_;
+	ClassProxyWeakPtr class_;
 };
 
 // "this" + functions set of class of "this"
@@ -234,19 +245,21 @@ class Value final
 {
 public:
 	Value();
-	Value( Variable variable );
+	Value( Variable variable, const FilePos& file_pos );
 	Value( FunctionVariable function_variable );
 	Value( OverloadedFunctionsSet functions_set );
-	Value( Type type );
-	Value( ClassField class_field );
+	Value( Type type, const FilePos& file_pos );
+	Value( ClassField class_field, const FilePos& file_pos );
 	Value( ThisOverloadedMethodsSet class_field );
-	Value( const NamesScopePtr& namespace_ );
-	Value( const TypeTemplatePtr& type_template );
+	Value( const NamesScopePtr& namespace_, const FilePos& file_pos );
+	Value( const TypeTemplatePtr& type_template, const FilePos& file_pos );
 	Value( TemplateDependentValue template_dependent_value );
 	Value( YetNotDeducedTemplateArg yet_not_deduced_template_arg );
 	Value( ErrorValue error_value );
 
 	const Type& GetType() const;
+	int GetKindIndex() const;
+	const FilePos& GetFilePos() const;
 
 	// Fundamental, class, array types
 	Variable* GetVariable();
@@ -292,6 +305,11 @@ private:
 		TemplateDependentValue,
 		YetNotDeducedTemplateArg,
 		ErrorValue > something_;
+
+	// File_pos used as unique id for entry, needed for imports merging.
+	// Two values are 100% same, if their file_pos are identical.
+	// Not for all values file_pos required, so, fill it with zeros for it.
+	FilePos file_pos_= { 0u, 0u, 0u };
 };
 
 // "Class" of function argument in terms of overloading.
@@ -382,6 +400,20 @@ typedef
 
 typedef boost::variant< Variable, Type > TemplateParameter;
 
+struct TemplateClassKey
+{
+	TypeTemplatePtr template_;
+	ProgramString class_name_encoded;
+};
+
+struct TemplateClassKeyHasher
+{
+	size_t operator()( const TemplateClassKey& key ) const;
+	bool operator()( const TemplateClassKey& a, const TemplateClassKey& b ) const;
+};
+
+typedef std::unordered_map< TemplateClassKey, ClassProxyPtr, TemplateClassKeyHasher, TemplateClassKeyHasher > TemplateClassesCache;
+
 struct Class final
 {
 	Class( const ProgramString& name, const NamesScope* parent_scope );
@@ -400,6 +432,9 @@ struct Class final
 	bool is_default_constructible= false;
 	bool is_copy_constructible= false;
 	bool have_destructor= false;
+
+	FilePos forward_declaration_file_pos= FilePos{ 0u, 0u, 0u };
+	FilePos body_file_pos= FilePos{ 0u, 0u, 0u };
 
 	llvm::StructType* llvm_type;
 

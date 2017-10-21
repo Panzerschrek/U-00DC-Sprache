@@ -99,7 +99,7 @@ void CodeBuilder::ApplyEmptyInitializer(
 			},
 			function_context);
 	}
-	else if( const ClassPtr class_type= variable.type.GetClassType() )
+	else if( const Class* const class_type= variable.type.GetClassType() )
 	{
 		// If initializer for class variable is empty, try to call default constructor.
 
@@ -205,7 +205,7 @@ void CodeBuilder::ApplyStructNamedInitializer(
 		return;
 	}
 
-	const ClassPtr class_type= variable.type.GetClassType();
+	const Class* const class_type= variable.type.GetClassType();
 	if( class_type == nullptr )
 	{
 		errors_.push_back( ReportStructInitializerForNonStruct( initializer.file_pos_ ) );
@@ -441,7 +441,7 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 		function_context.llvm_ir_builder.CreateStore( value_for_assignment, variable.llvm_value );
 		return constant_value;
 	}
-	else if( const ClassPtr class_type= variable.type.GetClassType() )
+	else if( const Class* const class_type= variable.type.GetClassType() )
 	{
 		const NamesScope::InsertedName* constructor_name=
 			class_type->members.GetThisScopeName( Keyword( Keywords::constructor_ ) );
@@ -601,7 +601,7 @@ llvm::Constant* CodeBuilder::ApplyZeroInitializer(
 						std::vector<llvm::Constant*>( array_type->size, const_value ) );
 		}
 	}
-	else if( const ClassPtr class_type= variable.type.GetClassType() )
+	else if( const Class* const class_type= variable.type.GetClassType() )
 	{
 		if( class_type->have_explicit_noncopy_constructors )
 			errors_.push_back( ReportInitializerDisabledBecauseClassHaveExplicitNoncopyConstructors( initializer.file_pos_ ) );

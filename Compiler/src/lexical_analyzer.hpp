@@ -10,9 +10,13 @@ namespace U
 
 struct FilePos
 {
-	unsigned int line; // from 1
-	unsigned int pos_in_line;
+	unsigned short line; // from 1
+	unsigned short pos_in_line;
+	unsigned short file_index;
 };
+
+bool operator==( const FilePos& l, const FilePos& r );
+bool operator!=( const FilePos& l, const FilePos& r );
 
 struct Lexem
 {

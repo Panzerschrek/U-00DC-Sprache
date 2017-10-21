@@ -12,6 +12,7 @@ typedef std::vector<SyntaxErrorMessage> SyntaxErrorMessages;
 
 struct SyntaxAnalysisResult
 {
+	std::vector<Import> imports;
 	ProgramElements program_elements;
 	SyntaxErrorMessages error_messages;
 };
