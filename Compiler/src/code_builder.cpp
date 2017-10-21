@@ -3592,7 +3592,14 @@ std::pair<const NamesScope::InsertedName*, NamesScope*> CodeBuilder::ResolveName
 		else if( const Type* const type= name->second.GetTypeName() )
 		{
 			if( Class* const class_= type->GetClassType() )
+			{
+				if( component_count >= 2u && class_->is_incomplete )
+				{
+					errors_.push_back( ReportUsingIncompleteType( file_pos, type->ToString() ) );
+					return std::make_pair( nullptr, nullptr );
+				}
 				next_space= &class_->members;
+			}
 		}
 		else if( const TypeTemplatePtr type_template = name->second.GetTypeTemplate() )
 		{
