@@ -81,7 +81,8 @@ public:
 			}
 
 			LoadFileResult result;
-			if( !ReadFile( result_path.c_str(), result.file_content ) )
+			// TODO - maybe use here native format of path string?
+			if( !ReadFile( result_path.string<std::string>().c_str(), result.file_content ) )
 				return boost::none;
 
 			return std::move(result);
