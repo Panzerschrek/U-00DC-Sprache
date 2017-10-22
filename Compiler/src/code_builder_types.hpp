@@ -474,7 +474,6 @@ typedef boost::variant< int, Type, Variable > DeducibleTemplateParameter; // int
 typedef std::vector<DeducibleTemplateParameter> DeducibleTemplateParameters;
 
 const ProgramString& GetFundamentalTypeName( U_FundamentalType fundamental_type );
-const char* GetFundamentalTypeNameASCII( U_FundamentalType fundamental_type );
 
 } //namespace CodeBuilderLLVMPrivate
 

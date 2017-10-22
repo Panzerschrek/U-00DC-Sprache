@@ -11,12 +11,3 @@
 #endif
 
 #define U_UNUSED(x) (void)x
-
-// Hack for stupid compilers/ide.
-// TODO - use designated intializer, when compilers become more clever.
-#if 0
-#define U_DESIGNATED_INITIALIZER( index, value ) [ size_t(index) ]= value
-#else
-// NOW - initializers is not designated - USE SEQUENTIAL initialization.
-#define U_DESIGNATED_INITIALIZER( index, value ) value
-#endif

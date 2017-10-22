@@ -11,64 +11,29 @@ namespace U
 namespace CodeBuilderPrivate
 {
 
-namespace
+static const size_t GetFundamentalTypeSize( const U_FundamentalType type )
 {
+	switch(type)
+	{
+	case U_FundamentalType::InvalidType: return 0u;
+	case U_FundamentalType::Void: return 0u;
+	case U_FundamentalType::Bool: return 1u;
+	case U_FundamentalType::i8 : return 1u;
+	case U_FundamentalType::u8 : return 1u;
+	case U_FundamentalType::i16: return 2u;
+	case U_FundamentalType::u16: return 2u;
+	case U_FundamentalType::i32: return 4u;
+	case U_FundamentalType::u32: return 4u;
+	case U_FundamentalType::i64: return 8u;
+	case U_FundamentalType::u64: return 8u;
+	case U_FundamentalType::f32: return 4u;
+	case U_FundamentalType::f64: return 8u;
+	case U_FundamentalType::LastType: break;
+	};
 
-const size_t g_fundamental_types_size[ size_t(U_FundamentalType::LastType) ]=
-{
-	U_DESIGNATED_INITIALIZER( U_FundamentalType::InvalidType, 0u ),
-	U_DESIGNATED_INITIALIZER( U_FundamentalType::Void, 0u ),
-	U_DESIGNATED_INITIALIZER( U_FundamentalType::Bool, 1u ),
-	U_DESIGNATED_INITIALIZER( U_FundamentalType::i8 , 1u ),
-	U_DESIGNATED_INITIALIZER( U_FundamentalType::u8 , 1u ),
-	U_DESIGNATED_INITIALIZER( U_FundamentalType::i16, 2u ),
-	U_DESIGNATED_INITIALIZER( U_FundamentalType::u16, 2u ),
-	U_DESIGNATED_INITIALIZER( U_FundamentalType::i32, 4u ),
-	U_DESIGNATED_INITIALIZER( U_FundamentalType::u32, 4u ),
-	U_DESIGNATED_INITIALIZER( U_FundamentalType::i64, 8u ),
-	U_DESIGNATED_INITIALIZER( U_FundamentalType::u64, 8u ),
-	U_DESIGNATED_INITIALIZER( U_FundamentalType::f32, 4u ),
-	U_DESIGNATED_INITIALIZER( U_FundamentalType::f64, 8u ),
-};
-
-const char g_invalid_type_name_ascii[]= "InvalidType";
-const ProgramString g_invalid_type_name= ToProgramString( g_invalid_type_name_ascii );
-
-const char* const g_fundamental_types_names_ascii[ size_t(U_FundamentalType::LastType) ]=
-{
-	U_DESIGNATED_INITIALIZER( U_FundamentalType::InvalidType, g_invalid_type_name_ascii ),
-	U_DESIGNATED_INITIALIZER( U_FundamentalType::Void,  KeywordAscii( Keywords::void_ ) ),
-	U_DESIGNATED_INITIALIZER( U_FundamentalType::Bool, KeywordAscii( Keywords::bool_ ) ),
-	U_DESIGNATED_INITIALIZER( U_FundamentalType::i8 , KeywordAscii( Keywords::i8_  ) ),
-	U_DESIGNATED_INITIALIZER( U_FundamentalType::u8 , KeywordAscii( Keywords::u8_  ) ),
-	U_DESIGNATED_INITIALIZER( U_FundamentalType::i16, KeywordAscii( Keywords::i16_ ) ),
-	U_DESIGNATED_INITIALIZER( U_FundamentalType::u16, KeywordAscii( Keywords::u16_ ) ),
-	U_DESIGNATED_INITIALIZER( U_FundamentalType::i32, KeywordAscii( Keywords::i32_ ) ),
-	U_DESIGNATED_INITIALIZER( U_FundamentalType::u32, KeywordAscii( Keywords::u32_ ) ),
-	U_DESIGNATED_INITIALIZER( U_FundamentalType::i64, KeywordAscii( Keywords::i64_ ) ),
-	U_DESIGNATED_INITIALIZER( U_FundamentalType::u64, KeywordAscii( Keywords::u64_ ) ),
-	U_DESIGNATED_INITIALIZER( U_FundamentalType::f32, KeywordAscii( Keywords::f32_ ) ),
-	U_DESIGNATED_INITIALIZER( U_FundamentalType::f64, KeywordAscii( Keywords::f64_ ) ),
-};
-
-const ProgramString (&g_fundamental_types_names)[ size_t(U_FundamentalType::LastType) ]=
-{
-	U_DESIGNATED_INITIALIZER( U_FundamentalType::InvalidType, g_invalid_type_name ),
-	U_DESIGNATED_INITIALIZER( U_FundamentalType::Void,  Keyword( Keywords::void_ ) ),
-	U_DESIGNATED_INITIALIZER( U_FundamentalType::Bool, Keyword( Keywords::bool_ ) ),
-	U_DESIGNATED_INITIALIZER( U_FundamentalType::i8 , Keyword( Keywords::i8_  ) ),
-	U_DESIGNATED_INITIALIZER( U_FundamentalType::u8 , Keyword( Keywords::u8_  ) ),
-	U_DESIGNATED_INITIALIZER( U_FundamentalType::i16, Keyword( Keywords::i16_ ) ),
-	U_DESIGNATED_INITIALIZER( U_FundamentalType::u16, Keyword( Keywords::u16_ ) ),
-	U_DESIGNATED_INITIALIZER( U_FundamentalType::i32, Keyword( Keywords::i32_ ) ),
-	U_DESIGNATED_INITIALIZER( U_FundamentalType::u32, Keyword( Keywords::u32_ ) ),
-	U_DESIGNATED_INITIALIZER( U_FundamentalType::i64, Keyword( Keywords::i64_ ) ),
-	U_DESIGNATED_INITIALIZER( U_FundamentalType::u64, Keyword( Keywords::u64_ ) ),
-	U_DESIGNATED_INITIALIZER( U_FundamentalType::f32, Keyword( Keywords::f32_ ) ),
-	U_DESIGNATED_INITIALIZER( U_FundamentalType::f64, Keyword( Keywords::f64_ ) ),
-};
-
-} // namespace
+	U_ASSERT( false );
+	return 0u;
+}
 
 //
 // Fundamental type
@@ -275,7 +240,7 @@ size_t Type::SizeOf() const
 
 		void operator()( const FundamentalType& fundamental )
 		{
-			size= g_fundamental_types_size[ size_t( fundamental.fundamental_type ) ];
+			size= GetFundamentalTypeSize( fundamental.fundamental_type );
 		}
 
 		void operator()( const FunctionPtr& function )
@@ -984,20 +949,30 @@ void NamesScope::SetParent( const NamesScope* const parent )
 	parent_= parent;
 }
 
-const ProgramString& GetFundamentalTypeName( const U_FundamentalType fundamental_type )
+const ProgramString g_invalid_type_name= "InvalidType"_SpC;
+
+const ProgramString& GetFundamentalTypeName( const U_FundamentalType type )
 {
-	if( fundamental_type >= U_FundamentalType::LastType )
-		return g_invalid_type_name;
+	switch(type)
+	{
+	case U_FundamentalType::InvalidType: return g_invalid_type_name;
+	case U_FundamentalType::Void: return Keyword( Keywords::void_ );
+	case U_FundamentalType::Bool: return Keyword( Keywords::bool_ );
+	case U_FundamentalType::i8 : return Keyword( Keywords::i8_ );
+	case U_FundamentalType::u8 : return Keyword( Keywords::u8_ );
+	case U_FundamentalType::i16: return Keyword( Keywords::i16_ );
+	case U_FundamentalType::u16: return Keyword( Keywords::u16_ );
+	case U_FundamentalType::i32: return Keyword( Keywords::i32_ );
+	case U_FundamentalType::u32: return Keyword( Keywords::u32_ );
+	case U_FundamentalType::i64: return Keyword( Keywords::i64_ );
+	case U_FundamentalType::u64: return Keyword( Keywords::u64_ );
+	case U_FundamentalType::f32: return Keyword( Keywords::f32_ );
+	case U_FundamentalType::f64: return Keyword( Keywords::f64_ );
+	case U_FundamentalType::LastType: break;
+	};
 
-	return g_fundamental_types_names[ size_t( fundamental_type ) ];
-}
-
-const char* GetFundamentalTypeNameASCII( const U_FundamentalType fundamental_type )
-{
-	if( fundamental_type >= U_FundamentalType::LastType )
-		return g_invalid_type_name_ascii;
-
-	return g_fundamental_types_names_ascii[ size_t( fundamental_type ) ];
+	U_ASSERT( false );
+	return g_invalid_type_name;
 }
 
 } //namespace CodeBuilderLLVMPrivate
