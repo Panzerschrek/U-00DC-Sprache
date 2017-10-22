@@ -559,8 +559,14 @@ llvm::Constant* CodeBuilder::ApplyZeroInitializer(
 			zero_value= llvm::ConstantFP::get( fundamental_llvm_types_.f64, 0.0 );
 			break;
 
-		case U_FundamentalType::Void:
 		case U_FundamentalType::InvalidType:
+			zero_value=
+				llvm::Constant::getIntegerValue(
+					GetFundamentalLLVMType( fundamental_type->fundamental_type ),
+					llvm::APInt( fundamental_llvm_types_.invalid_type_->getIntegerBitWidth(), uint64_t(0) ) );
+			break;
+
+		case U_FundamentalType::Void:
 		case U_FundamentalType::LastType:
 			U_ASSERT(false);
 			break;

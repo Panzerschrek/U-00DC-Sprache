@@ -386,4 +386,94 @@ U_TEST(InitializerDisabledBecauseClassHaveExplicitNoncopyConstructorsTest1)
 	U_TEST_ASSERT( error.file_pos.line == 9u );
 }
 
+U_TEST( InitializerForInvalidType_Test0 )
+{
+	// Type is invalid, because name of type not found.
+	// expression initializer.
+	static const char c_program_text[]=
+	R"(
+		var unknown_type constexpr x= 0;
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NameNotFound );
+	U_TEST_ASSERT( error.file_pos.line == 2u );
+}
+
+U_TEST( InitializerForInvalidType_Test1 )
+{
+	// Type is invalid, because name of type not found.
+	// constructor initializer.
+	static const char c_program_text[]=
+	R"(
+		var unknown_type constexpr x(0);
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NameNotFound );
+	U_TEST_ASSERT( error.file_pos.line == 2u );
+}
+
+U_TEST( InitializerForInvalidType_Test2 )
+{
+	// Type is invalid, because name of type not found.
+	// struct initializer.
+	static const char c_program_text[]=
+	R"(
+		var unknown_type constexpr x{};
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NameNotFound );
+	U_TEST_ASSERT( error.file_pos.line == 2u );
+}
+
+U_TEST( InitializerForInvalidType_Test3 )
+{
+	// Type is invalid, because name of type not found.
+	// zero initializer.
+	static const char c_program_text[]=
+	R"(
+		var unknown_type constexpr x= zero_init;
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NameNotFound );
+	U_TEST_ASSERT( error.file_pos.line == 2u );
+}
+
+U_TEST( InitializerForInvalidType_Test4 )
+{
+	// Type is invalid, because name of type not found.
+	// array initializer.
+	static const char c_program_text[]=
+	R"(
+		var [ unknown_type, 2 ] constexpr x[];
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NameNotFound );
+	U_TEST_ASSERT( error.file_pos.line == 2u );
+}
+
 } // namespace U
