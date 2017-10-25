@@ -3016,9 +3016,10 @@ void CodeBuilder::BuildReturnOperatorCode(
 			// Now we can return by value only fundamentals.
 			U_ASSERT( expression_result.type.GetFundamentalType() != nullptr );
 
+			llvm::Value* const value_for_return= CreateMoveToLLVMRegisterInstruction( expression_result, function_context );
+
 			call_destructors();
 
-			llvm::Value* value_for_return= CreateMoveToLLVMRegisterInstruction( expression_result, function_context );
 			function_context.llvm_ir_builder.CreateRet( value_for_return );
 		}
 	}

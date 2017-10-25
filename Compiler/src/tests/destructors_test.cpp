@@ -574,4 +574,38 @@ U_TEST(DestructorsTest11)
 		std::vector<int>( { 1, 0,   3, 2,   4,   6, 7,   8, 9,   10,   11, 11,   12,   13,   14,   13 } ) );
 }
 
+U_TEST( DestructorsTest12_ShouldCorrectlyReturnValueFromDestructibleStruct )
+{
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			i32 x;
+			fn destructor()
+			{
+				x= 0;
+			}
+		}
+
+		fn Foo() : i32
+		{
+			var S s{ .x= 55841 };
+			// Destructor set "x" to zero. We must read "x" before destructor call.
+			return s.x;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	const llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( static_cast<uint64_t>( 55841 ) == result_value.IntVal.getLimitedValue() );
+}
+
 } // namespace U
