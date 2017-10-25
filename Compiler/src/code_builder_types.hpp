@@ -261,6 +261,9 @@ public:
 	int GetKindIndex() const;
 	const FilePos& GetFilePos() const;
 
+	bool IsTemplateParameter() const;
+	void SetIsTemplateParameter( bool is_template_parameter );
+
 	// Fundamental, class, array types
 	Variable* GetVariable();
 	const Variable* GetVariable() const;
@@ -310,6 +313,7 @@ private:
 	// Two values are 100% same, if their file_pos are identical.
 	// Not for all values file_pos required, so, fill it with zeros for it.
 	FilePos file_pos_= { 0u, 0u, 0u };
+	bool is_template_parameter_= false;
 };
 
 // "Class" of function argument in terms of overloading.
@@ -382,12 +386,9 @@ struct NameResolvingKeyHasher
 	bool operator()( const NameResolvingKey& a, const NameResolvingKey& b ) const;
 };
 
-bool NameResolvingKeyCompare( const NameResolvingKey& a, const NameResolvingKey& b );
-
 struct ResolvingCacheValue final
 {
 	NamesScope::InsertedName name;
-	NamesScope* parent_namespace;
 	size_t name_components_cut;
 };
 
@@ -468,6 +469,7 @@ struct TypeTemplate final
 	const TemplateBase* syntax_element= nullptr;
 
 	ResolvingCache resolving_cache;
+	NamesScope* parent_namespace= nullptr; // Changes after import.
 };
 
 typedef boost::variant< int, Type, Variable > DeducibleTemplateParameter; // int means not deduced

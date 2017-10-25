@@ -428,6 +428,8 @@ private:
 
 	// Name resolving.
 
+	// PreResolve function.
+	// Returns name (if found) and parent namespace, if name found not in cache.
 	typedef
 		std::function<
 			std::pair<const NamesScope::InsertedName*, NamesScope*>(
@@ -448,14 +450,7 @@ private:
 		const ComplexName::Component* components,
 		size_t component_count );
 
-	std::pair<const NamesScope::InsertedName*, NamesScope*> ResolveNameWithParentSpace(
-		const FilePos& file_pos,
-		NamesScope& names_scope,
-		const ComplexName::Component* components,
-		size_t component_count,
-		bool only_primary_resolove= false );
-
-	std::pair<const NamesScope::InsertedName*, NamesScope*> PreResolve(
+	const NamesScope::InsertedName* PreResolve(
 		NamesScope& names_scope,
 		const ComplexName::Component* components,
 		size_t component_count,

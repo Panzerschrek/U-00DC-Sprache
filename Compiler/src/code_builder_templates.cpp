@@ -63,6 +63,7 @@ void CodeBuilder::PrepareTypeTemplate(
 		return;
 	}
 
+	type_template->parent_namespace= &names_scope;
 	type_template->syntax_element= &type_template_declaration;
 
 	std::vector<TypeTemplate::TemplateParameter>& template_parameters= type_template->template_parameters;
@@ -86,6 +87,8 @@ void CodeBuilder::PrepareTypeTemplate(
 		}
 		if( NameShadowsTemplateArgument( arg.name, names_scope ) )
 			errors_.push_back( ReportDeclarationShadowsTemplateArgument( type_template_declaration.file_pos_, arg.name ) );
+
+		NamesScope::InsertedName* inserted_template_parameter= nullptr;
 
 		if( !arg.arg_type.components.empty() )
 		{
@@ -147,7 +150,8 @@ void CodeBuilder::PrepareTypeTemplate(
 						ToStdString( arg.name ) );
 			}
 
-			template_parameters_namespace->AddName( arg.name, Value( std::move(variable), type_template_declaration.file_pos_ ) /* TODO - set correct file_pos */ );
+			inserted_template_parameter=
+				template_parameters_namespace->AddName( arg.name, Value( std::move(variable), type_template_declaration.file_pos_ ) /* TODO - set correct file_pos */ );
 		}
 		else
 		{
@@ -155,9 +159,13 @@ void CodeBuilder::PrepareTypeTemplate(
 
 			template_parameters.emplace_back();
 			template_parameters.back().name= arg.name;
-			template_parameters_namespace->AddName( arg.name, Value( GetNextTemplateDependentType(), type_template_declaration.file_pos_ /* TODO - set correct file_pos */ ) );
 			template_parameters_usage_flags.push_back(false);
+			inserted_template_parameter=
+				template_parameters_namespace->AddName( arg.name, Value( GetNextTemplateDependentType(), type_template_declaration.file_pos_ /* TODO - set correct file_pos */ ) );
 		}
+
+		if( inserted_template_parameter != nullptr )
+			inserted_template_parameter->second.SetIsTemplateParameter(true);
 	}
 
 	U_ASSERT( template_parameters_usage_flags.size() == type_template->template_parameters.size() );
@@ -239,11 +247,10 @@ void CodeBuilder::PrepareTemplateSignatureParameter(
 	}
 
 	// Do recursive preresolve for subsequent deduction.
-
 	size_t skip_components= 0u;
-	const std::pair< const NamesScope::InsertedName*, NamesScope* > start_name=
+	const NamesScope::InsertedName* const start_name=
 		PreResolve( names_scope, signature_parameter.components.data(), signature_parameter.components.size(), skip_components );
-	if( start_name.first == nullptr )
+	if( start_name == nullptr )
 		errors_.push_back( ReportNameNotFound( file_pos, signature_parameter ) );
 	for( const ComplexName::Component& component : signature_parameter.components )
 	{
@@ -388,204 +395,116 @@ bool CodeBuilder::DuduceTemplateArguments(
 		}
 	}
 
-	// Try deduce other type kind.
-	// Curently, can work only with class types.
-	const Class* const class_type= given_type.GetClassType();
-	if( class_type == nullptr )
+	size_t component_number= 0u;
+	const NamesScope::InsertedName* const start_name=
+		PreResolve( names_scope, signature_parameter.components.data(), signature_parameter.components.size(), component_number );
+	if( start_name == nullptr )
 		return false;
-
-	// SPRACHE_TODO - support type aliases as signature complex arguments.
-
-	typedef boost::variant<NamesScopePtr, Class*> TypePathComponent;
-
-	// Sequence of namespaces/classes, where given type placed. Given type included.
-	std::vector<TypePathComponent> given_type_predecessors;
+	const NamesScope::InsertedName* current_name= start_name;
+	while( component_number < signature_parameter.components.size() )
 	{
-		const NamesScope* n= &class_type->members;
-		while( n->GetParent() != nullptr )
-		{
-			const NamesScope* const parent= n->GetParent();
-			const NamesScope::InsertedName* const name= parent->GetThisScopeName( n->GetThisNamespaceName() );
-			U_ASSERT( name != nullptr );
-			if( const NamesScopePtr names_scope= name->second.GetNamespace() )
-				given_type_predecessors.insert( given_type_predecessors.begin(), 1u, names_scope );
-			else if( const Type* const type= name->second.GetTypeName() )
-			{
-				if( Class* const class_= type->GetClassType() )
-					given_type_predecessors.insert( given_type_predecessors.begin(), 1u, class_ );
-				else U_ASSERT(false);
-			}
-			else U_ASSERT(false);
+		NamesScope* next_space= nullptr;
+		const ComplexName::Component& component= signature_parameter.components[component_number - 1u];
+		const bool is_last_component= component_number + 1u == signature_parameter.components.size();
 
-			n= parent;
-		}
-	}
-
-	size_t signature_name_components_skip= 0u;
-	const std::pair< const NamesScope::InsertedName*, NamesScope* > start_name=
-		PreResolve( names_scope, signature_parameter.components.data(), signature_parameter.components.size(), signature_name_components_skip );
-	U_ASSERT( signature_name_components_skip > 0u && signature_name_components_skip <= signature_parameter.components.size() );
-	if( start_name.first == nullptr )
-		return false;
-	std::vector<TypePathComponent> start_name_predecessors; // Predecessors EXCLUDING start name.
-	{
-		const NamesScope* n= start_name.second;
-		while( n->GetParent() != nullptr )
-		{
-			const NamesScope* const parent= n->GetParent();
-			const NamesScope::InsertedName* const name= parent->GetThisScopeName( n->GetThisNamespaceName() );
-			U_ASSERT( name != nullptr );
-			if( const NamesScopePtr names_scope= name->second.GetNamespace() )
-				start_name_predecessors.insert( start_name_predecessors.begin(), 1u, names_scope );
-			else if( const Type* const type= name->second.GetTypeName() )
-			{
-				if( Class* const class_= type->GetClassType() )
-					start_name_predecessors.insert( start_name_predecessors.begin(), 1u, class_ );
-				else U_ASSERT(false);
-			}
-			else
-			{
-				if( n == start_name.second )
-					return false; // Start name is not class or namespace - deduction failed.
-				else
-					U_ASSERT(false);
-			}
-
-			n= parent;
-		}
-	}
-
-	{
-		// Now, we have two sequences - for given type and for start part of complex name in template signature parameter.
-		// Check, if template signature parameter predecessors is a subsequence of actual type predecessors.
-		if( start_name_predecessors.size() >= given_type_predecessors.size() )
-			return false;
-
-		const auto it_pair= std::mismatch(
-			start_name_predecessors.begin(), start_name_predecessors.end(),
-			given_type_predecessors.begin());
-
-		if( it_pair.first != start_name_predecessors.end() ) // Is not subsequence.
-			return false;
-	}
-
-	const NamesScope::InsertedName* current_name= start_name.first;
-	const TypePathComponent* given_type_component= &given_type_predecessors[ start_name_predecessors.size() ];
-	for( size_t n= signature_name_components_skip - 1u; n < signature_parameter.components.size(); ++n )
-	{
-		const ComplexName::Component& name_component= signature_parameter.components[n];
-		const bool is_last_component= n == signature_parameter.components.size() - 1u;
-
-		if( const NamesScopePtr component_names_scope= current_name->second.GetNamespace() )
-		{
-			if( name_component.have_template_parameters )
-				return false;
-
-			if( const NamesScopePtr* const namespace_ptr= boost::get<NamesScopePtr>(given_type_component) )
-			{
-				if( *namespace_ptr == component_names_scope )
-					++given_type_component; // All ok
-				else
-					return false;
-			}
-			else
-				return false;
-
-			if( n + 1u < signature_parameter.components.size() )
-				current_name= component_names_scope->GetThisScopeName(signature_parameter.components[n+1u].name);
-		}
+		if( const NamesScopePtr inner_namespace= current_name->second.GetNamespace() )
+			next_space= inner_namespace.get();
 		else if( const Type* const type= current_name->second.GetTypeName() )
 		{
-			if( name_component.have_template_parameters )
-				return false;
-			if( const Class* const given_class_= type->GetClassType() )
+			if( Class* const class_= type->GetClassType() )
 			{
-				if( Class* const* const class_ptr= boost::get<Class*>(given_type_component) )
+				if( !is_last_component && class_->is_incomplete )
 				{
-					if( given_class_ == *class_ptr )
-						++given_type_component; // All ok
-					else
-						return false; // different classes
-
-					if( !is_last_component )
-						current_name= given_class_->members.GetThisScopeName( signature_parameter.components[n+1u].name );
+					errors_.push_back( ReportUsingIncompleteType( template_file_pos, type->ToString() ) );
+					return false;
 				}
+				next_space= &class_->members;
 			}
-			else
-				return false;
 		}
-		else if( const TypeTemplatePtr inner_type_template= current_name->second.GetTypeTemplate() )
+		else if( const TypeTemplatePtr type_template = current_name->second.GetTypeTemplate() )
 		{
-			if( !name_component.have_template_parameters )
-				return false;
-
-			if( const NamesScopePtr* const namespace_= boost::get<NamesScopePtr>(given_type_component))
+			if( component.have_template_parameters && !is_last_component )
 			{
-				const NamesScope::InsertedName* const class_name= (*namespace_)->GetThisScopeName( GetNameForGeneratedClass() );
-				if( class_name == nullptr )
+				const NamesScope::InsertedName* generated_type=
+					GenTemplateType(
+						FilePos(),
+						type_template,
+						component.template_parameters,
+						*type_template->parent_namespace,
+						names_scope );
+				if( generated_type == nullptr )
 					return false;
-				// This is generated from template class.
-				const Type* const class_type= class_name->second.GetTypeName();
-				U_ASSERT( class_type != nullptr );
-				const Class* const given_type_class= class_type->GetClassType();
-				U_ASSERT( given_type_class != nullptr );
-				U_ASSERT( given_type_class->base_template != boost::none );
+				if( generated_type->second.GetType() == NontypeStub::TemplateDependentValue )
+					return true;
 
-				if( given_type_class->base_template->class_template != inner_type_template )
-					return false;
-
-				if( inner_type_template->signature_arguments.size() != name_component.template_parameters.size() )
-					return false;
-
-				for( size_t i= 0u; i < name_component.template_parameters.size(); ++i)
-				{
-					// SPRACHE_TODO - Allow expressions as signature arguments - value-signature-arguments.
-					if( const NamedOperand* const named_operand= dynamic_cast<const NamedOperand*>( name_component.template_parameters[i].get() ) )
-					{
-						const bool deduced= DuduceTemplateArguments(
-							type_template_ptr,
-							given_type_class->base_template->template_parameters[i],
-							named_operand->name_,
-							template_file_pos,
-							deducible_template_parameters,
-							names_scope );
-						if( !deduced )
-							return false;
-					}
-					else
-						return false;
-				}
-
-				if( !is_last_component )
-					current_name= given_type_class->members.GetThisScopeName( signature_parameter.components[n+1u].name );
-				given_type_component+= 2u;
+				const Type* const type= generated_type->second.GetTypeName();
+				U_ASSERT( type != nullptr );
+				if( type->GetTemplateDependentType() != nullptr )
+					return true;
+				if( Class* const class_= type->GetClassType() )
+					next_space= &class_->members;
 			}
-			else
+			else if( !is_last_component )
+			{
+				errors_.push_back( ReportTemplateInstantiationRequired( template_file_pos, type_template->syntax_element->name_ ) );
 				return false;
+			}
+
 		}
 		else
-		{
-			if( name_component.have_template_parameters )
-				return false;
+			return false;
 
-			current_name= nullptr;
-		}
-
-		if( is_last_component )
-		{
-			if( given_type_component <= &given_type_predecessors.back() )
-				return false; // Given type is deeper, than signature parameter.
-		}
-		else
-		{
-			if( given_type_component > &given_type_predecessors.back() )
-				return false; // Signature parameter is deeper, than given type.
-			if( current_name == nullptr )
-				return false; // Does not contains given name inside actual space.
-		}
+		const ComplexName::Component& next_component= signature_parameter.components[component_number];
+		if( next_space != nullptr )
+			current_name= next_space->GetThisScopeName( next_component.name );
+		++component_number;
 	}
 
-	return true;
+	if( current_name == nullptr )
+		return false;
+
+	if( const Type* const type= current_name->second.GetTypeName() )
+	{
+		return *type == given_type;
+	}
+	else if( const TypeTemplatePtr inner_type_template = current_name->second.GetTypeTemplate() )
+	{
+		const Class* const given_type_class= given_type.GetClassType();
+		if( given_type_class == nullptr )
+			return false;
+		if( given_type_class->base_template == boost::none )
+			return false;
+		if( given_type_class->base_template->class_template != inner_type_template )
+			return false;
+
+		const ComplexName::Component& name_component= signature_parameter.components.back();
+		if( !name_component.have_template_parameters )
+			return false;
+		if( signature_parameter.components.back().template_parameters.size() < inner_type_template->first_optional_signature_argument )
+			return false;
+
+		for( size_t i= 0u; i < name_component.template_parameters.size(); ++i)
+		{
+			// SPRACHE_TODO - Allow expressions as signature arguments - value-signature-arguments.
+			if( const NamedOperand* const named_operand= dynamic_cast<const NamedOperand*>( name_component.template_parameters[i].get() ) )
+			{
+				const bool deduced= DuduceTemplateArguments(
+					type_template_ptr,
+					given_type_class->base_template->template_parameters[i],
+					named_operand->name_,
+					template_file_pos,
+					deducible_template_parameters,
+					names_scope );
+				if( !deduced )
+					return false;
+			}
+			else
+				return false;
+		}
+		return true;
+	}
+
+	return false;
 }
 
 NamesScope::InsertedName* CodeBuilder::GenTemplateType(
@@ -822,27 +741,11 @@ bool CodeBuilder::NameShadowsTemplateArgument( const ProgramString& name, NamesS
 	ComplexName::Component component;
 	component.name= name;
 	component.is_generated= true;
-	const std::pair<const NamesScope::InsertedName*, NamesScope*> name_with_parent_space=
-		ResolveNameWithParentSpace( FilePos(), names_scope, &component, 1u );
-	if( name_with_parent_space.second == nullptr )
+	const NamesScope::InsertedName* const name_resolved= ResolveName( FilePos(), names_scope, &component, 1u );
+	if( name_resolved == nullptr )
 		return false;
 
-	const ProgramString& name_of_namespace= name_with_parent_space.second->GetThisNamespaceName();
-
-	if( name_of_namespace.size() < g_template_parameters_namespace_prefix.size() )
-		return false;
-
-	const auto it_pair= std::mismatch(
-		g_template_parameters_namespace_prefix.begin(), g_template_parameters_namespace_prefix.end(),
-		name_of_namespace.begin());
-
-	if( it_pair.first != g_template_parameters_namespace_prefix.end() ) // Is not subsequence.
-		return false;
-
-	if( name == GetNameForGeneratedClass() ) // Name is in template parameters namespace, but it is class template instantiation.
-		return false;
-
-	return true;
+	return name_resolved->second.IsTemplateParameter();
 }
 
 TemplateDependentType CodeBuilder::GetNextTemplateDependentType()

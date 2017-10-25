@@ -342,43 +342,6 @@ U_TEST( ClassTemplateTest9 )
 	U_TEST_ASSERT( static_cast<uint64_t>( 9998565 ) == result_value.IntVal.getLimitedValue() );
 }
 
-U_TEST( ClassTemplateTest10 )
-{
-	// Type deduction from template instance. Use struct from template class.
-	static const char c_program_text[]=
-	R"(
-		template</ type T /> class Baz</ T />
-		{
-			struct Feed{ T t; }
-		}
-
-		template</ type T />
-		struct Point</ Baz</ T />::Feed />
-		{
-			T x;
-		}
-
-		fn Foo() : f32
-		{
-			var Point</ Baz</ f32 />::Feed /> p= zero_init;
-			p.x= -3.14f;
-			return p.x;
-		}
-	)";
-
-	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
-
-	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
-	U_TEST_ASSERT( function != nullptr );
-
-	llvm::GenericValue result_value=
-		engine->runFunction(
-			function,
-			llvm::ArrayRef<llvm::GenericValue>() );
-
-	U_TEST_ASSERT( -3.14f == result_value.FloatVal );
-}
-
 U_TEST( ClassTemplateTest11 )
 {
 	// Type deduction from template instance. Both templates placed inside common namespace.
@@ -1027,12 +990,12 @@ U_TEST( PreResolveTest3 )
 	// In template signature must be visible only template from outer space.
 	static const char c_program_text[]=
 	R"(
-		template</ type T /> struct S</ T /> { struct Mem{}   fn Bar() : i32 { return 5552; } }
+		template</ type T /> struct S</ T /> { fn Bar() : i32 { return 5552; } }
 
 		namespace Baz
 		{
 			template</ type T />
-			struct Box</ S</ T />::Mem />
+			struct Box</ S</ T /> />
 			{
 				fn Worker() : i32
 				{
@@ -1040,12 +1003,12 @@ U_TEST( PreResolveTest3 )
 				}
 			}
 
-			template</ type T, type F /> struct S</ T, Box</F/> /> { struct Mem{}   fn Bar() : i32 { return 441; } }
+			template</ type T, type F /> struct S</ T, Box</F/> /> { fn Bar() : i32 { return 441; } }
 		}
 
 		fn Foo() : i32
 		{
-			return Baz::Box</ S</ f32 />::Mem />().Worker();
+			return Baz::Box</ S</ f32 /> />().Worker();
 		}
 	)";
 
@@ -1302,48 +1265,6 @@ U_TEST( ClassTemplateInsideClass_Test1 )
 	U_TEST_ASSERT( static_cast<uint64_t>( 226587 ) == result_value.IntVal.getLimitedValue() );
 }
 
-U_TEST( ClassTemplateInsideClass_Test2 )
-{
-	static const char c_program_text[]=
-	R"(
-		struct A
-		{
-			struct B
-			{
-				template</ type T />
-				struct Box</ T />
-				{
-					struct C{}
-				}
-			}
-		}
-
-		template</ type T />
-		struct Wrapper</ A::B::Box</ T />::C />     // Should deduce template parameter here.
-		{
-			T t;
-		}
-
-		fn Foo() : i32
-		{
-			var Wrapper</ A::B::Box</ i32 />::C /> wrapper{ .t= 124 };
-			return wrapper.t;
-		}
-	)";
-
-	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
-
-	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
-	U_TEST_ASSERT( function != nullptr );
-
-	llvm::GenericValue result_value=
-		engine->runFunction(
-			function,
-			llvm::ArrayRef<llvm::GenericValue>() );
-
-	U_TEST_ASSERT( static_cast<uint64_t>( 124 ) == result_value.IntVal.getLimitedValue() );
-}
-
 U_TEST( ClassTemplateInsideClassTemplate_Test0 )
 {
 	static const char c_program_text[]=
@@ -1397,10 +1318,10 @@ U_TEST( ClassTemplateInsideClassTemplate_Test1 )
 			}
 		}
 
-		template</ type T, type U />
-		struct RevBox</ A</ T />::B::C</ U /> /> // Should deduce template inside template
+		template</ type U />
+		struct RevBox</ A</ u32 />::B::C</ U /> /> // Should deduce template inside template
 		{
-			T u;
+			u32 u;
 			U t;
 		}
 
