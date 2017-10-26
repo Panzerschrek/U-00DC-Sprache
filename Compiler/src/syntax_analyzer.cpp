@@ -2120,43 +2120,42 @@ std::unique_ptr<TemplateBase> SyntaxAnalyzer::ParseTemplate()
 		return result;
 	}
 
-	if( it_->type != Lexem::Type::TemplateBracketLeft )
+
+	if( it_->type == Lexem::Type::TemplateBracketLeft )
 	{
-		PushErrorMessage( *it_ );
-		return result;
-	}
-	++it_; U_ASSERT( it_ < it_end_ );
-
-	// Parse signature args
-	while( true )
-	{
-		if( it_->type == Lexem::Type::TemplateBracketRight )
+		// Parse signature args
+		++it_; U_ASSERT( it_ < it_end_ );
+		while( true )
 		{
-			++it_; U_ASSERT( it_ < it_end_ );
-			break;
-		}
-
-		result->signature_args_.emplace_back();
-		result->signature_args_.back().name= ParseComplexName();
-
-		U_ASSERT( it_ < it_end_ );
-		if( it_->type == Lexem::Type::Assignment )
-		{
-			++it_; U_ASSERT( it_ < it_end_ );
-			result->signature_args_.back().default_value= ParseComplexName();
-		}
-
-		if( it_->type == Lexem::Type::Comma )
-		{
-			++it_; U_ASSERT( it_ < it_end_ );
 			if( it_->type == Lexem::Type::TemplateBracketRight )
 			{
-				PushErrorMessage( *it_ );
-				return result;
+				++it_; U_ASSERT( it_ < it_end_ );
+				break;
 			}
-		}
-	} // for signature args
 
+			result->signature_args_.emplace_back();
+			result->signature_args_.back().name= ParseComplexName();
+
+			U_ASSERT( it_ < it_end_ );
+			if( it_->type == Lexem::Type::Assignment )
+			{
+				++it_; U_ASSERT( it_ < it_end_ );
+				result->signature_args_.back().default_value= ParseComplexName();
+			}
+
+			if( it_->type == Lexem::Type::Comma )
+			{
+				++it_; U_ASSERT( it_ < it_end_ );
+				if( it_->type == Lexem::Type::TemplateBracketRight )
+				{
+					PushErrorMessage( *it_ );
+					return result;
+				}
+			}
+		} // for signature args
+	}
+	else
+		result->is_short_form_= true;
 
 	switch( template_kind )
 	{
@@ -2166,6 +2165,7 @@ std::unique_ptr<TemplateBase> SyntaxAnalyzer::ParseTemplate()
 			class_template->args_= std::move(result->args_);
 			class_template->signature_args_= std::move(result->signature_args_);
 			class_template->name_= name;
+			class_template->is_short_form_= result->is_short_form_;
 
 			class_template->class_= ParseClassBody();
 			if( class_template->class_ != nullptr )
@@ -2182,6 +2182,7 @@ std::unique_ptr<TemplateBase> SyntaxAnalyzer::ParseTemplate()
 			typedef_template->args_= std::move(result->args_);
 			typedef_template->signature_args_= std::move(result->signature_args_);
 			typedef_template->name_= name;
+			typedef_template->is_short_form_= result->is_short_form_;
 
 			typedef_template->typedef_= ParseTypedefBody();
 			if( typedef_template->typedef_ != nullptr )

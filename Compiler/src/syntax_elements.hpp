@@ -601,6 +601,9 @@ public:
 	std::vector<Arg> args_;
 	std::vector<SignatureArg> signature_args_;
 	ProgramString name_;
+
+	// Short form means that template argumenst are also signature arguments.
+	bool is_short_form_= false;
 };
 
 typedef std::unique_ptr<TemplateBase> TemplateBasePtr;

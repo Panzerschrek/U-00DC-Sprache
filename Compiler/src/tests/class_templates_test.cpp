@@ -1420,4 +1420,18 @@ U_TEST( ArrayAsClassTemplateParameter_Test0 )
 	U_TEST_ASSERT( static_cast<uint64_t>( 5 + 84 + 996 + 5412 ) == result_value.IntVal.getLimitedValue() );
 }
 
+U_TEST( ShortClassTemplateForm_Test0 )
+{
+	static const char c_program_text[]=
+	R"(
+		template</ type T />
+		struct Box
+		{
+			T t;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+}
+
 } // namespace U
