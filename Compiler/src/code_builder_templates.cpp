@@ -76,17 +76,20 @@ void CodeBuilder::PrepareTypeTemplate(
 	// Check and fill template parameters.
 	for( const TemplateBase::Arg& arg : type_template_declaration.args_ )
 	{
+		U_ASSERT( arg.name.components.size() == 1u );
+		const ProgramString& arg_name= arg.name.components.front().name;
+
 		// Check redefinition
 		for( const auto& prev_arg : template_parameters )
 		{
-			if( prev_arg.name == arg.name )
+			if( prev_arg.name == arg_name )
 			{
-				errors_.push_back( ReportRedefinition( type_template_declaration.file_pos_, arg.name ) );
+				errors_.push_back( ReportRedefinition( type_template_declaration.file_pos_, arg_name ) );
 				continue;
 			}
 		}
-		if( NameShadowsTemplateArgument( arg.name, names_scope ) )
-			errors_.push_back( ReportDeclarationShadowsTemplateArgument( type_template_declaration.file_pos_, arg.name ) );
+		if( NameShadowsTemplateArgument( arg_name, names_scope ) )
+			errors_.push_back( ReportDeclarationShadowsTemplateArgument( type_template_declaration.file_pos_, arg_name ) );
 
 		NamesScope::InsertedName* inserted_template_parameter= nullptr;
 
@@ -129,7 +132,7 @@ void CodeBuilder::PrepareTypeTemplate(
 			}
 
 			template_parameters.emplace_back();
-			template_parameters.back().name= arg.name;
+			template_parameters.back().name= arg_name;
 			template_parameters.back().type_name= &arg.arg_type;
 			template_parameters_usage_flags.push_back(false);
 
@@ -147,21 +150,21 @@ void CodeBuilder::PrepareTypeTemplate(
 						true,
 						llvm::GlobalValue::LinkageTypes::InternalLinkage,
 						variable.constexpr_value,
-						ToStdString( arg.name ) );
+						ToStdString( arg_name ) );
 			}
 
 			inserted_template_parameter=
-				template_parameters_namespace->AddName( arg.name, Value( std::move(variable), type_template_declaration.file_pos_ ) /* TODO - set correct file_pos */ );
+				template_parameters_namespace->AddName( arg_name, Value( std::move(variable), type_template_declaration.file_pos_ ) /* TODO - set correct file_pos */ );
 		}
 		else
 		{
 			// If template parameter is type.
 
 			template_parameters.emplace_back();
-			template_parameters.back().name= arg.name;
+			template_parameters.back().name= arg_name;
 			template_parameters_usage_flags.push_back(false);
 			inserted_template_parameter=
-				template_parameters_namespace->AddName( arg.name, Value( GetNextTemplateDependentType(), type_template_declaration.file_pos_ /* TODO - set correct file_pos */ ) );
+				template_parameters_namespace->AddName( arg_name, Value( GetNextTemplateDependentType(), type_template_declaration.file_pos_ /* TODO - set correct file_pos */ ) );
 		}
 
 		if( inserted_template_parameter != nullptr )

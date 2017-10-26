@@ -2053,7 +2053,12 @@ std::unique_ptr<TemplateBase> SyntaxAnalyzer::ParseTemplate()
 			PushErrorMessage( *it_ );
 			return result;
 		}
-		result->args_.back().name= it_->text;
+
+		ComplexName name;
+		name.components.emplace_back();
+		name.components.back().name= it_->text;
+		result->args_.back().name= std::move(name);
+
 		++it_; U_ASSERT( it_ < it_end_ );
 
 		if( it_->type == Lexem::Type::Comma )

@@ -588,7 +588,7 @@ public:
 	struct Arg
 	{
 		ComplexName arg_type;
-		ProgramString name;
+		ComplexName name; // Actually, only name with one component
 	};
 
 	// Argument in template signature.
