@@ -1420,4 +1420,160 @@ U_TEST( ArrayAsClassTemplateParameter_Test0 )
 	U_TEST_ASSERT( static_cast<uint64_t>( 5 + 84 + 996 + 5412 ) == result_value.IntVal.getLimitedValue() );
 }
 
+U_TEST( ShortClassTemplateForm_Test0 )
+{
+	static const char c_program_text[]=
+	R"(
+		template</ type T />
+		struct Box // Signature arguments will be </ T />
+		{
+			T t;
+		}
+
+		fn Foo() : i32
+		{
+			var Box</ i32 /> b{ .t= 8842657 };
+			return b.t;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	const llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( static_cast<uint64_t>( 8842657 ) == result_value.IntVal.getLimitedValue() );
+}
+
+U_TEST( ShortClassTemplateForm_Test1 )
+{
+	// Value parameters in short form.
+	static const char c_program_text[]=
+	R"(
+		template</ type T, u32 size />
+		struct ArrayBox // Signature arguments will be </ T, size />
+		{
+			[ T, size ] t;
+		}
+
+		fn Foo() : i32
+		{
+			var ArrayBox</ i32, 4u /> b{ .t[ 78, 54, 895, 125 ] };
+			return b.t[0u] * b.t[1u] + b.t[2u] / b.t[3u];
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	const llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( static_cast<uint64_t>( 78 * 54 + 895 / 125 ) == result_value.IntVal.getLimitedValue() );
+}
+
+U_TEST( ShortClassTemplateForm_Test2 )
+{
+	// Multiple signature arguments.
+	static const char c_program_text[]=
+	R"(
+		template</ type A, type B, type C />
+		struct Tuple3 // Signature arguments will be </ A, B, C />
+		{
+			A first;
+			B second;
+			C third;
+		}
+
+		fn Foo() : i32
+		{
+			var Tuple3</ i32, f64, u8 /> t{ .first= 8845, .second= 4571.21, .third= 105u8 };
+			return ( t.first - i32(t.second) ) * i32(t.third);
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	const llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( static_cast<uint64_t>( ( 8845 - int(4571.21) ) * 105 ) == result_value.IntVal.getLimitedValue() );
+}
+
+U_TEST( ShortClassTemplateForm_Test3 )
+{
+	// Value parameter of type of other parameter.
+	static const char c_program_text[]=
+	R"(
+		template</ type T, T size />
+		struct ArrayBox // Signature arguments will be </ T, size />
+		{
+			[ T, size ] t;
+		}
+
+		fn Foo() : i32
+		{
+			var ArrayBox</ i32, 3 /> b{ .t[ -25, -85, 654 ] };
+			return b.t[0u] * b.t[1u] + b.t[2u];
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	const llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( static_cast<uint64_t>( (-25) * (-85) + 654 ) == result_value.IntVal.getLimitedValue() );
+}
+
+U_TEST( ShortClassTemplateForm_Test4 )
+{
+	// Template with zero arguments and short form.
+	static const char c_program_text[]=
+	R"(
+		template</ />
+		struct Dummy
+		{
+			i32 x;
+		}
+
+		fn Foo() : i32
+		{
+			var Dummy</ /> d{ .x= 4125641 };
+			return d.x;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	const llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( static_cast<uint64_t>( 4125641 ) == result_value.IntVal.getLimitedValue() );
+}
+
 } // namespace U

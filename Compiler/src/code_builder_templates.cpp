@@ -46,10 +46,10 @@ void CodeBuilder::PrepareTypeTemplate(
 	NamesScope& names_scope )
 {
 	/* SPRACHE_TODO:
+	 *) Support default template arguments for short form.
 	 *) Convert signature and template arguments to "default form" for equality comparison.
 	 *) Support templates overloading.
 	 *) Add "enable_if".
-	 *) Support short template form, where template parameters are also signature parameters.
 	 *) Support signature parameters with expressions inside template parameters, different, than NamedOperand.
 	 *) Support template-dependent types for value parameters, such template</ type T, U</ T /> ut />.
 	*/
@@ -76,17 +76,20 @@ void CodeBuilder::PrepareTypeTemplate(
 	// Check and fill template parameters.
 	for( const TemplateBase::Arg& arg : type_template_declaration.args_ )
 	{
+		U_ASSERT( arg.name.components.size() == 1u );
+		const ProgramString& arg_name= arg.name.components.front().name;
+
 		// Check redefinition
 		for( const auto& prev_arg : template_parameters )
 		{
-			if( prev_arg.name == arg.name )
+			if( prev_arg.name == arg_name )
 			{
-				errors_.push_back( ReportRedefinition( type_template_declaration.file_pos_, arg.name ) );
+				errors_.push_back( ReportRedefinition( type_template_declaration.file_pos_, arg_name ) );
 				continue;
 			}
 		}
-		if( NameShadowsTemplateArgument( arg.name, names_scope ) )
-			errors_.push_back( ReportDeclarationShadowsTemplateArgument( type_template_declaration.file_pos_, arg.name ) );
+		if( NameShadowsTemplateArgument( arg_name, names_scope ) )
+			errors_.push_back( ReportDeclarationShadowsTemplateArgument( type_template_declaration.file_pos_, arg_name ) );
 
 		NamesScope::InsertedName* inserted_template_parameter= nullptr;
 
@@ -129,7 +132,7 @@ void CodeBuilder::PrepareTypeTemplate(
 			}
 
 			template_parameters.emplace_back();
-			template_parameters.back().name= arg.name;
+			template_parameters.back().name= arg_name;
 			template_parameters.back().type_name= &arg.arg_type;
 			template_parameters_usage_flags.push_back(false);
 
@@ -147,21 +150,21 @@ void CodeBuilder::PrepareTypeTemplate(
 						true,
 						llvm::GlobalValue::LinkageTypes::InternalLinkage,
 						variable.constexpr_value,
-						ToStdString( arg.name ) );
+						ToStdString( arg_name ) );
 			}
 
 			inserted_template_parameter=
-				template_parameters_namespace->AddName( arg.name, Value( std::move(variable), type_template_declaration.file_pos_ ) /* TODO - set correct file_pos */ );
+				template_parameters_namespace->AddName( arg_name, Value( std::move(variable), type_template_declaration.file_pos_ ) /* TODO - set correct file_pos */ );
 		}
 		else
 		{
 			// If template parameter is type.
 
 			template_parameters.emplace_back();
-			template_parameters.back().name= arg.name;
+			template_parameters.back().name= arg_name;
 			template_parameters_usage_flags.push_back(false);
 			inserted_template_parameter=
-				template_parameters_namespace->AddName( arg.name, Value( GetNextTemplateDependentType(), type_template_declaration.file_pos_ /* TODO - set correct file_pos */ ) );
+				template_parameters_namespace->AddName( arg_name, Value( GetNextTemplateDependentType(), type_template_declaration.file_pos_ /* TODO - set correct file_pos */ ) );
 		}
 
 		if( inserted_template_parameter != nullptr )
@@ -170,26 +173,41 @@ void CodeBuilder::PrepareTypeTemplate(
 
 	U_ASSERT( template_parameters_usage_flags.size() == type_template->template_parameters.size() );
 
-	// Check and fill signature args.
-	type_template->first_optional_signature_argument= 0u;
-	for( const TemplateBase::SignatureArg& signature_arg : type_template_declaration.signature_args_ )
+	if( type_template_declaration.is_short_form_ )
 	{
-		PrepareTemplateSignatureParameter( type_template_declaration.file_pos_, signature_arg.name, *template_parameters_namespace, template_parameters, template_parameters_usage_flags );
-		type_template->signature_arguments.push_back(&signature_arg.name);
-
-		if( signature_arg.default_value != boost::none )
+		U_ASSERT( type_template_declaration.signature_args_.empty() );
+		// Assign template arguments to signature arguments.
+		for( const TemplateBase::Arg& arg : type_template_declaration.args_ )
 		{
-			PrepareTemplateSignatureParameter( type_template_declaration.file_pos_, *signature_arg.default_value, *template_parameters_namespace, template_parameters, template_parameters_usage_flags );
-			type_template->default_signature_arguments.push_back(signature_arg.default_value.get_ptr());
-		}
-		else
-		{
-			const size_t index= type_template->signature_arguments.size() - 1u;
-			if (index > type_template->first_optional_signature_argument )
-				errors_.push_back( ReportMandatoryTemplateSignatureArgumentAfterOptionalArgument( type_template_declaration.file_pos_ ) );
-
+			PrepareTemplateSignatureParameter( type_template_declaration.file_pos_, arg.name, *template_parameters_namespace, template_parameters, template_parameters_usage_flags );
+			type_template->signature_arguments.push_back(&arg.name);
 			type_template->default_signature_arguments.push_back(nullptr);
-			++type_template->first_optional_signature_argument;
+		}
+		type_template->first_optional_signature_argument= type_template->signature_arguments.size();
+	}
+	else
+	{
+		// Check and fill signature args.
+		type_template->first_optional_signature_argument= 0u;
+		for( const TemplateBase::SignatureArg& signature_arg : type_template_declaration.signature_args_ )
+		{
+			PrepareTemplateSignatureParameter( type_template_declaration.file_pos_, signature_arg.name, *template_parameters_namespace, template_parameters, template_parameters_usage_flags );
+			type_template->signature_arguments.push_back(&signature_arg.name);
+
+			if( signature_arg.default_value != boost::none )
+			{
+				PrepareTemplateSignatureParameter( type_template_declaration.file_pos_, *signature_arg.default_value, *template_parameters_namespace, template_parameters, template_parameters_usage_flags );
+				type_template->default_signature_arguments.push_back(signature_arg.default_value.get_ptr());
+			}
+			else
+			{
+				const size_t index= type_template->signature_arguments.size() - 1u;
+				if (index > type_template->first_optional_signature_argument )
+					errors_.push_back( ReportMandatoryTemplateSignatureArgumentAfterOptionalArgument( type_template_declaration.file_pos_ ) );
+
+				type_template->default_signature_arguments.push_back(nullptr);
+				++type_template->first_optional_signature_argument;
+			}
 		}
 	}
 	U_ASSERT( type_template->signature_arguments.size() == type_template->default_signature_arguments.size() );
