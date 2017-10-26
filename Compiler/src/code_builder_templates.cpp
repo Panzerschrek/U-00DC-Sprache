@@ -46,6 +46,7 @@ void CodeBuilder::PrepareTypeTemplate(
 	NamesScope& names_scope )
 {
 	/* SPRACHE_TODO:
+	 *) Support default template arguments for short form.
 	 *) Convert signature and template arguments to "default form" for equality comparison.
 	 *) Support templates overloading.
 	 *) Add "enable_if".
@@ -182,7 +183,6 @@ void CodeBuilder::PrepareTypeTemplate(
 			type_template->signature_arguments.push_back(&arg.name);
 			type_template->default_signature_arguments.push_back(nullptr);
 		}
-		// SPRACHE_TODO - maybe support default arguments for short form?
 		type_template->first_optional_signature_argument= type_template->signature_arguments.size();
 	}
 	else

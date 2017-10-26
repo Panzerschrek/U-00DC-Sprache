@@ -330,4 +330,52 @@ U_TEST( TypedefsTemplates_Test6_TypedefTemplateForTypedefTemplate )
 	U_TEST_ASSERT( static_cast<uint64_t>( 88884 ) == result_value.IntVal.getLimitedValue() );
 }
 
+U_TEST( TypedefsTemplates_Test7_ShortTypedefTemplateForm_Test0 )
+{
+	// Short typedef template form for array.
+	static const char c_program_text[]=
+	R"(
+		template</ type T /> type Pair= [ T, 2 ];
+
+		fn Foo() : f64
+		{
+			var Pair</ f64 /> p[ 4.55, 0.2 ];
+			return p[0u] - p[1u];
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	const llvm::GenericValue result_value= engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( 4.55 - 0.2 == result_value.DoubleVal );
+}
+
+U_TEST( TypedefsTemplates_Test8_ShortTypedefTemplateForm_Test1 )
+{
+	// Short typedef template form for class template.
+	static const char c_program_text[]=
+	R"(
+		template</ type T /> struct Box</ T /> { T t; }   // base template
+
+		template</ type T /> type Box_alias = Box</ T />;   // alias for this template
+
+		fn Foo() : i32
+		{
+			var Box_alias</ i32 /> box{ .t= 23541 };    // usage of alias
+			return box.t;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	const llvm::GenericValue result_value= engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( static_cast<uint64_t>( 23541 ) == result_value.IntVal.getLimitedValue() );
+}
+
 } // namespace U
