@@ -10,6 +10,9 @@
 namespace U
 {
 
+namespace Synt
+{
+
 class SyntaxElementBase
 {
 public:
@@ -507,10 +510,10 @@ public:
 	TypeName value;
 };
 
-class FunctionArgumentDeclaration final : public SyntaxElementBase
+class FunctionArgument final : public SyntaxElementBase
 {
 public:
-	FunctionArgumentDeclaration(
+	FunctionArgument(
 		const FilePos& file_pos,
 		ProgramString name,
 		TypeName type,
@@ -524,16 +527,16 @@ public:
 	const ReferenceModifier reference_modifier_;
 };
 
-typedef std::unique_ptr<FunctionArgumentDeclaration> FunctionArgumentDeclarationPtr;
-typedef std::vector<FunctionArgumentDeclarationPtr> FunctionArgumentsDeclaration;
+typedef std::unique_ptr<FunctionArgument> FunctionArgumentPtr;
+typedef std::vector<FunctionArgumentPtr> FunctionArgumentsDeclaration;
 
-class FunctionDeclaration final
+class Function final
 	: public SyntaxElementBase
 	, public IProgramElement
 	, public IClassElement
 {
 public:
-	FunctionDeclaration(
+	Function(
 		const FilePos& file_pos,
 		ComplexName name,
 		TypeName return_type,
@@ -552,26 +555,24 @@ public:
 	const BlockPtr block_;
 };
 
-class ClassTemplateDeclaration;
-
-class ClassFieldDeclaration final
+class ClassField final
 	: public SyntaxElementBase
 	, public IClassElement
 {
 public:
-	explicit ClassFieldDeclaration( const FilePos& file_pos );
+	explicit ClassField( const FilePos& file_pos );
 
 	TypeName type;
 	ProgramString name;
 };
 
-class ClassDeclaration final
+class Class final
 	: public SyntaxElementBase
 	, public IProgramElement
 	, public IClassElement
 {
 public:
-	explicit ClassDeclaration( const FilePos& file_pos );
+	explicit Class( const FilePos& file_pos );
 
 	ClassElements elements_;
 	ComplexName name_;
@@ -608,15 +609,15 @@ public:
 
 typedef std::unique_ptr<TemplateBase> TemplateBasePtr;
 
-class ClassTemplateDeclaration final
+class ClassTemplate final
 	: public TemplateBase
 	, public IProgramElement
 	, public IClassElement
 {
 public:
-	explicit ClassTemplateDeclaration( const FilePos& file_pos );
+	explicit ClassTemplate( const FilePos& file_pos );
 
-	std::unique_ptr<ClassDeclaration> class_;
+	std::unique_ptr<Class> class_;
 };
 
 class TypedefTemplate final
@@ -648,5 +649,7 @@ public:
 
 	ProgramString import_name;
 };
+
+} // namespace Synt
 
 } // namespace U

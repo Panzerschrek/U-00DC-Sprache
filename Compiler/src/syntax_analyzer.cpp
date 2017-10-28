@@ -8,6 +8,9 @@
 namespace U
 {
 
+namespace Synt
+{
+
 static int GetBinaryOperatorPriority( const BinaryOperatorType binary_operator )
 {
 	#define PRIORITY ( - __LINE__ )
@@ -161,9 +164,9 @@ private:
 
 	std::unique_ptr<Typedef> ParseTypedef();
 	std::unique_ptr<Typedef> ParseTypedefBody();
-	std::unique_ptr<FunctionDeclaration> ParseFunction();
-	std::unique_ptr<ClassDeclaration> ParseClass();
-	std::unique_ptr<ClassDeclaration> ParseClassBody();
+	std::unique_ptr<Function> ParseFunction();
+	std::unique_ptr<Class> ParseClass();
+	std::unique_ptr<Class> ParseClassBody();
 
 	std::unique_ptr<TemplateBase> ParseTemplate();
 
@@ -1628,7 +1631,7 @@ std::unique_ptr<Typedef> SyntaxAnalyzer::ParseTypedefBody()
 	return result;
 }
 
-std::unique_ptr<FunctionDeclaration> SyntaxAnalyzer::ParseFunction()
+std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 {
 	U_ASSERT( it_->text == Keywords::fn_ );
 	U_ASSERT( it_ < it_end_ );
@@ -1647,7 +1650,7 @@ std::unique_ptr<FunctionDeclaration> SyntaxAnalyzer::ParseFunction()
 	++it_;
 	U_ASSERT( it_ < it_end_ );
 
-	std::vector<FunctionArgumentDeclarationPtr> arguments;
+	std::vector<FunctionArgumentPtr> arguments;
 
 	// Try parse "this"
 	if( it_->type == Lexem::Type::Identifier )
@@ -1689,7 +1692,7 @@ std::unique_ptr<FunctionDeclaration> SyntaxAnalyzer::ParseFunction()
 		if( is_this )
 		{
 			arguments.emplace_back(
-				new FunctionArgumentDeclaration(
+				new FunctionArgument(
 					it_->file_pos,
 					Keyword( Keywords::this_ ),
 					TypeName(),
@@ -1760,7 +1763,7 @@ std::unique_ptr<FunctionDeclaration> SyntaxAnalyzer::ParseFunction()
 		U_ASSERT( it_ < it_end_ );
 
 		arguments.emplace_back(
-			new FunctionArgumentDeclaration(
+			new FunctionArgument(
 				arg_file_pos,
 				arg_name,
 				std::move(arg_type),
@@ -1886,8 +1889,8 @@ std::unique_ptr<FunctionDeclaration> SyntaxAnalyzer::ParseFunction()
 		}
 	}
 
-	return std::unique_ptr<FunctionDeclaration>(
-		new FunctionDeclaration(
+	return std::unique_ptr<Function>(
+		new Function(
 			func_pos,
 			std::move( fn_name ),
 			std::move(return_type),
@@ -1898,23 +1901,23 @@ std::unique_ptr<FunctionDeclaration> SyntaxAnalyzer::ParseFunction()
 			std::move( block ) ) );
 }
 
-std::unique_ptr<ClassDeclaration> SyntaxAnalyzer::ParseClass()
+std::unique_ptr<Class> SyntaxAnalyzer::ParseClass()
 {
 	U_ASSERT( it_->text == Keywords::struct_ || it_->text == Keywords::class_ );
 	++it_; U_ASSERT( it_ < it_end_ );
 
 	ComplexName name= ParseComplexName();
 
-	std::unique_ptr<ClassDeclaration> result= ParseClassBody();
+	std::unique_ptr<Class> result= ParseClassBody();
 	if( result != nullptr )
 		result->name_= std::move(name);
 
 	return result;
 }
 
-std::unique_ptr<ClassDeclaration> SyntaxAnalyzer::ParseClassBody()
+std::unique_ptr<Class> SyntaxAnalyzer::ParseClassBody()
 {
-	std::unique_ptr<ClassDeclaration> result( new ClassDeclaration( it_->file_pos ) );
+	std::unique_ptr<Class> result( new Class( it_->file_pos ) );
 
 	if( it_->type == Lexem::Type::Semicolon )
 	{
@@ -1983,7 +1986,7 @@ std::unique_ptr<ClassDeclaration> SyntaxAnalyzer::ParseClassBody()
 		}
 		else
 		{
-			std::unique_ptr<ClassFieldDeclaration> field( new ClassFieldDeclaration( it_->file_pos ) );
+			std::unique_ptr<ClassField> field( new ClassField( it_->file_pos ) );
 
 			field->type= ParseTypeName();
 
@@ -2022,7 +2025,7 @@ std::unique_ptr<TemplateBase> SyntaxAnalyzer::ParseTemplate()
 	U_ASSERT( it_->type == Lexem::Type::Identifier && it_->text == Keywords::template_ );
 	++it_; U_ASSERT( it_ < it_end_ );
 
-	std::unique_ptr<TemplateBase> result( new ClassTemplateDeclaration( it_->file_pos ) );
+	std::unique_ptr<TemplateBase> result( new ClassTemplate( it_->file_pos ) );
 
 	if( it_->type != Lexem::Type::TemplateBracketLeft )
 	{
@@ -2161,7 +2164,7 @@ std::unique_ptr<TemplateBase> SyntaxAnalyzer::ParseTemplate()
 	{
 	case TemplateKind::Class:
 		{
-			std::unique_ptr<ClassTemplateDeclaration> class_template( new ClassTemplateDeclaration( result->file_pos_ ) );
+			std::unique_ptr<ClassTemplate> class_template( new ClassTemplate( result->file_pos_ ) );
 			class_template->args_= std::move(result->args_);
 			class_template->signature_args_= std::move(result->signature_args_);
 			class_template->name_= name;
@@ -2208,5 +2211,7 @@ SyntaxAnalysisResult SyntaxAnalysis( const Lexems& lexems )
 {
 	return SyntaxAnalyzer().DoAnalyzis( lexems );
 }
+
+} // namespace Synt
 
 } // namespace U

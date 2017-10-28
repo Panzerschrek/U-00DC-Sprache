@@ -89,7 +89,7 @@ CodeBuilder::CodeBuilder()
 	resolving_funcs_stack_.emplace_back( new PreResolveFunc(
 		[this](
 			NamesScope& names_scope,
-			const ComplexName::Component* components,
+			const Synt::ComplexName::Component* components,
 			size_t component_count,
 			size_t& out_skip_components  )
 		{
@@ -387,7 +387,7 @@ void CodeBuilder::FillGlobalNamesScope( NamesScope& global_names_scope )
 
 Type CodeBuilder::PrepareType(
 	const FilePos& file_pos,
-	const TypeName& type_name,
+	const Synt::TypeName& type_name,
 	NamesScope& names_scope )
 {
 	Type result;
@@ -408,7 +408,7 @@ Type CodeBuilder::PrepareType(
 		arrays_stack[ arrays_count ]= last_type;
 		arrays_count++;
 
-		const IExpressionComponent& num= * *rit;
+		const Synt::IExpressionComponent& num= * *rit;
 		const FilePos& num_file_pos= num.GetFilePos();
 
 		*last_type= Array();
@@ -498,8 +498,8 @@ Type CodeBuilder::PrepareType(
 }
 
 ClassProxyPtr CodeBuilder::PrepareClass(
-	const ClassDeclaration& class_declaration,
-	const ComplexName& class_complex_name,
+	const Synt::Class& class_declaration,
+	const Synt::ComplexName& class_complex_name,
 	NamesScope& names_scope,
 	const bool force_forward_declaration )
 {
@@ -615,13 +615,13 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 	std::vector<llvm::Type*> fields_llvm_types;
 
 	std::vector<PrepareFunctionResult> class_functions;
-	std::vector<const ClassDeclaration*> inner_classes;
+	std::vector<const Synt::Class*> inner_classes;
 
-	for( const IClassElementPtr& member : class_declaration.elements_ )
+	for( const Synt::IClassElementPtr& member : class_declaration.elements_ )
 	{
 		// TODO - maybe apply visitor?
-		if( const ClassFieldDeclaration* const in_field=
-			dynamic_cast<const ClassFieldDeclaration*>( member.get() ) )
+		if( const auto in_field=
+			dynamic_cast<const Synt::ClassField*>( member.get() ) )
 		{
 			ClassField out_field;
 			out_field.type= PrepareType( in_field->file_pos_, in_field->type, the_class->members );
@@ -648,48 +648,45 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 				the_class->field_count++;
 			}
 		}
-		else if( const FunctionDeclaration* const function_declaration=
-			dynamic_cast<const FunctionDeclaration*>( member.get() ) )
+		else if( const auto function_declaration=
+			dynamic_cast<const Synt::Function*>( member.get() ) )
 		{
 			// First time, push only prototypes.
 			class_functions.push_back( PrepareFunction( *function_declaration, true, the_class_proxy, the_class->members ) );
 		}
-		else if( const ClassDeclaration* const inner_class=
-			dynamic_cast<const ClassDeclaration*>( member.get() ) )
+		else if( const auto inner_class=
+			dynamic_cast<const Synt::Class*>( member.get() ) )
 		{
 			inner_classes.push_back( inner_class );
 			PrepareClass( *inner_class, inner_class->name_, the_class->members, true );
 		}
-		else if( const TemplateBase* const template_=
-			dynamic_cast<const TemplateBase*>( member.get() ) )
+		else if( const auto template_=
+			dynamic_cast<const Synt::TemplateBase*>( member.get() ) )
 		{
 			PrepareTypeTemplate( *template_, the_class->members );
 		}
-		else if( const VariablesDeclaration* variables_declaration=
-			dynamic_cast<const VariablesDeclaration*>( member.get() ) )
+		else if( const auto variables_declaration=
+			dynamic_cast<const Synt::VariablesDeclaration*>( member.get() ) )
 		{
 			BuildVariablesDeclarationCode( *variables_declaration, the_class->members, *dummy_function_context_, true );
 		}
-		else if( const AutoVariableDeclaration* auto_variable_declaration=
-			dynamic_cast<const AutoVariableDeclaration*>( member.get() ) )
+		else if( const auto auto_variable_declaration=
+			dynamic_cast<const Synt::AutoVariableDeclaration*>( member.get() ) )
 		{
 			BuildAutoVariableDeclarationCode( *auto_variable_declaration, the_class->members, *dummy_function_context_, true );
 		}
-		else if(
-			const StaticAssert* static_assert_=
-			dynamic_cast<const StaticAssert*>( member.get() ) )
+		else if( const auto static_assert_=
+			dynamic_cast<const Synt::StaticAssert*>( member.get() ) )
 		{
 			BuildStaticAssert( *static_assert_, the_class->members );
 		}
-		else if(
-			const Typedef* typedef_=
-			dynamic_cast<const Typedef*>( member.get() ) )
+		else if( const auto typedef_=
+			dynamic_cast<const Synt::Typedef*>( member.get() ) )
 		{
 			BuildTypedef( *typedef_, the_class->members );
 		}
-		else if(
-			const TypedefTemplate* const typedef_template=
-			dynamic_cast<const TypedefTemplate*>( member.get() ) )
+		else if( const auto typedef_template=
+			dynamic_cast<const Synt::TypedefTemplate*>( member.get() ) )
 		{
 			U_UNUSED( typedef_template );
 			// TODO
@@ -728,7 +725,7 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 	TryGenerateDestructor( *the_class, class_type );
 
 	// Prepare inner classes.
-	for( const ClassDeclaration* const inner_class : inner_classes )
+	for( const Synt::Class* const inner_class : inner_classes )
 	{
 		if( !inner_class->is_forward_declaration_ )
 			PrepareClass( *inner_class, inner_class->name_, the_class->members );
@@ -1361,25 +1358,23 @@ void CodeBuilder::CallMembersDestructors( FunctionContext& function_context )
 }
 
 void CodeBuilder::BuildNamespaceBody(
-	const ProgramElements& body_elements,
+	const Synt::ProgramElements& body_elements,
 	NamesScope& names_scope )
 {
-	for( const IProgramElementPtr& program_element : body_elements )
+	for( const Synt::IProgramElementPtr& program_element : body_elements )
 	{
-		if( const FunctionDeclaration* const func=
-			dynamic_cast<const FunctionDeclaration*>( program_element.get() ) )
+		if( const auto func=
+			dynamic_cast<const Synt::Function*>( program_element.get() ) )
 		{
 			PrepareFunction( *func, false, nullptr, names_scope );
 		}
-		else if(
-			const ClassDeclaration* const class_=
-			dynamic_cast<const ClassDeclaration*>( program_element.get() ) )
+		else if( const auto class_=
+			dynamic_cast<const Synt::Class*>( program_element.get() ) )
 		{
 			PrepareClass( *class_, class_->name_, names_scope );
 		}
-		else if(
-			const Namespace* const namespace_=
-			dynamic_cast<const Namespace*>( program_element.get() ) )
+		else if( const auto namespace_=
+			dynamic_cast<const Synt::Namespace*>( program_element.get() ) )
 		{
 			NamesScope* result_scope= &names_scope;
 
@@ -1405,50 +1400,43 @@ void CodeBuilder::BuildNamespaceBody(
 
 			BuildNamespaceBody( namespace_->elements_, *result_scope );
 		}
-		else if(
-			const TemplateBase* const tempate_=
-			dynamic_cast<const TemplateBase*>( program_element.get() ) )
+		else if( const auto tempate_=
+			dynamic_cast<const Synt::TemplateBase*>( program_element.get() ) )
 		{
 			PrepareTypeTemplate( *tempate_, names_scope );
 		}
-		else if( const VariablesDeclaration* variables_declaration=
-			dynamic_cast<const VariablesDeclaration*>( program_element.get() ) )
+		else if( const auto variables_declaration=
+			dynamic_cast<const Synt::VariablesDeclaration*>( program_element.get() ) )
 		{
 			BuildVariablesDeclarationCode( *variables_declaration, names_scope, *dummy_function_context_, true );
 		}
-		else if( const AutoVariableDeclaration* auto_variable_declaration=
-			dynamic_cast<const AutoVariableDeclaration*>( program_element.get() ) )
+		else if( const auto auto_variable_declaration=
+			dynamic_cast<const Synt::AutoVariableDeclaration*>( program_element.get() ) )
 		{
 			BuildAutoVariableDeclarationCode( *auto_variable_declaration, names_scope, *dummy_function_context_, true );
 		}
-		else if(
-			const StaticAssert* static_assert_=
-			dynamic_cast<const StaticAssert*>( program_element.get() ) )
+		else if( const auto static_assert_=
+			dynamic_cast<const Synt::StaticAssert*>( program_element.get() ) )
 		{
 			BuildStaticAssert( *static_assert_, names_scope );
 		}
-		else if(
-			const Typedef* typedef_=
-			dynamic_cast<const Typedef*>( program_element.get() ) )
+		else if( const auto typedef_=
+			dynamic_cast<const Synt::Typedef*>( program_element.get() ) )
 		{
 			BuildTypedef( *typedef_, names_scope );
 		}
-		else if(
-			const TypedefTemplate* const typedef_template=
-			dynamic_cast<const TypedefTemplate*>( program_element.get() ) )
+		else if( const auto typedef_template=
+			dynamic_cast<const Synt::TypedefTemplate*>( program_element.get() ) )
 		{
-			U_UNUSED( typedef_template );
-			// TODO
+			PrepareTypeTemplate( *typedef_template, names_scope );
 		}
 		else
-		{
 			U_ASSERT(false);
-		}
 	} // for program elements
 }
 
 CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
-	const FunctionDeclaration& func,
+	const Synt::Function& func,
 	const bool is_class_method_predeclaration,
 	ClassProxyPtr base_class,
 	NamesScope& func_definition_names_scope /* scope, where this function appears */ )
@@ -1464,7 +1452,7 @@ CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 	if( !is_special_method && IsKeyword( func_name ) )
 		errors_.push_back( ReportUsingKeywordAsName( func.file_pos_ ) );
 
-	const Block* const block= is_class_method_predeclaration ? nullptr : func.block_.get();
+	const Synt::Block* const block= is_class_method_predeclaration ? nullptr : func.block_.get();
 
 	// Base scope (class, namespace), where function is declared.
 	// Arguments, return value, body names all resolved from this scope.
@@ -1568,7 +1556,7 @@ CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 		arg.is_mutable= true;
 	}
 
-	for( const FunctionArgumentDeclarationPtr& arg : func.arguments_ )
+	for( const Synt::FunctionArgumentPtr& arg : func.arguments_ )
 	{
 		const bool is_this= arg == func.arguments_.front() && arg->name_ == Keywords::this_;
 
@@ -1740,9 +1728,9 @@ void CodeBuilder::BuildFuncCode(
 	const ClassProxyPtr base_class,
 	NamesScope& parent_names_scope,
 	const ProgramString& func_name,
-	const FunctionArgumentsDeclaration& args,
-	const Block* const block,
-	const StructNamedInitializer* const constructor_initialization_list )
+	const Synt::FunctionArgumentsDeclaration& args,
+	const Synt::Block* const block,
+	const Synt::StructNamedInitializer* const constructor_initialization_list )
 {
 	std::vector<llvm::Type*> args_llvm_types;
 	Function* const function_type= func_variable.type.GetFunctionType();
@@ -1901,7 +1889,7 @@ void CodeBuilder::BuildFuncCode(
 			continue;
 		}
 
-		const FunctionArgumentDeclaration& declaration_arg= *args[ is_special_method ? ( arg_number - 1u ) : arg_number ];
+		const Synt::FunctionArgument& declaration_arg= *args[ is_special_method ? ( arg_number - 1u ) : arg_number ];
 		const ProgramString& arg_name= declaration_arg.name_;
 
 		if( !arg.is_reference && arg.type.IsIncomplete() )
@@ -1991,7 +1979,7 @@ void CodeBuilder::BuildFuncCode(
 		if( constructor_initialization_list == nullptr )
 		{
 			// Create dummy initialization list for constructors without explicit initialization list.
-			const StructNamedInitializer dumy_initialization_list{ FilePos() };
+			const Synt::StructNamedInitializer dumy_initialization_list{ FilePos() };
 
 			BuildConstructorInitialization(
 				*function_context.this_,
@@ -2091,13 +2079,13 @@ void CodeBuilder::BuildConstructorInitialization(
 	const Class& base_class,
 	NamesScope& names_scope,
 	FunctionContext& function_context,
-	const StructNamedInitializer& constructor_initialization_list )
+	const Synt::StructNamedInitializer& constructor_initialization_list )
 {
 	std::set<ProgramString> initialized_fields;
 
 	// Check for errors, build list of initialized fields.
 	bool have_fields_errors= false;
-	for( const StructNamedInitializer::MemberInitializer& field_initializer : constructor_initialization_list.members_initializers )
+	for( const Synt::StructNamedInitializer::MemberInitializer& field_initializer : constructor_initialization_list.members_initializers )
 	{
 		const NamesScope::InsertedName* const class_member=
 			base_class.members.GetThisScopeName( field_initializer.name );
@@ -2167,7 +2155,7 @@ void CodeBuilder::BuildConstructorInitialization(
 	if( have_fields_errors )
 		return;
 
-	for( const StructNamedInitializer::MemberInitializer& field_initializer : constructor_initialization_list.members_initializers )
+	for( const Synt::StructNamedInitializer::MemberInitializer& field_initializer : constructor_initialization_list.members_initializers )
 	{
 		const NamesScope::InsertedName* const class_member=
 			base_class.members.GetThisScopeName( field_initializer.name );
@@ -2194,7 +2182,7 @@ void CodeBuilder::BuildConstructorInitialization(
 }
 
 CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockCode(
-	const Block& block,
+	const Synt::Block& block,
 	NamesScope& names,
 	FunctionContext& function_context )
 {
@@ -2203,9 +2191,9 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockCode(
 
 	function_context.destructibles_stack.emplace_back();
 
-	for( const IBlockElementPtr& block_element : block.elements_ )
+	for( const Synt::IBlockElementPtr& block_element : block.elements_ )
 	{
-		const IBlockElement* const block_element_ptr= block_element.get();
+		const Synt::IBlockElement* const block_element_ptr= block_element.get();
 
 		const auto try_report_unreachable_code=
 		[&]
@@ -2215,40 +2203,36 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockCode(
 				errors_.push_back( ReportUnreachableCode( block.elements_[ block_element_index + 1u ]->GetFilePos() ) );
 		};
 
-		if( const VariablesDeclaration* variables_declaration=
-			dynamic_cast<const VariablesDeclaration*>( block_element_ptr ) )
+		if( const auto variables_declaration=
+			dynamic_cast<const Synt::VariablesDeclaration*>( block_element_ptr ) )
 		{
 			BuildVariablesDeclarationCode( *variables_declaration, block_names, function_context );
 		}
-		else if( const AutoVariableDeclaration* auto_variable_declaration=
-			dynamic_cast<const AutoVariableDeclaration*>( block_element_ptr ) )
+		else if( const auto auto_variable_declaration=
+			dynamic_cast<const Synt::AutoVariableDeclaration*>( block_element_ptr ) )
 		{
 			BuildAutoVariableDeclarationCode( *auto_variable_declaration, block_names, function_context );
 		}
-		else if(
-			const SingleExpressionOperator* expression=
-			dynamic_cast<const SingleExpressionOperator*>( block_element_ptr ) )
+		else if( const auto expression=
+			dynamic_cast<const Synt::SingleExpressionOperator*>( block_element_ptr ) )
 		{
 			BuildExpressionCodeAndDestroyTemporaries(
 				*expression->expression_,
 				block_names,
 				function_context );
 		}
-		else if(
-			const AssignmentOperator* assignment_operator=
-			dynamic_cast<const AssignmentOperator*>( block_element_ptr ) )
+		else if( const auto assignment_operator=
+			dynamic_cast<const Synt::AssignmentOperator*>( block_element_ptr ) )
 		{
 			BuildAssignmentOperatorCode( *assignment_operator, block_names, function_context );
 		}
-		else if(
-			const AdditiveAssignmentOperator* additive_assignment_operator=
-			dynamic_cast<const AdditiveAssignmentOperator*>( block_element_ptr ) )
+		else if( const auto additive_assignment_operator=
+			dynamic_cast<const Synt::AdditiveAssignmentOperator*>( block_element_ptr ) )
 		{
 			BuildAdditiveAssignmentOperatorCode( *additive_assignment_operator, block_names, function_context );
 		}
-		else if(
-			const IncrementOperator* increment_operator=
-			dynamic_cast<const IncrementOperator*>( block_element_ptr ) )
+		else if( const auto increment_operator=
+			dynamic_cast<const Synt::IncrementOperator*>( block_element_ptr ) )
 		{
 			BuildDeltaOneOperatorCode(
 				*increment_operator->expression,
@@ -2257,9 +2241,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockCode(
 				block_names,
 				function_context );
 		}
-		else if(
-			const DecrementOperator* decrement_operator=
-			dynamic_cast<const DecrementOperator*>( block_element_ptr ) )
+		else if( const auto decrement_operator=
+			dynamic_cast<const Synt::DecrementOperator*>( block_element_ptr ) )
 		{
 			BuildDeltaOneOperatorCode(
 				*decrement_operator->expression,
@@ -2268,9 +2251,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockCode(
 				block_names,
 				function_context );
 		}
-		else if(
-			const ReturnOperator* return_operator=
-			dynamic_cast<const ReturnOperator*>( block_element_ptr ) )
+		else if( const auto return_operator=
+			dynamic_cast<const Synt::ReturnOperator*>( block_element_ptr ) )
 		{
 			BuildReturnOperatorCode(
 				*return_operator,
@@ -2280,18 +2262,16 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockCode(
 			block_build_info.have_unconditional_return_inside= true;
 			try_report_unreachable_code();
 		}
-		else if(
-			const WhileOperator* while_operator=
-			dynamic_cast<const WhileOperator*>( block_element_ptr ) )
+		else if( const auto while_operator=
+			dynamic_cast<const Synt::WhileOperator*>( block_element_ptr ) )
 		{
 			BuildWhileOperatorCode(
 				*while_operator,
 				block_names,
 				function_context );
 		}
-		else if(
-			const BreakOperator* break_operator=
-			dynamic_cast<const BreakOperator*>( block_element_ptr ) )
+		else if( const auto break_operator=
+			dynamic_cast<const Synt::BreakOperator*>( block_element_ptr ) )
 		{
 			BuildBreakOperatorCode(
 				*break_operator,
@@ -2300,9 +2280,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockCode(
 			block_build_info.have_uncodnitional_break_or_continue= true;
 			try_report_unreachable_code();
 		}
-		else if(
-			const ContinueOperator* continue_operator=
-			dynamic_cast<const ContinueOperator*>( block_element_ptr ) )
+		else if( const auto continue_operator=
+			dynamic_cast<const Synt::ContinueOperator*>( block_element_ptr ) )
 		{
 			BuildContinueOperatorCode(
 				*continue_operator,
@@ -2312,8 +2291,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockCode(
 			try_report_unreachable_code();
 		}
 		else if(
-			const IfOperator* if_operator=
-			dynamic_cast<const IfOperator*>( block_element_ptr ) )
+			const auto if_operator=
+			dynamic_cast<const Synt::IfOperator*>( block_element_ptr ) )
 		{
 			const CodeBuilder::BlockBuildInfo if_block_info=
 				BuildIfOperatorCode(
@@ -2330,15 +2309,13 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockCode(
 				block_build_info.have_uncodnitional_break_or_continue )
 				try_report_unreachable_code();
 		}
-		else if(
-			const StaticAssert* static_assert_=
-			dynamic_cast<const StaticAssert*>( block_element_ptr ) )
+		else if( const auto static_assert_=
+			dynamic_cast<const Synt::StaticAssert*>( block_element_ptr ) )
 		{
 			BuildStaticAssert( *static_assert_, block_names );
 		}
-		else if(
-			const Block* block=
-			dynamic_cast<const Block*>( block_element_ptr ) )
+		else if( const auto block=
+			dynamic_cast<const Synt::Block*>( block_element_ptr ) )
 		{
 			const BlockBuildInfo inner_block_build_info=
 				BuildBlockCode( *block, block_names, function_context );
@@ -2367,7 +2344,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockCode(
 }
 
 void CodeBuilder::BuildVariablesDeclarationCode(
-	const VariablesDeclaration& variables_declaration,
+	const Synt::VariablesDeclaration& variables_declaration,
 	NamesScope& block_names,
 	FunctionContext& function_context,
 	const bool global )
@@ -2379,7 +2356,7 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 		return;
 	}
 
-	for( const VariablesDeclaration::VariableEntry& variable_declaration : variables_declaration.variables )
+	for( const Synt::VariablesDeclaration::VariableEntry& variable_declaration : variables_declaration.variables )
 	{
 		if( IsKeyword( variable_declaration.name ) )
 		{
@@ -2455,14 +2432,14 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 				continue;
 			}
 
-			const IExpressionComponent* initializer_expression= nullptr;
-			if( const ExpressionInitializer* const expression_initializer=
-				dynamic_cast<const ExpressionInitializer*>( variable_declaration.initializer.get() ) )
+			const Synt::IExpressionComponent* initializer_expression= nullptr;
+			if( const auto expression_initializer=
+				dynamic_cast<const Synt::ExpressionInitializer*>( variable_declaration.initializer.get() ) )
 			{
 				initializer_expression= expression_initializer->expression.get();
 			}
-			else if( const ConstructorInitializer* const constructor_initializer=
-				dynamic_cast<const ConstructorInitializer*>( variable_declaration.initializer.get() ) )
+			else if( const auto constructor_initializer=
+				dynamic_cast<const Synt::ConstructorInitializer*>( variable_declaration.initializer.get() ) )
 			{
 				if( constructor_initializer->call_operator.arguments_.size() != 1u )
 				{
@@ -2549,7 +2526,7 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 }
 
 void CodeBuilder::BuildAutoVariableDeclarationCode(
-	const AutoVariableDeclaration& auto_variable_declaration,
+	const Synt::AutoVariableDeclaration& auto_variable_declaration,
 	NamesScope& block_names,
 	FunctionContext& function_context,
 	const bool global )
@@ -2720,15 +2697,15 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 }
 
 void CodeBuilder::BuildAssignmentOperatorCode(
-	const AssignmentOperator& assignment_operator,
+	const Synt::AssignmentOperator& assignment_operator,
 	NamesScope& block_names,
 	FunctionContext& function_context )
 {
 	// Destruction frame for temporary variables of expressions.
 	function_context.destructibles_stack.emplace_back();
 
-	const IExpressionComponent& l_value= *assignment_operator.l_value_;
-	const IExpressionComponent& r_value= *assignment_operator.r_value_;
+	const Synt::IExpressionComponent& l_value= *assignment_operator.l_value_;
+	const Synt::IExpressionComponent& r_value= *assignment_operator.r_value_;
 
 	const Value l_var_value= BuildExpressionCode( l_value, block_names, function_context );
 	const Value r_var_value= BuildExpressionCode( r_value, block_names, function_context );
@@ -2787,7 +2764,7 @@ void CodeBuilder::BuildAssignmentOperatorCode(
 }
 
 void CodeBuilder::BuildAdditiveAssignmentOperatorCode(
-	const AdditiveAssignmentOperator& additive_assignment_operator,
+	const Synt::AdditiveAssignmentOperator& additive_assignment_operator,
 	NamesScope& block_names,
 	FunctionContext& function_context )
 {
@@ -2868,7 +2845,7 @@ void CodeBuilder::BuildAdditiveAssignmentOperatorCode(
 }
 
 void CodeBuilder::BuildDeltaOneOperatorCode(
-	const IExpressionComponent& expression,
+	const Synt::IExpressionComponent& expression,
 	const FilePos& file_pos,
 	bool positive, // true - increment, false - decrement
 	NamesScope& block_names,
@@ -2923,7 +2900,7 @@ void CodeBuilder::BuildDeltaOneOperatorCode(
 }
 
 void CodeBuilder::BuildReturnOperatorCode(
-	const ReturnOperator& return_operator,
+	const Synt::ReturnOperator& return_operator,
 	NamesScope& names,
 	FunctionContext& function_context )
 {
@@ -3027,7 +3004,7 @@ void CodeBuilder::BuildReturnOperatorCode(
 }
 
 void CodeBuilder::BuildWhileOperatorCode(
-	const WhileOperator& while_operator,
+	const Synt::WhileOperator& while_operator,
 	NamesScope& names,
 	FunctionContext& function_context )
 {
@@ -3084,7 +3061,7 @@ void CodeBuilder::BuildWhileOperatorCode(
 }
 
 void CodeBuilder::BuildBreakOperatorCode(
-	const BreakOperator& break_operator,
+	const Synt::BreakOperator& break_operator,
 	FunctionContext& function_context )
 {
 	if( function_context.loops_stack.empty() )
@@ -3099,7 +3076,7 @@ void CodeBuilder::BuildBreakOperatorCode(
 }
 
 void CodeBuilder::BuildContinueOperatorCode(
-	const ContinueOperator& continue_operator,
+	const Synt::ContinueOperator& continue_operator,
 	FunctionContext& function_context )
 {
 	if( function_context.loops_stack.empty() )
@@ -3114,7 +3091,7 @@ void CodeBuilder::BuildContinueOperatorCode(
 }
 
 CodeBuilder::BlockBuildInfo CodeBuilder::BuildIfOperatorCode(
-	const IfOperator& if_operator,
+	const Synt::IfOperator& if_operator,
 	NamesScope& names,
 	FunctionContext& function_context )
 {
@@ -3135,7 +3112,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildIfOperatorCode(
 
 	for( unsigned int i= 0u; i < if_operator.branches_.size(); i++ )
 	{
-		const IfOperator::Branch& branch= if_operator.branches_[i];
+		const Synt::IfOperator::Branch& branch= if_operator.branches_[i];
 
 		llvm::BasicBlock* body_block= llvm::BasicBlock::Create( llvm_context_ );
 		llvm::BasicBlock* current_condition_block= next_condition_block;
@@ -3211,7 +3188,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildIfOperatorCode(
 }
 
 void CodeBuilder::BuildStaticAssert(
-	const StaticAssert& static_assert_,
+	const Synt::StaticAssert& static_assert_,
 	NamesScope& names )
 {
 	const Value expression_result= BuildExpressionCode( *static_assert_.expression, names, *dummy_function_context_ );
@@ -3247,7 +3224,7 @@ void CodeBuilder::BuildStaticAssert(
 }
 
 void CodeBuilder::BuildTypedef(
-	const Typedef& typedef_,
+	const Synt::Typedef& typedef_,
 	NamesScope& names )
 {
 	const Type type= PrepareType( typedef_.file_pos_, typedef_.value, names );
@@ -3480,8 +3457,7 @@ const FunctionVariable* CodeBuilder::GetOverloadedFunction(
 	}
 }
 
-
-U_FundamentalType CodeBuilder::GetNumericConstantType( const NumericConstant& number )
+U_FundamentalType CodeBuilder::GetNumericConstantType( const Synt::NumericConstant& number )
 {
 	if( number.type_suffix_.empty() )
 	{

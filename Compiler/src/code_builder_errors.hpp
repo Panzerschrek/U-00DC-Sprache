@@ -126,7 +126,7 @@ struct CodeBuilderError
 // TODO - add more parameters for errors.
 CodeBuilderError ReportBuildFailed();
 CodeBuilderError ReportNameNotFound( const FilePos& file_pos, const ProgramString& name );
-CodeBuilderError ReportNameNotFound( const FilePos& file_pos, const ComplexName& name );
+CodeBuilderError ReportNameNotFound( const FilePos& file_pos, const Synt::ComplexName& name );
 CodeBuilderError ReportUsingKeywordAsName( const FilePos& file_pos );
 CodeBuilderError ReportRedefinition( const FilePos& file_pos, const ProgramString& name );
 CodeBuilderError ReportUnknownNumericConstantType( const FilePos& file_pos, const ProgramString& unknown_type );

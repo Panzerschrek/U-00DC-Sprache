@@ -4,6 +4,9 @@
 namespace U
 {
 
+namespace Synt
+{
+
 SyntaxElementBase::SyntaxElementBase( const FilePos& file_pos )
 	: file_pos_(file_pos)
 {}
@@ -253,7 +256,7 @@ Typedef::Typedef( const FilePos& file_pos )
 	: SyntaxElementBase(file_pos)
 {}
 
-FunctionArgumentDeclaration::FunctionArgumentDeclaration(
+FunctionArgument::FunctionArgument(
 	const FilePos& file_pos,
 	ProgramString name,
 	TypeName type,
@@ -266,7 +269,7 @@ FunctionArgumentDeclaration::FunctionArgumentDeclaration(
 	, reference_modifier_(reference_modifier)
 {}
 
-FunctionDeclaration::FunctionDeclaration(
+Function::Function(
 	const FilePos& file_pos,
 	ComplexName name,
 	TypeName return_type,
@@ -285,11 +288,11 @@ FunctionDeclaration::FunctionDeclaration(
 	, block_( std::move(block) )
 {}
 
-ClassFieldDeclaration::ClassFieldDeclaration( const FilePos& file_pos )
+ClassField::ClassField( const FilePos& file_pos )
 	: SyntaxElementBase( file_pos )
 {}
 
-ClassDeclaration::ClassDeclaration( const FilePos& file_pos )
+Class::Class( const FilePos& file_pos )
 	: SyntaxElementBase( file_pos )
 {}
 
@@ -297,7 +300,7 @@ TemplateBase::TemplateBase( const FilePos& file_pos )
 	: SyntaxElementBase( file_pos )
 {}
 
-ClassTemplateDeclaration::ClassTemplateDeclaration( const FilePos& file_pos )
+ClassTemplate::ClassTemplate( const FilePos& file_pos )
 	: TemplateBase( file_pos )
 {}
 
@@ -312,5 +315,7 @@ Namespace::Namespace( const FilePos& file_pos )
 Import::Import( const FilePos& file_pos )
 	: SyntaxElementBase(file_pos)
 {}
+
+} // namespace Synt
 
 } // namespace U

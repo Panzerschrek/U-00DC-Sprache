@@ -33,7 +33,7 @@ struct SourceGraph final
 	{
 		IVfs::Path file_path; // normalized
 		std::vector<size_t> child_nodes_indeces;
-		SyntaxAnalysisResult ast;
+		Synt::SyntaxAnalysisResult ast;
 		// Here can be placed cached module.
 	};
 
@@ -41,7 +41,7 @@ struct SourceGraph final
 	size_t root_node_index= ~0u;
 
 	LexicalErrorMessages lexical_errors;
-	SyntaxErrorMessages syntax_errors;
+	Synt::SyntaxErrorMessages syntax_errors;
 };
 
 typedef std::unique_ptr<SourceGraph> SourceGraphPtr;

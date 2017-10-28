@@ -30,13 +30,13 @@ CodeBuilderError ReportNameNotFound( const FilePos& file_pos, const ProgramStrin
 	return error;
 }
 
-CodeBuilderError ReportNameNotFound( const FilePos& file_pos, const ComplexName& name )
+CodeBuilderError ReportNameNotFound( const FilePos& file_pos, const Synt::ComplexName& name )
 {
 	CodeBuilderError error;
 	error.file_pos= file_pos;
 	error.code= CodeBuilderErrorCode::NameNotFound;
 
-	for( const ComplexName::Component& component : name.components )
+	for( const Synt::ComplexName::Component& component : name.components )
 	{
 		error.text+= component.name;
 		if( &component != &name.components.back() )

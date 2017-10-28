@@ -19,7 +19,7 @@ namespace CodeBuilderPrivate
 {
 
 Value CodeBuilder::BuildExpressionCodeAndDestroyTemporaries(
-	const IExpressionComponent& expression,
+	const Synt::IExpressionComponent& expression,
 	NamesScope& names,
 	FunctionContext& function_context )
 {
@@ -35,17 +35,17 @@ Value CodeBuilder::BuildExpressionCodeAndDestroyTemporaries(
 }
 
 Value CodeBuilder::BuildExpressionCode(
-	const IExpressionComponent& expression,
+	const Synt::IExpressionComponent& expression,
 	NamesScope& names,
 	FunctionContext& function_context )
 {
 	Value result;
 
-	if( const BinaryOperator* const binary_operator=
-		dynamic_cast<const BinaryOperator*>(&expression) )
+	if( const auto binary_operator=
+		dynamic_cast<const Synt::BinaryOperator*>(&expression) )
 	{
-		if( binary_operator->operator_type_ == BinaryOperatorType::LazyLogicalAnd ||
-			binary_operator->operator_type_ == BinaryOperatorType::LazyLogicalOr )
+		if( binary_operator->operator_type_ == Synt::BinaryOperatorType::LazyLogicalAnd ||
+			binary_operator->operator_type_ == Synt::BinaryOperatorType::LazyLogicalOr )
 		{
 			return
 				BuildLazyBinaryOperator(
@@ -96,28 +96,28 @@ Value CodeBuilder::BuildExpressionCode(
 			return BuildBinaryOperator( *l_var, *r_var, binary_operator->operator_type_, binary_operator->file_pos_, function_context );
 		}
 	}
-	else if( const NamedOperand* const named_operand=
-		dynamic_cast<const NamedOperand*>(&expression) )
+	else if( const auto named_operand=
+		dynamic_cast<const Synt::NamedOperand*>(&expression) )
 	{
 		result= BuildNamedOperand( *named_operand, names, function_context );
 	}
-	else if( const NumericConstant* numeric_constant=
-		dynamic_cast<const NumericConstant*>(&expression) )
+	else if( const auto numeric_constant=
+		dynamic_cast<const Synt::NumericConstant*>(&expression) )
 	{
 		result= BuildNumericConstant( *numeric_constant );
 	}
-	else if( const BooleanConstant* boolean_constant=
-		dynamic_cast<const BooleanConstant*>(&expression) )
+	else if( const auto boolean_constant=
+		dynamic_cast<const Synt::BooleanConstant*>(&expression) )
 	{
 		result= Value( BuildBooleanConstant( *boolean_constant ), boolean_constant->file_pos_ );
 	}
-	else if( const BracketExpression* bracket_expression=
-		dynamic_cast<const BracketExpression*>(&expression) )
+	else if( const auto bracket_expression=
+		dynamic_cast<const Synt::BracketExpression*>(&expression) )
 	{
 		result= BuildExpressionCode( *bracket_expression->expression_, names, function_context );
 	}
-	else if( const TypeNameInExpression* type_name_in_expression=
-		dynamic_cast<const TypeNameInExpression*>(&expression) )
+	else if( const auto type_name_in_expression=
+		dynamic_cast<const Synt::TypeNameInExpression*>(&expression) )
 	{
 		result=
 			Value(
@@ -130,23 +130,23 @@ Value CodeBuilder::BuildExpressionCode(
 		U_ASSERT(false);
 	}
 
-	if( const ExpressionComponentWithUnaryOperators* const expression_with_unary_operators=
-		dynamic_cast<const ExpressionComponentWithUnaryOperators*>( &expression ) )
+	if( const auto expression_with_unary_operators=
+		dynamic_cast<const Synt::ExpressionComponentWithUnaryOperators*>( &expression ) )
 	{
-		for( const IUnaryPostfixOperatorPtr& postfix_operator : expression_with_unary_operators->postfix_operators_ )
+		for( const Synt::IUnaryPostfixOperatorPtr& postfix_operator : expression_with_unary_operators->postfix_operators_ )
 		{
-			if( const IndexationOperator* const indexation_operator=
-				dynamic_cast<const IndexationOperator*>( postfix_operator.get() ) )
+			if( const auto indexation_operator=
+				dynamic_cast<const Synt::IndexationOperator*>( postfix_operator.get() ) )
 			{
 				result= BuildIndexationOperator( result, *indexation_operator, names, function_context );
 			}
-			else if( const MemberAccessOperator* const member_access_operator=
-				dynamic_cast<const MemberAccessOperator*>( postfix_operator.get() ) )
+			else if( const auto member_access_operator=
+				dynamic_cast<const Synt::MemberAccessOperator*>( postfix_operator.get() ) )
 			{
 				result= BuildMemberAccessOperator( result, *member_access_operator, function_context );
 			}
-			else if( const CallOperator* const call_operator=
-				dynamic_cast<const CallOperator*>( postfix_operator.get() ) )
+			else if( const auto call_operator=
+				dynamic_cast<const Synt::CallOperator*>( postfix_operator.get() ) )
 			{
 				result= BuildCallOperator( result, *call_operator, names, function_context );
 			}
@@ -156,26 +156,26 @@ Value CodeBuilder::BuildExpressionCode(
 			}
 		} // for unary postfix operators
 
-		for( const IUnaryPrefixOperatorPtr& prefix_operator : expression_with_unary_operators->prefix_operators_ )
+		for( const Synt::IUnaryPrefixOperatorPtr& prefix_operator : expression_with_unary_operators->prefix_operators_ )
 		{
-			if( const UnaryMinus* const unary_minus=
-				dynamic_cast<const UnaryMinus*>( prefix_operator.get() ) )
+			if( const auto unary_minus=
+				dynamic_cast<const Synt::UnaryMinus*>( prefix_operator.get() ) )
 			{
 				result= BuildUnaryMinus( result, *unary_minus, function_context );
 			}
-			else if( const UnaryPlus* const unary_plus=
-				dynamic_cast<const UnaryPlus*>( prefix_operator.get() ) )
+			else if( const auto unary_plus=
+				dynamic_cast<const Synt::UnaryPlus*>( prefix_operator.get() ) )
 			{
 				(void)unary_plus;
 				// DO NOTHING
 			}
-			else if( const LogicalNot* const logical_not=
-				dynamic_cast<const LogicalNot*>( prefix_operator.get() ) )
+			else if( const auto logical_not=
+				dynamic_cast<const Synt::LogicalNot*>( prefix_operator.get() ) )
 			{
 				result= BuildLogicalNot( result, *logical_not, function_context );
 			}
-			else if( const BitwiseNot* const bitwise_not=
-				dynamic_cast<const BitwiseNot*>( prefix_operator.get() ) )
+			else if( const auto bitwise_not=
+				dynamic_cast<const Synt::BitwiseNot*>( prefix_operator.get() ) )
 			{
 				result= BuildBitwiseNot( result, *bitwise_not, function_context );
 			}
@@ -189,7 +189,7 @@ Value CodeBuilder::BuildExpressionCode(
 Value CodeBuilder::BuildBinaryOperator(
 	const Variable& l_var,
 	const Variable& r_var,
-	const BinaryOperatorType binary_operator,
+	const Synt::BinaryOperatorType binary_operator,
 	const FilePos& file_pos,
 	FunctionContext& function_context )
 {
@@ -202,6 +202,7 @@ Value CodeBuilder::BuildBinaryOperator(
 	const FundamentalType* const l_fundamental_type= l_type.GetFundamentalType();
 	const FundamentalType* const r_fundamental_type= r_var.type.GetFundamentalType();
 
+	using BinaryOperatorType= Synt::BinaryOperatorType;
 	switch( binary_operator )
 	{
 	case BinaryOperatorType::Add:
@@ -762,9 +763,9 @@ Value CodeBuilder::BuildBinaryOperator(
 }
 
 Value CodeBuilder::BuildLazyBinaryOperator(
-	const IExpressionComponent& l_expression,
-	const IExpressionComponent& r_expression,
-	const BinaryOperator& binary_operator,
+	const Synt::IExpressionComponent& l_expression,
+	const Synt::IExpressionComponent& r_expression,
+	const Synt::BinaryOperator& binary_operator,
 	const FilePos& file_pos,
 	NamesScope& names,
 	FunctionContext& function_context )
@@ -805,9 +806,9 @@ Value CodeBuilder::BuildLazyBinaryOperator(
 	llvm::BasicBlock* const block_after_operator= llvm::BasicBlock::Create( llvm_context_ );
 
 	llvm::Value* const l_var_in_register= CreateMoveToLLVMRegisterInstruction( l_var, function_context );
-	if( binary_operator.operator_type_ == BinaryOperatorType::LazyLogicalAnd )
+	if( binary_operator.operator_type_ == Synt::BinaryOperatorType::LazyLogicalAnd )
 		function_context.llvm_ir_builder.CreateCondBr( l_var_in_register, r_part_block, block_after_operator );
-	else if( binary_operator.operator_type_ == BinaryOperatorType::LazyLogicalOr )
+	else if( binary_operator.operator_type_ == Synt::BinaryOperatorType::LazyLogicalOr )
 		function_context.llvm_ir_builder.CreateCondBr( l_var_in_register, block_after_operator, r_part_block );
 	else{ U_ASSERT(false); }
 
@@ -855,9 +856,9 @@ Value CodeBuilder::BuildLazyBinaryOperator(
 	// TODO - remove all blocks code in case of constexpr?
 	if( l_var.constexpr_value != nullptr && r_var_constepxr_value != nullptr )
 	{
-		if( binary_operator.operator_type_ == BinaryOperatorType::LazyLogicalAnd )
+		if( binary_operator.operator_type_ == Synt::BinaryOperatorType::LazyLogicalAnd )
 			result.constexpr_value= llvm::ConstantExpr::getAnd( l_var.constexpr_value, r_var_constepxr_value );
-		else if( binary_operator.operator_type_ == BinaryOperatorType::LazyLogicalOr )
+		else if( binary_operator.operator_type_ == Synt::BinaryOperatorType::LazyLogicalOr )
 			result.constexpr_value= llvm::ConstantExpr::getOr ( l_var.constexpr_value, r_var_constepxr_value );
 		else
 			U_ASSERT(false);
@@ -869,7 +870,7 @@ Value CodeBuilder::BuildLazyBinaryOperator(
 }
 
 Value CodeBuilder::BuildNamedOperand(
-	const NamedOperand& named_operand,
+	const Synt::NamedOperand& named_operand,
 	NamesScope& names,
 	FunctionContext& function_context )
 {
@@ -962,7 +963,7 @@ Value CodeBuilder::BuildNamedOperand(
 	return name_entry->second;
 }
 
-Value CodeBuilder::BuildNumericConstant( const NumericConstant& numeric_constant )
+Value CodeBuilder::BuildNumericConstant( const Synt::NumericConstant& numeric_constant )
 {
 	U_FundamentalType type= GetNumericConstantType( numeric_constant );
 	if( type == U_FundamentalType::InvalidType )
@@ -993,7 +994,7 @@ Value CodeBuilder::BuildNumericConstant( const NumericConstant& numeric_constant
 	return Value( result, numeric_constant.file_pos_ );
 }
 
-Variable CodeBuilder::BuildBooleanConstant( const BooleanConstant& boolean_constant )
+Variable CodeBuilder::BuildBooleanConstant( const Synt::BooleanConstant& boolean_constant )
 {
 	Variable result;
 	result.location= Variable::Location::LLVMRegister;
@@ -1010,7 +1011,7 @@ Variable CodeBuilder::BuildBooleanConstant( const BooleanConstant& boolean_const
 
 Value CodeBuilder::BuildIndexationOperator(
 	const Value& value,
-	const IndexationOperator& indexation_operator,
+	const Synt::IndexationOperator& indexation_operator,
 	NamesScope& names,
 	FunctionContext& function_context )
 {
@@ -1112,7 +1113,7 @@ Value CodeBuilder::BuildIndexationOperator(
 
 Value CodeBuilder::BuildMemberAccessOperator(
 	const Value& value,
-	const MemberAccessOperator& member_access_operator,
+	const Synt::MemberAccessOperator& member_access_operator,
 	FunctionContext& function_context )
 {
 	CHECK_RETURN_ERROR_VALUE(value);
@@ -1173,7 +1174,7 @@ Value CodeBuilder::BuildMemberAccessOperator(
 
 Value CodeBuilder::BuildCallOperator(
 	const Value& function_value,
-	const CallOperator& call_operator,
+	const Synt::CallOperator& call_operator,
 	NamesScope& names,
 	FunctionContext& function_context )
 {
@@ -1181,13 +1182,13 @@ Value CodeBuilder::BuildCallOperator(
 
 	if( function_value.GetType() == NontypeStub::TemplateDependentValue )
 	{
-		for( const IExpressionComponentPtr& arg_expression : call_operator.arguments_ )
+		for( const Synt::IExpressionComponentPtr& arg_expression : call_operator.arguments_ )
 			BuildExpressionCode( *arg_expression, names, function_context );
 		return function_value;
 	}
 	if( function_value.GetType().GetTemplateDependentType() != nullptr )
 	{
-		for( const IExpressionComponentPtr& arg_expression : call_operator.arguments_ )
+		for( const Synt::IExpressionComponentPtr& arg_expression : call_operator.arguments_ )
 			BuildExpressionCode( *arg_expression, names, function_context );
 		Variable result;
 		result.type= GetNextTemplateDependentType();
@@ -1235,7 +1236,7 @@ Value CodeBuilder::BuildCallOperator(
 
 	// Push arguments from call operator.
 	bool args_are_template_dependent= false;
-	for( const IExpressionComponentPtr& arg_expression : call_operator.arguments_ )
+	for( const Synt::IExpressionComponentPtr& arg_expression : call_operator.arguments_ )
 	{
 		U_ASSERT( arg_expression != nullptr );
 		const Value expr_value= BuildExpressionCode( *arg_expression, names, function_context );
@@ -1449,7 +1450,7 @@ Value CodeBuilder::BuildCallOperator(
 
 Variable CodeBuilder::BuildTempVariableConstruction(
 	const Type& type,
-	const CallOperator& call_operator,
+	const Synt::CallOperator& call_operator,
 	NamesScope& names,
 	FunctionContext& function_context )
 {
@@ -1468,7 +1469,7 @@ Variable CodeBuilder::BuildTempVariableConstruction(
 
 Value CodeBuilder::BuildUnaryMinus(
 	const Value& value,
-	const UnaryMinus& unary_minus,
+	const Synt::UnaryMinus& unary_minus,
 	FunctionContext& function_context )
 {
 	CHECK_RETURN_ERROR_VALUE(value);
@@ -1524,7 +1525,7 @@ Value CodeBuilder::BuildUnaryMinus(
 
 Value CodeBuilder::BuildLogicalNot(
 	const Value& value,
-	const LogicalNot& logical_not,
+	const Synt::LogicalNot& logical_not,
 	FunctionContext& function_context )
 {
 	CHECK_RETURN_ERROR_VALUE(value);
@@ -1563,7 +1564,7 @@ Value CodeBuilder::BuildLogicalNot(
 
 Value CodeBuilder::BuildBitwiseNot(
 	const Value& value,
-	const BitwiseNot& bitwise_not,
+	const Synt::BitwiseNot& bitwise_not,
 	FunctionContext& function_context )
 {
 	CHECK_RETURN_ERROR_VALUE(value);

@@ -47,7 +47,7 @@ size_t SourceGraphLoader::LoadNode_r(
 	for( Lexem& lexem :lex_result.lexems )
 		lexem.file_pos.file_index= static_cast<unsigned short>(node_index);
 
-	SyntaxAnalysisResult synt_result= SyntaxAnalysis( lex_result.lexems );
+	Synt::SyntaxAnalysisResult synt_result= Synt::SyntaxAnalysis( lex_result.lexems );
 	for( const std::string& syntax_error_message : synt_result.error_messages )
 		std::cout << syntax_error_message << "\n";
 	result.syntax_errors.insert( result.syntax_errors.end(), synt_result.error_messages.begin(), synt_result.error_messages.end() );

@@ -7,6 +7,9 @@
 namespace U
 {
 
+namespace Synt
+{
+
 typedef std::string SyntaxErrorMessage;
 typedef std::vector<SyntaxErrorMessage> SyntaxErrorMessages;
 
@@ -18,5 +21,7 @@ struct SyntaxAnalysisResult
 };
 
 SyntaxAnalysisResult SyntaxAnalysis( const Lexems& lexems );
+
+} // namespace Synt
 
 } // namespace U

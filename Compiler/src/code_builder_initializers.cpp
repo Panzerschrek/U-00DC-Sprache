@@ -21,39 +21,37 @@ static const SizeType g_max_array_size_to_linear_initialization= 8u;
 
 llvm::Constant* CodeBuilder::ApplyInitializer(
 	const Variable& variable,
-	const IInitializer& initializer,
+	const Synt::IInitializer& initializer,
 	NamesScope& block_names,
 	FunctionContext& function_context )
 {
-	if( const ArrayInitializer* const array_initializer=
-		dynamic_cast<const ArrayInitializer*>(&initializer) )
+	if( const auto array_initializer=
+		dynamic_cast<const Synt::ArrayInitializer*>(&initializer) )
 	{
 		return ApplyArrayInitializer( variable, *array_initializer, block_names, function_context );
 	}
-	else if( const StructNamedInitializer* const struct_named_initializer=
-		dynamic_cast<const StructNamedInitializer*>(&initializer) )
+	else if( const auto struct_named_initializer=
+		dynamic_cast<const Synt::StructNamedInitializer*>(&initializer) )
 	{
 		ApplyStructNamedInitializer( variable, *struct_named_initializer, block_names, function_context );
 	}
-	else if( const ConstructorInitializer* const constructor_initializer=
-		dynamic_cast<const ConstructorInitializer*>(&initializer) )
+	else if( const auto constructor_initializer=
+		dynamic_cast<const Synt::ConstructorInitializer*>(&initializer) )
 	{
 		return ApplyConstructorInitializer( variable, constructor_initializer->call_operator, block_names, function_context );
 	}
-	else if( const ExpressionInitializer* const expression_initializer=
-		dynamic_cast<const ExpressionInitializer*>(&initializer) )
+	else if( const auto expression_initializer=
+		dynamic_cast<const Synt::ExpressionInitializer*>(&initializer) )
 	{
 		return ApplyExpressionInitializer( variable, *expression_initializer, block_names, function_context );
 	}
-	else if( const ZeroInitializer* const zero_initializer=
-		dynamic_cast<const ZeroInitializer*>(&initializer) )
+	else if( const auto zero_initializer=
+		dynamic_cast<const Synt::ZeroInitializer*>(&initializer) )
 	{
 		return ApplyZeroInitializer( variable, *zero_initializer, block_names, function_context );
 	}
 	else
-	{
 		U_ASSERT(false);
-	}
 
 	return nullptr;
 }
@@ -113,7 +111,7 @@ void CodeBuilder::ApplyEmptyInitializer(
 		this_overloaded_methods_set.this_= variable;
 		this_overloaded_methods_set.overloaded_methods_set= *constructors_set;
 
-		const CallOperator call_operator( file_pos, std::vector<IExpressionComponentPtr>() );
+		const Synt::CallOperator call_operator( file_pos, std::vector<Synt::IExpressionComponentPtr>() );
 		NamesScope dummy_names_scope( ProgramString(), nullptr );
 		BuildCallOperator( this_overloaded_methods_set, call_operator, dummy_names_scope, function_context );
 	}
@@ -123,13 +121,13 @@ void CodeBuilder::ApplyEmptyInitializer(
 
 llvm::Constant* CodeBuilder::ApplyArrayInitializer(
 	const Variable& variable,
-	const ArrayInitializer& initializer,
+	const Synt::ArrayInitializer& initializer,
 	NamesScope& block_names,
 	FunctionContext& function_context )
 {
 	if( variable.type.GetTemplateDependentType() != nullptr )
 	{
-		for( const IInitializerPtr& sub_initializer : initializer.initializers )
+		for( const Synt::IInitializerPtr& sub_initializer : initializer.initializers )
 			ApplyInitializer( variable, *sub_initializer, block_names, function_context );
 		return nullptr;
 	}
@@ -194,13 +192,13 @@ llvm::Constant* CodeBuilder::ApplyArrayInitializer(
 
 void CodeBuilder::ApplyStructNamedInitializer(
 	const Variable& variable,
-	const StructNamedInitializer& initializer,
+	const Synt::StructNamedInitializer& initializer,
 	NamesScope& block_names,
 	FunctionContext& function_context )
 {
 	if( variable.type.GetTemplateDependentType() != nullptr )
 	{
-		for( const StructNamedInitializer::MemberInitializer& member_initializer : initializer.members_initializers )
+		for( const Synt::StructNamedInitializer::MemberInitializer& member_initializer : initializer.members_initializers )
 			ApplyInitializer( variable, *member_initializer.initializer, block_names, function_context );
 		return;
 	}
@@ -223,7 +221,7 @@ void CodeBuilder::ApplyStructNamedInitializer(
 	llvm::Value* index_list[2];
 	index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
 
-	for( const StructNamedInitializer::MemberInitializer& member_initializer : initializer.members_initializers )
+	for( const Synt::StructNamedInitializer::MemberInitializer& member_initializer : initializer.members_initializers )
 	{
 		if( initialized_members_names.count( member_initializer.name ) != 0 )
 		{
@@ -275,13 +273,13 @@ void CodeBuilder::ApplyStructNamedInitializer(
 
 llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 	const Variable& variable,
-	const CallOperator& call_operator,
+	const Synt::CallOperator& call_operator,
 	NamesScope& block_names,
 	FunctionContext& function_context )
 {
 	if( variable.type.GetTemplateDependentType() != nullptr )
 	{
-		for( const IExpressionComponentPtr& arg : call_operator.arguments_ )
+		for( const Synt::IExpressionComponentPtr& arg : call_operator.arguments_ )
 			BuildExpressionCode( *arg, block_names, function_context );
 		return nullptr;
 	}
@@ -473,7 +471,7 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 
 llvm::Constant* CodeBuilder::ApplyExpressionInitializer(
 	const Variable& variable,
-	const ExpressionInitializer& initializer,
+	const Synt::ExpressionInitializer& initializer,
 	NamesScope& block_names,
 	FunctionContext& function_context )
 {
@@ -519,7 +517,7 @@ llvm::Constant* CodeBuilder::ApplyExpressionInitializer(
 
 llvm::Constant* CodeBuilder::ApplyZeroInitializer(
 	const Variable& variable,
-	const ZeroInitializer& initializer,
+	const Synt::ZeroInitializer& initializer,
 	NamesScope& block_names,
 	FunctionContext& function_context )
 {
@@ -635,7 +633,7 @@ llvm::Constant* CodeBuilder::ApplyZeroInitializer(
 	}
 	else
 	{
-		// REPORT unsupported type for zero initializer
+		// TODO - report unsupported type for zero initializer
 		return nullptr;
 	}
 

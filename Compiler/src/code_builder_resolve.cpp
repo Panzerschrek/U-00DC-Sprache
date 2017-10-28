@@ -15,7 +15,7 @@ void CodeBuilder::PushCacheFillResolveHandler( ResolvingCache& resolving_cache, 
 	resolving_funcs_stack_.emplace_back( new PreResolveFunc(
 		[this, &resolving_cache, &start_namespace, prev_handler_index](
 			NamesScope& names_scope,
-			const ComplexName::Component* components,
+			const Synt::ComplexName::Component* components,
 			size_t component_count,
 			size_t& out_skip_components )
 			-> std::pair<const NamesScope::InsertedName*, NamesScope*>
@@ -53,7 +53,7 @@ void CodeBuilder::PushCacheGetResolveHandelr( const ResolvingCache& resolving_ca
 	resolving_funcs_stack_.emplace_back( new PreResolveFunc(
 		[this, &resolving_cache, prev_handler_index](
 			NamesScope& names_scope,
-			const ComplexName::Component* components,
+			const Synt::ComplexName::Component* components,
 			size_t component_count,
 			size_t& out_skip_components )
 			-> std::pair<const NamesScope::InsertedName*, NamesScope*>
@@ -78,7 +78,7 @@ void CodeBuilder::PopResolveHandler()
 	resolving_funcs_stack_.pop_back();
 }
 
-const NamesScope::InsertedName* CodeBuilder::ResolveName( const FilePos& file_pos, NamesScope& names_scope, const ComplexName& complex_name )
+const NamesScope::InsertedName* CodeBuilder::ResolveName( const FilePos& file_pos, NamesScope& names_scope, const Synt::ComplexName& complex_name )
 {
 	return ResolveName( file_pos, names_scope, complex_name.components.data(), complex_name.components.size() );
 }
@@ -86,7 +86,7 @@ const NamesScope::InsertedName* CodeBuilder::ResolveName( const FilePos& file_po
 const NamesScope::InsertedName* CodeBuilder::ResolveName(
 	const FilePos& file_pos,
 	NamesScope& names_scope,
-	const ComplexName::Component* components,
+	const Synt::ComplexName::Component* components,
 	size_t component_count )
 {
 	U_ASSERT( !resolving_funcs_stack_.empty() );
@@ -183,7 +183,7 @@ const NamesScope::InsertedName* CodeBuilder::ResolveName(
 
 const NamesScope::InsertedName* CodeBuilder::PreResolve(
 	NamesScope& names_scope,
-	const ComplexName::Component* const components,
+	const Synt::ComplexName::Component* const components,
 	const size_t component_count,
 	size_t& out_skip_components )
 {
@@ -192,7 +192,7 @@ const NamesScope::InsertedName* CodeBuilder::PreResolve(
 
 std::pair<const NamesScope::InsertedName*, NamesScope*> CodeBuilder::PreResolveDefault(
 	NamesScope& names_scope,
-	const ComplexName::Component* components,
+	const Synt::ComplexName::Component* components,
 	size_t component_count,
 	size_t& out_skip_components )
 {

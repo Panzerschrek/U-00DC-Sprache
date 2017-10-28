@@ -19,9 +19,9 @@ namespace U
 namespace CodeBuilderPrivate
 {
 
-static const ComplexName& GetComplexNameForGeneratedClass()
+static const Synt::ComplexName& GetComplexNameForGeneratedClass()
 {
-	static ComplexName name;
+	static Synt::ComplexName name;
 	static bool init= false;
 	if( !init )
 	{
@@ -42,7 +42,7 @@ static const ProgramString& GetNameForGeneratedClass()
 static const ProgramString g_template_parameters_namespace_prefix= "_tp_ns-"_SpC;
 
 void CodeBuilder::PrepareTypeTemplate(
-	const TemplateBase& type_template_declaration,
+	const Synt::TemplateBase& type_template_declaration,
 	NamesScope& names_scope )
 {
 	/* SPRACHE_TODO:
@@ -74,7 +74,7 @@ void CodeBuilder::PrepareTypeTemplate(
 	const NamesScopePtr template_parameters_namespace = std::make_shared<NamesScope>( g_template_parameters_namespace_prefix, &names_scope );
 
 	// Check and fill template parameters.
-	for( const TemplateBase::Arg& arg : type_template_declaration.args_ )
+	for( const Synt::TemplateBase::Arg& arg : type_template_declaration.args_ )
 	{
 		U_ASSERT( arg.name.components.size() == 1u );
 		const ProgramString& arg_name= arg.name.components.front().name;
@@ -177,7 +177,7 @@ void CodeBuilder::PrepareTypeTemplate(
 	{
 		U_ASSERT( type_template_declaration.signature_args_.empty() );
 		// Assign template arguments to signature arguments.
-		for( const TemplateBase::Arg& arg : type_template_declaration.args_ )
+		for( const Synt::TemplateBase::Arg& arg : type_template_declaration.args_ )
 		{
 			PrepareTemplateSignatureParameter( type_template_declaration.file_pos_, arg.name, *template_parameters_namespace, template_parameters, template_parameters_usage_flags );
 			type_template->signature_arguments.push_back(&arg.name);
@@ -189,7 +189,7 @@ void CodeBuilder::PrepareTypeTemplate(
 	{
 		// Check and fill signature args.
 		type_template->first_optional_signature_argument= 0u;
-		for( const TemplateBase::SignatureArg& signature_arg : type_template_declaration.signature_args_ )
+		for( const Synt::TemplateBase::SignatureArg& signature_arg : type_template_declaration.signature_args_ )
 		{
 			PrepareTemplateSignatureParameter( type_template_declaration.file_pos_, signature_arg.name, *template_parameters_namespace, template_parameters, template_parameters_usage_flags );
 			type_template->signature_arguments.push_back(&signature_arg.name);
@@ -219,12 +219,12 @@ void CodeBuilder::PrepareTypeTemplate(
 
 	// Make first check-pass for template. Resolve all names in this pass.
 
-	ComplexName temp_class_name;
+	Synt::ComplexName temp_class_name;
 	temp_class_name.components.emplace_back();
 	temp_class_name.components.back().name = "_temp"_SpC + type_template_name;
 	temp_class_name.components.back().is_generated= true;
 
-	if( const ClassTemplateDeclaration* const template_class= dynamic_cast<const ClassTemplateDeclaration*>( &type_template_declaration ) )
+	if( const Synt::ClassTemplate* const template_class= dynamic_cast<const Synt::ClassTemplate*>( &type_template_declaration ) )
 	{
 		const ClassProxyPtr class_proxy= PrepareClass( *template_class->class_, temp_class_name, *template_parameters_namespace );
 
@@ -234,7 +234,7 @@ void CodeBuilder::PrepareTypeTemplate(
 			RemoveTempClassLLVMValues( *class_proxy->class_ );
 		}
 	}
-	else if( const TypedefTemplate* const typedef_template= dynamic_cast<const TypedefTemplate*>( &type_template_declaration ) )
+	else if( const Synt::TypedefTemplate* const typedef_template= dynamic_cast<const Synt::TypedefTemplate*>( &type_template_declaration ) )
 	{
 		PrepareType( typedef_template->typedef_->file_pos_, typedef_template->typedef_->value, *template_parameters_namespace );
 	}
@@ -246,7 +246,7 @@ void CodeBuilder::PrepareTypeTemplate(
 
 void CodeBuilder::PrepareTemplateSignatureParameter(
 	const FilePos& file_pos,
-	const ComplexName& signature_parameter,
+	const Synt::ComplexName& signature_parameter,
 	NamesScope& names_scope,
 	const std::vector<TypeTemplate::TemplateParameter>& template_parameters,
 	std::vector<bool>& template_parameters_usage_flags )
@@ -274,9 +274,9 @@ void CodeBuilder::PrepareTemplateSignatureParameter(
 	}
 	if( start_name->second.GetTypeTemplate() != nullptr )
 	{
-		for( const IExpressionComponentPtr& template_parameter : signature_parameter.components.back().template_parameters )
+		for( const Synt::IExpressionComponentPtr& template_parameter : signature_parameter.components.back().template_parameters )
 		{
-			if( const NamedOperand* const named_operand= dynamic_cast<const NamedOperand*>(template_parameter.get()))
+			if( const Synt::NamedOperand* const named_operand= dynamic_cast<const Synt::NamedOperand*>(template_parameter.get()))
 				PrepareTemplateSignatureParameter( named_operand->file_pos_, named_operand->name_, names_scope, template_parameters, template_parameters_usage_flags );
 			else
 				errors_.push_back( ReportUnsupportedExpressionTypeForTemplateSignatureArgument( file_pos ) );
@@ -287,7 +287,7 @@ void CodeBuilder::PrepareTemplateSignatureParameter(
 
 const NamesScope::InsertedName* CodeBuilder::ResolveForTemplateSignatureParameter(
 	const FilePos& file_pos,
-	const ComplexName& signature_parameter,
+	const Synt::ComplexName& signature_parameter,
 	NamesScope& names_scope )
 {
 	size_t component_number= 0u;
@@ -299,7 +299,7 @@ const NamesScope::InsertedName* CodeBuilder::ResolveForTemplateSignatureParamete
 	while( component_number < signature_parameter.components.size() )
 	{
 		NamesScope* next_space= nullptr;
-		const ComplexName::Component& component= signature_parameter.components[component_number - 1u];
+		const Synt::ComplexName::Component& component= signature_parameter.components[component_number - 1u];
 		const bool is_last_component= component_number + 1u == signature_parameter.components.size();
 
 		if( const NamesScopePtr inner_namespace= current_name->second.GetNamespace() )
@@ -349,7 +349,7 @@ const NamesScope::InsertedName* CodeBuilder::ResolveForTemplateSignatureParamete
 		else
 			return nullptr;
 
-		const ComplexName::Component& next_component= signature_parameter.components[component_number];
+		const Synt::ComplexName::Component& next_component= signature_parameter.components[component_number];
 		if( next_space != nullptr )
 			current_name= next_space->GetThisScopeName( next_component.name );
 		else if( !is_last_component )
@@ -364,7 +364,7 @@ const NamesScope::InsertedName* CodeBuilder::ResolveForTemplateSignatureParamete
 bool CodeBuilder::DuduceTemplateArguments(
 	const TypeTemplatePtr& type_template_ptr,
 	const TemplateParameter& template_parameter,
-	const ComplexName& signature_parameter,
+	const Synt::ComplexName& signature_parameter,
 	const FilePos& signature_parameter_file_pos,
 	DeducibleTemplateParameters& deducible_template_parameters,
 	NamesScope& names_scope )
@@ -497,7 +497,7 @@ bool CodeBuilder::DuduceTemplateArguments(
 		if( given_type_class->base_template->class_template != inner_type_template )
 			return false;
 
-		const ComplexName::Component& name_component= signature_parameter.components.back();
+		const Synt::ComplexName::Component& name_component= signature_parameter.components.back();
 		if( !name_component.have_template_parameters )
 			return false;
 		if( signature_parameter.components.back().template_parameters.size() < inner_type_template->first_optional_signature_argument )
@@ -506,7 +506,7 @@ bool CodeBuilder::DuduceTemplateArguments(
 		for( size_t i= 0u; i < name_component.template_parameters.size(); ++i)
 		{
 			// SPRACHE_TODO - Allow expressions as signature arguments - value-signature-arguments.
-			if( const NamedOperand* const named_operand= dynamic_cast<const NamedOperand*>( name_component.template_parameters[i].get() ) )
+			if( const Synt::NamedOperand* const named_operand= dynamic_cast<const Synt::NamedOperand*>( name_component.template_parameters[i].get() ) )
 			{
 				const bool deduced= DuduceTemplateArguments(
 					type_template_ptr,
@@ -530,7 +530,7 @@ bool CodeBuilder::DuduceTemplateArguments(
 NamesScope::InsertedName* CodeBuilder::GenTemplateType(
 	const FilePos& file_pos,
 	const TypeTemplatePtr& type_template_ptr,
-	const std::vector<IExpressionComponentPtr>& template_arguments,
+	const std::vector<Synt::IExpressionComponentPtr>& template_arguments,
 	NamesScope& template_names_scope,
 	NamesScope& arguments_names_scope )
 {
@@ -586,7 +586,7 @@ NamesScope::InsertedName* CodeBuilder::GenTemplateType(
 			}
 		}
 
-		const ComplexName& name= *type_template.signature_arguments[i];
+		const Synt::ComplexName& name= *type_template.signature_arguments[i];
 
 		// TODO - maybe add some errors, if not deduced?
 		if( const Type* const type_name= value.GetTypeName() )
@@ -699,7 +699,7 @@ NamesScope::InsertedName* CodeBuilder::GenTemplateType(
 	template_parameters_namespace->SetThisNamespaceName( name_encoded );
 	template_names_scope.AddName( name_encoded, Value( template_parameters_namespace, type_template_ptr->syntax_element->file_pos_ /* TODO - check file_pos */ ) );
 
-	if( const ClassTemplateDeclaration* const template_class= dynamic_cast<const ClassTemplateDeclaration*>( type_template.syntax_element ) )
+	if( const Synt::ClassTemplate* const template_class= dynamic_cast<const Synt::ClassTemplate*>( type_template.syntax_element ) )
 	{
 		const TemplateClassKey class_key{ type_template_ptr, name_encoded };
 		const auto cache_class_it= template_classes_cache_.find( class_key );
@@ -738,7 +738,7 @@ NamesScope::InsertedName* CodeBuilder::GenTemplateType(
 		template_classes_cache_[class_key]= class_proxy;
 		return template_parameters_namespace->GetThisScopeName( GetNameForGeneratedClass() );
 	}
-	else if( const TypedefTemplate* const typedef_template= dynamic_cast<const TypedefTemplate*>( type_template.syntax_element ) )
+	else if( const Synt::TypedefTemplate* const typedef_template= dynamic_cast<const Synt::TypedefTemplate*>( type_template.syntax_element ) )
 	{
 		const Type type= PrepareType( typedef_template->typedef_->file_pos_, typedef_template->typedef_->value, *template_parameters_namespace );
 
@@ -758,7 +758,7 @@ NamesScope::InsertedName* CodeBuilder::GenTemplateType(
 
 bool CodeBuilder::NameShadowsTemplateArgument( const ProgramString& name, NamesScope& names_scope )
 {
-	ComplexName::Component component;
+	Synt::ComplexName::Component component;
 	component.name= name;
 	component.is_generated= true;
 	const NamesScope::InsertedName* const name_resolved= ResolveName( FilePos(), names_scope, &component, 1u );
