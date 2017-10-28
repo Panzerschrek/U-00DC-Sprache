@@ -127,6 +127,12 @@ private:
 		const std::vector<TypeTemplate::TemplateParameter>& template_parameters,
 		std::vector<bool>& template_parameters_usage_flags );
 
+	// Resolve as deep, as can, but does not instantiate last component, if it is template.
+	const NamesScope::InsertedName* ResolveForTemplateSignatureParameter(
+		const FilePos& file_pos,
+		const ComplexName& signature_parameter,
+		NamesScope& names_scope );
+
 	// Returns true, if all ok.
 	bool DuduceTemplateArguments(
 		const TypeTemplatePtr& type_template_ptr,

@@ -265,14 +265,16 @@ void CodeBuilder::PrepareTemplateSignatureParameter(
 	}
 
 	// Do recursive preresolve for subsequent deduction.
-	size_t skip_components= 0u;
 	const NamesScope::InsertedName* const start_name=
-		PreResolve( names_scope, signature_parameter.components.data(), signature_parameter.components.size(), skip_components );
+		ResolveForTemplateSignatureParameter( file_pos, signature_parameter, names_scope );
 	if( start_name == nullptr )
-		errors_.push_back( ReportNameNotFound( file_pos, signature_parameter ) );
-	for( const ComplexName::Component& component : signature_parameter.components )
 	{
-		for( const IExpressionComponentPtr& template_parameter : component.template_parameters )
+		errors_.push_back( ReportNameNotFound( file_pos, signature_parameter ) );
+		return;
+	}
+	if( start_name->second.GetTypeTemplate() != nullptr )
+	{
+		for( const IExpressionComponentPtr& template_parameter : signature_parameter.components.back().template_parameters )
 		{
 			if( const NamedOperand* const named_operand= dynamic_cast<const NamedOperand*>(template_parameter.get()))
 				PrepareTemplateSignatureParameter( named_operand->file_pos_, named_operand->name_, names_scope, template_parameters, template_parameters_usage_flags );
@@ -281,6 +283,82 @@ void CodeBuilder::PrepareTemplateSignatureParameter(
 			// SPRACHE_TODO - allow value-expressions here
 		}
 	}
+}
+
+const NamesScope::InsertedName* CodeBuilder::ResolveForTemplateSignatureParameter(
+	const FilePos& file_pos,
+	const ComplexName& signature_parameter,
+	NamesScope& names_scope )
+{
+	size_t component_number= 0u;
+	const NamesScope::InsertedName* const start_name=
+		PreResolve( names_scope, signature_parameter.components.data(), signature_parameter.components.size(), component_number );
+	if( start_name == nullptr )
+		return nullptr;
+	const NamesScope::InsertedName* current_name= start_name;
+	while( component_number < signature_parameter.components.size() )
+	{
+		NamesScope* next_space= nullptr;
+		const ComplexName::Component& component= signature_parameter.components[component_number - 1u];
+		const bool is_last_component= component_number + 1u == signature_parameter.components.size();
+
+		if( const NamesScopePtr inner_namespace= current_name->second.GetNamespace() )
+			next_space= inner_namespace.get();
+		else if( const Type* const type= current_name->second.GetTypeName() )
+		{
+			if( Class* const class_= type->GetClassType() )
+			{
+				if( !is_last_component && class_->is_incomplete )
+				{
+					errors_.push_back( ReportUsingIncompleteType( file_pos, type->ToString() ) );
+					return nullptr;
+				}
+				next_space= &class_->members;
+			}
+		}
+		else if( const TypeTemplatePtr type_template = current_name->second.GetTypeTemplate() )
+		{
+			if( component.have_template_parameters && !is_last_component )
+			{
+				const NamesScope::InsertedName* generated_type=
+					GenTemplateType(
+						FilePos(),
+						type_template,
+						component.template_parameters,
+						*type_template->parent_namespace,
+						names_scope );
+				if( generated_type == nullptr )
+					return nullptr;
+				if( generated_type->second.GetType() == NontypeStub::TemplateDependentValue )
+					return generated_type;
+
+				const Type* const type= generated_type->second.GetTypeName();
+				U_ASSERT( type != nullptr );
+				if( type->GetTemplateDependentType() != nullptr )
+					return &names_scope.GetTemplateDependentValue();
+				if( Class* const class_= type->GetClassType() )
+					next_space= &class_->members;
+			}
+			else if( !is_last_component )
+			{
+				errors_.push_back( ReportTemplateInstantiationRequired( file_pos, type_template->syntax_element->name_ ) );
+				return nullptr;
+			}
+
+		}
+		else
+			return nullptr;
+
+		const ComplexName::Component& next_component= signature_parameter.components[component_number];
+		if( next_space != nullptr )
+			current_name= next_space->GetThisScopeName( next_component.name );
+		else if( !is_last_component )
+			return nullptr;
+
+		++component_number;
+	}
+
+	return current_name;
 }
 
 bool CodeBuilder::DuduceTemplateArguments(
@@ -400,92 +478,16 @@ bool CodeBuilder::DuduceTemplateArguments(
 		return true;
 	}
 
-	// Process simple fundamental type.
-	if( given_type.GetFundamentalType() != nullptr )
-	{
-		if( const NamesScope::InsertedName* const inserted_name= ResolveName( template_file_pos, names_scope, signature_parameter ) )
-		{
-			if( const Type* type= inserted_name->second.GetTypeName() )
-			{
-				if( *type == given_type )
-					return true;
-			}
-		}
-	}
-
-	size_t component_number= 0u;
-	const NamesScope::InsertedName* const start_name=
-		PreResolve( names_scope, signature_parameter.components.data(), signature_parameter.components.size(), component_number );
-	if( start_name == nullptr )
-		return false;
-	const NamesScope::InsertedName* current_name= start_name;
-	while( component_number < signature_parameter.components.size() )
-	{
-		NamesScope* next_space= nullptr;
-		const ComplexName::Component& component= signature_parameter.components[component_number - 1u];
-		const bool is_last_component= component_number + 1u == signature_parameter.components.size();
-
-		if( const NamesScopePtr inner_namespace= current_name->second.GetNamespace() )
-			next_space= inner_namespace.get();
-		else if( const Type* const type= current_name->second.GetTypeName() )
-		{
-			if( Class* const class_= type->GetClassType() )
-			{
-				if( !is_last_component && class_->is_incomplete )
-				{
-					errors_.push_back( ReportUsingIncompleteType( template_file_pos, type->ToString() ) );
-					return false;
-				}
-				next_space= &class_->members;
-			}
-		}
-		else if( const TypeTemplatePtr type_template = current_name->second.GetTypeTemplate() )
-		{
-			if( component.have_template_parameters && !is_last_component )
-			{
-				const NamesScope::InsertedName* generated_type=
-					GenTemplateType(
-						FilePos(),
-						type_template,
-						component.template_parameters,
-						*type_template->parent_namespace,
-						names_scope );
-				if( generated_type == nullptr )
-					return false;
-				if( generated_type->second.GetType() == NontypeStub::TemplateDependentValue )
-					return true;
-
-				const Type* const type= generated_type->second.GetTypeName();
-				U_ASSERT( type != nullptr );
-				if( type->GetTemplateDependentType() != nullptr )
-					return true;
-				if( Class* const class_= type->GetClassType() )
-					next_space= &class_->members;
-			}
-			else if( !is_last_component )
-			{
-				errors_.push_back( ReportTemplateInstantiationRequired( template_file_pos, type_template->syntax_element->name_ ) );
-				return false;
-			}
-
-		}
-		else
-			return false;
-
-		const ComplexName::Component& next_component= signature_parameter.components[component_number];
-		if( next_space != nullptr )
-			current_name= next_space->GetThisScopeName( next_component.name );
-		++component_number;
-	}
-
-	if( current_name == nullptr )
+	const NamesScope::InsertedName* const signature_parameter_name=
+		ResolveForTemplateSignatureParameter( signature_parameter_file_pos, signature_parameter, names_scope );
+	if( signature_parameter_name == nullptr )
 		return false;
 
-	if( const Type* const type= current_name->second.GetTypeName() )
+	if( const Type* const type= signature_parameter_name->second.GetTypeName() )
 	{
 		return *type == given_type;
 	}
-	else if( const TypeTemplatePtr inner_type_template = current_name->second.GetTypeTemplate() )
+	else if( const TypeTemplatePtr inner_type_template = signature_parameter_name->second.GetTypeTemplate() )
 	{
 		const Class* const given_type_class= given_type.GetClassType();
 		if( given_type_class == nullptr )

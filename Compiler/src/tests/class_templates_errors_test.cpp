@@ -615,55 +615,6 @@ U_TEST( TemplateParametersDeductionFailed_Test6 )
 	U_TEST_ASSERT( error.file_pos.line == 7u );
 }
 
-U_TEST( TemplateParametersDeductionFailed_Test7 )
-{
-	static const char c_program_text[]=
-	R"(
-		template</ type T />
-		struct FFF</ T />
-		{
-			struct Ball{}
-			struct Box{}
-		}
-
-		template</ type T /> struct Baz</ FFF</ T />::Ball /> {}
-
-		fn Foo( Baz</ FFF</ T />::Box /> &imut b ) {}  // Template requires FFF</T/>::Ball, but FFF</T/>::Box given.
-	)";
-
-	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
-
-	U_TEST_ASSERT( !build_result.errors.empty() );
-	const CodeBuilderError& error= build_result.errors.front();
-
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NameNotFound );
-	U_TEST_ASSERT( error.file_pos.line == 11u );
-}
-
-U_TEST( TemplateParametersDeductionFailed_Test8 )
-{
-	static const char c_program_text[]=
-	R"(
-		template</ type T />
-		struct FFF</ T />
-		{
-			struct Ball{}
-		}
-
-		template</ type T /> struct Baz</ FFF</ T />::Ball /> {}
-
-		fn Foo( Baz</ FFF</ T /> /> &imut b ) {}  // Template requires FFF</T/>::Ball, but FFF</T/> given.
-	)";
-
-	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
-
-	U_TEST_ASSERT( !build_result.errors.empty() );
-	const CodeBuilderError& error= build_result.errors.front();
-
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NameNotFound );
-	U_TEST_ASSERT( error.file_pos.line == 10u );
-}
-
 U_TEST( TemplateParametersDeductionFailed_Test9 )
 {
 	static const char c_program_text[]=
@@ -686,34 +637,6 @@ U_TEST( TemplateParametersDeductionFailed_Test9 )
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NameNotFound );
 	U_TEST_ASSERT( error.file_pos.line == 10u );
-}
-
-U_TEST( TemplateParametersDeductionFailed_Test10 )
-{
-	static const char c_program_text[]=
-	R"(
-		template</ type T />
-		struct FFF</ T />
-		{
-			struct Ball{}
-		}
-
-		template</ type T /> struct Baz</ FFF</ T />::Ball /> {}
-
-		// Can not deduce such kind of template parameter.
-		fn Foo()
-		{
-			var Baz</ FFF</ f32 />::Ball /> baz;
-		}
-	)";
-
-	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
-
-	U_TEST_ASSERT( !build_result.errors.empty() );
-	const CodeBuilderError& error= build_result.errors.front();
-
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NameNotFound );
-	U_TEST_ASSERT( error.file_pos.line == 13u );
 }
 
 } // namespace U
