@@ -512,7 +512,7 @@ CodeBuilderError ReportStaticAssertionFailed( const FilePos& file_pos )
 	return error;
 }
 
-CodeBuilderError ReportArrayIndexOutOfBounds( const FilePos& file_pos, const size_t index, const size_t array_size )
+CodeBuilderError ReportArrayIndexOutOfBounds( const FilePos& file_pos, const SizeType index, const SizeType array_size )
 {
 	CodeBuilderError error;
 	error.file_pos= file_pos;
@@ -538,8 +538,8 @@ CodeBuilderError ReportArrayInitializerForNonArray( const FilePos& file_pos )
 
 CodeBuilderError ReportArrayInitializersCountMismatch(
 	const FilePos& file_pos,
-	const size_t expected_initializers,
-	const size_t real_initializers )
+	const SizeType expected_initializers,
+	const SizeType real_initializers )
 {
 	CodeBuilderError error;
 	error.file_pos= file_pos;

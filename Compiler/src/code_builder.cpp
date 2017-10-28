@@ -422,7 +422,6 @@ Type CodeBuilder::PrepareType(
 		{
 			if( size_variable->constexpr_value != nullptr )
 			{
-
 				if( const FundamentalType* const size_fundamental_type= size_variable->type.GetFundamentalType() )
 				{
 					if( IsInteger( size_fundamental_type->fundamental_type ) )
@@ -435,7 +434,7 @@ Type CodeBuilder::PrepareType(
 							if( IsSignedInteger( size_fundamental_type->fundamental_type ) && size_value.isNegative() )
 								errors_.push_back( ReportArraySizeIsNegative( num_file_pos ) );
 							else
-								array_type.size= size_t( size_value.getLimitedValue() );
+								array_type.size= SizeType( size_value.getLimitedValue() );
 						}
 					}
 					else
@@ -492,6 +491,8 @@ Type CodeBuilder::PrepareType(
 					array_type->ArraySizeOrZero() );
 		}
 	}
+
+	// TODO - generate error, if total size of type (incuding arrays) is more, than half of address space of target architecture.
 
 	return result;
 }
@@ -1222,7 +1223,7 @@ void CodeBuilder::TryCallCopyConstructor(
 }
 
 void CodeBuilder::GenerateLoop(
-	const size_t iteration_count,
+	const SizeType iteration_count,
 	const std::function<void(llvm::Value* counter_value)>& loop_body,
 	FunctionContext& function_context)
 {

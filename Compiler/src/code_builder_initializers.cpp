@@ -17,7 +17,7 @@ namespace U
 namespace CodeBuilderPrivate
 {
 
-static const size_t g_max_array_size_to_linear_initialization= 8u;
+static const SizeType g_max_array_size_to_linear_initialization= 8u;
 
 llvm::Constant* CodeBuilder::ApplyInitializer(
 	const Variable& variable,
@@ -163,7 +163,7 @@ llvm::Constant* CodeBuilder::ApplyArrayInitializer(
 	bool is_constant= array_type->type.CanBeConstexpr();
 	std::vector<llvm::Constant*> members_constants;
 
-	for( size_t i= 0u; i < initializer.initializers.size(); i++ )
+	for( SizeType i= 0u; i < initializer.initializers.size(); i++ )
 	{
 		index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(i) ) );
 		array_member.llvm_value=
@@ -320,8 +320,8 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 		{
 			// Perform fundamental types conversion.
 
-			const size_t src_size= expression_type.SizeOf();
-			const size_t dst_size= variable.type.SizeOf();
+			const SizeType src_size= expression_type.SizeOf();
+			const SizeType dst_size= variable.type.SizeOf();
 			if( IsInteger( dst_type->fundamental_type ) &&
 				IsInteger( src_type->fundamental_type ) )
 			{

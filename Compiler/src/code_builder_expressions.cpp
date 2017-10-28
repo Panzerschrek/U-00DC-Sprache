@@ -1080,7 +1080,7 @@ Value CodeBuilder::BuildIndexationOperator(
 	if( index.constexpr_value != nullptr && llvm::dyn_cast<llvm::UndefValue>(index.constexpr_value) == nullptr &&
 		array_type->size != Array::c_undefined_size )
 	{
-		const size_t index_value= size_t( index.constexpr_value->getUniqueInteger().getLimitedValue() );
+		const SizeType index_value= SizeType( index.constexpr_value->getUniqueInteger().getLimitedValue() );
 		if( index_value >= array_type->size )
 			errors_.push_back( ReportArrayIndexOutOfBounds( indexation_operator.file_pos_, index_value, array_type->size ) );
 	}

@@ -168,9 +168,9 @@ CodeBuilderError ReportConstantExpressionResultIsUndefined( const FilePos& file_
 CodeBuilderError ReportStaticAssertExpressionMustHaveBoolType( const FilePos& file_pos );
 CodeBuilderError ReportStaticAssertExpressionIsNotConstant( const FilePos& file_pos );
 CodeBuilderError ReportStaticAssertionFailed( const FilePos& file_pos );
-CodeBuilderError ReportArrayIndexOutOfBounds( const FilePos& file_pos, size_t index, size_t array_size );
+CodeBuilderError ReportArrayIndexOutOfBounds( const FilePos& file_pos, SizeType index, SizeType array_size );
 CodeBuilderError ReportArrayInitializerForNonArray( const FilePos& file_pos );
-CodeBuilderError ReportArrayInitializersCountMismatch( const FilePos& file_pos, size_t expected_initializers, size_t real_initializers );
+CodeBuilderError ReportArrayInitializersCountMismatch( const FilePos& file_pos, SizeType expected_initializers, SizeType real_initializers );
 CodeBuilderError ReportFundamentalTypesHaveConstructorsWithExactlyOneParameter( const FilePos& file_pos );
 CodeBuilderError ReportReferencesHaveConstructorsWithExactlyOneParameter( const FilePos& file_pos );
 CodeBuilderError ReportUnsupportedInitializerForReference( const FilePos& file_pos );

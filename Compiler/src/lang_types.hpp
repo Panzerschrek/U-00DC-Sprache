@@ -1,4 +1,5 @@
 #pragma once
+#include <cstdint>
 
 namespace U
 {
@@ -30,5 +31,8 @@ bool IsSignedInteger( U_FundamentalType type );
 bool IsInteger( U_FundamentalType type );
 bool IsFloatingPoint( U_FundamentalType type );
 bool IsNumericType( U_FundamentalType type );
+
+// Use only this type for representation of any size in compiled program.
+typedef uint64_t SizeType;
 
 } // namespace U

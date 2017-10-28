@@ -110,7 +110,7 @@ public:
 	const TemplateDependentType* GetTemplateDependentType() const;
 
 	// TODO - does this method needs?
-	size_t SizeOf() const;
+	SizeType SizeOf() const;
 
 	bool IsIncomplete() const;
 	bool IsDefaultConstructible() const;
@@ -164,14 +164,14 @@ bool operator!=( const Function& r, const Function& l );
 struct Array final
 {
 	// "size" in case, when size is not known yet, when size depends on template parameter, for example.
-	static constexpr size_t c_undefined_size= std::numeric_limits<size_t>::max();
+	static constexpr SizeType c_undefined_size= std::numeric_limits<SizeType>::max();
 
 	Type type;
-	size_t size= c_undefined_size;
+	SizeType size= c_undefined_size;
 
 	llvm::ArrayType* llvm_type= nullptr;
 
-	size_t ArraySizeOrZero() const { return size == c_undefined_size ? 0u : size; }
+	SizeType ArraySizeOrZero() const { return size == c_undefined_size ? 0u : size; }
 };
 
 bool operator==( const Array& r, const Array& l );

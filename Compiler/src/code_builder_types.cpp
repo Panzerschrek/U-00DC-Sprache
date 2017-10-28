@@ -11,7 +11,7 @@ namespace U
 namespace CodeBuilderPrivate
 {
 
-static const size_t GetFundamentalTypeSize( const U_FundamentalType type )
+static const SizeType GetFundamentalTypeSize( const U_FundamentalType type )
 {
 	switch(type)
 	{
@@ -232,11 +232,11 @@ const TemplateDependentType* Type::GetTemplateDependentType() const
 	return boost::get<TemplateDependentType>( &something_ );
 }
 
-size_t Type::SizeOf() const
+SizeType Type::SizeOf() const
 {
 	struct Visitor final : public boost::static_visitor<>
 	{
-		size_t size= 1u;
+		SizeType size= 1u;
 
 		void operator()( const FundamentalType& fundamental )
 		{
