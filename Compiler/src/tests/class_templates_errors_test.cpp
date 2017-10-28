@@ -615,6 +615,46 @@ U_TEST( TemplateParametersDeductionFailed_Test6 )
 	U_TEST_ASSERT( error.file_pos.line == 7u );
 }
 
+U_TEST( TemplateParametersDeductionFailed_Test7 )
+{
+	static const char c_program_text[]=
+	R"(
+		template</ type T />
+		struct FakePair</ T, T />{}
+
+		fn Foo( FakePair</ f32, i32 /> &imut b ) {}  // Conflicted deduced types.
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NameNotFound );
+	U_TEST_ASSERT( error.file_pos.line == 5u );
+}
+
+U_TEST( TemplateParametersDeductionFailed_Test8 )
+{
+	static const char c_program_text[]=
+	R"(
+		template</ type T /> struct Box{ T t; }
+
+		template</ type T />
+		struct FakePair</ T, Box</T/> />{}
+
+		fn Foo( FakePair</ f32, Box</ bool /> /> &imut b ) {}  // Conflicted deduced types.
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NameNotFound );
+	U_TEST_ASSERT( error.file_pos.line == 7u );
+}
+
 U_TEST( TemplateParametersDeductionFailed_Test9 )
 {
 	static const char c_program_text[]=

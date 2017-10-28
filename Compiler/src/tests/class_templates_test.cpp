@@ -713,7 +713,6 @@ U_TEST( ClassTemplateTest21_CallOverloadedFunctionWithTemplateDependentSignature
 	BuildProgram( c_program_text );
 }
 
-
 U_TEST( ClassTemplateTest22_BoolValueArgument )
 {
 	static const char c_program_text[]=
@@ -741,6 +740,60 @@ U_TEST( ClassTemplateTest22_BoolValueArgument )
 			llvm::ArrayRef<llvm::GenericValue>() );
 
 	U_TEST_ASSERT( static_cast<uint64_t>( 55412 ) == result_value.IntVal.getLimitedValue() );
+}
+
+U_TEST( ClassTemplateTest23_SameTemplateArgumentAppearsMultipleTimesInSignature )
+{
+	static const char c_program_text[]=
+	R"(
+		template</ type T />
+		struct FakePair</ T, T />
+		{
+			T first; T second;
+		}
+
+		fn Foo() : i32
+		{
+			var FakePair</ i32, i32 /> p{ .first= 58421, .second= 84 };
+			return p.first / p.second;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	const llvm::GenericValue result_value= engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+	U_TEST_ASSERT( static_cast<uint64_t>( 58421 / 84 ) == result_value.IntVal.getLimitedValue() );
+}
+
+U_TEST( ClassTemplateTest24_SameTemplateArgumentAppearsInMultipleFormsInSignature )
+{
+	static const char c_program_text[]=
+	R"(
+		template</ type T /> struct Box{ T t; }
+
+		template</ type T />
+		struct FakePair</ T, Box</T/> />
+		{
+			T first; T second;
+		}
+
+		fn Foo() : i32
+		{
+			var FakePair</ i32, Box</i32/> /> p{ .first= 354154, .second= 65 };
+			return p.first / p.second;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	const llvm::GenericValue result_value= engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+	U_TEST_ASSERT( static_cast<uint64_t>( 354154 / 65 ) == result_value.IntVal.getLimitedValue() );
 }
 
 U_TEST( ClassPrepass_Test0 )
