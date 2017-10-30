@@ -106,7 +106,10 @@ ICodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_g
 	errors_.clear();
 	error_count_= 0u;
 
-	module_.reset( new llvm::Module( "U-Module", llvm_context_ ) );
+	module_.reset(
+		new llvm::Module(
+			ToStdString( source_graph.nodes_storage[ source_graph.root_node_index ].file_path ),
+			llvm_context_ ) );
 
 	// In some places outside functions we need to execute expression evaluation.
 	// Create for this dummy function context.
