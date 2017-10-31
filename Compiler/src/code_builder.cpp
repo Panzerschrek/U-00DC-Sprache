@@ -2317,6 +2317,11 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockCode(
 		{
 			BuildStaticAssert( *static_assert_, block_names );
 		}
+		else if( const auto halt=
+			dynamic_cast<const Synt::Halt*>( block_element_ptr ) )
+		{
+			// TODO
+		}
 		else if( const auto block=
 			dynamic_cast<const Synt::Block*>( block_element_ptr ) )
 		{

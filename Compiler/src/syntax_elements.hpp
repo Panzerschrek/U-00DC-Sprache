@@ -498,6 +498,14 @@ public:
 	IExpressionComponentPtr expression;
 };
 
+class Halt final
+	: public SyntaxElementBase
+	, public IBlockElement
+{
+public:
+	explicit Halt( const FilePos& file_pos );
+};
+
 class Typedef final
 	: public SyntaxElementBase
 	, public IProgramElement
