@@ -120,6 +120,14 @@ ICodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_g
 			"",
 			module_.get() );
 
+	// Prepare halt func.
+	{
+		llvm::FunctionType* void_function_type= llvm::FunctionType::get( fundamental_llvm_types_.void_, false );
+		halt_func_= llvm::Function::Create( void_function_type, llvm::Function::ExternalLinkage, "__U_halt", module_.get() );
+		halt_func_->setDoesNotReturn();
+		halt_func_->setDoesNotThrow();
+	}
+
 	FunctionContext dummy_function_context(
 		void_type_,
 		false, false,
@@ -2320,7 +2328,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockCode(
 		else if( const auto halt=
 			dynamic_cast<const Synt::Halt*>( block_element_ptr ) )
 		{
-			// TODO
+			BuildHalt( *halt, function_context );
 		}
 		else if( const auto block=
 			dynamic_cast<const Synt::Block*>( block_element_ptr ) )
@@ -3229,6 +3237,13 @@ void CodeBuilder::BuildStaticAssert(
 		errors_.push_back( ReportStaticAssertionFailed( static_assert_.file_pos_ ) );
 		return;
 	}
+}
+
+void CodeBuilder::BuildHalt( const Synt::Halt& halt, FunctionContext& function_context )
+{
+	U_UNUSED( halt );
+
+	function_context.llvm_ir_builder.CreateCall( halt_func_ );
 }
 
 void CodeBuilder::BuildTypedef(
