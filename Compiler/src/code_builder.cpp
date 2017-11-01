@@ -2329,6 +2329,9 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockCode(
 			dynamic_cast<const Synt::Halt*>( block_element_ptr ) )
 		{
 			BuildHalt( *halt, function_context );
+
+			block_build_info.have_unconditional_return_inside= true;
+			try_report_unreachable_code();
 		}
 		else if( const auto block=
 			dynamic_cast<const Synt::Block*>( block_element_ptr ) )
@@ -3244,6 +3247,9 @@ void CodeBuilder::BuildHalt( const Synt::Halt& halt, FunctionContext& function_c
 	U_UNUSED( halt );
 
 	function_context.llvm_ir_builder.CreateCall( halt_func_ );
+
+	// We needs return, because call to "halt" is not terminal instruction.
+	function_context.llvm_ir_builder.CreateRetVoid();
 }
 
 void CodeBuilder::BuildTypedef(
