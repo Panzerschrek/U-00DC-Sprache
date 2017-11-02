@@ -506,6 +506,16 @@ public:
 	explicit Halt( const FilePos& file_pos );
 };
 
+class HaltIf final
+	: public SyntaxElementBase
+	, public IBlockElement
+{
+public:
+	explicit HaltIf( const FilePos& file_pos );
+
+	IExpressionComponentPtr condition;
+};
+
 class Typedef final
 	: public SyntaxElementBase
 	, public IProgramElement
