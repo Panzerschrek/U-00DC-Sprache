@@ -20,16 +20,10 @@ static llvm::GenericValue HaltCalled( llvm::FunctionType*, llvm::ArrayRef<llvm::
 	throw HaltException();
 }
 
-static bool g_halt_handler_registered= false;
-
 static void HaltTestPrepare()
 {
-	if(g_halt_handler_registered)
-		return;
-
 	// "lle_X_" - common prefix for all external functions, called from LLVM Interpreter
 	llvm::sys::DynamicLibrary::AddSymbol( "lle_X___U_halt", reinterpret_cast<void*>( &HaltCalled ) );
-	g_halt_handler_registered= true;
 }
 
 U_TEST( HaltTest0 )

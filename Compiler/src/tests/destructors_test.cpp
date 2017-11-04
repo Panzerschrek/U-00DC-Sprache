@@ -7,7 +7,6 @@ namespace U
 
 static std::vector<int> g_destructors_call_sequence;
 
-static bool g_destructors_handler_registered= false;
 static llvm::GenericValue DestructorCalled(
 	llvm::FunctionType*,
 	llvm::ArrayRef<llvm::GenericValue> args )
@@ -20,12 +19,8 @@ static void DestructorTestPrepare()
 {
 	g_destructors_call_sequence.clear();
 
-	if(g_destructors_handler_registered)
-		return;
-
 	// "lle_X_" - common prefix for all external functions, called from LLVM Interpreter
 	llvm::sys::DynamicLibrary::AddSymbol( "lle_X__Z16DestructorCalledi", reinterpret_cast<void*>( &DestructorCalled ) );
-	g_destructors_handler_registered= true;
 }
 
 U_TEST(DestructorsTest0)
