@@ -29,7 +29,7 @@ include_directories(${LLVM_INCLUDE_DIRS})
 add_definitions(${LLVM_DEFINITIONS})
 
 llvm_map_components_to_libnames( LLVM_LIBS_FOR_COMPILER_LIB Core )
-llvm_map_components_to_libnames( LLVM_LIBS_FOR_COMPILER BitWriter )
+llvm_map_components_to_libnames( LLVM_LIBS_FOR_COMPILER BitWriter AsmParser Linker )
 llvm_map_components_to_libnames( LLVM_LIBS_FOR_TESTS ExecutionEngine Interpreter )
 
 get_filename_component( LLVM_UTILS_DIR ${LLVM_INSTALL_DIR}/bin ABSOLUTE )
@@ -81,7 +81,10 @@ target_link_libraries( CompilerLib ${LLVM_LIBS_FOR_COMPILER_LIB} )
 set( COMPILER_SOURCES
 	src/main.cpp )
 
-add_executable( Compiler ${COMPILER_SOURCES} )
+set( COMPILER_HEADERS
+	src/stdlib_asm.hpp )
+
+add_executable( Compiler ${COMPILER_SOURCES} ${COMPILER_HEADERS} )
 target_link_libraries( Compiler CompilerLib ${LLVM_LIBS_FOR_COMPILER} )
 target_link_libraries( Compiler ${Boost_LIBRARIES} )
 

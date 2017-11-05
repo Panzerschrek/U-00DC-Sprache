@@ -5,11 +5,15 @@
 #include <boost/filesystem/path.hpp>
 
 #include "push_disable_llvm_warnings.hpp"
+#include <llvm/AsmParser/Parser.h>
 #include <llvm/Bitcode/ReaderWriter.h>
 #include <llvm/IR/LegacyPassManager.h>
+#include <llvm/IR/Verifier.h>
+#include <llvm/Linker/Linker.h>
 #include <llvm/Support/FileSystem.h>
 #include <llvm/Support/FileSystem.h>
 #include <llvm/Support/Host.h>
+#include <llvm/Support/SourceMgr.h>
 #include <llvm/Support/TargetRegistry.h>
 #include <llvm/Support/TargetSelect.h>
 #include <llvm/Support/raw_ostream.h>
@@ -20,6 +24,8 @@
 #include "assert.hpp"
 #include "code_builder.hpp"
 #include "source_graph_loader.hpp"
+
+#include "stdlib_asm.hpp"
 
 static bool ReadFile( const char* const name, U::ProgramString& out_file_content )
 {
@@ -175,6 +181,28 @@ Usage:
 
 	if( !build_result.errors.empty() )
 		return 1;
+
+	{ // Link stdlib with result module.
+		llvm::SMDiagnostic err;
+		const std::unique_ptr<llvm::Module> std_lib_module=
+			llvm::parseAssemblyString( g_std_lib_asm, err, build_result.module->getContext() );
+
+		if( std_lib_module == nullptr )
+		{
+			std::cout << "Internal compiler error - stdlib parse error." << std::endl;
+			return 1;
+		}
+
+		std::string err_stream_str;
+		llvm::raw_string_ostream err_stream( err_stream_str );
+		if( llvm::verifyModule( *std_lib_module, &err_stream ) )
+		{
+			std::cout << "Internal compiler error - stdlib verify error:\n" << err_stream.str() << std::endl;
+			return 1;
+		}
+
+		llvm::Linker::LinkModules( build_result.module.get(), std_lib_module.get() );
+	}
 
 	if( print_llvm_asm )
 	{

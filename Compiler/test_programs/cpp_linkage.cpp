@@ -39,6 +39,8 @@ void TheClass::StaticMethod2()
 
 void U32ToStr( unsigned int x, signed char (&str)[64] );
 
+void CondHalt( bool cond );
+
 int main()
 {
 	// Call some Ü-Sprache functions
@@ -59,5 +61,8 @@ int main()
 
 	const double res= Do( 42 );
 	std::cout << "Res: " << res << std::endl;
+
+	CondHalt(false);
+
 	return 0;
 }
