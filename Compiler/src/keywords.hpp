@@ -55,6 +55,7 @@ enum class Keywords : unsigned int
 	destructor_,
 
 	static_assert_,
+	halt_,
 
 	type_,
 	template_,

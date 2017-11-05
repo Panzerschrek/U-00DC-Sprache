@@ -67,3 +67,8 @@ fn U32ToStr( u32 x, [ i8, 64 ]& out_str )
 	}
 	out_str[dst]= 0i8;
 }
+
+fn CondHalt( bool cond )
+{
+	halt if( cond );
+}

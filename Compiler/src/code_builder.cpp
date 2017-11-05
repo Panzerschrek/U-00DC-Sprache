@@ -120,6 +120,14 @@ ICodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_g
 			"",
 			module_.get() );
 
+	// Prepare halt func.
+	{
+		llvm::FunctionType* void_function_type= llvm::FunctionType::get( fundamental_llvm_types_.void_, false );
+		halt_func_= llvm::Function::Create( void_function_type, llvm::Function::ExternalLinkage, "__U_halt", module_.get() );
+		halt_func_->setDoesNotReturn();
+		halt_func_->setDoesNotThrow();
+	}
+
 	FunctionContext dummy_function_context(
 		void_type_,
 		false, false,
@@ -2317,6 +2325,19 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockCode(
 		{
 			BuildStaticAssert( *static_assert_, block_names );
 		}
+		else if( const auto halt=
+			dynamic_cast<const Synt::Halt*>( block_element_ptr ) )
+		{
+			BuildHalt( *halt, function_context );
+
+			block_build_info.have_unconditional_return_inside= true;
+			try_report_unreachable_code();
+		}
+		else if( const auto halt_if=
+			dynamic_cast<const Synt::HaltIf*>( block_element_ptr ) )
+		{
+			BuildHaltIf( *halt_if, block_names, function_context );
+		}
 		else if( const auto block=
 			dynamic_cast<const Synt::Block*>( block_element_ptr ) )
 		{
@@ -3224,6 +3245,54 @@ void CodeBuilder::BuildStaticAssert(
 		errors_.push_back( ReportStaticAssertionFailed( static_assert_.file_pos_ ) );
 		return;
 	}
+}
+
+void CodeBuilder::BuildHalt( const Synt::Halt& halt, FunctionContext& function_context )
+{
+	U_UNUSED( halt );
+
+	function_context.llvm_ir_builder.CreateCall( halt_func_ );
+
+	// We needs return, because call to "halt" is not terminal instruction.
+	function_context.llvm_ir_builder.CreateRetVoid();
+}
+
+void CodeBuilder::BuildHaltIf(const Synt::HaltIf& halt_if, NamesScope& names, FunctionContext& function_context )
+{
+	llvm::BasicBlock* const true_block = llvm::BasicBlock::Create( llvm_context_ );
+	llvm::BasicBlock* const false_block= llvm::BasicBlock::Create( llvm_context_ );
+
+	const Value condition_expression= BuildExpressionCodeAndDestroyTemporaries( *halt_if.condition, names, function_context );
+
+	if( condition_expression.GetType() != NontypeStub::TemplateDependentValue &&
+		condition_expression.GetType().GetTemplateDependentType() == nullptr )
+	{
+		if( condition_expression.GetType() != bool_type_ )
+		{
+			errors_.push_back(
+				ReportTypesMismatch(
+					halt_if.condition->GetFilePos(),
+					bool_type_.ToString(),
+					condition_expression.GetType().ToString() ) );
+			return;
+		}
+
+		llvm::Value* const condition_in_register= CreateMoveToLLVMRegisterInstruction( *condition_expression.GetVariable(), function_context );
+		function_context.llvm_ir_builder.CreateCondBr( condition_in_register, true_block, false_block );
+	}
+	else
+		function_context.llvm_ir_builder.CreateCondBr( llvm::UndefValue::get( fundamental_llvm_types_.bool_ ), true_block, false_block );
+
+	// True branch
+	function_context.function->getBasicBlockList().push_back( true_block );
+	function_context.llvm_ir_builder.SetInsertPoint( true_block );
+
+	function_context.llvm_ir_builder.CreateCall( halt_func_ );
+	function_context.llvm_ir_builder.CreateRetVoid();
+
+	// False branch
+	function_context.function->getBasicBlockList().push_back( false_block );
+	function_context.llvm_ir_builder.SetInsertPoint( false_block );
 }
 
 void CodeBuilder::BuildTypedef(

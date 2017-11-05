@@ -1,5 +1,7 @@
 #include <iostream>
 
+#include <llvm/Support/ManagedStatic.h>
+
 #include "../assert.hpp"
 #include "../lexical_analyzer.hpp"
 #include "../syntax_analyzer.hpp"
@@ -164,6 +166,9 @@ void RunAllTests()
 			std::cout << "Test " << func_data.name << " failed: " << ex.what() << std::endl;
 			failed++;
 		};
+
+		// We must kill ALL static internal llvm variables after each test.
+		llvm::llvm_shutdown();
 	}
 
 	std::cout << std::endl << funcs_container.size() - failed << " tests passed\n" << failed << " tests failed" << std::endl;

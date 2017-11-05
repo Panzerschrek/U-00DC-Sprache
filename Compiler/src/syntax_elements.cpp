@@ -252,6 +252,14 @@ StaticAssert::StaticAssert( const FilePos& file_pos )
 	: SyntaxElementBase(file_pos)
 {}
 
+Halt::Halt( const FilePos& file_pos )
+	: SyntaxElementBase(file_pos)
+{}
+
+HaltIf::HaltIf( const FilePos& file_pos )
+	: SyntaxElementBase(file_pos)
+{}
+
 Typedef::Typedef( const FilePos& file_pos )
 	: SyntaxElementBase(file_pos)
 {}

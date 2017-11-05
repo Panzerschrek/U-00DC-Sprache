@@ -159,6 +159,7 @@ private:
 	IBlockElementPtr ParseContinueOperator();
 	IBlockElementPtr ParseIfOperator();
 	std::unique_ptr<StaticAssert> ParseStaticAssert();
+	IBlockElementPtr ParseHalt();
 
 	BlockPtr ParseBlock();
 
@@ -1430,6 +1431,56 @@ std::unique_ptr<StaticAssert> SyntaxAnalyzer::ParseStaticAssert()
 	return std::move(result);
 }
 
+IBlockElementPtr SyntaxAnalyzer::ParseHalt()
+{
+	U_ASSERT( it_->type == Lexem::Type::Identifier && it_->text == Keywords::halt_ );
+
+	const FilePos& file_pos= it_->file_pos;
+	++it_; U_ASSERT( it_ < it_end_ );
+
+	if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::if_ )
+	{
+		++it_; U_ASSERT( it_ < it_end_ );
+		std::unique_ptr<HaltIf> result( new HaltIf( file_pos ) );
+
+		if( it_->type != Lexem::Type::BracketLeft )
+		{
+			PushErrorMessage( *it_ );
+			return nullptr;
+		}
+		++it_; U_ASSERT( it_ < it_end_ );
+
+		result->condition= ParseExpression();
+
+		if( it_->type != Lexem::Type::BracketRight )
+		{
+			PushErrorMessage( *it_ );
+			return nullptr;
+		}
+		++it_; U_ASSERT( it_ < it_end_ );
+
+		if( it_->type != Lexem::Type::Semicolon )
+		{
+			PushErrorMessage( *it_ );
+			return nullptr;
+		}
+		++it_; U_ASSERT( it_ < it_end_ );
+
+		return std::move(result);
+	}
+	else if( it_->type == Lexem::Type::Semicolon )
+	{
+		++it_; U_ASSERT( it_ < it_end_ );
+		std::unique_ptr<Halt> result( new Halt( file_pos ) );
+		return std::move(result);
+	}
+	else
+	{
+		PushErrorMessage( *it_ );
+		return nullptr;
+	}
+}
+
 BlockPtr SyntaxAnalyzer::ParseBlock()
 {
 	U_ASSERT( it_->type == Lexem::Type::BraceLeft );
@@ -1465,6 +1516,8 @@ BlockPtr SyntaxAnalyzer::ParseBlock()
 			elements.emplace_back( ParseIfOperator() );
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::static_assert_ )
 			elements.emplace_back( ParseStaticAssert() );
+		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::halt_ )
+			elements.emplace_back( ParseHalt() );
 
 		else if( it_->type == Lexem::Type::Increment )
 		{

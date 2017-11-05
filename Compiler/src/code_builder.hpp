@@ -366,6 +366,9 @@ private:
 		const Synt::StaticAssert& static_assert_,
 		NamesScope& names );
 
+	void BuildHalt( const Synt::Halt& halt, FunctionContext& function_context );
+	void BuildHaltIf( const Synt::HaltIf& halt_if, NamesScope& names, FunctionContext& function_context );
+
 	void BuildTypedef(
 		const Synt::Typedef& typedef_,
 		NamesScope& names );
@@ -499,6 +502,8 @@ private:
 		llvm::Type* invalid_type_;
 		llvm::IntegerType* bool_;
 	} fundamental_llvm_types_;
+
+	llvm::Function* halt_func_= nullptr;
 
 	Type invalid_type_;
 	Type void_type_;
