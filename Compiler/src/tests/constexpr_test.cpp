@@ -589,4 +589,21 @@ U_TEST( ZeroInitConstexprTest1 )
 	U_TEST_ASSERT( 0.0f == result_value.FloatVal );
 }
 
+U_TEST( ConstexprVariableInTemplateClass_Test0 )
+{
+	static const char c_program_text[]=
+	R"(
+		template</ u32 x />
+		struct Square
+		{
+			auto constexpr r= x * x;
+		}
+
+		var u32 constexpr square_2017= Square</ 2017u />::r;
+		static_assert( square_2017 == 4068289u );
+	)";
+
+	BuildProgram( c_program_text );
+}
+
 } // namespace U

@@ -215,6 +215,7 @@ struct Variable final
 	llvm::Value* llvm_value= nullptr;
 
 	// Exists only for constant expressions of fundamental types.
+	// Undef, if value is template-dependent.
 	llvm::Constant* constexpr_value= nullptr;
 };
 

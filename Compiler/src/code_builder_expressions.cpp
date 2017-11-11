@@ -752,7 +752,10 @@ Value CodeBuilder::BuildBinaryOperator(
 	if( result.constexpr_value != nullptr )
 	{
 		// Undef value can occurs in integer division by zero or something like it.
-		if( llvm::dyn_cast<llvm::UndefValue >(result.constexpr_value) )
+		// But, if inputs are undef, this means, that they are template-dependent and this is not error case.
+		if( llvm::dyn_cast<llvm::UndefValue >(result.constexpr_value) != nullptr &&
+			llvm::dyn_cast<llvm::UndefValue >(r_var.constexpr_value) == nullptr &&
+			llvm::dyn_cast<llvm::UndefValue >(l_var.constexpr_value) == nullptr )
 		{
 			errors_.push_back( ReportConstantExpressionResultIsUndefined( file_pos ) );
 			result.constexpr_value= nullptr;
