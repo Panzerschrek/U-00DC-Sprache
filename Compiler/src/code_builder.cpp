@@ -1896,6 +1896,11 @@ void CodeBuilder::BuildFuncCode(
 			this_.llvm_value= &llvm_arg;
 			llvm_arg.setName( KeywordAscii( Keywords::this_ ) );
 			function_context.this_= &this_;
+
+			const StoredVariablePtr this_storage= std::make_shared<StoredVariable>();
+			this_storage->content= this_;
+			this_.referenced_variables.push_back(this_storage);
+
 			arg_number++;
 			continue;
 		}
@@ -1948,6 +1953,10 @@ void CodeBuilder::BuildFuncCode(
 			{ U_ASSERT( false ); }
 		}
 
+		const StoredVariablePtr var_storage= std::make_shared<StoredVariable>();
+		var_storage->content= var;
+		var.referenced_variables.push_back(var_storage);
+
 		if( is_this )
 		{
 			// Save "this" in function context for accessing inside class methods.
@@ -1962,18 +1971,16 @@ void CodeBuilder::BuildFuncCode(
 				return;
 			}
 
+			if( !arg.is_reference )
+				function_context.destructibles_stack.back().RegisterVariable( var );
+
 			const NamesScope::InsertedName* const inserted_arg=
-				function_names.AddName(
-					arg_name,
-					Value( std::move(var), declaration_arg.file_pos_ ) );
+				function_names.AddName( arg_name, Value( var_storage, declaration_arg.file_pos_ ) );
 			if( !inserted_arg )
 			{
 				errors_.push_back( ReportRedefinition( declaration_arg.file_pos_, arg_name ) );
 				return;
 			}
-
-			if( !arg.is_reference )
-				function_context.destructibles_stack.back().RegisterVariable( *inserted_arg->second.GetVariable() );
 		}
 
 		llvm_arg.setName( "_arg_" + ToStdString( arg_name ) );
