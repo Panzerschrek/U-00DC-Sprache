@@ -2535,17 +2535,19 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 			return;
 		}
 
-		const NamesScope::InsertedName* inserted_name=
-			block_names.AddName( variable_declaration.name, Value( std::move(variable), variable_declaration.file_pos ) );
+		if( variable_declaration.reference_modifier == ReferenceModifier::None )
+			function_context.destructibles_stack.back().RegisterVariable( variable );
 
+		const StoredVariablePtr stored_variable= std::make_shared<StoredVariable>();
+		stored_variable->content= std::move(variable);
+
+		const NamesScope::InsertedName* const inserted_name=
+			block_names.AddName( variable_declaration.name, Value( std::move(stored_variable), variable_declaration.file_pos ) );
 		if( !inserted_name )
 		{
 			errors_.push_back( ReportRedefinition( variables_declaration.file_pos_, variable_declaration.name ) );
 			continue;
 		}
-
-		if( variable_declaration.reference_modifier == ReferenceModifier::None )
-			function_context.destructibles_stack.back().RegisterVariable( *inserted_name->second.GetVariable() );
 	}
 }
 
@@ -2707,17 +2709,20 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 		return;
 	}
 
+	if( auto_variable_declaration.reference_modifier == ReferenceModifier::None )
+		function_context.destructibles_stack.back().RegisterVariable( variable );
+
+	const StoredVariablePtr stored_variable= std::make_shared<StoredVariable>();
+	stored_variable->content= std::move(variable);
+
 	const NamesScope::InsertedName* inserted_name=
-		block_names.AddName( auto_variable_declaration.name, Value( std::move(variable), auto_variable_declaration.file_pos_ ) );
+		block_names.AddName( auto_variable_declaration.name, Value( std::move(stored_variable), auto_variable_declaration.file_pos_ ) );
 
 	if( inserted_name == nullptr )
 	{
 		errors_.push_back( ReportRedefinition( auto_variable_declaration.file_pos_, auto_variable_declaration.name ) );
 		return;
 	}
-
-	if( auto_variable_declaration.reference_modifier == ReferenceModifier::None )
-		function_context.destructibles_stack.back().RegisterVariable( *inserted_name->second.GetVariable() );
 }
 
 void CodeBuilder::BuildAssignmentOperatorCode(

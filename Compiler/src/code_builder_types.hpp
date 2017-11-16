@@ -69,6 +69,7 @@ enum class NontypeStub
 	TemplateDependentValue,
 	YetNotDeducedTemplateArg,
 	ErrorValue,
+	VariableStorage,
 };
 
 bool operator==( const FundamentalType& r, const FundamentalType& l );
@@ -194,6 +195,10 @@ struct FunctionVariable final
 // Set of functions with same name, but different signature.
 typedef std::vector<FunctionVariable> OverloadedFunctionsSet;
 
+struct StoredVariable;
+typedef std::shared_ptr<StoredVariable> StoredVariablePtr;
+typedef std::shared_ptr<void> VariableStorageUseCounter;
+
 enum class ValueType
 {
 	Value,
@@ -217,6 +222,20 @@ struct Variable final
 	// Exists only for constant expressions of fundamental types.
 	// Undef, if value is template-dependent.
 	llvm::Constant* constexpr_value= nullptr;
+
+	std::vector<StoredVariablePtr> referenced_variables;
+	std::vector<VariableStorageUseCounter> locked_referenced_variables;
+};
+
+struct StoredVariable
+{
+	Variable content;
+
+	VariableStorageUseCounter  mut_use_counter= std::make_shared<int>();
+	VariableStorageUseCounter imut_use_counter= std::make_shared<int>();
+
+	bool UsedAsMutable  () const { return  mut_use_counter.use_count() >= 2u; }
+	bool usedAsImmutable() const { return imut_use_counter.use_count() >= 2u; }
 };
 
 struct ClassField final
@@ -247,6 +266,7 @@ class Value final
 public:
 	Value();
 	Value( Variable variable, const FilePos& file_pos );
+	Value( StoredVariablePtr stored_variable, const FilePos& file_pos  );
 	Value( FunctionVariable function_variable );
 	Value( OverloadedFunctionsSet functions_set );
 	Value( Type type, const FilePos& file_pos );
@@ -268,6 +288,8 @@ public:
 	// Fundamental, class, array types
 	Variable* GetVariable();
 	const Variable* GetVariable() const;
+	// Stored variable
+	StoredVariablePtr GetStoredVariable() const;
 	// Function types
 	FunctionVariable* GetFunctionVariable();
 	const FunctionVariable* GetFunctionVariable() const;
@@ -299,6 +321,7 @@ public:
 private:
 	boost::variant<
 		Variable,
+		StoredVariablePtr,
 		FunctionVariable,
 		OverloadedFunctionsSet,
 		Type,

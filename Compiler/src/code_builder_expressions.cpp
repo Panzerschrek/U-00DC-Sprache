@@ -962,6 +962,14 @@ Value CodeBuilder::BuildNamedOperand(
 			}
 		}
 	}
+	else if( const StoredVariablePtr stored_variable= name_entry->second.GetStoredVariable() )
+	{
+		// Unwrap stored variable here.
+		Variable result;
+		result= stored_variable->content;
+		result.referenced_variables.push_back( stored_variable );
+		return Value( result, name_entry->second.GetFilePos() );
+	}
 
 	return name_entry->second;
 }
