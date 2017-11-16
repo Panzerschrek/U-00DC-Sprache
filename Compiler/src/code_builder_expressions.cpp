@@ -1069,6 +1069,8 @@ Value CodeBuilder::BuildIndexationOperator(
 		Variable result;
 		result.location= Variable::Location::Pointer;
 		result.value_type= variable.value_type;
+		result.referenced_variables= variable.referenced_variables;
+		result.locked_referenced_variables= variable.locked_referenced_variables;
 		result.type= array_type->type;
 		return Value( result, indexation_operator.file_pos_ );
 	}
@@ -1100,6 +1102,8 @@ Value CodeBuilder::BuildIndexationOperator(
 	Variable result;
 	result.location= Variable::Location::Pointer;
 	result.value_type= variable.value_type;
+	result.referenced_variables= variable.referenced_variables;
+	result.locked_referenced_variables= variable.locked_referenced_variables;
 	result.type= array_type->type;
 
 	if( variable.constexpr_value != nullptr && index.constexpr_value != nullptr )
@@ -1177,6 +1181,8 @@ Value CodeBuilder::BuildMemberAccessOperator(
 	Variable result;
 	result.location= Variable::Location::Pointer;
 	result.value_type= variable.value_type;
+	result.referenced_variables= variable.referenced_variables;
+	result.locked_referenced_variables= variable.locked_referenced_variables;
 	result.type= field->type;
 	result.llvm_value=
 		function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, index_list );
