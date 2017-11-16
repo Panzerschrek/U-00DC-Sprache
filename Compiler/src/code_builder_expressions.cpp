@@ -925,6 +925,8 @@ Value CodeBuilder::BuildNamedOperand(
 		field_variable.type= field->type;
 		field_variable.location= Variable::Location::Pointer;
 		field_variable.value_type= function_context.this_->value_type;
+		field_variable.referenced_variables= function_context.this_->referenced_variables;
+		field_variable.locked_referenced_variables= function_context.this_->locked_referenced_variables;
 
 		// Make first index = 0 for array to pointer conversion.
 		llvm::Value* index_list[2];
