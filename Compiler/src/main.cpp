@@ -7,18 +7,12 @@
 #include "push_disable_llvm_warnings.hpp"
 #include <llvm/AsmParser/Parser.h>
 #include <llvm/Bitcode/ReaderWriter.h>
-#include <llvm/IR/LegacyPassManager.h>
 #include <llvm/IR/Verifier.h>
 #include <llvm/Linker/Linker.h>
 #include <llvm/Support/FileSystem.h>
-#include <llvm/Support/FileSystem.h>
-#include <llvm/Support/Host.h>
 #include <llvm/Support/SourceMgr.h>
-#include <llvm/Support/TargetRegistry.h>
-#include <llvm/Support/TargetSelect.h>
 #include <llvm/Support/raw_ostream.h>
 #include <llvm/Support/raw_os_ostream.h>
-#include <llvm/Target/TargetMachine.h>
 #include "pop_llvm_warnings.hpp"
 
 #include "assert.hpp"
@@ -212,7 +206,7 @@ Usage:
 
 	// LLVM ir dump
 	std::error_code file_error_code;
-	llvm::raw_fd_ostream file( output_file , file_error_code, llvm::sys::fs::F_None );
+	llvm::raw_fd_ostream file( output_file, file_error_code, llvm::sys::fs::F_None );
 
 	llvm::WriteBitcodeToFile( build_result.module.get(), file );
 	file.flush();
