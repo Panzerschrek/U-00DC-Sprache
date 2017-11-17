@@ -2508,6 +2508,8 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 				continue;
 			}
 
+			variable.referenced_variables= expression_result.referenced_variables;
+			variable.locked_referenced_variables= expression_result.locked_referenced_variables;
 			// TODO - maybe make copy of varaible address in new llvm register?
 			variable.llvm_value= expression_result.llvm_value;
 			variable.constexpr_value= expression_result.constexpr_value;
@@ -2643,6 +2645,8 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 			return;
 		}
 
+		variable.referenced_variables= initializer_experrsion.referenced_variables;
+		variable.locked_referenced_variables= initializer_experrsion.locked_referenced_variables;
 		variable.llvm_value= initializer_experrsion.llvm_value;
 		variable.constexpr_value= initializer_experrsion.constexpr_value;
 	}
