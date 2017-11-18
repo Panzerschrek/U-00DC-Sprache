@@ -5,11 +5,10 @@ R"(
 
 ; ModuleID = 'Ü-std'
 
-; Function Attrs: noreturn nounwind
 declare void @llvm.trap() #0
 
-; Function Attrs: noreturn nounwind
-define void @__U_halt() #0
+$__U_halt = comdat any
+define linkonce_odr void @__U_halt() unnamed_addr #0 comdat
 {
 	call void @llvm.trap()
 	ret void

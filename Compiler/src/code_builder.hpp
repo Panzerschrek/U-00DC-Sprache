@@ -481,6 +481,8 @@ private:
 	// If variable already in register - does nothing.
 	llvm::Value* CreateMoveToLLVMRegisterInstruction( const Variable& variable, FunctionContext& function_context );
 
+	void SetupGeneratedFunctionLinkageAttributes( llvm::Function& function );
+
 private:
 	llvm::LLVMContext& llvm_context_;
 

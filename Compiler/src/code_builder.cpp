@@ -116,7 +116,7 @@ ICodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_g
 	llvm::Function* const dummy_function=
 		llvm::Function::Create(
 			llvm::FunctionType::get( fundamental_llvm_types_.void_, false ),
-			llvm::Function::LinkageTypes::ExternalLinkage,
+			llvm::Function::LinkageTypes::LinkOnceODRLinkage,
 			"",
 			module_.get() );
 
@@ -126,6 +126,7 @@ ICodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_g
 		halt_func_= llvm::Function::Create( void_function_type, llvm::Function::ExternalLinkage, "__U_halt", module_.get() );
 		halt_func_->setDoesNotReturn();
 		halt_func_->setDoesNotThrow();
+		halt_func_->setUnnamedAddr( true );
 	}
 
 	FunctionContext dummy_function_context(
@@ -838,11 +839,11 @@ void CodeBuilder::TryGenerateDefaultConstructor( Class& the_class, const Type& c
 	llvm::Function* const llvm_constructor_function=
 		llvm::Function::Create(
 			constructor_type.llvm_function_type,
-			llvm::Function::LinkageTypes::ExternalLinkage, // TODO - select linkage
+			llvm::Function::LinkageTypes::LinkOnceODRLinkage,
 			MangleFunction( the_class.members, Keyword( Keywords::constructor_ ), constructor_type, true ),
 			module_.get() );
 
-	llvm_constructor_function->setUnnamedAddr( true );
+	SetupGeneratedFunctionLinkageAttributes( *llvm_constructor_function );
 	llvm_constructor_function->addAttribute( 1u, llvm::Attribute::NonNull ); // this is nonnull
 
 	FunctionContext function_context(
@@ -966,11 +967,11 @@ void CodeBuilder::TryGenerateCopyConstructor( Class& the_class, const Type& clas
 	llvm::Function* const llvm_constructor_function=
 		llvm::Function::Create(
 			constructor_type.llvm_function_type,
-			llvm::Function::LinkageTypes::ExternalLinkage, // TODO - select linkage
+			llvm::Function::LinkageTypes::LinkOnceODRLinkage,
 			MangleFunction( the_class.members, Keyword( Keywords::constructor_ ), constructor_type, true ),
 			module_.get() );
 
-	llvm_constructor_function->setUnnamedAddr( true );
+	SetupGeneratedFunctionLinkageAttributes( *llvm_constructor_function );
 	llvm_constructor_function->addAttribute( 1u, llvm::Attribute::NonNull ); // this is nonnull
 	llvm_constructor_function->addAttribute( 2u, llvm::Attribute::NonNull ); // and src is nonnull
 
@@ -1069,10 +1070,11 @@ void CodeBuilder::TryGenerateDestructor( Class& the_class, const Type& class_typ
 	llvm::Function* const llvm_destructor_function=
 		llvm::Function::Create(
 			destructor_type.llvm_function_type,
-			llvm::Function::LinkageTypes::ExternalLinkage, // TODO - select linkage
+			llvm::Function::LinkageTypes::LinkOnceODRLinkage,
 			MangleFunction( the_class.members, Keyword( Keywords::destructor_ ), destructor_type, true ),
 			module_.get() );
-	llvm_destructor_function->setUnnamedAddr( true );
+
+	SetupGeneratedFunctionLinkageAttributes( *llvm_destructor_function );
 	llvm_destructor_function->addAttribute( 1u, llvm::Attribute::NonNull ); // this is nonnull
 
 	llvm::Value* const this_llvm_value= &*llvm_destructor_function->args().begin();
@@ -1810,7 +1812,7 @@ void CodeBuilder::BuildFuncCode(
 		llvm_function=
 			llvm::Function::Create(
 				function_type->llvm_function_type,
-				llvm::Function::LinkageTypes::ExternalLinkage, // TODO - select linkage
+				llvm::Function::LinkageTypes::ExternalLinkage, // External - for prototype.
 				MangleFunction( parent_names_scope, func_name, *function_type, func_variable.is_this_call ),
 				module_.get() );
 
@@ -1849,6 +1851,16 @@ void CodeBuilder::BuildFuncCode(
 		// This is only prototype, then, function preparing work is done.
 		func_variable.have_body= false;
 		return;
+	}
+
+	// For functions with body we can use linkonce_odr, comdat.
+	{
+		llvm_function->setLinkage( llvm::Function::LinkOnceODRLinkage );
+
+		// Set comdat for correct linkage of same functions, emitted in several modules.
+		llvm::Comdat* const comdat= module_->getOrInsertComdat( llvm_function->getName() );
+		comdat->setSelectionKind( llvm::Comdat::Any );
+		llvm_function->setComdat( comdat );
 	}
 
 	func_variable.have_body= true;
@@ -3610,6 +3622,18 @@ llvm::Value*CodeBuilder::CreateMoveToLLVMRegisterInstruction(
 
 	U_ASSERT(false);
 	return nullptr;
+}
+
+void CodeBuilder::SetupGeneratedFunctionLinkageAttributes( llvm::Function& function )
+{
+	// Merge functions with identical code.
+	// We doesn`t need different addresses for different functions.
+	function.setUnnamedAddr( true );
+
+	// Set comdat for correct linkage of same functions, emitted in several modules.
+	llvm::Comdat* const comdat= module_->getOrInsertComdat( function.getName() );
+	comdat->setSelectionKind( llvm::Comdat::Any ); // Actually, we needs something, like ExactMatch, but it works not in all cases.
+	function.setComdat( comdat );
 }
 
 } // namespace CodeBuilderLLVMPrivate
