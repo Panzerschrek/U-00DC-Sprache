@@ -2,6 +2,7 @@
 #include <map>
 #include <memory>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 #include <boost/optional.hpp>
@@ -223,8 +224,8 @@ struct Variable final
 	// Undef, if value is template-dependent.
 	llvm::Constant* constexpr_value= nullptr;
 
-	std::vector<StoredVariablePtr> referenced_variables;
-	std::vector<VariableStorageUseCounter> locked_referenced_variables;
+	std::unordered_set<StoredVariablePtr> referenced_variables;
+	std::unordered_set<VariableStorageUseCounter> locked_referenced_variables;
 };
 
 struct StoredVariable

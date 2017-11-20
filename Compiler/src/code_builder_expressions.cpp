@@ -969,7 +969,7 @@ Value CodeBuilder::BuildNamedOperand(
 		// Unwrap stored variable here.
 		Variable result;
 		result= stored_variable->content;
-		result.referenced_variables.push_back( stored_variable );
+		result.referenced_variables.emplace( stored_variable );
 		return Value( result, name_entry->second.GetFilePos() );
 	}
 

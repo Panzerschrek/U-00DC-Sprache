@@ -1899,7 +1899,7 @@ void CodeBuilder::BuildFuncCode(
 
 			const StoredVariablePtr this_storage= std::make_shared<StoredVariable>();
 			this_storage->content= this_;
-			this_.referenced_variables.push_back(this_storage);
+			this_.referenced_variables.emplace(this_storage);
 
 			arg_number++;
 			continue;
@@ -1955,7 +1955,7 @@ void CodeBuilder::BuildFuncCode(
 
 		const StoredVariablePtr var_storage= std::make_shared<StoredVariable>();
 		var_storage->content= var;
-		var.referenced_variables.push_back(var_storage);
+		var.referenced_variables.emplace(var_storage);
 
 		if( is_this )
 		{
