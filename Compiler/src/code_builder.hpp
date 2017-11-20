@@ -436,6 +436,9 @@ private:
 		NamesScope& block_names,
 		FunctionContext& function_context );
 
+	// Reference-checking.
+	void CheckReferencedVariables( const Variable& reference, const FilePos& file_pos );
+
 	// Name resolving.
 
 	// PreResolve function.

@@ -2514,6 +2514,7 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 				variable.locked_referenced_variables.emplace(
 					variable.value_type == ValueType::ConstReference ? stored_variable->imut_use_counter : stored_variable->mut_use_counter );
 			}
+			CheckReferencedVariables( variable, variable_declaration.file_pos );
 
 			// TODO - maybe make copy of varaible address in new llvm register?
 			variable.llvm_value= expression_result.llvm_value;
@@ -2656,6 +2657,7 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 			variable.locked_referenced_variables.emplace(
 				variable.value_type == ValueType::ConstReference ? stored_variable->imut_use_counter : stored_variable->mut_use_counter );
 		}
+		CheckReferencedVariables( variable, auto_variable_declaration.file_pos_ );
 
 		variable.llvm_value= initializer_experrsion.llvm_value;
 		variable.constexpr_value= initializer_experrsion.constexpr_value;
@@ -3552,6 +3554,21 @@ const FunctionVariable* CodeBuilder::GetOverloadedFunction(
 		// Not found any function.
 		errors_.push_back( ReportCouldNotSelectOverloadedFunction( file_pos ) );
 		return nullptr;
+	}
+}
+
+void CodeBuilder::CheckReferencedVariables( const Variable& reference, const FilePos& file_pos )
+{
+	for( const StoredVariablePtr& stored_variable : reference.referenced_variables)
+	{
+		if(
+			stored_variable-> mut_use_counter.use_count() <= 2u &&
+			stored_variable->imut_use_counter.use_count() == 1u)
+		{} // All ok - one mutable reference.
+		else if( stored_variable-> mut_use_counter.use_count() == 1u )
+		{} // All ok - 0-infinity immutable references.
+		else
+			errors_.push_back( ReportNotImplemented( file_pos, "Reference protection fail" ) ); // TODO - use correct message.
 	}
 }
 

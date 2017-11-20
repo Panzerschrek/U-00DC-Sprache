@@ -112,6 +112,8 @@ enum class CodeBuilderErrorCode : unsigned int
 	UnsupportedExpressionTypeForTemplateSignatureArgument,
 	TemplateArgumentNotUsedInSignature,
 	IncompleteMemberOfClassTemplate,
+
+	// Reference checking
 };
 
 struct CodeBuilderError
