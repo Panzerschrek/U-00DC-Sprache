@@ -225,7 +225,7 @@ struct Variable final
 	llvm::Constant* constexpr_value= nullptr;
 
 	std::unordered_set<StoredVariablePtr> referenced_variables;
-	std::unordered_set<VariableStorageUseCounter> locked_referenced_variables;
+	std::unordered_set<VariableStorageUseCounter> locked_referenced_variables; // TODO - maybve use vector here?
 };
 
 struct StoredVariable

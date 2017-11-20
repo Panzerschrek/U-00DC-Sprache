@@ -2509,7 +2509,12 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 			}
 
 			variable.referenced_variables= expression_result.referenced_variables;
-			variable.locked_referenced_variables= expression_result.locked_referenced_variables;
+			for( const StoredVariablePtr& stored_variable : variable.referenced_variables )
+			{
+				variable.locked_referenced_variables.emplace(
+					variable.value_type == ValueType::ConstReference ? stored_variable->imut_use_counter : stored_variable->mut_use_counter );
+			}
+
 			// TODO - maybe make copy of varaible address in new llvm register?
 			variable.llvm_value= expression_result.llvm_value;
 			variable.constexpr_value= expression_result.constexpr_value;
@@ -2646,7 +2651,12 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 		}
 
 		variable.referenced_variables= initializer_experrsion.referenced_variables;
-		variable.locked_referenced_variables= initializer_experrsion.locked_referenced_variables;
+		for( const StoredVariablePtr& stored_variable : variable.referenced_variables )
+		{
+			variable.locked_referenced_variables.emplace(
+				variable.value_type == ValueType::ConstReference ? stored_variable->imut_use_counter : stored_variable->mut_use_counter );
+		}
+
 		variable.llvm_value= initializer_experrsion.llvm_value;
 		variable.constexpr_value= initializer_experrsion.constexpr_value;
 	}
