@@ -239,6 +239,12 @@ struct StoredVariable
 	bool usedAsImmutable() const { return imut_use_counter.use_count() >= 2u; }
 };
 
+struct VaraibleReferencesCounter
+{
+	unsigned int  mut= 0u;
+	unsigned int imut= 0u;
+};
+
 struct ClassField final
 {
 	Type type;

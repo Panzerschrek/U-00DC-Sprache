@@ -1316,6 +1316,7 @@ Value CodeBuilder::BuildCallOperator(
 	}
 
 	std::vector<llvm::Value*> llvm_args;
+	std::unordered_map<StoredVariablePtr, VaraibleReferencesCounter> locked_variable_conters;
 
 	llvm::Value* s_ret_value= nullptr;
 	if( function.return_value_is_sret )
@@ -1360,6 +1361,9 @@ Value CodeBuilder::BuildCallOperator(
 				}
 
 				llvm_args.push_back(expr.llvm_value);
+
+				for( const StoredVariablePtr& referenced_variable : expr.referenced_variables )
+					++locked_variable_conters[referenced_variable].mut;
 			}
 			else
 			{
@@ -1380,7 +1384,12 @@ Value CodeBuilder::BuildCallOperator(
 						llvm_args.push_back( expr.llvm_value );
 				}
 				else
+				{
 					llvm_args.push_back( expr.llvm_value );
+
+					for( const StoredVariablePtr& referenced_variable : expr.referenced_variables )
+						++locked_variable_conters[referenced_variable].imut;
+				}
 			}
 		}
 		else
@@ -1415,6 +1424,18 @@ Value CodeBuilder::BuildCallOperator(
 				U_ASSERT( false );
 		}
 	}
+
+	for( const auto& pair : locked_variable_conters )
+	{
+		const VaraibleReferencesCounter& counter= pair.second;
+		if( counter.mut == 1u && counter.imut == 0u )
+		{} // All ok - one mutable reference.
+		else if( counter.mut == 0u )
+		{} // All ok - 0-infinity immutable references.
+		else
+			errors_.push_back( ReportReferenceProtectionError( call_operator.file_pos_ ) );
+	}
+	locked_variable_conters.clear();
 
 	if( function_result_have_template_dependent_type )
 	{
