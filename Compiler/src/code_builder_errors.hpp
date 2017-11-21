@@ -114,6 +114,7 @@ enum class CodeBuilderErrorCode : unsigned int
 	IncompleteMemberOfClassTemplate,
 
 	// Reference checking
+	ReferenceProtectionError,
 };
 
 struct CodeBuilderError
@@ -207,5 +208,6 @@ CodeBuilderError ReportTemplateArgumentIsNotDeducedYet( const FilePos& file_pos,
 CodeBuilderError ReportUnsupportedExpressionTypeForTemplateSignatureArgument( const FilePos& file_pos );
 CodeBuilderError ReportTemplateArgumentNotUsedInSignature( const FilePos& file_pos, const ProgramString& name );
 CodeBuilderError ReportIncompleteMemberOfClassTemplate( const FilePos& file_pos, const ProgramString& name );
+CodeBuilderError ReportReferenceProtectionError( const FilePos& file_pos ); // TODO - add variable name
 
 } // namespace U

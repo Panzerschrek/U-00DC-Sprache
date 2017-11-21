@@ -3568,7 +3568,7 @@ void CodeBuilder::CheckReferencedVariables( const Variable& reference, const Fil
 		else if( stored_variable-> mut_use_counter.use_count() == 1u )
 		{} // All ok - 0-infinity immutable references.
 		else
-			errors_.push_back( ReportNotImplemented( file_pos, "Reference protection fail" ) ); // TODO - use correct message.
+			errors_.push_back( ReportReferenceProtectionError( file_pos ) );
 	}
 }
 
