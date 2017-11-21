@@ -1425,6 +1425,7 @@ Value CodeBuilder::BuildCallOperator(
 		}
 	}
 
+	// Check references.
 	for( const auto& pair : locked_variable_conters )
 	{
 		const VaraibleReferencesCounter& counter= pair.second;
@@ -1435,7 +1436,6 @@ Value CodeBuilder::BuildCallOperator(
 		else
 			errors_.push_back( ReportReferenceProtectionError( call_operator.file_pos_ ) );
 	}
-	locked_variable_conters.clear();
 
 	if( function_result_have_template_dependent_type )
 	{
@@ -1484,6 +1484,14 @@ Value CodeBuilder::BuildCallOperator(
 	}
 	result.type= function_type.return_type;
 	result.llvm_value= call_result;
+
+	// Prepare reference result.
+	if( function_type.return_value_is_reference )
+	{
+		// SPRACHE_TODO - process function lifetimes. Now - just combine all input function references.
+		for( const auto& pair : locked_variable_conters )
+			result.referenced_variables.emplace(pair.first);
+	}
 
 	return Value( result, call_operator.file_pos_ );
 }
