@@ -762,6 +762,11 @@ Value CodeBuilder::BuildBinaryOperator(
 		}
 	}
 
+	const StoredVariablePtr stored_result= std::make_shared<StoredVariable>();
+	stored_result->content= result;
+	result.locked_referenced_variables.emplace( stored_result );
+	function_context.destructibles_stack.back().RegisterVariable( stored_result );
+
 	return Value( result, file_pos );
 }
 
@@ -866,6 +871,11 @@ Value CodeBuilder::BuildLazyBinaryOperator(
 		else
 			U_ASSERT(false);
 	}
+
+	const StoredVariablePtr stored_result= std::make_shared<StoredVariable>();
+	stored_result->content= result;
+	result.locked_referenced_variables.emplace( stored_result );
+	function_context.destructibles_stack.back().RegisterVariable( stored_result );
 
 	return Value( result, file_pos );
 
@@ -1576,6 +1586,11 @@ Value CodeBuilder::BuildUnaryMinus(
 			result.llvm_value= function_context.llvm_ir_builder.CreateNeg( value_for_neg );
 	}
 
+	const StoredVariablePtr stored_result= std::make_shared<StoredVariable>();
+	stored_result->content= result;
+	result.locked_referenced_variables.emplace( stored_result );
+	function_context.destructibles_stack.back().RegisterVariable( stored_result );
+
 	return Value( result, unary_minus.file_pos_ );
 }
 
@@ -1614,6 +1629,11 @@ Value CodeBuilder::BuildLogicalNot(
 		llvm::Value* const value_in_register= CreateMoveToLLVMRegisterInstruction( variable, function_context );
 		result.llvm_value= function_context.llvm_ir_builder.CreateNot( value_in_register );
 	}
+
+	const StoredVariablePtr stored_result= std::make_shared<StoredVariable>();
+	stored_result->content= result;
+	result.locked_referenced_variables.emplace( stored_result );
+	function_context.destructibles_stack.back().RegisterVariable( stored_result );
 
 	return Value( result, logical_not.file_pos_ );
 }
@@ -1660,6 +1680,11 @@ Value CodeBuilder::BuildBitwiseNot(
 		llvm::Value* const value_in_register= CreateMoveToLLVMRegisterInstruction( variable, function_context );
 		result.llvm_value= function_context.llvm_ir_builder.CreateNot( value_in_register );
 	}
+
+	const StoredVariablePtr stored_result= std::make_shared<StoredVariable>();
+	stored_result->content= result;
+	result.locked_referenced_variables.emplace( stored_result );
+	function_context.destructibles_stack.back().RegisterVariable( stored_result );
 
 	return Value( result, bitwise_not.file_pos_ );
 }
