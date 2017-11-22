@@ -234,6 +234,7 @@ struct StoredVariable
 
 	VariableStorageUseCounter  mut_use_counter= std::make_shared<int>();
 	VariableStorageUseCounter imut_use_counter= std::make_shared<int>();
+	bool is_reference= false;
 
 	bool UsedAsMutable  () const { return  mut_use_counter.use_count() >= 2u; }
 	bool usedAsImmutable() const { return imut_use_counter.use_count() >= 2u; }

@@ -931,12 +931,22 @@ CodeBuilderError ReportIncompleteMemberOfClassTemplate( const FilePos& file_pos,
 
 CodeBuilderError ReportReferenceProtectionError( const FilePos& file_pos )
 {
-
 	CodeBuilderError error;
 	error.file_pos= file_pos;
 	error.code= CodeBuilderErrorCode::ReferenceProtectionError;
 
 	error.text= "Reference protection check failed."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportDestroyedVariableStillHaveReferences( const FilePos& file_pos )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::DestroyedVariableStillHaveReferences;
+
+	error.text= "Destroyed variable still have reference(s)."_SpC;
 
 	return error;
 }

@@ -1269,14 +1269,30 @@ void CodeBuilder::GenerateLoop(
 }
 
 void CodeBuilder::CallDestructors(
-	const DestructiblesStorage& destructibles_storage,
+	DestructiblesStorage& destructibles_storage,
 	FunctionContext& function_context )
 {
 	// Call destructors in reverse order.
 	for( auto it = destructibles_storage.variables.rbegin(); it != destructibles_storage.variables.rend(); ++it )
 	{
-		const Variable& var= (*it)->content;
-		if( var.type.HaveDestructor() )
+		StoredVariable& stored_variable= **it;
+
+		if( stored_variable.is_reference )
+		{
+			// Cleare references.
+			stored_variable.content.referenced_variables.clear();
+			stored_variable.content.locked_referenced_variables.clear();
+		}
+		else
+		{
+			// Check references.
+			if( stored_variable.imut_use_counter.use_count() > 1u || stored_variable.mut_use_counter.use_count() > 1u )
+				errors_.push_back( ReportDestroyedVariableStillHaveReferences( FilePos() ) );
+		}
+
+		// Call destructors.
+		const Variable& var= stored_variable.content;
+		if( !stored_variable.is_reference && var.type.HaveDestructor() )
 			CallDestructor( var.llvm_value, var.type, function_context );
 	}
 }
@@ -1959,7 +1975,10 @@ void CodeBuilder::BuildFuncCode(
 
 		const StoredVariablePtr var_storage= std::make_shared<StoredVariable>();
 		var_storage->content= var;
-		var.referenced_variables.emplace(var_storage);
+		var_storage->is_reference= arg.is_reference;
+
+		if( !var_storage->is_reference )
+			var.referenced_variables.emplace(var_storage);
 
 		if( is_this )
 		{
@@ -1975,8 +1994,7 @@ void CodeBuilder::BuildFuncCode(
 				return;
 			}
 
-			if( !arg.is_reference )
-				function_context.destructibles_stack.back().RegisterVariable( var_storage );
+			function_context.destructibles_stack.back().RegisterVariable( var_storage );
 
 			const NamesScope::InsertedName* const inserted_arg=
 				function_names.AddName( arg_name, Value( var_storage, declaration_arg.file_pos_ ) );
@@ -2556,9 +2574,9 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 
 		const StoredVariablePtr stored_variable= std::make_shared<StoredVariable>();
 		stored_variable->content= std::move(variable);
+		stored_variable->is_reference= variable_declaration.reference_modifier == ReferenceModifier::Reference;
 
-		if( variable_declaration.reference_modifier == ReferenceModifier::None )
-			function_context.destructibles_stack.back().RegisterVariable( stored_variable );
+		function_context.destructibles_stack.back().RegisterVariable( stored_variable );
 
 		const NamesScope::InsertedName* const inserted_name=
 			block_names.AddName( variable_declaration.name, Value( std::move(stored_variable), variable_declaration.file_pos ) );
@@ -2738,9 +2756,9 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 
 	const StoredVariablePtr stored_variable= std::make_shared<StoredVariable>();
 	stored_variable->content= std::move(variable);
+	stored_variable->is_reference= auto_variable_declaration.reference_modifier == ReferenceModifier::Reference;
 
-	if( auto_variable_declaration.reference_modifier == ReferenceModifier::None )
-		function_context.destructibles_stack.back().RegisterVariable( stored_variable );
+	function_context.destructibles_stack.back().RegisterVariable( stored_variable );
 
 	const NamesScope::InsertedName* inserted_name=
 		block_names.AddName( auto_variable_declaration.name, Value( std::move(stored_variable), auto_variable_declaration.file_pos_ ) );

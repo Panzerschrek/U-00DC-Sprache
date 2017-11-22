@@ -188,7 +188,7 @@ private:
 		FunctionContext& function_context);
 
 	void CallDestructors(
-		const DestructiblesStorage& destructibles_storage,
+		DestructiblesStorage& destructibles_storage,
 		FunctionContext& function_context );
 
 	void CallDestructor(

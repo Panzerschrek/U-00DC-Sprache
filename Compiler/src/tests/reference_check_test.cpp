@@ -183,40 +183,6 @@ U_TEST( ReferenceCheckTest_FunctionWithSingleArgumentReturnsReferenceToInputVari
 	U_TEST_ASSERT( error.file_pos.line == 7u );
 }
 
-U_TEST( ReferenceCheckTest_FunctionWithSingleArgumentReturnsReferenceToInputVariable_2 )
-{
-	static const char c_program_text[]=
-	R"(
-		fn Bar( i32 &mut x ) : i32 &mut { return x; }
-		fn Foo()
-		{
-			// Pass mutable reference into Bar, but assing result of Bar to immutable reference.
-			// Making this multiple times should be ok.
-			var i32 x= 0;
-			var i32 &imut r0= Bar(x);
-			var i32 &imut r1= Bar(x);
-		}
-	)";
-
-	BuildProgram( c_program_text );
-}
-
-U_TEST( ReferenceCheckTest_PassingMutableReferenceToFunctionWhileMutableReferenceOnStackExistsShouldBeOk )
-{
-	static const char c_program_text[]=
-	R"(
-		fn Bar( i32 &mut x ) {}
-		fn Foo()
-		{
-			var i32 x= 0;
-			var i32 &mut r= x; // Store mutable reference on stack.
-			Bar(x); // Pass mutable reference.
-		}
-	)";
-
-	BuildProgram( c_program_text );
-}
-
 U_TEST( ReferenceCheckTest_StructMemberRefersToStruct_0 )
 {
 	static const char c_program_text[]=
@@ -375,6 +341,72 @@ U_TEST( ReferenceCheckTest_ReferenceCanReferToMultipleVariables )
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferenceProtectionError );
 	U_TEST_ASSERT( error.file_pos.line == 11u );
+}
+
+U_TEST( ReferenceCheckTest_passMutableReferenceToFunctionWhenMutableReferenceOnStackExists )
+{
+	static const char c_program_text[]=
+	R"(
+		fn Bar( i32 &mut x ){}
+		fn Foo()
+		{
+			var i32 x= 0;
+			var i32 &mut r= x;
+			Bar(x); // Forbidden, x already have mutable reference.
+		}
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferenceProtectionError );
+	U_TEST_ASSERT( error.file_pos.line == 7u );
+}
+
+U_TEST( ReferenceCheckTest_PassMutableReferenceToFunctionWhenImmutableReferenceOnStackExists )
+{
+	static const char c_program_text[]=
+	R"(
+		fn Bar( i32 &mut x ){}
+		fn Foo()
+		{
+			var i32 x= 0;
+			var i32 &imut r= x;
+			Bar(x); // Forbidden, x already have immutable reference.
+		}
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferenceProtectionError );
+	U_TEST_ASSERT( error.file_pos.line == 7u );
+}
+
+U_TEST( ReferenceCheckTest_PassImmutableReferenceToFunctionWhenMutableReferenceOnStackExists )
+{
+	static const char c_program_text[]=
+	R"(
+		fn Bar( i32 &imut x ){}
+		fn Foo()
+		{
+			var i32 x= 0;
+			var i32 &mut r= x;
+			Bar(x); // Forbidden, x already have mutable reference.
+		}
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferenceProtectionError );
+	U_TEST_ASSERT( error.file_pos.line == 7u );
 }
 
 } // namespace U

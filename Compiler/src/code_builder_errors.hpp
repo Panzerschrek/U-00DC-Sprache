@@ -115,6 +115,7 @@ enum class CodeBuilderErrorCode : unsigned int
 
 	// Reference checking
 	ReferenceProtectionError,
+	DestroyedVariableStillHaveReferences,
 };
 
 struct CodeBuilderError
@@ -209,5 +210,6 @@ CodeBuilderError ReportUnsupportedExpressionTypeForTemplateSignatureArgument( co
 CodeBuilderError ReportTemplateArgumentNotUsedInSignature( const FilePos& file_pos, const ProgramString& name );
 CodeBuilderError ReportIncompleteMemberOfClassTemplate( const FilePos& file_pos, const ProgramString& name );
 CodeBuilderError ReportReferenceProtectionError( const FilePos& file_pos ); // TODO - add variable name
+CodeBuilderError ReportDestroyedVariableStillHaveReferences( const FilePos& file_pos ); // TODO - add variable name
 
 } // namespace U

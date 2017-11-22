@@ -208,19 +208,13 @@ U_TEST(MethodTest6)
 				return x_ / 7.0;
 			}
 		}
+		fn  MutRef( S & mut s ) : S & mut { return s; }
+		fn IMutRef( S &imut s ) : S &imut { return s; }
 		fn Foo() : f64
 		{
 			var S s{ .x_= 13.0 };
 			var f64 a= 0.0, b= 0.0;
-			{
-				var S & mut s_mut = s;
-				a= s_mut.GetX();
-			}
-			{
-				var S &imut s_imut= s;
-				b= s_imut.GetX();
-			}
-			return a - b;
+			return MutRef(s).GetX() - IMutRef(s).GetX();
 		}
 	)";
 

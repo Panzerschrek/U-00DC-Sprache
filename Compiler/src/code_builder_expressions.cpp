@@ -979,7 +979,11 @@ Value CodeBuilder::BuildNamedOperand(
 		// Unwrap stored variable here.
 		Variable result;
 		result= stored_variable->content;
-		result.referenced_variables.emplace( stored_variable );
+		if( !stored_variable->is_reference )
+			result.referenced_variables.emplace( stored_variable );
+
+		result.locked_referenced_variables.clear(); // Reset locks for references.
+
 		return Value( result, name_entry->second.GetFilePos() );
 	}
 
@@ -1439,9 +1443,12 @@ Value CodeBuilder::BuildCallOperator(
 	for( const auto& pair : locked_variable_conters )
 	{
 		const VaraibleReferencesCounter& counter= pair.second;
-		if( counter.mut == 1u && counter.imut == 0u )
+		const StoredVariable& var= *pair.first;
+		const size_t  mut_counter= counter. mut + ( var. mut_use_counter.use_count() - 1u );
+		const size_t imut_counter= counter.imut + ( var.imut_use_counter.use_count() - 1u );
+		if( mut_counter == 1u && imut_counter == 0u )
 		{} // All ok - one mutable reference.
-		else if( counter.mut == 0u )
+		else if( mut_counter == 0u )
 		{} // All ok - 0-infinity immutable references.
 		else
 			errors_.push_back( ReportReferenceProtectionError( call_operator.file_pos_ ) );
