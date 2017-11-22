@@ -1480,7 +1480,11 @@ Value CodeBuilder::BuildCallOperator(
 		result.location= function.return_value_is_sret ? Variable::Location::Pointer : Variable::Location::LLVMRegister;
 		result.value_type= ValueType::Value;
 
-		function_context.destructibles_stack.back().RegisterVariable( result );
+		const StoredVariablePtr stored_result= std::make_shared<StoredVariable>();
+		stored_result->content= result;
+		result.locked_referenced_variables.emplace( stored_result );
+
+		function_context.destructibles_stack.back().RegisterVariable( stored_result );
 	}
 	result.type= function_type.return_type;
 	result.llvm_value= call_result;
@@ -1510,7 +1514,11 @@ Variable CodeBuilder::BuildTempVariableConstruction(
 	variable.constexpr_value= ApplyConstructorInitializer( variable, call_operator, names, function_context );
 	variable.value_type= ValueType::Value; // Make value efter construction
 
-	function_context.destructibles_stack.back().RegisterVariable( variable );
+	const StoredVariablePtr stored_variable= std::make_shared<StoredVariable>();
+	stored_variable->content= variable;
+	variable.referenced_variables.emplace( stored_variable );
+
+	function_context.destructibles_stack.back().RegisterVariable( stored_variable );
 
 	return variable;
 }

@@ -37,9 +37,9 @@ private:
 
 	struct DestructiblesStorage final
 	{
-		void RegisterVariable( Variable variable );
+		void RegisterVariable( const StoredVariablePtr& variable );
 
-		std::vector<Variable> variables;
+		std::vector<StoredVariablePtr> variables;
 	};
 
 	struct LoopFrame final
