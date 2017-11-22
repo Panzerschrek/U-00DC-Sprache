@@ -1281,7 +1281,7 @@ void CodeBuilder::CallDestructors(
 		{
 			// Cleare references.
 			stored_variable.content.referenced_variables.clear();
-			stored_variable.content.locked_referenced_variables.clear();
+			stored_variable.locked_referenced_variables.clear();
 		}
 		else
 		{
@@ -2531,12 +2531,6 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 			}
 
 			variable.referenced_variables= expression_result.referenced_variables;
-			for( const StoredVariablePtr& stored_variable : variable.referenced_variables )
-			{
-				variable.locked_referenced_variables.emplace(
-					variable.value_type == ValueType::ConstReference ? stored_variable->imut_use_counter : stored_variable->mut_use_counter );
-			}
-			CheckReferencedVariables( variable, variable_declaration.file_pos );
 
 			// TODO - maybe make copy of varaible address in new llvm register?
 			variable.llvm_value= expression_result.llvm_value;
@@ -2573,8 +2567,18 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 		}
 
 		const StoredVariablePtr stored_variable= std::make_shared<StoredVariable>();
-		stored_variable->content= std::move(variable);
+		stored_variable->content= variable;
 		stored_variable->is_reference= variable_declaration.reference_modifier == ReferenceModifier::Reference;
+
+		if( stored_variable->is_reference )
+		{
+			for( const StoredVariablePtr& referenced_variable : variable.referenced_variables )
+			{
+				stored_variable->locked_referenced_variables.push_back(
+					variable.value_type == ValueType::ConstReference ? referenced_variable->imut_use_counter : referenced_variable->mut_use_counter );
+			}
+			CheckReferencedVariables( variable, variable_declaration.file_pos );
+		}
 
 		function_context.destructibles_stack.back().RegisterVariable( stored_variable );
 
@@ -2674,12 +2678,6 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 		}
 
 		variable.referenced_variables= initializer_experrsion.referenced_variables;
-		for( const StoredVariablePtr& stored_variable : variable.referenced_variables )
-		{
-			variable.locked_referenced_variables.emplace(
-				variable.value_type == ValueType::ConstReference ? stored_variable->imut_use_counter : stored_variable->mut_use_counter );
-		}
-		CheckReferencedVariables( variable, auto_variable_declaration.file_pos_ );
 
 		variable.llvm_value= initializer_experrsion.llvm_value;
 		variable.constexpr_value= initializer_experrsion.constexpr_value;
@@ -2755,8 +2753,18 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 	}
 
 	const StoredVariablePtr stored_variable= std::make_shared<StoredVariable>();
-	stored_variable->content= std::move(variable);
+	stored_variable->content= variable;
 	stored_variable->is_reference= auto_variable_declaration.reference_modifier == ReferenceModifier::Reference;
+
+	if( stored_variable->is_reference )
+	{
+		for( const StoredVariablePtr& referenced_variable : variable.referenced_variables )
+		{
+			stored_variable->locked_referenced_variables.push_back(
+				variable.value_type == ValueType::ConstReference ? referenced_variable->imut_use_counter : referenced_variable->mut_use_counter );
+		}
+		CheckReferencedVariables( variable, auto_variable_declaration.file_pos_ );
+	}
 
 	function_context.destructibles_stack.back().RegisterVariable( stored_variable );
 
@@ -3581,7 +3589,7 @@ const FunctionVariable* CodeBuilder::GetOverloadedFunction(
 
 void CodeBuilder::CheckReferencedVariables( const Variable& reference, const FilePos& file_pos )
 {
-	for( const StoredVariablePtr& stored_variable : reference.referenced_variables)
+	for( const StoredVariablePtr& stored_variable : reference.referenced_variables )
 	{
 		if(
 			stored_variable-> mut_use_counter.use_count() <= 2u &&

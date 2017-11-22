@@ -764,7 +764,7 @@ Value CodeBuilder::BuildBinaryOperator(
 
 	const StoredVariablePtr stored_result= std::make_shared<StoredVariable>();
 	stored_result->content= result;
-	result.locked_referenced_variables.emplace( stored_result );
+	result.referenced_variables.emplace( stored_result );
 	function_context.destructibles_stack.back().RegisterVariable( stored_result );
 
 	return Value( result, file_pos );
@@ -874,7 +874,7 @@ Value CodeBuilder::BuildLazyBinaryOperator(
 
 	const StoredVariablePtr stored_result= std::make_shared<StoredVariable>();
 	stored_result->content= result;
-	result.locked_referenced_variables.emplace( stored_result );
+	result.referenced_variables.emplace( stored_result );
 	function_context.destructibles_stack.back().RegisterVariable( stored_result );
 
 	return Value( result, file_pos );
@@ -936,7 +936,6 @@ Value CodeBuilder::BuildNamedOperand(
 		field_variable.location= Variable::Location::Pointer;
 		field_variable.value_type= function_context.this_->value_type;
 		field_variable.referenced_variables= function_context.this_->referenced_variables;
-		field_variable.locked_referenced_variables= function_context.this_->locked_referenced_variables;
 
 		// Make first index = 0 for array to pointer conversion.
 		llvm::Value* index_list[2];
@@ -981,8 +980,6 @@ Value CodeBuilder::BuildNamedOperand(
 		result= stored_variable->content;
 		if( !stored_variable->is_reference )
 			result.referenced_variables.emplace( stored_variable );
-
-		result.locked_referenced_variables.clear(); // Reset locks for references.
 
 		return Value( result, name_entry->second.GetFilePos() );
 	}
@@ -1086,7 +1083,6 @@ Value CodeBuilder::BuildIndexationOperator(
 		result.location= Variable::Location::Pointer;
 		result.value_type= variable.value_type;
 		result.referenced_variables= variable.referenced_variables;
-		result.locked_referenced_variables= variable.locked_referenced_variables;
 		result.type= array_type->type;
 		return Value( result, indexation_operator.file_pos_ );
 	}
@@ -1119,7 +1115,6 @@ Value CodeBuilder::BuildIndexationOperator(
 	result.location= Variable::Location::Pointer;
 	result.value_type= variable.value_type;
 	result.referenced_variables= variable.referenced_variables;
-	result.locked_referenced_variables= variable.locked_referenced_variables;
 	result.type= array_type->type;
 
 	if( variable.constexpr_value != nullptr && index.constexpr_value != nullptr )
@@ -1198,7 +1193,6 @@ Value CodeBuilder::BuildMemberAccessOperator(
 	result.location= Variable::Location::Pointer;
 	result.value_type= variable.value_type;
 	result.referenced_variables= variable.referenced_variables;
-	result.locked_referenced_variables= variable.locked_referenced_variables;
 	result.type= field->type;
 	result.llvm_value=
 		function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, index_list );
@@ -1499,7 +1493,7 @@ Value CodeBuilder::BuildCallOperator(
 
 		const StoredVariablePtr stored_result= std::make_shared<StoredVariable>();
 		stored_result->content= result;
-		result.locked_referenced_variables.emplace( stored_result );
+		result.referenced_variables.emplace( stored_result );
 
 		function_context.destructibles_stack.back().RegisterVariable( stored_result );
 	}
@@ -1595,7 +1589,7 @@ Value CodeBuilder::BuildUnaryMinus(
 
 	const StoredVariablePtr stored_result= std::make_shared<StoredVariable>();
 	stored_result->content= result;
-	result.locked_referenced_variables.emplace( stored_result );
+	result.referenced_variables.emplace( stored_result );
 	function_context.destructibles_stack.back().RegisterVariable( stored_result );
 
 	return Value( result, unary_minus.file_pos_ );
@@ -1639,7 +1633,7 @@ Value CodeBuilder::BuildLogicalNot(
 
 	const StoredVariablePtr stored_result= std::make_shared<StoredVariable>();
 	stored_result->content= result;
-	result.locked_referenced_variables.emplace( stored_result );
+	result.referenced_variables.emplace( stored_result );
 	function_context.destructibles_stack.back().RegisterVariable( stored_result );
 
 	return Value( result, logical_not.file_pos_ );
@@ -1690,7 +1684,7 @@ Value CodeBuilder::BuildBitwiseNot(
 
 	const StoredVariablePtr stored_result= std::make_shared<StoredVariable>();
 	stored_result->content= result;
-	result.locked_referenced_variables.emplace( stored_result );
+	result.referenced_variables.emplace( stored_result );
 	function_context.destructibles_stack.back().RegisterVariable( stored_result );
 
 	return Value( result, bitwise_not.file_pos_ );

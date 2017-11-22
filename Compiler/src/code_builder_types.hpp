@@ -225,7 +225,6 @@ struct Variable final
 	llvm::Constant* constexpr_value= nullptr;
 
 	std::unordered_set<StoredVariablePtr> referenced_variables;
-	std::unordered_set<VariableStorageUseCounter> locked_referenced_variables; // TODO - maybve use vector here?
 };
 
 struct StoredVariable
@@ -234,7 +233,9 @@ struct StoredVariable
 
 	VariableStorageUseCounter  mut_use_counter= std::make_shared<int>();
 	VariableStorageUseCounter imut_use_counter= std::make_shared<int>();
+
 	bool is_reference= false;
+	std::vector<VariableStorageUseCounter> locked_referenced_variables; // For references
 
 	bool UsedAsMutable  () const { return  mut_use_counter.use_count() >= 2u; }
 	bool usedAsImmutable() const { return imut_use_counter.use_count() >= 2u; }
