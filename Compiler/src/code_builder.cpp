@@ -1268,9 +1268,10 @@ void CodeBuilder::GenerateLoop(
 	function_context.llvm_ir_builder.SetInsertPoint( block_after_loop );
 }
 
-void CodeBuilder::CallDestructors(
-	DestructiblesStorage& destructibles_storage,
-	FunctionContext& function_context )
+void CodeBuilder::CallDestructorsImpl(
+	const DestructiblesStorage& destructibles_storage,
+	FunctionContext& function_context,
+	DestroyedVariableReferencesCount& destroyed_variable_references )
 {
 	// Call destructors in reverse order.
 	for( auto it = destructibles_storage.variables.rbegin(); it != destructibles_storage.variables.rend(); ++it )
@@ -1279,14 +1280,28 @@ void CodeBuilder::CallDestructors(
 
 		if( stored_variable.is_reference )
 		{
-			// Cleare references.
-			stored_variable.content.referenced_variables.clear();
-			stored_variable.locked_referenced_variables.clear();
+			U_ASSERT( stored_variable.content.referenced_variables.size() == stored_variable.locked_referenced_variables.size() );
+
+			// Increment coounter of destroyed reference for referenced variables.
+			for( const StoredVariablePtr& referenced_variable : stored_variable.content.referenced_variables )
+			{
+				if( destroyed_variable_references.find( referenced_variable ) == destroyed_variable_references.end() )
+					destroyed_variable_references[ referenced_variable ]= 1u;
+				else
+					++destroyed_variable_references[ referenced_variable ];
+			}
 		}
 		else
 		{
 			// Check references.
-			if( stored_variable.imut_use_counter.use_count() > 1u || stored_variable.mut_use_counter.use_count() > 1u )
+			U_ASSERT( stored_variable.imut_use_counter.use_count() >= 1u && stored_variable.mut_use_counter.use_count() >= 1u );
+
+			size_t alive_ref_count= ( stored_variable.imut_use_counter.use_count() - 1u ) + ( stored_variable.mut_use_counter.use_count() - 1u );
+			const auto map_it= destroyed_variable_references.find( *it );
+			if( map_it != destroyed_variable_references.end() )
+				alive_ref_count-= map_it->second;
+
+			if( alive_ref_count > 0u )
 				errors_.push_back( ReportDestroyedVariableStillHaveReferences( FilePos() ) );
 		}
 
@@ -1295,6 +1310,14 @@ void CodeBuilder::CallDestructors(
 		if( !stored_variable.is_reference && var.type.HaveDestructor() )
 			CallDestructor( var.llvm_value, var.type, function_context );
 	}
+}
+
+void CodeBuilder::CallDestructors(
+	const DestructiblesStorage& destructibles_storage,
+	FunctionContext& function_context )
+{
+	DestroyedVariableReferencesCount destroyed_variable_references;
+	CallDestructorsImpl( destructibles_storage, function_context, destroyed_variable_references );
 }
 
 void CodeBuilder::CallDestructor(
@@ -1344,6 +1367,8 @@ void CodeBuilder::CallDestructorsForLoopInnerVariables( FunctionContext& functio
 {
 	U_ASSERT( !function_context.loops_stack.empty() );
 
+	DestroyedVariableReferencesCount destroyed_variable_references;
+
 	// Destroy all local variables before "break"/"continue" in all blocks inside loop.
 	size_t undestructed_stack_size= function_context.destructibles_stack.size();
 	for(
@@ -1352,15 +1377,17 @@ void CodeBuilder::CallDestructorsForLoopInnerVariables( FunctionContext& functio
 		undestructed_stack_size > function_context.loops_stack.back().destructibles_stack_size;
 		++it, --undestructed_stack_size )
 	{
-		CallDestructors( *it, function_context );
+		CallDestructorsImpl( *it, function_context, destroyed_variable_references );
 	}
 }
 
 void CodeBuilder::CallDestructorsBeforeReturn( FunctionContext& function_context )
 {
+	DestroyedVariableReferencesCount destroyed_variable_references;
+
 	// We must call ALL destructors of local variables, arguments, etc before each return.
 	for( auto it= function_context.destructibles_stack.rbegin(); it != function_context.destructibles_stack.rend(); ++it )
-		CallDestructors( *it, function_context );
+		CallDestructorsImpl( *it, function_context, destroyed_variable_references );
 }
 
 void CodeBuilder::CallMembersDestructors( FunctionContext& function_context )

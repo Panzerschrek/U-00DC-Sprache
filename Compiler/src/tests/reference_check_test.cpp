@@ -535,4 +535,26 @@ U_TEST( ReferenceCheckTest_ReturnReferenceToValueArgument_1 )
 	//U_TEST_ASSERT( error.file_pos.line == 7u ); // TODO - check this
 }
 
+U_TEST( ReferenceCheckTest_ReferenceShouldLockVariableAfterConditionalReturn )
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo()
+		{
+			var i32 x= 0;
+			var i32 &mut r0= x;
+			if( false ){ return; }
+			var i32 &mut r1= x; // "x" reference counters should be unchanged after return.
+		}
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferenceProtectionError );
+	U_TEST_ASSERT( error.file_pos.line == 7u );
+}
+
 } // namespace U
