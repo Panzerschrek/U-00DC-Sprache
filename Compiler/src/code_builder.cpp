@@ -3056,7 +3056,14 @@ void CodeBuilder::BuildReturnOperatorCode(
 			return;
 		}
 
+		// Lock references to return value variables.
+		std::vector<VariableStorageUseCounter> return_value_locks;
+		for( const StoredVariablePtr& var : expression_result.referenced_variables )
+			return_value_locks.push_back( function_context.return_value_is_mutable ? var->mut_use_counter : var->imut_use_counter );
+
 		call_destructors();
+		return_value_locks.clear(); // Reset locks AFTER destructors call. We must get error in case of returning of reference to stack variable or value-argument.
+
 		function_context.llvm_ir_builder.CreateRet( expression_result.llvm_value );
 	}
 	else

@@ -409,4 +409,130 @@ U_TEST( ReferenceCheckTest_PassImmutableReferenceToFunctionWhenMutableReferenceO
 	U_TEST_ASSERT( error.file_pos.line == 7u );
 }
 
+U_TEST( ReferenceCheckTest_ReturnReferenceToLocalVariable_0 )
+{
+	// Simple return of reference to stack variable.
+	static const char c_program_text[]=
+	R"(
+		fn Foo() : i32 &imut
+		{
+			var i32 x= 0;
+			return x;
+		}
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::DestroyedVariableStillHaveReferences );
+	//U_TEST_ASSERT( error.file_pos.line == 7u ); // TODO - check this
+}
+
+U_TEST( ReferenceCheckTest_ReturnReferenceToLocalVariable_1 )
+{
+	// Conditional return of reference to stack variable.
+	static const char c_program_text[]=
+	R"(
+		fn Foo( i32 &imut in ) : i32 &imut
+		{
+			var i32 x= 0;
+			if( in != 0 ){ return x; }
+			return in;
+		}
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::DestroyedVariableStillHaveReferences );
+	//U_TEST_ASSERT( error.file_pos.line == 7u ); // TODO - check this
+}
+
+U_TEST( ReferenceCheckTest_ReturnReferenceToLocalVariable_2 )
+{
+	// Conditional return of reference to member of stack variable, pussed through function.
+	static const char c_program_text[]=
+	R"(
+		struct S{ [ i32, 2 ] x; }
+		fn Pass( S   &imut s ) : S   &imut { return s; }
+		fn Pass( i32 &imut x ) : i32 &imut { return x; }
+		fn Foo( i32 &imut in ) : i32 &imut
+		{
+			var S s= zero_init;
+			while( in == 0 )
+			{
+				return Pass(Pass(s).x[0u]);
+			}
+			return in;
+		}
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::DestroyedVariableStillHaveReferences );
+	//U_TEST_ASSERT( error.file_pos.line == 7u ); // TODO - check this
+}
+
+U_TEST( ReferenceCheckTest_ReturnReferenceToLocalVariable_3 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo( i32 &mut in ) : i32 &imut
+		{
+			if( in == 42 ) { return in; }
+			auto &mut r= in; // Should take this reference.
+			return r;
+		}
+	)";
+
+	BuildProgram( c_program_text );
+}
+
+U_TEST( ReferenceCheckTest_ReturnReferenceToValueArgument_0 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo( i32 x ) : i32 &imut
+		{
+			return x;
+		}
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::DestroyedVariableStillHaveReferences );
+	//U_TEST_ASSERT( error.file_pos.line == 7u ); // TODO - check this
+}
+
+
+U_TEST( ReferenceCheckTest_ReturnReferenceToValueArgument_1 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo( i32 x ) : i32 &imut
+		{
+			auto &ref= x;
+			return x;
+		}
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::DestroyedVariableStillHaveReferences );
+	//U_TEST_ASSERT( error.file_pos.line == 7u ); // TODO - check this
+}
+
 } // namespace U
