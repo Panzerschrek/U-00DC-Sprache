@@ -104,12 +104,12 @@ Value CodeBuilder::BuildExpressionCode(
 	else if( const auto numeric_constant=
 		dynamic_cast<const Synt::NumericConstant*>(&expression) )
 	{
-		result= BuildNumericConstant( *numeric_constant );
+		result= BuildNumericConstant( *numeric_constant, function_context );
 	}
 	else if( const auto boolean_constant=
 		dynamic_cast<const Synt::BooleanConstant*>(&expression) )
 	{
-		result= Value( BuildBooleanConstant( *boolean_constant ), boolean_constant->file_pos_ );
+		result= Value( BuildBooleanConstant( *boolean_constant, function_context ), boolean_constant->file_pos_ );
 	}
 	else if( const auto bracket_expression=
 		dynamic_cast<const Synt::BracketExpression*>(&expression) )
@@ -993,7 +993,9 @@ Value CodeBuilder::BuildNamedOperand(
 	return name_entry->second;
 }
 
-Value CodeBuilder::BuildNumericConstant( const Synt::NumericConstant& numeric_constant )
+Value CodeBuilder::BuildNumericConstant(
+	const Synt::NumericConstant& numeric_constant,
+	FunctionContext& function_context )
 {
 	U_FundamentalType type= GetNumericConstantType( numeric_constant );
 	if( type == U_FundamentalType::InvalidType )
@@ -1021,10 +1023,17 @@ Value CodeBuilder::BuildNumericConstant( const Synt::NumericConstant& numeric_co
 
 	result.llvm_value= result.constexpr_value;
 
+	const StoredVariablePtr stored_result= std::make_shared<StoredVariable>();
+	stored_result->content= result;
+	result.referenced_variables.emplace( stored_result );
+	function_context.destructibles_stack.back().RegisterVariable( stored_result );
+
 	return Value( result, numeric_constant.file_pos_ );
 }
 
-Variable CodeBuilder::BuildBooleanConstant( const Synt::BooleanConstant& boolean_constant )
+Variable CodeBuilder::BuildBooleanConstant(
+	const Synt::BooleanConstant& boolean_constant,
+	FunctionContext& function_context )
 {
 	Variable result;
 	result.location= Variable::Location::LLVMRegister;
@@ -1035,6 +1044,11 @@ Variable CodeBuilder::BuildBooleanConstant( const Synt::BooleanConstant& boolean
 		llvm::Constant::getIntegerValue(
 			fundamental_llvm_types_.bool_ ,
 			llvm::APInt( 1u, uint64_t(boolean_constant.value_) ) );
+
+	const StoredVariablePtr stored_result= std::make_shared<StoredVariable>();
+	stored_result->content= result;
+	result.referenced_variables.emplace( stored_result );
+	function_context.destructibles_stack.back().RegisterVariable( stored_result );
 
 	return result;
 }
@@ -1410,6 +1424,11 @@ Value CodeBuilder::BuildCallOperator(
 					}
 					else
 						llvm_args.push_back( expr.llvm_value );
+
+					// Convert reference locks.
+					for( const StoredVariablePtr& referenced_variable : expr.referenced_variables )
+						++locked_variable_conters[referenced_variable].mut;
+					acutal_args_locks[i].clear();
 				}
 				else
 				{
@@ -1557,7 +1576,7 @@ Variable CodeBuilder::BuildTempVariableConstruction(
 	variable.value_type= ValueType::Reference;
 	variable.llvm_value= function_context.alloca_ir_builder.CreateAlloca( type.GetLLVMType() );
 	variable.constexpr_value= ApplyConstructorInitializer( variable, call_operator, names, function_context );
-	variable.value_type= ValueType::Value; // Make value efter construction
+	variable.value_type= ValueType::Value; // Make value after construction
 
 	const StoredVariablePtr stored_variable= std::make_shared<StoredVariable>();
 	stored_variable->content= variable;

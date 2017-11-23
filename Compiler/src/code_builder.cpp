@@ -2452,6 +2452,9 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 			continue;
 		}
 
+		// Destruction frame for temporary variables of initializer expression.
+		function_context.destructibles_stack.emplace_back();
+
 		Variable variable;
 		variable.type= type;
 		variable.location= Variable::Location::Pointer;
@@ -2535,7 +2538,7 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 			}
 
 			const Value expression_result_value=
-				BuildExpressionCodeAndDestroyTemporaries( *initializer_expression, block_names, function_context );
+				BuildExpressionCode( *initializer_expression, block_names, function_context );
 
 			if( expression_result_value.GetType() != variable.type &&
 				expression_result_value.GetType().GetTemplateDependentType() == nullptr && variable.type.GetTemplateDependentType() == nullptr )
@@ -2607,8 +2610,6 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 			CheckReferencedVariables( variable, variable_declaration.file_pos );
 		}
 
-		function_context.destructibles_stack.back().RegisterVariable( stored_variable );
-
 		const NamesScope::InsertedName* const inserted_name=
 			block_names.AddName( variable_declaration.name, Value( std::move(stored_variable), variable_declaration.file_pos ) );
 		if( !inserted_name )
@@ -2616,7 +2617,13 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 			errors_.push_back( ReportRedefinition( variables_declaration.file_pos_, variable_declaration.name ) );
 			continue;
 		}
-	}
+
+		// After lock of references we can call destructors.
+		CallDestructors( function_context.destructibles_stack.back(), function_context );
+		function_context.destructibles_stack.pop_back();
+
+		function_context.destructibles_stack.back().RegisterVariable( stored_variable );
+	} // for variables
 }
 
 void CodeBuilder::BuildAutoVariableDeclarationCode(
@@ -2625,8 +2632,11 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 	FunctionContext& function_context,
 	const bool global )
 {
+	// Destruction frame for temporary variables of initializer expression.
+	function_context.destructibles_stack.emplace_back();
+
 	const Value initializer_experrsion_value=
-		BuildExpressionCodeAndDestroyTemporaries( *auto_variable_declaration.initializer_expression, block_names, function_context );
+		BuildExpressionCode( *auto_variable_declaration.initializer_expression, block_names, function_context );
 
 	if( initializer_experrsion_value.GetType() == NontypeStub::TemplateDependentValue )
 	{
@@ -2750,9 +2760,7 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 			global_variable->setInitializer( variable.constexpr_value );
 	}
 	else
-	{
 		U_ASSERT(false);
-	}
 
 	if( variable.type.GetTemplateDependentType() == nullptr &&
 		auto_variable_declaration.mutability_modifier == MutabilityModifier::Constexpr &&
@@ -2793,16 +2801,20 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 		CheckReferencedVariables( variable, auto_variable_declaration.file_pos_ );
 	}
 
-	function_context.destructibles_stack.back().RegisterVariable( stored_variable );
-
 	const NamesScope::InsertedName* inserted_name=
-		block_names.AddName( auto_variable_declaration.name, Value( std::move(stored_variable), auto_variable_declaration.file_pos_ ) );
+		block_names.AddName( auto_variable_declaration.name, Value( stored_variable, auto_variable_declaration.file_pos_ ) );
 
 	if( inserted_name == nullptr )
 	{
 		errors_.push_back( ReportRedefinition( auto_variable_declaration.file_pos_, auto_variable_declaration.name ) );
 		return;
 	}
+
+	// After lock of references we can call destructors.
+	CallDestructors( function_context.destructibles_stack.back(), function_context );
+	function_context.destructibles_stack.pop_back();
+
+	function_context.destructibles_stack.back().RegisterVariable( stored_variable );
 }
 
 void CodeBuilder::BuildAssignmentOperatorCode(

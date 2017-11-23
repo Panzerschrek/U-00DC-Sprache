@@ -344,7 +344,7 @@ U_TEST( ReferenceCheckTest_ReferenceCanReferToMultipleVariables )
 	U_TEST_ASSERT( error.file_pos.line == 11u );
 }
 
-U_TEST( ReferenceCheckTest_passMutableReferenceToFunctionWhenMutableReferenceOnStackExists )
+U_TEST( ReferenceCheckTest_PassMutableReferenceToFunctionWhenMutableReferenceOnStackExists )
 {
 	static const char c_program_text[]=
 	R"(
@@ -515,7 +515,6 @@ U_TEST( ReferenceCheckTest_ReturnReferenceToValueArgument_0 )
 	//U_TEST_ASSERT( error.file_pos.line == 7u ); // TODO - check this
 }
 
-
 U_TEST( ReferenceCheckTest_ReturnReferenceToValueArgument_1 )
 {
 	static const char c_program_text[]=
@@ -524,6 +523,67 @@ U_TEST( ReferenceCheckTest_ReturnReferenceToValueArgument_1 )
 		{
 			auto &ref= x;
 			return ref;
+		}
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::DestroyedVariableStillHaveReferences );
+	//U_TEST_ASSERT( error.file_pos.line == 7u ); // TODO - check this
+}
+
+U_TEST( ReferenceCheckTest_AssignToReferenceTemporaryVariable_0 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn PassRef( i32 &imut x ) : i32 &imut { return x; }
+		fn Foo()
+		{
+			auto &imut r= PassRef( 42 ); // r referes here to temporary variable "42".
+		}
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::DestroyedVariableStillHaveReferences );
+	//U_TEST_ASSERT( error.file_pos.line == 7u ); // TODO - check this
+}
+
+U_TEST( ReferenceCheckTest_AssignToReferenceTemporaryVariable_1 )
+{
+	static const char c_program_text[]=
+	R"(
+		struct S{}
+		fn PassRef( S &imut x ) : S &imut { return x; }
+		fn Foo()
+		{
+			auto &imut r= PassRef( S() ); // r referes here to temporary variable of type S.
+		}
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::DestroyedVariableStillHaveReferences );
+	//U_TEST_ASSERT( error.file_pos.line == 7u ); // TODO - check this
+}
+
+U_TEST( ReferenceCheckTest_AssignToReferenceTemporaryVariable_2 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn PassRef( bool &imut x ) : bool &imut { return x; }
+		fn Foo()
+		{
+			var bool &imut r= PassRef( false ); // r referes here to temporary variable of bool type.
 		}
 	)";
 

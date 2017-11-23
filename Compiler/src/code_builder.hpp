@@ -274,8 +274,8 @@ private:
 		FunctionContext& function_context );
 
 	Value BuildNamedOperand( const Synt::NamedOperand& named_operand, NamesScope& names, FunctionContext& function_context );
-	Value BuildNumericConstant( const Synt::NumericConstant& numeric_constant );
-	Variable BuildBooleanConstant( const Synt::BooleanConstant& boolean_constant );
+	Value BuildNumericConstant( const Synt::NumericConstant& numeric_constant, FunctionContext& function_context );
+	Variable BuildBooleanConstant( const Synt::BooleanConstant& boolean_constant, FunctionContext& function_context  );
 
 	Value BuildIndexationOperator(
 		const Value& value,
