@@ -39,12 +39,12 @@ U_TEST(SimpleProgramTest)
 U_TEST(ArgumentsAssignmentTest)
 {
 	static const char c_program_text[]=
-	"\
-	fn Foo( i32 a ) : i32\
-	{\
-		a= a * a;\
-		return a;\
-	}"
+	R"(
+	fn Foo( i32 a ) : i32
+	{
+		a= a * a;
+		return a;
+	})"
 	;
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );

@@ -660,4 +660,53 @@ U_TEST( ReferenceCheckTest_AssignmentForReferencedVariable_1 )
 	U_TEST_ASSERT( error.file_pos.line == 6u );
 }
 
+U_TEST( ReferenceCheckTest_AssignmentForReferencedVariable_2 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo()
+		{
+			var i32 x= 0;
+			var i32 &mut r= x;
+			r= 24; // Ok, assign value to "x", using single mutable reference.
+		}
+	)";
+
+	BuildProgram( c_program_text );
+}
+
+U_TEST( ReferenceCheckTest_AssignmentForReferencedVariable_3 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo()
+		{
+			var i32 x= 0;
+			x= x; // Self-assignment, should produce error.
+		}
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::AccessingVariableThatHaveMutableReference );
+	U_TEST_ASSERT( error.file_pos.line == 5u );
+}
+
+U_TEST( ReferenceCheckTest_AssignmentForReferencedVariable_4 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo()
+		{
+			var i32 x= 0;
+			x= i32(x); // Self-assignment, using deref, should be ok.
+		}
+	)";
+
+	BuildProgram( c_program_text );
+}
+
 } // namespace U

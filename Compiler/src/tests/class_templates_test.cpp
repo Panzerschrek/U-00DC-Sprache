@@ -840,8 +840,8 @@ U_TEST( ClassPrepass_Test0 )
 				loc1+= arr[0u];
 
 				// dependent on T unary operators
-				loc0= -loc1;
-				loc1= ~loc1;
+				loc1= -loc0;
+				loc0= ~loc1;
 				!loc2;
 
 				// constexpr for template-dependent stuff

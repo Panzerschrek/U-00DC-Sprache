@@ -2825,26 +2825,28 @@ void CodeBuilder::BuildAssignmentOperatorCode(
 	// Destruction frame for temporary variables of expressions.
 	function_context.destructibles_stack.emplace_back();
 
-	const Synt::IExpressionComponent& l_value= *assignment_operator.l_value_;
-	const Synt::IExpressionComponent& r_value= *assignment_operator.r_value_;
-
-	const Value l_var_value= BuildExpressionCode( l_value, block_names, function_context );
-	const Value r_var_value= BuildExpressionCode( r_value, block_names, function_context );
-
-	if( l_var_value.GetType() == NontypeStub::TemplateDependentValue || r_var_value.GetType() == NontypeStub::TemplateDependentValue )
-		return;
-
-	const Variable* const l_var= l_var_value.GetVariable();
+	// Evalueate right part
+	const Value r_var_value= BuildExpressionCode( *assignment_operator.r_value_, block_names, function_context );
 	const Variable* const r_var= r_var_value.GetVariable();
-	if( l_var == nullptr )
-		errors_.push_back( ReportExpectedVariableInAssignment( assignment_operator.file_pos_, l_var_value.GetType().ToString() ) );
-	if( r_var == nullptr )
+	if( r_var == nullptr && r_var_value.GetType() != NontypeStub::TemplateDependentValue )
 		errors_.push_back( ReportExpectedVariableInAssignment( assignment_operator.file_pos_, r_var_value.GetType().ToString() ) );
-	if( l_var == nullptr || r_var == nullptr )
+
+	// Lock r_var variables.
+	std::vector<VariableStorageUseCounter> r_var_locks;
+	if( r_var != nullptr )
 	{
-		// TODO
-		return;
+		for( const StoredVariablePtr& stored_variable : r_var->referenced_variables )
+			r_var_locks.push_back( r_var->value_type == ValueType::Reference ? stored_variable->mut_use_counter : stored_variable->imut_use_counter );
 	}
+
+	// Evaluate left part.
+	const Value l_var_value= BuildExpressionCode( *assignment_operator.l_value_, block_names, function_context );
+	const Variable* const l_var= l_var_value.GetVariable();
+	if( l_var == nullptr && l_var_value.GetType() != NontypeStub::TemplateDependentValue )
+		errors_.push_back( ReportExpectedVariableInAssignment( assignment_operator.file_pos_, l_var_value.GetType().ToString() ) );
+
+	if( l_var == nullptr || r_var == nullptr )
+		return;
 
 	if( l_var->value_type != ValueType::Reference )
 	{
@@ -2855,6 +2857,21 @@ void CodeBuilder::BuildAssignmentOperatorCode(
 	{
 		errors_.push_back( ReportTypesMismatch( assignment_operator.file_pos_, l_var->type.ToString(), r_var->type.ToString() ) );
 		return;
+	}
+
+	// Check references of destination.
+	for( const StoredVariablePtr& stored_variable : l_var->referenced_variables )
+	{
+		if( stored_variable->imut_use_counter.use_count() > 1u )
+		{
+			// Assign to variable, that have nonzero immutable references.
+			errors_.push_back( ReportReferenceProtectionError( assignment_operator.file_pos_ ) );
+		}
+		if( stored_variable->mut_use_counter.use_count() > 1u + 1u )
+		{
+			// Variable have mutable references except locked reference for this assignment.
+			errors_.push_back( ReportReferenceProtectionError( assignment_operator.file_pos_ ) );
+		}
 	}
 
 	const FundamentalType* const fundamental_type= l_var->type.GetFundamentalType();
@@ -2878,6 +2895,8 @@ void CodeBuilder::BuildAssignmentOperatorCode(
 		errors_.push_back( ReportNotImplemented( assignment_operator.file_pos_, "nonfundamental types assignment." ) );
 		return;
 	}
+
+	r_var_locks.clear();
 
 	// Destruct temporary variables of right and left expressions.
 	CallDestructors( function_context.destructibles_stack.back(), function_context );

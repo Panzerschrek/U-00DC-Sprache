@@ -1162,7 +1162,7 @@ U_TEST(ExpectedReferenceValueTest2)
 	R"(
 		fn Foo( i32 a, i32 b )
 		{
-			a / b = b;
+			42 = b;
 		}
 	)";
 
