@@ -951,4 +951,15 @@ CodeBuilderError ReportDestroyedVariableStillHaveReferences( const FilePos& file
 	return error;
 }
 
+CodeBuilderError ReportAccessingVariableThatHaveMutableReference( const FilePos& file_pos )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::AccessingVariableThatHaveMutableReference;
+
+	error.text= "Accessing variable, that have mutable reference."_SpC;
+
+	return error;
+}
+
 } // namespace U

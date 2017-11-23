@@ -979,7 +979,13 @@ Value CodeBuilder::BuildNamedOperand(
 		Variable result;
 		result= stored_variable->content;
 		if( !stored_variable->is_reference )
+		{
 			result.referenced_variables.emplace( stored_variable );
+
+			// If we have mutable reference to variable, we can not access variable itself.
+			if( stored_variable->content.value_type == ValueType::Reference && stored_variable->mut_use_counter.use_count() >= 2u )
+				errors_.push_back( ReportAccessingVariableThatHaveMutableReference( named_operand.file_pos_ ) );
+		}
 
 		return Value( result, name_entry->second.GetFilePos() );
 	}
@@ -1436,16 +1442,24 @@ Value CodeBuilder::BuildCallOperator(
 	// Check references.
 	for( const auto& pair : locked_variable_conters )
 	{
+		// Check references, passed into function.
 		const VaraibleReferencesCounter& counter= pair.second;
-		const StoredVariable& var= *pair.first;
-		const size_t  mut_counter= counter. mut + ( var. mut_use_counter.use_count() - 1u );
-		const size_t imut_counter= counter.imut + ( var.imut_use_counter.use_count() - 1u );
-		if( mut_counter == 1u && imut_counter == 0u )
+		if( counter.mut == 1u && counter.imut == 0u )
 		{} // All ok - one mutable reference.
-		else if( mut_counter == 0u )
+		else if( counter. mut == 0u )
 		{} // All ok - 0-infinity immutable references.
 		else
 			errors_.push_back( ReportReferenceProtectionError( call_operator.file_pos_ ) );
+
+		// Check interaction between references, passed into function and references on stack.
+		const StoredVariable& var= *pair.first;
+		if( counter.mut > 0 && var.imut_use_counter.use_count() > 1u )
+		{
+			// Pass mutable reference into function, while there are immutable references on stack.
+			errors_.push_back( ReportReferenceProtectionError( call_operator.file_pos_ ) );
+		}
+		if( counter.mut == 1u && var.mut_use_counter.use_count() == 2u )
+		{} // Ok - we take one mutable reference from stack and pass it into function.
 	}
 
 	if( function_result_have_template_dependent_type )
