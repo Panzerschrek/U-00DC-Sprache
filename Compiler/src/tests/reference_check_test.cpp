@@ -99,7 +99,7 @@ U_TEST( ReferenceCheckTest_MultipleMutableReferencesPassedToFunction )
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferenceProtectionError );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::AccessingVariableThatHaveMutableReference );
 	U_TEST_ASSERT( error.file_pos.line == 6u );
 }
 
@@ -120,7 +120,7 @@ U_TEST( ReferenceCheckTest_MutableAndImmutableReferencesPassedToFunction )
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferenceProtectionError );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::AccessingVariableThatHaveMutableReference );
 	U_TEST_ASSERT( error.file_pos.line == 6u );
 }
 
@@ -129,10 +129,11 @@ U_TEST( ReferenceCheckTest_MultipleImmutableReferencesPassedToFunctionShouldBeOk
 	static const char c_program_text[]=
 	R"(
 		fn Bar( i32 &imut x, i32 &imut y ) {}
+		fn ToImut( i32 &imut x ) : i32 &imut { return x; }
 		fn Foo()
 		{
 			var i32 x= 0;
-			Bar( x, x );
+			Bar( ToImut(x), ToImut(x) );
 		}
 	)";
 
@@ -179,7 +180,7 @@ U_TEST( ReferenceCheckTest_FunctionWithSingleArgumentReturnsReferenceToInputVari
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferenceProtectionError );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::AccessingVariableThatHaveMutableReference );
 	U_TEST_ASSERT( error.file_pos.line == 7u );
 }
 
@@ -553,8 +554,50 @@ U_TEST( ReferenceCheckTest_ReferenceShouldLockVariableAfterConditionalReturn )
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferenceProtectionError );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::AccessingVariableThatHaveMutableReference );
 	U_TEST_ASSERT( error.file_pos.line == 7u );
+}
+
+U_TEST( ReferenceCheckTest_AssignmentForReferencedVariable_0 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo()
+		{
+			var i32 x= 0;
+			var i32 &mut r= x;
+			x= 24; // Error, "x" have mutable reference.
+		}
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::AccessingVariableThatHaveMutableReference );
+	U_TEST_ASSERT( error.file_pos.line == 6u );
+}
+
+U_TEST( ReferenceCheckTest_AssignmentForReferencedVariable_1 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo()
+		{
+			var i32 x= 0;
+			var i32 &imut r= x;
+			x= 24; // Error, "x" have immutable reference.
+		}
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferenceProtectionError );
+	U_TEST_ASSERT( error.file_pos.line == 6u );
 }
 
 } // namespace U

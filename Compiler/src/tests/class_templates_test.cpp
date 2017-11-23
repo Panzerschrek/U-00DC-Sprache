@@ -1198,7 +1198,8 @@ U_TEST( DefaultSignatureArguments_Test3 )
 		fn Foo() : i32
 		{
 			var Vec2</ i32 /> a{ .x= 42, .y=34 }, b{ .y= 12, .x= 12 };
-			return a.GetDiffX( a, b );
+			auto &imut a_ref= a;
+			return a_ref.GetDiffX( a, b );
 		}
 	)";
 

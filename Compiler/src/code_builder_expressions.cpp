@@ -1253,12 +1253,18 @@ Value CodeBuilder::BuildCallOperator(
 	size_t total_args= this_count + call_operator.arguments_.size();
 	std::vector<Function::Arg> actual_args;
 	std::vector<Variable> actual_args_variables;
+	std::vector<std::vector<VariableStorageUseCounter>> acutal_args_locks;
 	actual_args.reserve( total_args );
 	actual_args_variables.reserve( total_args );
+	acutal_args_locks.reserve( total_args );
 
 	// Push "this" argument.
 	if( this_ != nullptr )
 	{
+		acutal_args_locks.emplace_back();
+		for( const StoredVariablePtr& referenced_variable : this_->referenced_variables )
+			acutal_args_locks.back().push_back( this_->value_type == ValueType::Reference ? referenced_variable->mut_use_counter : referenced_variable->imut_use_counter );
+
 		actual_args.emplace_back();
 		actual_args.back().type= this_->type;
 		actual_args.back().is_reference= true;
@@ -1287,6 +1293,12 @@ Value CodeBuilder::BuildCallOperator(
 			errors_.push_back( ReportExpectedVariableAsArgument( arg_expression->GetFilePos(), expr_value.GetType().ToString() ) );
 			return ErrorValue();
 		}
+
+		// Lock references. This needs, because reference can be damaged in process of calculation of next arguments.
+		// SPRACHE_TODO - make early conversions of references for cases, where signature of function is known.
+		acutal_args_locks.emplace_back();
+		for( const StoredVariablePtr& referenced_variable : expr->referenced_variables )
+			acutal_args_locks.back().push_back( expr->value_type == ValueType::Reference ? referenced_variable->mut_use_counter : referenced_variable->imut_use_counter );
 
 		actual_args.emplace_back();
 		actual_args.back().type= expr->type;
@@ -1376,8 +1388,10 @@ Value CodeBuilder::BuildCallOperator(
 
 				llvm_args.push_back(expr.llvm_value);
 
+				// Convert reference locks.
 				for( const StoredVariablePtr& referenced_variable : expr.referenced_variables )
 					++locked_variable_conters[referenced_variable].mut;
+				acutal_args_locks[i].clear();
 			}
 			else
 			{
@@ -1401,8 +1415,10 @@ Value CodeBuilder::BuildCallOperator(
 				{
 					llvm_args.push_back( expr.llvm_value );
 
+					// Convert reference locks.
 					for( const StoredVariablePtr& referenced_variable : expr.referenced_variables )
 						++locked_variable_conters[referenced_variable].imut;
+					acutal_args_locks[i].clear();
 				}
 			}
 		}
@@ -1428,6 +1444,7 @@ Value CodeBuilder::BuildCallOperator(
 					// Create copy of class value. Call copy constructor.
 					llvm::Value* const arg_copy= function_context.alloca_ir_builder.CreateAlloca( arg.type.GetLLVMType() );
 
+					acutal_args_locks[i].clear(); // We must clear locks before constructor call, because we transfer ownership of reference.
 					TryCallCopyConstructor( call_operator.file_pos_, arg_copy, expr.llvm_value, class_type, function_context );
 					llvm_args.push_back( arg_copy );
 				}
@@ -1437,6 +1454,9 @@ Value CodeBuilder::BuildCallOperator(
 			else
 				U_ASSERT( false );
 		}
+
+		// Clear initial locks, because we use separate locks for final checks.
+		acutal_args_locks[i].clear();
 	}
 
 	// Check references.
