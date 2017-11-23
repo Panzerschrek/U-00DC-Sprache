@@ -3015,6 +3015,13 @@ void CodeBuilder::BuildDeltaOneOperatorCode(
 			return;
 		}
 
+		for( const StoredVariablePtr& stored_variable : variable->referenced_variables )
+		{
+			if( stored_variable->imut_use_counter.use_count() > 1u ) // Changing variable, that have immutable references.
+				errors_.push_back( ReportReferenceProtectionError( file_pos ) );
+			// If "mut_counter" is not 0 or 1, error must be generated previosly.
+		}
+
 		llvm::Value* const value_in_register= CreateMoveToLLVMRegisterInstruction( *variable, function_context );
 		llvm::Value* const one=
 			llvm::Constant::getIntegerValue(

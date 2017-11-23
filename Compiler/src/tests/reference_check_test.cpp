@@ -709,4 +709,46 @@ U_TEST( ReferenceCheckTest_AssignmentForReferencedVariable_4 )
 	BuildProgram( c_program_text );
 }
 
+U_TEST( ReferenceCheckTest_Increment_0 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo()
+		{
+			var i32 x= 0;
+			auto &imut r= x;
+			++x; // Error, x have immutable reference.
+		}
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferenceProtectionError );
+	U_TEST_ASSERT( error.file_pos.line == 6u );
+}
+
+U_TEST( ReferenceCheckTest_Increment_1 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo()
+		{
+			var i32 x= 0;
+			auto &mut r= x;
+			++x; // Error, x have mmutable reference.
+		}
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::AccessingVariableThatHaveMutableReference );
+	U_TEST_ASSERT( error.file_pos.line == 6u );
+}
+
 } // namespace U
