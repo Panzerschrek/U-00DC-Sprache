@@ -24,12 +24,12 @@ Value CodeBuilder::BuildExpressionCodeAndDestroyTemporaries(
 	FunctionContext& function_context )
 {
 	// Destruction frame for temporary variables of expression.
-	function_context.destructibles_stack.emplace_back();
+	function_context.stack_variables_stack.emplace_back();
 
 	const Value result= BuildExpressionCode( expression, names, function_context );
 
-	CallDestructors( function_context.destructibles_stack.back(), function_context, expression.GetFilePos() );
-	function_context.destructibles_stack.pop_back();
+	CallDestructors( function_context.stack_variables_stack.back(), function_context, expression.GetFilePos() );
+	function_context.stack_variables_stack.pop_back();
 
 	return result;
 }
@@ -69,8 +69,8 @@ Value CodeBuilder::BuildExpressionCode(
 			{
 				if( const Variable* const l_var= l_var_value.GetVariable() )
 				{
-					for( const StoredVariablePtr& stored_variable : l_var->referenced_variables )
-						l_var_locks.push_back( l_var->value_type == ValueType::Reference ? stored_variable->mut_use_counter : stored_variable->imut_use_counter );
+					for( const StoredVariablePtr& referenced_variable : l_var->referenced_variables )
+						l_var_locks.push_back( l_var->value_type == ValueType::Reference ? referenced_variable->mut_use_counter : referenced_variable->imut_use_counter );
 				}
 			}
 
@@ -794,10 +794,9 @@ Value CodeBuilder::BuildBinaryOperator(
 		}
 	}
 
-	const StoredVariablePtr stored_result= std::make_shared<StoredVariable>();
-	stored_result->content= result;
+	const StoredVariablePtr stored_result= std::make_shared<StoredVariable>( result );
 	result.referenced_variables.emplace( stored_result );
-	function_context.destructibles_stack.back().RegisterVariable( stored_result );
+	function_context.stack_variables_stack.back().RegisterVariable( stored_result );
 
 	return Value( result, file_pos );
 }
@@ -904,10 +903,9 @@ Value CodeBuilder::BuildLazyBinaryOperator(
 			U_ASSERT(false);
 	}
 
-	const StoredVariablePtr stored_result= std::make_shared<StoredVariable>();
-	stored_result->content= result;
+	const StoredVariablePtr stored_result= std::make_shared<StoredVariable>( result );
 	result.referenced_variables.emplace( stored_result );
-	function_context.destructibles_stack.back().RegisterVariable( stored_result );
+	function_context.stack_variables_stack.back().RegisterVariable( stored_result );
 
 	return Value( result, file_pos );
 
@@ -1005,17 +1003,17 @@ Value CodeBuilder::BuildNamedOperand(
 			}
 		}
 	}
-	else if( const StoredVariablePtr stored_variable= name_entry->second.GetStoredVariable() )
+	else if( const StoredVariablePtr referenced_variable= name_entry->second.GetStoredVariable() )
 	{
 		// Unwrap stored variable here.
 		Variable result;
-		result= stored_variable->content;
-		if( !stored_variable->is_reference )
+		result= referenced_variable->content;
+		if( !referenced_variable->is_reference )
 		{
-			result.referenced_variables.emplace( stored_variable );
+			result.referenced_variables.emplace( referenced_variable );
 
 			// If we have mutable reference to variable, we can not access variable itself.
-			if( stored_variable->content.value_type == ValueType::Reference && stored_variable->mut_use_counter.use_count() >= 2u )
+			if( referenced_variable->content.value_type == ValueType::Reference && referenced_variable->mut_use_counter.use_count() >= 2u )
 				errors_.push_back( ReportAccessingVariableThatHaveMutableReference( named_operand.file_pos_ ) );
 		}
 
@@ -1055,10 +1053,9 @@ Value CodeBuilder::BuildNumericConstant(
 
 	result.llvm_value= result.constexpr_value;
 
-	const StoredVariablePtr stored_result= std::make_shared<StoredVariable>();
-	stored_result->content= result;
+	const StoredVariablePtr stored_result= std::make_shared<StoredVariable>( result );
 	result.referenced_variables.emplace( stored_result );
-	function_context.destructibles_stack.back().RegisterVariable( stored_result );
+	function_context.stack_variables_stack.back().RegisterVariable( stored_result );
 
 	return Value( result, numeric_constant.file_pos_ );
 }
@@ -1077,10 +1074,9 @@ Variable CodeBuilder::BuildBooleanConstant(
 			fundamental_llvm_types_.bool_ ,
 			llvm::APInt( 1u, uint64_t(boolean_constant.value_) ) );
 
-	const StoredVariablePtr stored_result= std::make_shared<StoredVariable>();
-	stored_result->content= result;
+	const StoredVariablePtr stored_result= std::make_shared<StoredVariable>( result );
 	result.referenced_variables.emplace( stored_result );
-	function_context.destructibles_stack.back().RegisterVariable( stored_result );
+	function_context.stack_variables_stack.back().RegisterVariable( stored_result );
 
 	return result;
 }
@@ -1576,11 +1572,10 @@ Value CodeBuilder::BuildCallOperator(
 		result.location= function.return_value_is_sret ? Variable::Location::Pointer : Variable::Location::LLVMRegister;
 		result.value_type= ValueType::Value;
 
-		const StoredVariablePtr stored_result= std::make_shared<StoredVariable>();
-		stored_result->content= result;
+		const StoredVariablePtr stored_result= std::make_shared<StoredVariable>( result );
 		result.referenced_variables.emplace( stored_result );
 
-		function_context.destructibles_stack.back().RegisterVariable( stored_result );
+		function_context.stack_variables_stack.back().RegisterVariable( stored_result );
 	}
 	result.type= function_type.return_type;
 	result.llvm_value= call_result;
@@ -1610,11 +1605,10 @@ Variable CodeBuilder::BuildTempVariableConstruction(
 	variable.constexpr_value= ApplyConstructorInitializer( variable, call_operator, names, function_context );
 	variable.value_type= ValueType::Value; // Make value after construction
 
-	const StoredVariablePtr stored_variable= std::make_shared<StoredVariable>();
-	stored_variable->content= variable;
+	const StoredVariablePtr stored_variable= std::make_shared<StoredVariable>( variable );
 	variable.referenced_variables.emplace( stored_variable );
 
-	function_context.destructibles_stack.back().RegisterVariable( stored_variable );
+	function_context.stack_variables_stack.back().RegisterVariable( stored_variable );
 
 	return variable;
 }
@@ -1672,10 +1666,9 @@ Value CodeBuilder::BuildUnaryMinus(
 			result.llvm_value= function_context.llvm_ir_builder.CreateNeg( value_for_neg );
 	}
 
-	const StoredVariablePtr stored_result= std::make_shared<StoredVariable>();
-	stored_result->content= result;
+	const StoredVariablePtr stored_result= std::make_shared<StoredVariable>( result );
 	result.referenced_variables.emplace( stored_result );
-	function_context.destructibles_stack.back().RegisterVariable( stored_result );
+	function_context.stack_variables_stack.back().RegisterVariable( stored_result );
 
 	return Value( result, unary_minus.file_pos_ );
 }
@@ -1716,10 +1709,9 @@ Value CodeBuilder::BuildLogicalNot(
 		result.llvm_value= function_context.llvm_ir_builder.CreateNot( value_in_register );
 	}
 
-	const StoredVariablePtr stored_result= std::make_shared<StoredVariable>();
-	stored_result->content= result;
+	const StoredVariablePtr stored_result= std::make_shared<StoredVariable>( result );
 	result.referenced_variables.emplace( stored_result );
-	function_context.destructibles_stack.back().RegisterVariable( stored_result );
+	function_context.stack_variables_stack.back().RegisterVariable( stored_result );
 
 	return Value( result, logical_not.file_pos_ );
 }
@@ -1767,10 +1759,9 @@ Value CodeBuilder::BuildBitwiseNot(
 		result.llvm_value= function_context.llvm_ir_builder.CreateNot( value_in_register );
 	}
 
-	const StoredVariablePtr stored_result= std::make_shared<StoredVariable>();
-	stored_result->content= result;
+	const StoredVariablePtr stored_result= std::make_shared<StoredVariable>( result );
 	result.referenced_variables.emplace( stored_result );
-	function_context.destructibles_stack.back().RegisterVariable( stored_result );
+	function_context.stack_variables_stack.back().RegisterVariable( stored_result );
 
 	return Value( result, bitwise_not.file_pos_ );
 }

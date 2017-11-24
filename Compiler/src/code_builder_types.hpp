@@ -229,16 +229,16 @@ struct Variable final
 
 struct StoredVariable
 {
-	Variable content;
+	const Variable content;
+	const VariableStorageUseCounter  mut_use_counter= std::make_shared<int>();
+	const VariableStorageUseCounter imut_use_counter= std::make_shared<int>();
 
-	VariableStorageUseCounter  mut_use_counter= std::make_shared<int>();
-	VariableStorageUseCounter imut_use_counter= std::make_shared<int>();
-
-	bool is_reference= false;
+	const bool is_reference;
 	std::vector<VariableStorageUseCounter> locked_referenced_variables; // For references
 
-	bool UsedAsMutable  () const { return  mut_use_counter.use_count() >= 2u; }
-	bool usedAsImmutable() const { return imut_use_counter.use_count() >= 2u; }
+	StoredVariable( Variable in_content, bool in_is_reference= false )
+		: content(std::move(in_content)), is_reference(in_is_reference)
+	{}
 };
 
 struct VaraibleReferencesCounter

@@ -35,7 +35,7 @@ private:
 		std::unique_ptr<ClassTable> class_table;
 	};
 
-	struct DestructiblesStorage final
+	struct StackVariablesStorage final
 	{
 		void RegisterVariable( const StoredVariablePtr& variable );
 
@@ -46,8 +46,8 @@ private:
 	{
 		llvm::BasicBlock* block_for_break= nullptr;
 		llvm::BasicBlock* block_for_continue= nullptr;
-		// Number of destructibles storages at stack before loop block creation.
-		size_t destructibles_stack_size= 0u;
+		// Number of stack variable storages at stack before loop block creation.
+		size_t stack_variables_stack_size= 0u;
 	};
 
 	struct FunctionContext
@@ -81,11 +81,11 @@ private:
 
 		std::vector<LoopFrame> loops_stack;
 
-		// Stack for distructibles.
+		// Stack for stack variables.
 		// First entry is set of function arguments.
-		// Each block adds new storage for it`s destructible variables.
-		// Also, evaluation of some operators and expressions adds their destructibles storages.
-		std::vector<DestructiblesStorage> destructibles_stack;
+		// Each block adds new storage for it`s variables.
+		// Also, evaluation of some operators and expressions adds their variables storages.
+		std::vector<StackVariablesStorage> stack_variables_stack;
 		llvm::BasicBlock* destructor_end_block= nullptr; // exists, if function is destructor
 	};
 
@@ -191,13 +191,13 @@ private:
 	typedef std::unordered_map<StoredVariablePtr, size_t> DestroyedVariableReferencesCount;
 
 	void CallDestructorsImpl(
-		const DestructiblesStorage& destructibles_storage,
+		const StackVariablesStorage& stack_variables_storage,
 		FunctionContext& function_context,
 		DestroyedVariableReferencesCount& destroyed_variable_references,
 		const FilePos& file_pos );
 
 	void CallDestructors(
-		const DestructiblesStorage& destructibles_storage,
+		const StackVariablesStorage& stack_variables_storage,
 		FunctionContext& function_context,
 		const FilePos& file_pos );
 
