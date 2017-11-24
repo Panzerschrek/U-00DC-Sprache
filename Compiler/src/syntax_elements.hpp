@@ -334,9 +334,10 @@ typedef std::vector<IBlockElementPtr> BlockElements;
 class Block final : public SyntaxElementBase, public IBlockElement
 {
 public:
-	Block( const FilePos& file_pos, BlockElements elements );
+	Block( const FilePos& start_file_pos, const FilePos& end_file_pos, BlockElements elements );
 
 public:
+	const FilePos end_file_pos_;
 	const BlockElements elements_;
 };
 

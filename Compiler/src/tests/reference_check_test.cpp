@@ -428,7 +428,7 @@ U_TEST( ReferenceCheckTest_ReturnReferenceToLocalVariable_0 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::DestroyedVariableStillHaveReferences );
-	//U_TEST_ASSERT( error.file_pos.line == 7u ); // TODO - check this
+	U_TEST_ASSERT( error.file_pos.line == 5u );
 }
 
 U_TEST( ReferenceCheckTest_ReturnReferenceToLocalVariable_1 )
@@ -450,7 +450,7 @@ U_TEST( ReferenceCheckTest_ReturnReferenceToLocalVariable_1 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::DestroyedVariableStillHaveReferences );
-	//U_TEST_ASSERT( error.file_pos.line == 7u ); // TODO - check this
+	U_TEST_ASSERT( error.file_pos.line == 5u );
 }
 
 U_TEST( ReferenceCheckTest_ReturnReferenceToLocalVariable_2 )
@@ -478,7 +478,7 @@ U_TEST( ReferenceCheckTest_ReturnReferenceToLocalVariable_2 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::DestroyedVariableStillHaveReferences );
-	//U_TEST_ASSERT( error.file_pos.line == 7u ); // TODO - check this
+	U_TEST_ASSERT( error.file_pos.line == 10u );
 }
 
 U_TEST( ReferenceCheckTest_ReturnReferenceToLocalVariable_3 )
@@ -512,7 +512,7 @@ U_TEST( ReferenceCheckTest_ReturnReferenceToValueArgument_0 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::DestroyedVariableStillHaveReferences );
-	//U_TEST_ASSERT( error.file_pos.line == 7u ); // TODO - check this
+	U_TEST_ASSERT( error.file_pos.line == 4u );
 }
 
 U_TEST( ReferenceCheckTest_ReturnReferenceToValueArgument_1 )
@@ -532,7 +532,7 @@ U_TEST( ReferenceCheckTest_ReturnReferenceToValueArgument_1 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::DestroyedVariableStillHaveReferences );
-	//U_TEST_ASSERT( error.file_pos.line == 7u ); // TODO - check this
+	U_TEST_ASSERT( error.file_pos.line == 5u );
 }
 
 U_TEST( ReferenceCheckTest_AssignToReferenceTemporaryVariable_0 )
@@ -552,7 +552,7 @@ U_TEST( ReferenceCheckTest_AssignToReferenceTemporaryVariable_0 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::DestroyedVariableStillHaveReferences );
-	//U_TEST_ASSERT( error.file_pos.line == 7u ); // TODO - check this
+	U_TEST_ASSERT( error.file_pos.line == 5u );
 }
 
 U_TEST( ReferenceCheckTest_AssignToReferenceTemporaryVariable_1 )
@@ -573,7 +573,7 @@ U_TEST( ReferenceCheckTest_AssignToReferenceTemporaryVariable_1 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::DestroyedVariableStillHaveReferences );
-	//U_TEST_ASSERT( error.file_pos.line == 7u ); // TODO - check this
+	U_TEST_ASSERT( error.file_pos.line == 6u );
 }
 
 U_TEST( ReferenceCheckTest_AssignToReferenceTemporaryVariable_2 )
@@ -593,7 +593,7 @@ U_TEST( ReferenceCheckTest_AssignToReferenceTemporaryVariable_2 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::DestroyedVariableStillHaveReferences );
-	//U_TEST_ASSERT( error.file_pos.line == 7u ); // TODO - check this
+	U_TEST_ASSERT( error.file_pos.line == 5u );
 }
 
 U_TEST( ReferenceCheckTest_ReferenceShouldLockVariableAfterConditionalReturn )

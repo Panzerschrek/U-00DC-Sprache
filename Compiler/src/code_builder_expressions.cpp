@@ -28,7 +28,7 @@ Value CodeBuilder::BuildExpressionCodeAndDestroyTemporaries(
 
 	const Value result= BuildExpressionCode( expression, names, function_context );
 
-	CallDestructors( function_context.destructibles_stack.back(), function_context );
+	CallDestructors( function_context.destructibles_stack.back(), function_context, expression.GetFilePos() );
 	function_context.destructibles_stack.pop_back();
 
 	return result;

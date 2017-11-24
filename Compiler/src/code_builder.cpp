@@ -1271,7 +1271,8 @@ void CodeBuilder::GenerateLoop(
 void CodeBuilder::CallDestructorsImpl(
 	const DestructiblesStorage& destructibles_storage,
 	FunctionContext& function_context,
-	DestroyedVariableReferencesCount& destroyed_variable_references )
+	DestroyedVariableReferencesCount& destroyed_variable_references,
+	const FilePos& file_pos )
 {
 	// Call destructors in reverse order.
 	for( auto it = destructibles_storage.variables.rbegin(); it != destructibles_storage.variables.rend(); ++it )
@@ -1302,7 +1303,7 @@ void CodeBuilder::CallDestructorsImpl(
 				alive_ref_count-= map_it->second;
 
 			if( alive_ref_count > 0u )
-				errors_.push_back( ReportDestroyedVariableStillHaveReferences( FilePos() ) );
+				errors_.push_back( ReportDestroyedVariableStillHaveReferences( file_pos ) );
 		}
 
 		// Call destructors.
@@ -1314,10 +1315,11 @@ void CodeBuilder::CallDestructorsImpl(
 
 void CodeBuilder::CallDestructors(
 	const DestructiblesStorage& destructibles_storage,
-	FunctionContext& function_context )
+	FunctionContext& function_context,
+	const FilePos& file_pos )
 {
 	DestroyedVariableReferencesCount destroyed_variable_references;
-	CallDestructorsImpl( destructibles_storage, function_context, destroyed_variable_references );
+	CallDestructorsImpl( destructibles_storage, function_context, destroyed_variable_references, file_pos );
 }
 
 void CodeBuilder::CallDestructor(
@@ -1363,7 +1365,7 @@ void CodeBuilder::CallDestructor(
 	}
 }
 
-void CodeBuilder::CallDestructorsForLoopInnerVariables( FunctionContext& function_context )
+void CodeBuilder::CallDestructorsForLoopInnerVariables( FunctionContext& function_context, const FilePos& file_pos )
 {
 	U_ASSERT( !function_context.loops_stack.empty() );
 
@@ -1377,17 +1379,17 @@ void CodeBuilder::CallDestructorsForLoopInnerVariables( FunctionContext& functio
 		undestructed_stack_size > function_context.loops_stack.back().destructibles_stack_size;
 		++it, --undestructed_stack_size )
 	{
-		CallDestructorsImpl( *it, function_context, destroyed_variable_references );
+		CallDestructorsImpl( *it, function_context, destroyed_variable_references, file_pos );
 	}
 }
 
-void CodeBuilder::CallDestructorsBeforeReturn( FunctionContext& function_context )
+void CodeBuilder::CallDestructorsBeforeReturn( FunctionContext& function_context, const FilePos& file_pos )
 {
 	DestroyedVariableReferencesCount destroyed_variable_references;
 
 	// We must call ALL destructors of local variables, arguments, etc before each return.
 	for( auto it= function_context.destructibles_stack.rbegin(); it != function_context.destructibles_stack.rend(); ++it )
-		CallDestructorsImpl( *it, function_context, destroyed_variable_references );
+		CallDestructorsImpl( *it, function_context, destroyed_variable_references, file_pos );
 }
 
 void CodeBuilder::CallMembersDestructors( FunctionContext& function_context )
@@ -2083,7 +2085,7 @@ void CodeBuilder::BuildFuncCode(
 		// Manually generate "return" for void-return functions.
 		if( !block_build_info.have_unconditional_return_inside )
 		{
-			CallDestructors( function_context.destructibles_stack.back(), function_context );
+			CallDestructors( function_context.destructibles_stack.back(), function_context, block->end_file_pos_ );
 
 			if( function_context.destructor_end_block == nullptr )
 				function_context.llvm_ir_builder.CreateRetVoid();
@@ -2416,7 +2418,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockCode(
 	// If there are undconditional "break", "continue", "return" operators,
 	// we didn`t need call destructors, it must be called in this operators.
 	if( !( block_build_info.have_uncodnitional_break_or_continue || block_build_info.have_unconditional_return_inside ) )
-		CallDestructors( function_context.destructibles_stack.back(), function_context );
+		CallDestructors( function_context.destructibles_stack.back(), function_context, block.end_file_pos_ );
 
 	function_context.destructibles_stack.pop_back();
 
@@ -2619,7 +2621,7 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 		}
 
 		// After lock of references we can call destructors.
-		CallDestructors( function_context.destructibles_stack.back(), function_context );
+		CallDestructors( function_context.destructibles_stack.back(), function_context, variable_declaration.file_pos );
 		function_context.destructibles_stack.pop_back();
 
 		function_context.destructibles_stack.back().RegisterVariable( stored_variable );
@@ -2811,7 +2813,7 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 	}
 
 	// After lock of references we can call destructors.
-	CallDestructors( function_context.destructibles_stack.back(), function_context );
+	CallDestructors( function_context.destructibles_stack.back(), function_context, auto_variable_declaration.file_pos_ );
 	function_context.destructibles_stack.pop_back();
 
 	function_context.destructibles_stack.back().RegisterVariable( stored_variable );
@@ -2899,7 +2901,7 @@ void CodeBuilder::BuildAssignmentOperatorCode(
 	r_var_locks.clear();
 
 	// Destruct temporary variables of right and left expressions.
-	CallDestructors( function_context.destructibles_stack.back(), function_context );
+	CallDestructors( function_context.destructibles_stack.back(), function_context, assignment_operator.file_pos_ );
 	function_context.destructibles_stack.pop_back();
 }
 
@@ -3006,7 +3008,7 @@ void CodeBuilder::BuildAdditiveAssignmentOperatorCode(
 	r_var_locks.clear();
 
 	// Destruct temporary variables of right and left expressions.
-	CallDestructors( function_context.destructibles_stack.back(), function_context );
+	CallDestructors( function_context.destructibles_stack.back(), function_context, additive_assignment_operator.file_pos_ );
 	function_context.destructibles_stack.pop_back();
 }
 
@@ -3085,7 +3087,7 @@ void CodeBuilder::BuildReturnOperatorCode(
 			return;
 		}
 
-		CallDestructorsBeforeReturn( function_context );
+		CallDestructorsBeforeReturn( function_context, return_operator.file_pos_ );
 
 		if( function_context.destructor_end_block == nullptr )
 			function_context.llvm_ir_builder.CreateRetVoid();
@@ -3120,10 +3122,10 @@ void CodeBuilder::BuildReturnOperatorCode(
 	const auto call_destructors=
 	[&]()
 	{
-		CallDestructors( function_context.destructibles_stack.back(), function_context );
+		CallDestructors( function_context.destructibles_stack.back(), function_context, return_operator.file_pos_ );
 		function_context.destructibles_stack.pop_back();
 
-		CallDestructorsBeforeReturn( function_context );
+		CallDestructorsBeforeReturn( function_context, return_operator.file_pos_ );
 	};
 
 	if( expression_result_value.GetType().GetTemplateDependentType() == nullptr && function_context.return_type.GetTemplateDependentType() == nullptr &&
@@ -3251,7 +3253,7 @@ void CodeBuilder::BuildBreakOperatorCode(
 	}
 	U_ASSERT( function_context.loops_stack.back().block_for_break != nullptr );
 
-	CallDestructorsForLoopInnerVariables( function_context );
+	CallDestructorsForLoopInnerVariables( function_context, break_operator.file_pos_ );
 	function_context.llvm_ir_builder.CreateBr( function_context.loops_stack.back().block_for_break );
 }
 
@@ -3266,7 +3268,7 @@ void CodeBuilder::BuildContinueOperatorCode(
 	}
 	U_ASSERT( function_context.loops_stack.back().block_for_continue != nullptr );
 
-	CallDestructorsForLoopInnerVariables( function_context );
+	CallDestructorsForLoopInnerVariables( function_context, continue_operator.file_pos_ );
 	function_context.llvm_ir_builder.CreateBr( function_context.loops_stack.back().block_for_continue );
 }
 

@@ -193,19 +193,21 @@ private:
 	void CallDestructorsImpl(
 		const DestructiblesStorage& destructibles_storage,
 		FunctionContext& function_context,
-		DestroyedVariableReferencesCount& destroyed_variable_references );
+		DestroyedVariableReferencesCount& destroyed_variable_references,
+		const FilePos& file_pos );
 
 	void CallDestructors(
 		const DestructiblesStorage& destructibles_storage,
-		FunctionContext& function_context );
+		FunctionContext& function_context,
+		const FilePos& file_pos );
 
 	void CallDestructor(
 		llvm::Value* ptr,
 		const Type& type,
 		FunctionContext& function_context );
 
-	void CallDestructorsForLoopInnerVariables( FunctionContext& function_context );
-	void CallDestructorsBeforeReturn( FunctionContext& function_context );
+	void CallDestructorsForLoopInnerVariables( FunctionContext& function_context, const FilePos& file_pos );
+	void CallDestructorsBeforeReturn( FunctionContext& function_context, const FilePos& file_pos );
 	void CallMembersDestructors( FunctionContext& function_context );
 
 	void BuildNamespaceBody(
