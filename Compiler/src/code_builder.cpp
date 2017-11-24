@@ -2911,29 +2911,53 @@ void CodeBuilder::BuildAdditiveAssignmentOperatorCode(
 	// Destruction frame for temporary variables of expressions.
 	function_context.destructibles_stack.emplace_back();
 
-	const Value l_var_value=
-		BuildExpressionCode(
-			*additive_assignment_operator.l_value_,
-			block_names,
-			function_context );
 	const Value r_var_value=
 		BuildExpressionCode(
 			*additive_assignment_operator.r_value_,
 			block_names,
 			function_context );
-
-	if( l_var_value.GetType() == NontypeStub::TemplateDependentValue || r_var_value.GetType() == NontypeStub::TemplateDependentValue )
-		return;
-
-	const Variable* const l_var= l_var_value.GetVariable();
 	const Variable* const r_var= r_var_value.GetVariable();
 
-	if( l_var == nullptr )
+	// Lock r_var variables.
+	std::vector<VariableStorageUseCounter> r_var_locks;
+	if( r_var != nullptr )
+	{
+		for( const StoredVariablePtr& stored_variable : r_var->referenced_variables )
+			r_var_locks.push_back( r_var->value_type == ValueType::Reference ? stored_variable->mut_use_counter : stored_variable->imut_use_counter );
+	}
+
+	const Value l_var_value=
+		BuildExpressionCode(
+			*additive_assignment_operator.l_value_,
+			block_names,
+			function_context );
+	const Variable* const l_var= l_var_value.GetVariable();
+
+	if( l_var == nullptr && l_var_value.GetType() != NontypeStub::TemplateDependentValue )
 		errors_.push_back( ReportExpectedVariableInAdditiveAssignment( additive_assignment_operator.file_pos_, l_var_value.GetType().ToString() ) );
-	if( r_var == nullptr )
+	if( r_var == nullptr && r_var_value.GetType() != NontypeStub::TemplateDependentValue )
 		errors_.push_back( ReportExpectedVariableInAdditiveAssignment( additive_assignment_operator.file_pos_, r_var_value.GetType().ToString() ) );
+
 	if( l_var == nullptr || r_var == nullptr )
+	{
+		function_context.destructibles_stack.pop_back();
 		return;
+	}
+
+	// Check references of destination.
+	for( const StoredVariablePtr& stored_variable : l_var->referenced_variables )
+	{
+		if( stored_variable->imut_use_counter.use_count() > 1u )
+		{
+			// Assign to variable, that have nonzero immutable references.
+			errors_.push_back( ReportReferenceProtectionError( additive_assignment_operator.file_pos_ ) );
+		}
+		if( stored_variable->mut_use_counter.use_count() > 1u + 1u )
+		{
+			// Variable have mutable references except locked reference for this assignment.
+			errors_.push_back( ReportReferenceProtectionError( additive_assignment_operator.file_pos_ ) );
+		}
+	}
 
 	const FundamentalType* const l_var_fundamental_type= l_var->type.GetFundamentalType();
 	const FundamentalType* const r_var_fundamental_type= r_var->type.GetFundamentalType();
@@ -2978,6 +3002,8 @@ void CodeBuilder::BuildAdditiveAssignmentOperatorCode(
 		errors_.push_back( ReportNotImplemented( additive_assignment_operator.file_pos_, "additive operations for nonfundamental types" ) );
 		return;
 	}
+
+	r_var_locks.clear();
 
 	// Destruct temporary variables of right and left expressions.
 	CallDestructors( function_context.destructibles_stack.back(), function_context );
