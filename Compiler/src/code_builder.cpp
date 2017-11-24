@@ -56,6 +56,17 @@ CodeBuilder::FunctionContext::FunctionContext(
 {
 }
 
+CodeBuilder::StackVariablesStorage::StackVariablesStorage( FunctionContext& in_function_context )
+	: function_context(in_function_context)
+{
+	function_context.stack_variables_stack.push_back(this);
+}
+
+CodeBuilder::StackVariablesStorage::~StackVariablesStorage()
+{
+	function_context.stack_variables_stack.pop_back();
+}
+
 void CodeBuilder::StackVariablesStorage::RegisterVariable( const StoredVariablePtr& variable )
 {
 	variables.push_back( variable );
@@ -132,7 +143,7 @@ ICodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_g
 		false, false,
 		llvm_context_,
 		dummy_function );
-	dummy_function_context.stack_variables_stack.emplace_back();
+	const StackVariablesStorage dummy_function_variables_storage( dummy_function_context );
 	dummy_function_context_= &dummy_function_context;
 
 	// Build graph.
@@ -850,8 +861,7 @@ void CodeBuilder::TryGenerateDefaultConstructor( Class& the_class, const Type& c
 		constructor_type.return_value_is_reference,
 		llvm_context_,
 		llvm_constructor_function );
-	function_context.stack_variables_stack.emplace_back();
-
+	StackVariablesStorage function_variables_storage( function_context );
 	llvm::Value* const this_llvm_value= llvm_constructor_function->args().begin();
 	this_llvm_value->setName( KeywordAscii( Keywords::this_ ) );
 
@@ -1379,7 +1389,7 @@ void CodeBuilder::CallDestructorsForLoopInnerVariables( FunctionContext& functio
 		undestructed_stack_size > function_context.loops_stack.back().stack_variables_stack_size;
 		++it, --undestructed_stack_size )
 	{
-		CallDestructorsImpl( *it, function_context, destroyed_variable_references, file_pos );
+		CallDestructorsImpl( **it, function_context, destroyed_variable_references, file_pos );
 	}
 }
 
@@ -1389,7 +1399,7 @@ void CodeBuilder::CallDestructorsBeforeReturn( FunctionContext& function_context
 
 	// We must call ALL destructors of local variables, arguments, etc before each return.
 	for( auto it= function_context.stack_variables_stack.rbegin(); it != function_context.stack_variables_stack.rend(); ++it )
-		CallDestructorsImpl( *it, function_context, destroyed_variable_references, file_pos );
+		CallDestructorsImpl( **it, function_context, destroyed_variable_references, file_pos );
 }
 
 void CodeBuilder::CallMembersDestructors( FunctionContext& function_context )
@@ -1909,8 +1919,7 @@ void CodeBuilder::BuildFuncCode(
 		function_type->return_value_is_reference,
 		llvm_context_,
 		llvm_function );
-
-	function_context.stack_variables_stack.emplace_back();
+	const StackVariablesStorage args_storage( function_context );
 
 	// push args
 	Variable this_;
@@ -2020,7 +2029,7 @@ void CodeBuilder::BuildFuncCode(
 				return;
 			}
 
-			function_context.stack_variables_stack.back().RegisterVariable( var_storage );
+			function_context.stack_variables_stack.back()->RegisterVariable( var_storage );
 
 			const NamesScope::InsertedName* const inserted_arg=
 				function_names.AddName( arg_name, Value( var_storage, declaration_arg.file_pos_ ) );
@@ -2071,8 +2080,7 @@ void CodeBuilder::BuildFuncCode(
 	const BlockBuildInfo block_build_info=
 		BuildBlockCode( *block, function_names, function_context );
 
-	// TODO - turn on this. We can damage stack, in template prepass.
-	//U_ASSERT( function_context.destructibles_stack.size() == 1u || !errors_.empty() || error_count_ > 0u );
+	U_ASSERT( function_context.stack_variables_stack.size() == 1u );
 
 	// We need call destructors for arguments only if function returns "void".
 	// In other case, we have "return" in all branches and destructors call before each "return".
@@ -2082,7 +2090,7 @@ void CodeBuilder::BuildFuncCode(
 		// Manually generate "return" for void-return functions.
 		if( !block_build_info.have_unconditional_return_inside )
 		{
-			CallDestructors( function_context.stack_variables_stack.back(), function_context, block->end_file_pos_ );
+			CallDestructors( *function_context.stack_variables_stack.back(), function_context, block->end_file_pos_ );
 
 			if( function_context.destructor_end_block == nullptr )
 				function_context.llvm_ir_builder.CreateRetVoid();
@@ -2255,7 +2263,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockCode(
 	NamesScope block_names( ""_SpC, &names );
 	BlockBuildInfo block_build_info;
 
-	function_context.stack_variables_stack.emplace_back();
+	const StackVariablesStorage block_variables_storage( function_context );
 
 	for( const Synt::IBlockElementPtr& block_element : block.elements_ )
 	{
@@ -2415,9 +2423,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockCode(
 	// If there are undconditional "break", "continue", "return" operators,
 	// we didn`t need call destructors, it must be called in this operators.
 	if( !( block_build_info.have_uncodnitional_break_or_continue || block_build_info.have_unconditional_return_inside ) )
-		CallDestructors( function_context.stack_variables_stack.back(), function_context, block.end_file_pos_ );
+		CallDestructors( *function_context.stack_variables_stack.back(), function_context, block.end_file_pos_ );
 
-	function_context.stack_variables_stack.pop_back();
 
 	return block_build_info;
 }
@@ -2452,7 +2459,7 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 		}
 
 		// Destruction frame for temporary variables of initializer expression.
-		function_context.stack_variables_stack.emplace_back();
+		const StackVariablesStorage temp_variables_storage( function_context );
 
 		Variable variable;
 		variable.type= type;
@@ -2619,10 +2626,9 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 		}
 
 		// After lock of references we can call destructors.
-		CallDestructors( function_context.stack_variables_stack.back(), function_context, variable_declaration.file_pos );
-		function_context.stack_variables_stack.pop_back();
+		CallDestructors( *function_context.stack_variables_stack.back(), function_context, variable_declaration.file_pos );
 
-		function_context.stack_variables_stack.back().RegisterVariable( stored_variable );
+		function_context.stack_variables_stack[ function_context.stack_variables_stack.size() - 2u ]->RegisterVariable( stored_variable );
 	} // for variables
 }
 
@@ -2633,7 +2639,7 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 	const bool global )
 {
 	// Destruction frame for temporary variables of initializer expression.
-	function_context.stack_variables_stack.emplace_back();
+	const StackVariablesStorage temp_variables_storage( function_context );
 
 	const Value initializer_experrsion_value=
 		BuildExpressionCode( *auto_variable_declaration.initializer_expression, block_names, function_context );
@@ -2812,10 +2818,9 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 	}
 
 	// After lock of references we can call destructors.
-	CallDestructors( function_context.stack_variables_stack.back(), function_context, auto_variable_declaration.file_pos_ );
-	function_context.stack_variables_stack.pop_back();
+	CallDestructors( *function_context.stack_variables_stack.back(), function_context, auto_variable_declaration.file_pos_ );
 
-	function_context.stack_variables_stack.back().RegisterVariable( stored_variable );
+	function_context.stack_variables_stack[ function_context.stack_variables_stack.size() - 2u ]->RegisterVariable( stored_variable );
 }
 
 void CodeBuilder::BuildAssignmentOperatorCode(
@@ -2824,7 +2829,7 @@ void CodeBuilder::BuildAssignmentOperatorCode(
 	FunctionContext& function_context )
 {
 	// Destruction frame for temporary variables of expressions.
-	function_context.stack_variables_stack.emplace_back();
+	const StackVariablesStorage temp_variables_storage( function_context );
 
 	// Evalueate right part
 	const Value r_var_value= BuildExpressionCode( *assignment_operator.r_value_, block_names, function_context );
@@ -2900,8 +2905,7 @@ void CodeBuilder::BuildAssignmentOperatorCode(
 	r_var_locks.clear();
 
 	// Destruct temporary variables of right and left expressions.
-	CallDestructors( function_context.stack_variables_stack.back(), function_context, assignment_operator.file_pos_ );
-	function_context.stack_variables_stack.pop_back();
+	CallDestructors( *function_context.stack_variables_stack.back(), function_context, assignment_operator.file_pos_ );
 }
 
 void CodeBuilder::BuildAdditiveAssignmentOperatorCode(
@@ -2910,7 +2914,7 @@ void CodeBuilder::BuildAdditiveAssignmentOperatorCode(
 	FunctionContext& function_context )
 {
 	// Destruction frame for temporary variables of expressions.
-	function_context.stack_variables_stack.emplace_back();
+	const StackVariablesStorage temp_variables_storage( function_context );
 
 	const Value r_var_value=
 		BuildExpressionCode(
@@ -2940,10 +2944,7 @@ void CodeBuilder::BuildAdditiveAssignmentOperatorCode(
 		errors_.push_back( ReportExpectedVariableInAdditiveAssignment( additive_assignment_operator.file_pos_, r_var_value.GetType().ToString() ) );
 
 	if( l_var == nullptr || r_var == nullptr )
-	{
-		function_context.stack_variables_stack.pop_back();
 		return;
-	}
 
 	// Check references of destination.
 	for( const StoredVariablePtr& stored_variable : l_var->referenced_variables )
@@ -3007,8 +3008,7 @@ void CodeBuilder::BuildAdditiveAssignmentOperatorCode(
 	r_var_locks.clear();
 
 	// Destruct temporary variables of right and left expressions.
-	CallDestructors( function_context.stack_variables_stack.back(), function_context, additive_assignment_operator.file_pos_ );
-	function_context.stack_variables_stack.pop_back();
+	CallDestructors( *function_context.stack_variables_stack.back(), function_context, additive_assignment_operator.file_pos_ );
 }
 
 void CodeBuilder::BuildDeltaOneOperatorCode(
@@ -3100,7 +3100,7 @@ void CodeBuilder::BuildReturnOperatorCode(
 	}
 
 	// Destruction frame for temporary variables of result expression.
-	function_context.stack_variables_stack.emplace_back();
+	const StackVariablesStorage temp_variables_storage( function_context );
 
 	const Value expression_result_value=
 		BuildExpressionCode(
@@ -3115,17 +3115,6 @@ void CodeBuilder::BuildReturnOperatorCode(
 		function_context.llvm_ir_builder.CreateRetVoid();
 		return;
 	}
-
-	// Destruct temporary variables of return expression only after assignment of
-	// return value. Destroy all other function variables after this.
-	const auto call_destructors=
-	[&]()
-	{
-		CallDestructors( function_context.stack_variables_stack.back(), function_context, return_operator.file_pos_ );
-		function_context.stack_variables_stack.pop_back();
-
-		CallDestructorsBeforeReturn( function_context, return_operator.file_pos_ );
-	};
 
 	if( expression_result_value.GetType().GetTemplateDependentType() == nullptr && function_context.return_type.GetTemplateDependentType() == nullptr &&
 		expression_result_value.GetType() != function_context.return_type )
@@ -3153,7 +3142,7 @@ void CodeBuilder::BuildReturnOperatorCode(
 		for( const StoredVariablePtr& var : expression_result.referenced_variables )
 			return_value_locks.push_back( function_context.return_value_is_mutable ? var->mut_use_counter : var->imut_use_counter );
 
-		call_destructors();
+		CallDestructorsBeforeReturn( function_context, return_operator.file_pos_ );
 		return_value_locks.clear(); // Reset locks AFTER destructors call. We must get error in case of returning of reference to stack variable or value-argument.
 
 		function_context.llvm_ir_builder.CreateRet( expression_result.llvm_value );
@@ -3165,7 +3154,7 @@ void CodeBuilder::BuildReturnOperatorCode(
 			const ClassProxyPtr class_= function_context.s_ret_->type.GetClassTypeProxy();
 			TryCallCopyConstructor( return_operator.file_pos_, function_context.s_ret_->llvm_value, expression_result.llvm_value, class_, function_context );
 
-			call_destructors();
+			CallDestructorsBeforeReturn( function_context, return_operator.file_pos_ );
 			function_context.llvm_ir_builder.CreateRetVoid();
 		}
 		else if( expression_result.type.GetTemplateDependentType() != nullptr )
@@ -3177,7 +3166,7 @@ void CodeBuilder::BuildReturnOperatorCode(
 
 			llvm::Value* const value_for_return= CreateMoveToLLVMRegisterInstruction( expression_result, function_context );
 
-			call_destructors();
+			CallDestructorsBeforeReturn( function_context, return_operator.file_pos_ );
 
 			function_context.llvm_ir_builder.CreateRet( value_for_return );
 		}

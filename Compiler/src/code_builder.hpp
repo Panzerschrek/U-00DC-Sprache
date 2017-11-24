@@ -35,10 +35,18 @@ private:
 		std::unique_ptr<ClassTable> class_table;
 	};
 
+	struct FunctionContext;
+
+	// Usage - create this struct on stack. FunctionContext::stack_variables_stack will be controlled automatically.
+	// But you still need call "CallDestructors" manually.
 	struct StackVariablesStorage final
 	{
+		StackVariablesStorage( FunctionContext& function_context );
+		~StackVariablesStorage();
+
 		void RegisterVariable( const StoredVariablePtr& variable );
 
+		FunctionContext& function_context;
 		std::vector<StoredVariablePtr> variables;
 	};
 
@@ -85,7 +93,9 @@ private:
 		// First entry is set of function arguments.
 		// Each block adds new storage for it`s variables.
 		// Also, evaluation of some operators and expressions adds their variables storages.
-		std::vector<StackVariablesStorage> stack_variables_stack;
+		// Do not push/pop to t his stack manually!
+		std::vector<StackVariablesStorage*> stack_variables_stack;
+
 		llvm::BasicBlock* destructor_end_block= nullptr; // exists, if function is destructor
 	};
 

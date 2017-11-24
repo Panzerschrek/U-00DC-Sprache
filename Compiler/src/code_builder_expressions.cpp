@@ -24,12 +24,11 @@ Value CodeBuilder::BuildExpressionCodeAndDestroyTemporaries(
 	FunctionContext& function_context )
 {
 	// Destruction frame for temporary variables of expression.
-	function_context.stack_variables_stack.emplace_back();
+	const StackVariablesStorage temp_variables_storage( function_context );
 
 	const Value result= BuildExpressionCode( expression, names, function_context );
 
-	CallDestructors( function_context.stack_variables_stack.back(), function_context, expression.GetFilePos() );
-	function_context.stack_variables_stack.pop_back();
+	CallDestructors( *function_context.stack_variables_stack.back(), function_context, expression.GetFilePos() );
 
 	return result;
 }
@@ -796,7 +795,7 @@ Value CodeBuilder::BuildBinaryOperator(
 
 	const StoredVariablePtr stored_result= std::make_shared<StoredVariable>( result );
 	result.referenced_variables.emplace( stored_result );
-	function_context.stack_variables_stack.back().RegisterVariable( stored_result );
+	function_context.stack_variables_stack.back()->RegisterVariable( stored_result );
 
 	return Value( result, file_pos );
 }
@@ -905,7 +904,7 @@ Value CodeBuilder::BuildLazyBinaryOperator(
 
 	const StoredVariablePtr stored_result= std::make_shared<StoredVariable>( result );
 	result.referenced_variables.emplace( stored_result );
-	function_context.stack_variables_stack.back().RegisterVariable( stored_result );
+	function_context.stack_variables_stack.back()->RegisterVariable( stored_result );
 
 	return Value( result, file_pos );
 
@@ -1055,7 +1054,7 @@ Value CodeBuilder::BuildNumericConstant(
 
 	const StoredVariablePtr stored_result= std::make_shared<StoredVariable>( result );
 	result.referenced_variables.emplace( stored_result );
-	function_context.stack_variables_stack.back().RegisterVariable( stored_result );
+	function_context.stack_variables_stack.back()->RegisterVariable( stored_result );
 
 	return Value( result, numeric_constant.file_pos_ );
 }
@@ -1076,7 +1075,7 @@ Variable CodeBuilder::BuildBooleanConstant(
 
 	const StoredVariablePtr stored_result= std::make_shared<StoredVariable>( result );
 	result.referenced_variables.emplace( stored_result );
-	function_context.stack_variables_stack.back().RegisterVariable( stored_result );
+	function_context.stack_variables_stack.back()->RegisterVariable( stored_result );
 
 	return result;
 }
@@ -1575,7 +1574,7 @@ Value CodeBuilder::BuildCallOperator(
 		const StoredVariablePtr stored_result= std::make_shared<StoredVariable>( result );
 		result.referenced_variables.emplace( stored_result );
 
-		function_context.stack_variables_stack.back().RegisterVariable( stored_result );
+		function_context.stack_variables_stack.back()->RegisterVariable( stored_result );
 	}
 	result.type= function_type.return_type;
 	result.llvm_value= call_result;
@@ -1608,7 +1607,7 @@ Variable CodeBuilder::BuildTempVariableConstruction(
 	const StoredVariablePtr stored_variable= std::make_shared<StoredVariable>( variable );
 	variable.referenced_variables.emplace( stored_variable );
 
-	function_context.stack_variables_stack.back().RegisterVariable( stored_variable );
+	function_context.stack_variables_stack.back()->RegisterVariable( stored_variable );
 
 	return variable;
 }
@@ -1668,7 +1667,7 @@ Value CodeBuilder::BuildUnaryMinus(
 
 	const StoredVariablePtr stored_result= std::make_shared<StoredVariable>( result );
 	result.referenced_variables.emplace( stored_result );
-	function_context.stack_variables_stack.back().RegisterVariable( stored_result );
+	function_context.stack_variables_stack.back()->RegisterVariable( stored_result );
 
 	return Value( result, unary_minus.file_pos_ );
 }
@@ -1711,7 +1710,7 @@ Value CodeBuilder::BuildLogicalNot(
 
 	const StoredVariablePtr stored_result= std::make_shared<StoredVariable>( result );
 	result.referenced_variables.emplace( stored_result );
-	function_context.stack_variables_stack.back().RegisterVariable( stored_result );
+	function_context.stack_variables_stack.back()->RegisterVariable( stored_result );
 
 	return Value( result, logical_not.file_pos_ );
 }
@@ -1761,7 +1760,7 @@ Value CodeBuilder::BuildBitwiseNot(
 
 	const StoredVariablePtr stored_result= std::make_shared<StoredVariable>( result );
 	result.referenced_variables.emplace( stored_result );
-	function_context.stack_variables_stack.back().RegisterVariable( stored_result );
+	function_context.stack_variables_stack.back()->RegisterVariable( stored_result );
 
 	return Value( result, bitwise_not.file_pos_ );
 }
