@@ -35,19 +35,27 @@ private:
 		std::unique_ptr<ClassTable> class_table;
 	};
 
-	struct DestructiblesStorage final
-	{
-		void RegisterVariable( Variable variable );
+	struct FunctionContext;
 
-		std::vector<Variable> variables;
+	// Usage - create this struct on stack. FunctionContext::stack_variables_stack will be controlled automatically.
+	// But you still need call "CallDestructors" manually.
+	struct StackVariablesStorage final
+	{
+		StackVariablesStorage( FunctionContext& function_context );
+		~StackVariablesStorage();
+
+		void RegisterVariable( const StoredVariablePtr& variable );
+
+		FunctionContext& function_context;
+		std::vector<StoredVariablePtr> variables;
 	};
 
 	struct LoopFrame final
 	{
 		llvm::BasicBlock* block_for_break= nullptr;
 		llvm::BasicBlock* block_for_continue= nullptr;
-		// Number of destructibles storages at stack before loop block creation.
-		size_t destructibles_stack_size= 0u;
+		// Number of stack variable storages at stack before loop block creation.
+		size_t stack_variables_stack_size= 0u;
 	};
 
 	struct FunctionContext
@@ -81,11 +89,13 @@ private:
 
 		std::vector<LoopFrame> loops_stack;
 
-		// Stack for distructibles.
+		// Stack for stack variables.
 		// First entry is set of function arguments.
-		// Each block adds new storage for it`s destructible variables.
-		// Also, evaluation of some operators and expressions adds their destructibles storages.
-		std::vector<DestructiblesStorage> destructibles_stack;
+		// Each block adds new storage for it`s variables.
+		// Also, evaluation of some operators and expressions adds their variables storages.
+		// Do not push/pop to t his stack manually!
+		std::vector<StackVariablesStorage*> stack_variables_stack;
+
 		llvm::BasicBlock* destructor_end_block= nullptr; // exists, if function is destructor
 	};
 
@@ -187,17 +197,27 @@ private:
 		const std::function<void(llvm::Value* counter_value)>& loop_body,
 		FunctionContext& function_context);
 
+	// Store counter of destroyed references to this variable.
+	typedef std::unordered_map<StoredVariablePtr, size_t> DestroyedVariableReferencesCount;
+
+	void CallDestructorsImpl(
+		const StackVariablesStorage& stack_variables_storage,
+		FunctionContext& function_context,
+		DestroyedVariableReferencesCount& destroyed_variable_references,
+		const FilePos& file_pos );
+
 	void CallDestructors(
-		const DestructiblesStorage& destructibles_storage,
-		FunctionContext& function_context );
+		const StackVariablesStorage& stack_variables_storage,
+		FunctionContext& function_context,
+		const FilePos& file_pos );
 
 	void CallDestructor(
 		llvm::Value* ptr,
 		const Type& type,
 		FunctionContext& function_context );
 
-	void CallDestructorsForLoopInnerVariables( FunctionContext& function_context );
-	void CallDestructorsBeforeReturn( FunctionContext& function_context );
+	void CallDestructorsForLoopInnerVariables( FunctionContext& function_context, const FilePos& file_pos );
+	void CallDestructorsBeforeReturn( FunctionContext& function_context, const FilePos& file_pos );
 	void CallMembersDestructors( FunctionContext& function_context );
 
 	void BuildNamespaceBody(
@@ -266,8 +286,8 @@ private:
 		FunctionContext& function_context );
 
 	Value BuildNamedOperand( const Synt::NamedOperand& named_operand, NamesScope& names, FunctionContext& function_context );
-	Value BuildNumericConstant( const Synt::NumericConstant& numeric_constant );
-	Variable BuildBooleanConstant( const Synt::BooleanConstant& boolean_constant );
+	Value BuildNumericConstant( const Synt::NumericConstant& numeric_constant, FunctionContext& function_context );
+	Variable BuildBooleanConstant( const Synt::BooleanConstant& boolean_constant, FunctionContext& function_context  );
 
 	Value BuildIndexationOperator(
 		const Value& value,
@@ -435,6 +455,10 @@ private:
 		const Synt::ZeroInitializer& initializer,
 		NamesScope& block_names,
 		FunctionContext& function_context );
+
+	// Reference-checking.
+	void CheckReferencedVariables( const Variable& reference, const FilePos& file_pos );
+	std::vector<VariableStorageUseCounter> LockReferencedVariables( const Variable& reference );
 
 	// Name resolving.
 

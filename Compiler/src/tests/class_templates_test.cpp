@@ -840,8 +840,8 @@ U_TEST( ClassPrepass_Test0 )
 				loc1+= arr[0u];
 
 				// dependent on T unary operators
-				loc0= -loc1;
-				loc1= ~loc1;
+				loc1= -loc0;
+				loc0= ~loc1;
 				!loc2;
 
 				// constexpr for template-dependent stuff
@@ -1198,7 +1198,8 @@ U_TEST( DefaultSignatureArguments_Test3 )
 		fn Foo() : i32
 		{
 			var Vec2</ i32 /> a{ .x= 42, .y=34 }, b{ .y= 12, .x= 12 };
-			return a.GetDiffX( a, b );
+			auto &imut a_ref= a;
+			return a_ref.GetDiffX( a, b );
 		}
 	)";
 

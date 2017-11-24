@@ -56,10 +56,20 @@ CodeBuilder::FunctionContext::FunctionContext(
 {
 }
 
-void CodeBuilder::DestructiblesStorage::RegisterVariable( Variable variable )
+CodeBuilder::StackVariablesStorage::StackVariablesStorage( FunctionContext& in_function_context )
+	: function_context(in_function_context)
 {
-	if( variable.type.HaveDestructor() )
-		variables.push_back( std::move( variable ) );
+	function_context.stack_variables_stack.push_back(this);
+}
+
+CodeBuilder::StackVariablesStorage::~StackVariablesStorage()
+{
+	function_context.stack_variables_stack.pop_back();
+}
+
+void CodeBuilder::StackVariablesStorage::RegisterVariable( const StoredVariablePtr& variable )
+{
+	variables.push_back( variable );
 }
 
 CodeBuilder::CodeBuilder()
@@ -134,7 +144,7 @@ ICodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_g
 		false, false,
 		llvm_context_,
 		dummy_function );
-	dummy_function_context.destructibles_stack.emplace_back();
+	const StackVariablesStorage dummy_function_variables_storage( dummy_function_context );
 	dummy_function_context_= &dummy_function_context;
 
 	// Build graph.
@@ -852,7 +862,7 @@ void CodeBuilder::TryGenerateDefaultConstructor( Class& the_class, const Type& c
 		constructor_type.return_value_is_reference,
 		llvm_context_,
 		llvm_constructor_function );
-
+	StackVariablesStorage function_variables_storage( function_context );
 	llvm::Value* const this_llvm_value= llvm_constructor_function->args().begin();
 	this_llvm_value->setName( KeywordAscii( Keywords::this_ ) );
 
@@ -1270,13 +1280,58 @@ void CodeBuilder::GenerateLoop(
 	function_context.llvm_ir_builder.SetInsertPoint( block_after_loop );
 }
 
-void CodeBuilder::CallDestructors(
-	const DestructiblesStorage& destructibles_storage,
-	FunctionContext& function_context )
+void CodeBuilder::CallDestructorsImpl(
+	const StackVariablesStorage& stack_variables_storage,
+	FunctionContext& function_context,
+	DestroyedVariableReferencesCount& destroyed_variable_references,
+	const FilePos& file_pos )
 {
 	// Call destructors in reverse order.
-	for( auto it = destructibles_storage.variables.rbegin(); it != destructibles_storage.variables.rend(); ++it )
-		CallDestructor( it->llvm_value, it->type, function_context );
+	for( auto it = stack_variables_storage.variables.rbegin(); it != stack_variables_storage.variables.rend(); ++it )
+	{
+		StoredVariable& stored_variable= **it;
+
+		if( stored_variable.is_reference )
+		{
+			U_ASSERT( stored_variable.content.referenced_variables.size() == stored_variable.locked_referenced_variables.size() );
+
+			// Increment coounter of destroyed reference for referenced variables.
+			for( const StoredVariablePtr& referenced_variable : stored_variable.content.referenced_variables )
+			{
+				if( destroyed_variable_references.find( referenced_variable ) == destroyed_variable_references.end() )
+					destroyed_variable_references[ referenced_variable ]= 1u;
+				else
+					++destroyed_variable_references[ referenced_variable ];
+			}
+		}
+		else
+		{
+			// Check references.
+			U_ASSERT( stored_variable.imut_use_counter.use_count() >= 1u && stored_variable.mut_use_counter.use_count() >= 1u );
+
+			size_t alive_ref_count= ( stored_variable.imut_use_counter.use_count() - 1u ) + ( stored_variable.mut_use_counter.use_count() - 1u );
+			const auto map_it= destroyed_variable_references.find( *it );
+			if( map_it != destroyed_variable_references.end() )
+				alive_ref_count-= map_it->second;
+
+			if( alive_ref_count > 0u )
+				errors_.push_back( ReportDestroyedVariableStillHaveReferences( file_pos ) );
+		}
+
+		// Call destructors.
+		const Variable& var= stored_variable.content;
+		if( !stored_variable.is_reference && var.type.HaveDestructor() )
+			CallDestructor( var.llvm_value, var.type, function_context );
+	}
+}
+
+void CodeBuilder::CallDestructors(
+	const StackVariablesStorage& stack_variables_storage,
+	FunctionContext& function_context,
+	const FilePos& file_pos )
+{
+	DestroyedVariableReferencesCount destroyed_variable_references;
+	CallDestructorsImpl( stack_variables_storage, function_context, destroyed_variable_references, file_pos );
 }
 
 void CodeBuilder::CallDestructor(
@@ -1322,27 +1377,31 @@ void CodeBuilder::CallDestructor(
 	}
 }
 
-void CodeBuilder::CallDestructorsForLoopInnerVariables( FunctionContext& function_context )
+void CodeBuilder::CallDestructorsForLoopInnerVariables( FunctionContext& function_context, const FilePos& file_pos )
 {
 	U_ASSERT( !function_context.loops_stack.empty() );
 
+	DestroyedVariableReferencesCount destroyed_variable_references;
+
 	// Destroy all local variables before "break"/"continue" in all blocks inside loop.
-	size_t undestructed_stack_size= function_context.destructibles_stack.size();
+	size_t undestructed_stack_size= function_context.stack_variables_stack.size();
 	for(
-		auto it= function_context.destructibles_stack.rbegin();
-		it != function_context.destructibles_stack.rend() &&
-		undestructed_stack_size > function_context.loops_stack.back().destructibles_stack_size;
+		auto it= function_context.stack_variables_stack.rbegin();
+		it != function_context.stack_variables_stack.rend() &&
+		undestructed_stack_size > function_context.loops_stack.back().stack_variables_stack_size;
 		++it, --undestructed_stack_size )
 	{
-		CallDestructors( *it, function_context );
+		CallDestructorsImpl( **it, function_context, destroyed_variable_references, file_pos );
 	}
 }
 
-void CodeBuilder::CallDestructorsBeforeReturn( FunctionContext& function_context )
+void CodeBuilder::CallDestructorsBeforeReturn( FunctionContext& function_context, const FilePos& file_pos )
 {
+	DestroyedVariableReferencesCount destroyed_variable_references;
+
 	// We must call ALL destructors of local variables, arguments, etc before each return.
-	for( auto it= function_context.destructibles_stack.rbegin(); it != function_context.destructibles_stack.rend(); ++it )
-		CallDestructors( *it, function_context );
+	for( auto it= function_context.stack_variables_stack.rbegin(); it != function_context.stack_variables_stack.rend(); ++it )
+		CallDestructorsImpl( **it, function_context, destroyed_variable_references, file_pos );
 }
 
 void CodeBuilder::CallMembersDestructors( FunctionContext& function_context )
@@ -1872,8 +1931,7 @@ void CodeBuilder::BuildFuncCode(
 		function_type->return_value_is_reference,
 		llvm_context_,
 		llvm_function );
-
-	function_context.destructibles_stack.emplace_back();
+	const StackVariablesStorage args_storage( function_context );
 
 	// push args
 	Variable this_;
@@ -1908,6 +1966,10 @@ void CodeBuilder::BuildFuncCode(
 			this_.llvm_value= &llvm_arg;
 			llvm_arg.setName( KeywordAscii( Keywords::this_ ) );
 			function_context.this_= &this_;
+
+			const StoredVariablePtr this_storage= std::make_shared<StoredVariable>( this_ );
+			this_.referenced_variables.emplace(this_storage);
+
 			arg_number++;
 			continue;
 		}
@@ -1960,6 +2022,11 @@ void CodeBuilder::BuildFuncCode(
 			{ U_ASSERT( false ); }
 		}
 
+		const StoredVariablePtr var_storage= std::make_shared<StoredVariable>( var, arg.is_reference );
+
+		if( !var_storage->is_reference )
+			var.referenced_variables.emplace(var_storage);
+
 		if( is_this )
 		{
 			// Save "this" in function context for accessing inside class methods.
@@ -1974,18 +2041,15 @@ void CodeBuilder::BuildFuncCode(
 				return;
 			}
 
+			function_context.stack_variables_stack.back()->RegisterVariable( var_storage );
+
 			const NamesScope::InsertedName* const inserted_arg=
-				function_names.AddName(
-					arg_name,
-					Value( std::move(var), declaration_arg.file_pos_ ) );
+				function_names.AddName( arg_name, Value( var_storage, declaration_arg.file_pos_ ) );
 			if( !inserted_arg )
 			{
 				errors_.push_back( ReportRedefinition( declaration_arg.file_pos_, arg_name ) );
 				return;
 			}
-
-			if( !arg.is_reference )
-				function_context.destructibles_stack.back().RegisterVariable( *inserted_arg->second.GetVariable() );
 		}
 
 		llvm_arg.setName( "_arg_" + ToStdString( arg_name ) );
@@ -2028,8 +2092,7 @@ void CodeBuilder::BuildFuncCode(
 	const BlockBuildInfo block_build_info=
 		BuildBlockCode( *block, function_names, function_context );
 
-	// TODO - turn on this. We can damage stack, in template prepass.
-	//U_ASSERT( function_context.destructibles_stack.size() == 1u || !errors_.empty() || error_count_ > 0u );
+	U_ASSERT( function_context.stack_variables_stack.size() == 1u );
 
 	// We need call destructors for arguments only if function returns "void".
 	// In other case, we have "return" in all branches and destructors call before each "return".
@@ -2039,7 +2102,7 @@ void CodeBuilder::BuildFuncCode(
 		// Manually generate "return" for void-return functions.
 		if( !block_build_info.have_unconditional_return_inside )
 		{
-			CallDestructors( function_context.destructibles_stack.back(), function_context );
+			CallDestructors( *function_context.stack_variables_stack.back(), function_context, block->end_file_pos_ );
 
 			if( function_context.destructor_end_block == nullptr )
 				function_context.llvm_ir_builder.CreateRetVoid();
@@ -2212,7 +2275,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockCode(
 	NamesScope block_names( ""_SpC, &names );
 	BlockBuildInfo block_build_info;
 
-	function_context.destructibles_stack.emplace_back();
+	const StackVariablesStorage block_variables_storage( function_context );
 
 	for( const Synt::IBlockElementPtr& block_element : block.elements_ )
 	{
@@ -2372,9 +2435,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockCode(
 	// If there are undconditional "break", "continue", "return" operators,
 	// we didn`t need call destructors, it must be called in this operators.
 	if( !( block_build_info.have_uncodnitional_break_or_continue || block_build_info.have_unconditional_return_inside ) )
-		CallDestructors( function_context.destructibles_stack.back(), function_context );
+		CallDestructors( *function_context.stack_variables_stack.back(), function_context, block.end_file_pos_ );
 
-	function_context.destructibles_stack.pop_back();
 
 	return block_build_info;
 }
@@ -2407,6 +2469,9 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 			errors_.push_back( ReportInvalidTypeForConstantExpressionVariable( variables_declaration.file_pos_ ) );
 			continue;
 		}
+
+		// Destruction frame for temporary variables of initializer expression.
+		const StackVariablesStorage temp_variables_storage( function_context );
 
 		Variable variable;
 		variable.type= type;
@@ -2491,7 +2556,7 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 			}
 
 			const Value expression_result_value=
-				BuildExpressionCodeAndDestroyTemporaries( *initializer_expression, block_names, function_context );
+				BuildExpressionCode( *initializer_expression, block_names, function_context );
 
 			if( expression_result_value.GetType() != variable.type &&
 				expression_result_value.GetType().GetTemplateDependentType() == nullptr && variable.type.GetTemplateDependentType() == nullptr )
@@ -2512,6 +2577,8 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 				errors_.push_back( ReportBindingConstReferenceToNonconstReference( variables_declaration.file_pos_ ) );
 				continue;
 			}
+
+			variable.referenced_variables= expression_result.referenced_variables;
 
 			// TODO - maybe make copy of varaible address in new llvm register?
 			variable.llvm_value= expression_result.llvm_value;
@@ -2547,18 +2614,30 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 			return;
 		}
 
-		const NamesScope::InsertedName* inserted_name=
-			block_names.AddName( variable_declaration.name, Value( std::move(variable), variable_declaration.file_pos ) );
+		const StoredVariablePtr stored_variable=
+			std::make_shared<StoredVariable>(
+				variable,
+				variable_declaration.reference_modifier == ReferenceModifier::Reference );
 
+		if( stored_variable->is_reference )
+		{
+			stored_variable->locked_referenced_variables= LockReferencedVariables( variable );
+			CheckReferencedVariables( variable, variable_declaration.file_pos );
+		}
+
+		const NamesScope::InsertedName* const inserted_name=
+			block_names.AddName( variable_declaration.name, Value( std::move(stored_variable), variable_declaration.file_pos ) );
 		if( !inserted_name )
 		{
 			errors_.push_back( ReportRedefinition( variables_declaration.file_pos_, variable_declaration.name ) );
 			continue;
 		}
 
-		if( variable_declaration.reference_modifier == ReferenceModifier::None )
-			function_context.destructibles_stack.back().RegisterVariable( *inserted_name->second.GetVariable() );
-	}
+		// After lock of references we can call destructors.
+		CallDestructors( *function_context.stack_variables_stack.back(), function_context, variable_declaration.file_pos );
+
+		function_context.stack_variables_stack[ function_context.stack_variables_stack.size() - 2u ]->RegisterVariable( stored_variable );
+	} // for variables
 }
 
 void CodeBuilder::BuildAutoVariableDeclarationCode(
@@ -2567,8 +2646,11 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 	FunctionContext& function_context,
 	const bool global )
 {
+	// Destruction frame for temporary variables of initializer expression.
+	const StackVariablesStorage temp_variables_storage( function_context );
+
 	const Value initializer_experrsion_value=
-		BuildExpressionCodeAndDestroyTemporaries( *auto_variable_declaration.initializer_expression, block_names, function_context );
+		BuildExpressionCode( *auto_variable_declaration.initializer_expression, block_names, function_context );
 
 	if( initializer_experrsion_value.GetType() == NontypeStub::TemplateDependentValue )
 	{
@@ -2646,6 +2728,8 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 			return;
 		}
 
+		variable.referenced_variables= initializer_experrsion.referenced_variables;
+
 		variable.llvm_value= initializer_experrsion.llvm_value;
 		variable.constexpr_value= initializer_experrsion.constexpr_value;
 	}
@@ -2690,9 +2774,7 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 			global_variable->setInitializer( variable.constexpr_value );
 	}
 	else
-	{
 		U_ASSERT(false);
-	}
 
 	if( variable.type.GetTemplateDependentType() == nullptr &&
 		auto_variable_declaration.mutability_modifier == MutabilityModifier::Constexpr &&
@@ -2719,8 +2801,19 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 		return;
 	}
 
+	const StoredVariablePtr stored_variable=
+		std::make_shared<StoredVariable>(
+			variable,
+			auto_variable_declaration.reference_modifier == ReferenceModifier::Reference );
+
+	if( stored_variable->is_reference )
+	{
+		stored_variable->locked_referenced_variables= LockReferencedVariables( variable );
+		CheckReferencedVariables( variable, auto_variable_declaration.file_pos_ );
+	}
+
 	const NamesScope::InsertedName* inserted_name=
-		block_names.AddName( auto_variable_declaration.name, Value( std::move(variable), auto_variable_declaration.file_pos_ ) );
+		block_names.AddName( auto_variable_declaration.name, Value( stored_variable, auto_variable_declaration.file_pos_ ) );
 
 	if( inserted_name == nullptr )
 	{
@@ -2728,8 +2821,10 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 		return;
 	}
 
-	if( auto_variable_declaration.reference_modifier == ReferenceModifier::None )
-		function_context.destructibles_stack.back().RegisterVariable( *inserted_name->second.GetVariable() );
+	// After lock of references we can call destructors.
+	CallDestructors( *function_context.stack_variables_stack.back(), function_context, auto_variable_declaration.file_pos_ );
+
+	function_context.stack_variables_stack[ function_context.stack_variables_stack.size() - 2u ]->RegisterVariable( stored_variable );
 }
 
 void CodeBuilder::BuildAssignmentOperatorCode(
@@ -2738,28 +2833,27 @@ void CodeBuilder::BuildAssignmentOperatorCode(
 	FunctionContext& function_context )
 {
 	// Destruction frame for temporary variables of expressions.
-	function_context.destructibles_stack.emplace_back();
+	const StackVariablesStorage temp_variables_storage( function_context );
 
-	const Synt::IExpressionComponent& l_value= *assignment_operator.l_value_;
-	const Synt::IExpressionComponent& r_value= *assignment_operator.r_value_;
-
-	const Value l_var_value= BuildExpressionCode( l_value, block_names, function_context );
-	const Value r_var_value= BuildExpressionCode( r_value, block_names, function_context );
-
-	if( l_var_value.GetType() == NontypeStub::TemplateDependentValue || r_var_value.GetType() == NontypeStub::TemplateDependentValue )
-		return;
-
-	const Variable* const l_var= l_var_value.GetVariable();
+	// Evalueate right part
+	const Value r_var_value= BuildExpressionCode( *assignment_operator.r_value_, block_names, function_context );
 	const Variable* const r_var= r_var_value.GetVariable();
-	if( l_var == nullptr )
-		errors_.push_back( ReportExpectedVariableInAssignment( assignment_operator.file_pos_, l_var_value.GetType().ToString() ) );
-	if( r_var == nullptr )
+	if( r_var == nullptr && r_var_value.GetType() != NontypeStub::TemplateDependentValue )
 		errors_.push_back( ReportExpectedVariableInAssignment( assignment_operator.file_pos_, r_var_value.GetType().ToString() ) );
+
+	// Lock r_var variables.
+	std::vector<VariableStorageUseCounter> r_var_locks;
+	if( r_var != nullptr )
+		r_var_locks= LockReferencedVariables( *r_var );
+
+	// Evaluate left part.
+	const Value l_var_value= BuildExpressionCode( *assignment_operator.l_value_, block_names, function_context );
+	const Variable* const l_var= l_var_value.GetVariable();
+	if( l_var == nullptr && l_var_value.GetType() != NontypeStub::TemplateDependentValue )
+		errors_.push_back( ReportExpectedVariableInAssignment( assignment_operator.file_pos_, l_var_value.GetType().ToString() ) );
+
 	if( l_var == nullptr || r_var == nullptr )
-	{
-		// TODO
 		return;
-	}
 
 	if( l_var->value_type != ValueType::Reference )
 	{
@@ -2770,6 +2864,21 @@ void CodeBuilder::BuildAssignmentOperatorCode(
 	{
 		errors_.push_back( ReportTypesMismatch( assignment_operator.file_pos_, l_var->type.ToString(), r_var->type.ToString() ) );
 		return;
+	}
+
+	// Check references of destination.
+	for( const StoredVariablePtr& referenced_variable : l_var->referenced_variables )
+	{
+		if( referenced_variable->imut_use_counter.use_count() > 1u )
+		{
+			// Assign to variable, that have nonzero immutable references.
+			errors_.push_back( ReportReferenceProtectionError( assignment_operator.file_pos_ ) );
+		}
+		if( referenced_variable->mut_use_counter.use_count() > 1u + 1u )
+		{
+			// Variable have mutable references except locked reference for this assignment.
+			errors_.push_back( ReportReferenceProtectionError( assignment_operator.file_pos_ ) );
+		}
 	}
 
 	const FundamentalType* const fundamental_type= l_var->type.GetFundamentalType();
@@ -2794,9 +2903,10 @@ void CodeBuilder::BuildAssignmentOperatorCode(
 		return;
 	}
 
+	r_var_locks.clear();
+
 	// Destruct temporary variables of right and left expressions.
-	CallDestructors( function_context.destructibles_stack.back(), function_context );
-	function_context.destructibles_stack.pop_back();
+	CallDestructors( *function_context.stack_variables_stack.back(), function_context, assignment_operator.file_pos_ );
 }
 
 void CodeBuilder::BuildAdditiveAssignmentOperatorCode(
@@ -2805,31 +2915,49 @@ void CodeBuilder::BuildAdditiveAssignmentOperatorCode(
 	FunctionContext& function_context )
 {
 	// Destruction frame for temporary variables of expressions.
-	function_context.destructibles_stack.emplace_back();
+	const StackVariablesStorage temp_variables_storage( function_context );
+
+	const Value r_var_value=
+		BuildExpressionCode(
+			*additive_assignment_operator.r_value_,
+			block_names,
+			function_context );
+	const Variable* const r_var= r_var_value.GetVariable();
+
+	// Lock r_var variables.
+	std::vector<VariableStorageUseCounter> r_var_locks;
+	if( r_var != nullptr )
+		r_var_locks= LockReferencedVariables( *r_var );
 
 	const Value l_var_value=
 		BuildExpressionCode(
 			*additive_assignment_operator.l_value_,
 			block_names,
 			function_context );
-	const Value r_var_value=
-		BuildExpressionCode(
-			*additive_assignment_operator.r_value_,
-			block_names,
-			function_context );
-
-	if( l_var_value.GetType() == NontypeStub::TemplateDependentValue || r_var_value.GetType() == NontypeStub::TemplateDependentValue )
-		return;
-
 	const Variable* const l_var= l_var_value.GetVariable();
-	const Variable* const r_var= r_var_value.GetVariable();
 
-	if( l_var == nullptr )
+	if( l_var == nullptr && l_var_value.GetType() != NontypeStub::TemplateDependentValue )
 		errors_.push_back( ReportExpectedVariableInAdditiveAssignment( additive_assignment_operator.file_pos_, l_var_value.GetType().ToString() ) );
-	if( r_var == nullptr )
+	if( r_var == nullptr && r_var_value.GetType() != NontypeStub::TemplateDependentValue )
 		errors_.push_back( ReportExpectedVariableInAdditiveAssignment( additive_assignment_operator.file_pos_, r_var_value.GetType().ToString() ) );
+
 	if( l_var == nullptr || r_var == nullptr )
 		return;
+
+	// Check references of destination.
+	for( const StoredVariablePtr& stored_variable : l_var->referenced_variables )
+	{
+		if( stored_variable->imut_use_counter.use_count() > 1u )
+		{
+			// Assign to variable, that have nonzero immutable references.
+			errors_.push_back( ReportReferenceProtectionError( additive_assignment_operator.file_pos_ ) );
+		}
+		if( stored_variable->mut_use_counter.use_count() > 1u + 1u )
+		{
+			// Variable have mutable references except locked reference for this assignment.
+			errors_.push_back( ReportReferenceProtectionError( additive_assignment_operator.file_pos_ ) );
+		}
+	}
 
 	const FundamentalType* const l_var_fundamental_type= l_var->type.GetFundamentalType();
 	const FundamentalType* const r_var_fundamental_type= r_var->type.GetFundamentalType();
@@ -2875,9 +3003,10 @@ void CodeBuilder::BuildAdditiveAssignmentOperatorCode(
 		return;
 	}
 
+	r_var_locks.clear();
+
 	// Destruct temporary variables of right and left expressions.
-	CallDestructors( function_context.destructibles_stack.back(), function_context );
-	function_context.destructibles_stack.pop_back();
+	CallDestructors( *function_context.stack_variables_stack.back(), function_context, additive_assignment_operator.file_pos_ );
 }
 
 void CodeBuilder::BuildDeltaOneOperatorCode(
@@ -2909,6 +3038,13 @@ void CodeBuilder::BuildDeltaOneOperatorCode(
 		{
 			errors_.push_back( ReportExpectedReferenceValue( file_pos ) );
 			return;
+		}
+
+		for( const StoredVariablePtr& referenced_variable : variable->referenced_variables )
+		{
+			if( referenced_variable->imut_use_counter.use_count() > 1u ) // Changing variable, that have immutable references.
+				errors_.push_back( ReportReferenceProtectionError( file_pos ) );
+			// If "mut_counter" is not 0 or 1, error must be generated previosly.
 		}
 
 		llvm::Value* const value_in_register= CreateMoveToLLVMRegisterInstruction( *variable, function_context );
@@ -2948,7 +3084,7 @@ void CodeBuilder::BuildReturnOperatorCode(
 			return;
 		}
 
-		CallDestructorsBeforeReturn( function_context );
+		CallDestructorsBeforeReturn( function_context, return_operator.file_pos_ );
 
 		if( function_context.destructor_end_block == nullptr )
 			function_context.llvm_ir_builder.CreateRetVoid();
@@ -2962,7 +3098,7 @@ void CodeBuilder::BuildReturnOperatorCode(
 	}
 
 	// Destruction frame for temporary variables of result expression.
-	function_context.destructibles_stack.emplace_back();
+	const StackVariablesStorage temp_variables_storage( function_context );
 
 	const Value expression_result_value=
 		BuildExpressionCode(
@@ -2977,17 +3113,6 @@ void CodeBuilder::BuildReturnOperatorCode(
 		function_context.llvm_ir_builder.CreateRetVoid();
 		return;
 	}
-
-	// Destruct temporary variables of return expression only after assignment of
-	// return value. Destroy all other function variables after this.
-	const auto call_destructors=
-	[&]()
-	{
-		CallDestructors( function_context.destructibles_stack.back(), function_context );
-		function_context.destructibles_stack.pop_back();
-
-		CallDestructorsBeforeReturn( function_context );
-	};
 
 	if( expression_result_value.GetType().GetTemplateDependentType() == nullptr && function_context.return_type.GetTemplateDependentType() == nullptr &&
 		expression_result_value.GetType() != function_context.return_type )
@@ -3010,7 +3135,14 @@ void CodeBuilder::BuildReturnOperatorCode(
 			return;
 		}
 
-		call_destructors();
+		// Lock references to return value variables.
+		std::vector<VariableStorageUseCounter> return_value_locks;
+		for( const StoredVariablePtr& var : expression_result.referenced_variables )
+			return_value_locks.push_back( function_context.return_value_is_mutable ? var->mut_use_counter : var->imut_use_counter );
+
+		CallDestructorsBeforeReturn( function_context, return_operator.file_pos_ );
+		return_value_locks.clear(); // Reset locks AFTER destructors call. We must get error in case of returning of reference to stack variable or value-argument.
+
 		function_context.llvm_ir_builder.CreateRet( expression_result.llvm_value );
 	}
 	else
@@ -3020,7 +3152,7 @@ void CodeBuilder::BuildReturnOperatorCode(
 			const ClassProxyPtr class_= function_context.s_ret_->type.GetClassTypeProxy();
 			TryCallCopyConstructor( return_operator.file_pos_, function_context.s_ret_->llvm_value, expression_result.llvm_value, class_, function_context );
 
-			call_destructors();
+			CallDestructorsBeforeReturn( function_context, return_operator.file_pos_ );
 			function_context.llvm_ir_builder.CreateRetVoid();
 		}
 		else if( expression_result.type.GetTemplateDependentType() != nullptr )
@@ -3032,7 +3164,7 @@ void CodeBuilder::BuildReturnOperatorCode(
 
 			llvm::Value* const value_for_return= CreateMoveToLLVMRegisterInstruction( expression_result, function_context );
 
-			call_destructors();
+			CallDestructorsBeforeReturn( function_context, return_operator.file_pos_ );
 
 			function_context.llvm_ir_builder.CreateRet( value_for_return );
 		}
@@ -3081,7 +3213,7 @@ void CodeBuilder::BuildWhileOperatorCode(
 	function_context.loops_stack.emplace_back();
 	function_context.loops_stack.back().block_for_break= block_after_while;
 	function_context.loops_stack.back().block_for_continue= test_block;
-	function_context.loops_stack.back().destructibles_stack_size= function_context.destructibles_stack.size();
+	function_context.loops_stack.back().stack_variables_stack_size= function_context.stack_variables_stack.size();
 
 	function_context.function->getBasicBlockList().push_back( while_block );
 	function_context.llvm_ir_builder.SetInsertPoint( while_block );
@@ -3107,7 +3239,7 @@ void CodeBuilder::BuildBreakOperatorCode(
 	}
 	U_ASSERT( function_context.loops_stack.back().block_for_break != nullptr );
 
-	CallDestructorsForLoopInnerVariables( function_context );
+	CallDestructorsForLoopInnerVariables( function_context, break_operator.file_pos_ );
 	function_context.llvm_ir_builder.CreateBr( function_context.loops_stack.back().block_for_break );
 }
 
@@ -3122,7 +3254,7 @@ void CodeBuilder::BuildContinueOperatorCode(
 	}
 	U_ASSERT( function_context.loops_stack.back().block_for_continue != nullptr );
 
-	CallDestructorsForLoopInnerVariables( function_context );
+	CallDestructorsForLoopInnerVariables( function_context, continue_operator.file_pos_ );
 	function_context.llvm_ir_builder.CreateBr( function_context.loops_stack.back().block_for_continue );
 }
 
@@ -3539,6 +3671,30 @@ const FunctionVariable* CodeBuilder::GetOverloadedFunction(
 		errors_.push_back( ReportCouldNotSelectOverloadedFunction( file_pos ) );
 		return nullptr;
 	}
+}
+
+void CodeBuilder::CheckReferencedVariables( const Variable& reference, const FilePos& file_pos )
+{
+	for( const StoredVariablePtr& referenced_variable : reference.referenced_variables )
+	{
+		if(
+			referenced_variable-> mut_use_counter.use_count() <= 2u &&
+			referenced_variable->imut_use_counter.use_count() == 1u)
+		{} // All ok - one mutable reference.
+		else if( referenced_variable-> mut_use_counter.use_count() == 1u )
+		{} // All ok - 0-infinity immutable references.
+		else
+			errors_.push_back( ReportReferenceProtectionError( file_pos ) );
+	}
+}
+
+std::vector<VariableStorageUseCounter> CodeBuilder::LockReferencedVariables( const Variable& reference )
+{
+	std::vector<VariableStorageUseCounter> locks;
+	for( const StoredVariablePtr& referenced_variable : reference.referenced_variables )
+		locks.push_back( reference.value_type == ValueType::Reference ? referenced_variable->mut_use_counter : referenced_variable->imut_use_counter );
+
+	return locks;
 }
 
 U_FundamentalType CodeBuilder::GetNumericConstantType( const Synt::NumericConstant& number )

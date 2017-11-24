@@ -622,6 +622,7 @@ static const Type g_type_template_type_stub= NontypeStub::TypeTemplate;
 static const Type g_template_dependent_type_stub= NontypeStub::TemplateDependentValue;
 static const Type g_yet_not_deduced_template_arg_type_stub= NontypeStub::YetNotDeducedTemplateArg;
 static const Type g_error_value_type_stub= NontypeStub::ErrorValue;
+static const Type g_variable_storage_type_stub= NontypeStub::VariableStorage;
 
 Value::Value()
 {}
@@ -630,6 +631,13 @@ Value::Value( Variable variable, const FilePos& file_pos )
 	: file_pos_(file_pos)
 {
 	something_= std::move(variable);
+}
+
+Value::Value( StoredVariablePtr stored_variable, const FilePos& file_pos )
+	: file_pos_(file_pos)
+{
+	U_ASSERT( stored_variable != nullptr );
+	something_= std::move(stored_variable);
 }
 
 Value::Value( FunctionVariable function_variable )
@@ -697,6 +705,9 @@ const Type& Value::GetType() const
 		void operator()( const Variable& variable )
 		{ type= &variable.type; }
 
+		void operator()( const StoredVariablePtr& )
+		{ type= &g_variable_storage_type_stub; }
+
 		void operator()( const FunctionVariable& function_variable )
 		{ type= &function_variable.type; }
 
@@ -761,6 +772,14 @@ Variable* Value::GetVariable()
 const Variable* Value::GetVariable() const
 {
 	return boost::get<Variable>( &something_ );
+}
+
+StoredVariablePtr Value::GetStoredVariable() const
+{
+	const StoredVariablePtr* const stored_variable= boost::get<StoredVariablePtr>( &something_ );
+	if( stored_variable == nullptr )
+		return nullptr;
+	return *stored_variable;
 }
 
 FunctionVariable* Value::GetFunctionVariable()

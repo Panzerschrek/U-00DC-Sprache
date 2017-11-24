@@ -24,12 +24,11 @@ Value CodeBuilder::BuildExpressionCodeAndDestroyTemporaries(
 	FunctionContext& function_context )
 {
 	// Destruction frame for temporary variables of expression.
-	function_context.destructibles_stack.emplace_back();
+	const StackVariablesStorage temp_variables_storage( function_context );
 
 	const Value result= BuildExpressionCode( expression, names, function_context );
 
-	CallDestructors( function_context.destructibles_stack.back(), function_context );
-	function_context.destructibles_stack.pop_back();
+	CallDestructors( *function_context.stack_variables_stack.back(), function_context, expression.GetFilePos() );
 
 	return result;
 }
@@ -58,11 +57,40 @@ Value CodeBuilder::BuildExpressionCode(
 		}
 		else
 		{
-			const Value l_var_value=
+			Value l_var_value=
 				BuildExpressionCode(
 					*binary_operator->left_,
 					names,
 					function_context );
+
+			// Lock l_var variables before evaluating of r_var.
+			std::vector<VariableStorageUseCounter> l_var_locks;
+			{
+				if( const Variable* const l_var= l_var_value.GetVariable() )
+					l_var_locks= LockReferencedVariables( *l_var );
+			}
+
+			// HACK. Currently, we have no operators overloading.
+			// So, we have only binary operators for fundamental types, that have value-parameters.
+			// So, we can convert referernce to value here. After convertion to value, we does not needs locks of references.
+
+			// TODO - for operators overloading evaluate l_var and r_var two times:
+			// first - for type deduction and fetching overloaded operator,
+			// second - for code generation and reference checking.
+			if( l_var_value.GetType().GetTemplateDependentType() == nullptr )
+			{
+				if( Variable* const l_var= l_var_value.GetVariable() )
+				{
+					if( l_var->location == Variable::Location::Pointer )
+					{
+						l_var->llvm_value= CreateMoveToLLVMRegisterInstruction( *l_var, function_context );
+						l_var->location= Variable::Location::LLVMRegister;
+					}
+					l_var->value_type= ValueType::Value;
+
+					l_var_locks.clear();
+				}
+			}
 
 			const Value r_var_value=
 				BuildExpressionCode(
@@ -104,12 +132,12 @@ Value CodeBuilder::BuildExpressionCode(
 	else if( const auto numeric_constant=
 		dynamic_cast<const Synt::NumericConstant*>(&expression) )
 	{
-		result= BuildNumericConstant( *numeric_constant );
+		result= BuildNumericConstant( *numeric_constant, function_context );
 	}
 	else if( const auto boolean_constant=
 		dynamic_cast<const Synt::BooleanConstant*>(&expression) )
 	{
-		result= Value( BuildBooleanConstant( *boolean_constant ), boolean_constant->file_pos_ );
+		result= Value( BuildBooleanConstant( *boolean_constant, function_context ), boolean_constant->file_pos_ );
 	}
 	else if( const auto bracket_expression=
 		dynamic_cast<const Synt::BracketExpression*>(&expression) )
@@ -762,6 +790,10 @@ Value CodeBuilder::BuildBinaryOperator(
 		}
 	}
 
+	const StoredVariablePtr stored_result= std::make_shared<StoredVariable>( result );
+	result.referenced_variables.emplace( stored_result );
+	function_context.stack_variables_stack.back()->RegisterVariable( stored_result );
+
 	return Value( result, file_pos );
 }
 
@@ -867,6 +899,10 @@ Value CodeBuilder::BuildLazyBinaryOperator(
 			U_ASSERT(false);
 	}
 
+	const StoredVariablePtr stored_result= std::make_shared<StoredVariable>( result );
+	result.referenced_variables.emplace( stored_result );
+	function_context.stack_variables_stack.back()->RegisterVariable( stored_result );
+
 	return Value( result, file_pos );
 
 	#undef RETURN_UNDEF_BOOL
@@ -925,6 +961,7 @@ Value CodeBuilder::BuildNamedOperand(
 		field_variable.type= field->type;
 		field_variable.location= Variable::Location::Pointer;
 		field_variable.value_type= function_context.this_->value_type;
+		field_variable.referenced_variables= function_context.this_->referenced_variables;
 
 		// Make first index = 0 for array to pointer conversion.
 		llvm::Value* index_list[2];
@@ -962,11 +999,29 @@ Value CodeBuilder::BuildNamedOperand(
 			}
 		}
 	}
+	else if( const StoredVariablePtr referenced_variable= name_entry->second.GetStoredVariable() )
+	{
+		// Unwrap stored variable here.
+		Variable result;
+		result= referenced_variable->content;
+		if( !referenced_variable->is_reference )
+		{
+			result.referenced_variables.emplace( referenced_variable );
+
+			// If we have mutable reference to variable, we can not access variable itself.
+			if( referenced_variable->content.value_type == ValueType::Reference && referenced_variable->mut_use_counter.use_count() >= 2u )
+				errors_.push_back( ReportAccessingVariableThatHaveMutableReference( named_operand.file_pos_ ) );
+		}
+
+		return Value( result, name_entry->second.GetFilePos() );
+	}
 
 	return name_entry->second;
 }
 
-Value CodeBuilder::BuildNumericConstant( const Synt::NumericConstant& numeric_constant )
+Value CodeBuilder::BuildNumericConstant(
+	const Synt::NumericConstant& numeric_constant,
+	FunctionContext& function_context )
 {
 	U_FundamentalType type= GetNumericConstantType( numeric_constant );
 	if( type == U_FundamentalType::InvalidType )
@@ -994,10 +1049,16 @@ Value CodeBuilder::BuildNumericConstant( const Synt::NumericConstant& numeric_co
 
 	result.llvm_value= result.constexpr_value;
 
+	const StoredVariablePtr stored_result= std::make_shared<StoredVariable>( result );
+	result.referenced_variables.emplace( stored_result );
+	function_context.stack_variables_stack.back()->RegisterVariable( stored_result );
+
 	return Value( result, numeric_constant.file_pos_ );
 }
 
-Variable CodeBuilder::BuildBooleanConstant( const Synt::BooleanConstant& boolean_constant )
+Variable CodeBuilder::BuildBooleanConstant(
+	const Synt::BooleanConstant& boolean_constant,
+	FunctionContext& function_context )
 {
 	Variable result;
 	result.location= Variable::Location::LLVMRegister;
@@ -1008,6 +1069,10 @@ Variable CodeBuilder::BuildBooleanConstant( const Synt::BooleanConstant& boolean
 		llvm::Constant::getIntegerValue(
 			fundamental_llvm_types_.bool_ ,
 			llvm::APInt( 1u, uint64_t(boolean_constant.value_) ) );
+
+	const StoredVariablePtr stored_result= std::make_shared<StoredVariable>( result );
+	result.referenced_variables.emplace( stored_result );
+	function_context.stack_variables_stack.back()->RegisterVariable( stored_result );
 
 	return result;
 }
@@ -1061,6 +1126,7 @@ Value CodeBuilder::BuildIndexationOperator(
 		Variable result;
 		result.location= Variable::Location::Pointer;
 		result.value_type= variable.value_type;
+		result.referenced_variables= variable.referenced_variables;
 		result.type= array_type->type;
 		return Value( result, indexation_operator.file_pos_ );
 	}
@@ -1092,6 +1158,7 @@ Value CodeBuilder::BuildIndexationOperator(
 	Variable result;
 	result.location= Variable::Location::Pointer;
 	result.value_type= variable.value_type;
+	result.referenced_variables= variable.referenced_variables;
 	result.type= array_type->type;
 
 	if( variable.constexpr_value != nullptr && index.constexpr_value != nullptr )
@@ -1169,6 +1236,7 @@ Value CodeBuilder::BuildMemberAccessOperator(
 	Variable result;
 	result.location= Variable::Location::Pointer;
 	result.value_type= variable.value_type;
+	result.referenced_variables= variable.referenced_variables;
 	result.type= field->type;
 	result.llvm_value=
 		function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, index_list );
@@ -1223,12 +1291,16 @@ Value CodeBuilder::BuildCallOperator(
 	size_t total_args= this_count + call_operator.arguments_.size();
 	std::vector<Function::Arg> actual_args;
 	std::vector<Variable> actual_args_variables;
+	std::vector<std::vector<VariableStorageUseCounter>> acutal_args_locks;
 	actual_args.reserve( total_args );
 	actual_args_variables.reserve( total_args );
+	acutal_args_locks.reserve( total_args );
 
 	// Push "this" argument.
 	if( this_ != nullptr )
 	{
+		acutal_args_locks.push_back( LockReferencedVariables( *this_ ) );
+
 		actual_args.emplace_back();
 		actual_args.back().type= this_->type;
 		actual_args.back().is_reference= true;
@@ -1257,6 +1329,10 @@ Value CodeBuilder::BuildCallOperator(
 			errors_.push_back( ReportExpectedVariableAsArgument( arg_expression->GetFilePos(), expr_value.GetType().ToString() ) );
 			return ErrorValue();
 		}
+
+		// Lock references. This needs, because reference can be damaged in process of calculation of next arguments.
+		// SPRACHE_TODO - make early conversions of references for cases, where signature of function is known.
+		acutal_args_locks.push_back( LockReferencedVariables( *expr ) );
 
 		actual_args.emplace_back();
 		actual_args.back().type= expr->type;
@@ -1300,6 +1376,7 @@ Value CodeBuilder::BuildCallOperator(
 	}
 
 	std::vector<llvm::Value*> llvm_args;
+	std::unordered_map<StoredVariablePtr, VaraibleReferencesCounter> locked_variable_conters;
 
 	llvm::Value* s_ret_value= nullptr;
 	if( function.return_value_is_sret )
@@ -1344,6 +1421,11 @@ Value CodeBuilder::BuildCallOperator(
 				}
 
 				llvm_args.push_back(expr.llvm_value);
+
+				// Convert reference locks.
+				for( const StoredVariablePtr& referenced_variable : expr.referenced_variables )
+					++locked_variable_conters[referenced_variable].mut;
+				acutal_args_locks[i].clear();
 			}
 			else
 			{
@@ -1362,9 +1444,21 @@ Value CodeBuilder::BuildCallOperator(
 					}
 					else
 						llvm_args.push_back( expr.llvm_value );
+
+					// Convert reference locks.
+					for( const StoredVariablePtr& referenced_variable : expr.referenced_variables )
+						++locked_variable_conters[referenced_variable].mut;
+					acutal_args_locks[i].clear();
 				}
 				else
+				{
 					llvm_args.push_back( expr.llvm_value );
+
+					// Convert reference locks.
+					for( const StoredVariablePtr& referenced_variable : expr.referenced_variables )
+						++locked_variable_conters[referenced_variable].imut;
+					acutal_args_locks[i].clear();
+				}
 			}
 		}
 		else
@@ -1389,6 +1483,7 @@ Value CodeBuilder::BuildCallOperator(
 					// Create copy of class value. Call copy constructor.
 					llvm::Value* const arg_copy= function_context.alloca_ir_builder.CreateAlloca( arg.type.GetLLVMType() );
 
+					acutal_args_locks[i].clear(); // We must clear locks before constructor call, because we transfer ownership of reference.
 					TryCallCopyConstructor( call_operator.file_pos_, arg_copy, expr.llvm_value, class_type, function_context );
 					llvm_args.push_back( arg_copy );
 				}
@@ -1398,6 +1493,32 @@ Value CodeBuilder::BuildCallOperator(
 			else
 				U_ASSERT( false );
 		}
+
+		// Clear initial locks, because we use separate locks for final checks.
+		acutal_args_locks[i].clear();
+	}
+
+	// Check references.
+	for( const auto& pair : locked_variable_conters )
+	{
+		// Check references, passed into function.
+		const VaraibleReferencesCounter& counter= pair.second;
+		if( counter.mut == 1u && counter.imut == 0u )
+		{} // All ok - one mutable reference.
+		else if( counter. mut == 0u )
+		{} // All ok - 0-infinity immutable references.
+		else
+			errors_.push_back( ReportReferenceProtectionError( call_operator.file_pos_ ) );
+
+		// Check interaction between references, passed into function and references on stack.
+		const StoredVariable& var= *pair.first;
+		if( counter.mut > 0 && var.imut_use_counter.use_count() > 1u )
+		{
+			// Pass mutable reference into function, while there are immutable references on stack.
+			errors_.push_back( ReportReferenceProtectionError( call_operator.file_pos_ ) );
+		}
+		if( counter.mut == 1u && var.mut_use_counter.use_count() == 2u )
+		{} // Ok - we take one mutable reference from stack and pass it into function.
 	}
 
 	if( function_result_have_template_dependent_type )
@@ -1443,10 +1564,21 @@ Value CodeBuilder::BuildCallOperator(
 		result.location= function.return_value_is_sret ? Variable::Location::Pointer : Variable::Location::LLVMRegister;
 		result.value_type= ValueType::Value;
 
-		function_context.destructibles_stack.back().RegisterVariable( result );
+		const StoredVariablePtr stored_result= std::make_shared<StoredVariable>( result );
+		result.referenced_variables.emplace( stored_result );
+
+		function_context.stack_variables_stack.back()->RegisterVariable( stored_result );
 	}
 	result.type= function_type.return_type;
 	result.llvm_value= call_result;
+
+	// Prepare reference result.
+	if( function_type.return_value_is_reference )
+	{
+		// SPRACHE_TODO - process function lifetimes. Now - just combine all input function references.
+		for( const auto& pair : locked_variable_conters )
+			result.referenced_variables.emplace(pair.first);
+	}
 
 	return Value( result, call_operator.file_pos_ );
 }
@@ -1463,9 +1595,12 @@ Variable CodeBuilder::BuildTempVariableConstruction(
 	variable.value_type= ValueType::Reference;
 	variable.llvm_value= function_context.alloca_ir_builder.CreateAlloca( type.GetLLVMType() );
 	variable.constexpr_value= ApplyConstructorInitializer( variable, call_operator, names, function_context );
-	variable.value_type= ValueType::Value; // Make value efter construction
+	variable.value_type= ValueType::Value; // Make value after construction
 
-	function_context.destructibles_stack.back().RegisterVariable( variable );
+	const StoredVariablePtr stored_variable= std::make_shared<StoredVariable>( variable );
+	variable.referenced_variables.emplace( stored_variable );
+
+	function_context.stack_variables_stack.back()->RegisterVariable( stored_variable );
 
 	return variable;
 }
@@ -1523,6 +1658,10 @@ Value CodeBuilder::BuildUnaryMinus(
 			result.llvm_value= function_context.llvm_ir_builder.CreateNeg( value_for_neg );
 	}
 
+	const StoredVariablePtr stored_result= std::make_shared<StoredVariable>( result );
+	result.referenced_variables.emplace( stored_result );
+	function_context.stack_variables_stack.back()->RegisterVariable( stored_result );
+
 	return Value( result, unary_minus.file_pos_ );
 }
 
@@ -1561,6 +1700,10 @@ Value CodeBuilder::BuildLogicalNot(
 		llvm::Value* const value_in_register= CreateMoveToLLVMRegisterInstruction( variable, function_context );
 		result.llvm_value= function_context.llvm_ir_builder.CreateNot( value_in_register );
 	}
+
+	const StoredVariablePtr stored_result= std::make_shared<StoredVariable>( result );
+	result.referenced_variables.emplace( stored_result );
+	function_context.stack_variables_stack.back()->RegisterVariable( stored_result );
 
 	return Value( result, logical_not.file_pos_ );
 }
@@ -1607,6 +1750,10 @@ Value CodeBuilder::BuildBitwiseNot(
 		llvm::Value* const value_in_register= CreateMoveToLLVMRegisterInstruction( variable, function_context );
 		result.llvm_value= function_context.llvm_ir_builder.CreateNot( value_in_register );
 	}
+
+	const StoredVariablePtr stored_result= std::make_shared<StoredVariable>( result );
+	result.referenced_variables.emplace( stored_result );
+	function_context.stack_variables_stack.back()->RegisterVariable( stored_result );
 
 	return Value( result, bitwise_not.file_pos_ );
 }

@@ -2,6 +2,7 @@
 #include <map>
 #include <memory>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 #include <boost/optional.hpp>
@@ -69,6 +70,7 @@ enum class NontypeStub
 	TemplateDependentValue,
 	YetNotDeducedTemplateArg,
 	ErrorValue,
+	VariableStorage,
 };
 
 bool operator==( const FundamentalType& r, const FundamentalType& l );
@@ -194,6 +196,10 @@ struct FunctionVariable final
 // Set of functions with same name, but different signature.
 typedef std::vector<FunctionVariable> OverloadedFunctionsSet;
 
+struct StoredVariable;
+typedef std::shared_ptr<StoredVariable> StoredVariablePtr;
+typedef std::shared_ptr<void> VariableStorageUseCounter;
+
 enum class ValueType
 {
 	Value,
@@ -217,6 +223,28 @@ struct Variable final
 	// Exists only for constant expressions of fundamental types.
 	// Undef, if value is template-dependent.
 	llvm::Constant* constexpr_value= nullptr;
+
+	std::unordered_set<StoredVariablePtr> referenced_variables;
+};
+
+struct StoredVariable
+{
+	const Variable content;
+	const VariableStorageUseCounter  mut_use_counter= std::make_shared<int>();
+	const VariableStorageUseCounter imut_use_counter= std::make_shared<int>();
+
+	const bool is_reference;
+	std::vector<VariableStorageUseCounter> locked_referenced_variables; // For references
+
+	StoredVariable( Variable in_content, bool in_is_reference= false )
+		: content(std::move(in_content)), is_reference(in_is_reference)
+	{}
+};
+
+struct VaraibleReferencesCounter
+{
+	unsigned int  mut= 0u;
+	unsigned int imut= 0u;
 };
 
 struct ClassField final
@@ -247,6 +275,7 @@ class Value final
 public:
 	Value();
 	Value( Variable variable, const FilePos& file_pos );
+	Value( StoredVariablePtr stored_variable, const FilePos& file_pos  );
 	Value( FunctionVariable function_variable );
 	Value( OverloadedFunctionsSet functions_set );
 	Value( Type type, const FilePos& file_pos );
@@ -268,6 +297,8 @@ public:
 	// Fundamental, class, array types
 	Variable* GetVariable();
 	const Variable* GetVariable() const;
+	// Stored variable
+	StoredVariablePtr GetStoredVariable() const;
 	// Function types
 	FunctionVariable* GetFunctionVariable();
 	const FunctionVariable* GetFunctionVariable() const;
@@ -299,6 +330,7 @@ public:
 private:
 	boost::variant<
 		Variable,
+		StoredVariablePtr,
 		FunctionVariable,
 		OverloadedFunctionsSet,
 		Type,

@@ -1487,6 +1487,7 @@ BlockPtr SyntaxAnalyzer::ParseBlock()
 	U_ASSERT( it_ < it_end_ );
 
 	const FilePos& block_pos= it_->file_pos;
+	FilePos block_end_file_pos= block_pos;
 
 	++it_;
 
@@ -1624,7 +1625,10 @@ BlockPtr SyntaxAnalyzer::ParseBlock()
 	}
 
 	if( it_->type == Lexem::Type::BraceRight )
+	{
+		block_end_file_pos= it_->file_pos;
 		++it_;
+	}
 	else
 	{
 		PushErrorMessage( *it_ );
@@ -1634,6 +1638,7 @@ BlockPtr SyntaxAnalyzer::ParseBlock()
 	return BlockPtr(
 		new Block(
 			block_pos,
+			block_end_file_pos,
 			std::move( elements ) ) );
 }
 

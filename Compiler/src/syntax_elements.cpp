@@ -169,8 +169,9 @@ const FilePos& IBlockElement::GetFilePos() const
 	return base->file_pos_;
 }
 
-Block::Block( const FilePos& file_pos, BlockElements elements )
-	: SyntaxElementBase(file_pos)
+Block::Block( const FilePos& start_file_pos, const FilePos& end_file_pos, BlockElements elements )
+	: SyntaxElementBase(start_file_pos)
+	, end_file_pos_(end_file_pos)
 	, elements_( std::move( elements ) )
 {}
 

@@ -39,12 +39,12 @@ U_TEST(SimpleProgramTest)
 U_TEST(ArgumentsAssignmentTest)
 {
 	static const char c_program_text[]=
-	"\
-	fn Foo( i32 a ) : i32\
-	{\
-		a= a * a;\
-		return a;\
-	}"
+	R"(
+	fn Foo( i32 a ) : i32
+	{
+		a= a * a;
+		return a;
+	})"
 	;
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
@@ -1338,8 +1338,10 @@ U_TEST(ReferencesTest0)
 	fn Foo() : i32
 	{
 		var i32 x= 0;
-		var i32 &x_ref= x;
-		x_ref= 42;
+		{
+			var i32 &x_ref= x;
+			x_ref= 42;
+		}
 		return x;
 	}
 	)";
@@ -1391,10 +1393,15 @@ U_TEST(ReferencesTest2)
 	fn Foo( i32 a, i32 b ) : i32
 	{
 		var [ i32, 4 ] arr= zero_init;
-		var [ i32, 4 ] &arr_ref= arr;
-		arr_ref[0u]= a;
-		arr_ref[1u]= b;
-		arr_ref[2u]= arr_ref[0u] * arr_ref[1u];
+		{
+			var [ i32, 4 ] &arr_ref= arr;
+			arr_ref[0u]= a;
+			arr_ref[1u]= b;
+		}
+		{
+			var [ i32, 4 ] &arr_ref= arr;
+			arr_ref[2u]= arr_ref[0u] * arr_ref[1u];
+		}
 		return arr[2u];
 	}
 	)";

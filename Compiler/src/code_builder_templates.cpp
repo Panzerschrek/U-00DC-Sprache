@@ -828,6 +828,11 @@ void CodeBuilder::RemoveTempClassLLVMValues( Class& class_ )
 				U_UNUSED(variable);
 				// TODO - maybe we can delete global variable without breaking llvm code structure?
 			}
+			else if( const StoredVariablePtr stored_variable= name.second.GetStoredVariable() )
+			{
+				U_UNUSED(stored_variable);
+				// TODO - maybe we can delete global variable without breaking llvm code structure?
+			}
 			else
 				U_ASSERT(false);
 		} );
@@ -880,6 +885,8 @@ void CodeBuilder::ReportAboutIncompleteMembersOfTemplateClass( const FilePos& fi
 					});
 			}
 			else if( name.second.GetVariable() != nullptr )
+			{}
+			else if( name.second.GetStoredVariable() != nullptr )
 			{}
 			else
 				U_ASSERT(false);
