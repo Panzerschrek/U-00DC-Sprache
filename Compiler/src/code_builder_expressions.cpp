@@ -64,6 +64,14 @@ Value CodeBuilder::BuildExpressionCode(
 					names,
 					function_context );
 
+			// Lock l_var variables before evaluating of r_var.
+			std::vector<VariableStorageUseCounter> l_var_locks;
+			if( const Variable* const l_var= l_var_value.GetVariable() )
+			{
+				for( const StoredVariablePtr& stored_variable : l_var->referenced_variables )
+					l_var_locks.push_back( l_var->value_type == ValueType::Reference ? stored_variable->mut_use_counter : stored_variable->imut_use_counter );
+			}
+
 			const Value r_var_value=
 				BuildExpressionCode(
 					*binary_operator->right_,
