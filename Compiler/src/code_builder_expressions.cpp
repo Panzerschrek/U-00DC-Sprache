@@ -58,7 +58,7 @@ Value CodeBuilder::BuildExpressionCode(
 		}
 		else
 		{
-			const Value l_var_value=
+			Value l_var_value=
 				BuildExpressionCode(
 					*binary_operator->left_,
 					names,
@@ -66,10 +66,34 @@ Value CodeBuilder::BuildExpressionCode(
 
 			// Lock l_var variables before evaluating of r_var.
 			std::vector<VariableStorageUseCounter> l_var_locks;
-			if( const Variable* const l_var= l_var_value.GetVariable() )
 			{
-				for( const StoredVariablePtr& stored_variable : l_var->referenced_variables )
-					l_var_locks.push_back( l_var->value_type == ValueType::Reference ? stored_variable->mut_use_counter : stored_variable->imut_use_counter );
+				if( const Variable* const l_var= l_var_value.GetVariable() )
+				{
+					for( const StoredVariablePtr& stored_variable : l_var->referenced_variables )
+						l_var_locks.push_back( l_var->value_type == ValueType::Reference ? stored_variable->mut_use_counter : stored_variable->imut_use_counter );
+				}
+			}
+
+			// HACK. Currently, we have no operators overloading.
+			// So, we have only binary operators for fundamental types, that have value-parameters.
+			// So, we can convert referernce to value here. After convertion to value, we does not needs locks of references.
+
+			// TODO - for operators overloading evaluate l_var and r_var two times:
+			// first - for type deduction and fetching overloaded operator,
+			// second - for code generation and reference checking.
+			if( l_var_value.GetType().GetTemplateDependentType() == nullptr )
+			{
+				if( Variable* const l_var= l_var_value.GetVariable() )
+				{
+					if( l_var->location == Variable::Location::Pointer )
+					{
+						l_var->llvm_value= CreateMoveToLLVMRegisterInstruction( *l_var, function_context );
+						l_var->location= Variable::Location::LLVMRegister;
+					}
+					l_var->value_type= ValueType::Value;
+
+					l_var_locks.clear();
+				}
 			}
 
 			const Value r_var_value=
