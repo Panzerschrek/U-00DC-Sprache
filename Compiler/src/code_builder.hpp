@@ -458,6 +458,7 @@ private:
 
 	// Reference-checking.
 	void CheckReferencedVariables( const Variable& reference, const FilePos& file_pos );
+	std::vector<VariableStorageUseCounter> LockReferencedVariables( const Variable& reference );
 
 	// Name resolving.
 

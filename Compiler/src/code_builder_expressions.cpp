@@ -67,10 +67,7 @@ Value CodeBuilder::BuildExpressionCode(
 			std::vector<VariableStorageUseCounter> l_var_locks;
 			{
 				if( const Variable* const l_var= l_var_value.GetVariable() )
-				{
-					for( const StoredVariablePtr& referenced_variable : l_var->referenced_variables )
-						l_var_locks.push_back( l_var->value_type == ValueType::Reference ? referenced_variable->mut_use_counter : referenced_variable->imut_use_counter );
-				}
+					l_var_locks= LockReferencedVariables( *l_var );
 			}
 
 			// HACK. Currently, we have no operators overloading.
@@ -1302,9 +1299,7 @@ Value CodeBuilder::BuildCallOperator(
 	// Push "this" argument.
 	if( this_ != nullptr )
 	{
-		acutal_args_locks.emplace_back();
-		for( const StoredVariablePtr& referenced_variable : this_->referenced_variables )
-			acutal_args_locks.back().push_back( this_->value_type == ValueType::Reference ? referenced_variable->mut_use_counter : referenced_variable->imut_use_counter );
+		acutal_args_locks.push_back( LockReferencedVariables( *this_ ) );
 
 		actual_args.emplace_back();
 		actual_args.back().type= this_->type;
@@ -1337,9 +1332,7 @@ Value CodeBuilder::BuildCallOperator(
 
 		// Lock references. This needs, because reference can be damaged in process of calculation of next arguments.
 		// SPRACHE_TODO - make early conversions of references for cases, where signature of function is known.
-		acutal_args_locks.emplace_back();
-		for( const StoredVariablePtr& referenced_variable : expr->referenced_variables )
-			acutal_args_locks.back().push_back( expr->value_type == ValueType::Reference ? referenced_variable->mut_use_counter : referenced_variable->imut_use_counter );
+		acutal_args_locks.push_back( LockReferencedVariables( *expr ) );
 
 		actual_args.emplace_back();
 		actual_args.back().type= expr->type;

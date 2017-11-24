@@ -2609,11 +2609,7 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 
 		if( stored_variable->is_reference )
 		{
-			for( const StoredVariablePtr& referenced_variable : variable.referenced_variables )
-			{
-				stored_variable->locked_referenced_variables.push_back(
-					variable.value_type == ValueType::ConstReference ? referenced_variable->imut_use_counter : referenced_variable->mut_use_counter );
-			}
+			stored_variable->locked_referenced_variables= LockReferencedVariables( variable );
 			CheckReferencedVariables( variable, variable_declaration.file_pos );
 		}
 
@@ -2800,11 +2796,7 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 
 	if( stored_variable->is_reference )
 	{
-		for( const StoredVariablePtr& referenced_variable : variable.referenced_variables )
-		{
-			stored_variable->locked_referenced_variables.push_back(
-				variable.value_type == ValueType::ConstReference ? referenced_variable->imut_use_counter : referenced_variable->mut_use_counter );
-		}
+		stored_variable->locked_referenced_variables= LockReferencedVariables( variable );
 		CheckReferencedVariables( variable, auto_variable_declaration.file_pos_ );
 	}
 
@@ -2840,10 +2832,7 @@ void CodeBuilder::BuildAssignmentOperatorCode(
 	// Lock r_var variables.
 	std::vector<VariableStorageUseCounter> r_var_locks;
 	if( r_var != nullptr )
-	{
-		for( const StoredVariablePtr& referenced_variable : r_var->referenced_variables )
-			r_var_locks.push_back( r_var->value_type == ValueType::Reference ? referenced_variable->mut_use_counter : referenced_variable->imut_use_counter );
-	}
+		r_var_locks= LockReferencedVariables( *r_var );
 
 	// Evaluate left part.
 	const Value l_var_value= BuildExpressionCode( *assignment_operator.l_value_, block_names, function_context );
@@ -2926,10 +2915,7 @@ void CodeBuilder::BuildAdditiveAssignmentOperatorCode(
 	// Lock r_var variables.
 	std::vector<VariableStorageUseCounter> r_var_locks;
 	if( r_var != nullptr )
-	{
-		for( const StoredVariablePtr& referenced_variable : r_var->referenced_variables )
-			r_var_locks.push_back( r_var->value_type == ValueType::Reference ? referenced_variable->mut_use_counter : referenced_variable->imut_use_counter );
-	}
+		r_var_locks= LockReferencedVariables( *r_var );
 
 	const Value l_var_value=
 		BuildExpressionCode(
@@ -3688,6 +3674,15 @@ void CodeBuilder::CheckReferencedVariables( const Variable& reference, const Fil
 		else
 			errors_.push_back( ReportReferenceProtectionError( file_pos ) );
 	}
+}
+
+std::vector<VariableStorageUseCounter> CodeBuilder::LockReferencedVariables( const Variable& reference )
+{
+	std::vector<VariableStorageUseCounter> locks;
+	for( const StoredVariablePtr& referenced_variable : reference.referenced_variables )
+		locks.push_back( reference.value_type == ValueType::Reference ? referenced_variable->mut_use_counter : referenced_variable->imut_use_counter );
+
+	return locks;
 }
 
 U_FundamentalType CodeBuilder::GetNumericConstantType( const Synt::NumericConstant& number )
