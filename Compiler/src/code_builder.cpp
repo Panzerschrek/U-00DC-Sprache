@@ -1195,9 +1195,7 @@ void CodeBuilder::BuildCopyConstructorPart(
 			llvm_args );
 	}
 	else
-	{
 		U_ASSERT(false);
-	}
 }
 
 void CodeBuilder::TryCallCopyConstructor(
@@ -2578,9 +2576,7 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 			variable.constexpr_value= expression_result.constexpr_value;
 		}
 		else
-		{
 			U_ASSERT(false);
-		}
 
 		if( type.GetTemplateDependentType() == nullptr &&
 			variable_declaration.mutability_modifier == MutabilityModifier::Constexpr &&
@@ -3599,9 +3595,7 @@ const FunctionVariable* CodeBuilder::GetOverloadedFunction(
 					match_type= MatchType::MutToImutReferenceConversion;
 			}
 			else
-			{
 				U_ASSERT(false);
-			}
 		} // for candidate function args.
 
 		const unsigned int function_index= &function - functions_set.data();

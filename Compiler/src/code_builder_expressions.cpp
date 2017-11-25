@@ -153,10 +153,7 @@ Value CodeBuilder::BuildExpressionCode(
 				type_name_in_expression->file_pos_ );
 	}
 	else
-	{
-		// TODO
-		U_ASSERT(false);
-	}
+		U_ASSERT(false); // TODO
 
 	if( const auto expression_with_unary_operators=
 		dynamic_cast<const Synt::ExpressionComponentWithUnaryOperators*>( &expression ) )
@@ -179,9 +176,7 @@ Value CodeBuilder::BuildExpressionCode(
 				result= BuildCallOperator( result, *call_operator, names, function_context );
 			}
 			else
-			{
 				U_ASSERT(false);
-			}
 		} // for unary postfix operators
 
 		for( const Synt::IUnaryPrefixOperatorPtr& prefix_operator : expression_with_unary_operators->prefix_operators_ )
@@ -845,7 +840,7 @@ Value CodeBuilder::BuildLazyBinaryOperator(
 		function_context.llvm_ir_builder.CreateCondBr( l_var_in_register, r_part_block, block_after_operator );
 	else if( binary_operator.operator_type_ == Synt::BinaryOperatorType::LazyLogicalOr )
 		function_context.llvm_ir_builder.CreateCondBr( l_var_in_register, block_after_operator, r_part_block );
-	else{ U_ASSERT(false); }
+	else U_ASSERT(false);
 
 	function_context.function->getBasicBlockList().push_back( r_part_block );
 	function_context.llvm_ir_builder.SetInsertPoint( r_part_block );
@@ -1043,9 +1038,7 @@ Value CodeBuilder::BuildNumericConstant(
 		result.constexpr_value=
 			llvm::ConstantFP::get( llvm_type, static_cast<double>( numeric_constant.value_) );
 	else
-	{
 		U_ASSERT(false);
-	}
 
 	result.llvm_value= result.constexpr_value;
 
