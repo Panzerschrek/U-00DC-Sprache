@@ -2488,15 +2488,8 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 			llvm::GlobalVariable* global_variable= nullptr;
 			if( global && type.GetTemplateDependentType() == nullptr )
 			{
-				variable.llvm_value=
-				global_variable=
-					new llvm::GlobalVariable(
-						*module_,
-						type.GetLLVMType(),
-						true,
-						llvm::GlobalValue::LinkageTypes::LinkOnceODRLinkage,
-						nullptr,
-						MangleGlobalVariable( block_names, variable_declaration.name ) );
+				variable.llvm_value= global_variable=
+					CreateGlobalConstantVariable( type, MangleGlobalVariable( block_names, variable_declaration.name ) );
 			}
 			else
 			{
@@ -2738,15 +2731,8 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 		llvm::GlobalVariable* global_variable= nullptr;
 		if( global && variable.type.GetTemplateDependentType() == nullptr )
 		{
-			variable.llvm_value=
-			global_variable=
-				new llvm::GlobalVariable(
-					*module_,
-					variable.type.GetLLVMType(),
-					true,
-					llvm::GlobalValue::LinkageTypes::LinkOnceODRLinkage,
-					nullptr,
-					MangleGlobalVariable( block_names, auto_variable_declaration.name ) );
+			variable.llvm_value= global_variable=
+				CreateGlobalConstantVariable( variable.type, MangleGlobalVariable( block_names, auto_variable_declaration.name ) );
 		}
 		else
 		{
@@ -3778,6 +3764,28 @@ llvm::Value*CodeBuilder::CreateMoveToLLVMRegisterInstruction(
 
 	U_ASSERT(false);
 	return nullptr;
+}
+
+llvm::GlobalVariable* CodeBuilder::CreateGlobalConstantVariable(
+	const Type& type,
+	const std::string& mangled_name,
+	llvm::Constant* const initializer )
+{
+	llvm::GlobalVariable* const val=
+		new llvm::GlobalVariable(
+			*module_,
+			type.GetLLVMType(),
+			true, // is constant
+			llvm::GlobalValue::LinkageTypes::LinkOnceODRLinkage,
+			nullptr,
+			mangled_name );
+
+	if( initializer != nullptr )
+		val->setInitializer( initializer );
+
+	val->setUnnamedAddr( true );
+
+	return val;
 }
 
 void CodeBuilder::SetupGeneratedFunctionLinkageAttributes( llvm::Function& function )

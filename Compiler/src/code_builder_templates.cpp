@@ -144,13 +144,7 @@ void CodeBuilder::PrepareTypeTemplate(
 			{
 				variable.constexpr_value= llvm::UndefValue::get( type->GetLLVMType() );
 				variable.llvm_value=
-					new llvm::GlobalVariable(
-						*module_,
-						type->GetLLVMType(),
-						true,
-						llvm::GlobalValue::LinkageTypes::InternalLinkage,
-						variable.constexpr_value,
-						ToStdString( arg_name ) );
+					CreateGlobalConstantVariable( *type, ToStdString( arg_name ), variable.constexpr_value );
 			}
 
 			inserted_template_parameter=
@@ -421,16 +415,11 @@ bool CodeBuilder::DuduceTemplateArguments(
 		variable_for_insertion.type= variable->type;
 		variable_for_insertion.location= Variable::Location::Pointer;
 		variable_for_insertion.value_type= ValueType::ConstReference;
-		llvm::GlobalValue* const global_value=
-			new llvm::GlobalVariable(
-				*module_,
-				variable->type.GetLLVMType(),
-				true,
-				llvm::GlobalValue::LinkageTypes::InternalLinkage,
-				variable->constexpr_value,
-				ToStdString( type_template.template_parameters[ dependend_arg_index ].name ) );
-		global_value->setUnnamedAddr(true); // We do not require unique address.
-		variable_for_insertion.llvm_value= global_value;
+		variable_for_insertion.llvm_value=
+			CreateGlobalConstantVariable(
+				variable->type,
+				ToStdString( type_template.template_parameters[ dependend_arg_index ].name ),
+				variable->constexpr_value );
 		variable_for_insertion.constexpr_value= variable->constexpr_value;
 
 		if( boost::get<int>( &deducible_template_parameters[ dependend_arg_index ] ) != nullptr )
