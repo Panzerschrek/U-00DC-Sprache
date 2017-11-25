@@ -1505,20 +1505,27 @@ Value CodeBuilder::BuildCallOperator(
 		const VaraibleReferencesCounter& counter= pair.second;
 		if( counter.mut == 1u && counter.imut == 0u )
 		{} // All ok - one mutable reference.
-		else if( counter. mut == 0u )
+		else if( counter.mut == 0u )
 		{} // All ok - 0-infinity immutable references.
 		else
+		{
 			errors_.push_back( ReportReferenceProtectionError( call_operator.file_pos_ ) );
+			continue;
+		}
 
 		// Check interaction between references, passed into function and references on stack.
 		const StoredVariable& var= *pair.first;
-		if( counter.mut > 0 && var.imut_use_counter.use_count() > 1u )
+		if( counter.mut == 1u &&
+			( var.imut_use_counter.use_count() > 1u || var.mut_use_counter.use_count() > 2u ) )
 		{
-			// Pass mutable reference into function, while there are immutable references on stack.
+			// Pass mutable reference into function, while there are references on stack or somewhere else.
+			// We can have one mutable reference on stack, but no more.
 			errors_.push_back( ReportReferenceProtectionError( call_operator.file_pos_ ) );
 		}
 		if( counter.mut == 1u && var.mut_use_counter.use_count() == 2u )
 		{} // Ok - we take one mutable reference from stack and pass it into function.
+		if( counter.mut == 0u && var.imut_use_counter.use_count() > 1u )
+		{} // Ok - pass immutable references into function, while mutable references on stack exists.
 	}
 
 	if( function_result_have_template_dependent_type )
