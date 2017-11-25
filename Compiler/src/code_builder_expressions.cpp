@@ -308,7 +308,7 @@ Value CodeBuilder::BuildBinaryOperator(
 						result.constexpr_value= llvm::ConstantExpr::getSub( l_var.constexpr_value, r_var.constexpr_value );
 					else
 						result_value=
-						function_context.llvm_ir_builder.CreateSub( l_value_for_op, r_value_for_op );
+							function_context.llvm_ir_builder.CreateSub( l_value_for_op, r_value_for_op );
 				}
 				break;
 

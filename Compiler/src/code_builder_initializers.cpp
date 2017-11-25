@@ -71,10 +71,9 @@ void CodeBuilder::ApplyEmptyInitializer(
 		return;
 	}
 
-	if( const FundamentalType* const fundamental_type= variable.type.GetFundamentalType() )
+	if( variable.type.GetFundamentalType() != nullptr )
 	{
 		// Fundamentals is not default-constructible, we should generate error about it before.
-		U_UNUSED( fundamental_type );
 		U_ASSERT( false );
 	}
 	else if( const Array* const array_type= variable.type.GetArrayType() )
@@ -530,12 +529,6 @@ llvm::Constant* CodeBuilder::ApplyZeroInitializer(
 		switch( fundamental_type->fundamental_type )
 		{
 		case U_FundamentalType::Bool:
-			zero_value=
-				llvm::Constant::getIntegerValue(
-					fundamental_llvm_types_.bool_,
-					llvm::APInt( 1u, uint64_t(0) ) );
-			break;
-
 		case U_FundamentalType::i8:
 		case U_FundamentalType::u8:
 		case U_FundamentalType::i16:
@@ -544,24 +537,16 @@ llvm::Constant* CodeBuilder::ApplyZeroInitializer(
 		case U_FundamentalType::u32:
 		case U_FundamentalType::i64:
 		case U_FundamentalType::u64:
-			zero_value=
-				llvm::Constant::getIntegerValue(
-					GetFundamentalLLVMType( fundamental_type->fundamental_type ),
-					llvm::APInt( variable.type.SizeOf() * 8u, uint64_t(0) ) );
-			break;
-
-		case U_FundamentalType::f32:
-			zero_value= llvm::ConstantFP::get( fundamental_llvm_types_.f32, 0.0 );
-			break;
-		case U_FundamentalType::f64:
-			zero_value= llvm::ConstantFP::get( fundamental_llvm_types_.f64, 0.0 );
-			break;
-
 		case U_FundamentalType::InvalidType:
 			zero_value=
 				llvm::Constant::getIntegerValue(
 					GetFundamentalLLVMType( fundamental_type->fundamental_type ),
-					llvm::APInt( fundamental_llvm_types_.invalid_type_->getIntegerBitWidth(), uint64_t(0) ) );
+					llvm::APInt( variable.type.GetLLVMType()->getIntegerBitWidth(), uint64_t(0) ) );
+			break;
+
+		case U_FundamentalType::f32:
+		case U_FundamentalType::f64:
+			zero_value= llvm::ConstantFP::get( variable.type.GetLLVMType(), 0.0 );
 			break;
 
 		case U_FundamentalType::Void:

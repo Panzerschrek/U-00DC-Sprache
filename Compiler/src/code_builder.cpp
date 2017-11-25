@@ -121,15 +121,6 @@ ICodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_g
 			ToStdString( source_graph.nodes_storage[ source_graph.root_node_index ].file_path ),
 			llvm_context_ ) );
 
-	// In some places outside functions we need to execute expression evaluation.
-	// Create for this dummy function context.
-	llvm::Function* const dummy_function=
-		llvm::Function::Create(
-			llvm::FunctionType::get( fundamental_llvm_types_.void_, false ),
-			llvm::Function::LinkageTypes::LinkOnceODRLinkage,
-			"",
-			module_.get() );
-
 	// Prepare halt func.
 	{
 		llvm::FunctionType* void_function_type= llvm::FunctionType::get( fundamental_llvm_types_.void_, false );
@@ -138,6 +129,15 @@ ICodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_g
 		halt_func_->setDoesNotThrow();
 		halt_func_->setUnnamedAddr( true );
 	}
+
+	// In some places outside functions we need to execute expression evaluation.
+	// Create for this dummy function context.
+	llvm::Function* const dummy_function=
+		llvm::Function::Create(
+			llvm::FunctionType::get( fundamental_llvm_types_.void_, false ),
+			llvm::Function::LinkageTypes::LinkOnceODRLinkage,
+			"",
+			module_.get() );
 
 	FunctionContext dummy_function_context(
 		void_type_,
@@ -560,9 +560,6 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 		return the_class_proxy;
 	}
 
-	Class* the_class= nullptr;
-	ClassProxyPtr the_class_proxy;
-
 	const NamesScope::InsertedName* previous_declaration= nullptr;
 	if( class_complex_name.components.size() == 1u )
 	{
@@ -580,6 +577,8 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 		}
 	}
 
+	Class* the_class= nullptr;
+	ClassProxyPtr the_class_proxy;
 	if( previous_declaration == nullptr )
 	{
 		the_class_proxy= std::make_shared<ClassProxy>( new Class( class_name, &names_scope ) );
@@ -617,13 +616,8 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 				the_class_proxy= previous_class;
 				the_class= previous_class->class_.get();
 			}
-			else
-			{
-				errors_.push_back( ReportRedefinition( class_declaration.file_pos_, class_name ) );
-				return nullptr;
-			}
 		}
-		else
+		if( the_class == nullptr )
 		{
 			errors_.push_back( ReportRedefinition( class_declaration.file_pos_, class_name ) );
 			return nullptr;
@@ -710,8 +704,7 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 		else if( const auto typedef_template=
 			dynamic_cast<const Synt::TypedefTemplate*>( member.get() ) )
 		{
-			U_UNUSED( typedef_template );
-			// TODO
+			PrepareTypeTemplate( *typedef_template, the_class->members );
 		}
 		else
 			U_ASSERT( false );
@@ -1370,9 +1363,7 @@ void CodeBuilder::CallDestructor(
 			function_context );
 	}
 	else
-	{
 		U_ASSERT( false && "WTF? strange type for variable" );
-	}
 }
 
 void CodeBuilder::CallDestructorsForLoopInnerVariables( FunctionContext& function_context, const FilePos& file_pos )
@@ -1412,9 +1403,7 @@ void CodeBuilder::CallMembersDestructors( FunctionContext& function_context )
 		[&]( const NamesScope::InsertedName& member )
 		{
 			const ClassField* const field= member.second.GetClassField();
-			if( field == nullptr )
-				return;
-			if( !field->type.HaveDestructor() )
+			if( field == nullptr || !field->type.HaveDestructor() )
 				return;
 
 			llvm::Value* index_list[2];
@@ -1459,7 +1448,6 @@ void CodeBuilder::BuildNamespaceBody(
 			}
 			else
 			{
-
 				// There are no templates abowe namespace. Namespaces inside classes does not exists.
 				U_ASSERT( !NameShadowsTemplateArgument( namespace_->name_, names_scope ) );
 
@@ -1547,9 +1535,7 @@ CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 
 			if( base_space_is_class ) {}
 			else if( const NamesScopePtr namespace_= scope_name->second.GetNamespace() )
-			{
 				func_base_names_scope= namespace_.get();
-			}
 			else
 			{
 				errors_.push_back( ReportNameNotFound( func.file_pos_, func.name_ ) );
@@ -1820,7 +1806,7 @@ void CodeBuilder::BuildFuncCode(
 			func_variable.return_value_is_sret= true;
 		}
 		else
-		{ U_ASSERT( false ); }
+			U_ASSERT( false );
 	}
 
 	for( const Function::Arg& arg : function_type->args )
@@ -1840,7 +1826,7 @@ void CodeBuilder::BuildFuncCode(
 				type= llvm::PointerType::get( type, 0u );
 			}
 			else
-			{ U_ASSERT( false ); }
+				U_ASSERT( false );
 		}
 		args_llvm_types.push_back( type );
 	}
@@ -2087,19 +2073,16 @@ void CodeBuilder::BuildFuncCode(
 	if( is_destructor )
 		function_context.destructor_end_block= llvm::BasicBlock::Create( llvm_context_ );
 
-	const BlockBuildInfo block_build_info=
-		BuildBlockCode( *block, function_names, function_context );
-
+	const BlockBuildInfo block_build_info= BuildBlockCode( *block, function_names, function_context );
 	U_ASSERT( function_context.stack_variables_stack.size() == 1u );
 
 	// We need call destructors for arguments only if function returns "void".
 	// In other case, we have "return" in all branches and destructors call before each "return".
-
-	if(  function_type->return_type == void_type_ )
+	if( !block_build_info.have_unconditional_return_inside )
 	{
-		// Manually generate "return" for void-return functions.
-		if( !block_build_info.have_unconditional_return_inside )
+		if( function_type->return_type == void_type_ )
 		{
+			// Manually generate "return" for void-return functions.
 			CallDestructors( *function_context.stack_variables_stack.back(), function_context, block->end_file_pos_ );
 
 			if( function_context.destructor_end_block == nullptr )
@@ -2110,17 +2093,14 @@ void CodeBuilder::BuildFuncCode(
 				function_context.llvm_ir_builder.CreateBr( function_context.destructor_end_block );
 			}
 		}
-	}
-	else
-	{
-		if( !block_build_info.have_unconditional_return_inside )
+		else
 		{
 			errors_.push_back( ReportNoReturnInFunctionReturningNonVoid( block->file_pos_ ) );
 			return;
 		}
 	}
 
-	llvm::Function::BasicBlockListType& bb_list = llvm_function->getBasicBlockList();
+	llvm::Function::BasicBlockListType& bb_list= llvm_function->getBasicBlockList();
 
 	function_context.alloca_ir_builder.CreateBr( function_context.function_basic_block );
 
@@ -2617,10 +2597,7 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 		const NamesScope::InsertedName* const inserted_name=
 			block_names.AddName( variable_declaration.name, Value( std::move(stored_variable), variable_declaration.file_pos ) );
 		if( !inserted_name )
-		{
 			errors_.push_back( ReportRedefinition( variables_declaration.file_pos_, variable_declaration.name ) );
-			continue;
-		}
 
 		// After lock of references we can call destructors.
 		CallDestructors( *function_context.stack_variables_stack.back(), function_context, variable_declaration.file_pos );
@@ -2794,14 +2771,10 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 		CheckReferencedVariables( variable, auto_variable_declaration.file_pos_ );
 	}
 
-	const NamesScope::InsertedName* inserted_name=
+	const NamesScope::InsertedName* const inserted_name=
 		block_names.AddName( auto_variable_declaration.name, Value( stored_variable, auto_variable_declaration.file_pos_ ) );
-
 	if( inserted_name == nullptr )
-	{
 		errors_.push_back( ReportRedefinition( auto_variable_declaration.file_pos_, auto_variable_declaration.name ) );
-		return;
-	}
 
 	// After lock of references we can call destructors.
 	CallDestructors( *function_context.stack_variables_stack.back(), function_context, auto_variable_declaration.file_pos_ );
@@ -3118,9 +3091,7 @@ void CodeBuilder::BuildReturnOperatorCode(
 		}
 
 		// Lock references to return value variables.
-		std::vector<VariableStorageUseCounter> return_value_locks;
-		for( const StoredVariablePtr& var : expression_result.referenced_variables )
-			return_value_locks.push_back( function_context.return_value_is_mutable ? var->mut_use_counter : var->imut_use_counter );
+		std::vector<VariableStorageUseCounter> return_value_locks= LockReferencedVariables( expression_result );
 
 		CallDestructorsBeforeReturn( function_context, return_operator.file_pos_ );
 		return_value_locks.clear(); // Reset locks AFTER destructors call. We must get error in case of returning of reference to stack variable or value-argument.
@@ -3144,10 +3115,10 @@ void CodeBuilder::BuildReturnOperatorCode(
 			// Now we can return by value only fundamentals.
 			U_ASSERT( expression_result.type.GetFundamentalType() != nullptr );
 
+			// We must read return value before call of destructors.
 			llvm::Value* const value_for_return= CreateMoveToLLVMRegisterInstruction( expression_result, function_context );
 
 			CallDestructorsBeforeReturn( function_context, return_operator.file_pos_ );
-
 			function_context.llvm_ir_builder.CreateRet( value_for_return );
 		}
 	}
