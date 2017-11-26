@@ -279,17 +279,14 @@ Value CodeBuilder::BuildBinaryOperator(
 					if( arguments_are_constexpr )
 						result.constexpr_value= llvm::ConstantExpr::getFAdd( l_var.constexpr_value, r_var.constexpr_value );
 					else
-						result_value=
-							function_context.llvm_ir_builder.CreateFAdd( l_value_for_op, r_value_for_op );
-
+						result_value= function_context.llvm_ir_builder.CreateFAdd( l_value_for_op, r_value_for_op );
 				}
 				else
 				{
 					if( arguments_are_constexpr )
 						result.constexpr_value= llvm::ConstantExpr::getAdd( l_var.constexpr_value, r_var.constexpr_value );
 					else
-						result_value=
-							function_context.llvm_ir_builder.CreateAdd( l_value_for_op, r_value_for_op );
+						result_value= function_context.llvm_ir_builder.CreateAdd( l_value_for_op, r_value_for_op );
 				}
 				break;
 
@@ -299,16 +296,14 @@ Value CodeBuilder::BuildBinaryOperator(
 					if( arguments_are_constexpr )
 						result.constexpr_value= llvm::ConstantExpr::getFSub( l_var.constexpr_value, r_var.constexpr_value );
 					else
-						result_value=
-							function_context.llvm_ir_builder.CreateFSub( l_value_for_op, r_value_for_op );
+						result_value= function_context.llvm_ir_builder.CreateFSub( l_value_for_op, r_value_for_op );
 				}
 				else
 				{
 					if( arguments_are_constexpr )
 						result.constexpr_value= llvm::ConstantExpr::getSub( l_var.constexpr_value, r_var.constexpr_value );
 					else
-						result_value=
-							function_context.llvm_ir_builder.CreateSub( l_value_for_op, r_value_for_op );
+						result_value= function_context.llvm_ir_builder.CreateSub( l_value_for_op, r_value_for_op );
 				}
 				break;
 
@@ -318,24 +313,21 @@ Value CodeBuilder::BuildBinaryOperator(
 					if( arguments_are_constexpr )
 						result.constexpr_value= llvm::ConstantExpr::getFDiv( l_var.constexpr_value, r_var.constexpr_value );
 					else
-						result_value=
-							function_context.llvm_ir_builder.CreateFDiv( l_value_for_op, r_value_for_op );
+						result_value= function_context.llvm_ir_builder.CreateFDiv( l_value_for_op, r_value_for_op );
 				}
 				else if( is_signed )
 				{
 					if( arguments_are_constexpr )
 						result.constexpr_value= llvm::ConstantExpr::getSDiv( l_var.constexpr_value, r_var.constexpr_value );
 					else
-						result_value=
-							function_context.llvm_ir_builder.CreateSDiv( l_value_for_op, r_value_for_op );
+						result_value= function_context.llvm_ir_builder.CreateSDiv( l_value_for_op, r_value_for_op );
 				}
 				else
 				{
 					if( arguments_are_constexpr )
 						result.constexpr_value= llvm::ConstantExpr::getUDiv( l_var.constexpr_value, r_var.constexpr_value );
 					else
-						result_value=
-							function_context.llvm_ir_builder.CreateUDiv( l_value_for_op, r_value_for_op );
+						result_value= function_context.llvm_ir_builder.CreateUDiv( l_value_for_op, r_value_for_op );
 				}
 				break;
 
@@ -345,16 +337,14 @@ Value CodeBuilder::BuildBinaryOperator(
 					if( arguments_are_constexpr )
 						result.constexpr_value= llvm::ConstantExpr::getFMul( l_var.constexpr_value, r_var.constexpr_value );
 					else
-						result_value=
-							function_context.llvm_ir_builder.CreateFMul( l_value_for_op, r_value_for_op );
+						result_value= function_context.llvm_ir_builder.CreateFMul( l_value_for_op, r_value_for_op );
 				}
 				else
 				{
 					if( arguments_are_constexpr )
 						result.constexpr_value= llvm::ConstantExpr::getMul( l_var.constexpr_value, r_var.constexpr_value );
 					else
-						result_value=
-							function_context.llvm_ir_builder.CreateMul( l_value_for_op, r_value_for_op );
+						result_value= function_context.llvm_ir_builder.CreateMul( l_value_for_op, r_value_for_op );
 				}
 				break;
 
@@ -364,24 +354,21 @@ Value CodeBuilder::BuildBinaryOperator(
 					if( arguments_are_constexpr )
 						result.constexpr_value= llvm::ConstantExpr::getFRem( l_var.constexpr_value, r_var.constexpr_value );
 					else
-						result_value=
-							function_context.llvm_ir_builder.CreateFRem( l_value_for_op, r_value_for_op );
+						result_value= function_context.llvm_ir_builder.CreateFRem( l_value_for_op, r_value_for_op );
 				}
 				else if( is_signed )
 				{
 					if( arguments_are_constexpr )
 						result.constexpr_value= llvm::ConstantExpr::getSRem( l_var.constexpr_value, r_var.constexpr_value );
 					else
-						result_value=
-							function_context.llvm_ir_builder.CreateSRem( l_value_for_op, r_value_for_op );
+						result_value= function_context.llvm_ir_builder.CreateSRem( l_value_for_op, r_value_for_op );
 				}
 				else
 				{
 					if( arguments_are_constexpr )
 						result.constexpr_value= llvm::ConstantExpr::getURem( l_var.constexpr_value, r_var.constexpr_value );
 					else
-						result_value=
-							function_context.llvm_ir_builder.CreateURem( l_value_for_op, r_value_for_op );
+						result_value= function_context.llvm_ir_builder.CreateURem( l_value_for_op, r_value_for_op );
 				}
 				break;
 
@@ -666,24 +653,21 @@ Value CodeBuilder::BuildBinaryOperator(
 				if( arguments_are_constexpr )
 					result.constexpr_value= llvm::ConstantExpr::getAnd( l_var.constexpr_value, r_var.constexpr_value );
 				else
-					result_value=
-						function_context.llvm_ir_builder.CreateAnd( l_value_for_op, r_value_for_op );
+					result_value= function_context.llvm_ir_builder.CreateAnd( l_value_for_op, r_value_for_op );
 				break;
 
 			case BinaryOperatorType::Or:
 				if( arguments_are_constexpr )
 					result.constexpr_value= llvm::ConstantExpr::getOr( l_var.constexpr_value, r_var.constexpr_value );
 				else
-					result_value=
-						function_context.llvm_ir_builder.CreateOr( l_value_for_op, r_value_for_op );
+					result_value= function_context.llvm_ir_builder.CreateOr( l_value_for_op, r_value_for_op );
 				break;
 
 			case BinaryOperatorType::Xor:
 				if( arguments_are_constexpr )
 					result.constexpr_value= llvm::ConstantExpr::getXor( l_var.constexpr_value, r_var.constexpr_value );
 				else
-					result_value=
-						function_context.llvm_ir_builder.CreateXor( l_value_for_op, r_value_for_op );
+					result_value= function_context.llvm_ir_builder.CreateXor( l_value_for_op, r_value_for_op );
 				break;
 
 			default: U_ASSERT( false ); break;
@@ -1018,7 +1002,7 @@ Value CodeBuilder::BuildNumericConstant(
 	const Synt::NumericConstant& numeric_constant,
 	FunctionContext& function_context )
 {
-	U_FundamentalType type= GetNumericConstantType( numeric_constant );
+	const U_FundamentalType type= GetNumericConstantType( numeric_constant );
 	if( type == U_FundamentalType::InvalidType )
 	{
 		errors_.push_back( ReportUnknownNumericConstantType( numeric_constant.file_pos_, numeric_constant.type_suffix_ ) );
@@ -1033,7 +1017,7 @@ Value CodeBuilder::BuildNumericConstant(
 
 	if( IsInteger( type ) )
 		result.constexpr_value=
-			llvm::Constant::getIntegerValue( llvm_type, llvm::APInt( result.type.SizeOf() * 8u, uint64_t(numeric_constant.value_) ) );
+			llvm::Constant::getIntegerValue( llvm_type, llvm::APInt( llvm_type->getIntegerBitWidth(), uint64_t(numeric_constant.value_) ) );
 	else if( IsFloatingPoint( type ) )
 		result.constexpr_value=
 			llvm::ConstantFP::get( llvm_type, static_cast<double>( numeric_constant.value_) );
