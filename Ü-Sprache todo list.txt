@@ -1,0 +1,39 @@
+﻿Here placed language features for future development of language itself and
+compiler. Features grouped and sorted by priority inside each group.
+When feature was implemented, delete it from list.
+
+Common:
+*) Operators overloading
+*) public/private/protected for class/struct members
+*) sizeof operator
+*) raw_pointer
+*) Inheritance and virtual methods
+*) Unsafe
+*) Enum
+*) Continious initializer for arrays
+*) Uninitialized initializer
+*) array_view, array view take operator
+*) Type conversions
+
+References:
+*) Double function arguments evaluation - for early function deduction
+*) Tags for references as functions arguments and return values
+*) References inside struct/class
+*) Tags for struct/class references
+
+Templates:
+*) Default template arguments for short type template form
+*) Type templates overloading
+*) enable_if for templates
+*) Function templates
+*) Variadic templates
+
+Standart library:
+*) vector
+*) unique_ptr
+*) optional
+*) shared_ptr
+
+Compiler:
+*) Standartized entry point, such "main" in some languages
+*) Precompiled modules
