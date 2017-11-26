@@ -234,49 +234,44 @@ const TemplateDependentType* Type::GetTemplateDependentType() const
 
 SizeType Type::SizeOf() const
 {
-	struct Visitor final : public boost::static_visitor<>
+	struct Visitor final : public boost::static_visitor<SizeType>
 	{
-		SizeType size= 1u;
-
-		void operator()( const FundamentalType& fundamental )
+		SizeType operator()( const FundamentalType& fundamental ) const
 		{
-			size= GetFundamentalTypeSize( fundamental.fundamental_type );
+			return GetFundamentalTypeSize( fundamental.fundamental_type );
 		}
 
-		void operator()( const FunctionPtr& function )
+		SizeType operator()( const FunctionPtr& ) const
 		{
-			if( function == nullptr ) return;
 			U_ASSERT( false && "SizeOf method not supported for functions." );
+			return 1u;
 		}
 
-		void operator()( const ArrayPtr& array )
+		SizeType operator()( const ArrayPtr& array ) const
 		{
-			if( array == nullptr ) return;
-			size= array->type.SizeOf() * array->size;
+			return array->type.SizeOf() * array->size;
 		}
 
-		void operator()( const ClassProxyPtr& class_ )
+		SizeType operator()( const ClassProxyPtr& ) const
 		{
-			if( class_ == nullptr ) return;
 			U_ASSERT( false && "SizeOf method not supported for classes." );
+			return 1u;
 		}
 
-		void operator()( const NontypeStub& stub )
+		SizeType operator()( const NontypeStub& ) const
 		{
-			U_UNUSED(stub);
 			U_ASSERT( false && "SizeOf method not supported for stub types." );
+			return 1u;
 		}
 
-		void operator()( const TemplateDependentType& template_dependent_type )
+		SizeType operator()( const TemplateDependentType& ) const
 		{
-			U_UNUSED(template_dependent_type);
 			U_ASSERT( false && "SizeOf method not supported for template-dependent types." );
+			return 1u;
 		}
 	};
 
-	Visitor visitor;
-	boost::apply_visitor( visitor, something_ );
-	return visitor.size;
+	return boost::apply_visitor( Visitor(), something_ );
 }
 
 bool Type::IsIncomplete() const
@@ -369,64 +364,57 @@ bool Type::CanBeConstexpr() const
 
 llvm::Type* Type::GetLLVMType() const
 {
-	struct Visitor final : public boost::static_visitor<>
+	struct Visitor final : public boost::static_visitor<llvm::Type*>
 	{
-		llvm::Type* llvm_type= nullptr;
-
-		void operator()( const FundamentalType& fundamental )
+		llvm::Type* operator()( const FundamentalType& fundamental ) const
 		{
-			llvm_type= fundamental.llvm_type;
+			return fundamental.llvm_type;
 		}
 
-		void operator()( const FunctionPtr& function )
+		llvm::Type* operator()( const FunctionPtr& function ) const
 		{
 			U_ASSERT( function != nullptr );
-			llvm_type= function->llvm_function_type;
+			return function->llvm_function_type;
 		}
 
-		void operator()( const ArrayPtr& array )
+		llvm::Type* operator()( const ArrayPtr& array ) const
 		{
-			if( array == nullptr ) return;
-			llvm_type= array->llvm_type;
+			if( array == nullptr ) return nullptr;
+			return array->llvm_type;
 		}
 
-		void operator()( const ClassProxyPtr& class_ )
+		llvm::Type* operator()( const ClassProxyPtr& class_ ) const
 		{
-			if( class_ == nullptr ) return;
-			llvm_type= class_->class_->llvm_type;
+			if( class_ == nullptr ) return nullptr;
+			return class_->class_->llvm_type;
 		}
 
-		void operator()( const NontypeStub& stub )
+		llvm::Type* operator()( const NontypeStub& ) const
 		{
-			U_UNUSED(stub);
+			return nullptr;
 		}
 
-		void operator()( const TemplateDependentType& template_dependent_type )
+		llvm::Type* operator()( const TemplateDependentType& template_dependent_type ) const
 		{
-			llvm_type= template_dependent_type.llvm_type;
+			return template_dependent_type.llvm_type;
 		}
 	};
 
-	Visitor visitor;
-	boost::apply_visitor( visitor, something_ );
-	return visitor.llvm_type;
+	return boost::apply_visitor( Visitor(), something_ );
 }
 
 ProgramString Type::ToString() const
 {
-	struct Visitor final : public boost::static_visitor<>
+	struct Visitor final : public boost::static_visitor<ProgramString>
 	{
-		ProgramString result;
-
-		void operator()( const FundamentalType& fundamental )
+		ProgramString operator()( const FundamentalType& fundamental ) const
 		{
-			result= GetFundamentalTypeName( fundamental.fundamental_type );
+			return GetFundamentalTypeName( fundamental.fundamental_type );
 		}
 
-		void operator()( const FunctionPtr& function )
+		ProgramString operator()( const FunctionPtr& function ) const
 		{
-			if( function == nullptr ) return;
-
+			ProgramString result;
 			result+= "fn "_SpC;
 			result+= function->return_type.ToString();
 			result+= " ( "_SpC;
@@ -444,64 +432,53 @@ ProgramString Type::ToString() const
 					result+= ", "_SpC;
 			}
 			result+= " )"_SpC;
+			return result;
 		}
 
-		void operator()( const ArrayPtr& array )
+		ProgramString  operator()( const ArrayPtr& array ) const
 		{
-			if( array == nullptr ) return;
-
-			result=
+			return
 				"[ "_SpC + array->type.ToString() + ", "_SpC +
 				ToProgramString( std::to_string( array->size ).c_str() ) + " ]"_SpC;
 		}
 
-		void operator()( const ClassProxyPtr& class_ )
+		ProgramString operator()( const ClassProxyPtr& class_ ) const
 		{
-			if( class_ == nullptr ) return;
-
-			result= "class "_SpC + class_->class_->members.GetThisNamespaceName();
+			return "class "_SpC + class_->class_->members.GetThisNamespaceName();
 		}
 
-		void operator()( const NontypeStub& stub )
+		ProgramString operator()( const NontypeStub& stub ) const
 		{
 			switch(stub)
 			{
 			case NontypeStub::OverloadedFunctionsSet:
-				result= "overloaded functions set"_SpC;
-				break;
+				return "overloaded functions set"_SpC;
 			case NontypeStub::ThisOverloadedMethodsSet:
-				result= "this + overloaded methods set"_SpC;
-				break;
+				return "this + overloaded methods set"_SpC;
 			case NontypeStub::TypeName:
-				result= "class name"_SpC;
-				break;
+				return "class name"_SpC;
 			case NontypeStub::Namespace:
-				result= "namespace"_SpC;
-				break;
+				return "namespace"_SpC;
 			case NontypeStub::TypeTemplate:
-				result= "type template"_SpC;
+				return "type template"_SpC;
 			case NontypeStub::TemplateDependentValue:
-				result= "template-dependent value"_SpC;
-				break;
+				return "template-dependent value"_SpC;
 			case NontypeStub::YetNotDeducedTemplateArg:
-				result= "yet not deduced template arg"_SpC;
-				break;
+				return "yet not deduced template arg"_SpC;
 			case NontypeStub::ErrorValue:
-				result= "error value"_SpC;
-				break;
+				return "error value"_SpC;
 			};
-			U_ASSERT(!result.empty());
+			U_ASSERT(false);
+			return ProgramString();
 		}
 
-		void operator()( const TemplateDependentType& )
+		ProgramString operator()( const TemplateDependentType& ) const
 		{
-			result= "template dependent type"_SpC;
+			return "template dependent type"_SpC;
 		}
 	};
 
-	Visitor visitor;
-	boost::apply_visitor( visitor, something_ );
-	return std::move( visitor.result );
+	return boost::apply_visitor( Visitor(), something_ );
 }
 
 bool operator==( const Type& r, const Type& l )
@@ -698,50 +675,46 @@ Value::Value( ErrorValue error_value )
 
 const Type& Value::GetType() const
 {
-	struct Visitor final : public boost::static_visitor<>
+	struct Visitor final : public boost::static_visitor< const Type& >
 	{
-		const Type* type;
+		const Type& operator()( const Variable& variable ) const
+		{ return variable.type; }
 
-		void operator()( const Variable& variable )
-		{ type= &variable.type; }
+		const Type& operator()( const StoredVariablePtr& ) const
+		{ return g_variable_storage_type_stub; }
 
-		void operator()( const StoredVariablePtr& )
-		{ type= &g_variable_storage_type_stub; }
+		const Type& operator()( const FunctionVariable& function_variable ) const
+		{ return function_variable.type; }
 
-		void operator()( const FunctionVariable& function_variable )
-		{ type= &function_variable.type; }
+		const Type& operator()( const OverloadedFunctionsSet& ) const
+		{ return g_overloaded_functions_set_stub_type; }
 
-		void operator()( const OverloadedFunctionsSet& )
-		{ type= &g_overloaded_functions_set_stub_type; }
+		const Type& operator()( const Type& ) const
+		{ return g_typename_type_stub; }
 
-		void operator()( const Type& )
-		{ type= &g_typename_type_stub; }
+		const Type& operator()( const ClassField& class_field ) const
+		{ return class_field.type; }
 
-		void operator()( const ClassField& class_field )
-		{ type= &class_field.type; }
+		const Type& operator()( const ThisOverloadedMethodsSet& ) const
+		{ return g_this_overloaded_methods_set_stub_type; }
 
-		void operator()( const ThisOverloadedMethodsSet& )
-		{ type= &g_this_overloaded_methods_set_stub_type; }
+		const Type& operator()( const NamesScopePtr& ) const
+		{ return g_namespace_type_stub; }
 
-		void operator()( const NamesScopePtr& )
-		{ type= &g_namespace_type_stub; }
+		const Type& operator()( const TypeTemplatePtr& ) const
+		{ return g_type_template_type_stub; }
 
-		void operator()( const TypeTemplatePtr& )
-		{ type= &g_type_template_type_stub; }
+		const Type& operator()( const TemplateDependentValue& ) const
+		{ return g_template_dependent_type_stub; }
 
-		void operator()( const TemplateDependentValue& )
-		{ type= &g_template_dependent_type_stub; }
+		const Type& operator()( const YetNotDeducedTemplateArg& ) const
+		{ return g_yet_not_deduced_template_arg_type_stub; }
 
-		void operator()( const YetNotDeducedTemplateArg& )
-		{ type= &g_yet_not_deduced_template_arg_type_stub; }
-
-		void operator()( const ErrorValue& )
-		{ type= &g_error_value_type_stub; }
+		const Type& operator()( const ErrorValue& ) const
+		{ return g_error_value_type_stub; }
 	};
 
-	Visitor visitor;
-	boost::apply_visitor( visitor, something_ );
-	return *visitor.type;
+	return boost::apply_visitor( Visitor(), something_ );
 }
 
 int Value::GetKindIndex() const
