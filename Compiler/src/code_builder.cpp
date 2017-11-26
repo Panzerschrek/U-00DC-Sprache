@@ -3741,12 +3741,9 @@ llvm::GlobalVariable* CodeBuilder::CreateGlobalConstantVariable(
 			*module_,
 			type.GetLLVMType(),
 			true, // is constant
-			llvm::GlobalValue::LinkageTypes::LinkOnceODRLinkage,
-			nullptr,
+			llvm::GlobalValue::InternalLinkage, // We have no external variables, so, use internal linkage.
+			initializer,
 			mangled_name );
-
-	if( initializer != nullptr )
-		val->setInitializer( initializer );
 
 	val->setUnnamedAddr( true );
 
