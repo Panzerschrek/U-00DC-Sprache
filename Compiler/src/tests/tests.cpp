@@ -33,7 +33,7 @@ public:
 		for( const SourceEntry& source_entry : sources_ )
 		{
 			if( file_path == source_entry.file_path )
-				return LoadFileResult{ file_path, ToProgramString( source_entry.text ) };
+				return LoadFileResult{ file_path, DecodeUTF8( source_entry.text ) };
 		}
 		return boost::none;
 	}

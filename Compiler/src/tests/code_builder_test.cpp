@@ -6,6 +6,23 @@
 namespace U
 {
 
+U_TEST( AdditionalSymbolsForIdentifiersTest0 )
+{
+	static const char c_program_text[]=
+	u8R"(
+		struct S{}
+		fn Foo()
+		{
+			var S
+				only_latin, русская_кириллица, бѣcъ, UPPERSCALE_КИРИЛЛИЦАЪ, ВсЯкАйА_CYRIllIC_Хрень_ҥ_Ѫ_Ѱ_ӂ_Ґ_ґ_Ғ_ғ,
+				Ӽ, non_roman_latin_öžçšüä, Anschlußßß, Wörk, Børk, Æ_æ;
+		}
+	)";
+	;
+
+	 BuildProgram( c_program_text );
+}
+
 U_TEST(SimpleProgramTest)
 {
 	static const char c_program_text[]=

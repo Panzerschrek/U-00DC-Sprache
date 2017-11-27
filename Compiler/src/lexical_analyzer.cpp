@@ -104,14 +104,25 @@ static bool IsNumberStartChar( sprache_char c )
 	return std::isdigit(c);
 }
 
-static bool IsIdentifierChar( sprache_char c )
-{
-	return std::isalnum(c) || c == '_';
-}
-
 static bool IsIdentifierStartChar( sprache_char c )
 {
-	return std::isalpha(c);
+	// HACK - manually define allowed "letters".
+	// TODO - use something, like symbol category from unicode.
+	return
+		( c >= 'a' && c <= 'z' ) ||
+		( c >= 'A' && c <= 'Z' ) ||
+		( c >= 0x0400u && c <= 0x04FFu ) || // Cyrillic
+		( c >= 0x0500u && c <= 0x0527u ) || // Extended cyrillic
+		( c >= 0x00C0u && c <= 0x00D6u ) || // Additional latin symbols
+		( c >= 0x00D8u && c <= 0x00F6u ) || // Additional latin symbols
+		( c >= 0x00F8u && c <= 0x00FFu ) || // Additional latin symbols
+		( c >= 0x0100u && c <= 0x017Fu ) || // Extended latin part A
+		( c >= 0x0180u && c <= 0x024Fu ) ;  // Extended latin part B
+}
+
+static bool IsIdentifierChar( sprache_char c )
+{
+	return IsIdentifierStartChar(c) || IsNumberStartChar(c) || c == '_';
 }
 
 static void ParseNumberImpl(
