@@ -645,68 +645,6 @@ U_TEST(NoMatchBinaryOperatorForGivenTypesTest1)
 	U_TEST_ASSERT( error.file_pos.line == 6u );
 }
 
-U_TEST(FunctionSignatureMismatchTest0)
-{
-	// Argument count mismatch.
-	// TODO - support functions overloading.
-	static const char c_program_text[]=
-	R"(
-		fn Bar( i32 a, bool b ) : bool { return false; }
-		fn Foo()
-		{
-			Bar( 1 );
-		}
-	)";
-
-	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
-
-	U_TEST_ASSERT( !build_result.errors.empty() );
-	U_TEST_ASSERT( build_result.errors[0].code == CodeBuilderErrorCode::FunctionSignatureMismatch );
-	U_TEST_ASSERT( build_result.errors[0].file_pos.line == 5u );;
-}
-
-U_TEST(FunctionSignatureMismatchTest1)
-{
-	// Argument count mismatch.
-	// TODO - support functions overloading.
-	static const char c_program_text[]=
-	R"(
-		fn Bar( i32 a, bool b ) : bool { return false; }
-		fn Foo()
-		{
-			Bar( 1, false, 0.2 );
-		}
-	)";
-
-	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
-
-	U_TEST_ASSERT( !build_result.errors.empty() );
-	U_TEST_ASSERT( build_result.errors[0].code == CodeBuilderErrorCode::FunctionSignatureMismatch );
-	U_TEST_ASSERT( build_result.errors[0].file_pos.line == 5u );
-}
-
-U_TEST(FunctionSignatureMismatchTest2)
-{
-	// Argumenst type mismatch.
-	// TODO - support functions overloading.
-	static const char c_program_text[]=
-	R"(
-		fn Bar( i32 a, bool b ) : bool { return false; }
-		fn Foo()
-		{
-			Bar( 0.5f32, false );
-		}
-	)";
-
-	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
-
-	U_TEST_ASSERT( !build_result.errors.empty() );
-	const CodeBuilderError& error= build_result.errors.front();
-
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::FunctionSignatureMismatch );
-	U_TEST_ASSERT( error.file_pos.line == 5u );
-}
-
 U_TEST(ArraySizeIsNotInteger)
 {
 	static const char c_program_text[]=
@@ -1254,7 +1192,7 @@ U_TEST(ExpectedReferenceValueTest6)
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedReferenceValue );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::CouldNotSelectOverloadedFunction );
 	U_TEST_ASSERT( error.file_pos.line == 5u );
 }
 

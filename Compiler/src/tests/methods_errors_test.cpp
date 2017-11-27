@@ -23,7 +23,7 @@ U_TEST( BindingConstReferenceToNonconstReference_InThisCall_Test0 )
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::BindingConstReferenceToNonconstReference );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::CouldNotSelectOverloadedFunction );
 	U_TEST_ASSERT( error.file_pos.line == 9u );
 }
 
@@ -51,7 +51,7 @@ U_TEST( BindingConstReferenceToNonconstReference_InThisCall_Test1 )
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::BindingConstReferenceToNonconstReference );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::CouldNotSelectOverloadedFunction );
 	U_TEST_ASSERT( error.file_pos.line == 7u );
 }
 

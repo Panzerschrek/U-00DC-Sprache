@@ -24,28 +24,6 @@ U_TEST(BindingConstReferenceToNonconstReferenceTest0)
 	U_TEST_ASSERT( error.file_pos.line == 5u );
 }
 
-U_TEST(BindingConstReferenceToNonconstReferenceTest1)
-{
-	// Initialize reference using value-object.
-	static const char c_program_text[]=
-	R"(
-		fn Bar( i32 &mut x ){}
-		fn Foo()
-		{
-			var i32 imut x = 0;
-			Bar( x );
-		}
-	)";
-
-	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
-
-	U_TEST_ASSERT( !build_result.errors.empty() );
-	const CodeBuilderError& error= build_result.errors.front();
-
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::BindingConstReferenceToNonconstReference );
-	U_TEST_ASSERT( error.file_pos.line == 6u );
-}
-
 U_TEST(BindingConstReferenceToNonconstReferenceTest2)
 {
 	// Return reference, when return value is const reference.
@@ -87,31 +65,6 @@ U_TEST(BindingConstReferenceToNonconstReferenceTest3)
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::BindingConstReferenceToNonconstReference );
 	U_TEST_ASSERT( error.file_pos.line == 6u );
-}
-
-U_TEST(BindingConstReferenceToNonconstReferenceTest4)
-{
-	// Call "mutable this" method from method with "immutable this".
-	static const char c_program_text[]=
-	R"(
-		struct A
-		{
-			fn Bar( mut this )
-			{}
-			fn Foo( imut this )
-			{
-				Bar();
-			}
-		}
-	)";
-
-	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
-
-	U_TEST_ASSERT( !build_result.errors.empty() );
-	const CodeBuilderError& error= build_result.errors.front();
-
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::BindingConstReferenceToNonconstReference );
-	U_TEST_ASSERT( error.file_pos.line == 8u );
 }
 
 U_TEST(BindingConstReferenceToNonconstReferenceTest5)
@@ -208,7 +161,7 @@ U_TEST(BindingConstReferenceToNonconstReferenceTest8)
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::BindingConstReferenceToNonconstReference );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::CouldNotSelectOverloadedFunction );
 	U_TEST_ASSERT( error.file_pos.line == 8u );
 }
 

@@ -1267,63 +1267,63 @@ Value CodeBuilder::BuildCallOperator(
 	size_t this_count= this_ == nullptr ? 0u : 1u;
 	size_t total_args= this_count + call_operator.arguments_.size();
 	std::vector<Function::Arg> actual_args;
-	std::vector<Variable> actual_args_variables;
-	std::vector<std::vector<VariableStorageUseCounter>> acutal_args_locks;
 	actual_args.reserve( total_args );
-	actual_args_variables.reserve( total_args );
-	acutal_args_locks.reserve( total_args );
 
-	// Push "this" argument.
-	if( this_ != nullptr )
-	{
-		acutal_args_locks.push_back( LockReferencedVariables( *this_ ) );
+	const size_t error_count_before= errors_.size();
 
-		actual_args.emplace_back();
-		actual_args.back().type= this_->type;
-		actual_args.back().is_reference= true;
-		actual_args.back().is_mutable= this_->value_type == ValueType::Reference;
+	{ // Make preevaluation af arguments for selection of overloaded function.
+		bool args_are_template_dependent= false;
 
-		actual_args_variables.push_back( *this_ );
-	}
+		// Prepare dummy function context for first pass.
+		FunctionContext dummy_function_context(
+			function_context.return_type,
+			function_context.return_value_is_mutable,
+			function_context.return_value_is_reference,
+			llvm_context_,
+			dummy_function_context_->function );
+		const StackVariablesStorage dummy_stack_variables_storage( dummy_function_context );
+		dummy_function_context.this_= function_context.this_;
 
-	// Push arguments from call operator.
-	bool args_are_template_dependent= false;
-	for( const Synt::IExpressionComponentPtr& arg_expression : call_operator.arguments_ )
-	{
-		U_ASSERT( arg_expression != nullptr );
-		const Value expr_value= BuildExpressionCode( *arg_expression, names, function_context );
-		CHECK_RETURN_ERROR_VALUE(expr_value);
-
-		if( expr_value.GetType() == NontypeStub::TemplateDependentValue)
+		// Push "this" argument.
+		if( this_ != nullptr )
 		{
-			args_are_template_dependent= true;
-			continue;
+			actual_args.emplace_back();
+			actual_args.back().type= this_->type;
+			actual_args.back().is_reference= true;
+			actual_args.back().is_mutable= this_->value_type == ValueType::Reference;
 		}
-
-		const Variable* const expr= expr_value.GetVariable();
-		if( expr == nullptr )
+		// Push arguments from call operator.
+		for( const Synt::IExpressionComponentPtr& arg_expression : call_operator.arguments_ )
 		{
-			errors_.push_back( ReportExpectedVariableAsArgument( arg_expression->GetFilePos(), expr_value.GetType().ToString() ) );
-			return ErrorValue();
+			U_ASSERT( arg_expression != nullptr );
+			const Value expr_value= BuildExpressionCode( *arg_expression, names, dummy_function_context );
+			CHECK_RETURN_ERROR_VALUE(expr_value);
+
+			if( expr_value.GetType() == NontypeStub::TemplateDependentValue )
+			{
+				args_are_template_dependent= true;
+				continue;
+			}
+
+			const Variable* const expr= expr_value.GetVariable();
+			if( expr == nullptr )
+			{
+				errors_.push_back( ReportExpectedVariableAsArgument( arg_expression->GetFilePos(), expr_value.GetType().ToString() ) );
+				return ErrorValue();
+			}
+
+			actual_args.emplace_back();
+			actual_args.back().type= expr->type;
+			actual_args.back().is_reference= expr->value_type != ValueType::Value;
+			actual_args.back().is_mutable= expr->value_type == ValueType::Reference;
 		}
-
-		// Lock references. This needs, because reference can be damaged in process of calculation of next arguments.
-		// SPRACHE_TODO - make early conversions of references for cases, where signature of function is known.
-		acutal_args_locks.push_back( LockReferencedVariables( *expr ) );
-
-		actual_args.emplace_back();
-		actual_args.back().type= expr->type;
-		actual_args.back().is_reference= expr->value_type != ValueType::Value;
-		actual_args.back().is_mutable= expr->value_type == ValueType::Reference;
-
-		actual_args_variables.push_back( std::move(*expr) );
+		if( args_are_template_dependent )
+			return Value( Type(NontypeStub::TemplateDependentValue), call_operator.file_pos_ );
 	}
-	if( args_are_template_dependent )
-		return Value( Type(NontypeStub::TemplateDependentValue), call_operator.file_pos_ );
 
 	// SPRACHE_TODO - try get function with "this" parameter in signature and without it.
 	// We must support static functions call using "this".
-	const FunctionVariable* function_ptr=
+	const FunctionVariable* const function_ptr=
 		GetOverloadedFunction( *functions_set, actual_args, this_ != nullptr, call_operator.file_pos_ );
 	if( function_ptr == nullptr )
 		return ErrorValue();
@@ -1337,8 +1337,8 @@ Value CodeBuilder::BuildCallOperator(
 		this_count--;
 		total_args--;
 		actual_args.erase( actual_args.begin() );
-		actual_args_variables.erase( actual_args_variables.begin() );
 	}
+	U_ASSERT( function_type.args.size() == actual_args.size() );
 
 	if( this_ == nullptr && function.is_this_call )
 	{
@@ -1346,14 +1346,11 @@ Value CodeBuilder::BuildCallOperator(
 		return ErrorValue();
 	}
 
-	if( function_type.args.size() != actual_args.size() )
-	{
-		errors_.push_back( ReportFunctionSignatureMismatch( call_operator.file_pos_ ) );
-		return ErrorValue();
-	}
+	errors_.resize( error_count_before ); // Drop errors from first pass.
 
 	std::vector<llvm::Value*> llvm_args;
 	std::unordered_map<StoredVariablePtr, VaraibleReferencesCounter> locked_variable_conters;
+	std::vector<VariableStorageUseCounter> temp_args_locks; // We need lock reference argument before evaluating next arguments.
 
 	llvm::Value* s_ret_value= nullptr;
 	if( function.return_value_is_sret )
@@ -1365,22 +1362,21 @@ Value CodeBuilder::BuildCallOperator(
 	bool function_result_have_template_dependent_type= false;
 	for( unsigned int i= 0u; i < actual_args.size(); i++ )
 	{
+		const bool is_this_arg= this_count != 0u && i == 0u;
 		const Function::Arg& arg= function_type.args[i];
-		const Variable& expr= actual_args_variables[i];
 
-		const FilePos& file_pos=
-			( this_count != 0u && i == 0u )
-				? call_operator.file_pos_
-				: call_operator.arguments_[i - this_count]->GetFilePos();
+		Variable expr;
+		if( is_this_arg )
+			expr= *this_;
+		else
+			expr= *BuildExpressionCode( *call_operator.arguments_[i - this_count], names, function_context ).GetVariable();
+
+		const FilePos& file_pos= is_this_arg ? call_operator.file_pos_ : call_operator.arguments_[i - this_count]->GetFilePos();
 
 		const bool something_have_template_dependent_type= expr.type.GetTemplateDependentType() != nullptr || arg.type.GetTemplateDependentType() != nullptr;
 		function_result_have_template_dependent_type= function_result_have_template_dependent_type || something_have_template_dependent_type;
 
-		if( !something_have_template_dependent_type && expr.type != arg.type )
-		{
-			errors_.push_back( ReportFunctionSignatureMismatch( file_pos ) );
-			return ErrorValue();
-		}
+		U_ASSERT( something_have_template_dependent_type || expr.type == arg.type );
 
 		if( arg.is_reference )
 		{
@@ -1399,10 +1395,12 @@ Value CodeBuilder::BuildCallOperator(
 
 				llvm_args.push_back(expr.llvm_value);
 
-				// Convert reference locks.
+				// Lock references.
 				for( const StoredVariablePtr& referenced_variable : expr.referenced_variables )
+				{
 					++locked_variable_conters[referenced_variable].mut;
-				acutal_args_locks[i].clear();
+					temp_args_locks.push_back( referenced_variable->mut_use_counter );
+				}
 			}
 			else
 			{
@@ -1414,27 +1412,22 @@ Value CodeBuilder::BuildCallOperator(
 					{
 						if( !something_have_template_dependent_type )
 						{
-							llvm::Value* temp_storage= function_context.alloca_ir_builder.CreateAlloca( expr.type.GetLLVMType() );
+							llvm::Value* const temp_storage= function_context.alloca_ir_builder.CreateAlloca( expr.type.GetLLVMType() );
 							function_context.llvm_ir_builder.CreateStore( expr.llvm_value, temp_storage );
 							llvm_args.push_back( temp_storage );
 						}
 					}
 					else
 						llvm_args.push_back( expr.llvm_value );
-
-					// Convert reference locks.
-					for( const StoredVariablePtr& referenced_variable : expr.referenced_variables )
-						++locked_variable_conters[referenced_variable].mut;
-					acutal_args_locks[i].clear();
 				}
 				else
-				{
 					llvm_args.push_back( expr.llvm_value );
 
-					// Convert reference locks.
-					for( const StoredVariablePtr& referenced_variable : expr.referenced_variables )
-						++locked_variable_conters[referenced_variable].imut;
-					acutal_args_locks[i].clear();
+				// Lock references.
+				for( const StoredVariablePtr& referenced_variable : expr.referenced_variables )
+				{
+					++locked_variable_conters[referenced_variable].imut;
+					temp_args_locks.push_back( referenced_variable->imut_use_counter );
 				}
 			}
 		}
@@ -1460,7 +1453,6 @@ Value CodeBuilder::BuildCallOperator(
 					// Create copy of class value. Call copy constructor.
 					llvm::Value* const arg_copy= function_context.alloca_ir_builder.CreateAlloca( arg.type.GetLLVMType() );
 
-					acutal_args_locks[i].clear(); // We must clear locks before constructor call, because we transfer ownership of reference.
 					TryCallCopyConstructor( call_operator.file_pos_, arg_copy, expr.llvm_value, class_type, function_context );
 					llvm_args.push_back( arg_copy );
 				}
@@ -1470,12 +1462,10 @@ Value CodeBuilder::BuildCallOperator(
 			else
 				U_ASSERT( false );
 		}
-
-		// Clear initial locks, because we use separate locks for final checks.
-		acutal_args_locks[i].clear();
 	}
 
 	// Check references.
+	temp_args_locks.clear(); // clear temporary locks.
 	for( const auto& pair : locked_variable_conters )
 	{
 		// Check references, passed into function.

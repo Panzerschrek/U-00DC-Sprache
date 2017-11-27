@@ -3485,11 +3485,6 @@ const FunctionVariable* CodeBuilder::GetOverloadedFunction(
 	U_ASSERT( !functions_set.empty() );
 	U_ASSERT( !( first_actual_arg_is_this && actual_args.empty() ) );
 
-	// If we have only one function - return it.
-	// Caller can generate error, if arguments does not match.
-	if( functions_set.size() == 1u )
-		return &functions_set.front();
-
 	enum class MatchType
 	{
 		// Overloading class and type match for all parameters.

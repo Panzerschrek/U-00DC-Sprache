@@ -127,17 +127,6 @@ CodeBuilderError ReportNoMatchBinaryOperatorForGivenTypes(
 	return error;
 }
 
-CodeBuilderError ReportFunctionSignatureMismatch( const FilePos& file_pos )
-{
-	CodeBuilderError error;
-	error.file_pos= file_pos;
-	error.code= CodeBuilderErrorCode::FunctionSignatureMismatch;
-
-	error.text= "Function signature mismatch."_SpC; // TODO - print expected and actual signatures here.
-
-	return error;
-}
-
 CodeBuilderError ReportNotImplemented( const FilePos& file_pos, const char* const what )
 {
 	CodeBuilderError error;

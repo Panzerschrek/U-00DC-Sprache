@@ -120,7 +120,7 @@ U_TEST( ReferenceCheckTest_MutableAndImmutableReferencesPassedToFunction )
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::AccessingVariableThatHaveMutableReference );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferenceProtectionError );
 	U_TEST_ASSERT( error.file_pos.line == 6u );
 }
 
@@ -811,6 +811,164 @@ U_TEST( ReferenceCheckTest_AdditiveAssignment_2 )
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::AccessingVariableThatHaveMutableReference );
 	U_TEST_ASSERT( error.file_pos.line == 5u );
+}
+
+U_TEST( ReferenceCheckTest_ShouldConvertReferenceInFunctionCall_0 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn Add( i32 x, i32 y ) : i32 { return x + y; }
+		fn Foo()
+		{
+			var i32 x= 0;
+			Add( x, x ); // We take here mutable references to x, but convert it to value in function call, so, this is not error.
+		}
+	)";
+
+	BuildProgram( c_program_text );
+}
+
+U_TEST( ReferenceCheckTest_ShouldConvertReferenceInFunctionCall_1 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn Add( i32 &imut x, i32 &imut y ) : i32 { return x + y; }
+		fn Foo()
+		{
+			var i32 x= 0;
+			Add( x, x ); // We take here mutable references to x, but convert it to immatable references in function call, so, this is not error.
+		}
+	)";
+
+	BuildProgram( c_program_text );
+}
+
+U_TEST( ReferenceCheckTest_ShouldConvertReferenceInFunctionCall_2 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn Assign( i32 x, i32 &mut y ) { y= x; }
+		fn Foo()
+		{
+			var i32 x= 0;
+			Assign( x, x ); // We take here mutable references to x, but convert first reference to value and pass to function only second reference.
+		}
+	)";
+
+	BuildProgram( c_program_text );
+}
+
+U_TEST( ReferenceCheckTest_TryPassTwoMutableReferencesIntoFunction_0 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn Bar( i32 &mut x, i32 &mut y ) {}
+		fn Foo()
+		{
+			var i32 x= 0;
+			Bar( x, x ); // Take mutable reference, then, take mutable reference again
+		}
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::AccessingVariableThatHaveMutableReference );
+	U_TEST_ASSERT( error.file_pos.line == 6u );
+}
+
+U_TEST( ReferenceCheckTest_TryPassTwoMutableReferencesIntoFunction_1 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn Bar( i32 &mut x, i32 &mut y ) {}
+		fn Foo()
+		{
+			var i32 x= 0;
+			auto &mut r= x;
+			Bar( r, r ); // Use mutable reference from stack, then, use it again.
+		}
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferenceProtectionError );
+	U_TEST_ASSERT( error.file_pos.line == 7u );
+}
+
+U_TEST( ReferenceCheckTest_TryPassTwoMutableReferencesIntoFunction_2 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn Bar( i32 &mut x, i32 &mut y ) {}
+		fn Foo()
+		{
+			var i32 x= 0;
+			auto &mut r= x;
+			Bar( r, x ); // Use mutable reference from stack, then, use variable itself.
+		}
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::AccessingVariableThatHaveMutableReference );
+	U_TEST_ASSERT( error.file_pos.line == 7u );
+}
+
+U_TEST( ReferenceCheckTest_TryUseVariableWhenReferenceInFunctionCallExists_0 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn Deref( i32 &imut x ) : i32 { return x; }
+		fn Do( i32 &mut x, i32 y ) {}
+		fn Foo()
+		{
+			var i32 x= 0;
+			Do(
+				x,
+				Deref(x) ); // Pass immutable reference into function "Deref" when mutable reference for function call "Do" saved.
+		}
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::AccessingVariableThatHaveMutableReference );
+	U_TEST_ASSERT( error.file_pos.line == 9u );
+}
+
+U_TEST( ReferenceCheckTest_TryUseVariableWhenReferenceInFunctionCallExists_1 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn Mutate( i32 &mut x ) : i32 { return x; }
+		fn Do( i32 &imut x, i32 y ) {}
+		fn Foo()
+		{
+			var i32 x= 0;
+			Do(
+				x,
+				Mutate(x) ); // Pass mutable reference into function "Deref" when immutable reference for function call "Do" saved.
+		}
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferenceProtectionError );
+	U_TEST_ASSERT( error.file_pos.line == 9u );
 }
 
 } // namespace U
