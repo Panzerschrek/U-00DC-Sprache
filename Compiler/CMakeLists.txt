@@ -151,5 +151,5 @@ add_custom_command(
 	COMMAND Compiler -i ${CMAKE_SOURCE_DIR}/test_programs/cpp_linkage.u -o cpp_linkage.ir &&
 	${LLVM_UTILS_DIR}/llc cpp_linkage.ir -filetype=obj -o=${CPP_LINKAGE_U_MODULE} )
 
-#add_executable( CPPLinkageTest ${CPP_LINKAGE_U_MODULE} ${CPP_LINKAGE_CPP_SOURCE} )
-#add_dependencies( CPPLinkageTest Compiler )
+add_executable( CPPLinkageTest ${CPP_LINKAGE_U_MODULE} ${CPP_LINKAGE_CPP_SOURCE} )
+add_dependencies( CPPLinkageTest Compiler )
