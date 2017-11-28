@@ -2885,19 +2885,38 @@ void CodeBuilder::BuildAssignmentOperatorCode(
 	NamesScope& block_names,
 	FunctionContext& function_context )
 {
+	if(
+		TryCallOverloadedBinaryOperator(
+			Synt::OverloadedOperator::Assign,
+			*assignment_operator.l_value_,
+			*assignment_operator.r_value_,
+			assignment_operator.file_pos_,
+			block_names,
+			function_context ) != boost::none )
+	{
+		return;
+	}
+	// Here process default assignment operator for fundamental types.
+
 	// Destruction frame for temporary variables of expressions.
 	const StackVariablesStorage temp_variables_storage( function_context );
 
 	// Evalueate right part
-	const Value r_var_value= BuildExpressionCode( *assignment_operator.r_value_, block_names, function_context );
-	const Variable* const r_var= r_var_value.GetVariable();
+	Value r_var_value= BuildExpressionCode( *assignment_operator.r_value_, block_names, function_context );
+	Variable* const r_var= r_var_value.GetVariable();
 	if( r_var == nullptr && r_var_value.GetType() != NontypeStub::TemplateDependentValue )
 		errors_.push_back( ReportExpectedVariableInAssignment( assignment_operator.file_pos_, r_var_value.GetType().ToString() ) );
 
-	// Lock r_var variables.
-	std::vector<VariableStorageUseCounter> r_var_locks;
-	if( r_var != nullptr )
-		r_var_locks= LockReferencedVariables( *r_var );
+	if( r_var != nullptr && r_var->type.GetFundamentalType() != nullptr )
+	{
+		// We must read value, because referenced by reference value may be changed in l_var evaluation.
+		if( r_var->location != Variable::Location::LLVMRegister )
+		{
+			r_var->llvm_value= CreateMoveToLLVMRegisterInstruction( *r_var, function_context );
+			r_var->location= Variable::Location::LLVMRegister;
+		}
+		r_var->value_type= ValueType::Value;
+	}
 
 	// Evaluate left part.
 	const Value l_var_value= BuildExpressionCode( *assignment_operator.l_value_, block_names, function_context );
@@ -2927,36 +2946,25 @@ void CodeBuilder::BuildAssignmentOperatorCode(
 			// Assign to variable, that have nonzero immutable references.
 			errors_.push_back( ReportReferenceProtectionError( assignment_operator.file_pos_ ) );
 		}
-		if( referenced_variable->mut_use_counter.use_count() > 1u + 1u )
-		{
-			// Variable have mutable references except locked reference for this assignment.
-			errors_.push_back( ReportReferenceProtectionError( assignment_operator.file_pos_ ) );
-		}
 	}
 
-	const FundamentalType* const fundamental_type= l_var->type.GetFundamentalType();
-	if( fundamental_type != nullptr )
+	if( const FundamentalType* const fundamental_type= l_var->type.GetFundamentalType())
 	{
 		if( l_var->location != Variable::Location::Pointer )
 		{
 			U_ASSERT(false);
 			return;
 		}
-		llvm::Value* value_for_assignment= CreateMoveToLLVMRegisterInstruction( *r_var, function_context );
-		function_context.llvm_ir_builder.CreateStore( value_for_assignment, l_var->llvm_value );
+		U_ASSERT( r_var->location == Variable::Location::LLVMRegister );
+		function_context.llvm_ir_builder.CreateStore( r_var->llvm_value, l_var->llvm_value );
 	}
 	else if( l_var->type.GetTemplateDependentType() != nullptr || r_var->type.GetTemplateDependentType() != nullptr )
 	{}
 	else
 	{
-		// TODO - functions is not copyable.
-		// TODO - arrays not copyable.
-		// TODO - make classes copyable.
-		errors_.push_back( ReportNotImplemented( assignment_operator.file_pos_, "nonfundamental types assignment." ) );
+		errors_.push_back( ReportOperationNotSupportedForThisType( assignment_operator.file_pos_, l_var->type.ToString() ) );
 		return;
 	}
-
-	r_var_locks.clear();
 
 	// Destruct temporary variables of right and left expressions.
 	CallDestructors( *function_context.stack_variables_stack.back(), function_context, assignment_operator.file_pos_ );

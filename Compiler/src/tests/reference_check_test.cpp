@@ -679,9 +679,17 @@ U_TEST( ReferenceCheckTest_AssignmentForReferencedVariable_3 )
 {
 	static const char c_program_text[]=
 	R"(
+		struct Box
+		{
+			i32 x;
+			op=( mut this, Box &imut other )
+			{
+				this.x= other.x;
+			}
+		}
 		fn Foo()
 		{
-			var i32 x= 0;
+			var Box x= zero_init;
 			x= x; // Self-assignment, should produce error.
 		}
 	)";
@@ -692,7 +700,7 @@ U_TEST( ReferenceCheckTest_AssignmentForReferencedVariable_3 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::AccessingVariableThatHaveMutableReference );
-	U_TEST_ASSERT( error.file_pos.line == 5u );
+	U_TEST_ASSERT( error.file_pos.line == 13u );
 }
 
 U_TEST( ReferenceCheckTest_AssignmentForReferencedVariable_4 )

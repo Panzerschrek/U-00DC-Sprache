@@ -276,6 +276,17 @@ private:
 		NamesScope& names,
 		FunctionContext& function_context );
 
+	// Returns Value, if overloaded operator selected or if arguments are template dependent or argumens are error values.
+	// Returns boost::none, if all ok, but there is no overloaded operator.
+	// In success call of overloaded operator arguments evaluated in left to right order.
+	boost::optional<Value> TryCallOverloadedBinaryOperator(
+		Synt::OverloadedOperator op,
+		const Synt::IExpressionComponent&  left_expr,
+		const Synt::IExpressionComponent& right_expr,
+		const FilePos& file_pos,
+		NamesScope& names,
+		FunctionContext& function_context);
+
 	Value BuildBinaryOperator(
 		const Variable& l_var,
 		const Variable& r_var,
