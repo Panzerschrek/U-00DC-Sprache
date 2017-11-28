@@ -237,6 +237,8 @@ private:
 		ClassProxyPtr base_class,
 		NamesScope& scope );
 
+	void CheckOverloadedOperator( const ClassProxyPtr& base_class, Function& func_type, Synt::OverloadedOperator overloaded_operator );
+
 	void BuildFuncCode(
 		FunctionVariable& func,
 		ClassProxyPtr base_class,
@@ -303,6 +305,14 @@ private:
 	Value BuildCallOperator(
 		const Value& function_value,
 		const Synt::CallOperator& call_operator,
+		NamesScope& names,
+		FunctionContext& function_context );
+
+	Value DoCallFunction(
+		const FunctionVariable& function,
+		const FilePos& call_file_pos,
+		const Variable* this_arg,
+		std::vector<const Synt::IExpressionComponent*> args,
 		NamesScope& names,
 		FunctionContext& function_context );
 
@@ -410,6 +420,8 @@ private:
 		const std::vector<Function::Arg>& actual_args,
 		bool first_actual_arg_is_this,
 		const FilePos& file_pos );
+
+	const FunctionVariable* GetOverloadedOperator( const std::vector<Function::Arg>& actual_args, Synt::OverloadedOperator op );
 
 	// Initializers.
 	// Some initializers returns nonnul constant, if initializer is constant.

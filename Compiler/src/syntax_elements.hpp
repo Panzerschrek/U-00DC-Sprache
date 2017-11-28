@@ -177,6 +177,7 @@ enum class OverloadedOperator
 	Sub, // for unary and binary -
 	Mul,
 	Div,
+	Rem,
 
 	Equal,
 	NotEqual,
@@ -211,6 +212,8 @@ enum class OverloadedOperator
 	Increment,
 	Decrement,
 };
+
+ProgramString OverloadedOperatorToString( OverloadedOperator op );
 
 class IExpressionComponent
 {

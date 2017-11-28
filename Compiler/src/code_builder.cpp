@@ -1659,6 +1659,8 @@ CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 			errors_.push_back( ReportUsingIncompleteType( arg->file_pos_, out_arg.type.ToString() ) );
 	} // for arguments
 
+	CheckOverloadedOperator( base_class, function_type, func.overloaded_operator_ );
+
 	NamesScope::InsertedName* const previously_inserted_func=
 		func_base_names_scope->GetThisScopeName( func_name );
 	if( previously_inserted_func == nullptr )
@@ -1777,6 +1779,100 @@ CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 	}
 
 	return result;
+}
+
+void CodeBuilder::CheckOverloadedOperator( const ClassProxyPtr& base_class, Function& func_type, Synt::OverloadedOperator overloaded_operator )
+{
+	using Synt::OverloadedOperator;
+
+	if( overloaded_operator == OverloadedOperator::None )
+		return; // Not operator
+
+	if( base_class == nullptr )
+	{
+		// TODO - Error - must be inside class
+		return;
+	}
+
+	bool is_this_class= false;
+	for( const Function::Arg& arg : func_type.args )
+	{
+		if( base_class != nullptr && arg.type == base_class )
+		{
+			is_this_class= true;
+			break;
+		}
+	}
+
+	if( !is_this_class )
+	{
+		// TODO - Error - one of arg must have class type
+	}
+
+	switch( overloaded_operator )
+	{
+	case OverloadedOperator::Add:
+	case OverloadedOperator::Sub:
+		break;
+
+	case OverloadedOperator::Mul:
+	case OverloadedOperator::Div:
+
+	case OverloadedOperator::Equal:
+	case OverloadedOperator::NotEqual:
+	case OverloadedOperator::Less:
+	case OverloadedOperator::LessEqual:
+	case OverloadedOperator::Greater:
+	case OverloadedOperator::GreaterEqual:
+
+	case OverloadedOperator::And:
+	case OverloadedOperator::Or :
+	case OverloadedOperator::Xor:
+
+	case OverloadedOperator::ShiftLeft :
+	case OverloadedOperator::ShiftRight:
+
+	case OverloadedOperator::AssignAdd:
+	case OverloadedOperator::AssignSub:
+	case OverloadedOperator::AssignMul:
+	case OverloadedOperator::AssignDiv:
+	case OverloadedOperator::AssignAnd:
+	case OverloadedOperator::AssignOr :
+	case OverloadedOperator::AssignXor:
+	case OverloadedOperator::AssignShiftLeft :
+	case OverloadedOperator::AssignShiftRight:
+		if( func_type.return_type != void_type_ )
+		{
+			// TODO - Error, expected void
+		}
+		break;
+
+	case OverloadedOperator::LogicalNot:
+	case OverloadedOperator::BitwiseNot:
+		if( func_type.return_type == void_type_ )
+		{
+			// TODO - Error, must return a value
+		}
+		break;
+
+	case OverloadedOperator::Assign:
+		if( func_type.return_type != void_type_ )
+		{
+			// TODO - Error, expected void
+		}
+		break;
+
+	case OverloadedOperator::Increment:
+	case OverloadedOperator::Decrement:
+		if( func_type.return_type != void_type_ )
+		{
+			// TODO - Error, expected void
+		}
+		break;
+
+	case OverloadedOperator::None:
+		U_ASSERT(false);
+	};
 }
 
 void CodeBuilder::BuildFuncCode(
@@ -3617,6 +3713,31 @@ const FunctionVariable* CodeBuilder::GetOverloadedFunction(
 		errors_.push_back( ReportCouldNotSelectOverloadedFunction( file_pos ) );
 		return nullptr;
 	}
+}
+
+const FunctionVariable* CodeBuilder::GetOverloadedOperator( const std::vector<Function::Arg>& actual_args, Synt::OverloadedOperator op )
+{
+	const ProgramString op_name= Synt::OverloadedOperatorToString( op );
+
+	for( const Function::Arg& arg : actual_args )
+	{
+		if( const Class* const class_= arg.type.GetClassType() )
+		{
+			// TODO - check incomplete class.
+			const NamesScope::InsertedName* const name_in_class= class_->members.GetThisScopeName( op_name );
+			if( name_in_class == nullptr )
+				continue;
+
+			const OverloadedFunctionsSet* const operators_set= name_in_class->second.GetFunctionsSet();
+			U_ASSERT( operators_set != nullptr ); // If we found something in names map with operator name, it must be operator.
+
+			const FunctionVariable* const func= GetOverloadedFunction( *operators_set, actual_args, false, FilePos( /*TODO*/ ) );
+			if( func != nullptr )
+				return func;
+		}
+	}
+
+	return nullptr;
 }
 
 void CodeBuilder::CheckReferencedVariables( const Variable& reference, const FilePos& file_pos )

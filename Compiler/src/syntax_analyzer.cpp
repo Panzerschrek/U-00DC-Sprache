@@ -1719,10 +1719,11 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 
 		switch( it_->type )
 		{
-		case Lexem::Type::Plus : overloaded_operator= OverloadedOperator::Add; break;
-		case Lexem::Type::Minus: overloaded_operator= OverloadedOperator::Sub; break;
-		case Lexem::Type::Star : overloaded_operator= OverloadedOperator::Mul; break;
-		case Lexem::Type::Slash: overloaded_operator= OverloadedOperator::Div; break;
+		case Lexem::Type::Plus   : overloaded_operator= OverloadedOperator::Add; break;
+		case Lexem::Type::Minus  : overloaded_operator= OverloadedOperator::Sub; break;
+		case Lexem::Type::Star   : overloaded_operator= OverloadedOperator::Mul; break;
+		case Lexem::Type::Slash  : overloaded_operator= OverloadedOperator::Div; break;
+		case Lexem::Type::Percent: overloaded_operator= OverloadedOperator::Rem; break;
 		case Lexem::Type::CompareEqual   : overloaded_operator= OverloadedOperator::Equal   ; break;
 		case Lexem::Type::CompareNotEqual: overloaded_operator= OverloadedOperator::NotEqual; break;
 		case Lexem::Type::CompareLess          : overloaded_operator= OverloadedOperator::Less        ; break;

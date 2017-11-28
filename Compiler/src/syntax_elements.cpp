@@ -75,6 +75,53 @@ ProgramString BinaryOperatorToString( const BinaryOperatorType op )
 	return ToProgramString( op_str );
 }
 
+ProgramString OverloadedOperatorToString( const OverloadedOperator op )
+{
+	switch( op )
+	{
+	case OverloadedOperator::None: return ""_SpC;
+
+	case OverloadedOperator::Add: return "+"_SpC;
+	case OverloadedOperator::Sub: return "-"_SpC;
+	case OverloadedOperator::Mul: return "*"_SpC;
+	case OverloadedOperator::Div: return "/"_SpC;
+	case OverloadedOperator::Rem: return "%"_SpC;
+
+	case OverloadedOperator::Equal: return "=="_SpC;
+	case OverloadedOperator::NotEqual: return "!="_SpC;
+	case OverloadedOperator::Less: return "<"_SpC;
+	case OverloadedOperator::LessEqual: return "<="_SpC;
+	case OverloadedOperator::Greater: return ">"_SpC;
+	case OverloadedOperator::GreaterEqual: return ">="_SpC;
+
+	case OverloadedOperator::And: return "&"_SpC;
+	case OverloadedOperator::Or : return "|"_SpC;
+	case OverloadedOperator::Xor: return "^"_SpC;
+
+	case OverloadedOperator::ShiftLeft : return "<<"_SpC;
+	case OverloadedOperator::ShiftRight: return ">>"_SpC;
+
+	case OverloadedOperator::AssignAdd: return "+="_SpC;
+	case OverloadedOperator::AssignSub: return "-="_SpC;
+	case OverloadedOperator::AssignMul: return "*="_SpC;
+	case OverloadedOperator::AssignDiv: return "/="_SpC;
+
+	case OverloadedOperator::AssignAnd: return "&="_SpC;
+	case OverloadedOperator::AssignOr : return "|="_SpC;
+	case OverloadedOperator::AssignXor: return "^="_SpC;
+
+	case OverloadedOperator::AssignShiftLeft : return "<<="_SpC;
+	case OverloadedOperator::AssignShiftRight: return ">>="_SpC;
+
+	case OverloadedOperator::LogicalNot: return "!"_SpC;
+	case OverloadedOperator::BitwiseNot: return "~"_SpC;
+
+	case OverloadedOperator::Assign: return "="_SpC;
+	case OverloadedOperator::Increment: return "++"_SpC;
+	case OverloadedOperator::Decrement: return "--"_SpC;
+	};
+}
+
 MemberAccessOperator::MemberAccessOperator(
 	const FilePos& file_pos,
 	ProgramString member_name )
