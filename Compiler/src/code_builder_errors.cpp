@@ -951,4 +951,48 @@ CodeBuilderError ReportAccessingVariableThatHaveMutableReference( const FilePos&
 	return error;
 }
 
+CodeBuilderError ReportOperatorDeclarationOutsideClass( const FilePos& file_pos )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::OperatorDeclarationOutsideClass;
+
+	error.text= "Operator declaration outside class. Operators can be declared only inside classes."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportOperatorDoesNotHaveParentClassArguments( const FilePos& file_pos )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::OperatorDoesNotHaveParentClassArguments;
+
+	error.text= "Operator does not have parent class arguments. At least one argument of operator must have parent class type."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportInvalidArgumentCountForOperator( const FilePos& file_pos )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::InvalidArgumentCountForOperator;
+
+	error.text= "Invalid argument count for operator."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportInvalidReturnTypeForOperator( const FilePos& file_pos, const ProgramString& expected_type_name )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::InvalidReturnTypeForOperator;
+
+	error.text= "Invalid return type for operator, expected \""_SpC + expected_type_name + "\"."_SpC;
+
+	return error;
+}
+
 } // namespace U

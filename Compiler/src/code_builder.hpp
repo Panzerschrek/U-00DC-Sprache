@@ -237,7 +237,11 @@ private:
 		ClassProxyPtr base_class,
 		NamesScope& scope );
 
-	void CheckOverloadedOperator( const ClassProxyPtr& base_class, Function& func_type, Synt::OverloadedOperator overloaded_operator );
+	void CheckOverloadedOperator(
+		const ClassProxyPtr& base_class,
+		const Function& func_type,
+		Synt::OverloadedOperator overloaded_operator,
+		const FilePos& file_pos );
 
 	void BuildFuncCode(
 		FunctionVariable& func,

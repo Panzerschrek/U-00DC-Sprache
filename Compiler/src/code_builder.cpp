@@ -1659,7 +1659,7 @@ CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 			errors_.push_back( ReportUsingIncompleteType( arg->file_pos_, out_arg.type.ToString() ) );
 	} // for arguments
 
-	CheckOverloadedOperator( base_class, function_type, func.overloaded_operator_ );
+	CheckOverloadedOperator( base_class, function_type, func.overloaded_operator_, func.file_pos_ );
 
 	NamesScope::InsertedName* const previously_inserted_func=
 		func_base_names_scope->GetThisScopeName( func_name );
@@ -1781,7 +1781,11 @@ CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 	return result;
 }
 
-void CodeBuilder::CheckOverloadedOperator( const ClassProxyPtr& base_class, Function& func_type, Synt::OverloadedOperator overloaded_operator )
+void CodeBuilder::CheckOverloadedOperator(
+	const ClassProxyPtr& base_class,
+	const Function& func_type,
+	const Synt::OverloadedOperator overloaded_operator,
+	const FilePos& file_pos )
 {
 	using Synt::OverloadedOperator;
 
@@ -1790,7 +1794,7 @@ void CodeBuilder::CheckOverloadedOperator( const ClassProxyPtr& base_class, Func
 
 	if( base_class == nullptr )
 	{
-		// TODO - Error - must be inside class
+		errors_.push_back( ReportOperatorDeclarationOutsideClass( file_pos ) );
 		return;
 	}
 
@@ -1805,32 +1809,32 @@ void CodeBuilder::CheckOverloadedOperator( const ClassProxyPtr& base_class, Func
 	}
 
 	if( !is_this_class )
-	{
-		// TODO - Error - one of arg must have class type
-	}
+		errors_.push_back( ReportOperatorDoesNotHaveParentClassArguments( file_pos ) );
 
 	switch( overloaded_operator )
 	{
 	case OverloadedOperator::Add:
 	case OverloadedOperator::Sub:
+		if( !( func_type.args.size() == 1u || func_type.args.size() == 2u ) )
+			errors_.push_back( ReportInvalidArgumentCountForOperator( file_pos ) );
 		break;
 
 	case OverloadedOperator::Mul:
 	case OverloadedOperator::Div:
-
 	case OverloadedOperator::Equal:
 	case OverloadedOperator::NotEqual:
 	case OverloadedOperator::Less:
 	case OverloadedOperator::LessEqual:
 	case OverloadedOperator::Greater:
 	case OverloadedOperator::GreaterEqual:
-
 	case OverloadedOperator::And:
 	case OverloadedOperator::Or :
 	case OverloadedOperator::Xor:
-
 	case OverloadedOperator::ShiftLeft :
 	case OverloadedOperator::ShiftRight:
+		if( func_type.args.size() != 2u )
+			errors_.push_back( ReportInvalidArgumentCountForOperator( file_pos ) );
+		break;
 
 	case OverloadedOperator::AssignAdd:
 	case OverloadedOperator::AssignSub:
@@ -1841,33 +1845,31 @@ void CodeBuilder::CheckOverloadedOperator( const ClassProxyPtr& base_class, Func
 	case OverloadedOperator::AssignXor:
 	case OverloadedOperator::AssignShiftLeft :
 	case OverloadedOperator::AssignShiftRight:
+		if( func_type.args.size() != 2u )
+			errors_.push_back( ReportInvalidArgumentCountForOperator( file_pos ) );
 		if( func_type.return_type != void_type_ )
-		{
-			// TODO - Error, expected void
-		}
+			errors_.push_back( ReportInvalidReturnTypeForOperator( file_pos, void_type_.ToString() ) );
 		break;
 
 	case OverloadedOperator::LogicalNot:
 	case OverloadedOperator::BitwiseNot:
-		if( func_type.return_type == void_type_ )
-		{
-			// TODO - Error, must return a value
-		}
+		if( func_type.args.size() != 1u )
+			errors_.push_back( ReportInvalidArgumentCountForOperator( file_pos ) );
 		break;
 
 	case OverloadedOperator::Assign:
+		if( func_type.args.size() != 2u )
+			errors_.push_back( ReportInvalidArgumentCountForOperator( file_pos ) );
 		if( func_type.return_type != void_type_ )
-		{
-			// TODO - Error, expected void
-		}
+			errors_.push_back( ReportInvalidReturnTypeForOperator( file_pos, void_type_.ToString() ) );
 		break;
 
 	case OverloadedOperator::Increment:
 	case OverloadedOperator::Decrement:
+		if( func_type.args.size() != 1u )
+			errors_.push_back( ReportInvalidArgumentCountForOperator( file_pos ) );
 		if( func_type.return_type != void_type_ )
-		{
-			// TODO - Error, expected void
-		}
+			errors_.push_back( ReportInvalidReturnTypeForOperator( file_pos, void_type_.ToString() ) );
 		break;
 
 	case OverloadedOperator::None:

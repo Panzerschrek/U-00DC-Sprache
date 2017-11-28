@@ -116,6 +116,12 @@ enum class CodeBuilderErrorCode : unsigned int
 	ReferenceProtectionError,
 	DestroyedVariableStillHaveReferences,
 	AccessingVariableThatHaveMutableReference,
+
+	// Operators overloading
+	OperatorDeclarationOutsideClass,
+	OperatorDoesNotHaveParentClassArguments,
+	InvalidArgumentCountForOperator,
+	InvalidReturnTypeForOperator,
 };
 
 struct CodeBuilderError
@@ -211,5 +217,9 @@ CodeBuilderError ReportIncompleteMemberOfClassTemplate( const FilePos& file_pos,
 CodeBuilderError ReportReferenceProtectionError( const FilePos& file_pos ); // TODO - add variable name
 CodeBuilderError ReportDestroyedVariableStillHaveReferences( const FilePos& file_pos ); // TODO - add variable name
 CodeBuilderError ReportAccessingVariableThatHaveMutableReference( const FilePos& file_pos ); // TODO - add variable name
+CodeBuilderError ReportOperatorDeclarationOutsideClass( const FilePos& file_pos );
+CodeBuilderError ReportOperatorDoesNotHaveParentClassArguments( const FilePos& file_pos );
+CodeBuilderError ReportInvalidArgumentCountForOperator( const FilePos& file_pos );
+CodeBuilderError ReportInvalidReturnTypeForOperator( const FilePos& file_pos, const ProgramString& expected_type_name );
 
 } // namespace U
