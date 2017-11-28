@@ -242,28 +242,63 @@ Value CodeBuilder::BuildExpressionCode(
 
 		for( const Synt::IUnaryPrefixOperatorPtr& prefix_operator : expression_with_unary_operators->prefix_operators_ )
 		{
-			if( const auto unary_minus=
-				dynamic_cast<const Synt::UnaryMinus*>( prefix_operator.get() ) )
+			if( result.GetTemplateDependentValue() != nullptr )
+				continue;
+			const Variable* const var= result.GetVariable();
+			if( var == nullptr )
 			{
-				result= BuildUnaryMinus( result, *unary_minus, function_context );
+				errors_.push_back( ReportOperationNotSupportedForThisType( expression_with_unary_operators->file_pos_, result.GetType().ToString() ) );
+				continue;
 			}
-			else if( const auto unary_plus=
-				dynamic_cast<const Synt::UnaryPlus*>( prefix_operator.get() ) )
+
+			std::vector<Function::Arg> args;
+			args.emplace_back();
+			args.back().type= var->type;
+			args.back().is_mutable= var->value_type == ValueType::Reference;
+			args.back().is_reference= var->value_type != ValueType::Value;
+
+			Synt::OverloadedOperator op= Synt::OverloadedOperator::None;
+			if( dynamic_cast<const Synt::UnaryMinus*>( prefix_operator.get() ) != nullptr )
+				op= Synt::OverloadedOperator::Sub;
+			else if( dynamic_cast<const Synt::UnaryPlus*>( prefix_operator.get() ) != nullptr )
+				op= Synt::OverloadedOperator::Add;
+			else if( dynamic_cast<const Synt::LogicalNot*>( prefix_operator.get() ) != nullptr )
+				op= Synt::OverloadedOperator::LogicalNot;
+			else if( dynamic_cast<const Synt::BitwiseNot*>( prefix_operator.get() ) != nullptr )
+				op= Synt::OverloadedOperator::BitwiseNot;
+			else U_ASSERT( false );
+
+			const FunctionVariable* const overloaded_operator= GetOverloadedOperator( args, op );
+			if( overloaded_operator != nullptr )
 			{
-				(void)unary_plus;
-				// DO NOTHING
+				result= DoCallFunction( *overloaded_operator, expression_with_unary_operators->file_pos_, var, {}, names, function_context );
 			}
-			else if( const auto logical_not=
-				dynamic_cast<const Synt::LogicalNot*>( prefix_operator.get() ) )
+			else
 			{
-				result= BuildLogicalNot( result, *logical_not, function_context );
+				if( const auto unary_minus=
+					dynamic_cast<const Synt::UnaryMinus*>( prefix_operator.get() ) )
+				{
+					result= BuildUnaryMinus( result, *unary_minus, function_context );
+				}
+				else if( const auto unary_plus=
+					dynamic_cast<const Synt::UnaryPlus*>( prefix_operator.get() ) )
+				{
+					// TODO - maybe do something here?
+					(void)unary_plus;
+				}
+				else if( const auto logical_not=
+					dynamic_cast<const Synt::LogicalNot*>( prefix_operator.get() ) )
+				{
+					result= BuildLogicalNot( result, *logical_not, function_context );
+				}
+				else if( const auto bitwise_not=
+					dynamic_cast<const Synt::BitwiseNot*>( prefix_operator.get() ) )
+				{
+					result= BuildBitwiseNot( result, *bitwise_not, function_context );
+				}
+				else
+					U_ASSERT(false);
 			}
-			else if( const auto bitwise_not=
-				dynamic_cast<const Synt::BitwiseNot*>( prefix_operator.get() ) )
-			{
-				result= BuildBitwiseNot( result, *bitwise_not, function_context );
-			}
-			// TODO
 		} // for unary prefix operators
 
 		return result;
@@ -1420,7 +1455,7 @@ Value CodeBuilder::BuildCallOperator(
 Value CodeBuilder::DoCallFunction(
 	const FunctionVariable& function,
 	const FilePos& call_file_pos,
-	const Variable* this_arg,
+	const Variable* first_arg,
 	std::vector<const Synt::IExpressionComponent*> args,
 	NamesScope& names,
 	FunctionContext& function_context )
@@ -1439,20 +1474,20 @@ Value CodeBuilder::DoCallFunction(
 	}
 
 	bool function_result_have_template_dependent_type= false;
-	const size_t this_count= this_arg == 0u ? 0u : 1u;
-	const size_t arg_count= args.size() + this_count;
+	const size_t first_arg_count= first_arg == 0u ? 0u : 1u;
+	const size_t arg_count= args.size() + first_arg_count;
 	for( unsigned int i= 0u; i < arg_count; i++ )
 	{
-		const bool is_this_arg= this_arg != nullptr && i == 0u;
+		const bool is_first_arg= first_arg != nullptr && i == 0u;
 		const Function::Arg& arg= function_type.args[i];
 
 		Variable expr;
-		if( is_this_arg )
-			expr= *this_arg;
+		if( is_first_arg )
+			expr= *first_arg;
 		else
-			expr= *BuildExpressionCode( *args[ i - this_count ], names, function_context ).GetVariable();
+			expr= *BuildExpressionCode( *args[ i - first_arg_count ], names, function_context ).GetVariable();
 
-		const FilePos& file_pos= is_this_arg ? file_pos : args[ i - this_count ]->GetFilePos();
+		const FilePos& file_pos= is_first_arg ? file_pos : args[ i - first_arg_count ]->GetFilePos();
 
 		const bool something_have_template_dependent_type= expr.type.GetTemplateDependentType() != nullptr || arg.type.GetTemplateDependentType() != nullptr;
 		function_result_have_template_dependent_type= function_result_have_template_dependent_type || something_have_template_dependent_type;

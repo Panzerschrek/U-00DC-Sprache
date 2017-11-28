@@ -315,7 +315,7 @@ private:
 	Value DoCallFunction(
 		const FunctionVariable& function,
 		const FilePos& call_file_pos,
-		const Variable* this_arg,
+		const Variable* first_arg,
 		std::vector<const Synt::IExpressionComponent*> args,
 		NamesScope& names,
 		FunctionContext& function_context );
