@@ -286,7 +286,8 @@ Function::Function(
 	ReferenceModifier return_value_reference_modifier,
 	FunctionArgumentsDeclaration arguments,
 	std::unique_ptr<StructNamedInitializer> constructor_initialization_list,
-	BlockPtr block )
+	BlockPtr block,
+	OverloadedOperator overloaded_operator )
 	: SyntaxElementBase(file_pos)
 	, name_( std::move(name) )
 	, return_type_( std::move(return_type) )
@@ -295,6 +296,7 @@ Function::Function(
 	, arguments_( std::move(arguments) )
 	, constructor_initialization_list_( std::move(constructor_initialization_list) )
 	, block_( std::move(block) )
+	, overloaded_operator_( std::move(overloaded_operator) )
 {}
 
 ClassField::ClassField( const FilePos& file_pos )

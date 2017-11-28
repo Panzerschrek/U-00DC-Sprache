@@ -169,6 +169,49 @@ enum class BinaryOperatorType
 
 ProgramString BinaryOperatorToString( BinaryOperatorType op );
 
+enum class OverloadedOperator
+{
+	None,
+
+	Add, // for unary and binary +
+	Sub, // for unary and binary -
+	Mul,
+	Div,
+
+	Equal,
+	NotEqual,
+	Less,
+	LessEqual,
+	Greater,
+	GreaterEqual,
+
+	And,
+	Or,
+	Xor,
+
+	ShiftLeft ,
+	ShiftRight,
+
+	AssignAdd,
+	AssignSub,
+	AssignMul,
+	AssignDiv,
+
+	AssignAnd,
+	AssignOr ,
+	AssignXor,
+
+	AssignShiftLeft ,
+	AssignShiftRight,
+
+	LogicalNot,
+	BitwiseNot,
+
+	Assign,
+	Increment,
+	Decrement,
+};
+
 class IExpressionComponent
 {
 public:
@@ -563,7 +606,8 @@ public:
 		ReferenceModifier return_value_reference_modifier,
 		FunctionArgumentsDeclaration arguments,
 		std::unique_ptr<StructNamedInitializer> constructor_initialization_list,
-		BlockPtr block );
+		BlockPtr block,
+		OverloadedOperator overloaded_operator );
 
 	const ComplexName name_;
 	const TypeName return_type_;
@@ -572,6 +616,7 @@ public:
 	const FunctionArgumentsDeclaration arguments_;
 	const std::unique_ptr<StructNamedInitializer> constructor_initialization_list_;
 	const BlockPtr block_;
+	const OverloadedOperator overloaded_operator_;
 };
 
 class ClassField final
