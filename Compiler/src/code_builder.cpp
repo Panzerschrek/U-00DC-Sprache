@@ -3080,7 +3080,18 @@ void CodeBuilder::BuildDeltaOneOperatorCode(
 		return;
 	}
 
-	if( const FundamentalType* const fundamental_type= variable->type.GetFundamentalType() )
+	std::vector<Function::Arg> args;
+	args.emplace_back();
+	args.back().type= variable->type;
+	args.back().is_mutable= variable->value_type == ValueType::Reference;
+	args.back().is_reference= variable->value_type != ValueType::Value;
+	const FunctionVariable* const overloaded_operator=
+		GetOverloadedOperator( args, positive ? Synt::OverloadedOperator::Increment : Synt::OverloadedOperator::Decrement );
+	if( overloaded_operator != nullptr )
+	{
+		DoCallFunction( *overloaded_operator, file_pos, variable, {}, block_names, function_context );
+	}
+	else if( const FundamentalType* const fundamental_type= variable->type.GetFundamentalType() )
 	{
 		if( !IsInteger( fundamental_type->fundamental_type ) )
 		{
@@ -3118,8 +3129,7 @@ void CodeBuilder::BuildDeltaOneOperatorCode(
 	{}
 	else
 	{
-		// SPRACHE_TODO - search for overloaded operators.
-		errors_.push_back( ReportNotImplemented( file_pos, "++ and -- for nonfundamental types" ) );
+		errors_.push_back( ReportOperationNotSupportedForThisType( file_pos, variable->type.ToString() ) );
 		return;
 	}
 }
