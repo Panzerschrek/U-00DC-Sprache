@@ -301,4 +301,52 @@ U_TEST( OperatorsOverloadingTest5 )
 	U_TEST_ASSERT( static_cast<uint64_t>( 55414 * 332 ) == result_value.IntVal.getLimitedValue() );
 }
 
+U_TEST( AssignmentOperatorArgumentsShouldBeEvaluatedInReverseOrder )
+{
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			i32 x;
+			op=( S &mut dst, S &imut src )
+			{
+				dst.x= src.x;
+			}
+		}
+
+		fn Mul5( i32 &mut x ) : u32
+		{
+			x*= 5;
+			return 0u;
+		}
+
+		fn Div7( i32 &mut x ) : u32
+		{
+			x/= 7;
+			return 0u;
+		}
+
+		fn Foo() : i32
+		{
+			var [ S, 1 ] arr0= zero_init;
+			var [ S, 1 ] arr1= zero_init;
+			var i32 fff= 4;
+
+			arr0[ Div7(fff) ]= arr1[ Mul5(fff) ];  // Must first evaluate Mul5, then - Mul7
+
+			return fff;
+		}
+	)";
+
+	static_assert( 4 * 5 / 7 != 4 / 7 * 5, "test is wrong" );
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	const llvm::GenericValue result_value= engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+	U_TEST_ASSERT( static_cast<uint64_t>( 4 * 5 / 7 ) == result_value.IntVal.getLimitedValue() );
+}
+
 } // namespace U

@@ -283,9 +283,10 @@ private:
 		Synt::OverloadedOperator op,
 		const Synt::IExpressionComponent&  left_expr,
 		const Synt::IExpressionComponent& right_expr,
+		bool evaluate_args_in_reverse_order,
 		const FilePos& file_pos,
 		NamesScope& names,
-		FunctionContext& function_context);
+		FunctionContext& function_context );
 
 	Value BuildBinaryOperator(
 		const Variable& l_var,
@@ -328,6 +329,7 @@ private:
 		const FilePos& call_file_pos,
 		const Variable* first_arg,
 		std::vector<const Synt::IExpressionComponent*> args,
+		const bool evaluate_args_in_reverse_order,
 		NamesScope& names,
 		FunctionContext& function_context );
 

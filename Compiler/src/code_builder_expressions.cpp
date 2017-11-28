@@ -63,6 +63,7 @@ boost::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 	const Synt::OverloadedOperator op,
 	const Synt::IExpressionComponent&  left_expr,
 	const Synt::IExpressionComponent& right_expr,
+	const bool evaluate_args_in_reverse_order,
 	const FilePos& file_pos,
 	NamesScope& names,
 	FunctionContext& function_context)
@@ -120,7 +121,7 @@ boost::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 		synt_args.reserve( 2u );
 		synt_args.push_back( & left_expr );
 		synt_args.push_back( &right_expr );
-		return DoCallFunction( *overloaded_operator, file_pos, nullptr, synt_args, names, function_context );
+		return DoCallFunction( *overloaded_operator, file_pos, nullptr, synt_args, evaluate_args_in_reverse_order, names, function_context );
 	}
 
 	return boost::none;
@@ -154,6 +155,7 @@ Value CodeBuilder::BuildExpressionCode(
 				TryCallOverloadedBinaryOperator(
 					GetOverloadedOperatorForBinaryOperator( binary_operator->operator_type_ ),
 					*binary_operator->left_, *binary_operator->right_,
+					false,
 					binary_operator->file_pos_,
 					names,
 					function_context );
@@ -282,7 +284,7 @@ Value CodeBuilder::BuildExpressionCode(
 			const FunctionVariable* const overloaded_operator= GetOverloadedOperator( args, op );
 			if( overloaded_operator != nullptr )
 			{
-				result= DoCallFunction( *overloaded_operator, expression_with_unary_operators->file_pos_, var, {}, names, function_context );
+				result= DoCallFunction( *overloaded_operator, expression_with_unary_operators->file_pos_, var, {}, false, names, function_context );
 			}
 			else
 			{
@@ -1460,7 +1462,7 @@ Value CodeBuilder::BuildCallOperator(
 	for( const Synt::IExpressionComponentPtr& arg : call_operator.arguments_ )
 		synt_args.push_back( arg.get() );
 
-	return DoCallFunction( function, call_operator.file_pos_, this_, synt_args, names, function_context );
+	return DoCallFunction( function, call_operator.file_pos_, this_, synt_args, false, names, function_context );
 }
 
 Value CodeBuilder::DoCallFunction(
@@ -1468,37 +1470,37 @@ Value CodeBuilder::DoCallFunction(
 	const FilePos& call_file_pos,
 	const Variable* first_arg,
 	std::vector<const Synt::IExpressionComponent*> args,
+	const bool evaluate_args_in_reverse_order,
 	NamesScope& names,
 	FunctionContext& function_context )
 {
+	U_ASSERT( !( evaluate_args_in_reverse_order && first_arg != nullptr ) );
+
 	const Function& function_type= *function.type.GetFunctionType();
 
+	const size_t first_arg_count= first_arg == 0u ? 0u : 1u;
+	const size_t arg_count= args.size() + first_arg_count;
+
 	std::vector<llvm::Value*> llvm_args;
+	llvm_args.resize( arg_count, nullptr );
 	std::unordered_map<StoredVariablePtr, VaraibleReferencesCounter> locked_variable_conters;
 	std::vector<VariableStorageUseCounter> temp_args_locks; // We need lock reference argument before evaluating next arguments.
 
-	llvm::Value* s_ret_value= nullptr;
-	if( function.return_value_is_sret )
-	{
-		s_ret_value= function_context.alloca_ir_builder.CreateAlloca( function_type.return_type.GetLLVMType() );
-		llvm_args.push_back( s_ret_value );
-	}
-
 	bool function_result_have_template_dependent_type= false;
-	const size_t first_arg_count= first_arg == 0u ? 0u : 1u;
-	const size_t arg_count= args.size() + first_arg_count;
 	for( unsigned int i= 0u; i < arg_count; i++ )
 	{
-		const bool is_first_arg= first_arg != nullptr && i == 0u;
-		const Function::Arg& arg= function_type.args[i];
+		const unsigned int j= evaluate_args_in_reverse_order ? arg_count - i - 1u : i;
+
+		const bool is_first_arg= first_arg != nullptr && j == 0u;
+		const Function::Arg& arg= function_type.args[j];
 
 		Variable expr;
 		if( is_first_arg )
 			expr= *first_arg;
 		else
-			expr= *BuildExpressionCode( *args[ i - first_arg_count ], names, function_context ).GetVariable();
+			expr= *BuildExpressionCode( *args[ j - first_arg_count ], names, function_context ).GetVariable();
 
-		const FilePos& file_pos= is_first_arg ? file_pos : args[ i - first_arg_count ]->GetFilePos();
+		const FilePos& file_pos= is_first_arg ? file_pos : args[ j - first_arg_count ]->GetFilePos();
 
 		const bool something_have_template_dependent_type= expr.type.GetTemplateDependentType() != nullptr || arg.type.GetTemplateDependentType() != nullptr;
 		function_result_have_template_dependent_type= function_result_have_template_dependent_type || something_have_template_dependent_type;
@@ -1520,7 +1522,7 @@ Value CodeBuilder::DoCallFunction(
 					return ErrorValue();
 				}
 
-				llvm_args.push_back(expr.llvm_value);
+				llvm_args[j]= expr.llvm_value;
 
 				// Lock references.
 				for( const StoredVariablePtr& referenced_variable : expr.referenced_variables )
@@ -1541,14 +1543,14 @@ Value CodeBuilder::DoCallFunction(
 						{
 							llvm::Value* const temp_storage= function_context.alloca_ir_builder.CreateAlloca( expr.type.GetLLVMType() );
 							function_context.llvm_ir_builder.CreateStore( expr.llvm_value, temp_storage );
-							llvm_args.push_back( temp_storage );
+							llvm_args[j]= temp_storage;
 						}
 					}
 					else
-						llvm_args.push_back( expr.llvm_value );
+						llvm_args[j]= expr.llvm_value;
 				}
 				else
-					llvm_args.push_back( expr.llvm_value );
+					llvm_args[j]= expr.llvm_value;
 
 				// Lock references.
 				for( const StoredVariablePtr& referenced_variable : expr.referenced_variables )
@@ -1563,7 +1565,7 @@ Value CodeBuilder::DoCallFunction(
 			if( arg.type.GetFundamentalType() != nullptr )
 			{
 				if( !something_have_template_dependent_type )
-					llvm_args.push_back( CreateMoveToLLVMRegisterInstruction( expr, function_context ) );
+					llvm_args[j]= CreateMoveToLLVMRegisterInstruction( expr, function_context );
 			}
 			else if( const ClassProxyPtr class_type= arg.type.GetClassTypeProxy() )
 			{
@@ -1581,7 +1583,7 @@ Value CodeBuilder::DoCallFunction(
 					llvm::Value* const arg_copy= function_context.alloca_ir_builder.CreateAlloca( arg.type.GetLLVMType() );
 
 					TryCallCopyConstructor( file_pos, arg_copy, expr.llvm_value, class_type, function_context );
-					llvm_args.push_back( arg_copy );
+					llvm_args[j]= arg_copy;
 				}
 			}
 			else if( something_have_template_dependent_type )
@@ -1637,6 +1639,13 @@ Value CodeBuilder::DoCallFunction(
 			dummy_result.location= function.return_value_is_sret ? Variable::Location::Pointer : Variable::Location::LLVMRegister;
 		dummy_result.type= GetNextTemplateDependentType();
 		return Value( dummy_result, call_file_pos );
+	}
+
+	llvm::Value* s_ret_value= nullptr;
+	if( function.return_value_is_sret )
+	{
+		s_ret_value= function_context.alloca_ir_builder.CreateAlloca( function_type.return_type.GetLLVMType() );
+		llvm_args.insert( llvm_args.begin(), s_ret_value );
 	}
 
 	llvm::Value* call_result=

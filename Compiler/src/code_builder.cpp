@@ -2910,6 +2910,7 @@ void CodeBuilder::BuildAssignmentOperatorCode(
 			Synt::OverloadedOperator::Assign,
 			*assignment_operator.l_value_,
 			*assignment_operator.r_value_,
+			true, // evaluate args in reverse order
 			assignment_operator.file_pos_,
 			block_names,
 			function_context ) != boost::none )
@@ -3000,6 +3001,7 @@ void CodeBuilder::BuildAdditiveAssignmentOperatorCode(
 			GetOverloadedOperatorForAdditiveAssignmentOperator( additive_assignment_operator.additive_operation_ ),
 			*additive_assignment_operator.l_value_,
 			*additive_assignment_operator.r_value_,
+			true, // evaluate args in reverse order
 			additive_assignment_operator.file_pos_,
 			block_names,
 			function_context ) != boost::none )
@@ -3127,7 +3129,7 @@ void CodeBuilder::BuildDeltaOneOperatorCode(
 		GetOverloadedOperator( args, positive ? Synt::OverloadedOperator::Increment : Synt::OverloadedOperator::Decrement );
 	if( overloaded_operator != nullptr )
 	{
-		DoCallFunction( *overloaded_operator, file_pos, variable, {}, block_names, function_context );
+		DoCallFunction( *overloaded_operator, file_pos, variable, {}, false, block_names, function_context );
 	}
 	else if( const FundamentalType* const fundamental_type= variable->type.GetFundamentalType() )
 	{
