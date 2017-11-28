@@ -1739,6 +1739,7 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 		case Lexem::Type::AssignSub: overloaded_operator= OverloadedOperator::AssignSub; break;
 		case Lexem::Type::AssignMul: overloaded_operator= OverloadedOperator::AssignMul; break;
 		case Lexem::Type::AssignDiv: overloaded_operator= OverloadedOperator::AssignDiv; break;
+		case Lexem::Type::AssignRem: overloaded_operator= OverloadedOperator::AssignRem; break;
 		case Lexem::Type::AssignAnd: overloaded_operator= OverloadedOperator::AssignAnd; break;
 		case Lexem::Type::AssignOr : overloaded_operator= OverloadedOperator::AssignOr ; break;
 		case Lexem::Type::AssignXor: overloaded_operator= OverloadedOperator::AssignXor; break;

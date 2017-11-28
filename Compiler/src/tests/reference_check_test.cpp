@@ -805,10 +805,18 @@ U_TEST( ReferenceCheckTest_AdditiveAssignment_2 )
 {
 	static const char c_program_text[]=
 	R"(
+		struct Box
+		{
+			i32 b;
+			op/=( mut this, Box &imut other )
+			{
+				this.b /= other.b;
+			}
+		}
 		fn Foo()
 		{
-			var i32 x= 0;
-			x*= x; // Error, needs deref.
+			var Box x{ .b= 541 };
+			x/= x; // Error, pass into operator both mutable and immutable references.
 		}
 	)";
 
@@ -818,7 +826,7 @@ U_TEST( ReferenceCheckTest_AdditiveAssignment_2 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::AccessingVariableThatHaveMutableReference );
-	U_TEST_ASSERT( error.file_pos.line == 5u );
+	U_TEST_ASSERT( error.file_pos.line == 13u );
 }
 
 U_TEST( ReferenceCheckTest_ShouldConvertReferenceInFunctionCall_0 )

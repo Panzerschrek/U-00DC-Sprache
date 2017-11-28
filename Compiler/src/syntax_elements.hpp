@@ -197,6 +197,7 @@ enum class OverloadedOperator
 	AssignSub,
 	AssignMul,
 	AssignDiv,
+	AssignRem,
 
 	AssignAnd,
 	AssignOr ,

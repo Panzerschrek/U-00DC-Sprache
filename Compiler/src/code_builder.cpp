@@ -36,6 +36,26 @@ const TypesMap g_types_map=
 
 } // namespace
 
+static Synt::OverloadedOperator GetOverloadedOperatorForAdditiveAssignmentOperator( const Synt::BinaryOperatorType operator_type )
+{
+	using Synt::BinaryOperatorType;
+	using Synt::OverloadedOperator;
+	switch( operator_type )
+	{
+	case BinaryOperatorType::Add: return OverloadedOperator::AssignAdd;
+	case BinaryOperatorType::Sub: return OverloadedOperator::AssignSub;
+	case BinaryOperatorType::Mul: return OverloadedOperator::AssignMul;
+	case BinaryOperatorType::Div: return OverloadedOperator::AssignDiv;
+	case BinaryOperatorType::Rem: return OverloadedOperator::AssignRem;
+	case BinaryOperatorType::And: return OverloadedOperator::AssignAnd;
+	case BinaryOperatorType::Or : return OverloadedOperator::AssignOr ;
+	case BinaryOperatorType::Xor: return OverloadedOperator::AssignXor;
+	case BinaryOperatorType::ShiftLeft : return OverloadedOperator::AssignShiftLeft ;
+	case BinaryOperatorType::ShiftRight: return OverloadedOperator::AssignShiftRight;
+	default: U_ASSERT(false); return OverloadedOperator::None;
+	};
+}
+
 namespace CodeBuilderPrivate
 {
 
@@ -2975,20 +2995,39 @@ void CodeBuilder::BuildAdditiveAssignmentOperatorCode(
 	NamesScope& block_names,
 	FunctionContext& function_context )
 {
+	if(
+		TryCallOverloadedBinaryOperator(
+			GetOverloadedOperatorForAdditiveAssignmentOperator( additive_assignment_operator.additive_operation_ ),
+			*additive_assignment_operator.l_value_,
+			*additive_assignment_operator.r_value_,
+			additive_assignment_operator.file_pos_,
+			block_names,
+			function_context ) != boost::none )
+	{
+		return;
+	}
+	// Here process default additive assignment operators for fundamental types.
+
 	// Destruction frame for temporary variables of expressions.
 	const StackVariablesStorage temp_variables_storage( function_context );
 
-	const Value r_var_value=
+	Value r_var_value=
 		BuildExpressionCode(
 			*additive_assignment_operator.r_value_,
 			block_names,
 			function_context );
-	const Variable* const r_var= r_var_value.GetVariable();
+	Variable* const r_var= r_var_value.GetVariable();
 
-	// Lock r_var variables.
-	std::vector<VariableStorageUseCounter> r_var_locks;
-	if( r_var != nullptr )
-		r_var_locks= LockReferencedVariables( *r_var );
+	if( r_var != nullptr && r_var->type.GetFundamentalType() != nullptr )
+	{
+		// We must read value, because referenced by reference value may be changed in l_var evaluation.
+		if( r_var->location != Variable::Location::LLVMRegister )
+		{
+			r_var->llvm_value= CreateMoveToLLVMRegisterInstruction( *r_var, function_context );
+			r_var->location= Variable::Location::LLVMRegister;
+		}
+		r_var->value_type= ValueType::Value;
+	}
 
 	const Value l_var_value=
 		BuildExpressionCode(
@@ -3013,11 +3052,6 @@ void CodeBuilder::BuildAdditiveAssignmentOperatorCode(
 			// Assign to variable, that have nonzero immutable references.
 			errors_.push_back( ReportReferenceProtectionError( additive_assignment_operator.file_pos_ ) );
 		}
-		if( stored_variable->mut_use_counter.use_count() > 1u + 1u )
-		{
-			// Variable have mutable references except locked reference for this assignment.
-			errors_.push_back( ReportReferenceProtectionError( additive_assignment_operator.file_pos_ ) );
-		}
 	}
 
 	const FundamentalType* const l_var_fundamental_type= l_var->type.GetFundamentalType();
@@ -3025,7 +3059,6 @@ void CodeBuilder::BuildAdditiveAssignmentOperatorCode(
 	if( l_var_fundamental_type != nullptr && r_var_fundamental_type != nullptr )
 	{
 		// Generate binary operator and assignment for fundamental types.
-		// SPRACHE_TODO - do not call "BuildBinaryOperator", when operators overloading will be implemented.
 		const Value operation_result_value=
 			BuildBinaryOperator(
 				*l_var, *r_var,
@@ -3059,12 +3092,9 @@ void CodeBuilder::BuildAdditiveAssignmentOperatorCode(
 	{}
 	else
 	{
-		// SPRACHE_TODO - search for overloaded operators.
-		errors_.push_back( ReportNotImplemented( additive_assignment_operator.file_pos_, "additive operations for nonfundamental types" ) );
+		errors_.push_back( ReportOperationNotSupportedForThisType( additive_assignment_operator.file_pos_, l_var->type.ToString() ) );
 		return;
 	}
-
-	r_var_locks.clear();
 
 	// Destruct temporary variables of right and left expressions.
 	CallDestructors( *function_context.stack_variables_stack.back(), function_context, additive_assignment_operator.file_pos_ );

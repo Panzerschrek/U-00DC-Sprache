@@ -270,4 +270,35 @@ U_TEST( OperatorsOverloadingTest4 )
 	U_TEST_ASSERT( static_cast<uint64_t>( 332 ) == result_value.IntVal.getLimitedValue() );
 }
 
+U_TEST( OperatorsOverloadingTest5 )
+{
+	// Basic overloaded additive assignment operator.
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			i32 x;
+			op*=( S &mut dst, S &imut src )
+			{
+				dst.x*= src.x;
+			}
+		}
+
+		fn Foo() : i32
+		{
+			var S a{ .x= 55414 }, b{ .x= 332 };
+			a*= b;
+			return a.x;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	const llvm::GenericValue result_value= engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+	U_TEST_ASSERT( static_cast<uint64_t>( 55414 * 332 ) == result_value.IntVal.getLimitedValue() );
+}
+
 } // namespace U

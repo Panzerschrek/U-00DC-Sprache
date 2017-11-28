@@ -34,6 +34,7 @@ enum class CodeBuilderErrorCode : unsigned int
 	BindingConstReferenceToNonconstReference,
 
 	// ExpectedVariable* errors
+	// TODO - emit common error - ExpectedVariable.
 	ExpectedVariableInAssignment,
 	ExpectedVariableInBinaryOperator,
 	ExpectedVariableAsArgument,

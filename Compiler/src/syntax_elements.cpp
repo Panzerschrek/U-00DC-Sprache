@@ -105,6 +105,7 @@ ProgramString OverloadedOperatorToString( const OverloadedOperator op )
 	case OverloadedOperator::AssignSub: return "-="_SpC;
 	case OverloadedOperator::AssignMul: return "*="_SpC;
 	case OverloadedOperator::AssignDiv: return "/="_SpC;
+	case OverloadedOperator::AssignRem: return "%="_SpC;
 
 	case OverloadedOperator::AssignAnd: return "&="_SpC;
 	case OverloadedOperator::AssignOr : return "|="_SpC;
