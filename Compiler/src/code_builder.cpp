@@ -389,6 +389,7 @@ void CodeBuilder::CopyClass(
 	copy->is_default_constructible= src.is_default_constructible;
 	copy->is_copy_constructible= src.is_copy_constructible;
 	copy->have_destructor= src.have_destructor;
+	copy->is_copy_assignable= src.is_copy_assignable;
 
 	copy->forward_declaration_file_pos= src.forward_declaration_file_pos;
 	copy->body_file_pos= src.body_file_pos;
@@ -758,6 +759,7 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 	TryGenerateDefaultConstructor( *the_class, class_type );
 	TryGenerateCopyConstructor( *the_class, class_type );
 	TryGenerateDestructor( *the_class, class_type );
+	TryGenerateCopyAssignmentOperator( *the_class, class_type );
 
 	// Prepare inner classes.
 	for( const Synt::Class* const inner_class : inner_classes )
@@ -1141,6 +1143,140 @@ void CodeBuilder::TryGenerateDestructor( Class& the_class, const Type& class_typ
 	the_class.have_destructor= true;
 }
 
+void CodeBuilder::TryGenerateCopyAssignmentOperator( Class& the_class, const Type& class_type )
+{
+	static const ProgramString op_name= "="_SpC;
+
+	// Search for explicit assignment operator.
+	if( const NamesScope::InsertedName* const assignment_operator_name=
+		the_class.members.GetThisScopeName( op_name ) )
+	{
+		const OverloadedFunctionsSet* const operators= assignment_operator_name->second.GetFunctionsSet();
+		for( const FunctionVariable& op : *operators )
+		{
+			const Function& op_type= *op.type.GetFunctionType();
+
+			if( op_type.args.size() != 2u )
+				continue; // Can happens in error case.
+
+			// SPRACHE_TODO - support assignment operator with value src argument.
+			if(
+				op_type.args[0u].type == class_type &&  op_type.args[0u].is_mutable && op_type.args[0u].is_reference &&
+				op_type.args[1u].type == class_type && !op_type.args[1u].is_mutable && op_type.args[1u].is_reference )
+			{
+				the_class.is_copy_assignable= true;
+				return;
+			}
+		}
+	}
+
+	bool all_fields_is_copy_assignable= true;
+
+	the_class.members.ForEachInThisScope(
+		[&]( const NamesScope::InsertedName& member )
+		{
+			const ClassField* const field= member.second.GetClassField();
+			if( field == nullptr )
+				return;
+
+			if( !field->type.IsCopyAssignable() )
+				all_fields_is_copy_assignable= false;
+		} );
+
+	if( !all_fields_is_copy_assignable )
+		return;
+
+	// Generate assignment operator
+	Function op_type;
+	op_type.return_type= void_type_;
+	op_type.args.resize(2u);
+	op_type.args[0].type= class_type;
+	op_type.args[0].is_mutable= true;
+	op_type.args[0].is_reference= true;
+	op_type.args[1].type= class_type;
+	op_type.args[1].is_mutable= false;
+	op_type.args[1].is_reference= true;
+
+	std::vector<llvm::Type*> args_llvm_types;
+	args_llvm_types.push_back( llvm::PointerType::get( class_type.GetLLVMType(), 0u ) );
+	args_llvm_types.push_back( llvm::PointerType::get( class_type.GetLLVMType(), 0u ) );
+
+	op_type.llvm_function_type=
+		llvm::FunctionType::get(
+			fundamental_llvm_types_.void_,
+			llvm::ArrayRef<llvm::Type*>( args_llvm_types.data(), args_llvm_types.size() ),
+			false );
+
+	llvm::Function* const llvm_op_function=
+		llvm::Function::Create(
+			op_type.llvm_function_type,
+			llvm::Function::LinkageTypes::LinkOnceODRLinkage,
+			MangleFunction( the_class.members, op_name, op_type, true ),
+			module_.get() );
+
+	SetupGeneratedFunctionLinkageAttributes( *llvm_op_function );
+	llvm_op_function->addAttribute( 1u, llvm::Attribute::NonNull ); // this is nonnull
+	llvm_op_function->addAttribute( 2u, llvm::Attribute::NonNull ); // and src is nonnull
+
+	FunctionContext function_context(
+		op_type.return_type,
+		op_type.return_value_is_mutable,
+		op_type.return_value_is_reference,
+		llvm_context_,
+		llvm_op_function );
+
+	llvm::Value* const this_llvm_value= &*llvm_op_function->args().begin();
+	this_llvm_value->setName( KeywordAscii( Keywords::this_ ) );
+	llvm::Value* const src_llvm_value= &*(++llvm_op_function->args().begin());
+	src_llvm_value->setName( "src" );
+
+	the_class.members.ForEachInThisScope(
+		[&]( const NamesScope::InsertedName& member )
+		{
+			const ClassField* const field= member.second.GetClassField();
+			if( field == nullptr )
+				return;
+			U_ASSERT( field->type.IsCopyAssignable() );
+
+			llvm::Value* index_list[2];
+			index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
+			index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(field->index) ) );
+
+			BuildCopyAssignmentOperatorPart(
+				function_context.llvm_ir_builder.CreateGEP( src_llvm_value , llvm::ArrayRef<llvm::Value*>( index_list, 2u ) ),
+				function_context.llvm_ir_builder.CreateGEP( this_llvm_value, llvm::ArrayRef<llvm::Value*>( index_list, 2u ) ),
+				field->type,
+				function_context );
+		} ); // For fields.
+
+	function_context.alloca_ir_builder.CreateBr( function_context.function_basic_block );
+	function_context.llvm_ir_builder.CreateRetVoid();
+
+	// Add generated assignment operator
+	FunctionVariable op_variable;
+	op_variable.type= std::move( op_type );
+	op_variable.have_body= true;
+	op_variable.is_this_call= true;
+	op_variable.is_generated= true;
+	op_variable.llvm_function= llvm_op_function;
+
+	if( NamesScope::InsertedName* const operators_name= the_class.members.GetThisScopeName( op_name ) )
+	{
+		OverloadedFunctionsSet* const operators= operators_name->second.GetFunctionsSet();
+		U_ASSERT( operators != nullptr );
+		operators->push_back( std::move( op_variable ) );
+	}
+	else
+	{
+		OverloadedFunctionsSet operators;
+		operators.push_back( std::move( op_variable ) );
+		the_class.members.AddName( op_name , std::move( operators ) );
+	}
+
+	// After operator generation, class is copy-assignable.
+	the_class.is_copy_assignable= true;
+}
+
 void CodeBuilder::BuildCopyConstructorPart(
 	llvm::Value* const src, llvm::Value* const dst,
 	const Type& type,
@@ -1205,6 +1341,76 @@ void CodeBuilder::BuildCopyConstructorPart(
 		llvm_args.push_back( src );
 		function_context.llvm_ir_builder.CreateCall(
 			llvm::dyn_cast<llvm::Function>(constructor->llvm_function),
+			llvm_args );
+	}
+	else
+		U_ASSERT(false);
+}
+
+void CodeBuilder::BuildCopyAssignmentOperatorPart(
+	llvm::Value* src, llvm::Value* dst,
+	const Type& type,
+	FunctionContext& function_context )
+{
+	if( const FundamentalType* const fundamental_type= type.GetFundamentalType() )
+	{
+		// Create simple load-store.
+		U_UNUSED( fundamental_type );
+		llvm::Value* const val= function_context.llvm_ir_builder.CreateLoad( src );
+		function_context.llvm_ir_builder.CreateStore( val, dst );
+	}
+	else if( const Array* const array_type_ptr= type.GetArrayType() )
+	{
+		const Array& array_type= *array_type_ptr;
+
+		GenerateLoop(
+			array_type.ArraySizeOrZero(),
+			[&](llvm::Value* const counter_value)
+			{
+				llvm::Value* index_list[2];
+				index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
+				index_list[1]= counter_value;
+
+				BuildCopyAssignmentOperatorPart(
+					function_context.llvm_ir_builder.CreateGEP( src, llvm::ArrayRef<llvm::Value*>( index_list, 2u ) ),
+					function_context.llvm_ir_builder.CreateGEP( dst, llvm::ArrayRef<llvm::Value*>( index_list, 2u ) ),
+					array_type.type,
+					function_context );
+			},
+			function_context);
+	}
+	else if( const ClassProxyPtr class_type_proxy= type.GetClassTypeProxy() )
+	{
+		const Type filed_class_type= class_type_proxy;
+		const Class& class_type= *class_type_proxy->class_;
+
+		// Search copy-assignment aoperator.
+		const NamesScope::InsertedName* op_name=
+			class_type.members.GetThisScopeName( "="_SpC );
+		U_ASSERT( op_name != nullptr );
+		const OverloadedFunctionsSet* const operators_set= op_name->second.GetFunctionsSet();
+		U_ASSERT( operators_set != nullptr );
+
+		const FunctionVariable* op= nullptr;;
+		for( const FunctionVariable& candidate_op : *operators_set )
+		{
+			const Function& op_type= *candidate_op .type.GetFunctionType();
+
+			if( op_type.args[0u].type == type &&  op_type.args[0u].is_mutable && op_type.args[0u].is_reference &&
+				op_type.args[1u].type == type && !op_type.args[1u].is_mutable && op_type.args[1u].is_reference )
+			{
+				op= &candidate_op;
+				break;
+			}
+		}
+		U_ASSERT( op != nullptr );
+
+		// Call it.
+		std::vector<llvm::Value*> llvm_args;
+		llvm_args.push_back( dst );
+		llvm_args.push_back( src );
+		function_context.llvm_ir_builder.CreateCall(
+			llvm::dyn_cast<llvm::Function>(op->llvm_function),
 			llvm_args );
 	}
 	else

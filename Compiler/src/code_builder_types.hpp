@@ -117,6 +117,7 @@ public:
 	bool IsIncomplete() const;
 	bool IsDefaultConstructible() const;
 	bool IsCopyConstructible() const;
+	bool IsCopyAssignable() const;
 	bool HaveDestructor() const;
 	bool CanBeConstexpr() const;
 
@@ -466,6 +467,7 @@ struct Class final
 	bool is_default_constructible= false;
 	bool is_copy_constructible= false;
 	bool have_destructor= false;
+	bool is_copy_assignable= false;
 
 	FilePos forward_declaration_file_pos= FilePos{ 0u, 0u, 0u };
 	FilePos body_file_pos= FilePos{ 0u, 0u, 0u };

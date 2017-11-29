@@ -576,4 +576,86 @@ U_TEST( OperatorsOverloadingTest_IndexationOperator )
 	U_TEST_ASSERT( static_cast<uint64_t>( 654 ) == result_value.IntVal.getLimitedValue() );
 }
 
+U_TEST( GeneratedCopyAssignmentOperatorTest0 )
+{
+	static const char c_program_text[]=
+	R"(
+		struct Box{}
+		struct BoxBox
+		{
+			Box b;
+			bool bbb;
+		}
+		struct S
+		{
+			[ i32, 4 ] arr;
+			f32 x;
+			Box b;
+			BoxBox bb;
+
+			op==( S &imut a, S& imut b ) : bool
+			{
+				return
+					a.arr[0u] == b.arr[0u] && a.arr[1u] == b.arr[1u] && a.arr[2u] == b.arr[2u] && a.arr[3u] == b.arr[3u] &&
+					a.x == b.x &&
+					a.bb.bbb == b.bb.bbb;
+			}
+		}
+
+		fn Foo()
+		{
+			var S
+				src{ .arr[ 584, 654125, -57, 8547 ], .x= 3.14f, .bb{ .bbb= true } },
+				dst=zero_init;
+			dst= src;
+			halt if( !( dst == src ) );
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+}
+
+U_TEST( GeneratedCopyAssignmentOperatorTest1 )
+{
+	// Generated operator calls to implicit operator
+	static const char c_program_text[]=
+	R"(
+		struct A
+		{
+			i32 x;
+			op=( A &mut dst, A &imut src )
+			{
+				dst.x= 8888745;
+			}
+		}
+		struct B
+		{
+			A a;
+			f32 ch;
+		}
+		fn Foo() : i32
+		{
+			var B
+				imut src{ .a= zero_init, .ch= 35.54f },
+				mut dst=zero_init;
+			dst= src;
+			halt if( dst.ch != src.ch );
+			return dst.a.x; // Should return "wrong" value.
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	const llvm::GenericValue result_value= engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+	U_TEST_ASSERT( static_cast<uint64_t>( 8888745 ) == result_value.IntVal.getLimitedValue() );
+}
+
 } // namespace U

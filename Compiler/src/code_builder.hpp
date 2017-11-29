@@ -177,8 +177,14 @@ private:
 	void TryGenerateDefaultConstructor( Class& the_class, const Type& class_type );
 	void TryGenerateCopyConstructor( Class& the_class, const Type& class_type );
 	void TryGenerateDestructor( Class& the_class, const Type& class_type );
+	void TryGenerateCopyAssignmentOperator( Class& the_class, const Type& class_type );
 
 	void BuildCopyConstructorPart(
+		llvm::Value* src, llvm::Value* dst,
+		const Type& type,
+		FunctionContext& function_context );
+
+	void BuildCopyAssignmentOperatorPart(
 		llvm::Value* src, llvm::Value* dst,
 		const Type& type,
 		FunctionContext& function_context );

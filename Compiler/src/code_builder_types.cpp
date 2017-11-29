@@ -327,6 +327,24 @@ bool Type::IsCopyConstructible() const
 	return false;
 }
 
+bool Type::IsCopyAssignable() const
+{
+	if( GetFundamentalType() != nullptr )
+		return true;
+	else if( const ClassProxyPtr* const class_= boost::get<ClassProxyPtr>( &something_ ) )
+	{
+		U_ASSERT( *class_ != nullptr && (*class_)->class_ != nullptr );
+		return (*class_)->class_->is_copy_assignable;
+	}
+	else if( const ArrayPtr* const array= boost::get<ArrayPtr>( &something_ ) )
+	{
+		U_ASSERT( *array != nullptr );
+		return (*array)->type.IsCopyAssignable();
+	}
+
+	return false;
+}
+
 bool Type::HaveDestructor() const
 {
 	if( const ClassProxyPtr* const class_= boost::get<ClassProxyPtr>( &something_ ) )
