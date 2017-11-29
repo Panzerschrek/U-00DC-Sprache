@@ -349,4 +349,194 @@ U_TEST( AssignmentOperatorArgumentsShouldBeEvaluatedInReverseOrder )
 	U_TEST_ASSERT( static_cast<uint64_t>( 4 * 5 / 7 ) == result_value.IntVal.getLimitedValue() );
 }
 
+U_TEST( AdditiveAssignmentOperatorArgumentsShouldBeEvaluatedInReverseOrder )
+{
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			i32 x;
+			op+=( S &mut dst, S &imut src )
+			{
+				dst.x+= src.x;
+			}
+		}
+
+		fn Mul5( i32 &mut x ) : u32
+		{
+			x*= 5;
+			return 0u;
+		}
+
+		fn Div7( i32 &mut x ) : u32
+		{
+			x/= 7;
+			return 0u;
+		}
+
+		fn Foo() : i32
+		{
+			var [ S, 1 ] arr0= zero_init;
+			var [ S, 1 ] arr1= zero_init;
+			var i32 fff= 4;
+
+			arr0[ Div7(fff) ]+= arr1[ Mul5(fff) ];  // Must first evaluate Mul5, then - Mul7
+
+			return fff;
+		}
+	)";
+
+	static_assert( 4 * 5 / 7 != 4 / 7 * 5, "test is wrong" );
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	const llvm::GenericValue result_value= engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+	U_TEST_ASSERT( static_cast<uint64_t>( 4 * 5 / 7 ) == result_value.IntVal.getLimitedValue() );
+}
+
+U_TEST( BinaryOperatorArgumentsShouldBeEvaluatedInDirectOrder )
+{
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			i32 x;
+			op+( S &imut a, S &imut b )
+			{
+				// do nothing
+			}
+		}
+
+		fn Mul5( i32 &mut x ) : u32
+		{
+			x*= 5;
+			return 0u;
+		}
+
+		fn Div7( i32 &mut x ) : u32
+		{
+			x/= 7;
+			return 0u;
+		}
+
+		fn Foo() : i32
+		{
+			var [ S, 1 ] arr= zero_init;
+			var i32 fff= 4;
+
+			arr[ Mul5(fff) ] + arr[ Div7(fff) ];  // Must first evaluate Mul5, then - Mul7
+
+			return fff;
+		}
+	)";
+
+	static_assert( 4 * 5 / 7 != 4 / 7 * 5, "test is wrong" );
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	const llvm::GenericValue result_value= engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+	U_TEST_ASSERT( static_cast<uint64_t>( 4 * 5 / 7 ) == result_value.IntVal.getLimitedValue() );
+}
+
+U_TEST( OperatorsOverloadingTest_InTemplates )
+{
+	// Overloaded operator must be selected inside template.
+	static const char c_program_text[]=
+	R"(
+		template</ type T />
+		struct Math
+		{
+			fn Sub( T &imut a, T &imut b ) : T
+			{
+				return a - b;
+			}
+		}
+
+		struct MyInt
+		{
+			i32 x;
+			op-( MyInt &imut a, MyInt &imut b ) : MyInt
+			{
+				var MyInt res{ .x= a.x - b.x };
+				return res;
+			}
+		}
+
+		fn Foo() : i32
+		{
+			var MyInt a{ .x= 584 }, b{ .x= 11 };
+			return Math</ MyInt />::Sub( a, b ).x;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	const llvm::GenericValue result_value= engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+	U_TEST_ASSERT( static_cast<uint64_t>( 584 - 11 ) == result_value.IntVal.getLimitedValue() );
+}
+
+U_TEST( OperatorsOverloadingTest_EqualityOperators )
+{
+	static const char c_program_text[]=
+	R"(
+		struct MyInt
+		{
+			i32 x;
+			op==( MyInt &imut a, MyInt &imut b ) : bool
+			{
+				return a.x == b.x;
+			}
+			op!=( MyInt &imut a, MyInt &imut b ) : bool
+			{
+				return a.x != b.x;
+			}
+			op> ( MyInt &imut a, MyInt &imut b ) : bool
+			{
+				return a.x >  b.x;
+			}
+			op>=( MyInt &imut a, MyInt &imut b ) : bool
+			{
+				return a.x >= b.x;
+			}
+			op< ( MyInt &imut a, MyInt &imut b ) : bool
+			{
+				return a.x <  b.x;
+			}
+			op<=( MyInt &imut a, MyInt &imut b ) : bool
+			{
+				return a.x <= b.x;
+			}
+		}
+
+		fn Foo()
+		{
+			var MyInt imut a{ .x= 584 }, imut b{ .x= 11 };
+			halt if( a == b );
+			halt if( a != a );
+			halt if( a < b );
+			halt if( a <= b );
+			halt if( !( a <= a ) );
+			halt if( b > a );
+			halt if( b >= a );
+			halt if( !( b >= b ) );
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	const llvm::GenericValue result_value= engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+}
+
 } // namespace U
