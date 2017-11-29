@@ -114,7 +114,7 @@ boost::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 	}
 	errors_.resize( error_count_before );
 
-	const FunctionVariable* const overloaded_operator= GetOverloadedOperator( args, op );
+	const FunctionVariable* const overloaded_operator= GetOverloadedOperator( args, op, file_pos );
 	if( overloaded_operator != nullptr )
 	{
 		std::vector<const Synt::IExpressionComponent*> synt_args;
@@ -281,7 +281,7 @@ Value CodeBuilder::BuildExpressionCode(
 				op= Synt::OverloadedOperator::BitwiseNot;
 			else U_ASSERT( false );
 
-			const FunctionVariable* const overloaded_operator= GetOverloadedOperator( args, op );
+			const FunctionVariable* const overloaded_operator= GetOverloadedOperator( args, op, expression_with_unary_operators->file_pos_ );
 			if( overloaded_operator != nullptr )
 			{
 				result= DoCallFunction( *overloaded_operator, expression_with_unary_operators->file_pos_, var, {}, false, names, function_context );

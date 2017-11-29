@@ -3126,7 +3126,7 @@ void CodeBuilder::BuildDeltaOneOperatorCode(
 	args.back().is_mutable= variable->value_type == ValueType::Reference;
 	args.back().is_reference= variable->value_type != ValueType::Value;
 	const FunctionVariable* const overloaded_operator=
-		GetOverloadedOperator( args, positive ? Synt::OverloadedOperator::Increment : Synt::OverloadedOperator::Decrement );
+		GetOverloadedOperator( args, positive ? Synt::OverloadedOperator::Increment : Synt::OverloadedOperator::Decrement, file_pos );
 	if( overloaded_operator != nullptr )
 	{
 		DoCallFunction( *overloaded_operator, file_pos, variable, {}, false, block_names, function_context );
@@ -3767,15 +3767,25 @@ const FunctionVariable* CodeBuilder::GetOverloadedFunction(
 	}
 }
 
-const FunctionVariable* CodeBuilder::GetOverloadedOperator( const std::vector<Function::Arg>& actual_args, Synt::OverloadedOperator op )
+const FunctionVariable* CodeBuilder::GetOverloadedOperator(
+	const std::vector<Function::Arg>& actual_args,
+	Synt::OverloadedOperator op,
+	const FilePos& file_pos )
 {
 	const ProgramString op_name= Synt::OverloadedOperatorToString( op );
+
+	const size_t errors_before= errors_.size();
 
 	for( const Function::Arg& arg : actual_args )
 	{
 		if( const Class* const class_= arg.type.GetClassType() )
 		{
-			// TODO - check incomplete class.
+			if( class_->is_incomplete )
+			{
+				errors_.push_back( ReportUsingIncompleteType( file_pos, arg.type.ToString() ) );
+				return nullptr;
+			}
+
 			const NamesScope::InsertedName* const name_in_class= class_->members.GetThisScopeName( op_name );
 			if( name_in_class == nullptr )
 				continue;
@@ -3783,9 +3793,12 @@ const FunctionVariable* CodeBuilder::GetOverloadedOperator( const std::vector<Fu
 			const OverloadedFunctionsSet* const operators_set= name_in_class->second.GetFunctionsSet();
 			U_ASSERT( operators_set != nullptr ); // If we found something in names map with operator name, it must be operator.
 
-			const FunctionVariable* const func= GetOverloadedFunction( *operators_set, actual_args, false, FilePos( /*TODO*/ ) );
+			const FunctionVariable* const func= GetOverloadedFunction( *operators_set, actual_args, false, file_pos );
 			if( func != nullptr )
+			{
+				errors_.resize( errors_before ); // Clear potential errors only in case of success.
 				return func;
+			}
 		}
 	}
 

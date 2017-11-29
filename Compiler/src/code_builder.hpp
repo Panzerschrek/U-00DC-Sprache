@@ -438,7 +438,10 @@ private:
 		bool first_actual_arg_is_this,
 		const FilePos& file_pos );
 
-	const FunctionVariable* GetOverloadedOperator( const std::vector<Function::Arg>& actual_args, Synt::OverloadedOperator op );
+	const FunctionVariable* GetOverloadedOperator(
+		const std::vector<Function::Arg>& actual_args,
+		Synt::OverloadedOperator op,
+		const FilePos& file_pos );
 
 	// Initializers.
 	// Some initializers returns nonnul constant, if initializer is constant.
