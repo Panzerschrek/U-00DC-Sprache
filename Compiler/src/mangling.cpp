@@ -110,6 +110,8 @@ static const ProgramString& DecodeOperator( const ProgramString& func_name )
 		{ "="_SpC, "aS"_SpC },
 		{ "++"_SpC, "pp"_SpC },
 		{ "--"_SpC, "mm"_SpC },
+
+		{ "[]"_SpC, "ix"_SpC },
 	};
 	static const ProgramString c_empty;
 

@@ -212,6 +212,8 @@ enum class OverloadedOperator
 	Assign,
 	Increment,
 	Decrement,
+
+	Indexing,
 };
 
 ProgramString OverloadedOperatorToString( OverloadedOperator op );

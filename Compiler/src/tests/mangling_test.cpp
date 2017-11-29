@@ -203,6 +203,11 @@ U_TEST( OperatorsManglingTest )
 			{
 				a.x= b.x;
 			}
+
+			op[]( Box &imut this_, u32 ind ) : u32
+			{
+				return this_.x + ind;
+			}
 		}
 	)";
 
@@ -247,6 +252,8 @@ U_TEST( OperatorsManglingTest )
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN3BoxaSERS_RKS_" ) != nullptr ); // =
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN3BoxppERS_" ) != nullptr ); // ++
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN3BoxmmERS_" ) != nullptr ); // --
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN3BoxixERKS_j" ) != nullptr ); // []
 }
 
 } // namespace U

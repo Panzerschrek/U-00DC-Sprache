@@ -135,4 +135,23 @@ U_TEST( UsingIncompleteTypeForOperator )
 	U_TEST_ASSERT( error.file_pos.line == 5u );
 }
 
+U_TEST( IndexationOperatorHaveFirstArgumentOfNonparentClass )
+{
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			op[]( i32 i, S &imut s ){}
+		}
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::OperatorDoesNotHaveParentClassArguments ); // TODO - use separate error code for this case
+	U_TEST_ASSERT( error.file_pos.line == 4u );
+}
+
 } // namespace U

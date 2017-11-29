@@ -1892,6 +1892,14 @@ void CodeBuilder::CheckOverloadedOperator(
 			errors_.push_back( ReportInvalidReturnTypeForOperator( file_pos, void_type_.ToString() ) );
 		break;
 
+	case OverloadedOperator::Indexing:
+		if( func_type.args.size() != 2u )
+			errors_.push_back( ReportInvalidArgumentCountForOperator( file_pos ) );
+		// Indexing operator must have first argument of parent class.
+		if( !func_type.args.empty() && func_type.args[0].type != base_class )
+			errors_.push_back( ReportOperatorDoesNotHaveParentClassArguments( file_pos ) );
+		break;
+
 	case OverloadedOperator::None:
 		U_ASSERT(false);
 	};
@@ -3778,6 +3786,9 @@ const FunctionVariable* CodeBuilder::GetOverloadedOperator(
 
 	for( const Function::Arg& arg : actual_args )
 	{
+		if( op == Synt::OverloadedOperator::Indexing && &arg != &actual_args.front() )
+			break; // For indexing operator only check first argument.
+
 		if( const Class* const class_= arg.type.GetClassType() )
 		{
 			if( class_->is_incomplete )

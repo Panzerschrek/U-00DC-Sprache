@@ -1191,13 +1191,74 @@ Value CodeBuilder::BuildIndexationOperator(
 		return value;
 	}
 
-	const Array* array_type= value.GetType().GetArrayType();
+	if( value.GetVariable() == nullptr )
+	{
+		errors_.push_back( ReportExpectedVariableInBinaryOperator( indexation_operator.file_pos_, value.GetType().ToString() ) );
+		return ErrorValue();
+	}
+
+	const Variable& variable= *value.GetVariable();
+
+	if( variable.type.GetClassType() != nullptr ) // If this is class - try call overloaded [] operator.
+	{
+		std::vector<Function::Arg> args;
+		args.reserve( 2u );
+		const size_t error_count_before= errors_.size();
+
+		args.emplace_back();
+		args.back().type= variable.type;
+		args.back().is_reference= variable.value_type != ValueType::Value;
+		args.back().is_mutable= variable.value_type == ValueType::Reference;
+
+		// Know type of index.
+		{
+			// Prepare dummy function context for first pass.
+			FunctionContext dummy_function_context(
+				function_context.return_type,
+				function_context.return_value_is_mutable,
+				function_context.return_value_is_reference,
+				llvm_context_,
+				dummy_function_context_->function );
+			const StackVariablesStorage dummy_stack_variables_storage( dummy_function_context );
+			dummy_function_context.this_= function_context.this_;
+
+			const Value index_value= BuildExpressionCode( *indexation_operator.index_, names, dummy_function_context );
+			CHECK_RETURN_ERROR_VALUE(index_value);
+			CHECK_RETURN_TEMPLATE_DEPENDENT_VALUE(index_value);
+
+			const Variable* const index_variable= index_value.GetVariable();
+			if( index_variable == nullptr )
+			{
+				errors_.push_back( ReportExpectedVariableInBinaryOperator( indexation_operator.index_->GetFilePos(), index_value.GetType().ToString() ) );
+				return ErrorValue();
+			}
+
+			args.emplace_back();
+			args.back().type= index_variable->type;
+			args.back().is_reference= index_variable->value_type != ValueType::Value;
+			args.back().is_mutable= index_variable->value_type == ValueType::Reference;
+		}
+		errors_.resize( error_count_before );
+
+		const FunctionVariable* const overloaded_operator=
+			GetOverloadedOperator( args, Synt::OverloadedOperator::Indexing, indexation_operator.file_pos_ );
+		if( overloaded_operator != nullptr )
+		{
+			return
+				DoCallFunction(
+					*overloaded_operator,
+					indexation_operator.file_pos_,
+					&variable, { indexation_operator.index_.get() }, false,
+					names, function_context );
+		}
+	}
+
+	const Array* const array_type= variable.type.GetArrayType();
 	if( array_type == nullptr )
 	{
 		errors_.push_back( ReportOperationNotSupportedForThisType( indexation_operator.file_pos_, value.GetType().ToString() ) );
 		return ErrorValue();
 	}
-	const Variable& variable= *value.GetVariable();
 
 	const Value index_value=
 		BuildExpressionCode(

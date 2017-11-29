@@ -1751,6 +1751,16 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 		case Lexem::Type::Increment: overloaded_operator= OverloadedOperator::Increment; break;
 		case Lexem::Type::Decrement: overloaded_operator= OverloadedOperator::Decrement; break;
 
+		case Lexem::Type::SquareBracketLeft:
+			++it_; U_ASSERT( it_ < it_end_ );
+			if( it_->type != Lexem::Type::SquareBracketRight )
+			{
+				PushErrorMessage( *it_ );
+				return nullptr;
+			}
+			overloaded_operator= OverloadedOperator::Indexing;
+			break;
+
 		default:
 			PushErrorMessage( *it_ );
 			return nullptr;
@@ -1758,6 +1768,8 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 
 		fn_name.components.emplace_back();
 		fn_name.components.back().name= it_->text;
+		if( overloaded_operator == OverloadedOperator::Indexing )
+			fn_name.components.back().name= "[]"_SpC;
 
 		++it_; U_ASSERT( it_ < it_end_ );
 	}

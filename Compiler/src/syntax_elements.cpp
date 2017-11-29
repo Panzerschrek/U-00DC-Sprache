@@ -69,6 +69,7 @@ ProgramString BinaryOperatorToString( const BinaryOperatorType op )
 		case BinaryOperatorType::LazyLogicalAnd: op_str= "&&"; break;
 		case BinaryOperatorType::LazyLogicalOr: op_str= "||"; break;
 
+
 		case BinaryOperatorType::Last: U_ASSERT(false); break;
 	};
 
@@ -120,6 +121,8 @@ ProgramString OverloadedOperatorToString( const OverloadedOperator op )
 	case OverloadedOperator::Assign: return "="_SpC;
 	case OverloadedOperator::Increment: return "++"_SpC;
 	case OverloadedOperator::Decrement: return "--"_SpC;
+
+	case OverloadedOperator::Indexing: return "[]"_SpC;
 	};
 }
 

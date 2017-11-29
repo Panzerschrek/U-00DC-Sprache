@@ -539,4 +539,41 @@ U_TEST( OperatorsOverloadingTest_EqualityOperators )
 	const llvm::GenericValue result_value= engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
 }
 
+U_TEST( OperatorsOverloadingTest_IndexationOperator )
+{
+	static const char c_program_text[]=
+	R"(
+		struct MyIntVec
+		{
+			[ i32, 4 ] x;
+
+			op[]( mut this, i32 index ) : i32 &mut
+			{
+				halt if( index < 0 | index >= 4 );
+				return x[u32(index)];
+			}
+			op[]( imut this, i32 index ) : i32 &imut
+			{
+				halt if( index < 0 | index >= 4 );
+				return x[u32(index)];
+			}
+		}
+
+		fn Foo() : i32
+		{
+			var MyIntVec mut a= zero_init, imut b{ .x[ 58, 451, 654, 11254 ] };
+			a[1]= b[2];
+			return a.x[1u];
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	const llvm::GenericValue result_value= engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+	U_TEST_ASSERT( static_cast<uint64_t>( 654 ) == result_value.IntVal.getLimitedValue() );
+}
+
 } // namespace U
