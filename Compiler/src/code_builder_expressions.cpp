@@ -1721,6 +1721,8 @@ Value CodeBuilder::DoCallFunction(
 
 	Variable result;
 
+	result.type= function_type.return_type;
+	result.llvm_value= call_result;
 	if( function_type.return_value_is_reference )
 	{
 		result.location= Variable::Location::Pointer;
@@ -1739,8 +1741,6 @@ Value CodeBuilder::DoCallFunction(
 
 		function_context.stack_variables_stack.back()->RegisterVariable( stored_result );
 	}
-	result.type= function_type.return_type;
-	result.llvm_value= call_result;
 
 	// Prepare reference result.
 	if( function_type.return_value_is_reference )
