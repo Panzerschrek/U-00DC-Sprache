@@ -1717,6 +1717,38 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 	{
 		++it_; U_ASSERT( it_ < it_end_ );
 
+		if( it_->type == Lexem::Type::Identifier || it_->type == Lexem::Type::Scope )
+		{
+			// Parse complex name before op name - such "op MyStruct::+"
+			if( it_->type == Lexem::Type::Scope )
+			{
+				fn_name.components.emplace_back();
+				++it_; U_ASSERT( it_ < it_end_ );
+			}
+
+			while(true)
+			{
+				if( it_->type != Lexem::Type::Identifier )
+				{
+					PushErrorMessage( *it_ );
+					return nullptr;
+				}
+				fn_name.components.emplace_back();
+				fn_name.components.back().name= it_->text;
+				++it_; U_ASSERT( it_ < it_end_ );
+
+				if( it_->type == Lexem::Type::Scope )
+				{
+					++it_; U_ASSERT( it_ < it_end_ );
+				}
+
+				if( it_->type == Lexem::Type::Identifier )
+					continue;
+				else
+					break;
+			}
+		}
+
 		switch( it_->type )
 		{
 		case Lexem::Type::Plus   : overloaded_operator= OverloadedOperator::Add; break;

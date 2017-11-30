@@ -658,4 +658,41 @@ U_TEST( GeneratedCopyAssignmentOperatorTest1 )
 	U_TEST_ASSERT( static_cast<uint64_t>( 8888745 ) == result_value.IntVal.getLimitedValue() );
 }
 
+U_TEST( OperatorBodyOutsideClass )
+{
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			i32 x;
+			op/( S &imut a, S &imut b ) : S;
+			op+( S &imut a, S &imut b ) : S;
+		}
+
+		op S::/( S &imut a, S &imut b ) : S // relative name
+		{
+			var S r{ .x= a.x / b.x };
+			return r;
+		}
+		op ::S::+( S &imut a, S &imut b ) : S // global name
+		{
+			var S r{ .x= a.x + b.x };
+			return r;
+		}
+		fn Foo() : i32
+		{
+			var S imut a{ .x= 584147 }, imut b{ .x= 55 };
+			return ( a / b ).x + ( a + b ).x;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	const llvm::GenericValue result_value= engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+	U_TEST_ASSERT( static_cast<uint64_t>( 584147 / 55 + ( 584147 + 55 ) ) == result_value.IntVal.getLimitedValue() );
+}
+
 } // namespace U
