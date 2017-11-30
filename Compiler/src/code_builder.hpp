@@ -170,6 +170,7 @@ private:
 	// Removes llvm-functions and functions of subclasses.
 	// Warning! Class must be not used after call of this function!
 	void RemoveTempClassLLVMValues( Class& class_ );
+	void CleareDummyFunction();
 
 	void ReportAboutIncompleteMembersOfTemplateClass( const FilePos& file_pos, Class& class_ );
 
