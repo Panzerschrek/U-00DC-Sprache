@@ -107,6 +107,26 @@ static BinaryOperatorType LexemToBinaryOperator( const Lexem& lexem )
 	};
 }
 
+static bool IsAdditiveAssignmentOperator( const Lexem& lexem )
+{
+	switch(lexem.type)
+	{
+		case Lexem::Type::AssignAdd:
+		case Lexem::Type::AssignSub:
+		case Lexem::Type::AssignMul:
+		case Lexem::Type::AssignDiv:
+		case Lexem::Type::AssignAnd:
+		case Lexem::Type::AssignRem:
+		case Lexem::Type::AssignOr :
+		case Lexem::Type::AssignXor:
+		case Lexem::Type::AssignShiftLeft :
+		case Lexem::Type::AssignShiftRight:
+			return true;
+	};
+
+	return false;
+}
+
 static BinaryOperatorType GetAdditiveAssignmentOperator( const Lexem& lexem )
 {
 	switch(lexem.type)
@@ -219,7 +239,7 @@ ProgramElements SyntaxAnalyzer::ParseNamespaceBody( const Lexem::Type end_lexem 
 
 	while( it_ < it_end_ )
 	{
-		if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::fn_ )
+		if( it_->type == Lexem::Type::Identifier && ( it_->text == Keywords::fn_ || it_->text == Keywords::op_ ) )
 		{
 			if( IProgramElementPtr program_element= ParseFunction() )
 				program_elements.emplace_back( std::move( program_element ) );
@@ -1577,17 +1597,7 @@ BlockPtr SyntaxAnalyzer::ParseBlock()
 						std::move( l_expression ),
 						std::move( r_expression ) ) );
 			}
-			else if(
-				it_->type == Lexem::Type::AssignAdd ||
-				it_->type == Lexem::Type::AssignSub ||
-				it_->type == Lexem::Type::AssignMul ||
-				it_->type == Lexem::Type::AssignDiv ||
-				it_->type == Lexem::Type::AssignRem ||
-				it_->type == Lexem::Type::AssignAnd ||
-				it_->type == Lexem::Type::AssignOr  ||
-				it_->type == Lexem::Type::AssignXor ||
-				it_->type == Lexem::Type::AssignShiftLeft  ||
-				it_->type == Lexem::Type::AssignShiftRight )
+			else if( IsAdditiveAssignmentOperator( *it_ ) )
 			{
 				std::unique_ptr<AdditiveAssignmentOperator> op( new AdditiveAssignmentOperator( it_->file_pos ) );
 
@@ -1691,13 +1701,110 @@ std::unique_ptr<Typedef> SyntaxAnalyzer::ParseTypedefBody()
 
 std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 {
-	U_ASSERT( it_->text == Keywords::fn_ );
+	U_ASSERT( it_->text == Keywords::fn_ || it_->text == Keywords::op_ );
 	U_ASSERT( it_ < it_end_ );
 
 	const FilePos& func_pos= it_->file_pos;
-	++it_; U_ASSERT( it_ < it_end_ );
+	ComplexName fn_name;
+	OverloadedOperator overloaded_operator= OverloadedOperator::None;
 
-	ComplexName fn_name= ParseComplexName();
+	if( it_->text == Keywords::fn_ )
+	{
+		++it_; U_ASSERT( it_ < it_end_ );
+		fn_name= ParseComplexName();
+	}
+	else
+	{
+		++it_; U_ASSERT( it_ < it_end_ );
+
+		if( it_->type == Lexem::Type::Identifier || it_->type == Lexem::Type::Scope )
+		{
+			// Parse complex name before op name - such "op MyStruct::+"
+			if( it_->type == Lexem::Type::Scope )
+			{
+				fn_name.components.emplace_back();
+				++it_; U_ASSERT( it_ < it_end_ );
+			}
+
+			while(true)
+			{
+				if( it_->type != Lexem::Type::Identifier )
+				{
+					PushErrorMessage( *it_ );
+					return nullptr;
+				}
+				fn_name.components.emplace_back();
+				fn_name.components.back().name= it_->text;
+				++it_; U_ASSERT( it_ < it_end_ );
+
+				if( it_->type == Lexem::Type::Scope )
+				{
+					++it_; U_ASSERT( it_ < it_end_ );
+				}
+
+				if( it_->type == Lexem::Type::Identifier )
+					continue;
+				else
+					break;
+			}
+		}
+
+		switch( it_->type )
+		{
+		case Lexem::Type::Plus   : overloaded_operator= OverloadedOperator::Add; break;
+		case Lexem::Type::Minus  : overloaded_operator= OverloadedOperator::Sub; break;
+		case Lexem::Type::Star   : overloaded_operator= OverloadedOperator::Mul; break;
+		case Lexem::Type::Slash  : overloaded_operator= OverloadedOperator::Div; break;
+		case Lexem::Type::Percent: overloaded_operator= OverloadedOperator::Rem; break;
+		case Lexem::Type::CompareEqual   : overloaded_operator= OverloadedOperator::Equal   ; break;
+		case Lexem::Type::CompareNotEqual: overloaded_operator= OverloadedOperator::NotEqual; break;
+		case Lexem::Type::CompareLess          : overloaded_operator= OverloadedOperator::Less        ; break;
+		case Lexem::Type::CompareLessOrEqual   : overloaded_operator= OverloadedOperator::LessEqual   ; break;
+		case Lexem::Type::CompareGreater       : overloaded_operator= OverloadedOperator::Greater     ; break;
+		case Lexem::Type::CompareGreaterOrEqual: overloaded_operator= OverloadedOperator::GreaterEqual; break;
+		case Lexem::Type::And: overloaded_operator= OverloadedOperator::And; break;
+		case Lexem::Type::Or : overloaded_operator= OverloadedOperator::Or ; break;
+		case Lexem::Type::Xor: overloaded_operator= OverloadedOperator::Xor; break;
+		case Lexem::Type::ShiftLeft : overloaded_operator= OverloadedOperator::ShiftLeft ; break;
+		case Lexem::Type::ShiftRight: overloaded_operator= OverloadedOperator::ShiftRight; break;
+		case Lexem::Type::AssignAdd: overloaded_operator= OverloadedOperator::AssignAdd; break;
+		case Lexem::Type::AssignSub: overloaded_operator= OverloadedOperator::AssignSub; break;
+		case Lexem::Type::AssignMul: overloaded_operator= OverloadedOperator::AssignMul; break;
+		case Lexem::Type::AssignDiv: overloaded_operator= OverloadedOperator::AssignDiv; break;
+		case Lexem::Type::AssignRem: overloaded_operator= OverloadedOperator::AssignRem; break;
+		case Lexem::Type::AssignAnd: overloaded_operator= OverloadedOperator::AssignAnd; break;
+		case Lexem::Type::AssignOr : overloaded_operator= OverloadedOperator::AssignOr ; break;
+		case Lexem::Type::AssignXor: overloaded_operator= OverloadedOperator::AssignXor; break;
+		case Lexem::Type::AssignShiftLeft : overloaded_operator= OverloadedOperator::AssignShiftLeft ; break;
+		case Lexem::Type::AssignShiftRight: overloaded_operator= OverloadedOperator::AssignShiftRight; break;
+		case Lexem::Type::Not  : overloaded_operator= OverloadedOperator::LogicalNot; break;
+		case Lexem::Type::Tilda: overloaded_operator= OverloadedOperator::BitwiseNot; break;
+		case Lexem::Type::Assignment: overloaded_operator= OverloadedOperator::Assign; break;
+		case Lexem::Type::Increment: overloaded_operator= OverloadedOperator::Increment; break;
+		case Lexem::Type::Decrement: overloaded_operator= OverloadedOperator::Decrement; break;
+
+		case Lexem::Type::SquareBracketLeft:
+			++it_; U_ASSERT( it_ < it_end_ );
+			if( it_->type != Lexem::Type::SquareBracketRight )
+			{
+				PushErrorMessage( *it_ );
+				return nullptr;
+			}
+			overloaded_operator= OverloadedOperator::Indexing;
+			break;
+
+		default:
+			PushErrorMessage( *it_ );
+			return nullptr;
+		};
+
+		fn_name.components.emplace_back();
+		fn_name.components.back().name= it_->text;
+		if( overloaded_operator == OverloadedOperator::Indexing )
+			fn_name.components.back().name= "[]"_SpC;
+
+		++it_; U_ASSERT( it_ < it_end_ );
+	}
 
 	if( it_->type != Lexem::Type::BracketLeft )
 	{
@@ -1956,7 +2063,8 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 			reference_modifier,
 			std::move( arguments ),
 			std::move( constructor_initialization_list ),
-			std::move( block ) ) );
+			std::move( block ),
+			overloaded_operator ) );
 }
 
 std::unique_ptr<Class> SyntaxAnalyzer::ParseClass()
@@ -1998,7 +2106,7 @@ std::unique_ptr<Class> SyntaxAnalyzer::ParseClassBody()
 		it_->type == Lexem::Type::EndOfFile ) )
 	{
 		// SPRACHE_TODO - try parse here, subclasses, typedefs, etc.
-		if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::fn_ )
+		if( it_->type == Lexem::Type::Identifier && ( it_->text == Keywords::fn_ || it_->text == Keywords::op_ ) )
 		{
 			result->elements_.emplace_back( ParseFunction() );
 		}

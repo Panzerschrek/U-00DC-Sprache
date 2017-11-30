@@ -69,10 +69,61 @@ ProgramString BinaryOperatorToString( const BinaryOperatorType op )
 		case BinaryOperatorType::LazyLogicalAnd: op_str= "&&"; break;
 		case BinaryOperatorType::LazyLogicalOr: op_str= "||"; break;
 
+
 		case BinaryOperatorType::Last: U_ASSERT(false); break;
 	};
 
 	return ToProgramString( op_str );
+}
+
+ProgramString OverloadedOperatorToString( const OverloadedOperator op )
+{
+	switch( op )
+	{
+	case OverloadedOperator::None: return ""_SpC;
+
+	case OverloadedOperator::Add: return "+"_SpC;
+	case OverloadedOperator::Sub: return "-"_SpC;
+	case OverloadedOperator::Mul: return "*"_SpC;
+	case OverloadedOperator::Div: return "/"_SpC;
+	case OverloadedOperator::Rem: return "%"_SpC;
+
+	case OverloadedOperator::Equal: return "=="_SpC;
+	case OverloadedOperator::NotEqual: return "!="_SpC;
+	case OverloadedOperator::Less: return "<"_SpC;
+	case OverloadedOperator::LessEqual: return "<="_SpC;
+	case OverloadedOperator::Greater: return ">"_SpC;
+	case OverloadedOperator::GreaterEqual: return ">="_SpC;
+
+	case OverloadedOperator::And: return "&"_SpC;
+	case OverloadedOperator::Or : return "|"_SpC;
+	case OverloadedOperator::Xor: return "^"_SpC;
+
+	case OverloadedOperator::ShiftLeft : return "<<"_SpC;
+	case OverloadedOperator::ShiftRight: return ">>"_SpC;
+
+	case OverloadedOperator::AssignAdd: return "+="_SpC;
+	case OverloadedOperator::AssignSub: return "-="_SpC;
+	case OverloadedOperator::AssignMul: return "*="_SpC;
+	case OverloadedOperator::AssignDiv: return "/="_SpC;
+	case OverloadedOperator::AssignRem: return "%="_SpC;
+
+	case OverloadedOperator::AssignAnd: return "&="_SpC;
+	case OverloadedOperator::AssignOr : return "|="_SpC;
+	case OverloadedOperator::AssignXor: return "^="_SpC;
+
+	case OverloadedOperator::AssignShiftLeft : return "<<="_SpC;
+	case OverloadedOperator::AssignShiftRight: return ">>="_SpC;
+
+	case OverloadedOperator::LogicalNot: return "!"_SpC;
+	case OverloadedOperator::BitwiseNot: return "~"_SpC;
+
+	case OverloadedOperator::Assign: return "="_SpC;
+	case OverloadedOperator::Increment: return "++"_SpC;
+	case OverloadedOperator::Decrement: return "--"_SpC;
+
+	case OverloadedOperator::Indexing: return "[]"_SpC;
+	};
 }
 
 MemberAccessOperator::MemberAccessOperator(
@@ -286,7 +337,8 @@ Function::Function(
 	ReferenceModifier return_value_reference_modifier,
 	FunctionArgumentsDeclaration arguments,
 	std::unique_ptr<StructNamedInitializer> constructor_initialization_list,
-	BlockPtr block )
+	BlockPtr block,
+	OverloadedOperator overloaded_operator )
 	: SyntaxElementBase(file_pos)
 	, name_( std::move(name) )
 	, return_type_( std::move(return_type) )
@@ -295,6 +347,7 @@ Function::Function(
 	, arguments_( std::move(arguments) )
 	, constructor_initialization_list_( std::move(constructor_initialization_list) )
 	, block_( std::move(block) )
+	, overloaded_operator_( std::move(overloaded_operator) )
 {}
 
 ClassField::ClassField( const FilePos& file_pos )

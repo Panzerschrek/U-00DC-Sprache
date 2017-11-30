@@ -36,6 +36,7 @@ static const Globals& GetGlobals()
 	static const KeywordEntry c_keywords[ size_t(Keywords::LastKeyword) ]=
 	{
 		[ size_t(Keywords::fn_) ]= "fn",
+		[ size_t(Keywords::op_) ]= "op",
 		[ size_t(Keywords::var_) ]= "var",
 		[ size_t(Keywords::auto_) ]= "auto",
 		[ size_t(Keywords::return_) ]= "return",

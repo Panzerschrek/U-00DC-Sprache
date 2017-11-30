@@ -36,6 +36,26 @@ const TypesMap g_types_map=
 
 } // namespace
 
+static Synt::OverloadedOperator GetOverloadedOperatorForAdditiveAssignmentOperator( const Synt::BinaryOperatorType operator_type )
+{
+	using Synt::BinaryOperatorType;
+	using Synt::OverloadedOperator;
+	switch( operator_type )
+	{
+	case BinaryOperatorType::Add: return OverloadedOperator::AssignAdd;
+	case BinaryOperatorType::Sub: return OverloadedOperator::AssignSub;
+	case BinaryOperatorType::Mul: return OverloadedOperator::AssignMul;
+	case BinaryOperatorType::Div: return OverloadedOperator::AssignDiv;
+	case BinaryOperatorType::Rem: return OverloadedOperator::AssignRem;
+	case BinaryOperatorType::And: return OverloadedOperator::AssignAnd;
+	case BinaryOperatorType::Or : return OverloadedOperator::AssignOr ;
+	case BinaryOperatorType::Xor: return OverloadedOperator::AssignXor;
+	case BinaryOperatorType::ShiftLeft : return OverloadedOperator::AssignShiftLeft ;
+	case BinaryOperatorType::ShiftRight: return OverloadedOperator::AssignShiftRight;
+	default: U_ASSERT(false); return OverloadedOperator::None;
+	};
+}
+
 namespace CodeBuilderPrivate
 {
 
@@ -369,6 +389,7 @@ void CodeBuilder::CopyClass(
 	copy->is_default_constructible= src.is_default_constructible;
 	copy->is_copy_constructible= src.is_copy_constructible;
 	copy->have_destructor= src.have_destructor;
+	copy->is_copy_assignable= src.is_copy_assignable;
 
 	copy->forward_declaration_file_pos= src.forward_declaration_file_pos;
 	copy->body_file_pos= src.body_file_pos;
@@ -469,7 +490,7 @@ Type CodeBuilder::PrepareType(
 				errors_.push_back( ReportExpectedConstantExpression( num_file_pos ) );
 		}
 		else
-			errors_.push_back( ReprotExpectedVariableInArraySize( num_file_pos, size_expression.GetType().ToString() ) );
+			errors_.push_back( ReportExpectedVariable( num_file_pos, size_expression.GetType().ToString() ) );
 
 		last_type= &array_type.type;
 	}
@@ -738,6 +759,7 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 	TryGenerateDefaultConstructor( *the_class, class_type );
 	TryGenerateCopyConstructor( *the_class, class_type );
 	TryGenerateDestructor( *the_class, class_type );
+	TryGenerateCopyAssignmentOperator( *the_class, class_type );
 
 	// Prepare inner classes.
 	for( const Synt::Class* const inner_class : inner_classes )
@@ -1121,6 +1143,140 @@ void CodeBuilder::TryGenerateDestructor( Class& the_class, const Type& class_typ
 	the_class.have_destructor= true;
 }
 
+void CodeBuilder::TryGenerateCopyAssignmentOperator( Class& the_class, const Type& class_type )
+{
+	static const ProgramString op_name= "="_SpC;
+
+	// Search for explicit assignment operator.
+	if( const NamesScope::InsertedName* const assignment_operator_name=
+		the_class.members.GetThisScopeName( op_name ) )
+	{
+		const OverloadedFunctionsSet* const operators= assignment_operator_name->second.GetFunctionsSet();
+		for( const FunctionVariable& op : *operators )
+		{
+			const Function& op_type= *op.type.GetFunctionType();
+
+			if( op_type.args.size() != 2u )
+				continue; // Can happens in error case.
+
+			// SPRACHE_TODO - support assignment operator with value src argument.
+			if(
+				op_type.args[0u].type == class_type &&  op_type.args[0u].is_mutable && op_type.args[0u].is_reference &&
+				op_type.args[1u].type == class_type && !op_type.args[1u].is_mutable && op_type.args[1u].is_reference )
+			{
+				the_class.is_copy_assignable= true;
+				return;
+			}
+		}
+	}
+
+	bool all_fields_is_copy_assignable= true;
+
+	the_class.members.ForEachInThisScope(
+		[&]( const NamesScope::InsertedName& member )
+		{
+			const ClassField* const field= member.second.GetClassField();
+			if( field == nullptr )
+				return;
+
+			if( !field->type.IsCopyAssignable() )
+				all_fields_is_copy_assignable= false;
+		} );
+
+	if( !all_fields_is_copy_assignable )
+		return;
+
+	// Generate assignment operator
+	Function op_type;
+	op_type.return_type= void_type_;
+	op_type.args.resize(2u);
+	op_type.args[0].type= class_type;
+	op_type.args[0].is_mutable= true;
+	op_type.args[0].is_reference= true;
+	op_type.args[1].type= class_type;
+	op_type.args[1].is_mutable= false;
+	op_type.args[1].is_reference= true;
+
+	std::vector<llvm::Type*> args_llvm_types;
+	args_llvm_types.push_back( llvm::PointerType::get( class_type.GetLLVMType(), 0u ) );
+	args_llvm_types.push_back( llvm::PointerType::get( class_type.GetLLVMType(), 0u ) );
+
+	op_type.llvm_function_type=
+		llvm::FunctionType::get(
+			fundamental_llvm_types_.void_,
+			llvm::ArrayRef<llvm::Type*>( args_llvm_types.data(), args_llvm_types.size() ),
+			false );
+
+	llvm::Function* const llvm_op_function=
+		llvm::Function::Create(
+			op_type.llvm_function_type,
+			llvm::Function::LinkageTypes::LinkOnceODRLinkage,
+			MangleFunction( the_class.members, op_name, op_type, true ),
+			module_.get() );
+
+	SetupGeneratedFunctionLinkageAttributes( *llvm_op_function );
+	llvm_op_function->addAttribute( 1u, llvm::Attribute::NonNull ); // this is nonnull
+	llvm_op_function->addAttribute( 2u, llvm::Attribute::NonNull ); // and src is nonnull
+
+	FunctionContext function_context(
+		op_type.return_type,
+		op_type.return_value_is_mutable,
+		op_type.return_value_is_reference,
+		llvm_context_,
+		llvm_op_function );
+
+	llvm::Value* const this_llvm_value= &*llvm_op_function->args().begin();
+	this_llvm_value->setName( KeywordAscii( Keywords::this_ ) );
+	llvm::Value* const src_llvm_value= &*(++llvm_op_function->args().begin());
+	src_llvm_value->setName( "src" );
+
+	the_class.members.ForEachInThisScope(
+		[&]( const NamesScope::InsertedName& member )
+		{
+			const ClassField* const field= member.second.GetClassField();
+			if( field == nullptr )
+				return;
+			U_ASSERT( field->type.IsCopyAssignable() );
+
+			llvm::Value* index_list[2];
+			index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
+			index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(field->index) ) );
+
+			BuildCopyAssignmentOperatorPart(
+				function_context.llvm_ir_builder.CreateGEP( src_llvm_value , llvm::ArrayRef<llvm::Value*>( index_list, 2u ) ),
+				function_context.llvm_ir_builder.CreateGEP( this_llvm_value, llvm::ArrayRef<llvm::Value*>( index_list, 2u ) ),
+				field->type,
+				function_context );
+		} ); // For fields.
+
+	function_context.alloca_ir_builder.CreateBr( function_context.function_basic_block );
+	function_context.llvm_ir_builder.CreateRetVoid();
+
+	// Add generated assignment operator
+	FunctionVariable op_variable;
+	op_variable.type= std::move( op_type );
+	op_variable.have_body= true;
+	op_variable.is_this_call= true;
+	op_variable.is_generated= true;
+	op_variable.llvm_function= llvm_op_function;
+
+	if( NamesScope::InsertedName* const operators_name= the_class.members.GetThisScopeName( op_name ) )
+	{
+		OverloadedFunctionsSet* const operators= operators_name->second.GetFunctionsSet();
+		U_ASSERT( operators != nullptr );
+		operators->push_back( std::move( op_variable ) );
+	}
+	else
+	{
+		OverloadedFunctionsSet operators;
+		operators.push_back( std::move( op_variable ) );
+		the_class.members.AddName( op_name , std::move( operators ) );
+	}
+
+	// After operator generation, class is copy-assignable.
+	the_class.is_copy_assignable= true;
+}
+
 void CodeBuilder::BuildCopyConstructorPart(
 	llvm::Value* const src, llvm::Value* const dst,
 	const Type& type,
@@ -1185,6 +1341,76 @@ void CodeBuilder::BuildCopyConstructorPart(
 		llvm_args.push_back( src );
 		function_context.llvm_ir_builder.CreateCall(
 			llvm::dyn_cast<llvm::Function>(constructor->llvm_function),
+			llvm_args );
+	}
+	else
+		U_ASSERT(false);
+}
+
+void CodeBuilder::BuildCopyAssignmentOperatorPart(
+	llvm::Value* src, llvm::Value* dst,
+	const Type& type,
+	FunctionContext& function_context )
+{
+	if( const FundamentalType* const fundamental_type= type.GetFundamentalType() )
+	{
+		// Create simple load-store.
+		U_UNUSED( fundamental_type );
+		llvm::Value* const val= function_context.llvm_ir_builder.CreateLoad( src );
+		function_context.llvm_ir_builder.CreateStore( val, dst );
+	}
+	else if( const Array* const array_type_ptr= type.GetArrayType() )
+	{
+		const Array& array_type= *array_type_ptr;
+
+		GenerateLoop(
+			array_type.ArraySizeOrZero(),
+			[&](llvm::Value* const counter_value)
+			{
+				llvm::Value* index_list[2];
+				index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
+				index_list[1]= counter_value;
+
+				BuildCopyAssignmentOperatorPart(
+					function_context.llvm_ir_builder.CreateGEP( src, llvm::ArrayRef<llvm::Value*>( index_list, 2u ) ),
+					function_context.llvm_ir_builder.CreateGEP( dst, llvm::ArrayRef<llvm::Value*>( index_list, 2u ) ),
+					array_type.type,
+					function_context );
+			},
+			function_context);
+	}
+	else if( const ClassProxyPtr class_type_proxy= type.GetClassTypeProxy() )
+	{
+		const Type filed_class_type= class_type_proxy;
+		const Class& class_type= *class_type_proxy->class_;
+
+		// Search copy-assignment aoperator.
+		const NamesScope::InsertedName* op_name=
+			class_type.members.GetThisScopeName( "="_SpC );
+		U_ASSERT( op_name != nullptr );
+		const OverloadedFunctionsSet* const operators_set= op_name->second.GetFunctionsSet();
+		U_ASSERT( operators_set != nullptr );
+
+		const FunctionVariable* op= nullptr;;
+		for( const FunctionVariable& candidate_op : *operators_set )
+		{
+			const Function& op_type= *candidate_op .type.GetFunctionType();
+
+			if( op_type.args[0u].type == type &&  op_type.args[0u].is_mutable && op_type.args[0u].is_reference &&
+				op_type.args[1u].type == type && !op_type.args[1u].is_mutable && op_type.args[1u].is_reference )
+			{
+				op= &candidate_op;
+				break;
+			}
+		}
+		U_ASSERT( op != nullptr );
+
+		// Call it.
+		std::vector<llvm::Value*> llvm_args;
+		llvm_args.push_back( dst );
+		llvm_args.push_back( src );
+		function_context.llvm_ir_builder.CreateCall(
+			llvm::dyn_cast<llvm::Function>(op->llvm_function),
 			llvm_args );
 	}
 	else
@@ -1659,6 +1885,8 @@ CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 			errors_.push_back( ReportUsingIncompleteType( arg->file_pos_, out_arg.type.ToString() ) );
 	} // for arguments
 
+	CheckOverloadedOperator( base_class, function_type, func.overloaded_operator_, func.file_pos_ );
+
 	NamesScope::InsertedName* const previously_inserted_func=
 		func_base_names_scope->GetThisScopeName( func_name );
 	if( previously_inserted_func == nullptr )
@@ -1777,6 +2005,110 @@ CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 	}
 
 	return result;
+}
+
+void CodeBuilder::CheckOverloadedOperator(
+	const ClassProxyPtr& base_class,
+	const Function& func_type,
+	const Synt::OverloadedOperator overloaded_operator,
+	const FilePos& file_pos )
+{
+	using Synt::OverloadedOperator;
+
+	if( overloaded_operator == OverloadedOperator::None )
+		return; // Not operator
+
+	if( base_class == nullptr )
+	{
+		errors_.push_back( ReportOperatorDeclarationOutsideClass( file_pos ) );
+		return;
+	}
+
+	bool is_this_class= false;
+	for( const Function::Arg& arg : func_type.args )
+	{
+		if( base_class != nullptr && arg.type == base_class )
+		{
+			is_this_class= true;
+			break;
+		}
+	}
+
+	if( !is_this_class )
+		errors_.push_back( ReportOperatorDoesNotHaveParentClassArguments( file_pos ) );
+
+	switch( overloaded_operator )
+	{
+	case OverloadedOperator::Add:
+	case OverloadedOperator::Sub:
+		if( !( func_type.args.size() == 1u || func_type.args.size() == 2u ) )
+			errors_.push_back( ReportInvalidArgumentCountForOperator( file_pos ) );
+		break;
+
+	case OverloadedOperator::Mul:
+	case OverloadedOperator::Div:
+	case OverloadedOperator::Equal:
+	case OverloadedOperator::NotEqual:
+	case OverloadedOperator::Less:
+	case OverloadedOperator::LessEqual:
+	case OverloadedOperator::Greater:
+	case OverloadedOperator::GreaterEqual:
+	case OverloadedOperator::And:
+	case OverloadedOperator::Or :
+	case OverloadedOperator::Xor:
+	case OverloadedOperator::ShiftLeft :
+	case OverloadedOperator::ShiftRight:
+		if( func_type.args.size() != 2u )
+			errors_.push_back( ReportInvalidArgumentCountForOperator( file_pos ) );
+		break;
+
+	case OverloadedOperator::AssignAdd:
+	case OverloadedOperator::AssignSub:
+	case OverloadedOperator::AssignMul:
+	case OverloadedOperator::AssignDiv:
+	case OverloadedOperator::AssignAnd:
+	case OverloadedOperator::AssignOr :
+	case OverloadedOperator::AssignXor:
+	case OverloadedOperator::AssignShiftLeft :
+	case OverloadedOperator::AssignShiftRight:
+		if( func_type.args.size() != 2u )
+			errors_.push_back( ReportInvalidArgumentCountForOperator( file_pos ) );
+		if( func_type.return_type != void_type_ )
+			errors_.push_back( ReportInvalidReturnTypeForOperator( file_pos, void_type_.ToString() ) );
+		break;
+
+	case OverloadedOperator::LogicalNot:
+	case OverloadedOperator::BitwiseNot:
+		if( func_type.args.size() != 1u )
+			errors_.push_back( ReportInvalidArgumentCountForOperator( file_pos ) );
+		break;
+
+	case OverloadedOperator::Assign:
+		if( func_type.args.size() != 2u )
+			errors_.push_back( ReportInvalidArgumentCountForOperator( file_pos ) );
+		if( func_type.return_type != void_type_ )
+			errors_.push_back( ReportInvalidReturnTypeForOperator( file_pos, void_type_.ToString() ) );
+		break;
+
+	case OverloadedOperator::Increment:
+	case OverloadedOperator::Decrement:
+		if( func_type.args.size() != 1u )
+			errors_.push_back( ReportInvalidArgumentCountForOperator( file_pos ) );
+		if( func_type.return_type != void_type_ )
+			errors_.push_back( ReportInvalidReturnTypeForOperator( file_pos, void_type_.ToString() ) );
+		break;
+
+	case OverloadedOperator::Indexing:
+		if( func_type.args.size() != 2u )
+			errors_.push_back( ReportInvalidArgumentCountForOperator( file_pos ) );
+		// Indexing operator must have first argument of parent class.
+		if( !func_type.args.empty() && func_type.args[0].type != base_class )
+			errors_.push_back( ReportOperatorDoesNotHaveParentClassArguments( file_pos ) );
+		break;
+
+	case OverloadedOperator::None:
+		U_ASSERT(false);
+	};
 }
 
 void CodeBuilder::BuildFuncCode(
@@ -2787,25 +3119,45 @@ void CodeBuilder::BuildAssignmentOperatorCode(
 	NamesScope& block_names,
 	FunctionContext& function_context )
 {
+	if(
+		TryCallOverloadedBinaryOperator(
+			Synt::OverloadedOperator::Assign,
+			*assignment_operator.l_value_,
+			*assignment_operator.r_value_,
+			true, // evaluate args in reverse order
+			assignment_operator.file_pos_,
+			block_names,
+			function_context ) != boost::none )
+	{
+		return;
+	}
+	// Here process default assignment operator for fundamental types.
+
 	// Destruction frame for temporary variables of expressions.
 	const StackVariablesStorage temp_variables_storage( function_context );
 
 	// Evalueate right part
-	const Value r_var_value= BuildExpressionCode( *assignment_operator.r_value_, block_names, function_context );
-	const Variable* const r_var= r_var_value.GetVariable();
+	Value r_var_value= BuildExpressionCode( *assignment_operator.r_value_, block_names, function_context );
+	Variable* const r_var= r_var_value.GetVariable();
 	if( r_var == nullptr && r_var_value.GetType() != NontypeStub::TemplateDependentValue )
-		errors_.push_back( ReportExpectedVariableInAssignment( assignment_operator.file_pos_, r_var_value.GetType().ToString() ) );
+		errors_.push_back( ReportExpectedVariable( assignment_operator.file_pos_, r_var_value.GetType().ToString() ) );
 
-	// Lock r_var variables.
-	std::vector<VariableStorageUseCounter> r_var_locks;
-	if( r_var != nullptr )
-		r_var_locks= LockReferencedVariables( *r_var );
+	if( r_var != nullptr && r_var->type.GetFundamentalType() != nullptr )
+	{
+		// We must read value, because referenced by reference value may be changed in l_var evaluation.
+		if( r_var->location != Variable::Location::LLVMRegister )
+		{
+			r_var->llvm_value= CreateMoveToLLVMRegisterInstruction( *r_var, function_context );
+			r_var->location= Variable::Location::LLVMRegister;
+		}
+		r_var->value_type= ValueType::Value;
+	}
 
 	// Evaluate left part.
 	const Value l_var_value= BuildExpressionCode( *assignment_operator.l_value_, block_names, function_context );
 	const Variable* const l_var= l_var_value.GetVariable();
 	if( l_var == nullptr && l_var_value.GetType() != NontypeStub::TemplateDependentValue )
-		errors_.push_back( ReportExpectedVariableInAssignment( assignment_operator.file_pos_, l_var_value.GetType().ToString() ) );
+		errors_.push_back( ReportExpectedVariable( assignment_operator.file_pos_, l_var_value.GetType().ToString() ) );
 
 	if( l_var == nullptr || r_var == nullptr )
 		return;
@@ -2829,36 +3181,25 @@ void CodeBuilder::BuildAssignmentOperatorCode(
 			// Assign to variable, that have nonzero immutable references.
 			errors_.push_back( ReportReferenceProtectionError( assignment_operator.file_pos_ ) );
 		}
-		if( referenced_variable->mut_use_counter.use_count() > 1u + 1u )
-		{
-			// Variable have mutable references except locked reference for this assignment.
-			errors_.push_back( ReportReferenceProtectionError( assignment_operator.file_pos_ ) );
-		}
 	}
 
-	const FundamentalType* const fundamental_type= l_var->type.GetFundamentalType();
-	if( fundamental_type != nullptr )
+	if( const FundamentalType* const fundamental_type= l_var->type.GetFundamentalType())
 	{
 		if( l_var->location != Variable::Location::Pointer )
 		{
 			U_ASSERT(false);
 			return;
 		}
-		llvm::Value* value_for_assignment= CreateMoveToLLVMRegisterInstruction( *r_var, function_context );
-		function_context.llvm_ir_builder.CreateStore( value_for_assignment, l_var->llvm_value );
+		U_ASSERT( r_var->location == Variable::Location::LLVMRegister );
+		function_context.llvm_ir_builder.CreateStore( r_var->llvm_value, l_var->llvm_value );
 	}
 	else if( l_var->type.GetTemplateDependentType() != nullptr || r_var->type.GetTemplateDependentType() != nullptr )
 	{}
 	else
 	{
-		// TODO - functions is not copyable.
-		// TODO - arrays not copyable.
-		// TODO - make classes copyable.
-		errors_.push_back( ReportNotImplemented( assignment_operator.file_pos_, "nonfundamental types assignment." ) );
+		errors_.push_back( ReportOperationNotSupportedForThisType( assignment_operator.file_pos_, l_var->type.ToString() ) );
 		return;
 	}
-
-	r_var_locks.clear();
 
 	// Destruct temporary variables of right and left expressions.
 	CallDestructors( *function_context.stack_variables_stack.back(), function_context, assignment_operator.file_pos_ );
@@ -2869,20 +3210,40 @@ void CodeBuilder::BuildAdditiveAssignmentOperatorCode(
 	NamesScope& block_names,
 	FunctionContext& function_context )
 {
+	if(
+		TryCallOverloadedBinaryOperator(
+			GetOverloadedOperatorForAdditiveAssignmentOperator( additive_assignment_operator.additive_operation_ ),
+			*additive_assignment_operator.l_value_,
+			*additive_assignment_operator.r_value_,
+			true, // evaluate args in reverse order
+			additive_assignment_operator.file_pos_,
+			block_names,
+			function_context ) != boost::none )
+	{
+		return;
+	}
+	// Here process default additive assignment operators for fundamental types.
+
 	// Destruction frame for temporary variables of expressions.
 	const StackVariablesStorage temp_variables_storage( function_context );
 
-	const Value r_var_value=
+	Value r_var_value=
 		BuildExpressionCode(
 			*additive_assignment_operator.r_value_,
 			block_names,
 			function_context );
-	const Variable* const r_var= r_var_value.GetVariable();
+	Variable* const r_var= r_var_value.GetVariable();
 
-	// Lock r_var variables.
-	std::vector<VariableStorageUseCounter> r_var_locks;
-	if( r_var != nullptr )
-		r_var_locks= LockReferencedVariables( *r_var );
+	if( r_var != nullptr && r_var->type.GetFundamentalType() != nullptr )
+	{
+		// We must read value, because referenced by reference value may be changed in l_var evaluation.
+		if( r_var->location != Variable::Location::LLVMRegister )
+		{
+			r_var->llvm_value= CreateMoveToLLVMRegisterInstruction( *r_var, function_context );
+			r_var->location= Variable::Location::LLVMRegister;
+		}
+		r_var->value_type= ValueType::Value;
+	}
 
 	const Value l_var_value=
 		BuildExpressionCode(
@@ -2892,9 +3253,9 @@ void CodeBuilder::BuildAdditiveAssignmentOperatorCode(
 	const Variable* const l_var= l_var_value.GetVariable();
 
 	if( l_var == nullptr && l_var_value.GetType() != NontypeStub::TemplateDependentValue )
-		errors_.push_back( ReportExpectedVariableInAdditiveAssignment( additive_assignment_operator.file_pos_, l_var_value.GetType().ToString() ) );
+		errors_.push_back( ReportExpectedVariable( additive_assignment_operator.file_pos_, l_var_value.GetType().ToString() ) );
 	if( r_var == nullptr && r_var_value.GetType() != NontypeStub::TemplateDependentValue )
-		errors_.push_back( ReportExpectedVariableInAdditiveAssignment( additive_assignment_operator.file_pos_, r_var_value.GetType().ToString() ) );
+		errors_.push_back( ReportExpectedVariable( additive_assignment_operator.file_pos_, r_var_value.GetType().ToString() ) );
 
 	if( l_var == nullptr || r_var == nullptr )
 		return;
@@ -2907,11 +3268,6 @@ void CodeBuilder::BuildAdditiveAssignmentOperatorCode(
 			// Assign to variable, that have nonzero immutable references.
 			errors_.push_back( ReportReferenceProtectionError( additive_assignment_operator.file_pos_ ) );
 		}
-		if( stored_variable->mut_use_counter.use_count() > 1u + 1u )
-		{
-			// Variable have mutable references except locked reference for this assignment.
-			errors_.push_back( ReportReferenceProtectionError( additive_assignment_operator.file_pos_ ) );
-		}
 	}
 
 	const FundamentalType* const l_var_fundamental_type= l_var->type.GetFundamentalType();
@@ -2919,7 +3275,6 @@ void CodeBuilder::BuildAdditiveAssignmentOperatorCode(
 	if( l_var_fundamental_type != nullptr && r_var_fundamental_type != nullptr )
 	{
 		// Generate binary operator and assignment for fundamental types.
-		// SPRACHE_TODO - do not call "BuildBinaryOperator", when operators overloading will be implemented.
 		const Value operation_result_value=
 			BuildBinaryOperator(
 				*l_var, *r_var,
@@ -2953,12 +3308,9 @@ void CodeBuilder::BuildAdditiveAssignmentOperatorCode(
 	{}
 	else
 	{
-		// SPRACHE_TODO - search for overloaded operators.
-		errors_.push_back( ReportNotImplemented( additive_assignment_operator.file_pos_, "additive operations for nonfundamental types" ) );
+		errors_.push_back( ReportOperationNotSupportedForThisType( additive_assignment_operator.file_pos_, l_var->type.ToString() ) );
 		return;
 	}
-
-	r_var_locks.clear();
 
 	// Destruct temporary variables of right and left expressions.
 	CallDestructors( *function_context.stack_variables_stack.back(), function_context, additive_assignment_operator.file_pos_ );
@@ -2978,11 +3330,22 @@ void CodeBuilder::BuildDeltaOneOperatorCode(
 	const Variable* const variable= value.GetVariable();
 	if( variable == nullptr )
 	{
-		errors_.push_back( ReportExpectedVariableInIncrementOrDecrement( file_pos, value.GetType().ToString() ) );
+		errors_.push_back( ReportExpectedVariable( file_pos, value.GetType().ToString() ) );
 		return;
 	}
 
-	if( const FundamentalType* const fundamental_type= variable->type.GetFundamentalType() )
+	std::vector<Function::Arg> args;
+	args.emplace_back();
+	args.back().type= variable->type;
+	args.back().is_mutable= variable->value_type == ValueType::Reference;
+	args.back().is_reference= variable->value_type != ValueType::Value;
+	const FunctionVariable* const overloaded_operator=
+		GetOverloadedOperator( args, positive ? Synt::OverloadedOperator::Increment : Synt::OverloadedOperator::Decrement, file_pos );
+	if( overloaded_operator != nullptr )
+	{
+		DoCallFunction( *overloaded_operator, file_pos, variable, {}, false, block_names, function_context );
+	}
+	else if( const FundamentalType* const fundamental_type= variable->type.GetFundamentalType() )
 	{
 		if( !IsInteger( fundamental_type->fundamental_type ) )
 		{
@@ -3020,8 +3383,7 @@ void CodeBuilder::BuildDeltaOneOperatorCode(
 	{}
 	else
 	{
-		// SPRACHE_TODO - search for overloaded operators.
-		errors_.push_back( ReportNotImplemented( file_pos, "++ and -- for nonfundamental types" ) );
+		errors_.push_back( ReportOperationNotSupportedForThisType( file_pos, variable->type.ToString() ) );
 		return;
 	}
 }
@@ -3617,6 +3979,47 @@ const FunctionVariable* CodeBuilder::GetOverloadedFunction(
 		errors_.push_back( ReportCouldNotSelectOverloadedFunction( file_pos ) );
 		return nullptr;
 	}
+}
+
+const FunctionVariable* CodeBuilder::GetOverloadedOperator(
+	const std::vector<Function::Arg>& actual_args,
+	Synt::OverloadedOperator op,
+	const FilePos& file_pos )
+{
+	const ProgramString op_name= Synt::OverloadedOperatorToString( op );
+
+	const size_t errors_before= errors_.size();
+
+	for( const Function::Arg& arg : actual_args )
+	{
+		if( op == Synt::OverloadedOperator::Indexing && &arg != &actual_args.front() )
+			break; // For indexing operator only check first argument.
+
+		if( const Class* const class_= arg.type.GetClassType() )
+		{
+			if( class_->is_incomplete )
+			{
+				errors_.push_back( ReportUsingIncompleteType( file_pos, arg.type.ToString() ) );
+				return nullptr;
+			}
+
+			const NamesScope::InsertedName* const name_in_class= class_->members.GetThisScopeName( op_name );
+			if( name_in_class == nullptr )
+				continue;
+
+			const OverloadedFunctionsSet* const operators_set= name_in_class->second.GetFunctionsSet();
+			U_ASSERT( operators_set != nullptr ); // If we found something in names map with operator name, it must be operator.
+
+			const FunctionVariable* const func= GetOverloadedFunction( *operators_set, actual_args, false, file_pos );
+			if( func != nullptr )
+			{
+				errors_.resize( errors_before ); // Clear potential errors only in case of success.
+				return func;
+			}
+		}
+	}
+
+	return nullptr;
 }
 
 void CodeBuilder::CheckReferencedVariables( const Variable& reference, const FilePos& file_pos )

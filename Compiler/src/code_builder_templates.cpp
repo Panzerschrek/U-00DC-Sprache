@@ -1,5 +1,7 @@
 #include <algorithm>
 
+#include <boost/range/adaptor/reversed.hpp>
+
 #include "push_disable_llvm_warnings.hpp"
 #include <llvm/IR/Constant.h>
 #include <llvm/IR/LLVMContext.h>
@@ -225,6 +227,10 @@ void CodeBuilder::PrepareTypeTemplate(
 		if( class_proxy != nullptr )
 		{
 			ReportAboutIncompleteMembersOfTemplateClass( type_template_declaration.file_pos_, *class_proxy->class_ );
+
+			// Remove llvm functions and variables of temp class.
+			// Clear dummy function before it, because dummy function can contain references to removed functions.
+			CleareDummyFunction();
 			RemoveTempClassLLVMValues( *class_proxy->class_ );
 		}
 	}
@@ -825,6 +831,15 @@ void CodeBuilder::RemoveTempClassLLVMValues( Class& class_ )
 			else
 				U_ASSERT(false);
 		} );
+}
+
+void CodeBuilder::CleareDummyFunction()
+{
+	llvm::Function::BasicBlockListType& bb_list= dummy_function_context_->function->getBasicBlockList();
+
+	// Clear blocks in reverse order, because newer blocks can depend on elder blocks.
+	for (llvm::BasicBlock& block : boost::adaptors::reverse(bb_list))
+		block.getInstList().clear();
 }
 
 void CodeBuilder::ReportAboutIncompleteMembersOfTemplateClass( const FilePos& file_pos, Class& class_ )

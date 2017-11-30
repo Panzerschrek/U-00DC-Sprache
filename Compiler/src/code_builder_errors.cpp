@@ -248,68 +248,13 @@ CodeBuilderError ReportBindingConstReferenceToNonconstReference( const FilePos& 
 	return error;
 }
 
-CodeBuilderError ReportExpectedVariableInAssignment( const FilePos& file_pos, const ProgramString& got )
+CodeBuilderError ReportExpectedVariable( const FilePos& file_pos, const ProgramString& got )
 {
 	CodeBuilderError error;
 	error.file_pos= file_pos;
-	error.code= CodeBuilderErrorCode::ExpectedVariableInAssignment;
+	error.code= CodeBuilderErrorCode::ExpectedVariable;
 
-	error.text= "Expected variable in assignment, got \"."_SpC + got + "\"."_SpC;
-
-	return error;
-}
-
-CodeBuilderError ReportExpectedVariableInBinaryOperator( const FilePos& file_pos, const ProgramString& got )
-{
-	CodeBuilderError error;
-	error.file_pos= file_pos;
-	error.code= CodeBuilderErrorCode::ExpectedVariableInBinaryOperator;
-
-	error.text= "Expected variable in binary operator, got \"."_SpC + got + "\"."_SpC;
-
-	return error;
-}
-
-CodeBuilderError ReportExpectedVariableAsArgument( const FilePos& file_pos, const ProgramString& got )
-{
-	CodeBuilderError error;
-	error.file_pos= file_pos;
-	error.code= CodeBuilderErrorCode::ExpectedVariableAsArgument;
-
-	error.text= "Expected variable as argument, got \"."_SpC + got + "\"."_SpC;
-
-	return error;
-}
-
-CodeBuilderError ReportExpectedVariableInAdditiveAssignment( const FilePos& file_pos, const ProgramString& got )
-{
-	CodeBuilderError error;
-	error.file_pos= file_pos;
-	error.code= CodeBuilderErrorCode::ExpectedVariableInAdditiveAssignment;
-
-	error.text= "Expected variable in additive assignment, got \"."_SpC + got + "\"."_SpC;
-
-	return error;
-}
-
-CodeBuilderError ReportExpectedVariableInIncrementOrDecrement( const FilePos& file_pos, const ProgramString& got )
-{
-	CodeBuilderError error;
-	error.file_pos= file_pos;
-	error.code= CodeBuilderErrorCode::ExpectedVariableInIncrementOrDecrement;
-
-	error.text= "Expected variable in increment or decrement, got \"."_SpC + got + "\"."_SpC;
-
-	return error;
-}
-
-CodeBuilderError ReprotExpectedVariableInArraySize( const FilePos& file_pos, const ProgramString& got )
-{
-	CodeBuilderError error;
-	error.file_pos= file_pos;
-	error.code= CodeBuilderErrorCode::ExpectedVariableInArraySize;
-
-	error.text= "Expected variable in array size expression, got \"."_SpC + got + "\"."_SpC;
+	error.text= "Expected variable, got \"."_SpC + got + "\"."_SpC;
 
 	return error;
 }
@@ -947,6 +892,50 @@ CodeBuilderError ReportAccessingVariableThatHaveMutableReference( const FilePos&
 	error.code= CodeBuilderErrorCode::AccessingVariableThatHaveMutableReference;
 
 	error.text= "Accessing variable, that have mutable reference."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportOperatorDeclarationOutsideClass( const FilePos& file_pos )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::OperatorDeclarationOutsideClass;
+
+	error.text= "Operator declaration outside class. Operators can be declared only inside classes."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportOperatorDoesNotHaveParentClassArguments( const FilePos& file_pos )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::OperatorDoesNotHaveParentClassArguments;
+
+	error.text= "Operator does not have parent class arguments. At least one argument of operator must have parent class type."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportInvalidArgumentCountForOperator( const FilePos& file_pos )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::InvalidArgumentCountForOperator;
+
+	error.text= "Invalid argument count for operator."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportInvalidReturnTypeForOperator( const FilePos& file_pos, const ProgramString& expected_type_name )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::InvalidReturnTypeForOperator;
+
+	error.text= "Invalid return type for operator, expected \""_SpC + expected_type_name + "\"."_SpC;
 
 	return error;
 }

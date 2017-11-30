@@ -11,6 +11,7 @@ enum class Keywords : unsigned int
 {
 	// Common keywords.
 	fn_,
+	op_,
 	var_,
 	auto_,
 	return_,

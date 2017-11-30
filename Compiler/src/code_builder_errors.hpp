@@ -34,12 +34,8 @@ enum class CodeBuilderErrorCode : unsigned int
 	BindingConstReferenceToNonconstReference,
 
 	// ExpectedVariable* errors
-	ExpectedVariableInAssignment,
-	ExpectedVariableInBinaryOperator,
-	ExpectedVariableAsArgument,
-	ExpectedVariableInAdditiveAssignment,
-	ExpectedVariableInIncrementOrDecrement,
-	ExpectedVariableInArraySize,
+	// TODO - emit common error - ExpectedVariable.
+	ExpectedVariable,
 
 	CouldNotOverloadFunction,
 	TooManySuitableOverloadedFunctions,
@@ -116,6 +112,12 @@ enum class CodeBuilderErrorCode : unsigned int
 	ReferenceProtectionError,
 	DestroyedVariableStillHaveReferences,
 	AccessingVariableThatHaveMutableReference,
+
+	// Operators overloading
+	OperatorDeclarationOutsideClass,
+	OperatorDoesNotHaveParentClassArguments,
+	InvalidArgumentCountForOperator,
+	InvalidReturnTypeForOperator,
 };
 
 struct CodeBuilderError
@@ -148,12 +150,7 @@ CodeBuilderError ReportNoReturnInFunctionReturningNonVoid( const FilePos& file_p
 CodeBuilderError ReportExpectedInitializer( const FilePos& file_pos, const ProgramString& variable_name );
 CodeBuilderError ReportExpectedReferenceValue( const FilePos& file_pos );
 CodeBuilderError ReportBindingConstReferenceToNonconstReference( const FilePos& file_pos );
-CodeBuilderError ReportExpectedVariableInAssignment( const FilePos& file_pos, const ProgramString& got );
-CodeBuilderError ReportExpectedVariableInBinaryOperator( const FilePos& file_pos, const ProgramString& got );
-CodeBuilderError ReportExpectedVariableAsArgument( const FilePos& file_pos, const ProgramString& got );
-CodeBuilderError ReportExpectedVariableInAdditiveAssignment( const FilePos& file_pos, const ProgramString& got );
-CodeBuilderError ReportExpectedVariableInIncrementOrDecrement( const FilePos& file_pos, const ProgramString& got );
-CodeBuilderError ReprotExpectedVariableInArraySize( const FilePos& file_pos, const ProgramString& got );
+CodeBuilderError ReportExpectedVariable( const FilePos& file_pos, const ProgramString& got );
 CodeBuilderError ReportCouldNotOverloadFunction( const FilePos& file_pos );
 CodeBuilderError ReportTooManySuitableOverloadedFunctions( const FilePos& file_pos );
 CodeBuilderError ReportCouldNotSelectOverloadedFunction( const FilePos& file_pos );
@@ -211,5 +208,9 @@ CodeBuilderError ReportIncompleteMemberOfClassTemplate( const FilePos& file_pos,
 CodeBuilderError ReportReferenceProtectionError( const FilePos& file_pos ); // TODO - add variable name
 CodeBuilderError ReportDestroyedVariableStillHaveReferences( const FilePos& file_pos ); // TODO - add variable name
 CodeBuilderError ReportAccessingVariableThatHaveMutableReference( const FilePos& file_pos ); // TODO - add variable name
+CodeBuilderError ReportOperatorDeclarationOutsideClass( const FilePos& file_pos );
+CodeBuilderError ReportOperatorDoesNotHaveParentClassArguments( const FilePos& file_pos );
+CodeBuilderError ReportInvalidArgumentCountForOperator( const FilePos& file_pos );
+CodeBuilderError ReportInvalidReturnTypeForOperator( const FilePos& file_pos, const ProgramString& expected_type_name );
 
 } // namespace U

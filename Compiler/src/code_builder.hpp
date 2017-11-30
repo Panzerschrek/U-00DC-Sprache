@@ -170,6 +170,7 @@ private:
 	// Removes llvm-functions and functions of subclasses.
 	// Warning! Class must be not used after call of this function!
 	void RemoveTempClassLLVMValues( Class& class_ );
+	void CleareDummyFunction();
 
 	void ReportAboutIncompleteMembersOfTemplateClass( const FilePos& file_pos, Class& class_ );
 
@@ -177,8 +178,14 @@ private:
 	void TryGenerateDefaultConstructor( Class& the_class, const Type& class_type );
 	void TryGenerateCopyConstructor( Class& the_class, const Type& class_type );
 	void TryGenerateDestructor( Class& the_class, const Type& class_type );
+	void TryGenerateCopyAssignmentOperator( Class& the_class, const Type& class_type );
 
 	void BuildCopyConstructorPart(
+		llvm::Value* src, llvm::Value* dst,
+		const Type& type,
+		FunctionContext& function_context );
+
+	void BuildCopyAssignmentOperatorPart(
 		llvm::Value* src, llvm::Value* dst,
 		const Type& type,
 		FunctionContext& function_context );
@@ -237,6 +244,12 @@ private:
 		ClassProxyPtr base_class,
 		NamesScope& scope );
 
+	void CheckOverloadedOperator(
+		const ClassProxyPtr& base_class,
+		const Function& func_type,
+		Synt::OverloadedOperator overloaded_operator,
+		const FilePos& file_pos );
+
 	void BuildFuncCode(
 		FunctionVariable& func,
 		ClassProxyPtr base_class,
@@ -267,6 +280,18 @@ private:
 
 	Value BuildExpressionCode(
 		const Synt::IExpressionComponent& expression,
+		NamesScope& names,
+		FunctionContext& function_context );
+
+	// Returns Value, if overloaded operator selected or if arguments are template dependent or argumens are error values.
+	// Returns boost::none, if all ok, but there is no overloaded operator.
+	// In success call of overloaded operator arguments evaluated in left to right order.
+	boost::optional<Value> TryCallOverloadedBinaryOperator(
+		Synt::OverloadedOperator op,
+		const Synt::IExpressionComponent&  left_expr,
+		const Synt::IExpressionComponent& right_expr,
+		bool evaluate_args_in_reverse_order,
+		const FilePos& file_pos,
 		NamesScope& names,
 		FunctionContext& function_context );
 
@@ -303,6 +328,15 @@ private:
 	Value BuildCallOperator(
 		const Value& function_value,
 		const Synt::CallOperator& call_operator,
+		NamesScope& names,
+		FunctionContext& function_context );
+
+	Value DoCallFunction(
+		const FunctionVariable& function,
+		const FilePos& call_file_pos,
+		const Variable* first_arg,
+		std::vector<const Synt::IExpressionComponent*> args,
+		const bool evaluate_args_in_reverse_order,
 		NamesScope& names,
 		FunctionContext& function_context );
 
@@ -409,6 +443,11 @@ private:
 		const OverloadedFunctionsSet& functions_set,
 		const std::vector<Function::Arg>& actual_args,
 		bool first_actual_arg_is_this,
+		const FilePos& file_pos );
+
+	const FunctionVariable* GetOverloadedOperator(
+		const std::vector<Function::Arg>& actual_args,
+		Synt::OverloadedOperator op,
 		const FilePos& file_pos );
 
 	// Initializers.

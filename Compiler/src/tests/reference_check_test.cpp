@@ -679,9 +679,17 @@ U_TEST( ReferenceCheckTest_AssignmentForReferencedVariable_3 )
 {
 	static const char c_program_text[]=
 	R"(
+		struct Box
+		{
+			i32 x;
+			op=( mut this, Box &imut other )
+			{
+				this.x= other.x;
+			}
+		}
 		fn Foo()
 		{
-			var i32 x= 0;
+			var Box x= zero_init;
 			x= x; // Self-assignment, should produce error.
 		}
 	)";
@@ -691,8 +699,8 @@ U_TEST( ReferenceCheckTest_AssignmentForReferencedVariable_3 )
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::AccessingVariableThatHaveMutableReference );
-	U_TEST_ASSERT( error.file_pos.line == 5u );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferenceProtectionError );
+	U_TEST_ASSERT( error.file_pos.line == 13u );
 }
 
 U_TEST( ReferenceCheckTest_AssignmentForReferencedVariable_4 )
@@ -797,10 +805,18 @@ U_TEST( ReferenceCheckTest_AdditiveAssignment_2 )
 {
 	static const char c_program_text[]=
 	R"(
+		struct Box
+		{
+			i32 b;
+			op/=( mut this, Box &imut other )
+			{
+				this.b /= other.b;
+			}
+		}
 		fn Foo()
 		{
-			var i32 x= 0;
-			x*= x; // Error, needs deref.
+			var Box x{ .b= 541 };
+			x/= x; // Error, pass into operator both mutable and immutable references.
 		}
 	)";
 
@@ -809,8 +825,8 @@ U_TEST( ReferenceCheckTest_AdditiveAssignment_2 )
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::AccessingVariableThatHaveMutableReference );
-	U_TEST_ASSERT( error.file_pos.line == 5u );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferenceProtectionError );
+	U_TEST_ASSERT( error.file_pos.line == 13u );
 }
 
 U_TEST( ReferenceCheckTest_ShouldConvertReferenceInFunctionCall_0 )
@@ -969,6 +985,140 @@ U_TEST( ReferenceCheckTest_TryUseVariableWhenReferenceInFunctionCallExists_1 )
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferenceProtectionError );
 	U_TEST_ASSERT( error.file_pos.line == 9u );
+}
+
+U_TEST( ReferenceCheckTest_DeltaOneOperatorsModifyValue_0 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo()
+		{
+			var i32 x= 0;
+			auto &imut r= x;
+			++x; // Error, x have references
+		}
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferenceProtectionError );
+	U_TEST_ASSERT( error.file_pos.line == 6u );
+}
+
+U_TEST( ReferenceCheckTest_DeltaOneOperatorsModifyValue_1 )
+{
+	static const char c_program_text[]=
+	R"(
+		struct Box
+		{
+			i32 b;
+			op++( mut this )
+			{
+				++b;
+			}
+		}
+		fn Foo()
+		{
+			var Box b= zero_init;
+			auto &imut r= b;
+			++b; // Error, x have references
+		}
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferenceProtectionError );
+	U_TEST_ASSERT( error.file_pos.line == 14u );
+}
+
+U_TEST( ReferenceCheckTest_BinaryOperatorsModifyValue )
+{
+	static const char c_program_text[]=
+	R"(
+		struct Box
+		{
+			i32 b;
+			op+( mut this, Box &mut other ) // Correct, but useless declaration of operator
+			{
+				b+= other.b;
+			}
+		}
+		fn Foo()
+		{
+			var Box b= zero_init;
+			b + b;
+		}
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::AccessingVariableThatHaveMutableReference );
+	U_TEST_ASSERT( error.file_pos.line == 13u );
+}
+
+U_TEST( ReferenceCheckTest_AssignmentOperatorsModifyValue )
+{
+	static const char c_program_text[]=
+	R"(
+		struct Box
+		{
+			i32 b;
+			op=( mut this, Box &mut other ) // Correct, but useless declaration of operator
+			{
+				b= other.b;
+			}
+		}
+		fn Foo()
+		{
+			var Box b= zero_init;
+			b= b;
+		}
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::AccessingVariableThatHaveMutableReference );
+	U_TEST_ASSERT( error.file_pos.line == 13u );
+}
+
+U_TEST( ReferenceCheckTest_AdditiveAssignmentOperatorsModifyValue )
+{
+	static const char c_program_text[]=
+	R"(
+		struct Box
+		{
+			i32 b;
+			op+=( mut this, Box &mut other ) // Correct, but useless declaration of operator
+			{
+				b+= other.b;
+			}
+		}
+		fn Foo()
+		{
+			var Box b= zero_init;
+			b+= b;
+		}
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::AccessingVariableThatHaveMutableReference );
+	U_TEST_ASSERT( error.file_pos.line == 13u );
 }
 
 } // namespace U

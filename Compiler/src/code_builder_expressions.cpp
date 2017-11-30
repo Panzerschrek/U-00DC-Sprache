@@ -18,6 +18,32 @@ namespace U
 namespace CodeBuilderPrivate
 {
 
+static Synt::OverloadedOperator GetOverloadedOperatorForBinaryOperator( const Synt::BinaryOperatorType binary_operator_type )
+{
+	using Synt::BinaryOperatorType;
+	using Synt::OverloadedOperator;
+	switch( binary_operator_type )
+	{
+	case BinaryOperatorType::Add: return OverloadedOperator::Add;
+	case BinaryOperatorType::Sub: return OverloadedOperator::Sub;
+	case BinaryOperatorType::Mul: return OverloadedOperator::Mul;
+	case BinaryOperatorType::Div: return OverloadedOperator::Div;
+	case BinaryOperatorType::Rem: return OverloadedOperator::Rem;
+	case BinaryOperatorType::And: return OverloadedOperator::And;
+	case BinaryOperatorType::Or : return OverloadedOperator::Or ;
+	case BinaryOperatorType::Xor: return OverloadedOperator::Xor;
+	case BinaryOperatorType::Equal: return OverloadedOperator::Equal;
+	case BinaryOperatorType::NotEqual: return OverloadedOperator::NotEqual;
+	case BinaryOperatorType::Less: return OverloadedOperator::Less;
+	case BinaryOperatorType::LessEqual: return OverloadedOperator::LessEqual;
+	case BinaryOperatorType::Greater: return OverloadedOperator::Greater;
+	case BinaryOperatorType::GreaterEqual: return OverloadedOperator::GreaterEqual;
+	case BinaryOperatorType::ShiftLeft : return OverloadedOperator::ShiftLeft ;
+	case BinaryOperatorType::ShiftRight: return OverloadedOperator::ShiftRight;
+	default: U_ASSERT(false); return OverloadedOperator::None;
+	};
+}
+
 Value CodeBuilder::BuildExpressionCodeAndDestroyTemporaries(
 	const Synt::IExpressionComponent& expression,
 	NamesScope& names,
@@ -31,6 +57,73 @@ Value CodeBuilder::BuildExpressionCodeAndDestroyTemporaries(
 	CallDestructors( *function_context.stack_variables_stack.back(), function_context, expression.GetFilePos() );
 
 	return result;
+}
+
+boost::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
+	const Synt::OverloadedOperator op,
+	const Synt::IExpressionComponent&  left_expr,
+	const Synt::IExpressionComponent& right_expr,
+	const bool evaluate_args_in_reverse_order,
+	const FilePos& file_pos,
+	NamesScope& names,
+	FunctionContext& function_context)
+{
+	std::vector<Function::Arg> args;
+	args.reserve( 2u );
+	const size_t error_count_before= errors_.size();
+
+	// Know args types.
+	{
+		// Prepare dummy function context for first pass.
+		FunctionContext dummy_function_context(
+			function_context.return_type,
+			function_context.return_value_is_mutable,
+			function_context.return_value_is_reference,
+			llvm_context_,
+			dummy_function_context_->function );
+		const StackVariablesStorage dummy_stack_variables_storage( dummy_function_context );
+		dummy_function_context.this_= function_context.this_;
+
+		const Value l_var_value= BuildExpressionCode( left_expr , names, dummy_function_context );
+		const Value r_var_value= BuildExpressionCode( right_expr, names, dummy_function_context );
+
+		CHECK_RETURN_ERROR_VALUE(l_var_value);
+		CHECK_RETURN_ERROR_VALUE(l_var_value);
+		CHECK_RETURN_TEMPLATE_DEPENDENT_VALUE(l_var_value);
+		CHECK_RETURN_TEMPLATE_DEPENDENT_VALUE(r_var_value);
+
+		const Variable* const l_var= l_var_value.GetVariable();
+		const Variable* const r_var= r_var_value.GetVariable();
+		if( l_var == nullptr )
+			errors_.push_back( ReportExpectedVariable( file_pos, l_var_value.GetType().ToString() ) );
+		if( r_var == nullptr )
+			errors_.push_back( ReportExpectedVariable( file_pos, r_var_value.GetType().ToString() ) );
+		if( l_var == nullptr || r_var == nullptr )
+			return Value(ErrorValue());
+
+		args.emplace_back();
+		args.back().type= l_var->type;
+		args.back().is_reference= l_var->value_type != ValueType::Value;
+		args.back().is_mutable= l_var->value_type == ValueType::Reference;
+
+		args.emplace_back();
+		args.back().type= r_var->type;
+		args.back().is_reference= r_var->value_type != ValueType::Value;
+		args.back().is_mutable= r_var->value_type == ValueType::Reference;
+	}
+	errors_.resize( error_count_before );
+
+	const FunctionVariable* const overloaded_operator= GetOverloadedOperator( args, op, file_pos );
+	if( overloaded_operator != nullptr )
+	{
+		std::vector<const Synt::IExpressionComponent*> synt_args;
+		synt_args.reserve( 2u );
+		synt_args.push_back( & left_expr );
+		synt_args.push_back( &right_expr );
+		return DoCallFunction( *overloaded_operator, file_pos, nullptr, synt_args, evaluate_args_in_reverse_order, names, function_context );
+	}
+
+	return boost::none;
 }
 
 Value CodeBuilder::BuildExpressionCode(
@@ -57,63 +150,43 @@ Value CodeBuilder::BuildExpressionCode(
 		}
 		else
 		{
+			const boost::optional<Value> overloaded_operator_call_try=
+				TryCallOverloadedBinaryOperator(
+					GetOverloadedOperatorForBinaryOperator( binary_operator->operator_type_ ),
+					*binary_operator->left_, *binary_operator->right_,
+					false,
+					binary_operator->file_pos_,
+					names,
+					function_context );
+			if( overloaded_operator_call_try != boost::none )
+				return *overloaded_operator_call_try;
+
 			Value l_var_value=
 				BuildExpressionCode(
 					*binary_operator->left_,
 					names,
 					function_context );
+			Variable* const l_var= l_var_value.GetVariable(); U_ASSERT( l_var != nullptr );
 
-			// Lock l_var variables before evaluating of r_var.
-			std::vector<VariableStorageUseCounter> l_var_locks;
+			if( l_var->type.GetFundamentalType() != nullptr )
 			{
-				if( const Variable* const l_var= l_var_value.GetVariable() )
-					l_var_locks= LockReferencedVariables( *l_var );
-			}
-
-			// HACK. Currently, we have no operators overloading.
-			// So, we have only binary operators for fundamental types, that have value-parameters.
-			// So, we can convert referernce to value here. After convertion to value, we does not needs locks of references.
-
-			// TODO - for operators overloading evaluate l_var and r_var two times:
-			// first - for type deduction and fetching overloaded operator,
-			// second - for code generation and reference checking.
-			if( l_var_value.GetType().GetTemplateDependentType() == nullptr )
-			{
-				if( Variable* const l_var= l_var_value.GetVariable() )
+				// Save l_var in register, because build-in binary operators require value-parameters.
+				if( l_var->location == Variable::Location::Pointer )
 				{
-					if( l_var->location == Variable::Location::Pointer )
-					{
-						l_var->llvm_value= CreateMoveToLLVMRegisterInstruction( *l_var, function_context );
-						l_var->location= Variable::Location::LLVMRegister;
-					}
-					l_var->value_type= ValueType::Value;
-
-					l_var_locks.clear();
+					l_var->llvm_value= CreateMoveToLLVMRegisterInstruction( *l_var, function_context );
+					l_var->location= Variable::Location::LLVMRegister;
 				}
+				l_var->value_type= ValueType::Value;
 			}
 
-			const Value r_var_value=
+			Value r_var_value=
 				BuildExpressionCode(
 					*binary_operator->right_,
 					names,
 					function_context );
+			Variable* const r_var= r_var_value.GetVariable(); U_ASSERT( r_var != nullptr );
 
-			CHECK_RETURN_ERROR_VALUE(l_var_value);
-			CHECK_RETURN_ERROR_VALUE(l_var_value);
-			CHECK_RETURN_TEMPLATE_DEPENDENT_VALUE(l_var_value);
-			CHECK_RETURN_TEMPLATE_DEPENDENT_VALUE(r_var_value);
-
-			const Variable* const l_var= l_var_value.GetVariable();
-			const Variable* const r_var= r_var_value.GetVariable();
-
-			if( l_var == nullptr )
-				errors_.push_back( ReportExpectedVariableInBinaryOperator( binary_operator->file_pos_, l_var_value.GetType().ToString() ) );
-			if( r_var == nullptr )
-				errors_.push_back( ReportExpectedVariableInBinaryOperator( binary_operator->file_pos_, r_var_value.GetType().ToString() ) );
-			if( l_var == nullptr || r_var == nullptr )
-				return ErrorValue();
-
-			if( l_var->type.GetTemplateDependentType() != nullptr || r_var->type.GetTemplateDependentType() )
+			if( l_var->type.GetTemplateDependentType() != nullptr || r_var->type.GetTemplateDependentType() != nullptr )
 			{
 				Variable result;
 				result.type= GetNextTemplateDependentType();
@@ -181,28 +254,63 @@ Value CodeBuilder::BuildExpressionCode(
 
 		for( const Synt::IUnaryPrefixOperatorPtr& prefix_operator : expression_with_unary_operators->prefix_operators_ )
 		{
-			if( const auto unary_minus=
-				dynamic_cast<const Synt::UnaryMinus*>( prefix_operator.get() ) )
+			if( result.GetTemplateDependentValue() != nullptr )
+				continue;
+			const Variable* const var= result.GetVariable();
+			if( var == nullptr )
 			{
-				result= BuildUnaryMinus( result, *unary_minus, function_context );
+				errors_.push_back( ReportOperationNotSupportedForThisType( expression_with_unary_operators->file_pos_, result.GetType().ToString() ) );
+				continue;
 			}
-			else if( const auto unary_plus=
-				dynamic_cast<const Synt::UnaryPlus*>( prefix_operator.get() ) )
+
+			std::vector<Function::Arg> args;
+			args.emplace_back();
+			args.back().type= var->type;
+			args.back().is_mutable= var->value_type == ValueType::Reference;
+			args.back().is_reference= var->value_type != ValueType::Value;
+
+			Synt::OverloadedOperator op= Synt::OverloadedOperator::None;
+			if( dynamic_cast<const Synt::UnaryMinus*>( prefix_operator.get() ) != nullptr )
+				op= Synt::OverloadedOperator::Sub;
+			else if( dynamic_cast<const Synt::UnaryPlus*>( prefix_operator.get() ) != nullptr )
+				op= Synt::OverloadedOperator::Add;
+			else if( dynamic_cast<const Synt::LogicalNot*>( prefix_operator.get() ) != nullptr )
+				op= Synt::OverloadedOperator::LogicalNot;
+			else if( dynamic_cast<const Synt::BitwiseNot*>( prefix_operator.get() ) != nullptr )
+				op= Synt::OverloadedOperator::BitwiseNot;
+			else U_ASSERT( false );
+
+			const FunctionVariable* const overloaded_operator= GetOverloadedOperator( args, op, expression_with_unary_operators->file_pos_ );
+			if( overloaded_operator != nullptr )
 			{
-				(void)unary_plus;
-				// DO NOTHING
+				result= DoCallFunction( *overloaded_operator, expression_with_unary_operators->file_pos_, var, {}, false, names, function_context );
 			}
-			else if( const auto logical_not=
-				dynamic_cast<const Synt::LogicalNot*>( prefix_operator.get() ) )
+			else
 			{
-				result= BuildLogicalNot( result, *logical_not, function_context );
+				if( const auto unary_minus=
+					dynamic_cast<const Synt::UnaryMinus*>( prefix_operator.get() ) )
+				{
+					result= BuildUnaryMinus( result, *unary_minus, function_context );
+				}
+				else if( const auto unary_plus=
+					dynamic_cast<const Synt::UnaryPlus*>( prefix_operator.get() ) )
+				{
+					// TODO - maybe do something here?
+					(void)unary_plus;
+				}
+				else if( const auto logical_not=
+					dynamic_cast<const Synt::LogicalNot*>( prefix_operator.get() ) )
+				{
+					result= BuildLogicalNot( result, *logical_not, function_context );
+				}
+				else if( const auto bitwise_not=
+					dynamic_cast<const Synt::BitwiseNot*>( prefix_operator.get() ) )
+				{
+					result= BuildBitwiseNot( result, *bitwise_not, function_context );
+				}
+				else
+					U_ASSERT(false);
 			}
-			else if( const auto bitwise_not=
-				dynamic_cast<const Synt::BitwiseNot*>( prefix_operator.get() ) )
-			{
-				result= BuildBitwiseNot( result, *bitwise_not, function_context );
-			}
-			// TODO
 		} // for unary prefix operators
 
 		return result;
@@ -1082,13 +1190,74 @@ Value CodeBuilder::BuildIndexationOperator(
 		return value;
 	}
 
-	const Array* array_type= value.GetType().GetArrayType();
+	if( value.GetVariable() == nullptr )
+	{
+		errors_.push_back( ReportExpectedVariable( indexation_operator.file_pos_, value.GetType().ToString() ) );
+		return ErrorValue();
+	}
+
+	const Variable& variable= *value.GetVariable();
+
+	if( variable.type.GetClassType() != nullptr ) // If this is class - try call overloaded [] operator.
+	{
+		std::vector<Function::Arg> args;
+		args.reserve( 2u );
+		const size_t error_count_before= errors_.size();
+
+		args.emplace_back();
+		args.back().type= variable.type;
+		args.back().is_reference= variable.value_type != ValueType::Value;
+		args.back().is_mutable= variable.value_type == ValueType::Reference;
+
+		// Know type of index.
+		{
+			// Prepare dummy function context for first pass.
+			FunctionContext dummy_function_context(
+				function_context.return_type,
+				function_context.return_value_is_mutable,
+				function_context.return_value_is_reference,
+				llvm_context_,
+				dummy_function_context_->function );
+			const StackVariablesStorage dummy_stack_variables_storage( dummy_function_context );
+			dummy_function_context.this_= function_context.this_;
+
+			const Value index_value= BuildExpressionCode( *indexation_operator.index_, names, dummy_function_context );
+			CHECK_RETURN_ERROR_VALUE(index_value);
+			CHECK_RETURN_TEMPLATE_DEPENDENT_VALUE(index_value);
+
+			const Variable* const index_variable= index_value.GetVariable();
+			if( index_variable == nullptr )
+			{
+				errors_.push_back( ReportExpectedVariable( indexation_operator.index_->GetFilePos(), index_value.GetType().ToString() ) );
+				return ErrorValue();
+			}
+
+			args.emplace_back();
+			args.back().type= index_variable->type;
+			args.back().is_reference= index_variable->value_type != ValueType::Value;
+			args.back().is_mutable= index_variable->value_type == ValueType::Reference;
+		}
+		errors_.resize( error_count_before );
+
+		const FunctionVariable* const overloaded_operator=
+			GetOverloadedOperator( args, Synt::OverloadedOperator::Indexing, indexation_operator.file_pos_ );
+		if( overloaded_operator != nullptr )
+		{
+			return
+				DoCallFunction(
+					*overloaded_operator,
+					indexation_operator.file_pos_,
+					&variable, { indexation_operator.index_.get() }, false,
+					names, function_context );
+		}
+	}
+
+	const Array* const array_type= variable.type.GetArrayType();
 	if( array_type == nullptr )
 	{
 		errors_.push_back( ReportOperationNotSupportedForThisType( indexation_operator.file_pos_, value.GetType().ToString() ) );
 		return ErrorValue();
 	}
-	const Variable& variable= *value.GetVariable();
 
 	const Value index_value=
 		BuildExpressionCode(
@@ -1308,7 +1477,7 @@ Value CodeBuilder::BuildCallOperator(
 			const Variable* const expr= expr_value.GetVariable();
 			if( expr == nullptr )
 			{
-				errors_.push_back( ReportExpectedVariableAsArgument( arg_expression->GetFilePos(), expr_value.GetType().ToString() ) );
+				errors_.push_back( ReportExpectedVariable( arg_expression->GetFilePos(), expr_value.GetType().ToString() ) );
 				return ErrorValue();
 			}
 
@@ -1336,6 +1505,7 @@ Value CodeBuilder::BuildCallOperator(
 		// Just dump first "this" arg.
 		this_count--;
 		total_args--;
+		this_= nullptr;
 		actual_args.erase( actual_args.begin() );
 	}
 	U_ASSERT( function_type.args.size() == actual_args.size() );
@@ -1348,30 +1518,49 @@ Value CodeBuilder::BuildCallOperator(
 
 	errors_.resize( error_count_before ); // Drop errors from first pass.
 
+	std::vector<const Synt::IExpressionComponent*> synt_args;
+	for( const Synt::IExpressionComponentPtr& arg : call_operator.arguments_ )
+		synt_args.push_back( arg.get() );
+
+	return DoCallFunction( function, call_operator.file_pos_, this_, synt_args, false, names, function_context );
+}
+
+Value CodeBuilder::DoCallFunction(
+	const FunctionVariable& function,
+	const FilePos& call_file_pos,
+	const Variable* first_arg,
+	std::vector<const Synt::IExpressionComponent*> args,
+	const bool evaluate_args_in_reverse_order,
+	NamesScope& names,
+	FunctionContext& function_context )
+{
+	U_ASSERT( !( evaluate_args_in_reverse_order && first_arg != nullptr ) );
+
+	const Function& function_type= *function.type.GetFunctionType();
+
+	const size_t first_arg_count= first_arg == 0u ? 0u : 1u;
+	const size_t arg_count= args.size() + first_arg_count;
+
 	std::vector<llvm::Value*> llvm_args;
+	llvm_args.resize( arg_count, nullptr );
 	std::unordered_map<StoredVariablePtr, VaraibleReferencesCounter> locked_variable_conters;
 	std::vector<VariableStorageUseCounter> temp_args_locks; // We need lock reference argument before evaluating next arguments.
 
-	llvm::Value* s_ret_value= nullptr;
-	if( function.return_value_is_sret )
-	{
-		s_ret_value= function_context.alloca_ir_builder.CreateAlloca( function_type.return_type.GetLLVMType() );
-		llvm_args.push_back( s_ret_value );
-	}
-
 	bool function_result_have_template_dependent_type= false;
-	for( unsigned int i= 0u; i < actual_args.size(); i++ )
+	for( unsigned int i= 0u; i < arg_count; i++ )
 	{
-		const bool is_this_arg= this_count != 0u && i == 0u;
-		const Function::Arg& arg= function_type.args[i];
+		const unsigned int j= evaluate_args_in_reverse_order ? arg_count - i - 1u : i;
+
+		const bool is_first_arg= first_arg != nullptr && j == 0u;
+		const Function::Arg& arg= function_type.args[j];
 
 		Variable expr;
-		if( is_this_arg )
-			expr= *this_;
+		if( is_first_arg )
+			expr= *first_arg;
 		else
-			expr= *BuildExpressionCode( *call_operator.arguments_[i - this_count], names, function_context ).GetVariable();
+			expr= *BuildExpressionCode( *args[ j - first_arg_count ], names, function_context ).GetVariable();
 
-		const FilePos& file_pos= is_this_arg ? call_operator.file_pos_ : call_operator.arguments_[i - this_count]->GetFilePos();
+		const FilePos& file_pos= is_first_arg ? file_pos : args[ j - first_arg_count ]->GetFilePos();
 
 		const bool something_have_template_dependent_type= expr.type.GetTemplateDependentType() != nullptr || arg.type.GetTemplateDependentType() != nullptr;
 		function_result_have_template_dependent_type= function_result_have_template_dependent_type || something_have_template_dependent_type;
@@ -1393,7 +1582,7 @@ Value CodeBuilder::BuildCallOperator(
 					return ErrorValue();
 				}
 
-				llvm_args.push_back(expr.llvm_value);
+				llvm_args[j]= expr.llvm_value;
 
 				// Lock references.
 				for( const StoredVariablePtr& referenced_variable : expr.referenced_variables )
@@ -1414,14 +1603,14 @@ Value CodeBuilder::BuildCallOperator(
 						{
 							llvm::Value* const temp_storage= function_context.alloca_ir_builder.CreateAlloca( expr.type.GetLLVMType() );
 							function_context.llvm_ir_builder.CreateStore( expr.llvm_value, temp_storage );
-							llvm_args.push_back( temp_storage );
+							llvm_args[j]= temp_storage;
 						}
 					}
 					else
-						llvm_args.push_back( expr.llvm_value );
+						llvm_args[j]= expr.llvm_value;
 				}
 				else
-					llvm_args.push_back( expr.llvm_value );
+					llvm_args[j]= expr.llvm_value;
 
 				// Lock references.
 				for( const StoredVariablePtr& referenced_variable : expr.referenced_variables )
@@ -1436,7 +1625,7 @@ Value CodeBuilder::BuildCallOperator(
 			if( arg.type.GetFundamentalType() != nullptr )
 			{
 				if( !something_have_template_dependent_type )
-					llvm_args.push_back( CreateMoveToLLVMRegisterInstruction( expr, function_context ) );
+					llvm_args[j]= CreateMoveToLLVMRegisterInstruction( expr, function_context );
 			}
 			else if( const ClassProxyPtr class_type= arg.type.GetClassTypeProxy() )
 			{
@@ -1444,7 +1633,7 @@ Value CodeBuilder::BuildCallOperator(
 				{
 					// Can not call function with value parameter, because for value parameter needs copy, but parameter type is not copyable.
 					// TODO - print more reliable message.
-					errors_.push_back( ReportOperationNotSupportedForThisType( call_operator.file_pos_, arg.type.ToString() ) );
+					errors_.push_back( ReportOperationNotSupportedForThisType( file_pos, arg.type.ToString() ) );
 					continue;
 				}
 
@@ -1453,8 +1642,8 @@ Value CodeBuilder::BuildCallOperator(
 					// Create copy of class value. Call copy constructor.
 					llvm::Value* const arg_copy= function_context.alloca_ir_builder.CreateAlloca( arg.type.GetLLVMType() );
 
-					TryCallCopyConstructor( call_operator.file_pos_, arg_copy, expr.llvm_value, class_type, function_context );
-					llvm_args.push_back( arg_copy );
+					TryCallCopyConstructor( file_pos, arg_copy, expr.llvm_value, class_type, function_context );
+					llvm_args[j]= arg_copy;
 				}
 			}
 			else if( something_have_template_dependent_type )
@@ -1476,7 +1665,7 @@ Value CodeBuilder::BuildCallOperator(
 		{} // All ok - 0-infinity immutable references.
 		else
 		{
-			errors_.push_back( ReportReferenceProtectionError( call_operator.file_pos_ ) );
+			errors_.push_back( ReportReferenceProtectionError( call_file_pos ) );
 			continue;
 		}
 
@@ -1487,7 +1676,7 @@ Value CodeBuilder::BuildCallOperator(
 		{
 			// Pass mutable reference into function, while there are references on stack or somewhere else.
 			// We can have one mutable reference on stack, but no more.
-			errors_.push_back( ReportReferenceProtectionError( call_operator.file_pos_ ) );
+			errors_.push_back( ReportReferenceProtectionError( call_file_pos ) );
 		}
 		if( counter.mut == 1u && var.mut_use_counter.use_count() == 2u )
 		{} // Ok - we take one mutable reference from stack and pass it into function.
@@ -1509,7 +1698,14 @@ Value CodeBuilder::BuildCallOperator(
 		else
 			dummy_result.location= function.return_value_is_sret ? Variable::Location::Pointer : Variable::Location::LLVMRegister;
 		dummy_result.type= GetNextTemplateDependentType();
-		return Value( dummy_result, call_operator.file_pos_ );
+		return Value( dummy_result, call_file_pos );
+	}
+
+	llvm::Value* s_ret_value= nullptr;
+	if( function.return_value_is_sret )
+	{
+		s_ret_value= function_context.alloca_ir_builder.CreateAlloca( function_type.return_type.GetLLVMType() );
+		llvm_args.insert( llvm_args.begin(), s_ret_value );
 	}
 
 	llvm::Value* call_result=
@@ -1554,7 +1750,7 @@ Value CodeBuilder::BuildCallOperator(
 			result.referenced_variables.emplace(pair.first);
 	}
 
-	return Value( result, call_operator.file_pos_ );
+	return Value( result, call_file_pos );
 }
 
 Variable CodeBuilder::BuildTempVariableConstruction(

@@ -3,7 +3,6 @@ compiler. Features grouped and sorted by priority inside each group.
 When feature was implemented, delete it from list.
 
 Common:
-*) Operators overloading
 *) public/private/protected for class/struct members
 *) sizeof operator
 *) raw_pointer
@@ -14,6 +13,8 @@ Common:
 *) Uninitialized initializer
 *) array_view, array view take operator
 *) Type conversions
+*) Overloading of operator ()
+*) Dereference operator - for pointer-like classes
 
 References:
 *) Tags for references as functions arguments and return values

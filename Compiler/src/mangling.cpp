@@ -66,6 +66,61 @@ private:
 	std::vector<ProgramString> names_container_;
 };
 
+// Returns empty string if func_name is not oeprator name.
+static const ProgramString& DecodeOperator( const ProgramString& func_name )
+{
+	static const std::map<ProgramString, ProgramString> c_op_names
+	{
+		{ "+"_SpC, "pl"_SpC },
+		{ "-"_SpC, "mi"_SpC },
+		{ "*"_SpC, "ml"_SpC },
+		{ "/"_SpC, "dv"_SpC },
+		{ "%"_SpC, "rm"_SpC },
+
+		{ "=="_SpC, "eq"_SpC },
+		{ "!="_SpC, "ne"_SpC },
+		{  ">"_SpC, "gt"_SpC },
+		{ ">="_SpC, "ge"_SpC },
+		{  "<"_SpC, "lt"_SpC },
+		{ "<="_SpC, "le"_SpC },
+
+		{ "&"_SpC, "an"_SpC },
+		{ "|"_SpC, "or"_SpC },
+		{ "^"_SpC, "eo"_SpC },
+
+		{ "<<"_SpC, "ls"_SpC },
+		{ ">>"_SpC, "rs"_SpC },
+
+		{ "+="_SpC, "pL"_SpC },
+		{ "-="_SpC, "mI"_SpC },
+		{ "*="_SpC, "mL"_SpC },
+		{ "/="_SpC, "dV"_SpC },
+		{ "%="_SpC, "rM"_SpC },
+
+		{ "&="_SpC, "aN"_SpC },
+		{ "|="_SpC, "oR"_SpC },
+		{ "^="_SpC, "eO"_SpC },
+
+		{ "<<="_SpC, "lS"_SpC },
+		{ ">>="_SpC, "rS"_SpC },
+
+		{ "!"_SpC, "nt"_SpC },
+		{ "~"_SpC, "co"_SpC },
+
+		{ "="_SpC, "aS"_SpC },
+		{ "++"_SpC, "pp"_SpC },
+		{ "--"_SpC, "mm"_SpC },
+
+		{ "[]"_SpC, "ix"_SpC },
+	};
+	static const ProgramString c_empty;
+
+	const auto it= c_op_names.find( func_name );
+	if( it != c_op_names.end() )
+		return it->second;
+
+	return c_empty;
+}
 
 static void GetNamespacePrefix_r( const NamesScope& names_scope, std::vector<ProgramString>& result )
 {
@@ -80,7 +135,9 @@ static void GetNamespacePrefix_r( const NamesScope& names_scope, std::vector<Pro
 	}
 }
 
-static NamePair GetNestedName( const ProgramString& name, const NamesScope& parent_scope, const bool need_konst, NamesCache& names_cache, bool name_is_func_name= false )
+static NamePair GetNestedName(
+	const ProgramString& name, bool name_needs_num_prefix,
+	const NamesScope& parent_scope, const bool need_konst, NamesCache& names_cache, bool name_is_func_name= false )
 {
 	// "N" - prefix for all names inside namespaces or classes.
 	// "K" prefix for "this-call" methods with immutable "this".
@@ -88,7 +145,10 @@ static NamePair GetNestedName( const ProgramString& name, const NamesScope& pare
 
 	std::vector<ProgramString> result_splitted;
 	GetNamespacePrefix_r( parent_scope, result_splitted );
-	result_splitted.push_back( ToProgramString( std::to_string( name.size() ).c_str() ) + name );
+	if( name_needs_num_prefix )
+		result_splitted.push_back( ToProgramString( std::to_string( name.size() ).c_str() ) + name );
+	else
+		result_splitted.push_back( name );
 
 	ProgramString name_combined;
 	const ProgramString konst= need_konst ? "K"_SpC : ""_SpC;
@@ -173,7 +233,7 @@ static NamePair GetTypeName_r( const Type& type, NamesCache& names_cache )
 	}
 	else if( const Class* const class_type= type.GetClassType() )
 	{
-		result= GetNestedName( class_type->members.GetThisNamespaceName(), *class_type->members.GetParent(), false, names_cache );
+		result= GetNestedName( class_type->members.GetThisNamespaceName(), true, *class_type->members.GetParent(), false, names_cache );
 	}
 
 	return result;
@@ -197,16 +257,22 @@ std::string MangleFunction(
 	{
 		// TODO
 		// Itanium ABI requires at least 2  cnstructors - "C1" and "C2". We should generate both.
-		result+= GetNestedName( "C1"_SpC, parent_scope, false, names_cache, true ).compressed_and_escaped;
+		result+= GetNestedName( "C1"_SpC, false, parent_scope, false, names_cache, true ).compressed_and_escaped;
 	}
 	else
+	{
+		const ProgramString& op_name= DecodeOperator( function_name );
+		const bool is_op= !op_name.empty();
+
 		result+=
 			GetNestedName(
-				function_name,
+				is_op ? op_name : function_name,
+				!is_op,
 				parent_scope,
 				is_this_call_method && !function_type.args.front().is_mutable,
 				names_cache,
 				true ).compressed_and_escaped;
+	}
 
 	size_t arg_count= function_type.args.size();
 	const Function::Arg* args= function_type.args.data();
@@ -273,7 +339,7 @@ std::string MangleGlobalVariable(
 	NamesCache names_cache;
 	ProgramString result= "_Z"_SpC;
 
-	result+= GetNestedName( variable_name, parent_scope, false, names_cache ).compressed_and_escaped;
+	result+= GetNestedName( variable_name, true, parent_scope, false, names_cache ).compressed_and_escaped;
 
 	return ToStdString( result );
 }

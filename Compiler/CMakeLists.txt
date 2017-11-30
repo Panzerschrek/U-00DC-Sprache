@@ -120,6 +120,8 @@ set( TESTS_SOURCES
 	src/tests/mutability_errors_test.cpp
 	src/tests/namespaces_errors_test.cpp
 	src/tests/namespaces_test.cpp
+	src/tests/operators_overloading_errors_test.cpp
+	src/tests/operators_overloading_test.cpp
 	src/tests/operators_priority_test.cpp
 	src/tests/operators_test.cpp
 	src/tests/reference_check_test.cpp
