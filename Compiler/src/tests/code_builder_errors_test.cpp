@@ -296,20 +296,17 @@ U_TEST(OperationNotSupportedForThisTypeTest1)
 			var f32 variable= 0.0f32;
 			var S s= zero_init;
 			variable[ 42u32 ]; // Indexation of variable.
-			Bar[ 0u32 ]; // Indexation of function.
 			s[ 45u32 ]; // Indexation of struct variable.
 		}
 	)";
 
 	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_TEST_ASSERT( build_result.errors.size() >= 3u );
+	U_TEST_ASSERT( build_result.errors.size() >= 2u );
 	U_TEST_ASSERT( build_result.errors[0].code == CodeBuilderErrorCode::OperationNotSupportedForThisType );
 	U_TEST_ASSERT( build_result.errors[0].file_pos.line == 8u );
 	U_TEST_ASSERT( build_result.errors[1].code == CodeBuilderErrorCode::OperationNotSupportedForThisType );
 	U_TEST_ASSERT( build_result.errors[1].file_pos.line == 9u );
-	U_TEST_ASSERT( build_result.errors[2].code == CodeBuilderErrorCode::OperationNotSupportedForThisType );
-	U_TEST_ASSERT( build_result.errors[2].file_pos.line == 10u );
 }
 
 U_TEST(OperationNotSupportedForThisTypeTest2)
