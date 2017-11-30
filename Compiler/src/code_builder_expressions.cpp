@@ -94,11 +94,10 @@ boost::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 
 		const Variable* const l_var= l_var_value.GetVariable();
 		const Variable* const r_var= r_var_value.GetVariable();
-		const auto err_func= op == Synt::OverloadedOperator::Assign ? ReportExpectedVariableInAssignment : ReportExpectedVariableInBinaryOperator;
 		if( l_var == nullptr )
-			errors_.push_back( err_func( file_pos, l_var_value.GetType().ToString() ) );
+			errors_.push_back( ReportExpectedVariable( file_pos, l_var_value.GetType().ToString() ) );
 		if( r_var == nullptr )
-			errors_.push_back( err_func( file_pos, r_var_value.GetType().ToString() ) );
+			errors_.push_back( ReportExpectedVariable( file_pos, r_var_value.GetType().ToString() ) );
 		if( l_var == nullptr || r_var == nullptr )
 			return Value(ErrorValue());
 
@@ -1193,7 +1192,7 @@ Value CodeBuilder::BuildIndexationOperator(
 
 	if( value.GetVariable() == nullptr )
 	{
-		errors_.push_back( ReportExpectedVariableInBinaryOperator( indexation_operator.file_pos_, value.GetType().ToString() ) );
+		errors_.push_back( ReportExpectedVariable( indexation_operator.file_pos_, value.GetType().ToString() ) );
 		return ErrorValue();
 	}
 
@@ -1229,7 +1228,7 @@ Value CodeBuilder::BuildIndexationOperator(
 			const Variable* const index_variable= index_value.GetVariable();
 			if( index_variable == nullptr )
 			{
-				errors_.push_back( ReportExpectedVariableInBinaryOperator( indexation_operator.index_->GetFilePos(), index_value.GetType().ToString() ) );
+				errors_.push_back( ReportExpectedVariable( indexation_operator.index_->GetFilePos(), index_value.GetType().ToString() ) );
 				return ErrorValue();
 			}
 
@@ -1478,7 +1477,7 @@ Value CodeBuilder::BuildCallOperator(
 			const Variable* const expr= expr_value.GetVariable();
 			if( expr == nullptr )
 			{
-				errors_.push_back( ReportExpectedVariableAsArgument( arg_expression->GetFilePos(), expr_value.GetType().ToString() ) );
+				errors_.push_back( ReportExpectedVariable( arg_expression->GetFilePos(), expr_value.GetType().ToString() ) );
 				return ErrorValue();
 			}
 

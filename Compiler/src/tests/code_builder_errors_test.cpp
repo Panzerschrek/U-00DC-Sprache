@@ -701,7 +701,7 @@ U_TEST( ExpectedVariableInArraySizeTest0 )
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedVariableInArraySize );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedVariable );
 	U_TEST_ASSERT( error.file_pos.line == 4u );
 }
 
@@ -1278,17 +1278,17 @@ U_TEST(ExpectedVariableInAssignmentTest0)
 
 	U_TEST_ASSERT( build_result.errors.size() >= 6u );
 
-	U_TEST_ASSERT( build_result.errors[0].code == CodeBuilderErrorCode::ExpectedVariableInAssignment );
+	U_TEST_ASSERT( build_result.errors[0].code == CodeBuilderErrorCode::ExpectedVariable );
 	U_TEST_ASSERT( build_result.errors[0].file_pos.line == 7u );
-	U_TEST_ASSERT( build_result.errors[1].code == CodeBuilderErrorCode::ExpectedVariableInAssignment );
+	U_TEST_ASSERT( build_result.errors[1].code == CodeBuilderErrorCode::ExpectedVariable );
 	U_TEST_ASSERT( build_result.errors[1].file_pos.line == 8u );
-	U_TEST_ASSERT( build_result.errors[2].code == CodeBuilderErrorCode::ExpectedVariableInAssignment );
+	U_TEST_ASSERT( build_result.errors[2].code == CodeBuilderErrorCode::ExpectedVariable );
 	U_TEST_ASSERT( build_result.errors[2].file_pos.line == 9u );
-	U_TEST_ASSERT( build_result.errors[3].code == CodeBuilderErrorCode::ExpectedVariableInAssignment );
+	U_TEST_ASSERT( build_result.errors[3].code == CodeBuilderErrorCode::ExpectedVariable );
 	U_TEST_ASSERT( build_result.errors[3].file_pos.line == 10u );
-	U_TEST_ASSERT( build_result.errors[4].code == CodeBuilderErrorCode::ExpectedVariableInAssignment );
+	U_TEST_ASSERT( build_result.errors[4].code == CodeBuilderErrorCode::ExpectedVariable );
 	U_TEST_ASSERT( build_result.errors[4].file_pos.line == 11u );
-	U_TEST_ASSERT( build_result.errors[5].code == CodeBuilderErrorCode::ExpectedVariableInAssignment );
+	U_TEST_ASSERT( build_result.errors[5].code == CodeBuilderErrorCode::ExpectedVariable );
 	U_TEST_ASSERT( build_result.errors[5].file_pos.line == 11u );
 }
 
@@ -1313,17 +1313,17 @@ U_TEST(ExpectedVariableInBinaryOperatorTest0)
 
 	U_TEST_ASSERT( build_result.errors.size() >= 6u );
 
-	U_TEST_ASSERT( build_result.errors[0].code == CodeBuilderErrorCode::ExpectedVariableInBinaryOperator );
+	U_TEST_ASSERT( build_result.errors[0].code == CodeBuilderErrorCode::ExpectedVariable );
 	U_TEST_ASSERT( build_result.errors[0].file_pos.line == 7u );
-	U_TEST_ASSERT( build_result.errors[1].code == CodeBuilderErrorCode::ExpectedVariableInBinaryOperator );
+	U_TEST_ASSERT( build_result.errors[1].code == CodeBuilderErrorCode::ExpectedVariable );
 	U_TEST_ASSERT( build_result.errors[1].file_pos.line == 8u );
-	U_TEST_ASSERT( build_result.errors[2].code == CodeBuilderErrorCode::ExpectedVariableInBinaryOperator );
+	U_TEST_ASSERT( build_result.errors[2].code == CodeBuilderErrorCode::ExpectedVariable );
 	U_TEST_ASSERT( build_result.errors[2].file_pos.line == 9u );
-	U_TEST_ASSERT( build_result.errors[3].code == CodeBuilderErrorCode::ExpectedVariableInBinaryOperator );
+	U_TEST_ASSERT( build_result.errors[3].code == CodeBuilderErrorCode::ExpectedVariable );
 	U_TEST_ASSERT( build_result.errors[3].file_pos.line == 10u );
-	U_TEST_ASSERT( build_result.errors[4].code == CodeBuilderErrorCode::ExpectedVariableInBinaryOperator );
+	U_TEST_ASSERT( build_result.errors[4].code == CodeBuilderErrorCode::ExpectedVariable );
 	U_TEST_ASSERT( build_result.errors[4].file_pos.line == 11u );
-	U_TEST_ASSERT( build_result.errors[5].code == CodeBuilderErrorCode::ExpectedVariableInBinaryOperator );
+	U_TEST_ASSERT( build_result.errors[5].code == CodeBuilderErrorCode::ExpectedVariable );
 	U_TEST_ASSERT( build_result.errors[5].file_pos.line == 11u );
 }
 
@@ -1345,9 +1345,9 @@ U_TEST(ExpectedVariableAsArgumentTest0)
 
 	U_TEST_ASSERT( build_result.errors.size() >= 2u );
 
-	U_TEST_ASSERT( build_result.errors[0].code == CodeBuilderErrorCode::ExpectedVariableAsArgument );
+	U_TEST_ASSERT( build_result.errors[0].code == CodeBuilderErrorCode::ExpectedVariable );
 	U_TEST_ASSERT( build_result.errors[0].file_pos.line == 7u );
-	U_TEST_ASSERT( build_result.errors[1].code == CodeBuilderErrorCode::ExpectedVariableAsArgument );
+	U_TEST_ASSERT( build_result.errors[1].code == CodeBuilderErrorCode::ExpectedVariable );
 	U_TEST_ASSERT( build_result.errors[1].file_pos.line == 8u );
 }
 
@@ -1372,17 +1372,17 @@ U_TEST(ExpectedVariableInAdditiveAssignmentTest0)
 
 	U_TEST_ASSERT( build_result.errors.size() >= 6u );
 
-	U_TEST_ASSERT( build_result.errors[0].code == CodeBuilderErrorCode::ExpectedVariableInAdditiveAssignment );
+	U_TEST_ASSERT( build_result.errors[0].code == CodeBuilderErrorCode::ExpectedVariable );
 	U_TEST_ASSERT( build_result.errors[0].file_pos.line == 7u );
-	U_TEST_ASSERT( build_result.errors[1].code == CodeBuilderErrorCode::ExpectedVariableInAdditiveAssignment );
+	U_TEST_ASSERT( build_result.errors[1].code == CodeBuilderErrorCode::ExpectedVariable );
 	U_TEST_ASSERT( build_result.errors[1].file_pos.line == 8u );
-	U_TEST_ASSERT( build_result.errors[2].code == CodeBuilderErrorCode::ExpectedVariableInAdditiveAssignment );
+	U_TEST_ASSERT( build_result.errors[2].code == CodeBuilderErrorCode::ExpectedVariable );
 	U_TEST_ASSERT( build_result.errors[2].file_pos.line == 9u );
-	U_TEST_ASSERT( build_result.errors[3].code == CodeBuilderErrorCode::ExpectedVariableInAdditiveAssignment );
+	U_TEST_ASSERT( build_result.errors[3].code == CodeBuilderErrorCode::ExpectedVariable );
 	U_TEST_ASSERT( build_result.errors[3].file_pos.line == 10u );
-	U_TEST_ASSERT( build_result.errors[4].code == CodeBuilderErrorCode::ExpectedVariableInAdditiveAssignment );
+	U_TEST_ASSERT( build_result.errors[4].code == CodeBuilderErrorCode::ExpectedVariable );
 	U_TEST_ASSERT( build_result.errors[4].file_pos.line == 11u );
-	U_TEST_ASSERT( build_result.errors[5].code == CodeBuilderErrorCode::ExpectedVariableInAdditiveAssignment );
+	U_TEST_ASSERT( build_result.errors[5].code == CodeBuilderErrorCode::ExpectedVariable );
 	U_TEST_ASSERT( build_result.errors[5].file_pos.line == 11u );
 }
 
@@ -1406,13 +1406,13 @@ U_TEST(ExpectedVariableInIncrementOrDecrementTest0)
 
 	U_TEST_ASSERT( build_result.errors.size() >= 4u );
 
-	U_TEST_ASSERT( build_result.errors[0].code == CodeBuilderErrorCode::ExpectedVariableInIncrementOrDecrement );
+	U_TEST_ASSERT( build_result.errors[0].code == CodeBuilderErrorCode::ExpectedVariable );
 	U_TEST_ASSERT( build_result.errors[0].file_pos.line == 7u );
-	U_TEST_ASSERT( build_result.errors[1].code == CodeBuilderErrorCode::ExpectedVariableInIncrementOrDecrement );
+	U_TEST_ASSERT( build_result.errors[1].code == CodeBuilderErrorCode::ExpectedVariable );
 	U_TEST_ASSERT( build_result.errors[1].file_pos.line == 8u );
-	U_TEST_ASSERT( build_result.errors[2].code == CodeBuilderErrorCode::ExpectedVariableInIncrementOrDecrement );
+	U_TEST_ASSERT( build_result.errors[2].code == CodeBuilderErrorCode::ExpectedVariable );
 	U_TEST_ASSERT( build_result.errors[2].file_pos.line == 9u );
-	U_TEST_ASSERT( build_result.errors[3].code == CodeBuilderErrorCode::ExpectedVariableInIncrementOrDecrement );
+	U_TEST_ASSERT( build_result.errors[3].code == CodeBuilderErrorCode::ExpectedVariable );
 	U_TEST_ASSERT( build_result.errors[3].file_pos.line == 10u );
 }
 

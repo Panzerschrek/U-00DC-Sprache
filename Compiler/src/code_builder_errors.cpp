@@ -248,68 +248,13 @@ CodeBuilderError ReportBindingConstReferenceToNonconstReference( const FilePos& 
 	return error;
 }
 
-CodeBuilderError ReportExpectedVariableInAssignment( const FilePos& file_pos, const ProgramString& got )
+CodeBuilderError ReportExpectedVariable( const FilePos& file_pos, const ProgramString& got )
 {
 	CodeBuilderError error;
 	error.file_pos= file_pos;
-	error.code= CodeBuilderErrorCode::ExpectedVariableInAssignment;
+	error.code= CodeBuilderErrorCode::ExpectedVariable;
 
-	error.text= "Expected variable in assignment, got \"."_SpC + got + "\"."_SpC;
-
-	return error;
-}
-
-CodeBuilderError ReportExpectedVariableInBinaryOperator( const FilePos& file_pos, const ProgramString& got )
-{
-	CodeBuilderError error;
-	error.file_pos= file_pos;
-	error.code= CodeBuilderErrorCode::ExpectedVariableInBinaryOperator;
-
-	error.text= "Expected variable in binary operator, got \"."_SpC + got + "\"."_SpC;
-
-	return error;
-}
-
-CodeBuilderError ReportExpectedVariableAsArgument( const FilePos& file_pos, const ProgramString& got )
-{
-	CodeBuilderError error;
-	error.file_pos= file_pos;
-	error.code= CodeBuilderErrorCode::ExpectedVariableAsArgument;
-
-	error.text= "Expected variable as argument, got \"."_SpC + got + "\"."_SpC;
-
-	return error;
-}
-
-CodeBuilderError ReportExpectedVariableInAdditiveAssignment( const FilePos& file_pos, const ProgramString& got )
-{
-	CodeBuilderError error;
-	error.file_pos= file_pos;
-	error.code= CodeBuilderErrorCode::ExpectedVariableInAdditiveAssignment;
-
-	error.text= "Expected variable in additive assignment, got \"."_SpC + got + "\"."_SpC;
-
-	return error;
-}
-
-CodeBuilderError ReportExpectedVariableInIncrementOrDecrement( const FilePos& file_pos, const ProgramString& got )
-{
-	CodeBuilderError error;
-	error.file_pos= file_pos;
-	error.code= CodeBuilderErrorCode::ExpectedVariableInIncrementOrDecrement;
-
-	error.text= "Expected variable in increment or decrement, got \"."_SpC + got + "\"."_SpC;
-
-	return error;
-}
-
-CodeBuilderError ReprotExpectedVariableInArraySize( const FilePos& file_pos, const ProgramString& got )
-{
-	CodeBuilderError error;
-	error.file_pos= file_pos;
-	error.code= CodeBuilderErrorCode::ExpectedVariableInArraySize;
-
-	error.text= "Expected variable in array size expression, got \"."_SpC + got + "\"."_SpC;
+	error.text= "Expected variable, got \"."_SpC + got + "\"."_SpC;
 
 	return error;
 }

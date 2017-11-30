@@ -490,7 +490,7 @@ Type CodeBuilder::PrepareType(
 				errors_.push_back( ReportExpectedConstantExpression( num_file_pos ) );
 		}
 		else
-			errors_.push_back( ReprotExpectedVariableInArraySize( num_file_pos, size_expression.GetType().ToString() ) );
+			errors_.push_back( ReportExpectedVariable( num_file_pos, size_expression.GetType().ToString() ) );
 
 		last_type= &array_type.type;
 	}
@@ -3140,7 +3140,7 @@ void CodeBuilder::BuildAssignmentOperatorCode(
 	Value r_var_value= BuildExpressionCode( *assignment_operator.r_value_, block_names, function_context );
 	Variable* const r_var= r_var_value.GetVariable();
 	if( r_var == nullptr && r_var_value.GetType() != NontypeStub::TemplateDependentValue )
-		errors_.push_back( ReportExpectedVariableInAssignment( assignment_operator.file_pos_, r_var_value.GetType().ToString() ) );
+		errors_.push_back( ReportExpectedVariable( assignment_operator.file_pos_, r_var_value.GetType().ToString() ) );
 
 	if( r_var != nullptr && r_var->type.GetFundamentalType() != nullptr )
 	{
@@ -3157,7 +3157,7 @@ void CodeBuilder::BuildAssignmentOperatorCode(
 	const Value l_var_value= BuildExpressionCode( *assignment_operator.l_value_, block_names, function_context );
 	const Variable* const l_var= l_var_value.GetVariable();
 	if( l_var == nullptr && l_var_value.GetType() != NontypeStub::TemplateDependentValue )
-		errors_.push_back( ReportExpectedVariableInAssignment( assignment_operator.file_pos_, l_var_value.GetType().ToString() ) );
+		errors_.push_back( ReportExpectedVariable( assignment_operator.file_pos_, l_var_value.GetType().ToString() ) );
 
 	if( l_var == nullptr || r_var == nullptr )
 		return;
@@ -3253,9 +3253,9 @@ void CodeBuilder::BuildAdditiveAssignmentOperatorCode(
 	const Variable* const l_var= l_var_value.GetVariable();
 
 	if( l_var == nullptr && l_var_value.GetType() != NontypeStub::TemplateDependentValue )
-		errors_.push_back( ReportExpectedVariableInAdditiveAssignment( additive_assignment_operator.file_pos_, l_var_value.GetType().ToString() ) );
+		errors_.push_back( ReportExpectedVariable( additive_assignment_operator.file_pos_, l_var_value.GetType().ToString() ) );
 	if( r_var == nullptr && r_var_value.GetType() != NontypeStub::TemplateDependentValue )
-		errors_.push_back( ReportExpectedVariableInAdditiveAssignment( additive_assignment_operator.file_pos_, r_var_value.GetType().ToString() ) );
+		errors_.push_back( ReportExpectedVariable( additive_assignment_operator.file_pos_, r_var_value.GetType().ToString() ) );
 
 	if( l_var == nullptr || r_var == nullptr )
 		return;
@@ -3330,7 +3330,7 @@ void CodeBuilder::BuildDeltaOneOperatorCode(
 	const Variable* const variable= value.GetVariable();
 	if( variable == nullptr )
 	{
-		errors_.push_back( ReportExpectedVariableInIncrementOrDecrement( file_pos, value.GetType().ToString() ) );
+		errors_.push_back( ReportExpectedVariable( file_pos, value.GetType().ToString() ) );
 		return;
 	}
 

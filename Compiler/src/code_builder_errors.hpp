@@ -35,12 +35,7 @@ enum class CodeBuilderErrorCode : unsigned int
 
 	// ExpectedVariable* errors
 	// TODO - emit common error - ExpectedVariable.
-	ExpectedVariableInAssignment,
-	ExpectedVariableInBinaryOperator,
-	ExpectedVariableAsArgument,
-	ExpectedVariableInAdditiveAssignment,
-	ExpectedVariableInIncrementOrDecrement,
-	ExpectedVariableInArraySize,
+	ExpectedVariable,
 
 	CouldNotOverloadFunction,
 	TooManySuitableOverloadedFunctions,
@@ -155,12 +150,7 @@ CodeBuilderError ReportNoReturnInFunctionReturningNonVoid( const FilePos& file_p
 CodeBuilderError ReportExpectedInitializer( const FilePos& file_pos, const ProgramString& variable_name );
 CodeBuilderError ReportExpectedReferenceValue( const FilePos& file_pos );
 CodeBuilderError ReportBindingConstReferenceToNonconstReference( const FilePos& file_pos );
-CodeBuilderError ReportExpectedVariableInAssignment( const FilePos& file_pos, const ProgramString& got );
-CodeBuilderError ReportExpectedVariableInBinaryOperator( const FilePos& file_pos, const ProgramString& got );
-CodeBuilderError ReportExpectedVariableAsArgument( const FilePos& file_pos, const ProgramString& got );
-CodeBuilderError ReportExpectedVariableInAdditiveAssignment( const FilePos& file_pos, const ProgramString& got );
-CodeBuilderError ReportExpectedVariableInIncrementOrDecrement( const FilePos& file_pos, const ProgramString& got );
-CodeBuilderError ReprotExpectedVariableInArraySize( const FilePos& file_pos, const ProgramString& got );
+CodeBuilderError ReportExpectedVariable( const FilePos& file_pos, const ProgramString& got );
 CodeBuilderError ReportCouldNotOverloadFunction( const FilePos& file_pos );
 CodeBuilderError ReportTooManySuitableOverloadedFunctions( const FilePos& file_pos );
 CodeBuilderError ReportCouldNotSelectOverloadedFunction( const FilePos& file_pos );
