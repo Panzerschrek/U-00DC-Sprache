@@ -299,7 +299,13 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 			return llvm::UndefValue::get( dst_type->llvm_type );
 
 		const Type expression_type= expression_result.GetType();
-		const FundamentalType* const src_type= expression_type.GetFundamentalType();
+		const FundamentalType* src_type= expression_type.GetFundamentalType();
+		if( src_type == nullptr )
+		{
+			// Allow explicit conversions of enums to ints.
+			if( const Enum* const enum_type= expression_type.GetEnumType () )
+				src_type= &enum_type->underlaying_type;
+		}
 
 		if( src_type == nullptr )
 		{

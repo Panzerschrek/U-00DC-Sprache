@@ -158,4 +158,25 @@ U_TEST( EnumValueAsTemplateValueParameter )
 	BuildProgram( c_program_text );
 }
 
+U_TEST( EnumToIntConversionTest )
+{
+	static const char c_program_text[]=
+	R"(
+		enum Months{ January, February, March, April, May, June, July, August, September, Ocotber, November, December }
+
+		fn Foo() : u32
+		{
+			var u32 march( Months::March );
+			return u32(u16(Months::Ocotber)) - march;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	const llvm::GenericValue result_value= engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+	U_TEST_ASSERT( static_cast<uint64_t>( 9 - 2 ) == result_value.IntVal.getLimitedValue() );
+}
+
 } // namespace U

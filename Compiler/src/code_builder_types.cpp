@@ -276,10 +276,9 @@ SizeType Type::SizeOf() const
 			return 1u;
 		}
 
-		SizeType operator()( const EnumPtr& ) const
+		SizeType operator()( const EnumPtr& enum_type ) const
 		{
-			U_ASSERT( false && "SizeOf method not supported for enums." );
-			return 1u;
+			return GetFundamentalTypeSize( enum_type->underlaying_type.fundamental_type );
 		}
 
 		SizeType operator()( const NontypeStub& ) const
