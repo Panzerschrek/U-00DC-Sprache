@@ -421,7 +421,7 @@ U_TEST(TypesMismatchTest2)
 	R"(
 		fn Foo()
 		{
-			var i32 x= 0;
+			var i32 mut x= 0;
 			x= 3.1415926535f32;
 			return;
 		}
@@ -1177,7 +1177,7 @@ U_TEST(ExpectedReferenceValueTest6)
 	// Using value in reference - function argument.
 	static const char c_program_text[]=
 	R"(
-		fn Bar( i32 &x ) {}
+		fn Bar( i32 &mut x ) {}
 		fn Foo()
 		{
 			Bar(42);

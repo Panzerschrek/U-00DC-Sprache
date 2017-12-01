@@ -287,7 +287,7 @@ std::string MangleFunction(
 
 		NamePair type_name= GetTypeName_r( arg.type, names_cache );
 
-		if( !arg.is_mutable )
+		if( !arg.is_mutable && arg.is_reference ) // push "Konst" for reference immutable arguments
 		{
 			const ProgramString prefix= "K"_SpC;
 			const ProgramString prefixed_type_name= prefix + type_name.full;

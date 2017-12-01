@@ -11,7 +11,7 @@ U_TEST(BindingConstReferenceToNonconstReferenceTest0)
 		fn Foo()
 		{
 			var i32 imut a= 42;
-			var i32 &a_ref= a;
+			var i32 &mut a_ref= a;
 		}
 	)";
 

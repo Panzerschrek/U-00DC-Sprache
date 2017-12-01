@@ -104,7 +104,7 @@ U_TEST(AdditiveOperationsTest0)
 	R"(
 		fn Foo( i32 x, i32 y ) : i32
 		{
-			auto result= x;
+			auto mut result= x;
 			result+= y;
 			return result;
 		}
@@ -136,7 +136,7 @@ U_TEST(AdditiveOperationsTest1)
 	R"(
 		fn Foo( i32 x, i32 y ) : i32
 		{
-			auto result= x;
+			auto mut result= x;
 			result-= y;
 			return result;
 		}
@@ -168,7 +168,7 @@ U_TEST(AdditiveOperationsTest2)
 	R"(
 		fn Foo( i32 x, i32 y ) : i32
 		{
-			var [ i32, 8 ] result= zero_init;
+			var [ i32, 8 ] mut result= zero_init;
 			result[5u]= x;
 			result[5u]/= y;
 			return result[5u];
@@ -350,7 +350,7 @@ U_TEST(RightShiftAndAssignTest0)
 {
 	static const char c_program_text[]=
 	R"(
-		fn Foo( u32 x, u16 y ) : u32
+		fn Foo( u32 mut x, u16 y ) : u32
 		{
 			x>>= y;
 			return x;
@@ -388,7 +388,7 @@ U_TEST(LeftShiftAndAssignTest0)
 {
 	static const char c_program_text[]=
 	R"(
-		fn Foo( i32 x, u32 y ) : i32
+		fn Foo( i32 mut x, u32 y ) : i32
 		{
 			x<<= y;
 			return x;
@@ -427,7 +427,7 @@ U_TEST(IncrementTest0)
 	// Increment for signed value.
 	static const char c_program_text[]=
 	R"(
-		fn Foo( i32 x ) : i32
+		fn Foo( i32 mut x ) : i32
 		{
 			++x;
 			return x;
@@ -462,7 +462,7 @@ U_TEST(IncrementTest1)
 	// Increment for unsigned value.
 	static const char c_program_text[]=
 	R"(
-		fn Foo( u64 x ) : u64
+		fn Foo( u64 mut x ) : u64
 		{
 			++x;
 			return x;
@@ -497,7 +497,7 @@ U_TEST(DecrementTest0)
 	// Decrement for signed value.
 	static const char c_program_text[]=
 	R"(
-		fn Foo( i8 x ) : i8
+		fn Foo( i8 mut x ) : i8
 		{
 			--x;
 			return x;
@@ -532,7 +532,7 @@ U_TEST(DecrementTest1)
 	// Decrement for unsigned value.
 	static const char c_program_text[]=
 	R"(
-		fn Foo( u16 x ) : u16
+		fn Foo( u16 mut x ) : u16
 		{
 			--x;
 			return x;
@@ -687,7 +687,7 @@ U_TEST(LazyLogicalAndTest0)
 		struct S
 		{
 			i32 x;
-			fn GetAndMutate( this, bool v, i32 i ) : bool
+			fn GetAndMutate( mut this, bool v, i32 i ) : bool
 			{
 				x= i;
 				return v;
@@ -695,7 +695,7 @@ U_TEST(LazyLogicalAndTest0)
 		}
 		fn Foo() : i32
 		{
-			var S s{ .x= 896 };
+			var S mut s{ .x= 896 };
 			if( true && s.GetAndMutate( true, 42 ) ) // Must call function and mutate
 			{ return s.x; }
 			return 0;
@@ -722,7 +722,7 @@ U_TEST(LazyLogicalAndTest1)
 		struct S
 		{
 			i32 x;
-			fn GetAndMutate( this, bool v, i32 i ) : bool
+			fn GetAndMutate( mut this, bool v, i32 i ) : bool
 			{
 				x= i;
 				return v;
@@ -730,7 +730,7 @@ U_TEST(LazyLogicalAndTest1)
 		}
 		fn Foo() : i32
 		{
-			var S s{ .x= 896 };
+			var S mut s{ .x= 896 };
 			if( false && s.GetAndMutate( false, 42 ) ) // Must not call function
 			{ return 0; }
 			return s.x;
@@ -757,7 +757,7 @@ U_TEST(LazyLogicalOrTest0)
 		struct S
 		{
 			i32 x;
-			fn GetAndMutate( this, bool v, i32 i ) : bool
+			fn GetAndMutate( mut this, bool v, i32 i ) : bool
 			{
 				x= i;
 				return v;
@@ -765,7 +765,7 @@ U_TEST(LazyLogicalOrTest0)
 		}
 		fn Foo() : i32
 		{
-			var S s{ .x= 896 };
+			var S mut s{ .x= 896 };
 			if( true || s.GetAndMutate( true, 42 ) ) // Must not call function
 			{ return s.x; }
 			return 0;
@@ -792,7 +792,7 @@ U_TEST(LazyLogicalOrTest1)
 		struct S
 		{
 			i32 x;
-			fn GetAndMutate( this, bool v, i32 i ) : bool
+			fn GetAndMutate( mut this, bool v, i32 i ) : bool
 			{
 				x= i;
 				return v;
@@ -800,7 +800,7 @@ U_TEST(LazyLogicalOrTest1)
 		}
 		fn Foo() : i32
 		{
-			var S s{ .x= 896 };
+			var S mut s{ .x= 896 };
 			if( false || s.GetAndMutate( true, 42 ) ) // Must call function and mutate
 			{ return s.x; }
 			return 0;
@@ -1190,7 +1190,7 @@ U_TEST( RemOperatorTest1 )
 	// %= for signed integers
 	static const char c_program_text[]=
 	R"(
-		fn Foo( i32 x, i32 y ) : i32
+		fn Foo( i32 mut x, i32 y ) : i32
 		{
 			x%= y;
 			return x;

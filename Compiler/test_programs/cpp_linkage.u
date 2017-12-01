@@ -23,14 +23,14 @@ fn TakeS( NameSpace::S &imut s )
 
 struct TheClass
 {
-	fn Method( this );
-	fn ImutMethod( imut this, TheClass& other );
+	fn Method( mut this );
+	fn ImutMethod( imut this, TheClass &mut other );
 
 	fn StaticMethod();
 	fn StaticMethod2();
 }
 
-fn TheClass::Method( this )
+fn TheClass::Method( mut this )
 {
 	ImutMethod( this );
 }
@@ -40,7 +40,7 @@ fn TheClass::StaticMethod()
 	StaticMethod2();
 }
 
-fn U32ToStr( u32 x, [ i8, 64 ]& out_str )
+fn U32ToStr( u32 mut x, [ i8, 64 ] &mut out_str )
 {
 	auto constexpr zero_char= 48u;
 	if( x == 0u )
@@ -49,8 +49,8 @@ fn U32ToStr( u32 x, [ i8, 64 ]& out_str )
 		out_str[1u]= 0i8;
 		return;
 	}
-	var u32 dst= 0u;
-	var u32 div= 1000000000u;
+	var u32 mut dst= 0u;
+	var u32 mut div= 1000000000u;
 
 	while( div > x )
 	{

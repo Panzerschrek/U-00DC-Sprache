@@ -1250,11 +1250,7 @@ CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 			return result;
 	}
 
-	// SPRACHE_TODO - make variables without explicit mutability modifiers immutable.
-	if( func.return_value_mutability_modifier_ == MutabilityModifier::Immutable )
-		function_type.return_value_is_mutable= false;
-	else
-		function_type.return_value_is_mutable= true;
+	function_type.return_value_is_mutable= func.return_value_mutability_modifier_ == MutabilityModifier::Mutable;
 	function_type.return_value_is_reference= func.return_value_reference_modifier_ == ReferenceModifier::Reference;
 
 	if( function_type.return_type.GetTemplateDependentType() == nullptr &&
@@ -1311,11 +1307,7 @@ CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 		else
 			out_arg.type= PrepareType( arg->file_pos_, arg->type_, *func_base_names_scope );
 
-		// TODO - make variables without explicit mutability modifiers immutable.
-		if( arg->mutability_modifier_ == MutabilityModifier::Immutable )
-			out_arg.is_mutable= false;
-		else
-			out_arg.is_mutable= true;
+		out_arg.is_mutable= arg->mutability_modifier_ == MutabilityModifier::Mutable;
 		out_arg.is_reference= is_this || arg->reference_modifier_ == ReferenceModifier::Reference;
 
 		if( !out_arg.is_reference &&
@@ -1756,8 +1748,7 @@ void CodeBuilder::BuildFuncCode(
 		var.type= arg.type;
 		var.llvm_value= &llvm_arg;
 
-		// TODO - make variables without explicit mutability modifiers immutable.
-		if( declaration_arg.mutability_modifier_ == MutabilityModifier::Immutable )
+		if( declaration_arg.mutability_modifier_ != MutabilityModifier::Mutable )
 			var.value_type= ValueType::ConstReference;
 
 		if( arg.is_reference )
@@ -2262,9 +2253,7 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 				ApplyEmptyInitializer( variable_declaration.name, variables_declaration.file_pos_, variable, function_context );
 
 			// Make immutable, if needed, only after initialization, because in initialization we need call constructors, which is mutable methods.
-			// SPRACHE_TODO - make variables without explicit mutability modifiers immutable.
-			if( variable_declaration.mutability_modifier == MutabilityModifier::Immutable ||
-				variable_declaration.mutability_modifier == MutabilityModifier::Constexpr )
+			if( variable_declaration.mutability_modifier != MutabilityModifier::Mutable )
 				variable.value_type= ValueType::ConstReference;
 
 			if( global_variable != nullptr && variable.constexpr_value != nullptr )
@@ -2273,9 +2262,7 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 		else if( variable_declaration.reference_modifier == ReferenceModifier::Reference )
 		{
 			// Mark references immutable before initialization.
-			// SPRACHE_TODO - make variables without explicit mutability modifiers immutable.
-			if( variable_declaration.mutability_modifier == MutabilityModifier::Immutable ||
-				variable_declaration.mutability_modifier == MutabilityModifier::Constexpr )
+			if( variable_declaration.mutability_modifier != MutabilityModifier::Mutable )
 				variable.value_type= ValueType::ConstReference;
 
 			if( variable_declaration.initializer == nullptr )
@@ -2403,9 +2390,7 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 		// Stub, if initializer expression is something strange.
 
 		Variable variable;
-		// SPRACHE_TODO - make variables without explicit mutability modifiers immutable.
-		if( auto_variable_declaration.mutability_modifier == MutabilityModifier::Immutable||
-			auto_variable_declaration.mutability_modifier == MutabilityModifier::Constexpr )
+		if( auto_variable_declaration.mutability_modifier != MutabilityModifier::Mutable )
 			variable.value_type= ValueType::ConstReference;
 		else
 			variable.value_type= ValueType::Reference;
@@ -2444,13 +2429,10 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 
 	Variable variable;
 	variable.location= Variable::Location::Pointer;
-
-	// SPRACHE_TODO - make variables without explicit mutability modifiers immutable.
-	if( auto_variable_declaration.mutability_modifier == MutabilityModifier::Immutable ||
-		auto_variable_declaration.mutability_modifier == MutabilityModifier::Constexpr )
-		variable.value_type= ValueType::ConstReference;
-	else
+	if( auto_variable_declaration.mutability_modifier == MutabilityModifier::Mutable )
 		variable.value_type= ValueType::Reference;
+	else
+		variable.value_type= ValueType::ConstReference;
 
 	variable.type= initializer_experrsion.type;
 

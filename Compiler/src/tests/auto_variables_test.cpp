@@ -90,8 +90,8 @@ U_TEST(AutoVariableTest3)
 	R"(
 	fn Foo() : i32
 	{
-		var [ i32, 4 ] a[ 0, 0, 1237, 0 ];
-		auto &x= a;
+		var [ i32, 4 ] mut a[ 0, 0, 1237, 0 ];
+		auto &mut x= a;
 		x[0u]= x[2u] + 5;
 		return x[0u];
 	}

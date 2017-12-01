@@ -119,7 +119,7 @@ U_TEST( GlobalVariablesTest4_GlobalConstantArray )
 			static_assert( arr[3u] == 16u8 );
 			static_assert( arr[4u] == 23u8 );
 			static_assert( arr[5u] == 42u8 );
-			var u32 i= 0u, s= 0u;
+			var u32 mut i= 0u, mut s= 0u;
 			while( i < 6u )
 			{
 				s+= u32(arr[i]);

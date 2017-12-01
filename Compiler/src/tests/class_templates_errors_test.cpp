@@ -101,7 +101,7 @@ U_TEST( ClassPrepass_ErrorsTest2 )
 		{
 			fn Foo()
 			{
-				var i32 something_mutable= 34;
+				var i32 mut something_mutable= 34;
 				auto constexpr x= something_mutable;
 			}
 		}

@@ -1961,7 +1961,7 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 		TypeName arg_type= ParseTypeName();
 
 		ReferenceModifier reference_modifier= ReferenceModifier::None;
-		MutabilityModifier mutability_modifier= MutabilityModifier::Mutable;
+		MutabilityModifier mutability_modifier= MutabilityModifier::None;
 
 		if( it_->type == Lexem::Type::And )
 		{

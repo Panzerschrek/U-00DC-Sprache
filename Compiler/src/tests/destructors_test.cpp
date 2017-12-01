@@ -540,7 +540,7 @@ U_TEST(DestructorsTest11)
 			var bool y= S(2).x == 0 || S(3).x == 0; // Must destroy both S(3) and S(2)
 			var bool z= S(4).x == 0 && S(5).x == 0; // Must destroy only S(4)
 
-			var [ i32, 2 ] arr= zero_init;
+			var [ i32, 2 ] mut arr= zero_init;
 			// Type conversion to u32 must destroy temporary variable of class type.
 			arr[ u32( S(6).x / 10 ) ]= S(7).x;  // Must destroy index and temporary in right part
 			arr[ u32( S(8).x / 10 ) ]+= S(9).x;  // Must destroy index and temporary in right part

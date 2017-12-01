@@ -584,8 +584,8 @@ U_TEST(ZeroInitilaizerTest8)
 	fn Foo() : i32
 	{
 		var [ i32, 4096 ] imut arr= zero_init;
-		var u32 i= 0u;
-		var i32 result= 0;
+		var u32 mut i= 0u;
+		var i32 mut result= 0;
 		while( i < 4096u )
 		{
 			result= result | arr[i];

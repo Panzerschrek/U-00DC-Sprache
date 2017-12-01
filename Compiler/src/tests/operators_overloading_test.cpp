@@ -210,7 +210,7 @@ U_TEST( OperatorsOverloadingTest3 )
 
 		fn Foo() : i32
 		{
-			var S a{ .x= 5845 };
+			var S mut a{ .x= 5845 };
 			--a;
 			--a;
 			--a;
@@ -255,7 +255,7 @@ U_TEST( OperatorsOverloadingTest4 )
 
 		fn Foo() : i32
 		{
-			var S a{ .x= 55414 }, b{ .x= 332 };
+			var S mut a{ .x= 55414 }, b{ .x= 332 };
 			a= b;
 			return a.x;
 		}
@@ -286,7 +286,7 @@ U_TEST( OperatorsOverloadingTest5 )
 
 		fn Foo() : i32
 		{
-			var S a{ .x= 55414 }, b{ .x= 332 };
+			var S mut a{ .x= 55414 }, b{ .x= 332 };
 			a*= b;
 			return a.x;
 		}
@@ -328,9 +328,9 @@ U_TEST( AssignmentOperatorArgumentsShouldBeEvaluatedInReverseOrder )
 
 		fn Foo() : i32
 		{
-			var [ S, 1 ] arr0= zero_init;
+			var [ S, 1 ] mut arr0= zero_init;
 			var [ S, 1 ] arr1= zero_init;
-			var i32 fff= 4;
+			var i32 mut fff= 4;
 
 			arr0[ Div7(fff) ]= arr1[ Mul5(fff) ];  // Must first evaluate Mul5, then - Mul7
 
@@ -376,9 +376,9 @@ U_TEST( AdditiveAssignmentOperatorArgumentsShouldBeEvaluatedInReverseOrder )
 
 		fn Foo() : i32
 		{
-			var [ S, 1 ] arr0= zero_init;
+			var [ S, 1 ] mut arr0= zero_init;
 			var [ S, 1 ] arr1= zero_init;
-			var i32 fff= 4;
+			var i32 mut fff= 4;
 
 			arr0[ Div7(fff) ]+= arr1[ Mul5(fff) ];  // Must first evaluate Mul5, then - Mul7
 
@@ -424,8 +424,8 @@ U_TEST( BinaryOperatorArgumentsShouldBeEvaluatedInDirectOrder )
 
 		fn Foo() : i32
 		{
-			var [ S, 1 ] arr= zero_init;
-			var i32 fff= 4;
+			var [ S, 1 ] mut arr= zero_init;
+			var i32 mut fff= 4;
 
 			arr[ Mul5(fff) ] + arr[ Div7(fff) ];  // Must first evaluate Mul5, then - Mul7
 
@@ -606,7 +606,7 @@ U_TEST( GeneratedCopyAssignmentOperatorTest0 )
 		{
 			var S
 				src{ .arr[ 584, 654125, -57, 8547 ], .x= 3.14f, .bb{ .bbb= true } },
-				dst=zero_init;
+				mut dst=zero_init;
 			dst= src;
 			halt if( !( dst == src ) );
 		}

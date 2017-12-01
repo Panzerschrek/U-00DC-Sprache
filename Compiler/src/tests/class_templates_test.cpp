@@ -149,7 +149,7 @@ U_TEST( ClassTemplateTest4 )
 
 		fn Foo() : i32
 		{
-			var Point</ SSS /> p= zero_init;
+			var Point</ SSS /> mut p= zero_init;
 			p.x.a= 1145874;
 			return p.x.a;
 		}
@@ -184,7 +184,7 @@ U_TEST( ClassTemplateTest5 )
 
 		fn Foo() : i32
 		{
-			var Point</ SSS, i32 /> p= zero_init;
+			var Point</ SSS, i32 /> mut p= zero_init;
 			p.x.a= 1145874;
 			return p.x.a;
 		}
@@ -218,7 +218,7 @@ U_TEST( ClassTemplateTest6 )
 
 		fn Foo() : i32
 		{
-			var Point</ Box</ i32 /> /> p= zero_init;
+			var Point</ Box</ i32 /> /> mut p= zero_init;
 			p.x= 8884;
 			return p.x;
 		}
@@ -249,7 +249,7 @@ U_TEST( ClassTemplateTest7 )
 
 		fn Foo() : i32
 		{
-			var Point</ SSS /> p= zero_init;
+			var Point</ SSS /> mut p= zero_init;
 			p.x.a= 1145874;
 			return p.x.a;
 		}
@@ -286,7 +286,7 @@ U_TEST( ClassTemplateTest8 )
 
 		fn Foo() : i32
 		{
-			var Point</ std::Box</ i32 /> /> p= zero_init;
+			var Point</ std::Box</ i32 /> /> mut p= zero_init;
 			p.x= 666;
 			return p.x;
 		}
@@ -322,7 +322,7 @@ U_TEST( ClassTemplateTest9 )
 
 			fn Foo() : i32
 			{
-				var Point</ Box</ i32 /> /> p= zero_init;
+				var Point</ Box</ i32 /> /> mut p= zero_init;
 				p.x= 9998565;
 				return p.x;
 			}
@@ -361,7 +361,7 @@ U_TEST( ClassTemplateTest11 )
 
 				fn Foo() : i32
 				{
-					var Point</ Box</ i32 /> /> p= zero_init;
+					var Point</ Box</ i32 /> /> mut p= zero_init;
 					p.x= 1996;
 					return p.x;
 				}
@@ -400,7 +400,7 @@ U_TEST( ClassTemplateTest12 )
 
 		fn Foo() : f32
 		{
-			var Point</ Box</ f32 /> /> p= zero_init;
+			var Point</ Box</ f32 /> /> mut p= zero_init;
 			p.x= -3.14f;
 			return p.x;
 		}
@@ -439,7 +439,7 @@ U_TEST( ClassTemplateTest13 )
 
 		fn Foo() : f32
 		{
-			var Point</ Box</ RR::VV /> /> p= zero_init;
+			var Point</ Box</ RR::VV /> /> mut p= zero_init;
 			p.x= -3.14f;
 			return p.x;
 		}
@@ -472,7 +472,7 @@ U_TEST( ClassTemplateTest14 )
 		fn Foo() : i32
 		{
 			auto constexpr c_size= 14u;
-			var Box</ i32, c_size /> p= zero_init;
+			var Box</ i32, c_size /> mut p= zero_init;
 			p.x[13u]= 2017;
 			return p.x[13u];
 		}
@@ -504,7 +504,7 @@ U_TEST( ClassTemplateTest15 )
 			struct XXX{ u32 x; }
 			fn Foo() : u32
 			{
-				var Box</ XXX /> p= zero_init;
+				var Box</ XXX /> mut p= zero_init;
 				p.t.x= 733u;
 				return p.t.x;
 			}
@@ -536,7 +536,7 @@ U_TEST( ClassTemplateTest16 )
 
 			fn Foo() : f64
 			{
-				var Box</ T /> r= zero_init;
+				var Box</ T /> mut r= zero_init;
 				r.t= T(458);
 				return r.t;
 			}
@@ -583,7 +583,7 @@ U_TEST( ClassTemplateTest17 )
 
 		fn Foo() : i32
 		{
-			var MMM::Point</ Baz</ Box</ i32 /> /> /> p= zero_init;
+			var MMM::Point</ Baz</ Box</ i32 /> /> /> mut p= zero_init;
 			p.x= 55474;
 			return p.x;
 		}
@@ -817,7 +817,7 @@ U_TEST( ClassPrepass_Test0 )
 				loc0[42u]; // dependent on T indexation
 
 				// dependent on T indexation
-				var [ i32, 2 ] arr= zero_init;
+				var [ i32, 2 ] mut arr= zero_init;
 				arr[ loc3 ];
 
 				// Accessing members of T
@@ -850,7 +850,7 @@ U_TEST( ClassPrepass_Test0 )
 				auto constexpr zzz= xxx; // Ok, because xxx is template-dependent.
 
 				// Size of array dependent of T
-				var [ i32, T(5).x ] arr0= zero_init;
+				var [ i32, T(5).x ] mut arr0= zero_init;
 				arr0[45u]= 55; // Size check must not work, because array size is undefined
 				var [ i32, xxx ] arr1[ 5, 6, 7, 8, 8, 8, 2564, 846 ]; // Initializer count check must not work, because size is undefined
 				var [ i32, 2 ] arr2= zero_init;
@@ -1091,7 +1091,7 @@ U_TEST( DefaultSignatureArguments_Test0 )
 
 		fn Foo() : i32
 		{
-			var S</ f64 /> s= zero_init;
+			var S</ f64 /> mut s= zero_init;
 			s.p= 42;
 			return s.p;
 		}

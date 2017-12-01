@@ -26,13 +26,13 @@ U_TEST(ExpectedConstantExpressionTest0)
 
 U_TEST(ExpectedConstantExpressionTest1)
 {
-	// Sum of non-constexpr variables is not constexpr.
+	// Sum of mutable variables is not constexpr.
 	static const char c_program_text[]=
 	R"(
 		fn Foo()
 		{
-			var i32 x= 42, y= 34;
-			var [ i32, x + y ] x;
+			var i32 mut x= 42, mut y= 34;
+			var [ i32, x + y ] z= zero_init;
 		}
 	)";
 
@@ -52,7 +52,7 @@ U_TEST( ViariableInitializerIsNotConstantExpressionTest0 )
 	R"(
 		fn Foo()
 		{
-			var i32 x= 42;
+			var i32 mut x= 42;
 			var i32 constexpr y= x;
 		}
 	)";
@@ -73,7 +73,7 @@ U_TEST( ViariableInitializerIsNotConstantExpressionTest1 )
 	R"(
 		fn Foo()
 		{
-			var i32 x= 42;
+			var i32 mut x= 42;
 			var i32 constexpr y(x);
 		}
 	)";
@@ -94,7 +94,7 @@ U_TEST( ViariableInitializerIsNotConstantExpressionTest2 )
 	R"(
 		fn Foo()
 		{
-			var i32 x= 42;
+			var i32 mut x= 42;
 			auto constexpr y= x * 2;
 		}
 	)";
@@ -115,7 +115,7 @@ U_TEST( ViariableInitializerIsNotConstantExpressionTest3 )
 	R"(
 		fn Foo()
 		{
-			var i32 x= 42;
+			var i32 mut x= 42;
 			var [ i32, 3 ] constexpr arr[ 5, x, 854 ];
 		}
 	)";
@@ -245,7 +245,7 @@ U_TEST( StaticAssertExpressionIsNotConstantTest0 )
 	R"(
 		fn Foo()
 		{
-			var f32 pi= 3.14f;
+			var f32 mut pi= 3.14f;
 			static_assert( pi == 3.14f ); // pi is not constant
 		}
 	)";

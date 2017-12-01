@@ -10,7 +10,7 @@ U_TEST( ReferenceCheckTest_MultipleMutableReferencesOnStack )
 	R"(
 		fn Foo()
 		{
-			var i32 x= 0;
+			var i32 mut x= 0;
 			auto &mut r0= x;
 			auto &mut r1= x;
 		}
@@ -31,7 +31,7 @@ U_TEST( ReferenceCheckTest_MutableReferenceAfterImmutableReferenceOnStack )
 	R"(
 		fn Foo()
 		{
-			var i32 x= 0;
+			var i32 mut x= 0;
 			auto &imut r0= x;
 			auto & mut r1= x;
 		}
@@ -52,7 +52,7 @@ U_TEST( ReferenceCheckTest_ImmutableReferenceAfterMutableReferenceOnStack )
 	R"(
 		fn Foo()
 		{
-			var i32 x= 0;
+			var i32 mut x= 0;
 			auto & mut r0= x;
 			auto &imut r1= x;
 		}
@@ -89,7 +89,7 @@ U_TEST( ReferenceCheckTest_MultipleMutableReferencesPassedToFunction )
 		fn Bar( i32 &mut x, i32 &mut y ) {}
 		fn Foo()
 		{
-			var i32 x= 0;
+			var i32 mut x= 0;
 			Bar( x, x );
 		}
 	)";
@@ -110,7 +110,7 @@ U_TEST( ReferenceCheckTest_MutableAndImmutableReferencesPassedToFunction )
 		fn Bar( i32 &imut x, i32 &mut y ) {}
 		fn Foo()
 		{
-			var i32 x= 0;
+			var i32 mut x= 0;
 			Bar( x, x );
 		}
 	)";
@@ -147,7 +147,7 @@ U_TEST( ReferenceCheckTest_FunctionWithSingleArgumentReturnsReferenceToInputVari
 		fn Bar( i32 &imut x ) : i32 &imut { return x; }
 		fn Foo()
 		{
-			var i32 x= 0;
+			var i32 mut x= 0;
 			auto &imut r0= Bar( x ); // r0 refers to x
 			auto & mut r1= x; // r1 refers to x too. Mutable reference after immutable forbidden.
 		}
@@ -170,7 +170,7 @@ U_TEST( ReferenceCheckTest_FunctionWithSingleArgumentReturnsReferenceToInputVari
 		fn Baz( i32 &mut x, i32 &mut y ) {}
 		fn Foo()
 		{
-			var i32 x= 0;
+			var i32 mut x= 0;
 			Baz( Bar(x), Bar(x) ); // Result of two Bar calls produces two mutable references to x. Passing this references into Baz is forbidden.
 		}
 	)";
@@ -191,7 +191,7 @@ U_TEST( ReferenceCheckTest_StructMemberRefersToStruct_0 )
 		struct S{ i32 x; }
 		fn Foo()
 		{
-			var S s= zero_init;
+			var S mut s= zero_init;
 			var i32 &mut r0= s.x; // r0 refers to s
 			var S &imut r1= s; // r1 refers to s too
 		}
@@ -218,7 +218,7 @@ U_TEST( ReferenceCheckTest_StructMemberRefersToStruct_1 )
 		}
 		fn Foo()
 		{
-			var S s= zero_init;
+			var S mut s= zero_init;
 			var i32 &mut r0= s.GetThis().x; // r0 refers to s
 			var S &imut r1= s.GetThis(); // r1 refers to s too
 		}
@@ -240,7 +240,7 @@ U_TEST( ReferenceCheckTest_ArrayMemberRefersToArray_0 )
 	R"(
 		fn Foo()
 		{
-			var [ i32, 4 ] arr= zero_init;
+			var [ i32, 4 ] mut arr= zero_init;
 			auto &mut r0= arr[1u];
 			auto &mut r1= arr[2u];
 		}
@@ -261,7 +261,7 @@ U_TEST( ReferenceCheckTest_ArrayMemberRefersToArray_1 )
 	R"(
 		fn Foo()
 		{
-			var [ i32, 4 ] arr= zero_init;
+			var [ i32, 4 ] mut arr= zero_init;
 			auto &imut r0= arr[1u];
 			auto &mut r1= arr;
 		}
@@ -283,7 +283,7 @@ U_TEST( ReferenceCheckTest_DestroyedReferenceDoesNotRefersToVariable )
 		fn Bar( i32 &mut x ) {}
 		fn Foo()
 		{
-			var i32 x= 0;
+			var i32 mut x= 0;
 			{
 				auto &mut r0= x;
 			}
@@ -301,7 +301,7 @@ U_TEST( ReferenceCheckTest_ReferenceInInnerScopeInteractsWithReferenceInOuterSco
 		fn Bar( i32 &mut x ) {}
 		fn Foo()
 		{
-			var i32 x= 0;
+			var i32 mut x= 0;
 			auto &mut r0= x;
 			{
 				auto &mut r1= x; // Error. Here visible two mutable references to x - r1 and r0.
@@ -329,7 +329,7 @@ U_TEST( ReferenceCheckTest_ReferenceCanReferToMultipleVariables )
 		}
 		fn Foo()
 		{
-			var i32 x= 0, y= 0;
+			var i32 mut x= 0, y= 0;
 			var i32 &imut max= Max( x, y ); // max refers to both x and y.
 			var i32 &mut x_ref= x; // Taking second reference to x.
 		}
@@ -351,7 +351,7 @@ U_TEST( ReferenceCheckTest_PassMutableReferenceToFunctionWhenMutableReferenceOnS
 		fn Bar( i32 &mut x ){}
 		fn Foo()
 		{
-			var i32 x= 0;
+			var i32 mut x= 0;
 			var i32 &mut r= x;
 			Bar(x); // Forbidden, x already have mutable reference.
 		}
@@ -373,7 +373,7 @@ U_TEST( ReferenceCheckTest_PassMutableReferenceToFunctionWhenImmutableReferenceO
 		fn Bar( i32 &mut x ){}
 		fn Foo()
 		{
-			var i32 x= 0;
+			var i32 mut x= 0;
 			var i32 &imut r= x;
 			Bar(x); // Forbidden, x already have immutable reference.
 		}
@@ -395,7 +395,7 @@ U_TEST( ReferenceCheckTest_PassImmutableReferenceToFunctionWhenMutableReferenceO
 		fn Bar( i32 &imut x ){}
 		fn Foo()
 		{
-			var i32 x= 0;
+			var i32 mut x= 0;
 			var i32 &mut r= x;
 			Bar(x); // Forbidden, x already have mutable reference.
 		}
@@ -602,7 +602,7 @@ U_TEST( ReferenceCheckTest_ReferenceShouldLockVariableAfterConditionalReturn )
 	R"(
 		fn Foo()
 		{
-			var i32 x= 0;
+			var i32 mut x= 0;
 			var i32 &mut r0= x;
 			if( false ){ return; }
 			var i32 &mut r1= x; // "x" reference counters should be unchanged after return.
@@ -624,7 +624,7 @@ U_TEST( ReferenceCheckTest_AssignmentForReferencedVariable_0 )
 	R"(
 		fn Foo()
 		{
-			var i32 x= 0;
+			var i32 mut x= 0;
 			var i32 &mut r= x;
 			x= 24; // Error, "x" have mutable reference.
 		}
@@ -645,7 +645,7 @@ U_TEST( ReferenceCheckTest_AssignmentForReferencedVariable_1 )
 	R"(
 		fn Foo()
 		{
-			var i32 x= 0;
+			var i32 mut x= 0;
 			var i32 &imut r= x;
 			x= 24; // Error, "x" have immutable reference.
 		}
@@ -666,7 +666,7 @@ U_TEST( ReferenceCheckTest_AssignmentForReferencedVariable_2 )
 	R"(
 		fn Foo()
 		{
-			var i32 x= 0;
+			var i32 mut x= 0;
 			var i32 &mut r= x;
 			r= 24; // Ok, assign value to "x", using single mutable reference.
 		}
@@ -689,7 +689,7 @@ U_TEST( ReferenceCheckTest_AssignmentForReferencedVariable_3 )
 		}
 		fn Foo()
 		{
-			var Box x= zero_init;
+			var Box mut x= zero_init;
 			x= x; // Self-assignment, should produce error.
 		}
 	)";
@@ -709,7 +709,7 @@ U_TEST( ReferenceCheckTest_AssignmentForReferencedVariable_4 )
 	R"(
 		fn Foo()
 		{
-			var i32 x= 0;
+			var i32 mut x= 0;
 			x= i32(x); // Self-assignment, using deref, should be ok.
 		}
 	)";
@@ -723,7 +723,7 @@ U_TEST( ReferenceCheckTest_Increment_0 )
 	R"(
 		fn Foo()
 		{
-			var i32 x= 0;
+			var i32 mut x= 0;
 			auto &imut r= x;
 			++x; // Error, x have immutable reference.
 		}
@@ -744,7 +744,7 @@ U_TEST( ReferenceCheckTest_Increment_1 )
 	R"(
 		fn Foo()
 		{
-			var i32 x= 0;
+			var i32 mut x= 0;
 			auto &mut r= x;
 			++x; // Error, x have mmutable reference.
 		}
@@ -765,7 +765,7 @@ U_TEST( ReferenceCheckTest_AdditiveAssignment_0 )
 	R"(
 		fn Foo()
 		{
-			var i32 x= 0;
+			var i32 mut x= 0;
 			auto &mut r= x;
 			x+= 1; // Error, x have mmutable reference.
 		}
@@ -815,7 +815,7 @@ U_TEST( ReferenceCheckTest_AdditiveAssignment_2 )
 		}
 		fn Foo()
 		{
-			var Box x{ .b= 541 };
+			var Box mut x{ .b= 541 };
 			x/= x; // Error, pass into operator both mutable and immutable references.
 		}
 	)";
@@ -866,7 +866,7 @@ U_TEST( ReferenceCheckTest_ShouldConvertReferenceInFunctionCall_2 )
 		fn Assign( i32 x, i32 &mut y ) { y= x; }
 		fn Foo()
 		{
-			var i32 x= 0;
+			var i32 mut x= 0;
 			Assign( x, x ); // We take here mutable references to x, but convert first reference to value and pass to function only second reference.
 		}
 	)";
@@ -881,7 +881,7 @@ U_TEST( ReferenceCheckTest_TryPassTwoMutableReferencesIntoFunction_0 )
 		fn Bar( i32 &mut x, i32 &mut y ) {}
 		fn Foo()
 		{
-			var i32 x= 0;
+			var i32 mut x= 0;
 			Bar( x, x ); // Take mutable reference, then, take mutable reference again
 		}
 	)";
@@ -902,7 +902,7 @@ U_TEST( ReferenceCheckTest_TryPassTwoMutableReferencesIntoFunction_1 )
 		fn Bar( i32 &mut x, i32 &mut y ) {}
 		fn Foo()
 		{
-			var i32 x= 0;
+			var i32 mut x= 0;
 			auto &mut r= x;
 			Bar( r, r ); // Use mutable reference from stack, then, use it again.
 		}
@@ -924,7 +924,7 @@ U_TEST( ReferenceCheckTest_TryPassTwoMutableReferencesIntoFunction_2 )
 		fn Bar( i32 &mut x, i32 &mut y ) {}
 		fn Foo()
 		{
-			var i32 x= 0;
+			var i32 mut x= 0;
 			auto &mut r= x;
 			Bar( r, x ); // Use mutable reference from stack, then, use variable itself.
 		}
@@ -947,7 +947,7 @@ U_TEST( ReferenceCheckTest_TryUseVariableWhenReferenceInFunctionCallExists_0 )
 		fn Do( i32 &mut x, i32 y ) {}
 		fn Foo()
 		{
-			var i32 x= 0;
+			var i32 mut x= 0;
 			Do(
 				x,
 				Deref(x) ); // Pass immutable reference into function "Deref" when mutable reference for function call "Do" saved.
@@ -971,7 +971,7 @@ U_TEST( ReferenceCheckTest_TryUseVariableWhenReferenceInFunctionCallExists_1 )
 		fn Do( i32 &imut x, i32 y ) {}
 		fn Foo()
 		{
-			var i32 x= 0;
+			var i32 mut x= 0;
 			Do(
 				x,
 				Mutate(x) ); // Pass mutable reference into function "Deref" when immutable reference for function call "Do" saved.
@@ -993,7 +993,7 @@ U_TEST( ReferenceCheckTest_DeltaOneOperatorsModifyValue_0 )
 	R"(
 		fn Foo()
 		{
-			var i32 x= 0;
+			var i32 mut x= 0;
 			auto &imut r= x;
 			++x; // Error, x have references
 		}
@@ -1022,7 +1022,7 @@ U_TEST( ReferenceCheckTest_DeltaOneOperatorsModifyValue_1 )
 		}
 		fn Foo()
 		{
-			var Box b= zero_init;
+			var Box mut b= zero_init;
 			auto &imut r= b;
 			++b; // Error, x have references
 		}
@@ -1051,7 +1051,7 @@ U_TEST( ReferenceCheckTest_BinaryOperatorsModifyValue )
 		}
 		fn Foo()
 		{
-			var Box b= zero_init;
+			var Box mut b= zero_init;
 			b + b;
 		}
 	)";
@@ -1079,7 +1079,7 @@ U_TEST( ReferenceCheckTest_AssignmentOperatorsModifyValue )
 		}
 		fn Foo()
 		{
-			var Box b= zero_init;
+			var Box mut b= zero_init;
 			b= b;
 		}
 	)";
@@ -1107,7 +1107,7 @@ U_TEST( ReferenceCheckTest_AdditiveAssignmentOperatorsModifyValue )
 		}
 		fn Foo()
 		{
-			var Box b= zero_init;
+			var Box mut b= zero_init;
 			b+= b;
 		}
 	)";

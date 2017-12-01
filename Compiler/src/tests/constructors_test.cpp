@@ -626,7 +626,7 @@ U_TEST(ConstructorTest18)
 		}
 		fn Foo() : i32
 		{
-			var A a= zero_init;
+			var A mut a= zero_init;
 			a.x[2u][1u]= 54741;
 			var A a_copy( a ); // Array fields must be copied.
 			return a_copy.x[2u][1u];

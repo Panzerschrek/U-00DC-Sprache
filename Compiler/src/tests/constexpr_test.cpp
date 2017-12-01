@@ -10,7 +10,7 @@ U_TEST(ConstexprTest0)
 	R"(
 		fn Foo() : i32
 		{
-			var [ i32, 7 - 3 ] arr= zero_init;
+			var [ i32, 7 - 3 ] mut arr= zero_init;
 			arr[3u]= 42;
 			return arr[3u];
 		}
@@ -36,7 +36,7 @@ U_TEST(ConstexprTest1)
 	R"(
 		fn Foo() : i32
 		{
-			var [ i32, -(-2) ] arr= zero_init;
+			var [ i32, -(-2) ] mut arr= zero_init;
 			arr[1u]= 42;
 			return arr[1u];
 		}
@@ -62,7 +62,7 @@ U_TEST(ConstexprTest2)
 	R"(
 		fn Foo() : i32
 		{
-			var [ i32, ( ( 42 << 4u ) >> 6u8 ) >> 1u16 ] arr= zero_init; // Must be array of size "5"
+			var [ i32, ( ( 42 << 4u ) >> 6u8 ) >> 1u16 ] mut arr= zero_init; // Must be array of size "5"
 			arr[4u]= 42;
 			return arr[4u];
 		}
@@ -164,7 +164,7 @@ U_TEST(ConstexprTest6)
 		fn Foo() : i32
 		{
 			var i32 constexpr s= 3 + 2;
-			var [ i32, s ] arr= zero_init;
+			var [ i32, s ] mut arr= zero_init;
 			arr[4u]= 85124;
 			return arr[4u];
 		}

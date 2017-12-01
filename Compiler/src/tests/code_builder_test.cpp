@@ -57,7 +57,7 @@ U_TEST(ArgumentsAssignmentTest)
 {
 	static const char c_program_text[]=
 	R"(
-	fn Foo( i32 a ) : i32
+	fn Foo( i32 mut a ) : i32
 	{
 		a= a * a;
 		return a;
@@ -117,7 +117,7 @@ U_TEST(VariablesTest1)
 	"\
 	fn Foo( i32 a, i32 b ) : i32\
 	{\
-		var i32 tmp= a - b, r= 1;\
+		var i32 mut tmp= a - b, r= 1;\
 		tmp= tmp * r;\
 		return tmp;\
 	}"
@@ -225,7 +225,7 @@ U_TEST(ArraysTest0)
 	"\
 	fn Foo( i32 x ) : i32\
 	{\
-		var [ i32, 17 ] tmp= zero_init;\
+		var [ i32, 17 ] mut tmp= zero_init;\
 		tmp[5u32]= x;\
 		return tmp[5u] + 5;\
 	}"
@@ -254,7 +254,7 @@ U_TEST(ArraysTest1)
 	"\
 	fn Foo( i32 x ) : i32\
 	{\
-		var [ [ [ i32, 3 ], 5 ], 17 ] tmp= zero_init;\
+		var [ [ [ i32, 3 ], 5 ], 17 ] mut tmp= zero_init;\
 		tmp[5u32][3u32][1u32]= x;\
 		return tmp[5u][3u][1u] + 5;\
 	}"
@@ -284,7 +284,7 @@ U_TEST(BooleanBasicTest)
 	fn Foo( bool a, bool b, bool c ) : bool\
 	{\
 		var bool unused= false;\
-		var bool tmp= a & b;\
+		var bool mut tmp= a & b;\
 		tmp= tmp & ( true );\
 		tmp= tmp | false;\
 		return tmp ^ c ;\
@@ -463,7 +463,7 @@ U_TEST(CallTest4)
 		fn Bar( S s ) : i32 { return s.arr[42u]; }
 		fn Foo() : i32
 		{
-			var S s=zero_init;
+			var S mut s=zero_init;
 			s.arr[42u]= 11145;
 			return Bar(s);
 		}
@@ -491,7 +491,7 @@ U_TEST(CallTest5)
 		struct S { [ f32, 17 ] arr; i32 x; }
 		fn Bar() : S
 		{
-			var S result= zero_init;
+			var S mut result= zero_init;
 			result.x= 888;
 			return result;
 		}
@@ -522,7 +522,7 @@ U_TEST(CallTest6)
 		struct S { [ f32, 17 ] arr; i32 x; }
 		fn Bar() : S
 		{
-			var S result= zero_init;
+			var S mut result= zero_init;
 			result.x= 888;
 			return result;
 		}
@@ -557,7 +557,7 @@ U_TEST(CallTest7)
 			i32 x;
 			fn Bar( this ) : S
 			{
-				var S result= zero_init;
+				var S mut result= zero_init;
 				result.x= 888 * x;
 				return result;
 			}
@@ -599,7 +599,7 @@ U_TEST(CallTest8)
 		fn Foo() : i32
 		{
 			var A a{ .x= 17 };
-			var S s= zero_init;
+			var S mut s= zero_init;
 			s.x= 555874;
 			return a.Bar( s );
 		}
@@ -627,7 +627,7 @@ U_TEST(CallTest9)
 		struct A
 		{
 			i32 x;
-			fn Bar( this, S s ) : S
+			fn Bar( this, S mut s ) : S
 			{
 				s.x= s.x * x; // Function changes value of parameter
 				return s;
@@ -636,7 +636,7 @@ U_TEST(CallTest9)
 		fn Foo() : i32
 		{
 			var A a{ .x= 746984 };
-			var S s= zero_init;
+			var S mut s= zero_init;
 			s.x= 25;
 			return a.Bar( s ).x + s.x; // s.x must left unchanged after call.
 		}
@@ -725,7 +725,7 @@ U_TEST(WhileOperatorTest)
 	"\
 	fn Foo( i32 a, i32 b ) : i32\
 	{\
-		var i32 x= a;\
+		var i32 mut x= a;\
 		while( x > 0 )\
 		{\
 			x= x - 1i32;\
@@ -763,7 +763,7 @@ U_TEST(IfOperatorTest0)
 	"\
 	fn Foo( i32 x ) : i32\
 	{\
-		var i32 tmp= x;\
+		var i32 mut tmp= x;\
 		if( x < 0 ) { tmp= -x; }\
 		return tmp;\
 	}"
@@ -801,7 +801,7 @@ U_TEST(IfOperatorTest1)
 	"\
 	fn Foo( i32 x ) : i32\
 	{\
-		var i32 tmp= 0;\
+		var i32 mut tmp= 0;\
 		var i32 bits= x & 1;\
 		if( bits == 0 ) { tmp= x; }\
 		else { tmp= x * 2; }\
@@ -841,7 +841,7 @@ U_TEST(IfOperatorTest2)
 	"\
 	fn Foo( i32 x ) : i32\
 	{\
-		var i32 tmp= 0;\
+		var i32 mut tmp= 0;\
 		var i32 bits= x & 3;\
 		tmp= 1488;\
 		if( bits == 0 ) { tmp= x; }\
@@ -890,8 +890,8 @@ U_TEST(IfOperatorTest3)
 	"\
 	fn Foo( i32 x ) : i32\
 	{\
-		var i32 tmp= 0;\
-		var i32 bits= 0;\
+		var i32 mut tmp= 0;\
+		var i32 mut bits= 0;\
 		bits= x & 3;\
 		if( bits == 0 ) { tmp= x; }\
 		else if( bits == 1 ) { tmp= x * 2; }\
@@ -940,8 +940,8 @@ U_TEST(IfOperatorTest4)
 	"\
 	fn Foo( i32 x ) : i32\
 	{\
-		var i32 tmp= 0;\
-		var i32 bits= 0;\
+		var i32 mut tmp= 0;\
+		var i32 mut bits= 0;\
 		bits= x & 3;\
 		tmp= 1488;\
 		if( bits == 0 ) { tmp= x; }\
@@ -999,8 +999,8 @@ U_TEST(IfOperatorTest5)
 	"\
 	fn Foo( i32 x ) : i32\
 	{\
-		var i32 tmp= 0;\
-		var i32 bits= 0;\
+		var i32 mut tmp= 0;\
+		var i32 mut bits= 0;\
 		bits= x & 3;\
 		if( bits == 0 ) { tmp= x; }\
 		else if( bits == 1 ) { tmp= x * 2; }\
@@ -1056,7 +1056,7 @@ U_TEST(BreakOperatorTest0)
 	static const char c_program_text[]=
 	"fn Foo( i32 x ) : i32\
 	{\
-		var i32 tmp= x;\
+		var i32 mut tmp= x;\
 		while( x < 0 ) { tmp= -x; if( true ) { break; } else {} tmp= 0; }\
 		return tmp;\
 	}"
@@ -1093,8 +1093,8 @@ U_TEST(BreakOperatorTest1)
 	static const char c_program_text[]=
 	"fn Foo( i32 x ) : i32\
 	{\
-		var i32 tmp= 0;\
-		var i32 counter= 1;\
+		var i32 mut tmp= 0;\
+		var i32 mut counter= 1;\
 		while( counter > 0 )\
 		{\
 			while( counter > 0 )\
@@ -1129,7 +1129,7 @@ U_TEST(BreakOperatorTest2)
 	static const char c_program_text[]=
 	"fn Foo( i32 x ) : i32\
 	{\
-		var i32 tmp= 0;\
+		var i32 mut tmp= 0;\
 		while( true )\
 		{\
 			while( false ){}\
@@ -1160,8 +1160,8 @@ U_TEST(ContinueOperatorTest0)
 	static const char c_program_text[]=
 	"fn Foo( i32 x ) : i32\
 	{\
-		var i32 tmp= 0;\
-		var i32 counter= 5;\
+		var i32 mut tmp= 0;\
+		var i32 mut counter= 5;\
 		while( counter > 0 )\
 		{\
 			tmp= x;\
@@ -1193,8 +1193,8 @@ U_TEST(ContinueOperatorTest1)
 	static const char c_program_text[]=
 	"fn Foo( i32 x ) : i32\
 	{\
-		var i32 tmp= 0;\
-		var i32 counter= 1;\
+		var i32 mut tmp= 0;\
+		var i32 mut counter= 1;\
 		while( counter > 0 )\
 		{\
 			while( tmp == 0 )\
@@ -1236,8 +1236,8 @@ U_TEST(StructTest0)
 	}
 	fn Foo( i32 a, i32 b, i32 c ) : i32
 	{
-		var Point p= zero_init;
-		var u32 index= 0u32;
+		var Point mut p= zero_init;
+		var u32 mut index= 0u32;
 		p.x= a;
 		p.y = b;
 		p.zzz[0u]= c;
@@ -1287,7 +1287,7 @@ U_TEST(StructTest1)
 	}
 	fn Foo( f64 a, f64 b ) : f64
 	{
-		var Point p= zero_init;
+		var Point mut p= zero_init;
 		p.dummy.y= a;
 		p.dummy.z[1u]= b;
 		return p.dummy.y - p.dummy.z[1u];
@@ -1354,9 +1354,9 @@ U_TEST(ReferencesTest0)
 	R"(
 	fn Foo() : i32
 	{
-		var i32 x= 0;
+		var i32 mut x= 0;
 		{
-			var i32 &x_ref= x;
+			var i32 &mut x_ref= x;
 			x_ref= 42;
 		}
 		return x;
@@ -1409,14 +1409,14 @@ U_TEST(ReferencesTest2)
 	R"(
 	fn Foo( i32 a, i32 b ) : i32
 	{
-		var [ i32, 4 ] arr= zero_init;
+		var [ i32, 4 ] mut arr= zero_init;
 		{
-			var [ i32, 4 ] &arr_ref= arr;
+			var [ i32, 4 ] &mut arr_ref= arr;
 			arr_ref[0u]= a;
 			arr_ref[1u]= b;
 		}
 		{
-			var [ i32, 4 ] &arr_ref= arr;
+			var [ i32, 4 ] &mut arr_ref= arr;
 			arr_ref[2u]= arr_ref[0u] * arr_ref[1u];
 		}
 		return arr[2u];
@@ -1540,7 +1540,7 @@ U_TEST(ReferencesTest6)
 	{ x = x * 2; }
 	fn Foo( i32 a ) : i32
 	{
-		var i32 triple_a= a * 3;
+		var i32 mut triple_a= a * 3;
 		DoubleIt( triple_a );
 		return triple_a;
 	}
@@ -1607,7 +1607,7 @@ U_TEST(ReferencesTest8)
 	{ arr[3u] = 99985; }
 	fn Foo() : i32
 	{
-		var [ i32, 5 ] arr= zero_init;
+		var [ i32, 5 ] mut arr= zero_init;
 		Bar( arr );
 		return arr[3u];
 	}

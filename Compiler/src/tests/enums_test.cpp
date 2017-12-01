@@ -49,7 +49,7 @@ U_TEST( EnumsAssignmentAndReturnTest )
 		enum ColorComponent{ r, g, b }
 		fn Foo() : ColorComponent
 		{
-			var ColorComponent cc= zero_init;
+			var ColorComponent mut cc= zero_init;
 			cc= ColorComponent::b;
 			return cc;
 		}
