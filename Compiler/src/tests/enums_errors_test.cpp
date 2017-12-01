@@ -8,7 +8,7 @@ U_TEST( Redefinition_ForEnums )
 	static const char c_program_text[]=
 	R"(
 		struct S{}
-		enum S{}
+		enum S{ A }
 	)";
 
 	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );

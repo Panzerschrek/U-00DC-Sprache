@@ -11,7 +11,6 @@ U_TEST( EnumsDeclarationTest )
 		{
 			A, B, C,
 		}
-		enum EmptyEnum {}
 
 		class C
 		{

@@ -610,8 +610,7 @@ llvm::Constant* CodeBuilder::ApplyZeroInitializer(
 	}
 	else if( const Enum* const enum_type= variable.type.GetEnumType() )
 	{
-		// Currently, first member of enum have 0 value.
-		// TODO - generate error, if enum is empty.
+		// Currently, first member of enum have zero value.
 
 		llvm::Constant* const zero_value=
 			llvm::Constant::getIntegerValue(

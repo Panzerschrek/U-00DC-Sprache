@@ -1480,12 +1480,6 @@ std::unique_ptr<Enum> SyntaxAnalyzer::ParseEnum()
 	}
 	++it_; U_ASSERT( it_ < it_end_ );
 
-	if( it_->type == Lexem::Type::BraceRight )
-	{
-		++it_; U_ASSERT( it_ < it_end_ );
-		return result;
-	}
-
 	while( true )
 	{
 		if( it_->type != Lexem::Type::Identifier )
