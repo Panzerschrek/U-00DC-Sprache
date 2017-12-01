@@ -438,6 +438,36 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 		function_context.llvm_ir_builder.CreateStore( value_for_assignment, variable.llvm_value );
 		return constant_value;
 	}
+	else if( variable.type.GetEnumType() != nullptr )
+	{
+		if( call_operator.arguments_.size() != 1u )
+		{
+			// TODO - generate separate error for enums.
+			errors_.push_back( ReportFundamentalTypesHaveConstructorsWithExactlyOneParameter( call_operator.file_pos_ ) );
+			return nullptr;
+		}
+
+		// SPRACHE_TODO - maybe we need save temporaries of this expression?
+		const Value expression_result=
+			BuildExpressionCodeAndDestroyTemporaries( *call_operator.arguments_.front(), block_names, function_context );
+		if( expression_result.GetType() == NontypeStub::TemplateDependentValue ||
+			expression_result.GetType().GetTemplateDependentType() != nullptr )
+			return llvm::UndefValue::get( dst_type->llvm_type );
+
+		if( expression_result.GetType() != variable.type )
+		{
+			errors_.push_back( ReportTypesMismatch( call_operator.file_pos_, variable.type.ToString(), expression_result.GetType().ToString() ) );
+			return nullptr;
+		}
+
+		const Variable& expression_result_variable= *expression_result.GetVariable();
+
+		function_context.llvm_ir_builder.CreateStore(
+			CreateMoveToLLVMRegisterInstruction( expression_result_variable, function_context ),
+			variable.llvm_value );
+
+		return expression_result_variable.constexpr_value;
+	}
 	else if( const Class* const class_type= variable.type.GetClassType() )
 	{
 		const NamesScope::InsertedName* constructor_name=
@@ -574,6 +604,19 @@ llvm::Constant* CodeBuilder::ApplyZeroInitializer(
 			U_ASSERT(false);
 			break;
 		};
+
+		function_context.llvm_ir_builder.CreateStore( zero_value, variable.llvm_value );
+		return zero_value;
+	}
+	else if( const Enum* const enum_type= variable.type.GetEnumType() )
+	{
+		// Currently, first member of enum have 0 value.
+		// TODO - generate error, if enum is empty.
+
+		llvm::Constant* const zero_value=
+			llvm::Constant::getIntegerValue(
+				enum_type->underlaying_type.llvm_type,
+				llvm::APInt( enum_type->underlaying_type.llvm_type->getIntegerBitWidth(), uint64_t(0) ) );
 
 		function_context.llvm_ir_builder.CreateStore( zero_value, variable.llvm_value );
 		return zero_value;

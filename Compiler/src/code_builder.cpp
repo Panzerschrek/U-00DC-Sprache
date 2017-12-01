@@ -2388,6 +2388,7 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 			type.GetFundamentalType() != nullptr ||
 			type.GetArrayType() != nullptr ||
 			type.GetClassType() != nullptr ||
+			type.GetEnumType() != nullptr ||
 			type.GetTemplateDependentType() != nullptr;
 		if( !type_is_ok )
 		{
@@ -2450,12 +2451,11 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 			variable.llvm_value->setName( ToStdString( auto_variable_declaration.name ) );
 		}
 
-		if( const FundamentalType* const fundamental_type= variable.type.GetFundamentalType() )
+		if( variable.type.GetFundamentalType() != nullptr ||
+			variable.type.GetEnumType() != nullptr  )
 		{
-			U_UNUSED(fundamental_type);
 			llvm::Value* const value_for_assignment= CreateMoveToLLVMRegisterInstruction( initializer_experrsion, function_context );
 			function_context.llvm_ir_builder.CreateStore( value_for_assignment, variable.llvm_value );
-
 			variable.constexpr_value= initializer_experrsion.constexpr_value;
 		}
 		else if( variable.type.GetTemplateDependentType() != nullptr )
