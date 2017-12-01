@@ -64,4 +64,23 @@ U_TEST( EnumsAssignmentAndReturnTest )
 	U_TEST_ASSERT( static_cast<uint64_t>( 2 ) == result_value.IntVal.getLimitedValue() );
 }
 
+U_TEST( EnumsCompareTest )
+{
+	static const char c_program_text[]=
+	R"(
+		enum ColorComponent{ r, g, b }
+		fn Foo()
+		{
+			static_assert( ColorComponent::r == ColorComponent::r );
+			static_assert( ColorComponent::r != ColorComponent::g );
+			var bool eq= ColorComponent::b == ColorComponent::b;
+			var bool ne= ColorComponent::b != ColorComponent::b;
+			halt if( !eq );
+			halt if( ne );
+		}
+	)";
+
+	BuildProgram( c_program_text );
+}
+
 } // namespace U
