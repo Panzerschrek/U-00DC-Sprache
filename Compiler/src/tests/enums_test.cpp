@@ -83,4 +83,29 @@ U_TEST( EnumsCompareTest )
 	BuildProgram( c_program_text );
 }
 
+U_TEST( EnumValueRefTest )
+{
+	static const char c_program_text[]=
+	R"(
+		enum ColorComponent{ r, g, b }
+		fn GetGreen() : ColorComponent &imut
+		{
+			return ColorComponent::g;
+		}
+
+		fn Foo() : ColorComponent
+		{
+			auto &imut green= GetGreen();
+			return green;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	const llvm::GenericValue result_value= engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+	U_TEST_ASSERT( static_cast<uint64_t>( 1 ) == result_value.IntVal.getLimitedValue() );
+}
+
 } // namespace U

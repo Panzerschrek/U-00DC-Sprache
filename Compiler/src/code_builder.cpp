@@ -803,12 +803,17 @@ void CodeBuilder::PrepareEnum( const Synt::Enum& enum_decl, NamesScope& names_sc
 		Variable var;
 
 		var.type= enum_;
-		var.location= Variable::Location::LLVMRegister;
-		var.value_type= ValueType::Value;
-		var.llvm_value= var.constexpr_value=
+		var.location= Variable::Location::Pointer;
+		var.value_type= ValueType::ConstReference;
+		var.constexpr_value=
 			llvm::Constant::getIntegerValue(
 				enum_->underlaying_type.llvm_type,
 				llvm::APInt( enum_->underlaying_type.llvm_type->getIntegerBitWidth(), counter ) );
+		var.llvm_value=
+			CreateGlobalConstantVariable(
+				var.type,
+				MangleGlobalVariable( enum_->members, in_member.name ),
+				var.constexpr_value );
 
 		if( enum_->members.AddName( in_member.name, Value( var, in_member.file_pos ) ) == nullptr )
 			errors_.push_back( ReportRedefinition( in_member.file_pos, in_member.name ) );
@@ -2549,7 +2554,7 @@ void CodeBuilder::BuildAssignmentOperatorCode(
 	if( r_var == nullptr && r_var_value.GetType() != NontypeStub::TemplateDependentValue )
 		errors_.push_back( ReportExpectedVariable( assignment_operator.file_pos_, r_var_value.GetType().ToString() ) );
 
-	if( r_var != nullptr && r_var->type.GetFundamentalType() != nullptr )
+	if( r_var != nullptr && ( r_var->type.GetFundamentalType() != nullptr || r_var->type.GetEnumType() != nullptr ) )
 	{
 		// We must read value, because referenced by reference value may be changed in l_var evaluation.
 		if( r_var->location != Variable::Location::LLVMRegister )
