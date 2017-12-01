@@ -669,9 +669,17 @@ NamesScope::InsertedName* CodeBuilder::GenTemplateType(
 		}
 		else if( const Variable* const variable= boost::get<Variable>( &arg ) )
 		{
-			// Currently, can be only integer.
+			// Currently, can be only integer or enum type.
+			FundamentalType raw_type;
+			if( const FundamentalType* const fundamental_type= variable->type.GetFundamentalType () )
+				raw_type= *fundamental_type;
+			else if( const Enum* const enum_type= variable->type.GetEnumType () )
+				raw_type= enum_type->underlaying_type;
+			else
+				U_ASSERT( false );
+
 			const llvm::APInt& int_value= variable->constexpr_value->getUniqueInteger();
-			if( IsSignedInteger( variable->type.GetFundamentalType()->fundamental_type ) && int_value.isNegative() )
+			if( IsSignedInteger( raw_type.fundamental_type ) && int_value.isNegative() )
 				name_encoded+= ToProgramString( std::to_string(  int64_t(int_value.getLimitedValue()) ).c_str() );
 			else
 				name_encoded+= ToProgramString( std::to_string( uint64_t(int_value.getLimitedValue()) ).c_str() );
@@ -775,6 +783,11 @@ bool CodeBuilder::TypeIsValidForTemplateVariableArgument( const Type& type )
 		// SPRACHE_TODO - allow non-fundamental value arguments, such enums, for example.
 		if( IsInteger( fundamental->fundamental_type ) || fundamental->fundamental_type == U_FundamentalType::Bool )
 			return true;
+	}
+	if( type.GetEnumType() != nullptr )
+	{
+		U_ASSERT( TypeIsValidForTemplateVariableArgument( type.GetEnumType()->underlaying_type ) );
+		return true;
 	}
 
 	return false;
