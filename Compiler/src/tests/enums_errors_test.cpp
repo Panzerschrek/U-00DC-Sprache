@@ -174,4 +174,31 @@ U_TEST( TypesMismatch_ForUnderlayingEnumType_Test2 )
 	U_TEST_ASSERT( error.file_pos.line == 3u );
 }
 
+U_TEST( UnderlayingTypeIsTooSmall_Test )
+{
+	static const char c_program_text[]=
+	R"(
+		enum E : i8
+		{
+			V00, V01, V02, V03, V04, V05, V06, V07, V08, V09, V0A, V0B, V0C, V0D, V0E, V0F,
+			V10, V11, V12, V13, V14, V15, V16, V17, V18, V19, V1A, V1B, V1C, V1D, V1E, V1F,
+			V20, V21, V22, V23, V24, V25, V26, V27, V28, V29, V2A, V2B, V2C, V2D, V2E, V2F,
+			V30, V31, V32, V33, V34, V35, V36, V37, V38, V39, V3A, V3B, V3C, V3D, V3E, V3F,
+			V40, V41, V42, V43, V44, V45, V46, V47, V48, V49, V4A, V4B, V4C, V4D, V4E, V4F,
+			V50, V51, V52, V53, V54, V55, V56, V57, V58, V59, V5A, V5B, V5C, V5D, V5E, V5F,
+			V60, V61, V62, V63, V64, V65, V66, V67, V68, V69, V6A, V6B, V6C, V6D, V6E, V6F,
+			V70, V71, V72, V73, V74, V75, V76, V77, V78, V79, V7A, V7B, V7C, V7D, V7E, V7F,
+			Too, Much, Values, In, This, Enum,
+		}
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::UnderlayingTypeForEnumIsTooSmall );
+	U_TEST_ASSERT( error.file_pos.line == 2u );
+}
+
 } // namespace U

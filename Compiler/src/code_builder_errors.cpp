@@ -940,4 +940,17 @@ CodeBuilderError ReportInvalidReturnTypeForOperator( const FilePos& file_pos, co
 	return error;
 }
 
+CodeBuilderError ReportUnderlayingTypeForEnumIsTooSmall( const FilePos& file_pos, const SizeType max_value, const SizeType max_value_of_underlaying_type )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::UnderlayingTypeForEnumIsTooSmall;
+
+	error.text= "Underlaying type for enum is too small - enum max value is "_SpC
+		+ ToProgramString( std::to_string(max_value).c_str() ) + " but type max value is "_SpC +
+		ToProgramString( std::to_string(max_value_of_underlaying_type).c_str() ) + "."_SpC;
+
+	return error;
+}
+
 } // namespace U

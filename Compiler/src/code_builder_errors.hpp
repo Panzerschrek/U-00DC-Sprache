@@ -118,6 +118,9 @@ enum class CodeBuilderErrorCode : unsigned int
 	OperatorDoesNotHaveParentClassArguments,
 	InvalidArgumentCountForOperator,
 	InvalidReturnTypeForOperator,
+
+	// Enums
+	UnderlayingTypeForEnumIsTooSmall,
 };
 
 struct CodeBuilderError
@@ -212,5 +215,6 @@ CodeBuilderError ReportOperatorDeclarationOutsideClass( const FilePos& file_pos 
 CodeBuilderError ReportOperatorDoesNotHaveParentClassArguments( const FilePos& file_pos );
 CodeBuilderError ReportInvalidArgumentCountForOperator( const FilePos& file_pos );
 CodeBuilderError ReportInvalidReturnTypeForOperator( const FilePos& file_pos, const ProgramString& expected_type_name );
+CodeBuilderError ReportUnderlayingTypeForEnumIsTooSmall( const FilePos& file_pos, SizeType max_value, SizeType max_value_of_underlaying_type );
 
 } // namespace U

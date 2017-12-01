@@ -846,6 +846,15 @@ void CodeBuilder::PrepareEnum( const Synt::Enum& enum_decl, NamesScope& names_sc
 		++counter;
 	}
 
+	{
+		const SizeType max_value_plus_one=
+			SizeType(1) << ( SizeType(enum_->underlaying_type.llvm_type->getIntegerBitWidth()) - ( IsSignedInteger( enum_->underlaying_type.fundamental_type ) ? 1u : 0u ) );
+		const SizeType max_value= max_value_plus_one - 1u;
+
+		if( counter > max_value )
+			errors_.push_back( ReportUnderlayingTypeForEnumIsTooSmall( enum_decl.file_pos_, counter - 1u, max_value ) );
+	}
+
 	names_scope.AddName( enum_decl.name, Value( Type( enum_ ), enum_decl.file_pos_ ) );
 }
 
