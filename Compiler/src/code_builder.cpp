@@ -697,6 +697,11 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 		{
 			BuildStaticAssert( *static_assert_, the_class->members );
 		}
+		else if( const auto enum_=
+			dynamic_cast<const Synt::Enum*>( member.get() ) )
+		{
+			PrepareEnum( *enum_, the_class->members );
+		}
 		else if( const auto typedef_=
 			dynamic_cast<const Synt::Typedef*>( member.get() ) )
 		{
@@ -779,6 +784,78 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 	}
 
 	return the_class_proxy;
+}
+
+void CodeBuilder::PrepareEnum( const Synt::Enum& enum_decl, NamesScope& names_scope )
+{
+	if( names_scope.GetThisScopeName( enum_decl.name ) != nullptr )
+		errors_.push_back( ReportRedefinition( enum_decl.file_pos_, enum_decl.name ) );
+	if( NameShadowsTemplateArgument( enum_decl.name, names_scope ) )
+		errors_.push_back( ReportDeclarationShadowsTemplateArgument( enum_decl.file_pos_, enum_decl.name ) );
+
+	const std::shared_ptr<Enum> enum_= std::make_shared<Enum>( enum_decl.name, &names_scope );
+
+	// Default underlaying type is 32bit. TODO - make do it platform-dependent?
+	enum_->underlaying_type= FundamentalType( U_FundamentalType::u32, fundamental_llvm_types_.u32 );
+
+	if( !enum_decl.underlaying_type_name.components.empty() )
+	{
+		const NamesScope::InsertedName* const type_name= ResolveName( enum_decl.file_pos_, names_scope, enum_decl.underlaying_type_name );
+		if( type_name == nullptr )
+			errors_.push_back( ReportNameNotFound( enum_decl.file_pos_, enum_decl.underlaying_type_name ) );
+		else
+		{
+			const Type* const type= type_name->second.GetTypeName();
+			if( type == nullptr )
+				errors_.push_back( ReportNameIsNotTypeName( enum_decl.file_pos_, enum_decl.underlaying_type_name.components.back().name ) );
+			else
+			{
+				const FundamentalType* const fundamental_type= type->GetFundamentalType();
+				if( fundamental_type == nullptr || !IsInteger( fundamental_type->fundamental_type ) )
+				{
+					// SPRACHE_TODO - maybe allow inheritance of enums?
+					errors_.push_back( ReportTypesMismatch( enum_decl.file_pos_, "any integer type"_SpC, type->ToString() ) );
+				}
+				else
+					enum_->underlaying_type= *fundamental_type;
+			}
+		}
+	}
+
+	SizeType counter= 0u;
+	for( const Synt::Enum::Member& in_member : enum_decl.members )
+	{
+		Variable var;
+
+		var.type= enum_;
+		var.location= Variable::Location::Pointer;
+		var.value_type= ValueType::ConstReference;
+		var.constexpr_value=
+			llvm::Constant::getIntegerValue(
+				enum_->underlaying_type.llvm_type,
+				llvm::APInt( enum_->underlaying_type.llvm_type->getIntegerBitWidth(), counter ) );
+		var.llvm_value=
+			CreateGlobalConstantVariable(
+				var.type,
+				MangleGlobalVariable( enum_->members, in_member.name ),
+				var.constexpr_value );
+
+		if( enum_->members.AddName( in_member.name, Value( var, in_member.file_pos ) ) == nullptr )
+			errors_.push_back( ReportRedefinition( in_member.file_pos, in_member.name ) );
+
+		++counter;
+	}
+
+	{
+		const SizeType max_value_plus_one=
+			SizeType(1) << ( SizeType(enum_->underlaying_type.llvm_type->getIntegerBitWidth()) - ( IsSignedInteger( enum_->underlaying_type.fundamental_type ) ? 1u : 0u ) );
+		const SizeType max_value= max_value_plus_one - 1u;
+
+		if( counter > max_value )
+			errors_.push_back( ReportUnderlayingTypeForEnumIsTooSmall( enum_decl.file_pos_, counter - 1u, max_value ) );
+	}
+
+	names_scope.AddName( enum_decl.name, Value( Type( enum_ ), enum_decl.file_pos_ ) );
 }
 
 void CodeBuilder::TryCallCopyConstructor(
@@ -1068,6 +1145,11 @@ void CodeBuilder::BuildNamespaceBody(
 		{
 			BuildStaticAssert( *static_assert_, names_scope );
 		}
+		else if( const auto enum_=
+			dynamic_cast<const Synt::Enum*>( program_element.get() ) )
+		{
+			PrepareEnum( *enum_, names_scope );
+		}
 		else if( const auto typedef_=
 			dynamic_cast<const Synt::Typedef*>( program_element.get() ) )
 		{
@@ -1178,9 +1260,10 @@ CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 	if( function_type.return_type.GetTemplateDependentType() == nullptr &&
 		!function_type.return_value_is_reference &&
 		!( function_type.return_type.GetFundamentalType() != nullptr ||
-		   function_type.return_type.GetClassType() != nullptr ) )
+		   function_type.return_type.GetClassType() != nullptr ||
+		   function_type.return_type.GetEnumType() != nullptr ) )
 	{
-		errors_.push_back( ReportNotImplemented( func.file_pos_, "return value types except fundamental and classes" ) );
+		errors_.push_back( ReportNotImplemented( func.file_pos_, "return value types except fundamentals, enums, classes" ) );
 		return result;
 	}
 
@@ -1238,6 +1321,7 @@ CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 		if( !out_arg.is_reference &&
 			!( out_arg.type.GetFundamentalType() != nullptr ||
 			   out_arg.type.GetClassType() != nullptr ||
+			   out_arg.type.GetEnumType() != nullptr ||
 			   out_arg.type.GetTemplateDependentType() != nullptr ) )
 		{
 			errors_.push_back( ReportNotImplemented( func.file_pos_, "parameters types except fundamental and classes" ) );
@@ -1490,7 +1574,8 @@ void CodeBuilder::BuildFuncCode(
 	{
 		if( function_type->return_type.GetTemplateDependentType() != nullptr )
 		{}
-		else if( function_type->return_type.GetFundamentalType() != nullptr )
+		else if( function_type->return_type.GetFundamentalType() != nullptr ||
+			function_type->return_type.GetEnumType() != nullptr )
 		{}
 		else if( const Class* const class_type= function_type->return_type.GetClassType() )
 		{
@@ -1512,7 +1597,7 @@ void CodeBuilder::BuildFuncCode(
 		{
 			if( arg.type.GetTemplateDependentType() != nullptr )
 				type= fundamental_llvm_types_.invalid_type_;
-			else if( arg.type.GetFundamentalType() != nullptr )
+			else if( arg.type.GetFundamentalType() != nullptr || arg.type.GetEnumType() != nullptr )
 			{}
 			else if( arg.type.GetClassType() != nullptr )
 			{
@@ -1680,6 +1765,7 @@ void CodeBuilder::BuildFuncCode(
 		else
 		{
 			if( arg.type.GetFundamentalType() != nullptr ||
+				arg.type.GetEnumType() != nullptr ||
 				arg.type.GetTemplateDependentType() != nullptr )
 			{
 				// Move parameters to stack for assignment possibility.
@@ -2345,6 +2431,7 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 			type.GetFundamentalType() != nullptr ||
 			type.GetArrayType() != nullptr ||
 			type.GetClassType() != nullptr ||
+			type.GetEnumType() != nullptr ||
 			type.GetTemplateDependentType() != nullptr;
 		if( !type_is_ok )
 		{
@@ -2407,12 +2494,11 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 			variable.llvm_value->setName( ToStdString( auto_variable_declaration.name ) );
 		}
 
-		if( const FundamentalType* const fundamental_type= variable.type.GetFundamentalType() )
+		if( variable.type.GetFundamentalType() != nullptr ||
+			variable.type.GetEnumType() != nullptr  )
 		{
-			U_UNUSED(fundamental_type);
 			llvm::Value* const value_for_assignment= CreateMoveToLLVMRegisterInstruction( initializer_experrsion, function_context );
 			function_context.llvm_ir_builder.CreateStore( value_for_assignment, variable.llvm_value );
-
 			variable.constexpr_value= initializer_experrsion.constexpr_value;
 		}
 		else if( variable.type.GetTemplateDependentType() != nullptr )
@@ -2504,7 +2590,7 @@ void CodeBuilder::BuildAssignmentOperatorCode(
 	if( r_var == nullptr && r_var_value.GetType() != NontypeStub::TemplateDependentValue )
 		errors_.push_back( ReportExpectedVariable( assignment_operator.file_pos_, r_var_value.GetType().ToString() ) );
 
-	if( r_var != nullptr && r_var->type.GetFundamentalType() != nullptr )
+	if( r_var != nullptr && ( r_var->type.GetFundamentalType() != nullptr || r_var->type.GetEnumType() != nullptr ) )
 	{
 		// We must read value, because referenced by reference value may be changed in l_var evaluation.
 		if( r_var->location != Variable::Location::LLVMRegister )
@@ -2545,7 +2631,7 @@ void CodeBuilder::BuildAssignmentOperatorCode(
 		}
 	}
 
-	if( const FundamentalType* const fundamental_type= l_var->type.GetFundamentalType())
+	if( l_var->type.GetFundamentalType() != nullptr || l_var->type.GetEnumType() != nullptr )
 	{
 		if( l_var->location != Variable::Location::Pointer )
 		{
@@ -2836,8 +2922,8 @@ void CodeBuilder::BuildReturnOperatorCode(
 			function_context.llvm_ir_builder.CreateRetVoid();
 		else
 		{
-			// Now we can return by value only fundamentals.
-			U_ASSERT( expression_result.type.GetFundamentalType() != nullptr );
+			// Now we can return by value only fundamentals end enums.
+			U_ASSERT( expression_result.type.GetFundamentalType() != nullptr || expression_result.type.GetEnumType() != nullptr );
 
 			// We must read return value before call of destructors.
 			llvm::Value* const value_for_return= CreateMoveToLLVMRegisterInstruction( expression_result, function_context );

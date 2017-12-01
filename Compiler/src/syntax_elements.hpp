@@ -500,6 +500,25 @@ public:
 	TypeName value;
 };
 
+class Enum final
+	: public SyntaxElementBase
+	, public IProgramElement
+	, public IClassElement
+{
+public:
+	explicit Enum( const FilePos& file_pos );
+
+	struct Member
+	{
+		FilePos file_pos;
+		ProgramString name;
+	};
+
+	ProgramString name;
+	ComplexName underlaying_type_name;
+	std::vector<Member> members;
+};
+
 class FunctionArgument final : public SyntaxElementBase
 {
 public:

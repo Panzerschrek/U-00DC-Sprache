@@ -127,6 +127,10 @@ const NamesScope::InsertedName* CodeBuilder::ResolveName(
 				}
 				next_space= &class_->members;
 			}
+			else if( Enum* const enum_= type->GetEnumType() )
+			{
+				next_space= &enum_->members;
+			}
 		}
 		else if( const TypeTemplatePtr type_template = name->second.GetTypeTemplate() )
 		{

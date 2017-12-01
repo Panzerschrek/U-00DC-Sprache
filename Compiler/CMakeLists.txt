@@ -110,6 +110,8 @@ set( TESTS_SOURCES
 	src/tests/constructors_test.cpp
 	src/tests/destructors_errors_test.cpp
 	src/tests/destructors_test.cpp
+	src/tests/enums_errors_test.cpp
+	src/tests/enums_test.cpp
 	src/tests/global_variables_errors_test.cpp
 	src/tests/global_variables_test.cpp
 	src/tests/halt_test.cpp

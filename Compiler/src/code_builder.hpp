@@ -127,6 +127,8 @@ private:
 		NamesScope& names_scope,
 		bool force_forward_declaration= false );
 
+	void PrepareEnum( const Synt::Enum& enum_decl, NamesScope& names_scope );
+
 	// Templates
 	void PrepareTypeTemplate( const Synt::TemplateBase& type_template_declaration, NamesScope& names_scope );
 

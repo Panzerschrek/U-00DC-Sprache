@@ -179,6 +179,7 @@ private:
 	IBlockElementPtr ParseContinueOperator();
 	IBlockElementPtr ParseIfOperator();
 	std::unique_ptr<StaticAssert> ParseStaticAssert();
+	std::unique_ptr<Enum> ParseEnum();
 	IBlockElementPtr ParseHalt();
 
 	BlockPtr ParseBlock();
@@ -278,6 +279,11 @@ ProgramElements SyntaxAnalyzer::ParseNamespaceBody( const Lexem::Type end_lexem 
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::static_assert_ )
 		{
 			if( IProgramElementPtr program_element= ParseStaticAssert() )
+				program_elements.emplace_back( std::move(program_element) );
+		}
+		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::enum_ )
+		{
+			if( IProgramElementPtr program_element= ParseEnum() )
 				program_elements.emplace_back( std::move(program_element) );
 		}
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::type_ )
@@ -1451,6 +1457,73 @@ std::unique_ptr<StaticAssert> SyntaxAnalyzer::ParseStaticAssert()
 	return std::move(result);
 }
 
+std::unique_ptr<Enum> SyntaxAnalyzer::ParseEnum()
+{
+	U_ASSERT( it_->type == Lexem::Type::Identifier && it_->text == Keywords::enum_ );
+
+	std::unique_ptr<Enum> result( new Enum( it_->file_pos ) );
+
+	++it_; U_ASSERT( it_ < it_end_ );
+
+	if( it_->type != Lexem::Type::Identifier )
+	{
+		PushErrorMessage( *it_ );
+		return nullptr;
+	}
+	result->name= it_->text;
+	++it_; U_ASSERT( it_ < it_end_ );
+
+	if( it_->type == Lexem::Type::Colon )
+	{
+		++it_; U_ASSERT( it_ < it_end_ );
+		result->underlaying_type_name= ParseComplexName();
+	}
+
+	if( it_->type != Lexem::Type::BraceLeft )
+	{
+		PushErrorMessage( *it_ );
+		return result;
+	}
+	++it_; U_ASSERT( it_ < it_end_ );
+
+	while( true )
+	{
+		if( it_->type != Lexem::Type::Identifier )
+		{
+			PushErrorMessage( *it_ );
+			return result;
+		}
+
+		result->members.emplace_back();
+		result->members.back().file_pos= it_->file_pos;
+		result->members.back().name= it_->text;
+		++it_; U_ASSERT( it_ < it_end_ );
+
+		if( it_->type == Lexem::Type::Comma )
+		{
+			++it_; U_ASSERT( it_ < it_end_ );
+			if( it_->type == Lexem::Type::BraceRight )
+			{
+				++it_; U_ASSERT( it_ < it_end_ );
+				break;
+			}
+			continue;
+		}
+		else if( it_->type == Lexem::Type::BraceRight )
+		{
+			++it_; U_ASSERT( it_ < it_end_ );
+			break;
+		}
+		else
+		{
+			PushErrorMessage( *it_ );
+			return result;
+		}
+	}
+
+	return result;
+}
+
 IBlockElementPtr SyntaxAnalyzer::ParseHalt()
 {
 	U_ASSERT( it_->type == Lexem::Type::Identifier && it_->text == Keywords::halt_ );
@@ -2127,12 +2200,17 @@ std::unique_ptr<Class> SyntaxAnalyzer::ParseClassBody()
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::static_assert_ )
 		{
 			if( IClassElementPtr class_element= ParseStaticAssert() )
-				result->elements_.emplace_back( std::move(class_element) );;
+				result->elements_.emplace_back( std::move(class_element) );
+		}
+		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::enum_ )
+		{
+			if( IClassElementPtr class_element= ParseEnum() )
+				result->elements_.emplace_back( std::move(class_element) );
 		}
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::type_ )
 		{
 			if( IClassElementPtr class_element= ParseTypedef() )
-				result->elements_.emplace_back( std::move(class_element) );;
+				result->elements_.emplace_back( std::move(class_element) );
 		}
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::template_ )
 		{

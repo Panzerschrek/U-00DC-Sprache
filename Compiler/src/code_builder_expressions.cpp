@@ -477,15 +477,17 @@ Value CodeBuilder::BuildBinaryOperator(
 			errors_.push_back( ReportNoMatchBinaryOperatorForGivenTypes( file_pos, r_var.type.ToString(), l_var.type.ToString(), BinaryOperatorToString( binary_operator ) ) );
 			return ErrorValue();
 		}
-		if( l_fundamental_type == nullptr )
+		if( !( l_var.type.GetFundamentalType() != nullptr || r_var.type.GetEnumType() != nullptr ) )
 		{
 			errors_.push_back( ReportOperationNotSupportedForThisType( file_pos, l_type.ToString() ) );
 			return ErrorValue();
 		}
 		else
 		{
-			const bool if_float= IsFloatingPoint( l_fundamental_type->fundamental_type );
-			if( !( IsInteger( l_fundamental_type->fundamental_type ) || if_float || l_fundamental_type->fundamental_type == U_FundamentalType::Bool ) )
+			const FundamentalType raw_fundamental_type= l_fundamental_type != nullptr ? *l_fundamental_type : l_var.type.GetEnumType()->underlaying_type;
+
+			const bool if_float= IsFloatingPoint( raw_fundamental_type.fundamental_type );
+			if( !( IsInteger( raw_fundamental_type.fundamental_type ) || if_float || raw_fundamental_type.fundamental_type == U_FundamentalType::Bool ) )
 			{
 				errors_.push_back( ReportOperationNotSupportedForThisType( file_pos, l_type.ToString() ) );
 				return ErrorValue();
@@ -1596,7 +1598,7 @@ Value CodeBuilder::DoCallFunction(
 		}
 		else
 		{
-			if( arg.type.GetFundamentalType() != nullptr )
+			if( arg.type.GetFundamentalType() != nullptr || arg.type.GetEnumType() != nullptr )
 			{
 				if( !something_have_template_dependent_type )
 					llvm_args[j]= CreateMoveToLLVMRegisterInstruction( expr, function_context );

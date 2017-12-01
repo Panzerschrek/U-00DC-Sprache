@@ -26,6 +26,7 @@ namespace CodeBuilderPrivate
 struct Function;
 struct Array;
 class Class;
+struct Enum;
 
 struct ClassProxy
 {
@@ -36,6 +37,8 @@ struct ClassProxy
 };
 typedef std::shared_ptr<ClassProxy> ClassProxyPtr;
 typedef std::weak_ptr<ClassProxy> ClassProxyWeakPtr;
+
+typedef std::shared_ptr<Enum> EnumPtr;
 
 class NamesScope;
 typedef std::shared_ptr<NamesScope> NamesScopePtr;
@@ -96,6 +99,7 @@ public:
 	Type( const Array& array_type );
 	Type( Array&& array_type );
 	Type( ClassProxyPtr class_type );
+	Type( EnumPtr enum_type );
 	Type( NontypeStub nontype_strub );
 	Type( TemplateDependentType template_dependent_type );
 
@@ -108,6 +112,7 @@ public:
 	const Array* GetArrayType() const;
 	ClassProxyPtr GetClassTypeProxy() const;
 	Class* GetClassType() const;
+	Enum* GetEnumType() const;
 	TemplateDependentType* GetTemplateDependentType();
 	const TemplateDependentType* GetTemplateDependentType() const;
 
@@ -135,6 +140,7 @@ private:
 		FunctionPtr,
 		ArrayPtr,
 		ClassProxyPtr,
+		EnumPtr,
 		NontypeStub,
 		TemplateDependentType> something_;
 };
@@ -482,6 +488,14 @@ struct Class final
 
 	// Exists only for classes, generated from class templates.
 	boost::optional<BaseTemplate> base_template;
+};
+
+struct Enum
+{
+	Enum( const ProgramString& name, const NamesScope* parent_scope );
+
+	NamesScope members;
+	FundamentalType underlaying_type; // must be integer
 };
 
 struct TypeTemplate final

@@ -60,6 +60,7 @@ enum class Keywords : unsigned int
 
 	type_,
 	template_,
+	enum_,
 
 	// Reserved keywords for future usage.
 	for_,
