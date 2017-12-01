@@ -697,6 +697,11 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 		{
 			BuildStaticAssert( *static_assert_, the_class->members );
 		}
+		else if( const auto enum_=
+			dynamic_cast<const Synt::Enum*>( member.get() ) )
+		{
+			U_UNUSED( enum_ ); // TODO
+		}
 		else if( const auto typedef_=
 			dynamic_cast<const Synt::Typedef*>( member.get() ) )
 		{
@@ -1067,6 +1072,11 @@ void CodeBuilder::BuildNamespaceBody(
 			dynamic_cast<const Synt::StaticAssert*>( program_element.get() ) )
 		{
 			BuildStaticAssert( *static_assert_, names_scope );
+		}
+		else if( const auto enum_=
+			dynamic_cast<const Synt::Enum*>( program_element.get() ) )
+		{
+			U_UNUSED( enum_ ); // TODO
 		}
 		else if( const auto typedef_=
 			dynamic_cast<const Synt::Typedef*>( program_element.get() ) )

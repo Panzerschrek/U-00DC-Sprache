@@ -231,6 +231,10 @@ Typedef::Typedef( const FilePos& file_pos )
 	: SyntaxElementBase(file_pos)
 {}
 
+Enum::Enum( const FilePos& file_pos )
+	: SyntaxElementBase(file_pos)
+{}
+
 FunctionArgument::FunctionArgument(
 	const FilePos& file_pos,
 	ProgramString name,

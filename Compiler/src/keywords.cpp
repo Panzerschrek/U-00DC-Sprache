@@ -81,6 +81,7 @@ static const Globals& GetGlobals()
 
 		[ size_t(Keywords::type_) ]= "type",
 		[ size_t(Keywords::template_) ]= "template",
+		[ size_t(Keywords::enum_) ]= "enum",
 
 		[ size_t(Keywords::for_) ]= "for",
 		[ size_t(Keywords::do_) ]= "do",
