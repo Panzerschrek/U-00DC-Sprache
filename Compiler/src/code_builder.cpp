@@ -1221,9 +1221,10 @@ CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 	if( function_type.return_type.GetTemplateDependentType() == nullptr &&
 		!function_type.return_value_is_reference &&
 		!( function_type.return_type.GetFundamentalType() != nullptr ||
-		   function_type.return_type.GetClassType() != nullptr ) )
+		   function_type.return_type.GetClassType() != nullptr ||
+		   function_type.return_type.GetEnumType() != nullptr ) )
 	{
-		errors_.push_back( ReportNotImplemented( func.file_pos_, "return value types except fundamental and classes" ) );
+		errors_.push_back( ReportNotImplemented( func.file_pos_, "return value types except fundamentals, enums, classes" ) );
 		return result;
 	}
 
@@ -1533,7 +1534,8 @@ void CodeBuilder::BuildFuncCode(
 	{
 		if( function_type->return_type.GetTemplateDependentType() != nullptr )
 		{}
-		else if( function_type->return_type.GetFundamentalType() != nullptr )
+		else if( function_type->return_type.GetFundamentalType() != nullptr ||
+			function_type->return_type.GetEnumType() != nullptr )
 		{}
 		else if( const Class* const class_type= function_type->return_type.GetClassType() )
 		{
@@ -2588,7 +2590,7 @@ void CodeBuilder::BuildAssignmentOperatorCode(
 		}
 	}
 
-	if( const FundamentalType* const fundamental_type= l_var->type.GetFundamentalType())
+	if( l_var->type.GetFundamentalType() != nullptr || l_var->type.GetEnumType() != nullptr )
 	{
 		if( l_var->location != Variable::Location::Pointer )
 		{
@@ -2879,8 +2881,8 @@ void CodeBuilder::BuildReturnOperatorCode(
 			function_context.llvm_ir_builder.CreateRetVoid();
 		else
 		{
-			// Now we can return by value only fundamentals.
-			U_ASSERT( expression_result.type.GetFundamentalType() != nullptr );
+			// Now we can return by value only fundamentals end enums.
+			U_ASSERT( expression_result.type.GetFundamentalType() != nullptr || expression_result.type.GetEnumType() != nullptr );
 
 			// We must read return value before call of destructors.
 			llvm::Value* const value_for_return= CreateMoveToLLVMRegisterInstruction( expression_result, function_context );
