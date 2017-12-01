@@ -18,32 +18,6 @@ namespace U
 namespace CodeBuilderPrivate
 {
 
-static Synt::OverloadedOperator GetOverloadedOperatorForBinaryOperator( const Synt::BinaryOperatorType binary_operator_type )
-{
-	using Synt::BinaryOperatorType;
-	using Synt::OverloadedOperator;
-	switch( binary_operator_type )
-	{
-	case BinaryOperatorType::Add: return OverloadedOperator::Add;
-	case BinaryOperatorType::Sub: return OverloadedOperator::Sub;
-	case BinaryOperatorType::Mul: return OverloadedOperator::Mul;
-	case BinaryOperatorType::Div: return OverloadedOperator::Div;
-	case BinaryOperatorType::Rem: return OverloadedOperator::Rem;
-	case BinaryOperatorType::And: return OverloadedOperator::And;
-	case BinaryOperatorType::Or : return OverloadedOperator::Or ;
-	case BinaryOperatorType::Xor: return OverloadedOperator::Xor;
-	case BinaryOperatorType::Equal: return OverloadedOperator::Equal;
-	case BinaryOperatorType::NotEqual: return OverloadedOperator::NotEqual;
-	case BinaryOperatorType::Less: return OverloadedOperator::Less;
-	case BinaryOperatorType::LessEqual: return OverloadedOperator::LessEqual;
-	case BinaryOperatorType::Greater: return OverloadedOperator::Greater;
-	case BinaryOperatorType::GreaterEqual: return OverloadedOperator::GreaterEqual;
-	case BinaryOperatorType::ShiftLeft : return OverloadedOperator::ShiftLeft ;
-	case BinaryOperatorType::ShiftRight: return OverloadedOperator::ShiftRight;
-	default: U_ASSERT(false); return OverloadedOperator::None;
-	};
-}
-
 Value CodeBuilder::BuildExpressionCodeAndDestroyTemporaries(
 	const Synt::IExpressionComponent& expression,
 	NamesScope& names,
@@ -60,7 +34,7 @@ Value CodeBuilder::BuildExpressionCodeAndDestroyTemporaries(
 }
 
 boost::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
-	const Synt::OverloadedOperator op,
+	const OverloadedOperator op,
 	const Synt::IExpressionComponent&  left_expr,
 	const Synt::IExpressionComponent& right_expr,
 	const bool evaluate_args_in_reverse_order,
@@ -136,8 +110,8 @@ Value CodeBuilder::BuildExpressionCode(
 	if( const auto binary_operator=
 		dynamic_cast<const Synt::BinaryOperator*>(&expression) )
 	{
-		if( binary_operator->operator_type_ == Synt::BinaryOperatorType::LazyLogicalAnd ||
-			binary_operator->operator_type_ == Synt::BinaryOperatorType::LazyLogicalOr )
+		if( binary_operator->operator_type_ == BinaryOperatorType::LazyLogicalAnd ||
+			binary_operator->operator_type_ == BinaryOperatorType::LazyLogicalOr )
 		{
 			return
 				BuildLazyBinaryOperator(
@@ -269,15 +243,15 @@ Value CodeBuilder::BuildExpressionCode(
 			args.back().is_mutable= var->value_type == ValueType::Reference;
 			args.back().is_reference= var->value_type != ValueType::Value;
 
-			Synt::OverloadedOperator op= Synt::OverloadedOperator::None;
+			OverloadedOperator op= OverloadedOperator::None;
 			if( dynamic_cast<const Synt::UnaryMinus*>( prefix_operator.get() ) != nullptr )
-				op= Synt::OverloadedOperator::Sub;
+				op= OverloadedOperator::Sub;
 			else if( dynamic_cast<const Synt::UnaryPlus*>( prefix_operator.get() ) != nullptr )
-				op= Synt::OverloadedOperator::Add;
+				op= OverloadedOperator::Add;
 			else if( dynamic_cast<const Synt::LogicalNot*>( prefix_operator.get() ) != nullptr )
-				op= Synt::OverloadedOperator::LogicalNot;
+				op= OverloadedOperator::LogicalNot;
 			else if( dynamic_cast<const Synt::BitwiseNot*>( prefix_operator.get() ) != nullptr )
-				op= Synt::OverloadedOperator::BitwiseNot;
+				op= OverloadedOperator::BitwiseNot;
 			else U_ASSERT( false );
 
 			const FunctionVariable* const overloaded_operator= GetOverloadedOperator( args, op, expression_with_unary_operators->file_pos_ );
@@ -320,7 +294,7 @@ Value CodeBuilder::BuildExpressionCode(
 Value CodeBuilder::BuildBinaryOperator(
 	const Variable& l_var,
 	const Variable& r_var,
-	const Synt::BinaryOperatorType binary_operator,
+	const BinaryOperatorType binary_operator,
 	const FilePos& file_pos,
 	FunctionContext& function_context )
 {
@@ -333,7 +307,7 @@ Value CodeBuilder::BuildBinaryOperator(
 	const FundamentalType* const l_fundamental_type= l_type.GetFundamentalType();
 	const FundamentalType* const r_fundamental_type= r_var.type.GetFundamentalType();
 
-	using BinaryOperatorType= Synt::BinaryOperatorType;
+	using BinaryOperatorType= BinaryOperatorType;
 	switch( binary_operator )
 	{
 	case BinaryOperatorType::Add:
@@ -928,9 +902,9 @@ Value CodeBuilder::BuildLazyBinaryOperator(
 	llvm::BasicBlock* const block_after_operator= llvm::BasicBlock::Create( llvm_context_ );
 
 	llvm::Value* const l_var_in_register= CreateMoveToLLVMRegisterInstruction( l_var, function_context );
-	if( binary_operator.operator_type_ == Synt::BinaryOperatorType::LazyLogicalAnd )
+	if( binary_operator.operator_type_ == BinaryOperatorType::LazyLogicalAnd )
 		function_context.llvm_ir_builder.CreateCondBr( l_var_in_register, r_part_block, block_after_operator );
-	else if( binary_operator.operator_type_ == Synt::BinaryOperatorType::LazyLogicalOr )
+	else if( binary_operator.operator_type_ == BinaryOperatorType::LazyLogicalOr )
 		function_context.llvm_ir_builder.CreateCondBr( l_var_in_register, block_after_operator, r_part_block );
 	else U_ASSERT(false);
 
@@ -978,9 +952,9 @@ Value CodeBuilder::BuildLazyBinaryOperator(
 	// TODO - remove all blocks code in case of constexpr?
 	if( l_var.constexpr_value != nullptr && r_var_constepxr_value != nullptr )
 	{
-		if( binary_operator.operator_type_ == Synt::BinaryOperatorType::LazyLogicalAnd )
+		if( binary_operator.operator_type_ == BinaryOperatorType::LazyLogicalAnd )
 			result.constexpr_value= llvm::ConstantExpr::getAnd( l_var.constexpr_value, r_var_constepxr_value );
-		else if( binary_operator.operator_type_ == Synt::BinaryOperatorType::LazyLogicalOr )
+		else if( binary_operator.operator_type_ == BinaryOperatorType::LazyLogicalOr )
 			result.constexpr_value= llvm::ConstantExpr::getOr ( l_var.constexpr_value, r_var_constepxr_value );
 		else
 			U_ASSERT(false);
@@ -1240,7 +1214,7 @@ Value CodeBuilder::BuildIndexationOperator(
 		errors_.resize( error_count_before );
 
 		const FunctionVariable* const overloaded_operator=
-			GetOverloadedOperator( args, Synt::OverloadedOperator::Indexing, indexation_operator.file_pos_ );
+			GetOverloadedOperator( args, OverloadedOperator::Indexing, indexation_operator.file_pos_ );
 		if( overloaded_operator != nullptr )
 		{
 			return

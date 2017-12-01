@@ -247,7 +247,7 @@ private:
 	void CheckOverloadedOperator(
 		const ClassProxyPtr& base_class,
 		const Function& func_type,
-		Synt::OverloadedOperator overloaded_operator,
+		OverloadedOperator overloaded_operator,
 		const FilePos& file_pos );
 
 	void BuildFuncCode(
@@ -287,7 +287,7 @@ private:
 	// Returns boost::none, if all ok, but there is no overloaded operator.
 	// In success call of overloaded operator arguments evaluated in left to right order.
 	boost::optional<Value> TryCallOverloadedBinaryOperator(
-		Synt::OverloadedOperator op,
+		OverloadedOperator op,
 		const Synt::IExpressionComponent&  left_expr,
 		const Synt::IExpressionComponent& right_expr,
 		bool evaluate_args_in_reverse_order,
@@ -298,7 +298,7 @@ private:
 	Value BuildBinaryOperator(
 		const Variable& l_var,
 		const Variable& r_var,
-		Synt::BinaryOperatorType binary_operator,
+		BinaryOperatorType binary_operator,
 		const FilePos& file_pos,
 		FunctionContext& function_context );
 		
@@ -447,7 +447,7 @@ private:
 
 	const FunctionVariable* GetOverloadedOperator(
 		const std::vector<Function::Arg>& actual_args,
-		Synt::OverloadedOperator op,
+		OverloadedOperator op,
 		const FilePos& file_pos );
 
 	// Initializers.

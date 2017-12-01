@@ -36,26 +36,6 @@ const TypesMap g_types_map=
 
 } // namespace
 
-static Synt::OverloadedOperator GetOverloadedOperatorForAdditiveAssignmentOperator( const Synt::BinaryOperatorType operator_type )
-{
-	using Synt::BinaryOperatorType;
-	using Synt::OverloadedOperator;
-	switch( operator_type )
-	{
-	case BinaryOperatorType::Add: return OverloadedOperator::AssignAdd;
-	case BinaryOperatorType::Sub: return OverloadedOperator::AssignSub;
-	case BinaryOperatorType::Mul: return OverloadedOperator::AssignMul;
-	case BinaryOperatorType::Div: return OverloadedOperator::AssignDiv;
-	case BinaryOperatorType::Rem: return OverloadedOperator::AssignRem;
-	case BinaryOperatorType::And: return OverloadedOperator::AssignAnd;
-	case BinaryOperatorType::Or : return OverloadedOperator::AssignOr ;
-	case BinaryOperatorType::Xor: return OverloadedOperator::AssignXor;
-	case BinaryOperatorType::ShiftLeft : return OverloadedOperator::AssignShiftLeft ;
-	case BinaryOperatorType::ShiftRight: return OverloadedOperator::AssignShiftRight;
-	default: U_ASSERT(false); return OverloadedOperator::None;
-	};
-}
-
 namespace CodeBuilderPrivate
 {
 
@@ -1394,11 +1374,9 @@ CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 void CodeBuilder::CheckOverloadedOperator(
 	const ClassProxyPtr& base_class,
 	const Function& func_type,
-	const Synt::OverloadedOperator overloaded_operator,
+	const OverloadedOperator overloaded_operator,
 	const FilePos& file_pos )
 {
-	using Synt::OverloadedOperator;
-
 	if( overloaded_operator == OverloadedOperator::None )
 		return; // Not operator
 
@@ -2505,7 +2483,7 @@ void CodeBuilder::BuildAssignmentOperatorCode(
 {
 	if(
 		TryCallOverloadedBinaryOperator(
-			Synt::OverloadedOperator::Assign,
+			OverloadedOperator::Assign,
 			*assignment_operator.l_value_,
 			*assignment_operator.r_value_,
 			true, // evaluate args in reverse order
@@ -2724,7 +2702,7 @@ void CodeBuilder::BuildDeltaOneOperatorCode(
 	args.back().is_mutable= variable->value_type == ValueType::Reference;
 	args.back().is_reference= variable->value_type != ValueType::Value;
 	const FunctionVariable* const overloaded_operator=
-		GetOverloadedOperator( args, positive ? Synt::OverloadedOperator::Increment : Synt::OverloadedOperator::Decrement, file_pos );
+		GetOverloadedOperator( args, positive ? OverloadedOperator::Increment : OverloadedOperator::Decrement, file_pos );
 	if( overloaded_operator != nullptr )
 	{
 		DoCallFunction( *overloaded_operator, file_pos, variable, {}, false, block_names, function_context );
@@ -3367,16 +3345,16 @@ const FunctionVariable* CodeBuilder::GetOverloadedFunction(
 
 const FunctionVariable* CodeBuilder::GetOverloadedOperator(
 	const std::vector<Function::Arg>& actual_args,
-	Synt::OverloadedOperator op,
+	OverloadedOperator op,
 	const FilePos& file_pos )
 {
-	const ProgramString op_name= Synt::OverloadedOperatorToString( op );
+	const ProgramString op_name= OverloadedOperatorToString( op );
 
 	const size_t errors_before= errors_.size();
 
 	for( const Function::Arg& arg : actual_args )
 	{
-		if( op == Synt::OverloadedOperator::Indexing && &arg != &actual_args.front() )
+		if( op == OverloadedOperator::Indexing && &arg != &actual_args.front() )
 			break; // For indexing operator only check first argument.
 
 		if( const Class* const class_= arg.type.GetClassType() )

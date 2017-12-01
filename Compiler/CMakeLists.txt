@@ -51,6 +51,7 @@ set( COMPILER_LIB_SOURCES
 	src/lang_types.cpp
 	src/lexical_analyzer.cpp
 	src/mangling.cpp
+	src/operators.cpp
 	src/program_string.cpp
 	src/source_graph_loader.cpp
 	src/syntax_analyzer.cpp
@@ -65,6 +66,7 @@ set( COMPILER_LIB_HEADERS
 	src/keywords.hpp
 	src/lexical_analyzer.hpp
 	src/mangling.hpp
+	src/operators.hpp
 	src/pop_llvm_warnings.hpp
 	src/program_string.hpp
 	src/push_disable_llvm_warnings.hpp

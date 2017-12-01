@@ -6,6 +6,7 @@
 #include <boost/optional.hpp>
 
 #include "lexical_analyzer.hpp"
+#include "operators.hpp"
 
 namespace U
 {
@@ -138,85 +139,6 @@ public:
 
 	const ProgramString member_name_;
 };
-
-enum class BinaryOperatorType
-{
-	Add,
-	Sub,
-	Mul,
-	Div,
-	Rem,
-
-	Equal,
-	NotEqual,
-	Less,
-	LessEqual,
-	Greater,
-	GreaterEqual,
-
-	And,
-	Or,
-	Xor,
-
-	ShiftLeft ,
-	ShiftRight,
-
-	LazyLogicalAnd,
-	LazyLogicalOr,
-
-	Last,
-};
-
-ProgramString BinaryOperatorToString( BinaryOperatorType op );
-
-enum class OverloadedOperator
-{
-	None,
-
-	Add, // for unary and binary +
-	Sub, // for unary and binary -
-	Mul,
-	Div,
-	Rem,
-
-	Equal,
-	NotEqual,
-	Less,
-	LessEqual,
-	Greater,
-	GreaterEqual,
-
-	And,
-	Or,
-	Xor,
-
-	ShiftLeft ,
-	ShiftRight,
-
-	AssignAdd,
-	AssignSub,
-	AssignMul,
-	AssignDiv,
-	AssignRem,
-
-	AssignAnd,
-	AssignOr ,
-	AssignXor,
-
-	AssignShiftLeft ,
-	AssignShiftRight,
-
-	LogicalNot,
-	BitwiseNot,
-
-	Assign,
-	Increment,
-	Decrement,
-
-	Indexing,
-};
-
-ProgramString OverloadedOperatorToString( OverloadedOperator op );
 
 class IExpressionComponent
 {
