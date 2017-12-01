@@ -515,6 +515,7 @@ public:
 	};
 
 	ProgramString name;
+	ComplexName underlaying_type_name;
 	std::vector<Member> members;
 };
 

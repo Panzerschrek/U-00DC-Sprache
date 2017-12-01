@@ -229,4 +229,19 @@ U_TEST( EnumAsClassFiled )
 	U_TEST_ASSERT( static_cast<uint64_t>( 2 ) == result_value.IntVal.getLimitedValue() );
 }
 
+U_TEST( UnderlayingTypeForEnumTest )
+{
+	static const char c_program_text[]=
+	R"(
+		enum CompactEnum : u8
+		{ A, B, C, }
+
+		enum largeEnum: i64
+		{ A, B, C, }
+	)";
+
+	BuildProgram( c_program_text );
+	// TODO - add size checks of result enum
+}
+
 } // namespace U

@@ -74,4 +74,104 @@ U_TEST( EnumsRestrictionsTest )
 	U_TEST_ASSERT( build_result.errors[5].file_pos.line == 11u );
 }
 
+U_TEST( NameNotFound_ForUnderlayingEnumType_Test )
+{
+	static const char c_program_text[]=
+	R"(
+		enum E : wtf_where_is_type_name
+		{
+			A, B, C,
+		}
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NameNotFound );
+	U_TEST_ASSERT( error.file_pos.line == 2u );
+}
+
+U_TEST( NameIsNotTypeName_ForUnderlayingEnumType_Test )
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo(){}
+		enum E : Foo
+		{
+			A, B, C,
+		}
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NameIsNotTypeName );
+	U_TEST_ASSERT( error.file_pos.line == 3u );
+}
+
+U_TEST( TypesMismatch_ForUnderlayingEnumType_Test0 )
+{
+	// Float as underlaying type
+	static const char c_program_text[]=
+	R"(
+		enum E : f32
+		{
+			A, B, C,
+		}
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::TypesMismatch );
+	U_TEST_ASSERT( error.file_pos.line == 2u );
+}
+
+U_TEST( TypesMismatch_ForUnderlayingEnumType_Test1 )
+{
+	// Bool as underlaying type
+	static const char c_program_text[]=
+	R"(
+		enum E : bool
+		{
+			A, B, C,
+		}
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::TypesMismatch );
+	U_TEST_ASSERT( error.file_pos.line == 2u );
+}
+
+U_TEST( TypesMismatch_ForUnderlayingEnumType_Test2 )
+{
+	// struct as underlaying type
+	static const char c_program_text[]=
+	R"(
+		struct S{}
+		enum E : S
+		{
+			A, B, C,
+		}
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::TypesMismatch );
+	U_TEST_ASSERT( error.file_pos.line == 3u );
+}
+
 } // namespace U

@@ -1473,6 +1473,12 @@ std::unique_ptr<Enum> SyntaxAnalyzer::ParseEnum()
 	result->name= it_->text;
 	++it_; U_ASSERT( it_ < it_end_ );
 
+	if( it_->type == Lexem::Type::Colon )
+	{
+		++it_; U_ASSERT( it_ < it_end_ );
+		result->underlaying_type_name= ParseComplexName();
+	}
+
 	if( it_->type != Lexem::Type::BraceLeft )
 	{
 		PushErrorMessage( *it_ );

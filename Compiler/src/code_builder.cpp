@@ -795,7 +795,32 @@ void CodeBuilder::PrepareEnum( const Synt::Enum& enum_decl, NamesScope& names_sc
 
 	const std::shared_ptr<Enum> enum_= std::make_shared<Enum>( enum_decl.name, &names_scope );
 
-	enum_->underlaying_type= FundamentalType( U_FundamentalType::u32, fundamental_llvm_types_.u32 ); // SPRACHE_TODO - maybe select?
+	// Default underlaying type is 32bit. TODO - make do it platform-dependent?
+	enum_->underlaying_type= FundamentalType( U_FundamentalType::u32, fundamental_llvm_types_.u32 );
+
+	if( !enum_decl.underlaying_type_name.components.empty() )
+	{
+		const NamesScope::InsertedName* const type_name= ResolveName( enum_decl.file_pos_, names_scope, enum_decl.underlaying_type_name );
+		if( type_name == nullptr )
+			errors_.push_back( ReportNameNotFound( enum_decl.file_pos_, enum_decl.underlaying_type_name ) );
+		else
+		{
+			const Type* const type= type_name->second.GetTypeName();
+			if( type == nullptr )
+				errors_.push_back( ReportNameIsNotTypeName( enum_decl.file_pos_, enum_decl.underlaying_type_name.components.back().name ) );
+			else
+			{
+				const FundamentalType* const fundamental_type= type->GetFundamentalType();
+				if( fundamental_type == nullptr || !IsInteger( fundamental_type->fundamental_type ) )
+				{
+					// SPRACHE_TODO - maybe allow inheritance of enums?
+					errors_.push_back( ReportTypesMismatch( enum_decl.file_pos_, "any integer type"_SpC, type->ToString() ) );
+				}
+				else
+					enum_->underlaying_type= *fundamental_type;
+			}
+		}
+	}
 
 	SizeType counter= 0u;
 	for( const Synt::Enum::Member& in_member : enum_decl.members )
