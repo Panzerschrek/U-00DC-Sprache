@@ -203,4 +203,30 @@ U_TEST( EnumToIntConversionTest )
 	U_TEST_ASSERT( static_cast<uint64_t>( 9 - 2 ) == result_value.IntVal.getLimitedValue() );
 }
 
+U_TEST( EnumAsClassFiled )
+{
+	static const char c_program_text[]=
+	R"(
+		class Color
+		{
+			enum NamedColor{ Red, Green, Blue, Black, White }
+			NamedColor named_color;
+		}
+
+		fn Foo() : i32
+		{
+			var Color color{ .named_color= Color::NamedColor::Blue };
+			var Color color_copy( color );
+			return i32( color_copy.named_color );
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	const llvm::GenericValue result_value= engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+	U_TEST_ASSERT( static_cast<uint64_t>( 2 ) == result_value.IntVal.getLimitedValue() );
+}
+
 } // namespace U

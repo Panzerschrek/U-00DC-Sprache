@@ -331,9 +331,8 @@ bool Type::IsDefaultConstructible() const
 
 bool Type::IsCopyConstructible() const
 {
-	if( const FundamentalType* const fundamental_type= boost::get<FundamentalType>( &something_ ) )
+	if( boost::get<FundamentalType>( &something_ ) != nullptr || boost::get<EnumPtr>( &something_ ) != nullptr )
 	{
-		U_UNUSED(fundamental_type);
 		return true;
 	}
 	else if( const ClassProxyPtr* const class_= boost::get<ClassProxyPtr>( &something_ ) )
@@ -352,7 +351,7 @@ bool Type::IsCopyConstructible() const
 
 bool Type::IsCopyAssignable() const
 {
-	if( GetFundamentalType() != nullptr )
+	if( GetFundamentalType() != nullptr || GetEnumType() != nullptr )
 		return true;
 	else if( const ClassProxyPtr* const class_= boost::get<ClassProxyPtr>( &something_ ) )
 	{
