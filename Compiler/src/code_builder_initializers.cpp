@@ -503,6 +503,26 @@ llvm::Constant* CodeBuilder::ApplyExpressionInitializer(
 		if( llvm::Constant* const constexpr_value= expression_result.GetVariable()->constexpr_value )
 			return constexpr_value;
 	}
+	else if( const Enum* const enum_type= variable.type.GetEnumType() )
+	{
+		const Value expression_result=
+			BuildExpressionCodeAndDestroyTemporaries( *initializer.expression, block_names, function_context );
+		if( expression_result.GetType() == NontypeStub::TemplateDependentValue ||
+			expression_result.GetType().GetTemplateDependentType() != nullptr )
+			return llvm::UndefValue::get( enum_type->underlaying_type.llvm_type );
+
+		if( expression_result.GetType() != variable.type )
+		{
+			errors_.push_back( ReportTypesMismatch( initializer.file_pos_, variable.type.ToString(), expression_result.GetType().ToString() ) );
+			return nullptr;
+		}
+
+		llvm::Value* const value_for_assignment= CreateMoveToLLVMRegisterInstruction( *expression_result.GetVariable(), function_context );
+		function_context.llvm_ir_builder.CreateStore( value_for_assignment, variable.llvm_value );
+
+		if( llvm::Constant* const constexpr_value= expression_result.GetVariable()->constexpr_value )
+			return constexpr_value;
+	}
 	else if( variable.type.GetTemplateDependentType() != nullptr )
 	{}
 	else

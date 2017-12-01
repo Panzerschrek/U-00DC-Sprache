@@ -700,7 +700,7 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 		else if( const auto enum_=
 			dynamic_cast<const Synt::Enum*>( member.get() ) )
 		{
-			U_UNUSED( enum_ ); // TODO
+			PrepareEnum( *enum_, the_class->members );
 		}
 		else if( const auto typedef_=
 			dynamic_cast<const Synt::Typedef*>( member.get() ) )
@@ -784,6 +784,39 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 	}
 
 	return the_class_proxy;
+}
+
+void CodeBuilder::PrepareEnum( const Synt::Enum& enum_decl, NamesScope& names_scope )
+{
+	if( names_scope.GetThisScopeName( enum_decl.name ) != nullptr )
+		errors_.push_back( ReportRedefinition( enum_decl.file_pos_, enum_decl.name ) );
+	if( NameShadowsTemplateArgument( enum_decl.name, names_scope ) )
+		errors_.push_back( ReportDeclarationShadowsTemplateArgument( enum_decl.file_pos_, enum_decl.name ) );
+
+	const std::shared_ptr<Enum> enum_= std::make_shared<Enum>( enum_decl.name, &names_scope );
+
+	enum_->underlaying_type= FundamentalType( U_FundamentalType::u32, fundamental_llvm_types_.u32 ); // SPRACHE_TODO - maybe select?
+
+	SizeType counter= 0u;
+	for( const Synt::Enum::Member& in_member : enum_decl.members )
+	{
+		Variable var;
+
+		var.type= enum_;
+		var.location= Variable::Location::LLVMRegister;
+		var.value_type= ValueType::Value;
+		var.llvm_value= var.constexpr_value=
+			llvm::Constant::getIntegerValue(
+				enum_->underlaying_type.llvm_type,
+				llvm::APInt( enum_->underlaying_type.llvm_type->getIntegerBitWidth(), counter ) );
+
+		if( enum_->members.AddName( in_member.name, Value( var, in_member.file_pos ) ) == nullptr )
+			errors_.push_back( ReportRedefinition( in_member.file_pos, in_member.name ) );
+
+		++counter;
+	}
+
+	names_scope.AddName( enum_decl.name, Value( Type( enum_ ), enum_decl.file_pos_ ) );
 }
 
 void CodeBuilder::TryCallCopyConstructor(
@@ -1076,7 +1109,7 @@ void CodeBuilder::BuildNamespaceBody(
 		else if( const auto enum_=
 			dynamic_cast<const Synt::Enum*>( program_element.get() ) )
 		{
-			U_UNUSED( enum_ ); // TODO
+			PrepareEnum( *enum_, names_scope );
 		}
 		else if( const auto typedef_=
 			dynamic_cast<const Synt::Typedef*>( program_element.get() ) )

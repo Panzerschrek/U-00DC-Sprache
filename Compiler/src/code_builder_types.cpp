@@ -106,6 +106,11 @@ Type::Type( ClassProxyPtr class_type )
 	something_= std::move( class_type );
 }
 
+Type::Type( EnumPtr enum_type )
+{
+	something_= std::move( enum_type );
+}
+
 Type::Type( const NontypeStub nontype_strub )
 {
 	something_= nontype_strub;
@@ -146,6 +151,11 @@ Type& Type::operator=( const Type& other )
 		void operator()( const ClassProxyPtr& class_ )
 		{
 			this_.something_= class_;
+		}
+
+		void operator()( const EnumPtr& enum_ )
+		{
+			this_.something_= enum_;
 		}
 
 		void operator()( const NontypeStub& stub )
@@ -222,6 +232,14 @@ Class* Type::GetClassType() const
 	return class_proxy->class_.get();
 }
 
+Enum* Type::GetEnumType() const
+{
+	const EnumPtr* enum_ptr= boost::get<EnumPtr>( &something_ );
+	if( enum_ptr == nullptr )
+		return nullptr;
+	return enum_ptr->get();
+}
+
 TemplateDependentType* Type::GetTemplateDependentType()
 {
 	return boost::get<TemplateDependentType>( &something_ );
@@ -255,6 +273,12 @@ SizeType Type::SizeOf() const
 		SizeType operator()( const ClassProxyPtr& ) const
 		{
 			U_ASSERT( false && "SizeOf method not supported for classes." );
+			return 1u;
+		}
+
+		SizeType operator()( const EnumPtr& ) const
+		{
+			U_ASSERT( false && "SizeOf method not supported for enums." );
 			return 1u;
 		}
 
@@ -397,14 +421,19 @@ llvm::Type* Type::GetLLVMType() const
 
 		llvm::Type* operator()( const ArrayPtr& array ) const
 		{
-			if( array == nullptr ) return nullptr;
+			U_ASSERT( array != nullptr );
 			return array->llvm_type;
 		}
 
 		llvm::Type* operator()( const ClassProxyPtr& class_ ) const
 		{
-			if( class_ == nullptr ) return nullptr;
+			U_ASSERT( class_ != nullptr && class_->class_ != nullptr );
 			return class_->class_->llvm_type;
+		}
+
+		llvm::Type* operator()( const EnumPtr& enum_ ) const
+		{
+			return enum_->underlaying_type.llvm_type;
 		}
 
 		llvm::Type* operator()( const NontypeStub& ) const
@@ -465,6 +494,11 @@ ProgramString Type::ToString() const
 			return "class "_SpC + class_->class_->members.GetThisNamespaceName();
 		}
 
+		ProgramString operator()( const EnumPtr& enum_ ) const
+		{
+			return "enum "_SpC + enum_->members.GetThisNamespaceName();
+		}
+
 		ProgramString operator()( const NontypeStub& stub ) const
 		{
 			switch(stub)
@@ -522,9 +556,13 @@ bool operator==( const Type& r, const Type& l )
 	}
 	else if( r.something_.which() == 4 )
 	{
-		return boost::get<NontypeStub>(r.something_) == boost::get<NontypeStub>(l.something_);
+		return r.GetEnumType() == l.GetEnumType();
 	}
 	else if( r.something_.which() == 5 )
+	{
+		return boost::get<NontypeStub>(r.something_) == boost::get<NontypeStub>(l.something_);
+	}
+	else if( r.something_.which() ==6 )
 	{
 		return boost::get<TemplateDependentType>(r.something_) == boost::get<TemplateDependentType>(l.something_);
 	}
@@ -603,6 +641,10 @@ Class::Class( const ProgramString& in_name, const NamesScope* const parent_scope
 {}
 
 Class::~Class()
+{}
+
+Enum::Enum( const ProgramString& in_name, const NamesScope* parent_scope )
+	: members( in_name, parent_scope )
 {}
 
 //

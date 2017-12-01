@@ -26,4 +26,18 @@ U_TEST( EnumsDeclarationTest )
 	BuildProgram( c_program_text );
 }
 
+U_TEST( EnumVariableDeclarationTest )
+{
+	static const char c_program_text[]=
+	R"(
+		enum E { A, B, C }
+		fn Foo()
+		{
+			var E e= E::B;
+		}
+	)";
+
+	BuildProgram( c_program_text );
+}
+
 } // namespace U
