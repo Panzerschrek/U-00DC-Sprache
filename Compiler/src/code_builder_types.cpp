@@ -387,7 +387,7 @@ bool Type::HaveDestructor() const
 
 bool Type::CanBeConstexpr() const
 {
-	if( boost::get<FundamentalType>( &something_ ) != nullptr )
+	if( boost::get<FundamentalType>( &something_ ) != nullptr || boost::get<EnumPtr>( &something_ ) != nullptr )
 	{
 		return true;
 	}

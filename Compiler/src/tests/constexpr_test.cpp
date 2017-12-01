@@ -606,4 +606,16 @@ U_TEST( ConstexprVariableInTemplateClass_Test0 )
 	BuildProgram( c_program_text );
 }
 
+U_TEST( EnumsAreConstexpr )
+{
+	static const char c_program_text[]=
+	R"(
+		enum Colors{ Red, Green, Blue, Black, White, Orange, Magenta }
+		auto constexpr default_bg_color= Colors::White;
+		static_assert( default_bg_color != Colors::Black );
+	)";
+
+	BuildProgram( c_program_text );
+}
+
 } // namespace U
