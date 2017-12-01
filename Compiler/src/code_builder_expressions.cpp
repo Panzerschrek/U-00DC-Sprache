@@ -1598,7 +1598,7 @@ Value CodeBuilder::DoCallFunction(
 		}
 		else
 		{
-			if( arg.type.GetFundamentalType() != nullptr )
+			if( arg.type.GetFundamentalType() != nullptr || arg.type.GetEnumType() != nullptr )
 			{
 				if( !something_have_template_dependent_type )
 					llvm_args[j]= CreateMoveToLLVMRegisterInstruction( expr, function_context );

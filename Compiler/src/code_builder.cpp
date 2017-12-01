@@ -1287,6 +1287,7 @@ CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 		if( !out_arg.is_reference &&
 			!( out_arg.type.GetFundamentalType() != nullptr ||
 			   out_arg.type.GetClassType() != nullptr ||
+			   out_arg.type.GetEnumType() != nullptr ||
 			   out_arg.type.GetTemplateDependentType() != nullptr ) )
 		{
 			errors_.push_back( ReportNotImplemented( func.file_pos_, "parameters types except fundamental and classes" ) );
@@ -1562,7 +1563,7 @@ void CodeBuilder::BuildFuncCode(
 		{
 			if( arg.type.GetTemplateDependentType() != nullptr )
 				type= fundamental_llvm_types_.invalid_type_;
-			else if( arg.type.GetFundamentalType() != nullptr )
+			else if( arg.type.GetFundamentalType() != nullptr || arg.type.GetEnumType() != nullptr )
 			{}
 			else if( arg.type.GetClassType() != nullptr )
 			{
@@ -1730,6 +1731,7 @@ void CodeBuilder::BuildFuncCode(
 		else
 		{
 			if( arg.type.GetFundamentalType() != nullptr ||
+				arg.type.GetEnumType() != nullptr ||
 				arg.type.GetTemplateDependentType() != nullptr )
 			{
 				// Move parameters to stack for assignment possibility.

@@ -63,6 +63,30 @@ U_TEST( EnumsAssignmentAndReturnTest )
 	U_TEST_ASSERT( static_cast<uint64_t>( 2 ) == result_value.IntVal.getLimitedValue() );
 }
 
+U_TEST( EnumValueAsArgument )
+{
+	static const char c_program_text[]=
+	R"(
+		enum ColorComponent{ r, g, b }
+		fn ConvertComponent( ColorComponent c ) : ColorComponent
+		{
+			if( c == ColorComponent::r ) { return ColorComponent::b; }
+			if( c == ColorComponent::g ) { return ColorComponent::g; }
+			if( c == ColorComponent::b ) { return ColorComponent::r; }
+			halt;
+		}
+
+		fn Foo()
+		{
+			halt if( ConvertComponent( ColorComponent::r ) != ColorComponent::b );
+			halt if( ConvertComponent( ColorComponent::g ) != ColorComponent::g );
+			halt if( ConvertComponent( ColorComponent::b ) != ColorComponent::r );
+		}
+	)";
+
+	BuildProgram( c_program_text );
+}
+
 U_TEST( EnumsCompareTest )
 {
 	static const char c_program_text[]=
