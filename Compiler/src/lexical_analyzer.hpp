@@ -60,6 +60,8 @@ struct Lexem
 		Tilda, // ~
 		Not, // !
 
+		Apostrophe, // '
+
 		Increment, // ++
 		Decrement, // --
 
