@@ -32,7 +32,8 @@ struct TheClass
 
 fn TheClass::Method( mut this )
 {
-	ImutMethod( this );
+	var TheClass mut other_instance;
+	ImutMethod( other_instance );
 }
 
 fn TheClass::StaticMethod()

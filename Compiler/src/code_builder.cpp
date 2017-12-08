@@ -1792,10 +1792,21 @@ void CodeBuilder::BuildFuncCode(
 			{ U_ASSERT( false ); }
 		}
 
-		const StoredVariablePtr var_storage= std::make_shared<StoredVariable>( var, arg.is_reference );
+		// Mark even reference-args as variable.
+		const StoredVariablePtr var_storage= std::make_shared<StoredVariable>( var, false );
+		var.referenced_variables.emplace(var_storage);
 
-		if( !var_storage->is_reference )
-			var.referenced_variables.emplace(var_storage);
+		if( arg.is_reference && function_type->return_value_is_reference )
+		{
+			for( const size_t arg_n : function_type->return_reference_args )
+			{
+				if( arg_n == arg_number )
+				{
+					function_context.allowed_for_returning_references.emplace(var_storage);
+					break;
+				}
+			}
+		}
 
 		if( is_this )
 		{
@@ -1811,7 +1822,8 @@ void CodeBuilder::BuildFuncCode(
 				return;
 			}
 
-			function_context.stack_variables_stack.back()->RegisterVariable( var_storage );
+			if( !arg.is_reference )
+				function_context.stack_variables_stack.back()->RegisterVariable( var_storage );
 
 			const NamesScope::InsertedName* const inserted_arg=
 				function_names.AddName( arg_name, Value( var_storage, declaration_arg.file_pos_ ) );
@@ -2902,6 +2914,13 @@ void CodeBuilder::BuildReturnOperatorCode(
 
 		CallDestructorsBeforeReturn( function_context, return_operator.file_pos_ );
 		return_value_locks.clear(); // Reset locks AFTER destructors call. We must get error in case of returning of reference to stack variable or value-argument.
+
+		// Check correctness of returning reference.
+		for( const StoredVariablePtr& var : expression_result.referenced_variables )
+		{
+			if( function_context.allowed_for_returning_references.count(var) == 0u )
+				errors_.push_back( ReportReturningUnallowedReference( return_operator.file_pos_ ) );
+		}
 
 		function_context.llvm_ir_builder.CreateRet( expression_result.llvm_value );
 	}

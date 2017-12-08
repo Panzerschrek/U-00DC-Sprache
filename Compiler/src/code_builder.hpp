@@ -72,6 +72,7 @@ private:
 		Type return_type;
 		bool return_value_is_mutable;
 		bool return_value_is_reference;
+		std::unordered_set<StoredVariablePtr> allowed_for_returning_references;
 
 		const Variable* this_= nullptr; // null for nonclass functions or static member functions.
 		const Variable* s_ret_= nullptr; // Value for assignment for "sret" functions.
