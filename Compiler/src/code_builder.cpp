@@ -1332,6 +1332,12 @@ CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 
 	if( function_type.return_value_is_reference && function_type.return_reference_args.empty() )
 	{
+		if( !func.return_value_reference_tag_.empty() )
+		{
+			// Tag exists, but referenced args is empty - means tag apperas only in return value, but not in any argument.
+			errors_.push_back( ReportNameNotFound( func.file_pos_, func.return_value_reference_tag_ ) );
+		}
+
 		// If there is no tag for return reference, assume, that it may refer to any reference argument.
 		for( size_t i= 0u; i < function_type.args.size(); ++i )
 		{

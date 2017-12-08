@@ -132,4 +132,43 @@ U_TEST( ReferncesTagsTest_UntaggedReturValueMustBeOk )
 	BuildProgram( c_program_text );
 }
 
+U_TEST( NameNotFound_ForReturnReferenceTag_Test0 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo( i32 &'F x ) : i32 &'unexistent_tag
+		{
+			return x;
+		}
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NameNotFound );
+	U_TEST_ASSERT( error.file_pos.line == 2u );
+}
+
+U_TEST( NameNotFound_ForReturnReferenceTag_Test1 )
+{
+	static const char c_program_text[]=
+	R"(
+		auto constexpr XXX= 457;
+		fn Foo() : i32 &'unexistent_tag
+		{
+			return XXX;
+		}
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NameNotFound );
+	U_TEST_ASSERT( error.file_pos.line == 3u );
+}
+
 } // namespace U
