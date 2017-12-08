@@ -68,4 +68,35 @@ U_TEST( ReferncesTagsTest_TryReturnUnallowedReference0 )
 	U_TEST_ASSERT( error.file_pos.line == 4u );
 }
 
+// TODO - add more tests
+
+U_TEST( ReferncesTagsTest_ReturnReferenceToGlobalConstant0 )
+{
+	static const char c_program_text[]=
+	R"(
+		auto constexpr ccc= 5654;
+		fn Foo() : i32 &imut
+		{
+			return ccc; // Ok, return reference to global constant
+		}
+	)";
+
+	BuildProgram( c_program_text );
+}
+
+U_TEST( ReferncesTagsTest_ReturnReferenceToGlobalConstant1 )
+{
+	static const char c_program_text[]=
+	R"(
+		auto constexpr ccc= 5654;
+		fn PositiveVarOrZero( i32 &'a imut x ) : i32 &'a imut
+		{
+			if( x > 0 ) { return x; } // Ok, return global constant
+			return ccc; // Ok, return allowed reference.
+		}
+	)";
+
+	BuildProgram( c_program_text );
+}
+
 } // namespace U

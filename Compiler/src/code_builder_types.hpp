@@ -243,10 +243,11 @@ struct StoredVariable
 	const VariableStorageUseCounter imut_use_counter= std::make_shared<int>();
 
 	const bool is_reference;
+	const bool is_global_constant;
 	std::vector<VariableStorageUseCounter> locked_referenced_variables; // For references
 
-	StoredVariable( Variable in_content, bool in_is_reference= false )
-		: content(std::move(in_content)), is_reference(in_is_reference)
+	StoredVariable( Variable in_content, bool in_is_reference= false, bool in_is_global_constant= false )
+		: content(std::move(in_content)), is_reference(in_is_reference), is_global_constant(in_is_global_constant)
 	{}
 };
 

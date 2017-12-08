@@ -2380,7 +2380,8 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 		const StoredVariablePtr stored_variable=
 			std::make_shared<StoredVariable>(
 				variable,
-				variable_declaration.reference_modifier == ReferenceModifier::Reference );
+				variable_declaration.reference_modifier == ReferenceModifier::Reference,
+				global );
 
 		if( stored_variable->is_reference )
 		{
@@ -2552,7 +2553,8 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 	const StoredVariablePtr stored_variable=
 		std::make_shared<StoredVariable>(
 			variable,
-			auto_variable_declaration.reference_modifier == ReferenceModifier::Reference );
+			auto_variable_declaration.reference_modifier == ReferenceModifier::Reference,
+			global );
 
 	if( stored_variable->is_reference )
 	{
@@ -2918,6 +2920,8 @@ void CodeBuilder::BuildReturnOperatorCode(
 		// Check correctness of returning reference.
 		for( const StoredVariablePtr& var : expression_result.referenced_variables )
 		{
+			if( var->is_global_constant ) // Always allow return of global constants.
+				continue;
 			if( function_context.allowed_for_returning_references.count(var) == 0u )
 				errors_.push_back( ReportReturningUnallowedReference( return_operator.file_pos_ ) );
 		}
