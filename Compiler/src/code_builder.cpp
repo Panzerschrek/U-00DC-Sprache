@@ -1323,7 +1323,28 @@ CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 		// If this is not prototype, value-args must have complete type.
 		if( block != nullptr && out_arg.type.IsIncomplete() && !out_arg.is_reference )
 			errors_.push_back( ReportUsingIncompleteType( arg->file_pos_, out_arg.type.ToString() ) );
+
+		if( function_type.return_value_is_reference && out_arg.is_reference &&
+			!arg->reference_tag_.empty() && !func.return_value_reference_tag_.empty() &&
+			arg->reference_tag_ == func.return_value_reference_tag_ )
+			function_type.return_reference_args.push_back( function_type.args.size() - 1u );
 	} // for arguments
+
+	if( function_type.return_value_is_reference && function_type.return_reference_args.empty() )
+	{
+		if( !func.return_value_reference_tag_.empty() )
+		{
+			// Tag exists, but referenced args is empty - means tag apperas only in return value, but not in any argument.
+			errors_.push_back( ReportNameNotFound( func.file_pos_, func.return_value_reference_tag_ ) );
+		}
+
+		// If there is no tag for return reference, assume, that it may refer to any reference argument.
+		for( size_t i= 0u; i < function_type.args.size(); ++i )
+		{
+			if( function_type.args[i].is_reference )
+				function_type.return_reference_args.push_back(i);
+		}
+	}
 
 	CheckOverloadedOperator( base_class, function_type, func.overloaded_operator_, func.file_pos_ );
 
@@ -1777,10 +1798,21 @@ void CodeBuilder::BuildFuncCode(
 			{ U_ASSERT( false ); }
 		}
 
-		const StoredVariablePtr var_storage= std::make_shared<StoredVariable>( var, arg.is_reference );
+		// Mark even reference-args as variable.
+		const StoredVariablePtr var_storage= std::make_shared<StoredVariable>( var, false );
+		var.referenced_variables.emplace(var_storage);
 
-		if( !var_storage->is_reference )
-			var.referenced_variables.emplace(var_storage);
+		if( arg.is_reference && function_type->return_value_is_reference )
+		{
+			for( const size_t arg_n : function_type->return_reference_args )
+			{
+				if( arg_n == arg_number )
+				{
+					function_context.allowed_for_returning_references.emplace(var_storage);
+					break;
+				}
+			}
+		}
 
 		if( is_this )
 		{
@@ -1796,7 +1828,8 @@ void CodeBuilder::BuildFuncCode(
 				return;
 			}
 
-			function_context.stack_variables_stack.back()->RegisterVariable( var_storage );
+			if( !arg.is_reference )
+				function_context.stack_variables_stack.back()->RegisterVariable( var_storage );
 
 			const NamesScope::InsertedName* const inserted_arg=
 				function_names.AddName( arg_name, Value( var_storage, declaration_arg.file_pos_ ) );
@@ -2353,7 +2386,8 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 		const StoredVariablePtr stored_variable=
 			std::make_shared<StoredVariable>(
 				variable,
-				variable_declaration.reference_modifier == ReferenceModifier::Reference );
+				variable_declaration.reference_modifier == ReferenceModifier::Reference,
+				global );
 
 		if( stored_variable->is_reference )
 		{
@@ -2525,7 +2559,8 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 	const StoredVariablePtr stored_variable=
 		std::make_shared<StoredVariable>(
 			variable,
-			auto_variable_declaration.reference_modifier == ReferenceModifier::Reference );
+			auto_variable_declaration.reference_modifier == ReferenceModifier::Reference,
+			global );
 
 	if( stored_variable->is_reference )
 	{
@@ -2887,6 +2922,15 @@ void CodeBuilder::BuildReturnOperatorCode(
 
 		CallDestructorsBeforeReturn( function_context, return_operator.file_pos_ );
 		return_value_locks.clear(); // Reset locks AFTER destructors call. We must get error in case of returning of reference to stack variable or value-argument.
+
+		// Check correctness of returning reference.
+		for( const StoredVariablePtr& var : expression_result.referenced_variables )
+		{
+			if( var->is_global_constant ) // Always allow return of global constants.
+				continue;
+			if( function_context.allowed_for_returning_references.count(var) == 0u )
+				errors_.push_back( ReportReturningUnallowedReference( return_operator.file_pos_ ) );
+		}
 
 		function_context.llvm_ir_builder.CreateRet( expression_result.llvm_value );
 	}

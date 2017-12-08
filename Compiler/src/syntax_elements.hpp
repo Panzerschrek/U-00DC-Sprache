@@ -527,13 +527,15 @@ public:
 		ProgramString name,
 		TypeName type,
 		MutabilityModifier mutability_modifier,
-		ReferenceModifier reference_modifier );
+		ReferenceModifier reference_modifier,
+		ProgramString reference_tag);
 
 public:
 	const ProgramString name_;
 	const TypeName type_;
 	const MutabilityModifier mutability_modifier_;
 	const ReferenceModifier reference_modifier_;
+	const ProgramString reference_tag_;
 };
 
 typedef std::unique_ptr<FunctionArgument> FunctionArgumentPtr;
@@ -551,15 +553,17 @@ public:
 		TypeName return_type,
 		MutabilityModifier return_value_mutability_modifier,
 		ReferenceModifier return_value_reference_modifier,
+		ProgramString return_value_reference_tag,
 		FunctionArgumentsDeclaration arguments,
 		std::unique_ptr<StructNamedInitializer> constructor_initialization_list,
 		BlockPtr block,
-		OverloadedOperator overloaded_operator );
+		OverloadedOperator overloaded_operator);
 
 	const ComplexName name_;
 	const TypeName return_type_;
 	const MutabilityModifier return_value_mutability_modifier_;
 	const ReferenceModifier return_value_reference_modifier_;
+	const ProgramString return_value_reference_tag_;
 	const FunctionArgumentsDeclaration arguments_;
 	const std::unique_ptr<StructNamedInitializer> constructor_initialization_list_;
 	const BlockPtr block_;

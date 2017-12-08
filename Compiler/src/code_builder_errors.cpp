@@ -896,6 +896,17 @@ CodeBuilderError ReportAccessingVariableThatHaveMutableReference( const FilePos&
 	return error;
 }
 
+CodeBuilderError ReportReturningUnallowedReference( const FilePos& file_pos )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::ReturningUnallowedReference;
+
+	error.text= "Returning unallowed reference."_SpC;
+
+	return error;
+}
+
 CodeBuilderError ReportOperatorDeclarationOutsideClass( const FilePos& file_pos )
 {
 	CodeBuilderError error;

@@ -590,7 +590,8 @@ bool operator==( const Function& r, const Function& l )
 		r.return_type == l.return_type &&
 		r.return_value_is_mutable == l.return_value_is_mutable &&
 		r.return_value_is_reference == l.return_value_is_reference &&
-		r.args == l.args;
+		r.args == l.args &&
+		r.return_reference_args == l.return_reference_args;
 }
 
 bool operator!=( const Function& r, const Function& l )

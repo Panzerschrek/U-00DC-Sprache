@@ -1121,4 +1121,64 @@ U_TEST( ReferenceCheckTest_AdditiveAssignmentOperatorsModifyValue )
 	U_TEST_ASSERT( error.file_pos.line == 13u );
 }
 
+U_TEST( ReferenceCheckTest_TryChangeArgs0 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo( i32 &mut x )
+		{
+			auto &imut r= x;
+			x+= 42; // Can not mutate - have immutable references.
+		}
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferenceProtectionError );
+	U_TEST_ASSERT( error.file_pos.line == 5u );
+}
+
+U_TEST( ReferenceCheckTest_TryChangeArgs1 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo( i32 &mut x )
+		{
+			auto &mut r= x;
+			x+= 42; // Can not access arg - have mutable references.
+		}
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::AccessingVariableThatHaveMutableReference );
+	U_TEST_ASSERT( error.file_pos.line == 5u );
+}
+
+U_TEST( ReferenceCheckTest_TryChangeArgs2 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo( i32 &mut x )
+		{
+			auto &mut r0= x;
+			auto &mut r1= r0; // Error, taking second mutable reference.
+		}
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferenceProtectionError );
+	U_TEST_ASSERT( error.file_pos.line == 5u );
+}
+
 } // namespace U

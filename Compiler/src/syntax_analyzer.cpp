@@ -1935,7 +1935,8 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 					Keyword( Keywords::this_ ),
 					TypeName(),
 					mutability_modifier,
-					ReferenceModifier::Reference ) );
+					ReferenceModifier::Reference,
+					""_SpC /*TODO*/) );
 
 			if( it_->type == Lexem::Type::Comma )
 			{
@@ -1962,12 +1963,25 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 
 		ReferenceModifier reference_modifier= ReferenceModifier::None;
 		MutabilityModifier mutability_modifier= MutabilityModifier::None;
+		ProgramString reference_tag;
 
 		if( it_->type == Lexem::Type::And )
 		{
 			reference_modifier= ReferenceModifier::Reference;
-			++it_;
-			U_ASSERT( it_ < it_end_ );
+			++it_; U_ASSERT( it_ < it_end_ );
+
+			if( it_->type == Lexem::Type::Apostrophe )
+			{
+				++it_; U_ASSERT( it_ < it_end_ );
+
+				if( it_->type != Lexem::Type::Identifier )
+				{
+					PushErrorMessage( *it_ );
+					return nullptr;
+				}
+				reference_tag = it_->text;
+				++it_; U_ASSERT( it_ < it_end_ );
+			}
 		}
 
 		if( it_->type != Lexem::Type::Identifier )
@@ -2006,7 +2020,8 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 				arg_name,
 				std::move(arg_type),
 				mutability_modifier,
-				reference_modifier ) );
+				reference_modifier,
+				std::move(reference_tag)) );
 
 		if( it_->type == Lexem::Type::Comma )
 		{
@@ -2030,6 +2045,7 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 	TypeName return_type;
 	MutabilityModifier mutability_modifier= MutabilityModifier::None;
 	ReferenceModifier reference_modifier= ReferenceModifier::None;
+	ProgramString return_value_reference_tag;
 
 	if( it_->type == Lexem::Type::Colon )
 	{
@@ -2041,8 +2057,20 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 		if( it_->type == Lexem::Type::And )
 		{
 			reference_modifier= ReferenceModifier::Reference;
-			++it_;
-			U_ASSERT( it_ < it_end_ );
+			++it_; U_ASSERT( it_ < it_end_ );
+
+			if( it_->type == Lexem::Type::Apostrophe )
+			{
+				++it_; U_ASSERT( it_ < it_end_ );
+
+				if( it_->type != Lexem::Type::Identifier )
+				{
+					PushErrorMessage( *it_ );
+					return nullptr;
+				}
+				return_value_reference_tag = it_->text;
+				++it_; U_ASSERT( it_ < it_end_ );
+			}
 		}
 
 		if( it_->type == Lexem::Type::Identifier )
@@ -2134,6 +2162,7 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 			std::move(return_type),
 			mutability_modifier,
 			reference_modifier,
+			std::move(return_value_reference_tag),
 			std::move( arguments ),
 			std::move( constructor_initialization_list ),
 			std::move( block ),
