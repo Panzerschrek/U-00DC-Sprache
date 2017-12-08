@@ -131,7 +131,6 @@ set( TESTS_SOURCES
 	src/tests/operators_test.cpp
 	src/tests/reference_check_test.cpp
 	src/tests/references_tags_test.cpp
-	src/tests/tests_main.cpp
 	src/tests/tests.cpp
 	src/tests/type_conversions_test.cpp
 	src/tests/typedefs_errors_test.cpp

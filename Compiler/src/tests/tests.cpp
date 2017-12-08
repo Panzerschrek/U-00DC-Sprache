@@ -148,8 +148,13 @@ TestId AddTestFuncPrivate( TestFunc* func, const char* const file_name, const ch
 	return counter++;
 }
 
-void RunAllTests()
+} // namespace U
+
+// Entry point for tests executable.
+int main()
 {
+	using namespace U;
+
 	FuncsContainer& funcs_container= GetFuncsContainer();
 
 	std::cout << "Run " << funcs_container.size() << " tests" << std::endl << std::endl;
@@ -172,6 +177,6 @@ void RunAllTests()
 	}
 
 	std::cout << std::endl << funcs_container.size() - failed << " tests passed\n" << failed << " tests failed" << std::endl;
-}
 
-} // namespace U
+	return -int(failed);
+}
