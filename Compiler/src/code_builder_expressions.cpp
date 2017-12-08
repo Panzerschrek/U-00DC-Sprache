@@ -1516,11 +1516,13 @@ Value CodeBuilder::DoCallFunction(
 
 	const size_t first_arg_count= first_arg == 0u ? 0u : 1u;
 	const size_t arg_count= args.size() + first_arg_count;
+	U_ASSERT( arg_count == function_type.args.size() );
 
 	std::vector<llvm::Value*> llvm_args;
 	llvm_args.resize( arg_count, nullptr );
-	std::unordered_map<StoredVariablePtr, VaraibleReferencesCounter> locked_variable_conters;
+	std::unordered_map<StoredVariablePtr, VaraibleReferencesCounter> locked_variable_counters;
 	std::vector<VariableStorageUseCounter> temp_args_locks; // We need lock reference argument before evaluating next arguments.
+	std::vector< std::unordered_set<StoredVariablePtr> > arg_to_variables( arg_count );
 
 	bool function_result_have_template_dependent_type= false;
 	for( unsigned int i= 0u; i < arg_count; i++ )
@@ -1563,8 +1565,9 @@ Value CodeBuilder::DoCallFunction(
 				// Lock references.
 				for( const StoredVariablePtr& referenced_variable : expr.referenced_variables )
 				{
-					++locked_variable_conters[referenced_variable].mut;
+					++locked_variable_counters[referenced_variable].mut;
 					temp_args_locks.push_back( referenced_variable->mut_use_counter );
+					arg_to_variables[j].emplace( referenced_variable );
 				}
 			}
 			else
@@ -1591,8 +1594,9 @@ Value CodeBuilder::DoCallFunction(
 				// Lock references.
 				for( const StoredVariablePtr& referenced_variable : expr.referenced_variables )
 				{
-					++locked_variable_conters[referenced_variable].imut;
+					++locked_variable_counters[referenced_variable].imut;
 					temp_args_locks.push_back( referenced_variable->imut_use_counter );
+					arg_to_variables[j].emplace( referenced_variable );
 				}
 			}
 		}
@@ -1631,7 +1635,7 @@ Value CodeBuilder::DoCallFunction(
 
 	// Check references.
 	temp_args_locks.clear(); // clear temporary locks.
-	for( const auto& pair : locked_variable_conters )
+	for( const auto& pair : locked_variable_counters )
 	{
 		// Check references, passed into function.
 		const VaraibleReferencesCounter& counter= pair.second;
@@ -1721,9 +1725,14 @@ Value CodeBuilder::DoCallFunction(
 	// Prepare reference result.
 	if( function_type.return_value_is_reference )
 	{
-		// SPRACHE_TODO - process function lifetimes. Now - just combine all input function references.
-		for( const auto& pair : locked_variable_conters )
-			result.referenced_variables.emplace(pair.first);
+		// Returned reference refers to args, listed in function type.
+		U_ASSERT( arg_to_variables.size() == function_type.args.size() );
+		for( const size_t arg_n : function_type.return_reference_args )
+		{
+			U_ASSERT( arg_n < arg_to_variables.size() );
+			for( const StoredVariablePtr& var : arg_to_variables[arg_n] )
+				result.referenced_variables.emplace(var);
+		}
 	}
 
 	return Value( result, call_file_pos );
