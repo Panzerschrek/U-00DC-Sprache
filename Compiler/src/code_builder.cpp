@@ -1323,7 +1323,22 @@ CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 		// If this is not prototype, value-args must have complete type.
 		if( block != nullptr && out_arg.type.IsIncomplete() && !out_arg.is_reference )
 			errors_.push_back( ReportUsingIncompleteType( arg->file_pos_, out_arg.type.ToString() ) );
+
+		if( function_type.return_value_is_reference && out_arg.is_reference &&
+			!arg->reference_tag_.empty() && !func.return_value_reference_tag_.empty() &&
+			arg->reference_tag_ == func.return_value_reference_tag_ )
+			function_type.return_reference_args.push_back( function_type.args.size() - 1u );
 	} // for arguments
+
+	if( function_type.return_value_is_reference && function_type.return_reference_args.empty() )
+	{
+		// If there is no tag for return reference, assume, that it may refer to any reference argument.
+		for( size_t i= 0u; i < function_type.args.size(); ++i )
+		{
+			if( function_type.args[i].is_reference )
+				function_type.return_reference_args.push_back(i);
+		}
+	}
 
 	CheckOverloadedOperator( base_class, function_type, func.overloaded_operator_, func.file_pos_ );
 

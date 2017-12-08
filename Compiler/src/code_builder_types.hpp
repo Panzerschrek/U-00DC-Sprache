@@ -162,6 +162,8 @@ struct Function final
 	bool return_value_is_mutable= false;
 	std::vector<Arg> args;
 
+	std::vector<size_t> return_reference_args;
+
 	llvm::FunctionType* llvm_function_type= nullptr;
 };
 
