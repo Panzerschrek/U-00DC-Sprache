@@ -47,9 +47,6 @@ static void NAME##Func()
 		throw TestException( #x );\
 	}
 
-// Tests launch procedure.
-void RunAllTests();
-
 // Utility tests functions.
 
 #define ASSERT_NEAR( x, y, eps ) U_TEST_ASSERT( std::abs( (x) - (y) ) <= (eps) )

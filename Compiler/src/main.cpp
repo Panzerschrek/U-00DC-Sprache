@@ -85,6 +85,7 @@ public:
 			if( !ReadFile( result_path.string<std::string>().c_str(), result.file_content ) )
 				return boost::none;
 
+			result.full_file_path= ToProgramString( result_path.string<std::string>().c_str() );
 			return std::move(result);
 		}
 		catch( const std::exception& e )
