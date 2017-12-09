@@ -1,0 +1,13 @@
+import "inc.u"
+
+fn FunFromA()
+{
+}
+
+fn PrivateA()
+{
+	FunFromA();
+	FunFromB();
+	FunFromC();
+	InlineFromInc();
+}

@@ -1,0 +1,15 @@
+namespace Math
+{
+	// Global constant - must be inlined.
+	auto constexpr pi= 3.1415926535;
+}
+
+// Extern functions
+fn FunFromA();
+fn FunFromB();
+fn FunFromC();
+
+// Must be inlined on each module, but visible in extern modules, that does not includes this file.
+fn InlineFromInc()
+{
+}

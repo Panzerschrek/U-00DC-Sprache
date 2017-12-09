@@ -1,0 +1,13 @@
+// Extern functions
+fn FunFromA();
+fn FunFromB();
+fn FunFromC();
+
+fn InlineFromInc();
+
+fn FunFromC()
+{
+	FunFromA();
+	FunFromB();
+	InlineFromInc();
+}

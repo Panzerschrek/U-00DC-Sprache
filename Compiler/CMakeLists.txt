@@ -142,21 +142,54 @@ set( TESTS_HEADERS
 add_executable( Tests ${TESTS_SOURCES} ${TESTS_HEADERS} )
 target_link_libraries( Tests CompilerLib ${LLVM_LIBS_FOR_TESTS} )
 
+# Build rule for "Ü" files
+# Returns result in U_SOURCE_OBJECT
+function( CompileUSource u_source_file )
+	get_filename_component( source_name ${u_source_file} NAME_WE )
+	set( ir_name ${source_name}.ir )
+	set( object_name ${source_name}.o )
+	add_custom_command(
+		OUTPUT ${object_name}
+		DEPENDS ${u_source_file} Compiler
+		COMMAND Compiler -i ${CMAKE_SOURCE_DIR}/${u_source_file} -o ${ir_name} &&
+		${LLVM_UTILS_DIR}/llc ${ir_name} -filetype=obj -o=${object_name} )
+	set( U_SOURCE_OBJECT ${object_name} PARENT_SCOPE )
+endfunction()
+
+# Returns list of objects in U_SOURCE_OBJECTS
+function( CompileUSources u_source_files )
+	foreach( source ${u_source_files} )
+		CompileUSource( ${source} )
+		list( APPEND out_objects ${U_SOURCE_OBJECT} )
+	endforeach()
+	set( U_SOURCE_OBJECTS ${out_objects} PARENT_SCOPE )
+endfunction()
+
 #
 # CPP-Linkage test
 #
 
 # Compile simple program on "Ü-Sprache", link it together with C++ program.
 
-set( CPP_LINKAGE_U_SOURCE test_programs/cpp_linkage.u )
-set( CPP_LINKAGE_U_MODULE cpp_linkage_u.obj )
-set( CPP_LINKAGE_CPP_SOURCE test_programs/cpp_linkage.cpp )
+set( CPP_LINKAGE_SOURCES test_programs/cpp_linkage.u )
+CompileUSources( "${CPP_LINKAGE_SOURCES}" )
+set( CPP_LINKAGE_OBJECTS ${U_SOURCE_OBJECTS} )
 
-add_custom_command(
-	OUTPUT ${CPP_LINKAGE_U_MODULE}
-	DEPENDS ${CPP_LINKAGE_U_SOURCE} Compiler
-	COMMAND Compiler -i ${CMAKE_SOURCE_DIR}/test_programs/cpp_linkage.u -o cpp_linkage.ir &&
-	${LLVM_UTILS_DIR}/llc cpp_linkage.ir -filetype=obj -o=${CPP_LINKAGE_U_MODULE} )
-
-add_executable( CPPLinkageTest ${CPP_LINKAGE_U_MODULE} ${CPP_LINKAGE_CPP_SOURCE} )
+add_executable( CPPLinkageTest test_programs/cpp_linkage.cpp ${CPP_LINKAGE_OBJECTS} )
 add_dependencies( CPPLinkageTest Compiler )
+
+#
+# Inline linkage test
+#
+
+# Compile multimodule program on "Ü-Sprache". Each module includes one common file.
+
+set( INLINE_LINKAGE_SOURCES
+	inline_linkage_test/a.u
+	inline_linkage_test/b.u
+	inline_linkage_test/c.u )
+CompileUSources( "${INLINE_LINKAGE_SOURCES}" )
+set( INLINE_LINKAGE_OBJECTS ${U_SOURCE_OBJECTS} )
+
+add_executable( InlineLinkageTest inline_linkage_test/entry.cpp ${INLINE_LINKAGE_OBJECTS} )
+add_dependencies( InlineLinkageTest Compiler )
