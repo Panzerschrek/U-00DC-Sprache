@@ -17,8 +17,6 @@ namespace U
 namespace CodeBuilderPrivate
 {
 
-static const SizeType g_max_array_size_to_linear_initialization= 8u;
-
 llvm::Constant* CodeBuilder::ApplyInitializer(
 	const Variable& variable,
 	const Synt::IInitializer& initializer,
@@ -115,7 +113,7 @@ void CodeBuilder::ApplyEmptyInitializer(
 		BuildCallOperator( this_overloaded_methods_set, call_operator, dummy_names_scope, function_context );
 	}
 	else
-		return;
+		U_ASSERT(false);
 }
 
 llvm::Constant* CodeBuilder::ApplyArrayInitializer(
@@ -516,36 +514,15 @@ llvm::Constant* CodeBuilder::ApplyExpressionInitializer(
 		return nullptr;
 	}
 
-	if( const FundamentalType* const fundamental_type= variable.type.GetFundamentalType() )
+	if( variable.type.GetFundamentalType() != nullptr ||
+		variable.type.GetEnumType() != nullptr )
 	{
-		U_UNUSED(fundamental_type);
-
 		// SPRACHE_TODO - maybe we need save temporaries of this expression?
 		const Value expression_result=
 			BuildExpressionCodeAndDestroyTemporaries( *initializer.expression, block_names, function_context );
 		if( expression_result.GetType() == NontypeStub::TemplateDependentValue ||
 			expression_result.GetType().GetTemplateDependentType() != nullptr )
-			return llvm::UndefValue::get( fundamental_type->llvm_type );
-
-		if( expression_result.GetType() != variable.type )
-		{
-			errors_.push_back( ReportTypesMismatch( initializer.file_pos_, variable.type.ToString(), expression_result.GetType().ToString() ) );
-			return nullptr;
-		}
-
-		llvm::Value* const value_for_assignment= CreateMoveToLLVMRegisterInstruction( *expression_result.GetVariable(), function_context );
-		function_context.llvm_ir_builder.CreateStore( value_for_assignment, variable.llvm_value );
-
-		if( llvm::Constant* const constexpr_value= expression_result.GetVariable()->constexpr_value )
-			return constexpr_value;
-	}
-	else if( const Enum* const enum_type= variable.type.GetEnumType() )
-	{
-		const Value expression_result=
-			BuildExpressionCodeAndDestroyTemporaries( *initializer.expression, block_names, function_context );
-		if( expression_result.GetType() == NontypeStub::TemplateDependentValue ||
-			expression_result.GetType().GetTemplateDependentType() != nullptr )
-			return llvm::UndefValue::get( enum_type->underlaying_type.llvm_type );
+			return llvm::UndefValue::get( variable.type.GetLLVMType() );
 
 		if( expression_result.GetType() != variable.type )
 		{
@@ -596,13 +573,13 @@ llvm::Constant* CodeBuilder::ApplyZeroInitializer(
 		case U_FundamentalType::InvalidType:
 			zero_value=
 				llvm::Constant::getIntegerValue(
-					GetFundamentalLLVMType( fundamental_type->fundamental_type ),
-					llvm::APInt( variable.type.GetLLVMType()->getIntegerBitWidth(), uint64_t(0) ) );
+					fundamental_type->llvm_type,
+					llvm::APInt( fundamental_type->llvm_type->getIntegerBitWidth(), uint64_t(0) ) );
 			break;
 
 		case U_FundamentalType::f32:
 		case U_FundamentalType::f64:
-			zero_value= llvm::ConstantFP::get( variable.type.GetLLVMType(), 0.0 );
+			zero_value= llvm::ConstantFP::get( fundamental_type->llvm_type, 0.0 );
 			break;
 
 		case U_FundamentalType::Void:
@@ -685,10 +662,7 @@ llvm::Constant* CodeBuilder::ApplyZeroInitializer(
 			});
 	}
 	else
-	{
-		// TODO - report unsupported type for zero initializer
-		return nullptr;
-	}
+		U_ASSERT( false );
 
 	return nullptr;
 }
