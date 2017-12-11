@@ -644,14 +644,23 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 			out_field.type= PrepareType( in_field->file_pos_, in_field->type, the_class->members );
 			out_field.index= the_class->field_count;
 			out_field.class_= the_class_proxy;
+			out_field.is_reference= in_field->reference_modifier == Synt::ReferenceModifier::Reference;
 
-			if( out_field.type.IsIncomplete() )
+			if( out_field.is_reference ) // Reference-fields are immutable by default
+				out_field.is_mutable= in_field->mutability_modifier == Synt::MutabilityModifier::Mutable;
+			else // But value-fields are immutable by default
+				out_field.is_mutable= in_field->mutability_modifier != Synt::MutabilityModifier::Immutable;
+
+			if( !out_field.is_reference && out_field.type.IsIncomplete() )
 			{
 				errors_.push_back( ReportUsingIncompleteType( class_declaration.file_pos_, out_field.type.ToString() ) );
 				continue;
 			}
 
-			fields_llvm_types.emplace_back( out_field.type.GetLLVMType() );
+			if( out_field.is_reference )
+				fields_llvm_types.emplace_back( llvm::PointerType::get( out_field.type.GetLLVMType(), 0u ) );
+			else
+				fields_llvm_types.emplace_back( out_field.type.GetLLVMType() );
 
 			if( NameShadowsTemplateArgument( in_field->name, the_class->members ) )
 				errors_.push_back( ReportDeclarationShadowsTemplateArgument( in_field->file_pos_, in_field->name ) );
@@ -1070,7 +1079,7 @@ void CodeBuilder::CallMembersDestructors( FunctionContext& function_context )
 		[&]( const NamesScope::InsertedName& member )
 		{
 			const ClassField* const field= member.second.GetClassField();
-			if( field == nullptr || !field->type.HaveDestructor() )
+			if( field == nullptr || field->is_reference || !field->type.HaveDestructor() )
 				return;
 
 			llvm::Value* index_list[2];
@@ -2006,18 +2015,25 @@ void CodeBuilder::BuildConstructorInitialization(
 		const ClassField* const field= class_member->second.GetClassField();
 		U_ASSERT( field != nullptr );
 
-		Variable field_variable;
-		field_variable.type= field->type;
-		field_variable.location= Variable::Location::Pointer;
-		field_variable.value_type= ValueType::Reference;
+		if( field->is_reference )
+		{
+			errors_.push_back( ReportExpectedInitializer( class_member->second.GetFilePos(), field_name ) );
+		}
+		else
+		{
+			Variable field_variable;
+			field_variable.type= field->type;
+			field_variable.location= Variable::Location::Pointer;
+			field_variable.value_type= ValueType::Reference;
 
-		llvm::Value* index_list[2];
-		index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
-		index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(field->index) ) );
-		field_variable.llvm_value=
-			function_context.llvm_ir_builder.CreateGEP( this_.llvm_value, llvm::ArrayRef<llvm::Value*> ( index_list, 2u ) );
+			llvm::Value* index_list[2];
+			index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
+			index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(field->index) ) );
+			field_variable.llvm_value=
+				function_context.llvm_ir_builder.CreateGEP( this_.llvm_value, llvm::ArrayRef<llvm::Value*> ( index_list, 2u ) );
 
-		ApplyEmptyInitializer( field_name, constructor_initialization_list.file_pos_, field_variable, function_context );
+			ApplyEmptyInitializer( field_name, constructor_initialization_list.file_pos_, field_variable, function_context );
+		}
 	}
 
 	if( have_fields_errors )
@@ -2031,19 +2047,24 @@ void CodeBuilder::BuildConstructorInitialization(
 		const ClassField* const field= class_member->second.GetClassField();
 		U_ASSERT( field != nullptr );
 
-		Variable field_variable;
-		field_variable.type= field->type;
-		field_variable.location= Variable::Location::Pointer;
-		field_variable.value_type= ValueType::Reference;
+		if( field->is_reference )
+			InitializeReferenceField( this_, *field, *field_initializer.initializer, names_scope, function_context );
+		else
+		{
+			Variable field_variable;
+			field_variable.type= field->type;
+			field_variable.location= Variable::Location::Pointer;
+			field_variable.value_type= ValueType::Reference;
 
-		llvm::Value* index_list[2];
-		index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
-		index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(field->index) ) );
-		field_variable.llvm_value=
-			function_context.llvm_ir_builder.CreateGEP( this_.llvm_value, llvm::ArrayRef<llvm::Value*> ( index_list, 2u ) );
+			llvm::Value* index_list[2];
+			index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
+			index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(field->index) ) );
+			field_variable.llvm_value=
+				function_context.llvm_ir_builder.CreateGEP( this_.llvm_value, llvm::ArrayRef<llvm::Value*> ( index_list, 2u ) );
 
-		U_ASSERT( field_initializer.initializer != nullptr );
-		ApplyInitializer( field_variable, *field_initializer.initializer, names_scope, function_context );
+			U_ASSERT( field_initializer.initializer != nullptr );
+			ApplyInitializer( field_variable, *field_initializer.initializer, names_scope, function_context );
+		}
 
 		function_context.uninitialized_this_fields.erase( field );
 	} // for fields initializers

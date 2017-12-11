@@ -498,6 +498,13 @@ private:
 		NamesScope& block_names,
 		FunctionContext& function_context );
 
+	void InitializeReferenceField(
+		const Variable& variable,
+		const ClassField& field,
+		const Synt::IInitializer& initializer,
+		NamesScope& block_names,
+		FunctionContext& function_context );
+
 	// Reference-checking.
 	void CheckReferencedVariables( const Variable& reference, const FilePos& file_pos );
 	std::vector<VariableStorageUseCounter> LockReferencedVariables( const Variable& reference );

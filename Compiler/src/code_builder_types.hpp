@@ -262,6 +262,8 @@ struct ClassField final
 	Type type;
 	unsigned int index= 0u;
 	ClassProxyWeakPtr class_;
+	bool is_reference= false;
+	bool is_mutable= true;
 };
 
 // "this" + functions set of class of "this"

@@ -579,6 +579,8 @@ public:
 
 	TypeName type;
 	ProgramString name;
+	MutabilityModifier mutability_modifier= MutabilityModifier::None;
+	ReferenceModifier reference_modifier= ReferenceModifier::None;
 };
 
 class Class final

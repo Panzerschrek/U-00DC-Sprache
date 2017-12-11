@@ -51,7 +51,7 @@ void CodeBuilder::TryGenerateDefaultConstructor( Class& the_class, const Type& c
 			if( field == nullptr )
 				return;
 
-			if( !field->type.IsDefaultConstructible() )
+			if( field->is_reference || !field->type.IsDefaultConstructible() )
 				all_fields_is_default_constructible= false;
 		} );
 
@@ -176,7 +176,7 @@ void CodeBuilder::TryGenerateCopyConstructor( Class& the_class, const Type& clas
 			if( field == nullptr )
 				return;
 
-			if( !field->type.IsCopyConstructible() )
+			if( !field->is_reference && !field->type.IsCopyConstructible() )
 				all_fields_is_copy_constructible= false;
 		} );
 
@@ -233,17 +233,24 @@ void CodeBuilder::TryGenerateCopyConstructor( Class& the_class, const Type& clas
 			const ClassField* const field= member.second.GetClassField();
 			if( field == nullptr )
 				return;
-			U_ASSERT( field->type.IsCopyConstructible() );
 
 			llvm::Value* index_list[2];
 			index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
 			index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(field->index) ) );
+			llvm::Value* const src= function_context.llvm_ir_builder.CreateGEP( src_llvm_value , llvm::ArrayRef<llvm::Value*>( index_list, 2u ) );
+			llvm::Value* const dst= function_context.llvm_ir_builder.CreateGEP( this_llvm_value, llvm::ArrayRef<llvm::Value*>( index_list, 2u ) );
 
-			BuildCopyConstructorPart(
-				function_context.llvm_ir_builder.CreateGEP( src_llvm_value , llvm::ArrayRef<llvm::Value*>( index_list, 2u ) ),
-				function_context.llvm_ir_builder.CreateGEP( this_llvm_value, llvm::ArrayRef<llvm::Value*>( index_list, 2u ) ),
-				field->type,
-				function_context );
+			if( field->is_reference )
+			{
+				// Create simple load-store for references.
+				llvm::Value* const val= function_context.llvm_ir_builder.CreateLoad( src );
+				function_context.llvm_ir_builder.CreateStore( val, dst );
+			}
+			else
+			{
+				U_ASSERT( field->type.IsCopyConstructible() );
+				BuildCopyConstructorPart( src, dst, field->type, function_context );
+			}
 
 		} ); // For fields.
 
@@ -394,7 +401,8 @@ void CodeBuilder::TryGenerateCopyAssignmentOperator( Class& the_class, const Typ
 			if( field == nullptr )
 				return;
 
-			if( !field->type.IsCopyAssignable() )
+			// We can not generate assignment operator for classes with references.
+			if( field->is_reference || !field->type.IsCopyAssignable() )
 				all_fields_is_copy_assignable= false;
 		} );
 
