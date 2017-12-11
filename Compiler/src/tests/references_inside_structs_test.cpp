@@ -99,4 +99,31 @@ U_TEST( StructsWithReferencesHaveNoGeneratedDefaultConstructor )
 	U_TEST_ASSERT( error.file_pos.line == 9u );
 }
 
+U_TEST( GeneratedCopyConstructorForStructsWithReferencesTest )
+{
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			i32 &mut r;
+		}
+
+		fn Foo() : i32
+		{
+			auto mut x= 54745;
+			var S s0{ .r= x };
+			var S s1( s0 ); // Should correctly call generated copy cosntructor.
+			return s1.r;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	const llvm::GenericValue result_value= engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( static_cast<uint64_t>( 54745 ) == result_value.IntVal.getLimitedValue() );
+}
+
 } // namespace U
