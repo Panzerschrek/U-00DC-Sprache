@@ -156,4 +156,31 @@ U_TEST( InitializingReferencesInsideStructsInConstructorInitializerList )
 	U_TEST_ASSERT( static_cast<uint64_t>( 1124578 ) == result_value.IntVal.getLimitedValue() );
 }
 
+U_TEST( AccessingReferenceInsideMethodUsingImplicitThis )
+{
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			i32 &imut x;
+			fn GetX( imut this ) : i32 { return x; }
+		}
+
+		fn Foo() : i32
+		{
+			auto mut x= 954365;
+			var S s{ .x= x };
+			return s.GetX();
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	const llvm::GenericValue result_value= engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( static_cast<uint64_t>( 954365 ) == result_value.IntVal.getLimitedValue() );
+}
+
 } // namespace U
