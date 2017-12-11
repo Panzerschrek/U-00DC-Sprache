@@ -1079,7 +1079,7 @@ void CodeBuilder::CallMembersDestructors( FunctionContext& function_context )
 		[&]( const NamesScope::InsertedName& member )
 		{
 			const ClassField* const field= member.second.GetClassField();
-			if( field == nullptr || !field->type.HaveDestructor() )
+			if( field == nullptr || field->is_reference || !field->type.HaveDestructor() )
 				return;
 
 			llvm::Value* index_list[2];
