@@ -51,7 +51,7 @@ void CodeBuilder::TryGenerateDefaultConstructor( Class& the_class, const Type& c
 			if( field == nullptr )
 				return;
 
-			if( !field->type.IsDefaultConstructible() )
+			if( field->is_reference || !field->type.IsDefaultConstructible() )
 				all_fields_is_default_constructible= false;
 		} );
 

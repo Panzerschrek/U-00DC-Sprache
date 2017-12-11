@@ -75,4 +75,28 @@ U_TEST( CopyAssignmentOperatorForStructsWithReferencesDeleted )
 	U_TEST_ASSERT( error.file_pos.line == 12u );
 }
 
+U_TEST( StructsWithReferencesHaveNoGeneratedDefaultConstructor )
+{
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			i32 &mut r;
+		}
+
+		fn Foo()
+		{
+			var S s; // Needs connstructor or initializer.
+		}
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedInitializer );
+	U_TEST_ASSERT( error.file_pos.line == 9u );
+}
+
 } // namespace U
