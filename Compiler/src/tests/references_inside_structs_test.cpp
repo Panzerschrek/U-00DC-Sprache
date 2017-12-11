@@ -126,4 +126,34 @@ U_TEST( GeneratedCopyConstructorForStructsWithReferencesTest )
 	U_TEST_ASSERT( static_cast<uint64_t>( 54745 ) == result_value.IntVal.getLimitedValue() );
 }
 
+U_TEST( InitializingReferencesInsideStructsInConstructorInitializerList )
+{
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			f32 dummy;
+			i32 &mut r;
+			fn constructor ( i32 &mut in_r )
+			( r= in_r, dummy(0.0f) )
+			{}
+		}
+
+		fn Foo() : i32
+		{
+			auto mut x= 1124578;
+			var S s( x );
+			return s.r;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	const llvm::GenericValue result_value= engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( static_cast<uint64_t>( 1124578 ) == result_value.IntVal.getLimitedValue() );
+}
+
 } // namespace U

@@ -261,6 +261,30 @@ U_TEST( ExpectedInitializer_InConstructors_Test0 )
 	U_TEST_ASSERT( error.file_pos.line == 7u );
 }
 
+U_TEST( ExpectedInitializer_InConstructors_Test1 )
+{
+	// Expected initializer for reference type
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			i32 & x;
+			i32 y;
+			fn constructor()
+			( y(0) ) // x left uninitialized
+			{}
+		}
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedInitializer );
+	U_TEST_ASSERT( error.file_pos.line == 4u );
+}
+
 U_TEST( InitializerForNonfieldStructMember_InConstructors_Test0 )
 {
 	static const char c_program_text[]=
