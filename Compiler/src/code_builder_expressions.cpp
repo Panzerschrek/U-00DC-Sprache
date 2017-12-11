@@ -1362,6 +1362,14 @@ Value CodeBuilder::BuildMemberAccessOperator(
 	result.type= field->type;
 	result.llvm_value=
 		function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, index_list );
+
+	if( field->is_reference )
+	{
+		result.value_type= field->is_mutable ? ValueType::Reference : ValueType::ConstReference;
+		result.llvm_value= function_context.llvm_ir_builder.CreateLoad( result.llvm_value );
+		// TODO - porcess referenced variables here.
+	}
+
 	return Value( result, member_access_operator.file_pos_ );
 }
 

@@ -241,13 +241,70 @@ void CodeBuilder::ApplyStructNamedInitializer(
 
 		initialized_members_names.insert( member_initializer.name );
 
-		struct_member.type= field->type;
-		index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(field->index) ) );
-		struct_member.llvm_value=
-			function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, llvm::ArrayRef<llvm::Value*> ( index_list, 2u ) );
+		if( field->is_reference )
+		{
+			const Synt::IExpressionComponent* initializer_expression= nullptr;
+			if( const auto expression_initializer=
+				dynamic_cast<const Synt::ExpressionInitializer*>( member_initializer.initializer.get() ) )
+			{
+				initializer_expression= expression_initializer->expression.get();
+			}
+			else if( const auto constructor_initializer=
+				dynamic_cast<const Synt::ConstructorInitializer*>( member_initializer.initializer.get() ) )
+			{
+				if( constructor_initializer->call_operator.arguments_.size() != 1u )
+				{
+					errors_.push_back( ReportReferencesHaveConstructorsWithExactlyOneParameter( constructor_initializer->file_pos_ ) );
+					continue;
+				}
+				initializer_expression= constructor_initializer->call_operator.arguments_.front().get();
+			}
+			else
+			{
+				errors_.push_back( ReportUnsupportedInitializerForReference( member_initializer.initializer->GetFilePos() ) );
+				continue;
+			}
 
-		U_ASSERT( member_initializer.initializer != nullptr );
-		ApplyInitializer( struct_member, *member_initializer.initializer, block_names, function_context );
+			// SPRACHE_TODO - maybe we need save temporaries of this expression?
+			const Value initializer_value= BuildExpressionCodeAndDestroyTemporaries( *initializer_expression, block_names, function_context );
+			if( initializer_value.GetTemplateDependentValue() != nullptr )
+				continue;
+
+			const Variable* const initializer_variable= initializer_value.GetVariable();
+			if( initializer_variable == nullptr )
+			{
+				errors_.push_back( ReportExpectedVariable( initializer_expression->GetFilePos(), initializer_value.GetType().ToString() ) );
+				continue;
+			}
+
+			if( field->type.GetTemplateDependentType() != nullptr )
+				continue;
+			if( initializer_variable->value_type == ValueType::Value )
+			{
+				errors_.push_back( ReportExpectedReferenceValue( initializer_expression->GetFilePos() ) );
+				continue;
+			}
+			U_ASSERT( initializer_variable->location == Variable::Location::Pointer );
+
+			// TODO - check mutability correctness
+			// TODO - collect referenced variables
+
+			index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(field->index) ) );
+			llvm::Value* const address_of_reference=
+				function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, llvm::ArrayRef<llvm::Value*> ( index_list, 2u ) );
+
+			function_context.llvm_ir_builder.CreateStore( initializer_variable->llvm_value, address_of_reference );
+		}
+		else
+		{
+			struct_member.type= field->type;
+			index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(field->index) ) );
+			struct_member.llvm_value=
+				function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, llvm::ArrayRef<llvm::Value*> ( index_list, 2u ) );
+
+			U_ASSERT( member_initializer.initializer != nullptr );
+			ApplyInitializer( struct_member, *member_initializer.initializer, block_names, function_context );
+		}
 	}
 
 	U_ASSERT( initialized_members_names.size() <= class_type->field_count );
@@ -258,11 +315,16 @@ void CodeBuilder::ApplyStructNamedInitializer(
 			{
 				if( initialized_members_names.count( class_member.first ) == 0 )
 				{
-					struct_member.type= field->type;
-					index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(field->index) ) );
-					struct_member.llvm_value=
-						function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, llvm::ArrayRef<llvm::Value*> ( index_list, 2u ) );
-					ApplyEmptyInitializer( class_member.first, initializer.file_pos_, struct_member, function_context );
+					if( field->is_reference )
+						errors_.push_back( ReportExpectedInitializer( class_member.second.GetFilePos(), class_member.first ) ); // References is not default-constructible.
+					else
+					{
+						struct_member.type= field->type;
+						index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(field->index) ) );
+						struct_member.llvm_value=
+							function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, llvm::ArrayRef<llvm::Value*> ( index_list, 2u ) );
+						ApplyEmptyInitializer( class_member.first, initializer.file_pos_, struct_member, function_context );
+					}
 				}
 			}
 		});

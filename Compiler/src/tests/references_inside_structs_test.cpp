@@ -22,4 +22,30 @@ U_TEST( ReferenceClassFiledDeclaration )
 	BuildProgram( c_program_text );
 }
 
+U_TEST( BasicReferenceInsideClassUsage )
+{
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			i32 &mut r;
+		}
+
+		fn Foo() : i32
+		{
+			auto mut x= 42;
+			var S s{ .r= x };
+			return s.r;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	const llvm::GenericValue result_value= engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( static_cast<uint64_t>( 42 ) == result_value.IntVal.getLimitedValue() );
+}
+
 } // namespace U
