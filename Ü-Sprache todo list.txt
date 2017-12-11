@@ -5,6 +5,7 @@ When feature was implemented, delete it from list.
 Common:
 *) public/private/protected for class/struct members
 *) sizeof operator
+*) Immutable fields
 *) raw_pointer
 *) Inheritance and virtual methods
 *) Unsafe
@@ -16,7 +17,7 @@ Common:
 *) Dereference operator - for pointer-like classes
 
 References:
-*) References inside struct/class
+*) Reference-checking for references, inside structs
 *) Tags for struct/class references
 *) Separate references checking for struct members - add possibility to have two mutable references
 	for two different members of one struct value.
