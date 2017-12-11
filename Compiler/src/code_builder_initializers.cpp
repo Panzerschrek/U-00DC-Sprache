@@ -730,7 +730,11 @@ void CodeBuilder::InitializeReferenceField(
 	}
 	U_ASSERT( initializer_variable->location == Variable::Location::Pointer );
 
-	// TODO - check mutability correctness
+	if( field.is_mutable && initializer_variable->value_type == ValueType::ConstReference )
+	{
+		errors_.push_back( ReportBindingConstReferenceToNonconstReference( initializer_expression->GetFilePos() ) );
+		return;
+	}
 	// TODO - collect referenced variables
 
 	// Make first index = 0 for array to pointer conversion.
