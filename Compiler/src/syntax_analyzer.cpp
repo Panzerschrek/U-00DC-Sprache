@@ -2262,8 +2262,28 @@ std::unique_ptr<Class> SyntaxAnalyzer::ParseClassBody()
 			std::unique_ptr<ClassField> field( new ClassField( it_->file_pos ) );
 
 			field->type= ParseTypeName();
-
 			U_ASSERT( it_ < it_end_ );
+
+			if( it_->type == Lexem::Type::And )
+			{
+				++it_; U_ASSERT( it_ < it_end_ );
+				field->reference_modifier= ReferenceModifier::Reference;
+			}
+
+			if( it_->type == Lexem::Type::Identifier )
+			{
+				if( it_->text == Keywords::mut_ )
+				{
+					++it_; U_ASSERT( it_ < it_end_ );
+					field->mutability_modifier= MutabilityModifier::Mutable;
+				}
+				if( it_->text == Keywords::imut_ )
+				{
+					++it_; U_ASSERT( it_ < it_end_ );
+					field->mutability_modifier= MutabilityModifier::Immutable;
+				}
+			}
+
 			if( it_->type != Lexem::Type::Identifier )
 			{
 				PushErrorMessage( *it_ );
