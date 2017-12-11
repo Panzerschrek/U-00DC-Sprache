@@ -2048,62 +2048,7 @@ void CodeBuilder::BuildConstructorInitialization(
 		U_ASSERT( field != nullptr );
 
 		if( field->is_reference )
-		{
-			// TODO - move reference initialization code to one place
-			const Synt::IExpressionComponent* initializer_expression= nullptr;
-			if( const auto expression_initializer=
-				dynamic_cast<const Synt::ExpressionInitializer*>( field_initializer.initializer.get() ) )
-			{
-				initializer_expression= expression_initializer->expression.get();
-			}
-			else if( const auto constructor_initializer=
-				dynamic_cast<const Synt::ConstructorInitializer*>( field_initializer.initializer.get() ) )
-			{
-				if( constructor_initializer->call_operator.arguments_.size() != 1u )
-				{
-					errors_.push_back( ReportReferencesHaveConstructorsWithExactlyOneParameter( constructor_initializer->file_pos_ ) );
-					continue;
-				}
-				initializer_expression= constructor_initializer->call_operator.arguments_.front().get();
-			}
-			else
-			{
-				errors_.push_back( ReportUnsupportedInitializerForReference( field_initializer.initializer->GetFilePos() ) );
-				continue;
-			}
-
-			// SPRACHE_TODO - maybe we need save temporaries of this expression?
-			const Value initializer_value= BuildExpressionCodeAndDestroyTemporaries( *initializer_expression, names_scope, function_context );
-			if( initializer_value.GetTemplateDependentValue() != nullptr )
-				continue;
-
-			const Variable* const initializer_variable= initializer_value.GetVariable();
-			if( initializer_variable == nullptr )
-			{
-				errors_.push_back( ReportExpectedVariable( initializer_expression->GetFilePos(), initializer_value.GetType().ToString() ) );
-				continue;
-			}
-
-			if( field->type.GetTemplateDependentType() != nullptr )
-				continue;
-			if( initializer_variable->value_type == ValueType::Value )
-			{
-				errors_.push_back( ReportExpectedReferenceValue( initializer_expression->GetFilePos() ) );
-				continue;
-			}
-			U_ASSERT( initializer_variable->location == Variable::Location::Pointer );
-
-			// TODO - check mutability correctness
-			// TODO - collect referenced variables
-
-			llvm::Value* index_list[2];
-			index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
-			index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(field->index) ) );
-			llvm::Value* const address_of_reference=
-				function_context.llvm_ir_builder.CreateGEP( this_.llvm_value, llvm::ArrayRef<llvm::Value*> ( index_list, 2u ) );
-
-			function_context.llvm_ir_builder.CreateStore( initializer_variable->llvm_value, address_of_reference );
-		}
+			InitializeReferenceField( this_, *field, *field_initializer.initializer, names_scope, function_context );
 		else
 		{
 			Variable field_variable;

@@ -242,59 +242,7 @@ void CodeBuilder::ApplyStructNamedInitializer(
 		initialized_members_names.insert( member_initializer.name );
 
 		if( field->is_reference )
-		{
-			const Synt::IExpressionComponent* initializer_expression= nullptr;
-			if( const auto expression_initializer=
-				dynamic_cast<const Synt::ExpressionInitializer*>( member_initializer.initializer.get() ) )
-			{
-				initializer_expression= expression_initializer->expression.get();
-			}
-			else if( const auto constructor_initializer=
-				dynamic_cast<const Synt::ConstructorInitializer*>( member_initializer.initializer.get() ) )
-			{
-				if( constructor_initializer->call_operator.arguments_.size() != 1u )
-				{
-					errors_.push_back( ReportReferencesHaveConstructorsWithExactlyOneParameter( constructor_initializer->file_pos_ ) );
-					continue;
-				}
-				initializer_expression= constructor_initializer->call_operator.arguments_.front().get();
-			}
-			else
-			{
-				errors_.push_back( ReportUnsupportedInitializerForReference( member_initializer.initializer->GetFilePos() ) );
-				continue;
-			}
-
-			// SPRACHE_TODO - maybe we need save temporaries of this expression?
-			const Value initializer_value= BuildExpressionCodeAndDestroyTemporaries( *initializer_expression, block_names, function_context );
-			if( initializer_value.GetTemplateDependentValue() != nullptr )
-				continue;
-
-			const Variable* const initializer_variable= initializer_value.GetVariable();
-			if( initializer_variable == nullptr )
-			{
-				errors_.push_back( ReportExpectedVariable( initializer_expression->GetFilePos(), initializer_value.GetType().ToString() ) );
-				continue;
-			}
-
-			if( field->type.GetTemplateDependentType() != nullptr )
-				continue;
-			if( initializer_variable->value_type == ValueType::Value )
-			{
-				errors_.push_back( ReportExpectedReferenceValue( initializer_expression->GetFilePos() ) );
-				continue;
-			}
-			U_ASSERT( initializer_variable->location == Variable::Location::Pointer );
-
-			// TODO - check mutability correctness
-			// TODO - collect referenced variables
-
-			index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(field->index) ) );
-			llvm::Value* const address_of_reference=
-				function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, llvm::ArrayRef<llvm::Value*> ( index_list, 2u ) );
-
-			function_context.llvm_ir_builder.CreateStore( initializer_variable->llvm_value, address_of_reference );
-		}
+			InitializeReferenceField( variable, *field, *member_initializer.initializer, block_names, function_context );
 		else
 		{
 			struct_member.type= field->type;
@@ -727,6 +675,72 @@ llvm::Constant* CodeBuilder::ApplyZeroInitializer(
 		U_ASSERT( false );
 
 	return nullptr;
+}
+
+void CodeBuilder::InitializeReferenceField(
+	const Variable& variable,
+	const ClassField& field,
+	const Synt::IInitializer& initializer,
+	NamesScope& block_names,
+	FunctionContext& function_context )
+{
+	U_ASSERT( variable.type.GetClassType() != nullptr );
+	U_ASSERT( variable.type.GetClassTypeProxy() == field.class_.lock() );
+
+	const Synt::IExpressionComponent* initializer_expression= nullptr;
+	if( const auto expression_initializer=
+		dynamic_cast<const Synt::ExpressionInitializer*>( &initializer ) )
+	{
+		initializer_expression= expression_initializer->expression.get();
+	}
+	else if( const auto constructor_initializer=
+		dynamic_cast<const Synt::ConstructorInitializer*>( &initializer ) )
+	{
+		if( constructor_initializer->call_operator.arguments_.size() != 1u )
+		{
+			errors_.push_back( ReportReferencesHaveConstructorsWithExactlyOneParameter( constructor_initializer->file_pos_ ) );
+			return;
+		}
+		initializer_expression= constructor_initializer->call_operator.arguments_.front().get();
+	}
+	else
+	{
+		errors_.push_back( ReportUnsupportedInitializerForReference( initializer.GetFilePos() ) );
+		return;
+	}
+
+	// SPRACHE_TODO - maybe we need save temporaries of this expression?
+	const Value initializer_value= BuildExpressionCodeAndDestroyTemporaries( *initializer_expression, block_names, function_context );
+	if( initializer_value.GetTemplateDependentValue() != nullptr )
+		return;
+
+	const Variable* const initializer_variable= initializer_value.GetVariable();
+	if( initializer_variable == nullptr )
+	{
+		errors_.push_back( ReportExpectedVariable( initializer_expression->GetFilePos(), initializer_value.GetType().ToString() ) );
+		return;
+	}
+
+	if( field.type.GetTemplateDependentType() != nullptr )
+		return;
+	if( initializer_variable->value_type == ValueType::Value )
+	{
+		errors_.push_back( ReportExpectedReferenceValue( initializer_expression->GetFilePos() ) );
+		return;
+	}
+	U_ASSERT( initializer_variable->location == Variable::Location::Pointer );
+
+	// TODO - check mutability correctness
+	// TODO - collect referenced variables
+
+	// Make first index = 0 for array to pointer conversion.
+	llvm::Value* index_list[2];
+	index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
+	index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(field.index) ) );
+	llvm::Value* const address_of_reference=
+		function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, llvm::ArrayRef<llvm::Value*> ( index_list, 2u ) );
+
+	function_context.llvm_ir_builder.CreateStore( initializer_variable->llvm_value, address_of_reference );
 }
 
 } // namespace CodeBuilderPrivate
