@@ -644,14 +644,23 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 			out_field.type= PrepareType( in_field->file_pos_, in_field->type, the_class->members );
 			out_field.index= the_class->field_count;
 			out_field.class_= the_class_proxy;
+			out_field.is_reference= in_field->reference_modifier == Synt::ReferenceModifier::Reference;
 
-			if( out_field.type.IsIncomplete() )
+			if( out_field.is_reference ) // Reference-fields are immutable by default
+				out_field.is_mutable= in_field->mutability_modifier == Synt::MutabilityModifier::Mutable;
+			else // But value-fields are immutable by default
+				out_field.is_mutable= in_field->mutability_modifier != Synt::MutabilityModifier::Immutable;
+
+			if( !out_field.is_reference && out_field.type.IsIncomplete() )
 			{
 				errors_.push_back( ReportUsingIncompleteType( class_declaration.file_pos_, out_field.type.ToString() ) );
 				continue;
 			}
 
-			fields_llvm_types.emplace_back( out_field.type.GetLLVMType() );
+			if( out_field.is_reference )
+				fields_llvm_types.emplace_back( llvm::PointerType::get( out_field.type.GetLLVMType(), 0u ) );
+			else
+				fields_llvm_types.emplace_back( out_field.type.GetLLVMType() );
 
 			if( NameShadowsTemplateArgument( in_field->name, the_class->members ) )
 				errors_.push_back( ReportDeclarationShadowsTemplateArgument( in_field->file_pos_, in_field->name ) );
