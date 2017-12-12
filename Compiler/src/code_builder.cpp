@@ -1856,6 +1856,7 @@ void CodeBuilder::BuildFuncCode(
 		const StoredVariablePtr var_storage= std::make_shared<StoredVariable>( var, false );
 		var.referenced_variables.emplace(var_storage);
 
+		// For reference arguments try add reference to list of allowed for returning references.
 		if( arg.is_reference && function_type->return_value_is_reference )
 		{
 			for( const size_t arg_n : function_type->return_reference_args )
@@ -1864,6 +1865,28 @@ void CodeBuilder::BuildFuncCode(
 				{
 					function_context.allowed_for_returning_references.emplace(var_storage);
 					break;
+				}
+			}
+		}
+		// For arguments with references inside create variable storage, mark it, if needed, as allowed for return.
+		if( arg.type.ReferencesTagsCount() > 0u )
+		{
+			U_ASSERT( arg.type.ReferencesTagsCount() == 1u ); // Currently, support 0 or 1 tags.
+
+			Variable dummy_variable;
+			const StoredVariablePtr inner_variable = std::make_shared<StoredVariable>( dummy_variable, false );
+			var_storage->referenced_variables.emplace( inner_variable );
+			// Do not lock it, because for function this inner reference looks like variable.
+
+			if( function_type->return_value_is_reference )
+			{
+				for( const std::pair<size_t, size_t>& arg_and_tag : function_type->return_reference_inner_args )
+				{
+					if( arg_and_tag.first == arg_number && arg_and_tag.second == 0u )
+					{
+						function_context.allowed_for_returning_references.emplace( inner_variable );
+						break;
+					}
 				}
 			}
 		}

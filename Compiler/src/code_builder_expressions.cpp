@@ -1037,7 +1037,13 @@ Value CodeBuilder::BuildNamedOperand(
 		{
 			field_variable.value_type= field->is_mutable ? ValueType::Reference : ValueType::ConstReference;
 			field_variable.llvm_value= function_context.llvm_ir_builder.CreateLoad( field_variable.llvm_value );
-			// TODO - porcess referenced variables here.
+
+			field_variable.referenced_variables.clear();
+			for( const StoredVariablePtr& struct_variable : function_context.this_->referenced_variables )
+			{
+				for( const StoredVariablePtr& referenced_variable : struct_variable->referenced_variables )
+					field_variable.referenced_variables.insert( referenced_variable );
+			}
 		}
 
 		return Value( field_variable, named_operand.file_pos_ );
@@ -1374,7 +1380,13 @@ Value CodeBuilder::BuildMemberAccessOperator(
 	{
 		result.value_type= field->is_mutable ? ValueType::Reference : ValueType::ConstReference;
 		result.llvm_value= function_context.llvm_ir_builder.CreateLoad( result.llvm_value );
-		// TODO - porcess referenced variables here.
+
+		result.referenced_variables.clear();
+		for( const StoredVariablePtr& struct_variable : variable.referenced_variables )
+		{
+			for( const StoredVariablePtr& referenced_variable : struct_variable->referenced_variables )
+				result.referenced_variables.insert( referenced_variable );
+		}
 	}
 
 	return Value( result, member_access_operator.file_pos_ );
