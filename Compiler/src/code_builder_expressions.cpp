@@ -1764,10 +1764,15 @@ Variable CodeBuilder::BuildTempVariableConstruction(
 	variable.location= Variable::Location::Pointer;
 	variable.value_type= ValueType::Reference;
 	variable.llvm_value= function_context.alloca_ir_builder.CreateAlloca( type.GetLLVMType() );
-	variable.constexpr_value= ApplyConstructorInitializer( variable, call_operator, names, function_context );
+
+	StoredVariable variable_storage_for_initialization( variable );
+	variable.constexpr_value= ApplyConstructorInitializer( variable, variable_storage_for_initialization, call_operator, names, function_context );
 	variable.value_type= ValueType::Value; // Make value after construction
 
 	const StoredVariablePtr stored_variable= std::make_shared<StoredVariable>( variable );
+	stored_variable->referenced_variables= std::move( variable_storage_for_initialization.referenced_variables );
+	stored_variable->locked_referenced_variables= std::move( variable_storage_for_initialization.locked_referenced_variables );
+
 	variable.referenced_variables.emplace( stored_variable );
 
 	function_context.stack_variables_stack.back()->RegisterVariable( stored_variable );

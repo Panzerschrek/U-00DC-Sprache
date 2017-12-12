@@ -973,6 +973,15 @@ void CodeBuilder::CallDestructorsImpl(
 		}
 		else
 		{
+			// Increment coounter of destroyed reference for referenced variables of references inside this variable.
+			for( const StoredVariablePtr& referenced_variable : stored_variable.referenced_variables )
+			{
+				if( destroyed_variable_references.find( referenced_variable ) == destroyed_variable_references.end() )
+					destroyed_variable_references[ referenced_variable ]= 1u;
+				else
+					++destroyed_variable_references[ referenced_variable ];
+			}
+
 			// Check references.
 			U_ASSERT( stored_variable.imut_use_counter.use_count() >= 1u && stored_variable.mut_use_counter.use_count() >= 1u );
 
@@ -2047,8 +2056,10 @@ void CodeBuilder::BuildConstructorInitialization(
 		const ClassField* const field= class_member->second.GetClassField();
 		U_ASSERT( field != nullptr );
 
+		U_ASSERT( this_.referenced_variables.size() == 1u );
+		StoredVariable& this_storage= **this_.referenced_variables.begin();
 		if( field->is_reference )
-			InitializeReferenceField( this_, *field, *field_initializer.initializer, names_scope, function_context );
+			InitializeReferenceField( this_, this_storage, *field, *field_initializer.initializer, names_scope, function_context );
 		else
 		{
 			Variable field_variable;
@@ -2063,7 +2074,7 @@ void CodeBuilder::BuildConstructorInitialization(
 				function_context.llvm_ir_builder.CreateGEP( this_.llvm_value, llvm::ArrayRef<llvm::Value*> ( index_list, 2u ) );
 
 			U_ASSERT( field_initializer.initializer != nullptr );
-			ApplyInitializer( field_variable, *field_initializer.initializer, names_scope, function_context );
+			ApplyInitializer( field_variable, this_storage, *field_initializer.initializer, names_scope, function_context );
 		}
 
 		function_context.uninitialized_this_fields.erase( field );
@@ -2281,10 +2292,12 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 		variable.location= Variable::Location::Pointer;
 		variable.value_type= ValueType::Reference;
 
+		StoredVariable variable_storage_for_initialization( variable );
+
 		if( type.GetTemplateDependentType() != nullptr )
 		{
 			if( variable_declaration.initializer != nullptr )
-				ApplyInitializer( variable, *variable_declaration.initializer, block_names, function_context );
+				ApplyInitializer( variable, variable_storage_for_initialization, *variable_declaration.initializer, block_names, function_context );
 		}
 		else if( variable_declaration.reference_modifier == ReferenceModifier::None )
 		{
@@ -2302,7 +2315,7 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 
 			if( variable_declaration.initializer != nullptr )
 				variable.constexpr_value=
-					ApplyInitializer( variable, *variable_declaration.initializer, block_names, function_context );
+					ApplyInitializer( variable, variable_storage_for_initialization, *variable_declaration.initializer, block_names, function_context );
 			else
 				ApplyEmptyInitializer( variable_declaration.name, variables_declaration.file_pos_, variable, function_context );
 
@@ -2414,6 +2427,11 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 		{
 			stored_variable->locked_referenced_variables= LockReferencedVariables( variable );
 			CheckReferencedVariables( variable, variable_declaration.file_pos );
+		}
+		else
+		{
+			stored_variable->referenced_variables= std::move( variable_storage_for_initialization.referenced_variables );
+			stored_variable->locked_referenced_variables= std::move( variable_storage_for_initialization.locked_referenced_variables );
 		}
 
 		const NamesScope::InsertedName* const inserted_name=

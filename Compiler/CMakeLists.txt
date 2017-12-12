@@ -129,6 +129,7 @@ set( TESTS_SOURCES
 	src/tests/operators_priority_test.cpp
 	src/tests/operators_test.cpp
 	src/tests/reference_check_test.cpp
+	src/tests/reference_check_for_structs_test.cpp
 	src/tests/references_inside_structs_errors_test.cpp
 	src/tests/references_inside_structs_test.cpp
 	src/tests/references_tags_test.cpp

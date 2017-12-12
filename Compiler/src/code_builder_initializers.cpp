@@ -19,6 +19,7 @@ namespace CodeBuilderPrivate
 
 llvm::Constant* CodeBuilder::ApplyInitializer(
 	const Variable& variable,
+	StoredVariable& variable_storage,
 	const Synt::IInitializer& initializer,
 	NamesScope& block_names,
 	FunctionContext& function_context )
@@ -26,22 +27,22 @@ llvm::Constant* CodeBuilder::ApplyInitializer(
 	if( const auto array_initializer=
 		dynamic_cast<const Synt::ArrayInitializer*>(&initializer) )
 	{
-		return ApplyArrayInitializer( variable, *array_initializer, block_names, function_context );
+		return ApplyArrayInitializer( variable, variable_storage, *array_initializer, block_names, function_context );
 	}
 	else if( const auto struct_named_initializer=
 		dynamic_cast<const Synt::StructNamedInitializer*>(&initializer) )
 	{
-		ApplyStructNamedInitializer( variable, *struct_named_initializer, block_names, function_context );
+		ApplyStructNamedInitializer( variable, variable_storage, *struct_named_initializer, block_names, function_context );
 	}
 	else if( const auto constructor_initializer=
 		dynamic_cast<const Synt::ConstructorInitializer*>(&initializer) )
 	{
-		return ApplyConstructorInitializer( variable, constructor_initializer->call_operator, block_names, function_context );
+		return ApplyConstructorInitializer( variable, variable_storage, constructor_initializer->call_operator, block_names, function_context );
 	}
 	else if( const auto expression_initializer=
 		dynamic_cast<const Synt::ExpressionInitializer*>(&initializer) )
 	{
-		return ApplyExpressionInitializer( variable, *expression_initializer, block_names, function_context );
+		return ApplyExpressionInitializer( variable, variable_storage, *expression_initializer, block_names, function_context );
 	}
 	else if( const auto zero_initializer=
 		dynamic_cast<const Synt::ZeroInitializer*>(&initializer) )
@@ -118,6 +119,7 @@ void CodeBuilder::ApplyEmptyInitializer(
 
 llvm::Constant* CodeBuilder::ApplyArrayInitializer(
 	const Variable& variable,
+	StoredVariable& variable_storage,
 	const Synt::ArrayInitializer& initializer,
 	NamesScope& block_names,
 	FunctionContext& function_context )
@@ -125,7 +127,7 @@ llvm::Constant* CodeBuilder::ApplyArrayInitializer(
 	if( variable.type.GetTemplateDependentType() != nullptr )
 	{
 		for( const Synt::IInitializerPtr& sub_initializer : initializer.initializers )
-			ApplyInitializer( variable, *sub_initializer, block_names, function_context );
+			ApplyInitializer( variable, variable_storage, *sub_initializer, block_names, function_context );
 		return nullptr;
 	}
 
@@ -166,7 +168,7 @@ llvm::Constant* CodeBuilder::ApplyArrayInitializer(
 
 		U_ASSERT( initializer.initializers[i] != nullptr );
 		llvm::Constant* const member_constant=
-			ApplyInitializer( array_member, *initializer.initializers[i], block_names, function_context );
+			ApplyInitializer( array_member, variable_storage, *initializer.initializers[i], block_names, function_context );
 
 		if( is_constant && member_constant != nullptr )
 			members_constants.push_back( member_constant );
@@ -189,6 +191,7 @@ llvm::Constant* CodeBuilder::ApplyArrayInitializer(
 
 void CodeBuilder::ApplyStructNamedInitializer(
 	const Variable& variable,
+	StoredVariable& variable_storage,
 	const Synt::StructNamedInitializer& initializer,
 	NamesScope& block_names,
 	FunctionContext& function_context )
@@ -196,7 +199,7 @@ void CodeBuilder::ApplyStructNamedInitializer(
 	if( variable.type.GetTemplateDependentType() != nullptr )
 	{
 		for( const Synt::StructNamedInitializer::MemberInitializer& member_initializer : initializer.members_initializers )
-			ApplyInitializer( variable, *member_initializer.initializer, block_names, function_context );
+			ApplyInitializer( variable, variable_storage, *member_initializer.initializer, block_names, function_context );
 		return;
 	}
 
@@ -242,7 +245,7 @@ void CodeBuilder::ApplyStructNamedInitializer(
 		initialized_members_names.insert( member_initializer.name );
 
 		if( field->is_reference )
-			InitializeReferenceField( variable, *field, *member_initializer.initializer, block_names, function_context );
+			InitializeReferenceField( variable, variable_storage, *field, *member_initializer.initializer, block_names, function_context );
 		else
 		{
 			struct_member.type= field->type;
@@ -251,7 +254,7 @@ void CodeBuilder::ApplyStructNamedInitializer(
 				function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, llvm::ArrayRef<llvm::Value*> ( index_list, 2u ) );
 
 			U_ASSERT( member_initializer.initializer != nullptr );
-			ApplyInitializer( struct_member, *member_initializer.initializer, block_names, function_context );
+			ApplyInitializer( struct_member, variable_storage, *member_initializer.initializer, block_names, function_context );
 		}
 	}
 
@@ -280,6 +283,7 @@ void CodeBuilder::ApplyStructNamedInitializer(
 
 llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 	const Variable& variable,
+	StoredVariable& variable_storage,
 	const Synt::CallOperator& call_operator,
 	NamesScope& block_names,
 	FunctionContext& function_context )
@@ -501,6 +505,7 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 		this_overloaded_methods_set.overloaded_methods_set= *constructors_set;
 
 		// TODO - disallow explicit constructors calls.
+		// TODO - set references after call.
 		BuildCallOperator( this_overloaded_methods_set, call_operator, block_names, function_context );
 	}
 	else
@@ -514,6 +519,7 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 
 llvm::Constant* CodeBuilder::ApplyExpressionInitializer(
 	const Variable& variable,
+	StoredVariable& variable_storage,
 	const Synt::ExpressionInitializer& initializer,
 	NamesScope& block_names,
 	FunctionContext& function_context )
@@ -679,6 +685,7 @@ llvm::Constant* CodeBuilder::ApplyZeroInitializer(
 
 void CodeBuilder::InitializeReferenceField(
 	const Variable& variable,
+	StoredVariable& variable_storage,
 	const ClassField& field,
 	const Synt::IInitializer& initializer,
 	NamesScope& block_names,
@@ -735,7 +742,17 @@ void CodeBuilder::InitializeReferenceField(
 		errors_.push_back( ReportBindingConstReferenceToNonconstReference( initializer_expression->GetFilePos() ) );
 		return;
 	}
-	// TODO - collect referenced variables
+
+	for( const StoredVariablePtr& referenced_variable : initializer_variable->referenced_variables )
+	{
+		const bool inserted= variable_storage.referenced_variables.insert( referenced_variable ).second;
+		if( inserted )
+		{
+			// Lock only if newly inserted.
+			variable_storage.locked_referenced_variables.push_back( field.is_mutable ? referenced_variable->mut_use_counter : referenced_variable->imut_use_counter );
+		}
+	}
+	CheckReferencedVariables( *initializer_variable, initializer.GetFilePos() );
 
 	// Make first index = 0 for array to pointer conversion.
 	llvm::Value* index_list[2];

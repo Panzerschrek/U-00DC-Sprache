@@ -244,7 +244,12 @@ struct StoredVariable
 
 	const bool is_reference;
 	const bool is_global_constant;
-	std::vector<VariableStorageUseCounter> locked_referenced_variables; // For references
+
+	// Referenced variables, referenced variables of referenced variables, etc. Used only for variables, not references.
+	std::unordered_set<StoredVariablePtr> referenced_variables;
+
+	// For references and structs with references.
+	std::vector<VariableStorageUseCounter> locked_referenced_variables;
 
 	StoredVariable( Variable in_content, bool in_is_reference= false, bool in_is_global_constant= false )
 		: content(std::move(in_content)), is_reference(in_is_reference), is_global_constant(in_is_global_constant)
