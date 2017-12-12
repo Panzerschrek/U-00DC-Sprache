@@ -163,7 +163,10 @@ struct Function final
 	bool return_value_is_mutable= false;
 	std::vector<Arg> args;
 
+	// Numbers of args, reference to which returned from function.
 	std::vector<size_t> return_reference_args;
+	// Pairs of arg number and tag number of returned from function inner args references.
+	std::vector< std::pair< size_t, size_t > > return_reference_inner_args;
 
 	llvm::FunctionType* llvm_function_type= nullptr;
 };

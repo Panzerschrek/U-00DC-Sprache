@@ -606,7 +606,8 @@ bool operator==( const Function& r, const Function& l )
 		r.return_value_is_mutable == l.return_value_is_mutable &&
 		r.return_value_is_reference == l.return_value_is_reference &&
 		r.args == l.args &&
-		r.return_reference_args == l.return_reference_args;
+		r.return_reference_args == l.return_reference_args &&
+		r.return_reference_inner_args == l.return_reference_inner_args;
 }
 
 bool operator!=( const Function& r, const Function& l )

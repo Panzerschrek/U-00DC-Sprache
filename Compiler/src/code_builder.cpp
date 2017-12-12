@@ -1356,13 +1356,31 @@ CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 		if( block != nullptr && out_arg.type.IsIncomplete() && !out_arg.is_reference )
 			errors_.push_back( ReportUsingIncompleteType( arg->file_pos_, out_arg.type.ToString() ) );
 
+		// Process tags.
+		const size_t arg_number= function_type.args.size() - 1u;
+
 		if( function_type.return_value_is_reference && out_arg.is_reference &&
 			!arg->reference_tag_.empty() && !func.return_value_reference_tag_.empty() &&
 			arg->reference_tag_ == func.return_value_reference_tag_ )
-			function_type.return_reference_args.push_back( function_type.args.size() - 1u );
+			function_type.return_reference_args.push_back( arg_number );
+
+		if( arg->inner_arg_reference_tags_.size() != out_arg.type.ReferencesTagsCount() ||
+			arg->inner_arg_reference_tags_.size() > 1u )
+			errors_.push_back( ReportNotImplemented( arg->file_pos_, "multiple references tags for variables" ) );
+
+		if( function_type.return_value_is_reference && !func.return_value_reference_tag_.empty() )
+		{
+			for( const ProgramString& tag : arg->inner_arg_reference_tags_ )
+			{
+				const size_t tag_number= &tag - arg->inner_arg_reference_tags_.data();
+				if( tag == func.return_value_reference_tag_ )
+					function_type.return_reference_inner_args.emplace_back( arg_number, tag_number );
+			}
+		}
 	} // for arguments
 
-	if( function_type.return_value_is_reference && function_type.return_reference_args.empty() )
+	if( function_type.return_value_is_reference &&
+		( function_type.return_reference_args.empty() && function_type.return_reference_inner_args.empty() ) )
 	{
 		if( !func.return_value_reference_tag_.empty() )
 		{
@@ -1370,11 +1388,15 @@ CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 			errors_.push_back( ReportNameNotFound( func.file_pos_, func.return_value_reference_tag_ ) );
 		}
 
-		// If there is no tag for return reference, assume, that it may refer to any reference argument.
+		// If there is no tag for return reference, assume, that it may refer to any reference argument and any reference inside argument.
 		for( size_t i= 0u; i < function_type.args.size(); ++i )
 		{
 			if( function_type.args[i].is_reference )
 				function_type.return_reference_args.push_back(i);
+
+			const size_t tag_count= function_type.args[i].type.ReferencesTagsCount();
+			for( size_t j= 0; j < tag_count; ++j )
+				function_type.return_reference_inner_args.emplace_back( i, j );
 		}
 	}
 
