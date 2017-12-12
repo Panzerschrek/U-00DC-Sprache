@@ -241,13 +241,15 @@ FunctionArgument::FunctionArgument(
 	TypeName type,
 	MutabilityModifier mutability_modifier,
 	ReferenceModifier reference_modifier,
-	ProgramString reference_tag)
+	ProgramString reference_tag,
+	ReferencesTagsList inner_arg_reference_tags )
 	: SyntaxElementBase( file_pos )
 	, name_(std::move(name))
 	, type_(std::move(type))
 	, mutability_modifier_(mutability_modifier)
 	, reference_modifier_(reference_modifier)
 	, reference_tag_(std::move(reference_tag))
+	, inner_arg_reference_tags_(std::move(inner_arg_reference_tags))
 {}
 
 Function::Function(

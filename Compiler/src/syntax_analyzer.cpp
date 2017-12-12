@@ -163,6 +163,7 @@ private:
 	void ParseTypeName_r( TypeName& result );
 	TypeName ParseTypeName();
 	ComplexName ParseComplexName();
+	ReferencesTagsList ParseReferencesTagsList();
 
 	IInitializerPtr ParseInitializer( bool parse_expression_initializer );
 	std::unique_ptr<ArrayInitializer> ParseArrayInitializer();
@@ -850,6 +851,52 @@ ComplexName SyntaxAnalyzer::ParseComplexName()
 	} while(true);
 
 	return complex_name;
+}
+
+ReferencesTagsList SyntaxAnalyzer::ParseReferencesTagsList()
+{
+	U_ASSERT( it_->type == Lexem::Type::Apostrophe );
+	++it_; U_ASSERT( it_ < it_end_ );
+
+	ReferencesTagsList result;
+
+	if( it_->type == Lexem::Type::Apostrophe )
+	{
+		// Empty list
+		++it_; U_ASSERT( it_ < it_end_ );
+		return result;
+	}
+
+	while(1)
+	{
+		if( it_->type == Lexem::Type::Identifier )
+		{
+			result.push_back( it_->text );
+			++it_;
+		}
+		else
+		{
+			PushErrorMessage( *it_ );
+			return result;
+		}
+
+		if( it_->type == Lexem::Type::Comma )
+		{
+			++it_; U_ASSERT( it_ < it_end_ );
+			if( it_->type == Lexem::Type::Apostrophe ) // Disable things, like 'a, b, c,'
+			{
+				PushErrorMessage( *it_ );
+				return result;
+			}
+		}
+		else if( it_->type == Lexem::Type::Apostrophe )
+		{
+			++it_; U_ASSERT( it_ < it_end_ );
+			break;
+		}
+	}
+
+	return result;
 }
 
 IInitializerPtr SyntaxAnalyzer::ParseInitializer( const bool parse_expression_initializer )
@@ -1936,7 +1983,8 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 					TypeName(),
 					mutability_modifier,
 					ReferenceModifier::Reference,
-					""_SpC /*TODO*/) );
+					""_SpC /*TODO*/,
+					{} /*TODO*/ ) );
 
 			if( it_->type == Lexem::Type::Comma )
 			{
@@ -1964,6 +2012,7 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 		ReferenceModifier reference_modifier= ReferenceModifier::None;
 		MutabilityModifier mutability_modifier= MutabilityModifier::None;
 		ProgramString reference_tag;
+		ReferencesTagsList tags_list;
 
 		if( it_->type == Lexem::Type::And )
 		{
@@ -2011,8 +2060,10 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 
 		const FilePos& arg_file_pos= it_->file_pos;
 		const ProgramString& arg_name= it_->text;
-		++it_;
-		U_ASSERT( it_ < it_end_ );
+		++it_; U_ASSERT( it_ < it_end_ );
+
+		if( it_->type == Lexem::Type::Apostrophe )
+			tags_list= ParseReferencesTagsList();
 
 		arguments.emplace_back(
 			new FunctionArgument(
@@ -2021,7 +2072,8 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 				std::move(arg_type),
 				mutability_modifier,
 				reference_modifier,
-				std::move(reference_tag)) );
+				std::move(reference_tag),
+				std::move(tags_list) ) );
 
 		if( it_->type == Lexem::Type::Comma )
 		{

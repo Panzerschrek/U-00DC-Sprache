@@ -519,6 +519,8 @@ public:
 	std::vector<Member> members;
 };
 
+typedef std::vector<ProgramString> ReferencesTagsList;
+
 class FunctionArgument final : public SyntaxElementBase
 {
 public:
@@ -528,7 +530,8 @@ public:
 		TypeName type,
 		MutabilityModifier mutability_modifier,
 		ReferenceModifier reference_modifier,
-		ProgramString reference_tag);
+		ProgramString reference_tag,
+		ReferencesTagsList inner_arg_reference_tags );
 
 public:
 	const ProgramString name_;
@@ -536,6 +539,7 @@ public:
 	const MutabilityModifier mutability_modifier_;
 	const ReferenceModifier reference_modifier_;
 	const ProgramString reference_tag_;
+	const ReferencesTagsList inner_arg_reference_tags_;
 };
 
 typedef std::unique_ptr<FunctionArgument> FunctionArgumentPtr;
