@@ -402,6 +402,21 @@ bool Type::CanBeConstexpr() const
 	return false;
 }
 
+size_t Type::ReferencesTagsCount() const
+{
+	if( const Class* const class_type= GetClassType() )
+	{
+		return class_type->references_tags_count;
+	}
+	else if( const ArrayPtr* const array= boost::get<ArrayPtr>( &something_ ) )
+	{
+		U_ASSERT( *array != nullptr );
+		return (*array)->type.ReferencesTagsCount();
+	}
+
+	return 0u;
+}
+
 llvm::Type* Type::GetLLVMType() const
 {
 	struct Visitor final : public boost::static_visitor<llvm::Type*>

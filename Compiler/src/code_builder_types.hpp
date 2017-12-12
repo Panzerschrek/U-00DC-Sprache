@@ -125,6 +125,7 @@ public:
 	bool IsCopyAssignable() const;
 	bool HaveDestructor() const;
 	bool CanBeConstexpr() const;
+	size_t ReferencesTagsCount() const;
 
 	llvm::Type* GetLLVMType() const;
 	ProgramString ToString() const;
@@ -476,8 +477,11 @@ struct Class final
 	Class& operator=( const Class& )= delete;
 	Class& operator=( Class&& )= delete;
 
+	// If you change this, you must change CodeBuilder::CopyClass too!
+
 	NamesScope members;
 	size_t field_count= 0u;
+	size_t references_tags_count= 0u;
 	bool is_incomplete= true;
 	bool have_explicit_noncopy_constructors= false;
 	bool is_default_constructible= false;

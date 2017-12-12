@@ -363,6 +363,7 @@ void CodeBuilder::CopyClass(
 
 	// Copy fields.
 	copy->field_count= src.field_count;
+	copy->references_tags_count= src.references_tags_count;
 	copy->is_incomplete= src.is_incomplete;
 
 	copy->have_explicit_noncopy_constructors= src.have_explicit_noncopy_constructors;
@@ -743,6 +744,19 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 			}
 		};
 	}
+
+	// Count references inside.
+	// SPRACHE_TODO - allow user-defined references tags for structs.
+	the_class->members.ForEachInThisScope(
+		[&]( const NamesScope::InsertedName& name )
+		{
+			const ClassField* const field= name.second.GetClassField();
+			if( field == nullptr )
+				return;
+
+			if( field->is_reference || field->type.ReferencesTagsCount() != 0u )
+				the_class->references_tags_count= 1u;
+		});
 
 	// Check opaque before set body for cases of errors (class body duplication).
 	if( the_class->llvm_type->isOpaque() )
