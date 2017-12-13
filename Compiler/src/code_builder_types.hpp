@@ -158,19 +158,27 @@ struct Function final
 		bool is_mutable;
 	};
 
+	struct InToOutReferences
+	{
+		// Numers of args.
+		std::vector<size_t> args_references;
+		// Pairs of arg number and tag number.
+		std::vector< std::pair< size_t, size_t > > inner_args_references;
+	};
+
 	Type return_type;
 	bool return_value_is_reference= false;
 	bool return_value_is_mutable= false;
 	std::vector<Arg> args;
 
-	// Numbers of args, reference to which returned from function.
-	std::vector<size_t> return_reference_args;
-	// Pairs of arg number and tag number of returned from function inner args references.
-	std::vector< std::pair< size_t, size_t > > return_reference_inner_args;
+	InToOutReferences return_references; // for functions, returning references
+	InToOutReferences return_value_inner_references; // for functions, returning values
 
 	llvm::FunctionType* llvm_function_type= nullptr;
 };
 
+bool operator==( const Function::InToOutReferences& l, const Function::InToOutReferences& r );
+bool operator!=( const Function::InToOutReferences& l, const Function::InToOutReferences& r );
 bool operator==( const Function::Arg& r, const Function::Arg& l );
 bool operator!=( const Function::Arg& r, const Function::Arg& l );
 bool operator==( const Function& r, const Function& l );

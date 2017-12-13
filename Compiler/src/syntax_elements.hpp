@@ -558,16 +558,18 @@ public:
 		MutabilityModifier return_value_mutability_modifier,
 		ReferenceModifier return_value_reference_modifier,
 		ProgramString return_value_reference_tag,
+		ReferencesTagsList return_value_inner_reference_tags,
 		FunctionArgumentsDeclaration arguments,
 		std::unique_ptr<StructNamedInitializer> constructor_initialization_list,
 		BlockPtr block,
-		OverloadedOperator overloaded_operator);
+		OverloadedOperator overloaded_operator );
 
 	const ComplexName name_;
 	const TypeName return_type_;
 	const MutabilityModifier return_value_mutability_modifier_;
 	const ReferenceModifier return_value_reference_modifier_;
 	const ProgramString return_value_reference_tag_;
+	const ReferencesTagsList return_value_inner_reference_tags_;
 	const FunctionArgumentsDeclaration arguments_;
 	const std::unique_ptr<StructNamedInitializer> constructor_initialization_list_;
 	const BlockPtr block_;

@@ -1298,6 +1298,12 @@ CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 	if( is_special_method && function_type.return_type != void_type_ )
 		errors_.push_back( ReportConstructorAndDestructorMustReturnVoid( func.file_pos_ ) );
 
+	if( !function_type.return_value_is_reference && !func.return_value_inner_reference_tags_.empty() )
+	{
+		if( func.return_value_inner_reference_tags_.size() != function_type.return_type.ReferencesTagsCount() )
+			errors_.push_back( ReportNotImplemented( func.file_pos_, "multiple references tags for variables" ) );
+	}
+
 	// Args.
 	function_type.args.reserve( func.arguments_.size() );
 
@@ -1362,7 +1368,7 @@ CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 		if( function_type.return_value_is_reference && out_arg.is_reference &&
 			!arg->reference_tag_.empty() && !func.return_value_reference_tag_.empty() &&
 			arg->reference_tag_ == func.return_value_reference_tag_ )
-			function_type.return_reference_args.push_back( arg_number );
+			function_type.return_references.args_references.push_back( arg_number );
 
 		if( arg->inner_arg_reference_tags_.size() != out_arg.type.ReferencesTagsCount() ||
 			arg->inner_arg_reference_tags_.size() > 1u )
@@ -1374,13 +1380,40 @@ CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 			{
 				const size_t tag_number= &tag - arg->inner_arg_reference_tags_.data();
 				if( tag == func.return_value_reference_tag_ )
-					function_type.return_reference_inner_args.emplace_back( arg_number, tag_number );
+					function_type.return_references.inner_args_references.emplace_back( arg_number, tag_number );
+			}
+		}
+
+		if( !function_type.return_value_is_reference && !func.return_value_inner_reference_tags_.empty() &&
+			function_type.return_type.ReferencesTagsCount() > 0u )
+		{
+			if( out_arg.is_reference && !arg->reference_tag_.empty() )
+			{
+				for( const ProgramString& tag : func.return_value_inner_reference_tags_ )
+				{
+					if( tag == arg->reference_tag_ )
+						function_type.return_value_inner_references.args_references.push_back( arg_number );
+				}
+			}
+
+			if( ! arg->inner_arg_reference_tags_.empty() )
+			{
+				for( const ProgramString& arg_tag : arg->inner_arg_reference_tags_ )
+				for( const ProgramString& ret_tag : func.return_value_inner_reference_tags_ )
+				{
+					if( arg_tag == ret_tag )
+					{
+						const size_t arg_tag_number= &arg_tag - arg->inner_arg_reference_tags_.data();
+						//const size_t ret_tag_number= &ret_tag - func.return_value_inner_reference_tags_;
+						function_type.return_value_inner_references.inner_args_references.emplace_back( arg_number, arg_tag_number );
+					}
+				}
 			}
 		}
 	} // for arguments
 
 	if( function_type.return_value_is_reference &&
-		( function_type.return_reference_args.empty() && function_type.return_reference_inner_args.empty() ) )
+		( function_type.return_references.args_references.empty() && function_type.return_references.inner_args_references.empty() ) )
 	{
 		if( !func.return_value_reference_tag_.empty() )
 		{
@@ -1392,11 +1425,26 @@ CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 		for( size_t i= 0u; i < function_type.args.size(); ++i )
 		{
 			if( function_type.args[i].is_reference )
-				function_type.return_reference_args.push_back(i);
+				function_type.return_references.args_references.push_back(i);
 
 			const size_t tag_count= function_type.args[i].type.ReferencesTagsCount();
 			for( size_t j= 0; j < tag_count; ++j )
-				function_type.return_reference_inner_args.emplace_back( i, j );
+				function_type.return_references.inner_args_references.emplace_back( i, j );
+		}
+	}
+
+	if( !function_type.return_value_is_reference && function_type.return_type.ReferencesTagsCount() > 0u &&
+		func.return_value_inner_reference_tags_.empty() )
+	{
+		// For functions, returning value-type with reference inside, if tags list empty - link ALL function references with this value inner references.
+		for( size_t i= 0u; i < function_type.args.size(); ++i )
+		{
+			if( function_type.args[i].is_reference )
+				function_type.return_value_inner_references.args_references.push_back(i);
+
+			const size_t tag_count= function_type.args[i].type.ReferencesTagsCount();
+			for( size_t j= 0; j < tag_count; ++j )
+				function_type.return_value_inner_references.inner_args_references.emplace_back( i, j );
 		}
 	}
 
@@ -1857,14 +1905,29 @@ void CodeBuilder::BuildFuncCode(
 		var.referenced_variables.emplace(var_storage);
 
 		// For reference arguments try add reference to list of allowed for returning references.
-		if( arg.is_reference && function_type->return_value_is_reference )
+		if( arg.is_reference )
 		{
-			for( const size_t arg_n : function_type->return_reference_args )
+			if( function_type->return_value_is_reference )
 			{
-				if( arg_n == arg_number )
+				for( const size_t arg_n : function_type->return_references.args_references )
 				{
-					function_context.allowed_for_returning_references.emplace(var_storage);
-					break;
+					if( arg_n == arg_number )
+					{
+						function_context.allowed_for_returning_references.emplace(var_storage);
+						break;
+					}
+				}
+			}
+			else if( function_type->return_type.ReferencesTagsCount() > 0u )
+			{
+				U_ASSERT( function_type->return_type.ReferencesTagsCount() == 1u ); // Currently, support 0 or 1 tags.
+				for( const size_t arg_n : function_type->return_value_inner_references.args_references )
+				{
+					if( arg_n == arg_number )
+					{
+						function_context.allowed_for_returning_references.emplace(var_storage);
+						break;
+					}
 				}
 			}
 		}
@@ -1880,7 +1943,18 @@ void CodeBuilder::BuildFuncCode(
 
 			if( function_type->return_value_is_reference )
 			{
-				for( const std::pair<size_t, size_t>& arg_and_tag : function_type->return_reference_inner_args )
+				for( const std::pair<size_t, size_t>& arg_and_tag : function_type->return_references.inner_args_references )
+				{
+					if( arg_and_tag.first == arg_number && arg_and_tag.second == 0u )
+					{
+						function_context.allowed_for_returning_references.emplace( inner_variable );
+						break;
+					}
+				}
+			}
+			else if( function_type->return_type.ReferencesTagsCount() > 0u )
+			{
+				for( const std::pair<size_t, size_t>& arg_and_tag : function_type->return_value_inner_references.inner_args_references )
 				{
 					if( arg_and_tag.first == arg_number && arg_and_tag.second == 0u )
 					{
@@ -3034,6 +3108,19 @@ void CodeBuilder::BuildReturnOperatorCode(
 	}
 	else
 	{
+		if( expression_result.type.ReferencesTagsCount() > 0u )
+		{
+			// Check correctness of returning references.
+			for( const StoredVariablePtr& var : expression_result.referenced_variables )
+			for( const StoredVariablePtr& inner_var : var->referenced_variables )
+			{
+				if( inner_var->is_global_constant ) // Always allow return of global constants.
+					continue;
+				if( function_context.allowed_for_returning_references.count(inner_var) == 0u )
+					errors_.push_back( ReportReturningUnallowedReference( return_operator.file_pos_ ) );
+			}
+		}
+
 		if( function_context.s_ret_ != nullptr )
 		{
 			const ClassProxyPtr class_= function_context.s_ret_->type.GetClassTypeProxy();

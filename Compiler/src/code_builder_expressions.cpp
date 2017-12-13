@@ -1758,7 +1758,7 @@ Value CodeBuilder::DoCallFunction(
 	{
 		// Returned reference refers to args, listed in function type.
 		U_ASSERT( arg_to_variables.size() == function_type.args.size() );
-		for( const size_t arg_n : function_type.return_reference_args )
+		for( const size_t arg_n : function_type.return_references.args_references )
 		{
 			U_ASSERT( arg_n < arg_to_variables.size() );
 			if( function_type.args[ arg_n ].is_reference )
@@ -1769,7 +1769,7 @@ Value CodeBuilder::DoCallFunction(
 		}
 
 		// Returned reference also may be linked with references, passed inside structs.
-		for( const std::pair< size_t, size_t >& arg_n_and_tag_n : function_type.return_reference_inner_args )
+		for( const std::pair< size_t, size_t >& arg_n_and_tag_n : function_type.return_references.inner_args_references )
 		{
 			U_ASSERT( arg_n_and_tag_n.first < arg_to_variables.size() );
 			U_ASSERT( arg_n_and_tag_n.second == 0u ); // Currently, support only 0 or 1 tags
@@ -1780,6 +1780,38 @@ Value CodeBuilder::DoCallFunction(
 			{
 				for( const StoredVariablePtr& referenced_variable : var->referenced_variables )
 					result.referenced_variables.emplace(referenced_variable);
+			}
+		}
+	}
+	else if( function_type.return_type.ReferencesTagsCount() > 0u )
+	{
+		U_ASSERT( result.referenced_variables.size() == 1u );
+		const StoredVariablePtr& stored_result= *result.referenced_variables.begin();
+
+		// Returned value references refers to args, listed in function type.
+		U_ASSERT( arg_to_variables.size() == function_type.args.size() );
+		for( const size_t arg_n : function_type.return_value_inner_references.args_references )
+		{
+			U_ASSERT( arg_n < arg_to_variables.size() );
+			if( function_type.args[ arg_n ].is_reference )
+			{
+				for( const StoredVariablePtr& var : arg_to_variables[arg_n] )
+					stored_result->referenced_variables.emplace(var);
+			}
+		}
+
+		// Returned vale references also may be linked with references, passed inside structs.
+		for( const std::pair< size_t, size_t >& arg_n_and_tag_n : function_type.return_value_inner_references.inner_args_references )
+		{
+			U_ASSERT( arg_n_and_tag_n.first < arg_to_variables.size() );
+			U_ASSERT( arg_n_and_tag_n.second == 0u ); // Currently, support only 0 or 1 tags
+			// TODO - if we pass value-argument, we needs to call copy constructor. In this constructor we can swap tags.
+			// We need correct result in such case.
+
+			for( const StoredVariablePtr& var : arg_to_variables[arg_n_and_tag_n.first] )
+			{
+				for( const StoredVariablePtr& referenced_variable : var->referenced_variables )
+					stored_result->referenced_variables.emplace(referenced_variable);
 			}
 		}
 	}

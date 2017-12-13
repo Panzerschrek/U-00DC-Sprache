@@ -1623,10 +1623,10 @@ U_TEST(ReturnValueDiffersFromPrototypeTest1)
 	// Different return value mutability.
 	static const char c_program_text[]=
 	R"(
-		fn Bar( i32 x, f64 y ) : i32 imut;
-		fn Bar( i32 x, f64 y ) : i32 mut
+		fn Bar( i32& x, f64& y ) : i32 &imut;
+		fn Bar( i32& x, f64& y ) : i32 &mut
 		{
-			return 0;
+			return x;
 		}
 	)";
 

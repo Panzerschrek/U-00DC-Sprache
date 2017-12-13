@@ -72,6 +72,9 @@ private:
 		Type return_type;
 		bool return_value_is_mutable;
 		bool return_value_is_reference;
+
+		// For reference-returned functions - references of returning reference.
+		// For value-returned functions - references inside value.
 		std::unordered_set<StoredVariablePtr> allowed_for_returning_references;
 
 		const Variable* this_= nullptr; // null for nonclass functions or static member functions.

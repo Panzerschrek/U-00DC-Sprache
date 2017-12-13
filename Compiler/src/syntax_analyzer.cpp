@@ -2098,6 +2098,7 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 	MutabilityModifier mutability_modifier= MutabilityModifier::None;
 	ReferenceModifier reference_modifier= ReferenceModifier::None;
 	ProgramString return_value_reference_tag;
+	ReferencesTagsList return_value_tags_list;
 
 	if( it_->type == Lexem::Type::Colon )
 	{
@@ -2123,25 +2124,27 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 				return_value_reference_tag = it_->text;
 				++it_; U_ASSERT( it_ < it_end_ );
 			}
-		}
 
-		if( it_->type == Lexem::Type::Identifier )
-		{
-			if( it_->text == Keywords::mut_ )
+			if( it_->type == Lexem::Type::Identifier )
 			{
-				mutability_modifier= MutabilityModifier::Mutable;
-				++it_;
-				U_ASSERT( it_ < it_end_ );
+				if( it_->text == Keywords::mut_ )
+				{
+					mutability_modifier= MutabilityModifier::Mutable;
+					++it_;
+					U_ASSERT( it_ < it_end_ );
+				}
+				else if( it_->text == Keywords::imut_ )
+				{
+					mutability_modifier= MutabilityModifier::Immutable;
+					++it_;
+					U_ASSERT( it_ < it_end_ );
+				}
+				else
+					PushErrorMessage( *it_ );
 			}
-			else if( it_->text == Keywords::imut_ )
-			{
-				mutability_modifier= MutabilityModifier::Immutable;
-				++it_;
-				U_ASSERT( it_ < it_end_ );
-			}
-			else
-				PushErrorMessage( *it_ );
 		}
+		else if( it_->type == Lexem::Type::Apostrophe )
+			return_value_tags_list= ParseReferencesTagsList();
 	}
 
 	std::unique_ptr<StructNamedInitializer> constructor_initialization_list;
@@ -2215,6 +2218,7 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 			mutability_modifier,
 			reference_modifier,
 			std::move(return_value_reference_tag),
+			return_value_tags_list,
 			std::move( arguments ),
 			std::move( constructor_initialization_list ),
 			std::move( block ),

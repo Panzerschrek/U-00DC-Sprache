@@ -136,4 +136,33 @@ U_TEST( GetReturnedReferencePassedThroughArgument_Test1 )
 	U_TEST_ASSERT( static_cast<uint64_t>( 4456823 ) == result_value.IntVal.getLimitedValue() );
 }
 
+U_TEST( ReturnStructWithReferenceFromFunction_Test0 )
+{
+	static const char c_program_text[]=
+	R"(
+		template</ type T /> struct MutRef{ T &mut r; }
+
+		fn ToRef( i32 &mut x ) : MutRef</ i32 />
+		{
+			var MutRef</ i32 /> r{ .r= x };
+			return r;
+		}
+
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			auto &mut r0= x;
+			auto &mut r1= ToRef( r0 ).r; // Error, reference, inside struct, refers to "x", but there is reference "r0" on stack.
+		}
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferenceProtectionError );
+	U_TEST_ASSERT( error.file_pos.line == 14u );
+}
+
 } // namespace U

@@ -589,6 +589,16 @@ bool operator!=( const Type& r, const Type& l )
 	return !( r == l );
 }
 
+bool operator==( const Function::InToOutReferences& l, const Function::InToOutReferences& r )
+{
+	return l.args_references == r.args_references && l.inner_args_references == r.inner_args_references;
+}
+
+bool operator!=( const Function::InToOutReferences& l, const Function::InToOutReferences& r )
+{
+	return !( l == r );
+}
+
 bool operator==( const Function::Arg& r, const Function::Arg& l )
 {
 	return r.type == l.type && r.is_mutable == l.is_mutable && r.is_reference == l.is_reference;
@@ -606,8 +616,8 @@ bool operator==( const Function& r, const Function& l )
 		r.return_value_is_mutable == l.return_value_is_mutable &&
 		r.return_value_is_reference == l.return_value_is_reference &&
 		r.args == l.args &&
-		r.return_reference_args == l.return_reference_args &&
-		r.return_reference_inner_args == l.return_reference_inner_args;
+		r.return_references == l.return_references &&
+		r.return_value_inner_references == l.return_value_inner_references;
 }
 
 bool operator!=( const Function& r, const Function& l )
