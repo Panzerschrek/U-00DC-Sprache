@@ -1362,91 +1362,10 @@ CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 		if( block != nullptr && out_arg.type.IsIncomplete() && !out_arg.is_reference )
 			errors_.push_back( ReportUsingIncompleteType( arg->file_pos_, out_arg.type.ToString() ) );
 
-		// Process tags.
-		const size_t arg_number= function_type.args.size() - 1u;
-
-		if( function_type.return_value_is_reference && out_arg.is_reference &&
-			!arg->reference_tag_.empty() && !func.return_value_reference_tag_.empty() &&
-			arg->reference_tag_ == func.return_value_reference_tag_ )
-			function_type.return_references.args_references.push_back( arg_number );
-
-		if( arg->inner_arg_reference_tags_.size() != out_arg.type.ReferencesTagsCount() ||
-			arg->inner_arg_reference_tags_.size() > 1u )
-			errors_.push_back( ReportNotImplemented( arg->file_pos_, "multiple references tags for variables" ) );
-
-		if( function_type.return_value_is_reference && !func.return_value_reference_tag_.empty() )
-		{
-			for( const ProgramString& tag : arg->inner_arg_reference_tags_ )
-			{
-				const size_t tag_number= &tag - arg->inner_arg_reference_tags_.data();
-				if( tag == func.return_value_reference_tag_ )
-					function_type.return_references.inner_args_references.emplace_back( arg_number, tag_number );
-			}
-		}
-
-		if( !function_type.return_value_is_reference && !func.return_value_inner_reference_tags_.empty() &&
-			function_type.return_type.ReferencesTagsCount() > 0u )
-		{
-			if( out_arg.is_reference && !arg->reference_tag_.empty() )
-			{
-				for( const ProgramString& tag : func.return_value_inner_reference_tags_ )
-				{
-					if( tag == arg->reference_tag_ )
-						function_type.return_value_inner_references.args_references.push_back( arg_number );
-				}
-			}
-
-			if( ! arg->inner_arg_reference_tags_.empty() )
-			{
-				for( const ProgramString& arg_tag : arg->inner_arg_reference_tags_ )
-				for( const ProgramString& ret_tag : func.return_value_inner_reference_tags_ )
-				{
-					if( arg_tag == ret_tag )
-					{
-						const size_t arg_tag_number= &arg_tag - arg->inner_arg_reference_tags_.data();
-						//const size_t ret_tag_number= &ret_tag - func.return_value_inner_reference_tags_;
-						function_type.return_value_inner_references.inner_args_references.emplace_back( arg_number, arg_tag_number );
-					}
-				}
-			}
-		}
+		ProcessFunctionArgReferencesTags( func, function_type, *arg, out_arg, function_type.args.size() - 1u );
 	} // for arguments
 
-	if( function_type.return_value_is_reference &&
-		( function_type.return_references.args_references.empty() && function_type.return_references.inner_args_references.empty() ) )
-	{
-		if( !func.return_value_reference_tag_.empty() )
-		{
-			// Tag exists, but referenced args is empty - means tag apperas only in return value, but not in any argument.
-			errors_.push_back( ReportNameNotFound( func.file_pos_, func.return_value_reference_tag_ ) );
-		}
-
-		// If there is no tag for return reference, assume, that it may refer to any reference argument and any reference inside argument.
-		for( size_t i= 0u; i < function_type.args.size(); ++i )
-		{
-			if( function_type.args[i].is_reference )
-				function_type.return_references.args_references.push_back(i);
-
-			const size_t tag_count= function_type.args[i].type.ReferencesTagsCount();
-			for( size_t j= 0; j < tag_count; ++j )
-				function_type.return_references.inner_args_references.emplace_back( i, j );
-		}
-	}
-
-	if( !function_type.return_value_is_reference && function_type.return_type.ReferencesTagsCount() > 0u &&
-		func.return_value_inner_reference_tags_.empty() )
-	{
-		// For functions, returning value-type with reference inside, if tags list empty - link ALL function references with this value inner references.
-		for( size_t i= 0u; i < function_type.args.size(); ++i )
-		{
-			if( function_type.args[i].is_reference )
-				function_type.return_value_inner_references.args_references.push_back(i);
-
-			const size_t tag_count= function_type.args[i].type.ReferencesTagsCount();
-			for( size_t j= 0; j < tag_count; ++j )
-				function_type.return_value_inner_references.inner_args_references.emplace_back( i, j );
-		}
-	}
+	TryGenerateFunctionReturnReferencesMapping( func, function_type );
 
 	CheckOverloadedOperator( base_class, function_type, func.overloaded_operator_, func.file_pos_ );
 
@@ -1568,6 +1487,106 @@ CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 	}
 
 	return result;
+}
+
+void CodeBuilder::ProcessFunctionArgReferencesTags(
+	const Synt::Function& func,
+	Function& function_type,
+	const Synt::FunctionArgument& in_arg,
+	const Function::Arg& out_arg,
+	const size_t arg_number )
+{
+	if( function_type.return_value_is_reference && !func.return_value_reference_tag_.empty() )
+	{
+		// Arg reference to return reference
+		if( out_arg.is_reference && !in_arg.reference_tag_.empty() &&
+			in_arg.reference_tag_ == func.return_value_reference_tag_ )
+			function_type.return_references.args_references.push_back( arg_number );
+
+		if( in_arg.inner_arg_reference_tags_.size() != out_arg.type.ReferencesTagsCount() ||
+			in_arg.inner_arg_reference_tags_.size() > 1u )
+			errors_.push_back( ReportNotImplemented( in_arg.file_pos_, "multiple references tags for variables" ) );
+
+		// Inner arg references to return reference
+		for( const ProgramString& tag : in_arg.inner_arg_reference_tags_ )
+		{
+			const size_t tag_number= &tag - in_arg.inner_arg_reference_tags_.data();
+			if( tag == func.return_value_reference_tag_ )
+				function_type.return_references.inner_args_references.emplace_back( arg_number, tag_number );
+		}
+	}
+
+	if( !function_type.return_value_is_reference && !func.return_value_inner_reference_tags_.empty() &&
+		function_type.return_type.ReferencesTagsCount() > 0u )
+	{
+		// In arg reference to return value references
+		if( out_arg.is_reference && !in_arg.reference_tag_.empty() )
+		{
+			for( const ProgramString& tag : func.return_value_inner_reference_tags_ )
+			{
+				if( tag == in_arg.reference_tag_ )
+					function_type.return_value_inner_references.args_references.push_back( arg_number );
+			}
+		}
+
+		// Inner arg references to return value references
+		if( !in_arg.inner_arg_reference_tags_.empty() )
+		{
+			for( const ProgramString& arg_tag : in_arg.inner_arg_reference_tags_ )
+			for( const ProgramString& ret_tag : func.return_value_inner_reference_tags_ )
+			{
+				if( arg_tag == ret_tag )
+				{
+					const size_t arg_tag_number= &arg_tag - in_arg.inner_arg_reference_tags_.data();
+					//const size_t ret_tag_number= &ret_tag - func.return_value_inner_reference_tags_;
+					function_type.return_value_inner_references.inner_args_references.emplace_back( arg_number, arg_tag_number );
+				}
+			}
+		}
+	}
+}
+
+void CodeBuilder::TryGenerateFunctionReturnReferencesMapping(
+	const Synt::Function& func,
+	Function& function_type )
+{
+	// Generate mapping of input references to output references, if reference tags are not specified explicitly.
+
+	if( function_type.return_value_is_reference &&
+		( function_type.return_references.args_references.empty() && function_type.return_references.inner_args_references.empty() ) )
+	{
+		if( !func.return_value_reference_tag_.empty() )
+		{
+			// Tag exists, but referenced args is empty - means tag apperas only in return value, but not in any argument.
+			errors_.push_back( ReportNameNotFound( func.file_pos_, func.return_value_reference_tag_ ) );
+		}
+
+		// If there is no tag for return reference, assume, that it may refer to any reference argument and any reference inside argument.
+		for( size_t i= 0u; i < function_type.args.size(); ++i )
+		{
+			if( function_type.args[i].is_reference )
+				function_type.return_references.args_references.push_back(i);
+
+			const size_t tag_count= function_type.args[i].type.ReferencesTagsCount();
+			for( size_t j= 0; j < tag_count; ++j )
+				function_type.return_references.inner_args_references.emplace_back( i, j );
+		}
+	}
+
+	if( !function_type.return_value_is_reference && function_type.return_type.ReferencesTagsCount() > 0u &&
+		func.return_value_inner_reference_tags_.empty() )
+	{
+		// For functions, returning value-type with reference inside, if tags list empty - link ALL function references with this value inner references.
+		for( size_t i= 0u; i < function_type.args.size(); ++i )
+		{
+			if( function_type.args[i].is_reference )
+				function_type.return_value_inner_references.args_references.push_back(i);
+
+			const size_t tag_count= function_type.args[i].type.ReferencesTagsCount();
+			for( size_t j= 0; j < tag_count; ++j )
+				function_type.return_value_inner_references.inner_args_references.emplace_back( i, j );
+		}
+	}
 }
 
 void CodeBuilder::CheckOverloadedOperator(

@@ -250,6 +250,17 @@ private:
 		ClassProxyPtr base_class,
 		NamesScope& scope );
 
+	void ProcessFunctionArgReferencesTags(
+		const Synt::Function& func,
+		Function& function_type,
+		const Synt::FunctionArgument& in_arg,
+		const Function::Arg& out_arg,
+		size_t arg_number );
+
+	void TryGenerateFunctionReturnReferencesMapping(
+		const Synt::Function& func,
+		Function& function_type );
+
 	void CheckOverloadedOperator(
 		const ClassProxyPtr& base_class,
 		const Function& func_type,
