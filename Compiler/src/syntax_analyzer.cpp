@@ -1976,15 +1976,7 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 
 		if( is_this )
 		{
-			arguments.emplace_back(
-				new FunctionArgument(
-					it_->file_pos,
-					Keyword( Keywords::this_ ),
-					TypeName(),
-					mutability_modifier,
-					ReferenceModifier::Reference,
-					""_SpC /*TODO*/,
-					{} /*TODO*/ ) );
+			const FilePos& file_pos= it_->file_pos;
 
 			if( it_->type == Lexem::Type::Comma )
 			{
@@ -1996,6 +1988,20 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 					return nullptr;
 				}
 			}
+
+			ReferencesTagsList tags_list;
+			if( it_->type == Lexem::Type::Apostrophe )
+				tags_list= ParseReferencesTagsList();
+
+			arguments.emplace_back(
+				new FunctionArgument(
+					file_pos,
+					Keyword( Keywords::this_ ),
+					TypeName(),
+					mutability_modifier,
+					ReferenceModifier::Reference,
+					Keyword( Keywords::this_ ), // Implicit set name for tag of "this" to "this".
+					tags_list ) );
 		}
 	}
 
