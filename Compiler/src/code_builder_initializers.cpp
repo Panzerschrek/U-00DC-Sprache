@@ -743,7 +743,8 @@ void CodeBuilder::InitializeReferenceField(
 		return;
 	}
 
-	for( const StoredVariablePtr& referenced_variable : initializer_variable->referenced_variables )
+	const auto insert_referenced_variable=
+	[&]( const StoredVariablePtr& referenced_variable )
 	{
 		const bool inserted= variable_storage.referenced_variables.insert( referenced_variable ).second;
 		if( inserted )
@@ -751,6 +752,13 @@ void CodeBuilder::InitializeReferenceField(
 			// Lock only if newly inserted.
 			variable_storage.locked_referenced_variables.push_back( field.is_mutable ? referenced_variable->mut_use_counter : referenced_variable->imut_use_counter );
 		}
+	};
+	for( const StoredVariablePtr& referenced_variable : initializer_variable->referenced_variables )
+	{
+		insert_referenced_variable( referenced_variable );
+		// Insert to list of referenced variables also referenced variables of referenced variables.
+		for( const StoredVariablePtr& inner_variable : referenced_variable->referenced_variables )
+			insert_referenced_variable( inner_variable );
 	}
 	CheckReferencedVariables( *initializer_variable, initializer.GetFilePos() );
 

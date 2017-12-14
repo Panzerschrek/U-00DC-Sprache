@@ -218,4 +218,98 @@ U_TEST( ReturnStructWithReferenceFromFunction_Test2 )
 	BuildProgram( c_program_text );
 }
 
+U_TEST( TwoLevelsOfIndirection_Test0 )
+{
+	static const char c_program_text[]=
+	R"(
+		struct A{ i32 &mut x; }
+		struct B{ A   &imut x; }
+
+		fn Baz( i32 &mut x, i32 &mut y ){}
+
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var A a{ .x= x };
+			var B b{ .x= a };
+
+			Baz( a.x, b.x.x ); // Error, both argument references refers to "x".
+		}
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferenceProtectionError );
+	U_TEST_ASSERT( error.file_pos.line == 13u );
+}
+
+U_TEST( TwoLevelsOfIndirection_Test1 )
+{
+	static const char c_program_text[]=
+	R"(
+		struct A{ i32 &mut x; }
+		struct B{ A   &imut x; }
+
+		fn Extract( B & b'x' ) : i32 &'x mut
+		{
+			return b.x.x;
+		}
+		fn Baz( i32 &mut x, i32 &mut y ){}
+
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var A a{ .x= x };
+			var B b{ .x= a };
+
+			Baz( Extract(b), a.x ); // Error, both argument references refers to "x".
+		}
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferenceProtectionError );
+	U_TEST_ASSERT( error.file_pos.line == 17u );
+}
+
+U_TEST( ThreeLevelsOfIndirection_Test )
+{
+	static const char c_program_text[]=
+	R"(
+		struct A{ i32 &mut x; }
+		struct B{ A   &imut x; }
+		struct C{ B   &imut x; }
+
+		fn Extract( C & c'x' ) : i32 &'x mut
+		{
+			return c.x.x.x;
+		}
+		fn Baz( i32 &mut x, i32 &mut y ){}
+
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var A a{ .x= x };
+			var B b{ .x= a };
+			var C c{ .x= b };
+
+			Baz( a.x, Extract(c) ); // Error, both argument references refers to "x".
+		}
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferenceProtectionError );
+	U_TEST_ASSERT( error.file_pos.line == 19u );
+}
+
 } // namespace U
