@@ -165,4 +165,57 @@ U_TEST( ReturnStructWithReferenceFromFunction_Test0 )
 	U_TEST_ASSERT( error.file_pos.line == 14u );
 }
 
+U_TEST( ReturnStructWithReferenceFromFunction_Test1 )
+{
+	static const char c_program_text[]=
+	R"(
+		template</ type T /> struct MutRef{ T &mut r; }
+
+		fn ToRef( i32 &'r mut x ) : MutRef</ i32 />'r' // References now implicitly tagged
+		{
+			var MutRef</ i32 /> r{ .r= x };
+			return r;
+		}
+
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			auto &imut r0= x;
+			auto &mut r1= ToRef( x ).r; // Error, reference, inside struct, refers to "x", but there is reference "r0" on stack.
+		}
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferenceProtectionError );
+	U_TEST_ASSERT( error.file_pos.line == 14u );
+}
+
+U_TEST( ReturnStructWithReferenceFromFunction_Test2 )
+{
+	static const char c_program_text[]=
+	R"(
+		template</ type T /> struct MutRef{ T &mut r; }
+
+		fn ToRef( i32 &'r mut x, i32 &'f mut y ) : MutRef</ i32 />'f' // References now implicitly tagged. Returning only one reference.
+		{
+			x= y;
+			var MutRef</ i32 /> r{ .r= y };
+			return r;
+		}
+
+		fn Foo()
+		{
+			var i32 mut x= 0, mut y= 0;
+			auto &mut r0= x;
+			auto &mut r1= ToRef( r0, y ).r; // Ok, reference, inside struct, refers to "y".
+		}
+	)";
+
+	BuildProgram( c_program_text );
+}
+
 } // namespace U
