@@ -1326,8 +1326,15 @@ CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 		if( !is_this && IsKeyword( arg->name_ ) )
 			errors_.push_back( ReportUsingKeywordAsName( arg->file_pos_ ) );
 
-		if( is_this && is_special_method )
-			errors_.push_back( ReportExplicitThisInConstructorOrDestructor( arg->file_pos_ ) );
+		if( is_this && is_destructor )
+			errors_.push_back( ReportExplicitThisInDestructor( arg->file_pos_ ) );
+		if( is_this && is_constructor )
+		{
+			// Explicit this for constructor.
+			U_ASSERT( function_type.args.size() == 1u );
+			ProcessFunctionArgReferencesTags( func, function_type, *arg, function_type.args.back(), function_type.args.size() - 1u );
+			continue;
+		}
 
 		function_type.args.emplace_back();
 		Function::Arg& out_arg= function_type.args.back();
@@ -1837,7 +1844,7 @@ void CodeBuilder::BuildFuncCode(
 
 	const bool is_constructor= func_name == Keywords::constructor_;
 	const bool is_destructor= func_name == Keywords::destructor_;
-	const bool is_special_method= is_constructor || is_destructor;
+	const bool have_implicit_this= is_destructor || ( is_constructor && ( args.empty() || args.front()->name_ != Keywords::this_ ) );
 
 	for( llvm::Argument& llvm_arg : llvm_function->args() )
 	{
@@ -1855,7 +1862,7 @@ void CodeBuilder::BuildFuncCode(
 
 		const Function::Arg& arg= function_type->args[ arg_number ];
 
-		if( is_special_method && arg_number == 0u )
+		if( arg_number == 0u && ( have_implicit_this || is_constructor ) )
 		{
 			this_.location= Variable::Location::Pointer;
 			this_.value_type= ValueType::Reference;
@@ -1871,7 +1878,7 @@ void CodeBuilder::BuildFuncCode(
 			continue;
 		}
 
-		const Synt::FunctionArgument& declaration_arg= *args[ is_special_method ? ( arg_number - 1u ) : arg_number ];
+		const Synt::FunctionArgument& declaration_arg= *args[ have_implicit_this ? ( arg_number - 1u ) : arg_number ];
 		const ProgramString& arg_name= declaration_arg.name_;
 
 		if( !arg.is_reference && arg.type.IsIncomplete() )
@@ -1882,7 +1889,7 @@ void CodeBuilder::BuildFuncCode(
 
 		const bool is_this= arg_number == 0u && arg_name == Keywords::this_;
 		U_ASSERT( !( is_this && !arg.is_reference ) );
-		U_ASSERT( !( is_special_method && is_this ) );
+		U_ASSERT( !( have_implicit_this && is_this ) );
 
 		Variable var;
 		var.location= Variable::Location::LLVMRegister;

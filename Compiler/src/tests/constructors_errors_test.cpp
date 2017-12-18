@@ -97,28 +97,6 @@ U_TEST(InitializationListInNonconstructorTest1)
 	U_TEST_ASSERT( error.file_pos.line == 5u );
 }
 
-U_TEST(ExplicitThisInConstructorParamtersTest0)
-{
-	static const char c_program_text[]=
-	R"(
-		struct S
-		{
-			i32 x;
-			fn constructor( this )
-			( x(0) )
-			{}
-		}
-	)";
-
-	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
-
-	U_TEST_ASSERT( !build_result.errors.empty() );
-	const CodeBuilderError& error= build_result.errors.front();
-
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExplicitThisInConstructorOrDestructor );
-	U_TEST_ASSERT( error.file_pos.line == 5u );
-}
-
 U_TEST(FieldIsNotInitializedYetTest0)
 {
 	// Initialize field, using unitialized field value.

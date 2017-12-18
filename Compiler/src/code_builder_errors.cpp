@@ -643,13 +643,13 @@ CodeBuilderError ReportClassHaveNoConstructors( const FilePos& file_pos )
 	return error;
 }
 
-CodeBuilderError ReportExplicitThisInConstructorOrDestructor( const FilePos& file_pos )
+CodeBuilderError ReportExplicitThisInDestructor( const FilePos& file_pos )
 {
 	CodeBuilderError error;
 	error.file_pos= file_pos;
-	error.code= CodeBuilderErrorCode::ExplicitThisInConstructorOrDestructor;
+	error.code= CodeBuilderErrorCode::ExplicitThisInDestructor;
 
-	error.text= "Explicit \"this\" in constructor or destructor parameters."_SpC;
+	error.text= "Explicit \"this\" in destructor parameters."_SpC;
 
 	return error;
 }

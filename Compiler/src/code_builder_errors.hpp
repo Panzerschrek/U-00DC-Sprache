@@ -81,7 +81,7 @@ enum class CodeBuilderErrorCode : unsigned int
 	ConstructorAndDestructorMustReturnVoid,
 	InitializationListInNonconstructor,
 	ClassHaveNoConstructors,
-	ExplicitThisInConstructorOrDestructor,
+	ExplicitThisInDestructor,
 	FieldIsNotInitializedYet,
 	MethodsCallInConstructorInitializerListIsForbidden,
 
@@ -189,7 +189,7 @@ CodeBuilderError ReportConstructorOrDestructorOutsideClass( const FilePos& file_
 CodeBuilderError ReportConstructorAndDestructorMustReturnVoid( const FilePos& file_pos );
 CodeBuilderError ReportInitializationListInNonconstructor( const FilePos& file_pos );
 CodeBuilderError ReportClassHaveNoConstructors( const FilePos& file_pos );
-CodeBuilderError ReportExplicitThisInConstructorOrDestructor( const FilePos& file_pos );
+CodeBuilderError ReportExplicitThisInDestructor( const FilePos& file_pos );
 CodeBuilderError ReportFieldIsNotInitializedYet( const FilePos& file_pos, const ProgramString& field_name );
 CodeBuilderError ReportMethodsCallInConstructorInitializerListIsForbidden( const FilePos& file_pos, const ProgramString& method_name );
 CodeBuilderError ReportExplicitArgumentsInDestructor( const FilePos& file_pos );
