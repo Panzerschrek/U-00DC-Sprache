@@ -2043,6 +2043,10 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 		{
 			const FilePos& file_pos= it_->file_pos;
 
+			ReferencesTagsList tags_list;
+			if( it_->type == Lexem::Type::Apostrophe )
+				tags_list= ParseReferencesTagsList();
+
 			if( it_->type == Lexem::Type::Comma )
 			{
 				++it_;
@@ -2053,10 +2057,6 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 					return nullptr;
 				}
 			}
-
-			ReferencesTagsList tags_list;
-			if( it_->type == Lexem::Type::Apostrophe )
-				tags_list= ParseReferencesTagsList();
 
 			arguments.emplace_back(
 				new FunctionArgument(
