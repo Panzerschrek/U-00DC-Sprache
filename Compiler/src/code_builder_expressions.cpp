@@ -1816,6 +1816,87 @@ Value CodeBuilder::DoCallFunction(
 		}
 	}
 
+	for( const Function::ReferencePollution& referene_pollution : function_type.references_pollution )
+	{
+		const size_t dst_arg= referene_pollution.dst.first;
+		U_ASSERT( dst_arg < function_type.args.size() );
+		U_ASSERT( function_type.args[ dst_arg ].type.ReferencesTagsCount() > 0u );
+
+		std::unordered_set<StoredVariablePtr> src_variables;
+		bool src_variables_is_mutable= false;
+		if( referene_pollution.src.second == ~0u )
+		{
+			// Reference-arg itself
+			U_ASSERT( function_type.args[ referene_pollution.src.first ].is_reference );
+			src_variables= arg_to_variables[ referene_pollution.src.first ];
+			src_variables_is_mutable= function_type.args[ referene_pollution.src.first ].is_mutable;
+		}
+		else
+		{
+			// Varuables, referenced by inner argument references.
+			U_ASSERT( referene_pollution.src.second == 0u );// Currently we support one tag per struct.
+			for( const StoredVariablePtr& referenced_variable : arg_to_variables[ referene_pollution.src.first ] )
+				for( const StoredVariablePtr& inner_variable : referenced_variable->referenced_variables )
+				{
+					boost::optional<bool> is_mutable;
+					for( const VariableStorageUseCounter& counter : referenced_variable->locked_referenced_variables )
+					{
+						if( counter == inner_variable->imut_use_counter || counter == inner_variable->mut_use_counter )
+						{
+							is_mutable= counter == inner_variable->mut_use_counter;
+							break;
+						}
+					}
+					U_ASSERT( is_mutable.is_initialized() );
+					src_variables_is_mutable= src_variables_is_mutable || *is_mutable;
+				}
+		}
+
+		const auto link_variables=
+		[&]( const StoredVariablePtr& dst_variable, const StoredVariablePtr& src_variable )
+		{
+			const bool inserted= dst_variable->referenced_variables.insert( src_variable ).second;
+			if( inserted ) // Ok, insert new variable, lock counter.
+				dst_variable->locked_referenced_variables.push_back( src_variables_is_mutable ? src_variable->mut_use_counter : src_variable->imut_use_counter );
+			else
+			{
+				// Try change couter mutability. If counter was immutable and new value is mutable - make it mutable.
+				VariableStorageUseCounter* counter_to_lock= nullptr;
+				for( VariableStorageUseCounter& counter : dst_variable->locked_referenced_variables )
+				{
+					if( counter == src_variable->imut_use_counter || counter == src_variable->mut_use_counter )
+					{
+						counter_to_lock= &counter;
+						break;
+					}
+				}
+				U_ASSERT( counter_to_lock != nullptr );
+				if( *counter_to_lock == src_variable->imut_use_counter && src_variables_is_mutable )
+					*counter_to_lock= src_variable->mut_use_counter;
+			}
+		};
+
+		if( function_type.args[ dst_arg ].is_reference )
+		{
+			for( const StoredVariablePtr& arg_value_variable : arg_to_variables[ dst_arg ] )
+			{
+				for( const StoredVariablePtr& src_variable : src_variables )
+					link_variables( arg_value_variable, src_variable );
+			}
+		}
+		else
+		{
+			for( const StoredVariablePtr& arg_value_variable : arg_to_variables[ dst_arg ] )
+			{
+				for( const StoredVariablePtr& dst_variable : arg_value_variable->referenced_variables )
+				{
+					for( const StoredVariablePtr& src_variable : src_variables )
+						link_variables( dst_variable, src_variable );
+				}
+			}
+		}
+	} // for function_type.references_pollution
+
 	return Value( result, call_file_pos );
 }
 

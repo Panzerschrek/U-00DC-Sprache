@@ -166,6 +166,29 @@ struct Function final
 		std::vector< std::pair< size_t, size_t > > inner_args_references;
 	};
 
+	struct ReferencePollution
+	{
+		std::pair< size_t, size_t > dst;
+		std::pair< size_t, size_t > src; // second = ~0, if reference itself, else - inner reference.
+		bool operator==( const ReferencePollution& other ) const
+		{
+			return this->dst == other.dst && this->src == other.src;
+		}
+	};
+
+	struct ReferencePollutionHasher
+	{
+		size_t operator()( const ReferencePollution& r ) const
+		{
+			size_t result= 0u;
+			boost::hash_combine( result, r.dst.first );
+			boost::hash_combine( result, r.dst.second );
+			boost::hash_combine( result, r.src.first );
+			boost::hash_combine( result, r.src.second );
+			return result;
+		}
+	};
+
 	Type return_type;
 	bool return_value_is_reference= false;
 	bool return_value_is_mutable= false;
@@ -173,6 +196,7 @@ struct Function final
 
 	InToOutReferences return_references; // for functions, returning references
 	InToOutReferences return_value_inner_references; // for functions, returning values
+	std::unordered_set< ReferencePollution, ReferencePollutionHasher > references_pollution;
 
 	llvm::FunctionType* llvm_function_type= nullptr;
 };

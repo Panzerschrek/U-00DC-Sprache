@@ -1373,7 +1373,7 @@ CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 	} // for arguments
 
 	TryGenerateFunctionReturnReferencesMapping( func, function_type );
-
+	ProcessFunctionReferencesPollution( func, function_type, base_class );
 	CheckOverloadedOperator( base_class, function_type, func.overloaded_operator_, func.file_pos_ );
 
 	NamesScope::InsertedName* const previously_inserted_func=
@@ -1592,6 +1592,73 @@ void CodeBuilder::TryGenerateFunctionReturnReferencesMapping(
 			const size_t tag_count= function_type.args[i].type.ReferencesTagsCount();
 			for( size_t j= 0; j < tag_count; ++j )
 				function_type.return_value_inner_references.inner_args_references.emplace_back( i, j );
+		}
+	}
+}
+
+void CodeBuilder::ProcessFunctionReferencesPollution(
+	const Synt::Function& func,
+	Function& function_type,
+	const ClassProxyPtr& base_class )
+{
+	const bool first_arg_is_implicit_this=
+		( func.name_.components.back().name == Keywords::destructor_ ) ||
+		( func.name_.components.back().name == Keywords::constructor_ && ( func.arguments_.empty() || func.arguments_.front()->name_ != Keywords::this_ ) );
+
+	const auto get_references=
+	[&]( const ProgramString& name ) -> std::vector< std::pair< size_t, size_t > >
+	{
+		std::vector< std::pair< size_t, size_t > > result;
+
+		for( size_t arg_n= 0u; arg_n < function_type.args.size(); ++arg_n )
+		{
+			if( arg_n == 0u && first_arg_is_implicit_this )
+				continue;
+
+			const Synt::FunctionArgument& in_arg= *func.arguments_[ arg_n - ( first_arg_is_implicit_this ? 1u : 0u ) ];
+
+			if( !in_arg.reference_tag_.empty() && in_arg.reference_tag_ == name )
+				result.emplace_back( arg_n, ~0u );
+
+			for( const ProgramString& inner_tag : in_arg.inner_arg_reference_tags_ )
+				if( inner_tag == name )
+					result.emplace_back( arg_n, &inner_tag - in_arg.inner_arg_reference_tags_.data() );
+		}
+
+		return result;
+	};
+
+	if( func.name_.components.size() == 1u && func.name_.components.front().name == Keywords::constructor_ &&
+		function_type.args.size() == 2u &&
+		function_type.args.back().type == base_class && !function_type.args.back().is_mutable && function_type.args.back().is_reference )
+	{
+		// This is copy constructor. Generate reference pollution for it automatically.
+		Function::ReferencePollution ref_pollution;
+		ref_pollution.dst.first= 0u;
+		ref_pollution.dst.second= 0u;
+		ref_pollution.src.first= 1u;
+		ref_pollution.src.second= 0u;
+		function_type.references_pollution.insert(ref_pollution);
+	}
+	else
+	{
+		for( const std::pair< ProgramString, ProgramString >& pollution : func.referecnces_pollution_list_ )
+		{
+			const std::vector< std::pair< size_t, size_t > > dst_references= get_references( pollution.first );
+			const std::vector< std::pair< size_t, size_t > > src_references= get_references( pollution.second );
+			if( dst_references.empty() )
+				errors_.push_back( ReportNameNotFound( func.file_pos_, pollution.first ) );
+			if( src_references.empty() )
+				errors_.push_back( ReportNameNotFound( func.file_pos_, pollution.second ) );
+
+			for( const std::pair< size_t, size_t >& src_ref : src_references )
+			for( const std::pair< size_t, size_t >& dst_ref : dst_references )
+			{
+				Function::ReferencePollution ref_pollution;
+				ref_pollution.dst= dst_ref;
+				ref_pollution.src= src_ref;
+				function_type.references_pollution.emplace(ref_pollution);
+			}
 		}
 	}
 }
@@ -2451,12 +2518,12 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 		variable.location= Variable::Location::Pointer;
 		variable.value_type= ValueType::Reference;
 
-		StoredVariable variable_storage_for_initialization( variable );
+		const StoredVariablePtr variable_storage_for_initialization= std::make_shared<StoredVariable>( variable );
 
 		if( type.GetTemplateDependentType() != nullptr )
 		{
 			if( variable_declaration.initializer != nullptr )
-				ApplyInitializer( variable, variable_storage_for_initialization, *variable_declaration.initializer, block_names, function_context );
+				ApplyInitializer( variable, *variable_storage_for_initialization, *variable_declaration.initializer, block_names, function_context );
 		}
 		else if( variable_declaration.reference_modifier == ReferenceModifier::None )
 		{
@@ -2472,11 +2539,15 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 				variable.llvm_value->setName( ToStdString( variable_declaration.name ) );
 			}
 
+			variable.referenced_variables.insert( variable_storage_for_initialization );
 			if( variable_declaration.initializer != nullptr )
 				variable.constexpr_value=
-					ApplyInitializer( variable, variable_storage_for_initialization, *variable_declaration.initializer, block_names, function_context );
+					ApplyInitializer( variable, *variable_storage_for_initialization, *variable_declaration.initializer, block_names, function_context );
 			else
 				ApplyEmptyInitializer( variable_declaration.name, variables_declaration.file_pos_, variable, function_context );
+			variable.referenced_variables.erase( variable_storage_for_initialization );
+
+			U_ASSERT( variable_storage_for_initialization.use_count() == 1u ); // Must NOT lock variable in initialization process.
 
 			// Make immutable, if needed, only after initialization, because in initialization we need call constructors, which is mutable methods.
 			if( variable_declaration.mutability_modifier != MutabilityModifier::Mutable )
@@ -2589,8 +2660,8 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 		}
 		else
 		{
-			stored_variable->referenced_variables= std::move( variable_storage_for_initialization.referenced_variables );
-			stored_variable->locked_referenced_variables= std::move( variable_storage_for_initialization.locked_referenced_variables );
+			stored_variable->referenced_variables= std::move( variable_storage_for_initialization->referenced_variables );
+			stored_variable->locked_referenced_variables= std::move( variable_storage_for_initialization->locked_referenced_variables );
 		}
 
 		const NamesScope::InsertedName* const inserted_name=

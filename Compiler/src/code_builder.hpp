@@ -261,6 +261,11 @@ private:
 		const Synt::Function& func,
 		Function& function_type );
 
+	void ProcessFunctionReferencesPollution(
+		const Synt::Function& func,
+		Function& function_type,
+		const ClassProxyPtr& base_class );
+
 	void CheckOverloadedOperator(
 		const ClassProxyPtr& base_class,
 		const Function& func_type,

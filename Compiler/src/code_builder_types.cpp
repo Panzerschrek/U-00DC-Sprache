@@ -617,7 +617,8 @@ bool operator==( const Function& r, const Function& l )
 		r.return_value_is_reference == l.return_value_is_reference &&
 		r.args == l.args &&
 		r.return_references == l.return_references &&
-		r.return_value_inner_references == l.return_value_inner_references;
+		r.return_value_inner_references == l.return_value_inner_references &&
+		r.references_pollution == l.references_pollution;
 }
 
 bool operator!=( const Function& r, const Function& l )

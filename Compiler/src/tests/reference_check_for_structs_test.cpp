@@ -325,4 +325,33 @@ U_TEST( ReferencePollutionTest0 )
 	BuildProgram( c_program_text );
 }
 
+U_TEST( ConstructorLinksPassedReference_Test0 )
+{
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			i32 &imut x;
+			fn constructor( this't', i32 &'p mut in_x ) ' t <- p '
+			( x(in_x) )
+			{}
+		}
+
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var S s( x ); // Constructor links passed reference with itself.
+			++x; // Error, "x" have mutable references.
+		}
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::AccessingVariableThatHaveMutableReference );
+	U_TEST_ASSERT( error.file_pos.line == 14u );
+}
+
 } // namespace U
