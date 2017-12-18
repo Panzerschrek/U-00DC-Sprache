@@ -544,6 +544,7 @@ public:
 
 typedef std::unique_ptr<FunctionArgument> FunctionArgumentPtr;
 typedef std::vector<FunctionArgumentPtr> FunctionArgumentsDeclaration;
+typedef std::vector< std::pair< ProgramString, ProgramString > > FunctionReferencesPollutionList;
 
 class Function final
 	: public SyntaxElementBase
@@ -559,6 +560,7 @@ public:
 		ReferenceModifier return_value_reference_modifier,
 		ProgramString return_value_reference_tag,
 		ReferencesTagsList return_value_inner_reference_tags,
+		FunctionReferencesPollutionList referecnces_pollution_list,
 		FunctionArgumentsDeclaration arguments,
 		std::unique_ptr<StructNamedInitializer> constructor_initialization_list,
 		BlockPtr block,
@@ -570,6 +572,7 @@ public:
 	const ReferenceModifier return_value_reference_modifier_;
 	const ProgramString return_value_reference_tag_;
 	const ReferencesTagsList return_value_inner_reference_tags_;
+	const FunctionReferencesPollutionList referecnces_pollution_list_;
 	const FunctionArgumentsDeclaration arguments_;
 	const std::unique_ptr<StructNamedInitializer> constructor_initialization_list_;
 	const BlockPtr block_;

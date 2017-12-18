@@ -260,6 +260,7 @@ Function::Function(
 	ReferenceModifier return_value_reference_modifier,
 	ProgramString return_value_reference_tag,
 	ReferencesTagsList return_value_inner_reference_tags,
+	FunctionReferencesPollutionList referecnces_pollution_list,
 	FunctionArgumentsDeclaration arguments,
 	std::unique_ptr<StructNamedInitializer> constructor_initialization_list,
 	BlockPtr block,
@@ -271,6 +272,7 @@ Function::Function(
 	, return_value_reference_modifier_(return_value_reference_modifier)
 	, return_value_reference_tag_(std::move(return_value_reference_tag))
 	, return_value_inner_reference_tags_(std::move(return_value_inner_reference_tags))
+	, referecnces_pollution_list_( std::move(referecnces_pollution_list) )
 	, arguments_( std::move(arguments) )
 	, constructor_initialization_list_( std::move(constructor_initialization_list) )
 	, block_( std::move(block) )

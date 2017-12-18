@@ -312,4 +312,17 @@ U_TEST( ThreeLevelsOfIndirection_Test )
 	U_TEST_ASSERT( error.file_pos.line == 19u );
 }
 
+U_TEST( ReferencePollutionTest0 )
+{
+	static const char c_program_text[]=
+	R"(
+		struct S{ i32 &mut x; }
+
+		fn Foo( S &mut s'x', i32 &'y mut i ) ' x <- y '
+		{}
+	)";
+
+	BuildProgram( c_program_text );
+}
+
 } // namespace U

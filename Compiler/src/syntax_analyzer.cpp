@@ -164,6 +164,7 @@ private:
 	TypeName ParseTypeName();
 	ComplexName ParseComplexName();
 	ReferencesTagsList ParseReferencesTagsList();
+	FunctionReferencesPollutionList ParseFunctionReferencesPollutionList();
 
 	IInitializerPtr ParseInitializer( bool parse_expression_initializer );
 	std::unique_ptr<ArrayInitializer> ParseArrayInitializer();
@@ -872,6 +873,70 @@ ReferencesTagsList SyntaxAnalyzer::ParseReferencesTagsList()
 		if( it_->type == Lexem::Type::Identifier )
 		{
 			result.push_back( it_->text );
+			++it_;
+		}
+		else
+		{
+			PushErrorMessage( *it_ );
+			return result;
+		}
+
+		if( it_->type == Lexem::Type::Comma )
+		{
+			++it_; U_ASSERT( it_ < it_end_ );
+			if( it_->type == Lexem::Type::Apostrophe ) // Disable things, like 'a, b, c,'
+			{
+				PushErrorMessage( *it_ );
+				return result;
+			}
+		}
+		else if( it_->type == Lexem::Type::Apostrophe )
+		{
+			++it_; U_ASSERT( it_ < it_end_ );
+			break;
+		}
+	}
+
+	return result;
+}
+
+FunctionReferencesPollutionList SyntaxAnalyzer::ParseFunctionReferencesPollutionList()
+{
+	U_ASSERT( it_->type == Lexem::Type::Apostrophe );
+	++it_; U_ASSERT( it_ < it_end_ );
+
+	FunctionReferencesPollutionList result;
+
+	if( it_->type == Lexem::Type::Apostrophe )
+	{
+		// Empty list
+		++it_; U_ASSERT( it_ < it_end_ );
+		return result;
+	}
+
+	while(1)
+	{
+		if( it_->type == Lexem::Type::Identifier )
+		{
+			result.emplace_back( it_->text, ProgramString() );
+			++it_;
+		}
+		else
+		{
+			PushErrorMessage( *it_ );
+			return result;
+		}
+
+		if( it_->type != Lexem::Type::LeftArrow )
+		{
+			PushErrorMessage( *it_ );
+			return result;
+		}
+		++it_; U_ASSERT( it_ < it_end_ );
+
+		if( it_->type == Lexem::Type::Identifier )
+		{
+			result.back().second= it_->text;
 			++it_;
 		}
 		else
@@ -2105,6 +2170,10 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 	ReferenceModifier reference_modifier= ReferenceModifier::None;
 	ProgramString return_value_reference_tag;
 	ReferencesTagsList return_value_tags_list;
+	FunctionReferencesPollutionList references_pollution_list;
+
+	if( it_->type == Lexem::Type::Apostrophe )
+		references_pollution_list= ParseFunctionReferencesPollutionList();
 
 	if( it_->type == Lexem::Type::Colon )
 	{
@@ -2225,6 +2294,7 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 			reference_modifier,
 			std::move(return_value_reference_tag),
 			return_value_tags_list,
+			references_pollution_list,
 			std::move( arguments ),
 			std::move( constructor_initialization_list ),
 			std::move( block ),
