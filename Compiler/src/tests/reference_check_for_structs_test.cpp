@@ -419,4 +419,102 @@ U_TEST( ReferencePollutionErrorsTest_ArgReferencePollution )
 	U_TEST_ASSERT( error.file_pos.line == 3u );
 }
 
+U_TEST( ReferencePollutionErrorsTest_UnallowedReferencePollution_Test0 )
+{
+	static const char c_program_text[]=
+	R"(
+		struct S{ i32 &imut x; }
+		fn FakePollution( S &mut s'x', i32 &'y i ) ' x <- y ' // reference pollution allowed in signature, but actually not happens.
+		{}
+
+		fn Foo( S &mut s, i32 & r )
+		{
+			FakePollution( s, r );
+		} // Error, pollution of "s" with "r", which is not allowed.
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::UnallowedReferencePollution );
+	U_TEST_ASSERT( error.file_pos.line == 9u );
+}
+
+U_TEST( ReferencePollutionErrorsTest_UnallowedReferencePollution_Test1 )
+{
+	static const char c_program_text[]=
+	R"(
+		struct S{ i32 &imut x; }
+		fn FakePollution( S &mut s'x', i32 &'y i ) ' x <- y ' // reference pollution allowed in signature, but actually not happens.
+		{}
+
+		fn Foo( S &mut s, i32 & r )
+		{
+			auto inner_int= 0;
+			FakePollution( s, inner_int );
+		} // Error, pollution of "s" with inner variable, which is not allowed.
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( build_result.errors.size() >= 2u );
+
+	U_TEST_ASSERT( build_result.errors[0].code == CodeBuilderErrorCode::DestroyedVariableStillHaveReferences );
+	U_TEST_ASSERT( build_result.errors[1].code == CodeBuilderErrorCode::UnallowedReferencePollution );
+	U_TEST_ASSERT( build_result.errors[1].file_pos.line == 10u );
+}
+
+U_TEST( ReferencePollutionErrorsTest_UnallowedReferencePollution_Test2 )
+{
+	// "this" inner variables pollution.
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			i32 &imut x;
+			fn FakePollution( mut this'x', i32 &'y i ) ' x <- y '// reference pollution allowed in signature, but actually not happens.
+			{}
+		}
+
+		fn Foo( S &mut s, i32 & r )
+		{
+			s.FakePollution(r);
+		} // Error, pollution of "s" with "r", which is not allowed.
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::UnallowedReferencePollution );
+	U_TEST_ASSERT( error.file_pos.line == 12u );
+}
+
+U_TEST( ReferencePollutionErrorsTest_UnallowedReferencePollution_Test3 )
+{
+	static const char c_program_text[]=
+	R"(
+		struct S{ i32 &imut x; }
+		struct P{ S &mut x; }
+		fn FakePollution( S &mut s'x', i32 &'y i ) ' x <- y ' // reference pollution allowed in signature, but actually not happens.
+		{}
+
+		fn Foo( P &mut p'x', i32 &'y r )
+		{
+			FakePollution( p.x, r );
+		} // Error, pollution of "p" with "r", which is not allowed.
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::UnallowedReferencePollution );
+	U_TEST_ASSERT( error.file_pos.line == 10u );
+}
+
 } // namespace U

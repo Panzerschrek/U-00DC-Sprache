@@ -1918,6 +1918,9 @@ void CodeBuilder::BuildFuncCode(
 		llvm_function );
 	const StackVariablesStorage args_storage( function_context );
 
+	std::vector< std::pair< StoredVariablePtr, StoredVariablePtr > > args_stored_variables;
+	args_stored_variables.resize( function_type->args.size() );
+
 	// push args
 	Variable this_;
 	Variable s_ret;
@@ -1954,6 +1957,18 @@ void CodeBuilder::BuildFuncCode(
 
 			const StoredVariablePtr this_storage= std::make_shared<StoredVariable>( this_ );
 			this_.referenced_variables.emplace(this_storage);
+
+			args_stored_variables[arg_number].first= this_storage;
+
+			if (arg.type.ReferencesTagsCount() > 0u )
+			{
+				Variable dummy_variable;
+				const StoredVariablePtr inner_variable = std::make_shared<StoredVariable>( dummy_variable, false );
+				this_storage->referenced_variables.emplace( inner_variable );
+				args_stored_variables[arg_number].second= inner_variable;
+			}
+
+			// TODO - try add "this" and inner variable of "this" to list of allowed for returning references.
 
 			arg_number++;
 			continue;
@@ -2011,6 +2026,7 @@ void CodeBuilder::BuildFuncCode(
 		const StoredVariablePtr var_storage= std::make_shared<StoredVariable>( var, false );
 		var.referenced_variables.emplace(var_storage);
 
+		args_stored_variables[arg_number].first= var_storage;
 		// For reference arguments try add reference to list of allowed for returning references.
 		if( arg.is_reference )
 		{
@@ -2047,6 +2063,8 @@ void CodeBuilder::BuildFuncCode(
 			const StoredVariablePtr inner_variable = std::make_shared<StoredVariable>( dummy_variable, false );
 			var_storage->referenced_variables.emplace( inner_variable );
 			// Do not lock it, because for function this inner reference looks like variable.
+
+			args_stored_variables[arg_number].second= inner_variable;
 
 			if( function_type->return_value_is_reference )
 			{
@@ -2159,6 +2177,71 @@ void CodeBuilder::BuildFuncCode(
 		{
 			errors_.push_back( ReportNoReturnInFunctionReturningNonVoid( block->file_pos_ ) );
 			return;
+		}
+	}
+
+	// Now, we can check references pollution. After this point only code is destructors calls, which can not link references.
+	const auto find_reference=
+	[&]( const StoredVariablePtr& stored_variable ) -> boost::optional< std::pair<size_t, size_t> >
+	{
+		for( size_t i= 0u; i < function_type->args.size(); ++i )
+		{
+			if( stored_variable == args_stored_variables[i].first )
+				return std::pair<size_t, size_t>( i, ~0u );
+			if( stored_variable == args_stored_variables[i].second )
+				return std::pair<size_t, size_t>( i, 0u );
+		}
+		return boost::none;
+	};
+	for( size_t i= 0u; i < function_type->args.size(); ++i )
+	{
+		if( args_stored_variables[i].first == nullptr ) // May be in templates.
+			continue;
+
+		if( function_type->args[i].is_reference )
+		{
+			for( const StoredVariablePtr& referenced_variable : args_stored_variables[i].first->referenced_variables )
+			{
+				if( referenced_variable == args_stored_variables[i].second ) // Ok, inner storage
+					continue;
+
+				const boost::optional< std::pair<size_t, size_t> > reference= find_reference( referenced_variable );
+				if( reference == boost::none )
+				{
+					errors_.push_back( ReportUnallowedReferencePollution( block->end_file_pos_ ) );
+					continue;
+				}
+
+				Function::ReferencePollution pollution;
+				pollution.src= *reference;
+				pollution.dst.first= i;
+				pollution.dst.second= 0u;
+				if( function_type->references_pollution.count( pollution ) == 0u )
+					errors_.push_back( ReportUnallowedReferencePollution( block->end_file_pos_ ) );
+			}
+		}
+
+		if( args_stored_variables[i].second == nullptr ) // May be in templates.
+			continue;
+
+		if( function_type->args[i].type.ReferencesTagsCount() > 0u )
+		{
+			for( const StoredVariablePtr& referenced_variable : args_stored_variables[i].second->referenced_variables )
+			{
+				const boost::optional< std::pair<size_t, size_t> > reference= find_reference( referenced_variable );
+				if( reference == boost::none )
+				{
+					errors_.push_back( ReportUnallowedReferencePollution( block->end_file_pos_ ) );
+					continue;
+				}
+
+				Function::ReferencePollution pollution;
+				pollution.src= *reference;
+				pollution.dst.first= i;
+				pollution.dst.second= 0u;
+				if( function_type->references_pollution.count( pollution ) == 0u )
+					errors_.push_back( ReportUnallowedReferencePollution( block->end_file_pos_ ) );
+			}
 		}
 	}
 

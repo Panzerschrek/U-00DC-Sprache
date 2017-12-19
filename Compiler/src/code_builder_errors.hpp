@@ -115,6 +115,7 @@ enum class CodeBuilderErrorCode : unsigned int
 	ReturningUnallowedReference,
 	SelfReferencePollution,
 	ArgReferencePollution,
+	UnallowedReferencePollution,
 
 	// Operators overloading
 	OperatorDeclarationOutsideClass,
@@ -217,6 +218,7 @@ CodeBuilderError ReportAccessingVariableThatHaveMutableReference( const FilePos&
 CodeBuilderError ReportReturningUnallowedReference( const FilePos& file_pos ); // TODO - add variable name
 CodeBuilderError ReportSelfReferencePollution( const FilePos& file_pos );
 CodeBuilderError ReportArgReferencePollution( const FilePos& file_pos );
+CodeBuilderError ReportUnallowedReferencePollution( const FilePos& file_pos ); // TODO - add some string information
 CodeBuilderError ReportOperatorDeclarationOutsideClass( const FilePos& file_pos );
 CodeBuilderError ReportOperatorDoesNotHaveParentClassArguments( const FilePos& file_pos );
 CodeBuilderError ReportInvalidArgumentCountForOperator( const FilePos& file_pos );
