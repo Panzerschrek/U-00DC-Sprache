@@ -354,6 +354,35 @@ U_TEST( ConstructorLinksPassedReference_Test0 )
 	U_TEST_ASSERT( error.file_pos.line == 14u );
 }
 
+U_TEST( ConstructorLinksPassedReference_Test1 )
+{
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			i32 &imut x;
+			fn constructor( this't', i32 &'p in_x ) ' t <- p '
+			( x(in_x) )
+			{}
+		}
+
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			auto &imut r= S(x).x; // Constructed temp temp variable refers to "x", then, reference to "x" taked and saved.
+			++x; // Error, "x" have immutable reference.
+		}
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferenceProtectionError );
+	U_TEST_ASSERT( error.file_pos.line == 14u );
+}
+
 U_TEST( ReferencePollutionErrorsTest_SelfReferencePollution )
 {
 	static const char c_program_text[]=

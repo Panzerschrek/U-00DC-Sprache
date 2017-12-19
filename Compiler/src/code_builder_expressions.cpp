@@ -1920,13 +1920,15 @@ Variable CodeBuilder::BuildTempVariableConstruction(
 	variable.value_type= ValueType::Reference;
 	variable.llvm_value= function_context.alloca_ir_builder.CreateAlloca( type.GetLLVMType() );
 
-	StoredVariable variable_storage_for_initialization( variable );
-	variable.constexpr_value= ApplyConstructorInitializer( variable, variable_storage_for_initialization, call_operator, names, function_context );
+	const StoredVariablePtr variable_storage_for_initialization= std::make_shared<StoredVariable>( variable );
+	variable.referenced_variables.insert(variable_storage_for_initialization);
+	variable.constexpr_value= ApplyConstructorInitializer( variable, *variable_storage_for_initialization, call_operator, names, function_context );
+	variable.referenced_variables.erase(variable_storage_for_initialization);
 	variable.value_type= ValueType::Value; // Make value after construction
 
 	const StoredVariablePtr stored_variable= std::make_shared<StoredVariable>( variable );
-	stored_variable->referenced_variables= std::move( variable_storage_for_initialization.referenced_variables );
-	stored_variable->locked_referenced_variables= std::move( variable_storage_for_initialization.locked_referenced_variables );
+	stored_variable->referenced_variables= std::move( variable_storage_for_initialization->referenced_variables );
+	stored_variable->locked_referenced_variables= std::move( variable_storage_for_initialization->locked_referenced_variables );
 
 	variable.referenced_variables.emplace( stored_variable );
 
