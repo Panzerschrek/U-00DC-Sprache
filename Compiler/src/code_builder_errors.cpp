@@ -907,6 +907,28 @@ CodeBuilderError ReportReturningUnallowedReference( const FilePos& file_pos )
 	return error;
 }
 
+CodeBuilderError ReportSelfReferencePollution( const FilePos& file_pos )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::SelfReferencePollution;
+
+	error.text= "Reference self-pollution."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportArgReferencePollution( const FilePos& file_pos )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::ArgReferencePollution;
+
+	error.text= "Pollution of arg reference."_SpC;
+
+	return error;
+}
+
 CodeBuilderError ReportOperatorDeclarationOutsideClass( const FilePos& file_pos )
 {
 	CodeBuilderError error;

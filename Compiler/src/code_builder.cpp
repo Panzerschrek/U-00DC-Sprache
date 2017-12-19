@@ -1644,6 +1644,12 @@ void CodeBuilder::ProcessFunctionReferencesPollution(
 	{
 		for( const std::pair< ProgramString, ProgramString >& pollution : func.referecnces_pollution_list_ )
 		{
+			if( pollution.first == pollution.second )
+			{
+				errors_.push_back( ReportSelfReferencePollution( func.file_pos_ ) );
+				continue;
+			}
+
 			const std::vector< std::pair< size_t, size_t > > dst_references= get_references( pollution.first );
 			const std::vector< std::pair< size_t, size_t > > src_references= get_references( pollution.second );
 			if( dst_references.empty() )
@@ -1651,15 +1657,23 @@ void CodeBuilder::ProcessFunctionReferencesPollution(
 			if( src_references.empty() )
 				errors_.push_back( ReportNameNotFound( func.file_pos_, pollution.second ) );
 
-			for( const std::pair< size_t, size_t >& src_ref : src_references )
 			for( const std::pair< size_t, size_t >& dst_ref : dst_references )
 			{
-				Function::ReferencePollution ref_pollution;
-				ref_pollution.dst= dst_ref;
-				ref_pollution.src= src_ref;
-				function_type.references_pollution.emplace(ref_pollution);
+				if( dst_ref.second == ~0u )
+				{
+					errors_.push_back( ReportArgReferencePollution( func.file_pos_ ) );
+					continue;
+				}
+
+				for( const std::pair< size_t, size_t >& src_ref : src_references )
+				{
+					Function::ReferencePollution ref_pollution;
+					ref_pollution.dst= dst_ref;
+					ref_pollution.src= src_ref;
+					function_type.references_pollution.emplace(ref_pollution);
+				}
 			}
-		}
+		} // for pollution
 	}
 }
 

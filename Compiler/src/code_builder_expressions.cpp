@@ -1876,6 +1876,8 @@ Value CodeBuilder::DoCallFunction(
 			}
 		};
 
+		// TODO - link to dst variable also variables, referenced by src variables.
+
 		if( function_type.args[ dst_arg ].is_reference )
 		{
 			for( const StoredVariablePtr& arg_value_variable : arg_to_variables[ dst_arg ] )

@@ -354,4 +354,40 @@ U_TEST( ConstructorLinksPassedReference_Test0 )
 	U_TEST_ASSERT( error.file_pos.line == 14u );
 }
 
+U_TEST( ReferencePollutionErrorsTest_SelfReferencePollution )
+{
+	static const char c_program_text[]=
+	R"(
+		struct S{ i32 &mut x; }
+		fn Foo( S &mut s'x' ) ' x <- x '
+		{}
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::SelfReferencePollution );
+	U_TEST_ASSERT( error.file_pos.line == 3u );
+}
+
+U_TEST( ReferencePollutionErrorsTest_ArgReferencePollution )
+{
+	static const char c_program_text[]=
+	R"(
+		struct S{ i32 &mut x; }
+		fn Foo( S &mut s'x', i32 &'y mut r ) ' y <- x '
+		{}
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ArgReferencePollution );
+	U_TEST_ASSERT( error.file_pos.line == 3u );
+}
+
 } // namespace U
