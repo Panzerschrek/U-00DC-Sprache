@@ -383,6 +383,99 @@ U_TEST( ConstructorLinksPassedReference_Test1 )
 	U_TEST_ASSERT( error.file_pos.line == 14u );
 }
 
+U_TEST( ReferencePollutionPropogationTest0 )
+{
+	static const char c_program_text[]=
+	R"(
+		struct S{ i32 & x; }
+		struct P{ S & x; }
+
+		fn Pollution( P &mut p'x', i32 &'y i ) ' x <- y '
+		{}
+
+		fn Foo()
+		{
+			var i32 mut x= 0, mut y= 0;
+			var S s{ .x= x }; // "s" refers to "x"
+			{
+				var P mut p{ .x= s }; // "p" refers to "s" and "x" also
+				Pollution( p, y ); // "p" and "s" now refers also to "y".
+			}
+			++y; // Error, still have references.
+		}
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferenceProtectionError );
+	U_TEST_ASSERT( error.file_pos.line == 16u );
+}
+
+U_TEST( ReferencePollutionPropogationTest1 )
+{
+	static const char c_program_text[]=
+	R"(
+		struct S{ i32 & x; }
+		struct P{ S & x; }
+
+		fn Pollution( P p'x', i32 &'y i ) ' x <- y '
+		{}
+
+		fn Foo()
+		{
+			var i32 mut x= 0, mut y= 0;
+			var S s{ .x= x }; // "s" refers to "x"
+			{
+				var P mut p{ .x= s }; // "p" refers to "s" and "x" also
+				Pollution( p, y ); // "s" now refers also to "y".
+			}
+			++y; // Error, still have references.
+		}
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferenceProtectionError );
+	U_TEST_ASSERT( error.file_pos.line == 16u );
+}
+
+U_TEST( ReferencePollutionPropogationTest2 )
+{
+	static const char c_program_text[]=
+	R"(
+		struct S{ i32 & x; }
+		struct P{ S & x; }
+
+		fn Pollution( P &mut p'x', i32 &'y i ) ' x <- y '
+		{}
+
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var S s{ .x= x }; // "s" refers to "x"
+			{
+				var i32 y= 0;
+				var P mut p{ .x= s }; // "p" refers to "s" and "x" also
+				Pollution( p, y ); // "p" and "s" now refers also to "y".
+			} // Error, "y" still have reference - inside "s".
+		}
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::DestroyedVariableStillHaveReferences );
+	U_TEST_ASSERT( error.file_pos.line == 16u );
+}
+
 U_TEST( ReferencePollutionErrorsTest_SelfReferencePollution )
 {
 	static const char c_program_text[]=
