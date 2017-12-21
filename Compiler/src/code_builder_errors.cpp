@@ -929,6 +929,28 @@ CodeBuilderError ReportUnallowedReferencePollution( const FilePos& file_pos )
 	return error;
 }
 
+CodeBuilderError ReportExplicitReferencePollutionForCopyConstructor( const FilePos& file_pos )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::ExplicitReferencePollutionForCopyConstructor;
+
+	error.text= "Explicit reference pollution for copy constructor. Reference pollution for copy constructors generated automatically."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportExplicitReferencePollutionForCopyAssignmentOperator( const FilePos& file_pos )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::ExplicitReferencePollutionForCopyAssignmentOperator;
+
+	error.text= "Explicit reference pollution for copy assignment operator. Reference pollution for copy assignment operators generated automatically."_SpC;
+
+	return error;
+}
+
 CodeBuilderError ReportOperatorDeclarationOutsideClass( const FilePos& file_pos )
 {
 	CodeBuilderError error;

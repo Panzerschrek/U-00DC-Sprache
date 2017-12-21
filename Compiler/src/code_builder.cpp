@@ -1626,13 +1626,38 @@ void CodeBuilder::ProcessFunctionReferencesPollution(
 		function_type.args.size() == 2u &&
 		function_type.args.back().type == base_class && !function_type.args.back().is_mutable && function_type.args.back().is_reference )
 	{
-		// This is copy constructor. Generate reference pollution for it automatically.
-		Function::ReferencePollution ref_pollution;
-		ref_pollution.dst.first= 0u;
-		ref_pollution.dst.second= 0u;
-		ref_pollution.src.first= 1u;
-		ref_pollution.src.second= 0u;
-		function_type.references_pollution.insert(ref_pollution);
+		if( !func.referecnces_pollution_list_.empty() )
+			errors_.push_back( ReportExplicitReferencePollutionForCopyConstructor( func.file_pos_ ) );
+
+		if( base_class->class_->references_tags_count > 0u )
+		{
+			// This is copy constructor. Generate reference pollution for it automatically.
+			Function::ReferencePollution ref_pollution;
+			ref_pollution.dst.first= 0u;
+			ref_pollution.dst.second= 0u;
+			ref_pollution.src.first= 1u;
+			ref_pollution.src.second= 0u;
+			function_type.references_pollution.insert(ref_pollution);
+		}
+	}
+	else if( func.name_.components.back().name == OverloadedOperatorToString( OverloadedOperator::Assign ) &&
+		function_type.args.size() == 2u &&
+		function_type.args[0u].type == base_class &&  function_type.args[0u].is_mutable && function_type.args[0u].is_reference &&
+		function_type.args[1u].type == base_class && !function_type.args[1u].is_mutable && function_type.args[1u].is_reference )
+	{
+		if( !func.referecnces_pollution_list_.empty() )
+			errors_.push_back( ReportExplicitReferencePollutionForCopyAssignmentOperator( func.file_pos_ ) );
+
+		if( base_class->class_->references_tags_count > 0u )
+		{
+			// This is copy assignment operator. Generate reference pollution for it automatically.
+			Function::ReferencePollution ref_pollution;
+			ref_pollution.dst.first= 0u;
+			ref_pollution.dst.second= 0u;
+			ref_pollution.src.first= 1u;
+			ref_pollution.src.second= 0u;
+			function_type.references_pollution.insert(ref_pollution);
+		}
 	}
 	else
 	{

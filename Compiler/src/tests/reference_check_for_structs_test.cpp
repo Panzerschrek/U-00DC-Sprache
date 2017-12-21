@@ -610,4 +610,48 @@ U_TEST( ReferencePollutionErrorsTest_UnallowedReferencePollution_Test3 )
 	U_TEST_ASSERT( error.file_pos.line == 10u );
 }
 
+U_TEST( ReferencePollutionErrorsTest_ExplicitReferencePollutionForCopyConstructor )
+{
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			i32& x;
+			fn constructor( mut this'x', S & other'y' ) ' x <- y '
+			( x(other.x) )
+			{}
+		}
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExplicitReferencePollutionForCopyConstructor );
+	U_TEST_ASSERT( error.file_pos.line == 5u );
+}
+
+
+U_TEST( ReferencePollutionErrorsTest_ExplicitReferencePollutionForCopyAssignmentOperator )
+{
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			i32& x;
+			op=( mut this'x', S & other'y' ) ' x <- y '
+			{}
+		}
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExplicitReferencePollutionForCopyAssignmentOperator );
+	U_TEST_ASSERT( error.file_pos.line == 5u );
+}
+
 } // namespace U

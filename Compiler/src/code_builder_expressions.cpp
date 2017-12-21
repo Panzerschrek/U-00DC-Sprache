@@ -1773,8 +1773,6 @@ Value CodeBuilder::DoCallFunction(
 		{
 			U_ASSERT( arg_n_and_tag_n.first < arg_to_variables.size() );
 			U_ASSERT( arg_n_and_tag_n.second == 0u ); // Currently, support only 0 or 1 tags
-			// TODO - if we pass value-argument, we needs to call copy constructor. In this constructor we can swap tags.
-			// We need correct result in such case.
 
 			for( const StoredVariablePtr& var : arg_to_variables[arg_n_and_tag_n.first] )
 			{
@@ -1816,6 +1814,7 @@ Value CodeBuilder::DoCallFunction(
 		}
 	}
 
+	// Setup references after call.
 	for( const Function::ReferencePollution& referene_pollution : function_type.references_pollution )
 	{
 		const size_t dst_arg= referene_pollution.dst.first;
