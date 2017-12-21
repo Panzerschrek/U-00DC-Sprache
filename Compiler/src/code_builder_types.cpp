@@ -617,7 +617,7 @@ bool operator==( const Function& r, const Function& l )
 		r.return_value_is_reference == l.return_value_is_reference &&
 		r.args == l.args &&
 		r.return_references == l.return_references &&
-		r.return_value_inner_references == l.return_value_inner_references &&
+		r.return_references == l.return_references &&
 		r.references_pollution == l.references_pollution;
 }
 
@@ -634,6 +634,18 @@ bool operator==( const Array& r, const Array& l )
 bool operator!=( const Array& r, const Array& l )
 {
 	return !( r == l );
+}
+
+constexpr size_t Function::c_arg_reference_tag_number;
+
+size_t Function::ReferencePollutionHasher::operator()( const ReferencePollution& r ) const
+{
+	size_t result= 0u;
+	boost::hash_combine( result, r.dst.first );
+	boost::hash_combine( result, r.dst.second );
+	boost::hash_combine( result, r.src.first );
+	boost::hash_combine( result, r.src.second );
+	return result;
 }
 
 size_t NameResolvingKeyHasher::operator()( const NameResolvingKey& key ) const

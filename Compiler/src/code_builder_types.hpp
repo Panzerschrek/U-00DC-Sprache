@@ -151,6 +151,7 @@ bool operator!=( const Type& r, const Type& l );
 
 struct Function final
 {
+public:
 	struct Arg
 	{
 		Type type;
@@ -158,18 +159,22 @@ struct Function final
 		bool is_mutable;
 	};
 
+	// "first" - arg number, "second" is inner tag number or ~0, if it is reference itself
+	static constexpr size_t c_arg_reference_tag_number= ~0u;
+	typedef std::pair< size_t, size_t > ArgReference;
+
 	struct InToOutReferences
 	{
 		// Numers of args.
 		std::vector<size_t> args_references;
 		// Pairs of arg number and tag number.
-		std::vector< std::pair< size_t, size_t > > inner_args_references;
+		std::vector< ArgReference > inner_args_references;
 	};
 
 	struct ReferencePollution
 	{
-		std::pair< size_t, size_t > dst;
-		std::pair< size_t, size_t > src; // second = ~0, if reference itself, else - inner reference.
+		ArgReference dst;
+		ArgReference src; // second = ~0, if reference itself, else - inner reference.
 		bool operator==( const ReferencePollution& other ) const
 		{
 			return this->dst == other.dst && this->src == other.src;
@@ -178,24 +183,18 @@ struct Function final
 
 	struct ReferencePollutionHasher
 	{
-		size_t operator()( const ReferencePollution& r ) const
-		{
-			size_t result= 0u;
-			boost::hash_combine( result, r.dst.first );
-			boost::hash_combine( result, r.dst.second );
-			boost::hash_combine( result, r.src.first );
-			boost::hash_combine( result, r.src.second );
-			return result;
-		}
+		size_t operator()( const ReferencePollution& r ) const;
 	};
 
+public:
 	Type return_type;
 	bool return_value_is_reference= false;
 	bool return_value_is_mutable= false;
 	std::vector<Arg> args;
 
-	InToOutReferences return_references; // for functions, returning references
-	InToOutReferences return_value_inner_references; // for functions, returning values
+	// for functions, returning references this is references of reference itslef.
+	// For function, returning values, this is inner references.
+	InToOutReferences return_references;
 	std::unordered_set< ReferencePollution, ReferencePollutionHasher > references_pollution;
 
 	llvm::FunctionType* llvm_function_type= nullptr;

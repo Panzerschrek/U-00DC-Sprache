@@ -1769,7 +1769,7 @@ Value CodeBuilder::DoCallFunction(
 		}
 
 		// Returned reference also may be linked with references, passed inside structs.
-		for( const std::pair< size_t, size_t >& arg_n_and_tag_n : function_type.return_references.inner_args_references )
+		for( const Function::ArgReference& arg_n_and_tag_n : function_type.return_references.inner_args_references )
 		{
 			U_ASSERT( arg_n_and_tag_n.first < arg_to_variables.size() );
 			U_ASSERT( arg_n_and_tag_n.second == 0u ); // Currently, support only 0 or 1 tags
@@ -1788,7 +1788,7 @@ Value CodeBuilder::DoCallFunction(
 
 		// Returned value references refers to args, listed in function type.
 		U_ASSERT( arg_to_variables.size() == function_type.args.size() );
-		for( const size_t arg_n : function_type.return_value_inner_references.args_references )
+		for( const size_t arg_n : function_type.return_references.args_references )
 		{
 			U_ASSERT( arg_n < arg_to_variables.size() );
 			if( function_type.args[ arg_n ].is_reference )
@@ -1799,7 +1799,7 @@ Value CodeBuilder::DoCallFunction(
 		}
 
 		// Returned vale references also may be linked with references, passed inside structs.
-		for( const std::pair< size_t, size_t >& arg_n_and_tag_n : function_type.return_value_inner_references.inner_args_references )
+		for( const Function::ArgReference& arg_n_and_tag_n : function_type.return_references.inner_args_references )
 		{
 			U_ASSERT( arg_n_and_tag_n.first < arg_to_variables.size() );
 			U_ASSERT( arg_n_and_tag_n.second == 0u ); // Currently, support only 0 or 1 tags
@@ -1823,7 +1823,7 @@ Value CodeBuilder::DoCallFunction(
 
 		std::unordered_set<StoredVariablePtr> src_variables;
 		bool src_variables_is_mutable= false;
-		if( referene_pollution.src.second == ~0u )
+		if( referene_pollution.src.second == Function::c_arg_reference_tag_number )
 		{
 			// Reference-arg itself
 			U_ASSERT( function_type.args[ referene_pollution.src.first ].is_reference );

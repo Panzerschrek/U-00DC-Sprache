@@ -1532,7 +1532,7 @@ void CodeBuilder::ProcessFunctionArgReferencesTags(
 			for( const ProgramString& tag : func.return_value_inner_reference_tags_ )
 			{
 				if( tag == in_arg.reference_tag_ )
-					function_type.return_value_inner_references.args_references.push_back( arg_number );
+					function_type.return_references.args_references.push_back( arg_number );
 			}
 		}
 
@@ -1546,7 +1546,7 @@ void CodeBuilder::ProcessFunctionArgReferencesTags(
 				{
 					const size_t arg_tag_number= &arg_tag - in_arg.inner_arg_reference_tags_.data();
 					//const size_t ret_tag_number= &ret_tag - func.return_value_inner_reference_tags_;
-					function_type.return_value_inner_references.inner_args_references.emplace_back( arg_number, arg_tag_number );
+					function_type.return_references.inner_args_references.emplace_back( arg_number, arg_tag_number );
 				}
 			}
 		}
@@ -1587,11 +1587,11 @@ void CodeBuilder::TryGenerateFunctionReturnReferencesMapping(
 		for( size_t i= 0u; i < function_type.args.size(); ++i )
 		{
 			if( function_type.args[i].is_reference )
-				function_type.return_value_inner_references.args_references.push_back(i);
+				function_type.return_references.args_references.push_back(i);
 
 			const size_t tag_count= function_type.args[i].type.ReferencesTagsCount();
 			for( size_t j= 0; j < tag_count; ++j )
-				function_type.return_value_inner_references.inner_args_references.emplace_back( i, j );
+				function_type.return_references.inner_args_references.emplace_back( i, j );
 		}
 	}
 }
@@ -1606,9 +1606,9 @@ void CodeBuilder::ProcessFunctionReferencesPollution(
 		( func.name_.components.back().name == Keywords::constructor_ && ( func.arguments_.empty() || func.arguments_.front()->name_ != Keywords::this_ ) );
 
 	const auto get_references=
-	[&]( const ProgramString& name ) -> std::vector< std::pair< size_t, size_t > >
+	[&]( const ProgramString& name ) -> std::vector<Function::ArgReference>
 	{
-		std::vector< std::pair< size_t, size_t > > result;
+		std::vector<Function::ArgReference> result;
 
 		for( size_t arg_n= 0u; arg_n < function_type.args.size(); ++arg_n )
 		{
@@ -1618,7 +1618,7 @@ void CodeBuilder::ProcessFunctionReferencesPollution(
 			const Synt::FunctionArgument& in_arg= *func.arguments_[ arg_n - ( first_arg_is_implicit_this ? 1u : 0u ) ];
 
 			if( !in_arg.reference_tag_.empty() && in_arg.reference_tag_ == name )
-				result.emplace_back( arg_n, ~0u );
+				result.emplace_back( arg_n, Function::c_arg_reference_tag_number );
 
 			for( const ProgramString& inner_tag : in_arg.inner_arg_reference_tags_ )
 				if( inner_tag == name )
@@ -1675,22 +1675,22 @@ void CodeBuilder::ProcessFunctionReferencesPollution(
 				continue;
 			}
 
-			const std::vector< std::pair< size_t, size_t > > dst_references= get_references( pollution.first );
-			const std::vector< std::pair< size_t, size_t > > src_references= get_references( pollution.second );
+			const std::vector<Function::ArgReference> dst_references= get_references( pollution.first );
+			const std::vector<Function::ArgReference> src_references= get_references( pollution.second );
 			if( dst_references.empty() )
 				errors_.push_back( ReportNameNotFound( func.file_pos_, pollution.first ) );
 			if( src_references.empty() )
 				errors_.push_back( ReportNameNotFound( func.file_pos_, pollution.second ) );
 
-			for( const std::pair< size_t, size_t >& dst_ref : dst_references )
+			for( const Function::ArgReference& dst_ref : dst_references )
 			{
-				if( dst_ref.second == ~0u )
+				if( dst_ref.second == Function::c_arg_reference_tag_number )
 				{
 					errors_.push_back( ReportArgReferencePollution( func.file_pos_ ) );
 					continue;
 				}
 
-				for( const std::pair< size_t, size_t >& src_ref : src_references )
+				for( const Function::ArgReference& src_ref : src_references )
 				{
 					Function::ReferencePollution ref_pollution;
 					ref_pollution.dst= dst_ref;
@@ -2069,7 +2069,7 @@ void CodeBuilder::BuildFuncCode(
 			else if( function_type->return_type.ReferencesTagsCount() > 0u )
 			{
 				U_ASSERT( function_type->return_type.ReferencesTagsCount() == 1u ); // Currently, support 0 or 1 tags.
-				for( const size_t arg_n : function_type->return_value_inner_references.args_references )
+				for( const size_t arg_n : function_type->return_references.args_references )
 				{
 					if( arg_n == arg_number )
 					{
@@ -2093,7 +2093,7 @@ void CodeBuilder::BuildFuncCode(
 
 			if( function_type->return_value_is_reference )
 			{
-				for( const std::pair<size_t, size_t>& arg_and_tag : function_type->return_references.inner_args_references )
+				for( const Function::ArgReference& arg_and_tag : function_type->return_references.inner_args_references )
 				{
 					if( arg_and_tag.first == arg_number && arg_and_tag.second == 0u )
 					{
@@ -2104,7 +2104,7 @@ void CodeBuilder::BuildFuncCode(
 			}
 			else if( function_type->return_type.ReferencesTagsCount() > 0u )
 			{
-				for( const std::pair<size_t, size_t>& arg_and_tag : function_type->return_value_inner_references.inner_args_references )
+				for( const Function::ArgReference& arg_and_tag : function_type->return_references.inner_args_references )
 				{
 					if( arg_and_tag.first == arg_number && arg_and_tag.second == 0u )
 					{
@@ -2207,14 +2207,14 @@ void CodeBuilder::BuildFuncCode(
 
 	// Now, we can check references pollution. After this point only code is destructors calls, which can not link references.
 	const auto find_reference=
-	[&]( const StoredVariablePtr& stored_variable ) -> boost::optional< std::pair<size_t, size_t> >
+	[&]( const StoredVariablePtr& stored_variable ) -> boost::optional<Function::ArgReference>
 	{
 		for( size_t i= 0u; i < function_type->args.size(); ++i )
 		{
 			if( stored_variable == args_stored_variables[i].first )
-				return std::pair<size_t, size_t>( i, ~0u );
+				return Function::ArgReference( i, Function::c_arg_reference_tag_number );
 			if( stored_variable == args_stored_variables[i].second )
-				return std::pair<size_t, size_t>( i, 0u );
+				return Function::ArgReference( i, 0u );
 		}
 		return boost::none;
 	};
@@ -2230,7 +2230,7 @@ void CodeBuilder::BuildFuncCode(
 				if( referenced_variable == args_stored_variables[i].second ) // Ok, inner storage
 					continue;
 
-				const boost::optional< std::pair<size_t, size_t> > reference= find_reference( referenced_variable );
+				const boost::optional<Function::ArgReference> reference= find_reference( referenced_variable );
 				if( reference == boost::none )
 				{
 					errors_.push_back( ReportUnallowedReferencePollution( block->end_file_pos_ ) );
@@ -2253,7 +2253,7 @@ void CodeBuilder::BuildFuncCode(
 		{
 			for( const StoredVariablePtr& referenced_variable : args_stored_variables[i].second->referenced_variables )
 			{
-				const boost::optional< std::pair<size_t, size_t> > reference= find_reference( referenced_variable );
+				const boost::optional<Function::ArgReference> reference= find_reference( referenced_variable );
 				if( reference == boost::none )
 				{
 					errors_.push_back( ReportUnallowedReferencePollution( block->end_file_pos_ ) );
