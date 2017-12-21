@@ -663,6 +663,12 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 			else
 				fields_llvm_types.emplace_back( out_field.type.GetLLVMType() );
 
+			// HACK! REMOVE ME.
+			// Count references inside, processing fields.
+			// TODO - try process class methods, when all info about this is known.
+			if( out_field.is_reference || out_field.type.ReferencesTagsCount() > 0u )
+				the_class->references_tags_count= 1u;
+
 			if( NameShadowsTemplateArgument( in_field->name, the_class->members ) )
 				errors_.push_back( ReportDeclarationShadowsTemplateArgument( in_field->file_pos_, in_field->name ) );
 			else
