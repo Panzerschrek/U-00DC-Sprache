@@ -1875,24 +1875,31 @@ Value CodeBuilder::DoCallFunction(
 			}
 		};
 
+		const auto link_variable_and_inner_variables=
+		[&]( const StoredVariablePtr& dst_variable, const StoredVariablePtr& src_variable )
+		{
+			link_variables( dst_variable, src_variable );
+			for( const StoredVariablePtr& src_variable_referenced_variable : src_variable->referenced_variables )
+				link_variables( dst_variable, src_variable_referenced_variable );
+		};
+
+		const auto link_variables_include_inner=
+		[&]( const StoredVariablePtr& dst_variable, const StoredVariablePtr& src_variable )
+		{
+			link_variable_and_inner_variables( dst_variable, src_variable );
+			for( const StoredVariablePtr& dst_variable_referenced_variable : dst_variable->referenced_variables )
+			{
+				// TODO - maybe add here check, if referenced variable itself can contains references?
+				link_variable_and_inner_variables( dst_variable_referenced_variable, src_variable );
+			}
+		};
+
 		if( function_type.args[ dst_arg ].is_reference )
 		{
 			for( const StoredVariablePtr& arg_value_variable : arg_to_variables[ dst_arg ] )
 			{
 				for( const StoredVariablePtr& src_variable : src_variables )
-				{
-					link_variables( arg_value_variable, src_variable ); // Link src variable itself
-					for( const StoredVariablePtr& src_variable_referenced_variable : src_variable->referenced_variables ) // link referenced by src variable variables
-						link_variables( arg_value_variable, src_variable_referenced_variable );
-
-					// Link with referenced by dst variable variables.
-					for( const StoredVariablePtr& dst_variable_referenced_variable : arg_value_variable->referenced_variables ) // link referenced by src variable variables
-					{
-						link_variables( dst_variable_referenced_variable, src_variable );
-						for( const StoredVariablePtr& src_variable_referenced_variable : src_variable->referenced_variables ) // link referenced by src variable variables
-							link_variables( dst_variable_referenced_variable, src_variable_referenced_variable );
-					}
-				}
+					link_variables_include_inner( arg_value_variable, src_variable );
 			}
 		}
 		else
@@ -1902,19 +1909,7 @@ Value CodeBuilder::DoCallFunction(
 				for( const StoredVariablePtr& dst_variable : arg_value_variable->referenced_variables )
 				{
 					for( const StoredVariablePtr& src_variable : src_variables )
-					{
-						link_variables( dst_variable, src_variable ); // Link src variable itself
-						for( const StoredVariablePtr& src_variable_referenced_variable : src_variable->referenced_variables ) // link referenced by src variable variables
-							link_variables( arg_value_variable, src_variable_referenced_variable );
-
-						// Link with referenced by dst variable variables.
-						for( const StoredVariablePtr& dst_variable_referenced_variable : dst_variable->referenced_variables ) // link referenced by src variable variables
-						{
-							link_variables( dst_variable_referenced_variable, src_variable );
-							for( const StoredVariablePtr& src_variable_referenced_variable : src_variable->referenced_variables ) // link referenced by src variable variables
-								link_variables( dst_variable_referenced_variable, src_variable_referenced_variable );
-						}
-					}
+						link_variables_include_inner( dst_variable, src_variable );
 				}
 			}
 		}

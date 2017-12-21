@@ -2084,7 +2084,7 @@ void CodeBuilder::BuildFuncCode(
 		{
 			U_ASSERT( arg.type.ReferencesTagsCount() == 1u ); // Currently, support 0 or 1 tags.
 
-			Variable dummy_variable;
+			Variable dummy_variable; // TODO - maybe set possible type?
 			const StoredVariablePtr inner_variable = std::make_shared<StoredVariable>( dummy_variable, false );
 			var_storage->referenced_variables.emplace( inner_variable );
 			// Do not lock it, because for function this inner reference looks like variable.
