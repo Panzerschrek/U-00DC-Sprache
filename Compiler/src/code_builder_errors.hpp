@@ -42,7 +42,6 @@ enum class CodeBuilderErrorCode : unsigned int
 	CouldNotSelectOverloadedFunction,
 	FunctionPrototypeDuplication,
 	FunctionBodyDuplication,
-	ReturnValueDiffersFromPrototype,
 	FunctionDeclarationOutsideItsScope,
 	ClassDeclarationOutsideItsScope,
 	ClassBodyDuplication,
@@ -163,7 +162,6 @@ CodeBuilderError ReportTooManySuitableOverloadedFunctions( const FilePos& file_p
 CodeBuilderError ReportCouldNotSelectOverloadedFunction( const FilePos& file_pos );
 CodeBuilderError ReportFunctionPrototypeDuplication( const FilePos& file_pos, const ProgramString& func_name );
 CodeBuilderError ReportFunctionBodyDuplication( const FilePos& file_pos, const ProgramString& func_name );
-CodeBuilderError ReportReturnValueDiffersFromPrototype( const FilePos& file_pos );
 CodeBuilderError ReportFunctionDeclarationOutsideItsScope( const FilePos& file_pos );
 CodeBuilderError ReportClassDeclarationOutsideItsScope( const FilePos& file_pos );
 CodeBuilderError ReportClassBodyDuplication( const FilePos& file_pos );

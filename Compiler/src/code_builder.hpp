@@ -451,7 +451,7 @@ private:
 
 	// Functions
 
-	FunctionVariable* GetFunctionWithExactSignature(
+	FunctionVariable* GetFunctionWithSameType(
 		const Function& function_type,
 		OverloadedFunctionsSet& functions_set );
 

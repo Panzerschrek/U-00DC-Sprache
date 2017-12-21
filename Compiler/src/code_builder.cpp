@@ -275,7 +275,7 @@ void CodeBuilder::MergeNameScopes( NamesScope& dst, const NamesScope& src, Class
 				for( const FunctionVariable& src_func : *src_funcs_set )
 				{
 					FunctionVariable* same_dst_func=
-						GetFunctionWithExactSignature( *src_func.type.GetFunctionType(), *dst_funcs_set );
+						GetFunctionWithSameType( *src_func.type.GetFunctionType(), *dst_funcs_set );
 					if( same_dst_func != nullptr )
 					{
 						if( same_dst_func->prototype_file_pos != src_func.prototype_file_pos )
@@ -1424,7 +1424,7 @@ CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 		if( OverloadedFunctionsSet* const functions_set= value.GetFunctionsSet() )
 		{
 			if( FunctionVariable* const same_function=
-				GetFunctionWithExactSignature(
+				GetFunctionWithSameType(
 					*func_variable.type.GetFunctionType(),
 					*functions_set ) )
 			{
@@ -1436,12 +1436,6 @@ CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 				if( same_function->have_body )
 				{
 					errors_.push_back( ReportFunctionBodyDuplication( func.file_pos_, func_name ) );
-					return result;
-				}
-				if( same_function->type != func_variable.type )
-				{
-					// In this place we have only possible error
-					errors_.push_back( ReportReturnValueDiffersFromPrototype( func.file_pos_ ) );
 					return result;
 				}
 
@@ -3623,15 +3617,13 @@ void CodeBuilder::BuildTypedef(
 		errors_.push_back( ReportRedefinition( typedef_.file_pos_, typedef_.name ) );
 }
 
-FunctionVariable* CodeBuilder::GetFunctionWithExactSignature(
+FunctionVariable* CodeBuilder::GetFunctionWithSameType(
 	const Function& function_type,
 	OverloadedFunctionsSet& functions_set )
 {
 	for( FunctionVariable& function_varaible : functions_set )
 	{
-		const Function& set_function_type= *function_varaible.type.GetFunctionType();
-
-		if( set_function_type.args == function_type.args )
+		if( *function_varaible.type.GetFunctionType() == function_type )
 			return &function_varaible;
 	}
 
