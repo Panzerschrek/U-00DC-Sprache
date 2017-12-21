@@ -1301,7 +1301,7 @@ CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 	if( !function_type.return_value_is_reference && !func.return_value_inner_reference_tags_.empty() )
 	{
 		if( func.return_value_inner_reference_tags_.size() != function_type.return_type.ReferencesTagsCount() )
-			errors_.push_back( ReportNotImplemented( func.file_pos_, "multiple references tags for variables" ) );
+			errors_.push_back( ReportInvalidReferenceTagCount( func.file_pos_, func.return_value_inner_reference_tags_.size(), function_type.return_type.ReferencesTagsCount() ) );
 	}
 
 	// Args.
@@ -1497,16 +1497,16 @@ void CodeBuilder::ProcessFunctionArgReferencesTags(
 	const Function::Arg& out_arg,
 	const size_t arg_number )
 {
+	if( !in_arg.inner_arg_reference_tags_.empty() &&
+		in_arg.inner_arg_reference_tags_.size() != out_arg.type.ReferencesTagsCount() )
+		errors_.push_back( ReportInvalidReferenceTagCount( in_arg.file_pos_, in_arg.inner_arg_reference_tags_.size(), out_arg.type.ReferencesTagsCount() ) );
+
 	if( function_type.return_value_is_reference && !func.return_value_reference_tag_.empty() )
 	{
 		// Arg reference to return reference
 		if( out_arg.is_reference && !in_arg.reference_tag_.empty() &&
 			in_arg.reference_tag_ == func.return_value_reference_tag_ )
 			function_type.return_references.args_references.push_back( arg_number );
-
-		if( in_arg.inner_arg_reference_tags_.size() != out_arg.type.ReferencesTagsCount() ||
-			in_arg.inner_arg_reference_tags_.size() > 1u )
-			errors_.push_back( ReportNotImplemented( in_arg.file_pos_, "multiple references tags for variables" ) );
 
 		// Inner arg references to return reference
 		for( const ProgramString& tag : in_arg.inner_arg_reference_tags_ )

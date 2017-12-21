@@ -654,4 +654,53 @@ U_TEST( ReferencePollutionErrorsTest_ExplicitReferencePollutionForCopyAssignment
 	U_TEST_ASSERT( error.file_pos.line == 5u );
 }
 
+U_TEST( InnterTagsErrorsTest_InvalidReferenceTagCount_0 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo( i32 x'a, b, c' ); // tag list for fundamental type
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::InvalidReferenceTagCount );
+	U_TEST_ASSERT( error.file_pos.line == 2u );
+}
+
+U_TEST( InnterTagsErrorsTest_InvalidReferenceTagCount_1 )
+{
+	static const char c_program_text[]=
+	R"(
+		struct S{}
+		fn Foo( S s'a, b, c' ); // tag list for struct without references
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::InvalidReferenceTagCount );
+	U_TEST_ASSERT( error.file_pos.line == 3u );
+}
+
+U_TEST( InnterTagsErrorsTest_InvalidReferenceTagCount_2 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo( i32 &'x a, i32 &'y b, i32 &'z c ) : i32'x, y, z'; // tag list for return value
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::InvalidReferenceTagCount );
+	U_TEST_ASSERT( error.file_pos.line == 2u );
+}
+
 } // namespace U

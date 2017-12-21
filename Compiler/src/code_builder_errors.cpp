@@ -896,6 +896,19 @@ CodeBuilderError ReportReturningUnallowedReference( const FilePos& file_pos )
 	return error;
 }
 
+CodeBuilderError ReportInvalidReferenceTagCount( const FilePos& file_pos, const size_t given, const size_t required )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::InvalidReferenceTagCount;
+
+	error.text= "Invalid reference tag count, expected "_SpC +
+		ToProgramString(std::to_string(required).c_str()) + ", given "_SpC +
+		ToProgramString(std::to_string(given).c_str()) + "."_SpC;
+
+	return error;
+}
+
 CodeBuilderError ReportSelfReferencePollution( const FilePos& file_pos )
 {
 	CodeBuilderError error;
