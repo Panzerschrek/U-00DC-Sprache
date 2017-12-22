@@ -2089,6 +2089,14 @@ void CodeBuilder::BuildFuncCode(
 			var_storage->referenced_variables.emplace( inner_variable );
 			// Do not lock it, because for function this inner reference looks like variable.
 
+			// Make this inner storage self-referenced. This needs for hard cases, like
+			// struct A{ i32 & i; }
+			// struct B{ i32 & a; }
+			// struct C{ i32 & b; }
+			// struct D{ i32 & c; }
+			// fn Foo( D & d ) {  d.c.b.a;  }
+			inner_variable->referenced_variables.emplace( inner_variable );
+
 			args_stored_variables[arg_number].second= inner_variable;
 
 			if( function_type->return_value_is_reference )
@@ -2253,6 +2261,9 @@ void CodeBuilder::BuildFuncCode(
 		{
 			for( const StoredVariablePtr& referenced_variable : args_stored_variables[i].second->referenced_variables )
 			{
+				if( referenced_variable == args_stored_variables[i].second )
+					continue; // Skip self-reference.
+
 				const boost::optional<Function::ArgReference> reference= find_reference( referenced_variable );
 				if( reference == boost::none )
 				{
@@ -2269,6 +2280,11 @@ void CodeBuilder::BuildFuncCode(
 			}
 		}
 	}
+
+	// Remove self-reference in inner argument variable.
+	for( const std::pair< StoredVariablePtr, StoredVariablePtr >& arg_variable : args_stored_variables )
+		if( arg_variable.second != nullptr )
+			arg_variable.second->referenced_variables.erase(arg_variable.second);
 
 	llvm::Function::BasicBlockListType& bb_list= llvm_function->getBasicBlockList();
 
