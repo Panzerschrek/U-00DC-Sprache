@@ -2232,6 +2232,7 @@ void CodeBuilder::BuildFuncCode(
 			{
 				if( referenced_variable == args_stored_variables[i].second ) // Ok, inner storage
 					continue;
+				// TODO - what if self-linking of inner variable occurs?
 
 				check_reference( referenced_variable );
 			}

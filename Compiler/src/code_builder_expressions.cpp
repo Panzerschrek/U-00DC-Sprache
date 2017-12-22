@@ -1821,6 +1821,7 @@ Value CodeBuilder::DoCallFunction(
 		U_ASSERT( dst_arg < function_type.args.size() );
 		U_ASSERT( function_type.args[ dst_arg ].type.ReferencesTagsCount() > 0u );
 
+		// SPRACHE_TODO - maybe add "mut/imut" modifier for "src" in reference pollution, like ' x <- mut y ' ?
 		std::unordered_set<StoredVariablePtr> src_variables;
 		bool src_variables_is_mutable= false;
 		if( referene_pollution.src.second == Function::c_arg_reference_tag_number )
@@ -1837,6 +1838,7 @@ Value CodeBuilder::DoCallFunction(
 			for( const StoredVariablePtr& referenced_variable : arg_to_variables[ referene_pollution.src.first ] )
 				for( const StoredVariablePtr& inner_variable : referenced_variable->referenced_variables )
 				{
+					// TODO fixme - what is variable have no locked counter (such as argument variable )?
 					boost::optional<bool> is_mutable;
 					for( const VariableStorageUseCounter& counter : referenced_variable->locked_referenced_variables )
 					{
