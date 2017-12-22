@@ -2055,20 +2055,8 @@ void CodeBuilder::BuildFuncCode(
 		// For reference arguments try add reference to list of allowed for returning references.
 		if( arg.is_reference )
 		{
-			if( function_type->return_value_is_reference )
+			if( function_type->return_value_is_reference || function_type->return_type.ReferencesTagsCount() > 0u )
 			{
-				for( const size_t arg_n : function_type->return_references.args_references )
-				{
-					if( arg_n == arg_number )
-					{
-						function_context.allowed_for_returning_references.emplace(var_storage);
-						break;
-					}
-				}
-			}
-			else if( function_type->return_type.ReferencesTagsCount() > 0u )
-			{
-				U_ASSERT( function_type->return_type.ReferencesTagsCount() == 1u ); // Currently, support 0 or 1 tags.
 				for( const size_t arg_n : function_type->return_references.args_references )
 				{
 					if( arg_n == arg_number )
@@ -2099,18 +2087,7 @@ void CodeBuilder::BuildFuncCode(
 
 			args_stored_variables[arg_number].second= inner_variable;
 
-			if( function_type->return_value_is_reference )
-			{
-				for( const Function::ArgReference& arg_and_tag : function_type->return_references.inner_args_references )
-				{
-					if( arg_and_tag.first == arg_number && arg_and_tag.second == 0u )
-					{
-						function_context.allowed_for_returning_references.emplace( inner_variable );
-						break;
-					}
-				}
-			}
-			else if( function_type->return_type.ReferencesTagsCount() > 0u )
+			if( function_type->return_value_is_reference || function_type->return_type.ReferencesTagsCount() > 0u )
 			{
 				for( const Function::ArgReference& arg_and_tag : function_type->return_references.inner_args_references )
 				{
@@ -2231,6 +2208,24 @@ void CodeBuilder::BuildFuncCode(
 		if( args_stored_variables[i].first == nullptr ) // May be in templates.
 			continue;
 
+		const auto check_reference=
+		[&]( const StoredVariablePtr& referenced_variable )
+		{
+			const boost::optional<Function::ArgReference> reference= find_reference( referenced_variable );
+			if( reference == boost::none )
+			{
+				errors_.push_back( ReportUnallowedReferencePollution( block->end_file_pos_ ) );
+				return;
+			}
+
+			Function::ReferencePollution pollution;
+			pollution.src= *reference;
+			pollution.dst.first= i;
+			pollution.dst.second= 0u;
+			if( function_type->references_pollution.count( pollution ) == 0u )
+				errors_.push_back( ReportUnallowedReferencePollution( block->end_file_pos_ ) );
+		};
+
 		if( function_type->args[i].is_reference )
 		{
 			for( const StoredVariablePtr& referenced_variable : args_stored_variables[i].first->referenced_variables )
@@ -2238,19 +2233,7 @@ void CodeBuilder::BuildFuncCode(
 				if( referenced_variable == args_stored_variables[i].second ) // Ok, inner storage
 					continue;
 
-				const boost::optional<Function::ArgReference> reference= find_reference( referenced_variable );
-				if( reference == boost::none )
-				{
-					errors_.push_back( ReportUnallowedReferencePollution( block->end_file_pos_ ) );
-					continue;
-				}
-
-				Function::ReferencePollution pollution;
-				pollution.src= *reference;
-				pollution.dst.first= i;
-				pollution.dst.second= 0u;
-				if( function_type->references_pollution.count( pollution ) == 0u )
-					errors_.push_back( ReportUnallowedReferencePollution( block->end_file_pos_ ) );
+				check_reference( referenced_variable );
 			}
 		}
 
@@ -2264,19 +2247,7 @@ void CodeBuilder::BuildFuncCode(
 				if( referenced_variable == args_stored_variables[i].second )
 					continue; // Skip self-reference.
 
-				const boost::optional<Function::ArgReference> reference= find_reference( referenced_variable );
-				if( reference == boost::none )
-				{
-					errors_.push_back( ReportUnallowedReferencePollution( block->end_file_pos_ ) );
-					continue;
-				}
-
-				Function::ReferencePollution pollution;
-				pollution.src= *reference;
-				pollution.dst.first= i;
-				pollution.dst.second= 0u;
-				if( function_type->references_pollution.count( pollution ) == 0u )
-					errors_.push_back( ReportUnallowedReferencePollution( block->end_file_pos_ ) );
+				check_reference( referenced_variable );
 			}
 		}
 	}
