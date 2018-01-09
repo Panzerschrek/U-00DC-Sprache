@@ -1821,9 +1821,8 @@ Value CodeBuilder::DoCallFunction(
 		U_ASSERT( dst_arg < function_type.args.size() );
 		U_ASSERT( function_type.args[ dst_arg ].type.ReferencesTagsCount() > 0u );
 
-		// SPRACHE_TODO - maybe add "mut/imut" modifier for "src" in reference pollution, like ' x <- mut y ' ?
 		std::unordered_set<StoredVariablePtr> src_variables;
-		bool src_variables_is_mutable= false;
+		bool src_variables_is_mutable= false; // Current mutability of src.
 		if( referene_pollution.src.second == Function::c_arg_reference_tag_number )
 		{
 			// Reference-arg itself
@@ -1852,6 +1851,9 @@ Value CodeBuilder::DoCallFunction(
 					src_variables_is_mutable= src_variables_is_mutable || *is_mutable;
 				}
 		}
+
+		if( !referene_pollution.src_is_mutable ) // SEt src immutable, if it immatuable in signature
+			src_variables_is_mutable= false;
 
 		const auto link_variables=
 		[&]( const StoredVariablePtr& dst_variable, const StoredVariablePtr& src_variable )

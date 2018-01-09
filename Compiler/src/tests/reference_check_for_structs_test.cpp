@@ -325,6 +325,28 @@ U_TEST( ReferencePollutionTest0 )
 	BuildProgram( c_program_text );
 }
 
+U_TEST( ReferencePollutionTest1 )
+{
+	static const char c_program_text[]=
+	R"(
+		struct S{ i32 &imut x; }
+
+		// Function takes mutable argumebnt, but links it with other argument as immutable.
+		fn Foo( S &mut s'x', i32 &'y mut i ) ' x <- imut y '
+		{}
+
+		fn Foo()
+		{
+			var i32 mut y= 0, mut x= 0;
+			var S mut s { .x= x };
+			Foo( s, y ); // Now "s" contains immutable reference to "y", even if we mass into function mutable reference.
+			auto &imut y_ref= y; // Ok, can take second immutable refence.
+		}
+	)";
+
+	BuildProgram( c_program_text );
+}
+
 U_TEST( ConstructorLinksPassedReference_Test0 )
 {
 	static const char c_program_text[]=

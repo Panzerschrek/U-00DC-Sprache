@@ -1667,20 +1667,20 @@ void CodeBuilder::ProcessFunctionReferencesPollution(
 	}
 	else
 	{
-		for( const std::pair< ProgramString, ProgramString >& pollution : func.referecnces_pollution_list_ )
+		for( const Synt::FunctionReferencesPollution& pollution : func.referecnces_pollution_list_ )
 		{
-			if( pollution.first == pollution.second )
+			if( pollution.first == pollution.second.name )
 			{
 				errors_.push_back( ReportSelfReferencePollution( func.file_pos_ ) );
 				continue;
 			}
 
 			const std::vector<Function::ArgReference> dst_references= get_references( pollution.first );
-			const std::vector<Function::ArgReference> src_references= get_references( pollution.second );
+			const std::vector<Function::ArgReference> src_references= get_references( pollution.second.name );
 			if( dst_references.empty() )
 				errors_.push_back( ReportNameNotFound( func.file_pos_, pollution.first ) );
 			if( src_references.empty() )
-				errors_.push_back( ReportNameNotFound( func.file_pos_, pollution.second ) );
+				errors_.push_back( ReportNameNotFound( func.file_pos_, pollution.second.name ) );
 
 			for( const Function::ArgReference& dst_ref : dst_references )
 			{
@@ -1695,6 +1695,7 @@ void CodeBuilder::ProcessFunctionReferencesPollution(
 					Function::ReferencePollution ref_pollution;
 					ref_pollution.dst= dst_ref;
 					ref_pollution.src= src_ref;
+					ref_pollution.src_is_mutable= pollution.second.is_mutable;
 					function_type.references_pollution.emplace(ref_pollution);
 				}
 			}

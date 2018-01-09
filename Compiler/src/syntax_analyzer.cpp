@@ -918,7 +918,8 @@ FunctionReferencesPollutionList SyntaxAnalyzer::ParseFunctionReferencesPollution
 	{
 		if( it_->type == Lexem::Type::Identifier )
 		{
-			result.emplace_back( it_->text, ProgramString() );
+			result.emplace_back();
+			result.back().first = it_->text;
 			++it_;
 		}
 		else
@@ -936,7 +937,21 @@ FunctionReferencesPollutionList SyntaxAnalyzer::ParseFunctionReferencesPollution
 
 		if( it_->type == Lexem::Type::Identifier )
 		{
-			result.back().second= it_->text;
+			if( it_->text == Keywords::mut_ )
+			{
+				result.back().second.is_mutable= true;
+				++it_; U_ASSERT( it_ < it_end_ );
+			}
+			else if( it_->text == Keywords::imut_ )
+			{
+				result.back().second.is_mutable= false;
+				++it_; U_ASSERT( it_ < it_end_ );
+			}
+		}
+
+		if( it_->type == Lexem::Type::Identifier )
+		{
+			result.back().second.name= it_->text;
 			++it_;
 		}
 		else

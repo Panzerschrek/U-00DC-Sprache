@@ -544,7 +544,14 @@ public:
 
 typedef std::unique_ptr<FunctionArgument> FunctionArgumentPtr;
 typedef std::vector<FunctionArgumentPtr> FunctionArgumentsDeclaration;
-typedef std::vector< std::pair< ProgramString, ProgramString > > FunctionReferencesPollutionList;
+
+struct ReferencePollutionSrc
+{
+	ProgramString name;
+	bool is_mutable= true;
+};
+typedef std::pair< ProgramString, ReferencePollutionSrc > FunctionReferencesPollution;
+typedef std::vector<FunctionReferencesPollution> FunctionReferencesPollutionList;
 
 class Function final
 	: public SyntaxElementBase
