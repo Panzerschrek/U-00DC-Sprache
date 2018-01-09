@@ -853,7 +853,7 @@ Value CodeBuilder::BuildBinaryOperator(
 		}
 	}
 
-	const StoredVariablePtr stored_result= std::make_shared<StoredVariable>( result );
+	const StoredVariablePtr stored_result= std::make_shared<StoredVariable>( BinaryOperatorToString(binary_operator), result );
 	result.referenced_variables.emplace( stored_result );
 	function_context.stack_variables_stack.back()->RegisterVariable( stored_result );
 
@@ -962,7 +962,7 @@ Value CodeBuilder::BuildLazyBinaryOperator(
 			U_ASSERT(false);
 	}
 
-	const StoredVariablePtr stored_result= std::make_shared<StoredVariable>( result );
+	const StoredVariablePtr stored_result= std::make_shared<StoredVariable>( BinaryOperatorToString(binary_operator.operator_type_), result );
 	result.referenced_variables.emplace( stored_result );
 	function_context.stack_variables_stack.back()->RegisterVariable( stored_result );
 
@@ -1086,7 +1086,7 @@ Value CodeBuilder::BuildNamedOperand(
 
 			// If we have mutable reference to variable, we can not access variable itself.
 			if( referenced_variable->content.value_type == ValueType::Reference && referenced_variable->mut_use_counter.use_count() >= 2u )
-				errors_.push_back( ReportAccessingVariableThatHaveMutableReference( named_operand.file_pos_ ) );
+				errors_.push_back( ReportAccessingVariableThatHaveMutableReference( named_operand.file_pos_, referenced_variable->name ) );
 		}
 
 		return Value( result, name_entry->second.GetFilePos() );
@@ -1123,7 +1123,7 @@ Value CodeBuilder::BuildNumericConstant(
 
 	result.llvm_value= result.constexpr_value;
 
-	const StoredVariablePtr stored_result= std::make_shared<StoredVariable>( result );
+	const StoredVariablePtr stored_result= std::make_shared<StoredVariable>( "numeric constant"_SpC, result );
 	result.referenced_variables.emplace( stored_result );
 	function_context.stack_variables_stack.back()->RegisterVariable( stored_result );
 
@@ -1144,7 +1144,10 @@ Variable CodeBuilder::BuildBooleanConstant(
 			fundamental_llvm_types_.bool_ ,
 			llvm::APInt( 1u, uint64_t(boolean_constant.value_) ) );
 
-	const StoredVariablePtr stored_result= std::make_shared<StoredVariable>( result );
+	const StoredVariablePtr stored_result=
+		std::make_shared<StoredVariable>(
+			Keyword( boolean_constant.value_ ? Keywords::true_ : Keywords::false_ ),
+			result );
 	result.referenced_variables.emplace( stored_result );
 	function_context.stack_variables_stack.back()->RegisterVariable( stored_result );
 
@@ -1676,7 +1679,7 @@ Value CodeBuilder::DoCallFunction(
 		{} // All ok - 0-infinity immutable references.
 		else
 		{
-			errors_.push_back( ReportReferenceProtectionError( call_file_pos ) );
+			errors_.push_back( ReportReferenceProtectionError( call_file_pos, pair.first->name ) );
 			continue;
 		}
 
@@ -1687,7 +1690,7 @@ Value CodeBuilder::DoCallFunction(
 		{
 			// Pass mutable reference into function, while there are references on stack or somewhere else.
 			// We can have one mutable reference on stack, but no more.
-			errors_.push_back( ReportReferenceProtectionError( call_file_pos ) );
+			errors_.push_back( ReportReferenceProtectionError( call_file_pos, var.name ) );
 		}
 		if( counter.mut == 1u && var.mut_use_counter.use_count() == 2u )
 		{} // Ok - we take one mutable reference from stack and pass it into function.
@@ -1747,7 +1750,7 @@ Value CodeBuilder::DoCallFunction(
 		result.location= function.return_value_is_sret ? Variable::Location::Pointer : Variable::Location::LLVMRegister;
 		result.value_type= ValueType::Value;
 
-		const StoredVariablePtr stored_result= std::make_shared<StoredVariable>( result );
+		const StoredVariablePtr stored_result= std::make_shared<StoredVariable>( "fn result"_SpC, result );
 		result.referenced_variables.emplace( stored_result );
 
 		function_context.stack_variables_stack.back()->RegisterVariable( stored_result );
@@ -1934,13 +1937,13 @@ Variable CodeBuilder::BuildTempVariableConstruction(
 	variable.value_type= ValueType::Reference;
 	variable.llvm_value= function_context.alloca_ir_builder.CreateAlloca( type.GetLLVMType() );
 
-	const StoredVariablePtr variable_storage_for_initialization= std::make_shared<StoredVariable>( variable );
+	const StoredVariablePtr variable_storage_for_initialization= std::make_shared<StoredVariable>( "temp "_SpC + type.ToString(), variable );
 	variable.referenced_variables.insert(variable_storage_for_initialization);
 	variable.constexpr_value= ApplyConstructorInitializer( variable, *variable_storage_for_initialization, call_operator, names, function_context );
 	variable.referenced_variables.erase(variable_storage_for_initialization);
 	variable.value_type= ValueType::Value; // Make value after construction
 
-	const StoredVariablePtr stored_variable= std::make_shared<StoredVariable>( variable );
+	const StoredVariablePtr stored_variable= std::make_shared<StoredVariable>( variable_storage_for_initialization->name, variable );
 	stored_variable->referenced_variables= std::move( variable_storage_for_initialization->referenced_variables );
 	stored_variable->locked_referenced_variables= std::move( variable_storage_for_initialization->locked_referenced_variables );
 
@@ -2004,7 +2007,7 @@ Value CodeBuilder::BuildUnaryMinus(
 			result.llvm_value= function_context.llvm_ir_builder.CreateNeg( value_for_neg );
 	}
 
-	const StoredVariablePtr stored_result= std::make_shared<StoredVariable>( result );
+	const StoredVariablePtr stored_result= std::make_shared<StoredVariable>( OverloadedOperatorToString(OverloadedOperator::Sub), result );
 	result.referenced_variables.emplace( stored_result );
 	function_context.stack_variables_stack.back()->RegisterVariable( stored_result );
 
@@ -2047,7 +2050,7 @@ Value CodeBuilder::BuildLogicalNot(
 		result.llvm_value= function_context.llvm_ir_builder.CreateNot( value_in_register );
 	}
 
-	const StoredVariablePtr stored_result= std::make_shared<StoredVariable>( result );
+	const StoredVariablePtr stored_result= std::make_shared<StoredVariable>( OverloadedOperatorToString(OverloadedOperator::LogicalNot), result );
 	result.referenced_variables.emplace( stored_result );
 	function_context.stack_variables_stack.back()->RegisterVariable( stored_result );
 
@@ -2097,7 +2100,7 @@ Value CodeBuilder::BuildBitwiseNot(
 		result.llvm_value= function_context.llvm_ir_builder.CreateNot( value_in_register );
 	}
 
-	const StoredVariablePtr stored_result= std::make_shared<StoredVariable>( result );
+	const StoredVariablePtr stored_result= std::make_shared<StoredVariable>( OverloadedOperatorToString(OverloadedOperator::BitwiseNot), result );
 	result.referenced_variables.emplace( stored_result );
 	function_context.stack_variables_stack.back()->RegisterVariable( stored_result );
 

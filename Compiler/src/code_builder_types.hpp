@@ -274,6 +274,7 @@ struct Variable final
 
 struct StoredVariable
 {
+	const ProgramString name; // needs for error messages
 	const Variable content;
 	const VariableStorageUseCounter  mut_use_counter= std::make_shared<int>();
 	const VariableStorageUseCounter imut_use_counter= std::make_shared<int>();
@@ -287,8 +288,9 @@ struct StoredVariable
 	// For references and structs with references.
 	std::vector<VariableStorageUseCounter> locked_referenced_variables;
 
-	StoredVariable( Variable in_content, bool in_is_reference= false, bool in_is_global_constant= false )
-		: content(std::move(in_content)), is_reference(in_is_reference), is_global_constant(in_is_global_constant)
+	StoredVariable( ProgramString in_name, Variable in_content, bool in_is_reference= false, bool in_is_global_constant= false )
+		: name(std::move(in_name) ), content(std::move(in_content))
+		, is_reference(in_is_reference), is_global_constant(in_is_global_constant)
 	{}
 };
 

@@ -1011,7 +1011,7 @@ void CodeBuilder::CallDestructorsImpl(
 				alive_ref_count-= map_it->second;
 
 			if( alive_ref_count > 0u )
-				errors_.push_back( ReportDestroyedVariableStillHaveReferences( file_pos ) );
+				errors_.push_back( ReportDestroyedVariableStillHaveReferences( file_pos, stored_variable.name ) );
 		}
 
 		// Call destructors.
@@ -1981,7 +1981,7 @@ void CodeBuilder::BuildFuncCode(
 			llvm_arg.setName( KeywordAscii( Keywords::this_ ) );
 			function_context.this_= &this_;
 
-			const StoredVariablePtr this_storage= std::make_shared<StoredVariable>( this_ );
+			const StoredVariablePtr this_storage= std::make_shared<StoredVariable>( Keyword(Keywords::this_), this_ );
 			this_.referenced_variables.emplace(this_storage);
 
 			args_stored_variables[arg_number].first= this_storage;
@@ -1989,7 +1989,7 @@ void CodeBuilder::BuildFuncCode(
 			if (arg.type.ReferencesTagsCount() > 0u )
 			{
 				Variable dummy_variable;
-				const StoredVariablePtr inner_variable = std::make_shared<StoredVariable>( dummy_variable, false );
+				const StoredVariablePtr inner_variable = std::make_shared<StoredVariable>( "inner dummy"_SpC, dummy_variable, false );
 				this_storage->referenced_variables.emplace( inner_variable );
 				args_stored_variables[arg_number].second= inner_variable;
 			}
@@ -2049,7 +2049,7 @@ void CodeBuilder::BuildFuncCode(
 		}
 
 		// Mark even reference-args as variable.
-		const StoredVariablePtr var_storage= std::make_shared<StoredVariable>( var, false );
+		const StoredVariablePtr var_storage= std::make_shared<StoredVariable>( arg_name, var, false );
 		var.referenced_variables.emplace(var_storage);
 
 		args_stored_variables[arg_number].first= var_storage;
@@ -2074,7 +2074,7 @@ void CodeBuilder::BuildFuncCode(
 			U_ASSERT( arg.type.ReferencesTagsCount() == 1u ); // Currently, support 0 or 1 tags.
 
 			Variable dummy_variable; // TODO - maybe set possible type?
-			const StoredVariablePtr inner_variable = std::make_shared<StoredVariable>( dummy_variable, false );
+			const StoredVariablePtr inner_variable = std::make_shared<StoredVariable>( "inner dummy"_SpC, dummy_variable, false );
 			var_storage->referenced_variables.emplace( inner_variable );
 			// Do not lock it, because for function this inner reference looks like variable.
 
@@ -2629,7 +2629,7 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 		variable.location= Variable::Location::Pointer;
 		variable.value_type= ValueType::Reference;
 
-		const StoredVariablePtr variable_storage_for_initialization= std::make_shared<StoredVariable>( variable );
+		const StoredVariablePtr variable_storage_for_initialization= std::make_shared<StoredVariable>( variable_declaration.name, variable );
 
 		if( type.GetTemplateDependentType() != nullptr )
 		{
@@ -2760,6 +2760,7 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 
 		const StoredVariablePtr stored_variable=
 			std::make_shared<StoredVariable>(
+				variable_declaration.name,
 				variable,
 				variable_declaration.reference_modifier == ReferenceModifier::Reference,
 				global );
@@ -2938,6 +2939,7 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 
 	const StoredVariablePtr stored_variable=
 		std::make_shared<StoredVariable>(
+			auto_variable_declaration.name,
 			variable,
 			auto_variable_declaration.reference_modifier == ReferenceModifier::Reference,
 			global );
@@ -3024,7 +3026,7 @@ void CodeBuilder::BuildAssignmentOperatorCode(
 		if( referenced_variable->imut_use_counter.use_count() > 1u )
 		{
 			// Assign to variable, that have nonzero immutable references.
-			errors_.push_back( ReportReferenceProtectionError( assignment_operator.file_pos_ ) );
+			errors_.push_back( ReportReferenceProtectionError( assignment_operator.file_pos_, referenced_variable->name ) );
 		}
 	}
 
@@ -3111,7 +3113,7 @@ void CodeBuilder::BuildAdditiveAssignmentOperatorCode(
 		if( stored_variable->imut_use_counter.use_count() > 1u )
 		{
 			// Assign to variable, that have nonzero immutable references.
-			errors_.push_back( ReportReferenceProtectionError( additive_assignment_operator.file_pos_ ) );
+			errors_.push_back( ReportReferenceProtectionError( additive_assignment_operator.file_pos_, stored_variable->name ) );
 		}
 	}
 
@@ -3206,7 +3208,7 @@ void CodeBuilder::BuildDeltaOneOperatorCode(
 		for( const StoredVariablePtr& referenced_variable : variable->referenced_variables )
 		{
 			if( referenced_variable->imut_use_counter.use_count() > 1u ) // Changing variable, that have immutable references.
-				errors_.push_back( ReportReferenceProtectionError( file_pos ) );
+				errors_.push_back( ReportReferenceProtectionError( file_pos, referenced_variable->name ) );
 			// If "mut_counter" is not 0 or 1, error must be generated previosly.
 		}
 
@@ -3898,7 +3900,7 @@ void CodeBuilder::CheckReferencedVariables( const Variable& reference, const Fil
 		else if( referenced_variable-> mut_use_counter.use_count() == 1u )
 		{} // All ok - 0-infinity immutable references.
 		else
-			errors_.push_back( ReportReferenceProtectionError( file_pos ) );
+			errors_.push_back( ReportReferenceProtectionError( file_pos, referenced_variable->name ) );
 	}
 }
 
