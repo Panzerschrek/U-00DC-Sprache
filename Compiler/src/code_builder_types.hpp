@@ -274,23 +274,34 @@ struct Variable final
 
 struct StoredVariable
 {
+	struct ReferencedVariable
+	{
+		StoredVariablePtr variable;
+		VariableStorageUseCounter use_counter;
+		bool IsMutable() const{ return use_counter == variable->mut_use_counter; }
+	};
+
+	enum class Kind
+	{
+		Variable,
+		Reference,
+		ArgInnerVariable,
+	};
+
 	const ProgramString name; // needs for error messages
 	const Variable content;
 	const VariableStorageUseCounter  mut_use_counter= std::make_shared<int>();
 	const VariableStorageUseCounter imut_use_counter= std::make_shared<int>();
 
-	const bool is_reference;
+	const Kind kind;
 	const bool is_global_constant;
 
-	// Referenced variables, referenced variables of referenced variables, etc. Used only for variables, not references.
-	std::unordered_set<StoredVariablePtr> referenced_variables;
+	// Referenced variables, referenced variables of referenced variables, etc.
+	std::unordered_map<StoredVariablePtr, ReferencedVariable> referenced_variables;
 
-	// For references and structs with references.
-	std::vector<VariableStorageUseCounter> locked_referenced_variables;
-
-	StoredVariable( ProgramString in_name, Variable in_content, bool in_is_reference= false, bool in_is_global_constant= false )
+	StoredVariable( ProgramString in_name, Variable in_content, Kind in_kind= Kind::Variable, bool in_is_global_constant= false )
 		: name(std::move(in_name) ), content(std::move(in_content))
-		, is_reference(in_is_reference), is_global_constant(in_is_global_constant)
+		, kind(in_kind), is_global_constant(in_is_global_constant)
 	{}
 };
 

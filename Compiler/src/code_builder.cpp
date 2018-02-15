@@ -978,10 +978,8 @@ void CodeBuilder::CallDestructorsImpl(
 	{
 		StoredVariable& stored_variable= **it;
 
-		if( stored_variable.is_reference )
+		if( stored_variable.kind == StoredVariable::Kind::Reference )
 		{
-			U_ASSERT( stored_variable.content.referenced_variables.size() == stored_variable.locked_referenced_variables.size() );
-
 			// Increment coounter of destroyed reference for referenced variables.
 			for( const StoredVariablePtr& referenced_variable : stored_variable.content.referenced_variables )
 			{
@@ -991,15 +989,15 @@ void CodeBuilder::CallDestructorsImpl(
 					++destroyed_variable_references[ referenced_variable ];
 			}
 		}
-		else
+		else if( stored_variable.kind == StoredVariable::Kind::Variable )
 		{
 			// Increment coounter of destroyed reference for referenced variables of references inside this variable.
-			for( const StoredVariablePtr& referenced_variable : stored_variable.referenced_variables )
+			for( const auto& referenced_variable_pair : stored_variable.referenced_variables )
 			{
-				if( destroyed_variable_references.find( referenced_variable ) == destroyed_variable_references.end() )
-					destroyed_variable_references[ referenced_variable ]= 1u;
+				if( destroyed_variable_references.find( referenced_variable_pair.first ) == destroyed_variable_references.end() )
+					destroyed_variable_references[ referenced_variable_pair.first ]= 1u;
 				else
-					++destroyed_variable_references[ referenced_variable ];
+					++destroyed_variable_references[ referenced_variable_pair.first ];
 			}
 
 			// Check references.
@@ -1013,10 +1011,12 @@ void CodeBuilder::CallDestructorsImpl(
 			if( alive_ref_count > 0u )
 				errors_.push_back( ReportDestroyedVariableStillHaveReferences( file_pos, stored_variable.name ) );
 		}
+		else
+			U_ASSERT( false );
 
 		// Call destructors.
 		const Variable& var= stored_variable.content;
-		if( !stored_variable.is_reference && var.type.HaveDestructor() )
+		if( stored_variable.kind == StoredVariable::Kind::Variable && var.type.HaveDestructor() )
 			CallDestructor( var.llvm_value, var.type, function_context );
 	}
 }
@@ -1643,6 +1643,7 @@ void CodeBuilder::ProcessFunctionReferencesPollution(
 			ref_pollution.dst.second= 0u;
 			ref_pollution.src.first= 1u;
 			ref_pollution.src.second= 0u;
+			// TODO - maybe set "is mutable" ?
 			function_type.references_pollution.insert(ref_pollution);
 		}
 	}
@@ -1662,6 +1663,7 @@ void CodeBuilder::ProcessFunctionReferencesPollution(
 			ref_pollution.dst.second= 0u;
 			ref_pollution.src.first= 1u;
 			ref_pollution.src.second= 0u;
+			// TODO - maybe set "is mutable" ?
 			function_type.references_pollution.insert(ref_pollution);
 		}
 	}
@@ -1989,8 +1991,8 @@ void CodeBuilder::BuildFuncCode(
 			if (arg.type.ReferencesTagsCount() > 0u )
 			{
 				Variable dummy_variable;
-				const StoredVariablePtr inner_variable = std::make_shared<StoredVariable>( "inner dummy"_SpC, dummy_variable, false );
-				this_storage->referenced_variables.emplace( inner_variable );
+				const StoredVariablePtr inner_variable = std::make_shared<StoredVariable>( "inner dummy"_SpC, dummy_variable, StoredVariable::Kind::ArgInnerVariable );
+				this_storage->referenced_variables[ inner_variable ]= StoredVariable::ReferencedVariable{ inner_variable, nullptr /* TODO */ };
 				args_stored_variables[arg_number].second= inner_variable;
 			}
 
@@ -2049,7 +2051,7 @@ void CodeBuilder::BuildFuncCode(
 		}
 
 		// Mark even reference-args as variable.
-		const StoredVariablePtr var_storage= std::make_shared<StoredVariable>( arg_name, var, false );
+		const StoredVariablePtr var_storage= std::make_shared<StoredVariable>( arg_name, var, StoredVariable::Kind::Variable );
 		var.referenced_variables.emplace(var_storage);
 
 		args_stored_variables[arg_number].first= var_storage;
@@ -2074,17 +2076,9 @@ void CodeBuilder::BuildFuncCode(
 			U_ASSERT( arg.type.ReferencesTagsCount() == 1u ); // Currently, support 0 or 1 tags.
 
 			Variable dummy_variable; // TODO - maybe set possible type?
-			const StoredVariablePtr inner_variable = std::make_shared<StoredVariable>( "inner dummy"_SpC, dummy_variable, false );
-			var_storage->referenced_variables.emplace( inner_variable );
+			const StoredVariablePtr inner_variable = std::make_shared<StoredVariable>( "inner dummy"_SpC, dummy_variable, StoredVariable::Kind::ArgInnerVariable );
+			var_storage->referenced_variables[ inner_variable ]= StoredVariable::ReferencedVariable{ inner_variable, nullptr /* TODO */ };
 			// Do not lock it, because for function this inner reference looks like variable.
-
-			// Make this inner storage self-referenced. This needs for hard cases, like
-			// struct A{ i32 & i; }
-			// struct B{ i32 & a; }
-			// struct C{ i32 & b; }
-			// struct D{ i32 & c; }
-			// fn Foo( D & d ) {  d.c.b.a;  }
-			inner_variable->referenced_variables.emplace( inner_variable );
 
 			args_stored_variables[arg_number].second= inner_variable;
 
@@ -2223,19 +2217,26 @@ void CodeBuilder::BuildFuncCode(
 			pollution.src= *reference;
 			pollution.dst.first= i;
 			pollution.dst.second= 0u;
-			if( function_type->references_pollution.count( pollution ) == 0u )
-				errors_.push_back( ReportUnallowedReferencePollution( block->end_file_pos_ ) );
+			// Currently check both mutable and immutable. TODO - maybe akt more smarter?
+			pollution.src_is_mutable= true;
+			if( function_type->references_pollution.count( pollution ) != 0u )
+				return;
+			pollution.src_is_mutable= false;
+			if( function_type->references_pollution.count( pollution ) != 0u )
+				return;
+			errors_.push_back( ReportUnallowedReferencePollution( block->end_file_pos_ ) );
 		};
 
 		if( function_type->args[i].is_reference )
 		{
-			for( const StoredVariablePtr& referenced_variable : args_stored_variables[i].first->referenced_variables )
+			for( const auto& referenced_variable_pair : args_stored_variables[i].first->referenced_variables )
 			{
-				if( referenced_variable == args_stored_variables[i].second ) // Ok, inner storage
+				if( referenced_variable_pair.first->kind == StoredVariable::Kind::ArgInnerVariable &&
+					referenced_variable_pair.first == args_stored_variables[i].second ) // Ok, arg inner variable.
 					continue;
 				// TODO - what if self-linking of inner variable occurs?
 
-				check_reference( referenced_variable );
+				check_reference( referenced_variable_pair.first );
 			}
 		}
 
@@ -2244,13 +2245,8 @@ void CodeBuilder::BuildFuncCode(
 
 		if( function_type->args[i].type.ReferencesTagsCount() > 0u )
 		{
-			for( const StoredVariablePtr& referenced_variable : args_stored_variables[i].second->referenced_variables )
-			{
-				if( referenced_variable == args_stored_variables[i].second )
-					continue; // Skip self-reference.
-
-				check_reference( referenced_variable );
-			}
+			for( const auto& referenced_variable_pair : args_stored_variables[i].second->referenced_variables )
+				check_reference( referenced_variable_pair.first );
 		}
 	}
 
@@ -2762,19 +2758,26 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 			std::make_shared<StoredVariable>(
 				variable_declaration.name,
 				variable,
-				variable_declaration.reference_modifier == ReferenceModifier::Reference,
+				variable_declaration.reference_modifier == ReferenceModifier::Reference ? StoredVariable::Kind::Reference : StoredVariable::Kind::Variable,
 				global );
 
-		if( stored_variable->is_reference )
+		if( stored_variable->kind == StoredVariable::Kind::Reference )
 		{
-			stored_variable->locked_referenced_variables= LockReferencedVariables( variable );
+			const bool is_mutable= variable.value_type == ValueType::Reference;
+			for( const StoredVariablePtr& referenced_variable : variable.referenced_variables )
+			{
+				stored_variable->referenced_variables[referenced_variable]=
+					StoredVariable::ReferencedVariable{
+						referenced_variable,
+						is_mutable ? referenced_variable->mut_use_counter : referenced_variable->imut_use_counter };
+			}
 			CheckReferencedVariables( variable, variable_declaration.file_pos );
 		}
-		else
+		else if( stored_variable->kind == StoredVariable::Kind::Variable )
 		{
 			stored_variable->referenced_variables= std::move( variable_storage_for_initialization->referenced_variables );
-			stored_variable->locked_referenced_variables= std::move( variable_storage_for_initialization->locked_referenced_variables );
 		}
+		else U_ASSERT(false);
 
 		const NamesScope::InsertedName* const inserted_name=
 			block_names.AddName( variable_declaration.name, Value( std::move(stored_variable), variable_declaration.file_pos ) );
@@ -2941,12 +2944,19 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 		std::make_shared<StoredVariable>(
 			auto_variable_declaration.name,
 			variable,
-			auto_variable_declaration.reference_modifier == ReferenceModifier::Reference,
+			auto_variable_declaration.reference_modifier == ReferenceModifier::Reference ? StoredVariable::Kind::Reference : StoredVariable::Kind::Variable,
 			global );
 
-	if( stored_variable->is_reference )
+	if( stored_variable->kind == StoredVariable::Kind::Reference )
 	{
-		stored_variable->locked_referenced_variables= LockReferencedVariables( variable );
+		const bool is_mutable= variable.value_type == ValueType::Reference;
+		for( const StoredVariablePtr& referenced_variable : variable.referenced_variables )
+		{
+			stored_variable->referenced_variables[referenced_variable]=
+				StoredVariable::ReferencedVariable{
+					referenced_variable,
+					is_mutable ? referenced_variable->mut_use_counter : referenced_variable->imut_use_counter };
+		}
 		CheckReferencedVariables( variable, auto_variable_declaration.file_pos_ );
 	}
 
@@ -3322,11 +3332,11 @@ void CodeBuilder::BuildReturnOperatorCode(
 		{
 			// Check correctness of returning references.
 			for( const StoredVariablePtr& var : expression_result.referenced_variables )
-			for( const StoredVariablePtr& inner_var : var->referenced_variables )
+			for( const auto& inner_var : var->referenced_variables )
 			{
-				if( inner_var->is_global_constant ) // Always allow return of global constants.
+				if( inner_var.first->is_global_constant ) // Always allow return of global constants.
 					continue;
-				if( function_context.allowed_for_returning_references.count(inner_var) == 0u )
+				if( function_context.allowed_for_returning_references.count(inner_var.first) == 0u )
 					errors_.push_back( ReportReturningUnallowedReference( return_operator.file_pos_ ) );
 			}
 		}

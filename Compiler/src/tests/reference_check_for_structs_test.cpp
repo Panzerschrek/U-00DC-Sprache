@@ -198,12 +198,12 @@ U_TEST( ReturnStructWithReferenceFromFunction_Test2 )
 {
 	static const char c_program_text[]=
 	R"(
-		template</ type T /> struct MutRef{ T &mut r; }
+		template</ type T /> struct ImutRef{ T &imut r; }
 
-		fn ToRef( i32 &'r mut x, i32 &'f mut y ) : MutRef</ i32 />'f' // References now implicitly tagged. Returning only one reference.
+		fn ToRef( i32 &'r mut x, i32 &'f imut y ) : ImutRef</ i32 />'f' // References now implicitly tagged. Returning only one reference.
 		{
 			x= y;
-			var MutRef</ i32 /> r{ .r= y };
+			var ImutRef</ i32 /> r{ .r= y };
 			return r;
 		}
 
@@ -211,7 +211,7 @@ U_TEST( ReturnStructWithReferenceFromFunction_Test2 )
 		{
 			var i32 mut x= 0, mut y= 0;
 			auto &mut r0= x;
-			auto &mut r1= ToRef( r0, y ).r; // Ok, reference, inside struct, refers to "y".
+			auto &imut r1= ToRef( r0, y ).r; // Ok, reference, inside struct, refers to "y".
 		}
 	)";
 
@@ -383,7 +383,7 @@ U_TEST( ConstructorLinksPassedReference_Test1 )
 		struct S
 		{
 			i32 &imut x;
-			fn constructor( this't', i32 &'p in_x ) ' t <- p '
+			fn constructor( this't', i32 &'p in_x ) ' t <- imut p '
 			( x(in_x) )
 			{}
 		}
@@ -403,99 +403,6 @@ U_TEST( ConstructorLinksPassedReference_Test1 )
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferenceProtectionError );
 	U_TEST_ASSERT( error.file_pos.line == 14u );
-}
-
-U_TEST( ReferencePollutionPropogationTest0 )
-{
-	static const char c_program_text[]=
-	R"(
-		struct S{ i32 & x; }
-		struct P{ S & x; }
-
-		fn Pollution( P &mut p'x', i32 &'y i ) ' x <- y '
-		{}
-
-		fn Foo()
-		{
-			var i32 mut x= 0, mut y= 0;
-			var S s{ .x= x }; // "s" refers to "x"
-			{
-				var P mut p{ .x= s }; // "p" refers to "s" and "x" also
-				Pollution( p, y ); // "p" and "s" now refers also to "y".
-			}
-			++y; // Error, still have references.
-		}
-	)";
-
-	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
-
-	U_TEST_ASSERT( !build_result.errors.empty() );
-	const CodeBuilderError& error= build_result.errors.front();
-
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferenceProtectionError );
-	U_TEST_ASSERT( error.file_pos.line == 16u );
-}
-
-U_TEST( ReferencePollutionPropogationTest1 )
-{
-	static const char c_program_text[]=
-	R"(
-		struct S{ i32 & x; }
-		struct P{ S & x; }
-
-		fn Pollution( P p'x', i32 &'y i ) ' x <- y '
-		{}
-
-		fn Foo()
-		{
-			var i32 mut x= 0, mut y= 0;
-			var S s{ .x= x }; // "s" refers to "x"
-			{
-				var P mut p{ .x= s }; // "p" refers to "s" and "x" also
-				Pollution( p, y ); // "s" now refers also to "y".
-			}
-			++y; // Error, still have references.
-		}
-	)";
-
-	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
-
-	U_TEST_ASSERT( !build_result.errors.empty() );
-	const CodeBuilderError& error= build_result.errors.front();
-
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferenceProtectionError );
-	U_TEST_ASSERT( error.file_pos.line == 16u );
-}
-
-U_TEST( ReferencePollutionPropogationTest2 )
-{
-	static const char c_program_text[]=
-	R"(
-		struct S{ i32 & x; }
-		struct P{ S & x; }
-
-		fn Pollution( P &mut p'x', i32 &'y i ) ' x <- y '
-		{}
-
-		fn Foo()
-		{
-			var i32 mut x= 0;
-			var S s{ .x= x }; // "s" refers to "x"
-			{
-				var i32 y= 0;
-				var P mut p{ .x= s }; // "p" refers to "s" and "x" also
-				Pollution( p, y ); // "p" and "s" now refers also to "y".
-			} // Error, "y" still have reference - inside "s".
-		}
-	)";
-
-	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
-
-	U_TEST_ASSERT( !build_result.errors.empty() );
-	const CodeBuilderError& error= build_result.errors.front();
-
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::DestroyedVariableStillHaveReferences );
-	U_TEST_ASSERT( error.file_pos.line == 16u );
 }
 
 U_TEST( ReferencePollutionErrorsTest_SelfReferencePollution )
