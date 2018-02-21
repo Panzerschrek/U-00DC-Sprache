@@ -18,18 +18,28 @@ namespace U
 namespace CodeBuilderPrivate
 {
 
-static std::unordered_set<StoredVariablePtr> RecursiveGetAllReferencedVariables( const StoredVariablePtr& stored_variable )
+struct AchievableVariables
+{
+	std::unordered_set<StoredVariablePtr> variables;
+	bool any_variable_is_mutable= false;
+};
+
+static AchievableVariables RecursiveGetAllReferencedVariables( const StoredVariablePtr& stored_variable )
 {
 	U_ASSERT( stored_variable->kind == StoredVariable::Kind::Variable );
 
-	std::unordered_set<StoredVariablePtr> result;
+	AchievableVariables result;
 
 	for( const auto& referenced_variable_pair : stored_variable->referenced_variables )
 	{
-		result.insert( referenced_variable_pair.first );
-		const std::unordered_set<StoredVariablePtr> v=
+		result.variables.insert( referenced_variable_pair.first );
+		const AchievableVariables achievable_variables=
 			RecursiveGetAllReferencedVariables(referenced_variable_pair.first);
-		result.insert( v.begin(), v.end() );
+		result.variables.insert( achievable_variables.variables.begin(), achievable_variables.variables.end() );
+
+		if( referenced_variable_pair.second.IsMutable() ||
+			achievable_variables.any_variable_is_mutable )
+			result.any_variable_is_mutable= true;
 	}
 
 	return result;
@@ -1819,8 +1829,9 @@ Value CodeBuilder::DoCallFunction(
 			U_ASSERT( arg_n < arg_to_variables.size() );
 			if( function_type.args[ arg_n ].is_reference )
 			{
+				const bool is_mutable= function_type.args[arg_n].is_mutable;
 				for( const StoredVariablePtr& var : arg_to_variables[arg_n] )
-					stored_result->referenced_variables[var]= StoredVariable::ReferencedVariable{ var, var->mut_use_counter /*TODO - select mutability*/};
+					stored_result->referenced_variables[var]= StoredVariable::ReferencedVariable{ var, is_mutable ? var->mut_use_counter : var->imut_use_counter };
 			}
 		}
 
@@ -1834,9 +1845,12 @@ Value CodeBuilder::DoCallFunction(
 
 			for( const StoredVariablePtr& var : arg_to_variables[arg_n_and_tag_n.first] )
 			{
-				for( const auto& referenced_variable_pair : RecursiveGetAllReferencedVariables( var ) )
+				const AchievableVariables achievable_variables= RecursiveGetAllReferencedVariables( var );
+				for( const auto& referenced_variable_pair : achievable_variables.variables )
 					stored_result->referenced_variables[referenced_variable_pair]=
-						StoredVariable::ReferencedVariable{ referenced_variable_pair, referenced_variable_pair->mut_use_counter /*TODO - select mutability*/};
+						StoredVariable::ReferencedVariable{
+							referenced_variable_pair,
+							achievable_variables.any_variable_is_mutable ? referenced_variable_pair->mut_use_counter : referenced_variable_pair->imut_use_counter};
 			}
 		}
 	}
@@ -1861,7 +1875,7 @@ Value CodeBuilder::DoCallFunction(
 			U_ASSERT( referene_pollution.src.second == 0u );// Currently we support one tag per struct.
 			for( const StoredVariablePtr& referenced_variable : arg_to_variables[ referene_pollution.src.first ] )
 			{
-				const std::unordered_set<StoredVariablePtr> vars= RecursiveGetAllReferencedVariables( referenced_variable );
+				const std::unordered_set<StoredVariablePtr> vars= RecursiveGetAllReferencedVariables( referenced_variable ).variables;
 				src_variables.insert( vars.begin(), vars.end() );
 			}
 		}
