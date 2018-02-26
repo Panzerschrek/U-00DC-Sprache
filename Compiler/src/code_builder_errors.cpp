@@ -942,6 +942,17 @@ CodeBuilderError ReportUnallowedReferencePollution( const FilePos& file_pos )
 	return error;
 }
 
+CodeBuilderError ReportReferencePollutionForArgReference( const FilePos& file_pos )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::ReferencePollutionForArgReference;
+
+	error.text= "Pollution of inner reference of argument."_SpC;
+
+	return error;
+}
+
 CodeBuilderError ReportExplicitReferencePollutionForCopyConstructor( const FilePos& file_pos )
 {
 	CodeBuilderError error;

@@ -1888,10 +1888,7 @@ Value CodeBuilder::DoCallFunction(
 			{
 				U_ASSERT( dst_variable->kind == StoredVariable::Kind::Variable || dst_variable->kind == StoredVariable::Kind::ArgInnerVariable );
 				if( dst_variable->kind == StoredVariable::Kind::ArgInnerVariable )
-				{
-					// TODO - create separate error
-					errors_.push_back( ReportUnallowedReferencePollution( call_file_pos ) );
-				}
+					errors_.push_back( ReportReferencePollutionForArgReference( call_file_pos ) );
 
 				for( const StoredVariablePtr& src_variable : src_variables )
 				{
