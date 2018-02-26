@@ -1990,13 +1990,10 @@ void CodeBuilder::BuildFuncCode(
 
 			if (arg.type.ReferencesTagsCount() > 0u )
 			{
-				Variable dummy_variable;
-				const StoredVariablePtr inner_variable = std::make_shared<StoredVariable>( "inner dummy"_SpC, dummy_variable, StoredVariable::Kind::ArgInnerVariable );
-				this_storage->referenced_variables[ inner_variable ]= StoredVariable::ReferencedVariable{ inner_variable, nullptr /* TODO */ };
+				const StoredVariablePtr inner_variable = std::make_shared<StoredVariable>( Keyword(Keywords::this_) + " inner reference"_SpC, Variable(), StoredVariable::Kind::ArgInnerVariable );
+				this_storage->referenced_variables[ inner_variable ]= StoredVariable::ReferencedVariable{ inner_variable, nullptr }; // Do not lock it, because for function this inner reference looks like variable.
 				args_stored_variables[arg_number].second= inner_variable;
 			}
-
-			// TODO - try add "this" and inner variable of "this" to list of allowed for returning references.
 
 			arg_number++;
 			continue;
@@ -2055,44 +2052,13 @@ void CodeBuilder::BuildFuncCode(
 		var.referenced_variables.emplace(var_storage);
 
 		args_stored_variables[arg_number].first= var_storage;
-		// For reference arguments try add reference to list of allowed for returning references.
-		if( arg.is_reference )
-		{
-			if( function_type->return_value_is_reference || function_type->return_type.ReferencesTagsCount() > 0u )
-			{
-				for( const size_t arg_n : function_type->return_references.args_references )
-				{
-					if( arg_n == arg_number )
-					{
-						function_context.allowed_for_returning_references.emplace(var_storage);
-						break;
-					}
-				}
-			}
-		}
-		// For arguments with references inside create variable storage, mark it, if needed, as allowed for return.
+		// For arguments with references inside create variable storage.
 		if( arg.type.ReferencesTagsCount() > 0u )
 		{
 			U_ASSERT( arg.type.ReferencesTagsCount() == 1u ); // Currently, support 0 or 1 tags.
-
-			Variable dummy_variable; // TODO - maybe set possible type?
-			const StoredVariablePtr inner_variable = std::make_shared<StoredVariable>( "inner dummy"_SpC, dummy_variable, StoredVariable::Kind::ArgInnerVariable );
-			var_storage->referenced_variables[ inner_variable ]= StoredVariable::ReferencedVariable{ inner_variable, nullptr /* TODO */ };
-			// Do not lock it, because for function this inner reference looks like variable.
-
+			const StoredVariablePtr inner_variable = std::make_shared<StoredVariable>( arg_name + " inner reference"_SpC, Variable(), StoredVariable::Kind::ArgInnerVariable );
+			var_storage->referenced_variables[ inner_variable ]= StoredVariable::ReferencedVariable{ inner_variable, nullptr }; // Do not lock it, because for function this inner reference looks like variable.
 			args_stored_variables[arg_number].second= inner_variable;
-
-			if( function_type->return_value_is_reference || function_type->return_type.ReferencesTagsCount() > 0u )
-			{
-				for( const Function::ArgReference& arg_and_tag : function_type->return_references.inner_args_references )
-				{
-					if( arg_and_tag.first == arg_number && arg_and_tag.second == 0u )
-					{
-						function_context.allowed_for_returning_references.emplace( inner_variable );
-						break;
-					}
-				}
-			}
 		}
 
 		if( is_this )
@@ -2123,6 +2089,39 @@ void CodeBuilder::BuildFuncCode(
 
 		llvm_arg.setName( "_arg_" + ToStdString( arg_name ) );
 		++arg_number;
+	}
+
+	if( function_type->return_value_is_reference || function_type->return_type.ReferencesTagsCount() > 0u )
+	{
+		// Fill list of allowed for returning references.
+		for (size_t i= 0u; i < function_type->args.size(); ++i )
+		{
+			const Function::Arg& arg= function_type->args[i];
+
+			// For reference arguments try add reference to list of allowed for returning references.
+			if( arg.is_reference )
+			{
+				for( const size_t arg_n : function_type->return_references.args_references )
+				{
+					if( arg_n == i )
+					{
+						function_context.allowed_for_returning_references.emplace( args_stored_variables[i].first );
+						break;
+					}
+				}
+			}
+			if( arg.type.ReferencesTagsCount() > 0u )
+			{
+				for( const Function::ArgReference& arg_and_tag : function_type->return_references.inner_args_references )
+				{
+					if( arg_and_tag.first == i && arg_and_tag.second == 0u )
+					{
+						function_context.allowed_for_returning_references.emplace( args_stored_variables[i].second );
+						break;
+					}
+				}
+			}
+		}
 	}
 
 	if( is_constructor )

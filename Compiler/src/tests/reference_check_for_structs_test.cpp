@@ -77,6 +77,63 @@ U_TEST( ReturnReferenceFromArg_Test1 )
 	U_TEST_ASSERT( error.file_pos.line == 5u );
 }
 
+U_TEST( ReturnReferenceFromArg_Test2 )
+{
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			i32 &mut x;
+			fn Foo( this, i32 &'p i ) : i32 &'p
+			{
+				return this.x; // Error, does not allowed
+			}
+		}
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReturningUnallowedReference );
+	U_TEST_ASSERT( error.file_pos.line == 7u );
+}
+
+U_TEST( ReturnReferenceFromArg_Test3 )
+{
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			i32 x;
+			fn Foo( this, i32 &'p i ) : i32 &'this
+			{
+				return this.x; // Ok, return this
+			}
+		}
+	)";
+
+	BuildProgram( c_program_text );
+}
+
+U_TEST( ReturnReferenceFromArg_Test4 )
+{
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			i32 &imut x;
+			fn Foo( this'inner_this_shit', i32 &'p i ) : i32 &'inner_this_shit
+			{
+				return this.x; // Ok, return inner_this_shit
+			}
+		}
+	)";
+
+	BuildProgram( c_program_text );
+}
+
 U_TEST( GetReturnedReferencePassedThroughArgument_Test0 )
 {
 	static const char c_program_text[]=
