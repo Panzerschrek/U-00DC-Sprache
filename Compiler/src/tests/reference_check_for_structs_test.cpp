@@ -404,6 +404,61 @@ U_TEST( ReferencePollutionTest1 )
 	BuildProgram( c_program_text );
 }
 
+U_TEST( ReferencePollutionTest2_LinkAsImmutableIfAllLinkedVariablesAreMutable )
+{
+	static const char c_program_text[]=
+	R"(
+		struct S{ i32 &imut x; }
+		fn Baz( S &mut s_dst'x', S &imut s_src'y' ) ' x <- mut y '
+		{}
+
+		fn Foo()
+		{
+			var i32 mut x= 0, mut y= 0;
+			var S mut s0{ .x= x };
+			{
+				var S mut s1{ .x= y };
+				Baz( s0, s1 ); // Now s0 contains immutable reference to "y", even if function reference pollution is mutable - because s1 contains only immutable reference.
+			}
+			auto &mut y_mut_ref= y; // Error, s0 contains reference to y.
+		}
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferenceProtectionError );
+	U_TEST_ASSERT( error.file_pos.line == 14u );
+}
+
+U_TEST( ReferencePollutionTest3_LinkAsImmutableIfAllLinkedVariablesAreMutable )
+{
+	static const char c_program_text[]=
+	R"(
+		struct S{ i32 &imut x; }
+		fn Baz( S &mut s_dst'x', i32 &'y imut i ) ' x <- mut y '
+		{}
+
+		fn Foo()
+		{
+			var i32 mut x= 0, mut y= 0;
+			var S mut s{ .x= x };
+			Baz( s, y ); // Now "s" contains immutable reference to "y", even if function reference pollution is mutable - because "y" passed into function as immutable.
+			auto &mut y_mut_ref= y; // Error, "s" contains reference to "y".
+		}
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferenceProtectionError );
+	U_TEST_ASSERT( error.file_pos.line == 11u );
+}
+
 U_TEST( ConstructorLinksPassedReference_Test0 )
 {
 	static const char c_program_text[]=

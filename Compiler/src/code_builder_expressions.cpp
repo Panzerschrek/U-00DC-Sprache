@@ -1862,25 +1862,32 @@ Value CodeBuilder::DoCallFunction(
 		U_ASSERT( dst_arg < function_type.args.size() );
 		U_ASSERT( function_type.args[ dst_arg ].type.ReferencesTagsCount() > 0u );
 
+		bool src_variables_is_mutable= referene_pollution.src_is_mutable;
 		std::unordered_set<StoredVariablePtr> src_variables;
 		if( referene_pollution.src.second == Function::c_arg_reference_tag_number )
 		{
 			// Reference-arg itself
 			U_ASSERT( function_type.args[ referene_pollution.src.first ].is_reference );
 			src_variables= arg_to_variables[ referene_pollution.src.first ];
+
+			if( !function_type.args[ referene_pollution.src.first ].is_mutable )
+				src_variables_is_mutable= false; // Even if reference-pollution is mutable, but if src vars is immutable, link as immutable.
 		}
 		else
 		{
 			// Variables, referenced by inner argument references.
 			U_ASSERT( referene_pollution.src.second == 0u );// Currently we support one tag per struct.
+			bool all_is_mutable= false;
 			for( const StoredVariablePtr& referenced_variable : arg_to_variables[ referene_pollution.src.first ] )
 			{
-				const std::unordered_set<StoredVariablePtr> vars= RecursiveGetAllReferencedVariables( referenced_variable ).variables;
-				src_variables.insert( vars.begin(), vars.end() );
+				const AchievableVariables vars= RecursiveGetAllReferencedVariables( referenced_variable );
+				src_variables.insert( vars.variables.begin(), vars.variables.end() );
+				all_is_mutable= all_is_mutable || vars.any_variable_is_mutable;
 			}
-		}
 
-		const bool src_variables_is_mutable= referene_pollution.src_is_mutable; // TODO - maybe make it dependent on actually passed variables?
+			if( !all_is_mutable )
+				src_variables_is_mutable= false; // Even if reference-pollution is mutable, but if src vars is immutable, link as immutable.
+		}
 
 		if( function_type.args[ dst_arg ].is_reference )
 		{
