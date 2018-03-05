@@ -194,6 +194,18 @@ void CodeBuilder::TryGenerateCopyConstructor( Class& the_class, const Type& clas
 	constructor_type.args[1].is_mutable= false;
 	constructor_type.args[1].is_reference= true;
 
+	// Generate default reference pollution for copying.
+	for( size_t i= 0u; i < class_type.ReferencesTagsCount(); ++i )
+	{
+		Function::ReferencePollution pollution;
+		pollution.dst.first= 0u;
+		pollution.dst.second= i;
+		pollution.src.first= 1u;
+		pollution.src.second= i;
+		pollution.src_is_mutable= true; // TODO - set correct mutability.
+		constructor_type.references_pollution.emplace(pollution);
+	}
+
 	std::vector<llvm::Type*> args_llvm_types;
 	args_llvm_types.push_back( llvm::PointerType::get( class_type.GetLLVMType(), 0u ) );
 	args_llvm_types.push_back( llvm::PointerType::get( class_type.GetLLVMType(), 0u ) );
@@ -419,6 +431,18 @@ void CodeBuilder::TryGenerateCopyAssignmentOperator( Class& the_class, const Typ
 	op_type.args[1].type= class_type;
 	op_type.args[1].is_mutable= false;
 	op_type.args[1].is_reference= true;
+
+	// Generate default reference pollution for copying.
+	for( size_t i= 0u; i < class_type.ReferencesTagsCount(); ++i )
+	{
+		Function::ReferencePollution pollution;
+		pollution.dst.first= 0u;
+		pollution.dst.second= i;
+		pollution.src.first= 1u;
+		pollution.src.second= i;
+		pollution.src_is_mutable= true; // TODO - set correct mutability.
+		op_type.references_pollution.emplace(pollution);
+	}
 
 	std::vector<llvm::Type*> args_llvm_types;
 	args_llvm_types.push_back( llvm::PointerType::get( class_type.GetLLVMType(), 0u ) );

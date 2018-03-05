@@ -1643,7 +1643,7 @@ void CodeBuilder::ProcessFunctionReferencesPollution(
 			ref_pollution.dst.second= 0u;
 			ref_pollution.src.first= 1u;
 			ref_pollution.src.second= 0u;
-			// TODO - maybe set "is mutable" ?
+			ref_pollution.src_is_mutable= true; // TODO - set correct mutability.
 			function_type.references_pollution.insert(ref_pollution);
 		}
 	}
@@ -1663,7 +1663,7 @@ void CodeBuilder::ProcessFunctionReferencesPollution(
 			ref_pollution.dst.second= 0u;
 			ref_pollution.src.first= 1u;
 			ref_pollution.src.second= 0u;
-			// TODO - maybe set "is mutable" ?
+			ref_pollution.src_is_mutable= true; // TODO - set correct mutability.
 			function_type.references_pollution.insert(ref_pollution);
 		}
 	}
