@@ -550,6 +550,38 @@ U_TEST( ConstructorLinksPassedReference_Test1 )
 	U_TEST_ASSERT( error.file_pos.line == 14u );
 }
 
+U_TEST( CopyAssignmentOperator_PollutionTest )
+{
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			i32 &mut x;
+			op=( this'x', S &imut other'y' ) ' x <- mut y '
+			{} // Actually does nothing.
+		}
+
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var S mut s{ .x= x };
+			{
+				var i32 mut y= 0;
+				var S s1{ .x= y };
+				s= s1; // Now, 's' contains reverences to 'x' and 'y'.
+			}
+		}
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::DestroyedVariableStillHaveReferences );
+	U_TEST_ASSERT( error.file_pos.line == 17u );
+}
+
 U_TEST( ReferencePollutionErrorsTest_SelfReferencePollution )
 {
 	static const char c_program_text[]=

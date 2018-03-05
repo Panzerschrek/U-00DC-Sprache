@@ -1935,7 +1935,6 @@ Value CodeBuilder::DoCallFunction(
 		else
 		{
 			 // Does it have sence, write references to value argument?
-			errors_.push_back( ReportNotImplemented( call_file_pos, "linking with value arguments" ) );
 		}
 	} // for function_type.references_pollution
 
