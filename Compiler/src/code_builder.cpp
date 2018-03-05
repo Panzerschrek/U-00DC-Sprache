@@ -1568,30 +1568,22 @@ void CodeBuilder::TryGenerateFunctionReturnReferencesMapping(
 			errors_.push_back( ReportNameNotFound( func.file_pos_, func.return_value_reference_tag_ ) );
 		}
 
-		// If there is no tag for return reference, assume, that it may refer to any reference argument and any reference inside argument.
+		// If there is no tag for return reference, assume, that it may refer to any reference argument, but not inner reference of any argument.
 		for( size_t i= 0u; i < function_type.args.size(); ++i )
 		{
 			if( function_type.args[i].is_reference )
 				function_type.return_references.args_references.push_back(i);
-
-			const size_t tag_count= function_type.args[i].type.ReferencesTagsCount();
-			for( size_t j= 0; j < tag_count; ++j )
-				function_type.return_references.inner_args_references.emplace_back( i, j );
 		}
 	}
 
 	if( !function_type.return_value_is_reference && function_type.return_type.ReferencesTagsCount() > 0u &&
 		func.return_value_inner_reference_tags_.empty() )
 	{
-		// For functions, returning value-type with reference inside, if tags list empty - link ALL function references with this value inner references.
+		// If there is no tag for return reference, assume, that it may refer to any reference argument, but not inner reference of any argument.
 		for( size_t i= 0u; i < function_type.args.size(); ++i )
 		{
 			if( function_type.args[i].is_reference )
 				function_type.return_references.args_references.push_back(i);
-
-			const size_t tag_count= function_type.args[i].type.ReferencesTagsCount();
-			for( size_t j= 0; j < tag_count; ++j )
-				function_type.return_references.inner_args_references.emplace_back( i, j );
 		}
 	}
 }

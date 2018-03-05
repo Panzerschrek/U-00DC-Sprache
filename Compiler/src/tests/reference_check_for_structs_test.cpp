@@ -134,6 +134,30 @@ U_TEST( ReturnReferenceFromArg_Test4 )
 	BuildProgram( c_program_text );
 }
 
+U_TEST( ReturnReferenceFromArg_Test5 )
+{
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			i32 &mut x;
+		}
+
+		fn Foo( S s ) : i32 &mut // Returning reference tag not specified, assume, that function can return any reference-arg, but not any reference from arg.
+		{
+			return s.x;
+		}
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReturningUnallowedReference );
+	U_TEST_ASSERT( error.file_pos.line == 9u );
+}
+
 U_TEST( GetReturnedReferencePassedThroughArgument_Test0 )
 {
 	static const char c_program_text[]=
