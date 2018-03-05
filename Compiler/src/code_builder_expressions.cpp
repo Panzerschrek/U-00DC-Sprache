@@ -1689,9 +1689,23 @@ Value CodeBuilder::DoCallFunction(
 					llvm_args[j]= arg_copy;
 				}
 
-				// Save referenced variables, because we need check references inside it.
-				for( const StoredVariablePtr& referenced_variable : expr.referenced_variables )
-					arg_to_variables[j].emplace( referenced_variable );
+				// Save references inside referenced variables, because we need check references inside it.
+				for( const StoredVariablePtr& var_itself : expr.referenced_variables )
+					for( const auto& referenced_variable_pair : var_itself->referenced_variables )
+					{
+						const StoredVariablePtr& referenced_variable = referenced_variable_pair.first;
+						if( referenced_variable_pair.second.IsMutable() )
+						{
+							++locked_variable_counters[referenced_variable].mut;
+							temp_args_locks.push_back( referenced_variable->mut_use_counter );
+						}
+						else
+						{
+							++locked_variable_counters[referenced_variable].imut;
+							temp_args_locks.push_back( referenced_variable->imut_use_counter );
+						}
+						arg_to_variables[j].emplace( referenced_variable );
+					}
 			}
 			else if( something_have_template_dependent_type )
 			{}
@@ -1812,8 +1826,10 @@ Value CodeBuilder::DoCallFunction(
 
 			for( const StoredVariablePtr& var : arg_to_variables[arg_n_and_tag_n.first] )
 			{
-				for( const auto& referenced_variable_pair : var->referenced_variables )
-					result.referenced_variables.emplace(referenced_variable_pair.first);
+				if( !function_type.args[ arg_n_and_tag_n.first ].is_reference )
+					result.referenced_variables.emplace( var );
+				for( const StoredVariablePtr& referenced_variable : RecursiveGetAllReferencedVariables(var).variables )
+					result.referenced_variables.emplace(referenced_variable);
 			}
 		}
 	}

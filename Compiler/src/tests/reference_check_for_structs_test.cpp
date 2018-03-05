@@ -335,7 +335,7 @@ U_TEST( TwoLevelsOfIndirection_Test1 )
 	U_TEST_ASSERT( error.file_pos.line == 17u );
 }
 
-U_TEST( ThreeLevelsOfIndirection_Test )
+U_TEST( ThreeLevelsOfIndirection_Test0 )
 {
 	static const char c_program_text[]=
 	R"(
@@ -367,6 +367,39 @@ U_TEST( ThreeLevelsOfIndirection_Test )
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferenceProtectionError );
 	U_TEST_ASSERT( error.file_pos.line == 19u );
+}
+
+U_TEST( ThreeLevelsOfIndirection_Test1 )
+{
+	static const char c_program_text[]=
+	R"(
+		struct A{ i32 &mut x; }
+		struct B{ A   &imut x; }
+		struct C{ B   &imut x; }
+
+		fn Extract( C & c'x' ) : i32 &'x mut
+		{
+			return c.x.x.x;
+		}
+
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var A a{ .x= x };
+			var B b{ .x= a };
+			var C c{ .x= b };
+
+			auto &imut ref= Extract(c); // error, 'ref' contains reference to 'x', while mutable reference inside 'a' exists.
+		}
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferenceProtectionError );
+	U_TEST_ASSERT( error.file_pos.line == 18u );
 }
 
 U_TEST( ReferencePollutionTest0 )
