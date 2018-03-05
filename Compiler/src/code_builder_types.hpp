@@ -176,10 +176,7 @@ public:
 		ArgReference dst;
 		ArgReference src; // second = ~0, if reference itself, else - inner reference.
 		bool src_is_mutable= true;
-		bool operator==( const ReferencePollution& other ) const
-		{
-			return this->dst == other.dst && this->src == other.src && this->src_is_mutable == other.src_is_mutable;
-		}
+		bool operator==( const ReferencePollution& other ) const;
 	};
 
 	struct ReferencePollutionHasher

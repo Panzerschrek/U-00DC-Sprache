@@ -638,6 +638,11 @@ bool operator!=( const Array& r, const Array& l )
 
 constexpr size_t Function::c_arg_reference_tag_number;
 
+bool Function::ReferencePollution::operator==( const ReferencePollution& other ) const
+{
+	return this->dst == other.dst && this->src == other.src && this->src_is_mutable == other.src_is_mutable;
+}
+
 size_t Function::ReferencePollutionHasher::operator()( const ReferencePollution& r ) const
 {
 	size_t result= 0u;

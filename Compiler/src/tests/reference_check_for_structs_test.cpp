@@ -43,6 +43,104 @@ U_TEST( DestructionOfVariableWithReferenceDestroysReference )
 	BuildProgram( c_program_text );
 }
 
+U_TEST( LockVariableMultipleTimesInSameStruct_Test0 )
+{
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			i32 &imut x;
+			i32 &mut  y;
+		}
+
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var S mut s{ .x= x, .y= x };
+		}
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferenceProtectionError );
+	U_TEST_ASSERT( error.file_pos.line == 11u );
+}
+
+U_TEST( LockVariableMultipleTimesInSameStruct_Test1 )
+{
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			i32 &mut x;
+			i32 &mut y;
+		}
+
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var S mut s{ .x= x, .y= x };
+		}
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::AccessingVariableThatHaveMutableReference );
+	U_TEST_ASSERT( error.file_pos.line == 11u );
+}
+
+U_TEST( LockVariableMultipleTimesInSameStruct_Test2 )
+{
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			i32 &mut  x;
+			i32 &imut y;
+		}
+
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var S mut s{ .x= x, .y= x };
+		}
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::AccessingVariableThatHaveMutableReference );
+	U_TEST_ASSERT( error.file_pos.line == 11u );
+}
+
+U_TEST( LockVariableMultipleTimesInSameStruct_Test3 )
+{
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			i32 &imut x;
+			i32 &imut y;
+		}
+
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var S mut s{ .x= x, .y= x };
+		}
+	)";
+
+	BuildProgram( c_program_text );
+}
+
 U_TEST( ReturnReferenceFromArg_Test0 )
 {
 	static const char c_program_text[]=

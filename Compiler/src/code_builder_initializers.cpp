@@ -745,12 +745,19 @@ void CodeBuilder::InitializeReferenceField(
 
 	for( const StoredVariablePtr& referenced_variable : initializer_variable->referenced_variables )
 	{
-		if( variable_storage.referenced_variables.find( referenced_variable ) == variable_storage.referenced_variables.end() )
+		const auto it= variable_storage.referenced_variables.find( referenced_variable );
+		if( it == variable_storage.referenced_variables.end() )
 		{
+			// New variable - just insert it.
 			variable_storage.referenced_variables[referenced_variable]=
 				StoredVariable::ReferencedVariable{
 					referenced_variable,
 					field.is_mutable ? referenced_variable->mut_use_counter : referenced_variable->imut_use_counter };
+		}
+		else
+		{
+			if( field.is_mutable || it->second.IsMutable() ) // Taking two or more mutable references to sma variable.
+				errors_.push_back( ReportReferenceProtectionError( initializer.GetFilePos(), variable_storage.name /* TODO - use field name */ ) );
 		}
 	}
 	CheckReferencedVariables( *initializer_variable, initializer.GetFilePos() );
