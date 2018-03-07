@@ -931,4 +931,64 @@ U_TEST( InnterTagsErrorsTest_InvalidReferenceTagCount_2 )
 	U_TEST_ASSERT( error.file_pos.line == 2u );
 }
 
+U_TEST( InnterTagsErrorsTest_InvalidReferenceTagCount_3 )
+{
+	static const char c_program_text[]=
+	R"(
+		// Invalid tag list for complete type.
+		struct S{}
+		fn Foo( S s' a, b, c ' );
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::InvalidReferenceTagCount );
+	U_TEST_ASSERT( error.file_pos.line == 4u );
+}
+
+U_TEST( InnterTagsErrorsTest_InvalidReferenceTagCount_4 )
+{
+	static const char c_program_text[]=
+	R"(
+		// Invalid tag list for incomplete type. Must NOT generate error, because function have no body.
+		struct S;
+		fn Foo( S s'a, b, c' );
+	)";
+
+	BuildProgram( c_program_text );
+}
+
+U_TEST( InnterTagsErrorsTest_InvalidReferenceTagCount_5 )
+{
+	static const char c_program_text[]=
+	R"(
+		// Invalid tag list for complete type.
+		struct S{}
+		fn Foo() : S' a, b, c ';
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::InvalidReferenceTagCount );
+	U_TEST_ASSERT( error.file_pos.line == 4u );
+}
+
+U_TEST( InnterTagsErrorsTest_InvalidReferenceTagCount_6 )
+{
+	static const char c_program_text[]=
+	R"(
+		// Invalid tag list for incomplete type. Must NOT generate error, because function have no body.
+		struct S;
+		fn Foo() : S'a, b, c';
+	)";
+
+	BuildProgram( c_program_text );
+}
+
 } // namespace U
