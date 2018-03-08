@@ -314,17 +314,6 @@ CodeBuilderError ReportFunctionBodyDuplication( const FilePos& file_pos, const P
 	return error;
 }
 
-CodeBuilderError ReportReturnValueDiffersFromPrototype( const FilePos& file_pos )
-{
-	CodeBuilderError error;
-	error.file_pos= file_pos;
-	error.code= CodeBuilderErrorCode::ReturnValueDiffersFromPrototype;
-
-	error.text= "Function return value differs from prototype."_SpC;
-
-	return error;
-}
-
 CodeBuilderError ReportFunctionDeclarationOutsideItsScope( const FilePos& file_pos )
 {
 	CodeBuilderError error;
@@ -643,13 +632,13 @@ CodeBuilderError ReportClassHaveNoConstructors( const FilePos& file_pos )
 	return error;
 }
 
-CodeBuilderError ReportExplicitThisInConstructorOrDestructor( const FilePos& file_pos )
+CodeBuilderError ReportExplicitThisInDestructor( const FilePos& file_pos )
 {
 	CodeBuilderError error;
 	error.file_pos= file_pos;
-	error.code= CodeBuilderErrorCode::ExplicitThisInConstructorOrDestructor;
+	error.code= CodeBuilderErrorCode::ExplicitThisInDestructor;
 
-	error.text= "Explicit \"this\" in constructor or destructor parameters."_SpC;
+	error.text= "Explicit \"this\" in destructor parameters."_SpC;
 
 	return error;
 }
@@ -863,35 +852,35 @@ CodeBuilderError ReportIncompleteMemberOfClassTemplate( const FilePos& file_pos,
 	return error;
 }
 
-CodeBuilderError ReportReferenceProtectionError( const FilePos& file_pos )
+CodeBuilderError ReportReferenceProtectionError( const FilePos& file_pos, const ProgramString& var_name )
 {
 	CodeBuilderError error;
 	error.file_pos= file_pos;
 	error.code= CodeBuilderErrorCode::ReferenceProtectionError;
 
-	error.text= "Reference protection check failed."_SpC;
+	error.text= "Reference protection check for variable \""_SpC + var_name + "\" failed."_SpC;
 
 	return error;
 }
 
-CodeBuilderError ReportDestroyedVariableStillHaveReferences( const FilePos& file_pos )
+CodeBuilderError ReportDestroyedVariableStillHaveReferences( const FilePos& file_pos, const ProgramString& var_name )
 {
 	CodeBuilderError error;
 	error.file_pos= file_pos;
 	error.code= CodeBuilderErrorCode::DestroyedVariableStillHaveReferences;
 
-	error.text= "Destroyed variable still have reference(s)."_SpC;
+	error.text= "Destroyed variable \""_SpC + var_name + "\" still have reference(s)."_SpC;
 
 	return error;
 }
 
-CodeBuilderError ReportAccessingVariableThatHaveMutableReference( const FilePos& file_pos )
+CodeBuilderError ReportAccessingVariableThatHaveMutableReference( const FilePos& file_pos, const ProgramString& var_name )
 {
 	CodeBuilderError error;
 	error.file_pos= file_pos;
 	error.code= CodeBuilderErrorCode::AccessingVariableThatHaveMutableReference;
 
-	error.text= "Accessing variable, that have mutable reference."_SpC;
+	error.text= "Accessing variable \""_SpC + var_name + "\", that have mutable reference."_SpC;
 
 	return error;
 }
@@ -903,6 +892,85 @@ CodeBuilderError ReportReturningUnallowedReference( const FilePos& file_pos )
 	error.code= CodeBuilderErrorCode::ReturningUnallowedReference;
 
 	error.text= "Returning unallowed reference."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportInvalidReferenceTagCount( const FilePos& file_pos, const size_t given, const size_t required )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::InvalidReferenceTagCount;
+
+	error.text= "Invalid reference tag count, expected "_SpC +
+		ToProgramString(std::to_string(required).c_str()) + ", given "_SpC +
+		ToProgramString(std::to_string(given).c_str()) + "."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportSelfReferencePollution( const FilePos& file_pos )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::SelfReferencePollution;
+
+	error.text= "Reference self-pollution."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportArgReferencePollution( const FilePos& file_pos )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::ArgReferencePollution;
+
+	error.text= "Pollution of arg reference."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportUnallowedReferencePollution( const FilePos& file_pos )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::UnallowedReferencePollution;
+
+	error.text= "Unallowed reference pollution."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportReferencePollutionForArgReference( const FilePos& file_pos )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::ReferencePollutionForArgReference;
+
+	error.text= "Pollution of inner reference of argument."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportExplicitReferencePollutionForCopyConstructor( const FilePos& file_pos )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::ExplicitReferencePollutionForCopyConstructor;
+
+	error.text= "Explicit reference pollution for copy constructor. Reference pollution for copy constructors generated automatically."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportExplicitReferencePollutionForCopyAssignmentOperator( const FilePos& file_pos )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::ExplicitReferencePollutionForCopyAssignmentOperator;
+
+	error.text= "Explicit reference pollution for copy assignment operator. Reference pollution for copy assignment operators generated automatically."_SpC;
 
 	return error;
 }

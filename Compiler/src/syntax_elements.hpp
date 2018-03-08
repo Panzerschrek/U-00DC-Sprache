@@ -519,6 +519,8 @@ public:
 	std::vector<Member> members;
 };
 
+typedef std::vector<ProgramString> ReferencesTagsList;
+
 class FunctionArgument final : public SyntaxElementBase
 {
 public:
@@ -528,7 +530,8 @@ public:
 		TypeName type,
 		MutabilityModifier mutability_modifier,
 		ReferenceModifier reference_modifier,
-		ProgramString reference_tag);
+		ProgramString reference_tag,
+		ReferencesTagsList inner_arg_reference_tags );
 
 public:
 	const ProgramString name_;
@@ -536,10 +539,19 @@ public:
 	const MutabilityModifier mutability_modifier_;
 	const ReferenceModifier reference_modifier_;
 	const ProgramString reference_tag_;
+	const ReferencesTagsList inner_arg_reference_tags_;
 };
 
 typedef std::unique_ptr<FunctionArgument> FunctionArgumentPtr;
 typedef std::vector<FunctionArgumentPtr> FunctionArgumentsDeclaration;
+
+struct ReferencePollutionSrc
+{
+	ProgramString name;
+	bool is_mutable= true;
+};
+typedef std::pair< ProgramString, ReferencePollutionSrc > FunctionReferencesPollution;
+typedef std::vector<FunctionReferencesPollution> FunctionReferencesPollutionList;
 
 class Function final
 	: public SyntaxElementBase
@@ -554,16 +566,20 @@ public:
 		MutabilityModifier return_value_mutability_modifier,
 		ReferenceModifier return_value_reference_modifier,
 		ProgramString return_value_reference_tag,
+		ReferencesTagsList return_value_inner_reference_tags,
+		FunctionReferencesPollutionList referecnces_pollution_list,
 		FunctionArgumentsDeclaration arguments,
 		std::unique_ptr<StructNamedInitializer> constructor_initialization_list,
 		BlockPtr block,
-		OverloadedOperator overloaded_operator);
+		OverloadedOperator overloaded_operator );
 
 	const ComplexName name_;
 	const TypeName return_type_;
 	const MutabilityModifier return_value_mutability_modifier_;
 	const ReferenceModifier return_value_reference_modifier_;
 	const ProgramString return_value_reference_tag_;
+	const ReferencesTagsList return_value_inner_reference_tags_;
+	const FunctionReferencesPollutionList referecnces_pollution_list_;
 	const FunctionArgumentsDeclaration arguments_;
 	const std::unique_ptr<StructNamedInitializer> constructor_initialization_list_;
 	const BlockPtr block_;

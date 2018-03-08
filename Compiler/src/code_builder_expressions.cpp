@@ -18,6 +18,33 @@ namespace U
 namespace CodeBuilderPrivate
 {
 
+struct AchievableVariables
+{
+	std::unordered_set<StoredVariablePtr> variables;
+	bool any_variable_is_mutable= false;
+};
+
+static AchievableVariables RecursiveGetAllReferencedVariables( const StoredVariablePtr& stored_variable )
+{
+	U_ASSERT( stored_variable->kind == StoredVariable::Kind::Variable );
+
+	AchievableVariables result;
+
+	for( const auto& referenced_variable_pair : stored_variable->referenced_variables )
+	{
+		result.variables.insert( referenced_variable_pair.first );
+		const AchievableVariables achievable_variables=
+			RecursiveGetAllReferencedVariables(referenced_variable_pair.first);
+		result.variables.insert( achievable_variables.variables.begin(), achievable_variables.variables.end() );
+
+		if( referenced_variable_pair.second.IsMutable() ||
+			achievable_variables.any_variable_is_mutable )
+			result.any_variable_is_mutable= true;
+	}
+
+	return result;
+}
+
 Value CodeBuilder::BuildExpressionCodeAndDestroyTemporaries(
 	const Synt::IExpressionComponent& expression,
 	NamesScope& names,
@@ -853,7 +880,7 @@ Value CodeBuilder::BuildBinaryOperator(
 		}
 	}
 
-	const StoredVariablePtr stored_result= std::make_shared<StoredVariable>( result );
+	const StoredVariablePtr stored_result= std::make_shared<StoredVariable>( BinaryOperatorToString(binary_operator), result );
 	result.referenced_variables.emplace( stored_result );
 	function_context.stack_variables_stack.back()->RegisterVariable( stored_result );
 
@@ -962,7 +989,7 @@ Value CodeBuilder::BuildLazyBinaryOperator(
 			U_ASSERT(false);
 	}
 
-	const StoredVariablePtr stored_result= std::make_shared<StoredVariable>( result );
+	const StoredVariablePtr stored_result= std::make_shared<StoredVariable>( BinaryOperatorToString(binary_operator.operator_type_), result );
 	result.referenced_variables.emplace( stored_result );
 	function_context.stack_variables_stack.back()->RegisterVariable( stored_result );
 
@@ -1037,7 +1064,13 @@ Value CodeBuilder::BuildNamedOperand(
 		{
 			field_variable.value_type= field->is_mutable ? ValueType::Reference : ValueType::ConstReference;
 			field_variable.llvm_value= function_context.llvm_ir_builder.CreateLoad( field_variable.llvm_value );
-			// TODO - porcess referenced variables here.
+
+			field_variable.referenced_variables.clear();
+			for( const StoredVariablePtr& struct_variable : function_context.this_->referenced_variables )
+			{
+				for( const auto& referenced_variable_pair : struct_variable->referenced_variables )
+					field_variable.referenced_variables.insert( referenced_variable_pair.first );
+			}
 		}
 
 		return Value( field_variable, named_operand.file_pos_ );
@@ -1074,13 +1107,19 @@ Value CodeBuilder::BuildNamedOperand(
 		// Unwrap stored variable here.
 		Variable result;
 		result= referenced_variable->content;
-		if( !referenced_variable->is_reference )
+		if( referenced_variable->kind == StoredVariable::Kind::Variable )
 		{
 			result.referenced_variables.emplace( referenced_variable );
 
 			// If we have mutable reference to variable, we can not access variable itself.
 			if( referenced_variable->content.value_type == ValueType::Reference && referenced_variable->mut_use_counter.use_count() >= 2u )
-				errors_.push_back( ReportAccessingVariableThatHaveMutableReference( named_operand.file_pos_ ) );
+				errors_.push_back( ReportAccessingVariableThatHaveMutableReference( named_operand.file_pos_, referenced_variable->name ) );
+		}
+		else if( referenced_variable->kind == StoredVariable::Kind::ArgInnerVariable )
+		{
+			// If we have mutable reference to variable, we can not access variable itself.
+			if( referenced_variable->content.value_type == ValueType::Reference && referenced_variable->mut_use_counter.use_count() >= 2u )
+				errors_.push_back( ReportAccessingVariableThatHaveMutableReference( named_operand.file_pos_, referenced_variable->name ) );
 		}
 
 		return Value( result, name_entry->second.GetFilePos() );
@@ -1117,7 +1156,7 @@ Value CodeBuilder::BuildNumericConstant(
 
 	result.llvm_value= result.constexpr_value;
 
-	const StoredVariablePtr stored_result= std::make_shared<StoredVariable>( result );
+	const StoredVariablePtr stored_result= std::make_shared<StoredVariable>( "numeric constant"_SpC, result );
 	result.referenced_variables.emplace( stored_result );
 	function_context.stack_variables_stack.back()->RegisterVariable( stored_result );
 
@@ -1138,7 +1177,10 @@ Variable CodeBuilder::BuildBooleanConstant(
 			fundamental_llvm_types_.bool_ ,
 			llvm::APInt( 1u, uint64_t(boolean_constant.value_) ) );
 
-	const StoredVariablePtr stored_result= std::make_shared<StoredVariable>( result );
+	const StoredVariablePtr stored_result=
+		std::make_shared<StoredVariable>(
+			Keyword( boolean_constant.value_ ? Keywords::true_ : Keywords::false_ ),
+			result );
 	result.referenced_variables.emplace( stored_result );
 	function_context.stack_variables_stack.back()->RegisterVariable( stored_result );
 
@@ -1374,7 +1416,13 @@ Value CodeBuilder::BuildMemberAccessOperator(
 	{
 		result.value_type= field->is_mutable ? ValueType::Reference : ValueType::ConstReference;
 		result.llvm_value= function_context.llvm_ir_builder.CreateLoad( result.llvm_value );
-		// TODO - porcess referenced variables here.
+
+		result.referenced_variables.clear();
+		for( const StoredVariablePtr& struct_variable : variable.referenced_variables )
+		{
+			for( const auto& referenced_variable_pair : struct_variable->referenced_variables )
+				result.referenced_variables.insert( referenced_variable_pair.first );
+		}
 	}
 
 	return Value( result, member_access_operator.file_pos_ );
@@ -1640,6 +1688,24 @@ Value CodeBuilder::DoCallFunction(
 					TryCallCopyConstructor( file_pos, arg_copy, expr.llvm_value, class_type, function_context );
 					llvm_args[j]= arg_copy;
 				}
+
+				// Save references inside referenced variables, because we need check references inside it.
+				for( const StoredVariablePtr& var_itself : expr.referenced_variables )
+					for( const auto& referenced_variable_pair : var_itself->referenced_variables )
+					{
+						const StoredVariablePtr& referenced_variable = referenced_variable_pair.first;
+						if( referenced_variable_pair.second.IsMutable() )
+						{
+							++locked_variable_counters[referenced_variable].mut;
+							temp_args_locks.push_back( referenced_variable->mut_use_counter );
+						}
+						else
+						{
+							++locked_variable_counters[referenced_variable].imut;
+							temp_args_locks.push_back( referenced_variable->imut_use_counter );
+						}
+						arg_to_variables[j].emplace( referenced_variable );
+					}
 			}
 			else if( something_have_template_dependent_type )
 			{}
@@ -1660,7 +1726,7 @@ Value CodeBuilder::DoCallFunction(
 		{} // All ok - 0-infinity immutable references.
 		else
 		{
-			errors_.push_back( ReportReferenceProtectionError( call_file_pos ) );
+			errors_.push_back( ReportReferenceProtectionError( call_file_pos, pair.first->name ) );
 			continue;
 		}
 
@@ -1671,7 +1737,7 @@ Value CodeBuilder::DoCallFunction(
 		{
 			// Pass mutable reference into function, while there are references on stack or somewhere else.
 			// We can have one mutable reference on stack, but no more.
-			errors_.push_back( ReportReferenceProtectionError( call_file_pos ) );
+			errors_.push_back( ReportReferenceProtectionError( call_file_pos, var.name ) );
 		}
 		if( counter.mut == 1u && var.mut_use_counter.use_count() == 2u )
 		{} // Ok - we take one mutable reference from stack and pass it into function.
@@ -1731,7 +1797,7 @@ Value CodeBuilder::DoCallFunction(
 		result.location= function.return_value_is_sret ? Variable::Location::Pointer : Variable::Location::LLVMRegister;
 		result.value_type= ValueType::Value;
 
-		const StoredVariablePtr stored_result= std::make_shared<StoredVariable>( result );
+		const StoredVariablePtr stored_result= std::make_shared<StoredVariable>( "fn result"_SpC, result );
 		result.referenced_variables.emplace( stored_result );
 
 		function_context.stack_variables_stack.back()->RegisterVariable( stored_result );
@@ -1742,13 +1808,135 @@ Value CodeBuilder::DoCallFunction(
 	{
 		// Returned reference refers to args, listed in function type.
 		U_ASSERT( arg_to_variables.size() == function_type.args.size() );
-		for( const size_t arg_n : function_type.return_reference_args )
+		for( const size_t arg_n : function_type.return_references.args_references )
 		{
 			U_ASSERT( arg_n < arg_to_variables.size() );
-			for( const StoredVariablePtr& var : arg_to_variables[arg_n] )
-				result.referenced_variables.emplace(var);
+			if( function_type.args[ arg_n ].is_reference )
+			{
+				for( const StoredVariablePtr& var : arg_to_variables[arg_n] )
+					result.referenced_variables.emplace(var);
+			}
+		}
+
+		// Returned reference also may be linked with references, passed inside structs.
+		for( const Function::ArgReference& arg_n_and_tag_n : function_type.return_references.inner_args_references )
+		{
+			U_ASSERT( arg_n_and_tag_n.first < arg_to_variables.size() );
+			U_ASSERT( arg_n_and_tag_n.second == 0u ); // Currently, support only 0 or 1 tags
+
+			for( const StoredVariablePtr& var : arg_to_variables[arg_n_and_tag_n.first] )
+			{
+				if( !function_type.args[ arg_n_and_tag_n.first ].is_reference )
+					result.referenced_variables.emplace( var );
+				for( const StoredVariablePtr& referenced_variable : RecursiveGetAllReferencedVariables(var).variables )
+					result.referenced_variables.emplace(referenced_variable);
+			}
 		}
 	}
+	else if( function_type.return_type.ReferencesTagsCount() > 0u )
+	{
+		U_ASSERT( result.referenced_variables.size() == 1u );
+		const StoredVariablePtr& stored_result= *result.referenced_variables.begin();
+
+		// Returned value references refers to args, listed in function type.
+		U_ASSERT( arg_to_variables.size() == function_type.args.size() );
+		for( const size_t arg_n : function_type.return_references.args_references )
+		{
+			U_ASSERT( arg_n < arg_to_variables.size() );
+			if( function_type.args[ arg_n ].is_reference )
+			{
+				const bool is_mutable= function_type.args[arg_n].is_mutable;
+				for( const StoredVariablePtr& var : arg_to_variables[arg_n] )
+					stored_result->referenced_variables[var]= StoredVariable::ReferencedVariable{ var, is_mutable ? var->mut_use_counter : var->imut_use_counter };
+			}
+		}
+
+		// Returned vale references also may be linked with references, passed inside structs.
+		for( const Function::ArgReference& arg_n_and_tag_n : function_type.return_references.inner_args_references )
+		{
+			U_ASSERT( arg_n_and_tag_n.first < arg_to_variables.size() );
+			U_ASSERT( arg_n_and_tag_n.second == 0u ); // Currently, support only 0 or 1 tags
+			// TODO - if we pass value-argument, we needs to call copy constructor. In this constructor we can swap tags.
+			// We need correct result in such case.
+
+			for( const StoredVariablePtr& var : arg_to_variables[arg_n_and_tag_n.first] )
+			{
+				const AchievableVariables achievable_variables= RecursiveGetAllReferencedVariables( var );
+				for( const auto& referenced_variable_pair : achievable_variables.variables )
+					stored_result->referenced_variables[referenced_variable_pair]=
+						StoredVariable::ReferencedVariable{
+							referenced_variable_pair,
+							achievable_variables.any_variable_is_mutable ? referenced_variable_pair->mut_use_counter : referenced_variable_pair->imut_use_counter};
+			}
+		}
+	}
+
+	// Setup references after call.
+	for( const Function::ReferencePollution& referene_pollution : function_type.references_pollution )
+	{
+		const size_t dst_arg= referene_pollution.dst.first;
+		U_ASSERT( dst_arg < function_type.args.size() );
+		U_ASSERT( function_type.args[ dst_arg ].type.ReferencesTagsCount() > 0u );
+
+		bool src_variables_is_mutable= referene_pollution.src_is_mutable;
+		std::unordered_set<StoredVariablePtr> src_variables;
+		if( referene_pollution.src.second == Function::c_arg_reference_tag_number )
+		{
+			// Reference-arg itself
+			U_ASSERT( function_type.args[ referene_pollution.src.first ].is_reference );
+			src_variables= arg_to_variables[ referene_pollution.src.first ];
+
+			if( !function_type.args[ referene_pollution.src.first ].is_mutable )
+				src_variables_is_mutable= false; // Even if reference-pollution is mutable, but if src vars is immutable, link as immutable.
+		}
+		else
+		{
+			// Variables, referenced by inner argument references.
+			U_ASSERT( referene_pollution.src.second == 0u );// Currently we support one tag per struct.
+			bool all_is_mutable= false;
+			for( const StoredVariablePtr& referenced_variable : arg_to_variables[ referene_pollution.src.first ] )
+			{
+				const AchievableVariables vars= RecursiveGetAllReferencedVariables( referenced_variable );
+				src_variables.insert( vars.variables.begin(), vars.variables.end() );
+				all_is_mutable= all_is_mutable || vars.any_variable_is_mutable;
+			}
+
+			if( !all_is_mutable )
+				src_variables_is_mutable= false; // Even if reference-pollution is mutable, but if src vars is immutable, link as immutable.
+		}
+
+		if( function_type.args[ dst_arg ].is_reference )
+		{
+			for( const StoredVariablePtr& dst_variable : arg_to_variables[ dst_arg ] )
+			{
+				U_ASSERT( dst_variable->kind == StoredVariable::Kind::Variable || dst_variable->kind == StoredVariable::Kind::ArgInnerVariable );
+				if( dst_variable->kind == StoredVariable::Kind::ArgInnerVariable )
+					errors_.push_back( ReportReferencePollutionForArgReference( call_file_pos ) );
+
+				for( const StoredVariablePtr& src_variable : src_variables )
+				{
+					const auto& counter= src_variables_is_mutable ? src_variable->mut_use_counter : src_variable->imut_use_counter;
+					if( dst_variable->referenced_variables.find(src_variable) == dst_variable->referenced_variables.end() )
+					{
+						dst_variable->referenced_variables[src_variable]= StoredVariable::ReferencedVariable{ src_variable, counter };
+					}
+					else
+					{
+						// Already linked. Try change mutability, if needed.
+						StoredVariable::ReferencedVariable& old_referenced_variable= dst_variable->referenced_variables[src_variable];
+						if( src_variables_is_mutable && !old_referenced_variable.IsMutable() )
+						{
+							old_referenced_variable.use_counter= src_variable->mut_use_counter;
+						}
+					}
+				}
+			} // for dst variables
+		}
+		else
+		{
+			 // Does it have sence, write references to value argument?
+		}
+	} // for function_type.references_pollution
 
 	return Value( result, call_file_pos );
 }
@@ -1764,10 +1952,16 @@ Variable CodeBuilder::BuildTempVariableConstruction(
 	variable.location= Variable::Location::Pointer;
 	variable.value_type= ValueType::Reference;
 	variable.llvm_value= function_context.alloca_ir_builder.CreateAlloca( type.GetLLVMType() );
-	variable.constexpr_value= ApplyConstructorInitializer( variable, call_operator, names, function_context );
+
+	const StoredVariablePtr variable_storage_for_initialization= std::make_shared<StoredVariable>( "temp "_SpC + type.ToString(), variable );
+	variable.referenced_variables.insert(variable_storage_for_initialization);
+	variable.constexpr_value= ApplyConstructorInitializer( variable, *variable_storage_for_initialization, call_operator, names, function_context );
+	variable.referenced_variables.erase(variable_storage_for_initialization);
 	variable.value_type= ValueType::Value; // Make value after construction
 
-	const StoredVariablePtr stored_variable= std::make_shared<StoredVariable>( variable );
+	const StoredVariablePtr stored_variable= std::make_shared<StoredVariable>( variable_storage_for_initialization->name, variable );
+	stored_variable->referenced_variables= std::move( variable_storage_for_initialization->referenced_variables );
+
 	variable.referenced_variables.emplace( stored_variable );
 
 	function_context.stack_variables_stack.back()->RegisterVariable( stored_variable );
@@ -1828,7 +2022,7 @@ Value CodeBuilder::BuildUnaryMinus(
 			result.llvm_value= function_context.llvm_ir_builder.CreateNeg( value_for_neg );
 	}
 
-	const StoredVariablePtr stored_result= std::make_shared<StoredVariable>( result );
+	const StoredVariablePtr stored_result= std::make_shared<StoredVariable>( OverloadedOperatorToString(OverloadedOperator::Sub), result );
 	result.referenced_variables.emplace( stored_result );
 	function_context.stack_variables_stack.back()->RegisterVariable( stored_result );
 
@@ -1871,7 +2065,7 @@ Value CodeBuilder::BuildLogicalNot(
 		result.llvm_value= function_context.llvm_ir_builder.CreateNot( value_in_register );
 	}
 
-	const StoredVariablePtr stored_result= std::make_shared<StoredVariable>( result );
+	const StoredVariablePtr stored_result= std::make_shared<StoredVariable>( OverloadedOperatorToString(OverloadedOperator::LogicalNot), result );
 	result.referenced_variables.emplace( stored_result );
 	function_context.stack_variables_stack.back()->RegisterVariable( stored_result );
 
@@ -1921,7 +2115,7 @@ Value CodeBuilder::BuildBitwiseNot(
 		result.llvm_value= function_context.llvm_ir_builder.CreateNot( value_in_register );
 	}
 
-	const StoredVariablePtr stored_result= std::make_shared<StoredVariable>( result );
+	const StoredVariablePtr stored_result= std::make_shared<StoredVariable>( OverloadedOperatorToString(OverloadedOperator::BitwiseNot), result );
 	result.referenced_variables.emplace( stored_result );
 	function_context.stack_variables_stack.back()->RegisterVariable( stored_result );
 

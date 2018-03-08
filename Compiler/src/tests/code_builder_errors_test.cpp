@@ -1614,7 +1614,7 @@ U_TEST(ReturnValueDiffersFromPrototypeTest0)
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReturnValueDiffersFromPrototype );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::CouldNotOverloadFunction );
 	U_TEST_ASSERT( error.file_pos.line == 3u );
 }
 
@@ -1623,10 +1623,10 @@ U_TEST(ReturnValueDiffersFromPrototypeTest1)
 	// Different return value mutability.
 	static const char c_program_text[]=
 	R"(
-		fn Bar( i32 x, f64 y ) : i32 imut;
-		fn Bar( i32 x, f64 y ) : i32 mut
+		fn Bar( i32& x, f64& y ) : i32 &imut;
+		fn Bar( i32& x, f64& y ) : i32 &mut
 		{
-			return 0;
+			return x;
 		}
 	)";
 
@@ -1635,7 +1635,7 @@ U_TEST(ReturnValueDiffersFromPrototypeTest1)
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReturnValueDiffersFromPrototype );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::CouldNotOverloadFunction );
 	U_TEST_ASSERT( error.file_pos.line == 3u );
 }
 
@@ -1656,7 +1656,7 @@ U_TEST(ReturnValueDiffersFromPrototypeTest2)
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReturnValueDiffersFromPrototype );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::CouldNotOverloadFunction );
 	U_TEST_ASSERT( error.file_pos.line == 3u );
 }
 
@@ -1677,7 +1677,7 @@ U_TEST(ReturnValueDiffersFromPrototypeTest3)
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReturnValueDiffersFromPrototype );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::CouldNotOverloadFunction );
 	U_TEST_ASSERT( error.file_pos.line == 3u );
 }
 

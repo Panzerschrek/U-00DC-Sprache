@@ -402,6 +402,21 @@ bool Type::CanBeConstexpr() const
 	return false;
 }
 
+size_t Type::ReferencesTagsCount() const
+{
+	if( const Class* const class_type= GetClassType() )
+	{
+		return class_type->references_tags_count;
+	}
+	else if( const ArrayPtr* const array= boost::get<ArrayPtr>( &something_ ) )
+	{
+		U_ASSERT( *array != nullptr );
+		return (*array)->type.ReferencesTagsCount();
+	}
+
+	return 0u;
+}
+
 llvm::Type* Type::GetLLVMType() const
 {
 	struct Visitor final : public boost::static_visitor<llvm::Type*>
@@ -574,6 +589,16 @@ bool operator!=( const Type& r, const Type& l )
 	return !( r == l );
 }
 
+bool operator==( const Function::InToOutReferences& l, const Function::InToOutReferences& r )
+{
+	return l.args_references == r.args_references && l.inner_args_references == r.inner_args_references;
+}
+
+bool operator!=( const Function::InToOutReferences& l, const Function::InToOutReferences& r )
+{
+	return !( l == r );
+}
+
 bool operator==( const Function::Arg& r, const Function::Arg& l )
 {
 	return r.type == l.type && r.is_mutable == l.is_mutable && r.is_reference == l.is_reference;
@@ -591,7 +616,9 @@ bool operator==( const Function& r, const Function& l )
 		r.return_value_is_mutable == l.return_value_is_mutable &&
 		r.return_value_is_reference == l.return_value_is_reference &&
 		r.args == l.args &&
-		r.return_reference_args == l.return_reference_args;
+		r.return_references == l.return_references &&
+		r.return_references == l.return_references &&
+		r.references_pollution == l.references_pollution;
 }
 
 bool operator!=( const Function& r, const Function& l )
@@ -607,6 +634,23 @@ bool operator==( const Array& r, const Array& l )
 bool operator!=( const Array& r, const Array& l )
 {
 	return !( r == l );
+}
+
+constexpr size_t Function::c_arg_reference_tag_number;
+
+bool Function::ReferencePollution::operator==( const ReferencePollution& other ) const
+{
+	return this->dst == other.dst && this->src == other.src && this->src_is_mutable == other.src_is_mutable;
+}
+
+size_t Function::ReferencePollutionHasher::operator()( const ReferencePollution& r ) const
+{
+	size_t result= 0u;
+	boost::hash_combine( result, r.dst.first );
+	boost::hash_combine( result, r.dst.second );
+	boost::hash_combine( result, r.src.first );
+	boost::hash_combine( result, r.src.second );
+	return result;
 }
 
 size_t NameResolvingKeyHasher::operator()( const NameResolvingKey& key ) const

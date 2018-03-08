@@ -163,6 +163,8 @@ private:
 	void ParseTypeName_r( TypeName& result );
 	TypeName ParseTypeName();
 	ComplexName ParseComplexName();
+	ReferencesTagsList ParseReferencesTagsList();
+	FunctionReferencesPollutionList ParseFunctionReferencesPollutionList();
 
 	IInitializerPtr ParseInitializer( bool parse_expression_initializer );
 	std::unique_ptr<ArrayInitializer> ParseArrayInitializer();
@@ -850,6 +852,131 @@ ComplexName SyntaxAnalyzer::ParseComplexName()
 	} while(true);
 
 	return complex_name;
+}
+
+ReferencesTagsList SyntaxAnalyzer::ParseReferencesTagsList()
+{
+	U_ASSERT( it_->type == Lexem::Type::Apostrophe );
+	++it_; U_ASSERT( it_ < it_end_ );
+
+	ReferencesTagsList result;
+
+	if( it_->type == Lexem::Type::Apostrophe )
+	{
+		// Empty list
+		++it_; U_ASSERT( it_ < it_end_ );
+		return result;
+	}
+
+	while(1)
+	{
+		if( it_->type == Lexem::Type::Identifier )
+		{
+			result.push_back( it_->text );
+			++it_;
+		}
+		else
+		{
+			PushErrorMessage( *it_ );
+			return result;
+		}
+
+		if( it_->type == Lexem::Type::Comma )
+		{
+			++it_; U_ASSERT( it_ < it_end_ );
+			if( it_->type == Lexem::Type::Apostrophe ) // Disable things, like 'a, b, c,'
+			{
+				PushErrorMessage( *it_ );
+				return result;
+			}
+		}
+		else if( it_->type == Lexem::Type::Apostrophe )
+		{
+			++it_; U_ASSERT( it_ < it_end_ );
+			break;
+		}
+	}
+
+	return result;
+}
+
+FunctionReferencesPollutionList SyntaxAnalyzer::ParseFunctionReferencesPollutionList()
+{
+	U_ASSERT( it_->type == Lexem::Type::Apostrophe );
+	++it_; U_ASSERT( it_ < it_end_ );
+
+	FunctionReferencesPollutionList result;
+
+	if( it_->type == Lexem::Type::Apostrophe )
+	{
+		// Empty list
+		++it_; U_ASSERT( it_ < it_end_ );
+		return result;
+	}
+
+	while(1)
+	{
+		if( it_->type == Lexem::Type::Identifier )
+		{
+			result.emplace_back();
+			result.back().first = it_->text;
+			++it_;
+		}
+		else
+		{
+			PushErrorMessage( *it_ );
+			return result;
+		}
+
+		if( it_->type != Lexem::Type::LeftArrow )
+		{
+			PushErrorMessage( *it_ );
+			return result;
+		}
+		++it_; U_ASSERT( it_ < it_end_ );
+
+		if( it_->type == Lexem::Type::Identifier )
+		{
+			if( it_->text == Keywords::mut_ )
+			{
+				result.back().second.is_mutable= true;
+				++it_; U_ASSERT( it_ < it_end_ );
+			}
+			else if( it_->text == Keywords::imut_ )
+			{
+				result.back().second.is_mutable= false;
+				++it_; U_ASSERT( it_ < it_end_ );
+			}
+		}
+
+		if( it_->type == Lexem::Type::Identifier )
+		{
+			result.back().second.name= it_->text;
+			++it_;
+		}
+		else
+		{
+			PushErrorMessage( *it_ );
+			return result;
+		}
+
+		if( it_->type == Lexem::Type::Comma )
+		{
+			++it_; U_ASSERT( it_ < it_end_ );
+			if( it_->type == Lexem::Type::Apostrophe ) // Disable things, like 'a, b, c,'
+			{
+				PushErrorMessage( *it_ );
+				return result;
+			}
+		}
+		else if( it_->type == Lexem::Type::Apostrophe )
+		{
+			++it_; U_ASSERT( it_ < it_end_ );
+			break;
+		}
+	}
+
+	return result;
 }
 
 IInitializerPtr SyntaxAnalyzer::ParseInitializer( const bool parse_expression_initializer )
@@ -1929,14 +2056,11 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 
 		if( is_this )
 		{
-			arguments.emplace_back(
-				new FunctionArgument(
-					it_->file_pos,
-					Keyword( Keywords::this_ ),
-					TypeName(),
-					mutability_modifier,
-					ReferenceModifier::Reference,
-					""_SpC /*TODO*/) );
+			const FilePos& file_pos= it_->file_pos;
+
+			ReferencesTagsList tags_list;
+			if( it_->type == Lexem::Type::Apostrophe )
+				tags_list= ParseReferencesTagsList();
 
 			if( it_->type == Lexem::Type::Comma )
 			{
@@ -1948,6 +2072,16 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 					return nullptr;
 				}
 			}
+
+			arguments.emplace_back(
+				new FunctionArgument(
+					file_pos,
+					Keyword( Keywords::this_ ),
+					TypeName(),
+					mutability_modifier,
+					ReferenceModifier::Reference,
+					Keyword( Keywords::this_ ), // Implicit set name for tag of "this" to "this".
+					tags_list ) );
 		}
 	}
 
@@ -1964,6 +2098,7 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 		ReferenceModifier reference_modifier= ReferenceModifier::None;
 		MutabilityModifier mutability_modifier= MutabilityModifier::None;
 		ProgramString reference_tag;
+		ReferencesTagsList tags_list;
 
 		if( it_->type == Lexem::Type::And )
 		{
@@ -2011,8 +2146,10 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 
 		const FilePos& arg_file_pos= it_->file_pos;
 		const ProgramString& arg_name= it_->text;
-		++it_;
-		U_ASSERT( it_ < it_end_ );
+		++it_; U_ASSERT( it_ < it_end_ );
+
+		if( it_->type == Lexem::Type::Apostrophe )
+			tags_list= ParseReferencesTagsList();
 
 		arguments.emplace_back(
 			new FunctionArgument(
@@ -2021,7 +2158,8 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 				std::move(arg_type),
 				mutability_modifier,
 				reference_modifier,
-				std::move(reference_tag)) );
+				std::move(reference_tag),
+				std::move(tags_list) ) );
 
 		if( it_->type == Lexem::Type::Comma )
 		{
@@ -2046,6 +2184,11 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 	MutabilityModifier mutability_modifier= MutabilityModifier::None;
 	ReferenceModifier reference_modifier= ReferenceModifier::None;
 	ProgramString return_value_reference_tag;
+	ReferencesTagsList return_value_tags_list;
+	FunctionReferencesPollutionList references_pollution_list;
+
+	if( it_->type == Lexem::Type::Apostrophe )
+		references_pollution_list= ParseFunctionReferencesPollutionList();
 
 	if( it_->type == Lexem::Type::Colon )
 	{
@@ -2071,25 +2214,27 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 				return_value_reference_tag = it_->text;
 				++it_; U_ASSERT( it_ < it_end_ );
 			}
-		}
 
-		if( it_->type == Lexem::Type::Identifier )
-		{
-			if( it_->text == Keywords::mut_ )
+			if( it_->type == Lexem::Type::Identifier )
 			{
-				mutability_modifier= MutabilityModifier::Mutable;
-				++it_;
-				U_ASSERT( it_ < it_end_ );
+				if( it_->text == Keywords::mut_ )
+				{
+					mutability_modifier= MutabilityModifier::Mutable;
+					++it_;
+					U_ASSERT( it_ < it_end_ );
+				}
+				else if( it_->text == Keywords::imut_ )
+				{
+					mutability_modifier= MutabilityModifier::Immutable;
+					++it_;
+					U_ASSERT( it_ < it_end_ );
+				}
+				else
+					PushErrorMessage( *it_ );
 			}
-			else if( it_->text == Keywords::imut_ )
-			{
-				mutability_modifier= MutabilityModifier::Immutable;
-				++it_;
-				U_ASSERT( it_ < it_end_ );
-			}
-			else
-				PushErrorMessage( *it_ );
 		}
+		else if( it_->type == Lexem::Type::Apostrophe )
+			return_value_tags_list= ParseReferencesTagsList();
 	}
 
 	std::unique_ptr<StructNamedInitializer> constructor_initialization_list;
@@ -2163,6 +2308,8 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 			mutability_modifier,
 			reference_modifier,
 			std::move(return_value_reference_tag),
+			return_value_tags_list,
+			references_pollution_list,
 			std::move( arguments ),
 			std::move( constructor_initialization_list ),
 			std::move( block ),

@@ -83,7 +83,7 @@ U_TEST( InitializingReferencesInsideStructsInConstructorInitializerList )
 		{
 			f32 dummy;
 			i32 &mut r;
-			fn constructor ( i32 &mut in_r )
+			fn constructor ( this'x', i32 &'y mut in_r ) ' x <- y '
 			( r= in_r, dummy(0.0f) )
 			{}
 		}

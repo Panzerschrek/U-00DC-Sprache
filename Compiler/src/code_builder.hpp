@@ -72,6 +72,9 @@ private:
 		Type return_type;
 		bool return_value_is_mutable;
 		bool return_value_is_reference;
+
+		// For reference-returned functions - references of returning reference.
+		// For value-returned functions - references inside value.
 		std::unordered_set<StoredVariablePtr> allowed_for_returning_references;
 
 		const Variable* this_= nullptr; // null for nonclass functions or static member functions.
@@ -246,6 +249,22 @@ private:
 		bool force_prototype,
 		ClassProxyPtr base_class,
 		NamesScope& scope );
+
+	void ProcessFunctionArgReferencesTags(
+		const Synt::Function& func,
+		Function& function_type,
+		const Synt::FunctionArgument& in_arg,
+		const Function::Arg& out_arg,
+		size_t arg_number );
+
+	void TryGenerateFunctionReturnReferencesMapping(
+		const Synt::Function& func,
+		Function& function_type );
+
+	void ProcessFunctionReferencesPollution(
+		const Synt::Function& func,
+		Function& function_type,
+		const ClassProxyPtr& base_class );
 
 	void CheckOverloadedOperator(
 		const ClassProxyPtr& base_class,
@@ -432,7 +451,7 @@ private:
 
 	// Functions
 
-	FunctionVariable* GetFunctionWithExactSignature(
+	FunctionVariable* GetFunctionWithSameType(
 		const Function& function_type,
 		OverloadedFunctionsSet& functions_set );
 
@@ -458,6 +477,7 @@ private:
 
 	llvm::Constant* ApplyInitializer(
 		const Variable& variable,
+		StoredVariable& variable_storage,
 		const Synt::IInitializer& initializer,
 		NamesScope& block_names,
 		FunctionContext& function_context );
@@ -470,24 +490,28 @@ private:
 
 	llvm::Constant* ApplyArrayInitializer(
 		const Variable& variable,
+		StoredVariable& variable_storage,
 		const Synt::ArrayInitializer& initializer,
 		NamesScope& block_names,
 		FunctionContext& function_context );
 
 	void ApplyStructNamedInitializer(
 		const Variable& variable,
+		StoredVariable& variable_storage,
 		const Synt::StructNamedInitializer& initializer,
 		NamesScope& block_names,
 		FunctionContext& function_context );
 
 	llvm::Constant* ApplyConstructorInitializer(
 		const Variable& variable,
+		StoredVariable& variable_storage,
 		const Synt::CallOperator& call_operator,
 		NamesScope& block_names,
 		FunctionContext& function_context );
 
 	llvm::Constant* ApplyExpressionInitializer(
 		const Variable& variable,
+		StoredVariable& variable_storage,
 		const Synt::ExpressionInitializer& initializer,
 		NamesScope& block_names,
 		FunctionContext& function_context );
@@ -500,6 +524,7 @@ private:
 
 	void InitializeReferenceField(
 		const Variable& variable,
+		StoredVariable& variable_storage,
 		const ClassField& field,
 		const Synt::IInitializer& initializer,
 		NamesScope& block_names,

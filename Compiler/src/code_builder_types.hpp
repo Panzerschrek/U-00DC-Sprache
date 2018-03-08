@@ -125,6 +125,7 @@ public:
 	bool IsCopyAssignable() const;
 	bool HaveDestructor() const;
 	bool CanBeConstexpr() const;
+	size_t ReferencesTagsCount() const;
 
 	llvm::Type* GetLLVMType() const;
 	ProgramString ToString() const;
@@ -150,6 +151,7 @@ bool operator!=( const Type& r, const Type& l );
 
 struct Function final
 {
+public:
 	struct Arg
 	{
 		Type type;
@@ -157,16 +159,47 @@ struct Function final
 		bool is_mutable;
 	};
 
+	// "first" - arg number, "second" is inner tag number or ~0, if it is reference itself
+	static constexpr size_t c_arg_reference_tag_number= ~0u;
+	typedef std::pair< size_t, size_t > ArgReference;
+
+	struct InToOutReferences
+	{
+		// Numers of args.
+		std::vector<size_t> args_references;
+		// Pairs of arg number and tag number.
+		std::vector< ArgReference > inner_args_references;
+	};
+
+	struct ReferencePollution
+	{
+		ArgReference dst;
+		ArgReference src; // second = ~0, if reference itself, else - inner reference.
+		bool src_is_mutable= true;
+		bool operator==( const ReferencePollution& other ) const;
+	};
+
+	struct ReferencePollutionHasher
+	{
+		size_t operator()( const ReferencePollution& r ) const;
+	};
+
+public:
 	Type return_type;
 	bool return_value_is_reference= false;
 	bool return_value_is_mutable= false;
 	std::vector<Arg> args;
 
-	std::vector<size_t> return_reference_args;
+	// for functions, returning references this is references of reference itslef.
+	// For function, returning values, this is inner references.
+	InToOutReferences return_references;
+	std::unordered_set< ReferencePollution, ReferencePollutionHasher > references_pollution;
 
 	llvm::FunctionType* llvm_function_type= nullptr;
 };
 
+bool operator==( const Function::InToOutReferences& l, const Function::InToOutReferences& r );
+bool operator!=( const Function::InToOutReferences& l, const Function::InToOutReferences& r );
 bool operator==( const Function::Arg& r, const Function::Arg& l );
 bool operator!=( const Function::Arg& r, const Function::Arg& l );
 bool operator==( const Function& r, const Function& l );
@@ -238,16 +271,34 @@ struct Variable final
 
 struct StoredVariable
 {
+	struct ReferencedVariable
+	{
+		StoredVariablePtr variable;
+		VariableStorageUseCounter use_counter;
+		bool IsMutable() const{ return use_counter == variable->mut_use_counter; }
+	};
+
+	enum class Kind
+	{
+		Variable,
+		Reference,
+		ArgInnerVariable,
+	};
+
+	const ProgramString name; // needs for error messages
 	const Variable content;
 	const VariableStorageUseCounter  mut_use_counter= std::make_shared<int>();
 	const VariableStorageUseCounter imut_use_counter= std::make_shared<int>();
 
-	const bool is_reference;
+	const Kind kind;
 	const bool is_global_constant;
-	std::vector<VariableStorageUseCounter> locked_referenced_variables; // For references
 
-	StoredVariable( Variable in_content, bool in_is_reference= false, bool in_is_global_constant= false )
-		: content(std::move(in_content)), is_reference(in_is_reference), is_global_constant(in_is_global_constant)
+	// Referenced variables, referenced variables of referenced variables, etc.
+	std::unordered_map<StoredVariablePtr, ReferencedVariable> referenced_variables;
+
+	StoredVariable( ProgramString in_name, Variable in_content, Kind in_kind= Kind::Variable, bool in_is_global_constant= false )
+		: name(std::move(in_name) ), content(std::move(in_content))
+		, kind(in_kind), is_global_constant(in_is_global_constant)
 	{}
 };
 
@@ -471,8 +522,11 @@ struct Class final
 	Class& operator=( const Class& )= delete;
 	Class& operator=( Class&& )= delete;
 
+	// If you change this, you must change CodeBuilder::CopyClass too!
+
 	NamesScope members;
 	size_t field_count= 0u;
+	size_t references_tags_count= 0u;
 	bool is_incomplete= true;
 	bool have_explicit_noncopy_constructors= false;
 	bool is_default_constructible= false;

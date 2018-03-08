@@ -241,13 +241,15 @@ FunctionArgument::FunctionArgument(
 	TypeName type,
 	MutabilityModifier mutability_modifier,
 	ReferenceModifier reference_modifier,
-	ProgramString reference_tag)
+	ProgramString reference_tag,
+	ReferencesTagsList inner_arg_reference_tags )
 	: SyntaxElementBase( file_pos )
 	, name_(std::move(name))
 	, type_(std::move(type))
 	, mutability_modifier_(mutability_modifier)
 	, reference_modifier_(reference_modifier)
 	, reference_tag_(std::move(reference_tag))
+	, inner_arg_reference_tags_(std::move(inner_arg_reference_tags))
 {}
 
 Function::Function(
@@ -257,6 +259,8 @@ Function::Function(
 	MutabilityModifier return_value_mutability_modifier,
 	ReferenceModifier return_value_reference_modifier,
 	ProgramString return_value_reference_tag,
+	ReferencesTagsList return_value_inner_reference_tags,
+	FunctionReferencesPollutionList referecnces_pollution_list,
 	FunctionArgumentsDeclaration arguments,
 	std::unique_ptr<StructNamedInitializer> constructor_initialization_list,
 	BlockPtr block,
@@ -267,6 +271,8 @@ Function::Function(
 	, return_value_mutability_modifier_(return_value_mutability_modifier)
 	, return_value_reference_modifier_(return_value_reference_modifier)
 	, return_value_reference_tag_(std::move(return_value_reference_tag))
+	, return_value_inner_reference_tags_(std::move(return_value_inner_reference_tags))
+	, referecnces_pollution_list_( std::move(referecnces_pollution_list) )
 	, arguments_( std::move(arguments) )
 	, constructor_initialization_list_( std::move(constructor_initialization_list) )
 	, block_( std::move(block) )

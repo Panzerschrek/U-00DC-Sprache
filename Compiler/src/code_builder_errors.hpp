@@ -42,7 +42,6 @@ enum class CodeBuilderErrorCode : unsigned int
 	CouldNotSelectOverloadedFunction,
 	FunctionPrototypeDuplication,
 	FunctionBodyDuplication,
-	ReturnValueDiffersFromPrototype,
 	FunctionDeclarationOutsideItsScope,
 	ClassDeclarationOutsideItsScope,
 	ClassBodyDuplication,
@@ -81,7 +80,7 @@ enum class CodeBuilderErrorCode : unsigned int
 	ConstructorAndDestructorMustReturnVoid,
 	InitializationListInNonconstructor,
 	ClassHaveNoConstructors,
-	ExplicitThisInConstructorOrDestructor,
+	ExplicitThisInDestructor,
 	FieldIsNotInitializedYet,
 	MethodsCallInConstructorInitializerListIsForbidden,
 
@@ -113,6 +112,13 @@ enum class CodeBuilderErrorCode : unsigned int
 	DestroyedVariableStillHaveReferences,
 	AccessingVariableThatHaveMutableReference,
 	ReturningUnallowedReference,
+	InvalidReferenceTagCount,
+	SelfReferencePollution,
+	ArgReferencePollution,
+	UnallowedReferencePollution,
+	ReferencePollutionForArgReference,
+	ExplicitReferencePollutionForCopyConstructor,
+	ExplicitReferencePollutionForCopyAssignmentOperator,
 
 	// Operators overloading
 	OperatorDeclarationOutsideClass,
@@ -160,7 +166,6 @@ CodeBuilderError ReportTooManySuitableOverloadedFunctions( const FilePos& file_p
 CodeBuilderError ReportCouldNotSelectOverloadedFunction( const FilePos& file_pos );
 CodeBuilderError ReportFunctionPrototypeDuplication( const FilePos& file_pos, const ProgramString& func_name );
 CodeBuilderError ReportFunctionBodyDuplication( const FilePos& file_pos, const ProgramString& func_name );
-CodeBuilderError ReportReturnValueDiffersFromPrototype( const FilePos& file_pos );
 CodeBuilderError ReportFunctionDeclarationOutsideItsScope( const FilePos& file_pos );
 CodeBuilderError ReportClassDeclarationOutsideItsScope( const FilePos& file_pos );
 CodeBuilderError ReportClassBodyDuplication( const FilePos& file_pos );
@@ -189,7 +194,7 @@ CodeBuilderError ReportConstructorOrDestructorOutsideClass( const FilePos& file_
 CodeBuilderError ReportConstructorAndDestructorMustReturnVoid( const FilePos& file_pos );
 CodeBuilderError ReportInitializationListInNonconstructor( const FilePos& file_pos );
 CodeBuilderError ReportClassHaveNoConstructors( const FilePos& file_pos );
-CodeBuilderError ReportExplicitThisInConstructorOrDestructor( const FilePos& file_pos );
+CodeBuilderError ReportExplicitThisInDestructor( const FilePos& file_pos );
 CodeBuilderError ReportFieldIsNotInitializedYet( const FilePos& file_pos, const ProgramString& field_name );
 CodeBuilderError ReportMethodsCallInConstructorInitializerListIsForbidden( const FilePos& file_pos, const ProgramString& method_name );
 CodeBuilderError ReportExplicitArgumentsInDestructor( const FilePos& file_pos );
@@ -209,10 +214,17 @@ CodeBuilderError ReportTemplateArgumentIsNotDeducedYet( const FilePos& file_pos,
 CodeBuilderError ReportUnsupportedExpressionTypeForTemplateSignatureArgument( const FilePos& file_pos );
 CodeBuilderError ReportTemplateArgumentNotUsedInSignature( const FilePos& file_pos, const ProgramString& name );
 CodeBuilderError ReportIncompleteMemberOfClassTemplate( const FilePos& file_pos, const ProgramString& name );
-CodeBuilderError ReportReferenceProtectionError( const FilePos& file_pos ); // TODO - add variable name
-CodeBuilderError ReportDestroyedVariableStillHaveReferences( const FilePos& file_pos ); // TODO - add variable name
-CodeBuilderError ReportAccessingVariableThatHaveMutableReference( const FilePos& file_pos ); // TODO - add variable name
+CodeBuilderError ReportReferenceProtectionError( const FilePos& file_pos, const ProgramString& var_name );
+CodeBuilderError ReportDestroyedVariableStillHaveReferences( const FilePos& file_pos, const ProgramString& var_name );
+CodeBuilderError ReportAccessingVariableThatHaveMutableReference( const FilePos& file_pos, const ProgramString& var_name );
 CodeBuilderError ReportReturningUnallowedReference( const FilePos& file_pos ); // TODO - add variable name
+CodeBuilderError ReportInvalidReferenceTagCount( const FilePos& file_pos, size_t given, size_t required );
+CodeBuilderError ReportSelfReferencePollution( const FilePos& file_pos );
+CodeBuilderError ReportArgReferencePollution( const FilePos& file_pos );
+CodeBuilderError ReportUnallowedReferencePollution( const FilePos& file_pos ); // TODO - add some string information
+CodeBuilderError ReportReferencePollutionForArgReference( const FilePos& file_pos ); // TODO - add some string information
+CodeBuilderError ReportExplicitReferencePollutionForCopyConstructor( const FilePos& file_pos );
+CodeBuilderError ReportExplicitReferencePollutionForCopyAssignmentOperator( const FilePos& file_pos );
 CodeBuilderError ReportOperatorDeclarationOutsideClass( const FilePos& file_pos );
 CodeBuilderError ReportOperatorDoesNotHaveParentClassArguments( const FilePos& file_pos );
 CodeBuilderError ReportInvalidArgumentCountForOperator( const FilePos& file_pos );

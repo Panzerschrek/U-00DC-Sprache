@@ -171,4 +171,29 @@ U_TEST( NameNotFound_ForReturnReferenceTag_Test1 )
 	U_TEST_ASSERT( error.file_pos.line == 3u );
 }
 
+U_TEST( ImplicitThisTag )
+{
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			i32 x;
+			fn GetXRef( mut this, i32 &mut other ) : i32 &'this mut // use implicitly defined for "this" argument "this" tag.
+			{
+				x= other;
+				return x;
+			}
+		}
+		fn Foo()
+		{
+			var S mut s= zero_init;
+			auto mut y= 0;
+			auto &mut r= s.GetXRef(y); // "r" referes to "s" only.
+			y= 2; // ok, can do this.
+		}
+	)";
+
+	BuildProgram( c_program_text );
+}
+
 } // namespace U
