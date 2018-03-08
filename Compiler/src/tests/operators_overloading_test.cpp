@@ -301,6 +301,37 @@ U_TEST( OperatorsOverloadingTest5 )
 	U_TEST_ASSERT( static_cast<uint64_t>( 55414 * 332 ) == result_value.IntVal.getLimitedValue() );
 }
 
+U_TEST( OperatorsOverloadingTest6 )
+{
+	// Overloaded operator takes value arguments and returns value result.
+	static const char c_program_text[]=
+	R"(
+		struct MyInt
+		{
+			i32 x;
+			op-( MyInt a, MyInt b ) : MyInt
+			{
+				var MyInt r{ .x= a.x - b.x };
+				return r;
+			}
+		}
+
+		fn Foo() : i32
+		{
+			var MyInt a{ .x= 55114 }, b{ .x= 537 };
+			return ( a - b ).x;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	const llvm::GenericValue result_value= engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+	U_TEST_ASSERT( static_cast<uint64_t>( 55114 - 537 ) == result_value.IntVal.getLimitedValue() );
+}
+
 U_TEST( AssignmentOperatorArgumentsShouldBeEvaluatedInReverseOrder )
 {
 	static const char c_program_text[]=
