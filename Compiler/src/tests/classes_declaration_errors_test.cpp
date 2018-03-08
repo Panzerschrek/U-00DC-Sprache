@@ -223,4 +223,117 @@ U_TEST( UsingIncompleteTypeTest6 )
 	U_TEST_ASSERT( error.file_pos.line == 3u );
 }
 
+U_TEST( UsingIncompleteTypeTest7 )
+{
+	// Value arg for function with body is incomplete.
+	static const char c_program_text[]=
+	R"(
+		struct X;
+		fn Foo( X x ) {}
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::UsingIncompleteType );
+	U_TEST_ASSERT( error.file_pos.line == 3u );
+}
+
+U_TEST( UsingIncompleteTypeTest8 )
+{
+	// Value arg for function without body is incomplete. Must be ok.
+	static const char c_program_text[]=
+	R"(
+		struct X;
+		fn Foo( X x );
+	)";
+
+	BuildProgram( c_program_text );
+}
+
+U_TEST( UsingIncompleteTypeTest9 )
+{
+	// Reference arg for function with body is incomplete. Must be ok.
+	static const char c_program_text[]=
+	R"(
+		struct X;
+		fn Foo( X& x ){}
+	)";
+
+	BuildProgram( c_program_text );
+}
+
+U_TEST( UsingIncompleteTypeTest10 )
+{
+	// Value arg of parent class type must be ok.
+	static const char c_program_text[]=
+	R"(
+		struct X
+		{
+			fn Foo( X x ){}
+		}
+	)";
+
+	BuildProgram( c_program_text );
+}
+
+U_TEST( UsingIncompleteTypeTest11 )
+{
+	// Returning value of function with body have incomplete type.
+	static const char c_program_text[]=
+	R"(
+		struct X;
+		fn Foo() : X {}
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::UsingIncompleteType );
+	U_TEST_ASSERT( error.file_pos.line == 3u );
+}
+
+U_TEST( UsingIncompleteTypeTest12 )
+{
+	// Returning value of function with body must be ok.
+	static const char c_program_text[]=
+	R"(
+		struct X;
+		fn Foo() : X;
+	)";
+
+	BuildProgram( c_program_text );
+}
+
+U_TEST( UsingIncompleteTypeTest13 )
+{
+	// Returning value of parent class type must be ok.
+	static const char c_program_text[]=
+	R"(
+		struct X
+		{
+			fn Make() : X { return X(); }
+		}
+	)";
+
+	BuildProgram( c_program_text );
+}
+
+U_TEST( UsingIncompleteTypeTest14 )
+{
+	// Returning reference to incomplete type must be ok for functions with and without body.
+	static const char c_program_text[]=
+	R"(
+		struct X;
+		fn Foo() : X&;
+		fn Bar() : X& { return Foo(); }
+	)";
+
+	BuildProgram( c_program_text );
+}
+
 } // namespace U

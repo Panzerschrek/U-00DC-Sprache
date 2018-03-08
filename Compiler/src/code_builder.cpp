@@ -1366,10 +1366,6 @@ CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 			return result;
 		}
 
-		// If this is not prototype, value-args must have complete type.
-		if( block != nullptr && out_arg.type.IsIncomplete() && !out_arg.is_reference )
-			errors_.push_back( ReportUsingIncompleteType( arg->file_pos_, out_arg.type.ToString() ) );
-
 		ProcessFunctionArgReferencesTags( func, function_type, *arg, out_arg, function_type.args.size() - 1u );
 	} // for arguments
 
@@ -1925,6 +1921,15 @@ void CodeBuilder::BuildFuncCode(
 
 	func_variable.have_body= true;
 
+	// Check completeness only for functions body.
+	for( const Function::Arg& arg : function_type->args )
+	{
+		if( !arg.is_reference && arg.type.IsIncomplete() )
+			errors_.push_back( ReportUsingIncompleteType( args.front()->file_pos_, arg.type.ToString() ) );
+	}
+	if( !function_type->return_value_is_reference && function_type->return_type.IsIncomplete() )
+		errors_.push_back( ReportUsingIncompleteType( func_variable.body_file_pos, function_type->return_type.ToString() ) );
+
 	NamesScope function_names( ""_SpC, &parent_names_scope );
 	FunctionContext function_context(
 		function_type->return_type,
@@ -1989,12 +1994,6 @@ void CodeBuilder::BuildFuncCode(
 
 		const Synt::FunctionArgument& declaration_arg= *args[ have_implicit_this ? ( arg_number - 1u ) : arg_number ];
 		const ProgramString& arg_name= declaration_arg.name_;
-
-		if( !arg.is_reference && arg.type.IsIncomplete() )
-		{
-			errors_.push_back( ReportUsingIncompleteType( declaration_arg.file_pos_, arg.type.ToString() ) );
-			continue;
-		}
 
 		const bool is_this= arg_number == 0u && arg_name == Keywords::this_;
 		U_ASSERT( !( is_this && !arg.is_reference ) );
