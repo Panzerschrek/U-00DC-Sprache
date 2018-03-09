@@ -137,4 +137,51 @@ U_TEST(AutoVariableTest4)
 	U_TEST_ASSERT( 0.5f == result_value.FloatVal );
 }
 
+U_TEST(AutoVariableTest5)
+{
+	// Auto-variable for struct type.
+	static const char c_program_text[]=
+	R"(
+		struct S{ i32 x; }
+		fn Foo() : i32
+		{
+			var S s0{ .x= 58471 };
+			auto s1= s0;
+			return s1.x;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+	const llvm::GenericValue result_value= engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( static_cast<uint64_t>(58471) == result_value.IntVal.getLimitedValue() );
+}
+
+U_TEST(AutoVariableTest6)
+{
+	// Auto-variable for struct type with reference inside.
+	static const char c_program_text[]=
+	R"(
+		struct S{ i32& x; }
+		fn Foo() : i32
+		{
+			var i32 x= 4136574;
+			var S s0{ .x= x };
+			auto s1= s0;
+			return s1.x;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+	const llvm::GenericValue result_value= engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( static_cast<uint64_t>(4136574) == result_value.IntVal.getLimitedValue() );
+}
+
 } // namespace U

@@ -2889,6 +2889,16 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 		}
 		else if( variable.type.GetTemplateDependentType() != nullptr )
 		{}
+		else if( const ClassProxyPtr class_type= variable.type.GetClassTypeProxy() )
+		{
+			U_ASSERT( ! class_type->class_->is_incomplete );
+
+			TryCallCopyConstructor(
+				auto_variable_declaration.file_pos_,
+				variable.llvm_value, initializer_experrsion.llvm_value,
+				variable.type.GetClassTypeProxy(),
+				function_context );
+		}
 		else
 		{
 			errors_.push_back( ReportNotImplemented( auto_variable_declaration.file_pos_, "expression initialization for nonfundamental types" ) );
@@ -2945,6 +2955,20 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 		}
 		CheckReferencedVariables( variable, auto_variable_declaration.file_pos_ );
 	}
+	else if( stored_variable->kind == StoredVariable::Kind::Variable )
+	{
+		// Take references inside variables in initializer expression.
+		for( const StoredVariablePtr& referenced_variable : initializer_experrsion.referenced_variables )
+		{
+			for( const auto& inner_variable_pair : referenced_variable->referenced_variables )
+			{
+				const auto it= stored_variable->referenced_variables.find( inner_variable_pair.first );
+				if( it == stored_variable->referenced_variables.end() )
+					stored_variable->referenced_variables.insert(inner_variable_pair);
+			}
+		}
+	}
+	else U_ASSERT( false );
 
 	const NamesScope::InsertedName* const inserted_name=
 		block_names.AddName( auto_variable_declaration.name, Value( stored_variable, auto_variable_declaration.file_pos_ ) );
