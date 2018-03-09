@@ -882,7 +882,7 @@ U_TEST( ReferencePollutionErrorsTest_ExplicitReferencePollutionForCopyAssignment
 	U_TEST_ASSERT( error.file_pos.line == 5u );
 }
 
-U_TEST( InnterTagsErrorsTest_InvalidReferenceTagCount_0 )
+U_TEST( InnerTagsErrorsTest_InvalidReferenceTagCount_0 )
 {
 	static const char c_program_text[]=
 	R"(
@@ -898,7 +898,7 @@ U_TEST( InnterTagsErrorsTest_InvalidReferenceTagCount_0 )
 	U_TEST_ASSERT( error.file_pos.line == 2u );
 }
 
-U_TEST( InnterTagsErrorsTest_InvalidReferenceTagCount_1 )
+U_TEST( InnerTagsErrorsTest_InvalidReferenceTagCount_1 )
 {
 	static const char c_program_text[]=
 	R"(
@@ -915,7 +915,7 @@ U_TEST( InnterTagsErrorsTest_InvalidReferenceTagCount_1 )
 	U_TEST_ASSERT( error.file_pos.line == 3u );
 }
 
-U_TEST( InnterTagsErrorsTest_InvalidReferenceTagCount_2 )
+U_TEST( InnerTagsErrorsTest_InvalidReferenceTagCount_2 )
 {
 	static const char c_program_text[]=
 	R"(
@@ -931,7 +931,7 @@ U_TEST( InnterTagsErrorsTest_InvalidReferenceTagCount_2 )
 	U_TEST_ASSERT( error.file_pos.line == 2u );
 }
 
-U_TEST( InnterTagsErrorsTest_InvalidReferenceTagCount_3 )
+U_TEST( InnerTagsErrorsTest_InvalidReferenceTagCount_3 )
 {
 	static const char c_program_text[]=
 	R"(
@@ -949,7 +949,7 @@ U_TEST( InnterTagsErrorsTest_InvalidReferenceTagCount_3 )
 	U_TEST_ASSERT( error.file_pos.line == 4u );
 }
 
-U_TEST( InnterTagsErrorsTest_InvalidReferenceTagCount_4 )
+U_TEST( InnerTagsErrorsTest_InvalidReferenceTagCount_4 )
 {
 	static const char c_program_text[]=
 	R"(
@@ -961,7 +961,7 @@ U_TEST( InnterTagsErrorsTest_InvalidReferenceTagCount_4 )
 	BuildProgram( c_program_text );
 }
 
-U_TEST( InnterTagsErrorsTest_InvalidReferenceTagCount_5 )
+U_TEST( InnerTagsErrorsTest_InvalidReferenceTagCount_5 )
 {
 	static const char c_program_text[]=
 	R"(
@@ -979,7 +979,7 @@ U_TEST( InnterTagsErrorsTest_InvalidReferenceTagCount_5 )
 	U_TEST_ASSERT( error.file_pos.line == 4u );
 }
 
-U_TEST( InnterTagsErrorsTest_InvalidReferenceTagCount_6 )
+U_TEST( InnerTagsErrorsTest_InvalidReferenceTagCount_6 )
 {
 	static const char c_program_text[]=
 	R"(
