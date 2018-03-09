@@ -14,4 +14,4 @@ So, this is reference-compiler for this language.
 * Run Cmake and generate project for your favorite IDE or build system.
 
 ### Authors
-Copyright © 2016-2017 Artöm "Panzerscrek" Kunz.
+Copyright © 2016-2018 Artöm "Panzerscrek" Kunz.
