@@ -3360,7 +3360,14 @@ void CodeBuilder::BuildReturnOperatorCode(
 		if( function_context.s_ret_ != nullptr )
 		{
 			const ClassProxyPtr class_= function_context.s_ret_->type.GetClassTypeProxy();
-			TryCallCopyConstructor( return_operator.file_pos_, function_context.s_ret_->llvm_value, expression_result.llvm_value, class_, function_context );
+			if( expression_result.value_type == ValueType::Value )
+			{
+				U_ASSERT( expression_result.referenced_variables.size() == 1u );
+				(*expression_result.referenced_variables.begin())->Move();
+				CopyBytes( expression_result.llvm_value, function_context.s_ret_->llvm_value, function_context.return_type, function_context );
+			}
+			else
+				TryCallCopyConstructor( return_operator.file_pos_, function_context.s_ret_->llvm_value, expression_result.llvm_value, class_, function_context );
 
 			CallDestructorsBeforeReturn( function_context, return_operator.file_pos_ );
 			function_context.llvm_ir_builder.CreateRetVoid();
