@@ -662,6 +662,67 @@ void CodeBuilder::BuildCopyAssignmentOperatorPart(
 		U_ASSERT(false);
 }
 
+void CodeBuilder::CopyBytes(
+	llvm::Value* const src, llvm::Value* const dst,
+	const Type& type,
+	FunctionContext& function_context )
+{
+	if( type.GetFundamentalType() != nullptr || type.GetEnumType() != nullptr )
+	{
+		// Create simple load-store.
+		llvm::Value* const val= function_context.llvm_ir_builder.CreateLoad( src );
+		function_context.llvm_ir_builder.CreateStore( val, dst );
+	}
+	else if( const Array* const array_type_ptr= type.GetArrayType() )
+	{
+		const Array& array_type= *array_type_ptr;
+
+		GenerateLoop(
+			array_type.ArraySizeOrZero(),
+			[&](llvm::Value* const counter_value)
+			{
+				llvm::Value* index_list[2];
+				index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
+				index_list[1]= counter_value;
+
+				CopyBytes(
+					function_context.llvm_ir_builder.CreateGEP( src, llvm::ArrayRef<llvm::Value*>( index_list, 2u ) ),
+					function_context.llvm_ir_builder.CreateGEP( dst, llvm::ArrayRef<llvm::Value*>( index_list, 2u ) ),
+					array_type.type,
+					function_context );
+			},
+			function_context);
+	}
+	else if( const ClassProxyPtr class_type_proxy= type.GetClassTypeProxy() )
+	{
+		const Class& class_type= *class_type_proxy->class_;
+
+		class_type.members.ForEachInThisScope(
+			[&]( const NamesScope::InsertedName& class_member )
+			{
+				const ClassField* const field = class_member.second.GetClassField();
+				if( field == nullptr )
+					return;
+
+				llvm::Value* index_list[2];
+				index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
+				index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(field->index) ) );
+
+				llvm::Value* const field_src= function_context.llvm_ir_builder.CreateGEP( src, llvm::ArrayRef<llvm::Value*> ( index_list, 2u ) );
+				llvm::Value* const field_dst= function_context.llvm_ir_builder.CreateGEP( dst, llvm::ArrayRef<llvm::Value*> ( index_list, 2u ) );
+				if( field->is_reference )
+				{
+					llvm::Value* const val= function_context.llvm_ir_builder.CreateLoad( field_src );
+					function_context.llvm_ir_builder.CreateStore( val, field_dst );
+				}
+				else
+					CopyBytes( field_src, field_dst, field->type, function_context );
+			} );
+	}
+	else
+		U_ASSERT(false);
+}
+
 } // namespace CodeBuilderPrivate
 
 } //namespace U

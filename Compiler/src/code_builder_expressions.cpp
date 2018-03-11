@@ -1680,7 +1680,16 @@ Value CodeBuilder::DoCallFunction(
 					continue;
 				}
 
-				if( !something_have_template_dependent_type )
+				if( something_have_template_dependent_type )
+				{}
+				else if( expr.value_type == ValueType::Value )
+				{
+					// Do not call copy constructors - just move.
+					U_ASSERT( expr.referenced_variables.size() == 1u );
+					(*expr.referenced_variables.begin())->Move();
+					llvm_args[j]= expr.llvm_value;
+				}
+				else
 				{
 					// Create copy of class value. Call copy constructor.
 					llvm::Value* const arg_copy= function_context.alloca_ir_builder.CreateAlloca( arg.type.GetLLVMType() );
