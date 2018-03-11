@@ -113,6 +113,26 @@ boost::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 				CallDestructor( l_var_real.llvm_value, l_var_real.type, function_context );
 			CopyBytes( r_var_real.llvm_value, l_var_real.llvm_value, l_var_real.type, function_context );
 
+			// Write references from src to dst and check it.
+			// TODO - make do this in other place?
+			for( const StoredVariablePtr& l_var_variable : l_var_real.referenced_variables )
+			{
+				for( const StoredVariablePtr& r_var_variable : r_var_real.referenced_variables )
+				{
+					for( const auto& inner_variable_pair : r_var_variable->referenced_variables )
+					{
+						const auto it= l_var_variable->referenced_variables.find(inner_variable_pair.first);
+						if( it == l_var_variable->referenced_variables.end() )
+							l_var_variable->referenced_variables.insert(inner_variable_pair);
+						else
+						{
+							if( it->second.IsMutable() || inner_variable_pair.second.IsMutable() )
+								errors_.push_back( ReportReferenceProtectionError( file_pos, l_var_variable->name ) );
+						}
+					}
+				}
+			}
+
 			U_ASSERT( r_var_real.referenced_variables.size() == 1u );
 			(*(r_var_real.referenced_variables.begin()))->Move();
 
