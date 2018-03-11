@@ -102,6 +102,25 @@ boost::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 		if( l_var == nullptr || r_var == nullptr )
 			return Value(ErrorValue());
 
+		// Try apply move-assignment for class types.
+		if( op == OverloadedOperator::Assign && r_var->value_type == ValueType::Value &&
+			r_var->type == l_var->type && r_var->type.GetClassType() != nullptr )
+		{
+			// Move here, instead of calling copy-assignment operator. Before moving we must also call destructor for destination.
+			const Variable l_var_real= *BuildExpressionCode(  left_expr, names, function_context ).GetVariable();
+			const Variable r_var_real= *BuildExpressionCode( right_expr, names, function_context ).GetVariable();
+			if( l_var->type.HaveDestructor() )
+				CallDestructor( l_var_real.llvm_value, l_var_real.type, function_context );
+			CopyBytes( r_var_real.llvm_value, l_var_real.llvm_value, l_var_real.type, function_context );
+
+			U_ASSERT( r_var_real.referenced_variables.size() == 1u );
+			(*(r_var_real.referenced_variables.begin()))->Move();
+
+			Variable move_result;
+			move_result.type= void_type_;
+			return Value( move_result, file_pos );
+		}
+
 		args.emplace_back();
 		args.back().type= l_var->type;
 		args.back().is_reference= l_var->value_type != ValueType::Value;

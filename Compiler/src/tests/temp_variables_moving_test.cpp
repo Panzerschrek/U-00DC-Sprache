@@ -295,4 +295,55 @@ U_TEST(TempVariablesMovingTest4_MoveFunctionResult)
 		 g_destructors_call_sequence == std::vector<int>( { 88542 } ) );
 }
 
+U_TEST(TempVariablesMovingTest5_MoveInAssignment)
+{
+	TestPrepare();
+
+	static const char c_program_text[]=
+	R"(
+		fn ConstructorCalled(i32 x);
+		fn  DestructorCalled(i32 x);
+
+		class S
+		{
+			i32 x;
+			fn constructor()
+				( x= 0 )
+			{
+				ConstructorCalled(x);
+			}
+			fn constructor( i32 in_x )
+				( x= in_x )
+			{
+				ConstructorCalled(x);
+			}
+			fn constructor( S& imut other )
+				( x= other.x )
+			{
+				ConstructorCalled(x);
+			}
+			fn destructor()
+			{
+				DestructorCalled(x);
+			}
+		}
+
+		fn Foo()
+		{
+			var S s0(51254);
+			s0= S(33241); // Must here call constructor for temp variable, call destructor for 's0' and move temp variable to 's0'.
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT(
+		g_constructirs_call_sequence == std::vector<int>( { 51254, 33241 } ) &&
+		 g_destructors_call_sequence == std::vector<int>( { 51254, 33241 } ) );
+}
+
 } // namespace U
