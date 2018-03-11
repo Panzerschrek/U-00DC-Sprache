@@ -2853,6 +2853,7 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 		return;
 	}
 
+	std::unordered_map<StoredVariablePtr, StoredVariable::ReferencedVariable> moved_variable_referenced_variables;
 	if( auto_variable_declaration.reference_modifier == ReferenceModifier::Reference )
 	{
 		if( initializer_experrsion.value_type == ValueType::Value )
@@ -2899,11 +2900,22 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 		{
 			U_ASSERT( ! class_type->class_->is_incomplete );
 
-			TryCallCopyConstructor(
-				auto_variable_declaration.file_pos_,
-				variable.llvm_value, initializer_experrsion.llvm_value,
-				variable.type.GetClassTypeProxy(),
-				function_context );
+			if( initializer_experrsion.value_type == ValueType::Value )
+			{
+				U_ASSERT( initializer_experrsion.referenced_variables.size() == 1u );
+				StoredVariable& variable_for_move= **initializer_experrsion.referenced_variables.begin();
+
+				moved_variable_referenced_variables= std::move(variable_for_move.referenced_variables);
+				variable_for_move.Move();
+
+				CopyBytes( initializer_experrsion.llvm_value, variable.llvm_value, variable.type, function_context );
+			}
+			else
+				TryCallCopyConstructor(
+					auto_variable_declaration.file_pos_,
+					variable.llvm_value, initializer_experrsion.llvm_value,
+					variable.type.GetClassTypeProxy(),
+					function_context );
 		}
 		else
 		{
@@ -2964,6 +2976,7 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 	else if( stored_variable->kind == StoredVariable::Kind::Variable )
 	{
 		// Take references inside variables in initializer expression.
+		stored_variable->referenced_variables= std::move(moved_variable_referenced_variables);
 		for( const StoredVariablePtr& referenced_variable : initializer_experrsion.referenced_variables )
 		{
 			for( const auto& inner_variable_pair : referenced_variable->referenced_variables )
