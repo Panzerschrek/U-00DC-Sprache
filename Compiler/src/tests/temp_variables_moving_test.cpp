@@ -55,6 +55,11 @@ U_TEST(TempVariablesMovingTest0_MoveTempVariableToArgument)
 			{
 				ConstructorCalled(x);
 			}
+			fn constructor( S& imut other )
+				( x= other.x )
+			{
+				ConstructorCalled(x);
+			}
 			fn destructor()
 			{
 				DestructorCalled(x);
@@ -99,6 +104,11 @@ U_TEST(TempVariablesMovingTest1_MoveTempVariableToReturnValue)
 			}
 			fn constructor( i32 in_x )
 				( x= in_x )
+			{
+				ConstructorCalled(x);
+			}
+			fn constructor( S& imut other )
+				( x= other.x )
 			{
 				ConstructorCalled(x);
 			}
@@ -152,6 +162,11 @@ U_TEST(TempVariablesMovingTest2_MoveTempVariableInExpressionInitialization)
 			{
 				ConstructorCalled(x);
 			}
+			fn constructor( S& imut other )
+				( x= other.x )
+			{
+				ConstructorCalled(x);
+			}
 			fn destructor()
 			{
 				DestructorCalled(x);
@@ -197,6 +212,11 @@ U_TEST(TempVariablesMovingTest3_MoveTempVariableInAutoVariableInitialization)
 			{
 				ConstructorCalled(x);
 			}
+			fn constructor( S& imut other )
+				( x= other.x )
+			{
+				ConstructorCalled(x);
+			}
 			fn destructor()
 			{
 				DestructorCalled(x);
@@ -239,6 +259,11 @@ U_TEST(TempVariablesMovingTest4_MoveFunctionResult)
 			}
 			fn constructor( i32 in_x )
 				( x= in_x )
+			{
+				ConstructorCalled(x);
+			}
+			fn constructor( S& imut other )
+				( x= other.x )
 			{
 				ConstructorCalled(x);
 			}
