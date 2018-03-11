@@ -691,6 +691,31 @@ Enum::Enum( const ProgramString& in_name, const NamesScope* parent_scope )
 {}
 
 //
+// StoredVariable
+//
+
+StoredVariable::StoredVariable(
+	ProgramString in_name,
+	Variable in_content,
+	Kind in_kind,
+	bool in_is_global_constant )
+	: name(std::move(in_name) ), content(std::move(in_content))
+	, kind(in_kind), is_global_constant(in_is_global_constant)
+{}
+
+void StoredVariable::Move()
+{
+	U_ASSERT( !moved );
+	moved= true;
+	referenced_variables.clear();
+}
+
+bool StoredVariable::IsMoved() const
+{
+	return moved;
+}
+
+//
 // Value
 //
 

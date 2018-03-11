@@ -972,6 +972,12 @@ void CodeBuilder::CallDestructorsImpl(
 	{
 		StoredVariable& stored_variable= **it;
 
+		if( stored_variable.IsMoved() )
+		{
+			U_ASSERT( stored_variable.referenced_variables.empty() );
+			continue;
+		}
+
 		if( stored_variable.kind == StoredVariable::Kind::Reference )
 		{
 			// Increment coounter of destroyed reference for referenced variables.
