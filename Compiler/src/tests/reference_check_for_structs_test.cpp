@@ -724,6 +724,35 @@ U_TEST( AutoVariableContainsCopyOfReference_Test0 )
 	U_TEST_ASSERT( error.file_pos.line == 14u );
 }
 
+U_TEST( ExpressionInitializedVariableContainsCopyOfReference_Test0 )
+{
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			i32 &imut x;
+			fn constructor( this'st', i32 &'r x ) ' st <- imut r '
+			( x= x )
+			{}
+		}
+
+		fn Foo()
+		{
+			var i32 mut y= 0;
+			var S s= S(y);
+			++y; // Error, 's' have reference to 'y'.
+		}
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferenceProtectionError );
+	U_TEST_ASSERT( error.file_pos.line == 14u );
+}
+
 U_TEST( CopyAssignmentOperator_PollutionTest )
 {
 	static const char c_program_text[]=

@@ -554,9 +554,44 @@ llvm::Constant* CodeBuilder::ApplyExpressionInitializer(
 	}
 	else if( variable.type.GetTemplateDependentType() != nullptr )
 	{}
+	else if( variable.type.GetClassType() != nullptr )
+	{
+		// Currently we support "=" initializer for copying and moving of structs.
+
+		const Value expression_result_value=
+			BuildExpressionCode( *initializer.expression, block_names, function_context );
+		if( expression_result_value.GetType() != variable.type )
+		{
+			errors_.push_back( ReportTypesMismatch( initializer.file_pos_, variable.type.ToString(), expression_result_value.GetType().ToString() ) );
+			return nullptr;
+		}
+		const Variable& expression_result= *expression_result_value.GetVariable();
+
+		// Lock references.
+		for( const StoredVariablePtr& referenced_variable : expression_result.referenced_variables )
+		{
+			for( const auto& inner_variable_pair : referenced_variable->referenced_variables )
+			{
+				const auto it= variable_storage.referenced_variables.find( inner_variable_pair.first );
+				if( it == variable_storage.referenced_variables.end() )
+					variable_storage.referenced_variables.insert(inner_variable_pair);
+			}
+		}
+
+		// Move or try call copy constructor.
+		if( expression_result.value_type == ValueType::Value )
+		{
+			U_ASSERT( expression_result.referenced_variables.size() == 1u );
+			(*expression_result.referenced_variables.begin())->Move();
+			CopyBytes( expression_result.llvm_value, variable.llvm_value, variable.type, function_context );
+		}
+		else
+			TryCallCopyConstructor(
+				initializer.file_pos_, variable.llvm_value, expression_result.llvm_value, variable.type.GetClassTypeProxy(), function_context );
+	}
 	else
 	{
-		errors_.push_back( ReportNotImplemented( initializer.file_pos_, "expression initialization for nonfundamental types" ) );
+		errors_.push_back( ReportNotImplemented( initializer.file_pos_, "expression initialization for arrays" ) );
 		return nullptr;
 	}
 
