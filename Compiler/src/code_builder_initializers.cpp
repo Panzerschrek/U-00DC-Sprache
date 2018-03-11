@@ -575,6 +575,11 @@ llvm::Constant* CodeBuilder::ApplyExpressionInitializer(
 				const auto it= variable_storage.referenced_variables.find( inner_variable_pair.first );
 				if( it == variable_storage.referenced_variables.end() )
 					variable_storage.referenced_variables.insert(inner_variable_pair);
+				else
+				{
+					if( it->second.IsMutable() || inner_variable_pair.second.IsMutable() )
+						errors_.push_back( ReportReferenceProtectionError( initializer.GetFilePos(), variable_storage.name ) );
+				}
 			}
 		}
 
