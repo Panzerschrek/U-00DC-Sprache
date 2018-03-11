@@ -449,4 +449,38 @@ U_TEST(TempVariablesMovingTest7_MoveTempVariableReturningFromFunctionToAnotherFu
 		 g_destructors_call_sequence == std::vector<int>( { 65214 } ) );
 }
 
+U_TEST(TempVariablesMovingTest8_MoveVariableFromFunctionResultWithMutableReferenceInside)
+{
+	static const char c_program_text[]=
+	R"(
+		struct Box
+		{
+			i32 &mut r;
+			fn constructor( this'x', i32 &'y mut in_r ) ' x <- mut y '
+			( r= in_r )
+			{}
+		}
+
+		fn BoxIt( i32 &mut x ) : Box
+		{
+			return Box(x);
+		}
+
+		fn Foo() : i32
+		{
+			var i32 mut i= 45;
+			auto box= BoxIt(i); // Function result contains mutable reference. If we just copy it, we recieve reference protection error. But, with moving, all must be ok.
+			box.r= 856;
+			return box.r;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	const llvm::GenericValue result_value= engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+	U_TEST_ASSERT( static_cast<uint64_t>(856) == result_value.IntVal.getLimitedValue() );
+}
+
 } // namespace U
