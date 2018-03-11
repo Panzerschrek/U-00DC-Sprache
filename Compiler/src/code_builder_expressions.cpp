@@ -73,6 +73,7 @@ boost::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 	args.reserve( 2u );
 	const size_t error_count_before= errors_.size();
 
+	bool needs_move_assign= false;
 	// Know args types.
 	{
 		// Prepare dummy function context for first pass.
@@ -103,43 +104,9 @@ boost::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 			return Value(ErrorValue());
 
 		// Try apply move-assignment for class types.
-		if( op == OverloadedOperator::Assign && r_var->value_type == ValueType::Value &&
-			r_var->type == l_var->type && r_var->type.GetClassType() != nullptr )
-		{
-			// Move here, instead of calling copy-assignment operator. Before moving we must also call destructor for destination.
-			const Variable l_var_real= *BuildExpressionCode(  left_expr, names, function_context ).GetVariable();
-			const Variable r_var_real= *BuildExpressionCode( right_expr, names, function_context ).GetVariable();
-			if( l_var->type.HaveDestructor() )
-				CallDestructor( l_var_real.llvm_value, l_var_real.type, function_context );
-			CopyBytes( r_var_real.llvm_value, l_var_real.llvm_value, l_var_real.type, function_context );
-
-			// Write references from src to dst and check it.
-			// TODO - make do this in other place?
-			for( const StoredVariablePtr& l_var_variable : l_var_real.referenced_variables )
-			{
-				for( const StoredVariablePtr& r_var_variable : r_var_real.referenced_variables )
-				{
-					for( const auto& inner_variable_pair : r_var_variable->referenced_variables )
-					{
-						const auto it= l_var_variable->referenced_variables.find(inner_variable_pair.first);
-						if( it == l_var_variable->referenced_variables.end() )
-							l_var_variable->referenced_variables.insert(inner_variable_pair);
-						else
-						{
-							if( it->second.IsMutable() || inner_variable_pair.second.IsMutable() )
-								errors_.push_back( ReportReferenceProtectionError( file_pos, l_var_variable->name ) );
-						}
-					}
-				}
-			}
-
-			U_ASSERT( r_var_real.referenced_variables.size() == 1u );
-			(*(r_var_real.referenced_variables.begin()))->Move();
-
-			Variable move_result;
-			move_result.type= void_type_;
-			return Value( move_result, file_pos );
-		}
+		needs_move_assign=
+			op == OverloadedOperator::Assign && r_var->value_type == ValueType::Value &&
+			r_var->type == l_var->type && r_var->type.GetClassType() != nullptr;
 
 		args.emplace_back();
 		args.back().type= l_var->type;
@@ -152,6 +119,44 @@ boost::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 		args.back().is_mutable= r_var->value_type == ValueType::Reference;
 	}
 	errors_.resize( error_count_before );
+
+	// Apply here move-assignment for class types.
+	if( needs_move_assign )
+	{
+		// Move here, instead of calling copy-assignment operator. Before moving we must also call destructor for destination.
+		const Variable l_var_real= *BuildExpressionCode(  left_expr, names, function_context ).GetVariable();
+		const Variable r_var_real= *BuildExpressionCode( right_expr, names, function_context ).GetVariable();
+		if( l_var_real.type.HaveDestructor() )
+			CallDestructor( l_var_real.llvm_value, l_var_real.type, function_context );
+		CopyBytes( r_var_real.llvm_value, l_var_real.llvm_value, l_var_real.type, function_context );
+
+		// Write references from src to dst and check it.
+		// TODO - make do this in other place?
+		for( const StoredVariablePtr& l_var_variable : l_var_real.referenced_variables )
+		{
+			for( const StoredVariablePtr& r_var_variable : r_var_real.referenced_variables )
+			{
+				for( const auto& inner_variable_pair : r_var_variable->referenced_variables )
+				{
+					const auto it= l_var_variable->referenced_variables.find(inner_variable_pair.first);
+					if( it == l_var_variable->referenced_variables.end() )
+						l_var_variable->referenced_variables.insert(inner_variable_pair);
+					else
+					{
+						if( it->second.IsMutable() || inner_variable_pair.second.IsMutable() )
+							errors_.push_back( ReportReferenceProtectionError( file_pos, l_var_variable->name ) );
+					}
+				}
+			}
+		}
+
+		U_ASSERT( r_var_real.referenced_variables.size() == 1u );
+		(*(r_var_real.referenced_variables.begin()))->Move();
+
+		Variable move_result;
+		move_result.type= void_type_;
+		return Value( move_result, file_pos );
+	}
 
 	const FunctionVariable* const overloaded_operator= GetOverloadedOperator( args, op, file_pos );
 	if( overloaded_operator != nullptr )
