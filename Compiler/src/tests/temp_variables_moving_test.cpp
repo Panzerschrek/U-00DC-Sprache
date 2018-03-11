@@ -179,7 +179,6 @@ U_TEST(TempVariablesMovingTest3_MoveTempVariableInAutoVariableInitialization)
 {
 	TestPrepare();
 
-	// Move variable in function call.
 	static const char c_program_text[]=
 	R"(
 		fn ConstructorCalled(i32 x);
@@ -219,6 +218,56 @@ U_TEST(TempVariablesMovingTest3_MoveTempVariableInAutoVariableInitialization)
 	U_TEST_ASSERT(
 		g_constructirs_call_sequence == std::vector<int>( { 11245678 } ) &&
 		 g_destructors_call_sequence == std::vector<int>( { 11245678 } ) );
+}
+
+U_TEST(TempVariablesMovingTest4_MoveFunctionResult)
+{
+	TestPrepare();
+
+	static const char c_program_text[]=
+	R"(
+		fn ConstructorCalled(i32 x);
+		fn  DestructorCalled(i32 x);
+
+		class S
+		{
+			i32 x;
+			fn constructor()
+				( x= 0 )
+			{
+				ConstructorCalled(x);
+			}
+			fn constructor( i32 in_x )
+				( x= in_x )
+			{
+				ConstructorCalled(x);
+			}
+			fn destructor()
+			{
+				DestructorCalled(x);
+			}
+		}
+
+		fn Bar( i32 x ) : S
+		{
+			return S(x);
+		}
+
+		fn Foo()
+		{
+			auto s= Bar(88542); // Must move to initialized variable function result.
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT(
+		g_constructirs_call_sequence == std::vector<int>( { 88542 } ) &&
+		 g_destructors_call_sequence == std::vector<int>( { 88542 } ) );
 }
 
 } // namespace U
