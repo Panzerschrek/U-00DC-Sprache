@@ -196,6 +196,11 @@ private:
 		const Type& type,
 		FunctionContext& function_context );
 
+	void CopyBytes(
+		llvm::Value* src, llvm::Value* dst,
+		const Type& type,
+		FunctionContext& function_context );
+
 	void TryCallCopyConstructor(
 		const FilePos& file_pos,
 		llvm::Value* this_, llvm::Value* src,

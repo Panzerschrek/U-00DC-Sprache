@@ -972,6 +972,12 @@ void CodeBuilder::CallDestructorsImpl(
 	{
 		StoredVariable& stored_variable= **it;
 
+		if( stored_variable.IsMoved() )
+		{
+			U_ASSERT( stored_variable.referenced_variables.empty() );
+			continue;
+		}
+
 		if( stored_variable.kind == StoredVariable::Kind::Reference )
 		{
 			// Increment coounter of destroyed reference for referenced variables.
@@ -2847,6 +2853,7 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 		return;
 	}
 
+	std::unordered_map<StoredVariablePtr, StoredVariable::ReferencedVariable> moved_variable_referenced_variables;
 	if( auto_variable_declaration.reference_modifier == ReferenceModifier::Reference )
 	{
 		if( initializer_experrsion.value_type == ValueType::Value )
@@ -2893,11 +2900,22 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 		{
 			U_ASSERT( ! class_type->class_->is_incomplete );
 
-			TryCallCopyConstructor(
-				auto_variable_declaration.file_pos_,
-				variable.llvm_value, initializer_experrsion.llvm_value,
-				variable.type.GetClassTypeProxy(),
-				function_context );
+			if( initializer_experrsion.value_type == ValueType::Value )
+			{
+				U_ASSERT( initializer_experrsion.referenced_variables.size() == 1u );
+				StoredVariable& variable_for_move= **initializer_experrsion.referenced_variables.begin();
+
+				moved_variable_referenced_variables= std::move(variable_for_move.referenced_variables);
+				variable_for_move.Move();
+
+				CopyBytes( initializer_experrsion.llvm_value, variable.llvm_value, variable.type, function_context );
+			}
+			else
+				TryCallCopyConstructor(
+					auto_variable_declaration.file_pos_,
+					variable.llvm_value, initializer_experrsion.llvm_value,
+					variable.type.GetClassTypeProxy(),
+					function_context );
 		}
 		else
 		{
@@ -2958,6 +2976,7 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 	else if( stored_variable->kind == StoredVariable::Kind::Variable )
 	{
 		// Take references inside variables in initializer expression.
+		stored_variable->referenced_variables= std::move(moved_variable_referenced_variables);
 		for( const StoredVariablePtr& referenced_variable : initializer_experrsion.referenced_variables )
 		{
 			for( const auto& inner_variable_pair : referenced_variable->referenced_variables )
@@ -3354,7 +3373,14 @@ void CodeBuilder::BuildReturnOperatorCode(
 		if( function_context.s_ret_ != nullptr )
 		{
 			const ClassProxyPtr class_= function_context.s_ret_->type.GetClassTypeProxy();
-			TryCallCopyConstructor( return_operator.file_pos_, function_context.s_ret_->llvm_value, expression_result.llvm_value, class_, function_context );
+			if( expression_result.value_type == ValueType::Value )
+			{
+				U_ASSERT( expression_result.referenced_variables.size() == 1u );
+				(*expression_result.referenced_variables.begin())->Move();
+				CopyBytes( expression_result.llvm_value, function_context.s_ret_->llvm_value, function_context.return_type, function_context );
+			}
+			else
+				TryCallCopyConstructor( return_operator.file_pos_, function_context.s_ret_->llvm_value, expression_result.llvm_value, class_, function_context );
 
 			CallDestructorsBeforeReturn( function_context, return_operator.file_pos_ );
 			function_context.llvm_ir_builder.CreateRetVoid();

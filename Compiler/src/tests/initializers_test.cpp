@@ -82,6 +82,30 @@ U_TEST(ExpressionInitializerTest2)
 	U_TEST_ASSERT( 2017.52 == result_value.DoubleVal );
 }
 
+U_TEST(ExpressionInitializerTest3)
+{
+	// Expression initializer for structs.
+	static const char c_program_text[]=
+	R"(
+		struct Vec{ i32 x; i32 y; }
+		fn Foo() : i32
+		{
+			var Vec v0{ .x=584, .y=-98 };
+			var Vec v1= v0;
+			return v1.x - v1.y;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	const llvm::GenericValue result_value=
+		engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( static_cast<uint64_t>( 584 - (-98) ) == result_value.IntVal.getLimitedValue() );
+}
+
 U_TEST(ConstructorInitializerForFundamentalTypesTest0)
 {
 	// Constructor initializer for integers

@@ -133,7 +133,7 @@ U_TEST(DestructorsTest2)
 		function,
 		llvm::ArrayRef<llvm::GenericValue>() );
 
-	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 0,  66, 88,   66, 88 } ) );
+	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 0,  66, 88 } ) );
 }
 
 U_TEST(DestructorsTest3)
@@ -271,7 +271,7 @@ U_TEST(DestructorsTest5)
 
 	U_TEST_ASSERT(
 		g_destructors_call_sequence ==
-		std::vector<int>( { 0, 0,   1, 1,   2, 2,   555, 3, 3 } ) );
+		std::vector<int>( { 0,  1,  2,  555, 3, } ) );
 }
 
 U_TEST(DestructorsTest6)
@@ -545,8 +545,8 @@ U_TEST(DestructorsTest11)
 			arr[ u32( S(6).x / 10 ) ]= S(7).x;  // Must destroy index and temporary in right part
 			arr[ u32( S(8).x / 10 ) ]+= S(9).x;  // Must destroy index and temporary in right part
 
-			auto i= Bar(10).x; // Must destroy returned from function result and temporary variable inside function.
-			Baz( S(11) ); // Must destroy argument in function, than temporary variable.
+			auto i= Bar(10).x; // Must destroy returned from function result and move variable inside function.
+			Baz( S(11) ); // Must destroy argument in function, and move temporary variable.
 			Fuz( S(12) ); // Bind value to immutable reference parameter. Must destroy only temporary.
 
 			var S nontemporary(13);
@@ -566,7 +566,7 @@ U_TEST(DestructorsTest11)
 
 	U_TEST_ASSERT(
 		g_destructors_call_sequence ==
-		std::vector<int>( { 1, 0,   3, 2,   4,   6, 7,   8, 9,   10, 10,  11, 11,   12,   13,   14,   13 } ) );
+		std::vector<int>( { 1, 0,   3, 2,   4,   6, 7,   8, 9,   10,  11,   12,   13,   14,   13 } ) );
 }
 
 U_TEST( DestructorsTest12_ShouldCorrectlyReturnValueFromDestructibleStruct )

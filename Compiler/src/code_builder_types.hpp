@@ -269,8 +269,9 @@ struct Variable final
 	std::unordered_set<StoredVariablePtr> referenced_variables;
 };
 
-struct StoredVariable
+class StoredVariable
 {
+public:
 	struct ReferencedVariable
 	{
 		StoredVariablePtr variable;
@@ -296,10 +297,13 @@ struct StoredVariable
 	// Referenced variables, referenced variables of referenced variables, etc.
 	std::unordered_map<StoredVariablePtr, ReferencedVariable> referenced_variables;
 
-	StoredVariable( ProgramString in_name, Variable in_content, Kind in_kind= Kind::Variable, bool in_is_global_constant= false )
-		: name(std::move(in_name) ), content(std::move(in_content))
-		, kind(in_kind), is_global_constant(in_is_global_constant)
-	{}
+	StoredVariable( ProgramString iname, Variable icontent, Kind ikind= Kind::Variable, bool iis_global_constant= false );
+
+	void Move();
+	bool IsMoved() const;
+
+private:
+	bool moved= false;
 };
 
 struct VaraibleReferencesCounter

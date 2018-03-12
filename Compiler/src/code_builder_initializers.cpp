@@ -488,6 +488,52 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 	}
 	else if( const Class* const class_type= variable.type.GetClassType() )
 	{
+		// Try do move-construct.
+		bool needs_move_constuct= false;
+		if( call_operator.arguments_.size() == 1u )
+		{
+			// Prepare dummy function context for first pass.
+			FunctionContext dummy_function_context(
+				function_context.return_type,
+				function_context.return_value_is_mutable,
+				function_context.return_value_is_reference,
+				llvm_context_,
+				dummy_function_context_->function );
+			const StackVariablesStorage dummy_stack_variables_storage( dummy_function_context );
+			dummy_function_context.this_= function_context.this_;
+
+			const Value initializer_value= BuildExpressionCode( *call_operator.arguments_.front(), block_names, dummy_function_context );
+			needs_move_constuct=
+				initializer_value.GetType() == variable.type &&
+				initializer_value.GetVariable()->value_type == ValueType::Value ;
+		}
+		if( needs_move_constuct )
+		{
+			const Variable initializer_variable= *BuildExpressionCode( *call_operator.arguments_.front(), block_names, function_context ).GetVariable();
+			CopyBytes( initializer_variable.llvm_value, variable.llvm_value, variable.type, function_context );
+
+			// Lock references.
+			// TODO - move this code into function.
+			for( const StoredVariablePtr& referenced_variable : initializer_variable.referenced_variables )
+			{
+				for( const auto& inner_variable_pair : referenced_variable->referenced_variables )
+				{
+					const auto it= variable_storage.referenced_variables.find( inner_variable_pair.first );
+					if( it == variable_storage.referenced_variables.end() )
+						variable_storage.referenced_variables.insert(inner_variable_pair);
+					else
+					{
+						if( it->second.IsMutable() || inner_variable_pair.second.IsMutable() )
+							errors_.push_back( ReportReferenceProtectionError( call_operator.file_pos_, variable_storage.name ) );
+					}
+				}
+			}
+
+			U_ASSERT( initializer_variable.referenced_variables.size() == 1u );
+			(*(initializer_variable.referenced_variables.begin()))->Move();
+			return nullptr;
+		}
+
 		const NamesScope::InsertedName* constructor_name=
 			class_type->members.GetThisScopeName( Keyword( Keywords::constructor_ ) );
 
@@ -554,9 +600,50 @@ llvm::Constant* CodeBuilder::ApplyExpressionInitializer(
 	}
 	else if( variable.type.GetTemplateDependentType() != nullptr )
 	{}
+	else if( variable.type.GetClassType() != nullptr )
+	{
+		// Currently we support "=" initializer for copying and moving of structs.
+
+		const Value expression_result_value=
+			BuildExpressionCode( *initializer.expression, block_names, function_context );
+		if( expression_result_value.GetType() != variable.type )
+		{
+			errors_.push_back( ReportTypesMismatch( initializer.file_pos_, variable.type.ToString(), expression_result_value.GetType().ToString() ) );
+			return nullptr;
+		}
+		const Variable& expression_result= *expression_result_value.GetVariable();
+
+		// Lock references.
+		// TODO - move this code into function.
+		for( const StoredVariablePtr& referenced_variable : expression_result.referenced_variables )
+		{
+			for( const auto& inner_variable_pair : referenced_variable->referenced_variables )
+			{
+				const auto it= variable_storage.referenced_variables.find( inner_variable_pair.first );
+				if( it == variable_storage.referenced_variables.end() )
+					variable_storage.referenced_variables.insert(inner_variable_pair);
+				else
+				{
+					if( it->second.IsMutable() || inner_variable_pair.second.IsMutable() )
+						errors_.push_back( ReportReferenceProtectionError( initializer.GetFilePos(), variable_storage.name ) );
+				}
+			}
+		}
+
+		// Move or try call copy constructor.
+		if( expression_result.value_type == ValueType::Value )
+		{
+			U_ASSERT( expression_result.referenced_variables.size() == 1u );
+			(*expression_result.referenced_variables.begin())->Move();
+			CopyBytes( expression_result.llvm_value, variable.llvm_value, variable.type, function_context );
+		}
+		else
+			TryCallCopyConstructor(
+				initializer.file_pos_, variable.llvm_value, expression_result.llvm_value, variable.type.GetClassTypeProxy(), function_context );
+	}
 	else
 	{
-		errors_.push_back( ReportNotImplemented( initializer.file_pos_, "expression initialization for nonfundamental types" ) );
+		errors_.push_back( ReportNotImplemented( initializer.file_pos_, "expression initialization for arrays" ) );
 		return nullptr;
 	}
 

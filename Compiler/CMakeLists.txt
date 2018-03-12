@@ -133,6 +133,7 @@ set( TESTS_SOURCES
 	src/tests/references_inside_structs_errors_test.cpp
 	src/tests/references_inside_structs_test.cpp
 	src/tests/references_tags_test.cpp
+	src/tests/temp_variables_moving_test.cpp
 	src/tests/tests.cpp
 	src/tests/type_conversions_test.cpp
 	src/tests/typedefs_errors_test.cpp
