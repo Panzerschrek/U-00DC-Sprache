@@ -3,7 +3,6 @@ compiler. Features grouped and sorted by priority inside each group.
 When feature was implemented, delete it from list.
 
 Common:
-*) moving of temporary variables ( in expressions, assignment etc. )
 *) public/private/protected for class/struct members
 *) sizeof operator
 *) Immutable fields
@@ -38,5 +37,7 @@ Standart library:
 *) shared_ptr
 
 Compiler:
+*) Some reference-checking bux fixing - references inside "while" "if-else". Fix
+  multiple mutable reference pollution.
 *) Standartized entry point, such "main" in some languages
 *) Precompiled modules
