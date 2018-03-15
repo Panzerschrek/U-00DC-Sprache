@@ -336,4 +336,27 @@ U_TEST( UsingIncompleteTypeTest14 )
 	BuildProgram( c_program_text );
 }
 
+U_TEST( UsingIncompleteTypeTest15 )
+{
+	// Calling function, returning value of incomplete type.
+	static const char c_program_text[]=
+	R"(
+		struct X;
+		fn Foo() : X;
+
+		fn Bar()
+		{
+			Foo();
+		}
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::UsingIncompleteType );
+	U_TEST_ASSERT( error.file_pos.line == 7u );
+}
+
 } // namespace U
