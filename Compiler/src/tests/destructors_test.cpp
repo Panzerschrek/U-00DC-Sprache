@@ -603,4 +603,182 @@ U_TEST( DestructorsTest12_ShouldCorrectlyReturnValueFromDestructibleStruct )
 	U_TEST_ASSERT( static_cast<uint64_t>( 55841 ) == result_value.IntVal.getLimitedValue() );
 }
 
+U_TEST( DestructorsTest13_ShouldBeDesdtroyedAfterUsage0 )
+{
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			i32 x;
+			fn constructor( i32 in_x )
+			( x= in_x ) {}
+			fn destructor()
+			{
+				x= 0;
+			}
+		}
+		struct T{ i32 x; }
+
+		fn Foo() : i32
+		{
+			var T t { .x= S(124586).x }; // Must destroy temporary inner variable after initialization via expression-initializer.
+			return t.x;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	const llvm::GenericValue result_value= engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+	U_TEST_ASSERT( static_cast<uint64_t>(124586) == result_value.IntVal.getLimitedValue() );
+}
+
+U_TEST( DestructorsTest14_ShouldBeDesdtroyedAfterUsage1 )
+{
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			i32 x;
+			fn constructor( i32 in_x )
+			( x= in_x ) {}
+			fn destructor()
+			{
+				x= 0;
+			}
+		}
+		struct T{ i32 x; }
+
+		fn Foo() : i32
+		{
+			var T t { .x( S(4536758).x ) }; // Must destroy temporary inner variable after initialization via constructor-initializer.
+			return t.x;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	const llvm::GenericValue result_value= engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+	U_TEST_ASSERT( static_cast<uint64_t>(4536758) == result_value.IntVal.getLimitedValue() );
+}
+
+U_TEST( DestructorsTest15_ShouldBeDesdtroyedAfterUsage2 )
+{
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			i32 x;
+			fn constructor( i32 in_x )
+			( x= in_x ) {}
+			fn destructor()
+			{
+				x= 0;
+			}
+		}
+
+		fn Foo() : i32
+		{
+			var [ i32, 1 ] t[ S(985624).x ]; // Must destroy temporary inner variable after initialization of array member via expression-initializer.
+			return t[0u];
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	const llvm::GenericValue result_value= engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+	U_TEST_ASSERT( static_cast<uint64_t>(985624) == result_value.IntVal.getLimitedValue() );
+}
+
+U_TEST( DestructorsTest16_ShouldBeDesdtroyedAfterUsage3 )
+{
+	static const char c_program_text[]=
+	R"(
+		struct B
+		{
+			bool b;
+			fn constructor() ( b= true ) {}
+			fn destructor() { b= false; }
+		}
+
+		fn Foo() : bool
+		{
+			auto r= B().b && B().b; // Must destroy both temp variables after evaluation of && or ||.
+			return r; // Must return true.
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	const llvm::GenericValue result_value= engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+	U_TEST_ASSERT( static_cast<uint64_t>(1) == result_value.IntVal.getLimitedValue() );
+}
+
+U_TEST( DestructorsTest17_ShouldBeDesdtroyedAfterUsage4 )
+{
+	static const char c_program_text[]=
+	R"(
+		struct B
+		{
+			bool b;
+			fn constructor() ( b= true ) {}
+			fn destructor() { b= false; }
+		}
+
+		fn Foo() : i32
+		{
+			if( B().b ) // Temporary variable must be destroyed after evaluation of condition.
+			{ return 5245; } // Must return in this branch of 'if'.
+			return 123475;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	const llvm::GenericValue result_value= engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+	U_TEST_ASSERT( static_cast<uint64_t>(5245) == result_value.IntVal.getLimitedValue() );
+}
+
+U_TEST( DestructorsTest18_ShouldBeDesdtroyedAfterUsage5 )
+{
+	static const char c_program_text[]=
+	R"(
+		struct B
+		{
+			bool b;
+			fn constructor() ( b= true ) {}
+			fn destructor() { b= false; }
+		}
+
+		fn Foo() : i32
+		{
+			while( B().b ) // Temporary variable must be destroyed after evaluation of condition.
+			{ return 7698577; } // Must return in 'while'.
+			return 9641;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	const llvm::GenericValue result_value= engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+	U_TEST_ASSERT( static_cast<uint64_t>(7698577) == result_value.IntVal.getLimitedValue() );
+}
+
 } // namespace U

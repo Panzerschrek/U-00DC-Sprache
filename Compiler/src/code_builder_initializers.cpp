@@ -303,9 +303,8 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 			return nullptr;
 		}
 
-		// SPRACHE_TODO - maybe we need save temporaries of this expression?
 		const Value expression_result=
-			BuildExpressionCodeAndDestroyTemporaries( *call_operator.arguments_.front(), block_names, function_context );
+			BuildExpressionCode( *call_operator.arguments_.front(), block_names, function_context );
 		if( expression_result.GetType() == NontypeStub::TemplateDependentValue ||
 			expression_result.GetType().GetTemplateDependentType() != nullptr )
 			return llvm::UndefValue::get( dst_type->llvm_type );
@@ -465,9 +464,8 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 			return nullptr;
 		}
 
-		// SPRACHE_TODO - maybe we need save temporaries of this expression?
 		const Value expression_result=
-			BuildExpressionCodeAndDestroyTemporaries( *call_operator.arguments_.front(), block_names, function_context );
+			BuildExpressionCode( *call_operator.arguments_.front(), block_names, function_context );
 		if( expression_result.GetType() == NontypeStub::TemplateDependentValue ||
 			expression_result.GetType().GetTemplateDependentType() != nullptr )
 			return llvm::UndefValue::get( dst_type->llvm_type );
@@ -579,9 +577,8 @@ llvm::Constant* CodeBuilder::ApplyExpressionInitializer(
 	if( variable.type.GetFundamentalType() != nullptr ||
 		variable.type.GetEnumType() != nullptr )
 	{
-		// SPRACHE_TODO - maybe we need save temporaries of this expression?
 		const Value expression_result=
-			BuildExpressionCodeAndDestroyTemporaries( *initializer.expression, block_names, function_context );
+			BuildExpressionCode( *initializer.expression, block_names, function_context );
 		if( expression_result.GetType() == NontypeStub::TemplateDependentValue ||
 			expression_result.GetType().GetTemplateDependentType() != nullptr )
 			return llvm::UndefValue::get( variable.type.GetLLVMType() );
@@ -803,8 +800,7 @@ void CodeBuilder::InitializeReferenceField(
 		return;
 	}
 
-	// SPRACHE_TODO - maybe we need save temporaries of this expression?
-	const Value initializer_value= BuildExpressionCodeAndDestroyTemporaries( *initializer_expression, block_names, function_context );
+	const Value initializer_value= BuildExpressionCode( *initializer_expression, block_names, function_context );
 	if( initializer_value.GetTemplateDependentValue() != nullptr )
 		return;
 

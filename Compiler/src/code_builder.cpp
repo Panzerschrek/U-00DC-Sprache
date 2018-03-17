@@ -3209,6 +3209,7 @@ void CodeBuilder::BuildDeltaOneOperatorCode(
 	NamesScope& block_names,
 	FunctionContext& function_context )
 {
+	// SPRACHE_TODO - maybe destory temporaries after?
 	const Value value= BuildExpressionCodeAndDestroyTemporaries( expression, block_names, function_context );
 	if( value.GetType() == NontypeStub::TemplateDependentValue )
 		return;
@@ -3417,7 +3418,8 @@ void CodeBuilder::BuildWhileOperatorCode(
 	function_context.function->getBasicBlockList().push_back( test_block );
 	function_context.llvm_ir_builder.SetInsertPoint( test_block );
 
-	const Value condition_expression= BuildExpressionCodeAndDestroyTemporaries( *while_operator.condition_, names, function_context );
+	const StackVariablesStorage temp_variables_storage( function_context );
+	const Value condition_expression= BuildExpressionCode( *while_operator.condition_, names, function_context );
 
 	if( condition_expression.GetType() != NontypeStub::TemplateDependentValue &&
 		condition_expression.GetType().GetTemplateDependentType() == nullptr )
@@ -3433,6 +3435,8 @@ void CodeBuilder::BuildWhileOperatorCode(
 		}
 
 		llvm::Value* condition_in_register= CreateMoveToLLVMRegisterInstruction( *condition_expression.GetVariable(), function_context );
+		CallDestructors( *function_context.stack_variables_stack.back(), function_context, while_operator.condition_->GetFilePos() );
+
 		function_context.llvm_ir_builder.CreateCondBr( condition_in_register, while_block, block_after_while );
 	}
 	else
@@ -3533,7 +3537,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildIfOperatorCode(
 		}
 		else
 		{
-			const Value condition_expression= BuildExpressionCodeAndDestroyTemporaries( *branch.condition, names, function_context );
+			const StackVariablesStorage temp_variables_storage( function_context );
+			const Value condition_expression= BuildExpressionCode( *branch.condition, names, function_context );
 
 			if( condition_expression.GetType() != NontypeStub::TemplateDependentValue &&
 				condition_expression.GetType().GetTemplateDependentType() == nullptr )
@@ -3549,6 +3554,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildIfOperatorCode(
 				}
 
 				llvm::Value* condition_in_register= CreateMoveToLLVMRegisterInstruction( *condition_expression.GetVariable(), function_context );
+				CallDestructors( *function_context.stack_variables_stack.back(), function_context, branch.condition->GetFilePos() );
+
 				function_context.llvm_ir_builder.CreateCondBr( condition_in_register, body_block, next_condition_block );
 			}
 			else
@@ -3636,7 +3643,8 @@ void CodeBuilder::BuildHaltIf(const Synt::HaltIf& halt_if, NamesScope& names, Fu
 	llvm::BasicBlock* const true_block = llvm::BasicBlock::Create( llvm_context_ );
 	llvm::BasicBlock* const false_block= llvm::BasicBlock::Create( llvm_context_ );
 
-	const Value condition_expression= BuildExpressionCodeAndDestroyTemporaries( *halt_if.condition, names, function_context );
+	const StackVariablesStorage temp_variables_storage( function_context );
+	const Value condition_expression= BuildExpressionCode( *halt_if.condition, names, function_context );
 
 	if( condition_expression.GetType() != NontypeStub::TemplateDependentValue &&
 		condition_expression.GetType().GetTemplateDependentType() == nullptr )
@@ -3652,6 +3660,8 @@ void CodeBuilder::BuildHaltIf(const Synt::HaltIf& halt_if, NamesScope& names, Fu
 		}
 
 		llvm::Value* const condition_in_register= CreateMoveToLLVMRegisterInstruction( *condition_expression.GetVariable(), function_context );
+		CallDestructors( *function_context.stack_variables_stack.back(), function_context, halt_if.condition->GetFilePos() );
+
 		function_context.llvm_ir_builder.CreateCondBr( condition_in_register, true_block, false_block );
 	}
 	else

@@ -954,12 +954,12 @@ Value CodeBuilder::BuildLazyBinaryOperator(
 
 	if( l_var_value.GetType() == NontypeStub::TemplateDependentValue )
 	{
-		BuildExpressionCodeAndDestroyTemporaries( r_expression, names, function_context );
+		BuildExpressionCode( r_expression, names, function_context );
 		return l_var_value;
 	}
 	if( l_var_value.GetType().GetTemplateDependentType() != nullptr )
 	{
-		BuildExpressionCodeAndDestroyTemporaries( r_expression, names, function_context );
+		BuildExpressionCode( r_expression, names, function_context );
 		RETURN_UNDEF_BOOL
 	}
 
@@ -984,9 +984,10 @@ Value CodeBuilder::BuildLazyBinaryOperator(
 	function_context.function->getBasicBlockList().push_back( r_part_block );
 	function_context.llvm_ir_builder.SetInsertPoint( r_part_block );
 
-	// Right part of lazy operator is conditinal. So, we must destroy it temporaries only in this condition.
+	// Right part of lazy operator is conditinal. So, we must destroy its temporaries only in this condition.
 	// We doesn`t needs longer lifetime of epxression temporaries, because we use only bool result.
-	const Value r_var_value= BuildExpressionCodeAndDestroyTemporaries( r_expression, names, function_context );
+	const StackVariablesStorage r_var_temp_variables_storage( function_context );
+	const Value r_var_value= BuildExpressionCode( r_expression, names, function_context );
 	CHECK_RETURN_ERROR_VALUE(r_var_value);
 
 	llvm::Value* r_var_in_register= nullptr;
@@ -1006,6 +1007,9 @@ Value CodeBuilder::BuildLazyBinaryOperator(
 		r_var_constepxr_value= r_var.constexpr_value;
 		r_var_in_register= CreateMoveToLLVMRegisterInstruction( r_var, function_context );
 	}
+
+	// Destroy r_var temporaries in this branch.
+	CallDestructors( *function_context.stack_variables_stack.back(), function_context, file_pos );
 
 	function_context.llvm_ir_builder.CreateBr( block_after_operator );
 	function_context.function->getBasicBlockList().push_back( block_after_operator );

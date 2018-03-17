@@ -1072,4 +1072,169 @@ U_TEST( InnerTagsErrorsTest_InvalidReferenceTagCount_6 )
 	BuildProgram( c_program_text );
 }
 
+U_TEST( TryGrabReferenceToTempVariable_Test0 )
+{
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			i32 x;
+			fn constructor( i32 in_x )
+			( x= in_x ) {}
+		}
+		struct R
+		{
+			i32& r;
+		}
+		fn Foo()
+		{
+			var R r{ .r= S(42).x }; // Grab reference to temp variable in expression-initialization of reference field.
+		}
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::DestroyedVariableStillHaveReferences );
+	U_TEST_ASSERT( error.file_pos.line == 14u );
+}
+
+U_TEST( TryGrabReferenceToTempVariable_Test1 )
+{
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			i32 x;
+			fn constructor( i32 in_x )
+			( x= in_x ) {}
+		}
+		struct R
+		{
+			i32& r;
+		}
+		fn Foo()
+		{
+			var R r{ .r( S(42).x ) }; // Grab reference to temp variable in constructor-initialization of reference field.
+		}
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::DestroyedVariableStillHaveReferences );
+	U_TEST_ASSERT( error.file_pos.line == 14u );
+}
+
+U_TEST( TryGrabReferenceToTempVariable_Test2 )
+{
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			i32 x;
+			fn constructor( i32 in_x )
+			( x= in_x ) {}
+		}
+		struct R
+		{
+			i32& r;
+			fn constructor( this'a', i32&'b in_r ) ' a <- imut b '
+			( r= in_r ) {}
+		}
+		fn Foo()
+		{
+			var R r( S(42).x ); // Grab reference to temp variable in constructor initializer.
+		}
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::DestroyedVariableStillHaveReferences );
+	U_TEST_ASSERT( error.file_pos.line == 16u );
+}
+
+U_TEST( TryGrabReferenceToTempVariable_Test3 )
+{
+	static const char c_program_text[]=
+	R"(
+		struct R
+		{
+			i32& r;
+			fn constructor( this'a', i32&'b in_r ) ' a <- imut b '
+			( r= in_r ) {}
+		}
+		fn Foo()
+		{
+			var R r( 42 ); // Grab reference to temp variable in constructor initializer.
+		}
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::DestroyedVariableStillHaveReferences );
+	U_TEST_ASSERT( error.file_pos.line == 10u );
+}
+
+U_TEST( TryGrabReferenceToTempVariable_Test4 )
+{
+	static const char c_program_text[]=
+	R"(
+		struct R
+		{
+			i32& r;
+			fn constructor( this'a', i32&'b in_r ) ' a <- imut b '
+			( r= in_r ) {}
+		}
+		struct T{ R r; }
+		fn Foo()
+		{
+			var T t{ .r( 42 ) }; // Grab reference to temp variable in constructor initializer of struct member.
+		}
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::DestroyedVariableStillHaveReferences );
+	U_TEST_ASSERT( error.file_pos.line == 11u );
+}
+
+U_TEST( TryGrabReferenceToTempVariable_Test5 )
+{
+	static const char c_program_text[]=
+	R"(
+		struct R
+		{
+			i32& r;
+			fn constructor( this'a', i32&'b in_r ) ' a <- imut b '
+			( r= in_r ) {}
+		}
+		fn Foo()
+		{
+			var [ R, 1 ] r[ ( 42 ) ]; // Grab reference to temp variable in constructor initializer of array member.
+		}
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::DestroyedVariableStillHaveReferences );
+	U_TEST_ASSERT( error.file_pos.line == 10u );
+}
+
 } // namespace U
