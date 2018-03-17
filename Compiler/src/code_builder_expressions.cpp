@@ -1372,7 +1372,7 @@ Value CodeBuilder::BuildIndexationOperator(
 
 	Variable result;
 	result.location= Variable::Location::Pointer;
-	result.value_type= variable.value_type;
+	result.value_type= variable.value_type == ValueType::Reference ? ValueType::Reference : ValueType::ConstReference;
 	result.referenced_variables= variable.referenced_variables;
 	result.type= array_type->type;
 
@@ -1450,7 +1450,7 @@ Value CodeBuilder::BuildMemberAccessOperator(
 
 	Variable result;
 	result.location= Variable::Location::Pointer;
-	result.value_type= variable.value_type;
+	result.value_type= variable.value_type == ValueType::Reference ? ValueType::Reference : ValueType::ConstReference;
 	result.referenced_variables= variable.referenced_variables;
 	result.type= field->type;
 	result.llvm_value=
