@@ -64,11 +64,14 @@ CodeBuilder::StackVariablesStorage::StackVariablesStorage( FunctionContext& in_f
 
 CodeBuilder::StackVariablesStorage::~StackVariablesStorage()
 {
+	for( const StoredVariablePtr& var : variables )
+		function_context.variables_state.RemoveVariable(var);
 	function_context.stack_variables_stack.pop_back();
 }
 
 void CodeBuilder::StackVariablesStorage::RegisterVariable( const StoredVariablePtr& variable )
 {
+	function_context.variables_state.AddVariable( variable );
 	variables.push_back( variable );
 }
 

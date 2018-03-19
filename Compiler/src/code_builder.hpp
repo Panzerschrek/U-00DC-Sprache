@@ -99,6 +99,7 @@ private:
 		// Also, evaluation of some operators and expressions adds their variables storages.
 		// Do not push/pop to t his stack manually!
 		std::vector<StackVariablesStorage*> stack_variables_stack;
+		VariablesState variables_state;
 
 		llvm::BasicBlock* destructor_end_block= nullptr; // exists, if function is destructor
 	};
