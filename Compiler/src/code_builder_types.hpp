@@ -238,7 +238,7 @@ struct FunctionVariable final
 // Set of functions with same name, but different signature.
 typedef std::vector<FunctionVariable> OverloadedFunctionsSet;
 
-struct StoredVariable;
+class StoredVariable;
 typedef std::shared_ptr<StoredVariable> StoredVariablePtr;
 typedef std::shared_ptr<void> VariableStorageUseCounter;
 
@@ -304,6 +304,40 @@ public:
 
 private:
 	bool moved= false;
+};
+
+class VariablesState
+{
+public:
+	void AddVariable(const StoredVariablePtr& var);
+	void RemoveVariable(const StoredVariablePtr& var);
+	bool AddLink( const StoredVariablePtr& dst, const StoredVariablePtr& src, bool is_mutable ); // returns true, if ok
+	void Move( const StoredVariablePtr& var ); // returns true, if ok
+	bool VariableIsMoved( const StoredVariablePtr& var ) const;
+
+	struct AchievableVariables
+	{
+		std::unordered_set<StoredVariablePtr> variables;
+		bool any_variable_is_mutable= false;
+	};
+	AchievableVariables RecursiveGetAllReferencedVariables( const StoredVariablePtr& stored_variable ) const;
+
+private:
+	struct VariableEntry
+	{
+		bool is_moved= false;
+
+		struct Reference
+		{
+			StoredVariablePtr variable;
+			VariableStorageUseCounter use_counter;
+			bool IsMutable() const{ return use_counter == variable->mut_use_counter; }
+		};
+
+		std::unordered_map<StoredVariablePtr, Reference> inner_references;
+	};
+
+	std::unordered_map<StoredVariablePtr, VariableEntry> variables_;
 };
 
 struct VaraibleReferencesCounter
