@@ -975,11 +975,8 @@ void CodeBuilder::CallDestructorsImpl(
 	{
 		StoredVariable& stored_variable= **it;
 
-		if( stored_variable.IsMoved() )
-		{
-			U_ASSERT( stored_variable.referenced_variables.empty() );
+		if( function_context.variables_state.VariableIsMoved( *it ) )
 			continue;
-		}
 
 		if( stored_variable.kind == StoredVariable::Kind::Reference )
 		{
@@ -995,7 +992,7 @@ void CodeBuilder::CallDestructorsImpl(
 		else if( stored_variable.kind == StoredVariable::Kind::Variable )
 		{
 			// Increment coounter of destroyed reference for referenced variables of references inside this variable.
-			for( const auto& referenced_variable_pair : stored_variable.referenced_variables )
+			for( const auto& referenced_variable_pair : function_context.variables_state.GetVariableReferences( *it ) )
 			{
 				if( destroyed_variable_references.find( referenced_variable_pair.first ) == destroyed_variable_references.end() )
 					destroyed_variable_references[ referenced_variable_pair.first ]= 1u;
@@ -1988,12 +1985,14 @@ void CodeBuilder::BuildFuncCode(
 			const StoredVariablePtr this_storage= std::make_shared<StoredVariable>( Keyword(Keywords::this_), this_ );
 			this_.referenced_variables.emplace(this_storage);
 
+			function_context.variables_state.AddVariable( this_storage );
 			args_stored_variables[arg_number].first= this_storage;
 
 			if (arg.type.ReferencesTagsCount() > 0u )
 			{
 				const StoredVariablePtr inner_variable = std::make_shared<StoredVariable>( Keyword(Keywords::this_) + " inner reference"_SpC, Variable(), StoredVariable::Kind::ArgInnerVariable );
-				this_storage->referenced_variables[ inner_variable ]= StoredVariable::ReferencedVariable{ inner_variable, nullptr }; // Do not lock it, because for function this inner reference looks like variable.
+				function_context.variables_state.AddLinkForArgInnerVariable( this_storage, inner_variable );
+				function_context.variables_state.AddVariable( inner_variable );
 				args_stored_variables[arg_number].second= inner_variable;
 			}
 
@@ -2045,6 +2044,10 @@ void CodeBuilder::BuildFuncCode(
 
 		// Mark even reference-args as variable.
 		const StoredVariablePtr var_storage= std::make_shared<StoredVariable>( arg_name, var, StoredVariable::Kind::Variable );
+		if( arg.is_reference )
+			function_context.variables_state.AddVariable( var_storage );
+		else
+			function_context.stack_variables_stack.back()->RegisterVariable( var_storage );
 		var.referenced_variables.emplace(var_storage);
 
 		args_stored_variables[arg_number].first= var_storage;
@@ -2053,7 +2056,8 @@ void CodeBuilder::BuildFuncCode(
 		{
 			U_ASSERT( arg.type.ReferencesTagsCount() == 1u ); // Currently, support 0 or 1 tags.
 			const StoredVariablePtr inner_variable = std::make_shared<StoredVariable>( arg_name + " inner reference"_SpC, Variable(), StoredVariable::Kind::ArgInnerVariable );
-			var_storage->referenced_variables[ inner_variable ]= StoredVariable::ReferencedVariable{ inner_variable, nullptr }; // Do not lock it, because for function this inner reference looks like variable.
+			function_context.variables_state.AddVariable( inner_variable );
+			function_context.variables_state.AddLinkForArgInnerVariable( var_storage, inner_variable );
 			args_stored_variables[arg_number].second= inner_variable;
 		}
 
@@ -2070,9 +2074,6 @@ void CodeBuilder::BuildFuncCode(
 				errors_.push_back( ReportDeclarationShadowsTemplateArgument( declaration_arg.file_pos_, arg_name ) );
 				return;
 			}
-
-			if( !arg.is_reference )
-				function_context.stack_variables_stack.back()->RegisterVariable( var_storage );
 
 			const NamesScope::InsertedName* const inserted_arg=
 				function_names.AddName( arg_name, Value( var_storage, declaration_arg.file_pos_ ) );
@@ -2224,7 +2225,7 @@ void CodeBuilder::BuildFuncCode(
 
 		if( function_type->args[i].is_reference )
 		{
-			for( const auto& referenced_variable_pair : args_stored_variables[i].first->referenced_variables )
+			for( const auto& referenced_variable_pair : function_context.variables_state.GetVariableReferences( args_stored_variables[i].first ) )
 			{
 				if( referenced_variable_pair.first->kind == StoredVariable::Kind::ArgInnerVariable &&
 					referenced_variable_pair.first == args_stored_variables[i].second ) // Ok, arg inner variable.
@@ -2240,15 +2241,10 @@ void CodeBuilder::BuildFuncCode(
 
 		if( function_type->args[i].type.ReferencesTagsCount() > 0u )
 		{
-			for( const auto& referenced_variable_pair : args_stored_variables[i].second->referenced_variables )
+			for( const auto& referenced_variable_pair : function_context.variables_state.GetVariableReferences( args_stored_variables[i].second ) )
 				check_reference( referenced_variable_pair.first );
 		}
 	}
-
-	// Remove self-reference in inner argument variable.
-	for( const std::pair< StoredVariablePtr, StoredVariablePtr >& arg_variable : args_stored_variables )
-		if( arg_variable.second != nullptr )
-			arg_variable.second->referenced_variables.erase(arg_variable.second);
 
 	llvm::Function::BasicBlockListType& bb_list= llvm_function->getBasicBlockList();
 
@@ -2385,7 +2381,7 @@ void CodeBuilder::BuildConstructorInitialization(
 		U_ASSERT( field != nullptr );
 
 		U_ASSERT( this_.referenced_variables.size() == 1u );
-		StoredVariable& this_storage= **this_.referenced_variables.begin();
+		const StoredVariablePtr& this_storage= *this_.referenced_variables.begin();
 		if( field->is_reference )
 			InitializeReferenceField( this_, this_storage, *field, *field_initializer.initializer, names_scope, function_context );
 		else
@@ -2631,7 +2627,7 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 		if( type.GetTemplateDependentType() != nullptr )
 		{
 			if( variable_declaration.initializer != nullptr )
-				ApplyInitializer( variable, *stored_variable, *variable_declaration.initializer, block_names, function_context );
+				ApplyInitializer( variable, stored_variable, *variable_declaration.initializer, block_names, function_context );
 		}
 		else if( variable_declaration.reference_modifier == ReferenceModifier::None )
 		{
@@ -2650,7 +2646,7 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 			variable.referenced_variables.insert( stored_variable );
 			if( variable_declaration.initializer != nullptr )
 				variable.constexpr_value=
-					ApplyInitializer( variable, *stored_variable, *variable_declaration.initializer, block_names, function_context );
+					ApplyInitializer( variable, stored_variable, *variable_declaration.initializer, block_names, function_context );
 			else
 				ApplyEmptyInitializer( variable_declaration.name, variables_declaration.file_pos_, variable, function_context );
 			variable.referenced_variables.erase( stored_variable );
@@ -2723,12 +2719,7 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 
 			const bool is_mutable= variable.value_type == ValueType::Reference;
 			for( const StoredVariablePtr& referenced_variable : variable.referenced_variables )
-			{
-				stored_variable->referenced_variables[referenced_variable]=
-					StoredVariable::ReferencedVariable{
-						referenced_variable,
-						is_mutable ? referenced_variable->mut_use_counter : referenced_variable->imut_use_counter };
-			}
+				function_context.variables_state.AddLink( stored_variable, referenced_variable, is_mutable );
 			CheckReferencedVariables( stored_variable->content, variable_declaration.file_pos );
 
 			// TODO - maybe make copy of varaible address in new llvm register?
@@ -2872,17 +2863,12 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 
 		const bool is_mutable= variable.value_type == ValueType::Reference;
 		for( const StoredVariablePtr& referenced_variable : variable.referenced_variables )
-		{
-			stored_variable->referenced_variables[referenced_variable]=
-				StoredVariable::ReferencedVariable{
-					referenced_variable,
-					is_mutable ? referenced_variable->mut_use_counter : referenced_variable->imut_use_counter };
-		}
+			function_context.variables_state.AddLink( stored_variable, referenced_variable, is_mutable );
 		CheckReferencedVariables( variable, auto_variable_declaration.file_pos_ );
 	}
 	else if( auto_variable_declaration.reference_modifier == ReferenceModifier::None )
 	{
-		std::unordered_map<StoredVariablePtr, StoredVariable::ReferencedVariable> moved_variable_referenced_variables;
+		VariablesState::VariableReferences moved_variable_referenced_variables;
 
 		llvm::GlobalVariable* global_variable= nullptr;
 		if( global && variable.type.GetTemplateDependentType() == nullptr )
@@ -2912,10 +2898,10 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 			if( initializer_experrsion.value_type == ValueType::Value )
 			{
 				U_ASSERT( initializer_experrsion.referenced_variables.size() == 1u );
-				StoredVariable& variable_for_move= **initializer_experrsion.referenced_variables.begin();
+				const StoredVariablePtr& variable_for_move= *initializer_experrsion.referenced_variables.begin();
 
-				moved_variable_referenced_variables= std::move(variable_for_move.referenced_variables);
-				variable_for_move.Move();
+				moved_variable_referenced_variables= function_context.variables_state.GetVariableReferences( variable_for_move );
+				function_context.variables_state.Move( variable_for_move );
 
 				CopyBytes( initializer_experrsion.llvm_value, variable.llvm_value, variable.type, function_context );
 			}
@@ -2936,14 +2922,15 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 			global_variable->setInitializer( variable.constexpr_value );
 
 		// Take references inside variables in initializer expression.
-		stored_variable->referenced_variables= std::move(moved_variable_referenced_variables);
+		for( const auto& ref : moved_variable_referenced_variables )
+			function_context.variables_state.AddLink( stored_variable, ref.first, ref.second.IsMutable() );
 		for( const StoredVariablePtr& referenced_variable : initializer_experrsion.referenced_variables )
 		{
-			for( const auto& inner_variable_pair : referenced_variable->referenced_variables )
+			for( const auto& inner_variable_pair : function_context.variables_state.GetVariableReferences( referenced_variable ) )
 			{
-				const auto it= stored_variable->referenced_variables.find( inner_variable_pair.first );
-				if( it == stored_variable->referenced_variables.end() )
-					stored_variable->referenced_variables.insert(inner_variable_pair);
+				const bool ok= function_context.variables_state.AddLink( stored_variable, inner_variable_pair.first, inner_variable_pair.second.IsMutable() );
+				if(!ok)
+					errors_.push_back( ReportReferenceProtectionError( auto_variable_declaration.file_pos_, inner_variable_pair.first->name ) );
 			}
 		}
 	}
@@ -3346,7 +3333,7 @@ void CodeBuilder::BuildReturnOperatorCode(
 		{
 			// Check correctness of returning references.
 			for( const StoredVariablePtr& var : expression_result.referenced_variables )
-			for( const auto& inner_var : var->referenced_variables )
+			for( const auto& inner_var :function_context.variables_state.GetVariableReferences( var ) )
 			{
 				if( inner_var.first->is_global_constant ) // Always allow return of global constants.
 					continue;
@@ -3361,7 +3348,7 @@ void CodeBuilder::BuildReturnOperatorCode(
 			if( expression_result.value_type == ValueType::Value )
 			{
 				U_ASSERT( expression_result.referenced_variables.size() == 1u );
-				(*expression_result.referenced_variables.begin())->Move();
+				function_context.variables_state.Move( *expression_result.referenced_variables.begin() );
 				CopyBytes( expression_result.llvm_value, function_context.s_ret_->llvm_value, function_context.return_type, function_context );
 			}
 			else

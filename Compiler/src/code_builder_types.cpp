@@ -703,18 +703,6 @@ StoredVariable::StoredVariable(
 	, kind(in_kind), is_global_constant(in_is_global_constant)
 {}
 
-void StoredVariable::Move()
-{
-	U_ASSERT( !moved );
-	moved= true;
-	referenced_variables.clear();
-}
-
-bool StoredVariable::IsMoved() const
-{
-	return moved;
-}
-
 //
 // VariablesState
 //
@@ -739,8 +727,9 @@ bool VariablesState::AddLink( const StoredVariablePtr& dst, const StoredVariable
 	const auto it= variable_entry.inner_references.find(src);
 	if( it == variable_entry.inner_references.end() )
 	{
-		VariableEntry::Reference ref;
+		Reference ref;
 		ref.use_counter= is_mutable ? src->mut_use_counter : src->imut_use_counter;
+		ref.variable= src;
 		variable_entry.inner_references[src]= ref;
 	}
 	else
@@ -750,6 +739,19 @@ bool VariablesState::AddLink( const StoredVariablePtr& dst, const StoredVariable
 	}
 
 	return true;
+}
+
+void VariablesState::AddLinkForArgInnerVariable( const StoredVariablePtr& arg, const StoredVariablePtr& inner_variable )
+{
+	U_ASSERT( variables_.find(arg) != variables_.end() );
+
+	VariableEntry& variable_entry= variables_.find(arg)->second;
+	U_ASSERT( variable_entry.inner_references.find(inner_variable) == variable_entry.inner_references.end() );
+
+	Reference ref;
+	ref.use_counter= nullptr;
+	ref.variable= inner_variable;
+	variable_entry.inner_references[inner_variable]= ref;
 }
 
 void VariablesState::Move( const StoredVariablePtr& var )
@@ -766,7 +768,14 @@ bool VariablesState::VariableIsMoved( const StoredVariablePtr& var ) const
 {
 	const auto it= variables_.find(var);
 	U_ASSERT( it != variables_.end() );
-	return it->second.is_moved ;
+	return it->second.is_moved;
+}
+
+const VariablesState::VariableReferences& VariablesState::GetVariableReferences( const StoredVariablePtr& var ) const
+{
+	const auto it= variables_.find(var);
+	U_ASSERT( it != variables_.end() );
+	return it->second.inner_references;
 }
 
 VariablesState::AchievableVariables VariablesState::RecursiveGetAllReferencedVariables( const StoredVariablePtr& var ) const

@@ -483,7 +483,7 @@ private:
 
 	llvm::Constant* ApplyInitializer(
 		const Variable& variable,
-		StoredVariable& variable_storage,
+		const StoredVariablePtr& variable_storage,
 		const Synt::IInitializer& initializer,
 		NamesScope& block_names,
 		FunctionContext& function_context );
@@ -496,28 +496,28 @@ private:
 
 	llvm::Constant* ApplyArrayInitializer(
 		const Variable& variable,
-		StoredVariable& variable_storage,
+		const StoredVariablePtr& variable_storage,
 		const Synt::ArrayInitializer& initializer,
 		NamesScope& block_names,
 		FunctionContext& function_context );
 
 	void ApplyStructNamedInitializer(
 		const Variable& variable,
-		StoredVariable& variable_storage,
+		const StoredVariablePtr& variable_storage,
 		const Synt::StructNamedInitializer& initializer,
 		NamesScope& block_names,
 		FunctionContext& function_context );
 
 	llvm::Constant* ApplyConstructorInitializer(
 		const Variable& variable,
-		StoredVariable& variable_storage,
+		const StoredVariablePtr& variable_storage,
 		const Synt::CallOperator& call_operator,
 		NamesScope& block_names,
 		FunctionContext& function_context );
 
 	llvm::Constant* ApplyExpressionInitializer(
 		const Variable& variable,
-		StoredVariable& variable_storage,
+		const StoredVariablePtr& variable_storage,
 		const Synt::ExpressionInitializer& initializer,
 		NamesScope& block_names,
 		FunctionContext& function_context );
@@ -530,7 +530,7 @@ private:
 
 	void InitializeReferenceField(
 		const Variable& variable,
-		StoredVariable& variable_storage,
+		const StoredVariablePtr& variable_storage,
 		const ClassField& field,
 		const Synt::IInitializer& initializer,
 		NamesScope& block_names,

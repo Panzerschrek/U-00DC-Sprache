@@ -19,7 +19,7 @@ namespace CodeBuilderPrivate
 
 llvm::Constant* CodeBuilder::ApplyInitializer(
 	const Variable& variable,
-	StoredVariable& variable_storage,
+	const StoredVariablePtr& variable_storage,
 	const Synt::IInitializer& initializer,
 	NamesScope& block_names,
 	FunctionContext& function_context )
@@ -119,7 +119,7 @@ void CodeBuilder::ApplyEmptyInitializer(
 
 llvm::Constant* CodeBuilder::ApplyArrayInitializer(
 	const Variable& variable,
-	StoredVariable& variable_storage,
+	const StoredVariablePtr& variable_storage,
 	const Synt::ArrayInitializer& initializer,
 	NamesScope& block_names,
 	FunctionContext& function_context )
@@ -191,7 +191,7 @@ llvm::Constant* CodeBuilder::ApplyArrayInitializer(
 
 void CodeBuilder::ApplyStructNamedInitializer(
 	const Variable& variable,
-	StoredVariable& variable_storage,
+	const StoredVariablePtr& variable_storage,
 	const Synt::StructNamedInitializer& initializer,
 	NamesScope& block_names,
 	FunctionContext& function_context )
@@ -283,7 +283,7 @@ void CodeBuilder::ApplyStructNamedInitializer(
 
 llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 	const Variable& variable,
-	StoredVariable& variable_storage,
+	const StoredVariablePtr& variable_storage,
 	const Synt::CallOperator& call_operator,
 	NamesScope& block_names,
 	FunctionContext& function_context )
@@ -510,25 +510,17 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 			const Variable initializer_variable= *BuildExpressionCode( *call_operator.arguments_.front(), block_names, function_context ).GetVariable();
 			CopyBytes( initializer_variable.llvm_value, variable.llvm_value, variable.type, function_context );
 
-			// Lock references.
-			// TODO - move this code into function.
-			for( const StoredVariablePtr& referenced_variable : initializer_variable.referenced_variables )
+			// Lock references and move.
+			U_ASSERT( initializer_variable.referenced_variables.size() == 1u );
+			for( const auto& inner_variable : function_context.variables_state.GetVariableReferences( *initializer_variable.referenced_variables.begin() ) )
 			{
-				for( const auto& inner_variable_pair : referenced_variable->referenced_variables )
-				{
-					const auto it= variable_storage.referenced_variables.find( inner_variable_pair.first );
-					if( it == variable_storage.referenced_variables.end() )
-						variable_storage.referenced_variables.insert(inner_variable_pair);
-					else
-					{
-						if( it->second.IsMutable() || inner_variable_pair.second.IsMutable() )
-							errors_.push_back( ReportReferenceProtectionError( call_operator.file_pos_, variable_storage.name ) );
-					}
-				}
+				const bool ok= function_context.variables_state.AddLink( variable_storage, inner_variable.first, inner_variable.second.IsMutable() );
+				if( !ok )
+					errors_.push_back( ReportReferenceProtectionError( call_operator.file_pos_, inner_variable.first->name ) );
 			}
 
-			U_ASSERT( initializer_variable.referenced_variables.size() == 1u );
-			(*(initializer_variable.referenced_variables.begin()))->Move();
+			function_context.variables_state.Move( *initializer_variable.referenced_variables.begin() );
+
 			return nullptr;
 		}
 
@@ -563,7 +555,7 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 
 llvm::Constant* CodeBuilder::ApplyExpressionInitializer(
 	const Variable& variable,
-	StoredVariable& variable_storage,
+	const StoredVariablePtr& variable_storage,
 	const Synt::ExpressionInitializer& initializer,
 	NamesScope& block_names,
 	FunctionContext& function_context )
@@ -614,16 +606,11 @@ llvm::Constant* CodeBuilder::ApplyExpressionInitializer(
 		// TODO - move this code into function.
 		for( const StoredVariablePtr& referenced_variable : expression_result.referenced_variables )
 		{
-			for( const auto& inner_variable_pair : referenced_variable->referenced_variables )
+			for( const auto& inner_variable : function_context.variables_state.GetVariableReferences( referenced_variable ) )
 			{
-				const auto it= variable_storage.referenced_variables.find( inner_variable_pair.first );
-				if( it == variable_storage.referenced_variables.end() )
-					variable_storage.referenced_variables.insert(inner_variable_pair);
-				else
-				{
-					if( it->second.IsMutable() || inner_variable_pair.second.IsMutable() )
-						errors_.push_back( ReportReferenceProtectionError( initializer.GetFilePos(), variable_storage.name ) );
-				}
+				const bool ok= function_context.variables_state.AddLink( variable_storage, inner_variable.first, inner_variable.second.IsMutable() );
+				if( !ok )
+					errors_.push_back( ReportReferenceProtectionError( initializer.file_pos_, inner_variable.first->name ) );
 			}
 		}
 
@@ -631,7 +618,7 @@ llvm::Constant* CodeBuilder::ApplyExpressionInitializer(
 		if( expression_result.value_type == ValueType::Value )
 		{
 			U_ASSERT( expression_result.referenced_variables.size() == 1u );
-			(*expression_result.referenced_variables.begin())->Move();
+			function_context.variables_state.Move( *expression_result.referenced_variables.begin() );
 			CopyBytes( expression_result.llvm_value, variable.llvm_value, variable.type, function_context );
 		}
 		else
@@ -769,7 +756,7 @@ llvm::Constant* CodeBuilder::ApplyZeroInitializer(
 
 void CodeBuilder::InitializeReferenceField(
 	const Variable& variable,
-	StoredVariable& variable_storage,
+	const StoredVariablePtr& variable_storage,
 	const ClassField& field,
 	const Synt::IInitializer& initializer,
 	NamesScope& block_names,
@@ -828,20 +815,9 @@ void CodeBuilder::InitializeReferenceField(
 
 	for( const StoredVariablePtr& referenced_variable : initializer_variable->referenced_variables )
 	{
-		const auto it= variable_storage.referenced_variables.find( referenced_variable );
-		if( it == variable_storage.referenced_variables.end() )
-		{
-			// New variable - just insert it.
-			variable_storage.referenced_variables[referenced_variable]=
-				StoredVariable::ReferencedVariable{
-					referenced_variable,
-					field.is_mutable ? referenced_variable->mut_use_counter : referenced_variable->imut_use_counter };
-		}
-		else
-		{
-			if( field.is_mutable || it->second.IsMutable() ) // Taking two or more mutable references to sma variable.
-				errors_.push_back( ReportReferenceProtectionError( initializer.GetFilePos(), variable_storage.name /* TODO - use field name */ ) );
-		}
+		const bool ok= function_context.variables_state.AddLink( variable_storage, referenced_variable, field.is_mutable );
+		if( !ok )
+			errors_.push_back( ReportReferenceProtectionError( initializer.GetFilePos(), variable_storage->name /* TODO - use field name */ ) );
 	}
 	CheckReferencedVariables( *initializer_variable, initializer.GetFilePos() );
 

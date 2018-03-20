@@ -18,33 +18,6 @@ namespace U
 namespace CodeBuilderPrivate
 {
 
-struct AchievableVariables
-{
-	std::unordered_set<StoredVariablePtr> variables;
-	bool any_variable_is_mutable= false;
-};
-
-static AchievableVariables RecursiveGetAllReferencedVariables( const StoredVariablePtr& stored_variable )
-{
-	U_ASSERT( stored_variable->kind == StoredVariable::Kind::Variable );
-
-	AchievableVariables result;
-
-	for( const auto& referenced_variable_pair : stored_variable->referenced_variables )
-	{
-		result.variables.insert( referenced_variable_pair.first );
-		const AchievableVariables achievable_variables=
-			RecursiveGetAllReferencedVariables(referenced_variable_pair.first);
-		result.variables.insert( achievable_variables.variables.begin(), achievable_variables.variables.end() );
-
-		if( referenced_variable_pair.second.IsMutable() ||
-			achievable_variables.any_variable_is_mutable )
-			result.any_variable_is_mutable= true;
-	}
-
-	return result;
-}
-
 Value CodeBuilder::BuildExpressionCodeAndDestroyTemporaries(
 	const Synt::IExpressionComponent& expression,
 	NamesScope& names,
@@ -85,6 +58,7 @@ boost::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 			dummy_function_context_->function );
 		const StackVariablesStorage dummy_stack_variables_storage( dummy_function_context );
 		dummy_function_context.this_= function_context.this_;
+		dummy_function_context.variables_state= function_context.variables_state;
 
 		const Value l_var_value= BuildExpressionCode( left_expr , names, dummy_function_context );
 		const Value r_var_value= BuildExpressionCode( right_expr, names, dummy_function_context );
@@ -136,22 +110,17 @@ boost::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 		{
 			for( const StoredVariablePtr& r_var_variable : r_var_real.referenced_variables )
 			{
-				for( const auto& inner_variable_pair : r_var_variable->referenced_variables )
+				for( const auto& inner_reference : function_context.variables_state.GetVariableReferences( r_var_variable ) )
 				{
-					const auto it= l_var_variable->referenced_variables.find(inner_variable_pair.first);
-					if( it == l_var_variable->referenced_variables.end() )
-						l_var_variable->referenced_variables.insert(inner_variable_pair);
-					else
-					{
-						if( it->second.IsMutable() || inner_variable_pair.second.IsMutable() )
-							errors_.push_back( ReportReferenceProtectionError( file_pos, l_var_variable->name ) );
-					}
+					const bool ok= function_context.variables_state.AddLink( l_var_variable, inner_reference.first, inner_reference.second.IsMutable() );
+					if( !ok )
+						errors_.push_back( ReportReferenceProtectionError( file_pos, inner_reference.first->name ) );
 				}
 			}
 		}
 
 		U_ASSERT( r_var_real.referenced_variables.size() == 1u );
-		(*(r_var_real.referenced_variables.begin()))->Move();
+		function_context.variables_state.Move( *r_var_real.referenced_variables.begin() );
 
 		Variable move_result;
 		move_result.type= void_type_;
@@ -1039,7 +1008,7 @@ Value CodeBuilder::BuildLazyBinaryOperator(
 
 	const StoredVariablePtr stored_result= std::make_shared<StoredVariable>( BinaryOperatorToString(binary_operator.operator_type_), result );
 	result.referenced_variables.emplace( stored_result );
-	function_context.stack_variables_stack.back()->RegisterVariable( stored_result );
+	function_context.stack_variables_stack[ function_context.stack_variables_stack.size() -2u ]->RegisterVariable( stored_result );
 
 	return Value( result, file_pos );
 
@@ -1116,7 +1085,7 @@ Value CodeBuilder::BuildNamedOperand(
 			field_variable.referenced_variables.clear();
 			for( const StoredVariablePtr& struct_variable : function_context.this_->referenced_variables )
 			{
-				for( const auto& referenced_variable_pair : struct_variable->referenced_variables )
+				for( const auto& referenced_variable_pair : function_context.variables_state.GetVariableReferences( struct_variable ) )
 					field_variable.referenced_variables.insert( referenced_variable_pair.first );
 			}
 		}
@@ -1293,6 +1262,7 @@ Value CodeBuilder::BuildIndexationOperator(
 				dummy_function_context_->function );
 			const StackVariablesStorage dummy_stack_variables_storage( dummy_function_context );
 			dummy_function_context.this_= function_context.this_;
+			dummy_function_context.variables_state= function_context.variables_state;
 
 			const Value index_value= BuildExpressionCode( *indexation_operator.index_, names, dummy_function_context );
 			CHECK_RETURN_ERROR_VALUE(index_value);
@@ -1468,7 +1438,7 @@ Value CodeBuilder::BuildMemberAccessOperator(
 		result.referenced_variables.clear();
 		for( const StoredVariablePtr& struct_variable : variable.referenced_variables )
 		{
-			for( const auto& referenced_variable_pair : struct_variable->referenced_variables )
+			for( const auto& referenced_variable_pair : function_context.variables_state.GetVariableReferences( struct_variable ) )
 				result.referenced_variables.insert( referenced_variable_pair.first );
 		}
 	}
@@ -1539,6 +1509,7 @@ Value CodeBuilder::BuildCallOperator(
 			dummy_function_context_->function );
 		const StackVariablesStorage dummy_stack_variables_storage( dummy_function_context );
 		dummy_function_context.this_= function_context.this_;
+		dummy_function_context.variables_state= function_context.variables_state; // TODO - support copy-on-write for variables_state
 
 		// Push "this" argument.
 		if( this_ != nullptr )
@@ -1734,7 +1705,7 @@ Value CodeBuilder::DoCallFunction(
 				{
 					// Do not call copy constructors - just move.
 					U_ASSERT( expr.referenced_variables.size() == 1u );
-					(*expr.referenced_variables.begin())->Move();
+					function_context.variables_state.Move( *expr.referenced_variables.begin() );
 					llvm_args[j]= expr.llvm_value;
 				}
 				else
@@ -1748,7 +1719,7 @@ Value CodeBuilder::DoCallFunction(
 
 				// Save references inside referenced variables, because we need check references inside it.
 				for( const StoredVariablePtr& var_itself : expr.referenced_variables )
-					for( const auto& referenced_variable_pair : var_itself->referenced_variables )
+					for( const auto& referenced_variable_pair : function_context.variables_state.GetVariableReferences( var_itself ) )
 					{
 						const StoredVariablePtr& referenced_variable = referenced_variable_pair.first;
 						if( referenced_variable_pair.second.IsMutable() )
@@ -1888,7 +1859,7 @@ Value CodeBuilder::DoCallFunction(
 			{
 				if( !function_type.args[ arg_n_and_tag_n.first ].is_reference )
 					result.referenced_variables.emplace( var );
-				for( const StoredVariablePtr& referenced_variable : RecursiveGetAllReferencedVariables(var).variables )
+				for( const StoredVariablePtr& referenced_variable : function_context.variables_state.RecursiveGetAllReferencedVariables(var).variables )
 					result.referenced_variables.emplace(referenced_variable);
 			}
 		}
@@ -1907,7 +1878,7 @@ Value CodeBuilder::DoCallFunction(
 			{
 				const bool is_mutable= function_type.args[arg_n].is_mutable;
 				for( const StoredVariablePtr& var : arg_to_variables[arg_n] )
-					stored_result->referenced_variables[var]= StoredVariable::ReferencedVariable{ var, is_mutable ? var->mut_use_counter : var->imut_use_counter };
+					function_context.variables_state.AddLink( stored_result, var, is_mutable );
 			}
 		}
 
@@ -1921,12 +1892,9 @@ Value CodeBuilder::DoCallFunction(
 
 			for( const StoredVariablePtr& var : arg_to_variables[arg_n_and_tag_n.first] )
 			{
-				const AchievableVariables achievable_variables= RecursiveGetAllReferencedVariables( var );
+				const VariablesState::AchievableVariables achievable_variables= function_context.variables_state.RecursiveGetAllReferencedVariables( var );
 				for( const auto& referenced_variable_pair : achievable_variables.variables )
-					stored_result->referenced_variables[referenced_variable_pair]=
-						StoredVariable::ReferencedVariable{
-							referenced_variable_pair,
-							achievable_variables.any_variable_is_mutable ? referenced_variable_pair->mut_use_counter : referenced_variable_pair->imut_use_counter};
+					function_context.variables_state.AddLink( stored_result, referenced_variable_pair, achievable_variables.any_variable_is_mutable );
 			}
 		}
 	}
@@ -1956,7 +1924,7 @@ Value CodeBuilder::DoCallFunction(
 			bool all_is_mutable= false;
 			for( const StoredVariablePtr& referenced_variable : arg_to_variables[ referene_pollution.src.first ] )
 			{
-				const AchievableVariables vars= RecursiveGetAllReferencedVariables( referenced_variable );
+				const VariablesState::AchievableVariables vars= function_context.variables_state.RecursiveGetAllReferencedVariables( referenced_variable );
 				src_variables.insert( vars.variables.begin(), vars.variables.end() );
 				all_is_mutable= all_is_mutable || vars.any_variable_is_mutable;
 			}
@@ -1975,20 +1943,9 @@ Value CodeBuilder::DoCallFunction(
 
 				for( const StoredVariablePtr& src_variable : src_variables )
 				{
-					const auto& counter= src_variables_is_mutable ? src_variable->mut_use_counter : src_variable->imut_use_counter;
-					if( dst_variable->referenced_variables.find(src_variable) == dst_variable->referenced_variables.end() )
-					{
-						dst_variable->referenced_variables[src_variable]= StoredVariable::ReferencedVariable{ src_variable, counter };
-					}
-					else
-					{
-						// Already linked. Try change mutability, if needed.
-						StoredVariable::ReferencedVariable& old_referenced_variable= dst_variable->referenced_variables[src_variable];
-						if( src_variables_is_mutable && !old_referenced_variable.IsMutable() )
-						{
-							old_referenced_variable.use_counter= src_variable->mut_use_counter;
-						}
-					}
+					const bool ok= function_context.variables_state.AddLink( dst_variable, src_variable, src_variables_is_mutable );
+					if( !ok )
+						errors_.push_back( ReportReferenceProtectionError( call_file_pos, src_variable->name ) );
 				}
 			} // for dst variables
 		}
@@ -2008,6 +1965,7 @@ Variable CodeBuilder::BuildTempVariableConstruction(
 	FunctionContext& function_context )
 {
 	const StoredVariablePtr stored_variable= std::make_shared<StoredVariable>( "temp "_SpC + type.ToString(), Variable() );
+	function_context.stack_variables_stack.back()->RegisterVariable( stored_variable );
 	Variable& variable= stored_variable->content;
 	variable.type= type;
 	variable.location= Variable::Location::Pointer;
@@ -2015,13 +1973,12 @@ Variable CodeBuilder::BuildTempVariableConstruction(
 	variable.llvm_value= function_context.alloca_ir_builder.CreateAlloca( type.GetLLVMType() );
 
 	variable.referenced_variables.insert(stored_variable);
-	variable.constexpr_value= ApplyConstructorInitializer( variable, *stored_variable, call_operator, names, function_context );
+	variable.constexpr_value= ApplyConstructorInitializer( variable, stored_variable, call_operator, names, function_context );
 	variable.referenced_variables.erase(stored_variable);
 	variable.value_type= ValueType::Value; // Make value after construction
 
 	variable.referenced_variables.emplace( stored_variable );
 
-	function_context.stack_variables_stack.back()->RegisterVariable( stored_variable );
 
 	return variable;
 }

@@ -294,48 +294,43 @@ public:
 	const Kind kind;
 	const bool is_global_constant;
 
-	// Referenced variables, referenced variables of referenced variables, etc.
-	std::unordered_map<StoredVariablePtr, ReferencedVariable> referenced_variables;
-
 	StoredVariable( ProgramString iname, Variable icontent, Kind ikind= Kind::Variable, bool iis_global_constant= false );
-
-	void Move();
-	bool IsMoved() const;
-
-private:
-	bool moved= false;
 };
 
 class VariablesState
 {
 public:
-	void AddVariable(const StoredVariablePtr& var);
-	void RemoveVariable(const StoredVariablePtr& var);
-	bool AddLink( const StoredVariablePtr& dst, const StoredVariablePtr& src, bool is_mutable ); // returns true, if ok
-	void Move( const StoredVariablePtr& var ); // returns true, if ok
-	bool VariableIsMoved( const StoredVariablePtr& var ) const;
+	struct Reference
+	{
+		StoredVariablePtr variable; // TODO - does it needs here?
+		VariableStorageUseCounter use_counter;
+		bool IsMutable() const{ return use_counter == variable->mut_use_counter; }
+	};
+	using VariableReferences= std::unordered_map<StoredVariablePtr, Reference>;
+
+	struct VariableEntry
+	{
+		VariableReferences inner_references;
+		bool is_moved= false;
+	};
 
 	struct AchievableVariables
 	{
 		std::unordered_set<StoredVariablePtr> variables;
 		bool any_variable_is_mutable= false;
 	};
+
+	void AddVariable( const StoredVariablePtr& var );
+	void RemoveVariable( const StoredVariablePtr& var );
+	bool AddLink( const StoredVariablePtr& dst, const StoredVariablePtr& src, bool is_mutable ); // returns true, if ok
+	void AddLinkForArgInnerVariable( const StoredVariablePtr& arg, const StoredVariablePtr& inner_variable );
+	void Move( const StoredVariablePtr& var ); // returns true, if ok
+	bool VariableIsMoved( const StoredVariablePtr& var ) const;
+
+	const VariableReferences& GetVariableReferences( const StoredVariablePtr& var ) const;
 	AchievableVariables RecursiveGetAllReferencedVariables( const StoredVariablePtr& stored_variable ) const;
 
 private:
-	struct VariableEntry
-	{
-		bool is_moved= false;
-
-		struct Reference
-		{
-			StoredVariablePtr variable;
-			VariableStorageUseCounter use_counter;
-			bool IsMutable() const{ return use_counter == variable->mut_use_counter; }
-		};
-
-		std::unordered_map<StoredVariablePtr, Reference> inner_references;
-	};
 
 	std::unordered_map<StoredVariablePtr, VariableEntry> variables_;
 };
