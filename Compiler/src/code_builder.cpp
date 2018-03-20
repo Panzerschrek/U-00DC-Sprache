@@ -2615,17 +2615,23 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 		// Destruction frame for temporary variables of initializer expression.
 		const StackVariablesStorage temp_variables_storage( function_context );
 
-		Variable variable;
+		const StoredVariablePtr stored_variable=
+			std::make_shared<StoredVariable>(
+				variable_declaration.name,
+				Variable(),
+				variable_declaration.reference_modifier == ReferenceModifier::Reference ? StoredVariable::Kind::Reference : StoredVariable::Kind::Variable,
+				global );
+		function_context.stack_variables_stack[ function_context.stack_variables_stack.size() - 2u ]->RegisterVariable( stored_variable );
+
+		Variable& variable= stored_variable->content;
 		variable.type= type;
 		variable.location= Variable::Location::Pointer;
 		variable.value_type= ValueType::Reference;
 
-		const StoredVariablePtr variable_storage_for_initialization= std::make_shared<StoredVariable>( variable_declaration.name, variable );
-
 		if( type.GetTemplateDependentType() != nullptr )
 		{
 			if( variable_declaration.initializer != nullptr )
-				ApplyInitializer( variable, *variable_storage_for_initialization, *variable_declaration.initializer, block_names, function_context );
+				ApplyInitializer( variable, *stored_variable, *variable_declaration.initializer, block_names, function_context );
 		}
 		else if( variable_declaration.reference_modifier == ReferenceModifier::None )
 		{
@@ -2641,15 +2647,13 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 				variable.llvm_value->setName( ToStdString( variable_declaration.name ) );
 			}
 
-			variable.referenced_variables.insert( variable_storage_for_initialization );
+			variable.referenced_variables.insert( stored_variable );
 			if( variable_declaration.initializer != nullptr )
 				variable.constexpr_value=
-					ApplyInitializer( variable, *variable_storage_for_initialization, *variable_declaration.initializer, block_names, function_context );
+					ApplyInitializer( variable, *stored_variable, *variable_declaration.initializer, block_names, function_context );
 			else
 				ApplyEmptyInitializer( variable_declaration.name, variables_declaration.file_pos_, variable, function_context );
-			variable.referenced_variables.erase( variable_storage_for_initialization );
-
-			U_ASSERT( variable_storage_for_initialization.use_count() == 1u ); // Must NOT lock variable in initialization process.
+			variable.referenced_variables.erase( stored_variable );
 
 			// Make immutable, if needed, only after initialization, because in initialization we need call constructors, which is mutable methods.
 			if( variable_declaration.mutability_modifier != MutabilityModifier::Mutable )
@@ -2717,6 +2721,16 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 
 			variable.referenced_variables= expression_result.referenced_variables;
 
+			const bool is_mutable= variable.value_type == ValueType::Reference;
+			for( const StoredVariablePtr& referenced_variable : variable.referenced_variables )
+			{
+				stored_variable->referenced_variables[referenced_variable]=
+					StoredVariable::ReferencedVariable{
+						referenced_variable,
+						is_mutable ? referenced_variable->mut_use_counter : referenced_variable->imut_use_counter };
+			}
+			CheckReferencedVariables( stored_variable->content, variable_declaration.file_pos );
+
 			// TODO - maybe make copy of varaible address in new llvm register?
 			variable.llvm_value= expression_result.llvm_value;
 			variable.constexpr_value= expression_result.constexpr_value;
@@ -2749,40 +2763,13 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 			return;
 		}
 
-		const StoredVariablePtr stored_variable=
-			std::make_shared<StoredVariable>(
-				variable_declaration.name,
-				variable,
-				variable_declaration.reference_modifier == ReferenceModifier::Reference ? StoredVariable::Kind::Reference : StoredVariable::Kind::Variable,
-				global );
-
-		if( stored_variable->kind == StoredVariable::Kind::Reference )
-		{
-			const bool is_mutable= variable.value_type == ValueType::Reference;
-			for( const StoredVariablePtr& referenced_variable : variable.referenced_variables )
-			{
-				stored_variable->referenced_variables[referenced_variable]=
-					StoredVariable::ReferencedVariable{
-						referenced_variable,
-						is_mutable ? referenced_variable->mut_use_counter : referenced_variable->imut_use_counter };
-			}
-			CheckReferencedVariables( variable, variable_declaration.file_pos );
-		}
-		else if( stored_variable->kind == StoredVariable::Kind::Variable )
-		{
-			stored_variable->referenced_variables= std::move( variable_storage_for_initialization->referenced_variables );
-		}
-		else U_ASSERT(false);
-
 		const NamesScope::InsertedName* const inserted_name=
-			block_names.AddName( variable_declaration.name, Value( std::move(stored_variable), variable_declaration.file_pos ) );
+			block_names.AddName( variable_declaration.name, Value( stored_variable, variable_declaration.file_pos ) );
 		if( !inserted_name )
 			errors_.push_back( ReportRedefinition( variables_declaration.file_pos_, variable_declaration.name ) );
 
 		// After lock of references we can call destructors.
 		CallDestructors( *function_context.stack_variables_stack.back(), function_context, variable_declaration.file_pos );
-
-		function_context.stack_variables_stack[ function_context.stack_variables_stack.size() - 2u ]->RegisterVariable( stored_variable );
 	} // for variables
 }
 
@@ -2840,7 +2827,15 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 
 	const Variable& initializer_experrsion= *initializer_experrsion_value.GetVariable();
 
-	Variable variable;
+	const StoredVariablePtr stored_variable=
+		std::make_shared<StoredVariable>(
+			auto_variable_declaration.name,
+			Variable(),
+			auto_variable_declaration.reference_modifier == ReferenceModifier::Reference ? StoredVariable::Kind::Reference : StoredVariable::Kind::Variable,
+			global );
+	function_context.stack_variables_stack[ function_context.stack_variables_stack.size() - 2u ]->RegisterVariable( stored_variable );
+
+	Variable& variable= stored_variable->content;
 	variable.location= Variable::Location::Pointer;
 	if( auto_variable_declaration.mutability_modifier == MutabilityModifier::Mutable )
 		variable.value_type= ValueType::Reference;
@@ -2856,7 +2851,6 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 		return;
 	}
 
-	std::unordered_map<StoredVariablePtr, StoredVariable::ReferencedVariable> moved_variable_referenced_variables;
 	if( auto_variable_declaration.reference_modifier == ReferenceModifier::Reference )
 	{
 		if( initializer_experrsion.value_type == ValueType::Value )
@@ -2875,9 +2869,21 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 
 		variable.llvm_value= initializer_experrsion.llvm_value;
 		variable.constexpr_value= initializer_experrsion.constexpr_value;
+
+		const bool is_mutable= variable.value_type == ValueType::Reference;
+		for( const StoredVariablePtr& referenced_variable : variable.referenced_variables )
+		{
+			stored_variable->referenced_variables[referenced_variable]=
+				StoredVariable::ReferencedVariable{
+					referenced_variable,
+					is_mutable ? referenced_variable->mut_use_counter : referenced_variable->imut_use_counter };
+		}
+		CheckReferencedVariables( variable, auto_variable_declaration.file_pos_ );
 	}
 	else if( auto_variable_declaration.reference_modifier == ReferenceModifier::None )
 	{
+		std::unordered_map<StoredVariablePtr, StoredVariable::ReferencedVariable> moved_variable_referenced_variables;
+
 		llvm::GlobalVariable* global_variable= nullptr;
 		if( global && variable.type.GetTemplateDependentType() == nullptr )
 		{
@@ -2928,6 +2934,18 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 
 		if( global_variable != nullptr && variable.constexpr_value != nullptr )
 			global_variable->setInitializer( variable.constexpr_value );
+
+		// Take references inside variables in initializer expression.
+		stored_variable->referenced_variables= std::move(moved_variable_referenced_variables);
+		for( const StoredVariablePtr& referenced_variable : initializer_experrsion.referenced_variables )
+		{
+			for( const auto& inner_variable_pair : referenced_variable->referenced_variables )
+			{
+				const auto it= stored_variable->referenced_variables.find( inner_variable_pair.first );
+				if( it == stored_variable->referenced_variables.end() )
+					stored_variable->referenced_variables.insert(inner_variable_pair);
+			}
+		}
 	}
 	else
 		U_ASSERT(false);
@@ -2957,41 +2975,6 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 		return;
 	}
 
-	const StoredVariablePtr stored_variable=
-		std::make_shared<StoredVariable>(
-			auto_variable_declaration.name,
-			variable,
-			auto_variable_declaration.reference_modifier == ReferenceModifier::Reference ? StoredVariable::Kind::Reference : StoredVariable::Kind::Variable,
-			global );
-
-	if( stored_variable->kind == StoredVariable::Kind::Reference )
-	{
-		const bool is_mutable= variable.value_type == ValueType::Reference;
-		for( const StoredVariablePtr& referenced_variable : variable.referenced_variables )
-		{
-			stored_variable->referenced_variables[referenced_variable]=
-				StoredVariable::ReferencedVariable{
-					referenced_variable,
-					is_mutable ? referenced_variable->mut_use_counter : referenced_variable->imut_use_counter };
-		}
-		CheckReferencedVariables( variable, auto_variable_declaration.file_pos_ );
-	}
-	else if( stored_variable->kind == StoredVariable::Kind::Variable )
-	{
-		// Take references inside variables in initializer expression.
-		stored_variable->referenced_variables= std::move(moved_variable_referenced_variables);
-		for( const StoredVariablePtr& referenced_variable : initializer_experrsion.referenced_variables )
-		{
-			for( const auto& inner_variable_pair : referenced_variable->referenced_variables )
-			{
-				const auto it= stored_variable->referenced_variables.find( inner_variable_pair.first );
-				if( it == stored_variable->referenced_variables.end() )
-					stored_variable->referenced_variables.insert(inner_variable_pair);
-			}
-		}
-	}
-	else U_ASSERT( false );
-
 	const NamesScope::InsertedName* const inserted_name=
 		block_names.AddName( auto_variable_declaration.name, Value( stored_variable, auto_variable_declaration.file_pos_ ) );
 	if( inserted_name == nullptr )
@@ -2999,8 +2982,6 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 
 	// After lock of references we can call destructors.
 	CallDestructors( *function_context.stack_variables_stack.back(), function_context, auto_variable_declaration.file_pos_ );
-
-	function_context.stack_variables_stack[ function_context.stack_variables_stack.size() - 2u ]->RegisterVariable( stored_variable );
 }
 
 void CodeBuilder::BuildAssignmentOperatorCode(

@@ -2007,20 +2007,17 @@ Variable CodeBuilder::BuildTempVariableConstruction(
 	NamesScope& names,
 	FunctionContext& function_context )
 {
-	Variable variable;
+	const StoredVariablePtr stored_variable= std::make_shared<StoredVariable>( "temp "_SpC + type.ToString(), Variable() );
+	Variable& variable= stored_variable->content;
 	variable.type= type;
 	variable.location= Variable::Location::Pointer;
 	variable.value_type= ValueType::Reference;
 	variable.llvm_value= function_context.alloca_ir_builder.CreateAlloca( type.GetLLVMType() );
 
-	const StoredVariablePtr variable_storage_for_initialization= std::make_shared<StoredVariable>( "temp "_SpC + type.ToString(), variable );
-	variable.referenced_variables.insert(variable_storage_for_initialization);
-	variable.constexpr_value= ApplyConstructorInitializer( variable, *variable_storage_for_initialization, call_operator, names, function_context );
-	variable.referenced_variables.erase(variable_storage_for_initialization);
+	variable.referenced_variables.insert(stored_variable);
+	variable.constexpr_value= ApplyConstructorInitializer( variable, *stored_variable, call_operator, names, function_context );
+	variable.referenced_variables.erase(stored_variable);
 	variable.value_type= ValueType::Value; // Make value after construction
-
-	const StoredVariablePtr stored_variable= std::make_shared<StoredVariable>( variable_storage_for_initialization->name, variable );
-	stored_variable->referenced_variables= std::move( variable_storage_for_initialization->referenced_variables );
 
 	variable.referenced_variables.emplace( stored_variable );
 

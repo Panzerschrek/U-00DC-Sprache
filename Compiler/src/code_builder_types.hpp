@@ -287,7 +287,7 @@ public:
 	};
 
 	const ProgramString name; // needs for error messages
-	const Variable content;
+	Variable content;
 	const VariableStorageUseCounter  mut_use_counter= std::make_shared<int>();
 	const VariableStorageUseCounter imut_use_counter= std::make_shared<int>();
 
