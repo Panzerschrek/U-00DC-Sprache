@@ -499,11 +499,15 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 				dummy_function_context_->function );
 			const StackVariablesStorage dummy_stack_variables_storage( dummy_function_context );
 			dummy_function_context.this_= function_context.this_;
+			dummy_function_context.variables_state= function_context.variables_state;
+			function_context.variables_state.DeactivateLocks();
 
 			const Value initializer_value= BuildExpressionCode( *call_operator.arguments_.front(), block_names, dummy_function_context );
 			needs_move_constuct=
 				initializer_value.GetType() == variable.type &&
 				initializer_value.GetVariable()->value_type == ValueType::Value ;
+
+			function_context.variables_state.ActiavateLocks();
 		}
 		if( needs_move_constuct )
 		{

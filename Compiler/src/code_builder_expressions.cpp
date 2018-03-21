@@ -59,6 +59,7 @@ boost::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 		const StackVariablesStorage dummy_stack_variables_storage( dummy_function_context );
 		dummy_function_context.this_= function_context.this_;
 		dummy_function_context.variables_state= function_context.variables_state;
+		function_context.variables_state.DeactivateLocks();
 
 		const Value l_var_value= BuildExpressionCode( left_expr , names, dummy_function_context );
 		const Value r_var_value= BuildExpressionCode( right_expr, names, dummy_function_context );
@@ -93,6 +94,7 @@ boost::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 		args.back().is_mutable= r_var->value_type == ValueType::Reference;
 	}
 	errors_.resize( error_count_before );
+	function_context.variables_state.ActiavateLocks();
 
 	// Apply here move-assignment for class types.
 	if( needs_move_assign )
@@ -1263,6 +1265,7 @@ Value CodeBuilder::BuildIndexationOperator(
 			const StackVariablesStorage dummy_stack_variables_storage( dummy_function_context );
 			dummy_function_context.this_= function_context.this_;
 			dummy_function_context.variables_state= function_context.variables_state;
+			function_context.variables_state.DeactivateLocks();
 
 			const Value index_value= BuildExpressionCode( *indexation_operator.index_, names, dummy_function_context );
 			CHECK_RETURN_ERROR_VALUE(index_value);
@@ -1281,6 +1284,7 @@ Value CodeBuilder::BuildIndexationOperator(
 			args.back().is_mutable= index_variable->value_type == ValueType::Reference;
 		}
 		errors_.resize( error_count_before );
+		function_context.variables_state.ActiavateLocks();
 
 		const FunctionVariable* const overloaded_operator=
 			GetOverloadedOperator( args, OverloadedOperator::Indexing, indexation_operator.file_pos_ );
@@ -1510,6 +1514,7 @@ Value CodeBuilder::BuildCallOperator(
 		const StackVariablesStorage dummy_stack_variables_storage( dummy_function_context );
 		dummy_function_context.this_= function_context.this_;
 		dummy_function_context.variables_state= function_context.variables_state; // TODO - support copy-on-write for variables_state
+		function_context.variables_state.DeactivateLocks();
 
 		// Push "this" argument.
 		if( this_ != nullptr )
@@ -1547,6 +1552,7 @@ Value CodeBuilder::BuildCallOperator(
 		if( args_are_template_dependent )
 			return Value( Type(NontypeStub::TemplateDependentValue), call_operator.file_pos_ );
 	}
+	function_context.variables_state.ActiavateLocks();
 
 	// SPRACHE_TODO - try get function with "this" parameter in signature and without it.
 	// We must support static functions call using "this".
