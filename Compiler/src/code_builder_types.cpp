@@ -729,6 +729,7 @@ bool VariablesState::AddLink( const StoredVariablePtr& dst, const StoredVariable
 	{
 		Reference ref;
 		ref.use_counter= is_mutable ? src->mut_use_counter : src->imut_use_counter;
+		ref.is_mutable= is_mutable;
 		ref.variable= src;
 		variable_entry.inner_references[src]= ref;
 	}
@@ -799,6 +800,23 @@ VariablesState::AchievableVariables VariablesState::RecursiveGetAllReferencedVar
 	}
 
 	return result;
+}
+
+void VariablesState::ActiavateLocks()
+{
+	for( auto& variable_pair : variables_ )
+		for( auto& ref_pair : variable_pair.second.inner_references )
+		{
+			if( ref_pair.second.variable != nullptr )
+				ref_pair.second.use_counter= ref_pair.second.is_mutable ? ref_pair.first->mut_use_counter : ref_pair.first->imut_use_counter;
+		}
+}
+
+void VariablesState::DeactivateLocks()
+{
+	for( auto& variable_pair : variables_ )
+		for( auto& ref_pair : variable_pair.second.inner_references )
+			ref_pair.second.use_counter= nullptr;
 }
 
 //

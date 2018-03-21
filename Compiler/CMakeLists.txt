@@ -160,7 +160,8 @@ if( BUILD_TESTS )
 		src/tests/tests.cpp
 		src/tests/type_conversions_test.cpp
 		src/tests/typedefs_errors_test.cpp
-		src/tests/typedefs_test.cpp )
+		src/tests/typedefs_test.cpp
+		src/tests/variables_state_merge_test.cpp )
 
 	set( TESTS_HEADERS
 		src/tests/tests.hpp )

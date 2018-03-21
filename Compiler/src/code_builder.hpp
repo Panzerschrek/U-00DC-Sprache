@@ -538,8 +538,10 @@ private:
 
 	// Reference-checking.
 	void CheckReferencedVariables( const Variable& reference, const FilePos& file_pos );
+	void CheckVariableReferences( const StoredVariable& var, const FilePos& file_pos );
 	std::vector<VariableStorageUseCounter> LockReferencedVariables( const Variable& reference );
 
+	VariablesState MergeVariablesStateAfterIf( const std::vector<VariablesState>& bracnhes_variables_state, const FilePos& file_pos );
 	// Name resolving.
 
 	// PreResolve function.

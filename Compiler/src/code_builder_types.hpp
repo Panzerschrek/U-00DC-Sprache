@@ -304,6 +304,7 @@ public:
 	{
 		StoredVariablePtr variable; // TODO - does it needs here?
 		VariableStorageUseCounter use_counter;
+		bool is_mutable= true;
 		bool IsMutable() const{ return use_counter == variable->mut_use_counter; }
 	};
 	using VariableReferences= std::unordered_map<StoredVariablePtr, Reference>;
@@ -330,7 +331,10 @@ public:
 	const VariableReferences& GetVariableReferences( const StoredVariablePtr& var ) const;
 	AchievableVariables RecursiveGetAllReferencedVariables( const StoredVariablePtr& stored_variable ) const;
 
-private:
+	// For merging of if-else we needs deactivate and reactivate locks.
+	void ActiavateLocks();
+	void DeactivateLocks();
+//private:
 
 	std::unordered_map<StoredVariablePtr, VariableEntry> variables_;
 };

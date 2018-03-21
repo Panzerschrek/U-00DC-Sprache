@@ -3483,6 +3483,10 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildIfOperatorCode(
 	// Break to first condition. We must push terminal instruction at end of current block.
 	function_context.llvm_ir_builder.CreateBr( next_condition_block );
 
+	VariablesState conditions_variable_state= function_context.variables_state;
+	conditions_variable_state.DeactivateLocks();
+	std::vector<VariablesState> bracnhes_variables_state( if_operator.branches_.size() );
+
 	for( unsigned int i= 0u; i < if_operator.branches_.size(); i++ )
 	{
 		const Synt::IfOperator::Branch& branch= if_operator.branches_[i];
@@ -3508,29 +3512,36 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildIfOperatorCode(
 		}
 		else
 		{
-			const StackVariablesStorage temp_variables_storage( function_context );
-			const Value condition_expression= BuildExpressionCode( *branch.condition, names, function_context );
-
-			if( condition_expression.GetType() != NontypeStub::TemplateDependentValue &&
-				condition_expression.GetType().GetTemplateDependentType() == nullptr )
+			function_context.variables_state= conditions_variable_state;
+			function_context.variables_state.ActiavateLocks();
+			conditions_variable_state.DeactivateLocks();
 			{
-				if( condition_expression.GetType() != bool_type_ )
+				const StackVariablesStorage temp_variables_storage( function_context );
+				const Value condition_expression= BuildExpressionCode( *branch.condition, names, function_context );
+
+				if( condition_expression.GetType() != NontypeStub::TemplateDependentValue &&
+					condition_expression.GetType().GetTemplateDependentType() == nullptr )
 				{
-					errors_.push_back(
-						ReportTypesMismatch(
-							branch.condition->GetFilePos(),
-							bool_type_.ToString(),
-							condition_expression.GetType().ToString() ) );
-					return if_operator_blocks_build_info;
+					if( condition_expression.GetType() != bool_type_ )
+					{
+						errors_.push_back(
+							ReportTypesMismatch(
+								branch.condition->GetFilePos(),
+								bool_type_.ToString(),
+								condition_expression.GetType().ToString() ) );
+						return if_operator_blocks_build_info;
+					}
+
+					llvm::Value* condition_in_register= CreateMoveToLLVMRegisterInstruction( *condition_expression.GetVariable(), function_context );
+					CallDestructors( *function_context.stack_variables_stack.back(), function_context, branch.condition->GetFilePos() );
+
+					function_context.llvm_ir_builder.CreateCondBr( condition_in_register, body_block, next_condition_block );
 				}
-
-				llvm::Value* condition_in_register= CreateMoveToLLVMRegisterInstruction( *condition_expression.GetVariable(), function_context );
-				CallDestructors( *function_context.stack_variables_stack.back(), function_context, branch.condition->GetFilePos() );
-
-				function_context.llvm_ir_builder.CreateCondBr( condition_in_register, body_block, next_condition_block );
+				else
+					function_context.llvm_ir_builder.CreateCondBr( llvm::UndefValue::get( fundamental_llvm_types_.bool_ ), body_block, next_condition_block );
 			}
-			else
-				function_context.llvm_ir_builder.CreateCondBr( llvm::UndefValue::get( fundamental_llvm_types_.bool_ ), body_block, next_condition_block );
+			conditions_variable_state= function_context.variables_state;
+			conditions_variable_state.DeactivateLocks();
 		}
 
 		// Make body block code.
@@ -3544,15 +3555,28 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildIfOperatorCode(
 		have_break_or_continue_in_all_branches= have_break_or_continue_in_all_branches && block_build_info.have_uncodnitional_break_or_continue;
 
 		function_context.llvm_ir_builder.CreateBr( block_after_if );
+
+		bracnhes_variables_state[i]= function_context.variables_state;
+		bracnhes_variables_state[i].DeactivateLocks();
+		function_context.variables_state= conditions_variable_state;
+		function_context.variables_state.ActiavateLocks();
 	}
 
 	U_ASSERT( next_condition_block == block_after_if );
+
+	if( if_operator.branches_.back().condition != nullptr ) // Have no unconditional "else" at end.
+		bracnhes_variables_state.push_back( conditions_variable_state );
 
 	if( if_operator.branches_.back().condition != nullptr )
 	{
 		have_return_in_all_branches= false;
 		have_break_or_continue_in_all_branches= false;
 	}
+
+	function_context.variables_state= MergeVariablesStateAfterIf( bracnhes_variables_state, if_operator.end_file_pos_ );
+	function_context.variables_state.ActiavateLocks();
+	for( const auto& var_pair : function_context.variables_state.variables_ )
+		CheckVariableReferences( *var_pair.first, if_operator.end_file_pos_ );
 
 	// Block after if code.
 	function_context.function->getBasicBlockList().push_back( block_after_if );
@@ -3919,16 +3943,19 @@ const FunctionVariable* CodeBuilder::GetOverloadedOperator(
 void CodeBuilder::CheckReferencedVariables( const Variable& reference, const FilePos& file_pos )
 {
 	for( const StoredVariablePtr& referenced_variable : reference.referenced_variables )
-	{
-		if(
-			referenced_variable-> mut_use_counter.use_count() <= 2u &&
-			referenced_variable->imut_use_counter.use_count() == 1u)
-		{} // All ok - one mutable reference.
-		else if( referenced_variable-> mut_use_counter.use_count() == 1u )
-		{} // All ok - 0-infinity immutable references.
-		else
-			errors_.push_back( ReportReferenceProtectionError( file_pos, referenced_variable->name ) );
-	}
+		CheckVariableReferences( *referenced_variable, file_pos );
+}
+
+void CodeBuilder::CheckVariableReferences( const StoredVariable& var, const FilePos& file_pos )
+{
+	if(
+		var. mut_use_counter.use_count() <= 2u &&
+		var.imut_use_counter.use_count() == 1u)
+	{} // All ok - one mutable reference.
+	else if( var. mut_use_counter.use_count() == 1u )
+	{} // All ok - 0-infinity immutable references.
+	else
+		errors_.push_back( ReportReferenceProtectionError( file_pos, var.name ) );
 }
 
 std::vector<VariableStorageUseCounter> CodeBuilder::LockReferencedVariables( const Variable& reference )
@@ -3938,6 +3965,42 @@ std::vector<VariableStorageUseCounter> CodeBuilder::LockReferencedVariables( con
 		locks.push_back( reference.value_type == ValueType::Reference ? referenced_variable->mut_use_counter : referenced_variable->imut_use_counter );
 
 	return locks;
+}
+
+VariablesState CodeBuilder::MergeVariablesStateAfterIf( const std::vector<VariablesState>& bracnhes_variables_state, const FilePos& file_pos )
+{
+	U_UNUSED( file_pos );
+	U_ASSERT( !bracnhes_variables_state.empty() );
+
+	VariablesState result;
+
+	// SPRACHE_TODO - check moving. Disallow conditional moving.
+
+	for( const VariablesState& branch_state : bracnhes_variables_state )
+	{
+		U_ASSERT( branch_state.variables_.size() == bracnhes_variables_state.front().variables_.size() );
+		for (const auto& variable_pair : branch_state.variables_ )
+		{
+			VariablesState::VariableEntry& result_entry= result.variables_[variable_pair.first];
+			for( auto& reference : variable_pair.second.inner_references )
+			{
+				const auto it= result_entry.inner_references.find( reference.first );
+				if( it == result_entry.inner_references.end() )
+				{
+					// Ok, inserted one time.
+					result_entry.inner_references.insert( reference );
+				}
+				else
+				{
+					// If linked as mutable and as immutable in different branches - result is mutable.
+					if( !it->second.IsMutable() && reference.second.IsMutable() )
+						it->second= reference.second;
+				}
+			}
+		}
+	} // for branches.
+
+	return result;
 }
 
 U_FundamentalType CodeBuilder::GetNumericConstantType( const Synt::NumericConstant& number )

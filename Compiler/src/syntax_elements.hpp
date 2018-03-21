@@ -410,9 +410,10 @@ public:
 		BlockPtr block;
 	};
 
-	IfOperator( const FilePos& file_pos, std::vector<Branch> branches );
+	IfOperator( const FilePos& start_file_pos, const FilePos& end_file_pos, std::vector<Branch> branches );
 
-	std::vector<Branch> branches_; // else if()
+	const std::vector<Branch> branches_; // else if()
+	const FilePos end_file_pos_;
 };
 
 class SingleExpressionOperator final : public SyntaxElementBase, public IBlockElement

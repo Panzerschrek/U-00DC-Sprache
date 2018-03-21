@@ -1547,6 +1547,7 @@ IBlockElementPtr SyntaxAnalyzer::ParseIfOperator()
 		IBlockElementPtr(
 			new IfOperator(
 				op_pos,
+				std::prev( it_ )->file_pos,
 				std::move( branches ) ) );
 }
 
