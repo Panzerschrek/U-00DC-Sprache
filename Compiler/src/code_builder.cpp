@@ -3392,6 +3392,9 @@ void CodeBuilder::BuildWhileOperatorCode(
 	const StackVariablesStorage temp_variables_storage( function_context );
 	const Value condition_expression= BuildExpressionCode( *while_operator.condition_, names, function_context );
 
+	VariablesState variables_state_before_while= function_context.variables_state;
+	variables_state_before_while.DeactivateLocks();
+
 	if( condition_expression.GetType() != NontypeStub::TemplateDependentValue &&
 		condition_expression.GetType().GetTemplateDependentType() == nullptr )
 	{
@@ -3431,6 +3434,8 @@ void CodeBuilder::BuildWhileOperatorCode(
 	// Block after while code.
 	function_context.function->getBasicBlockList().push_back( block_after_while );
 	function_context.llvm_ir_builder.SetInsertPoint( block_after_while );
+
+	CheckWhileBlokVariablesState( variables_state_before_while, function_context.variables_state, while_operator.block_->end_file_pos_ );
 }
 
 void CodeBuilder::BuildBreakOperatorCode(
@@ -4001,6 +4006,32 @@ VariablesState CodeBuilder::MergeVariablesStateAfterIf( const std::vector<Variab
 	} // for branches.
 
 	return result;
+}
+
+void CodeBuilder::CheckWhileBlokVariablesState( const VariablesState& state_before, const VariablesState& state_after, const FilePos& file_pos )
+{
+	U_ASSERT( state_before.variables_.size() == state_after.variables_.size() );
+
+	// SPRACHE_TODO - detect also moving of outer variables inside loop.
+
+	for( const auto& var_before : state_before.variables_ )
+	{
+		U_ASSERT( state_after.variables_.find( var_before.first ) != state_after.variables_.end() );
+		const auto& var_after= *state_after.variables_.find( var_before.first );
+
+		U_ASSERT( var_before.second.inner_references.size() <= var_after.second.inner_references.size() ); // Currently, can only add references.
+
+		for( const auto& reference_after : var_after.second.inner_references )
+		{
+			const auto reference_before_it= var_before.second.inner_references.find( reference_after.first );
+			if( reference_before_it == var_before.second.inner_references.end() )
+			{
+				//add reference in while loop
+				if( reference_after.second.IsMutable() )
+					errors_.push_back( ReportMutableReferencePollutionOfOuterLoopVariable( file_pos, var_before.first->name, reference_after.first->name ) );
+			}
+		}
+	}
 }
 
 U_FundamentalType CodeBuilder::GetNumericConstantType( const Synt::NumericConstant& number )

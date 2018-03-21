@@ -284,4 +284,71 @@ U_TEST( IfMergeTest9_ConditionAffectsLowerBranches3 )
 	U_TEST_ASSERT( error.file_pos.line == 10u );
 }
 
+U_TEST( WhileMergeTest0_MutablePollutionInsideLoop0 )
+{
+	static const char c_program_text[]=
+	R"(
+		struct S { i32 &mut x; }
+		fn Link( S &mut s'a', i32&'b mut x ) ' a <- mut b ' {}
+		fn Foo()
+		{
+			var i32 mut x= 0, mut y= 0;
+			var S mut s{ .x= x };
+
+			while(true)
+			{
+				Link( s, y ); // error, pollution for outer variables does not allowed.
+			}
+		}
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::MutableReferencePollutionOfOuterLoopVariable );
+	U_TEST_ASSERT( error.file_pos.line == 12u );
+}
+
+U_TEST( WhileMergeTest1_MutablePollutionInsideLoop1 )
+{
+	static const char c_program_text[]=
+	R"(
+		struct S { i32 &mut x; }
+		fn Foo()
+		{
+			var i32 mut x= 0;
+
+			while(true)
+			{
+				var S mut s{ .x= x }; // ok, pollution of inner loop variable by outer loop variable.
+			}
+		}
+	)";
+
+	BuildProgram( c_program_text );
+}
+
+U_TEST( WhileMergeTest2_MutablePollutionInsideLoop2 )
+{
+	static const char c_program_text[]=
+	R"(
+		struct S { i32 &imut x; }
+		fn Link( S &mut s'a', i32&'b imut x ) ' a <- imut b ' {}
+		fn Foo()
+		{
+			var i32 imut x= 0, imut y= 0;
+			var S mut s{ .x= x };
+
+			while(true)
+			{
+				Link( s, y ); // error, immutable pollution for oter loop variables.
+			}
+		}
+	)";
+
+	BuildProgram( c_program_text );
+}
+
 } // namespace U
