@@ -94,7 +94,7 @@ boost::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 		args.back().is_mutable= r_var->value_type == ValueType::Reference;
 	}
 	errors_.resize( error_count_before );
-	function_context.variables_state.ActiavateLocks();
+	function_context.variables_state.ActivateLocks();
 
 	// Apply here move-assignment for class types.
 	if( needs_move_assign )
@@ -114,7 +114,7 @@ boost::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 			{
 				for( const auto& inner_reference : function_context.variables_state.GetVariableReferences( r_var_variable ) )
 				{
-					const bool ok= function_context.variables_state.AddLink( l_var_variable, inner_reference.first, inner_reference.second.IsMutable() );
+					const bool ok= function_context.variables_state.AddPollution( l_var_variable, inner_reference.first, inner_reference.second.IsMutable() );
 					if( !ok )
 						errors_.push_back( ReportReferenceProtectionError( file_pos, inner_reference.first->name ) );
 				}
@@ -1284,7 +1284,7 @@ Value CodeBuilder::BuildIndexationOperator(
 			args.back().is_mutable= index_variable->value_type == ValueType::Reference;
 		}
 		errors_.resize( error_count_before );
-		function_context.variables_state.ActiavateLocks();
+		function_context.variables_state.ActivateLocks();
 
 		const FunctionVariable* const overloaded_operator=
 			GetOverloadedOperator( args, OverloadedOperator::Indexing, indexation_operator.file_pos_ );
@@ -1552,7 +1552,7 @@ Value CodeBuilder::BuildCallOperator(
 		if( args_are_template_dependent )
 			return Value( Type(NontypeStub::TemplateDependentValue), call_operator.file_pos_ );
 	}
-	function_context.variables_state.ActiavateLocks();
+	function_context.variables_state.ActivateLocks();
 
 	// SPRACHE_TODO - try get function with "this" parameter in signature and without it.
 	// We must support static functions call using "this".
@@ -1884,7 +1884,7 @@ Value CodeBuilder::DoCallFunction(
 			{
 				const bool is_mutable= function_type.args[arg_n].is_mutable;
 				for( const StoredVariablePtr& var : arg_to_variables[arg_n] )
-					function_context.variables_state.AddLink( stored_result, var, is_mutable );
+					function_context.variables_state.AddPollution( stored_result, var, is_mutable );
 			}
 		}
 
@@ -1900,7 +1900,7 @@ Value CodeBuilder::DoCallFunction(
 			{
 				const VariablesState::AchievableVariables achievable_variables= function_context.variables_state.RecursiveGetAllReferencedVariables( var );
 				for( const auto& referenced_variable_pair : achievable_variables.variables )
-					function_context.variables_state.AddLink( stored_result, referenced_variable_pair, achievable_variables.any_variable_is_mutable );
+					function_context.variables_state.AddPollution( stored_result, referenced_variable_pair, achievable_variables.any_variable_is_mutable );
 			}
 		}
 	}
@@ -1949,7 +1949,7 @@ Value CodeBuilder::DoCallFunction(
 
 				for( const StoredVariablePtr& src_variable : src_variables )
 				{
-					const bool ok= function_context.variables_state.AddLink( dst_variable, src_variable, src_variables_is_mutable );
+					const bool ok= function_context.variables_state.AddPollution( dst_variable, src_variable, src_variables_is_mutable );
 					if( !ok )
 						errors_.push_back( ReportReferenceProtectionError( call_file_pos, src_variable->name ) );
 				}

@@ -706,6 +706,11 @@ StoredVariable::StoredVariable(
 //
 // VariablesState
 //
+
+VariablesState::VariablesState( VariablesContainer variables )
+	: variables_(std::move(variables))
+{}
+
 void VariablesState::AddVariable( const StoredVariablePtr& var )
 {
 	U_ASSERT( variables_.find(var) == variables_.end() );
@@ -718,7 +723,7 @@ void VariablesState::RemoveVariable( const StoredVariablePtr& var )
 	variables_.erase(var);
 }
 
-bool VariablesState::AddLink( const StoredVariablePtr& dst, const StoredVariablePtr& src, bool is_mutable )
+bool VariablesState::AddPollution( const StoredVariablePtr& dst, const StoredVariablePtr& src, bool is_mutable )
 {
 	U_ASSERT( variables_.find(dst) != variables_.end() );
 
@@ -742,7 +747,7 @@ bool VariablesState::AddLink( const StoredVariablePtr& dst, const StoredVariable
 	return true;
 }
 
-void VariablesState::AddLinkForArgInnerVariable( const StoredVariablePtr& arg, const StoredVariablePtr& inner_variable )
+void VariablesState::AddPollutionForArgInnerVariable( const StoredVariablePtr& arg, const StoredVariablePtr& inner_variable )
 {
 	U_ASSERT( variables_.find(arg) != variables_.end() );
 
@@ -779,6 +784,11 @@ const VariablesState::VariableReferences& VariablesState::GetVariableReferences(
 	return it->second.inner_references;
 }
 
+const VariablesState::VariablesContainer& VariablesState::GetVariables() const
+{
+	return variables_;
+}
+
 VariablesState::AchievableVariables VariablesState::RecursiveGetAllReferencedVariables( const StoredVariablePtr& var ) const
 {
 	U_ASSERT( var->kind == StoredVariable::Kind::Variable );
@@ -802,7 +812,7 @@ VariablesState::AchievableVariables VariablesState::RecursiveGetAllReferencedVar
 	return result;
 }
 
-void VariablesState::ActiavateLocks()
+void VariablesState::ActivateLocks()
 {
 	for( auto& variable_pair : variables_ )
 		for( auto& ref_pair : variable_pair.second.inner_references )

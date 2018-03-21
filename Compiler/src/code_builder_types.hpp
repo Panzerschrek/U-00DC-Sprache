@@ -305,7 +305,7 @@ public:
 		StoredVariablePtr variable; // TODO - does it needs here?
 		VariableStorageUseCounter use_counter;
 		bool is_mutable= true;
-		bool IsMutable() const{ return use_counter == variable->mut_use_counter; }
+		bool IsMutable() const { return is_mutable; }
 	};
 	using VariableReferences= std::unordered_map<StoredVariablePtr, Reference>;
 
@@ -321,22 +321,29 @@ public:
 		bool any_variable_is_mutable= false;
 	};
 
+	using VariablesContainer= std::unordered_map<StoredVariablePtr, VariableEntry>;
+
+public:
+	VariablesState()= default;
+	explicit VariablesState( VariablesContainer variables );
+
 	void AddVariable( const StoredVariablePtr& var );
 	void RemoveVariable( const StoredVariablePtr& var );
-	bool AddLink( const StoredVariablePtr& dst, const StoredVariablePtr& src, bool is_mutable ); // returns true, if ok
-	void AddLinkForArgInnerVariable( const StoredVariablePtr& arg, const StoredVariablePtr& inner_variable );
+	bool AddPollution( const StoredVariablePtr& dst, const StoredVariablePtr& src, bool is_mutable ); // returns true, if ok
+	void AddPollutionForArgInnerVariable( const StoredVariablePtr& arg, const StoredVariablePtr& inner_variable );
 	void Move( const StoredVariablePtr& var ); // returns true, if ok
 	bool VariableIsMoved( const StoredVariablePtr& var ) const;
 
+	const VariablesContainer& GetVariables() const;
 	const VariableReferences& GetVariableReferences( const StoredVariablePtr& var ) const;
 	AchievableVariables RecursiveGetAllReferencedVariables( const StoredVariablePtr& stored_variable ) const;
 
-	// For merging of if-else we needs deactivate and reactivate locks.
-	void ActiavateLocks();
+	// For merging of 'if-else' and 'while' we needs deactivate and reactivate locks.
+	void ActivateLocks();
 	void DeactivateLocks();
-//private:
 
-	std::unordered_map<StoredVariablePtr, VariableEntry> variables_;
+private:
+	VariablesContainer variables_;
 };
 
 struct VaraibleReferencesCounter

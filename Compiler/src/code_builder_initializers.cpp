@@ -507,7 +507,7 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 				initializer_value.GetType() == variable.type &&
 				initializer_value.GetVariable()->value_type == ValueType::Value ;
 
-			function_context.variables_state.ActiavateLocks();
+			function_context.variables_state.ActivateLocks();
 		}
 		if( needs_move_constuct )
 		{
@@ -518,7 +518,7 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 			U_ASSERT( initializer_variable.referenced_variables.size() == 1u );
 			for( const auto& inner_variable : function_context.variables_state.GetVariableReferences( *initializer_variable.referenced_variables.begin() ) )
 			{
-				const bool ok= function_context.variables_state.AddLink( variable_storage, inner_variable.first, inner_variable.second.IsMutable() );
+				const bool ok= function_context.variables_state.AddPollution( variable_storage, inner_variable.first, inner_variable.second.IsMutable() );
 				if( !ok )
 					errors_.push_back( ReportReferenceProtectionError( call_operator.file_pos_, inner_variable.first->name ) );
 			}
@@ -611,7 +611,7 @@ llvm::Constant* CodeBuilder::ApplyExpressionInitializer(
 		{
 			for( const auto& inner_variable : function_context.variables_state.GetVariableReferences( referenced_variable ) )
 			{
-				const bool ok= function_context.variables_state.AddLink( variable_storage, inner_variable.first, inner_variable.second.IsMutable() );
+				const bool ok= function_context.variables_state.AddPollution( variable_storage, inner_variable.first, inner_variable.second.IsMutable() );
 				if( !ok )
 					errors_.push_back( ReportReferenceProtectionError( initializer.file_pos_, inner_variable.first->name ) );
 			}
@@ -818,7 +818,7 @@ void CodeBuilder::InitializeReferenceField(
 
 	for( const StoredVariablePtr& referenced_variable : initializer_variable->referenced_variables )
 	{
-		const bool ok= function_context.variables_state.AddLink( variable_storage, referenced_variable, field.is_mutable );
+		const bool ok= function_context.variables_state.AddPollution( variable_storage, referenced_variable, field.is_mutable );
 		if( !ok )
 			errors_.push_back( ReportReferenceProtectionError( initializer.GetFilePos(), referenced_variable->name ) );
 	}

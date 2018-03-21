@@ -1991,7 +1991,7 @@ void CodeBuilder::BuildFuncCode(
 			if (arg.type.ReferencesTagsCount() > 0u )
 			{
 				const StoredVariablePtr inner_variable = std::make_shared<StoredVariable>( Keyword(Keywords::this_) + " inner reference"_SpC, Variable(), StoredVariable::Kind::ArgInnerVariable );
-				function_context.variables_state.AddLinkForArgInnerVariable( this_storage, inner_variable );
+				function_context.variables_state.AddPollutionForArgInnerVariable( this_storage, inner_variable );
 				function_context.variables_state.AddVariable( inner_variable );
 				args_stored_variables[arg_number].second= inner_variable;
 			}
@@ -2057,7 +2057,7 @@ void CodeBuilder::BuildFuncCode(
 			U_ASSERT( arg.type.ReferencesTagsCount() == 1u ); // Currently, support 0 or 1 tags.
 			const StoredVariablePtr inner_variable = std::make_shared<StoredVariable>( arg_name + " inner reference"_SpC, Variable(), StoredVariable::Kind::ArgInnerVariable );
 			function_context.variables_state.AddVariable( inner_variable );
-			function_context.variables_state.AddLinkForArgInnerVariable( var_storage, inner_variable );
+			function_context.variables_state.AddPollutionForArgInnerVariable( var_storage, inner_variable );
 			args_stored_variables[arg_number].second= inner_variable;
 		}
 
@@ -2719,7 +2719,7 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 
 			const bool is_mutable= variable.value_type == ValueType::Reference;
 			for( const StoredVariablePtr& referenced_variable : variable.referenced_variables )
-				function_context.variables_state.AddLink( stored_variable, referenced_variable, is_mutable );
+				function_context.variables_state.AddPollution( stored_variable, referenced_variable, is_mutable );
 			CheckReferencedVariables( stored_variable->content, variable_declaration.file_pos );
 
 			// TODO - maybe make copy of varaible address in new llvm register?
@@ -2863,7 +2863,7 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 
 		const bool is_mutable= variable.value_type == ValueType::Reference;
 		for( const StoredVariablePtr& referenced_variable : variable.referenced_variables )
-			function_context.variables_state.AddLink( stored_variable, referenced_variable, is_mutable );
+			function_context.variables_state.AddPollution( stored_variable, referenced_variable, is_mutable );
 		CheckReferencedVariables( variable, auto_variable_declaration.file_pos_ );
 	}
 	else if( auto_variable_declaration.reference_modifier == ReferenceModifier::None )
@@ -2923,12 +2923,12 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 
 		// Take references inside variables in initializer expression.
 		for( const auto& ref : moved_variable_referenced_variables )
-			function_context.variables_state.AddLink( stored_variable, ref.first, ref.second.IsMutable() );
+			function_context.variables_state.AddPollution( stored_variable, ref.first, ref.second.IsMutable() );
 		for( const StoredVariablePtr& referenced_variable : initializer_experrsion.referenced_variables )
 		{
 			for( const auto& inner_variable_pair : function_context.variables_state.GetVariableReferences( referenced_variable ) )
 			{
-				const bool ok= function_context.variables_state.AddLink( stored_variable, inner_variable_pair.first, inner_variable_pair.second.IsMutable() );
+				const bool ok= function_context.variables_state.AddPollution( stored_variable, inner_variable_pair.first, inner_variable_pair.second.IsMutable() );
 				if(!ok)
 					errors_.push_back( ReportReferenceProtectionError( auto_variable_declaration.file_pos_, inner_variable_pair.first->name ) );
 			}
@@ -3518,7 +3518,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildIfOperatorCode(
 		else
 		{
 			function_context.variables_state= conditions_variable_state;
-			function_context.variables_state.ActiavateLocks();
+			function_context.variables_state.ActivateLocks();
 			conditions_variable_state.DeactivateLocks();
 			{
 				const StackVariablesStorage temp_variables_storage( function_context );
@@ -3564,7 +3564,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildIfOperatorCode(
 		bracnhes_variables_state[i]= function_context.variables_state;
 		bracnhes_variables_state[i].DeactivateLocks();
 		function_context.variables_state= conditions_variable_state;
-		function_context.variables_state.ActiavateLocks();
+		function_context.variables_state.ActivateLocks();
 	}
 
 	U_ASSERT( next_condition_block == block_after_if );
@@ -3579,8 +3579,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildIfOperatorCode(
 	}
 
 	function_context.variables_state= MergeVariablesStateAfterIf( bracnhes_variables_state, if_operator.end_file_pos_ );
-	function_context.variables_state.ActiavateLocks();
-	for( const auto& var_pair : function_context.variables_state.variables_ )
+	function_context.variables_state.ActivateLocks();
+	for( const auto& var_pair : function_context.variables_state.GetVariables() )
 		CheckVariableReferences( *var_pair.first, if_operator.end_file_pos_ );
 
 	// Block after if code.
@@ -3977,16 +3977,16 @@ VariablesState CodeBuilder::MergeVariablesStateAfterIf( const std::vector<Variab
 	U_UNUSED( file_pos );
 	U_ASSERT( !bracnhes_variables_state.empty() );
 
-	VariablesState result;
+	VariablesState::VariablesContainer result;
 
 	// SPRACHE_TODO - check moving. Disallow conditional moving.
 
 	for( const VariablesState& branch_state : bracnhes_variables_state )
 	{
-		U_ASSERT( branch_state.variables_.size() == bracnhes_variables_state.front().variables_.size() );
-		for (const auto& variable_pair : branch_state.variables_ )
+		U_ASSERT( branch_state.GetVariables().size() == bracnhes_variables_state.front().GetVariables().size() );
+		for (const auto& variable_pair : branch_state.GetVariables() )
 		{
-			VariablesState::VariableEntry& result_entry= result.variables_[variable_pair.first];
+			VariablesState::VariableEntry& result_entry= result[variable_pair.first];
 			for( auto& reference : variable_pair.second.inner_references )
 			{
 				const auto it= result_entry.inner_references.find( reference.first );
@@ -4005,19 +4005,19 @@ VariablesState CodeBuilder::MergeVariablesStateAfterIf( const std::vector<Variab
 		}
 	} // for branches.
 
-	return result;
+	return VariablesState(std::move(result));
 }
 
 void CodeBuilder::CheckWhileBlokVariablesState( const VariablesState& state_before, const VariablesState& state_after, const FilePos& file_pos )
 {
-	U_ASSERT( state_before.variables_.size() == state_after.variables_.size() );
+	U_ASSERT( state_before.GetVariables().size() == state_after.GetVariables().size() );
 
 	// SPRACHE_TODO - detect also moving of outer variables inside loop.
 
-	for( const auto& var_before : state_before.variables_ )
+	for( const auto& var_before : state_before.GetVariables() )
 	{
-		U_ASSERT( state_after.variables_.find( var_before.first ) != state_after.variables_.end() );
-		const auto& var_after= *state_after.variables_.find( var_before.first );
+		U_ASSERT( state_after.GetVariables().find( var_before.first ) != state_after.GetVariables().end() );
+		const auto& var_after= *state_after.GetVariables().find( var_before.first );
 
 		U_ASSERT( var_before.second.inner_references.size() <= var_after.second.inner_references.size() ); // Currently, can only add references.
 
