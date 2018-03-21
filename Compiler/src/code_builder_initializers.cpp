@@ -603,7 +603,6 @@ llvm::Constant* CodeBuilder::ApplyExpressionInitializer(
 		const Variable& expression_result= *expression_result_value.GetVariable();
 
 		// Lock references.
-		// TODO - move this code into function.
 		for( const StoredVariablePtr& referenced_variable : expression_result.referenced_variables )
 		{
 			for( const auto& inner_variable : function_context.variables_state.GetVariableReferences( referenced_variable ) )
@@ -817,7 +816,7 @@ void CodeBuilder::InitializeReferenceField(
 	{
 		const bool ok= function_context.variables_state.AddLink( variable_storage, referenced_variable, field.is_mutable );
 		if( !ok )
-			errors_.push_back( ReportReferenceProtectionError( initializer.GetFilePos(), variable_storage->name /* TODO - use field name */ ) );
+			errors_.push_back( ReportReferenceProtectionError( initializer.GetFilePos(), referenced_variable->name ) );
 	}
 	CheckReferencedVariables( *initializer_variable, initializer.GetFilePos() );
 
