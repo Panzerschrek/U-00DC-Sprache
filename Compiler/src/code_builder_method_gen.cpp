@@ -413,8 +413,8 @@ void CodeBuilder::TryGenerateCopyAssignmentOperator( Class& the_class, const Typ
 			if( field == nullptr )
 				return;
 
-			// We can not generate assignment operator for classes with references.
-			if( field->is_reference || !field->type.IsCopyAssignable() )
+			// We can not generate assignment operator for classes with references, for classes with immutable fields, for classes with noncopyable fields.
+			if( field->is_reference || !field->type.IsCopyAssignable() || !field->is_mutable )
 				all_fields_is_copy_assignable= false;
 		} );
 

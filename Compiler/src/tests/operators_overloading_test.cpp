@@ -689,6 +689,31 @@ U_TEST( GeneratedCopyAssignmentOperatorTest1 )
 	U_TEST_ASSERT( static_cast<uint64_t>( 8888745 ) == result_value.IntVal.getLimitedValue() );
 }
 
+U_TEST( GeneratedCopyAssignmentOperatorTest2 )
+{
+	static const char c_program_text[]=
+	R"(
+		struct A  // Copy-assignment operator not generated, because class contains immutable fields.
+		{
+			i32 imut x;
+			fn constructor() ( x= 0 ){}
+		}
+		fn Foo()
+		{
+			var A mut x, mut y;
+			x= y; // Error, no = operator
+		}
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::OperationNotSupportedForThisType );
+	U_TEST_ASSERT( error.file_pos.line == 10u );
+}
+
 U_TEST( OperatorBodyOutsideClass )
 {
 	static const char c_program_text[]=
