@@ -1096,21 +1096,22 @@ Value CodeBuilder::BuildNamedOperand(
 	{
 		if( function_context.this_ != nullptr )
 		{
-			if( function_context.is_constructor_initializer_list_now )
-			{
-				// SPRACHE_TODO - allow call of static methods and parents methods.
-				errors_.push_back( ReportMethodsCallInConstructorInitializerListIsForbidden( named_operand.file_pos_, named_operand.name_.components.back().name ) );
-				return ErrorValue();
-			}
-
 			// Trying add "this" to functions set.
 			const Class* const class_= function_context.this_->type.GetClassType();
 
+			// SPRACHE_TODO - mabe this kind of search is incorrect?
 			const NamesScope::InsertedName* const same_set_in_class=
 				class_->members.GetThisScopeName( named_operand.name_.components.back().name );
 			// SPRACHE_TODO - add "this" for functions from parent classes.
 			if( name_entry == same_set_in_class )
 			{
+				if( function_context.is_constructor_initializer_list_now )
+				{
+					// SPRACHE_TODO - allow call of static methods and parents methods.
+					errors_.push_back( ReportMethodsCallInConstructorInitializerListIsForbidden( named_operand.file_pos_, named_operand.name_.components.back().name ) );
+					return ErrorValue();
+				}
+
 				ThisOverloadedMethodsSet this_overloaded_methods_set;
 				this_overloaded_methods_set.this_= *function_context.this_;
 				this_overloaded_methods_set.overloaded_methods_set= *overloaded_functions_set;
