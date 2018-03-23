@@ -99,6 +99,7 @@ private:
 		// Also, evaluation of some operators and expressions adds their variables storages.
 		// Do not push/pop to t his stack manually!
 		std::vector<StackVariablesStorage*> stack_variables_stack;
+		VariablesState variables_state;
 
 		llvm::BasicBlock* destructor_end_block= nullptr; // exists, if function is destructor
 	};
@@ -254,22 +255,6 @@ private:
 		bool force_prototype,
 		ClassProxyPtr base_class,
 		NamesScope& scope );
-
-	void ProcessFunctionArgReferencesTags(
-		const Synt::Function& func,
-		Function& function_type,
-		const Synt::FunctionArgument& in_arg,
-		const Function::Arg& out_arg,
-		size_t arg_number );
-
-	void TryGenerateFunctionReturnReferencesMapping(
-		const Synt::Function& func,
-		Function& function_type );
-
-	void ProcessFunctionReferencesPollution(
-		const Synt::Function& func,
-		Function& function_type,
-		const ClassProxyPtr& base_class );
 
 	void CheckOverloadedOperator(
 		const ClassProxyPtr& base_class,
@@ -482,7 +467,7 @@ private:
 
 	llvm::Constant* ApplyInitializer(
 		const Variable& variable,
-		StoredVariable& variable_storage,
+		const StoredVariablePtr& variable_storage,
 		const Synt::IInitializer& initializer,
 		NamesScope& block_names,
 		FunctionContext& function_context );
@@ -495,28 +480,28 @@ private:
 
 	llvm::Constant* ApplyArrayInitializer(
 		const Variable& variable,
-		StoredVariable& variable_storage,
+		const StoredVariablePtr& variable_storage,
 		const Synt::ArrayInitializer& initializer,
 		NamesScope& block_names,
 		FunctionContext& function_context );
 
 	void ApplyStructNamedInitializer(
 		const Variable& variable,
-		StoredVariable& variable_storage,
+		const StoredVariablePtr& variable_storage,
 		const Synt::StructNamedInitializer& initializer,
 		NamesScope& block_names,
 		FunctionContext& function_context );
 
 	llvm::Constant* ApplyConstructorInitializer(
 		const Variable& variable,
-		StoredVariable& variable_storage,
+		const StoredVariablePtr& variable_storage,
 		const Synt::CallOperator& call_operator,
 		NamesScope& block_names,
 		FunctionContext& function_context );
 
 	llvm::Constant* ApplyExpressionInitializer(
 		const Variable& variable,
-		StoredVariable& variable_storage,
+		const StoredVariablePtr& variable_storage,
 		const Synt::ExpressionInitializer& initializer,
 		NamesScope& block_names,
 		FunctionContext& function_context );
@@ -529,15 +514,35 @@ private:
 
 	void InitializeReferenceField(
 		const Variable& variable,
-		StoredVariable& variable_storage,
+		const StoredVariablePtr& variable_storage,
 		const ClassField& field,
 		const Synt::IInitializer& initializer,
 		NamesScope& block_names,
 		FunctionContext& function_context );
 
 	// Reference-checking.
+	void ProcessFunctionArgReferencesTags(
+		const Synt::Function& func,
+		Function& function_type,
+		const Synt::FunctionArgument& in_arg,
+		const Function::Arg& out_arg,
+		size_t arg_number );
+
+	void TryGenerateFunctionReturnReferencesMapping(
+		const Synt::Function& func,
+		Function& function_type );
+
+	void ProcessFunctionReferencesPollution(
+		const Synt::Function& func,
+		Function& function_type,
+		const ClassProxyPtr& base_class );
+
 	void CheckReferencedVariables( const Variable& reference, const FilePos& file_pos );
+	void CheckVariableReferences( const StoredVariable& var, const FilePos& file_pos );
 	std::vector<VariableStorageUseCounter> LockReferencedVariables( const Variable& reference );
+
+	VariablesState MergeVariablesStateAfterIf( const std::vector<VariablesState>& bracnhes_variables_state, const FilePos& file_pos );
+	void CheckWhileBlokVariablesState( const VariablesState& state_before, const VariablesState& state_after, const FilePos& file_pos );
 
 	// Name resolving.
 

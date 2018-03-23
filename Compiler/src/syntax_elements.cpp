@@ -184,9 +184,10 @@ ContinueOperator::ContinueOperator( const FilePos& file_pos )
 	: SyntaxElementBase(file_pos)
 {}
 
-IfOperator::IfOperator( const FilePos& file_pos, std::vector<Branch> branches )
-	: SyntaxElementBase(file_pos)
+IfOperator::IfOperator( const FilePos& start_file_pos, const FilePos& end_file_pos, std::vector<Branch> branches )
+	: SyntaxElementBase(start_file_pos)
 	, branches_( std::move( branches ) )
+	, end_file_pos_(end_file_pos)
 {}
 
 SingleExpressionOperator::SingleExpressionOperator( const FilePos& file_pos, IExpressionComponentPtr expression )

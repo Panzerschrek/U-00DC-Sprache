@@ -703,16 +703,129 @@ StoredVariable::StoredVariable(
 	, kind(in_kind), is_global_constant(in_is_global_constant)
 {}
 
-void StoredVariable::Move()
+//
+// VariablesState
+//
+
+VariablesState::VariablesState( VariablesContainer variables )
+	: variables_(std::move(variables))
+{}
+
+void VariablesState::AddVariable( const StoredVariablePtr& var )
 {
-	U_ASSERT( !moved );
-	moved= true;
-	referenced_variables.clear();
+	U_ASSERT( variables_.find(var) == variables_.end() );
+	variables_[var]= VariableEntry();
 }
 
-bool StoredVariable::IsMoved() const
+void VariablesState::RemoveVariable( const StoredVariablePtr& var )
 {
-	return moved;
+	U_ASSERT( variables_.find(var) != variables_.end() );
+	variables_.erase(var);
+}
+
+bool VariablesState::AddPollution( const StoredVariablePtr& dst, const StoredVariablePtr& src, bool is_mutable )
+{
+	U_ASSERT( variables_.find(dst) != variables_.end() );
+
+	VariableEntry& variable_entry= variables_.find(dst)->second;
+
+	const auto it= variable_entry.inner_references.find(src);
+	if( it == variable_entry.inner_references.end() )
+	{
+		Reference ref;
+		ref.use_counter= is_mutable ? src->mut_use_counter : src->imut_use_counter;
+		ref.is_mutable= is_mutable;
+		variable_entry.inner_references[src]= ref;
+	}
+	else
+	{
+		if( it->second.IsMutable() || is_mutable ) // Error - link mutable not once.
+			return false;
+	}
+
+	return true;
+}
+
+void VariablesState::AddPollutionForArgInnerVariable( const StoredVariablePtr& arg, const StoredVariablePtr& inner_variable )
+{
+	U_ASSERT( variables_.find(arg) != variables_.end() );
+
+	VariableEntry& variable_entry= variables_.find(arg)->second;
+	U_ASSERT( variable_entry.inner_references.find(inner_variable) == variable_entry.inner_references.end() );
+
+	Reference ref;
+	ref.use_counter= nullptr;
+	ref.is_arg_inner_variable= true;
+	variable_entry.inner_references[inner_variable]= ref;
+}
+
+void VariablesState::Move( const StoredVariablePtr& var )
+{
+	const auto it= variables_.find(var);
+	U_ASSERT( it != variables_.end() );
+	U_ASSERT( !it->second.is_moved );
+
+	it->second.is_moved= true;
+	it->second.inner_references.clear();
+}
+
+bool VariablesState::VariableIsMoved( const StoredVariablePtr& var ) const
+{
+	const auto it= variables_.find(var);
+	U_ASSERT( it != variables_.end() );
+	return it->second.is_moved;
+}
+
+const VariablesState::VariableReferences& VariablesState::GetVariableReferences( const StoredVariablePtr& var ) const
+{
+	const auto it= variables_.find(var);
+	U_ASSERT( it != variables_.end() );
+	return it->second.inner_references;
+}
+
+const VariablesState::VariablesContainer& VariablesState::GetVariables() const
+{
+	return variables_;
+}
+
+VariablesState::AchievableVariables VariablesState::RecursiveGetAllReferencedVariables( const StoredVariablePtr& var ) const
+{
+	U_ASSERT( var->kind == StoredVariable::Kind::Variable );
+	U_ASSERT( variables_.find(var) != variables_.end() );
+	const VariableEntry& var_entry= variables_.find(var)->second;
+
+	AchievableVariables result;
+
+	for( const auto& referenced_variable_pair : var_entry.inner_references )
+	{
+		result.variables.insert( referenced_variable_pair.first );
+		const AchievableVariables achievable_variables=
+			RecursiveGetAllReferencedVariables(referenced_variable_pair.first);
+		result.variables.insert( achievable_variables.variables.begin(), achievable_variables.variables.end() );
+
+		if( referenced_variable_pair.second.IsMutable() ||
+			achievable_variables.any_variable_is_mutable )
+			result.any_variable_is_mutable= true;
+	}
+
+	return result;
+}
+
+void VariablesState::ActivateLocks()
+{
+	for( auto& variable_pair : variables_ )
+		for( auto& ref_pair : variable_pair.second.inner_references )
+		{
+			if( !ref_pair.second.is_arg_inner_variable )
+				ref_pair.second.use_counter= ref_pair.second.is_mutable ? ref_pair.first->mut_use_counter : ref_pair.first->imut_use_counter;
+		}
+}
+
+void VariablesState::DeactivateLocks()
+{
+	for( auto& variable_pair : variables_ )
+		for( auto& ref_pair : variable_pair.second.inner_references )
+			ref_pair.second.use_counter= nullptr;
 }
 
 //

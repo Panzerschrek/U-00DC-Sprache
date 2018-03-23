@@ -115,6 +115,7 @@ enum class CodeBuilderErrorCode : unsigned int
 	InvalidReferenceTagCount,
 	SelfReferencePollution,
 	ArgReferencePollution,
+	MutableReferencePollutionOfOuterLoopVariable,
 	UnallowedReferencePollution,
 	ReferencePollutionForArgReference,
 	ExplicitReferencePollutionForCopyConstructor,
@@ -221,6 +222,7 @@ CodeBuilderError ReportReturningUnallowedReference( const FilePos& file_pos ); /
 CodeBuilderError ReportInvalidReferenceTagCount( const FilePos& file_pos, size_t given, size_t required );
 CodeBuilderError ReportSelfReferencePollution( const FilePos& file_pos );
 CodeBuilderError ReportArgReferencePollution( const FilePos& file_pos );
+CodeBuilderError ReportMutableReferencePollutionOfOuterLoopVariable( const FilePos& file_pos, const ProgramString& dst_name, const ProgramString& src_name );
 CodeBuilderError ReportUnallowedReferencePollution( const FilePos& file_pos ); // TODO - add some string information
 CodeBuilderError ReportReferencePollutionForArgReference( const FilePos& file_pos ); // TODO - add some string information
 CodeBuilderError ReportExplicitReferencePollutionForCopyConstructor( const FilePos& file_pos );

@@ -931,6 +931,17 @@ CodeBuilderError ReportArgReferencePollution( const FilePos& file_pos )
 	return error;
 }
 
+CodeBuilderError ReportMutableReferencePollutionOfOuterLoopVariable( const FilePos& file_pos, const ProgramString& dst_name, const ProgramString& src_name )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::MutableReferencePollutionOfOuterLoopVariable;
+
+	error.text= "Mutable reference pollution for outer variables inside loop. \""_SpC + dst_name + "\" polluted by \""_SpC + src_name + "\"."_SpC;
+
+	return error;
+}
+
 CodeBuilderError ReportUnallowedReferencePollution( const FilePos& file_pos )
 {
 	CodeBuilderError error;
