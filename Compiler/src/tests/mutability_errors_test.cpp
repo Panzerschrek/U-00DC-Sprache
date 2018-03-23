@@ -165,4 +165,137 @@ U_TEST(BindingConstReferenceToNonconstReferenceTest8)
 	U_TEST_ASSERT( error.file_pos.line == 8u );
 }
 
+U_TEST(ImmutableClassField_Test0)
+{
+	// Mutating class field via member access operator.
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			i32 imut x;
+		}
+		fn Foo()
+		{
+			var S mut s {.x= 42 };
+			s.x= 34;
+		}
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedReferenceValue );
+	U_TEST_ASSERT( error.file_pos.line == 9u );
+}
+
+U_TEST(ImmutableClassField_Test1)
+{
+	// Mutating class field via implicit this.
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			i32 imut x;
+			fn Foo( mut this )
+			{
+				x= 34;
+			}
+		}
+
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedReferenceValue );
+	U_TEST_ASSERT( error.file_pos.line == 7u );
+}
+
+U_TEST(ImmutableClassField_Test2)
+{
+	// Mutating class field via explicit this.
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			i32 imut x;
+			fn Foo( mut this )
+			{
+				this.x= 34;
+			}
+		}
+
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedReferenceValue );
+	U_TEST_ASSERT( error.file_pos.line == 7u );
+}
+
+
+U_TEST(ImmutableClassField_Test3)
+{
+	// Mutating class field in constructor is forbidden. But initializing must be ok.
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			i32 imut x;
+			fn constructor( i32 in_x )
+			( x= in_x ) // ok
+			{
+				++x; // error
+			}
+		}
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedReferenceValue );
+	U_TEST_ASSERT( error.file_pos.line == 8u );
+}
+
+U_TEST(ImmutableClassField_Test4)
+{
+	// Mutating class field in constructor initializer list.
+	static const char c_program_text[]=
+	R"(
+		fn Mutate( i32 &mut x ) : i32
+		{
+			++x;
+			return x;
+		}
+		struct S
+		{
+			i32 imut x;
+			i32 y;
+			fn constructor( i32 in_x )
+				(
+					x= in_x,
+					y( Mutate(x) ) // error, mutating already initialized immutable field.
+				)
+			{}
+		}
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::CouldNotSelectOverloadedFunction );
+	U_TEST_ASSERT( error.file_pos.line == 14u );
+}
+
 } // namespace U

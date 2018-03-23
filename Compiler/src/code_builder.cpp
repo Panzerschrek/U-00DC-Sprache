@@ -652,7 +652,7 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 
 			if( out_field.is_reference ) // Reference-fields are immutable by default
 				out_field.is_mutable= in_field->mutability_modifier == Synt::MutabilityModifier::Mutable;
-			else // But value-fields are immutable by default
+			else // But value-fields are mutable by default
 				out_field.is_mutable= in_field->mutability_modifier != Synt::MutabilityModifier::Immutable;
 
 			if( !out_field.is_reference && out_field.type.IsIncomplete() )

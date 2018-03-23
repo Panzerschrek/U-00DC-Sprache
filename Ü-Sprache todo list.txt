@@ -6,7 +6,6 @@ Common:
 *) public/private/protected for class/struct members
 *) sizeof operator
 *) Moving for stack variables
-*) Immutable fields
 *) raw_pointer
 *) Inheritance and virtual methods
 *) Unsafe

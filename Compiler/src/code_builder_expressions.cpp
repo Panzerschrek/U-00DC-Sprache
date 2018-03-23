@@ -1066,7 +1066,7 @@ Value CodeBuilder::BuildNamedOperand(
 		Variable field_variable;
 		field_variable.type= field->type;
 		field_variable.location= Variable::Location::Pointer;
-		field_variable.value_type= function_context.this_->value_type;
+		field_variable.value_type= ( function_context.this_->value_type == ValueType::Reference && field->is_mutable ) ? ValueType::Reference : ValueType::ConstReference;
 		field_variable.referenced_variables= function_context.this_->referenced_variables;
 
 		// Make first index = 0 for array to pointer conversion.
@@ -1426,7 +1426,7 @@ Value CodeBuilder::BuildMemberAccessOperator(
 
 	Variable result;
 	result.location= Variable::Location::Pointer;
-	result.value_type= variable.value_type == ValueType::Reference ? ValueType::Reference : ValueType::ConstReference;
+	result.value_type= ( variable.value_type == ValueType::Reference && field->is_mutable ) ? ValueType::Reference : ValueType::ConstReference;
 	result.referenced_variables= variable.referenced_variables;
 	result.type= field->type;
 	result.llvm_value=
