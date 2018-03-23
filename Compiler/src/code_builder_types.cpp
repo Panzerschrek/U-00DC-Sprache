@@ -735,7 +735,6 @@ bool VariablesState::AddPollution( const StoredVariablePtr& dst, const StoredVar
 		Reference ref;
 		ref.use_counter= is_mutable ? src->mut_use_counter : src->imut_use_counter;
 		ref.is_mutable= is_mutable;
-		ref.variable= src;
 		variable_entry.inner_references[src]= ref;
 	}
 	else
@@ -756,7 +755,7 @@ void VariablesState::AddPollutionForArgInnerVariable( const StoredVariablePtr& a
 
 	Reference ref;
 	ref.use_counter= nullptr;
-	ref.variable= inner_variable;
+	ref.is_arg_inner_variable= true;
 	variable_entry.inner_references[inner_variable]= ref;
 }
 
@@ -817,7 +816,7 @@ void VariablesState::ActivateLocks()
 	for( auto& variable_pair : variables_ )
 		for( auto& ref_pair : variable_pair.second.inner_references )
 		{
-			if( ref_pair.second.variable != nullptr )
+			if( !ref_pair.second.is_arg_inner_variable )
 				ref_pair.second.use_counter= ref_pair.second.is_mutable ? ref_pair.first->mut_use_counter : ref_pair.first->imut_use_counter;
 		}
 }

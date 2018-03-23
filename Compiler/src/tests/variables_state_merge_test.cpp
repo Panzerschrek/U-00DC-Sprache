@@ -343,7 +343,7 @@ U_TEST( WhileMergeTest2_MutablePollutionInsideLoop2 )
 
 			while(true)
 			{
-				Link( s, y ); // error, immutable pollution for oter loop variables.
+				Link( s, y ); // ok, immutable pollution for oter loop variables.
 			}
 		}
 	)";

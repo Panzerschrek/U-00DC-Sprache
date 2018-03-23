@@ -107,17 +107,14 @@ boost::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 		CopyBytes( r_var_real.llvm_value, l_var_real.llvm_value, l_var_real.type, function_context );
 
 		// Write references from src to dst and check it.
-		// TODO - make do this in other place?
 		for( const StoredVariablePtr& l_var_variable : l_var_real.referenced_variables )
+		for( const StoredVariablePtr& r_var_variable : r_var_real.referenced_variables )
 		{
-			for( const StoredVariablePtr& r_var_variable : r_var_real.referenced_variables )
+			for( const auto& inner_reference : function_context.variables_state.GetVariableReferences( r_var_variable ) )
 			{
-				for( const auto& inner_reference : function_context.variables_state.GetVariableReferences( r_var_variable ) )
-				{
-					const bool ok= function_context.variables_state.AddPollution( l_var_variable, inner_reference.first, inner_reference.second.IsMutable() );
-					if( !ok )
-						errors_.push_back( ReportReferenceProtectionError( file_pos, inner_reference.first->name ) );
-				}
+				const bool ok= function_context.variables_state.AddPollution( l_var_variable, inner_reference.first, inner_reference.second.IsMutable() );
+				if( !ok )
+					errors_.push_back( ReportReferenceProtectionError( file_pos, inner_reference.first->name ) );
 			}
 		}
 

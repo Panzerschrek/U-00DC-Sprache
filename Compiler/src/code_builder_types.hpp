@@ -302,9 +302,9 @@ class VariablesState
 public:
 	struct Reference
 	{
-		StoredVariablePtr variable; // TODO - does it needs here?
 		VariableStorageUseCounter use_counter;
 		bool is_mutable= true;
+		bool is_arg_inner_variable= false;
 		bool IsMutable() const { return is_mutable; }
 	};
 	using VariableReferences= std::unordered_map<StoredVariablePtr, Reference>;
