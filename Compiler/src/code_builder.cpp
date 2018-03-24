@@ -1590,6 +1590,14 @@ void CodeBuilder::CheckOverloadedOperator(
 			errors_.push_back( ReportOperatorDoesNotHaveParentClassArguments( file_pos ) );
 		break;
 
+	case OverloadedOperator::Call:
+		if( func_type.args.empty() )
+			errors_.push_back( ReportInvalidArgumentCountForOperator( file_pos ) );
+		// Call operator must have first argument of parent class.
+		if( !func_type.args.empty() && func_type.args[0].type != base_class )
+			errors_.push_back( ReportOperatorDoesNotHaveParentClassArguments( file_pos ) );
+		break;
+
 	case OverloadedOperator::None:
 		U_ASSERT(false);
 	};
@@ -3742,8 +3750,6 @@ const FunctionVariable* CodeBuilder::GetOverloadedOperator(
 
 	return nullptr;
 }
-
-
 
 U_FundamentalType CodeBuilder::GetNumericConstantType( const Synt::NumericConstant& number )
 {

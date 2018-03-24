@@ -1994,15 +1994,23 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 			overloaded_operator= OverloadedOperator::Indexing;
 			break;
 
+		case Lexem::Type::BracketLeft:
+			++it_; U_ASSERT( it_ < it_end_ );
+			if( it_->type != Lexem::Type::BracketRight )
+			{
+				PushErrorMessage( *it_ );
+				return nullptr;
+			}
+			overloaded_operator= OverloadedOperator::Call;
+			break;
+
 		default:
 			PushErrorMessage( *it_ );
 			return nullptr;
 		};
 
 		fn_name.components.emplace_back();
-		fn_name.components.back().name= it_->text;
-		if( overloaded_operator == OverloadedOperator::Indexing )
-			fn_name.components.back().name= "[]"_SpC;
+		fn_name.components.back().name= OverloadedOperatorToString( overloaded_operator );
 
 		++it_; U_ASSERT( it_ < it_end_ );
 	}

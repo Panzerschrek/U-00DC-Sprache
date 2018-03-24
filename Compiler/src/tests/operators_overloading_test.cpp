@@ -607,6 +607,75 @@ U_TEST( OperatorsOverloadingTest_IndexationOperator )
 	U_TEST_ASSERT( static_cast<uint64_t>( 654 ) == result_value.IntVal.getLimitedValue() );
 }
 
+U_TEST( OperatorsOverloadingTest_CallOperator0 )
+{
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			i32 x;
+			op()( mut this ) : i32
+			{
+				++x;
+				return x;
+			}
+		}
+		fn Foo() : i32
+		{
+			var S mut s{ .x= 425 };
+			s();
+			s();
+			s();
+			return s();
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	const llvm::GenericValue result_value= engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+	U_TEST_ASSERT( static_cast<uint64_t>( 425 + 4 ) == result_value.IntVal.getLimitedValue() );
+}
+
+U_TEST( OperatorsOverloadingTest_CallOperator1 )
+{
+	// Multiple () operators in same class.
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			i32 x;
+			op()( mut this ) : i32
+			{
+				++x;
+				return x;
+			}
+			op()( mut this, i32 y ) : i32
+			{
+				x+= y;
+				return x;
+			}
+		}
+		fn Foo() : i32
+		{
+			var S mut s{ .x= 0 };
+			s();
+			s( 77454 );
+			return s.x;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	const llvm::GenericValue result_value= engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+	U_TEST_ASSERT( static_cast<uint64_t>( 1 + 77454 ) == result_value.IntVal.getLimitedValue() );
+}
+
 U_TEST( GeneratedCopyAssignmentOperatorTest0 )
 {
 	static const char c_program_text[]=

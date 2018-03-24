@@ -86,6 +86,7 @@ ProgramString OverloadedOperatorToString( const OverloadedOperator op )
 	case OverloadedOperator::Decrement: return "--"_SpC;
 
 	case OverloadedOperator::Indexing: return "[]"_SpC;
+	case OverloadedOperator::Call: return "()"_SpC;
 	};
 }
 

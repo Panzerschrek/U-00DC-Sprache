@@ -1485,6 +1485,21 @@ Value CodeBuilder::BuildCallOperator(
 		functions_set= &this_overloaded_methods_set->overloaded_methods_set;
 		this_= &this_overloaded_methods_set->this_;
 	}
+	else if( const Variable* const callable_variable= function_value.GetVariable() )
+	{
+		// For classes try to find () operator inside it.
+		if( const Class* const class_type= callable_variable->type.GetClassType() )
+		{
+			if( const NamesScope::InsertedName* const name=
+				class_type->members.GetThisScopeName( OverloadedOperatorToString( OverloadedOperator::Call ) ) )
+			{
+				functions_set= name->second.GetFunctionsSet();
+				U_ASSERT( functions_set != nullptr ); // If we found (), this must be functions set.
+				this_= callable_variable;
+				// SPRACHE_TODO - maybe support not only thiscall () operators ?
+			}
+		}
+	}
 
 	if( functions_set == nullptr )
 	{

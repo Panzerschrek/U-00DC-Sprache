@@ -13,7 +13,6 @@ Common:
 *) Uninitialized initializer
 *) array_view, array view take operator
 *) Type conversions
-*) Overloading of operator ()
 *) Dereference operator - for pointer-like classes
 *) Early temp variables destruction
 

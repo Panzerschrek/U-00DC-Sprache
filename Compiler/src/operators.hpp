@@ -77,6 +77,7 @@ enum class OverloadedOperator
 	Decrement,
 
 	Indexing,
+	Call,
 };
 
 ProgramString BinaryOperatorToString( BinaryOperatorType op );
