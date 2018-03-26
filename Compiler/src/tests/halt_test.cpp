@@ -214,4 +214,94 @@ U_TEST( HaltIfTest0 )
 	}
 }
 
+U_TEST( ArrayOutOfBoundsShouldHalt0 )
+{
+	HaltTestPrepare();
+
+	static const char c_program_text[]=
+	R"(
+		fn Foo()
+		{
+			var [ i32, 45 ] arr= zero_init;
+			var u32 mut index= 58u; // index is greater, than array size
+			arr[ index ];
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	try
+	{
+		engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+	}
+	catch( const HaltException& )
+	{
+		U_TEST_ASSERT(true);
+		return;
+	}
+	U_TEST_ASSERT( false );
+}
+
+U_TEST( ArrayOutOfBoundsShouldHalt1 )
+{
+	HaltTestPrepare();
+
+	static const char c_program_text[]=
+	R"(
+		fn Foo()
+		{
+			var [ i32, 24 ] arr= zero_init;
+			var u32 mut index= 24u; // index is equal to array size
+			arr[ index ];
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	try
+	{
+		engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+	}
+	catch( const HaltException& )
+	{
+		U_TEST_ASSERT(true);
+		return;
+	}
+	U_TEST_ASSERT( false );
+}
+
+U_TEST( ArrayOutOfBoundsShouldHalt2 )
+{
+	HaltTestPrepare();
+
+	static const char c_program_text[]=
+	R"(
+		fn Foo()
+		{
+			var [ i32, 13 ] arr= zero_init;
+			var u32 mut index= 10u; // index is less than array size
+			arr[ index ];
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	try
+	{
+		engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+	}
+	catch( const HaltException& )
+	{
+		U_TEST_ASSERT(false);
+		return;
+	}
+	U_TEST_ASSERT(true);
+}
+
 } // namespace U

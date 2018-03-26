@@ -1366,6 +1366,35 @@ Value CodeBuilder::BuildIndexationOperator(
 	index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
 	index_list[1]= CreateMoveToLLVMRegisterInstruction( index, function_context );
 
+	// If index is not const and array size is not undefined - check bounds.
+	if( index.constexpr_value == nullptr && array_type->size != Array::c_undefined_size )
+	{
+		const Type size_type= FundamentalType( U_FundamentalType::u32, fundamental_llvm_types_.u32 ); // SPRACHE_TODO - use native size_type.
+
+		llvm::Value* index_value= index_list[1];
+		if( index.type.SizeOf() > size_type.SizeOf() )
+			index_value= function_context.llvm_ir_builder.CreateTrunc( index_value, fundamental_llvm_types_.i32 );
+		else if( index.type.SizeOf() < size_type.SizeOf() )
+			index_value= function_context.llvm_ir_builder.CreateZExt( index_value, fundamental_llvm_types_.i32 );
+
+		llvm::Value* const condition=
+			function_context.llvm_ir_builder.CreateICmpUGE( // if( index >= array_size ) {halt;}
+				index_value,
+				llvm::Constant::getIntegerValue( size_type.GetLLVMType(), llvm::APInt( 32u, array_type->size ) ) );
+
+		llvm::BasicBlock* const halt_block= llvm::BasicBlock::Create( llvm_context_ );
+		llvm::BasicBlock* const block_after_if= llvm::BasicBlock::Create( llvm_context_ );
+		function_context.llvm_ir_builder.CreateCondBr( condition, halt_block, block_after_if );
+
+		function_context.function->getBasicBlockList().push_back( halt_block );
+		function_context.llvm_ir_builder.SetInsertPoint( halt_block );
+		function_context.llvm_ir_builder.CreateCall( halt_func_ );
+		function_context.llvm_ir_builder.CreateRetVoid(); // terminate block.
+
+		function_context.function->getBasicBlockList().push_back( block_after_if );
+		function_context.llvm_ir_builder.SetInsertPoint( block_after_if );
+	}
+
 	result.llvm_value=
 		function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, llvm::ArrayRef< llvm::Value*> ( index_list, 2u ) );
 
