@@ -63,19 +63,29 @@ struct ComplexName final
 	std::vector<Component> components;
 };
 
-struct TypeName
+class ITypeName
 {
-	// [ [i32, 5] 7 ]
-	ComplexName name; // Can be empty in some cases.
-	std::vector< IExpressionComponentPtr > array_sizes;
+public:
+	virtual ~ITypeName()= default;
+};
 
-	// Compiler so stupid - can not generate move constructors without noexcept. Make help for it.
-	TypeName() = default;
-	TypeName( TypeName&& ) noexcept = default;
-	TypeName( const TypeName& )= default;
+typedef std::unique_ptr<ITypeName> ITypeNamePtr;
 
-	TypeName& operator=( const TypeName& )= default;
-	TypeName& operator=( TypeName&& )= default;
+class ArrayTypeName final : public SyntaxElementBase, public ITypeName
+{
+public:
+	explicit ArrayTypeName( const FilePos& file_pos );
+
+	ITypeNamePtr element_type;
+	IExpressionComponentPtr size;
+};
+
+class NamedTypeName final : public SyntaxElementBase, public ITypeName
+{
+public:
+	explicit NamedTypeName( const FilePos& file_pos );
+
+	ComplexName name;
 };
 
 class IUnaryPrefixOperator
@@ -270,7 +280,7 @@ class TypeNameInExpression final : public ExpressionComponentWithUnaryOperators
 public:
 	explicit TypeNameInExpression( const FilePos& file_pos );
 
-	TypeName type_name;
+	ITypeNamePtr type_name;
 };
 
 class IProgramElement
@@ -352,7 +362,7 @@ struct VariablesDeclaration final
 	};
 
 	std::vector<VariableEntry> variables;
-	TypeName type;
+	ITypeNamePtr type;
 };
 
 typedef std::unique_ptr<VariablesDeclaration> VariablesDeclarationPtr;
@@ -498,7 +508,7 @@ public:
 	explicit Typedef( const FilePos& file_pos );
 
 	ProgramString name;
-	TypeName value;
+	ITypeNamePtr value;
 };
 
 class Enum final
@@ -528,7 +538,7 @@ public:
 	FunctionArgument(
 		const FilePos& file_pos,
 		ProgramString name,
-		TypeName type,
+		ITypeNamePtr type,
 		MutabilityModifier mutability_modifier,
 		ReferenceModifier reference_modifier,
 		ProgramString reference_tag,
@@ -536,7 +546,7 @@ public:
 
 public:
 	const ProgramString name_;
-	const TypeName type_;
+	const ITypeNamePtr type_;
 	const MutabilityModifier mutability_modifier_;
 	const ReferenceModifier reference_modifier_;
 	const ProgramString reference_tag_;
@@ -563,7 +573,7 @@ public:
 	Function(
 		const FilePos& file_pos,
 		ComplexName name,
-		TypeName return_type,
+		ITypeNamePtr return_type,
 		MutabilityModifier return_value_mutability_modifier,
 		ReferenceModifier return_value_reference_modifier,
 		ProgramString return_value_reference_tag,
@@ -575,7 +585,7 @@ public:
 		OverloadedOperator overloaded_operator );
 
 	const ComplexName name_;
-	const TypeName return_type_;
+	const ITypeNamePtr return_type_;
 	const MutabilityModifier return_value_mutability_modifier_;
 	const ReferenceModifier return_value_reference_modifier_;
 	const ProgramString return_value_reference_tag_;
@@ -594,7 +604,7 @@ class ClassField final
 public:
 	explicit ClassField( const FilePos& file_pos );
 
-	TypeName type;
+	ITypeNamePtr type;
 	ProgramString name;
 	MutabilityModifier mutability_modifier= MutabilityModifier::None;
 	ReferenceModifier reference_modifier= ReferenceModifier::None;

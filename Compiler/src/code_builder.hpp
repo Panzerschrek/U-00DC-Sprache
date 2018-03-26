@@ -123,7 +123,7 @@ private:
 	void SetCurrentClassTable( ClassTable& table );
 
 	void FillGlobalNamesScope( NamesScope& global_names_scope );
-	Type PrepareType( const FilePos& file_pos, const Synt::TypeName& type_name, NamesScope& names_scope );
+	Type PrepareType( const Synt::ITypeNamePtr& type_name, NamesScope& names_scope );
 
 	// Returns nullptr on fail.
 	ClassProxyPtr PrepareClass(

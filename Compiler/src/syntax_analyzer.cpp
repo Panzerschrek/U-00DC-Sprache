@@ -160,8 +160,7 @@ private:
 
 	IExpressionComponentPtr ParseExpression();
 
-	void ParseTypeName_r( TypeName& result );
-	TypeName ParseTypeName();
+	ITypeNamePtr ParseTypeName();
 	ComplexName ParseComplexName();
 	ReferencesTagsList ParseReferencesTagsList();
 	FunctionReferencesPollutionList ParseFunctionReferencesPollutionList();
@@ -753,39 +752,40 @@ IExpressionComponentPtr SyntaxAnalyzer::ParseExpression()
 	return root;
 }
 
-void SyntaxAnalyzer::ParseTypeName_r( TypeName& result )
+ITypeNamePtr SyntaxAnalyzer::ParseTypeName()
 {
+	U_ASSERT( it_ < it_end_ );
 	if( it_->type == Lexem::Type::SquareBracketLeft )
 	{
-		++it_;
-		ParseTypeName_r( result );
+		++it_; U_ASSERT( it_ < it_end_ );
+
+		std::unique_ptr<ArrayTypeName> array_type_name( new ArrayTypeName(it_->file_pos) );
+		array_type_name->element_type= ParseTypeName();
 
 		if( it_->type != Lexem::Type::Comma )
 		{
 			PushErrorMessage( *it_ );
-			return;
+			return std::move(array_type_name);
 		}
-		++it_;
+		++it_; U_ASSERT( it_ < it_end_ );
 
-		result.array_sizes.emplace_back( ParseExpression() );
+		array_type_name->size= ParseExpression();
 
 		if( it_->type != Lexem::Type::SquareBracketRight )
 		{
 			PushErrorMessage( *it_ );
-			return;
+			return std::move(array_type_name);
 		}
+		++it_; U_ASSERT( it_ < it_end_ );
 
-		++it_;
+		return std::move(array_type_name);
 	}
 	else
-		result.name= ParseComplexName();
-}
-
-TypeName SyntaxAnalyzer::ParseTypeName()
-{
-	TypeName result;
-	ParseTypeName_r( result );
-	return result;
+	{
+		std::unique_ptr<NamedTypeName> named_type_name( new NamedTypeName(it_->file_pos) );
+		named_type_name->name= ParseComplexName();
+		return std::move(named_type_name);
+	}
 }
 
 ComplexName SyntaxAnalyzer::ParseComplexName()
@@ -2086,7 +2086,7 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 				new FunctionArgument(
 					file_pos,
 					Keyword( Keywords::this_ ),
-					TypeName(),
+					ITypeNamePtr(),
 					mutability_modifier,
 					ReferenceModifier::Reference,
 					Keyword( Keywords::this_ ), // Implicit set name for tag of "this" to "this".
@@ -2102,7 +2102,7 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 			break;
 		}
 
-		TypeName arg_type= ParseTypeName();
+		ITypeNamePtr arg_type= ParseTypeName();
 
 		ReferenceModifier reference_modifier= ReferenceModifier::None;
 		MutabilityModifier mutability_modifier= MutabilityModifier::None;
@@ -2189,7 +2189,7 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 		}
 	}
 
-	TypeName return_type;
+	ITypeNamePtr return_type;
 	MutabilityModifier mutability_modifier= MutabilityModifier::None;
 	ReferenceModifier reference_modifier= ReferenceModifier::None;
 	ProgramString return_value_reference_tag;

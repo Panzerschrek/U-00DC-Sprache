@@ -236,7 +236,7 @@ void CodeBuilder::PrepareTypeTemplate(
 	}
 	else if( const Synt::TypedefTemplate* const typedef_template= dynamic_cast<const Synt::TypedefTemplate*>( &type_template_declaration ) )
 	{
-		PrepareType( typedef_template->typedef_->file_pos_, typedef_template->typedef_->value, *template_parameters_namespace );
+		PrepareType( typedef_template->typedef_->value, *template_parameters_namespace );
 	}
 	else
 		U_ASSERT(false);
@@ -743,7 +743,7 @@ NamesScope::InsertedName* CodeBuilder::GenTemplateType(
 	}
 	else if( const Synt::TypedefTemplate* const typedef_template= dynamic_cast<const Synt::TypedefTemplate*>( type_template.syntax_element ) )
 	{
-		const Type type= PrepareType( typedef_template->typedef_->file_pos_, typedef_template->typedef_->value, *template_parameters_namespace );
+		const Type type= PrepareType( typedef_template->typedef_->value, *template_parameters_namespace );
 
 		PopResolveHandler();
 

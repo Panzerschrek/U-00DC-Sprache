@@ -413,33 +413,21 @@ void CodeBuilder::FillGlobalNamesScope( NamesScope& global_names_scope )
 }
 
 Type CodeBuilder::PrepareType(
-	const FilePos& file_pos,
-	const Synt::TypeName& type_name,
+	const Synt::ITypeNamePtr& type_name,
 	NamesScope& names_scope )
 {
-	Type result;
-	Type* last_type= &result;
+	U_ASSERT( type_name != nullptr );
 
-	constexpr unsigned int c_max_array_dimensions= 16u;
-	Type* arrays_stack[ c_max_array_dimensions ];
-	unsigned int arrays_count= 0u;
+	Type result= invalid_type_;
 
-	// Fill arrays hierarchy.
-	for( auto rit= type_name.array_sizes.rbegin(); rit != type_name.array_sizes.rend(); ++rit )
+	if( const auto array_type_name= dynamic_cast<const Synt::ArrayTypeName*>(type_name.get()) )
 	{
-		if( arrays_count >= c_max_array_dimensions )
-		{
-			U_ASSERT( false && "WTF?" );
-		}
+		result= Array();
+		Array& array_type= *result.GetArrayType();
 
-		arrays_stack[ arrays_count ]= last_type;
-		arrays_count++;
+		array_type.type= PrepareType( array_type_name->element_type, names_scope );
 
-		const Synt::IExpressionComponent& num= * *rit;
-		const FilePos& num_file_pos= num.GetFilePos();
-
-		*last_type= Array();
-		Array& array_type= *last_type->GetArrayType();
+		const Synt::IExpressionComponent& num= *array_type_name->size;
 
 		const Value size_expression= BuildExpressionCode( num, names_scope, *dummy_function_context_ );
 		if( size_expression.GetType() == NontypeStub::TemplateDependentValue ||
@@ -459,67 +447,43 @@ Type CodeBuilder::PrepareType(
 						{
 							const llvm::APInt& size_value= size_variable->constexpr_value->getUniqueInteger();
 							if( IsSignedInteger( size_fundamental_type->fundamental_type ) && size_value.isNegative() )
-								errors_.push_back( ReportArraySizeIsNegative( num_file_pos ) );
+								errors_.push_back( ReportArraySizeIsNegative( num.GetFilePos() ) );
 							else
 								array_type.size= SizeType( size_value.getLimitedValue() );
 						}
 					}
 					else
-						errors_.push_back( ReportArraySizeIsNotInteger( num_file_pos ) );
+						errors_.push_back( ReportArraySizeIsNotInteger( num.GetFilePos() ) );
 				}
 				else
 					U_ASSERT( false && "Nonfundamental constexpr? WTF?" );
 			}
 			else
-				errors_.push_back( ReportExpectedConstantExpression( num_file_pos ) );
+				errors_.push_back( ReportExpectedConstantExpression( num.GetFilePos() ) );
 		}
 		else
-			errors_.push_back( ReportExpectedVariable( num_file_pos, size_expression.GetType().ToString() ) );
+			errors_.push_back( ReportExpectedVariable( num.GetFilePos(), size_expression.GetType().ToString() ) );
 
-		last_type= &array_type.type;
+		array_type.llvm_type= llvm::ArrayType::get( array_type.type.GetLLVMType(), array_type.ArraySizeOrZero() );
+
+		// TODO - generate error, if total size of type (incuding arrays) is more, than half of address space of target architecture.
 	}
-
-	*last_type= FundamentalType( U_FundamentalType::InvalidType, fundamental_llvm_types_.invalid_type_ );
-
-	if( const NamesScope::InsertedName* name=
-		ResolveName( file_pos, names_scope, type_name.name ) )
+	else if( const auto named_type_name= dynamic_cast<const Synt::NamedTypeName*>(type_name.get()) )
 	{
-		if( name->second.GetType() == NontypeStub::TemplateDependentValue )
-			return GetNextTemplateDependentType();
-		else if( const Type* const type= name->second.GetTypeName() )
-			*last_type= *type;
+		if( const NamesScope::InsertedName* name=
+			ResolveName( named_type_name->file_pos_, names_scope, named_type_name->name ) )
+		{
+			if( name->second.GetType() == NontypeStub::TemplateDependentValue )
+				return GetNextTemplateDependentType();
+			else if( const Type* const type= name->second.GetTypeName() )
+				result= *type;
+			else
+				errors_.push_back( ReportNameIsNotTypeName( named_type_name->file_pos_, name->first ) );
+		}
 		else
-			errors_.push_back( ReportNameIsNotTypeName( file_pos, name->first ) );
+			errors_.push_back( ReportNameNotFound( named_type_name->file_pos_, named_type_name->name  ) );
 	}
-	else
-		errors_.push_back( ReportNameNotFound( file_pos, type_name.name ) );
-
-	// Setup arrays llvm types.
-	if( arrays_count > 0u )
-	{
-		{
-			Array* const array_type= arrays_stack[ arrays_count - 1u ]->GetArrayType();
-			U_ASSERT( array_type != nullptr );
-
-				array_type->llvm_type=
-				llvm::ArrayType::get(
-					last_type->GetLLVMType(),
-					array_type->ArraySizeOrZero() );
-		}
-
-		for( unsigned int i= arrays_count - 1u; i > 0u; i-- )
-		{
-			Array* const array_type= arrays_stack[ i - 1u ]->GetArrayType();
-			U_ASSERT( array_type != nullptr );
-
-			array_type->llvm_type=
-				llvm::ArrayType::get(
-					arrays_stack[i]->GetLLVMType(),
-					array_type->ArraySizeOrZero() );
-		}
-	}
-
-	// TODO - generate error, if total size of type (incuding arrays) is more, than half of address space of target architecture.
+	else U_ASSERT(false);
 
 	return result;
 }
@@ -645,7 +609,7 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 			dynamic_cast<const Synt::ClassField*>( member.get() ) )
 		{
 			ClassField out_field;
-			out_field.type= PrepareType( in_field->file_pos_, in_field->type, the_class->members );
+			out_field.type= PrepareType( in_field->type, the_class->members );
 			out_field.index= the_class->field_count;
 			out_field.class_= the_class_proxy;
 			out_field.is_reference= in_field->reference_modifier == Synt::ReferenceModifier::Reference;
@@ -1279,11 +1243,11 @@ CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 	func_variable.type= Function();
 	Function& function_type= *func_variable.type.GetFunctionType();
 
-	if( func.return_type_.name.components.empty() )
+	if( func.return_type_ == nullptr )
 		function_type.return_type= void_type_;
 	else
 	{
-		function_type.return_type= PrepareType( func.file_pos_, func.return_type_, *func_base_names_scope );
+		function_type.return_type= PrepareType( func.return_type_, *func_base_names_scope );
 		if( function_type.return_type == invalid_type_ )
 			return result;
 	}
@@ -1357,7 +1321,7 @@ CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 			out_arg.type= base_class;
 		}
 		else
-			out_arg.type= PrepareType( arg->file_pos_, arg->type_, *func_base_names_scope );
+			out_arg.type= PrepareType( arg->type_, *func_base_names_scope );
 
 		out_arg.is_mutable= arg->mutability_modifier_ == MutabilityModifier::Mutable;
 		out_arg.is_reference= is_this || arg->reference_modifier_ == ReferenceModifier::Reference;
@@ -2391,7 +2355,7 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 	FunctionContext& function_context,
 	const bool global )
 {
-	const Type type= PrepareType( variables_declaration.file_pos_, variables_declaration.type, block_names );
+	const Type type= PrepareType( variables_declaration.type, block_names );
 	if( type.IsIncomplete() )
 	{
 		errors_.push_back( ReportUsingIncompleteType( variables_declaration.file_pos_, type.ToString() ) );
@@ -3489,7 +3453,7 @@ void CodeBuilder::BuildTypedef(
 	const Synt::Typedef& typedef_,
 	NamesScope& names )
 {
-	const Type type= PrepareType( typedef_.file_pos_, typedef_.value, names );
+	const Type type= PrepareType( typedef_.value, names );
 	if( type == invalid_type_ )
 		return;
 

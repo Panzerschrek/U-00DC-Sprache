@@ -11,6 +11,15 @@ SyntaxElementBase::SyntaxElementBase( const FilePos& file_pos )
 	: file_pos_(file_pos)
 {}
 
+ArrayTypeName::ArrayTypeName( const FilePos& file_pos )
+	: SyntaxElementBase(file_pos)
+{}
+
+NamedTypeName::NamedTypeName( const FilePos& file_pos )
+	: SyntaxElementBase(file_pos)
+{}
+
+
 UnaryPlus::UnaryPlus( const FilePos& file_pos )
 	: SyntaxElementBase(file_pos)
 {}
@@ -239,7 +248,7 @@ Enum::Enum( const FilePos& file_pos )
 FunctionArgument::FunctionArgument(
 	const FilePos& file_pos,
 	ProgramString name,
-	TypeName type,
+	ITypeNamePtr type,
 	MutabilityModifier mutability_modifier,
 	ReferenceModifier reference_modifier,
 	ProgramString reference_tag,
@@ -256,7 +265,7 @@ FunctionArgument::FunctionArgument(
 Function::Function(
 	const FilePos& file_pos,
 	ComplexName name,
-	TypeName return_type,
+	ITypeNamePtr return_type,
 	MutabilityModifier return_value_mutability_modifier,
 	ReferenceModifier return_value_reference_modifier,
 	ProgramString return_value_reference_tag,

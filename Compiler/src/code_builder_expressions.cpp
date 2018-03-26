@@ -235,7 +235,7 @@ Value CodeBuilder::BuildExpressionCode(
 	{
 		result=
 			Value(
-				PrepareType( type_name_in_expression->file_pos_, type_name_in_expression->type_name, names ),
+				PrepareType( type_name_in_expression->type_name, names ),
 				type_name_in_expression->file_pos_ );
 	}
 	else
