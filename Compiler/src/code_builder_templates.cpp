@@ -449,8 +449,6 @@ bool CodeBuilder::DuduceTemplateArguments(
 
 	if( const Variable* const variable= boost::get<Variable>(&template_parameter) )
 	{
-		// Currently, we can bind variables only to signature arguments, which refers to template arguments.
-		// SPRACHE_TODO - maybe allow signatures, like </ A, B, 42 /> ?
 		if( dependend_arg_index == ~0u )
 			return false;
 
@@ -908,7 +906,6 @@ bool CodeBuilder::TypeIsValidForTemplateVariableArgument( const Type& type )
 {
 	if( const FundamentalType* const fundamental= type.GetFundamentalType() )
 	{
-		// SPRACHE_TODO - allow non-fundamental value arguments, such enums, for example.
 		if( IsInteger( fundamental->fundamental_type ) || fundamental->fundamental_type == U_FundamentalType::Bool )
 			return true;
 	}

@@ -680,6 +680,39 @@ U_TEST( TemplateParametersDeductionFailed_Test10 )
 	U_TEST_ASSERT( error.file_pos.line == 7u );
 }
 
+U_TEST( TemplateParametersDeductionFailed_Test11 )
+{
+	static const char c_program_text[]=
+	R"(
+		template</ i32 default_val />
+		struct Box
+		{
+			i32 x;
+			fn constructor() ( x= default_val ){}
+		}
+
+		template</ />
+		struct ZeroBoxVec</ Box</ 0 /> />   // numeric constant is inside template signature arg.
+		{
+			Box</ 0 /> x;
+			Box</ 0 /> y;
+		}
+
+		fn Foo()
+		{
+			var ZeroBoxVec</ Box</ 42 /> /> v;   // given number does not match to number in signature parameter.
+		}
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NameNotFound );
+	U_TEST_ASSERT( error.file_pos.line == 18u );
+}
+
 U_TEST( ExpectedConstantExpression_InTemplateSignatureArgument_Test0 )
 {
 	static const char c_program_text[]=

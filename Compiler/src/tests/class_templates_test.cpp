@@ -1660,6 +1660,45 @@ U_TEST( NumericConstantAsTemplateSignatureParameter_Test0 )
 	U_TEST_ASSERT( static_cast<uint64_t>( 23214 - 2221 ) == result_value.IntVal.getLimitedValue() );
 }
 
+U_TEST( NumericConstantAsTemplateSignatureParameter_Test2 )
+{
+	static const char c_program_text[]=
+	R"(
+		template</ i32 default_val />
+		struct Box
+		{
+			i32 x;
+			fn constructor() ( x= default_val ){}
+			fn constructor( i32 in_x ) ( x= in_x ){}
+		}
+
+		template</ />
+		struct ZeroBoxVec</ Box</ 0 /> />   // numeric constant is inside template signature arg.
+		{
+			Box</ 0 /> x;
+			Box</ 0 /> y;
+		}
+
+		fn Foo() : i32
+		{
+			var ZeroBoxVec</ Box</ 0 /> /> v{ .x( 654 ), .y( 114 ) };
+			return v.x.x - v.y.x;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	const llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( static_cast<uint64_t>( 654 - 114 ) == result_value.IntVal.getLimitedValue() );
+}
+
 U_TEST( VariableExpressionAsTemplateSignatureParameter_Test0 )
 {
 	static const char c_program_text[]=
