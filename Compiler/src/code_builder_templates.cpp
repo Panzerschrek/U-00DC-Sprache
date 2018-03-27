@@ -52,7 +52,6 @@ void CodeBuilder::PrepareTypeTemplate(
 	 *) Convert signature and template arguments to "default form" for equality comparison.
 	 *) Support templates overloading.
 	 *) Add "enable_if".
-	 *) Support signature parameters with expressions inside template parameters, different, than NamedOperand.
 	 *) Support template-dependent types for value parameters, such template</ type T, U</ T /> ut />.
 	*/
 
@@ -285,18 +284,50 @@ void CodeBuilder::PrepareTemplateSignatureParameter(
 	const std::vector<TypeTemplate::TemplateParameter>& template_parameters,
 	std::vector<bool>& template_parameters_usage_flags )
 {
+	bool special_expr_type= true;
+
 	if( const auto named_operand= dynamic_cast<const Synt::NamedOperand*>(template_parameter.get()) )
-		PrepareTemplateSignatureParameter( named_operand->file_pos_, named_operand->name_, names_scope, template_parameters, template_parameters_usage_flags );
+	{
+		if( named_operand->postfix_operators_.empty() && named_operand->prefix_operators_.empty() )
+			PrepareTemplateSignatureParameter( named_operand->file_pos_, named_operand->name_, names_scope, template_parameters, template_parameters_usage_flags );
+		else
+			special_expr_type= false;
+	}
 	else if( const auto type_name= dynamic_cast<const Synt::TypeNameInExpression*>(template_parameter.get()) )
 		PrepareTemplateSignatureParameter( *type_name->type_name, names_scope, template_parameters, template_parameters_usage_flags );
-	// SPRACHE_TODO - maybe check constants?
-	// SPRACHE_TODO - maybe support binary expressions?
-	else if( dynamic_cast<const Synt::NumericConstant*>(template_parameter.get()) )
-	{}
-	else if( dynamic_cast<const Synt::BooleanConstant*>(template_parameter.get()) )
-	{}
+	else if( const auto bracket_expression= dynamic_cast<const Synt::BracketExpression*>(template_parameter.get()) )
+	{
+		if( bracket_expression->postfix_operators_.empty() && bracket_expression->prefix_operators_.empty() )
+			PrepareTemplateSignatureParameter( bracket_expression->expression_, names_scope, template_parameters, template_parameters_usage_flags );
+		else
+			special_expr_type= false;
+	}
 	else
-		errors_.push_back( ReportUnsupportedExpressionTypeForTemplateSignatureArgument( template_parameter->GetFilePos() ) );
+		special_expr_type= false;
+
+	if( special_expr_type )
+		return;
+
+	// If this is not special expression - assume that this is variable-expression.
+
+	const Value val= BuildExpressionCode( *template_parameter, names_scope, *dummy_function_context_ );
+	if( val.GetErrorValue() != nullptr || val.GetTemplateDependentValue() != nullptr ||
+		val.GetType().GetTemplateDependentType() != nullptr )
+		return;
+
+	const Variable* const var= val.GetVariable();
+	if( var == nullptr )
+	{
+		errors_.push_back( ReportExpectedVariable( template_parameter->GetFilePos(), val.GetType().ToString() ) );
+		return;
+	}
+	if( var->type.GetTemplateDependentType() == nullptr && !TypeIsValidForTemplateVariableArgument( var->type ) )
+	{
+		errors_.push_back( ReportInvalidTypeOfTemplateVariableArgument( template_parameter->GetFilePos(), var->type.ToString() ) );
+		return;
+	}
+	if( var->constexpr_value == nullptr )
+		errors_.push_back( ReportExpectedConstantExpression( template_parameter->GetFilePos() ) );
 }
 
 void CodeBuilder::PrepareTemplateSignatureParameter(
@@ -530,20 +561,15 @@ bool CodeBuilder::DuduceTemplateArguments(
 
 		for( size_t i= 0u; i < name_component.template_parameters.size(); ++i)
 		{
-			// SPRACHE_TODO - Allow expressions as signature arguments - value-signature-arguments.
-			if( const Synt::NamedOperand* const named_operand= dynamic_cast<const Synt::NamedOperand*>( name_component.template_parameters[i].get() ) )
-			{
-				const bool deduced= DuduceTemplateArguments(
+			const bool deduced=
+				DuduceTemplateArguments(
 					type_template_ptr,
 					given_type_class->base_template->template_parameters[i],
-					named_operand->name_,
+					*name_component.template_parameters[i],
 					template_file_pos,
 					deducible_template_parameters,
 					names_scope );
-				if( !deduced )
-					return false;
-			}
-			else
+			if( !deduced )
 				return false;
 		}
 		return true;
@@ -561,39 +587,40 @@ bool CodeBuilder::DuduceTemplateArguments(
 	NamesScope& names_scope )
 {
 	if( const auto named_operand= dynamic_cast<const Synt::NamedOperand*>(&signature_parameter) )
-		return DuduceTemplateArguments( type_template_ptr, template_parameter, named_operand->name_, signature_parameter_file_pos, deducible_template_parameters, names_scope );
+	{
+		if( named_operand->postfix_operators_.empty() && named_operand->prefix_operators_.empty() )
+			return DuduceTemplateArguments( type_template_ptr, template_parameter, named_operand->name_, signature_parameter_file_pos, deducible_template_parameters, names_scope );
+	}
 	else if( const auto type_name= dynamic_cast<const Synt::TypeNameInExpression*>(&signature_parameter) )
 		return DuduceTemplateArguments( type_template_ptr, template_parameter, *type_name->type_name, signature_parameter_file_pos, deducible_template_parameters, names_scope );
-	else if( const auto numeric_constant= dynamic_cast<const Synt::NumericConstant*>(&signature_parameter) )
+	else if( const auto bracket_expression= dynamic_cast<const Synt::BracketExpression*>(&signature_parameter) )
 	{
-		const Value val= BuildNumericConstant( *numeric_constant, *dummy_function_context_ );
-		if( const Variable* var= val.GetVariable() )
-		{
-			// SPRACHE_TODO - compare integers of same types, if can.
-			const Variable* const param_var= boost::get<const Variable>( &template_parameter );
-			if( param_var == nullptr ||
-				param_var->type != var->type ||
-				param_var->constexpr_value == nullptr ||
-				param_var->constexpr_value->getUniqueInteger() != var->constexpr_value->getUniqueInteger() )
-				return false;
-			return true;
-		}
-		else
-			return false;
-	}
-	else if( const auto boolean_constant= dynamic_cast<const Synt::BooleanConstant*>(&signature_parameter) )
-	{
-		const Variable var = BuildBooleanConstant( *boolean_constant, *dummy_function_context_ );
-		const Variable* const param_var= boost::get<const Variable>( &template_parameter );
-		if( param_var == nullptr ||
-			param_var->type != var.type ||
-			param_var->constexpr_value == nullptr ||
-			param_var->constexpr_value->getUniqueInteger() != var.constexpr_value->getUniqueInteger())
-			return false;
-		return true;
+		if( bracket_expression->postfix_operators_.empty() && bracket_expression->prefix_operators_.empty() )
+			return DuduceTemplateArguments( type_template_ptr, template_parameter, *bracket_expression->expression_, signature_parameter_file_pos, deducible_template_parameters, names_scope );
 	}
 
-	return false;
+	// This is not special kind of template signature argument. So, process it as variable-expression.
+
+	const Variable* const param_var= boost::get<const Variable>( &template_parameter );
+	if( param_var == nullptr )
+		return false;
+	if( !TypeIsValidForTemplateVariableArgument( param_var->type ) )
+		return false;
+
+	const Value val= BuildExpressionCode( signature_parameter, names_scope, *dummy_function_context_ );
+	if( val.GetVariable() == nullptr )
+		return false;
+	const Variable& var= *val.GetVariable();
+	if( !TypeIsValidForTemplateVariableArgument( var.type ) )
+		return false;
+
+	// SPRACHE_TODO - maybe try compare integers without type?
+	if( param_var->type != var.type )
+		return false;
+	if( param_var->constexpr_value->getUniqueInteger() != var.constexpr_value->getUniqueInteger() )
+		return false;
+
+	return true;
 }
 
 bool CodeBuilder::DuduceTemplateArguments(

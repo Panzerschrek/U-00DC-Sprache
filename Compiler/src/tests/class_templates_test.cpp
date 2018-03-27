@@ -1660,6 +1660,97 @@ U_TEST( NumericConstantAsTemplateSignatureParameter_Test0 )
 	U_TEST_ASSERT( static_cast<uint64_t>( 23214 - 2221 ) == result_value.IntVal.getLimitedValue() );
 }
 
+U_TEST( VariableExpressionAsTemplateSignatureParameter_Test0 )
+{
+	static const char c_program_text[]=
+	R"(
+		template</ type T />
+		struct IntVec</ T, ( 1 + 1 ) * 1 />
+		{
+			T x; T y;
+		}
+
+		fn Foo() : i32
+		{
+			var IntVec</ i32, 2 /> v{ .x= 654740, .y= 66523 };
+			return v.x - v.y;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	const llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( static_cast<uint64_t>( 654740 - 66523 ) == result_value.IntVal.getLimitedValue() );
+}
+
+U_TEST( VariableExpressionAsTemplateSignatureParameter_Test1 )
+{
+	static const char c_program_text[]=
+	R"(
+		template</ type T />
+		struct Vec</ T, -( 0 - 2 ) />  // expression with brackets and unary minus
+		{
+			T x; T y;
+		}
+
+		fn Foo() : i32
+		{
+			var Vec</ i32, 2 /> v{ .x= 7451, .y= 1142 };
+			return v.x - v.y;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	const llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( static_cast<uint64_t>( 7451 - 1142 ) == result_value.IntVal.getLimitedValue() );
+}
+
+U_TEST( BracketExpressionAsTemplateSignatureParameter_Test0 )
+{
+	static const char c_program_text[]=
+	R"(
+		template</ type T />
+		struct Vec2</ (T) />
+		{
+			T x; T y;
+		}
+
+		fn Foo() : i32
+		{
+			var Vec2</ i32 /> v{ .x= 6541, .y= 214 };
+			return v.x / v.y;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	const llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( static_cast<uint64_t>( 6541 / 214 ) == result_value.IntVal.getLimitedValue() );
+}
+
+
 U_TEST( ArrayAsTemplateSignatureParameter_Test0 )
 {
 	static const char c_program_text[]=
