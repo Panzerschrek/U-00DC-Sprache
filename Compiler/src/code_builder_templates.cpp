@@ -953,7 +953,12 @@ void CodeBuilder::CleareDummyFunction()
 
 	// Clear blocks in reverse order, because newer blocks can depend on elder blocks.
 	for (llvm::BasicBlock& block : boost::adaptors::reverse(bb_list))
-		block.getInstList().clear();
+	{
+		// Destroy instructions in reverse order.
+		while( ! block.getInstList().empty() )
+			block.getInstList().pop_back();
+		//block.getInstList().clear();
+	}
 }
 
 void CodeBuilder::ReportAboutIncompleteMembersOfTemplateClass( const FilePos& file_pos, Class& class_ )
