@@ -144,6 +144,18 @@ private:
 		const std::vector<TypeTemplate::TemplateParameter>& template_parameters,
 		std::vector<bool>& template_parameters_usage_flags );
 
+	void PrepareTemplateSignatureParameter(
+		const Synt::IExpressionComponentPtr& template_parameter,
+		NamesScope& names_scope,
+		const std::vector<TypeTemplate::TemplateParameter>& template_parameters,
+		std::vector<bool>& template_parameters_usage_flags );
+
+	void PrepareTemplateSignatureParameter(
+		const Synt::ITypeName& template_parameter,
+		NamesScope& names_scope,
+		const std::vector<TypeTemplate::TemplateParameter>& template_parameters,
+		std::vector<bool>& template_parameters_usage_flags );
+
 	// Resolve as deep, as can, but does not instantiate last component, if it is template.
 	const NamesScope::InsertedName* ResolveForTemplateSignatureParameter(
 		const FilePos& file_pos,
@@ -155,6 +167,22 @@ private:
 		const TypeTemplatePtr& type_template_ptr,
 		const TemplateParameter& template_parameter,
 		const Synt::ComplexName& signature_parameter,
+		const FilePos& signature_parameter_file_pos,
+		DeducibleTemplateParameters& deducible_template_parameters,
+		NamesScope& names_scope );
+
+	bool DuduceTemplateArguments(
+		const TypeTemplatePtr& type_template_ptr,
+		const TemplateParameter& template_parameter,
+		const Synt::IExpressionComponent& signature_parameter,
+		const FilePos& signature_parameter_file_pos,
+		DeducibleTemplateParameters& deducible_template_parameters,
+		NamesScope& names_scope );
+
+	bool DuduceTemplateArguments(
+		const TypeTemplatePtr& type_template_ptr,
+		const TemplateParameter& template_parameter,
+		const Synt::ITypeName& signature_parameter,
 		const FilePos& signature_parameter_file_pos,
 		DeducibleTemplateParameters& deducible_template_parameters,
 		NamesScope& names_scope );

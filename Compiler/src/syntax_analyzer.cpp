@@ -2498,7 +2498,11 @@ std::unique_ptr<TemplateBase> SyntaxAnalyzer::ParseTemplate()
 			++it_; U_ASSERT( it_ < it_end_ );
 		}
 		else
-			result->args_.back().arg_type= ParseComplexName();
+		{
+			std::unique_ptr<NamedOperand> arg_type( new NamedOperand( it_->file_pos, ParseComplexName() ) );
+			result->args_.back().arg_type= &arg_type->name_;
+			result->args_.back().arg_type_expr= std::move(arg_type);
+		}
 
 		if( it_->type != Lexem::Type::Identifier )
 		{
@@ -2509,7 +2513,9 @@ std::unique_ptr<TemplateBase> SyntaxAnalyzer::ParseTemplate()
 		ComplexName name;
 		name.components.emplace_back();
 		name.components.back().name= it_->text;
-		result->args_.back().name= std::move(name);
+		std::unique_ptr<NamedOperand> name_ptr( new NamedOperand( it_->file_pos, std::move(name) ) );
+		result->args_.back().name= &name_ptr->name_;
+		result->args_.back().name_expr= std::move(name_ptr);
 
 		++it_; U_ASSERT( it_ < it_end_ );
 
@@ -2586,13 +2592,13 @@ std::unique_ptr<TemplateBase> SyntaxAnalyzer::ParseTemplate()
 			}
 
 			result->signature_args_.emplace_back();
-			result->signature_args_.back().name= ParseComplexName();
+			result->signature_args_.back().name= ParseExpression();
 
 			U_ASSERT( it_ < it_end_ );
 			if( it_->type == Lexem::Type::Assignment )
 			{
 				++it_; U_ASSERT( it_ < it_end_ );
-				result->signature_args_.back().default_value= ParseComplexName();
+				result->signature_args_.back().default_value= ParseExpression();
 			}
 
 			if( it_->type == Lexem::Type::Comma )

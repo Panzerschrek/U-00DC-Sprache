@@ -1630,4 +1630,127 @@ U_TEST( ShortClassTemplateForm_Test4 )
 	U_TEST_ASSERT( static_cast<uint64_t>( 4125641 ) == result_value.IntVal.getLimitedValue() );
 }
 
+U_TEST( NumericConstantAsTemplateSignatureParameter_Test0 )
+{
+	static const char c_program_text[]=
+	R"(
+		template</ type T />
+		struct IntVec</ T, 2 />
+		{
+			T x; T y;
+		}
+
+		fn Foo() : i32
+		{
+			var IntVec</ i32, 1 + 1 /> v{ .x= 23214, .y= 2221 };
+			return v.x - v.y;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	const llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( static_cast<uint64_t>( 23214 - 2221 ) == result_value.IntVal.getLimitedValue() );
+}
+
+U_TEST( ArrayAsTemplateSignatureParameter_Test0 )
+{
+	static const char c_program_text[]=
+	R"(
+		// Array size is constant
+		template</ type T />
+		struct ArrayElement</ [ T, 4u ] />
+		{
+			T x;
+		}
+
+		fn Foo() : i32
+		{
+			var ArrayElement</ [ i32, 4u ] /> el{ .x= 584144 };
+			return el.x;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	const llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( static_cast<uint64_t>( 584144 ) == result_value.IntVal.getLimitedValue() );
+}
+
+U_TEST( ArrayAsTemplateSignatureParameter_Test1 )
+{
+	static const char c_program_text[]=
+	R"(
+		// Array size is param.
+		template</ type T, u32 size />
+		struct ArrayWrapper</ [ T, size ] />
+		{
+			[ T, size ] x;
+		}
+
+		fn Foo() : i32
+		{
+			var ArrayWrapper</ [ i32, 2u ] /> arr{ .x[ 85647, 32141 ] };
+			return arr.x[0u] - arr.x[1u];
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	const llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( static_cast<uint64_t>( 85647 - 32141 ) == result_value.IntVal.getLimitedValue() );
+}
+
+U_TEST( ArrayAsTemplateSignatureParameter_Test2 )
+{
+	static const char c_program_text[]=
+	R"(
+		// Array size is param, type is known.
+		template</ u32 size />
+		struct ArrayWrapper</ [ i32, size ] />
+		{
+			[ i32, size ] x;
+		}
+
+		fn Foo() : i32
+		{
+			var ArrayWrapper</ [ i32, 3u ] /> arr{ .x[ 8547, 3214, 11 ] };
+			return ( arr.x[0u] - arr.x[1u] ) * arr.x[2u];
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	const llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( static_cast<uint64_t>( ( 8547 - 3214 ) * 11 ) == result_value.IntVal.getLimitedValue() );
+}
+
 } // namespace U

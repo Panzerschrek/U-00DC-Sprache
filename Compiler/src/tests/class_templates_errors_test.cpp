@@ -368,7 +368,7 @@ U_TEST( TemplateArgumentIsNotDeducedYet_Test0 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::TemplateArgumentIsNotDeducedYet );
-	U_TEST_ASSERT( error.file_pos.line == 2u );
+	U_TEST_ASSERT( error.file_pos.line == 3u );
 }
 
 U_TEST( TemplateArgumentIsNotDeducedYet_Test1 )
@@ -404,7 +404,7 @@ U_TEST( UnsupportedExpressionTypeForTemplateSignatureArgument_Test0 )
 			[ bool, size ] bools;
 		}
 
-		template</ /> struct X</ BoolArray</ 42 /> /> {}
+		template</ /> struct X</ BoolArray</ 42 + 42 /> /> {}
 	)";
 
 	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
@@ -677,6 +677,28 @@ U_TEST( TemplateParametersDeductionFailed_Test9 )
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NameNotFound );
 	U_TEST_ASSERT( error.file_pos.line == 10u );
+}
+
+U_TEST( TemplateParametersDeductionFailed_Test10 )
+{
+	static const char c_program_text[]=
+	R"(
+		template</ />
+		struct FFF</ 42 /> {}
+
+		fn Foo()
+		{
+			var FFF</ 34 /> ff{}; // signature number and actual number mismatch.
+		}
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NameNotFound );
+	U_TEST_ASSERT( error.file_pos.line == 7u );
 }
 
 } // namespace U
