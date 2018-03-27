@@ -632,15 +632,18 @@ public:
 	// For value arguments, like template</ type A, A x, i32 y />, arg_type is comples name of argument.
 	struct Arg
 	{
-		ComplexName arg_type;
-		ComplexName name; // Actually, only name with one component
+		const ComplexName* arg_type= nullptr; // pointer to arg_type_expr
+		IExpressionComponentPtr arg_type_expr= nullptr; // Actyally, only NamedOperand
+
+		const ComplexName* name= nullptr; // Actually, only name with one component
+		IExpressionComponentPtr name_expr;
 	};
 
 	// Argument in template signature.
 	struct SignatureArg
 	{
-		ComplexName name;
-		boost::optional<ComplexName> default_value;
+		IExpressionComponentPtr name;
+		IExpressionComponentPtr default_value;
 	};
 
 	std::vector<Arg> args_;

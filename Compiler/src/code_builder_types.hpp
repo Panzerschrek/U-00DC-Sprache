@@ -612,8 +612,8 @@ struct TypeTemplate final
 	// Sorted in order of first parameter usage in signature.
 	std::vector< TemplateParameter > template_parameters;
 
-	std::vector< const Synt::ComplexName* > signature_arguments;
-	std::vector< const Synt::ComplexName* > default_signature_arguments;
+	std::vector< const Synt::IExpressionComponent* > signature_arguments;
+	std::vector< const Synt::IExpressionComponent* > default_signature_arguments;
 	size_t first_optional_signature_argument= ~0u;
 
 	// Store syntax tree element for instantiation.

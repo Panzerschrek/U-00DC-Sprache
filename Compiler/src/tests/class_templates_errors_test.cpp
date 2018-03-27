@@ -368,7 +368,7 @@ U_TEST( TemplateArgumentIsNotDeducedYet_Test0 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::TemplateArgumentIsNotDeducedYet );
-	U_TEST_ASSERT( error.file_pos.line == 2u );
+	U_TEST_ASSERT( error.file_pos.line == 3u );
 }
 
 U_TEST( TemplateArgumentIsNotDeducedYet_Test1 )
@@ -393,27 +393,6 @@ U_TEST( TemplateArgumentIsNotDeducedYet_Test1 )
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::TemplateArgumentIsNotDeducedYet );
 	U_TEST_ASSERT( error.file_pos.line == 5u );
-}
-
-U_TEST( UnsupportedExpressionTypeForTemplateSignatureArgument_Test0 )
-{
-	static const char c_program_text[]=
-	R"(
-		template</ u32 size /> struct BoolArray</ size />
-		{
-			[ bool, size ] bools;
-		}
-
-		template</ /> struct X</ BoolArray</ 42 /> /> {}
-	)";
-
-	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
-
-	U_TEST_ASSERT( !build_result.errors.empty() );
-	const CodeBuilderError& error= build_result.errors.front();
-
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::UnsupportedExpressionTypeForTemplateSignatureArgument );
-	U_TEST_ASSERT( error.file_pos.line == 7u );
 }
 
 U_TEST( TemplateArgumentNotUsedInSignature_Test0 )
@@ -677,6 +656,80 @@ U_TEST( TemplateParametersDeductionFailed_Test9 )
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NameNotFound );
 	U_TEST_ASSERT( error.file_pos.line == 10u );
+}
+
+U_TEST( TemplateParametersDeductionFailed_Test10 )
+{
+	static const char c_program_text[]=
+	R"(
+		template</ />
+		struct FFF</ 42 /> {}
+
+		fn Foo()
+		{
+			var FFF</ 34 /> ff{}; // signature number and actual number mismatch.
+		}
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NameNotFound );
+	U_TEST_ASSERT( error.file_pos.line == 7u );
+}
+
+U_TEST( TemplateParametersDeductionFailed_Test11 )
+{
+	static const char c_program_text[]=
+	R"(
+		template</ i32 default_val />
+		struct Box
+		{
+			i32 x;
+			fn constructor() ( x= default_val ){}
+		}
+
+		template</ />
+		struct ZeroBoxVec</ Box</ 0 /> />   // numeric constant is inside template signature arg.
+		{
+			Box</ 0 /> x;
+			Box</ 0 /> y;
+		}
+
+		fn Foo()
+		{
+			var ZeroBoxVec</ Box</ 42 /> /> v;   // given number does not match to number in signature parameter.
+		}
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NameNotFound );
+	U_TEST_ASSERT( error.file_pos.line == 18u );
+}
+
+U_TEST( ExpectedConstantExpression_InTemplateSignatureArgument_Test0 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn GetNum() : i32 { return 42; }
+
+		template</ />
+		struct FFF</ GetNum() /> {}  // result of function call is not constant
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedConstantExpression );
+	U_TEST_ASSERT( error.file_pos.line == 5u );
 }
 
 } // namespace U

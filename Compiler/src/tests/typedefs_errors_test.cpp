@@ -154,7 +154,7 @@ U_TEST( NameNotFound_ForTypedefTemplate_Test1 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NameNotFound );
-	U_TEST_ASSERT( error.file_pos.line == 2 );
+	U_TEST_ASSERT( error.file_pos.line == 3 );
 }
 
 U_TEST( TemplateArgumentNotUsedInSignature_ForTypedefTemplate_Test0 )

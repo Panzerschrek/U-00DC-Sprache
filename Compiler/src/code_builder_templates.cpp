@@ -52,7 +52,6 @@ void CodeBuilder::PrepareTypeTemplate(
 	 *) Convert signature and template arguments to "default form" for equality comparison.
 	 *) Support templates overloading.
 	 *) Add "enable_if".
-	 *) Support signature parameters with expressions inside template parameters, different, than NamedOperand.
 	 *) Support template-dependent types for value parameters, such template</ type T, U</ T /> ut />.
 	*/
 
@@ -78,8 +77,8 @@ void CodeBuilder::PrepareTypeTemplate(
 	// Check and fill template parameters.
 	for( const Synt::TemplateBase::Arg& arg : type_template_declaration.args_ )
 	{
-		U_ASSERT( arg.name.components.size() == 1u );
-		const ProgramString& arg_name= arg.name.components.front().name;
+		U_ASSERT( arg.name->components.size() == 1u );
+		const ProgramString& arg_name= arg.name->components.front().name;
 
 		// Check redefinition
 		for( const auto& prev_arg : template_parameters )
@@ -95,15 +94,15 @@ void CodeBuilder::PrepareTypeTemplate(
 
 		NamesScope::InsertedName* inserted_template_parameter= nullptr;
 
-		if( !arg.arg_type.components.empty() )
+		if( arg.arg_type != nullptr )
 		{
 			// If template parameter is variable.
 
 			// Resolve from outer space or from this template parameters.
-			const NamesScope::InsertedName* const type_name= ResolveName( type_template_declaration.file_pos_, *template_parameters_namespace, arg.arg_type );
+			const NamesScope::InsertedName* const type_name= ResolveName( type_template_declaration.file_pos_, *template_parameters_namespace, *arg.arg_type );
 			if( type_name == nullptr )
 			{
-				errors_.push_back( ReportNameNotFound( type_template_declaration.file_pos_, arg.arg_type ) );
+				errors_.push_back( ReportNameNotFound( type_template_declaration.file_pos_, *arg.arg_type ) );
 				continue;
 			}
 			const Type* const type= type_name->second.GetTypeName();
@@ -121,11 +120,11 @@ void CodeBuilder::PrepareTypeTemplate(
 			}
 
 			// If type is template parameter, set usage flag.
-			if( arg.arg_type.components.size() == 1u && !arg.arg_type.components.front().have_template_parameters )
+			if( arg.arg_type->components.size() == 1u && !arg.arg_type->components.front().have_template_parameters )
 			{
 				for( const TypeTemplate::TemplateParameter& template_parameter : template_parameters )
 				{
-					if( template_parameter.name == arg.arg_type.components.front().name )
+					if( template_parameter.name == arg.arg_type->components.front().name )
 					{
 						template_parameters_usage_flags[ &template_parameter - template_parameters.data() ]= true;
 						break;
@@ -135,7 +134,7 @@ void CodeBuilder::PrepareTypeTemplate(
 
 			template_parameters.emplace_back();
 			template_parameters.back().name= arg_name;
-			template_parameters.back().type_name= &arg.arg_type;
+			template_parameters.back().type_name= arg.arg_type;
 			template_parameters_usage_flags.push_back(false);
 
 			Variable variable;
@@ -175,8 +174,8 @@ void CodeBuilder::PrepareTypeTemplate(
 		// Assign template arguments to signature arguments.
 		for( const Synt::TemplateBase::Arg& arg : type_template_declaration.args_ )
 		{
-			PrepareTemplateSignatureParameter( type_template_declaration.file_pos_, arg.name, *template_parameters_namespace, template_parameters, template_parameters_usage_flags );
-			type_template->signature_arguments.push_back(&arg.name);
+			PrepareTemplateSignatureParameter( type_template_declaration.file_pos_, *arg.name, *template_parameters_namespace, template_parameters, template_parameters_usage_flags );
+			type_template->signature_arguments.push_back(arg.name_expr.get());
 			type_template->default_signature_arguments.push_back(nullptr);
 		}
 		type_template->first_optional_signature_argument= type_template->signature_arguments.size();
@@ -187,13 +186,13 @@ void CodeBuilder::PrepareTypeTemplate(
 		type_template->first_optional_signature_argument= 0u;
 		for( const Synt::TemplateBase::SignatureArg& signature_arg : type_template_declaration.signature_args_ )
 		{
-			PrepareTemplateSignatureParameter( type_template_declaration.file_pos_, signature_arg.name, *template_parameters_namespace, template_parameters, template_parameters_usage_flags );
-			type_template->signature_arguments.push_back(&signature_arg.name);
+			PrepareTemplateSignatureParameter( signature_arg.name, *template_parameters_namespace, template_parameters, template_parameters_usage_flags );
+			type_template->signature_arguments.push_back(signature_arg.name.get());
 
-			if( signature_arg.default_value != boost::none )
+			if( signature_arg.default_value != nullptr )
 			{
-				PrepareTemplateSignatureParameter( type_template_declaration.file_pos_, *signature_arg.default_value, *template_parameters_namespace, template_parameters, template_parameters_usage_flags );
-				type_template->default_signature_arguments.push_back(signature_arg.default_value.get_ptr());
+				PrepareTemplateSignatureParameter( signature_arg.default_value, *template_parameters_namespace, template_parameters, template_parameters_usage_flags );
+				type_template->default_signature_arguments.push_back(signature_arg.default_value.get());
 			}
 			else
 			{
@@ -275,14 +274,76 @@ void CodeBuilder::PrepareTemplateSignatureParameter(
 	if( start_name->second.GetTypeTemplate() != nullptr )
 	{
 		for( const Synt::IExpressionComponentPtr& template_parameter : signature_parameter.components.back().template_parameters )
-		{
-			if( const Synt::NamedOperand* const named_operand= dynamic_cast<const Synt::NamedOperand*>(template_parameter.get()))
-				PrepareTemplateSignatureParameter( named_operand->file_pos_, named_operand->name_, names_scope, template_parameters, template_parameters_usage_flags );
-			else
-				errors_.push_back( ReportUnsupportedExpressionTypeForTemplateSignatureArgument( file_pos ) );
-			// SPRACHE_TODO - allow value-expressions here
-		}
+			PrepareTemplateSignatureParameter( template_parameter, names_scope, template_parameters, template_parameters_usage_flags );
 	}
+}
+
+void CodeBuilder::PrepareTemplateSignatureParameter(
+	const Synt::IExpressionComponentPtr& template_parameter,
+	NamesScope& names_scope,
+	const std::vector<TypeTemplate::TemplateParameter>& template_parameters,
+	std::vector<bool>& template_parameters_usage_flags )
+{
+	bool special_expr_type= true;
+
+	if( const auto named_operand= dynamic_cast<const Synt::NamedOperand*>(template_parameter.get()) )
+	{
+		if( named_operand->postfix_operators_.empty() && named_operand->prefix_operators_.empty() )
+			PrepareTemplateSignatureParameter( named_operand->file_pos_, named_operand->name_, names_scope, template_parameters, template_parameters_usage_flags );
+		else
+			special_expr_type= false;
+	}
+	else if( const auto type_name= dynamic_cast<const Synt::TypeNameInExpression*>(template_parameter.get()) )
+		PrepareTemplateSignatureParameter( *type_name->type_name, names_scope, template_parameters, template_parameters_usage_flags );
+	else if( const auto bracket_expression= dynamic_cast<const Synt::BracketExpression*>(template_parameter.get()) )
+	{
+		if( bracket_expression->postfix_operators_.empty() && bracket_expression->prefix_operators_.empty() )
+			PrepareTemplateSignatureParameter( bracket_expression->expression_, names_scope, template_parameters, template_parameters_usage_flags );
+		else
+			special_expr_type= false;
+	}
+	else
+		special_expr_type= false;
+
+	if( special_expr_type )
+		return;
+
+	// If this is not special expression - assume that this is variable-expression.
+
+	const Value val= BuildExpressionCode( *template_parameter, names_scope, *dummy_function_context_ );
+	if( val.GetErrorValue() != nullptr || val.GetTemplateDependentValue() != nullptr ||
+		val.GetType().GetTemplateDependentType() != nullptr )
+		return;
+
+	const Variable* const var= val.GetVariable();
+	if( var == nullptr )
+	{
+		errors_.push_back( ReportExpectedVariable( template_parameter->GetFilePos(), val.GetType().ToString() ) );
+		return;
+	}
+	if( var->type.GetTemplateDependentType() == nullptr && !TypeIsValidForTemplateVariableArgument( var->type ) )
+	{
+		errors_.push_back( ReportInvalidTypeOfTemplateVariableArgument( template_parameter->GetFilePos(), var->type.ToString() ) );
+		return;
+	}
+	if( var->constexpr_value == nullptr )
+		errors_.push_back( ReportExpectedConstantExpression( template_parameter->GetFilePos() ) );
+}
+
+void CodeBuilder::PrepareTemplateSignatureParameter(
+	const Synt::ITypeName& type_name_template_parameter,
+	NamesScope& names_scope,
+	const std::vector<TypeTemplate::TemplateParameter>& template_parameters,
+	std::vector<bool>& template_parameters_usage_flags )
+{
+	if( const auto named_type_name= dynamic_cast<const Synt::NamedTypeName*>(&type_name_template_parameter) )
+		PrepareTemplateSignatureParameter( named_type_name->file_pos_, named_type_name->name, names_scope, template_parameters, template_parameters_usage_flags );
+	else if( const auto array_type_name= dynamic_cast<const Synt::ArrayTypeName*>(&type_name_template_parameter) )
+	{
+		PrepareTemplateSignatureParameter( array_type_name->size, names_scope, template_parameters, template_parameters_usage_flags );
+		PrepareTemplateSignatureParameter( *array_type_name->element_type, names_scope, template_parameters, template_parameters_usage_flags );
+	}
+	else U_ASSERT(false);
 }
 
 const NamesScope::InsertedName* CodeBuilder::ResolveForTemplateSignatureParameter(
@@ -388,8 +449,6 @@ bool CodeBuilder::DuduceTemplateArguments(
 
 	if( const Variable* const variable= boost::get<Variable>(&template_parameter) )
 	{
-		// Currently, we can bind variables only to signature arguments, which refers to template arguments.
-		// SPRACHE_TODO - maybe allow signatures, like </ A, B, 42 /> ?
 		if( dependend_arg_index == ~0u )
 			return false;
 
@@ -500,26 +559,99 @@ bool CodeBuilder::DuduceTemplateArguments(
 
 		for( size_t i= 0u; i < name_component.template_parameters.size(); ++i)
 		{
-			// SPRACHE_TODO - Allow expressions as signature arguments - value-signature-arguments.
-			if( const Synt::NamedOperand* const named_operand= dynamic_cast<const Synt::NamedOperand*>( name_component.template_parameters[i].get() ) )
-			{
-				const bool deduced= DuduceTemplateArguments(
+			const bool deduced=
+				DuduceTemplateArguments(
 					type_template_ptr,
 					given_type_class->base_template->template_parameters[i],
-					named_operand->name_,
+					*name_component.template_parameters[i],
 					template_file_pos,
 					deducible_template_parameters,
 					names_scope );
-				if( !deduced )
-					return false;
-			}
-			else
+			if( !deduced )
 				return false;
 		}
 		return true;
 	}
 
 	return false;
+}
+
+bool CodeBuilder::DuduceTemplateArguments(
+	const TypeTemplatePtr& type_template_ptr,
+	const TemplateParameter& template_parameter,
+	const Synt::IExpressionComponent& signature_parameter,
+	const FilePos& signature_parameter_file_pos,
+	DeducibleTemplateParameters& deducible_template_parameters,
+	NamesScope& names_scope )
+{
+	if( const auto named_operand= dynamic_cast<const Synt::NamedOperand*>(&signature_parameter) )
+	{
+		if( named_operand->postfix_operators_.empty() && named_operand->prefix_operators_.empty() )
+			return DuduceTemplateArguments( type_template_ptr, template_parameter, named_operand->name_, signature_parameter_file_pos, deducible_template_parameters, names_scope );
+	}
+	else if( const auto type_name= dynamic_cast<const Synt::TypeNameInExpression*>(&signature_parameter) )
+		return DuduceTemplateArguments( type_template_ptr, template_parameter, *type_name->type_name, signature_parameter_file_pos, deducible_template_parameters, names_scope );
+	else if( const auto bracket_expression= dynamic_cast<const Synt::BracketExpression*>(&signature_parameter) )
+	{
+		if( bracket_expression->postfix_operators_.empty() && bracket_expression->prefix_operators_.empty() )
+			return DuduceTemplateArguments( type_template_ptr, template_parameter, *bracket_expression->expression_, signature_parameter_file_pos, deducible_template_parameters, names_scope );
+	}
+
+	// This is not special kind of template signature argument. So, process it as variable-expression.
+
+	const Variable* const param_var= boost::get<const Variable>( &template_parameter );
+	if( param_var == nullptr )
+		return false;
+	if( !TypeIsValidForTemplateVariableArgument( param_var->type ) )
+		return false;
+
+	const Value val= BuildExpressionCode( signature_parameter, names_scope, *dummy_function_context_ );
+	if( val.GetVariable() == nullptr )
+		return false;
+	const Variable& var= *val.GetVariable();
+	if( !TypeIsValidForTemplateVariableArgument( var.type ) )
+		return false;
+
+	// SPRACHE_TODO - maybe try compare integers without type?
+	if( param_var->type != var.type )
+		return false;
+	if( param_var->constexpr_value->getUniqueInteger() != var.constexpr_value->getUniqueInteger() )
+		return false;
+
+	return true;
+}
+
+bool CodeBuilder::DuduceTemplateArguments(
+	const TypeTemplatePtr& type_template_ptr,
+	const TemplateParameter& template_parameter,
+	const Synt::ITypeName& signature_parameter,
+	const FilePos& signature_parameter_file_pos,
+	DeducibleTemplateParameters& deducible_template_parameters,
+	NamesScope& names_scope )
+{
+	if( const auto named_type= dynamic_cast<const Synt::NamedTypeName*>(&signature_parameter) )
+		return DuduceTemplateArguments( type_template_ptr, template_parameter, named_type->name, signature_parameter_file_pos, deducible_template_parameters, names_scope );
+	else if( const auto array_type= dynamic_cast<const Synt::ArrayTypeName*>(&signature_parameter) )
+	{
+		const Type* const param_type= boost::get<const Type>( &template_parameter );
+		if( param_type == nullptr )
+			return false;
+		const Array* const param_array_type= param_type->GetArrayType();
+		if( param_array_type == nullptr )
+			return false;
+
+		Variable size_var;
+		size_var.type= FundamentalType( U_FundamentalType::u32, fundamental_llvm_types_.u32 ); // TODO - maybe selet native size type?
+		size_var.value_type= ValueType::Value;
+		size_var.llvm_value= size_var.constexpr_value=
+			llvm::Constant::getIntegerValue( size_var.type.GetLLVMType(), llvm::APInt( size_var.type.SizeOf() * 8u, param_array_type->size ) );
+
+		bool ok_element= DuduceTemplateArguments( type_template_ptr, param_array_type->type, *array_type->element_type, signature_parameter_file_pos, deducible_template_parameters, names_scope );
+		bool ok_size= DuduceTemplateArguments( type_template_ptr, size_var, *array_type->size, signature_parameter_file_pos, deducible_template_parameters, names_scope );
+		return ok_element && ok_size;
+	}
+
+	else U_ASSERT(false);
 }
 
 NamesScope::InsertedName* CodeBuilder::GenTemplateType(
@@ -555,13 +687,8 @@ NamesScope::InsertedName* CodeBuilder::GenTemplateType(
 		if( i < template_arguments.size() )
 			value= BuildExpressionCode( *template_arguments[i], arguments_names_scope, *dummy_function_context_ );
 		else
-		{
-			const NamesScope::InsertedName* const name=
-				ResolveName( type_template_ptr->syntax_element->file_pos_, *template_parameters_namespace, *type_template.default_signature_arguments[i] );
-			if( name == nullptr )
-				continue;
-			value= name->second;
-		}
+			value= BuildExpressionCode( *type_template.default_signature_arguments[i], *template_parameters_namespace, *dummy_function_context_ );
+
 		if( value.GetErrorValue() != nullptr )
 			continue;
 
@@ -581,12 +708,11 @@ NamesScope::InsertedName* CodeBuilder::GenTemplateType(
 			}
 		}
 
-		const Synt::ComplexName& name= *type_template.signature_arguments[i];
-
+		const Synt::IExpressionComponent& expr= *type_template.signature_arguments[i];
 		// TODO - maybe add some errors, if not deduced?
 		if( const Type* const type_name= value.GetTypeName() )
 		{
-			if( !DuduceTemplateArguments( type_template_ptr, *type_name, name, file_pos, deduced_template_args, template_names_scope ) )
+			if( !DuduceTemplateArguments( type_template_ptr, *type_name, expr, file_pos, deduced_template_args, template_names_scope ) )
 			{
 				deduction_failed= true;
 				continue;
@@ -594,7 +720,7 @@ NamesScope::InsertedName* CodeBuilder::GenTemplateType(
 		}
 		else if( const Variable* const variable= value.GetVariable() )
 		{
-			if( !DuduceTemplateArguments( type_template_ptr, *variable, name, file_pos, deduced_template_args, template_names_scope ) )
+			if( !DuduceTemplateArguments( type_template_ptr, *variable, expr, file_pos, deduced_template_args, template_names_scope ) )
 			{
 				deduction_failed= true;
 				continue;
@@ -780,7 +906,6 @@ bool CodeBuilder::TypeIsValidForTemplateVariableArgument( const Type& type )
 {
 	if( const FundamentalType* const fundamental= type.GetFundamentalType() )
 	{
-		// SPRACHE_TODO - allow non-fundamental value arguments, such enums, for example.
 		if( IsInteger( fundamental->fundamental_type ) || fundamental->fundamental_type == U_FundamentalType::Bool )
 			return true;
 	}
@@ -852,7 +977,12 @@ void CodeBuilder::CleareDummyFunction()
 
 	// Clear blocks in reverse order, because newer blocks can depend on elder blocks.
 	for (llvm::BasicBlock& block : boost::adaptors::reverse(bb_list))
-		block.getInstList().clear();
+	{
+		// Destroy instructions in reverse order.
+		while( ! block.getInstList().empty() )
+			block.getInstList().pop_back();
+		//block.getInstList().clear();
+	}
 }
 
 void CodeBuilder::ReportAboutIncompleteMembersOfTemplateClass( const FilePos& file_pos, Class& class_ )
