@@ -182,11 +182,14 @@ endif( BUILD_TESTS )
 #
 # Python CompilerLib bindings
 #
+
+find_package( PythonLibs REQUIRED )
 if( BUILD_COMPILER_LIB_PY )
 	set( COMPILER_LIB_PY_SOURCES
 		compiler_lib_py/compiler_lib_py.cpp )
 	add_library( CompilerLibPy SHARED ${COMPILER_LIB_PY_SOURCES} )
 	target_link_libraries( CompilerLibPy CompilerLib )
+	target_include_directories( CompilerLibPy PRIVATE ${PYTHON_INCLUDE_DIRS} )
 endif( BUILD_COMPILER_LIB_PY )
 
 # Build rule for "Ü" files
