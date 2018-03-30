@@ -194,6 +194,19 @@ if( BUILD_COMPILER_LIB_PY )
 	target_link_libraries( CompilerLibPy ${PYTHON_LIBRARIES} )
 	target_include_directories( CompilerLibPy PRIVATE ${PYTHON_INCLUDE_DIRS} )
 
+	# Make copy of result library with appropriate name.
+	if( WIN32 )
+		add_custom_target(
+			CompilerLibPy_Install ALL
+			COMMAND cp libCompilerLibPy.dll sprache_compiler_lib.pyd # *.pyd libraries required by python on Windows
+			DEPENDS CompilerLibPy )
+	else()
+		add_custom_target(
+			CompilerLibPy_Install ALL
+			COMMAND cp libCompilerLibPy.so sprache_compiler_lib.so
+			DEPENDS CompilerLibPy )
+	endif()
+
 endif( BUILD_COMPILER_LIB_PY )
 
 # Build rule for "Ü" files
