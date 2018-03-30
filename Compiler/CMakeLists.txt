@@ -5,6 +5,7 @@ project(Sprache)
 option( BUILD_COMPILER "Enable compilation of compiler" YES )
 option( BUILD_TESTS "Enable compilation of base tests" YES )
 option( BUILD_LINKAGE_TESTS "Enable compilation of linkage tests" YES )
+option( BUILD_COMPILER_LIB_PY "Enable compilation of python bindings for compiler lib" YES )
 
 if( BUILD_COMPILER )
 	message( STATUS "Build compiler" )
@@ -23,6 +24,13 @@ if( BUILD_LINKAGE_TESTS )
 else()
 	message( STATUS "Skip linkage tests" )
 endif( BUILD_LINKAGE_TESTS )
+
+if( BUILD_COMPILER_LIB_PY )
+	message( STATUS "Build python bindings for compiler lib" )
+else()
+	message( STATUS "Skip python bindings for compiler lib" )
+endif( BUILD_COMPILER_LIB_PY )
+
 
 set( CMAKE_CXX_STANDARD 11 )
 
@@ -171,6 +179,15 @@ if( BUILD_TESTS )
 	target_link_libraries( Tests CompilerLib ${LLVM_LIBS_FOR_TESTS} )
 endif( BUILD_TESTS )
 
+#
+# Python CompilerLib bindings
+#
+if( BUILD_COMPILER_LIB_PY )
+	set( COMPILER_LIB_PY_SOURCES
+		compiler_lib_py/compiler_lib_py.cpp )
+	add_library( CompilerLibPy SHARED ${COMPILER_LIB_PY_SOURCES} )
+	target_link_libraries( CompilerLibPy CompilerLib )
+endif( BUILD_COMPILER_LIB_PY )
 
 # Build rule for "Ü" files
 # Returns result in U_SOURCE_OBJECT
