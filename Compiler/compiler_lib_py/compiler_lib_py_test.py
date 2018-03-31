@@ -1,5 +1,4 @@
 import sys
-sys.path.append('../../Compiler-build')
 import sprache_compiler_tests_py_lib as tests_lib
 
 class FilePos:

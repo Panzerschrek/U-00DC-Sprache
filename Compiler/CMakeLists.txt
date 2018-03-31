@@ -208,6 +208,13 @@ if( BUILD_PY_TESTS )
 			DEPENDS PyTestsLib )
 	endif()
 
+	# Run result test.
+	add_custom_target(
+		PyTestsRun ALL
+		COMMAND ${CMAKE_COMMAND} -E env PYTHONPATH=${CMAKE_CURRENT_BINARY_DIR} python compiler_lib_py/compiler_lib_py_test.py
+		DEPENDS PyTestsLib_Install
+		WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} )
+
 endif( BUILD_PY_TESTS )
 
 # Build rule for "Ü" files
