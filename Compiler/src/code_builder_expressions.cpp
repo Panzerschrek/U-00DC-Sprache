@@ -1870,7 +1870,7 @@ Value CodeBuilder::DoCallFunction(
 	}
 	else
 	{
-		if( function_type.return_type.IsIncomplete() )
+		if( function_type.return_type != void_type_ && function_type.return_type.IsIncomplete() )
 			errors_.push_back( ReportUsingIncompleteType( call_file_pos, function_type.return_type.ToString() ) );
 
 		result.location= function.return_value_is_sret ? Variable::Location::Pointer : Variable::Location::LLVMRegister;

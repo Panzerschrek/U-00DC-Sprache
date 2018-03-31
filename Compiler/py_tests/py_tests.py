@@ -13,8 +13,6 @@ class CodeBuilderError:
 	error_code= ""
 	file_pos= FilePos()
 
-#tests_list= []
-
 
 def ConvertErrors( errors_list ):
 	result= []
@@ -56,12 +54,49 @@ def ZeroInitializerForStructWithReferenceTest():
 	assert( errors_list[0].file_pos.line == 5 )
 
 
+def VoidTypeIsIncomplete_Test0():
+	c_program_text= """
+	fn Foo()
+	{
+		var void v; // void variable
+	}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "UsingIncompleteType" )
+	assert( errors_list[0].file_pos.line == 4 )
+
+
+def VoidTypeIsIncomplete_Test1():
+	c_program_text= """
+	fn Bar(){}
+	fn Foo()
+	{
+		auto v= Bar(); // void auto variable
+	}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "UsingIncompleteType" )
+	assert( errors_list[0].file_pos.line == 5 )
+
+
+def VoidTypeIsIncomplete_Test2():
+	c_program_text= """
+	struct S{ void v; } // void struct field
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "UsingIncompleteType" )
+	assert( errors_list[0].file_pos.line == 2 )
+
+
 # Get list of all tests here.
 tests_list = [ obj for name, obj in inspect.getmembers(sys.modules[__name__]) if inspect.isfunction(obj) and obj != ConvertErrors ]
 
 def main():
 
-	print( "run " + str(len(tests_list)) + " tests" + "\n" )
+	print( "run " + str(len(tests_list)) + " py_tests" + "\n" )
 	tests_failed= 0
 
 	for test in tests_list:
@@ -75,8 +110,8 @@ def main():
 			tests_failed= tests_failed + 1
 			tests_lib.free_program()
 
-	print( str( len(tests_list) - tests_failed ) + " - passed" )
-	print( str(tests_failed) + " - failed" )
+	print( str( len(tests_list) - tests_failed ) + " tests passed" )
+	print( str(tests_failed) + " tests failed" )
 
 
 if __name__ == "__main__":

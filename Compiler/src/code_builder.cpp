@@ -1703,7 +1703,7 @@ void CodeBuilder::BuildFuncCode(
 		if( !arg.is_reference && arg.type.IsIncomplete() )
 			errors_.push_back( ReportUsingIncompleteType( args.front()->file_pos_, arg.type.ToString() ) );
 	}
-	if( !function_type->return_value_is_reference && function_type->return_type.IsIncomplete() )
+	if( !function_type->return_value_is_reference && function_type->return_type != void_type_ && function_type->return_type.IsIncomplete() )
 		errors_.push_back( ReportUsingIncompleteType( func_variable.body_file_pos, function_type->return_type.ToString() ) );
 
 	NamesScope function_names( ""_SpC, &parent_names_scope );
@@ -2639,6 +2639,12 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 	else if( auto_variable_declaration.reference_modifier == ReferenceModifier::None )
 	{
 		VariablesState::VariableReferences moved_variable_referenced_variables;
+
+		if( variable.type.IsIncomplete() )
+		{
+			errors_.push_back( ReportUsingIncompleteType( auto_variable_declaration.file_pos_, variable.type.ToString() ) );
+			return;
+		}
 
 		llvm::GlobalVariable* global_variable= nullptr;
 		if( global && variable.type.GetTemplateDependentType() == nullptr )

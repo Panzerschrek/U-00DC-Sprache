@@ -299,7 +299,9 @@ SizeType Type::SizeOf() const
 
 bool Type::IsIncomplete() const
 {
-	if( const ClassProxyPtr* const class_= boost::get<ClassProxyPtr>( &something_ ) )
+	if( const FundamentalType* const fundamental= boost::get<FundamentalType>( &something_ ) )
+		return fundamental->fundamental_type == U_FundamentalType::Void;
+	else if( const ClassProxyPtr* const class_= boost::get<ClassProxyPtr>( &something_ ) )
 	{
 		U_ASSERT( *class_ != nullptr && (*class_)->class_ != nullptr );
 		return (*class_)->class_->is_incomplete;
