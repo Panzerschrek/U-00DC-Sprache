@@ -191,6 +191,7 @@ if( BUILD_PY_TESTS )
 
 	add_library( PyTestsLib SHARED ${COMPILER_LIB_PY_SOURCES} )
 	target_link_libraries( PyTestsLib CompilerLib )
+	target_link_libraries( PyTestsLib ${LLVM_LIBS_FOR_TESTS} )
 	target_link_libraries( PyTestsLib ${PYTHON_LIBRARIES} )
 	target_include_directories( PyTestsLib PRIVATE ${PYTHON_INCLUDE_DIRS} )
 

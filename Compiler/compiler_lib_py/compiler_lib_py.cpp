@@ -9,6 +9,12 @@
 #include "../src/code_builder.hpp"
 #include "../src/source_graph_loader.hpp"
 
+#include "../src/push_disable_llvm_warnings.hpp"
+#include <llvm/ExecutionEngine/ExecutionEngine.h>
+#include <llvm/ExecutionEngine/GenericValue.h>
+#include <llvm/ExecutionEngine/Interpreter.h>
+#include "../src/pop_llvm_warnings.hpp"
+
 namespace U
 {
 
@@ -58,17 +64,6 @@ std::unique_ptr<llvm::Module> BuildProgram( const char* const text )
 
 } // namespace U
 
-static PyObject* TestEcho( PyObject* self, PyObject* args )
-{
-	const char* command= nullptr;
-
-	if( !PyArg_ParseTuple( args, "s", &command ) )
-		return nullptr;
-	std::cout << command << std::endl;
-	return Py_None;
-}
-
-
 static PyObject* BuildProgram( PyObject* self, PyObject* args )
 {
 	const char* program_text= nullptr;
@@ -81,28 +76,155 @@ static PyObject* BuildProgram( PyObject* self, PyObject* args )
 	if( module == nullptr )
 		return Py_None;
 
+	llvm::EngineBuilder builder( std::move(module) );
+	llvm::ExecutionEngine* const engine= builder.create();
+	if( engine == nullptr )
+		return nullptr;
+
 	// Convert pointer to integer handle.
-	return Py_BuildValue( "n", module.release() );
+	return Py_BuildValue( "n", engine );
 }
 
 static PyObject* FreeProgram( PyObject* self, PyObject* args )
 {
-	Py_ssize_t module_ptr= 0;
+	Py_ssize_t engine_ptr= 0;
 
-	if( !PyArg_ParseTuple( args, "n", &module_ptr ) )
+	if( !PyArg_ParseTuple( args, "n", &engine_ptr ) )
 		return nullptr;
 
-	llvm::Module* const module= reinterpret_cast<llvm::Module*>( module_ptr );
-	delete module;
+	llvm::ExecutionEngine* const engine= reinterpret_cast<llvm::ExecutionEngine*>( engine_ptr );
+	delete engine;
+
+	return Py_None;
+}
+
+static PyObject* RunFunction( PyObject* const self, PyObject* const args )
+{
+	const unsigned c_max_args= 8;
+	PyObject* engine_param= nullptr;
+	PyObject* function_name_param= nullptr;
+	PyObject* function_args[c_max_args]= { nullptr };
+
+	if( !PyArg_UnpackTuple(
+		args, "", 2, 2 + c_max_args,
+		&engine_param,
+		&function_name_param,
+		&function_args[0],
+		&function_args[1],
+		&function_args[2],
+		&function_args[3],
+		&function_args[4],
+		&function_args[5],
+		&function_args[6],
+		&function_args[7] ) )
+		return nullptr; // Parse will raise
+
+	Py_ssize_t engine_ptr= 0;
+	if( !PyArg_Parse( engine_param, "n", &engine_ptr ) )
+		return nullptr; // Parse will raise
+
+	const char* function_name= nullptr;
+	if( !PyArg_Parse( function_name_param, "s", &function_name ) )
+		return nullptr; // Parse will raise
+
+	llvm::ExecutionEngine* const engine= reinterpret_cast<llvm::ExecutionEngine*>( engine_ptr );
+	llvm::Function* const function= engine->FindFunctionNamed( function_name );
+	if( function == nullptr )
+	{
+		PyErr_SetString( PyExc_RuntimeError, "can not get function" );
+		return nullptr;
+	}
+
+	const llvm::FunctionType* const function_type= function->getFunctionType();
+
+	llvm::GenericValue llvm_args[c_max_args];
+	unsigned int arg_count= 0u;
+	for( unsigned int i= 0u; i < c_max_args; ++i )
+	{
+		if( function_args[i] == nullptr )
+			break;
+
+		bool parse_result= false;
+		const llvm::Type* const arg_type= function_type->params()[i];
+		if( arg_type->isIntegerTy() )
+		{
+			const unsigned int bit_width= arg_type->getIntegerBitWidth();
+			if( bit_width == 1 )
+			{
+				int bool_param= 0;
+				parse_result= PyArg_Parse( function_args[i], "p", &bool_param );
+				llvm_args[i].IntVal= llvm::APInt( 1, bool_param );
+			}
+			if( bit_width == 8 )
+			{
+				int8_t int_param= 0;
+				parse_result= PyArg_Parse( function_args[i], "b", &int_param );
+				llvm_args[i].IntVal= llvm::APInt( 8, int_param );
+			}
+			if( bit_width == 16 )
+			{
+				int16_t int_param= 0;
+				parse_result= PyArg_Parse( function_args[i], "h", &int_param );
+				llvm_args[i].IntVal= llvm::APInt( 16, int_param );
+			}
+			if( bit_width == 32 )
+			{
+				int32_t int_param= 0;
+				parse_result= PyArg_Parse( function_args[i], "i", &int_param );
+				llvm_args[i].IntVal= llvm::APInt( 32, int_param );
+			}
+			if( bit_width == 64 )
+			{
+				int64_t int_param= 0;
+				parse_result= PyArg_Parse( function_args[i], "L", &int_param );
+				llvm_args[i].IntVal= llvm::APInt( 64, int_param );
+			}
+		}
+		else if( arg_type->isFloatTy() )
+			parse_result= PyArg_Parse( function_args[i], "f", &llvm_args[i].FloatVal );
+		else if( arg_type->isDoubleTy() )
+			parse_result= PyArg_Parse( function_args[i], "d", &llvm_args[i].DoubleVal );
+		else
+		{
+			PyErr_SetString( PyExc_RuntimeError, "unsupported arg type" );
+			return nullptr;
+		}
+
+		if( !parse_result )
+			return nullptr; // Parse will raise
+
+		++arg_count;
+	} // for args
+
+	if( function_type->getNumParams() != arg_count )
+	{
+		PyErr_SetString( PyExc_RuntimeError, "invalid param count" );
+		return nullptr;
+	}
+
+	const llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>( llvm_args, arg_count ) );
+
+	const llvm::Type* const return_type= function_type->getReturnType();
+	if( return_type->isVoidTy() )
+		return Py_None;
+	if( return_type->isIntegerTy() )
+		return Py_BuildValue( "L", result_value.IntVal.getLimitedValue() );
+	if( return_type->isFloatTy() )
+		return Py_BuildValue( "f", result_value.FloatVal );
+	if( return_type->isDoubleTy() )
+		return Py_BuildValue( "d", result_value.DoubleVal );
 
 	return Py_None;
 }
 
 static PyMethodDef sprace_methods[]=
 {
-	{ "test_echo",  TestEcho, METH_VARARGS, "Test echo." },
 	{ "build_program",  BuildProgram, METH_VARARGS, "Build program." },
 	{ "free_program",  FreeProgram, METH_VARARGS, "Free program." },
+	{ "run_function",  RunFunction, METH_VARARGS, "Run function." },
 	{ nullptr, nullptr, 0, nullptr }        /* Sentinel */
 };
 
