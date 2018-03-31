@@ -1,12 +1,13 @@
 import sys
 sys.path.append('../../Compiler-build')
-import sprache_compiler_lib
+import sprache_compiler_tests_py_lib
 
 def main():
-	print( "test0" )
-	sprache_compiler_lib.build_program( "fn foo() {}" )
-	print( "test1" )
-	sprache_compiler_lib.build_program( "fn foo() : i32 {}" )
+	program= sprache_compiler_tests_py_lib.build_program( "fn foo() : i32 { return 42; }" )
+	if program is None:
+		raise "program is none"
+
+	sprache_compiler_tests_py_lib.free_program(program)
 
 if __name__ == "__main__":
 	sys.exit(main())

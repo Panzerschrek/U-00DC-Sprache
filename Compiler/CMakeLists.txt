@@ -5,7 +5,7 @@ project(Sprache)
 option( BUILD_COMPILER "Enable compilation of compiler" YES )
 option( BUILD_TESTS "Enable compilation of base tests" YES )
 option( BUILD_LINKAGE_TESTS "Enable compilation of linkage tests" YES )
-option( BUILD_COMPILER_LIB_PY "Enable compilation of python bindings for compiler lib" YES )
+option( BUILD_PY_TESTS "Enable compilation of py_tests" YES )
 
 if( BUILD_COMPILER )
 	message( STATUS "Build compiler" )
@@ -25,11 +25,11 @@ else()
 	message( STATUS "Skip linkage tests" )
 endif( BUILD_LINKAGE_TESTS )
 
-if( BUILD_COMPILER_LIB_PY )
-	message( STATUS "Build python bindings for compiler lib" )
+if( BUILD_PY_TESTS )
+	message( STATUS "Build py_tests" )
 else()
-	message( STATUS "Skip python bindings for compiler lib" )
-endif( BUILD_COMPILER_LIB_PY )
+	message( STATUS "Skip py_tests" )
+endif( BUILD_PY_TESTS )
 
 
 set( CMAKE_CXX_STANDARD 11 )
@@ -180,34 +180,34 @@ if( BUILD_TESTS )
 endif( BUILD_TESTS )
 
 #
-# Python CompilerLib bindings
+# PyTests
 #
 
-if( BUILD_COMPILER_LIB_PY )
+if( BUILD_PY_TESTS )
 	find_package( PythonLibs REQUIRED )
 
 	set( COMPILER_LIB_PY_SOURCES
 		compiler_lib_py/compiler_lib_py.cpp )
 
-	add_library( CompilerLibPy SHARED ${COMPILER_LIB_PY_SOURCES} )
-	target_link_libraries( CompilerLibPy CompilerLib )
-	target_link_libraries( CompilerLibPy ${PYTHON_LIBRARIES} )
-	target_include_directories( CompilerLibPy PRIVATE ${PYTHON_INCLUDE_DIRS} )
+	add_library( PyTestsLib SHARED ${COMPILER_LIB_PY_SOURCES} )
+	target_link_libraries( PyTestsLib CompilerLib )
+	target_link_libraries( PyTestsLib ${PYTHON_LIBRARIES} )
+	target_include_directories( PyTestsLib PRIVATE ${PYTHON_INCLUDE_DIRS} )
 
 	# Make copy of result library with appropriate name.
 	if( WIN32 )
 		add_custom_target(
-			CompilerLibPy_Install ALL
-			COMMAND cp libCompilerLibPy.dll sprache_compiler_lib.pyd # *.pyd libraries required by python on Windows
-			DEPENDS CompilerLibPy )
+			PyTestsLib_Install ALL
+			COMMAND cp libPyTestsLib.dll sprache_compiler_tests_py_lib.pyd # *.pyd libraries required by python on Windows
+			DEPENDS PyTestsLib )
 	else()
 		add_custom_target(
-			CompilerLibPy_Install ALL
-			COMMAND cp libCompilerLibPy.so sprache_compiler_lib.so
-			DEPENDS CompilerLibPy )
+			PyTestsLib_Install ALL
+			COMMAND cp libPyTestsLib.so sprache_compiler_tests_py_lib.so
+			DEPENDS PyTestsLib )
 	endif()
 
-endif( BUILD_COMPILER_LIB_PY )
+endif( BUILD_PY_TESTS )
 
 # Build rule for "Ü" files
 # Returns result in U_SOURCE_OBJECT

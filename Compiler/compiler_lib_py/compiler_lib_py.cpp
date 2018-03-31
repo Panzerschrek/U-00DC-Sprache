@@ -33,7 +33,7 @@ private:
 	const char* const file_text_;
 };
 
-void BuildProgram( const char* const text )
+std::unique_ptr<llvm::Module> BuildProgram( const char* const text )
 {
 	const ProgramString file_path= "_"_SpC;
 	const SourceGraphPtr source_graph=
@@ -43,12 +43,17 @@ void BuildProgram( const char* const text )
 		!source_graph->lexical_errors.empty() ||
 		!source_graph->syntax_errors.empty() ||
 		!( source_graph->root_node_index < source_graph->nodes_storage.size() ) )
-		return;
+		return nullptr;
 
-	const ICodeBuilder::BuildResult build_result= CodeBuilder().BuildProgram( *source_graph );
+	ICodeBuilder::BuildResult build_result= CodeBuilder().BuildProgram( *source_graph );
 
 	for( const CodeBuilderError& error : build_result.errors )
 		std::cout << error.file_pos.line << ":" << error.file_pos.pos_in_line << " " << ToStdString( error.text ) << "\n";
+
+	if( !build_result.errors.empty() )
+		return nullptr;
+
+	return std::move(build_result.module);
 }
 
 } // namespace U
@@ -63,6 +68,7 @@ static PyObject* TestEcho( PyObject* self, PyObject* args )
 	return Py_None;
 }
 
+
 static PyObject* BuildProgram( PyObject* self, PyObject* args )
 {
 	const char* program_text= nullptr;
@@ -70,7 +76,24 @@ static PyObject* BuildProgram( PyObject* self, PyObject* args )
 	if( !PyArg_ParseTuple( args, "s", &program_text ) )
 		return nullptr;
 
-	U::BuildProgram( program_text );
+	std::unique_ptr<llvm::Module> module= U::BuildProgram( program_text );
+
+	if( module == nullptr )
+		return Py_None;
+
+	// Convert pointer to integer handle.
+	return Py_BuildValue( "n", module.release() );
+}
+
+static PyObject* FreeProgram( PyObject* self, PyObject* args )
+{
+	Py_ssize_t module_ptr= 0;
+
+	if( !PyArg_ParseTuple( args, "n", &module_ptr ) )
+		return nullptr;
+
+	llvm::Module* const module= reinterpret_cast<llvm::Module*>( module_ptr );
+	delete module;
 
 	return Py_None;
 }
@@ -79,6 +102,7 @@ static PyMethodDef sprace_methods[]=
 {
 	{ "test_echo",  TestEcho, METH_VARARGS, "Test echo." },
 	{ "build_program",  BuildProgram, METH_VARARGS, "Build program." },
+	{ "free_program",  FreeProgram, METH_VARARGS, "Free program." },
 	{ nullptr, nullptr, 0, nullptr }        /* Sentinel */
 };
 
@@ -92,7 +116,7 @@ static struct PyModuleDef module=
 	sprace_methods
 };
 
-PyMODINIT_FUNC PyInit_sprache_compiler_lib(void)
+PyMODINIT_FUNC PyInit_sprache_compiler_tests_py_lib(void)
 {
 	return PyModule_Create( &module );
 }
