@@ -182,14 +182,13 @@ endif( BUILD_TESTS )
 #
 # PyTests
 #
-
 if( BUILD_PY_TESTS )
 	find_package( PythonLibs REQUIRED )
 
-	set( COMPILER_LIB_PY_SOURCES
-		compiler_lib_py/compiler_lib_py.cpp )
+	set( PY_TESTS_SOURCES
+		py_tests/py_tests.cpp )
 
-	add_library( PyTestsLib SHARED ${COMPILER_LIB_PY_SOURCES} )
+	add_library( PyTestsLib SHARED ${PY_TESTS_SOURCES} )
 	target_link_libraries( PyTestsLib CompilerLib )
 	target_link_libraries( PyTestsLib ${LLVM_LIBS_FOR_TESTS} )
 	target_link_libraries( PyTestsLib ${PYTHON_LIBRARIES} )
@@ -211,7 +210,7 @@ if( BUILD_PY_TESTS )
 	# Run result test.
 	add_custom_target(
 		PyTestsRun ALL
-		COMMAND ${CMAKE_COMMAND} -E env PYTHONPATH=${CMAKE_CURRENT_BINARY_DIR} python compiler_lib_py/compiler_lib_py_test.py
+		COMMAND ${CMAKE_COMMAND} -E env PYTHONPATH=${CMAKE_CURRENT_BINARY_DIR} python py_tests/py_tests.py
 		DEPENDS PyTestsLib_Install
 		WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} )
 
