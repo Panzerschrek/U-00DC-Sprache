@@ -119,16 +119,16 @@ static PyObject* RunFunction( PyObject* const self, PyObject* const args )
 	PyObject* function_args[c_max_args]= { nullptr };
 
 	if( !PyArg_UnpackTuple(
-		args, "", 1, 1 + c_max_args,
-		&function_name_param,
-		&function_args[0],
-		&function_args[1],
-		&function_args[2],
-		&function_args[3],
-		&function_args[4],
-		&function_args[5],
-		&function_args[6],
-		&function_args[7] ) )
+			args, "", 1, 1 + c_max_args,
+			&function_name_param,
+			&function_args[0],
+			&function_args[1],
+			&function_args[2],
+			&function_args[3],
+			&function_args[4],
+			&function_args[5],
+			&function_args[6],
+			&function_args[7] ) )
 		return nullptr; // Parse will raise
 
 	if( g_current_engine == nullptr )
@@ -233,195 +233,6 @@ static PyObject* RunFunction( PyObject* const self, PyObject* const args )
 	return Py_None;
 }
 
-static const char* const ErrorCodeToString( const U::CodeBuilderErrorCode code )
-{
-	using U::CodeBuilderErrorCode;
-	switch(code)
-	{
-	case CodeBuilderErrorCode::BuildFailed:
-		return "BuildFailed";
-	case CodeBuilderErrorCode::NameNotFound:
-		return "NameNotFound";
-	case CodeBuilderErrorCode::UsingKeywordAsName:
-		return "UsingKeywordAsName";
-	case CodeBuilderErrorCode::Redefinition:
-		return "Redefinition";
-	case CodeBuilderErrorCode::UnknownNumericConstantType:
-		return "UnknownNumericConstantType";
-	case CodeBuilderErrorCode::OperationNotSupportedForThisType:
-		return "OperationNotSupportedForThisType";
-	case CodeBuilderErrorCode::TypesMismatch:
-		return "TypesMismatch";
-	case CodeBuilderErrorCode::NoMatchBinaryOperatorForGivenTypes:
-		return "NoMatchBinaryOperatorForGivenTypes";
-	case CodeBuilderErrorCode::NotImplemented:
-		return "NotImplemented";
-	case CodeBuilderErrorCode::ArraySizeIsNegative:
-		return "ArraySizeIsNegative";
-	case CodeBuilderErrorCode::ArraySizeIsNotInteger:
-		return "ArraySizeIsNotInteger";
-	case CodeBuilderErrorCode::BreakOutsideLoop:
-		return "BreakOutsideLoop";
-	case CodeBuilderErrorCode::ContinueOutsideLoop:
-		return "ContinueOutsideLoop";
-	case CodeBuilderErrorCode::NameIsNotTypeName:
-		return "NameIsNotTypeName";
-	case CodeBuilderErrorCode::UnreachableCode:
-		return "UnreachableCode";
-	case CodeBuilderErrorCode::NoReturnInFunctionReturningNonVoid:
-		return "NoReturnInFunctionReturningNonVoid";
-	case CodeBuilderErrorCode::ExpectedInitializer:
-		return "ExpectedInitializer";
-	case CodeBuilderErrorCode::ExpectedReferenceValue:
-		return "ExpectedReferenceValue";
-	case CodeBuilderErrorCode::BindingConstReferenceToNonconstReference:
-		return "BindingConstReferenceToNonconstReference";
-	case CodeBuilderErrorCode::ExpectedVariable:
-		return "ExpectedVariable";
-	case CodeBuilderErrorCode::CouldNotOverloadFunction:
-		return "CouldNotOverloadFunction";
-	case CodeBuilderErrorCode::TooManySuitableOverloadedFunctions:
-		return "TooManySuitableOverloadedFunctions";
-	case CodeBuilderErrorCode::CouldNotSelectOverloadedFunction:
-		return "CouldNotSelectOverloadedFunction";
-	case CodeBuilderErrorCode::FunctionPrototypeDuplication:
-		return "FunctionPrototypeDuplication";
-	case CodeBuilderErrorCode::FunctionBodyDuplication:
-		return "FunctionBodyDuplication";
-	case CodeBuilderErrorCode::FunctionDeclarationOutsideItsScope:
-		return "FunctionDeclarationOutsideItsScope";
-	case CodeBuilderErrorCode::ClassDeclarationOutsideItsScope:
-		return "ClassDeclarationOutsideItsScope";
-	case CodeBuilderErrorCode::ClassBodyDuplication:
-		return "ClassBodyDuplication";
-	case CodeBuilderErrorCode::UsingIncompleteType:
-		return "UsingIncompleteType";
-	case CodeBuilderErrorCode::ExpectedConstantExpression:
-		return "ExpectedConstantExpression";
-	case CodeBuilderErrorCode::VariableInitializerIsNotConstantExpression:
-		return "VariableInitializerIsNotConstantExpression";
-	case CodeBuilderErrorCode::InvalidTypeForConstantExpressionVariable:
-		return "InvalidTypeForConstantExpressionVariable";
-	case CodeBuilderErrorCode::ConstantExpressionResultIsUndefined:
-		return "ConstantExpressionResultIsUndefined";
-	case CodeBuilderErrorCode::StaticAssertExpressionMustHaveBoolType:
-		return "StaticAssertExpressionMustHaveBoolType";
-	case CodeBuilderErrorCode::StaticAssertExpressionIsNotConstant:
-		return "StaticAssertExpressionIsNotConstant";
-	case CodeBuilderErrorCode::StaticAssertionFailed:
-		return "StaticAssertionFailed";
-	case CodeBuilderErrorCode::ArrayIndexOutOfBounds:
-		return "ArrayIndexOutOfBounds";
-	case CodeBuilderErrorCode::ArrayInitializerForNonArray:
-		return "ArrayInitializerForNonArray";
-	case CodeBuilderErrorCode::ArrayInitializersCountMismatch:
-		return "ArrayInitializersCountMismatch";
-	case CodeBuilderErrorCode::FundamentalTypesHaveConstructorsWithExactlyOneParameter:
-		return "FundamentalTypesHaveConstructorsWithExactlyOneParameter";
-	case CodeBuilderErrorCode::ReferencesHaveConstructorsWithExactlyOneParameter:
-		return "ReferencesHaveConstructorsWithExactlyOneParameter";
-	case CodeBuilderErrorCode::UnsupportedInitializerForReference:
-		return "UnsupportedInitializerForReference";
-	case CodeBuilderErrorCode::ConstructorInitializerForUnsupportedType:
-		return "ConstructorInitializerForUnsupportedType";
-	case CodeBuilderErrorCode::StructInitializerForNonStruct:
-		return "StructInitializerForNonStruct";
-	case CodeBuilderErrorCode::InitializerForNonfieldStructMember:
-		return "InitializerForNonfieldStructMember";
-	case CodeBuilderErrorCode::DuplicatedStructMemberInitializer:
-		return "DuplicatedStructMemberInitializer";
-	case CodeBuilderErrorCode::InitializerDisabledBecauseClassHaveExplicitNoncopyConstructors:
-		return "InitializerDisabledBecauseClassHaveExplicitNoncopyConstructors";
-	case CodeBuilderErrorCode::InvalidTypeForAutoVariable:
-		return "InvalidTypeForAutoVariable";
-	case CodeBuilderErrorCode::GlobalVariableMustBeConstexpr:
-		return "GlobalVariableMustBeConstexpr";
-	case CodeBuilderErrorCode::ConstructorOrDestructorOutsideClass:
-		return "ConstructorOrDestructorOutsideClass";
-	case CodeBuilderErrorCode::ConstructorAndDestructorMustReturnVoid:
-		return "ConstructorAndDestructorMustReturnVoid";
-	case CodeBuilderErrorCode::InitializationListInNonconstructor:
-		return "InitializationListInNonconstructor";
-	case CodeBuilderErrorCode::ClassHaveNoConstructors:
-		return "ClassHaveNoConstructors";
-	case CodeBuilderErrorCode::ExplicitThisInDestructor:
-		return "ExplicitThisInDestructor";
-	case CodeBuilderErrorCode::FieldIsNotInitializedYet:
-		return "FieldIsNotInitializedYet";
-	case CodeBuilderErrorCode::MethodsCallInConstructorInitializerListIsForbidden:
-		return "MethodsCallInConstructorInitializerListIsForbidden";
-	case CodeBuilderErrorCode::ExplicitArgumentsInDestructor:
-		return "ExplicitArgumentsInDestructor";
-	case CodeBuilderErrorCode::CallOfThiscallFunctionUsingNonthisArgument:
-		return "CallOfThiscallFunctionUsingNonthisArgument";
-	case CodeBuilderErrorCode::ClassFiledAccessInStaticMethod:
-		return "ClassFiledAccessInStaticMethod";
-	case CodeBuilderErrorCode::ThisInNonclassFunction:
-		return "ThisInNonclassFunction";
-	case CodeBuilderErrorCode::AccessOfNonThisClassField:
-		return "AccessOfNonThisClassField";
-	case CodeBuilderErrorCode::ThisUnavailable:
-		return "ThisUnavailable";
-	case CodeBuilderErrorCode::InvalidValueAsTemplateArgument:
-		return "InvalidValueAsTemplateArgument";
-	case CodeBuilderErrorCode::InvalidTypeOfTemplateVariableArgument:
-		return "InvalidTypeOfTemplateVariableArgument";
-	case CodeBuilderErrorCode::TemplateParametersDeductionFailed:
-		return "TemplateParametersDeductionFailed";
-	case CodeBuilderErrorCode::DeclarationShadowsTemplateArgument:
-		return "DeclarationShadowsTemplateArgument";
-	case CodeBuilderErrorCode::ValueIsNotTemplate:
-		return "ValueIsNotTemplate";
-	case CodeBuilderErrorCode::TemplateInstantiationRequired:
-		return "TemplateInstantiationRequired";
-	case CodeBuilderErrorCode::MandatoryTemplateSignatureArgumentAfterOptionalArgument:
-		return "MandatoryTemplateSignatureArgumentAfterOptionalArgument";
-	case CodeBuilderErrorCode::TemplateArgumentIsNotDeducedYet:
-		return "TemplateArgumentIsNotDeducedYet";
-	case CodeBuilderErrorCode::TemplateArgumentNotUsedInSignature:
-		return "TemplateArgumentNotUsedInSignature";
-	case CodeBuilderErrorCode::IncompleteMemberOfClassTemplate:
-		return "IncompleteMemberOfClassTemplate";
-	case CodeBuilderErrorCode::ReferenceProtectionError:
-		return "ReferenceProtectionError";
-	case CodeBuilderErrorCode::DestroyedVariableStillHaveReferences:
-		return "DestroyedVariableStillHaveReferences";
-	case CodeBuilderErrorCode::AccessingVariableThatHaveMutableReference:
-		return "AccessingVariableThatHaveMutableReference";
-	case CodeBuilderErrorCode::ReturningUnallowedReference:
-		return "ReturningUnallowedReference";
-	case CodeBuilderErrorCode::InvalidReferenceTagCount:
-		return "InvalidReferenceTagCount";
-	case CodeBuilderErrorCode::SelfReferencePollution:
-		return "SelfReferencePollution";
-	case CodeBuilderErrorCode::ArgReferencePollution:
-		return "ArgReferencePollution";
-	case CodeBuilderErrorCode::MutableReferencePollutionOfOuterLoopVariable:
-		return "MutableReferencePollutionOfOuterLoopVariable";
-	case CodeBuilderErrorCode::UnallowedReferencePollution:
-		return "UnallowedReferencePollution";
-	case CodeBuilderErrorCode::ReferencePollutionForArgReference:
-		return "ReferencePollutionForArgReference";
-	case CodeBuilderErrorCode::ExplicitReferencePollutionForCopyConstructor:
-		return "ExplicitReferencePollutionForCopyConstructor";
-	case CodeBuilderErrorCode::ExplicitReferencePollutionForCopyAssignmentOperator:
-		return "ExplicitReferencePollutionForCopyAssignmentOperator";
-	case CodeBuilderErrorCode::OperatorDeclarationOutsideClass:
-		return "OperatorDeclarationOutsideClass";
-	case CodeBuilderErrorCode::OperatorDoesNotHaveParentClassArguments:
-		return "OperatorDoesNotHaveParentClassArguments";
-	case CodeBuilderErrorCode::InvalidArgumentCountForOperator:
-		return "InvalidArgumentCountForOperator";
-	case CodeBuilderErrorCode::InvalidReturnTypeForOperator:
-		return "InvalidReturnTypeForOperator";
-	case CodeBuilderErrorCode::UnderlayingTypeForEnumIsTooSmall:
-		return "UnderlayingTypeForEnumIsTooSmall";
-	};
-
-	U_ASSERT(false);
-	return "";
-}
-
 static PyObject* BuildProgramWithErrors( PyObject* const self, PyObject* const args )
 {
 	const char* program_text= nullptr;
@@ -452,7 +263,7 @@ static PyObject* BuildProgramWithErrors( PyObject* const self, PyObject* const a
 		PyObject* const dict= PyDict_New();
 		PyDict_SetItemString( dict, "file_pos", file_pos_dict );
 
-		const char* const error_code_str= ErrorCodeToString( error.code );
+		const char* const error_code_str= U::CodeBuilderErrorCodeToString( error.code );
 		PyDict_SetItemString( dict, "code", PyUnicode_DecodeASCII( error_code_str, std::strlen(error_code_str), nullptr ) );
 
 		std::string message= U::ToStdString( error.text );
@@ -466,26 +277,26 @@ static PyObject* BuildProgramWithErrors( PyObject* const self, PyObject* const a
 	return list;
 }
 
-static PyMethodDef sprace_methods[]=
+static PyMethodDef g_methods[]=
 {
-	{ "build_program",  BuildProgram, METH_VARARGS, "Build program." },
-	{ "free_program",  FreeProgram, METH_VARARGS, "Free program." },
-	{ "run_function",  RunFunction, METH_VARARGS, "Run function." },
+	{ "build_program"           ,   BuildProgram,           METH_VARARGS, "Build program." },
+	{ "free_program"             ,  FreeProgram,            METH_VARARGS, "Free program."  },
+	{ "run_function"             ,  RunFunction,            METH_VARARGS, "Run function."  },
 	{ "build_program_with_errors",  BuildProgramWithErrors, METH_VARARGS, "Build program with errors." },
-	{ nullptr, nullptr, 0, nullptr }        /* Sentinel */
+	{ nullptr, nullptr, 0, nullptr } // Sentinel
 };
 
-static struct PyModuleDef module=
+static struct PyModuleDef g_module=
 {
 	PyModuleDef_HEAD_INIT,
-	"sprache_compiler_lib",   /* name of module */
-	nullptr, /* module documentation, may be NULL */
-	-1,       /* size of per-interpreter state of the module,
-				 or -1 if the module keeps state in global variables. */
-	sprace_methods
+	"sprache_compiler_tests_py_lib",   // name of module
+	nullptr,  // module documentation, may be NULL
+	-1,       // size of per-interpreter state of the module,
+			  // or -1 if the module keeps state in global variables.
+	g_methods
 };
 
 PyMODINIT_FUNC PyInit_sprache_compiler_tests_py_lib(void)
 {
-	return PyModule_Create( &module );
+	return PyModule_Create( &g_module );
 }
