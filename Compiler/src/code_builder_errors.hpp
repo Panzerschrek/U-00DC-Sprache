@@ -137,6 +137,8 @@ struct CodeBuilderError
 	ProgramString text;
 };
 
+const char* CodeBuilderErrorCodeToString( CodeBuilderErrorCode code );
+
 // Helper functions for errors generation.
 
 // TODO - add more parameters for errors.

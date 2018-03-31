@@ -5,6 +5,7 @@ project(Sprache)
 option( BUILD_COMPILER "Enable compilation of compiler" YES )
 option( BUILD_TESTS "Enable compilation of base tests" YES )
 option( BUILD_LINKAGE_TESTS "Enable compilation of linkage tests" YES )
+option( BUILD_PY_TESTS "Enable compilation of py_tests" YES )
 
 if( BUILD_COMPILER )
 	message( STATUS "Build compiler" )
@@ -23,6 +24,13 @@ if( BUILD_LINKAGE_TESTS )
 else()
 	message( STATUS "Skip linkage tests" )
 endif( BUILD_LINKAGE_TESTS )
+
+if( BUILD_PY_TESTS )
+	message( STATUS "Build py_tests" )
+else()
+	message( STATUS "Skip py_tests" )
+endif( BUILD_PY_TESTS )
+
 
 set( CMAKE_CXX_STANDARD 11 )
 
@@ -171,6 +179,42 @@ if( BUILD_TESTS )
 	target_link_libraries( Tests CompilerLib ${LLVM_LIBS_FOR_TESTS} )
 endif( BUILD_TESTS )
 
+#
+# PyTests
+#
+if( BUILD_PY_TESTS )
+	find_package( PythonLibs REQUIRED )
+
+	set( PY_TESTS_SOURCES
+		py_tests/py_tests.cpp )
+
+	add_library( PyTestsLib SHARED ${PY_TESTS_SOURCES} )
+	target_link_libraries( PyTestsLib CompilerLib )
+	target_link_libraries( PyTestsLib ${LLVM_LIBS_FOR_TESTS} )
+	target_link_libraries( PyTestsLib ${PYTHON_LIBRARIES} )
+	target_include_directories( PyTestsLib PRIVATE ${PYTHON_INCLUDE_DIRS} )
+
+	# Make copy of result library with appropriate name.
+	if( WIN32 )
+		add_custom_target(
+			PyTestsLib_Install ALL
+			COMMAND cp libPyTestsLib.dll sprache_compiler_tests_py_lib.pyd # *.pyd libraries required by python on Windows
+			DEPENDS PyTestsLib )
+	else()
+		add_custom_target(
+			PyTestsLib_Install ALL
+			COMMAND cp libPyTestsLib.so sprache_compiler_tests_py_lib.so
+			DEPENDS PyTestsLib )
+	endif()
+
+	# Run result test.
+	add_custom_target(
+		PyTestsRun ALL
+		COMMAND ${CMAKE_COMMAND} -E env PYTHONPATH=${CMAKE_CURRENT_BINARY_DIR} python py_tests/py_tests.py
+		DEPENDS PyTestsLib_Install
+		WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} )
+
+endif( BUILD_PY_TESTS )
 
 # Build rule for "Ü" files
 # Returns result in U_SOURCE_OBJECT
