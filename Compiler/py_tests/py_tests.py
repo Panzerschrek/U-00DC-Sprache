@@ -42,6 +42,20 @@ def ErrorsTest():
 	assert( errors_list[0].file_pos.line == 1 )
 
 
+def ZeroInitializerForStructWithReferenceTest():
+	c_program_text= """
+	struct S{ i32& r; }
+	fn Foo()
+	{
+		var S s= zero_init;
+	}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "UnsupportedInitializerForReference" )
+	assert( errors_list[0].file_pos.line == 5 )
+
+
 # Get list of all tests here.
 tests_list = [ obj for name, obj in inspect.getmembers(sys.modules[__name__]) if inspect.isfunction(obj) and obj != ConvertErrors ]
 

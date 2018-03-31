@@ -742,6 +742,11 @@ llvm::Constant* CodeBuilder::ApplyZeroInitializer(
 				const ClassField* const field= member.second.GetClassField();
 				if( field == nullptr )
 					return;
+				if( field->is_reference )
+				{
+					errors_.push_back( ReportUnsupportedInitializerForReference( initializer.file_pos_ ) );
+					return;
+				}
 
 				struct_member.type= field->type;
 				index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(field->index) ) );
