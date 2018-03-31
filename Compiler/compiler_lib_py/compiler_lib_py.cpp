@@ -13,6 +13,7 @@
 #include <llvm/ExecutionEngine/ExecutionEngine.h>
 #include <llvm/ExecutionEngine/GenericValue.h>
 #include <llvm/ExecutionEngine/Interpreter.h>
+#include <llvm/Support/ManagedStatic.h>
 #include "../src/pop_llvm_warnings.hpp"
 
 namespace U
@@ -64,6 +65,8 @@ std::unique_ptr<llvm::Module> BuildProgram( const char* const text )
 
 } // namespace U
 
+static std::unique_ptr<llvm::ExecutionEngine> g_current_engine; // Can have only one.
+
 static PyObject* BuildProgram( PyObject* self, PyObject* args )
 {
 	const char* program_text= nullptr;
@@ -71,29 +74,40 @@ static PyObject* BuildProgram( PyObject* self, PyObject* args )
 	if( !PyArg_ParseTuple( args, "s", &program_text ) )
 		return nullptr;
 
+	if( g_current_engine != nullptr )
+	{
+		PyErr_SetString( PyExc_RuntimeError, "can not have more then one program in one time" );
+		return nullptr;
+	}
+
 	std::unique_ptr<llvm::Module> module= U::BuildProgram( program_text );
 
 	if( module == nullptr )
-		return Py_None;
-
-	llvm::EngineBuilder builder( std::move(module) );
-	llvm::ExecutionEngine* const engine= builder.create();
-	if( engine == nullptr )
+	{
+		llvm::llvm_shutdown();
+		PyErr_SetString( PyExc_RuntimeError, "program build failed" );
 		return nullptr;
+	}
 
-	// Convert pointer to integer handle.
-	return Py_BuildValue( "n", engine );
+	g_current_engine.reset( llvm::EngineBuilder( std::move(module) ).create() );
+	if( g_current_engine == nullptr )
+	{
+		llvm::llvm_shutdown();
+		PyErr_SetString( PyExc_RuntimeError, "engine creation failed" );
+		return nullptr;
+	}
+
+	return Py_None;
 }
 
-static PyObject* FreeProgram( PyObject* self, PyObject* args )
+static PyObject* FreeProgram( PyObject* const self, PyObject* const args )
 {
-	Py_ssize_t engine_ptr= 0;
-
-	if( !PyArg_ParseTuple( args, "n", &engine_ptr ) )
-		return nullptr;
-
-	llvm::ExecutionEngine* const engine= reinterpret_cast<llvm::ExecutionEngine*>( engine_ptr );
-	delete engine;
+	if( g_current_engine != nullptr )
+	{
+		g_current_engine.reset();
+		// We must kill ALL static internal llvm variables.
+		llvm::llvm_shutdown();
+	}
 
 	return Py_None;
 }
@@ -101,13 +115,11 @@ static PyObject* FreeProgram( PyObject* self, PyObject* args )
 static PyObject* RunFunction( PyObject* const self, PyObject* const args )
 {
 	const unsigned c_max_args= 8;
-	PyObject* engine_param= nullptr;
 	PyObject* function_name_param= nullptr;
 	PyObject* function_args[c_max_args]= { nullptr };
 
 	if( !PyArg_UnpackTuple(
-		args, "", 2, 2 + c_max_args,
-		&engine_param,
+		args, "", 1, 1 + c_max_args,
 		&function_name_param,
 		&function_args[0],
 		&function_args[1],
@@ -119,16 +131,17 @@ static PyObject* RunFunction( PyObject* const self, PyObject* const args )
 		&function_args[7] ) )
 		return nullptr; // Parse will raise
 
-	Py_ssize_t engine_ptr= 0;
-	if( !PyArg_Parse( engine_param, "n", &engine_ptr ) )
-		return nullptr; // Parse will raise
+	if( g_current_engine == nullptr )
+	{
+		PyErr_SetString( PyExc_RuntimeError, "current program is empty" );
+		return nullptr;
+	}
 
 	const char* function_name= nullptr;
 	if( !PyArg_Parse( function_name_param, "s", &function_name ) )
 		return nullptr; // Parse will raise
 
-	llvm::ExecutionEngine* const engine= reinterpret_cast<llvm::ExecutionEngine*>( engine_ptr );
-	llvm::Function* const function= engine->FindFunctionNamed( function_name );
+	llvm::Function* const function= g_current_engine->FindFunctionNamed( function_name );
 	if( function == nullptr )
 	{
 		PyErr_SetString( PyExc_RuntimeError, "can not get function" );
@@ -203,7 +216,7 @@ static PyObject* RunFunction( PyObject* const self, PyObject* const args )
 	}
 
 	const llvm::GenericValue result_value=
-		engine->runFunction(
+		g_current_engine->runFunction(
 			function,
 			llvm::ArrayRef<llvm::GenericValue>( llvm_args, arg_count ) );
 

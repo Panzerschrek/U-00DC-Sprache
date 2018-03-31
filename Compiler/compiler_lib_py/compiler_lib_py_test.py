@@ -1,16 +1,14 @@
 import sys
 sys.path.append('../../Compiler-build')
-import sprache_compiler_tests_py_lib
+import sprache_compiler_tests_py_lib as tests_lib
 
 def main():
-	program= sprache_compiler_tests_py_lib.build_program( "fn Foo( i32 x, i32 y ) : f32 { return f32(x * y) + 0.5f; }" )
-	if program is None:
-		raise "program is none"
+	tests_lib.build_program( "fn Foo( i32 x, i32 y ) : f32 { return f32(x * y) + 0.5f; }" )
 
-	call_result= sprache_compiler_tests_py_lib.run_function( program, "_Z3Fooii", 1, 45 )
+	call_result= tests_lib.run_function( "_Z3Fooii", 3, 7 )
 	print( call_result )
 
-	sprache_compiler_tests_py_lib.free_program(program)
+	tests_lib.free_program()
 
 if __name__ == "__main__":
 	sys.exit(main())
