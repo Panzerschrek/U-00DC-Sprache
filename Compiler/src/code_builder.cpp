@@ -2356,14 +2356,16 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 	const bool global )
 {
 	const Type type= PrepareType( variables_declaration.type, block_names );
-	if( type.IsIncomplete() )
-	{
-		errors_.push_back( ReportUsingIncompleteType( variables_declaration.file_pos_, type.ToString() ) );
-		return;
-	}
 
 	for( const Synt::VariablesDeclaration::VariableEntry& variable_declaration : variables_declaration.variables )
 	{
+		// Report about incomplete type only for values, not references.
+		if( variable_declaration.reference_modifier != ReferenceModifier::Reference && type.IsIncomplete() )
+		{
+			errors_.push_back( ReportUsingIncompleteType( variables_declaration.file_pos_, type.ToString() ) );
+			return;
+		}
+
 		if( IsKeyword( variable_declaration.name ) )
 		{
 			errors_.push_back( ReportUsingKeywordAsName( variables_declaration.file_pos_ ) );
