@@ -26,6 +26,11 @@ def ConvertErrors( errors_list ):
 	return result
 
 
+#
+# Start tests
+#
+
+
 def OkTest():
 	tests_lib.build_program( "fn Foo( i32 x, i32 y ) : f32 { return f32(x * y) + 0.5f; }" )
 
@@ -132,6 +137,23 @@ def VoidTypeReference_Test4():
 	struct S{ void& v; }   // void for reference field.
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def VoidTypeReference_Test5():
+	c_program_text= """
+	fn Foo() : void&;
+	fn Bar( void& v );
+	fn Baz()
+	{
+		Bar(Foo()); // Pass void-reference result from one function to another.
+	}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+#
+# End tests
+#
 
 
 # Get list of all tests here.

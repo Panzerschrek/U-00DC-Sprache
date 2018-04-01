@@ -67,12 +67,21 @@ std::unique_ptr<llvm::Module> BuildProgram( const char* const text )
 
 static std::unique_ptr<llvm::ExecutionEngine> g_current_engine; // Can have only one.
 
-static PyObject* BuildProgram( PyObject* self, PyObject* args )
+static PyObject* BuildProgram( PyObject* const self, PyObject* const args )
 {
-	const char* program_text= nullptr;
+	PyObject* prorgam_text_arg= nullptr;
+	PyObject* print_llvm_asm_arg= nullptr;
 
-	if( !PyArg_ParseTuple( args, "s", &program_text ) )
-		return nullptr;
+	if( !PyArg_UnpackTuple( args, "", 1, 2, &prorgam_text_arg, &print_llvm_asm_arg ) )
+		return nullptr; // Parse will raise
+
+	const char* program_text= nullptr;
+	if( !PyArg_Parse( prorgam_text_arg, "s", &program_text ) )
+		return nullptr; // Parse will raise
+
+	int print_llvm_asm= 0;
+	if( print_llvm_asm_arg != nullptr && !PyArg_Parse( print_llvm_asm_arg, "p", &print_llvm_asm ) )
+		return nullptr; // Parse will raise
 
 	if( g_current_engine != nullptr )
 	{
@@ -88,6 +97,9 @@ static PyObject* BuildProgram( PyObject* self, PyObject* args )
 		PyErr_SetString( PyExc_RuntimeError, "program build failed" );
 		return nullptr;
 	}
+
+	if( print_llvm_asm != 0 )
+		module->dump();
 
 	g_current_engine.reset( llvm::EngineBuilder( std::move(module) ).create() );
 	if( g_current_engine == nullptr )
