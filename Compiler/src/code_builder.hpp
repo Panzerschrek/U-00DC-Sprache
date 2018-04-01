@@ -638,7 +638,8 @@ private:
 		llvm::Type* f32;
 		llvm::Type* f64;
 
-		llvm::Type* void_;
+		llvm::IntegerType* void_;
+		llvm::Type* void_for_ret_;
 		llvm::Type* invalid_type_;
 		llvm::IntegerType* bool_;
 	} fundamental_llvm_types_;
@@ -647,6 +648,7 @@ private:
 
 	Type invalid_type_;
 	Type void_type_;
+	Type void_type_for_ret_;
 	Type bool_type_;
 
 	FunctionContext* dummy_function_context_= nullptr;

@@ -91,11 +91,13 @@ CodeBuilder::CodeBuilder()
 	fundamental_llvm_types_.f64= llvm::Type::getDoubleTy( llvm_context_ );
 
 	fundamental_llvm_types_.invalid_type_= llvm::Type::getInt8Ty( llvm_context_ );
-	fundamental_llvm_types_.void_= llvm::Type::getVoidTy( llvm_context_ );
+	fundamental_llvm_types_.void_= llvm::Type::getInt8Ty( llvm_context_ );
+	fundamental_llvm_types_.void_for_ret_= llvm::Type::getVoidTy( llvm_context_ );
 	fundamental_llvm_types_.bool_= llvm::Type::getInt1Ty( llvm_context_ );
 
 	invalid_type_= FundamentalType( U_FundamentalType::InvalidType, fundamental_llvm_types_.invalid_type_ );
 	void_type_= FundamentalType( U_FundamentalType::Void, fundamental_llvm_types_.void_ );
+	void_type_for_ret_= FundamentalType( U_FundamentalType::Void, fundamental_llvm_types_.void_for_ret_ );
 	bool_type_= FundamentalType( U_FundamentalType::Bool, fundamental_llvm_types_.bool_ );
 
 	// Default resolve handler - push first to stack.
@@ -1244,7 +1246,7 @@ CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 	Function& function_type= *func_variable.type.GetFunctionType();
 
 	if( func.return_type_ == nullptr )
-		function_type.return_type= void_type_;
+		function_type.return_type= void_type_for_ret_;
 	else
 	{
 		function_type.return_type= PrepareType( func.return_type_, *func_base_names_scope );
@@ -1254,6 +1256,11 @@ CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 
 	function_type.return_value_is_mutable= func.return_value_mutability_modifier_ == MutabilityModifier::Mutable;
 	function_type.return_value_is_reference= func.return_value_reference_modifier_ == ReferenceModifier::Reference;
+
+	// HACK. We have different llvm types for "void".
+	// llvm::void used only for empty return value, for other purposes we use "i8" for Ü::void.
+	if( !function_type.return_value_is_reference && function_type.return_type == void_type_ )
+		function_type.return_type= void_type_for_ret_;
 
 	if( function_type.return_type.GetTemplateDependentType() == nullptr &&
 		!function_type.return_value_is_reference &&

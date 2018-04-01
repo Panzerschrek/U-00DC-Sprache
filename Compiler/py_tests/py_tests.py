@@ -91,6 +91,49 @@ def VoidTypeIsIncomplete_Test2():
 	assert( errors_list[0].file_pos.line == 2 )
 
 
+def VoidTypeReference_Test0():
+	c_program_text= """
+	fn Foo( void& v ) {}    // void type for reference-arg.
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def VoidTypeReference_Test1():
+	c_program_text= """
+	fn Foo() : void&;    // void for returning reference.
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def VoidTypeReference_Test2():
+	c_program_text= """
+	fn Foo() : void&;
+	fn Bar()
+	{
+		var void &v= Foo();  // save returning void reference, using "var".
+	}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def VoidTypeReference_Test3():
+	c_program_text= """
+	fn Foo() : void&;
+	fn Bar()
+	{
+		auto &v= Foo();  // save returning void reference, using "auto".
+	}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def VoidTypeReference_Test4():
+	c_program_text= """
+	struct S{ void& v; }   // void for reference field.
+	"""
+	tests_lib.build_program( c_program_text )
+
+
 # Get list of all tests here.
 tests_list = [ obj for name, obj in inspect.getmembers(sys.modules[__name__]) if inspect.isfunction(obj) and obj != ConvertErrors ]
 
