@@ -214,6 +214,25 @@ def CastToVoidReference_Test3():
 	tests_lib.build_program( c_program_text )
 
 
+def CastToVoidReference_Test4():
+	c_program_text= """
+		fn ToVoid( i32& x ) : void&
+		{
+			return x;  // Cast to void in return (imut to imut).
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def CastToVoidReference_Test5():
+	c_program_text= """
+		fn ToVoid( i32 &mut x ) : void &mut
+		{
+			return x;  // Cast to void in return (mut to mut).
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
 #
 # End tests
 #

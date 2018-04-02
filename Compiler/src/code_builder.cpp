@@ -3038,7 +3038,7 @@ void CodeBuilder::BuildReturnOperatorCode(
 {
 	if( return_operator.expression_ == nullptr )
 	{
-		if( function_context.return_type != void_type_ )
+		if( !( function_context.return_type == void_type_ && !function_context.return_value_is_reference ) )
 		{
 			errors_.push_back( ReportTypesMismatch( return_operator.file_pos_, void_type_.ToString(), function_context.return_type.ToString() ) );
 			return;
@@ -3067,6 +3067,7 @@ void CodeBuilder::BuildReturnOperatorCode(
 			function_context );
 
 	if( expression_result_value.GetType() == NontypeStub::TemplateDependentValue ||
+		expression_result_value.GetType() == NontypeStub::ErrorValue ||
 		function_context.return_type == NontypeStub::TemplateDependentValue )
 	{
 		// Add "ret void", because we do not need to break llvm basic blocks structure.
@@ -3074,16 +3075,18 @@ void CodeBuilder::BuildReturnOperatorCode(
 		return;
 	}
 
-	if( expression_result_value.GetType().GetTemplateDependentType() == nullptr && function_context.return_type.GetTemplateDependentType() == nullptr &&
-		expression_result_value.GetType() != function_context.return_type )
-	{
-		errors_.push_back( ReportTypesMismatch( return_operator.file_pos_, function_context.return_type.ToString(), expression_result_value.GetType().ToString() ) );
-		return;
-	}
+	const bool something_is_template_dependent= expression_result_value.GetType().GetTemplateDependentType() != nullptr || function_context.return_type.GetTemplateDependentType() != nullptr;
 	const Variable& expression_result= *expression_result_value.GetVariable();
 
 	if( function_context.return_value_is_reference )
 	{
+		if( !something_is_template_dependent && expression_result.type != function_context.return_type &&
+			!expression_result.type.ReferenceIsConvertibleTo( function_context.return_type ) )
+		{
+			errors_.push_back( ReportTypesMismatch( return_operator.file_pos_, function_context.return_type.ToString(), expression_result_value.GetType().ToString() ) );
+			return;
+		}
+
 		if( expression_result.value_type == ValueType::Value )
 		{
 			errors_.push_back( ReportExpectedReferenceValue( return_operator.file_pos_ ) );
@@ -3110,10 +3113,19 @@ void CodeBuilder::BuildReturnOperatorCode(
 				errors_.push_back( ReportReturningUnallowedReference( return_operator.file_pos_ ) );
 		}
 
-		function_context.llvm_ir_builder.CreateRet( expression_result.llvm_value );
+		llvm::Value* ret_value= expression_result.llvm_value;
+		if( expression_result.type != function_context.return_type )
+			ret_value= CreateReferenceCast( ret_value, function_context.return_type, function_context );
+		function_context.llvm_ir_builder.CreateRet( ret_value );
 	}
 	else
 	{
+		if( !something_is_template_dependent && expression_result.type != function_context.return_type )
+		{
+			errors_.push_back( ReportTypesMismatch( return_operator.file_pos_, function_context.return_type.ToString(), expression_result_value.GetType().ToString() ) );
+			return;
+		}
+
 		if( expression_result.type.ReferencesTagsCount() > 0u )
 		{
 			// Check correctness of returning references.
