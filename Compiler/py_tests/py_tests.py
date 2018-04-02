@@ -233,6 +233,18 @@ def CastToVoidReference_Test5():
 	"""
 	tests_lib.build_program( c_program_text )
 
+
+def CastToVoidReference_Test6():
+	c_program_text= """
+		struct S{ void& v; }
+		fn Foo()
+		{
+			var f32 x= zero_init;
+			var S S{ .v= x };  // Cast reference in field initialization.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
 #
 # End tests
 #

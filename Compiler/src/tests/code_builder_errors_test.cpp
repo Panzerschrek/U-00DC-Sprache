@@ -598,6 +598,28 @@ U_TEST(TypesMismatchTest10)
 	U_TEST_ASSERT( error.file_pos.line == 5u );
 }
 
+U_TEST(TypesMismatchTest11)
+{
+	// Unexpected type in reference-field initialization.
+	static const char c_program_text[]=
+	R"(
+		struct S{ i32& x; }
+		fn Foo()
+		{
+			var f32 x= 0.0f;
+			var S s{ .x= x };
+		}
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::TypesMismatch );
+	U_TEST_ASSERT( error.file_pos.line == 6u );
+}
+
 U_TEST(NoMatchBinaryOperatorForGivenTypesTest0)
 {
 	// Add for array and int.

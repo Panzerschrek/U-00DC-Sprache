@@ -808,6 +808,11 @@ void CodeBuilder::InitializeReferenceField(
 
 	if( field.type.GetTemplateDependentType() != nullptr )
 		return;
+	if( !initializer_variable->type.ReferenceIsConvertibleTo( field.type ) )
+	{
+		errors_.push_back( ReportTypesMismatch( initializer_expression->GetFilePos(), field.type.ToString(), initializer_variable->type.ToString() ) );
+		return;
+	}
 	if( initializer_variable->value_type == ValueType::Value )
 	{
 		errors_.push_back( ReportExpectedReferenceValue( initializer_expression->GetFilePos() ) );
@@ -836,7 +841,10 @@ void CodeBuilder::InitializeReferenceField(
 	llvm::Value* const address_of_reference=
 		function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, llvm::ArrayRef<llvm::Value*> ( index_list, 2u ) );
 
-	function_context.llvm_ir_builder.CreateStore( initializer_variable->llvm_value, address_of_reference );
+	llvm::Value* ref_to_store= initializer_variable->llvm_value;
+	if( field.type != initializer_variable->type )
+		ref_to_store= CreateReferenceCast( ref_to_store, field.type, function_context );
+	function_context.llvm_ir_builder.CreateStore( ref_to_store, address_of_reference );
 }
 
 } // namespace CodeBuilderPrivate
