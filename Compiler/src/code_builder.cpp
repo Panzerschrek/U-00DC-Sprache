@@ -2474,7 +2474,7 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 			const Value expression_result_value=
 				BuildExpressionCode( *initializer_expression, block_names, function_context );
 
-			if( expression_result_value.GetType() != variable.type &&
+			if( !expression_result_value.GetType().ReferenceIsConvertibleTo( variable.type ) &&
 				expression_result_value.GetType().GetTemplateDependentType() == nullptr && variable.type.GetTemplateDependentType() == nullptr )
 			{
 				errors_.push_back( ReportTypesMismatch( variables_declaration.file_pos_, variable.type.ToString(), expression_result_value.GetType().ToString() ) );
@@ -2502,7 +2502,10 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 			CheckReferencedVariables( stored_variable->content, variable_declaration.file_pos );
 
 			// TODO - maybe make copy of varaible address in new llvm register?
-			variable.llvm_value= expression_result.llvm_value;
+			llvm::Value* result_ref= expression_result.llvm_value;
+			if( variable.type != expression_result.type )
+				result_ref= CreateReferenceCast( result_ref, variable.type, function_context );
+			variable.llvm_value= result_ref;
 			variable.constexpr_value= expression_result.constexpr_value;
 		}
 		else

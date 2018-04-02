@@ -245,6 +245,17 @@ def CastToVoidReference_Test6():
 	"""
 	tests_lib.build_program( c_program_text )
 
+
+def CastToVoidReference_Test7():
+	c_program_text= """
+		fn Foo( f32& x ) : void&
+		{
+			var void &v= x;  // Cast reference to void in reference-variable initialization.
+			return v;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
 #
 # End tests
 #
