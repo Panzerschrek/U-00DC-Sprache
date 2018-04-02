@@ -989,7 +989,7 @@ U_TEST(NoReturnInFunctionReturningNonVoidTest0)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NoReturnInFunctionReturningNonVoid );
-	U_TEST_ASSERT( error.file_pos.line == 3u );
+	U_TEST_ASSERT( error.file_pos.line == 4u );
 }
 
 U_TEST(NoReturnInFunctionReturningNonVoidTest1)
@@ -1009,7 +1009,7 @@ U_TEST(NoReturnInFunctionReturningNonVoidTest1)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NoReturnInFunctionReturningNonVoid );
-	U_TEST_ASSERT( error.file_pos.line == 3u );
+	U_TEST_ASSERT( error.file_pos.line == 5u );
 }
 
 U_TEST(NoReturnInFunctionReturningNonVoidTest2)
@@ -1030,7 +1030,7 @@ U_TEST(NoReturnInFunctionReturningNonVoidTest2)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NoReturnInFunctionReturningNonVoid );
-	U_TEST_ASSERT( error.file_pos.line == 3u );
+	U_TEST_ASSERT( error.file_pos.line == 6u );
 }
 
 U_TEST(NoReturnInFunctionReturningNonVoidTest3)

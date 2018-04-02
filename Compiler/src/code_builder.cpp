@@ -1938,7 +1938,7 @@ void CodeBuilder::BuildFuncCode(
 	// In other case, we have "return" in all branches and destructors call before each "return".
 	if( !block_build_info.have_unconditional_return_inside )
 	{
-		if( function_type->return_type == void_type_ )
+		if( function_type->return_type == void_type_ && !function_type->return_value_is_reference )
 		{
 			// Manually generate "return" for void-return functions.
 			CallDestructors( *function_context.stack_variables_stack.back(), function_context, block->end_file_pos_ );
@@ -1953,7 +1953,7 @@ void CodeBuilder::BuildFuncCode(
 		}
 		else
 		{
-			errors_.push_back( ReportNoReturnInFunctionReturningNonVoid( block->file_pos_ ) );
+			errors_.push_back( ReportNoReturnInFunctionReturningNonVoid( block->end_file_pos_ ) );
 			return;
 		}
 	}

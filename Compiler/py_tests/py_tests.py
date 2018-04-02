@@ -59,6 +59,22 @@ def ZeroInitializerForStructWithReferenceTest():
 	assert( errors_list[0].file_pos.line == 5 )
 
 
+def VoidTypeReferenceMustBeReturned_Test():
+	c_program_text= """
+	fn Bar() : void&;
+	fn Foo() : void&
+	{
+		if(false){ return Bar(); }
+		2 + 2;
+		// Does not return.
+	}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "NoReturnInFunctionReturningNonVoid" )
+	assert( errors_list[0].file_pos.line == 8 )
+
+
 def VoidTypeIsIncomplete_Test0():
 	c_program_text= """
 	fn Foo()
