@@ -2474,7 +2474,7 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 			const Value expression_result_value=
 				BuildExpressionCode( *initializer_expression, block_names, function_context );
 
-			if( expression_result_value.GetType() != variable.type &&
+			if( !expression_result_value.GetType().ReferenceIsConvertibleTo( variable.type ) &&
 				expression_result_value.GetType().GetTemplateDependentType() == nullptr && variable.type.GetTemplateDependentType() == nullptr )
 			{
 				errors_.push_back( ReportTypesMismatch( variables_declaration.file_pos_, variable.type.ToString(), expression_result_value.GetType().ToString() ) );
@@ -2502,7 +2502,10 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 			CheckReferencedVariables( stored_variable->content, variable_declaration.file_pos );
 
 			// TODO - maybe make copy of varaible address in new llvm register?
-			variable.llvm_value= expression_result.llvm_value;
+			llvm::Value* result_ref= expression_result.llvm_value;
+			if( variable.type != expression_result.type )
+				result_ref= CreateReferenceCast( result_ref, variable.type, function_context );
+			variable.llvm_value= result_ref;
 			variable.constexpr_value= expression_result.constexpr_value;
 		}
 		else
@@ -3038,7 +3041,7 @@ void CodeBuilder::BuildReturnOperatorCode(
 {
 	if( return_operator.expression_ == nullptr )
 	{
-		if( function_context.return_type != void_type_ )
+		if( !( function_context.return_type == void_type_ && !function_context.return_value_is_reference ) )
 		{
 			errors_.push_back( ReportTypesMismatch( return_operator.file_pos_, void_type_.ToString(), function_context.return_type.ToString() ) );
 			return;
@@ -3067,6 +3070,7 @@ void CodeBuilder::BuildReturnOperatorCode(
 			function_context );
 
 	if( expression_result_value.GetType() == NontypeStub::TemplateDependentValue ||
+		expression_result_value.GetType() == NontypeStub::ErrorValue ||
 		function_context.return_type == NontypeStub::TemplateDependentValue )
 	{
 		// Add "ret void", because we do not need to break llvm basic blocks structure.
@@ -3074,16 +3078,18 @@ void CodeBuilder::BuildReturnOperatorCode(
 		return;
 	}
 
-	if( expression_result_value.GetType().GetTemplateDependentType() == nullptr && function_context.return_type.GetTemplateDependentType() == nullptr &&
-		expression_result_value.GetType() != function_context.return_type )
-	{
-		errors_.push_back( ReportTypesMismatch( return_operator.file_pos_, function_context.return_type.ToString(), expression_result_value.GetType().ToString() ) );
-		return;
-	}
+	const bool something_is_template_dependent= expression_result_value.GetType().GetTemplateDependentType() != nullptr || function_context.return_type.GetTemplateDependentType() != nullptr;
 	const Variable& expression_result= *expression_result_value.GetVariable();
 
 	if( function_context.return_value_is_reference )
 	{
+		if( !something_is_template_dependent && expression_result.type != function_context.return_type &&
+			!expression_result.type.ReferenceIsConvertibleTo( function_context.return_type ) )
+		{
+			errors_.push_back( ReportTypesMismatch( return_operator.file_pos_, function_context.return_type.ToString(), expression_result_value.GetType().ToString() ) );
+			return;
+		}
+
 		if( expression_result.value_type == ValueType::Value )
 		{
 			errors_.push_back( ReportExpectedReferenceValue( return_operator.file_pos_ ) );
@@ -3110,10 +3116,19 @@ void CodeBuilder::BuildReturnOperatorCode(
 				errors_.push_back( ReportReturningUnallowedReference( return_operator.file_pos_ ) );
 		}
 
-		function_context.llvm_ir_builder.CreateRet( expression_result.llvm_value );
+		llvm::Value* ret_value= expression_result.llvm_value;
+		if( expression_result.type != function_context.return_type )
+			ret_value= CreateReferenceCast( ret_value, function_context.return_type, function_context );
+		function_context.llvm_ir_builder.CreateRet( ret_value );
 	}
 	else
 	{
+		if( !something_is_template_dependent && expression_result.type != function_context.return_type )
+		{
+			errors_.push_back( ReportTypesMismatch( return_operator.file_pos_, function_context.return_type.ToString(), expression_result_value.GetType().ToString() ) );
+			return;
+		}
+
 		if( expression_result.type.ReferencesTagsCount() > 0u )
 		{
 			// Check correctness of returning references.
@@ -3602,10 +3617,10 @@ const FunctionVariable* CodeBuilder::GetOverloadedFunction(
 				actual_args_begin[i].type.GetTemplateDependentType() != nullptr )
 				return &function;
 
+			const bool types_are_same= actual_args_begin[i].type == function_type.args[i].type;
+			const bool types_are_compatible= actual_args_begin[i].type.ReferenceIsConvertibleTo( function_type.args[i].type );
 			// SPRACHE_TODO - support type-casting for function call.
-			// SPRACHE_TODO - support references-casting.
-			// Now - only exactly compare types.
-			if( actual_args_begin[i].type != function_type.args[i].type )
+			if( !types_are_compatible )
 			{
 				match_type= MatchType::NoMatch;
 				break;
@@ -3632,6 +3647,17 @@ const FunctionVariable* CodeBuilder::GetOverloadedFunction(
 			}
 			else
 				U_ASSERT(false);
+
+			if( !types_are_same && types_are_compatible && match_type != MatchType::NoMatch )
+			{
+				if( !function_type.args[i].is_reference )
+				{
+					// Can cast only references now.
+					match_type= MatchType::NoMatch;
+					break;
+				}
+				match_type= MatchType::TypeConversions;
+			}
 		} // for candidate function args.
 
 		const unsigned int function_index= &function - functions_set.data();
@@ -3811,6 +3837,11 @@ llvm::Value*CodeBuilder::CreateMoveToLLVMRegisterInstruction(
 
 	U_ASSERT(false);
 	return nullptr;
+}
+
+llvm::Value* CodeBuilder::CreateReferenceCast( llvm::Value* const ref, const Type& dest_type, FunctionContext& function_context )
+{
+	return function_context.llvm_ir_builder.CreatePointerCast( ref, llvm::PointerType::get( dest_type.GetLLVMType(), 0 ) );
 }
 
 llvm::GlobalVariable* CodeBuilder::CreateGlobalConstantVariable(

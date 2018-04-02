@@ -116,6 +116,8 @@ public:
 	TemplateDependentType* GetTemplateDependentType();
 	const TemplateDependentType* GetTemplateDependentType() const;
 
+	bool ReferenceIsConvertibleTo( const Type& other ) const;
+
 	// TODO - does this method needs?
 	SizeType SizeOf() const;
 

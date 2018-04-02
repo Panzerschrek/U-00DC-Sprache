@@ -1673,10 +1673,14 @@ Value CodeBuilder::DoCallFunction(
 		const bool something_have_template_dependent_type= expr.type.GetTemplateDependentType() != nullptr || arg.type.GetTemplateDependentType() != nullptr;
 		function_result_have_template_dependent_type= function_result_have_template_dependent_type || something_have_template_dependent_type;
 
-		U_ASSERT( something_have_template_dependent_type || expr.type == arg.type );
-
 		if( arg.is_reference )
 		{
+			if( !something_have_template_dependent_type && !expr.type.ReferenceIsConvertibleTo(arg.type) )
+			{
+				errors_.push_back( ReportTypesMismatch( file_pos, arg.type.ToString(), expr.type.ToString() ) );
+				return ErrorValue();
+			}
+
 			if( arg.is_mutable )
 			{
 				if( expr.value_type == ValueType::Value )
@@ -1690,7 +1694,10 @@ Value CodeBuilder::DoCallFunction(
 					return ErrorValue();
 				}
 
-				llvm_args[j]= expr.llvm_value;
+				if( expr.type == arg.type )
+					llvm_args[j]= expr.llvm_value;
+				else
+					llvm_args[j]= CreateReferenceCast( expr.llvm_value, arg.type, function_context );
 
 				// Lock references.
 				for( const StoredVariablePtr& referenced_variable : expr.referenced_variables )
@@ -1702,24 +1709,19 @@ Value CodeBuilder::DoCallFunction(
 			}
 			else
 			{
-				if( expr.value_type == ValueType::Value )
+				if( expr.value_type == ValueType::Value && expr.location == Variable::Location::LLVMRegister && !something_have_template_dependent_type )
 				{
 					// Bind value to const reference.
 					// TODO - support nonfundamental values.
-					if( expr.location == Variable::Location::LLVMRegister )
-					{
-						if( !something_have_template_dependent_type )
-						{
-							llvm::Value* const temp_storage= function_context.alloca_ir_builder.CreateAlloca( expr.type.GetLLVMType() );
-							function_context.llvm_ir_builder.CreateStore( expr.llvm_value, temp_storage );
-							llvm_args[j]= temp_storage;
-						}
-					}
-					else
-						llvm_args[j]= expr.llvm_value;
+					llvm::Value* const temp_storage= function_context.alloca_ir_builder.CreateAlloca( expr.type.GetLLVMType() );
+					function_context.llvm_ir_builder.CreateStore( expr.llvm_value, temp_storage );
+					llvm_args[j]= temp_storage;
 				}
 				else
 					llvm_args[j]= expr.llvm_value;
+
+				if( expr.type != arg.type )
+					llvm_args[j]= CreateReferenceCast( llvm_args[j], arg.type, function_context );
 
 				// Lock references.
 				for( const StoredVariablePtr& referenced_variable : expr.referenced_variables )
@@ -1732,6 +1734,13 @@ Value CodeBuilder::DoCallFunction(
 		}
 		else
 		{
+			if( !something_have_template_dependent_type && arg.type != expr.type )
+			{
+				// SPRACHE_TODO - allow value-casting.
+				errors_.push_back( ReportTypesMismatch( file_pos, arg.type.ToString(), expr.type.ToString() ) );
+				return ErrorValue();
+			}
+
 			if( arg.type.GetFundamentalType() != nullptr || arg.type.GetEnumType() != nullptr )
 			{
 				if( !something_have_template_dependent_type )
