@@ -250,6 +250,19 @@ const TemplateDependentType* Type::GetTemplateDependentType() const
 	return boost::get<TemplateDependentType>( &something_ );
 }
 
+bool Type::ReferenceIsConvertibleTo( const Type& other ) const
+{
+	if( *this == other )
+		return true;
+
+	// SPRACHE_TODO - support other reference casting - derived to base, etc.
+	const FundamentalType* const other_fundamental= other.GetFundamentalType();
+	if( other_fundamental != nullptr && other_fundamental->fundamental_type == U_FundamentalType::Void )
+		return true;
+
+	return false;
+}
+
 SizeType Type::SizeOf() const
 {
 	struct Visitor final : public boost::static_visitor<SizeType>

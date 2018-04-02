@@ -167,6 +167,53 @@ def VoidTypeReference_Test5():
 	tests_lib.build_program( c_program_text )
 
 
+def CastToVoidReference_Test0():
+	c_program_text= """
+		fn Bar( void& v );
+		fn Foo()
+		{
+			var i32 x= 0;
+			Bar(x); // Cast to void reference in call (imut to imut).
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def CastToVoidReference_Test1():
+	c_program_text= """
+		fn Bar( void& v );
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			Bar(x); // Cast to void reference in call (mut to imut).
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def CastToVoidReference_Test2():
+	c_program_text= """
+		fn Bar( void &mut v );
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			Bar(x); // Cast to void reference in call (mut to mut).
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def CastToVoidReference_Test3():
+	c_program_text= """
+		fn Bar( void& v );
+		fn Foo()
+		{
+			Bar(42); // Cast value to void reference in call (imut to imut).
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
 #
 # End tests
 #

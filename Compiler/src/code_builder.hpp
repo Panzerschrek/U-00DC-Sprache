@@ -617,6 +617,8 @@ private:
 	// If variable already in register - does nothing.
 	llvm::Value* CreateMoveToLLVMRegisterInstruction( const Variable& variable, FunctionContext& function_context );
 
+	llvm::Value* CreateReferenceCast( llvm::Value* ref, const Type& dest_type, FunctionContext& function_context );
+
 	llvm::GlobalVariable* CreateGlobalConstantVariable( const Type& type, const std::string& mangled_name, llvm::Constant* initializer= nullptr );
 
 	void SetupGeneratedFunctionLinkageAttributes( llvm::Function& function );

@@ -3602,10 +3602,10 @@ const FunctionVariable* CodeBuilder::GetOverloadedFunction(
 				actual_args_begin[i].type.GetTemplateDependentType() != nullptr )
 				return &function;
 
+			const bool types_are_same= actual_args_begin[i].type == function_type.args[i].type;
+			const bool types_are_compatible= actual_args_begin[i].type.ReferenceIsConvertibleTo( function_type.args[i].type );
 			// SPRACHE_TODO - support type-casting for function call.
-			// SPRACHE_TODO - support references-casting.
-			// Now - only exactly compare types.
-			if( actual_args_begin[i].type != function_type.args[i].type )
+			if( !types_are_compatible )
 			{
 				match_type= MatchType::NoMatch;
 				break;
@@ -3632,6 +3632,17 @@ const FunctionVariable* CodeBuilder::GetOverloadedFunction(
 			}
 			else
 				U_ASSERT(false);
+
+			if( !types_are_same && types_are_compatible && match_type != MatchType::NoMatch )
+			{
+				if( !function_type.args[i].is_reference )
+				{
+					// Can cast only references now.
+					match_type= MatchType::NoMatch;
+					break;
+				}
+				match_type= MatchType::TypeConversions;
+			}
 		} // for candidate function args.
 
 		const unsigned int function_index= &function - functions_set.data();
@@ -3811,6 +3822,11 @@ llvm::Value*CodeBuilder::CreateMoveToLLVMRegisterInstruction(
 
 	U_ASSERT(false);
 	return nullptr;
+}
+
+llvm::Value* CodeBuilder::CreateReferenceCast( llvm::Value* const ref, const Type& dest_type, FunctionContext& function_context )
+{
+	return function_context.llvm_ir_builder.CreatePointerCast( ref, llvm::PointerType::get( dest_type.GetLLVMType(), 0 ) );
 }
 
 llvm::GlobalVariable* CodeBuilder::CreateGlobalConstantVariable(
