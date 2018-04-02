@@ -128,7 +128,7 @@ ICodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_g
 
 	// Prepare halt func.
 	{
-		llvm::FunctionType* void_function_type= llvm::FunctionType::get( fundamental_llvm_types_.void_, false );
+		llvm::FunctionType* void_function_type= llvm::FunctionType::get( fundamental_llvm_types_.void_for_ret_, false );
 		halt_func_= llvm::Function::Create( void_function_type, llvm::Function::ExternalLinkage, "__U_halt", module_.get() );
 		halt_func_->setDoesNotReturn();
 		halt_func_->setDoesNotThrow();
@@ -145,7 +145,7 @@ ICodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_g
 			module_.get() );
 
 	FunctionContext dummy_function_context(
-		void_type_,
+		void_type_for_ret_,
 		false, false,
 		llvm_context_,
 		dummy_function );
