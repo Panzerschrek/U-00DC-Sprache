@@ -3,6 +3,7 @@ import sys
 import traceback
 import sprache_compiler_tests_py_lib as tests_lib
 
+
 class FilePos:
 	file_index= 0
 	line= 0
@@ -255,6 +256,32 @@ def CastToVoidReference_Test7():
 		}
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def CastToVoidReference_Test8():
+	c_program_text= """
+		fn Bar( void& v ){}
+		fn Foo()
+		{
+			var [ i32, 4 ] arr= zero_init;
+			Bar(arr);  // Cast reference to array in function all.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def CastToVoidReference_Test9():
+	c_program_text= """
+		struct S{}
+		fn Bar( void& v ){}
+		fn Foo()
+		{
+			var S s= zero_init;
+			Bar(s);  // Cast reference to struct in function all.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
 
 #
 # End tests
