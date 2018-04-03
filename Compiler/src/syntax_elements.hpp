@@ -610,6 +610,15 @@ public:
 	ReferenceModifier reference_modifier= ReferenceModifier::None;
 };
 
+enum class ClassKindAttribute
+{
+	None,
+	Final,
+	Polymorph,
+	Interface,
+	Abstract,
+};
+
 class Class final
 	: public SyntaxElementBase
 	, public IProgramElement
@@ -621,6 +630,7 @@ public:
 	ClassElements elements_;
 	ComplexName name_;
 	bool is_forward_declaration_= false;
+	ClassKindAttribute kind_attribute_ = ClassKindAttribute::None;
 };
 
 class TemplateBase : public SyntaxElementBase
