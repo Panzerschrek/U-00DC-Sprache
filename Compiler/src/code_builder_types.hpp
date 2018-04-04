@@ -607,6 +607,7 @@ public:
 	boost::optional<BaseTemplate> base_template;
 
 	Kind kind= Kind::Struct;
+	ClassProxyPtr base_class; // We can have single non-interface base class.
 	std::vector<ClassProxyPtr> parents; // Class have fields with numbers 0-N for parents.
 };
 

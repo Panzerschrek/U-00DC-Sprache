@@ -97,3 +97,44 @@ def InheritanceTest_ClassParentsList_Test6():
 		class C : NNN::A {}  // Single parent inside namespace
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def InheritanceTest_ParentClassNameVisibleInChild_Test0():
+	c_program_text= """
+		class A
+		{
+			type I= i32;
+		}
+		class B : A{}
+
+		fn Foo() : i32
+		{
+			var B::I r= 5652111;   // B::I must be visible
+			return r;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 5652111 )
+
+
+def InheritanceTest_ChildClassNameOverridesParentClassName_Test0():
+	c_program_text= """
+		class A
+		{
+			type I= f64;
+		}
+		class B : A
+		{
+			type I= i32;
+		}
+
+		fn Foo() : i32
+		{
+			var B::I r= 24574;   // B::I must be selected, instead of A::I
+			return r;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 24574 )

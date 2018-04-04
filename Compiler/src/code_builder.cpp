@@ -384,6 +384,7 @@ void CodeBuilder::CopyClass(
 	copy->base_template= src.base_template;
 
 	copy->kind= src.kind;
+	copy->base_class= src.base_class;
 	copy->parents= src.parents;
 
 	// Register copy in destination namespace and current class table.
@@ -770,6 +771,32 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 	// Check opaque before set body for cases of errors (class body duplication).
 	if( the_class->llvm_type->isOpaque() )
 		the_class->llvm_type->setBody( fields_llvm_types );
+
+	// Merge namespaces of parents into result class.
+	for( const ClassProxyPtr& parent : the_class->parents )
+	{
+		parent->class_->members.ForEachInThisScope(
+			[&]( const NamesScope::InsertedName& name )
+			{
+				const NamesScope::InsertedName* result_class_name= the_class->members.GetThisScopeName(name.first);
+
+				if( const OverloadedFunctionsSet* const functions= name.second.GetFunctionsSet() )
+				{
+					// merge functions.
+					if( name.first == Keyword( Keywords::constructor_ ) ||
+						name.first == Keyword( Keywords::destructor_ ) )
+						return; // Did not inherit constructors and destructors.
+
+					// SPRACHE_TODO - merge it.
+				}
+				else
+				{
+					// Just override other kinds of symbols.
+					if( result_class_name == nullptr )
+						the_class->members.AddName( name.first, name.second );
+				}
+			});
+	}
 
 	the_class->is_incomplete= false;
 
