@@ -568,6 +568,24 @@ struct Class final
 	Class& operator=( const Class& )= delete;
 	Class& operator=( Class&& )= delete;
 
+public:
+	struct BaseTemplate
+	{
+		TypeTemplatePtr class_template;
+		std::vector<TemplateParameter> template_parameters;
+	};
+
+	enum class Kind
+	{
+		Struct,
+		NonPolymorph,
+		Interface,
+		Abstract,
+		PolymorphNonFinal,
+		PolymorphFinal,
+	};
+
+public:
 	// If you change this, you must change CodeBuilder::CopyClass too!
 
 	NamesScope members;
@@ -585,14 +603,11 @@ struct Class final
 
 	llvm::StructType* llvm_type;
 
-	struct BaseTemplate
-	{
-		TypeTemplatePtr class_template;
-		std::vector<TemplateParameter> template_parameters;
-	};
-
 	// Exists only for classes, generated from class templates.
 	boost::optional<BaseTemplate> base_template;
+
+	Kind kind= Kind::Struct;
+	std::vector<ClassProxyPtr> parents; // Class have fields with numbers 0-N for parents.
 };
 
 struct Enum

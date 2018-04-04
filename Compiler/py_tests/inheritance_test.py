@@ -38,7 +38,7 @@ def InheritanceTest_ClassKindAttribute_Test4():
 
 def InheritanceTest_ClassParentsList_Test0():
 	c_program_text= """
-		class F polymorph{}
+		class A polymorph{}
 		class C polymorph : A {}  // Single parent + kind attribute
 	"""
 	tests_lib.build_program( c_program_text )
@@ -64,7 +64,7 @@ def InheritanceTest_ClassParentsList_Test2():
 
 def InheritanceTest_ClassParentsList_Test3():
 	c_program_text= """
-		class F polymorph{}
+		class A polymorph{}
 		template</ type T />
 		class C</T/> polymorph : A {}  // Single parent + kind attribute + template
 	"""
@@ -93,7 +93,7 @@ def InheritanceTest_ClassParentsList_Test5():
 
 def InheritanceTest_ClassParentsList_Test6():
 	c_program_text= """
-		namespace NNN{   class F polymorph{}   }
+		namespace NNN{   class A polymorph{}   }
 		class C : NNN::A {}  // Single parent inside namespace
 	"""
 	tests_lib.build_program( c_program_text )

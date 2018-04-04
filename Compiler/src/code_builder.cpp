@@ -383,6 +383,9 @@ void CodeBuilder::CopyClass(
 	copy->llvm_type= src.llvm_type;
 	copy->base_template= src.base_template;
 
+	copy->kind= src.kind;
+	copy->parents= src.parents;
+
 	// Register copy in destination namespace and current class table.
 	dst_namespace.AddName( src.members.GetThisNamespaceName(), Value( src_class, file_pos ) );
 	dst_class_table[ src_class ]= copy;
@@ -600,6 +603,43 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 	the_class->body_file_pos= class_declaration.file_pos_;
 
 	std::vector<llvm::Type*> fields_llvm_types;
+
+	for( const Synt::ComplexName& parent : class_declaration.parents_ )
+	{
+		const NamesScope::InsertedName* const parent_name= ResolveName( class_declaration.file_pos_, names_scope, parent );
+		if( parent_name == nullptr )
+		{
+			errors_.push_back( ReportNameNotFound( class_declaration.file_pos_, parent ) );
+			continue;
+		}
+
+		const Type* const type_name= parent_name->second.GetTypeName();
+		if( type_name == nullptr )
+		{
+			errors_.push_back( ReportNameIsNotTypeName( class_declaration.file_pos_, parent_name->first ) );
+			continue;
+		}
+
+		const ClassProxyPtr parent_class_proxy= type_name->GetClassTypeProxy();
+		if( parent_class_proxy == nullptr )
+		{
+			// SPRACHE_TODO - add specific error
+			errors_.push_back( ReportNotImplemented( class_declaration.file_pos_, "inheritance from nonclass types" ) );
+			continue;
+		}
+
+		if( std::find( the_class->parents.begin(), the_class->parents.end(), parent_class_proxy ) != the_class->parents.end() )
+		{
+			// SPRACHE_TODO - add specific error
+			errors_.push_back( ReportNotImplemented( class_declaration.file_pos_, "Duplicated class parent" ) );
+			continue;
+		}
+
+		// SPRACHE_TODO - check this class and parent class.
+
+		the_class->parents.push_back( parent_class_proxy );
+		fields_llvm_types.emplace_back( parent_class_proxy->class_->llvm_type );
+	} // for parents
 
 	std::vector<PrepareFunctionResult> class_functions;
 	std::vector<const Synt::Class*> inner_classes;
