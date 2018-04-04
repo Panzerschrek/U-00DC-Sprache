@@ -631,6 +631,7 @@ public:
 	ComplexName name_;
 	bool is_forward_declaration_= false;
 	ClassKindAttribute kind_attribute_ = ClassKindAttribute::None;
+	std::vector<ComplexName> parents_;
 };
 
 class TemplateBase : public SyntaxElementBase

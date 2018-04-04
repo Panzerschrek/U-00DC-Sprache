@@ -186,6 +186,7 @@ private:
 	BlockPtr ParseBlock();
 
 	ClassKindAttribute TryParseClassKindAttribute();
+	std::vector<ComplexName> TryParseClassParentsList();
 
 	std::unique_ptr<Typedef> ParseTypedef();
 	std::unique_ptr<Typedef> ParseTypedefBody();
@@ -1879,6 +1880,32 @@ ClassKindAttribute SyntaxAnalyzer::TryParseClassKindAttribute()
 	return class_kind_attribute;
 }
 
+std::vector<ComplexName> SyntaxAnalyzer::TryParseClassParentsList()
+{
+	U_ASSERT( it_ < it_end_ );
+
+	std::vector<ComplexName> result;
+
+	if( it_->type != Lexem::Type::Colon )
+		return result;
+
+	++it_; U_ASSERT( it_ < it_end_ );
+
+	while(true)
+	{
+		result.push_back(ParseComplexName());
+		if( it_->type == Lexem::Type::Comma )
+		{
+			++it_; U_ASSERT( it_ < it_end_ );
+			continue;
+		}
+		else
+			break;
+	}
+
+	return result;
+}
+
 std::unique_ptr<Typedef> SyntaxAnalyzer::ParseTypedef()
 {
 	U_ASSERT( it_->text == Keywords::type_ );
@@ -2359,12 +2386,14 @@ std::unique_ptr<Class> SyntaxAnalyzer::ParseClass()
 	ComplexName name= ParseComplexName();
 
 	const ClassKindAttribute class_kind_attribute= TryParseClassKindAttribute();
+	std::vector<ComplexName> parents_list= TryParseClassParentsList();
 
 	std::unique_ptr<Class> result= ParseClassBody();
 	if( result != nullptr )
 	{
 		result->name_= std::move(name);
 		result->kind_attribute_= class_kind_attribute;
+		result->parents_= std::move(parents_list);
 	}
 
 	return result;
@@ -2576,7 +2605,6 @@ std::unique_ptr<TemplateBase> SyntaxAnalyzer::ParseTemplate()
 	TemplateKind template_kind= TemplateKind::Invlaid;
 
 	ProgramString name;
-	ClassKindAttribute class_kind_attribute= ClassKindAttribute::None;
 	if( it_->type == Lexem::Type::Identifier && ( it_->text == Keywords::struct_ || it_->text == Keywords::class_ ) )
 	{
 		++it_; U_ASSERT( it_ < it_end_ );
@@ -2588,7 +2616,6 @@ std::unique_ptr<TemplateBase> SyntaxAnalyzer::ParseTemplate()
 		}
 		name= it_->text;
 		++it_; U_ASSERT( it_ < it_end_ );
-		class_kind_attribute= TryParseClassKindAttribute();
 		template_kind= TemplateKind::Class;
 	}
 	else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::type_ )
@@ -2658,12 +2685,15 @@ std::unique_ptr<TemplateBase> SyntaxAnalyzer::ParseTemplate()
 			class_template->name_= name;
 			class_template->is_short_form_= result->is_short_form_;
 
+			ClassKindAttribute class_kind_attribute= TryParseClassKindAttribute();
+			std::vector<ComplexName> class_parents_list= TryParseClassParentsList();
 			class_template->class_= ParseClassBody();
 			if( class_template->class_ != nullptr )
 			{
 				class_template->class_->name_.components.emplace_back();
 				class_template->class_->name_.components.back().name= std::move(name);
 				class_template->class_->kind_attribute_= class_kind_attribute;
+				class_template->class_->parents_= std::move(class_parents_list);
 			}
 			return std::move(class_template);
 		}
