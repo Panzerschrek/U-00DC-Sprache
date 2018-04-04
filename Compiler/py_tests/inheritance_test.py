@@ -138,3 +138,65 @@ def InheritanceTest_ChildClassNameOverridesParentClassName_Test0():
 	tests_lib.build_program( c_program_text )
 	call_result= tests_lib.run_function( "_Z3Foov" )
 	assert( call_result == 24574 )
+
+
+def InheritanceTest_ParentClassFieldAccess_Test0():
+	c_program_text= """
+		class A
+		{
+			i32 a;
+			fn constructor()( a= 541 ){}
+		}
+		class B : A
+		{
+			f32 b;
+			fn constructor()( b= 124.3f ){}
+		}
+		class C : B
+		{
+			f64 c;
+			fn constructor()( c= -54.2 ){}
+		}
+
+		fn Foo() : i32
+		{
+
+			var C c;
+			return i32( f64(c.a) - f64(c.b) / f64(c.c) );   // Access parent fields via .member_access.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def InheritanceTest_ParentClassFieldAccess_Test1():
+	c_program_text= """
+		class A
+		{
+			i32 a;
+			fn constructor()( a= 541 ){}
+		}
+		class B : A
+		{
+			f32 b;
+			fn constructor()( b= 124.3f ){}
+		}
+		class C : B
+		{
+			f64 c;
+			fn constructor()( c= -54.2 ){}
+			fn Foo( this ) :i32
+			{
+				return i32( f64(a) - f64(b) / f64(c) );  // Access parent fileds via NamedOperand.
+			}
+		}
+
+		fn Foo() : i32
+		{
+
+			var C c;
+			return c.Foo();
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )

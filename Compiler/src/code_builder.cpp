@@ -385,6 +385,7 @@ void CodeBuilder::CopyClass(
 
 	copy->kind= src.kind;
 	copy->base_class= src.base_class;
+	copy->base_class_field_number= src.base_class_field_number;
 	copy->parents= src.parents;
 
 	// Register copy in destination namespace and current class table.
@@ -640,6 +641,9 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 
 		the_class->parents.push_back( parent_class_proxy );
 		fields_llvm_types.emplace_back( parent_class_proxy->class_->llvm_type );
+		++the_class->field_count;
+
+		the_class->base_class= parent_class_proxy; // SPRACHE_TODO - select correct base class.
 	} // for parents
 
 	std::vector<PrepareFunctionResult> class_functions;
@@ -2158,6 +2162,12 @@ void CodeBuilder::BuildConstructorInitialization(
 			errors_.push_back( ReportInitializerForNonfieldStructMember( constructor_initialization_list.file_pos_, field_initializer.name ) );
 			continue;
 		}
+		if( field->class_.lock()->class_.get() != &base_class )
+		{
+			// SPRACHE_TODO - generate separate error.
+			errors_.push_back( ReportNotImplemented( constructor_initialization_list.file_pos_, "Initializing parent class fields" ) );
+			continue;
+		}
 
 		if( initialized_fields.find( field_initializer.name ) != initialized_fields.end() )
 		{
@@ -2177,6 +2187,8 @@ void CodeBuilder::BuildConstructorInitialization(
 		{
 			const ClassField* const field= member.second.GetClassField();
 			if( field == nullptr )
+				return;
+			if( field->class_.lock()->class_.get() != &base_class ) // Parent class field.
 				return;
 
 			if( initialized_fields.find( member.first ) == initialized_fields.end() )

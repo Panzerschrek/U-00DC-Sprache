@@ -608,6 +608,7 @@ public:
 
 	Kind kind= Kind::Struct;
 	ClassProxyPtr base_class; // We can have single non-interface base class.
+	unsigned int base_class_field_number= 0u;
 	std::vector<ClassProxyPtr> parents; // Class have fields with numbers 0-N for parents.
 };
 

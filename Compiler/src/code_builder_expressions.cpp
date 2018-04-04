@@ -1049,11 +1049,33 @@ Value CodeBuilder::BuildNamedOperand(
 		const ClassProxyPtr class_= field->class_.lock();
 		U_ASSERT( class_ != nullptr && "Class is dead? WTF?" );
 
-		// SPRACHE_TODO - allow access to parents fields here.
-		if( Type(class_) != function_context.this_->type )
+		// Make first index = 0 for array to pointer conversion.
+		llvm::Value* index_list[2];
+		index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
+
+		const ClassProxyPtr field_class_proxy= field->class_.lock();
+		U_ASSERT( field_class_proxy != nullptr );
+
+		llvm::Value* actual_field_class_ptr= nullptr;
+		if( field_class_proxy == function_context.this_->type.GetClassTypeProxy() )
+			actual_field_class_ptr= function_context.this_->llvm_value;
+		else
 		{
-			errors_.push_back( ReportAccessOfNonThisClassField( named_operand.file_pos_, named_operand.name_.components.back().name ) );
-			return ErrorValue();
+			// For parent filed we needs make several GEP isntructions.
+			ClassProxyPtr actual_field_class= function_context.this_->type.GetClassTypeProxy();
+			actual_field_class_ptr= function_context.this_->llvm_value;
+			while( actual_field_class != field_class_proxy )
+			{
+				index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(actual_field_class->class_->base_class_field_number) ) );
+				actual_field_class_ptr= function_context.llvm_ir_builder.CreateGEP( actual_field_class_ptr, index_list );
+
+				actual_field_class= actual_field_class->class_->base_class;
+				if( actual_field_class == nullptr )
+				{
+					errors_.push_back( ReportAccessOfNonThisClassField( named_operand.file_pos_, named_operand.name_.components.back().name ) );
+					return ErrorValue();
+				}
+			}
 		}
 
 		if( function_context.is_constructor_initializer_list_now &&
@@ -1069,12 +1091,9 @@ Value CodeBuilder::BuildNamedOperand(
 		field_variable.value_type= ( function_context.this_->value_type == ValueType::Reference && field->is_mutable ) ? ValueType::Reference : ValueType::ConstReference;
 		field_variable.referenced_variables= function_context.this_->referenced_variables;
 
-		// Make first index = 0 for array to pointer conversion.
-		llvm::Value* index_list[2];
-		index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
 		index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(field->index) ) );
 		field_variable.llvm_value=
-			function_context.llvm_ir_builder.CreateGEP( function_context.this_->llvm_value, index_list );
+			function_context.llvm_ir_builder.CreateGEP( actual_field_class_ptr, index_list );
 
 		if( field->is_reference )
 		{
@@ -1451,6 +1470,28 @@ Value CodeBuilder::BuildMemberAccessOperator(
 	// Make first index = 0 for array to pointer conversion.
 	llvm::Value* index_list[2];
 	index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
+
+	const ClassProxyPtr field_class_proxy= field->class_.lock();
+	U_ASSERT( field_class_proxy != nullptr );
+
+	llvm::Value* actual_field_class_ptr= nullptr;
+	if( field_class_proxy == value.GetType().GetClassTypeProxy() )
+		actual_field_class_ptr= variable.llvm_value;
+	else
+	{
+		// For parent filed we needs make several GEP isntructions.
+		ClassProxyPtr actual_field_class= value.GetType().GetClassTypeProxy();
+		actual_field_class_ptr= variable.llvm_value;
+		while( actual_field_class != field_class_proxy )
+		{
+			index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(actual_field_class->class_->base_class_field_number) ) );
+			actual_field_class_ptr= function_context.llvm_ir_builder.CreateGEP( actual_field_class_ptr, index_list );
+
+			actual_field_class= actual_field_class->class_->base_class;
+			U_ASSERT(actual_field_class != nullptr );
+		}
+	}
+
 	index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(field->index) ) );
 
 	Variable result;
@@ -1459,7 +1500,7 @@ Value CodeBuilder::BuildMemberAccessOperator(
 	result.referenced_variables= variable.referenced_variables;
 	result.type= field->type;
 	result.llvm_value=
-		function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, index_list );
+		function_context.llvm_ir_builder.CreateGEP( actual_field_class_ptr, index_list );
 
 	if( field->is_reference )
 	{
