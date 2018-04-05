@@ -140,6 +140,119 @@ def InheritanceTest_ChildClassNameOverridesParentClassName_Test0():
 	assert( call_result == 24574 )
 
 
+def InheritanceTest_ChildClassNameOverridesParentClassName_Test1():
+	c_program_text= """
+		class A
+		{
+			type I= f64;
+		}
+		class B : A
+		{
+			fn I() : i32    // Child class have different kind of symbol with same name.
+			{
+				return 4447854;
+			}
+		}
+
+		fn Foo() : i32
+		{
+			return B::I();   // Must access function B::I, not type A::I
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 4447854 )
+
+
+def InheritanceTest_ChildClassNameOverridesParentClassName_Test2():
+	c_program_text= """
+		class A
+		{
+			fn I() : i32 { return 0; }
+		}
+		class B : A
+		{
+			type I= i32;   // Child class have different kind of symbol with same name.
+		}
+
+		fn Foo() : i32
+		{
+			var B::I r= 658566;   // type B::I must be selected, instead of function A::I.
+			return r;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 658566 )
+
+
+def InheritanceTest_ChildClassNameOverridesParentClassName_Test3():
+	c_program_text= """
+		class A
+		{
+			fn foo() : i32 { return 0; }
+		}
+		class B : A
+		{
+			fn foo() : i32 { return 5584; }   // Static function shadows parent class function with exact signature.
+		}
+
+		fn Foo() : i32
+		{
+			return B::foo();  // B::foo must be called
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 5584 )
+
+
+def InheritanceTest_ChildClassNameOverridesParentClassName_Test4():
+	c_program_text= """
+		class A
+		{
+			fn foo( i32 x ) : i32 { return x; }
+		}
+		class B : A
+		{
+			fn foo() : i32 { return 0; }   // Function in child class merged with one functions set with parent class functions.
+		}
+
+		fn Foo() : i32
+		{
+			return B::foo( 996544 );  // A::foo must be called
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 996544 )
+
+
+def InheritanceTest_ChildClassNameOverridesParentClassName_Test5():
+	c_program_text= """
+		class A
+		{
+			f32 x;
+			fn constructor() ( x= 0.0f ) {}
+		}
+		class B : A
+		{
+			i32 x;
+			fn constructor() ( x= 0 ) {}
+		}
+
+		fn Foo() : i32
+		{
+			var B mut b;
+			b.x= 66541211; // member B::x must be selected
+			return b.x;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 66541211 )
+
+
 def InheritanceTest_ParentClassFieldAccess_Test0():
 	c_program_text= """
 		class A

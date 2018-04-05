@@ -782,16 +782,42 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 		parent->class_->members.ForEachInThisScope(
 			[&]( const NamesScope::InsertedName& name )
 			{
-				const NamesScope::InsertedName* result_class_name= the_class->members.GetThisScopeName(name.first);
+				NamesScope::InsertedName* const result_class_name= the_class->members.GetThisScopeName(name.first);
 
 				if( const OverloadedFunctionsSet* const functions= name.second.GetFunctionsSet() )
 				{
-					// merge functions.
+					// SPARCHE_TODO - maybe also ski additive-assignment operators?
 					if( name.first == Keyword( Keywords::constructor_ ) ||
-						name.first == Keyword( Keywords::destructor_ ) )
-						return; // Did not inherit constructors and destructors.
+						name.first == Keyword( Keywords::destructor_ ) ||
+						name.first == OverloadedOperatorToString( OverloadedOperator::Assign ) )
+						return; // Did not inherit constructors, destructors, assignment operators.
 
-					// SPRACHE_TODO - merge it.
+					if( result_class_name != nullptr )
+					{
+						if( OverloadedFunctionsSet* const result_class_functions= result_class_name->second.GetFunctionsSet() )
+						{
+							// Merge function sets, if result class have functions set with given name.
+							for( const FunctionVariable& parent_function : *functions )
+							{
+								bool overrides= false;
+								for( FunctionVariable& result_class_function : *result_class_functions )
+								{
+									if( parent_function.type == result_class_function.type )
+									{
+										overrides= true; // Ok, result class function overrides parent clas function.
+										break;
+									}
+								}
+								if( !overrides )
+									ApplyOverloadedFunction( *result_class_functions, parent_function, class_declaration.file_pos_ );
+							} // for parent functions
+						}
+					}
+					else
+					{
+						// Result class have no functions with this name. Inherit all functions from parent calass.
+						the_class->members.AddName( name.first, name.second );
+					}
 				}
 				else
 				{
