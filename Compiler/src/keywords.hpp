@@ -56,6 +56,7 @@ enum class Keywords : unsigned int
 	zero_init_,
 
 	this_,
+	base_,
 	constructor_,
 	destructor_,
 

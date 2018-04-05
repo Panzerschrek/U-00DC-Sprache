@@ -13,6 +13,7 @@
 #include <llvm/ExecutionEngine/ExecutionEngine.h>
 #include <llvm/ExecutionEngine/GenericValue.h>
 #include <llvm/ExecutionEngine/Interpreter.h>
+#include <llvm/Support/DynamicLibrary.h>
 #include <llvm/Support/ManagedStatic.h>
 #include "../src/pop_llvm_warnings.hpp"
 
@@ -65,6 +66,21 @@ std::unique_ptr<llvm::Module> BuildProgram( const char* const text )
 
 } // namespace U
 
+class HaltException final : public std::exception
+{
+public:
+	virtual const char* what() const noexcept override
+	{
+		return "Halt exception";
+	}
+};
+
+static llvm::GenericValue HaltCalled( llvm::FunctionType*, llvm::ArrayRef<llvm::GenericValue> )
+{
+	// Return from interpreter, using native exception.
+	throw HaltException();
+}
+
 static std::unique_ptr<llvm::ExecutionEngine> g_current_engine; // Can have only one.
 
 static PyObject* BuildProgram( PyObject* const self, PyObject* const args )
@@ -108,6 +124,8 @@ static PyObject* BuildProgram( PyObject* const self, PyObject* const args )
 		PyErr_SetString( PyExc_RuntimeError, "engine creation failed" );
 		return nullptr;
 	}
+
+	llvm::sys::DynamicLibrary::AddSymbol( "lle_X___U_halt", reinterpret_cast<void*>( &HaltCalled ) );
 
 	return Py_None;
 }
@@ -227,10 +245,19 @@ static PyObject* RunFunction( PyObject* const self, PyObject* const args )
 		return nullptr;
 	}
 
-	const llvm::GenericValue result_value=
-		g_current_engine->runFunction(
-			function,
-			llvm::ArrayRef<llvm::GenericValue>( llvm_args, arg_count ) );
+	llvm::GenericValue result_value;
+	try
+	{
+		result_value=
+			g_current_engine->runFunction(
+				function,
+				llvm::ArrayRef<llvm::GenericValue>( llvm_args, arg_count ) );
+	}
+	catch( const HaltException& )
+	{
+		PyErr_SetString( PyExc_RuntimeError, "Program halted" );
+		return nullptr;
+	}
 
 	const llvm::Type* const return_type= function_type->getReturnType();
 	if( return_type->isVoidTy() )

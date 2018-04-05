@@ -1020,15 +1020,23 @@ Value CodeBuilder::BuildNamedOperand(
 	FunctionContext& function_context )
 {
 	if( named_operand.name_.components.size() == 1u &&
-		named_operand.name_.components.back().name == Keywords::this_ &&
 		named_operand.name_.components.back().template_parameters.empty() )
 	{
-		if( function_context.this_ == nullptr || function_context.is_constructor_initializer_list_now )
+		if( named_operand.name_.components.back().name == Keywords::this_ )
 		{
-			errors_.push_back( ReportThisUnavailable( named_operand.file_pos_ ) );
+			if( function_context.this_ == nullptr || function_context.is_constructor_initializer_list_now )
+			{
+				errors_.push_back( ReportThisUnavailable( named_operand.file_pos_ ) );
+				return ErrorValue();
+			}
+			return Value( *function_context.this_, named_operand.file_pos_ );
+		}
+		else if( named_operand.name_.components.back().name == Keywords::base_ )
+		{
+			// SPRACHE_TODO
+			errors_.push_back( ReportNotImplemented( named_operand.file_pos_, "base access" ) );
 			return ErrorValue();
 		}
-		return Value( *function_context.this_, named_operand.file_pos_ );
 	}
 
 	const NamesScope::InsertedName* name_entry= ResolveName( named_operand.file_pos_, names, named_operand.name_ );

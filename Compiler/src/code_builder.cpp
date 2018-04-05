@@ -2143,8 +2143,28 @@ void CodeBuilder::BuildConstructorInitialization(
 
 	// Check for errors, build list of initialized fields.
 	bool have_fields_errors= false;
+	bool base_initialized= false;
 	for( const Synt::StructNamedInitializer::MemberInitializer& field_initializer : constructor_initialization_list.members_initializers )
 	{
+		if( field_initializer.name == Keywords::base_ )
+		{
+			if( base_class.base_class == nullptr )
+			{
+				// SPRACHE_TODO - gen separate error
+				have_fields_errors= true;
+				errors_.push_back( ReportNameNotFound( constructor_initialization_list.file_pos_, field_initializer.name ) );
+				continue;
+			}
+			if( base_initialized )
+			{
+				have_fields_errors= true;
+				errors_.push_back( ReportDuplicatedStructMemberInitializer( constructor_initialization_list.file_pos_, field_initializer.name ) );
+				continue;
+			}
+			base_initialized= true;
+			continue;
+		}
+
 		const NamesScope::InsertedName* const class_member=
 			base_class.members.GetThisScopeName( field_initializer.name );
 
@@ -2224,20 +2244,54 @@ void CodeBuilder::BuildConstructorInitialization(
 			ApplyEmptyInitializer( field_name, constructor_initialization_list.file_pos_, field_variable, function_context );
 		}
 	}
+	if( !base_initialized && base_class.base_class != nullptr )
+	{
+		// Apply default initializer for base class.
+		Variable base_variable;
+		base_variable.type= base_class.base_class;
+		base_variable.location= Variable::Location::Pointer;
+		base_variable.value_type= ValueType::Reference;
+
+		llvm::Value* index_list[2];
+		index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
+		index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(base_class.base_class_field_number) ) );
+		base_variable.llvm_value=
+			function_context.llvm_ir_builder.CreateGEP( this_.llvm_value, llvm::ArrayRef<llvm::Value*> ( index_list, 2u ) );
+
+		ApplyEmptyInitializer( base_class.base_class->class_->members.GetThisNamespaceName(), constructor_initialization_list.file_pos_, base_variable, function_context );
+	}
 
 	if( have_fields_errors )
 		return;
 
 	for( const Synt::StructNamedInitializer::MemberInitializer& field_initializer : constructor_initialization_list.members_initializers )
 	{
+		U_ASSERT( this_.referenced_variables.size() == 1u );
+		const StoredVariablePtr& this_storage= *this_.referenced_variables.begin();
+
+		if( field_initializer.name == Keywords::base_ )
+		{
+			Variable base_variable;
+			base_variable.type= base_class.base_class;
+			base_variable.location= Variable::Location::Pointer;
+			base_variable.value_type= ValueType::Reference;
+
+			llvm::Value* index_list[2];
+			index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
+			index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(base_class.base_class_field_number) ) );
+			base_variable.llvm_value=
+				function_context.llvm_ir_builder.CreateGEP( this_.llvm_value, llvm::ArrayRef<llvm::Value*> ( index_list, 2u ) );
+
+			ApplyInitializer( base_variable, this_storage, *field_initializer.initializer, names_scope, function_context );
+			continue;
+		}
+
 		const NamesScope::InsertedName* const class_member=
 			base_class.members.GetThisScopeName( field_initializer.name );
 		U_ASSERT( class_member != nullptr );
 		const ClassField* const field= class_member->second.GetClassField();
 		U_ASSERT( field != nullptr );
 
-		U_ASSERT( this_.referenced_variables.size() == 1u );
-		const StoredVariablePtr& this_storage= *this_.referenced_variables.begin();
 		if( field->is_reference )
 			InitializeReferenceField( this_, this_storage, *field, *field_initializer.initializer, names_scope, function_context );
 		else

@@ -193,9 +193,53 @@ def InheritanceTest_ParentClassFieldAccess_Test1():
 
 		fn Foo() : i32
 		{
-
 			var C c;
 			return c.Foo();
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def InheritanceTest_InitializeBaseClass_Test0():
+	c_program_text= """
+		class A
+		{
+			i32 a;
+			fn constructor()( a= 541 ){}
+		}
+		class B : A
+		{
+			f32 b;
+			fn constructor()( b= 124.3f ){}   // Must implicitly call A::constructor
+		}
+
+		fn Foo()
+		{
+			var B b;
+			halt if( b.a != 541 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def InheritanceTest_InitializeBaseClass_Test1():
+	c_program_text= """
+		class A
+		{
+			i32 a;
+			fn constructor( i32 x )( a= x ){}
+		}
+		class B : A
+		{
+			fn constructor( i32 x )( base(x) ){}   // Must explicitly call A::constructor
+		}
+
+		fn Foo()
+		{
+			var B b( 55521 );
+			halt if( b.a != 55521 );
 		}
 	"""
 	tests_lib.build_program( c_program_text )
