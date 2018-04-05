@@ -101,7 +101,7 @@ def InheritanceTest_ClassParentsList_Test6():
 
 def InheritanceTest_ParentClassNameVisibleInChild_Test0():
 	c_program_text= """
-		class A
+		class A polymorph
 		{
 			type I= i32;
 		}
@@ -120,7 +120,7 @@ def InheritanceTest_ParentClassNameVisibleInChild_Test0():
 
 def InheritanceTest_ChildClassNameOverridesParentClassName_Test0():
 	c_program_text= """
-		class A
+		class A polymorph
 		{
 			type I= f64;
 		}
@@ -142,7 +142,7 @@ def InheritanceTest_ChildClassNameOverridesParentClassName_Test0():
 
 def InheritanceTest_ChildClassNameOverridesParentClassName_Test1():
 	c_program_text= """
-		class A
+		class A polymorph
 		{
 			type I= f64;
 		}
@@ -166,7 +166,7 @@ def InheritanceTest_ChildClassNameOverridesParentClassName_Test1():
 
 def InheritanceTest_ChildClassNameOverridesParentClassName_Test2():
 	c_program_text= """
-		class A
+		class A polymorph
 		{
 			fn I() : i32 { return 0; }
 		}
@@ -188,7 +188,7 @@ def InheritanceTest_ChildClassNameOverridesParentClassName_Test2():
 
 def InheritanceTest_ChildClassNameOverridesParentClassName_Test3():
 	c_program_text= """
-		class A
+		class A polymorph
 		{
 			fn foo() : i32 { return 0; }
 		}
@@ -209,7 +209,7 @@ def InheritanceTest_ChildClassNameOverridesParentClassName_Test3():
 
 def InheritanceTest_ChildClassNameOverridesParentClassName_Test4():
 	c_program_text= """
-		class A
+		class A polymorph
 		{
 			fn foo( i32 x ) : i32 { return x; }
 		}
@@ -230,7 +230,7 @@ def InheritanceTest_ChildClassNameOverridesParentClassName_Test4():
 
 def InheritanceTest_ChildClassNameOverridesParentClassName_Test5():
 	c_program_text= """
-		class A
+		class A polymorph
 		{
 			f32 x;
 			fn constructor() ( x= 0.0f ) {}
@@ -255,7 +255,7 @@ def InheritanceTest_ChildClassNameOverridesParentClassName_Test5():
 
 def InheritanceTest_ParentClassFieldAccess_Test0():
 	c_program_text= """
-		class A
+		class A polymorph
 		{
 			i32 a;
 			fn constructor()( a= 541 ){}
@@ -284,7 +284,7 @@ def InheritanceTest_ParentClassFieldAccess_Test0():
 
 def InheritanceTest_ParentClassFieldAccess_Test1():
 	c_program_text= """
-		class A
+		class A polymorph
 		{
 			i32 a;
 			fn constructor()( a= 541 ){}
@@ -316,7 +316,7 @@ def InheritanceTest_ParentClassFieldAccess_Test1():
 
 def InheritanceTest_InitializeBaseClass_Test0():
 	c_program_text= """
-		class A
+		class A polymorph
 		{
 			i32 a;
 			fn constructor()( a= 541 ){}
@@ -339,7 +339,7 @@ def InheritanceTest_InitializeBaseClass_Test0():
 
 def InheritanceTest_InitializeBaseClass_Test1():
 	c_program_text= """
-		class A
+		class A polymorph
 		{
 			i32 a;
 			fn constructor( i32 x )( a= x ){}

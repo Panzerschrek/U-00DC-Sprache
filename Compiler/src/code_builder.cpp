@@ -637,13 +637,25 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 			continue;
 		}
 
-		// SPRACHE_TODO - check this class and parent class.
+		const auto parent_kind= parent_class_proxy->class_->kind;
+		if( !( parent_kind == Class::Kind::Abstract || parent_kind == Class::Kind::Interface || parent_kind == Class::Kind::PolymorphNonFinal ) )
+		{
+			// SPRACHE_TODO - add specific error
+			errors_.push_back( ReportNotImplemented( class_declaration.file_pos_, "inheritance forbidden" ) );
+		}
 
 		the_class->parents.push_back( parent_class_proxy );
 		fields_llvm_types.emplace_back( parent_class_proxy->class_->llvm_type );
-		++the_class->field_count;
 
-		the_class->base_class= parent_class_proxy; // SPRACHE_TODO - select correct base class.
+		if( parent_kind != Class::Kind::Interface ) // not interface=base
+		{
+			if( the_class->base_class != nullptr )
+			{
+				// SPRACHE_TODO - add specific error
+				errors_.push_back( ReportNotImplemented( class_declaration.file_pos_, "multiple non-interface base classes" ) );
+			}
+			the_class->base_class= parent_class_proxy;
+		}
 	} // for parents
 
 	std::vector<PrepareFunctionResult> class_functions;
@@ -657,7 +669,7 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 		{
 			ClassField out_field;
 			out_field.type= PrepareType( in_field->type, the_class->members );
-			out_field.index= the_class->field_count;
+			out_field.index= static_cast<unsigned int>(fields_llvm_types.size());
 			out_field.class_= the_class_proxy;
 			out_field.is_reference= in_field->reference_modifier == Synt::ReferenceModifier::Reference;
 
@@ -775,6 +787,41 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 	// Check opaque before set body for cases of errors (class body duplication).
 	if( the_class->llvm_type->isOpaque() )
 		the_class->llvm_type->setBody( fields_llvm_types );
+
+	// Check given kind attribute and actual class properties.
+	switch( class_declaration.kind_attribute_ )
+	{
+	case Synt::ClassKindAttribute::None: // Class without parents and without kind attribute is non-polymorph.
+		if( the_class->parents.empty() )
+			the_class->kind= Class::Kind::NonPolymorph;
+		else
+			the_class->kind= Class::Kind::PolymorphNonFinal;
+		break;
+
+	case Synt::ClassKindAttribute::Final:
+		if( the_class->parents.empty() )
+			the_class->kind= Class::Kind::NonPolymorph;
+		else
+			the_class->kind= Class::Kind::PolymorphFinal;
+		break;
+
+	case Synt::ClassKindAttribute::Polymorph:
+		the_class->kind= Class::Kind::PolymorphNonFinal;
+		break;
+
+	case Synt::ClassKindAttribute::Interface:
+		if( the_class->field_count != 0u )
+		{
+			// SPRACHE_TODO - add specific error
+			errors_.push_back( ReportNotImplemented( class_declaration.file_pos_, "fields in interface" ) );
+		}
+		the_class->kind= Class::Kind::Interface;
+		break;
+
+	case Synt::ClassKindAttribute::Abstract:
+		// SPRACHE_TODO
+		break;
+	};
 
 	// Merge namespaces of parents into result class.
 	for( const ClassProxyPtr& parent : the_class->parents )
