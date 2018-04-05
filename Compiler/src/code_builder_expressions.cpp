@@ -1066,15 +1066,15 @@ Value CodeBuilder::BuildNamedOperand(
 			actual_field_class_ptr= function_context.this_->llvm_value;
 			while( actual_field_class != field_class_proxy )
 			{
-				index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(actual_field_class->class_->base_class_field_number) ) );
-				actual_field_class_ptr= function_context.llvm_ir_builder.CreateGEP( actual_field_class_ptr, index_list );
-
-				actual_field_class= actual_field_class->class_->base_class;
-				if( actual_field_class == nullptr )
+				if( actual_field_class->class_->base_class == nullptr )
 				{
 					errors_.push_back( ReportAccessOfNonThisClassField( named_operand.file_pos_, named_operand.name_.components.back().name ) );
 					return ErrorValue();
 				}
+
+				index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(actual_field_class->class_->base_class_field_number) ) );
+				actual_field_class_ptr= function_context.llvm_ir_builder.CreateGEP( actual_field_class_ptr, index_list );
+				actual_field_class= actual_field_class->class_->base_class;
 			}
 		}
 
