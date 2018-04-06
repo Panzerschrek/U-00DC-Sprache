@@ -657,6 +657,7 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 				continue;
 			}
 			the_class->base_class= parent_class_proxy;
+			the_class->base_class_field_number= static_cast<unsigned int>(fields_llvm_types.size() - 1u);
 		}
 	} // for parents
 

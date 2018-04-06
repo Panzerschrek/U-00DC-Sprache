@@ -50,10 +50,15 @@ void CodeBuilder::TryGenerateDefaultConstructor( Class& the_class, const Type& c
 			const ClassField* const field= member.second.GetClassField();
 			if( field == nullptr )
 				return;
+			if( field->class_.lock()->class_.get() != &the_class )
+				return; // Skip fields of parent classes.
 
 			if( field->is_reference || !field->type.IsDefaultConstructible() )
 				all_fields_is_default_constructible= false;
 		} );
+
+	if( the_class.base_class != nullptr && !the_class.base_class->class_->is_default_constructible )
+		all_fields_is_default_constructible= false;
 
 	if( !all_fields_is_default_constructible )
 		return;
@@ -96,12 +101,29 @@ void CodeBuilder::TryGenerateDefaultConstructor( Class& the_class, const Type& c
 	llvm::Value* const this_llvm_value= llvm_constructor_function->args().begin();
 	this_llvm_value->setName( KeywordAscii( Keywords::this_ ) );
 
+	if( the_class.base_class != nullptr )
+	{
+		Variable base_variable;
+		base_variable.type= the_class.base_class;
+		base_variable.value_type= ValueType::Reference;
+
+		llvm::Value* index_list[2];
+		index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
+		index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(the_class.base_class_field_number) ) );
+		base_variable.llvm_value=
+			function_context.llvm_ir_builder.CreateGEP( this_llvm_value, llvm::ArrayRef<llvm::Value*>( index_list, 2u ) );
+
+		ApplyEmptyInitializer( Keyword( Keywords::base_ ), FilePos()/*TODO*/, base_variable, function_context );
+	}
+
 	the_class.members.ForEachInThisScope(
 		[&]( const NamesScope::InsertedName& member )
 		{
 			const ClassField* const field= member.second.GetClassField();
 			if( field == nullptr )
 				return;
+			if( field->class_.lock()->class_.get() != &the_class )
+				return; // Skip fields of parent classes.
 
 			Variable field_variable;
 			field_variable.type= field->type;
