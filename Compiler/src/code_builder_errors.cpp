@@ -99,6 +99,8 @@ const char* CodeBuilderErrorCodeToString( const CodeBuilderErrorCode code )
 		return "ConstructorInitializerForUnsupportedType";
 	case CodeBuilderErrorCode::StructInitializerForNonStruct:
 		return "StructInitializerForNonStruct";
+	case CodeBuilderErrorCode::InitializerForBaseClassField:
+		return "InitializerForBaseClassField";
 	case CodeBuilderErrorCode::InitializerForNonfieldStructMember:
 		return "InitializerForNonfieldStructMember";
 	case CodeBuilderErrorCode::DuplicatedStructMemberInitializer:
@@ -135,6 +137,8 @@ const char* CodeBuilderErrorCodeToString( const CodeBuilderErrorCode code )
 		return "AccessOfNonThisClassField";
 	case CodeBuilderErrorCode::ThisUnavailable:
 		return "ThisUnavailable";
+	case CodeBuilderErrorCode::BaseUnavailable:
+		return "BaseUnavailable";
 	case CodeBuilderErrorCode::InvalidValueAsTemplateArgument:
 		return "InvalidValueAsTemplateArgument";
 	case CodeBuilderErrorCode::InvalidTypeOfTemplateVariableArgument:
@@ -189,6 +193,16 @@ const char* CodeBuilderErrorCodeToString( const CodeBuilderErrorCode code )
 		return "InvalidReturnTypeForOperator";
 	case CodeBuilderErrorCode::UnderlayingTypeForEnumIsTooSmall:
 		return "UnderlayingTypeForEnumIsTooSmall";
+	case CodeBuilderErrorCode::CanNotDeriveFromThisType:
+		return "CanNotDeriveFromThisType";
+	case CodeBuilderErrorCode::DuplicatedParentClass:
+		return "DuplicatedParentClass";
+	case CodeBuilderErrorCode::DuplicatedBaseClass:
+		return "DuplicatedBaseClass";
+	case CodeBuilderErrorCode::FieldsForInterfacesNotAllowed:
+		return "FieldsForInterfacesNotAllowed";
+	case CodeBuilderErrorCode::BaseClassForInterface:
+		return "BaseClassForInterface";
 	};
 
 	U_ASSERT(false);
@@ -732,6 +746,17 @@ CodeBuilderError ReportInitializerForNonfieldStructMember(
 	return error;
 }
 
+CodeBuilderError ReportInitializerForBaseClassField( const FilePos& file_pos, const ProgramString& field_name )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::InitializerForBaseClassField;
+
+	error.text= "Initializer for \"."_SpC + field_name + "\" which is not this class field."_SpC;
+
+	return error;
+}
+
 CodeBuilderError ReportDuplicatedStructMemberInitializer( const FilePos& file_pos, const ProgramString& member_name )
 {
 	CodeBuilderError error;
@@ -915,6 +940,17 @@ CodeBuilderError ReportThisUnavailable( const FilePos& file_pos )
 	error.code= CodeBuilderErrorCode::ThisUnavailable;
 
 	error.text= "\"this\" unavailable."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportBaseUnavailable( const FilePos& file_pos )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::BaseUnavailable;
+
+	error.text= "\"base\" unavailable."_SpC;
 
 	return error;
 }
@@ -1216,6 +1252,61 @@ CodeBuilderError ReportUnderlayingTypeForEnumIsTooSmall( const FilePos& file_pos
 	error.text= "Underlaying type for enum is too small - enum max value is "_SpC
 		+ ToProgramString( std::to_string(max_value).c_str() ) + " but type max value is "_SpC +
 		ToProgramString( std::to_string(max_value_of_underlaying_type).c_str() ) + "."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportCanNotDeriveFromThisType( const FilePos& file_pos, const ProgramString& type_name )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::CanNotDeriveFromThisType;
+
+	error.text= "Can not derive from \""_SpC + type_name + "\"."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportDuplicatedParentClass( const FilePos& file_pos, const ProgramString& type_name )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::DuplicatedParentClass;
+
+	error.text= "Parent class \""_SpC + type_name + "\" is duplicated."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportDuplicatedBaseClass( const FilePos& file_pos, const ProgramString& type_name )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::DuplicatedBaseClass;
+
+	error.text= "Can not inherit from \""_SpC + type_name + "\" because class already have base."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportFieldsForInterfacesNotAllowed( const FilePos& file_pos )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::FieldsForInterfacesNotAllowed;
+
+	error.text= "Fields for interfaces not allowed."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportBaseClassForInterface( const FilePos& file_pos )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::BaseClassForInterface;
+
+	error.text= "Base class for interface.."_SpC;
 
 	return error;
 }

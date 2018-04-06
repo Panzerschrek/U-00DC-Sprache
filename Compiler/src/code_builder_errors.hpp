@@ -70,6 +70,7 @@ enum class CodeBuilderErrorCode : unsigned int
 	ConstructorInitializerForUnsupportedType,
 	StructInitializerForNonStruct,
 	InitializerForNonfieldStructMember,
+	InitializerForBaseClassField,
 	DuplicatedStructMemberInitializer,
 	InitializerDisabledBecauseClassHaveExplicitNoncopyConstructors,
 	InvalidTypeForAutoVariable,
@@ -93,6 +94,7 @@ enum class CodeBuilderErrorCode : unsigned int
 	ThisInNonclassFunction,
 	AccessOfNonThisClassField,
 	ThisUnavailable,
+	BaseUnavailable,
 
 	// Template errors.
 	InvalidValueAsTemplateArgument,
@@ -128,6 +130,13 @@ enum class CodeBuilderErrorCode : unsigned int
 
 	// Enums
 	UnderlayingTypeForEnumIsTooSmall,
+
+	// Inheritance errors
+	CanNotDeriveFromThisType,
+	DuplicatedParentClass,
+	DuplicatedBaseClass,
+	FieldsForInterfacesNotAllowed,
+	BaseClassForInterface,
 };
 
 struct CodeBuilderError
@@ -188,6 +197,7 @@ CodeBuilderError ReportUnsupportedInitializerForReference( const FilePos& file_p
 CodeBuilderError ReportConstructorInitializerForUnsupportedType( const FilePos& file_pos );
 CodeBuilderError ReportStructInitializerForNonStruct( const FilePos& file_pos );
 CodeBuilderError ReportInitializerForNonfieldStructMember( const FilePos& file_pos, const ProgramString& member_name );
+CodeBuilderError ReportInitializerForBaseClassField( const FilePos& file_pos, const ProgramString& field_name );
 CodeBuilderError ReportDuplicatedStructMemberInitializer( const FilePos& file_pos, const ProgramString& member_name );
 CodeBuilderError ReportInitializerDisabledBecauseClassHaveExplicitNoncopyConstructors( const FilePos& file_pos );
 CodeBuilderError ReportInvalidTypeForAutoVariable( const FilePos& file_pos, const ProgramString& type_name );
@@ -205,6 +215,7 @@ CodeBuilderError ReportClassFiledAccessInStaticMethod( const FilePos& file_pos, 
 CodeBuilderError ReportThisInNonclassFunction( const FilePos& file_pos, const ProgramString& func_name );
 CodeBuilderError ReportAccessOfNonThisClassField( const FilePos& file_pos, const ProgramString& field_name );
 CodeBuilderError ReportThisUnavailable( const FilePos& file_pos );
+CodeBuilderError ReportBaseUnavailable( const FilePos& file_pos );
 CodeBuilderError ReportInvalidValueAsTemplateArgument( const FilePos& file_pos, const ProgramString& got );
 CodeBuilderError ReportInvalidTypeOfTemplateVariableArgument( const FilePos& file_pos, const ProgramString& type_name );
 CodeBuilderError ReportTemplateParametersDeductionFailed( const FilePos& file_pos );
@@ -232,5 +243,10 @@ CodeBuilderError ReportOperatorDoesNotHaveParentClassArguments( const FilePos& f
 CodeBuilderError ReportInvalidArgumentCountForOperator( const FilePos& file_pos );
 CodeBuilderError ReportInvalidReturnTypeForOperator( const FilePos& file_pos, const ProgramString& expected_type_name );
 CodeBuilderError ReportUnderlayingTypeForEnumIsTooSmall( const FilePos& file_pos, SizeType max_value, SizeType max_value_of_underlaying_type );
+CodeBuilderError ReportCanNotDeriveFromThisType( const FilePos& file_pos, const ProgramString& type_name );
+CodeBuilderError ReportDuplicatedParentClass( const FilePos& file_pos, const ProgramString& type_name );
+CodeBuilderError ReportDuplicatedBaseClass( const FilePos& file_pos, const ProgramString& type_name );
+CodeBuilderError ReportFieldsForInterfacesNotAllowed( const FilePos& file_pos );
+CodeBuilderError ReportBaseClassForInterface( const FilePos& file_pos );
 
 } // namespace U

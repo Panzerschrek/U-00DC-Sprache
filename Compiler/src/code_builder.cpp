@@ -625,23 +625,25 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 		const ClassProxyPtr parent_class_proxy= type_name->GetClassTypeProxy();
 		if( parent_class_proxy == nullptr )
 		{
-			// SPRACHE_TODO - add specific error
-			errors_.push_back( ReportNotImplemented( class_declaration.file_pos_, "inheritance from nonclass types" ) );
+			errors_.push_back( ReportCanNotDeriveFromThisType( class_declaration.file_pos_, type_name->ToString() ) );
 			continue;
 		}
-
+		if( parent_class_proxy->class_->is_incomplete )
+		{
+			errors_.push_back( ReportUsingIncompleteType( class_declaration.file_pos_, type_name->ToString() ) );
+			continue;
+		}
 		if( std::find( the_class->parents.begin(), the_class->parents.end(), parent_class_proxy ) != the_class->parents.end() )
 		{
-			// SPRACHE_TODO - add specific error
-			errors_.push_back( ReportNotImplemented( class_declaration.file_pos_, "Duplicated class parent" ) );
+			errors_.push_back( ReportDuplicatedParentClass( class_declaration.file_pos_, type_name->ToString() ) );
 			continue;
 		}
 
 		const auto parent_kind= parent_class_proxy->class_->kind;
 		if( !( parent_kind == Class::Kind::Abstract || parent_kind == Class::Kind::Interface || parent_kind == Class::Kind::PolymorphNonFinal ) )
 		{
-			// SPRACHE_TODO - add specific error
-			errors_.push_back( ReportNotImplemented( class_declaration.file_pos_, "inheritance forbidden" ) );
+			errors_.push_back( ReportCanNotDeriveFromThisType( class_declaration.file_pos_, type_name->ToString() ) );
+			continue;
 		}
 
 		the_class->parents.push_back( parent_class_proxy );
@@ -651,8 +653,8 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 		{
 			if( the_class->base_class != nullptr )
 			{
-				// SPRACHE_TODO - add specific error
-				errors_.push_back( ReportNotImplemented( class_declaration.file_pos_, "multiple non-interface base classes" ) );
+				errors_.push_back( ReportDuplicatedBaseClass( class_declaration.file_pos_, type_name->ToString() ) );
+				continue;
 			}
 			the_class->base_class= parent_class_proxy;
 		}
@@ -811,10 +813,9 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 
 	case Synt::ClassKindAttribute::Interface:
 		if( the_class->field_count != 0u )
-		{
-			// SPRACHE_TODO - add specific error
-			errors_.push_back( ReportNotImplemented( class_declaration.file_pos_, "fields in interface" ) );
-		}
+			errors_.push_back( ReportFieldsForInterfacesNotAllowed( class_declaration.file_pos_ ) );
+		if( the_class->base_class != nullptr )
+			errors_.push_back( ReportBaseClassForInterface( class_declaration.file_pos_ ) );
 		the_class->kind= Class::Kind::Interface;
 		break;
 
@@ -2223,9 +2224,8 @@ void CodeBuilder::BuildConstructorInitialization(
 		{
 			if( base_class.base_class == nullptr )
 			{
-				// SPRACHE_TODO - gen separate error
 				have_fields_errors= true;
-				errors_.push_back( ReportNameNotFound( constructor_initialization_list.file_pos_, field_initializer.name ) );
+				errors_.push_back( ReportBaseUnavailable( constructor_initialization_list.file_pos_ ) );
 				continue;
 			}
 			if( base_initialized )
@@ -2235,6 +2235,7 @@ void CodeBuilder::BuildConstructorInitialization(
 				continue;
 			}
 			base_initialized= true;
+			function_context.base_initialized= false;
 			continue;
 		}
 
@@ -2257,8 +2258,8 @@ void CodeBuilder::BuildConstructorInitialization(
 		}
 		if( field->class_.lock()->class_.get() != &base_class )
 		{
-			// SPRACHE_TODO - generate separate error.
-			errors_.push_back( ReportNotImplemented( constructor_initialization_list.file_pos_, "Initializing parent class fields" ) );
+			have_fields_errors= true;
+			errors_.push_back( ReportInitializerForBaseClassField( constructor_initialization_list.file_pos_, field_initializer.name ) );
 			continue;
 		}
 
@@ -2332,6 +2333,7 @@ void CodeBuilder::BuildConstructorInitialization(
 			function_context.llvm_ir_builder.CreateGEP( this_.llvm_value, llvm::ArrayRef<llvm::Value*> ( index_list, 2u ) );
 
 		ApplyEmptyInitializer( base_class.base_class->class_->members.GetThisNamespaceName(), constructor_initialization_list.file_pos_, base_variable, function_context );
+		function_context.base_initialized= true;
 	}
 
 	if( have_fields_errors )
@@ -2356,6 +2358,7 @@ void CodeBuilder::BuildConstructorInitialization(
 				function_context.llvm_ir_builder.CreateGEP( this_.llvm_value, llvm::ArrayRef<llvm::Value*> ( index_list, 2u ) );
 
 			ApplyInitializer( base_variable, this_storage, *field_initializer.initializer, names_scope, function_context );
+			function_context.base_initialized= true;
 			continue;
 		}
 

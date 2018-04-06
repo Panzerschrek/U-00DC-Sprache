@@ -1092,6 +1092,13 @@ Value CodeBuilder::BuildNamedOperand(
 			errors_.push_back( ReportFieldIsNotInitializedYet( named_operand.file_pos_, named_operand.name_.components.back().name ) );
 			return ErrorValue();
 		}
+		if( function_context.is_constructor_initializer_list_now &&
+			field_class_proxy != function_context.this_->type.GetClassTypeProxy() &&
+			!function_context.base_initialized )
+		{
+			errors_.push_back( ReportFieldIsNotInitializedYet( named_operand.file_pos_, Keyword( Keywords::base_ ) ) );
+			return ErrorValue();
+		}
 
 		Variable field_variable;
 		field_variable.type= field->type;

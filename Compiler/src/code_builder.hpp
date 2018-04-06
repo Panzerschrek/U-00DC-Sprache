@@ -81,6 +81,7 @@ private:
 		const Variable* s_ret_= nullptr; // Value for assignment for "sret" functions.
 
 		std::set<const ClassField*> uninitialized_this_fields;
+		bool base_initialized= false;
 		bool is_constructor_initializer_list_now= false;
 
 		llvm::Function* const function;

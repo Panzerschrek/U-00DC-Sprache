@@ -1,6 +1,7 @@
 from py_tests_common import *
 
-def InheritanceTes_ClassKindAttribute_Test0():
+
+def InheritanceTest_ClassKindAttribute_Test0():
 	c_program_text= """
 	class S final {}
 	"""
@@ -353,6 +354,76 @@ def InheritanceTest_InitializeBaseClass_Test1():
 		{
 			var B b( 55521 );
 			halt if( b.a != 55521 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def InheritanceTest_InitializeBaseClass_Test2():
+	c_program_text= """
+		class A polymorph
+		{
+			i32 a;
+			fn constructor()( a= 988541 ){}
+		}
+		class B : A
+		{
+			// Must generate default constructor, that calls A::constructor
+		}
+
+		fn Foo()
+		{
+			var B b;
+			halt if( b.a != 988541 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def InheritanceTest_InitializeBaseClass_Test3():
+	c_program_text= """
+		class A polymorph
+		{
+			i32 a;
+			fn constructor( i32 x )( a= x ){}
+		}
+		class B : A
+		{
+			i32 b;
+			fn constructor( i32 x )( base(x), b= a ){}   // Must access parent class field after explicit base initialization.
+		}
+
+		fn Foo()
+		{
+			var B b( 1451 );
+			halt if( b.a != 1451 );
+			halt if( b.b != 1451 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def InheritanceTest_InitializeBaseClass_Test4():
+	c_program_text= """
+		class A polymorph
+		{
+			i32 a;
+			fn constructor()( a= 2018 ){}
+		}
+		class B : A
+		{
+			i32 b;
+			fn constructor()(  b= a ){}   // Must access parent class field after implicit base initialization.
+		}
+
+		fn Foo()
+		{
+			var B b;
+			halt if( b.a != 2018 );
+			halt if( b.b != 2018 );
 		}
 	"""
 	tests_lib.build_program( c_program_text )
