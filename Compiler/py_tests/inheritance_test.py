@@ -430,6 +430,73 @@ def InheritanceTest_InitializeBaseClass_Test4():
 	tests_lib.run_function( "_Z3Foov" )
 
 
+def Desturctors_ForInheritance_Test0():
+	c_program_text= """
+		class A polymorph
+		{
+			i32 &mut a;
+			fn constructor( this'x', i32 &'y mut in_a ) ' x <- y'
+			( a= in_a ){}
+			fn destructor()
+			{
+				a= 0;
+			}
+		}
+		class B : A
+		{
+			fn constructor( this'x', i32 &'y mut in_a ) ' x <- y'
+			( base(in_a) ){}
+			// Must generate default destructor, which calls base destructor.
+		}
+
+		fn Foo()
+		{
+			var i32 mut x= 586;
+			{
+				var B b( x );  // Destuctor for 'A' (base of 'B') must be called.
+			}
+			halt if( x != 0 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def Desturctors_ForInheritance_Test1():
+	c_program_text= """
+		class A polymorph
+		{
+			i32 &mut a;
+			fn constructor( this'x', i32 &'y mut in_a ) ' x <- y'
+			( a= in_a ){}
+			fn destructor()
+			{
+				a= 0;
+			}
+		}
+		class B : A
+		{
+			fn constructor( this'x', i32 &'y mut in_a ) ' x <- y'
+			( base(in_a) ){}
+			fn destructor()
+			{
+				// after end of this destructor, destructor for base must be called.
+			}
+		}
+
+		fn Foo()
+		{
+			var i32 mut x= 847;
+			{
+				var B b( x );
+			}
+			halt if( x != 0 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
 def ChildToParentReferenceCast_Test0():
 	c_program_text= """
 		class A polymorph{}
@@ -479,7 +546,6 @@ def ChildToParentReferenceCast_Test2():
 	"""
 	tests_lib.build_program( c_program_text )
 	tests_lib.run_function( "_Z3Foov" )
-
 
 
 def ChildToParentReferenceCast_Test3():

@@ -789,6 +789,11 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 			if( field->is_reference || field->type.ReferencesTagsCount() != 0u )
 				the_class->references_tags_count= 1u;
 		});
+	for( const ClassProxyPtr& parent_class : the_class->parents )
+	{
+		if( parent_class->class_->references_tags_count != 0u )
+			the_class->references_tags_count= 1u;
+	}
 
 	// Check opaque before set body for cases of errors (class body duplication).
 	if( the_class->llvm_type->isOpaque() )
@@ -1219,11 +1224,23 @@ void CodeBuilder::CallMembersDestructors( FunctionContext& function_context )
 	const Class* const class_= function_context.this_->type.GetClassType();
 	U_ASSERT( class_ != nullptr );
 
+	if( class_->base_class != nullptr )
+	{
+		llvm::Value* index_list[2];
+		index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
+		index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(class_->base_class_field_number) ) );
+		CallDestructor(
+			function_context.llvm_ir_builder.CreateGEP( function_context.this_->llvm_value, index_list ),
+			class_->base_class,
+			function_context );
+	}
+
 	class_->members.ForEachInThisScope(
 		[&]( const NamesScope::InsertedName& member )
 		{
 			const ClassField* const field= member.second.GetClassField();
-			if( field == nullptr || field->is_reference || !field->type.HaveDestructor() )
+			if( field == nullptr || field->is_reference || !field->type.HaveDestructor() ||
+				field->class_.lock()->class_.get() != class_ )
 				return;
 
 			llvm::Value* index_list[2];
