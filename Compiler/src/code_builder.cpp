@@ -387,6 +387,7 @@ void CodeBuilder::CopyClass(
 	copy->base_class= src.base_class;
 	copy->base_class_field_number= src.base_class_field_number;
 	copy->parents= src.parents;
+	copy->parents_fields_numbers= src.parents_fields_numbers;
 
 	// Register copy in destination namespace and current class table.
 	dst_namespace.AddName( src.members.GetThisNamespaceName(), Value( src_class, file_pos ) );
@@ -646,8 +647,6 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 			continue;
 		}
 
-		the_class->parents.push_back( parent_class_proxy );
-		fields_llvm_types.emplace_back( parent_class_proxy->class_->llvm_type );
 
 		if( parent_kind != Class::Kind::Interface ) // not interface=base
 		{
@@ -657,8 +656,12 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 				continue;
 			}
 			the_class->base_class= parent_class_proxy;
-			the_class->base_class_field_number= static_cast<unsigned int>(fields_llvm_types.size() - 1u);
+			the_class->base_class_field_number= static_cast<unsigned int>(fields_llvm_types.size());
 		}
+
+		the_class->parents.push_back( parent_class_proxy );
+		the_class->parents_fields_numbers.push_back( static_cast<unsigned int>(fields_llvm_types.size()) );
+		fields_llvm_types.emplace_back( parent_class_proxy->class_->llvm_type );
 	} // for parents
 
 	std::vector<PrepareFunctionResult> class_functions;
@@ -2714,7 +2717,7 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 			// TODO - maybe make copy of varaible address in new llvm register?
 			llvm::Value* result_ref= expression_result.llvm_value;
 			if( variable.type != expression_result.type )
-				result_ref= CreateReferenceCast( result_ref, variable.type, function_context );
+				result_ref= CreateReferenceCast( result_ref, expression_result.type, variable.type, function_context );
 			variable.llvm_value= result_ref;
 			variable.constexpr_value= expression_result.constexpr_value;
 		}
@@ -3328,7 +3331,7 @@ void CodeBuilder::BuildReturnOperatorCode(
 
 		llvm::Value* ret_value= expression_result.llvm_value;
 		if( expression_result.type != function_context.return_type )
-			ret_value= CreateReferenceCast( ret_value, function_context.return_type, function_context );
+			ret_value= CreateReferenceCast( ret_value, expression_result.type, function_context.return_type, function_context );
 		function_context.llvm_ir_builder.CreateRet( ret_value );
 	}
 	else
@@ -3828,6 +3831,20 @@ const FunctionVariable* CodeBuilder::GetOverloadedFunction(
 				return &function;
 
 			const bool types_are_same= actual_args_begin[i].type == function_type.args[i].type;
+			if( !types_are_same )
+			{
+				// We needs complete types for checking possible conversions.
+				// We can not just skip this function, if types are incomplete, because it will break "template instantiation equality rule".
+				if( function_type.args[i].type != void_type_ && actual_args_begin[i].type != void_type_ &&
+					( actual_args_begin[i].type.IsIncomplete() || function_type.args[i].type.IsIncomplete() ) )
+				{
+					// SPRACHE_TODO - generate separate error.
+					errors_.push_back( ReportNotImplemented( file_pos, "type conversions for incomplete types" ) );
+					match_type= MatchType::NoMatch;
+					break;
+				};
+			}
+
 			const bool types_are_compatible= actual_args_begin[i].type.ReferenceIsConvertibleTo( function_type.args[i].type );
 			// SPRACHE_TODO - support type-casting for function call.
 			if( !types_are_compatible )
@@ -4049,9 +4066,41 @@ llvm::Value*CodeBuilder::CreateMoveToLLVMRegisterInstruction(
 	return nullptr;
 }
 
-llvm::Value* CodeBuilder::CreateReferenceCast( llvm::Value* const ref, const Type& dest_type, FunctionContext& function_context )
+llvm::Value* CodeBuilder::CreateReferenceCast( llvm::Value* const ref, const Type& src_type, const Type& dst_type, FunctionContext& function_context )
 {
-	return function_context.llvm_ir_builder.CreatePointerCast( ref, llvm::PointerType::get( dest_type.GetLLVMType(), 0 ) );
+	U_ASSERT( src_type.ReferenceIsConvertibleTo( dst_type ) );
+	if( dst_type == void_type_ )
+		return function_context.llvm_ir_builder.CreatePointerCast( ref, llvm::PointerType::get( dst_type.GetLLVMType(), 0 ) );
+	else
+	{
+		const Class* const src_class_type= src_type.GetClassType();
+		const Class* const dst_class_tepe= dst_type.GetClassType();
+		U_ASSERT( src_class_type != nullptr );
+		U_ASSERT( dst_class_tepe != nullptr );
+
+		for( const ClassProxyPtr& src_parent_class : src_class_type->parents )
+		{
+			const size_t parent_index= &src_parent_class - src_class_type->parents.data();
+			if( src_parent_class == dst_type )
+			{
+				llvm::Value* index_list[2];
+				index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
+				index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(src_class_type->parents_fields_numbers[parent_index]) ) );
+				return function_context.llvm_ir_builder.CreateGEP( ref, llvm::ArrayRef< llvm::Value*> ( index_list, 2u ) );
+			}
+			else if( Type(src_parent_class).ReferenceIsConvertibleTo( dst_type ) )
+			{
+				llvm::Value* index_list[2];
+				index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
+				index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(src_class_type->parents_fields_numbers[parent_index]) ) );
+				llvm::Value* const sub_ref= function_context.llvm_ir_builder.CreateGEP( ref, llvm::ArrayRef< llvm::Value*> ( index_list, 2u ) );
+				return CreateReferenceCast( sub_ref, src_parent_class, dst_type, function_context );
+			}
+		}
+	}
+
+	U_ASSERT(false);
+	return nullptr;
 }
 
 llvm::GlobalVariable* CodeBuilder::CreateGlobalConstantVariable(

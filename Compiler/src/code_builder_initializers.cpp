@@ -843,7 +843,7 @@ void CodeBuilder::InitializeReferenceField(
 
 	llvm::Value* ref_to_store= initializer_variable->llvm_value;
 	if( field.type != initializer_variable->type )
-		ref_to_store= CreateReferenceCast( ref_to_store, field.type, function_context );
+		ref_to_store= CreateReferenceCast( ref_to_store, initializer_variable->type, field.type, function_context );
 	function_context.llvm_ir_builder.CreateStore( ref_to_store, address_of_reference );
 }
 

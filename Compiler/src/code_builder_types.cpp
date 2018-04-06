@@ -260,6 +260,19 @@ bool Type::ReferenceIsConvertibleTo( const Type& other ) const
 	if( other_fundamental != nullptr && other_fundamental->fundamental_type == U_FundamentalType::Void )
 		return true;
 
+	const Class* const class_type= GetClassType();
+	const Class* const other_class_type= other.GetClassType();
+	if( class_type != nullptr && other_class_type != nullptr )
+	{
+		for( const ClassProxyPtr& parent : class_type->parents )
+		{
+			if( parent->class_.get() == other_class_type )
+				return true;
+			if( Type(parent).ReferenceIsConvertibleTo( other ) )
+				return true;
+		}
+	}
+
 	return false;
 }
 

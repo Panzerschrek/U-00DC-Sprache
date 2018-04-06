@@ -1753,7 +1753,7 @@ Value CodeBuilder::DoCallFunction(
 				if( expr.type == arg.type )
 					llvm_args[j]= expr.llvm_value;
 				else
-					llvm_args[j]= CreateReferenceCast( expr.llvm_value, arg.type, function_context );
+					llvm_args[j]= CreateReferenceCast( expr.llvm_value, expr.type, arg.type, function_context );
 
 				// Lock references.
 				for( const StoredVariablePtr& referenced_variable : expr.referenced_variables )
@@ -1777,7 +1777,7 @@ Value CodeBuilder::DoCallFunction(
 					llvm_args[j]= expr.llvm_value;
 
 				if( expr.type != arg.type )
-					llvm_args[j]= CreateReferenceCast( llvm_args[j], arg.type, function_context );
+					llvm_args[j]= CreateReferenceCast( llvm_args[j], expr.type, arg.type, function_context );
 
 				// Lock references.
 				for( const StoredVariablePtr& referenced_variable : expr.referenced_variables )

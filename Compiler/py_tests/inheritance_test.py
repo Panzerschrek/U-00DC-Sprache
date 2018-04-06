@@ -428,3 +428,88 @@ def InheritanceTest_InitializeBaseClass_Test4():
 	"""
 	tests_lib.build_program( c_program_text )
 	tests_lib.run_function( "_Z3Foov" )
+
+
+def ChildToParentReferenceCast_Test0():
+	c_program_text= """
+		class A polymorph{}
+		class B : A {}
+		fn Bar( A& a ) {}
+		fn Foo()
+		{
+			var B b;
+			Bar(b); // Must convert B& to A&. Direct child to parent conversion.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def ChildToParentReferenceCast_Test1():
+	c_program_text= """
+		class A polymorph{}
+		class AA interface{}
+		class B : A, AA {}
+		fn Bar( A& a ) {}
+		fn Baz( AA& aa ) {}
+		fn Foo()
+		{
+			var B b;
+			// Direct child to parent conversion for class with two parents.
+			Bar(b); // Must convert B& to A&.
+			Baz(b); // Must convert B& to AA&.
+		}
+	"""
+	tests_lib.build_program( c_program_text, )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def ChildToParentReferenceCast_Test2():
+	c_program_text= """
+		class A polymorph{}
+		class B : A {}
+		class C : B {}
+		fn Bar( A& a ) {}
+		fn Foo()
+		{
+			var C c;
+			// Undirect child to parent conversion.
+			Bar(c); // Must convert B& to A&.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+
+def ChildToParentReferenceCast_Test3():
+	c_program_text= """
+		class A0 interface{}
+		class A1 interface{}
+		class A interface : A0, A1 {}
+		class B0 interface{}
+		class B1 interface{}
+		class B interface : B0, B1 {}
+		class C : A, B {}
+		fn BarA0( A0& a0 ) {}
+		fn BarA1( A1& a1 ) {}
+		fn BarB0( B0& b0 ) {}
+		fn BarB1( B1& b1 ) {}
+		fn BarA ( A & a  ) {}
+		fn BarB ( B & b  ) {}
+		fn BarC ( C & c  ) {}
+		fn Foo()
+		{
+			var C c;
+			// Undirect child to parent conversion for class with multiple parents.
+			BarA0(c);
+			BarA1(c);
+			BarB0(c);
+			BarB1(c);
+			BarA (c);
+			BarB (c);
+			BarC (c);
+		}
+	"""
+	tests_lib.build_program( c_program_text, )
+	tests_lib.run_function( "_Z3Foov" )
