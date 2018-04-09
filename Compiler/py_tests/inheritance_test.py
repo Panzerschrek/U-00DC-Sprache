@@ -579,3 +579,96 @@ def ChildToParentReferenceCast_Test3():
 	"""
 	tests_lib.build_program( c_program_text, )
 	tests_lib.run_function( "_Z3Foov" )
+
+
+def CopyChildToParent_Test0():
+	c_program_text= """
+		class A polymorph
+		{
+			i32 x;
+			fn constructor( i32 in_x ) ( x= in_x ) {}
+		}
+		class B : A
+		{
+			fn constructor( i32 in_x ) ( base(in_x) ) {}
+		}
+		fn Foo() : i32
+		{
+			var B b( 5635224 );
+			var A a= b; // Copy via expression initializer.
+			return a.x;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 5635224 )
+
+
+def CopyChildToParent_Test1():
+	c_program_text= """
+		class A polymorph
+		{
+			i32 x;
+			fn constructor( i32 in_x ) ( x= in_x ) {}
+		}
+		class B : A
+		{
+			fn constructor( i32 in_x ) ( base(in_x) ) {}
+		}
+		fn Foo() : i32
+		{
+			var B b( 11241 );
+			var A a(b); // Copy via copy constructor call with reference cast.
+			return a.x;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 11241 )
+
+
+def CopyChildToParent_Test2():
+	c_program_text= """
+		class A polymorph
+		{
+			i32 x;
+			fn constructor( i32 in_x ) ( x= in_x ) {}
+		}
+		class B : A
+		{
+			fn constructor( i32 in_x ) ( base(in_x) ) {}
+		}
+		fn Foo() : i32
+		{
+			var A mut a( 0 );
+			var B b( 66685 );
+			a= b;  // Call copy-assignnment
+			return a.x;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 66685 )
+
+
+def CopyChildToParent_Test3():
+	c_program_text= """
+		class A polymorph
+		{
+			i32 x;
+			fn constructor( i32 in_x ) ( x= in_x ) {}
+		}
+		class B : A
+		{
+			fn constructor( i32 in_x ) ( base(in_x) ) {}
+		}
+		fn Bar( A a ) : i32 { return a.x; }
+		fn Foo() : i32
+		{
+			var B b( 44758 );
+			return Bar(b); // Copy in function call
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 44758 )

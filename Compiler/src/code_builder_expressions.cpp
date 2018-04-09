@@ -1790,9 +1790,8 @@ Value CodeBuilder::DoCallFunction(
 		}
 		else
 		{
-			if( !something_have_template_dependent_type && arg.type != expr.type )
+			if( !something_have_template_dependent_type && !expr.type.ReferenceIsConvertibleTo( arg.type ) )
 			{
-				// SPRACHE_TODO - allow value-casting.
 				errors_.push_back( ReportTypesMismatch( file_pos, arg.type.ToString(), expr.type.ToString() ) );
 				return ErrorValue();
 			}
@@ -1814,7 +1813,7 @@ Value CodeBuilder::DoCallFunction(
 
 				if( something_have_template_dependent_type )
 				{}
-				else if( expr.value_type == ValueType::Value )
+				else if( expr.value_type == ValueType::Value && expr.type == arg.type )
 				{
 					// Do not call copy constructors - just move.
 					U_ASSERT( expr.referenced_variables.size() == 1u );
@@ -1826,7 +1825,10 @@ Value CodeBuilder::DoCallFunction(
 					// Create copy of class value. Call copy constructor.
 					llvm::Value* const arg_copy= function_context.alloca_ir_builder.CreateAlloca( arg.type.GetLLVMType() );
 
-					TryCallCopyConstructor( file_pos, arg_copy, expr.llvm_value, class_type, function_context );
+					llvm::Value* value_for_copy= expr.llvm_value;
+					if( expr.type != arg.type )
+						value_for_copy= CreateReferenceCast( value_for_copy, expr.type, arg.type, function_context );
+					TryCallCopyConstructor( file_pos, arg_copy, value_for_copy, class_type, function_context );
 					llvm_args[j]= arg_copy;
 				}
 

@@ -599,7 +599,7 @@ llvm::Constant* CodeBuilder::ApplyExpressionInitializer(
 
 		const Value expression_result_value=
 			BuildExpressionCode( *initializer.expression, block_names, function_context );
-		if( expression_result_value.GetType() != variable.type )
+		if( !expression_result_value.GetType().ReferenceIsConvertibleTo( variable.type ) )
 		{
 			errors_.push_back( ReportTypesMismatch( initializer.file_pos_, variable.type.ToString(), expression_result_value.GetType().ToString() ) );
 			return nullptr;
@@ -618,15 +618,20 @@ llvm::Constant* CodeBuilder::ApplyExpressionInitializer(
 		}
 
 		// Move or try call copy constructor.
-		if( expression_result.value_type == ValueType::Value )
+		if( expression_result.value_type == ValueType::Value && expression_result.type == variable.type )
 		{
 			U_ASSERT( expression_result.referenced_variables.size() == 1u );
 			function_context.variables_state.Move( *expression_result.referenced_variables.begin() );
 			CopyBytes( expression_result.llvm_value, variable.llvm_value, variable.type, function_context );
 		}
 		else
+		{
+			llvm::Value* value_for_copy= expression_result.llvm_value;
+			if( expression_result.type != variable.type )
+				value_for_copy= CreateReferenceCast( value_for_copy, expression_result.type, variable.type, function_context );
 			TryCallCopyConstructor(
-				initializer.file_pos_, variable.llvm_value, expression_result.llvm_value, variable.type.GetClassTypeProxy(), function_context );
+				initializer.file_pos_, variable.llvm_value, value_for_copy, variable.type.GetClassTypeProxy(), function_context );
+		}
 	}
 	else
 	{
