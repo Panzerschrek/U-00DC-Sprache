@@ -203,6 +203,12 @@ const char* CodeBuilderErrorCodeToString( const CodeBuilderErrorCode code )
 		return "FieldsForInterfacesNotAllowed";
 	case CodeBuilderErrorCode::BaseClassForInterface:
 		return "BaseClassForInterface";
+	case CodeBuilderErrorCode::VirtualForNonclassFunction:
+		return "VirtualForNonclassFunction";
+	case CodeBuilderErrorCode::VirtualForNonThisCallFunction:
+		return "VirtualForNonThisCallFunction";
+	case CodeBuilderErrorCode::FunctionCanNotBeVirtual:
+		return "FunctionCanNotBeVirtual";
 	};
 
 	U_ASSERT(false);
@@ -1307,6 +1313,39 @@ CodeBuilderError ReportBaseClassForInterface( const FilePos& file_pos )
 	error.code= CodeBuilderErrorCode::BaseClassForInterface;
 
 	error.text= "Base class for interface.."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportVirtualForNonclassFunction( const FilePos& file_pos, const ProgramString& function_name )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::VirtualForNonclassFunction;
+
+	error.text= "Virtual for non-class function \"."_SpC + function_name + "\"."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportVirtualForNonThisCallFunction( const FilePos& file_pos, const ProgramString& function_name )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::VirtualForNonThisCallFunction;
+
+	error.text= "Virtual for non-thiscall function \"."_SpC + function_name + "\"."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportFunctionCanNotBeVirtual( const FilePos& file_pos, const ProgramString& function_name )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::FunctionCanNotBeVirtual;
+
+	error.text= "Function \"."_SpC + function_name + "\" can not be virtual."_SpC;
 
 	return error;
 }

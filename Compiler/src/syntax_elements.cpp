@@ -274,7 +274,8 @@ Function::Function(
 	FunctionArgumentsDeclaration arguments,
 	std::unique_ptr<StructNamedInitializer> constructor_initialization_list,
 	BlockPtr block,
-	OverloadedOperator overloaded_operator )
+	OverloadedOperator overloaded_operator,
+	VirtualFunctionKind virtual_function_kind)
 	: SyntaxElementBase(file_pos)
 	, name_( std::move(name) )
 	, return_type_( std::move(return_type) )
@@ -287,6 +288,7 @@ Function::Function(
 	, constructor_initialization_list_( std::move(constructor_initialization_list) )
 	, block_( std::move(block) )
 	, overloaded_operator_( std::move(overloaded_operator) )
+	, virtual_function_kind_( std::move(virtual_function_kind) )
 {}
 
 ClassField::ClassField( const FilePos& file_pos )

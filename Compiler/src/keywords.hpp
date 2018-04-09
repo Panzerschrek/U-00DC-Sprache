@@ -28,6 +28,10 @@ enum class Keywords : unsigned int
 	interface_,
 	abstract_,
 
+	virtual_,
+	override_,
+	pure_,
+
 	namespace_,
 
 	// Fundamental types names.
@@ -73,8 +77,6 @@ enum class Keywords : unsigned int
 	switch_,
 	case_,
 	default_,
-	virtual_,
-	override_,
 	typename_,
 	cast_,
 	const_,

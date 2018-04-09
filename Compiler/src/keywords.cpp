@@ -53,6 +53,10 @@ static const Globals& GetGlobals()
 		[ size_t(Keywords::interface_) ]= "interface",
 		[ size_t(Keywords::abstract_) ]= "abstract",
 
+		[ size_t(Keywords::virtual_) ]= "virtual",
+		[ size_t(Keywords::override_) ]= "override",
+		[ size_t(Keywords::pure_) ]= "pure",
+
 		[ size_t(Keywords::namespace_) ]= "namespace",
 
 		[ size_t(Keywords::void_) ]= "void",
@@ -93,8 +97,6 @@ static const Globals& GetGlobals()
 		[ size_t(Keywords::switch_) ]= "switch",
 		[ size_t(Keywords::case_) ]= "case",
 		[ size_t(Keywords::default_) ]= "default",
-		[ size_t(Keywords::virtual_) ]= "virtual",
-		[ size_t(Keywords::override_) ]= "override",
 		[ size_t(Keywords::typename_) ]= "typename",
 		[ size_t(Keywords::cast_) ]= "cast",
 		[ size_t(Keywords::const_) ]= "const",

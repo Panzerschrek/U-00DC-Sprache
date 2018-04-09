@@ -1961,15 +1961,48 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 	const FilePos& func_pos= it_->file_pos;
 	ComplexName fn_name;
 	OverloadedOperator overloaded_operator= OverloadedOperator::None;
+	VirtualFunctionKind virtual_function_kind= VirtualFunctionKind::None;
+
+	const auto try_parse_virtual_specifiers=
+	[&]
+	{
+		if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::virtual_ )
+		{
+			++it_; U_ASSERT( it_ < it_end_ );
+			if( it_->type == Lexem::Type::Identifier )
+			{
+				if( it_->text == Keywords::override_ )
+				{
+					virtual_function_kind= VirtualFunctionKind::VirtualOverride;
+					++it_; U_ASSERT( it_ < it_end_ );
+				}
+				else if( it_->text == Keywords::final_ )
+				{
+					virtual_function_kind= VirtualFunctionKind::VirtualFinal;
+					++it_; U_ASSERT( it_ < it_end_ );
+				}
+				else if( it_->text == Keywords::pure_ )
+				{
+					virtual_function_kind= VirtualFunctionKind::VirtualPure;
+					++it_; U_ASSERT( it_ < it_end_ );
+				}
+				else
+					virtual_function_kind= VirtualFunctionKind::DeclareVirtual;
+			}
+		}
+	};
 
 	if( it_->text == Keywords::fn_ )
 	{
 		++it_; U_ASSERT( it_ < it_end_ );
+
+		try_parse_virtual_specifiers();
 		fn_name= ParseComplexName();
 	}
 	else
 	{
 		++it_; U_ASSERT( it_ < it_end_ );
+		try_parse_virtual_specifiers();
 
 		if( it_->type == Lexem::Type::Identifier || it_->type == Lexem::Type::Scope )
 		{
@@ -2375,7 +2408,8 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 			std::move( arguments ),
 			std::move( constructor_initialization_list ),
 			std::move( block ),
-			overloaded_operator ) );
+			overloaded_operator,
+			virtual_function_kind ) );
 }
 
 std::unique_ptr<Class> SyntaxAnalyzer::ParseClass()

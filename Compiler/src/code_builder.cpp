@@ -1516,6 +1516,18 @@ CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 	ProcessFunctionReferencesPollution( func, function_type, base_class );
 	CheckOverloadedOperator( base_class, function_type, func.overloaded_operator_, func.file_pos_ );
 
+	// Check virtual.
+	// TODO - maybe do this in other place?
+	if( func.virtual_function_kind_ != Synt::VirtualFunctionKind::None )
+	{
+		if( base_class == nullptr )
+			errors_.push_back( ReportVirtualForNonclassFunction( func.file_pos_, func_name ) );
+		if( !func_variable.is_this_call )
+			errors_.push_back( ReportVirtualForNonThisCallFunction( func.file_pos_, func_name ) );
+		if( is_constructor )
+			errors_.push_back( ReportFunctionCanNotBeVirtual( func.file_pos_, func_name ) );
+	}
+
 	NamesScope::InsertedName* const previously_inserted_func=
 		func_base_names_scope->GetThisScopeName( func_name );
 	if( previously_inserted_func == nullptr )
