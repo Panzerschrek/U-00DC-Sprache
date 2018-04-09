@@ -6,6 +6,7 @@ from py_tests_common import *
 import code_builder_test
 import inheritance_test
 import inheritance_errors_test
+import overloading_resolution_test
 
 
 # Get list of all tests here.
@@ -19,7 +20,7 @@ def GetTestsList( tests_modules_list ):
 
 
 def main():
-	tests_list= GetTestsList( [ "code_builder_test", "inheritance_test", "inheritance_errors_test" ] )
+	tests_list= GetTestsList( [ "code_builder_test", "inheritance_test", "inheritance_errors_test", "overloading_resolution_test" ] )
 
 	print( "run " + str(len(tests_list)) + " py_tests" + "\n" )
 	tests_failed= 0
