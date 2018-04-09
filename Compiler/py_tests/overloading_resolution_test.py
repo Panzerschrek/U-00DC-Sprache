@@ -415,3 +415,166 @@ def OverloadingResolutionTest_MutabilityAndReferenceConversions_Tes5():
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "TooManySuitableOverloadedFunctions" )
 	assert( errors_list[0].file_pos.line == 10 )
+
+
+def OverloadingResolutionTest_StaticClassFunctions_Test0():
+	c_program_text= """
+		struct S
+		{
+			fn Bar( i32& mut x ) : i32 { return 111; }
+			fn Bar( i32&imut x ) : i32 { return 222; }
+		}
+		fn Foo() : i32
+		{
+			var S s;
+			var i32 mut x= 0;
+			return s.Bar(x);   // Ok, select Bar( i32& mut ).
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 111 )
+
+
+def OverloadingResolutionTest_StaticClassFunctions_Test1():
+	c_program_text= """
+		struct S
+		{
+			fn Bar( i32& mut x, i32&imut y ) : i32 { return 111; }
+			fn Bar( i32&imut x, i32& mut y ) : i32 { return 222; }
+		}
+		fn Foo() : i32
+		{
+			var S s;
+			var i32 mut x= 0;
+			return s.Bar(x, x);   // Error, could not select between (&mut, &imut) and (&imut, &mut).
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "TooManySuitableOverloadedFunctions" )
+	assert( errors_list[0].file_pos.line == 11 )
+
+
+def OverloadingResolutionTest_StaticClassFunctions_Test2():
+	c_program_text= """
+		struct S
+		{
+			fn Bar( i32&imut x ) : i32 { return 111; }
+			fn Bar( imut this, i32&imut x ) : i32 { return 222; }
+		}
+		fn Foo() : i32
+		{
+			var S imut s;
+			var i32 mut x= 0;
+			return s.Bar(x);   // Error, could not select between (&imut) and (imut this, &imut).
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "TooManySuitableOverloadedFunctions" )
+	assert( errors_list[0].file_pos.line == 11 )
+
+
+def OverloadingResolutionTest_StaticClassFunctions_Test3():
+	c_program_text= """
+		struct S
+		{
+			fn Bar( i32&mut x ) : i32 { return 111; }
+			fn Bar( imut this, i32&imut x ) : i32 { return 222; }
+		}
+		fn Foo() : i32
+		{
+			var S imut s;
+			var i32 mut x= 0;
+			return s.Bar(x);   // Ok, select (i32&mut).
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 111 )
+
+
+def OverloadingResolutionTest_StaticClassFunctions_Test4():
+	c_program_text= """
+		struct S
+		{
+			fn Bar( i32&mut x ) : i32 { return 111; }
+			fn Bar( imut this, i32&imut x ) : i32 { return 222; }
+		}
+		fn Foo() : i32
+		{
+			var S imut s;
+			var i32 imut x= 0;
+			return s.Bar(x);   // Ok, can select only (imut this, i32&imut).
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 222 )
+
+
+def OverloadingResolutionTest_ParentClassCall_Test0():
+	c_program_text= """
+		class A polymorph
+		{
+			fn Bar( imut this, i32&imut x ) : i32 { return 111; }
+		}
+		class B : A
+		{
+			fn Bar( imut this, i32&imut x ) : i32 { return 222; }
+		}
+		fn Foo() : i32
+		{
+			var B b;
+			var i32 x= 0;
+			return b.Bar(x); // Should select B::Bar ( B::Bar shadows A::Bar ).
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 222 )
+
+
+def OverloadingResolutionTest_ParentClassCall_Test1():
+	c_program_text= """
+		class A polymorph
+		{
+			fn Bar( imut this, i32&imut x ) : i32 { return 111; }
+		}
+		class B : A
+		{
+			fn Bar(  mut this, i32& mut x ) : i32 { return 222; }
+		}
+		fn Foo() : i32
+		{
+			var B mut b;
+			var i32 mut x= 0;
+			return b.Bar(x); // Should select B::Bar, because it have no mut->imut conversion for "x" and "this".
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 222 )
+
+
+def OverloadingResolutionTest_ParentClassCall_Test2():
+	c_program_text= """
+		class A polymorph
+		{
+			fn Bar( i32&mut x ) : i32 { return 111; }
+		}
+		class B : A
+		{
+			fn Bar( imut this, i32&imut x ) : i32 { return 222; }
+		}
+		fn Foo() : i32
+		{
+			var B mut b;
+			var i32 mut x= 0;
+			return b.Bar(x); // Should select static A::Bar, because it have no mut->imut conversion for "x".
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 111 )

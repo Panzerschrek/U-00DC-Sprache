@@ -264,6 +264,7 @@ const FunctionVariable* CodeBuilder::GetOverloadedFunction(
 	std::vector<bool> best_functions( match_functions.size(), true );
 
 	// For each argument search functions, which is better, than another functions.
+	// For NOT better (four current arg) functions set flags to false.
 	for( size_t arg_n= 0; arg_n < actual_args.size(); ++arg_n )
 	{
 		for( const FunctionVariable* const function_l : match_functions )
@@ -318,7 +319,7 @@ const FunctionVariable* CodeBuilder::GetOverloadedFunction(
 					const Function& r_type=* function_r.type.GetFunctionType();
 					ConversionsCompareResult comp= CompareConversions(
 						actual_args[arg_n], l_type.args[l_arg_n], r_type.args[r_arg_n] );
-					U_ASSERT( comp != ConversionsCompareResult::Incomparable );
+					U_ASSERT( comp != ConversionsCompareResult::Incomparable && comp != ConversionsCompareResult::RightIsBetter );
 
 					if( comp != ConversionsCompareResult::Same )
 						best_functions[func_n]= false;
@@ -327,6 +328,7 @@ const FunctionVariable* CodeBuilder::GetOverloadedFunction(
 		} // for functions left
 	} // for args
 
+	// For succsess resolution we must get just one function with flag=true.
 	const FunctionVariable* selected_function= nullptr;
 	for( size_t func_n= 0u; func_n < match_functions.size(); ++func_n )
 	{
