@@ -392,6 +392,7 @@ void CodeBuilder::CopyClass(
 	copy->virtual_table= src.virtual_table;
 	copy->virtual_table_llvm_type= src.virtual_table_llvm_type;
 	copy->this_class_virtual_table= src.this_class_virtual_table;
+	copy->virtual_table_field_number= src.virtual_table_field_number;
 	copy->parents_virtual_tables= src.parents_virtual_tables;
 
 	// Register copy in destination namespace and current class table.
@@ -894,7 +895,10 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 
 	PrepareClassVirtualTableType( *the_class );
 	if( the_class->virtual_table_llvm_type != nullptr )
+	{
+		the_class->virtual_table_field_number= static_cast<unsigned int>( fields_llvm_types.size() );
 		fields_llvm_types.push_back( llvm::PointerType::get( the_class->virtual_table_llvm_type, 0u ) ); // TODO - maybe store virtual table pointer in base class?
+	}
 
 	// Check opaque before set body for cases of errors (class body duplication).
 	if( the_class->llvm_type->isOpaque() )
@@ -1070,6 +1074,9 @@ void CodeBuilder::PrepareClassVirtualTableType( Class& the_class )
 	U_ASSERT( the_class.is_incomplete );
 	U_ASSERT( the_class.virtual_table_llvm_type == nullptr );
 
+	if( the_class.virtual_table.empty() )
+		return; // Non-polymorph class.
+
 	llvm::Type* const size_type= fundamental_llvm_types_.u32; // SPRACHE_TODO - select proper size type.
 
 	the_class.virtual_table_llvm_type= llvm::StructType::create( llvm_context_ );
@@ -1091,10 +1098,11 @@ void CodeBuilder::BuildClassVirtualTables( Class& the_class, const Type& class_t
 	U_ASSERT( the_class.is_incomplete );
 	U_ASSERT( the_class.this_class_virtual_table == nullptr );
 	U_ASSERT( the_class.parents_virtual_tables.empty() );
-	U_ASSERT( the_class.virtual_table_llvm_type != nullptr );
 
 	if( the_class.virtual_table.empty() )
 		return; // Non-polymorph class.
+
+	U_ASSERT( the_class.virtual_table_llvm_type != nullptr );
 
 	llvm::Type* const size_type= fundamental_llvm_types_.u32; // SPRACHE_TODO - select proper size type.
 
@@ -2681,6 +2689,8 @@ void CodeBuilder::BuildConstructorInitialization(
 
 		function_context.uninitialized_this_fields.erase( field );
 	} // for fields initializers
+
+	SetupVirtualTablePointersInConstructor( this_.llvm_value, base_class, function_context );
 }
 
 CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockCode(

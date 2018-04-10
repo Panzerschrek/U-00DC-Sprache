@@ -138,6 +138,8 @@ void CodeBuilder::TryGenerateDefaultConstructor( Class& the_class, const Type& c
 			ApplyEmptyInitializer( member.first, FilePos()/*TODO*/, field_variable, function_context );
 		} );
 
+	SetupVirtualTablePointersInConstructor( this_llvm_value, the_class, function_context );
+
 	function_context.llvm_ir_builder.CreateRetVoid();
 	function_context.alloca_ir_builder.CreateBr( function_context.function_basic_block );
 
@@ -287,6 +289,8 @@ void CodeBuilder::TryGenerateCopyConstructor( Class& the_class, const Type& clas
 			}
 
 		} ); // For fields.
+
+	SetupVirtualTablePointersInConstructor( this_llvm_value, the_class, function_context );
 
 	function_context.llvm_ir_builder.CreateRetVoid();
 	function_context.alloca_ir_builder.CreateBr( function_context.function_basic_block );
@@ -743,6 +747,32 @@ void CodeBuilder::CopyBytes(
 	}
 	else
 		U_ASSERT(false);
+}
+
+void CodeBuilder::SetupVirtualTablePointersInConstructor(
+	llvm::Value* this_,
+	const Class& class_type,
+	FunctionContext& function_context )
+{
+	if( class_type.virtual_table.empty() )
+	{
+		U_ASSERT( class_type.virtual_table_llvm_type == nullptr );
+		U_ASSERT( class_type.this_class_virtual_table == nullptr );
+		return;
+	}
+
+	llvm::Value* index_list[2];
+	index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
+	index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(class_type.virtual_table_field_number) ) );
+	llvm::Value* const ptr_to_vtable_ptr= function_context.llvm_ir_builder.CreateGEP( this_, llvm::ArrayRef<llvm::Value*> ( index_list, 2u ) );
+	function_context.llvm_ir_builder.CreateStore( class_type.this_class_virtual_table, ptr_to_vtable_ptr );
+
+	for( size_t i= 0u; i < class_type.parents_fields_numbers.size(); ++i )
+	{
+		index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(class_type.parents_fields_numbers[i]) ) );
+		llvm::Value* const ptr_parent= function_context.llvm_ir_builder.CreateGEP( this_, llvm::ArrayRef<llvm::Value*> ( index_list, 2u ) );
+		SetupVirtualTablePointersInConstructor( ptr_parent, *class_type.parents[i]->class_, function_context );
+	}
 }
 
 } // namespace CodeBuilderPrivate

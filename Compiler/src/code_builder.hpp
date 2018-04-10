@@ -243,6 +243,11 @@ private:
 		const Type& type,
 		FunctionContext& function_context );
 
+	void SetupVirtualTablePointersInConstructor(
+		llvm::Value* this_,
+		const Class& class_type,
+		FunctionContext& function_context );
+
 	void TryCallCopyConstructor(
 		const FilePos& file_pos,
 		llvm::Value* this_, llvm::Value* src,

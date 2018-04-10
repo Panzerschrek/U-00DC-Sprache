@@ -625,6 +625,7 @@ public:
 	std::vector<VirtualTableEntry> virtual_table;
 	llvm::StructType* virtual_table_llvm_type= nullptr;
 	llvm::GlobalVariable* this_class_virtual_table= nullptr;
+	unsigned int virtual_table_field_number= 0u;
 	std::unordered_map< ClassProxyPtr, llvm::GlobalVariable* > parents_virtual_tables;
 };
 
