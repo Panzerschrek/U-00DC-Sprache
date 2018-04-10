@@ -383,7 +383,8 @@ private:
 		FunctionContext& function_context );
 
 	Value DoCallFunction(
-		const FunctionVariable& function,
+		llvm::Value* function,
+		const Function& function_type,
 		const FilePos& call_file_pos,
 		const Variable* first_arg,
 		std::vector<const Synt::IExpressionComponent*> args,

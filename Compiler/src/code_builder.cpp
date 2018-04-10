@@ -993,7 +993,10 @@ void CodeBuilder::ProcessClassVirtualFunction( Class& the_class, PrepareFunction
 	U_ASSERT( the_class.is_incomplete );
 	U_ASSERT( function.functions_set != nullptr );
 
-	const FunctionVariable& function_variable= (*function.functions_set)[function.function_index];
+	FunctionVariable& function_variable= (*function.functions_set)[function.function_index];
+
+	if( !function_variable.is_this_call )
+		return; // May be in case of error
 
 	Class::VirtualTableEntry* virtual_table_entry= nullptr;
 	for( Class::VirtualTableEntry& e : the_class.virtual_table )
@@ -1004,6 +1007,9 @@ void CodeBuilder::ProcessClassVirtualFunction( Class& the_class, PrepareFunction
 			break;
 		}
 	}
+	unsigned int virtual_table_index= ~0u;
+	if( virtual_table_entry != nullptr )
+		virtual_table_index= static_cast<unsigned int>(virtual_table_entry - the_class.virtual_table.data());
 
 	const FilePos& file_pos= function.func_syntax_element->file_pos_;
 	switch( function.func_syntax_element->virtual_function_kind_ )
@@ -1018,6 +1024,8 @@ void CodeBuilder::ProcessClassVirtualFunction( Class& the_class, PrepareFunction
 			errors_.push_back( ReportNotImplemented( file_pos, "needs override" ) ); // SPRACHE_TODO - generate separate error.
 		else
 		{
+			function_variable.virtual_table_index= static_cast<unsigned int>(the_class.virtual_table.size());
+
 			Class::VirtualTableEntry new_virtual_table_entry;
 			new_virtual_table_entry.function_variable= function_variable;
 			new_virtual_table_entry.is_pure= false;
@@ -1033,6 +1041,7 @@ void CodeBuilder::ProcessClassVirtualFunction( Class& the_class, PrepareFunction
 			errors_.push_back( ReportNotImplemented( file_pos, "can not override final function" ) ); // SPRACHE_TODO - generate separate error.
 		else
 		{
+			function_variable.virtual_table_index= virtual_table_index;
 			virtual_table_entry->function_variable= function_variable;
 			virtual_table_entry->is_pure= false;
 		}
@@ -1047,6 +1056,7 @@ void CodeBuilder::ProcessClassVirtualFunction( Class& the_class, PrepareFunction
 				errors_.push_back( ReportNotImplemented( file_pos, "can not override final function" ) ); // SPRACHE_TODO - generate separate error.
 			else
 			{
+				function_variable.virtual_table_index= virtual_table_index;
 				virtual_table_entry->function_variable= function_variable;
 				virtual_table_entry->is_pure= false;
 				virtual_table_entry->is_final= true;
@@ -1059,6 +1069,8 @@ void CodeBuilder::ProcessClassVirtualFunction( Class& the_class, PrepareFunction
 			errors_.push_back( ReportNotImplemented( file_pos, "needs override, not pure" ) ); // SPRACHE_TODO - generate separate error.
 		else
 		{
+			function_variable.virtual_table_index= static_cast<unsigned int>(the_class.virtual_table.size());
+
 			Class::VirtualTableEntry new_virtual_table_entry;
 			new_virtual_table_entry.function_variable= function_variable;
 			new_virtual_table_entry.is_pure= true;
@@ -3500,7 +3512,7 @@ void CodeBuilder::BuildDeltaOneOperatorCode(
 		GetOverloadedOperator( args, positive ? OverloadedOperator::Increment : OverloadedOperator::Decrement, file_pos );
 	if( overloaded_operator != nullptr )
 	{
-		DoCallFunction( *overloaded_operator, file_pos, variable, {}, false, block_names, function_context );
+		DoCallFunction( overloaded_operator->llvm_function, *overloaded_operator->type.GetFunctionType(), file_pos, variable, {}, false, block_names, function_context );
 	}
 	else if( const FundamentalType* const fundamental_type= variable->type.GetFundamentalType() )
 	{

@@ -133,7 +133,7 @@ boost::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 		synt_args.reserve( 2u );
 		synt_args.push_back( & left_expr );
 		synt_args.push_back( &right_expr );
-		return DoCallFunction( *overloaded_operator, file_pos, nullptr, synt_args, evaluate_args_in_reverse_order, names, function_context );
+		return DoCallFunction( overloaded_operator->llvm_function, *overloaded_operator->type.GetFunctionType(), file_pos, nullptr, synt_args, evaluate_args_in_reverse_order, names, function_context );
 	}
 
 	return boost::none;
@@ -296,7 +296,7 @@ Value CodeBuilder::BuildExpressionCode(
 			const FunctionVariable* const overloaded_operator= GetOverloadedOperator( args, op, expression_with_unary_operators->file_pos_ );
 			if( overloaded_operator != nullptr )
 			{
-				result= DoCallFunction( *overloaded_operator, expression_with_unary_operators->file_pos_, var, {}, false, names, function_context );
+				result= DoCallFunction( overloaded_operator->llvm_function, *overloaded_operator->type.GetFunctionType(), expression_with_unary_operators->file_pos_, var, {}, false, names, function_context );
 			}
 			else
 			{
@@ -1324,7 +1324,8 @@ Value CodeBuilder::BuildIndexationOperator(
 		{
 			return
 				DoCallFunction(
-					*overloaded_operator,
+					overloaded_operator->llvm_function,
+					*overloaded_operator->type.GetFunctionType(),
 					indexation_operator.file_pos_,
 					&variable, { indexation_operator.index_.get() }, false,
 					names, function_context );
@@ -1684,11 +1685,48 @@ Value CodeBuilder::BuildCallOperator(
 	for( const Synt::IExpressionComponentPtr& arg : call_operator.arguments_ )
 		synt_args.push_back( arg.get() );
 
-	return DoCallFunction( function, call_operator.file_pos_, this_, synt_args, false, names, function_context );
+	// Do virtual function fetch here.
+	Variable this_casted;
+	llvm::Value* llvm_function_ptr= function.llvm_function;
+	if( this_ != nullptr && this_->type.ReferenceIsConvertibleTo( function_type.args.front().type ) )
+	{
+		this_casted= *this_;
+		if( this_->type != function_type.args.front().type )
+		{
+			this_casted.type= function_type.args.front().type;
+			this_casted.llvm_value= CreateReferenceCast( this_->llvm_value, this_->type, this_casted.type, function_context );
+		}
+		this_= &this_casted;
+
+		if( function.virtual_table_index != ~0u )
+		{
+			const Class* const class_type= this_casted.type.GetClassType();
+			U_ASSERT( class_type != nullptr );
+			U_ASSERT( function.virtual_table_index < class_type->virtual_table.size() );
+
+			const unsigned int func_ptr_field_number= function.virtual_table_index * 2u + 1u;
+			const unsigned int offset_field_number= function.virtual_table_index * 2u;
+
+			llvm::Value* index_list[2];
+			index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
+			index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(class_type->virtual_table_field_number) ) );
+			llvm::Value* const ptr_to_virtual_table_ptr= function_context.llvm_ir_builder.CreateGEP( this_casted.llvm_value, llvm::ArrayRef<llvm::Value*> ( index_list, 2u ) );
+			llvm::Value* const virtual_table_ptr= function_context.llvm_ir_builder.CreateLoad( ptr_to_virtual_table_ptr );
+
+			index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(func_ptr_field_number) ) );
+			llvm::Value* const ptr_to_function_ptr= function_context.llvm_ir_builder.CreateGEP( virtual_table_ptr, llvm::ArrayRef<llvm::Value*> ( index_list, 2u ) );
+			llvm_function_ptr= function_context.llvm_ir_builder.CreateLoad( ptr_to_function_ptr );
+
+			// TODO - add "this" pointer offset here.
+		}
+	}
+
+	return DoCallFunction( llvm_function_ptr, function_type, call_operator.file_pos_, this_, synt_args, false, names, function_context );
 }
 
 Value CodeBuilder::DoCallFunction(
-	const FunctionVariable& function,
+	llvm::Value* function,
+	const Function& function_type,
 	const FilePos& call_file_pos,
 	const Variable* first_arg,
 	std::vector<const Synt::IExpressionComponent*> args,
@@ -1697,8 +1735,6 @@ Value CodeBuilder::DoCallFunction(
 	FunctionContext& function_context )
 {
 	U_ASSERT( !( evaluate_args_in_reverse_order && first_arg != nullptr ) );
-
-	const Function& function_type= *function.type.GetFunctionType();
 
 	const size_t first_arg_count= first_arg == 0u ? 0u : 1u;
 	const size_t arg_count= args.size() + first_arg_count;
@@ -1888,6 +1924,8 @@ Value CodeBuilder::DoCallFunction(
 		{} // Ok - pass immutable references into function, while mutable references on stack exists.
 	}
 
+	const bool return_value_is_sret= function_type.return_type.GetClassType() != nullptr && !function_type.return_value_is_reference;
+
 	if( function_result_have_template_dependent_type )
 	{
 		Variable dummy_result;
@@ -1900,13 +1938,13 @@ Value CodeBuilder::DoCallFunction(
 				dummy_result.value_type= ValueType::ConstReference;
 		}
 		else
-			dummy_result.location= function.return_value_is_sret ? Variable::Location::Pointer : Variable::Location::LLVMRegister;
+			dummy_result.location= return_value_is_sret ? Variable::Location::Pointer : Variable::Location::LLVMRegister;
 		dummy_result.type= GetNextTemplateDependentType();
 		return Value( dummy_result, call_file_pos );
 	}
 
 	llvm::Value* s_ret_value= nullptr;
-	if( function.return_value_is_sret )
+	if( return_value_is_sret )
 	{
 		s_ret_value= function_context.alloca_ir_builder.CreateAlloca( function_type.return_type.GetLLVMType() );
 		llvm_args.insert( llvm_args.begin(), s_ret_value );
@@ -1914,10 +1952,10 @@ Value CodeBuilder::DoCallFunction(
 
 	llvm::Value* call_result=
 		function_context.llvm_ir_builder.CreateCall(
-			llvm::dyn_cast<llvm::Function>(function.llvm_function),
+			function,
 			llvm_args );
 
-	if( function.return_value_is_sret )
+	if( return_value_is_sret )
 	{
 		U_ASSERT( s_ret_value != nullptr );
 		call_result= s_ret_value;
@@ -1940,7 +1978,7 @@ Value CodeBuilder::DoCallFunction(
 		if( function_type.return_type != void_type_ && function_type.return_type.IsIncomplete() )
 			errors_.push_back( ReportUsingIncompleteType( call_file_pos, function_type.return_type.ToString() ) );
 
-		result.location= function.return_value_is_sret ? Variable::Location::Pointer : Variable::Location::LLVMRegister;
+		result.location= return_value_is_sret ? Variable::Location::Pointer : Variable::Location::LLVMRegister;
 		result.value_type= ValueType::Value;
 
 		const StoredVariablePtr stored_result= std::make_shared<StoredVariable>( "fn result"_SpC, result );

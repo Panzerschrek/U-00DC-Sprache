@@ -227,6 +227,7 @@ bool operator!=( const Array& r, const Array& l );
 struct FunctionVariable final
 {
 	Type type; // Function type 100%
+	unsigned int virtual_table_index= ~0u; // For virtual functions number in virtual functions table in class of first arg(this).
 	bool have_body= true;
 	bool is_this_call= false;
 	bool is_generated= false;

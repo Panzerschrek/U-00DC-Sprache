@@ -48,6 +48,30 @@ def VirtualFunctionDeclaration_Test3():
 	tests_lib.build_program( c_program_text )
 
 
+def VirtualFunctionCallTest0():
+	c_program_text= """
+		class T polymorph
+		{
+			fn virtual Bar( this ) : i32 { return 555; }
+		}
+		class S : T
+		{
+			fn virtual override Bar( this ) : i32 { return 666; }
+		}
+
+		fn Bar( T& t ) : i32 { return t.Bar(); }   // Must call S::Bar here
+
+		fn Foo() : i32
+		{
+			var S s;
+			return Bar(s);
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 666 )
+
+
 def VirtualForNonclassFunction_Test0():
 	c_program_text= """
 		fn virtual Foo();
