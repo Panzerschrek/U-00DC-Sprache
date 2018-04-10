@@ -187,6 +187,7 @@ public:
 	};
 
 public:
+	// If this changed, virtual functions compare function must be changed too!
 	Type return_type;
 	bool return_value_is_reference= false;
 	bool return_value_is_mutable= false;
@@ -235,6 +236,8 @@ struct FunctionVariable final
 
 	FilePos prototype_file_pos= FilePos{ 0u, 0u, 0u };
 	FilePos body_file_pos= FilePos{ 0u, 0u, 0u };
+
+	bool VirtuallyEquals( const FunctionVariable& other ) const;
 };
 
 // Set of functions with same name, but different signature.
@@ -585,6 +588,13 @@ public:
 		PolymorphFinal,
 	};
 
+	struct VirtualTableEntry
+	{
+		FunctionVariable function_variable;
+		bool is_pure= false;
+		bool is_final= false;
+	};
+
 public:
 	// If you change this, you must change CodeBuilder::CopyClass too!
 
@@ -611,6 +621,8 @@ public:
 	unsigned int base_class_field_number= 0u;
 	std::vector<ClassProxyPtr> parents; // Class have fields with numbers 0-N for parents.
 	std::vector<unsigned int> parents_fields_numbers;
+
+	std::vector<VirtualTableEntry> virtual_table;
 };
 
 struct Enum

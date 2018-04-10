@@ -111,6 +111,13 @@ private:
 		bool have_uncodnitional_break_or_continue= false;
 	};
 
+	struct PrepareFunctionResult
+	{
+		const Synt::Function* func_syntax_element= nullptr;
+		OverloadedFunctionsSet* functions_set= nullptr;
+		size_t function_index= 0u;
+	};
+
 private:
 	BuildResultInternal BuildProgramInternal( const SourceGraph& source_graph, size_t node_index );
 
@@ -132,6 +139,9 @@ private:
 		const Synt::ComplexName& class_complex_name,
 		NamesScope& names_scope,
 		bool force_forward_declaration= false );
+
+	void ProcessClassParentsVirtualTables( Class& the_class );
+	void ProcessClassVirtualFunction( Class& the_class, PrepareFunctionResult& function );
 
 	void PrepareEnum( const Synt::Enum& enum_decl, NamesScope& names_scope );
 
@@ -271,13 +281,6 @@ private:
 	void BuildNamespaceBody(
 		const Synt::ProgramElements& body_elements,
 		NamesScope& names_scope );
-
-	struct PrepareFunctionResult
-	{
-		const Synt::Function* func_syntax_element= nullptr;
-		OverloadedFunctionsSet* functions_set= nullptr;
-		size_t function_index= 0u;
-	};
 
 	PrepareFunctionResult PrepareFunction(
 		const Synt::Function& func,

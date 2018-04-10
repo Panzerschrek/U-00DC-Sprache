@@ -388,6 +388,7 @@ void CodeBuilder::CopyClass(
 	copy->base_class_field_number= src.base_class_field_number;
 	copy->parents= src.parents;
 	copy->parents_fields_numbers= src.parents_fields_numbers;
+	copy->virtual_table= src.virtual_table;
 
 	// Register copy in destination namespace and current class table.
 	dst_namespace.AddName( src.members.GetThisNamespaceName(), Value( src_class, file_pos ) );
@@ -664,6 +665,9 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 		fields_llvm_types.emplace_back( parent_class_proxy->class_->llvm_type );
 	} // for parents
 
+
+	ProcessClassParentsVirtualTables( *the_class );
+
 	std::vector<PrepareFunctionResult> class_functions;
 	std::vector<const Synt::Class*> inner_classes;
 
@@ -711,7 +715,10 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 			dynamic_cast<const Synt::Function*>( member.get() ) )
 		{
 			// First time, push only prototypes.
-			class_functions.push_back( PrepareFunction( *function_declaration, true, the_class_proxy, the_class->members ) );
+			PrepareFunctionResult function_prepared= PrepareFunction( *function_declaration, true, the_class_proxy, the_class->members );
+			if( function_prepared.functions_set != nullptr )
+				ProcessClassVirtualFunction( *the_class, function_prepared );
+			class_functions.push_back( std::move(function_prepared) );
 		}
 		else if( const auto inner_class=
 			dynamic_cast<const Synt::Class*>( member.get() ) )
@@ -930,6 +937,118 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 	}
 
 	return the_class_proxy;
+}
+
+void CodeBuilder::ProcessClassParentsVirtualTables( Class& the_class )
+{
+	U_ASSERT( the_class.is_incomplete );
+	U_ASSERT( the_class.virtual_table.empty() );
+
+	// Copy virtual table of base class.
+	// SPRACHE_TODO - modify vtable_entry ?
+	if( the_class.base_class != nullptr )
+		the_class.virtual_table= the_class.base_class->class_->virtual_table;
+
+	// Process only interfaces.
+	for( const ClassProxyPtr& parent : the_class.parents )
+	{
+		if( parent == the_class.base_class )
+			continue;
+
+		for( const Class::VirtualTableEntry& parent_vtable_entry : parent->class_->virtual_table )
+		{
+			bool already_exists_in_vtable= false;
+			for( const Class::VirtualTableEntry& this_class_vtable_entry : the_class.virtual_table )
+			{
+				if( this_class_vtable_entry.function_variable.VirtuallyEquals( parent_vtable_entry.function_variable ) )
+				{
+					already_exists_in_vtable= true;
+					break;
+				}
+			}
+
+			// SPRACHE_TODO - modify vtable_entry ?
+			if( !already_exists_in_vtable )
+				the_class.virtual_table.push_back( parent_vtable_entry );
+		} // for parent virtual table
+	}
+}
+
+void CodeBuilder::ProcessClassVirtualFunction( Class& the_class, PrepareFunctionResult& function )
+{
+	U_ASSERT( the_class.is_incomplete );
+	U_ASSERT( function.functions_set != nullptr );
+
+	const FunctionVariable& function_variable= (*function.functions_set)[function.function_index];
+
+	Class::VirtualTableEntry* virtual_table_entry= nullptr;
+	for( Class::VirtualTableEntry& e : the_class.virtual_table )
+	{
+		if( e.function_variable.VirtuallyEquals( function_variable ) )
+		{
+			virtual_table_entry= &e;
+			break;
+		}
+	}
+
+	const FilePos& file_pos= function.func_syntax_element->file_pos_;
+	switch( function.func_syntax_element->virtual_function_kind_ )
+	{
+	case Synt::VirtualFunctionKind::None:
+		if( virtual_table_entry != nullptr )
+			errors_.push_back( ReportNotImplemented( file_pos, "function overrides virtual function, but not marked as virtual" ) ); // SPRACHE_TODO - generate separate error.
+		break;
+
+	case Synt::VirtualFunctionKind::DeclareVirtual:
+		if( virtual_table_entry != nullptr )
+			errors_.push_back( ReportNotImplemented( file_pos, "needs override" ) ); // SPRACHE_TODO - generate separate error.
+		else
+		{
+			Class::VirtualTableEntry new_virtual_table_entry;
+			new_virtual_table_entry.function_variable= function_variable;
+			new_virtual_table_entry.is_pure= false;
+			new_virtual_table_entry.is_final= false;
+			the_class.virtual_table.push_back( std::move( new_virtual_table_entry ) );
+		}
+		break;
+
+	case Synt::VirtualFunctionKind::VirtualOverride:
+		if( virtual_table_entry == nullptr )
+			errors_.push_back( ReportNotImplemented( file_pos, "function does not override" ) ); // SPRACHE_TODO - generate separate error.
+		else if( virtual_table_entry->is_final )
+			errors_.push_back( ReportNotImplemented( file_pos, "can not override final function" ) ); // SPRACHE_TODO - generate separate error.
+		else
+			virtual_table_entry->function_variable= function_variable;
+		break;
+
+	case Synt::VirtualFunctionKind::VirtualFinal:
+		if( virtual_table_entry == nullptr )
+			errors_.push_back( ReportNotImplemented( file_pos, "function does not override, so, it can not be final" ) ); // SPRACHE_TODO - generate separate error.
+		else
+		{
+			if( virtual_table_entry->is_final )
+				errors_.push_back( ReportNotImplemented( file_pos, "can not override final function" ) ); // SPRACHE_TODO - generate separate error.
+			else
+			{
+				virtual_table_entry->is_final= true;
+				virtual_table_entry->function_variable= function_variable;
+			}
+		}
+		break;
+
+	case Synt::VirtualFunctionKind::VirtualPure:
+		if( virtual_table_entry != nullptr )
+			errors_.push_back( ReportNotImplemented( file_pos, "needs override, not pure" ) ); // SPRACHE_TODO - generate separate error.
+		else
+		{
+			Class::VirtualTableEntry new_virtual_table_entry;
+			new_virtual_table_entry.function_variable= function_variable;
+			new_virtual_table_entry.is_pure= true;
+			new_virtual_table_entry.is_final= false;
+			the_class.virtual_table.push_back( std::move( new_virtual_table_entry ) );
+		}
+		break;
+	};
 }
 
 void CodeBuilder::PrepareEnum( const Synt::Enum& enum_decl, NamesScope& names_scope )
