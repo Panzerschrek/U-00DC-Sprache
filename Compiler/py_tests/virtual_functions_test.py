@@ -72,6 +72,37 @@ def VirtualFunctionCallTest0():
 	assert( call_result == 666 )
 
 
+def VirtualFunctionCallTest1():
+	c_program_text= """
+		class A polymorph
+		{
+			fn virtual Bar( this ) {}
+		}
+		class B interface
+		{
+			fn virtual pure Baz( this ) : i32;
+		}
+		class C : A, B
+		{
+			i32 x;
+			fn constructor()( x= 777 ) {}
+			fn virtual override Bar( this ) {}
+			fn virtual override Baz( this ) : i32 { return x; }
+		}
+
+		fn Baz( B& b ) : i32 { return b.Baz(); }   // Must call C::Baz here.  Should convert virtual pointer for call.
+
+		fn Foo() : i32
+		{
+			var C c;
+			return Baz(c);
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 777 )
+
+
 def VirtualForNonclassFunction_Test0():
 	c_program_text= """
 		fn virtual Foo();

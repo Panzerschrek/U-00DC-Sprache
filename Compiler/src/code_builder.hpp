@@ -245,7 +245,8 @@ private:
 
 	void SetupVirtualTablePointersInConstructor(
 		llvm::Value* this_,
-		const Class& class_type,
+		const Class& the_class,
+		const Type& class_type,
 		FunctionContext& function_context );
 
 	void TryCallCopyConstructor(

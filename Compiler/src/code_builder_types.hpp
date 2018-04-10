@@ -591,6 +591,7 @@ public:
 
 	struct VirtualTableEntry
 	{
+		ProgramString name;
 		FunctionVariable function_variable;
 		bool is_pure= false;
 		bool is_final= false;
@@ -625,9 +626,9 @@ public:
 
 	std::vector<VirtualTableEntry> virtual_table;
 	llvm::StructType* virtual_table_llvm_type= nullptr;
-	llvm::GlobalVariable* this_class_virtual_table= nullptr;
+	llvm::GlobalVariable* this_class_virtual_table= nullptr; // May be null for interfaces and abstract classes.
 	unsigned int virtual_table_field_number= 0u;
-	std::unordered_map< ClassProxyPtr, llvm::GlobalVariable* > parents_virtual_tables;
+	std::unordered_map< ClassProxyPtr, llvm::GlobalVariable* > ancestors_virtual_tables; // Include parent, parents of parents, etc.
 };
 
 struct Enum

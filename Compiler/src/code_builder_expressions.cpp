@@ -1706,18 +1706,24 @@ Value CodeBuilder::BuildCallOperator(
 
 			const unsigned int func_ptr_field_number= function.virtual_table_index * 2u + 1u;
 			const unsigned int offset_field_number= function.virtual_table_index * 2u;
-
+			// Fetch vtable pointer.
 			llvm::Value* index_list[2];
 			index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
 			index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(class_type->virtual_table_field_number) ) );
 			llvm::Value* const ptr_to_virtual_table_ptr= function_context.llvm_ir_builder.CreateGEP( this_casted.llvm_value, llvm::ArrayRef<llvm::Value*> ( index_list, 2u ) );
 			llvm::Value* const virtual_table_ptr= function_context.llvm_ir_builder.CreateLoad( ptr_to_virtual_table_ptr );
-
+			// Fetch function.
 			index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(func_ptr_field_number) ) );
 			llvm::Value* const ptr_to_function_ptr= function_context.llvm_ir_builder.CreateGEP( virtual_table_ptr, llvm::ArrayRef<llvm::Value*> ( index_list, 2u ) );
 			llvm_function_ptr= function_context.llvm_ir_builder.CreateLoad( ptr_to_function_ptr );
-
-			// TODO - add "this" pointer offset here.
+			// Fetch "this" pointer offset.
+			index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(offset_field_number) ) );
+			llvm::Value* const offset_ptr= function_context.llvm_ir_builder.CreateGEP( virtual_table_ptr, llvm::ArrayRef<llvm::Value*> ( index_list, 2u ) );
+			llvm::Value* const offset= function_context.llvm_ir_builder.CreateLoad( offset_ptr );
+			// Correct "this" pointer.
+			llvm::Value* const this_ptr_as_int= function_context.llvm_ir_builder.CreatePtrToInt( this_casted.llvm_value, fundamental_llvm_types_.u64 ); // SPRACHE_TODO - use size type
+			llvm::Value* this_sub_offset= function_context.llvm_ir_builder.CreateSub( this_ptr_as_int, offset );
+			this_casted.llvm_value= function_context.llvm_ir_builder.CreateIntToPtr( this_sub_offset, llvm::PointerType::get( this_casted.type.GetLLVMType(), 0u ) );
 		}
 	}
 

@@ -138,7 +138,7 @@ void CodeBuilder::TryGenerateDefaultConstructor( Class& the_class, const Type& c
 			ApplyEmptyInitializer( member.first, FilePos()/*TODO*/, field_variable, function_context );
 		} );
 
-	SetupVirtualTablePointersInConstructor( this_llvm_value, the_class, function_context );
+	SetupVirtualTablePointersInConstructor( this_llvm_value, the_class, class_type, function_context );
 
 	function_context.llvm_ir_builder.CreateRetVoid();
 	function_context.alloca_ir_builder.CreateBr( function_context.function_basic_block );
@@ -290,7 +290,7 @@ void CodeBuilder::TryGenerateCopyConstructor( Class& the_class, const Type& clas
 
 		} ); // For fields.
 
-	SetupVirtualTablePointersInConstructor( this_llvm_value, the_class, function_context );
+	SetupVirtualTablePointersInConstructor( this_llvm_value, the_class, class_type, function_context );
 
 	function_context.llvm_ir_builder.CreateRetVoid();
 	function_context.alloca_ir_builder.CreateBr( function_context.function_basic_block );
@@ -751,36 +751,34 @@ void CodeBuilder::CopyBytes(
 
 void CodeBuilder::SetupVirtualTablePointersInConstructor(
 	llvm::Value* this_,
-	const Class& class_type,
+	const Class& the_class,
+	const Type& class_type,
 	FunctionContext& function_context )
 {
-	if( class_type.virtual_table.empty() )
+	if( the_class.virtual_table.empty() )
 	{
-		U_ASSERT( class_type.virtual_table_llvm_type == nullptr );
-		U_ASSERT( class_type.this_class_virtual_table == nullptr );
+		U_ASSERT( the_class.virtual_table_llvm_type == nullptr );
+		U_ASSERT( the_class.this_class_virtual_table == nullptr );
 		return;
 	}
 
+	if( the_class.kind == Class::Kind::Interface || the_class.kind == Class::Kind::Abstract )
+		return; // Such kinds of classes have no virtual tables. SPRACHE_TODO - maybe generate for such classes some virtual tables?
+
 	llvm::Value* index_list[2];
 	index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
-	index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(class_type.virtual_table_field_number) ) );
+	index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(the_class.virtual_table_field_number) ) );
 	llvm::Value* const ptr_to_vtable_ptr= function_context.llvm_ir_builder.CreateGEP( this_, llvm::ArrayRef<llvm::Value*> ( index_list, 2u ) );
-	function_context.llvm_ir_builder.CreateStore( class_type.this_class_virtual_table, ptr_to_vtable_ptr );
+	function_context.llvm_ir_builder.CreateStore( the_class.this_class_virtual_table, ptr_to_vtable_ptr );
 
-	// TODO - make recursive.
-	for( size_t i= 0u; i < class_type.parents_fields_numbers.size(); ++i )
+	for( auto& ancestor_pair : the_class.ancestors_virtual_tables )
 	{
-		const Class& parent_class_type= *class_type.parents[i]->class_;
-		U_ASSERT( class_type.parents_virtual_tables.count(class_type.parents[i]) > 0u );
-		llvm::Value* vtable_for_this_parent= class_type.parents_virtual_tables.find(class_type.parents[i])->second;
+		const Class& ancestor_class_type= *ancestor_pair.first->class_;
+		llvm::Value* const ancestor_ptr= CreateReferenceCast( this_, class_type, ancestor_pair.first, function_context );
 
-		index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(class_type.parents_fields_numbers[i]) ) );
-		llvm::Value* const ptr_parent= function_context.llvm_ir_builder.CreateGEP( this_, llvm::ArrayRef<llvm::Value*> ( index_list, 2u ) );
-
-		index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(parent_class_type.virtual_table_field_number) ) );
-		llvm::Value* const ptr_to_parent_vtable_ptr= function_context.llvm_ir_builder.CreateGEP( ptr_parent, llvm::ArrayRef<llvm::Value*> ( index_list, 2u ) );
-		function_context.llvm_ir_builder.CreateStore( vtable_for_this_parent, ptr_to_parent_vtable_ptr );
-
+		index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(ancestor_class_type.virtual_table_field_number) ) );
+		llvm::Value* const ptr_to_vtable_ptr= function_context.llvm_ir_builder.CreateGEP( ancestor_ptr, llvm::ArrayRef<llvm::Value*> ( index_list, 2u ) );
+		function_context.llvm_ir_builder.CreateStore( ancestor_pair.second, ptr_to_vtable_ptr );
 	}
 }
 
