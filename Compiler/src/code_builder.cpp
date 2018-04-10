@@ -388,7 +388,11 @@ void CodeBuilder::CopyClass(
 	copy->base_class_field_number= src.base_class_field_number;
 	copy->parents= src.parents;
 	copy->parents_fields_numbers= src.parents_fields_numbers;
+
 	copy->virtual_table= src.virtual_table;
+	copy->virtual_table_llvm_type= src.virtual_table_llvm_type;
+	copy->this_class_virtual_table= src.this_class_virtual_table;
+	copy->parents_virtual_tables= src.parents_virtual_tables;
 
 	// Register copy in destination namespace and current class table.
 	dst_namespace.AddName( src.members.GetThisNamespaceName(), Value( src_class, file_pos ) );
@@ -802,10 +806,6 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 			the_class->references_tags_count= 1u;
 	}
 
-	// Check opaque before set body for cases of errors (class body duplication).
-	if( the_class->llvm_type->isOpaque() )
-		the_class->llvm_type->setBody( fields_llvm_types );
-
 	// Check given kind attribute and actual class properties.
 	switch( class_declaration.kind_attribute_ )
 	{
@@ -891,6 +891,16 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 				}
 			});
 	}
+
+	PrepareClassVirtualTableType( *the_class );
+	if( the_class->virtual_table_llvm_type != nullptr )
+		fields_llvm_types.push_back( llvm::PointerType::get( the_class->virtual_table_llvm_type, 0u ) ); // TODO - maybe store virtual table pointer in base class?
+
+	// Check opaque before set body for cases of errors (class body duplication).
+	if( the_class->llvm_type->isOpaque() )
+		the_class->llvm_type->setBody( fields_llvm_types );
+
+	BuildClassVirtualTables( *the_class, class_type );
 
 	the_class->is_incomplete= false;
 
@@ -1018,7 +1028,10 @@ void CodeBuilder::ProcessClassVirtualFunction( Class& the_class, PrepareFunction
 		else if( virtual_table_entry->is_final )
 			errors_.push_back( ReportNotImplemented( file_pos, "can not override final function" ) ); // SPRACHE_TODO - generate separate error.
 		else
+		{
 			virtual_table_entry->function_variable= function_variable;
+			virtual_table_entry->is_pure= false;
+		}
 		break;
 
 	case Synt::VirtualFunctionKind::VirtualFinal:
@@ -1030,8 +1043,9 @@ void CodeBuilder::ProcessClassVirtualFunction( Class& the_class, PrepareFunction
 				errors_.push_back( ReportNotImplemented( file_pos, "can not override final function" ) ); // SPRACHE_TODO - generate separate error.
 			else
 			{
-				virtual_table_entry->is_final= true;
 				virtual_table_entry->function_variable= function_variable;
+				virtual_table_entry->is_pure= false;
+				virtual_table_entry->is_final= true;
 			}
 		}
 		break;
@@ -1049,6 +1063,132 @@ void CodeBuilder::ProcessClassVirtualFunction( Class& the_class, PrepareFunction
 		}
 		break;
 	};
+}
+
+void CodeBuilder::PrepareClassVirtualTableType( Class& the_class )
+{
+	U_ASSERT( the_class.is_incomplete );
+	U_ASSERT( the_class.virtual_table_llvm_type == nullptr );
+
+	llvm::Type* const size_type= fundamental_llvm_types_.u32; // SPRACHE_TODO - select proper size type.
+
+	the_class.virtual_table_llvm_type= llvm::StructType::create( llvm_context_ );
+	std::vector<llvm::Type*> virtual_table_struct_fields;
+
+	for( const Class::VirtualTableEntry& virtual_table_entry : the_class.virtual_table )
+	{
+		const Function& function_type= *virtual_table_entry.function_variable.type.GetFunctionType();
+
+		virtual_table_struct_fields.push_back( size_type ); // this pointer offset
+		virtual_table_struct_fields.push_back( llvm::PointerType::get( function_type.llvm_function_type, 0u ) );
+	}
+
+	the_class.virtual_table_llvm_type->setBody( virtual_table_struct_fields );
+}
+
+void CodeBuilder::BuildClassVirtualTables( Class& the_class, const Type& class_type )
+{
+	U_ASSERT( the_class.is_incomplete );
+	U_ASSERT( the_class.this_class_virtual_table == nullptr );
+	U_ASSERT( the_class.parents_virtual_tables.empty() );
+	U_ASSERT( the_class.virtual_table_llvm_type != nullptr );
+
+	if( the_class.virtual_table.empty() )
+		return; // Non-polymorph class.
+
+	llvm::Type* const size_type= fundamental_llvm_types_.u32; // SPRACHE_TODO - select proper size type.
+
+	std::vector<llvm::Constant*> initializer_values;
+	for( const Class::VirtualTableEntry& virtual_table_entry : the_class.virtual_table )
+	{
+		const Function& function_type= *virtual_table_entry.function_variable.type.GetFunctionType();
+
+		// Calculate offset of class-owner of function.
+		llvm::Constant* offset_as_int_const= nullptr;
+		if( class_type == function_type.args.front().type )
+			offset_as_int_const= llvm::Constant::getIntegerValue( size_type, llvm::APInt( size_type->getIntegerBitWidth(), 0u ) );
+		else
+		{
+			llvm::Value* const offset_ptr=
+				CreateReferenceCast(
+					llvm::Constant::getNullValue( llvm::PointerType::get( the_class.llvm_type, 0u ) ),
+					class_type, function_type.args.front().type,
+					*dummy_function_context_ );
+			llvm::Value* const offset_as_int= dummy_function_context_->llvm_ir_builder.CreatePtrToInt( offset_ptr, size_type );
+			offset_as_int_const= llvm::dyn_cast<llvm::Constant>( offset_as_int );
+		}
+
+		initializer_values.push_back( offset_as_int_const );
+		initializer_values.push_back( virtual_table_entry.function_variable.llvm_function );
+	}
+
+	the_class.this_class_virtual_table=
+		new llvm::GlobalVariable(
+			*module_,
+			the_class.virtual_table_llvm_type,
+			true, // is constant
+			llvm::GlobalValue::InternalLinkage,
+			 llvm::ConstantStruct::get( the_class.virtual_table_llvm_type, initializer_values ),
+			"_vtable_base_" + MangleType(class_type) );
+	the_class.this_class_virtual_table->setUnnamedAddr( true );
+
+	// Build vitual tables for parents.
+	for( const ClassProxyPtr& parent : the_class.parents )
+	{
+		std::vector<llvm::Constant*> initializer_values;
+		for( const Class::VirtualTableEntry& parent_virtual_table_entry : parent->class_->virtual_table )
+		{
+			const Class::VirtualTableEntry* overriden_in_this_class= nullptr;
+			for( const Class::VirtualTableEntry& this_class_virtual_table_entry : the_class.virtual_table )
+			{
+				if( this_class_virtual_table_entry.function_variable.VirtuallyEquals( parent_virtual_table_entry.function_variable ) )
+				{
+					overriden_in_this_class= &this_class_virtual_table_entry;
+					break;
+				}
+			}
+
+			if( overriden_in_this_class != nullptr )
+			{
+				llvm::Value* const function_pointer_casted=
+					dummy_function_context_->llvm_ir_builder.CreateBitOrPointerCast(
+						overriden_in_this_class->function_variable.llvm_function,
+						llvm::PointerType::get( parent_virtual_table_entry.function_variable.type.GetFunctionType()->llvm_function_type, 0 ) );
+
+				// TODO - maybe negative offset?
+				initializer_values.push_back( llvm::Constant::getIntegerValue( size_type, llvm::APInt( size_type->getIntegerBitWidth(), 0u ) ) );
+				initializer_values.push_back( llvm::dyn_cast<llvm::Constant>(function_pointer_casted) );
+			}
+			else
+			{
+				// Calculate offset from this class pointer to base class pointer.
+				llvm::Value* const offset_ptr=
+					CreateReferenceCast(
+						llvm::Constant::getNullValue( llvm::PointerType::get( the_class.llvm_type, 0u ) ),
+						class_type,
+						parent_virtual_table_entry.function_variable.type.GetFunctionType()->args.front().type,
+						*dummy_function_context_ );
+				llvm::Value* const offset_as_int= dummy_function_context_->llvm_ir_builder.CreatePtrToInt( offset_ptr, size_type );
+				llvm::Constant* const offset_as_int_const= llvm::dyn_cast<llvm::Constant>( offset_as_int );
+
+				initializer_values.push_back( offset_as_int_const );
+				initializer_values.push_back( parent_virtual_table_entry.function_variable.llvm_function );
+			}
+		} // for parent virtual table
+
+		llvm::GlobalVariable* const parent_vtable=
+			new llvm::GlobalVariable(
+				*module_,
+				parent->class_->virtual_table_llvm_type,
+				true, // is constant
+				llvm::GlobalValue::InternalLinkage,
+				 llvm::ConstantStruct::get( parent->class_->virtual_table_llvm_type, initializer_values ),
+				"_vtable_" + MangleType(class_type) + "_for_" + MangleType(parent) );
+		parent_vtable->setUnnamedAddr( true );
+
+		the_class.parents_virtual_tables[parent]= parent_vtable;
+
+	} // for parents
 }
 
 void CodeBuilder::PrepareEnum( const Synt::Enum& enum_decl, NamesScope& names_scope )

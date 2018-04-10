@@ -623,6 +623,9 @@ public:
 	std::vector<unsigned int> parents_fields_numbers;
 
 	std::vector<VirtualTableEntry> virtual_table;
+	llvm::StructType* virtual_table_llvm_type= nullptr;
+	llvm::GlobalVariable* this_class_virtual_table= nullptr;
+	std::unordered_map< ClassProxyPtr, llvm::GlobalVariable* > parents_virtual_tables;
 };
 
 struct Enum

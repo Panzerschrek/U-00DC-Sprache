@@ -142,6 +142,8 @@ private:
 
 	void ProcessClassParentsVirtualTables( Class& the_class );
 	void ProcessClassVirtualFunction( Class& the_class, PrepareFunctionResult& function );
+	void PrepareClassVirtualTableType( Class& the_class );
+	void BuildClassVirtualTables( Class& the_class, const Type& class_type ); // Returns type of vtable pointer or nullptr.
 
 	void PrepareEnum( const Synt::Enum& enum_decl, NamesScope& names_scope );
 
