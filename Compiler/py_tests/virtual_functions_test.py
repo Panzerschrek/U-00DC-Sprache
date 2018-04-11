@@ -103,6 +103,116 @@ def VirtualFunctionCallTest1():
 	assert( call_result == 777 )
 
 
+def VirtualFunctionCallTest2():
+	c_program_text= """
+		class A polymorph
+		{
+			i32 x;
+			fn constructor()( x= 586 ) {}
+			fn virtual Bar( this ) : i32 { return x; }
+		}
+		class B interface
+		{
+			fn virtual pure Bar( this ) : i32;
+		}
+		class C : A, B    // Class must inherit A::Bar and use it for B::Bar
+		{}
+
+		fn Bar( B& b ) : i32 { return b.Bar(); }   // Must call A::Bar here.
+
+		fn Foo() : i32
+		{
+			var C c;
+			return Bar(c);
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 586 )
+
+
+def VirtualFunctionCallTest3():
+	c_program_text= """
+		class A polymorph
+		{
+			fn virtual Bar( this ) : i32 { return 6666; }
+		}
+		class B : A
+		{
+			fn virtual override Bar( this ) : i32 { return 65658; }
+		}
+		fn Bar( B& b ) : i32 { return b.Bar(); }  // Must directly call B::Bar here.
+		fn Foo() : i32
+		{
+			var B b;
+			return Bar(b);
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 65658 )
+
+
+def VirtualFunctionCallTest4():
+	c_program_text= """
+		class A interface
+		{
+			fn virtual pure Bar( this ) : i32;
+		}
+		class B interface
+		{
+			fn virtual pure Bar( this ) : i32;
+		}
+		class C : A, B
+		{
+			fn virtual override Bar( this ) : i32 { return 88888; }   // overrides A::Bar and B::Bar
+		}
+
+		fn Bar( A& a ) : i32 { return a.Bar(); }
+		fn Bar( B& b ) : i32 { return b.Bar(); }
+		fn ToA( C& c ) : A& { return c; }
+		fn ToB( C& c ) : A& { return c; }
+
+		fn Foo() : i32
+		{
+			var C c;
+			halt if( Bar(ToA(c)) != 88888 );
+			halt if( Bar(ToB(c)) != 88888 );
+			return c.Bar();
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 88888 )
+
+
+def VirtualFunctionCallTest5():
+	c_program_text= """
+		class A interface
+		{
+			fn virtual pure Bar( this ) : i32;
+		}
+		class B : A
+		{
+			fn virtual override Bar( this ) : i32 { return 1111144; }
+		}
+		class C : B
+		{
+			// Class inherits B::Bar.
+		}
+		fn Bar( B& b ) : i32 { return b.Bar(); }  // Must directly call B::Bar here.
+		fn Foo() : i32
+		{
+			var C c;
+			halt if( c.Bar() != 1111144 ); // And here must call B::Bar
+			return Bar(c);
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 1111144 )
+
+
 def VirtualForNonclassFunction_Test0():
 	c_program_text= """
 		fn virtual Foo();
