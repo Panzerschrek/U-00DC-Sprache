@@ -2498,6 +2498,9 @@ void CodeBuilder::BuildFuncCode(
 				*constructor_initialization_list );
 
 		function_context.is_constructor_initializer_list_now= false;
+
+		if( base_class->class_->kind == Class::Kind::Abstract )
+			function_context.this_= nullptr; // "this" unavailable in constructors of abstract classes.
 	}
 
 	if( is_destructor )

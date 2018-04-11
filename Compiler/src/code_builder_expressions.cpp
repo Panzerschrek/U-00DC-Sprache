@@ -58,6 +58,7 @@ boost::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 			dummy_function_context_->function );
 		const StackVariablesStorage dummy_stack_variables_storage( dummy_function_context );
 		dummy_function_context.this_= function_context.this_;
+		dummy_function_context.is_constructor_initializer_list_now= function_context.is_constructor_initializer_list_now;
 		dummy_function_context.variables_state= function_context.variables_state;
 		function_context.variables_state.DeactivateLocks();
 
@@ -1296,6 +1297,7 @@ Value CodeBuilder::BuildIndexationOperator(
 				dummy_function_context_->function );
 			const StackVariablesStorage dummy_stack_variables_storage( dummy_function_context );
 			dummy_function_context.this_= function_context.this_;
+			dummy_function_context.is_constructor_initializer_list_now= function_context.is_constructor_initializer_list_now;
 			dummy_function_context.variables_state= function_context.variables_state;
 			function_context.variables_state.DeactivateLocks();
 
@@ -1612,6 +1614,7 @@ Value CodeBuilder::BuildCallOperator(
 			dummy_function_context_->function );
 		const StackVariablesStorage dummy_stack_variables_storage( dummy_function_context );
 		dummy_function_context.this_= function_context.this_;
+		dummy_function_context.is_constructor_initializer_list_now= function_context.is_constructor_initializer_list_now;
 		dummy_function_context.variables_state= function_context.variables_state; // TODO - support copy-on-write for variables_state
 		function_context.variables_state.DeactivateLocks();
 

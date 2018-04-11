@@ -672,3 +672,57 @@ def CopyChildToParent_Test3():
 	tests_lib.build_program( c_program_text )
 	call_result= tests_lib.run_function( "_Z3Foov" )
 	assert( call_result == 44758 )
+
+
+def AbstractClassConstructor_Test0():
+	c_program_text= """
+		class A abstract
+		{
+			fn Foo( this ){}
+			fn constructor()
+			{
+				Foo();   // "this" unavailable in constructor of abstrat class, so, we can not here call "thiscall" function.
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "CouldNotSelectOverloadedFunction" )
+	assert( errors_list[0].file_pos.line == 7 )
+
+
+def AbstractClassConstructor_Test1():
+	c_program_text= """
+		class A;
+		fn Foo( A& a ){}
+		class A abstract
+		{
+			fn constructor()
+			{
+				Foo(this);   // "this" unavailable in constructor of abstrat class.
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ThisUnavailable" )
+	assert( errors_list[0].file_pos.line == 8 )
+
+
+def AbstractClassConstructor_Test2():
+	c_program_text= """
+		class A abstract
+		{
+			i32 x;
+			fn constructor()
+			( x= 0 )
+			{
+				x= 0;  // "this" unavailable in constructor of abstrat class, so, can not access field.
+				// SPRACHE_TODO - maybe allow accessing fields?
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ClassFiledAccessInStaticMethod" )
+	assert( errors_list[0].file_pos.line == 8 )
