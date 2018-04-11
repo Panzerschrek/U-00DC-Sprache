@@ -209,6 +209,8 @@ const char* CodeBuilderErrorCodeToString( const CodeBuilderErrorCode code )
 		return "VirtualForNonThisCallFunction";
 	case CodeBuilderErrorCode::FunctionCanNotBeVirtual:
 		return "FunctionCanNotBeVirtual";
+	case CodeBuilderErrorCode::VirtualForNonpolymorphClass:
+		return "VirtualForNonpolymorphClass";
 	case CodeBuilderErrorCode::VirtualRequired:
 		return "VirtualRequired";
 	case CodeBuilderErrorCode::OverrideRequired:
@@ -1358,6 +1360,17 @@ CodeBuilderError ReportFunctionCanNotBeVirtual( const FilePos& file_pos, const P
 	error.code= CodeBuilderErrorCode::FunctionCanNotBeVirtual;
 
 	error.text= "Function \"."_SpC + function_name + "\" can not be virtual."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportVirtualForNonpolymorphClass( const FilePos& file_pos, const ProgramString& function_name )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::VirtualForNonpolymorphClass;
+
+	error.text= "Function \"."_SpC + function_name + "\" can not be virtual, because it`s class is not polymorph."_SpC;
 
 	return error;
 }

@@ -141,6 +141,7 @@ enum class CodeBuilderErrorCode : unsigned int
 	// Virtual functions errors
 	VirtualForNonclassFunction,
 	VirtualForNonThisCallFunction,
+	VirtualForNonpolymorphClass,
 	FunctionCanNotBeVirtual,
 	VirtualRequired,
 	OverrideRequired,
@@ -262,6 +263,7 @@ CodeBuilderError ReportBaseClassForInterface( const FilePos& file_pos );
 CodeBuilderError ReportVirtualForNonclassFunction( const FilePos& file_pos, const ProgramString& function_name );
 CodeBuilderError ReportVirtualForNonThisCallFunction( const FilePos& file_pos, const ProgramString& function_name );
 CodeBuilderError ReportFunctionCanNotBeVirtual( const FilePos& file_pos, const ProgramString& function_name );
+CodeBuilderError ReportVirtualForNonpolymorphClass( const FilePos& file_pos, const ProgramString& function_name );
 CodeBuilderError ReportVirtualRequired( const FilePos& file_pos, const ProgramString& function_name );
 CodeBuilderError ReportOverrideRequired( const FilePos& file_pos, const ProgramString& function_name );
 CodeBuilderError ReportFunctionDoesNotOverride( const FilePos& file_pos, const ProgramString& function_name );

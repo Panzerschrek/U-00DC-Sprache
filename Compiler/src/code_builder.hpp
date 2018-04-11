@@ -141,6 +141,7 @@ private:
 		bool force_forward_declaration= false );
 
 	void ProcessClassParentsVirtualTables( Class& the_class );
+	void TryGenerateDestructorPrototypeForPolymorphClass( Class& the_class, const Type& class_type );
 	void ProcessClassVirtualFunction( Class& the_class, PrepareFunctionResult& function );
 	void PrepareClassVirtualTableType( Class& the_class );
 	void BuildClassVirtualTables( Class& the_class, const Type& class_type ); // Returns type of vtable pointer or nullptr.
@@ -225,6 +226,8 @@ private:
 	// Constructors/destructors
 	void TryGenerateDefaultConstructor( Class& the_class, const Type& class_type );
 	void TryGenerateCopyConstructor( Class& the_class, const Type& class_type );
+	FunctionVariable GenerateDestructorPrototype( Class& the_class, const Type& class_type );
+	void GenerateDestructorBody( Class& the_class, const Type& class_type, FunctionVariable& destructor_function );
 	void TryGenerateDestructor( Class& the_class, const Type& class_type );
 	void TryGenerateCopyAssignmentOperator( Class& the_class, const Type& class_type );
 

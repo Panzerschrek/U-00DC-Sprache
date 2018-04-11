@@ -672,8 +672,14 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 		fields_llvm_types.emplace_back( parent_class_proxy->class_->llvm_type );
 	} // for parents
 
-
 	ProcessClassParentsVirtualTables( *the_class );
+
+	// Pre-mark class as polymorph. Later we know class kind exactly, now, we only needs to know, that is polymorph - for virtual functions preparation.
+	if( class_declaration.kind_attribute_ == Synt::ClassKindAttribute::Polymorph ||
+		class_declaration.kind_attribute_ == Synt::ClassKindAttribute::Interface ||
+		class_declaration.kind_attribute_ == Synt::ClassKindAttribute::Abstract ||
+		!class_declaration.parents_.empty() )
+		the_class->kind= Class::Kind::PolymorphNonFinal;
 
 	std::vector<PrepareFunctionResult> class_functions;
 	std::vector<const Synt::Class*> inner_classes;
@@ -858,6 +864,12 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 		break;
 	};
 
+	if( the_class->kind == Class::Kind::Interface ||
+		the_class->kind == Class::Kind::Abstract ||
+		the_class->kind == Class::Kind::PolymorphNonFinal ||
+		the_class->kind == Class::Kind::PolymorphFinal )
+		TryGenerateDestructorPrototypeForPolymorphClass( *the_class, class_type );
+
 	// Merge namespaces of parents into result class.
 	for( const ClassProxyPtr& parent : the_class->parents )
 	{
@@ -1006,6 +1018,48 @@ void CodeBuilder::ProcessClassParentsVirtualTables( Class& the_class )
 	}
 }
 
+void CodeBuilder::TryGenerateDestructorPrototypeForPolymorphClass( Class& the_class, const Type& class_type )
+{
+	U_ASSERT( the_class.is_incomplete );
+	U_ASSERT( the_class.virtual_table_llvm_type == nullptr );
+	U_ASSERT( the_class.this_class_virtual_table == nullptr );
+
+	const NamesScope::InsertedName* const destructor_name= the_class.members.GetThisScopeName( Keyword( Keywords::destructor_ ) );
+	if( destructor_name != nullptr )
+		return;
+
+	// Generate destructor prototype.
+	FunctionVariable destructor_function_variable= GenerateDestructorPrototype( the_class, class_type );
+	destructor_function_variable.prototype_file_pos= destructor_function_variable.body_file_pos= FilePos(); // TODO - set correct file_pos
+
+	// Add destructor to virtual table.
+	Class::VirtualTableEntry* virtual_table_entry= nullptr;
+	for( Class::VirtualTableEntry& e : the_class.virtual_table )
+	{
+		if( e.name == Keywords::destructor_ )
+		{
+			virtual_table_entry= &e;
+			break;
+		}
+	}
+	if( virtual_table_entry == nullptr )
+	{
+		destructor_function_variable.virtual_table_index= static_cast<unsigned int>(the_class.virtual_table.size());
+		Class::VirtualTableEntry new_virtual_table_entry;
+		new_virtual_table_entry.function_variable= destructor_function_variable;
+		new_virtual_table_entry.name= Keyword( Keywords::destructor_ );
+		new_virtual_table_entry.is_pure= false;
+		new_virtual_table_entry.is_final= false;
+		the_class.virtual_table.push_back( std::move( new_virtual_table_entry ) );
+	}
+	else
+		virtual_table_entry->function_variable= destructor_function_variable;
+
+	// Add destructor to names scope.
+	OverloadedFunctionsSet destructors_set{ destructor_function_variable };
+	the_class.members.AddName( Keyword( Keywords::destructor_ ), destructors_set );
+}
+
 void CodeBuilder::ProcessClassVirtualFunction( Class& the_class, PrepareFunctionResult& function )
 {
 	U_ASSERT( the_class.is_incomplete );
@@ -1034,7 +1088,29 @@ void CodeBuilder::ProcessClassVirtualFunction( Class& the_class, PrepareFunction
 	switch( function.func_syntax_element->virtual_function_kind_ )
 	{
 	case Synt::VirtualFunctionKind::None:
-		if( virtual_table_entry != nullptr )
+		if( function_name == Keywords::destructor_ )
+		{
+			// For destructors virtual specifiers are optional.
+			// If destructor not marked as virtual, but it placed in polymorph class, make it virtual.
+			if( virtual_table_entry != nullptr )
+			{
+				function_variable.virtual_table_index= virtual_table_index;
+				virtual_table_entry->function_variable= function_variable;
+			}
+			else if( the_class.kind == Class::Kind::PolymorphFinal || the_class.kind == Class::Kind::PolymorphNonFinal ||
+					 the_class.kind == Class::Kind::Interface || the_class.kind == Class::Kind::Abstract )
+			{
+				function_variable.virtual_table_index= static_cast<unsigned int>(the_class.virtual_table.size());
+
+				Class::VirtualTableEntry new_virtual_table_entry;
+				new_virtual_table_entry.name= function_name;
+				new_virtual_table_entry.function_variable= function_variable;
+				new_virtual_table_entry.is_pure= false;
+				new_virtual_table_entry.is_final= false;
+				the_class.virtual_table.push_back( std::move( new_virtual_table_entry ) );
+			}
+		}
+		else if( virtual_table_entry != nullptr )
 			errors_.push_back( ReportVirtualRequired( file_pos, function_name ) );
 		break;
 
@@ -1820,6 +1896,8 @@ CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 			errors_.push_back( ReportVirtualForNonThisCallFunction( func.file_pos_, func_name ) );
 		if( is_constructor )
 			errors_.push_back( ReportFunctionCanNotBeVirtual( func.file_pos_, func_name ) );
+		if( base_class != nullptr && ( base_class->class_->kind == Class::Kind::Struct || base_class->class_->kind == Class::Kind::NonPolymorph ) )
+			errors_.push_back( ReportVirtualForNonpolymorphClass( func.file_pos_, func_name ) );
 	}
 
 	NamesScope::InsertedName* const previously_inserted_func=

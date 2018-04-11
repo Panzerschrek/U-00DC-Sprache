@@ -213,6 +213,150 @@ def VirtualFunctionCallTest5():
 	assert( call_result == 1111144 )
 
 
+def VirtualDestructor_Test0():
+	c_program_text= """
+		class A polymorph
+		{
+			fn virtual destructor(){} // Manually declare virtual destructor.
+		}
+		class B : A
+		{
+			i32 y;
+			fn constructor() ( y= 0 ) {}
+			fn virtual override destructor() { y= 666; } // manually override it
+		}
+		fn Destruct( A&mut a )
+		{
+			a.destructor(); // HACK! manully call destructor. hould Call B::destructor.
+		}
+		fn Foo() : i32
+		{
+			var B mut b;
+			Destruct(b);
+			return b.y;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 666 )
+
+
+def VirtualDestructor_Test1():
+	c_program_text= """
+		class A polymorph
+		{
+			// Class have implicit generated destructor/
+		}
+		class B : A
+		{
+			i32 y;
+			fn constructor() ( y= 0 ) {}
+			fn virtual override destructor() { y= 555; } // manually override implicit destructor.
+		}
+		fn Destruct( A&mut a )
+		{
+			a.destructor(); // HACK! manully call destructor. hould Call B::destructor.
+		}
+		fn Foo() : i32
+		{
+			var B mut b;
+			Destruct(b);
+			return b.y;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 555 )
+
+
+def VirtualDestructor_Test2():
+	c_program_text= """
+		class A polymorph
+		{
+			// Class have implicit generated destructor.
+		}
+		class B : A
+		{
+			i32 y;
+			fn constructor() ( y= 0 ) {}
+			fn virtual override destructor() {} // manually override implicit destructor.
+		}
+		class C : B
+		{
+			fn virtual override destructor() { y= 555; } // manually override destructor again.
+		}
+
+		fn Destruct( A&mut a )
+		{
+			a.destructor(); // HACK! manully call destructor. hould Call C::destructor.
+		}
+		fn Foo() : i32
+		{
+			var C mut c;
+			Destruct(c);
+			return c.y;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 555 )
+
+
+def VirtualDestructor_Test3():
+	c_program_text= """
+		class A polymorph
+		{
+			// Class have implicit generated destructor.
+		}
+		class B : A
+		{
+			i32 y;
+			fn constructor() ( y= 0 ) {}
+			fn  destructor() { y= 44422; } // manually override implicit destructor, without using "virtual". Destructor is virtual implicitly.
+		}
+		fn Destruct( A&mut a )
+		{
+			a.destructor(); // HACK! manully call destructor. hould Call B::destructor.
+		}
+		fn Foo() : i32
+		{
+			var B mut b;
+			Destruct(b);
+			return b.y;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 44422 )
+
+
+def VirtualDestructor_Test4():
+	c_program_text= """
+		class A polymorph
+		{
+			fn  destructor() {}  // Destructor is virtual implicitly.
+		}
+		class B : A
+		{
+			i32 y;
+			fn constructor() ( y= 0 ) {}
+			fn  destructor() { y= 111117; } // manually override implicit destructor, without using "virtual". Destructor is virtual implicitly.
+		}
+		fn Destruct( A&mut a )
+		{
+			a.destructor(); // HACK! manully call destructor. hould Call B::destructor.
+		}
+		fn Foo() : i32
+		{
+			var B mut b;
+			Destruct(b);
+			return b.y;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 111117 )
+
 def VirtualForNonclassFunction_Test0():
 	c_program_text= """
 		fn virtual Foo();
@@ -397,3 +541,16 @@ def BodyForPureVirtualFunction_Test1():
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "FunctionBodyDuplication" )
 	assert( errors_list[0].file_pos.line == 6 )
+
+
+def VirtualForNonpolymorphClass_Test0():
+	c_program_text= """
+		class A
+		{
+			fn virtual Foo(this){}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "VirtualForNonpolymorphClass" )
+	assert( errors_list[0].file_pos.line == 4 )
