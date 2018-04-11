@@ -783,6 +783,9 @@ void CodeBuilder::SetupVirtualTablePointersInConstructor(
 	if( the_class.kind == Class::Kind::Interface || the_class.kind == Class::Kind::Abstract )
 		return; // Such kinds of classes have no virtual tables. SPRACHE_TODO - maybe generate for such classes some virtual tables?
 
+	if( the_class.this_class_virtual_table == nullptr )
+		return; // May be in case of errors.
+
 	llvm::Value* index_list[2];
 	index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
 	index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(the_class.virtual_table_field_number) ) );

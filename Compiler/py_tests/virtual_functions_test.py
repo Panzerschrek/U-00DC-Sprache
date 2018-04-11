@@ -554,3 +554,61 @@ def VirtualForNonpolymorphClass_Test0():
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "VirtualForNonpolymorphClass" )
 	assert( errors_list[0].file_pos.line == 4 )
+
+
+def ClassContainsPureVirtualFunctions_Test0():
+	c_program_text= """
+		class A interface
+		{
+			fn virtual pure Foo(this);
+		}
+		class B : A  // Must be abstract or interface, if contains pure virtual functions.
+		{}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ClassContainsPureVirtualFunctions" )
+	assert( errors_list[0].file_pos.line == 7 )
+
+
+def ClassContainsPureVirtualFunctions_Test1():
+	c_program_text= """
+		class A interface
+		{
+			fn virtual pure Foo(this);
+		}
+		class B final : A  // Must be abstract or interface, if contains pure virtual functions.
+		{}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ClassContainsPureVirtualFunctions" )
+	assert( errors_list[0].file_pos.line == 7 )
+
+
+def ClassContainsPureVirtualFunctions_Test2():
+	c_program_text= """
+		class A interface
+		{
+			fn virtual pure Foo(this);
+		}
+		class B polymorph : A  // Must be abstract or interface, if contains pure virtual functions.
+		{}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ClassContainsPureVirtualFunctions" )
+	assert( errors_list[0].file_pos.line == 7 )
+
+
+def NonPureVirtualFunctionInInterface_Test0():
+	c_program_text= """
+		class A interface
+		{
+			fn virtual Foo(this){}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "NonPureVirtualFunctionInInterface" )
+	assert( errors_list[0].file_pos.line == 3 )

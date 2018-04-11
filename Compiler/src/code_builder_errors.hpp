@@ -149,6 +149,8 @@ enum class CodeBuilderErrorCode : unsigned int
 	OverrideFinalFunction,
 	FinalForFirstVirtualFunction,
 	BodyForPureVirtualFunction,
+	ClassContainsPureVirtualFunctions,
+	NonPureVirtualFunctionInInterface,
 };
 
 struct CodeBuilderError
@@ -270,5 +272,7 @@ CodeBuilderError ReportFunctionDoesNotOverride( const FilePos& file_pos, const P
 CodeBuilderError ReportOverrideFinalFunction( const FilePos& file_pos, const ProgramString& function_name );
 CodeBuilderError ReportFinalForFirstVirtualFunction( const FilePos& file_pos, const ProgramString& function_name );
 CodeBuilderError ReportBodyForPureVirtualFunction( const FilePos& file_pos, const ProgramString& function_name );
+CodeBuilderError ReportClassContainsPureVirtualFunctions( const FilePos& file_pos, const ProgramString& class_name );
+CodeBuilderError ReportNonPureVirtualFunctionInInterface( const FilePos& file_pos, const ProgramString& class_name );
 
 } // namespace U

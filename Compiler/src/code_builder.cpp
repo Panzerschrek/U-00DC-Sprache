@@ -655,7 +655,6 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 			continue;
 		}
 
-
 		if( parent_kind != Class::Kind::Interface ) // not interface=base
 		{
 			if( the_class->base_class != nullptr )
@@ -815,6 +814,17 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 			the_class->references_tags_count= 1u;
 	}
 
+
+	bool class_contains_pure_virtual_functions= false;
+	for( Class::VirtualTableEntry& virtual_table_entry : the_class->virtual_table )
+	{
+		if( virtual_table_entry.is_pure )
+		{
+			class_contains_pure_virtual_functions= true;
+			break;
+		}
+	}
+
 	// Check given kind attribute and actual class properties.
 	switch( class_declaration.kind_attribute_ )
 	{
@@ -823,9 +833,9 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 			the_class->kind= Class::Kind::NonPolymorph;
 		else
 			the_class->kind= Class::Kind::PolymorphNonFinal;
-		if( the_class->virtual_table_llvm_type != nullptr && the_class->this_class_virtual_table == nullptr )
+		if( class_contains_pure_virtual_functions )
 		{
-			errors_.push_back( ReportNotImplemented( class_declaration.file_pos_, "class contains pure functions" ) ); // SPRACHE_TODO -  generate separate error
+			errors_.push_back( ReportClassContainsPureVirtualFunctions( class_declaration.file_pos_, class_name ) );
 			the_class->kind= Class::Kind::Abstract;
 		}
 		break;
@@ -834,19 +844,23 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 		if( the_class->parents.empty() )
 			the_class->kind= Class::Kind::NonPolymorph;
 		else
-			the_class->kind= Class::Kind::PolymorphFinal;
-		if( the_class->virtual_table_llvm_type != nullptr && the_class->this_class_virtual_table == nullptr )
 		{
-			errors_.push_back( ReportNotImplemented( class_declaration.file_pos_, "class contains pure functions" ) ); // SPRACHE_TODO -  generate separate error
+			for( Class::VirtualTableEntry& virtual_table_entry : the_class->virtual_table )
+				virtual_table_entry.is_final= true; // All virtual functions of final class is final.
+			the_class->kind= Class::Kind::PolymorphFinal;
+		}
+		if( class_contains_pure_virtual_functions )
+		{
+			errors_.push_back( ReportClassContainsPureVirtualFunctions( class_declaration.file_pos_, class_name ) );
 			the_class->kind= Class::Kind::Abstract;
 		}
 		break;
 
 	case Synt::ClassKindAttribute::Polymorph:
 		the_class->kind= Class::Kind::PolymorphNonFinal;
-		if( the_class->virtual_table_llvm_type != nullptr && the_class->this_class_virtual_table == nullptr )
+		if( class_contains_pure_virtual_functions )
 		{
-			errors_.push_back( ReportNotImplemented( class_declaration.file_pos_, "class contains pure functions" ) ); // SPRACHE_TODO -  generate separate error
+			errors_.push_back( ReportClassContainsPureVirtualFunctions( class_declaration.file_pos_, class_name ) );
 			the_class->kind= Class::Kind::Abstract;
 		}
 		break;
@@ -856,6 +870,14 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 			errors_.push_back( ReportFieldsForInterfacesNotAllowed( class_declaration.file_pos_ ) );
 		if( the_class->base_class != nullptr )
 			errors_.push_back( ReportBaseClassForInterface( class_declaration.file_pos_ ) );
+		for( const Class::VirtualTableEntry& virtual_table_entry : the_class->virtual_table )
+		{
+			if( !virtual_table_entry.is_pure && virtual_table_entry.name != Keywords::destructor_ )
+			{
+				errors_.push_back( ReportNonPureVirtualFunctionInInterface( class_declaration.file_pos_, class_name ) );
+				break;
+			}
+		}
 		the_class->kind= Class::Kind::Interface;
 		break;
 

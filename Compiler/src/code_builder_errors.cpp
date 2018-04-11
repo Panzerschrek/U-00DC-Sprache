@@ -223,6 +223,10 @@ const char* CodeBuilderErrorCodeToString( const CodeBuilderErrorCode code )
 		return "FinalForFirstVirtualFunction";
 	case CodeBuilderErrorCode::BodyForPureVirtualFunction:
 		return "BodyForPureVirtualFunction";
+	case CodeBuilderErrorCode::ClassContainsPureVirtualFunctions:
+		return "ClassContainsPureVirtualFunctions";
+	case CodeBuilderErrorCode::NonPureVirtualFunctionInInterface:
+		return "NonPureVirtualFunctionInInterface";
 	};
 
 	U_ASSERT(false);
@@ -1437,6 +1441,28 @@ CodeBuilderError ReportBodyForPureVirtualFunction( const FilePos& file_pos, cons
 	error.code= CodeBuilderErrorCode::BodyForPureVirtualFunction;
 
 	error.text= "Body for pure virtual function \"."_SpC + function_name + "\"."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportClassContainsPureVirtualFunctions( const FilePos& file_pos, const ProgramString& class_name )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::ClassContainsPureVirtualFunctions;
+
+	error.text= "Class \"."_SpC + class_name + "\" is not interface or abstract and contains pure virtual functions."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportNonPureVirtualFunctionInInterface( const FilePos& file_pos, const ProgramString& class_name )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::NonPureVirtualFunctionInInterface;
+
+	error.text= "Interface \"."_SpC + class_name + "\" contains non-pure virtual functions."_SpC;
 
 	return error;
 }
