@@ -209,6 +209,18 @@ const char* CodeBuilderErrorCodeToString( const CodeBuilderErrorCode code )
 		return "VirtualForNonThisCallFunction";
 	case CodeBuilderErrorCode::FunctionCanNotBeVirtual:
 		return "FunctionCanNotBeVirtual";
+	case CodeBuilderErrorCode::VirtualRequired:
+		return "VirtualRequired";
+	case CodeBuilderErrorCode::OverrideRequired:
+		return "OverrideRequired";
+	case CodeBuilderErrorCode::FunctionDoesNotOverride:
+		return "FunctionDoesNotOverride";
+	case CodeBuilderErrorCode::OverrideFinalFunction:
+		return "OverrideFinalFunction";
+	case CodeBuilderErrorCode::FinalForFirstVirtualFunction:
+		return "FinalForFirstVirtualFunction";
+	case CodeBuilderErrorCode::BodyForPureVirtualFunction:
+		return "BodyForPureVirtualFunction";
 	};
 
 	U_ASSERT(false);
@@ -1346,6 +1358,72 @@ CodeBuilderError ReportFunctionCanNotBeVirtual( const FilePos& file_pos, const P
 	error.code= CodeBuilderErrorCode::FunctionCanNotBeVirtual;
 
 	error.text= "Function \"."_SpC + function_name + "\" can not be virtual."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportVirtualRequired( const FilePos& file_pos, const ProgramString& function_name )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::VirtualRequired;
+
+	error.text= "\"virtual\" required for function \"."_SpC + function_name + "\"."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportOverrideRequired( const FilePos& file_pos, const ProgramString& function_name )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::OverrideRequired;
+
+	error.text= "\"override\" required for function \"."_SpC + function_name + "\"."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportFunctionDoesNotOverride( const FilePos& file_pos, const ProgramString& function_name )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::FunctionDoesNotOverride;
+
+	error.text= "Function \"."_SpC + function_name + "\" marked as \"override\", but does not override."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportOverrideFinalFunction( const FilePos& file_pos, const ProgramString& function_name )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::OverrideFinalFunction;
+
+	error.text= "\"override\" for final function \"."_SpC + function_name + "\"."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportFinalForFirstVirtualFunction( const FilePos& file_pos, const ProgramString& function_name )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::FinalForFirstVirtualFunction;
+
+	error.text= "\"final\" for first virtual function \"."_SpC + function_name + "\"."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportBodyForPureVirtualFunction( const FilePos& file_pos, const ProgramString& function_name )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::BodyForPureVirtualFunction;
+
+	error.text= "Body for pure virtual function \"."_SpC + function_name + "\"."_SpC;
 
 	return error;
 }

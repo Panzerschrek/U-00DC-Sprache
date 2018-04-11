@@ -142,6 +142,12 @@ enum class CodeBuilderErrorCode : unsigned int
 	VirtualForNonclassFunction,
 	VirtualForNonThisCallFunction,
 	FunctionCanNotBeVirtual,
+	VirtualRequired,
+	OverrideRequired,
+	FunctionDoesNotOverride,
+	OverrideFinalFunction,
+	FinalForFirstVirtualFunction,
+	BodyForPureVirtualFunction,
 };
 
 struct CodeBuilderError
@@ -256,5 +262,11 @@ CodeBuilderError ReportBaseClassForInterface( const FilePos& file_pos );
 CodeBuilderError ReportVirtualForNonclassFunction( const FilePos& file_pos, const ProgramString& function_name );
 CodeBuilderError ReportVirtualForNonThisCallFunction( const FilePos& file_pos, const ProgramString& function_name );
 CodeBuilderError ReportFunctionCanNotBeVirtual( const FilePos& file_pos, const ProgramString& function_name );
+CodeBuilderError ReportVirtualRequired( const FilePos& file_pos, const ProgramString& function_name );
+CodeBuilderError ReportOverrideRequired( const FilePos& file_pos, const ProgramString& function_name );
+CodeBuilderError ReportFunctionDoesNotOverride( const FilePos& file_pos, const ProgramString& function_name );
+CodeBuilderError ReportOverrideFinalFunction( const FilePos& file_pos, const ProgramString& function_name );
+CodeBuilderError ReportFinalForFirstVirtualFunction( const FilePos& file_pos, const ProgramString& function_name );
+CodeBuilderError ReportBodyForPureVirtualFunction( const FilePos& file_pos, const ProgramString& function_name );
 
 } // namespace U

@@ -247,3 +247,153 @@ def FunctionCanNotBeVirtual_Test0():
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "FunctionCanNotBeVirtual" )
 	assert( errors_list[0].file_pos.line == 4 )
+
+
+def VirtualRequired_Test0():
+	c_program_text= """
+		class A polymorph
+		{
+			fn virtual Foo(this){}
+		}
+		class B : A
+		{
+			fn Foo(this){}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "VirtualRequired" )
+	assert( errors_list[0].file_pos.line == 8 )
+
+
+def OverrideRequired_Test0():
+	c_program_text= """
+		class A polymorph
+		{
+			fn virtual Foo(this){}
+		}
+		class B : A
+		{
+			fn virtual Foo(this){}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "OverrideRequired" )
+	assert( errors_list[0].file_pos.line == 8 )
+
+
+def OverrideRequired_Test1():
+	c_program_text= """
+		class A polymorph
+		{
+			fn virtual Foo(this){}
+		}
+		class B : A
+		{
+			fn virtual pure Foo(this);
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "OverrideRequired" )
+	assert( errors_list[0].file_pos.line == 8 )
+
+
+def FunctionDoesNotOverride_Test0():
+	c_program_text= """
+		class A polymorph
+		{
+			fn virtual Foo(this){}
+		}
+		class B : A
+		{
+			fn virtual override Foo( this, i32 x );
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "FunctionDoesNotOverride" )
+	assert( errors_list[0].file_pos.line == 8 )
+
+
+def OverrideFinalFunction_Test0():
+	c_program_text= """
+		class A polymorph
+		{
+			fn virtual Foo(this){}
+		}
+		class B : A
+		{
+			fn virtual final Foo(this){}
+		}
+		class C : B
+		{
+			fn virtual override Foo(this){}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "OverrideFinalFunction" )
+	assert( errors_list[0].file_pos.line == 12 )
+
+
+def OverrideFinalFunction_Test1():
+	c_program_text= """
+		class A polymorph
+		{
+			fn virtual Foo(this){}
+		}
+		class B : A
+		{
+			fn virtual final Foo(this){}
+		}
+		class C : B
+		{
+			fn virtual final Foo(this){}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "OverrideFinalFunction" )
+	assert( errors_list[0].file_pos.line == 12 )
+
+
+def FinalForFirstVirtualFunction_Test0():
+	c_program_text= """
+		class A polymorph
+		{
+			fn virtual final Foo(this){}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "FinalForFirstVirtualFunction" )
+	assert( errors_list[0].file_pos.line == 4 )
+
+
+def BodyForPureVirtualFunction_Test0():
+	c_program_text= """
+		class A interface
+		{
+			fn virtual pure Foo(this){}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "BodyForPureVirtualFunction" )
+	assert( errors_list[0].file_pos.line == 4 )
+
+
+def BodyForPureVirtualFunction_Test1():
+	c_program_text= """
+		class A interface
+		{
+			fn virtual pure Foo(this);
+		}
+		fn A::Foo( this ){}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "FunctionBodyDuplication" )
+	assert( errors_list[0].file_pos.line == 6 )

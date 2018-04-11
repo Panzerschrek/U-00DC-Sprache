@@ -1035,12 +1035,12 @@ void CodeBuilder::ProcessClassVirtualFunction( Class& the_class, PrepareFunction
 	{
 	case Synt::VirtualFunctionKind::None:
 		if( virtual_table_entry != nullptr )
-			errors_.push_back( ReportNotImplemented( file_pos, "function overrides virtual function, but not marked as virtual" ) ); // SPRACHE_TODO - generate separate error.
+			errors_.push_back( ReportVirtualRequired( file_pos, function_name ) );
 		break;
 
 	case Synt::VirtualFunctionKind::DeclareVirtual:
 		if( virtual_table_entry != nullptr )
-			errors_.push_back( ReportNotImplemented( file_pos, "needs override" ) ); // SPRACHE_TODO - generate separate error.
+			errors_.push_back( ReportOverrideRequired( file_pos, function_name ) );
 		else
 		{
 			function_variable.virtual_table_index= static_cast<unsigned int>(the_class.virtual_table.size());
@@ -1056,9 +1056,9 @@ void CodeBuilder::ProcessClassVirtualFunction( Class& the_class, PrepareFunction
 
 	case Synt::VirtualFunctionKind::VirtualOverride:
 		if( virtual_table_entry == nullptr )
-			errors_.push_back( ReportNotImplemented( file_pos, "function does not override" ) ); // SPRACHE_TODO - generate separate error.
+			errors_.push_back( ReportFunctionDoesNotOverride( file_pos, function_name ) );
 		else if( virtual_table_entry->is_final )
-			errors_.push_back( ReportNotImplemented( file_pos, "can not override final function" ) ); // SPRACHE_TODO - generate separate error.
+			errors_.push_back( ReportOverrideFinalFunction( file_pos, function_name  ) );
 		else
 		{
 			function_variable.virtual_table_index= virtual_table_index;
@@ -1069,11 +1069,11 @@ void CodeBuilder::ProcessClassVirtualFunction( Class& the_class, PrepareFunction
 
 	case Synt::VirtualFunctionKind::VirtualFinal:
 		if( virtual_table_entry == nullptr )
-			errors_.push_back( ReportNotImplemented( file_pos, "function does not override, so, it can not be final" ) ); // SPRACHE_TODO - generate separate error.
+			errors_.push_back( ReportFinalForFirstVirtualFunction( file_pos, function_name ) );
 		else
 		{
 			if( virtual_table_entry->is_final )
-				errors_.push_back( ReportNotImplemented( file_pos, "can not override final function" ) ); // SPRACHE_TODO - generate separate error.
+				errors_.push_back( ReportOverrideFinalFunction( file_pos, function_name ) );
 			else
 			{
 				function_variable.virtual_table_index= virtual_table_index;
@@ -1086,9 +1086,13 @@ void CodeBuilder::ProcessClassVirtualFunction( Class& the_class, PrepareFunction
 
 	case Synt::VirtualFunctionKind::VirtualPure:
 		if( virtual_table_entry != nullptr )
-			errors_.push_back( ReportNotImplemented( file_pos, "needs override, not pure" ) ); // SPRACHE_TODO - generate separate error.
+			errors_.push_back( ReportOverrideRequired( file_pos, function_name ) );
 		else
 		{
+			if( function.func_syntax_element->block_ != nullptr )
+				errors_.push_back( ReportBodyForPureVirtualFunction( file_pos, function_name ) );
+			function_variable.have_body= true; // Mark pure function as "with body", because we needs to disable real body creation for pure function.
+
 			function_variable.virtual_table_index= static_cast<unsigned int>(the_class.virtual_table.size());
 
 			Class::VirtualTableEntry new_virtual_table_entry;
