@@ -1721,7 +1721,7 @@ Value CodeBuilder::BuildCallOperator(
 			llvm::Value* const offset_ptr= function_context.llvm_ir_builder.CreateGEP( virtual_table_ptr, llvm::ArrayRef<llvm::Value*> ( index_list, 2u ) );
 			llvm::Value* const offset= function_context.llvm_ir_builder.CreateLoad( offset_ptr );
 			// Correct "this" pointer.
-			llvm::Value* const this_ptr_as_int= function_context.llvm_ir_builder.CreatePtrToInt( this_casted.llvm_value, fundamental_llvm_types_.u64 ); // SPRACHE_TODO - use size type
+			llvm::Value* const this_ptr_as_int= function_context.llvm_ir_builder.CreatePtrToInt( this_casted.llvm_value, fundamental_llvm_types_.int_ptr );
 			llvm::Value* this_sub_offset= function_context.llvm_ir_builder.CreateSub( this_ptr_as_int, offset );
 			this_casted.llvm_value= function_context.llvm_ir_builder.CreateIntToPtr( this_sub_offset, llvm::PointerType::get( this_casted.type.GetLLVMType(), 0u ) );
 		}

@@ -95,6 +95,8 @@ CodeBuilder::CodeBuilder()
 	fundamental_llvm_types_.void_for_ret_= llvm::Type::getVoidTy( llvm_context_ );
 	fundamental_llvm_types_.bool_= llvm::Type::getInt1Ty( llvm_context_ );
 
+	fundamental_llvm_types_.int_ptr= llvm::Type::getInt64Ty( llvm_context_ ); // TODO - make target-dependent
+
 	invalid_type_= FundamentalType( U_FundamentalType::InvalidType, fundamental_llvm_types_.invalid_type_ );
 	void_type_= FundamentalType( U_FundamentalType::Void, fundamental_llvm_types_.void_ );
 	void_type_for_ret_= FundamentalType( U_FundamentalType::Void, fundamental_llvm_types_.void_for_ret_ );
@@ -1108,7 +1110,6 @@ void CodeBuilder::PrepareClassVirtualTableType( Class& the_class )
 	if( the_class.virtual_table.empty() )
 		return; // Non-polymorph class.
 
-	llvm::Type* const size_type= fundamental_llvm_types_.u64; // SPRACHE_TODO - select proper size type.
 
 	the_class.virtual_table_llvm_type= llvm::StructType::create( llvm_context_ );
 	std::vector<llvm::Type*> virtual_table_struct_fields;
@@ -1117,7 +1118,7 @@ void CodeBuilder::PrepareClassVirtualTableType( Class& the_class )
 	{
 		const Function& function_type= *virtual_table_entry.function_variable.type.GetFunctionType();
 
-		virtual_table_struct_fields.push_back( size_type ); // this pointer offset
+		virtual_table_struct_fields.push_back( fundamental_llvm_types_.int_ptr );
 		virtual_table_struct_fields.push_back( llvm::PointerType::get( function_type.llvm_function_type, 0u ) );
 	}
 
@@ -1135,15 +1136,16 @@ void CodeBuilder::BuildClassVirtualTables( Class& the_class, const Type& class_t
 
 	U_ASSERT( the_class.virtual_table_llvm_type != nullptr );
 
-	llvm::Type* const size_type= fundamental_llvm_types_.u64; // SPRACHE_TODO - select proper size type.
-
 	std::vector<llvm::Constant*> initializer_values;
 	for( const Class::VirtualTableEntry& virtual_table_entry : the_class.virtual_table )
 	{
 		if( virtual_table_entry.is_pure )
 			return;  // Class is interface or abstract.
 
-		initializer_values.push_back( llvm::Constant::getIntegerValue( size_type, llvm::APInt( size_type->getIntegerBitWidth(), 0u ) ) ); // For this class virtual table we have all offsets zeros.
+		initializer_values.push_back(
+			llvm::Constant::getIntegerValue(
+				fundamental_llvm_types_.int_ptr,
+				llvm::APInt( fundamental_llvm_types_.int_ptr->getIntegerBitWidth(), 0u ) ) ); // For this class virtual table we have all offsets zeros.
 		initializer_values.push_back( virtual_table_entry.function_variable.llvm_function );
 	}
 
@@ -1193,7 +1195,7 @@ void CodeBuilder::BuildClassVirtualTables( Class& the_class, const Type& class_t
 					class_type,
 					ancestor_virtual_table_entry.function_variable.type.GetFunctionType()->args.front().type,
 					*dummy_function_context_ );
-			llvm::Value* const offset_as_int= dummy_function_context_->llvm_ir_builder.CreatePtrToInt( offset_ptr, size_type );
+			llvm::Value* const offset_as_int= dummy_function_context_->llvm_ir_builder.CreatePtrToInt( offset_ptr, fundamental_llvm_types_.int_ptr );
 			llvm::Constant* const offset_const= llvm::dyn_cast<llvm::Constant>( offset_as_int );
 
 			llvm::Value* const function_pointer_casted=

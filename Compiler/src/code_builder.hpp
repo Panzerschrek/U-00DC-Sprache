@@ -657,6 +657,8 @@ private:
 		llvm::Type* void_for_ret_;
 		llvm::Type* invalid_type_;
 		llvm::IntegerType* bool_;
+
+		llvm::IntegerType* int_ptr; // Type with width of pointer.
 	} fundamental_llvm_types_;
 
 	llvm::Function* halt_func_= nullptr;
