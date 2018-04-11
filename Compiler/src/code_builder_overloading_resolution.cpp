@@ -212,8 +212,7 @@ const FunctionVariable* CodeBuilder::GetOverloadedFunction(
 				if( function_type.args[i].type != void_type_ && actual_args_begin[i].type != void_type_ &&
 					( actual_args_begin[i].type.IsIncomplete() || function_type.args[i].type.IsIncomplete() ) )
 				{
-					// SPRACHE_TODO - generate separate error.
-					errors_.push_back( ReportNotImplemented( file_pos, "type conversions for incomplete types" ) );
+					errors_.push_back( ReportCouldNotSelectOverloadedFunction( file_pos ) );
 					all_args_is_compatible= false;
 					break;
 				};
