@@ -246,7 +246,7 @@ private:
 		const Type& type,
 		FunctionContext& function_context );
 
-	void SetupVirtualTablePointersInConstructor(
+	void SetupVirtualTablePointers(
 		llvm::Value* this_,
 		const Class& the_class,
 		const Type& class_type,

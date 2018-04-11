@@ -1,5 +1,6 @@
 from py_tests_common import *
 
+
 def VirtualFunctionDeclaration_Test0():
 	c_program_text= """
 		class S polymorph
@@ -356,6 +357,85 @@ def VirtualDestructor_Test4():
 	tests_lib.build_program( c_program_text )
 	call_result= tests_lib.run_function( "_Z3Foov" )
 	assert( call_result == 111117 )
+
+
+def VirtualCallInConstructor_Test0():
+	c_program_text= """
+		class A polymorph
+		{
+			i32 x;
+			fn constructor()( x= 0 ){ x= Foo(); }   // Must call A::Foo here.
+			fn virtual Foo(this) : i32 { return 88877; }
+		}
+		class B : A
+		{
+			fn virtual override Foo(this) : i32 { return 42; }
+		}
+
+		fn Foo() : i32
+		{
+			var B b;
+			halt if( b.Foo() != 42 );  // But after parent class construction, must call B::Foo.
+			return b.x;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 88877 )
+
+
+def VirtualCallInConstructor_Test1():
+	c_program_text= """
+		class A polymorph
+		{
+			fn virtual Foo(this) : i32 { return 3335214; }
+		}
+		class B : A
+		{
+			i32 x;
+			fn constructor()( x= 0 ){ x= Foo(); }  // Must call A::Foo here.
+		}
+
+		fn Foo() : i32
+		{
+			var B b;
+			return b.x;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 3335214 )
+
+
+def VirtualCallInDestructor_Test0():
+	c_program_text= """
+		class A polymorph
+		{
+			i32 x;
+			fn constructor()( x= 0 ){}
+			fn virtual Foo(this) : i32 { return 88877; }
+			fn destructor()
+			{
+				x= Foo();  // Must call A::Foo. In destructor virtual table pointer must point to current class virtual table.
+			}
+		}
+		class B : A
+		{
+			fn virtual override Foo(this) : i32 { return 42; }
+		}
+
+		fn Foo() : i32
+		{
+			var B mut b;
+			b.destructor(); // HACK! Manual destructor call.
+			halt if( b.Foo() != 42 );  // But after parent class construction, must call B::Foo.
+			return b.x;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 88877 )
+
 
 def VirtualForNonclassFunction_Test0():
 	c_program_text= """
