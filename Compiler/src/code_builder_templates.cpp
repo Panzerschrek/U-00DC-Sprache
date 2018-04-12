@@ -920,6 +920,9 @@ bool CodeBuilder::TypeIsValidForTemplateVariableArgument( const Type& type )
 
 void CodeBuilder::RemoveTempClassLLVMValues( Class& class_ )
 {
+	// TODO  - know, how we can safely delete a lot of functions, virtual tables, etc. without causing llvm internal errors.
+	return;
+
 	class_.members.ForEachInThisScope(
 		[this]( const NamesScope::InsertedName& name )
 		{
