@@ -1034,9 +1034,27 @@ Value CodeBuilder::BuildNamedOperand(
 		}
 		else if( named_operand.name_.components.back().name == Keywords::base_ )
 		{
-			// SPRACHE_TODO
-			errors_.push_back( ReportNotImplemented( named_operand.file_pos_, "base access" ) );
-			return ErrorValue();
+			if( function_context.this_ == nullptr )
+			{
+				errors_.push_back( ReportBaseUnavailable( named_operand.file_pos_ ) );
+				return ErrorValue();
+			}
+			const Class& class_= *function_context.this_->type.GetClassType();
+			if( class_.base_class == nullptr )
+			{
+				errors_.push_back( ReportBaseUnavailable( named_operand.file_pos_ ) );
+				return ErrorValue();
+			}
+			if( function_context.is_constructor_initializer_list_now && ( !function_context.base_initialized || class_.base_class->class_->kind == Class::Kind::Abstract ) )
+			{
+				errors_.push_back( ReportFieldIsNotInitializedYet( named_operand.file_pos_, Keyword( Keywords::base_ ) ) );
+				return ErrorValue();
+			}
+
+			Variable base= *function_context.this_;
+			base.type= class_.base_class;
+			base.llvm_value= CreateReferenceCast( function_context.this_->llvm_value, function_context.this_->type, base.type, function_context );
+			return Value( base, named_operand.file_pos_ );
 		}
 	}
 

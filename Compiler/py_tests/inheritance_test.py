@@ -430,6 +430,86 @@ def InheritanceTest_InitializeBaseClass_Test4():
 	tests_lib.run_function( "_Z3Foov" )
 
 
+def InheritanceTest_InitializeBaseClass_Test5():
+	c_program_text= """
+		class A polymorph
+		{
+			i32 a;
+			fn constructor( i32 x )( a= x ){}
+		}
+		class B : A
+		{
+			i32 b;
+			fn constructor( i32 x )( base(x), b= base.a ){}   // Must access "base" after explicit "base" initialization.
+		}
+
+		fn Foo()
+		{
+			var B b( 77457 );
+			halt if( b.a != 77457 );
+			halt if( b.b != 77457 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def InheritanceTest_InitializeBaseClass_Test6():
+	c_program_text= """
+		class A polymorph
+		{
+			i32 a;
+			fn constructor()( a= 66633625 ){}
+		}
+		class B : A
+		{
+			i32 b;
+			fn constructor()(  b= base.a ){}   // Must access "base" after implicit "base" initialization.
+		}
+
+		fn Foo()
+		{
+			var B b;
+			halt if( b.a != 66633625 );
+			halt if( b.b != 66633625 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def InheritanceTest_BaseReference_Test0():
+	c_program_text= """
+		class A polymorph
+		{
+			i32 a;
+			fn constructor( i32 in_a )( a= in_a ){}
+		}
+		class B : A
+		{
+			i32 a;
+			fn constructor( i32 in_base_a, i32 in_a )( base(in_base_a), a= in_a ){}
+			fn GetA( this ) : i32
+			{
+				return a;
+			}
+			fn GeBasetA( this ) : i32
+			{
+				return base.a;
+			}
+		}
+
+		fn Foo()
+		{
+			var B b( 584, 99965 );
+			halt if( b.GetA() != 99965 );
+			halt if( b.GeBasetA() != 584 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
 def Desturctors_ForInheritance_Test0():
 	c_program_text= """
 		class A polymorph

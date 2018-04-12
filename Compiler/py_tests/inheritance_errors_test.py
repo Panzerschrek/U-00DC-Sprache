@@ -27,6 +27,59 @@ def BaseUnavailable_Test0():
 	assert( errors_list[0].file_pos.line == 5 )
 
 
+def BaseUnavailable_Test1():
+	c_program_text= """
+		class A abstract
+		{
+			i32 x;
+			fn constructor()( x= 0 ){}
+		}
+		class B
+		{
+			i32 y;
+			fn constructor()( y= base.y ) {}  // Error, "base" in constructor initializer lis is unavailable, because "base" is abstract.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "BaseUnavailable" )
+	assert( errors_list[0].file_pos.line == 10 )
+
+
+def BaseUnavailable_Test2():
+	c_program_text= """
+		class A polymorph
+		{}
+		class B : A
+		{
+			fn Foo()
+			{
+				base;  // Error - "base" access in static function.
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "BaseUnavailable" )
+	assert( errors_list[0].file_pos.line == 8 )
+
+
+def BaseUnavailable_Test3():
+	c_program_text= """
+		class A
+		{
+			fn Foo( this )
+			{
+				base;  // Error - class have no "base" class.
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "BaseUnavailable" )
+	assert( errors_list[0].file_pos.line == 6 )
+
+
 def CanNotDeriveFromThisType_Test0():
 	c_program_text= """
 		class A{}   // non-polymorph by-default
