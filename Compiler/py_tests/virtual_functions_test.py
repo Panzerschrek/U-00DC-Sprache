@@ -214,7 +214,7 @@ def VirtualFunctionCallTest5():
 	assert( call_result == 1111144 )
 
 
-def VirtualFunctionCallTest5():
+def VirtualFunctionCallTest6():
 	c_program_text= """
 		class A interface
 		{

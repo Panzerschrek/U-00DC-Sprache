@@ -144,6 +144,7 @@ private:
 	void TryGenerateDestructorPrototypeForPolymorphClass( Class& the_class, const Type& class_type );
 	void ProcessClassVirtualFunction( Class& the_class, PrepareFunctionResult& function );
 	void PrepareClassVirtualTableType( Class& the_class );
+	void BuildClassVirtualTables_r( Class& the_class, const Type& class_type, const std::vector< ClassProxyPtr >& dst_class_path, llvm::Value* dst_class_ptr_null_based );
 	void BuildClassVirtualTables( Class& the_class, const Type& class_type ); // Returns type of vtable pointer or nullptr.
 
 	void PrepareEnum( const Synt::Enum& enum_decl, NamesScope& names_scope );
@@ -248,8 +249,8 @@ private:
 
 	void SetupVirtualTablePointers_r(
 		llvm::Value* this_,
-		const Class& the_class,
-		const std::unordered_map< ClassProxyPtr, llvm::GlobalVariable* >& virtual_tables,
+		const std::vector< ClassProxyPtr >& class_path,
+		const std::map< std::vector< ClassProxyPtr >, llvm::GlobalVariable* > virtual_tables,
 		FunctionContext& function_context );
 
 	void SetupVirtualTablePointers(

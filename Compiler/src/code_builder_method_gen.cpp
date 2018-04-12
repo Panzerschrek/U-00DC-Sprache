@@ -769,27 +769,32 @@ void CodeBuilder::CopyBytes(
 
 void CodeBuilder::SetupVirtualTablePointers_r(
 	llvm::Value* this_,
-	const Class& the_class,
-	const std::unordered_map< ClassProxyPtr, llvm::GlobalVariable* >& virtual_tables,
+	const std::vector< ClassProxyPtr >& class_path,
+	const std::map< std::vector< ClassProxyPtr >, llvm::GlobalVariable* > virtual_tables,
 	FunctionContext& function_context )
 {
+	const Class& the_class= *class_path.back()->class_;
+	U_ASSERT( virtual_tables.find( class_path ) != virtual_tables.end() );
+
 	llvm::Value* index_list[2];
 	index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
 
-	for( size_t i= 0u; i < the_class.parents.size(); ++i )
+	index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(the_class.virtual_table_field_number) ) );
+	llvm::Value* const ptr_to_vtable_ptr= function_context.llvm_ir_builder.CreateGEP( this_, llvm::ArrayRef<llvm::Value*> ( index_list, 2u ) );
+	function_context.llvm_ir_builder.CreateStore( virtual_tables.find(class_path)->second, ptr_to_vtable_ptr );
+
+	if( !the_class.parents.empty() )
 	{
-		U_ASSERT( virtual_tables.find( the_class.parents[i] ) != virtual_tables.end() );
+		auto parent_path= class_path;
+		parent_path.emplace_back();
+		for( size_t i= 0u; i < the_class.parents.size(); ++i )
+		{
+			parent_path.back()= the_class.parents[i];
 
-		const Class& parent_class_type= *the_class.parents[i]->class_;
-
-		index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(the_class.parents_fields_numbers[i]) ) );
-		llvm::Value* const ancestor_ptr= function_context.llvm_ir_builder.CreateGEP( this_, llvm::ArrayRef< llvm::Value*> ( index_list, 2u ) );
-
-		index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(parent_class_type.virtual_table_field_number) ) );
-		llvm::Value* const ptr_to_vtable_ptr= function_context.llvm_ir_builder.CreateGEP( ancestor_ptr, llvm::ArrayRef<llvm::Value*> ( index_list, 2u ) );
-		function_context.llvm_ir_builder.CreateStore( virtual_tables.find(the_class.parents[i])->second, ptr_to_vtable_ptr );
-
-		SetupVirtualTablePointers_r( ancestor_ptr, parent_class_type, virtual_tables, function_context );
+			index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(the_class.parents_fields_numbers[i]) ) );
+			llvm::Value* const parent_ptr= function_context.llvm_ir_builder.CreateGEP( this_, index_list );
+			SetupVirtualTablePointers_r( parent_ptr, parent_path, virtual_tables, function_context );
+		}
 	}
 }
 
@@ -813,11 +818,17 @@ void CodeBuilder::SetupVirtualTablePointers(
 
 	llvm::Value* index_list[2];
 	index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
+
 	index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(the_class.virtual_table_field_number) ) );
 	llvm::Value* const ptr_to_vtable_ptr= function_context.llvm_ir_builder.CreateGEP( this_, llvm::ArrayRef<llvm::Value*> ( index_list, 2u ) );
 	function_context.llvm_ir_builder.CreateStore( the_class.this_class_virtual_table, ptr_to_vtable_ptr );
 
-	SetupVirtualTablePointers_r( this_, the_class, the_class.ancestors_virtual_tables, function_context );
+	for( size_t i= 0u; i < the_class.parents.size(); ++i )
+	{
+		index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(the_class.parents_fields_numbers[i]) ) );
+		llvm::Value* const parent_ptr= function_context.llvm_ir_builder.CreateGEP( this_, index_list );
+		SetupVirtualTablePointers_r( parent_ptr, { the_class.parents[i] }, the_class.ancestors_virtual_tables, function_context );
+	}
 }
 
 } // namespace CodeBuilderPrivate

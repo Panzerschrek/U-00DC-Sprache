@@ -628,7 +628,10 @@ public:
 	llvm::StructType* virtual_table_llvm_type= nullptr;
 	llvm::GlobalVariable* this_class_virtual_table= nullptr; // May be null for interfaces and abstract classes.
 	unsigned int virtual_table_field_number= 0u;
-	std::unordered_map< ClassProxyPtr, llvm::GlobalVariable* > ancestors_virtual_tables; // Include parent, parents of parents, etc.
+
+	// Key - sequence of classes from child to parent. This class not included.
+	// Virtual table destination is lats key element.
+	std::map< std::vector<ClassProxyPtr>, llvm::GlobalVariable* > ancestors_virtual_tables;
 };
 
 struct Enum
