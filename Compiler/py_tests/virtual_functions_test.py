@@ -214,6 +214,38 @@ def VirtualFunctionCallTest5():
 	assert( call_result == 1111144 )
 
 
+def VirtualFunctionCallTest5():
+	c_program_text= """
+		class A interface
+		{
+			fn virtual pure Bar( this ) : i32;
+		}
+		class B : A
+		{
+			fn virtual override Bar( this ) : i32 { return 0; }
+		}
+		class C : A, B
+		{
+			// Class contains two virtual tables for "A".
+			fn virtual override Bar( this ) : i32 { return 666; }
+		}
+
+		fn ToA0( B& b ) : A& { return b; }
+		fn ToA1( C& c ) : A& { return ToA0(c); }
+		fn Foo() : i32
+		{
+			var C c;
+			var i32 r0= ToA0(c).Bar();
+			var i32 r1= ToA1(c).Bar();
+			halt if( r0 != r1 );
+			return r0;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 666 )
+
+
 def VirtualDestructor_Test0():
 	c_program_text= """
 		class A polymorph

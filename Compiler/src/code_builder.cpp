@@ -2505,7 +2505,7 @@ void CodeBuilder::BuildFuncCode(
 
 	if( is_destructor )
 	{
-		SetupVirtualTablePointers( this_.llvm_value, *base_class->class_, base_class, function_context );
+		SetupVirtualTablePointers( this_.llvm_value, *base_class->class_, function_context );
 		function_context.destructor_end_block= llvm::BasicBlock::Create( llvm_context_ );
 	}
 
@@ -2823,7 +2823,7 @@ void CodeBuilder::BuildConstructorInitialization(
 		function_context.uninitialized_this_fields.erase( field );
 	} // for fields initializers
 
-	SetupVirtualTablePointers( this_.llvm_value, base_class, this_.type, function_context );
+	SetupVirtualTablePointers( this_.llvm_value, base_class, function_context );
 }
 
 CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockCode(

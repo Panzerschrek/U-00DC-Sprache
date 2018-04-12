@@ -246,10 +246,15 @@ private:
 		const Type& type,
 		FunctionContext& function_context );
 
+	void SetupVirtualTablePointers_r(
+		llvm::Value* this_,
+		const Class& the_class,
+		const std::unordered_map< ClassProxyPtr, llvm::GlobalVariable* >& virtual_tables,
+		FunctionContext& function_context );
+
 	void SetupVirtualTablePointers(
 		llvm::Value* this_,
 		const Class& the_class,
-		const Type& class_type,
 		FunctionContext& function_context );
 
 	void TryCallCopyConstructor(
