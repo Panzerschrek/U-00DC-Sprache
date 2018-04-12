@@ -392,6 +392,8 @@ private:
 		NamesScope& names,
 		FunctionContext& function_context );
 
+	std::pair<Variable, llvm::Value*> TryFetchVirtualFunction( const Variable& this_, const FunctionVariable& function, FunctionContext& function_context );
+
 	Value DoCallFunction(
 		llvm::Value* function,
 		const Function& function_type,

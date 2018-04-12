@@ -246,6 +246,103 @@ def VirtualFunctionCallTest6():
 	assert( call_result == 666 )
 
 
+def VirtualOperatorCall_Test0():
+	c_program_text= """
+		class A abstract
+		{
+			i32 x;
+			fn constructor()( x= 0 ){}
+			op virtual pure ++( mut this );
+		}
+		class B : A
+		{
+			op virtual override ++( mut this ) { ++x; }
+		}
+		fn Inc( A&mut a ) { ++a; }   // ++operator
+		fn Foo() : i32
+		{
+			var B mut b;
+			Inc(b);
+			return b.x;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 1 )
+
+
+def VirtualOperatorCall_Test1():
+	c_program_text= """
+		class A abstract
+		{
+			i32 x;
+			fn constructor()( x= 777854 ){}
+			op virtual pure ()( this ) : i32;
+		}
+		class B : A
+		{
+			op virtual override ()( this ) : i32{ return x; }
+		}
+		fn Call( A& a ) : i32 { return a(); }   // operator()
+		fn Foo() : i32
+		{
+			var B mut b;
+			return Call(b);
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 777854 )
+
+
+def VirtualOperatorCall_Test2():
+	c_program_text= """
+		class A abstract
+		{
+			i32 x;
+			fn constructor()( x= 33321 ){}
+			op virtual pure []( this, i32 mul ) : i32;
+		}
+		class B : A
+		{
+			op virtual override []( this, i32 mul ) : i32{ return x * mul; }
+		}
+		fn DoubleIt( A& a ) : i32 { return a[2]; }   // operator[]
+		fn Foo() : i32
+		{
+			var B mut b;
+			return DoubleIt(b);
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 33321 * 2 )
+
+
+def VirtualOperatorCall_Test3():
+	c_program_text= """
+		class A abstract
+		{
+			i32 x;
+			fn constructor()( x= -8874 ){}
+			op virtual pure -( this ) : i32;
+		}
+		class B : A
+		{
+			op virtual override -( this ) : i32{ return -x; }
+		}
+		fn Neg( A& a ) : i32 { return -a; }   // unary minus operator
+		fn Foo() : i32
+		{
+			var B mut b;
+			return Neg(b);
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 8874 )
+
+
 def VirtualDestructor_Test0():
 	c_program_text= """
 		class A polymorph
