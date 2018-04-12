@@ -204,6 +204,9 @@ void CodeBuilder::TryGenerateCopyConstructor( Class& the_class, const Type& clas
 				all_fields_is_copy_constructible= false;
 		} );
 
+	if( the_class.base_class != nullptr && !the_class.base_class->class_->is_copy_constructible )
+		all_fields_is_copy_constructible= false;
+
 	if( !all_fields_is_copy_constructible )
 		return;
 
@@ -263,11 +266,21 @@ void CodeBuilder::TryGenerateCopyConstructor( Class& the_class, const Type& clas
 	llvm::Value* const src_llvm_value= &*(++llvm_constructor_function->args().begin());
 	src_llvm_value->setName( "src" );
 
+	if( the_class.base_class != nullptr )
+	{
+		llvm::Value* index_list[2];
+		index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
+		index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(the_class.base_class_field_number) ) );
+		llvm::Value* const src= function_context.llvm_ir_builder.CreateGEP( src_llvm_value , llvm::ArrayRef<llvm::Value*>( index_list, 2u ) );
+		llvm::Value* const dst= function_context.llvm_ir_builder.CreateGEP( this_llvm_value, llvm::ArrayRef<llvm::Value*>( index_list, 2u ) );
+		BuildCopyConstructorPart( src, dst, the_class.base_class, function_context );
+	}
+
 	the_class.members.ForEachInThisScope(
 		[&]( const NamesScope::InsertedName& member )
 		{
 			const ClassField* const field= member.second.GetClassField();
-			if( field == nullptr )
+			if( field == nullptr || field->class_.lock()->class_.get() != &the_class )
 				return;
 
 			llvm::Value* index_list[2];
