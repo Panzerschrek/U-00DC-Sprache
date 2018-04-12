@@ -1216,12 +1216,12 @@ void CodeBuilder::PrepareClassVirtualTableType( Class& the_class )
 	the_class.virtual_table_llvm_type= llvm::StructType::create( llvm_context_ );
 	std::vector<llvm::Type*> virtual_table_struct_fields;
 
+	virtual_table_struct_fields.push_back( fundamental_llvm_types_.int_ptr ); // Offset field.
+
 	for( const Class::VirtualTableEntry& virtual_table_entry : the_class.virtual_table )
 	{
 		const Function& function_type= *virtual_table_entry.function_variable.type.GetFunctionType();
-
-		virtual_table_struct_fields.push_back( fundamental_llvm_types_.int_ptr );
-		virtual_table_struct_fields.push_back( llvm::PointerType::get( function_type.llvm_function_type, 0u ) );
+		virtual_table_struct_fields.push_back( llvm::PointerType::get( function_type.llvm_function_type, 0u ) ); // Function pointer field.
 	}
 
 	the_class.virtual_table_llvm_type->setBody( virtual_table_struct_fields );
@@ -1231,6 +1231,12 @@ void CodeBuilder::BuildClassVirtualTables_r( Class& the_class, const Type& class
 {
 	const Class& dst_class= *dst_class_path.back()->class_;
 	std::vector<llvm::Constant*> initializer_values;
+
+	// Calculate offset from this class pointer to ancestor class pointer.
+	// In virtual call we must subtract this offset.
+	llvm::Value* const offset_as_int= dummy_function_context_->llvm_ir_builder.CreatePtrToInt( dst_class_ptr_null_based, fundamental_llvm_types_.int_ptr );
+	llvm::Constant* const offset_const= llvm::dyn_cast<llvm::Constant>( offset_as_int );
+	initializer_values.push_back( offset_const );
 
 	for( const Class::VirtualTableEntry& ancestor_virtual_table_entry : dst_class.virtual_table )
 	{
@@ -1247,17 +1253,11 @@ void CodeBuilder::BuildClassVirtualTables_r( Class& the_class, const Type& class
 
 		U_ASSERT( overriden_in_this_class != nullptr ); // We must override, or inherit function.
 
-		// Calculate offset from this class pointer to ancestor class pointer.
-		// In virtual call we must subtract this offset.
-		llvm::Value* const offset_as_int= dummy_function_context_->llvm_ir_builder.CreatePtrToInt( dst_class_ptr_null_based, fundamental_llvm_types_.int_ptr );
-		llvm::Constant* const offset_const= llvm::dyn_cast<llvm::Constant>( offset_as_int );
-
 		llvm::Value* const function_pointer_casted=
 			dummy_function_context_->llvm_ir_builder.CreateBitOrPointerCast(
 				overriden_in_this_class->function_variable.llvm_function,
 				llvm::PointerType::get( ancestor_virtual_table_entry.function_variable.type.GetFunctionType()->llvm_function_type, 0 ) );
 
-		initializer_values.push_back( offset_const );
 		initializer_values.push_back( llvm::dyn_cast<llvm::Constant>(function_pointer_casted) );
 
 	} // for ancestor virtual table
@@ -1309,15 +1309,16 @@ void CodeBuilder::BuildClassVirtualTables( Class& the_class, const Type& class_t
 	U_ASSERT( the_class.virtual_table_llvm_type != nullptr );
 
 	std::vector<llvm::Constant*> initializer_values;
+	initializer_values.push_back(
+		llvm::Constant::getIntegerValue(
+			fundamental_llvm_types_.int_ptr,
+			llvm::APInt( fundamental_llvm_types_.int_ptr->getIntegerBitWidth(), 0u ) ) ); // For this class virtual table we have zero offset to real this.
+
 	for( const Class::VirtualTableEntry& virtual_table_entry : the_class.virtual_table )
 	{
 		if( virtual_table_entry.is_pure )
 			return;  // Class is interface or abstract.
 
-		initializer_values.push_back(
-			llvm::Constant::getIntegerValue(
-				fundamental_llvm_types_.int_ptr,
-				llvm::APInt( fundamental_llvm_types_.int_ptr->getIntegerBitWidth(), 0u ) ) ); // For this class virtual table we have all offsets zeros.
 		initializer_values.push_back( virtual_table_entry.function_variable.llvm_function );
 	}
 

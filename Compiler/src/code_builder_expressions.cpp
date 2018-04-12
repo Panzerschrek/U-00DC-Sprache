@@ -1722,8 +1722,9 @@ Value CodeBuilder::BuildCallOperator(
 			U_ASSERT( class_type != nullptr );
 			U_ASSERT( function.virtual_table_index < class_type->virtual_table.size() );
 
-			const unsigned int func_ptr_field_number= function.virtual_table_index * 2u + 1u;
-			const unsigned int offset_field_number= function.virtual_table_index * 2u;
+			const unsigned int func_ptr_field_number= function.virtual_table_index + 1u;
+			const unsigned int offset_field_number= 0u;
+
 			// Fetch vtable pointer.
 			llvm::Value* index_list[2];
 			index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
