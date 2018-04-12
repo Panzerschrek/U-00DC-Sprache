@@ -797,12 +797,79 @@ def AbstractClassConstructor_Test2():
 			fn constructor()
 			( x= 0 )
 			{
-				x= 0;  // "this" unavailable in constructor of abstrat class, so, can not access field.
-				// SPRACHE_TODO - maybe allow accessing fields?
+				x= 42; // Ok, can directly access fields.
+			}
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def AbstractClassConstructor_Test3():
+	c_program_text= """
+		class A;
+		fn Foo( A& a ){}
+		class A interface
+		{
+			fn constructor()
+			{
+				Foo(this);   // "this" unavailable in constructor of interface.
 			}
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "ClassFiledAccessInStaticMethod" )
+	assert( errors_list[0].error_code == "ThisUnavailable" )
 	assert( errors_list[0].file_pos.line == 8 )
+
+
+def AbstractClassDestructor_Test0():
+	c_program_text= """
+		class A;
+		fn Foo( A& a ){}
+		class A abstract
+		{
+			fn destructor()
+			{
+				Foo(this);   // "this" unavailable in destructor of abstract class.
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ThisUnavailable" )
+	assert( errors_list[0].file_pos.line == 8 )
+
+
+def AbstractClassDestructor_Test1():
+	c_program_text= """
+		class A;
+		fn Foo( A& a ){}
+		class A interface
+		{
+			fn destructor()
+			{
+				Foo(this);   // "this" unavailable in destructor of interface.
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ThisUnavailable" )
+	assert( errors_list[0].file_pos.line == 8 )
+
+
+def AbstractClassDestructor_Test2():
+	c_program_text= """
+		class A;
+		fn Foo( A& a ){}
+		class A abstract
+		{
+			i32 x;
+			fn constructor()( x= 0 ){}
+			fn destructor()
+			{
+				x= 42; // Ok, can directly access fields.
+			}
+		}
+	"""
+	tests_lib.build_program( c_program_text )

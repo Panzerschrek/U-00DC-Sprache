@@ -499,7 +499,7 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 				dummy_function_context_->function );
 			const StackVariablesStorage dummy_stack_variables_storage( dummy_function_context );
 			dummy_function_context.this_= function_context.this_;
-			dummy_function_context.is_constructor_initializer_list_now= function_context.is_constructor_initializer_list_now;
+			dummy_function_context.whole_this_is_unavailable= function_context.whole_this_is_unavailable;
 			dummy_function_context.variables_state= function_context.variables_state;
 			function_context.variables_state.DeactivateLocks();
 

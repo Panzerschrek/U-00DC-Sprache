@@ -123,8 +123,6 @@ const char* CodeBuilderErrorCodeToString( const CodeBuilderErrorCode code )
 		return "ExplicitThisInDestructor";
 	case CodeBuilderErrorCode::FieldIsNotInitializedYet:
 		return "FieldIsNotInitializedYet";
-	case CodeBuilderErrorCode::MethodsCallInConstructorInitializerListIsForbidden:
-		return "MethodsCallInConstructorInitializerListIsForbidden";
 	case CodeBuilderErrorCode::ExplicitArgumentsInDestructor:
 		return "ExplicitArgumentsInDestructor";
 	case CodeBuilderErrorCode::CallOfThiscallFunctionUsingNonthisArgument:
@@ -887,17 +885,6 @@ CodeBuilderError ReportFieldIsNotInitializedYet( const FilePos& file_pos, const 
 	error.code= CodeBuilderErrorCode::FieldIsNotInitializedYet;
 
 	error.text= "Field \""_SpC + field_name + "\" in not initialized yet."_SpC;
-
-	return error;
-}
-
-CodeBuilderError ReportMethodsCallInConstructorInitializerListIsForbidden( const FilePos& file_pos, const ProgramString& method_name )
-{
-	CodeBuilderError error;
-	error.file_pos= file_pos;
-	error.code= CodeBuilderErrorCode::MethodsCallInConstructorInitializerListIsForbidden;
-
-	error.text= "Call of method \""_SpC + method_name + "\" in constructor."_SpC;
 
 	return error;
 }

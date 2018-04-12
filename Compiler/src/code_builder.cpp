@@ -2494,7 +2494,7 @@ void CodeBuilder::BuildFuncCode(
 		U_ASSERT( base_class != nullptr );
 		U_ASSERT( function_context.this_ != nullptr );
 
-		function_context.is_constructor_initializer_list_now= true;
+		function_context.whole_this_is_unavailable= true;
 
 		if( constructor_initialization_list == nullptr )
 		{
@@ -2516,11 +2516,11 @@ void CodeBuilder::BuildFuncCode(
 				function_context,
 				*constructor_initialization_list );
 
-		function_context.is_constructor_initializer_list_now= false;
-
-		if( base_class->class_->kind == Class::Kind::Abstract )
-			function_context.this_= nullptr; // "this" unavailable in constructors of abstract classes.
+		function_context.whole_this_is_unavailable= false;
 	}
+
+	if( ( is_constructor || is_destructor ) && ( base_class->class_->kind == Class::Kind::Abstract || base_class->class_->kind == Class::Kind::Interface ) )
+		function_context.whole_this_is_unavailable= true; // Whole "this" unavailable in body of constructors and destructors of abstract classes and interfaces.
 
 	if( is_destructor )
 	{

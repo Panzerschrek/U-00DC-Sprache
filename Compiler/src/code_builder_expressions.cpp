@@ -58,7 +58,7 @@ boost::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 			dummy_function_context_->function );
 		const StackVariablesStorage dummy_stack_variables_storage( dummy_function_context );
 		dummy_function_context.this_= function_context.this_;
-		dummy_function_context.is_constructor_initializer_list_now= function_context.is_constructor_initializer_list_now;
+		dummy_function_context.whole_this_is_unavailable= function_context.whole_this_is_unavailable;
 		dummy_function_context.variables_state= function_context.variables_state;
 		function_context.variables_state.DeactivateLocks();
 
@@ -1025,7 +1025,7 @@ Value CodeBuilder::BuildNamedOperand(
 	{
 		if( named_operand.name_.components.back().name == Keywords::this_ )
 		{
-			if( function_context.this_ == nullptr || function_context.is_constructor_initializer_list_now )
+			if( function_context.this_ == nullptr || function_context.whole_this_is_unavailable )
 			{
 				errors_.push_back( ReportThisUnavailable( named_operand.file_pos_ ) );
 				return ErrorValue();
@@ -1045,7 +1045,7 @@ Value CodeBuilder::BuildNamedOperand(
 				errors_.push_back( ReportBaseUnavailable( named_operand.file_pos_ ) );
 				return ErrorValue();
 			}
-			if( function_context.is_constructor_initializer_list_now && ( !function_context.base_initialized || class_.base_class->class_->kind == Class::Kind::Abstract ) )
+			if( function_context.whole_this_is_unavailable && ( !function_context.base_initialized || class_.base_class->class_->kind == Class::Kind::Abstract ) )
 			{
 				errors_.push_back( ReportFieldIsNotInitializedYet( named_operand.file_pos_, Keyword( Keywords::base_ ) ) );
 				return ErrorValue();
@@ -1105,13 +1105,13 @@ Value CodeBuilder::BuildNamedOperand(
 			}
 		}
 
-		if( function_context.is_constructor_initializer_list_now &&
+		if( function_context.whole_this_is_unavailable &&
 			function_context.uninitialized_this_fields.find( field ) != function_context.uninitialized_this_fields.end() )
 		{
 			errors_.push_back( ReportFieldIsNotInitializedYet( named_operand.file_pos_, named_operand.name_.components.back().name ) );
 			return ErrorValue();
 		}
-		if( function_context.is_constructor_initializer_list_now &&
+		if( function_context.whole_this_is_unavailable &&
 			field_class_proxy != function_context.this_->type.GetClassTypeProxy() &&
 			!function_context.base_initialized )
 		{
@@ -1158,17 +1158,14 @@ Value CodeBuilder::BuildNamedOperand(
 			// SPRACHE_TODO - add "this" for functions from parent classes.
 			if( name_entry == same_set_in_class )
 			{
-				if( function_context.is_constructor_initializer_list_now )
+				if( !function_context.whole_this_is_unavailable )
 				{
-					// SPRACHE_TODO - allow call of static methods and parents methods.
-					errors_.push_back( ReportMethodsCallInConstructorInitializerListIsForbidden( named_operand.file_pos_, named_operand.name_.components.back().name ) );
-					return ErrorValue();
+					// Append "this" only if whole "this" is available.
+					ThisOverloadedMethodsSet this_overloaded_methods_set;
+					this_overloaded_methods_set.this_= *function_context.this_;
+					this_overloaded_methods_set.overloaded_methods_set= *overloaded_functions_set;
+					return this_overloaded_methods_set;
 				}
-
-				ThisOverloadedMethodsSet this_overloaded_methods_set;
-				this_overloaded_methods_set.this_= *function_context.this_;
-				this_overloaded_methods_set.overloaded_methods_set= *overloaded_functions_set;
-				return this_overloaded_methods_set;
 			}
 		}
 	}
@@ -1315,7 +1312,7 @@ Value CodeBuilder::BuildIndexationOperator(
 				dummy_function_context_->function );
 			const StackVariablesStorage dummy_stack_variables_storage( dummy_function_context );
 			dummy_function_context.this_= function_context.this_;
-			dummy_function_context.is_constructor_initializer_list_now= function_context.is_constructor_initializer_list_now;
+			dummy_function_context.whole_this_is_unavailable= function_context.whole_this_is_unavailable;
 			dummy_function_context.variables_state= function_context.variables_state;
 			function_context.variables_state.DeactivateLocks();
 
@@ -1632,7 +1629,7 @@ Value CodeBuilder::BuildCallOperator(
 			dummy_function_context_->function );
 		const StackVariablesStorage dummy_stack_variables_storage( dummy_function_context );
 		dummy_function_context.this_= function_context.this_;
-		dummy_function_context.is_constructor_initializer_list_now= function_context.is_constructor_initializer_list_now;
+		dummy_function_context.whole_this_is_unavailable= function_context.whole_this_is_unavailable;
 		dummy_function_context.variables_state= function_context.variables_state; // TODO - support copy-on-write for variables_state
 		function_context.variables_state.DeactivateLocks();
 

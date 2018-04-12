@@ -82,7 +82,7 @@ private:
 
 		std::set<const ClassField*> uninitialized_this_fields;
 		bool base_initialized= false;
-		bool is_constructor_initializer_list_now= false;
+		bool whole_this_is_unavailable= false; // May be true in constructor initializer list, in body of constructors and destructors of abstract classes.
 
 		llvm::Function* const function;
 

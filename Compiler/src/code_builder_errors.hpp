@@ -83,7 +83,6 @@ enum class CodeBuilderErrorCode : unsigned int
 	ClassHaveNoConstructors,
 	ExplicitThisInDestructor,
 	FieldIsNotInitializedYet,
-	MethodsCallInConstructorInitializerListIsForbidden,
 
 	// Destructors errors
 	ExplicitArgumentsInDestructor,
@@ -222,7 +221,6 @@ CodeBuilderError ReportInitializationListInNonconstructor( const FilePos& file_p
 CodeBuilderError ReportClassHaveNoConstructors( const FilePos& file_pos );
 CodeBuilderError ReportExplicitThisInDestructor( const FilePos& file_pos );
 CodeBuilderError ReportFieldIsNotInitializedYet( const FilePos& file_pos, const ProgramString& field_name );
-CodeBuilderError ReportMethodsCallInConstructorInitializerListIsForbidden( const FilePos& file_pos, const ProgramString& method_name );
 CodeBuilderError ReportExplicitArgumentsInDestructor( const FilePos& file_pos );
 CodeBuilderError ReportCallOfThiscallFunctionUsingNonthisArgument( const FilePos& file_pos );
 CodeBuilderError ReportClassFiledAccessInStaticMethod( const FilePos& file_pos, const ProgramString& field_name );
