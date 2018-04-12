@@ -136,6 +136,7 @@ enum class CodeBuilderErrorCode : unsigned int
 	DuplicatedBaseClass,
 	FieldsForInterfacesNotAllowed,
 	BaseClassForInterface,
+	ConstructorForInterface,
 
 	// Virtual functions errors
 	VirtualForNonclassFunction,
@@ -260,6 +261,7 @@ CodeBuilderError ReportDuplicatedParentClass( const FilePos& file_pos, const Pro
 CodeBuilderError ReportDuplicatedBaseClass( const FilePos& file_pos, const ProgramString& type_name );
 CodeBuilderError ReportFieldsForInterfacesNotAllowed( const FilePos& file_pos );
 CodeBuilderError ReportBaseClassForInterface( const FilePos& file_pos );
+CodeBuilderError ReportConstructorForInterface( const FilePos& file_pos );
 CodeBuilderError ReportVirtualForNonclassFunction( const FilePos& file_pos, const ProgramString& function_name );
 CodeBuilderError ReportVirtualForNonThisCallFunction( const FilePos& file_pos, const ProgramString& function_name );
 CodeBuilderError ReportFunctionCanNotBeVirtual( const FilePos& file_pos, const ProgramString& function_name );

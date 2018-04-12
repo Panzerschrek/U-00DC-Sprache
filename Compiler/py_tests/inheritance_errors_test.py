@@ -103,6 +103,16 @@ def CanNotDeriveFromThisType_Test1():
 	assert( errors_list[0].file_pos.line == 4 )
 
 
+def CanNotDeriveFromThisType_Test2():
+	c_program_text= """
+		class A : i32 {}   // Inherit from non-class
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "CanNotDeriveFromThisType" )
+	assert( errors_list[0].file_pos.line == 2 )
+
+
 def DuplicatedParentClass_Test0():
 	c_program_text= """
 		class A interface {}
@@ -160,4 +170,17 @@ def BaseClassForInterface_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "BaseClassForInterface" )
+	assert( errors_list[0].file_pos.line == 3 )
+
+
+def ConstructorForInterface_Test0():
+	c_program_text= """
+		class A interface
+		{
+			fn constructor(){}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ConstructorForInterface" )
 	assert( errors_list[0].file_pos.line == 3 )

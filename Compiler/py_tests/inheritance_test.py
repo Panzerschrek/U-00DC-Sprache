@@ -754,6 +754,30 @@ def CopyChildToParent_Test3():
 	assert( call_result == 44758 )
 
 
+def GeneratedCopyConstructor_Test0():
+	c_program_text= """
+		class A polymorph
+		{
+			i32 x;
+			fn constructor( i32 in_x ) ( x= in_x ) {}
+		}
+		class B : A
+		{
+			fn constructor( i32 in_x ) ( base(in_x) ) {}
+		}
+		fn Foo() : i32
+		{
+			var B b( 99965 );
+			var B b2= b;
+			halt if( b.x != b2.x );
+			return b2.x;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 99965 )
+
+
 def AbstractClassConstructor_Test0():
 	c_program_text= """
 		class A abstract
@@ -802,24 +826,6 @@ def AbstractClassConstructor_Test2():
 		}
 	"""
 	tests_lib.build_program( c_program_text )
-
-
-def AbstractClassConstructor_Test3():
-	c_program_text= """
-		class A;
-		fn Foo( A& a ){}
-		class A interface
-		{
-			fn constructor()
-			{
-				Foo(this);   // "this" unavailable in constructor of interface.
-			}
-		}
-	"""
-	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "ThisUnavailable" )
-	assert( errors_list[0].file_pos.line == 8 )
 
 
 def AbstractClassDestructor_Test0():

@@ -870,6 +870,8 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 			errors_.push_back( ReportFieldsForInterfacesNotAllowed( class_declaration.file_pos_ ) );
 		if( the_class->base_class != nullptr )
 			errors_.push_back( ReportBaseClassForInterface( class_declaration.file_pos_ ) );
+		if( the_class->members.GetThisScopeName( Keyword( Keywords::constructor_ ) ) != nullptr )
+			errors_.push_back( ReportConstructorForInterface( class_declaration.file_pos_ ) );
 		for( const Class::VirtualTableEntry& virtual_table_entry : the_class->virtual_table )
 		{
 			if( !virtual_table_entry.is_pure && virtual_table_entry.name != Keywords::destructor_ )
@@ -1010,11 +1012,10 @@ void CodeBuilder::ProcessClassParentsVirtualTables( Class& the_class )
 	U_ASSERT( the_class.virtual_table.empty() );
 
 	// Copy virtual table of base class.
-	// SPRACHE_TODO - modify vtable_entry ?
 	if( the_class.base_class != nullptr )
 		the_class.virtual_table= the_class.base_class->class_->virtual_table;
 
-	// Process only interfaces.
+	// Later, process interfaces.
 	for( const ClassProxyPtr& parent : the_class.parents )
 	{
 		if( parent == the_class.base_class )
@@ -1033,7 +1034,6 @@ void CodeBuilder::ProcessClassParentsVirtualTables( Class& the_class )
 				}
 			}
 
-			// SPRACHE_TODO - modify vtable_entry ?
 			if( !already_exists_in_vtable )
 				the_class.virtual_table.push_back( parent_vtable_entry );
 		} // for parent virtual table

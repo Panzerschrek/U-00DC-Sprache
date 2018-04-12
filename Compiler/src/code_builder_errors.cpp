@@ -201,6 +201,8 @@ const char* CodeBuilderErrorCodeToString( const CodeBuilderErrorCode code )
 		return "FieldsForInterfacesNotAllowed";
 	case CodeBuilderErrorCode::BaseClassForInterface:
 		return "BaseClassForInterface";
+	case CodeBuilderErrorCode::ConstructorForInterface:
+		return "ConstructorForInterface";
 	case CodeBuilderErrorCode::VirtualForNonclassFunction:
 		return "VirtualForNonclassFunction";
 	case CodeBuilderErrorCode::VirtualForNonThisCallFunction:
@@ -1317,7 +1319,18 @@ CodeBuilderError ReportBaseClassForInterface( const FilePos& file_pos )
 	error.file_pos= file_pos;
 	error.code= CodeBuilderErrorCode::BaseClassForInterface;
 
-	error.text= "Base class for interface.."_SpC;
+	error.text= "Base class for interface."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportConstructorForInterface( const FilePos& file_pos )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::ConstructorForInterface;
+
+	error.text= "Constructor for interface."_SpC;
 
 	return error;
 }
