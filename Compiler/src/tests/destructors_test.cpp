@@ -781,4 +781,35 @@ U_TEST( DestructorsTest18_ShouldBeDesdtroyedAfterUsage5 )
 	U_TEST_ASSERT( static_cast<uint64_t>(7698577) == result_value.IntVal.getLimitedValue() );
 }
 
+U_TEST(DestructorsTest19_DestuctorForInterface)
+{
+	DestructorTestPrepare();
+
+	// Must call destructor for of interface-parent.
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+		class A interface
+		{
+			fn destructor()
+			{
+				DestructorCalled( 5558414 );
+			}
+		}
+		class B : A{}
+		fn Foo()
+		{
+			var B b;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( g_destructors_call_sequence.size() == 1u && g_destructors_call_sequence.front() == 5558414 );
+}
+
 } // namespace U

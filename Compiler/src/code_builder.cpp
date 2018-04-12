@@ -1298,14 +1298,15 @@ void CodeBuilder::CallMembersDestructors( FunctionContext& function_context )
 	const Class* const class_= function_context.this_->type.GetClassType();
 	U_ASSERT( class_ != nullptr );
 
-	if( class_->base_class != nullptr )
+	for( size_t i= 0u; i < class_->parents.size(); ++i )
 	{
+		U_ASSERT( class_->parents[i]->class_->have_destructor ); // Parents are polymorph, polymorph classes always have destructors.
 		llvm::Value* index_list[2];
 		index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
-		index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(class_->base_class_field_number) ) );
+		index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(class_->parents_fields_numbers[i]) ) );
 		CallDestructor(
 			function_context.llvm_ir_builder.CreateGEP( function_context.this_->llvm_value, index_list ),
-			class_->base_class,
+			class_->parents[i],
 			function_context );
 	}
 
