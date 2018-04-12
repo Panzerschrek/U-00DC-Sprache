@@ -821,3 +821,16 @@ def NonPureVirtualFunctionInInterface_Test0():
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "NonPureVirtualFunctionInInterface" )
 	assert( errors_list[0].file_pos.line == 3 )
+
+
+def PureDestructor_Test0():
+	c_program_text= """
+		class A interface
+		{
+			fn virtual pure destructor();
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "PureDestructor" )
+	assert( errors_list[0].file_pos.line == 4 )

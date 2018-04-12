@@ -192,6 +192,8 @@ void CodeBuilder::ProcessClassVirtualFunction( Class& the_class, PrepareFunction
 		{
 			if( function.func_syntax_element->block_ != nullptr )
 				errors_.push_back( ReportBodyForPureVirtualFunction( file_pos, function_name ) );
+			if( function_name == Keyword( Keywords::destructor_ ) )
+				errors_.push_back( ReportPureDestructor( file_pos, the_class.members.GetThisNamespaceName() ) );
 			function_variable.have_body= true; // Mark pure function as "with body", because we needs to disable real body creation for pure function.
 
 			function_variable.virtual_table_index= static_cast<unsigned int>(the_class.virtual_table.size());

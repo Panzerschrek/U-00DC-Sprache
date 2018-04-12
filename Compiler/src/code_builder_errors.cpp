@@ -227,6 +227,8 @@ const char* CodeBuilderErrorCodeToString( const CodeBuilderErrorCode code )
 		return "ClassContainsPureVirtualFunctions";
 	case CodeBuilderErrorCode::NonPureVirtualFunctionInInterface:
 		return "NonPureVirtualFunctionInInterface";
+	case CodeBuilderErrorCode::PureDestructor:
+		return "PureDestructor";
 	};
 
 	U_ASSERT(false);
@@ -1463,6 +1465,17 @@ CodeBuilderError ReportNonPureVirtualFunctionInInterface( const FilePos& file_po
 	error.code= CodeBuilderErrorCode::NonPureVirtualFunctionInInterface;
 
 	error.text= "Interface \"."_SpC + class_name + "\" contains non-pure virtual functions."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportPureDestructor( const FilePos& file_pos, const ProgramString& class_name )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::PureDestructor;
+
+	error.text= "Pure destructor for class \"."_SpC + class_name + "\"."_SpC;
 
 	return error;
 }
