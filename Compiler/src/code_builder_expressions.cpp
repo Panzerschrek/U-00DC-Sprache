@@ -1740,54 +1740,6 @@ Value CodeBuilder::BuildCallOperator(
 	return DoCallFunction( llvm_function_ptr, function_type, call_operator.file_pos_, this_, synt_args, false, names, function_context );
 }
 
-std::pair<Variable, llvm::Value*> CodeBuilder::TryFetchVirtualFunction( const Variable& this_, const FunctionVariable& function, FunctionContext& function_context )
-{
-	const Function& function_type= *function.type.GetFunctionType();
-
-	if( !this_.type.ReferenceIsConvertibleTo( function_type.args.front().type ) )
-		return std::make_pair( this_, function.llvm_function );
-
-	Variable this_casted;
-	this_casted= this_;
-	if( this_.type != function_type.args.front().type )
-	{
-		this_casted.type= function_type.args.front().type;
-		this_casted.llvm_value= CreateReferenceCast( this_.llvm_value, this_.type, this_casted.type, function_context );
-	}
-
-	llvm::Value* llvm_function_ptr= function.llvm_function;
-	if( function.virtual_table_index != ~0u )
-	{
-		const Class* const class_type= this_casted.type.GetClassType();
-		U_ASSERT( class_type != nullptr );
-		U_ASSERT( function.virtual_table_index < class_type->virtual_table.size() );
-
-		const unsigned int func_ptr_field_number= function.virtual_table_index + 1u;
-		const unsigned int offset_field_number= 0u;
-
-		// Fetch vtable pointer.
-		llvm::Value* index_list[2];
-		index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
-		index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(class_type->virtual_table_field_number) ) );
-		llvm::Value* const ptr_to_virtual_table_ptr= function_context.llvm_ir_builder.CreateGEP( this_casted.llvm_value, llvm::ArrayRef<llvm::Value*> ( index_list, 2u ) );
-		llvm::Value* const virtual_table_ptr= function_context.llvm_ir_builder.CreateLoad( ptr_to_virtual_table_ptr );
-		// Fetch function.
-		index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(func_ptr_field_number) ) );
-		llvm::Value* const ptr_to_function_ptr= function_context.llvm_ir_builder.CreateGEP( virtual_table_ptr, llvm::ArrayRef<llvm::Value*> ( index_list, 2u ) );
-		llvm_function_ptr= function_context.llvm_ir_builder.CreateLoad( ptr_to_function_ptr );
-		// Fetch "this" pointer offset.
-		index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(offset_field_number) ) );
-		llvm::Value* const offset_ptr= function_context.llvm_ir_builder.CreateGEP( virtual_table_ptr, llvm::ArrayRef<llvm::Value*> ( index_list, 2u ) );
-		llvm::Value* const offset= function_context.llvm_ir_builder.CreateLoad( offset_ptr );
-		// Correct "this" pointer.
-		llvm::Value* const this_ptr_as_int= function_context.llvm_ir_builder.CreatePtrToInt( this_casted.llvm_value, fundamental_llvm_types_.int_ptr );
-		llvm::Value* this_sub_offset= function_context.llvm_ir_builder.CreateSub( this_ptr_as_int, offset );
-		this_casted.llvm_value= function_context.llvm_ir_builder.CreateIntToPtr( this_sub_offset, llvm::PointerType::get( this_casted.type.GetLLVMType(), 0u ) );
-	}
-
-	return std::make_pair( std::move(this_casted), llvm_function_ptr );
-}
-
 Value CodeBuilder::DoCallFunction(
 	llvm::Value* function,
 	const Function& function_type,

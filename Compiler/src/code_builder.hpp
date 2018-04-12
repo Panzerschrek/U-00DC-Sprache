@@ -140,6 +140,9 @@ private:
 		NamesScope& names_scope,
 		bool force_forward_declaration= false );
 
+	void PrepareEnum( const Synt::Enum& enum_decl, NamesScope& names_scope );
+
+	// Virtual stuff
 	void ProcessClassParentsVirtualTables( Class& the_class );
 	void TryGenerateDestructorPrototypeForPolymorphClass( Class& the_class, const Type& class_type );
 	void ProcessClassVirtualFunction( Class& the_class, PrepareFunctionResult& function );
@@ -147,7 +150,18 @@ private:
 	void BuildClassVirtualTables_r( Class& the_class, const Type& class_type, const std::vector< ClassProxyPtr >& dst_class_path, llvm::Value* dst_class_ptr_null_based );
 	void BuildClassVirtualTables( Class& the_class, const Type& class_type ); // Returns type of vtable pointer or nullptr.
 
-	void PrepareEnum( const Synt::Enum& enum_decl, NamesScope& names_scope );
+	std::pair<Variable, llvm::Value*> TryFetchVirtualFunction( const Variable& this_, const FunctionVariable& function, FunctionContext& function_context );
+
+	void SetupVirtualTablePointers_r(
+		llvm::Value* this_,
+		const std::vector< ClassProxyPtr >& class_path,
+		const std::map< std::vector< ClassProxyPtr >, llvm::GlobalVariable* > virtual_tables,
+		FunctionContext& function_context );
+
+	void SetupVirtualTablePointers(
+		llvm::Value* this_,
+		const Class& the_class,
+		FunctionContext& function_context );
 
 	// Templates
 	void PrepareTypeTemplate( const Synt::TemplateBase& type_template_declaration, NamesScope& names_scope );
@@ -245,17 +259,6 @@ private:
 	void CopyBytes(
 		llvm::Value* src, llvm::Value* dst,
 		const Type& type,
-		FunctionContext& function_context );
-
-	void SetupVirtualTablePointers_r(
-		llvm::Value* this_,
-		const std::vector< ClassProxyPtr >& class_path,
-		const std::map< std::vector< ClassProxyPtr >, llvm::GlobalVariable* > virtual_tables,
-		FunctionContext& function_context );
-
-	void SetupVirtualTablePointers(
-		llvm::Value* this_,
-		const Class& the_class,
 		FunctionContext& function_context );
 
 	void TryCallCopyConstructor(
@@ -391,8 +394,6 @@ private:
 		const Synt::CallOperator& call_operator,
 		NamesScope& names,
 		FunctionContext& function_context );
-
-	std::pair<Variable, llvm::Value*> TryFetchVirtualFunction( const Variable& this_, const FunctionVariable& function, FunctionContext& function_context );
 
 	Value DoCallFunction(
 		llvm::Value* function,

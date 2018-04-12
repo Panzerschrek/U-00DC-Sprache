@@ -78,6 +78,7 @@ set( COMPILER_LIB_SOURCES
 	src/code_builder_resolve.cpp
 	src/code_builder_templates.cpp
 	src/code_builder_types.cpp
+	src/code_builder_virtual.cpp
 	src/keywords.cpp
 	src/lang_types.cpp
 	src/lexical_analyzer.cpp
