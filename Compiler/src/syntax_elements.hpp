@@ -624,7 +624,8 @@ public:
 
 enum class ClassKindAttribute
 {
-	None,
+	Struct,
+	Class,
 	Final,
 	Polymorph,
 	Interface,
@@ -642,7 +643,7 @@ public:
 	ClassElements elements_;
 	ComplexName name_;
 	bool is_forward_declaration_= false;
-	ClassKindAttribute kind_attribute_ = ClassKindAttribute::None;
+	ClassKindAttribute kind_attribute_ = ClassKindAttribute::Struct;
 	std::vector<ComplexName> parents_;
 };
 

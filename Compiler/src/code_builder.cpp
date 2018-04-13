@@ -828,7 +828,12 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 	// Check given kind attribute and actual class properties.
 	switch( class_declaration.kind_attribute_ )
 	{
-	case Synt::ClassKindAttribute::None: // Class without parents and without kind attribute is non-polymorph.
+	case Synt::ClassKindAttribute::Struct:
+		U_ASSERT( class_declaration.parents_.empty() );
+		the_class->kind= Class::Kind::Struct;
+		break;
+
+	case Synt::ClassKindAttribute::Class: // Class without parents and without kind attribute is non-polymorph.
 		if( the_class->parents.empty() )
 			the_class->kind= Class::Kind::NonPolymorph;
 		else
