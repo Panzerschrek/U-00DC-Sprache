@@ -68,6 +68,7 @@ enum class CodeBuilderErrorCode : unsigned int
 	ReferencesHaveConstructorsWithExactlyOneParameter,
 	UnsupportedInitializerForReference,
 	ConstructorInitializerForUnsupportedType,
+	ZeroInitializerForClass,
 	StructInitializerForNonStruct,
 	InitializerForNonfieldStructMember,
 	InitializerForBaseClassField,
@@ -210,6 +211,7 @@ CodeBuilderError ReportFundamentalTypesHaveConstructorsWithExactlyOneParameter( 
 CodeBuilderError ReportReferencesHaveConstructorsWithExactlyOneParameter( const FilePos& file_pos );
 CodeBuilderError ReportUnsupportedInitializerForReference( const FilePos& file_pos );
 CodeBuilderError ReportConstructorInitializerForUnsupportedType( const FilePos& file_pos );
+CodeBuilderError ReportZeroInitializerForClass( const FilePos& file_pos );
 CodeBuilderError ReportStructInitializerForNonStruct( const FilePos& file_pos );
 CodeBuilderError ReportInitializerForNonfieldStructMember( const FilePos& file_pos, const ProgramString& member_name );
 CodeBuilderError ReportInitializerForBaseClassField( const FilePos& file_pos, const ProgramString& field_name );

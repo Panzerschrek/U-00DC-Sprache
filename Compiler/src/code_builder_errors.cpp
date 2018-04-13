@@ -97,6 +97,8 @@ const char* CodeBuilderErrorCodeToString( const CodeBuilderErrorCode code )
 		return "UnsupportedInitializerForReference";
 	case CodeBuilderErrorCode::ConstructorInitializerForUnsupportedType:
 		return "ConstructorInitializerForUnsupportedType";
+	case CodeBuilderErrorCode::ZeroInitializerForClass:
+		return "ZeroInitializerForClass";
 	case CodeBuilderErrorCode::StructInitializerForNonStruct:
 		return "StructInitializerForNonStruct";
 	case CodeBuilderErrorCode::InitializerForBaseClassField:
@@ -744,6 +746,17 @@ CodeBuilderError ReportConstructorInitializerForUnsupportedType( const FilePos& 
 	error.code= CodeBuilderErrorCode::ConstructorInitializerForUnsupportedType;
 
 	error.text= "Constructor initializer for unsupported type."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportZeroInitializerForClass( const FilePos& file_pos )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::ZeroInitializerForClass;
+
+	error.text= "zero initializer for class."_SpC;
 
 	return error;
 }

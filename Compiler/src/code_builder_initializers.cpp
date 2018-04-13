@@ -204,7 +204,7 @@ void CodeBuilder::ApplyStructNamedInitializer(
 	}
 
 	const Class* const class_type= variable.type.GetClassType();
-	if( class_type == nullptr )
+	if( class_type == nullptr || class_type->kind != Class::Kind::Struct )
 	{
 		errors_.push_back( ReportStructInitializerForNonStruct( initializer.file_pos_ ) );
 		return;
@@ -735,6 +735,8 @@ llvm::Constant* CodeBuilder::ApplyZeroInitializer(
 	{
 		if( class_type->have_explicit_noncopy_constructors )
 			errors_.push_back( ReportInitializerDisabledBecauseClassHaveExplicitNoncopyConstructors( initializer.file_pos_ ) );
+		if( class_type->kind != Class::Kind::Struct )
+			errors_.push_back( ReportZeroInitializerForClass( initializer.file_pos_ ) );
 
 		Variable struct_member= variable;
 		struct_member.location= Variable::Location::Pointer;
