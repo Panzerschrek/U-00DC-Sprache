@@ -1,19 +1,15 @@
+import importlib
 import inspect
 import sys
 import traceback
 from py_tests_common import *
 
-import code_builder_test
-import inheritance_test
-import inheritance_errors_test
-import overloading_resolution_test
-import virtual_functions_test
 
-
-# Get list of all tests here.
+# Import tests modules and get list of all tests functions here.
 def GetTestsList( tests_modules_list ):
 	result=[]
 	for module_name in tests_modules_list:
+		importlib.import_module( module_name )
 		module_tests= [ obj for name, obj in inspect.getmembers(sys.modules[module_name]) if inspect.isfunction(obj) and obj != ConvertErrors ]
 		result = result + module_tests
 
@@ -21,7 +17,14 @@ def GetTestsList( tests_modules_list ):
 
 
 def main():
-	tests_list= GetTestsList( [ "code_builder_test", "inheritance_test", "inheritance_errors_test", "overloading_resolution_test", "virtual_functions_test" ] )
+	tests_modules_list= [
+		"code_builder_test",
+		"inheritance_test",
+		"inheritance_errors_test",
+		"overloading_resolution_test",
+		"virtual_functions_test" ]
+
+	tests_list= GetTestsList( tests_modules_list )
 
 	print( "run " + str(len(tests_list)) + " py_tests" + "\n" )
 	tests_failed= 0
