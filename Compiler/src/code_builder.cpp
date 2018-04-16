@@ -378,6 +378,7 @@ void CodeBuilder::CopyClass(
 	copy->is_copy_constructible= src.is_copy_constructible;
 	copy->have_destructor= src.have_destructor;
 	copy->is_copy_assignable= src.is_copy_assignable;
+	copy->have_template_dependent_parents= src.have_template_dependent_parents;
 
 	copy->forward_declaration_file_pos= src.forward_declaration_file_pos;
 	copy->body_file_pos= src.body_file_pos;
@@ -628,6 +629,11 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 		if( type_name == nullptr )
 		{
 			errors_.push_back( ReportNameIsNotTypeName( class_declaration.file_pos_, parent_name->first ) );
+			continue;
+		}
+		if( type_name->GetTemplateDependentType() != nullptr )
+		{
+			the_class->have_template_dependent_parents= true;
 			continue;
 		}
 
@@ -3920,6 +3926,10 @@ llvm::Value*CodeBuilder::CreateMoveToLLVMRegisterInstruction(
 llvm::Value* CodeBuilder::CreateReferenceCast( llvm::Value* const ref, const Type& src_type, const Type& dst_type, FunctionContext& function_context )
 {
 	U_ASSERT( src_type.ReferenceIsConvertibleTo( dst_type ) );
+
+	if( src_type.GetTemplateDependentType() != nullptr || dst_type.GetTemplateDependentType() != nullptr )
+		return nullptr;
+
 	if( dst_type == void_type_ )
 		return function_context.llvm_ir_builder.CreatePointerCast( ref, llvm::PointerType::get( dst_type.GetLLVMType(), 0 ) );
 	else
@@ -3928,6 +3938,9 @@ llvm::Value* CodeBuilder::CreateReferenceCast( llvm::Value* const ref, const Typ
 		const Class* const dst_class_tepe= dst_type.GetClassType();
 		U_ASSERT( src_class_type != nullptr );
 		U_ASSERT( dst_class_tepe != nullptr );
+
+		if( src_class_type->have_template_dependent_parents || dst_class_tepe->have_template_dependent_parents )
+			return function_context.llvm_ir_builder.CreatePointerCast( ref, llvm::PointerType::get( dst_type.GetLLVMType(), 0 ) );
 
 		for( const ClassProxyPtr& src_parent_class : src_class_type->parents )
 		{

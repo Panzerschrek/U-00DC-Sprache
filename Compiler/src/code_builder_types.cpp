@@ -271,7 +271,13 @@ bool Type::ReferenceIsConvertibleTo( const Type& other ) const
 			if( Type(parent).ReferenceIsConvertibleTo( other ) )
 				return true;
 		}
+
+		if( class_type->have_template_dependent_parents || other_class_type->have_template_dependent_parents )
+			return true;
 	}
+
+	if( this->GetTemplateDependentType() != nullptr || other.GetTemplateDependentType() != nullptr )
+		return true;
 
 	return false;
 }

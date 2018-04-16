@@ -919,6 +919,41 @@ U_TEST( ClassPrepass_Test2 )
 	BuildProgram( c_program_text );
 }
 
+U_TEST( ClassPrepass_Test3 )
+{
+	// Class repass and inheritance.
+	static const char c_program_text[]=
+	R"(
+		class I polymorph{}
+		fn Foo( I& i ){}
+		template</ type T />
+		struct X
+		{
+			fn Bar()
+			{
+				var T t;
+				Foo(t); // Ok, converting template-dependent type to other type.
+				var I& i= t; // Ok, converting template-dependent reference to other reference.
+			}
+		}
+
+		template</ type T />
+		class Y : T
+		{
+			type ThisType= Y</T/>;
+			fn Baz( ThisType& y ){}
+			fn Bar( mut this )
+			{
+				Foo(this); // Ok, type of this have template-dependent parent.
+				var I i;
+				Baz(i); // Ok, converting reference of known type to reference of this type, because this type have template-dependent parents.
+			}
+		}
+	)";
+
+	BuildProgram( c_program_text );
+}
+
 U_TEST( PreResolveTest0 )
 {
 	// Inside template must be visible only one of two overloaded functions.
