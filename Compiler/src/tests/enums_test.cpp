@@ -207,7 +207,7 @@ U_TEST( EnumAsClassFiled )
 {
 	static const char c_program_text[]=
 	R"(
-		class Color
+		struct Color
 		{
 			enum NamedColor{ Red, Green, Blue, Black, White }
 			NamedColor named_color;

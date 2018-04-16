@@ -97,8 +97,12 @@ const char* CodeBuilderErrorCodeToString( const CodeBuilderErrorCode code )
 		return "UnsupportedInitializerForReference";
 	case CodeBuilderErrorCode::ConstructorInitializerForUnsupportedType:
 		return "ConstructorInitializerForUnsupportedType";
+	case CodeBuilderErrorCode::ZeroInitializerForClass:
+		return "ZeroInitializerForClass";
 	case CodeBuilderErrorCode::StructInitializerForNonStruct:
 		return "StructInitializerForNonStruct";
+	case CodeBuilderErrorCode::InitializerForBaseClassField:
+		return "InitializerForBaseClassField";
 	case CodeBuilderErrorCode::InitializerForNonfieldStructMember:
 		return "InitializerForNonfieldStructMember";
 	case CodeBuilderErrorCode::DuplicatedStructMemberInitializer:
@@ -121,8 +125,6 @@ const char* CodeBuilderErrorCodeToString( const CodeBuilderErrorCode code )
 		return "ExplicitThisInDestructor";
 	case CodeBuilderErrorCode::FieldIsNotInitializedYet:
 		return "FieldIsNotInitializedYet";
-	case CodeBuilderErrorCode::MethodsCallInConstructorInitializerListIsForbidden:
-		return "MethodsCallInConstructorInitializerListIsForbidden";
 	case CodeBuilderErrorCode::ExplicitArgumentsInDestructor:
 		return "ExplicitArgumentsInDestructor";
 	case CodeBuilderErrorCode::CallOfThiscallFunctionUsingNonthisArgument:
@@ -135,6 +137,8 @@ const char* CodeBuilderErrorCodeToString( const CodeBuilderErrorCode code )
 		return "AccessOfNonThisClassField";
 	case CodeBuilderErrorCode::ThisUnavailable:
 		return "ThisUnavailable";
+	case CodeBuilderErrorCode::BaseUnavailable:
+		return "BaseUnavailable";
 	case CodeBuilderErrorCode::InvalidValueAsTemplateArgument:
 		return "InvalidValueAsTemplateArgument";
 	case CodeBuilderErrorCode::InvalidTypeOfTemplateVariableArgument:
@@ -189,6 +193,44 @@ const char* CodeBuilderErrorCodeToString( const CodeBuilderErrorCode code )
 		return "InvalidReturnTypeForOperator";
 	case CodeBuilderErrorCode::UnderlayingTypeForEnumIsTooSmall:
 		return "UnderlayingTypeForEnumIsTooSmall";
+	case CodeBuilderErrorCode::CanNotDeriveFromThisType:
+		return "CanNotDeriveFromThisType";
+	case CodeBuilderErrorCode::DuplicatedParentClass:
+		return "DuplicatedParentClass";
+	case CodeBuilderErrorCode::DuplicatedBaseClass:
+		return "DuplicatedBaseClass";
+	case CodeBuilderErrorCode::FieldsForInterfacesNotAllowed:
+		return "FieldsForInterfacesNotAllowed";
+	case CodeBuilderErrorCode::BaseClassForInterface:
+		return "BaseClassForInterface";
+	case CodeBuilderErrorCode::ConstructorForInterface:
+		return "ConstructorForInterface";
+	case CodeBuilderErrorCode::VirtualForNonclassFunction:
+		return "VirtualForNonclassFunction";
+	case CodeBuilderErrorCode::VirtualForNonThisCallFunction:
+		return "VirtualForNonThisCallFunction";
+	case CodeBuilderErrorCode::FunctionCanNotBeVirtual:
+		return "FunctionCanNotBeVirtual";
+	case CodeBuilderErrorCode::VirtualForNonpolymorphClass:
+		return "VirtualForNonpolymorphClass";
+	case CodeBuilderErrorCode::VirtualRequired:
+		return "VirtualRequired";
+	case CodeBuilderErrorCode::OverrideRequired:
+		return "OverrideRequired";
+	case CodeBuilderErrorCode::FunctionDoesNotOverride:
+		return "FunctionDoesNotOverride";
+	case CodeBuilderErrorCode::OverrideFinalFunction:
+		return "OverrideFinalFunction";
+	case CodeBuilderErrorCode::FinalForFirstVirtualFunction:
+		return "FinalForFirstVirtualFunction";
+	case CodeBuilderErrorCode::BodyForPureVirtualFunction:
+		return "BodyForPureVirtualFunction";
+	case CodeBuilderErrorCode::ClassContainsPureVirtualFunctions:
+		return "ClassContainsPureVirtualFunctions";
+	case CodeBuilderErrorCode::NonPureVirtualFunctionInInterface:
+		return "NonPureVirtualFunctionInInterface";
+	case CodeBuilderErrorCode::PureDestructor:
+		return "PureDestructor";
 	};
 
 	U_ASSERT(false);
@@ -708,6 +750,17 @@ CodeBuilderError ReportConstructorInitializerForUnsupportedType( const FilePos& 
 	return error;
 }
 
+CodeBuilderError ReportZeroInitializerForClass( const FilePos& file_pos )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::ZeroInitializerForClass;
+
+	error.text= "zero initializer for class."_SpC;
+
+	return error;
+}
+
 CodeBuilderError ReportStructInitializerForNonStruct( const FilePos& file_pos )
 {
 	CodeBuilderError error;
@@ -728,6 +781,17 @@ CodeBuilderError ReportInitializerForNonfieldStructMember(
 	error.code= CodeBuilderErrorCode::InitializerForNonfieldStructMember;
 
 	error.text= "Initializer for \"."_SpC + member_name + "\" which is not a field."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportInitializerForBaseClassField( const FilePos& file_pos, const ProgramString& field_name )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::InitializerForBaseClassField;
+
+	error.text= "Initializer for \"."_SpC + field_name + "\" which is not this class field."_SpC;
 
 	return error;
 }
@@ -842,17 +906,6 @@ CodeBuilderError ReportFieldIsNotInitializedYet( const FilePos& file_pos, const 
 	return error;
 }
 
-CodeBuilderError ReportMethodsCallInConstructorInitializerListIsForbidden( const FilePos& file_pos, const ProgramString& method_name )
-{
-	CodeBuilderError error;
-	error.file_pos= file_pos;
-	error.code= CodeBuilderErrorCode::MethodsCallInConstructorInitializerListIsForbidden;
-
-	error.text= "Call of method \""_SpC + method_name + "\" in constructor."_SpC;
-
-	return error;
-}
-
 CodeBuilderError ReportExplicitArgumentsInDestructor( const FilePos& file_pos )
 {
 	CodeBuilderError error;
@@ -915,6 +968,17 @@ CodeBuilderError ReportThisUnavailable( const FilePos& file_pos )
 	error.code= CodeBuilderErrorCode::ThisUnavailable;
 
 	error.text= "\"this\" unavailable."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportBaseUnavailable( const FilePos& file_pos )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::BaseUnavailable;
+
+	error.text= "\"base\" unavailable."_SpC;
 
 	return error;
 }
@@ -1216,6 +1280,215 @@ CodeBuilderError ReportUnderlayingTypeForEnumIsTooSmall( const FilePos& file_pos
 	error.text= "Underlaying type for enum is too small - enum max value is "_SpC
 		+ ToProgramString( std::to_string(max_value).c_str() ) + " but type max value is "_SpC +
 		ToProgramString( std::to_string(max_value_of_underlaying_type).c_str() ) + "."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportCanNotDeriveFromThisType( const FilePos& file_pos, const ProgramString& type_name )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::CanNotDeriveFromThisType;
+
+	error.text= "Can not derive from \""_SpC + type_name + "\"."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportDuplicatedParentClass( const FilePos& file_pos, const ProgramString& type_name )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::DuplicatedParentClass;
+
+	error.text= "Parent class \""_SpC + type_name + "\" is duplicated."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportDuplicatedBaseClass( const FilePos& file_pos, const ProgramString& type_name )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::DuplicatedBaseClass;
+
+	error.text= "Can not inherit from \""_SpC + type_name + "\" because class already have base."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportFieldsForInterfacesNotAllowed( const FilePos& file_pos )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::FieldsForInterfacesNotAllowed;
+
+	error.text= "Fields for interfaces not allowed."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportBaseClassForInterface( const FilePos& file_pos )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::BaseClassForInterface;
+
+	error.text= "Base class for interface."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportConstructorForInterface( const FilePos& file_pos )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::ConstructorForInterface;
+
+	error.text= "Constructor for interface."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportVirtualForNonclassFunction( const FilePos& file_pos, const ProgramString& function_name )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::VirtualForNonclassFunction;
+
+	error.text= "Virtual for non-class function \"."_SpC + function_name + "\"."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportVirtualForNonThisCallFunction( const FilePos& file_pos, const ProgramString& function_name )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::VirtualForNonThisCallFunction;
+
+	error.text= "Virtual for non-thiscall function \"."_SpC + function_name + "\"."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportFunctionCanNotBeVirtual( const FilePos& file_pos, const ProgramString& function_name )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::FunctionCanNotBeVirtual;
+
+	error.text= "Function \"."_SpC + function_name + "\" can not be virtual."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportVirtualForNonpolymorphClass( const FilePos& file_pos, const ProgramString& function_name )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::VirtualForNonpolymorphClass;
+
+	error.text= "Function \"."_SpC + function_name + "\" can not be virtual, because it`s class is not polymorph."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportVirtualRequired( const FilePos& file_pos, const ProgramString& function_name )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::VirtualRequired;
+
+	error.text= "\"virtual\" required for function \"."_SpC + function_name + "\"."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportOverrideRequired( const FilePos& file_pos, const ProgramString& function_name )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::OverrideRequired;
+
+	error.text= "\"override\" required for function \"."_SpC + function_name + "\"."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportFunctionDoesNotOverride( const FilePos& file_pos, const ProgramString& function_name )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::FunctionDoesNotOverride;
+
+	error.text= "Function \"."_SpC + function_name + "\" marked as \"override\", but does not override."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportOverrideFinalFunction( const FilePos& file_pos, const ProgramString& function_name )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::OverrideFinalFunction;
+
+	error.text= "\"override\" for final function \"."_SpC + function_name + "\"."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportFinalForFirstVirtualFunction( const FilePos& file_pos, const ProgramString& function_name )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::FinalForFirstVirtualFunction;
+
+	error.text= "\"final\" for first virtual function \"."_SpC + function_name + "\"."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportBodyForPureVirtualFunction( const FilePos& file_pos, const ProgramString& function_name )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::BodyForPureVirtualFunction;
+
+	error.text= "Body for pure virtual function \"."_SpC + function_name + "\"."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportClassContainsPureVirtualFunctions( const FilePos& file_pos, const ProgramString& class_name )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::ClassContainsPureVirtualFunctions;
+
+	error.text= "Class \"."_SpC + class_name + "\" is not interface or abstract and contains pure virtual functions."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportNonPureVirtualFunctionInInterface( const FilePos& file_pos, const ProgramString& class_name )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::NonPureVirtualFunctionInInterface;
+
+	error.text= "Interface \"."_SpC + class_name + "\" contains non-pure virtual functions."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportPureDestructor( const FilePos& file_pos, const ProgramString& class_name )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::PureDestructor;
+
+	error.text= "Pure destructor for class \"."_SpC + class_name + "\"."_SpC;
 
 	return error;
 }

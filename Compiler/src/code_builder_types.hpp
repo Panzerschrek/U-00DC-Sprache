@@ -187,6 +187,7 @@ public:
 	};
 
 public:
+	// If this changed, virtual functions compare function must be changed too!
 	Type return_type;
 	bool return_value_is_reference= false;
 	bool return_value_is_mutable= false;
@@ -226,6 +227,7 @@ bool operator!=( const Array& r, const Array& l );
 struct FunctionVariable final
 {
 	Type type; // Function type 100%
+	unsigned int virtual_table_index= ~0u; // For virtual functions number in virtual functions table in class of first arg(this).
 	bool have_body= true;
 	bool is_this_call= false;
 	bool is_generated= false;
@@ -235,6 +237,8 @@ struct FunctionVariable final
 
 	FilePos prototype_file_pos= FilePos{ 0u, 0u, 0u };
 	FilePos body_file_pos= FilePos{ 0u, 0u, 0u };
+
+	bool VirtuallyEquals( const FunctionVariable& other ) const;
 };
 
 // Set of functions with same name, but different signature.
@@ -568,6 +572,32 @@ struct Class final
 	Class& operator=( const Class& )= delete;
 	Class& operator=( Class&& )= delete;
 
+public:
+	struct BaseTemplate
+	{
+		TypeTemplatePtr class_template;
+		std::vector<TemplateParameter> template_parameters;
+	};
+
+	enum class Kind
+	{
+		Struct,
+		NonPolymorph,
+		Interface,
+		Abstract,
+		PolymorphNonFinal,
+		PolymorphFinal,
+	};
+
+	struct VirtualTableEntry
+	{
+		ProgramString name;
+		FunctionVariable function_variable;
+		bool is_pure= false;
+		bool is_final= false;
+	};
+
+public:
 	// If you change this, you must change CodeBuilder::CopyClass too!
 
 	NamesScope members;
@@ -579,20 +609,30 @@ struct Class final
 	bool is_copy_constructible= false;
 	bool have_destructor= false;
 	bool is_copy_assignable= false;
+	bool have_template_dependent_parents= false;
 
 	FilePos forward_declaration_file_pos= FilePos{ 0u, 0u, 0u };
 	FilePos body_file_pos= FilePos{ 0u, 0u, 0u };
 
 	llvm::StructType* llvm_type;
 
-	struct BaseTemplate
-	{
-		TypeTemplatePtr class_template;
-		std::vector<TemplateParameter> template_parameters;
-	};
-
 	// Exists only for classes, generated from class templates.
 	boost::optional<BaseTemplate> base_template;
+
+	Kind kind= Kind::Struct;
+	ClassProxyPtr base_class; // We can have single non-interface base class.
+	unsigned int base_class_field_number= 0u;
+	std::vector<ClassProxyPtr> parents; // Class have fields with numbers 0-N for parents.
+	std::vector<unsigned int> parents_fields_numbers;
+
+	std::vector<VirtualTableEntry> virtual_table;
+	llvm::StructType* virtual_table_llvm_type= nullptr;
+	llvm::GlobalVariable* this_class_virtual_table= nullptr; // May be null for interfaces and abstract classes.
+	unsigned int virtual_table_field_number= 0u;
+
+	// Key - sequence of classes from child to parent. This class not included.
+	// Virtual table destination is lats key element.
+	std::map< std::vector<ClassProxyPtr>, llvm::GlobalVariable* > ancestors_virtual_tables;
 };
 
 struct Enum

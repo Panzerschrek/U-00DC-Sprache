@@ -81,7 +81,8 @@ private:
 		const Variable* s_ret_= nullptr; // Value for assignment for "sret" functions.
 
 		std::set<const ClassField*> uninitialized_this_fields;
-		bool is_constructor_initializer_list_now= false;
+		bool base_initialized= false;
+		bool whole_this_is_unavailable= false; // May be true in constructor initializer list, in body of constructors and destructors of abstract classes.
 
 		llvm::Function* const function;
 
@@ -110,6 +111,13 @@ private:
 		bool have_uncodnitional_break_or_continue= false;
 	};
 
+	struct PrepareFunctionResult
+	{
+		const Synt::Function* func_syntax_element= nullptr;
+		OverloadedFunctionsSet* functions_set= nullptr;
+		size_t function_index= 0u;
+	};
+
 private:
 	BuildResultInternal BuildProgramInternal( const SourceGraph& source_graph, size_t node_index );
 
@@ -133,6 +141,27 @@ private:
 		bool force_forward_declaration= false );
 
 	void PrepareEnum( const Synt::Enum& enum_decl, NamesScope& names_scope );
+
+	// Virtual stuff
+	void ProcessClassParentsVirtualTables( Class& the_class );
+	void TryGenerateDestructorPrototypeForPolymorphClass( Class& the_class, const Type& class_type );
+	void ProcessClassVirtualFunction( Class& the_class, PrepareFunctionResult& function );
+	void PrepareClassVirtualTableType( Class& the_class );
+	void BuildClassVirtualTables_r( Class& the_class, const Type& class_type, const std::vector< ClassProxyPtr >& dst_class_path, llvm::Value* dst_class_ptr_null_based );
+	void BuildClassVirtualTables( Class& the_class, const Type& class_type ); // Returns type of vtable pointer or nullptr.
+
+	std::pair<Variable, llvm::Value*> TryFetchVirtualFunction( const Variable& this_, const FunctionVariable& function, FunctionContext& function_context );
+
+	void SetupVirtualTablePointers_r(
+		llvm::Value* this_,
+		const std::vector< ClassProxyPtr >& class_path,
+		const std::map< std::vector< ClassProxyPtr >, llvm::GlobalVariable* > virtual_tables,
+		FunctionContext& function_context );
+
+	void SetupVirtualTablePointers(
+		llvm::Value* this_,
+		const Class& the_class,
+		FunctionContext& function_context );
 
 	// Templates
 	void PrepareTypeTemplate( const Synt::TemplateBase& type_template_declaration, NamesScope& names_scope );
@@ -212,6 +241,8 @@ private:
 	// Constructors/destructors
 	void TryGenerateDefaultConstructor( Class& the_class, const Type& class_type );
 	void TryGenerateCopyConstructor( Class& the_class, const Type& class_type );
+	FunctionVariable GenerateDestructorPrototype( Class& the_class, const Type& class_type );
+	void GenerateDestructorBody( Class& the_class, const Type& class_type, FunctionVariable& destructor_function );
 	void TryGenerateDestructor( Class& the_class, const Type& class_type );
 	void TryGenerateCopyAssignmentOperator( Class& the_class, const Type& class_type );
 
@@ -270,13 +301,6 @@ private:
 	void BuildNamespaceBody(
 		const Synt::ProgramElements& body_elements,
 		NamesScope& names_scope );
-
-	struct PrepareFunctionResult
-	{
-		const Synt::Function* func_syntax_element= nullptr;
-		OverloadedFunctionsSet* functions_set= nullptr;
-		size_t function_index= 0u;
-	};
 
 	PrepareFunctionResult PrepareFunction(
 		const Synt::Function& func,
@@ -372,7 +396,8 @@ private:
 		FunctionContext& function_context );
 
 	Value DoCallFunction(
-		const FunctionVariable& function,
+		llvm::Value* function,
+		const Function& function_type,
 		const FilePos& call_file_pos,
 		const Variable* first_arg,
 		std::vector<const Synt::IExpressionComponent*> args,
@@ -617,7 +642,7 @@ private:
 	// If variable already in register - does nothing.
 	llvm::Value* CreateMoveToLLVMRegisterInstruction( const Variable& variable, FunctionContext& function_context );
 
-	llvm::Value* CreateReferenceCast( llvm::Value* ref, const Type& dest_type, FunctionContext& function_context );
+	llvm::Value* CreateReferenceCast( llvm::Value* ref, const Type& src_type, const Type& dst_type, FunctionContext& function_context );
 
 	llvm::GlobalVariable* CreateGlobalConstantVariable( const Type& type, const std::string& mangled_name, llvm::Constant* initializer= nullptr );
 
@@ -644,6 +669,8 @@ private:
 		llvm::Type* void_for_ret_;
 		llvm::Type* invalid_type_;
 		llvm::IntegerType* bool_;
+
+		llvm::IntegerType* int_ptr; // Type with width of pointer.
 	} fundamental_llvm_types_;
 
 	llvm::Function* halt_func_= nullptr;

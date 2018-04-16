@@ -145,6 +145,32 @@ U_TEST(FieldIsNotInitializedYetTest1)
 	U_TEST_ASSERT( error.file_pos.line == 6u );
 }
 
+U_TEST(FieldIsNotInitializedYetTest2)
+{
+	// Accessing base class field before "base" initialization.
+	static const char c_program_text[]=
+	R"(
+		class A polymorph
+		{
+			i32 x;
+			fn constructor( i32 in_x ) ( x= in_x ) {}
+		}
+		class B : A
+		{
+			i32 y;
+			fn constructor() ( y= x, base(42) ) {}
+		}
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::FieldIsNotInitializedYet );
+	U_TEST_ASSERT( error.file_pos.line == 10u );
+}
+
 U_TEST(MethodsCallInConstructorInitializerListIsForbiddenTest0)
 {
 	static const char c_program_text[]=
@@ -164,7 +190,7 @@ U_TEST(MethodsCallInConstructorInitializerListIsForbiddenTest0)
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::MethodsCallInConstructorInitializerListIsForbidden );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::CouldNotSelectOverloadedFunction );
 	U_TEST_ASSERT( error.file_pos.line == 7u );
 }
 
@@ -386,6 +412,55 @@ U_TEST( DefaultConstructorNotFoundTest2 )
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedInitializer );
 	U_TEST_ASSERT( error.file_pos.line == 8u );
+}
+
+U_TEST( InitializerForBaseClassField_Test0 )
+{
+	static const char c_program_text[]=
+	R"(
+		class A polymorph
+		{
+			i32 a;
+			fn constructor() ( a= 0 ) {}
+		}
+		class B : A
+		{
+			fn constructor() ( a= 42 ) {}   // Try initialize field of direct base
+		}
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::InitializerForBaseClassField );
+	U_TEST_ASSERT( error.file_pos.line == 9u );
+}
+
+U_TEST( InitializerForBaseClassField_Test1 )
+{
+	static const char c_program_text[]=
+	R"(
+		class A polymorph
+		{
+			i32 a;
+			fn constructor() ( a= 0 ) {}
+		}
+		class B : A{}
+		class C : B
+		{
+			fn constructor() ( a= 42 ) {}   // Try initialize field of non-direct base base
+		}
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::InitializerForBaseClassField );
+	U_TEST_ASSERT( error.file_pos.line == 10u );
 }
 
 } // namespace U

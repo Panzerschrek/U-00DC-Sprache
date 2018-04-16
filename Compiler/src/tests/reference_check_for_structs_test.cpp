@@ -695,6 +695,58 @@ U_TEST( ConstructorLinksPassedReference_Test1 )
 	U_TEST_ASSERT( error.file_pos.line == 14u );
 }
 
+U_TEST( ConvertedVariableCanLostInnerReference_Test0 )
+{
+	static const char c_program_text[]=
+	R"(
+		class A polymorph{}
+		class B : A
+		{
+			i32 &mut x;
+			fn constructor( this't', i32 &'p mut in_x ) ' t <- mut p '
+			( x(in_x) )
+			{}
+		}
+
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var A a= B(x); // Save refernce to 'x' in temp variable, but in initialization we loss this reference.
+			++x; // Ok,
+		}
+	)";
+
+	BuildProgram( c_program_text );
+}
+
+U_TEST( ConvertedVariableCanLostInnerReference_Test1 )
+{
+	static const char c_program_text[]=
+	R"(
+		class A polymorph{}
+		class B : A
+		{
+			i32 &mut x;
+			fn constructor( this't', i32 &'p mut in_x ) ' t <- mut p '
+			( x(in_x) )
+			{}
+		}
+
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var A mut a;
+			{
+				var B b(x); // Save reference to 'x' in 'b'.
+				a= b; // This assignment must not transfer reference fro 'b' to 'a'.
+			}
+			++x; // Ok,
+		}
+	)";
+
+	BuildProgram( c_program_text );
+}
+
 U_TEST( AutoVariableContainsCopyOfReference_Test0 )
 {
 	static const char c_program_text[]=

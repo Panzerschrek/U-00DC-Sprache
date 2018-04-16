@@ -58,6 +58,7 @@ boost::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 			dummy_function_context_->function );
 		const StackVariablesStorage dummy_stack_variables_storage( dummy_function_context );
 		dummy_function_context.this_= function_context.this_;
+		dummy_function_context.whole_this_is_unavailable= function_context.whole_this_is_unavailable;
 		dummy_function_context.variables_state= function_context.variables_state;
 		function_context.variables_state.DeactivateLocks();
 
@@ -129,11 +130,17 @@ boost::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 	const FunctionVariable* const overloaded_operator= GetOverloadedOperator( args, op, file_pos );
 	if( overloaded_operator != nullptr )
 	{
+		if( overloaded_operator->virtual_table_index != ~0u )
+		{
+			// We can not fetch virtual function here, because "this" may be evaluated as second operand for some binary operators.
+			errors_.push_back( ReportNotImplemented( file_pos, "calling virtual binary operators" ) );
+		}
+
 		std::vector<const Synt::IExpressionComponent*> synt_args;
 		synt_args.reserve( 2u );
 		synt_args.push_back( & left_expr );
 		synt_args.push_back( &right_expr );
-		return DoCallFunction( *overloaded_operator, file_pos, nullptr, synt_args, evaluate_args_in_reverse_order, names, function_context );
+		return DoCallFunction( overloaded_operator->llvm_function, *overloaded_operator->type.GetFunctionType(), file_pos, nullptr, synt_args, evaluate_args_in_reverse_order, names, function_context );
 	}
 
 	return boost::none;
@@ -296,7 +303,13 @@ Value CodeBuilder::BuildExpressionCode(
 			const FunctionVariable* const overloaded_operator= GetOverloadedOperator( args, op, expression_with_unary_operators->file_pos_ );
 			if( overloaded_operator != nullptr )
 			{
-				result= DoCallFunction( *overloaded_operator, expression_with_unary_operators->file_pos_, var, {}, false, names, function_context );
+				if( overloaded_operator->is_this_call && overloaded_operator->virtual_table_index != ~0u )
+				{
+					const auto fetch_result= TryFetchVirtualFunction( *var, *overloaded_operator, function_context );
+					result= DoCallFunction( fetch_result.second, *overloaded_operator->type.GetFunctionType(), expression_with_unary_operators->file_pos_, &fetch_result.first, {}, false, names, function_context );
+				}
+				else
+					result= DoCallFunction( overloaded_operator->llvm_function, *overloaded_operator->type.GetFunctionType(), expression_with_unary_operators->file_pos_, var, {}, false, names, function_context );
 			}
 			else
 			{
@@ -1020,15 +1033,41 @@ Value CodeBuilder::BuildNamedOperand(
 	FunctionContext& function_context )
 {
 	if( named_operand.name_.components.size() == 1u &&
-		named_operand.name_.components.back().name == Keywords::this_ &&
 		named_operand.name_.components.back().template_parameters.empty() )
 	{
-		if( function_context.this_ == nullptr || function_context.is_constructor_initializer_list_now )
+		if( named_operand.name_.components.back().name == Keywords::this_ )
 		{
-			errors_.push_back( ReportThisUnavailable( named_operand.file_pos_ ) );
-			return ErrorValue();
+			if( function_context.this_ == nullptr || function_context.whole_this_is_unavailable )
+			{
+				errors_.push_back( ReportThisUnavailable( named_operand.file_pos_ ) );
+				return ErrorValue();
+			}
+			return Value( *function_context.this_, named_operand.file_pos_ );
 		}
-		return Value( *function_context.this_, named_operand.file_pos_ );
+		else if( named_operand.name_.components.back().name == Keywords::base_ )
+		{
+			if( function_context.this_ == nullptr )
+			{
+				errors_.push_back( ReportBaseUnavailable( named_operand.file_pos_ ) );
+				return ErrorValue();
+			}
+			const Class& class_= *function_context.this_->type.GetClassType();
+			if( class_.base_class == nullptr )
+			{
+				errors_.push_back( ReportBaseUnavailable( named_operand.file_pos_ ) );
+				return ErrorValue();
+			}
+			if( function_context.whole_this_is_unavailable && ( !function_context.base_initialized || class_.base_class->class_->kind == Class::Kind::Abstract ) )
+			{
+				errors_.push_back( ReportFieldIsNotInitializedYet( named_operand.file_pos_, Keyword( Keywords::base_ ) ) );
+				return ErrorValue();
+			}
+
+			Variable base= *function_context.this_;
+			base.type= class_.base_class;
+			base.llvm_value= CreateReferenceCast( function_context.this_->llvm_value, function_context.this_->type, base.type, function_context );
+			return Value( base, named_operand.file_pos_ );
+		}
 	}
 
 	const NamesScope::InsertedName* name_entry= ResolveName( named_operand.file_pos_, names, named_operand.name_ );
@@ -1049,17 +1088,46 @@ Value CodeBuilder::BuildNamedOperand(
 		const ClassProxyPtr class_= field->class_.lock();
 		U_ASSERT( class_ != nullptr && "Class is dead? WTF?" );
 
-		// SPRACHE_TODO - allow access to parents fields here.
-		if( Type(class_) != function_context.this_->type )
+		// Make first index = 0 for array to pointer conversion.
+		llvm::Value* index_list[2];
+		index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
+
+		const ClassProxyPtr field_class_proxy= field->class_.lock();
+		U_ASSERT( field_class_proxy != nullptr );
+
+		llvm::Value* actual_field_class_ptr= nullptr;
+		if( field_class_proxy == function_context.this_->type.GetClassTypeProxy() )
+			actual_field_class_ptr= function_context.this_->llvm_value;
+		else
 		{
-			errors_.push_back( ReportAccessOfNonThisClassField( named_operand.file_pos_, named_operand.name_.components.back().name ) );
-			return ErrorValue();
+			// For parent filed we needs make several GEP isntructions.
+			ClassProxyPtr actual_field_class= function_context.this_->type.GetClassTypeProxy();
+			actual_field_class_ptr= function_context.this_->llvm_value;
+			while( actual_field_class != field_class_proxy )
+			{
+				if( actual_field_class->class_->base_class == nullptr )
+				{
+					errors_.push_back( ReportAccessOfNonThisClassField( named_operand.file_pos_, named_operand.name_.components.back().name ) );
+					return ErrorValue();
+				}
+
+				index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(actual_field_class->class_->base_class_field_number) ) );
+				actual_field_class_ptr= function_context.llvm_ir_builder.CreateGEP( actual_field_class_ptr, index_list );
+				actual_field_class= actual_field_class->class_->base_class;
+			}
 		}
 
-		if( function_context.is_constructor_initializer_list_now &&
+		if( function_context.whole_this_is_unavailable &&
 			function_context.uninitialized_this_fields.find( field ) != function_context.uninitialized_this_fields.end() )
 		{
 			errors_.push_back( ReportFieldIsNotInitializedYet( named_operand.file_pos_, named_operand.name_.components.back().name ) );
+			return ErrorValue();
+		}
+		if( function_context.whole_this_is_unavailable &&
+			field_class_proxy != function_context.this_->type.GetClassTypeProxy() &&
+			!function_context.base_initialized )
+		{
+			errors_.push_back( ReportFieldIsNotInitializedYet( named_operand.file_pos_, Keyword( Keywords::base_ ) ) );
 			return ErrorValue();
 		}
 
@@ -1069,12 +1137,9 @@ Value CodeBuilder::BuildNamedOperand(
 		field_variable.value_type= ( function_context.this_->value_type == ValueType::Reference && field->is_mutable ) ? ValueType::Reference : ValueType::ConstReference;
 		field_variable.referenced_variables= function_context.this_->referenced_variables;
 
-		// Make first index = 0 for array to pointer conversion.
-		llvm::Value* index_list[2];
-		index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
 		index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(field->index) ) );
 		field_variable.llvm_value=
-			function_context.llvm_ir_builder.CreateGEP( function_context.this_->llvm_value, index_list );
+			function_context.llvm_ir_builder.CreateGEP( actual_field_class_ptr, index_list );
 
 		if( field->is_reference )
 		{
@@ -1105,17 +1170,14 @@ Value CodeBuilder::BuildNamedOperand(
 			// SPRACHE_TODO - add "this" for functions from parent classes.
 			if( name_entry == same_set_in_class )
 			{
-				if( function_context.is_constructor_initializer_list_now )
+				if( !function_context.whole_this_is_unavailable )
 				{
-					// SPRACHE_TODO - allow call of static methods and parents methods.
-					errors_.push_back( ReportMethodsCallInConstructorInitializerListIsForbidden( named_operand.file_pos_, named_operand.name_.components.back().name ) );
-					return ErrorValue();
+					// Append "this" only if whole "this" is available.
+					ThisOverloadedMethodsSet this_overloaded_methods_set;
+					this_overloaded_methods_set.this_= *function_context.this_;
+					this_overloaded_methods_set.overloaded_methods_set= *overloaded_functions_set;
+					return this_overloaded_methods_set;
 				}
-
-				ThisOverloadedMethodsSet this_overloaded_methods_set;
-				this_overloaded_methods_set.this_= *function_context.this_;
-				this_overloaded_methods_set.overloaded_methods_set= *overloaded_functions_set;
-				return this_overloaded_methods_set;
 			}
 		}
 	}
@@ -1262,6 +1324,7 @@ Value CodeBuilder::BuildIndexationOperator(
 				dummy_function_context_->function );
 			const StackVariablesStorage dummy_stack_variables_storage( dummy_function_context );
 			dummy_function_context.this_= function_context.this_;
+			dummy_function_context.whole_this_is_unavailable= function_context.whole_this_is_unavailable;
 			dummy_function_context.variables_state= function_context.variables_state;
 			function_context.variables_state.DeactivateLocks();
 
@@ -1288,12 +1351,25 @@ Value CodeBuilder::BuildIndexationOperator(
 			GetOverloadedOperator( args, OverloadedOperator::Indexing, indexation_operator.file_pos_ );
 		if( overloaded_operator != nullptr )
 		{
-			return
-				DoCallFunction(
-					*overloaded_operator,
-					indexation_operator.file_pos_,
-					&variable, { indexation_operator.index_.get() }, false,
-					names, function_context );
+			if( overloaded_operator->is_this_call && overloaded_operator->virtual_table_index != ~0u  )
+			{
+				const auto fetch_result= TryFetchVirtualFunction( variable, *overloaded_operator, function_context );
+				return
+					DoCallFunction(
+						fetch_result.second,
+						*overloaded_operator->type.GetFunctionType(),
+						indexation_operator.file_pos_,
+						&fetch_result.first, { indexation_operator.index_.get() }, false,
+						names, function_context );
+			}
+			else
+				return
+					DoCallFunction(
+						overloaded_operator->llvm_function,
+						*overloaded_operator->type.GetFunctionType(),
+						indexation_operator.file_pos_,
+						&variable, { indexation_operator.index_.get() }, false,
+						names, function_context );
 		}
 	}
 
@@ -1451,6 +1527,28 @@ Value CodeBuilder::BuildMemberAccessOperator(
 	// Make first index = 0 for array to pointer conversion.
 	llvm::Value* index_list[2];
 	index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
+
+	const ClassProxyPtr field_class_proxy= field->class_.lock();
+	U_ASSERT( field_class_proxy != nullptr );
+
+	llvm::Value* actual_field_class_ptr= nullptr;
+	if( field_class_proxy == value.GetType().GetClassTypeProxy() )
+		actual_field_class_ptr= variable.llvm_value;
+	else
+	{
+		// For parent filed we needs make several GEP isntructions.
+		ClassProxyPtr actual_field_class= value.GetType().GetClassTypeProxy();
+		actual_field_class_ptr= variable.llvm_value;
+		while( actual_field_class != field_class_proxy )
+		{
+			index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(actual_field_class->class_->base_class_field_number) ) );
+			actual_field_class_ptr= function_context.llvm_ir_builder.CreateGEP( actual_field_class_ptr, index_list );
+
+			actual_field_class= actual_field_class->class_->base_class;
+			U_ASSERT(actual_field_class != nullptr );
+		}
+	}
+
 	index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(field->index) ) );
 
 	Variable result;
@@ -1459,7 +1557,7 @@ Value CodeBuilder::BuildMemberAccessOperator(
 	result.referenced_variables= variable.referenced_variables;
 	result.type= field->type;
 	result.llvm_value=
-		function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, index_list );
+		function_context.llvm_ir_builder.CreateGEP( actual_field_class_ptr, index_list );
 
 	if( field->is_reference )
 	{
@@ -1555,6 +1653,7 @@ Value CodeBuilder::BuildCallOperator(
 			dummy_function_context_->function );
 		const StackVariablesStorage dummy_stack_variables_storage( dummy_function_context );
 		dummy_function_context.this_= function_context.this_;
+		dummy_function_context.whole_this_is_unavailable= function_context.whole_this_is_unavailable;
 		dummy_function_context.variables_state= function_context.variables_state; // TODO - support copy-on-write for variables_state
 		function_context.variables_state.DeactivateLocks();
 
@@ -1628,11 +1727,22 @@ Value CodeBuilder::BuildCallOperator(
 	for( const Synt::IExpressionComponentPtr& arg : call_operator.arguments_ )
 		synt_args.push_back( arg.get() );
 
-	return DoCallFunction( function, call_operator.file_pos_, this_, synt_args, false, names, function_context );
+	Variable this_casted;
+	llvm::Value* llvm_function_ptr= function.llvm_function;
+	if( this_ != nullptr )
+	{
+		auto fetch_result= TryFetchVirtualFunction( *this_, function, function_context );
+		this_casted= std::move( fetch_result.first );
+		llvm_function_ptr= fetch_result.second;
+		this_= &this_casted;
+	}
+
+	return DoCallFunction( llvm_function_ptr, function_type, call_operator.file_pos_, this_, synt_args, false, names, function_context );
 }
 
 Value CodeBuilder::DoCallFunction(
-	const FunctionVariable& function,
+	llvm::Value* function,
+	const Function& function_type,
 	const FilePos& call_file_pos,
 	const Variable* first_arg,
 	std::vector<const Synt::IExpressionComponent*> args,
@@ -1641,8 +1751,6 @@ Value CodeBuilder::DoCallFunction(
 	FunctionContext& function_context )
 {
 	U_ASSERT( !( evaluate_args_in_reverse_order && first_arg != nullptr ) );
-
-	const Function& function_type= *function.type.GetFunctionType();
 
 	const size_t first_arg_count= first_arg == 0u ? 0u : 1u;
 	const size_t arg_count= args.size() + first_arg_count;
@@ -1697,7 +1805,7 @@ Value CodeBuilder::DoCallFunction(
 				if( expr.type == arg.type )
 					llvm_args[j]= expr.llvm_value;
 				else
-					llvm_args[j]= CreateReferenceCast( expr.llvm_value, arg.type, function_context );
+					llvm_args[j]= CreateReferenceCast( expr.llvm_value, expr.type, arg.type, function_context );
 
 				// Lock references.
 				for( const StoredVariablePtr& referenced_variable : expr.referenced_variables )
@@ -1721,7 +1829,7 @@ Value CodeBuilder::DoCallFunction(
 					llvm_args[j]= expr.llvm_value;
 
 				if( expr.type != arg.type )
-					llvm_args[j]= CreateReferenceCast( llvm_args[j], arg.type, function_context );
+					llvm_args[j]= CreateReferenceCast( llvm_args[j], expr.type, arg.type, function_context );
 
 				// Lock references.
 				for( const StoredVariablePtr& referenced_variable : expr.referenced_variables )
@@ -1734,9 +1842,8 @@ Value CodeBuilder::DoCallFunction(
 		}
 		else
 		{
-			if( !something_have_template_dependent_type && arg.type != expr.type )
+			if( !something_have_template_dependent_type && !expr.type.ReferenceIsConvertibleTo( arg.type ) )
 			{
-				// SPRACHE_TODO - allow value-casting.
 				errors_.push_back( ReportTypesMismatch( file_pos, arg.type.ToString(), expr.type.ToString() ) );
 				return ErrorValue();
 			}
@@ -1758,7 +1865,7 @@ Value CodeBuilder::DoCallFunction(
 
 				if( something_have_template_dependent_type )
 				{}
-				else if( expr.value_type == ValueType::Value )
+				else if( expr.value_type == ValueType::Value && expr.type == arg.type )
 				{
 					// Do not call copy constructors - just move.
 					U_ASSERT( expr.referenced_variables.size() == 1u );
@@ -1770,34 +1877,41 @@ Value CodeBuilder::DoCallFunction(
 					// Create copy of class value. Call copy constructor.
 					llvm::Value* const arg_copy= function_context.alloca_ir_builder.CreateAlloca( arg.type.GetLLVMType() );
 
-					TryCallCopyConstructor( file_pos, arg_copy, expr.llvm_value, class_type, function_context );
+					llvm::Value* value_for_copy= expr.llvm_value;
+					if( expr.type != arg.type )
+						value_for_copy= CreateReferenceCast( value_for_copy, expr.type, arg.type, function_context );
+					TryCallCopyConstructor( file_pos, arg_copy, value_for_copy, class_type, function_context );
 					llvm_args[j]= arg_copy;
 				}
 
 				// Save references inside referenced variables, because we need check references inside it.
-				for( const StoredVariablePtr& var_itself : expr.referenced_variables )
-					for( const auto& referenced_variable_pair : function_context.variables_state.GetVariableReferences( var_itself ) )
-					{
-						const StoredVariablePtr& referenced_variable = referenced_variable_pair.first;
-						if( referenced_variable_pair.second.IsMutable() )
+				// Do it only if arg type can contain any reference inside.
+				if( arg.type.ReferencesTagsCount() > 0u )
+				{
+					for( const StoredVariablePtr& var_itself : expr.referenced_variables )
+						for( const auto& referenced_variable_pair : function_context.variables_state.GetVariableReferences( var_itself ) )
 						{
-							++locked_variable_counters[referenced_variable].mut;
-							temp_args_locks.push_back( referenced_variable->mut_use_counter );
+							const StoredVariablePtr& referenced_variable = referenced_variable_pair.first;
+							if( referenced_variable_pair.second.IsMutable() )
+							{
+								++locked_variable_counters[referenced_variable].mut;
+								temp_args_locks.push_back( referenced_variable->mut_use_counter );
+							}
+							else
+							{
+								++locked_variable_counters[referenced_variable].imut;
+								temp_args_locks.push_back( referenced_variable->imut_use_counter );
+							}
+							arg_to_variables[j].emplace( referenced_variable );
 						}
-						else
-						{
-							++locked_variable_counters[referenced_variable].imut;
-							temp_args_locks.push_back( referenced_variable->imut_use_counter );
-						}
-						arg_to_variables[j].emplace( referenced_variable );
-					}
+				}
 			}
 			else if( something_have_template_dependent_type )
 			{}
 			else
 				U_ASSERT( false );
 		}
-	}
+	} // for args
 
 	// Check references.
 	temp_args_locks.clear(); // clear temporary locks.
@@ -1830,6 +1944,8 @@ Value CodeBuilder::DoCallFunction(
 		{} // Ok - pass immutable references into function, while mutable references on stack exists.
 	}
 
+	const bool return_value_is_sret= function_type.return_type.GetClassType() != nullptr && !function_type.return_value_is_reference;
+
 	if( function_result_have_template_dependent_type )
 	{
 		Variable dummy_result;
@@ -1842,13 +1958,13 @@ Value CodeBuilder::DoCallFunction(
 				dummy_result.value_type= ValueType::ConstReference;
 		}
 		else
-			dummy_result.location= function.return_value_is_sret ? Variable::Location::Pointer : Variable::Location::LLVMRegister;
+			dummy_result.location= return_value_is_sret ? Variable::Location::Pointer : Variable::Location::LLVMRegister;
 		dummy_result.type= GetNextTemplateDependentType();
 		return Value( dummy_result, call_file_pos );
 	}
 
 	llvm::Value* s_ret_value= nullptr;
-	if( function.return_value_is_sret )
+	if( return_value_is_sret )
 	{
 		s_ret_value= function_context.alloca_ir_builder.CreateAlloca( function_type.return_type.GetLLVMType() );
 		llvm_args.insert( llvm_args.begin(), s_ret_value );
@@ -1856,10 +1972,10 @@ Value CodeBuilder::DoCallFunction(
 
 	llvm::Value* call_result=
 		function_context.llvm_ir_builder.CreateCall(
-			llvm::dyn_cast<llvm::Function>(function.llvm_function),
+			function,
 			llvm_args );
 
-	if( function.return_value_is_sret )
+	if( return_value_is_sret )
 	{
 		U_ASSERT( s_ret_value != nullptr );
 		call_result= s_ret_value;
@@ -1882,7 +1998,7 @@ Value CodeBuilder::DoCallFunction(
 		if( function_type.return_type != void_type_ && function_type.return_type.IsIncomplete() )
 			errors_.push_back( ReportUsingIncompleteType( call_file_pos, function_type.return_type.ToString() ) );
 
-		result.location= function.return_value_is_sret ? Variable::Location::Pointer : Variable::Location::LLVMRegister;
+		result.location= return_value_is_sret ? Variable::Location::Pointer : Variable::Location::LLVMRegister;
 		result.value_type= ValueType::Value;
 
 		const StoredVariablePtr stored_result= std::make_shared<StoredVariable>( "fn result"_SpC, result );

@@ -564,6 +564,16 @@ struct ReferencePollutionSrc
 typedef std::pair< ProgramString, ReferencePollutionSrc > FunctionReferencesPollution;
 typedef std::vector<FunctionReferencesPollution> FunctionReferencesPollutionList;
 
+
+enum class VirtualFunctionKind
+{
+	None, // Regular, non-virtual
+	DeclareVirtual,
+	VirtualOverride,
+	VirtualFinal,
+	VirtualPure,
+};
+
 class Function final
 	: public SyntaxElementBase
 	, public IProgramElement
@@ -582,7 +592,8 @@ public:
 		FunctionArgumentsDeclaration arguments,
 		std::unique_ptr<StructNamedInitializer> constructor_initialization_list,
 		BlockPtr block,
-		OverloadedOperator overloaded_operator );
+		OverloadedOperator overloaded_operator,
+		VirtualFunctionKind virtual_function_kind );
 
 	const ComplexName name_;
 	const ITypeNamePtr return_type_;
@@ -595,6 +606,7 @@ public:
 	const std::unique_ptr<StructNamedInitializer> constructor_initialization_list_;
 	const BlockPtr block_;
 	const OverloadedOperator overloaded_operator_;
+	const VirtualFunctionKind virtual_function_kind_;
 };
 
 class ClassField final
@@ -610,6 +622,16 @@ public:
 	ReferenceModifier reference_modifier= ReferenceModifier::None;
 };
 
+enum class ClassKindAttribute
+{
+	Struct,
+	Class,
+	Final,
+	Polymorph,
+	Interface,
+	Abstract,
+};
+
 class Class final
 	: public SyntaxElementBase
 	, public IProgramElement
@@ -621,6 +643,8 @@ public:
 	ClassElements elements_;
 	ComplexName name_;
 	bool is_forward_declaration_= false;
+	ClassKindAttribute kind_attribute_ = ClassKindAttribute::Struct;
+	std::vector<ComplexName> parents_;
 };
 
 class TemplateBase : public SyntaxElementBase

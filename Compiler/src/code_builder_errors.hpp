@@ -68,8 +68,10 @@ enum class CodeBuilderErrorCode : unsigned int
 	ReferencesHaveConstructorsWithExactlyOneParameter,
 	UnsupportedInitializerForReference,
 	ConstructorInitializerForUnsupportedType,
+	ZeroInitializerForClass,
 	StructInitializerForNonStruct,
 	InitializerForNonfieldStructMember,
+	InitializerForBaseClassField,
 	DuplicatedStructMemberInitializer,
 	InitializerDisabledBecauseClassHaveExplicitNoncopyConstructors,
 	InvalidTypeForAutoVariable,
@@ -82,7 +84,6 @@ enum class CodeBuilderErrorCode : unsigned int
 	ClassHaveNoConstructors,
 	ExplicitThisInDestructor,
 	FieldIsNotInitializedYet,
-	MethodsCallInConstructorInitializerListIsForbidden,
 
 	// Destructors errors
 	ExplicitArgumentsInDestructor,
@@ -93,6 +94,7 @@ enum class CodeBuilderErrorCode : unsigned int
 	ThisInNonclassFunction,
 	AccessOfNonThisClassField,
 	ThisUnavailable,
+	BaseUnavailable,
 
 	// Template errors.
 	InvalidValueAsTemplateArgument,
@@ -128,6 +130,29 @@ enum class CodeBuilderErrorCode : unsigned int
 
 	// Enums
 	UnderlayingTypeForEnumIsTooSmall,
+
+	// Inheritance errors
+	CanNotDeriveFromThisType,
+	DuplicatedParentClass,
+	DuplicatedBaseClass,
+	FieldsForInterfacesNotAllowed,
+	BaseClassForInterface,
+	ConstructorForInterface,
+
+	// Virtual functions errors
+	VirtualForNonclassFunction,
+	VirtualForNonThisCallFunction,
+	VirtualForNonpolymorphClass,
+	FunctionCanNotBeVirtual,
+	VirtualRequired,
+	OverrideRequired,
+	FunctionDoesNotOverride,
+	OverrideFinalFunction,
+	FinalForFirstVirtualFunction,
+	BodyForPureVirtualFunction,
+	ClassContainsPureVirtualFunctions,
+	NonPureVirtualFunctionInInterface,
+	PureDestructor
 };
 
 struct CodeBuilderError
@@ -186,8 +211,10 @@ CodeBuilderError ReportFundamentalTypesHaveConstructorsWithExactlyOneParameter( 
 CodeBuilderError ReportReferencesHaveConstructorsWithExactlyOneParameter( const FilePos& file_pos );
 CodeBuilderError ReportUnsupportedInitializerForReference( const FilePos& file_pos );
 CodeBuilderError ReportConstructorInitializerForUnsupportedType( const FilePos& file_pos );
+CodeBuilderError ReportZeroInitializerForClass( const FilePos& file_pos );
 CodeBuilderError ReportStructInitializerForNonStruct( const FilePos& file_pos );
 CodeBuilderError ReportInitializerForNonfieldStructMember( const FilePos& file_pos, const ProgramString& member_name );
+CodeBuilderError ReportInitializerForBaseClassField( const FilePos& file_pos, const ProgramString& field_name );
 CodeBuilderError ReportDuplicatedStructMemberInitializer( const FilePos& file_pos, const ProgramString& member_name );
 CodeBuilderError ReportInitializerDisabledBecauseClassHaveExplicitNoncopyConstructors( const FilePos& file_pos );
 CodeBuilderError ReportInvalidTypeForAutoVariable( const FilePos& file_pos, const ProgramString& type_name );
@@ -198,13 +225,13 @@ CodeBuilderError ReportInitializationListInNonconstructor( const FilePos& file_p
 CodeBuilderError ReportClassHaveNoConstructors( const FilePos& file_pos );
 CodeBuilderError ReportExplicitThisInDestructor( const FilePos& file_pos );
 CodeBuilderError ReportFieldIsNotInitializedYet( const FilePos& file_pos, const ProgramString& field_name );
-CodeBuilderError ReportMethodsCallInConstructorInitializerListIsForbidden( const FilePos& file_pos, const ProgramString& method_name );
 CodeBuilderError ReportExplicitArgumentsInDestructor( const FilePos& file_pos );
 CodeBuilderError ReportCallOfThiscallFunctionUsingNonthisArgument( const FilePos& file_pos );
 CodeBuilderError ReportClassFiledAccessInStaticMethod( const FilePos& file_pos, const ProgramString& field_name );
 CodeBuilderError ReportThisInNonclassFunction( const FilePos& file_pos, const ProgramString& func_name );
 CodeBuilderError ReportAccessOfNonThisClassField( const FilePos& file_pos, const ProgramString& field_name );
 CodeBuilderError ReportThisUnavailable( const FilePos& file_pos );
+CodeBuilderError ReportBaseUnavailable( const FilePos& file_pos );
 CodeBuilderError ReportInvalidValueAsTemplateArgument( const FilePos& file_pos, const ProgramString& got );
 CodeBuilderError ReportInvalidTypeOfTemplateVariableArgument( const FilePos& file_pos, const ProgramString& type_name );
 CodeBuilderError ReportTemplateParametersDeductionFailed( const FilePos& file_pos );
@@ -232,5 +259,24 @@ CodeBuilderError ReportOperatorDoesNotHaveParentClassArguments( const FilePos& f
 CodeBuilderError ReportInvalidArgumentCountForOperator( const FilePos& file_pos );
 CodeBuilderError ReportInvalidReturnTypeForOperator( const FilePos& file_pos, const ProgramString& expected_type_name );
 CodeBuilderError ReportUnderlayingTypeForEnumIsTooSmall( const FilePos& file_pos, SizeType max_value, SizeType max_value_of_underlaying_type );
+CodeBuilderError ReportCanNotDeriveFromThisType( const FilePos& file_pos, const ProgramString& type_name );
+CodeBuilderError ReportDuplicatedParentClass( const FilePos& file_pos, const ProgramString& type_name );
+CodeBuilderError ReportDuplicatedBaseClass( const FilePos& file_pos, const ProgramString& type_name );
+CodeBuilderError ReportFieldsForInterfacesNotAllowed( const FilePos& file_pos );
+CodeBuilderError ReportBaseClassForInterface( const FilePos& file_pos );
+CodeBuilderError ReportConstructorForInterface( const FilePos& file_pos );
+CodeBuilderError ReportVirtualForNonclassFunction( const FilePos& file_pos, const ProgramString& function_name );
+CodeBuilderError ReportVirtualForNonThisCallFunction( const FilePos& file_pos, const ProgramString& function_name );
+CodeBuilderError ReportFunctionCanNotBeVirtual( const FilePos& file_pos, const ProgramString& function_name );
+CodeBuilderError ReportVirtualForNonpolymorphClass( const FilePos& file_pos, const ProgramString& function_name );
+CodeBuilderError ReportVirtualRequired( const FilePos& file_pos, const ProgramString& function_name );
+CodeBuilderError ReportOverrideRequired( const FilePos& file_pos, const ProgramString& function_name );
+CodeBuilderError ReportFunctionDoesNotOverride( const FilePos& file_pos, const ProgramString& function_name );
+CodeBuilderError ReportOverrideFinalFunction( const FilePos& file_pos, const ProgramString& function_name );
+CodeBuilderError ReportFinalForFirstVirtualFunction( const FilePos& file_pos, const ProgramString& function_name );
+CodeBuilderError ReportBodyForPureVirtualFunction( const FilePos& file_pos, const ProgramString& function_name );
+CodeBuilderError ReportClassContainsPureVirtualFunctions( const FilePos& file_pos, const ProgramString& class_name );
+CodeBuilderError ReportNonPureVirtualFunctionInInterface( const FilePos& file_pos, const ProgramString& class_name );
+CodeBuilderError ReportPureDestructor( const FilePos& file_pos, const ProgramString& class_name );
 
 } // namespace U

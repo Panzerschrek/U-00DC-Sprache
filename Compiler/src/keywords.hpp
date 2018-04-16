@@ -23,6 +23,14 @@ enum class Keywords : unsigned int
 
 	struct_,
 	class_,
+	final_,
+	polymorph_,
+	interface_,
+	abstract_,
+
+	virtual_,
+	override_,
+	pure_,
 
 	namespace_,
 
@@ -52,6 +60,7 @@ enum class Keywords : unsigned int
 	zero_init_,
 
 	this_,
+	base_,
 	constructor_,
 	destructor_,
 
@@ -68,10 +77,6 @@ enum class Keywords : unsigned int
 	switch_,
 	case_,
 	default_,
-	final_,
-	virtual_,
-	polymorph_,
-	override_,
 	typename_,
 	cast_,
 	const_,

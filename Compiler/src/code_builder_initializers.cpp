@@ -204,7 +204,7 @@ void CodeBuilder::ApplyStructNamedInitializer(
 	}
 
 	const Class* const class_type= variable.type.GetClassType();
-	if( class_type == nullptr )
+	if( class_type == nullptr || class_type->kind != Class::Kind::Struct )
 	{
 		errors_.push_back( ReportStructInitializerForNonStruct( initializer.file_pos_ ) );
 		return;
@@ -499,6 +499,7 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 				dummy_function_context_->function );
 			const StackVariablesStorage dummy_stack_variables_storage( dummy_function_context );
 			dummy_function_context.this_= function_context.this_;
+			dummy_function_context.whole_this_is_unavailable= function_context.whole_this_is_unavailable;
 			dummy_function_context.variables_state= function_context.variables_state;
 			function_context.variables_state.DeactivateLocks();
 
@@ -599,7 +600,7 @@ llvm::Constant* CodeBuilder::ApplyExpressionInitializer(
 
 		const Value expression_result_value=
 			BuildExpressionCode( *initializer.expression, block_names, function_context );
-		if( expression_result_value.GetType() != variable.type )
+		if( !expression_result_value.GetType().ReferenceIsConvertibleTo( variable.type ) )
 		{
 			errors_.push_back( ReportTypesMismatch( initializer.file_pos_, variable.type.ToString(), expression_result_value.GetType().ToString() ) );
 			return nullptr;
@@ -607,26 +608,34 @@ llvm::Constant* CodeBuilder::ApplyExpressionInitializer(
 		const Variable& expression_result= *expression_result_value.GetVariable();
 
 		// Lock references.
-		for( const StoredVariablePtr& referenced_variable : expression_result.referenced_variables )
+		if( variable.type.ReferencesTagsCount() > 0u )
 		{
-			for( const auto& inner_variable : function_context.variables_state.GetVariableReferences( referenced_variable ) )
+			for( const StoredVariablePtr& referenced_variable : expression_result.referenced_variables )
 			{
-				const bool ok= function_context.variables_state.AddPollution( variable_storage, inner_variable.first, inner_variable.second.IsMutable() );
-				if( !ok )
-					errors_.push_back( ReportReferenceProtectionError( initializer.file_pos_, inner_variable.first->name ) );
+				for( const auto& inner_variable : function_context.variables_state.GetVariableReferences( referenced_variable ) )
+				{
+					const bool ok= function_context.variables_state.AddPollution( variable_storage, inner_variable.first, inner_variable.second.IsMutable() );
+					if( !ok )
+						errors_.push_back( ReportReferenceProtectionError( initializer.file_pos_, inner_variable.first->name ) );
+				}
 			}
 		}
 
 		// Move or try call copy constructor.
-		if( expression_result.value_type == ValueType::Value )
+		if( expression_result.value_type == ValueType::Value && expression_result.type == variable.type )
 		{
 			U_ASSERT( expression_result.referenced_variables.size() == 1u );
 			function_context.variables_state.Move( *expression_result.referenced_variables.begin() );
 			CopyBytes( expression_result.llvm_value, variable.llvm_value, variable.type, function_context );
 		}
 		else
+		{
+			llvm::Value* value_for_copy= expression_result.llvm_value;
+			if( expression_result.type != variable.type )
+				value_for_copy= CreateReferenceCast( value_for_copy, expression_result.type, variable.type, function_context );
 			TryCallCopyConstructor(
-				initializer.file_pos_, variable.llvm_value, expression_result.llvm_value, variable.type.GetClassTypeProxy(), function_context );
+				initializer.file_pos_, variable.llvm_value, value_for_copy, variable.type.GetClassTypeProxy(), function_context );
+		}
 	}
 	else
 	{
@@ -729,6 +738,8 @@ llvm::Constant* CodeBuilder::ApplyZeroInitializer(
 	{
 		if( class_type->have_explicit_noncopy_constructors )
 			errors_.push_back( ReportInitializerDisabledBecauseClassHaveExplicitNoncopyConstructors( initializer.file_pos_ ) );
+		if( class_type->kind != Class::Kind::Struct )
+			errors_.push_back( ReportZeroInitializerForClass( initializer.file_pos_ ) );
 
 		Variable struct_member= variable;
 		struct_member.location= Variable::Location::Pointer;
@@ -843,7 +854,7 @@ void CodeBuilder::InitializeReferenceField(
 
 	llvm::Value* ref_to_store= initializer_variable->llvm_value;
 	if( field.type != initializer_variable->type )
-		ref_to_store= CreateReferenceCast( ref_to_store, field.type, function_context );
+		ref_to_store= CreateReferenceCast( ref_to_store, initializer_variable->type, field.type, function_context );
 	function_context.llvm_ir_builder.CreateStore( ref_to_store, address_of_reference );
 }
 

@@ -260,6 +260,25 @@ bool Type::ReferenceIsConvertibleTo( const Type& other ) const
 	if( other_fundamental != nullptr && other_fundamental->fundamental_type == U_FundamentalType::Void )
 		return true;
 
+	const Class* const class_type= GetClassType();
+	const Class* const other_class_type= other.GetClassType();
+	if( class_type != nullptr && other_class_type != nullptr )
+	{
+		for( const ClassProxyPtr& parent : class_type->parents )
+		{
+			if( parent->class_.get() == other_class_type )
+				return true;
+			if( Type(parent).ReferenceIsConvertibleTo( other ) )
+				return true;
+		}
+
+		if( class_type->have_template_dependent_parents || other_class_type->have_template_dependent_parents )
+			return true;
+	}
+
+	if( this->GetTemplateDependentType() != nullptr || other.GetTemplateDependentType() != nullptr )
+		return true;
+
 	return false;
 }
 
@@ -693,6 +712,28 @@ bool TemplateClassKeyHasher::operator()( const TemplateClassKey& a, const Templa
 {
 	return a.template_ == b.template_ && a.class_name_encoded == b.class_name_encoded;
 }
+
+
+bool FunctionVariable::VirtuallyEquals( const FunctionVariable& other ) const
+{
+	U_ASSERT( this->is_this_call && other.is_this_call );
+
+	const Function& l_type= *this->type.GetFunctionType();
+	const Function& r_type= *other.type.GetFunctionType();
+
+	return
+		l_type.return_type == r_type.return_type &&
+		l_type.return_value_is_reference == r_type.return_value_is_reference &&
+		l_type.return_value_is_mutable == r_type.return_value_is_mutable &&
+		l_type.return_references == r_type.return_references &&
+		l_type.references_pollution == r_type.references_pollution &&
+		l_type.args.size() == r_type.args.size() &&
+		std::equal( l_type.args.begin() + 1, l_type.args.end(), r_type.args.begin() + 1 );  // Compare args, except first.
+}
+
+//
+// Class
+//
 
 Class::Class( const ProgramString& in_name, const NamesScope* const parent_scope )
 	: members( in_name, parent_scope )

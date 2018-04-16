@@ -50,10 +50,15 @@ void CodeBuilder::TryGenerateDefaultConstructor( Class& the_class, const Type& c
 			const ClassField* const field= member.second.GetClassField();
 			if( field == nullptr )
 				return;
+			if( field->class_.lock()->class_.get() != &the_class )
+				return; // Skip fields of parent classes.
 
 			if( field->is_reference || !field->type.IsDefaultConstructible() )
 				all_fields_is_default_constructible= false;
 		} );
+
+	if( the_class.base_class != nullptr && !the_class.base_class->class_->is_default_constructible )
+		all_fields_is_default_constructible= false;
 
 	if( !all_fields_is_default_constructible )
 		return;
@@ -96,12 +101,29 @@ void CodeBuilder::TryGenerateDefaultConstructor( Class& the_class, const Type& c
 	llvm::Value* const this_llvm_value= llvm_constructor_function->args().begin();
 	this_llvm_value->setName( KeywordAscii( Keywords::this_ ) );
 
+	if( the_class.base_class != nullptr )
+	{
+		Variable base_variable;
+		base_variable.type= the_class.base_class;
+		base_variable.value_type= ValueType::Reference;
+
+		llvm::Value* index_list[2];
+		index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
+		index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(the_class.base_class_field_number) ) );
+		base_variable.llvm_value=
+			function_context.llvm_ir_builder.CreateGEP( this_llvm_value, llvm::ArrayRef<llvm::Value*>( index_list, 2u ) );
+
+		ApplyEmptyInitializer( Keyword( Keywords::base_ ), FilePos()/*TODO*/, base_variable, function_context );
+	}
+
 	the_class.members.ForEachInThisScope(
 		[&]( const NamesScope::InsertedName& member )
 		{
 			const ClassField* const field= member.second.GetClassField();
 			if( field == nullptr )
 				return;
+			if( field->class_.lock()->class_.get() != &the_class )
+				return; // Skip fields of parent classes.
 
 			Variable field_variable;
 			field_variable.type= field->type;
@@ -115,6 +137,8 @@ void CodeBuilder::TryGenerateDefaultConstructor( Class& the_class, const Type& c
 
 			ApplyEmptyInitializer( member.first, FilePos()/*TODO*/, field_variable, function_context );
 		} );
+
+	SetupVirtualTablePointers( this_llvm_value, the_class, function_context );
 
 	function_context.llvm_ir_builder.CreateRetVoid();
 	function_context.alloca_ir_builder.CreateBr( function_context.function_basic_block );
@@ -180,6 +204,9 @@ void CodeBuilder::TryGenerateCopyConstructor( Class& the_class, const Type& clas
 				all_fields_is_copy_constructible= false;
 		} );
 
+	if( the_class.base_class != nullptr && !the_class.base_class->class_->is_copy_constructible )
+		all_fields_is_copy_constructible= false;
+
 	if( !all_fields_is_copy_constructible )
 		return;
 
@@ -239,11 +266,21 @@ void CodeBuilder::TryGenerateCopyConstructor( Class& the_class, const Type& clas
 	llvm::Value* const src_llvm_value= &*(++llvm_constructor_function->args().begin());
 	src_llvm_value->setName( "src" );
 
+	if( the_class.base_class != nullptr )
+	{
+		llvm::Value* index_list[2];
+		index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
+		index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(the_class.base_class_field_number) ) );
+		llvm::Value* const src= function_context.llvm_ir_builder.CreateGEP( src_llvm_value , llvm::ArrayRef<llvm::Value*>( index_list, 2u ) );
+		llvm::Value* const dst= function_context.llvm_ir_builder.CreateGEP( this_llvm_value, llvm::ArrayRef<llvm::Value*>( index_list, 2u ) );
+		BuildCopyConstructorPart( src, dst, the_class.base_class, function_context );
+	}
+
 	the_class.members.ForEachInThisScope(
 		[&]( const NamesScope::InsertedName& member )
 		{
 			const ClassField* const field= member.second.GetClassField();
-			if( field == nullptr )
+			if( field == nullptr || field->class_.lock()->class_.get() != &the_class )
 				return;
 
 			llvm::Value* index_list[2];
@@ -265,6 +302,8 @@ void CodeBuilder::TryGenerateCopyConstructor( Class& the_class, const Type& clas
 			}
 
 		} ); // For fields.
+
+	SetupVirtualTablePointers( this_llvm_value, the_class, function_context );
 
 	function_context.llvm_ir_builder.CreateRetVoid();
 	function_context.alloca_ir_builder.CreateBr( function_context.function_basic_block );
@@ -295,24 +334,10 @@ void CodeBuilder::TryGenerateCopyConstructor( Class& the_class, const Type& clas
 	the_class.is_copy_constructible= true;
 }
 
-void CodeBuilder::TryGenerateDestructor( Class& the_class, const Type& class_type )
+FunctionVariable CodeBuilder::GenerateDestructorPrototype( Class& the_class, const Type& class_type )
 {
-	// Search for explicit destructor.
-	if( const NamesScope::InsertedName* const destructor_name=
-		the_class.members.GetThisScopeName( Keyword( Keywords::destructor_ ) ) )
-	{
-		const OverloadedFunctionsSet* const destructors= destructor_name->second.GetFunctionsSet();
-		U_ASSERT( destructors != nullptr && destructors->size() == 1u );
-		U_UNUSED( destructors );
-		the_class.have_destructor= true;
-		return;
-	}
-
-	// SPRACHE_TODO - maybe not generate default destructor for classes, that have no fields with destructors?
-	// SPRACHE_TODO - maybe mark generated destructor for this cases as "empty"?
-
-	// Generate destructor.
 	Function destructor_type;
+
 	destructor_type.return_type= void_type_for_ret_;
 	destructor_type.args.resize(1u);
 	destructor_type.args[0].type= class_type;
@@ -326,17 +351,29 @@ void CodeBuilder::TryGenerateDestructor( Class& the_class, const Type& class_typ
 			llvm::ArrayRef<llvm::Type*>( &this_llvm_type, 1u ),
 			false );
 
-	llvm::Function* const llvm_destructor_function=
+	FunctionVariable destructor_function;
+	destructor_function.type= destructor_type;
+	destructor_function.type= destructor_type;
+	destructor_function.is_generated= true;
+	destructor_function.is_this_call= true;
+	destructor_function.return_value_is_sret= false;
+	destructor_function.have_body= false;
+
+	destructor_function.llvm_function=
 		llvm::Function::Create(
 			destructor_type.llvm_function_type,
 			llvm::Function::LinkageTypes::LinkOnceODRLinkage,
 			MangleFunction( the_class.members, Keyword( Keywords::destructor_ ), destructor_type, true ),
 			module_.get() );
 
-	SetupGeneratedFunctionLinkageAttributes( *llvm_destructor_function );
-	llvm_destructor_function->addAttribute( 1u, llvm::Attribute::NonNull ); // this is nonnull
+	return destructor_function;
+}
 
-	llvm::Value* const this_llvm_value= &*llvm_destructor_function->args().begin();
+void CodeBuilder::GenerateDestructorBody( Class& the_class, const Type& class_type, FunctionVariable& destructor_function )
+{
+	const Function& destructor_type= *destructor_function .type.GetFunctionType();
+
+	llvm::Value* const this_llvm_value= &*destructor_function .llvm_function->args().begin();
 	this_llvm_value->setName( KeywordAscii( Keywords::this_ ) );
 
 	Variable this_;
@@ -350,20 +387,40 @@ void CodeBuilder::TryGenerateDestructor( Class& the_class, const Type& class_typ
 		destructor_type.return_value_is_mutable,
 		destructor_type.return_value_is_reference,
 		llvm_context_,
-		llvm_destructor_function );
+		destructor_function .llvm_function );
 	function_context.this_= &this_;
 
 	CallMembersDestructors( function_context );
 	function_context.alloca_ir_builder.CreateBr( function_context.function_basic_block );
 	function_context.llvm_ir_builder.CreateRetVoid();
 
-	// Add generated destructor.
-	FunctionVariable destructor_variable;
-	destructor_variable.type= std::move( destructor_type );
-	destructor_variable.have_body= true;
-	destructor_variable.is_this_call= true;
-	destructor_variable.is_generated= true;
-	destructor_variable.llvm_function= llvm_destructor_function;
+	destructor_function.have_body= true;
+}
+
+void CodeBuilder::TryGenerateDestructor( Class& the_class, const Type& class_type )
+{
+	// Search for explicit destructor.
+	if( NamesScope::InsertedName* const destructor_name=
+		the_class.members.GetThisScopeName( Keyword( Keywords::destructor_ ) ) )
+	{
+		OverloadedFunctionsSet* const destructors= destructor_name->second.GetFunctionsSet();
+		U_ASSERT( destructors != nullptr && destructors->size() == 1u );
+
+		FunctionVariable& destructor_function= destructors->front();
+		if( destructor_function.is_generated && !destructor_function.have_body )
+			GenerateDestructorBody( the_class, class_type, destructor_function ); // Finish generating pre-generated destructor.
+
+		the_class.have_destructor= true;
+		return;
+	}
+
+	// SPRACHE_TODO - maybe not generate default destructor for classes, that have no fields with destructors?
+	// SPRACHE_TODO - maybe mark generated destructor for this cases as "empty"?
+
+	// Generate destructor.
+
+	FunctionVariable destructor_variable= GenerateDestructorPrototype( the_class, class_type );
+	GenerateDestructorBody( the_class, class_type, destructor_variable );
 
 	// TODO - destructor have no overloads. Maybe store it as FunctionVariable, not as FunctionsSet?
 	OverloadedFunctionsSet destructors;

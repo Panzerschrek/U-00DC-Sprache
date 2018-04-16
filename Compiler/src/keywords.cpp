@@ -48,6 +48,14 @@ static const Globals& GetGlobals()
 
 		[ size_t(Keywords::struct_) ]= "struct",
 		[ size_t(Keywords::class_) ]= "class",
+		[ size_t(Keywords::final_) ]= "final",
+		[ size_t(Keywords::polymorph_) ]= "polymorph",
+		[ size_t(Keywords::interface_) ]= "interface",
+		[ size_t(Keywords::abstract_) ]= "abstract",
+
+		[ size_t(Keywords::virtual_) ]= "virtual",
+		[ size_t(Keywords::override_) ]= "override",
+		[ size_t(Keywords::pure_) ]= "pure",
 
 		[ size_t(Keywords::namespace_) ]= "namespace",
 
@@ -73,6 +81,7 @@ static const Globals& GetGlobals()
 
 		[ size_t(Keywords::zero_init_) ]= "zero_init",
 		[ size_t(Keywords::this_) ]= "this",
+		[ size_t(Keywords::base_) ]= "base",
 		[ size_t(Keywords::constructor_) ]= "constructor",
 		[ size_t(Keywords::destructor_) ]= "destructor",
 
@@ -88,10 +97,6 @@ static const Globals& GetGlobals()
 		[ size_t(Keywords::switch_) ]= "switch",
 		[ size_t(Keywords::case_) ]= "case",
 		[ size_t(Keywords::default_) ]= "default",
-		[ size_t(Keywords::final_) ]= "final",
-		[ size_t(Keywords::virtual_) ]= "virtual",
-		[ size_t(Keywords::polymorph_) ]= "polymorph",
-		[ size_t(Keywords::override_) ]= "override",
 		[ size_t(Keywords::typename_) ]= "typename",
 		[ size_t(Keywords::cast_) ]= "cast",
 		[ size_t(Keywords::const_) ]= "const",

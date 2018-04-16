@@ -291,6 +291,27 @@ U_TEST(StructInitializerForNonStructTest0)
 	U_TEST_ASSERT( error.file_pos.line == 4u );
 }
 
+U_TEST(StructInitializerForNonStructTest1)
+{
+	// Struct initializer for class. For classes initialization only constructors must be used.
+	static const char c_program_text[]=
+	R"(
+		class FF{}
+		fn Foo()
+		{
+			var FF ff{};
+		}
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::StructInitializerForNonStruct );
+	U_TEST_ASSERT( error.file_pos.line == 5u );
+}
+
 U_TEST(InitializerForNonfieldStructMemberTest0)
 {
 	// Struct initializer for array.
@@ -324,6 +345,26 @@ U_TEST(DuplicatedStructMemberInitializerTest0)
 		fn Foo()
 		{
 			var Point point{ .x= 42, .y= 34, .x= 0 };
+		}
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::DuplicatedStructMemberInitializer );
+	U_TEST_ASSERT( error.file_pos.line == 5u );
+}
+
+U_TEST(DuplicatedStructMemberInitializerTest1)
+{
+	static const char c_program_text[]=
+	R"(
+		class A polymorph{}
+		class B : A
+		{
+			fn constructor() ( base(), base() ) {}   // duplicated intitializer for base class
 		}
 	)";
 
@@ -474,6 +515,27 @@ U_TEST( InitializerForInvalidType_Test4 )
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NameNotFound );
 	U_TEST_ASSERT( error.file_pos.line == 2u );
+}
+
+U_TEST(ZeroInitializerForClass_Test0)
+{
+	// Struct initializer for class. For classes initialization only constructors must be used.
+	static const char c_program_text[]=
+	R"(
+		class FF{}
+		fn Foo()
+		{
+			var FF ff= zero_init;
+		}
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ZeroInitializerForClass );
+	U_TEST_ASSERT( error.file_pos.line == 5u );
 }
 
 } // namespace U
