@@ -1885,29 +1885,33 @@ Value CodeBuilder::DoCallFunction(
 				}
 
 				// Save references inside referenced variables, because we need check references inside it.
-				for( const StoredVariablePtr& var_itself : expr.referenced_variables )
-					for( const auto& referenced_variable_pair : function_context.variables_state.GetVariableReferences( var_itself ) )
-					{
-						const StoredVariablePtr& referenced_variable = referenced_variable_pair.first;
-						if( referenced_variable_pair.second.IsMutable() )
+				// Do it only if arg type can contain any reference inside.
+				if( arg.type.ReferencesTagsCount() > 0u )
+				{
+					for( const StoredVariablePtr& var_itself : expr.referenced_variables )
+						for( const auto& referenced_variable_pair : function_context.variables_state.GetVariableReferences( var_itself ) )
 						{
-							++locked_variable_counters[referenced_variable].mut;
-							temp_args_locks.push_back( referenced_variable->mut_use_counter );
+							const StoredVariablePtr& referenced_variable = referenced_variable_pair.first;
+							if( referenced_variable_pair.second.IsMutable() )
+							{
+								++locked_variable_counters[referenced_variable].mut;
+								temp_args_locks.push_back( referenced_variable->mut_use_counter );
+							}
+							else
+							{
+								++locked_variable_counters[referenced_variable].imut;
+								temp_args_locks.push_back( referenced_variable->imut_use_counter );
+							}
+							arg_to_variables[j].emplace( referenced_variable );
 						}
-						else
-						{
-							++locked_variable_counters[referenced_variable].imut;
-							temp_args_locks.push_back( referenced_variable->imut_use_counter );
-						}
-						arg_to_variables[j].emplace( referenced_variable );
-					}
+				}
 			}
 			else if( something_have_template_dependent_type )
 			{}
 			else
 				U_ASSERT( false );
 		}
-	}
+	} // for args
 
 	// Check references.
 	temp_args_locks.clear(); // clear temporary locks.
