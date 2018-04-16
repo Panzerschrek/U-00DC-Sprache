@@ -608,13 +608,16 @@ llvm::Constant* CodeBuilder::ApplyExpressionInitializer(
 		const Variable& expression_result= *expression_result_value.GetVariable();
 
 		// Lock references.
-		for( const StoredVariablePtr& referenced_variable : expression_result.referenced_variables )
+		if( variable.type.ReferencesTagsCount() > 0u )
 		{
-			for( const auto& inner_variable : function_context.variables_state.GetVariableReferences( referenced_variable ) )
+			for( const StoredVariablePtr& referenced_variable : expression_result.referenced_variables )
 			{
-				const bool ok= function_context.variables_state.AddPollution( variable_storage, inner_variable.first, inner_variable.second.IsMutable() );
-				if( !ok )
-					errors_.push_back( ReportReferenceProtectionError( initializer.file_pos_, inner_variable.first->name ) );
+				for( const auto& inner_variable : function_context.variables_state.GetVariableReferences( referenced_variable ) )
+				{
+					const bool ok= function_context.variables_state.AddPollution( variable_storage, inner_variable.first, inner_variable.second.IsMutable() );
+					if( !ok )
+						errors_.push_back( ReportReferenceProtectionError( initializer.file_pos_, inner_variable.first->name ) );
+				}
 			}
 		}
 

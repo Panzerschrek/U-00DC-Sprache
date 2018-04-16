@@ -820,7 +820,6 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 			the_class->references_tags_count= 1u;
 	}
 
-
 	bool class_contains_pure_virtual_functions= false;
 	for( Class::VirtualTableEntry& virtual_table_entry : the_class->virtual_table )
 	{
