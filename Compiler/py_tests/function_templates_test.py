@@ -17,7 +17,7 @@ def FunctionTemplateDeclaration_Test1():
 		template</ type T, u32 size />
 		fn ZeroFill( [ T, size ] &mut arr )
 		{
-			var u32 i= 0u;
+			var u32 mut i= 0u;
 			while( i < size )
 			{
 				arr[i]= T(0);

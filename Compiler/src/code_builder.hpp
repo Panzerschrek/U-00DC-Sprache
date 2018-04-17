@@ -167,6 +167,14 @@ private:
 	void PrepareTypeTemplate( const Synt::TypeTemplateBase& type_template_declaration, NamesScope& names_scope );
 	void PrepareFunctionTemplate( const Synt::FunctionTemplate& function_template_declaration, NamesScope& names_scope );
 
+	void ProcessTemplateArgs(
+		const std::vector<Synt::TemplateBase::Arg>& args,
+		NamesScope& names_scope,
+		const FilePos& file_pos,
+		std::vector<TypeTemplate::TemplateParameter>& template_parameters,
+		NamesScope& template_parameters_namespace,
+		std::vector<bool>& template_parameters_usage_flags );
+
 	void PrepareTemplateSignatureParameter(
 		const FilePos& file_pos,
 		const Synt::ComplexName& signature_parameter,

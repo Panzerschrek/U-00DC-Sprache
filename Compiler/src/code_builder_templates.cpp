@@ -74,99 +74,13 @@ void CodeBuilder::PrepareTypeTemplate(
 	PushCacheFillResolveHandler( type_template->resolving_cache, names_scope );
 	const NamesScopePtr template_parameters_namespace = std::make_shared<NamesScope>( g_template_parameters_namespace_prefix, &names_scope );
 
-	// Check and fill template parameters.
-	for( const Synt::TypeTemplateBase::Arg& arg : type_template_declaration.args_ )
-	{
-		U_ASSERT( arg.name->components.size() == 1u );
-		const ProgramString& arg_name= arg.name->components.front().name;
-
-		// Check redefinition
-		for( const auto& prev_arg : template_parameters )
-		{
-			if( prev_arg.name == arg_name )
-			{
-				errors_.push_back( ReportRedefinition( type_template_declaration.file_pos_, arg_name ) );
-				continue;
-			}
-		}
-		if( NameShadowsTemplateArgument( arg_name, names_scope ) )
-			errors_.push_back( ReportDeclarationShadowsTemplateArgument( type_template_declaration.file_pos_, arg_name ) );
-
-		NamesScope::InsertedName* inserted_template_parameter= nullptr;
-
-		if( arg.arg_type != nullptr )
-		{
-			// If template parameter is variable.
-
-			// Resolve from outer space or from this template parameters.
-			const NamesScope::InsertedName* const type_name= ResolveName( type_template_declaration.file_pos_, *template_parameters_namespace, *arg.arg_type );
-			if( type_name == nullptr )
-			{
-				errors_.push_back( ReportNameNotFound( type_template_declaration.file_pos_, *arg.arg_type ) );
-				continue;
-			}
-			const Type* const type= type_name->second.GetTypeName();
-			if( type == nullptr )
-			{
-				errors_.push_back( ReportNameIsNotTypeName( type_template_declaration.file_pos_, type_name->first ) );
-				continue;
-			}
-
-			if( type->GetTemplateDependentType() == nullptr &&
-				!TypeIsValidForTemplateVariableArgument( *type ) )
-			{
-				errors_.push_back( ReportInvalidTypeOfTemplateVariableArgument( type_template_declaration.file_pos_, type->ToString() ) );
-				continue;
-			}
-
-			// If type is template parameter, set usage flag.
-			if( arg.arg_type->components.size() == 1u && !arg.arg_type->components.front().have_template_parameters )
-			{
-				for( const TypeTemplate::TemplateParameter& template_parameter : template_parameters )
-				{
-					if( template_parameter.name == arg.arg_type->components.front().name )
-					{
-						template_parameters_usage_flags[ &template_parameter - template_parameters.data() ]= true;
-						break;
-					}
-				}
-			}
-
-			template_parameters.emplace_back();
-			template_parameters.back().name= arg_name;
-			template_parameters.back().type_name= arg.arg_type;
-			template_parameters_usage_flags.push_back(false);
-
-			Variable variable;
-			variable.type= *type;
-			if( type->GetTemplateDependentType() != nullptr )
-			{}
-			else
-			{
-				variable.constexpr_value= llvm::UndefValue::get( type->GetLLVMType() );
-				variable.llvm_value=
-					CreateGlobalConstantVariable( *type, ToStdString( arg_name ), variable.constexpr_value );
-			}
-
-			inserted_template_parameter=
-				template_parameters_namespace->AddName( arg_name, Value( std::move(variable), type_template_declaration.file_pos_ ) /* TODO - set correct file_pos */ );
-		}
-		else
-		{
-			// If template parameter is type.
-
-			template_parameters.emplace_back();
-			template_parameters.back().name= arg_name;
-			template_parameters_usage_flags.push_back(false);
-			inserted_template_parameter=
-				template_parameters_namespace->AddName( arg_name, Value( GetNextTemplateDependentType(), type_template_declaration.file_pos_ /* TODO - set correct file_pos */ ) );
-		}
-
-		if( inserted_template_parameter != nullptr )
-			inserted_template_parameter->second.SetIsTemplateParameter(true);
-	}
-
-	U_ASSERT( template_parameters_usage_flags.size() == type_template->template_parameters.size() );
+	ProcessTemplateArgs(
+		type_template_declaration.args_,
+		names_scope,
+		type_template_declaration.file_pos_,
+		template_parameters,
+		*template_parameters_namespace,
+		template_parameters_usage_flags );
 
 	if( type_template_declaration.is_short_form_ )
 	{
@@ -245,6 +159,163 @@ void CodeBuilder::PrepareTypeTemplate(
 
 void CodeBuilder::PrepareFunctionTemplate( const Synt::FunctionTemplate& function_template_declaration, NamesScope& names_scope )
 {
+	const Synt::ComplexName& complex_name = function_template_declaration.function_->name_;
+	const ProgramString& function_template_name= complex_name.components.front().name;
+
+	if( complex_name.components.size() > 1u )
+		errors_.push_back( ReportFunctionDeclarationOutsideItsScope( function_template_declaration.file_pos_ ) );
+	if( complex_name.components.front().have_template_parameters )
+		errors_.push_back( ReportValueIsNotTemplate( function_template_declaration.file_pos_ ) );
+
+	if( function_template_declaration.function_->block_ == nullptr )
+		errors_.push_back( ReportIncompleteMemberOfClassTemplate( function_template_declaration.file_pos_, function_template_name ) ); // SPRACHE_TODO - generate separate error
+	if( function_template_declaration.function_->virtual_function_kind_ != Synt::VirtualFunctionKind::None )
+	{
+		// SPRACHE_TODO - report "template function can not be virtual"
+	}
+
+	const FunctionTemplatePtr function_template( new FunctionTemplate );
+
+	std::vector<bool> template_parameters_usage_flags; // Currently unused, because function template have no signature.
+
+	PushCacheFillResolveHandler( function_template->resolving_cache, names_scope );
+	const NamesScopePtr template_parameters_namespace = std::make_shared<NamesScope>( g_template_parameters_namespace_prefix, &names_scope );
+
+	ProcessTemplateArgs(
+		function_template_declaration.args_,
+		names_scope,
+		function_template_declaration.file_pos_,
+		function_template->template_parameters,
+		*template_parameters_namespace,
+		template_parameters_usage_flags );
+
+	// Make first check-pass for template. Resolve all names in this pass.
+	PrepareFunction( *function_template_declaration.function_, false, nullptr, *template_parameters_namespace );
+
+	PopResolveHandler();
+
+	// Insert function template
+	if( NamesScope::InsertedName* const same_name= names_scope.GetThisScopeName( function_template_name ) )
+	{
+		if( OverloadedFunctionsSet* const functions_set= same_name->second.GetFunctionsSet() )
+		{
+			// SPRACHE_TODO - check equality of different template functions.
+			functions_set->template_functions.push_back( function_template );
+		}
+		else
+			errors_.push_back( ReportRedefinition( function_template_declaration.file_pos_, function_template_name ) );
+	}
+	else
+	{
+		OverloadedFunctionsSet functions_set;
+		functions_set.template_functions.push_back( function_template );
+	}
+}
+
+void CodeBuilder::ProcessTemplateArgs(
+	const std::vector<Synt::TemplateBase::Arg>& args,
+	NamesScope& names_scope,
+	const FilePos& file_pos,
+	std::vector<TypeTemplate::TemplateParameter>& template_parameters,
+	NamesScope& template_parameters_namespace,
+	std::vector<bool>& template_parameters_usage_flags )
+{
+	U_ASSERT( template_parameters.empty() );
+	U_ASSERT( template_parameters_usage_flags.empty() );
+
+	// Check and fill template parameters.
+	for( const Synt::TemplateBase::Arg& arg : args )
+	{
+		U_ASSERT( arg.name->components.size() == 1u );
+		const ProgramString& arg_name= arg.name->components.front().name;
+
+		// Check redefinition
+		for( const auto& prev_arg : template_parameters )
+		{
+			if( prev_arg.name == arg_name )
+			{
+				errors_.push_back( ReportRedefinition( file_pos, arg_name ) );
+				continue;
+			}
+		}
+		if( NameShadowsTemplateArgument( arg_name, names_scope ) )
+			errors_.push_back( ReportDeclarationShadowsTemplateArgument( file_pos, arg_name ) );
+
+		NamesScope::InsertedName* inserted_template_parameter= nullptr;
+
+		if( arg.arg_type != nullptr )
+		{
+			// If template parameter is variable.
+
+			// Resolve from outer space or from this template parameters.
+			const NamesScope::InsertedName* const type_name= ResolveName( file_pos, template_parameters_namespace, *arg.arg_type );
+			if( type_name == nullptr )
+			{
+				errors_.push_back( ReportNameNotFound( file_pos, *arg.arg_type ) );
+				continue;
+			}
+			const Type* const type= type_name->second.GetTypeName();
+			if( type == nullptr )
+			{
+				errors_.push_back( ReportNameIsNotTypeName( file_pos, type_name->first ) );
+				continue;
+			}
+
+			if( type->GetTemplateDependentType() == nullptr &&
+				!TypeIsValidForTemplateVariableArgument( *type ) )
+			{
+				errors_.push_back( ReportInvalidTypeOfTemplateVariableArgument( file_pos, type->ToString() ) );
+				continue;
+			}
+
+			// If type is template parameter, set usage flag.
+			if( arg.arg_type->components.size() == 1u && !arg.arg_type->components.front().have_template_parameters )
+			{
+				for( const TypeTemplate::TemplateParameter& template_parameter : template_parameters )
+				{
+					if( template_parameter.name == arg.arg_type->components.front().name )
+					{
+						template_parameters_usage_flags[ &template_parameter - template_parameters.data() ]= true;
+						break;
+					}
+				}
+			}
+
+			template_parameters.emplace_back();
+			template_parameters.back().name= arg_name;
+			template_parameters.back().type_name= arg.arg_type;
+			template_parameters_usage_flags.push_back(false);
+
+			Variable variable;
+			variable.type= *type;
+			if( type->GetTemplateDependentType() != nullptr )
+			{}
+			else
+			{
+				variable.constexpr_value= llvm::UndefValue::get( type->GetLLVMType() );
+				variable.llvm_value=
+					CreateGlobalConstantVariable( *type, ToStdString( arg_name ), variable.constexpr_value );
+			}
+
+			inserted_template_parameter=
+				template_parameters_namespace.AddName( arg_name, Value( std::move(variable), file_pos ) /* TODO - set correct file_pos */ );
+		}
+		else
+		{
+			// If template parameter is type.
+
+			template_parameters.emplace_back();
+			template_parameters.back().name= arg_name;
+			template_parameters_usage_flags.push_back(false);
+			inserted_template_parameter=
+				template_parameters_namespace.AddName( arg_name, Value( GetNextTemplateDependentType(), file_pos /* TODO - set correct file_pos */ ) );
+		}
+
+		if( inserted_template_parameter != nullptr )
+			inserted_template_parameter->second.SetIsTemplateParameter(true);
+	}
+
+	U_ASSERT( template_parameters_usage_flags.size() == template_parameters.size() );
 }
 
 void CodeBuilder::PrepareTemplateSignatureParameter(

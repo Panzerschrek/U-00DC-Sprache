@@ -46,6 +46,9 @@ typedef std::shared_ptr<NamesScope> NamesScopePtr;
 struct TypeTemplate;
 typedef std::shared_ptr<TypeTemplate> TypeTemplatePtr;
 
+struct FunctionTemplate;
+typedef std::shared_ptr<FunctionTemplate> FunctionTemplatePtr;
+
 struct FundamentalType final
 {
 	U_FundamentalType fundamental_type;
@@ -244,7 +247,8 @@ struct FunctionVariable final
 struct OverloadedFunctionsSet
 {
 	std::vector<FunctionVariable> functions;
-	// TODO - function templates here
+
+	std::vector<FunctionTemplatePtr> template_functions;
 };
 
 class StoredVariable;
@@ -671,6 +675,17 @@ struct TypeTemplate final
 
 typedef boost::variant< int, Type, Variable > DeducibleTemplateParameter; // int means not deduced
 typedef std::vector<DeducibleTemplateParameter> DeducibleTemplateParameters;
+
+struct FunctionTemplate
+{
+	std::vector<TypeTemplate::TemplateParameter> template_parameters;
+
+	// Store syntax tree element for instantiation.
+	// Syntax tree must live longer, than this struct.
+	const Synt::FunctionTemplate* syntax_element= nullptr;
+
+	ResolvingCache resolving_cache;
+};
 
 const ProgramString& GetFundamentalTypeName( U_FundamentalType fundamental_type );
 
