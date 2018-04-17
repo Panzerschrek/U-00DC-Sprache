@@ -303,11 +303,19 @@ TemplateBase::TemplateBase( const FilePos& file_pos )
 	: SyntaxElementBase( file_pos )
 {}
 
-ClassTemplate::ClassTemplate( const FilePos& file_pos )
+TypeTemplateBase::TypeTemplateBase( const FilePos& file_pos )
 	: TemplateBase( file_pos )
 {}
 
+ClassTemplate::ClassTemplate( const FilePos& file_pos )
+	: TypeTemplateBase( file_pos )
+{}
+
 TypedefTemplate::TypedefTemplate( const FilePos& file_pos )
+	: TypeTemplateBase( file_pos )
+{}
+
+FunctionTemplate::FunctionTemplate( const FilePos& file_pos )
 	: TemplateBase( file_pos )
 {}
 

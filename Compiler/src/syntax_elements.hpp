@@ -663,6 +663,16 @@ public:
 		IExpressionComponentPtr name_expr;
 	};
 
+	std::vector<Arg> args_;
+};
+
+typedef std::unique_ptr<TemplateBase> TemplateBasePtr;
+
+class TypeTemplateBase : public TemplateBase
+{
+public:
+	explicit TypeTemplateBase( const FilePos& file_pos );
+
 	// Argument in template signature.
 	struct SignatureArg
 	{
@@ -670,7 +680,6 @@ public:
 		IExpressionComponentPtr default_value;
 	};
 
-	std::vector<Arg> args_;
 	std::vector<SignatureArg> signature_args_;
 	ProgramString name_;
 
@@ -678,10 +687,10 @@ public:
 	bool is_short_form_= false;
 };
 
-typedef std::unique_ptr<TemplateBase> TemplateBasePtr;
+typedef std::unique_ptr<TypeTemplateBase> TypeTemplateBasePtr;
 
 class ClassTemplate final
-	: public TemplateBase
+	: public TypeTemplateBase
 	, public IProgramElement
 	, public IClassElement
 {
@@ -692,7 +701,7 @@ public:
 };
 
 class TypedefTemplate final
-	: public TemplateBase
+	: public TypeTemplateBase
 	, public IProgramElement
 	, public IClassElement
 {
@@ -700,6 +709,17 @@ public:
 	explicit TypedefTemplate( const FilePos& file_pos );
 
 	std::unique_ptr<Typedef> typedef_;
+};
+
+class FunctionTemplate final
+	: public TemplateBase
+	, public IProgramElement
+	, public IClassElement
+{
+public:
+	explicit FunctionTemplate( const FilePos& file_pos );
+
+	std::unique_ptr<Function> function_;
 };
 
 class Namespace final

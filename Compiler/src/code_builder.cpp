@@ -745,7 +745,7 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 			PrepareClass( *inner_class, inner_class->name_, the_class->members, true );
 		}
 		else if( const auto template_=
-			dynamic_cast<const Synt::TemplateBase*>( member.get() ) )
+			dynamic_cast<const Synt::TypeTemplateBase*>( member.get() ) )
 		{
 			PrepareTypeTemplate( *template_, the_class->members );
 		}
@@ -778,6 +778,11 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 			dynamic_cast<const Synt::TypedefTemplate*>( member.get() ) )
 		{
 			PrepareTypeTemplate( *typedef_template, the_class->members );
+		}
+		else if( const auto function_template=
+			dynamic_cast<const Synt::FunctionTemplate*>( member.get() ) )
+		{
+			U_UNUSED(function_template); // TODO
 		}
 		else
 			U_ASSERT( false );
@@ -1381,7 +1386,7 @@ void CodeBuilder::BuildNamespaceBody(
 			BuildNamespaceBody( namespace_->elements_, *result_scope );
 		}
 		else if( const auto tempate_=
-			dynamic_cast<const Synt::TemplateBase*>( program_element.get() ) )
+			dynamic_cast<const Synt::TypeTemplateBase*>( program_element.get() ) )
 		{
 			PrepareTypeTemplate( *tempate_, names_scope );
 		}
@@ -1414,6 +1419,11 @@ void CodeBuilder::BuildNamespaceBody(
 			dynamic_cast<const Synt::TypedefTemplate*>( program_element.get() ) )
 		{
 			PrepareTypeTemplate( *typedef_template, names_scope );
+		}
+		else if( const auto function_template=
+			dynamic_cast<const Synt::FunctionTemplate*>( program_element.get() ) )
+		{
+			U_UNUSED(function_template); // TODO
 		}
 		else
 			U_ASSERT(false);

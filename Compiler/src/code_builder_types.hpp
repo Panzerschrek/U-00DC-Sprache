@@ -660,7 +660,7 @@ struct TypeTemplate final
 
 	// Store syntax tree element for instantiation.
 	// Syntax tree must live longer, than this struct.
-	const Synt::TemplateBase* syntax_element= nullptr;
+	const Synt::TypeTemplateBase* syntax_element= nullptr;
 
 	ResolvingCache resolving_cache;
 	NamesScope* parent_namespace= nullptr; // Changes after import.

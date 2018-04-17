@@ -194,7 +194,7 @@ private:
 	std::unique_ptr<Class> ParseClass();
 	std::unique_ptr<Class> ParseClassBody();
 
-	std::unique_ptr<TemplateBase> ParseTemplate();
+	TemplateBasePtr ParseTemplate();
 
 	void PushErrorMessage( const Lexem& lexem );
 
@@ -2569,17 +2569,19 @@ std::unique_ptr<Class> SyntaxAnalyzer::ParseClassBody()
 	return result;
 }
 
-std::unique_ptr<TemplateBase> SyntaxAnalyzer::ParseTemplate()
+TemplateBasePtr SyntaxAnalyzer::ParseTemplate()
 {
 	U_ASSERT( it_->type == Lexem::Type::Identifier && it_->text == Keywords::template_ );
 	++it_; U_ASSERT( it_ < it_end_ );
 
-	std::unique_ptr<TemplateBase> result( new ClassTemplate( it_->file_pos ) );
+	// TemplateBase parameters
+	const FilePos& template_file_pos= it_->file_pos;
+	std::vector<TemplateBase::Arg> args;
 
 	if( it_->type != Lexem::Type::TemplateBracketLeft )
 	{
 		PushErrorMessage( *it_ );
-		return result;
+		return nullptr;
 	}
 	++it_; U_ASSERT( it_ < it_end_ );
 
@@ -2591,7 +2593,7 @@ std::unique_ptr<TemplateBase> SyntaxAnalyzer::ParseTemplate()
 			break;
 		}
 
-		result->args_.emplace_back();
+		args.emplace_back();
 
 		if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::type_ )
 		{
@@ -2600,22 +2602,22 @@ std::unique_ptr<TemplateBase> SyntaxAnalyzer::ParseTemplate()
 		else
 		{
 			std::unique_ptr<NamedOperand> arg_type( new NamedOperand( it_->file_pos, ParseComplexName() ) );
-			result->args_.back().arg_type= &arg_type->name_;
-			result->args_.back().arg_type_expr= std::move(arg_type);
+			args.back().arg_type= &arg_type->name_;
+			args.back().arg_type_expr= std::move(arg_type);
 		}
 
 		if( it_->type != Lexem::Type::Identifier )
 		{
 			PushErrorMessage( *it_ );
-			return result;
+			return nullptr;
 		}
 
 		ComplexName name;
 		name.components.emplace_back();
 		name.components.back().name= it_->text;
 		std::unique_ptr<NamedOperand> name_ptr( new NamedOperand( it_->file_pos, std::move(name) ) );
-		result->args_.back().name= &name_ptr->name_;
-		result->args_.back().name_expr= std::move(name_ptr);
+		args.back().name= &name_ptr->name_;
+		args.back().name_expr= std::move(name_ptr);
 
 		++it_; U_ASSERT( it_ < it_end_ );
 
@@ -2625,7 +2627,7 @@ std::unique_ptr<TemplateBase> SyntaxAnalyzer::ParseTemplate()
 			if( it_->type == Lexem::Type::TemplateBracketRight )
 			{
 				PushErrorMessage( *it_ );
-				return result;
+				return nullptr;
 			}
 		}
 	} // for arg parameters
@@ -2633,7 +2635,7 @@ std::unique_ptr<TemplateBase> SyntaxAnalyzer::ParseTemplate()
 	if( it_->type != Lexem::Type::Identifier )
 	{
 		PushErrorMessage( *it_ );
-		return result;
+		return nullptr;
 	}
 
 	enum class TemplateKind
@@ -2654,7 +2656,7 @@ std::unique_ptr<TemplateBase> SyntaxAnalyzer::ParseTemplate()
 		if( it_->type != Lexem::Type::Identifier )
 		{
 			PushErrorMessage( *it_ );
-			return result;
+			return nullptr;
 		}
 		name= it_->text;
 		++it_; U_ASSERT( it_ < it_end_ );
@@ -2666,19 +2668,28 @@ std::unique_ptr<TemplateBase> SyntaxAnalyzer::ParseTemplate()
 		if( it_->type != Lexem::Type::Identifier )
 		{
 			PushErrorMessage( *it_ );
-			return result;
+			return nullptr;
 		}
 		name= it_->text;
 		++it_; U_ASSERT( it_ < it_end_ );
 		template_kind= TemplateKind::Typedef;
 	}
+	else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::fn_ )
+	{
+		std::unique_ptr<FunctionTemplate> function_template( new FunctionTemplate( template_file_pos ) );
+		function_template->args_= std::move(args);
+		function_template->function_= ParseFunction();
+		return std::move(function_template);
+	}
 	else
 	{
-		// TODO - parse functions templates here
 		PushErrorMessage( *it_ );
-		return result;
+		return nullptr;
 	}
 
+	// TypeTemplateBase parameters
+	std::vector<TypeTemplateBase::SignatureArg> signature_args;
+	bool is_short_form= false;
 
 	if( it_->type == Lexem::Type::TemplateBracketLeft )
 	{
@@ -2692,14 +2703,14 @@ std::unique_ptr<TemplateBase> SyntaxAnalyzer::ParseTemplate()
 				break;
 			}
 
-			result->signature_args_.emplace_back();
-			result->signature_args_.back().name= ParseExpression();
+			signature_args.emplace_back();
+			signature_args.back().name= ParseExpression();
 
 			U_ASSERT( it_ < it_end_ );
 			if( it_->type == Lexem::Type::Assignment )
 			{
 				++it_; U_ASSERT( it_ < it_end_ );
-				result->signature_args_.back().default_value= ParseExpression();
+				signature_args.back().default_value= ParseExpression();
 			}
 
 			if( it_->type == Lexem::Type::Comma )
@@ -2708,24 +2719,24 @@ std::unique_ptr<TemplateBase> SyntaxAnalyzer::ParseTemplate()
 				if( it_->type == Lexem::Type::TemplateBracketRight )
 				{
 					PushErrorMessage( *it_ );
-					return result;
+					return nullptr;
 				}
 			}
 		} // for signature args
 	}
 	else
-		result->is_short_form_= true;
+		is_short_form= true;
 
 	switch( template_kind )
 	{
 	case TemplateKind::Class:
 	case TemplateKind::Struct:
 		{
-			std::unique_ptr<ClassTemplate> class_template( new ClassTemplate( result->file_pos_ ) );
-			class_template->args_= std::move(result->args_);
-			class_template->signature_args_= std::move(result->signature_args_);
+			std::unique_ptr<ClassTemplate> class_template( new ClassTemplate( template_file_pos ) );
+			class_template->args_= std::move(args);
+			class_template->signature_args_= std::move(signature_args);
 			class_template->name_= name;
-			class_template->is_short_form_= result->is_short_form_;
+			class_template->is_short_form_= is_short_form;
 
 			ClassKindAttribute class_kind_attribute= ClassKindAttribute::Struct;
 			std::vector<ComplexName> class_parents_list;
@@ -2747,11 +2758,11 @@ std::unique_ptr<TemplateBase> SyntaxAnalyzer::ParseTemplate()
 
 	case TemplateKind::Typedef:
 		{
-			std::unique_ptr<TypedefTemplate> typedef_template( new TypedefTemplate( result->file_pos_ ) );
-			typedef_template->args_= std::move(result->args_);
-			typedef_template->signature_args_= std::move(result->signature_args_);
+			std::unique_ptr<TypedefTemplate> typedef_template( new TypedefTemplate( template_file_pos ) );
+			typedef_template->args_= std::move(args);
+			typedef_template->signature_args_= std::move(signature_args);
 			typedef_template->name_= name;
-			typedef_template->is_short_form_= result->is_short_form_;
+			typedef_template->is_short_form_= is_short_form;
 
 			typedef_template->typedef_= ParseTypedefBody();
 			if( typedef_template->typedef_ != nullptr )
@@ -2766,7 +2777,7 @@ std::unique_ptr<TemplateBase> SyntaxAnalyzer::ParseTemplate()
 	};
 
 	U_ASSERT(false);
-	return result;
+	return nullptr;
 }
 
 void SyntaxAnalyzer::PushErrorMessage( const Lexem& lexem )

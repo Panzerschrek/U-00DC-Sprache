@@ -164,7 +164,7 @@ private:
 		FunctionContext& function_context );
 
 	// Templates
-	void PrepareTypeTemplate( const Synt::TemplateBase& type_template_declaration, NamesScope& names_scope );
+	void PrepareTypeTemplate( const Synt::TypeTemplateBase& type_template_declaration, NamesScope& names_scope );
 
 	void PrepareTemplateSignatureParameter(
 		const FilePos& file_pos,

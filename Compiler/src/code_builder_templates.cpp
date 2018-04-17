@@ -44,7 +44,7 @@ static const ProgramString& GetNameForGeneratedClass()
 static const ProgramString g_template_parameters_namespace_prefix= "_tp_ns-"_SpC;
 
 void CodeBuilder::PrepareTypeTemplate(
-	const Synt::TemplateBase& type_template_declaration,
+	const Synt::TypeTemplateBase& type_template_declaration,
 	NamesScope& names_scope )
 {
 	/* SPRACHE_TODO:
@@ -75,7 +75,7 @@ void CodeBuilder::PrepareTypeTemplate(
 	const NamesScopePtr template_parameters_namespace = std::make_shared<NamesScope>( g_template_parameters_namespace_prefix, &names_scope );
 
 	// Check and fill template parameters.
-	for( const Synt::TemplateBase::Arg& arg : type_template_declaration.args_ )
+	for( const Synt::TypeTemplateBase::Arg& arg : type_template_declaration.args_ )
 	{
 		U_ASSERT( arg.name->components.size() == 1u );
 		const ProgramString& arg_name= arg.name->components.front().name;
@@ -172,7 +172,7 @@ void CodeBuilder::PrepareTypeTemplate(
 	{
 		U_ASSERT( type_template_declaration.signature_args_.empty() );
 		// Assign template arguments to signature arguments.
-		for( const Synt::TemplateBase::Arg& arg : type_template_declaration.args_ )
+		for( const Synt::TypeTemplateBase::Arg& arg : type_template_declaration.args_ )
 		{
 			PrepareTemplateSignatureParameter( type_template_declaration.file_pos_, *arg.name, *template_parameters_namespace, template_parameters, template_parameters_usage_flags );
 			type_template->signature_arguments.push_back(arg.name_expr.get());
@@ -184,7 +184,7 @@ void CodeBuilder::PrepareTypeTemplate(
 	{
 		// Check and fill signature args.
 		type_template->first_optional_signature_argument= 0u;
-		for( const Synt::TemplateBase::SignatureArg& signature_arg : type_template_declaration.signature_args_ )
+		for( const Synt::TypeTemplateBase::SignatureArg& signature_arg : type_template_declaration.signature_args_ )
 		{
 			PrepareTemplateSignatureParameter( signature_arg.name, *template_parameters_namespace, template_parameters, template_parameters_usage_flags );
 			type_template->signature_arguments.push_back(signature_arg.name.get());
