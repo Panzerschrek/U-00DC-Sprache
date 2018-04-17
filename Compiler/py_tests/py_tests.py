@@ -19,6 +19,7 @@ def GetTestsList( tests_modules_list ):
 def main():
 	tests_modules_list= [
 		"code_builder_test",
+		"function_templates_errors_test",
 		"function_templates_test",
 		"inheritance_test",
 		"inheritance_errors_test",

@@ -152,7 +152,8 @@ enum class CodeBuilderErrorCode : unsigned int
 	BodyForPureVirtualFunction,
 	ClassContainsPureVirtualFunctions,
 	NonPureVirtualFunctionInInterface,
-	PureDestructor
+	PureDestructor,
+	VirtualForFunctionTemplate,
 };
 
 struct CodeBuilderError
@@ -278,5 +279,6 @@ CodeBuilderError ReportBodyForPureVirtualFunction( const FilePos& file_pos, cons
 CodeBuilderError ReportClassContainsPureVirtualFunctions( const FilePos& file_pos, const ProgramString& class_name );
 CodeBuilderError ReportNonPureVirtualFunctionInInterface( const FilePos& file_pos, const ProgramString& class_name );
 CodeBuilderError ReportPureDestructor( const FilePos& file_pos, const ProgramString& class_name );
+CodeBuilderError ReportVirtualForFunctionTemplate( const FilePos& file_pos, const ProgramString& function_name );
 
 } // namespace U

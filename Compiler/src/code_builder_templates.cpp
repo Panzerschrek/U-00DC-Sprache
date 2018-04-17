@@ -169,11 +169,9 @@ void CodeBuilder::PrepareFunctionTemplate( const Synt::FunctionTemplate& functio
 		errors_.push_back( ReportValueIsNotTemplate( function_template_declaration.file_pos_ ) );
 
 	if( function_template_declaration.function_->block_ == nullptr )
-		errors_.push_back( ReportIncompleteMemberOfClassTemplate( function_template_declaration.file_pos_, function_template_name ) ); // SPRACHE_TODO - generate separate error
+		errors_.push_back( ReportIncompleteMemberOfClassTemplate( function_template_declaration.file_pos_, function_template_name ) );
 	if( function_template_declaration.function_->virtual_function_kind_ != Synt::VirtualFunctionKind::None )
-	{
-		// SPRACHE_TODO - report "template function can not be virtual"
-	}
+		errors_.push_back( ReportVirtualForFunctionTemplate( function_template_declaration.file_pos_, function_template_name ) );
 
 	const FunctionTemplatePtr function_template( new FunctionTemplate );
 	function_template->syntax_element= &function_template_declaration;
@@ -193,6 +191,8 @@ void CodeBuilder::PrepareFunctionTemplate( const Synt::FunctionTemplate& functio
 		function_template->template_parameters,
 		*template_parameters_namespace,
 		template_parameters_usage_flags );
+
+	// TODO - PrepareTemplateSignatureParameter
 
 	// Make first check-pass for template. Resolve all names in this pass.
 	PrepareFunction( *function_template_declaration.function_, false, base_class, *template_parameters_namespace );
@@ -857,6 +857,8 @@ NamesScope::InsertedName* CodeBuilder::GenTemplateType(
 
 		if( boost::get<int>( &arg ) != nullptr )
 		{
+			// SPRACHE_TODO - maybe not generate this error?
+			// Other function templates, for example, can match given aruments.
 			errors_.push_back( ReportTemplateParametersDeductionFailed( file_pos ) );
 			PopResolveHandler();
 			return nullptr;
