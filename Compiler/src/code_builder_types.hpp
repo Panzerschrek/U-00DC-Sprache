@@ -43,6 +43,9 @@ typedef std::shared_ptr<Enum> EnumPtr;
 class NamesScope;
 typedef std::shared_ptr<NamesScope> NamesScopePtr;
 
+struct TemplateBase;
+typedef std::shared_ptr<TemplateBase> TemplateBasePtr;
+
 struct TypeTemplate;
 typedef std::shared_ptr<TypeTemplate> TypeTemplatePtr;
 
@@ -650,7 +653,7 @@ struct Enum
 	FundamentalType underlaying_type; // must be integer
 };
 
-struct TypeTemplate final
+struct TemplateBase
 {
 	struct TemplateParameter
 	{
@@ -658,9 +661,16 @@ struct TypeTemplate final
 		const Synt::ComplexName* type_name= nullptr; // Exists for value parameters.
 	};
 
-	// Sorted in order of first parameter usage in signature.
 	std::vector< TemplateParameter > template_parameters;
 
+	ResolvingCache resolving_cache;
+	NamesScope* parent_namespace= nullptr; // Changes after import.
+
+	FilePos file_pos;
+};
+
+struct TypeTemplate final : TemplateBase
+{
 	std::vector< const Synt::IExpressionComponent* > signature_arguments;
 	std::vector< const Synt::IExpressionComponent* > default_signature_arguments;
 	size_t first_optional_signature_argument= ~0u;
@@ -669,22 +679,16 @@ struct TypeTemplate final
 	// Syntax tree must live longer, than this struct.
 	const Synt::TypeTemplateBase* syntax_element= nullptr;
 
-	ResolvingCache resolving_cache;
-	NamesScope* parent_namespace= nullptr; // Changes after import.
 };
 
 typedef boost::variant< int, Type, Variable > DeducibleTemplateParameter; // int means not deduced
 typedef std::vector<DeducibleTemplateParameter> DeducibleTemplateParameters;
 
-struct FunctionTemplate
+struct FunctionTemplate final : public TemplateBase
 {
-	std::vector<TypeTemplate::TemplateParameter> template_parameters;
-
 	// Store syntax tree element for instantiation.
 	// Syntax tree must live longer, than this struct.
 	const Synt::FunctionTemplate* syntax_element= nullptr;
-
-	ResolvingCache resolving_cache;
 };
 
 const ProgramString& GetFundamentalTypeName( U_FundamentalType fundamental_type );

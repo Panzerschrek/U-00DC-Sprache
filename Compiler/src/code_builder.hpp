@@ -202,7 +202,7 @@ private:
 
 	// Returns true, if all ok.
 	bool DuduceTemplateArguments(
-		const TypeTemplatePtr& type_template_ptr,
+		const TemplateBasePtr& template_ptr,
 		const TemplateParameter& template_parameter,
 		const Synt::ComplexName& signature_parameter,
 		const FilePos& signature_parameter_file_pos,
@@ -210,7 +210,7 @@ private:
 		NamesScope& names_scope );
 
 	bool DuduceTemplateArguments(
-		const TypeTemplatePtr& type_template_ptr,
+		const TemplateBasePtr& template_ptr,
 		const TemplateParameter& template_parameter,
 		const Synt::IExpressionComponent& signature_parameter,
 		const FilePos& signature_parameter_file_pos,
@@ -218,7 +218,7 @@ private:
 		NamesScope& names_scope );
 
 	bool DuduceTemplateArguments(
-		const TypeTemplatePtr& type_template_ptr,
+		const TemplateBasePtr& template_ptr,
 		const TemplateParameter& template_parameter,
 		const Synt::ITypeName& signature_parameter,
 		const FilePos& signature_parameter_file_pos,
@@ -233,8 +233,13 @@ private:
 		NamesScope& template_names_scope,
 		NamesScope& arguments_names_scope );
 
-	NamesScope& PushTemplateArgumentsSpace();
-	void PopTemplateArgumentsSpace();
+	const FunctionVariable* GenTemplateFunction(
+		const FilePos& file_pos,
+		const FunctionTemplatePtr& function_template_ptr,
+		NamesScope& template_names_scope,
+		const std::vector<Function::Arg>& actual_args,
+		bool first_actual_arg_is_this );
+
 	bool NameShadowsTemplateArgument( const ProgramString& name, NamesScope& names_scope );
 
 	TemplateDependentType GetNextTemplateDependentType();
@@ -522,6 +527,12 @@ private:
 	const FunctionVariable* GetOverloadedOperator(
 		const std::vector<Function::Arg>& actual_args,
 		OverloadedOperator op,
+		const FilePos& file_pos );
+
+	const FunctionVariable* GetTemplateFunction(
+		const OverloadedFunctionsSet& functions_set,
+		const std::vector<Function::Arg>& actual_args,
+		bool first_actual_arg_is_this,
 		const FilePos& file_pos );
 
 	// Initializers.

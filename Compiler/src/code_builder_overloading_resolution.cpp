@@ -167,7 +167,7 @@ const FunctionVariable* CodeBuilder::GetOverloadedFunction(
 	const bool first_actual_arg_is_this,
 	const FilePos& file_pos )
 {
-	U_ASSERT( !functions_set.functions.empty() );
+	U_ASSERT( !functions_set.functions.empty() || ! functions_set.template_functions.empty() );
 	U_ASSERT( !( first_actual_arg_is_this && actual_args.empty() ) );
 
 	std::vector<const FunctionVariable*> match_functions;
@@ -253,9 +253,8 @@ const FunctionVariable* CodeBuilder::GetOverloadedFunction(
 
 	if( match_functions.empty() )
 	{
-		// Not found any function.
-		errors_.push_back( ReportCouldNotSelectOverloadedFunction( file_pos ) );
-		return nullptr;
+		// Not found any function - try elect template function.
+		return GetTemplateFunction( functions_set, actual_args, first_actual_arg_is_this, file_pos );
 	}
 	else if( match_functions.size() == 1u )
 		return match_functions.front();
@@ -389,6 +388,25 @@ const FunctionVariable* CodeBuilder::GetOverloadedOperator(
 		}
 	}
 
+	return nullptr;
+}
+
+const FunctionVariable* CodeBuilder::GetTemplateFunction(
+	const OverloadedFunctionsSet& functions_set,
+	const std::vector<Function::Arg>& actual_args,
+	const bool first_actual_arg_is_this,
+	const FilePos& file_pos )
+{
+	// SPRACHE_TODO - try select between multiple template functions.
+	if( functions_set.template_functions.size() > 1u )
+		errors_.push_back( ReportTooManySuitableOverloadedFunctions( file_pos ) );
+
+	for( const FunctionTemplatePtr& function_template_ptr : functions_set.template_functions )
+	{
+		return GenTemplateFunction( file_pos, function_template_ptr, *function_template_ptr->parent_namespace, actual_args, first_actual_arg_is_this );
+	}
+
+	errors_.push_back( ReportCouldNotSelectOverloadedFunction( file_pos ) );
 	return nullptr;
 }
 

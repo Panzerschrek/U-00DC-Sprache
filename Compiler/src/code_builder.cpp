@@ -279,6 +279,7 @@ void CodeBuilder::MergeNameScopes( NamesScope& dst, const NamesScope& src, Class
 				const OverloadedFunctionsSet* const src_funcs_set= src_member.second.GetFunctionsSet();
 				U_ASSERT( src_funcs_set != nullptr );
 
+				// TODO - merge function templates
 				for( const FunctionVariable& src_func : src_funcs_set->functions )
 				{
 					FunctionVariable* same_dst_func=
@@ -925,6 +926,7 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 						if( OverloadedFunctionsSet* const result_class_functions= result_class_name->second.GetFunctionsSet() )
 						{
 							// Merge function sets, if result class have functions set with given name.
+							// TODO - merge function templates
 							for( const FunctionVariable& parent_function : functions->functions )
 							{
 								bool overrides= false;
