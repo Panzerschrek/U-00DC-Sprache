@@ -689,6 +689,7 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 
 	std::vector<PrepareFunctionResult> class_functions;
 	std::vector<const Synt::Class*> inner_classes;
+	std::vector<const Synt::FunctionTemplate*> function_templates;
 
 	for( const Synt::IClassElementPtr& member : class_declaration.elements_ )
 	{
@@ -778,7 +779,8 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 		else if( const auto function_template=
 			dynamic_cast<const Synt::FunctionTemplate*>( member.get() ) )
 		{
-			PrepareFunctionTemplate( *function_template, names_scope );
+			// In first pass skip templates, because we process template functions include body.
+			function_templates.push_back(function_template);
 		}
 		else
 			U_ASSERT( false );
@@ -977,6 +979,12 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 	TryGenerateCopyConstructor( *the_class, class_type );
 	TryGenerateDestructor( *the_class, class_type );
 	TryGenerateCopyAssignmentOperator( *the_class, class_type );
+
+	// Prepare function templates
+	// Here we can face some problems: lower templates can not be seen from upper templtes.
+	// So, assume, that it is not "bug", but "feature".
+	for( const auto function_template : function_templates )
+		PrepareFunctionTemplate( *function_template, the_class->members, the_class_proxy );
 
 	// Prepare inner classes.
 	for( const Synt::Class* const inner_class : inner_classes )
@@ -1415,7 +1423,7 @@ void CodeBuilder::BuildNamespaceBody(
 		else if( const auto function_template=
 			dynamic_cast<const Synt::FunctionTemplate*>( program_element.get() ) )
 		{
-			PrepareFunctionTemplate( *function_template, names_scope );
+			PrepareFunctionTemplate( *function_template, names_scope, nullptr );
 		}
 		else
 			U_ASSERT(false);

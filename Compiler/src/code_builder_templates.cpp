@@ -158,7 +158,7 @@ void CodeBuilder::PrepareTypeTemplate(
 	PopResolveHandler();
 }
 
-void CodeBuilder::PrepareFunctionTemplate( const Synt::FunctionTemplate& function_template_declaration, NamesScope& names_scope )
+void CodeBuilder::PrepareFunctionTemplate( const Synt::FunctionTemplate& function_template_declaration, NamesScope& names_scope, const ClassProxyPtr& base_class )
 {
 	const Synt::ComplexName& complex_name = function_template_declaration.function_->name_;
 	const ProgramString& function_template_name= complex_name.components.front().name;
@@ -179,6 +179,7 @@ void CodeBuilder::PrepareFunctionTemplate( const Synt::FunctionTemplate& functio
 	function_template->syntax_element= &function_template_declaration;
 	function_template->file_pos= function_template_declaration.file_pos_;
 	function_template->parent_namespace= &names_scope;
+	function_template->base_class= base_class;
 
 	std::vector<bool> template_parameters_usage_flags; // Currently unused, because function template have no signature.
 
@@ -194,7 +195,7 @@ void CodeBuilder::PrepareFunctionTemplate( const Synt::FunctionTemplate& functio
 		template_parameters_usage_flags );
 
 	// Make first check-pass for template. Resolve all names in this pass.
-	PrepareFunction( *function_template_declaration.function_, false, nullptr, *template_parameters_namespace );
+	PrepareFunction( *function_template_declaration.function_, false, base_class, *template_parameters_namespace );
 
 	PopResolveHandler();
 
@@ -1004,11 +1005,24 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 
 		// Functin arg declared as "mut&", but given something immutable.
 		if( function_argument.mutability_modifier_ == Synt::MutabilityModifier::Mutable &&
-			function_argument.reference_modifier_ == Synt::ReferenceModifier::Reference &&
+			( function_argument.reference_modifier_ == Synt::ReferenceModifier::Reference || function_argument.name_ == Keywords::this_ ) &&
 			!given_args[i].is_mutable )
-			return nullptr;
+		{
+			deduction_failed= true;
+			continue;
+		}
 
-		if( !DuduceTemplateArguments(
+		if( i == 0u && function_argument.name_ == Keywords::this_ )
+		{
+			if( function_template.base_class == nullptr || // Can be in case of error.
+				given_args[i].type != function_template.base_class )
+			{
+				// Givent type and type of "this" are different.
+				deduction_failed= true;
+				continue;
+			}
+		}
+		else if( !DuduceTemplateArguments(
 				function_template_ptr,
 				given_args[i].type,
 				*function_argument.type_,
@@ -1107,7 +1121,7 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 
 	// "PrepareFunction" can insert function in namespace, but we do not whant it.
 	PrepareFunctionResult prepare_result=
-		PrepareFunction( function_declaration, false, nullptr/*TODO - set base class*/, *template_parameters_namespace );
+		PrepareFunction( function_declaration, false, function_template.base_class, *template_parameters_namespace );
 
 	PopResolveHandler();
 

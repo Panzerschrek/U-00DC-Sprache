@@ -165,7 +165,7 @@ private:
 
 	// Templates
 	void PrepareTypeTemplate( const Synt::TypeTemplateBase& type_template_declaration, NamesScope& names_scope );
-	void PrepareFunctionTemplate( const Synt::FunctionTemplate& function_template_declaration, NamesScope& names_scope );
+	void PrepareFunctionTemplate( const Synt::FunctionTemplate& function_template_declaration, NamesScope& names_scope, const ClassProxyPtr& base_class );
 
 	void ProcessTemplateArgs(
 		const std::vector<Synt::TemplateBase::Arg>& args,

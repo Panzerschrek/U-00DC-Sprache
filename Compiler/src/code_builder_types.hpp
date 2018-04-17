@@ -689,6 +689,8 @@ struct FunctionTemplate final : public TemplateBase
 	// Store syntax tree element for instantiation.
 	// Syntax tree must live longer, than this struct.
 	const Synt::FunctionTemplate* syntax_element= nullptr;
+
+	ClassProxyPtr base_class;
 };
 
 const ProgramString& GetFundamentalTypeName( U_FundamentalType fundamental_type );
