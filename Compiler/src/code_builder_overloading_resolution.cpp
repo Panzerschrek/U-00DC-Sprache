@@ -403,7 +403,11 @@ const FunctionVariable* CodeBuilder::GetTemplateFunction(
 
 	for( const FunctionTemplatePtr& function_template_ptr : functions_set.template_functions )
 	{
-		return GenTemplateFunction( file_pos, function_template_ptr, *function_template_ptr->parent_namespace, actual_args, first_actual_arg_is_this );
+		const FunctionVariable* const generated_function=
+			GenTemplateFunction( file_pos, function_template_ptr, *function_template_ptr->parent_namespace, actual_args, first_actual_arg_is_this );
+		if( generated_function == nullptr )
+			break;
+		return generated_function;
 	}
 
 	errors_.push_back( ReportCouldNotSelectOverloadedFunction( file_pos ) );
