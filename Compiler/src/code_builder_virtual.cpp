@@ -81,7 +81,8 @@ void CodeBuilder::TryGenerateDestructorPrototypeForPolymorphClass( Class& the_cl
 		virtual_table_entry->function_variable= destructor_function_variable;
 
 	// Add destructor to names scope.
-	OverloadedFunctionsSet destructors_set{ destructor_function_variable };
+	OverloadedFunctionsSet destructors_set;
+	destructors_set.functions.push_back(destructor_function_variable);
 	the_class.members.AddName( Keyword( Keywords::destructor_ ), destructors_set );
 }
 
@@ -90,7 +91,7 @@ void CodeBuilder::ProcessClassVirtualFunction( Class& the_class, PrepareFunction
 	U_ASSERT( the_class.is_incomplete );
 	U_ASSERT( function.functions_set != nullptr );
 
-	FunctionVariable& function_variable= (*function.functions_set)[function.function_index];
+	FunctionVariable& function_variable= (function.functions_set->functions)[function.function_index];
 	const ProgramString& function_name= function.func_syntax_element->name_.components.back().name; // TODO - does this right?
 
 	if( !function_variable.is_this_call )

@@ -1,5 +1,6 @@
 from py_tests_common import *
 
+
 def FunctionTemplateDeclaration_Test0():
 	c_program_text= """
 		template</ type T />

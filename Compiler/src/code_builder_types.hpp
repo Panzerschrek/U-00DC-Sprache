@@ -241,8 +241,11 @@ struct FunctionVariable final
 	bool VirtuallyEquals( const FunctionVariable& other ) const;
 };
 
-// Set of functions with same name, but different signature.
-typedef std::vector<FunctionVariable> OverloadedFunctionsSet;
+struct OverloadedFunctionsSet
+{
+	std::vector<FunctionVariable> functions;
+	// TODO - function templates here
+};
 
 class StoredVariable;
 typedef std::shared_ptr<StoredVariable> StoredVariablePtr;

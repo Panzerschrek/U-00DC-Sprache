@@ -279,7 +279,7 @@ void CodeBuilder::MergeNameScopes( NamesScope& dst, const NamesScope& src, Class
 				const OverloadedFunctionsSet* const src_funcs_set= src_member.second.GetFunctionsSet();
 				U_ASSERT( src_funcs_set != nullptr );
 
-				for( const FunctionVariable& src_func : *src_funcs_set )
+				for( const FunctionVariable& src_func : src_funcs_set->functions )
 				{
 					FunctionVariable* same_dst_func=
 						GetFunctionWithSameType( *src_func.type.GetFunctionType(), *dst_funcs_set );
@@ -744,11 +744,6 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 			inner_classes.push_back( inner_class );
 			PrepareClass( *inner_class, inner_class->name_, the_class->members, true );
 		}
-		else if( const auto template_=
-			dynamic_cast<const Synt::TypeTemplateBase*>( member.get() ) )
-		{
-			PrepareTypeTemplate( *template_, the_class->members );
-		}
 		else if( const auto variables_declaration=
 			dynamic_cast<const Synt::VariablesDeclaration*>( member.get() ) )
 		{
@@ -774,15 +769,15 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 		{
 			BuildTypedef( *typedef_, the_class->members );
 		}
-		else if( const auto typedef_template=
-			dynamic_cast<const Synt::TypedefTemplate*>( member.get() ) )
+		else if( const auto type_template=
+			dynamic_cast<const Synt::TypeTemplateBase*>( member.get() ) )
 		{
-			PrepareTypeTemplate( *typedef_template, the_class->members );
+			PrepareTypeTemplate( *type_template, the_class->members );
 		}
 		else if( const auto function_template=
 			dynamic_cast<const Synt::FunctionTemplate*>( member.get() ) )
 		{
-			U_UNUSED(function_template); // TODO
+			PrepareFunctionTemplate( *function_template, names_scope );
 		}
 		else
 			U_ASSERT( false );
@@ -794,7 +789,7 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 	{
 		const OverloadedFunctionsSet* const constructors= constructors_name->second.GetFunctionsSet();
 		U_ASSERT( constructors != nullptr );
-		for( const FunctionVariable& constructor : *constructors )
+		for( const FunctionVariable& constructor : constructors->functions )
 		{
 			const Function& constructor_type= *constructor.type.GetFunctionType();
 
@@ -930,10 +925,10 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 						if( OverloadedFunctionsSet* const result_class_functions= result_class_name->second.GetFunctionsSet() )
 						{
 							// Merge function sets, if result class have functions set with given name.
-							for( const FunctionVariable& parent_function : *functions )
+							for( const FunctionVariable& parent_function : functions->functions )
 							{
 								bool overrides= false;
-								for( FunctionVariable& result_class_function : *result_class_functions )
+								for( FunctionVariable& result_class_function : result_class_functions->functions )
 								{
 									if( parent_function.type == result_class_function.type )
 									{
@@ -998,7 +993,7 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 				continue; // This is prototype, it is already processed.
 
 			const ProgramString& func_name= func.func_syntax_element->name_.components.back().name;
-			FunctionVariable& function_variable= (*func.functions_set)[ func.function_index ];
+			FunctionVariable& function_variable= func.functions_set->functions[ func.function_index ];
 			if( function_variable.have_body && func.func_syntax_element->block_ != nullptr )
 			{
 				errors_.push_back( ReportFunctionBodyDuplication( func.func_syntax_element->file_pos_, func_name ) );
@@ -1116,7 +1111,7 @@ void CodeBuilder::TryCallCopyConstructor(
 	const OverloadedFunctionsSet* const constructors= constructos_name->second.GetFunctionsSet();
 	U_ASSERT(constructors != nullptr );
 	const FunctionVariable* constructor= nullptr;
-	for( const FunctionVariable& candidate : *constructors )
+	for( const FunctionVariable& candidate : constructors->functions )
 	{
 		const Function& constructor_type= *candidate.type.GetFunctionType();
 		if( candidate.is_this_call && constructor_type.args.size() == 2u &&
@@ -1251,9 +1246,9 @@ void CodeBuilder::CallDestructor(
 		const NamesScope::InsertedName* const destructor_name= class_->members.GetThisScopeName( Keyword( Keywords::destructor_ ) );
 		U_ASSERT( destructor_name != nullptr );
 		const OverloadedFunctionsSet* const destructors= destructor_name->second.GetFunctionsSet();
-		U_ASSERT(destructors != nullptr && destructors->size() == 1u );
+		U_ASSERT(destructors != nullptr && destructors->functions.size() == 1u );
 
-		const FunctionVariable& destructor= destructors->front();
+		const FunctionVariable& destructor= destructors->functions.front();
 		llvm::Value* const destructor_args[]= { ptr };
 		function_context.llvm_ir_builder.CreateCall(
 			destructor.llvm_function,
@@ -1385,11 +1380,6 @@ void CodeBuilder::BuildNamespaceBody(
 
 			BuildNamespaceBody( namespace_->elements_, *result_scope );
 		}
-		else if( const auto tempate_=
-			dynamic_cast<const Synt::TypeTemplateBase*>( program_element.get() ) )
-		{
-			PrepareTypeTemplate( *tempate_, names_scope );
-		}
 		else if( const auto variables_declaration=
 			dynamic_cast<const Synt::VariablesDeclaration*>( program_element.get() ) )
 		{
@@ -1415,15 +1405,15 @@ void CodeBuilder::BuildNamespaceBody(
 		{
 			BuildTypedef( *typedef_, names_scope );
 		}
-		else if( const auto typedef_template=
-			dynamic_cast<const Synt::TypedefTemplate*>( program_element.get() ) )
+		else if( const auto type_template=
+			dynamic_cast<const Synt::TypeTemplateBase*>( program_element.get() ) )
 		{
-			PrepareTypeTemplate( *typedef_template, names_scope );
+			PrepareTypeTemplate( *type_template, names_scope );
 		}
 		else if( const auto function_template=
 			dynamic_cast<const Synt::FunctionTemplate*>( program_element.get() ) )
 		{
-			U_UNUSED(function_template); // TODO
+			PrepareFunctionTemplate( *function_template, names_scope );
 		}
 		else
 			U_ASSERT(false);
@@ -1640,7 +1630,7 @@ CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 			func_variable.body_file_pos= func.file_pos_;
 
 		OverloadedFunctionsSet functions_set;
-		functions_set.push_back( std::move( func_variable ) );
+		functions_set.functions.push_back( std::move( func_variable ) );
 
 		if( NameShadowsTemplateArgument( func_name, *func_base_names_scope ) )
 		{
@@ -1654,7 +1644,7 @@ CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 		U_ASSERT( inserted_func != nullptr );
 
 		BuildFuncCode(
-			inserted_func->second.GetFunctionsSet()->front(),
+			inserted_func->second.GetFunctionsSet()->functions.front(),
 			base_class,
 			*func_base_names_scope,
 			func_name,
@@ -1664,7 +1654,7 @@ CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 
 		result.func_syntax_element= &func;
 		result.functions_set= inserted_func->second.GetFunctionsSet();
-		result.function_index= result.functions_set->size() - 1u;
+		result.function_index= result.functions_set->functions.size() - 1u;
 		return result;
 	}
 	else
@@ -1712,7 +1702,7 @@ CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 				if( !overloading_ok )
 					return result;
 
-				FunctionVariable& inserted_func_variable= functions_set->back();
+				FunctionVariable& inserted_func_variable= functions_set->functions.back();
 				inserted_func_variable.prototype_file_pos= func.file_pos_;
 				if( block != nullptr )
 					inserted_func_variable.body_file_pos= func.file_pos_;
@@ -1729,7 +1719,7 @@ CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 
 			result.func_syntax_element= &func;
 			result.functions_set= functions_set;
-			result.function_index= result.functions_set->size() - 1u;
+			result.function_index= result.functions_set->functions.size() - 1u;
 			return result;
 		}
 		else

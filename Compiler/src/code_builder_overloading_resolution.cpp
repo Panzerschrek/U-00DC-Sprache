@@ -99,7 +99,7 @@ FunctionVariable* CodeBuilder::GetFunctionWithSameType(
 	const Function& function_type,
 	OverloadedFunctionsSet& functions_set )
 {
-	for( FunctionVariable& function_varaible : functions_set )
+	for( FunctionVariable& function_varaible : functions_set.functions )
 	{
 		if( *function_varaible.type.GetFunctionType() == function_type )
 			return &function_varaible;
@@ -113,9 +113,9 @@ bool CodeBuilder::ApplyOverloadedFunction(
 	const FunctionVariable& function,
 	const FilePos& file_pos )
 {
-	if( functions_set.empty() )
+	if( functions_set.functions.empty() )
 	{
-		functions_set.push_back(function);
+		functions_set.functions.push_back(function);
 		return true;
 	}
 
@@ -127,7 +127,7 @@ bool CodeBuilder::ApplyOverloadedFunction(
 	If parameter count differs - overload function.
 	If "ArgOverloadingClass" of one or more arguments differs - overload function.
 	*/
-	for( const FunctionVariable& set_function : functions_set )
+	for( const FunctionVariable& set_function : functions_set.functions )
 	{
 		const Function& set_function_type= *set_function.type.GetFunctionType(); // Must be function type 100 %
 
@@ -157,7 +157,7 @@ bool CodeBuilder::ApplyOverloadedFunction(
 	} // For functions in set.
 
 	// No error - add function to set.
-	functions_set.push_back(function);
+	functions_set.functions.push_back(function);
 	return true;
 }
 
@@ -167,13 +167,13 @@ const FunctionVariable* CodeBuilder::GetOverloadedFunction(
 	const bool first_actual_arg_is_this,
 	const FilePos& file_pos )
 {
-	U_ASSERT( !functions_set.empty() );
+	U_ASSERT( !functions_set.functions.empty() );
 	U_ASSERT( !( first_actual_arg_is_this && actual_args.empty() ) );
 
 	std::vector<const FunctionVariable*> match_functions;
 
 	// First, found functions, compatible with given arguments.
-	for( const FunctionVariable& function : functions_set )
+	for( const FunctionVariable& function : functions_set.functions )
 	{
 		const Function& function_type= *function.type.GetFunctionType();
 
@@ -345,6 +345,8 @@ const FunctionVariable* CodeBuilder::GetOverloadedFunction(
 
 	if( selected_function == nullptr )
 		errors_.push_back( ReportTooManySuitableOverloadedFunctions( file_pos ) );
+
+	// TODO - try get also templateš function here.
 
 	return selected_function;
 }

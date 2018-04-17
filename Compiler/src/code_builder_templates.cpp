@@ -243,6 +243,10 @@ void CodeBuilder::PrepareTypeTemplate(
 	PopResolveHandler();
 }
 
+void CodeBuilder::PrepareFunctionTemplate( const Synt::FunctionTemplate& function_template_declaration, NamesScope& names_scope )
+{
+}
+
 void CodeBuilder::PrepareTemplateSignatureParameter(
 	const FilePos& file_pos,
 	const Synt::ComplexName& signature_parameter,
@@ -933,7 +937,7 @@ void CodeBuilder::RemoveTempClassLLVMValues( Class& class_ )
 			}
 			else if( const OverloadedFunctionsSet* const functions_set= name.second.GetFunctionsSet() )
 			{
-				for( const FunctionVariable& function : *functions_set )
+				for( const FunctionVariable& function : functions_set->functions )
 					function.llvm_function->eraseFromParent();
 			}
 			else if( name.second.GetClassField() != nullptr )
@@ -1005,7 +1009,7 @@ void CodeBuilder::ReportAboutIncompleteMembersOfTemplateClass( const FilePos& fi
 			}
 			else if( const OverloadedFunctionsSet* const functions_set= name.second.GetFunctionsSet() )
 			{
-				for( const FunctionVariable& function : *functions_set )
+				for( const FunctionVariable& function : functions_set->functions )
 				{
 					if( !function.have_body )
 						errors_.push_back( ReportIncompleteMemberOfClassTemplate( file_pos, name.first ) );
