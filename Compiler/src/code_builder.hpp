@@ -201,24 +201,24 @@ private:
 		NamesScope& names_scope );
 
 	// Returns true, if all ok.
-	bool DuduceTemplateArguments(
-		const TemplateBasePtr& template_ptr,
+	bool DeduceTemplateArguments(
+		const TemplateBase& template_,
 		const TemplateParameter& template_parameter,
 		const Synt::ComplexName& signature_parameter,
 		const FilePos& signature_parameter_file_pos,
 		DeducibleTemplateParameters& deducible_template_parameters,
 		NamesScope& names_scope );
 
-	bool DuduceTemplateArguments(
-		const TemplateBasePtr& template_ptr,
+	bool DeduceTemplateArguments(
+		const TemplateBase& template_,
 		const TemplateParameter& template_parameter,
 		const Synt::IExpressionComponent& signature_parameter,
 		const FilePos& signature_parameter_file_pos,
 		DeducibleTemplateParameters& deducible_template_parameters,
 		NamesScope& names_scope );
 
-	bool DuduceTemplateArguments(
-		const TemplateBasePtr& template_ptr,
+	bool DeduceTemplateArguments(
+		const TemplateBase& template_,
 		const TemplateParameter& template_parameter,
 		const Synt::ITypeName& signature_parameter,
 		const FilePos& signature_parameter_file_pos,

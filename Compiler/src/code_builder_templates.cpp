@@ -503,15 +503,14 @@ const NamesScope::InsertedName* CodeBuilder::ResolveForTemplateSignatureParamete
 	return current_name;
 }
 
-bool CodeBuilder::DuduceTemplateArguments(
-	const TemplateBasePtr& template_ptr,
+bool CodeBuilder::DeduceTemplateArguments(
+	const TemplateBase& template_,
 	const TemplateParameter& template_parameter,
 	const Synt::ComplexName& signature_parameter,
 	const FilePos& signature_parameter_file_pos,
 	DeducibleTemplateParameters& deducible_template_parameters,
 	NamesScope& names_scope )
 {
-	const TemplateBase& template_= *template_ptr;
 	const FilePos& template_file_pos= template_.file_pos;
 
 	// Look if signature argument refers to template argument.
@@ -546,8 +545,8 @@ bool CodeBuilder::DuduceTemplateArguments(
 		}
 
 		// Check given type and type from signature, deduce also some complex names.
-		if( !DuduceTemplateArguments(
-				template_ptr,
+		if( !DeduceTemplateArguments(
+				template_,
 				variable->type,
 				*template_.template_parameters[ dependend_arg_index ].type_name,
 				signature_parameter_file_pos,
@@ -641,8 +640,8 @@ bool CodeBuilder::DuduceTemplateArguments(
 		for( size_t i= 0u; i < name_component.template_parameters.size(); ++i)
 		{
 			const bool deduced=
-				DuduceTemplateArguments(
-					template_ptr,
+				DeduceTemplateArguments(
+					template_,
 					given_type_class->base_template->template_parameters[i],
 					*name_component.template_parameters[i],
 					template_file_pos,
@@ -657,8 +656,8 @@ bool CodeBuilder::DuduceTemplateArguments(
 	return false;
 }
 
-bool CodeBuilder::DuduceTemplateArguments(
-	const TemplateBasePtr& template_ptr,
+bool CodeBuilder::DeduceTemplateArguments(
+	const TemplateBase& template_,
 	const TemplateParameter& template_parameter,
 	const Synt::IExpressionComponent& signature_parameter,
 	const FilePos& signature_parameter_file_pos,
@@ -668,14 +667,14 @@ bool CodeBuilder::DuduceTemplateArguments(
 	if( const auto named_operand= dynamic_cast<const Synt::NamedOperand*>(&signature_parameter) )
 	{
 		if( named_operand->postfix_operators_.empty() && named_operand->prefix_operators_.empty() )
-			return DuduceTemplateArguments( template_ptr, template_parameter, named_operand->name_, signature_parameter_file_pos, deducible_template_parameters, names_scope );
+			return DeduceTemplateArguments( template_, template_parameter, named_operand->name_, signature_parameter_file_pos, deducible_template_parameters, names_scope );
 	}
 	else if( const auto type_name= dynamic_cast<const Synt::TypeNameInExpression*>(&signature_parameter) )
-		return DuduceTemplateArguments( template_ptr, template_parameter, *type_name->type_name, signature_parameter_file_pos, deducible_template_parameters, names_scope );
+		return DeduceTemplateArguments( template_, template_parameter, *type_name->type_name, signature_parameter_file_pos, deducible_template_parameters, names_scope );
 	else if( const auto bracket_expression= dynamic_cast<const Synt::BracketExpression*>(&signature_parameter) )
 	{
 		if( bracket_expression->postfix_operators_.empty() && bracket_expression->prefix_operators_.empty() )
-			return DuduceTemplateArguments( template_ptr, template_parameter, *bracket_expression->expression_, signature_parameter_file_pos, deducible_template_parameters, names_scope );
+			return DeduceTemplateArguments( template_, template_parameter, *bracket_expression->expression_, signature_parameter_file_pos, deducible_template_parameters, names_scope );
 	}
 
 	// This is not special kind of template signature argument. So, process it as variable-expression.
@@ -702,8 +701,8 @@ bool CodeBuilder::DuduceTemplateArguments(
 	return true;
 }
 
-bool CodeBuilder::DuduceTemplateArguments(
-	const TemplateBasePtr& template_ptr,
+bool CodeBuilder::DeduceTemplateArguments(
+	const TemplateBase& template_,
 	const TemplateParameter& template_parameter,
 	const Synt::ITypeName& signature_parameter,
 	const FilePos& signature_parameter_file_pos,
@@ -711,7 +710,7 @@ bool CodeBuilder::DuduceTemplateArguments(
 	NamesScope& names_scope )
 {
 	if( const auto named_type= dynamic_cast<const Synt::NamedTypeName*>(&signature_parameter) )
-		return DuduceTemplateArguments( template_ptr, template_parameter, named_type->name, signature_parameter_file_pos, deducible_template_parameters, names_scope );
+		return DeduceTemplateArguments( template_, template_parameter, named_type->name, signature_parameter_file_pos, deducible_template_parameters, names_scope );
 	else if( const auto array_type= dynamic_cast<const Synt::ArrayTypeName*>(&signature_parameter) )
 	{
 		const Type* const param_type= boost::get<const Type>( &template_parameter );
@@ -727,8 +726,8 @@ bool CodeBuilder::DuduceTemplateArguments(
 		size_var.llvm_value= size_var.constexpr_value=
 			llvm::Constant::getIntegerValue( size_var.type.GetLLVMType(), llvm::APInt( size_var.type.SizeOf() * 8u, param_array_type->size ) );
 
-		bool ok_element= DuduceTemplateArguments( template_ptr, param_array_type->type, *array_type->element_type, signature_parameter_file_pos, deducible_template_parameters, names_scope );
-		bool ok_size= DuduceTemplateArguments( template_ptr, size_var, *array_type->size, signature_parameter_file_pos, deducible_template_parameters, names_scope );
+		bool ok_element= DeduceTemplateArguments( template_, param_array_type->type, *array_type->element_type, signature_parameter_file_pos, deducible_template_parameters, names_scope );
+		bool ok_size= DeduceTemplateArguments( template_, size_var, *array_type->size, signature_parameter_file_pos, deducible_template_parameters, names_scope );
 		return ok_element && ok_size;
 	}
 
@@ -793,7 +792,7 @@ NamesScope::InsertedName* CodeBuilder::GenTemplateType(
 		// TODO - maybe add some errors, if not deduced?
 		if( const Type* const type_name= value.GetTypeName() )
 		{
-			if( !DuduceTemplateArguments( type_template_ptr, *type_name, expr, file_pos, deduced_template_args, template_names_scope ) )
+			if( !DeduceTemplateArguments( type_template, *type_name, expr, file_pos, deduced_template_args, template_names_scope ) )
 			{
 				deduction_failed= true;
 				continue;
@@ -801,7 +800,7 @@ NamesScope::InsertedName* CodeBuilder::GenTemplateType(
 		}
 		else if( const Variable* const variable= value.GetVariable() )
 		{
-			if( !DuduceTemplateArguments( type_template_ptr, *variable, expr, file_pos, deduced_template_args, template_names_scope ) )
+			if( !DeduceTemplateArguments( type_template, *variable, expr, file_pos, deduced_template_args, template_names_scope ) )
 			{
 				deduction_failed= true;
 				continue;
@@ -1024,8 +1023,8 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 				continue;
 			}
 		}
-		else if( !DuduceTemplateArguments(
-				function_template_ptr,
+		else if( !DeduceTemplateArguments(
+				function_template,
 				given_args[i].type,
 				*function_argument.type_,
 				function_argument.file_pos_,
