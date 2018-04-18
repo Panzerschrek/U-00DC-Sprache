@@ -35,6 +35,52 @@ def IncompleteMemberOfClassTemplate_ForFunctionTemplates_Test0():
 	assert( errors_list[0].file_pos.line == 2 )
 
 
+def Redefinition_ForFunctionTemplateParameter():
+	c_program_text= """
+		template</ type T, type T />
+		fn Foo(){}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "Redefinition" )
+	assert( errors_list[0].file_pos.line == 2 )
+
+
+def NameNotFound_ForFunctionTemplateParameter():
+	c_program_text= """
+		template</ UnknownName param />
+		fn Foo(){}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "NameNotFound" )
+	assert( errors_list[0].file_pos.line == 2 )
+
+
+def NameIsNotTypeName_ForFunctionTemplateParameter():
+	c_program_text= """
+		fn Bar(){}
+		template</ Bar param />
+		fn Foo(){}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "NameIsNotTypeName" )
+	assert( errors_list[0].file_pos.line == 3 )
+
+
+def InvalidTypeOfTemplateVariableArgument_ForFunctionTemplateParameter():
+	c_program_text= """
+		struct Bar{}
+		template</ Bar param />
+		fn Foo(){}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "InvalidTypeOfTemplateVariableArgument" )
+	assert( errors_list[0].file_pos.line == 3 )
+
+
 def VirtualForFunctionTemplate_Test0():
 	c_program_text= """
 		template</ type T />
@@ -44,6 +90,60 @@ def VirtualForFunctionTemplate_Test0():
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "VirtualForFunctionTemplate" )
 	assert( errors_list[0].file_pos.line == 3 )
+
+
+def DeclarationShadowsTemplateArgument_Test0():
+	c_program_text= """
+		template</ type T />
+		fn Foo()
+		{
+			var i32 T= 0;  // Error, local variable "T" shadows template argument.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "DeclarationShadowsTemplateArgument" )
+	assert( errors_list[0].file_pos.line == 5 )
+
+
+def DeclarationShadowsTemplateArgument_Test1():
+	c_program_text= """
+		template</ type T />
+		fn Foo()
+		{
+			auto T= 0;  // Error, local auto-variable "T" shadows template argument.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "DeclarationShadowsTemplateArgument" )
+	assert( errors_list[0].file_pos.line == 5 )
+
+
+def DeclarationShadowsTemplateArgument_Test2():
+	c_program_text= """
+		template</ type T />
+		fn Foo( i32 T ) {}  // Error, function argument shadows template argument.
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "DeclarationShadowsTemplateArgument" )
+	assert( errors_list[0].file_pos.line == 3 )
+
+
+def DeclarationShadowsTemplateArgument_Test3():
+	c_program_text= """
+		template</ type T />
+		struct S
+		{
+			template</ type T />  // Error, shadowing upper-level template parameter.
+			fn Foo(){}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "DeclarationShadowsTemplateArgument" )
+	assert( errors_list[0].file_pos.line == 5 )
 
 
 def TemplateParametersDeductionFailed_Test0():
@@ -209,3 +309,55 @@ def TemplateParametersDeductionFailed_Test7():
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "CouldNotSelectOverloadedFunction" )
 	assert( errors_list[0].file_pos.line == 18 )
+
+
+def TemplateParametersDeductionFailed_Test8():
+	c_program_text= """
+		template</ type T />
+		fn Bar( T& t, i32 x ) {}
+
+		fn Foo()
+		{
+			Bar( false, 0.25f ); // Error, second argument of non-template type does not match given argument.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "CouldNotSelectOverloadedFunction" )
+	assert( errors_list[0].file_pos.line == 7 )
+
+
+def TemplateParametersDeductionFailed_Test9():
+	c_program_text= """
+		template</ type T />
+		fn Bar( T& t, i32 x ) {}
+
+		fn Foo()
+		{
+			Bar( false, 0, 1 ); // Error, argument count mismatch.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "CouldNotSelectOverloadedFunction" )
+	assert( errors_list[0].file_pos.line == 7 )
+
+
+def TemplateParametersDeductionFailed_Test10():
+	c_program_text= """
+		template</ type T />
+		fn Max( T& a, T& b ) : T&
+		{
+			if( a > b ) { return a; }
+			return b;
+		}
+
+		fn Foo()
+		{
+			Max( 0.0f ); // Error, argument count mismatch.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "CouldNotSelectOverloadedFunction" )
+	assert( errors_list[0].file_pos.line == 11 )
