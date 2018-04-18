@@ -263,3 +263,23 @@ def TemplateMethod_Test4():
 	tests_lib.build_program( c_program_text )
 	call_result= tests_lib.run_function( "_Z3Foov" )
 	assert( call_result == 856.0 )
+
+
+def RecursiveTemplateFunctionCall_Test0():
+	c_program_text= """
+		template</ type T />
+		fn Sum( T from, T to ) : T
+		{
+			auto diff = to - from;
+			if( diff <= T(0) ) { return T(0); }
+			return from + Sum( from + T(1), to ); // Must do recursive call here.
+		}
+
+		fn Foo() : u32
+		{
+			return Sum( 9u, 15u );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == ( 9 + 10 + 11 + 12 + 13 + 14 ) )

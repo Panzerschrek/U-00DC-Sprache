@@ -1121,20 +1121,27 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 		return inserted_name->second.GetFunctionVariable();
 	}
 
-	// "PrepareFunction" can insert function in namespace, but we do not whant it.
-	PrepareFunctionResult prepare_result=
-		PrepareFunction( function_declaration, false, function_template.base_class, *template_parameters_namespace );
-
-	PopResolveHandler();
+	// First, prepare only as prototype.
+	const PrepareFunctionResult prepare_result=
+		PrepareFunction( function_declaration, true, function_template.base_class, *template_parameters_namespace );
 
 	if( prepare_result.functions_set == nullptr ||
 		prepare_result.function_index >= prepare_result.functions_set->functions.size() )
+	{
+		PopResolveHandler();
 		return nullptr; // Function prepare failed
+	}
 
 	// Insert generated function
-	FunctionVariable function_variable= prepare_result.functions_set->functions[prepare_result.function_index];
+	const FunctionVariable function_variable= prepare_result.functions_set->functions[prepare_result.function_index];
 	const NamesScope::InsertedName* const inserted_function_name= function_template.parent_namespace->AddName( name_encoded, function_variable );
 	U_ASSERT( inserted_function_name != nullptr );
+
+	// And generate function body after insertion of prototype.
+	PrepareFunction( function_declaration, false, function_template.base_class, *template_parameters_namespace );
+	PopResolveHandler();
+
+	// Two-step preparation needs for recursive function template call.
 
 	return inserted_function_name->second.GetFunctionVariable();
 }
