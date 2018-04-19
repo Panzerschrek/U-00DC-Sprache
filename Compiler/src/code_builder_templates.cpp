@@ -1140,6 +1140,7 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 		}
 		else U_ASSERT(false);
 	}
+	name_encoded += ToProgramString( std::to_string( reinterpret_cast<uintptr_t>(&function_template) ).c_str() ); // HACK! use address of template object, because we can have multiple templates with same name.
 
 	if( const NamesScope::InsertedName* const inserted_name= function_template.parent_namespace->GetThisScopeName( name_encoded ) )
 	{
