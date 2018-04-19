@@ -200,8 +200,8 @@ private:
 		const Synt::ComplexName& signature_parameter,
 		NamesScope& names_scope );
 
-	// Returns true, if all ok.
-	bool DeduceTemplateArguments(
+	// Returns deduced parameter, if all ok.
+	DeducedTemplateParameter DeduceTemplateArguments(
 		const TemplateBase& template_,
 		const TemplateParameter& template_parameter,
 		const Synt::ComplexName& signature_parameter,
@@ -209,7 +209,7 @@ private:
 		DeducibleTemplateParameters& deducible_template_parameters,
 		NamesScope& names_scope );
 
-	bool DeduceTemplateArguments(
+	DeducedTemplateParameter DeduceTemplateArguments(
 		const TemplateBase& template_,
 		const TemplateParameter& template_parameter,
 		const Synt::IExpressionComponent& signature_parameter,
@@ -217,7 +217,7 @@ private:
 		DeducibleTemplateParameters& deducible_template_parameters,
 		NamesScope& names_scope );
 
-	bool DeduceTemplateArguments(
+	DeducedTemplateParameter DeduceTemplateArguments(
 		const TemplateBase& template_,
 		const TemplateParameter& template_parameter,
 		const Synt::ITypeName& signature_parameter,
@@ -527,12 +527,6 @@ private:
 	const FunctionVariable* GetOverloadedOperator(
 		const std::vector<Function::Arg>& actual_args,
 		OverloadedOperator op,
-		const FilePos& file_pos );
-
-	const FunctionVariable* GetTemplateFunction(
-		const OverloadedFunctionsSet& functions_set,
-		const std::vector<Function::Arg>& actual_args,
-		bool first_actual_arg_is_this,
 		const FilePos& file_pos );
 
 	// Initializers.

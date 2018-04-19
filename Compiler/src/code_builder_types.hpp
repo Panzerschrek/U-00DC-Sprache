@@ -52,6 +52,8 @@ typedef std::shared_ptr<TypeTemplate> TypeTemplatePtr;
 struct FunctionTemplate;
 typedef std::shared_ptr<FunctionTemplate> FunctionTemplatePtr;
 
+class DeducedTemplateParameter;
+
 struct FundamentalType final
 {
 	U_FundamentalType fundamental_type;
@@ -233,6 +235,10 @@ bool operator!=( const Array& r, const Array& l );
 struct FunctionVariable final
 {
 	Type type; // Function type 100%
+
+	// For function templates is nonempty and have size of args. Needs for selection of better (more specialized) template function.
+	std::vector<DeducedTemplateParameter> deduced_temlpate_parameters;
+
 	unsigned int virtual_table_index= ~0u; // For virtual functions number in virtual functions table in class of first arg(this).
 	bool have_body= true;
 	bool is_this_call= false;
@@ -691,6 +697,57 @@ struct FunctionTemplate final : public TemplateBase
 	const Synt::FunctionTemplate* syntax_element= nullptr;
 
 	ClassProxyPtr base_class;
+};
+
+class DeducedTemplateParameter
+{
+public:
+	struct Invalid{};
+	struct Type{};
+	struct Value{};
+	struct TemplateParameter{};
+
+	struct Array
+	{
+		std::unique_ptr<DeducedTemplateParameter> size;
+		std::unique_ptr<DeducedTemplateParameter> type;
+
+		Array()= default;
+		Array(Array&&)= default;
+		Array& operator=(Array&&)= default;
+
+		Array( const Array& other );
+		Array& operator=( const Array& other );
+	};
+
+	struct Template
+	{
+		std::vector<DeducedTemplateParameter> args;
+	};
+
+public:
+	DeducedTemplateParameter( Invalid invalid= Invalid() );
+	DeducedTemplateParameter( Type type );
+	DeducedTemplateParameter( Value value );
+	DeducedTemplateParameter( TemplateParameter template_parameter );
+	DeducedTemplateParameter( Array array );
+	DeducedTemplateParameter( Template template_ );
+
+	bool IsInvalid() const;
+	bool IsType() const;
+	bool IsValue() const;
+	bool IsTemplateParameter() const;
+	const Array* GetArray() const;
+	const Template* GetTemplate() const;
+
+private:
+	boost::variant<
+		Invalid,
+		Type,
+		Value,
+		TemplateParameter,
+		Array,
+		Template> something_;
 };
 
 const ProgramString& GetFundamentalTypeName( U_FundamentalType fundamental_type );

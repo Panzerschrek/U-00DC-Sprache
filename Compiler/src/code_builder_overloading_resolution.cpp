@@ -71,6 +71,106 @@ static ConversionsCompareResult CompareConversionsMutability(
 		return ConversionsCompareResult::LeftIsBetter;
 	if( right_overloding_class == ArgOverloadingClass::MutalbeReference )
 		return ConversionsCompareResult::RightIsBetter;
+
+	return ConversionsCompareResult::Incomparable;
+}
+
+static ConversionsCompareResult TemplateSpecializationCompare(
+	const DeducedTemplateParameter& left_template_parameter,
+	const DeducedTemplateParameter& right_template_parameter )
+{
+	U_ASSERT( ! left_template_parameter.IsInvalid() );
+	U_ASSERT( !right_template_parameter.IsInvalid() );
+
+	if( left_template_parameter.IsType() )
+	{
+		if( right_template_parameter.IsType() )
+			return ConversionsCompareResult::Same;
+		else if( right_template_parameter.IsTemplateParameter() )
+			return ConversionsCompareResult::LeftIsBetter; // Concrete type is better, then template parameter.
+		else if( right_template_parameter.GetArray() != nullptr )
+			return ConversionsCompareResult::RightIsBetter; // Array is more specialized, then type.
+		if( right_template_parameter.GetTemplate() != nullptr )
+			return ConversionsCompareResult::RightIsBetter; // Template is more specialized, then type.
+		else U_ASSERT(false);
+	}
+	else if( left_template_parameter.IsValue() )
+	{
+		if( right_template_parameter.IsValue() )
+			return ConversionsCompareResult::Same;
+		else if( right_template_parameter.IsTemplateParameter() )
+			return ConversionsCompareResult::LeftIsBetter; // Value is more specialized, then template parameter.
+		else U_ASSERT(false);
+	}
+	else if( const auto l_array= left_template_parameter.GetArray() )
+	{
+		if( right_template_parameter.IsType() )
+			return ConversionsCompareResult::LeftIsBetter; // Array is more specialized, then type.
+		else if( right_template_parameter.IsTemplateParameter() )
+			return ConversionsCompareResult::LeftIsBetter; // Array is more specialized, then template parameter.
+		else if( const auto r_array= right_template_parameter.GetArray() )
+		{
+			const ConversionsCompareResult size_compare_result= TemplateSpecializationCompare( *l_array->size, *r_array->size );
+			const ConversionsCompareResult type_compare_result= TemplateSpecializationCompare( *l_array->type, *r_array->type );
+			if( size_compare_result == ConversionsCompareResult::Incomparable || type_compare_result == ConversionsCompareResult::Incomparable )
+				return ConversionsCompareResult::Incomparable;
+			if( size_compare_result == ConversionsCompareResult::Same )
+				return type_compare_result;
+			if( type_compare_result == ConversionsCompareResult::Same )
+				return size_compare_result;
+			if( type_compare_result == size_compare_result )
+				return size_compare_result;
+			return ConversionsCompareResult::Incomparable;
+		}
+		else U_ASSERT(false);
+	}
+	else if( const auto l_template= left_template_parameter.GetTemplate() )
+	{
+		if( right_template_parameter.IsType() )
+			return ConversionsCompareResult::LeftIsBetter; // Template is more specialized, then type.
+		else if( right_template_parameter.IsTemplateParameter() )
+			return ConversionsCompareResult::LeftIsBetter; // Template is more specialized, then template parameter.
+		else if( const auto r_template= right_template_parameter.GetTemplate() )
+		{
+			// Templates with different arg count is uncomparable.
+			if( l_template->args.size() != r_template->args.size() )
+				return ConversionsCompareResult::Incomparable;
+
+			ConversionsCompareResult result= ConversionsCompareResult::Same;
+			for( size_t i= 0u; i < l_template->args.size(); ++i )
+			{
+				const ConversionsCompareResult arg_result= TemplateSpecializationCompare( l_template->args[i], r_template->args[i] );
+				if( arg_result == ConversionsCompareResult::Incomparable )
+					return ConversionsCompareResult::Incomparable;
+
+				if( arg_result == ConversionsCompareResult::Same )
+				{}
+				else if( result == ConversionsCompareResult::Same )
+					result= arg_result;
+				else if( result != arg_result )
+					return ConversionsCompareResult::Incomparable;
+			}
+			return result;
+		}
+		else U_ASSERT(false);
+	}
+	else if( left_template_parameter.IsTemplateParameter() )
+	{
+		if( right_template_parameter.IsType() )
+			return ConversionsCompareResult::RightIsBetter;  // Concrete type is better, then template parameter.
+		else if( right_template_parameter.IsValue() )
+			return ConversionsCompareResult::RightIsBetter; // Value is more specialized, then template parameter.
+		else if( right_template_parameter.IsTemplateParameter() )
+			return ConversionsCompareResult::Same;
+		else if( right_template_parameter.GetArray() != nullptr )
+			return ConversionsCompareResult::RightIsBetter; // Array is more specialized, then template parameter.
+		else if( right_template_parameter.GetTemplate() != nullptr )
+			return ConversionsCompareResult::RightIsBetter; // Template is more specialized, then template parameter.
+		else U_ASSERT(false);
+	}
+	else U_ASSERT(false);
+
+	return ConversionsCompareResult::Incomparable;
 }
 
 static ConversionsCompareResult CompareConversions(
@@ -91,6 +191,30 @@ static ConversionsCompareResult CompareConversions(
 		return mutability_compare;
 	if( mutability_compare == ConversionsCompareResult::Same )
 		return types_compare;
+
+	return ConversionsCompareResult::Incomparable;
+}
+
+static ConversionsCompareResult CompareConversions(
+	const Function::Arg& src,
+	const Function::Arg& dst_left,
+	const Function::Arg& dst_right,
+	const DeducedTemplateParameter& dst_left_template_parameter,
+	const DeducedTemplateParameter& dst_right_template_parameter )
+{
+	const ConversionsCompareResult conversions_compare= CompareConversions( src, dst_left, dst_right );
+	const ConversionsCompareResult template_specialization_compare= TemplateSpecializationCompare( dst_left_template_parameter, dst_right_template_parameter );
+
+	if( conversions_compare == template_specialization_compare )
+		return conversions_compare;
+
+	if( conversions_compare == ConversionsCompareResult::Incomparable || template_specialization_compare == ConversionsCompareResult::Incomparable )
+		return ConversionsCompareResult::Incomparable;
+
+	if( conversions_compare == ConversionsCompareResult::Same )
+		return template_specialization_compare;
+	if( template_specialization_compare == ConversionsCompareResult::Same )
+		return conversions_compare;
 
 	return ConversionsCompareResult::Incomparable;
 }
@@ -254,7 +378,19 @@ const FunctionVariable* CodeBuilder::GetOverloadedFunction(
 	if( match_functions.empty() )
 	{
 		// Not found any function - try elect template function.
-		return GetTemplateFunction( functions_set, actual_args, first_actual_arg_is_this, file_pos );
+		for( const FunctionTemplatePtr& function_template_ptr : functions_set.template_functions )
+		{
+			const FunctionVariable* const generated_function=
+				GenTemplateFunction( file_pos, function_template_ptr, *function_template_ptr->parent_namespace, actual_args, first_actual_arg_is_this );
+			if( generated_function != nullptr )
+				match_functions.push_back( generated_function );
+		}
+	}
+
+	if( match_functions.empty() )
+	{
+		errors_.push_back( ReportCouldNotSelectOverloadedFunction( file_pos ) );
+		return nullptr;
 	}
 	else if( match_functions.size() == 1u )
 		return match_functions.front();
@@ -290,8 +426,19 @@ const FunctionVariable* CodeBuilder::GetOverloadedFunction(
 
 				const Function& r_type=* function_r->type.GetFunctionType();
 
-				ConversionsCompareResult comp= CompareConversions(
-					actual_args[arg_n], l_type.args[l_arg_n], r_type.args[r_arg_n] );
+				ConversionsCompareResult comp;
+					if( !function_r->deduced_temlpate_parameters.empty() )
+						comp=
+							CompareConversions(
+								actual_args[arg_n],
+								l_type.args[l_arg_n], r_type.args[r_arg_n],
+								function_l->deduced_temlpate_parameters[l_arg_n], function_r->deduced_temlpate_parameters[r_arg_n] );
+					else
+						comp=
+							CompareConversions(
+								actual_args[arg_n],
+								l_type.args[l_arg_n], r_type.args[r_arg_n] );
+
 				if( comp == ConversionsCompareResult::Same || comp == ConversionsCompareResult::LeftIsBetter )
 					continue;
 
@@ -315,8 +462,19 @@ const FunctionVariable* CodeBuilder::GetOverloadedFunction(
 					}
 
 					const Function& r_type=* function_r.type.GetFunctionType();
-					ConversionsCompareResult comp= CompareConversions(
-						actual_args[arg_n], l_type.args[l_arg_n], r_type.args[r_arg_n] );
+					ConversionsCompareResult comp;
+					if( !function_r.deduced_temlpate_parameters.empty() )
+						comp=
+							CompareConversions(
+								actual_args[arg_n],
+								l_type.args[l_arg_n], r_type.args[r_arg_n],
+								function_l->deduced_temlpate_parameters[l_arg_n], function_r.deduced_temlpate_parameters[r_arg_n] );
+					else
+						comp=
+							CompareConversions(
+								actual_args[arg_n],
+								l_type.args[l_arg_n], r_type.args[r_arg_n] );
+
 					U_ASSERT( comp != ConversionsCompareResult::Incomparable && comp != ConversionsCompareResult::RightIsBetter );
 
 					if( comp != ConversionsCompareResult::Same )
@@ -388,29 +546,6 @@ const FunctionVariable* CodeBuilder::GetOverloadedOperator(
 		}
 	}
 
-	return nullptr;
-}
-
-const FunctionVariable* CodeBuilder::GetTemplateFunction(
-	const OverloadedFunctionsSet& functions_set,
-	const std::vector<Function::Arg>& actual_args,
-	const bool first_actual_arg_is_this,
-	const FilePos& file_pos )
-{
-	// SPRACHE_TODO - try select between multiple template functions.
-	if( functions_set.template_functions.size() > 1u )
-		errors_.push_back( ReportTooManySuitableOverloadedFunctions( file_pos ) );
-
-	for( const FunctionTemplatePtr& function_template_ptr : functions_set.template_functions )
-	{
-		const FunctionVariable* const generated_function=
-			GenTemplateFunction( file_pos, function_template_ptr, *function_template_ptr->parent_namespace, actual_args, first_actual_arg_is_this );
-		if( generated_function == nullptr )
-			break;
-		return generated_function;
-	}
-
-	errors_.push_back( ReportCouldNotSelectOverloadedFunction( file_pos ) );
 	return nullptr;
 }
 

@@ -503,7 +503,7 @@ const NamesScope::InsertedName* CodeBuilder::ResolveForTemplateSignatureParamete
 	return current_name;
 }
 
-bool CodeBuilder::DeduceTemplateArguments(
+DeducedTemplateParameter CodeBuilder::DeduceTemplateArguments(
 	const TemplateBase& template_,
 	const TemplateParameter& template_parameter,
 	const Synt::ComplexName& signature_parameter,
@@ -530,29 +530,31 @@ bool CodeBuilder::DeduceTemplateArguments(
 	if( const Variable* const variable= boost::get<Variable>(&template_parameter) )
 	{
 		if( dependend_arg_index == ~0u )
-			return false;
+			return DeducedTemplateParameter::Invalid();
 
 		if( !TypeIsValidForTemplateVariableArgument( variable->type ) )
 		{
 			errors_.push_back( ReportInvalidTypeOfTemplateVariableArgument( signature_parameter_file_pos, variable->type.ToString() ) );
-			return false;
+			return DeducedTemplateParameter::Invalid();
 		}
 
 		if( variable->constexpr_value == nullptr )
 		{
 			errors_.push_back( ReportExpectedConstantExpression( signature_parameter_file_pos ) );
-			return false;
+			return DeducedTemplateParameter::Invalid();
 		}
 
 		// Check given type and type from signature, deduce also some complex names.
-		if( !DeduceTemplateArguments(
+		const DeducedTemplateParameter deduced_value_type= // TODO - use it?
+			DeduceTemplateArguments(
 				template_,
 				variable->type,
 				*template_.template_parameters[ dependend_arg_index ].type_name,
 				signature_parameter_file_pos,
 				deducible_template_parameters,
-				names_scope ) )
-			return false;
+				names_scope );
+		if( deduced_value_type.IsInvalid() )
+			return DeducedTemplateParameter::Invalid();
 
 		// Allocate global variable, because we needs address.
 
@@ -570,17 +572,17 @@ bool CodeBuilder::DeduceTemplateArguments(
 		if( boost::get<int>( &deducible_template_parameters[ dependend_arg_index ] ) != nullptr )
 			deducible_template_parameters[ dependend_arg_index ]= std::move( variable_for_insertion ); // Set empty arg.
 		else if( boost::get<Type>( &deducible_template_parameters[ dependend_arg_index ] ) != nullptr )
-			return false; // WTF?
+			return DeducedTemplateParameter::Invalid(); // WTF?
 		else if( const Variable* const prev_variable_value= boost::get<Variable>( &deducible_template_parameters[ dependend_arg_index ] )  )
 		{
 			// Variable already known, Check conflicts.
 			// TODO - do real comparision
 			// TODO - maybe generate error in this case?
 			if( prev_variable_value->constexpr_value->getUniqueInteger() != variable_for_insertion.constexpr_value->getUniqueInteger() )
-				return false;
+				return DeducedTemplateParameter::Invalid();
 		}
 
-		return true;
+		return DeducedTemplateParameter::TemplateParameter();
 	}
 
 	const Type& given_type= boost::get<Type>(template_parameter);
@@ -591,7 +593,7 @@ bool CodeBuilder::DeduceTemplateArguments(
 		if( template_.template_parameters[ dependend_arg_index ].type_name != nullptr )
 		{
 			// Expected variable, but type given.
-			return false;
+			return DeducedTemplateParameter::Invalid();
 		}
 		else if( boost::get<int>( &deducible_template_parameters[ dependend_arg_index ] ) != nullptr )
 		{
@@ -602,44 +604,47 @@ bool CodeBuilder::DeduceTemplateArguments(
 		{
 			// Type already known. Check conflicts.
 			if( *prev_type != given_type )
-				return false;
+				return DeducedTemplateParameter::Invalid();
 		}
 		else if( boost::get<Variable>( &deducible_template_parameters[ dependend_arg_index ] ) != nullptr )
 		{
 			// Bind type argument to variable parameter.
-			return false;
+			return DeducedTemplateParameter::Invalid();
 		}
-		return true;
+		return DeducedTemplateParameter::TemplateParameter();
 	}
 
 	const NamesScope::InsertedName* const signature_parameter_name=
 		ResolveForTemplateSignatureParameter( signature_parameter_file_pos, signature_parameter, names_scope );
 	if( signature_parameter_name == nullptr )
-		return false;
+		return DeducedTemplateParameter::Invalid();
 
 	if( const Type* const type= signature_parameter_name->second.GetTypeName() )
 	{
-		return *type == given_type;
+		if( *type == given_type )
+			return DeducedTemplateParameter::Type();
+		return DeducedTemplateParameter::Invalid();
 	}
 	else if( const TypeTemplatePtr inner_type_template = signature_parameter_name->second.GetTypeTemplate() )
 	{
 		const Class* const given_type_class= given_type.GetClassType();
 		if( given_type_class == nullptr )
-			return false;
+			return DeducedTemplateParameter::Invalid();
 		if( given_type_class->base_template == boost::none )
-			return false;
+			return DeducedTemplateParameter::Invalid();
 		if( given_type_class->base_template->class_template != inner_type_template )
-			return false;
+			return DeducedTemplateParameter::Invalid();
 
 		const Synt::ComplexName::Component& name_component= signature_parameter.components.back();
 		if( !name_component.have_template_parameters )
-			return false;
+			return DeducedTemplateParameter::Invalid();
 		if( signature_parameter.components.back().template_parameters.size() < inner_type_template->first_optional_signature_argument )
-			return false;
+			return DeducedTemplateParameter::Invalid();
 
+		DeducedTemplateParameter::Template result;
 		for( size_t i= 0u; i < name_component.template_parameters.size(); ++i)
 		{
-			const bool deduced=
+			DeducedTemplateParameter deduced=
 				DeduceTemplateArguments(
 					template_,
 					given_type_class->base_template->template_parameters[i],
@@ -647,16 +652,17 @@ bool CodeBuilder::DeduceTemplateArguments(
 					template_file_pos,
 					deducible_template_parameters,
 					names_scope );
-			if( !deduced )
-				return false;
+			if( deduced.IsInvalid() )
+				return DeducedTemplateParameter::Invalid();
+			result.args.push_back(std::move(deduced));
 		}
-		return true;
+		return result;
 	}
 
-	return false;
+	return DeducedTemplateParameter::Invalid();
 }
 
-bool CodeBuilder::DeduceTemplateArguments(
+DeducedTemplateParameter CodeBuilder::DeduceTemplateArguments(
 	const TemplateBase& template_,
 	const TemplateParameter& template_parameter,
 	const Synt::IExpressionComponent& signature_parameter,
@@ -681,27 +687,27 @@ bool CodeBuilder::DeduceTemplateArguments(
 
 	const Variable* const param_var= boost::get<const Variable>( &template_parameter );
 	if( param_var == nullptr )
-		return false;
+		return DeducedTemplateParameter::Invalid();
 	if( !TypeIsValidForTemplateVariableArgument( param_var->type ) )
-		return false;
+		return DeducedTemplateParameter::Invalid();
 
 	const Value val= BuildExpressionCode( signature_parameter, names_scope, *dummy_function_context_ );
 	if( val.GetVariable() == nullptr )
-		return false;
+		return DeducedTemplateParameter::Invalid();
 	const Variable& var= *val.GetVariable();
 	if( !TypeIsValidForTemplateVariableArgument( var.type ) )
-		return false;
+		return DeducedTemplateParameter::Invalid();
 
 	// SPRACHE_TODO - maybe try compare integers without type?
 	if( param_var->type != var.type )
-		return false;
+		return DeducedTemplateParameter::Invalid();
 	if( param_var->constexpr_value->getUniqueInteger() != var.constexpr_value->getUniqueInteger() )
-		return false;
+		return DeducedTemplateParameter::Invalid();
 
-	return true;
+	return DeducedTemplateParameter::Value();
 }
 
-bool CodeBuilder::DeduceTemplateArguments(
+DeducedTemplateParameter CodeBuilder::DeduceTemplateArguments(
 	const TemplateBase& template_,
 	const TemplateParameter& template_parameter,
 	const Synt::ITypeName& signature_parameter,
@@ -715,10 +721,10 @@ bool CodeBuilder::DeduceTemplateArguments(
 	{
 		const Type* const param_type= boost::get<const Type>( &template_parameter );
 		if( param_type == nullptr )
-			return false;
+			return DeducedTemplateParameter::Invalid();
 		const Array* const param_array_type= param_type->GetArrayType();
 		if( param_array_type == nullptr )
-			return false;
+			return DeducedTemplateParameter::Invalid();
 
 		Variable size_var;
 		size_var.type= FundamentalType( U_FundamentalType::u32, fundamental_llvm_types_.u32 ); // TODO - maybe selet native size type?
@@ -726,12 +732,22 @@ bool CodeBuilder::DeduceTemplateArguments(
 		size_var.llvm_value= size_var.constexpr_value=
 			llvm::Constant::getIntegerValue( size_var.type.GetLLVMType(), llvm::APInt( size_var.type.SizeOf() * 8u, param_array_type->size ) );
 
-		bool ok_element= DeduceTemplateArguments( template_, param_array_type->type, *array_type->element_type, signature_parameter_file_pos, deducible_template_parameters, names_scope );
-		bool ok_size= DeduceTemplateArguments( template_, size_var, *array_type->size, signature_parameter_file_pos, deducible_template_parameters, names_scope );
-		return ok_element && ok_size;
+		DeducedTemplateParameter::Array result;
+		result.type.reset(
+			new DeducedTemplateParameter(
+				DeduceTemplateArguments( template_, param_array_type->type, *array_type->element_type, signature_parameter_file_pos, deducible_template_parameters, names_scope ) ) );
+		result.size.reset(
+			new DeducedTemplateParameter(
+				DeduceTemplateArguments( template_, size_var, *array_type->size, signature_parameter_file_pos, deducible_template_parameters, names_scope ) ) );
+		if( result.type->IsInvalid() || result.size->IsInvalid() )
+			return DeducedTemplateParameter::Invalid();
+
+		return std::move(result);
 	}
 
 	else U_ASSERT(false);
+
+	return DeducedTemplateParameter::Invalid();
 }
 
 NamesScope::InsertedName* CodeBuilder::GenTemplateType(
@@ -792,7 +808,8 @@ NamesScope::InsertedName* CodeBuilder::GenTemplateType(
 		// TODO - maybe add some errors, if not deduced?
 		if( const Type* const type_name= value.GetTypeName() )
 		{
-			if( !DeduceTemplateArguments( type_template, *type_name, expr, file_pos, deduced_template_args, template_names_scope ) )
+			const DeducedTemplateParameter deduced= DeduceTemplateArguments( type_template, *type_name, expr, file_pos, deduced_template_args, template_names_scope );
+			if( deduced.IsInvalid() )
 			{
 				deduction_failed= true;
 				continue;
@@ -800,7 +817,8 @@ NamesScope::InsertedName* CodeBuilder::GenTemplateType(
 		}
 		else if( const Variable* const variable= value.GetVariable() )
 		{
-			if( !DeduceTemplateArguments( type_template, *variable, expr, file_pos, deduced_template_args, template_names_scope ) )
+			const DeducedTemplateParameter deduced= DeduceTemplateArguments( type_template, *variable, expr, file_pos, deduced_template_args, template_names_scope );
+			if( deduced.IsInvalid() )
 			{
 				deduction_failed= true;
 				continue;
@@ -1000,6 +1018,7 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 
 	bool is_template_dependent= false;
 	bool deduction_failed= false;
+	std::vector<DeducedTemplateParameter> deduced_temlpate_parameters( function_declaration.arguments_.size() );
 	for( size_t i= 0u; i < function_declaration.arguments_.size(); ++i )
 	{
 		const Synt::FunctionArgument& function_argument= *function_declaration.arguments_[i];
@@ -1023,16 +1042,22 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 				continue;
 			}
 		}
-		else if( !DeduceTemplateArguments(
-				function_template,
-				given_args[i].type,
-				*function_argument.type_,
-				function_argument.file_pos_,
-				deduced_template_args,
-				*function_template_ptr->parent_namespace /*TODO - is this correct namespace? */ ) )
+		else
 		{
-			deduction_failed= true;
-			continue;
+			DeducedTemplateParameter deduced=
+				DeduceTemplateArguments(
+					function_template,
+					given_args[i].type,
+					*function_argument.type_,
+					function_argument.file_pos_,
+					deduced_template_args,
+					*function_template_ptr->parent_namespace /*TODO - is this correct namespace? */ );
+			if( deduced.IsInvalid() )
+			{
+				deduction_failed= true;
+				continue;
+			}
+			deduced_temlpate_parameters[i]= std::move(deduced);
 		}
 
 		// Update known arguments in names scope.
@@ -1132,7 +1157,8 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 	}
 
 	// Insert generated function
-	const FunctionVariable function_variable= prepare_result.functions_set->functions[prepare_result.function_index];
+	FunctionVariable function_variable= prepare_result.functions_set->functions[prepare_result.function_index];
+	function_variable.deduced_temlpate_parameters= std::move(deduced_temlpate_parameters);
 	const NamesScope::InsertedName* const inserted_function_name= function_template.parent_namespace->AddName( name_encoded, function_variable );
 	U_ASSERT( inserted_function_name != nullptr );
 
