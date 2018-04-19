@@ -603,6 +603,7 @@ DeducedTemplateParameter CodeBuilder::DeduceTemplateArguments(
 		else if( const Type* const prev_type= boost::get<Type>( &deducible_template_parameters[ dependend_arg_index ] ) )
 		{
 			// Type already known. Check conflicts.
+			// TODO - maybe allow type conversions?
 			if( *prev_type != given_type )
 				return DeducedTemplateParameter::Invalid();
 		}
@@ -621,7 +622,9 @@ DeducedTemplateParameter CodeBuilder::DeduceTemplateArguments(
 
 	if( const Type* const type= signature_parameter_name->second.GetTypeName() )
 	{
-		if( *type == given_type )
+		// TODO - maybe allow reference conversions only for direct function arguments?
+		// TODO - allow here type conversions ONLY for direct function arguments.
+		if( *type == given_type || given_type.ReferenceIsConvertibleTo( *type ) )
 			return DeducedTemplateParameter::Type();
 		return DeducedTemplateParameter::Invalid();
 	}

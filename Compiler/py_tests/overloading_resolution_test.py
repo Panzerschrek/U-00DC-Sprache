@@ -435,6 +435,55 @@ def OverloadingResolutionTest_MutabilityAndReferenceConversions_Tes5():
 	assert( errors_list[0].file_pos.line == 10 )
 
 
+def OverloadingResolutionTest_ForFunctionTemplates_Test0():
+	c_program_text= """
+		class A polymorph {}
+		class B : A {}
+		template</ type T /> struct Box{}
+
+		template</ type T />
+		fn Bar( T& t, B& b ){}
+
+		template</ type T />
+		fn Bar( Box</T/>& t, A& a ){}
+
+		fn Foo()
+		{
+			var B b;
+			var Box</i32/> box;
+			Bar( box, b ); // Error, first argument is better for second function ( more specialized ), but second argument is berrter for first function ( conversion B&->B& is better, then B&->A& ).
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "TooManySuitableOverloadedFunctions" )
+	assert( errors_list[0].file_pos.line == 16 )
+
+
+def OverloadingResolutionTest_ForFunctionTemplates_Test1():
+	c_program_text= """
+		class A polymorph {}
+		class B : A {}
+		template</ type T /> struct Box{}
+
+		template</ type T />
+		fn Bar( T& t, A& a ) : i32 { return 9999; }
+
+		template</ type T />
+		fn Bar( Box</T/>& t, B& b ) : i32 { return 4242; }
+
+		fn Foo() : i32
+		{
+			var B b;
+			var Box</i32/> box;
+			return Bar( box, b ); // Ok, select second function, because first template-argument is more specialized and second argument have better conversion/
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 4242 )
+
+
 def OverloadingResolutionTest_StaticClassFunctions_Test0():
 	c_program_text= """
 		struct S
