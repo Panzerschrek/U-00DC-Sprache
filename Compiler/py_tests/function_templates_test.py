@@ -561,3 +561,23 @@ def Specialization_Test12():
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "TooManySuitableOverloadedFunctions" )
 	assert( errors_list[0].file_pos.line == 14 )
+
+
+def Specialization_Test12():
+	c_program_text= """
+		template</ type T /> struct Box{}
+
+		template</  />
+		fn Bar( Box</ void /> & b ) : i32 { return 666; }
+
+		fn Foo() : i32
+		{
+			var Box</i32/> box;
+			return Bar(box); // Must not select Box</ void />, even if i32 is convertible to void.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "CouldNotSelectOverloadedFunction" )
+	assert( errors_list[0].file_pos.line == 10 )
+

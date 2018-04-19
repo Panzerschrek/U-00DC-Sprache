@@ -603,7 +603,6 @@ DeducedTemplateParameter CodeBuilder::DeduceTemplateArguments(
 		else if( const Type* const prev_type= boost::get<Type>( &deducible_template_parameters[ dependend_arg_index ] ) )
 		{
 			// Type already known. Check conflicts.
-			// TODO - maybe allow type conversions?
 			if( *prev_type != given_type )
 				return DeducedTemplateParameter::Invalid();
 		}
@@ -622,9 +621,7 @@ DeducedTemplateParameter CodeBuilder::DeduceTemplateArguments(
 
 	if( const Type* const type= signature_parameter_name->second.GetTypeName() )
 	{
-		// TODO - maybe allow reference conversions only for direct function arguments?
-		// TODO - allow here type conversions ONLY for direct function arguments.
-		if( *type == given_type || given_type.ReferenceIsConvertibleTo( *type ) )
+		if( *type == given_type )
 			return DeducedTemplateParameter::Type();
 		return DeducedTemplateParameter::Invalid();
 	}
@@ -1065,20 +1062,66 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 		}
 		else
 		{
-			DeducedTemplateParameter deduced=
-				DeduceTemplateArguments(
-					function_template,
-					given_args[i].type,
-					*function_argument.type_,
-					function_argument.file_pos_,
-					deduced_template_args,
-					*function_template_ptr->parent_namespace /*TODO - is this correct namespace? */ );
-			if( deduced.IsInvalid() )
+			// For named types we check, if reference (and type in future) conversion is possible, and if not, do arguments deduction.
+			bool deduced_specially= false;
+			if( const Synt::NamedTypeName* const named_type_name= dynamic_cast<Synt::NamedTypeName*>( function_argument.type_.get() ) )
 			{
-				deduction_failed= true;
-				continue;
+				size_t dependend_arg_index= ~0u;
+				if( named_type_name->name.components.size() == 1u && !named_type_name->name.components.front().have_template_parameters )
+				{
+					for( const TypeTemplate::TemplateParameter& param : function_template.template_parameters )
+					{
+						if( param.name == named_type_name->name.components.front().name )
+						{
+							dependend_arg_index= &param - function_template.template_parameters.data();
+							break;
+						}
+					}
+				}
+
+				if( dependend_arg_index == ~0u )
+				{
+					// Not template parameter, must be type name or template.
+					const NamesScope::InsertedName* const signature_parameter_name=
+						ResolveForTemplateSignatureParameter( named_type_name->file_pos_, named_type_name->name, *function_template.parent_namespace /*TODO - is this correct namespace? */ );
+					if( signature_parameter_name == nullptr )
+					{
+						deduction_failed= true;
+						continue;
+					}
+					if( const Type* const type= signature_parameter_name->second.GetTypeName() )
+					{
+						if( *type == given_args[i].type || given_args[i].type.ReferenceIsConvertibleTo( *type ) )
+						{
+							deduced_temlpate_parameters[i]= DeducedTemplateParameter::Type();
+							deduced_specially= true;
+						}
+						else
+						{
+								deduction_failed= true;
+								continue;
+						}
+					}
+				}
 			}
-			deduced_temlpate_parameters[i]= std::move(deduced);
+
+			if( !deduced_specially )
+			{
+				DeducedTemplateParameter deduced=
+					DeduceTemplateArguments(
+						function_template,
+						given_args[i].type,
+						*function_argument.type_,
+						function_argument.file_pos_,
+						deduced_template_args,
+						*function_template_ptr->parent_namespace /*TODO - is this correct namespace? */ );
+				if( deduced.IsInvalid() )
+				{
+					deduction_failed= true;
+					continue;
+				}
+				deduced_temlpate_parameters[i]= std::move(deduced);
+			}
 		}
 
 		// Update known arguments in names scope.

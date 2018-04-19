@@ -85,7 +85,7 @@ static ConversionsCompareResult TemplateSpecializationCompare(
 	if( left_template_parameter.IsType() )
 	{
 		if( right_template_parameter.IsType() )
-			return ConversionsCompareResult::Same; // SPRACHE_TODO - mybe compare types?
+			return ConversionsCompareResult::Same;
 		else if( right_template_parameter.IsTemplateParameter() )
 			return ConversionsCompareResult::LeftIsBetter; // Concrete type is better, then template parameter.
 		else if( right_template_parameter.GetArray() != nullptr )
