@@ -659,6 +659,20 @@ DeducedTemplateParameter CodeBuilder::DeduceTemplateArguments(
 				return DeducedTemplateParameter::Invalid();
 			result.args.push_back(std::move(deduced));
 		}
+
+		// Check, if given something, like std::tuple</ i32, std::vector</float/>, [ bool, 4 ] />.
+		bool all_template_parameters_is_concrete= true;
+		for( const DeducedTemplateParameter& param : result.args )
+		{
+			if( !( param.IsType() || param.IsValue() ) )
+			{
+				all_template_parameters_is_concrete= false;
+				break;
+			}
+		}
+		if( all_template_parameters_is_concrete )
+			return DeducedTemplateParameter::Type();
+
 		return result;
 	}
 
@@ -744,6 +758,10 @@ DeducedTemplateParameter CodeBuilder::DeduceTemplateArguments(
 				DeduceTemplateArguments( template_, size_var, *array_type->size, signature_parameter_file_pos, deducible_template_parameters, names_scope ) ) );
 		if( result.type->IsInvalid() || result.size->IsInvalid() )
 			return DeducedTemplateParameter::Invalid();
+
+		// All array parameters is known, so, this is concrete type.
+		if( result.type->IsType() && result.size->IsValue() )
+			return DeducedTemplateParameter::Type();
 
 		return std::move(result);
 	}

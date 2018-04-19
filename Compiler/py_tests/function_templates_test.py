@@ -493,3 +493,71 @@ def Specialization_Test9():
 	tests_lib.build_program( c_program_text )
 	call_result= tests_lib.run_function( "_Z3Foov" )
 	assert( call_result == 111114 )
+
+
+def Specialization_Test10():
+	c_program_text= """
+		type IVec3= [ i32, 3u ];
+
+		template</  />
+		fn Bar( IVec3& v ) : i32 { return 666; }
+
+		template</  />
+		fn Bar( [ i32, 3u ] & v ) : i32 { return 222; }
+
+		fn Foo() : i32
+		{
+			var [ i32, 3 ] arr= zero_init;
+			return Bar(arr); // Error, both functions have same specialization of parameter (concrete type).
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "TooManySuitableOverloadedFunctions" )
+	assert( errors_list[0].file_pos.line == 13 )
+
+
+def Specialization_Test11():
+	c_program_text= """
+		template</ type T /> struct Box{}
+		type IBox= Box</ i32 />;
+
+		template</  />
+		fn Bar( IBox& v ) : i32 { return 666; }
+
+		template</  />
+		fn Bar( Box</ i32 /> & v ) : i32 { return 222; }
+
+		fn Foo() : i32
+		{
+			var IBox box;
+			return Bar(box); // Error, both functions have same specialization of parameter (concrete type).
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "TooManySuitableOverloadedFunctions" )
+	assert( errors_list[0].file_pos.line == 14 )
+
+
+def Specialization_Test12():
+	c_program_text= """
+		template</ type T, u32 size /> struct ArrayWrapper{}
+		type IVec4= ArrayWrapper</ i32, 4u />;
+
+		template</  />
+		fn Bar( IVec4& v ) : i32 { return 666; }
+
+		template</  />
+		fn Bar( ArrayWrapper</ i32, 4u /> & v ) : i32 { return 222; }
+
+		fn Foo() : i32
+		{
+			var IVec4 vec;
+			return Bar(vec); // Error, both functions have same specialization of parameter (concrete type).
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "TooManySuitableOverloadedFunctions" )
+	assert( errors_list[0].file_pos.line == 14 )
