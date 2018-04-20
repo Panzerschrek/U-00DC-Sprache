@@ -265,6 +265,32 @@ def TemplateMethod_Test4():
 	assert( call_result == 856.0 )
 
 
+def TemplateMethod_Test5():
+	c_program_text= """
+		struct Num
+		{
+			f64 n;
+
+			template</ type T />
+			fn Set( Num &mut self, T t )
+			{
+				self.n= f64(t);
+			}
+		}
+
+		fn Foo() : f64
+		{
+			var Num mut num{ .n= 0.0 };
+			Num::Set</ i32 />( num, 99654 ); // Directly set template paremeter.
+			// SPRACHE_TODO - allow something, like num.Set</ i32 />( 0 );
+			return num.n;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 99654 )
+
+
 def RecursiveTemplateFunctionCall_Test0():
 	c_program_text= """
 		template</ type T />
@@ -644,3 +670,39 @@ def DirectFunctionTemplateParametersSet_Test2():
 	tests_lib.build_program( c_program_text )
 	call_result= tests_lib.run_function( "_Z3Foov" )
 	assert( call_result == 888541 )
+
+
+def DirectFunctionTemplateParametersSet_Test3():
+	c_program_text= """
+		template</ type T />
+		fn Bar() : i32 { return 55541; }
+
+		template</ i32 X />
+		fn Bar() : i32 { return X; }
+
+		fn Foo() : i32
+		{
+			return Bar</ 1110 />(); // First template instantiation failed, but second successed.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 1110 )
+
+
+def DirectFunctionTemplateParametersSet_Test4():
+	c_program_text= """
+		template</ type T />
+		fn Bar() : i32 { return 55541; }
+
+		template</ i32 X />
+		fn Bar() : i32 { return X; }
+
+		fn Foo() : i32
+		{
+			return Bar</ i32 />(); // Second template instantiation failed, but first successed.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 55541 )

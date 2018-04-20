@@ -1695,6 +1695,37 @@ U_TEST( NumericConstantAsTemplateSignatureParameter_Test0 )
 	U_TEST_ASSERT( static_cast<uint64_t>( 23214 - 2221 ) == result_value.IntVal.getLimitedValue() );
 }
 
+U_TEST( NumericConstantAsTemplateSignatureParameter_Test1 )
+{
+	static const char c_program_text[]=
+	R"(
+		var i32 constexpr two= 2;
+		template</ type T />
+		struct IntVec</ T, two /> // constexpr variable as specialized signature parameter
+		{
+			T x; T y;
+		}
+
+		fn Foo() : i32
+		{
+			var IntVec</ i32, 2 /> v{ .x= 9987, .y= 1124 };
+			return v.x - v.y;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	const llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( static_cast<uint64_t>( 9987 - 1124 ) == result_value.IntVal.getLimitedValue() );
+}
+
 U_TEST( NumericConstantAsTemplateSignatureParameter_Test2 )
 {
 	static const char c_program_text[]=

@@ -536,7 +536,13 @@ DeducedTemplateParameter CodeBuilder::DeduceTemplateArguments(
 			if( signature_parameter_name == nullptr )
 				return DeducedTemplateParameter::Invalid();
 
-			if( const Variable* const named_variable= signature_parameter_name->second.GetVariable() )
+			const Variable* named_variable = signature_parameter_name->second.GetVariable();
+			if( named_variable == nullptr )
+			{
+				if( const StoredVariablePtr stored_variable= signature_parameter_name->second.GetStoredVariable() )
+					named_variable= &stored_variable->content;
+			}
+			if( named_variable != nullptr )
 			{
 				if( named_variable->type == variable->type &&
 					TypeIsValidForTemplateVariableArgument( named_variable->type ) &&
@@ -1267,7 +1273,7 @@ const NamesScope::InsertedName* CodeBuilder::GenTemplateFunctionsUsingTemplatePa
 	bool something_is_wrong= false;
 	for( const Synt::IExpressionComponentPtr& expr : template_arguments )
 	{
-		Value value= BuildExpressionCode( *expr, arguments_names_scope, *dummy_function_context_ );
+		const Value value= BuildExpressionCode( *expr, arguments_names_scope, *dummy_function_context_ );
 		if( value.GetType() == NontypeStub::TemplateDependentValue ||
 			value.GetType().GetTemplateDependentType() != nullptr )
 		{
@@ -1301,13 +1307,9 @@ const NamesScope::InsertedName* CodeBuilder::GenTemplateFunctionsUsingTemplatePa
 	} // for given template arguments.
 
 	if( something_is_wrong )
-	{
-		// TODO
-	}
+		return nullptr;
 	if( is_template_dependent )
-	{
-		// TODO
-	}
+		return &template_names_scope.GetTemplateDependentValue();
 
 	// Encode name, based on set of function templates and given tempate parameters.
 	ProgramString name_encoded= g_template_parameters_namespace_prefix;
@@ -1351,6 +1353,7 @@ const NamesScope::InsertedName* CodeBuilder::GenTemplateFunctionsUsingTemplatePa
 		if( function_template.template_parameters.size() > template_parameters.size() )
 			continue;
 
+		// Check given arguments and template parameters.
 		bool ok= true;
 		for( size_t i= 0u; i < template_parameters.size(); ++i )
 		{
