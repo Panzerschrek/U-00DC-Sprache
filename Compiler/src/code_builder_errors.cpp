@@ -159,6 +159,8 @@ const char* CodeBuilderErrorCodeToString( const CodeBuilderErrorCode code )
 		return "TemplateArgumentNotUsedInSignature";
 	case CodeBuilderErrorCode::IncompleteMemberOfClassTemplate:
 		return "IncompleteMemberOfClassTemplate";
+	case CodeBuilderErrorCode::TemplateFunctionGenerationFailed:
+		return "TemplateFunctionGenerationFailed";
 	case CodeBuilderErrorCode::ReferenceProtectionError:
 		return "ReferenceProtectionError";
 	case CodeBuilderErrorCode::DestroyedVariableStillHaveReferences:
@@ -1091,6 +1093,17 @@ CodeBuilderError ReportIncompleteMemberOfClassTemplate( const FilePos& file_pos,
 	error.code= CodeBuilderErrorCode::IncompleteMemberOfClassTemplate;
 
 	error.text= "\""_SpC + name + "\" is incomplete."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportTemplateFunctionGenerationFailed( const FilePos& file_pos, const ProgramString& function_template_name )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::TemplateFunctionGenerationFailed;
+
+	error.text= "Instantiation of function template \""_SpC + function_template_name + "\" failed."_SpC;
 
 	return error;
 }

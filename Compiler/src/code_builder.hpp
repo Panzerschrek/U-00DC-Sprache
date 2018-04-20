@@ -240,6 +240,13 @@ private:
 		const std::vector<Function::Arg>& actual_args,
 		bool first_actual_arg_is_this );
 
+	const NamesScope::InsertedName* GenTemplateFunctionsUsingTemplateParameters(
+		const FilePos& file_pos,
+		const std::vector<FunctionTemplatePtr>& function_templates,
+		const std::vector<Synt::IExpressionComponentPtr>& template_arguments,
+		NamesScope& template_names_scope,
+		NamesScope& arguments_names_scope );
+
 	bool NameShadowsTemplateArgument( const ProgramString& name, NamesScope& names_scope );
 
 	TemplateDependentType GetNextTemplateDependentType();

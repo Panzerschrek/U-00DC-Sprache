@@ -697,6 +697,8 @@ struct FunctionTemplate final : public TemplateBase
 	const Synt::FunctionTemplate* syntax_element= nullptr;
 
 	ClassProxyPtr base_class;
+
+	std::vector< std::pair< ProgramString, Value > > known_template_parameters;
 };
 
 class DeducedTemplateParameter

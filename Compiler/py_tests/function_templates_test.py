@@ -581,3 +581,66 @@ def Specialization_Test12():
 	assert( errors_list[0].error_code == "CouldNotSelectOverloadedFunction" )
 	assert( errors_list[0].file_pos.line == 10 )
 
+
+def DirectFunctionTemplateParametersSet_Test0():
+	c_program_text= """
+		template</ type T />
+		fn Cast( f32 x ) : T
+		{
+			return T(x);
+		}
+
+		fn Foo() : i32
+		{
+			return Cast</ i32 />(45.7f);
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 45 )
+
+
+def DirectFunctionTemplateParametersSet_Test1():
+	c_program_text= """
+		template</ i32 value, u32 size />
+		fn FillArray( [ i32, size ] &mut arr )
+		{
+			auto mut i= 0u;
+			while( i < size )
+			{
+				arr[i]= value;
+				++i;
+			}
+		}
+
+		fn Foo()
+		{
+			var [ i32, 42u ] mut arr= zero_init;
+			FillArray</ 13, 42u />( arr );
+			auto mut i= 0u;
+			while( i < 42u )
+			{
+				halt if( arr[i] != 13 );
+				++i;
+			}
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+
+
+def DirectFunctionTemplateParametersSet_Test2():
+	c_program_text= """
+		class A polymorph{}
+		class B : A {}
+		template</ type T />
+		fn Bar( T& a, T& b ) : i32 { return 888541; }
+
+		fn Foo() : i32
+		{
+			return Bar</ A />( A(), B() );  // Ok, T is concrete type "A", and reference conversions works correctly.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 888541 )

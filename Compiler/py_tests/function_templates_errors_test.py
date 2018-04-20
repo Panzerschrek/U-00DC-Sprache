@@ -361,3 +361,87 @@ def TemplateParametersDeductionFailed_Test10():
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "CouldNotSelectOverloadedFunction" )
 	assert( errors_list[0].file_pos.line == 11 )
+
+
+def TemplateParametersDeductionFailed_Test11():
+	c_program_text= """
+		template</ type T />
+		fn Bar( T& a, T& b ){}
+
+		class A polymorph{}
+		class B : A{}
+		fn Foo()
+		{
+			Bar( A(), B() ); // Error, T deduced to "A" or "B". Reference conversion does not works here.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "CouldNotSelectOverloadedFunction" )
+	assert( errors_list[0].file_pos.line == 9 )
+
+
+def TemplateFunctionGenerationFailed_Test0():
+	c_program_text= """
+		template</ type T />
+		fn CastIntTo( i32 i ) : T { return T(i); }
+
+		fn Foo()
+		{
+			CastIntTo</ i32, f64 />; // Error, function generation failed, because parameter count is greater, then needs.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "TemplateFunctionGenerationFailed" )
+	assert( errors_list[0].file_pos.line == 7 )
+
+
+def TemplateFunctionGenerationFailed_Test1():
+	c_program_text= """
+		template</ type T />
+		fn CastIntTo( i32 i ) : T { return T(i); }
+
+		fn Foo()
+		{
+			CastIntTo</ 42 />; // Error, function generation failed, value parameter given, but expected type parameter.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "TemplateFunctionGenerationFailed" )
+	assert( errors_list[0].file_pos.line == 7 )
+
+
+def TemplateFunctionGenerationFailed_Test2():
+	c_program_text= """
+		template</ u32 value />
+		fn Set( u32 &mut u ) { u= value; }
+
+		fn Foo()
+		{
+			var u32 mut x= 0u;
+			Set</ 42 />( x ); // Error, function generation failed, given value parameter type does not match expected type.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "TemplateFunctionGenerationFailed" )
+	assert( errors_list[0].file_pos.line == 8 )
+
+
+def TemplateFunctionGenerationFailed_Test3():
+	c_program_text= """
+		template</ type T, T value />
+		fn Set( T &mut t ) { t= value; }
+
+		fn Foo()
+		{
+			var u32 mut x= 0u;
+			Set</ u32, false />( x ); // Error, function generation failed, given value parameter type does not match expected type.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "TemplateFunctionGenerationFailed" )
+	assert( errors_list[0].file_pos.line == 8 )
