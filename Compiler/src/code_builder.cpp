@@ -279,7 +279,6 @@ void CodeBuilder::MergeNameScopes( NamesScope& dst, const NamesScope& src, Class
 				const OverloadedFunctionsSet* const src_funcs_set= src_member.second.GetFunctionsSet();
 				U_ASSERT( src_funcs_set != nullptr );
 
-				// TODO - merge function templates
 				for( const FunctionVariable& src_func : src_funcs_set->functions )
 				{
 					FunctionVariable* same_dst_func=
@@ -303,6 +302,15 @@ void CodeBuilder::MergeNameScopes( NamesScope& dst, const NamesScope& src, Class
 					}
 					else
 						ApplyOverloadedFunction( *dst_funcs_set, src_func, src_func.prototype_file_pos );
+
+					for( const FunctionTemplatePtr& function_template : src_funcs_set->template_functions )
+					{
+						// Function template must know it parent namespace.
+						// Change namespace at this point.
+						if( function_template->parent_namespace == &src )
+							function_template->parent_namespace= &dst;
+						dst_funcs_set->template_functions.push_back( function_template );
+					}
 				}
 				return;
 			}
@@ -943,6 +951,9 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 								if( !overrides )
 									ApplyOverloadedFunction( *result_class_functions, parent_function, class_declaration.file_pos_ );
 							} // for parent functions
+
+							for( const FunctionTemplatePtr& function_template : functions->template_functions )
+								result_class_functions->template_functions.push_back(function_template);
 						}
 					}
 					else
