@@ -706,3 +706,122 @@ def DirectFunctionTemplateParametersSet_Test4():
 	tests_lib.build_program( c_program_text )
 	call_result= tests_lib.run_function( "_Z3Foov" )
 	assert( call_result == 55541 )
+
+
+def PreResolve_Test0():
+	c_program_text= """
+		type I= i32;
+		namespace N
+		{
+			type I= i64;
+			template</ type T />
+			fn ToI( T& t ) : I { return I(t); }
+		}
+
+		fn Foo() : i64
+		{
+			return N::ToI( 45.3f ); // Must return i64 result
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 45 )
+
+
+def PreResolve_Test1():
+	c_program_text= """
+		template</ type T /> struct Box{}
+		namespace N
+		{
+			template</ type T /> struct Box{ T boxed; }
+
+			template</ type T />
+			fn Unbox( Box</ T /> & box ) : T& { return box.boxed; }  // N::Box should be visible here, not ::Box
+		}
+
+		fn Foo() : i32
+		{
+			var N::Box</ i32 /> box{ .boxed= 666541 };
+			return N::Unbox(box);
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 666541 )
+
+
+def PreResolve_Test2():
+	c_program_text= """
+		template</ type T /> struct Box{}
+		namespace N
+		{
+			template</ type T /> struct Box{ T boxed; }
+
+			template</ type T />
+			fn Unbox( Box</ T /> & box ) : T& { return box.boxed; }  // N::Box should be visible here, not ::Box
+		}
+
+		fn Foo() : i32
+		{
+			var Box</ i32 /> box{};
+			return N::Unbox(box); // Error, epected N::Box</T/>, got ::Box</T/>
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "CouldNotSelectOverloadedFunction" )
+	assert( errors_list[0].file_pos.line == 14 )
+
+
+def PreResolve_Test3():
+	c_program_text= """
+		fn DoubleIt( i32&imut x ) : i32
+		{
+			return x * 2;
+		}
+
+		template</ type T />
+		fn TryDoubleIt( T &mut x ) : i32
+		{
+			return DoubleIt(x);  // DoubleIt( i32&imut x ) should be visible here, not DoubleIt( i32& mut x ).
+		}
+
+		fn DoubleIt( i32& mut x ) : i32
+		{
+			x*= 2;
+			return x;
+		}
+
+		fn Foo() : i32
+		{
+			var i32 mut x= 7;
+			auto r= TryDoubleIt(x); // Should NOT modyfy 'x'.
+			halt if( r != 2 * x );
+			return x;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 7 )
+
+
+def PreResolve_Test4():
+	c_program_text= """
+		type I= i32;
+		namespace N
+		{
+			type I= i64;
+			template</ I val, type T />
+			fn SetVal( T&mut t ) { t= val; }
+		}
+
+		fn Foo() : i64
+		{
+			var i64 mut x= zero_init;
+			N::SetVal</ 874i64 />( x );  // N::I must be visible here as type of value-argument of template function.
+			return x;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 874 )
