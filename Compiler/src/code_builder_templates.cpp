@@ -1350,7 +1350,7 @@ const NamesScope::InsertedName* CodeBuilder::GenTemplateFunctionsUsingTemplatePa
 	for( const FunctionTemplatePtr& function_template_ptr : function_templates )
 	{
 		const FunctionTemplate& function_template= *function_template_ptr;
-		if( function_template.template_parameters.size() > template_parameters.size() )
+		if( template_parameters.size() > function_template.template_parameters.size() )
 			continue;
 
 		// Check given arguments and template parameters.

@@ -445,3 +445,19 @@ def TemplateFunctionGenerationFailed_Test3():
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "TemplateFunctionGenerationFailed" )
 	assert( errors_list[0].file_pos.line == 8 )
+
+
+def TemplateFunctionGenerationFailed_Test5():
+	c_program_text= """
+		template</ type T/>
+		fn Bar(){}
+
+		fn Foo()
+		{
+			Bar</ i32, f32 />(); // Error, template parameter count is greater, then expected.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "TemplateFunctionGenerationFailed" )
+	assert( errors_list[0].file_pos.line == 7 )
