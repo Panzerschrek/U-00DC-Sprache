@@ -11,10 +11,15 @@ Common:
 *) Continious initializer for arrays
 *) Uninitialized initializer
 *) array_view, array view take operator
-*) Disabled by-default copying for classes
+*) Disabled by-default copying for classes. Possibility to force generating
+	copying methods.
+*) Possibility to disable some methods generation.
 *) Type conversions
 *) Dereference operator - for pointer-like classes
 *) Early temp variables destruction
+*) "shared" tag for shared_ptr and it propagation to structures with shared
+	pointers inside
+*) Multithreading support
 
 References:
 *) Tags for struct/class references
@@ -27,14 +32,17 @@ Templates:
 *) Default template arguments for short type template form
 *) Type templates overloading
 *) enable_if for templates
-*) Function templates
 *) Variadic templates
+*) Function templates with template-dependent reference and mutability modifiers
+	for arguments.
 
 Standart library:
 *) vector
 *) unique_ptr
 *) optional
 *) shared_ptr
+*) thread class
+*) thread-safe shared_ptr
 
 Compiler:
 *) Fix exponential complexity for expressions evaluation
