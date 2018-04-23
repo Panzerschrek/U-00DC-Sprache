@@ -1057,7 +1057,6 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 
 	PushCacheGetResolveHandelr( function_template.resolving_cache );
 
-	bool is_template_dependent= false;
 	bool deduction_failed= false;
 	std::vector<DeducedTemplateParameter> deduced_temlpate_parameters( function_declaration.arguments_.size() );
 	for( size_t i= 0u; i < function_declaration.arguments_.size(); ++i )
@@ -1175,10 +1174,6 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 	{
 		PopResolveHandler();
 		return nullptr;
-	}
-	if( is_template_dependent )
-	{
-		// TODO
 	}
 
 	for( size_t i = 0u; i < deduced_template_args.size() ; ++i )
@@ -1607,6 +1602,8 @@ void CodeBuilder::ReportAboutIncompleteMembersOfTemplateClass( const FilePos& fi
 			else if( name.second.GetVariable() != nullptr )
 			{}
 			else if( name.second.GetStoredVariable() != nullptr )
+			{}
+			else if( name.second.GetTemplateDependentValue() != nullptr )
 			{}
 			else
 				U_ASSERT(false);

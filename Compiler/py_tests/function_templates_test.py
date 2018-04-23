@@ -849,3 +849,37 @@ def PreResolve_Test4():
 	tests_lib.build_program( c_program_text )
 	call_result= tests_lib.run_function( "_Z3Foov" )
 	assert( call_result == 874 )
+
+
+def TemplateDependentFunctionTemplateArguments_Test0():
+	c_program_text= """
+		template</ type T />
+		class Vector
+		{
+			template</ type F />
+			fn emplace_back( F& f ){}
+
+			fn emplace_back( T& t )
+			{
+				emplace_back( t );
+			}
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def TemplateDependentFunctionTemplateArguments_Test1():
+	c_program_text= """
+		template</ type T />
+		class Vector
+		{
+			template</ type F />
+			fn emplace_back( F& f ){}
+
+			fn emplace_back( T& t )
+			{
+				emplace_back</T/>( t );
+			}
+		}
+	"""
+	tests_lib.build_program( c_program_text )
