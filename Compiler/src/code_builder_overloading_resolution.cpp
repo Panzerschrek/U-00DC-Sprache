@@ -94,9 +94,9 @@ static ConversionsCompareResult TemplateSpecializationCompare(
 			return ConversionsCompareResult::RightIsBetter; // Template is more specialized, then type.
 		else U_ASSERT(false);
 	}
-	else if( left_template_parameter.IsValue() )
+	else if( left_template_parameter.IsVariable() )
 	{
-		if( right_template_parameter.IsValue() )
+		if( right_template_parameter.IsVariable() )
 			return ConversionsCompareResult::Same;
 		else if( right_template_parameter.IsTemplateParameter() )
 			return ConversionsCompareResult::LeftIsBetter; // Value is more specialized, then template parameter.
@@ -158,7 +158,7 @@ static ConversionsCompareResult TemplateSpecializationCompare(
 	{
 		if( right_template_parameter.IsType() )
 			return ConversionsCompareResult::RightIsBetter;  // Concrete type is better, then template parameter.
-		else if( right_template_parameter.IsValue() )
+		else if( right_template_parameter.IsVariable() )
 			return ConversionsCompareResult::RightIsBetter; // Value is more specialized, then template parameter.
 		else if( right_template_parameter.IsTemplateParameter() )
 			return ConversionsCompareResult::Same;
@@ -377,7 +377,7 @@ const FunctionVariable* CodeBuilder::GetOverloadedFunction(
 
 	if( match_functions.empty() )
 	{
-		// Not found any function - try elect template function.
+		// Not found any function - try select template function.
 		for( const FunctionTemplatePtr& function_template_ptr : functions_set.template_functions )
 		{
 			const FunctionVariable* const generated_function=

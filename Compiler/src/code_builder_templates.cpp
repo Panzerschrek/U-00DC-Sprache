@@ -192,8 +192,6 @@ void CodeBuilder::PrepareFunctionTemplate( const Synt::FunctionTemplate& functio
 		*template_parameters_namespace,
 		template_parameters_usage_flags );
 
-	// TODO - PrepareTemplateSignatureParameter
-
 	// Make first check-pass for template. Resolve all names in this pass.
 	PrepareFunction( *function_template_declaration.function_, false, base_class, *template_parameters_namespace );
 
@@ -548,7 +546,7 @@ DeducedTemplateParameter CodeBuilder::DeduceTemplateArguments(
 					TypeIsValidForTemplateVariableArgument( named_variable->type ) &&
 					named_variable->constexpr_value != nullptr && variable->constexpr_value != nullptr &&
 					named_variable->constexpr_value->getUniqueInteger() == variable->constexpr_value->getUniqueInteger() )
-					return DeducedTemplateParameter::Value();
+					return DeducedTemplateParameter::Variable();
 			}
 			return DeducedTemplateParameter::Invalid();
 		}
@@ -566,7 +564,7 @@ DeducedTemplateParameter CodeBuilder::DeduceTemplateArguments(
 		}
 
 		// Check given type and type from signature, deduce also some complex names.
-		const DeducedTemplateParameter deduced_value_type= // TODO - use it?
+		const DeducedTemplateParameter deduced_value_type=
 			DeduceTemplateArguments(
 				template_,
 				variable->type,
@@ -682,7 +680,7 @@ DeducedTemplateParameter CodeBuilder::DeduceTemplateArguments(
 		bool all_template_parameters_is_concrete= true;
 		for( const DeducedTemplateParameter& param : result.args )
 		{
-			if( !( param.IsType() || param.IsValue() ) )
+			if( !( param.IsType() || param.IsVariable() ) )
 			{
 				all_template_parameters_is_concrete= false;
 				break;
@@ -739,7 +737,7 @@ DeducedTemplateParameter CodeBuilder::DeduceTemplateArguments(
 	if( param_var->constexpr_value->getUniqueInteger() != var.constexpr_value->getUniqueInteger() )
 		return DeducedTemplateParameter::Invalid();
 
-	return DeducedTemplateParameter::Value();
+	return DeducedTemplateParameter::Variable();
 }
 
 DeducedTemplateParameter CodeBuilder::DeduceTemplateArguments(
@@ -778,7 +776,7 @@ DeducedTemplateParameter CodeBuilder::DeduceTemplateArguments(
 			return DeducedTemplateParameter::Invalid();
 
 		// All array parameters is known, so, this is concrete type.
-		if( result.type->IsType() && result.size->IsValue() )
+		if( result.type->IsType() && result.size->IsVariable() )
 			return DeducedTemplateParameter::Type();
 
 		return std::move(result);

@@ -1274,9 +1274,9 @@ DeducedTemplateParameter::DeducedTemplateParameter( Type type )
 	something_= std::move(type);
 }
 
-DeducedTemplateParameter::DeducedTemplateParameter( Value value )
+DeducedTemplateParameter::DeducedTemplateParameter( Variable variable )
 {
-	something_= std::move(value);
+	something_= std::move(variable);
 }
 
 DeducedTemplateParameter::DeducedTemplateParameter( TemplateParameter template_parameter )
@@ -1304,9 +1304,9 @@ bool DeducedTemplateParameter::IsType() const
 	return boost::get<Type>( &something_ ) != nullptr;
 }
 
-bool DeducedTemplateParameter::IsValue() const
+bool DeducedTemplateParameter::IsVariable() const
 {
-	return boost::get<Value>( &something_ ) != nullptr;
+	return boost::get<Variable>( &something_ ) != nullptr;
 }
 
 bool DeducedTemplateParameter::IsTemplateParameter() const

@@ -706,7 +706,7 @@ class DeducedTemplateParameter
 public:
 	struct Invalid{};
 	struct Type{};
-	struct Value{};
+	struct Variable{};
 	struct TemplateParameter{};
 
 	struct Array
@@ -730,14 +730,14 @@ public:
 public:
 	DeducedTemplateParameter( Invalid invalid= Invalid() );
 	DeducedTemplateParameter( Type type );
-	DeducedTemplateParameter( Value value );
+	DeducedTemplateParameter( Variable variable );
 	DeducedTemplateParameter( TemplateParameter template_parameter );
 	DeducedTemplateParameter( Array array );
 	DeducedTemplateParameter( Template template_ );
 
 	bool IsInvalid() const;
 	bool IsType() const;
-	bool IsValue() const;
+	bool IsVariable() const;
 	bool IsTemplateParameter() const;
 	const Array* GetArray() const;
 	const Template* GetTemplate() const;
@@ -746,7 +746,7 @@ private:
 	boost::variant<
 		Invalid,
 		Type,
-		Value,
+		Variable,
 		TemplateParameter,
 		Array,
 		Template> something_;
