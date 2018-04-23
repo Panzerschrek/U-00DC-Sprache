@@ -591,4 +591,95 @@ U_TEST( ImportsTest13_MultipleImportOfSameGeneratedTemplateClassInsideTemplateCl
 	U_TEST_ASSERT( static_cast<uint64_t>(42 - 3) == result_value.IntVal.getLimitedValue() );
 }
 
+U_TEST( ImportsTest14_ImportFunctionTemplate0 )
+{
+	static const char c_program_text_a[]=
+	R"(
+		type I= i32;
+		template</ type T /> fn ToImut( T &imut t ) : T&imut
+		{
+			var I i= 0;
+			return t;
+		}
+	)";
+
+	static const char c_program_text_root[]=
+	R"(
+		import "a"
+
+		fn A( i32& mut x ) { x*= 2; }
+		fn A( i32&imut x ) { }
+		fn Foo() : i32
+		{
+			var i32 mut x= 5;
+			A( ToImut(x) ); // Must select function with immutable argument.
+			return x;
+		}
+	)";
+
+	const EnginePtr engine=
+		CreateEngine(
+			BuildMultisourceProgram(
+				{
+					{ "a"_SpC, c_program_text_a },
+					{ "root"_SpC, c_program_text_root }
+				},
+				"root"_SpC ) );
+
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	const llvm::GenericValue result_value= engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+	U_TEST_ASSERT( static_cast<uint64_t>(5) == result_value.IntVal.getLimitedValue() );
+}
+
+U_TEST( ImportsTest14_ImportFunctionTemplate1 )
+{
+	static const char c_program_text_a[]=
+	R"(
+		type I= i32;
+		template</ type T /> fn Bar( T &mut t )
+		{
+			t= T(586);
+		}
+	)";
+
+	static const char c_program_text_b[]=
+	R"(
+		fn ToImut( i32 &mut t )
+		{
+			t= 1917;
+		}
+	)";
+
+	static const char c_program_text_root[]=
+	R"(
+		import "a"
+		import "b"
+
+		fn Foo() : i32
+		{
+			var i32 mut x= 0;
+			ToImut(x); // Must select non-template function from "b", rather then template from "a".
+			return x;
+		}
+	)";
+
+	const EnginePtr engine=
+		CreateEngine(
+			BuildMultisourceProgram(
+				{
+					{ "a"_SpC, c_program_text_a },
+					{ "b"_SpC, c_program_text_b },
+					{ "root"_SpC, c_program_text_root }
+				},
+				"root"_SpC ) );
+
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	const llvm::GenericValue result_value= engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+	U_TEST_ASSERT( static_cast<uint64_t>(1917) == result_value.IntVal.getLimitedValue() );
+}
+
 } // namespace U

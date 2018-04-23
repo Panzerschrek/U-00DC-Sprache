@@ -43,8 +43,16 @@ typedef std::shared_ptr<Enum> EnumPtr;
 class NamesScope;
 typedef std::shared_ptr<NamesScope> NamesScopePtr;
 
+struct TemplateBase;
+typedef std::shared_ptr<TemplateBase> TemplateBasePtr;
+
 struct TypeTemplate;
 typedef std::shared_ptr<TypeTemplate> TypeTemplatePtr;
+
+struct FunctionTemplate;
+typedef std::shared_ptr<FunctionTemplate> FunctionTemplatePtr;
+
+class DeducedTemplateParameter;
 
 struct FundamentalType final
 {
@@ -227,6 +235,10 @@ bool operator!=( const Array& r, const Array& l );
 struct FunctionVariable final
 {
 	Type type; // Function type 100%
+
+	// For function templates is nonempty and have size of args. Needs for selection of better (more specialized) template function.
+	std::vector<DeducedTemplateParameter> deduced_temlpate_parameters;
+
 	unsigned int virtual_table_index= ~0u; // For virtual functions number in virtual functions table in class of first arg(this).
 	bool have_body= true;
 	bool is_this_call= false;
@@ -241,8 +253,12 @@ struct FunctionVariable final
 	bool VirtuallyEquals( const FunctionVariable& other ) const;
 };
 
-// Set of functions with same name, but different signature.
-typedef std::vector<FunctionVariable> OverloadedFunctionsSet;
+struct OverloadedFunctionsSet
+{
+	std::vector<FunctionVariable> functions;
+
+	std::vector<FunctionTemplatePtr> template_functions;
+};
 
 class StoredVariable;
 typedef std::shared_ptr<StoredVariable> StoredVariablePtr;
@@ -643,7 +659,7 @@ struct Enum
 	FundamentalType underlaying_type; // must be integer
 };
 
-struct TypeTemplate final
+struct TemplateBase
 {
 	struct TemplateParameter
 	{
@@ -651,23 +667,90 @@ struct TypeTemplate final
 		const Synt::ComplexName* type_name= nullptr; // Exists for value parameters.
 	};
 
-	// Sorted in order of first parameter usage in signature.
 	std::vector< TemplateParameter > template_parameters;
 
+	ResolvingCache resolving_cache;
+	NamesScope* parent_namespace= nullptr; // Changes after import.
+
+	FilePos file_pos;
+};
+
+struct TypeTemplate final : TemplateBase
+{
 	std::vector< const Synt::IExpressionComponent* > signature_arguments;
 	std::vector< const Synt::IExpressionComponent* > default_signature_arguments;
 	size_t first_optional_signature_argument= ~0u;
 
 	// Store syntax tree element for instantiation.
 	// Syntax tree must live longer, than this struct.
-	const Synt::TemplateBase* syntax_element= nullptr;
+	const Synt::TypeTemplateBase* syntax_element= nullptr;
 
-	ResolvingCache resolving_cache;
-	NamesScope* parent_namespace= nullptr; // Changes after import.
 };
 
 typedef boost::variant< int, Type, Variable > DeducibleTemplateParameter; // int means not deduced
 typedef std::vector<DeducibleTemplateParameter> DeducibleTemplateParameters;
+
+struct FunctionTemplate final : public TemplateBase
+{
+	// Store syntax tree element for instantiation.
+	// Syntax tree must live longer, than this struct.
+	const Synt::FunctionTemplate* syntax_element= nullptr;
+
+	ClassProxyPtr base_class;
+
+	std::vector< std::pair< ProgramString, Value > > known_template_parameters;
+};
+
+class DeducedTemplateParameter
+{
+public:
+	struct Invalid{};
+	struct Type{};
+	struct Variable{};
+	struct TemplateParameter{};
+
+	struct Array
+	{
+		std::unique_ptr<DeducedTemplateParameter> size;
+		std::unique_ptr<DeducedTemplateParameter> type;
+
+		Array()= default;
+		Array(Array&&)= default;
+		Array& operator=(Array&&)= default;
+
+		Array( const Array& other );
+		Array& operator=( const Array& other );
+	};
+
+	struct Template
+	{
+		std::vector<DeducedTemplateParameter> args;
+	};
+
+public:
+	DeducedTemplateParameter( Invalid invalid= Invalid() );
+	DeducedTemplateParameter( Type type );
+	DeducedTemplateParameter( Variable variable );
+	DeducedTemplateParameter( TemplateParameter template_parameter );
+	DeducedTemplateParameter( Array array );
+	DeducedTemplateParameter( Template template_ );
+
+	bool IsInvalid() const;
+	bool IsType() const;
+	bool IsVariable() const;
+	bool IsTemplateParameter() const;
+	const Array* GetArray() const;
+	const Template* GetTemplate() const;
+
+private:
+	boost::variant<
+		Invalid,
+		Type,
+		Variable,
+		TemplateParameter,
+		Array,
+		Template> something_;
+};
 
 const ProgramString& GetFundamentalTypeName( U_FundamentalType fundamental_type );
 

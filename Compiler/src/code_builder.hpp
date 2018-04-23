@@ -164,7 +164,16 @@ private:
 		FunctionContext& function_context );
 
 	// Templates
-	void PrepareTypeTemplate( const Synt::TemplateBase& type_template_declaration, NamesScope& names_scope );
+	void PrepareTypeTemplate( const Synt::TypeTemplateBase& type_template_declaration, NamesScope& names_scope );
+	void PrepareFunctionTemplate( const Synt::FunctionTemplate& function_template_declaration, NamesScope& names_scope, const ClassProxyPtr& base_class );
+
+	void ProcessTemplateArgs(
+		const std::vector<Synt::TemplateBase::Arg>& args,
+		NamesScope& names_scope,
+		const FilePos& file_pos,
+		std::vector<TypeTemplate::TemplateParameter>& template_parameters,
+		NamesScope& template_parameters_namespace,
+		std::vector<bool>& template_parameters_usage_flags );
 
 	void PrepareTemplateSignatureParameter(
 		const FilePos& file_pos,
@@ -191,25 +200,25 @@ private:
 		const Synt::ComplexName& signature_parameter,
 		NamesScope& names_scope );
 
-	// Returns true, if all ok.
-	bool DuduceTemplateArguments(
-		const TypeTemplatePtr& type_template_ptr,
+	// Returns deduced parameter, if all ok.
+	DeducedTemplateParameter DeduceTemplateArguments(
+		const TemplateBase& template_,
 		const TemplateParameter& template_parameter,
 		const Synt::ComplexName& signature_parameter,
 		const FilePos& signature_parameter_file_pos,
 		DeducibleTemplateParameters& deducible_template_parameters,
 		NamesScope& names_scope );
 
-	bool DuduceTemplateArguments(
-		const TypeTemplatePtr& type_template_ptr,
+	DeducedTemplateParameter DeduceTemplateArguments(
+		const TemplateBase& template_,
 		const TemplateParameter& template_parameter,
 		const Synt::IExpressionComponent& signature_parameter,
 		const FilePos& signature_parameter_file_pos,
 		DeducibleTemplateParameters& deducible_template_parameters,
 		NamesScope& names_scope );
 
-	bool DuduceTemplateArguments(
-		const TypeTemplatePtr& type_template_ptr,
+	DeducedTemplateParameter DeduceTemplateArguments(
+		const TemplateBase& template_,
 		const TemplateParameter& template_parameter,
 		const Synt::ITypeName& signature_parameter,
 		const FilePos& signature_parameter_file_pos,
@@ -224,8 +233,20 @@ private:
 		NamesScope& template_names_scope,
 		NamesScope& arguments_names_scope );
 
-	NamesScope& PushTemplateArgumentsSpace();
-	void PopTemplateArgumentsSpace();
+	const FunctionVariable* GenTemplateFunction(
+		const FilePos& file_pos,
+		const FunctionTemplatePtr& function_template_ptr,
+		NamesScope& template_names_scope,
+		const std::vector<Function::Arg>& actual_args,
+		bool first_actual_arg_is_this );
+
+	const NamesScope::InsertedName* GenTemplateFunctionsUsingTemplateParameters(
+		const FilePos& file_pos,
+		const std::vector<FunctionTemplatePtr>& function_templates,
+		const std::vector<Synt::IExpressionComponentPtr>& template_arguments,
+		NamesScope& template_names_scope,
+		NamesScope& arguments_names_scope );
+
 	bool NameShadowsTemplateArgument( const ProgramString& name, NamesScope& names_scope );
 
 	TemplateDependentType GetNextTemplateDependentType();
@@ -387,6 +408,7 @@ private:
 	Value BuildMemberAccessOperator(
 		const Value& value,
 		const Synt::MemberAccessOperator& member_access_operator,
+		NamesScope& names,
 		FunctionContext& function_context );
 
 	Value BuildCallOperator(

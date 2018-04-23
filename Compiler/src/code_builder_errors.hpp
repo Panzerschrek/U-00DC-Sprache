@@ -107,6 +107,7 @@ enum class CodeBuilderErrorCode : unsigned int
 	TemplateArgumentIsNotDeducedYet,
 	TemplateArgumentNotUsedInSignature,
 	IncompleteMemberOfClassTemplate,
+	TemplateFunctionGenerationFailed,
 
 	// Reference checking
 	ReferenceProtectionError,
@@ -152,7 +153,8 @@ enum class CodeBuilderErrorCode : unsigned int
 	BodyForPureVirtualFunction,
 	ClassContainsPureVirtualFunctions,
 	NonPureVirtualFunctionInInterface,
-	PureDestructor
+	PureDestructor,
+	VirtualForFunctionTemplate,
 };
 
 struct CodeBuilderError
@@ -242,6 +244,7 @@ CodeBuilderError ReportMandatoryTemplateSignatureArgumentAfterOptionalArgument( 
 CodeBuilderError ReportTemplateArgumentIsNotDeducedYet( const FilePos& file_pos, const ProgramString& name );
 CodeBuilderError ReportTemplateArgumentNotUsedInSignature( const FilePos& file_pos, const ProgramString& name );
 CodeBuilderError ReportIncompleteMemberOfClassTemplate( const FilePos& file_pos, const ProgramString& name );
+CodeBuilderError ReportTemplateFunctionGenerationFailed( const FilePos& file_pos, const ProgramString& function_template_name );
 CodeBuilderError ReportReferenceProtectionError( const FilePos& file_pos, const ProgramString& var_name );
 CodeBuilderError ReportDestroyedVariableStillHaveReferences( const FilePos& file_pos, const ProgramString& var_name );
 CodeBuilderError ReportAccessingVariableThatHaveMutableReference( const FilePos& file_pos, const ProgramString& var_name );
@@ -278,5 +281,6 @@ CodeBuilderError ReportBodyForPureVirtualFunction( const FilePos& file_pos, cons
 CodeBuilderError ReportClassContainsPureVirtualFunctions( const FilePos& file_pos, const ProgramString& class_name );
 CodeBuilderError ReportNonPureVirtualFunctionInInterface( const FilePos& file_pos, const ProgramString& class_name );
 CodeBuilderError ReportPureDestructor( const FilePos& file_pos, const ProgramString& class_name );
+CodeBuilderError ReportVirtualForFunctionTemplate( const FilePos& file_pos, const ProgramString& function_name );
 
 } // namespace U

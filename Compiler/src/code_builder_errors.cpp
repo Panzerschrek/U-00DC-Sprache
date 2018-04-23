@@ -159,6 +159,8 @@ const char* CodeBuilderErrorCodeToString( const CodeBuilderErrorCode code )
 		return "TemplateArgumentNotUsedInSignature";
 	case CodeBuilderErrorCode::IncompleteMemberOfClassTemplate:
 		return "IncompleteMemberOfClassTemplate";
+	case CodeBuilderErrorCode::TemplateFunctionGenerationFailed:
+		return "TemplateFunctionGenerationFailed";
 	case CodeBuilderErrorCode::ReferenceProtectionError:
 		return "ReferenceProtectionError";
 	case CodeBuilderErrorCode::DestroyedVariableStillHaveReferences:
@@ -231,6 +233,8 @@ const char* CodeBuilderErrorCodeToString( const CodeBuilderErrorCode code )
 		return "NonPureVirtualFunctionInInterface";
 	case CodeBuilderErrorCode::PureDestructor:
 		return "PureDestructor";
+	case CodeBuilderErrorCode::VirtualForFunctionTemplate:
+		return "VirtualForFunctionTemplate";
 	};
 
 	U_ASSERT(false);
@@ -1093,6 +1097,17 @@ CodeBuilderError ReportIncompleteMemberOfClassTemplate( const FilePos& file_pos,
 	return error;
 }
 
+CodeBuilderError ReportTemplateFunctionGenerationFailed( const FilePos& file_pos, const ProgramString& function_template_name )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::TemplateFunctionGenerationFailed;
+
+	error.text= "Instantiation of function template \""_SpC + function_template_name + "\" failed."_SpC;
+
+	return error;
+}
+
 CodeBuilderError ReportReferenceProtectionError( const FilePos& file_pos, const ProgramString& var_name )
 {
 	CodeBuilderError error;
@@ -1489,6 +1504,17 @@ CodeBuilderError ReportPureDestructor( const FilePos& file_pos, const ProgramStr
 	error.code= CodeBuilderErrorCode::PureDestructor;
 
 	error.text= "Pure destructor for class \"."_SpC + class_name + "\"."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportVirtualForFunctionTemplate( const FilePos& file_pos, const ProgramString& function_name )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::VirtualForFunctionTemplate;
+
+	error.text= "\"virtual\" for template function \"."_SpC + function_name + "\"."_SpC;
 
 	return error;
 }

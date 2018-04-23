@@ -1248,6 +1248,86 @@ void NamesScope::SetParent( const NamesScope* const parent )
 	parent_= parent;
 }
 
+//
+// DeducedTemplateParameter
+//
+
+DeducedTemplateParameter::Array::Array( const Array& other )
+{
+	*this= other;
+}
+
+DeducedTemplateParameter::Array& DeducedTemplateParameter::Array::operator=( const Array& other )
+{
+	size.reset( new DeducedTemplateParameter( *other.size ) );
+	type.reset( new DeducedTemplateParameter( *other.type ) );
+	return *this;
+}
+
+DeducedTemplateParameter::DeducedTemplateParameter( Invalid invalid )
+{
+	something_= std::move(invalid);
+}
+
+DeducedTemplateParameter::DeducedTemplateParameter( Type type )
+{
+	something_= std::move(type);
+}
+
+DeducedTemplateParameter::DeducedTemplateParameter( Variable variable )
+{
+	something_= std::move(variable);
+}
+
+DeducedTemplateParameter::DeducedTemplateParameter( TemplateParameter template_parameter )
+{
+	something_= std::move(template_parameter);
+}
+
+DeducedTemplateParameter::DeducedTemplateParameter( Array array )
+{
+	something_= std::move(array);
+}
+
+DeducedTemplateParameter::DeducedTemplateParameter( Template template_ )
+{
+	something_= std::move(template_);
+}
+
+bool DeducedTemplateParameter::IsInvalid() const
+{
+	return boost::get<Invalid>( &something_ ) != nullptr;
+}
+
+bool DeducedTemplateParameter::IsType() const
+{
+	return boost::get<Type>( &something_ ) != nullptr;
+}
+
+bool DeducedTemplateParameter::IsVariable() const
+{
+	return boost::get<Variable>( &something_ ) != nullptr;
+}
+
+bool DeducedTemplateParameter::IsTemplateParameter() const
+{
+	return boost::get<TemplateParameter>( &something_ ) != nullptr;
+}
+
+const DeducedTemplateParameter::Array* DeducedTemplateParameter::GetArray() const
+{
+	return boost::get<Array>( &something_ );
+}
+
+const DeducedTemplateParameter::Template* DeducedTemplateParameter::GetTemplate() const
+{
+	return boost::get<Template>( &something_ );
+}
+
+//
+//
+//
+
 const ProgramString g_invalid_type_name= "InvalidType"_SpC;
 
 const ProgramString& GetFundamentalTypeName( const U_FundamentalType type )

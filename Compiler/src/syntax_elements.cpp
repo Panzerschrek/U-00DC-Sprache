@@ -51,10 +51,8 @@ IndexationOperator::IndexationOperator( const FilePos& file_pos, IExpressionComp
 }
 
 MemberAccessOperator::MemberAccessOperator(
-	const FilePos& file_pos,
-	ProgramString member_name )
+	const FilePos& file_pos )
 	: SyntaxElementBase( file_pos )
-	, member_name_( std::move(member_name) )
 {}
 
 const FilePos& IExpressionComponent::GetFilePos() const
@@ -303,11 +301,19 @@ TemplateBase::TemplateBase( const FilePos& file_pos )
 	: SyntaxElementBase( file_pos )
 {}
 
-ClassTemplate::ClassTemplate( const FilePos& file_pos )
+TypeTemplateBase::TypeTemplateBase( const FilePos& file_pos )
 	: TemplateBase( file_pos )
 {}
 
+ClassTemplate::ClassTemplate( const FilePos& file_pos )
+	: TypeTemplateBase( file_pos )
+{}
+
 TypedefTemplate::TypedefTemplate( const FilePos& file_pos )
+	: TypeTemplateBase( file_pos )
+{}
+
+FunctionTemplate::FunctionTemplate( const FilePos& file_pos )
 	: TemplateBase( file_pos )
 {}
 

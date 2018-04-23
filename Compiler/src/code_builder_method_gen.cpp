@@ -24,7 +24,7 @@ void CodeBuilder::TryGenerateDefaultConstructor( Class& the_class, const Type& c
 	{
 		const OverloadedFunctionsSet* const constructors= constructors_name->second.GetFunctionsSet();
 		U_ASSERT( constructors != nullptr );
-		for( const FunctionVariable& constructor : *constructors )
+		for( const FunctionVariable& constructor : constructors->functions )
 		{
 			const Function& constructor_type= *constructor.type.GetFunctionType();
 
@@ -156,12 +156,12 @@ void CodeBuilder::TryGenerateDefaultConstructor( Class& the_class, const Type& c
 	{
 		OverloadedFunctionsSet* const constructors= constructors_name->second.GetFunctionsSet();
 		U_ASSERT( constructors != nullptr );
-		constructors->push_back( std::move( constructor_variable ) );
+		constructors->functions.push_back( std::move( constructor_variable ) );
 	}
 	else
 	{
 		OverloadedFunctionsSet constructors;
-		constructors.push_back( std::move( constructor_variable ) );
+		constructors.functions.push_back( std::move( constructor_variable ) );
 		the_class.members.AddName( Keyword( Keywords::constructor_ ), std::move( constructors ) );
 	}
 
@@ -177,7 +177,7 @@ void CodeBuilder::TryGenerateCopyConstructor( Class& the_class, const Type& clas
 	{
 		const OverloadedFunctionsSet* const constructors= constructors_name->second.GetFunctionsSet();
 		U_ASSERT( constructors != nullptr );
-		for( const FunctionVariable& constructor : *constructors )
+		for( const FunctionVariable& constructor : constructors->functions )
 		{
 			const Function& constructor_type= *constructor.type.GetFunctionType();
 
@@ -321,12 +321,12 @@ void CodeBuilder::TryGenerateCopyConstructor( Class& the_class, const Type& clas
 	{
 		OverloadedFunctionsSet* const constructors= constructors_name->second.GetFunctionsSet();
 		U_ASSERT( constructors != nullptr );
-		constructors->push_back( std::move( constructor_variable ) );
+		constructors->functions.push_back( std::move( constructor_variable ) );
 	}
 	else
 	{
 		OverloadedFunctionsSet constructors;
-		constructors.push_back( std::move( constructor_variable ) );
+		constructors.functions.push_back( std::move( constructor_variable ) );
 		the_class.members.AddName( Keyword( Keywords::constructor_ ), std::move( constructors ) );
 	}
 
@@ -404,9 +404,9 @@ void CodeBuilder::TryGenerateDestructor( Class& the_class, const Type& class_typ
 		the_class.members.GetThisScopeName( Keyword( Keywords::destructor_ ) ) )
 	{
 		OverloadedFunctionsSet* const destructors= destructor_name->second.GetFunctionsSet();
-		U_ASSERT( destructors != nullptr && destructors->size() == 1u );
+		U_ASSERT( destructors != nullptr && destructors->functions.size() == 1u );
 
-		FunctionVariable& destructor_function= destructors->front();
+		FunctionVariable& destructor_function= destructors->functions.front();
 		if( destructor_function.is_generated && !destructor_function.have_body )
 			GenerateDestructorBody( the_class, class_type, destructor_function ); // Finish generating pre-generated destructor.
 
@@ -424,7 +424,7 @@ void CodeBuilder::TryGenerateDestructor( Class& the_class, const Type& class_typ
 
 	// TODO - destructor have no overloads. Maybe store it as FunctionVariable, not as FunctionsSet?
 	OverloadedFunctionsSet destructors;
-	destructors.push_back( std::move( destructor_variable ) );
+	destructors.functions.push_back( std::move( destructor_variable ) );
 
 	the_class.members.AddName(
 		Keyword( Keywords::destructor_ ),
@@ -443,7 +443,7 @@ void CodeBuilder::TryGenerateCopyAssignmentOperator( Class& the_class, const Typ
 		the_class.members.GetThisScopeName( op_name ) )
 	{
 		const OverloadedFunctionsSet* const operators= assignment_operator_name->second.GetFunctionsSet();
-		for( const FunctionVariable& op : *operators )
+		for( const FunctionVariable& op : operators->functions )
 		{
 			const Function& op_type= *op.type.GetFunctionType();
 
@@ -568,12 +568,12 @@ void CodeBuilder::TryGenerateCopyAssignmentOperator( Class& the_class, const Typ
 	{
 		OverloadedFunctionsSet* const operators= operators_name->second.GetFunctionsSet();
 		U_ASSERT( operators != nullptr );
-		operators->push_back( std::move( op_variable ) );
+		operators->functions.push_back( std::move( op_variable ) );
 	}
 	else
 	{
 		OverloadedFunctionsSet operators;
-		operators.push_back( std::move( op_variable ) );
+		operators.functions.push_back( std::move( op_variable ) );
 		the_class.members.AddName( op_name , std::move( operators ) );
 	}
 
@@ -625,7 +625,7 @@ void CodeBuilder::BuildCopyConstructorPart(
 		U_ASSERT( constructors_set != nullptr );
 
 		const FunctionVariable* constructor= nullptr;;
-		for( const FunctionVariable& candidate_constructor : *constructors_set )
+		for( const FunctionVariable& candidate_constructor : constructors_set->functions )
 		{
 			const Function& constructor_type= *candidate_constructor.type.GetFunctionType();
 
@@ -694,7 +694,7 @@ void CodeBuilder::BuildCopyAssignmentOperatorPart(
 		U_ASSERT( operators_set != nullptr );
 
 		const FunctionVariable* op= nullptr;;
-		for( const FunctionVariable& candidate_op : *operators_set )
+		for( const FunctionVariable& candidate_op : operators_set->functions )
 		{
 			const Function& op_type= *candidate_op .type.GetFunctionType();
 

@@ -106,7 +106,7 @@ const NamesScope::InsertedName* CodeBuilder::ResolveName(
 		if( name == nullptr )
 			return nullptr;
 
-		if( components[0].have_template_parameters && name->second.GetTypeTemplate() == nullptr )
+		if( components[0].have_template_parameters && name->second.GetTypeTemplate() == nullptr && name->second.GetFunctionsSet() == nullptr )
 		{
 			errors_.push_back( ReportValueIsNotTemplate( file_pos ) );
 			return nullptr;
@@ -165,6 +165,25 @@ const NamesScope::InsertedName* CodeBuilder::ResolveName(
 			{
 				errors_.push_back( ReportTemplateInstantiationRequired( file_pos, type_template->syntax_element->name_ ) );
 				return nullptr;
+			}
+		}
+		else if( const OverloadedFunctionsSet* const functions_set= name->second.GetFunctionsSet() )
+		{
+			if( components[0].have_template_parameters )
+			{
+				if( functions_set->template_functions.empty() )
+				{
+					errors_.push_back( ReportValueIsNotTemplate( file_pos ) );
+					return nullptr;
+				}
+
+				name=
+					GenTemplateFunctionsUsingTemplateParameters(
+						file_pos,
+						functions_set->template_functions,
+						components[0].template_parameters,
+						*functions_set->template_functions.front()->parent_namespace, // All template functions in one set have one parent namespace.
+						names_scope );
 			}
 		}
 

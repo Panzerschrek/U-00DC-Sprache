@@ -261,7 +261,7 @@ Value CodeBuilder::BuildExpressionCode(
 			else if( const auto member_access_operator=
 				dynamic_cast<const Synt::MemberAccessOperator*>( postfix_operator.get() ) )
 			{
-				result= BuildMemberAccessOperator( result, *member_access_operator, function_context );
+				result= BuildMemberAccessOperator( result, *member_access_operator, names, function_context );
 			}
 			else if( const auto call_operator=
 				dynamic_cast<const Synt::CallOperator*>( postfix_operator.get() ) )
@@ -1480,6 +1480,7 @@ Value CodeBuilder::BuildIndexationOperator(
 Value CodeBuilder::BuildMemberAccessOperator(
 	const Value& value,
 	const Synt::MemberAccessOperator& member_access_operator,
+	NamesScope& names,
 	FunctionContext& function_context )
 {
 	CHECK_RETURN_ERROR_VALUE(value);
@@ -1487,7 +1488,7 @@ Value CodeBuilder::BuildMemberAccessOperator(
 	if( value.GetType().GetTemplateDependentType() != nullptr )
 		return TemplateDependentValue();
 
-	const Class* const class_type= value.GetType().GetClassType();
+	Class* const class_type= value.GetType().GetClassType();
 	if( class_type == nullptr )
 	{
 		errors_.push_back( ReportOperationNotSupportedForThisType( member_access_operator.file_pos_, value.GetType().ToString() ) );
@@ -1509,13 +1510,35 @@ Value CodeBuilder::BuildMemberAccessOperator(
 		return ErrorValue();
 	}
 
-	if( const OverloadedFunctionsSet* const functions_set= class_member->second.GetFunctionsSet() )
+	if( const OverloadedFunctionsSet* functions_set= class_member->second.GetFunctionsSet() )
 	{
+		if( member_access_operator.have_template_parameters )
+		{
+			if( functions_set->template_functions.empty() )
+				errors_.push_back( ReportValueIsNotTemplate( member_access_operator.file_pos_ ) );
+			else
+			{
+				const NamesScope::InsertedName* const inserted_name=
+					GenTemplateFunctionsUsingTemplateParameters(
+						member_access_operator.file_pos_,
+						functions_set->template_functions,
+						member_access_operator.template_parameters,
+						class_type->members,
+						names );
+				if( inserted_name == nullptr )
+					return ErrorValue();
+
+				functions_set= inserted_name->second.GetFunctionsSet();
+			}
+		}
 		ThisOverloadedMethodsSet this_overloaded_methods_set;
 		this_overloaded_methods_set.this_= variable;
 		this_overloaded_methods_set.overloaded_methods_set= *functions_set;
 		return this_overloaded_methods_set;
 	}
+
+	if( member_access_operator.have_template_parameters )
+		errors_.push_back( ReportValueIsNotTemplate( member_access_operator.file_pos_ ) );
 
 	const ClassField* const field= class_member->second.GetClassField();
 	if( field == nullptr )
