@@ -751,4 +751,19 @@ U_TEST(DefaultInitializationForStructMembersTest1)
 	U_TEST_ASSERT( 5 == result_value.IntVal.getLimitedValue() );
 }
 
+U_TEST(InitializerForZeroSizedArray_Test0)
+{
+	static const char c_program_text[]=
+	R"(
+		struct S{ i32& x; } // Struct with reference, without any initializer.
+		struct A{ [ S, 0 ] s; } // Have generated default initilizer, because all fields have default initializers.
+		fn Foo()
+		{
+			var A a; // Ok, default initializer used.
+		}
+	)";
+
+	BuildProgram( c_program_text );
+}
+
 } // namespace U

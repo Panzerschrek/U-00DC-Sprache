@@ -783,6 +783,22 @@ U_TEST( GeneratedCopyAssignmentOperatorTest2 )
 	U_TEST_ASSERT( error.file_pos.line == 10u );
 }
 
+U_TEST( GeneratedCopyAssignmentOperatorTest3 )
+{
+	static const char c_program_text[]=
+	R"(
+		struct S{ i32& x; } // Struct with reference, have no operator=.
+		struct A{ [ S, 0 ] s; } // Have generated operator= initilizer, because all fields have operator=.
+		fn Foo()
+		{
+			var A mut a, mut b;
+			a= b; // Ok, have generated operator=.
+		}
+	)";
+
+	BuildProgram( c_program_text );
+}
+
 U_TEST( OperatorBodyOutsideClass )
 {
 	static const char c_program_text[]=

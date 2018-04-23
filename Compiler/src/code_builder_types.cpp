@@ -357,7 +357,7 @@ bool Type::IsDefaultConstructible() const
 	else if( const ArrayPtr* const array= boost::get<ArrayPtr>( &something_ ) )
 	{
 		U_ASSERT( *array != nullptr );
-		return (*array)->type.IsDefaultConstructible();
+		return (*array)->ArraySizeOrZero() == 0u || (*array)->type.IsDefaultConstructible();
 	}
 
 	return false;
@@ -377,7 +377,7 @@ bool Type::IsCopyConstructible() const
 	else if( const ArrayPtr* const array= boost::get<ArrayPtr>( &something_ ) )
 	{
 		U_ASSERT( *array != nullptr );
-		return (*array)->type.IsCopyConstructible();
+		return (*array)->ArraySizeOrZero() == 0u || (*array)->type.IsCopyConstructible();
 	}
 
 	return false;
@@ -395,7 +395,7 @@ bool Type::IsCopyAssignable() const
 	else if( const ArrayPtr* const array= boost::get<ArrayPtr>( &something_ ) )
 	{
 		U_ASSERT( *array != nullptr );
-		return (*array)->type.IsCopyAssignable();
+		return (*array)->ArraySizeOrZero() == 0u || (*array)->type.IsCopyAssignable();
 	}
 
 	return false;
