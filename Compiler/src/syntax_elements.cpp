@@ -51,10 +51,8 @@ IndexationOperator::IndexationOperator( const FilePos& file_pos, IExpressionComp
 }
 
 MemberAccessOperator::MemberAccessOperator(
-	const FilePos& file_pos,
-	ProgramString member_name )
+	const FilePos& file_pos )
 	: SyntaxElementBase( file_pos )
-	, member_name_( std::move(member_name) )
 {}
 
 const FilePos& IExpressionComponent::GetFilePos() const

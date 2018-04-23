@@ -282,13 +282,37 @@ def TemplateMethod_Test5():
 		{
 			var Num mut num{ .n= 0.0 };
 			Num::Set</ i32 />( num, 99654 ); // Directly set template paremeter.
-			// SPRACHE_TODO - allow something, like num.Set</ i32 />( 0 );
 			return num.n;
 		}
 	"""
 	tests_lib.build_program( c_program_text )
 	call_result= tests_lib.run_function( "_Z3Foov" )
 	assert( call_result == 99654 )
+
+
+def TemplateMethod_Test6():
+	c_program_text= """
+		struct Num
+		{
+			f64 n;
+
+			template</ type T />
+			fn Set( mut this, T t )
+			{
+				n= f64(t);
+			}
+		}
+
+		fn Foo() : f64
+		{
+			var Num mut num{ .n= 0.0 };
+			num.Set</ i32 />( 885214 ); // Directly set template paremeter.
+			return num.n;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 885214 )
 
 
 def RecursiveTemplateFunctionCall_Test0():

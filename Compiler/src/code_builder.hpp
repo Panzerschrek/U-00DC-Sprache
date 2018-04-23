@@ -408,6 +408,7 @@ private:
 	Value BuildMemberAccessOperator(
 		const Value& value,
 		const Synt::MemberAccessOperator& member_access_operator,
+		NamesScope& names,
 		FunctionContext& function_context );
 
 	Value BuildCallOperator(

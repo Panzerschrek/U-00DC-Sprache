@@ -161,6 +161,7 @@ private:
 	IExpressionComponentPtr ParseExpression();
 
 	ITypeNamePtr ParseTypeName();
+	std::vector<IExpressionComponentPtr> ParseTemplateParameters();
 	ComplexName ParseComplexName();
 	ReferencesTagsList ParseReferencesTagsList();
 	FunctionReferencesPollutionList ParseFunctionReferencesPollutionList();
@@ -664,6 +665,7 @@ IExpressionComponentPtr SyntaxAnalyzer::ParseExpression()
 
 			case Lexem::Type::Dot:
 				{
+					std::unique_ptr<MemberAccessOperator> member_access_operator( new MemberAccessOperator( it_->file_pos ) );
 					++it_; U_ASSERT( it_ < it_end_ );
 
 					if( it_->type != Lexem::Type::Identifier )
@@ -672,12 +674,16 @@ IExpressionComponentPtr SyntaxAnalyzer::ParseExpression()
 						return nullptr;
 					}
 
-					current_node->postfix_operators_.emplace_back(
-						new MemberAccessOperator(
-								(it_-1)->file_pos,
-								it_->text ) );
-
+					member_access_operator->member_name_= it_->text;
 					++it_; U_ASSERT( it_ < it_end_ );
+
+					if( it_->type == Lexem::Type::TemplateBracketLeft )
+					{
+						member_access_operator->have_template_parameters= true;
+						member_access_operator->template_parameters= ParseTemplateParameters();
+					}
+
+					current_node->postfix_operators_.push_back( std::move( member_access_operator ) );
 				} break;
 
 			default:
@@ -791,6 +797,37 @@ ITypeNamePtr SyntaxAnalyzer::ParseTypeName()
 	}
 }
 
+std::vector<IExpressionComponentPtr> SyntaxAnalyzer::ParseTemplateParameters()
+{
+	U_ASSERT( it_->type == Lexem::Type::TemplateBracketLeft );
+	++it_; U_ASSERT( it_ < it_end_ );
+
+	std::vector<IExpressionComponentPtr> result;
+
+	while(true)
+	{
+		if( it_->type == Lexem::Type::TemplateBracketRight )
+		{
+			++it_; U_ASSERT( it_ < it_end_ );
+			break;
+		}
+
+		result.push_back( ParseExpression() );
+
+		if( it_->type == Lexem::Type::Comma )
+		{
+			++it_; U_ASSERT( it_ < it_end_ );
+			if( it_->type == Lexem::Type::TemplateBracketRight )
+			{
+				PushErrorMessage( *it_ );
+				return result;
+			}
+		}
+	}
+
+	return result;
+}
+
 ComplexName SyntaxAnalyzer::ParseComplexName()
 {
 	ComplexName complex_name;
@@ -821,28 +858,7 @@ ComplexName SyntaxAnalyzer::ParseComplexName()
 		if( it_->type == Lexem::Type::TemplateBracketLeft )
 		{
 			complex_name.components.back().have_template_parameters= true;
-
-			++it_; U_ASSERT( it_ < it_end_ );
-			while(true)
-			{
-				if( it_->type == Lexem::Type::TemplateBracketRight )
-				{
-					++it_; U_ASSERT( it_ < it_end_ );
-					break;
-				}
-
-				complex_name.components.back().template_parameters.push_back( ParseExpression() );
-
-				if( it_->type == Lexem::Type::Comma )
-				{
-					++it_; U_ASSERT( it_ < it_end_ );
-					if( it_->type == Lexem::Type::TemplateBracketRight )
-					{
-						PushErrorMessage( *it_ );
-						return complex_name;
-					}
-				}
-			}
+			complex_name.components.back().template_parameters= ParseTemplateParameters();
 		}
 
 		if( it_->type == Lexem::Type::Scope )

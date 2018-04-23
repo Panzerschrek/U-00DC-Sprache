@@ -503,8 +503,6 @@ const FunctionVariable* CodeBuilder::GetOverloadedFunction(
 	if( selected_function == nullptr )
 		errors_.push_back( ReportTooManySuitableOverloadedFunctions( file_pos ) );
 
-	// TODO - try get also templateš function here.
-
 	return selected_function;
 }
 

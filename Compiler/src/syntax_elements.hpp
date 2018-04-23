@@ -145,9 +145,11 @@ public:
 class MemberAccessOperator final : public SyntaxElementBase, public IUnaryPostfixOperator
 {
 public:
-	MemberAccessOperator( const FilePos& file_pos, ProgramString member_name );
+	MemberAccessOperator( const FilePos& file_pos );
 
-	const ProgramString member_name_;
+	ProgramString member_name_;
+	std::vector<IExpressionComponentPtr> template_parameters;
+	bool have_template_parameters= false;
 };
 
 class IExpressionComponent
