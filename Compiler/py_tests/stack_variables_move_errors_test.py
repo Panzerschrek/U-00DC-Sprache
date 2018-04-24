@@ -116,6 +116,20 @@ def AccessingMovedVariable_Test4():
 	assert( errors_list[0].file_pos.line == 5 )
 
 
+def AccessingMovedVariable_Test5():
+	c_program_text= """
+		fn Foo()
+		{
+			auto mut b= true;
+			move(b) && b;  // In lazy ligical operator.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "AccessingMovedVariable" )
+	assert( errors_list[0].file_pos.line == 5 )
+
+
 def OuterVariableMoveInsideLoop_Test0():
 	c_program_text= """
 		fn Foo()
@@ -201,3 +215,45 @@ def ConditionalMove_Test3():
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ConditionalMove" )
 	assert( errors_list[0].file_pos.line == 6 )
+
+
+def ConditionalMove_ForLazyLogicalOperators_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			auto mut b= false;
+			true && move(b); // Second part of lazy logical operator is conditional.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ConditionalMove" )
+	assert( errors_list[0].file_pos.line == 5 )
+
+
+def ConditionalMove_ForLazyLogicalOperators_Test1():
+	c_program_text= """
+		fn Foo()
+		{
+			auto mut b= false;
+			false || move(b); // Second part of lazy logical operator is conditional.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ConditionalMove" )
+	assert( errors_list[0].file_pos.line == 5 )
+
+
+def ConditionalMove_ForLazyLogicalOperators_Test2():
+	c_program_text= """
+		fn Foo()
+		{
+			auto mut b= false;
+			false || ( move(b) || true ); // Move inside right part of top-level lazy logical operator.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ConditionalMove" )
+	assert( errors_list[0].file_pos.line == 5 )

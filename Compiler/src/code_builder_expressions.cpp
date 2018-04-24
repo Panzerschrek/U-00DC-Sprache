@@ -967,34 +967,41 @@ Value CodeBuilder::BuildLazyBinaryOperator(
 	else U_ASSERT(false);
 
 	function_context.function->getBasicBlockList().push_back( r_part_block );
-	function_context.llvm_ir_builder.SetInsertPoint( r_part_block );
+	function_context.llvm_ir_builder.SetInsertPoint( r_part_block );	
 
-	// Right part of lazy operator is conditinal. So, we must destroy its temporaries only in this condition.
-	// We doesn`t needs longer lifetime of epxression temporaries, because we use only bool result.
-	const StackVariablesStorage r_var_temp_variables_storage( function_context );
-	const Value r_var_value= BuildExpressionCode( r_expression, names, function_context );
-	CHECK_RETURN_ERROR_VALUE(r_var_value);
+	VariablesState variables_state_before_r_branch= function_context.variables_state;
+	variables_state_before_r_branch.DeactivateLocks();
 
 	llvm::Value* r_var_in_register= nullptr;
 	llvm::Constant* r_var_constepxr_value= nullptr;
-	if( r_var_value.GetType().GetTemplateDependentType() != nullptr )
-		RETURN_UNDEF_BOOL
-	if( r_var_value.GetType() == NontypeStub::TemplateDependentValue )
-		r_var_in_register= r_var_constepxr_value= llvm::UndefValue::get( fundamental_llvm_types_.bool_ );
-	else
 	{
-		if( r_var_value.GetType() != bool_type_ )
-		{
-			errors_.push_back( ReportTypesMismatch( binary_operator.file_pos_, bool_type_.ToString(), r_var_value.GetType().ToString() ) );
-			return ErrorValue();
-		}
-		const Variable& r_var= *r_var_value.GetVariable();
-		r_var_constepxr_value= r_var.constexpr_value;
-		r_var_in_register= CreateMoveToLLVMRegisterInstruction( r_var, function_context );
-	}
+		// Right part of lazy operator is conditinal. So, we must destroy its temporaries only in this condition.
+		// We doesn`t needs longer lifetime of epxression temporaries, because we use only bool result.
+		const StackVariablesStorage r_var_temp_variables_storage( function_context );
 
-	// Destroy r_var temporaries in this branch.
-	CallDestructors( *function_context.stack_variables_stack.back(), function_context, file_pos );
+		const Value r_var_value= BuildExpressionCode( r_expression, names, function_context );
+		CHECK_RETURN_ERROR_VALUE(r_var_value);
+
+		if( r_var_value.GetType().GetTemplateDependentType() != nullptr )
+			RETURN_UNDEF_BOOL
+		if( r_var_value.GetType() == NontypeStub::TemplateDependentValue )
+			r_var_in_register= r_var_constepxr_value= llvm::UndefValue::get( fundamental_llvm_types_.bool_ );
+		else
+		{
+			if( r_var_value.GetType() != bool_type_ )
+			{
+				errors_.push_back( ReportTypesMismatch( binary_operator.file_pos_, bool_type_.ToString(), r_var_value.GetType().ToString() ) );
+				return ErrorValue();
+			}
+			const Variable& r_var= *r_var_value.GetVariable();
+			r_var_constepxr_value= r_var.constexpr_value;
+			r_var_in_register= CreateMoveToLLVMRegisterInstruction( r_var, function_context );
+		}
+
+		// Destroy r_var temporaries in this branch.
+		CallDestructors( *function_context.stack_variables_stack.back(), function_context, file_pos );
+	}
+	function_context.variables_state= MergeVariablesStateAfterIf( { variables_state_before_r_branch, function_context.variables_state }, file_pos );
 
 	function_context.llvm_ir_builder.CreateBr( block_after_operator );
 	function_context.function->getBasicBlockList().push_back( block_after_operator );
@@ -1024,8 +1031,7 @@ Value CodeBuilder::BuildLazyBinaryOperator(
 
 	const StoredVariablePtr stored_result= std::make_shared<StoredVariable>( BinaryOperatorToString(binary_operator.operator_type_), result );
 	result.referenced_variables.emplace( stored_result );
-	function_context.stack_variables_stack[ function_context.stack_variables_stack.size() -2u ]->RegisterVariable( stored_result );
-
+	function_context.stack_variables_stack.back()->RegisterVariable( stored_result );
 	return Value( result, file_pos );
 
 	#undef RETURN_UNDEF_BOOL

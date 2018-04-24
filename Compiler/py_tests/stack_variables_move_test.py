@@ -133,3 +133,25 @@ def MoveBeforeLoop_Test0():
 		}
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def Move_InLazyLogicalOperator_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			auto mut b= false;
+			move(b) || true;  // Ok, move in first part, which is unconditional.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def Move_InLazyLogicalOperator_Test1():
+	c_program_text= """
+		fn Foo()
+		{
+			auto mut b= true;
+			move(b) && false;  // Ok, move in first part, which is unconditional.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
