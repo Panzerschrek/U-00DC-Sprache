@@ -828,7 +828,8 @@ void VariablesState::Move( const StoredVariablePtr& var )
 bool VariablesState::VariableIsMoved( const StoredVariablePtr& var ) const
 {
 	const auto it= variables_.find(var);
-	U_ASSERT( it != variables_.end() );
+	if( it == variables_.end() ) // Can be for global constants, for example.
+		return false;
 	return it->second.is_moved;
 }
 
