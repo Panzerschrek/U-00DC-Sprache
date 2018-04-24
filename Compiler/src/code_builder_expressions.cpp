@@ -248,8 +248,7 @@ Value CodeBuilder::BuildExpressionCode(
 	else if( const auto move_operator=
 		dynamic_cast<const Synt::MoveOperator*>(&expression) )
 	{
-		// TODO
-		result= TemplateDependentValue();
+		result= BuildMoveOpeator( *move_operator, names, function_context );
 	}
 	else U_ASSERT(false);
 
@@ -1210,6 +1209,56 @@ Value CodeBuilder::BuildNamedOperand(
 	}
 
 	return name_entry->second;
+}
+
+Value CodeBuilder::BuildMoveOpeator( const Synt::MoveOperator& move_operator, NamesScope& names, FunctionContext& function_context )
+{
+	Synt::ComplexName complex_name;
+	complex_name.components.emplace_back();
+	complex_name.components.back().name= move_operator.var_name_;
+	complex_name.components.back().is_generated= true;
+
+	const NamesScope::InsertedName* const resolved_name= ResolveName( move_operator.file_pos_, names, complex_name );
+	if( resolved_name == nullptr )
+	{
+		errors_.push_back( ReportNameNotFound( move_operator.file_pos_, move_operator.var_name_ ) );
+		return ErrorValue();
+	}
+	const StoredVariablePtr variable_for_move= resolved_name->second.GetStoredVariable();
+	if( variable_for_move == nullptr )
+	{
+		errors_.push_back( ReportExpectedVariable( move_operator.file_pos_, resolved_name->second.GetType().ToString() ) );
+		return ErrorValue();
+	}
+
+	// TODO - maybe allow moving for immutable variables?
+	if( variable_for_move->content.value_type != ValueType::Reference )
+	{
+		errors_.push_back( ReportExpectedReferenceValue(  move_operator.file_pos_ ) );
+		return ErrorValue();
+	}
+
+	// If this is mutable variable - it is stack variable or value argument.
+	// This can not be temp variable, global variable, or inner argument variable.
+
+	if( variable_for_move->mut_use_counter.use_count() > 1u || variable_for_move->imut_use_counter.use_count() > 1u )
+	{
+		// Error, moving variable, while references to it exists.
+		errors_.push_back( ReportDestroyedVariableStillHaveReferences( move_operator.file_pos_, variable_for_move->name ) ); // TODO - generate separate error?
+		return ErrorValue();
+	}
+
+	function_context.variables_state.Move( variable_for_move );
+
+	Variable content= variable_for_move->content;
+	content.value_type= ValueType::Value;
+	content.referenced_variables.clear();
+
+	const StoredVariablePtr moved_result= std::make_shared<StoredVariable>( "_moved_"_SpC + variable_for_move->name, content );
+	content.referenced_variables.emplace( moved_result );
+	function_context.stack_variables_stack.back()->RegisterVariable( moved_result );
+
+	return Value( content, move_operator.file_pos_ );
 }
 
 Value CodeBuilder::BuildNumericConstant(
