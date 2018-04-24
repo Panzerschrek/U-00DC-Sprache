@@ -12,7 +12,6 @@ def MoveOperatorDeclaration_Test0():
 	tests_lib.build_program( c_program_text )
 
 
-
 def MoveOperatorDeclaration_Test1():
 	c_program_text= """
 		fn Foo( i32 mut x )
@@ -150,6 +149,30 @@ def MoveInsideIf_Test1():
 			else if( false ) { move(x); }
 			else if( true ) { move(x); }
 			else { move(x); }   // Ok, move variable in all if-else branches.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def MoveInsideIf_Test2():
+	c_program_text= """
+		fn Foo()
+		{
+			auto mut b= false;
+			if(  move(b) ) { }
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def MoveInsideIf_Test3():
+	c_program_text= """
+		fn Foo()
+		{
+			auto mut b= false;
+			if( false ) { move(b); }
+			else if( move(b) ){}
+			else {}  //  Ok, 'b" moved in brach and later condition. Here is no conditional move.
 		}
 	"""
 	tests_lib.build_program( c_program_text )

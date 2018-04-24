@@ -28,6 +28,20 @@ def ExpectedReferenceValue_ForMove_Test1():
 	assert( errors_list[0].file_pos.line == 4 )
 
 
+def ExpectedReferenceValue_ForMove_Test2():
+	c_program_text= """
+		auto constexpr pi= 3.141592535;
+		fn Foo()
+		{
+			move(pi); // Expected mutable variable, got global constant.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ExpectedReferenceValue" )
+	assert( errors_list[0].file_pos.line == 5 )
+
+
 def ExpectedVariable_ForMove_Test0():
 	c_program_text= """
 		fn Foo()
@@ -41,6 +55,23 @@ def ExpectedVariable_ForMove_Test0():
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ExpectedVariable" )
 	assert( errors_list[0].file_pos.line == 6 )
+
+
+def ExpectedVariable_ForMove_Test1():
+	c_program_text= """
+		struct S
+		{
+			i32 x;
+			fn Foo( this )
+			{
+				move(x); // Error, moving field
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ExpectedVariable" )
+	assert( errors_list[0].file_pos.line == 7 )
 
 
 def AccessingMovedVariable_Test0():
@@ -130,6 +161,20 @@ def AccessingMovedVariable_Test5():
 	assert( errors_list[0].file_pos.line == 5 )
 
 
+def AccessingMovedVariable_Test6():
+	c_program_text= """
+		fn Foo()
+		{
+			auto mut b= true;
+			if( move(b) ) { b= false; }
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "AccessingMovedVariable" )
+	assert( errors_list[0].file_pos.line == 5 )
+
+
 def OuterVariableMoveInsideLoop_Test0():
 	c_program_text= """
 		fn Foo()
@@ -155,6 +200,23 @@ def OuterVariableMoveInsideLoop_Test1():
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "OuterVariableMoveInsideLoop" )
 	assert( errors_list[0].file_pos.line == 4 )
+
+
+def OuterVariableMoveInsideLoop_Test2():
+	c_program_text= """
+		fn Foo( i32 mut x )
+		{
+			while( false )
+			{
+				if( false ) { move(x); }
+				else { move(x); }
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "OuterVariableMoveInsideLoop" )
+	assert( errors_list[0].file_pos.line == 8 )
 
 
 def ConditionalMove_Test0():
