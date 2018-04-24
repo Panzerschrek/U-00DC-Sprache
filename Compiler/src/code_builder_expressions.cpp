@@ -1234,15 +1234,15 @@ Value CodeBuilder::BuildMoveOpeator( const Synt::MoveOperator& move_operator, Na
 		return ErrorValue();
 	}
 	const StoredVariablePtr variable_for_move= resolved_name->second.GetStoredVariable();
-	if( variable_for_move == nullptr )
+	if( variable_for_move == nullptr ||
+		variable_for_move->kind != StoredVariable::Kind::Variable )
 	{
 		errors_.push_back( ReportExpectedVariable( move_operator.file_pos_, resolved_name->second.GetType().ToString() ) );
 		return ErrorValue();
 	}
 
 	// TODO - maybe allow moving for immutable variables?
-	if( variable_for_move->content.value_type != ValueType::Reference ||
-		variable_for_move->kind != StoredVariable::Kind::Variable )
+	if( variable_for_move->content.value_type != ValueType::Reference )
 	{
 		errors_.push_back( ReportExpectedReferenceValue( move_operator.file_pos_ ) );
 		return ErrorValue();

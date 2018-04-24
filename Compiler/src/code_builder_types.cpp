@@ -566,6 +566,8 @@ ProgramString Type::ToString() const
 				return "yet not deduced template arg"_SpC;
 			case NontypeStub::ErrorValue:
 				return "error value"_SpC;
+			case NontypeStub::VariableStorage:
+				return "variable storage"_SpC;
 			};
 			U_ASSERT(false);
 			return ProgramString();
