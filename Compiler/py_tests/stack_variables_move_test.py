@@ -82,3 +82,54 @@ def MoveOperatorTest1():
 	tests_lib.build_program( c_program_text )
 	call_result= tests_lib.run_function( "_Z3Foov" )
 	assert( call_result == 999 )
+
+
+def MoveInsideIf_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			auto mut x= 0;
+			if( false ) { move(x); }
+			else { move(x); }   // Ok, move variable in all if-else branches.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def MoveInsideIf_Test1():
+	c_program_text= """
+		fn Foo()
+		{
+			auto mut x= 0;
+			if( false ) { move(x); }
+			else if( false ) { move(x); }
+			else if( true ) { move(x); }
+			else { move(x); }   // Ok, move variable in all if-else branches.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def MoveBeforeIf_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			auto mut x= 0;
+			move(x);
+			if( false ){}
+			else {}
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def MoveBeforeLoop_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			auto mut x= 0;
+			move(x);
+			while(false){}
+		}
+	"""
+	tests_lib.build_program( c_program_text )

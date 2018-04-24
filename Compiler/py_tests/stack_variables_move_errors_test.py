@@ -114,3 +114,90 @@ def AccessingMovedVariable_Test4():
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "AccessingMovedVariable" )
 	assert( errors_list[0].file_pos.line == 5 )
+
+
+def OuterVariableMoveInsideLoop_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			auto mut x= 0;
+			while( false ){ move(x); }
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "OuterVariableMoveInsideLoop" )
+	assert( errors_list[0].file_pos.line == 5 )
+
+
+def OuterVariableMoveInsideLoop_Test1():
+	c_program_text= """
+		fn Foo( i32 mut x )
+		{
+			while( false ){ move(x); }
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "OuterVariableMoveInsideLoop" )
+	assert( errors_list[0].file_pos.line == 4 )
+
+
+def ConditionalMove_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			auto mut x= 0;
+			if( false ) { move(x); }
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ConditionalMove" )
+	assert( errors_list[0].file_pos.line == 5 )
+
+
+def ConditionalMove_Test1():
+	c_program_text= """
+		fn Foo()
+		{
+			auto mut x= 0;
+			if( false ) { move(x); }
+			else if( false ) {}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ConditionalMove" )
+	assert( errors_list[0].file_pos.line == 6 )
+
+
+def ConditionalMove_Test2():
+	c_program_text= """
+		fn Foo()
+		{
+			auto mut x= 0;
+			if( false ) { move(x); }
+			else if( false ) {}
+			else { move(x); }
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ConditionalMove" )
+	assert( errors_list[0].file_pos.line == 7 )
+
+
+def ConditionalMove_Test3():
+	c_program_text= """
+		fn Foo()
+		{
+			auto mut x= 0;
+			if( false ) { }   // Not moved in first branch
+			else { move(x); }
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ConditionalMove" )
+	assert( errors_list[0].file_pos.line == 6 )
