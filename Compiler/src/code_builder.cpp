@@ -2792,6 +2792,9 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 			if( variable_declaration.mutability_modifier != MutabilityModifier::Mutable )
 				variable.value_type= ValueType::ConstReference;
 
+			for( const auto& referenced_variable_pair : function_context.variables_state.GetVariableReferences( stored_variable ) )
+				CheckVariableReferences( *referenced_variable_pair.first, variable_declaration.file_pos );
+
 			if( global_variable != nullptr && variable.constexpr_value != nullptr )
 				global_variable->setInitializer( variable.constexpr_value );
 		}

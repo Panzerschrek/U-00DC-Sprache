@@ -1263,8 +1263,6 @@ Value CodeBuilder::BuildMoveOpeator( const Synt::MoveOperator& move_operator, Na
 		return ErrorValue();
 	}
 
-	function_context.variables_state.Move( variable_for_move );
-
 	Variable content= variable_for_move->content;
 	content.value_type= ValueType::Value;
 	content.referenced_variables.clear();
@@ -1272,6 +1270,15 @@ Value CodeBuilder::BuildMoveOpeator( const Synt::MoveOperator& move_operator, Na
 	const StoredVariablePtr moved_result= std::make_shared<StoredVariable>( "_moved_"_SpC + variable_for_move->name, content );
 	content.referenced_variables.emplace( moved_result );
 	function_context.stack_variables_stack.back()->RegisterVariable( moved_result );
+
+	// We must save inner references of moved variable.
+	for( const auto& inner_variable : function_context.variables_state.GetVariableReferences( variable_for_move ) )
+	{
+		const bool ok= function_context.variables_state.AddPollution( moved_result, inner_variable.first, inner_variable.second.IsMutable() );
+		if( !ok )
+			errors_.push_back( ReportReferenceProtectionError( move_operator.file_pos_, inner_variable.first->name ) );
+	}
+	function_context.variables_state.Move( variable_for_move );
 
 	return Value( content, move_operator.file_pos_ );
 }

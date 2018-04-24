@@ -74,14 +74,59 @@ def MoveOperatorTest1():
 		{
 			var i32 mut x= 0;
 			var S mut s( x );
-			var S s_copy= move(s); // 's' contains mutable reference. After move 's' contains no references, but 's_copy' contains reference.
-			s_copy.r= 999;
-			return x;
+			{
+				var S s_copy= move(s); // 's' contains mutable reference. After move 's' contains no references, but 's_copy' contains reference.
+				s_copy.r= 999;
+			}
+			return x; // Here we have no references to 'x'.
 		}
 	"""
 	tests_lib.build_program( c_program_text )
 	call_result= tests_lib.run_function( "_Z3Foov" )
 	assert( call_result == 999 )
+
+
+def MoveOperatorTest2():
+	c_program_text= """
+		struct S
+		{
+			i32 &mut r;
+			fn constructor( this'a', i32 &'b mut in_r ) ' a <- mut b '
+			( r= in_r ){}
+		}
+
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var S mut s( x ); // 's' contains mutable reference to 'x' now.
+			move(s); // After move 's' lost contained references.
+			++x; // Ok, can change, because have no references.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def MoveOperatorTest2():
+	c_program_text= """
+		struct S
+		{
+			i32 &mut r;
+			fn constructor( this'a', i32 &'b mut in_r ) ' a <- mut b '
+			( r= in_r ){}
+		}
+
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var S mut s0( x ); // 's' contains mutable reference to 'x' now.
+			auto s1= move(s0); // After move 's' transfers contained references to 's1'.
+			++x; // Error, accessing variable, that have mutalbe reference inside 's1'.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "AccessingVariableThatHaveMutableReference" )
+	assert( errors_list[0].file_pos.line == 14 )
 
 
 def MoveInsideIf_Test0():

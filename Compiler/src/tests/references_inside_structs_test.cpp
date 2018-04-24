@@ -54,7 +54,7 @@ U_TEST( GeneratedCopyConstructorForStructsWithReferencesTest )
 	R"(
 		struct S
 		{
-			i32 &mut r;
+			i32 &imut r;
 		}
 
 		fn Foo() : i32
