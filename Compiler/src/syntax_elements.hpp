@@ -242,6 +242,14 @@ public:
 	const ComplexName name_;
 };
 
+class MoveOperator final : public ExpressionComponentWithUnaryOperators
+{
+public:
+	MoveOperator( const FilePos& file_pos );
+
+	ProgramString var_name_;
+};
+
 class BooleanConstant final : public ExpressionComponentWithUnaryOperators
 {
 public:

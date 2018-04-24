@@ -552,6 +552,35 @@ IExpressionComponentPtr SyntaxAnalyzer::ParseExpression()
 				current_node.reset( new BooleanConstant( it_->file_pos, false ) );
 				++it_;
 			}
+			else if( it_->text == Keywords::move_ )
+			{
+				std::unique_ptr<MoveOperator> move_operator( new MoveOperator( it_->file_pos ) );
+
+				++it_; U_ASSERT( it_ < it_end_ );
+				if( it_->type != Lexem::Type::BracketLeft )
+				{
+					PushErrorMessage( *it_ );
+					return nullptr;
+				}
+				++it_; U_ASSERT( it_ < it_end_ );
+
+				if( it_->type != Lexem::Type::Identifier )
+				{
+					PushErrorMessage( *it_ );
+					return nullptr;
+				}
+				move_operator->var_name_= it_->text;
+				++it_; U_ASSERT( it_ < it_end_ );
+
+				if( it_->type != Lexem::Type::BracketRight )
+				{
+					PushErrorMessage( *it_ );
+					return nullptr;
+				}
+				++it_; U_ASSERT( it_ < it_end_ );
+
+				current_node= std::move(move_operator);
+			}
 			else
 				current_node.reset( new NamedOperand( it_->file_pos, ParseComplexName() ) );
 		}

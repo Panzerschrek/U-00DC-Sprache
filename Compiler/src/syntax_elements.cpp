@@ -109,6 +109,10 @@ NamedOperand::NamedOperand( const FilePos& file_pos, ComplexName name )
 	, name_( std::move(name) )
 {}
 
+MoveOperator::MoveOperator( const FilePos& file_pos  )
+	: ExpressionComponentWithUnaryOperators(file_pos)
+{}
+
 BooleanConstant::BooleanConstant( const FilePos& file_pos, bool value )
 	: ExpressionComponentWithUnaryOperators(file_pos)
 	, value_( value )

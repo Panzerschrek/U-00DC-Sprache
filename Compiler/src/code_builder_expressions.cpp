@@ -245,8 +245,13 @@ Value CodeBuilder::BuildExpressionCode(
 				PrepareType( type_name_in_expression->type_name, names ),
 				type_name_in_expression->file_pos_ );
 	}
-	else
-		U_ASSERT(false); // TODO
+	else if( const auto move_operator=
+		dynamic_cast<const Synt::MoveOperator*>(&expression) )
+	{
+		// TODO
+		result= TemplateDependentValue();
+	}
+	else U_ASSERT(false);
 
 	if( const auto expression_with_unary_operators=
 		dynamic_cast<const Synt::ExpressionComponentWithUnaryOperators*>( &expression ) )

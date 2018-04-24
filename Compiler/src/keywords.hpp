@@ -20,6 +20,7 @@ enum class Keywords : unsigned int
 	continue_,
 	if_,
 	else_,
+	move_,
 
 	struct_,
 	class_,
