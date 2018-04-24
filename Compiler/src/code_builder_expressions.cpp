@@ -1192,6 +1192,9 @@ Value CodeBuilder::BuildNamedOperand(
 		result= referenced_variable->content;
 		if( referenced_variable->kind == StoredVariable::Kind::Variable )
 		{
+			if( function_context.variables_state.VariableIsMoved( referenced_variable ) )
+				errors_.push_back( ReportAccessingMovedVariable( named_operand.file_pos_, referenced_variable->name ) );
+
 			result.referenced_variables.emplace( referenced_variable );
 
 			// If we have mutable reference to variable, we can not access variable itself.
@@ -1232,9 +1235,15 @@ Value CodeBuilder::BuildMoveOpeator( const Synt::MoveOperator& move_operator, Na
 	}
 
 	// TODO - maybe allow moving for immutable variables?
-	if( variable_for_move->content.value_type != ValueType::Reference )
+	if( variable_for_move->content.value_type != ValueType::Reference ||
+		variable_for_move->kind != StoredVariable::Kind::Variable )
 	{
-		errors_.push_back( ReportExpectedReferenceValue(  move_operator.file_pos_ ) );
+		errors_.push_back( ReportExpectedReferenceValue( move_operator.file_pos_ ) );
+		return ErrorValue();
+	}
+	if( function_context.variables_state.VariableIsMoved( variable_for_move ) )
+	{
+		errors_.push_back( ReportAccessingMovedVariable( move_operator.file_pos_, variable_for_move->name ) );
 		return ErrorValue();
 	}
 

@@ -79,6 +79,6 @@ def MoveOperatorTest1():
 			return x;
 		}
 	"""
-	tests_lib.build_program( c_program_text, True )
+	tests_lib.build_program( c_program_text )
 	call_result= tests_lib.run_function( "_Z3Foov" )
 	assert( call_result == 999 )

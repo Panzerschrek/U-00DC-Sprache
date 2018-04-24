@@ -113,6 +113,7 @@ enum class CodeBuilderErrorCode : unsigned int
 	ReferenceProtectionError,
 	DestroyedVariableStillHaveReferences,
 	AccessingVariableThatHaveMutableReference,
+	AccessingMovedVariable,
 	ReturningUnallowedReference,
 	InvalidReferenceTagCount,
 	SelfReferencePollution,
@@ -248,6 +249,7 @@ CodeBuilderError ReportTemplateFunctionGenerationFailed( const FilePos& file_pos
 CodeBuilderError ReportReferenceProtectionError( const FilePos& file_pos, const ProgramString& var_name );
 CodeBuilderError ReportDestroyedVariableStillHaveReferences( const FilePos& file_pos, const ProgramString& var_name );
 CodeBuilderError ReportAccessingVariableThatHaveMutableReference( const FilePos& file_pos, const ProgramString& var_name );
+CodeBuilderError ReportAccessingMovedVariable( const FilePos& file_pos, const ProgramString& var_name );
 CodeBuilderError ReportReturningUnallowedReference( const FilePos& file_pos ); // TODO - add variable name
 CodeBuilderError ReportInvalidReferenceTagCount( const FilePos& file_pos, size_t given, size_t required );
 CodeBuilderError ReportSelfReferencePollution( const FilePos& file_pos );

@@ -167,6 +167,8 @@ const char* CodeBuilderErrorCodeToString( const CodeBuilderErrorCode code )
 		return "DestroyedVariableStillHaveReferences";
 	case CodeBuilderErrorCode::AccessingVariableThatHaveMutableReference:
 		return "AccessingVariableThatHaveMutableReference";
+	case CodeBuilderErrorCode::AccessingMovedVariable:
+		return "AccessingMovedVariable";
 	case CodeBuilderErrorCode::ReturningUnallowedReference:
 		return "ReturningUnallowedReference";
 	case CodeBuilderErrorCode::InvalidReferenceTagCount:
@@ -1137,6 +1139,17 @@ CodeBuilderError ReportAccessingVariableThatHaveMutableReference( const FilePos&
 	error.code= CodeBuilderErrorCode::AccessingVariableThatHaveMutableReference;
 
 	error.text= "Accessing variable \""_SpC + var_name + "\", that have mutable reference."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportAccessingMovedVariable( const FilePos& file_pos, const ProgramString& var_name )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::AccessingMovedVariable;
+
+	error.text= "Accessing moved variable \""_SpC + var_name + "\"."_SpC;
 
 	return error;
 }
