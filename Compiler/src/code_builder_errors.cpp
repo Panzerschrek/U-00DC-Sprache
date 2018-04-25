@@ -183,6 +183,8 @@ const char* CodeBuilderErrorCodeToString( const CodeBuilderErrorCode code )
 		return "OuterVariableMoveInsideLoop";
 	case CodeBuilderErrorCode::ConditionalMove:
 		return "ConditionalMove";
+	case CodeBuilderErrorCode::MovedVariableHaveReferences:
+		return "MovedVariableHaveReferences";
 	case CodeBuilderErrorCode::UnallowedReferencePollution:
 		return "UnallowedReferencePollution";
 	case CodeBuilderErrorCode::ReferencePollutionForArgReference:
@@ -1233,6 +1235,17 @@ CodeBuilderError ReportConditionalMove( const FilePos& file_pos, const ProgramSt
 	error.code= CodeBuilderErrorCode::ConditionalMove;
 
 	error.text= "Variable \""_SpC + variable_name + "\" moved not in all if-else bracnes."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportMovedVariableHaveReferences( const FilePos& file_pos, const ProgramString& variable_name )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::MovedVariableHaveReferences;
+
+	error.text= "Moved variable \""_SpC + variable_name + "\" have references."_SpC;
 
 	return error;
 }

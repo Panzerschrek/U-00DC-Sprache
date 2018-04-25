@@ -332,3 +332,72 @@ def ConditionalMove_ForLazyLogicalOperators_Test2():
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ConditionalMove" )
 	assert( errors_list[0].file_pos.line == 5 )
+
+
+def MovedVariableHaveReferences_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			auto mut x= 3.5;
+			auto &ref= x;
+			move(x);
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "MovedVariableHaveReferences" )
+	assert( errors_list[0].file_pos.line == 6 )
+
+
+def MovedVariableHaveReferences_Test1():
+	c_program_text= """
+		fn Foo( i16 mut short )
+		{
+			auto &mut ref= short;
+			move(short);
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "MovedVariableHaveReferences" )
+	assert( errors_list[0].file_pos.line == 5 )
+
+
+def MovedVariableHaveReferences_Test2():
+	c_program_text= """
+		struct S
+		{
+			i32& r;
+		}
+		fn Foo()
+		{
+			var i32 mut x= 45;
+			var S s{ .r= x };
+			move(x);
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "MovedVariableHaveReferences" )
+	assert( errors_list[0].file_pos.line == 10 )
+
+
+def MovedVariableHaveReferences_Test3():
+	c_program_text= """
+		struct S
+		{
+			i32& r;
+			fn constructor( this'a', i32&'b x ) ' a <- imut b '
+			( r= x ) {}
+		}
+		fn Bar( S s, i32 x ){}
+		fn Foo()
+		{
+			var i32 mut x= 45;
+			Bar( S(x), move(x) );
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "MovedVariableHaveReferences" )
+	assert( errors_list[0].file_pos.line == 12 )

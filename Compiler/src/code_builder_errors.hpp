@@ -121,6 +121,7 @@ enum class CodeBuilderErrorCode : unsigned int
 	MutableReferencePollutionOfOuterLoopVariable,
 	OuterVariableMoveInsideLoop,
 	ConditionalMove,
+	MovedVariableHaveReferences,
 	UnallowedReferencePollution,
 	ReferencePollutionForArgReference,
 	ExplicitReferencePollutionForCopyConstructor,
@@ -259,6 +260,7 @@ CodeBuilderError ReportArgReferencePollution( const FilePos& file_pos );
 CodeBuilderError ReportMutableReferencePollutionOfOuterLoopVariable( const FilePos& file_pos, const ProgramString& dst_name, const ProgramString& src_name );
 CodeBuilderError ReportOuterVariableMoveInsideLoop( const FilePos& file_pos, const ProgramString& variable_name );
 CodeBuilderError ReportConditionalMove( const FilePos& file_pos, const ProgramString& variable_name );
+CodeBuilderError ReportMovedVariableHaveReferences( const FilePos& file_pos, const ProgramString& variable_name );
 CodeBuilderError ReportUnallowedReferencePollution( const FilePos& file_pos ); // TODO - add some string information
 CodeBuilderError ReportReferencePollutionForArgReference( const FilePos& file_pos ); // TODO - add some string information
 CodeBuilderError ReportExplicitReferencePollutionForCopyConstructor( const FilePos& file_pos );

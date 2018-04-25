@@ -1259,8 +1259,7 @@ Value CodeBuilder::BuildMoveOpeator( const Synt::MoveOperator& move_operator, Na
 
 	if( variable_for_move->mut_use_counter.use_count() > 1u || variable_for_move->imut_use_counter.use_count() > 1u )
 	{
-		// Error, moving variable, while references to it exists.
-		errors_.push_back( ReportDestroyedVariableStillHaveReferences( move_operator.file_pos_, variable_for_move->name ) ); // TODO - generate separate error?
+		errors_.push_back( ReportMovedVariableHaveReferences( move_operator.file_pos_, variable_for_move->name ) );
 		return ErrorValue();
 	}
 
