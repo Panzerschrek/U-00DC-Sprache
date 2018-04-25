@@ -812,4 +812,71 @@ U_TEST(DestructorsTest19_DestuctorForInterface)
 	U_TEST_ASSERT( g_destructors_call_sequence.size() == 1u && g_destructors_call_sequence.front() == 5558414 );
 }
 
+U_TEST(DestructorsTest20_EarlyDestructorCallUsingMoveOperator)
+{
+	DestructorTestPrepare();
+
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+
+		class S
+		{
+			i32 x;
+			fn constructor( i32 in_x ) ( x= in_x ) {}
+			fn destructor() { DestructorCalled(x); }
+		}
+		fn Foo()
+		{
+			var S mut s0( 99985 );
+			move(s0); // Must call destructor here.
+			var S s1( 8852 );
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 99985, 8852 } ) );
+}
+
+U_TEST(DestructorsTest21_ChangeDestructionOrderUsingMoveOperator)
+{
+	DestructorTestPrepare();
+
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+
+		class S
+		{
+			i32 x;
+			fn constructor( i32 in_x ) ( x= in_x ) {}
+			fn destructor() { DestructorCalled(x); }
+		}
+		fn Foo()
+		{
+			var S mut s0( 111 );
+			var S s1( 222 );
+			{
+				var S s2= move(s0);
+				var S s3( 333 );
+				// Must destroy 333, 111 here.
+			}
+			// Must destroy 222 here.
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 333, 111, 222 } ) );
+}
+
 } // namespace U

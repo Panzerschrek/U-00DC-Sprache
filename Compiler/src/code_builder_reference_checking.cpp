@@ -244,14 +244,19 @@ VariablesState CodeBuilder::MergeVariablesStateAfterIf( const std::vector<Variab
 
 	VariablesState::VariablesContainer result;
 
-	// SPRACHE_TODO - check moving. Disallow conditional moving.
-
 	for( const VariablesState& branch_state : bracnhes_variables_state )
 	{
 		U_ASSERT( branch_state.GetVariables().size() == bracnhes_variables_state.front().GetVariables().size() );
 		for (const auto& variable_pair : branch_state.GetVariables() )
 		{
+			if( result.find( variable_pair.first ) == result.end() )
+				result[variable_pair.first].is_moved= variable_pair.second.is_moved;
+
 			VariablesState::VariableEntry& result_entry= result[variable_pair.first];
+
+			if( result_entry.is_moved != variable_pair.second.is_moved )
+				errors_.push_back( ReportConditionalMove( file_pos, variable_pair.first->name ) );
+
 			for( auto& reference : variable_pair.second.inner_references )
 			{
 				const auto it= result_entry.inner_references.find( reference.first );
@@ -277,14 +282,15 @@ void CodeBuilder::CheckWhileBlokVariablesState( const VariablesState& state_befo
 {
 	U_ASSERT( state_before.GetVariables().size() == state_after.GetVariables().size() );
 
-	// SPRACHE_TODO - detect also moving of outer variables inside loop.
-
 	for( const auto& var_before : state_before.GetVariables() )
 	{
 		U_ASSERT( state_after.GetVariables().find( var_before.first ) != state_after.GetVariables().end() );
 		const auto& var_after= *state_after.GetVariables().find( var_before.first );
 
 		U_ASSERT( var_before.second.inner_references.size() <= var_after.second.inner_references.size() ); // Currently, can only add references.
+
+		if( !var_before.second.is_moved && var_after.second.is_moved )
+			errors_.push_back( ReportOuterVariableMoveInsideLoop( file_pos, var_before.first->name ) );
 
 		for( const auto& reference_after : var_after.second.inner_references )
 		{

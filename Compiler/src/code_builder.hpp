@@ -396,6 +396,7 @@ private:
 		FunctionContext& function_context );
 
 	Value BuildNamedOperand( const Synt::NamedOperand& named_operand, NamesScope& names, FunctionContext& function_context );
+	Value BuildMoveOpeator( const Synt::MoveOperator& move_operator, NamesScope& names, FunctionContext& function_context );
 	Value BuildNumericConstant( const Synt::NumericConstant& numeric_constant, FunctionContext& function_context );
 	Variable BuildBooleanConstant( const Synt::BooleanConstant& boolean_constant, FunctionContext& function_context  );
 

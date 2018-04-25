@@ -305,6 +305,7 @@ public:
 	{
 		Variable,
 		Reference,
+		ReferenceArg,
 		ArgInnerVariable,
 	};
 

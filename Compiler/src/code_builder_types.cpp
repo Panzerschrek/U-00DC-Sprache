@@ -566,6 +566,8 @@ ProgramString Type::ToString() const
 				return "yet not deduced template arg"_SpC;
 			case NontypeStub::ErrorValue:
 				return "error value"_SpC;
+			case NontypeStub::VariableStorage:
+				return "variable storage"_SpC;
 			};
 			U_ASSERT(false);
 			return ProgramString();
@@ -828,7 +830,8 @@ void VariablesState::Move( const StoredVariablePtr& var )
 bool VariablesState::VariableIsMoved( const StoredVariablePtr& var ) const
 {
 	const auto it= variables_.find(var);
-	U_ASSERT( it != variables_.end() );
+	if( it == variables_.end() ) // Can be for global constants, for example.
+		return false;
 	return it->second.is_moved;
 }
 

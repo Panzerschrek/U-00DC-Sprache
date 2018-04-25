@@ -167,6 +167,8 @@ const char* CodeBuilderErrorCodeToString( const CodeBuilderErrorCode code )
 		return "DestroyedVariableStillHaveReferences";
 	case CodeBuilderErrorCode::AccessingVariableThatHaveMutableReference:
 		return "AccessingVariableThatHaveMutableReference";
+	case CodeBuilderErrorCode::AccessingMovedVariable:
+		return "AccessingMovedVariable";
 	case CodeBuilderErrorCode::ReturningUnallowedReference:
 		return "ReturningUnallowedReference";
 	case CodeBuilderErrorCode::InvalidReferenceTagCount:
@@ -177,6 +179,12 @@ const char* CodeBuilderErrorCodeToString( const CodeBuilderErrorCode code )
 		return "ArgReferencePollution";
 	case CodeBuilderErrorCode::MutableReferencePollutionOfOuterLoopVariable:
 		return "MutableReferencePollutionOfOuterLoopVariable";
+	case CodeBuilderErrorCode::OuterVariableMoveInsideLoop:
+		return "OuterVariableMoveInsideLoop";
+	case CodeBuilderErrorCode::ConditionalMove:
+		return "ConditionalMove";
+	case CodeBuilderErrorCode::MovedVariableHaveReferences:
+		return "MovedVariableHaveReferences";
 	case CodeBuilderErrorCode::UnallowedReferencePollution:
 		return "UnallowedReferencePollution";
 	case CodeBuilderErrorCode::ReferencePollutionForArgReference:
@@ -1141,6 +1149,17 @@ CodeBuilderError ReportAccessingVariableThatHaveMutableReference( const FilePos&
 	return error;
 }
 
+CodeBuilderError ReportAccessingMovedVariable( const FilePos& file_pos, const ProgramString& var_name )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::AccessingMovedVariable;
+
+	error.text= "Accessing moved variable \""_SpC + var_name + "\"."_SpC;
+
+	return error;
+}
+
 CodeBuilderError ReportReturningUnallowedReference( const FilePos& file_pos )
 {
 	CodeBuilderError error;
@@ -1194,6 +1213,39 @@ CodeBuilderError ReportMutableReferencePollutionOfOuterLoopVariable( const FileP
 	error.code= CodeBuilderErrorCode::MutableReferencePollutionOfOuterLoopVariable;
 
 	error.text= "Mutable reference pollution for outer variables inside loop. \""_SpC + dst_name + "\" polluted by \""_SpC + src_name + "\"."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportOuterVariableMoveInsideLoop( const FilePos& file_pos, const ProgramString& variable_name )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::OuterVariableMoveInsideLoop;
+
+	error.text= "Outer loop variable \""_SpC + variable_name + "\" move inside loop."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportConditionalMove( const FilePos& file_pos, const ProgramString& variable_name )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::ConditionalMove;
+
+	error.text= "Variable \""_SpC + variable_name + "\" moved not in all if-else bracnes."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportMovedVariableHaveReferences( const FilePos& file_pos, const ProgramString& variable_name )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::MovedVariableHaveReferences;
+
+	error.text= "Moved variable \""_SpC + variable_name + "\" have references."_SpC;
 
 	return error;
 }

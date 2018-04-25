@@ -113,11 +113,15 @@ enum class CodeBuilderErrorCode : unsigned int
 	ReferenceProtectionError,
 	DestroyedVariableStillHaveReferences,
 	AccessingVariableThatHaveMutableReference,
+	AccessingMovedVariable,
 	ReturningUnallowedReference,
 	InvalidReferenceTagCount,
 	SelfReferencePollution,
 	ArgReferencePollution,
 	MutableReferencePollutionOfOuterLoopVariable,
+	OuterVariableMoveInsideLoop,
+	ConditionalMove,
+	MovedVariableHaveReferences,
 	UnallowedReferencePollution,
 	ReferencePollutionForArgReference,
 	ExplicitReferencePollutionForCopyConstructor,
@@ -248,11 +252,15 @@ CodeBuilderError ReportTemplateFunctionGenerationFailed( const FilePos& file_pos
 CodeBuilderError ReportReferenceProtectionError( const FilePos& file_pos, const ProgramString& var_name );
 CodeBuilderError ReportDestroyedVariableStillHaveReferences( const FilePos& file_pos, const ProgramString& var_name );
 CodeBuilderError ReportAccessingVariableThatHaveMutableReference( const FilePos& file_pos, const ProgramString& var_name );
+CodeBuilderError ReportAccessingMovedVariable( const FilePos& file_pos, const ProgramString& var_name );
 CodeBuilderError ReportReturningUnallowedReference( const FilePos& file_pos ); // TODO - add variable name
 CodeBuilderError ReportInvalidReferenceTagCount( const FilePos& file_pos, size_t given, size_t required );
 CodeBuilderError ReportSelfReferencePollution( const FilePos& file_pos );
 CodeBuilderError ReportArgReferencePollution( const FilePos& file_pos );
 CodeBuilderError ReportMutableReferencePollutionOfOuterLoopVariable( const FilePos& file_pos, const ProgramString& dst_name, const ProgramString& src_name );
+CodeBuilderError ReportOuterVariableMoveInsideLoop( const FilePos& file_pos, const ProgramString& variable_name );
+CodeBuilderError ReportConditionalMove( const FilePos& file_pos, const ProgramString& variable_name );
+CodeBuilderError ReportMovedVariableHaveReferences( const FilePos& file_pos, const ProgramString& variable_name );
 CodeBuilderError ReportUnallowedReferencePollution( const FilePos& file_pos ); // TODO - add some string information
 CodeBuilderError ReportReferencePollutionForArgReference( const FilePos& file_pos ); // TODO - add some string information
 CodeBuilderError ReportExplicitReferencePollutionForCopyConstructor( const FilePos& file_pos );

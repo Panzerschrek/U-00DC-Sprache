@@ -2105,8 +2105,8 @@ void CodeBuilder::BuildFuncCode(
 			{ U_ASSERT( false ); }
 		}
 
-		// Mark even reference-args as variable.
-		const StoredVariablePtr var_storage= std::make_shared<StoredVariable>( arg_name, var, StoredVariable::Kind::Variable );
+		const StoredVariablePtr var_storage=
+			std::make_shared<StoredVariable>( arg_name, var, arg.is_reference ? StoredVariable::Kind::ReferenceArg : StoredVariable::Kind::Variable );
 		if( arg.is_reference )
 			function_context.variables_state.AddVariable( var_storage );
 		else
@@ -2791,6 +2791,9 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 			// Make immutable, if needed, only after initialization, because in initialization we need call constructors, which is mutable methods.
 			if( variable_declaration.mutability_modifier != MutabilityModifier::Mutable )
 				variable.value_type= ValueType::ConstReference;
+
+			for( const auto& referenced_variable_pair : function_context.variables_state.GetVariableReferences( stored_variable ) )
+				CheckVariableReferences( *referenced_variable_pair.first, variable_declaration.file_pos );
 
 			if( global_variable != nullptr && variable.constexpr_value != nullptr )
 				global_variable->setInitializer( variable.constexpr_value );

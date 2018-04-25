@@ -24,6 +24,8 @@ def main():
 		"inheritance_test",
 		"inheritance_errors_test",
 		"overloading_resolution_test",
+		"stack_variables_move_errors_test",
+		"stack_variables_move_test",
 		"virtual_functions_test" ]
 
 	tests_list= GetTestsList( tests_modules_list )

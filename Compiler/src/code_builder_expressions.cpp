@@ -245,8 +245,12 @@ Value CodeBuilder::BuildExpressionCode(
 				PrepareType( type_name_in_expression->type_name, names ),
 				type_name_in_expression->file_pos_ );
 	}
-	else
-		U_ASSERT(false); // TODO
+	else if( const auto move_operator=
+		dynamic_cast<const Synt::MoveOperator*>(&expression) )
+	{
+		result= BuildMoveOpeator( *move_operator, names, function_context );
+	}
+	else U_ASSERT(false);
 
 	if( const auto expression_with_unary_operators=
 		dynamic_cast<const Synt::ExpressionComponentWithUnaryOperators*>( &expression ) )
@@ -963,34 +967,41 @@ Value CodeBuilder::BuildLazyBinaryOperator(
 	else U_ASSERT(false);
 
 	function_context.function->getBasicBlockList().push_back( r_part_block );
-	function_context.llvm_ir_builder.SetInsertPoint( r_part_block );
+	function_context.llvm_ir_builder.SetInsertPoint( r_part_block );	
 
-	// Right part of lazy operator is conditinal. So, we must destroy its temporaries only in this condition.
-	// We doesn`t needs longer lifetime of epxression temporaries, because we use only bool result.
-	const StackVariablesStorage r_var_temp_variables_storage( function_context );
-	const Value r_var_value= BuildExpressionCode( r_expression, names, function_context );
-	CHECK_RETURN_ERROR_VALUE(r_var_value);
+	VariablesState variables_state_before_r_branch= function_context.variables_state;
+	variables_state_before_r_branch.DeactivateLocks();
 
 	llvm::Value* r_var_in_register= nullptr;
 	llvm::Constant* r_var_constepxr_value= nullptr;
-	if( r_var_value.GetType().GetTemplateDependentType() != nullptr )
-		RETURN_UNDEF_BOOL
-	if( r_var_value.GetType() == NontypeStub::TemplateDependentValue )
-		r_var_in_register= r_var_constepxr_value= llvm::UndefValue::get( fundamental_llvm_types_.bool_ );
-	else
 	{
-		if( r_var_value.GetType() != bool_type_ )
-		{
-			errors_.push_back( ReportTypesMismatch( binary_operator.file_pos_, bool_type_.ToString(), r_var_value.GetType().ToString() ) );
-			return ErrorValue();
-		}
-		const Variable& r_var= *r_var_value.GetVariable();
-		r_var_constepxr_value= r_var.constexpr_value;
-		r_var_in_register= CreateMoveToLLVMRegisterInstruction( r_var, function_context );
-	}
+		// Right part of lazy operator is conditinal. So, we must destroy its temporaries only in this condition.
+		// We doesn`t needs longer lifetime of epxression temporaries, because we use only bool result.
+		const StackVariablesStorage r_var_temp_variables_storage( function_context );
 
-	// Destroy r_var temporaries in this branch.
-	CallDestructors( *function_context.stack_variables_stack.back(), function_context, file_pos );
+		const Value r_var_value= BuildExpressionCode( r_expression, names, function_context );
+		CHECK_RETURN_ERROR_VALUE(r_var_value);
+
+		if( r_var_value.GetType().GetTemplateDependentType() != nullptr )
+			RETURN_UNDEF_BOOL
+		if( r_var_value.GetType() == NontypeStub::TemplateDependentValue )
+			r_var_in_register= r_var_constepxr_value= llvm::UndefValue::get( fundamental_llvm_types_.bool_ );
+		else
+		{
+			if( r_var_value.GetType() != bool_type_ )
+			{
+				errors_.push_back( ReportTypesMismatch( binary_operator.file_pos_, bool_type_.ToString(), r_var_value.GetType().ToString() ) );
+				return ErrorValue();
+			}
+			const Variable& r_var= *r_var_value.GetVariable();
+			r_var_constepxr_value= r_var.constexpr_value;
+			r_var_in_register= CreateMoveToLLVMRegisterInstruction( r_var, function_context );
+		}
+
+		// Destroy r_var temporaries in this branch.
+		CallDestructors( *function_context.stack_variables_stack.back(), function_context, file_pos );
+	}
+	function_context.variables_state= MergeVariablesStateAfterIf( { variables_state_before_r_branch, function_context.variables_state }, file_pos );
 
 	function_context.llvm_ir_builder.CreateBr( block_after_operator );
 	function_context.function->getBasicBlockList().push_back( block_after_operator );
@@ -1020,8 +1031,7 @@ Value CodeBuilder::BuildLazyBinaryOperator(
 
 	const StoredVariablePtr stored_result= std::make_shared<StoredVariable>( BinaryOperatorToString(binary_operator.operator_type_), result );
 	result.referenced_variables.emplace( stored_result );
-	function_context.stack_variables_stack[ function_context.stack_variables_stack.size() -2u ]->RegisterVariable( stored_result );
-
+	function_context.stack_variables_stack.back()->RegisterVariable( stored_result );
 	return Value( result, file_pos );
 
 	#undef RETURN_UNDEF_BOOL
@@ -1186,8 +1196,12 @@ Value CodeBuilder::BuildNamedOperand(
 		// Unwrap stored variable here.
 		Variable result;
 		result= referenced_variable->content;
-		if( referenced_variable->kind == StoredVariable::Kind::Variable )
+		if( referenced_variable->kind == StoredVariable::Kind::Variable ||
+			referenced_variable->kind == StoredVariable::Kind::ReferenceArg )
 		{
+			if( function_context.variables_state.VariableIsMoved( referenced_variable ) )
+				errors_.push_back( ReportAccessingMovedVariable( named_operand.file_pos_, referenced_variable->name ) );
+
 			result.referenced_variables.emplace( referenced_variable );
 
 			// If we have mutable reference to variable, we can not access variable itself.
@@ -1205,6 +1219,68 @@ Value CodeBuilder::BuildNamedOperand(
 	}
 
 	return name_entry->second;
+}
+
+Value CodeBuilder::BuildMoveOpeator( const Synt::MoveOperator& move_operator, NamesScope& names, FunctionContext& function_context )
+{
+	Synt::ComplexName complex_name;
+	complex_name.components.emplace_back();
+	complex_name.components.back().name= move_operator.var_name_;
+	complex_name.components.back().is_generated= true;
+
+	const NamesScope::InsertedName* const resolved_name= ResolveName( move_operator.file_pos_, names, complex_name );
+	if( resolved_name == nullptr )
+	{
+		errors_.push_back( ReportNameNotFound( move_operator.file_pos_, move_operator.var_name_ ) );
+		return ErrorValue();
+	}
+	const StoredVariablePtr variable_for_move= resolved_name->second.GetStoredVariable();
+	if( variable_for_move == nullptr ||
+		variable_for_move->kind != StoredVariable::Kind::Variable )
+	{
+		errors_.push_back( ReportExpectedVariable( move_operator.file_pos_, resolved_name->second.GetType().ToString() ) );
+		return ErrorValue();
+	}
+
+	// TODO - maybe allow moving for immutable variables?
+	if( variable_for_move->content.value_type != ValueType::Reference )
+	{
+		errors_.push_back( ReportExpectedReferenceValue( move_operator.file_pos_ ) );
+		return ErrorValue();
+	}
+	if( function_context.variables_state.VariableIsMoved( variable_for_move ) )
+	{
+		errors_.push_back( ReportAccessingMovedVariable( move_operator.file_pos_, variable_for_move->name ) );
+		return ErrorValue();
+	}
+
+	// If this is mutable variable - it is stack variable or value argument.
+	// This can not be temp variable, global variable, or inner argument variable.
+
+	if( variable_for_move->mut_use_counter.use_count() > 1u || variable_for_move->imut_use_counter.use_count() > 1u )
+	{
+		errors_.push_back( ReportMovedVariableHaveReferences( move_operator.file_pos_, variable_for_move->name ) );
+		return ErrorValue();
+	}
+
+	Variable content= variable_for_move->content;
+	content.value_type= ValueType::Value;
+	content.referenced_variables.clear();
+
+	const StoredVariablePtr moved_result= std::make_shared<StoredVariable>( "_moved_"_SpC + variable_for_move->name, content );
+	content.referenced_variables.emplace( moved_result );
+	function_context.stack_variables_stack.back()->RegisterVariable( moved_result );
+
+	// We must save inner references of moved variable.
+	for( const auto& inner_variable : function_context.variables_state.GetVariableReferences( variable_for_move ) )
+	{
+		const bool ok= function_context.variables_state.AddPollution( moved_result, inner_variable.first, inner_variable.second.IsMutable() );
+		if( !ok )
+			errors_.push_back( ReportReferenceProtectionError( move_operator.file_pos_, inner_variable.first->name ) );
+	}
+	function_context.variables_state.Move( variable_for_move );
+
+	return Value( content, move_operator.file_pos_ );
 }
 
 Value CodeBuilder::BuildNumericConstant(
@@ -2133,7 +2209,7 @@ Value CodeBuilder::DoCallFunction(
 		{
 			for( const StoredVariablePtr& dst_variable : arg_to_variables[ dst_arg ] )
 			{
-				U_ASSERT( dst_variable->kind == StoredVariable::Kind::Variable || dst_variable->kind == StoredVariable::Kind::ArgInnerVariable );
+				U_ASSERT( dst_variable->kind == StoredVariable::Kind::Variable || dst_variable->kind == StoredVariable::Kind::ArgInnerVariable  || dst_variable->kind == StoredVariable::Kind::ReferenceArg );
 				if( dst_variable->kind == StoredVariable::Kind::ArgInnerVariable )
 					errors_.push_back( ReportReferencePollutionForArgReference( call_file_pos ) );
 
