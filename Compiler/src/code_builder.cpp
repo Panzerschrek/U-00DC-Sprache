@@ -2105,8 +2105,8 @@ void CodeBuilder::BuildFuncCode(
 			{ U_ASSERT( false ); }
 		}
 
-		// Mark even reference-args as variable.
-		const StoredVariablePtr var_storage= std::make_shared<StoredVariable>( arg_name, var, StoredVariable::Kind::Variable );
+		const StoredVariablePtr var_storage=
+			std::make_shared<StoredVariable>( arg_name, var, arg.is_reference ? StoredVariable::Kind::ReferenceArg : StoredVariable::Kind::Variable );
 		if( arg.is_reference )
 			function_context.variables_state.AddVariable( var_storage );
 		else

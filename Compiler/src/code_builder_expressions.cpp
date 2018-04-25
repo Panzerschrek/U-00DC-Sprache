@@ -1196,7 +1196,8 @@ Value CodeBuilder::BuildNamedOperand(
 		// Unwrap stored variable here.
 		Variable result;
 		result= referenced_variable->content;
-		if( referenced_variable->kind == StoredVariable::Kind::Variable )
+		if( referenced_variable->kind == StoredVariable::Kind::Variable ||
+			referenced_variable->kind == StoredVariable::Kind::ReferenceArg )
 		{
 			if( function_context.variables_state.VariableIsMoved( referenced_variable ) )
 				errors_.push_back( ReportAccessingMovedVariable( named_operand.file_pos_, referenced_variable->name ) );
@@ -2209,7 +2210,7 @@ Value CodeBuilder::DoCallFunction(
 		{
 			for( const StoredVariablePtr& dst_variable : arg_to_variables[ dst_arg ] )
 			{
-				U_ASSERT( dst_variable->kind == StoredVariable::Kind::Variable || dst_variable->kind == StoredVariable::Kind::ArgInnerVariable );
+				U_ASSERT( dst_variable->kind == StoredVariable::Kind::Variable || dst_variable->kind == StoredVariable::Kind::ArgInnerVariable  || dst_variable->kind == StoredVariable::Kind::ReferenceArg );
 				if( dst_variable->kind == StoredVariable::Kind::ArgInnerVariable )
 					errors_.push_back( ReportReferencePollutionForArgReference( call_file_pos ) );
 
