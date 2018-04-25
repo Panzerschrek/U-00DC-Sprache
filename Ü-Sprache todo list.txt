@@ -5,12 +5,13 @@ When feature was implemented, delete it from list.
 Common:
 *) public/private/protected for class/struct members
 *) sizeof operator
-*) Moving for stack variables
 *) raw_pointer
 *) Unsafe
 *) Continious initializer for arrays
 *) Uninitialized initializer
+*) Function pointers
 *) array_view, array view take operator
+*) "string literals\n"
 *) Disabled by-default copying for classes. Possibility to force generating
 	copying methods.
 *) Possibility to disable some methods generation.
@@ -35,6 +36,7 @@ Templates:
 *) Variadic templates
 *) Function templates with template-dependent reference and mutability modifiers
 	for arguments.
+*) Equality comparison for function templates with same name
 
 Standart library:
 *) vector
