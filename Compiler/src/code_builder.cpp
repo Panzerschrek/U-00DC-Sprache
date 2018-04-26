@@ -1893,7 +1893,6 @@ void CodeBuilder::BuildFuncCode(
 			// Add return-value ponter as "sret" argument for class types.
 			args_llvm_types.push_back( llvm::PointerType::get( class_type->llvm_type, 0u ) );
 			first_arg_is_sret= true;
-			func_variable.return_value_is_sret= true;
 		}
 		else
 			U_ASSERT( false );

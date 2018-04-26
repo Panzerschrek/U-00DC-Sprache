@@ -356,7 +356,6 @@ FunctionVariable CodeBuilder::GenerateDestructorPrototype( Class& the_class, con
 	destructor_function.type= destructor_type;
 	destructor_function.is_generated= true;
 	destructor_function.is_this_call= true;
-	destructor_function.return_value_is_sret= false;
 	destructor_function.have_body= false;
 
 	destructor_function.llvm_function=
