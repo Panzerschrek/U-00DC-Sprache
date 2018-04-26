@@ -1079,6 +1079,7 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 				deduction_failed= true;
 				continue;
 			}
+			deduced_temlpate_parameters[i]= DeducedTemplateParameter::Type();
 		}
 		else
 		{
@@ -1118,8 +1119,8 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 						}
 						else
 						{
-								deduction_failed= true;
-								continue;
+							deduction_failed= true;
+							continue;
 						}
 					}
 				}

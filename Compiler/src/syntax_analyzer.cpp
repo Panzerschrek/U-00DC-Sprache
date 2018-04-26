@@ -2719,7 +2719,7 @@ TemplateBasePtr SyntaxAnalyzer::ParseTemplate()
 		++it_; U_ASSERT( it_ < it_end_ );
 		template_kind= TemplateKind::Typedef;
 	}
-	else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::fn_ )
+	else if( it_->type == Lexem::Type::Identifier && ( it_->text == Keywords::fn_ || it_->text == Keywords::op_ ) )
 	{
 		std::unique_ptr<FunctionTemplate> function_template( new FunctionTemplate( template_file_pos ) );
 		function_template->args_= std::move(args);

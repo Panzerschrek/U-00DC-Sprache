@@ -315,6 +315,69 @@ def TemplateMethod_Test6():
 	assert( call_result == 885214 )
 
 
+def TemplateOperator_Test0():
+	c_program_text= """
+		struct Num
+		{
+			f64 n;
+
+			template</ type T />
+			op*( this, T t ) : Num
+			{
+				var Num r { .n= n * f64(t) };
+				return r;
+			}
+		}
+
+		fn Foo() : f64
+		{
+			var Num mut num{ .n= 25.25 };
+			return ( num * 2u ).n;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 50.5 )
+
+
+def TemplateOperator_Test1():
+	return
+	c_program_text= """
+		template</ type T, u64 size />
+		struct ArrayWrapper
+		{
+			[ T, size ] arr;
+
+			fn constructor()
+			( arr= zero_init ){}
+
+			template</ type Index />
+			op[]( this, Index& index ) : T&
+			{
+				return arr[u64(index)];
+			}
+
+			template</ type Index />
+			op[]( mut this, Index& index ) : T&mut
+			{
+				return arr[u64(index)];
+			}
+		}
+
+		fn Foo() : i32
+		{
+			var ArrayWrapper</ i32, 3u64 /> mut arr;
+			arr[0.1f]= 5;
+			arr[1]= 7;
+			arr[2u8]= 9;
+			return arr[0] * arr[1] - arr[2];
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 5 * 7 - 9 )
+
+
 def RecursiveTemplateFunctionCall_Test0():
 	c_program_text= """
 		template</ type T />
