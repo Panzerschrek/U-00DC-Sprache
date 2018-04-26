@@ -1701,6 +1701,10 @@ CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 
 				same_function->body_file_pos= func.file_pos_;
 
+				// virtual specifier required for first function declaration only.
+				if( func.virtual_function_kind_ != Synt::VirtualFunctionKind::None )
+					errors_.push_back( ReportVirtualForFunctionImplementation( func.file_pos_, func_name ) );
+
 				BuildFuncCode(
 					*same_function,
 					base_class,

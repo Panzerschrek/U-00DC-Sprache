@@ -834,3 +834,45 @@ def PureDestructor_Test0():
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "PureDestructor" )
 	assert( errors_list[0].file_pos.line == 4 )
+
+
+def VirtualForFunctionImplementation_Test0():
+	c_program_text= """
+		class A polymorph
+		{
+			fn Foo(this);
+			fn virtual Foo(this){} // firtual for non-virtual function implementation inside class.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "VirtualForFunctionImplementation" )
+	assert( errors_list[0].file_pos.line == 5 )
+
+
+def VirtualForFunctionImplementation_Test1():
+	c_program_text= """
+		class A polymorph
+		{
+			fn virtual Foo(this);
+			fn virtual Foo(this){} // firtual for function implementation inside class.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "VirtualForFunctionImplementation" )
+	assert( errors_list[0].file_pos.line == 5 )
+
+
+def VirtualForFunctionImplementation_Test2():
+	c_program_text= """
+		class A polymorph
+		{
+			fn virtual Foo(this);
+		}
+		fn virtual A::Foo(this){} // firtual for function implementation outside class.
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "VirtualForFunctionImplementation" )
+	assert( errors_list[0].file_pos.line == 6 )

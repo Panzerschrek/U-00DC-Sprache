@@ -243,6 +243,8 @@ const char* CodeBuilderErrorCodeToString( const CodeBuilderErrorCode code )
 		return "PureDestructor";
 	case CodeBuilderErrorCode::VirtualForFunctionTemplate:
 		return "VirtualForFunctionTemplate";
+	case CodeBuilderErrorCode::VirtualForFunctionImplementation:
+		return "VirtualForFunctionImplementation";
 	};
 
 	U_ASSERT(false);
@@ -1567,6 +1569,17 @@ CodeBuilderError ReportVirtualForFunctionTemplate( const FilePos& file_pos, cons
 	error.code= CodeBuilderErrorCode::VirtualForFunctionTemplate;
 
 	error.text= "\"virtual\" for template function \"."_SpC + function_name + "\"."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportVirtualForFunctionImplementation( const FilePos& file_pos, const ProgramString& function_name )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::VirtualForFunctionImplementation;
+
+	error.text= "\"virtual\" for function implementation \"."_SpC + function_name + "\"."_SpC;
 
 	return error;
 }
