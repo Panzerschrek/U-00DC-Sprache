@@ -1815,6 +1815,7 @@ void CodeBuilder::CheckOverloadedOperator(
 	case OverloadedOperator::AssignSub:
 	case OverloadedOperator::AssignMul:
 	case OverloadedOperator::AssignDiv:
+	case OverloadedOperator::AssignRem:
 	case OverloadedOperator::AssignAnd:
 	case OverloadedOperator::AssignOr :
 	case OverloadedOperator::AssignXor:

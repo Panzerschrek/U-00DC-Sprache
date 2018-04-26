@@ -85,6 +85,10 @@ U_TEST( OperatorsOverloadingTest0 )
 			{
 				a.x/= b.x;
 			}
+			op%=( Box &mut a, Box &imut b )
+			{
+				a.x%= b.x;
+			}
 
 			op&=( Box &mut a, Box &imut b )
 			{
