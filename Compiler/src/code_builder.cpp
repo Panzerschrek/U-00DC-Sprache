@@ -1680,14 +1680,15 @@ CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 	}
 	else
 	{
-		Value& value= previously_inserted_func->second;
-		if( OverloadedFunctionsSet* const functions_set= value.GetFunctionsSet() )
+		if( OverloadedFunctionsSet* const functions_set= previously_inserted_func->second.GetFunctionsSet() )
 		{
 			if( FunctionVariable* const same_function=
 				GetFunctionWithSameType(
 					*func_variable.type.GetFunctionType(),
 					*functions_set ) )
 			{
+				U_ASSERT( !( same_function->is_generated && !same_function->have_body ) );
+
 				if( func.block_ == nullptr )
 				{
 					errors_.push_back( ReportFunctionPrototypeDuplication( func.file_pos_, func_name ) );
@@ -1700,6 +1701,9 @@ CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 				}
 
 				same_function->body_file_pos= func.file_pos_;
+
+				if( func_variable.is_this_call != same_function->is_this_call )
+					errors_.push_back( ReportThiscallMismatch( func.file_pos_, func_name ) );
 
 				// virtual specifier required for first function declaration only.
 				if( func.virtual_function_kind_ != Synt::VirtualFunctionKind::None )

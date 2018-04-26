@@ -92,6 +92,7 @@ enum class CodeBuilderErrorCode : unsigned int
 	CallOfThiscallFunctionUsingNonthisArgument,
 	ClassFiledAccessInStaticMethod,
 	ThisInNonclassFunction,
+	ThiscallMismatch,
 	AccessOfNonThisClassField,
 	ThisUnavailable,
 	BaseUnavailable,
@@ -236,6 +237,7 @@ CodeBuilderError ReportExplicitArgumentsInDestructor( const FilePos& file_pos );
 CodeBuilderError ReportCallOfThiscallFunctionUsingNonthisArgument( const FilePos& file_pos );
 CodeBuilderError ReportClassFiledAccessInStaticMethod( const FilePos& file_pos, const ProgramString& field_name );
 CodeBuilderError ReportThisInNonclassFunction( const FilePos& file_pos, const ProgramString& func_name );
+CodeBuilderError ReportThiscallMismatch( const FilePos& file_pos, const ProgramString& func_name );
 CodeBuilderError ReportAccessOfNonThisClassField( const FilePos& file_pos, const ProgramString& field_name );
 CodeBuilderError ReportThisUnavailable( const FilePos& file_pos );
 CodeBuilderError ReportBaseUnavailable( const FilePos& file_pos );

@@ -133,6 +133,8 @@ const char* CodeBuilderErrorCodeToString( const CodeBuilderErrorCode code )
 		return "ClassFiledAccessInStaticMethod";
 	case CodeBuilderErrorCode::ThisInNonclassFunction:
 		return "ThisInNonclassFunction";
+	case CodeBuilderErrorCode::ThiscallMismatch:
+		return "ThiscallMismatch";
 	case CodeBuilderErrorCode::AccessOfNonThisClassField:
 		return "AccessOfNonThisClassField";
 	case CodeBuilderErrorCode::ThisUnavailable:
@@ -960,6 +962,17 @@ CodeBuilderError ReportThisInNonclassFunction( const FilePos& file_pos, const Pr
 	error.code= CodeBuilderErrorCode::ThisInNonclassFunction;
 
 	error.text= "This in nonclass function \""_SpC + func_name + "\"."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportThiscallMismatch( const FilePos& file_pos, const ProgramString& func_name )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::ThiscallMismatch;
+
+	error.text= "Thiscall for function \""_SpC + func_name + "\" does not match to thiscall in prototype."_SpC;
 
 	return error;
 }
