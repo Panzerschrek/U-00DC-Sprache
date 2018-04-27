@@ -49,8 +49,7 @@ llvm::Constant* CodeBuilder::ApplyInitializer(
 	{
 		return ApplyZeroInitializer( variable, *zero_initializer, block_names, function_context );
 	}
-	else
-		U_ASSERT(false);
+	else U_ASSERT(false);
 
 	return nullptr;
 }
@@ -70,9 +69,9 @@ void CodeBuilder::ApplyEmptyInitializer(
 		return;
 	}
 
-	if( variable.type.GetFundamentalType() != nullptr )
+	if( variable.type.GetFundamentalType() != nullptr || variable.type.GetEnumType() != nullptr )
 	{
-		// Fundamentals is not default-constructible, we should generate error about it before.
+		// Fundamentals and enums are not default-constructible, we should generate error about it before.
 		U_ASSERT( false );
 	}
 	else if( const Array* const array_type= variable.type.GetArrayType() )
@@ -113,8 +112,7 @@ void CodeBuilder::ApplyEmptyInitializer(
 		NamesScope dummy_names_scope( ProgramString(), nullptr );
 		BuildCallOperator( this_overloaded_methods_set, call_operator, dummy_names_scope, function_context );
 	}
-	else
-		U_ASSERT(false);
+	else U_ASSERT(false);
 }
 
 llvm::Constant* CodeBuilder::ApplyArrayInitializer(
@@ -241,6 +239,11 @@ void CodeBuilder::ApplyStructNamedInitializer(
 			errors_.push_back( ReportInitializerForNonfieldStructMember( initializer.file_pos_, member_initializer.name ) );
 			continue;
 		}
+		if( field->class_.lock() != variable.type )
+		{
+			errors_.push_back( ReportInitializerForBaseClassField( initializer.file_pos_, member_initializer.name ) );
+			continue;
+		}
 
 		initialized_members_names.insert( member_initializer.name );
 
@@ -336,8 +339,7 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 
 			const SizeType src_size= expression_type.SizeOf();
 			const SizeType dst_size= variable.type.SizeOf();
-			if( IsInteger( dst_type->fundamental_type ) &&
-				IsInteger( src_type->fundamental_type ) )
+			if( IsInteger( dst_type->fundamental_type ) && IsInteger( src_type->fundamental_type ) )
 			{
 				// int to int
 				if( src_size < dst_size )
@@ -372,8 +374,7 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 					// Same size integers - do nothing.
 				}
 			}
-			else if( IsFloatingPoint( dst_type->fundamental_type ) &&
-				IsFloatingPoint( src_type->fundamental_type ) )
+			else if( IsFloatingPoint( dst_type->fundamental_type ) && IsFloatingPoint( src_type->fundamental_type ) )
 			{
 				// float to float
 				if( src_size < dst_size )
@@ -392,8 +393,7 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 				}
 				else U_ASSERT(false);
 			}
-			else if( IsFloatingPoint( dst_type->fundamental_type ) &&
-				IsInteger( src_type->fundamental_type ) )
+			else if( IsFloatingPoint( dst_type->fundamental_type ) && IsInteger( src_type->fundamental_type ) )
 			{
 				// int to float
 				if( IsSignedInteger( src_type->fundamental_type ) )
@@ -411,8 +411,7 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 						value_for_assignment= function_context.llvm_ir_builder.CreateUIToFP( value_for_assignment, dst_type->llvm_type );
 				}
 			}
-			else if( IsInteger( dst_type->fundamental_type ) &&
-				IsFloatingPoint( src_type->fundamental_type ) )
+			else if( IsInteger( dst_type->fundamental_type ) && IsFloatingPoint( src_type->fundamental_type ) )
 			{
 				// float to int
 				if( IsSignedInteger( dst_type->fundamental_type ) )
@@ -531,7 +530,6 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 
 		const NamesScope::InsertedName* constructor_name=
 			class_type->members.GetThisScopeName( Keyword( Keywords::constructor_ ) );
-
 		if( constructor_name == nullptr )
 		{
 			errors_.push_back( ReportClassHaveNoConstructors( call_operator.file_pos_ ) );
@@ -545,8 +543,6 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 		this_overloaded_methods_set.this_= variable;
 		this_overloaded_methods_set.overloaded_methods_set= *constructors_set;
 
-		// TODO - disallow explicit constructors calls.
-		// TODO - set references after call.
 		BuildCallOperator( this_overloaded_methods_set, call_operator, block_names, function_context );
 	}
 	else
@@ -571,8 +567,7 @@ llvm::Constant* CodeBuilder::ApplyExpressionInitializer(
 		return nullptr;
 	}
 
-	if( variable.type.GetFundamentalType() != nullptr ||
-		variable.type.GetEnumType() != nullptr )
+	if( variable.type.GetFundamentalType() != nullptr || variable.type.GetEnumType() != nullptr )
 	{
 		const Value expression_result=
 			BuildExpressionCode( *initializer.expression, block_names, function_context );
@@ -751,7 +746,7 @@ llvm::Constant* CodeBuilder::ApplyZeroInitializer(
 			[&]( const NamesScope::InsertedName& member )
 			{
 				const ClassField* const field= member.second.GetClassField();
-				if( field == nullptr )
+				if( field == nullptr || field->class_.lock() != variable.type )
 					return;
 				if( field->is_reference )
 				{
@@ -767,8 +762,7 @@ llvm::Constant* CodeBuilder::ApplyZeroInitializer(
 				ApplyZeroInitializer( struct_member, initializer, block_names, function_context );
 			});
 	}
-	else
-		U_ASSERT( false );
+	else U_ASSERT( false );
 
 	return nullptr;
 }

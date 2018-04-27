@@ -2856,8 +2856,7 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 				errors_.push_back( ReportExpectedReferenceValue( variables_declaration.file_pos_ ) );
 				continue;
 			}
-			if( expression_result.value_type == ValueType::ConstReference &&
-				variable.value_type == ValueType::Reference )
+			if( expression_result.value_type == ValueType::ConstReference && variable.value_type == ValueType::Reference )
 			{
 				errors_.push_back( ReportBindingConstReferenceToNonconstReference( variables_declaration.file_pos_ ) );
 				continue;
@@ -2877,8 +2876,7 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 			variable.llvm_value= result_ref;
 			variable.constexpr_value= expression_result.constexpr_value;
 		}
-		else
-			U_ASSERT(false);
+		else U_ASSERT(false);
 
 		if( type.GetTemplateDependentType() == nullptr &&
 			variable_declaration.mutability_modifier == MutabilityModifier::Constexpr &&
@@ -2978,16 +2976,11 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 	function_context.stack_variables_stack[ function_context.stack_variables_stack.size() - 2u ]->RegisterVariable( stored_variable );
 
 	Variable& variable= stored_variable->content;
-	variable.location= Variable::Location::Pointer;
-	if( auto_variable_declaration.mutability_modifier == MutabilityModifier::Mutable )
-		variable.value_type= ValueType::Reference;
-	else
-		variable.value_type= ValueType::ConstReference;
-
 	variable.type= initializer_experrsion.type;
+	variable.value_type= auto_variable_declaration.mutability_modifier == MutabilityModifier::Mutable ? ValueType::Reference : ValueType::ConstReference;
+	variable.location= Variable::Location::Pointer;
 
-	if( auto_variable_declaration.mutability_modifier == MutabilityModifier::Constexpr &&
-		!variable.type.CanBeConstexpr() )
+	if( auto_variable_declaration.mutability_modifier == MutabilityModifier::Constexpr && !variable.type.CanBeConstexpr() )
 	{
 		errors_.push_back( ReportInvalidTypeForConstantExpressionVariable( auto_variable_declaration.file_pos_ ) );
 		return;
@@ -3000,8 +2993,7 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 			errors_.push_back( ReportExpectedReferenceValue( auto_variable_declaration.file_pos_ ) );
 			return;
 		}
-		if( initializer_experrsion.value_type == ValueType::ConstReference &&
-			variable.value_type != ValueType::ConstReference )
+		if( initializer_experrsion.value_type == ValueType::ConstReference && variable.value_type != ValueType::ConstReference )
 		{
 			errors_.push_back( ReportBindingConstReferenceToNonconstReference( auto_variable_declaration.file_pos_ ) );
 			return;
@@ -3039,8 +3031,7 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 			variable.llvm_value->setName( ToStdString( auto_variable_declaration.name ) );
 		}
 
-		if( variable.type.GetFundamentalType() != nullptr ||
-			variable.type.GetEnumType() != nullptr  )
+		if( variable.type.GetFundamentalType() != nullptr || variable.type.GetEnumType() != nullptr  )
 		{
 			llvm::Value* const value_for_assignment= CreateMoveToLLVMRegisterInstruction( initializer_experrsion, function_context );
 			function_context.llvm_ir_builder.CreateStore( value_for_assignment, variable.llvm_value );
@@ -3051,7 +3042,6 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 		else if( const ClassProxyPtr class_type= variable.type.GetClassTypeProxy() )
 		{
 			U_ASSERT( ! class_type->class_->is_incomplete );
-
 			if( initializer_experrsion.value_type == ValueType::Value )
 			{
 				U_ASSERT( initializer_experrsion.referenced_variables.size() == 1u );
@@ -3091,8 +3081,7 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 			}
 		}
 	}
-	else
-		U_ASSERT(false);
+	else U_ASSERT(false);
 
 	if( variable.type.GetTemplateDependentType() == nullptr &&
 		auto_variable_declaration.mutability_modifier == MutabilityModifier::Constexpr &&
