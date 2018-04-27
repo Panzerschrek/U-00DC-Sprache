@@ -753,11 +753,24 @@ void CodeBuilder::CopyBytes(
 	{
 		const Class& class_type= *class_type_proxy->class_;
 
+		if( class_type.base_class != nullptr )
+		{
+			llvm::Value* index_list[2];
+			index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
+			index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(class_type.base_class_field_number) ) );
+
+			CopyBytes(
+				function_context.llvm_ir_builder.CreateGEP( src, llvm::ArrayRef<llvm::Value*> ( index_list, 2u ) ),
+				function_context.llvm_ir_builder.CreateGEP( dst, llvm::ArrayRef<llvm::Value*> ( index_list, 2u ) ),
+				class_type.base_class,
+				function_context );
+		}
+
 		class_type.members.ForEachInThisScope(
 			[&]( const NamesScope::InsertedName& class_member )
 			{
 				const ClassField* const field = class_member.second.GetClassField();
-				if( field == nullptr )
+				if( field == nullptr || field->class_.lock() != class_type_proxy )
 					return;
 
 				llvm::Value* index_list[2];

@@ -754,6 +754,99 @@ def CopyChildToParent_Test3():
 	assert( call_result == 44758 )
 
 
+def MoveClassWithParent_Test0():
+	c_program_text= """
+		class A polymorph
+		{
+			i32 x;
+			fn constructor( i32 in_x ) ( x= in_x ) {}
+		}
+		class B : A
+		{
+			fn constructor( i32 in_x ) ( base(in_x) ) {}
+		}
+
+		fn Bar( B b ) : i32 { return b.x; }
+		fn Foo() : i32
+		{
+			return Bar( B( 58 ) ); // Move in function call
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 58 )
+
+
+def MoveClassWithParent_Test1():
+	c_program_text= """
+		class A polymorph
+		{
+			i32 x;
+			fn constructor( i32 in_x ) ( x= in_x ) {}
+		}
+		class B : A
+		{
+			fn constructor( i32 in_x ) ( base(in_x) ) {}
+		}
+
+		fn Foo() : i32
+		{
+			auto b= B( 66584 ); // Move in aut-variable initialization
+			return b.x;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 66584 )
+
+
+def MoveClassWithParent_Test2():
+	c_program_text= """
+		class A polymorph
+		{
+			i32 x;
+			fn constructor( i32 in_x ) ( x= in_x ) {}
+		}
+		class B : A
+		{
+			fn constructor( i32 in_x ) ( base(in_x) ) {}
+		}
+
+		fn Foo() : i32
+		{
+			var B b= B( 965856 ); // Move in variable initialization
+			return b.x;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 965856 )
+
+
+def MoveClassWithParent_Test3():
+	c_program_text= """
+		class A polymorph
+		{
+			i32 x;
+			fn constructor( i32 in_x ) ( x= in_x ) {}
+		}
+		class B : A
+		{
+			fn constructor( i32 in_x ) ( base(in_x) ) {}
+		}
+
+		fn Foo() : i32
+		{
+			var B mut b(0);
+			b= B( 11125 ); // Move in assignment
+			return b.x;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 11125 )
+
+
 def GeneratedCopyConstructor_Test0():
 	c_program_text= """
 		class A polymorph
