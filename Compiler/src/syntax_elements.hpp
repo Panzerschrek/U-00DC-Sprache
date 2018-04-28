@@ -642,6 +642,23 @@ enum class ClassKindAttribute
 	Abstract,
 };
 
+class ClassVisibilityLabel final
+	: public SyntaxElementBase
+	, public IClassElement
+{
+public:
+	enum class Label
+	{
+		Public,
+		Private,
+		Protected,
+	};
+
+	ClassVisibilityLabel( const FilePos& file_pos, Label label );
+
+	const Label label_;
+};
+
 class Class final
 	: public SyntaxElementBase
 	, public IProgramElement

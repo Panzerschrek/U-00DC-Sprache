@@ -35,6 +35,10 @@ enum class Keywords : unsigned int
 
 	namespace_,
 
+	public_,
+	private_,
+	protected_,
+
 	// Fundamental types names.
 	void_,
 	bool_,

@@ -790,8 +790,12 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 			// In first pass skip templates, because we process template functions include body.
 			function_templates.push_back(function_template);
 		}
-		else
-			U_ASSERT( false );
+		else if( const auto visibility_label=
+			dynamic_cast<const Synt::ClassVisibilityLabel*>( member.get() ) )
+		{
+			// TODO
+		}
+		else U_ASSERT( false );
 	}
 
 	// Search for explicit noncopy constructors.
