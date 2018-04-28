@@ -2,11 +2,11 @@
 
 #include <llvm/Support/ManagedStatic.h>
 
-#include "../assert.hpp"
-#include "../lexical_analyzer.hpp"
-#include "../syntax_analyzer.hpp"
-#include "../code_builder.hpp"
-#include "../source_graph_loader.hpp"
+#include "../src/assert.hpp"
+#include "../src/lexical_analyzer.hpp"
+#include "../src/syntax_analyzer.hpp"
+#include "../src/code_builder.hpp"
+#include "../src/source_graph_loader.hpp"
 
 #include "tests.hpp"
 

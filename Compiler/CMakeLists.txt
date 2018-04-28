@@ -129,53 +129,53 @@ endif( BUILD_COMPILER )
 #
 if( BUILD_TESTS )
 	set( TESTS_SOURCES
-		src/tests/auto_variables_test.cpp
-		src/tests/auto_variables_errors_test.cpp
-		src/tests/class_templates_errors_test.cpp
-		src/tests/class_templates_test.cpp
-		src/tests/classes_declaration_errors_test.cpp
-		src/tests/classes_declaration_test.cpp
-		src/tests/code_builder_errors_test.cpp
-		src/tests/code_builder_test.cpp
-		src/tests/constexpr_errors_test.cpp
-		src/tests/constexpr_test.cpp
-		src/tests/constructors_errors_test.cpp
-		src/tests/constructors_test.cpp
-		src/tests/destructors_errors_test.cpp
-		src/tests/destructors_test.cpp
-		src/tests/enums_errors_test.cpp
-		src/tests/enums_test.cpp
-		src/tests/global_variables_errors_test.cpp
-		src/tests/global_variables_test.cpp
-		src/tests/halt_test.cpp
-		src/tests/imports_errors_test.cpp
-		src/tests/imports_test.cpp
-		src/tests/initializers_errors_test.cpp
-		src/tests/initializers_test.cpp
-		src/tests/mangling_test.cpp
-		src/tests/methods_errors_test.cpp
-		src/tests/methods_test.cpp
-		src/tests/mutability_errors_test.cpp
-		src/tests/namespaces_errors_test.cpp
-		src/tests/namespaces_test.cpp
-		src/tests/operators_overloading_errors_test.cpp
-		src/tests/operators_overloading_test.cpp
-		src/tests/operators_priority_test.cpp
-		src/tests/operators_test.cpp
-		src/tests/reference_check_test.cpp
-		src/tests/reference_check_for_structs_test.cpp
-		src/tests/references_inside_structs_errors_test.cpp
-		src/tests/references_inside_structs_test.cpp
-		src/tests/references_tags_test.cpp
-		src/tests/temp_variables_moving_test.cpp
-		src/tests/tests.cpp
-		src/tests/type_conversions_test.cpp
-		src/tests/typedefs_errors_test.cpp
-		src/tests/typedefs_test.cpp
-		src/tests/variables_state_merge_test.cpp )
+		tests/auto_variables_test.cpp
+		tests/auto_variables_errors_test.cpp
+		tests/class_templates_errors_test.cpp
+		tests/class_templates_test.cpp
+		tests/classes_declaration_errors_test.cpp
+		tests/classes_declaration_test.cpp
+		tests/code_builder_errors_test.cpp
+		tests/code_builder_test.cpp
+		tests/constexpr_errors_test.cpp
+		tests/constexpr_test.cpp
+		tests/constructors_errors_test.cpp
+		tests/constructors_test.cpp
+		tests/destructors_errors_test.cpp
+		tests/destructors_test.cpp
+		tests/enums_errors_test.cpp
+		tests/enums_test.cpp
+		tests/global_variables_errors_test.cpp
+		tests/global_variables_test.cpp
+		tests/halt_test.cpp
+		tests/imports_errors_test.cpp
+		tests/imports_test.cpp
+		tests/initializers_errors_test.cpp
+		tests/initializers_test.cpp
+		tests/mangling_test.cpp
+		tests/methods_errors_test.cpp
+		tests/methods_test.cpp
+		tests/mutability_errors_test.cpp
+		tests/namespaces_errors_test.cpp
+		tests/namespaces_test.cpp
+		tests/operators_overloading_errors_test.cpp
+		tests/operators_overloading_test.cpp
+		tests/operators_priority_test.cpp
+		tests/operators_test.cpp
+		tests/reference_check_test.cpp
+		tests/reference_check_for_structs_test.cpp
+		tests/references_inside_structs_errors_test.cpp
+		tests/references_inside_structs_test.cpp
+		tests/references_tags_test.cpp
+		tests/temp_variables_moving_test.cpp
+		tests/tests.cpp
+		tests/type_conversions_test.cpp
+		tests/typedefs_errors_test.cpp
+		tests/typedefs_test.cpp
+		tests/variables_state_merge_test.cpp )
 
 	set( TESTS_HEADERS
-		src/tests/tests.hpp )
+		tests/tests.hpp )
 
 	add_executable( Tests ${TESTS_SOURCES} ${TESTS_HEADERS} )
 	target_link_libraries( Tests CompilerLib ${LLVM_LIBS_FOR_TESTS} )
