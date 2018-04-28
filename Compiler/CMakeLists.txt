@@ -52,7 +52,11 @@ find_package( Boost COMPONENTS system filesystem REQUIRED )
 include_directories( ${Boost_INCLUDE_DIRS} )
 
 # LLVM
-set( LLVM_INSTALL_DIR ../../llvm-install/ ) # Set path to your LLVM here.
+if( CMAKE_BUILD_TYPE STREQUAL Release )
+	set( LLVM_INSTALL_DIR ../../llvm-release-install/ ) # Set path to your LLVM here.
+else()
+	set( LLVM_INSTALL_DIR ../../llvm-install/ ) # Set path to your LLVM here.
+endif()
 set( LLVM_DIR ${LLVM_INSTALL_DIR}/share/llvm/cmake/ )
 find_package(LLVM REQUIRED CONFIG)
 
