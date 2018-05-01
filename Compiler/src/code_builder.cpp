@@ -698,6 +698,7 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 	std::vector<PrepareFunctionResult> class_functions;
 	std::vector<const Synt::Class*> inner_classes;
 	std::vector<const Synt::FunctionTemplate*> function_templates;
+	Synt::ClassMemberVisibility current_visibility= Synt::ClassMemberVisibility::Public;
 
 	for( const Synt::IClassElementPtr& member : class_declaration.elements_ )
 	{
@@ -793,7 +794,7 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 		else if( const auto visibility_label=
 			dynamic_cast<const Synt::ClassVisibilityLabel*>( member.get() ) )
 		{
-			// TODO
+			current_visibility= visibility_label->visibility_;
 		}
 		else U_ASSERT( false );
 	}

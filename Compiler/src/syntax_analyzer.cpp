@@ -2477,13 +2477,13 @@ std::unique_ptr<Class> SyntaxAnalyzer::ParseClassBody()
 		else if( it_->type == Lexem::Type::Identifier &&
 			( it_->text == Keywords::public_ || it_->text == Keywords::private_ || it_->text == Keywords::protected_ ) )
 		{
-			ClassVisibilityLabel::Label label= ClassVisibilityLabel::Label::Public;
+			ClassMemberVisibility visibility= ClassMemberVisibility::Public;
 			if( it_->text == Keywords::private_ )
-				label= ClassVisibilityLabel::Label::Private;
+				visibility= ClassMemberVisibility::Private;
 			if( it_->text == Keywords::protected_ )
-				label= ClassVisibilityLabel::Label::Protected;
+				visibility= ClassMemberVisibility::Protected;
 
-			result->elements_.emplace_back( new ClassVisibilityLabel( it_->file_pos, label ) );
+			result->elements_.emplace_back( new ClassVisibilityLabel( it_->file_pos, visibility ) );
 
 			NextLexem();
 			if( it_->type != Lexem::Type::Colon )

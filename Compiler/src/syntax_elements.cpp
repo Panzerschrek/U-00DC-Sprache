@@ -297,8 +297,8 @@ ClassField::ClassField( const FilePos& file_pos )
 	: SyntaxElementBase( file_pos )
 {}
 
-ClassVisibilityLabel::ClassVisibilityLabel( const FilePos& file_pos, Label label )
- : SyntaxElementBase(file_pos), label_(label)
+ClassVisibilityLabel::ClassVisibilityLabel( const FilePos& file_pos, ClassMemberVisibility visibility )
+ : SyntaxElementBase(file_pos), visibility_(visibility)
 {}
 
 Class::Class( const FilePos& file_pos )
