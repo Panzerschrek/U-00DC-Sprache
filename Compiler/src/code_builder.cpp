@@ -967,6 +967,12 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 					{
 						if( OverloadedFunctionsSet* const result_class_functions= result_class_name->second.GetFunctionsSet() )
 						{
+							if( the_class->GetMemberVisibility( name.first ) != parent->class_->GetMemberVisibility( name.first ) )
+							{
+								const auto& file_pos= result_class_functions->functions.empty() ? result_class_functions->template_functions.front()->file_pos : result_class_functions->functions.front().prototype_file_pos;
+								errors_.push_back( ReportFunctionsVisibilityMismatch( file_pos, name.first ) );
+							}
+
 							// Merge function sets, if result class have functions set with given name.
 							// TODO - merge function templates
 							for( const FunctionVariable& parent_function : functions->functions )

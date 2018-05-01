@@ -294,6 +294,63 @@ def FunctionsVisibilityMismatch_Test3():
 	assert( errors_list[0].file_pos.line == 7 )
 
 
+def FunctionsVisibilityMismatch_Test4():
+	c_program_text= """
+		class A polymorph
+		{
+		public:
+			fn virtual Foo( this );
+		}
+		class B : A
+		{
+		private:
+			fn virtual override Foo( this ); // Error, virtual functions must have same visibility
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "FunctionsVisibilityMismatch" )
+	assert( errors_list[0].file_pos.line == 10 )
+
+
+def FunctionsVisibilityMismatch_Test5():
+	c_program_text= """
+		class A polymorph
+		{
+		protected:
+			fn virtual Foo( this );
+		}
+		class B : A
+		{
+		public: // "Public Morozov"
+			fn virtual override Foo( this ); // Error, virtual functions must have same visibility
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "FunctionsVisibilityMismatch" )
+	assert( errors_list[0].file_pos.line == 10 )
+
+
+def FunctionsVisibilityMismatch_Test6():
+	c_program_text= """
+		class A polymorph
+		{
+		public:
+			fn Foo( f32 x );
+		}
+		class B : A
+		{
+		protected: // "Public Morozov"
+			fn Foo( i32 x ); // Error, different visibility for non-virtual functions - own and inhereted.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "FunctionsVisibilityMismatch" )
+	assert( errors_list[0].file_pos.line == 10 )
+
+
 def FunctionBodyVisibilityIsUnsignificant_Test0():
 	c_program_text= """
 		class A
