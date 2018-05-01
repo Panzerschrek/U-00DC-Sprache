@@ -568,7 +568,7 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 	else
 	{
 		// Complex name - make full name resolving.
-		previous_declaration= ResolveName( class_declaration.file_pos_, names_scope, class_complex_name );
+		previous_declaration= ResolveName( class_declaration.file_pos_, names_scope, class_complex_name, true );
 		if( previous_declaration == nullptr )
 		{
 			errors_.push_back( ReportClassDeclarationOutsideItsScope( class_declaration.file_pos_ ) );
@@ -1502,7 +1502,7 @@ CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 	{
 		// Complex name - search scope for this function.
 		if( const NamesScope::InsertedName* const scope_name=
-			ResolveName( func.file_pos_, func_definition_names_scope, func.name_.components.data(), func.name_.components.size() - 1u ) )
+			ResolveName( func.file_pos_, func_definition_names_scope, func.name_.components.data(), func.name_.components.size() - 1u, true ) )
 		{
 			bool base_space_is_class= false;
 			if( const Type* const type= scope_name->second.GetTypeName() )

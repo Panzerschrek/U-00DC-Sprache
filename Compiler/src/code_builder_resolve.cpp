@@ -78,16 +78,17 @@ void CodeBuilder::PopResolveHandler()
 	resolving_funcs_stack_.pop_back();
 }
 
-const NamesScope::InsertedName* CodeBuilder::ResolveName( const FilePos& file_pos, NamesScope& names_scope, const Synt::ComplexName& complex_name )
+const NamesScope::InsertedName* CodeBuilder::ResolveName( const FilePos& file_pos, NamesScope& names_scope, const Synt::ComplexName& complex_name, const bool for_declaration )
 {
-	return ResolveName( file_pos, names_scope, complex_name.components.data(), complex_name.components.size() );
+	return ResolveName( file_pos, names_scope, complex_name.components.data(), complex_name.components.size(), for_declaration );
 }
 
 const NamesScope::InsertedName* CodeBuilder::ResolveName(
 	const FilePos& file_pos,
 	NamesScope& names_scope,
 	const Synt::ComplexName::Component* components,
-	size_t component_count )
+	size_t component_count,
+	const bool for_declaration )
 {
 	U_ASSERT( !resolving_funcs_stack_.empty() );
 
@@ -198,7 +199,8 @@ const NamesScope::InsertedName* CodeBuilder::ResolveName(
 		{
 			name= next_space->GetThisScopeName( components[1].name );
 
-			if( next_space_class != nullptr  &&
+			if( next_space_class != nullptr &&
+				!for_declaration &&
 				next_space_class->class_->GetMemberVisibility( components[1].name ) != Synt::ClassMemberVisibility::Public &&
 				!names_scope.HaveAccessTo( next_space_class ) )
 				errors_.push_back( ReportAccessingNonpublicClassMember( file_pos, next_space_class->class_->members.GetThisNamespaceName(), components[1].name ) );

@@ -145,9 +145,44 @@ def AccessingPrivateMemberInsideClass_Test4():
 			struct Inner;
 		}
 
-		struct A::Inner
+		struct A::Inner // Ok, accessing private struct, but for declaration
 		{
 			II i; // Ok, accessing private member of outer class.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def AccessingPrivateMemberInsideClass_Test5():
+	c_program_text= """
+		class A
+		{
+		private:
+			struct Inner
+			{
+			private:
+				fn Foo();
+			}
+		}
+
+		fn A::Inner::Foo(){}  // Ok, accessing private function, but for declaration
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def AccessingPrivateMemberInsideClass_Test6():
+	c_program_text= """
+		class A
+		{
+		private:
+			type II= i32;
+		public:
+			struct Inner;
+		}
+
+		struct A::Inner
+		{
+			II i; // Ok, accessing private member of outer class form public class of uter class.
 		}
 	"""
 	tests_lib.build_program( c_program_text )

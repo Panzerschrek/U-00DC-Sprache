@@ -642,13 +642,14 @@ private:
 	void PushCacheGetResolveHandelr( const ResolvingCache& resolving_cache );
 	void PopResolveHandler();
 
-	const NamesScope::InsertedName* ResolveName( const FilePos& file_pos, NamesScope& names_scope, const Synt::ComplexName& complex_name );
+	const NamesScope::InsertedName* ResolveName( const FilePos& file_pos, NamesScope& names_scope, const Synt::ComplexName& complex_name, bool for_declaration= false );
 
 	const NamesScope::InsertedName* ResolveName(
 		const FilePos& file_pos,
 		NamesScope& names_scope,
 		const Synt::ComplexName::Component* components,
-		size_t component_count );
+		size_t component_count,
+		bool for_declaration= false );
 
 	const NamesScope::InsertedName* PreResolve(
 		NamesScope& names_scope,
