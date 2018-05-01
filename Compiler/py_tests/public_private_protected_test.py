@@ -375,3 +375,114 @@ def FunctionBodyVisibilityIsUnsignificant_Test1():
 		fn A::Foo(){}  // Ok, private function body outside class.
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def PrivateMembersNotInherited_Test0():
+	c_program_text= """
+		class A polymorph
+		{
+		private:
+			i32 x;
+		}
+		class B : A
+		{
+			fn Foo( this )
+			{
+				auto x_copy= x; // Error, 'x' not visible here
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "NameNotFound" )
+	assert( errors_list[0].file_pos.line == 11 )
+
+
+def PrivateMembersNotInherited_Test1():
+	c_program_text= """
+		class A polymorph
+		{
+		private:
+			type II= i32;
+		}
+		class B : A
+		{
+			fn Foo( this )
+			{
+				var II i= zero_init;  // Error, 'II' not visible here
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "NameNotFound" )
+	assert( errors_list[0].file_pos.line == 11 )
+
+
+def ChildClassNameOverridesParentClassNameAndVisibility_Test0():
+	c_program_text= """
+		class A polymorph
+		{
+		protected:
+			type TT= i32;
+		}
+		class B : A
+		{
+		public:
+			type TT= f32;
+		}
+
+		fn Foo() : B::TT  // B::TT must be visible here
+		{
+			return 2.25f;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 2.25 )
+
+
+def ChildClassNameOverridesParentClassNameAndVisibility_Test1():
+	c_program_text= """
+		class A polymorph
+		{
+		protected:
+			type TT= i32;
+		}
+		class B : A
+		{
+		public:
+			fn TT() : f64 { return 0.125; }   // reject 'TT' as type, now 'TT' is functions set.
+		}
+
+		fn Foo() : f64
+		{
+			return B::TT();
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 0.125 )
+
+
+def ChildClassNameOverridesParentClassNameAndVisibility_Test2():
+	c_program_text= """
+		class A polymorph
+		{
+		protected:
+			auto constexpr X= 5;
+		}
+		class B : A
+		{
+		public:
+			auto constexpr X= A::X * 2; // override variable
+		}
+
+		fn Foo() : i32
+		{
+			return B::X;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 10 )
