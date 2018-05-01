@@ -164,7 +164,7 @@ private:
 		FunctionContext& function_context );
 
 	// Templates
-	void PrepareTypeTemplate( const Synt::TypeTemplateBase& type_template_declaration, NamesScope& names_scope );
+	ProgramString PrepareTypeTemplate( const Synt::TypeTemplateBase& type_template_declaration, NamesScope& names_scope );  // returns names of type template in case of success
 	void PrepareFunctionTemplate( const Synt::FunctionTemplate& function_template_declaration, NamesScope& names_scope, const ClassProxyPtr& base_class );
 
 	void ProcessTemplateArgs(
@@ -451,13 +451,13 @@ private:
 
 	// Block elements
 
-	void BuildVariablesDeclarationCode(
+	std::vector<ProgramString> BuildVariablesDeclarationCode(  // returns list of variables names
 		const Synt::VariablesDeclaration& variables_declaration,
 		NamesScope& block_names,
 		FunctionContext& function_context,
 		bool global= false );
 
-	void BuildAutoVariableDeclarationCode(
+	ProgramString BuildAutoVariableDeclarationCode( // returns variable name or empty string in case of error
 		const Synt::AutoVariableDeclaration& auto_variable_declaration,
 		NamesScope& block_names,
 		FunctionContext& function_context,

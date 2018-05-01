@@ -577,8 +577,9 @@ struct TemplateClassKeyHasher
 
 typedef std::unordered_map< TemplateClassKey, ClassProxyPtr, TemplateClassKeyHasher, TemplateClassKeyHasher > TemplateClassesCache;
 
-struct Class final
+class Class final
 {
+public:
 	Class( const ProgramString& name, const NamesScope* parent_scope );
 	~Class();
 
@@ -617,6 +618,11 @@ public:
 	// If you change this, you must change CodeBuilder::CopyClass too!
 
 	NamesScope members;
+
+	// have no visibility for member, means it is public.
+	// TODO - maybe use unordered_map?
+	std::map< ProgramString, Synt::ClassMemberVisibility > members_visibility;
+
 	size_t field_count= 0u;
 	size_t references_tags_count= 0u;
 	bool is_incomplete= true;

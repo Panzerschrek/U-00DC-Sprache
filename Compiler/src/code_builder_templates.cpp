@@ -43,7 +43,7 @@ static const ProgramString& GetNameForGeneratedClass()
 
 static const ProgramString g_template_parameters_namespace_prefix= "_tp_ns-"_SpC;
 
-void CodeBuilder::PrepareTypeTemplate(
+ProgramString CodeBuilder::PrepareTypeTemplate(
 	const Synt::TypeTemplateBase& type_template_declaration,
 	NamesScope& names_scope )
 {
@@ -61,7 +61,7 @@ void CodeBuilder::PrepareTypeTemplate(
 	if( names_scope.AddName( type_template_name, Value( type_template, type_template_declaration.file_pos_ ) ) == nullptr )
 	{
 		errors_.push_back( ReportRedefinition( type_template_declaration.file_pos_, type_template_name ) );
-		return;
+		return type_template_name;
 	}
 
 	type_template->parent_namespace= &names_scope;
@@ -156,6 +156,8 @@ void CodeBuilder::PrepareTypeTemplate(
 		U_ASSERT(false);
 
 	PopResolveHandler();
+
+	return type_template_name;
 }
 
 void CodeBuilder::PrepareFunctionTemplate( const Synt::FunctionTemplate& function_template_declaration, NamesScope& names_scope, const ClassProxyPtr& base_class )

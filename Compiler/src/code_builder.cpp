@@ -378,6 +378,8 @@ void CodeBuilder::CopyClass(
 	MergeNameScopes( copy->members, src.members, dst_class_table );
 
 	// Copy fields.
+	copy->members_visibility= src.members_visibility;
+
 	copy->field_count= src.field_count;
 	copy->references_tags_count= src.references_tags_count;
 	copy->is_incomplete= src.is_incomplete;
@@ -739,6 +741,9 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 
 				the_class->field_count++;
 			}
+
+			if( current_visibility != Synt::ClassMemberVisibility::Public )
+				the_class->members_visibility[in_field->name]= current_visibility;
 		}
 		else if( const auto function_declaration=
 			dynamic_cast<const Synt::Function*>( member.get() ) )
@@ -758,12 +763,21 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 		else if( const auto variables_declaration=
 			dynamic_cast<const Synt::VariablesDeclaration*>( member.get() ) )
 		{
-			BuildVariablesDeclarationCode( *variables_declaration, the_class->members, *dummy_function_context_, true );
+			const std::vector<ProgramString> var_names=
+				BuildVariablesDeclarationCode( *variables_declaration, the_class->members, *dummy_function_context_, true );
+
+			if( current_visibility != Synt::ClassMemberVisibility::Public ) // TODO - create alias inside CodeBuilderPrivate namespace
+				for( const ProgramString& name : var_names )
+					the_class->members_visibility[name]= current_visibility;
 		}
 		else if( const auto auto_variable_declaration=
 			dynamic_cast<const Synt::AutoVariableDeclaration*>( member.get() ) )
 		{
-			BuildAutoVariableDeclarationCode( *auto_variable_declaration, the_class->members, *dummy_function_context_, true );
+			const ProgramString var_name=
+				BuildAutoVariableDeclarationCode( *auto_variable_declaration, the_class->members, *dummy_function_context_, true );
+
+			if( current_visibility != Synt::ClassMemberVisibility::Public )
+				the_class->members_visibility[var_name]= current_visibility;
 		}
 		else if( const auto static_assert_=
 			dynamic_cast<const Synt::StaticAssert*>( member.get() ) )
@@ -774,26 +788,40 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 			dynamic_cast<const Synt::Enum*>( member.get() ) )
 		{
 			PrepareEnum( *enum_, the_class->members );
+
+			if( current_visibility != Synt::ClassMemberVisibility::Public )
+				the_class->members_visibility[enum_->name]= current_visibility;
 		}
 		else if( const auto typedef_=
 			dynamic_cast<const Synt::Typedef*>( member.get() ) )
 		{
 			BuildTypedef( *typedef_, the_class->members );
+
+			if( current_visibility != Synt::ClassMemberVisibility::Public )
+				the_class->members_visibility[typedef_->name]= current_visibility;
 		}
 		else if( const auto type_template=
 			dynamic_cast<const Synt::TypeTemplateBase*>( member.get() ) )
 		{
-			PrepareTypeTemplate( *type_template, the_class->members );
+			const ProgramString type_template_name=
+				PrepareTypeTemplate( *type_template, the_class->members );
+
+			if( current_visibility != Synt::ClassMemberVisibility::Public )
+				the_class->members_visibility[type_template_name]= current_visibility;
 		}
 		else if( const auto function_template=
 			dynamic_cast<const Synt::FunctionTemplate*>( member.get() ) )
 		{
+			// TODO - process visibility
+
 			// In first pass skip templates, because we process template functions include body.
 			function_templates.push_back(function_template);
 		}
 		else if( const auto visibility_label=
 			dynamic_cast<const Synt::ClassVisibilityLabel*>( member.get() ) )
 		{
+			// TODO - process visibility
+
 			current_visibility= visibility_label->visibility_;
 		}
 		else U_ASSERT( false );
@@ -926,6 +954,11 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 		parent->class_->members.ForEachInThisScope(
 			[&]( const NamesScope::InsertedName& name )
 			{
+				const auto parent_class_visibility_it= parent->class_->members_visibility.find( name.first );
+				if( parent_class_visibility_it != parent->class_->members_visibility.end() &&
+					parent_class_visibility_it->second == Synt::ClassMemberVisibility::Private )
+					return; // Do not inherit private members.
+
 				NamesScope::InsertedName* const result_class_name= the_class->members.GetThisScopeName(name.first);
 
 				if( const OverloadedFunctionsSet* const functions= name.second.GetFunctionsSet() )
@@ -2727,12 +2760,14 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockCode(
 	return block_build_info;
 }
 
-void CodeBuilder::BuildVariablesDeclarationCode(
+std::vector<ProgramString> CodeBuilder::BuildVariablesDeclarationCode(
 	const Synt::VariablesDeclaration& variables_declaration,
 	NamesScope& block_names,
 	FunctionContext& function_context,
 	const bool global )
 {
+	std::vector<ProgramString> result_variables_names;
+
 	const Type type= PrepareType( variables_declaration.type, block_names );
 
 	for( const Synt::VariablesDeclaration::VariableEntry& variable_declaration : variables_declaration.variables )
@@ -2741,7 +2776,7 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 		if( variable_declaration.reference_modifier != ReferenceModifier::Reference && type.IsIncomplete() )
 		{
 			errors_.push_back( ReportUsingIncompleteType( variables_declaration.file_pos_, type.ToString() ) );
-			return;
+			continue;
 		}
 
 		if( IsKeyword( variable_declaration.name ) )
@@ -2905,20 +2940,26 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 		if( NameShadowsTemplateArgument( variable_declaration.name, block_names ) )
 		{
 			errors_.push_back( ReportDeclarationShadowsTemplateArgument( variables_declaration.file_pos_, variable_declaration.name ) );
-			return;
+			continue;
 		}
 
 		const NamesScope::InsertedName* const inserted_name=
 			block_names.AddName( variable_declaration.name, Value( stored_variable, variable_declaration.file_pos ) );
 		if( !inserted_name )
+		{
 			errors_.push_back( ReportRedefinition( variables_declaration.file_pos_, variable_declaration.name ) );
+			continue;
+		}
+		result_variables_names.push_back( variable_declaration.name );
 
 		// After lock of references we can call destructors.
 		CallDestructors( *function_context.stack_variables_stack.back(), function_context, variable_declaration.file_pos );
 	} // for variables
+
+	return result_variables_names;
 }
 
-void CodeBuilder::BuildAutoVariableDeclarationCode(
+ProgramString CodeBuilder::BuildAutoVariableDeclarationCode(
 	const Synt::AutoVariableDeclaration& auto_variable_declaration,
 	NamesScope& block_names,
 	FunctionContext& function_context,
@@ -2944,15 +2985,15 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 		if( NameShadowsTemplateArgument( auto_variable_declaration.name, block_names ) )
 		{
 			errors_.push_back( ReportDeclarationShadowsTemplateArgument( auto_variable_declaration.file_pos_, auto_variable_declaration.name ) );
-			return;
+			return auto_variable_declaration.name;
 		}
 		const NamesScope::InsertedName* inserted_name= block_names.AddName( auto_variable_declaration.name, Value( variable, auto_variable_declaration.file_pos_ ) );
 		if( inserted_name == nullptr )
 		{
 			errors_.push_back( ReportRedefinition( auto_variable_declaration.file_pos_, auto_variable_declaration.name ) );
-			return;
+			return auto_variable_declaration.name;
 		}
-		return;
+		return auto_variable_declaration.name;
 	}
 
 	{ // Check expression type. Expression can have exotic types, such "Overloading functions set", "class name", etc.
@@ -2966,7 +3007,7 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 		if( !type_is_ok )
 		{
 			errors_.push_back( ReportInvalidTypeForAutoVariable( auto_variable_declaration.file_pos_, initializer_experrsion_value.GetType().ToString() ) );
-			return;
+			return auto_variable_declaration.name;
 		}
 	}
 
@@ -2988,7 +3029,7 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 	if( auto_variable_declaration.mutability_modifier == MutabilityModifier::Constexpr && !variable.type.CanBeConstexpr() )
 	{
 		errors_.push_back( ReportInvalidTypeForConstantExpressionVariable( auto_variable_declaration.file_pos_ ) );
-		return;
+		return auto_variable_declaration.name;
 	}
 
 	if( auto_variable_declaration.reference_modifier == ReferenceModifier::Reference )
@@ -2996,12 +3037,12 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 		if( initializer_experrsion.value_type == ValueType::Value )
 		{
 			errors_.push_back( ReportExpectedReferenceValue( auto_variable_declaration.file_pos_ ) );
-			return;
+			return auto_variable_declaration.name;
 		}
 		if( initializer_experrsion.value_type == ValueType::ConstReference && variable.value_type != ValueType::ConstReference )
 		{
 			errors_.push_back( ReportBindingConstReferenceToNonconstReference( auto_variable_declaration.file_pos_ ) );
-			return;
+			return auto_variable_declaration.name;
 		}
 
 		variable.referenced_variables= initializer_experrsion.referenced_variables;
@@ -3021,7 +3062,7 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 		if( variable.type.IsIncomplete() )
 		{
 			errors_.push_back( ReportUsingIncompleteType( auto_variable_declaration.file_pos_, variable.type.ToString() ) );
-			return;
+			return auto_variable_declaration.name;
 		}
 
 		llvm::GlobalVariable* global_variable= nullptr;
@@ -3067,7 +3108,7 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 		else
 		{
 			errors_.push_back( ReportNotImplemented( auto_variable_declaration.file_pos_, "expression initialization for nonfundamental types" ) );
-			return;
+			return auto_variable_declaration.name;
 		}
 
 		if( global_variable != nullptr && variable.constexpr_value != nullptr )
@@ -3093,7 +3134,7 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 		variable.constexpr_value == nullptr )
 	{
 		errors_.push_back( ReportVariableInitializerIsNotConstantExpression( auto_variable_declaration.file_pos_ ) );
-		return;
+		return auto_variable_declaration.name;
 	}
 
 	// Reset constexpr initial value for mutable variables.
@@ -3104,13 +3145,13 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 		global && variable.constexpr_value == nullptr )
 	{
 		errors_.push_back( ReportGlobalVariableMustBeConstexpr( auto_variable_declaration.file_pos_, auto_variable_declaration.name ) );
-		return;
+		return auto_variable_declaration.name;
 	}
 
 	if( NameShadowsTemplateArgument( auto_variable_declaration.name, block_names ) )
 	{
 		errors_.push_back( ReportDeclarationShadowsTemplateArgument( auto_variable_declaration.file_pos_, auto_variable_declaration.name ) );
-		return;
+		return auto_variable_declaration.name;
 	}
 
 	const NamesScope::InsertedName* const inserted_name=
@@ -3120,6 +3161,8 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 
 	// After lock of references we can call destructors.
 	CallDestructors( *function_context.stack_variables_stack.back(), function_context, auto_variable_declaration.file_pos_ );
+
+	return auto_variable_declaration.name;
 }
 
 void CodeBuilder::BuildAssignmentOperatorCode(
