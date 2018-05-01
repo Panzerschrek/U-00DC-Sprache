@@ -170,7 +170,7 @@ private:
 		unction_template_declaration,
 		NamesScope& names_scope,
 		const ClassProxyPtr& base_class,
-		Synt::ClassMemberVisibility visibility= Synt::ClassMemberVisibility::Public );
+		ClassMemberVisibility visibility= ClassMemberVisibility::Public );
 
 	void ProcessTemplateArgs(
 		const std::vector<Synt::TemplateBase::Arg>& args,
@@ -333,7 +333,7 @@ private:
 		bool force_prototype,
 		ClassProxyPtr base_class,
 		NamesScope& scope,
-		Synt::ClassMemberVisibility visibility= Synt::ClassMemberVisibility::Public );
+		ClassMemberVisibility visibility= ClassMemberVisibility::Public );
 
 	void CheckOverloadedOperator(
 		const ClassProxyPtr& base_class,

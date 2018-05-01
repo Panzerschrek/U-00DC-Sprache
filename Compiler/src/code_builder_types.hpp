@@ -23,6 +23,8 @@ namespace U
 namespace CodeBuilderPrivate
 {
 
+using Synt::ClassMemberVisibility;
+
 struct Function;
 struct Array;
 class Class;
@@ -521,8 +523,8 @@ public:
 	const NamesScope* GetRoot() const;
 	void SetParent( const NamesScope* parent );
 
-	void AddAccessRightsFor( const ClassProxyPtr& class_, Synt::ClassMemberVisibility visibility );
-	Synt::ClassMemberVisibility GetAccessFor( const ClassProxyPtr& class_ ) const;
+	void AddAccessRightsFor( const ClassProxyPtr& class_, ClassMemberVisibility visibility );
+	ClassMemberVisibility GetAccessFor( const ClassProxyPtr& class_ ) const;
 
 	template<class Func>
 	void ForEachInThisScope( const Func& func ) const
@@ -537,7 +539,7 @@ private:
 	ProgramString name_;
 	const NamesScope* parent_;
 	NamesMap names_map_;
-	std::unordered_map<ClassProxyPtr, Synt::ClassMemberVisibility> access_rights_;
+	std::unordered_map<ClassProxyPtr, ClassMemberVisibility> access_rights_;
 };
 
 struct NameResolvingKey final
@@ -593,8 +595,8 @@ public:
 	Class& operator=( const Class& )= delete;
 	Class& operator=( Class&& )= delete;
 
-	Synt::ClassMemberVisibility GetMemberVisibility( const ProgramString& member_name ) const;
-	void SetMemberVisibility( const ProgramString& member_name, Synt::ClassMemberVisibility visibility );
+	ClassMemberVisibility GetMemberVisibility( const ProgramString& member_name ) const;
+	void SetMemberVisibility( const ProgramString& member_name, ClassMemberVisibility visibility );
 
 public:
 	struct BaseTemplate
@@ -628,7 +630,7 @@ public:
 
 	// have no visibility for member, means it is public.
 	// TODO - maybe use unordered_map?
-	std::map< ProgramString, Synt::ClassMemberVisibility > members_visibility;
+	std::map< ProgramString, ClassMemberVisibility > members_visibility;
 
 	size_t field_count= 0u;
 	size_t references_tags_count= 0u;

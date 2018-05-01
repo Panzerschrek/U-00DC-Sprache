@@ -164,7 +164,7 @@ void CodeBuilder::PrepareFunctionTemplate(
 	const Synt::FunctionTemplate& function_template_declaration,
 	NamesScope& names_scope,
 	const ClassProxyPtr& base_class,
-	const Synt::ClassMemberVisibility visibility )
+	const ClassMemberVisibility visibility )
 {
 	const Synt::ComplexName& complex_name = function_template_declaration.function_->name_;
 	const ProgramString& function_template_name= complex_name.components.front().name;

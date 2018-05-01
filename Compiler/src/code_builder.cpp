@@ -626,7 +626,7 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 	Type class_type;
 	class_type= the_class_proxy;
 	the_class->body_file_pos= class_declaration.file_pos_;
-	the_class->members.AddAccessRightsFor( the_class_proxy, Synt::ClassMemberVisibility::Private );
+	the_class->members.AddAccessRightsFor( the_class_proxy, ClassMemberVisibility::Private );
 
 	std::vector<llvm::Type*> fields_llvm_types;
 
@@ -687,7 +687,7 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 		}
 
 		the_class->parents.push_back( parent_class_proxy );
-		the_class->members.AddAccessRightsFor( parent_class_proxy, Synt::ClassMemberVisibility::Protected );
+		the_class->members.AddAccessRightsFor( parent_class_proxy, ClassMemberVisibility::Protected );
 		the_class->parents_fields_numbers.push_back( static_cast<unsigned int>(fields_llvm_types.size()) );
 		fields_llvm_types.emplace_back( parent_class_proxy->class_->llvm_type );
 	} // for parents
@@ -703,8 +703,8 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 
 	std::vector<PrepareFunctionResult> class_functions;
 	std::vector<const Synt::Class*> inner_classes;
-	std::vector< std::pair< const Synt::FunctionTemplate*, Synt::ClassMemberVisibility > > function_templates;
-	Synt::ClassMemberVisibility current_visibility= Synt::ClassMemberVisibility::Public;
+	std::vector< std::pair< const Synt::FunctionTemplate*, ClassMemberVisibility > > function_templates;
+	ClassMemberVisibility current_visibility= ClassMemberVisibility::Public;
 
 	for( const Synt::IClassElementPtr& member : class_declaration.elements_ )
 	{
@@ -950,7 +950,7 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 		parent->class_->members.ForEachInThisScope(
 			[&]( const NamesScope::InsertedName& name )
 			{
-				if( parent->class_->GetMemberVisibility( name.first ) == Synt::ClassMemberVisibility::Private )
+				if( parent->class_->GetMemberVisibility( name.first ) == ClassMemberVisibility::Private )
 					return; // Do not inherit private members.
 
 				NamesScope::InsertedName* const result_class_name= the_class->members.GetThisScopeName(name.first);
@@ -1484,7 +1484,7 @@ CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 	const bool is_class_method_predeclaration,
 	ClassProxyPtr base_class,
 	NamesScope& func_definition_names_scope /* scope, where this function appears */,
-	const Synt::ClassMemberVisibility visibility )
+	const ClassMemberVisibility visibility )
 {
 	PrepareFunctionResult result;
 

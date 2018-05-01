@@ -96,7 +96,7 @@ void CodeBuilder::ProcessClassVirtualFunction( Class& the_class, PrepareFunction
 	const FilePos& file_pos= function.func_syntax_element->file_pos_;
 
 	if( function.func_syntax_element->virtual_function_kind_ != Synt::VirtualFunctionKind::None &&
-		the_class.GetMemberVisibility( function_name ) == Synt::ClassMemberVisibility::Private )
+		the_class.GetMemberVisibility( function_name ) == ClassMemberVisibility::Private )
 	{
 		// Private members not visible in child classes. So, virtual private function is 100% error.
 		errors_.push_back( ReportVirtualForPrivateFunction( file_pos, function_name ) );
