@@ -25,6 +25,56 @@ def VisibilityLabelDeclaration_Test1():
 	tests_lib.build_program( c_program_text )
 
 
+def DefaultClassVisibilityIsPublic_Test0():
+	c_program_text= """
+		class A
+		{
+			i32 x;
+		}
+		fn Foo( A& a ) : i32 { return a.x; } // Ok, 'A::x' is public by-default.
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def VisibilityForEnumMember_Test0():
+	c_program_text= """
+		class A
+		{
+		private:
+			enum E{ EE }
+		}
+
+		fn Foo()
+		{
+			var A::E e= zero_init;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "AccessingNonpublicClassMember" )
+	assert( errors_list[0].file_pos.line == 10 )
+
+
+def VisibilityForTypeTempateMember_Test0():
+	c_program_text= """
+		class A
+		{
+		private:
+			template</ type T />
+			type Vec3= [ T, 3 ];
+		}
+
+		fn Foo()
+		{
+			var A::Vec3</ i32 /> e= zero_init;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "AccessingNonpublicClassMember" )
+	assert( errors_list[0].file_pos.line == 11 )
+
+
 def AccessingPrivateMemberOutsideClass_Test0():
 	c_program_text= """
 		class A
