@@ -703,7 +703,7 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 
 	std::vector<PrepareFunctionResult> class_functions;
 	std::vector<const Synt::Class*> inner_classes;
-	std::vector<const Synt::FunctionTemplate*> function_templates;
+	std::vector< std::pair< const Synt::FunctionTemplate*, Synt::ClassMemberVisibility > > function_templates;
 	Synt::ClassMemberVisibility current_visibility= Synt::ClassMemberVisibility::Public;
 
 	for( const Synt::IClassElementPtr& member : class_declaration.elements_ )
@@ -753,7 +753,7 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 			dynamic_cast<const Synt::Function*>( member.get() ) )
 		{
 			// First time, push only prototypes.
-			PrepareFunctionResult function_prepared= PrepareFunction( *function_declaration, true, the_class_proxy, the_class->members );
+			PrepareFunctionResult function_prepared= PrepareFunction( *function_declaration, true, the_class_proxy, the_class->members, current_visibility );
 			if( function_prepared.functions_set != nullptr )
 				ProcessClassVirtualFunction( *the_class, function_prepared );
 			class_functions.push_back( std::move(function_prepared) );
@@ -816,10 +816,8 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 		else if( const auto function_template=
 			dynamic_cast<const Synt::FunctionTemplate*>( member.get() ) )
 		{
-			// TODO - process visibility
-
 			// In first pass skip templates, because we process template functions include body.
-			function_templates.push_back(function_template);
+			function_templates.emplace_back( function_template, current_visibility );
 		}
 		else if( const auto visibility_label=
 			dynamic_cast<const Synt::ClassVisibilityLabel*>( member.get() ) )
@@ -1036,8 +1034,8 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 	// Prepare function templates
 	// Here we can face some problems: lower templates can not be seen from upper templtes.
 	// So, assume, that it is not "bug", but "feature".
-	for( const auto function_template : function_templates )
-		PrepareFunctionTemplate( *function_template, the_class->members, the_class_proxy );
+	for( const auto& function_template : function_templates )
+		PrepareFunctionTemplate( *function_template.first, the_class->members, the_class_proxy, function_template.second );
 
 	// Prepare inner classes.
 	for( const Synt::Class* const inner_class : inner_classes )
@@ -1487,7 +1485,8 @@ CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 	const Synt::Function& func,
 	const bool is_class_method_predeclaration,
 	ClassProxyPtr base_class,
-	NamesScope& func_definition_names_scope /* scope, where this function appears */ )
+	NamesScope& func_definition_names_scope /* scope, where this function appears */,
+	const Synt::ClassMemberVisibility visibility )
 {
 	PrepareFunctionResult result;
 
@@ -1506,6 +1505,7 @@ CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 	// Arguments, return value, body names all resolved from this scope.
 	NamesScope* func_base_names_scope= &func_definition_names_scope;
 
+	bool is_body_outside_scope= false;
 	if( func.name_.components.size() >= 2u )
 	{
 		// Complex name - search scope for this function.
@@ -1531,6 +1531,8 @@ CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 				errors_.push_back( ReportNameNotFound( func.file_pos_, func.name_ ) );
 				return result;
 			}
+
+			is_body_outside_scope= true;
 		}
 		else
 		{
@@ -1718,6 +1720,11 @@ CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 		result.func_syntax_element= &func;
 		result.functions_set= inserted_func->second.GetFunctionsSet();
 		result.function_index= result.functions_set->functions.size() - 1u;
+
+		U_ASSERT( !is_body_outside_scope );
+		if( base_class != nullptr && visibility != Synt::ClassMemberVisibility::Public )
+			base_class->class_->members_visibility[func_name]= visibility;
+
 		return result;
 	}
 	else
@@ -1742,14 +1749,14 @@ CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 					return result;
 				}
 
-				same_function->body_file_pos= func.file_pos_;
-
 				if( func_variable.is_this_call != same_function->is_this_call )
 					errors_.push_back( ReportThiscallMismatch( func.file_pos_, func_name ) );
 
 				// virtual specifier required for first function declaration only.
 				if( func.virtual_function_kind_ != Synt::VirtualFunctionKind::None )
 					errors_.push_back( ReportVirtualForFunctionImplementation( func.file_pos_, func_name ) );
+
+				same_function->body_file_pos= func.file_pos_;
 
 				BuildFuncCode(
 					*same_function,
@@ -1772,6 +1779,14 @@ CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 					ApplyOverloadedFunction( *functions_set, func_variable, func.file_pos_ );
 				if( !overloading_ok )
 					return result;
+
+				if( base_class != nullptr && !is_body_outside_scope )
+				{
+					const auto prev_visibility_it= base_class->class_->members_visibility.find( func_name );
+					const auto prev_visibility= prev_visibility_it == base_class->class_->members_visibility.end() ? Synt::ClassMemberVisibility::Public : prev_visibility_it->second;
+					if( prev_visibility != visibility )
+						errors_.push_back( ReportFunctionsVisibilityMismatch( func.file_pos_, func_name ) ); // All functions with same name must have same visibility.
+				}
 
 				FunctionVariable& inserted_func_variable= functions_set->functions.back();
 				inserted_func_variable.prototype_file_pos= func.file_pos_;

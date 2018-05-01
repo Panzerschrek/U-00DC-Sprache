@@ -170,3 +170,116 @@ def AccessingPrivateMemberOutsideClass_ViaMemberAccessOperator_Test0():
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "AccessingNonpublicClassMember" )
 	assert( errors_list[0].file_pos.line == 10 )
+
+
+def AccessingPrivateMemberOutsideClass_ViaMemberAccessOperator_Test1():
+	c_program_text= """
+		class A
+		{
+		private:
+			fn GetXInternal( this ) : i32 { return x; }
+			i32 x;
+		}
+
+		fn Foo( A& a )
+		{
+			auto x= a.GetXInternal();  // Error, A::GetXInternal is private
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "AccessingNonpublicClassMember" )
+	assert( errors_list[0].file_pos.line == 11 )
+
+
+def FunctionsVisibilityMismatch_Test0():
+	c_program_text= """
+		class A
+		{
+		public:
+			fn Foo( this );
+		private:
+			fn Foo( mut this ); // Error, functions with same name have different visibility
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "FunctionsVisibilityMismatch" )
+	assert( errors_list[0].file_pos.line == 7 )
+
+
+def FunctionsVisibilityMismatch_Test1():
+	c_program_text= """
+		class A
+		{
+		public:
+			fn Foo( this );
+		private:
+			template</ type T />
+			fn Foo( mut this ) : T { return T(); }  // Error, functions with same name have different visibility
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "FunctionsVisibilityMismatch" )
+	assert( errors_list[0].file_pos.line == 7 )
+
+
+def FunctionsVisibilityMismatch_Test2():
+	c_program_text= """
+		class A
+		{
+		public:
+			template</ type T />
+			fn Foo( this ) : T { return T(); }
+		private:
+			template</ type T />
+			fn Foo( mut this ) : T { return T(); }  // Error, functions with same name have different visibility
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "FunctionsVisibilityMismatch" )
+	assert( errors_list[0].file_pos.line == 8 )
+
+
+def FunctionsVisibilityMismatch_Test3():
+	c_program_text= """
+		class A
+		{
+		public:
+			fn Foo( i32 i );
+		protected:
+			fn Foo( f32 f ); // Error, functions with same name have different visibility
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "FunctionsVisibilityMismatch" )
+	assert( errors_list[0].file_pos.line == 7 )
+
+
+def FunctionBodyVisibilityIsUnsignificant_Test0():
+	c_program_text= """
+		class A
+		{
+		public:
+			fn Foo();
+		private:
+			fn Foo(){} // Ok, body can have any visibility, we check visibility only for prototype
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def FunctionBodyVisibilityIsUnsignificant_Test1():
+	c_program_text= """
+		class A
+		{
+		private:
+			fn Foo();
+		}
+
+		fn A::Foo(){}  // Ok, private function body outside class.
+	"""
+	tests_lib.build_program( c_program_text )

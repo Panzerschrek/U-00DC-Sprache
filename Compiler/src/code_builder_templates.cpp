@@ -160,7 +160,11 @@ ProgramString CodeBuilder::PrepareTypeTemplate(
 	return type_template_name;
 }
 
-void CodeBuilder::PrepareFunctionTemplate( const Synt::FunctionTemplate& function_template_declaration, NamesScope& names_scope, const ClassProxyPtr& base_class )
+void CodeBuilder::PrepareFunctionTemplate(
+	const Synt::FunctionTemplate& function_template_declaration,
+	NamesScope& names_scope,
+	const ClassProxyPtr& base_class,
+	const Synt::ClassMemberVisibility visibility )
 {
 	const Synt::ComplexName& complex_name = function_template_declaration.function_->name_;
 	const ProgramString& function_template_name= complex_name.components.front().name;
@@ -204,6 +208,14 @@ void CodeBuilder::PrepareFunctionTemplate( const Synt::FunctionTemplate& functio
 	{
 		if( OverloadedFunctionsSet* const functions_set= same_name->second.GetFunctionsSet() )
 		{
+			if( base_class != nullptr )
+			{
+				const auto prev_visibility_it= base_class->class_->members_visibility.find( function_template_name );
+				const auto prev_visibility= prev_visibility_it == base_class->class_->members_visibility.end() ? Synt::ClassMemberVisibility::Public : prev_visibility_it->second;
+				if( prev_visibility != visibility )
+					errors_.push_back( ReportFunctionsVisibilityMismatch( function_template_declaration.file_pos_, function_template_name ) ); // All functions with same name must have same visibility.
+			}
+
 			// SPRACHE_TODO - check equality of different template functions.
 			functions_set->template_functions.push_back( function_template );
 		}
@@ -215,6 +227,9 @@ void CodeBuilder::PrepareFunctionTemplate( const Synt::FunctionTemplate& functio
 		OverloadedFunctionsSet functions_set;
 		functions_set.template_functions.push_back( function_template );
 		names_scope.AddName( function_template_name, std::move(functions_set) );
+
+		if( base_class != nullptr && visibility != Synt::ClassMemberVisibility::Public )
+			base_class->class_->members_visibility[function_template_name]= visibility;
 	}
 }
 

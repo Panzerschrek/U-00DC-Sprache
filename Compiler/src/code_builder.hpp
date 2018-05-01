@@ -165,7 +165,12 @@ private:
 
 	// Templates
 	ProgramString PrepareTypeTemplate( const Synt::TypeTemplateBase& type_template_declaration, NamesScope& names_scope );  // returns names of type template in case of success
-	void PrepareFunctionTemplate( const Synt::FunctionTemplate& function_template_declaration, NamesScope& names_scope, const ClassProxyPtr& base_class );
+	void PrepareFunctionTemplate(
+		const Synt::FunctionTemplate&
+		unction_template_declaration,
+		NamesScope& names_scope,
+		const ClassProxyPtr& base_class,
+		Synt::ClassMemberVisibility visibility= Synt::ClassMemberVisibility::Public );
 
 	void ProcessTemplateArgs(
 		const std::vector<Synt::TemplateBase::Arg>& args,
@@ -327,7 +332,8 @@ private:
 		const Synt::Function& func,
 		bool force_prototype,
 		ClassProxyPtr base_class,
-		NamesScope& scope );
+		NamesScope& scope,
+		Synt::ClassMemberVisibility visibility= Synt::ClassMemberVisibility::Public );
 
 	void CheckOverloadedOperator(
 		const ClassProxyPtr& base_class,

@@ -47,6 +47,7 @@ enum class CodeBuilderErrorCode : unsigned int
 	ClassBodyDuplication,
 	UsingIncompleteType,
 	AccessingNonpublicClassMember,
+	FunctionsVisibilityMismatch,
 
 	// Constexpr errors.
 	ExpectedConstantExpression,
@@ -207,6 +208,7 @@ CodeBuilderError ReportClassDeclarationOutsideItsScope( const FilePos& file_pos 
 CodeBuilderError ReportClassBodyDuplication( const FilePos& file_pos );
 CodeBuilderError ReportUsingIncompleteType( const FilePos& file_pos, const ProgramString& type_name );
 CodeBuilderError ReportAccessingNonpublicClassMember( const FilePos& file_pos, const ProgramString& class_name, const ProgramString& member_name );
+CodeBuilderError ReportFunctionsVisibilityMismatch( const FilePos& file_pos, const ProgramString& function_name );
 CodeBuilderError ReportExpectedConstantExpression( const FilePos& file_pos );
 CodeBuilderError ReportVariableInitializerIsNotConstantExpression( const FilePos& file_pos );
 CodeBuilderError ReportInvalidTypeForConstantExpressionVariable( const FilePos& file_pos );

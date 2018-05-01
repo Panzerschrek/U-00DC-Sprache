@@ -71,6 +71,8 @@ const char* CodeBuilderErrorCodeToString( const CodeBuilderErrorCode code )
 		return "UsingIncompleteType";
 	case CodeBuilderErrorCode::AccessingNonpublicClassMember:
 		return "AccessingNonpublicClassMember";
+	case CodeBuilderErrorCode::FunctionsVisibilityMismatch:
+		return "FunctionsVisibilityMismatch";
 	case CodeBuilderErrorCode::ExpectedConstantExpression:
 		return "ExpectedConstantExpression";
 	case CodeBuilderErrorCode::VariableInitializerIsNotConstantExpression:
@@ -613,6 +615,17 @@ CodeBuilderError ReportAccessingNonpublicClassMember( const FilePos& file_pos, c
 	error.code= CodeBuilderErrorCode::AccessingNonpublicClassMember;
 
 	error.text= "Accessing member \""_SpC + member_name + "\" of class \""_SpC + class_name + "\"."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportFunctionsVisibilityMismatch( const FilePos& file_pos, const ProgramString& function_name )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::FunctionsVisibilityMismatch;
+
+	error.text= "Visibility mismatch for function \""_SpC + function_name + "\". All functions with same name in class must have same visibility."_SpC;
 
 	return error;
 }
