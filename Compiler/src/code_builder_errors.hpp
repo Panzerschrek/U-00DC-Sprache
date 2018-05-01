@@ -161,6 +161,7 @@ enum class CodeBuilderErrorCode : unsigned int
 	ClassContainsPureVirtualFunctions,
 	NonPureVirtualFunctionInInterface,
 	PureDestructor,
+	VirtualForPrivateFunction,
 	VirtualForFunctionTemplate,
 	VirtualForFunctionImplementation,
 };
@@ -296,6 +297,7 @@ CodeBuilderError ReportBodyForPureVirtualFunction( const FilePos& file_pos, cons
 CodeBuilderError ReportClassContainsPureVirtualFunctions( const FilePos& file_pos, const ProgramString& class_name );
 CodeBuilderError ReportNonPureVirtualFunctionInInterface( const FilePos& file_pos, const ProgramString& class_name );
 CodeBuilderError ReportPureDestructor( const FilePos& file_pos, const ProgramString& class_name );
+CodeBuilderError ReportVirtualForPrivateFunction( const FilePos& file_pos, const ProgramString& function_name );
 CodeBuilderError ReportVirtualForFunctionTemplate( const FilePos& file_pos, const ProgramString& function_name );
 CodeBuilderError ReportVirtualForFunctionImplementation( const FilePos& file_pos, const ProgramString& function_name );
 

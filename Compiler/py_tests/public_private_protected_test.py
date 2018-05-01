@@ -369,7 +369,7 @@ def FunctionsVisibilityMismatch_Test4():
 		}
 		class B : A
 		{
-		private:
+		protected:
 			fn virtual override Foo( this ); // Error, virtual functions must have same visibility
 		}
 	"""

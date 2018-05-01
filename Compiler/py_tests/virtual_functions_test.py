@@ -876,3 +876,17 @@ def VirtualForFunctionImplementation_Test2():
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "VirtualForFunctionImplementation" )
 	assert( errors_list[0].file_pos.line == 6 )
+
+
+def VirtualForPrivateFunction_Test0():
+	c_program_text= """
+		class A polymorph
+		{
+		private:
+			fn virtual Foo(this);
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "VirtualForPrivateFunction" )
+	assert( errors_list[0].file_pos.line == 5 )

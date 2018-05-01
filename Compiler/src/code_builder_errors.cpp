@@ -247,6 +247,8 @@ const char* CodeBuilderErrorCodeToString( const CodeBuilderErrorCode code )
 		return "NonPureVirtualFunctionInInterface";
 	case CodeBuilderErrorCode::PureDestructor:
 		return "PureDestructor";
+	case CodeBuilderErrorCode::VirtualForPrivateFunction:
+		return "VirtualForPrivateFunction";
 	case CodeBuilderErrorCode::VirtualForFunctionTemplate:
 		return "VirtualForFunctionTemplate";
 	case CodeBuilderErrorCode::VirtualForFunctionImplementation:
@@ -1597,6 +1599,17 @@ CodeBuilderError ReportPureDestructor( const FilePos& file_pos, const ProgramStr
 	error.code= CodeBuilderErrorCode::PureDestructor;
 
 	error.text= "Pure destructor for class \"."_SpC + class_name + "\"."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportVirtualForPrivateFunction( const FilePos& file_pos, const ProgramString& function_name )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::VirtualForPrivateFunction;
+
+	error.text= "Virtual for private function \"."_SpC + function_name + "\"."_SpC;
 
 	return error;
 }
