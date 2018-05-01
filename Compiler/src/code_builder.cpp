@@ -700,6 +700,10 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 		class_declaration.kind_attribute_ == Synt::ClassKindAttribute::Abstract ||
 		!class_declaration.parents_.empty() )
 		the_class->kind= Class::Kind::PolymorphNonFinal;
+	else if( class_declaration.kind_attribute_ == Synt::ClassKindAttribute::Struct )
+		the_class->kind= Class::Kind::Struct;
+	else
+		the_class->kind= Class::Kind::NonPolymorph;
 
 	std::vector<PrepareFunctionResult> class_functions;
 	std::vector<const Synt::Class*> inner_classes;
@@ -816,8 +820,8 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 		else if( const auto visibility_label=
 			dynamic_cast<const Synt::ClassVisibilityLabel*>( member.get() ) )
 		{
-			// TODO - process visibility
-
+			if( the_class->kind == Class::Kind::Struct )
+				errors_.push_back( ReportVisibilityForStruct( visibility_label->file_pos_, class_name ) );
 			current_visibility= visibility_label->visibility_;
 		}
 		else U_ASSERT( false );

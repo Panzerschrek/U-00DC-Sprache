@@ -73,6 +73,8 @@ const char* CodeBuilderErrorCodeToString( const CodeBuilderErrorCode code )
 		return "AccessingNonpublicClassMember";
 	case CodeBuilderErrorCode::FunctionsVisibilityMismatch:
 		return "FunctionsVisibilityMismatch";
+	case CodeBuilderErrorCode::VisibilityForStruct:
+		return "VisibilityForStruct";
 	case CodeBuilderErrorCode::ExpectedConstantExpression:
 		return "ExpectedConstantExpression";
 	case CodeBuilderErrorCode::VariableInitializerIsNotConstantExpression:
@@ -628,6 +630,17 @@ CodeBuilderError ReportFunctionsVisibilityMismatch( const FilePos& file_pos, con
 	error.code= CodeBuilderErrorCode::FunctionsVisibilityMismatch;
 
 	error.text= "Visibility mismatch for function \""_SpC + function_name + "\". All functions with same name in class must have same visibility."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportVisibilityForStruct( const FilePos& file_pos, const ProgramString& struct_name )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::VisibilityForStruct;
+
+	error.text= "Visibility label for struct \""_SpC + struct_name + "\". Visibility labels enabled only for classes, structs have all members public."_SpC;
 
 	return error;
 }

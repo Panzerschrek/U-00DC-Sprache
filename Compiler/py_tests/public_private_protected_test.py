@@ -177,7 +177,7 @@ def AccessingPrivateMemberInsideClass_Test5():
 		class A
 		{
 		private:
-			struct Inner
+			class Inner
 			{
 			private:
 				fn Foo();
@@ -552,3 +552,17 @@ def ChildClassNameOverridesParentClassNameAndVisibility_Test2():
 	tests_lib.build_program( c_program_text )
 	call_result= tests_lib.run_function( "_Z3Foov" )
 	assert( call_result == 10 )
+
+
+def VisibilityForStruct_Test0():
+	c_program_text= """
+		struct A
+		{
+		public:
+			i32 x;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "VisibilityForStruct" )
+	assert( errors_list[0].file_pos.line == 4 )
