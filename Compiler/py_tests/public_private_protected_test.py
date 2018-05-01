@@ -304,6 +304,22 @@ def AccessingProtectedMember_Test2():
 	assert( errors_list[0].file_pos.line == 10 )
 
 
+def AccessingProtectedMember_Test3():
+	c_program_text= """
+		class A polymorph
+		{
+		protected:
+			i32 x;
+		}
+		class B : A {} // 'B' contains 'x' as protected.
+		class C : B // 'C' contains 'x' as protected too.
+		{
+			fn Zero( mut this ) { A::x= 0; }  // Access protected member of parent class, unsing NamedOperand
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
 def AccessingPrivateMemberOutsideClass_ViaMemberAccessOperator_Test0():
 	c_program_text= """
 		class A

@@ -39,6 +39,13 @@ const TypesMap g_types_map=
 namespace CodeBuilderPrivate
 {
 
+static void AddAncestorsAccessRights_r( Class& the_class, const ClassProxyPtr& ancestor_class )
+{
+	the_class.members.AddAccessRightsFor( ancestor_class, ClassMemberVisibility::Protected );
+	for( const ClassProxyPtr& parent : ancestor_class->class_->parents )
+		AddAncestorsAccessRights_r( the_class, parent );
+}
+
 CodeBuilder::FunctionContext::FunctionContext(
 	const Type in_return_type,
 	const bool in_return_value_is_mutable,
@@ -687,7 +694,7 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 		}
 
 		the_class->parents.push_back( parent_class_proxy );
-		the_class->members.AddAccessRightsFor( parent_class_proxy, ClassMemberVisibility::Protected );
+		AddAncestorsAccessRights_r( *the_class, parent_class_proxy );
 		the_class->parents_fields_numbers.push_back( static_cast<unsigned int>(fields_llvm_types.size()) );
 		fields_llvm_types.emplace_back( parent_class_proxy->class_->llvm_type );
 	} // for parents
