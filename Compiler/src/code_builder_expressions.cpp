@@ -1586,9 +1586,7 @@ Value CodeBuilder::BuildMemberAccessOperator(
 		return ErrorValue();
 	}
 
-	const auto visibility_map_it= class_type->members_visibility.find( member_access_operator.member_name_ );
-	if( visibility_map_it != class_type->members_visibility.end() &&
-		visibility_map_it->second != Synt::ClassMemberVisibility::Public &&
+	if( class_type->GetMemberVisibility( member_access_operator.member_name_ ) != Synt::ClassMemberVisibility::Public &&
 		!names.HaveAccessTo( value.GetType().GetClassTypeProxy() ) )
 		errors_.push_back( ReportAccessingNonpublicClassMember( member_access_operator.file_pos_, class_type->members.GetThisNamespaceName(), member_access_operator.member_name_ ) );
 

@@ -593,6 +593,9 @@ public:
 	Class& operator=( const Class& )= delete;
 	Class& operator=( Class&& )= delete;
 
+	Synt::ClassMemberVisibility GetMemberVisibility( const ProgramString& member_name ) const;
+	void SetMemberVisibility( const ProgramString& member_name, Synt::ClassMemberVisibility visibility );
+
 public:
 	struct BaseTemplate
 	{

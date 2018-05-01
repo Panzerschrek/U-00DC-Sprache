@@ -744,6 +744,21 @@ Class::Class( const ProgramString& in_name, const NamesScope* const parent_scope
 Class::~Class()
 {}
 
+Synt::ClassMemberVisibility Class::GetMemberVisibility( const ProgramString& member_name ) const
+{
+	const auto it= members_visibility.find( member_name );
+	if( it == members_visibility.end() )
+		return Synt::ClassMemberVisibility::Public;
+	return it->second;
+}
+
+void Class::SetMemberVisibility( const ProgramString& member_name, const Synt::ClassMemberVisibility visibility )
+{
+	if( visibility == Synt::ClassMemberVisibility::Public )
+		return;
+	members_visibility[member_name]= visibility;
+}
+
 Enum::Enum( const ProgramString& in_name, const NamesScope* parent_scope )
 	: members( in_name, parent_scope )
 {}

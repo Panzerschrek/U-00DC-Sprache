@@ -208,13 +208,8 @@ void CodeBuilder::PrepareFunctionTemplate(
 	{
 		if( OverloadedFunctionsSet* const functions_set= same_name->second.GetFunctionsSet() )
 		{
-			if( base_class != nullptr )
-			{
-				const auto prev_visibility_it= base_class->class_->members_visibility.find( function_template_name );
-				const auto prev_visibility= prev_visibility_it == base_class->class_->members_visibility.end() ? Synt::ClassMemberVisibility::Public : prev_visibility_it->second;
-				if( prev_visibility != visibility )
-					errors_.push_back( ReportFunctionsVisibilityMismatch( function_template_declaration.file_pos_, function_template_name ) ); // All functions with same name must have same visibility.
-			}
+			if( base_class != nullptr && base_class->class_->GetMemberVisibility( function_template_name ) != visibility )
+				errors_.push_back( ReportFunctionsVisibilityMismatch( function_template_declaration.file_pos_, function_template_name ) ); // All functions with same name must have same visibility.
 
 			// SPRACHE_TODO - check equality of different template functions.
 			functions_set->template_functions.push_back( function_template );
@@ -228,8 +223,8 @@ void CodeBuilder::PrepareFunctionTemplate(
 		functions_set.template_functions.push_back( function_template );
 		names_scope.AddName( function_template_name, std::move(functions_set) );
 
-		if( base_class != nullptr && visibility != Synt::ClassMemberVisibility::Public )
-			base_class->class_->members_visibility[function_template_name]= visibility;
+		if( base_class != nullptr )
+			base_class->class_->SetMemberVisibility( function_template_name, visibility );
 	}
 }
 

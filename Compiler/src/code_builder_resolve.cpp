@@ -198,15 +198,10 @@ const NamesScope::InsertedName* CodeBuilder::ResolveName(
 		{
 			name= next_space->GetThisScopeName( components[1].name );
 
-			if( next_space_class != nullptr )
-			{
-				const Class& class_= *next_space_class->class_;
-				const auto visibility_map_it= class_.members_visibility.find(components[1].name );
-				if( visibility_map_it != class_.members_visibility.end() &&
-					visibility_map_it->second != Synt::ClassMemberVisibility::Public &&
-					!names_scope.HaveAccessTo( next_space_class ) )
-					errors_.push_back( ReportAccessingNonpublicClassMember( file_pos, next_space_class->class_->members.GetThisNamespaceName(), components[1].name ) );
-			}
+			if( next_space_class != nullptr  &&
+				next_space_class->class_->GetMemberVisibility( components[1].name ) != Synt::ClassMemberVisibility::Public &&
+				!names_scope.HaveAccessTo( next_space_class ) )
+				errors_.push_back( ReportAccessingNonpublicClassMember( file_pos, next_space_class->class_->members.GetThisNamespaceName(), components[1].name ) );
 		}
 		else
 			return nullptr;

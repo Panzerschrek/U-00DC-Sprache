@@ -746,8 +746,7 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 				the_class->field_count++;
 			}
 
-			if( current_visibility != Synt::ClassMemberVisibility::Public )
-				the_class->members_visibility[in_field->name]= current_visibility;
+			the_class->SetMemberVisibility( in_field->name, current_visibility );
 		}
 		else if( const auto function_declaration=
 			dynamic_cast<const Synt::Function*>( member.get() ) )
@@ -762,7 +761,10 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 			dynamic_cast<const Synt::Class*>( member.get() ) )
 		{
 			inner_classes.push_back( inner_class );
-			PrepareClass( *inner_class, inner_class->name_, the_class->members, true );
+			const auto innter_class_prepared= PrepareClass( *inner_class, inner_class->name_, the_class->members, true );
+
+			if( innter_class_prepared != nullptr )
+				the_class->SetMemberVisibility( innter_class_prepared->class_->members.GetThisNamespaceName(), current_visibility );
 		}
 		else if( const auto variables_declaration=
 			dynamic_cast<const Synt::VariablesDeclaration*>( member.get() ) )
@@ -770,9 +772,8 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 			const std::vector<ProgramString> var_names=
 				BuildVariablesDeclarationCode( *variables_declaration, the_class->members, *dummy_function_context_, true );
 
-			if( current_visibility != Synt::ClassMemberVisibility::Public ) // TODO - create alias inside CodeBuilderPrivate namespace
-				for( const ProgramString& name : var_names )
-					the_class->members_visibility[name]= current_visibility;
+			for( const ProgramString& name : var_names )
+				the_class->SetMemberVisibility( name, current_visibility );
 		}
 		else if( const auto auto_variable_declaration=
 			dynamic_cast<const Synt::AutoVariableDeclaration*>( member.get() ) )
@@ -780,8 +781,7 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 			const ProgramString var_name=
 				BuildAutoVariableDeclarationCode( *auto_variable_declaration, the_class->members, *dummy_function_context_, true );
 
-			if( current_visibility != Synt::ClassMemberVisibility::Public )
-				the_class->members_visibility[var_name]= current_visibility;
+			the_class->SetMemberVisibility( var_name, current_visibility );
 		}
 		else if( const auto static_assert_=
 			dynamic_cast<const Synt::StaticAssert*>( member.get() ) )
@@ -792,26 +792,20 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 			dynamic_cast<const Synt::Enum*>( member.get() ) )
 		{
 			PrepareEnum( *enum_, the_class->members );
-
-			if( current_visibility != Synt::ClassMemberVisibility::Public )
-				the_class->members_visibility[enum_->name]= current_visibility;
+			the_class->SetMemberVisibility( enum_->name, current_visibility );
 		}
 		else if( const auto typedef_=
 			dynamic_cast<const Synt::Typedef*>( member.get() ) )
 		{
 			BuildTypedef( *typedef_, the_class->members );
-
-			if( current_visibility != Synt::ClassMemberVisibility::Public )
-				the_class->members_visibility[typedef_->name]= current_visibility;
+			the_class->SetMemberVisibility( typedef_->name, current_visibility );
 		}
 		else if( const auto type_template=
 			dynamic_cast<const Synt::TypeTemplateBase*>( member.get() ) )
 		{
 			const ProgramString type_template_name=
 				PrepareTypeTemplate( *type_template, the_class->members );
-
-			if( current_visibility != Synt::ClassMemberVisibility::Public )
-				the_class->members_visibility[type_template_name]= current_visibility;
+			the_class->SetMemberVisibility( type_template_name, current_visibility );
 		}
 		else if( const auto function_template=
 			dynamic_cast<const Synt::FunctionTemplate*>( member.get() ) )
@@ -956,9 +950,7 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 		parent->class_->members.ForEachInThisScope(
 			[&]( const NamesScope::InsertedName& name )
 			{
-				const auto parent_class_visibility_it= parent->class_->members_visibility.find( name.first );
-				if( parent_class_visibility_it != parent->class_->members_visibility.end() &&
-					parent_class_visibility_it->second == Synt::ClassMemberVisibility::Private )
+				if( parent->class_->GetMemberVisibility( name.first ) == Synt::ClassMemberVisibility::Private )
 					return; // Do not inherit private members.
 
 				NamesScope::InsertedName* const result_class_name= the_class->members.GetThisScopeName(name.first);
@@ -1722,8 +1714,8 @@ CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 		result.function_index= result.functions_set->functions.size() - 1u;
 
 		U_ASSERT( !is_body_outside_scope );
-		if( base_class != nullptr && visibility != Synt::ClassMemberVisibility::Public )
-			base_class->class_->members_visibility[func_name]= visibility;
+		if( base_class != nullptr )
+			base_class->class_->SetMemberVisibility( func_name, visibility );
 
 		return result;
 	}
@@ -1780,13 +1772,9 @@ CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 				if( !overloading_ok )
 					return result;
 
-				if( base_class != nullptr && !is_body_outside_scope )
-				{
-					const auto prev_visibility_it= base_class->class_->members_visibility.find( func_name );
-					const auto prev_visibility= prev_visibility_it == base_class->class_->members_visibility.end() ? Synt::ClassMemberVisibility::Public : prev_visibility_it->second;
-					if( prev_visibility != visibility )
+				if( base_class != nullptr && !is_body_outside_scope &&
+					base_class->class_->GetMemberVisibility( func_name ) != visibility )
 						errors_.push_back( ReportFunctionsVisibilityMismatch( func.file_pos_, func_name ) ); // All functions with same name must have same visibility.
-				}
 
 				FunctionVariable& inserted_func_variable= functions_set->functions.back();
 				inserted_func_variable.prototype_file_pos= func.file_pos_;
