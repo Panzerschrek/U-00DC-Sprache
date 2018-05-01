@@ -644,9 +644,10 @@ enum class ClassKindAttribute
 
 enum class ClassMemberVisibility
 {
+	// Must be ordered from less access to more access.
 	Public,
-	Private,
 	Protected,
+	Private,
 };
 
 class ClassVisibilityLabel final

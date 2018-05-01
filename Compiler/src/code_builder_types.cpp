@@ -1266,18 +1266,17 @@ void NamesScope::SetParent( const NamesScope* const parent )
 	parent_= parent;
 }
 
-void NamesScope::AddAccessRightsFor( const ClassProxyPtr& class_ )
+void NamesScope::AddAccessRightsFor( const ClassProxyPtr& class_, const Synt::ClassMemberVisibility visibility )
 {
-	access_rights_.emplace(class_);
+	access_rights_[class_]= visibility;
 }
 
-bool NamesScope::HaveAccessTo( const ClassProxyPtr& class_ ) const
+Synt::ClassMemberVisibility NamesScope::GetAccessFor( const ClassProxyPtr& class_ ) const
 {
-	if( access_rights_.find(class_) != access_rights_.end() )
-		return true;
-	if( parent_ != nullptr )
-		return parent_->HaveAccessTo( class_ );
-	return false;
+	const auto it= access_rights_.find(class_);
+	const auto this_rights= it == access_rights_.end() ? Synt::ClassMemberVisibility::Public : it->second;
+	const auto parent_rights= parent_ == nullptr ? Synt::ClassMemberVisibility::Public : parent_->GetAccessFor( class_ );
+	return std::max( this_rights, parent_rights );
 }
 
 //

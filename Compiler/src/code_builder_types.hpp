@@ -521,8 +521,8 @@ public:
 	const NamesScope* GetRoot() const;
 	void SetParent( const NamesScope* parent );
 
-	void AddAccessRightsFor( const ClassProxyPtr& class_ );
-	bool HaveAccessTo( const ClassProxyPtr& class_ ) const;
+	void AddAccessRightsFor( const ClassProxyPtr& class_, Synt::ClassMemberVisibility visibility );
+	Synt::ClassMemberVisibility GetAccessFor( const ClassProxyPtr& class_ ) const;
 
 	template<class Func>
 	void ForEachInThisScope( const Func& func ) const
@@ -537,7 +537,7 @@ private:
 	ProgramString name_;
 	const NamesScope* parent_;
 	NamesMap names_map_;
-	std::unordered_set<ClassProxyPtr> access_rights_;
+	std::unordered_map<ClassProxyPtr, Synt::ClassMemberVisibility> access_rights_;
 };
 
 struct NameResolvingKey final

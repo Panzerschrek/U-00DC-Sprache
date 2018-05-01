@@ -199,10 +199,8 @@ const NamesScope::InsertedName* CodeBuilder::ResolveName(
 		{
 			name= next_space->GetThisScopeName( components[1].name );
 
-			if( next_space_class != nullptr &&
-				!for_declaration &&
-				next_space_class->class_->GetMemberVisibility( components[1].name ) != Synt::ClassMemberVisibility::Public &&
-				!names_scope.HaveAccessTo( next_space_class ) )
+			if( next_space_class != nullptr && !for_declaration &&
+				names_scope.GetAccessFor( next_space_class ) < next_space_class->class_->GetMemberVisibility( components[1].name ) )
 				errors_.push_back( ReportAccessingNonpublicClassMember( file_pos, next_space_class->class_->members.GetThisNamespaceName(), components[1].name ) );
 		}
 		else

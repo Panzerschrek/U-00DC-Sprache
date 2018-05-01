@@ -76,6 +76,25 @@ def AccessingPrivateMemberOutsideClass_Test2():
 	assert( errors_list[0].file_pos.line == 8 )
 
 
+def AccessingPrivateMemberOutsideClass_Test3():
+	c_program_text= """
+		class A polymorph
+		{
+		private:
+			type II= i32;
+		}
+
+		class B : A
+		{
+			A::II i;  // error, A::I is private
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "AccessingNonpublicClassMember" )
+	assert( errors_list[0].file_pos.line == 10 )
+
+
 def AccessingPrivateMemberInsideClass_Test0():
 	c_program_text= """
 		class A
@@ -186,6 +205,53 @@ def AccessingPrivateMemberInsideClass_Test6():
 		}
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def AccessingProtectedMember_Test0():
+	c_program_text= """
+		class A
+		{
+		protected:
+			i32 x;
+			fn Zero( mut this ) { x= 0; }  // Access protected member inside class
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def AccessingProtectedMember_Test1():
+	c_program_text= """
+		class A polymorph
+		{
+		protected:
+			i32 x;
+		}
+
+		class B : A
+		{
+			fn Zero( mut this ) { A::x= 0; }  // Access protected member of parent class, unsing NamedOperand
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def AccessingProtectedMember_Test2():
+	c_program_text= """
+		class A polymorph
+		{
+		protected:
+			i32 x;
+		}
+
+		fn Foo( A& a )
+		{
+			a.x;  // Error, 'A::x' is protected
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "AccessingNonpublicClassMember" )
+	assert( errors_list[0].file_pos.line == 10 )
 
 
 def AccessingPrivateMemberOutsideClass_ViaMemberAccessOperator_Test0():
