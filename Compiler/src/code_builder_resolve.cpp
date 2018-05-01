@@ -113,6 +113,7 @@ const NamesScope::InsertedName* CodeBuilder::ResolveName(
 		}
 
 		NamesScope* next_space= nullptr;
+		ClassProxyPtr next_space_class= nullptr;
 
 		if( const NamesScopePtr inner_namespace= name->second.GetNamespace() )
 			next_space= inner_namespace.get();
@@ -126,6 +127,7 @@ const NamesScope::InsertedName* CodeBuilder::ResolveName(
 					return nullptr;
 				}
 				next_space= &class_->members;
+				next_space_class= type->GetClassTypeProxy();
 			}
 			else if( Enum* const enum_= type->GetEnumType() )
 			{
@@ -158,7 +160,10 @@ const NamesScope::InsertedName* CodeBuilder::ResolveName(
 				}
 				U_ASSERT( type != nullptr );
 				if( Class* const class_= type->GetClassType() )
+				{
 					next_space= &class_->members;
+					next_space_class= type->GetClassTypeProxy();
+				}
 				name= generated_type;
 			}
 			else if( component_count >= 2u )
@@ -190,7 +195,19 @@ const NamesScope::InsertedName* CodeBuilder::ResolveName(
 		if( component_count == 1u )
 			break;
 		else if( next_space != nullptr )
+		{
 			name= next_space->GetThisScopeName( components[1].name );
+
+			if( next_space_class != nullptr )
+			{
+				const Class& class_= *next_space_class->class_;
+				const auto visibility_map_it= class_.members_visibility.find(components[1].name );
+				if( visibility_map_it != class_.members_visibility.end() &&
+					visibility_map_it->second != Synt::ClassMemberVisibility::Public &&
+					!names_scope.HaveAccessTo( next_space_class ) )
+					errors_.push_back( ReportAccessingNonpublicClassMember( file_pos, next_space_class->class_->members.GetThisNamespaceName(), components[1].name ) );
+			}
+		}
 		else
 			return nullptr;
 

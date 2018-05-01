@@ -1251,6 +1251,20 @@ void NamesScope::SetParent( const NamesScope* const parent )
 	parent_= parent;
 }
 
+void NamesScope::AddAccessRightsFor( const ClassProxyPtr& class_ )
+{
+	access_rights_.emplace(class_);
+}
+
+bool NamesScope::HaveAccessTo( const ClassProxyPtr& class_ ) const
+{
+	if( access_rights_.find(class_) != access_rights_.end() )
+		return true;
+	if( parent_ != nullptr )
+		return parent_->HaveAccessTo( class_ );
+	return false;
+}
+
 //
 // DeducedTemplateParameter
 //

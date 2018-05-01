@@ -69,6 +69,8 @@ const char* CodeBuilderErrorCodeToString( const CodeBuilderErrorCode code )
 		return "ClassBodyDuplication";
 	case CodeBuilderErrorCode::UsingIncompleteType:
 		return "UsingIncompleteType";
+	case CodeBuilderErrorCode::AccessingNonpublicClassMember:
+		return "AccessingNonpublicClassMember";
 	case CodeBuilderErrorCode::ExpectedConstantExpression:
 		return "ExpectedConstantExpression";
 	case CodeBuilderErrorCode::VariableInitializerIsNotConstantExpression:
@@ -600,6 +602,17 @@ CodeBuilderError ReportUsingIncompleteType( const FilePos& file_pos, const Progr
 	error.code= CodeBuilderErrorCode::UsingIncompleteType;
 
 	error.text= "Using incomplete type \""_SpC + type_name + "\", expected complete type."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportAccessingNonpublicClassMember( const FilePos& file_pos, const ProgramString& class_name, const ProgramString& member_name )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::AccessingNonpublicClassMember;
+
+	error.text= "Accessing member \""_SpC + member_name + "\" of class \""_SpC + class_name + "\"."_SpC;
 
 	return error;
 }

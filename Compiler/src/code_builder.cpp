@@ -224,6 +224,8 @@ void CodeBuilder::MergeNameScopes( NamesScope& dst, const NamesScope& src, Class
 					const NamesScopePtr names_scope_copy= std::make_shared<NamesScope>( names_scope->GetThisNamespaceName(), &dst );
 					MergeNameScopes( *names_scope_copy, *names_scope, dst_class_table );
 					dst.AddName( src_member.first, Value( names_scope_copy, src_member.second.GetFilePos() ) );
+
+					// TODO - copy access rights.
 				}
 				else if( const TypeTemplatePtr type_template= src_member.second.GetTypeTemplate() )
 				{
@@ -624,6 +626,7 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 	Type class_type;
 	class_type= the_class_proxy;
 	the_class->body_file_pos= class_declaration.file_pos_;
+	the_class->members.AddAccessRightsFor( the_class_proxy );
 
 	std::vector<llvm::Type*> fields_llvm_types;
 
@@ -684,6 +687,7 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 		}
 
 		the_class->parents.push_back( parent_class_proxy );
+		the_class->members.AddAccessRightsFor( parent_class_proxy ); // Have access to protected members of parent class. TODO - does this right?
 		the_class->parents_fields_numbers.push_back( static_cast<unsigned int>(fields_llvm_types.size()) );
 		fields_llvm_types.emplace_back( parent_class_proxy->class_->llvm_type );
 	} // for parents

@@ -53,3 +53,4 @@ Compiler:
 	parent class.
 *) Virtual call for final function optimization
 *) Precompiled modules
+*) Compiler uses a lot of shared pointers. Check for memory leaks.
