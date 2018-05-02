@@ -3,7 +3,6 @@ compiler. Features grouped and sorted by priority inside each group.
 When feature was implemented, delete it from list.
 
 Common:
-*) public/private/protected for class/struct members
 *) sizeof operator
 *) raw_pointer
 *) Unsafe
@@ -21,6 +20,8 @@ Common:
 *) "shared" tag for shared_ptr and it propagation to structures with shared
 	pointers inside
 *) Multithreading support
+*) "Disassembly operator" - declare variables with initializer as members of
+	value of structure type.
 
 References:
 *) Tags for struct/class references
