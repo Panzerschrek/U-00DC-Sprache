@@ -145,6 +145,23 @@ def AccessingPrivateMemberOutsideClass_Test3():
 	assert( errors_list[0].file_pos.line == 10 )
 
 
+def AccessingPrivateMemberOutsideClass_Test3():
+	c_program_text= """
+		class A
+		{
+		private:
+			template</ type T /> type Vec3= [ T, 3 ];
+		}
+
+		template</type T/>
+		struct Box</ A::Vec3</T/> />{}  // Accessing private member in template signature parameter.
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "AccessingNonpublicClassMember" )
+	assert( errors_list[0].file_pos.line == 9 )
+
+
 def AccessingPrivateMemberInsideClass_Test0():
 	c_program_text= """
 		class A

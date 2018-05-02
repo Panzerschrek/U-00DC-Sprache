@@ -451,6 +451,7 @@ const NamesScope::InsertedName* CodeBuilder::ResolveForTemplateSignatureParamete
 	while( component_number < signature_parameter.components.size() )
 	{
 		NamesScope* next_space= nullptr;
+		ClassProxyPtr next_space_class= nullptr;
 		const Synt::ComplexName::Component& component= signature_parameter.components[component_number - 1u];
 		const bool is_last_component= component_number + 1u == signature_parameter.components.size();
 
@@ -466,6 +467,7 @@ const NamesScope::InsertedName* CodeBuilder::ResolveForTemplateSignatureParamete
 					return nullptr;
 				}
 				next_space= &class_->members;
+				next_space_class= type->GetClassTypeProxy();
 			}
 		}
 		else if( const TypeTemplatePtr type_template = current_name->second.GetTypeTemplate() )
@@ -490,6 +492,7 @@ const NamesScope::InsertedName* CodeBuilder::ResolveForTemplateSignatureParamete
 					return &names_scope.GetTemplateDependentValue();
 				if( Class* const class_= type->GetClassType() )
 					next_space= &class_->members;
+				next_space_class= type->GetClassTypeProxy();
 			}
 			else if( !is_last_component )
 			{
@@ -503,7 +506,14 @@ const NamesScope::InsertedName* CodeBuilder::ResolveForTemplateSignatureParamete
 
 		const Synt::ComplexName::Component& next_component= signature_parameter.components[component_number];
 		if( next_space != nullptr )
+		{
 			current_name= next_space->GetThisScopeName( next_component.name );
+
+			if( next_space_class != nullptr &&
+				names_scope.GetAccessFor( next_space_class ) < next_space_class->class_->GetMemberVisibility( next_component.name ) )
+				errors_.push_back( ReportAccessingNonpublicClassMember( file_pos, next_space_class->class_->members.GetThisNamespaceName(), next_component.name ) );
+
+		}
 		else if( !is_last_component )
 			return nullptr;
 
