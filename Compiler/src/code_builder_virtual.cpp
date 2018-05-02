@@ -93,6 +93,14 @@ void CodeBuilder::ProcessClassVirtualFunction( Class& the_class, PrepareFunction
 
 	FunctionVariable& function_variable= (function.functions_set->functions)[function.function_index];
 	const ProgramString& function_name= function.func_syntax_element->name_.components.back().name; // TODO - does this right?
+	const FilePos& file_pos= function.func_syntax_element->file_pos_;
+
+	if( function.func_syntax_element->virtual_function_kind_ != Synt::VirtualFunctionKind::None &&
+		the_class.GetMemberVisibility( function_name ) == ClassMemberVisibility::Private )
+	{
+		// Private members not visible in child classes. So, virtual private function is 100% error.
+		errors_.push_back( ReportVirtualForPrivateFunction( file_pos, function_name ) );
+	}
 
 	if( !function_variable.is_this_call )
 		return; // May be in case of error
@@ -110,7 +118,6 @@ void CodeBuilder::ProcessClassVirtualFunction( Class& the_class, PrepareFunction
 	if( virtual_table_entry != nullptr )
 		virtual_table_index= static_cast<unsigned int>(virtual_table_entry - the_class.virtual_table.data());
 
-	const FilePos& file_pos= function.func_syntax_element->file_pos_;
 	switch( function.func_syntax_element->virtual_function_kind_ )
 	{
 	case Synt::VirtualFunctionKind::None:

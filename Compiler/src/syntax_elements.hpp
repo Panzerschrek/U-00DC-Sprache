@@ -642,6 +642,24 @@ enum class ClassKindAttribute
 	Abstract,
 };
 
+enum class ClassMemberVisibility
+{
+	// Must be ordered from less access to more access.
+	Public,
+	Protected,
+	Private,
+};
+
+class ClassVisibilityLabel final
+	: public SyntaxElementBase
+	, public IClassElement
+{
+public:
+	ClassVisibilityLabel( const FilePos& file_pos, ClassMemberVisibility visibility );
+
+	const ClassMemberVisibility visibility_;
+};
+
 class Class final
 	: public SyntaxElementBase
 	, public IProgramElement

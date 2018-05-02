@@ -23,6 +23,8 @@ namespace U
 namespace CodeBuilderPrivate
 {
 
+using Synt::ClassMemberVisibility;
+
 struct Function;
 struct Array;
 class Class;
@@ -521,6 +523,9 @@ public:
 	const NamesScope* GetRoot() const;
 	void SetParent( const NamesScope* parent );
 
+	void AddAccessRightsFor( const ClassProxyPtr& class_, ClassMemberVisibility visibility );
+	ClassMemberVisibility GetAccessFor( const ClassProxyPtr& class_ ) const;
+
 	template<class Func>
 	void ForEachInThisScope( const Func& func ) const
 	{
@@ -534,6 +539,7 @@ private:
 	ProgramString name_;
 	const NamesScope* parent_;
 	NamesMap names_map_;
+	std::unordered_map<ClassProxyPtr, ClassMemberVisibility> access_rights_;
 };
 
 struct NameResolvingKey final
@@ -577,8 +583,9 @@ struct TemplateClassKeyHasher
 
 typedef std::unordered_map< TemplateClassKey, ClassProxyPtr, TemplateClassKeyHasher, TemplateClassKeyHasher > TemplateClassesCache;
 
-struct Class final
+class Class final
 {
+public:
 	Class( const ProgramString& name, const NamesScope* parent_scope );
 	~Class();
 
@@ -587,6 +594,9 @@ struct Class final
 
 	Class& operator=( const Class& )= delete;
 	Class& operator=( Class&& )= delete;
+
+	ClassMemberVisibility GetMemberVisibility( const ProgramString& member_name ) const;
+	void SetMemberVisibility( const ProgramString& member_name, ClassMemberVisibility visibility );
 
 public:
 	struct BaseTemplate
@@ -617,6 +627,11 @@ public:
 	// If you change this, you must change CodeBuilder::CopyClass too!
 
 	NamesScope members;
+
+	// have no visibility for member, means it is public.
+	// TODO - maybe use unordered_map?
+	std::map< ProgramString, ClassMemberVisibility > members_visibility;
+
 	size_t field_count= 0u;
 	size_t references_tags_count= 0u;
 	bool is_incomplete= true;

@@ -47,6 +47,11 @@ enum class CodeBuilderErrorCode : unsigned int
 	ClassBodyDuplication,
 	UsingIncompleteType,
 
+	// Visibility
+	AccessingNonpublicClassMember,
+	FunctionsVisibilityMismatch,
+	VisibilityForStruct,
+
 	// Constexpr errors.
 	ExpectedConstantExpression,
 	VariableInitializerIsNotConstantExpression,
@@ -159,6 +164,7 @@ enum class CodeBuilderErrorCode : unsigned int
 	ClassContainsPureVirtualFunctions,
 	NonPureVirtualFunctionInInterface,
 	PureDestructor,
+	VirtualForPrivateFunction,
 	VirtualForFunctionTemplate,
 	VirtualForFunctionImplementation,
 };
@@ -205,6 +211,9 @@ CodeBuilderError ReportFunctionDeclarationOutsideItsScope( const FilePos& file_p
 CodeBuilderError ReportClassDeclarationOutsideItsScope( const FilePos& file_pos );
 CodeBuilderError ReportClassBodyDuplication( const FilePos& file_pos );
 CodeBuilderError ReportUsingIncompleteType( const FilePos& file_pos, const ProgramString& type_name );
+CodeBuilderError ReportAccessingNonpublicClassMember( const FilePos& file_pos, const ProgramString& class_name, const ProgramString& member_name );
+CodeBuilderError ReportFunctionsVisibilityMismatch( const FilePos& file_pos, const ProgramString& function_name );
+CodeBuilderError ReportVisibilityForStruct( const FilePos& file_pos, const ProgramString& struct_name );
 CodeBuilderError ReportExpectedConstantExpression( const FilePos& file_pos );
 CodeBuilderError ReportVariableInitializerIsNotConstantExpression( const FilePos& file_pos );
 CodeBuilderError ReportInvalidTypeForConstantExpressionVariable( const FilePos& file_pos );
@@ -292,6 +301,7 @@ CodeBuilderError ReportBodyForPureVirtualFunction( const FilePos& file_pos, cons
 CodeBuilderError ReportClassContainsPureVirtualFunctions( const FilePos& file_pos, const ProgramString& class_name );
 CodeBuilderError ReportNonPureVirtualFunctionInInterface( const FilePos& file_pos, const ProgramString& class_name );
 CodeBuilderError ReportPureDestructor( const FilePos& file_pos, const ProgramString& class_name );
+CodeBuilderError ReportVirtualForPrivateFunction( const FilePos& file_pos, const ProgramString& function_name );
 CodeBuilderError ReportVirtualForFunctionTemplate( const FilePos& file_pos, const ProgramString& function_name );
 CodeBuilderError ReportVirtualForFunctionImplementation( const FilePos& file_pos, const ProgramString& function_name );
 

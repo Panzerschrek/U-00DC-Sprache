@@ -69,6 +69,12 @@ const char* CodeBuilderErrorCodeToString( const CodeBuilderErrorCode code )
 		return "ClassBodyDuplication";
 	case CodeBuilderErrorCode::UsingIncompleteType:
 		return "UsingIncompleteType";
+	case CodeBuilderErrorCode::AccessingNonpublicClassMember:
+		return "AccessingNonpublicClassMember";
+	case CodeBuilderErrorCode::FunctionsVisibilityMismatch:
+		return "FunctionsVisibilityMismatch";
+	case CodeBuilderErrorCode::VisibilityForStruct:
+		return "VisibilityForStruct";
 	case CodeBuilderErrorCode::ExpectedConstantExpression:
 		return "ExpectedConstantExpression";
 	case CodeBuilderErrorCode::VariableInitializerIsNotConstantExpression:
@@ -243,6 +249,8 @@ const char* CodeBuilderErrorCodeToString( const CodeBuilderErrorCode code )
 		return "NonPureVirtualFunctionInInterface";
 	case CodeBuilderErrorCode::PureDestructor:
 		return "PureDestructor";
+	case CodeBuilderErrorCode::VirtualForPrivateFunction:
+		return "VirtualForPrivateFunction";
 	case CodeBuilderErrorCode::VirtualForFunctionTemplate:
 		return "VirtualForFunctionTemplate";
 	case CodeBuilderErrorCode::VirtualForFunctionImplementation:
@@ -600,6 +608,39 @@ CodeBuilderError ReportUsingIncompleteType( const FilePos& file_pos, const Progr
 	error.code= CodeBuilderErrorCode::UsingIncompleteType;
 
 	error.text= "Using incomplete type \""_SpC + type_name + "\", expected complete type."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportAccessingNonpublicClassMember( const FilePos& file_pos, const ProgramString& class_name, const ProgramString& member_name )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::AccessingNonpublicClassMember;
+
+	error.text= "Accessing member \""_SpC + member_name + "\" of class \""_SpC + class_name + "\"."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportFunctionsVisibilityMismatch( const FilePos& file_pos, const ProgramString& function_name )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::FunctionsVisibilityMismatch;
+
+	error.text= "Visibility mismatch for function \""_SpC + function_name + "\". All functions with same name in class must have same visibility."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportVisibilityForStruct( const FilePos& file_pos, const ProgramString& struct_name )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::VisibilityForStruct;
+
+	error.text= "Visibility label for struct \""_SpC + struct_name + "\". Visibility labels enabled only for classes, structs have all members public."_SpC;
 
 	return error;
 }
@@ -1571,6 +1612,17 @@ CodeBuilderError ReportPureDestructor( const FilePos& file_pos, const ProgramStr
 	error.code= CodeBuilderErrorCode::PureDestructor;
 
 	error.text= "Pure destructor for class \"."_SpC + class_name + "\"."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportVirtualForPrivateFunction( const FilePos& file_pos, const ProgramString& function_name )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::VirtualForPrivateFunction;
+
+	error.text= "Virtual for private function \"."_SpC + function_name + "\"."_SpC;
 
 	return error;
 }

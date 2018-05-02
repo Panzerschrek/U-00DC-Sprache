@@ -744,6 +744,21 @@ Class::Class( const ProgramString& in_name, const NamesScope* const parent_scope
 Class::~Class()
 {}
 
+ClassMemberVisibility Class::GetMemberVisibility( const ProgramString& member_name ) const
+{
+	const auto it= members_visibility.find( member_name );
+	if( it == members_visibility.end() )
+		return ClassMemberVisibility::Public;
+	return it->second;
+}
+
+void Class::SetMemberVisibility( const ProgramString& member_name, const ClassMemberVisibility visibility )
+{
+	if( visibility == ClassMemberVisibility::Public )
+		return;
+	members_visibility[member_name]= visibility;
+}
+
 Enum::Enum( const ProgramString& in_name, const NamesScope* parent_scope )
 	: members( in_name, parent_scope )
 {}
@@ -1249,6 +1264,19 @@ const NamesScope* NamesScope::GetRoot() const
 void NamesScope::SetParent( const NamesScope* const parent )
 {
 	parent_= parent;
+}
+
+void NamesScope::AddAccessRightsFor( const ClassProxyPtr& class_, const ClassMemberVisibility visibility )
+{
+	access_rights_[class_]= visibility;
+}
+
+ClassMemberVisibility NamesScope::GetAccessFor( const ClassProxyPtr& class_ ) const
+{
+	const auto it= access_rights_.find(class_);
+	const auto this_rights= it == access_rights_.end() ? ClassMemberVisibility::Public : it->second;
+	const auto parent_rights= parent_ == nullptr ? ClassMemberVisibility::Public : parent_->GetAccessFor( class_ );
+	return std::max( this_rights, parent_rights );
 }
 
 //

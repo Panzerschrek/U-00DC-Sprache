@@ -164,8 +164,13 @@ private:
 		FunctionContext& function_context );
 
 	// Templates
-	void PrepareTypeTemplate( const Synt::TypeTemplateBase& type_template_declaration, NamesScope& names_scope );
-	void PrepareFunctionTemplate( const Synt::FunctionTemplate& function_template_declaration, NamesScope& names_scope, const ClassProxyPtr& base_class );
+	ProgramString PrepareTypeTemplate( const Synt::TypeTemplateBase& type_template_declaration, NamesScope& names_scope );  // returns names of type template in case of success
+	void PrepareFunctionTemplate(
+		const Synt::FunctionTemplate&
+		unction_template_declaration,
+		NamesScope& names_scope,
+		const ClassProxyPtr& base_class,
+		ClassMemberVisibility visibility= ClassMemberVisibility::Public );
 
 	void ProcessTemplateArgs(
 		const std::vector<Synt::TemplateBase::Arg>& args,
@@ -327,7 +332,8 @@ private:
 		const Synt::Function& func,
 		bool force_prototype,
 		ClassProxyPtr base_class,
-		NamesScope& scope );
+		NamesScope& scope,
+		ClassMemberVisibility visibility= ClassMemberVisibility::Public );
 
 	void CheckOverloadedOperator(
 		const ClassProxyPtr& base_class,
@@ -451,13 +457,13 @@ private:
 
 	// Block elements
 
-	void BuildVariablesDeclarationCode(
+	std::vector<ProgramString> BuildVariablesDeclarationCode(  // returns list of variables names
 		const Synt::VariablesDeclaration& variables_declaration,
 		NamesScope& block_names,
 		FunctionContext& function_context,
 		bool global= false );
 
-	void BuildAutoVariableDeclarationCode(
+	ProgramString BuildAutoVariableDeclarationCode( // returns variable name or empty string in case of error
 		const Synt::AutoVariableDeclaration& auto_variable_declaration,
 		NamesScope& block_names,
 		FunctionContext& function_context,
@@ -636,13 +642,14 @@ private:
 	void PushCacheGetResolveHandelr( const ResolvingCache& resolving_cache );
 	void PopResolveHandler();
 
-	const NamesScope::InsertedName* ResolveName( const FilePos& file_pos, NamesScope& names_scope, const Synt::ComplexName& complex_name );
+	const NamesScope::InsertedName* ResolveName( const FilePos& file_pos, NamesScope& names_scope, const Synt::ComplexName& complex_name, bool for_declaration= false );
 
 	const NamesScope::InsertedName* ResolveName(
 		const FilePos& file_pos,
 		NamesScope& names_scope,
 		const Synt::ComplexName::Component* components,
-		size_t component_count );
+		size_t component_count,
+		bool for_declaration= false );
 
 	const NamesScope::InsertedName* PreResolve(
 		NamesScope& names_scope,

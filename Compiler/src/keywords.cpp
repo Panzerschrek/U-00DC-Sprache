@@ -60,6 +60,10 @@ static const Globals& GetGlobals()
 
 		[ size_t(Keywords::namespace_) ]= "namespace",
 
+		[ size_t(Keywords::public_) ]= "public",
+		[ size_t(Keywords::private_) ]= "private",
+		[ size_t(Keywords::protected_) ]= "protected",
+
 		[ size_t(Keywords::void_) ]= "void",
 		[ size_t(Keywords::bool_) ]= "bool",
 		[ size_t(Keywords::i8_ ) ]= "i8" ,

@@ -43,7 +43,7 @@ static const ProgramString& GetNameForGeneratedClass()
 
 static const ProgramString g_template_parameters_namespace_prefix= "_tp_ns-"_SpC;
 
-void CodeBuilder::PrepareTypeTemplate(
+ProgramString CodeBuilder::PrepareTypeTemplate(
 	const Synt::TypeTemplateBase& type_template_declaration,
 	NamesScope& names_scope )
 {
@@ -61,7 +61,7 @@ void CodeBuilder::PrepareTypeTemplate(
 	if( names_scope.AddName( type_template_name, Value( type_template, type_template_declaration.file_pos_ ) ) == nullptr )
 	{
 		errors_.push_back( ReportRedefinition( type_template_declaration.file_pos_, type_template_name ) );
-		return;
+		return type_template_name;
 	}
 
 	type_template->parent_namespace= &names_scope;
@@ -156,9 +156,15 @@ void CodeBuilder::PrepareTypeTemplate(
 		U_ASSERT(false);
 
 	PopResolveHandler();
+
+	return type_template_name;
 }
 
-void CodeBuilder::PrepareFunctionTemplate( const Synt::FunctionTemplate& function_template_declaration, NamesScope& names_scope, const ClassProxyPtr& base_class )
+void CodeBuilder::PrepareFunctionTemplate(
+	const Synt::FunctionTemplate& function_template_declaration,
+	NamesScope& names_scope,
+	const ClassProxyPtr& base_class,
+	const ClassMemberVisibility visibility )
 {
 	const Synt::ComplexName& complex_name = function_template_declaration.function_->name_;
 	const ProgramString& function_template_name= complex_name.components.front().name;
@@ -202,6 +208,9 @@ void CodeBuilder::PrepareFunctionTemplate( const Synt::FunctionTemplate& functio
 	{
 		if( OverloadedFunctionsSet* const functions_set= same_name->second.GetFunctionsSet() )
 		{
+			if( base_class != nullptr && base_class->class_->GetMemberVisibility( function_template_name ) != visibility )
+				errors_.push_back( ReportFunctionsVisibilityMismatch( function_template_declaration.file_pos_, function_template_name ) ); // All functions with same name must have same visibility.
+
 			// SPRACHE_TODO - check equality of different template functions.
 			functions_set->template_functions.push_back( function_template );
 		}
@@ -213,6 +222,9 @@ void CodeBuilder::PrepareFunctionTemplate( const Synt::FunctionTemplate& functio
 		OverloadedFunctionsSet functions_set;
 		functions_set.template_functions.push_back( function_template );
 		names_scope.AddName( function_template_name, std::move(functions_set) );
+
+		if( base_class != nullptr )
+			base_class->class_->SetMemberVisibility( function_template_name, visibility );
 	}
 }
 
@@ -439,6 +451,7 @@ const NamesScope::InsertedName* CodeBuilder::ResolveForTemplateSignatureParamete
 	while( component_number < signature_parameter.components.size() )
 	{
 		NamesScope* next_space= nullptr;
+		ClassProxyPtr next_space_class= nullptr;
 		const Synt::ComplexName::Component& component= signature_parameter.components[component_number - 1u];
 		const bool is_last_component= component_number + 1u == signature_parameter.components.size();
 
@@ -454,6 +467,7 @@ const NamesScope::InsertedName* CodeBuilder::ResolveForTemplateSignatureParamete
 					return nullptr;
 				}
 				next_space= &class_->members;
+				next_space_class= type->GetClassTypeProxy();
 			}
 		}
 		else if( const TypeTemplatePtr type_template = current_name->second.GetTypeTemplate() )
@@ -478,6 +492,7 @@ const NamesScope::InsertedName* CodeBuilder::ResolveForTemplateSignatureParamete
 					return &names_scope.GetTemplateDependentValue();
 				if( Class* const class_= type->GetClassType() )
 					next_space= &class_->members;
+				next_space_class= type->GetClassTypeProxy();
 			}
 			else if( !is_last_component )
 			{
@@ -491,7 +506,14 @@ const NamesScope::InsertedName* CodeBuilder::ResolveForTemplateSignatureParamete
 
 		const Synt::ComplexName::Component& next_component= signature_parameter.components[component_number];
 		if( next_space != nullptr )
+		{
 			current_name= next_space->GetThisScopeName( next_component.name );
+
+			if( next_space_class != nullptr &&
+				names_scope.GetAccessFor( next_space_class ) < next_space_class->class_->GetMemberVisibility( next_component.name ) )
+				errors_.push_back( ReportAccessingNonpublicClassMember( file_pos, next_space_class->class_->members.GetThisNamespaceName(), next_component.name ) );
+
+		}
 		else if( !is_last_component )
 			return nullptr;
 

@@ -1586,6 +1586,9 @@ Value CodeBuilder::BuildMemberAccessOperator(
 		return ErrorValue();
 	}
 
+	if( names.GetAccessFor( value.GetType().GetClassTypeProxy() ) < class_type->GetMemberVisibility( member_access_operator.member_name_ ) )
+		errors_.push_back( ReportAccessingNonpublicClassMember( member_access_operator.file_pos_, class_type->members.GetThisNamespaceName(), member_access_operator.member_name_ ) );
+
 	if( const OverloadedFunctionsSet* functions_set= class_member->second.GetFunctionsSet() )
 	{
 		if( member_access_operator.have_template_parameters )

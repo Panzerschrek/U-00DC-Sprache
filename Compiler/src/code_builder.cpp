@@ -39,6 +39,13 @@ const TypesMap g_types_map=
 namespace CodeBuilderPrivate
 {
 
+static void AddAncestorsAccessRights_r( Class& the_class, const ClassProxyPtr& ancestor_class )
+{
+	the_class.members.AddAccessRightsFor( ancestor_class, ClassMemberVisibility::Protected );
+	for( const ClassProxyPtr& parent : ancestor_class->class_->parents )
+		AddAncestorsAccessRights_r( the_class, parent );
+}
+
 CodeBuilder::FunctionContext::FunctionContext(
 	const Type in_return_type,
 	const bool in_return_value_is_mutable,
@@ -224,6 +231,8 @@ void CodeBuilder::MergeNameScopes( NamesScope& dst, const NamesScope& src, Class
 					const NamesScopePtr names_scope_copy= std::make_shared<NamesScope>( names_scope->GetThisNamespaceName(), &dst );
 					MergeNameScopes( *names_scope_copy, *names_scope, dst_class_table );
 					dst.AddName( src_member.first, Value( names_scope_copy, src_member.second.GetFilePos() ) );
+
+					// TODO - copy access rights.
 				}
 				else if( const TypeTemplatePtr type_template= src_member.second.GetTypeTemplate() )
 				{
@@ -378,6 +387,8 @@ void CodeBuilder::CopyClass(
 	MergeNameScopes( copy->members, src.members, dst_class_table );
 
 	// Copy fields.
+	copy->members_visibility= src.members_visibility;
+
 	copy->field_count= src.field_count;
 	copy->references_tags_count= src.references_tags_count;
 	copy->is_incomplete= src.is_incomplete;
@@ -564,7 +575,7 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 	else
 	{
 		// Complex name - make full name resolving.
-		previous_declaration= ResolveName( class_declaration.file_pos_, names_scope, class_complex_name );
+		previous_declaration= ResolveName( class_declaration.file_pos_, names_scope, class_complex_name, true );
 		if( previous_declaration == nullptr )
 		{
 			errors_.push_back( ReportClassDeclarationOutsideItsScope( class_declaration.file_pos_ ) );
@@ -622,6 +633,7 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 	Type class_type;
 	class_type= the_class_proxy;
 	the_class->body_file_pos= class_declaration.file_pos_;
+	the_class->members.AddAccessRightsFor( the_class_proxy, ClassMemberVisibility::Private );
 
 	std::vector<llvm::Type*> fields_llvm_types;
 
@@ -682,6 +694,7 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 		}
 
 		the_class->parents.push_back( parent_class_proxy );
+		AddAncestorsAccessRights_r( *the_class, parent_class_proxy );
 		the_class->parents_fields_numbers.push_back( static_cast<unsigned int>(fields_llvm_types.size()) );
 		fields_llvm_types.emplace_back( parent_class_proxy->class_->llvm_type );
 	} // for parents
@@ -694,10 +707,15 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 		class_declaration.kind_attribute_ == Synt::ClassKindAttribute::Abstract ||
 		!class_declaration.parents_.empty() )
 		the_class->kind= Class::Kind::PolymorphNonFinal;
+	else if( class_declaration.kind_attribute_ == Synt::ClassKindAttribute::Struct )
+		the_class->kind= Class::Kind::Struct;
+	else
+		the_class->kind= Class::Kind::NonPolymorph;
 
 	std::vector<PrepareFunctionResult> class_functions;
 	std::vector<const Synt::Class*> inner_classes;
-	std::vector<const Synt::FunctionTemplate*> function_templates;
+	std::vector< std::pair< const Synt::FunctionTemplate*, ClassMemberVisibility > > function_templates;
+	ClassMemberVisibility current_visibility= ClassMemberVisibility::Public;
 
 	for( const Synt::IClassElementPtr& member : class_declaration.elements_ )
 	{
@@ -738,12 +756,14 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 
 				the_class->field_count++;
 			}
+
+			the_class->SetMemberVisibility( in_field->name, current_visibility );
 		}
 		else if( const auto function_declaration=
 			dynamic_cast<const Synt::Function*>( member.get() ) )
 		{
 			// First time, push only prototypes.
-			PrepareFunctionResult function_prepared= PrepareFunction( *function_declaration, true, the_class_proxy, the_class->members );
+			PrepareFunctionResult function_prepared= PrepareFunction( *function_declaration, true, the_class_proxy, the_class->members, current_visibility );
 			if( function_prepared.functions_set != nullptr )
 				ProcessClassVirtualFunction( *the_class, function_prepared );
 			class_functions.push_back( std::move(function_prepared) );
@@ -752,17 +772,27 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 			dynamic_cast<const Synt::Class*>( member.get() ) )
 		{
 			inner_classes.push_back( inner_class );
-			PrepareClass( *inner_class, inner_class->name_, the_class->members, true );
+			const auto innter_class_prepared= PrepareClass( *inner_class, inner_class->name_, the_class->members, true );
+
+			if( innter_class_prepared != nullptr )
+				the_class->SetMemberVisibility( innter_class_prepared->class_->members.GetThisNamespaceName(), current_visibility );
 		}
 		else if( const auto variables_declaration=
 			dynamic_cast<const Synt::VariablesDeclaration*>( member.get() ) )
 		{
-			BuildVariablesDeclarationCode( *variables_declaration, the_class->members, *dummy_function_context_, true );
+			const std::vector<ProgramString> var_names=
+				BuildVariablesDeclarationCode( *variables_declaration, the_class->members, *dummy_function_context_, true );
+
+			for( const ProgramString& name : var_names )
+				the_class->SetMemberVisibility( name, current_visibility );
 		}
 		else if( const auto auto_variable_declaration=
 			dynamic_cast<const Synt::AutoVariableDeclaration*>( member.get() ) )
 		{
-			BuildAutoVariableDeclarationCode( *auto_variable_declaration, the_class->members, *dummy_function_context_, true );
+			const ProgramString var_name=
+				BuildAutoVariableDeclarationCode( *auto_variable_declaration, the_class->members, *dummy_function_context_, true );
+
+			the_class->SetMemberVisibility( var_name, current_visibility );
 		}
 		else if( const auto static_assert_=
 			dynamic_cast<const Synt::StaticAssert*>( member.get() ) )
@@ -773,25 +803,35 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 			dynamic_cast<const Synt::Enum*>( member.get() ) )
 		{
 			PrepareEnum( *enum_, the_class->members );
+			the_class->SetMemberVisibility( enum_->name, current_visibility );
 		}
 		else if( const auto typedef_=
 			dynamic_cast<const Synt::Typedef*>( member.get() ) )
 		{
 			BuildTypedef( *typedef_, the_class->members );
+			the_class->SetMemberVisibility( typedef_->name, current_visibility );
 		}
 		else if( const auto type_template=
 			dynamic_cast<const Synt::TypeTemplateBase*>( member.get() ) )
 		{
-			PrepareTypeTemplate( *type_template, the_class->members );
+			const ProgramString type_template_name=
+				PrepareTypeTemplate( *type_template, the_class->members );
+			the_class->SetMemberVisibility( type_template_name, current_visibility );
 		}
 		else if( const auto function_template=
 			dynamic_cast<const Synt::FunctionTemplate*>( member.get() ) )
 		{
 			// In first pass skip templates, because we process template functions include body.
-			function_templates.push_back(function_template);
+			function_templates.emplace_back( function_template, current_visibility );
 		}
-		else
-			U_ASSERT( false );
+		else if( const auto visibility_label=
+			dynamic_cast<const Synt::ClassVisibilityLabel*>( member.get() ) )
+		{
+			if( the_class->kind == Class::Kind::Struct )
+				errors_.push_back( ReportVisibilityForStruct( visibility_label->file_pos_, class_name ) );
+			current_visibility= visibility_label->visibility_;
+		}
+		else U_ASSERT( false );
 	}
 
 	// Search for explicit noncopy constructors.
@@ -921,6 +961,9 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 		parent->class_->members.ForEachInThisScope(
 			[&]( const NamesScope::InsertedName& name )
 			{
+				if( parent->class_->GetMemberVisibility( name.first ) == ClassMemberVisibility::Private )
+					return; // Do not inherit private members.
+
 				NamesScope::InsertedName* const result_class_name= the_class->members.GetThisScopeName(name.first);
 
 				if( const OverloadedFunctionsSet* const functions= name.second.GetFunctionsSet() )
@@ -935,6 +978,12 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 					{
 						if( OverloadedFunctionsSet* const result_class_functions= result_class_name->second.GetFunctionsSet() )
 						{
+							if( the_class->GetMemberVisibility( name.first ) != parent->class_->GetMemberVisibility( name.first ) )
+							{
+								const auto& file_pos= result_class_functions->functions.empty() ? result_class_functions->template_functions.front()->file_pos : result_class_functions->functions.front().prototype_file_pos;
+								errors_.push_back( ReportFunctionsVisibilityMismatch( file_pos, name.first ) );
+							}
+
 							// Merge function sets, if result class have functions set with given name.
 							// TODO - merge function templates
 							for( const FunctionVariable& parent_function : functions->functions )
@@ -994,8 +1043,8 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 	// Prepare function templates
 	// Here we can face some problems: lower templates can not be seen from upper templtes.
 	// So, assume, that it is not "bug", but "feature".
-	for( const auto function_template : function_templates )
-		PrepareFunctionTemplate( *function_template, the_class->members, the_class_proxy );
+	for( const auto& function_template : function_templates )
+		PrepareFunctionTemplate( *function_template.first, the_class->members, the_class_proxy, function_template.second );
 
 	// Prepare inner classes.
 	for( const Synt::Class* const inner_class : inner_classes )
@@ -1445,7 +1494,8 @@ CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 	const Synt::Function& func,
 	const bool is_class_method_predeclaration,
 	ClassProxyPtr base_class,
-	NamesScope& func_definition_names_scope /* scope, where this function appears */ )
+	NamesScope& func_definition_names_scope /* scope, where this function appears */,
+	const ClassMemberVisibility visibility )
 {
 	PrepareFunctionResult result;
 
@@ -1464,11 +1514,12 @@ CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 	// Arguments, return value, body names all resolved from this scope.
 	NamesScope* func_base_names_scope= &func_definition_names_scope;
 
+	bool is_body_outside_scope= false;
 	if( func.name_.components.size() >= 2u )
 	{
 		// Complex name - search scope for this function.
 		if( const NamesScope::InsertedName* const scope_name=
-			ResolveName( func.file_pos_, func_definition_names_scope, func.name_.components.data(), func.name_.components.size() - 1u ) )
+			ResolveName( func.file_pos_, func_definition_names_scope, func.name_.components.data(), func.name_.components.size() - 1u, true ) )
 		{
 			bool base_space_is_class= false;
 			if( const Type* const type= scope_name->second.GetTypeName() )
@@ -1489,6 +1540,8 @@ CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 				errors_.push_back( ReportNameNotFound( func.file_pos_, func.name_ ) );
 				return result;
 			}
+
+			is_body_outside_scope= true;
 		}
 		else
 		{
@@ -1676,6 +1729,11 @@ CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 		result.func_syntax_element= &func;
 		result.functions_set= inserted_func->second.GetFunctionsSet();
 		result.function_index= result.functions_set->functions.size() - 1u;
+
+		U_ASSERT( !is_body_outside_scope );
+		if( base_class != nullptr )
+			base_class->class_->SetMemberVisibility( func_name, visibility );
+
 		return result;
 	}
 	else
@@ -1700,14 +1758,14 @@ CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 					return result;
 				}
 
-				same_function->body_file_pos= func.file_pos_;
-
 				if( func_variable.is_this_call != same_function->is_this_call )
 					errors_.push_back( ReportThiscallMismatch( func.file_pos_, func_name ) );
 
 				// virtual specifier required for first function declaration only.
 				if( func.virtual_function_kind_ != Synt::VirtualFunctionKind::None )
 					errors_.push_back( ReportVirtualForFunctionImplementation( func.file_pos_, func_name ) );
+
+				same_function->body_file_pos= func.file_pos_;
 
 				BuildFuncCode(
 					*same_function,
@@ -1730,6 +1788,10 @@ CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 					ApplyOverloadedFunction( *functions_set, func_variable, func.file_pos_ );
 				if( !overloading_ok )
 					return result;
+
+				if( base_class != nullptr && !is_body_outside_scope &&
+					base_class->class_->GetMemberVisibility( func_name ) != visibility )
+						errors_.push_back( ReportFunctionsVisibilityMismatch( func.file_pos_, func_name ) ); // All functions with same name must have same visibility.
 
 				FunctionVariable& inserted_func_variable= functions_set->functions.back();
 				inserted_func_variable.prototype_file_pos= func.file_pos_;
@@ -2722,12 +2784,14 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockCode(
 	return block_build_info;
 }
 
-void CodeBuilder::BuildVariablesDeclarationCode(
+std::vector<ProgramString> CodeBuilder::BuildVariablesDeclarationCode(
 	const Synt::VariablesDeclaration& variables_declaration,
 	NamesScope& block_names,
 	FunctionContext& function_context,
 	const bool global )
 {
+	std::vector<ProgramString> result_variables_names;
+
 	const Type type= PrepareType( variables_declaration.type, block_names );
 
 	for( const Synt::VariablesDeclaration::VariableEntry& variable_declaration : variables_declaration.variables )
@@ -2736,7 +2800,7 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 		if( variable_declaration.reference_modifier != ReferenceModifier::Reference && type.IsIncomplete() )
 		{
 			errors_.push_back( ReportUsingIncompleteType( variables_declaration.file_pos_, type.ToString() ) );
-			return;
+			continue;
 		}
 
 		if( IsKeyword( variable_declaration.name ) )
@@ -2900,20 +2964,26 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 		if( NameShadowsTemplateArgument( variable_declaration.name, block_names ) )
 		{
 			errors_.push_back( ReportDeclarationShadowsTemplateArgument( variables_declaration.file_pos_, variable_declaration.name ) );
-			return;
+			continue;
 		}
 
 		const NamesScope::InsertedName* const inserted_name=
 			block_names.AddName( variable_declaration.name, Value( stored_variable, variable_declaration.file_pos ) );
 		if( !inserted_name )
+		{
 			errors_.push_back( ReportRedefinition( variables_declaration.file_pos_, variable_declaration.name ) );
+			continue;
+		}
+		result_variables_names.push_back( variable_declaration.name );
 
 		// After lock of references we can call destructors.
 		CallDestructors( *function_context.stack_variables_stack.back(), function_context, variable_declaration.file_pos );
 	} // for variables
+
+	return result_variables_names;
 }
 
-void CodeBuilder::BuildAutoVariableDeclarationCode(
+ProgramString CodeBuilder::BuildAutoVariableDeclarationCode(
 	const Synt::AutoVariableDeclaration& auto_variable_declaration,
 	NamesScope& block_names,
 	FunctionContext& function_context,
@@ -2939,15 +3009,15 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 		if( NameShadowsTemplateArgument( auto_variable_declaration.name, block_names ) )
 		{
 			errors_.push_back( ReportDeclarationShadowsTemplateArgument( auto_variable_declaration.file_pos_, auto_variable_declaration.name ) );
-			return;
+			return auto_variable_declaration.name;
 		}
 		const NamesScope::InsertedName* inserted_name= block_names.AddName( auto_variable_declaration.name, Value( variable, auto_variable_declaration.file_pos_ ) );
 		if( inserted_name == nullptr )
 		{
 			errors_.push_back( ReportRedefinition( auto_variable_declaration.file_pos_, auto_variable_declaration.name ) );
-			return;
+			return auto_variable_declaration.name;
 		}
-		return;
+		return auto_variable_declaration.name;
 	}
 
 	{ // Check expression type. Expression can have exotic types, such "Overloading functions set", "class name", etc.
@@ -2961,7 +3031,7 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 		if( !type_is_ok )
 		{
 			errors_.push_back( ReportInvalidTypeForAutoVariable( auto_variable_declaration.file_pos_, initializer_experrsion_value.GetType().ToString() ) );
-			return;
+			return auto_variable_declaration.name;
 		}
 	}
 
@@ -2983,7 +3053,7 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 	if( auto_variable_declaration.mutability_modifier == MutabilityModifier::Constexpr && !variable.type.CanBeConstexpr() )
 	{
 		errors_.push_back( ReportInvalidTypeForConstantExpressionVariable( auto_variable_declaration.file_pos_ ) );
-		return;
+		return auto_variable_declaration.name;
 	}
 
 	if( auto_variable_declaration.reference_modifier == ReferenceModifier::Reference )
@@ -2991,12 +3061,12 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 		if( initializer_experrsion.value_type == ValueType::Value )
 		{
 			errors_.push_back( ReportExpectedReferenceValue( auto_variable_declaration.file_pos_ ) );
-			return;
+			return auto_variable_declaration.name;
 		}
 		if( initializer_experrsion.value_type == ValueType::ConstReference && variable.value_type != ValueType::ConstReference )
 		{
 			errors_.push_back( ReportBindingConstReferenceToNonconstReference( auto_variable_declaration.file_pos_ ) );
-			return;
+			return auto_variable_declaration.name;
 		}
 
 		variable.referenced_variables= initializer_experrsion.referenced_variables;
@@ -3016,7 +3086,7 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 		if( variable.type.IsIncomplete() )
 		{
 			errors_.push_back( ReportUsingIncompleteType( auto_variable_declaration.file_pos_, variable.type.ToString() ) );
-			return;
+			return auto_variable_declaration.name;
 		}
 
 		llvm::GlobalVariable* global_variable= nullptr;
@@ -3062,7 +3132,7 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 		else
 		{
 			errors_.push_back( ReportNotImplemented( auto_variable_declaration.file_pos_, "expression initialization for nonfundamental types" ) );
-			return;
+			return auto_variable_declaration.name;
 		}
 
 		if( global_variable != nullptr && variable.constexpr_value != nullptr )
@@ -3088,7 +3158,7 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 		variable.constexpr_value == nullptr )
 	{
 		errors_.push_back( ReportVariableInitializerIsNotConstantExpression( auto_variable_declaration.file_pos_ ) );
-		return;
+		return auto_variable_declaration.name;
 	}
 
 	// Reset constexpr initial value for mutable variables.
@@ -3099,13 +3169,13 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 		global && variable.constexpr_value == nullptr )
 	{
 		errors_.push_back( ReportGlobalVariableMustBeConstexpr( auto_variable_declaration.file_pos_, auto_variable_declaration.name ) );
-		return;
+		return auto_variable_declaration.name;
 	}
 
 	if( NameShadowsTemplateArgument( auto_variable_declaration.name, block_names ) )
 	{
 		errors_.push_back( ReportDeclarationShadowsTemplateArgument( auto_variable_declaration.file_pos_, auto_variable_declaration.name ) );
-		return;
+		return auto_variable_declaration.name;
 	}
 
 	const NamesScope::InsertedName* const inserted_name=
@@ -3115,6 +3185,8 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 
 	// After lock of references we can call destructors.
 	CallDestructors( *function_context.stack_variables_stack.back(), function_context, auto_variable_declaration.file_pos_ );
+
+	return auto_variable_declaration.name;
 }
 
 void CodeBuilder::BuildAssignmentOperatorCode(

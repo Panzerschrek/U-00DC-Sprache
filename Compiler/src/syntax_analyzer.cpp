@@ -2474,6 +2474,22 @@ std::unique_ptr<Class> SyntaxAnalyzer::ParseClassBody()
 				}
 			}
 		}
+		else if( it_->type == Lexem::Type::Identifier &&
+			( it_->text == Keywords::public_ || it_->text == Keywords::private_ || it_->text == Keywords::protected_ ) )
+		{
+			ClassMemberVisibility visibility= ClassMemberVisibility::Public;
+			if( it_->text == Keywords::private_ )
+				visibility= ClassMemberVisibility::Private;
+			if( it_->text == Keywords::protected_ )
+				visibility= ClassMemberVisibility::Protected;
+
+			result->elements_.emplace_back( new ClassVisibilityLabel( it_->file_pos, visibility ) );
+
+			NextLexem();
+			if( it_->type != Lexem::Type::Colon )
+				PushErrorMessage();
+			NextLexem();
+		}
 		else
 		{
 			std::unique_ptr<ClassField> field( new ClassField( it_->file_pos ) );
