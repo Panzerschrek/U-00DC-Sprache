@@ -50,3 +50,29 @@ def ContinuousInnerReferenceTagUsedAsReturnReferenceTag_Test1():
 		}
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def ContinuousInnerReferenceTagUsedAsReturnValueInnerReferenceTag_Test0():
+	c_program_text= """
+		struct S
+		{
+			i32& x;
+			fn constructor( this'a', i32&'b in_x ) ' a <- imut b '
+			( x(in_x) ) {}
+		}
+		fn Pass( S& s' a... ' ) : S' a '
+		{
+			return s;
+		}
+
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			auto& ref= Pass(S(x)).x;  // 'ref' now contains reference to 'x'
+			++x; // Error, 'x' have references
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ReferenceProtectionError" )
+	assert( errors_list[0].file_pos.line == 17 )

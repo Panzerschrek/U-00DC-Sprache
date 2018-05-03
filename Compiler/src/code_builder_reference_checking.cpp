@@ -69,14 +69,23 @@ void CodeBuilder::ProcessFunctionArgReferencesTags(
 		// Inner arg references to return value references
 		if( !in_arg.inner_arg_reference_tags_.empty() )
 		{
-			for( const ProgramString& arg_tag : in_arg.inner_arg_reference_tags_ )
-			for( const ProgramString& ret_tag : func.return_value_inner_reference_tags_ )
+			for( size_t arg_tag_number= 0u; arg_tag_number < regular_tag_count; ++arg_tag_number )
 			{
-				if( arg_tag == ret_tag )
+				const ProgramString& arg_tag= in_arg.inner_arg_reference_tags_[arg_tag_number];
+				for( const ProgramString& ret_tag : func.return_value_inner_reference_tags_ )
 				{
-					const size_t arg_tag_number= &arg_tag - in_arg.inner_arg_reference_tags_.data();
-					//const size_t ret_tag_number= &ret_tag - func.return_value_inner_reference_tags_;
-					function_type.return_references.inner_args_references.emplace_back( arg_number, arg_tag_number );
+					if( arg_tag == ret_tag )
+						function_type.return_references.inner_args_references.emplace_back( arg_number, arg_tag_number );
+				}
+			}
+			for( size_t arg_tag_number= regular_tag_count; arg_tag_number < arg_reference_tag_count; ++arg_tag_number )
+			{
+				// Process continouos arg tag.
+				const ProgramString& arg_tag= in_arg.inner_arg_reference_tags_[regular_tag_count];
+				for( const ProgramString& ret_tag : func.return_value_inner_reference_tags_ )
+				{
+					if( arg_tag == ret_tag )
+						function_type.return_references.inner_args_references.emplace_back( arg_number, arg_tag_number );
 				}
 			}
 		}
