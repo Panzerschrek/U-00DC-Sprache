@@ -1612,9 +1612,19 @@ CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 
 	if( !function_type.return_value_is_reference && !func.return_value_inner_reference_tags_.empty() )
 	{
-		if( !function_type.return_type.IsIncomplete() && // Check reference tag count only for complete types.
-			func.return_value_inner_reference_tags_.size() != function_type.return_type.ReferencesTagsCount() )
-			errors_.push_back( ReportInvalidReferenceTagCount( func.file_pos_, func.return_value_inner_reference_tags_.size(), function_type.return_type.ReferencesTagsCount() ) );
+		const bool return_value_has_continuous_tag= !func.return_value_inner_reference_tags_.empty() && func.return_value_inner_reference_tags_.back().empty();
+		const size_t return_value_regular_tag_count= return_value_has_continuous_tag ? ( func.return_value_inner_reference_tags_.size() - 2u ) : func.return_value_inner_reference_tags_.size();
+
+		if( !function_type.return_type.IsIncomplete() ) // Check reference tag count only for complete types.
+		{
+			if( return_value_has_continuous_tag )
+			{
+				if( return_value_regular_tag_count > function_type.return_type.ReferencesTagsCount() )
+					errors_.push_back( ReportInvalidReferenceTagCount( func.file_pos_, return_value_has_continuous_tag, function_type.return_type.ReferencesTagsCount() ) );
+			}
+			else if( func.return_value_inner_reference_tags_.size() != function_type.return_type.ReferencesTagsCount() )
+				errors_.push_back( ReportInvalidReferenceTagCount( func.file_pos_, func.return_value_inner_reference_tags_.size(), function_type.return_type.ReferencesTagsCount() ) );
+		}
 	}
 
 	// Args.

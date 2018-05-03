@@ -17,7 +17,6 @@ void CodeBuilder::ProcessFunctionArgReferencesTags(
 {
 	const bool has_continuous_tag= !in_arg.inner_arg_reference_tags_.empty() && in_arg.inner_arg_reference_tags_.back().empty();
 	const size_t regular_tag_count= has_continuous_tag ? ( in_arg.inner_arg_reference_tags_.size() - 2u ) : in_arg.inner_arg_reference_tags_.size();
-
 	const size_t arg_reference_tag_count= out_arg.type.ReferencesTagsCount();
 
 	if( !in_arg.inner_arg_reference_tags_.empty() &&
@@ -53,15 +52,25 @@ void CodeBuilder::ProcessFunctionArgReferencesTags(
 		}
 	}
 
+	const bool return_value_has_continuous_tag= !func.return_value_inner_reference_tags_.empty() && func.return_value_inner_reference_tags_.back().empty();
+	const size_t return_value_regular_tag_count= return_value_has_continuous_tag ? ( func.return_value_inner_reference_tags_.size() - 2u ) : func.return_value_inner_reference_tags_.size();
+	const size_t return_value_reference_tag_count= function_type.return_type.ReferencesTagsCount();
+
 	if( !function_type.return_value_is_reference && !func.return_value_inner_reference_tags_.empty() &&
-		function_type.return_type.ReferencesTagsCount() > 0u )
+		return_value_reference_tag_count > 0u )
 	{
 		// In arg reference to return value references
 		if( out_arg.is_reference && !in_arg.reference_tag_.empty() )
 		{
-			for( const ProgramString& tag : func.return_value_inner_reference_tags_ )
+			for( size_t ret_tag_number= 0u; ret_tag_number < return_value_regular_tag_count; ++ ret_tag_number )
 			{
-				if( tag == in_arg.reference_tag_ )
+				if( func.return_value_inner_reference_tags_[ret_tag_number] == in_arg.reference_tag_ )
+					function_type.return_references.args_references.push_back( arg_number );
+			}
+			for( size_t ret_tag_number= return_value_regular_tag_count; ret_tag_number < return_value_reference_tag_count; ++ret_tag_number )
+			{
+				// Process continouos arg tag.
+				if( func.return_value_inner_reference_tags_[return_value_regular_tag_count] == in_arg.reference_tag_ )
 					function_type.return_references.args_references.push_back( arg_number );
 			}
 		}
