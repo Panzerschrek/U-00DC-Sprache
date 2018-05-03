@@ -173,6 +173,7 @@ void CodeBuilder::ProcessFunctionReferencesPollution(
 	[&]( const ProgramString& name ) -> std::vector<Function::ArgReference>
 	{
 		std::vector<Function::ArgReference> result;
+		bool any_ref_found= false;
 
 		for( size_t arg_n= 0u; arg_n < function_type.args.size(); ++arg_n )
 		{
@@ -184,10 +185,24 @@ void CodeBuilder::ProcessFunctionReferencesPollution(
 			if( !in_arg.reference_tag_.empty() && in_arg.reference_tag_ == name )
 				result.emplace_back( arg_n, Function::c_arg_reference_tag_number );
 
-			for( const ProgramString& inner_tag : in_arg.inner_arg_reference_tags_ )
-				if( inner_tag == name )
-					result.emplace_back( arg_n, &inner_tag - in_arg.inner_arg_reference_tags_.data() );
+			const bool has_continuous_tag= !in_arg.inner_arg_reference_tags_.empty() && in_arg.inner_arg_reference_tags_.back().empty();
+			const size_t regular_tag_count= has_continuous_tag ? ( in_arg.inner_arg_reference_tags_.size() - 2u ) : in_arg.inner_arg_reference_tags_.size();
+			const size_t arg_reference_tag_count= function_type.args[arg_n].type.ReferencesTagsCount();
+
+			for( size_t tag_number= 0u; tag_number < regular_tag_count; ++tag_number )
+				if( in_arg.inner_arg_reference_tags_[tag_number] == name )
+					result.emplace_back( arg_n, tag_number );
+
+			for( size_t tag_number= regular_tag_count; tag_number < arg_reference_tag_count; ++tag_number )
+				if( in_arg.inner_arg_reference_tags_[regular_tag_count] == name )
+					result.emplace_back( arg_n, tag_number );
+
+			if( has_continuous_tag && in_arg.inner_arg_reference_tags_[regular_tag_count] == name )
+				any_ref_found= true;
 		}
+
+		if( !any_ref_found && result.empty() )
+			errors_.push_back( ReportNameNotFound( func.file_pos_, name ) );
 
 		return result;
 	};
@@ -243,10 +258,6 @@ void CodeBuilder::ProcessFunctionReferencesPollution(
 
 			const std::vector<Function::ArgReference> dst_references= get_references( pollution.first );
 			const std::vector<Function::ArgReference> src_references= get_references( pollution.second.name );
-			if( dst_references.empty() )
-				errors_.push_back( ReportNameNotFound( func.file_pos_, pollution.first ) );
-			if( src_references.empty() )
-				errors_.push_back( ReportNameNotFound( func.file_pos_, pollution.second.name ) );
 
 			for( const Function::ArgReference& dst_ref : dst_references )
 			{
