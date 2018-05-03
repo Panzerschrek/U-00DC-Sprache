@@ -69,7 +69,7 @@ void CodeBuilder::ProcessFunctionArgReferencesTags(
 			}
 			for( size_t ret_tag_number= return_value_regular_tag_count; ret_tag_number < return_value_reference_tag_count; ++ret_tag_number )
 			{
-				// Process continouos arg tag.
+				// Process continouos ret tag.
 				if( func.return_value_inner_reference_tags_[return_value_regular_tag_count] == in_arg.reference_tag_ )
 					function_type.return_references.args_references.push_back( arg_number );
 			}
@@ -81,9 +81,15 @@ void CodeBuilder::ProcessFunctionArgReferencesTags(
 			for( size_t arg_tag_number= 0u; arg_tag_number < regular_tag_count; ++arg_tag_number )
 			{
 				const ProgramString& arg_tag= in_arg.inner_arg_reference_tags_[arg_tag_number];
-				for( const ProgramString& ret_tag : func.return_value_inner_reference_tags_ )
+				for( size_t ret_tag_number= 0u; ret_tag_number < return_value_regular_tag_count; ++ ret_tag_number )
 				{
-					if( arg_tag == ret_tag )
+					if( arg_tag == func.return_value_inner_reference_tags_[ret_tag_number] )
+						function_type.return_references.inner_args_references.emplace_back( arg_number, arg_tag_number );
+				}
+				for( size_t ret_tag_number= return_value_regular_tag_count; ret_tag_number < return_value_reference_tag_count; ++ret_tag_number )
+				{
+					// Process continouos ret tag.
+					if( arg_tag == func.return_value_inner_reference_tags_[return_value_regular_tag_count] )
 						function_type.return_references.inner_args_references.emplace_back( arg_number, arg_tag_number );
 				}
 			}
@@ -91,9 +97,15 @@ void CodeBuilder::ProcessFunctionArgReferencesTags(
 			{
 				// Process continouos arg tag.
 				const ProgramString& arg_tag= in_arg.inner_arg_reference_tags_[regular_tag_count];
-				for( const ProgramString& ret_tag : func.return_value_inner_reference_tags_ )
+				for( size_t ret_tag_number= 0u; ret_tag_number < return_value_regular_tag_count; ++ ret_tag_number )
 				{
-					if( arg_tag == ret_tag )
+					if( arg_tag == func.return_value_inner_reference_tags_[ret_tag_number] )
+						function_type.return_references.inner_args_references.emplace_back( arg_number, arg_tag_number );
+				}
+				for( size_t ret_tag_number= return_value_regular_tag_count; ret_tag_number < return_value_reference_tag_count; ++ret_tag_number )
+				{
+					// Process continouos ret tag.
+					if( arg_tag == func.return_value_inner_reference_tags_[return_value_regular_tag_count] )
 						function_type.return_references.inner_args_references.emplace_back( arg_number, arg_tag_number );
 				}
 			}
