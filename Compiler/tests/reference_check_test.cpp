@@ -987,6 +987,71 @@ U_TEST( ReferenceCheckTest_TryUseVariableWhenReferenceInFunctionCallExists_1 )
 	U_TEST_ASSERT( error.file_pos.line == 9u );
 }
 
+U_TEST( ReferenceCheckTest_TryModifyArrayInIndexing_Test0 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn Modify( [ i32, 4 ] &mut arr ) : u32 { return 1u; }
+		fn Foo()
+		{
+			var [ i32, 4 ] mut arr= zero_init;
+			auto el= arr[ Modify( arr ) ];
+		}
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::AccessingVariableThatHaveMutableReference );
+	U_TEST_ASSERT( error.file_pos.line == 6u );
+}
+
+U_TEST( ReferenceCheckTest_TryModifyArrayInIndexing_Test1 )
+{
+	static const char c_program_text[]=
+	R"(
+		template</ type T /> fn ToImut( T& t ) : T& { return t; }
+		fn Modify( [ i32, 4 ] &mut arr ) : u32 { return 1u; }
+		fn Foo()
+		{
+			var [ i32, 4 ] mut arr= zero_init;
+			auto el= ToImut(arr)[ Modify( arr ) ];
+		}
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferenceProtectionError );
+	U_TEST_ASSERT( error.file_pos.line == 7u );
+}
+
+U_TEST( ReferenceCheckTest_TryModifyArrayInIndexing_Test2 )
+{
+	static const char c_program_text[]=
+	R"(
+		struct S{ [ i32, 4 ] arr; }
+		fn Modify( S &mut s ) : u32 { return 0u; }
+		fn Foo()
+		{
+			var S mut s= zero_init;
+			auto el= s.arr[ Modify( s ) ];   // Error, we can not modify 's' in array index calcualtion, because we lock array as part of 's'.
+		}
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::AccessingVariableThatHaveMutableReference );
+	U_TEST_ASSERT( error.file_pos.line == 7u );
+}
+
 U_TEST( ReferenceCheckTest_DeltaOneOperatorsModifyValue_0 )
 {
 	static const char c_program_text[]=

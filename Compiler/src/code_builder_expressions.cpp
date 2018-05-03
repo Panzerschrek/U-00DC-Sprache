@@ -1456,6 +1456,11 @@ Value CodeBuilder::BuildIndexationOperator(
 		return ErrorValue();
 	}
 
+	// Lock array. We must prevent modification of array in index calcualtion.
+	std::vector<VariableStorageUseCounter> array_locks;
+	for( const StoredVariablePtr& stored_variable : variable.referenced_variables )
+		array_locks.push_back( variable.value_type == ValueType::Reference ? stored_variable->mut_use_counter : stored_variable->imut_use_counter );
+
 	const Value index_value=
 		BuildExpressionCode(
 			*indexation_operator.index_,
