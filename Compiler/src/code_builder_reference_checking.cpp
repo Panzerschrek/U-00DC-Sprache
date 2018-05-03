@@ -15,18 +15,20 @@ void CodeBuilder::ProcessFunctionArgReferencesTags(
 	const Function::Arg& out_arg,
 	const size_t arg_number )
 {
+	const bool has_continuous_tag= !in_arg.inner_arg_reference_tags_.empty() && in_arg.inner_arg_reference_tags_.back().empty();
+	const size_t regular_tag_count= has_continuous_tag ? ( in_arg.inner_arg_reference_tags_.size() - 2u ) : in_arg.inner_arg_reference_tags_.size();
+
+	const size_t arg_reference_tag_count= out_arg.type.ReferencesTagsCount();
+
 	if( !in_arg.inner_arg_reference_tags_.empty() &&
 		!out_arg.type.IsIncomplete() ) // Only generate error for args with complete type. Complete types now required for functions with body.
 	{
-		if( !in_arg.inner_arg_reference_tags_.empty() && in_arg.inner_arg_reference_tags_.back().empty() )
+		if( has_continuous_tag )
 		{
-			// Last tag is continuous.
-			U_ASSERT( in_arg.inner_arg_reference_tags_.size() >= 2u );
-			const auto min_tag_count= in_arg.inner_arg_reference_tags_.size() - 2u;
-			if( min_tag_count > out_arg.type.ReferencesTagsCount() )
-				errors_.push_back( ReportInvalidReferenceTagCount( in_arg.file_pos_, min_tag_count, out_arg.type.ReferencesTagsCount() ) );
+			if( regular_tag_count > arg_reference_tag_count )
+				errors_.push_back( ReportInvalidReferenceTagCount( in_arg.file_pos_, regular_tag_count, out_arg.type.ReferencesTagsCount() ) );
 		}
-		else if( in_arg.inner_arg_reference_tags_.size() != out_arg.type.ReferencesTagsCount() )
+		else if( in_arg.inner_arg_reference_tags_.size() != arg_reference_tag_count )
 			errors_.push_back( ReportInvalidReferenceTagCount( in_arg.file_pos_, in_arg.inner_arg_reference_tags_.size(), out_arg.type.ReferencesTagsCount() ) );
 	}
 
@@ -38,10 +40,15 @@ void CodeBuilder::ProcessFunctionArgReferencesTags(
 			function_type.return_references.args_references.push_back( arg_number );
 
 		// Inner arg references to return reference
-		for( const ProgramString& tag : in_arg.inner_arg_reference_tags_ )
+		for( size_t tag_number= 0u; tag_number < regular_tag_count; ++tag_number )
 		{
-			const size_t tag_number= &tag - in_arg.inner_arg_reference_tags_.data();
-			if( tag == func.return_value_reference_tag_ )
+			if( in_arg.inner_arg_reference_tags_[tag_number] == func.return_value_reference_tag_ )
+				function_type.return_references.inner_args_references.emplace_back( arg_number, tag_number );
+		}
+		for( size_t tag_number= regular_tag_count; tag_number < arg_reference_tag_count; ++tag_number )
+		{
+			// Process continouos arg tag.
+			if( in_arg.inner_arg_reference_tags_[regular_tag_count] == func.return_value_reference_tag_ )
 				function_type.return_references.inner_args_references.emplace_back( arg_number, tag_number );
 		}
 	}
@@ -87,8 +94,20 @@ void CodeBuilder::TryGenerateFunctionReturnReferencesMapping(
 	{
 		if( !func.return_value_reference_tag_.empty() )
 		{
-			// Tag exists, but referenced args is empty - means tag apperas only in return value, but not in any argument.
-			errors_.push_back( ReportNameNotFound( func.file_pos_, func.return_value_reference_tag_ ) );
+			bool tag_found= false;
+			for( const Synt::FunctionArgumentPtr& arg : func.arguments_ )
+			{
+				for( const ProgramString& tag : arg->inner_arg_reference_tags_ )
+					if( tag == func.return_value_reference_tag_ )
+						tag_found= true;
+				if( arg->reference_tag_ == func.return_value_reference_tag_ )
+					tag_found= true;
+				if( tag_found )
+					break;
+			}
+
+			if( !tag_found ) // Tag exists, but referenced args is empty - means tag apperas only in return value, but not in any argument.
+				errors_.push_back( ReportNameNotFound( func.file_pos_, func.return_value_reference_tag_ ) );
 		}
 
 		// If there is no tag for return reference, assume, that it may refer to any reference argument, but not inner reference of any argument.
