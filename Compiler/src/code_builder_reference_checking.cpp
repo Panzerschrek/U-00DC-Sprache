@@ -16,9 +16,19 @@ void CodeBuilder::ProcessFunctionArgReferencesTags(
 	const size_t arg_number )
 {
 	if( !in_arg.inner_arg_reference_tags_.empty() &&
-		!out_arg.type.IsIncomplete() && // Only generate error for args with complete type. Complete types now required for functions with body.
-		in_arg.inner_arg_reference_tags_.size() != out_arg.type.ReferencesTagsCount() )
-		errors_.push_back( ReportInvalidReferenceTagCount( in_arg.file_pos_, in_arg.inner_arg_reference_tags_.size(), out_arg.type.ReferencesTagsCount() ) );
+		!out_arg.type.IsIncomplete() ) // Only generate error for args with complete type. Complete types now required for functions with body.
+	{
+		if( !in_arg.inner_arg_reference_tags_.empty() && in_arg.inner_arg_reference_tags_.back().empty() )
+		{
+			// Last tag is continuous.
+			U_ASSERT( in_arg.inner_arg_reference_tags_.size() >= 2u );
+			const auto min_tag_count= in_arg.inner_arg_reference_tags_.size() - 2u;
+			if( min_tag_count > out_arg.type.ReferencesTagsCount() )
+				errors_.push_back( ReportInvalidReferenceTagCount( in_arg.file_pos_, min_tag_count, out_arg.type.ReferencesTagsCount() ) );
+		}
+		else if( in_arg.inner_arg_reference_tags_.size() != out_arg.type.ReferencesTagsCount() )
+			errors_.push_back( ReportInvalidReferenceTagCount( in_arg.file_pos_, in_arg.inner_arg_reference_tags_.size(), out_arg.type.ReferencesTagsCount() ) );
+	}
 
 	if( function_type.return_value_is_reference && !func.return_value_reference_tag_.empty() )
 	{

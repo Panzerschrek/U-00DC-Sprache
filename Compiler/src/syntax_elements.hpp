@@ -548,7 +548,7 @@ public:
 	std::vector<Member> members;
 };
 
-typedef std::vector<ProgramString> ReferencesTagsList;
+typedef std::vector<ProgramString> ReferencesTagsList; // If last tag is empty string - means continuous tag - like arg' a, b, c... '
 
 class FunctionArgument final : public SyntaxElementBase
 {

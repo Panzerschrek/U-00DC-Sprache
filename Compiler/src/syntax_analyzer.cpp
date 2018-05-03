@@ -933,6 +933,19 @@ ReferencesTagsList SyntaxAnalyzer::ParseReferencesTagsList()
 			NextLexem();
 			break;
 		}
+		else if( it_->type == Lexem::Type::Ellipsis )
+		{
+			NextLexem();
+			result.emplace_back();
+
+			if( it_->type != Lexem::Type::Apostrophe )
+			{
+				PushErrorMessage();
+				return result;
+			}
+			NextLexem();
+			break;
+		}
 	}
 
 	return result;
