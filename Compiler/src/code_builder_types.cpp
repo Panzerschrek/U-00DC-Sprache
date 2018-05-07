@@ -730,6 +730,7 @@ bool FunctionVariable::VirtuallyEquals( const FunctionVariable& other ) const
 		l_type.return_value_is_mutable == r_type.return_value_is_mutable &&
 		l_type.return_references == r_type.return_references &&
 		l_type.references_pollution == r_type.references_pollution &&
+		l_type.unsafe == r_type.unsafe &&
 		l_type.args.size() == r_type.args.size() &&
 		std::equal( l_type.args.begin() + 1, l_type.args.end(), r_type.args.begin() + 1 );  // Compare args, except first.
 }
