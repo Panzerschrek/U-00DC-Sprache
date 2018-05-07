@@ -1859,6 +1859,9 @@ Value CodeBuilder::DoCallFunction(
 {
 	U_ASSERT( !( evaluate_args_in_reverse_order && first_arg != nullptr ) );
 
+	if( function_type.unsafe && !function_context.is_in_unsafe_block )
+		errors_.push_back( ReportUnsafeFunctionCallOutsideUnsafeBlock( call_file_pos ) );
+
 	const size_t first_arg_count= first_arg == 0u ? 0u : 1u;
 	const size_t arg_count= args.size() + first_arg_count;
 	U_ASSERT( arg_count == function_type.args.size() );

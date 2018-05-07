@@ -654,7 +654,8 @@ bool operator==( const Function& r, const Function& l )
 		r.args == l.args &&
 		r.return_references == l.return_references &&
 		r.return_references == l.return_references &&
-		r.references_pollution == l.references_pollution;
+		r.references_pollution == l.references_pollution &&
+		r.unsafe == l.unsafe;
 }
 
 bool operator!=( const Function& r, const Function& l )

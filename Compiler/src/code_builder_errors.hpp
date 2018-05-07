@@ -167,6 +167,9 @@ enum class CodeBuilderErrorCode : unsigned int
 	VirtualForPrivateFunction,
 	VirtualForFunctionTemplate,
 	VirtualForFunctionImplementation,
+
+	// Unsafe
+	UnsafeFunctionCallOutsideUnsafeBlock,
 };
 
 struct CodeBuilderError
@@ -304,5 +307,6 @@ CodeBuilderError ReportPureDestructor( const FilePos& file_pos, const ProgramStr
 CodeBuilderError ReportVirtualForPrivateFunction( const FilePos& file_pos, const ProgramString& function_name );
 CodeBuilderError ReportVirtualForFunctionTemplate( const FilePos& file_pos, const ProgramString& function_name );
 CodeBuilderError ReportVirtualForFunctionImplementation( const FilePos& file_pos, const ProgramString& function_name );
+CodeBuilderError ReportUnsafeFunctionCallOutsideUnsafeBlock( const FilePos& file_pos );
 
 } // namespace U

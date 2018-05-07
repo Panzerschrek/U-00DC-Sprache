@@ -1198,6 +1198,9 @@ void CodeBuilder::TryCallCopyConstructor(
 	function_context.llvm_ir_builder.CreateCall(
 		constructor->llvm_function,
 		llvm::ArrayRef<llvm::Value*>( constructor_args, 2u ) );
+
+	if( constructor->type.GetFunctionType()->unsafe && !function_context.is_in_unsafe_block )
+		errors_.push_back( ReportUnsafeFunctionCallOutsideUnsafeBlock( file_pos ) );
 }
 
 void CodeBuilder::GenerateLoop(
@@ -1670,6 +1673,8 @@ CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 
 		ProcessFunctionArgReferencesTags( func, function_type, *arg, out_arg, function_type.args.size() - 1u );
 	} // for arguments
+
+	function_type.unsafe= func.unsafe_;
 
 	TryGenerateFunctionReturnReferencesMapping( func, function_type );
 	ProcessFunctionReferencesPollution( func, function_type, base_class );
@@ -2774,6 +2779,9 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockCode(
 		else if( const auto unsafe_block=
 			dynamic_cast<const Synt::UnsafeBlock*>( block_element_ptr ) )
 		{
+			const bool prev_unsafe= function_context.is_in_unsafe_block;
+			function_context.is_in_unsafe_block= true;
+
 			const BlockBuildInfo inner_block_build_info=
 				BuildBlockCode( *unsafe_block->block_, block_names, function_context );
 
@@ -2785,6 +2793,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockCode(
 			if( inner_block_build_info.have_unconditional_return_inside ||
 				block_build_info.have_uncodnitional_break_or_continue )
 				try_report_unreachable_code();
+
+			function_context.is_in_unsafe_block= prev_unsafe;
 		}
 		else
 			U_ASSERT(false);

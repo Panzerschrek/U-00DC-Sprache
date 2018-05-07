@@ -93,6 +93,7 @@ private:
 		llvm::IRBuilder<> llvm_ir_builder; // Use this builder for all instructions, except "alloca"
 
 		std::vector<LoopFrame> loops_stack;
+		bool is_in_unsafe_block= false;
 
 		// Stack for stack variables.
 		// First entry is set of function arguments.

@@ -202,6 +202,7 @@ public:
 	bool return_value_is_reference= false;
 	bool return_value_is_mutable= false;
 	std::vector<Arg> args;
+	bool unsafe= false;
 
 	// for functions, returning references this is references of reference itslef.
 	// For function, returning values, this is inner references.
