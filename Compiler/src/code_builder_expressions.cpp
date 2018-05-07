@@ -1087,6 +1087,11 @@ Value CodeBuilder::BuildNamedOperand(
 		return ErrorValue();
 	}
 
+	const ProgramString back_name_component= named_operand.name_.components.back().name ;
+	if( !function_context.is_in_unsafe_block &&
+		( back_name_component == Keywords::constructor_ || back_name_component == Keywords::destructor_ ) )
+		errors_.push_back( ReportExplicitAccessToThisMethodIsUnsafe( named_operand.file_pos_, back_name_component ) );
+
 	if( const ClassField* const field= name_entry->second.GetClassField() )
 	{
 		if( function_context.this_ == nullptr )
@@ -1590,6 +1595,10 @@ Value CodeBuilder::BuildMemberAccessOperator(
 		errors_.push_back( ReportNameNotFound( member_access_operator.file_pos_, member_access_operator.member_name_ ) );
 		return ErrorValue();
 	}
+
+	if( !function_context.is_in_unsafe_block &&
+		( member_access_operator.member_name_ == Keywords::constructor_ || member_access_operator.member_name_ == Keywords::destructor_ ) )
+		errors_.push_back( ReportExplicitAccessToThisMethodIsUnsafe( member_access_operator.file_pos_,  member_access_operator.member_name_ ) );
 
 	if( names.GetAccessFor( value.GetType().GetClassTypeProxy() ) < class_type->GetMemberVisibility( member_access_operator.member_name_ ) )
 		errors_.push_back( ReportAccessingNonpublicClassMember( member_access_operator.file_pos_, class_type->members.GetThisNamespaceName(), member_access_operator.member_name_ ) );

@@ -325,3 +325,85 @@ def FunctionDoesNotOverride_ForUnsafe_Test0():
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "FunctionDoesNotOverride" )
 	assert( errors_list[0].file_pos.line == 9 )
+
+
+def ExplicitAccessToSpecialMethodsIsUnsafe_Test0():
+	c_program_text= """
+		struct S {} // have generated default-constructor
+		fn Foo()
+		{
+			var S mut s;
+			s.constructor;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ExplicitAccessToThisMethodIsUnsafe" )
+	assert( errors_list[0].file_pos.line == 6 )
+
+
+def ExplicitAccessToSpecialMethodsIsUnsafe_Test1():
+	c_program_text= """
+		struct S {} // have generated default-constructor
+		fn Foo()
+		{
+			S::constructor;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ExplicitAccessToThisMethodIsUnsafe" )
+	assert( errors_list[0].file_pos.line == 5 )
+
+
+def ExplicitAccessToSpecialMethodsIsUnsafe_Test2():
+	c_program_text= """
+		struct S {  fn destructor(){}  }
+		fn Foo()
+		{
+			var S mut s;
+			s.destructor();
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ExplicitAccessToThisMethodIsUnsafe" )
+	assert( errors_list[0].file_pos.line == 6 )
+
+
+def ExplicitAccessToSpecialMethodsIsUnsafe_Test3():
+	c_program_text= """
+		struct S {  fn destructor(){}  }
+		fn Foo()
+		{
+			::S::destructor;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ExplicitAccessToThisMethodIsUnsafe" )
+	assert( errors_list[0].file_pos.line == 5 )
+
+
+def ExplicitAccessToSpecialMethodsIsUnsafe_Test4():
+	c_program_text= """
+		struct S {  fn constructor( i32 x ){}  }
+		fn Foo()
+		{
+			var S mut s(0);
+			unsafe{  s.constructor(42);  }   // ok, can access constructor in unsafe block
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def ExplicitAccessToSpecialMethodsIsUnsafe_Test5():
+	c_program_text= """
+		struct S {  fn destructor(){} }
+		fn Foo()
+		{
+			var S mut s;
+			unsafe{  s.destructor();  }   // ok, can access destructor in unsafe block
+		}
+	"""
+	tests_lib.build_program( c_program_text )

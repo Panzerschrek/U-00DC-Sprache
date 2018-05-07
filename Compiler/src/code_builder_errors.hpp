@@ -170,6 +170,7 @@ enum class CodeBuilderErrorCode : unsigned int
 
 	// Unsafe
 	UnsafeFunctionCallOutsideUnsafeBlock,
+	ExplicitAccessToThisMethodIsUnsafe,
 };
 
 struct CodeBuilderError
@@ -308,5 +309,6 @@ CodeBuilderError ReportVirtualForPrivateFunction( const FilePos& file_pos, const
 CodeBuilderError ReportVirtualForFunctionTemplate( const FilePos& file_pos, const ProgramString& function_name );
 CodeBuilderError ReportVirtualForFunctionImplementation( const FilePos& file_pos, const ProgramString& function_name );
 CodeBuilderError ReportUnsafeFunctionCallOutsideUnsafeBlock( const FilePos& file_pos );
+CodeBuilderError ReportExplicitAccessToThisMethodIsUnsafe( const FilePos& file_pos, const ProgramString& method_name );
 
 } // namespace U
