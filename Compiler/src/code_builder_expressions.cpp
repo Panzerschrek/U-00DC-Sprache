@@ -104,7 +104,7 @@ boost::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 		const Variable l_var_real= *BuildExpressionCode(  left_expr, names, function_context ).GetVariable();
 		const Variable r_var_real= *BuildExpressionCode( right_expr, names, function_context ).GetVariable();
 		if( l_var_real.type.HaveDestructor() )
-			CallDestructor( l_var_real.llvm_value, l_var_real.type, function_context );
+			CallDestructor( l_var_real.llvm_value, l_var_real.type, function_context, file_pos );
 		CopyBytes( r_var_real.llvm_value, l_var_real.llvm_value, l_var_real.type, function_context );
 
 		// Write references from src to dst and check it.
@@ -1087,6 +1087,11 @@ Value CodeBuilder::BuildNamedOperand(
 		return ErrorValue();
 	}
 
+	const ProgramString back_name_component= named_operand.name_.components.back().name ;
+	if( !function_context.is_in_unsafe_block &&
+		( back_name_component == Keywords::constructor_ || back_name_component == Keywords::destructor_ ) )
+		errors_.push_back( ReportExplicitAccessToThisMethodIsUnsafe( named_operand.file_pos_, back_name_component ) );
+
 	if( const ClassField* const field= name_entry->second.GetClassField() )
 	{
 		if( function_context.this_ == nullptr )
@@ -1591,6 +1596,10 @@ Value CodeBuilder::BuildMemberAccessOperator(
 		return ErrorValue();
 	}
 
+	if( !function_context.is_in_unsafe_block &&
+		( member_access_operator.member_name_ == Keywords::constructor_ || member_access_operator.member_name_ == Keywords::destructor_ ) )
+		errors_.push_back( ReportExplicitAccessToThisMethodIsUnsafe( member_access_operator.file_pos_,  member_access_operator.member_name_ ) );
+
 	if( names.GetAccessFor( value.GetType().GetClassTypeProxy() ) < class_type->GetMemberVisibility( member_access_operator.member_name_ ) )
 		errors_.push_back( ReportAccessingNonpublicClassMember( member_access_operator.file_pos_, class_type->members.GetThisNamespaceName(), member_access_operator.member_name_ ) );
 
@@ -1858,6 +1867,9 @@ Value CodeBuilder::DoCallFunction(
 	FunctionContext& function_context )
 {
 	U_ASSERT( !( evaluate_args_in_reverse_order && first_arg != nullptr ) );
+
+	if( function_type.unsafe && !function_context.is_in_unsafe_block )
+		errors_.push_back( ReportUnsafeFunctionCallOutsideUnsafeBlock( call_file_pos ) );
 
 	const size_t first_arg_count= first_arg == 0u ? 0u : 1u;
 	const size_t arg_count= args.size() + first_arg_count;

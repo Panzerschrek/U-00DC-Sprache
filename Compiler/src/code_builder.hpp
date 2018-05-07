@@ -93,6 +93,7 @@ private:
 		llvm::IRBuilder<> llvm_ir_builder; // Use this builder for all instructions, except "alloca"
 
 		std::vector<LoopFrame> loops_stack;
+		bool is_in_unsafe_block= false;
 
 		// Stack for stack variables.
 		// First entry is set of function arguments.
@@ -318,11 +319,12 @@ private:
 	void CallDestructor(
 		llvm::Value* ptr,
 		const Type& type,
-		FunctionContext& function_context );
+		FunctionContext& function_context,
+		const FilePos& file_pos );
 
 	void CallDestructorsForLoopInnerVariables( FunctionContext& function_context, const FilePos& file_pos );
 	void CallDestructorsBeforeReturn( FunctionContext& function_context, const FilePos& file_pos );
-	void CallMembersDestructors( FunctionContext& function_context );
+	void CallMembersDestructors( FunctionContext& function_context, const FilePos& file_pos );
 
 	void BuildNamespaceBody(
 		const Synt::ProgramElements& body_elements,

@@ -1726,6 +1726,13 @@ BlockPtr SyntaxAnalyzer::ParseBlock()
 			elements.emplace_back( ParseStaticAssert() );
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::halt_ )
 			elements.emplace_back( ParseHalt() );
+		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::unsafe_ )
+		{
+			NextLexem();
+			BlockPtr block= ParseBlock();
+			if( block != nullptr )
+				elements.emplace_back( new UnsafeBlock( std::move( block ) ) );
+		}
 
 		else if( it_->type == Lexem::Type::Increment )
 		{
@@ -2251,6 +2258,13 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 	if( it_->type == Lexem::Type::Apostrophe )
 		references_pollution_list= ParseFunctionReferencesPollutionList();
 
+	bool unsafe= false;
+	if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::unsafe_ )
+	{
+		unsafe= true;
+		NextLexem();
+	}
+
 	if( it_->type == Lexem::Type::Colon )
 	{
 		NextLexem();
@@ -2370,7 +2384,8 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 			std::move( constructor_initialization_list ),
 			std::move( block ),
 			overloaded_operator,
-			virtual_function_kind ) );
+			virtual_function_kind,
+			unsafe ) );
 }
 
 std::unique_ptr<Class> SyntaxAnalyzer::ParseClass()

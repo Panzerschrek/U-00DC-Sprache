@@ -27,6 +27,7 @@ def main():
 		"public_private_protected_test",
 		"stack_variables_move_errors_test",
 		"stack_variables_move_test",
+		"unsafe_test",
 		"virtual_functions_test" ]
 
 	tests_list= GetTestsList( tests_modules_list )

@@ -71,6 +71,7 @@ enum class Keywords : unsigned int
 
 	static_assert_,
 	halt_,
+	unsafe_,
 
 	type_,
 	template_,

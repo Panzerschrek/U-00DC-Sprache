@@ -357,7 +357,7 @@ def VirtualDestructor_Test0():
 		}
 		fn Destruct( A&mut a )
 		{
-			a.destructor(); // HACK! manully call destructor. hould Call B::destructor.
+			unsafe{ a.destructor(); } // HACK! manully call destructor. hould Call B::destructor.
 		}
 		fn Foo() : i32
 		{
@@ -385,7 +385,7 @@ def VirtualDestructor_Test1():
 		}
 		fn Destruct( A&mut a )
 		{
-			a.destructor(); // HACK! manully call destructor. hould Call B::destructor.
+			unsafe{ a.destructor(); } // HACK! manully call destructor. hould Call B::destructor.
 		}
 		fn Foo() : i32
 		{
@@ -418,7 +418,7 @@ def VirtualDestructor_Test2():
 
 		fn Destruct( A&mut a )
 		{
-			a.destructor(); // HACK! manully call destructor. hould Call C::destructor.
+			unsafe{ a.destructor(); } // HACK! manully call destructor. hould Call C::destructor.
 		}
 		fn Foo() : i32
 		{
@@ -446,7 +446,7 @@ def VirtualDestructor_Test3():
 		}
 		fn Destruct( A&mut a )
 		{
-			a.destructor(); // HACK! manully call destructor. hould Call B::destructor.
+			unsafe{ a.destructor(); } // HACK! manully call destructor. hould Call B::destructor.
 		}
 		fn Foo() : i32
 		{
@@ -474,7 +474,7 @@ def VirtualDestructor_Test4():
 		}
 		fn Destruct( A&mut a )
 		{
-			a.destructor(); // HACK! manully call destructor. hould Call B::destructor.
+			unsafe{ a.destructor(); } // HACK! manully call destructor. hould Call B::destructor.
 		}
 		fn Foo() : i32
 		{
@@ -556,7 +556,7 @@ def VirtualCallInDestructor_Test0():
 		fn Foo() : i32
 		{
 			var B mut b;
-			b.destructor(); // HACK! Manual destructor call.
+			unsafe{ b.destructor(); } // HACK! Manual destructor call.
 			halt if( b.Foo() != 42 );  // But after parent class construction, must call B::Foo.
 			return b.x;
 		}

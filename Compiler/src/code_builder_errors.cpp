@@ -255,6 +255,10 @@ const char* CodeBuilderErrorCodeToString( const CodeBuilderErrorCode code )
 		return "VirtualForFunctionTemplate";
 	case CodeBuilderErrorCode::VirtualForFunctionImplementation:
 		return "VirtualForFunctionImplementation";
+	case CodeBuilderErrorCode::UnsafeFunctionCallOutsideUnsafeBlock:
+		return "UnsafeFunctionCallOutsideUnsafeBlock";
+	case CodeBuilderErrorCode::ExplicitAccessToThisMethodIsUnsafe:
+		return "ExplicitAccessToThisMethodIsUnsafe";
 	};
 
 	U_ASSERT(false);
@@ -1645,6 +1649,28 @@ CodeBuilderError ReportVirtualForFunctionImplementation( const FilePos& file_pos
 	error.code= CodeBuilderErrorCode::VirtualForFunctionImplementation;
 
 	error.text= "\"virtual\" for function implementation \"."_SpC + function_name + "\"."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportUnsafeFunctionCallOutsideUnsafeBlock( const FilePos& file_pos )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::UnsafeFunctionCallOutsideUnsafeBlock;
+
+	error.text= "Calling unsafe function outside unsafe block."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportExplicitAccessToThisMethodIsUnsafe( const FilePos& file_pos, const ProgramString& method_name )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::ExplicitAccessToThisMethodIsUnsafe;
+
+	error.text= "Explicit access to method \""_SpC + method_name + "\" is unsafe."_SpC;
 
 	return error;
 }
