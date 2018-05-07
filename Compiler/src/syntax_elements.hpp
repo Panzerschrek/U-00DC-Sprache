@@ -334,6 +334,14 @@ public:
 
 typedef std::unique_ptr<Block> BlockPtr;
 
+class UnsafeBlock final : public SyntaxElementBase, public IBlockElement
+{
+public:
+	UnsafeBlock( BlockPtr block );
+
+	const BlockPtr block_;
+};
+
 enum class MutabilityModifier
 {
 	None,
@@ -603,7 +611,8 @@ public:
 		std::unique_ptr<StructNamedInitializer> constructor_initialization_list,
 		BlockPtr block,
 		OverloadedOperator overloaded_operator,
-		VirtualFunctionKind virtual_function_kind );
+		VirtualFunctionKind virtual_function_kind,
+		bool unsafe );
 
 	const ComplexName name_;
 	const ITypeNamePtr return_type_;
@@ -617,6 +626,7 @@ public:
 	const BlockPtr block_;
 	const OverloadedOperator overloaded_operator_;
 	const VirtualFunctionKind virtual_function_kind_;
+	const bool unsafe_;
 };
 
 class ClassField final

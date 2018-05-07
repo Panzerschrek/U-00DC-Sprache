@@ -152,6 +152,11 @@ Block::Block( const FilePos& start_file_pos, const FilePos& end_file_pos, BlockE
 	, elements_( std::move( elements ) )
 {}
 
+UnsafeBlock::UnsafeBlock( BlockPtr block )
+	: SyntaxElementBase(block->file_pos_)
+	, block_(std::move(block))
+{}
+
 VariablesDeclaration::VariablesDeclaration( const FilePos& file_pos )
 	: SyntaxElementBase(file_pos)
 {}
@@ -277,7 +282,8 @@ Function::Function(
 	std::unique_ptr<StructNamedInitializer> constructor_initialization_list,
 	BlockPtr block,
 	OverloadedOperator overloaded_operator,
-	VirtualFunctionKind virtual_function_kind)
+	VirtualFunctionKind virtual_function_kind,
+	bool unsafe )
 	: SyntaxElementBase(file_pos)
 	, name_( std::move(name) )
 	, return_type_( std::move(return_type) )
@@ -291,6 +297,7 @@ Function::Function(
 	, block_( std::move(block) )
 	, overloaded_operator_( std::move(overloaded_operator) )
 	, virtual_function_kind_( std::move(virtual_function_kind) )
+	, unsafe_(std::move(unsafe))
 {}
 
 ClassField::ClassField( const FilePos& file_pos )

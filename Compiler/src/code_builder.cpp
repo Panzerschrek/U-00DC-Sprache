@@ -2771,6 +2771,21 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockCode(
 				block_build_info.have_uncodnitional_break_or_continue )
 				try_report_unreachable_code();
 		}
+		else if( const auto unsafe_block=
+			dynamic_cast<const Synt::UnsafeBlock*>( block_element_ptr ) )
+		{
+			const BlockBuildInfo inner_block_build_info=
+				BuildBlockCode( *unsafe_block->block_, block_names, function_context );
+
+			block_build_info.have_unconditional_return_inside=
+				block_build_info.have_unconditional_return_inside || inner_block_build_info.have_unconditional_return_inside;
+			block_build_info.have_uncodnitional_break_or_continue=
+				block_build_info.have_uncodnitional_break_or_continue || inner_block_build_info.have_uncodnitional_break_or_continue;
+
+			if( inner_block_build_info.have_unconditional_return_inside ||
+				block_build_info.have_uncodnitional_break_or_continue )
+				try_report_unreachable_code();
+		}
 		else
 			U_ASSERT(false);
 	}
