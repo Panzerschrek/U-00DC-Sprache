@@ -1294,7 +1294,7 @@ void CodeBuilder::CallDestructorsImpl(
 		// Call destructors.
 		const Variable& var= stored_variable.content;
 		if( stored_variable.kind == StoredVariable::Kind::Variable && var.type.HaveDestructor() )
-			CallDestructor( var.llvm_value, var.type, function_context );
+			CallDestructor( var.llvm_value, var.type, function_context, file_pos );
 	}
 }
 
@@ -1310,7 +1310,8 @@ void CodeBuilder::CallDestructors(
 void CodeBuilder::CallDestructor(
 	llvm::Value* const ptr,
 	const Type& type,
-	FunctionContext& function_context )
+	FunctionContext& function_context,
+	const FilePos& file_pos )
 {
 	U_ASSERT( type.HaveDestructor() );
 
@@ -1326,6 +1327,9 @@ void CodeBuilder::CallDestructor(
 		function_context.llvm_ir_builder.CreateCall(
 			destructor.llvm_function,
 			llvm::ArrayRef<llvm::Value*>( destructor_args, 1u ) );
+
+		if( destructor.type.GetFunctionType()->unsafe && !function_context.is_in_unsafe_block )
+			errors_.push_back( ReportUnsafeFunctionCallOutsideUnsafeBlock( file_pos ) );
 	}
 	else if( const Array* const array_type= type.GetArrayType() )
 	{
@@ -1340,7 +1344,8 @@ void CodeBuilder::CallDestructor(
 				CallDestructor(
 					function_context.llvm_ir_builder.CreateGEP( ptr, llvm::ArrayRef<llvm::Value*> ( index_list, 2u ) ),
 					array_type->type,
-					function_context );
+					function_context,
+					file_pos );
 			},
 			function_context );
 	}
@@ -1375,7 +1380,7 @@ void CodeBuilder::CallDestructorsBeforeReturn( FunctionContext& function_context
 		CallDestructorsImpl( **it, function_context, destroyed_variable_references, file_pos );
 }
 
-void CodeBuilder::CallMembersDestructors( FunctionContext& function_context )
+void CodeBuilder::CallMembersDestructors( FunctionContext& function_context, const FilePos& file_pos )
 {
 	U_ASSERT( function_context.this_ != nullptr );
 	const Class* const class_= function_context.this_->type.GetClassType();
@@ -1390,7 +1395,8 @@ void CodeBuilder::CallMembersDestructors( FunctionContext& function_context )
 		CallDestructor(
 			function_context.llvm_ir_builder.CreateGEP( function_context.this_->llvm_value, index_list ),
 			class_->parents[i],
-			function_context );
+			function_context,
+			file_pos );
 	}
 
 	class_->members.ForEachInThisScope(
@@ -1407,7 +1413,8 @@ void CodeBuilder::CallMembersDestructors( FunctionContext& function_context )
 			CallDestructor(
 				function_context.llvm_ir_builder.CreateGEP( function_context.this_->llvm_value, index_list ),
 				field->type,
-				function_context );
+				function_context,
+				file_pos );
 		} );
 }
 
@@ -2401,7 +2408,7 @@ void CodeBuilder::BuildFuncCode(
 		function_context.llvm_ir_builder.SetInsertPoint( function_context.destructor_end_block );
 		bb_list.push_back( function_context.destructor_end_block );
 
-		CallMembersDestructors( function_context );
+		CallMembersDestructors( function_context, block->end_file_pos_ );
 		function_context.llvm_ir_builder.CreateRetVoid();
 	}
 

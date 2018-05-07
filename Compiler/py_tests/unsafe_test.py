@@ -205,6 +205,40 @@ def UnsafeFunctionCallOutsideUnsafeBlock_Test10():
 	assert( errors_list[0].file_pos.line == 5 )
 
 
+def UnsafeFunctionCallOutsideUnsafeBlock_Test11():
+	c_program_text= """
+		struct S
+		{
+			fn destructor() unsafe {}
+		}
+		fn Foo()
+		{
+			var S s;
+		} // Error, calling unsafe destructor here
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "UnsafeFunctionCallOutsideUnsafeBlock" )
+	assert( errors_list[0].file_pos.line == 9 )
+
+
+def UnsafeFunctionCallOutsideUnsafeBlock_Test12():
+	c_program_text= """
+		struct S
+		{
+			fn destructor() unsafe {}
+		}
+		struct B  // Error, while generating default-destructor. Currently, classes with unsafe destructor can not be members of other classes.
+		{
+			S s;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "UnsafeFunctionCallOutsideUnsafeBlock" )
+	assert( errors_list[0].file_pos.line == 7 )
+
+
 def UnsafeFunctionCallInsideUnsafeBlock_Test0():
 	c_program_text= """
 		fn Bar() unsafe;
@@ -282,6 +316,20 @@ def UnsafeFunctionCallInsideUnsafeBlock_Test4():
 					break;
 				}
 			}
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def UnsafeFunctionCallInsideUnsafeBlock_Test5():
+	c_program_text= """
+		struct S { fn destructor() unsafe {} }
+		fn Foo()
+		{
+			unsafe
+			{
+				var S s;
+			} // Ok, call unsafe destructor at end of unsafe block.
 		}
 	"""
 	tests_lib.build_program( c_program_text )

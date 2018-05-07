@@ -104,7 +104,7 @@ boost::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 		const Variable l_var_real= *BuildExpressionCode(  left_expr, names, function_context ).GetVariable();
 		const Variable r_var_real= *BuildExpressionCode( right_expr, names, function_context ).GetVariable();
 		if( l_var_real.type.HaveDestructor() )
-			CallDestructor( l_var_real.llvm_value, l_var_real.type, function_context );
+			CallDestructor( l_var_real.llvm_value, l_var_real.type, function_context, file_pos );
 		CopyBytes( r_var_real.llvm_value, l_var_real.llvm_value, l_var_real.type, function_context );
 
 		// Write references from src to dst and check it.
