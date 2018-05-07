@@ -5,7 +5,6 @@ When feature was implemented, delete it from list.
 Common:
 *) sizeof operator
 *) raw_pointer
-*) Unsafe
 *) Continious initializer for arrays
 *) Uninitialized initializer
 *) Function pointers
@@ -22,6 +21,8 @@ Common:
 *) Multithreading support
 *) "Disassembly operator" - declare variables with initializer as members of
 	value of structure type.
+*) "for" operator - for ranges
+*) Unsafe helpers operators (like C++ reinterpret_cast, or something like this)
 
 References:
 *) Tags for struct/class references
@@ -53,5 +54,6 @@ Compiler:
 *) Virtual table optimization - store child class virtual table pointer in
 	parent class.
 *) Virtual call for final function optimization
+*) Return value optimization
 *) Precompiled modules
 *) Compiler uses a lot of shared pointers. Check for memory leaks.
