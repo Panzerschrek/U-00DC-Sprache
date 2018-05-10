@@ -78,7 +78,7 @@ private:
 		std::unordered_set<StoredVariablePtr> allowed_for_returning_references;
 
 		const Variable* this_= nullptr; // null for nonclass functions or static member functions.
-		const Variable* s_ret_= nullptr; // Value for assignment for "sret" functions.
+		llvm::Value* s_ret_= nullptr; // Value for assignment for "sret" functions.
 
 		std::set<const ClassField*> uninitialized_this_fields;
 		bool base_initialized= false;

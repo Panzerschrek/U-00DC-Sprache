@@ -2095,7 +2095,6 @@ void CodeBuilder::BuildFuncCode(
 
 	// push args
 	Variable this_;
-	Variable s_ret;
 	unsigned int arg_number= 0u;
 
 	const bool is_constructor= func_name == Keywords::constructor_;
@@ -2107,12 +2106,8 @@ void CodeBuilder::BuildFuncCode(
 		// Skip "sret".
 		if( first_arg_is_sret && &llvm_arg == &*llvm_function->arg_begin() )
 		{
-			s_ret.location= Variable::Location::Pointer;
-			s_ret.value_type= ValueType::Reference;
-			s_ret.type= function_type->return_type;
-			s_ret.llvm_value= &llvm_arg;
 			llvm_arg.setName( "_return_value" );
-			function_context.s_ret_= &s_ret;
+			function_context.s_ret_= &llvm_arg;
 			continue;
 		}
 
@@ -3612,15 +3607,16 @@ void CodeBuilder::BuildReturnOperatorCode(
 
 		if( function_context.s_ret_ != nullptr )
 		{
-			const ClassProxyPtr class_= function_context.s_ret_->type.GetClassTypeProxy();
+			const ClassProxyPtr class_= function_context.return_type.GetClassTypeProxy();
+			U_ASSERT( class_ != nullptr );
 			if( expression_result.value_type == ValueType::Value )
 			{
 				U_ASSERT( expression_result.referenced_variables.size() == 1u );
 				function_context.variables_state.Move( *expression_result.referenced_variables.begin() );
-				CopyBytes( expression_result.llvm_value, function_context.s_ret_->llvm_value, function_context.return_type, function_context );
+				CopyBytes( expression_result.llvm_value, function_context.s_ret_, function_context.return_type, function_context );
 			}
 			else
-				TryCallCopyConstructor( return_operator.file_pos_, function_context.s_ret_->llvm_value, expression_result.llvm_value, class_, function_context );
+				TryCallCopyConstructor( return_operator.file_pos_, function_context.s_ret_, expression_result.llvm_value, class_, function_context );
 
 			CallDestructorsBeforeReturn( function_context, return_operator.file_pos_ );
 			function_context.llvm_ir_builder.CreateRetVoid();
