@@ -1086,12 +1086,18 @@ U_TEST( InnerTagsErrorsTest_InvalidReferenceTagCount_4 )
 {
 	static const char c_program_text[]=
 	R"(
-		// Invalid tag list for incomplete type. Must NOT generate error, because function have no body.
+		// Invalid tag list for incomplete type.
 		struct S;
 		fn Foo( S s'a, b, c' );
 	)";
 
-	BuildProgram( c_program_text );
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::UsingIncompleteType );
+	U_TEST_ASSERT( error.file_pos.line == 4u );
 }
 
 U_TEST( InnerTagsErrorsTest_InvalidReferenceTagCount_5 )
@@ -1116,9 +1122,29 @@ U_TEST( InnerTagsErrorsTest_InvalidReferenceTagCount_6 )
 {
 	static const char c_program_text[]=
 	R"(
-		// Invalid tag list for incomplete type. Must NOT generate error, because function have no body.
+		// Invalid tag list for incomplete type.
 		struct S;
 		fn Foo() : S'a, b, c';
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::UsingIncompleteType );
+	U_TEST_ASSERT( error.file_pos.line == 4u );
+}
+
+U_TEST( InnerTagsErrorsTest_InvalidReferenceTagCount_7 )
+{
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			fn Foo( this'r' ) {} // We process function after fields. So, we know here, that class have 1 reference tag.
+			i32& x;
+		}
 	)";
 
 	BuildProgram( c_program_text );

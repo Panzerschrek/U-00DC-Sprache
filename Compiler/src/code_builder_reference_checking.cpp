@@ -8,6 +8,20 @@ namespace U
 namespace CodeBuilderPrivate
 {
 
+static const Class& GetClassForIncompleteType( const Type& type )
+{
+	U_ASSERT( type.GetClassType() != nullptr || type.GetArrayType() != nullptr );
+
+	const Type* lower_type= &type;
+	while( lower_type->GetClassType() == nullptr )
+	{
+		U_ASSERT( lower_type->GetArrayType() != nullptr ); // If not class - must be array
+		lower_type= &lower_type->GetArrayType()->type;
+	}
+
+	return *lower_type->GetClassType();
+}
+
 void CodeBuilder::ProcessFunctionArgReferencesTags(
 	const Synt::Function& func,
 	Function& function_type,
@@ -19,16 +33,22 @@ void CodeBuilder::ProcessFunctionArgReferencesTags(
 	const size_t regular_tag_count= has_continuous_tag ? ( in_arg.inner_arg_reference_tags_.size() - 2u ) : in_arg.inner_arg_reference_tags_.size();
 	const size_t arg_reference_tag_count= out_arg.type.ReferencesTagsCount();
 
-	if( !in_arg.inner_arg_reference_tags_.empty() &&
-		!out_arg.type.IsIncomplete() ) // Only generate error for args with complete type. Complete types now required for functions with body.
+	if( !in_arg.inner_arg_reference_tags_.empty() )
 	{
+		if( out_arg.type.IsIncomplete() )
+		{
+			const Class& class_= GetClassForIncompleteType( out_arg.type );
+			if( class_.completeness < Class::Completeness::ReferenceTagsComplete )
+				errors_.push_back( ReportUsingIncompleteType( in_arg.file_pos_, class_.members.GetThisNamespaceName() ) );
+		}
+
 		if( has_continuous_tag )
 		{
 			if( regular_tag_count > arg_reference_tag_count )
-				errors_.push_back( ReportInvalidReferenceTagCount( in_arg.file_pos_, regular_tag_count, out_arg.type.ReferencesTagsCount() ) );
+				errors_.push_back( ReportInvalidReferenceTagCount( in_arg.file_pos_, regular_tag_count, arg_reference_tag_count ) );
 		}
-		else if( in_arg.inner_arg_reference_tags_.size() != arg_reference_tag_count )
-			errors_.push_back( ReportInvalidReferenceTagCount( in_arg.file_pos_, in_arg.inner_arg_reference_tags_.size(), out_arg.type.ReferencesTagsCount() ) );
+		else if( regular_tag_count != arg_reference_tag_count )
+			errors_.push_back( ReportInvalidReferenceTagCount( in_arg.file_pos_, regular_tag_count, arg_reference_tag_count ) );
 	}
 
 	if( function_type.return_value_is_reference && !func.return_value_reference_tag_.empty() )
@@ -110,6 +130,32 @@ void CodeBuilder::ProcessFunctionArgReferencesTags(
 				}
 			}
 		}
+	}
+}
+
+void CodeBuilder::ProcessFunctionReturnValueReferenceTags( const Synt::Function& func, const Function& function_type )
+{
+
+	if( !function_type.return_value_is_reference && !func.return_value_inner_reference_tags_.empty() )
+	{
+		const bool has_continuous_tag= !func.return_value_inner_reference_tags_.empty() && func.return_value_inner_reference_tags_.back().empty();
+		const size_t regular_tag_count= has_continuous_tag ? ( func.return_value_inner_reference_tags_.size() - 2u ) : func.return_value_inner_reference_tags_.size();
+		const size_t reference_tag_count= function_type.return_type.ReferencesTagsCount();
+
+		if( function_type.return_type.IsIncomplete() )
+		{
+			const Class& class_= GetClassForIncompleteType( function_type.return_type );
+			if( class_.completeness < Class::Completeness::ReferenceTagsComplete )
+				errors_.push_back( ReportUsingIncompleteType( func.file_pos_, class_.members.GetThisNamespaceName() ) );
+		}
+
+		if( has_continuous_tag )
+		{
+			if( regular_tag_count > reference_tag_count )
+				errors_.push_back( ReportInvalidReferenceTagCount( func.file_pos_, regular_tag_count, reference_tag_count ) );
+		}
+		else if( regular_tag_count != reference_tag_count )
+			errors_.push_back( ReportInvalidReferenceTagCount( func.file_pos_, regular_tag_count, reference_tag_count ) );
 	}
 }
 

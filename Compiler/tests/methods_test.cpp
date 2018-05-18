@@ -360,10 +360,9 @@ U_TEST(MethodTest11)
 		struct X{ i32 x; }
 		struct S
 		{
-			fn GetX( X &imut x ) : i32  // <- here must be visible outer X
+			fn GetX( X &imut x ) : i32  // <- here must be visible inner X, because functions processed after inner types.
 			{
-				var X other_x{ .y= x.x };   // <- but here must be visible inner X, because we process functions bodies after full class preprocession.
-				return other_x.y;
+				return x.y;
 			}
 
 			struct X{ i32 y; }
@@ -371,7 +370,7 @@ U_TEST(MethodTest11)
 
 		fn Foo() : i32
 		{
-			var X x{ .x= 55568 };
+			var S::X x{ .y= 55568 };
 			return S::GetX( x );
 		}
 	)";

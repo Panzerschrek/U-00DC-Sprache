@@ -336,7 +336,7 @@ bool Type::IsIncomplete() const
 	else if( const ClassProxyPtr* const class_= boost::get<ClassProxyPtr>( &something_ ) )
 	{
 		U_ASSERT( *class_ != nullptr && (*class_)->class_ != nullptr );
-		return (*class_)->class_->is_incomplete;
+		return (*class_)->class_->completeness != Class::Completeness::Complete;
 	}
 	else if( const ArrayPtr* const array= boost::get<ArrayPtr>( &something_ ) )
 	{

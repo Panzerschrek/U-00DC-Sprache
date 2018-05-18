@@ -342,17 +342,17 @@ void CodeBuilder::MergeNameScopes( NamesScope& dst, const NamesScope& src, Class
 
 					U_ASSERT( dst_class->forward_declaration_file_pos == src_class.forward_declaration_file_pos );
 
-					if(  dst_class->is_incomplete &&  src_class.is_incomplete )
+					if( dst_class->completeness == Class::Completeness::Incomplete && src_class.completeness == Class::Completeness::Incomplete )
 					{} // Ok
-					if( !dst_class->is_incomplete &&  src_class.is_incomplete )
+					if( dst_class->completeness != Class::Completeness::Incomplete && src_class.completeness == Class::Completeness::Incomplete )
 					{} // Dst class is complete, so, use it.
-					if( !dst_class->is_incomplete && !src_class.is_incomplete &&
-						 dst_class->body_file_pos != src_class.body_file_pos )
+					if( dst_class->completeness != Class::Completeness::Incomplete && src_class.completeness != Class::Completeness::Incomplete &&
+						dst_class->body_file_pos != src_class.body_file_pos )
 					{
 						// Different bodies from different files.
 						errors_.push_back( ReportClassBodyDuplication( src_class.body_file_pos ) );
 					}
-					if(  dst_class->is_incomplete && !src_class.is_incomplete )
+					if(  dst_class->completeness == Class::Completeness::Incomplete && src_class.completeness != Class::Completeness::Incomplete )
 					{
 						// Take body of more complete class and store in destintation class table.
 						CopyClass( src_class.forward_declaration_file_pos, src_class_proxy, dst_class_table, dst );
@@ -391,7 +391,7 @@ void CodeBuilder::CopyClass(
 
 	copy->field_count= src.field_count;
 	copy->references_tags_count= src.references_tags_count;
-	copy->is_incomplete= src.is_incomplete;
+	copy->completeness= src.completeness;
 
 	copy->have_explicit_noncopy_constructors= src.have_explicit_noncopy_constructors;
 	copy->is_default_constructible= src.is_default_constructible;
@@ -614,7 +614,7 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 		{
 			if( const ClassProxyPtr previous_class= previous_type->GetClassTypeProxy() )
 			{
-				if( !previous_class->class_->is_incomplete )
+				if( previous_class->class_->completeness != Class::Completeness::Incomplete )
 				{
 					errors_.push_back( ReportClassBodyDuplication( class_declaration.file_pos_ ) );
 					return nullptr;
@@ -664,7 +664,7 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 			errors_.push_back( ReportCanNotDeriveFromThisType( class_declaration.file_pos_, type_name->ToString() ) );
 			continue;
 		}
-		if( parent_class_proxy->class_->is_incomplete )
+		if( type_name->IsIncomplete() )
 		{
 			errors_.push_back( ReportUsingIncompleteType( class_declaration.file_pos_, type_name->ToString() ) );
 			continue;
@@ -715,8 +715,8 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 	std::vector<PrepareFunctionResult> class_functions;
 	std::vector<const Synt::Class*> inner_classes;
 	std::vector< std::pair< const Synt::FunctionTemplate*, ClassMemberVisibility > > function_templates;
-	ClassMemberVisibility current_visibility= ClassMemberVisibility::Public;
 
+	ClassMemberVisibility current_visibility= ClassMemberVisibility::Public;
 	for( const Synt::IClassElementPtr& member : class_declaration.elements_ )
 	{
 		// TODO - maybe apply visitor?
@@ -759,15 +759,7 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 
 			the_class->SetMemberVisibility( in_field->name, current_visibility );
 		}
-		else if( const auto function_declaration=
-			dynamic_cast<const Synt::Function*>( member.get() ) )
-		{
-			// First time, push only prototypes.
-			PrepareFunctionResult function_prepared= PrepareFunction( *function_declaration, true, the_class_proxy, the_class->members, current_visibility );
-			if( function_prepared.functions_set != nullptr )
-				ProcessClassVirtualFunction( *the_class, function_prepared );
-			class_functions.push_back( std::move(function_prepared) );
-		}
+		else if( dynamic_cast<const Synt::Function*>( member.get() ) != nullptr ) {}
 		else if( const auto inner_class=
 			dynamic_cast<const Synt::Class*>( member.get() ) )
 		{
@@ -818,12 +810,7 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 				PrepareTypeTemplate( *type_template, the_class->members );
 			the_class->SetMemberVisibility( type_template_name, current_visibility );
 		}
-		else if( const auto function_template=
-			dynamic_cast<const Synt::FunctionTemplate*>( member.get() ) )
-		{
-			// In first pass skip templates, because we process template functions include body.
-			function_templates.emplace_back( function_template, current_visibility );
-		}
+		else if( dynamic_cast<const Synt::FunctionTemplate*>( member.get() ) != nullptr ) {}
 		else if( const auto visibility_label=
 			dynamic_cast<const Synt::ClassVisibilityLabel*>( member.get() ) )
 		{
@@ -832,6 +819,53 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 			current_visibility= visibility_label->visibility_;
 		}
 		else U_ASSERT( false );
+	}
+
+	// Count references inside.
+	// SPRACHE_TODO - allow user-defined references tags for structs.
+	the_class->members.ForEachInThisScope(
+		[&]( const NamesScope::InsertedName& name )
+		{
+			const ClassField* const field= name.second.GetClassField();
+			if( field == nullptr )
+				return;
+
+			if( field->is_reference || field->type.ReferencesTagsCount() != 0u )
+				the_class->references_tags_count= 1u;
+		});
+
+	for( const ClassProxyPtr& parent_class : the_class->parents )
+	{
+		if( parent_class->class_->references_tags_count != 0u )
+			the_class->references_tags_count= 1u;
+	}
+
+	// After we processed fields and parents, we know exactly, how many reference tag this class have.
+	the_class->completeness= Class::Completeness::ReferenceTagsComplete;
+
+	// Now, we know parents, fields, inner types and type templates. Process member functions and function templates.
+	current_visibility= ClassMemberVisibility::Public;
+	for( const Synt::IClassElementPtr& member : class_declaration.elements_ )
+	{
+		if( const auto function_declaration= dynamic_cast<const Synt::Function*>( member.get() ) )
+		{
+			// First time, push only prototypes.
+			PrepareFunctionResult function_prepared= PrepareFunction( *function_declaration, true, the_class_proxy, the_class->members, current_visibility );
+			if( function_prepared.functions_set != nullptr )
+				ProcessClassVirtualFunction( *the_class, function_prepared );
+			class_functions.push_back( std::move(function_prepared) );
+		}
+		else if( const auto function_template= dynamic_cast<const Synt::FunctionTemplate*>( member.get() ) )
+		{
+			// In first pass skip templates, because we process template functions include body.
+			function_templates.emplace_back( function_template, current_visibility );
+		}
+		else if( const auto visibility_label= dynamic_cast<const Synt::ClassVisibilityLabel*>( member.get() ) )
+		{
+			if( the_class->kind == Class::Kind::Struct )
+				errors_.push_back( ReportVisibilityForStruct( visibility_label->file_pos_, class_name ) );
+			current_visibility= visibility_label->visibility_;
+		}
 	}
 
 	// Search for explicit noncopy constructors.
@@ -851,24 +885,6 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 				break;
 			}
 		};
-	}
-
-	// Count references inside.
-	// SPRACHE_TODO - allow user-defined references tags for structs.
-	the_class->members.ForEachInThisScope(
-		[&]( const NamesScope::InsertedName& name )
-		{
-			const ClassField* const field= name.second.GetClassField();
-			if( field == nullptr )
-				return;
-
-			if( field->is_reference || field->type.ReferencesTagsCount() != 0u )
-				the_class->references_tags_count= 1u;
-		});
-	for( const ClassProxyPtr& parent_class : the_class->parents )
-	{
-		if( parent_class->class_->references_tags_count != 0u )
-			the_class->references_tags_count= 1u;
 	}
 
 	bool class_contains_pure_virtual_functions= false;
@@ -1033,7 +1049,7 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 
 	BuildClassVirtualTables( *the_class, class_type );
 
-	the_class->is_incomplete= false;
+	the_class->completeness= Class::Completeness::Complete;
 
 	TryGenerateDefaultConstructor( *the_class, class_type );
 	TryGenerateCopyConstructor( *the_class, class_type );
@@ -1610,22 +1626,7 @@ CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 	if( is_special_method && function_type.return_type != void_type_ )
 		errors_.push_back( ReportConstructorAndDestructorMustReturnVoid( func.file_pos_ ) );
 
-	if( !function_type.return_value_is_reference && !func.return_value_inner_reference_tags_.empty() )
-	{
-		const bool return_value_has_continuous_tag= !func.return_value_inner_reference_tags_.empty() && func.return_value_inner_reference_tags_.back().empty();
-		const size_t return_value_regular_tag_count= return_value_has_continuous_tag ? ( func.return_value_inner_reference_tags_.size() - 2u ) : func.return_value_inner_reference_tags_.size();
-
-		if( !function_type.return_type.IsIncomplete() ) // Check reference tag count only for complete types.
-		{
-			if( return_value_has_continuous_tag )
-			{
-				if( return_value_regular_tag_count > function_type.return_type.ReferencesTagsCount() )
-					errors_.push_back( ReportInvalidReferenceTagCount( func.file_pos_, return_value_has_continuous_tag, function_type.return_type.ReferencesTagsCount() ) );
-			}
-			else if( func.return_value_inner_reference_tags_.size() != function_type.return_type.ReferencesTagsCount() )
-				errors_.push_back( ReportInvalidReferenceTagCount( func.file_pos_, func.return_value_inner_reference_tags_.size(), function_type.return_type.ReferencesTagsCount() ) );
-		}
-	}
+	ProcessFunctionReturnValueReferenceTags( func, function_type );
 
 	// Args.
 	function_type.args.reserve( func.arguments_.size() );
@@ -3153,7 +3154,7 @@ ProgramString CodeBuilder::BuildAutoVariableDeclarationCode(
 		{}
 		else if( const ClassProxyPtr class_type= variable.type.GetClassTypeProxy() )
 		{
-			U_ASSERT( ! class_type->class_->is_incomplete );
+			U_ASSERT( class_type->class_->completeness == Class::Completeness::Complete );
 			if( initializer_experrsion.value_type == ValueType::Value )
 			{
 				U_ASSERT( initializer_experrsion.referenced_variables.size() == 1u );

@@ -1581,7 +1581,7 @@ Value CodeBuilder::BuildMemberAccessOperator(
 		return ErrorValue();
 	}
 
-	if( class_type->is_incomplete )
+	if( class_type->completeness != Class::Completeness::Complete )
 	{
 		errors_.push_back( ReportUsingIncompleteType( member_access_operator.file_pos_, value.GetType().ToString() ) );
 		return ErrorValue();

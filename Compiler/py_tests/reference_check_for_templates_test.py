@@ -197,6 +197,47 @@ def ContinuousInnerReferenceTagForReturnValue_Test5():
 	tests_lib.build_program( c_program_text )
 
 
+def ContinuousInnerReferenceTagForThis_Test0():
+	c_program_text= """
+		struct S
+		{
+			i32& x;
+			fn constructor( this'a...', i32&'b in_x ) ' a <- imut b '    // Pollution works here, because 'a...' expands to one reference tag.
+			( x(in_x) ) {}
+		}
+
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var S s( x );
+			++x; // Error, 'x' have reference inside 's'.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ReferenceProtectionError" )
+	assert( errors_list[0].file_pos.line == 13 )
+
+
+def ContinuousInnerReferenceTagForThis_Test1():
+	c_program_text= """
+		struct S
+		{
+			i32 x;
+			fn constructor( this'a...', i32&'b in_x ) ' a <- imut b '    // Pollution does not works here, because 'a...' expands to zero reference tags.
+			( x(in_x) ) {}
+		}
+
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var S s( x );
+			++x; // Ok, 'x' has no references.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
 def ContinuousInnerReferenceTag_InPollution_Test0():
 	c_program_text= """
 		struct S
