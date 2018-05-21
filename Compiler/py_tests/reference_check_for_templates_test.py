@@ -277,3 +277,56 @@ def ContinuousInnerReferenceTag_InPollution_Test1():
 		}
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def VariativeReferenceTagsCount_InTemplateClass_Test0():
+	c_program_text= """
+		template</ type T />
+		class Vec
+		{
+			fn push_back( mut this'x...', T el'y...' ) ' x <- y ' {}
+			[ T, 0u ] container_marker;
+		}
+
+		struct S{ i32& r; i32 v; }
+
+		fn Foo()
+		{
+			var i32 mut a= 0;
+			var Vec</i32/> mut vec;
+			{
+				var S s{ .r= a, .v= 0 };
+				vec.push_back( s.v ); // Pushes part of struct, which contains reference. But must NOT save reference inside, because pollution for Vec</i32/> does not works.
+			}
+			++a; // Ok, can modify, because 'a' has no references
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def VariativeReferenceTagsCount_InTemplateClass_Test1():
+	c_program_text= """
+		template</ type T />
+		class Vec
+		{
+			fn push_back( mut this'x...', T el'y...' ) ' x <- y ' {}
+			[ T, 0u ] container_marker;
+		}
+
+		struct S{ i32& r; i32 v; }
+
+		fn Foo()
+		{
+			var i32 mut a= 0;
+			var Vec</S/> mut vec;
+			{
+				var S s{ .r= a, .v= 0 };
+				vec.push_back( s ); // Must save reference inside.
+			}
+			++a; // Error, can not modify, because 'a' has reference inside 'vec'.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ReferenceProtectionError" )
+	assert( errors_list[0].file_pos.line == 19 )

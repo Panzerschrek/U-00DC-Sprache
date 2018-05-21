@@ -855,7 +855,13 @@ bool VariablesState::VariableIsMoved( const StoredVariablePtr& var ) const
 const VariablesState::VariableReferences& VariablesState::GetVariableReferences( const StoredVariablePtr& var ) const
 {
 	const auto it= variables_.find(var);
-	U_ASSERT( it != variables_.end() );
+
+	if( it == variables_.end() ) // May be for globals.
+	{
+		static const VariableReferences empty_references;
+		return empty_references;
+	}
+
 	return it->second.inner_references;
 }
 
