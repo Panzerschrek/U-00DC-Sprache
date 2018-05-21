@@ -309,6 +309,30 @@ def VariativeReferenceTagsCount_InTemplateClass_Test1():
 		template</ type T />
 		class Vec
 		{
+			fn push_back( mut this'x...', T el'y...' ) ' x <- y '{}
+			fn get_val( this'x...' ) : T'x...' { return T(0); }
+			[ T, 0u ] container_marker;
+		}
+
+		fn Foo()
+		{
+			var i32 mut a= 0, mut b= 0;
+			{
+				var Vec</ i32 /> mut vec;
+				vec.push_back(a);
+				b= vec.get_val();
+			}
+			++a; // Ok, can modify, because 'a' has no references
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def VariativeReferenceTagsCount_InTemplateClass_Test2():
+	c_program_text= """
+		template</ type T />
+		class Vec
+		{
 			fn push_back( mut this'x...', T el'y...' ) ' x <- y ' {}
 			[ T, 0u ] container_marker;
 		}
@@ -330,3 +354,56 @@ def VariativeReferenceTagsCount_InTemplateClass_Test1():
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ReferenceProtectionError" )
 	assert( errors_list[0].file_pos.line == 19 )
+
+
+def VariativeReferenceTagsCount_InTemplateClass_Test3():
+	c_program_text= """
+		template</ type T />
+		struct Box
+		{
+			T boxed;
+			fn Get( this'x...' ) : T'x...' { return boxed; }
+		}
+
+		struct S{ i32& r; }
+
+		fn Foo()
+		{
+			var Box</i32/> box{ .boxed= 0 };
+			box.Get();
+
+			var Box</S/> s{ .boxed{ .r= box.boxed } };
+			s.Get();
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def VariativeReferenceTagsCount_InTemplateClass_Test4():
+	c_program_text= """
+		template</ type T />
+		struct Box
+		{
+			T boxed;
+			fn Get( this'x...' ) : T'x...' { return boxed; }
+		}
+
+		struct S{ i32& r; }
+
+		fn Pass( i32& x ) : i32&
+		{
+			var Box</S/> box{ .boxed{ .r= x } };
+			return box.Get().r;
+		}
+
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			auto& r= Pass(x);
+			++x; // Error, 'x' have references.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ReferenceProtectionError" )
+	assert( errors_list[0].file_pos.line == 21 )

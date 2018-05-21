@@ -872,7 +872,7 @@ const VariablesState::VariablesContainer& VariablesState::GetVariables() const
 
 VariablesState::AchievableVariables VariablesState::RecursiveGetAllReferencedVariables( const StoredVariablePtr& var ) const
 {
-	U_ASSERT( var->kind == StoredVariable::Kind::Variable );
+	U_ASSERT( var->kind == StoredVariable::Kind::Variable || var->kind == StoredVariable::Kind::ReferenceArg );
 	U_ASSERT( variables_.find(var) != variables_.end() );
 	const VariableEntry& var_entry= variables_.find(var)->second;
 
