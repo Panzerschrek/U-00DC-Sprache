@@ -461,7 +461,7 @@ const NamesScope::InsertedName* CodeBuilder::ResolveForTemplateSignatureParamete
 		{
 			if( Class* const class_= type->GetClassType() )
 			{
-				if( !is_last_component && class_->is_incomplete )
+				if( !is_last_component && class_->completeness != Class::Completeness::Complete )
 				{
 					errors_.push_back( ReportUsingIncompleteType( file_pos, type->ToString() ) );
 					return nullptr;
@@ -1583,7 +1583,7 @@ void CodeBuilder::ReportAboutIncompleteMembersOfTemplateClass( const FilePos& fi
 			{
 				if( Class* const subclass= type->GetClassType() )
 				{
-					if( subclass->is_incomplete )
+					if( subclass->completeness != Class::Completeness::Complete )
 						errors_.push_back( ReportIncompleteMemberOfClassTemplate( file_pos, name.first ) );
 					else
 						ReportAboutIncompleteMembersOfTemplateClass( file_pos, *subclass );

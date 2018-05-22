@@ -91,6 +91,7 @@ struct Lexem
 		AssignShiftRight, // >>=
 
 		LeftArrow, // <-
+		Ellipsis, // ...
 
 		// TODO - add other lexems.
 

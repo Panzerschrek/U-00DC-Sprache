@@ -612,6 +612,8 @@ private:
 		const Function::Arg& out_arg,
 		size_t arg_number );
 
+	void ProcessFunctionReturnValueReferenceTags( const Synt::Function& func, const Function& function_type );
+
 	void TryGenerateFunctionReturnReferencesMapping(
 		const Synt::Function& func,
 		Function& function_type );

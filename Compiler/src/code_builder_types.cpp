@@ -336,7 +336,7 @@ bool Type::IsIncomplete() const
 	else if( const ClassProxyPtr* const class_= boost::get<ClassProxyPtr>( &something_ ) )
 	{
 		U_ASSERT( *class_ != nullptr && (*class_)->class_ != nullptr );
-		return (*class_)->class_->is_incomplete;
+		return (*class_)->class_->completeness != Class::Completeness::Complete;
 	}
 	else if( const ArrayPtr* const array= boost::get<ArrayPtr>( &something_ ) )
 	{
@@ -855,7 +855,13 @@ bool VariablesState::VariableIsMoved( const StoredVariablePtr& var ) const
 const VariablesState::VariableReferences& VariablesState::GetVariableReferences( const StoredVariablePtr& var ) const
 {
 	const auto it= variables_.find(var);
-	U_ASSERT( it != variables_.end() );
+
+	if( it == variables_.end() ) // May be for globals.
+	{
+		static const VariableReferences empty_references;
+		return empty_references;
+	}
+
 	return it->second.inner_references;
 }
 
@@ -866,7 +872,7 @@ const VariablesState::VariablesContainer& VariablesState::GetVariables() const
 
 VariablesState::AchievableVariables VariablesState::RecursiveGetAllReferencedVariables( const StoredVariablePtr& var ) const
 {
-	U_ASSERT( var->kind == StoredVariable::Kind::Variable );
+	U_ASSERT( var->kind == StoredVariable::Kind::Variable || var->kind == StoredVariable::Kind::ReferenceArg );
 	U_ASSERT( variables_.find(var) != variables_.end() );
 	const VariableEntry& var_entry= variables_.find(var)->second;
 

@@ -39,18 +39,24 @@ if( ${CMAKE_BUILD_TYPE} STREQUAL Debug )
 else()
 endif()
 
+add_compile_options( -fPIC )
+
 #
 # External dependencies
 #
 
 # Boost
 set( Boost_USE_STATIC_LIBS yes )
-set( BOOST_ROOT ../../boost_1_60_0 ) # Set path to your boost here.
+set( BOOST_ROOT ../../boost_1_65_1 ) # Set path to your boost here.
 find_package( Boost COMPONENTS system filesystem REQUIRED )
 include_directories( ${Boost_INCLUDE_DIRS} )
 
 # LLVM
-set( LLVM_INSTALL_DIR ../../llvm-install/ ) # Set path to your LLVM here.
+if( CMAKE_BUILD_TYPE STREQUAL Release )
+	set( LLVM_INSTALL_DIR ../../llvm-release-install/ ) # Set path to your LLVM here.
+else()
+	set( LLVM_INSTALL_DIR ../../llvm-install/ ) # Set path to your LLVM here.
+endif()
 set( LLVM_DIR ${LLVM_INSTALL_DIR}/share/llvm/cmake/ )
 find_package(LLVM REQUIRED CONFIG)
 
@@ -108,6 +114,7 @@ set( COMPILER_LIB_HEADERS
 
 add_library( CompilerLib ${COMPILER_LIB_SOURCES} ${COMPILER_LIB_HEADERS} )
 target_link_libraries( CompilerLib ${LLVM_LIBS_FOR_COMPILER_LIB} )
+target_link_libraries( CompilerLib pthread dl )
 
 #
 # Compiler
@@ -212,7 +219,7 @@ if( BUILD_PY_TESTS )
 	# Run result test.
 	add_custom_target(
 		PyTestsRun ALL
-		COMMAND ${CMAKE_COMMAND} -E env PYTHONPATH=${CMAKE_CURRENT_BINARY_DIR} python py_tests/py_tests.py
+		COMMAND ${CMAKE_COMMAND} -E env PYTHONPATH=${CMAKE_CURRENT_BINARY_DIR} python3 py_tests/py_tests.py
 		DEPENDS PyTestsLib_Install
 		WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} )
 

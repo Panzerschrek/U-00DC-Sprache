@@ -8,6 +8,20 @@ namespace U
 namespace CodeBuilderPrivate
 {
 
+static const Class& GetClassForIncompleteType( const Type& type )
+{
+	U_ASSERT( type.GetClassType() != nullptr || type.GetArrayType() != nullptr );
+
+	const Type* lower_type= &type;
+	while( lower_type->GetClassType() == nullptr )
+	{
+		U_ASSERT( lower_type->GetArrayType() != nullptr ); // If not class - must be array
+		lower_type= &lower_type->GetArrayType()->type;
+	}
+
+	return *lower_type->GetClassType();
+}
+
 void CodeBuilder::ProcessFunctionArgReferencesTags(
 	const Synt::Function& func,
 	Function& function_type,
@@ -15,10 +29,30 @@ void CodeBuilder::ProcessFunctionArgReferencesTags(
 	const Function::Arg& out_arg,
 	const size_t arg_number )
 {
-	if( !in_arg.inner_arg_reference_tags_.empty() &&
-		!out_arg.type.IsIncomplete() && // Only generate error for args with complete type. Complete types now required for functions with body.
-		in_arg.inner_arg_reference_tags_.size() != out_arg.type.ReferencesTagsCount() )
-		errors_.push_back( ReportInvalidReferenceTagCount( in_arg.file_pos_, in_arg.inner_arg_reference_tags_.size(), out_arg.type.ReferencesTagsCount() ) );
+	if( out_arg.type.GetTemplateDependentType() != nullptr )
+		return;
+
+	const bool has_continuous_tag= !in_arg.inner_arg_reference_tags_.empty() && in_arg.inner_arg_reference_tags_.back().empty();
+	const size_t regular_tag_count= has_continuous_tag ? ( in_arg.inner_arg_reference_tags_.size() - 2u ) : in_arg.inner_arg_reference_tags_.size();
+	const size_t arg_reference_tag_count= out_arg.type.ReferencesTagsCount();
+
+	if( !in_arg.inner_arg_reference_tags_.empty() )
+	{
+		if( out_arg.type.IsIncomplete() )
+		{
+			const Class& class_= GetClassForIncompleteType( out_arg.type );
+			if( class_.completeness < Class::Completeness::ReferenceTagsComplete )
+				errors_.push_back( ReportUsingIncompleteType( in_arg.file_pos_, class_.members.GetThisNamespaceName() ) );
+		}
+
+		if( has_continuous_tag )
+		{
+			if( regular_tag_count > arg_reference_tag_count )
+				errors_.push_back( ReportInvalidReferenceTagCount( in_arg.file_pos_, regular_tag_count, arg_reference_tag_count ) );
+		}
+		else if( regular_tag_count != arg_reference_tag_count )
+			errors_.push_back( ReportInvalidReferenceTagCount( in_arg.file_pos_, regular_tag_count, arg_reference_tag_count ) );
+	}
 
 	if( function_type.return_value_is_reference && !func.return_value_reference_tag_.empty() )
 	{
@@ -28,41 +62,115 @@ void CodeBuilder::ProcessFunctionArgReferencesTags(
 			function_type.return_references.args_references.push_back( arg_number );
 
 		// Inner arg references to return reference
-		for( const ProgramString& tag : in_arg.inner_arg_reference_tags_ )
+		for( size_t tag_number= 0u; tag_number < regular_tag_count; ++tag_number )
 		{
-			const size_t tag_number= &tag - in_arg.inner_arg_reference_tags_.data();
-			if( tag == func.return_value_reference_tag_ )
+			if( in_arg.inner_arg_reference_tags_[tag_number] == func.return_value_reference_tag_ )
 				function_type.return_references.inner_args_references.emplace_back( arg_number, tag_number );
+		}
+		if( has_continuous_tag )
+		{
+			for( size_t tag_number= regular_tag_count; tag_number < arg_reference_tag_count; ++tag_number )
+			{
+				if( in_arg.inner_arg_reference_tags_[regular_tag_count] == func.return_value_reference_tag_ )
+					function_type.return_references.inner_args_references.emplace_back( arg_number, tag_number );
+			}
 		}
 	}
 
+	const bool return_value_has_continuous_tag= !func.return_value_inner_reference_tags_.empty() && func.return_value_inner_reference_tags_.back().empty();
+	const size_t return_value_regular_tag_count= return_value_has_continuous_tag ? ( func.return_value_inner_reference_tags_.size() - 2u ) : func.return_value_inner_reference_tags_.size();
+	const size_t return_value_reference_tag_count= function_type.return_type.ReferencesTagsCount();
+
 	if( !function_type.return_value_is_reference && !func.return_value_inner_reference_tags_.empty() &&
-		function_type.return_type.ReferencesTagsCount() > 0u )
+		return_value_reference_tag_count > 0u && function_type.return_type.GetTemplateDependentType() == nullptr )
 	{
 		// In arg reference to return value references
 		if( out_arg.is_reference && !in_arg.reference_tag_.empty() )
 		{
-			for( const ProgramString& tag : func.return_value_inner_reference_tags_ )
+			for( size_t ret_tag_number= 0u; ret_tag_number < return_value_regular_tag_count; ++ ret_tag_number )
 			{
-				if( tag == in_arg.reference_tag_ )
+				if( func.return_value_inner_reference_tags_[ret_tag_number] == in_arg.reference_tag_ )
 					function_type.return_references.args_references.push_back( arg_number );
+			}
+			if( return_value_has_continuous_tag )
+			{
+				for( size_t ret_tag_number= return_value_regular_tag_count; ret_tag_number < return_value_reference_tag_count; ++ret_tag_number )
+				{
+					if( func.return_value_inner_reference_tags_[return_value_regular_tag_count] == in_arg.reference_tag_ )
+						function_type.return_references.args_references.push_back( arg_number );
+				}
 			}
 		}
 
 		// Inner arg references to return value references
 		if( !in_arg.inner_arg_reference_tags_.empty() )
 		{
-			for( const ProgramString& arg_tag : in_arg.inner_arg_reference_tags_ )
-			for( const ProgramString& ret_tag : func.return_value_inner_reference_tags_ )
+			for( size_t arg_tag_number= 0u; arg_tag_number < regular_tag_count; ++arg_tag_number )
 			{
-				if( arg_tag == ret_tag )
+				const ProgramString& arg_tag= in_arg.inner_arg_reference_tags_[arg_tag_number];
+				for( size_t ret_tag_number= 0u; ret_tag_number < return_value_regular_tag_count; ++ ret_tag_number )
 				{
-					const size_t arg_tag_number= &arg_tag - in_arg.inner_arg_reference_tags_.data();
-					//const size_t ret_tag_number= &ret_tag - func.return_value_inner_reference_tags_;
-					function_type.return_references.inner_args_references.emplace_back( arg_number, arg_tag_number );
+					if( arg_tag == func.return_value_inner_reference_tags_[ret_tag_number] )
+						function_type.return_references.inner_args_references.emplace_back( arg_number, arg_tag_number );
+				}
+				if( return_value_has_continuous_tag )
+				{
+					for( size_t ret_tag_number= return_value_regular_tag_count; ret_tag_number < return_value_reference_tag_count; ++ret_tag_number )
+					{
+						if( arg_tag == func.return_value_inner_reference_tags_[return_value_regular_tag_count] )
+							function_type.return_references.inner_args_references.emplace_back( arg_number, arg_tag_number );
+					}
+				}
+			}
+			if( has_continuous_tag )
+			{
+				for( size_t arg_tag_number= regular_tag_count; arg_tag_number < arg_reference_tag_count; ++arg_tag_number )
+				{
+					const ProgramString& arg_tag= in_arg.inner_arg_reference_tags_[regular_tag_count];
+					for( size_t ret_tag_number= 0u; ret_tag_number < return_value_regular_tag_count; ++ ret_tag_number )
+					{
+						if( arg_tag == func.return_value_inner_reference_tags_[ret_tag_number] )
+							function_type.return_references.inner_args_references.emplace_back( arg_number, arg_tag_number );
+					}
+					if( return_value_has_continuous_tag )
+					{
+						for( size_t ret_tag_number= return_value_regular_tag_count; ret_tag_number < return_value_reference_tag_count; ++ret_tag_number )
+						{
+							if( arg_tag == func.return_value_inner_reference_tags_[return_value_regular_tag_count] )
+								function_type.return_references.inner_args_references.emplace_back( arg_number, arg_tag_number );
+						}
+					}
 				}
 			}
 		}
+	}
+}
+
+void CodeBuilder::ProcessFunctionReturnValueReferenceTags( const Synt::Function& func, const Function& function_type )
+{
+	if( function_type.return_type.GetTemplateDependentType() != nullptr )
+		return;
+
+	if( !function_type.return_value_is_reference && !func.return_value_inner_reference_tags_.empty() )
+	{
+		const bool has_continuous_tag= !func.return_value_inner_reference_tags_.empty() && func.return_value_inner_reference_tags_.back().empty();
+		const size_t regular_tag_count= has_continuous_tag ? ( func.return_value_inner_reference_tags_.size() - 2u ) : func.return_value_inner_reference_tags_.size();
+		const size_t reference_tag_count= function_type.return_type.ReferencesTagsCount();
+
+		if( function_type.return_type.IsIncomplete() )
+		{
+			const Class& class_= GetClassForIncompleteType( function_type.return_type );
+			if( class_.completeness < Class::Completeness::ReferenceTagsComplete )
+				errors_.push_back( ReportUsingIncompleteType( func.file_pos_, class_.members.GetThisNamespaceName() ) );
+		}
+
+		if( has_continuous_tag )
+		{
+			if( regular_tag_count > reference_tag_count )
+				errors_.push_back( ReportInvalidReferenceTagCount( func.file_pos_, regular_tag_count, reference_tag_count ) );
+		}
+		else if( regular_tag_count != reference_tag_count )
+			errors_.push_back( ReportInvalidReferenceTagCount( func.file_pos_, regular_tag_count, reference_tag_count ) );
 	}
 }
 
@@ -77,8 +185,20 @@ void CodeBuilder::TryGenerateFunctionReturnReferencesMapping(
 	{
 		if( !func.return_value_reference_tag_.empty() )
 		{
-			// Tag exists, but referenced args is empty - means tag apperas only in return value, but not in any argument.
-			errors_.push_back( ReportNameNotFound( func.file_pos_, func.return_value_reference_tag_ ) );
+			bool tag_found= false;
+			for( const Synt::FunctionArgumentPtr& arg : func.arguments_ )
+			{
+				for( const ProgramString& tag : arg->inner_arg_reference_tags_ )
+					if( tag == func.return_value_reference_tag_ )
+						tag_found= true;
+				if( arg->reference_tag_ == func.return_value_reference_tag_ )
+					tag_found= true;
+				if( tag_found )
+					break;
+			}
+
+			if( !tag_found ) // Tag exists, but referenced args is empty - means tag apperas only in return value, but not in any argument.
+				errors_.push_back( ReportNameNotFound( func.file_pos_, func.return_value_reference_tag_ ) );
 		}
 
 		// If there is no tag for return reference, assume, that it may refer to any reference argument, but not inner reference of any argument.
@@ -114,6 +234,7 @@ void CodeBuilder::ProcessFunctionReferencesPollution(
 	[&]( const ProgramString& name ) -> std::vector<Function::ArgReference>
 	{
 		std::vector<Function::ArgReference> result;
+		bool any_ref_found= false;
 
 		for( size_t arg_n= 0u; arg_n < function_type.args.size(); ++arg_n )
 		{
@@ -125,10 +246,24 @@ void CodeBuilder::ProcessFunctionReferencesPollution(
 			if( !in_arg.reference_tag_.empty() && in_arg.reference_tag_ == name )
 				result.emplace_back( arg_n, Function::c_arg_reference_tag_number );
 
-			for( const ProgramString& inner_tag : in_arg.inner_arg_reference_tags_ )
-				if( inner_tag == name )
-					result.emplace_back( arg_n, &inner_tag - in_arg.inner_arg_reference_tags_.data() );
+			const bool has_continuous_tag= !in_arg.inner_arg_reference_tags_.empty() && in_arg.inner_arg_reference_tags_.back().empty();
+			const size_t regular_tag_count= has_continuous_tag ? ( in_arg.inner_arg_reference_tags_.size() - 2u ) : in_arg.inner_arg_reference_tags_.size();
+			const size_t arg_reference_tag_count= function_type.args[arg_n].type.ReferencesTagsCount();
+
+			for( size_t tag_number= 0u; tag_number < regular_tag_count; ++tag_number )
+				if( in_arg.inner_arg_reference_tags_[tag_number] == name )
+					result.emplace_back( arg_n, tag_number );
+
+			for( size_t tag_number= regular_tag_count; tag_number < arg_reference_tag_count; ++tag_number )
+				if( in_arg.inner_arg_reference_tags_[regular_tag_count] == name )
+					result.emplace_back( arg_n, tag_number );
+
+			if( has_continuous_tag && in_arg.inner_arg_reference_tags_[regular_tag_count] == name )
+				any_ref_found= true;
 		}
+
+		if( !any_ref_found && result.empty() )
+			errors_.push_back( ReportNameNotFound( func.file_pos_, name ) );
 
 		return result;
 	};
@@ -184,10 +319,6 @@ void CodeBuilder::ProcessFunctionReferencesPollution(
 
 			const std::vector<Function::ArgReference> dst_references= get_references( pollution.first );
 			const std::vector<Function::ArgReference> src_references= get_references( pollution.second.name );
-			if( dst_references.empty() )
-				errors_.push_back( ReportNameNotFound( func.file_pos_, pollution.first ) );
-			if( src_references.empty() )
-				errors_.push_back( ReportNameNotFound( func.file_pos_, pollution.second.name ) );
 
 			for( const Function::ArgReference& dst_ref : dst_references )
 			{

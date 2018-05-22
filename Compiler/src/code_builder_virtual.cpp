@@ -11,7 +11,7 @@ namespace CodeBuilderPrivate
 
 void CodeBuilder::ProcessClassParentsVirtualTables( Class& the_class )
 {
-	U_ASSERT( the_class.is_incomplete );
+	U_ASSERT( the_class.completeness != Class::Completeness::Complete );
 	U_ASSERT( the_class.virtual_table.empty() );
 
 	// Copy virtual table of base class.
@@ -45,7 +45,7 @@ void CodeBuilder::ProcessClassParentsVirtualTables( Class& the_class )
 
 void CodeBuilder::TryGenerateDestructorPrototypeForPolymorphClass( Class& the_class, const Type& class_type )
 {
-	U_ASSERT( the_class.is_incomplete );
+	U_ASSERT( the_class.completeness != Class::Completeness::Complete );
 	U_ASSERT( the_class.virtual_table_llvm_type == nullptr );
 	U_ASSERT( the_class.this_class_virtual_table == nullptr );
 
@@ -88,7 +88,7 @@ void CodeBuilder::TryGenerateDestructorPrototypeForPolymorphClass( Class& the_cl
 
 void CodeBuilder::ProcessClassVirtualFunction( Class& the_class, PrepareFunctionResult& function )
 {
-	U_ASSERT( the_class.is_incomplete );
+	U_ASSERT( the_class.completeness != Class::Completeness::Complete );
 	U_ASSERT( function.functions_set != nullptr );
 
 	FunctionVariable& function_variable= (function.functions_set->functions)[function.function_index];
@@ -219,7 +219,7 @@ void CodeBuilder::ProcessClassVirtualFunction( Class& the_class, PrepareFunction
 
 void CodeBuilder::PrepareClassVirtualTableType( Class& the_class )
 {
-	U_ASSERT( the_class.is_incomplete );
+	U_ASSERT( the_class.completeness != Class::Completeness::Complete );
 	U_ASSERT( the_class.virtual_table_llvm_type == nullptr );
 
 	if( the_class.virtual_table.empty() )
@@ -312,7 +312,7 @@ void CodeBuilder::BuildClassVirtualTables_r( Class& the_class, const Type& class
 
 void CodeBuilder::BuildClassVirtualTables( Class& the_class, const Type& class_type )
 {
-	U_ASSERT( the_class.is_incomplete );
+	U_ASSERT( the_class.completeness != Class::Completeness::Complete );
 	U_ASSERT( the_class.this_class_virtual_table == nullptr );
 	U_ASSERT( the_class.ancestors_virtual_tables.empty() );
 

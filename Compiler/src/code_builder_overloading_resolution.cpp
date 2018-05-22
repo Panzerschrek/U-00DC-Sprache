@@ -522,7 +522,7 @@ const FunctionVariable* CodeBuilder::GetOverloadedOperator(
 
 		if( const Class* const class_= arg.type.GetClassType() )
 		{
-			if( class_->is_incomplete )
+			if( class_->completeness != Class::Completeness::Complete )
 			{
 				errors_.push_back( ReportUsingIncompleteType( file_pos, arg.type.ToString() ) );
 				return nullptr;

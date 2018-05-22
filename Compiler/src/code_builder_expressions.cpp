@@ -1581,7 +1581,7 @@ Value CodeBuilder::BuildMemberAccessOperator(
 		return ErrorValue();
 	}
 
-	if( class_type->is_incomplete )
+	if( class_type->completeness != Class::Completeness::Complete )
 	{
 		errors_.push_back( ReportUsingIncompleteType( member_access_operator.file_pos_, value.GetType().ToString() ) );
 		return ErrorValue();
@@ -1880,6 +1880,7 @@ Value CodeBuilder::DoCallFunction(
 	std::unordered_map<StoredVariablePtr, VaraibleReferencesCounter> locked_variable_counters;
 	std::vector<VariableStorageUseCounter> temp_args_locks; // We need lock reference argument before evaluating next arguments.
 	std::vector< std::unordered_set<StoredVariablePtr> > arg_to_variables( arg_count );
+	std::vector< std::pair< std::unordered_set<StoredVariablePtr>, bool > > arg_to_inner_variables( arg_count ); // second param - is mutable
 
 	bool function_result_have_template_dependent_type= false;
 	for( unsigned int i= 0u; i < arg_count; i++ )
@@ -1951,11 +1952,18 @@ Value CodeBuilder::DoCallFunction(
 					llvm_args[j]= CreateReferenceCast( llvm_args[j], expr.type, arg.type, function_context );
 
 				// Lock references.
+				arg_to_inner_variables[j].second= false; // Non-mutable
 				for( const StoredVariablePtr& referenced_variable : expr.referenced_variables )
 				{
 					++locked_variable_counters[referenced_variable].imut;
 					temp_args_locks.push_back( referenced_variable->imut_use_counter );
 					arg_to_variables[j].emplace( referenced_variable );
+
+					for( const auto& inner_variable_pair : function_context.variables_state.GetVariableReferences( referenced_variable ) )
+					{
+						arg_to_inner_variables[j].second= arg_to_inner_variables[j].second || inner_variable_pair.second.IsMutable();
+						arg_to_inner_variables[j].first.emplace( inner_variable_pair.first );
+					}
 				}
 			}
 		}
@@ -1974,6 +1982,34 @@ Value CodeBuilder::DoCallFunction(
 			}
 			else if( const ClassProxyPtr class_type= arg.type.GetClassTypeProxy() )
 			{
+				// Save references inside referenced variables, because we need check references inside it.
+				// Do it only if arg type can contain any reference inside.
+				// Do it before potential moving.
+				if( arg.type.ReferencesTagsCount() > 0u )
+				{
+					arg_to_inner_variables[j].second= false; // Non-mutable
+					for( const StoredVariablePtr& var_itself : expr.referenced_variables )
+					{
+						for( const auto& referenced_variable_pair : function_context.variables_state.GetVariableReferences( var_itself ) )
+						{
+							const StoredVariablePtr& referenced_variable = referenced_variable_pair.first;
+							if( referenced_variable_pair.second.IsMutable() )
+							{
+								++locked_variable_counters[referenced_variable].mut;
+								temp_args_locks.push_back( referenced_variable->mut_use_counter );
+							}
+							else
+							{
+								++locked_variable_counters[referenced_variable].imut;
+								temp_args_locks.push_back( referenced_variable->imut_use_counter );
+							}
+							arg_to_inner_variables[j].second= arg_to_inner_variables[j].second || referenced_variable_pair.second.IsMutable();
+							arg_to_inner_variables[j].first.emplace( referenced_variable );
+						}
+						//arg_to_variables[j].emplace( var_itself );
+					}
+				}
+
 				if( !arg.type.IsCopyConstructible() )
 				{
 					// Can not call function with value parameter, because for value parameter needs copy, but parameter type is not copyable.
@@ -2001,28 +2037,6 @@ Value CodeBuilder::DoCallFunction(
 						value_for_copy= CreateReferenceCast( value_for_copy, expr.type, arg.type, function_context );
 					TryCallCopyConstructor( file_pos, arg_copy, value_for_copy, class_type, function_context );
 					llvm_args[j]= arg_copy;
-				}
-
-				// Save references inside referenced variables, because we need check references inside it.
-				// Do it only if arg type can contain any reference inside.
-				if( arg.type.ReferencesTagsCount() > 0u )
-				{
-					for( const StoredVariablePtr& var_itself : expr.referenced_variables )
-						for( const auto& referenced_variable_pair : function_context.variables_state.GetVariableReferences( var_itself ) )
-						{
-							const StoredVariablePtr& referenced_variable = referenced_variable_pair.first;
-							if( referenced_variable_pair.second.IsMutable() )
-							{
-								++locked_variable_counters[referenced_variable].mut;
-								temp_args_locks.push_back( referenced_variable->mut_use_counter );
-							}
-							else
-							{
-								++locked_variable_counters[referenced_variable].imut;
-								temp_args_locks.push_back( referenced_variable->imut_use_counter );
-							}
-							arg_to_variables[j].emplace( referenced_variable );
-						}
 				}
 			}
 			else if( something_have_template_dependent_type )
@@ -2147,10 +2161,9 @@ Value CodeBuilder::DoCallFunction(
 			U_ASSERT( arg_n_and_tag_n.first < arg_to_variables.size() );
 			U_ASSERT( arg_n_and_tag_n.second == 0u ); // Currently, support only 0 or 1 tags
 
-			for( const StoredVariablePtr& var : arg_to_variables[arg_n_and_tag_n.first] )
+			for( const StoredVariablePtr& var : arg_to_inner_variables[arg_n_and_tag_n.first].first )
 			{
-				if( !function_type.args[ arg_n_and_tag_n.first ].is_reference )
-					result.referenced_variables.emplace( var );
+				result.referenced_variables.emplace(var);
 				for( const StoredVariablePtr& referenced_variable : function_context.variables_state.RecursiveGetAllReferencedVariables(var).variables )
 					result.referenced_variables.emplace(referenced_variable);
 			}
@@ -2182,8 +2195,11 @@ Value CodeBuilder::DoCallFunction(
 			// TODO - if we pass value-argument, we needs to call copy constructor. In this constructor we can swap tags.
 			// We need correct result in such case.
 
-			for( const StoredVariablePtr& var : arg_to_variables[arg_n_and_tag_n.first] )
+			for( const StoredVariablePtr& var : arg_to_inner_variables[arg_n_and_tag_n.first].first )
 			{
+				const bool is_mutable= arg_to_inner_variables[arg_n_and_tag_n.first].second;
+				function_context.variables_state.AddPollution( stored_result, var, is_mutable );
+
 				const VariablesState::AchievableVariables achievable_variables= function_context.variables_state.RecursiveGetAllReferencedVariables( var );
 				for( const auto& referenced_variable_pair : achievable_variables.variables )
 					function_context.variables_state.AddPollution( stored_result, referenced_variable_pair, achievable_variables.any_variable_is_mutable );
@@ -2214,11 +2230,12 @@ Value CodeBuilder::DoCallFunction(
 			// Variables, referenced by inner argument references.
 			U_ASSERT( referene_pollution.src.second == 0u );// Currently we support one tag per struct.
 			bool all_is_mutable= false;
-			for( const StoredVariablePtr& referenced_variable : arg_to_variables[ referene_pollution.src.first ] )
+			for( const StoredVariablePtr& referenced_variable : arg_to_inner_variables[ referene_pollution.src.first ].first )
 			{
 				const VariablesState::AchievableVariables vars= function_context.variables_state.RecursiveGetAllReferencedVariables( referenced_variable );
 				src_variables.insert( vars.variables.begin(), vars.variables.end() );
-				all_is_mutable= all_is_mutable || vars.any_variable_is_mutable;
+				src_variables.insert( referenced_variable );
+				all_is_mutable= all_is_mutable || vars.any_variable_is_mutable || arg_to_inner_variables[ referene_pollution.src.first ].second;
 			}
 
 			if( !all_is_mutable )
