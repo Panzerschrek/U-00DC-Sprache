@@ -407,3 +407,42 @@ def VariativeReferenceTagsCount_InTemplateClass_Test4():
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ReferenceProtectionError" )
 	assert( errors_list[0].file_pos.line == 21 )
+
+
+def ReferenceTagsForTemplateDependentType_Test0():
+	c_program_text= """
+		template</ type T />
+		fn Foo( T t' a ' ){} // Inner references tag for template-dependent arg type.
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def ReferenceTagsForTemplateDependentType_Test1():
+	c_program_text= """
+		struct S{ i32& r; }
+		template</ type T />
+		fn Foo( S s'a' ) : T'a' { return T(); }  // Inner references tag for template-dependent return type.
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def ReferenceTagsForTemplateDependentType_Test2():
+	c_program_text= """
+		template</ type T />
+		fn Foo( i32 x'a' ) : T { return T(); }  // Invalid tag count for non-template-dependent argument of template function.
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "InvalidReferenceTagCount" )
+	assert( errors_list[0].file_pos.line == 3 )
+
+
+def ReferenceTagsForTemplateDependentType_Test3():
+	c_program_text= """
+		template</ type T />
+		fn Foo( T t ) : i32'a' { return T(); }  // Invalid tag count for non-template-dependent return type of template function.
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "InvalidReferenceTagCount" )
+	assert( errors_list[0].file_pos.line == 3 )

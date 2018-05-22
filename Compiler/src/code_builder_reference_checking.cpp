@@ -29,6 +29,9 @@ void CodeBuilder::ProcessFunctionArgReferencesTags(
 	const Function::Arg& out_arg,
 	const size_t arg_number )
 {
+	if( out_arg.type.GetTemplateDependentType() != nullptr )
+		return;
+
 	const bool has_continuous_tag= !in_arg.inner_arg_reference_tags_.empty() && in_arg.inner_arg_reference_tags_.back().empty();
 	const size_t regular_tag_count= has_continuous_tag ? ( in_arg.inner_arg_reference_tags_.size() - 2u ) : in_arg.inner_arg_reference_tags_.size();
 	const size_t arg_reference_tag_count= out_arg.type.ReferencesTagsCount();
@@ -79,7 +82,7 @@ void CodeBuilder::ProcessFunctionArgReferencesTags(
 	const size_t return_value_reference_tag_count= function_type.return_type.ReferencesTagsCount();
 
 	if( !function_type.return_value_is_reference && !func.return_value_inner_reference_tags_.empty() &&
-		return_value_reference_tag_count > 0u )
+		return_value_reference_tag_count > 0u && function_type.return_type.GetTemplateDependentType() == nullptr )
 	{
 		// In arg reference to return value references
 		if( out_arg.is_reference && !in_arg.reference_tag_.empty() )
@@ -145,6 +148,8 @@ void CodeBuilder::ProcessFunctionArgReferencesTags(
 
 void CodeBuilder::ProcessFunctionReturnValueReferenceTags( const Synt::Function& func, const Function& function_type )
 {
+	if( function_type.return_type.GetTemplateDependentType() != nullptr )
+		return;
 
 	if( !function_type.return_value_is_reference && !func.return_value_inner_reference_tags_.empty() )
 	{
