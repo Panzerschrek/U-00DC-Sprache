@@ -252,19 +252,19 @@ Value CodeBuilder::BuildExpressionCode(
 	}
 	else if( const auto cast_ref= dynamic_cast<const Synt::CastRef*>(&expression) )
 	{
-		// TODO
+		result= BuildCastRef( *cast_ref, names, function_context );
 	}
 	else if( const auto cast_ref_unsafe= dynamic_cast<const Synt::CastRefUnsafe*>(&expression) )
 	{
-		// TODO
+		result= BuildCastRefUnsafe( *cast_ref_unsafe, names, function_context );
 	}
 	else if( const auto cast_imut= dynamic_cast<const Synt::CastImut*>(&expression) )
 	{
-		// TODO
+		result= BuildCastImut( *cast_imut, names, function_context );
 	}
 	else if( const auto cast_mut= dynamic_cast<const Synt::CastMut*>(&expression) )
 	{
-		// TODO
+		result= BuildCastMut( *cast_mut, names, function_context );
 	}
 	else U_ASSERT(false);
 
@@ -1051,6 +1051,74 @@ Value CodeBuilder::BuildLazyBinaryOperator(
 	return Value( result, file_pos );
 
 	#undef RETURN_UNDEF_BOOL
+}
+
+Value CodeBuilder::BuildCastRef( const Synt::CastRef& cast_ref, NamesScope& names, FunctionContext& function_context )
+{
+	const Type type= PrepareType( cast_ref.type_, names );
+	if( type == invalid_type_ )
+		return ErrorValue();
+
+	const Value expr= BuildExpressionCode( *cast_ref.expression_, names, function_context );
+	const Variable* var= expr.GetVariable();
+	if( var == nullptr )
+	{
+		errors_.push_back( ReportExpectedVariable( cast_ref.file_pos_, expr.GetType().ToString() ) );
+		return ErrorValue();
+	}
+
+	Variable result;
+	result.type= type;
+	result.value_type= var->value_type == ValueType::Reference ? ValueType::Reference : ValueType::ConstReference; // "ValueType" here converts inot ConstReference.
+	result.location= Variable::Location::Pointer;
+	result.referenced_variables= var->referenced_variables;
+
+	llvm::Value* src_value= var->llvm_value;
+	if( var->location == Variable::Location::LLVMRegister )
+	{
+		src_value= function_context.alloca_ir_builder.CreateAlloca( var->type.GetLLVMType() );
+		function_context.llvm_ir_builder.CreateStore( var->llvm_value, src_value );
+	}
+
+	if( type == var->type )
+		result.llvm_value= src_value;
+	else if( type == void_type_ )
+		result.llvm_value= CreateReferenceCast( src_value, var->type, type, function_context );
+	else
+	{
+		if( type.IsIncomplete() )
+			errors_.push_back( ReportUsingIncompleteType( cast_ref.file_pos_, type.ToString() ) );
+		if( var->type.IsIncomplete() )
+			errors_.push_back( ReportUsingIncompleteType( cast_ref.file_pos_, var->type.ToString() ) );
+
+		if( var->type.ReferenceIsConvertibleTo( type ) )
+			result.llvm_value= CreateReferenceCast( src_value, var->type, type, function_context );
+		else
+		{
+			result.llvm_value= function_context.llvm_ir_builder.CreatePointerCast( src_value, llvm::PointerType::get( type.GetLLVMType(), 0 ) );
+			errors_.push_back( ReportTypesMismatch( cast_ref.file_pos_, type.ToString(), var->type.ToString() ) );
+		}
+	}
+
+	return Value( result, cast_ref.file_pos_ );
+}
+
+Value CodeBuilder::BuildCastRefUnsafe( const Synt::CastRefUnsafe& cast_ref_unsafe, NamesScope& names, FunctionContext& function_context )
+{
+	// TODO
+	return ErrorValue();
+}
+
+Value CodeBuilder::BuildCastImut( const Synt::CastImut& cast_imut, NamesScope& names, FunctionContext& function_context )
+{
+	// TODO
+	return ErrorValue();
+}
+
+Value CodeBuilder::BuildCastMut( const Synt::CastMut& cast_mut, NamesScope& names, FunctionContext& function_context )
+{
+	// TODO
+	return ErrorValue();
 }
 
 Value CodeBuilder::BuildNamedOperand(

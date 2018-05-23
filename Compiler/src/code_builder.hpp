@@ -403,6 +403,11 @@ private:
 		NamesScope& names,
 		FunctionContext& function_context );
 
+	Value BuildCastRef( const Synt::CastRef& cast_ref, NamesScope& names, FunctionContext& function_context );
+	Value BuildCastRefUnsafe( const Synt::CastRefUnsafe& cast_ref_unsafe, NamesScope& names, FunctionContext& function_context );
+	Value BuildCastImut( const Synt::CastImut& cast_imut, NamesScope& names, FunctionContext& function_context );
+	Value BuildCastMut( const Synt::CastMut& cast_mut, NamesScope& names, FunctionContext& function_context );
+
 	Value BuildNamedOperand( const Synt::NamedOperand& named_operand, NamesScope& names, FunctionContext& function_context );
 	Value BuildMoveOpeator( const Synt::MoveOperator& move_operator, NamesScope& names, FunctionContext& function_context );
 	Value BuildNumericConstant( const Synt::NumericConstant& numeric_constant, FunctionContext& function_context );

@@ -43,3 +43,156 @@ def CastMut_OperatorDeclaration_Test():
 		}
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def CastRef_Test0_ShouldCastToVoid():
+	c_program_text= """
+		fn ToVoid( i32& x ) : void&
+		{
+			return cast_ref</ void />(x);
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def CastRef_Test1_ShouldCastChildToParent():
+	c_program_text= """
+		class A polymorph {}
+		class B : A {}
+		fn ToA( B& b ) : A&
+		{
+			return cast_ref</ A />(b);
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def CastRef_Test2_CastToSameType():
+	c_program_text= """
+		fn ToF32( f32& f ) : f32&
+		{
+			return cast_ref</ f32 />(f);
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def CastRef_Test3_ShouldSaveMutability():
+	c_program_text= """
+		fn A( i32&imut x ) : i32 { return 555; }
+		fn A( i32& mut x ) : i32 { return 999; }
+
+		fn Foo() : i32
+		{
+			auto mut x= 0;
+			return A( cast_ref</ i32 />(x) );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 999 )
+
+
+def CastRef_Test4_ShouldSaveMutability():
+	c_program_text= """
+		fn A( i32&imut x ) : i32 { return 555; }
+		fn A( i32& mut x ) : i32 { return 999; }
+
+		fn Foo() : i32
+		{
+			auto imut x= 0;
+			return A( cast_ref</ i32 />(x) );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 555 )
+
+
+def CastRef_Test5_ShouldCastValue():
+	c_program_text= """
+		fn Foo()
+		{
+			cast_ref</ void />( 42 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def CastRef_Test6_ShouldCastToVoidReferenceOfIncompleteType():
+	c_program_text= """
+		struct S;
+		fn ToVoid( S& s ) : void&
+		{
+			return cast_ref</ void />(s);
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def CastRef_Test7_CompleteteTypeRequiredForSource():
+	c_program_text= """
+		class B;
+		class A polymorph {}
+		fn ToA( B& b ) : A&
+		{
+			return cast_ref</ A />(b);
+		}
+		class B : A {}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "UsingIncompleteType" )
+	assert( errors_list[0].file_pos.line == 6 )
+
+
+def CastRef_Test8_CompleteteTypeRequiredForDestination():
+	c_program_text= """
+		class A;
+		class B;
+		fn ToA( B& b ) : A&
+		{
+			return cast_ref</ A />(b);
+		}
+		class A polymorph {}
+		class B : A {}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "UsingIncompleteType" )
+	assert( errors_list[0].file_pos.line == 6 )
+
+
+def CastRef_Test9_ShouldPreserveReferencedVariables():
+	c_program_text= """
+		fn Foo() : void&
+		{
+			auto x= 0;
+			return cast_ref</ void />(x); //  Return reference to local variable.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "DestroyedVariableStillHaveReferences" )
+	assert( errors_list[0].file_pos.line == 5 )
+
+
+def CastRef_Test10_ShouldPreserveReferencedVariables():
+	c_program_text= """
+		class A polymorph {}
+		class B : A
+		{
+			i32 x;
+			fn constructor() ( x= 0 ) {}
+		}
+		fn Foo()
+		{
+			var B mut b;
+			auto& r= cast_ref</ A />(b);
+			++b.x;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ReferenceProtectionError" )
+	assert( errors_list[0].file_pos.line == 12 )
