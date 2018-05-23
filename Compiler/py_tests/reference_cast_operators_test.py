@@ -411,3 +411,96 @@ def CastImut_Test3_ShouldPreserveReferences():
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ReferenceProtectionError" )
 	assert( errors_list[0].file_pos.line == 6 )
+
+
+def CastMut_Test0_CastImmutableReferenceToMutableReference():
+	c_program_text= """
+		fn A( i32&imut x ) : i32 { return 555; }
+		fn A( i32& mut x ) : i32 { return 999; }
+
+		fn Foo() : i32
+		{
+			auto imut x= 0;
+			unsafe{  return A( cast_mut(x) );  }
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 999 )
+
+
+def CastMut_Test1_CastMutableReferenceToMutableReference():
+	c_program_text= """
+		fn A( i32&imut x ) : i32 { return 555; }
+		fn A( i32& mut x ) : i32 { return 999; }
+
+		fn Foo() : i32
+		{
+			auto mut x= 0;
+			unsafe{  return A( cast_mut(x) );  }
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 999 )
+
+
+def CastMut_Test2_CastValueToMutableReference():
+	c_program_text= """
+		fn A( i32&imut x ) : i32 { return 555; }
+		fn A( i32& mut x ) : i32 { return 999; }
+
+		fn Foo() : i32
+		{
+			unsafe{  return A( cast_mut(42) );  }
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 999 )
+
+
+def CastMut_Test3_ShouldPreserveReferences():
+	c_program_text= """
+		fn Foo()
+		{
+			unsafe
+			{
+				auto mut x= 0;
+				auto &mut r= cast_mut(x); // Save reference here
+				++x; // error, modifying 'x', when reference to it exists.
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "AccessingVariableThatHaveMutableReference" )
+	assert( errors_list[0].file_pos.line == 8 )
+
+
+def CastMut_Test4_OperationIsUnsafe():
+	c_program_text= """
+		fn Foo()
+		{
+			auto imut x= 0;
+			cast_mut( x );
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "MutableReferenceCastOutsideUnsafeBlock" )
+	assert( errors_list[0].file_pos.line == 5 )
+
+
+def CastMut_Test5_OperationIsUnsafe():
+	c_program_text= """
+		fn Foo()
+		{
+			auto mut x= 0;
+			cast_mut( x );  // even mut->mut casting is unsafe
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "MutableReferenceCastOutsideUnsafeBlock" )
+	assert( errors_list[0].file_pos.line == 5 )

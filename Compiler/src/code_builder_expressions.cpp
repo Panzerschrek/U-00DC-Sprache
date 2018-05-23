@@ -1149,8 +1149,27 @@ Value CodeBuilder::BuildCastImut( const Synt::CastImut& cast_imut, NamesScope& n
 
 Value CodeBuilder::BuildCastMut( const Synt::CastMut& cast_mut, NamesScope& names, FunctionContext& function_context )
 {
-	// TODO
-	return ErrorValue();
+	if( !function_context.is_in_unsafe_block )
+		errors_.push_back( ReportMutableReferenceCastOutsideUnsafeBlock( cast_mut.file_pos_ ) );
+
+	const Value expr= BuildExpressionCode( *cast_mut.expression_, names, function_context );
+	const Variable* var= expr.GetVariable();
+	if( var == nullptr )
+	{
+		errors_.push_back( ReportExpectedVariable( cast_mut.file_pos_, expr.GetType().ToString() ) );
+		return ErrorValue();
+	}
+
+	Variable result= *var;
+	result.value_type= ValueType::Reference;
+
+	if( var->location == Variable::Location::LLVMRegister )
+	{
+		result.llvm_value= function_context.alloca_ir_builder.CreateAlloca( var->type.GetLLVMType() );
+		function_context.llvm_ir_builder.CreateStore( var->llvm_value, result.llvm_value );
+	}
+
+	return Value( result, cast_mut.file_pos_ );
 }
 
 Value CodeBuilder::BuildNamedOperand(

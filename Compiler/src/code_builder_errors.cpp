@@ -261,6 +261,8 @@ const char* CodeBuilderErrorCodeToString( const CodeBuilderErrorCode code )
 		return "ExplicitAccessToThisMethodIsUnsafe";
 	case CodeBuilderErrorCode::UnsafeReferenceCastOutsideUnsafeBlock:
 		return "UnsafeReferenceCastOutsideUnsafeBlock";
+	case CodeBuilderErrorCode::MutableReferenceCastOutsideUnsafeBlock:
+		return "MutableReferenceCastOutsideUnsafeBlock";
 	};
 
 	U_ASSERT(false);
@@ -1684,6 +1686,17 @@ CodeBuilderError ReportUnsafeReferenceCastOutsideUnsafeBlock( const FilePos& fil
 	error.code= CodeBuilderErrorCode::UnsafeReferenceCastOutsideUnsafeBlock;
 
 	error.text= "Unsafe reference cast outside unsafe block."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportMutableReferenceCastOutsideUnsafeBlock( const FilePos& file_pos )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::MutableReferenceCastOutsideUnsafeBlock;
+
+	error.text= "Mutable reference cast outside unsafe block."_SpC;
 
 	return error;
 }
