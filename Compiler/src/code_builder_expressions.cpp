@@ -1105,6 +1105,8 @@ Value CodeBuilder::DoReferenceCast(
 		result.llvm_value= CreateReferenceCast( src_value, var->type, type, function_context );
 	else
 	{
+		// Complete types required for both safe and unsafe casting, except unsafe void to anything cast.
+		// This needs, becasue we must emit same code for places where types yet not complete, and where they are complete.
 		if( type.IsIncomplete() )
 			errors_.push_back( ReportUsingIncompleteType( file_pos, type.ToString() ) );
 		if( var->type.IsIncomplete() && !( enable_unsafe && var->type == void_type_ ) )
@@ -1125,8 +1127,24 @@ Value CodeBuilder::DoReferenceCast(
 
 Value CodeBuilder::BuildCastImut( const Synt::CastImut& cast_imut, NamesScope& names, FunctionContext& function_context )
 {
-	// TODO
-	return ErrorValue();
+	const Value expr= BuildExpressionCode( *cast_imut.expression_, names, function_context );
+	const Variable* var= expr.GetVariable();
+	if( var == nullptr )
+	{
+		errors_.push_back( ReportExpectedVariable( cast_imut.file_pos_, expr.GetType().ToString() ) );
+		return ErrorValue();
+	}
+
+	Variable result= *var;
+	result.value_type= ValueType::ConstReference;
+
+	if( var->location == Variable::Location::LLVMRegister )
+	{
+		result.llvm_value= function_context.alloca_ir_builder.CreateAlloca( var->type.GetLLVMType() );
+		function_context.llvm_ir_builder.CreateStore( var->llvm_value, result.llvm_value );
+	}
+
+	return Value( result, cast_imut.file_pos_ );
 }
 
 Value CodeBuilder::BuildCastMut( const Synt::CastMut& cast_mut, NamesScope& names, FunctionContext& function_context )
