@@ -1447,7 +1447,7 @@ U_TEST(ExpectedVariableInReferenceCastOperatorsTest0)
 
 	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_TEST_ASSERT( build_result.errors.size() >= 0u );
+	U_TEST_ASSERT( build_result.errors.size() >= 1u );
 
 	U_TEST_ASSERT( build_result.errors[0].code == CodeBuilderErrorCode::ExpectedVariable );
 	U_TEST_ASSERT( build_result.errors[0].file_pos.line == 4u );

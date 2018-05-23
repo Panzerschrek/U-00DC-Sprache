@@ -1055,15 +1055,34 @@ Value CodeBuilder::BuildLazyBinaryOperator(
 
 Value CodeBuilder::BuildCastRef( const Synt::CastRef& cast_ref, NamesScope& names, FunctionContext& function_context )
 {
-	const Type type= PrepareType( cast_ref.type_, names );
+	return DoReferenceCast( cast_ref.file_pos_, cast_ref.type_, cast_ref.expression_, false, names, function_context );
+}
+
+Value CodeBuilder::BuildCastRefUnsafe( const Synt::CastRefUnsafe& cast_ref_unsafe, NamesScope& names, FunctionContext& function_context )
+{
+	if( !function_context.is_in_unsafe_block )
+		errors_.push_back( ReportUnsafeReferenceCastOutsideUnsafeBlock( cast_ref_unsafe.file_pos_ ) );
+
+	return DoReferenceCast( cast_ref_unsafe.file_pos_, cast_ref_unsafe.type_, cast_ref_unsafe.expression_, true, names, function_context );
+}
+
+Value CodeBuilder::DoReferenceCast(
+	const FilePos& file_pos,
+	const Synt::ITypeNamePtr& type_name,
+	const Synt::IExpressionComponentPtr& expression,
+	bool enable_unsafe,
+	NamesScope& names,
+	FunctionContext& function_context )
+{
+	const Type type= PrepareType( type_name, names );
 	if( type == invalid_type_ )
 		return ErrorValue();
 
-	const Value expr= BuildExpressionCode( *cast_ref.expression_, names, function_context );
+	const Value expr= BuildExpressionCode( *expression, names, function_context );
 	const Variable* var= expr.GetVariable();
 	if( var == nullptr )
 	{
-		errors_.push_back( ReportExpectedVariable( cast_ref.file_pos_, expr.GetType().ToString() ) );
+		errors_.push_back( ReportExpectedVariable( file_pos, expr.GetType().ToString() ) );
 		return ErrorValue();
 	}
 
@@ -1087,26 +1106,21 @@ Value CodeBuilder::BuildCastRef( const Synt::CastRef& cast_ref, NamesScope& name
 	else
 	{
 		if( type.IsIncomplete() )
-			errors_.push_back( ReportUsingIncompleteType( cast_ref.file_pos_, type.ToString() ) );
-		if( var->type.IsIncomplete() )
-			errors_.push_back( ReportUsingIncompleteType( cast_ref.file_pos_, var->type.ToString() ) );
+			errors_.push_back( ReportUsingIncompleteType( file_pos, type.ToString() ) );
+		if( var->type.IsIncomplete() && !( enable_unsafe && var->type == void_type_ ) )
+			errors_.push_back( ReportUsingIncompleteType( file_pos, var->type.ToString() ) );
 
 		if( var->type.ReferenceIsConvertibleTo( type ) )
 			result.llvm_value= CreateReferenceCast( src_value, var->type, type, function_context );
 		else
 		{
 			result.llvm_value= function_context.llvm_ir_builder.CreatePointerCast( src_value, llvm::PointerType::get( type.GetLLVMType(), 0 ) );
-			errors_.push_back( ReportTypesMismatch( cast_ref.file_pos_, type.ToString(), var->type.ToString() ) );
+			if( !enable_unsafe )
+				errors_.push_back( ReportTypesMismatch( file_pos, type.ToString(), var->type.ToString() ) );
 		}
 	}
 
-	return Value( result, cast_ref.file_pos_ );
-}
-
-Value CodeBuilder::BuildCastRefUnsafe( const Synt::CastRefUnsafe& cast_ref_unsafe, NamesScope& names, FunctionContext& function_context )
-{
-	// TODO
-	return ErrorValue();
+	return Value( result, file_pos );
 }
 
 Value CodeBuilder::BuildCastImut( const Synt::CastImut& cast_imut, NamesScope& names, FunctionContext& function_context )
