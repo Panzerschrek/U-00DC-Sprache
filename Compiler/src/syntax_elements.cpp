@@ -109,7 +109,23 @@ NamedOperand::NamedOperand( const FilePos& file_pos, ComplexName name )
 	, name_( std::move(name) )
 {}
 
-MoveOperator::MoveOperator( const FilePos& file_pos  )
+MoveOperator::MoveOperator( const FilePos& file_pos )
+	: ExpressionComponentWithUnaryOperators(file_pos)
+{}
+
+CastRef::CastRef( const FilePos& file_pos )
+	: ExpressionComponentWithUnaryOperators(file_pos)
+{}
+
+CastRefUnsafe::CastRefUnsafe( const FilePos& file_pos )
+	: ExpressionComponentWithUnaryOperators(file_pos)
+{}
+
+CastImut::CastImut( const FilePos& file_pos )
+	: ExpressionComponentWithUnaryOperators(file_pos)
+{}
+
+CastMut::CastMut( const FilePos& file_pos )
 	: ExpressionComponentWithUnaryOperators(file_pos)
 {}
 

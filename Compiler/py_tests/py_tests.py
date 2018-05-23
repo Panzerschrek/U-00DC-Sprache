@@ -25,6 +25,7 @@ def main():
 		"inheritance_errors_test",
 		"overloading_resolution_test",
 		"public_private_protected_test",
+		"reference_cast_operators_test",
 		"reference_check_for_templates_test",
 		"stack_variables_move_errors_test",
 		"stack_variables_move_test",

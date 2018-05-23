@@ -250,6 +250,22 @@ Value CodeBuilder::BuildExpressionCode(
 	{
 		result= BuildMoveOpeator( *move_operator, names, function_context );
 	}
+	else if( const auto cast_ref= dynamic_cast<const Synt::CastRef*>(&expression) )
+	{
+		// TODO
+	}
+	else if( const auto cast_ref_unsafe= dynamic_cast<const Synt::CastRefUnsafe*>(&expression) )
+	{
+		// TODO
+	}
+	else if( const auto cast_imut= dynamic_cast<const Synt::CastImut*>(&expression) )
+	{
+		// TODO
+	}
+	else if( const auto cast_mut= dynamic_cast<const Synt::CastMut*>(&expression) )
+	{
+		// TODO
+	}
 	else U_ASSERT(false);
 
 	if( const auto expression_with_unary_operators=

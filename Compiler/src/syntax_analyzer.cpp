@@ -582,6 +582,130 @@ IExpressionComponentPtr SyntaxAnalyzer::ParseExpression()
 
 				current_node= std::move(move_operator);
 			}
+			else if( it_->text == Keywords::cast_ref )
+			{
+				std::unique_ptr<CastRef> cast( new CastRef( it_->file_pos ) );
+
+				NextLexem();
+				if( it_->type != Lexem::Type::TemplateBracketLeft )
+				{
+					PushErrorMessage();
+					return nullptr;
+				}
+				NextLexem();
+
+				cast->type_= ParseTypeName();
+				if( it_->type != Lexem::Type::TemplateBracketRight )
+				{
+					PushErrorMessage();
+					return nullptr;
+				}
+				NextLexem();
+
+				if( it_->type != Lexem::Type::BracketLeft )
+				{
+					PushErrorMessage();
+					return nullptr;
+				}
+				NextLexem();
+
+				cast->expression_= ParseExpression();
+
+				if( it_->type != Lexem::Type::BracketRight )
+				{
+					PushErrorMessage();
+					return nullptr;
+				}
+				NextLexem();
+
+				current_node= std::move(cast);
+			}
+			else if( it_->text == Keywords::cast_ref_unsafe )
+			{
+				std::unique_ptr<CastRefUnsafe> cast( new CastRefUnsafe( it_->file_pos ) );
+
+				NextLexem();
+				if( it_->type != Lexem::Type::TemplateBracketLeft )
+				{
+					PushErrorMessage();
+					return nullptr;
+				}
+				NextLexem();
+
+				cast->type_= ParseTypeName();
+				if( it_->type != Lexem::Type::TemplateBracketRight )
+				{
+					PushErrorMessage();
+					return nullptr;
+				}
+				NextLexem();
+
+				if( it_->type != Lexem::Type::BracketLeft )
+				{
+					PushErrorMessage();
+					return nullptr;
+				}
+				NextLexem();
+
+				cast->expression_= ParseExpression();
+
+				if( it_->type != Lexem::Type::BracketRight )
+				{
+					PushErrorMessage();
+					return nullptr;
+				}
+				NextLexem();
+
+				current_node= std::move(cast);
+			}
+			else if( it_->text == Keywords::cast_imut )
+			{
+				std::unique_ptr<CastImut> cast( new CastImut( it_->file_pos ) );
+
+				NextLexem();
+
+				if( it_->type != Lexem::Type::BracketLeft )
+				{
+					PushErrorMessage();
+					return nullptr;
+				}
+				NextLexem();
+
+				cast->expression_= ParseExpression();
+
+				if( it_->type != Lexem::Type::BracketRight )
+				{
+					PushErrorMessage();
+					return nullptr;
+				}
+				NextLexem();
+
+				current_node= std::move(cast);
+			}
+			else if( it_->text == Keywords::cast_mut )
+			{
+				std::unique_ptr<CastMut> cast( new CastMut( it_->file_pos ) );
+
+				NextLexem();
+
+				if( it_->type != Lexem::Type::BracketLeft )
+				{
+					PushErrorMessage();
+					return nullptr;
+				}
+				NextLexem();
+
+				cast->expression_= ParseExpression();
+
+				if( it_->type != Lexem::Type::BracketRight )
+				{
+					PushErrorMessage();
+					return nullptr;
+				}
+				NextLexem();
+
+				current_node= std::move(cast);
+			}
 			else
 				current_node.reset( new NamedOperand( it_->file_pos, ParseComplexName() ) );
 		}
