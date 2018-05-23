@@ -98,19 +98,24 @@ static const Globals& GetGlobals()
 		[ size_t(Keywords::template_) ]= "template",
 		[ size_t(Keywords::enum_) ]= "enum",
 
+		[ size_t(Keywords::cast_ref) ]= "cast_ref",
+		[ size_t(Keywords::cast_ref_unsafe) ]= "cast_ref_unsafe",
+		[ size_t(Keywords::cast_imut) ]= "cast_imut",
+		[ size_t(Keywords::cast_mut) ]= "cast_mut",
+
+		[ size_t(Keywords::import_) ]= "import",
+
 		[ size_t(Keywords::for_) ]= "for",
 		[ size_t(Keywords::do_) ]= "do",
 		[ size_t(Keywords::switch_) ]= "switch",
 		[ size_t(Keywords::case_) ]= "case",
 		[ size_t(Keywords::default_) ]= "default",
 		[ size_t(Keywords::typename_) ]= "typename",
-		[ size_t(Keywords::cast_) ]= "cast",
 		[ size_t(Keywords::const_) ]= "const",
 		[ size_t(Keywords::lambda_) ]= "lambda",
 		[ size_t(Keywords::static_) ]= "static",
 		[ size_t(Keywords::package_) ]= "package",
 		[ size_t(Keywords::module_) ]= "module",
-		[ size_t(Keywords::import_) ]= "import",
 		[ size_t(Keywords::export_) ]= "export",
 	};
 

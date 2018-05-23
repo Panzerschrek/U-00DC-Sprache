@@ -250,6 +250,40 @@ public:
 	ProgramString var_name_;
 };
 
+class CastRef final : public ExpressionComponentWithUnaryOperators
+{
+public:
+	CastRef( const FilePos& file_pos );
+
+	ITypeNamePtr type_;
+	IExpressionComponentPtr expression_;
+};
+
+class CastRefUnsafe final : public ExpressionComponentWithUnaryOperators
+{
+public:
+	CastRefUnsafe( const FilePos& file_pos );
+
+	ITypeNamePtr type_;
+	IExpressionComponentPtr expression_;
+};
+
+class CastImut final : public ExpressionComponentWithUnaryOperators
+{
+public:
+	CastImut( const FilePos& file_pos );
+
+	IExpressionComponentPtr expression_;
+};
+
+class CastMut final : public ExpressionComponentWithUnaryOperators
+{
+public:
+	CastMut( const FilePos& file_pos );
+
+	IExpressionComponentPtr expression_;
+};
+
 class BooleanConstant final : public ExpressionComponentWithUnaryOperators
 {
 public:

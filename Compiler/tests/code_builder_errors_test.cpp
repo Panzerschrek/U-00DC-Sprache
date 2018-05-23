@@ -1435,6 +1435,31 @@ U_TEST(ExpectedVariableInIncrementOrDecrementTest0)
 	U_TEST_ASSERT( build_result.errors[3].file_pos.line == 10u );
 }
 
+U_TEST(ExpectedVariableInReferenceCastOperatorsTest0)
+{
+	static const char c_program_text[]=
+	R"(
+		namespace NS{}
+		fn Foo()
+		{
+			cast_ref</ void />(Foo);  // Function
+			unsafe{  cast_ref_unsafe</ i32 />( f32 );  }  // type name
+			cast_imut( NS );  // namespace
+		}
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( build_result.errors.size() >= 3u );
+
+	U_TEST_ASSERT( build_result.errors[0].code == CodeBuilderErrorCode::ExpectedVariable );
+	U_TEST_ASSERT( build_result.errors[0].file_pos.line == 5u );
+	U_TEST_ASSERT( build_result.errors[1].code == CodeBuilderErrorCode::ExpectedVariable );
+	U_TEST_ASSERT( build_result.errors[1].file_pos.line == 6u );
+	U_TEST_ASSERT( build_result.errors[2].code == CodeBuilderErrorCode::ExpectedVariable );
+	U_TEST_ASSERT( build_result.errors[2].file_pos.line == 7u );
+}
+
 U_TEST(CouldNotOverloadFunctionTest1)
 {
 	// Different are only mutability modifiers for value parameters.

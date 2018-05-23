@@ -250,6 +250,22 @@ Value CodeBuilder::BuildExpressionCode(
 	{
 		result= BuildMoveOpeator( *move_operator, names, function_context );
 	}
+	else if( const auto cast_ref= dynamic_cast<const Synt::CastRef*>(&expression) )
+	{
+		result= BuildCastRef( *cast_ref, names, function_context );
+	}
+	else if( const auto cast_ref_unsafe= dynamic_cast<const Synt::CastRefUnsafe*>(&expression) )
+	{
+		result= BuildCastRefUnsafe( *cast_ref_unsafe, names, function_context );
+	}
+	else if( const auto cast_imut= dynamic_cast<const Synt::CastImut*>(&expression) )
+	{
+		result= BuildCastImut( *cast_imut, names, function_context );
+	}
+	else if( const auto cast_mut= dynamic_cast<const Synt::CastMut*>(&expression) )
+	{
+		result= BuildCastMut( *cast_mut, names, function_context );
+	}
 	else U_ASSERT(false);
 
 	if( const auto expression_with_unary_operators=
@@ -1035,6 +1051,125 @@ Value CodeBuilder::BuildLazyBinaryOperator(
 	return Value( result, file_pos );
 
 	#undef RETURN_UNDEF_BOOL
+}
+
+Value CodeBuilder::BuildCastRef( const Synt::CastRef& cast_ref, NamesScope& names, FunctionContext& function_context )
+{
+	return DoReferenceCast( cast_ref.file_pos_, cast_ref.type_, cast_ref.expression_, false, names, function_context );
+}
+
+Value CodeBuilder::BuildCastRefUnsafe( const Synt::CastRefUnsafe& cast_ref_unsafe, NamesScope& names, FunctionContext& function_context )
+{
+	if( !function_context.is_in_unsafe_block )
+		errors_.push_back( ReportUnsafeReferenceCastOutsideUnsafeBlock( cast_ref_unsafe.file_pos_ ) );
+
+	return DoReferenceCast( cast_ref_unsafe.file_pos_, cast_ref_unsafe.type_, cast_ref_unsafe.expression_, true, names, function_context );
+}
+
+Value CodeBuilder::DoReferenceCast(
+	const FilePos& file_pos,
+	const Synt::ITypeNamePtr& type_name,
+	const Synt::IExpressionComponentPtr& expression,
+	bool enable_unsafe,
+	NamesScope& names,
+	FunctionContext& function_context )
+{
+	const Type type= PrepareType( type_name, names );
+	if( type == invalid_type_ )
+		return ErrorValue();
+
+	const Value expr= BuildExpressionCode( *expression, names, function_context );
+	const Variable* var= expr.GetVariable();
+	if( var == nullptr )
+	{
+		errors_.push_back( ReportExpectedVariable( file_pos, expr.GetType().ToString() ) );
+		return ErrorValue();
+	}
+
+	Variable result;
+	result.type= type;
+	result.value_type= var->value_type == ValueType::Reference ? ValueType::Reference : ValueType::ConstReference; // "ValueType" here converts inot ConstReference.
+	result.location= Variable::Location::Pointer;
+	result.referenced_variables= var->referenced_variables;
+
+	llvm::Value* src_value= var->llvm_value;
+	if( var->location == Variable::Location::LLVMRegister )
+	{
+		src_value= function_context.alloca_ir_builder.CreateAlloca( var->type.GetLLVMType() );
+		function_context.llvm_ir_builder.CreateStore( var->llvm_value, src_value );
+	}
+
+	if( type == var->type )
+		result.llvm_value= src_value;
+	else if( type == void_type_ )
+		result.llvm_value= CreateReferenceCast( src_value, var->type, type, function_context );
+	else
+	{
+		// Complete types required for both safe and unsafe casting, except unsafe void to anything cast.
+		// This needs, becasue we must emit same code for places where types yet not complete, and where they are complete.
+		if( type.IsIncomplete() )
+			errors_.push_back( ReportUsingIncompleteType( file_pos, type.ToString() ) );
+		if( var->type.IsIncomplete() && !( enable_unsafe && var->type == void_type_ ) )
+			errors_.push_back( ReportUsingIncompleteType( file_pos, var->type.ToString() ) );
+
+		if( var->type.ReferenceIsConvertibleTo( type ) )
+			result.llvm_value= CreateReferenceCast( src_value, var->type, type, function_context );
+		else
+		{
+			result.llvm_value= function_context.llvm_ir_builder.CreatePointerCast( src_value, llvm::PointerType::get( type.GetLLVMType(), 0 ) );
+			if( !enable_unsafe )
+				errors_.push_back( ReportTypesMismatch( file_pos, type.ToString(), var->type.ToString() ) );
+		}
+	}
+
+	return Value( result, file_pos );
+}
+
+Value CodeBuilder::BuildCastImut( const Synt::CastImut& cast_imut, NamesScope& names, FunctionContext& function_context )
+{
+	const Value expr= BuildExpressionCode( *cast_imut.expression_, names, function_context );
+	const Variable* var= expr.GetVariable();
+	if( var == nullptr )
+	{
+		errors_.push_back( ReportExpectedVariable( cast_imut.file_pos_, expr.GetType().ToString() ) );
+		return ErrorValue();
+	}
+
+	Variable result= *var;
+	result.value_type= ValueType::ConstReference;
+
+	if( var->location == Variable::Location::LLVMRegister )
+	{
+		result.llvm_value= function_context.alloca_ir_builder.CreateAlloca( var->type.GetLLVMType() );
+		function_context.llvm_ir_builder.CreateStore( var->llvm_value, result.llvm_value );
+	}
+
+	return Value( result, cast_imut.file_pos_ );
+}
+
+Value CodeBuilder::BuildCastMut( const Synt::CastMut& cast_mut, NamesScope& names, FunctionContext& function_context )
+{
+	if( !function_context.is_in_unsafe_block )
+		errors_.push_back( ReportMutableReferenceCastOutsideUnsafeBlock( cast_mut.file_pos_ ) );
+
+	const Value expr= BuildExpressionCode( *cast_mut.expression_, names, function_context );
+	const Variable* var= expr.GetVariable();
+	if( var == nullptr )
+	{
+		errors_.push_back( ReportExpectedVariable( cast_mut.file_pos_, expr.GetType().ToString() ) );
+		return ErrorValue();
+	}
+
+	Variable result= *var;
+	result.value_type= ValueType::Reference;
+
+	if( var->location == Variable::Location::LLVMRegister )
+	{
+		result.llvm_value= function_context.alloca_ir_builder.CreateAlloca( var->type.GetLLVMType() );
+		function_context.llvm_ir_builder.CreateStore( var->llvm_value, result.llvm_value );
+	}
+
+	return Value( result, cast_mut.file_pos_ );
 }
 
 Value CodeBuilder::BuildNamedOperand(

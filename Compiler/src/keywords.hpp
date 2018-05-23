@@ -77,6 +77,13 @@ enum class Keywords : unsigned int
 	template_,
 	enum_,
 
+	cast_ref,
+	cast_ref_unsafe,
+	cast_imut,
+	cast_mut,
+
+	import_,
+
 	// Reserved keywords for future usage.
 	for_,
 	do_,
@@ -84,13 +91,11 @@ enum class Keywords : unsigned int
 	case_,
 	default_,
 	typename_,
-	cast_,
 	const_,
 	lambda_,
 	static_,
 	package_,
 	module_,
-	import_,
 	export_,
 
 	LastKeyword,
