@@ -95,7 +95,7 @@ void CodeBuilder::TryGenerateDefaultConstructor( Class& the_class, const Type& c
 	llvm::Function* const llvm_constructor_function=
 		llvm::Function::Create(
 			constructor_type.llvm_function_type,
-			llvm::Function::LinkageTypes::LinkOnceODRLinkage,
+			llvm::Function::LinkageTypes::ExternalLinkage,
 			MangleFunction( the_class.members, Keyword( Keywords::constructor_ ), constructor_type, true ),
 			module_.get() );
 
@@ -275,7 +275,7 @@ void CodeBuilder::TryGenerateCopyConstructor( Class& the_class, const Type& clas
 	llvm::Function* const llvm_constructor_function=
 		llvm::Function::Create(
 			constructor_type.llvm_function_type,
-			llvm::Function::LinkageTypes::LinkOnceODRLinkage,
+			llvm::Function::LinkageTypes::ExternalLinkage,
 			MangleFunction( the_class.members, Keyword( Keywords::constructor_ ), constructor_type, true ),
 			module_.get() );
 
@@ -395,7 +395,7 @@ FunctionVariable CodeBuilder::GenerateDestructorPrototype( Class& the_class, con
 	destructor_function.llvm_function=
 		llvm::Function::Create(
 			destructor_type.llvm_function_type,
-			llvm::Function::LinkageTypes::LinkOnceODRLinkage,
+			llvm::Function::LinkageTypes::ExternalLinkage,
 			MangleFunction( the_class.members, Keyword( Keywords::destructor_ ), destructor_type, true ),
 			module_.get() );
 
@@ -561,7 +561,7 @@ void CodeBuilder::TryGenerateCopyAssignmentOperator( Class& the_class, const Typ
 	llvm::Function* const llvm_op_function=
 		llvm::Function::Create(
 			op_type.llvm_function_type,
-			llvm::Function::LinkageTypes::LinkOnceODRLinkage,
+			llvm::Function::LinkageTypes::ExternalLinkage,
 			MangleFunction( the_class.members, op_name, op_type, true ),
 			module_.get() );
 

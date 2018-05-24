@@ -180,7 +180,7 @@ ICodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_g
 	llvm::Function* const dummy_function=
 		llvm::Function::Create(
 			llvm::FunctionType::get( fundamental_llvm_types_.void_, false ),
-			llvm::Function::LinkageTypes::LinkOnceODRLinkage,
+			llvm::Function::LinkageTypes::ExternalLinkage,
 			"",
 			module_.get() );
 
@@ -2211,10 +2211,8 @@ void CodeBuilder::BuildFuncCode(
 		return;
 	}
 
-	// For functions with body we can use linkonce_odr, comdat.
+	// For functions with body we can use comdat.
 	{
-		llvm_function->setLinkage( llvm::Function::LinkOnceODRLinkage );
-
 		// Set comdat for correct linkage of same functions, emitted in several modules.
 		llvm::Comdat* const comdat= module_->getOrInsertComdat( llvm_function->getName() );
 		comdat->setSelectionKind( llvm::Comdat::Any );
