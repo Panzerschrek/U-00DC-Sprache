@@ -2010,7 +2010,7 @@ void CodeBuilder::BuildFuncCode(
 	if( function_type->return_type.GetTemplateDependentType() != nullptr )
 		llvm_function_return_type= fundamental_llvm_types_.void_;
 	else if( first_arg_is_sret )
-		llvm_function_return_type= fundamental_llvm_types_.void_;
+		llvm_function_return_type= fundamental_llvm_types_.void_for_ret_;
 	else
 	{
 		llvm_function_return_type= function_type->return_type.GetLLVMType();
