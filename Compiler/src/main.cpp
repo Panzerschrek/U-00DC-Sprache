@@ -172,7 +172,8 @@ Usage:
 		U::CodeBuilder().BuildProgram( *source_graph );
 
 	for( const U::CodeBuilderError& error : build_result.errors )
-		std::cout << input_file << ":" << error.file_pos.line << ":" << error.file_pos.pos_in_line << " " << U::ToStdString( error.text ) << "\n";
+		std::cout << U::ToStdString( source_graph->nodes_storage[error.file_pos.file_index ].file_path )
+			<< ":" << error.file_pos.line << ":" << error.file_pos.pos_in_line << " " << U::ToStdString( error.text ) << "\n";
 
 	if( !build_result.errors.empty() )
 		return 1;
