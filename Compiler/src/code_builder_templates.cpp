@@ -1506,21 +1506,29 @@ bool CodeBuilder::TypeIsValidForTemplateVariableArgument( const Type& type )
 
 void CodeBuilder::RemoveTempClassLLVMValues( Class& class_ )
 {
-	// TODO  - know, how we can safely delete a lot of functions, virtual tables, etc. without causing llvm internal errors.
-	return;
+	RemoveTempClassLLVMValues_impl( class_, false );
+	RemoveTempClassLLVMValues_impl( class_, true );
+}
 
+void CodeBuilder::RemoveTempClassLLVMValues_impl( Class& class_, const bool is_delete_pass )
+{
 	class_.members.ForEachInThisScope(
-		[this]( const NamesScope::InsertedName& name )
+		[&]( const NamesScope::InsertedName& name )
 		{
 			if( const Type* const type= name.second.GetTypeName() )
 			{
 				if( Class* const subclass= type->GetClassType() )
-					RemoveTempClassLLVMValues( *subclass );
+					RemoveTempClassLLVMValues_impl( *subclass, is_delete_pass );
 			}
 			else if( const OverloadedFunctionsSet* const functions_set= name.second.GetFunctionsSet() )
 			{
 				for( const FunctionVariable& function : functions_set->functions )
-					function.llvm_function->eraseFromParent();
+				{
+					if( is_delete_pass )
+						function.llvm_function->eraseFromParent();
+					else
+						function.llvm_function->dropAllReferences();
+				}
 			}
 			else if( name.second.GetClassField() != nullptr )
 			{}
@@ -1541,7 +1549,7 @@ void CodeBuilder::RemoveTempClassLLVMValues( Class& class_ )
 							Class* const generated_class= generated_class_type->GetClassType();
 							U_ASSERT( generated_class != nullptr );
 							U_ASSERT( generated_class->base_template != boost::none );
-							RemoveTempClassLLVMValues( *generated_class );
+							RemoveTempClassLLVMValues_impl( *generated_class, is_delete_pass );
 						}
 					});
 			}
@@ -1555,9 +1563,25 @@ void CodeBuilder::RemoveTempClassLLVMValues( Class& class_ )
 				U_UNUSED(stored_variable);
 				// TODO - maybe we can delete global variable without breaking llvm code structure?
 			}
-			else
-				U_ASSERT(false);
-		} );
+			else if( name.second.GetTemplateDependentValue() != nullptr )
+			{}
+			else U_ASSERT(false);
+		});
+
+	if( is_delete_pass )
+	{
+		if( class_.this_class_virtual_table != nullptr )
+			class_.this_class_virtual_table->dropAllReferences();
+		for( const auto& vt : class_.ancestors_virtual_tables )
+			vt.second->dropAllReferences();
+	}
+	else
+	{
+		if( class_.this_class_virtual_table != nullptr )
+			class_.this_class_virtual_table->eraseFromParent();
+		for( const auto& vt : class_.ancestors_virtual_tables )
+			vt.second->eraseFromParent();
+	}
 }
 
 void CodeBuilder::CleareDummyFunction()
