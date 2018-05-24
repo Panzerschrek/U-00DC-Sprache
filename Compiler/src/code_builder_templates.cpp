@@ -199,7 +199,8 @@ void CodeBuilder::PrepareFunctionTemplate(
 		template_parameters_usage_flags );
 
 	// Make first check-pass for template. Resolve all names in this pass.
-	PrepareFunction( *function_template_declaration.function_, false, base_class, *template_parameters_namespace );
+	const PrepareFunctionResult prepare_result=
+		PrepareFunction( *function_template_declaration.function_, false, base_class, *template_parameters_namespace );
 
 	PopResolveHandler();
 
@@ -225,6 +226,18 @@ void CodeBuilder::PrepareFunctionTemplate(
 
 		if( base_class != nullptr )
 			base_class->class_->SetMemberVisibility( function_template_name, visibility );
+	}
+
+	// Remove temp llvm function.
+	if( prepare_result.functions_set != nullptr )
+	{
+		llvm::Function* const llvm_function= prepare_result.functions_set->functions[prepare_result.function_index].llvm_function;
+		if( llvm_function != nullptr )
+		{
+			// Clear dummy function before it, because dummy function can contain references to removed functions.
+			CleareDummyFunction();
+			llvm_function->eraseFromParent();
+		}
 	}
 }
 
@@ -1527,7 +1540,9 @@ void CodeBuilder::RemoveTempClassLLVMValues_impl( Class& class_, const bool is_d
 					if( is_delete_pass )
 						function.llvm_function->eraseFromParent();
 					else
+					{
 						function.llvm_function->dropAllReferences();
+					}
 				}
 			}
 			else if( name.second.GetClassField() != nullptr )
