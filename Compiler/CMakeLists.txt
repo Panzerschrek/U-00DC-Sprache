@@ -215,22 +215,24 @@ if( BUILD_PY_TESTS )
 
 	# Make copy of result library with appropriate name.
 	if( WIN32 )
-		add_custom_target(
-			PyTestsLib_Install ALL
-			COMMAND cp libPyTestsLib.dll sprache_compiler_tests_py_lib.pyd # *.pyd libraries required by python on Windows
-			DEPENDS PyTestsLib )
+		set( PY_TESTS_LIB_INSTALLED sprache_compiler_tests_py_lib.pyd )  # *.pyd libraries required by python on Windows
+		add_custom_command(
+			COMMAND cp libPyTestsLib.dll ${PY_TESTS_LIB_INSTALLED}
+			DEPENDS PyTestsLib
+			OUTPUT ${PY_TESTS_LIB_INSTALLED} )
 	else()
-		add_custom_target(
-			PyTestsLib_Install ALL
-			COMMAND cp libPyTestsLib.so sprache_compiler_tests_py_lib.so
-			DEPENDS PyTestsLib )
+		set( PY_TESTS_LIB_INSTALLED sprache_compiler_tests_py_lib.so )
+		add_custom_command(
+			COMMAND cp libPyTestsLib.so ${PY_TESTS_LIB_INSTALLED}
+			DEPENDS PyTestsLib
+			OUTPUT ${PY_TESTS_LIB_INSTALLED} )
 	endif()
 
 	# Run result test.
 	add_custom_target(
 		PyTestsRun ALL
 		COMMAND ${CMAKE_COMMAND} -E env PYTHONPATH=${CMAKE_CURRENT_BINARY_DIR} ${PYTHON_EXECUTABLE} py_tests/py_tests.py
-		DEPENDS PyTestsLib_Install
+		DEPENDS ${PY_TESTS_LIB_INSTALLED}
 		WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} )
 
 endif( BUILD_PY_TESTS )
