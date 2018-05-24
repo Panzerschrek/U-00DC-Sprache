@@ -1861,7 +1861,7 @@ void CodeBuilder::CheckOverloadedOperator(
 	bool is_this_class= false;
 	for( const Function::Arg& arg : func_type.args )
 	{
-		if( base_class != nullptr && arg.type == base_class )
+		if( arg.type == base_class || arg.type.GetTemplateDependentType() != nullptr ) // Assume, that all template-depednent args can have this type
 		{
 			is_this_class= true;
 			break;

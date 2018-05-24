@@ -58,6 +58,22 @@ U_TEST( OperatorDoesNotHaveParentClassArguments_Test1 )
 	U_TEST_ASSERT( error.file_pos.line == 4u );
 }
 
+
+U_TEST( OperatorDoesNotHaveParentClassArguments_Test2 )
+{
+	static const char c_program_text[]=
+	R"(
+		template</ type T />
+		struct S
+		{
+			type this_type= S</T/>;
+			op+( this_type a, this_type b ) : bool { return false; }   // Should be ok, if args are template-dependent
+		}
+	)";
+
+	BuildProgram( c_program_text );
+}
+
 U_TEST( InvalidArgumentCountForOperator_Test )
 {
 	static const char c_program_text[]=
