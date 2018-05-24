@@ -241,13 +241,13 @@ endif( BUILD_PY_TESTS )
 # Returns result in U_SOURCE_OBJECT
 function( CompileUSource u_source_file )
 	get_filename_component( source_name ${u_source_file} NAME_WE )
-	set( ir_name ${source_name}.ir )
+	set( bc_name ${source_name}.bc )
 	set( object_name ${source_name}.o )
 	add_custom_command(
 		OUTPUT ${object_name}
 		DEPENDS ${u_source_file} Compiler
-		COMMAND Compiler -i ${CMAKE_SOURCE_DIR}/${u_source_file} -o ${ir_name} &&
-		${LLVM_UTILS_DIR}/llc ${ir_name} -filetype=obj -o=${object_name} )
+		COMMAND Compiler -i ${CMAKE_SOURCE_DIR}/${u_source_file} -o ${bc_name} &&
+		${LLVM_UTILS_DIR}/llc ${bc_name} -filetype=obj -o=${object_name} )
 	set( U_SOURCE_OBJECT ${object_name} PARENT_SCOPE )
 endfunction()
 
