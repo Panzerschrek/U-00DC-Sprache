@@ -1079,6 +1079,8 @@ Value CodeBuilder::DoReferenceCast(
 		return ErrorValue();
 
 	const Value expr= BuildExpressionCode( *expression, names, function_context );
+	CHECK_RETURN_TEMPLATE_DEPENDENT_VALUE(expr);
+	CHECK_RETURN_ERROR_VALUE(expr);
 	const Variable* var= expr.GetVariable();
 	if( var == nullptr )
 	{
@@ -1128,6 +1130,8 @@ Value CodeBuilder::DoReferenceCast(
 Value CodeBuilder::BuildCastImut( const Synt::CastImut& cast_imut, NamesScope& names, FunctionContext& function_context )
 {
 	const Value expr= BuildExpressionCode( *cast_imut.expression_, names, function_context );
+	CHECK_RETURN_TEMPLATE_DEPENDENT_VALUE(expr);
+	CHECK_RETURN_ERROR_VALUE(expr);
 	const Variable* var= expr.GetVariable();
 	if( var == nullptr )
 	{
@@ -1153,6 +1157,8 @@ Value CodeBuilder::BuildCastMut( const Synt::CastMut& cast_mut, NamesScope& name
 		errors_.push_back( ReportMutableReferenceCastOutsideUnsafeBlock( cast_mut.file_pos_ ) );
 
 	const Value expr= BuildExpressionCode( *cast_mut.expression_, names, function_context );
+	CHECK_RETURN_TEMPLATE_DEPENDENT_VALUE(expr);
+	CHECK_RETURN_ERROR_VALUE(expr);
 	const Variable* var= expr.GetVariable();
 	if( var == nullptr )
 	{
@@ -1834,13 +1840,8 @@ Value CodeBuilder::BuildCallOperator(
 {
 	CHECK_RETURN_ERROR_VALUE(function_value);
 
-	if( function_value.GetType() == NontypeStub::TemplateDependentValue )
-	{
-		for( const Synt::IExpressionComponentPtr& arg_expression : call_operator.arguments_ )
-			BuildExpressionCode( *arg_expression, names, function_context );
-		return function_value;
-	}
-	if( function_value.GetType().GetTemplateDependentType() != nullptr )
+	if( function_value.GetType() == NontypeStub::TemplateDependentValue ||
+		function_value.GetType().GetTemplateDependentType() != nullptr)
 	{
 		for( const Synt::IExpressionComponentPtr& arg_expression : call_operator.arguments_ )
 			BuildExpressionCode( *arg_expression, names, function_context );
