@@ -95,6 +95,29 @@ public:
 
 		return boost::none;
 	}
+
+	virtual Path GetFullFilePath( const Path& file_path, const Path& full_parent_file_path ) override
+	{
+		try
+		{
+			const fs::path file_path_r( ToStdString(file_path) );
+			fs::path result_path;
+			if( full_parent_file_path.empty() || file_path_r.is_absolute() )
+				result_path= file_path_r;
+			else
+			{
+				const fs::path base_dir= fs::path( ToStdString(full_parent_file_path) ).parent_path();
+				result_path= base_dir / file_path_r;
+			}
+			return ToProgramString( result_path.string<std::string>().c_str() );
+		}
+		catch( const std::exception& e )
+		{
+			std::cout << e.what() << std::endl;
+		}
+
+		return Path();
+	}
 };
 
 } // namespace U

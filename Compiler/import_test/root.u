@@ -1,0 +1,5 @@
+import "dir/f0.u"
+import "dir/f1.u"
+
+// We import here "f0.u" and "f1.u", but "f1.u" also imports "f0.u".
+// We must process this correctly.

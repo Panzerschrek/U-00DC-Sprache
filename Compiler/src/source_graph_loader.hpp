@@ -22,6 +22,8 @@ public:
 
 	// Empty "full_parent_file_path" means root file.
 	virtual boost::optional<LoadFileResult> LoadFileContent( const Path& file_path, const Path& full_parent_file_path )= 0;
+
+	virtual Path GetFullFilePath( const Path& file_path, const Path& full_parent_file_path )= 0;
 };
 
 typedef  std::shared_ptr<IVfs> IVfsPtr;

@@ -38,6 +38,12 @@ public:
 		return boost::none;
 	}
 
+	virtual Path GetFullFilePath( const Path& file_path, const Path& full_parent_file_path ) override
+	{
+		U_UNUSED(full_parent_file_path);
+		return file_path;
+	}
+
 private:
 	const std::vector<SourceEntry> sources_;
 };

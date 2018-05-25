@@ -290,3 +290,16 @@ if( BUILD_LINKAGE_TESTS )
 	add_executable( InlineLinkageTest inline_linkage_test/entry.cpp ${INLINE_LINKAGE_OBJECTS} )
 	add_dependencies( InlineLinkageTest Compiler )
 endif( BUILD_LINKAGE_TESTS )
+
+#
+# Imports test
+#
+if( BUILD_LINKAGE_TESTS )
+
+	set( IMPORT_TEST_SOURCES import_test/root.u )
+	CompileUSources( "${IMPORT_TEST_SOURCES}" )
+	set( IMPORT_TEST_OBJECTS ${U_SOURCE_OBJECTS} )
+
+	add_executable( ImportTest import_test/entry.c ${IMPORT_TEST_OBJECTS} )
+	add_dependencies( ImportTest Compiler )
+endif( BUILD_LINKAGE_TESTS )
