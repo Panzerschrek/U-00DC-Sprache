@@ -3909,8 +3909,8 @@ void CodeBuilder::BuildHalt( const Synt::Halt& halt, FunctionContext& function_c
 
 	function_context.llvm_ir_builder.CreateCall( halt_func_ );
 
-	// We needs return, because call to "halt" is not terminal instruction.
-	function_context.llvm_ir_builder.CreateRetVoid();
+	// We needs terminal , because call to "halt" is not terminal instruction.
+	function_context.llvm_ir_builder.CreateUnreachable();
 }
 
 void CodeBuilder::BuildHaltIf(const Synt::HaltIf& halt_if, NamesScope& names, FunctionContext& function_context )
@@ -3947,7 +3947,7 @@ void CodeBuilder::BuildHaltIf(const Synt::HaltIf& halt_if, NamesScope& names, Fu
 	function_context.llvm_ir_builder.SetInsertPoint( true_block );
 
 	function_context.llvm_ir_builder.CreateCall( halt_func_ );
-	function_context.llvm_ir_builder.CreateRetVoid();
+	function_context.llvm_ir_builder.CreateUnreachable();
 
 	// False branch
 	function_context.function->getBasicBlockList().push_back( false_block );
