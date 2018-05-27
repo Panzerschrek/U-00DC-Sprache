@@ -648,6 +648,7 @@ public:
 	bool is_copy_constructible= false;
 	bool have_destructor= false;
 	bool is_copy_assignable= false;
+	bool can_be_constexpr= false;
 	bool have_template_dependent_parents= false;
 
 	FilePos forward_declaration_file_pos= FilePos{ 0u, 0u, 0u };

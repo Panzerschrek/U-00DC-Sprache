@@ -398,6 +398,7 @@ void CodeBuilder::CopyClass(
 	copy->is_copy_constructible= src.is_copy_constructible;
 	copy->have_destructor= src.have_destructor;
 	copy->is_copy_assignable= src.is_copy_assignable;
+	copy->can_be_constexpr= src.can_be_constexpr;
 	copy->have_template_dependent_parents= src.have_template_dependent_parents;
 
 	copy->forward_declaration_file_pos= src.forward_declaration_file_pos;
@@ -712,6 +713,8 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 	else
 		the_class->kind= Class::Kind::NonPolymorph;
 
+	the_class->can_be_constexpr= the_class->kind == Class::Kind::Struct;
+
 	std::vector<PrepareFunctionResult> class_functions;
 	std::vector<const Synt::Class*> inner_classes;
 	std::vector< std::pair< const Synt::FunctionTemplate*, ClassMemberVisibility > > function_templates;
@@ -744,6 +747,9 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 				fields_llvm_types.emplace_back( llvm::PointerType::get( out_field.type.GetLLVMType(), 0u ) );
 			else
 				fields_llvm_types.emplace_back( out_field.type.GetLLVMType() );
+
+			if( !out_field.type.CanBeConstexpr() )
+				the_class->can_be_constexpr= false;
 
 			if( NameShadowsTemplateArgument( in_field->name, the_class->members ) )
 				errors_.push_back( ReportDeclarationShadowsTemplateArgument( in_field->file_pos_, in_field->name ) );
@@ -882,6 +888,7 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 			if( !( constructor_type.args.size() == 2u && constructor_type.args.back().type == class_type && !constructor_type.args.back().is_mutable ) )
 			{
 				the_class->have_explicit_noncopy_constructors= true;
+				the_class->can_be_constexpr= false; // Disable constexpr possibility too.
 				break;
 			}
 		};

@@ -131,10 +131,10 @@ U_TEST( ViariableInitializerIsNotConstantExpressionTest3 )
 
 U_TEST( InvalidTypeForConstantExpressionVariableTest0 )
 {
-	// Constexpr variable of struct type.
+	// Constexpr variable of class type.
 	static const char c_program_text[]=
 	R"(
-		struct S{}
+		class S{}
 		fn Foo()
 		{
 			var S constexpr s{};

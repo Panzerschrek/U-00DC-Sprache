@@ -432,6 +432,8 @@ bool Type::CanBeConstexpr() const
 	{
 		return true;
 	}
+	else if( const Class* const class_= GetClassType() )
+		return class_->can_be_constexpr;
 
 	return false;
 }

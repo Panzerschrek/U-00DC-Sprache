@@ -583,7 +583,7 @@ private:
 		NamesScope& block_names,
 		FunctionContext& function_context );
 
-	void ApplyStructNamedInitializer(
+	llvm::Constant* ApplyStructNamedInitializer(
 		const Variable& variable,
 		const StoredVariablePtr& variable_storage,
 		const Synt::StructNamedInitializer& initializer,
@@ -610,7 +610,7 @@ private:
 		NamesScope& block_names,
 		FunctionContext& function_context );
 
-	void InitializeReferenceField(
+	llvm::Constant* InitializeReferenceField(
 		const Variable& variable,
 		const StoredVariablePtr& variable_storage,
 		const ClassField& field,

@@ -32,7 +32,7 @@ llvm::Constant* CodeBuilder::ApplyInitializer(
 	else if( const auto struct_named_initializer=
 		dynamic_cast<const Synt::StructNamedInitializer*>(&initializer) )
 	{
-		ApplyStructNamedInitializer( variable, variable_storage, *struct_named_initializer, block_names, function_context );
+		return ApplyStructNamedInitializer( variable, variable_storage, *struct_named_initializer, block_names, function_context );
 	}
 	else if( const auto constructor_initializer=
 		dynamic_cast<const Synt::ConstructorInitializer*>(&initializer) )
@@ -187,7 +187,7 @@ llvm::Constant* CodeBuilder::ApplyArrayInitializer(
 	return nullptr;
 }
 
-void CodeBuilder::ApplyStructNamedInitializer(
+llvm::Constant* CodeBuilder::ApplyStructNamedInitializer(
 	const Variable& variable,
 	const StoredVariablePtr& variable_storage,
 	const Synt::StructNamedInitializer& initializer,
@@ -198,20 +198,28 @@ void CodeBuilder::ApplyStructNamedInitializer(
 	{
 		for( const Synt::StructNamedInitializer::MemberInitializer& member_initializer : initializer.members_initializers )
 			ApplyInitializer( variable, variable_storage, *member_initializer.initializer, block_names, function_context );
-		return;
+		return llvm::UndefValue::get( variable.type.GetLLVMType() );
 	}
 
 	const Class* const class_type= variable.type.GetClassType();
 	if( class_type == nullptr || class_type->kind != Class::Kind::Struct )
 	{
 		errors_.push_back( ReportStructInitializerForNonStruct( initializer.file_pos_ ) );
-		return;
+		return nullptr;
 	}
 
 	if( class_type->have_explicit_noncopy_constructors )
 		errors_.push_back( ReportInitializerDisabledBecauseClassHaveExplicitNoncopyConstructors( initializer.file_pos_ ) );
 
 	std::set<ProgramString> initialized_members_names;
+
+	std::vector<llvm::Constant*> constant_initializers;
+	bool all_fields_are_constant= false;
+	if( class_type->can_be_constexpr )
+	{
+		constant_initializers.resize( class_type->llvm_type->getNumElements(), nullptr );
+		all_fields_are_constant= true;
+	}
 
 	Variable struct_member= variable;
 	struct_member.location= Variable::Location::Pointer;
@@ -247,8 +255,10 @@ void CodeBuilder::ApplyStructNamedInitializer(
 
 		initialized_members_names.insert( member_initializer.name );
 
+		llvm::Constant* constant_initializer= nullptr;
 		if( field->is_reference )
-			InitializeReferenceField( variable, variable_storage, *field, *member_initializer.initializer, block_names, function_context );
+			constant_initializer=
+				InitializeReferenceField( variable, variable_storage, *field, *member_initializer.initializer, block_names, function_context );
 		else
 		{
 			struct_member.type= field->type;
@@ -257,8 +267,14 @@ void CodeBuilder::ApplyStructNamedInitializer(
 				function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, llvm::ArrayRef<llvm::Value*> ( index_list, 2u ) );
 
 			U_ASSERT( member_initializer.initializer != nullptr );
-			ApplyInitializer( struct_member, variable_storage, *member_initializer.initializer, block_names, function_context );
+			constant_initializer=
+				ApplyInitializer( struct_member, variable_storage, *member_initializer.initializer, block_names, function_context );
 		}
+
+		if( constant_initializer == nullptr )
+			all_fields_are_constant= false;
+		if( all_fields_are_constant )
+			constant_initializers[field->index]= constant_initializer;
 	}
 
 	U_ASSERT( initialized_members_names.size() <= class_type->field_count );
@@ -282,6 +298,11 @@ void CodeBuilder::ApplyStructNamedInitializer(
 				}
 			}
 		});
+
+	if( all_fields_are_constant && initialized_members_names.size() == class_type->field_count )
+		return llvm::ConstantStruct::get( class_type->llvm_type, constant_initializers );
+
+	return nullptr;
 }
 
 llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
@@ -617,6 +638,7 @@ llvm::Constant* CodeBuilder::ApplyExpressionInitializer(
 		}
 
 		// Move or try call copy constructor.
+		// TODO - produce constant initializer for generated copy constructor, if source is constant.
 		if( expression_result.value_type == ValueType::Value && expression_result.type == variable.type )
 		{
 			U_ASSERT( expression_result.referenced_variables.size() == 1u );
@@ -736,6 +758,14 @@ llvm::Constant* CodeBuilder::ApplyZeroInitializer(
 		if( class_type->kind != Class::Kind::Struct )
 			errors_.push_back( ReportZeroInitializerForClass( initializer.file_pos_ ) );
 
+		std::vector<llvm::Constant*> constant_initializers;
+		bool all_fields_are_constant= false;
+		if( class_type->can_be_constexpr )
+		{
+			constant_initializers.resize( class_type->llvm_type->getNumElements(), nullptr );
+			all_fields_are_constant= true;
+		}
+
 		Variable struct_member= variable;
 		struct_member.location= Variable::Location::Pointer;
 		// Make first index = 0 for array to pointer conversion.
@@ -750,6 +780,7 @@ llvm::Constant* CodeBuilder::ApplyZeroInitializer(
 					return;
 				if( field->is_reference )
 				{
+					all_fields_are_constant= false;
 					errors_.push_back( ReportUnsupportedInitializerForReference( initializer.file_pos_ ) );
 					return;
 				}
@@ -759,15 +790,24 @@ llvm::Constant* CodeBuilder::ApplyZeroInitializer(
 				struct_member.llvm_value=
 					function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, llvm::ArrayRef<llvm::Value*> ( index_list, 2u ) );
 
-				ApplyZeroInitializer( struct_member, initializer, block_names, function_context );
+				llvm::Constant* const constant_initializer=
+					ApplyZeroInitializer( struct_member, initializer, block_names, function_context );
+
+				if( constant_initializer == nullptr )
+					all_fields_are_constant= false;
+				if( all_fields_are_constant )
+					constant_initializers[field->index]= constant_initializer;
 			});
+
+		if( all_fields_are_constant )
+			return llvm::ConstantStruct::get( class_type->llvm_type, constant_initializers );
 	}
 	else U_ASSERT( false );
 
 	return nullptr;
 }
 
-void CodeBuilder::InitializeReferenceField(
+llvm::Constant* CodeBuilder::InitializeReferenceField(
 	const Variable& variable,
 	const StoredVariablePtr& variable_storage,
 	const ClassField& field,
@@ -790,45 +830,45 @@ void CodeBuilder::InitializeReferenceField(
 		if( constructor_initializer->call_operator.arguments_.size() != 1u )
 		{
 			errors_.push_back( ReportReferencesHaveConstructorsWithExactlyOneParameter( constructor_initializer->file_pos_ ) );
-			return;
+			return nullptr;
 		}
 		initializer_expression= constructor_initializer->call_operator.arguments_.front().get();
 	}
 	else
 	{
 		errors_.push_back( ReportUnsupportedInitializerForReference( initializer.GetFilePos() ) );
-		return;
+		return nullptr;
 	}
 
 	const Value initializer_value= BuildExpressionCode( *initializer_expression, block_names, function_context );
 	if( initializer_value.GetTemplateDependentValue() != nullptr )
-		return;
+		return nullptr;
 
 	const Variable* const initializer_variable= initializer_value.GetVariable();
 	if( initializer_variable == nullptr )
 	{
 		errors_.push_back( ReportExpectedVariable( initializer_expression->GetFilePos(), initializer_value.GetType().ToString() ) );
-		return;
+		return nullptr;
 	}
 
 	if( field.type.GetTemplateDependentType() != nullptr )
-		return;
+		return nullptr;
 	if( !initializer_variable->type.ReferenceIsConvertibleTo( field.type ) )
 	{
 		errors_.push_back( ReportTypesMismatch( initializer_expression->GetFilePos(), field.type.ToString(), initializer_variable->type.ToString() ) );
-		return;
+		return nullptr;
 	}
 	if( initializer_variable->value_type == ValueType::Value )
 	{
 		errors_.push_back( ReportExpectedReferenceValue( initializer_expression->GetFilePos() ) );
-		return;
+		return nullptr;
 	}
 	U_ASSERT( initializer_variable->location == Variable::Location::Pointer );
 
 	if( field.is_mutable && initializer_variable->value_type == ValueType::ConstReference )
 	{
 		errors_.push_back( ReportBindingConstReferenceToNonconstReference( initializer_expression->GetFilePos() ) );
-		return;
+		return nullptr;
 	}
 
 	for( const StoredVariablePtr& referenced_variable : initializer_variable->referenced_variables )
@@ -850,6 +890,20 @@ void CodeBuilder::InitializeReferenceField(
 	if( field.type != initializer_variable->type )
 		ref_to_store= CreateReferenceCast( ref_to_store, initializer_variable->type, field.type, function_context );
 	function_context.llvm_ir_builder.CreateStore( ref_to_store, address_of_reference );
+
+	if( initializer_variable->constexpr_value != nullptr )
+	{
+		// We needs to store constant somewhere. Create global variable for it.
+		llvm::Constant* constant_stored= CreateGlobalConstantVariable( initializer_variable->type, "_temp_const", initializer_variable->constexpr_value );
+
+		if( field.type != initializer_variable->type )
+			constant_stored=
+				llvm::dyn_cast<llvm::Constant>( CreateReferenceCast( constant_stored, initializer_variable->type, field.type, function_context ) );
+
+		return constant_stored;
+	}
+
+	return nullptr;
 }
 
 } // namespace CodeBuilderPrivate

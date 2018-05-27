@@ -1816,6 +1816,17 @@ Value CodeBuilder::BuildMemberAccessOperator(
 	result.llvm_value=
 		function_context.llvm_ir_builder.CreateGEP( actual_field_class_ptr, index_list );
 
+	if( variable.constexpr_value != nullptr )
+	{
+		result.constexpr_value= variable.constexpr_value->getAggregateElement( static_cast<unsigned int>( field->index ) );
+		if( field->is_reference )
+		{
+			// TODO - what if storage for constexpr reference valus is not "GlobalVariable"?
+			llvm::GlobalVariable* const var= llvm::dyn_cast<llvm::GlobalVariable>( result.constexpr_value );
+			result.constexpr_value= var->getInitializer();
+		}
+	}
+
 	if( field->is_reference )
 	{
 		result.value_type= field->is_mutable ? ValueType::Reference : ValueType::ConstReference;
