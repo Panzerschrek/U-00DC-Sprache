@@ -196,3 +196,16 @@ def InvalidTypeForConstantExpressionVariable_ForStructs_Test2():
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "InvalidTypeForConstantExpressionVariable" )
 	assert( errors_list[0].file_pos.line == 11 )
+
+
+def InvalidTypeForConstantExpressionVariable_ForStructs_Test3():
+	c_program_text= """
+		struct S { i32 &mut r; }  // struct can not be constexpr, because it contains mutable reference
+		auto constexpr x= 0;
+		var S constexpr s{ .r= x };
+
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "InvalidTypeForConstantExpressionVariable" )
+	assert( errors_list[0].file_pos.line == 4 )

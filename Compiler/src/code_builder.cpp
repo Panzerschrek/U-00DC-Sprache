@@ -743,13 +743,15 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 				continue;
 			}
 
+			// Disable constexpr, if field can not be constexpr, or if field is mutable reference.
+			if( !out_field.type.CanBeConstexpr() ||
+				( out_field.is_reference && out_field.is_mutable ) )
+				the_class->can_be_constexpr= false;
+
 			if( out_field.is_reference )
 				fields_llvm_types.emplace_back( llvm::PointerType::get( out_field.type.GetLLVMType(), 0u ) );
 			else
 				fields_llvm_types.emplace_back( out_field.type.GetLLVMType() );
-
-			if( !out_field.type.CanBeConstexpr() )
-				the_class->can_be_constexpr= false;
 
 			if( NameShadowsTemplateArgument( in_field->name, the_class->members ) )
 				errors_.push_back( ReportDeclarationShadowsTemplateArgument( in_field->file_pos_, in_field->name ) );
