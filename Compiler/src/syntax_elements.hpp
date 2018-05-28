@@ -478,6 +478,14 @@ public:
 	const FilePos end_file_pos_;
 };
 
+class StaticIfOperator final : public SyntaxElementBase, public IBlockElement
+{
+public:
+	StaticIfOperator( const FilePos& file_pos );
+
+	std::unique_ptr<IfOperator> if_operator_;
+};
+
 class SingleExpressionOperator final : public SyntaxElementBase, public IBlockElement
 {
 public:

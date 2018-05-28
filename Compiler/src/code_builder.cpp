@@ -2765,6 +2765,24 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockCode(
 				block_build_info.have_uncodnitional_break_or_continue )
 				try_report_unreachable_code();
 		}
+		else if( const auto static_if_operator=
+			dynamic_cast<const Synt::StaticIfOperator*>( block_element_ptr ) )
+		{
+			const CodeBuilder::BlockBuildInfo static_if_block_info=
+				BuildStaticIfOperatorCode(
+					*static_if_operator,
+					block_names,
+					function_context );
+
+			block_build_info.have_unconditional_return_inside=
+				block_build_info.have_unconditional_return_inside || static_if_block_info.have_unconditional_return_inside;
+			block_build_info.have_uncodnitional_break_or_continue=
+				block_build_info.have_uncodnitional_break_or_continue || static_if_block_info.have_uncodnitional_break_or_continue;
+
+			if( static_if_block_info.have_unconditional_return_inside ||
+				block_build_info.have_uncodnitional_break_or_continue )
+				try_report_unreachable_code();
+		}
 		else if( const auto static_assert_=
 			dynamic_cast<const Synt::StaticAssert*>( block_element_ptr ) )
 		{
@@ -3910,6 +3928,61 @@ void CodeBuilder::BuildStaticAssert(
 		errors_.push_back( ReportStaticAssertionFailed( static_assert_.file_pos_ ) );
 		return;
 	}
+}
+
+CodeBuilder::BlockBuildInfo CodeBuilder::BuildStaticIfOperatorCode(
+	const Synt::StaticIfOperator& static_if_operator,
+	NamesScope& names,
+	FunctionContext& function_context )
+{
+	const auto& branches= static_if_operator.if_operator_->branches_;
+	for( unsigned int i= 0u; i < branches.size(); i++ )
+	{
+		const auto& branch= branches[i];
+		if( branch.condition != nullptr )
+		{
+			const Synt::IExpressionComponent& condition= *branch.condition;
+
+			const StackVariablesStorage temp_variables_storage( function_context );
+
+			const Value condition_expression= BuildExpressionCode( condition, names, function_context );
+			if( condition_expression.GetTemplateDependentValue() != nullptr )
+				return BlockBuildInfo(); // Abort operator processing, if something is template-dependent.
+			const Variable* const var= condition_expression.GetVariable();
+			if( var == nullptr )
+			{
+				errors_.push_back( ReportExpectedVariable( condition.GetFilePos(), condition_expression.GetType().ToString() ) );
+				continue;
+			}
+
+			if( var->type.GetTemplateDependentType() != nullptr )
+				return BlockBuildInfo(); // Abort operator processing, if something is template-dependent.
+
+			if( var->type != bool_type_ )
+			{
+				errors_.push_back( ReportTypesMismatch( condition.GetFilePos(), bool_type_.ToString(), var->type.ToString() ) );
+				continue;
+			}
+			if( var->constexpr_value == nullptr )
+			{
+				errors_.push_back( ReportExpectedConstantExpression( condition.GetFilePos() ) );
+				continue;
+			}
+
+			if( var->constexpr_value->getUniqueInteger().getLimitedValue() != 0u )
+				return BuildBlockCode( *branch.block, names, function_context ); // Ok, this static if produdes block.
+
+			CallDestructors( *function_context.stack_variables_stack.back(), function_context, condition.GetFilePos() );
+
+		}
+		else
+		{
+			U_ASSERT( i == branches.size() - 1u );
+			return BuildBlockCode( *branch.block, names, function_context );
+		}
+	}
+
+	return BlockBuildInfo();
 }
 
 void CodeBuilder::BuildHalt( const Synt::Halt& halt, FunctionContext& function_context )

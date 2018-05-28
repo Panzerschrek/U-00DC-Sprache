@@ -19,6 +19,7 @@ enum class Keywords : unsigned int
 	break_,
 	continue_,
 	if_,
+	static_if_,
 	else_,
 	move_,
 
