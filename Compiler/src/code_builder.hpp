@@ -530,6 +530,11 @@ private:
 		const Synt::StaticAssert& static_assert_,
 		NamesScope& names );
 
+	BlockBuildInfo BuildStaticIfOperatorCode(
+		const Synt::StaticIfOperator& static_if_operator,
+		NamesScope& names,
+		FunctionContext& function_context );
+
 	void BuildHalt( const Synt::Halt& halt, FunctionContext& function_context );
 	void BuildHaltIf( const Synt::HaltIf& halt_if, NamesScope& names, FunctionContext& function_context );
 
