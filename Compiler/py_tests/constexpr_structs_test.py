@@ -209,3 +209,38 @@ def InvalidTypeForConstantExpressionVariable_ForStructs_Test3():
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "InvalidTypeForConstantExpressionVariable" )
 	assert( errors_list[0].file_pos.line == 4 )
+
+
+def InvalidTypeForConstantExpressionVariable_ForStructs_Test4():
+	c_program_text= """
+		struct S  // struct can not be constexpr, because it contains user-defined destructor.
+		{
+			fn destructor(){}
+		}
+		var S constexpr s;
+
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "InvalidTypeForConstantExpressionVariable" )
+	assert( errors_list[0].file_pos.line == 6 )
+
+
+def InvalidTypeForConstantExpressionVariable_ForStructs_Test5():
+	c_program_text= """
+		struct T
+		{
+			fn destructor(){}
+		} // 'T' con not be constexpr, because it have explicit destructor constructor.
+		struct S
+		{
+			[ T, 2 ] t;
+		}
+
+		var S constexpr s; // Error, 's' can not be constexpr, because it have non-constexpr field 't'.
+
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "InvalidTypeForConstantExpressionVariable" )
+	assert( errors_list[0].file_pos.line == 11 )

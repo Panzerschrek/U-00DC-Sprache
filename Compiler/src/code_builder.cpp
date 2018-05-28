@@ -896,6 +896,16 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 		};
 	}
 
+	// Disable constexpr possibility for structs with explicit destructors.
+	if( const NamesScope::InsertedName* const dstructor_name=
+		the_class->members.GetThisScopeName( Keyword( Keywords::destructor_ ) ) )
+	{
+		const OverloadedFunctionsSet* const destructors= dstructor_name->second.GetFunctionsSet();
+		U_ASSERT( destructors != nullptr && destructors->functions.size() == 1u );
+		if( !destructors->functions[0].is_generated )
+			the_class->can_be_constexpr= false;
+	}
+
 	bool class_contains_pure_virtual_functions= false;
 	for( Class::VirtualTableEntry& virtual_table_entry : the_class->virtual_table )
 	{
