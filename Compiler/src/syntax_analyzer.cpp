@@ -179,7 +179,8 @@ private:
 	IBlockElementPtr ParseWhileOperator();
 	IBlockElementPtr ParseBreakOperator();
 	IBlockElementPtr ParseContinueOperator();
-	IBlockElementPtr ParseIfOperator();
+	std::unique_ptr<IfOperator> ParseIfOperator();
+	IBlockElementPtr ParseStaticIfOperator();
 	std::unique_ptr<StaticAssert> ParseStaticAssert();
 	std::unique_ptr<Enum> ParseEnum();
 	IBlockElementPtr ParseHalt();
@@ -1584,9 +1585,9 @@ IBlockElementPtr SyntaxAnalyzer::ParseContinueOperator()
 	return IBlockElementPtr( new ContinueOperator( op_pos ) );
 }
 
-IBlockElementPtr SyntaxAnalyzer::ParseIfOperator()
+std::unique_ptr<IfOperator> SyntaxAnalyzer::ParseIfOperator()
 {
-	U_ASSERT( it_->type == Lexem::Type::Identifier && it_->text == Keywords::if_ );
+	U_ASSERT( it_->type == Lexem::Type::Identifier && ( it_->text == Keywords::if_  || it_->text == Keywords::static_if_ ) );
 
 	const FilePos& op_pos= it_->file_pos;
 
@@ -1668,11 +1669,20 @@ IBlockElementPtr SyntaxAnalyzer::ParseIfOperator()
 	}
 
 	return
-		IBlockElementPtr(
+		std::unique_ptr<IfOperator>(
 			new IfOperator(
 				op_pos,
 				std::prev( it_ )->file_pos,
 				std::move( branches ) ) );
+}
+
+IBlockElementPtr SyntaxAnalyzer::ParseStaticIfOperator()
+{
+	U_ASSERT( it_->type == Lexem::Type::Identifier && it_->text == Keywords::static_if_ );
+
+	std::unique_ptr<StaticIfOperator> result( new StaticIfOperator( it_->file_pos ) );
+	result->if_operator_= ParseIfOperator();
+	return std::move(result);
 }
 
 std::unique_ptr<StaticAssert> SyntaxAnalyzer::ParseStaticAssert()
@@ -1859,6 +1869,8 @@ BlockPtr SyntaxAnalyzer::ParseBlock()
 			elements.emplace_back( ParseContinueOperator() );
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::if_ )
 			elements.emplace_back( ParseIfOperator() );
+		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::static_if_ )
+			elements.emplace_back( ParseStaticIfOperator() );
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::static_assert_ )
 			elements.emplace_back( ParseStaticAssert() );
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::halt_ )

@@ -222,6 +222,10 @@ IfOperator::IfOperator( const FilePos& start_file_pos, const FilePos& end_file_p
 	, end_file_pos_(end_file_pos)
 {}
 
+StaticIfOperator::StaticIfOperator( const FilePos& file_pos )
+	: SyntaxElementBase(file_pos)
+{}
+
 SingleExpressionOperator::SingleExpressionOperator( const FilePos& file_pos, IExpressionComponentPtr expression )
 	: SyntaxElementBase(file_pos)
 	, expression_( std::move( expression ) )

@@ -2765,6 +2765,11 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockCode(
 				block_build_info.have_uncodnitional_break_or_continue )
 				try_report_unreachable_code();
 		}
+		else if( const auto static_if_operator=
+			dynamic_cast<const Synt::StaticIfOperator*>( block_element_ptr ) )
+		{
+			// TODO
+		}
 		else if( const auto static_assert_=
 			dynamic_cast<const Synt::StaticAssert*>( block_element_ptr ) )
 		{
