@@ -133,3 +133,71 @@ def StaticIfIsUnconditional_Test2():
 	assert( errors_list[0].error_code == "UnreachableCode" )
 	assert( errors_list[0].file_pos.line == 8 )
 
+
+def StaticIfForTemplateDependentExpression_Test0():
+	c_program_text= """
+		template</ type T />
+		fn Foo()
+		{
+			var T constexpr t;
+			static_if( t ) {}  // Ok, "T" here can be "bool"
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def ExpectedVariable_InStaticIf_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			static_if( Foo ) {}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ExpectedVariable" )
+	assert( errors_list[0].file_pos.line == 4 )
+
+
+def ExpectedBool_InStaticIf_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			static_if( 666 ) {}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "TypesMismatch" )
+	assert( errors_list[0].file_pos.line == 4 )
+
+
+def ExpectedConstantExpression_InStaticIf_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			auto mut false_val= false;
+			static_if( false_val ) {}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ExpectedConstantExpression" )
+	assert( errors_list[0].file_pos.line == 5 )
+
+
+def StaticIfHaveSeparateVisibilityScope_Test():
+	c_program_text= """
+		fn Foo()
+		{
+			static_if(true)
+			{
+				auto mut x= 0;
+			}
+			++x;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "NameNotFound" )
+	assert( errors_list[0].file_pos.line == 8 )
