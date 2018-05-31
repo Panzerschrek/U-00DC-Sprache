@@ -3272,6 +3272,7 @@ void CodeBuilder::BuildAssignmentOperatorCode(
 	if(
 		TryCallOverloadedBinaryOperator(
 			OverloadedOperator::Assign,
+			assignment_operator,
 			*assignment_operator.l_value_,
 			*assignment_operator.r_value_,
 			true, // evaluate args in reverse order
@@ -3363,6 +3364,7 @@ void CodeBuilder::BuildAdditiveAssignmentOperatorCode(
 	if(
 		TryCallOverloadedBinaryOperator(
 			GetOverloadedOperatorForAdditiveAssignmentOperator( additive_assignment_operator.additive_operation_ ),
+			additive_assignment_operator,
 			*additive_assignment_operator.l_value_,
 			*additive_assignment_operator.r_value_,
 			true, // evaluate args in reverse order

@@ -35,99 +35,118 @@ Value CodeBuilder::BuildExpressionCodeAndDestroyTemporaries(
 
 boost::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 	const OverloadedOperator op,
+	const Synt::SyntaxElementBase& op_syntax_element,
 	const Synt::IExpressionComponent&  left_expr,
 	const Synt::IExpressionComponent& right_expr,
 	const bool evaluate_args_in_reverse_order,
 	const FilePos& file_pos,
 	NamesScope& names,
-	FunctionContext& function_context)
+	FunctionContext& function_context )
 {
-	std::vector<Function::Arg> args;
-	args.reserve( 2u );
-	const size_t error_count_before= errors_.size();
+	const FunctionVariable* overloaded_operator= nullptr;
 
-	bool needs_move_assign= false;
-	// Know args types.
+	const auto cache_it= function_context.overloading_resolutin_cache.find( &op_syntax_element );
+	if( cache_it != function_context.overloading_resolutin_cache.end() )
+		overloaded_operator= cache_it->second.get_ptr();
+	else
 	{
-		// Prepare dummy function context for first pass.
-		FunctionContext dummy_function_context(
-			function_context.return_type,
-			function_context.return_value_is_mutable,
-			function_context.return_value_is_reference,
-			llvm_context_,
-			dummy_function_context_->function );
-		const StackVariablesStorage dummy_stack_variables_storage( dummy_function_context );
-		dummy_function_context.this_= function_context.this_;
-		dummy_function_context.whole_this_is_unavailable= function_context.whole_this_is_unavailable;
-		dummy_function_context.variables_state= function_context.variables_state;
-		function_context.variables_state.DeactivateLocks();
+		std::vector<Function::Arg> args;
+		args.reserve( 2u );
+		const size_t error_count_before= errors_.size();
 
-		const Value l_var_value= BuildExpressionCode( left_expr , names, dummy_function_context );
-		const Value r_var_value= BuildExpressionCode( right_expr, names, dummy_function_context );
-
-		CHECK_RETURN_ERROR_VALUE(l_var_value);
-		CHECK_RETURN_ERROR_VALUE(l_var_value);
-		CHECK_RETURN_TEMPLATE_DEPENDENT_VALUE(l_var_value);
-		CHECK_RETURN_TEMPLATE_DEPENDENT_VALUE(r_var_value);
-
-		const Variable* const l_var= l_var_value.GetVariable();
-		const Variable* const r_var= r_var_value.GetVariable();
-		if( l_var == nullptr )
-			errors_.push_back( ReportExpectedVariable( file_pos, l_var_value.GetType().ToString() ) );
-		if( r_var == nullptr )
-			errors_.push_back( ReportExpectedVariable( file_pos, r_var_value.GetType().ToString() ) );
-		if( l_var == nullptr || r_var == nullptr )
-			return Value(ErrorValue());
-
-		// Try apply move-assignment for class types.
-		needs_move_assign=
-			op == OverloadedOperator::Assign && r_var->value_type == ValueType::Value &&
-			r_var->type == l_var->type && r_var->type.GetClassType() != nullptr;
-
-		args.emplace_back();
-		args.back().type= l_var->type;
-		args.back().is_reference= l_var->value_type != ValueType::Value;
-		args.back().is_mutable= l_var->value_type == ValueType::Reference;
-
-		args.emplace_back();
-		args.back().type= r_var->type;
-		args.back().is_reference= r_var->value_type != ValueType::Value;
-		args.back().is_mutable= r_var->value_type == ValueType::Reference;
-	}
-	errors_.resize( error_count_before );
-	function_context.variables_state.ActivateLocks();
-
-	// Apply here move-assignment for class types.
-	if( needs_move_assign )
-	{
-		// Move here, instead of calling copy-assignment operator. Before moving we must also call destructor for destination.
-		const Variable l_var_real= *BuildExpressionCode(  left_expr, names, function_context ).GetVariable();
-		const Variable r_var_real= *BuildExpressionCode( right_expr, names, function_context ).GetVariable();
-		if( l_var_real.type.HaveDestructor() )
-			CallDestructor( l_var_real.llvm_value, l_var_real.type, function_context, file_pos );
-		CopyBytes( r_var_real.llvm_value, l_var_real.llvm_value, l_var_real.type, function_context );
-
-		// Write references from src to dst and check it.
-		for( const StoredVariablePtr& l_var_variable : l_var_real.referenced_variables )
-		for( const StoredVariablePtr& r_var_variable : r_var_real.referenced_variables )
+		bool needs_move_assign= false;
+		// Know args types.
 		{
-			for( const auto& inner_reference : function_context.variables_state.GetVariableReferences( r_var_variable ) )
+			// Prepare dummy function context for first pass.
+			FunctionContext dummy_function_context(
+				function_context.return_type,
+				function_context.return_value_is_mutable,
+				function_context.return_value_is_reference,
+				llvm_context_,
+				dummy_function_context_->function );
+			const StackVariablesStorage dummy_stack_variables_storage( dummy_function_context );
+			dummy_function_context.this_= function_context.this_;
+			dummy_function_context.whole_this_is_unavailable= function_context.whole_this_is_unavailable;
+			dummy_function_context.variables_state= function_context.variables_state;
+			function_context.variables_state.DeactivateLocks();
+
+			const Value l_var_value= BuildExpressionCode( left_expr , names, dummy_function_context );
+			const Value r_var_value= BuildExpressionCode( right_expr, names, dummy_function_context );
+
+			function_context.overloading_resolutin_cache.insert(
+				dummy_function_context.overloading_resolutin_cache.begin(),
+				dummy_function_context.overloading_resolutin_cache.end() );
+
+			CHECK_RETURN_ERROR_VALUE(l_var_value);
+			CHECK_RETURN_ERROR_VALUE(l_var_value);
+			CHECK_RETURN_TEMPLATE_DEPENDENT_VALUE(l_var_value);
+			CHECK_RETURN_TEMPLATE_DEPENDENT_VALUE(r_var_value);
+
+			const Variable* const l_var= l_var_value.GetVariable();
+			const Variable* const r_var= r_var_value.GetVariable();
+			if( l_var == nullptr )
+				errors_.push_back( ReportExpectedVariable( file_pos, l_var_value.GetType().ToString() ) );
+			if( r_var == nullptr )
+				errors_.push_back( ReportExpectedVariable( file_pos, r_var_value.GetType().ToString() ) );
+			if( l_var == nullptr || r_var == nullptr )
+				return Value(ErrorValue());
+
+			// Try apply move-assignment for class types.
+			needs_move_assign=
+				op == OverloadedOperator::Assign && r_var->value_type == ValueType::Value &&
+				r_var->type == l_var->type && r_var->type.GetClassType() != nullptr;
+
+			args.emplace_back();
+			args.back().type= l_var->type;
+			args.back().is_reference= l_var->value_type != ValueType::Value;
+			args.back().is_mutable= l_var->value_type == ValueType::Reference;
+
+			args.emplace_back();
+			args.back().type= r_var->type;
+			args.back().is_reference= r_var->value_type != ValueType::Value;
+			args.back().is_mutable= r_var->value_type == ValueType::Reference;
+		}
+		errors_.resize( error_count_before );
+		function_context.variables_state.ActivateLocks();
+
+		// Apply here move-assignment for class types.
+		if( needs_move_assign )
+		{
+			// Move here, instead of calling copy-assignment operator. Before moving we must also call destructor for destination.
+			const Variable l_var_real= *BuildExpressionCode(  left_expr, names, function_context ).GetVariable();
+			const Variable r_var_real= *BuildExpressionCode( right_expr, names, function_context ).GetVariable();
+			if( l_var_real.type.HaveDestructor() )
+				CallDestructor( l_var_real.llvm_value, l_var_real.type, function_context, file_pos );
+			CopyBytes( r_var_real.llvm_value, l_var_real.llvm_value, l_var_real.type, function_context );
+
+			// Write references from src to dst and check it.
+			for( const StoredVariablePtr& l_var_variable : l_var_real.referenced_variables )
+			for( const StoredVariablePtr& r_var_variable : r_var_real.referenced_variables )
 			{
-				const bool ok= function_context.variables_state.AddPollution( l_var_variable, inner_reference.first, inner_reference.second.IsMutable() );
-				if( !ok )
-					errors_.push_back( ReportReferenceProtectionError( file_pos, inner_reference.first->name ) );
+				for( const auto& inner_reference : function_context.variables_state.GetVariableReferences( r_var_variable ) )
+				{
+					const bool ok= function_context.variables_state.AddPollution( l_var_variable, inner_reference.first, inner_reference.second.IsMutable() );
+					if( !ok )
+						errors_.push_back( ReportReferenceProtectionError( file_pos, inner_reference.first->name ) );
+				}
 			}
+
+			U_ASSERT( r_var_real.referenced_variables.size() == 1u );
+			function_context.variables_state.Move( *r_var_real.referenced_variables.begin() );
+
+			Variable move_result;
+			move_result.type= void_type_;
+			return Value( move_result, file_pos );
 		}
 
-		U_ASSERT( r_var_real.referenced_variables.size() == 1u );
-		function_context.variables_state.Move( *r_var_real.referenced_variables.begin() );
+		overloaded_operator= GetOverloadedOperator( args, op, file_pos );
 
-		Variable move_result;
-		move_result.type= void_type_;
-		return Value( move_result, file_pos );
+		if( overloaded_operator == nullptr )
+			function_context.overloading_resolutin_cache[ &op_syntax_element ]= boost::none;
+		else
+			function_context.overloading_resolutin_cache[ &op_syntax_element ]= *overloaded_operator;
 	}
 
-	const FunctionVariable* const overloaded_operator= GetOverloadedOperator( args, op, file_pos );
 	if( overloaded_operator != nullptr )
 	{
 		if( overloaded_operator->virtual_table_index != ~0u )
@@ -173,6 +192,7 @@ Value CodeBuilder::BuildExpressionCode(
 			const boost::optional<Value> overloaded_operator_call_try=
 				TryCallOverloadedBinaryOperator(
 					GetOverloadedOperatorForBinaryOperator( binary_operator->operator_type_ ),
+					*binary_operator,
 					*binary_operator->left_, *binary_operator->right_,
 					false,
 					binary_operator->file_pos_,
@@ -1551,6 +1571,11 @@ Value CodeBuilder::BuildIndexationOperator(
 			function_context.variables_state.DeactivateLocks();
 
 			const Value index_value= BuildExpressionCode( *indexation_operator.index_, names, dummy_function_context );
+
+			function_context.overloading_resolutin_cache.insert(
+				dummy_function_context.overloading_resolutin_cache.begin(),
+				dummy_function_context.overloading_resolutin_cache.end() );
+
 			CHECK_RETURN_ERROR_VALUE(index_value);
 			CHECK_RETURN_TEMPLATE_DEPENDENT_VALUE(index_value);
 
@@ -1592,7 +1617,11 @@ Value CodeBuilder::BuildIndexationOperator(
 						indexation_operator.file_pos_,
 						&variable, { indexation_operator.index_.get() }, false,
 						names, function_context );
+
+			function_context.overloading_resolutin_cache[ &indexation_operator ]= *overloaded_operator;
 		}
+		else
+			function_context.overloading_resolutin_cache[ &indexation_operator ]= boost::none;
 	}
 
 	const Array* const array_type= variable.type.GetArrayType();
@@ -1899,12 +1928,21 @@ Value CodeBuilder::BuildCallOperator(
 
 	size_t this_count= this_ == nullptr ? 0u : 1u;
 	size_t total_args= this_count + call_operator.arguments_.size();
-	std::vector<Function::Arg> actual_args;
-	actual_args.reserve( total_args );
 
 	const size_t error_count_before= errors_.size();
 
-	{ // Make preevaluation af arguments for selection of overloaded function.
+	const FunctionVariable* function_ptr= nullptr;
+
+	// Make preevaluation af arguments for selection of overloaded function. Try also get function from cache.
+	const auto cache_it= function_context.overloading_resolutin_cache.find( &call_operator );
+	if( cache_it != function_context.overloading_resolutin_cache.end() &&
+		!call_operator.arguments_.empty() ) // empty check - hack for dummy call operator from empty initializer.
+		function_ptr= cache_it->second.get_ptr();
+	else
+	{
+		std::vector<Function::Arg> actual_args;
+		actual_args.reserve( total_args );
+
 		bool args_are_template_dependent= false;
 
 		// Prepare dummy function context for first pass.
@@ -1953,15 +1991,26 @@ Value CodeBuilder::BuildCallOperator(
 			actual_args.back().is_reference= expr->value_type != ValueType::Value;
 			actual_args.back().is_mutable= expr->value_type == ValueType::Reference;
 		}
+
+		function_context.overloading_resolutin_cache.insert(
+			dummy_function_context.overloading_resolutin_cache.begin(),
+			dummy_function_context.overloading_resolutin_cache.end() );
+
 		if( args_are_template_dependent )
 			return Value( Type(NontypeStub::TemplateDependentValue), call_operator.file_pos_ );
+
+		function_ptr=
+			GetOverloadedFunction( *functions_set, actual_args, this_ != nullptr, call_operator.file_pos_ );
+
+		if( function_ptr == nullptr )
+			function_context.overloading_resolutin_cache[ &call_operator ]= boost::none;
+		else
+			function_context.overloading_resolutin_cache[ &call_operator ]= *function_ptr;
 	}
 	function_context.variables_state.ActivateLocks();
 
 	// SPRACHE_TODO - try get function with "this" parameter in signature and without it.
 	// We must support static functions call using "this".
-	const FunctionVariable* const function_ptr=
-		GetOverloadedFunction( *functions_set, actual_args, this_ != nullptr, call_operator.file_pos_ );
 	if( function_ptr == nullptr )
 		return ErrorValue();
 	const FunctionVariable& function= *function_ptr;
@@ -1974,9 +2023,7 @@ Value CodeBuilder::BuildCallOperator(
 		this_count--;
 		total_args--;
 		this_= nullptr;
-		actual_args.erase( actual_args.begin() );
 	}
-	U_ASSERT( function_type.args.size() == actual_args.size() );
 
 	if( this_ == nullptr && function.is_this_call )
 	{

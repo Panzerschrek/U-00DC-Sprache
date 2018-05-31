@@ -250,3 +250,102 @@ def CastToVoidReference_Test9():
 		}
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def DeepExpressionsCompilationTest0():
+	c_program_text= """
+		fn Foo() : i32
+		{
+			// 64 elements in chain of binary operators is equivalent of expression, like
+			// add( 1, add( 1, add( 1, etc ) ) )
+			return
+				1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 +
+				1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 +
+				1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 +
+				1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 +
+				1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 +
+				1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 +
+				1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 +
+				1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 ;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 64 )
+
+
+def DeepExpressionsCompilationTest1():
+	c_program_text= """
+		fn add( i32 x, i32 y ) : i32 { return x + y; }
+		fn add( f32 x, f32 y ) : f32 { return x + y; }
+		fn add( bool a, bool b, bool c ) : bool { return a | b | c; }
+		fn Foo() : i32
+		{
+			return
+				add(
+					add(
+						add(
+							add(
+								add(  add( add(add(1,1),add(1,1)), add(add(1,1),add(1,1)) ), add( add(add(1,1),add(1,1)), add(add(1,1),add(1,1)) )  ),
+								add(  add( add(add(1,1),add(1,1)), add(add(1,1),add(1,1)) ), add( add(add(1,1),add(1,1)), add(add(1,1),add(1,1)) )  )
+								),
+							add(
+								add(  add( add(add(1,1),add(1,1)), add(add(1,1),add(1,1)) ), add( add(add(1,1),add(1,1)), add(add(1,1),add(1,1)) )  ),
+								add(  add( add(add(1,1),add(1,1)), add(add(1,1),add(1,1)) ), add( add(add(1,1),add(1,1)), add(add(1,1),add(1,1)) )  )
+								)
+							),
+						add(
+							add(
+								add(  add( add(add(1,1),add(1,1)), add(add(1,1),add(1,1)) ), add( add(add(1,1),add(1,1)), add(add(1,1),add(1,1)) )  ),
+								add(  add( add(add(1,1),add(1,1)), add(add(1,1),add(1,1)) ), add( add(add(1,1),add(1,1)), add(add(1,1),add(1,1)) )  )
+								),
+							add(
+								add(  add( add(add(1,1),add(1,1)), add(add(1,1),add(1,1)) ), add( add(add(1,1),add(1,1)), add(add(1,1),add(1,1)) )  ),
+								add(  add( add(add(1,1),add(1,1)), add(add(1,1),add(1,1)) ), add( add(add(1,1),add(1,1)), add(add(1,1),add(1,1)) )  )
+								)
+							)
+						),
+					add(
+						add(
+							add(
+								add(  add( add(add(1,1),add(1,1)), add(add(1,1),add(1,1)) ), add( add(add(1,1),add(1,1)), add(add(1,1),add(1,1)) )  ),
+								add(  add( add(add(1,1),add(1,1)), add(add(1,1),add(1,1)) ), add( add(add(1,1),add(1,1)), add(add(1,1),add(1,1)) )  )
+								),
+							add(
+								add(  add( add(add(1,1),add(1,1)), add(add(1,1),add(1,1)) ), add( add(add(1,1),add(1,1)), add(add(1,1),add(1,1)) )  ),
+								add(  add( add(add(1,1),add(1,1)), add(add(1,1),add(1,1)) ), add( add(add(1,1),add(1,1)), add(add(1,1),add(1,1)) )  )
+								)
+							),
+						add(
+							add(
+								add(  add( add(add(1,1),add(1,1)), add(add(1,1),add(1,1)) ), add( add(add(1,1),add(1,1)), add(add(1,1),add(1,1)) )  ),
+								add(  add( add(add(1,1),add(1,1)), add(add(1,1),add(1,1)) ), add( add(add(1,1),add(1,1)), add(add(1,1),add(1,1)) )  )
+								),
+							add(
+								add(  add( add(add(1,1),add(1,1)), add(add(1,1),add(1,1)) ), add( add(add(1,1),add(1,1)), add(add(1,1),add(1,1)) )  ),
+								add(  add( add(add(1,1),add(1,1)), add(add(1,1),add(1,1)) ), add( add(add(1,1),add(1,1)), add(add(1,1),add(1,1)) )  )
+								)
+							)
+						)
+					);
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 256 )
+
+
+def DeepExpressionsCompilationTest2():
+	c_program_text= """
+		fn add( i32 x, i32 y ) : i32 { return x + y; }
+		fn add( f32 x, f32 y ) : f32 { return x + y; }
+		fn add( bool a, bool b, bool c ) : bool { return a | b | c; }
+		fn Foo() : i32
+		{
+			return
+				add( 1, add( 1, add( 1, add( 1, add( 1, add( 1, add( 1, add( 1, add( 1, add( 1, add( 1, add( 1, add( 1, add( 1, add( 1, add( 1, add( 1, add( 1, add( 1, add( 1, add( 1, add( 1, add( 1, add( 1, add( 1, add( 1, add( 1, add( 1, add( 1, add( 1, add( 1, add( 1, add( 1, add( 1, add( 1, add( 1, add( 1, add( 1, add( 1, add( 1, add( 1, add( 1, add( 1, add( 1, add( 1, add( 1, add( 1, add( 1, add( 1, add( 1, add( 1, add( 1, add( 1, add( 1, add( 1, add( 1, add( 1, add( 1, add( 1, add( 1, add( 1, add( 1, add( 1, 1 ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) ) );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 64 )

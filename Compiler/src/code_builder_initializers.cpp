@@ -108,6 +108,8 @@ void CodeBuilder::ApplyEmptyInitializer(
 		this_overloaded_methods_set.this_= variable;
 		this_overloaded_methods_set.overloaded_methods_set= *constructors_set;
 
+		// TODO - fix this.
+		// "CallOperator" pointer used as key in overloading resolution cache. Passing stack ovject is not safe.
 		const Synt::CallOperator call_operator( file_pos, std::vector<Synt::IExpressionComponentPtr>() );
 		NamesScope dummy_names_scope( ProgramString(), nullptr );
 		BuildCallOperator( this_overloaded_methods_set, call_operator, dummy_names_scope, function_context );
@@ -529,6 +531,10 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 				initializer_value.GetVariable()->value_type == ValueType::Value ;
 
 			function_context.variables_state.ActivateLocks();
+
+			function_context.overloading_resolutin_cache.insert(
+				dummy_function_context.overloading_resolutin_cache.begin(),
+				dummy_function_context.overloading_resolutin_cache.end() );
 		}
 		if( needs_move_constuct )
 		{

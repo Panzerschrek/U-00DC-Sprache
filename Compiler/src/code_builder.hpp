@@ -35,6 +35,9 @@ private:
 		std::unique_ptr<ClassTable> class_table;
 	};
 
+	using OverloadingResolutionCache=
+		std::unordered_map< const Synt::SyntaxElementBase*, boost::optional<FunctionVariable> >;
+
 	struct FunctionContext;
 
 	// Usage - create this struct on stack. FunctionContext::stack_variables_stack will be controlled automatically.
@@ -102,6 +105,8 @@ private:
 		// Do not push/pop to t his stack manually!
 		std::vector<StackVariablesStorage*> stack_variables_stack;
 		VariablesState variables_state;
+
+		OverloadingResolutionCache overloading_resolutin_cache;
 
 		llvm::BasicBlock* destructor_end_block= nullptr; // exists, if function is destructor
 	};
@@ -382,6 +387,7 @@ private:
 	// In success call of overloaded operator arguments evaluated in left to right order.
 	boost::optional<Value> TryCallOverloadedBinaryOperator(
 		OverloadedOperator op,
+		const Synt::SyntaxElementBase& op_syntax_element,
 		const Synt::IExpressionComponent&  left_expr,
 		const Synt::IExpressionComponent& right_expr,
 		bool evaluate_args_in_reverse_order,
