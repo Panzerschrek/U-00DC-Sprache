@@ -1906,9 +1906,9 @@ Value CodeBuilder::BuildCallOperator(
 	}
 	else if( const Variable* const callable_variable= function_value.GetVariable() )
 	{
-		// For classes try to find () operator inside it.
 		if( const Class* const class_type= callable_variable->type.GetClassType() )
 		{
+			// For classes try to find () operator inside it.
 			if( const NamesScope::InsertedName* const name=
 				class_type->members.GetThisScopeName( OverloadedOperatorToString( OverloadedOperator::Call ) ) )
 			{
@@ -1917,6 +1917,21 @@ Value CodeBuilder::BuildCallOperator(
 				this_= callable_variable;
 				// SPRACHE_TODO - maybe support not only thiscall () operators ?
 			}
+		}
+		else if( const FunctionPointer* const function_pointer= callable_variable->type.GetFunctionPointerType() )
+		{
+			// Call function pointer directly.
+			std::vector<const Synt::IExpressionComponent*> args;
+			for( const auto& arg : call_operator.arguments_ )
+				args.push_back( arg.get() );
+
+			llvm::Value* const func_itself= CreateMoveToLLVMRegisterInstruction( *callable_variable, function_context );
+
+			return
+				DoCallFunction(
+					func_itself, function_pointer->function, call_operator.file_pos_,
+					nullptr, args, false,
+					names, function_context );
 		}
 	}
 

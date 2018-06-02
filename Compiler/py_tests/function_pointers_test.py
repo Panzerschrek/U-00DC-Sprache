@@ -139,3 +139,64 @@ def FunctionPoinerInitialization_Test5():
 		}
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def FunctionPointerCall_Test0():
+	c_program_text= """
+		fn Bar() : i32 { return 666; }
+		fn Foo() : i32
+		{
+			var ( fn() : i32 ) mut triple_six= Bar;
+			return triple_six();
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 666 )
+
+
+def FunctionPointerCall_Test1():
+	c_program_text= """
+		fn DoubleIt( i32 x ) : i32 { return x + x; }
+		fn Foo( i32 arg ) : i32
+		{
+			var ( fn( i32 x ) : i32 ) x2= DoubleIt;
+			return x2(arg);
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Fooi", 8956 )
+	assert( call_result == 8956 * 2 )
+
+
+def FunctionPointerCall_Test2():
+	c_program_text= """
+		fn AddAndDevide( f32 x, f32 y, i32 z ) : f32
+		{
+			return ( x + y ) / f32(z);
+		}
+		fn Foo() : f32
+		{
+			var ( fn( f32 x, f32 y, i32 z ) : f32 ) mut fff= AddAndDevide;
+			return fff( 7.25f, 82.75f, 9 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == ( 7.25 + 82.75 ) / 9.0 )
+
+
+def FunctionPointerCall_Test3():
+	c_program_text= """
+		fn Modify( i32& mut x ){ x= 555554; }
+		fn Foo() : i32
+		{
+			auto mut x= 0;
+			var fn( i32&mut x ) mutator= Modify;
+			mutator(x);
+			return x;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 555554 )
