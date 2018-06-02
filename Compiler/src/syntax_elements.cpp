@@ -289,35 +289,13 @@ FunctionArgument::FunctionArgument(
 	, inner_arg_reference_tags_(std::move(inner_arg_reference_tags))
 {}
 
-Function::Function(
-	const FilePos& file_pos,
-	ComplexName name,
-	ITypeNamePtr return_type,
-	MutabilityModifier return_value_mutability_modifier,
-	ReferenceModifier return_value_reference_modifier,
-	ProgramString return_value_reference_tag,
-	ReferencesTagsList return_value_inner_reference_tags,
-	FunctionReferencesPollutionList referecnces_pollution_list,
-	FunctionArgumentsDeclaration arguments,
-	std::unique_ptr<StructNamedInitializer> constructor_initialization_list,
-	BlockPtr block,
-	OverloadedOperator overloaded_operator,
-	VirtualFunctionKind virtual_function_kind,
-	bool unsafe )
+FunctionType::FunctionType( const FilePos& file_pos )
 	: SyntaxElementBase(file_pos)
-	, name_( std::move(name) )
-	, return_type_( std::move(return_type) )
-	, return_value_mutability_modifier_(return_value_mutability_modifier)
-	, return_value_reference_modifier_(return_value_reference_modifier)
-	, return_value_reference_tag_(std::move(return_value_reference_tag))
-	, return_value_inner_reference_tags_(std::move(return_value_inner_reference_tags))
-	, referecnces_pollution_list_( std::move(referecnces_pollution_list) )
-	, arguments_( std::move(arguments) )
-	, constructor_initialization_list_( std::move(constructor_initialization_list) )
-	, block_( std::move(block) )
-	, overloaded_operator_( std::move(overloaded_operator) )
-	, virtual_function_kind_( std::move(virtual_function_kind) )
-	, unsafe_(std::move(unsafe))
+{}
+
+Function::Function( const FilePos& file_pos )
+	: SyntaxElementBase(file_pos)
+	, type_(file_pos)
 {}
 
 ClassField::ClassField( const FilePos& file_pos )

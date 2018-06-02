@@ -506,6 +506,11 @@ Type CodeBuilder::PrepareType(
 
 		// TODO - generate error, if total size of type (incuding arrays) is more, than half of address space of target architecture.
 	}
+	else if( const auto function_type_name= dynamic_cast<const Synt::FunctionType*>(type_name.get()) )
+	{
+		// TODO
+		return bool_type_;
+	}
 	else if( const auto named_type_name= dynamic_cast<const Synt::NamedTypeName*>(type_name.get()) )
 	{
 		if( const NamesScope::InsertedName* name=
@@ -1112,7 +1117,7 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 				the_class_proxy,
 				the_class->members,
 				func_name,
-				func.func_syntax_element->arguments_,
+				func.func_syntax_element->type_.arguments_,
 				func.func_syntax_element->block_.get(),
 				func.func_syntax_element->constructor_initialization_list_.get() );
 		}
@@ -1605,7 +1610,7 @@ CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 		errors_.push_back( ReportInitializationListInNonconstructor(  func.constructor_initialization_list_->file_pos_ ) );
 		return result;
 	}
-	if( is_destructor && !func.arguments_.empty() )
+	if( is_destructor && !func.type_.arguments_.empty() )
 	{
 		errors_.push_back( ReportExplicitArgumentsInDestructor( func.file_pos_ ) );
 		return result;
@@ -1615,17 +1620,17 @@ CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 	func_variable.type= Function();
 	Function& function_type= *func_variable.type.GetFunctionType();
 
-	if( func.return_type_ == nullptr )
+	if( func.type_.return_type_ == nullptr )
 		function_type.return_type= void_type_for_ret_;
 	else
 	{
-		function_type.return_type= PrepareType( func.return_type_, *func_base_names_scope );
+		function_type.return_type= PrepareType( func.type_.return_type_, *func_base_names_scope );
 		if( function_type.return_type == invalid_type_ )
 			return result;
 	}
 
-	function_type.return_value_is_mutable= func.return_value_mutability_modifier_ == MutabilityModifier::Mutable;
-	function_type.return_value_is_reference= func.return_value_reference_modifier_ == ReferenceModifier::Reference;
+	function_type.return_value_is_mutable= func.type_.return_value_mutability_modifier_ == MutabilityModifier::Mutable;
+	function_type.return_value_is_reference= func.type_.return_value_reference_modifier_ == ReferenceModifier::Reference;
 
 	// HACK. We have different llvm types for "void".
 	// llvm::void used only for empty return value, for other purposes we use "i8" for Ü::void.
@@ -1645,10 +1650,10 @@ CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 	if( is_special_method && function_type.return_type != void_type_ )
 		errors_.push_back( ReportConstructorAndDestructorMustReturnVoid( func.file_pos_ ) );
 
-	ProcessFunctionReturnValueReferenceTags( func, function_type );
+	ProcessFunctionReturnValueReferenceTags( func.type_, function_type );
 
 	// Args.
-	function_type.args.reserve( func.arguments_.size() );
+	function_type.args.reserve( func.type_.arguments_.size() );
 
 	// Generate "this" arg for constructors.
 	if( is_special_method )
@@ -1662,9 +1667,9 @@ CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 		arg.is_mutable= true;
 	}
 
-	for( const Synt::FunctionArgumentPtr& arg : func.arguments_ )
+	for( const Synt::FunctionArgumentPtr& arg : func.type_.arguments_ )
 	{
-		const bool is_this= arg == func.arguments_.front() && arg->name_ == Keywords::this_;
+		const bool is_this= arg == func.type_.arguments_.front() && arg->name_ == Keywords::this_;
 
 		if( !is_this && IsKeyword( arg->name_ ) )
 			errors_.push_back( ReportUsingKeywordAsName( arg->file_pos_ ) );
@@ -1675,7 +1680,7 @@ CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 		{
 			// Explicit this for constructor.
 			U_ASSERT( function_type.args.size() == 1u );
-			ProcessFunctionArgReferencesTags( func, function_type, *arg, function_type.args.back(), function_type.args.size() - 1u );
+			ProcessFunctionArgReferencesTags( func.type_, function_type, *arg, function_type.args.back(), function_type.args.size() - 1u );
 			continue;
 		}
 
@@ -1708,12 +1713,12 @@ CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 			return result;
 		}
 
-		ProcessFunctionArgReferencesTags( func, function_type, *arg, out_arg, function_type.args.size() - 1u );
+		ProcessFunctionArgReferencesTags( func.type_, function_type, *arg, out_arg, function_type.args.size() - 1u );
 	} // for arguments
 
-	function_type.unsafe= func.unsafe_;
+	function_type.unsafe= func.type_.unsafe_;
 
-	TryGenerateFunctionReturnReferencesMapping( func, function_type );
+	TryGenerateFunctionReturnReferencesMapping( func.type_, function_type );
 	ProcessFunctionReferencesPollution( func, function_type, base_class );
 	CheckOverloadedOperator( base_class, function_type, func.overloaded_operator_, func.file_pos_ );
 
@@ -1764,7 +1769,7 @@ CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 			base_class,
 			*func_base_names_scope,
 			func_name,
-			func.arguments_,
+			func.type_.arguments_,
 			block,
 			func.constructor_initialization_list_.get() );
 
@@ -1814,7 +1819,7 @@ CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 					base_class,
 					*func_base_names_scope,
 					func_name,
-					func.arguments_,
+					func.type_.arguments_,
 					block,
 					func.constructor_initialization_list_.get() );
 			}
@@ -1845,7 +1850,7 @@ CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 					base_class,
 					*func_base_names_scope,
 					func_name,
-					func.arguments_,
+					func.type_.arguments_,
 					block,
 					func.constructor_initialization_list_.get() );
 			}

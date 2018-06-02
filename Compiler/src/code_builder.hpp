@@ -631,16 +631,16 @@ private:
 
 	// Reference-checking.
 	void ProcessFunctionArgReferencesTags(
-		const Synt::Function& func,
+		const Synt::FunctionType& func,
 		Function& function_type,
 		const Synt::FunctionArgument& in_arg,
 		const Function::Arg& out_arg,
 		size_t arg_number );
 
-	void ProcessFunctionReturnValueReferenceTags( const Synt::Function& func, const Function& function_type );
+	void ProcessFunctionReturnValueReferenceTags( const Synt::FunctionType& func, const Function& function_type );
 
 	void TryGenerateFunctionReturnReferencesMapping(
-		const Synt::Function& func,
+		const Synt::FunctionType& func,
 		Function& function_type );
 
 	void ProcessFunctionReferencesPollution(

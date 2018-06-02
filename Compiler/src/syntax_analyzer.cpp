@@ -160,6 +160,10 @@ private:
 
 	IExpressionComponentPtr ParseExpression();
 
+	FunctionArgumentPtr ParseFunctionArgument();
+	void ParseFunctionTypeEnding( FunctionType& result );
+	std::unique_ptr<FunctionType> ParseFunctionType();
+
 	ITypeNamePtr ParseTypeName();
 	std::vector<IExpressionComponentPtr> ParseTemplateParameters();
 	ComplexName ParseComplexName();
@@ -707,6 +711,13 @@ IExpressionComponentPtr SyntaxAnalyzer::ParseExpression()
 
 				current_node= std::move(cast);
 			}
+			else if( it_->text == Keywords::fn_ )
+			{
+				// Parse function type name: fn( i32 x )
+				std::unique_ptr<TypeNameInExpression> type_name_in_expression( new TypeNameInExpression( it_->file_pos ) );
+				type_name_in_expression->type_name= ParseTypeName();
+				current_node= std::move(type_name_in_expression);
+			}
 			else
 				current_node.reset( new NamedOperand( it_->file_pos, ParseComplexName() ) );
 		}
@@ -907,6 +918,181 @@ IExpressionComponentPtr SyntaxAnalyzer::ParseExpression()
 	return root;
 }
 
+FunctionArgumentPtr SyntaxAnalyzer::ParseFunctionArgument()
+{
+	ITypeNamePtr arg_type= ParseTypeName();
+
+	ReferenceModifier reference_modifier= ReferenceModifier::None;
+	MutabilityModifier mutability_modifier= MutabilityModifier::None;
+	ProgramString reference_tag;
+	ReferencesTagsList tags_list;
+
+	if( it_->type == Lexem::Type::And )
+	{
+		reference_modifier= ReferenceModifier::Reference;
+		NextLexem();
+
+		if( it_->type == Lexem::Type::Apostrophe )
+		{
+			NextLexem();
+
+			if( it_->type != Lexem::Type::Identifier )
+			{
+				PushErrorMessage();
+				return nullptr;
+			}
+			reference_tag = it_->text;
+			NextLexem();
+		}
+	}
+
+	if( it_->type != Lexem::Type::Identifier )
+	{
+		PushErrorMessage();
+		return nullptr;
+	}
+
+	if( it_->text == Keywords::mut_ )
+	{
+		mutability_modifier= MutabilityModifier::Mutable;
+		NextLexem();
+	}
+	else if( it_->text == Keywords::imut_ )
+	{
+		mutability_modifier= MutabilityModifier::Immutable;
+		NextLexem();
+	}
+
+	if( it_->type != Lexem::Type::Identifier )
+	{
+		PushErrorMessage();
+		return nullptr;
+	}
+
+	const FilePos& arg_file_pos= it_->file_pos;
+	const ProgramString& arg_name= it_->text;
+	NextLexem();
+
+	if( it_->type == Lexem::Type::Apostrophe )
+		tags_list= ParseReferencesTagsList();
+
+	return FunctionArgumentPtr(
+		new FunctionArgument(
+			arg_file_pos,
+			arg_name,
+			std::move(arg_type),
+			mutability_modifier,
+			reference_modifier,
+			std::move(reference_tag),
+			std::move(tags_list) ) );
+}
+
+void SyntaxAnalyzer::ParseFunctionTypeEnding( FunctionType& result )
+{
+	if( it_->type == Lexem::Type::Apostrophe )
+		result.referecnces_pollution_list_= ParseFunctionReferencesPollutionList();
+
+	if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::unsafe_ )
+	{
+		result.unsafe_= true;
+		NextLexem();
+	}
+
+	if( it_->type == Lexem::Type::Colon )
+	{
+		NextLexem();
+
+		result.return_type_= ParseTypeName();
+
+		if( it_->type == Lexem::Type::And )
+		{
+			result.return_value_reference_modifier_= ReferenceModifier::Reference;
+			NextLexem();
+
+			if( it_->type == Lexem::Type::Apostrophe )
+			{
+				NextLexem();
+
+				if( it_->type != Lexem::Type::Identifier )
+				{
+					PushErrorMessage();
+					return;
+				}
+				result.return_value_reference_tag_ = it_->text;
+				NextLexem();
+			}
+
+			if( it_->type == Lexem::Type::Identifier )
+			{
+				if( it_->text == Keywords::mut_ )
+				{
+					result.return_value_mutability_modifier_= MutabilityModifier::Mutable;
+					NextLexem();
+				}
+				else if( it_->text == Keywords::imut_ )
+				{
+					result.return_value_mutability_modifier_= MutabilityModifier::Immutable;
+					NextLexem();
+				}
+				else
+					PushErrorMessage();
+			}
+		}
+		else if( it_->type == Lexem::Type::Apostrophe )
+			result.return_value_inner_reference_tags_= ParseReferencesTagsList();
+	}
+}
+
+std::unique_ptr<FunctionType> SyntaxAnalyzer::ParseFunctionType()
+{
+	std::unique_ptr<FunctionType> result( new FunctionType( it_->file_pos ) );
+
+	U_ASSERT( it_->type == Lexem::Type::Identifier && it_->text == Keywords::fn_ );
+	NextLexem();
+
+	if( it_->type != Lexem::Type::BracketLeft )
+	{
+		PushErrorMessage();
+		return result;
+	}
+	NextLexem();
+
+	while( true )
+	{
+		if( it_->type == Lexem::Type::BracketRight )
+		{
+			NextLexem();
+			break;
+		}
+
+		auto arg= ParseFunctionArgument();
+		if( arg != nullptr )
+			result->arguments_.push_back( std::move(arg) );
+
+		if( it_->type == Lexem::Type::Comma )
+		{
+			NextLexem();
+			// Disallov constructions, like "fn f( a : int, ){}"
+			if( it_->type == Lexem::Type::BracketRight )
+			{
+				PushErrorMessage();
+				return nullptr;
+			}
+		}
+		else if( it_->type == Lexem::Type::BracketRight )
+		{}
+		else
+		{
+			PushErrorMessage();
+			return nullptr;
+		}
+	} // for arguments
+
+	ParseFunctionTypeEnding( *result );
+
+	return result;
+}
+
 ITypeNamePtr SyntaxAnalyzer::ParseTypeName()
 {
 	if( it_->type == Lexem::Type::SquareBracketLeft )
@@ -933,6 +1119,24 @@ ITypeNamePtr SyntaxAnalyzer::ParseTypeName()
 
 		return std::move(array_type_name);
 	}
+	else if( it_->type == Lexem::Type::BracketLeft )
+	{
+		// Type name inside (). We needs this for better parsing of function pointer types, for example.
+		NextLexem();
+
+		ITypeNamePtr type_name= ParseTypeName();
+
+		if( it_->type != Lexem::Type::BracketRight )
+		{
+			PushErrorMessage();
+			return type_name;
+		}
+		NextLexem();
+
+		return type_name;
+	}
+	else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::fn_ )
+		return ParseFunctionType();
 	else
 	{
 		std::unique_ptr<NamedTypeName> named_type_name( new NamedTypeName(it_->file_pos) );
@@ -2085,10 +2289,7 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 {
 	U_ASSERT( it_->text == Keywords::fn_ || it_->text == Keywords::op_ );
 
-	const FilePos& func_pos= it_->file_pos;
-	ComplexName fn_name;
-	OverloadedOperator overloaded_operator= OverloadedOperator::None;
-	VirtualFunctionKind virtual_function_kind= VirtualFunctionKind::None;
+	std::unique_ptr<Function> result( new Function( it_->file_pos ) );
 
 	const auto try_parse_virtual_specifiers=
 	[&]
@@ -2098,6 +2299,7 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 			NextLexem();
 			if( it_->type == Lexem::Type::Identifier )
 			{
+				VirtualFunctionKind virtual_function_kind= VirtualFunctionKind::None;
 				if( it_->text == Keywords::override_ )
 				{
 					virtual_function_kind= VirtualFunctionKind::VirtualOverride;
@@ -2115,6 +2317,7 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 				}
 				else
 					virtual_function_kind= VirtualFunctionKind::DeclareVirtual;
+				result->virtual_function_kind_= virtual_function_kind;
 			}
 		}
 	};
@@ -2124,7 +2327,7 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 		NextLexem();
 
 		try_parse_virtual_specifiers();
-		fn_name= ParseComplexName();
+		result->name_= ParseComplexName();
 	}
 	else
 	{
@@ -2136,7 +2339,7 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 			// Parse complex name before op name - such "op MyStruct::+"
 			if( it_->type == Lexem::Type::Scope )
 			{
-				fn_name.components.emplace_back();
+				result->name_.components.emplace_back();
 				NextLexem();
 			}
 
@@ -2147,8 +2350,8 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 					PushErrorMessage();
 					return nullptr;
 				}
-				fn_name.components.emplace_back();
-				fn_name.components.back().name= it_->text;
+				result->name_.components.emplace_back();
+				result->name_.components.back().name= it_->text;
 				NextLexem();
 
 				if( it_->type == Lexem::Type::Scope )
@@ -2161,6 +2364,7 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 			}
 		}
 
+		OverloadedOperator overloaded_operator= OverloadedOperator::None;
 		switch( it_->type )
 		{
 		case Lexem::Type::Plus   : overloaded_operator= OverloadedOperator::Add; break;
@@ -2220,8 +2424,9 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 			return nullptr;
 		};
 
-		fn_name.components.emplace_back();
-		fn_name.components.back().name= OverloadedOperatorToString( overloaded_operator );
+		result->name_.components.emplace_back();
+		result->name_.components.back().name= OverloadedOperatorToString( overloaded_operator );
+		result->overloaded_operator_= overloaded_operator;
 
 		NextLexem();
 	}
@@ -2234,7 +2439,7 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 
 	NextLexem();
 
-	std::vector<FunctionArgumentPtr> arguments;
+	std::vector<FunctionArgumentPtr>& arguments= result->type_.arguments_;
 
 	// Try parse "this"
 	if( it_->type == Lexem::Type::Identifier )
@@ -2312,71 +2517,9 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 			break;
 		}
 
-		ITypeNamePtr arg_type= ParseTypeName();
-
-		ReferenceModifier reference_modifier= ReferenceModifier::None;
-		MutabilityModifier mutability_modifier= MutabilityModifier::None;
-		ProgramString reference_tag;
-		ReferencesTagsList tags_list;
-
-		if( it_->type == Lexem::Type::And )
-		{
-			reference_modifier= ReferenceModifier::Reference;
-			NextLexem();
-
-			if( it_->type == Lexem::Type::Apostrophe )
-			{
-				NextLexem();
-
-				if( it_->type != Lexem::Type::Identifier )
-				{
-					PushErrorMessage();
-					return nullptr;
-				}
-				reference_tag = it_->text;
-				NextLexem();
-			}
-		}
-
-		if( it_->type != Lexem::Type::Identifier )
-		{
-			PushErrorMessage();
-			return nullptr;
-		}
-
-		if( it_->text == Keywords::mut_ )
-		{
-			mutability_modifier= MutabilityModifier::Mutable;
-			NextLexem();
-		}
-		else if( it_->text == Keywords::imut_ )
-		{
-			mutability_modifier= MutabilityModifier::Immutable;
-			NextLexem();
-		}
-
-		if( it_->type != Lexem::Type::Identifier )
-		{
-			PushErrorMessage();
-			return nullptr;
-		}
-
-		const FilePos& arg_file_pos= it_->file_pos;
-		const ProgramString& arg_name= it_->text;
-		NextLexem();
-
-		if( it_->type == Lexem::Type::Apostrophe )
-			tags_list= ParseReferencesTagsList();
-
-		arguments.emplace_back(
-			new FunctionArgument(
-				arg_file_pos,
-				arg_name,
-				std::move(arg_type),
-				mutability_modifier,
-				reference_modifier,
-				std::move(reference_tag),
-				std::move(tags_list) ) );
+		auto arg= ParseFunctionArgument();
+		if( arg != nullptr )
+			arguments.push_back( std::move(arg) );
 
 		if( it_->type == Lexem::Type::Comma )
 		{
@@ -2397,69 +2540,7 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 		}
 	}
 
-	ITypeNamePtr return_type;
-	MutabilityModifier mutability_modifier= MutabilityModifier::None;
-	ReferenceModifier reference_modifier= ReferenceModifier::None;
-	ProgramString return_value_reference_tag;
-	ReferencesTagsList return_value_tags_list;
-	FunctionReferencesPollutionList references_pollution_list;
-
-	if( it_->type == Lexem::Type::Apostrophe )
-		references_pollution_list= ParseFunctionReferencesPollutionList();
-
-	bool unsafe= false;
-	if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::unsafe_ )
-	{
-		unsafe= true;
-		NextLexem();
-	}
-
-	if( it_->type == Lexem::Type::Colon )
-	{
-		NextLexem();
-
-		return_type= ParseTypeName();
-
-		if( it_->type == Lexem::Type::And )
-		{
-			reference_modifier= ReferenceModifier::Reference;
-			NextLexem();
-
-			if( it_->type == Lexem::Type::Apostrophe )
-			{
-				NextLexem();
-
-				if( it_->type != Lexem::Type::Identifier )
-				{
-					PushErrorMessage();
-					return nullptr;
-				}
-				return_value_reference_tag = it_->text;
-				NextLexem();
-			}
-
-			if( it_->type == Lexem::Type::Identifier )
-			{
-				if( it_->text == Keywords::mut_ )
-				{
-					mutability_modifier= MutabilityModifier::Mutable;
-					NextLexem();
-				}
-				else if( it_->text == Keywords::imut_ )
-				{
-					mutability_modifier= MutabilityModifier::Immutable;
-					NextLexem();
-				}
-				else
-					PushErrorMessage();
-			}
-		}
-		else if( it_->type == Lexem::Type::Apostrophe )
-			return_value_tags_list= ParseReferencesTagsList();
-	}
-
-	std::unique_ptr<StructNamedInitializer> constructor_initialization_list;
-	BlockPtr block;
+	ParseFunctionTypeEnding( result->type_ );
 
 	if( it_->type == Lexem::Type::Semicolon )
 	{
@@ -2470,7 +2551,7 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 	{
 		if( it_->type == Lexem::Type::BracketLeft )
 		{
-			constructor_initialization_list.reset( new StructNamedInitializer( it_->file_pos ) );
+			result->constructor_initialization_list_.reset( new StructNamedInitializer( it_->file_pos ) );
 			NextLexem();
 
 			while( true )
@@ -2486,9 +2567,9 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 					PushErrorMessage();
 					return nullptr;
 				}
-				constructor_initialization_list->members_initializers.emplace_back();
-				constructor_initialization_list->members_initializers.back().name= it_->text;
-				IInitializerPtr& initializer= constructor_initialization_list->members_initializers.back().initializer;
+				result->constructor_initialization_list_->members_initializers.emplace_back();
+				result->constructor_initialization_list_->members_initializers.back().name= it_->text;
+				IInitializerPtr& initializer= result->constructor_initialization_list_->members_initializers.back().initializer;
 
 				NextLexem();
 				if( it_->type == Lexem::Type::Assignment )
@@ -2511,7 +2592,7 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 		}
 
 		if( it_->type == Lexem::Type::BraceLeft )
-			block= ParseBlock();
+			result->block_= ParseBlock();
 		else
 		{
 			PushErrorMessage();
@@ -2519,22 +2600,7 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 		}
 	}
 
-	return std::unique_ptr<Function>(
-		new Function(
-			func_pos,
-			std::move( fn_name ),
-			std::move(return_type),
-			mutability_modifier,
-			reference_modifier,
-			std::move(return_value_reference_tag),
-			return_value_tags_list,
-			references_pollution_list,
-			std::move( arguments ),
-			std::move( constructor_initialization_list ),
-			std::move( block ),
-			overloaded_operator,
-			virtual_function_kind,
-			unsafe ) );
+	return result;
 }
 
 std::unique_ptr<Class> SyntaxAnalyzer::ParseClass()
@@ -2588,7 +2654,6 @@ std::unique_ptr<Class> SyntaxAnalyzer::ParseClassBody()
 		it_->type == Lexem::Type::BraceRight ||
 		it_->type == Lexem::Type::EndOfFile ) )
 	{
-		// SPRACHE_TODO - try parse here, subclasses, typedefs, etc.
 		if( it_->type == Lexem::Type::Identifier && ( it_->text == Keywords::fn_ || it_->text == Keywords::op_ ) )
 		{
 			result->elements_.emplace_back( ParseFunction() );

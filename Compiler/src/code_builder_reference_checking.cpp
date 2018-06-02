@@ -23,7 +23,7 @@ static const Class& GetClassForIncompleteType( const Type& type )
 }
 
 void CodeBuilder::ProcessFunctionArgReferencesTags(
-	const Synt::Function& func,
+	const Synt::FunctionType& func,
 	Function& function_type,
 	const Synt::FunctionArgument& in_arg,
 	const Function::Arg& out_arg,
@@ -146,7 +146,7 @@ void CodeBuilder::ProcessFunctionArgReferencesTags(
 	}
 }
 
-void CodeBuilder::ProcessFunctionReturnValueReferenceTags( const Synt::Function& func, const Function& function_type )
+void CodeBuilder::ProcessFunctionReturnValueReferenceTags( const Synt::FunctionType& func, const Function& function_type )
 {
 	if( function_type.return_type.GetTemplateDependentType() != nullptr )
 		return;
@@ -201,7 +201,7 @@ void CodeBuilder::ProcessFunctionReturnValueReferenceTags( const Synt::Function&
 }
 
 void CodeBuilder::TryGenerateFunctionReturnReferencesMapping(
-	const Synt::Function& func,
+	const Synt::FunctionType& func,
 	Function& function_type )
 {
 	// Generate mapping of input references to output references, if reference tags are not specified explicitly.
@@ -254,7 +254,7 @@ void CodeBuilder::ProcessFunctionReferencesPollution(
 {
 	const bool first_arg_is_implicit_this=
 		( func.name_.components.back().name == Keywords::destructor_ ) ||
-		( func.name_.components.back().name == Keywords::constructor_ && ( func.arguments_.empty() || func.arguments_.front()->name_ != Keywords::this_ ) );
+		( func.name_.components.back().name == Keywords::constructor_ && ( func.type_.arguments_.empty() || func.type_.arguments_.front()->name_ != Keywords::this_ ) );
 
 	const auto get_references=
 	[&]( const ProgramString& name ) -> std::vector<Function::ArgReference>
@@ -267,7 +267,7 @@ void CodeBuilder::ProcessFunctionReferencesPollution(
 			if( arg_n == 0u && first_arg_is_implicit_this )
 				continue;
 
-			const Synt::FunctionArgument& in_arg= *func.arguments_[ arg_n - ( first_arg_is_implicit_this ? 1u : 0u ) ];
+			const Synt::FunctionArgument& in_arg= *func.type_.arguments_[ arg_n - ( first_arg_is_implicit_this ? 1u : 0u ) ];
 
 			if( !in_arg.reference_tag_.empty() && in_arg.reference_tag_ == name )
 				result.emplace_back( arg_n, Function::c_arg_reference_tag_number );
@@ -301,7 +301,7 @@ void CodeBuilder::ProcessFunctionReferencesPollution(
 		function_type.args.size() == 2u &&
 		function_type.args.back().type == base_class && !function_type.args.back().is_mutable && function_type.args.back().is_reference )
 	{
-		if( !func.referecnces_pollution_list_.empty() )
+		if( !func.type_.referecnces_pollution_list_.empty() )
 			errors_.push_back( ReportExplicitReferencePollutionForCopyConstructor( func.file_pos_ ) );
 
 		if( base_class->class_->references_tags_count > 0u )
@@ -321,7 +321,7 @@ void CodeBuilder::ProcessFunctionReferencesPollution(
 		function_type.args[0u].type == base_class &&  function_type.args[0u].is_mutable && function_type.args[0u].is_reference &&
 		function_type.args[1u].type == base_class && !function_type.args[1u].is_mutable && function_type.args[1u].is_reference )
 	{
-		if( !func.referecnces_pollution_list_.empty() )
+		if( !func.type_.referecnces_pollution_list_.empty() )
 			errors_.push_back( ReportExplicitReferencePollutionForCopyAssignmentOperator( func.file_pos_ ) );
 
 		if( base_class->class_->references_tags_count > 0u )
@@ -338,7 +338,7 @@ void CodeBuilder::ProcessFunctionReferencesPollution(
 	}
 	else
 	{
-		for( const Synt::FunctionReferencesPollution& pollution : func.referecnces_pollution_list_ )
+		for( const Synt::FunctionReferencesPollution& pollution : func.type_.referecnces_pollution_list_ )
 		{
 			if( pollution.first == pollution.second.name )
 			{

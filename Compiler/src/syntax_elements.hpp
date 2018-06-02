@@ -634,41 +634,37 @@ enum class VirtualFunctionKind
 	VirtualPure,
 };
 
+class FunctionType final
+	: public SyntaxElementBase
+	, public ITypeName
+{
+public:
+	FunctionType( const FilePos& file_pos );
+
+	ITypeNamePtr return_type_;
+	MutabilityModifier return_value_mutability_modifier_= MutabilityModifier::None;
+	ReferenceModifier return_value_reference_modifier_= ReferenceModifier::None;
+	ProgramString return_value_reference_tag_;
+	ReferencesTagsList return_value_inner_reference_tags_;
+	FunctionReferencesPollutionList referecnces_pollution_list_;
+	FunctionArgumentsDeclaration arguments_;
+	bool unsafe_= false;
+};
+
 class Function final
 	: public SyntaxElementBase
 	, public IProgramElement
 	, public IClassElement
 {
 public:
-	Function(
-		const FilePos& file_pos,
-		ComplexName name,
-		ITypeNamePtr return_type,
-		MutabilityModifier return_value_mutability_modifier,
-		ReferenceModifier return_value_reference_modifier,
-		ProgramString return_value_reference_tag,
-		ReferencesTagsList return_value_inner_reference_tags,
-		FunctionReferencesPollutionList referecnces_pollution_list,
-		FunctionArgumentsDeclaration arguments,
-		std::unique_ptr<StructNamedInitializer> constructor_initialization_list,
-		BlockPtr block,
-		OverloadedOperator overloaded_operator,
-		VirtualFunctionKind virtual_function_kind,
-		bool unsafe );
+	Function( const FilePos& file_pos );
 
-	const ComplexName name_;
-	const ITypeNamePtr return_type_;
-	const MutabilityModifier return_value_mutability_modifier_;
-	const ReferenceModifier return_value_reference_modifier_;
-	const ProgramString return_value_reference_tag_;
-	const ReferencesTagsList return_value_inner_reference_tags_;
-	const FunctionReferencesPollutionList referecnces_pollution_list_;
-	const FunctionArgumentsDeclaration arguments_;
-	const std::unique_ptr<StructNamedInitializer> constructor_initialization_list_;
-	const BlockPtr block_;
-	const OverloadedOperator overloaded_operator_;
-	const VirtualFunctionKind virtual_function_kind_;
-	const bool unsafe_;
+	ComplexName name_;
+	FunctionType type_;
+	std::unique_ptr<StructNamedInitializer> constructor_initialization_list_;
+	BlockPtr block_;
+	OverloadedOperator overloaded_operator_= OverloadedOperator::None;
+	VirtualFunctionKind virtual_function_kind_= VirtualFunctionKind::None;
 };
 
 class ClassField final

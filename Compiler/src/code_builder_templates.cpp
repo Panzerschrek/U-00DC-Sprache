@@ -1071,13 +1071,13 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 	size_t given_arg_count= actual_args.size();
 
 	if( first_actual_arg_is_this &&
-		!function_declaration.arguments_.empty() && function_declaration.arguments_.front()->name_ != Keywords::this_ )
+		!function_declaration.type_.arguments_.empty() && function_declaration.type_.arguments_.front()->name_ != Keywords::this_ )
 	{
 		++given_args;
 		--given_arg_count;
 	}
 
-	if( given_arg_count != function_declaration.arguments_.size() )
+	if( given_arg_count != function_declaration.type_.arguments_.size() )
 		return nullptr;
 
 	DeducibleTemplateParameters deduced_template_args( function_template.template_parameters.size() );
@@ -1091,10 +1091,10 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 	PushCacheGetResolveHandelr( function_template.resolving_cache );
 
 	bool deduction_failed= false;
-	std::vector<DeducedTemplateParameter> deduced_temlpate_parameters( function_declaration.arguments_.size() );
-	for( size_t i= 0u; i < function_declaration.arguments_.size(); ++i )
+	std::vector<DeducedTemplateParameter> deduced_temlpate_parameters( function_declaration.type_.arguments_.size() );
+	for( size_t i= 0u; i < function_declaration.type_.arguments_.size(); ++i )
 	{
-		const Synt::FunctionArgument& function_argument= *function_declaration.arguments_[i];
+		const Synt::FunctionArgument& function_argument= *function_declaration.type_.arguments_[i];
 
 		// Functin arg declared as "mut&", but given something immutable.
 		if( function_argument.mutability_modifier_ == Synt::MutabilityModifier::Mutable &&
