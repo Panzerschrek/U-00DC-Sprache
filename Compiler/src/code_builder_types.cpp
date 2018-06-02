@@ -86,6 +86,11 @@ Type::Type( const Function& function_type )
 	something_= FunctionPtr( new Function( function_type ) );
 }
 
+Type::Type( const FunctionPointer& function_pointer_type )
+{
+	something_= FunctionPointerPtr( new FunctionPointer( function_pointer_type ) );
+}
+
 Type::Type( Function&& function_type )
 {
 	something_= FunctionPtr( new Function( std::move( function_type ) ) );
@@ -167,6 +172,12 @@ Type& Type::operator=( const Type& other )
 		{
 			this_.something_= template_dependent_type;
 		}
+
+		void operator()( const FunctionPointerPtr& function_pointer )
+		{
+			U_ASSERT( function_pointer != nullptr );
+			this_.something_= FunctionPointerPtr( new FunctionPointer( *function_pointer ) );
+		}
 	};
 
 	Visitor visitor( *this );
@@ -198,6 +209,22 @@ const Function* Type::GetFunctionType() const
 	if( function_type == nullptr )
 		return nullptr;
 	return function_type->get();
+}
+
+FunctionPointer* Type::GetFunctionPointerType()
+{
+	FunctionPointerPtr* const function_pointer_type= boost::get<FunctionPointerPtr>( &something_ );
+	if( function_pointer_type == nullptr )
+		return nullptr;
+	return function_pointer_type->get();
+}
+
+const FunctionPointer* Type::GetFunctionPointerType() const
+{
+	const FunctionPointerPtr* const function_pointer_type= boost::get<FunctionPointerPtr>( &something_ );
+	if( function_pointer_type == nullptr )
+		return nullptr;
+	return function_pointer_type->get();
 }
 
 Array* Type::GetArrayType()
@@ -324,6 +351,12 @@ SizeType Type::SizeOf() const
 			U_ASSERT( false && "SizeOf method not supported for template-dependent types." );
 			return 1u;
 		}
+
+		SizeType operator()( const FunctionPointerPtr& ) const
+		{
+			U_ASSERT( false && "SizeOf method not supported for function-pointer types." );
+			return 1u;
+		}
 	};
 
 	return boost::apply_visitor( Visitor(), something_ );
@@ -365,7 +398,9 @@ bool Type::IsDefaultConstructible() const
 
 bool Type::IsCopyConstructible() const
 {
-	if( boost::get<FundamentalType>( &something_ ) != nullptr || boost::get<EnumPtr>( &something_ ) != nullptr )
+	if( boost::get<FundamentalType>( &something_ ) != nullptr ||
+		boost::get<EnumPtr>( &something_ ) != nullptr ||
+		boost::get<FunctionPointerPtr>( &something_ ) != nullptr )
 	{
 		return true;
 	}
@@ -385,7 +420,7 @@ bool Type::IsCopyConstructible() const
 
 bool Type::IsCopyAssignable() const
 {
-	if( GetFundamentalType() != nullptr || GetEnumType() != nullptr )
+	if( GetFundamentalType() != nullptr || GetEnumType() != nullptr || GetFunctionPointerType() != nullptr )
 		return true;
 	else if( const ClassProxyPtr* const class_= boost::get<ClassProxyPtr>( &something_ ) )
 	{
@@ -419,7 +454,9 @@ bool Type::HaveDestructor() const
 
 bool Type::CanBeConstexpr() const
 {
-	if( boost::get<FundamentalType>( &something_ ) != nullptr || boost::get<EnumPtr>( &something_ ) != nullptr )
+	if( boost::get<FundamentalType>( &something_ ) != nullptr ||
+		boost::get<EnumPtr>( &something_ ) != nullptr ||
+		boost::get<FunctionPointerPtr>( &something_ ) != nullptr )
 	{
 		return true;
 	}
@@ -494,6 +531,11 @@ llvm::Type* Type::GetLLVMType() const
 		{
 			return template_dependent_type.llvm_type;
 		}
+
+		llvm::Type* operator()( const FunctionPointerPtr& function_pointer_type ) const
+		{
+			return function_pointer_type->llvm_function_pointer_type;
+		}
 	};
 
 	return boost::apply_visitor( Visitor(), something_ );
@@ -510,6 +552,7 @@ ProgramString Type::ToString() const
 
 		ProgramString operator()( const FunctionPtr& function ) const
 		{
+			// TODO - actualize this
 			ProgramString result;
 			result+= "fn "_SpC;
 			result+= function->return_type.ToString();
@@ -579,6 +622,12 @@ ProgramString Type::ToString() const
 		{
 			return "template dependent type"_SpC;
 		}
+
+		ProgramString operator()( const FunctionPointerPtr& function_pointer ) const
+		{
+			U_UNUSED(function_pointer);
+			return "ptr to "_SpC; // TODO
+		}
 	};
 
 	return boost::apply_visitor( Visitor(), something_ );
@@ -616,6 +665,10 @@ bool operator==( const Type& r, const Type& l )
 	else if( r.something_.which() ==6 )
 	{
 		return boost::get<TemplateDependentType>(r.something_) == boost::get<TemplateDependentType>(l.something_);
+	}
+	else if( r.something_.which() ==7 )
+	{
+		return *r.GetFunctionPointerType() == *l.GetFunctionPointerType();
 	}
 
 	U_ASSERT(false);
@@ -661,6 +714,15 @@ bool operator==( const Function& r, const Function& l )
 }
 
 bool operator!=( const Function& r, const Function& l )
+{
+	return !( r == l );
+}
+
+bool operator==( const FunctionPointer& r, const FunctionPointer& l )
+{
+	return r.function == l.function;
+}
+bool operator!=( const FunctionPointer& r, const FunctionPointer& l )
 {
 	return !( r == l );
 }

@@ -725,6 +725,16 @@ llvm::Constant* CodeBuilder::ApplyZeroInitializer(
 		function_context.llvm_ir_builder.CreateStore( zero_value, variable.llvm_value );
 		return zero_value;
 	}
+	else if( const FunctionPointer* const function_pointer_type= variable.type.GetFunctionPointerType() )
+	{
+		// Really? Allow zero function pointers?
+
+		llvm::Constant* const null_value=
+			llvm::Constant::getNullValue( function_pointer_type->llvm_function_pointer_type );
+
+		function_context.llvm_ir_builder.CreateStore( null_value, variable.llvm_value );
+		return null_value;
+	}
 	else if( const Array* const array_type= variable.type.GetArrayType() )
 	{
 		Variable array_member= variable;

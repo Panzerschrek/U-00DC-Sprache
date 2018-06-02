@@ -26,6 +26,7 @@ namespace CodeBuilderPrivate
 using Synt::ClassMemberVisibility;
 
 struct Function;
+struct FunctionPointer;
 struct Array;
 class Class;
 struct Enum;
@@ -105,6 +106,7 @@ public:
 	// Construct from different type kinds.
 	Type( FundamentalType fundamental_type );
 	Type( const Function& function_type );
+	Type( const FunctionPointer& function_pointer_type );
 	Type( Function&& function_type );
 	Type( const Array& array_type );
 	Type( Array&& array_type );
@@ -118,6 +120,8 @@ public:
 	const FundamentalType* GetFundamentalType() const;
 	Function* GetFunctionType();
 	const Function* GetFunctionType() const;
+	FunctionPointer* GetFunctionPointerType();
+	const FunctionPointer* GetFunctionPointerType() const;
 	Array* GetArrayType();
 	const Array* GetArrayType() const;
 	ClassProxyPtr GetClassTypeProxy() const;
@@ -146,6 +150,7 @@ private:
 	friend bool operator==( const Type&, const Type&);
 
 	typedef std::unique_ptr<Function> FunctionPtr;
+	typedef std::unique_ptr<FunctionPointer> FunctionPointerPtr;
 	typedef std::unique_ptr<Array> ArrayPtr;
 
 	boost::variant<
@@ -155,7 +160,8 @@ private:
 		ClassProxyPtr,
 		EnumPtr,
 		NontypeStub,
-		TemplateDependentType> something_;
+		TemplateDependentType,
+		FunctionPointerPtr> something_;
 };
 
 bool operator==( const Type& r, const Type& l );
@@ -212,12 +218,20 @@ public:
 	llvm::FunctionType* llvm_function_type= nullptr;
 };
 
+struct FunctionPointer
+{
+	Function function;
+	llvm::PointerType* llvm_function_pointer_type= nullptr;
+};
+
 bool operator==( const Function::InToOutReferences& l, const Function::InToOutReferences& r );
 bool operator!=( const Function::InToOutReferences& l, const Function::InToOutReferences& r );
 bool operator==( const Function::Arg& r, const Function::Arg& l );
 bool operator!=( const Function::Arg& r, const Function::Arg& l );
 bool operator==( const Function& r, const Function& l );
 bool operator!=( const Function& r, const Function& l );
+bool operator==( const FunctionPointer& r, const FunctionPointer& l );
+bool operator!=( const FunctionPointer& r, const FunctionPointer& l );
 
 struct Array final
 {

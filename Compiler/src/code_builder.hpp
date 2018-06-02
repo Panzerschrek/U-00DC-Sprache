@@ -139,6 +139,8 @@ private:
 	void FillGlobalNamesScope( NamesScope& global_names_scope );
 	Type PrepareType( const Synt::ITypeNamePtr& type_name, NamesScope& names_scope );
 
+	llvm::FunctionType* GetLLVMFunctionType( const Function& function_type );
+
 	// Returns nullptr on fail.
 	ClassProxyPtr PrepareClass(
 		const Synt::Class& class_declaration,
@@ -647,6 +649,11 @@ private:
 		const Synt::Function& func,
 		Function& function_type,
 		const ClassProxyPtr& base_class );
+
+	void ProcessFunctionTypeReferencesPollution(
+		const Synt::FunctionType& func,
+		Function& function_type,
+		bool first_arg_is_implicit_this= false );
 
 	void CheckReferencedVariables( const Variable& reference, const FilePos& file_pos );
 	void CheckVariableReferences( const StoredVariable& var, const FilePos& file_pos );

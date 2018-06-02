@@ -585,7 +585,7 @@ void CodeBuilder::BuildCopyConstructorPart(
 	const Type& type,
 	FunctionContext& function_context )
 {
-	if( type.GetFundamentalType() != nullptr || type.GetEnumType() != nullptr )
+	if( type.GetFundamentalType() != nullptr || type.GetEnumType() != nullptr || type.GetFunctionPointerType() != nullptr )
 	{
 		// Create simple load-store.
 		llvm::Value* const val= function_context.llvm_ir_builder.CreateLoad( src );
@@ -654,7 +654,7 @@ void CodeBuilder::BuildCopyAssignmentOperatorPart(
 	const Type& type,
 	FunctionContext& function_context )
 {
-	if( type.GetFundamentalType() != nullptr || type.GetEnumType() != nullptr )
+	if( type.GetFundamentalType() != nullptr || type.GetEnumType() != nullptr || type.GetFunctionPointerType() != nullptr )
 	{
 		// Create simple load-store.
 		llvm::Value* const val= function_context.llvm_ir_builder.CreateLoad( src );
