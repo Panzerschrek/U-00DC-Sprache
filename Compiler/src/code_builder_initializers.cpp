@@ -506,6 +506,17 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 
 		return expression_result_variable.constexpr_value;
 	}
+	else if( variable.type.GetFunctionPointerType() != nullptr )
+	{
+		if( call_operator.arguments_.size() != 1u )
+		{
+			// TODO - generate separate error for function pointers.
+			errors_.push_back( ReportFundamentalTypesHaveConstructorsWithExactlyOneParameter( call_operator.file_pos_ ) );
+			return nullptr;
+		}
+
+		return InitializeFunctionPointer( variable, *call_operator.arguments_.front(), block_names, function_context );
+	}
 	else if( const Class* const class_type= variable.type.GetClassType() )
 	{
 		// Try do move-construct.
@@ -614,6 +625,8 @@ llvm::Constant* CodeBuilder::ApplyExpressionInitializer(
 		if( llvm::Constant* const constexpr_value= expression_result.GetVariable()->constexpr_value )
 			return constexpr_value;
 	}
+	else if( variable.type.GetFunctionPointerType() != nullptr )
+		return InitializeFunctionPointer( variable, *initializer.expression, block_names, function_context );
 	else if( variable.type.GetTemplateDependentType() != nullptr )
 	{}
 	else if( variable.type.GetClassType() != nullptr )
@@ -920,6 +933,74 @@ llvm::Constant* CodeBuilder::InitializeReferenceField(
 	}
 
 	return nullptr;
+}
+
+llvm::Constant* CodeBuilder::InitializeFunctionPointer(
+	const Variable& variable,
+	const Synt::IExpressionComponent& initializer_expression,
+	NamesScope& block_names,
+	FunctionContext& function_context )
+{
+	U_ASSERT( variable.type.GetFunctionPointerType() != nullptr );
+
+	const Value initializer_value= BuildExpressionCode( initializer_expression, block_names, function_context );
+
+	if( initializer_value.GetTemplateDependentValue() != nullptr ||
+		initializer_value.GetType().GetTemplateDependentType() != nullptr )
+		return nullptr;
+
+	if( const Variable* const initializer_variable= initializer_value.GetVariable() )
+	{
+		if( initializer_variable->type != variable.type )
+		{
+			errors_.push_back( ReportTypesMismatch( initializer_expression.GetFilePos(), variable.type.ToString(), initializer_variable->type.ToString() ) );
+			return nullptr;
+		}
+		U_ASSERT( initializer_variable->type.GetFunctionPointerType() != nullptr );
+
+		llvm::Value* const value_for_assignment= CreateMoveToLLVMRegisterInstruction( *initializer_variable, function_context );
+		function_context.llvm_ir_builder.CreateStore( value_for_assignment, variable.llvm_value );
+		return initializer_variable->constexpr_value;
+	}
+
+	const Type expected_function_type= variable.type.GetFunctionPointerType()->function;
+
+	// Try select one of overloaded functions.
+	const FunctionVariable* function_variable= nullptr;
+	if( const OverloadedFunctionsSet* const overloaded_functions_set= initializer_value.GetFunctionsSet() )
+	{
+		for( const FunctionVariable& func : overloaded_functions_set->functions )
+			if( func.type == expected_function_type )
+			{
+				function_variable= &func;
+				break;
+			}
+	}
+	else if( const ThisOverloadedMethodsSet* const overloaded_methods_set= initializer_value.GetThisOverloadedMethodsSet() )
+	{
+		for( const FunctionVariable& func : overloaded_methods_set->overloaded_methods_set.functions )
+			if( func.type == expected_function_type )
+			{
+				function_variable= &func;
+				break;
+			}
+	}
+	else
+	{
+		// TODO - generate separate error
+		errors_.push_back( ReportExpectedVariable( initializer_expression.GetFilePos(), initializer_value.GetType().ToString() ) );
+		return nullptr;
+	}
+
+	if( function_variable == nullptr )
+	{
+		errors_.push_back( ReportCouldNotSelectOverloadedFunction( initializer_expression.GetFilePos() ) );
+		return nullptr;
+	}
+	U_ASSERT( function_variable->type.GetFunctionType() != nullptr );
+
+	function_context.llvm_ir_builder.CreateStore( function_variable->llvm_function, variable.llvm_value );
+	return function_variable->llvm_function;
 }
 
 } // namespace CodeBuilderPrivate

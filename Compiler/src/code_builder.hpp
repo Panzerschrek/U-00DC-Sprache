@@ -631,6 +631,12 @@ private:
 		NamesScope& block_names,
 		FunctionContext& function_context );
 
+	llvm::Constant* InitializeFunctionPointer(
+		const Variable& variable,
+		const Synt::IExpressionComponent& initializer_expression,
+		NamesScope& block_names,
+		FunctionContext& function_context );
+
 	// Reference-checking.
 	void ProcessFunctionArgReferencesTags(
 		const Synt::FunctionType& func,
