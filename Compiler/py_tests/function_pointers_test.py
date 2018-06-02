@@ -252,3 +252,35 @@ def FunctionPointerEqualityComparision_Test1():
 	"""
 	tests_lib.build_program( c_program_text )
 	call_result= tests_lib.run_function( "_Z3Foov" )
+
+
+def FunctionsPoitersAssignment_Test0():
+	c_program_text= """
+		fn a() : i32 { return 55; }
+		fn b() : i32 { return 66; }
+		fn Foo() : i32
+		{
+			var (fn() : i32) mut ptr_0= a;
+			var (fn() : i32) mut ptr_1= b;
+			ptr_0= ptr_1;
+			return ptr_0();
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 66 )
+
+
+def FunctionsPoitersAssignment_Test1():
+	c_program_text= """
+		fn a() : i32 { return 99985; }
+		fn Foo() : i32
+		{
+			var (fn() : i32) mut ptr= zero_init;
+			ptr= a;
+			return ptr();
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 99985 )

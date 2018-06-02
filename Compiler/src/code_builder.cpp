@@ -3352,7 +3352,7 @@ void CodeBuilder::BuildAssignmentOperatorCode(
 	if( r_var == nullptr && r_var_value.GetType() != NontypeStub::TemplateDependentValue )
 		errors_.push_back( ReportExpectedVariable( assignment_operator.file_pos_, r_var_value.GetType().ToString() ) );
 
-	if( r_var != nullptr && ( r_var->type.GetFundamentalType() != nullptr || r_var->type.GetEnumType() != nullptr ) )
+	if( r_var != nullptr && ( r_var->type.GetFundamentalType() != nullptr || r_var->type.GetEnumType() != nullptr || r_var->type.GetFunctionPointerType() != nullptr ) )
 	{
 		// We must read value, because referenced by reference value may be changed in l_var evaluation.
 		if( r_var->location != Variable::Location::LLVMRegister )
@@ -3393,7 +3393,7 @@ void CodeBuilder::BuildAssignmentOperatorCode(
 		}
 	}
 
-	if( l_var->type.GetFundamentalType() != nullptr || l_var->type.GetEnumType() != nullptr )
+	if( l_var->type.GetFundamentalType() != nullptr || l_var->type.GetEnumType() != nullptr || l_var->type.GetFunctionPointerType() != nullptr )
 	{
 		if( l_var->location != Variable::Location::Pointer )
 		{

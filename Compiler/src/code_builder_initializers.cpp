@@ -941,7 +941,9 @@ llvm::Constant* CodeBuilder::InitializeFunctionPointer(
 	NamesScope& block_names,
 	FunctionContext& function_context )
 {
-	U_ASSERT( variable.type.GetFunctionPointerType() != nullptr );
+	U_ASSERT( variable.type.GetFunctionPointerType() != nullptr || variable.type.GetTemplateDependentType() != nullptr );
+	if( variable.type.GetTemplateDependentType() != nullptr )
+		return nullptr;
 
 	const Value initializer_value= BuildExpressionCode( initializer_expression, block_names, function_context );
 
