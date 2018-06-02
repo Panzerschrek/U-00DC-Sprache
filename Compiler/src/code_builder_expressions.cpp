@@ -208,7 +208,7 @@ Value CodeBuilder::BuildExpressionCode(
 					function_context );
 			Variable* const l_var= l_var_value.GetVariable(); U_ASSERT( l_var != nullptr );
 
-			if( l_var->type.GetFundamentalType() != nullptr )
+			if( l_var->type.GetFundamentalType() != nullptr || l_var->type.GetEnumType() != nullptr || l_var->type.GetFunctionPointerType() != nullptr )
 			{
 				// Save l_var in register, because build-in binary operators require value-parameters.
 				if( l_var->location == Variable::Location::Pointer )
@@ -569,7 +569,45 @@ Value CodeBuilder::BuildBinaryOperator(
 			errors_.push_back( ReportNoMatchBinaryOperatorForGivenTypes( file_pos, r_var.type.ToString(), l_var.type.ToString(), BinaryOperatorToString( binary_operator ) ) );
 			return ErrorValue();
 		}
-		if( !( l_var.type.GetFundamentalType() != nullptr || r_var.type.GetEnumType() != nullptr ) )
+		else if( l_var.type.GetFunctionPointerType() != nullptr )
+		{
+			llvm::Value* l_value_for_op= nullptr;
+			llvm::Value* r_value_for_op= nullptr;
+			llvm::Value* result_value= nullptr;
+			if( !arguments_are_constexpr )
+			{
+				l_value_for_op= CreateMoveToLLVMRegisterInstruction( l_var, function_context );
+				r_value_for_op= CreateMoveToLLVMRegisterInstruction( r_var, function_context );
+			}
+			switch( binary_operator )
+			{
+			case BinaryOperatorType::Equal:
+				if( arguments_are_constexpr )
+					result.constexpr_value= llvm::ConstantExpr::getICmp( llvm::CmpInst::ICMP_EQ, l_var.constexpr_value, r_var.constexpr_value );
+				else
+					result_value= function_context.llvm_ir_builder.CreateICmpEQ( l_value_for_op, r_value_for_op );
+				break;
+
+			case BinaryOperatorType::NotEqual:
+				if( arguments_are_constexpr )
+					result.constexpr_value= llvm::ConstantExpr::getICmp( llvm::CmpInst::ICMP_NE, l_var.constexpr_value, r_var.constexpr_value );
+				else
+					result_value= function_context.llvm_ir_builder.CreateICmpNE( l_value_for_op, r_value_for_op );
+				break;
+
+			default: U_ASSERT(false); break;
+			}
+
+			if( arguments_are_constexpr )
+				result_value= result.constexpr_value;
+			else U_ASSERT( result_value != nullptr );
+
+			result.location= Variable::Location::LLVMRegister;
+			result.value_type= ValueType::Value;
+			result.type= bool_type_;
+			result.llvm_value= result_value;
+		}
+		else if( !( l_var.type.GetFundamentalType() != nullptr || l_var.type.GetEnumType() != nullptr ) )
 		{
 			errors_.push_back( ReportOperationNotSupportedForThisType( file_pos, l_type.ToString() ) );
 			return ErrorValue();

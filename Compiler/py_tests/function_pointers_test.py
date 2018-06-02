@@ -214,3 +214,41 @@ def AutoVariableInitialization_UsingFunctionPointer_Test0():
 	tests_lib.build_program( c_program_text )
 	call_result= tests_lib.run_function( "_Z3Foov" )
 	assert( call_result == 42 )
+
+
+def FunctionPointerEqualityComparision_Test0():
+	c_program_text= """
+		fn a(){}
+		fn b(){}
+		fn Foo()
+		{
+			// Non-constexpr compare
+			var (fn()) mut ptr_0= a;
+			var (fn()) mut ptr_1= b;
+			halt if( ptr_0 != ptr_0 );
+			halt if( ptr_0 == ptr_1 );
+			halt if( !( ptr_0 == ptr_0 ) );
+			halt if( !( ptr_1 != ptr_0 ) );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+
+
+def FunctionPointerEqualityComparision_Test1():
+	c_program_text= """
+		fn a(){}
+		fn b(){}
+		fn Foo()
+		{
+			// Constexpr compare.
+			var (fn()) constexpr ptr_0= a;
+			var (fn()) constexpr ptr_1= b;
+			static_assert( ptr_0 == ptr_0 );
+			static_assert( ptr_0 != ptr_1 );
+			static_assert( !( ptr_0 != ptr_0 ) );
+			static_assert( !( ptr_1 == ptr_0 ) );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
