@@ -3160,6 +3160,7 @@ ProgramString CodeBuilder::BuildAutoVariableDeclarationCode(
 			type.GetArrayType() != nullptr ||
 			type.GetClassType() != nullptr ||
 			type.GetEnumType() != nullptr ||
+			type.GetFunctionPointerType() != nullptr ||
 			type.GetTemplateDependentType() != nullptr;
 		if( !type_is_ok )
 		{
@@ -3234,7 +3235,7 @@ ProgramString CodeBuilder::BuildAutoVariableDeclarationCode(
 			variable.llvm_value->setName( ToStdString( auto_variable_declaration.name ) );
 		}
 
-		if( variable.type.GetFundamentalType() != nullptr || variable.type.GetEnumType() != nullptr  )
+		if( variable.type.GetFundamentalType() != nullptr || variable.type.GetEnumType() != nullptr || variable.type.GetFunctionPointerType() != nullptr )
 		{
 			llvm::Value* const value_for_assignment= CreateMoveToLLVMRegisterInstruction( initializer_experrsion, function_context );
 			function_context.llvm_ir_builder.CreateStore( value_for_assignment, variable.llvm_value );

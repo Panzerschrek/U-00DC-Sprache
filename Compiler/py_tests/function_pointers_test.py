@@ -200,3 +200,17 @@ def FunctionPointerCall_Test3():
 	tests_lib.build_program( c_program_text )
 	call_result= tests_lib.run_function( "_Z3Foov" )
 	assert( call_result == 555554 )
+
+
+def AutoVariableInitialization_UsingFunctionPointer_Test0():
+	c_program_text= """
+		fn Get42() : i32 { return 42; }
+		fn Foo() : i32
+		{
+			auto foo= ( fn() : i32 )( Get42 );
+			return foo();
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 42 )
