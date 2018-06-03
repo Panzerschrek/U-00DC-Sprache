@@ -389,3 +389,72 @@ def FunctionPointersConversions_Test5():
 	"""
 	tests_lib.build_program( c_program_text )
 
+
+def FunctionPointerAsFunctionArgument_Test0():
+	c_program_text= """
+		type FunType= fn() : i32;
+
+		// Function pointer as value-argument.
+		fn DoubleIt( FunType fun ) : i32
+		{
+			return fun() * 2;
+		}
+
+		fn Get1009() : i32 { return 1009; }
+
+		fn Foo() : i32
+		{
+			// Call, using value without conversion.
+			return DoubleIt( FunType( Get1009 ) );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 1009 * 2 )
+
+
+def FunctionPointerAsFunctionArgument_Test1():
+	c_program_text= """
+		type FunType= fn( i32& mut x ) : i32;
+
+		// Function pointer as value-argument.
+		fn DoubleIt( FunType fun ) : i32
+		{
+			auto mut x= 666;
+			return fun( x ) * 2;
+		}
+
+		fn PassIt( i32& imut x ) : i32 { return x; }
+
+		fn Foo() : i32
+		{
+			var ( fn( i32& imut x ) : i32 ) ptr= PassIt;
+			return DoubleIt( ptr );   // Must convert pointer here.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 666 * 2 )
+
+
+def FunctionPointerAsFunctionArgument_Test2():
+	c_program_text= """
+		type FunType= fn() : i32;
+
+		// Function pointer as reference-argument.
+		fn DoubleIt( FunType& fun ) : i32
+		{
+			return fun() * 2;
+		}
+
+		fn Get1009() : i32 { return 1009; }
+
+		fn Foo() : i32
+		{
+			// Call, using value without conversion.
+			return DoubleIt( FunType( Get1009 ) );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 1009 * 2 )

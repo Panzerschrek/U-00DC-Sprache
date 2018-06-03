@@ -2249,6 +2249,12 @@ Value CodeBuilder::DoCallFunction(
 				if( !something_have_template_dependent_type )
 					llvm_args[j]= CreateMoveToLLVMRegisterInstruction( expr, function_context );
 			}
+			else if( arg.type.GetFunctionPointerType() != nullptr )
+			{
+				llvm_args[j]= CreateMoveToLLVMRegisterInstruction( expr, function_context );
+				if( arg.type != expr.type )
+					llvm_args[j]= function_context.llvm_ir_builder.CreatePointerCast( llvm_args[j], arg.type.GetLLVMType() );
+			}
 			else if( const ClassProxyPtr class_type= arg.type.GetClassTypeProxy() )
 			{
 				// Save references inside referenced variables, because we need check references inside it.
