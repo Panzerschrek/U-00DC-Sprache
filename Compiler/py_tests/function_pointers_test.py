@@ -473,3 +473,34 @@ def FunctionPointerAsReturnValue_Test0():
 	call_result= tests_lib.run_function( "_Z3Foov" )
 	assert( call_result == 999854 )
 
+
+def FunctionPointerToTemplateFunction_Test0():
+	c_program_text= """
+		template</ type T />
+		fn GetPi() : T { return T(3.1415926535); }
+
+		fn Foo() : i32
+		{
+			var (fn() : f32) ptr_to_fn= GetPi</f32/>;   // Manully specialize all template parameters.
+			return i32( ptr_to_fn() * 100.0f );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 314 )
+
+
+def FunctionPointerToTemplateFunction_Test1():
+	c_program_text= """
+		template<//>
+		fn GetE() : f32 { return 2.718281828f; }
+
+		fn Foo() : i32
+		{
+			var (fn() : f32) mut ptr_to_fn= GetE;   // Take pointer to function template with zero template parameters.
+			return i32( ptr_to_fn() * 1000.0f );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 2718 )

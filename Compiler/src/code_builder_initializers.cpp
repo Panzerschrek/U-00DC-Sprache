@@ -972,11 +972,11 @@ llvm::Constant* CodeBuilder::InitializeFunctionPointer(
 		return initializer_variable->constexpr_value;
 	}
 
-	const std::vector<FunctionVariable>* candidate_functions= nullptr;
+	const OverloadedFunctionsSet* candidate_functions= nullptr;
 	if( const OverloadedFunctionsSet* const overloaded_functions_set= initializer_value.GetFunctionsSet() )
-		candidate_functions= &overloaded_functions_set->functions;
+		candidate_functions= overloaded_functions_set;
 	else if( const ThisOverloadedMethodsSet* const overloaded_methods_set= initializer_value.GetThisOverloadedMethodsSet() )
-		candidate_functions= &overloaded_methods_set->overloaded_methods_set.functions;
+		candidate_functions= &overloaded_methods_set->overloaded_methods_set;
 	else
 	{
 		// TODO - generate separate error
@@ -990,12 +990,41 @@ llvm::Constant* CodeBuilder::InitializeFunctionPointer(
 	const FunctionVariable* exact_match_function_variable= nullptr;
 	std::vector<const FunctionVariable*> convertible_function_variables;
 
-	for( const FunctionVariable& func : *candidate_functions )
+	for( const FunctionVariable& func : candidate_functions->functions )
 	{
 		if( *func.type.GetFunctionType() == function_pointer_type.function )
 			exact_match_function_variable= &func;
 		else if( func.type.GetFunctionType()->PointerCanBeConvertedTo( function_pointer_type.function ) )
 			convertible_function_variables.push_back(&func);
+	}
+	// Try also select template functions with zero template parameters and template functions with all template parameters known.
+	for( const FunctionTemplatePtr& function_template : candidate_functions->template_functions )
+	{
+		if( function_template->template_parameters.empty() )
+		{
+			const FunctionVariable* const func=
+				GenTemplateFunction(
+					initializer_expression.GetFilePos(),
+					function_template,
+					*function_template->parent_namespace,
+					std::vector<Function::Arg>(), false, true );
+			if( func != nullptr )
+			{
+				if( func->type == function_pointer_type.function )
+				{
+					if( exact_match_function_variable != nullptr )
+					{
+						// Error, exist more, then one non-exact match function.
+						// TODO - maybe generate separate error?
+						errors_.push_back( ReportTooManySuitableOverloadedFunctions( initializer_expression.GetFilePos() ) );
+						return nullptr;
+					}
+					exact_match_function_variable= func;
+				}
+				else if( func->type.GetFunctionType()->PointerCanBeConvertedTo( function_pointer_type.function ) )
+					convertible_function_variables.push_back(func);
+			}
+		}
 	}
 
 	const FunctionVariable* function_variable= exact_match_function_variable;

@@ -1062,7 +1062,8 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 	const FunctionTemplatePtr& function_template_ptr,
 	NamesScope& template_names_scope,
 	const std::vector<Function::Arg>& actual_args,
-	const bool first_actual_arg_is_this )
+	const bool first_actual_arg_is_this,
+	bool skip_arguments )
 {
 	const FunctionTemplate& function_template= *function_template_ptr;
 	const Synt::Function& function_declaration= *function_template.syntax_element->function_;
@@ -1077,7 +1078,7 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 		--given_arg_count;
 	}
 
-	if( given_arg_count != function_declaration.type_.arguments_.size() )
+	if( !skip_arguments && given_arg_count != function_declaration.type_.arguments_.size() )
 		return nullptr;
 
 	DeducibleTemplateParameters deduced_template_args( function_template.template_parameters.size() );
@@ -1092,7 +1093,7 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 
 	bool deduction_failed= false;
 	std::vector<DeducedTemplateParameter> deduced_temlpate_parameters( function_declaration.type_.arguments_.size() );
-	for( size_t i= 0u; i < function_declaration.type_.arguments_.size(); ++i )
+	for( size_t i= 0u; i < function_declaration.type_.arguments_.size() && !skip_arguments; ++i )
 	{
 		const Synt::FunctionArgument& function_argument= *function_declaration.type_.arguments_[i];
 

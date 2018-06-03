@@ -251,7 +251,8 @@ private:
 		const FunctionTemplatePtr& function_template_ptr,
 		NamesScope& template_names_scope,
 		const std::vector<Function::Arg>& actual_args,
-		bool first_actual_arg_is_this );
+		bool first_actual_arg_is_this,
+		bool skip_arguments= false );
 
 	const NamesScope::InsertedName* GenTemplateFunctionsUsingTemplateParameters(
 		const FilePos& file_pos,
