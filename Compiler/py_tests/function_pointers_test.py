@@ -284,3 +284,108 @@ def FunctionsPoitersAssignment_Test1():
 	tests_lib.build_program( c_program_text )
 	call_result= tests_lib.run_function( "_Z3Foov" )
 	assert( call_result == 99985 )
+
+
+def FunctionPointersConversions_Test0():
+	c_program_text= """
+		fn a( i32 &imut x ) : i32 { return x; }
+		fn Foo() : i32
+		{
+			var ( fn( i32 &mut x ) : i32 ) mut ptr= a;   // Must convert immutable reference argument to mutable reference argument.
+			auto mut x= 998552;
+			return ptr( x );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 998552 )
+
+
+def FunctionPointersConversions_Test1():
+	c_program_text= """
+		fn a( i32 &mut x ) : i32 &imut { return x; }
+		fn Foo() : i32
+		{
+			var ( fn( i32 &mut x ) : i32 &mut ) mut ptr= a;   // Must convert immutable reference return value to mutable reference return value.
+			auto mut x= 55585;
+			return ptr( x );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 55585 )
+
+
+def FunctionPointersConversions_Test2():
+	c_program_text= """
+		fn RetFirst( i32&'x a, i32&'y b ) : i32&'x
+		{
+			return a;
+		}
+
+		type RetBothType= fn( i32&'x a, i32&'x b ) : i32&'x;
+
+		fn Foo() : i32
+		{
+			var RetBothType mut ptr= RetFirst;   // Must convert function, returning less references, to function, returning more references.
+			return ptr( 666, 999 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 666 )
+
+
+def FunctionPointersConversions_Test3():
+	c_program_text= """
+		struct S
+		{
+			i32 &imut r;
+		}
+
+		fn DoNotPollution( S &mut s, i32& a ) {}
+
+		type DoPollution= fn( S &mut s'x', i32&'y a ) ' x <- imut y ';
+
+		fn Foo()
+		{
+			var DoPollution mut ptr= DoNotPollution;   // Must convert function, which does not pollution to function, which does pollution.
+
+			var i32 x= 0, y= 0;
+			var S mut s{ .r= x };
+			ptr( s, y );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def FunctionPointersConversions_Test4():
+	c_program_text= """
+		type UnsafeFunction= fn() unsafe;
+
+		fn SafeFunction(){}
+
+		fn Foo()
+		{
+			var UnsafeFunction unsafe_function= SafeFunction;  // Must convert safe function to unsafe.
+			unsafe{  unsafe_function();  }
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def FunctionPointersConversions_Test5():
+	c_program_text= """
+		type SafeFunctionType= fn();
+		type UnsafeFunctionType= fn() unsafe;
+
+		fn SafeFunction(){}
+
+		fn Foo()
+		{
+			var SafeFunctionType safe_function= SafeFunction;
+			var UnsafeFunctionType unsafe_function= safe_function; // Must convert function pointer here.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+

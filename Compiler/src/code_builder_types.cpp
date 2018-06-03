@@ -306,6 +306,79 @@ bool Type::ReferenceIsConvertibleTo( const Type& other ) const
 	if( this->GetTemplateDependentType() != nullptr || other.GetTemplateDependentType() != nullptr )
 		return true;
 
+	// We can safely convert some function pointer types to another types.
+	if( this->GetFunctionType() != nullptr && other.GetFunctionType() != nullptr )
+	{
+		const Function&  this_function_type= *this->GetFunctionType();
+		const Function& other_function_type= *other.GetFunctionType();
+		if( this_function_type.return_type != other_function_type.return_type ||
+			this_function_type.return_value_is_reference != other_function_type.return_value_is_reference )
+			return false;
+
+		if( this_function_type.return_value_is_mutable && !other_function_type.return_value_is_mutable )
+			return false; // Allow mutability conversions, except mut->imut
+
+		if( this_function_type.args.size() != other_function_type.args.size() )
+			return false;
+		for( size_t i= 0u; i < this_function_type.args.size(); ++i )
+		{
+			if( this_function_type.args[i].type != other_function_type.args[i].type ||
+				this_function_type.args[i].is_reference != other_function_type.args[i].is_reference )
+				return false;
+
+			if( this_function_type.args[i].is_mutable && !other_function_type.args[i].is_mutable )
+				return false; // Allow mutability conversions, except mut->imut
+		}
+
+		// We can convert function, returning less references to function, returning more referenes.
+		for( const size_t src_arg_reference : this_function_type.return_references.args_references )
+		{
+			bool found= false;
+			for( const size_t dst_arg_reference : other_function_type.return_references.args_references )
+			{
+				if( dst_arg_reference == src_arg_reference )
+				{
+					found= true;
+					break;
+				}
+			}
+			if( !found )
+				return false;
+		}
+		for( const Function::ArgReference& src_inner_arg_reference : this_function_type.return_references.inner_args_references )
+		{
+			bool found= false;
+			for( const Function::ArgReference& dst_inner_arg_reference : other_function_type.return_references.inner_args_references )
+			{
+				if( dst_inner_arg_reference == src_inner_arg_reference )
+				{
+					found= true;
+					break;
+				}
+			}
+			if( !found )
+				return false;
+		}
+
+		// We can convert function, linkink less references to function, linking more references
+		for( const Function::ReferencePollution& src_pollution : this_function_type.references_pollution )
+		{
+			 // TODO - maybe compare with mutability conversion possibility?
+			if( other_function_type.references_pollution.count(src_pollution) == 0u )
+				return false;
+		}
+
+		if( this_function_type.unsafe && !other_function_type.unsafe )
+			return false; // Conversion from unsafe to safe function is forbidden.
+
+		// Finally, we check all conditions
+		return true;
+	} // if function types
+
+	// Function pointer types.
+	if( this->GetFunctionPointerType() != nullptr && other.GetFunctionPointerType() != nullptr )
+		return Type( this->GetFunctionPointerType()->function ).ReferenceIsConvertibleTo( other.GetFunctionPointerType()->function );
+
 	return false;
 }
 

@@ -953,14 +953,18 @@ llvm::Constant* CodeBuilder::InitializeFunctionPointer(
 
 	if( const Variable* const initializer_variable= initializer_value.GetVariable() )
 	{
-		if( initializer_variable->type != variable.type )
+		if( initializer_variable->type != variable.type &&
+			!initializer_variable->type.ReferenceIsConvertibleTo( variable.type ) )
 		{
 			errors_.push_back( ReportTypesMismatch( initializer_expression.GetFilePos(), variable.type.ToString(), initializer_variable->type.ToString() ) );
 			return nullptr;
 		}
 		U_ASSERT( initializer_variable->type.GetFunctionPointerType() != nullptr );
 
-		llvm::Value* const value_for_assignment= CreateMoveToLLVMRegisterInstruction( *initializer_variable, function_context );
+		llvm::Value* value_for_assignment= CreateMoveToLLVMRegisterInstruction( *initializer_variable, function_context );
+		if( initializer_variable->type != variable.type )
+			value_for_assignment= function_context.llvm_ir_builder.CreatePointerCast( value_for_assignment, variable.type.GetLLVMType() );
+
 		function_context.llvm_ir_builder.CreateStore( value_for_assignment, variable.llvm_value );
 		return initializer_variable->constexpr_value;
 	}
@@ -972,8 +976,14 @@ llvm::Constant* CodeBuilder::InitializeFunctionPointer(
 	if( const OverloadedFunctionsSet* const overloaded_functions_set= initializer_value.GetFunctionsSet() )
 	{
 		for( const FunctionVariable& func : overloaded_functions_set->functions )
-			if( func.type == expected_function_type )
+			if( func.type.ReferenceIsConvertibleTo( expected_function_type ) )
 			{
+				if( function_variable != nullptr )
+				{
+					// TODO - maybe generate separate error?
+					errors_.push_back( ReportTooManySuitableOverloadedFunctions( initializer_expression.GetFilePos() ) );
+					return nullptr;
+				}
 				function_variable= &func;
 				break;
 			}
@@ -981,8 +991,14 @@ llvm::Constant* CodeBuilder::InitializeFunctionPointer(
 	else if( const ThisOverloadedMethodsSet* const overloaded_methods_set= initializer_value.GetThisOverloadedMethodsSet() )
 	{
 		for( const FunctionVariable& func : overloaded_methods_set->overloaded_methods_set.functions )
-			if( func.type == expected_function_type )
+			if( func.type.ReferenceIsConvertibleTo( expected_function_type ) )
 			{
+				if( function_variable != nullptr )
+				{
+					// TODO - maybe generate separate error?
+					errors_.push_back( ReportTooManySuitableOverloadedFunctions( initializer_expression.GetFilePos() ) );
+					return nullptr;
+				}
 				function_variable= &func;
 				break;
 			}
@@ -1001,7 +1017,11 @@ llvm::Constant* CodeBuilder::InitializeFunctionPointer(
 	}
 	U_ASSERT( function_variable->type.GetFunctionType() != nullptr );
 
-	function_context.llvm_ir_builder.CreateStore( function_variable->llvm_function, variable.llvm_value );
+	llvm::Value* function_value= function_variable->llvm_function;
+	if( function_variable->type != expected_function_type )
+		function_value= function_context.llvm_ir_builder.CreatePointerCast( function_value, variable.type.GetLLVMType() );
+
+	function_context.llvm_ir_builder.CreateStore( function_value, variable.llvm_value );
 	return function_variable->llvm_function;
 }
 
