@@ -985,19 +985,32 @@ llvm::Constant* CodeBuilder::InitializeFunctionPointer(
 	}
 
 	// Try select one of overloaded functions.
-	const FunctionVariable* function_variable= nullptr;
+	// Select function with same with pointer type, if it exists.
+	// If there is no function with same type, select function, convertible to pointer type, but only if exists only one convertible function.
+	const FunctionVariable* exact_match_function_variable= nullptr;
+	std::vector<const FunctionVariable*> convertible_function_variables;
+
 	for( const FunctionVariable& func : *candidate_functions )
-		if( func.type.GetFunctionType()->PointerCanBeConvertedTo( function_pointer_type.function ) )
+	{
+		if( *func.type.GetFunctionType() == function_pointer_type.function )
+			exact_match_function_variable= &func;
+		else if( func.type.GetFunctionType()->PointerCanBeConvertedTo( function_pointer_type.function ) )
+			convertible_function_variables.push_back(&func);
+	}
+
+	const FunctionVariable* function_variable= exact_match_function_variable;
+	if( function_variable == nullptr )
+	{
+		if( convertible_function_variables.size() > 1u )
 		{
-			if( function_variable != nullptr )
-			{
-				// TODO - maybe generate separate error?
-				errors_.push_back( ReportTooManySuitableOverloadedFunctions( initializer_expression.GetFilePos() ) );
-				return nullptr;
-			}
-			function_variable= &func;
-			break;
+			// Error, exist more, then one non-exact match function.
+			// TODO - maybe generate separate error?
+			errors_.push_back( ReportTooManySuitableOverloadedFunctions( initializer_expression.GetFilePos() ) );
+			return nullptr;
 		}
+		else if( !convertible_function_variables.empty() )
+			function_variable= convertible_function_variables.front();
+	}
 	if( function_variable == nullptr )
 	{
 		errors_.push_back( ReportCouldNotSelectOverloadedFunction( initializer_expression.GetFilePos() ) );

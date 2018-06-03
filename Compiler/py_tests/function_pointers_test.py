@@ -141,6 +141,23 @@ def FunctionPoinerInitialization_Test5():
 	tests_lib.build_program( c_program_text )
 
 
+def FunctionPoinerInitialization_Test5():
+	c_program_text= """
+		fn a( i32& mut x ) : i32{ return 666; }
+		fn a( i32&imut x ) : i32{ return 999; }
+
+		fn Foo() : i32
+		{
+			var ( fn( i32& mut x ) : i32 ) ptr= a;  // Must select function with same type as in pointer ( with mutable argument ).
+			auto mut x= 0;
+			return ptr(x);
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 666 )
+
+
 def FunctionPointerCall_Test0():
 	c_program_text= """
 		fn Bar() : i32 { return 666; }

@@ -152,6 +152,18 @@ def CouldNotConvertFunctionPointer_Test12():
 	assert( errors_list[0].file_pos.line == 4 )
 
 
+def CouldNotSelectFunctionForPointer_Test0():
+	c_program_text= """
+		fn a( i32& mut x, i32&imut y ){}
+		fn a( i32&imut x, i32& mut y ){}
+		var ( fn( i32&mut x, i32&mut y ) ) constexpr ptr= a;  // Error, exist more, then one function, convertible to pointer type, but not equal to it.
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "TooManySuitableOverloadedFunctions" )
+	assert( errors_list[0].file_pos.line == 4 )
+
+
 def FunctionPointerReferencesIsNotCompatible_Test0():
 	c_program_text= """
 		fn Foo( i32 &mut x ){}
