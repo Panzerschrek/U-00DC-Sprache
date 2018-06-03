@@ -315,7 +315,7 @@ bool Type::ReferenceIsConvertibleTo( const Type& other ) const
 			this_function_type.return_value_is_reference != other_function_type.return_value_is_reference )
 			return false;
 
-		if( this_function_type.return_value_is_mutable && !other_function_type.return_value_is_mutable )
+		if( !this_function_type.return_value_is_mutable && other_function_type.return_value_is_mutable )
 			return false; // Allow mutability conversions, except mut->imut
 
 		if( this_function_type.args.size() != other_function_type.args.size() )
@@ -780,7 +780,6 @@ bool operator==( const Function& r, const Function& l )
 		r.return_value_is_mutable == l.return_value_is_mutable &&
 		r.return_value_is_reference == l.return_value_is_reference &&
 		r.args == l.args &&
-		r.return_references == l.return_references &&
 		r.return_references == l.return_references &&
 		r.references_pollution == l.references_pollution &&
 		r.unsafe == l.unsafe;

@@ -511,6 +511,21 @@ Type CodeBuilder::PrepareType(
 		FunctionPointer function_pointer_type;
 		Function& function_type= function_pointer_type.function;
 
+		if( function_type_name->return_type_ == nullptr )
+			function_type.return_type= void_type_for_ret_;
+		else
+			function_type.return_type= PrepareType( function_type_name->return_type_, names_scope );
+		function_type.return_value_is_mutable= function_type_name->return_value_mutability_modifier_ == MutabilityModifier::Mutable;
+		function_type.return_value_is_reference= function_type_name->return_value_reference_modifier_ == ReferenceModifier::Reference;
+
+		if( function_type.return_type.GetTemplateDependentType() == nullptr &&
+			!function_type.return_value_is_reference &&
+			!( function_type.return_type.GetFundamentalType() != nullptr ||
+			   function_type.return_type.GetClassType() != nullptr ||
+			   function_type.return_type.GetEnumType() != nullptr ||
+			   function_type.return_type.GetFunctionPointerType() != nullptr ) )
+			errors_.push_back( ReportNotImplemented( function_type_name->file_pos_, "return value types except fundamentals, enums, classes, function pointers" ) );
+
 		for( const Synt::FunctionArgumentPtr& arg : function_type_name->arguments_ )
 		{
 			if( IsKeyword( arg->name_ ) )
@@ -533,21 +548,6 @@ Type CodeBuilder::PrepareType(
 
 			ProcessFunctionArgReferencesTags( *function_type_name, function_type, *arg, out_arg, function_type.args.size() - 1u );
 		}
-
-		if( function_type_name->return_type_ == nullptr )
-			function_type.return_type= void_type_for_ret_;
-		else
-			function_type.return_type= PrepareType( function_type_name->return_type_, names_scope );
-		function_type.return_value_is_mutable= function_type_name->return_value_mutability_modifier_ == MutabilityModifier::Mutable;
-		function_type.return_value_is_reference= function_type_name->return_value_reference_modifier_ == ReferenceModifier::Reference;
-
-		if( function_type.return_type.GetTemplateDependentType() == nullptr &&
-			!function_type.return_value_is_reference &&
-			!( function_type.return_type.GetFundamentalType() != nullptr ||
-			   function_type.return_type.GetClassType() != nullptr ||
-			   function_type.return_type.GetEnumType() != nullptr ||
-			   function_type.return_type.GetFunctionPointerType() != nullptr ) )
-			errors_.push_back( ReportNotImplemented( function_type_name->file_pos_, "return value types except fundamentals, enums, classes, function pointers" ) );
 
 		function_type.unsafe= function_type_name->unsafe_;
 

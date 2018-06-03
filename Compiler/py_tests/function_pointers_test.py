@@ -303,10 +303,10 @@ def FunctionPointersConversions_Test0():
 
 def FunctionPointersConversions_Test1():
 	c_program_text= """
-		fn a( i32 &mut x ) : i32 &imut { return x; }
+		fn a( i32 &mut x ) : i32 &mut { return x; }
 		fn Foo() : i32
 		{
-			var ( fn( i32 &mut x ) : i32 &mut ) mut ptr= a;   // Must convert immutable reference return value to mutable reference return value.
+			var ( fn( i32 &mut x ) : i32 &imut ) mut ptr= a;   // Must convert mutable reference return value to immutable reference return value.
 			auto mut x= 55585;
 			return ptr( x );
 		}
