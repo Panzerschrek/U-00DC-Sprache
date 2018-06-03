@@ -451,3 +451,25 @@ def FunctionPointerAsFunctionArgument_Test1():
 	tests_lib.build_program( c_program_text )
 	call_result= tests_lib.run_function( "_Z3Foov" )
 	assert( call_result == 1009 * 2 )
+
+
+def FunctionPointerAsReturnValue_Test0():
+	c_program_text= """
+		type IntReturner= fn() : i32;
+
+		fn GetX() : i32{ return 999854; }
+
+		fn GetFnPtr() : IntReturner
+		{
+			return IntReturner(GetX);
+		}
+
+		fn Foo() : i32
+		{
+			return GetFnPtr()();
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 999854 )
+

@@ -3735,7 +3735,7 @@ void CodeBuilder::BuildReturnOperatorCode(
 		else
 		{
 			// Now we can return by value only fundamentals end enums.
-			U_ASSERT( expression_result.type.GetFundamentalType() != nullptr || expression_result.type.GetEnumType() != nullptr );
+			U_ASSERT( expression_result.type.GetFundamentalType() != nullptr || expression_result.type.GetEnumType() != nullptr || expression_result.type.GetFunctionPointerType() != nullptr );
 
 			// We must read return value before call of destructors.
 			llvm::Value* const value_for_return= CreateMoveToLLVMRegisterInstruction( expression_result, function_context );
