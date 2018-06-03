@@ -945,6 +945,8 @@ llvm::Constant* CodeBuilder::InitializeFunctionPointer(
 	if( variable.type.GetTemplateDependentType() != nullptr )
 		return nullptr;
 
+	const FunctionPointer& function_pointer_type= *variable.type.GetFunctionPointerType();
+
 	const Value initializer_value= BuildExpressionCode( initializer_expression, block_names, function_context );
 
 	if( initializer_value.GetTemplateDependentValue() != nullptr ||
@@ -953,8 +955,9 @@ llvm::Constant* CodeBuilder::InitializeFunctionPointer(
 
 	if( const Variable* const initializer_variable= initializer_value.GetVariable() )
 	{
-		if( initializer_variable->type != variable.type &&
-			!initializer_variable->type.ReferenceIsConvertibleTo( variable.type ) )
+		const FunctionPointer* const intitializer_type= initializer_variable->type.GetFunctionPointerType();
+		if( intitializer_type == nullptr ||
+			!intitializer_type->function.PointerCanBeConvertedTo( function_pointer_type.function ) )
 		{
 			errors_.push_back( ReportTypesMismatch( initializer_expression.GetFilePos(), variable.type.ToString(), initializer_variable->type.ToString() ) );
 			return nullptr;
@@ -969,40 +972,11 @@ llvm::Constant* CodeBuilder::InitializeFunctionPointer(
 		return initializer_variable->constexpr_value;
 	}
 
-	const Type expected_function_type= variable.type.GetFunctionPointerType()->function;
-
-	// Try select one of overloaded functions.
-	const FunctionVariable* function_variable= nullptr;
+	const std::vector<FunctionVariable>* candidate_functions= nullptr;
 	if( const OverloadedFunctionsSet* const overloaded_functions_set= initializer_value.GetFunctionsSet() )
-	{
-		for( const FunctionVariable& func : overloaded_functions_set->functions )
-			if( func.type.ReferenceIsConvertibleTo( expected_function_type ) )
-			{
-				if( function_variable != nullptr )
-				{
-					// TODO - maybe generate separate error?
-					errors_.push_back( ReportTooManySuitableOverloadedFunctions( initializer_expression.GetFilePos() ) );
-					return nullptr;
-				}
-				function_variable= &func;
-				break;
-			}
-	}
+		candidate_functions= &overloaded_functions_set->functions;
 	else if( const ThisOverloadedMethodsSet* const overloaded_methods_set= initializer_value.GetThisOverloadedMethodsSet() )
-	{
-		for( const FunctionVariable& func : overloaded_methods_set->overloaded_methods_set.functions )
-			if( func.type.ReferenceIsConvertibleTo( expected_function_type ) )
-			{
-				if( function_variable != nullptr )
-				{
-					// TODO - maybe generate separate error?
-					errors_.push_back( ReportTooManySuitableOverloadedFunctions( initializer_expression.GetFilePos() ) );
-					return nullptr;
-				}
-				function_variable= &func;
-				break;
-			}
-	}
+		candidate_functions= &overloaded_methods_set->overloaded_methods_set.functions;
 	else
 	{
 		// TODO - generate separate error
@@ -1010,15 +984,28 @@ llvm::Constant* CodeBuilder::InitializeFunctionPointer(
 		return nullptr;
 	}
 
+	// Try select one of overloaded functions.
+	const FunctionVariable* function_variable= nullptr;
+	for( const FunctionVariable& func : *candidate_functions )
+		if( func.type.GetFunctionType()->PointerCanBeConvertedTo( function_pointer_type.function ) )
+		{
+			if( function_variable != nullptr )
+			{
+				// TODO - maybe generate separate error?
+				errors_.push_back( ReportTooManySuitableOverloadedFunctions( initializer_expression.GetFilePos() ) );
+				return nullptr;
+			}
+			function_variable= &func;
+			break;
+		}
 	if( function_variable == nullptr )
 	{
 		errors_.push_back( ReportCouldNotSelectOverloadedFunction( initializer_expression.GetFilePos() ) );
 		return nullptr;
 	}
-	U_ASSERT( function_variable->type.GetFunctionType() != nullptr );
 
 	llvm::Value* function_value= function_variable->llvm_function;
-	if( function_variable->type != expected_function_type )
+	if( function_variable->type != function_pointer_type.function )
 		function_value= function_context.llvm_ir_builder.CreatePointerCast( function_value, variable.type.GetLLVMType() );
 
 	function_context.llvm_ir_builder.CreateStore( function_value, variable.llvm_value );

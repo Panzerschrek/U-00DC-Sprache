@@ -4216,11 +4216,6 @@ llvm::Value* CodeBuilder::CreateReferenceCast( llvm::Value* const ref, const Typ
 
 	if( dst_type == void_type_ )
 		return function_context.llvm_ir_builder.CreatePointerCast( ref, llvm::PointerType::get( dst_type.GetLLVMType(), 0 ) );
-	else if( src_type.GetFunctionPointerType() != nullptr )
-	{
-		U_ASSERT( dst_type.GetFunctionPointerType() != nullptr );
-		return function_context.llvm_ir_builder.CreatePointerCast( ref, llvm::PointerType::get( dst_type.GetLLVMType(), 0 ) );
-	}
 	else
 	{
 		const Class* const src_class_type= src_type.GetClassType();

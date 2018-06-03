@@ -2244,16 +2244,10 @@ Value CodeBuilder::DoCallFunction(
 				return ErrorValue();
 			}
 
-			if( arg.type.GetFundamentalType() != nullptr || arg.type.GetEnumType() != nullptr )
+			if( arg.type.GetFundamentalType() != nullptr || arg.type.GetEnumType() != nullptr || arg.type.GetFunctionPointerType() != nullptr )
 			{
 				if( !something_have_template_dependent_type )
 					llvm_args[j]= CreateMoveToLLVMRegisterInstruction( expr, function_context );
-			}
-			else if( arg.type.GetFunctionPointerType() != nullptr )
-			{
-				llvm_args[j]= CreateMoveToLLVMRegisterInstruction( expr, function_context );
-				if( arg.type != expr.type )
-					llvm_args[j]= function_context.llvm_ir_builder.CreatePointerCast( llvm_args[j], arg.type.GetLLVMType() );
 			}
 			else if( const ClassProxyPtr class_type= arg.type.GetClassTypeProxy() )
 			{

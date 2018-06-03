@@ -6,7 +6,6 @@ def CouldNotConvertFunctionPointer_Test0():
 		fn a( i32 &mut x ){}
 		var ( fn( i32 &imut x ) ) constexpr ptr= a;   // Mutable to immutable argument conversion.
 	"""
-	return
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "CouldNotSelectOverloadedFunction" )
@@ -150,4 +149,28 @@ def CouldNotConvertFunctionPointer_Test12():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "CouldNotSelectOverloadedFunction" )
+	assert( errors_list[0].file_pos.line == 4 )
+
+
+def FunctionPointerReferencesIsNotCompatible_Test0():
+	c_program_text= """
+		fn Foo( i32 &mut x ){}
+		var ( fn(i32 & mut x ) )  constexpr ptr= Foo;
+		var ( fn(i32 &imut x ) ) &constexpr ref_to_ptr= ptr;  // Error, references to function pointers are not compatible.
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "TypesMismatch" )
+	assert( errors_list[0].file_pos.line == 4 )
+
+
+def FunctionPointerReferencesIsNotCompatible_Test1():
+	c_program_text= """
+		fn Foo( i32 &imut x ){}
+		var ( fn(i32 &imut x ) )  constexpr ptr= Foo;
+		var ( fn(i32 & mut x ) ) &constexpr ref_to_ptr= ptr;  // Error, references is not compatible, even if function pointers iteslf are compativble.
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "TypesMismatch" )
 	assert( errors_list[0].file_pos.line == 4 )

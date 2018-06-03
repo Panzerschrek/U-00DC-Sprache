@@ -202,6 +202,8 @@ public:
 		size_t operator()( const ReferencePollution& r ) const;
 	};
 
+	bool PointerCanBeConvertedTo( const Function& other ) const;
+
 public:
 	// If this changed, virtual functions compare function must be changed too!
 	Type return_type;
