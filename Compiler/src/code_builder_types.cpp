@@ -86,6 +86,11 @@ Type::Type( const Function& function_type )
 	something_= FunctionPtr( new Function( function_type ) );
 }
 
+Type::Type( const FunctionPointer& function_pointer_type )
+{
+	something_= FunctionPointerPtr( new FunctionPointer( function_pointer_type ) );
+}
+
 Type::Type( Function&& function_type )
 {
 	something_= FunctionPtr( new Function( std::move( function_type ) ) );
@@ -167,6 +172,12 @@ Type& Type::operator=( const Type& other )
 		{
 			this_.something_= template_dependent_type;
 		}
+
+		void operator()( const FunctionPointerPtr& function_pointer )
+		{
+			U_ASSERT( function_pointer != nullptr );
+			this_.something_= FunctionPointerPtr( new FunctionPointer( *function_pointer ) );
+		}
 	};
 
 	Visitor visitor( *this );
@@ -198,6 +209,22 @@ const Function* Type::GetFunctionType() const
 	if( function_type == nullptr )
 		return nullptr;
 	return function_type->get();
+}
+
+FunctionPointer* Type::GetFunctionPointerType()
+{
+	FunctionPointerPtr* const function_pointer_type= boost::get<FunctionPointerPtr>( &something_ );
+	if( function_pointer_type == nullptr )
+		return nullptr;
+	return function_pointer_type->get();
+}
+
+const FunctionPointer* Type::GetFunctionPointerType() const
+{
+	const FunctionPointerPtr* const function_pointer_type= boost::get<FunctionPointerPtr>( &something_ );
+	if( function_pointer_type == nullptr )
+		return nullptr;
+	return function_pointer_type->get();
 }
 
 Array* Type::GetArrayType()
@@ -324,6 +351,12 @@ SizeType Type::SizeOf() const
 			U_ASSERT( false && "SizeOf method not supported for template-dependent types." );
 			return 1u;
 		}
+
+		SizeType operator()( const FunctionPointerPtr& ) const
+		{
+			U_ASSERT( false && "SizeOf method not supported for function-pointer types." );
+			return 1u;
+		}
 	};
 
 	return boost::apply_visitor( Visitor(), something_ );
@@ -365,7 +398,9 @@ bool Type::IsDefaultConstructible() const
 
 bool Type::IsCopyConstructible() const
 {
-	if( boost::get<FundamentalType>( &something_ ) != nullptr || boost::get<EnumPtr>( &something_ ) != nullptr )
+	if( boost::get<FundamentalType>( &something_ ) != nullptr ||
+		boost::get<EnumPtr>( &something_ ) != nullptr ||
+		boost::get<FunctionPointerPtr>( &something_ ) != nullptr )
 	{
 		return true;
 	}
@@ -385,7 +420,7 @@ bool Type::IsCopyConstructible() const
 
 bool Type::IsCopyAssignable() const
 {
-	if( GetFundamentalType() != nullptr || GetEnumType() != nullptr )
+	if( GetFundamentalType() != nullptr || GetEnumType() != nullptr || GetFunctionPointerType() != nullptr )
 		return true;
 	else if( const ClassProxyPtr* const class_= boost::get<ClassProxyPtr>( &something_ ) )
 	{
@@ -419,7 +454,9 @@ bool Type::HaveDestructor() const
 
 bool Type::CanBeConstexpr() const
 {
-	if( boost::get<FundamentalType>( &something_ ) != nullptr || boost::get<EnumPtr>( &something_ ) != nullptr )
+	if( boost::get<FundamentalType>( &something_ ) != nullptr ||
+		boost::get<EnumPtr>( &something_ ) != nullptr ||
+		boost::get<FunctionPointerPtr>( &something_ ) != nullptr )
 	{
 		return true;
 	}
@@ -494,6 +531,11 @@ llvm::Type* Type::GetLLVMType() const
 		{
 			return template_dependent_type.llvm_type;
 		}
+
+		llvm::Type* operator()( const FunctionPointerPtr& function_pointer_type ) const
+		{
+			return function_pointer_type->llvm_function_pointer_type;
+		}
 	};
 
 	return boost::apply_visitor( Visitor(), something_ );
@@ -510,6 +552,7 @@ ProgramString Type::ToString() const
 
 		ProgramString operator()( const FunctionPtr& function ) const
 		{
+			// TODO - actualize this
 			ProgramString result;
 			result+= "fn "_SpC;
 			result+= function->return_type.ToString();
@@ -579,6 +622,12 @@ ProgramString Type::ToString() const
 		{
 			return "template dependent type"_SpC;
 		}
+
+		ProgramString operator()( const FunctionPointerPtr& function_pointer ) const
+		{
+			U_UNUSED(function_pointer);
+			return "ptr to "_SpC; // TODO
+		}
 	};
 
 	return boost::apply_visitor( Visitor(), something_ );
@@ -617,6 +666,10 @@ bool operator==( const Type& r, const Type& l )
 	{
 		return boost::get<TemplateDependentType>(r.something_) == boost::get<TemplateDependentType>(l.something_);
 	}
+	else if( r.something_.which() ==7 )
+	{
+		return *r.GetFunctionPointerType() == *l.GetFunctionPointerType();
+	}
 
 	U_ASSERT(false);
 	return false;
@@ -625,6 +678,74 @@ bool operator==( const Type& r, const Type& l )
 bool operator!=( const Type& r, const Type& l )
 {
 	return !( r == l );
+}
+
+bool Function::PointerCanBeConvertedTo( const Function& other ) const
+{
+	const Function&  src_function_type= *this;
+	const Function& dst_function_type= other;
+	if( src_function_type.return_type != dst_function_type.return_type ||
+		src_function_type.return_value_is_reference != dst_function_type.return_value_is_reference )
+		return false;
+
+	if( !src_function_type.return_value_is_mutable && dst_function_type.return_value_is_mutable )
+		return false; // Allow mutability conversions, except mut->imut
+
+	if( src_function_type.args.size() != dst_function_type.args.size() )
+		return false;
+	for( size_t i= 0u; i < src_function_type.args.size(); ++i )
+	{
+		if( src_function_type.args[i].type != dst_function_type.args[i].type ||
+			src_function_type.args[i].is_reference != dst_function_type.args[i].is_reference )
+			return false;
+
+		if( src_function_type.args[i].is_mutable && !dst_function_type.args[i].is_mutable )
+			return false; // Allow mutability conversions, except mut->imut
+	}
+
+	// We can convert function, returning less references to function, returning more referenes.
+	for( const size_t src_arg_reference : src_function_type.return_references.args_references )
+	{
+		bool found= false;
+		for( const size_t dst_arg_reference : dst_function_type.return_references.args_references )
+		{
+			if( dst_arg_reference == src_arg_reference )
+			{
+				found= true;
+				break;
+			}
+		}
+		if( !found )
+			return false;
+	}
+	for( const Function::ArgReference& src_inner_arg_reference : src_function_type.return_references.inner_args_references )
+	{
+		bool found= false;
+		for( const Function::ArgReference& dst_inner_arg_reference : dst_function_type.return_references.inner_args_references )
+		{
+			if( dst_inner_arg_reference == src_inner_arg_reference )
+			{
+				found= true;
+				break;
+			}
+		}
+		if( !found )
+			return false;
+	}
+
+	// We can convert function, linkink less references to function, linking more references
+	for( const Function::ReferencePollution& src_pollution : src_function_type.references_pollution )
+	{
+		 // TODO - maybe compare with mutability conversion possibility?
+		if( dst_function_type.references_pollution.count(src_pollution) == 0u )
+			return false;
+	}
+
+	if( src_function_type.unsafe && !dst_function_type.unsafe )
+		return false; // Conversion from unsafe to safe function is forbidden.
+
+	// Finally, we check all conditions
+	return true;
 }
 
 bool operator==( const Function::InToOutReferences& l, const Function::InToOutReferences& r )
@@ -655,12 +776,20 @@ bool operator==( const Function& r, const Function& l )
 		r.return_value_is_reference == l.return_value_is_reference &&
 		r.args == l.args &&
 		r.return_references == l.return_references &&
-		r.return_references == l.return_references &&
 		r.references_pollution == l.references_pollution &&
 		r.unsafe == l.unsafe;
 }
 
 bool operator!=( const Function& r, const Function& l )
+{
+	return !( r == l );
+}
+
+bool operator==( const FunctionPointer& r, const FunctionPointer& l )
+{
+	return r.function == l.function;
+}
+bool operator!=( const FunctionPointer& r, const FunctionPointer& l )
 {
 	return !( r == l );
 }
@@ -1305,6 +1434,18 @@ DeducedTemplateParameter::Array& DeducedTemplateParameter::Array::operator=( con
 	return *this;
 }
 
+DeducedTemplateParameter::Function::Function( const Function& other )
+{
+	*this= other;
+}
+
+DeducedTemplateParameter::Function& DeducedTemplateParameter::Function::operator=( const Function& other )
+{
+	return_type.reset( new DeducedTemplateParameter( *other.return_type ) );
+	argument_types= other.argument_types;
+	return *this;
+}
+
 DeducedTemplateParameter::DeducedTemplateParameter( Invalid invalid )
 {
 	something_= std::move(invalid);
@@ -1328,6 +1469,11 @@ DeducedTemplateParameter::DeducedTemplateParameter( TemplateParameter template_p
 DeducedTemplateParameter::DeducedTemplateParameter( Array array )
 {
 	something_= std::move(array);
+}
+
+DeducedTemplateParameter::DeducedTemplateParameter( Function function )
+{
+	something_= std::move(function);
 }
 
 DeducedTemplateParameter::DeducedTemplateParameter( Template template_ )
@@ -1358,6 +1504,11 @@ bool DeducedTemplateParameter::IsTemplateParameter() const
 const DeducedTemplateParameter::Array* DeducedTemplateParameter::GetArray() const
 {
 	return boost::get<Array>( &something_ );
+}
+
+const DeducedTemplateParameter::Function* DeducedTemplateParameter::GetFunction() const
+{
+	return boost::get<Function>( &something_ );
 }
 
 const DeducedTemplateParameter::Template* DeducedTemplateParameter::GetTemplate() const

@@ -26,6 +26,7 @@ namespace CodeBuilderPrivate
 using Synt::ClassMemberVisibility;
 
 struct Function;
+struct FunctionPointer;
 struct Array;
 class Class;
 struct Enum;
@@ -105,6 +106,7 @@ public:
 	// Construct from different type kinds.
 	Type( FundamentalType fundamental_type );
 	Type( const Function& function_type );
+	Type( const FunctionPointer& function_pointer_type );
 	Type( Function&& function_type );
 	Type( const Array& array_type );
 	Type( Array&& array_type );
@@ -118,6 +120,8 @@ public:
 	const FundamentalType* GetFundamentalType() const;
 	Function* GetFunctionType();
 	const Function* GetFunctionType() const;
+	FunctionPointer* GetFunctionPointerType();
+	const FunctionPointer* GetFunctionPointerType() const;
 	Array* GetArrayType();
 	const Array* GetArrayType() const;
 	ClassProxyPtr GetClassTypeProxy() const;
@@ -146,6 +150,7 @@ private:
 	friend bool operator==( const Type&, const Type&);
 
 	typedef std::unique_ptr<Function> FunctionPtr;
+	typedef std::unique_ptr<FunctionPointer> FunctionPointerPtr;
 	typedef std::unique_ptr<Array> ArrayPtr;
 
 	boost::variant<
@@ -155,7 +160,8 @@ private:
 		ClassProxyPtr,
 		EnumPtr,
 		NontypeStub,
-		TemplateDependentType> something_;
+		TemplateDependentType,
+		FunctionPointerPtr> something_;
 };
 
 bool operator==( const Type& r, const Type& l );
@@ -196,6 +202,8 @@ public:
 		size_t operator()( const ReferencePollution& r ) const;
 	};
 
+	bool PointerCanBeConvertedTo( const Function& other ) const;
+
 public:
 	// If this changed, virtual functions compare function must be changed too!
 	Type return_type;
@@ -212,12 +220,20 @@ public:
 	llvm::FunctionType* llvm_function_type= nullptr;
 };
 
+struct FunctionPointer
+{
+	Function function;
+	llvm::PointerType* llvm_function_pointer_type= nullptr;
+};
+
 bool operator==( const Function::InToOutReferences& l, const Function::InToOutReferences& r );
 bool operator!=( const Function::InToOutReferences& l, const Function::InToOutReferences& r );
 bool operator==( const Function::Arg& r, const Function::Arg& l );
 bool operator!=( const Function::Arg& r, const Function::Arg& l );
 bool operator==( const Function& r, const Function& l );
 bool operator!=( const Function& r, const Function& l );
+bool operator==( const FunctionPointer& r, const FunctionPointer& l );
+bool operator!=( const FunctionPointer& r, const FunctionPointer& l );
 
 struct Array final
 {
@@ -746,6 +762,19 @@ public:
 		Array& operator=( const Array& other );
 	};
 
+	struct Function
+	{
+		std::unique_ptr<DeducedTemplateParameter> return_type;
+		std::vector<DeducedTemplateParameter> argument_types;
+
+		Function()= default;
+		Function(Function&&)= default;
+		Function& operator=(Function&&)= default;
+
+		Function( const Function& other );
+		Function& operator=( const Function& other );
+	};
+
 	struct Template
 	{
 		std::vector<DeducedTemplateParameter> args;
@@ -757,6 +786,7 @@ public:
 	DeducedTemplateParameter( Variable variable );
 	DeducedTemplateParameter( TemplateParameter template_parameter );
 	DeducedTemplateParameter( Array array );
+	DeducedTemplateParameter( Function function );
 	DeducedTemplateParameter( Template template_ );
 
 	bool IsInvalid() const;
@@ -764,6 +794,7 @@ public:
 	bool IsVariable() const;
 	bool IsTemplateParameter() const;
 	const Array* GetArray() const;
+	const Function* GetFunction() const;
 	const Template* GetTemplate() const;
 
 private:
@@ -773,6 +804,7 @@ private:
 		Variable,
 		TemplateParameter,
 		Array,
+		Function,
 		Template> something_;
 };
 

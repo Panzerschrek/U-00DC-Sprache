@@ -139,6 +139,8 @@ private:
 	void FillGlobalNamesScope( NamesScope& global_names_scope );
 	Type PrepareType( const Synt::ITypeNamePtr& type_name, NamesScope& names_scope );
 
+	llvm::FunctionType* GetLLVMFunctionType( const Function& function_type );
+
 	// Returns nullptr on fail.
 	ClassProxyPtr PrepareClass(
 		const Synt::Class& class_declaration,
@@ -249,7 +251,8 @@ private:
 		const FunctionTemplatePtr& function_template_ptr,
 		NamesScope& template_names_scope,
 		const std::vector<Function::Arg>& actual_args,
-		bool first_actual_arg_is_this );
+		bool first_actual_arg_is_this,
+		bool skip_arguments= false );
 
 	const NamesScope::InsertedName* GenTemplateFunctionsUsingTemplateParameters(
 		const FilePos& file_pos,
@@ -629,24 +632,35 @@ private:
 		NamesScope& block_names,
 		FunctionContext& function_context );
 
+	llvm::Constant* InitializeFunctionPointer(
+		const Variable& variable,
+		const Synt::IExpressionComponent& initializer_expression,
+		NamesScope& block_names,
+		FunctionContext& function_context );
+
 	// Reference-checking.
 	void ProcessFunctionArgReferencesTags(
-		const Synt::Function& func,
+		const Synt::FunctionType& func,
 		Function& function_type,
 		const Synt::FunctionArgument& in_arg,
 		const Function::Arg& out_arg,
 		size_t arg_number );
 
-	void ProcessFunctionReturnValueReferenceTags( const Synt::Function& func, const Function& function_type );
+	void ProcessFunctionReturnValueReferenceTags( const Synt::FunctionType& func, const Function& function_type );
 
 	void TryGenerateFunctionReturnReferencesMapping(
-		const Synt::Function& func,
+		const Synt::FunctionType& func,
 		Function& function_type );
 
 	void ProcessFunctionReferencesPollution(
 		const Synt::Function& func,
 		Function& function_type,
 		const ClassProxyPtr& base_class );
+
+	void ProcessFunctionTypeReferencesPollution(
+		const Synt::FunctionType& func,
+		Function& function_type,
+		bool first_arg_is_implicit_this= false );
 
 	void CheckReferencedVariables( const Variable& reference, const FilePos& file_pos );
 	void CheckVariableReferences( const StoredVariable& var, const FilePos& file_pos );

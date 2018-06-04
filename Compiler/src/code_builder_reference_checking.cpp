@@ -23,7 +23,7 @@ static const Class& GetClassForIncompleteType( const Type& type )
 }
 
 void CodeBuilder::ProcessFunctionArgReferencesTags(
-	const Synt::Function& func,
+	const Synt::FunctionType& func,
 	Function& function_type,
 	const Synt::FunctionArgument& in_arg,
 	const Function::Arg& out_arg,
@@ -146,7 +146,7 @@ void CodeBuilder::ProcessFunctionArgReferencesTags(
 	}
 }
 
-void CodeBuilder::ProcessFunctionReturnValueReferenceTags( const Synt::Function& func, const Function& function_type )
+void CodeBuilder::ProcessFunctionReturnValueReferenceTags( const Synt::FunctionType& func, const Function& function_type )
 {
 	if( function_type.return_type.GetTemplateDependentType() != nullptr )
 		return;
@@ -201,7 +201,7 @@ void CodeBuilder::ProcessFunctionReturnValueReferenceTags( const Synt::Function&
 }
 
 void CodeBuilder::TryGenerateFunctionReturnReferencesMapping(
-	const Synt::Function& func,
+	const Synt::FunctionType& func,
 	Function& function_type )
 {
 	// Generate mapping of input references to output references, if reference tags are not specified explicitly.
@@ -254,8 +254,56 @@ void CodeBuilder::ProcessFunctionReferencesPollution(
 {
 	const bool first_arg_is_implicit_this=
 		( func.name_.components.back().name == Keywords::destructor_ ) ||
-		( func.name_.components.back().name == Keywords::constructor_ && ( func.arguments_.empty() || func.arguments_.front()->name_ != Keywords::this_ ) );
+		( func.name_.components.back().name == Keywords::constructor_ && ( func.type_.arguments_.empty() || func.type_.arguments_.front()->name_ != Keywords::this_ ) );
 
+	if( func.name_.components.size() == 1u && func.name_.components.front().name == Keywords::constructor_ &&
+		function_type.args.size() == 2u &&
+		function_type.args.back().type == base_class && !function_type.args.back().is_mutable && function_type.args.back().is_reference )
+	{
+		if( !func.type_.referecnces_pollution_list_.empty() )
+			errors_.push_back( ReportExplicitReferencePollutionForCopyConstructor( func.file_pos_ ) );
+
+		if( base_class->class_->references_tags_count > 0u )
+		{
+			// This is copy constructor. Generate reference pollution for it automatically.
+			Function::ReferencePollution ref_pollution;
+			ref_pollution.dst.first= 0u;
+			ref_pollution.dst.second= 0u;
+			ref_pollution.src.first= 1u;
+			ref_pollution.src.second= 0u;
+			ref_pollution.src_is_mutable= true; // TODO - set correct mutability.
+			function_type.references_pollution.insert(ref_pollution);
+		}
+	}
+	else if( func.name_.components.back().name == OverloadedOperatorToString( OverloadedOperator::Assign ) &&
+		function_type.args.size() == 2u &&
+		function_type.args[0u].type == base_class &&  function_type.args[0u].is_mutable && function_type.args[0u].is_reference &&
+		function_type.args[1u].type == base_class && !function_type.args[1u].is_mutable && function_type.args[1u].is_reference )
+	{
+		if( !func.type_.referecnces_pollution_list_.empty() )
+			errors_.push_back( ReportExplicitReferencePollutionForCopyAssignmentOperator( func.file_pos_ ) );
+
+		if( base_class->class_->references_tags_count > 0u )
+		{
+			// This is copy assignment operator. Generate reference pollution for it automatically.
+			Function::ReferencePollution ref_pollution;
+			ref_pollution.dst.first= 0u;
+			ref_pollution.dst.second= 0u;
+			ref_pollution.src.first= 1u;
+			ref_pollution.src.second= 0u;
+			ref_pollution.src_is_mutable= true; // TODO - set correct mutability.
+			function_type.references_pollution.insert(ref_pollution);
+		}
+	}
+	else
+		ProcessFunctionTypeReferencesPollution( func.type_, function_type, first_arg_is_implicit_this );
+}
+
+void CodeBuilder::ProcessFunctionTypeReferencesPollution(
+	const Synt::FunctionType& func,
+	Function& function_type,
+	const bool first_arg_is_implicit_this )
+{
 	const auto get_references=
 	[&]( const ProgramString& name ) -> std::vector<Function::ArgReference>
 	{
@@ -297,77 +345,35 @@ void CodeBuilder::ProcessFunctionReferencesPollution(
 		return result;
 	};
 
-	if( func.name_.components.size() == 1u && func.name_.components.front().name == Keywords::constructor_ &&
-		function_type.args.size() == 2u &&
-		function_type.args.back().type == base_class && !function_type.args.back().is_mutable && function_type.args.back().is_reference )
+	for( const Synt::FunctionReferencesPollution& pollution : func.referecnces_pollution_list_ )
 	{
-		if( !func.referecnces_pollution_list_.empty() )
-			errors_.push_back( ReportExplicitReferencePollutionForCopyConstructor( func.file_pos_ ) );
-
-		if( base_class->class_->references_tags_count > 0u )
+		if( pollution.first == pollution.second.name )
 		{
-			// This is copy constructor. Generate reference pollution for it automatically.
-			Function::ReferencePollution ref_pollution;
-			ref_pollution.dst.first= 0u;
-			ref_pollution.dst.second= 0u;
-			ref_pollution.src.first= 1u;
-			ref_pollution.src.second= 0u;
-			ref_pollution.src_is_mutable= true; // TODO - set correct mutability.
-			function_type.references_pollution.insert(ref_pollution);
+			errors_.push_back( ReportSelfReferencePollution( func.file_pos_ ) );
+			continue;
 		}
-	}
-	else if( func.name_.components.back().name == OverloadedOperatorToString( OverloadedOperator::Assign ) &&
-		function_type.args.size() == 2u &&
-		function_type.args[0u].type == base_class &&  function_type.args[0u].is_mutable && function_type.args[0u].is_reference &&
-		function_type.args[1u].type == base_class && !function_type.args[1u].is_mutable && function_type.args[1u].is_reference )
-	{
-		if( !func.referecnces_pollution_list_.empty() )
-			errors_.push_back( ReportExplicitReferencePollutionForCopyAssignmentOperator( func.file_pos_ ) );
 
-		if( base_class->class_->references_tags_count > 0u )
+		const std::vector<Function::ArgReference> dst_references= get_references( pollution.first );
+		const std::vector<Function::ArgReference> src_references= get_references( pollution.second.name );
+
+		for( const Function::ArgReference& dst_ref : dst_references )
 		{
-			// This is copy assignment operator. Generate reference pollution for it automatically.
-			Function::ReferencePollution ref_pollution;
-			ref_pollution.dst.first= 0u;
-			ref_pollution.dst.second= 0u;
-			ref_pollution.src.first= 1u;
-			ref_pollution.src.second= 0u;
-			ref_pollution.src_is_mutable= true; // TODO - set correct mutability.
-			function_type.references_pollution.insert(ref_pollution);
-		}
-	}
-	else
-	{
-		for( const Synt::FunctionReferencesPollution& pollution : func.referecnces_pollution_list_ )
-		{
-			if( pollution.first == pollution.second.name )
+			if( dst_ref.second == Function::c_arg_reference_tag_number )
 			{
-				errors_.push_back( ReportSelfReferencePollution( func.file_pos_ ) );
+				errors_.push_back( ReportArgReferencePollution( func.file_pos_ ) );
 				continue;
 			}
 
-			const std::vector<Function::ArgReference> dst_references= get_references( pollution.first );
-			const std::vector<Function::ArgReference> src_references= get_references( pollution.second.name );
-
-			for( const Function::ArgReference& dst_ref : dst_references )
+			for( const Function::ArgReference& src_ref : src_references )
 			{
-				if( dst_ref.second == Function::c_arg_reference_tag_number )
-				{
-					errors_.push_back( ReportArgReferencePollution( func.file_pos_ ) );
-					continue;
-				}
-
-				for( const Function::ArgReference& src_ref : src_references )
-				{
-					Function::ReferencePollution ref_pollution;
-					ref_pollution.dst= dst_ref;
-					ref_pollution.src= src_ref;
-					ref_pollution.src_is_mutable= pollution.second.is_mutable;
-					function_type.references_pollution.emplace(ref_pollution);
-				}
+				Function::ReferencePollution ref_pollution;
+				ref_pollution.dst= dst_ref;
+				ref_pollution.src= src_ref;
+				ref_pollution.src_is_mutable= pollution.second.is_mutable;
+				function_type.references_pollution.emplace(ref_pollution);
 			}
-		} // for pollution
-	}
+		}
+	} // for pollution
 }
 
 void CodeBuilder::CheckReferencedVariables( const Variable& reference, const FilePos& file_pos )

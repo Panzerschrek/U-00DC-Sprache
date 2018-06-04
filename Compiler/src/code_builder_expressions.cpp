@@ -55,6 +55,7 @@ boost::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 		const size_t error_count_before= errors_.size();
 
 		bool needs_move_assign= false;
+		bool needs_function_pointer_assignment= false;
 		// Know args types.
 		{
 			// Prepare dummy function context for first pass.
@@ -84,6 +85,7 @@ boost::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 
 			const Variable* const l_var= l_var_value.GetVariable();
 			const Variable* const r_var= r_var_value.GetVariable();
+
 			if( l_var == nullptr )
 				errors_.push_back( ReportExpectedVariable( file_pos, l_var_value.GetType().ToString() ) );
 			if( r_var == nullptr )
@@ -94,7 +96,8 @@ boost::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 			// Try apply move-assignment for class types.
 			needs_move_assign=
 				op == OverloadedOperator::Assign && r_var->value_type == ValueType::Value &&
-				r_var->type == l_var->type && r_var->type.GetClassType() != nullptr;
+				r_var->type == l_var->type && r_var->type.GetClassType() != nullptr &&
+				l_var->value_type == ValueType::Reference;
 
 			args.emplace_back();
 			args.back().type= l_var->type;
@@ -208,7 +211,7 @@ Value CodeBuilder::BuildExpressionCode(
 					function_context );
 			Variable* const l_var= l_var_value.GetVariable(); U_ASSERT( l_var != nullptr );
 
-			if( l_var->type.GetFundamentalType() != nullptr )
+			if( l_var->type.GetFundamentalType() != nullptr || l_var->type.GetEnumType() != nullptr || l_var->type.GetFunctionPointerType() != nullptr )
 			{
 				// Save l_var in register, because build-in binary operators require value-parameters.
 				if( l_var->location == Variable::Location::Pointer )
@@ -569,7 +572,45 @@ Value CodeBuilder::BuildBinaryOperator(
 			errors_.push_back( ReportNoMatchBinaryOperatorForGivenTypes( file_pos, r_var.type.ToString(), l_var.type.ToString(), BinaryOperatorToString( binary_operator ) ) );
 			return ErrorValue();
 		}
-		if( !( l_var.type.GetFundamentalType() != nullptr || r_var.type.GetEnumType() != nullptr ) )
+		else if( l_var.type.GetFunctionPointerType() != nullptr )
+		{
+			llvm::Value* l_value_for_op= nullptr;
+			llvm::Value* r_value_for_op= nullptr;
+			llvm::Value* result_value= nullptr;
+			if( !arguments_are_constexpr )
+			{
+				l_value_for_op= CreateMoveToLLVMRegisterInstruction( l_var, function_context );
+				r_value_for_op= CreateMoveToLLVMRegisterInstruction( r_var, function_context );
+			}
+			switch( binary_operator )
+			{
+			case BinaryOperatorType::Equal:
+				if( arguments_are_constexpr )
+					result.constexpr_value= llvm::ConstantExpr::getICmp( llvm::CmpInst::ICMP_EQ, l_var.constexpr_value, r_var.constexpr_value );
+				else
+					result_value= function_context.llvm_ir_builder.CreateICmpEQ( l_value_for_op, r_value_for_op );
+				break;
+
+			case BinaryOperatorType::NotEqual:
+				if( arguments_are_constexpr )
+					result.constexpr_value= llvm::ConstantExpr::getICmp( llvm::CmpInst::ICMP_NE, l_var.constexpr_value, r_var.constexpr_value );
+				else
+					result_value= function_context.llvm_ir_builder.CreateICmpNE( l_value_for_op, r_value_for_op );
+				break;
+
+			default: U_ASSERT(false); break;
+			}
+
+			if( arguments_are_constexpr )
+				result_value= result.constexpr_value;
+			else U_ASSERT( result_value != nullptr );
+
+			result.location= Variable::Location::LLVMRegister;
+			result.value_type= ValueType::Value;
+			result.type= bool_type_;
+			result.llvm_value= result_value;
+		}
+		else if( !( l_var.type.GetFundamentalType() != nullptr || l_var.type.GetEnumType() != nullptr ) )
 		{
 			errors_.push_back( ReportOperationNotSupportedForThisType( file_pos, l_type.ToString() ) );
 			return ErrorValue();
@@ -1906,9 +1947,9 @@ Value CodeBuilder::BuildCallOperator(
 	}
 	else if( const Variable* const callable_variable= function_value.GetVariable() )
 	{
-		// For classes try to find () operator inside it.
 		if( const Class* const class_type= callable_variable->type.GetClassType() )
 		{
+			// For classes try to find () operator inside it.
 			if( const NamesScope::InsertedName* const name=
 				class_type->members.GetThisScopeName( OverloadedOperatorToString( OverloadedOperator::Call ) ) )
 			{
@@ -1917,6 +1958,27 @@ Value CodeBuilder::BuildCallOperator(
 				this_= callable_variable;
 				// SPRACHE_TODO - maybe support not only thiscall () operators ?
 			}
+		}
+		else if( const FunctionPointer* const function_pointer= callable_variable->type.GetFunctionPointerType() )
+		{
+			// Call function pointer directly.
+			if( function_pointer->function.args.size() != call_operator.arguments_.size() )
+			{
+				errors_.push_back( ReportInvalidFunctionArgumentCount( call_operator.file_pos_, call_operator.arguments_.size(), function_pointer->function.args.size() ) );
+				return ErrorValue();
+			}
+
+			std::vector<const Synt::IExpressionComponent*> args;
+			for( const auto& arg : call_operator.arguments_ )
+				args.push_back( arg.get() );
+
+			llvm::Value* const func_itself= CreateMoveToLLVMRegisterInstruction( *callable_variable, function_context );
+
+			return
+				DoCallFunction(
+					func_itself, function_pointer->function, call_operator.file_pos_,
+					nullptr, args, false,
+					names, function_context );
 		}
 	}
 
@@ -2169,7 +2231,7 @@ Value CodeBuilder::DoCallFunction(
 				return ErrorValue();
 			}
 
-			if( arg.type.GetFundamentalType() != nullptr || arg.type.GetEnumType() != nullptr )
+			if( arg.type.GetFundamentalType() != nullptr || arg.type.GetEnumType() != nullptr || arg.type.GetFunctionPointerType() != nullptr )
 			{
 				if( !something_have_template_dependent_type )
 					llvm_args[j]= CreateMoveToLLVMRegisterInstruction( expr, function_context );

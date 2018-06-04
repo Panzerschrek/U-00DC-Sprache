@@ -506,6 +506,17 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 
 		return expression_result_variable.constexpr_value;
 	}
+	else if( variable.type.GetFunctionPointerType() != nullptr )
+	{
+		if( call_operator.arguments_.size() != 1u )
+		{
+			// TODO - generate separate error for function pointers.
+			errors_.push_back( ReportFundamentalTypesHaveConstructorsWithExactlyOneParameter( call_operator.file_pos_ ) );
+			return nullptr;
+		}
+
+		return InitializeFunctionPointer( variable, *call_operator.arguments_.front(), block_names, function_context );
+	}
 	else if( const Class* const class_type= variable.type.GetClassType() )
 	{
 		// Try do move-construct.
@@ -614,6 +625,8 @@ llvm::Constant* CodeBuilder::ApplyExpressionInitializer(
 		if( llvm::Constant* const constexpr_value= expression_result.GetVariable()->constexpr_value )
 			return constexpr_value;
 	}
+	else if( variable.type.GetFunctionPointerType() != nullptr )
+		return InitializeFunctionPointer( variable, *initializer.expression, block_names, function_context );
 	else if( variable.type.GetTemplateDependentType() != nullptr )
 	{}
 	else if( variable.type.GetClassType() != nullptr )
@@ -724,6 +737,16 @@ llvm::Constant* CodeBuilder::ApplyZeroInitializer(
 
 		function_context.llvm_ir_builder.CreateStore( zero_value, variable.llvm_value );
 		return zero_value;
+	}
+	else if( const FunctionPointer* const function_pointer_type= variable.type.GetFunctionPointerType() )
+	{
+		// Really? Allow zero function pointers?
+
+		llvm::Constant* const null_value=
+			llvm::Constant::getNullValue( function_pointer_type->llvm_function_pointer_type );
+
+		function_context.llvm_ir_builder.CreateStore( null_value, variable.llvm_value );
+		return null_value;
 	}
 	else if( const Array* const array_type= variable.type.GetArrayType() )
 	{
@@ -910,6 +933,125 @@ llvm::Constant* CodeBuilder::InitializeReferenceField(
 	}
 
 	return nullptr;
+}
+
+llvm::Constant* CodeBuilder::InitializeFunctionPointer(
+	const Variable& variable,
+	const Synt::IExpressionComponent& initializer_expression,
+	NamesScope& block_names,
+	FunctionContext& function_context )
+{
+	U_ASSERT( variable.type.GetFunctionPointerType() != nullptr || variable.type.GetTemplateDependentType() != nullptr );
+	if( variable.type.GetTemplateDependentType() != nullptr )
+		return nullptr;
+
+	const FunctionPointer& function_pointer_type= *variable.type.GetFunctionPointerType();
+
+	const Value initializer_value= BuildExpressionCode( initializer_expression, block_names, function_context );
+
+	if( initializer_value.GetTemplateDependentValue() != nullptr ||
+		initializer_value.GetType().GetTemplateDependentType() != nullptr )
+		return nullptr;
+
+	if( const Variable* const initializer_variable= initializer_value.GetVariable() )
+	{
+		const FunctionPointer* const intitializer_type= initializer_variable->type.GetFunctionPointerType();
+		if( intitializer_type == nullptr ||
+			!intitializer_type->function.PointerCanBeConvertedTo( function_pointer_type.function ) )
+		{
+			errors_.push_back( ReportTypesMismatch( initializer_expression.GetFilePos(), variable.type.ToString(), initializer_variable->type.ToString() ) );
+			return nullptr;
+		}
+		U_ASSERT( initializer_variable->type.GetFunctionPointerType() != nullptr );
+
+		llvm::Value* value_for_assignment= CreateMoveToLLVMRegisterInstruction( *initializer_variable, function_context );
+		if( initializer_variable->type != variable.type )
+			value_for_assignment= function_context.llvm_ir_builder.CreatePointerCast( value_for_assignment, variable.type.GetLLVMType() );
+
+		function_context.llvm_ir_builder.CreateStore( value_for_assignment, variable.llvm_value );
+		return initializer_variable->constexpr_value;
+	}
+
+	const OverloadedFunctionsSet* candidate_functions= nullptr;
+	if( const OverloadedFunctionsSet* const overloaded_functions_set= initializer_value.GetFunctionsSet() )
+		candidate_functions= overloaded_functions_set;
+	else if( const ThisOverloadedMethodsSet* const overloaded_methods_set= initializer_value.GetThisOverloadedMethodsSet() )
+		candidate_functions= &overloaded_methods_set->overloaded_methods_set;
+	else
+	{
+		// TODO - generate separate error
+		errors_.push_back( ReportExpectedVariable( initializer_expression.GetFilePos(), initializer_value.GetType().ToString() ) );
+		return nullptr;
+	}
+
+	// Try select one of overloaded functions.
+	// Select function with same with pointer type, if it exists.
+	// If there is no function with same type, select function, convertible to pointer type, but only if exists only one convertible function.
+	const FunctionVariable* exact_match_function_variable= nullptr;
+	std::vector<const FunctionVariable*> convertible_function_variables;
+
+	for( const FunctionVariable& func : candidate_functions->functions )
+	{
+		if( *func.type.GetFunctionType() == function_pointer_type.function )
+			exact_match_function_variable= &func;
+		else if( func.type.GetFunctionType()->PointerCanBeConvertedTo( function_pointer_type.function ) )
+			convertible_function_variables.push_back(&func);
+	}
+	// Try also select template functions with zero template parameters and template functions with all template parameters known.
+	for( const FunctionTemplatePtr& function_template : candidate_functions->template_functions )
+	{
+		if( function_template->template_parameters.empty() )
+		{
+			const FunctionVariable* const func=
+				GenTemplateFunction(
+					initializer_expression.GetFilePos(),
+					function_template,
+					*function_template->parent_namespace,
+					std::vector<Function::Arg>(), false, true );
+			if( func != nullptr )
+			{
+				if( func->type == function_pointer_type.function )
+				{
+					if( exact_match_function_variable != nullptr )
+					{
+						// Error, exist more, then one non-exact match function.
+						// TODO - maybe generate separate error?
+						errors_.push_back( ReportTooManySuitableOverloadedFunctions( initializer_expression.GetFilePos() ) );
+						return nullptr;
+					}
+					exact_match_function_variable= func;
+				}
+				else if( func->type.GetFunctionType()->PointerCanBeConvertedTo( function_pointer_type.function ) )
+					convertible_function_variables.push_back(func);
+			}
+		}
+	}
+
+	const FunctionVariable* function_variable= exact_match_function_variable;
+	if( function_variable == nullptr )
+	{
+		if( convertible_function_variables.size() > 1u )
+		{
+			// Error, exist more, then one non-exact match function.
+			// TODO - maybe generate separate error?
+			errors_.push_back( ReportTooManySuitableOverloadedFunctions( initializer_expression.GetFilePos() ) );
+			return nullptr;
+		}
+		else if( !convertible_function_variables.empty() )
+			function_variable= convertible_function_variables.front();
+	}
+	if( function_variable == nullptr )
+	{
+		errors_.push_back( ReportCouldNotSelectOverloadedFunction( initializer_expression.GetFilePos() ) );
+		return nullptr;
+	}
+
+	llvm::Value* function_value= function_variable->llvm_function;
+	if( function_variable->type != function_pointer_type.function )
+		function_value= function_context.llvm_ir_builder.CreatePointerCast( function_value, variable.type.GetLLVMType() );
+
+	function_context.llvm_ir_builder.CreateStore( function_value, variable.llvm_value );
+	return function_variable->llvm_function;
 }
 
 } // namespace CodeBuilderPrivate

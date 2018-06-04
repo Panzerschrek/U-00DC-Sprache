@@ -506,6 +506,59 @@ Type CodeBuilder::PrepareType(
 
 		// TODO - generate error, if total size of type (incuding arrays) is more, than half of address space of target architecture.
 	}
+	else if( const auto function_type_name= dynamic_cast<const Synt::FunctionType*>(type_name.get()) )
+	{
+		FunctionPointer function_pointer_type;
+		Function& function_type= function_pointer_type.function;
+
+		if( function_type_name->return_type_ == nullptr )
+			function_type.return_type= void_type_for_ret_;
+		else
+			function_type.return_type= PrepareType( function_type_name->return_type_, names_scope );
+		function_type.return_value_is_mutable= function_type_name->return_value_mutability_modifier_ == MutabilityModifier::Mutable;
+		function_type.return_value_is_reference= function_type_name->return_value_reference_modifier_ == ReferenceModifier::Reference;
+
+		if( function_type.return_type.GetTemplateDependentType() == nullptr &&
+			!function_type.return_value_is_reference &&
+			!( function_type.return_type.GetFundamentalType() != nullptr ||
+			   function_type.return_type.GetClassType() != nullptr ||
+			   function_type.return_type.GetEnumType() != nullptr ||
+			   function_type.return_type.GetFunctionPointerType() != nullptr ) )
+			errors_.push_back( ReportNotImplemented( function_type_name->file_pos_, "return value types except fundamentals, enums, classes, function pointers" ) );
+
+		for( const Synt::FunctionArgumentPtr& arg : function_type_name->arguments_ )
+		{
+			if( IsKeyword( arg->name_ ) )
+				errors_.push_back( ReportUsingKeywordAsName( arg->file_pos_ ) );
+
+			function_type.args.emplace_back();
+			Function::Arg& out_arg= function_type.args.back();
+			out_arg.type= PrepareType( arg->type_, names_scope );
+
+			out_arg.is_mutable= arg->mutability_modifier_ == MutabilityModifier::Mutable;
+			out_arg.is_reference= arg->reference_modifier_ == ReferenceModifier::Reference;
+
+			if( !out_arg.is_reference &&
+				!( out_arg.type.GetFundamentalType() != nullptr ||
+				   out_arg.type.GetClassType() != nullptr ||
+				   out_arg.type.GetEnumType() != nullptr ||
+				   out_arg.type.GetTemplateDependentType() != nullptr ||
+				   out_arg.type.GetFunctionPointerType() != nullptr ) )
+				errors_.push_back( ReportNotImplemented( arg->file_pos_, "parameters types except fundamentals, classes, enums, functionpointers" ) );
+
+			ProcessFunctionArgReferencesTags( *function_type_name, function_type, *arg, out_arg, function_type.args.size() - 1u );
+		}
+
+		function_type.unsafe= function_type_name->unsafe_;
+
+		TryGenerateFunctionReturnReferencesMapping( *function_type_name, function_type );
+		ProcessFunctionTypeReferencesPollution( *function_type_name, function_type );
+
+		function_type.llvm_function_type= GetLLVMFunctionType( function_type );
+		function_pointer_type.llvm_function_pointer_type= llvm::PointerType::get( function_type.llvm_function_type, 0u );
+
+		return function_pointer_type;
+	}
 	else if( const auto named_type_name= dynamic_cast<const Synt::NamedTypeName*>(type_name.get()) )
 	{
 		if( const NamesScope::InsertedName* name=
@@ -524,6 +577,64 @@ Type CodeBuilder::PrepareType(
 	else U_ASSERT(false);
 
 	return result;
+}
+
+llvm::FunctionType* CodeBuilder::GetLLVMFunctionType( const Function& function_type )
+{
+	std::vector<llvm::Type*> args_llvm_types;
+
+	bool first_arg_is_sret= false;
+	if( !function_type.return_value_is_reference )
+	{
+		if( function_type.return_type.GetTemplateDependentType() != nullptr )
+		{}
+		else if( function_type.return_type.GetFundamentalType() != nullptr ||
+			function_type.return_type.GetEnumType() != nullptr ||
+			function_type.return_type.GetFunctionPointerType() != nullptr )
+		{}
+		else if( const Class* const class_type= function_type.return_type.GetClassType() )
+		{
+			// Add return-value ponter as "sret" argument for class types.
+			args_llvm_types.push_back( llvm::PointerType::get( class_type->llvm_type, 0u ) );
+			first_arg_is_sret= true;
+		}
+		else U_ASSERT( false );
+	}
+
+	for( const Function::Arg& arg : function_type.args )
+	{
+		llvm::Type* type= arg.type.GetLLVMType();
+		if( arg.is_reference )
+			type= llvm::PointerType::get( type, 0u );
+		else
+		{
+			if( arg.type.GetTemplateDependentType() != nullptr )
+				type= fundamental_llvm_types_.invalid_type_;
+			else if( arg.type.GetFundamentalType() != nullptr || arg.type.GetEnumType() != nullptr || arg.type.GetFunctionPointerType() )
+			{}
+			else if( arg.type.GetClassType() != nullptr )
+			{
+				// Mark value-parameters of class types as pointer. Lately this parameters will be marked as "byval".
+				type= llvm::PointerType::get( type, 0u );
+			}
+			else U_ASSERT( false );
+		}
+		args_llvm_types.push_back( type );
+	}
+
+	llvm::Type* llvm_function_return_type= nullptr;
+	if( function_type.return_type.GetTemplateDependentType() != nullptr )
+		llvm_function_return_type= fundamental_llvm_types_.void_;
+	else if( first_arg_is_sret )
+		llvm_function_return_type= fundamental_llvm_types_.void_for_ret_;
+	else
+	{
+		llvm_function_return_type= function_type.return_type.GetLLVMType();
+		if( function_type.return_value_is_reference )
+			llvm_function_return_type= llvm::PointerType::get( llvm_function_return_type, 0u );
+	}
+
+	return llvm::FunctionType::get( llvm_function_return_type, args_llvm_types, false );
 }
 
 ClassProxyPtr CodeBuilder::PrepareClass(
@@ -1112,7 +1223,7 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 				the_class_proxy,
 				the_class->members,
 				func_name,
-				func.func_syntax_element->arguments_,
+				func.func_syntax_element->type_.arguments_,
 				func.func_syntax_element->block_.get(),
 				func.func_syntax_element->constructor_initialization_list_.get() );
 		}
@@ -1605,7 +1716,7 @@ CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 		errors_.push_back( ReportInitializationListInNonconstructor(  func.constructor_initialization_list_->file_pos_ ) );
 		return result;
 	}
-	if( is_destructor && !func.arguments_.empty() )
+	if( is_destructor && !func.type_.arguments_.empty() )
 	{
 		errors_.push_back( ReportExplicitArgumentsInDestructor( func.file_pos_ ) );
 		return result;
@@ -1615,17 +1726,17 @@ CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 	func_variable.type= Function();
 	Function& function_type= *func_variable.type.GetFunctionType();
 
-	if( func.return_type_ == nullptr )
+	if( func.type_.return_type_ == nullptr )
 		function_type.return_type= void_type_for_ret_;
 	else
 	{
-		function_type.return_type= PrepareType( func.return_type_, *func_base_names_scope );
+		function_type.return_type= PrepareType( func.type_.return_type_, *func_base_names_scope );
 		if( function_type.return_type == invalid_type_ )
 			return result;
 	}
 
-	function_type.return_value_is_mutable= func.return_value_mutability_modifier_ == MutabilityModifier::Mutable;
-	function_type.return_value_is_reference= func.return_value_reference_modifier_ == ReferenceModifier::Reference;
+	function_type.return_value_is_mutable= func.type_.return_value_mutability_modifier_ == MutabilityModifier::Mutable;
+	function_type.return_value_is_reference= func.type_.return_value_reference_modifier_ == ReferenceModifier::Reference;
 
 	// HACK. We have different llvm types for "void".
 	// llvm::void used only for empty return value, for other purposes we use "i8" for Ü::void.
@@ -1636,19 +1747,20 @@ CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 		!function_type.return_value_is_reference &&
 		!( function_type.return_type.GetFundamentalType() != nullptr ||
 		   function_type.return_type.GetClassType() != nullptr ||
-		   function_type.return_type.GetEnumType() != nullptr ) )
+		   function_type.return_type.GetEnumType() != nullptr ||
+		   function_type.return_type.GetFunctionPointerType() != nullptr ) )
 	{
-		errors_.push_back( ReportNotImplemented( func.file_pos_, "return value types except fundamentals, enums, classes" ) );
+		errors_.push_back( ReportNotImplemented( func.file_pos_, "return value types except fundamentals, enums, classes, function pointers" ) );
 		return result;
 	}
 
 	if( is_special_method && function_type.return_type != void_type_ )
 		errors_.push_back( ReportConstructorAndDestructorMustReturnVoid( func.file_pos_ ) );
 
-	ProcessFunctionReturnValueReferenceTags( func, function_type );
+	ProcessFunctionReturnValueReferenceTags( func.type_, function_type );
 
 	// Args.
-	function_type.args.reserve( func.arguments_.size() );
+	function_type.args.reserve( func.type_.arguments_.size() );
 
 	// Generate "this" arg for constructors.
 	if( is_special_method )
@@ -1662,9 +1774,9 @@ CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 		arg.is_mutable= true;
 	}
 
-	for( const Synt::FunctionArgumentPtr& arg : func.arguments_ )
+	for( const Synt::FunctionArgumentPtr& arg : func.type_.arguments_ )
 	{
-		const bool is_this= arg == func.arguments_.front() && arg->name_ == Keywords::this_;
+		const bool is_this= arg == func.type_.arguments_.front() && arg->name_ == Keywords::this_;
 
 		if( !is_this && IsKeyword( arg->name_ ) )
 			errors_.push_back( ReportUsingKeywordAsName( arg->file_pos_ ) );
@@ -1675,7 +1787,7 @@ CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 		{
 			// Explicit this for constructor.
 			U_ASSERT( function_type.args.size() == 1u );
-			ProcessFunctionArgReferencesTags( func, function_type, *arg, function_type.args.back(), function_type.args.size() - 1u );
+			ProcessFunctionArgReferencesTags( func.type_, function_type, *arg, function_type.args.back(), function_type.args.size() - 1u );
 			continue;
 		}
 
@@ -1702,18 +1814,19 @@ CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 			!( out_arg.type.GetFundamentalType() != nullptr ||
 			   out_arg.type.GetClassType() != nullptr ||
 			   out_arg.type.GetEnumType() != nullptr ||
-			   out_arg.type.GetTemplateDependentType() != nullptr ) )
+			   out_arg.type.GetTemplateDependentType() != nullptr ||
+			   out_arg.type.GetFunctionPointerType() != nullptr ) )
 		{
-			errors_.push_back( ReportNotImplemented( func.file_pos_, "parameters types except fundamental and classes" ) );
+			errors_.push_back( ReportNotImplemented( func.file_pos_, "parameters types except fundamentals, classes, enums, functionpointers" ) );
 			return result;
 		}
 
-		ProcessFunctionArgReferencesTags( func, function_type, *arg, out_arg, function_type.args.size() - 1u );
+		ProcessFunctionArgReferencesTags( func.type_, function_type, *arg, out_arg, function_type.args.size() - 1u );
 	} // for arguments
 
-	function_type.unsafe= func.unsafe_;
+	function_type.unsafe= func.type_.unsafe_;
 
-	TryGenerateFunctionReturnReferencesMapping( func, function_type );
+	TryGenerateFunctionReturnReferencesMapping( func.type_, function_type );
 	ProcessFunctionReferencesPollution( func, function_type, base_class );
 	CheckOverloadedOperator( base_class, function_type, func.overloaded_operator_, func.file_pos_ );
 
@@ -1764,7 +1877,7 @@ CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 			base_class,
 			*func_base_names_scope,
 			func_name,
-			func.arguments_,
+			func.type_.arguments_,
 			block,
 			func.constructor_initialization_list_.get() );
 
@@ -1814,7 +1927,7 @@ CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 					base_class,
 					*func_base_names_scope,
 					func_name,
-					func.arguments_,
+					func.type_.arguments_,
 					block,
 					func.constructor_initialization_list_.get() );
 			}
@@ -1845,7 +1958,7 @@ CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 					base_class,
 					*func_base_names_scope,
 					func_name,
-					func.arguments_,
+					func.type_.arguments_,
 					block,
 					func.constructor_initialization_list_.get() );
 			}
@@ -1982,66 +2095,11 @@ void CodeBuilder::BuildFuncCode(
 	const Synt::Block* const block,
 	const Synt::StructNamedInitializer* const constructor_initialization_list )
 {
-	std::vector<llvm::Type*> args_llvm_types;
 	Function* const function_type= func_variable.type.GetFunctionType();
+	function_type->llvm_function_type= GetLLVMFunctionType( *function_type );
 
-	bool first_arg_is_sret= false;
-	if( !function_type->return_value_is_reference )
-	{
-		if( function_type->return_type.GetTemplateDependentType() != nullptr )
-		{}
-		else if( function_type->return_type.GetFundamentalType() != nullptr ||
-			function_type->return_type.GetEnumType() != nullptr )
-		{}
-		else if( const Class* const class_type= function_type->return_type.GetClassType() )
-		{
-			// Add return-value ponter as "sret" argument for class types.
-			args_llvm_types.push_back( llvm::PointerType::get( class_type->llvm_type, 0u ) );
-			first_arg_is_sret= true;
-		}
-		else
-			U_ASSERT( false );
-	}
-
-	for( const Function::Arg& arg : function_type->args )
-	{
-		llvm::Type* type= arg.type.GetLLVMType();
-		if( arg.is_reference )
-			type= llvm::PointerType::get( type, 0u );
-		else
-		{
-			if( arg.type.GetTemplateDependentType() != nullptr )
-				type= fundamental_llvm_types_.invalid_type_;
-			else if( arg.type.GetFundamentalType() != nullptr || arg.type.GetEnumType() != nullptr )
-			{}
-			else if( arg.type.GetClassType() != nullptr )
-			{
-				// Mark value-parameters of class types as pointer. Lately this parameters will be marked as "byval".
-				type= llvm::PointerType::get( type, 0u );
-			}
-			else
-				U_ASSERT( false );
-		}
-		args_llvm_types.push_back( type );
-	}
-
-	llvm::Type* llvm_function_return_type;
-	if( function_type->return_type.GetTemplateDependentType() != nullptr )
-		llvm_function_return_type= fundamental_llvm_types_.void_;
-	else if( first_arg_is_sret )
-		llvm_function_return_type= fundamental_llvm_types_.void_for_ret_;
-	else
-	{
-		llvm_function_return_type= function_type->return_type.GetLLVMType();
-		if( function_type->return_value_is_reference )
-			llvm_function_return_type= llvm::PointerType::get( llvm_function_return_type, 0u );
-	}
-
-	function_type->llvm_function_type=
-		llvm::FunctionType::get(
-			llvm_function_return_type,
-			llvm::ArrayRef<llvm::Type*>( args_llvm_types.data(), args_llvm_types.size() ),
-			false );
+	const bool first_arg_is_sret=
+		function_type->llvm_function_type->getReturnType()->isVoidTy() && function_type->return_type != void_type_;
 
 	llvm::Function* llvm_function;
 	if( func_variable.llvm_function == nullptr )
@@ -2192,7 +2250,8 @@ void CodeBuilder::BuildFuncCode(
 		{
 			if( arg.type.GetFundamentalType() != nullptr ||
 				arg.type.GetEnumType() != nullptr ||
-				arg.type.GetTemplateDependentType() != nullptr )
+				arg.type.GetTemplateDependentType() != nullptr ||
+				arg.type.GetFunctionPointerType() != nullptr )
 			{
 				// Move parameters to stack for assignment possibility.
 				// TODO - do it, only if parameters are not constant.
@@ -2208,8 +2267,7 @@ void CodeBuilder::BuildFuncCode(
 				// Value classes parameters using llvm-pointers with "byval" attribute.
 				var.location= Variable::Location::Pointer;
 			}
-			else
-			{ U_ASSERT( false ); }
+			else U_ASSERT(false);
 		}
 
 		const StoredVariablePtr var_storage=
@@ -3102,6 +3160,7 @@ ProgramString CodeBuilder::BuildAutoVariableDeclarationCode(
 			type.GetArrayType() != nullptr ||
 			type.GetClassType() != nullptr ||
 			type.GetEnumType() != nullptr ||
+			type.GetFunctionPointerType() != nullptr ||
 			type.GetTemplateDependentType() != nullptr;
 		if( !type_is_ok )
 		{
@@ -3176,7 +3235,7 @@ ProgramString CodeBuilder::BuildAutoVariableDeclarationCode(
 			variable.llvm_value->setName( ToStdString( auto_variable_declaration.name ) );
 		}
 
-		if( variable.type.GetFundamentalType() != nullptr || variable.type.GetEnumType() != nullptr  )
+		if( variable.type.GetFundamentalType() != nullptr || variable.type.GetEnumType() != nullptr || variable.type.GetFunctionPointerType() != nullptr )
 		{
 			llvm::Value* const value_for_assignment= CreateMoveToLLVMRegisterInstruction( initializer_experrsion, function_context );
 			function_context.llvm_ir_builder.CreateStore( value_for_assignment, variable.llvm_value );
@@ -3293,7 +3352,7 @@ void CodeBuilder::BuildAssignmentOperatorCode(
 	if( r_var == nullptr && r_var_value.GetType() != NontypeStub::TemplateDependentValue )
 		errors_.push_back( ReportExpectedVariable( assignment_operator.file_pos_, r_var_value.GetType().ToString() ) );
 
-	if( r_var != nullptr && ( r_var->type.GetFundamentalType() != nullptr || r_var->type.GetEnumType() != nullptr ) )
+	if( r_var != nullptr && ( r_var->type.GetFundamentalType() != nullptr || r_var->type.GetEnumType() != nullptr || r_var->type.GetFunctionPointerType() != nullptr ) )
 	{
 		// We must read value, because referenced by reference value may be changed in l_var evaluation.
 		if( r_var->location != Variable::Location::LLVMRegister )
@@ -3334,7 +3393,7 @@ void CodeBuilder::BuildAssignmentOperatorCode(
 		}
 	}
 
-	if( l_var->type.GetFundamentalType() != nullptr || l_var->type.GetEnumType() != nullptr )
+	if( l_var->type.GetFundamentalType() != nullptr || l_var->type.GetEnumType() != nullptr || l_var->type.GetFunctionPointerType() != nullptr )
 	{
 		if( l_var->location != Variable::Location::Pointer )
 		{
@@ -3676,7 +3735,7 @@ void CodeBuilder::BuildReturnOperatorCode(
 		else
 		{
 			// Now we can return by value only fundamentals end enums.
-			U_ASSERT( expression_result.type.GetFundamentalType() != nullptr || expression_result.type.GetEnumType() != nullptr );
+			U_ASSERT( expression_result.type.GetFundamentalType() != nullptr || expression_result.type.GetEnumType() != nullptr || expression_result.type.GetFunctionPointerType() != nullptr );
 
 			// We must read return value before call of destructors.
 			llvm::Value* const value_for_return= CreateMoveToLLVMRegisterInstruction( expression_result, function_context );

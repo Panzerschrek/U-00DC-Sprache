@@ -20,6 +20,8 @@ def main():
 	tests_modules_list= [
 		"code_builder_test",
 		"constexpr_structs_test",
+		"function_pointers_errors_test",
+		"function_pointers_test",
 		"function_templates_errors_test",
 		"function_templates_test",
 		"inheritance_test",
