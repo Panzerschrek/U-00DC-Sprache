@@ -330,7 +330,7 @@ U_TEST(TempVariablesMovingTest5_MoveInAssignment)
 
 		fn Foo()
 		{
-			var S s0(51254);
+			var S mut s0(51254);
 			s0= S(33241); // Must here call constructor for temp variable, call destructor for 's0' and move temp variable to 's0'.
 		}
 	)";
