@@ -277,3 +277,168 @@ def ExpectedReferenceValue_InFunctionPointerCall_Test0():
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ExpectedReferenceValue" )
 	assert( errors_list[0].file_pos.line == 6 )
+
+
+def TemplateDeductionFailed_WithFunctionPointerTypeAsTemplateSignatureArgument_Test0():
+	c_program_text= """
+		template</ type T />
+		struct S</ fn( T x ) /> {}
+		fn Foo()
+		{
+			var S</ fn() /> s;  // expected function with one argument, given function with zero arguments.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "NameNotFound" )
+	assert( errors_list[0].file_pos.line == 6 )
+
+
+def TemplateDeductionFailed_WithFunctionPointerTypeAsTemplateSignatureArgument_Test1():
+	c_program_text= """
+		template</ />
+		struct S</ fn() /> {}
+		fn Foo()
+		{
+			var S</ fn( i32 x ) /> s;  // expected function with zero argument, given function with one argument.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "NameNotFound" )
+	assert( errors_list[0].file_pos.line == 6 )
+
+
+def TemplateDeductionFailed_WithFunctionPointerTypeAsTemplateSignatureArgument_Test2():
+	c_program_text= """
+		template</ type T />
+		struct S</ fn( T x ) : i32 /> {}
+		fn Foo()
+		{
+			var S</ fn( i32 x ) /> s;  // expected function, returning 'i32', get function, returning 'void'.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "NameNotFound" )
+	assert( errors_list[0].file_pos.line == 6 )
+
+
+def TemplateDeductionFailed_WithFunctionPointerTypeAsTemplateSignatureArgument_Test3():
+	c_program_text= """
+		template</ type T />
+		struct S</ fn( T x ) /> {}
+		fn Foo()
+		{
+			var S</ fn( i32 x ) unsafe /> s;  // Given unsafe function, expected safe function.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "NameNotFound" )
+	assert( errors_list[0].file_pos.line == 6 )
+
+
+def TemplateDeductionFailed_WithFunctionPointerTypeAsTemplateSignatureArgument_Test4():
+	c_program_text= """
+		template</ type T />
+		struct S</ fn( T x ) unsafe /> {}
+		fn Foo()
+		{
+			var S</ fn( i32 x ) /> s;  // Given safe function, expected unsafe function.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "NameNotFound" )
+	assert( errors_list[0].file_pos.line == 6 )
+
+
+def TemplateDeductionFailed_WithFunctionPointerTypeAsTemplateSignatureArgument_Test5():
+	c_program_text= """
+		template</ type T />
+		struct S</ fn( T& x ) /> {}
+		fn Foo()
+		{
+			var S</ fn( i32 x ) /> s;  // Expected reference argument, given value argument.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "NameNotFound" )
+	assert( errors_list[0].file_pos.line == 6 )
+
+
+def TemplateDeductionFailed_WithFunctionPointerTypeAsTemplateSignatureArgument_Test6():
+	c_program_text= """
+		template</ type T />
+		struct S</ fn( T x ) /> {}
+		fn Foo()
+		{
+			var S</ fn( i32& x ) /> s;  // Expected value argument, given reference argument.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "NameNotFound" )
+	assert( errors_list[0].file_pos.line == 6 )
+
+
+def TemplateDeductionFailed_WithFunctionPointerTypeAsTemplateSignatureArgument_Test7():
+	c_program_text= """
+		template</ type T />
+		struct S</ fn( T& x ) /> {}
+		fn Foo()
+		{
+			var S</ fn( i32&mut x ) /> s;  // Expected immutable argument, given mutable argument.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "NameNotFound" )
+	assert( errors_list[0].file_pos.line == 6 )
+
+
+def TemplateDeductionFailed_WithFunctionPointerTypeAsTemplateSignatureArgument_Test8():
+	c_program_text= """
+		template</ type T />
+		struct S</ fn( T& t ) : T /> {}
+		fn Foo()
+		{
+			var S</ fn( i32& x ) : i32& /> s;  // Expected returning value, got returning reference.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "NameNotFound" )
+	assert( errors_list[0].file_pos.line == 6 )
+
+
+def TemplateDeductionFailed_WithFunctionPointerTypeAsTemplateSignatureArgument_Test9():
+	c_program_text= """
+		template</ type T />
+		struct S</ fn( T& t ) : T& /> {}
+		fn Foo()
+		{
+			var S</ fn( i32& x ) : i32 /> s;  // Expected returning reference, got returning value.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "NameNotFound" )
+	assert( errors_list[0].file_pos.line == 6 )
+
+
+def TemplateDeductionFailed_WithFunctionPointerTypeAsTemplateSignatureArgument_Test10():
+	c_program_text= """
+		template</ type T />
+		struct S</ fn( T t ) : T /> {}
+		fn Foo()
+		{
+			var S</ fn( i32 x ) : f32 /> s;  // Expected same types of argument and return value.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "NameNotFound" )
+	assert( errors_list[0].file_pos.line == 6 )

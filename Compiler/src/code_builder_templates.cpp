@@ -447,6 +447,14 @@ void CodeBuilder::PrepareTemplateSignatureParameter(
 		PrepareTemplateSignatureParameter( array_type_name->size, names_scope, template_parameters, template_parameters_usage_flags );
 		PrepareTemplateSignatureParameter( *array_type_name->element_type, names_scope, template_parameters, template_parameters_usage_flags );
 	}
+	else if( const auto function_pointer_type_name= dynamic_cast<const Synt::FunctionType*>(&type_name_template_parameter) )
+	{
+		// TODO - maybe check also reference tags?
+		if( function_pointer_type_name->return_type_ != nullptr )
+			PrepareTemplateSignatureParameter(*function_pointer_type_name->return_type_, names_scope, template_parameters, template_parameters_usage_flags );
+		for( const Synt::FunctionArgumentPtr& arg : function_pointer_type_name->arguments_ )
+			PrepareTemplateSignatureParameter( *arg->type_, names_scope, template_parameters, template_parameters_usage_flags );
+	}
 	else U_ASSERT(false);
 }
 
@@ -807,7 +815,7 @@ DeducedTemplateParameter CodeBuilder::DeduceTemplateArguments(
 		result.size.reset(
 			new DeducedTemplateParameter(
 				DeduceTemplateArguments( template_, size_var, *array_type->size, signature_parameter_file_pos, deducible_template_parameters, names_scope ) ) );
-		if( result.type->IsInvalid() || result.size->IsInvalid() )
+		if( result.type->IsInvalid() || result.size->IsInvalid() ) // TODO - what is size is not variable, but type name? Check this.
 			return DeducedTemplateParameter::Invalid();
 
 		// All array parameters is known, so, this is concrete type.
@@ -815,6 +823,95 @@ DeducedTemplateParameter CodeBuilder::DeduceTemplateArguments(
 			return DeducedTemplateParameter::Type();
 
 		return std::move(result);
+	}
+	else if( const auto function_pointer_type= dynamic_cast<const Synt::FunctionType*>(&signature_parameter) )
+	{
+		const Type* const param_type= boost::get<const Type>( &template_parameter );
+		if( param_type == nullptr )
+			return DeducedTemplateParameter::Invalid();
+		const FunctionPointer* const param_function_pointer_type= param_type->GetFunctionPointerType();
+		if( param_function_pointer_type == nullptr )
+			return DeducedTemplateParameter::Invalid();
+
+		DeducedTemplateParameter::Function result;
+
+		// Process return value.
+		const bool expected_ret_mutable= function_pointer_type->return_value_mutability_modifier_ == MutabilityModifier::Mutable;
+		const bool expected_ret_reference= function_pointer_type->return_value_reference_modifier_ == ReferenceModifier::Reference;
+		if( expected_ret_mutable != param_function_pointer_type->function.return_value_is_mutable ||
+			expected_ret_reference != param_function_pointer_type->function.return_value_is_reference )
+			return DeducedTemplateParameter::Invalid();
+
+		if( function_pointer_type->return_type_ != nullptr )
+		{
+			DeducedTemplateParameter ret_type_result=
+				DeduceTemplateArguments(
+					template_,
+					param_function_pointer_type->function.return_type,
+					*function_pointer_type->return_type_,
+					signature_parameter_file_pos,
+					deducible_template_parameters,
+					names_scope );
+			if( ret_type_result.IsInvalid() )
+				return DeducedTemplateParameter::Invalid();
+			result.return_type.reset( new DeducedTemplateParameter( std::move(ret_type_result) ) );
+		}
+		else
+		{
+			if( param_function_pointer_type->function.return_type != void_type_ )
+				return DeducedTemplateParameter::Invalid();
+			result.return_type.reset( new DeducedTemplateParameter( DeducedTemplateParameter::Type() ) );
+		}
+
+		if( !function_pointer_type->return_value_inner_reference_tags_.empty() ||
+			!function_pointer_type->return_value_reference_tag_.empty() )
+			errors_.push_back( ReportNotImplemented( function_pointer_type->file_pos_, "reference tags for template signature parameters" ) );
+
+		// Process args.
+		if( param_function_pointer_type->function.args.size() != function_pointer_type->arguments_.size() )
+			return DeducedTemplateParameter::Invalid();
+		for( size_t i= 0u; i < function_pointer_type->arguments_.size(); ++i)
+		{
+			const Synt::FunctionArgument& expected_arg= *function_pointer_type->arguments_[i];
+			const Function::Arg& given_arg= param_function_pointer_type->function.args[i];
+
+			const bool expected_mutable= expected_arg.mutability_modifier_ == MutabilityModifier::Mutable;
+			const bool expected_reference= expected_arg.reference_modifier_ == ReferenceModifier::Reference;
+
+			if( expected_mutable != given_arg.is_mutable || expected_reference != given_arg.is_reference )
+				return DeducedTemplateParameter::Invalid();
+
+			result.argument_types.push_back(
+				DeduceTemplateArguments( template_, given_arg.type, *expected_arg.type_, signature_parameter_file_pos, deducible_template_parameters, names_scope ));
+
+			if( result.argument_types.back().IsInvalid() )
+				return DeducedTemplateParameter::Invalid();
+
+			if( !expected_arg.inner_arg_reference_tags_.empty() || !expected_arg.reference_tag_.empty() )
+				errors_.push_back( ReportNotImplemented( function_pointer_type->file_pos_, "reference tags for template signature parameters" ) );
+		}
+
+		if( param_function_pointer_type->function.unsafe != function_pointer_type->unsafe_ )
+			return DeducedTemplateParameter::Invalid();
+
+		bool all_types_are_known= true;
+		if( !result.return_type->IsType() )
+			all_types_are_known= false;
+		for( const DeducedTemplateParameter& arg : result.argument_types )
+		{
+			if( !arg.IsType() )
+				all_types_are_known= false;
+			if( arg.IsVariable() )
+				return DeducedTemplateParameter::Invalid();
+		}
+
+		if( result.return_type->IsVariable() )
+			return DeducedTemplateParameter::Invalid();
+
+		if( all_types_are_known )
+			return DeducedTemplateParameter::Type();
+
+		return result;
 	}
 
 	else U_ASSERT(false);
@@ -1514,6 +1611,8 @@ bool CodeBuilder::TypeIsValidForTemplateVariableArgument( const Type& type )
 		U_ASSERT( TypeIsValidForTemplateVariableArgument( type.GetEnumType()->underlaying_type ) );
 		return true;
 	}
+	if( type.GetFunctionPointerType() != nullptr )
+		return true;
 
 	return false;
 }

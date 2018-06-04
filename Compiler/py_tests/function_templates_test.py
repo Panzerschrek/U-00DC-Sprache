@@ -676,7 +676,7 @@ def Specialization_Test12():
 	assert( errors_list[0].file_pos.line == 14 )
 
 
-def Specialization_Test12():
+def Specialization_Test13():
 	c_program_text= """
 		template</ type T /> struct Box{}
 
@@ -693,6 +693,25 @@ def Specialization_Test12():
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "CouldNotSelectOverloadedFunction" )
 	assert( errors_list[0].file_pos.line == 10 )
+
+
+def Specialization_Test14():
+	c_program_text= """
+		template</ type T />
+		fn Bar( T t ) : i32 { return 666; }
+
+		template</ type T />
+		fn Bar( ( fn(): T ) fn_t ) : i32 { return 999; }
+
+		fn Foo() : i32
+		{
+			var( fn() : i32 ) ptr= Foo;
+			return Bar( ptr );  // Must select function, specialized for function pointers.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 999 )
 
 
 def DirectFunctionTemplateParametersSet_Test0():

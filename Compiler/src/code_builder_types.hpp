@@ -762,6 +762,19 @@ public:
 		Array& operator=( const Array& other );
 	};
 
+	struct Function
+	{
+		std::unique_ptr<DeducedTemplateParameter> return_type;
+		std::vector<DeducedTemplateParameter> argument_types;
+
+		Function()= default;
+		Function(Function&&)= default;
+		Function& operator=(Function&&)= default;
+
+		Function( const Function& other );
+		Function& operator=( const Function& other );
+	};
+
 	struct Template
 	{
 		std::vector<DeducedTemplateParameter> args;
@@ -773,6 +786,7 @@ public:
 	DeducedTemplateParameter( Variable variable );
 	DeducedTemplateParameter( TemplateParameter template_parameter );
 	DeducedTemplateParameter( Array array );
+	DeducedTemplateParameter( Function function );
 	DeducedTemplateParameter( Template template_ );
 
 	bool IsInvalid() const;
@@ -780,6 +794,7 @@ public:
 	bool IsVariable() const;
 	bool IsTemplateParameter() const;
 	const Array* GetArray() const;
+	const Function* GetFunction() const;
 	const Template* GetTemplate() const;
 
 private:
@@ -789,6 +804,7 @@ private:
 		Variable,
 		TemplateParameter,
 		Array,
+		Function,
 		Template> something_;
 };
 

@@ -1434,6 +1434,18 @@ DeducedTemplateParameter::Array& DeducedTemplateParameter::Array::operator=( con
 	return *this;
 }
 
+DeducedTemplateParameter::Function::Function( const Function& other )
+{
+	*this= other;
+}
+
+DeducedTemplateParameter::Function& DeducedTemplateParameter::Function::operator=( const Function& other )
+{
+	return_type.reset( new DeducedTemplateParameter( *other.return_type ) );
+	argument_types= other.argument_types;
+	return *this;
+}
+
 DeducedTemplateParameter::DeducedTemplateParameter( Invalid invalid )
 {
 	something_= std::move(invalid);
@@ -1457,6 +1469,11 @@ DeducedTemplateParameter::DeducedTemplateParameter( TemplateParameter template_p
 DeducedTemplateParameter::DeducedTemplateParameter( Array array )
 {
 	something_= std::move(array);
+}
+
+DeducedTemplateParameter::DeducedTemplateParameter( Function function )
+{
+	something_= std::move(function);
 }
 
 DeducedTemplateParameter::DeducedTemplateParameter( Template template_ )
@@ -1487,6 +1504,11 @@ bool DeducedTemplateParameter::IsTemplateParameter() const
 const DeducedTemplateParameter::Array* DeducedTemplateParameter::GetArray() const
 {
 	return boost::get<Array>( &something_ );
+}
+
+const DeducedTemplateParameter::Function* DeducedTemplateParameter::GetFunction() const
+{
+	return boost::get<Function>( &something_ );
 }
 
 const DeducedTemplateParameter::Template* DeducedTemplateParameter::GetTemplate() const

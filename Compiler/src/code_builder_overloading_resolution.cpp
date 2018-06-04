@@ -90,6 +90,8 @@ static ConversionsCompareResult TemplateSpecializationCompare(
 			return ConversionsCompareResult::LeftIsBetter; // Concrete type is better, then template parameter.
 		else if( right_template_parameter.GetArray() != nullptr )
 			return ConversionsCompareResult::RightIsBetter; // Array is more specialized, then type.
+		if( right_template_parameter.GetFunction() != nullptr )
+			return ConversionsCompareResult::RightIsBetter; // Function is more specialized, then type.
 		if( right_template_parameter.GetTemplate() != nullptr )
 			return ConversionsCompareResult::RightIsBetter; // Template is more specialized, then type.
 		else U_ASSERT(false);
@@ -121,6 +123,35 @@ static ConversionsCompareResult TemplateSpecializationCompare(
 			if( type_compare_result == size_compare_result )
 				return size_compare_result;
 			return ConversionsCompareResult::Incomparable;
+		}
+		else U_ASSERT(false);
+	}
+	else if( const auto l_function= left_template_parameter.GetFunction() )
+	{
+		if( right_template_parameter.IsType() )
+			return ConversionsCompareResult::LeftIsBetter; // Function is more specialized, then type.
+		else if( right_template_parameter.IsTemplateParameter() )
+			return ConversionsCompareResult::LeftIsBetter; // Function is more specialized, then template parameter.
+		else if( const auto r_function= right_template_parameter.GetFunction() )
+		{
+			if( l_function->argument_types.size() != r_function->argument_types.size() )
+				return ConversionsCompareResult::Incomparable; // TODO - it is possible?
+
+			ConversionsCompareResult result= TemplateSpecializationCompare( *l_function->return_type, *r_function->return_type );
+			for( size_t i= 0u; i < l_function->argument_types.size(); ++i )
+			{
+				const ConversionsCompareResult arg_result= TemplateSpecializationCompare( l_function->argument_types[i], r_function->argument_types[i] );
+				if( arg_result == ConversionsCompareResult::Incomparable )
+					return ConversionsCompareResult::Incomparable;
+
+				if( arg_result == ConversionsCompareResult::Same )
+				{}
+				else if( result == ConversionsCompareResult::Same )
+					result= arg_result;
+				else if( result != arg_result )
+					return ConversionsCompareResult::Incomparable;
+			}
+			return result;
 		}
 		else U_ASSERT(false);
 	}
@@ -164,6 +195,8 @@ static ConversionsCompareResult TemplateSpecializationCompare(
 			return ConversionsCompareResult::Same;
 		else if( right_template_parameter.GetArray() != nullptr )
 			return ConversionsCompareResult::RightIsBetter; // Array is more specialized, then template parameter.
+		else if( right_template_parameter.GetFunction() != nullptr )
+			return ConversionsCompareResult::RightIsBetter; // Function is more specialized, then template parameter.
 		else if( right_template_parameter.GetTemplate() != nullptr )
 			return ConversionsCompareResult::RightIsBetter; // Template is more specialized, then template parameter.
 		else U_ASSERT(false);

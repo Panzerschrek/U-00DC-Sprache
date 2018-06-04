@@ -576,3 +576,62 @@ def ReturnReferenceTags_ForFunctionPointers_Test0():
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ReferenceProtectionError" )
 	assert( errors_list[0].file_pos.line == 15 )
+
+
+def FunctionPointerAsSpecializedTemplateParameter_Test0():
+	c_program_text= """
+		template</ type T />
+		struct ExtractReturnValueType</ fn() : T />
+		{
+			type ReturnValueType= T;
+		}
+
+		fn Foo() : i32
+		{
+			var ExtractReturnValueType</ fn() : i32 />::ReturnValueType must_be_int= 6668542;
+			return must_be_int;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 6668542 )
+
+
+def FunctionPointerAsSpecializedTemplateParameter_Test1():
+	c_program_text= """
+		template</ type T />
+		struct ExtractReturnValueType</ fn() : T />
+		{
+			type ReturnValueType= T;
+		}
+
+		type FnType= fn() : i32;
+
+		fn Foo() : i32
+		{
+			var ExtractReturnValueType</ FnType />::ReturnValueType must_be_int= 365244;  // Works, if function type alias passed.
+			return must_be_int;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 365244 )
+
+
+def FunctionPointerAsSpecializedTemplateParameter_Test2():
+	c_program_text= """
+		template</ type T />
+		struct ExtractFirstArgumentType</ fn(T x) />
+		{
+			type FirstArgumentType= T;
+		}
+
+		fn Foo() : f32
+		{
+			var ExtractFirstArgumentType</ fn( f32 x ) />::FirstArgumentType must_be_float= 5684.5f;
+			return must_be_float;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 5684.5 )
