@@ -32,11 +32,9 @@ enum class CodeBuilderErrorCode : unsigned int
 	ExpectedInitializer,
 	ExpectedReferenceValue,
 	BindingConstReferenceToNonconstReference,
-
-	// ExpectedVariable* errors
-	// TODO - emit common error - ExpectedVariable.
 	ExpectedVariable,
 
+	InvalidFunctionArgumentCount,
 	CouldNotOverloadFunction,
 	TooManySuitableOverloadedFunctions,
 	CouldNotSelectOverloadedFunction,
@@ -208,6 +206,7 @@ CodeBuilderError ReportExpectedInitializer( const FilePos& file_pos, const Progr
 CodeBuilderError ReportExpectedReferenceValue( const FilePos& file_pos );
 CodeBuilderError ReportBindingConstReferenceToNonconstReference( const FilePos& file_pos );
 CodeBuilderError ReportExpectedVariable( const FilePos& file_pos, const ProgramString& got );
+CodeBuilderError ReportInvalidFunctionArgumentCount( const FilePos& file_pos, size_t given_arg_count, size_t required_arg_count );
 CodeBuilderError ReportCouldNotOverloadFunction( const FilePos& file_pos );
 CodeBuilderError ReportTooManySuitableOverloadedFunctions( const FilePos& file_pos );
 CodeBuilderError ReportCouldNotSelectOverloadedFunction( const FilePos& file_pos );

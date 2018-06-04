@@ -51,6 +51,8 @@ const char* CodeBuilderErrorCodeToString( const CodeBuilderErrorCode code )
 		return "BindingConstReferenceToNonconstReference";
 	case CodeBuilderErrorCode::ExpectedVariable:
 		return "ExpectedVariable";
+	case CodeBuilderErrorCode::InvalidFunctionArgumentCount:
+		return "InvalidFunctionArgumentCount";
 	case CodeBuilderErrorCode::CouldNotOverloadFunction:
 		return "CouldNotOverloadFunction";
 	case CodeBuilderErrorCode::TooManySuitableOverloadedFunctions:
@@ -517,6 +519,19 @@ CodeBuilderError ReportExpectedVariable( const FilePos& file_pos, const ProgramS
 	error.code= CodeBuilderErrorCode::ExpectedVariable;
 
 	error.text= "Expected variable, got \"."_SpC + got + "\"."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportInvalidFunctionArgumentCount( const FilePos& file_pos, size_t given_arg_count, size_t required_arg_count )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::InvalidFunctionArgumentCount;
+
+	error.text= "Invalid function argument count. Required "_SpC +
+		ToProgramString(std::to_string(required_arg_count).c_str()) +
+		", got "_SpC + ToProgramString(std::to_string(given_arg_count).c_str()) + "."_SpC;
 
 	return error;
 }

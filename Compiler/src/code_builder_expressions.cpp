@@ -1962,6 +1962,12 @@ Value CodeBuilder::BuildCallOperator(
 		else if( const FunctionPointer* const function_pointer= callable_variable->type.GetFunctionPointerType() )
 		{
 			// Call function pointer directly.
+			if( function_pointer->function.args.size() != call_operator.arguments_.size() )
+			{
+				errors_.push_back( ReportInvalidFunctionArgumentCount( call_operator.file_pos_, call_operator.arguments_.size(), function_pointer->function.args.size() ) );
+				return ErrorValue();
+			}
+
 			std::vector<const Synt::IExpressionComponent*> args;
 			for( const auto& arg : call_operator.arguments_ )
 				args.push_back( arg.get() );

@@ -186,3 +186,94 @@ def FunctionPointerReferencesIsNotCompatible_Test1():
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "TypesMismatch" )
 	assert( errors_list[0].file_pos.line == 4 )
+
+
+def InvalidFunctionArgumentCount_Test0():
+	c_program_text= """
+		fn a(){}
+		fn Foo()
+		{
+			var (fn()) ptr= a;
+			ptr(42);
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "InvalidFunctionArgumentCount" )
+	assert( errors_list[0].file_pos.line == 6 )
+
+
+def InvalidFunctionArgumentCount_Test1():
+	c_program_text= """
+		fn a( i32 x ){}
+		fn Foo()
+		{
+			var (fn( i32 x )) ptr= a;
+			ptr();
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "InvalidFunctionArgumentCount" )
+	assert( errors_list[0].file_pos.line == 6 )
+
+
+def TypesMismatch_InFunctionPointerCall_Test0():
+	c_program_text= """
+		fn a( i32 x ){}
+		fn Foo()
+		{
+			var (fn( i32 x )) ptr= a;
+			ptr( 4.0f );   // expected 'i32', given 'f32'
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "TypesMismatch" )
+	assert( errors_list[0].file_pos.line == 6 )
+
+
+def TypesMismatch_InFunctionPointerCall_Test1():
+	c_program_text= """
+		fn a( i32& x ){}
+		fn Foo()
+		{
+			var (fn( i32& x )) ptr= a;
+			ptr( 4.0f );   // expected 'i32', given 'f32'
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "TypesMismatch" )
+	assert( errors_list[0].file_pos.line == 6 )
+
+
+def BindingConstReferenceToNonconstReference_InFunctionPointerCall_Test0():
+	c_program_text= """
+		fn a( i32&mut x ){}
+		fn Foo()
+		{
+			var (fn( i32&mut x )) ptr= a;
+			auto x= 0;
+			ptr( x );   // expected mutable reference, got immutable reference
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "BindingConstReferenceToNonconstReference" )
+	assert( errors_list[0].file_pos.line == 7 )
+
+
+def ExpectedReferenceValue_InFunctionPointerCall_Test0():
+	c_program_text= """
+		fn a( i32&mut x ){}
+		fn Foo()
+		{
+			var (fn( i32&mut x )) ptr= a;
+			ptr( 66 );   // expected mutable reference, got value
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ExpectedReferenceValue" )
+	assert( errors_list[0].file_pos.line == 6 )
