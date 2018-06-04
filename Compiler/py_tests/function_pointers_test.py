@@ -504,3 +504,75 @@ def FunctionPointerToTemplateFunction_Test1():
 	tests_lib.build_program( c_program_text )
 	call_result= tests_lib.run_function( "_Z3Foov" )
 	assert( call_result == 2718 )
+
+
+def FunctionPointerPointedToNonvirtualFunction_Test0():
+	c_program_text= """
+		class A polymorph
+		{
+			fn virtual Foo( this ) : i32 { return 5555; }
+		}
+
+		class B : A
+		{
+			fn virtual override Foo( this ) : i32 { return 6666; }
+		}
+
+		fn Foo() : i32
+		{
+			var B b;
+			var (fn( A& a ) : i32) mut ptr= cast_ref</A/>(b).Foo;   // Must take here A::Foo, not B::Foo
+			return ptr(b);
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 5555 )
+
+
+def ReferencePollution_ForFunctionPointer_Test0():
+	c_program_text= """
+		struct S{ i32& r; }
+
+		type DoPollutionType= fn( S& mut s'a', i32&'b x ) ' a <- imut b';
+
+		fn DoNotPollution( S&mut s, i32& x ){}
+
+		fn Foo()
+		{
+			var DoPollutionType ptr= DoNotPollution;
+
+			var i32 x= 0, mut y= 0;
+			var S mut s{ .r= x };
+			ptr(s, y);
+			++y;  // Error, 'y' have reference inside 's'.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ReferenceProtectionError" )
+	assert( errors_list[0].file_pos.line == 15 )
+
+
+def ReturnReferenceTags_ForFunctionPointers_Test0():
+	c_program_text= """
+		type RetBothType= fn( i32& a, i32& b ) : i32&;
+
+		fn RetFirst( i32&'x a, i32& b ) : i32&'x
+		{
+			return a;
+		}
+
+		fn Foo()
+		{
+			var RetBothType ptr= RetFirst;
+
+			var i32 mut a= 0, mut b= 0;
+			auto& ref= ptr(a, b);
+			++b; // Error, 'b' have reference.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ReferenceProtectionError" )
+	assert( errors_list[0].file_pos.line == 15 )
