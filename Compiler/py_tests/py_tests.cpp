@@ -133,6 +133,7 @@ static PyObject* BuildProgram( PyObject* const self, PyObject* const args )
 
 	llvm::sys::DynamicLibrary::AddSymbol( "lle_X___U_halt", reinterpret_cast<void*>( &HaltCalled ) );
 
+	Py_INCREF(Py_None);
 	return Py_None;
 }
 
@@ -145,6 +146,7 @@ static PyObject* FreeProgram( PyObject* const self, PyObject* const args )
 		llvm::llvm_shutdown();
 	}
 
+	Py_INCREF(Py_None);
 	return Py_None;
 }
 
@@ -267,7 +269,10 @@ static PyObject* RunFunction( PyObject* const self, PyObject* const args )
 
 	const llvm::Type* const return_type= function_type->getReturnType();
 	if( return_type->isVoidTy() )
+	{
+		Py_INCREF(Py_None);
 		return Py_None;
+	}
 	if( return_type->isIntegerTy() )
 		return Py_BuildValue( "L", result_value.IntVal.getLimitedValue() );
 	if( return_type->isFloatTy() )
@@ -275,6 +280,7 @@ static PyObject* RunFunction( PyObject* const self, PyObject* const args )
 	if( return_type->isDoubleTy() )
 		return Py_BuildValue( "d", result_value.DoubleVal );
 
+	Py_INCREF(Py_None);
 	return Py_None;
 }
 
