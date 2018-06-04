@@ -171,6 +171,32 @@ void CodeBuilder::ProcessFunctionReturnValueReferenceTags( const Synt::Function&
 		}
 		else if( regular_tag_count != reference_tag_count )
 			errors_.push_back( ReportInvalidReferenceTagCount( func.file_pos_, regular_tag_count, reference_tag_count ) );
+
+		// Check names of tags, report about unknown tag names.
+		for( size_t i= 0u; i < regular_tag_count; ++i )
+		{
+			const ProgramString& tag = func.return_value_inner_reference_tags_[i];
+
+			bool found= false;
+			for( const Synt::FunctionArgumentPtr& arg : func.arguments_ )
+			{
+				if( tag == arg->reference_tag_ )
+				{
+					found= true;
+					break;
+				}
+				for( const ProgramString& inner_arg_tag : arg->inner_arg_reference_tags_ )
+				{
+					if( tag == inner_arg_tag )
+					{
+						found= true;
+						break;
+					}
+				}
+			}
+			if( !found )
+				errors_.push_back( ReportNameNotFound( func.file_pos_, tag ) );
+		}
 	}
 }
 
@@ -254,9 +280,12 @@ void CodeBuilder::ProcessFunctionReferencesPollution(
 				if( in_arg.inner_arg_reference_tags_[tag_number] == name )
 					result.emplace_back( arg_n, tag_number );
 
-			for( size_t tag_number= regular_tag_count; tag_number < arg_reference_tag_count; ++tag_number )
-				if( in_arg.inner_arg_reference_tags_[regular_tag_count] == name )
-					result.emplace_back( arg_n, tag_number );
+			if( has_continuous_tag )
+			{
+				for( size_t tag_number= regular_tag_count; tag_number < arg_reference_tag_count; ++tag_number )
+					if( in_arg.inner_arg_reference_tags_[regular_tag_count] == name )
+						result.emplace_back( arg_n, tag_number );
+			}
 
 			if( has_continuous_tag && in_arg.inner_arg_reference_tags_[regular_tag_count] == name )
 				any_ref_found= true;

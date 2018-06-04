@@ -1315,4 +1315,54 @@ U_TEST( TryGrabReferenceToTempVariable_Test5 )
 	U_TEST_ASSERT( error.file_pos.line == 10u );
 }
 
+U_TEST( NameNotFound_ForReferenceTags_Test0 )
+{
+	// Unknown tag for return reference.
+	static const char c_program_text[]=
+	R"(
+		fn Foo( i32& x ) : i32&'a;  // Error, tag 'a' not found
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NameNotFound );
+	U_TEST_ASSERT( error.file_pos.line == 2u );
+}
+
+U_TEST( NameNotFound_ForReferenceTags_Test1 )
+{
+	// Unknown tag for return value inner reference.
+	static const char c_program_text[]=
+	R"(
+		struct S{ i32& r; }
+		fn Foo( i32& x ) : S'a';  // Error, tag 'a' not found
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NameNotFound );
+	U_TEST_ASSERT( error.file_pos.line == 3u );
+}
+
+U_TEST( NameNotFound_ForReferenceTags_Test2 )
+{
+	// Unknown tag in reference pollution list.
+	static const char c_program_text[]=
+	R"(
+		struct S{ i32& r; }
+		fn Foo( S &mut s'fff', i32& x ) ' fff <- ttt ';  // Error, tag 'ttt' not found
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NameNotFound );
+	U_TEST_ASSERT( error.file_pos.line == 3u );
+}
+
 } // namespace U
