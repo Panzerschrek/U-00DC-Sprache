@@ -294,7 +294,7 @@ def FunctionsPoitersAssignment_Test1():
 		fn Foo() : i32
 		{
 			var (fn() : i32) mut ptr= zero_init;
-			ptr= a;
+			ptr= (fn() : i32)(a);  // Currently required explicit function to pointer conversion.
 			return ptr();
 		}
 	"""

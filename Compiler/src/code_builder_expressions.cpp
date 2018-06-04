@@ -86,40 +86,28 @@ boost::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 			const Variable* const l_var= l_var_value.GetVariable();
 			const Variable* const r_var= r_var_value.GetVariable();
 
-			if( op == OverloadedOperator::Assign &&
-				l_var != nullptr &&
-				l_var->value_type == ValueType::Reference &&
-				( l_var->type.GetFunctionPointerType() != nullptr || l_var->type.GetTemplateDependentType() != nullptr ) &&
-				( r_var_value.GetFunctionsSet() != nullptr || r_var_value.GetThisOverloadedMethodsSet() != nullptr ) )
-			{
-				// hack. Process functions set to function pointer assignment
-				needs_function_pointer_assignment= true;
-			}
-			else
-			{
-				if( l_var == nullptr )
-					errors_.push_back( ReportExpectedVariable( file_pos, l_var_value.GetType().ToString() ) );
-				if( r_var == nullptr )
-					errors_.push_back( ReportExpectedVariable( file_pos, r_var_value.GetType().ToString() ) );
-				if( l_var == nullptr || r_var == nullptr )
-					return Value(ErrorValue());
+			if( l_var == nullptr )
+				errors_.push_back( ReportExpectedVariable( file_pos, l_var_value.GetType().ToString() ) );
+			if( r_var == nullptr )
+				errors_.push_back( ReportExpectedVariable( file_pos, r_var_value.GetType().ToString() ) );
+			if( l_var == nullptr || r_var == nullptr )
+				return Value(ErrorValue());
 
-				// Try apply move-assignment for class types.
-				needs_move_assign=
-					op == OverloadedOperator::Assign && r_var->value_type == ValueType::Value &&
-					r_var->type == l_var->type && r_var->type.GetClassType() != nullptr &&
-					l_var->value_type == ValueType::Reference;
+			// Try apply move-assignment for class types.
+			needs_move_assign=
+				op == OverloadedOperator::Assign && r_var->value_type == ValueType::Value &&
+				r_var->type == l_var->type && r_var->type.GetClassType() != nullptr &&
+				l_var->value_type == ValueType::Reference;
 
-				args.emplace_back();
-				args.back().type= l_var->type;
-				args.back().is_reference= l_var->value_type != ValueType::Value;
-				args.back().is_mutable= l_var->value_type == ValueType::Reference;
+			args.emplace_back();
+			args.back().type= l_var->type;
+			args.back().is_reference= l_var->value_type != ValueType::Value;
+			args.back().is_mutable= l_var->value_type == ValueType::Reference;
 
-				args.emplace_back();
-				args.back().type= r_var->type;
-				args.back().is_reference= r_var->value_type != ValueType::Value;
-				args.back().is_mutable= r_var->value_type == ValueType::Reference;
-			}
+			args.emplace_back();
+			args.back().type= r_var->type;
+			args.back().is_reference= r_var->value_type != ValueType::Value;
+			args.back().is_mutable= r_var->value_type == ValueType::Reference;
 		}
 		errors_.resize( error_count_before );
 		function_context.variables_state.ActivateLocks();
@@ -152,13 +140,6 @@ boost::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 			Variable move_result;
 			move_result.type= void_type_;
 			return Value( move_result, file_pos );
-		}
-		else if( needs_function_pointer_assignment )
-		{
-			const Variable l_var_real= *BuildExpressionCode( left_expr, names, function_context ).GetVariable();
-			// TODO - maybe lock references here?
-			InitializeFunctionPointer( l_var_real, right_expr, names, function_context );
-			return Value( l_var_real, file_pos );
 		}
 
 		overloaded_operator= GetOverloadedOperator( args, op, file_pos );
