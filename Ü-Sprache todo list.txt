@@ -8,7 +8,6 @@ Common:
 *) Continious initializer for arrays
 *) Uninitialized initializer
 *) Constructor initializer for constexpr structs
-*) Function pointers
 *) array_view, array view take operator
 *) "string literals\n"
 *) Disabled by-default copying for classes. Possibility to force generating
@@ -23,6 +22,8 @@ Common:
 *) "Disassembly operator" - declare variables with initializer as members of
 	value of structure type.
 *) "for" operator - for ranges
+*) Function to function pointer assignment
+
 
 References:
 *) Tags for struct/class references
@@ -37,6 +38,7 @@ Templates:
 *) Function templates with template-dependent reference and mutability modifiers
 	for arguments.
 *) Equality comparison for function templates with same name
+*) Function pointers as template variable-parameters
 
 Standart library:
 *) base functions for containers - memory allocation, reference casting, etc.
@@ -48,6 +50,7 @@ Standart library:
 *) thread-safe shared_ptr
 
 Compiler:
+*) move-assignment without hacks.
 *) Standartized entry point, such "main" in some languages
 *) Virtual table optimization - store child class virtual table pointer in
 	parent class.
