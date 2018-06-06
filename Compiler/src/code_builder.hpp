@@ -241,9 +241,15 @@ private:
 	// Returns nullptr in case of fail.
 	NamesScope::InsertedName* GenTemplateType(
 		const FilePos& file_pos,
+		const TypeTemplatesSet& type_templates_set,
+		const std::vector<Synt::IExpressionComponentPtr>& template_arguments,
+		NamesScope& arguments_names_scope );
+
+	// Returns nullptr in case of fail.
+	NamesScope::InsertedName* GenTemplateType(
+		const FilePos& file_pos,
 		const TypeTemplatePtr& type_template_ptr,
 		const std::vector<Synt::IExpressionComponentPtr>& template_arguments,
-		NamesScope& template_names_scope,
 		NamesScope& arguments_names_scope );
 
 	const FunctionVariable* GenTemplateFunction(

@@ -58,7 +58,7 @@ ProgramString CodeBuilder::PrepareTypeTemplate(
 	const TypeTemplatePtr type_template( new TypeTemplate );
 	const ProgramString& type_template_name= type_template_declaration.name_;
 
-	if( names_scope.AddName( type_template_name, Value( type_template, type_template_declaration.file_pos_ ) ) == nullptr )
+	if( names_scope.AddName( type_template_name, Value( TypeTemplatesSet{type_template}, type_template_declaration.file_pos_ ) ) == nullptr )
 	{
 		errors_.push_back( ReportRedefinition( type_template_declaration.file_pos_, type_template_name ) );
 		return type_template_name;
@@ -375,7 +375,7 @@ void CodeBuilder::PrepareTemplateSignatureParameter(
 		errors_.push_back( ReportNameNotFound( file_pos, signature_parameter ) );
 		return;
 	}
-	if( start_name->second.GetTypeTemplate() != nullptr )
+	if( start_name->second.GetTypeTemplatesSet() != nullptr )
 	{
 		for( const Synt::IExpressionComponentPtr& template_parameter : signature_parameter.components.back().template_parameters )
 			PrepareTemplateSignatureParameter( template_parameter, names_scope, template_parameters, template_parameters_usage_flags );
@@ -491,16 +491,15 @@ const NamesScope::InsertedName* CodeBuilder::ResolveForTemplateSignatureParamete
 				next_space_class= type->GetClassTypeProxy();
 			}
 		}
-		else if( const TypeTemplatePtr type_template = current_name->second.GetTypeTemplate() )
+		else if( const TypeTemplatesSet* const type_templates_set = current_name->second.GetTypeTemplatesSet() )
 		{
 			if( component.have_template_parameters && !is_last_component )
 			{
 				const NamesScope::InsertedName* generated_type=
 					GenTemplateType(
-						FilePos(),
-						type_template,
+						file_pos,
+						*type_templates_set,
 						component.template_parameters,
-						*type_template->parent_namespace,
 						names_scope );
 				if( generated_type == nullptr )
 					return nullptr;
@@ -517,7 +516,7 @@ const NamesScope::InsertedName* CodeBuilder::ResolveForTemplateSignatureParamete
 			}
 			else if( !is_last_component )
 			{
-				errors_.push_back( ReportTemplateInstantiationRequired( file_pos, type_template->syntax_element->name_ ) );
+				errors_.push_back( ReportTemplateInstantiationRequired( file_pos, type_templates_set->front()->syntax_element->name_ ) );
 				return nullptr;
 			}
 
@@ -687,8 +686,10 @@ DeducedTemplateParameter CodeBuilder::DeduceTemplateArguments(
 			return DeducedTemplateParameter::Type();
 		return DeducedTemplateParameter::Invalid();
 	}
-	else if( const TypeTemplatePtr inner_type_template = signature_parameter_name->second.GetTypeTemplate() )
+	else if( const TypeTemplatesSet* const inner_type_templates_set= signature_parameter_name->second.GetTypeTemplatesSet() )
 	{
+		// TODO - process multiple type templates
+		const TypeTemplatePtr inner_type_template= inner_type_templates_set->front();
 		const Class* const given_type_class= given_type.GetClassType();
 		if( given_type_class == nullptr )
 			return DeducedTemplateParameter::Invalid();
@@ -921,15 +922,29 @@ DeducedTemplateParameter CodeBuilder::DeduceTemplateArguments(
 
 NamesScope::InsertedName* CodeBuilder::GenTemplateType(
 	const FilePos& file_pos,
+	const TypeTemplatesSet& type_templates_set,
+	const std::vector<Synt::IExpressionComponentPtr>& template_arguments,
+	NamesScope& arguments_names_scope )
+{
+	return
+		GenTemplateType(
+			file_pos,
+			type_templates_set.front(),
+			template_arguments,
+			arguments_names_scope );
+}
+
+NamesScope::InsertedName* CodeBuilder::GenTemplateType(
+	const FilePos& file_pos,
 	const TypeTemplatePtr& type_template_ptr,
 	const std::vector<Synt::IExpressionComponentPtr>& template_arguments,
-	NamesScope& template_names_scope,
 	NamesScope& arguments_names_scope )
 {
 	// This method does not generate some errors, because instantiation may fail
 	// for one class template, but success for other.
 
 	const TypeTemplate& type_template= *type_template_ptr;
+	NamesScope& template_names_scope= *type_template.parent_namespace;
 
 	if( template_arguments.size() < type_template.first_optional_signature_argument )
 	{
@@ -1647,7 +1662,7 @@ void CodeBuilder::RemoveTempClassLLVMValues_impl( Class& class_, const bool is_d
 			}
 			else if( name.second.GetClassField() != nullptr )
 			{}
-			else if( name.second.GetTypeTemplate() != nullptr )
+			else if( name.second.GetTypeTemplatesSet() != nullptr )
 			{}
 			else if( const NamesScopePtr inner_namespace= name.second.GetNamespace() )
 			{
@@ -1738,7 +1753,7 @@ void CodeBuilder::ReportAboutIncompleteMembersOfTemplateClass( const FilePos& fi
 			}
 			else if( name.second.GetClassField() != nullptr )
 			{}
-			else if( name.second.GetTypeTemplate() != nullptr )
+			else if( name.second.GetTypeTemplatesSet() != nullptr )
 			{}
 			else if( const NamesScopePtr inner_namespace= name.second.GetNamespace() )
 			{

@@ -33,7 +33,7 @@ struct Enum;
 
 struct ClassProxy
 {
-	ClassProxy( Class* in_class ) // Poiter must be new-allocated. Takes ownership.
+	ClassProxy( Class* in_class ) // Pointer must be new-allocated. Takes ownership.
 		: class_( in_class )
 	{}
 	std::shared_ptr<Class> class_;
@@ -51,6 +51,7 @@ typedef std::shared_ptr<TemplateBase> TemplateBasePtr;
 
 struct TypeTemplate;
 typedef std::shared_ptr<TypeTemplate> TypeTemplatePtr;
+using TypeTemplatesSet= std::vector<TypeTemplatePtr>; // Set of type templates with same name.
 
 struct FunctionTemplate;
 typedef std::shared_ptr<FunctionTemplate> FunctionTemplatePtr;
@@ -430,7 +431,7 @@ public:
 	Value( ClassField class_field, const FilePos& file_pos );
 	Value( ThisOverloadedMethodsSet class_field );
 	Value( const NamesScopePtr& namespace_, const FilePos& file_pos );
-	Value( const TypeTemplatePtr& type_template, const FilePos& file_pos );
+	Value( TypeTemplatesSet type_templates, const FilePos& file_pos );
 	Value( TemplateDependentValue template_dependent_value );
 	Value( YetNotDeducedTemplateArg yet_not_deduced_template_arg );
 	Value( ErrorValue error_value );
@@ -463,8 +464,9 @@ public:
 	const ThisOverloadedMethodsSet* GetThisOverloadedMethodsSet() const;
 	// Namespace
 	NamesScopePtr GetNamespace() const;
-	// Class Template
-	TypeTemplatePtr GetTypeTemplate() const;
+	// Type templates sel
+	TypeTemplatesSet* GetTypeTemplatesSet();
+	const TypeTemplatesSet* GetTypeTemplatesSet() const;
 	// Template-dependent value
 	TemplateDependentValue* GetTemplateDependentValue();
 	const TemplateDependentValue* GetTemplateDependentValue() const;
@@ -485,7 +487,7 @@ private:
 		ClassField,
 		ThisOverloadedMethodsSet,
 		NamesScopePtr,
-		TypeTemplatePtr,
+		TypeTemplatesSet,
 		TemplateDependentValue,
 		YetNotDeducedTemplateArg,
 		ErrorValue > something_;

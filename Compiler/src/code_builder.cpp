@@ -234,12 +234,15 @@ void CodeBuilder::MergeNameScopes( NamesScope& dst, const NamesScope& src, Class
 
 					// TODO - copy access rights.
 				}
-				else if( const TypeTemplatePtr type_template= src_member.second.GetTypeTemplate() )
+				else if( const TypeTemplatesSet* const type_templates_set= src_member.second.GetTypeTemplatesSet() )
 				{
 					// Type template must know it parent namespace.
 					// Change namespace at this point.
-					if( type_template->parent_namespace == &src )
-						type_template->parent_namespace= &dst;
+					for( const TypeTemplatePtr& type_template : *type_templates_set )
+					{
+						if( type_template->parent_namespace == &src )
+							type_template->parent_namespace= &dst;
+					}
 					dst.AddName( src_member.first, src_member.second );
 				}
 				else
