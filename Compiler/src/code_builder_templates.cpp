@@ -58,11 +58,18 @@ ProgramString CodeBuilder::PrepareTypeTemplate(
 	const TypeTemplatePtr type_template( new TypeTemplate );
 	const ProgramString& type_template_name= type_template_declaration.name_;
 
-	if( names_scope.AddName( type_template_name, Value( TypeTemplatesSet{type_template}, type_template_declaration.file_pos_ ) ) == nullptr )
+	if( NamesScope::InsertedName* const prev_name= names_scope.GetThisScopeName( type_template_name ) )
 	{
-		errors_.push_back( ReportRedefinition( type_template_declaration.file_pos_, type_template_name ) );
-		return type_template_name;
+		if( TypeTemplatesSet* const type_templates_set= prev_name->second.GetTypeTemplatesSet() )
+			type_templates_set->push_back( type_template ); // TODO - check typpe template signature equality.
+		else
+		{
+			errors_.push_back( ReportRedefinition( type_template_declaration.file_pos_, type_template_name ) );
+			return type_template_name;
+		}
 	}
+	else
+		names_scope.AddName( type_template_name, Value( TypeTemplatesSet{type_template}, type_template_declaration.file_pos_ ) );
 
 	type_template->parent_namespace= &names_scope;
 	type_template->syntax_element= &type_template_declaration;
@@ -926,12 +933,28 @@ NamesScope::InsertedName* CodeBuilder::GenTemplateType(
 	const std::vector<Synt::IExpressionComponentPtr>& template_arguments,
 	NamesScope& arguments_names_scope )
 {
-	return
-		GenTemplateType(
-			file_pos,
-			type_templates_set.front(),
-			template_arguments,
-			arguments_names_scope );
+	std::vector<NamesScope::InsertedName*> generated_types;
+	for( const TypeTemplatePtr& type_template : type_templates_set )
+	{
+		NamesScope::InsertedName* const generated_type=
+			GenTemplateType(
+				file_pos,
+				type_template,
+				template_arguments,
+				arguments_names_scope );
+		if( generated_type != nullptr )
+			generated_types.push_back( generated_type );
+	}
+
+	if( generated_types.empty() )
+		return nullptr;
+
+	if( generated_types.size() == 1u )
+		return generated_types.front();
+
+	// TODO - generate separate error
+	errors_.push_back( ReportNotImplemented( file_pos, "selection over multiple valid type templates" ) );
+	return nullptr;
 }
 
 NamesScope::InsertedName* CodeBuilder::GenTemplateType(
@@ -1096,6 +1119,7 @@ NamesScope::InsertedName* CodeBuilder::GenTemplateType(
 		}
 		else U_ASSERT(false);
 	}
+	name_encoded+= ToProgramString( std::to_string( reinterpret_cast<uintptr_t>(&type_template) ).c_str() ); // HACK. encode also template itself, because we can have multiple templates with same name.
 
 	// Check, if already type generated.
 	// In recursive instantiation this also works.
