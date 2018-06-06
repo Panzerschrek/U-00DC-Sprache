@@ -695,20 +695,28 @@ DeducedTemplateParameter CodeBuilder::DeduceTemplateArguments(
 	}
 	else if( const TypeTemplatesSet* const inner_type_templates_set= signature_parameter_name->second.GetTypeTemplatesSet() )
 	{
-		// TODO - process multiple type templates
-		const TypeTemplatePtr inner_type_template= inner_type_templates_set->front();
 		const Class* const given_type_class= given_type.GetClassType();
 		if( given_type_class == nullptr )
 			return DeducedTemplateParameter::Invalid();
 		if( given_type_class->base_template == boost::none )
 			return DeducedTemplateParameter::Invalid();
-		if( given_type_class->base_template->class_template != inner_type_template )
+
+		const TypeTemplate* inner_type_template= nullptr;
+		for( const TypeTemplatePtr& candidate_template : *inner_type_templates_set)
+		{
+			if( candidate_template == given_type_class->base_template->class_template )
+			{
+				inner_type_template= candidate_template.get();
+				break;
+			}
+		}
+		if( inner_type_template == nullptr )
 			return DeducedTemplateParameter::Invalid();
 
 		const Synt::ComplexName::Component& name_component= signature_parameter.components.back();
 		if( !name_component.have_template_parameters )
 			return DeducedTemplateParameter::Invalid();
-		if( signature_parameter.components.back().template_parameters.size() < inner_type_template->first_optional_signature_argument )
+		if( name_component.template_parameters.size() < inner_type_template->first_optional_signature_argument )
 			return DeducedTemplateParameter::Invalid();
 
 		DeducedTemplateParameter::Template result;
@@ -717,7 +725,7 @@ DeducedTemplateParameter CodeBuilder::DeduceTemplateArguments(
 			DeducedTemplateParameter deduced=
 				DeduceTemplateArguments(
 					template_,
-					given_type_class->base_template->template_parameters[i],
+					given_type_class->base_template->signature_parameters[i],
 					*name_component.template_parameters[i],
 					template_file_pos,
 					deducible_template_parameters,
@@ -984,6 +992,7 @@ NamesScope::InsertedName* CodeBuilder::GenTemplateType(
 
 	bool is_template_dependent= false;
 	bool deduction_failed= false;
+	std::vector<TemplateParameter> result_signature_parameters(type_template.signature_arguments.size());
 	for( size_t i= 0u; i < type_template.signature_arguments.size(); ++i )
 	{
 		Value value;
@@ -1057,6 +1066,15 @@ NamesScope::InsertedName* CodeBuilder::GenTemplateType(
 					name->second= Value( *variable, type_template_ptr->syntax_element->file_pos_ /*TODO - set correctfile_pos */ );
 			}
 			else U_ASSERT( false );
+		}
+
+		if( !deduction_failed )
+		{
+			const Value result_singature_parameter= BuildExpressionCode( expr, *template_parameters_namespace, *dummy_function_context_ );
+			if( const Type* const type_name= result_singature_parameter.GetTypeName() )
+				result_signature_parameters[i]= *type_name;
+			else if( const Variable* const variable= result_singature_parameter.GetVariable() )
+				result_signature_parameters[i]= *variable;
 		}
 
 	} // for signature arguments
@@ -1171,6 +1189,7 @@ NamesScope::InsertedName* CodeBuilder::GenTemplateType(
 				the_class.base_template->template_parameters.push_back( *variable );
 			else U_ASSERT(false);
 		}
+		the_class.base_template->signature_parameters= std::move(result_signature_parameters);
 
 		template_classes_cache_[class_key]= class_proxy;
 		return template_parameters_namespace->GetThisScopeName( GetNameForGeneratedClass() );

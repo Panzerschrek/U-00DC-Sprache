@@ -622,6 +622,7 @@ public:
 	{
 		TypeTemplatePtr class_template;
 		std::vector<TemplateParameter> template_parameters;
+		std::vector<TemplateParameter> signature_parameters;
 	};
 
 	enum class Kind
