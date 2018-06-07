@@ -112,6 +112,7 @@ enum class CodeBuilderErrorCode : unsigned int
 	TemplateArgumentNotUsedInSignature,
 	IncompleteMemberOfClassTemplate,
 	TemplateFunctionGenerationFailed,
+	CouldNotSelectMoreSpicializedTypeTemplate,
 
 	// Reference checking
 	ReferenceProtectionError,
@@ -266,6 +267,7 @@ CodeBuilderError ReportTemplateArgumentIsNotDeducedYet( const FilePos& file_pos,
 CodeBuilderError ReportTemplateArgumentNotUsedInSignature( const FilePos& file_pos, const ProgramString& name );
 CodeBuilderError ReportIncompleteMemberOfClassTemplate( const FilePos& file_pos, const ProgramString& name );
 CodeBuilderError ReportTemplateFunctionGenerationFailed( const FilePos& file_pos, const ProgramString& function_template_name );
+CodeBuilderError ReportCouldNotSelectMoreSpicializedTypeTemplate( const FilePos& file_pos );
 CodeBuilderError ReportReferenceProtectionError( const FilePos& file_pos, const ProgramString& var_name );
 CodeBuilderError ReportDestroyedVariableStillHaveReferences( const FilePos& file_pos, const ProgramString& var_name );
 CodeBuilderError ReportAccessingVariableThatHaveMutableReference( const FilePos& file_pos, const ProgramString& var_name );

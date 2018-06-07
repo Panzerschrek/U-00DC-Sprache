@@ -974,8 +974,7 @@ NamesScope::InsertedName* CodeBuilder::GenTemplateType(
 	const TemplateTypeGenerationResult* selected_template= SelectTemplateType( generated_types, template_arguments.size() );
 	if( selected_template == nullptr )
 	{
-		// TODO - generate separate error
-		errors_.push_back( ReportNotImplemented( file_pos, "selection over multiple valid type templates" ) );
+		errors_.push_back( ReportCouldNotSelectMoreSpicializedTypeTemplate( file_pos ) );
 		return nullptr;
 	}
 

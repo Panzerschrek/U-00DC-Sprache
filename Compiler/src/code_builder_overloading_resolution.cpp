@@ -625,7 +625,7 @@ const CodeBuilder::TemplateTypeGenerationResult* CodeBuilder::SelectTemplateType
 			if( selected_template == nullptr )
 				selected_template= &candidate_templates[template_n];
 			else
-				errors_.push_back( ReportCouldNotOverloadFunction( FilePos() ) ); // TODO
+				return nullptr;
 		}
 	}
 
