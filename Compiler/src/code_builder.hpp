@@ -124,6 +124,13 @@ private:
 		size_t function_index= 0u;
 	};
 
+	struct TemplateTypeGenerationResult
+	{
+		TypeTemplatePtr type_template;
+		NamesScope::InsertedName* type= nullptr;
+		std::vector<DeducedTemplateParameter> deduced_template_parameters;
+	};
+
 private:
 	BuildResultInternal BuildProgramInternal( const SourceGraph& source_graph, size_t node_index );
 
@@ -246,11 +253,12 @@ private:
 		NamesScope& arguments_names_scope );
 
 	// Returns nullptr in case of fail.
-	NamesScope::InsertedName* GenTemplateType(
+	TemplateTypeGenerationResult GenTemplateType(
 		const FilePos& file_pos,
 		const TypeTemplatePtr& type_template_ptr,
 		const std::vector<Synt::IExpressionComponentPtr>& template_arguments,
-		NamesScope& arguments_names_scope );
+		NamesScope& arguments_names_scope,
+		bool skip_type_generation );
 
 	const FunctionVariable* GenTemplateFunction(
 		const FilePos& file_pos,
@@ -579,6 +587,10 @@ private:
 		const std::vector<Function::Arg>& actual_args,
 		OverloadedOperator op,
 		const FilePos& file_pos );
+
+	const TemplateTypeGenerationResult* SelectTemplateType(
+		const std::vector<TemplateTypeGenerationResult>& candidate_templates,
+		size_t arg_count );
 
 	// Initializers.
 	// Some initializers returns nonnul constant, if initializer is constant.
