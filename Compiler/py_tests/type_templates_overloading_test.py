@@ -186,3 +186,32 @@ def TypeTemplatesOvelroading_SpecializationErrors_Test1():
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "CouldNotSelectMoreSpicializedTypeTemplate" )
 	assert( errors_list[0].file_pos.line == 8 )
+
+
+def LessSpecializedTemplateTypesNotGenerated_Test0():
+	c_program_text= """
+		template</ type T />
+		struct IsArrayType
+		{
+			auto constexpr value= false;
+		}
+
+		template</ type T, type SizeType, SizeType s />
+		struct IsArrayType</ [ T, s ] />
+		{
+			auto constexpr value= true;
+		}
+
+		template</ type T />
+		struct S</ T />
+		{
+			static_assert( ! IsArrayType</ T />::value );
+		}
+
+		template</ type T, type SizeType, SizeType s />
+		struct S</ [ T, s ] />
+		{}
+
+		fn Foo( S</ [ i32, 4 ] />& s );  // Must here select 'S', specialized for arrays and not generate body of less specialized 'S'.
+	"""
+	tests_lib.build_program( c_program_text )

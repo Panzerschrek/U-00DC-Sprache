@@ -128,6 +128,7 @@ private:
 	{
 		TypeTemplatePtr type_template;
 		NamesScope::InsertedName* type= nullptr;
+		bool is_template_dependent= false;
 		std::vector<DeducedTemplateParameter> deduced_template_parameters;
 	};
 

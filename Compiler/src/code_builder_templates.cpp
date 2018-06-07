@@ -953,6 +953,15 @@ NamesScope::InsertedName* CodeBuilder::GenTemplateType(
 				true );
 		if( generated_type.type_template != nullptr )
 		{
+			if( generated_type.is_template_dependent )
+				return
+					GenTemplateType(
+						file_pos,
+						type_template,
+						template_arguments,
+						arguments_names_scope,
+						false ).type;
+
 			generated_types.push_back( generated_type );
 			U_ASSERT(generated_type.deduced_template_parameters.size() >= template_arguments.size());
 		}
@@ -1112,6 +1121,7 @@ CodeBuilder::TemplateTypeGenerationResult CodeBuilder::GenTemplateType(
 		PopResolveHandler();
 		return result;
 	}
+	result.is_template_dependent= is_template_dependent;
 	result.type_template= type_template_ptr;
 
 	if( is_template_dependent )
