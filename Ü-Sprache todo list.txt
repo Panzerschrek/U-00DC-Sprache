@@ -5,9 +5,12 @@ When feature was implemented, delete it from list.
 Common:
 *) sizeof operator
 *) raw_pointer
+*) Type information obtaining during compilation
+*) Conditional functions, something, like "enable_if"
+*) Constructor initializer for constexpr structs
+*) Constexpr functions
 *) Continious initializer for arrays
 *) Uninitialized initializer
-*) Constructor initializer for constexpr structs
 *) array_view, array view take operator
 *) "string literals\n"
 *) Disabled by-default copying for classes. Possibility to force generating
@@ -32,12 +35,11 @@ References:
 
 Templates:
 *) Default template arguments for short type template form
-*) Type templates overloading
 *) enable_if for templates
 *) Variadic templates
 *) Function templates with template-dependent reference and mutability modifiers
 	for arguments.
-*) Equality comparison for function templates with same name
+*) Equality comparison for type and function templates with same name
 *) Function pointers as template variable-parameters
 
 Standart library:
