@@ -1105,11 +1105,10 @@ Value::Value( const NamesScopePtr& namespace_, const FilePos& file_pos )
 	something_= namespace_;
 }
 
-Value::Value( const TypeTemplatePtr& type_template, const FilePos& file_pos )
+Value::Value( TypeTemplatesSet type_templates, const FilePos& file_pos )
 	: file_pos_(file_pos)
 {
-	U_ASSERT( type_template != nullptr );
-	something_= type_template;
+	something_= std::move(type_templates);
 }
 
 Value::Value( TemplateDependentValue template_dependent_value )
@@ -1155,7 +1154,7 @@ const Type& Value::GetType() const
 		const Type& operator()( const NamesScopePtr& ) const
 		{ return g_namespace_type_stub; }
 
-		const Type& operator()( const TypeTemplatePtr& ) const
+		const Type& operator()( const TypeTemplatesSet& ) const
 		{ return g_type_template_type_stub; }
 
 		const Type& operator()( const TemplateDependentValue& ) const
@@ -1262,12 +1261,14 @@ NamesScopePtr Value::GetNamespace() const
 	return *namespace_;
 }
 
-TypeTemplatePtr Value::GetTypeTemplate() const
+TypeTemplatesSet* Value::GetTypeTemplatesSet()
 {
-	const TypeTemplatePtr* const type_template= boost::get<TypeTemplatePtr>( &something_ );
-	if( type_template == nullptr )
-		return nullptr;
-	return *type_template;
+	return boost::get<TypeTemplatesSet>( &something_ );
+}
+
+const TypeTemplatesSet* Value::GetTypeTemplatesSet() const
+{
+	return boost::get<TypeTemplatesSet>( &something_ );
 }
 
 TemplateDependentValue* Value::GetTemplateDependentValue()

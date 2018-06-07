@@ -107,7 +107,7 @@ const NamesScope::InsertedName* CodeBuilder::ResolveName(
 		if( name == nullptr )
 			return nullptr;
 
-		if( components[0].have_template_parameters && name->second.GetTypeTemplate() == nullptr && name->second.GetFunctionsSet() == nullptr )
+		if( components[0].have_template_parameters && name->second.GetTypeTemplatesSet() == nullptr && name->second.GetFunctionsSet() == nullptr )
 		{
 			errors_.push_back( ReportValueIsNotTemplate( file_pos ) );
 			return nullptr;
@@ -135,16 +135,15 @@ const NamesScope::InsertedName* CodeBuilder::ResolveName(
 				next_space= &enum_->members;
 			}
 		}
-		else if( const TypeTemplatePtr type_template = name->second.GetTypeTemplate() )
+		else if( const TypeTemplatesSet* const type_templates_set = name->second.GetTypeTemplatesSet() )
 		{
 			if( components[0].have_template_parameters )
 			{
 				const NamesScope::InsertedName* generated_type=
 					GenTemplateType(
 						file_pos,
-						type_template,
+						*type_templates_set,
 						components[0].template_parameters,
-						*type_template->parent_namespace,
 						names_scope );
 				if( generated_type == nullptr )
 					return nullptr;
@@ -154,10 +153,10 @@ const NamesScope::InsertedName* CodeBuilder::ResolveName(
 				const Type* const type= generated_type->second.GetTypeName();
 				if( type->GetTemplateDependentType() != nullptr )
 				{
-					if( component_count >= 2u )
+					if( component_count <= 1u )
 						return generated_type; // If this name is last, we know, that this is type
 					else
-						return &type_template->parent_namespace->GetTemplateDependentValue(); // Else it is something really template-dependent
+						return &type_templates_set->front()->parent_namespace->GetTemplateDependentValue(); // Else it is something really template-dependent
 				}
 				U_ASSERT( type != nullptr );
 				if( Class* const class_= type->GetClassType() )
@@ -169,7 +168,7 @@ const NamesScope::InsertedName* CodeBuilder::ResolveName(
 			}
 			else if( component_count >= 2u )
 			{
-				errors_.push_back( ReportTemplateInstantiationRequired( file_pos, type_template->syntax_element->name_ ) );
+				errors_.push_back( ReportTemplateInstantiationRequired( file_pos, type_templates_set->front()->syntax_element->name_ ) );
 				return nullptr;
 			}
 		}

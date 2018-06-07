@@ -580,6 +580,58 @@ const FunctionVariable* CodeBuilder::GetOverloadedOperator(
 	return nullptr;
 }
 
+const CodeBuilder::TemplateTypeGenerationResult* CodeBuilder::SelectTemplateType(
+	const std::vector<TemplateTypeGenerationResult>& candidate_templates,
+	const size_t arg_count )
+{
+	std::vector<bool> best_templates( candidate_templates.size(), true );
+
+	for( size_t arg_n= 0u; arg_n < arg_count; ++arg_n )
+	{
+		for( const TemplateTypeGenerationResult& candidate_l : candidate_templates )
+		{
+			bool is_best_template_for_current_arg= true;
+			for( const TemplateTypeGenerationResult& candidate_r : candidate_templates )
+			{
+				const ConversionsCompareResult comp=
+					TemplateSpecializationCompare( candidate_l.deduced_template_parameters[arg_n], candidate_r.deduced_template_parameters[arg_n] );
+
+				if( comp == ConversionsCompareResult::Same || comp == ConversionsCompareResult::LeftIsBetter )
+					continue;
+
+				is_best_template_for_current_arg= false;
+				break;
+			}
+
+			if( is_best_template_for_current_arg )
+			{
+				for( const TemplateTypeGenerationResult& candidate_r : candidate_templates )
+				{
+					const ConversionsCompareResult comp=
+						TemplateSpecializationCompare( candidate_l.deduced_template_parameters[arg_n], candidate_r.deduced_template_parameters[arg_n] );
+
+					if( comp != ConversionsCompareResult::Same )
+						best_templates[ &candidate_r - candidate_templates.data() ]= false;
+				}
+			}
+		}
+	}
+
+	const TemplateTypeGenerationResult* selected_template= nullptr;
+	for( size_t template_n= 0u; template_n < candidate_templates.size(); ++ template_n )
+	{
+		if( best_templates[template_n] )
+		{
+			if( selected_template == nullptr )
+				selected_template= &candidate_templates[template_n];
+			else
+				return nullptr;
+		}
+	}
+
+	return selected_template;
+}
+
 } // namespace CodeBuilderPrivate
 
 } // namespace U

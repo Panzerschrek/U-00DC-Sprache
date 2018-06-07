@@ -171,6 +171,8 @@ const char* CodeBuilderErrorCodeToString( const CodeBuilderErrorCode code )
 		return "IncompleteMemberOfClassTemplate";
 	case CodeBuilderErrorCode::TemplateFunctionGenerationFailed:
 		return "TemplateFunctionGenerationFailed";
+	case CodeBuilderErrorCode::CouldNotSelectMoreSpicializedTypeTemplate:
+		return "CouldNotSelectMoreSpicializedTypeTemplate";
 	case CodeBuilderErrorCode::ReferenceProtectionError:
 		return "ReferenceProtectionError";
 	case CodeBuilderErrorCode::DestroyedVariableStillHaveReferences:
@@ -1191,6 +1193,17 @@ CodeBuilderError ReportTemplateFunctionGenerationFailed( const FilePos& file_pos
 	error.code= CodeBuilderErrorCode::TemplateFunctionGenerationFailed;
 
 	error.text= "Instantiation of function template \""_SpC + function_template_name + "\" failed."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportCouldNotSelectMoreSpicializedTypeTemplate( const FilePos& file_pos )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::CouldNotSelectMoreSpicializedTypeTemplate;
+
+	error.text= "Could not select more spicialized type template."_SpC;
 
 	return error;
 }

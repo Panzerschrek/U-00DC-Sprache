@@ -1290,6 +1290,36 @@ U_TEST( DefaultSignatureArguments_Test4 )
 	U_TEST_ASSERT( static_cast<uint64_t>( 8854 ) == result_value.IntVal.getLimitedValue() );
 }
 
+U_TEST( DefaultSignatureArguments_Test5 )
+{
+	static const char c_program_text[]=
+	R"(
+		template</ type T /> struct Box</ T = i32 /> { type TT = T; }
+
+		template</ />
+		struct Wrapper</ Box</ /> />   // Works, like Box</ i32 />
+		{
+			type TT= f32;
+		}
+
+		fn Foo() : i32
+		{
+			var Wrapper</ Box</ /> />::TT pi= 3.1415926535f;
+			var Wrapper</ Box</ i32 /> />::TT e= 2.718281828f;
+			return i32(pi * 1000.0f) + i32(e * 1000.0f);
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	const llvm::GenericValue result_value= engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( static_cast<uint64_t>( 3141 + 2718 ) == result_value.IntVal.getLimitedValue() );
+}
+
 U_TEST( ClassTemplateInsideClass_Test0 )
 {
 	static const char c_program_text[]=

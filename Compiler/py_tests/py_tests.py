@@ -32,6 +32,7 @@ def main():
 		"reference_check_for_templates_test",
 		"stack_variables_move_errors_test",
 		"stack_variables_move_test",
+		"type_templates_overloading_test",
 		"static_if_test",
 		"unsafe_test",
 		"virtual_functions_test" ]
