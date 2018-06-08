@@ -584,7 +584,19 @@ const CodeBuilder::TemplateTypeGenerationResult* CodeBuilder::SelectTemplateType
 	const std::vector<TemplateTypeGenerationResult>& candidate_templates,
 	const size_t arg_count )
 {
+	if( candidate_templates.empty() )
+		return nullptr;
+
+	if( candidate_templates.size() == 1u )
+		return &candidate_templates.front();
+
 	std::vector<bool> best_templates( candidate_templates.size(), true );
+
+	for( const TemplateTypeGenerationResult& template_ : candidate_templates )
+	{
+		U_UNUSED( template_ );
+		U_ASSERT( template_.deduced_template_parameters.size() >= arg_count );
+	}
 
 	for( size_t arg_n= 0u; arg_n < arg_count; ++arg_n )
 	{
@@ -596,11 +608,11 @@ const CodeBuilder::TemplateTypeGenerationResult* CodeBuilder::SelectTemplateType
 				const ConversionsCompareResult comp=
 					TemplateSpecializationCompare( candidate_l.deduced_template_parameters[arg_n], candidate_r.deduced_template_parameters[arg_n] );
 
-				if( comp == ConversionsCompareResult::Same || comp == ConversionsCompareResult::LeftIsBetter )
-					continue;
-
-				is_best_template_for_current_arg= false;
-				break;
+				if( comp == ConversionsCompareResult::Incomparable || comp == ConversionsCompareResult::RightIsBetter )
+				{
+					is_best_template_for_current_arg= false;
+					break;
+				}
 			}
 
 			if( is_best_template_for_current_arg )

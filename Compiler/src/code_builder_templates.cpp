@@ -941,6 +941,9 @@ NamesScope::InsertedName* CodeBuilder::GenTemplateType(
 	const std::vector<Synt::IExpressionComponentPtr>& template_arguments,
 	NamesScope& arguments_names_scope )
 {
+	if( type_templates_set.size() == 1u )
+		return GenTemplateType( file_pos, type_templates_set.front(), template_arguments, arguments_names_scope, false ).type;
+
 	std::vector<TemplateTypeGenerationResult> generated_types;
 	for( const TypeTemplatePtr& type_template : type_templates_set )
 	{
@@ -954,46 +957,20 @@ NamesScope::InsertedName* CodeBuilder::GenTemplateType(
 		if( generated_type.type_template != nullptr )
 		{
 			if( generated_type.is_template_dependent )
-				return
-					GenTemplateType(
-						file_pos,
-						type_template,
-						template_arguments,
-						arguments_names_scope,
-						false ).type;
+				return GenTemplateType( file_pos, type_template, template_arguments, arguments_names_scope, false ).type;
 
 			generated_types.push_back( generated_type );
 			U_ASSERT(generated_type.deduced_template_parameters.size() >= template_arguments.size());
 		}
 	}
 
-	if( generated_types.empty() )
-		return nullptr;
-
-	if( generated_types.size() == 1u )
-		return
-			GenTemplateType(
-				file_pos,
-				generated_types.front().type_template,
-				template_arguments,
-				arguments_names_scope,
-				false ).type;
-
-
-	const TemplateTypeGenerationResult* selected_template= SelectTemplateType( generated_types, template_arguments.size() );
-	if( selected_template == nullptr )
+	if( const TemplateTypeGenerationResult* const selected_template= SelectTemplateType( generated_types, template_arguments.size() ) )
+		return GenTemplateType( file_pos, selected_template->type_template, template_arguments, arguments_names_scope, false ).type;
+	else
 	{
 		errors_.push_back( ReportCouldNotSelectMoreSpicializedTypeTemplate( file_pos ) );
 		return nullptr;
 	}
-
-	return
-		GenTemplateType(
-			file_pos,
-			selected_template->type_template,
-			template_arguments,
-			arguments_names_scope,
-			false ).type;
 }
 
 CodeBuilder::TemplateTypeGenerationResult CodeBuilder::GenTemplateType(
