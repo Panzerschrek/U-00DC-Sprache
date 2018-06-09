@@ -1922,13 +1922,11 @@ Value CodeBuilder::BuildCallOperator(
 	CHECK_RETURN_ERROR_VALUE(function_value);
 
 	if( function_value.GetType() == NontypeStub::TemplateDependentValue ||
-		function_value.GetType().GetTemplateDependentType() != nullptr)
+		function_value.GetType().GetTemplateDependentType() != nullptr )
 	{
 		for( const Synt::IExpressionComponentPtr& arg_expression : call_operator.arguments_ )
 			BuildExpressionCode( *arg_expression, names, function_context );
-		Variable result;
-		result.type= GetNextTemplateDependentType();
-		return Value( result, call_operator.file_pos_ );
+		return TemplateDependentValue();
 	}
 
 	if( const Type* const type= function_value.GetTypeName() )
@@ -2059,7 +2057,7 @@ Value CodeBuilder::BuildCallOperator(
 			dummy_function_context.overloading_resolutin_cache.end() );
 
 		if( args_are_template_dependent )
-			return Value( Type(NontypeStub::TemplateDependentValue), call_operator.file_pos_ );
+			return TemplateDependentValue();
 
 		function_ptr=
 			GetOverloadedFunction( *functions_set, actual_args, this_ != nullptr, call_operator.file_pos_ );
@@ -2150,7 +2148,11 @@ Value CodeBuilder::DoCallFunction(
 		if( is_first_arg )
 			expr= *first_arg;
 		else
-			expr= *BuildExpressionCode( *args[ j - first_arg_count ], names, function_context ).GetVariable();
+		{
+			Value expr_val= BuildExpressionCode( *args[ j - first_arg_count ], names, function_context );
+			CHECK_RETURN_TEMPLATE_DEPENDENT_VALUE(expr_val);
+			expr= *expr_val.GetVariable();
+		}
 
 		const FilePos& file_pos= is_first_arg ? file_pos : args[ j - first_arg_count ]->GetFilePos();
 
