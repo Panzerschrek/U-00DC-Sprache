@@ -64,6 +64,7 @@ enum class Keywords : unsigned int
 	constexpr_,
 
 	zero_init_,
+	uninitialized_,
 
 	this_,
 	base_,

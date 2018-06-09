@@ -47,7 +47,12 @@ llvm::Constant* CodeBuilder::ApplyInitializer(
 	else if( const auto zero_initializer=
 		dynamic_cast<const Synt::ZeroInitializer*>(&initializer) )
 	{
-		return ApplyZeroInitializer( variable, *zero_initializer, block_names, function_context );
+		return ApplyZeroInitializer( variable, *zero_initializer, function_context );
+	}
+	else if( const auto uninitialized_initializer=
+		dynamic_cast<const Synt::UninitializedInitializer*>(&initializer) )
+	{
+		return ApplyUninitializedInitializer( variable, *uninitialized_initializer, function_context );
 	}
 	else U_ASSERT(false);
 
@@ -685,7 +690,6 @@ llvm::Constant* CodeBuilder::ApplyExpressionInitializer(
 llvm::Constant* CodeBuilder::ApplyZeroInitializer(
 	const Variable& variable,
 	const Synt::ZeroInitializer& initializer,
-	NamesScope& block_names,
 	FunctionContext& function_context )
 {
 	if( variable.type.GetTemplateDependentType() != nullptr )
@@ -765,7 +769,7 @@ llvm::Constant* CodeBuilder::ApplyZeroInitializer(
 				index_list[1]= counter_value;
 				array_member.llvm_value=
 					function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, llvm::ArrayRef<llvm::Value*>( index_list, 2u ) );
-				const_value= ApplyZeroInitializer( array_member, initializer, block_names, function_context );
+				const_value= ApplyZeroInitializer( array_member, initializer, function_context );
 			},
 			function_context);
 
@@ -820,7 +824,7 @@ llvm::Constant* CodeBuilder::ApplyZeroInitializer(
 					function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, llvm::ArrayRef<llvm::Value*> ( index_list, 2u ) );
 
 				llvm::Constant* const constant_initializer=
-					ApplyZeroInitializer( struct_member, initializer, block_names, function_context );
+					ApplyZeroInitializer( struct_member, initializer, function_context );
 
 				if( constant_initializer == nullptr )
 					all_fields_are_constant= false;
@@ -834,6 +838,20 @@ llvm::Constant* CodeBuilder::ApplyZeroInitializer(
 	else U_ASSERT( false );
 
 	return nullptr;
+}
+
+llvm::Constant* CodeBuilder::ApplyUninitializedInitializer(
+	const Variable& variable,
+	const Synt::UninitializedInitializer& initializer,
+	FunctionContext& function_context )
+{
+	if( !function_context.is_in_unsafe_block )
+		errors_.push_back( ReportUninitializedInitializerOutsideUnsafeBlock( initializer.file_pos_ ) );
+
+	if( variable.type.CanBeConstexpr() )
+		return llvm::UndefValue::get( variable.type.GetLLVMType() );
+	else
+		return nullptr;
 }
 
 llvm::Constant* CodeBuilder::InitializeReferenceField(

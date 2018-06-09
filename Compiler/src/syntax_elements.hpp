@@ -215,6 +215,12 @@ public:
 	explicit ZeroInitializer( const FilePos& file_pos );
 };
 
+class UninitializedInitializer final : public SyntaxElementBase, public IInitializer
+{
+public:
+	explicit UninitializedInitializer( const FilePos& file_pos );
+};
+
 class BinaryOperator final : public SyntaxElementBase, public IExpressionComponent
 {
 public:

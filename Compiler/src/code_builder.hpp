@@ -640,7 +640,11 @@ private:
 	llvm::Constant* ApplyZeroInitializer(
 		const Variable& variable,
 		const Synt::ZeroInitializer& initializer,
-		NamesScope& block_names,
+		FunctionContext& function_context );
+
+	llvm::Constant* ApplyUninitializedInitializer(
+		const Variable& variable,
+		const Synt::UninitializedInitializer& initializer,
 		FunctionContext& function_context );
 
 	llvm::Constant* InitializeReferenceField(

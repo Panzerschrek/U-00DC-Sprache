@@ -172,6 +172,7 @@ enum class CodeBuilderErrorCode : unsigned int
 	ExplicitAccessToThisMethodIsUnsafe,
 	UnsafeReferenceCastOutsideUnsafeBlock,
 	MutableReferenceCastOutsideUnsafeBlock,
+	UninitializedInitializerOutsideUnsafeBlock,
 };
 
 struct CodeBuilderError
@@ -315,5 +316,6 @@ CodeBuilderError ReportUnsafeFunctionCallOutsideUnsafeBlock( const FilePos& file
 CodeBuilderError ReportExplicitAccessToThisMethodIsUnsafe( const FilePos& file_pos, const ProgramString& method_name );
 CodeBuilderError ReportUnsafeReferenceCastOutsideUnsafeBlock( const FilePos& file_pos );
 CodeBuilderError ReportMutableReferenceCastOutsideUnsafeBlock( const FilePos& file_pos );
+CodeBuilderError ReportUninitializedInitializerOutsideUnsafeBlock( const FilePos& file_pos );
 
 } // namespace U

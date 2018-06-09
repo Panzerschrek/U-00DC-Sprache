@@ -267,6 +267,8 @@ const char* CodeBuilderErrorCodeToString( const CodeBuilderErrorCode code )
 		return "UnsafeReferenceCastOutsideUnsafeBlock";
 	case CodeBuilderErrorCode::MutableReferenceCastOutsideUnsafeBlock:
 		return "MutableReferenceCastOutsideUnsafeBlock";
+	case CodeBuilderErrorCode::UninitializedInitializerOutsideUnsafeBlock:
+		return "UninitializedInitializerOutsideUnsafeBlock";
 	};
 
 	U_ASSERT(false);
@@ -1725,6 +1727,17 @@ CodeBuilderError ReportMutableReferenceCastOutsideUnsafeBlock( const FilePos& fi
 	error.code= CodeBuilderErrorCode::MutableReferenceCastOutsideUnsafeBlock;
 
 	error.text= "Mutable reference cast outside unsafe block."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportUninitializedInitializerOutsideUnsafeBlock( const FilePos& file_pos )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::UninitializedInitializerOutsideUnsafeBlock;
+
+	error.text= "unsafe initializer outside unsafe block."_SpC;
 
 	return error;
 }

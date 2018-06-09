@@ -96,6 +96,10 @@ ZeroInitializer::ZeroInitializer( const FilePos& file_pos )
 	: SyntaxElementBase(file_pos)
 {}
 
+UninitializedInitializer::UninitializedInitializer( const FilePos& file_pos )
+	: SyntaxElementBase(file_pos)
+{}
+
 BinaryOperator::BinaryOperator( const FilePos& file_pos )
 	: SyntaxElementBase( file_pos )
 {}

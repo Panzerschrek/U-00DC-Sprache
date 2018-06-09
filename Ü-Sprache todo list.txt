@@ -10,7 +10,6 @@ Common:
 *) Constructor initializer for constexpr structs
 *) Constexpr functions
 *) Continious initializer for arrays
-*) Uninitialized initializer
 *) array_view, array view take operator
 *) "string literals\n"
 *) Disabled by-default copying for classes. Possibility to force generating

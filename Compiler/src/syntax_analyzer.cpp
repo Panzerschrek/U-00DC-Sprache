@@ -1379,6 +1379,12 @@ IInitializerPtr SyntaxAnalyzer::ParseInitializer( const bool parse_expression_in
 		NextLexem();
 		return IInitializerPtr( new ZeroInitializer( prev_it->file_pos ) );
 	}
+	else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::uninitialized_ )
+	{
+		const auto prev_it= it_;
+		NextLexem();
+		return IInitializerPtr( new UninitializedInitializer( prev_it->file_pos ) );
+	}
 	else if( parse_expression_initializer )
 	{
 		// In some cases usage of expression in initializer is forbidden.
@@ -1450,6 +1456,11 @@ std::unique_ptr<StructNamedInitializer> SyntaxAnalyzer::ParseStructNamedInitiali
 			if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::zero_init_ )
 			{
 				initializer.reset( new ZeroInitializer( it_->file_pos ) );
+				NextLexem();
+			}
+			else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::uninitialized_ )
+			{
+				initializer.reset( new UninitializedInitializer( it_->file_pos ) );
 				NextLexem();
 			}
 			else
@@ -1587,6 +1598,11 @@ VariablesDeclarationPtr SyntaxAnalyzer::ParseVariablesDeclaration()
 			if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::zero_init_ )
 			{
 				variable_entry.initializer.reset( new ZeroInitializer( it_->file_pos ) );
+				NextLexem();
+			}
+			else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::uninitialized_ )
+			{
+				variable_entry.initializer.reset( new UninitializedInitializer( it_->file_pos ) );
 				NextLexem();
 			}
 			else
@@ -2578,6 +2594,11 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 					if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::zero_init_ )
 					{
 						initializer.reset( new ZeroInitializer( it_->file_pos ) );
+						NextLexem();
+					}
+					else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::uninitialized_ )
+					{
+						initializer.reset( new UninitializedInitializer( it_->file_pos ) );
 						NextLexem();
 					}
 					else
