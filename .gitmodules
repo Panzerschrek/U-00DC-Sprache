@@ -1,0 +1,3 @@
+[submodule "grammar_validator/bnf-plus-plus"]
+	path = grammar_validator/bnf-plus-plus
+	url = git@github.com:Panzerschrek/bnf-plus-plus.git

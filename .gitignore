@@ -13,3 +13,4 @@ build*/
 
 # QtCreator settings
 *.pro.user
+*CmakeLists.txt.user

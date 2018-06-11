@@ -1,0 +1,89 @@
+classname u_sprache_parser;
+
+identifier ::= (<A-Za-z>) {<A-Za-z0-9>};
+
+complex_name_part ::= identifier [ "::" complex_name_part ];
+complex_name ::= ( "::" complex_name_part) | ( complex_name_part );
+
+decimal_number ::= {<0-9>};
+boolean_constant ::= "false" | "true";
+
+
+any_binary_operator ::= binary_minus | binary_plus;
+binary_minus ::= "minus";
+binary_plus ::= "plus";
+
+expression_component_with_unary_operators ::= unary_prefix_operators (named_operand | numeric_constant | boolean_constant) unary_postfix_operators;
+unary_prefix_operators ::= [{ unary_minus | bitwise_not | logical_not }];
+unary_postfix_operators ::= [{ indexation_operator | call_operator | member_access_operator }];
+
+named_operand ::= complex_name;
+numeric_constant ::= decimal_number;
+
+unary_minus ::= "-";
+bitwise_not ::= "~";
+logical_not ::= "!";
+
+indexation_operator ::= "[" expression "]";
+call_operator ::= "(" [ expression [{ "," expression  }] ] ")";
+member_access_operator ::= "." identifier;
+
+expression ::= expression_component_with_unary_operators [ { (any_binary_operator) (expression_component_with_unary_operators) } ];
+
+
+type_name ::= array_type_name | named_type_name;
+array_type_name ::= "[" type_name "," expression "]";
+named_type_name ::= complex_name;
+
+var_mutability_modifier ::= [ "mut" | "imut" | "constexpr" ];
+var_reference_modifier ::= ["&"];
+func_mutability_modifier ::= [ "mut" | "imut" ];
+func_arg ::= type_name ["&"] func_mutability_modifier identifier;
+
+pollution::= identifier "<-" func_mutability_modifier identifier;
+func_pollution_list ::= [ "'" [ pollution [{ "," pollution }] ] "'" ];
+func ::= "fn" complex_name "(" [ func_arg [{ "," func_arg }] ]  ")" func_pollution_list ["unsafe"] [ ":" type_name ["&" func_mutability_modifier ] ] (block | ";");
+
+block::= "{" [{block_element}] "}";
+
+block_element ::= block | unsafe_block | variables_declaration | auto_variable_declaration | return_operator | while_operator | break_operator | continue_operator | if_operator | static_if_operator | single_expression_operator | assignment_operator | additive_asginment_operator | increment_operator | decrement_operator | static_assert_ | halt | halt_if;
+
+unsafe_block ::= "unsafe" block;
+
+single_variable_declaration ::= var_mutability_modifier var_reference_modifier identifier;
+variables_declaration ::= "var" type_name single_variable_declaration [{ "," single_variable_declaration }] ";" ;
+auto_variable_declaration ::= "auto" single_variable_declaration "=" expression ";" ;
+return_operator ::= "return" [ expression ] ";" ;
+while_operator ::= "while" "(" expression ")" block;
+break_operator ::= "beak" ";" ;
+continue_operator ::= "continue" ";" ;
+if_operator_body ::= "(" expression ")" block [{ "else" "if" "(" expression ")" block }] [ "else" block ];
+if_operator ::= "if" if_operator_body;
+static_if_operator ::= "static_if" if_operator_body;
+single_expression_operator ::= expression ";" ;
+assignment_operator ::= expression "=" expression ";" ;
+additive_assignment_op ::= "+=" | "-=" | "/=" | "*=";
+additive_asginment_operator ::= expression additive_assignment_op expression ";" ;
+increment_operator  ::= "++" expression ";" ;
+decrement_operator  ::= "--" expression ";" ;
+static_assert_ ::= "static_assert" "(" expression ")" ";" ;
+halt ::= "halt" ";";
+halt_if ::= "halt" "if" "(" expression ")" ";" ;
+
+
+class_declaration ::= ("class" | "struct") "{" [{ class_element }] "}" ;
+class_element ::= func | typedef_ | class_field;
+
+class_field ::= type_name var_reference_modifier func_mutability_modifier identifier;
+
+typedef_ ::= "type" identifier "=" type_name ";" ;
+
+
+namespace_body ::= [{ namespace_element }];
+namespace_element ::= namespace_ | func | class_declaration | typedef_ | static_assert_;
+
+namespace_ ::= "namespace" "{" namespace_body "}";
+
+program ::= imports_list namespace_body !eoi;
+
+imports_list ::= [{ "import" identifier }];
