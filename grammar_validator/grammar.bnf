@@ -1,89 +1,204 @@
 classname u_sprache_parser;
 
-identifier ::= (<A-Za-z>) {<A-Za-z0-9>};
+//
+// Lexems
+//
 
-complex_name_part ::= identifier [ "::" complex_name_part ];
-complex_name ::= ( "::" complex_name_part) | ( complex_name_part );
+force_white ::= { < \t\n\r> };
+skip_white ::= [force_white];
 
-decimal_number ::= {<0-9>};
-boolean_constant ::= "false" | "true";
+identifier ::= (<A-Za-z>) [{<A-Za-z0-9_>}] skip_white;
+lx_numeric_constant ::= {<0-9>} [ "." {<0-9>} ] [ "e" [ "-" ] {<0-9>} ] skip_white;
+lx_bracket_left  ::= "(" skip_white;
+lx_bracket_right ::= ")" skip_white;
+lx_square_bracket_left  ::= "[" skip_white;
+lx_square_bracket_right ::= "]" skip_white;
+lx_brace_left  ::= "{" skip_white;
+lx_brace_right ::= "}" skip_white;
+lx_template_bracket_left  ::= "</" skip_white;
+lx_template_bracket_right ::= "/>" skip_white;
+lx_scope ::= "::" skip_white;
+lx_comma ::= "," skip_white;
+lx_dot ::= "." skip_white;
+lx_colon ::= ":" skip_white;
+lx_semicolon ::= ";" skip_white;
+lx_assignment ::= "=" skip_white;
+lx_plus ::= "+" skip_white;
+lx_minus ::= "-" skip_white;
+lx_star ::= "*" skip_white;
+lx_slash ::= "/" skip_white;
+lx_percent ::= "%" skip_white;
+lx_and ::= "&" skip_white;
+lx_or  ::= "|" skip_white;
+lx_xor ::= "^" skip_white;
+lx_tilda ::= "~" skip_white;
+lx_not ::= "!" skip_white;
+lx_apostrophe ::= "'" skip_white;
+lx_increment ::= "++" skip_white;
+lx_decrement ::= "--" skip_white;
+lx_compare_less             ::= "<"  skip_white;
+lx_compare_greater          ::= ">"  skip_white;
+lx_compare_equal            ::= "==" skip_white;
+lx_compare_not_equal        ::= "!=" skip_white;
+lx_compare_less_or_equal    ::= "<=" skip_white;
+lx_compare_greater_or_equal ::= ">=" skip_white;
+lx_conjunction ::= "&&" skip_white;
+lx_disjunction ::= "||" skip_white;
+lx_assign_add ::= "+=" skip_white;
+lx_assign_sub ::= "-=" skip_white;
+lx_assign_mul ::= "*=" skip_white;
+lx_assign_div ::= "/=" skip_white;
+lx_assign_rem ::= "%=" skip_white;
+lx_assign_and ::= "&=" skip_white;
+lx_assign_or  ::= "|=" skip_white;
+lx_assign_xor ::= "^=" skip_white;
+lx_shift_left ::= "<<" skip_white;
+lx_shift_right::= ">>" skip_white;
+lx_assign_shift_left  ::= "<<=" skip_white;
+lx_assign_shift_right ::= ">>=" skip_white;
+lx_left_arrow ::= "<-" skip_white;
+lx_ellipsis ::= "..." skip_white;
 
+//
+// Keywords
+//
 
-any_binary_operator ::= binary_minus | binary_plus;
-binary_minus ::= "minus";
-binary_plus ::= "plus";
+// TODO - we needs to disable parsion of constructions, like "fnwww";
+lx_non_ident ::= skip_white;
+kw_fn                  ::= "fn"                lx_non_ident;
+kw_op                  ::= "op"                lx_non_ident;
+kw_var                 ::= "var"               lx_non_ident;
+kw_auto                ::= "auto"              lx_non_ident;
+kw_return              ::= "return"            lx_non_ident;
+kw_while               ::= "while"             lx_non_ident;
+kw_break               ::= "break"             lx_non_ident;
+kw_continue            ::= "continue"          lx_non_ident;
+kw_if                  ::= "if"                lx_non_ident;
+kw_static_if           ::= "static_if"         lx_non_ident;
+kw_else                ::= "else"              lx_non_ident;
+kw_move                ::= "move"              lx_non_ident;
+kw_struct              ::= "struct"            lx_non_ident;
+kw_class               ::= "class"             lx_non_ident;
+kw_final               ::= "final"             lx_non_ident;
+kw_polymorph           ::= "polymorph"         lx_non_ident;
+kw_interface           ::= "interface"         lx_non_ident;
+kw_abstract            ::= "abstract"          lx_non_ident;
+kw_virtual             ::= "virtual"           lx_non_ident;
+kw_override            ::= "override"          lx_non_ident;
+kw_pure                ::= "pure"              lx_non_ident;
+kw_namespace           ::= "namespace"         lx_non_ident;
+kw_public              ::= "public"            lx_non_ident;
+kw_private             ::= "private"           lx_non_ident;
+kw_protected           ::= "protected"         lx_non_ident;
+kw_true                ::= "true"              lx_non_ident;
+kw_false               ::= "false"             lx_non_ident;
+kw_mut                 ::= "mut"               lx_non_ident;
+kw_imut                ::= "imut"              lx_non_ident;
+kw_constexpr           ::= "constexpr"         lx_non_ident;
+kw_zero_init           ::= "zero_init"         lx_non_ident;
+kw_uninitialized       ::= "uninitialized"     lx_non_ident;
+kw_this                ::= "this"              lx_non_ident;
+kw_base                ::= "base"              lx_non_ident;
+kw_constructor         ::= "constructor"       lx_non_ident;
+kw_destructor          ::= "destructor"        lx_non_ident;
+kw_static_assert       ::= "static_assert"     lx_non_ident;
+kw_halt                ::= "halt"              lx_non_ident;
+kw_unsafe              ::= "unsafe"            lx_non_ident;
+kw_type                ::= "type"              lx_non_ident;
+kw_template            ::= "template"          lx_non_ident;
+kw_enum                ::= "enum"              lx_non_ident;
+kw_cast_ref            ::= "cast_ref"          lx_non_ident;
+kw_cast_ref_unsaf      ::= "cast_ref_unsafe"   lx_non_ident;
+kw_cast_imut           ::= "cast_imut"         lx_non_ident;
+kw_cast_mut            ::= "cast_mut"          lx_non_ident;
+kw_import              ::= "import"            lx_non_ident;
 
-expression_component_with_unary_operators ::= unary_prefix_operators (named_operand | numeric_constant | boolean_constant) unary_postfix_operators;
-unary_prefix_operators ::= [{ unary_minus | bitwise_not | logical_not }];
+//
+// Syntax
+//
+
+optional_template_parameters ::= [ lx_template_bracket_left expression [{ lx_comma  expression}] lx_template_bracket_right ];
+complex_name_part ::= identifier [ lx_scope complex_name_part ];
+complex_name ::= [lx_scope] identifier optional_template_parameters [{ lx_scope identifier optional_template_parameters }];
+
+boolean_constant ::= kw_true | kw_false;
+
+any_binary_operator ::=
+	lx_plus | lx_minus | lx_star | lx_slash | lx_percent |
+	lx_compare_equal | lx_compare_not_equal | lx_compare_less | lx_compare_less_or_equal | lx_compare_greater | lx_compare_greater_or_equal |
+	lx_and | lx_or | lx_xor |
+	lx_shift_left | lx_shift_right |
+	lx_conjunction | lx_disjunction;
+
+additive_assignment_op ::=
+	lx_assign_add | lx_assign_sub | lx_assign_mul | lx_assign_div | lx_assign_rem |
+	lx_assign_and | lx_assign_or | lx_assign_xor |
+	lx_assign_shift_left | lx_assign_shift_right;
+
+expression_component_with_unary_operators ::= unary_prefix_operators (bracket_expression | named_operand | lx_numeric_constant | boolean_constant) unary_postfix_operators;
+unary_prefix_operators ::= [{ lx_not | lx_tilda | lx_minus }];
 unary_postfix_operators ::= [{ indexation_operator | call_operator | member_access_operator }];
 
+bracket_expression ::= lx_bracket_left expression lx_bracket_right;
 named_operand ::= complex_name;
-numeric_constant ::= decimal_number;
 
-unary_minus ::= "-";
-bitwise_not ::= "~";
-logical_not ::= "!";
+indexation_operator ::= lx_square_bracket_left expression lx_square_bracket_right;
+call_operator ::= lx_bracket_left [ expression [{ lx_comma expression }] ] lx_bracket_right;
+member_access_operator ::= lx_dot identifier optional_template_parameters;
 
-indexation_operator ::= "[" expression "]";
-call_operator ::= "(" [ expression [{ "," expression  }] ] ")";
-member_access_operator ::= "." identifier;
-
-expression ::= expression_component_with_unary_operators [ { (any_binary_operator) (expression_component_with_unary_operators) } ];
-
+expression ::= expression_component_with_unary_operators [{ any_binary_operator expression_component_with_unary_operators }];
 
 type_name ::= array_type_name | named_type_name;
-array_type_name ::= "[" type_name "," expression "]";
+array_type_name ::= lx_square_bracket_left type_name lx_comma expression lx_square_bracket_right;
 named_type_name ::= complex_name;
 
-var_mutability_modifier ::= [ "mut" | "imut" | "constexpr" ];
-var_reference_modifier ::= ["&"];
-func_mutability_modifier ::= [ "mut" | "imut" ];
-func_arg ::= type_name ["&"] func_mutability_modifier identifier;
+var_mutability_modifier ::= [ kw_mut | kw_imut | kw_constexpr ];
+func_mutability_modifier ::= [ kw_mut | kw_imut ];
+func_arg ::= type_name [lx_and [lx_apostrophe identifier] ] func_mutability_modifier identifier;
 
-pollution::= identifier "<-" func_mutability_modifier identifier;
-func_pollution_list ::= [ "'" [ pollution [{ "," pollution }] ] "'" ];
-func ::= "fn" complex_name "(" [ func_arg [{ "," func_arg }] ]  ")" func_pollution_list ["unsafe"] [ ":" type_name ["&" func_mutability_modifier ] ] (block | ";");
+pollution::= identifier lx_left_arrow func_mutability_modifier identifier;
+func_pollution_list ::= [ lx_apostrophe [ pollution [{ lx_comma pollution }] ] lx_apostrophe ];
+func ::= kw_fn complex_name lx_bracket_left [ func_arg [{ lx_comma func_arg }] ] lx_bracket_right func_pollution_list [kw_unsafe] [ lx_colon type_name [lx_and func_mutability_modifier ] ] skip_white (block | lx_semicolon);
 
-block::= "{" [{block_element}] "}";
+block::= lx_brace_left [{ block_element }] lx_brace_right;
 
 block_element ::= block | unsafe_block | variables_declaration | auto_variable_declaration | return_operator | while_operator | break_operator | continue_operator | if_operator | static_if_operator | single_expression_operator | assignment_operator | additive_asginment_operator | increment_operator | decrement_operator | static_assert_ | halt | halt_if;
 
-unsafe_block ::= "unsafe" block;
+unsafe_block ::= kw_unsafe block;
 
-single_variable_declaration ::= var_mutability_modifier var_reference_modifier identifier;
-variables_declaration ::= "var" type_name single_variable_declaration [{ "," single_variable_declaration }] ";" ;
-auto_variable_declaration ::= "auto" single_variable_declaration "=" expression ";" ;
-return_operator ::= "return" [ expression ] ";" ;
-while_operator ::= "while" "(" expression ")" block;
-break_operator ::= "beak" ";" ;
-continue_operator ::= "continue" ";" ;
-if_operator_body ::= "(" expression ")" block [{ "else" "if" "(" expression ")" block }] [ "else" block ];
-if_operator ::= "if" if_operator_body;
-static_if_operator ::= "static_if" if_operator_body;
-single_expression_operator ::= expression ";" ;
-assignment_operator ::= expression "=" expression ";" ;
-additive_assignment_op ::= "+=" | "-=" | "/=" | "*=";
-additive_asginment_operator ::= expression additive_assignment_op expression ";" ;
-increment_operator  ::= "++" expression ";" ;
-decrement_operator  ::= "--" expression ";" ;
-static_assert_ ::= "static_assert" "(" expression ")" ";" ;
-halt ::= "halt" ";";
-halt_if ::= "halt" "if" "(" expression ")" ";" ;
+single_variable_declaration ::= var_mutability_modifier [lx_and] identifier;
+variables_declaration ::= kw_var type_name single_variable_declaration [{ lx_comma single_variable_declaration }] lx_semicolon;
+auto_variable_declaration ::= kw_auto single_variable_declaration lx_assignment expression lx_semicolon;
+return_operator ::= kw_return [ expression ] lx_semicolon;
+while_operator ::= kw_while lx_bracket_left expression lx_bracket_right block;
+break_operator ::= kw_break lx_semicolon;
+continue_operator ::= kw_continue lx_semicolon;
+if_operator_body ::= lx_bracket_left expression lx_bracket_right block [{ kw_else kw_if lx_bracket_left expression lx_bracket_right block }] [ kw_else block ];
+if_operator ::= kw_if if_operator_body;
+static_if_operator ::= kw_static_if if_operator_body;
+single_expression_operator ::= expression lx_semicolon;
+assignment_operator ::= expression lx_assignment expression lx_semicolon;
+
+additive_asginment_operator ::= expression additive_assignment_op expression lx_semicolon;
+increment_operator ::= lx_increment expression lx_semicolon;
+decrement_operator ::= lx_decrement expression lx_semicolon;
+static_assert_ ::= kw_static_assert lx_bracket_left expression lx_bracket_right lx_semicolon;
+halt ::= kw_halt lx_semicolon;
+halt_if ::= kw_halt kw_if lx_bracket_left expression lx_bracket_right lx_semicolon;
 
 
-class_declaration ::= ("class" | "struct") "{" [{ class_element }] "}" ;
+class_declaration ::= (kw_class | kw_struct) lx_brace_left [{ class_element }] lx_brace_right;
 class_element ::= func | typedef_ | class_field;
 
-class_field ::= type_name var_reference_modifier func_mutability_modifier identifier;
+class_field ::= type_name [lx_and] func_mutability_modifier identifier;
 
-typedef_ ::= "type" identifier "=" type_name ";" ;
-
+typedef_ ::= kw_type identifier lx_assignment type_name lx_semicolon;
 
 namespace_body ::= [{ namespace_element }];
-namespace_element ::= namespace_ | func | class_declaration | typedef_ | static_assert_;
+namespace_element ::= namespace_ | func | class_declaration | typedef_ | static_assert_ ;
 
-namespace_ ::= "namespace" "{" namespace_body "}";
+namespace_ ::= kw_namespace lx_brace_left namespace_body lx_brace_right;
 
-program ::= imports_list namespace_body !eoi;
+program ::= skip_white namespace_body;
 
-imports_list ::= [{ "import" identifier }];
+imports_list ::= [{ kw_import identifier }];
