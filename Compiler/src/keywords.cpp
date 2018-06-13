@@ -109,6 +109,7 @@ static const Globals& GetGlobals()
 		[ size_t(Keywords::import_) ]= "import",
 
 		[ size_t(Keywords::default_) ]= "default",
+		[ size_t(Keywords::delete_) ]= "delete",
 
 		[ size_t(Keywords::for_) ]= "for",
 		[ size_t(Keywords::do_) ]= "do",

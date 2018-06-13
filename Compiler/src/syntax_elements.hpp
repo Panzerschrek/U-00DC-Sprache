@@ -672,7 +672,13 @@ public:
 	OverloadedOperator overloaded_operator_= OverloadedOperator::None;
 	VirtualFunctionKind virtual_function_kind_= VirtualFunctionKind::None;
 
-	bool body_generation_required_= false;
+	enum class BodyKind
+	{
+		None,
+		BodyGenerationRequired,
+		BodyGenerationDisabled,
+	};
+	BodyKind body_kind= BodyKind::None;
 };
 
 class ClassField final

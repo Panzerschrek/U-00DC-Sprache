@@ -2569,7 +2569,9 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 
 		NextLexem();
 
-		if( !( it_->type == Lexem::Type::Identifier && it_->text == Keywords::default_ ) )
+		if( it_->type == Lexem::Type::Identifier && ( it_->text == Keywords::default_ || it_->text == Keywords::delete_ ) )
+			result->body_kind= it_->text == Keywords::default_ ? Function::BodyKind::BodyGenerationRequired : Function::BodyKind::BodyGenerationDisabled;
+		else
 		{
 			PushErrorMessage();
 			return nullptr;
@@ -2582,8 +2584,6 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 			return nullptr;
 		}
 		NextLexem();
-
-		result->body_generation_required_= true;
 	}
 	else
 	{

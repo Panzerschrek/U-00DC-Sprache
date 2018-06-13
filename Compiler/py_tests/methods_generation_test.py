@@ -97,6 +97,76 @@ def DefaultConstructorGeneration_Test0():
 	assert( call_result == 666 )
 
 
+def DisableDefaultConstructor_Test0():
+	c_program_text= """
+		struct A
+		{
+			fn constructor()= delete;
+		}
+		fn Foo()
+		{
+			var A a;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ExpectedInitializer" )
+	assert( errors_list[0].file_pos.line == 8 )
+
+
+def DisableDefaultConstructor_Test1():
+	c_program_text= """
+		class A
+		{
+			fn constructor()= delete;
+		}
+		fn Foo()
+		{
+			var A a;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ExpectedInitializer" )
+	assert( errors_list[0].file_pos.line == 8 )
+
+
+def DisableCopyConstructor_Test0():
+	c_program_text= """
+		struct A
+		{
+			fn constructor( A &imut other )= delete;
+		}
+		fn Foo()
+		{
+			var A a0;
+			var A a1(a0);  // Error, copy-constructor deleted
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "AccessingDeletedMethod" )
+	assert( errors_list[0].file_pos.line == 9 )
+
+
+def DisableCopyAssignmentOperator_Test0():
+	c_program_text= """
+		struct A
+		{
+			op=( mut this, A& imut other )= delete;
+		}
+		fn Foo()
+		{
+			var A a0, mut a1;
+			a1= a0;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "AccessingDeletedMethod" )
+	assert( errors_list[0].file_pos.line == 9 )
+
+
 def InvalidMethodForBodyGeneration_Test0():
 	c_program_text= """
 		fn Foo()= default; // Non-class function.

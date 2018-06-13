@@ -1847,15 +1847,15 @@ CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 			errors_.push_back( ReportVirtualForNonpolymorphClass( func.file_pos_, func_name ) );
 	}
 
-	// Check "=default".
-	if( func.body_generation_required_ )
+	// Check "=default" / "=delete".
+	if( func.body_kind != Synt::Function::BodyKind::None )
 	{
 		U_ASSERT( func.block_ == nullptr && block == nullptr );
 
 		// TODO - create methods, like "IsDefaultConstructor", "IsCopyAssignmentOperator".
-		bool invalid_func_for_gemeration= false;
+		bool invalid_func= false;
 		if( base_class == nullptr )
-			invalid_func_for_gemeration= true;
+			invalid_func= true;
 		else if( is_constructor )
 		{
 			if( function_type.args.size() == 1u ) {}  // default constructor
@@ -1863,23 +1863,28 @@ CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 				function_type.args.size() == 2u &&
 				function_type.args[1].is_reference && !function_type.args[1].is_mutable && function_type.args[1].type == base_class ) {} // copy constructor
 			else
-				invalid_func_for_gemeration= true;
+				invalid_func= true;
 		}
-		else if( func.overloaded_operator_ == OverloadedOperator::Assign ) // copy-assignment operator
+		else if( func.overloaded_operator_ == OverloadedOperator::Assign )
 		{
 			if( function_type.args.size() == 2u &&
 				function_type.args[0].type == base_class &&  function_type.args[0].is_mutable && function_type.args[1].is_reference &&
-				function_type.args[1].type == base_class && !function_type.args[1].is_mutable && function_type.args[1].is_reference ) {}
+				function_type.args[1].type == base_class && !function_type.args[1].is_mutable && function_type.args[1].is_reference ) {}  // copy-assignment operator
 			else
-				invalid_func_for_gemeration= true;
+				invalid_func= true;
 		}
 		else
-			invalid_func_for_gemeration= true;
+			invalid_func= true;
 
-		if( invalid_func_for_gemeration )
+		if( invalid_func )
 			errors_.push_back( ReportInvalidMethodForBodyGeneration( func.file_pos_ ) );
 		else
-			func_variable.is_generated= true;
+		{
+			if( func.body_kind == Synt::Function::BodyKind::BodyGenerationRequired )
+				func_variable.is_generated= true;
+			else
+				func_variable.is_deleted= true;
+		}
 	}
 
 	NamesScope::InsertedName* const previously_inserted_func=

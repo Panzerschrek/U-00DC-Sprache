@@ -39,7 +39,8 @@ void CodeBuilder::TryGenerateDefaultConstructor( Class& the_class, const Type& c
 				}
 				else
 				{
-					the_class.is_default_constructible= true;
+					if( !constructor.is_deleted )
+						the_class.is_default_constructible= true;
 					return;
 				}
 			}
@@ -211,7 +212,8 @@ void CodeBuilder::TryGenerateCopyConstructor( Class& the_class, const Type& clas
 				}
 				else
 				{
-					the_class.is_copy_constructible= true;
+					if( !constructor.is_deleted )
+						the_class.is_copy_constructible= true;
 					return;
 				}
 			}
@@ -501,7 +503,8 @@ void CodeBuilder::TryGenerateCopyAssignmentOperator( Class& the_class, const Typ
 				}
 				else
 				{
-					the_class.is_copy_assignable= true;
+					if( !op.is_deleted )
+						the_class.is_copy_assignable= true;
 					return;
 				}
 			}

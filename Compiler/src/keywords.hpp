@@ -87,6 +87,7 @@ enum class Keywords : unsigned int
 	import_,
 
 	default_,
+	delete_,
 
 	// Reserved keywords for future usage.
 	for_,

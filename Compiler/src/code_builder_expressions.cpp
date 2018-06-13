@@ -152,6 +152,9 @@ boost::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 
 	if( overloaded_operator != nullptr )
 	{
+		if( overloaded_operator->is_deleted )
+			errors_.push_back( ReportAccessingDeletedMethod( file_pos ) );
+
 		if( overloaded_operator->virtual_table_index != ~0u )
 		{
 			// We can not fetch virtual function here, because "this" may be evaluated as second operand for some binary operators.
@@ -2092,6 +2095,9 @@ Value CodeBuilder::BuildCallOperator(
 	}
 
 	errors_.resize( error_count_before ); // Drop errors from first pass.
+
+	if( function_ptr->is_deleted )
+		errors_.push_back( ReportAccessingDeletedMethod( call_operator.file_pos_ ) );
 
 	std::vector<const Synt::IExpressionComponent*> synt_args;
 	for( const Synt::IExpressionComponentPtr& arg : call_operator.arguments_ )

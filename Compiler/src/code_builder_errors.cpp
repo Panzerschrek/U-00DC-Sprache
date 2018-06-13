@@ -153,6 +153,8 @@ const char* CodeBuilderErrorCodeToString( const CodeBuilderErrorCode code )
 		return "InvalidMethodForBodyGeneration";
 	case CodeBuilderErrorCode::MethodBodyGenerationFailed:
 		return "MethodBodyGenerationFailed";
+	case CodeBuilderErrorCode::AccessingDeletedMethod:
+		return "AccessingDeletedMethod";
 	case CodeBuilderErrorCode::InvalidValueAsTemplateArgument:
 		return "InvalidValueAsTemplateArgument";
 	case CodeBuilderErrorCode::InvalidTypeOfTemplateVariableArgument:
@@ -1100,6 +1102,17 @@ CodeBuilderError ReportMethodBodyGenerationFailed( const FilePos& file_pos )
 	error.code= CodeBuilderErrorCode::MethodBodyGenerationFailed;
 
 	error.text= "Method body generation failed."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportAccessingDeletedMethod( const FilePos& file_pos )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::AccessingDeletedMethod;
+
+	error.text= "Accessing deleted method."_SpC;
 
 	return error;
 }

@@ -1063,6 +1063,8 @@ llvm::Constant* CodeBuilder::InitializeFunctionPointer(
 		errors_.push_back( ReportCouldNotSelectOverloadedFunction( initializer_expression.GetFilePos() ) );
 		return nullptr;
 	}
+	if( function_variable->is_deleted )
+		errors_.push_back( ReportAccessingDeletedMethod( initializer_expression.GetFilePos() ) );
 
 	llvm::Value* function_value= function_variable->llvm_function;
 	if( function_variable->type != function_pointer_type.function )
