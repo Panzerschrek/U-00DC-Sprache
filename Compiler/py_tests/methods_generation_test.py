@@ -31,6 +31,48 @@ def ClassHaveNoCopyAssignementOperatorByDefault_Test0():
 	assert( errors_list[0].file_pos.line == 6 )
 
 
+def CopyConstructorGeneration_Test0():
+	c_program_text= """
+		class A
+		{
+			i32 x;
+			fn constructor( i32 in_x ) ( x= in_x ) {}
+			fn constructor( A &imut other )= default;
+		}
+
+		fn Foo() : i32
+		{
+			var A a( 99951 );
+			var A a_copy(a);
+			return a_copy.x;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 99951 )
+
+
+def CopyAssignentOperatorGeneration_Test0():
+	c_program_text= """
+		class A
+		{
+			i32 x;
+			fn constructor( i32 in_x ) ( x= in_x ) {}
+			op=( mut this, A &imut other )= default;
+		}
+
+		fn Foo() : i32
+		{
+			var A a0( 8885654 ), mut a1(0);
+			a1= a0;
+			return a1.x;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 8885654 )
+
+
 def InvalidMethodForBodyGeneration_Test0():
 	c_program_text= """
 		fn Foo()= default; // Non-class function.
