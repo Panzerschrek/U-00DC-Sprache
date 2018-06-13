@@ -1877,7 +1877,7 @@ CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 			invalid_func_for_gemeration= true;
 
 		if( invalid_func_for_gemeration )
-			errors_.push_back( ReportNotImplemented( func.file_pos_, "Generating body for such type" ) ); // TODO - generate separate error
+			errors_.push_back( ReportInvalidMethodForBodyGeneration( func.file_pos_ ) );
 		else
 			func_variable.is_generated= true;
 	}
