@@ -100,6 +100,7 @@ enum class CodeBuilderErrorCode : unsigned int
 	ThisUnavailable,
 	BaseUnavailable,
 	InvalidMethodForBodyGeneration,
+	MethodBodyGenerationFailed,
 
 	// Template errors.
 	InvalidValueAsTemplateArgument,
@@ -259,6 +260,7 @@ CodeBuilderError ReportAccessOfNonThisClassField( const FilePos& file_pos, const
 CodeBuilderError ReportThisUnavailable( const FilePos& file_pos );
 CodeBuilderError ReportBaseUnavailable( const FilePos& file_pos );
 CodeBuilderError ReportInvalidMethodForBodyGeneration( const FilePos& file_pos );
+CodeBuilderError ReportMethodBodyGenerationFailed( const FilePos& file_pos );
 CodeBuilderError ReportInvalidValueAsTemplateArgument( const FilePos& file_pos, const ProgramString& got );
 CodeBuilderError ReportInvalidTypeOfTemplateVariableArgument( const FilePos& file_pos, const ProgramString& type_name );
 CodeBuilderError ReportTemplateParametersDeductionFailed( const FilePos& file_pos );

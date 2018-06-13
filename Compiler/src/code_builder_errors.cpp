@@ -151,6 +151,8 @@ const char* CodeBuilderErrorCodeToString( const CodeBuilderErrorCode code )
 		return "BaseUnavailable";
 	case CodeBuilderErrorCode::InvalidMethodForBodyGeneration:
 		return "InvalidMethodForBodyGeneration";
+	case CodeBuilderErrorCode::MethodBodyGenerationFailed:
+		return "MethodBodyGenerationFailed";
 	case CodeBuilderErrorCode::InvalidValueAsTemplateArgument:
 		return "InvalidValueAsTemplateArgument";
 	case CodeBuilderErrorCode::InvalidTypeOfTemplateVariableArgument:
@@ -1087,6 +1089,17 @@ CodeBuilderError ReportInvalidMethodForBodyGeneration( const FilePos& file_pos )
 	error.code= CodeBuilderErrorCode::InvalidMethodForBodyGeneration;
 
 	error.text= "Invalid method for body generation."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportMethodBodyGenerationFailed( const FilePos& file_pos )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::MethodBodyGenerationFailed;
+
+	error.text= "Method body generation failed."_SpC;
 
 	return error;
 }

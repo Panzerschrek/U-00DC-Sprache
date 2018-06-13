@@ -234,7 +234,11 @@ void CodeBuilder::TryGenerateCopyConstructor( Class& the_class, const Type& clas
 		all_fields_is_copy_constructible= false;
 
 	if( !all_fields_is_copy_constructible )
+	{
+		if( prev_constructor_variable != nullptr )
+			errors_.push_back( ReportMethodBodyGenerationFailed( prev_constructor_variable->prototype_file_pos ) );
 		return;
+	}
 
 	// Generate copy-constructor
 	Function constructor_type;
@@ -518,7 +522,11 @@ void CodeBuilder::TryGenerateCopyAssignmentOperator( Class& the_class, const Typ
 		} );
 
 	if( !all_fields_is_copy_assignable )
+	{
+		if( prev_operator_variable != nullptr )
+			errors_.push_back( ReportMethodBodyGenerationFailed( prev_operator_variable->prototype_file_pos ) );
 		return;
+	}
 
 	// Generate assignment operator
 	Function op_type;

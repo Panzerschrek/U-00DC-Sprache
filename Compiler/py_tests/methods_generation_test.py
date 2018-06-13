@@ -133,3 +133,61 @@ def InvalidMethodForBodyGeneration_Test4():
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "InvalidMethodForBodyGeneration" )
 	assert( errors_list[0].file_pos.line == 4 )
+
+
+def MethodBodyGenerationFailed_Test0():
+	c_program_text= """
+		class Noncopyable{}
+		class A
+		{
+			Noncopyable nc;
+			fn constructor( A &imut other )= default;  // Error, can not generate copy constructor, because field is noncopyable.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "MethodBodyGenerationFailed" )
+	assert( errors_list[0].file_pos.line == 6 )
+
+
+def MethodBodyGenerationFailed_Test1():
+	c_program_text= """
+		class Noncopyable{}
+		class A
+		{
+			Noncopyable nc;
+			op=( mut this, A &imut other )= default;  // Error, can not generate copy assignment operator, because field is noncopyable.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "MethodBodyGenerationFailed" )
+	assert( errors_list[0].file_pos.line == 6 )
+
+
+def MethodBodyGenerationFailed_Test2():
+	c_program_text= """
+		class A
+		{
+			i32& r;
+			op=( mut this, A &imut other )= default;  // Error, can not generate copy assignment operator, because field is reference.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "MethodBodyGenerationFailed" )
+	assert( errors_list[0].file_pos.line == 5 )
+
+
+def MethodBodyGenerationFailed_Test3():
+	c_program_text= """
+		class Noncopyable polymorph {}
+		class A : Noncopyable
+		{
+			op=( mut this, A &imut other )= default;  // Error, can not generate copy assignment operator, because base class is noncopyable.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "MethodBodyGenerationFailed" )
+	assert( errors_list[0].file_pos.line == 6 )
