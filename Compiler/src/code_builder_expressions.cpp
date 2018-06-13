@@ -2268,14 +2268,6 @@ Value CodeBuilder::DoCallFunction(
 					}
 				}
 
-				if( !arg.type.IsCopyConstructible() )
-				{
-					// Can not call function with value parameter, because for value parameter needs copy, but parameter type is not copyable.
-					// TODO - print more reliable message.
-					errors_.push_back( ReportOperationNotSupportedForThisType( file_pos, arg.type.ToString() ) );
-					continue;
-				}
-
 				if( something_have_template_dependent_type )
 				{}
 				else if( expr.value_type == ValueType::Value && expr.type == arg.type )
@@ -2287,6 +2279,14 @@ Value CodeBuilder::DoCallFunction(
 				}
 				else
 				{
+					if( !arg.type.IsCopyConstructible() )
+					{
+						// Can not call function with value parameter, because for value parameter needs copy, but parameter type is not copyable.
+						// TODO - print more reliable message.
+						errors_.push_back( ReportOperationNotSupportedForThisType( file_pos, arg.type.ToString() ) );
+						continue;
+					}
+
 					// Create copy of class value. Call copy constructor.
 					llvm::Value* const arg_copy= function_context.alloca_ir_builder.CreateAlloca( arg.type.GetLLVMType() );
 
@@ -2361,10 +2361,11 @@ Value CodeBuilder::DoCallFunction(
 		llvm_args.insert( llvm_args.begin(), s_ret_value );
 	}
 
-	llvm::Value* call_result=
-		function_context.llvm_ir_builder.CreateCall(
-			function,
-			llvm_args );
+	llvm::Value* call_result= nullptr;
+	if( std::find( llvm_args.begin(), llvm_args.end(), nullptr ) == llvm_args.end() )
+		call_result= function_context.llvm_ir_builder.CreateCall( function, llvm_args );
+	else
+		call_result= llvm::UndefValue::get( llvm::dyn_cast<llvm::FunctionType>(function->getType())->getReturnType() );
 
 	if( return_value_is_sret )
 	{

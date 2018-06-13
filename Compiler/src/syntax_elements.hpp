@@ -671,6 +671,8 @@ public:
 	BlockPtr block_;
 	OverloadedOperator overloaded_operator_= OverloadedOperator::None;
 	VirtualFunctionKind virtual_function_kind_= VirtualFunctionKind::None;
+
+	bool body_generation_required_= false;
 };
 
 class ClassField final

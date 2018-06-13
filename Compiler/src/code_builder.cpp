@@ -1185,8 +1185,8 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 	the_class->completeness= Class::Completeness::Complete;
 
 	TryGenerateDefaultConstructor( *the_class, class_type );
-	TryGenerateCopyConstructor( *the_class, class_type );
 	TryGenerateDestructor( *the_class, class_type );
+	TryGenerateCopyConstructor( *the_class, class_type );
 	TryGenerateCopyAssignmentOperator( *the_class, class_type );
 
 	// Prepare function templates
@@ -1845,6 +1845,41 @@ CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 			errors_.push_back( ReportFunctionCanNotBeVirtual( func.file_pos_, func_name ) );
 		if( base_class != nullptr && ( base_class->class_->kind == Class::Kind::Struct || base_class->class_->kind == Class::Kind::NonPolymorph ) )
 			errors_.push_back( ReportVirtualForNonpolymorphClass( func.file_pos_, func_name ) );
+	}
+
+	// Check "=default".
+	if( func.body_generation_required_ )
+	{
+		U_ASSERT( func.block_ == nullptr && block == nullptr );
+
+		// TODO - create methods, like "IsDefaultConstructor", "IsCopyAssignmentOperator".
+		bool invalid_func_for_gemeration= false;
+		if( base_class == nullptr )
+			invalid_func_for_gemeration= true;
+		else if( is_constructor )
+		{
+			if( function_type.args.size() == 1u ) {}  // default constructor
+			else if(
+				function_type.args.size() == 2u &&
+				function_type.args[1].is_reference && !function_type.args[1].is_mutable && function_type.args[1].type == base_class ) {} // copy constructor
+			else
+				invalid_func_for_gemeration= true;
+		}
+		else if( func.overloaded_operator_ == OverloadedOperator::Assign ) // copy-assignment operator
+		{
+			if( function_type.args.size() == 2u &&
+				function_type.args[0].type == base_class &&  function_type.args[0].is_mutable && function_type.args[1].is_reference &&
+				function_type.args[1].type == base_class && !function_type.args[1].is_mutable && function_type.args[1].is_reference ) {}
+			else
+				invalid_func_for_gemeration= true;
+		}
+		else
+			invalid_func_for_gemeration= true;
+
+		if( invalid_func_for_gemeration )
+			errors_.push_back( ReportNotImplemented( func.file_pos_, "Generating body for such type" ) ); // TODO - generate separate error
+		else
+			func_variable.is_generated= true;
 	}
 
 	NamesScope::InsertedName* const previously_inserted_func=

@@ -2563,6 +2563,28 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 		// function prototype
 		NextLexem();
 	}
+	else if( it_->type == Lexem::Type::Assignment )
+	{
+		// =default;
+
+		NextLexem();
+
+		if( !( it_->type == Lexem::Type::Identifier && it_->text == Keywords::default_ ) )
+		{
+			PushErrorMessage();
+			return nullptr;
+		}
+		NextLexem();
+
+		if( it_->type != Lexem::Type::Semicolon )
+		{
+			PushErrorMessage();
+			return nullptr;
+		}
+		NextLexem();
+
+		result->body_generation_required_= true;
+	}
 	else
 	{
 		if( it_->type == Lexem::Type::BracketLeft )

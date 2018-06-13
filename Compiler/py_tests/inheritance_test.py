@@ -667,6 +667,7 @@ def CopyChildToParent_Test0():
 		{
 			i32 x;
 			fn constructor( i32 in_x ) ( x= in_x ) {}
+			fn constructor( A &imut other )= default;
 		}
 		class B : A
 		{
@@ -690,6 +691,7 @@ def CopyChildToParent_Test1():
 		{
 			i32 x;
 			fn constructor( i32 in_x ) ( x= in_x ) {}
+			fn constructor( A &imut other )= default;
 		}
 		class B : A
 		{
@@ -713,6 +715,7 @@ def CopyChildToParent_Test2():
 		{
 			i32 x;
 			fn constructor( i32 in_x ) ( x= in_x ) {}
+			op=( mut this, A &imut other )= default;
 		}
 		class B : A
 		{
@@ -737,6 +740,7 @@ def CopyChildToParent_Test3():
 		{
 			i32 x;
 			fn constructor( i32 in_x ) ( x= in_x ) {}
+			fn constructor( A &imut other )= default;
 		}
 		class B : A
 		{
@@ -853,10 +857,12 @@ def GeneratedCopyConstructor_Test0():
 		{
 			i32 x;
 			fn constructor( i32 in_x ) ( x= in_x ) {}
+			fn constructor( A &imut other )= default;
 		}
 		class B : A
 		{
 			fn constructor( i32 in_x ) ( base(in_x) ) {}
+			fn constructor( B &imut other )= default;
 		}
 		fn Foo() : i32
 		{

@@ -86,12 +86,13 @@ enum class Keywords : unsigned int
 
 	import_,
 
+	default_,
+
 	// Reserved keywords for future usage.
 	for_,
 	do_,
 	switch_,
 	case_,
-	default_,
 	typename_,
 	const_,
 	lambda_,

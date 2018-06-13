@@ -699,13 +699,17 @@ U_TEST( ConvertedVariableCanLostInnerReference_Test0 )
 {
 	static const char c_program_text[]=
 	R"(
-		class A polymorph{}
+		class A polymorph
+		{
+			fn constructor( A &imut other )= default;
+		}
 		class B : A
 		{
 			i32 &mut x;
 			fn constructor( this't', i32 &'p mut in_x ) ' t <- mut p '
 			( x(in_x) )
 			{}
+			fn constructor( B &imut other )= default;
 		}
 
 		fn Foo()
@@ -723,13 +727,18 @@ U_TEST( ConvertedVariableCanLostInnerReference_Test1 )
 {
 	static const char c_program_text[]=
 	R"(
-		class A polymorph{}
+		class A polymorph
+		{
+			fn constructor( A &imut other )= default;
+			op=( mut this, A &imut other )= default;
+		}
 		class B : A
 		{
 			i32 &mut x;
 			fn constructor( this't', i32 &'p mut in_x ) ' t <- mut p '
 			( x(in_x) )
 			{}
+			fn constructor( B &imut other )= default;
 		}
 
 		fn Foo()
