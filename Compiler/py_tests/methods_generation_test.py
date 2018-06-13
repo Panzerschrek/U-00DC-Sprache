@@ -73,6 +73,30 @@ def CopyAssignentOperatorGeneration_Test0():
 	assert( call_result == 8885654 )
 
 
+def DefaultConstructorGeneration_Test0():
+	c_program_text= """
+		class A
+		{
+			i32 x;
+			fn constructor() ( x= 666 ) {}
+		}
+		class B
+		{
+			A a;
+			fn constructor()= default;
+		}
+
+		fn Foo() : i32
+		{
+			var B b;
+			return b.a.x;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 666 )
+
+
 def InvalidMethodForBodyGeneration_Test0():
 	c_program_text= """
 		fn Foo()= default; // Non-class function.
@@ -185,6 +209,20 @@ def MethodBodyGenerationFailed_Test3():
 		class A : Noncopyable
 		{
 			op=( mut this, A &imut other )= default;  // Error, can not generate copy assignment operator, because base class is noncopyable.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "MethodBodyGenerationFailed" )
+	assert( errors_list[0].file_pos.line == 5 )
+
+
+def MethodBodyGenerationFailed_Test4():
+	c_program_text= """
+		class A
+		{
+			i32 x;
+			fn constructor()= default; // Error, can not generate default destructor, because class contains non-default-constructible fields.
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )

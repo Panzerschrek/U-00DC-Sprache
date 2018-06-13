@@ -47,7 +47,7 @@ void CodeBuilder::TryGenerateDefaultConstructor( Class& the_class, const Type& c
 	}
 
 	// Generating of default constructor disabled, if class have other explicit constructors, except copy constructors.
-	if( the_class.have_explicit_noncopy_constructors )
+	if( the_class.have_explicit_noncopy_constructors && prev_constructor_variable == nullptr )
 		return;
 
 	// Generate default constructor, if all fields is default constructible.
@@ -70,7 +70,11 @@ void CodeBuilder::TryGenerateDefaultConstructor( Class& the_class, const Type& c
 		all_fields_is_default_constructible= false;
 
 	if( !all_fields_is_default_constructible )
+	{
+		if( prev_constructor_variable != nullptr )
+			errors_.push_back( ReportMethodBodyGenerationFailed( prev_constructor_variable->prototype_file_pos ) );
 		return;
+	}
 
 	// Generate function
 
