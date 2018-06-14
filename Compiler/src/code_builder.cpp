@@ -1852,27 +1852,13 @@ CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 	{
 		U_ASSERT( func.block_ == nullptr && block == nullptr );
 
-		// TODO - create methods, like "IsDefaultConstructor", "IsCopyAssignmentOperator".
 		bool invalid_func= false;
 		if( base_class == nullptr )
 			invalid_func= true;
 		else if( is_constructor )
-		{
-			if( function_type.args.size() == 1u ) {}  // default constructor
-			else if(
-				function_type.args.size() == 2u &&
-				function_type.args[1].is_reference && !function_type.args[1].is_mutable && function_type.args[1].type == base_class ) {} // copy constructor
-			else
-				invalid_func= true;
-		}
+			invalid_func= !( IsDefaultConstructor( function_type, base_class ) || IsCopyConstructor( function_type, base_class ) );
 		else if( func.overloaded_operator_ == OverloadedOperator::Assign )
-		{
-			if( function_type.args.size() == 2u &&
-				function_type.args[0].type == base_class &&  function_type.args[0].is_mutable && function_type.args[1].is_reference &&
-				function_type.args[1].type == base_class && !function_type.args[1].is_mutable && function_type.args[1].is_reference ) {}  // copy-assignment operator
-			else
-				invalid_func= true;
-		}
+			invalid_func= !IsCopyAssignmentOperator( function_type, base_class );
 		else
 			invalid_func= true;
 

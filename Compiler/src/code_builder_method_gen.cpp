@@ -27,10 +27,7 @@ void CodeBuilder::TryGenerateDefaultConstructor( Class& the_class, const Type& c
 		U_ASSERT( constructors != nullptr );
 		for( FunctionVariable& constructor : constructors->functions )
 		{
-			const Function& constructor_type= *constructor.type.GetFunctionType();
-
-			U_ASSERT( constructor_type.args.size() >= 1u && constructor_type.args.front().type == class_type );
-			if( ( constructor_type.args.size() == 1u ) )
+			if( IsDefaultConstructor( *constructor.type.GetFunctionType(), class_type ) )
 			{
 				if( constructor.is_generated )
 				{
@@ -199,11 +196,7 @@ void CodeBuilder::TryGenerateCopyConstructor( Class& the_class, const Type& clas
 		U_ASSERT( constructors != nullptr );
 		for( FunctionVariable& constructor : constructors->functions )
 		{
-			const Function& constructor_type= *constructor.type.GetFunctionType();
-
-			U_ASSERT( constructor_type.args.size() >= 1u && constructor_type.args.front().type == class_type );
-			if( constructor_type.args.size() == 2u &&
-				constructor_type.args.back().type == class_type && !constructor_type.args.back().is_mutable )
+			if( IsCopyConstructor( *constructor.type.GetFunctionType(), class_type ) )
 			{
 				if( constructor.is_generated )
 				{
@@ -486,15 +479,9 @@ void CodeBuilder::TryGenerateCopyAssignmentOperator( Class& the_class, const Typ
 		OverloadedFunctionsSet* const operators= assignment_operator_name->second.GetFunctionsSet();
 		for( FunctionVariable& op : operators->functions )
 		{
-			const Function& op_type= *op.type.GetFunctionType();
-
-			if( op_type.args.size() != 2u )
-				continue; // Can happens in error case.
 
 			// SPRACHE_TODO - support assignment operator with value src argument.
-			if(
-				op_type.args[0u].type == class_type &&  op_type.args[0u].is_mutable && op_type.args[0u].is_reference &&
-				op_type.args[1u].type == class_type && !op_type.args[1u].is_mutable && op_type.args[1u].is_reference )
+			if( IsCopyAssignmentOperator( *op.type.GetFunctionType(), class_type ) )
 			{
 				if( op.is_generated )
 				{
@@ -866,6 +853,29 @@ void CodeBuilder::CopyBytes(
 	}
 	else
 		U_ASSERT(false);
+}
+
+bool CodeBuilder::IsDefaultConstructor( const Function& function_type, const Type& base_class )
+{
+	return
+		function_type.args.size() == 1u &&
+		function_type.args[0].type == base_class &&  function_type.args[0].is_mutable && function_type.args[0].is_reference;
+}
+
+bool CodeBuilder::IsCopyConstructor( const Function& function_type, const Type& base_class )
+{
+	return
+		function_type.args.size() == 2u &&
+		function_type.args[0].type == base_class &&  function_type.args[0].is_mutable && function_type.args[0].is_reference &&
+		function_type.args[1].type == base_class && !function_type.args[1].is_mutable && function_type.args[1].is_reference;
+}
+
+bool CodeBuilder::IsCopyAssignmentOperator( const Function& function_type, const Type& base_class )
+{
+	return
+		function_type.args.size() == 2u &&
+		function_type.args[0].type == base_class &&  function_type.args[0].is_mutable && function_type.args[0].is_reference &&
+		function_type.args[1].type == base_class && !function_type.args[1].is_mutable && function_type.args[1].is_reference;
 }
 
 } // namespace CodeBuilderPrivate
