@@ -12,9 +12,6 @@ Common:
 *) Continious initializer for arrays
 *) array_view, array view take operator
 *) "string literals\n"
-*) Disabled by-default copying for classes. Possibility to force generating
-	copying methods.
-*) Possibility to disable some methods generation.
 *) Type conversions
 *) Dereference operator - for pointer-like classes
 *) Early temp variables destruction
@@ -25,6 +22,7 @@ Common:
 	value of structure type.
 *) "for" operator - for ranges
 *) Function to function pointer assignment
+*) == and != methods generation
 
 
 References:
