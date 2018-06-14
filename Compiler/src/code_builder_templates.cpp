@@ -1770,16 +1770,16 @@ void CodeBuilder::RemoveTempClassLLVMValues_impl( Class& class_, const bool is_d
 	if( is_delete_pass )
 	{
 		if( class_.this_class_virtual_table != nullptr )
-			class_.this_class_virtual_table->dropAllReferences();
+			class_.this_class_virtual_table->eraseFromParent();
 		for( const auto& vt : class_.ancestors_virtual_tables )
-			vt.second->dropAllReferences();
+			vt.second->eraseFromParent();
 	}
 	else
 	{
 		if( class_.this_class_virtual_table != nullptr )
-			class_.this_class_virtual_table->eraseFromParent();
+			class_.this_class_virtual_table->dropAllReferences();
 		for( const auto& vt : class_.ancestors_virtual_tables )
-			vt.second->eraseFromParent();
+			vt.second->dropAllReferences();
 	}
 }
 
