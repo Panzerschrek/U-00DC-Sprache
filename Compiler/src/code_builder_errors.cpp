@@ -149,6 +149,12 @@ const char* CodeBuilderErrorCodeToString( const CodeBuilderErrorCode code )
 		return "ThisUnavailable";
 	case CodeBuilderErrorCode::BaseUnavailable:
 		return "BaseUnavailable";
+	case CodeBuilderErrorCode::InvalidMethodForBodyGeneration:
+		return "InvalidMethodForBodyGeneration";
+	case CodeBuilderErrorCode::MethodBodyGenerationFailed:
+		return "MethodBodyGenerationFailed";
+	case CodeBuilderErrorCode::AccessingDeletedMethod:
+		return "AccessingDeletedMethod";
 	case CodeBuilderErrorCode::InvalidValueAsTemplateArgument:
 		return "InvalidValueAsTemplateArgument";
 	case CodeBuilderErrorCode::InvalidTypeOfTemplateVariableArgument:
@@ -1074,6 +1080,39 @@ CodeBuilderError ReportBaseUnavailable( const FilePos& file_pos )
 	error.code= CodeBuilderErrorCode::BaseUnavailable;
 
 	error.text= "\"base\" unavailable."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportInvalidMethodForBodyGeneration( const FilePos& file_pos )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::InvalidMethodForBodyGeneration;
+
+	error.text= "Invalid method for body generation."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportMethodBodyGenerationFailed( const FilePos& file_pos )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::MethodBodyGenerationFailed;
+
+	error.text= "Method body generation failed."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportAccessingDeletedMethod( const FilePos& file_pos )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::AccessingDeletedMethod;
+
+	error.text= "Accessing deleted method."_SpC;
 
 	return error;
 }

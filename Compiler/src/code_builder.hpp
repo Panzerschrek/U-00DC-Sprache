@@ -318,6 +318,10 @@ private:
 		const ClassProxyPtr& class_proxy,
 		FunctionContext& function_context );
 
+	bool IsDefaultConstructor( const Function& function_type, const Type& base_class );
+	bool IsCopyConstructor( const Function& function_type, const Type& base_class );
+	bool IsCopyAssignmentOperator( const Function& function_type, const Type& base_class );
+
 	// Generates for loop from 0 to iteration_count - 1
 	// Calls callback with argument - i32 with index
 	// TODO - allow 64bit indeces?

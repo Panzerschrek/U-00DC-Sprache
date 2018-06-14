@@ -19,26 +19,33 @@ namespace CodeBuilderPrivate
 void CodeBuilder::TryGenerateDefaultConstructor( Class& the_class, const Type& class_type )
 {
 	// Search for explicit default constructor.
-	if( const NamesScope::InsertedName* const constructors_name=
+	FunctionVariable* prev_constructor_variable= nullptr;
+	if( NamesScope::InsertedName* const constructors_name=
 		the_class.members.GetThisScopeName( Keyword( Keywords::constructor_ ) ) )
 	{
-		const OverloadedFunctionsSet* const constructors= constructors_name->second.GetFunctionsSet();
+		OverloadedFunctionsSet* const constructors= constructors_name->second.GetFunctionsSet();
 		U_ASSERT( constructors != nullptr );
-		for( const FunctionVariable& constructor : constructors->functions )
+		for( FunctionVariable& constructor : constructors->functions )
 		{
-			const Function& constructor_type= *constructor.type.GetFunctionType();
-
-			U_ASSERT( constructor_type.args.size() >= 1u && constructor_type.args.front().type == class_type );
-			if( ( constructor_type.args.size() == 1u ) )
+			if( IsDefaultConstructor( *constructor.type.GetFunctionType(), class_type ) )
 			{
-				the_class.is_default_constructible= true;
-				return;
+				if( constructor.is_generated )
+				{
+					U_ASSERT(!constructor.have_body);
+					prev_constructor_variable= &constructor;
+				}
+				else
+				{
+					if( !constructor.is_deleted )
+						the_class.is_default_constructible= true;
+					return;
+				}
 			}
 		};
 	}
 
 	// Generating of default constructor disabled, if class have other explicit constructors, except copy constructors.
-	if( the_class.have_explicit_noncopy_constructors )
+	if( the_class.have_explicit_noncopy_constructors && prev_constructor_variable == nullptr )
 		return;
 
 	// Generate default constructor, if all fields is default constructible.
@@ -61,7 +68,11 @@ void CodeBuilder::TryGenerateDefaultConstructor( Class& the_class, const Type& c
 		all_fields_is_default_constructible= false;
 
 	if( !all_fields_is_default_constructible )
+	{
+		if( prev_constructor_variable != nullptr )
+			errors_.push_back( ReportMethodBodyGenerationFailed( prev_constructor_variable->prototype_file_pos ) );
 		return;
+	}
 
 	// Generate function
 
@@ -151,18 +162,23 @@ void CodeBuilder::TryGenerateDefaultConstructor( Class& the_class, const Type& c
 	constructor_variable.is_generated= true;
 	constructor_variable.llvm_function= llvm_constructor_function;
 
-	if( NamesScope::InsertedName* const constructors_name=
-		the_class.members.GetThisScopeName( Keyword( Keywords::constructor_ ) ) )
-	{
-		OverloadedFunctionsSet* const constructors= constructors_name->second.GetFunctionsSet();
-		U_ASSERT( constructors != nullptr );
-		constructors->functions.push_back( std::move( constructor_variable ) );
-	}
+	if( prev_constructor_variable != nullptr )
+		*prev_constructor_variable= std::move(constructor_variable);
 	else
 	{
-		OverloadedFunctionsSet constructors;
-		constructors.functions.push_back( std::move( constructor_variable ) );
-		the_class.members.AddName( Keyword( Keywords::constructor_ ), std::move( constructors ) );
+		if( NamesScope::InsertedName* const constructors_name=
+			the_class.members.GetThisScopeName( Keyword( Keywords::constructor_ ) ) )
+		{
+			OverloadedFunctionsSet* const constructors= constructors_name->second.GetFunctionsSet();
+			U_ASSERT( constructors != nullptr );
+			constructors->functions.push_back( std::move( constructor_variable ) );
+		}
+		else
+		{
+			OverloadedFunctionsSet constructors;
+			constructors.functions.push_back( std::move( constructor_variable ) );
+			the_class.members.AddName( Keyword( Keywords::constructor_ ), std::move( constructors ) );
+		}
 	}
 
 	// After default constructor generation, class is default-constructible.
@@ -172,24 +188,33 @@ void CodeBuilder::TryGenerateDefaultConstructor( Class& the_class, const Type& c
 void CodeBuilder::TryGenerateCopyConstructor( Class& the_class, const Type& class_type )
 {
 	// Search for explicit copy constructor.
-	if( const NamesScope::InsertedName* const constructors_name=
+	FunctionVariable* prev_constructor_variable= nullptr;
+	if( NamesScope::InsertedName* const constructors_name=
 		the_class.members.GetThisScopeName( Keyword( Keywords::constructor_ ) ) )
 	{
-		const OverloadedFunctionsSet* const constructors= constructors_name->second.GetFunctionsSet();
+		OverloadedFunctionsSet* const constructors= constructors_name->second.GetFunctionsSet();
 		U_ASSERT( constructors != nullptr );
-		for( const FunctionVariable& constructor : constructors->functions )
+		for( FunctionVariable& constructor : constructors->functions )
 		{
-			const Function& constructor_type= *constructor.type.GetFunctionType();
-
-			U_ASSERT( constructor_type.args.size() >= 1u && constructor_type.args.front().type == class_type );
-			if( constructor_type.args.size() == 2u &&
-				constructor_type.args.back().type == class_type && !constructor_type.args.back().is_mutable )
+			if( IsCopyConstructor( *constructor.type.GetFunctionType(), class_type ) )
 			{
-				the_class.is_copy_constructible= true;
-				return;
+				if( constructor.is_generated )
+				{
+					U_ASSERT(!constructor.have_body);
+					prev_constructor_variable= &constructor;
+				}
+				else
+				{
+					if( !constructor.is_deleted )
+						the_class.is_copy_constructible= true;
+					return;
+				}
 			}
 		}
 	}
+
+	if( prev_constructor_variable == nullptr && the_class.kind != Class::Kind::Struct )
+		return; // Do not generate copy-constructor for classes. Generate it only if "=default" explicitly specified for this method.
 
 	bool all_fields_is_copy_constructible= true;
 
@@ -208,7 +233,11 @@ void CodeBuilder::TryGenerateCopyConstructor( Class& the_class, const Type& clas
 		all_fields_is_copy_constructible= false;
 
 	if( !all_fields_is_copy_constructible )
+	{
+		if( prev_constructor_variable != nullptr )
+			errors_.push_back( ReportMethodBodyGenerationFailed( prev_constructor_variable->prototype_file_pos ) );
 		return;
+	}
 
 	// Generate copy-constructor
 	Function constructor_type;
@@ -316,18 +345,23 @@ void CodeBuilder::TryGenerateCopyConstructor( Class& the_class, const Type& clas
 	constructor_variable.is_generated= true;
 	constructor_variable.llvm_function= llvm_constructor_function;
 
-	if( NamesScope::InsertedName* const constructors_name=
-		the_class.members.GetThisScopeName( Keyword( Keywords::constructor_ ) ) )
-	{
-		OverloadedFunctionsSet* const constructors= constructors_name->second.GetFunctionsSet();
-		U_ASSERT( constructors != nullptr );
-		constructors->functions.push_back( std::move( constructor_variable ) );
-	}
+	if( prev_constructor_variable != nullptr )
+		*prev_constructor_variable= std::move(constructor_variable);
 	else
 	{
-		OverloadedFunctionsSet constructors;
-		constructors.functions.push_back( std::move( constructor_variable ) );
-		the_class.members.AddName( Keyword( Keywords::constructor_ ), std::move( constructors ) );
+		if( NamesScope::InsertedName* const constructors_name=
+			the_class.members.GetThisScopeName( Keyword( Keywords::constructor_ ) ) )
+		{
+			OverloadedFunctionsSet* const constructors= constructors_name->second.GetFunctionsSet();
+			U_ASSERT( constructors != nullptr );
+			constructors->functions.push_back( std::move( constructor_variable ) );
+		}
+		else
+		{
+			OverloadedFunctionsSet constructors;
+			constructors.functions.push_back( std::move( constructor_variable ) );
+			the_class.members.AddName( Keyword( Keywords::constructor_ ), std::move( constructors ) );
+		}
 	}
 
 	// After default constructor generation, class is copy-constructible.
@@ -438,27 +472,34 @@ void CodeBuilder::TryGenerateCopyAssignmentOperator( Class& the_class, const Typ
 	static const ProgramString op_name= "="_SpC;
 
 	// Search for explicit assignment operator.
-	if( const NamesScope::InsertedName* const assignment_operator_name=
+	FunctionVariable* prev_operator_variable= nullptr;
+	if( NamesScope::InsertedName* const assignment_operator_name=
 		the_class.members.GetThisScopeName( op_name ) )
 	{
-		const OverloadedFunctionsSet* const operators= assignment_operator_name->second.GetFunctionsSet();
-		for( const FunctionVariable& op : operators->functions )
+		OverloadedFunctionsSet* const operators= assignment_operator_name->second.GetFunctionsSet();
+		for( FunctionVariable& op : operators->functions )
 		{
-			const Function& op_type= *op.type.GetFunctionType();
-
-			if( op_type.args.size() != 2u )
-				continue; // Can happens in error case.
 
 			// SPRACHE_TODO - support assignment operator with value src argument.
-			if(
-				op_type.args[0u].type == class_type &&  op_type.args[0u].is_mutable && op_type.args[0u].is_reference &&
-				op_type.args[1u].type == class_type && !op_type.args[1u].is_mutable && op_type.args[1u].is_reference )
+			if( IsCopyAssignmentOperator( *op.type.GetFunctionType(), class_type ) )
 			{
-				the_class.is_copy_assignable= true;
-				return;
+				if( op.is_generated )
+				{
+					U_ASSERT( !op.have_body );
+					prev_operator_variable= &op;
+				}
+				else
+				{
+					if( !op.is_deleted )
+						the_class.is_copy_assignable= true;
+					return;
+				}
 			}
 		}
 	}
+
+	if( prev_operator_variable == nullptr && the_class.kind != Class::Kind::Struct )
+		return; // Do not generate copy-constructor for classes. Generate it only if "=default" explicitly specified for this method.
 
 	bool all_fields_is_copy_assignable= true;
 
@@ -474,8 +515,15 @@ void CodeBuilder::TryGenerateCopyAssignmentOperator( Class& the_class, const Typ
 				all_fields_is_copy_assignable= false;
 		} );
 
+	if( the_class.base_class != nullptr && !the_class.base_class->class_->is_copy_assignable )
+		all_fields_is_copy_assignable= false;
+
 	if( !all_fields_is_copy_assignable )
+	{
+		if( prev_operator_variable != nullptr )
+			errors_.push_back( ReportMethodBodyGenerationFailed( prev_operator_variable->prototype_file_pos ) );
 		return;
+	}
 
 	// Generate assignment operator
 	Function op_type;
@@ -533,6 +581,16 @@ void CodeBuilder::TryGenerateCopyAssignmentOperator( Class& the_class, const Typ
 	llvm::Value* const src_llvm_value= &*(++llvm_op_function->args().begin());
 	src_llvm_value->setName( "src" );
 
+	if( the_class.base_class != nullptr )
+	{
+		llvm::Value* index_list[2];
+		index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
+		index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(the_class.base_class_field_number) ) );
+		llvm::Value* const src= function_context.llvm_ir_builder.CreateGEP( src_llvm_value , llvm::ArrayRef<llvm::Value*>( index_list, 2u ) );
+		llvm::Value* const dst= function_context.llvm_ir_builder.CreateGEP( this_llvm_value, llvm::ArrayRef<llvm::Value*>( index_list, 2u ) );
+		BuildCopyAssignmentOperatorPart( src, dst, the_class.base_class, function_context );
+	}
+
 	the_class.members.ForEachInThisScope(
 		[&]( const NamesScope::InsertedName& member )
 		{
@@ -563,17 +621,22 @@ void CodeBuilder::TryGenerateCopyAssignmentOperator( Class& the_class, const Typ
 	op_variable.is_generated= true;
 	op_variable.llvm_function= llvm_op_function;
 
-	if( NamesScope::InsertedName* const operators_name= the_class.members.GetThisScopeName( op_name ) )
-	{
-		OverloadedFunctionsSet* const operators= operators_name->second.GetFunctionsSet();
-		U_ASSERT( operators != nullptr );
-		operators->functions.push_back( std::move( op_variable ) );
-	}
+	if( prev_operator_variable != nullptr )
+		*prev_operator_variable= std::move( op_variable );
 	else
 	{
-		OverloadedFunctionsSet operators;
-		operators.functions.push_back( std::move( op_variable ) );
-		the_class.members.AddName( op_name , std::move( operators ) );
+		if( NamesScope::InsertedName* const operators_name= the_class.members.GetThisScopeName( op_name ) )
+		{
+			OverloadedFunctionsSet* const operators= operators_name->second.GetFunctionsSet();
+			U_ASSERT( operators != nullptr );
+			operators->functions.push_back( std::move( op_variable ) );
+		}
+		else
+		{
+			OverloadedFunctionsSet operators;
+			operators.functions.push_back( std::move( op_variable ) );
+			the_class.members.AddName( op_name , std::move( operators ) );
+		}
 	}
 
 	// After operator generation, class is copy-assignable.
@@ -790,6 +853,29 @@ void CodeBuilder::CopyBytes(
 	}
 	else
 		U_ASSERT(false);
+}
+
+bool CodeBuilder::IsDefaultConstructor( const Function& function_type, const Type& base_class )
+{
+	return
+		function_type.args.size() == 1u &&
+		function_type.args[0].type == base_class &&  function_type.args[0].is_mutable && function_type.args[0].is_reference;
+}
+
+bool CodeBuilder::IsCopyConstructor( const Function& function_type, const Type& base_class )
+{
+	return
+		function_type.args.size() == 2u &&
+		function_type.args[0].type == base_class &&  function_type.args[0].is_mutable && function_type.args[0].is_reference &&
+		function_type.args[1].type == base_class && !function_type.args[1].is_mutable && function_type.args[1].is_reference;
+}
+
+bool CodeBuilder::IsCopyAssignmentOperator( const Function& function_type, const Type& base_class )
+{
+	return
+		function_type.args.size() == 2u &&
+		function_type.args[0].type == base_class &&  function_type.args[0].is_mutable && function_type.args[0].is_reference &&
+		function_type.args[1].type == base_class && !function_type.args[1].is_mutable && function_type.args[1].is_reference;
 }
 
 } // namespace CodeBuilderPrivate

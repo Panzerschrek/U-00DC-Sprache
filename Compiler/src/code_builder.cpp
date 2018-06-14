@@ -1185,8 +1185,8 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 	the_class->completeness= Class::Completeness::Complete;
 
 	TryGenerateDefaultConstructor( *the_class, class_type );
-	TryGenerateCopyConstructor( *the_class, class_type );
 	TryGenerateDestructor( *the_class, class_type );
+	TryGenerateCopyConstructor( *the_class, class_type );
 	TryGenerateCopyAssignmentOperator( *the_class, class_type );
 
 	// Prepare function templates
@@ -1845,6 +1845,32 @@ CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 			errors_.push_back( ReportFunctionCanNotBeVirtual( func.file_pos_, func_name ) );
 		if( base_class != nullptr && ( base_class->class_->kind == Class::Kind::Struct || base_class->class_->kind == Class::Kind::NonPolymorph ) )
 			errors_.push_back( ReportVirtualForNonpolymorphClass( func.file_pos_, func_name ) );
+	}
+
+	// Check "=default" / "=delete".
+	if( func.body_kind != Synt::Function::BodyKind::None )
+	{
+		U_ASSERT( func.block_ == nullptr && block == nullptr );
+
+		bool invalid_func= false;
+		if( base_class == nullptr )
+			invalid_func= true;
+		else if( is_constructor )
+			invalid_func= !( IsDefaultConstructor( function_type, base_class ) || IsCopyConstructor( function_type, base_class ) );
+		else if( func.overloaded_operator_ == OverloadedOperator::Assign )
+			invalid_func= !IsCopyAssignmentOperator( function_type, base_class );
+		else
+			invalid_func= true;
+
+		if( invalid_func )
+			errors_.push_back( ReportInvalidMethodForBodyGeneration( func.file_pos_ ) );
+		else
+		{
+			if( func.body_kind == Synt::Function::BodyKind::BodyGenerationRequired )
+				func_variable.is_generated= true;
+			else
+				func_variable.is_deleted= true;
+		}
 	}
 
 	NamesScope::InsertedName* const previously_inserted_func=

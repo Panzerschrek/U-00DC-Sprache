@@ -522,7 +522,7 @@ U_TEST(DestructorsTest11)
 	R"(
 		fn DestructorCalled(i32 x);
 
-		class S
+		struct S
 		{
 			i32 x;
 			fn constructor( i32 in_x ) ( x= in_x ) {}

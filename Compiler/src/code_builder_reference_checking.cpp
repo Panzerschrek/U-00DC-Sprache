@@ -256,9 +256,7 @@ void CodeBuilder::ProcessFunctionReferencesPollution(
 		( func.name_.components.back().name == Keywords::destructor_ ) ||
 		( func.name_.components.back().name == Keywords::constructor_ && ( func.type_.arguments_.empty() || func.type_.arguments_.front()->name_ != Keywords::this_ ) );
 
-	if( func.name_.components.size() == 1u && func.name_.components.front().name == Keywords::constructor_ &&
-		function_type.args.size() == 2u &&
-		function_type.args.back().type == base_class && !function_type.args.back().is_mutable && function_type.args.back().is_reference )
+	if( func.name_.components.back().name == Keywords::constructor_ && IsCopyConstructor( function_type, base_class ) )
 	{
 		if( !func.type_.referecnces_pollution_list_.empty() )
 			errors_.push_back( ReportExplicitReferencePollutionForCopyConstructor( func.file_pos_ ) );
@@ -275,10 +273,7 @@ void CodeBuilder::ProcessFunctionReferencesPollution(
 			function_type.references_pollution.insert(ref_pollution);
 		}
 	}
-	else if( func.name_.components.back().name == OverloadedOperatorToString( OverloadedOperator::Assign ) &&
-		function_type.args.size() == 2u &&
-		function_type.args[0u].type == base_class &&  function_type.args[0u].is_mutable && function_type.args[0u].is_reference &&
-		function_type.args[1u].type == base_class && !function_type.args[1u].is_mutable && function_type.args[1u].is_reference )
+	else if( func.name_.components.back().name == OverloadedOperatorToString( OverloadedOperator::Assign ) && IsCopyAssignmentOperator( function_type, base_class ) )
 	{
 		if( !func.type_.referecnces_pollution_list_.empty() )
 			errors_.push_back( ReportExplicitReferencePollutionForCopyAssignmentOperator( func.file_pos_ ) );

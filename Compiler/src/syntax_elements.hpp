@@ -671,6 +671,14 @@ public:
 	BlockPtr block_;
 	OverloadedOperator overloaded_operator_= OverloadedOperator::None;
 	VirtualFunctionKind virtual_function_kind_= VirtualFunctionKind::None;
+
+	enum class BodyKind
+	{
+		None,
+		BodyGenerationRequired,
+		BodyGenerationDisabled,
+	};
+	BodyKind body_kind= BodyKind::None;
 };
 
 class ClassField final

@@ -26,6 +26,7 @@ def main():
 		"function_templates_test",
 		"inheritance_test",
 		"inheritance_errors_test",
+		"methods_generation_test",
 		"overloading_resolution_test",
 		"public_private_protected_test",
 		"reference_cast_operators_test",
