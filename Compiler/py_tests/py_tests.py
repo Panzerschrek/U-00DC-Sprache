@@ -34,6 +34,7 @@ def main():
 		"stack_variables_move_errors_test",
 		"stack_variables_move_test",
 		"type_templates_overloading_test",
+		"typeinfo_test",
 		"static_if_test",
 		"uninitialized_initializer_test",
 		"unsafe_test",

@@ -76,6 +76,7 @@ enum class Keywords : unsigned int
 	unsafe_,
 
 	type_,
+	typeinfo_,
 	template_,
 	enum_,
 

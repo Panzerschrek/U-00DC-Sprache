@@ -292,6 +292,10 @@ Value CodeBuilder::BuildExpressionCode(
 	{
 		result= BuildCastMut( *cast_mut, names, function_context );
 	}
+	else if( const auto typeinfo_= dynamic_cast<const Synt::TypeInfo*>(&expression) )
+	{
+		U_UNUSED(typeinfo_); // TODO
+	}
 	else U_ASSERT(false);
 
 	if( const auto expression_with_unary_operators=
