@@ -85,7 +85,7 @@ public:
 			if( !ReadFile( result_path.string<std::string>().c_str(), result.file_content ) )
 				return boost::none;
 
-			result.full_file_path= ToProgramString( result_path.string<std::string>().c_str() );
+			result.full_file_path= ToProgramString( result_path.make_preferred().string<std::string>().c_str() );
 			return std::move(result);
 		}
 		catch( const std::exception& e )
@@ -109,7 +109,7 @@ public:
 				const fs::path base_dir= fs::path( ToStdString(full_parent_file_path) ).parent_path();
 				result_path= base_dir / file_path_r;
 			}
-			return ToProgramString( result_path.string<std::string>().c_str() );
+			return ToProgramString( result_path.make_preferred().string<std::string>().c_str() );
 		}
 		catch( const std::exception& e )
 		{
