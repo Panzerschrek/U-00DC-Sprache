@@ -136,22 +136,12 @@ Usage:
 		return 1;
 	}
 
-	const char* input_file= nullptr;
+	std::vector<const char*> input_files;
 	const char* output_file= nullptr;
 	bool print_llvm_asm= false;
 
-	for( int i = 1; i < argc; i++ )
+	for( int i = 1; i < argc; )
 	{
-		if( std::strcmp( argv[i], "-i" ) == 0 )
-		{
-			if( i + 1 >= argc )
-			{
-				std::cout << "Expeted name after\"-i\"" << std::endl;
-				return 1;
-			}
-			input_file= argv[ i + 1 ];
-		}
-		else
 		if( std::strcmp( argv[i], "-o" ) == 0 )
 		{
 			if( i + 1 >= argc )
@@ -160,21 +150,28 @@ Usage:
 				return 1;
 			}
 			output_file= argv[ i + 1 ];
+			i+= 2;
 		}
 		else if( std::strcmp( argv[i], "--print-llvm-asm" ) == 0 )
 		{
 			print_llvm_asm= true;
+			++i;
 		}
 		else if( std::strcmp( argv[i], "--help" ) == 0 )
 		{
 			std::cout << help_message << std::endl;
 			return 0;
 		}
+		else
+		{
+			input_files.push_back( argv[i] );
+			++i;
+		}
 	}
 
-	if( input_file == nullptr )
+	if( input_files.empty() )
 	{
-		std::cout << "No input file" << std::endl;
+		std::cout << "No input files" << std::endl;
 		return 1;
 	}
 	if( output_file == nullptr )
@@ -183,28 +180,54 @@ Usage:
 		return 1;
 	}
 
-	// Source graph loading (inluding lex & synth).
-	U::SourceGraphLoader source_gramph_loader( std::make_shared<U::VfsOverSystemFS>() );
-	const U::SourceGraphPtr source_graph= source_gramph_loader.LoadSource( U::ToProgramString( input_file ) );
-	U_ASSERT( source_graph != nullptr );
-	if( !source_graph->lexical_errors.empty() || !source_graph->syntax_errors.empty() )
-		return 1;
+	// Compile multiple input files and link them together.
+	U::SourceGraphLoader source_graph_loader( std::make_shared<U::VfsOverSystemFS>() );
+	std::unique_ptr<llvm::Module> result_module;
+	bool have_some_errors= false;
+	for( const char* const input_file : input_files )
+	{
+		const U::SourceGraphPtr source_graph= source_graph_loader.LoadSource( U::ToProgramString( input_file ) );
+		U_ASSERT( source_graph != nullptr );
+		if( !source_graph->lexical_errors.empty() || !source_graph->syntax_errors.empty() )
+		{
+			have_some_errors= true;
+			continue;
+		}
 
-	// Code build
-	U::CodeBuilder::BuildResult build_result=
-		U::CodeBuilder().BuildProgram( *source_graph );
+		U::CodeBuilder::BuildResult build_result=
+			U::CodeBuilder().BuildProgram( *source_graph );
 
-	for( const U::CodeBuilderError& error : build_result.errors )
-		std::cout << U::ToStdString( source_graph->nodes_storage[error.file_pos.file_index ].file_path )
-			<< ":" << error.file_pos.line << ":" << error.file_pos.pos_in_line << " " << U::ToStdString( error.text ) << "\n";
+		for( const U::CodeBuilderError& error : build_result.errors )
+			std::cout << U::ToStdString( source_graph->nodes_storage[error.file_pos.file_index ].file_path )
+				<< ":" << error.file_pos.line << ":" << error.file_pos.pos_in_line << " " << U::ToStdString( error.text ) << "\n";
 
-	if( !build_result.errors.empty() )
+		if( !build_result.errors.empty() )
+		{
+			have_some_errors= true;
+			continue;
+		}
+
+		if( result_module == nullptr )
+			result_module= std::move( build_result.module );
+		else
+		{
+			const bool not_ok=
+				llvm::Linker::LinkModules( result_module.get() , build_result.module.get() );
+			if( not_ok )
+			{
+				std::cout << "Error, linking file \"" << input_file << "\"" << std::endl;
+				have_some_errors= true;
+			}
+		}
+	}
+
+	if( have_some_errors )
 		return 1;
 
 	{ // Link stdlib with result module.
 		llvm::SMDiagnostic err;
 		const std::unique_ptr<llvm::Module> std_lib_module=
-			llvm::parseAssemblyString( g_std_lib_asm, err, build_result.module->getContext() );
+			llvm::parseAssemblyString( g_std_lib_asm, err, result_module->getContext() );
 
 		if( std_lib_module == nullptr )
 		{
@@ -220,20 +243,20 @@ Usage:
 			return 1;
 		}
 
-		llvm::Linker::LinkModules( build_result.module.get(), std_lib_module.get() );
+		llvm::Linker::LinkModules( result_module.get(), std_lib_module.get() );
 	}
 
 	if( print_llvm_asm )
 	{
 		llvm::raw_os_ostream stream(std::cout);
-		build_result.module->print(stream, nullptr);
+		result_module->print( stream, nullptr );
 	}
 
 	// LLVM ir dump
 	std::error_code file_error_code;
 	llvm::raw_fd_ostream file( output_file, file_error_code, llvm::sys::fs::F_None );
 
-	llvm::WriteBitcodeToFile( build_result.module.get(), file );
+	llvm::WriteBitcodeToFile( result_module.get(), file );
 	file.flush();
 
 	if( file.has_error() )

@@ -246,7 +246,7 @@ function( CompileUSource u_source_file )
 	add_custom_command(
 		OUTPUT ${object_name}
 		DEPENDS ${u_source_file} Compiler
-		COMMAND Compiler -i ${CMAKE_SOURCE_DIR}/${u_source_file} -o ${bc_name} &&
+		COMMAND Compiler ${CMAKE_SOURCE_DIR}/${u_source_file} -o ${bc_name} &&
 		${LLVM_UTILS_DIR}/llc ${bc_name} -filetype=obj -o=${object_name} )
 	set( U_SOURCE_OBJECT ${object_name} PARENT_SCOPE )
 endfunction()
