@@ -31,3 +31,16 @@ def TypeKindFields_Test0():
 		}
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def TypeinfoCalssIsSameForSameTypes_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			auto mut t= typeinfo</i32/>;
+			t= typeinfo</i32/>;  // Must asign here, because types of both typeinfo expressions is same.
+			halt if( ! t.is_fundamental );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )

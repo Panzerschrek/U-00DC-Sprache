@@ -19,7 +19,10 @@ Value CodeBuilder::BuildTypeinfoOperator( const Synt::TypeInfo& typeinfo_op, Nam
 		return ErrorValue();
 	}
 
-	// TODO - cache typeinfo values.
+	// Search in cache.
+	for( const auto& cache_value : typeinfo_cache_ )
+		if( cache_value.first == type )
+			return Value( cache_value.second, typeinfo_op.file_pos_ );
 
 	const ProgramString typeinfo_class_name= "_typeinfo_for_"_SpC + type.ToString();
 	const auto typeinfo_class_proxy= std::make_shared<ClassProxy>( new Class( typeinfo_class_name, names.GetRoot() ) );
@@ -36,7 +39,7 @@ Value CodeBuilder::BuildTypeinfoOperator( const Synt::TypeInfo& typeinfo_op, Nam
 		field.type= bool_type_;
 		field.index= fields_llvm_types.size();
 		field.is_reference= false;
-		field.is_mutable= false;
+		field.is_mutable= true;
 
 		typeinfo_class.members.AddName( name, Value( std::move(field), typeinfo_op.file_pos_ ) );
 		fields_llvm_types.push_back( fundamental_llvm_types_.bool_ );
@@ -78,7 +81,10 @@ Value CodeBuilder::BuildTypeinfoOperator( const Synt::TypeInfo& typeinfo_op, Nam
 			ToStdString( "_val_of_"_SpC + typeinfo_class_name ),
 			result.constexpr_value );
 
-	return Value( result, typeinfo_op.file_pos_ );
+	// Add to cache
+	typeinfo_cache_.push_back( std::make_pair( type, result ) );
+
+	return Value( std::move(result), typeinfo_op.file_pos_ );
 }
 
 } // namespace CodeBuilderPrivate

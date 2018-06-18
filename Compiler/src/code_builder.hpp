@@ -796,6 +796,10 @@ private:
 	// Unchangeable they are because incomplete template classes ( or classes inside template classes, etc. ) currently forbidden.
 	TemplateClassesCache template_classes_cache_;
 
+	// We needs to generate same typeinfo classes for same types. Use cache for it.
+	// TODO - create hasher for type and use unordered_map.
+	std::vector< std::pair< Type, Variable > > typeinfo_cache_;
+
 	std::vector<std::unique_ptr<PreResolveFunc>> resolving_funcs_stack_;
 	size_t next_template_dependent_type_index_= 1u;
 };
