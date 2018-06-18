@@ -112,6 +112,31 @@ Variable CodeBuilder::BuildTypeInfo( const Type& type, const NamesScope& root_na
 		add_size_field( "element_count"_SpC, array_type->ArraySizeOrZero() );
 		add_typeinfo_field( "element_type"_SpC, array_type->type );
 	}
+	else if( const Class* const class_type= type.GetClassType() )
+	{
+		add_size_field( "field_count"_SpC, class_type->field_count );
+
+		add_bool_field( "is_struct"_SpC, class_type->kind == Class::Kind::Struct );
+
+		add_bool_field( "is_polymorph"_SpC,
+			class_type->kind == Class::Kind::Interface ||
+			class_type->kind == Class::Kind::Abstract ||
+			class_type->kind == Class::Kind::PolymorphNonFinal ||
+			class_type->kind == Class::Kind::PolymorphFinal );
+
+		add_bool_field( "is_final"_SpC,
+			class_type->kind == Class::Kind::Struct ||
+			class_type->kind == Class::Kind::NonPolymorph ||
+			class_type->kind == Class::Kind::PolymorphFinal );
+
+		add_bool_field( "is_abstract"_SpC,
+			class_type->kind == Class::Kind::Abstract ||
+			class_type->kind == Class::Kind::Interface );
+
+		add_bool_field( "is_interface"_SpC, class_type->kind == Class::Kind::Interface );
+
+		// SPRACHE_TODO - add complete information about class type - fields, member types, functions
+	}
 
 	// TODO - add other stuff
 

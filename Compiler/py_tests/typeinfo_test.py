@@ -100,6 +100,69 @@ def ArrayTypesInfo_Test0():
 	tests_lib.build_program( c_program_text )
 
 
+def ClassTypesInfo_Test0():
+	c_program_text= """
+		struct S{}
+		class C{ i32 x; }
+		fn Foo()
+		{
+			static_assert( typeinfo</S/>.field_count == u64(0) );
+			static_assert( typeinfo</C/>.field_count == u64(1) );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def ClassTypesInfo_Test1():
+	c_program_text= """
+		struct S{}
+		class I interface {}
+		class A abstract {}
+		class NP {}
+		class PNF : I {}
+		class PF final : I {}
+		fn Foo()
+		{
+			static_assert(  typeinfo</S/>.is_struct );
+			static_assert( !typeinfo</S/>.is_polymorph );
+			static_assert(  typeinfo</S/>.is_final );
+			static_assert( !typeinfo</S/>.is_abstract );
+			static_assert( !typeinfo</S/>.is_interface );
+
+			static_assert( !typeinfo</I/>.is_struct );
+			static_assert(  typeinfo</I/>.is_polymorph );
+			static_assert( !typeinfo</I/>.is_final );
+			static_assert(  typeinfo</I/>.is_abstract );
+			static_assert(  typeinfo</I/>.is_interface );
+
+			static_assert( !typeinfo</A/>.is_struct );
+			static_assert(  typeinfo</A/>.is_polymorph );
+			static_assert( !typeinfo</A/>.is_final );
+			static_assert(  typeinfo</A/>.is_abstract );
+			static_assert( !typeinfo</A/>.is_interface );
+
+			static_assert( !typeinfo</NP/>.is_struct );
+			static_assert( !typeinfo</NP/>.is_polymorph );
+			static_assert(  typeinfo</NP/>.is_final );
+			static_assert( !typeinfo</NP/>.is_abstract );
+			static_assert( !typeinfo</NP/>.is_interface );
+
+			static_assert( !typeinfo</PNF/>.is_struct );
+			static_assert(  typeinfo</PNF/>.is_polymorph );
+			static_assert( !typeinfo</PNF/>.is_final );
+			static_assert( !typeinfo</PNF/>.is_abstract );
+			static_assert( !typeinfo</PNF/>.is_interface );
+
+			static_assert( !typeinfo</PF/>.is_struct );
+			static_assert(  typeinfo</PF/>.is_polymorph );
+			static_assert(  typeinfo</PF/>.is_final );
+			static_assert( !typeinfo</PF/>.is_abstract );
+			static_assert( !typeinfo</PF/>.is_interface );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
 def TypeinfoCalssIsSameForSameTypes_Test0():
 	c_program_text= """
 		fn Foo()
