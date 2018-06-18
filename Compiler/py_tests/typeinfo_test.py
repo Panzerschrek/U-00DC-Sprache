@@ -48,6 +48,19 @@ def FundamentalTypesInfo_Test0():
 	tests_lib.build_program( c_program_text )
 
 
+def EnumTypesInfo_Test0():
+	c_program_text= """
+		enum E : u16 { A, B, C }
+		fn Foo()
+		{
+			static_assert( typeinfo</E/>.is_enum );
+			static_assert( typeinfo</E/>.underlaying_type.is_unsigned_integer );
+			static_assert( typeinfo</E/>.element_count == u64(3));
+		}
+	"""
+	tests_lib.build_program( c_program_text, True )
+
+
 def TypeinfoCalssIsSameForSameTypes_Test0():
 	c_program_text= """
 		fn Foo()

@@ -1271,7 +1271,6 @@ void CodeBuilder::PrepareEnum( const Synt::Enum& enum_decl, NamesScope& names_sc
 		}
 	}
 
-	SizeType counter= 0u;
 	for( const Synt::Enum::Member& in_member : enum_decl.members )
 	{
 		Variable var;
@@ -1282,7 +1281,7 @@ void CodeBuilder::PrepareEnum( const Synt::Enum& enum_decl, NamesScope& names_sc
 		var.constexpr_value=
 			llvm::Constant::getIntegerValue(
 				enum_->underlaying_type.llvm_type,
-				llvm::APInt( enum_->underlaying_type.llvm_type->getIntegerBitWidth(), counter ) );
+				llvm::APInt( enum_->underlaying_type.llvm_type->getIntegerBitWidth(), enum_->element_count ) );
 		var.llvm_value=
 			CreateGlobalConstantVariable(
 				var.type,
@@ -1292,7 +1291,7 @@ void CodeBuilder::PrepareEnum( const Synt::Enum& enum_decl, NamesScope& names_sc
 		if( enum_->members.AddName( in_member.name, Value( var, in_member.file_pos ) ) == nullptr )
 			errors_.push_back( ReportRedefinition( in_member.file_pos, in_member.name ) );
 
-		++counter;
+		++enum_->element_count;
 	}
 
 	{
@@ -1300,8 +1299,8 @@ void CodeBuilder::PrepareEnum( const Synt::Enum& enum_decl, NamesScope& names_sc
 			SizeType(1) << ( SizeType(enum_->underlaying_type.llvm_type->getIntegerBitWidth()) - ( IsSignedInteger( enum_->underlaying_type.fundamental_type ) ? 1u : 0u ) );
 		const SizeType max_value= max_value_plus_one - 1u;
 
-		if( counter > max_value )
-			errors_.push_back( ReportUnderlayingTypeForEnumIsTooSmall( enum_decl.file_pos_, counter - 1u, max_value ) );
+		if( enum_->element_count > max_value )
+			errors_.push_back( ReportUnderlayingTypeForEnumIsTooSmall( enum_decl.file_pos_, enum_->element_count - 1u, max_value ) );
 	}
 
 	names_scope.AddName( enum_decl.name, Value( Type( enum_ ), enum_decl.file_pos_ ) );
