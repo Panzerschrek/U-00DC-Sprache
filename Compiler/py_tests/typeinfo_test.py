@@ -33,6 +33,25 @@ def TypeKindFields_Test0():
 	tests_lib.build_program( c_program_text )
 
 
+def TypeAdditionalCommonFields_Test0():
+	c_program_text= """
+		struct S{}
+		class C{}
+		fn Foo()
+		{
+			static_assert( !typeinfo</i32/>.is_default_constructible );
+			static_assert(  typeinfo</i32/>.is_copy_constructible );
+			static_assert(  typeinfo</i32/>.is_copy_assignable );
+			static_assert( typeinfo</S/>.is_default_constructible );
+			static_assert( typeinfo</S/>.is_copy_constructible );
+			static_assert( typeinfo</S/>.is_copy_assignable );
+			static_assert( !typeinfo</C/>.is_copy_constructible );
+			static_assert( !typeinfo</C/>.is_copy_assignable );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
 def FundamentalTypesInfo_Test0():
 	c_program_text= """
 		fn Foo()
@@ -43,6 +62,10 @@ def FundamentalTypesInfo_Test0():
 			static_assert( typeinfo</f64/>.is_float );
 			static_assert( typeinfo</bool/>.is_bool );
 			static_assert( !typeinfo</u64/>.is_bool );
+			static_assert( !typeinfo</bool/>.is_numeric );
+			static_assert( !typeinfo</f32/>.is_integer );
+			static_assert( typeinfo</f32/>.is_numeric );
+			static_assert( typeinfo</u8/>.is_integer );
 		}
 	"""
 	tests_lib.build_program( c_program_text )

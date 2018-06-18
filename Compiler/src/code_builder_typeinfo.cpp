@@ -89,8 +89,14 @@ Variable CodeBuilder::BuildTypeInfo( const Type& type, const NamesScope& root_na
 	add_bool_field(            "is_class"_SpC, type.GetClassType()           != nullptr );
 	add_bool_field( "is_function_pointer"_SpC, type.GetFunctionPointerType() != nullptr );
 
+	add_bool_field( "is_default_constructible"_SpC, type.IsDefaultConstructible() );
+	add_bool_field(    "is_copy_constructible"_SpC, type.IsCopyConstructible()    );
+	add_bool_field(       "is_copy_assignable"_SpC, type.IsCopyAssignable()       );
+
 	if( const FundamentalType* const fundamental_type= type.GetFundamentalType() )
 	{
+		add_bool_field( "is_integer"_SpC         , IsInteger        ( fundamental_type->fundamental_type ) );
+		add_bool_field( "is_numeric"_SpC         , IsNumericType    ( fundamental_type->fundamental_type ) );
 		add_bool_field( "is_signed_integer"_SpC  , IsSignedInteger  ( fundamental_type->fundamental_type ) );
 		add_bool_field( "is_unsigned_integer"_SpC, IsUnsignedInteger( fundamental_type->fundamental_type ) );
 		add_bool_field( "is_float"_SpC           , IsFloatingPoint  ( fundamental_type->fundamental_type ) );
