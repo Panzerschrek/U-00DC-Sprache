@@ -499,6 +499,8 @@ private:
 		const Synt::BitwiseNot& bitwise_not,
 		FunctionContext& function_context );
 
+	Value BuildTypeinfoOperator( const Synt::TypeInfo& typeinfo_op, NamesScope& names );
+
 	// Block elements
 
 	std::vector<ProgramString> BuildVariablesDeclarationCode(  // returns list of variables names

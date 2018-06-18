@@ -90,6 +90,7 @@ set( COMPILER_LIB_SOURCES
 	src/code_builder_reference_checking.cpp
 	src/code_builder_resolve.cpp
 	src/code_builder_templates.cpp
+	src/code_builder_typeinfo.cpp
 	src/code_builder_types.cpp
 	src/code_builder_virtual.cpp
 	src/keywords.cpp

@@ -294,7 +294,7 @@ Value CodeBuilder::BuildExpressionCode(
 	}
 	else if( const auto typeinfo_= dynamic_cast<const Synt::TypeInfo*>(&expression) )
 	{
-		U_UNUSED(typeinfo_); // TODO
+		result= BuildTypeinfoOperator( *typeinfo_, names );
 	}
 	else U_ASSERT(false);
 
