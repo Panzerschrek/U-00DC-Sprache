@@ -19,13 +19,18 @@ Value CodeBuilder::BuildTypeinfoOperator( const Synt::TypeInfo& typeinfo_op, Nam
 		return ErrorValue();
 	}
 
+	return Value( BuildTypeInfo( type, *names.GetRoot(), typeinfo_op.file_pos_ ), typeinfo_op.file_pos_ );
+}
+
+Variable CodeBuilder::BuildTypeInfo( const Type& type, const NamesScope& root_namespace, const FilePos& file_pos )
+{
 	// Search in cache.
 	for( const auto& cache_value : typeinfo_cache_ )
 		if( cache_value.first == type )
-			return Value( cache_value.second, typeinfo_op.file_pos_ );
+			return cache_value.second;
 
 	const ProgramString typeinfo_class_name= "_typeinfo_for_"_SpC + type.ToString();
-	const auto typeinfo_class_proxy= std::make_shared<ClassProxy>( new Class( typeinfo_class_name, names.GetRoot() ) );
+	const auto typeinfo_class_proxy= std::make_shared<ClassProxy>( new Class( typeinfo_class_name, &root_namespace ) );
 	Class& typeinfo_class= *typeinfo_class_proxy->class_;
 
 	std::vector<llvm::Type*> fields_llvm_types;
@@ -41,7 +46,7 @@ Value CodeBuilder::BuildTypeinfoOperator( const Synt::TypeInfo& typeinfo_op, Nam
 		field.is_reference= false;
 		field.is_mutable= true;
 
-		typeinfo_class.members.AddName( name, Value( std::move(field), typeinfo_op.file_pos_ ) );
+		typeinfo_class.members.AddName( name, Value( std::move(field), file_pos ) );
 		fields_llvm_types.push_back( fundamental_llvm_types_.bool_ );
 		fields_initializers.push_back( llvm::Constant::getIntegerValue( field.type.GetLLVMType(), llvm::APInt( 1u, uint64_t(value) ) ) );
 	};
@@ -52,7 +57,13 @@ Value CodeBuilder::BuildTypeinfoOperator( const Synt::TypeInfo& typeinfo_op, Nam
 	add_bool_field(            "is_class"_SpC, type.GetClassType()           != nullptr );
 	add_bool_field( "is_function_pointer"_SpC, type.GetFunctionPointerType() != nullptr );
 
-
+	if( const FundamentalType* const fundamental_type= type.GetFundamentalType() )
+	{
+		add_bool_field( "is_signed_integer"_SpC  , IsSignedInteger  ( fundamental_type->fundamental_type ) );
+		add_bool_field( "is_unsigned_integer"_SpC, IsUnsignedInteger( fundamental_type->fundamental_type ) );
+		add_bool_field( "is_float"_SpC           , IsFloatingPoint  ( fundamental_type->fundamental_type ) );
+		add_bool_field( "is_bool"_SpC            , fundamental_type->fundamental_type == U_FundamentalType::Bool );
+	}
 	// TODO - add other stuff
 
 	// Prepare class
@@ -84,7 +95,7 @@ Value CodeBuilder::BuildTypeinfoOperator( const Synt::TypeInfo& typeinfo_op, Nam
 	// Add to cache
 	typeinfo_cache_.push_back( std::make_pair( type, result ) );
 
-	return Value( std::move(result), typeinfo_op.file_pos_ );
+	return result;
 }
 
 } // namespace CodeBuilderPrivate

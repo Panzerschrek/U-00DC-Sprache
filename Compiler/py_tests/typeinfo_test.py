@@ -33,6 +33,21 @@ def TypeKindFields_Test0():
 	tests_lib.build_program( c_program_text )
 
 
+def FundamentalTypesInfo_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			static_assert( typeinfo</i32/>.is_signed_integer );
+			static_assert( typeinfo</u32/>.is_unsigned_integer );
+			static_assert( !typeinfo</i16/>.is_float );
+			static_assert( typeinfo</f64/>.is_float );
+			static_assert( typeinfo</bool/>.is_bool );
+			static_assert( !typeinfo</u64/>.is_bool );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
 def TypeinfoCalssIsSameForSameTypes_Test0():
 	c_program_text= """
 		fn Foo()

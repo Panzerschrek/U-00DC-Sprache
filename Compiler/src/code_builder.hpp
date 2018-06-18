@@ -500,6 +500,7 @@ private:
 		FunctionContext& function_context );
 
 	Value BuildTypeinfoOperator( const Synt::TypeInfo& typeinfo_op, NamesScope& names );
+	Variable BuildTypeInfo( const Type& type, const NamesScope& root_namespace, const FilePos& file_pos );
 
 	// Block elements
 
