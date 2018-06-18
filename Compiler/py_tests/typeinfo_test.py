@@ -66,6 +66,7 @@ def FundamentalTypesInfo_Test0():
 			static_assert( !typeinfo</f32/>.is_integer );
 			static_assert( typeinfo</f32/>.is_numeric );
 			static_assert( typeinfo</u8/>.is_integer );
+			static_assert( typeinfo</void/>.is_void );
 		}
 	"""
 	tests_lib.build_program( c_program_text )

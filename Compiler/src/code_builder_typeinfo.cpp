@@ -1,3 +1,4 @@
+#include "assert.hpp"
 #include "mangling.hpp"
 #include "code_builder.hpp"
 
@@ -13,7 +14,7 @@ Value CodeBuilder::BuildTypeinfoOperator( const Synt::TypeInfo& typeinfo_op, Nam
 	if( type == NontypeStub::ErrorValue || type == invalid_type_ )
 		return ErrorValue();
 
-	if( type.IsIncomplete() )
+	if( type.IsIncomplete() && type != void_type_ )
 	{
 		errors_.push_back( ReportUsingIncompleteType( typeinfo_op.file_pos_, type.ToString() ) );
 		return ErrorValue();
@@ -101,6 +102,7 @@ Variable CodeBuilder::BuildTypeInfo( const Type& type, const NamesScope& root_na
 		add_bool_field( "is_unsigned_integer"_SpC, IsUnsignedInteger( fundamental_type->fundamental_type ) );
 		add_bool_field( "is_float"_SpC           , IsFloatingPoint  ( fundamental_type->fundamental_type ) );
 		add_bool_field( "is_bool"_SpC            , fundamental_type->fundamental_type == U_FundamentalType::Bool );
+		add_bool_field( "is_void"_SpC            , fundamental_type->fundamental_type == U_FundamentalType::Void );
 	}
 	else if( const Enum* const enum_type= type.GetEnumType() )
 	{
@@ -114,6 +116,8 @@ Variable CodeBuilder::BuildTypeInfo( const Type& type, const NamesScope& root_na
 	}
 	else if( const Class* const class_type= type.GetClassType() )
 	{
+		U_ASSERT( class_type->completeness == Class::Completeness::Complete );
+
 		add_size_field( "field_count"_SpC, class_type->field_count );
 
 		add_bool_field( "is_struct"_SpC, class_type->kind == Class::Kind::Struct );
