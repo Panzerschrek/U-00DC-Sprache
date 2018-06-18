@@ -58,7 +58,23 @@ def EnumTypesInfo_Test0():
 			static_assert( typeinfo</E/>.element_count == u64(3));
 		}
 	"""
-	tests_lib.build_program( c_program_text, True )
+	tests_lib.build_program( c_program_text )
+
+
+def ArrayTypesInfo_Test0():
+	c_program_text= """
+		type Arr0= [ i32, 7 ];
+		type Arr1= [ Arr0, 4 ];
+		fn Foo()
+		{
+			static_assert( typeinfo</Arr0/>.is_array );
+			static_assert( typeinfo</Arr1/>.is_array );
+			static_assert( typeinfo</Arr0/>.element_count == u64(7) );
+			static_assert( typeinfo</Arr1/>.element_type.is_array );
+			static_assert( typeinfo</Arr1/>.element_type.element_count == u64(7) );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
 
 
 def TypeinfoCalssIsSameForSameTypes_Test0():

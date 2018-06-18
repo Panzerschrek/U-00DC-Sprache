@@ -66,6 +66,23 @@ Variable CodeBuilder::BuildTypeInfo( const Type& type, const NamesScope& root_na
 		fields_initializers.push_back( llvm::Constant::getIntegerValue( field.type.GetLLVMType(), llvm::APInt( 64u, value ) ) );
 	};
 
+	const auto add_typeinfo_field=
+	[&]( const ProgramString& name, const Type& dependent_type )
+	{
+		const Variable dependent_type_typeinfo= BuildTypeInfo( dependent_type, root_namespace, file_pos );
+
+		ClassField field;
+		field.class_= typeinfo_class_proxy;
+		field.type= dependent_type_typeinfo.type;
+		field.index= fields_llvm_types.size();
+		field.is_reference= true;
+		field.is_mutable= false;
+
+		typeinfo_class.members.AddName( name, Value( std::move(field), file_pos ) );
+		fields_llvm_types.push_back( llvm::PointerType::get( dependent_type_typeinfo.type.GetLLVMType(), 0u ) );
+		fields_initializers.push_back( llvm::dyn_cast<llvm::Constant>( dependent_type_typeinfo.llvm_value ) );
+	};
+
 	add_bool_field(      "is_fundamental"_SpC, type.GetFundamentalType()     != nullptr );
 	add_bool_field(             "is_enum"_SpC, type.GetEnumType()            != nullptr );
 	add_bool_field(            "is_array"_SpC, type.GetArrayType()           != nullptr );
@@ -82,23 +99,14 @@ Variable CodeBuilder::BuildTypeInfo( const Type& type, const NamesScope& root_na
 	else if( const Enum* const enum_type= type.GetEnumType() )
 	{
 		add_size_field( "element_count"_SpC, enum_type->element_count );
-
-		{
-			const Variable underlaying_type_typeinfo= BuildTypeInfo( enum_type->underlaying_type, root_namespace, file_pos );
-
-			ClassField field;
-			field.class_= typeinfo_class_proxy;
-			field.type= underlaying_type_typeinfo.type;
-			field.index= fields_llvm_types.size();
-			field.is_reference= true;
-			field.is_mutable= false;
-
-			typeinfo_class.members.AddName( "underlaying_type"_SpC, Value( std::move(field), file_pos ) );
-			fields_llvm_types.push_back( llvm::PointerType::get( underlaying_type_typeinfo.type.GetLLVMType(), 0u ) );
-			fields_initializers.push_back( llvm::dyn_cast<llvm::Constant>( underlaying_type_typeinfo.llvm_value ) );
-		}
-
+		add_typeinfo_field( "underlaying_type"_SpC, enum_type->underlaying_type );
 	}
+	else if( const Array* const array_type= type.GetArrayType() )
+	{
+		add_size_field( "element_count"_SpC, array_type->ArraySizeOrZero() );
+		add_typeinfo_field( "element_type"_SpC, array_type->type );
+	}
+
 	// TODO - add other stuff
 
 	// Prepare class
