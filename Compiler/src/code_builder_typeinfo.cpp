@@ -43,7 +43,7 @@ Variable CodeBuilder::BuildTypeInfo( const Type& type, const NamesScope& root_na
 		ClassField field;
 		field.class_= typeinfo_class_proxy;
 		field.type= bool_type_;
-		field.index= fields_llvm_types.size();
+		field.index= static_cast<unsigned int>(fields_llvm_types.size());
 		field.is_reference= false;
 		field.is_mutable= true;
 
@@ -58,7 +58,7 @@ Variable CodeBuilder::BuildTypeInfo( const Type& type, const NamesScope& root_na
 		ClassField field;
 		field.class_= typeinfo_class_proxy;
 		field.type= FundamentalType( U_FundamentalType::u64, fundamental_llvm_types_.u64 );
-		field.index= fields_llvm_types.size();
+		field.index= static_cast<unsigned int>(fields_llvm_types.size());
 		field.is_reference= false;
 		field.is_mutable= true;
 
@@ -75,7 +75,7 @@ Variable CodeBuilder::BuildTypeInfo( const Type& type, const NamesScope& root_na
 		ClassField field;
 		field.class_= typeinfo_class_proxy;
 		field.type= dependent_type_typeinfo.type;
-		field.index= fields_llvm_types.size();
+		field.index= static_cast<unsigned int>(fields_llvm_types.size());
 		field.is_reference= true;
 		field.is_mutable= false;
 
@@ -139,8 +139,15 @@ Variable CodeBuilder::BuildTypeInfo( const Type& type, const NamesScope& root_na
 
 		add_bool_field( "is_interface"_SpC, class_type->kind == Class::Kind::Interface );
 
-		// SPRACHE_TODO - add complete information about class type - fields, member types, functions
+		// SPRACHE_TODO - add complete information about class type - fields, member types, functions, etc/
 	}
+	else if( type.GetFunctionPointerType() != nullptr )
+	{
+		// SPRACHE_DOTO - add complete information about function pointer type - arguments, return value, pollution, unsafe, etc.
+	}
+	else if( type.GetTemplateDependentType() != nullptr )
+	{}
+	else U_ASSERT(false);
 
 	// TODO - add other stuff
 
