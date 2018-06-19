@@ -753,6 +753,8 @@ private:
 
 private:
 	llvm::LLVMContext& llvm_context_;
+	std::string target_triple_str_;
+	const llvm::TargetMachine* target_machine_= nullptr;
 
 	struct
 	{

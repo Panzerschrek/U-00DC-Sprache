@@ -52,6 +52,41 @@ def TypeAdditionalCommonFields_Test0():
 	tests_lib.build_program( c_program_text )
 
 
+def SizeAndAlignmentFileds_Test0():
+	c_program_text= """
+		struct TwoInt{ i32 x; i32 y; }
+		struct TripleBool{ [ bool, 3 ] b; }
+		struct OptionalInt{ i32 x; bool y; }
+		fn Foo()
+		{
+			static_assert( typeinfo</bool/>. size_of == u64(1) );
+			static_assert( typeinfo</bool/>.align_of == u64(1) );
+			static_assert( typeinfo</i8 />. size_of == u64(1) );
+			static_assert( typeinfo</i8 />.align_of == u64(1) );
+			static_assert( typeinfo</i16/>. size_of == u64(2) );
+			static_assert( typeinfo</i16/>.align_of == u64(2) );
+			static_assert( typeinfo</i32/>. size_of == u64(4) );
+			static_assert( typeinfo</i32/>.align_of == u64(4) );
+			static_assert( typeinfo</i64/>. size_of == u64(8) );
+			static_assert( typeinfo</i64/>.align_of == u64(8) );
+			static_assert( typeinfo</f32/>. size_of == u64(4) );
+			static_assert( typeinfo</f32/>.align_of == u64(4) );
+			static_assert( typeinfo</f64/>. size_of == u64(8) );
+			static_assert( typeinfo</f64/>.align_of == u64(8) );
+
+			static_assert( typeinfo</TwoInt/>. size_of == u64(4*2) );
+			static_assert( typeinfo</TwoInt/>.align_of == u64(4) );
+
+			static_assert( typeinfo</TripleBool/>. size_of == u64(3) );
+			static_assert( typeinfo</TripleBool/>.align_of == u64(1) );
+
+			static_assert( typeinfo</OptionalInt/>. size_of == u64(4*2) );
+			static_assert( typeinfo</OptionalInt/>.align_of == u64(4) );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
 def FundamentalTypesInfo_Test0():
 	c_program_text= """
 		fn Foo()

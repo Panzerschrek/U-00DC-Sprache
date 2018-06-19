@@ -1,6 +1,10 @@
 #include "push_disable_llvm_warnings.hpp"
 #include <llvm/IR/Constant.h>
 #include <llvm/IR/LLVMContext.h>
+#include <llvm/Support/Host.h>
+#include <llvm/Support/TargetRegistry.h>
+#include <llvm/Support/TargetSelect.h>
+#include <llvm/Target/TargetMachine.h>
 #include "pop_llvm_warnings.hpp"
 
 #include "assert.hpp"
@@ -85,6 +89,24 @@ void CodeBuilder::StackVariablesStorage::RegisterVariable( const StoredVariableP
 CodeBuilder::CodeBuilder()
 	: llvm_context_( llvm::getGlobalContext() )
 {
+	// Prepare target machine.
+	// Currently can work only with native target.
+	// TODO - allow compiler user to change target.
+	{
+		llvm::InitializeNativeTarget();
+		target_triple_str_= llvm::sys::getDefaultTargetTriple();
+		std::string error_str;
+		const llvm::Target* const target= llvm::TargetRegistry::lookupTarget(target_triple_str_, error_str);
+
+		std::string features_str;
+		target_machine_=
+			target->createTargetMachine(
+				target_triple_str_,
+				llvm::sys::getHostCPUName(),
+				features_str,
+				llvm::TargetOptions() );
+	}
+
 	fundamental_llvm_types_. i8= llvm::Type::getInt8Ty( llvm_context_ );
 	fundamental_llvm_types_. u8= llvm::Type::getInt8Ty( llvm_context_ );
 	fundamental_llvm_types_.i16= llvm::Type::getInt16Ty( llvm_context_ );
@@ -134,6 +156,11 @@ ICodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_g
 		new llvm::Module(
 			ToStdString( source_graph.nodes_storage[ source_graph.root_node_index ].file_path ),
 			llvm_context_ ) );
+
+	// Setup data layout
+	const llvm::DataLayout data_layout= target_machine_->createDataLayout();
+	module_->setDataLayout(data_layout);
+	module_->setTargetTriple(target_triple_str_);
 
 	// Prepare halt func.
 	{

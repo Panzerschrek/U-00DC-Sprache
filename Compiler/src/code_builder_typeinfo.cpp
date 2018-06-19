@@ -84,6 +84,10 @@ Variable CodeBuilder::BuildTypeInfo( const Type& type, const NamesScope& root_na
 		fields_initializers.push_back( llvm::dyn_cast<llvm::Constant>( dependent_type_typeinfo.llvm_value ) );
 	};
 
+	const llvm::DataLayout& data_layout= module_->getDataLayout();
+	add_size_field(  "size_of"_SpC, data_layout.getTypeAllocSize( type.GetLLVMType() ) );
+	add_size_field( "align_of"_SpC, data_layout.getABITypeAlignment( type.GetLLVMType() ) ); // TODO - is this correct alignment?
+
 	add_bool_field(      "is_fundamental"_SpC, type.GetFundamentalType()     != nullptr );
 	add_bool_field(             "is_enum"_SpC, type.GetEnumType()            != nullptr );
 	add_bool_field(            "is_array"_SpC, type.GetArrayType()           != nullptr );
