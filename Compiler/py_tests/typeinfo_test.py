@@ -42,6 +42,9 @@ def TypeAdditionalCommonFields_Test0():
 			static_assert( !typeinfo</i32/>.is_default_constructible );
 			static_assert(  typeinfo</i32/>.is_copy_constructible );
 			static_assert(  typeinfo</i32/>.is_copy_assignable );
+			static_assert( !typeinfo</ fn() />.is_default_constructible );
+			static_assert(  typeinfo</ fn() />.is_copy_constructible );
+			static_assert(  typeinfo</ fn() />.is_copy_assignable );
 			static_assert( typeinfo</S/>.is_default_constructible );
 			static_assert( typeinfo</S/>.is_copy_constructible );
 			static_assert( typeinfo</S/>.is_copy_assignable );
@@ -57,6 +60,7 @@ def SizeAndAlignmentFileds_Test0():
 		struct TwoInt{ i32 x; i32 y; }
 		struct TripleBool{ [ bool, 3 ] b; }
 		struct OptionalInt{ i32 x; bool y; }
+		struct Ref{ i32& r; }
 		fn Foo()
 		{
 			static_assert( typeinfo</bool/>. size_of == u64(1) );
@@ -74,6 +78,8 @@ def SizeAndAlignmentFileds_Test0():
 			static_assert( typeinfo</f64/>. size_of == u64(8) );
 			static_assert( typeinfo</f64/>.align_of == u64(8) );
 
+			static_assert( typeinfo</Ref/>.size_of <= u64(8) );
+
 			static_assert( typeinfo</TwoInt/>. size_of == u64(4*2) );
 			static_assert( typeinfo</TwoInt/>.align_of == u64(4) );
 
@@ -82,6 +88,9 @@ def SizeAndAlignmentFileds_Test0():
 
 			static_assert( typeinfo</OptionalInt/>. size_of == u64(4*2) );
 			static_assert( typeinfo</OptionalInt/>.align_of == u64(4) );
+
+			static_assert( typeinfo</ fn() />.size_of == typeinfo</ fn( i32 x ) : i32 />.size_of ); // All function pointers have same size
+			static_assert( typeinfo</ fn() />.size_of == typeinfo</Ref/>.size_of ); // Pointer to function have size of reference
 		}
 	"""
 	tests_lib.build_program( c_program_text )
@@ -210,3 +219,152 @@ def TypeinfoCalssIsSameForSameTypes_Test0():
 	"""
 	tests_lib.build_program( c_program_text )
 	tests_lib.run_function( "_Z3Foov" )
+
+
+def CompleteTypeRequredForTypeinfo_Test0():
+	c_program_text= """
+		struct S;
+		fn Foo()
+		{
+			typeinfo</S/>;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "UsingIncompleteType" )
+	assert( errors_list[0].file_pos.line == 5 )
+
+
+def CompleteTypeRequredForTypeinfo_Test1():
+	c_program_text= """
+		struct S;
+		fn Foo()
+		{
+			typeinfo</ [ S, 2 ] />;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "UsingIncompleteType" )
+	assert( errors_list[0].file_pos.line == 5 )
+
+
+def TypeinfoFieldsDependsOnTypeKind_Test0():
+	c_program_text= """
+		struct S{}
+		fn Foo()
+		{
+			typeinfo</S/>.is_numeric;  // "is_numeric" exists only in typeinfo for fundamental types.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "NameNotFound" )
+	assert( errors_list[0].file_pos.line == 5 )
+
+
+def TypeinfoFieldsDependsOnTypeKind_Test1():
+	c_program_text= """
+		fn Foo()
+		{
+			typeinfo</ [ i32, 8 ] />.is_bool;  // "is_bool" exists only in typeinfo for fundamental types.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "NameNotFound" )
+	assert( errors_list[0].file_pos.line == 4 )
+
+
+def TypeinfoFieldsDependsOnTypeKind_Test2():
+	c_program_text= """
+		fn Foo()
+		{
+			typeinfo</ f32 />.underlaying_type;  // "underlaying_type" exists only in typeinfo for enum types.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "NameNotFound" )
+	assert( errors_list[0].file_pos.line == 4 )
+
+
+def TypeinfoFieldsDependsOnTypeKind_Test3():
+	c_program_text= """
+		struct S{}
+		fn Foo()
+		{
+			typeinfo</ S />.element_count;  // "element_count" exists only in typeinfo for enum and array types.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "NameNotFound" )
+	assert( errors_list[0].file_pos.line == 5 )
+
+
+def TypeinfoFieldsDependsOnTypeKind_Test4():
+	c_program_text= """
+		fn Foo()
+		{
+			typeinfo</ u64 />.element_count;  // "element_count" exists only in typeinfo for enum and array types.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "NameNotFound" )
+	assert( errors_list[0].file_pos.line == 4 )
+
+
+def TypeinfoFieldsDependsOnTypeKind_Test5():
+	c_program_text= """
+		enum E{ A }
+		fn Foo()
+		{
+			typeinfo</ E />.element_type;  // "element_type" exists only in typeinfo for array types.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "NameNotFound" )
+	assert( errors_list[0].file_pos.line == 5 )
+
+
+def TypeinfoFieldsDependsOnTypeKind_Test6():
+	c_program_text= """
+		fn Foo()
+		{
+			typeinfo</ u8 />.field_count;  // "field_count" exists only in typeinfo for class types.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "NameNotFound" )
+	assert( errors_list[0].file_pos.line == 4 )
+
+
+def TypeinfoFieldsDependsOnTypeKind_Test7():
+	c_program_text= """
+		struct S{}
+		fn Foo()
+		{
+			typeinfo</ [ S, 16 ] />.is_abstract;  // "is_abstract" exists only in typeinfo for class types.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "NameNotFound" )
+	assert( errors_list[0].file_pos.line == 5 )
+
+
+def TypeinfoFieldsDependsOnTypeKind_Test8():
+	c_program_text= """
+		fn Foo()
+		{
+			typeinfo</ fn() />.is_struct;  // "is_struct" exists only in typeinfo for class types.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "NameNotFound" )
+	assert( errors_list[0].file_pos.line == 4 )
