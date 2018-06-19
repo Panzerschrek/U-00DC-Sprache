@@ -124,7 +124,7 @@ CodeBuilder::CodeBuilder()
 	fundamental_llvm_types_.void_for_ret_= llvm::Type::getVoidTy( llvm_context_ );
 	fundamental_llvm_types_.bool_= llvm::Type::getInt1Ty( llvm_context_ );
 
-	fundamental_llvm_types_.int_ptr= llvm::Type::getInt64Ty( llvm_context_ ); // TODO - make target-dependent
+	fundamental_llvm_types_.int_ptr= target_machine_->createDataLayout().getIntPtrType(llvm_context_);
 
 	invalid_type_= FundamentalType( U_FundamentalType::InvalidType, fundamental_llvm_types_.invalid_type_ );
 	void_type_= FundamentalType( U_FundamentalType::Void, fundamental_llvm_types_.void_ );
