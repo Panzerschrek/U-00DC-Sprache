@@ -58,9 +58,11 @@ def TypeAdditionalCommonFields_Test0():
 def SizeAndAlignmentFileds_Test0():
 	c_program_text= """
 		struct TwoInt{ i32 x; i32 y; }
+		struct TwoIntBox{ TwoInt ti; }
 		struct TripleBool{ [ bool, 3 ] b; }
 		struct OptionalInt{ i32 x; bool y; }
 		struct Ref{ i32& r; }
+		struct EmptyStruct{}
 		fn Foo()
 		{
 			static_assert( typeinfo</bool/>. size_of == size_type(1) );
@@ -91,6 +93,12 @@ def SizeAndAlignmentFileds_Test0():
 
 			static_assert( typeinfo</ fn() />.size_of == typeinfo</ fn( i32 x ) : i32 />.size_of ); // All function pointers have same size
 			static_assert( typeinfo</ fn() />.size_of == typeinfo</Ref/>.size_of ); // Pointer to function have size of reference
+
+			static_assert( typeinfo</ EmptyStruct />.size_of == size_type(0) );  // Empty struct have zero size.
+			static_assert( typeinfo</ [ i32, 0 ] />.size_of == size_type(0) );  // Empty array have zero size.
+			static_assert( typeinfo</ [ EmptyStruct, 16 ] />.size_of == size_type(0) );  // Array of empty structs have zero size.
+
+			static_assert( typeinfo</ TwoIntBox />.size_of == typeinfo</ TwoInt />.size_of ); // Struct with single field have size of this field.
 		}
 	"""
 	tests_lib.build_program( c_program_text )
