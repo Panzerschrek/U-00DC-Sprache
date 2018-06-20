@@ -5,7 +5,6 @@ When feature was implemented, delete it from list.
 Common:
 *) sizeof operator
 *) raw_pointer
-*) Type information obtaining during compilation
 *) Conditional functions, something, like "enable_if"
 *) Constructor initializer for constexpr structs
 *) Constexpr functions
@@ -23,6 +22,9 @@ Common:
 *) "for" operator - for ranges
 *) Function to function pointer assignment
 *) == and != methods generation
+*) Full information about classes and function pointers in "typeinfo" operator.
+*) 128-bit integers
+*) 128-bit float
 
 
 References:
@@ -35,7 +37,7 @@ Templates:
 *) enable_if for templates
 *) Variadic templates
 *) Function templates with template-dependent reference and mutability modifiers
-	for arguments.
+	for arguments. Conditional move for such arguments.
 *) Equality comparison for type and function templates with same name
 *) Function pointers as template variable-parameters
 
