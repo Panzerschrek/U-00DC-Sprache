@@ -53,6 +53,7 @@ enum class Keywords : unsigned int
 	u64_,
 	f32_,
 	f64_,
+	size_type_,
 
 	// Boolean constants.
 	true_,

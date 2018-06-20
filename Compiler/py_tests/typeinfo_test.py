@@ -63,31 +63,31 @@ def SizeAndAlignmentFileds_Test0():
 		struct Ref{ i32& r; }
 		fn Foo()
 		{
-			static_assert( typeinfo</bool/>. size_of == u64(1) );
-			static_assert( typeinfo</bool/>.align_of == u64(1) );
-			static_assert( typeinfo</i8 />. size_of == u64(1) );
-			static_assert( typeinfo</i8 />.align_of == u64(1) );
-			static_assert( typeinfo</i16/>. size_of == u64(2) );
-			static_assert( typeinfo</i16/>.align_of == u64(2) );
-			static_assert( typeinfo</i32/>. size_of == u64(4) );
-			static_assert( typeinfo</i32/>.align_of == u64(4) );
-			static_assert( typeinfo</i64/>. size_of == u64(8) );
-			static_assert( typeinfo</i64/>.align_of == u64(8) );
-			static_assert( typeinfo</f32/>. size_of == u64(4) );
-			static_assert( typeinfo</f32/>.align_of == u64(4) );
-			static_assert( typeinfo</f64/>. size_of == u64(8) );
-			static_assert( typeinfo</f64/>.align_of == u64(8) );
+			static_assert( typeinfo</bool/>. size_of == size_type(1) );
+			static_assert( typeinfo</bool/>.align_of == size_type(1) );
+			static_assert( typeinfo</i8 />. size_of == size_type(1) );
+			static_assert( typeinfo</i8 />.align_of == size_type(1) );
+			static_assert( typeinfo</i16/>. size_of == size_type(2) );
+			static_assert( typeinfo</i16/>.align_of == size_type(2) );
+			static_assert( typeinfo</i32/>. size_of == size_type(4) );
+			static_assert( typeinfo</i32/>.align_of == size_type(4) );
+			static_assert( typeinfo</i64/>. size_of == size_type(8) );
+			static_assert( typeinfo</i64/>.align_of == size_type(8) );
+			static_assert( typeinfo</f32/>. size_of == size_type(4) );
+			static_assert( typeinfo</f32/>.align_of == size_type(4) );
+			static_assert( typeinfo</f64/>. size_of == size_type(8) );
+			static_assert( typeinfo</f64/>.align_of == size_type(8) );
 
-			static_assert( typeinfo</Ref/>.size_of <= u64(8) );
+			static_assert( typeinfo</Ref/>.size_of <= size_type(8) );
 
-			static_assert( typeinfo</TwoInt/>. size_of == u64(4*2) );
-			static_assert( typeinfo</TwoInt/>.align_of == u64(4) );
+			static_assert( typeinfo</TwoInt/>. size_of == size_type(4*2) );
+			static_assert( typeinfo</TwoInt/>.align_of == size_type(4) );
 
-			static_assert( typeinfo</TripleBool/>. size_of == u64(3) );
-			static_assert( typeinfo</TripleBool/>.align_of == u64(1) );
+			static_assert( typeinfo</TripleBool/>. size_of == size_type(3) );
+			static_assert( typeinfo</TripleBool/>.align_of == size_type(1) );
 
-			static_assert( typeinfo</OptionalInt/>. size_of == u64(4*2) );
-			static_assert( typeinfo</OptionalInt/>.align_of == u64(4) );
+			static_assert( typeinfo</OptionalInt/>. size_of == size_type(4*2) );
+			static_assert( typeinfo</OptionalInt/>.align_of == size_type(4) );
 
 			static_assert( typeinfo</ fn() />.size_of == typeinfo</ fn( i32 x ) : i32 />.size_of ); // All function pointers have same size
 			static_assert( typeinfo</ fn() />.size_of == typeinfo</Ref/>.size_of ); // Pointer to function have size of reference
@@ -123,7 +123,7 @@ def EnumTypesInfo_Test0():
 		{
 			static_assert( typeinfo</E/>.is_enum );
 			static_assert( typeinfo</E/>.underlaying_type.is_unsigned_integer );
-			static_assert( typeinfo</E/>.element_count == u64(3));
+			static_assert( typeinfo</E/>.element_count == size_type(3));
 		}
 	"""
 	tests_lib.build_program( c_program_text )
@@ -137,9 +137,9 @@ def ArrayTypesInfo_Test0():
 		{
 			static_assert( typeinfo</Arr0/>.is_array );
 			static_assert( typeinfo</Arr1/>.is_array );
-			static_assert( typeinfo</Arr0/>.element_count == u64(7) );
+			static_assert( typeinfo</Arr0/>.element_count == size_type(7) );
 			static_assert( typeinfo</Arr1/>.element_type.is_array );
-			static_assert( typeinfo</Arr1/>.element_type.element_count == u64(7) );
+			static_assert( typeinfo</Arr1/>.element_type.element_count == size_type(7) );
 		}
 	"""
 	tests_lib.build_program( c_program_text )
@@ -151,8 +151,8 @@ def ClassTypesInfo_Test0():
 		class C{ i32 x; }
 		fn Foo()
 		{
-			static_assert( typeinfo</S/>.field_count == u64(0) );
-			static_assert( typeinfo</C/>.field_count == u64(1) );
+			static_assert( typeinfo</S/>.field_count == size_type(0) );
+			static_assert( typeinfo</C/>.field_count == size_type(1) );
 		}
 	"""
 	tests_lib.build_program( c_program_text )

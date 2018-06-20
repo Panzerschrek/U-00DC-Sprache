@@ -130,6 +130,10 @@ CodeBuilder::CodeBuilder()
 	void_type_= FundamentalType( U_FundamentalType::Void, fundamental_llvm_types_.void_ );
 	void_type_for_ret_= FundamentalType( U_FundamentalType::Void, fundamental_llvm_types_.void_for_ret_ );
 	bool_type_= FundamentalType( U_FundamentalType::Bool, fundamental_llvm_types_.bool_ );
+	size_type_=
+		fundamental_llvm_types_.int_ptr->getIntegerBitWidth() == 32u
+		? FundamentalType( U_FundamentalType::u32, fundamental_llvm_types_.u32 )
+		: FundamentalType( U_FundamentalType::u64, fundamental_llvm_types_.u64 );
 
 	// Default resolve handler - push first to stack.
 	resolving_funcs_stack_.emplace_back( new PreResolveFunc(
@@ -478,6 +482,8 @@ void CodeBuilder::FillGlobalNamesScope( NamesScope& global_names_scope )
 				FundamentalType( fundamental_type_value.second, GetFundamentalLLVMType( fundamental_type_value.second ) ),
 				fundamental_globals_file_pos ) );
 	}
+
+	global_names_scope.AddName( Keyword( Keywords::size_type_ ), Value( size_type_, fundamental_globals_file_pos ) );
 }
 
 Type CodeBuilder::PrepareType(

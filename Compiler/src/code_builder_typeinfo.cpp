@@ -69,14 +69,17 @@ Variable CodeBuilder::BuildTypeInfo( const Type& type, const NamesScope& root_na
 	{
 		ClassField field;
 		field.class_= typeinfo_class_proxy;
-		field.type= FundamentalType( U_FundamentalType::u64, fundamental_llvm_types_.u64 );
+		field.type= size_type_;
 		field.index= static_cast<unsigned int>(fields_llvm_types.size());
 		field.is_reference= false;
 		field.is_mutable= true;
 
 		typeinfo_class.members.AddName( name, Value( std::move(field), file_pos ) );
 		fields_llvm_types.push_back( field.type.GetLLVMType() );
-		fields_initializers.push_back( llvm::Constant::getIntegerValue( field.type.GetLLVMType(), llvm::APInt( 64u, value ) ) );
+		fields_initializers.push_back(
+			llvm::Constant::getIntegerValue(
+				size_type_.GetLLVMType(),
+				llvm::APInt( size_type_.GetLLVMType()->getIntegerBitWidth(), value ) ) );
 	};
 
 	const auto add_typeinfo_field=
