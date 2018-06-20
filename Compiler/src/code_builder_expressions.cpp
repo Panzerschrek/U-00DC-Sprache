@@ -1767,7 +1767,7 @@ Value CodeBuilder::BuildIndexationOperator(
 		function_context.function->getBasicBlockList().push_back( halt_block );
 		function_context.llvm_ir_builder.SetInsertPoint( halt_block );
 		function_context.llvm_ir_builder.CreateCall( halt_func_ );
-		function_context.llvm_ir_builder.CreateRetVoid(); // terminate block.
+		function_context.llvm_ir_builder.CreateUnreachable(); // terminate block.
 
 		function_context.function->getBasicBlockList().push_back( block_after_if );
 		function_context.llvm_ir_builder.SetInsertPoint( block_after_if );
