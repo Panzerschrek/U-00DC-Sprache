@@ -208,6 +208,27 @@ def ClassTypesInfo_Test1():
 	tests_lib.build_program( c_program_text )
 
 
+def TypeinfoForTemplateDependentType_Test0():
+	c_program_text= """
+		template</ type T />
+		fn Foo()
+		{
+			static_if( typeinfo</ T />.is_fundamental )
+			{
+			}
+			else if( typeinfo</T/>.is_array )
+			{
+				static_if( typeinfo</ [ T, 2 ] />.is_array )
+				{
+					auto x= typeinfo</ [ T, 2 ] />.element_count;
+					auto y= typeinfo</ [ T, 2 ] />.element_type.is_fundamental;
+				}
+			}
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
 def TypeinfoCalssIsSameForSameTypes_Test0():
 	c_program_text= """
 		fn Foo()
