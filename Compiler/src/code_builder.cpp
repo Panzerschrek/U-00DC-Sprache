@@ -1,6 +1,10 @@
 #include "push_disable_llvm_warnings.hpp"
 #include <llvm/IR/Constant.h>
 #include <llvm/IR/LLVMContext.h>
+#include <llvm/Support/Host.h>
+#include <llvm/Support/TargetRegistry.h>
+#include <llvm/Support/TargetSelect.h>
+#include <llvm/Target/TargetMachine.h>
 #include "pop_llvm_warnings.hpp"
 
 #include "assert.hpp"
@@ -85,6 +89,24 @@ void CodeBuilder::StackVariablesStorage::RegisterVariable( const StoredVariableP
 CodeBuilder::CodeBuilder()
 	: llvm_context_( llvm::getGlobalContext() )
 {
+	// Prepare target machine.
+	// Currently can work only with native target.
+	// TODO - allow compiler user to change target.
+	{
+		llvm::InitializeNativeTarget();
+		target_triple_str_= llvm::sys::getDefaultTargetTriple();
+		std::string error_str;
+		const llvm::Target* const target= llvm::TargetRegistry::lookupTarget(target_triple_str_, error_str);
+
+		std::string features_str;
+		target_machine_=
+			target->createTargetMachine(
+				target_triple_str_,
+				llvm::sys::getHostCPUName(),
+				features_str,
+				llvm::TargetOptions() );
+	}
+
 	fundamental_llvm_types_. i8= llvm::Type::getInt8Ty( llvm_context_ );
 	fundamental_llvm_types_. u8= llvm::Type::getInt8Ty( llvm_context_ );
 	fundamental_llvm_types_.i16= llvm::Type::getInt16Ty( llvm_context_ );
@@ -102,12 +124,16 @@ CodeBuilder::CodeBuilder()
 	fundamental_llvm_types_.void_for_ret_= llvm::Type::getVoidTy( llvm_context_ );
 	fundamental_llvm_types_.bool_= llvm::Type::getInt1Ty( llvm_context_ );
 
-	fundamental_llvm_types_.int_ptr= llvm::Type::getInt64Ty( llvm_context_ ); // TODO - make target-dependent
+	fundamental_llvm_types_.int_ptr= target_machine_->createDataLayout().getIntPtrType(llvm_context_);
 
 	invalid_type_= FundamentalType( U_FundamentalType::InvalidType, fundamental_llvm_types_.invalid_type_ );
 	void_type_= FundamentalType( U_FundamentalType::Void, fundamental_llvm_types_.void_ );
 	void_type_for_ret_= FundamentalType( U_FundamentalType::Void, fundamental_llvm_types_.void_for_ret_ );
 	bool_type_= FundamentalType( U_FundamentalType::Bool, fundamental_llvm_types_.bool_ );
+	size_type_=
+		fundamental_llvm_types_.int_ptr->getIntegerBitWidth() == 32u
+		? FundamentalType( U_FundamentalType::u32, fundamental_llvm_types_.u32 )
+		: FundamentalType( U_FundamentalType::u64, fundamental_llvm_types_.u64 );
 
 	// Default resolve handler - push first to stack.
 	resolving_funcs_stack_.emplace_back( new PreResolveFunc(
@@ -134,6 +160,11 @@ ICodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_g
 		new llvm::Module(
 			ToStdString( source_graph.nodes_storage[ source_graph.root_node_index ].file_path ),
 			llvm_context_ ) );
+
+	// Setup data layout
+	const llvm::DataLayout data_layout= target_machine_->createDataLayout();
+	module_->setDataLayout(data_layout);
+	module_->setTargetTriple(target_triple_str_);
 
 	// Prepare halt func.
 	{
@@ -451,6 +482,8 @@ void CodeBuilder::FillGlobalNamesScope( NamesScope& global_names_scope )
 				FundamentalType( fundamental_type_value.second, GetFundamentalLLVMType( fundamental_type_value.second ) ),
 				fundamental_globals_file_pos ) );
 	}
+
+	global_names_scope.AddName( Keyword( Keywords::size_type_ ), Value( size_type_, fundamental_globals_file_pos ) );
 }
 
 Type CodeBuilder::PrepareType(
@@ -1271,7 +1304,6 @@ void CodeBuilder::PrepareEnum( const Synt::Enum& enum_decl, NamesScope& names_sc
 		}
 	}
 
-	SizeType counter= 0u;
 	for( const Synt::Enum::Member& in_member : enum_decl.members )
 	{
 		Variable var;
@@ -1282,7 +1314,7 @@ void CodeBuilder::PrepareEnum( const Synt::Enum& enum_decl, NamesScope& names_sc
 		var.constexpr_value=
 			llvm::Constant::getIntegerValue(
 				enum_->underlaying_type.llvm_type,
-				llvm::APInt( enum_->underlaying_type.llvm_type->getIntegerBitWidth(), counter ) );
+				llvm::APInt( enum_->underlaying_type.llvm_type->getIntegerBitWidth(), enum_->element_count ) );
 		var.llvm_value=
 			CreateGlobalConstantVariable(
 				var.type,
@@ -1292,7 +1324,7 @@ void CodeBuilder::PrepareEnum( const Synt::Enum& enum_decl, NamesScope& names_sc
 		if( enum_->members.AddName( in_member.name, Value( var, in_member.file_pos ) ) == nullptr )
 			errors_.push_back( ReportRedefinition( in_member.file_pos, in_member.name ) );
 
-		++counter;
+		++enum_->element_count;
 	}
 
 	{
@@ -1300,8 +1332,8 @@ void CodeBuilder::PrepareEnum( const Synt::Enum& enum_decl, NamesScope& names_sc
 			SizeType(1) << ( SizeType(enum_->underlaying_type.llvm_type->getIntegerBitWidth()) - ( IsSignedInteger( enum_->underlaying_type.fundamental_type ) ? 1u : 0u ) );
 		const SizeType max_value= max_value_plus_one - 1u;
 
-		if( counter > max_value )
-			errors_.push_back( ReportUnderlayingTypeForEnumIsTooSmall( enum_decl.file_pos_, counter - 1u, max_value ) );
+		if( enum_->element_count > max_value )
+			errors_.push_back( ReportUnderlayingTypeForEnumIsTooSmall( enum_decl.file_pos_, enum_->element_count - 1u, max_value ) );
 	}
 
 	names_scope.AddName( enum_decl.name, Value( Type( enum_ ), enum_decl.file_pos_ ) );

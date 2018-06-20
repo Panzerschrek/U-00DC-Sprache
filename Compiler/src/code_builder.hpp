@@ -499,6 +499,9 @@ private:
 		const Synt::BitwiseNot& bitwise_not,
 		FunctionContext& function_context );
 
+	Value BuildTypeinfoOperator( const Synt::TypeInfo& typeinfo_op, NamesScope& names );
+	Variable BuildTypeInfo( const Type& type, const NamesScope& root_namespace, const FilePos& file_pos );
+
 	// Block elements
 
 	std::vector<ProgramString> BuildVariablesDeclarationCode(  // returns list of variables names
@@ -750,6 +753,8 @@ private:
 
 private:
 	llvm::LLVMContext& llvm_context_;
+	std::string target_triple_str_;
+	const llvm::TargetMachine* target_machine_= nullptr;
 
 	struct
 	{
@@ -779,6 +784,7 @@ private:
 	Type void_type_;
 	Type void_type_for_ret_;
 	Type bool_type_;
+	Type size_type_; // Alias for u32 or u64
 
 	FunctionContext* dummy_function_context_= nullptr;
 
@@ -793,6 +799,10 @@ private:
 	// We can use same classes in different files, because template classes are logically unchangeable after instantiation.
 	// Unchangeable they are because incomplete template classes ( or classes inside template classes, etc. ) currently forbidden.
 	TemplateClassesCache template_classes_cache_;
+
+	// We needs to generate same typeinfo classes for same types. Use cache for it.
+	// TODO - create hasher for type and use unordered_map.
+	std::vector< std::pair< Type, Variable > > typeinfo_cache_;
 
 	std::vector<std::unique_ptr<PreResolveFunc>> resolving_funcs_stack_;
 	size_t next_template_dependent_type_index_= 1u;

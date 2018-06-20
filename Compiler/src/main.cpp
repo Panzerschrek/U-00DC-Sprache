@@ -235,6 +235,9 @@ Usage:
 			return 1;
 		}
 
+		std_lib_module->setDataLayout( result_module->getDataLayout() );
+		std_lib_module->setTargetTriple( result_module->getTargetTriple() );
+
 		std::string err_stream_str;
 		llvm::raw_string_ostream err_stream( err_stream_str );
 		if( llvm::verifyModule( *std_lib_module, &err_stream ) )

@@ -8,10 +8,10 @@ U_TEST( TypedefsTest0 )
 	// Simple test.
 	static const char c_program_text[]=
 	R"(
-		type size_type= u64; // global typedef
+		type my_size_type= u64; // global typedef
 		struct C
 		{
-			type index_type= size_type; // typedef inside struct
+			type index_type= my_size_type; // typedef inside struct
 		}
 		namespace S
 		{

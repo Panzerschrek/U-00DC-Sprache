@@ -711,6 +711,28 @@ IExpressionComponentPtr SyntaxAnalyzer::ParseExpression()
 
 				current_node= std::move(cast);
 			}
+			else if( it_->text == Keywords::typeinfo_ )
+			{
+				std::unique_ptr<TypeInfo> typeinfo_( new TypeInfo( it_->file_pos ) );
+				NextLexem();
+
+				if( it_->type != Lexem::Type::TemplateBracketLeft )
+				{
+					PushErrorMessage();
+					return nullptr;
+				}
+				NextLexem();
+
+				typeinfo_->type_= ParseTypeName();
+				if( it_->type != Lexem::Type::TemplateBracketRight )
+				{
+					PushErrorMessage();
+					return nullptr;
+				}
+				NextLexem();
+
+				current_node= std::move(typeinfo_);
+			}
 			else if( it_->text == Keywords::fn_ )
 			{
 				// Parse function type name: fn( i32 x )

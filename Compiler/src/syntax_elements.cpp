@@ -133,6 +133,10 @@ CastMut::CastMut( const FilePos& file_pos )
 	: ExpressionComponentWithUnaryOperators(file_pos)
 {}
 
+TypeInfo::TypeInfo( const FilePos& file_pos )
+	: ExpressionComponentWithUnaryOperators(file_pos)
+{}
+
 BooleanConstant::BooleanConstant( const FilePos& file_pos, bool value )
 	: ExpressionComponentWithUnaryOperators(file_pos)
 	, value_( value )

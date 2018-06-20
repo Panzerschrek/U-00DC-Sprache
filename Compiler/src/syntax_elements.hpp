@@ -290,6 +290,14 @@ public:
 	IExpressionComponentPtr expression_;
 };
 
+class TypeInfo final : public ExpressionComponentWithUnaryOperators
+{
+public:
+	TypeInfo( const FilePos& file_pos );
+
+	ITypeNamePtr type_;
+};
+
 class BooleanConstant final : public ExpressionComponentWithUnaryOperators
 {
 public:

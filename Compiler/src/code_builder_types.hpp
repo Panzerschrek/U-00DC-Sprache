@@ -700,6 +700,7 @@ struct Enum
 	Enum( const ProgramString& name, const NamesScope* parent_scope );
 
 	NamesScope members;
+	SizeType element_count= 0u;
 	FundamentalType underlaying_type; // must be integer
 };
 
