@@ -39,6 +39,8 @@ static int GetBinaryOperatorPriority( const BinaryOperatorType binary_operator )
 	case BinaryOperatorType::Xor: return PRIORITY;
 	case BinaryOperatorType::LazyLogicalAnd: return PRIORITY;
 	case BinaryOperatorType::LazyLogicalOr: return PRIORITY;
+
+	case BinaryOperatorType::Last: break;
 	};
 
 	U_ASSERT(false);
@@ -122,6 +124,7 @@ static bool IsAdditiveAssignmentOperator( const Lexem& lexem )
 		case Lexem::Type::AssignShiftLeft :
 		case Lexem::Type::AssignShiftRight:
 			return true;
+		default: break;
 	};
 
 	return false;

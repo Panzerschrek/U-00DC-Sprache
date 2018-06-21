@@ -88,6 +88,9 @@ ProgramString OverloadedOperatorToString( const OverloadedOperator op )
 	case OverloadedOperator::Indexing: return "[]"_SpC;
 	case OverloadedOperator::Call: return "()"_SpC;
 	};
+
+	U_ASSERT(false);
+	return ""_SpC;
 }
 
 OverloadedOperator GetOverloadedOperatorForBinaryOperator( const BinaryOperatorType binary_operator_type )

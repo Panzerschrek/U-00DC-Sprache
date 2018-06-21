@@ -55,7 +55,6 @@ boost::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 		const size_t error_count_before= errors_.size();
 
 		bool needs_move_assign= false;
-		bool needs_function_pointer_assignment= false;
 		// Know args types.
 		{
 			// Prepare dummy function context for first pass.
@@ -388,9 +387,9 @@ Value CodeBuilder::BuildExpressionCode(
 					U_ASSERT(false);
 			}
 		} // for unary prefix operators
-
-		return result;
 	}
+
+	return result;
 }
 
 Value CodeBuilder::BuildBinaryOperator(

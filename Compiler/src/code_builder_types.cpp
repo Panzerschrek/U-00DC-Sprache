@@ -11,7 +11,7 @@ namespace U
 namespace CodeBuilderPrivate
 {
 
-static const SizeType GetFundamentalTypeSize( const U_FundamentalType type )
+static SizeType GetFundamentalTypeSize( const U_FundamentalType type )
 {
 	switch(type)
 	{

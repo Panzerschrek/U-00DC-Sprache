@@ -91,6 +91,8 @@ static std::unique_ptr<llvm::ExecutionEngine> g_current_engine; // Can have only
 
 static PyObject* BuildProgram( PyObject* const self, PyObject* const args )
 {
+	U_UNUSED(self);
+
 	PyObject* prorgam_text_arg= nullptr;
 	PyObject* print_llvm_asm_arg= nullptr;
 
@@ -139,6 +141,9 @@ static PyObject* BuildProgram( PyObject* const self, PyObject* const args )
 
 static PyObject* FreeProgram( PyObject* const self, PyObject* const args )
 {
+	U_UNUSED(self);
+	U_UNUSED(args);
+
 	if( g_current_engine != nullptr )
 	{
 		g_current_engine.reset();
@@ -152,6 +157,8 @@ static PyObject* FreeProgram( PyObject* const self, PyObject* const args )
 
 static PyObject* RunFunction( PyObject* const self, PyObject* const args )
 {
+	U_UNUSED(self);
+
 	const unsigned c_max_args= 8;
 	PyObject* function_name_param= nullptr;
 	PyObject* function_args[c_max_args]= { nullptr };
@@ -286,6 +293,8 @@ static PyObject* RunFunction( PyObject* const self, PyObject* const args )
 
 static PyObject* BuildProgramWithErrors( PyObject* const self, PyObject* const args )
 {
+	U_UNUSED(self);
+
 	const char* program_text= nullptr;
 
 	if( !PyArg_ParseTuple( args, "s", &program_text ) )
@@ -344,7 +353,8 @@ static struct PyModuleDef g_module=
 	nullptr,  // module documentation, may be NULL
 	-1,       // size of per-interpreter state of the module,
 			  // or -1 if the module keeps state in global variables.
-	g_methods
+	g_methods,
+	0, 0, 0, 0,
 };
 
 PyMODINIT_FUNC PyInit_sprache_compiler_tests_py_lib(void)

@@ -2074,6 +2074,7 @@ void CodeBuilder::CheckOverloadedOperator(
 
 	case OverloadedOperator::Mul:
 	case OverloadedOperator::Div:
+	case OverloadedOperator::Rem:
 	case OverloadedOperator::Equal:
 	case OverloadedOperator::NotEqual:
 	case OverloadedOperator::Less:

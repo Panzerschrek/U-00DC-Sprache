@@ -244,16 +244,12 @@ std::pair<const NamesScope::InsertedName*, NamesScope*> CodeBuilder::PreResolveD
 	else
 	{
 		const ProgramString& start= components[0].name;
-		NamesScope::InsertedName* start_resolved= nullptr;
 		NamesScope* space= &names_scope;
 		while(true)
 		{
 			NamesScope::InsertedName* const find= space->GetThisScopeName( start );
 			if( find != nullptr )
-			{
-				start_resolved= find;
 				break;
-			}
 			space= const_cast<NamesScope*>(space->GetParent());
 			if( space == nullptr )
 				return std::make_pair( nullptr, nullptr );
