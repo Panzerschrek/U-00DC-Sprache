@@ -75,6 +75,8 @@ static const Globals& GetGlobals()
 		[ size_t(Keywords::u32_) ]= "u32",
 		[ size_t(Keywords::i64_) ]= "i64",
 		[ size_t(Keywords::u64_) ]= "u64",
+		[ size_t(Keywords::i128_) ]= "i128",
+		[ size_t(Keywords::u128_) ]= "u128",
 		[ size_t(Keywords::f32_) ]= "f32",
 		[ size_t(Keywords::f64_) ]= "f64",
 		[ size_t(Keywords::char8_ ) ]= "char8" ,
@@ -127,6 +129,17 @@ static const Globals& GetGlobals()
 		[ size_t(Keywords::package_) ]= "package",
 		[ size_t(Keywords::module_) ]= "module",
 		[ size_t(Keywords::export_) ]= "export",
+
+		[ size_t(Keywords:: i256_) ]= " i256",
+		[ size_t(Keywords:: u256_) ]= " u256",
+		[ size_t(Keywords:: i512_) ]= " i512",
+		[ size_t(Keywords:: u512_) ]= " u512",
+		[ size_t(Keywords::i1024_) ]= "i1024",
+		[ size_t(Keywords::u1024_) ]= "u1024",
+		[ size_t(Keywords::i2048_) ]= "i2048",
+		[ size_t(Keywords::u2048_) ]= "u2048",
+		[ size_t(Keywords::i4096_) ]= "i4096",
+		[ size_t(Keywords::u4096_) ]= "u4096",
 	};
 
 	static const KeywordsSet c_keywords_set=

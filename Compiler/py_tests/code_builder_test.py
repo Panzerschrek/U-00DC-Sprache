@@ -349,3 +349,29 @@ def DeepExpressionsCompilationTest2():
 	tests_lib.build_program( c_program_text )
 	call_result= tests_lib.run_function( "_Z3Foov" )
 	assert( call_result == 64 )
+
+
+def Int128_Test0():
+	c_program_text= """
+	fn I128Add( i128 x, i128 y ) : i128
+	{
+		return x + y;
+	}
+	fn I128Mul( i128 x, i128 y ) : i128
+	{
+		return x * y;
+	}
+	fn I128Div( i128 x, i128 y ) : i128
+	{
+		return x / y;
+	}
+
+	fn Foo() : i32
+	{
+		var i128 mut x(1), y(-8), z(8657), w(12);
+		return i32( I128Add( I128Mul(x, y), I128Div(z, w) ) );
+	}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == ( 1 * (-8) ) + int( 8657 / 12 ) )
