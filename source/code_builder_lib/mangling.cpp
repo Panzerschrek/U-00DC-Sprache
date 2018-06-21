@@ -211,6 +211,8 @@ static NamePair GetTypeName_r( const Type& type, NamesCache& names_cache )
 		case U_FundamentalType::u32: result.full= "j"_SpC; break;
 		case U_FundamentalType::i64: result.full= "x"_SpC; break;
 		case U_FundamentalType::u64: result.full= "y"_SpC; break;
+		case U_FundamentalType::i128: result.full= "n"_SpC; break;
+		case U_FundamentalType::u128: result.full= "o"_SpC; break;
 		case U_FundamentalType::f32: result.full= "f"_SpC; break;
 		case U_FundamentalType::f64: result.full= "d"_SpC; break;
 		case U_FundamentalType::char8 : result.full= "c"_SpC; break; // C++ char

@@ -19,6 +19,8 @@ enum class U_FundamentalType
 	u32,
 	i64,
 	u64,
+	i128,
+	u128,
 
 	f32,
 	f64,

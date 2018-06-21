@@ -363,3 +363,33 @@ def FunctionContextForTypePreparing_Test0():
 	}
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def Int128_Test0():
+	c_program_text= """
+	fn I128Add( i128 x, i128 y ) : i128
+	{
+		return x + y;
+	}
+	fn I128Mul( i128 x, i128 y ) : i128
+	{
+		return x * y;
+	}
+	fn I128Div( i128 x, i128 y ) : i128
+	{
+		return x / y;
+	}
+	fn I128Rem( i128 x, i128 y ) : i128
+	{
+		return x % y;
+	}
+
+	fn Foo() : i32
+	{
+		var i128 mut x(1), y(-8), z(8657), w(12), f= 1000000000i128;
+		return i32( I128Rem( I128Add( I128Mul(x, y), I128Div(z, w) ), f ) );
+	}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == ( 1 * (-8) ) + int( 8657 / 12 ) )

@@ -57,6 +57,8 @@ enum class Keywords : unsigned int
 	u32_,
 	i64_,
 	u64_,
+	i128_,
+	u128_,
 	f32_,
 	f64_,
 	char8_,
@@ -115,6 +117,17 @@ enum class Keywords : unsigned int
 	package_,
 	module_,
 	export_,
+
+	i256_,
+	u256_,
+	i512_,
+	u512_,
+	i1024_,
+	u1024_,
+	i2048_,
+	u2048_,
+	i4096_,
+	u4096_,
 
 	LastKeyword,
 };
