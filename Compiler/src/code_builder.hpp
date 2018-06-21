@@ -323,8 +323,7 @@ private:
 	bool IsCopyAssignmentOperator( const Function& function_type, const Type& base_class );
 
 	// Generates for loop from 0 to iteration_count - 1
-	// Calls callback with argument - i32 with index
-	// TODO - allow 64bit indeces?
+	// Calls callback with argument - size_type with index
 	void GenerateLoop(
 		SizeType iteration_count,
 		const std::function<void(llvm::Value* counter_value)>& loop_body,

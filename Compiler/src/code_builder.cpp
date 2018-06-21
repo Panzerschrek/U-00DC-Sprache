@@ -1393,13 +1393,14 @@ void CodeBuilder::GenerateLoop(
 	if( iteration_count == 0u )
 		return;
 
+	const auto size_type_llvm= size_type_.GetLLVMType();
 	llvm::Value* const zero_value=
-		llvm::Constant::getIntegerValue( fundamental_llvm_types_.u32, llvm::APInt( 32u, uint64_t(0) ) );
+		llvm::Constant::getIntegerValue( size_type_llvm, llvm::APInt( size_type_llvm->getIntegerBitWidth(), uint64_t(0) ) );
 	llvm::Value* const one_value=
-		llvm::Constant::getIntegerValue( fundamental_llvm_types_.u32, llvm::APInt( 32u, uint64_t(1u) ) );
+		llvm::Constant::getIntegerValue( size_type_llvm, llvm::APInt( size_type_llvm->getIntegerBitWidth(), uint64_t(1u) ) );
 	llvm::Value* const loop_count_value=
-		llvm::Constant::getIntegerValue( fundamental_llvm_types_.u32, llvm::APInt( 32u, uint64_t(iteration_count) ) );
-	llvm::Value* const couter_address= function_context.alloca_ir_builder.CreateAlloca( fundamental_llvm_types_.u32 );
+		llvm::Constant::getIntegerValue( size_type_llvm, llvm::APInt( size_type_llvm->getIntegerBitWidth(), uint64_t(iteration_count) ) );
+	llvm::Value* const couter_address= function_context.alloca_ir_builder.CreateAlloca( size_type_llvm );
 	couter_address->setName( "loop_counter" );
 	function_context.llvm_ir_builder.CreateStore( zero_value, couter_address );
 

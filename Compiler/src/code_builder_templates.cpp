@@ -819,10 +819,10 @@ DeducedTemplateParameter CodeBuilder::DeduceTemplateArguments(
 			return DeducedTemplateParameter::Invalid();
 
 		Variable size_var;
-		size_var.type= FundamentalType( U_FundamentalType::u32, fundamental_llvm_types_.u32 ); // TODO - maybe selet native size type?
+		size_var.type= size_type_;
 		size_var.value_type= ValueType::Value;
 		size_var.llvm_value= size_var.constexpr_value=
-			llvm::Constant::getIntegerValue( size_var.type.GetLLVMType(), llvm::APInt( size_var.type.SizeOf() * 8u, param_array_type->size ) );
+			llvm::Constant::getIntegerValue( size_var.type.GetLLVMType(), llvm::APInt( size_type_.GetLLVMType()->getIntegerBitWidth(), param_array_type->size ) );
 
 		DeducedTemplateParameter::Array result;
 		result.type.reset(

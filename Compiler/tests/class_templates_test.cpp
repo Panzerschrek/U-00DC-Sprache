@@ -1892,7 +1892,7 @@ U_TEST( ArrayAsTemplateSignatureParameter_Test0 )
 	R"(
 		// Array size is constant
 		template</ type T />
-		struct ArrayElement</ [ T, 4u ] />
+		struct ArrayElement</ [ T, size_type(4) ] />
 		{
 			T x;
 		}
@@ -1922,7 +1922,7 @@ U_TEST( ArrayAsTemplateSignatureParameter_Test1 )
 	static const char c_program_text[]=
 	R"(
 		// Array size is param.
-		template</ type T, u32 size />
+		template</ type T, size_type size />
 		struct ArrayWrapper</ [ T, size ] />
 		{
 			[ T, size ] x;
@@ -1953,7 +1953,7 @@ U_TEST( ArrayAsTemplateSignatureParameter_Test2 )
 	static const char c_program_text[]=
 	R"(
 		// Array size is param, type is known.
-		template</ u32 size />
+		template</ size_type size />
 		struct ArrayWrapper</ [ i32, size ] />
 		{
 			[ i32, size ] x;

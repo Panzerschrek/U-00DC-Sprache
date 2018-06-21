@@ -569,11 +569,11 @@ def Specialization_Test7():
 
 def Specialization_Test8():
 	c_program_text= """
-		template</ type T, u32 size />
+		template</ type T, size_type size />
 		fn Bar( [ T, size ]& arr ) : i32 { return 8855; }
 
 		template</ type T />
-		fn Bar( [ T, 3u ]& arr3 ) : i32 { return 3333; }
+		fn Bar( [ T, size_type(3) ]& arr3 ) : i32 { return 3333; }
 
 		fn Foo() : i32
 		{
@@ -616,7 +616,7 @@ def Specialization_Test10():
 		fn Bar( IVec3& v ) : i32 { return 666; }
 
 		template</  />
-		fn Bar( [ i32, 3u ] & v ) : i32 { return 222; }
+		fn Bar( [ i32, size_type(3) ] & v ) : i32 { return 222; }
 
 		fn Foo() : i32
 		{
@@ -734,10 +734,10 @@ def DirectFunctionTemplateParametersSet_Test0():
 
 def DirectFunctionTemplateParametersSet_Test1():
 	c_program_text= """
-		template</ i32 value, u32 size />
+		template</ i32 value, size_type size />
 		fn FillArray( [ i32, size ] &mut arr )
 		{
-			auto mut i= 0u;
+			var size_type mut i(0);
 			while( i < size )
 			{
 				arr[i]= value;
@@ -748,7 +748,7 @@ def DirectFunctionTemplateParametersSet_Test1():
 		fn Foo()
 		{
 			var [ i32, 42u ] mut arr= zero_init;
-			FillArray</ 13, 42u />( arr );
+			FillArray</ 13, size_type(42) />( arr );
 			auto mut i= 0u;
 			while( i < 42u )
 			{
