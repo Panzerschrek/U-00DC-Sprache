@@ -792,6 +792,7 @@ private:
 		llvm::IntegerType* i128;
 		llvm::IntegerType* u128;
 
+		llvm::Type* f16;
 		llvm::Type* f32;
 		llvm::Type* f64;
 

@@ -22,6 +22,7 @@ enum class U_FundamentalType
 	i128,
 	u128,
 
+	f16,
 	f32,
 	f64,
 

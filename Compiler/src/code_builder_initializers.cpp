@@ -733,6 +733,7 @@ llvm::Constant* CodeBuilder::ApplyZeroInitializer(
 					llvm::APInt( fundamental_type->llvm_type->getIntegerBitWidth(), uint64_t(0) ) );
 			break;
 
+		case U_FundamentalType::f16:
 		case U_FundamentalType::f32:
 		case U_FundamentalType::f64:
 			zero_value= llvm::ConstantFP::get( fundamental_type->llvm_type, 0.0 );

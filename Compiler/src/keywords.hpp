@@ -53,6 +53,7 @@ enum class Keywords : unsigned int
 	u64_,
 	i128_,
 	u128_,
+	f16_,
 	f32_,
 	f64_,
 	char8_,

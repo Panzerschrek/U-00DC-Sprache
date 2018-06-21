@@ -31,6 +31,7 @@ bool IsInteger( const U_FundamentalType type )
 bool IsFloatingPoint( U_FundamentalType type )
 {
 	return
+		type == U_FundamentalType::f16 ||
 		type == U_FundamentalType::f32 ||
 		type == U_FundamentalType::f64;
 }

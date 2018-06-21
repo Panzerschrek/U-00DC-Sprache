@@ -427,13 +427,13 @@ Value CodeBuilder::BuildBinaryOperator(
 		}
 		else
 		{
-			if( l_type.SizeOf() < 4u )
+			const bool is_float= IsFloatingPoint( l_fundamental_type->fundamental_type );
+			if( !is_float && l_type.SizeOf() < 4u )
 			{
 				// Operation supported only for 32 and 64bit operands
 				errors_.push_back( ReportOperationNotSupportedForThisType( file_pos, l_type.ToString() ) );
 				return ErrorValue();
 			}
-			const bool is_float= IsFloatingPoint( l_fundamental_type->fundamental_type );
 			if( !( IsInteger( l_fundamental_type->fundamental_type ) || is_float ) )
 			{
 				// this operations allowed only for integer and floating point operands.
