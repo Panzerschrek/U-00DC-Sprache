@@ -268,11 +268,11 @@ endfunction()
 if( BUILD_LINKAGE_TESTS )
 	# Compile simple program on "Ü-Sprache", link it together with C++ program.
 
-	set( CPP_LINKAGE_SOURCES test_programs/cpp_linkage.u )
+	set( CPP_LINKAGE_SOURCES cpp_linkage_test/cpp_linkage.u )
 	CompileUSources( "${CPP_LINKAGE_SOURCES}" )
 	set( CPP_LINKAGE_OBJECTS ${U_SOURCE_OBJECTS} )
 
-	add_executable( CPPLinkageTest test_programs/cpp_linkage.cpp ${CPP_LINKAGE_OBJECTS} )
+	add_executable( CPPLinkageTest cpp_linkage_test/cpp_linkage.cpp ${CPP_LINKAGE_OBJECTS} )
 	add_dependencies( CPPLinkageTest Compiler )
 endif( BUILD_LINKAGE_TESTS )
 
