@@ -5,14 +5,21 @@
 #include <boost/filesystem/path.hpp>
 
 #include "push_disable_llvm_warnings.hpp"
+#include <llvm/ADT/Triple.h>
 #include <llvm/AsmParser/Parser.h>
 #include <llvm/Bitcode/ReaderWriter.h>
+#include <llvm/IR/LegacyPassManager.h>
 #include <llvm/IR/Verifier.h>
 #include <llvm/Linker/Linker.h>
 #include <llvm/Support/FileSystem.h>
 #include <llvm/Support/SourceMgr.h>
+#include <llvm/Support/TargetSelect.h>
+#include <llvm/Support/TargetRegistry.h>
+#include <llvm/Support/ToolOutputFile.h>
 #include <llvm/Support/raw_ostream.h>
 #include <llvm/Support/raw_os_ostream.h>
+#include <llvm/Target/TargetOptions.h>
+#include <llvm/Target/TargetMachine.h>
 #include "pop_llvm_warnings.hpp"
 
 #include "assert.hpp"
@@ -139,6 +146,7 @@ Usage:
 	std::vector<const char*> input_files;
 	const char* output_file= nullptr;
 	bool print_llvm_asm= false;
+	bool produce_object_file= false;
 
 	for( int i = 1; i < argc; )
 	{
@@ -155,6 +163,11 @@ Usage:
 		else if( std::strcmp( argv[i], "--print-llvm-asm" ) == 0 )
 		{
 			print_llvm_asm= true;
+			++i;
+		}
+		else if( std::strcmp( argv[i], "--produce-object-file" ) == 0 )
+		{
+			produce_object_file= true;
 			++i;
 		}
 		else if( std::strcmp( argv[i], "--help" ) == 0 )
@@ -255,14 +268,86 @@ Usage:
 		result_module->print( stream, nullptr );
 	}
 
-	// LLVM ir dump
 	std::error_code file_error_code;
-	llvm::raw_fd_ostream file( output_file, file_error_code, llvm::sys::fs::F_None );
+	llvm::raw_fd_ostream out_file_stream( output_file, file_error_code, llvm::sys::fs::F_None );
 
-	llvm::WriteBitcodeToFile( result_module.get(), file );
-	file.flush();
+	if( produce_object_file )
+	{
+		// TODO - support selecting other, than native, target.
+		llvm::InitializeNativeTarget();
+		llvm::InitializeNativeTargetAsmParser();
+		llvm::InitializeNativeTargetAsmPrinter();
 
-	if( file.has_error() )
+		llvm::PassRegistry& registry= *llvm::PassRegistry::getPassRegistry();
+		llvm::initializeCore(registry);
+		llvm::initializeCodeGen(registry);
+		llvm::initializeLoopStrengthReducePass(registry);
+		llvm::initializeLowerIntrinsicsPass(registry);
+		llvm::initializeUnreachableBlockElimPass(registry);
+
+		const std::string target_triple_str= result_module->getTargetTriple();
+
+		std::string error;
+		const llvm::Target* const target= llvm::TargetRegistry::lookupTarget( target_triple_str, error );
+		if( target == nullptr )
+		{
+			std::cout << "Error, selecting target: " << error << std::endl;
+			return 1;
+		}
+
+		const auto cpu_str= llvm::sys::getHostCPUName();
+		const std::string features_str= ""; // TODO - set it
+
+		llvm::TargetOptions options;
+		const llvm::Reloc::Model reloc_model= llvm::Reloc::Model::Default;
+		const llvm::CodeModel::Model code_model= llvm::CodeModel::Model::Default;
+		const llvm::CodeGenOpt::Level optimization_level = llvm::CodeGenOpt::Default;
+		const llvm::TargetMachine::CodeGenFileType file_type= llvm::TargetMachine::CodeGenFileType::CGFT_ObjectFile;
+		const bool no_verify= true;
+		llvm::AnalysisID start_before_id= nullptr;
+		llvm::AnalysisID start_after_id = nullptr;
+		llvm::AnalysisID stop_after_id = nullptr;
+
+		const std::unique_ptr<llvm::TargetMachine> target_machine(
+			target->createTargetMachine(
+				target_triple_str,
+				cpu_str,
+				features_str,
+				options,
+				reloc_model,
+				code_model,
+				optimization_level));
+		if( target_machine == nullptr )
+		{
+			std::cout << "Error, creating target machine." << std::endl;
+			return 1;
+		}
+
+		llvm::legacy::PassManager pass_manager;
+
+		if( target_machine->addPassesToEmitFile(
+				pass_manager,
+				out_file_stream,
+				file_type,
+				no_verify,
+				start_before_id,
+				start_after_id,
+				stop_after_id,
+				nullptr) )
+		{
+			std::cout << "Error, creating file emit pass." << std::endl;
+			return 1;
+		}
+
+		pass_manager.run(*result_module);
+	}
+	else
+	{
+		llvm::WriteBitcodeToFile( result_module.get(), out_file_stream );
+	}
+
+	out_file_stream.flush();
+	if( out_file_stream.has_error() )
 	{
 		std::cout << "Error while writing output file \"" << output_file << "\"" << std::endl;
 		return 1;
