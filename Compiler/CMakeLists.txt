@@ -215,26 +215,20 @@ if( BUILD_PY_TESTS )
 	target_link_libraries( PyTestsLib ${PYTHON_LIBRARIES} )
 	target_include_directories( PyTestsLib PRIVATE ${PYTHON_INCLUDE_DIRS} )
 
-	# Make copy of result library with appropriate name.
+	# Set proper name for result dynamic library.
 	if( WIN32 )
-		set( PY_TESTS_LIB_INSTALLED sprache_compiler_tests_py_lib.pyd )  # *.pyd libraries required by python on Windows
-		add_custom_command(
-			COMMAND cp libPyTestsLib.dll ${PY_TESTS_LIB_INSTALLED}
-			DEPENDS PyTestsLib
-			OUTPUT ${PY_TESTS_LIB_INSTALLED} )
+		set_target_properties( PyTestsLib
+			PROPERTIES OUTPUT_NAME sprache_compiler_tests_py_lib.pyd PREFIX "" SUFFIX "" )
 	else()
-		set( PY_TESTS_LIB_INSTALLED sprache_compiler_tests_py_lib.so )
-		add_custom_command(
-			COMMAND cp libPyTestsLib.so ${PY_TESTS_LIB_INSTALLED}
-			DEPENDS PyTestsLib
-			OUTPUT ${PY_TESTS_LIB_INSTALLED} )
+		set_target_properties( PyTestsLib
+			PROPERTIES OUTPUT_NAME sprache_compiler_tests_py_lib.so PREFIX "" SUFFIX "" )
 	endif()
 
 	# Run result test.
 	add_custom_target(
 		PyTestsRun ALL
 		COMMAND ${CMAKE_COMMAND} -E env PYTHONPATH=${CMAKE_CURRENT_BINARY_DIR} ${PYTHON_EXECUTABLE} py_tests/py_tests.py
-		DEPENDS ${PY_TESTS_LIB_INSTALLED}
+		DEPENDS PyTestsLib
 		WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} )
 
 endif( BUILD_PY_TESTS )
