@@ -194,3 +194,41 @@ def ConstexprFunctionArithmeticOperatorsTest_BitOperators():
 		}
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def ConstexprFunctionControlFlow_Test0():
+	c_program_text= """
+		fn constexpr Select( bool first, i32 x, i32 y ) : i32
+		{
+			if( first ) { return x; }
+			return y;
+		}
+		fn Foo()
+		{
+			static_assert( Select( true, 85, 865 ) == 85 );
+			static_assert( Select( false, 888, 999 ) == 999 );
+		}
+	"""
+
+	tests_lib.build_program( c_program_text )
+
+
+def ConstexprFunctionControlFlow_Test1():
+	c_program_text= """
+		fn constexpr Sum( i32 mut from, i32 to ) : i32
+		{
+			var i32 mut res= 0;
+			while( from < to )
+			{
+				res += from;
+				++from;
+			}
+			return res;
+		}
+		fn Foo()
+		{
+			static_assert( Sum( 7, 10 ) == 7 + 8 + 9 );
+			static_assert( Sum( 5, 13 ) == 5 + 6 + 7 + 8 + 9 + 10 + 11 + 12 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
