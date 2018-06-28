@@ -687,6 +687,8 @@ public:
 		BodyGenerationDisabled,
 	};
 	BodyKind body_kind= BodyKind::None;
+
+	bool constexpr_= false;
 };
 
 class ClassField final

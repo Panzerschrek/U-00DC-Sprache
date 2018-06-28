@@ -94,6 +94,7 @@ set( COMPILER_LIB_SOURCES
 	src/code_builder_typeinfo.cpp
 	src/code_builder_types.cpp
 	src/code_builder_virtual.cpp
+	src/constexpr_function_evaluator.cpp
 	src/keywords.cpp
 	src/lang_types.cpp
 	src/lexical_analyzer.cpp
@@ -109,6 +110,7 @@ set( COMPILER_LIB_HEADERS
 	src/code_builder_errors.hpp
 	src/code_builder.hpp
 	src/code_builder_types.hpp
+	src/constexpr_function_evaluator.hpp
 	src/i_code_builder.hpp
 	src/keywords.hpp
 	src/lexical_analyzer.hpp

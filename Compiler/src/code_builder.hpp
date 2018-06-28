@@ -475,7 +475,8 @@ private:
 		std::vector<const Synt::IExpressionComponent*> args,
 		const bool evaluate_args_in_reverse_order,
 		NamesScope& names,
-		FunctionContext& function_context );
+		FunctionContext& function_context,
+		bool func_is_constexpr= false );
 
 	Variable BuildTempVariableConstruction(
 		const Type& type,

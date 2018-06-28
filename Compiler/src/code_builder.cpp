@@ -1861,6 +1861,7 @@ CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 	} // for arguments
 
 	function_type.unsafe= func.type_.unsafe_;
+	func_variable.is_constexpr= func.constexpr_;
 
 	TryGenerateFunctionReturnReferencesMapping( func.type_, function_type );
 	ProcessFunctionReferencesPollution( func, function_type, base_class );

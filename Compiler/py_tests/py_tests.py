@@ -19,6 +19,7 @@ def GetTestsList( tests_modules_list ):
 def main():
 	tests_modules_list= [
 		"code_builder_test",
+		"constexpr_functions_test",
 		"constexpr_structs_test",
 		"function_pointers_errors_test",
 		"function_pointers_test",

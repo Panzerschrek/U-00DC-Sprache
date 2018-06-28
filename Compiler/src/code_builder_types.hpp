@@ -264,6 +264,7 @@ struct FunctionVariable final
 	bool is_this_call= false;
 	bool is_generated= false;
 	bool is_deleted= false;
+	bool is_constexpr= false;
 
 	llvm::Function* llvm_function= nullptr;
 

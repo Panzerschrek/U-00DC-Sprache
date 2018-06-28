@@ -4,6 +4,7 @@
 #include "pop_llvm_warnings.hpp"
 
 #include "assert.hpp"
+#include "constexpr_function_evaluator.hpp"
 #include "keywords.hpp"
 #include "lang_types.hpp"
 
@@ -2114,7 +2115,7 @@ Value CodeBuilder::BuildCallOperator(
 		this_= &this_casted;
 	}
 
-	return DoCallFunction( llvm_function_ptr, function_type, call_operator.file_pos_, this_, synt_args, false, names, function_context );
+	return DoCallFunction( llvm_function_ptr, function_type, call_operator.file_pos_, this_, synt_args, false, names, function_context, function.is_constexpr );
 }
 
 Value CodeBuilder::DoCallFunction(
@@ -2125,7 +2126,8 @@ Value CodeBuilder::DoCallFunction(
 	std::vector<const Synt::IExpressionComponent*> args,
 	const bool evaluate_args_in_reverse_order,
 	NamesScope& names,
-	FunctionContext& function_context )
+	FunctionContext& function_context,
+	bool func_is_constexpr )
 {
 	U_ASSERT( !( evaluate_args_in_reverse_order && first_arg != nullptr ) );
 
@@ -2137,6 +2139,7 @@ Value CodeBuilder::DoCallFunction(
 	U_ASSERT( arg_count == function_type.args.size() );
 
 	std::vector<llvm::Value*> llvm_args;
+	std::vector<llvm::Constant*> constant_llvm_args;
 	llvm_args.resize( arg_count, nullptr );
 	std::unordered_map<StoredVariablePtr, VaraibleReferencesCounter> locked_variable_counters;
 	std::vector<VariableStorageUseCounter> temp_args_locks; // We need lock reference argument before evaluating next arguments.
@@ -2165,6 +2168,9 @@ Value CodeBuilder::DoCallFunction(
 
 		const bool something_have_template_dependent_type= expr.type.GetTemplateDependentType() != nullptr || arg.type.GetTemplateDependentType() != nullptr;
 		function_result_have_template_dependent_type= function_result_have_template_dependent_type || something_have_template_dependent_type;
+
+		if( expr.constexpr_value != nullptr )
+			constant_llvm_args.push_back( expr.constexpr_value );
 
 		if( arg.is_reference )
 		{
@@ -2370,7 +2376,14 @@ Value CodeBuilder::DoCallFunction(
 
 	llvm::Value* call_result= nullptr;
 	if( std::find( llvm_args.begin(), llvm_args.end(), nullptr ) == llvm_args.end() )
-		call_result= function_context.llvm_ir_builder.CreateCall( function, llvm_args );
+	{
+		if( func_is_constexpr && constant_llvm_args.size() == llvm_args.size() )
+		{
+			call_result= ConstexprFunctionEvaluator( module_->getDataLayout() ).Evaluate( function_type, llvm::dyn_cast<llvm::Function>(function), constant_llvm_args ).result_constant;
+		}
+		else
+			call_result= function_context.llvm_ir_builder.CreateCall( function, llvm_args );
+	}
 	else
 		call_result= llvm::UndefValue::get( llvm::dyn_cast<llvm::FunctionType>(function->getType())->getReturnType() );
 
