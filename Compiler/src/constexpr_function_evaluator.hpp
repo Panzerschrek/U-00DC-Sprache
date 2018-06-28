@@ -39,7 +39,9 @@ private:
 	void ProcessAlloca( const llvm::Instruction* instruction );
 	void ProcessLoad( const llvm::Instruction* instruction );
 	void ProcessStore( const llvm::Instruction* instruction );
+	void ProcessGEP( const llvm::Instruction* instruction );
 
+	void ProcessUnaryArithmeticInstruction( const llvm::Instruction* instruction );
 	void ProcessBinaryArithmeticInstruction( const llvm::Instruction* instruction );
 
 private:

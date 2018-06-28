@@ -232,3 +232,57 @@ def ConstexprFunctionControlFlow_Test1():
 		}
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def ConstexprFunctionInternalArray_Test0():
+	c_program_text= """
+		fn constexpr Bar( i32 x ) : i32
+		{
+			var [ i32, 3 ] mut arr= zero_init;
+			arr[1u]= x;
+			return arr[1u] + arr[2u];
+		}
+		fn Foo()
+		{
+			static_assert( Bar( 65854 ) == 65854 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def ConstexprFunctionInternalArray_Test1():
+	c_program_text= """
+		fn constexpr Bar() : i32
+		{
+			var [ i32, 3 ] constexpr arr[ 85, 69, 845 ];
+			return arr[2u];
+		}
+		fn Foo()
+		{
+			static_assert( Bar() == 845 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def ConstexprFunctionInternalArray_Test2():
+	c_program_text= """
+		fn constexpr Bar( i32 x ) : i32
+		{
+			var [ i32, 3 ] mut arr[ x - 1, x, x + 1 ];
+
+			auto mut sum= 0;
+			auto mut counter= 0u;
+			while( counter < 3u )
+			{
+				sum+= arr[counter];
+				++counter;
+			}
+			return sum;
+		}
+		fn Foo()
+		{
+			static_assert( Bar( 85 ) == 85 * 3 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )

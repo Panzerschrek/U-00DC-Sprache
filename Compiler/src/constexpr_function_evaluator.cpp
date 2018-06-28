@@ -122,6 +122,11 @@ llvm::GenericValue ConstexprFunctionEvaluator::CallFunction( const llvm::Functio
 			instruction= instruction->getNextNode();
 			break;
 
+		case llvm::Instruction::GetElementPtr:
+			ProcessGEP(instruction);
+			instruction= instruction->getNextNode();
+			break;
+
 		case llvm::Instruction::Br:
 			{
 				if( instruction->getNumOperands() == 1u )
@@ -132,9 +137,7 @@ llvm::GenericValue ConstexprFunctionEvaluator::CallFunction( const llvm::Functio
 				}
 				else
 				{
-					const llvm::Value* const condition_value= instruction->getOperand(0u);
-					U_ASSERT( instructions_map_.find( condition_value ) != instructions_map_.end() );
-					const llvm::GenericValue& val= instructions_map_[condition_value];
+					const llvm::GenericValue val= GetVal(instruction->getOperand(0u));
 
 					if( !val.IntVal.getBoolValue() )
 					{
@@ -181,6 +184,20 @@ llvm::GenericValue ConstexprFunctionEvaluator::CallFunction( const llvm::Functio
 			instruction= instruction->getNextNode();
 			break;
 
+		case llvm::Instruction::SExt:
+		case llvm::Instruction::ZExt:
+		case llvm::Instruction::Trunc:
+			ProcessUnaryArithmeticInstruction(instruction);
+			instruction= instruction->getNextNode();
+			break;
+
+		case llvm::Instruction::Call:
+			U_ASSERT(false);
+			break;
+
+		case llvm::Instruction::Unreachable:
+			U_ASSERT(false);
+			break;
 
 		default:
 			U_ASSERT(false);
@@ -275,7 +292,7 @@ void ConstexprFunctionEvaluator::ProcessAlloca( const llvm::Instruction* const i
 	stack_.resize( stack_.size() + size );
 
 	llvm::GenericValue val;
-	val.IntVal= llvm::APInt( 64u, uint64_t(stack_offset) );
+	val.IntVal= llvm::APInt( data_layout_.getPointerSizeInBits(), uint64_t(stack_offset) );
 	instructions_map_[ instruction ]= val;
 }
 
@@ -350,6 +367,68 @@ void ConstexprFunctionEvaluator::ProcessStore( const llvm::Instruction* const in
 	}
 	else
 		U_ASSERT(false);
+}
+
+void ConstexprFunctionEvaluator::ProcessGEP( const llvm::Instruction* const instruction )
+{
+	U_ASSERT( instruction->getNumOperands() == 3u ); // Currently compiler generates only 3-operand GEP commands.
+
+	const llvm::GenericValue ptr= GetVal( instruction->getOperand(0u) );
+	const llvm::GenericValue index= GetVal( instruction->getOperand(2u) );
+
+	llvm::Type* const aggregate_type= llvm::dyn_cast<llvm::PointerType>(instruction->getOperand(0u)->getType())->getElementType();
+
+	llvm::GenericValue new_ptr;
+	if( aggregate_type->isArrayTy() )
+	{
+		llvm::Type* const element_type= llvm::dyn_cast<llvm::ArrayType>( aggregate_type )->getElementType();
+		new_ptr.IntVal=
+			ptr.IntVal +
+			llvm::APInt( ptr.IntVal.getBitWidth(), index.IntVal.getLimitedValue() ) *
+			llvm::APInt( ptr.IntVal.getBitWidth(), data_layout_.getTypeAllocSize( element_type ) );
+	}
+	else if( aggregate_type->isStructTy() )
+	{
+		const llvm::StructLayout& struct_layout= *data_layout_.getStructLayout( llvm::dyn_cast<llvm::StructType>(aggregate_type) );
+		new_ptr.IntVal=
+			ptr.IntVal +
+			llvm::APInt( ptr.IntVal.getBitWidth(), struct_layout.getElementOffset( index.IntVal.getLimitedValue() ) );
+	}
+	else
+		U_ASSERT(false);
+
+	instructions_map_[instruction]= new_ptr;
+}
+
+void ConstexprFunctionEvaluator::ProcessUnaryArithmeticInstruction( const llvm::Instruction* const instruction )
+{
+	const llvm::GenericValue op= GetVal( instruction->getOperand(0u) );
+
+	llvm::Type* type= instruction->getType();
+	llvm::GenericValue val;
+	switch(instruction->getOpcode())
+	{
+	case llvm::Instruction::SExt:
+		U_ASSERT(type->isIntegerTy());
+		val.IntVal= op.IntVal.sext(type->getIntegerBitWidth());
+		break;
+
+	case llvm::Instruction::ZExt:
+		U_ASSERT(type->isIntegerTy());
+		val.IntVal= op.IntVal.zext(type->getIntegerBitWidth());
+		break;
+
+	case llvm::Instruction::Trunc:
+		U_ASSERT(type->isIntegerTy());
+		val.IntVal= op.IntVal.trunc(type->getIntegerBitWidth());
+		break;
+
+	default:
+		U_ASSERT(false);
+		break;
+	}
+
+	instructions_map_[instruction]= val;
 }
 
 void ConstexprFunctionEvaluator::ProcessBinaryArithmeticInstruction( const llvm::Instruction* const instruction )
