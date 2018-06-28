@@ -139,6 +139,29 @@ llvm::GenericValue ConstexprFunctionEvaluator::CallFunction( const llvm::Functio
 				return instructions_map_[value];
 			}
 
+
+		case llvm::Instruction::Add:
+		case llvm::Instruction::Sub:
+		case llvm::Instruction::Mul:
+		case llvm::Instruction::SDiv:
+		case llvm::Instruction::UDiv:
+		case llvm::Instruction::SRem:
+		case llvm::Instruction::URem:
+		case llvm::Instruction::And:
+		case llvm::Instruction::Or:
+		case llvm::Instruction::Xor:
+		case llvm::Instruction::Shl:
+		case llvm::Instruction::AShr:
+		case llvm::Instruction::LShr:
+		case llvm::Instruction::FAdd:
+		case llvm::Instruction::FSub:
+		case llvm::Instruction::FMul:
+		case llvm::Instruction::FDiv:
+		case llvm::Instruction::FRem:
+			ProcessBinaryArithmeticInstruction(instruction);
+			instruction= instruction->getNextNode();
+			break;
+
 		default:
 			U_ASSERT(false);
 			break;
@@ -208,7 +231,7 @@ void ConstexprFunctionEvaluator::ProcessAlloca( const llvm::Instruction* const i
 	const size_t size= data_layout_.getTypeAllocSize( element_type );
 
 	const size_t stack_offset= stack_.size();
-	stack_.resize( size );
+	stack_.resize( stack_.size() + size );
 
 	llvm::GenericValue val;
 	val.IntVal= llvm::APInt( 64u, uint64_t(stack_offset) );
@@ -288,6 +311,131 @@ void ConstexprFunctionEvaluator::ProcessStore( const llvm::Instruction* const in
 	}
 	else
 		U_ASSERT(false);
+}
+
+void ConstexprFunctionEvaluator::ProcessBinaryArithmeticInstruction( const llvm::Instruction* const instruction )
+{
+	const llvm::Value* const op0_val= instruction->getOperand(0u);
+	U_ASSERT( instructions_map_.find( op0_val ) != instructions_map_.end() );
+	const llvm::GenericValue& op0= instructions_map_[op0_val];
+
+	const llvm::Value* const op1_val= instruction->getOperand(1u);
+	U_ASSERT( instructions_map_.find( op1_val ) != instructions_map_.end() );
+	const llvm::GenericValue& op1= instructions_map_[op1_val];
+
+	llvm::Type* type= instruction->getType();
+	llvm::GenericValue val;
+	switch(instruction->getOpcode())
+	{
+	case llvm::Instruction::Add:
+		U_ASSERT(type->isIntegerTy());
+		val.IntVal= op0.IntVal + op1.IntVal;
+		break;
+
+	case llvm::Instruction::Sub:
+		U_ASSERT(type->isIntegerTy());
+		val.IntVal= op0.IntVal - op1.IntVal;
+		break;
+
+	case llvm::Instruction::Mul:
+		U_ASSERT(type->isIntegerTy());
+		val.IntVal= op0.IntVal * op1.IntVal;
+		break;
+
+	case llvm::Instruction::SDiv:
+		U_ASSERT(type->isIntegerTy());
+		val.IntVal= op0.IntVal.sdiv(op1.IntVal); // TODO - check division by zero
+		break;
+
+	case llvm::Instruction::UDiv:
+		U_ASSERT(type->isIntegerTy());
+		val.IntVal= op0.IntVal.udiv(op1.IntVal); // TODO - check division by zero
+		break;
+
+	case llvm::Instruction::SRem:
+		U_ASSERT(type->isIntegerTy());
+		val.IntVal= op0.IntVal.srem(op1.IntVal);
+		break;
+
+	case llvm::Instruction::URem:
+		U_ASSERT(type->isIntegerTy());
+		val.IntVal= op0.IntVal.urem(op1.IntVal);
+		break;
+
+	case llvm::Instruction::And:
+		U_ASSERT(type->isIntegerTy());
+		val.IntVal= op0.IntVal.And(op1.IntVal);
+		break;
+
+	case llvm::Instruction::Or:
+		U_ASSERT(type->isIntegerTy());
+		val.IntVal= op0.IntVal.Or(op1.IntVal);
+		break;
+
+	case llvm::Instruction::Xor:
+		U_ASSERT(type->isIntegerTy());
+		val.IntVal= op0.IntVal.Xor(op1.IntVal);
+		break;
+
+
+	case llvm::Instruction::Shl:
+		U_ASSERT(type->isIntegerTy());
+		val.IntVal= op0.IntVal.shl(op1.IntVal);
+		break;
+
+	case llvm::Instruction::AShr:
+		U_ASSERT(type->isIntegerTy());
+		val.IntVal= op0.IntVal.ashr(op1.IntVal);
+		break;
+
+	case llvm::Instruction::LShr:
+		U_ASSERT(type->isIntegerTy());
+		val.IntVal= op0.IntVal.lshr(op1.IntVal);
+		break;
+
+	case llvm::Instruction::FAdd:
+		if( type->isFloatTy() )
+			val.FloatVal= ( llvm::APFloat(op0.FloatVal) + llvm::APFloat(op1.FloatVal) ).convertToFloat();
+		else if( type->isDoubleTy() )
+			val.DoubleVal= ( llvm::APFloat(op0.DoubleVal) + llvm::APFloat(op1.DoubleVal) ).convertToDouble();
+		else U_ASSERT(false);
+		break;
+
+	case llvm::Instruction::FSub:
+		if( type->isFloatTy() )
+			val.FloatVal= ( llvm::APFloat(op0.FloatVal) - llvm::APFloat(op1.FloatVal) ).convertToFloat();
+		else if( type->isDoubleTy() )
+			val.DoubleVal= ( llvm::APFloat(op0.DoubleVal) - llvm::APFloat(op1.DoubleVal) ).convertToDouble();
+		else U_ASSERT(false);
+		break;
+
+	case llvm::Instruction::FMul:
+		if( type->isFloatTy() )
+			val.FloatVal= ( llvm::APFloat(op0.FloatVal) * llvm::APFloat(op1.FloatVal) ).convertToFloat();
+		else if( type->isDoubleTy() )
+			val.DoubleVal= ( llvm::APFloat(op0.DoubleVal) * llvm::APFloat(op1.DoubleVal) ).convertToDouble();
+		else U_ASSERT(false);
+		break;
+
+	case llvm::Instruction::FDiv:
+		if( type->isFloatTy() )
+			val.FloatVal= ( llvm::APFloat(op0.FloatVal) / llvm::APFloat(op1.FloatVal) ).convertToFloat();
+		else if( type->isDoubleTy() )
+			val.DoubleVal= ( llvm::APFloat(op0.DoubleVal) / llvm::APFloat(op1.DoubleVal) ).convertToDouble();
+		else U_ASSERT(false);
+		break;
+
+	case llvm::Instruction::FRem:
+		U_ASSERT(false); // TODO
+		break;
+
+
+	default:
+		U_ASSERT(false);
+		break;
+	};
+
+	instructions_map_[instruction]= val;
 }
 
 } // namespace CodeBuilderPrivate

@@ -39,6 +39,8 @@ private:
 	void ProcessLoad( const llvm::Instruction* instruction );
 	void ProcessStore( const llvm::Instruction* instruction );
 
+	void ProcessBinaryArithmeticInstruction( const llvm::Instruction* instruction );
+
 private:
 	const llvm::DataLayout data_layout_;
 

@@ -68,3 +68,129 @@ def ConstexprCall_ResultTypeIs_f64():
 		}
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def ConstexprFunctionArithmeticOperatorsTest_Add():
+	c_program_text= """
+		fn constexpr Bar( i32 x, i32 y ) : i32
+		{
+			return x + y;
+		}
+		fn Foo()
+		{
+			static_assert( Bar(85, 14) == 85 + 14 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def ConstexprFunctionArithmeticOperatorsTest_Sub():
+	c_program_text= """
+		fn constexpr Bar( i32 x, i32 y ) : i32
+		{
+			return x - y;
+		}
+		fn Foo()
+		{
+			static_assert( Bar(14, 85) == 14 - 85 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def ConstexprFunctionArithmeticOperatorsTest_Mul():
+	c_program_text= """
+		fn constexpr Bar( i32 x, i32 y ) : i32
+		{
+			return x * y;
+		}
+		fn Foo()
+		{
+			static_assert( Bar(14, 85) == 14 * 85 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def ConstexprFunctionArithmeticOperatorsTest_Div():
+	c_program_text= """
+		fn constexpr Bar( i32 x, i32 y ) : i32
+		{
+			return x / y;
+		}
+		fn Foo()
+		{
+			static_assert( Bar(85, 14) == 85 / 14 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def ConstexprFunctionArithmeticOperatorsTest_FAdd():
+	c_program_text= """
+		fn constexpr Bar( f32 x, f32 y ) : f32
+		{
+			return x + y;
+		}
+		fn Foo()
+		{
+			static_assert( Bar(85.5f, 14.1f) == 85.5f + 14.1f );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def ConstexprFunctionArithmeticOperatorsTest_FSub():
+	c_program_text= """
+		fn constexpr Bar( f32 x, f32 y ) : f32
+		{
+			return x - y;
+		}
+		fn Foo()
+		{
+			static_assert( Bar(85.5f, 14.1f) == 85.5f - 14.1f );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def ConstexprFunctionArithmeticOperatorsTest_FMul():
+	c_program_text= """
+		fn constexpr Bar( f32 x, f32 y ) : f32
+		{
+			return x * y;
+		}
+		fn Foo()
+		{
+			static_assert( Bar(85.5f, 14.1f) == 85.5f * 14.1f );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def ConstexprFunctionArithmeticOperatorsTest_FDiv():
+	c_program_text= """
+		fn constexpr Bar( f32 x, f32 y ) : f32
+		{
+			return x / y;
+		}
+		fn Foo()
+		{
+			static_assert( Bar(85.5f, 14.1f) == 85.5f / 14.1f );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def ConstexprFunctionArithmeticOperatorsTest_BitOperators():
+	c_program_text= """
+		fn constexpr Bar( i32 x, i32 y, i32 z, i32 w ) : i32
+		{
+			return ( x & y ) | ( z ^ w );
+		}
+		fn Foo()
+		{
+			static_assert( Bar( 255, 254, 542, 86254 ) == ( (255&254) | (542^86254) ) );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
