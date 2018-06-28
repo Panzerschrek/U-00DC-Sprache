@@ -49,9 +49,15 @@ ConstexprFunctionEvaluator::Result ConstexprFunctionEvaluator::Evaluate(
 		}
 		else if( arg.getType()->isFloatTy() )
 		{
+			llvm::GenericValue val;
+			val.FloatVal= llvm::dyn_cast<llvm::ConstantFP>(args[i])->getValueAPF().convertToFloat();
+			instructions_map_[ &arg ]= val;
 		}
 		else if( arg.getType()->isDoubleTy() )
 		{
+			llvm::GenericValue val;
+			val.DoubleVal= llvm::dyn_cast<llvm::ConstantFP>(args[i])->getValueAPF().convertToDouble();
+			instructions_map_[ &arg ]= val;
 		}
 		else
 			U_ASSERT(false);
@@ -73,7 +79,12 @@ ConstexprFunctionEvaluator::Result ConstexprFunctionEvaluator::Evaluate(
 			if( IsInteger( fundamental->fundamental_type ) )
 				result.result_constant= llvm::Constant::getIntegerValue( function_type.return_type.GetLLVMType(), res.IntVal );
 			else if( IsFloatingPoint( fundamental->fundamental_type ) )
-				result.result_constant= llvm::ConstantFP::get( function_type.return_type.GetLLVMType(), res.DoubleVal );
+			{
+				result.result_constant=
+					llvm::ConstantFP::get(
+						function_type.return_type.GetLLVMType(),
+						fundamental->fundamental_type == U_FundamentalType::f32 ? double(res.FloatVal) : res.DoubleVal );
+			}
 			else
 				U_ASSERT(false);
 		}
@@ -97,79 +108,19 @@ llvm::GenericValue ConstexprFunctionEvaluator::CallFunction( const llvm::Functio
 		switch( instruction->getOpcode() )
 		{
 		case llvm::Instruction::Alloca:
-			{
-				//llvm::Type* const pointer_type= instruction->getOperand(0u)->getType();
-				//llvm::Type* const element_type= llvm::dyn_cast<llvm::PointerType>(pointer_type)->getElementType();
-				llvm::Type* const element_type= instruction->getOperand(0u)->getType();
-
-				const size_t size= data_layout_.getTypeAllocSize( element_type );
-
-				const size_t stack_offset= stack_.size();
-				stack_.resize( size );
-
-				llvm::GenericValue val;
-				val.IntVal= llvm::APInt( 64u, uint64_t(stack_offset) );
-				instructions_map_[ instruction ]= val;
-			}
+			ProcessAlloca(instruction);
 			instruction= instruction->getNextNode();
 			break;
 
 		case llvm::Instruction::Load:
-			{
-				const llvm::Value* const address= instruction->getOperand(0u);
-				U_ASSERT( instructions_map_.find( address ) != instructions_map_.end() );
-				const llvm::GenericValue& address_val= instructions_map_[address];
-
-				const size_t offset= address_val.IntVal.getLimitedValue();
-				U_ASSERT( offset < stack_.size() );
-
-				llvm::Type* const element_type= llvm::dyn_cast<llvm::PointerType>(address->getType())->getElementType();
-				if( element_type->isIntegerTy() )
-				{
-					uint64_t buff[4];
-					std::memcpy( buff, stack_.data() + offset, element_type->getIntegerBitWidth() / 8u );
-
-					llvm::GenericValue val;
-					val.IntVal= llvm::APInt( element_type->getIntegerBitWidth() , buff );
-					instructions_map_[ instruction ]= val;
-				}
-				else
-				{
-					U_ASSERT(false);
-					// TODO
-				}
-			}
+			ProcessLoad(instruction);
 			instruction= instruction->getNextNode();
 			break;
 
 		case llvm::Instruction::Store:
-			{
-				const llvm::Value* const address= instruction->getOperand(1u);
-				U_ASSERT( instructions_map_.find( address ) != instructions_map_.end() );
-				const llvm::GenericValue& address_val= instructions_map_[address];
-
-				const size_t offset= address_val.IntVal.getLimitedValue();
-				U_ASSERT( offset < stack_.size() );
-
-				const llvm::Value* const value= instruction->getOperand(0u);
-				U_ASSERT( instructions_map_.find( value ) != instructions_map_.end() );
-				const llvm::GenericValue& val= instructions_map_[value];
-
-				llvm::Type* const element_type= llvm::dyn_cast<llvm::PointerType>(address->getType())->getElementType();
-				if( element_type->isIntegerTy() )
-				{
-					uint64_t limited_value= val.IntVal.getLimitedValue();
-					std::memcpy( stack_.data() + offset, &limited_value, element_type->getIntegerBitWidth() / 8u );
-				}
-				else
-				{
-					U_ASSERT(false);
-					// TODO
-				}
-			}
+			ProcessStore(instruction);
 			instruction= instruction->getNextNode();
 			break;
-
 
 		case llvm::Instruction::Br:
 			{
@@ -248,6 +199,95 @@ size_t ConstexprFunctionEvaluator::MoveConstantToStack( const llvm::Constant& co
 	}
 
 	return stack_offset;
+}
+
+void ConstexprFunctionEvaluator::ProcessAlloca( const llvm::Instruction* const instruction )
+{
+	llvm::Type* const element_type= instruction->getOperand(0u)->getType();
+
+	const size_t size= data_layout_.getTypeAllocSize( element_type );
+
+	const size_t stack_offset= stack_.size();
+	stack_.resize( size );
+
+	llvm::GenericValue val;
+	val.IntVal= llvm::APInt( 64u, uint64_t(stack_offset) );
+	instructions_map_[ instruction ]= val;
+}
+
+void ConstexprFunctionEvaluator::ProcessLoad( const llvm::Instruction* const instruction )
+{
+	const llvm::Value* const address= instruction->getOperand(0u);
+	U_ASSERT( instructions_map_.find( address ) != instructions_map_.end() );
+	const llvm::GenericValue& address_val= instructions_map_[address];
+
+	const size_t offset= address_val.IntVal.getLimitedValue();
+	U_ASSERT( offset < stack_.size() );
+
+	llvm::Type* const element_type= llvm::dyn_cast<llvm::PointerType>(address->getType())->getElementType();
+	if( element_type->isIntegerTy() )
+	{
+		uint64_t buff[4];
+		std::memcpy( buff, stack_.data() + offset, element_type->getIntegerBitWidth() / 8u );
+
+		llvm::GenericValue val;
+		val.IntVal= llvm::APInt( element_type->getIntegerBitWidth() , buff );
+		instructions_map_[ instruction ]= val;
+	}
+	else if( element_type->isFloatTy() )
+	{
+		llvm::GenericValue val;
+		std::memcpy( &val.FloatVal, stack_.data() + offset, sizeof(float) );
+		instructions_map_[ instruction ]= val;
+	}
+	else if( element_type->isDoubleTy() )
+	{
+		llvm::GenericValue val;
+		std::memcpy( &val.DoubleVal, stack_.data() + offset, sizeof(double) );
+		instructions_map_[ instruction ]= val;
+	}
+	else if( element_type->isPointerTy() )
+	{
+		SizeType ptr;
+		std::memcpy( &ptr, stack_.data() + offset, data_layout_.getTypeAllocSize( element_type ) );
+		llvm::GenericValue val;
+		val.IntVal= llvm::APInt( 64u , ptr );
+		instructions_map_[ instruction ]= val;
+	}
+	else
+		U_ASSERT(false);
+}
+
+void ConstexprFunctionEvaluator::ProcessStore( const llvm::Instruction* const instruction )
+{
+	const llvm::Value* const address= instruction->getOperand(1u);
+	U_ASSERT( instructions_map_.find( address ) != instructions_map_.end() );
+	const llvm::GenericValue& address_val= instructions_map_[address];
+
+	const size_t offset= address_val.IntVal.getLimitedValue();
+	U_ASSERT( offset < stack_.size() );
+
+	const llvm::Value* const value= instruction->getOperand(0u);
+	U_ASSERT( instructions_map_.find( value ) != instructions_map_.end() );
+	const llvm::GenericValue& val= instructions_map_[value];
+
+	llvm::Type* const element_type= llvm::dyn_cast<llvm::PointerType>(address->getType())->getElementType();
+	if( element_type->isIntegerTy() )
+	{
+		uint64_t limited_value= val.IntVal.getLimitedValue();
+		std::memcpy( stack_.data() + offset, &limited_value, element_type->getIntegerBitWidth() / 8u );
+	}
+	else if( element_type->isFloatTy() )
+		std::memcpy( stack_.data() + offset, &val.FloatVal, data_layout_.getTypeAllocSize( element_type ) );
+	else if( element_type->isDoubleTy() )
+		std::memcpy( stack_.data() + offset, &val.DoubleVal, data_layout_.getTypeAllocSize( element_type ) );
+	else if( element_type->isPointerTy() )
+	{
+		SizeType ptr= val.IntVal.getLimitedValue();
+		std::memcpy( stack_.data() + offset, &ptr, data_layout_.getTypeAllocSize( element_type ) );
+	}
+	else
+		U_ASSERT(false);
 }
 
 } // namespace CodeBuilderPrivate

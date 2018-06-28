@@ -2379,6 +2379,7 @@ Value CodeBuilder::DoCallFunction(
 	{
 		if( func_is_constexpr && constant_llvm_args.size() == llvm_args.size() )
 		{
+			// TODO - check errors.
 			call_result= ConstexprFunctionEvaluator( module_->getDataLayout() ).Evaluate( function_type, llvm::dyn_cast<llvm::Function>(function), constant_llvm_args ).result_constant;
 		}
 		else
@@ -2394,6 +2395,7 @@ Value CodeBuilder::DoCallFunction(
 	}
 
 	Variable result;
+	result.constexpr_value= llvm::dyn_cast<llvm::Constant>(call_result);
 
 	result.type= function_type.return_type;
 	result.llvm_value= call_result;
