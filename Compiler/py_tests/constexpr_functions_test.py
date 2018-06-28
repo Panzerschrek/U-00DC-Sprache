@@ -86,13 +86,13 @@ def ConstexprFunctionArithmeticOperatorsTest_Add():
 
 def ConstexprFunctionArithmeticOperatorsTest_Sub():
 	c_program_text= """
-		fn constexpr Bar( i32 x, i32 y ) : i32
+		fn constexpr Bar( i64 x, i64 y ) : i64
 		{
 			return x - y;
 		}
 		fn Foo()
 		{
-			static_assert( Bar(14, 85) == 14 - 85 );
+			static_assert( Bar(14i64, 85i64) == 14i64 - 85i64 );
 		}
 	"""
 	tests_lib.build_program( c_program_text )
@@ -170,13 +170,13 @@ def ConstexprFunctionArithmeticOperatorsTest_FMul():
 
 def ConstexprFunctionArithmeticOperatorsTest_FDiv():
 	c_program_text= """
-		fn constexpr Bar( f32 x, f32 y ) : f32
+		fn constexpr Bar( f64 x, f64 y ) : f64
 		{
 			return x / y;
 		}
 		fn Foo()
 		{
-			static_assert( Bar(85.5f, 14.1f) == 85.5f / 14.1f );
+			static_assert( Bar(85.5, 14.1) == 85.5 / 14.1 );
 		}
 	"""
 	tests_lib.build_program( c_program_text )
