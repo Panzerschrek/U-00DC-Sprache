@@ -423,11 +423,33 @@ void ConstexprFunctionEvaluator::ProcessCall( const llvm::Instruction* const ins
 
 	InstructionsMap new_instructions_map;
 
+	const size_t prev_stack_size= stack_.size();
+
 	size_t i= 0u;
 	for( const llvm::Argument& arg : function->args() )
 	{
-		if( arg.hasStructRetAttr() ) U_ASSERT(false); // TODO - process Struct Ret args.
-		new_instructions_map[ &arg ]= GetVal( instruction->getOperand(i) );
+		if( arg.hasByValAttr() )
+		{
+			// Push to stack copy of byval arguments.
+			U_ASSERT( arg.getType()->isPointerTy() );
+			llvm::Type* const element_type= llvm::dyn_cast<llvm::PointerType>(arg.getType())->getElementType();
+			const size_t element_size= data_layout_.getTypeAllocSize( element_type );
+
+			const size_t dst_ptr= stack_.size();
+			stack_.resize( stack_.size() + element_size );
+
+			llvm::GenericValue val= GetVal( instruction->getOperand(i) );
+			const size_t src_ptr= val.IntVal.getLimitedValue();
+			U_ASSERT( src_ptr + element_size <= stack_.size() );
+
+			std::memcpy( stack_.data() + dst_ptr, stack_.data() + src_ptr, element_size );
+
+			llvm::GenericValue val_copy;
+			val_copy.IntVal= llvm::APInt( data_layout_.getPointerSizeInBits(), dst_ptr );
+			new_instructions_map[ &arg ]= val_copy;
+		}
+		else
+			new_instructions_map[ &arg ]= GetVal( instruction->getOperand(i) );
 		++i;
 	}
 
@@ -437,6 +459,8 @@ void ConstexprFunctionEvaluator::ProcessCall( const llvm::Instruction* const ins
 
 	if( !function->getReturnType()->isVoidTy() )
 		instructions_map_[instruction]= result_val;
+
+	stack_.resize( prev_stack_size ); // Drop temporary byval arguments.
 }
 
 void ConstexprFunctionEvaluator::ProcessUnaryArithmeticInstruction( const llvm::Instruction* const instruction )

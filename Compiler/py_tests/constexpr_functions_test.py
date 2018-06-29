@@ -440,6 +440,23 @@ def ConstexprFunctionCallOtherFunction_Test5():
 	tests_lib.build_program( c_program_text )
 
 
+def ConstexprFunctionCallOtherFunction_Test5():
+	c_program_text= """
+		struct Box{ i32 x; }
+		fn constexpr Unbox( Box box ) : i32 { return box.x; }
+		fn constexpr Pass( i32 x ) : i32
+		{
+			var Box box{ .x= x };
+			return Unbox(box);   // Call here function with "byval" argument.
+		}
+		fn Foo()
+		{
+			static_assert( Pass(114525) == 114525 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
 def ConstexprFunction_CompositeArgument_Test0():
 	c_program_text= """
 		struct Vec{ i32 x; i32 y; }
