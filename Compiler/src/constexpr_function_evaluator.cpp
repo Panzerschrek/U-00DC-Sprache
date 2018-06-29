@@ -207,6 +207,7 @@ llvm::GenericValue ConstexprFunctionEvaluator::CallFunction( const llvm::Functio
 		case llvm::Instruction::FDiv:
 		case llvm::Instruction::FRem:
 		case llvm::Instruction::ICmp:
+		case llvm::Instruction::FCmp:
 			ProcessBinaryArithmeticInstruction(instruction);
 			instruction= instruction->getNextNode();
 			break;
@@ -214,12 +215,24 @@ llvm::GenericValue ConstexprFunctionEvaluator::CallFunction( const llvm::Functio
 		case llvm::Instruction::SExt:
 		case llvm::Instruction::ZExt:
 		case llvm::Instruction::Trunc:
+		case llvm::Instruction::FPExt:
+		case llvm::Instruction::FPTrunc:
+		case llvm::Instruction::SIToFP:
+		case llvm::Instruction::UIToFP:
+		case llvm::Instruction::FPToSI:
+		case llvm::Instruction::FPToUI:
+		case llvm::Instruction::BitCast:
 			ProcessUnaryArithmeticInstruction(instruction);
 			instruction= instruction->getNextNode();
 			break;
 
 		case llvm::Instruction::Unreachable:
-			U_ASSERT(false);
+			U_ASSERT(false); // TODO
+			break;
+
+		case llvm::Instruction::PtrToInt:
+		case llvm::Instruction::IntToPtr:
+			U_ASSERT(false); // Constexpr functions must not use such instructions.
 			break;
 
 		default:
@@ -480,23 +493,95 @@ void ConstexprFunctionEvaluator::ProcessUnaryArithmeticInstruction( const llvm::
 {
 	const llvm::GenericValue op= GetVal( instruction->getOperand(0u) );
 
-	llvm::Type* type= instruction->getType();
+	llvm::Type* const dst_type= instruction->getType();
+	llvm::Type* const src_type= instruction->getOperand(0u)->getType();
 	llvm::GenericValue val;
 	switch(instruction->getOpcode())
 	{
 	case llvm::Instruction::SExt:
-		U_ASSERT(type->isIntegerTy());
-		val.IntVal= op.IntVal.sext(type->getIntegerBitWidth());
+		U_ASSERT(dst_type->isIntegerTy());
+		val.IntVal= op.IntVal.sext(dst_type->getIntegerBitWidth());
 		break;
 
 	case llvm::Instruction::ZExt:
-		U_ASSERT(type->isIntegerTy());
-		val.IntVal= op.IntVal.zext(type->getIntegerBitWidth());
+		U_ASSERT(dst_type->isIntegerTy());
+		val.IntVal= op.IntVal.zext(dst_type->getIntegerBitWidth());
 		break;
 
 	case llvm::Instruction::Trunc:
-		U_ASSERT(type->isIntegerTy());
-		val.IntVal= op.IntVal.trunc(type->getIntegerBitWidth());
+		U_ASSERT(dst_type->isIntegerTy());
+		val.IntVal= op.IntVal.trunc(dst_type->getIntegerBitWidth());
+		break;
+
+	case llvm::Instruction::FPExt:
+		if( dst_type->isFloatTy() )
+		{
+			if( src_type->isFloatTy() ) val.FloatVal= op.FloatVal;
+			else U_ASSERT(false);
+		}
+		else if( dst_type->isDoubleTy() )
+		{
+			if( src_type->isFloatTy() ) val.DoubleVal= llvm::APFloat(op.FloatVal).convertToDouble();
+			else U_ASSERT(false);
+		}
+		else U_ASSERT(false);
+		break;
+
+	case llvm::Instruction::FPTrunc:
+		if( dst_type->isFloatTy() )
+		{
+			if( src_type->isFloatTy() ) val.FloatVal= op.FloatVal;
+			else if( src_type->isDoubleTy() ) val.FloatVal= llvm::APFloat(op.DoubleVal).convertToFloat();
+			else U_ASSERT(false);
+		}
+		else if( dst_type->isDoubleTy() )
+		{
+			if( src_type->isDoubleTy() ) val.DoubleVal= op.DoubleVal;
+			else U_ASSERT(false);
+		}
+		else U_ASSERT(false);
+		break;
+
+
+	case llvm::Instruction::SIToFP:
+		U_ASSERT(src_type->isIntegerTy());
+		if( dst_type->isFloatTy() )
+			val.FloatVal= llvm::APIntOps::RoundSignedAPIntToFloat(op.IntVal);
+		else if( dst_type->isDoubleTy() )
+			val.DoubleVal= llvm::APIntOps::RoundSignedAPIntToDouble(op.IntVal);
+		else U_ASSERT(false);
+		break;
+
+	case llvm::Instruction::UIToFP:
+		U_ASSERT(src_type->isIntegerTy());
+		if( dst_type->isFloatTy() )
+			val.FloatVal= llvm::APIntOps::RoundAPIntToFloat(op.IntVal);
+		else if( dst_type->isDoubleTy() )
+			val.DoubleVal= llvm::APIntOps::RoundAPIntToDouble(op.IntVal);
+		else U_ASSERT(false);
+		break;
+
+	// TODO - is this correct way to convert floats to ints?
+	case llvm::Instruction::FPToSI:
+		U_ASSERT(dst_type->isIntegerTy());
+		if( src_type->isFloatTy() )
+			val.IntVal= llvm::APIntOps::RoundFloatToAPInt( op.FloatVal, dst_type->getIntegerBitWidth() );
+		else if( src_type->isDoubleTy() )
+			val.IntVal= llvm::APIntOps::RoundDoubleToAPInt( op.DoubleVal, dst_type->getIntegerBitWidth() );
+		else U_ASSERT(false);
+		break;
+
+	case llvm::Instruction::FPToUI:
+		U_ASSERT(dst_type->isIntegerTy());
+		if( src_type->isFloatTy() )
+			val.IntVal= llvm::APIntOps::RoundFloatToAPInt( op.FloatVal, dst_type->getIntegerBitWidth() );
+		else if( src_type->isDoubleTy() )
+			val.IntVal= llvm::APIntOps::RoundDoubleToAPInt( op.DoubleVal, dst_type->getIntegerBitWidth() );
+		else U_ASSERT(false);
+		break;
+
+	case llvm::Instruction::BitCast:
+		val.IntVal= llvm::APInt( dst_type->getIntegerBitWidth(), op.IntVal.getLimitedValue() );
 		break;
 
 	default:
@@ -512,7 +597,7 @@ void ConstexprFunctionEvaluator::ProcessBinaryArithmeticInstruction( const llvm:
 	const llvm::GenericValue op0= GetVal( instruction->getOperand(0u) );
 	const llvm::GenericValue op1= GetVal( instruction->getOperand(1u) );
 
-	llvm::Type* type= instruction->getType();
+	llvm::Type* const type= instruction->getOperand(0u)->getType();
 	llvm::GenericValue val;
 	switch(instruction->getOpcode())
 	{
@@ -566,7 +651,6 @@ void ConstexprFunctionEvaluator::ProcessBinaryArithmeticInstruction( const llvm:
 		val.IntVal= op0.IntVal.Xor(op1.IntVal);
 		break;
 
-
 	case llvm::Instruction::Shl:
 		U_ASSERT(type->isIntegerTy());
 		val.IntVal= op0.IntVal.shl(op1.IntVal);
@@ -615,7 +699,24 @@ void ConstexprFunctionEvaluator::ProcessBinaryArithmeticInstruction( const llvm:
 		break;
 
 	case llvm::Instruction::FRem:
-		U_ASSERT(false); // TODO
+		{
+			const auto rounding_mode= llvm::APFloat::roundingMode::rmNearestTiesToAway; // TODO - is this correct?
+			if( type->isFloatTy() )
+			{
+				llvm::APFloat result_val(op0.FloatVal);
+				const llvm::APFloat::opStatus status= result_val.mod( llvm::APFloat(op1.FloatVal), rounding_mode );
+				U_ASSERT( status == llvm::APFloat::opStatus::opOK ); // TODO - generate error, if not ok.
+				val.FloatVal= result_val.convertToFloat();
+			}
+			else if( type->isDoubleTy() )
+			{
+				llvm::APFloat result_val(op0.DoubleVal);
+				const llvm::APFloat::opStatus status= result_val.mod( llvm::APFloat(op1.DoubleVal), rounding_mode );
+				U_ASSERT( status == llvm::APFloat::opStatus::opOK ); // TODO - generate error, if not ok.
+				val.DoubleVal= result_val.convertToDouble();
+			}
+			else U_ASSERT(false);
+		}
 		break;
 
 	case llvm::Instruction::ICmp:
@@ -634,6 +735,38 @@ void ConstexprFunctionEvaluator::ProcessBinaryArithmeticInstruction( const llvm:
 		case llvm::CmpInst::ICMP_SLE: val.IntVal= op0.IntVal.sle(op1.IntVal); break;
 		default: U_ASSERT(false); break;
 		};
+		break;
+
+	case llvm::Instruction::FCmp:
+		U_ASSERT(type->isFloatingPointTy());
+		{
+			llvm::APFloat::cmpResult cmp_result;
+			if( type->isFloatTy() )
+				cmp_result= llvm::APFloat(op0.FloatVal).compare(llvm::APFloat(op0.FloatVal));
+			else
+				cmp_result= llvm::APFloat(op0.DoubleVal).compare(llvm::APFloat(op0.DoubleVal));
+			switch(llvm::dyn_cast<llvm::CmpInst>(instruction)->getPredicate())
+			{
+			// see llvm-3.7.1.src/lib/IR/ConstantFold.cpp:1752
+			default: U_ASSERT(false); break;
+			case llvm::FCmpInst::FCMP_FALSE: val.IntVal= llvm::APInt( 1u, 0u ); break;
+			case llvm::FCmpInst::FCMP_TRUE : val.IntVal= llvm::APInt( 1u, 1u ); break;
+			case llvm:: FCmpInst::FCMP_UNO : val.IntVal= llvm::APInt( 1u, cmp_result == llvm::APFloat::cmpUnordered ); break;
+			case llvm::FCmpInst::FCMP_ORD  : val.IntVal= llvm::APInt( 1u, cmp_result != llvm::APFloat::cmpUnordered ); break;
+			case llvm::FCmpInst::FCMP_UEQ  : val.IntVal= llvm::APInt( 1u, cmp_result == llvm::APFloat::cmpUnordered || cmp_result == llvm::APFloat::cmpEqual ); break;
+			case llvm::FCmpInst::FCMP_OEQ  : val.IntVal= llvm::APInt( 1u, cmp_result == llvm::APFloat::cmpEqual ); break;
+			case llvm::FCmpInst::FCMP_UNE  : val.IntVal= llvm::APInt( 1u, cmp_result != llvm::APFloat::cmpEqual  ); break;
+			case llvm::FCmpInst::FCMP_ONE  : val.IntVal= llvm::APInt( 1u, cmp_result == llvm::APFloat::cmpLessThan || cmp_result == llvm::APFloat::cmpGreaterThan ); break;
+			case llvm::FCmpInst::FCMP_ULT  : val.IntVal= llvm::APInt( 1u, cmp_result == llvm::APFloat::cmpUnordered || cmp_result == llvm::APFloat::cmpLessThan ); break;
+			case llvm::FCmpInst::FCMP_OLT  : val.IntVal= llvm::APInt( 1u, cmp_result == llvm::APFloat::cmpLessThan ); break;
+			case llvm::FCmpInst::FCMP_UGT  : val.IntVal= llvm::APInt( 1u, cmp_result == llvm::APFloat::cmpUnordered || cmp_result == llvm::APFloat::cmpGreaterThan ); break;
+			case llvm::FCmpInst::FCMP_OGT  : val.IntVal= llvm::APInt( 1u, cmp_result == llvm::APFloat::cmpGreaterThan ); break;
+			case llvm::FCmpInst::FCMP_ULE  : val.IntVal= llvm::APInt( 1u, cmp_result != llvm::APFloat::cmpGreaterThan ); break;
+			case llvm::FCmpInst::FCMP_OLE  : val.IntVal= llvm::APInt( 1u, cmp_result == llvm::APFloat::cmpLessThan || cmp_result == llvm::APFloat::cmpEqual ); break;
+			case llvm::FCmpInst::FCMP_UGE  : val.IntVal= llvm::APInt( 1u, cmp_result != llvm::APFloat::cmpLessThan ); break;
+			case llvm::FCmpInst::FCMP_OGE  : val.IntVal= llvm::APInt( 1u, cmp_result == llvm::APFloat::cmpGreaterThan || cmp_result == llvm::APFloat::cmpEqual ); break;
+			}
+		}
 		break;
 
 	default:
