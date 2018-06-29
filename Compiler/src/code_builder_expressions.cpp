@@ -2380,9 +2380,14 @@ Value CodeBuilder::DoCallFunction(
 		if( func_is_constexpr && constant_llvm_args.size() == llvm_args.size() )
 		{
 			// TODO - check errors.
-			call_result= ConstexprFunctionEvaluator( module_->getDataLayout() ).Evaluate( function_type, llvm::dyn_cast<llvm::Function>(function), constant_llvm_args ).result_constant;
+			const ConstexprFunctionEvaluator::Result evaluation_result=
+				ConstexprFunctionEvaluator( module_->getDataLayout() ).Evaluate( function_type, llvm::dyn_cast<llvm::Function>(function), constant_llvm_args, call_file_pos );
+
+			errors_.insert( errors_.end(), evaluation_result.errors.begin(), evaluation_result.errors.end() );
+			if( evaluation_result.errors.empty() )
+				call_result= evaluation_result.result_constant;
 		}
-		else
+		if( call_result == nullptr )
 			call_result= function_context.llvm_ir_builder.CreateCall( function, llvm_args );
 	}
 	else

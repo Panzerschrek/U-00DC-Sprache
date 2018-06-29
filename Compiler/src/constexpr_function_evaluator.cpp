@@ -21,8 +21,11 @@ ConstexprFunctionEvaluator::ConstexprFunctionEvaluator( const llvm::DataLayout& 
 ConstexprFunctionEvaluator::Result ConstexprFunctionEvaluator::Evaluate(
 	const Function& function_type,
 	llvm::Function* const llvm_function,
-	const std::vector<llvm::Constant*>& args )
+	const std::vector<llvm::Constant*>& args,
+	const FilePos& file_pos )
 {
+	file_pos_ = &file_pos;
+
 	U_ASSERT( function_type.args.size() == args.size() );
 
 	// Fill arguments
@@ -69,6 +72,8 @@ ConstexprFunctionEvaluator::Result ConstexprFunctionEvaluator::Evaluate(
 
 	llvm::GenericValue res= CallFunction( *llvm_function );
 	Result result;
+	result.errors= std::move(errors_);
+	errors_= {};
 
 	if( function_type.return_value_is_reference )
 	{
@@ -618,22 +623,34 @@ void ConstexprFunctionEvaluator::ProcessBinaryArithmeticInstruction( const llvm:
 
 	case llvm::Instruction::SDiv:
 		U_ASSERT(type->isIntegerTy());
-		val.IntVal= op0.IntVal.sdiv(op1.IntVal); // TODO - check division by zero
+		if( op1.IntVal.getBoolValue() )
+			val.IntVal= op0.IntVal.sdiv(op1.IntVal);
+		else
+			errors_.push_back( ReportConstantExpressionResultIsUndefined( *file_pos_ ) );
 		break;
 
 	case llvm::Instruction::UDiv:
 		U_ASSERT(type->isIntegerTy());
-		val.IntVal= op0.IntVal.udiv(op1.IntVal); // TODO - check division by zero
+		if( op1.IntVal.getBoolValue() )
+			val.IntVal= op0.IntVal.udiv(op1.IntVal);
+		else
+			errors_.push_back( ReportConstantExpressionResultIsUndefined( *file_pos_ ) );
 		break;
 
 	case llvm::Instruction::SRem:
 		U_ASSERT(type->isIntegerTy());
-		val.IntVal= op0.IntVal.srem(op1.IntVal);
+		if( op1.IntVal.getBoolValue() )
+			val.IntVal= op0.IntVal.srem(op1.IntVal);
+		else
+			errors_.push_back( ReportConstantExpressionResultIsUndefined( *file_pos_ ) );
 		break;
 
 	case llvm::Instruction::URem:
 		U_ASSERT(type->isIntegerTy());
-		val.IntVal= op0.IntVal.urem(op1.IntVal);
+		if( op1.IntVal.getBoolValue() )
+			val.IntVal= op0.IntVal.urem(op1.IntVal);
+		else
+			errors_.push_back( ReportConstantExpressionResultIsUndefined( *file_pos_ ) );
 		break;
 
 	case llvm::Instruction::And:
@@ -755,7 +772,7 @@ void ConstexprFunctionEvaluator::ProcessBinaryArithmeticInstruction( const llvm:
 			case llvm::FCmpInst::FCMP_ORD  : val.IntVal= llvm::APInt( 1u, cmp_result != llvm::APFloat::cmpUnordered ); break;
 			case llvm::FCmpInst::FCMP_UEQ  : val.IntVal= llvm::APInt( 1u, cmp_result == llvm::APFloat::cmpUnordered || cmp_result == llvm::APFloat::cmpEqual ); break;
 			case llvm::FCmpInst::FCMP_OEQ  : val.IntVal= llvm::APInt( 1u, cmp_result == llvm::APFloat::cmpEqual ); break;
-			case llvm::FCmpInst::FCMP_UNE  : val.IntVal= llvm::APInt( 1u, cmp_result != llvm::APFloat::cmpEqual  ); break;
+			case llvm::FCmpInst::FCMP_UNE  : val.IntVal= llvm::APInt( 1u, cmp_result != llvm::APFloat::cmpEqual ); break;
 			case llvm::FCmpInst::FCMP_ONE  : val.IntVal= llvm::APInt( 1u, cmp_result == llvm::APFloat::cmpLessThan || cmp_result == llvm::APFloat::cmpGreaterThan ); break;
 			case llvm::FCmpInst::FCMP_ULT  : val.IntVal= llvm::APInt( 1u, cmp_result == llvm::APFloat::cmpUnordered || cmp_result == llvm::APFloat::cmpLessThan ); break;
 			case llvm::FCmpInst::FCMP_OLT  : val.IntVal= llvm::APInt( 1u, cmp_result == llvm::APFloat::cmpLessThan ); break;
