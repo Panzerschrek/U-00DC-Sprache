@@ -408,7 +408,7 @@ def ConstexprFunctionCallOtherFunction_Test4():
 		{
 			auto mut i= 0u;
 			auto mut res= 0;
-			while( i < 65536u ) // Call function in loop. We must reset stack position after each call.
+			while( i < 4096u ) // Call function in loop. We must reset stack position after each call.
 			{
 				auto mut one= 1; // Mutable, because we needs to prevent constexpr call of 'Pass' function.
 				res+= Pass(one);
@@ -419,7 +419,7 @@ def ConstexprFunctionCallOtherFunction_Test4():
 		}
 		fn Foo()
 		{
-			static_assert( Get() == 65536 );
+			static_assert( Get() == 4096 );
 		}
 	"""
 	tests_lib.build_program( c_program_text )
@@ -436,5 +436,81 @@ def ConstexprFunctionCallOtherFunction_Test5():
 		{
 			static_assert( DoubleIt(985) == 985 * 2 );
 		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def ConstexprFunction_CompositeArgument_Test0():
+	c_program_text= """
+		struct Vec{ i32 x; i32 y; }
+		fn constexpr Dot( Vec& vec ) : i32
+		{
+			return vec.x * vec.y;
+		}
+		fn Foo()
+		{
+			var Vec constexpr vec{ .x= 954, .y= 8854 };
+			static_assert( Dot(vec) == 954 * 8854 );   // Pass simple struct by-reference.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def ConstexprFunction_CompositeArgument_Test1():
+	c_program_text= """
+		struct Vec{ i32 x; i32 y; }
+		fn constexpr Sub( Vec vec ) : i32
+		{
+			return vec.x - vec.y;
+		}
+		fn Foo()
+		{
+			var Vec constexpr vec{ .x= 954, .y= 8854 };
+			static_assert( Sub(vec) == 954 - 8854 );   // Pass simple struct by-value.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def ConstexprFunction_CompositeArgument_Test2():
+	c_program_text= """
+		struct Box{ i32& r; }
+		fn constexpr Unbox( Box& box ) : i32
+		{
+			return box.r;
+		}
+
+		auto constexpr g_x= 88854;
+		var Box constexpr g_box{ .r= g_x };
+		static_assert( Unbox( g_box ) == g_x );   // Pass structure with reference inside.
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def ConstexprFunction_CompositeArgument_Test3():
+	c_program_text= """
+		fn constexpr GetArrayElement( [ i32, 4 ]& arr, u32 index ) : i32
+		{
+			return arr[index];
+		}
+
+		var [ i32, 4 ] constexpr arr[ 58, 9545, 652, -85 ];
+		// Pass array by reference.
+		static_assert( GetArrayElement( arr, 0u ) == arr[0u] );
+		static_assert( GetArrayElement( arr, 1u ) == arr[1u] );
+		static_assert( GetArrayElement( arr, 2u ) == arr[2u] );
+		static_assert( GetArrayElement( arr, 3u ) == arr[3u] );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def ConstexprFunction_CompositeArgument_Test4():
+	c_program_text= """
+		fn constexpr Pass( f32& x ) : f32
+		{
+			return x;
+		}
+
+		static_assert( Pass( 2.718281828f ) == 2.718281828f );   // Pass scalar argument by-reference.
 	"""
 	tests_lib.build_program( c_program_text )

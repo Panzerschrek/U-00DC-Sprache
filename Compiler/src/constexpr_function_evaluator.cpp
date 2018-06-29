@@ -1,4 +1,5 @@
 #include "push_disable_llvm_warnings.hpp"
+#include <llvm/IR/GlobalVariable.h>
 #include <llvm/IR/InstrTypes.h>
 #include "pop_llvm_warnings.hpp"
 
@@ -220,7 +221,17 @@ size_t ConstexprFunctionEvaluator::MoveConstantToStack( const llvm::Constant& co
 	const size_t stack_offset= stack_.size();
 	stack_.resize( stack_.size() + data_layout_.getTypeAllocSize( constant.getType() ) );
 
-	if( const auto struct_type= llvm::dyn_cast<llvm::StructType>( constant.getType() ) )
+	CopyConstantToStack( constant, stack_offset );
+
+	return stack_offset;
+}
+
+void ConstexprFunctionEvaluator::CopyConstantToStack( const llvm::Constant& constant, size_t stack_offset )
+{
+	// TODO - check big-endian/little-endian correctness.
+
+	llvm::Type* const constant_type= constant.getType();
+	if( const auto struct_type= llvm::dyn_cast<llvm::StructType>( constant_type ) )
 	{
 		const llvm::StructLayout& struct_layout= *data_layout_.getStructLayout( struct_type );
 
@@ -228,46 +239,41 @@ size_t ConstexprFunctionEvaluator::MoveConstantToStack( const llvm::Constant& co
 		for( llvm::Type* const element_type : struct_type->elements() )
 		{
 			llvm::Constant* const element= constant.getAggregateElement(i);
-			const size_t element_size= data_layout_.getTypeAllocSize( element_type );
 			const size_t element_offset= struct_layout.getElementOffset(i);
 
 			if( element_type->isPointerTy() ) // TODO - what if it is function pointer ?
 			{
-				const size_t element_ptr= MoveConstantToStack( *element );
-				std::memcpy( stack_.data() + stack_offset + element_offset, stack_.data() + element_ptr, element_size );
-			}
-			else if( element_type->isStructTy() )
-			{
-				U_ASSERT(false); // TODO
-			}
-			// TODO - checl big/little-endian correctness.
-			else if( element_type->isIntegerTy() )
-			{
-				const uint64_t val= element->getUniqueInteger().getLimitedValue();
-				std::memcpy( stack_.data() + stack_offset + element_offset, &val, element_size );
-			}
-			else if( element_type->isFloatTy() )
-			{
-				const float val= llvm::dyn_cast<llvm::ConstantFP>( element )->getValueAPF().convertToFloat();
-				std::memcpy( stack_.data() + stack_offset + element_offset, &val, element_size );
-			}
-			else if( element_type->isDoubleTy() )
-			{
-				const double val= llvm::dyn_cast<llvm::ConstantFP>( element )->getValueAPF().convertToDouble();
-				std::memcpy( stack_.data() + stack_offset + element_offset, &val, element_size );
-			}
-			else if( element_type->isArrayTy() )
-			{
-				U_ASSERT(false); // TODO
+				const size_t element_ptr= MoveConstantToStack( *llvm::dyn_cast<llvm::GlobalVariable>(element)->getInitializer() );
+				std::memcpy( stack_.data() + stack_offset + element_offset, &element_ptr, sizeof(size_t) );
 			}
 			else
-				U_ASSERT(false);
+				CopyConstantToStack( *element, stack_offset + element_offset );
 
 			++i;
 		}
 	}
-
-	return stack_offset;
+	else if( const auto array_type= llvm::dyn_cast<llvm::ArrayType>(constant_type) )
+	{
+		const SizeType element_size= data_layout_.getTypeAllocSize( array_type->getElementType() );
+		for( SizeType i= 0u; i < array_type->getNumElements(); ++i )
+			CopyConstantToStack( *constant.getAggregateElement(i), stack_offset + i * element_size );
+	}
+	else if( constant_type->isIntegerTy() )
+	{
+		const uint64_t val= constant.getUniqueInteger().getLimitedValue();
+		std::memcpy( stack_.data() + stack_offset, &val, data_layout_.getTypeAllocSize( constant_type ) );
+	}
+	else if( constant_type->isFloatTy() )
+	{
+		const float val= llvm::dyn_cast<llvm::ConstantFP>(&constant)->getValueAPF().convertToFloat();
+		std::memcpy( stack_.data() + stack_offset, &val, sizeof(float) );
+	}
+	else if( constant_type->isDoubleTy() )
+	{
+		const double val= llvm::dyn_cast<llvm::ConstantFP>(&constant)->getValueAPF().convertToDouble();
+		std::memcpy( stack_.data() + stack_offset, &val, sizeof(double) );
+	}
+	else U_ASSERT(false);
 }
 
 llvm::GenericValue ConstexprFunctionEvaluator::GetVal( const llvm::Value* const val )

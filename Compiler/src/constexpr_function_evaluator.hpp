@@ -34,6 +34,7 @@ private:
 
 	// Returns offset
 	size_t MoveConstantToStack( const llvm::Constant& constant );
+	void CopyConstantToStack( const llvm::Constant& constant, size_t stack_offset );
 
 	llvm::GenericValue GetVal( const llvm::Value* val );
 	void ProcessAlloca( const llvm::Instruction* instruction );
