@@ -85,6 +85,10 @@ ConstexprFunctionEvaluator::Result ConstexprFunctionEvaluator::Evaluate(
 						function_type.return_type.GetLLVMType(),
 						fundamental->fundamental_type == U_FundamentalType::f32 ? double(res.FloatVal) : res.DoubleVal );
 			}
+			else if( fundamental->fundamental_type == U_FundamentalType::Void )
+			{
+				result.result_constant= llvm::UndefValue::get( function_type.return_type.GetLLVMType() ); // TODO - set correct value
+			}
 			else
 				U_ASSERT(false);
 		}
@@ -102,6 +106,8 @@ ConstexprFunctionEvaluator::Result ConstexprFunctionEvaluator::Evaluate(
 
 llvm::GenericValue ConstexprFunctionEvaluator::CallFunction( const llvm::Function& llvm_function )
 {
+	const size_t prev_stack_size= stack_.size();
+
 	const llvm::Instruction* instruction= llvm_function.getBasicBlockList().front().begin();
 	while(true)
 	{
@@ -124,6 +130,11 @@ llvm::GenericValue ConstexprFunctionEvaluator::CallFunction( const llvm::Functio
 
 		case llvm::Instruction::GetElementPtr:
 			ProcessGEP(instruction);
+			instruction= instruction->getNextNode();
+			break;
+
+		case llvm::Instruction::Call:
+			ProcessCall(instruction);
 			instruction= instruction->getNextNode();
 			break;
 
@@ -155,10 +166,12 @@ llvm::GenericValue ConstexprFunctionEvaluator::CallFunction( const llvm::Functio
 
 		case llvm::Instruction::Ret:
 			{
-				if( instruction->getNumOperands() == 0u )
-					return llvm::GenericValue();
+				llvm::GenericValue res;
+				if( instruction->getNumOperands() != 0u )
+					res= GetVal( instruction->getOperand(0u) );
 
-				return GetVal( instruction->getOperand(0u) );
+				stack_.resize( prev_stack_size );
+				return res;
 			}
 
 		case llvm::Instruction::Add:
@@ -189,10 +202,6 @@ llvm::GenericValue ConstexprFunctionEvaluator::CallFunction( const llvm::Functio
 		case llvm::Instruction::Trunc:
 			ProcessUnaryArithmeticInstruction(instruction);
 			instruction= instruction->getNextNode();
-			break;
-
-		case llvm::Instruction::Call:
-			U_ASSERT(false);
 			break;
 
 		case llvm::Instruction::Unreachable:
@@ -398,6 +407,30 @@ void ConstexprFunctionEvaluator::ProcessGEP( const llvm::Instruction* const inst
 		U_ASSERT(false);
 
 	instructions_map_[instruction]= new_ptr;
+}
+
+void ConstexprFunctionEvaluator::ProcessCall( const llvm::Instruction* const instruction )
+{
+	const llvm::Function* const function= llvm::dyn_cast<llvm::Function>(instruction->getOperand(instruction->getNumOperands() - 1u)); // Function is last operand
+	U_ASSERT(function != nullptr);
+	U_ASSERT( function->arg_size() == instruction->getNumOperands() - 1u );
+
+	InstructionsMap new_instructions_map;
+
+	size_t i= 0u;
+	for( const llvm::Argument& arg : function->args() )
+	{
+		if( arg.hasStructRetAttr() ) U_ASSERT(false); // TODO - process Struct Ret args.
+		new_instructions_map[ &arg ]= GetVal( instruction->getOperand(i) );
+		++i;
+	}
+
+	instructions_map_.swap(new_instructions_map);
+	llvm::GenericValue result_val= CallFunction( *function );
+	instructions_map_.swap(new_instructions_map);
+
+	if( !function->getReturnType()->isVoidTy() )
+		instructions_map_[instruction]= result_val;
 }
 
 void ConstexprFunctionEvaluator::ProcessUnaryArithmeticInstruction( const llvm::Instruction* const instruction )

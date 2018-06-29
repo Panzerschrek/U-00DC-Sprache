@@ -40,14 +40,17 @@ private:
 	void ProcessLoad( const llvm::Instruction* instruction );
 	void ProcessStore( const llvm::Instruction* instruction );
 	void ProcessGEP( const llvm::Instruction* instruction );
+	void ProcessCall( const llvm::Instruction* instruction );
 
 	void ProcessUnaryArithmeticInstruction( const llvm::Instruction* instruction );
 	void ProcessBinaryArithmeticInstruction( const llvm::Instruction* instruction );
 
 private:
+	using InstructionsMap= std::unordered_map< const llvm::Value*, llvm::GenericValue >;
+
 	const llvm::DataLayout data_layout_;
 
-	std::unordered_map< const llvm::Value*, llvm::GenericValue > instructions_map_;
+	InstructionsMap instructions_map_;
 	std::vector<unsigned char> stack_;
 
 };

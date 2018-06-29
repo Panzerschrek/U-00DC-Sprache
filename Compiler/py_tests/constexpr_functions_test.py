@@ -286,3 +286,155 @@ def ConstexprFunctionInternalArray_Test2():
 		}
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def ConstexprFunctionInternalStruct_Test0():
+	c_program_text= """
+		struct Vec{ i32 x; i32 y; }
+		fn constexpr Bar( i32 x ) : i32
+		{
+			var Vec mut vec= zero_init;
+			vec.x=  x;
+			vec.y= -x;
+			return vec.x * vec.y;
+		}
+		fn Foo()
+		{
+			static_assert( Bar( 85 ) == -85 * 85 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def ConstexprFunctionInternalStruct_Test1():
+	c_program_text= """
+		struct Vec
+		{
+			i32 x; i32 y;
+			fn constructor() ( x= 0, y= 0 ) {}
+		}
+		fn constexpr Bar( i32 x ) : i32
+		{
+			var Vec mut vec; // Call default constructor here
+			vec.x = x * 2;
+			vec.y=  x * 7;
+			return vec.x - vec.y;
+		}
+		fn Foo()
+		{
+			static_assert( Bar( 658 ) == -5 * 658 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def ConstexprFunctionCallOtherFunction_Test0():
+	c_program_text= """
+		fn constexpr Add( i32 x, i32 y, i32 z ) : i32
+		{
+			return x + y + z;
+		}
+		fn constexpr Bar( i32 x ) : i32
+		{
+			return Add( x, x, x ); // Call multiple args function.
+		}
+		fn Foo()
+		{
+			static_assert( Bar( 41 ) == 41 * 3 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def ConstexprFunctionCallOtherFunction_Test1():
+	c_program_text= """
+		fn constexpr Get() : i32
+		{
+			return 666;
+		}
+		fn constexpr Pass() : i32
+		{
+			return Get();  // Call zero-arg function.
+		}
+		fn Foo()
+		{
+			static_assert( Pass() == 666 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def ConstexprFunctionCallOtherFunction_Test2():
+	c_program_text= """
+		struct Vec
+		{
+			i32 x;
+			i32 y;
+			fn Dot( this ) : i32 { return x * y; }
+		}
+		fn constexpr Bar( i32 x, i32 y ) : i32
+		{
+			var Vec vec{ .x= x, .y= y };
+			return vec.Dot(); // Call method.
+		}
+		fn Foo()
+		{
+			static_assert( Bar( 451, 654 ) == 451 * 654 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def ConstexprFunctionCallOtherFunction_Test3():
+	c_program_text= """
+		fn constexpr DoNothing(){}
+		fn constexpr Get() : i32
+		{
+			DoNothing(); // Call function with void type result.
+			return 2018;
+		}
+		fn Foo()
+		{
+			static_assert( Get() == 2018 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def ConstexprFunctionCallOtherFunction_Test4():
+	c_program_text= """
+		fn constexpr Pass( i32 x ) : i32 { return x; }
+		fn constexpr Get() : i32
+		{
+			auto mut i= 0u;
+			auto mut res= 0;
+			while( i < 65536u ) // Call function in loop. We must reset stack position after each call.
+			{
+				auto mut one= 1; // Mutable, because we needs to prevent constexpr call of 'Pass' function.
+				res+= Pass(one);
+				++i;
+			}
+
+			return res;
+		}
+		fn Foo()
+		{
+			static_assert( Get() == 65536 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def ConstexprFunctionCallOtherFunction_Test5():
+	c_program_text= """
+		fn constexpr Pass( i32& x ) : i32 { return x; }
+		fn constexpr DoubleIt( i32 x ) : i32
+		{
+			return Pass(x) * 2; // Call function with reference arg.
+		}
+		fn Foo()
+		{
+			static_assert( DoubleIt(985) == 985 * 2 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
