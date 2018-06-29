@@ -1,6 +1,7 @@
 #include "push_disable_llvm_warnings.hpp"
 #include <llvm/IR/GlobalVariable.h>
 #include <llvm/IR/InstrTypes.h>
+#include <llvm/IR/Instructions.h>
 #include "pop_llvm_warnings.hpp"
 
 #include "assert.hpp"
@@ -109,7 +110,10 @@ llvm::GenericValue ConstexprFunctionEvaluator::CallFunction( const llvm::Functio
 {
 	const size_t prev_stack_size= stack_.size();
 
-	const llvm::Instruction* instruction= llvm_function.getBasicBlockList().front().begin();
+	const llvm::BasicBlock* prev_basic_block= nullptr;
+	const llvm::BasicBlock* current_basic_block= &llvm_function.getBasicBlockList().front();
+
+	const llvm::Instruction* instruction= current_basic_block->begin();
 	while(true)
 	{
 		switch( instruction->getOpcode() )
@@ -141,28 +145,37 @@ llvm::GenericValue ConstexprFunctionEvaluator::CallFunction( const llvm::Functio
 
 		case llvm::Instruction::Br:
 			{
-				if( instruction->getNumOperands() == 1u )
-				{
-					// Unconditional
-					const auto basic_block= llvm::dyn_cast<llvm::BasicBlock>(instruction->getOperand(0u));
-					instruction= basic_block->getInstList().begin();
-				}
+				prev_basic_block= current_basic_block;
+				if( instruction->getNumOperands() == 1u ) // Unconditional
+					current_basic_block= llvm::dyn_cast<llvm::BasicBlock>(instruction->getOperand(0u));
 				else
 				{
 					const llvm::GenericValue val= GetVal(instruction->getOperand(0u));
 
 					if( !val.IntVal.getBoolValue() )
-					{
-						const auto basic_block= llvm::dyn_cast<llvm::BasicBlock>(instruction->getOperand(1u));
-						instruction= basic_block->getInstList().begin();
-					}
+						current_basic_block= llvm::dyn_cast<llvm::BasicBlock>(instruction->getOperand(1u));
 					else
+						current_basic_block= llvm::dyn_cast<llvm::BasicBlock>(instruction->getOperand(2u));
+				}
+				instruction= current_basic_block->begin();
+			}
+			break;
+
+		case llvm::Instruction::PHI:
+			{
+				const auto phi_node= llvm::dyn_cast<llvm::PHINode>(instruction);
+
+				for (size_t i= 0u; i < phi_node->getNumIncomingValues(); ++i )
+				{
+					if( phi_node->getIncomingBlock(i) == prev_basic_block)
 					{
-						const auto basic_block= llvm::dyn_cast<llvm::BasicBlock>(instruction->getOperand(2u));
-						instruction= basic_block->getInstList().begin();
+						instructions_map_[instruction]= GetVal( phi_node->getIncomingValue(i) );
+						break;
 					}
+					U_ASSERT( i + 1u != phi_node->getNumIncomingValues() );
 				}
 			}
+			instruction= instruction->getNextNode();
 			break;
 
 		case llvm::Instruction::Ret:

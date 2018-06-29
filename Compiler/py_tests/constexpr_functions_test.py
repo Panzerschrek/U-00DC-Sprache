@@ -209,7 +209,6 @@ def ConstexprFunctionControlFlow_Test0():
 			static_assert( Select( false, 888, 999 ) == 999 );
 		}
 	"""
-
 	tests_lib.build_program( c_program_text )
 
 
@@ -230,6 +229,31 @@ def ConstexprFunctionControlFlow_Test1():
 			static_assert( Sum( 7, 10 ) == 7 + 8 + 9 );
 			static_assert( Sum( 5, 13 ) == 5 + 6 + 7 + 8 + 9 + 10 + 11 + 12 );
 		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def ConstexprFunctionControlFlow_Test2():
+	c_program_text= """
+	fn constexpr And( bool first, bool second ) : bool
+	{
+		return first && second;
+	}
+	fn constexpr Or ( bool first, bool second ) : bool
+	{
+		return first || second;
+	}
+	fn Foo()
+	{
+		static_assert( And( false, false ) == false );
+		static_assert( And( false,  true ) == false );
+		static_assert( And(  true, false ) == false );
+		static_assert( And(  true,  true ) ==  true );
+		static_assert( Or ( false, false ) == false );
+		static_assert( Or ( false,  true ) ==  true );
+		static_assert( Or (  true, false ) ==  true );
+		static_assert( Or (  true,  true ) ==  true );
+	}
 	"""
 	tests_lib.build_program( c_program_text )
 
