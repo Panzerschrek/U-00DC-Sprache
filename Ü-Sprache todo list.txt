@@ -3,11 +3,9 @@ compiler. Features grouped and sorted by priority inside each group.
 When feature was implemented, delete it from list.
 
 Common:
-*) sizeof operator
 *) raw_pointer
 *) Conditional functions, something, like "enable_if"
 *) Constructor initializer for constexpr structs
-*) Constexpr functions
 *) Continious initializer for arrays
 *) array_view, array view take operator
 *) "string literals\n"
@@ -25,6 +23,8 @@ Common:
 *) Full information about classes and function pointers in "typeinfo" operator.
 *) 128-bit integers
 *) 128-bit float
+*) Function pointers inside constexpr functions
+*) Returning references in constexpr functions
 
 
 References:
