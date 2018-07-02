@@ -89,6 +89,10 @@ const char* CodeBuilderErrorCodeToString( const CodeBuilderErrorCode code )
 		return "ConstexprFunctionEvaluationError";
 	case CodeBuilderErrorCode::ConstexprFunctionContainsUnallowedOperations:
 		return "ConstexprFunctionContainsUnallowedOperations";
+	case CodeBuilderErrorCode::InvalidTypeForConstexprFunction:
+		return "InvalidTypeForConstexprFunction";
+	case CodeBuilderErrorCode::ConstexprFunctionsMustHaveBody:
+		return "ConstexprFunctionsMustHaveBody";
 	case CodeBuilderErrorCode::StaticAssertExpressionMustHaveBoolType:
 		return "StaticAssertExpressionMustHaveBoolType";
 	case CodeBuilderErrorCode::StaticAssertExpressionIsNotConstant:
@@ -744,6 +748,28 @@ CodeBuilderError ReportConstexprFunctionContainsUnallowedOperations( const FileP
 	error.code= CodeBuilderErrorCode::ConstexprFunctionContainsUnallowedOperations;
 
 	error.text= "Constexpr function contains unallowed operatios."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportInvalidTypeForConstexprFunction( const FilePos& file_pos )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::InvalidTypeForConstexprFunction;
+
+	error.text= "Invalid type for constexpr function."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportConstexprFunctionsMustHaveBody( const FilePos& file_pos )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::ConstexprFunctionsMustHaveBody;
+
+	error.text= "Constexpr function must have body."_SpC;
 
 	return error;
 }

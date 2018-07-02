@@ -1886,7 +1886,7 @@ CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 	if( func.constexpr_ )
 	{
 		if( func.block_ == nullptr )
-		{} // TODO - generate error.
+			errors_.push_back( ReportConstexprFunctionsMustHaveBody( func.file_pos_ ) );
 		func_variable.constexpr_kind= FunctionVariable::ConstexprKind::ConstexprIncomplete;
 	}
 
@@ -2483,8 +2483,37 @@ void CodeBuilder::BuildFuncCode(
 
 	if( func_variable.constexpr_kind != FunctionVariable::ConstexprKind::NonConstexpr )
 	{
-		// TODO - check here all constexpr restrictions of function.
-		if( function_context.have_non_constexpr_operations_inside )
+		// Check function type and function body.
+		// Function type checked here, because in case of constexpr methods not all types are complete yet.
+
+		bool can_be_constexpr= true;
+		if( function_type->unsafe )
+			can_be_constexpr= false;
+		if( function_type->return_value_is_reference ) // Currently, constexpr function evaluator can not return references back.
+			can_be_constexpr= false;
+		if( !function_type->return_type.IsIncomplete() )
+		{
+			if( !function_type->return_type.CanBeConstexpr() ||
+				function_type->return_type.ReferencesTagsCount() > 0u ) // Currently, constexpr function evaluator can not return references back.
+				can_be_constexpr= false;
+		}
+		if( !function_type->references_pollution.empty() ) // Side effects, such pollution, not allowed.
+			can_be_constexpr= false;
+
+		for( const Function::Arg& arg : function_type->args )
+		{
+			if( !arg.type.IsIncomplete() && !arg.type.CanBeConstexpr() )
+				can_be_constexpr= false; // Allowed only constexpr types.
+			if( arg.is_mutable && arg.is_reference )
+				can_be_constexpr= false;
+		}
+
+		if( !can_be_constexpr )
+		{
+			errors_.push_back( ReportInvalidTypeForConstexprFunction( func_variable.body_file_pos ) );
+			func_variable.constexpr_kind= FunctionVariable::ConstexprKind::NonConstexpr;
+		}
+		else if( function_context.have_non_constexpr_operations_inside )
 		{
 			errors_.push_back( ReportConstexprFunctionContainsUnallowedOperations( func_variable.body_file_pos ) );
 			func_variable.constexpr_kind= FunctionVariable::ConstexprKind::NonConstexpr;
@@ -3663,6 +3692,9 @@ void CodeBuilder::BuildDeltaOneOperatorCode(
 		GetOverloadedOperator( args, positive ? OverloadedOperator::Increment : OverloadedOperator::Decrement, file_pos );
 	if( overloaded_operator != nullptr )
 	{
+		if( overloaded_operator->constexpr_kind == FunctionVariable::ConstexprKind::NonConstexpr )
+			function_context.have_non_constexpr_operations_inside= true;
+
 		if( overloaded_operator->is_this_call )
 		{
 			const auto fetch_result= TryFetchVirtualFunction( *variable, *overloaded_operator, function_context );
