@@ -1,6 +1,22 @@
 from py_tests_common import *
 
 
+def ConstexprHalt_Test0():
+	c_program_text= """
+		fn constexpr Foo( i32 x ) : i32
+		{
+			halt if( (x&1) == 0 );
+			return x | 0xFF;
+		}
+
+		auto constexpr x= Foo( 84 );
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ConstexprFunctionEvaluationError" )
+	assert( errors_list[0].file_pos.line == 8 )
+
+
 def ConstexprFunctionsMustHaveBody_Test0():
 	c_program_text= """
 		fn constexpr Foo();

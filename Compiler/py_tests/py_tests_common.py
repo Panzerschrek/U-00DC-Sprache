@@ -8,6 +8,7 @@ class FilePos:
 
 class CodeBuilderError:
 	error_code= ""
+	text= ""
 	file_pos= FilePos()
 
 
@@ -16,6 +17,7 @@ def ConvertErrors( errors_list ):
 	for error in errors_list:
 		out_error= CodeBuilderError()
 		out_error.error_code= error["code"]
+		out_error.text= error["text"]
 		out_error.file_pos.file_index= error["file_pos"]["file_index"]
 		out_error.file_pos.line= error["file_pos"]["line"]
 		out_error.file_pos.pos_in_line= error["file_pos"]["pos_in_line"]

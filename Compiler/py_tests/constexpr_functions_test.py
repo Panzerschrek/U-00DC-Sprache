@@ -635,3 +635,90 @@ def ConstexprFunction_ReturnStruct_Test4():
 	"""
 	tests_lib.build_program( c_program_text )
 	tests_lib.run_function( "_Z3Foov" )
+
+
+def ConstexprFunction_ReturnStruct_Test5():
+	c_program_text= """
+		struct F{ [ f64, 8 ] trash; i32 x; }
+		struct S{ f32 trash; F f; }
+		fn constexpr Bar( i32 x ) : S
+		{
+			var S mut s= zero_init;
+			s.f.x= x;
+			return s;
+		}
+
+		fn constexpr Extract( S& s ) : i32
+		{
+			return s.f.x;
+		}
+
+		static_assert( Extract( Bar( 8547 ) ) == 8547 );  // Call one constexpr struc and pass it`s result by-reference to another.
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def ConstexprFunction_ReturnStruct_Test6():
+	c_program_text= """
+		struct F{ [ f64, 8 ] trash; i32 x; }
+		struct S{ f32 trash; F f; }
+		fn constexpr Bar( i32 x ) : S
+		{
+			var S mut s= zero_init;
+			s.f.x= x;
+			return s;
+		}
+
+		fn constexpr Extract( S s ) : i32
+		{
+			return s.f.x;
+		}
+
+		static_assert( Extract( Bar( 8547 ) ) == 8547 );  // Call one constexpr struc and pass it`s result by-value to another.
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def ConstexprFunction_ReturnStruct_Test7():
+	c_program_text= """
+		struct F{ [ f64, 8 ] trash; i32 x; }
+		struct S{ f32 trash; F f; }
+		fn constexpr Bar( i32 x ) : S
+		{
+			var S mut s= zero_init;
+			s.f.x= x;
+			return s;
+		}
+
+		fn ExtractAndMul( S& s, i32 x ) : i32
+		{
+			return s.f.x * x;
+		}
+
+		fn Foo()
+		{
+			auto r= ExtractAndMul( Bar( 95254 ), 21 ); // Pass constexpr result to runtime function call.
+			halt if( r != 95254 * 21 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def ConstexprFunction_RecursiveCall_Test0():
+	c_program_text= """
+		fn constexpr Factorial( u32 x ) : u32
+		{
+			if( x <= 1u ) { return 1u; }
+			return x * Factorial( x - 1u );
+		}
+
+		static_assert( Factorial( 0u) ==   1u );
+		static_assert( Factorial( 1u) ==   1u );
+		static_assert( Factorial( 2u) ==   2u );
+		static_assert( Factorial( 3u) ==   6u );
+		static_assert( Factorial( 4u) ==  24u );
+		static_assert( Factorial( 5u) == 120u );
+		static_assert( Factorial( 6u) == 720u );
+	"""
+	tests_lib.build_program( c_program_text )
