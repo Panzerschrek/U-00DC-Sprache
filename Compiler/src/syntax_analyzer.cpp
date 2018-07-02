@@ -2361,6 +2361,11 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 				result->virtual_function_kind_= virtual_function_kind;
 			}
 		}
+		if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::constexpr_ )
+		{
+			NextLexem();
+			result->constexpr_= true;
+		}
 	};
 
 	if( it_->text == Keywords::fn_ )

@@ -1043,14 +1043,36 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 		};
 	}
 
-	// Disable constexpr possibility for structs with explicit destructors.
-	if( const NamesScope::InsertedName* const dstructor_name=
+	// Disable constexpr possibility for structs with explicit destructors, non-default copy-assignment operators and non-default copy constructors.
+	if( const NamesScope::InsertedName* const destructor_name=
 		the_class->members.GetThisScopeName( Keyword( Keywords::destructor_ ) ) )
 	{
-		const OverloadedFunctionsSet* const destructors= dstructor_name->second.GetFunctionsSet();
+		const OverloadedFunctionsSet* const destructors= destructor_name->second.GetFunctionsSet();
 		U_ASSERT( destructors != nullptr && destructors->functions.size() == 1u );
 		if( !destructors->functions[0].is_generated )
 			the_class->can_be_constexpr= false;
+	}
+	if( const NamesScope::InsertedName* const constructor_name=
+		the_class->members.GetThisScopeName( Keyword( Keywords::constructor_ ) ) )
+	{
+		const OverloadedFunctionsSet* const constructors= constructor_name->second.GetFunctionsSet();
+		U_ASSERT( constructors != nullptr );
+		for( const FunctionVariable& constructor : constructors->functions )
+		{
+			if( IsCopyConstructor( *constructor.type.GetFunctionType(), the_class_proxy ) && !constructor.is_generated )
+				the_class->can_be_constexpr= false;
+		}
+	}
+	if( const NamesScope::InsertedName* const assignment_operator_name=
+		the_class->members.GetThisScopeName( OverloadedOperatorToString( OverloadedOperator::Assign ) ) )
+	{
+		const OverloadedFunctionsSet* const operators= assignment_operator_name->second.GetFunctionsSet();
+		U_ASSERT( operators != nullptr );
+		for( const FunctionVariable& op : operators->functions )
+		{
+			if( IsCopyAssignmentOperator( *op.type.GetFunctionType(), the_class_proxy ) && !op.is_generated )
+				the_class->can_be_constexpr= false;
+		}
 	}
 
 	bool class_contains_pure_virtual_functions= false;
@@ -1861,6 +1883,15 @@ CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 	} // for arguments
 
 	function_type.unsafe= func.type_.unsafe_;
+	if( func.constexpr_ )
+	{
+		if( func.block_ == nullptr )
+			errors_.push_back( ReportConstexprFunctionsMustHaveBody( func.file_pos_ ) );
+		if( func.virtual_function_kind_ != Synt::VirtualFunctionKind::None )
+			errors_.push_back( ReportConstexprFunctionCanNotBeVirtual( func.file_pos_ ) );
+
+		func_variable.constexpr_kind= FunctionVariable::ConstexprKind::ConstexprIncomplete;
+	}
 
 	TryGenerateFunctionReturnReferencesMapping( func.type_, function_type );
 	ProcessFunctionReferencesPollution( func, function_type, base_class );
@@ -2452,6 +2483,50 @@ void CodeBuilder::BuildFuncCode(
 	const BlockBuildInfo block_build_info= BuildBlockCode( *block, function_names, function_context );
 	U_ASSERT( function_context.stack_variables_stack.size() == 1u );
 
+
+	if( func_variable.constexpr_kind != FunctionVariable::ConstexprKind::NonConstexpr )
+	{
+		// Check function type and function body.
+		// Function type checked here, because in case of constexpr methods not all types are complete yet.
+
+		bool can_be_constexpr= true;
+		if( function_type->unsafe )
+			can_be_constexpr= false;
+		if( function_type->return_value_is_reference ) // Currently, constexpr function evaluator can not return references back.
+			can_be_constexpr= false;
+		if( !function_type->return_type.IsIncomplete() )
+		{
+			if( !function_type->return_type.CanBeConstexpr() ||
+				function_type->return_type.ReferencesTagsCount() > 0u ) // Currently, constexpr function evaluator can not return references back.
+				can_be_constexpr= false;
+		}
+		if( !function_type->references_pollution.empty() ) // Side effects, such pollution, not allowed.
+			can_be_constexpr= false;
+
+		for( const Function::Arg& arg : function_type->args )
+		{
+			if( !arg.type.IsIncomplete() && !arg.type.CanBeConstexpr() )
+				can_be_constexpr= false; // Allowed only constexpr types.
+			if( arg.is_mutable && arg.is_reference )
+				can_be_constexpr= false;
+			if( arg.type == void_type_ ) // Disallow "void" arguments, because we currently can not constantly convert any reference to "void" in constexpr function call.
+				can_be_constexpr= false;
+		}
+
+		if( !can_be_constexpr )
+		{
+			errors_.push_back( ReportInvalidTypeForConstexprFunction( func_variable.body_file_pos ) );
+			func_variable.constexpr_kind= FunctionVariable::ConstexprKind::NonConstexpr;
+		}
+		else if( function_context.have_non_constexpr_operations_inside )
+		{
+			errors_.push_back( ReportConstexprFunctionContainsUnallowedOperations( func_variable.body_file_pos ) );
+			func_variable.constexpr_kind= FunctionVariable::ConstexprKind::NonConstexpr;
+		}
+		else
+			func_variable.constexpr_kind= FunctionVariable::ConstexprKind::ConstexprComplete;
+	}
+
 	// We need call destructors for arguments only if function returns "void".
 	// In other case, we have "return" in all branches and destructors call before each "return".
 	if( !block_build_info.have_unconditional_return_inside )
@@ -2948,6 +3023,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockCode(
 		else if( const auto unsafe_block=
 			dynamic_cast<const Synt::UnsafeBlock*>( block_element_ptr ) )
 		{
+			function_context.have_non_constexpr_operations_inside= true; // Unsafe operations can not be used in constexpr functions.
+
 			const bool prev_unsafe= function_context.is_in_unsafe_block;
 			function_context.is_in_unsafe_block= true;
 
@@ -2996,6 +3073,8 @@ std::vector<ProgramString> CodeBuilder::BuildVariablesDeclarationCode(
 			errors_.push_back( ReportUsingIncompleteType( variables_declaration.file_pos_, type.ToString() ) );
 			continue;
 		}
+		if( variable_declaration.reference_modifier != ReferenceModifier::Reference && !type.CanBeConstexpr() )
+			function_context.have_non_constexpr_operations_inside= true; // Declaring variable with non-constexpr type in constexpr function not allowed.
 
 		if( IsKeyword( variable_declaration.name ) )
 		{
@@ -3275,7 +3354,7 @@ ProgramString CodeBuilder::BuildAutoVariableDeclarationCode(
 		CheckReferencedVariables( variable, auto_variable_declaration.file_pos_ );
 	}
 	else if( auto_variable_declaration.reference_modifier == ReferenceModifier::None )
-	{
+	{	
 		VariablesState::VariableReferences moved_variable_referenced_variables;
 
 		if( variable.type.IsIncomplete() )
@@ -3283,6 +3362,8 @@ ProgramString CodeBuilder::BuildAutoVariableDeclarationCode(
 			errors_.push_back( ReportUsingIncompleteType( auto_variable_declaration.file_pos_, variable.type.ToString() ) );
 			return auto_variable_declaration.name;
 		}
+		if( !variable.type.CanBeConstexpr() )
+			function_context.have_non_constexpr_operations_inside= true; // Declaring variable with non-constexpr type in constexpr function not allowed.
 
 		llvm::GlobalVariable* global_variable= nullptr;
 		if( global && variable.type.GetTemplateDependentType() == nullptr )
@@ -3316,6 +3397,7 @@ ProgramString CodeBuilder::BuildAutoVariableDeclarationCode(
 				function_context.variables_state.Move( variable_for_move );
 
 				CopyBytes( initializer_experrsion.llvm_value, variable.llvm_value, variable.type, function_context );
+				variable.constexpr_value= initializer_experrsion.constexpr_value; // Move can preserve constexpr.
 			}
 			else
 				TryCallCopyConstructor(
@@ -3616,6 +3698,9 @@ void CodeBuilder::BuildDeltaOneOperatorCode(
 		GetOverloadedOperator( args, positive ? OverloadedOperator::Increment : OverloadedOperator::Decrement, file_pos );
 	if( overloaded_operator != nullptr )
 	{
+		if( overloaded_operator->constexpr_kind == FunctionVariable::ConstexprKind::NonConstexpr )
+			function_context.have_non_constexpr_operations_inside= true;
+
 		if( overloaded_operator->is_this_call )
 		{
 			const auto fetch_result= TryFetchVirtualFunction( *variable, *overloaded_operator, function_context );

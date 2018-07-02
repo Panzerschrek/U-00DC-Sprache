@@ -72,6 +72,22 @@ def ConstexprReferenceInsideStruct_Test1():
 	tests_lib.build_program( c_program_text )
 
 
+def FunctionPointerInConstexprStruct_Test0():
+	c_program_text= """
+		type fn_ptr= fn();
+		struct S
+		{
+			fn_ptr ref;
+		}
+
+		fn Foo(){}
+
+		var S constexpr s{ .ref= Foo };
+		static_assert( s.ref == fn_ptr(Foo) );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
 def ZeroInitForStructIsConstexpr_Test0():
 	c_program_text= """
 		struct S{ [ f32, 3 ] arr; }
@@ -244,3 +260,31 @@ def InvalidTypeForConstantExpressionVariable_ForStructs_Test5():
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "InvalidTypeForConstantExpressionVariable" )
 	assert( errors_list[0].file_pos.line == 11 )
+
+
+def InvalidTypeForConstantExpressionVariable_ForStructs_Tes6():
+	c_program_text= """
+		struct S
+		{
+			fn constructor( S& other ){}
+		}
+		var S constexpr s; // Error, 's' can not be constexpr, because it have non-default copy constructor.
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "InvalidTypeForConstantExpressionVariable" )
+	assert( errors_list[0].file_pos.line == 6 )
+
+
+def InvalidTypeForConstantExpressionVariable_ForStructs_Tes7():
+	c_program_text= """
+		struct S
+		{
+			op=( mut this, S& other ) {}
+		}
+		var S constexpr s; // Error, 's' can not be constexpr, because it have non-default copy assignment operator.
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "InvalidTypeForConstantExpressionVariable" )
+	assert( errors_list[0].file_pos.line == 6 )

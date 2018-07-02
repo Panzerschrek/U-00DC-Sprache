@@ -254,6 +254,13 @@ bool operator!=( const Array& r, const Array& l );
 
 struct FunctionVariable final
 {
+	enum class ConstexprKind
+	{
+		NonConstexpr,
+		ConstexprIncomplete,  // Can be used in body of constexpr functions, but result of call can not be constexpr.
+		ConstexprComplete,
+	};
+
 	Type type; // Function type 100%
 
 	// For function templates is nonempty and have size of args. Needs for selection of better (more specialized) template function.
@@ -264,6 +271,8 @@ struct FunctionVariable final
 	bool is_this_call= false;
 	bool is_generated= false;
 	bool is_deleted= false;
+
+	ConstexprKind constexpr_kind= ConstexprKind::NonConstexpr;
 
 	llvm::Function* llvm_function= nullptr;
 

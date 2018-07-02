@@ -85,6 +85,16 @@ const char* CodeBuilderErrorCodeToString( const CodeBuilderErrorCode code )
 		return "InvalidTypeForConstantExpressionVariable";
 	case CodeBuilderErrorCode::ConstantExpressionResultIsUndefined:
 		return "ConstantExpressionResultIsUndefined";
+	case CodeBuilderErrorCode::ConstexprFunctionEvaluationError:
+		return "ConstexprFunctionEvaluationError";
+	case CodeBuilderErrorCode::ConstexprFunctionContainsUnallowedOperations:
+		return "ConstexprFunctionContainsUnallowedOperations";
+	case CodeBuilderErrorCode::InvalidTypeForConstexprFunction:
+		return "InvalidTypeForConstexprFunction";
+	case CodeBuilderErrorCode::ConstexprFunctionsMustHaveBody:
+		return "ConstexprFunctionsMustHaveBody";
+	case CodeBuilderErrorCode::ConstexprFunctionCanNotBeVirtual:
+		return "ConstexprFunctionCanNotBeVirtual";
 	case CodeBuilderErrorCode::StaticAssertExpressionMustHaveBoolType:
 		return "StaticAssertExpressionMustHaveBoolType";
 	case CodeBuilderErrorCode::StaticAssertExpressionIsNotConstant:
@@ -718,6 +728,61 @@ CodeBuilderError ReportConstantExpressionResultIsUndefined( const FilePos& file_
 	error.code= CodeBuilderErrorCode::ConstantExpressionResultIsUndefined;
 
 	error.text= "Constant expression result is undefined."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportConstexprFunctionEvaluationError( const FilePos& file_pos, const char* const what_error )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::ConstexprFunctionEvaluationError;
+
+	error.text= "Constexpr function evaluation error: "_SpC + ToProgramString( what_error ) + "."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportConstexprFunctionContainsUnallowedOperations( const FilePos& file_pos )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::ConstexprFunctionContainsUnallowedOperations;
+
+	error.text= "Constexpr function contains unallowed operatios."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportInvalidTypeForConstexprFunction( const FilePos& file_pos )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::InvalidTypeForConstexprFunction;
+
+	error.text= "Invalid type for constexpr function."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportConstexprFunctionsMustHaveBody( const FilePos& file_pos )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::ConstexprFunctionsMustHaveBody;
+
+	error.text= "Constexpr function must have body."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportConstexprFunctionCanNotBeVirtual( const FilePos& file_pos )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::ConstexprFunctionCanNotBeVirtual;
+
+	error.text= "Constexpr function can not be virtual."_SpC;
 
 	return error;
 }

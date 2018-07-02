@@ -4,6 +4,7 @@
 #include "pop_llvm_warnings.hpp"
 
 #include "assert.hpp"
+#include "constexpr_function_evaluator.hpp"
 #include "keywords.hpp"
 #include "lang_types.hpp"
 
@@ -153,6 +154,8 @@ boost::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 	{
 		if( overloaded_operator->is_deleted )
 			errors_.push_back( ReportAccessingDeletedMethod( file_pos ) );
+		if( overloaded_operator->constexpr_kind == FunctionVariable::ConstexprKind::NonConstexpr )
+			function_context.have_non_constexpr_operations_inside= true; // Can not call non-constexpr function in constexpr function.
 
 		if( overloaded_operator->virtual_table_index != ~0u )
 		{
@@ -352,6 +355,9 @@ Value CodeBuilder::BuildExpressionCode(
 			const FunctionVariable* const overloaded_operator= GetOverloadedOperator( args, op, expression_with_unary_operators->file_pos_ );
 			if( overloaded_operator != nullptr )
 			{
+				if( overloaded_operator->constexpr_kind == FunctionVariable::ConstexprKind::NonConstexpr )
+					function_context.have_non_constexpr_operations_inside= true; // Can not call non-constexpr function in constexpr function.
+
 				if( overloaded_operator->is_this_call && overloaded_operator->virtual_table_index != ~0u )
 				{
 					const auto fetch_result= TryFetchVirtualFunction( *var, *overloaded_operator, function_context );
@@ -1645,6 +1651,9 @@ Value CodeBuilder::BuildIndexationOperator(
 			GetOverloadedOperator( args, OverloadedOperator::Indexing, indexation_operator.file_pos_ );
 		if( overloaded_operator != nullptr )
 		{
+			if( overloaded_operator->constexpr_kind == FunctionVariable::ConstexprKind::NonConstexpr )
+				function_context.have_non_constexpr_operations_inside= true; // Can not call non-constexpr function in constexpr function.
+
 			if( overloaded_operator->is_this_call && overloaded_operator->virtual_table_index != ~0u  )
 			{
 				const auto fetch_result= TryFetchVirtualFunction( variable, *overloaded_operator, function_context );
@@ -1963,6 +1972,8 @@ Value CodeBuilder::BuildCallOperator(
 		}
 		else if( const FunctionPointer* const function_pointer= callable_variable->type.GetFunctionPointerType() )
 		{
+			function_context.have_non_constexpr_operations_inside= true; // Calling function, using pointer, is not constexpr. We can not garantee, that called function is constexpr.
+
 			// Call function pointer directly.
 			if( function_pointer->function.args.size() != call_operator.arguments_.size() )
 			{
@@ -2100,6 +2111,9 @@ Value CodeBuilder::BuildCallOperator(
 	if( function_ptr->is_deleted )
 		errors_.push_back( ReportAccessingDeletedMethod( call_operator.file_pos_ ) );
 
+	if( function_ptr->constexpr_kind == FunctionVariable::ConstexprKind::NonConstexpr )
+		function_context.have_non_constexpr_operations_inside= true; // Can not call non-constexpr function in constexpr function.
+
 	std::vector<const Synt::IExpressionComponent*> synt_args;
 	for( const Synt::IExpressionComponentPtr& arg : call_operator.arguments_ )
 		synt_args.push_back( arg.get() );
@@ -2114,7 +2128,13 @@ Value CodeBuilder::BuildCallOperator(
 		this_= &this_casted;
 	}
 
-	return DoCallFunction( llvm_function_ptr, function_type, call_operator.file_pos_, this_, synt_args, false, names, function_context );
+	return
+		DoCallFunction(
+			llvm_function_ptr, function_type,
+			call_operator.file_pos_,
+			this_, synt_args, false,
+			names, function_context,
+			function.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete );
 }
 
 Value CodeBuilder::DoCallFunction(
@@ -2125,7 +2145,8 @@ Value CodeBuilder::DoCallFunction(
 	std::vector<const Synt::IExpressionComponent*> args,
 	const bool evaluate_args_in_reverse_order,
 	NamesScope& names,
-	FunctionContext& function_context )
+	FunctionContext& function_context,
+	const bool func_is_constexpr )
 {
 	U_ASSERT( !( evaluate_args_in_reverse_order && first_arg != nullptr ) );
 
@@ -2137,6 +2158,7 @@ Value CodeBuilder::DoCallFunction(
 	U_ASSERT( arg_count == function_type.args.size() );
 
 	std::vector<llvm::Value*> llvm_args;
+	std::vector<llvm::Constant*> constant_llvm_args;
 	llvm_args.resize( arg_count, nullptr );
 	std::unordered_map<StoredVariablePtr, VaraibleReferencesCounter> locked_variable_counters;
 	std::vector<VariableStorageUseCounter> temp_args_locks; // We need lock reference argument before evaluating next arguments.
@@ -2165,6 +2187,9 @@ Value CodeBuilder::DoCallFunction(
 
 		const bool something_have_template_dependent_type= expr.type.GetTemplateDependentType() != nullptr || arg.type.GetTemplateDependentType() != nullptr;
 		function_result_have_template_dependent_type= function_result_have_template_dependent_type || something_have_template_dependent_type;
+
+		if( expr.constexpr_value != nullptr )
+			constant_llvm_args.push_back( expr.constexpr_value );
 
 		if( arg.is_reference )
 		{
@@ -2366,11 +2391,31 @@ Value CodeBuilder::DoCallFunction(
 	{
 		s_ret_value= function_context.alloca_ir_builder.CreateAlloca( function_type.return_type.GetLLVMType() );
 		llvm_args.insert( llvm_args.begin(), s_ret_value );
+		constant_llvm_args.insert( constant_llvm_args.begin(), nullptr );
 	}
 
 	llvm::Value* call_result= nullptr;
+	llvm::Constant* constant_call_result= nullptr;
 	if( std::find( llvm_args.begin(), llvm_args.end(), nullptr ) == llvm_args.end() )
-		call_result= function_context.llvm_ir_builder.CreateCall( function, llvm_args );
+	{
+		if( func_is_constexpr && constant_llvm_args.size() == llvm_args.size() )
+		{
+			const ConstexprFunctionEvaluator::Result evaluation_result=
+				ConstexprFunctionEvaluator( module_->getDataLayout() ).Evaluate( function_type, llvm::dyn_cast<llvm::Function>(function), constant_llvm_args, call_file_pos );
+
+			errors_.insert( errors_.end(), evaluation_result.errors.begin(), evaluation_result.errors.end() );
+			if( evaluation_result.errors.empty() && evaluation_result.result_constant != nullptr )
+			{
+				if( return_value_is_sret ) // We needs here block of memory with result constant struct.
+					MoveConstantToMemory( s_ret_value, evaluation_result.result_constant, function_context );
+
+				call_result= evaluation_result.result_constant;
+				constant_call_result= evaluation_result.result_constant;
+			}
+		}
+		if( call_result == nullptr )
+			call_result= function_context.llvm_ir_builder.CreateCall( function, llvm_args );
+	}
 	else
 		call_result= llvm::UndefValue::get( llvm::dyn_cast<llvm::FunctionType>(function->getType())->getReturnType() );
 
@@ -2381,6 +2426,7 @@ Value CodeBuilder::DoCallFunction(
 	}
 
 	Variable result;
+	result.constexpr_value= constant_call_result;
 
 	result.type= function_type.return_type;
 	result.llvm_value= call_result;
