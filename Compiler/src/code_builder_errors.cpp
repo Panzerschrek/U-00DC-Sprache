@@ -87,6 +87,8 @@ const char* CodeBuilderErrorCodeToString( const CodeBuilderErrorCode code )
 		return "ConstantExpressionResultIsUndefined";
 	case CodeBuilderErrorCode::ConstexprFunctionEvaluationError:
 		return "ConstexprFunctionEvaluationError";
+	case CodeBuilderErrorCode::ConstexprFunctionContainsUnallowedOperations:
+		return "ConstexprFunctionContainsUnallowedOperations";
 	case CodeBuilderErrorCode::StaticAssertExpressionMustHaveBoolType:
 		return "StaticAssertExpressionMustHaveBoolType";
 	case CodeBuilderErrorCode::StaticAssertExpressionIsNotConstant:
@@ -731,6 +733,17 @@ CodeBuilderError ReportConstexprFunctionEvaluationError( const FilePos& file_pos
 	error.code= CodeBuilderErrorCode::ConstexprFunctionEvaluationError;
 
 	error.text= "Constexpr function evaluation error: "_SpC + ToProgramString( what_error ) + "."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportConstexprFunctionContainsUnallowedOperations( const FilePos& file_pos )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::ConstexprFunctionContainsUnallowedOperations;
+
+	error.text= "Constexpr function contains unallowed operatios."_SpC;
 
 	return error;
 }

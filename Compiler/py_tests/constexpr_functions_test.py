@@ -335,13 +335,12 @@ def ConstexprFunctionInternalStruct_Test1():
 		struct Vec
 		{
 			i32 x; i32 y;
-			fn constructor() ( x= 0, y= 0 ) {}
 		}
 		fn constexpr Bar( i32 x ) : i32
 		{
-			var Vec mut vec; // Call default constructor here
-			vec.x = x * 2;
-			vec.y=  x * 7;
+			var Vec mut vec{ .x= 0, .y= 0 }; // Call default constructor here
+			vec.x= x * 2;
+			vec.y= x * 7;
 			return vec.x - vec.y;
 		}
 		fn Foo()
@@ -394,7 +393,7 @@ def ConstexprFunctionCallOtherFunction_Test2():
 		{
 			i32 x;
 			i32 y;
-			fn Dot( this ) : i32 { return x * y; }
+			fn constexpr Dot( this ) : i32 { return x * y; }
 		}
 		fn constexpr Bar( i32 x, i32 y ) : i32
 		{

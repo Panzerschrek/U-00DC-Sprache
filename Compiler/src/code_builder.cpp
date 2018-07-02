@@ -1883,7 +1883,12 @@ CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 	} // for arguments
 
 	function_type.unsafe= func.type_.unsafe_;
-	func_variable.is_constexpr= func.constexpr_;
+	if( func.constexpr_ )
+	{
+		if( func.block_ == nullptr )
+		{} // TODO - generate error.
+		func_variable.constexpr_kind= FunctionVariable::ConstexprKind::ConstexprIncomplete;
+	}
 
 	TryGenerateFunctionReturnReferencesMapping( func.type_, function_type );
 	ProcessFunctionReferencesPollution( func, function_type, base_class );
@@ -2475,6 +2480,19 @@ void CodeBuilder::BuildFuncCode(
 	const BlockBuildInfo block_build_info= BuildBlockCode( *block, function_names, function_context );
 	U_ASSERT( function_context.stack_variables_stack.size() == 1u );
 
+
+	if( func_variable.constexpr_kind != FunctionVariable::ConstexprKind::NonConstexpr )
+	{
+		// TODO - check here all constexpr restrictions of function.
+		if( function_context.have_non_constexpr_operations_inside )
+		{
+			errors_.push_back( ReportConstexprFunctionContainsUnallowedOperations( func_variable.body_file_pos ) );
+			func_variable.constexpr_kind= FunctionVariable::ConstexprKind::NonConstexpr;
+		}
+		else
+			func_variable.constexpr_kind= FunctionVariable::ConstexprKind::ConstexprComplete;
+	}
+
 	// We need call destructors for arguments only if function returns "void".
 	// In other case, we have "return" in all branches and destructors call before each "return".
 	if( !block_build_info.have_unconditional_return_inside )
@@ -2971,6 +2989,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockCode(
 		else if( const auto unsafe_block=
 			dynamic_cast<const Synt::UnsafeBlock*>( block_element_ptr ) )
 		{
+			function_context.have_non_constexpr_operations_inside= true; // Unsafe operations can not be used in constexpr functions.
+
 			const bool prev_unsafe= function_context.is_in_unsafe_block;
 			function_context.is_in_unsafe_block= true;
 
@@ -3019,6 +3039,8 @@ std::vector<ProgramString> CodeBuilder::BuildVariablesDeclarationCode(
 			errors_.push_back( ReportUsingIncompleteType( variables_declaration.file_pos_, type.ToString() ) );
 			continue;
 		}
+		if( variable_declaration.reference_modifier != ReferenceModifier::Reference && !type.CanBeConstexpr() )
+			function_context.have_non_constexpr_operations_inside= true; // Declaring variable with non-constexpr type in constexpr function not allowed.
 
 		if( IsKeyword( variable_declaration.name ) )
 		{
@@ -3298,7 +3320,7 @@ ProgramString CodeBuilder::BuildAutoVariableDeclarationCode(
 		CheckReferencedVariables( variable, auto_variable_declaration.file_pos_ );
 	}
 	else if( auto_variable_declaration.reference_modifier == ReferenceModifier::None )
-	{
+	{	
 		VariablesState::VariableReferences moved_variable_referenced_variables;
 
 		if( variable.type.IsIncomplete() )
@@ -3306,6 +3328,8 @@ ProgramString CodeBuilder::BuildAutoVariableDeclarationCode(
 			errors_.push_back( ReportUsingIncompleteType( auto_variable_declaration.file_pos_, variable.type.ToString() ) );
 			return auto_variable_declaration.name;
 		}
+		if( !variable.type.CanBeConstexpr() )
+			function_context.have_non_constexpr_operations_inside= true; // Declaring variable with non-constexpr type in constexpr function not allowed.
 
 		llvm::GlobalVariable* global_variable= nullptr;
 		if( global && variable.type.GetTemplateDependentType() == nullptr )

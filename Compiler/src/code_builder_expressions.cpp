@@ -154,6 +154,8 @@ boost::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 	{
 		if( overloaded_operator->is_deleted )
 			errors_.push_back( ReportAccessingDeletedMethod( file_pos ) );
+		if( overloaded_operator->constexpr_kind == FunctionVariable::ConstexprKind::NonConstexpr )
+			function_context.have_non_constexpr_operations_inside= true; // Can not call non-constexpr function in constexpr function.
 
 		if( overloaded_operator->virtual_table_index != ~0u )
 		{
@@ -353,6 +355,9 @@ Value CodeBuilder::BuildExpressionCode(
 			const FunctionVariable* const overloaded_operator= GetOverloadedOperator( args, op, expression_with_unary_operators->file_pos_ );
 			if( overloaded_operator != nullptr )
 			{
+				if( overloaded_operator->constexpr_kind == FunctionVariable::ConstexprKind::NonConstexpr )
+					function_context.have_non_constexpr_operations_inside= true; // Can not call non-constexpr function in constexpr function.
+
 				if( overloaded_operator->is_this_call && overloaded_operator->virtual_table_index != ~0u )
 				{
 					const auto fetch_result= TryFetchVirtualFunction( *var, *overloaded_operator, function_context );
@@ -1646,6 +1651,9 @@ Value CodeBuilder::BuildIndexationOperator(
 			GetOverloadedOperator( args, OverloadedOperator::Indexing, indexation_operator.file_pos_ );
 		if( overloaded_operator != nullptr )
 		{
+			if( overloaded_operator->constexpr_kind == FunctionVariable::ConstexprKind::NonConstexpr )
+				function_context.have_non_constexpr_operations_inside= true; // Can not call non-constexpr function in constexpr function.
+
 			if( overloaded_operator->is_this_call && overloaded_operator->virtual_table_index != ~0u  )
 			{
 				const auto fetch_result= TryFetchVirtualFunction( variable, *overloaded_operator, function_context );
@@ -1964,6 +1972,8 @@ Value CodeBuilder::BuildCallOperator(
 		}
 		else if( const FunctionPointer* const function_pointer= callable_variable->type.GetFunctionPointerType() )
 		{
+			function_context.have_non_constexpr_operations_inside= true; // Calling function, using pointer, is not constexpr. We can not garantee, that called function is constexpr.
+
 			// Call function pointer directly.
 			if( function_pointer->function.args.size() != call_operator.arguments_.size() )
 			{
@@ -2101,6 +2111,9 @@ Value CodeBuilder::BuildCallOperator(
 	if( function_ptr->is_deleted )
 		errors_.push_back( ReportAccessingDeletedMethod( call_operator.file_pos_ ) );
 
+	if( function_ptr->constexpr_kind == FunctionVariable::ConstexprKind::NonConstexpr )
+		function_context.have_non_constexpr_operations_inside= true; // Can not call non-constexpr function in constexpr function.
+
 	std::vector<const Synt::IExpressionComponent*> synt_args;
 	for( const Synt::IExpressionComponentPtr& arg : call_operator.arguments_ )
 		synt_args.push_back( arg.get() );
@@ -2115,7 +2128,13 @@ Value CodeBuilder::BuildCallOperator(
 		this_= &this_casted;
 	}
 
-	return DoCallFunction( llvm_function_ptr, function_type, call_operator.file_pos_, this_, synt_args, false, names, function_context, function.is_constexpr );
+	return
+		DoCallFunction(
+			llvm_function_ptr, function_type,
+			call_operator.file_pos_,
+			this_, synt_args, false,
+			names, function_context,
+			function.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete );
 }
 
 Value CodeBuilder::DoCallFunction(
@@ -2127,7 +2146,7 @@ Value CodeBuilder::DoCallFunction(
 	const bool evaluate_args_in_reverse_order,
 	NamesScope& names,
 	FunctionContext& function_context,
-	bool func_is_constexpr )
+	const bool func_is_constexpr )
 {
 	U_ASSERT( !( evaluate_args_in_reverse_order && first_arg != nullptr ) );
 

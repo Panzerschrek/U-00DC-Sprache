@@ -56,6 +56,7 @@ enum class CodeBuilderErrorCode : unsigned int
 	InvalidTypeForConstantExpressionVariable,
 	ConstantExpressionResultIsUndefined,
 	ConstexprFunctionEvaluationError,
+	ConstexprFunctionContainsUnallowedOperations,
 
 	// Static assert errors.
 	StaticAssertExpressionMustHaveBoolType,
@@ -230,6 +231,7 @@ CodeBuilderError ReportVariableInitializerIsNotConstantExpression( const FilePos
 CodeBuilderError ReportInvalidTypeForConstantExpressionVariable( const FilePos& file_pos );
 CodeBuilderError ReportConstantExpressionResultIsUndefined( const FilePos& file_pos );
 CodeBuilderError ReportConstexprFunctionEvaluationError( const FilePos& file_pos, const char* what_error );
+CodeBuilderError ReportConstexprFunctionContainsUnallowedOperations( const FilePos& file_pos );
 CodeBuilderError ReportStaticAssertExpressionMustHaveBoolType( const FilePos& file_pos );
 CodeBuilderError ReportStaticAssertExpressionIsNotConstant( const FilePos& file_pos );
 CodeBuilderError ReportStaticAssertionFailed( const FilePos& file_pos );
