@@ -165,7 +165,7 @@ llvm::Constant* CodeBuilder::ApplyArrayInitializer(
 	bool is_constant= array_type->type.CanBeConstexpr();
 	std::vector<llvm::Constant*> members_constants;
 
-	for( SizeType i= 0u; i < initializer.initializers.size(); i++ )
+	for( size_t i= 0u; i < initializer.initializers.size(); i++ )
 	{
 		index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(i) ) );
 		array_member.llvm_value=
@@ -782,7 +782,7 @@ llvm::Constant* CodeBuilder::ApplyZeroInitializer(
 				return
 					llvm::ConstantArray::get(
 						array_type->llvm_type,
-						std::vector<llvm::Constant*>( array_type->size, const_value ) );
+						std::vector<llvm::Constant*>( size_t(array_type->size), const_value ) );
 		}
 	}
 	else if( const Class* const class_type= variable.type.GetClassType() )

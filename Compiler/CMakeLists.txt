@@ -42,7 +42,7 @@ endif()
 if( NOT WIN32 )
 	add_compile_options( -fPIC )
 endif()
-add_compile_options( -Wall -Wextra )
+add_compile_options( -Wall -Wextra -Wconversion )
 
 #
 # External dependencies

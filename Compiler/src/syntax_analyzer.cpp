@@ -474,7 +474,7 @@ std::unique_ptr<NumericConstant> SyntaxAnalyzer::ParseNumericConstant()
 
 		while( it < it_end && is_number_func(*it) )
 		{
-			power*= base;
+			power*= int(base);
 			power+= number_func(*it);
 			++it;
 		}

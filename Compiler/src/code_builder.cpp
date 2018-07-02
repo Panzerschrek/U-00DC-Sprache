@@ -3733,7 +3733,7 @@ void CodeBuilder::BuildDeltaOneOperatorCode(
 		llvm::Value* const one=
 			llvm::Constant::getIntegerValue(
 				fundamental_type->llvm_type,
-				llvm::APInt( variable->type.SizeOf() * 8u, uint64_t(1u) ) );
+				llvm::APInt( fundamental_type->llvm_type->getIntegerBitWidth(), uint64_t(1u) ) );
 
 		llvm::Value* const new_value=
 			positive

@@ -53,9 +53,9 @@ public:
 			n/= 36u;
 
 			if( base36_digit <= 9u )
-				result.insert( result.begin(), '0' + base36_digit );
+				result.insert( result.begin(), sprache_char( '0' + base36_digit ) );
 			else
-				result.insert( result.begin(), 'A' + ( base36_digit - 10u ) );
+				result.insert( result.begin(), sprache_char( 'A' + ( base36_digit - 10u ) ) );
 		}
 		while( n > 0u );
 

@@ -38,7 +38,7 @@ std::string ToStdString( const ProgramString& str )
 	std::string result( str.size(), '\0' );
 
 	for( unsigned int i= 0; i < str.size(); i++ )
-		result[i]= str[i];
+		result[i]= std::string::value_type(str[i]);
 
 	return result;
 }
@@ -69,7 +69,7 @@ static ProgramString DecodeUTF8( const char* start, const char* end )
 	const char* p= start;
 	while( p < end )
 	{
-		sprache_char code;
+		size_t code;
 		char c= *p;
 
 		if( ( c & 0b10000000 ) == 0 )
@@ -142,7 +142,7 @@ static ProgramString DecodeUTF8( const char* start, const char* end )
 			p++; // WTF - ?
 		}
 
-		result.push_back( code );
+		result.push_back( sprache_char(code) );
 	}
 
 	return result;
