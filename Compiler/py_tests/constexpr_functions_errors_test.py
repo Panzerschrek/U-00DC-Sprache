@@ -40,6 +40,32 @@ def ConstexprFunctionsMustHaveBody_Test1():
 	assert( errors_list[0].file_pos.line == 4 )
 
 
+def ConstexprFunctionCanNotBeVirtual_Test0():
+	c_program_text= """
+		class S polymorph
+		{
+			fn virtual constexpr Foo(){}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ConstexprFunctionCanNotBeVirtual" )
+	assert( errors_list[0].file_pos.line == 4 )
+
+
+def ConstexprFunctionCanNotBeVirtual_Test1():
+	c_program_text= """
+		class S polymorph
+		{
+			op virtual constexpr [](){}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ConstexprFunctionCanNotBeVirtual" )
+	assert( errors_list[0].file_pos.line == 4 )
+
+
 def InvalidTypeForConstexprFunction_Test0():
 	c_program_text= """
 		// mutable reference args not allowed.

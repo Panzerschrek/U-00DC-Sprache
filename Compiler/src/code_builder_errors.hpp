@@ -59,6 +59,7 @@ enum class CodeBuilderErrorCode : unsigned int
 	ConstexprFunctionContainsUnallowedOperations,
 	InvalidTypeForConstexprFunction,
 	ConstexprFunctionsMustHaveBody,
+	ConstexprFunctionCanNotBeVirtual,
 
 	// Static assert errors.
 	StaticAssertExpressionMustHaveBoolType,
@@ -236,6 +237,7 @@ CodeBuilderError ReportConstexprFunctionEvaluationError( const FilePos& file_pos
 CodeBuilderError ReportConstexprFunctionContainsUnallowedOperations( const FilePos& file_pos );
 CodeBuilderError ReportInvalidTypeForConstexprFunction( const FilePos& file_pos );
 CodeBuilderError ReportConstexprFunctionsMustHaveBody( const FilePos& file_pos );
+CodeBuilderError ReportConstexprFunctionCanNotBeVirtual( const FilePos& file_pos );
 CodeBuilderError ReportStaticAssertExpressionMustHaveBoolType( const FilePos& file_pos );
 CodeBuilderError ReportStaticAssertExpressionIsNotConstant( const FilePos& file_pos );
 CodeBuilderError ReportStaticAssertionFailed( const FilePos& file_pos );

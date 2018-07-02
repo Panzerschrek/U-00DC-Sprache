@@ -1887,6 +1887,9 @@ CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 	{
 		if( func.block_ == nullptr )
 			errors_.push_back( ReportConstexprFunctionsMustHaveBody( func.file_pos_ ) );
+		if( func.virtual_function_kind_ != Synt::VirtualFunctionKind::None )
+			errors_.push_back( ReportConstexprFunctionCanNotBeVirtual( func.file_pos_ ) );
+
 		func_variable.constexpr_kind= FunctionVariable::ConstexprKind::ConstexprIncomplete;
 	}
 
