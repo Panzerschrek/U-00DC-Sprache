@@ -85,6 +85,8 @@ const char* CodeBuilderErrorCodeToString( const CodeBuilderErrorCode code )
 		return "InvalidTypeForConstantExpressionVariable";
 	case CodeBuilderErrorCode::ConstantExpressionResultIsUndefined:
 		return "ConstantExpressionResultIsUndefined";
+	case CodeBuilderErrorCode::ConstexprFunctionEvaluationError:
+		return "ConstexprFunctionEvaluationError";
 	case CodeBuilderErrorCode::StaticAssertExpressionMustHaveBoolType:
 		return "StaticAssertExpressionMustHaveBoolType";
 	case CodeBuilderErrorCode::StaticAssertExpressionIsNotConstant:
@@ -718,6 +720,17 @@ CodeBuilderError ReportConstantExpressionResultIsUndefined( const FilePos& file_
 	error.code= CodeBuilderErrorCode::ConstantExpressionResultIsUndefined;
 
 	error.text= "Constant expression result is undefined."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportConstexprFunctionEvaluationError( const FilePos& file_pos, const char* const what_error )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::ConstexprFunctionEvaluationError;
+
+	error.text= "Constexpr function evaluation error: "_SpC + ToProgramString( what_error ) + "."_SpC;
 
 	return error;
 }
