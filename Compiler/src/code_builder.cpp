@@ -1043,14 +1043,36 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 		};
 	}
 
-	// Disable constexpr possibility for structs with explicit destructors.
-	if( const NamesScope::InsertedName* const dstructor_name=
+	// Disable constexpr possibility for structs with explicit destructors, non-default copy-assignment operators and non-default copy constructors.
+	if( const NamesScope::InsertedName* const destructor_name=
 		the_class->members.GetThisScopeName( Keyword( Keywords::destructor_ ) ) )
 	{
-		const OverloadedFunctionsSet* const destructors= dstructor_name->second.GetFunctionsSet();
+		const OverloadedFunctionsSet* const destructors= destructor_name->second.GetFunctionsSet();
 		U_ASSERT( destructors != nullptr && destructors->functions.size() == 1u );
 		if( !destructors->functions[0].is_generated )
 			the_class->can_be_constexpr= false;
+	}
+	if( const NamesScope::InsertedName* const constructor_name=
+		the_class->members.GetThisScopeName( Keyword( Keywords::constructor_ ) ) )
+	{
+		const OverloadedFunctionsSet* const constructors= constructor_name->second.GetFunctionsSet();
+		U_ASSERT( constructors != nullptr );
+		for( const FunctionVariable& constructor : constructors->functions )
+		{
+			if( IsCopyConstructor( *constructor.type.GetFunctionType(), the_class_proxy ) && !constructor.is_generated )
+				the_class->can_be_constexpr= false;
+		}
+	}
+	if( const NamesScope::InsertedName* const assignment_operator_name=
+		the_class->members.GetThisScopeName( OverloadedOperatorToString( OverloadedOperator::Assign ) ) )
+	{
+		const OverloadedFunctionsSet* const operators= assignment_operator_name->second.GetFunctionsSet();
+		U_ASSERT( operators != nullptr );
+		for( const FunctionVariable& op : operators->functions )
+		{
+			if( IsCopyAssignmentOperator( *op.type.GetFunctionType(), the_class_proxy ) && !op.is_generated )
+				the_class->can_be_constexpr= false;
+		}
 	}
 
 	bool class_contains_pure_virtual_functions= false;
