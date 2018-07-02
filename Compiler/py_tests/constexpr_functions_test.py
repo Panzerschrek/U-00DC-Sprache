@@ -554,3 +554,84 @@ def ConstexprFunction_CompositeArgument_Test4():
 		static_assert( Pass( 2.718281828f ) == 2.718281828f );   // Pass scalar argument by-reference.
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def ConstexprFunction_ReturnStruct_Test0():
+	c_program_text= """
+		struct S{ i32 x; }
+		fn constexpr Foo() : S
+		{
+			var S s{ .x= 88565 };
+			return s;
+		}
+
+		static_assert( Foo().x == 88565 );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def ConstexprFunction_ReturnStruct_Test1():
+	c_program_text= """
+		struct S{ i32 x; i32 y; }
+		fn constexpr Foo() : S
+		{
+			var S s{ .x= 9995, .y= -6665 };
+			return s;
+		}
+		auto constexpr g_s= Foo();
+		static_assert( g_s.x == 9995 );
+		static_assert( g_s.y == -6665 );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def ConstexprFunction_ReturnStruct_Test2():
+	c_program_text= """
+		struct S{ [ i32, 3 ] arr; }
+		fn constexpr Foo() : S
+		{
+			var S mut s= zero_init;
+			s.arr[1u]= 77412;
+			return s;
+		}
+
+		static_assert( Foo().arr[1u] == 77412 );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def ConstexprFunction_ReturnStruct_Test3():
+	c_program_text= """
+		struct F{ [ f64, 8 ] trash; i32 x; }
+		struct S{ f32 trash; F f; }
+		fn constexpr Foo( i32 x ) : S
+		{
+			var S mut s= zero_init;
+			s.f.x= x;
+			return s;
+		}
+
+		static_assert( Foo(85258).f.x == 85258 );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def ConstexprFunction_ReturnStruct_Test4():
+	c_program_text= """
+		struct F{ [ f64, 8 ] trash; i32 x; }
+		struct S{ f32 trash; F f; }
+		fn constexpr Bar( i32 x ) : S
+		{
+			var S mut s= zero_init;
+			s.f.x= x;
+			return s;
+		}
+
+		fn Foo()
+		{
+			auto mut s= Bar( 95159 );
+			halt if( s.f.x != 95159 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )

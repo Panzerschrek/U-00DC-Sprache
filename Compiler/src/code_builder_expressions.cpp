@@ -2391,9 +2391,11 @@ Value CodeBuilder::DoCallFunction(
 	{
 		s_ret_value= function_context.alloca_ir_builder.CreateAlloca( function_type.return_type.GetLLVMType() );
 		llvm_args.insert( llvm_args.begin(), s_ret_value );
+		constant_llvm_args.insert( constant_llvm_args.begin(), nullptr );
 	}
 
 	llvm::Value* call_result= nullptr;
+	llvm::Constant* constant_call_result= nullptr;
 	if( std::find( llvm_args.begin(), llvm_args.end(), nullptr ) == llvm_args.end() )
 	{
 		if( func_is_constexpr && constant_llvm_args.size() == llvm_args.size() )
@@ -2403,8 +2405,16 @@ Value CodeBuilder::DoCallFunction(
 				ConstexprFunctionEvaluator( module_->getDataLayout() ).Evaluate( function_type, llvm::dyn_cast<llvm::Function>(function), constant_llvm_args, call_file_pos );
 
 			errors_.insert( errors_.end(), evaluation_result.errors.begin(), evaluation_result.errors.end() );
-			if( evaluation_result.errors.empty() )
+			if( evaluation_result.errors.empty() && evaluation_result.result_constant != nullptr )
+			{
+				if( return_value_is_sret )
+				{
+					// We needs here block of memory with result constant struct.
+					MoveConstantToMemory( s_ret_value, evaluation_result.result_constant, function_context );
+				}
 				call_result= evaluation_result.result_constant;
+				constant_call_result= evaluation_result.result_constant;
+			}
 		}
 		if( call_result == nullptr )
 			call_result= function_context.llvm_ir_builder.CreateCall( function, llvm_args );
@@ -2419,7 +2429,7 @@ Value CodeBuilder::DoCallFunction(
 	}
 
 	Variable result;
-	result.constexpr_value= llvm::dyn_cast<llvm::Constant>(call_result);
+	result.constexpr_value= constant_call_result;
 
 	result.type= function_type.return_type;
 	result.llvm_value= call_result;

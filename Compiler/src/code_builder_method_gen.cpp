@@ -855,6 +855,43 @@ void CodeBuilder::CopyBytes(
 		U_ASSERT(false);
 }
 
+void CodeBuilder::MoveConstantToMemory(
+	llvm::Value* const ptr, llvm::Constant* const constant,
+	FunctionContext& function_context )
+{
+	llvm::Value* index_list[2];
+	index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
+
+	llvm::Type* const type= constant->getType();
+	if( type->isStructTy() )
+	{
+		llvm::StructType* const struct_type= llvm::dyn_cast<llvm::StructType>(type);
+		for( unsigned int i= 0u; i < struct_type->getNumElements(); ++i )
+		{
+			index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, i ) );
+			MoveConstantToMemory(
+				function_context.llvm_ir_builder.CreateGEP( ptr, index_list ),
+				constant->getAggregateElement(i),
+				function_context );
+		}
+	}
+	else if( type->isArrayTy() )
+	{
+		llvm::ArrayType* const array_type= llvm::dyn_cast<llvm::ArrayType>(type);
+		for( unsigned int i= 0u; i < array_type->getNumElements(); ++i )
+		{
+			index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, i ) );
+			MoveConstantToMemory(
+				function_context.llvm_ir_builder.CreateGEP( ptr, index_list ),
+				constant->getAggregateElement(i),
+				function_context );
+		}
+	}
+	else if( type->isIntegerTy() || type->isFloatingPointTy() )
+		function_context.llvm_ir_builder.CreateStore( constant, ptr );
+	else U_ASSERT(false);
+}
+
 bool CodeBuilder::IsDefaultConstructor( const Function& function_type, const Type& base_class )
 {
 	return

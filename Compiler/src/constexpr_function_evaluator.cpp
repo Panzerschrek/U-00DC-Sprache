@@ -26,7 +26,9 @@ ConstexprFunctionEvaluator::Result ConstexprFunctionEvaluator::Evaluate(
 {
 	file_pos_ = &file_pos;
 
-	U_ASSERT( function_type.args.size() == args.size() );
+	U_ASSERT( args.size() == llvm_function->getFunctionType()->getNumParams() );
+
+	size_t s_ret_ptr= 0u;
 
 	// Fill arguments
 	size_t i= 0u;
@@ -34,11 +36,17 @@ ConstexprFunctionEvaluator::Result ConstexprFunctionEvaluator::Evaluate(
 	{
 		if( arg.hasStructRetAttr() )
 		{
-			++i;
-			continue;
-		}
+			U_ASSERT(arg.getType()->isPointerTy());
+			U_ASSERT(i == 0u);
 
-		if( arg.getType()->isPointerTy() )
+			s_ret_ptr= stack_.size();
+			stack_.resize( stack_.size() + data_layout_.getTypeAllocSize( llvm::dyn_cast<llvm::PointerType>(arg.getType())->getElementType() ) );
+
+			llvm::GenericValue val;
+			val.IntVal= llvm::APInt( 64u, uint64_t(s_ret_ptr) );
+			instructions_map_[ &arg ]= val;
+		}
+		else if( arg.getType()->isPointerTy() )
 		{
 			const size_t ptr= MoveConstantToStack( *args[i] );
 			llvm::GenericValue val;
@@ -64,8 +72,7 @@ ConstexprFunctionEvaluator::Result ConstexprFunctionEvaluator::Evaluate(
 			val.DoubleVal= llvm::dyn_cast<llvm::ConstantFP>(args[i])->getValueAPF().convertToDouble();
 			instructions_map_[ &arg ]= val;
 		}
-		else
-			U_ASSERT(false);
+		else U_ASSERT(false);
 
 		++i;
 	}
@@ -100,10 +107,11 @@ ConstexprFunctionEvaluator::Result ConstexprFunctionEvaluator::Evaluate(
 			else
 				U_ASSERT(false);
 		}
-		else
+		else if( const Class* const struct_type= function_type.return_type.GetClassType() )
 		{
-			U_ASSERT(false);
+			result.result_constant= CreateInitializerForStructElement( struct_type->llvm_type, s_ret_ptr );
 		}
+		else U_ASSERT(false);
 	}
 
 	instructions_map_.clear();
@@ -316,6 +324,54 @@ void ConstexprFunctionEvaluator::CopyConstantToStack( const llvm::Constant& cons
 		std::memcpy( stack_.data() + stack_offset, &val, sizeof(double) );
 	}
 	else U_ASSERT(false);
+}
+
+llvm::Constant* ConstexprFunctionEvaluator::CreateInitializerForStructElement( llvm::Type* const type, const size_t element_ptr )
+{
+	if( type->isIntegerTy() )
+	{
+		uint64_t val; // TODO - check big-endian/little-endian correctness.
+		std::memcpy( &val, stack_.data() + element_ptr, sizeof(val) );
+		return llvm::Constant::getIntegerValue( type, llvm::APInt( type->getIntegerBitWidth(), val ) );
+	}
+	else if( type->isFloatTy() )
+	{
+		float val;
+		std::memcpy( &val, stack_.data() + element_ptr, sizeof(val) );
+		return llvm::ConstantFP::get( type, static_cast<double>(val) );
+	}
+	else if( type->isDoubleTy() )
+	{
+		double val;
+		std::memcpy( &val, stack_.data() + element_ptr, sizeof(val) );
+		return llvm::ConstantFP::get( type, val );
+	}
+	else if( type->isArrayTy() )
+	{
+		llvm::ArrayType* const array_type= llvm::dyn_cast<llvm::ArrayType>(type);
+		llvm::Type* const element_type= array_type->getElementType();
+		size_t element_size= data_layout_.getTypeAllocSize(element_type);
+
+		std::vector<llvm::Constant*> initializers( array_type->getNumElements(), nullptr );
+		for( unsigned int i= 0u; i < array_type->getNumElements(); ++i )
+			initializers[i]= CreateInitializerForStructElement( array_type->getElementType(), element_ptr + i * element_size );
+
+		return llvm::ConstantArray::get( array_type, initializers );
+	}
+	else if( type->isStructTy() )
+	{
+		llvm::StructType* const struct_type= llvm::dyn_cast<llvm::StructType>(type);
+		const llvm::StructLayout& struct_layout= *data_layout_.getStructLayout( struct_type );
+
+		std::vector<llvm::Constant*> initializers( struct_type->getNumElements(), nullptr );
+		for( unsigned int i= 0u; i < struct_type->getNumElements(); ++i )
+			initializers[i]= CreateInitializerForStructElement( struct_type->getElementType(i), element_ptr + struct_layout.getElementOffset(i) );
+
+		return llvm::ConstantStruct::get( struct_type, initializers );
+	}
+	else U_ASSERT(false);
+
+	return nullptr;
 }
 
 llvm::GenericValue ConstexprFunctionEvaluator::GetVal( const llvm::Value* const val )

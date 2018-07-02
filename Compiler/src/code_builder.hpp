@@ -313,6 +313,10 @@ private:
 		const Type& type,
 		FunctionContext& function_context );
 
+	void MoveConstantToMemory(
+		llvm::Value* ptr, llvm::Constant* constant,
+		FunctionContext& function_context );
+
 	void TryCallCopyConstructor(
 		const FilePos& file_pos,
 		llvm::Value* this_, llvm::Value* src,
