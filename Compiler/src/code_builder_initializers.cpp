@@ -568,7 +568,7 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 
 			function_context.variables_state.Move( *initializer_variable.referenced_variables.begin() );
 
-			return nullptr;
+			return initializer_variable.constexpr_value; // Move can preserve constexpr.
 		}
 
 		const NamesScope::InsertedName* constructor_name=
@@ -668,6 +668,7 @@ llvm::Constant* CodeBuilder::ApplyExpressionInitializer(
 			U_ASSERT( expression_result.referenced_variables.size() == 1u );
 			function_context.variables_state.Move( *expression_result.referenced_variables.begin() );
 			CopyBytes( expression_result.llvm_value, variable.llvm_value, variable.type, function_context );
+			return expression_result.constexpr_value; // Move can preserve constexpr.
 		}
 		else
 		{

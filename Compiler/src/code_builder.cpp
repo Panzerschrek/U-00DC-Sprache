@@ -3392,6 +3392,7 @@ ProgramString CodeBuilder::BuildAutoVariableDeclarationCode(
 				function_context.variables_state.Move( variable_for_move );
 
 				CopyBytes( initializer_experrsion.llvm_value, variable.llvm_value, variable.type, function_context );
+				variable.constexpr_value= initializer_experrsion.constexpr_value; // Move can preserve constexpr.
 			}
 			else
 				TryCallCopyConstructor(
