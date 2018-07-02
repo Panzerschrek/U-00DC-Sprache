@@ -17,6 +17,59 @@ def ConstexprHalt_Test0():
 	assert( errors_list[0].file_pos.line == 8 )
 
 
+def ConstexprFunctionEvaluationError_Test0():
+	c_program_text= """
+		type fn_ptr= fn();
+		fn constexpr Foo( fn_ptr ptr ) : i32
+		{
+			return 0;
+		}
+
+		fn Bar(){}
+		auto constexpr x= Foo( fn_ptr(Bar) );  // Passing function pointer to constexpr function.
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ConstexprFunctionEvaluationError" )
+	assert( errors_list[0].file_pos.line == 9 )
+
+
+def ConstexprFunctionEvaluationError_Test1():
+	c_program_text= """
+		type fn_ptr= fn();
+		struct S{ fn_ptr ptr; }
+		fn constexpr Foo( S s ) : i32
+		{
+			return 0;
+		}
+
+		fn Bar(){}
+		var S constexpr s{ .ptr(Bar) };
+		auto constexpr x= Foo( s );  // Passing function pointer to constexpr function.
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ConstexprFunctionEvaluationError" )
+	assert( errors_list[0].file_pos.line == 11 )
+
+
+def ConstexprFunctionEvaluationError_Test2():
+	c_program_text= """
+		type fn_ptr= fn();
+		fn Bar(){}
+		fn constexpr Foo() : fn_ptr
+		{
+			return fn_ptr(Bar);
+		}
+
+		auto constexpr x= Foo();  // Returning function pointer in constexpr function.
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ConstexprFunctionEvaluationError" )
+	assert( errors_list[0].file_pos.line == 9 )
+
+
 def ConstexprFunctionsMustHaveBody_Test0():
 	c_program_text= """
 		fn constexpr Foo();

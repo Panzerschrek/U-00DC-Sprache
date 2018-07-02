@@ -99,6 +99,8 @@ ConstexprFunctionEvaluator::Result ConstexprFunctionEvaluator::Evaluate(
 	}
 	else if( const Class* const struct_type= function_type.return_type.GetClassType() )
 		result.result_constant= CreateInitializerForStructElement( struct_type->llvm_type, s_ret_ptr );
+	else if( function_type.return_type.GetFunctionPointerType() != nullptr )
+		errors_.push_back( ReportConstexprFunctionEvaluationError( *file_pos_, "returning function pointer in constexpr function" ) );
 	else U_ASSERT(false);
 
 	instructions_map_.clear();
@@ -278,10 +280,15 @@ void ConstexprFunctionEvaluator::CopyConstantToStack( const llvm::Constant& cons
 			llvm::Constant* const element= constant.getAggregateElement(i);
 			const size_t element_offset= struct_layout.getElementOffset(i);
 
-			if( element_type->isPointerTy() ) // TODO - what if it is function pointer ?
+			if( element_type->isPointerTy() )
 			{
-				const size_t element_ptr= MoveConstantToStack( *llvm::dyn_cast<llvm::GlobalVariable>(element)->getInitializer() );
-				std::memcpy( stack_.data() + stack_offset + element_offset, &element_ptr, sizeof(size_t) );
+				if( llvm::dyn_cast<llvm::PointerType>(element_type)->getElementType()->isFunctionTy() )
+					errors_.push_back( ReportConstexprFunctionEvaluationError( *file_pos_, "passing function pointer to constexpr function" ) );
+				else
+				{
+					const size_t element_ptr= MoveConstantToStack( *llvm::dyn_cast<llvm::GlobalVariable>(element)->getInitializer() );
+					std::memcpy( stack_.data() + stack_offset + element_offset, &element_ptr, sizeof(size_t) );
+				}
 			}
 			else
 				CopyConstantToStack( *element, stack_offset + element_offset );
@@ -309,6 +316,14 @@ void ConstexprFunctionEvaluator::CopyConstantToStack( const llvm::Constant& cons
 	{
 		const double val= llvm::dyn_cast<llvm::ConstantFP>(&constant)->getValueAPF().convertToDouble();
 		std::memcpy( stack_.data() + stack_offset, &val, sizeof(double) );
+	}
+	else if( constant_type->isPointerTy() )
+	{
+		const llvm::PointerType* const pointer_type= llvm::dyn_cast<llvm::PointerType>(constant_type);
+		if( pointer_type->getElementType()->isFunctionTy() )
+			errors_.push_back( ReportConstexprFunctionEvaluationError( *file_pos_, "passing function pointer to constexpr function" ) );
+		else U_ASSERT(false);
+		std::memset( stack_.data() + stack_offset, 0, data_layout_.getTypeAllocSize( constant_type ) );
 	}
 	else U_ASSERT(false);
 }
@@ -356,6 +371,11 @@ llvm::Constant* ConstexprFunctionEvaluator::CreateInitializerForStructElement( l
 
 		return llvm::ConstantStruct::get( struct_type, initializers );
 	}
+	else if( type->isPointerTy() )
+	{
+		errors_.push_back( ReportConstexprFunctionEvaluationError( *file_pos_, "building constant pointer" ) );
+		return llvm::UndefValue::get( type );
+	}
 	else U_ASSERT(false);
 
 	return nullptr;
@@ -372,6 +392,8 @@ llvm::GenericValue ConstexprFunctionEvaluator::GetVal( const llvm::Value* const 
 			res.DoubleVal= constant_fp->getValueAPF().convertToDouble();
 		else U_ASSERT(false);
 	}
+	else if( llvm::dyn_cast<llvm::Function>(val) != nullptr )
+		errors_.push_back( ReportConstexprFunctionEvaluationError( *file_pos_, "accessing function pointer" ) );
 	else if( const auto constant= llvm::dyn_cast<llvm::Constant>(val) )
 		res.IntVal= constant->getUniqueInteger();
 	else

@@ -72,6 +72,22 @@ def ConstexprReferenceInsideStruct_Test1():
 	tests_lib.build_program( c_program_text )
 
 
+def FunctionPointerInConstexprStruct_Test0():
+	c_program_text= """
+		type fn_ptr= fn();
+		struct S
+		{
+			fn_ptr ref;
+		}
+
+		fn Foo(){}
+
+		var S constexpr s{ .ref= Foo };
+		static_assert( s.ref == fn_ptr(Foo) );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
 def ZeroInitForStructIsConstexpr_Test0():
 	c_program_text= """
 		struct S{ [ f32, 3 ] arr; }
