@@ -142,6 +142,16 @@ def InvalidTypeForConstexprFunction_Test5():
 	assert( errors_list[0].file_pos.line == 7 )
 
 
+def InvalidTypeForConstexprFunction_Test6():
+	c_program_text= """
+		fn constexpr Foo( void& v ) {}   // Currently we can not process "void" arguments.
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "InvalidTypeForConstexprFunction" )
+	assert( errors_list[0].file_pos.line == 2 )
+
+
 def ConstexprFunctionContainsUnallowedOperations_Test0():
 	c_program_text= """
 		// Unsafe blocks not allowed in constexpr functions.

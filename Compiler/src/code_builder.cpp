@@ -2509,6 +2509,8 @@ void CodeBuilder::BuildFuncCode(
 				can_be_constexpr= false; // Allowed only constexpr types.
 			if( arg.is_mutable && arg.is_reference )
 				can_be_constexpr= false;
+			if( arg.type == void_type_ ) // Disallow "void" arguments, because we currently can not constantly convert any reference to "void" in constexpr function call.
+				can_be_constexpr= false;
 		}
 
 		if( !can_be_constexpr )
