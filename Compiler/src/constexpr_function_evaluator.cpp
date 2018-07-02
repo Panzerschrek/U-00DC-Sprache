@@ -83,36 +83,23 @@ ConstexprFunctionEvaluator::Result ConstexprFunctionEvaluator::Evaluate(
 	result.errors= std::move(errors_);
 	errors_= {};
 
-	if( function_type.return_value_is_reference )
+	U_ASSERT( !function_type.return_value_is_reference ); // Currently can not return references.
+	if( const FundamentalType* const fundamental= function_type.return_type.GetFundamentalType() )
 	{
-		U_ASSERT(false);
-	}
-	else
-	{
-		if( const FundamentalType* const fundamental= function_type.return_type.GetFundamentalType() )
-		{
-			if( IsInteger( fundamental->fundamental_type ) || fundamental->fundamental_type == U_FundamentalType::Bool )
-				result.result_constant= llvm::Constant::getIntegerValue( function_type.return_type.GetLLVMType(), res.IntVal );
-			else if( IsFloatingPoint( fundamental->fundamental_type ) )
-			{
-				result.result_constant=
-					llvm::ConstantFP::get(
-						function_type.return_type.GetLLVMType(),
-						fundamental->fundamental_type == U_FundamentalType::f32 ? double(res.FloatVal) : res.DoubleVal );
-			}
-			else if( fundamental->fundamental_type == U_FundamentalType::Void )
-			{
-				result.result_constant= llvm::UndefValue::get( function_type.return_type.GetLLVMType() ); // TODO - set correct value
-			}
-			else
-				U_ASSERT(false);
-		}
-		else if( const Class* const struct_type= function_type.return_type.GetClassType() )
-		{
-			result.result_constant= CreateInitializerForStructElement( struct_type->llvm_type, s_ret_ptr );
-		}
+		if( IsInteger( fundamental->fundamental_type ) || fundamental->fundamental_type == U_FundamentalType::Bool )
+			result.result_constant= llvm::Constant::getIntegerValue( function_type.return_type.GetLLVMType(), res.IntVal );
+		else if( IsFloatingPoint( fundamental->fundamental_type ) )
+			result.result_constant=
+				llvm::ConstantFP::get(
+					function_type.return_type.GetLLVMType(),
+					fundamental->fundamental_type == U_FundamentalType::f32 ? double(res.FloatVal) : res.DoubleVal );
+		else if( fundamental->fundamental_type == U_FundamentalType::Void )
+			result.result_constant= llvm::UndefValue::get( function_type.return_type.GetLLVMType() ); // TODO - set correct value
 		else U_ASSERT(false);
 	}
+	else if( const Class* const struct_type= function_type.return_type.GetClassType() )
+		result.result_constant= CreateInitializerForStructElement( struct_type->llvm_type, s_ret_ptr );
+	else U_ASSERT(false);
 
 	instructions_map_.clear();
 	stack_.clear();

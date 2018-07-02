@@ -2400,18 +2400,15 @@ Value CodeBuilder::DoCallFunction(
 	{
 		if( func_is_constexpr && constant_llvm_args.size() == llvm_args.size() )
 		{
-			// TODO - check errors.
 			const ConstexprFunctionEvaluator::Result evaluation_result=
 				ConstexprFunctionEvaluator( module_->getDataLayout() ).Evaluate( function_type, llvm::dyn_cast<llvm::Function>(function), constant_llvm_args, call_file_pos );
 
 			errors_.insert( errors_.end(), evaluation_result.errors.begin(), evaluation_result.errors.end() );
 			if( evaluation_result.errors.empty() && evaluation_result.result_constant != nullptr )
 			{
-				if( return_value_is_sret )
-				{
-					// We needs here block of memory with result constant struct.
+				if( return_value_is_sret ) // We needs here block of memory with result constant struct.
 					MoveConstantToMemory( s_ret_value, evaluation_result.result_constant, function_context );
-				}
+
 				call_result= evaluation_result.result_constant;
 				constant_call_result= evaluation_result.result_constant;
 			}
