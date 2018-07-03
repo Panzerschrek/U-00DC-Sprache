@@ -543,7 +543,7 @@ U_TEST(DecrementTest1)
 	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foot" );
 	U_TEST_ASSERT( function != nullptr );
 
-	static const uint64_t values[]=
+	static const uint16_t values[]=
 	{
 		std::numeric_limits<uint16_t>::min(), std::numeric_limits<uint16_t>::max(), 0u,
 		1u, 2u, 3u, 12u, 17u, 65534u, 58u, 84u,

@@ -2183,7 +2183,7 @@ Value CodeBuilder::DoCallFunction(
 			expr= *expr_val.GetVariable();
 		}
 
-		const FilePos& file_pos= is_first_arg ? file_pos : args[ j - first_arg_count ]->GetFilePos();
+		const FilePos& file_pos= is_first_arg ? call_file_pos : args[ j - first_arg_count ]->GetFilePos();
 
 		const bool something_have_template_dependent_type= expr.type.GetTemplateDependentType() != nullptr || arg.type.GetTemplateDependentType() != nullptr;
 		function_result_have_template_dependent_type= function_result_have_template_dependent_type || something_have_template_dependent_type;

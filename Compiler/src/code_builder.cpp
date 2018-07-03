@@ -2214,7 +2214,7 @@ void CodeBuilder::BuildFuncCode(
 		// TODO - maybe mark immutable reference-parameters as "noalias"?
 		for( size_t i= 0u; i < function_type->args.size(); i++ )
 		{
-			const size_t arg_attr_index= i + 1u + (first_arg_is_sret ? 1u : 0u );
+			const unsigned int arg_attr_index= static_cast<unsigned int>(i + 1u + (first_arg_is_sret ? 1u : 0u ));
 			if (function_type->args[i].is_reference )
 				llvm_function->addAttribute( arg_attr_index, llvm::Attribute::NonNull );
 			else
@@ -2858,7 +2858,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockCode(
 		const auto try_report_unreachable_code=
 		[&]
 		{
-			const unsigned int block_element_index= &block_element - block.elements_.data();
+			const size_t block_element_index= size_t(&block_element - block.elements_.data());
 			if( block_element_index + 1u < block.elements_.size() )
 				errors_.push_back( ReportUnreachableCode( block.elements_[ block_element_index + 1u ]->GetFilePos() ) );
 		};

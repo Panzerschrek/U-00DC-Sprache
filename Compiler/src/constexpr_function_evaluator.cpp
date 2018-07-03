@@ -177,7 +177,7 @@ llvm::GenericValue ConstexprFunctionEvaluator::CallFunction( const llvm::Functio
 			{
 				const auto phi_node= llvm::dyn_cast<llvm::PHINode>(instruction);
 
-				for (size_t i= 0u; i < phi_node->getNumIncomingValues(); ++i )
+				for (unsigned int i= 0u; i < phi_node->getNumIncomingValues(); ++i )
 				{
 					if( phi_node->getIncomingBlock(i) == prev_basic_block)
 					{
@@ -274,7 +274,7 @@ void ConstexprFunctionEvaluator::CopyConstantToStack( const llvm::Constant& cons
 	{
 		const llvm::StructLayout& struct_layout= *data_layout_.getStructLayout( struct_type );
 
-		size_t i= 0u;
+		unsigned int i= 0u;
 		for( llvm::Type* const element_type : struct_type->elements() )
 		{
 			llvm::Constant* const element= constant.getAggregateElement(i);
@@ -527,7 +527,7 @@ void ConstexprFunctionEvaluator::ProcessCall( const llvm::Instruction* const ins
 
 	const size_t prev_stack_size= stack_.size();
 
-	size_t i= 0u;
+	unsigned int i= 0u;
 	for( const llvm::Argument& arg : function->args() )
 	{
 		if( arg.hasByValAttr() )

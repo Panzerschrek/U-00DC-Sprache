@@ -35,17 +35,17 @@ static bool ReadFile( const char* const name, U::ProgramString& out_file_content
 		return false;
 
 	std::fseek( f, 0, SEEK_END );
-	const unsigned int file_size= std::ftell( f );
+	const size_t file_size= size_t(std::ftell( f ));
 	std::fseek( f, 0, SEEK_SET );
 
 	std::vector<char> file_content_raw( file_size );
 
-	unsigned int read_total= 0u;
+	size_t read_total= 0u;
 	bool read_error= false;
 	do
 	{
-		const int read= std::fread( static_cast<char*>(file_content_raw.data()) + read_total, 1, file_size - read_total, f );
-		if( read < 0 )
+		const size_t read= std::fread( static_cast<char*>(file_content_raw.data()) + read_total, 1, file_size - read_total, f );
+		if( std::ferror(f) != 0 )
 		{
 			read_error= true;
 			break;
