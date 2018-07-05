@@ -733,6 +733,7 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 
 	Class* the_class= nullptr;
 	ClassProxyPtr the_class_proxy;
+	NamesScope* class_parent_namespace= &names_scope;
 	if( previous_declaration == nullptr )
 	{
 		the_class_proxy= std::make_shared<ClassProxy>( new Class( class_name, &names_scope ) );
@@ -769,6 +770,10 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 				}
 				the_class_proxy= previous_class;
 				the_class= previous_class->class_.get();
+
+				class_parent_namespace= const_cast<NamesScope*>(previous_class->class_->members.GetParent());   // const cast is HACK here
+				if( class_parent_namespace != &names_scope && !names_scope.IsAncestorFor( *class_parent_namespace ) )
+					errors_.push_back( ReportDeclarationOutsideEnclosingNamespace( class_declaration.file_pos_ ) );
 			}
 		}
 		if( the_class == nullptr )
@@ -787,7 +792,7 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 
 	for( const Synt::ComplexName& parent : class_declaration.parents_ )
 	{
-		const NamesScope::InsertedName* const parent_name= ResolveName( class_declaration.file_pos_, names_scope, parent );
+		const NamesScope::InsertedName* const parent_name= ResolveName( class_declaration.file_pos_, *class_parent_namespace, parent );
 		if( parent_name == nullptr )
 		{
 			errors_.push_back( ReportNameNotFound( class_declaration.file_pos_, parent ) );
@@ -1754,6 +1759,10 @@ CodeBuilder::PrepareFunctionResult CodeBuilder::PrepareFunction(
 				errors_.push_back( ReportNameNotFound( func.file_pos_, func.name_ ) );
 				return result;
 			}
+
+			if( &func_definition_names_scope != func_base_names_scope &&
+				!func_definition_names_scope.IsAncestorFor( *func_base_names_scope ) )
+				errors_.push_back( ReportDeclarationOutsideEnclosingNamespace( func.file_pos_ ) );
 
 			is_body_outside_scope= true;
 		}

@@ -93,15 +93,15 @@ U_TEST( ClassesDeclarationTest3 )
 
 	static const char c_program_text[]=
 	R"(
-		struct A;
 		namespace Private
 		{
-			struct ::A // full class body declared in other namespace
-			{ i32 x; }
+			struct A;
 		}
+		struct Private::A // full class body declared in other namespace
+		{ i32 x; }
 		fn Foo() : i32
 		{
-			var A a{ .x= 586 };
+			var Private::A a{ .x= 586 };
 			return a.x;
 		}
 	)";

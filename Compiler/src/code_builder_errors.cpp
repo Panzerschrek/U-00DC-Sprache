@@ -19,6 +19,8 @@ const char* CodeBuilderErrorCodeToString( const CodeBuilderErrorCode code )
 		return "UsingKeywordAsName";
 	case CodeBuilderErrorCode::Redefinition:
 		return "Redefinition";
+	case CodeBuilderErrorCode::DeclarationOutsideEnclosingNamespace:
+		return "DeclarationOutsideEnclosingNamespace";
 	case CodeBuilderErrorCode::UnknownNumericConstantType:
 		return "UnknownNumericConstantType";
 	case CodeBuilderErrorCode::OperationNotSupportedForThisType:
@@ -349,6 +351,17 @@ CodeBuilderError ReportRedefinition( const FilePos& file_pos, const ProgramStrin
 	error.code= CodeBuilderErrorCode::Redefinition;
 
 	error.text= name + " redefinition."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportDeclarationOutsideEnclosingNamespace( const FilePos& file_pos )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::DeclarationOutsideEnclosingNamespace;
+
+	error.text= "Declaration outside enclosing namespace."_SpC;
 
 	return error;
 }

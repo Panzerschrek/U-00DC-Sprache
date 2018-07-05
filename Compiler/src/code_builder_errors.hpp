@@ -17,6 +17,7 @@ enum class CodeBuilderErrorCode : unsigned int
 	NameNotFound= 101u,
 	UsingKeywordAsName,
 	Redefinition,
+	DeclarationOutsideEnclosingNamespace,
 	UnknownNumericConstantType,
 	OperationNotSupportedForThisType,
 	TypesMismatch,
@@ -200,6 +201,7 @@ CodeBuilderError ReportNameNotFound( const FilePos& file_pos, const ProgramStrin
 CodeBuilderError ReportNameNotFound( const FilePos& file_pos, const Synt::ComplexName& name );
 CodeBuilderError ReportUsingKeywordAsName( const FilePos& file_pos );
 CodeBuilderError ReportRedefinition( const FilePos& file_pos, const ProgramString& name );
+CodeBuilderError ReportDeclarationOutsideEnclosingNamespace( const FilePos& file_pos );
 CodeBuilderError ReportUnknownNumericConstantType( const FilePos& file_pos, const ProgramString& unknown_type );
 CodeBuilderError ReportOperationNotSupportedForThisType( const FilePos& file_pos, const ProgramString& type_name );
 CodeBuilderError ReportTypesMismatch( const FilePos& file_pos, const ProgramString& expected_type_name, const ProgramString& actual_type_name );
