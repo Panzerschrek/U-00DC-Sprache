@@ -134,34 +134,12 @@ ProgramString CodeBuilder::PrepareTypeTemplate(
 		if( !template_parameters_usage_flags[i] )
 			errors_.push_back( ReportTemplateArgumentNotUsedInSignature( type_template_declaration.file_pos_, type_template->template_parameters[i].name ) );
 
-	// Make first check-pass for template. Resolve all names in this pass.
-
-	Synt::ComplexName temp_class_name;
-	temp_class_name.components.emplace_back();
-	temp_class_name.components.back().name = "_temp"_SpC + type_template_name;
-	temp_class_name.components.back().is_generated= true;
-
+	// Make name resolving pass.
 	if( const Synt::ClassTemplate* const template_class= dynamic_cast<const Synt::ClassTemplate*>( &type_template_declaration ) )
-	{
-		/*const ClassProxyPtr class_proxy= PrepareClass( *template_class->class_, temp_class_name, *template_parameters_namespace );
-
-		if( class_proxy != nullptr )
-		{
-			ReportAboutIncompleteMembersOfTemplateClass( type_template_declaration.file_pos_, *class_proxy->class_ );
-
-			// Remove llvm functions and variables of temp class.
-			// Clear dummy function before it, because dummy function can contain references to removed functions.
-			CleareDummyFunction();
-			RemoveTempClassLLVMValues( *class_proxy->class_ );
-		}*/
 		PreResovleClass( *template_class->class_, *template_parameters_namespace, false );
-	}
 	else if( const Synt::TypedefTemplate* const typedef_template= dynamic_cast<const Synt::TypedefTemplate*>( &type_template_declaration ) )
-	{
 		PrepareType( typedef_template->typedef_->value, *template_parameters_namespace );
-	}
-	else
-		U_ASSERT(false);
+	else U_ASSERT(false);
 
 	PopResolveHandler();
 
@@ -206,9 +184,10 @@ void CodeBuilder::PrepareFunctionTemplate(
 		*template_parameters_namespace,
 		template_parameters_usage_flags );
 
-	// Make first check-pass for template. Resolve all names in this pass.
-	const PrepareFunctionResult prepare_result=
-		PrepareFunction( *function_template_declaration.function_, false, base_class, *template_parameters_namespace );
+	// Make name resolving pass.
+	PreResolveFunctionPrototype( *function_template_declaration.function_, *template_parameters_namespace );
+	if( function_template_declaration.function_->block_ != nullptr )
+		PreResolveFunctionBody( *function_template_declaration.function_, *template_parameters_namespace );
 
 	PopResolveHandler();
 
@@ -234,18 +213,6 @@ void CodeBuilder::PrepareFunctionTemplate(
 
 		if( base_class != nullptr )
 			base_class->class_->SetMemberVisibility( function_template_name, visibility );
-	}
-
-	// Remove temp llvm function.
-	if( prepare_result.functions_set != nullptr )
-	{
-		llvm::Function* const llvm_function= prepare_result.functions_set->functions[prepare_result.function_index].llvm_function;
-		if( llvm_function != nullptr )
-		{
-			// Clear dummy function before it, because dummy function can contain references to removed functions.
-			CleareDummyFunction();
-			llvm_function->eraseFromParent();
-		}
 	}
 }
 

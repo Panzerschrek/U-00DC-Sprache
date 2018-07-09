@@ -430,6 +430,8 @@ def ReferenceTagsForTemplateDependentType_Test2():
 	c_program_text= """
 		template</ type T />
 		fn Foo( i32 x'a' ) : T { return T(); }  // Invalid tag count for non-template-dependent argument of template function.
+
+		var (fn(i32 x ) : i32) constexpr ptr( Foo</i32/> );
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
@@ -441,6 +443,8 @@ def ReferenceTagsForTemplateDependentType_Test3():
 	c_program_text= """
 		template</ type T />
 		fn Foo( T t ) : i32'a' { return T(); }  // Invalid tag count for non-template-dependent return type of template function.
+
+		var (fn(i32 x ) : i32) constexpr ptr( Foo</i32/> );
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )

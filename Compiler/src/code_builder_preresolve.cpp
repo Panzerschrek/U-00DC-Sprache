@@ -180,6 +180,8 @@ void CodeBuilder::PreResolveType( const Synt::ITypeName& type_name, NamesScope& 
 
 void CodeBuilder::PreResolveFunctionPrototype( const Synt::Function& function, NamesScope& names )
 {
+	names.AddName( function.name_.components.back().name, g_name_stub );
+
 	for( const Synt::FunctionArgumentPtr& arg : function.type_.arguments_ )
 	{
 		if( arg->type_ != nullptr ) // May be null for "this"

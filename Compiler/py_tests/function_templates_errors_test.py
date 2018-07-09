@@ -127,61 +127,7 @@ def VirtualForFunctionTemplate_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "VirtualForFunctionTemplate" )
-	assert( errors_list[0].file_pos.line == 3 )
-
-
-def DeclarationShadowsTemplateArgument_Test0():
-	c_program_text= """
-		template</ type T />
-		fn Foo()
-		{
-			var i32 T= 0;  // Error, local variable "T" shadows template argument.
-		}
-	"""
-	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "DeclarationShadowsTemplateArgument" )
-	assert( errors_list[0].file_pos.line == 5 )
-
-
-def DeclarationShadowsTemplateArgument_Test1():
-	c_program_text= """
-		template</ type T />
-		fn Foo()
-		{
-			auto T= 0;  // Error, local auto-variable "T" shadows template argument.
-		}
-	"""
-	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "DeclarationShadowsTemplateArgument" )
-	assert( errors_list[0].file_pos.line == 5 )
-
-
-def DeclarationShadowsTemplateArgument_Test2():
-	c_program_text= """
-		template</ type T />
-		fn Foo( i32 T ) {}  // Error, function argument shadows template argument.
-	"""
-	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "DeclarationShadowsTemplateArgument" )
-	assert( errors_list[0].file_pos.line == 3 )
-
-
-def DeclarationShadowsTemplateArgument_Test3():
-	c_program_text= """
-		template</ type T />
-		struct S
-		{
-			template</ type T />  // Error, shadowing upper-level template parameter.
-			fn Foo(){}
-		}
-	"""
-	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "DeclarationShadowsTemplateArgument" )
-	assert( errors_list[0].file_pos.line == 5 )
+	assert( errors_list[0].file_pos.line == 2 )
 
 
 def TemplateParametersDeductionFailed_Test0():
