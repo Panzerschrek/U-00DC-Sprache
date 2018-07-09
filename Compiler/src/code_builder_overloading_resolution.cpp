@@ -355,12 +355,6 @@ const FunctionVariable* CodeBuilder::GetOverloadedFunction(
 		bool all_args_is_compatible= true;
 		for( unsigned int i= 0u; i < actial_arg_count; i++ )
 		{
-			// Function signature is template-dependent. Just return this function.
-			// Something is template-dependent. In this case we can return any function with proper number of arguments.
-			if( function_type.args[i].type.GetTemplateDependentType() != nullptr ||
-				actual_args_begin[i].type.GetTemplateDependentType() != nullptr )
-				return &function;
-
 			const bool types_are_same= actual_args_begin[i].type == function_type.args[i].type;
 			if( !types_are_same )
 			{

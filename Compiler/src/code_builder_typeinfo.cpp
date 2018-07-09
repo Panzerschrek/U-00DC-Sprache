@@ -25,18 +25,6 @@ Value CodeBuilder::BuildTypeinfoOperator( const Synt::TypeInfo& typeinfo_op, Nam
 
 Variable CodeBuilder::BuildTypeInfo( const Type& type, const NamesScope& root_namespace, const FilePos& file_pos )
 {
-	if( type.GetTemplateDependentType() != nullptr )
-	{
-		Variable result;
-		result.type= GetNextTemplateDependentType();
-		result.location= Variable::Location::Pointer;
-		result.value_type= ValueType::ConstReference;
-
-		result.constexpr_value= llvm::UndefValue::get( fundamental_llvm_types_.invalid_type_ );
-		result.llvm_value= llvm::UndefValue::get( llvm::PointerType::get( fundamental_llvm_types_.invalid_type_, 0u ) );
-		return result;
-	}
-
 	// Search in cache.
 	for( const auto& cache_value : typeinfo_cache_ )
 		if( cache_value.first == type )
@@ -164,8 +152,6 @@ Variable CodeBuilder::BuildTypeInfo( const Type& type, const NamesScope& root_na
 	{
 		// SPRACHE_DOTO - add complete information about function pointer type - arguments, return value, pollution, unsafe, etc.
 	}
-	else if( type.GetTemplateDependentType() != nullptr )
-	{}
 	else U_ASSERT(false);
 
 	// TODO - add other stuff

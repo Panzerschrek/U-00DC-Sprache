@@ -46,10 +46,6 @@ FundamentalType::FundamentalType(
 	, llvm_type(in_llvm_type)
 {}
 
-TemplateDependentType::TemplateDependentType( const size_t in_index, llvm::Type* const in_llvm_type )
-	: index(in_index)
-	, llvm_type( in_llvm_type )
-{}
 
 bool operator==( const FundamentalType& r, const FundamentalType& l )
 {
@@ -57,16 +53,6 @@ bool operator==( const FundamentalType& r, const FundamentalType& l )
 }
 
 bool operator!=( const FundamentalType& r, const FundamentalType& l )
-{
-	return !( r == l );
-}
-
-bool operator==( const TemplateDependentType& r, const TemplateDependentType& l )
-{
-	return r.index == l.index;
-}
-
-bool operator!=( const TemplateDependentType& r, const TemplateDependentType& l )
 {
 	return !( r == l );
 }
@@ -121,11 +107,6 @@ Type::Type( const NontypeStub nontype_strub )
 	something_= nontype_strub;
 }
 
-Type::Type( TemplateDependentType template_dependent_type )
-{
-	something_= std::move( template_dependent_type );
-}
-
 Type& Type::operator=( const Type& other )
 {
 	struct Visitor final : public boost::static_visitor<>
@@ -166,11 +147,6 @@ Type& Type::operator=( const Type& other )
 		void operator()( const NontypeStub& stub )
 		{
 			this_.something_= stub;
-		}
-
-		void operator()( const TemplateDependentType& template_dependent_type )
-		{
-			this_.something_= template_dependent_type;
 		}
 
 		void operator()( const FunctionPointerPtr& function_pointer )
@@ -267,16 +243,6 @@ Enum* Type::GetEnumType() const
 	return enum_ptr->get();
 }
 
-TemplateDependentType* Type::GetTemplateDependentType()
-{
-	return boost::get<TemplateDependentType>( &something_ );
-}
-
-const TemplateDependentType* Type::GetTemplateDependentType() const
-{
-	return boost::get<TemplateDependentType>( &something_ );
-}
-
 bool Type::ReferenceIsConvertibleTo( const Type& other ) const
 {
 	if( *this == other )
@@ -298,13 +264,7 @@ bool Type::ReferenceIsConvertibleTo( const Type& other ) const
 			if( Type(parent).ReferenceIsConvertibleTo( other ) )
 				return true;
 		}
-
-		if( class_type->have_template_dependent_parents || other_class_type->have_template_dependent_parents )
-			return true;
 	}
-
-	if( this->GetTemplateDependentType() != nullptr || other.GetTemplateDependentType() != nullptr )
-		return true;
 
 	return false;
 }
@@ -343,12 +303,6 @@ SizeType Type::SizeOf() const
 		SizeType operator()( const NontypeStub& ) const
 		{
 			U_ASSERT( false && "SizeOf method not supported for stub types." );
-			return 1u;
-		}
-
-		SizeType operator()( const TemplateDependentType& ) const
-		{
-			U_ASSERT( false && "SizeOf method not supported for template-dependent types." );
 			return 1u;
 		}
 
@@ -465,10 +419,6 @@ bool Type::CanBeConstexpr() const
 		U_ASSERT( *array != nullptr );
 		return (*array)->type.CanBeConstexpr();
 	}
-	else if( boost::get<TemplateDependentType>( &something_ ) != nullptr )
-	{
-		return true;
-	}
 	else if( const Class* const class_= GetClassType() )
 		return class_->can_be_constexpr;
 
@@ -525,11 +475,6 @@ llvm::Type* Type::GetLLVMType() const
 		llvm::Type* operator()( const NontypeStub& ) const
 		{
 			return nullptr;
-		}
-
-		llvm::Type* operator()( const TemplateDependentType& template_dependent_type ) const
-		{
-			return template_dependent_type.llvm_type;
 		}
 
 		llvm::Type* operator()( const FunctionPointerPtr& function_pointer_type ) const
@@ -605,8 +550,6 @@ ProgramString Type::ToString() const
 				return "namespace"_SpC;
 			case NontypeStub::TypeTemplate:
 				return "type template"_SpC;
-			case NontypeStub::TemplateDependentValue:
-				return "template-dependent value"_SpC;
 			case NontypeStub::YetNotDeducedTemplateArg:
 				return "yet not deduced template arg"_SpC;
 			case NontypeStub::ErrorValue:
@@ -616,11 +559,6 @@ ProgramString Type::ToString() const
 			};
 			U_ASSERT(false);
 			return ProgramString();
-		}
-
-		ProgramString operator()( const TemplateDependentType& ) const
-		{
-			return "template dependent type"_SpC;
 		}
 
 		ProgramString operator()( const FunctionPointerPtr& function_pointer ) const
@@ -662,11 +600,7 @@ bool operator==( const Type& r, const Type& l )
 	{
 		return boost::get<NontypeStub>(r.something_) == boost::get<NontypeStub>(l.something_);
 	}
-	else if( r.something_.which() ==6 )
-	{
-		return boost::get<TemplateDependentType>(r.something_) == boost::get<TemplateDependentType>(l.something_);
-	}
-	else if( r.something_.which() ==7 )
+	else if( r.something_.which() == 6 )
 	{
 		return *r.GetFunctionPointerType() == *l.GetFunctionPointerType();
 	}
@@ -1050,7 +984,6 @@ static const Type g_this_overloaded_methods_set_stub_type=NontypeStub::ThisOverl
 static const Type g_typename_type_stub= NontypeStub::TypeName;
 static const Type g_namespace_type_stub= NontypeStub::Namespace;
 static const Type g_type_template_type_stub= NontypeStub::TypeTemplate;
-static const Type g_template_dependent_type_stub= NontypeStub::TemplateDependentValue;
 static const Type g_yet_not_deduced_template_arg_type_stub= NontypeStub::YetNotDeducedTemplateArg;
 static const Type g_error_value_type_stub= NontypeStub::ErrorValue;
 static const Type g_variable_storage_type_stub= NontypeStub::VariableStorage;
@@ -1111,11 +1044,6 @@ Value::Value( TypeTemplatesSet type_templates, const FilePos& file_pos )
 	something_= std::move(type_templates);
 }
 
-Value::Value( TemplateDependentValue template_dependent_value )
-{
-	something_= std::move(template_dependent_value);
-}
-
 Value::Value( YetNotDeducedTemplateArg yet_not_deduced_template_arg )
 {
 	something_= std::move(yet_not_deduced_template_arg);
@@ -1156,9 +1084,6 @@ const Type& Value::GetType() const
 
 		const Type& operator()( const TypeTemplatesSet& ) const
 		{ return g_type_template_type_stub; }
-
-		const Type& operator()( const TemplateDependentValue& ) const
-		{ return g_template_dependent_type_stub; }
 
 		const Type& operator()( const YetNotDeducedTemplateArg& ) const
 		{ return g_yet_not_deduced_template_arg_type_stub; }
@@ -1271,16 +1196,6 @@ const TypeTemplatesSet* Value::GetTypeTemplatesSet() const
 	return boost::get<TypeTemplatesSet>( &something_ );
 }
 
-TemplateDependentValue* Value::GetTemplateDependentValue()
-{
-	return boost::get<TemplateDependentValue>( &something_ );
-}
-
-const TemplateDependentValue* Value::GetTemplateDependentValue() const
-{
-	return boost::get<TemplateDependentValue>( &something_ );
-}
-
 YetNotDeducedTemplateArg* Value::GetYetNotDeducedTemplateArg()
 {
 	return boost::get<YetNotDeducedTemplateArg>( &something_ );
@@ -1376,16 +1291,6 @@ NamesScope::InsertedName* NamesScope::GetThisScopeName( const ProgramString& nam
 	if( it != names_map_.end() )
 		return const_cast<InsertedName*>(&*it);
 	return nullptr;
-}
-
-NamesScope::InsertedName& NamesScope::GetTemplateDependentValue()
-{
-	const ProgramString name= "0_tdv"_SpC; // use identifier with number start - that can not exists in real program.
-	const auto it= names_map_.find(name);
-	if( it != names_map_.end() )
-		return *it;
-
-	return *names_map_.emplace( name, TemplateDependentValue() ).first;
 }
 
 const NamesScope* NamesScope::GetParent() const

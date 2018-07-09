@@ -66,14 +66,6 @@ struct FundamentalType final
 	FundamentalType( U_FundamentalType fundamental_type= U_FundamentalType::Void, llvm::Type* llvm_type= nullptr );
 };
 
-struct TemplateDependentType
-{
-	size_t index;
-	llvm::Type* llvm_type;
-
-	TemplateDependentType( size_t in_index, llvm::Type* in_llvm_type );
-};
-
 // Stub for type of non-variable "Values".
 enum class NontypeStub
 {
@@ -82,7 +74,6 @@ enum class NontypeStub
 	TypeName,
 	Namespace,
 	TypeTemplate,
-	TemplateDependentValue,
 	YetNotDeducedTemplateArg,
 	ErrorValue,
 	VariableStorage,
@@ -90,9 +81,6 @@ enum class NontypeStub
 
 bool operator==( const FundamentalType& r, const FundamentalType& l );
 bool operator!=( const FundamentalType& r, const FundamentalType& l );
-
-bool operator==( const TemplateDependentType& r, const TemplateDependentType& l );
-bool operator!=( const TemplateDependentType& r, const TemplateDependentType& l );
 
 class Type final
 {
@@ -114,7 +102,6 @@ public:
 	Type( ClassProxyPtr class_type );
 	Type( EnumPtr enum_type );
 	Type( NontypeStub nontype_strub );
-	Type( TemplateDependentType template_dependent_type );
 
 	// Get different type kinds.
 	FundamentalType* GetFundamentalType();
@@ -128,8 +115,6 @@ public:
 	ClassProxyPtr GetClassTypeProxy() const;
 	Class* GetClassType() const;
 	Enum* GetEnumType() const;
-	TemplateDependentType* GetTemplateDependentType();
-	const TemplateDependentType* GetTemplateDependentType() const;
 
 	bool ReferenceIsConvertibleTo( const Type& other ) const;
 
@@ -161,7 +146,6 @@ private:
 		ClassProxyPtr,
 		EnumPtr,
 		NontypeStub,
-		TemplateDependentType,
 		FunctionPointerPtr> something_;
 };
 
@@ -420,9 +404,6 @@ struct ThisOverloadedMethodsSet final
 	OverloadedFunctionsSet overloaded_methods_set;
 };
 
-struct TemplateDependentValue final
-{};
-
 struct YetNotDeducedTemplateArg final
 {};
 
@@ -442,7 +423,6 @@ public:
 	Value( ThisOverloadedMethodsSet class_field );
 	Value( const NamesScopePtr& namespace_, const FilePos& file_pos );
 	Value( TypeTemplatesSet type_templates, const FilePos& file_pos );
-	Value( TemplateDependentValue template_dependent_value );
 	Value( YetNotDeducedTemplateArg yet_not_deduced_template_arg );
 	Value( ErrorValue error_value );
 
@@ -477,9 +457,6 @@ public:
 	// Type templates sel
 	TypeTemplatesSet* GetTypeTemplatesSet();
 	const TypeTemplatesSet* GetTypeTemplatesSet() const;
-	// Template-dependent value
-	TemplateDependentValue* GetTemplateDependentValue();
-	const TemplateDependentValue* GetTemplateDependentValue() const;
 	// Yet not deduced template arg
 	YetNotDeducedTemplateArg* GetYetNotDeducedTemplateArg();
 	const YetNotDeducedTemplateArg* GetYetNotDeducedTemplateArg() const;
@@ -498,7 +475,6 @@ private:
 		ThisOverloadedMethodsSet,
 		NamesScopePtr,
 		TypeTemplatesSet,
-		TemplateDependentValue,
 		YetNotDeducedTemplateArg,
 		ErrorValue > something_;
 
@@ -546,7 +522,6 @@ public:
 
 	// Resolve simple name only in this scope.
 	InsertedName* GetThisScopeName( const ProgramString& name ) const;
-	InsertedName& GetTemplateDependentValue();
 
 	const NamesScope* GetParent() const;
 	const NamesScope* GetRoot() const;
@@ -678,7 +653,6 @@ public:
 	bool have_destructor= false;
 	bool is_copy_assignable= false;
 	bool can_be_constexpr= false;
-	bool have_template_dependent_parents= false;
 
 	FilePos forward_declaration_file_pos= FilePos{ 0u, 0u, 0u };
 	FilePos body_file_pos= FilePos{ 0u, 0u, 0u };

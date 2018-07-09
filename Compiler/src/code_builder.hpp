@@ -129,7 +129,6 @@ private:
 	{
 		TypeTemplatePtr type_template;
 		NamesScope::InsertedName* type= nullptr;
-		bool is_template_dependent= false;
 		std::vector<DeducedTemplateParameter> deduced_template_parameters;
 	};
 
@@ -279,7 +278,6 @@ private:
 
 	bool NameShadowsTemplateArgument( const ProgramString& name, NamesScope& names_scope );
 
-	TemplateDependentType GetNextTemplateDependentType();
 	bool TypeIsValidForTemplateVariableArgument( const Type& type );
 
 	// Removes llvm-functions and functions of subclasses.
@@ -829,7 +827,6 @@ private:
 	std::vector< std::pair< Type, Variable > > typeinfo_cache_;
 
 	std::vector<std::unique_ptr<PreResolveFunc>> resolving_funcs_stack_;
-	size_t next_template_dependent_type_index_= 1u;
 };
 
 using MutabilityModifier= Synt::MutabilityModifier;

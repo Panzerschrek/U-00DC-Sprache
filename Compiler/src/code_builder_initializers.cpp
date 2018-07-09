@@ -65,9 +65,6 @@ void CodeBuilder::ApplyEmptyInitializer(
 	const Variable& variable,
 	FunctionContext& function_context )
 {
-	if( variable.type.GetTemplateDependentType() != nullptr )
-		return;
-
 	if( !variable.type.IsDefaultConstructible() )
 	{
 		errors_.push_back( ReportExpectedInitializer( file_pos, variable_name ) );
@@ -129,13 +126,6 @@ llvm::Constant* CodeBuilder::ApplyArrayInitializer(
 	NamesScope& block_names,
 	FunctionContext& function_context )
 {
-	if( variable.type.GetTemplateDependentType() != nullptr )
-	{
-		for( const Synt::IInitializerPtr& sub_initializer : initializer.initializers )
-			ApplyInitializer( variable, variable_storage, *sub_initializer, block_names, function_context );
-		return nullptr;
-	}
-
 	const Array* const array_type= variable.type.GetArrayType();
 	if( array_type == nullptr )
 	{
@@ -201,13 +191,6 @@ llvm::Constant* CodeBuilder::ApplyStructNamedInitializer(
 	NamesScope& block_names,
 	FunctionContext& function_context )
 {
-	if( variable.type.GetTemplateDependentType() != nullptr )
-	{
-		for( const Synt::StructNamedInitializer::MemberInitializer& member_initializer : initializer.members_initializers )
-			ApplyInitializer( variable, variable_storage, *member_initializer.initializer, block_names, function_context );
-		return llvm::UndefValue::get( variable.type.GetLLVMType() );
-	}
-
 	const Class* const class_type= variable.type.GetClassType();
 	if( class_type == nullptr || class_type->kind != Class::Kind::Struct )
 	{
@@ -319,13 +302,6 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 	NamesScope& block_names,
 	FunctionContext& function_context )
 {
-	if( variable.type.GetTemplateDependentType() != nullptr )
-	{
-		for( const Synt::IExpressionComponentPtr& arg : call_operator.arguments_ )
-			BuildExpressionCode( *arg, block_names, function_context );
-		return nullptr;
-	}
-
 	if( const FundamentalType* const dst_type= variable.type.GetFundamentalType() )
 	{
 		if( call_operator.arguments_.size() != 1u )
@@ -336,9 +312,6 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 
 		const Value expression_result=
 			BuildExpressionCode( *call_operator.arguments_.front(), block_names, function_context );
-		if( expression_result.GetType() == NontypeStub::TemplateDependentValue ||
-			expression_result.GetType().GetTemplateDependentType() != nullptr )
-			return llvm::UndefValue::get( dst_type->llvm_type );
 
 		const Type expression_type= expression_result.GetType();
 		const FundamentalType* src_type= expression_type.GetFundamentalType();
@@ -493,10 +466,6 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 
 		const Value expression_result=
 			BuildExpressionCode( *call_operator.arguments_.front(), block_names, function_context );
-		if( expression_result.GetType() == NontypeStub::TemplateDependentValue ||
-			expression_result.GetType().GetTemplateDependentType() != nullptr )
-			return llvm::UndefValue::get( dst_type->llvm_type );
-
 		if( expression_result.GetType() != variable.type )
 		{
 			errors_.push_back( ReportTypesMismatch( call_operator.file_pos_, variable.type.ToString(), expression_result.GetType().ToString() ) );
@@ -604,20 +573,10 @@ llvm::Constant* CodeBuilder::ApplyExpressionInitializer(
 	NamesScope& block_names,
 	FunctionContext& function_context )
 {
-	if( variable.type.GetTemplateDependentType() != nullptr )
-	{
-		BuildExpressionCode( *initializer.expression, block_names, function_context );
-		return nullptr;
-	}
-
 	if( variable.type.GetFundamentalType() != nullptr || variable.type.GetEnumType() != nullptr )
 	{
 		const Value expression_result=
 			BuildExpressionCode( *initializer.expression, block_names, function_context );
-		if( expression_result.GetType() == NontypeStub::TemplateDependentValue ||
-			expression_result.GetType().GetTemplateDependentType() != nullptr )
-			return llvm::UndefValue::get( variable.type.GetLLVMType() );
-
 		if( expression_result.GetType() != variable.type )
 		{
 			errors_.push_back( ReportTypesMismatch( initializer.file_pos_, variable.type.ToString(), expression_result.GetType().ToString() ) );
@@ -632,8 +591,6 @@ llvm::Constant* CodeBuilder::ApplyExpressionInitializer(
 	}
 	else if( variable.type.GetFunctionPointerType() != nullptr )
 		return InitializeFunctionPointer( variable, *initializer.expression, block_names, function_context );
-	else if( variable.type.GetTemplateDependentType() != nullptr )
-	{}
 	else if( variable.type.GetClassType() != nullptr )
 	{
 		// Currently we support "=" initializer for copying and moving of structs.
@@ -693,9 +650,6 @@ llvm::Constant* CodeBuilder::ApplyZeroInitializer(
 	const Synt::ZeroInitializer& initializer,
 	FunctionContext& function_context )
 {
-	if( variable.type.GetTemplateDependentType() != nullptr )
-		return nullptr;
-
 	if( const FundamentalType* const fundamental_type= variable.type.GetFundamentalType() )
 	{
 		llvm::Constant* zero_value= nullptr;
@@ -889,8 +843,6 @@ llvm::Constant* CodeBuilder::InitializeReferenceField(
 	}
 
 	const Value initializer_value= BuildExpressionCode( *initializer_expression, block_names, function_context );
-	if( initializer_value.GetTemplateDependentValue() != nullptr )
-		return nullptr;
 
 	const Variable* const initializer_variable= initializer_value.GetVariable();
 	if( initializer_variable == nullptr )
@@ -899,8 +851,6 @@ llvm::Constant* CodeBuilder::InitializeReferenceField(
 		return nullptr;
 	}
 
-	if( field.type.GetTemplateDependentType() != nullptr )
-		return nullptr;
 	if( !initializer_variable->type.ReferenceIsConvertibleTo( field.type ) )
 	{
 		errors_.push_back( ReportTypesMismatch( initializer_expression->GetFilePos(), field.type.ToString(), initializer_variable->type.ToString() ) );
@@ -960,17 +910,11 @@ llvm::Constant* CodeBuilder::InitializeFunctionPointer(
 	NamesScope& block_names,
 	FunctionContext& function_context )
 {
-	U_ASSERT( variable.type.GetFunctionPointerType() != nullptr || variable.type.GetTemplateDependentType() != nullptr );
-	if( variable.type.GetTemplateDependentType() != nullptr )
-		return nullptr;
+	U_ASSERT( variable.type.GetFunctionPointerType() != nullptr );
 
 	const FunctionPointer& function_pointer_type= *variable.type.GetFunctionPointerType();
 
 	const Value initializer_value= BuildExpressionCode( initializer_expression, block_names, function_context );
-
-	if( initializer_value.GetTemplateDependentValue() != nullptr ||
-		initializer_value.GetType().GetTemplateDependentType() != nullptr )
-		return nullptr;
 
 	if( const Variable* const initializer_variable= initializer_value.GetVariable() )
 	{
