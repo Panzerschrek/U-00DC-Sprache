@@ -134,33 +134,12 @@ ProgramString CodeBuilder::PrepareTypeTemplate(
 		if( !template_parameters_usage_flags[i] )
 			errors_.push_back( ReportTemplateArgumentNotUsedInSignature( type_template_declaration.file_pos_, type_template->template_parameters[i].name ) );
 
-	// Make first check-pass for template. Resolve all names in this pass.
-
-	Synt::ComplexName temp_class_name;
-	temp_class_name.components.emplace_back();
-	temp_class_name.components.back().name = "_temp"_SpC + type_template_name;
-	temp_class_name.components.back().is_generated= true;
-
+	// Make name resolving pass.
 	if( const Synt::ClassTemplate* const template_class= dynamic_cast<const Synt::ClassTemplate*>( &type_template_declaration ) )
-	{
-		const ClassProxyPtr class_proxy= PrepareClass( *template_class->class_, temp_class_name, *template_parameters_namespace );
-
-		if( class_proxy != nullptr )
-		{
-			ReportAboutIncompleteMembersOfTemplateClass( type_template_declaration.file_pos_, *class_proxy->class_ );
-
-			// Remove llvm functions and variables of temp class.
-			// Clear dummy function before it, because dummy function can contain references to removed functions.
-			CleareDummyFunction();
-			RemoveTempClassLLVMValues( *class_proxy->class_ );
-		}
-	}
+		PreResovleClass( *template_class->class_, *template_parameters_namespace, false );
 	else if( const Synt::TypedefTemplate* const typedef_template= dynamic_cast<const Synt::TypedefTemplate*>( &type_template_declaration ) )
-	{
 		PrepareType( typedef_template->typedef_->value, *template_parameters_namespace );
-	}
-	else
-		U_ASSERT(false);
+	else U_ASSERT(false);
 
 	PopResolveHandler();
 
@@ -205,9 +184,10 @@ void CodeBuilder::PrepareFunctionTemplate(
 		*template_parameters_namespace,
 		template_parameters_usage_flags );
 
-	// Make first check-pass for template. Resolve all names in this pass.
-	const PrepareFunctionResult prepare_result=
-		PrepareFunction( *function_template_declaration.function_, false, base_class, *template_parameters_namespace );
+	// Make name resolving pass.
+	PreResolveFunctionPrototype( *function_template_declaration.function_, *template_parameters_namespace );
+	if( function_template_declaration.function_->block_ != nullptr )
+		PreResolveFunctionBody( *function_template_declaration.function_, *template_parameters_namespace );
 
 	PopResolveHandler();
 
@@ -233,18 +213,6 @@ void CodeBuilder::PrepareFunctionTemplate(
 
 		if( base_class != nullptr )
 			base_class->class_->SetMemberVisibility( function_template_name, visibility );
-	}
-
-	// Remove temp llvm function.
-	if( prepare_result.functions_set != nullptr )
-	{
-		llvm::Function* const llvm_function= prepare_result.functions_set->functions[prepare_result.function_index].llvm_function;
-		if( llvm_function != nullptr )
-		{
-			// Clear dummy function before it, because dummy function can contain references to removed functions.
-			CleareDummyFunction();
-			llvm_function->eraseFromParent();
-		}
 	}
 }
 
@@ -297,8 +265,7 @@ void CodeBuilder::ProcessTemplateArgs(
 				continue;
 			}
 
-			if( type->GetTemplateDependentType() == nullptr &&
-				!TypeIsValidForTemplateVariableArgument( *type ) )
+			if( !TypeIsValidForTemplateVariableArgument( *type ) )
 			{
 				errors_.push_back( ReportInvalidTypeOfTemplateVariableArgument( file_pos, type->ToString() ) );
 				continue;
@@ -324,14 +291,8 @@ void CodeBuilder::ProcessTemplateArgs(
 
 			Variable variable;
 			variable.type= *type;
-			if( type->GetTemplateDependentType() != nullptr )
-			{}
-			else
-			{
-				variable.constexpr_value= llvm::UndefValue::get( type->GetLLVMType() );
-				variable.llvm_value=
-					CreateGlobalConstantVariable( *type, ToStdString( arg_name ), variable.constexpr_value );
-			}
+			variable.constexpr_value= llvm::UndefValue::get( type->GetLLVMType() );
+			variable.llvm_value= CreateGlobalConstantVariable( *type, ToStdString( arg_name ), variable.constexpr_value );
 
 			inserted_template_parameter=
 				template_parameters_namespace.AddName( arg_name, Value( std::move(variable), file_pos ) /* TODO - set correct file_pos */ );
@@ -344,7 +305,7 @@ void CodeBuilder::ProcessTemplateArgs(
 			template_parameters.back().name= arg_name;
 			template_parameters_usage_flags.push_back(false);
 			inserted_template_parameter=
-				template_parameters_namespace.AddName( arg_name, Value( GetNextTemplateDependentType(), file_pos /* TODO - set correct file_pos */ ) );
+				template_parameters_namespace.AddName( arg_name, Value( Type( FundamentalType( U_FundamentalType::i32, fundamental_llvm_types_.i32 ) ), file_pos ) ); // TODO - is this correct, use conncrete type?
 		}
 
 		if( inserted_template_parameter != nullptr )
@@ -422,8 +383,7 @@ void CodeBuilder::PrepareTemplateSignatureParameter(
 	// If this is not special expression - assume that this is variable-expression.
 
 	const Value val= BuildExpressionCode( *template_parameter, names_scope, *dummy_function_context_ );
-	if( val.GetErrorValue() != nullptr || val.GetTemplateDependentValue() != nullptr ||
-		val.GetType().GetTemplateDependentType() != nullptr )
+	if( val.GetErrorValue() != nullptr )
 		return;
 
 	const Variable* const var= val.GetVariable();
@@ -432,7 +392,7 @@ void CodeBuilder::PrepareTemplateSignatureParameter(
 		errors_.push_back( ReportExpectedVariable( template_parameter->GetFilePos(), val.GetType().ToString() ) );
 		return;
 	}
-	if( var->type.GetTemplateDependentType() == nullptr && !TypeIsValidForTemplateVariableArgument( var->type ) )
+	if( !TypeIsValidForTemplateVariableArgument( var->type ) )
 	{
 		errors_.push_back( ReportInvalidTypeOfTemplateVariableArgument( template_parameter->GetFilePos(), var->type.ToString() ) );
 		return;
@@ -510,13 +470,9 @@ const NamesScope::InsertedName* CodeBuilder::ResolveForTemplateSignatureParamete
 						names_scope );
 				if( generated_type == nullptr )
 					return nullptr;
-				if( generated_type->second.GetType() == NontypeStub::TemplateDependentValue )
-					return generated_type;
 
 				const Type* const type= generated_type->second.GetTypeName();
 				U_ASSERT( type != nullptr );
-				if( type->GetTemplateDependentType() != nullptr )
-					return &names_scope.GetTemplateDependentValue();
 				if( Class* const class_= type->GetClassType() )
 					next_space= &class_->members;
 				next_space_class= type->GetClassTypeProxy();
@@ -956,9 +912,6 @@ NamesScope::InsertedName* CodeBuilder::GenTemplateType(
 				true );
 		if( generated_type.type_template != nullptr )
 		{
-			if( generated_type.is_template_dependent )
-				return GenTemplateType( file_pos, type_template, template_arguments, arguments_names_scope, false ).type;
-
 			generated_types.push_back( generated_type );
 			U_ASSERT(generated_type.deduced_template_parameters.size() >= template_arguments.size());
 		}
@@ -1001,7 +954,6 @@ CodeBuilder::TemplateTypeGenerationResult CodeBuilder::GenTemplateType(
 	for( const TypeTemplate::TemplateParameter& param : type_template.template_parameters )
 		template_parameters_namespace->AddName( param.name, YetNotDeducedTemplateArg() );
 
-	bool is_template_dependent= false;
 	bool deduction_failed= false;
 	std::vector<TemplateParameter> result_signature_parameters(type_template.signature_arguments.size());
 	result.deduced_template_parameters.resize(type_template.signature_arguments.size());
@@ -1015,22 +967,6 @@ CodeBuilder::TemplateTypeGenerationResult CodeBuilder::GenTemplateType(
 
 		if( value.GetErrorValue() != nullptr )
 			continue;
-
-		// Each template with template-dependent signature arguments is template-dependent values.
-		if( value.GetType() == NontypeStub::TemplateDependentValue ||
-			value.GetType().GetTemplateDependentType() != nullptr )
-		{
-			is_template_dependent= true;
-			continue;
-		}
-		if( const Type* const type_name= value.GetTypeName() )
-		{
-			if( type_name->GetTemplateDependentType() != nullptr )
-			{
-				is_template_dependent= true;
-				continue;
-			}
-		}
 
 		const Synt::IExpressionComponent& expr= *type_template.signature_arguments[i];
 		// TODO - maybe add some errors, if not deduced?
@@ -1098,18 +1034,7 @@ CodeBuilder::TemplateTypeGenerationResult CodeBuilder::GenTemplateType(
 		PopResolveHandler();
 		return result;
 	}
-	result.is_template_dependent= is_template_dependent;
 	result.type_template= type_template_ptr;
-
-	if( is_template_dependent )
-	{
-		PopResolveHandler();
-		result.type=
-			template_names_scope.AddName(
-				"_tdv"_SpC + ToProgramString( std::to_string(next_template_dependent_type_index_).c_str() ),
-				Value( GetNextTemplateDependentType(), type_template_ptr->syntax_element->file_pos_ /*TODO - set correctfile_pos */ ) );
-		return result;
-	}
 
 	for( size_t i = 0u; i < deduced_template_args.size() ; ++i )
 	{
@@ -1480,26 +1405,12 @@ const NamesScope::InsertedName* CodeBuilder::GenTemplateFunctionsUsingTemplatePa
 	U_ASSERT( !function_templates.empty() );
 
 	DeducibleTemplateParameters template_parameters;
-	bool is_template_dependent= false;
 	bool something_is_wrong= false;
 	for( const Synt::IExpressionComponentPtr& expr : template_arguments )
 	{
 		const Value value= BuildExpressionCode( *expr, arguments_names_scope, *dummy_function_context_ );
-		if( value.GetType() == NontypeStub::TemplateDependentValue ||
-			value.GetType().GetTemplateDependentType() != nullptr )
-		{
-			is_template_dependent= true;
-			continue;
-		}
-		else if( const auto type_name= value.GetTypeName() )
-		{
-			if( type_name->GetTemplateDependentType() != nullptr )
-			{
-				is_template_dependent= true;
-				continue;
-			}
+		if( const auto type_name= value.GetTypeName() )
 			template_parameters.push_back( *type_name );
-		}
 		else if( const auto variable= value.GetVariable() )
 		{
 			if( !TypeIsValidForTemplateVariableArgument( variable->type ) )
@@ -1519,8 +1430,6 @@ const NamesScope::InsertedName* CodeBuilder::GenTemplateFunctionsUsingTemplatePa
 
 	if( something_is_wrong )
 		return nullptr;
-	if( is_template_dependent )
-		return &template_names_scope.GetTemplateDependentValue();
 
 	// Encode name, based on set of function templates and given tempate parameters.
 	ProgramString name_encoded= g_template_parameters_namespace_prefix;
@@ -1678,11 +1587,6 @@ bool CodeBuilder::NameShadowsTemplateArgument( const ProgramString& name, NamesS
 	return name_resolved->second.IsTemplateParameter();
 }
 
-TemplateDependentType CodeBuilder::GetNextTemplateDependentType()
-{
-	return TemplateDependentType( next_template_dependent_type_index_++, fundamental_llvm_types_.invalid_type_ );
-}
-
 bool CodeBuilder::TypeIsValidForTemplateVariableArgument( const Type& type )
 {
 	if( const FundamentalType* const fundamental= type.GetFundamentalType() )
@@ -1762,8 +1666,6 @@ void CodeBuilder::RemoveTempClassLLVMValues_impl( Class& class_, const bool is_d
 				U_UNUSED(stored_variable);
 				// TODO - maybe we can delete global variable without breaking llvm code structure?
 			}
-			else if( name.second.GetTemplateDependentValue() != nullptr )
-			{}
 			else U_ASSERT(false);
 		});
 
@@ -1847,10 +1749,7 @@ void CodeBuilder::ReportAboutIncompleteMembersOfTemplateClass( const FilePos& fi
 			{}
 			else if( name.second.GetStoredVariable() != nullptr )
 			{}
-			else if( name.second.GetTemplateDependentValue() != nullptr )
-			{}
-			else
-				U_ASSERT(false);
+			else U_ASSERT(false);
 		} );
 }
 

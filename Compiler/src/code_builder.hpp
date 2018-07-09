@@ -129,7 +129,6 @@ private:
 	{
 		TypeTemplatePtr type_template;
 		NamesScope::InsertedName* type= nullptr;
-		bool is_template_dependent= false;
 		std::vector<DeducedTemplateParameter> deduced_template_parameters;
 	};
 
@@ -279,7 +278,6 @@ private:
 
 	bool NameShadowsTemplateArgument( const ProgramString& name, NamesScope& names_scope );
 
-	TemplateDependentType GetNextTemplateDependentType();
 	bool TypeIsValidForTemplateVariableArgument( const Type& type );
 
 	// Removes llvm-functions and functions of subclasses.
@@ -742,6 +740,25 @@ private:
 		size_t component_count,
 		size_t& out_skip_components );
 
+	// PreResolve
+	void PreResolveName( const Synt::ComplexName& name, NamesScope& names );
+	void PreResolveEnum( const Synt::Enum& enum_, NamesScope& names );
+	void PreResolveTypedef( const Synt::Typedef& typedef_, NamesScope& names );
+	void PreResolveTypeTemplate( const Synt::TypeTemplateBase& type_template, NamesScope& names );
+	void PreResolveFunctionTemplate( const Synt::FunctionTemplate& function_template, NamesScope& names );
+	void PreResovleClass( const Synt::Class& class_declaration, NamesScope& names, bool only_prototype );
+	void PreResolveType( const Synt::ITypeName& type_name, NamesScope& names );
+
+	void PreResolveFunctionPrototype( const Synt::Function& function, NamesScope& names );
+	void PreResolveFunctionBody( const Synt::Function& function, NamesScope& names );
+	void PreResolveBlock( const Synt::Block& block, NamesScope& names );
+
+	void PreResolveVariablesDeclaration( const Synt::VariablesDeclaration& variables_declaration, NamesScope& names );
+	void PreResolveAutoVariableDeclaration( const Synt::AutoVariableDeclaration& auto_variable_declaration, NamesScope& names );
+	void PreResolveStaticAssert( const Synt::StaticAssert& static_assert_, NamesScope& names );
+	void PreResolveExpression( const Synt::IExpressionComponent& expression, NamesScope& names );
+	// PreResolve End
+
 	static U_FundamentalType GetNumericConstantType( const Synt::NumericConstant& number );
 
 	llvm::Type* GetFundamentalLLVMType( U_FundamentalType fundmantal_type );
@@ -810,7 +827,6 @@ private:
 	std::vector< std::pair< Type, Variable > > typeinfo_cache_;
 
 	std::vector<std::unique_ptr<PreResolveFunc>> resolving_funcs_stack_;
-	size_t next_template_dependent_type_index_= 1u;
 };
 
 using MutabilityModifier= Synt::MutabilityModifier;

@@ -103,26 +103,6 @@ U_TEST( Redefinition_ForTypedef_Test1 )
 	U_TEST_ASSERT( error.file_pos.line == 3u );
 }
 
-U_TEST( DeclarationShadowsTemplateArgument_ForTypedef_Test0 )
-{
-	static const char c_program_text[]=
-	R"(
-		template</ type T />
-		struct Box</ T />
-		{
-			type T= i32;
-		}
-	)";
-
-	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
-
-	U_TEST_ASSERT( !build_result.errors.empty() );
-	const CodeBuilderError& error= build_result.errors.front();
-
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::DeclarationShadowsTemplateArgument );
-	U_TEST_ASSERT( error.file_pos.line == 5u );
-}
-
 U_TEST( NameNotFound_ForTypedefTemplate_Test0 )
 {
 	static const char c_program_text[]=

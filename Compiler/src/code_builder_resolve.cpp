@@ -147,17 +147,8 @@ const NamesScope::InsertedName* CodeBuilder::ResolveName(
 						names_scope );
 				if( generated_type == nullptr )
 					return nullptr;
-				if( generated_type->second.GetType() == NontypeStub::TemplateDependentValue )
-					return generated_type;
 
 				const Type* const type= generated_type->second.GetTypeName();
-				if( type->GetTemplateDependentType() != nullptr )
-				{
-					if( component_count <= 1u )
-						return generated_type; // If this name is last, we know, that this is type
-					else
-						return &type_templates_set->front()->parent_namespace->GetTemplateDependentValue(); // Else it is something really template-dependent
-				}
 				U_ASSERT( type != nullptr );
 				if( Class* const class_= type->GetClassType() )
 				{
