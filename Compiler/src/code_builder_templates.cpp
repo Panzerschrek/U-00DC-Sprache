@@ -143,7 +143,7 @@ ProgramString CodeBuilder::PrepareTypeTemplate(
 
 	if( const Synt::ClassTemplate* const template_class= dynamic_cast<const Synt::ClassTemplate*>( &type_template_declaration ) )
 	{
-		const ClassProxyPtr class_proxy= PrepareClass( *template_class->class_, temp_class_name, *template_parameters_namespace );
+		/*const ClassProxyPtr class_proxy= PrepareClass( *template_class->class_, temp_class_name, *template_parameters_namespace );
 
 		if( class_proxy != nullptr )
 		{
@@ -153,7 +153,8 @@ ProgramString CodeBuilder::PrepareTypeTemplate(
 			// Clear dummy function before it, because dummy function can contain references to removed functions.
 			CleareDummyFunction();
 			RemoveTempClassLLVMValues( *class_proxy->class_ );
-		}
+		}*/
+		PreResovleClass( *template_class->class_, *template_parameters_namespace, false );
 	}
 	else if( const Synt::TypedefTemplate* const typedef_template= dynamic_cast<const Synt::TypedefTemplate*>( &type_template_declaration ) )
 	{
