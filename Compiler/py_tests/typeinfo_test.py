@@ -250,12 +250,30 @@ def TypeinfoCalssIsSameForSameTypes_Test0():
 	tests_lib.run_function( "_Z3Foov" )
 
 
-def CompleteTypeRequredForTypeinfo_Test0():
+def TypeinfoForIncompleteType_Test0():
+	c_program_text= """
+		struct S;
+		fn Foo() { typeinfo</S/>; } // Here typeinfo is incomplete.
+		struct S { i32 x; f32 y; bool z; }
+		static_assert( typeinfo</S/>.field_count == size_type(3) ); // After completion of type, typeinfo for it becomes complete.
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def TypeinfoForIncompleteType_Test1():
+	c_program_text= """
+		struct S;
+		fn Foo() { typeinfo</S/>; } // Here typeinfo is incomplete.
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def TypeinfoForIncompleteTypeIsIncomplete_Test0():
 	c_program_text= """
 		struct S;
 		fn Foo()
 		{
-			typeinfo</S/>;
+			typeinfo</S/>.is_class;  // typeinfo for incomplete type is incomplete
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
@@ -264,12 +282,12 @@ def CompleteTypeRequredForTypeinfo_Test0():
 	assert( errors_list[0].file_pos.line == 5 )
 
 
-def CompleteTypeRequredForTypeinfo_Test1():
+def TypeinfoForIncompleteTypeIsIncomplete_Test1():
 	c_program_text= """
 		struct S;
 		fn Foo()
 		{
-			typeinfo</ [ S, 2 ] />;
+			typeinfo</ [ S, 2 ] />.is_array;
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
