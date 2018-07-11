@@ -38,4 +38,12 @@ bool IsNumericType( const U_FundamentalType type )
 	return IsInteger( type ) || IsFloatingPoint( type );
 }
 
+bool IsChar( const U_FundamentalType type )
+{
+	return
+		type == U_FundamentalType::char8  ||
+		type == U_FundamentalType::char16 ||
+		type == U_FundamentalType::char32;
+}
+
 } // namespace U

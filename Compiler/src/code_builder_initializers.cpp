@@ -430,6 +430,63 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 						value_for_assignment= function_context.llvm_ir_builder.CreateFPToUI( value_for_assignment, dst_type->llvm_type );
 				}
 			}
+			else if( IsChar( dst_type->fundamental_type ) && ( IsInteger( src_type->fundamental_type ) || IsChar( src_type->fundamental_type ) ) )
+			{
+				// int to char or char to char
+				if( src_size < dst_size )
+				{
+					if( src_is_constant )
+						constant_value= llvm::ConstantExpr::getZExt( src_var.constexpr_value, dst_type->llvm_type );
+					else
+						value_for_assignment= function_context.llvm_ir_builder.CreateZExt( value_for_assignment, dst_type->llvm_type );
+				}
+				else if( src_size > dst_size )
+				{
+					if( src_is_constant )
+						constant_value= llvm::ConstantExpr::getTrunc( src_var.constexpr_value, dst_type->llvm_type );
+					else
+						value_for_assignment= function_context.llvm_ir_builder.CreateTrunc( value_for_assignment, dst_type->llvm_type );
+				}
+				else
+				{
+					if( src_is_constant )
+						constant_value= src_var.constexpr_value;
+				}
+			}
+			else if( IsInteger( dst_type->fundamental_type ) && IsChar( src_type->fundamental_type ) )
+			{
+				// char to int
+				if( src_size < dst_size )
+				{
+					if( IsUnsignedInteger( dst_type->fundamental_type ) )
+					{
+						// We lost here some values in conversions, such i16 => u32, if src_type is signed.
+						if( src_is_constant )
+							constant_value= llvm::ConstantExpr::getZExt( src_var.constexpr_value, dst_type->llvm_type );
+						else
+							value_for_assignment= function_context.llvm_ir_builder.CreateZExt( value_for_assignment, dst_type->llvm_type );
+					}
+					else
+					{
+						if( src_is_constant )
+							constant_value= llvm::ConstantExpr::getSExt( src_var.constexpr_value, dst_type->llvm_type );
+						else
+							value_for_assignment= function_context.llvm_ir_builder.CreateSExt( value_for_assignment, dst_type->llvm_type );
+					}
+				}
+				else if( src_size > dst_size )
+				{
+					if( src_is_constant )
+						constant_value= llvm::ConstantExpr::getTrunc( src_var.constexpr_value, dst_type->llvm_type );
+					else
+						value_for_assignment= function_context.llvm_ir_builder.CreateTrunc( value_for_assignment, dst_type->llvm_type );
+				}
+				else
+				{
+					if( src_is_constant )
+						constant_value= src_var.constexpr_value;
+				}
+			}
 			else
 			{
 				if( dst_type->fundamental_type == U_FundamentalType::Bool )
@@ -664,6 +721,9 @@ llvm::Constant* CodeBuilder::ApplyZeroInitializer(
 		case U_FundamentalType::u32:
 		case U_FundamentalType::i64:
 		case U_FundamentalType::u64:
+		case U_FundamentalType::char8 :
+		case U_FundamentalType::char16:
+		case U_FundamentalType::char32:
 		case U_FundamentalType::InvalidType:
 			zero_value=
 				llvm::Constant::getIntegerValue(

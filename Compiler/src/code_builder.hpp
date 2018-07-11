@@ -792,6 +792,10 @@ private:
 		llvm::Type* f32;
 		llvm::Type* f64;
 
+		llvm::IntegerType* char8 ;
+		llvm::IntegerType* char16;
+		llvm::IntegerType* char32;
+
 		llvm::IntegerType* void_;
 		llvm::Type* void_for_ret_;
 		llvm::Type* invalid_type_;

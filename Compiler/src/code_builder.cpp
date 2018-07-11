@@ -36,6 +36,9 @@ const TypesMap g_types_map=
 	{ Keyword( Keywords::u64_ ), U_FundamentalType::u64 },
 	{ Keyword( Keywords::f32_ ), U_FundamentalType::f32 },
 	{ Keyword( Keywords::f64_ ), U_FundamentalType::f64 },
+	{ Keyword( Keywords::char8_  ), U_FundamentalType::char8  },
+	{ Keyword( Keywords::char16_ ), U_FundamentalType::char16 },
+	{ Keyword( Keywords::char32_ ), U_FundamentalType::char32 },
 };
 
 } // namespace
@@ -118,6 +121,10 @@ CodeBuilder::CodeBuilder()
 
 	fundamental_llvm_types_.f32= llvm::Type::getFloatTy( llvm_context_ );
 	fundamental_llvm_types_.f64= llvm::Type::getDoubleTy( llvm_context_ );
+
+	fundamental_llvm_types_.char8 = llvm::Type::getInt8Ty ( llvm_context_ );
+	fundamental_llvm_types_.char16= llvm::Type::getInt16Ty( llvm_context_ );
+	fundamental_llvm_types_.char32= llvm::Type::getInt32Ty( llvm_context_ );
 
 	fundamental_llvm_types_.invalid_type_= llvm::Type::getInt8Ty( llvm_context_ );
 	fundamental_llvm_types_.void_= llvm::Type::getInt8Ty( llvm_context_ );
@@ -4232,6 +4239,12 @@ llvm::Type* CodeBuilder::GetFundamentalLLVMType( const U_FundamentalType fundman
 		return fundamental_llvm_types_.f32;
 	case U_FundamentalType::f64:
 		return fundamental_llvm_types_.f64;
+	case U_FundamentalType::char8 :
+		return fundamental_llvm_types_.char8 ;
+	case U_FundamentalType::char16:
+		return fundamental_llvm_types_.char16;
+	case U_FundamentalType::char32:
+		return fundamental_llvm_types_.char32;
 	};
 
 	U_ASSERT(false);

@@ -1591,7 +1591,9 @@ bool CodeBuilder::TypeIsValidForTemplateVariableArgument( const Type& type )
 {
 	if( const FundamentalType* const fundamental= type.GetFundamentalType() )
 	{
-		if( IsInteger( fundamental->fundamental_type ) || fundamental->fundamental_type == U_FundamentalType::Bool )
+		if( IsInteger( fundamental->fundamental_type ) ||
+			IsChar( fundamental->fundamental_type ) ||
+			fundamental->fundamental_type == U_FundamentalType::Bool )
 			return true;
 	}
 	if( type.GetEnumType() != nullptr )

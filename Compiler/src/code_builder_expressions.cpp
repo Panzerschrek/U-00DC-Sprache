@@ -619,7 +619,7 @@ Value CodeBuilder::BuildBinaryOperator(
 			const FundamentalType raw_fundamental_type= l_fundamental_type != nullptr ? *l_fundamental_type : l_var.type.GetEnumType()->underlaying_type;
 
 			const bool if_float= IsFloatingPoint( raw_fundamental_type.fundamental_type );
-			if( !( IsInteger( raw_fundamental_type.fundamental_type ) || if_float || raw_fundamental_type.fundamental_type == U_FundamentalType::Bool ) )
+			if( !( IsInteger( raw_fundamental_type.fundamental_type ) || IsChar( raw_fundamental_type.fundamental_type ) || if_float || raw_fundamental_type == bool_type_ ) )
 			{
 				errors_.push_back( ReportOperationNotSupportedForThisType( file_pos, l_type.ToString() ) );
 				return ErrorValue();
@@ -703,8 +703,9 @@ Value CodeBuilder::BuildBinaryOperator(
 		else
 		{
 			const bool if_float= IsFloatingPoint( l_fundamental_type->fundamental_type );
-			const bool is_signed= IsSignedInteger( l_fundamental_type->fundamental_type );
-			if( !( IsInteger( l_fundamental_type->fundamental_type ) || if_float ) )
+			const bool is_char= IsChar( l_fundamental_type->fundamental_type );
+			const bool is_signed= !is_char && IsSignedInteger( l_fundamental_type->fundamental_type );
+			if( !( IsInteger( l_fundamental_type->fundamental_type ) || if_float || is_char ) )
 			{
 				errors_.push_back( ReportOperationNotSupportedForThisType( file_pos, l_type.ToString() ) );
 				return ErrorValue();
