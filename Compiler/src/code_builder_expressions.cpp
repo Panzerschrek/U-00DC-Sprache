@@ -244,6 +244,11 @@ Value CodeBuilder::BuildExpressionCode(
 	{
 		result= BuildNumericConstant( *numeric_constant, function_context );
 	}
+	else if( const auto string_literal=
+		dynamic_cast<const Synt::StringLiteral*>(&expression) )
+	{
+		result= BuildStringLiteral( *string_literal, function_context );
+	}
 	else if( const auto boolean_constant=
 		dynamic_cast<const Synt::BooleanConstant*>(&expression) )
 	{
@@ -1490,6 +1495,34 @@ Value CodeBuilder::BuildNumericConstant(
 	function_context.stack_variables_stack.back()->RegisterVariable( stored_result );
 
 	return Value( result, numeric_constant.file_pos_ );
+}
+
+Value CodeBuilder::BuildStringLiteral( const Synt::StringLiteral& string_literal, FunctionContext& function_context )
+{
+	const std::string value= ToStdString( string_literal.value_ );
+	// TODO - use postfix for different type string literals.
+	Array string_literal_type;
+	string_literal_type.type= FundamentalType( U_FundamentalType::char8, fundamental_llvm_types_.char8 );
+	string_literal_type.size= value.size();
+	string_literal_type.llvm_type= llvm::ArrayType::get( string_literal_type.type.GetLLVMType(), string_literal_type.size );
+
+	Variable result;
+	result.location= Variable::Location::Pointer;
+	result.value_type= ValueType::ConstReference;
+	result.type= string_literal_type;
+
+	result.constexpr_value= llvm::ConstantDataArray::getString( llvm_context_, value, false ); // NOT null-terminated
+	result.llvm_value=
+		CreateGlobalConstantVariable(
+			result.type,
+			"_string_literal_" + std::to_string( reinterpret_cast<uintptr_t>(&string_literal) ),
+			result.constexpr_value );
+
+	const StoredVariablePtr stored_result= std::make_shared<StoredVariable>( "string literal"_SpC, result );
+	result.referenced_variables.emplace( stored_result );
+	function_context.stack_variables_stack.back()->RegisterVariable( stored_result );
+
+	return Value( std::move(result), string_literal.file_pos_ );
 }
 
 Variable CodeBuilder::BuildBooleanConstant(

@@ -1383,16 +1383,24 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 	// Insert generated function
 	FunctionVariable function_variable= prepare_result.functions_set->functions[prepare_result.function_index];
 	function_variable.deduced_temlpate_parameters= std::move(deduced_temlpate_parameters);
-	const NamesScope::InsertedName* const inserted_function_name= function_template.parent_namespace->AddName( name_encoded, function_variable );
+	NamesScope::InsertedName* const inserted_function_name= function_template.parent_namespace->AddName( name_encoded, function_variable );
 	U_ASSERT( inserted_function_name != nullptr );
+	FunctionVariable& function_variable_inserted= *inserted_function_name->second.GetFunctionVariable();
 
 	// And generate function body after insertion of prototype.
-	PrepareFunction( function_declaration, false, function_template.base_class, template_parameters_namespace );
+	BuildFuncCode(
+		function_variable_inserted,
+		function_template.base_class,
+		template_parameters_namespace,
+		function_template.syntax_element->function_->name_.components.back().name,
+		function_template.syntax_element->function_->type_.arguments_,
+		function_template.syntax_element->function_->block_.get(),
+		nullptr );
 	PopResolveHandler();
 
 	// Two-step preparation needs for recursive function template call.
 
-	return inserted_function_name->second.GetFunctionVariable();
+	return &function_variable_inserted;
 }
 
 const NamesScope::InsertedName* CodeBuilder::GenTemplateFunctionsUsingTemplateParameters(

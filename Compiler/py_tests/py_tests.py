@@ -36,6 +36,7 @@ def main():
 		"reference_check_for_templates_test",
 		"stack_variables_move_errors_test",
 		"stack_variables_move_test",
+		"string_literals_test",
 		"type_templates_overloading_test",
 		"typeinfo_test",
 		"static_if_test",

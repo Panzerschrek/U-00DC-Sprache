@@ -153,6 +153,10 @@ NumericConstant::NumericConstant(
 	, has_fractional_point_( has_fractional_point )
 {}
 
+StringLiteral::StringLiteral( const FilePos& file_pos )
+	: ExpressionComponentWithUnaryOperators(file_pos)
+{}
+
 BracketExpression::BracketExpression( const FilePos& file_pos, IExpressionComponentPtr expression )
 	: ExpressionComponentWithUnaryOperators(file_pos)
 	, expression_( std::move( expression ) )
