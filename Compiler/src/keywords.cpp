@@ -77,6 +77,9 @@ static const Globals& GetGlobals()
 		[ size_t(Keywords::u64_) ]= "u64",
 		[ size_t(Keywords::f32_) ]= "f32",
 		[ size_t(Keywords::f64_) ]= "f64",
+		[ size_t(Keywords::char8_ ) ]= "char8" ,
+		[ size_t(Keywords::char16_) ]= "char16",
+		[ size_t(Keywords::char32_) ]= "char32",
 		[ size_t(Keywords::size_type_) ]= "size_type",
 
 		[ size_t(Keywords::true_) ]= "true",

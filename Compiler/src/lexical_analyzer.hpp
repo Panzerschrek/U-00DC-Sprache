@@ -28,6 +28,8 @@ struct Lexem
 		String,
 		Number,
 
+		LiteralSuffix, // For strings, numbers
+
 		BracketLeft, // (
 		BracketRight, // )
 

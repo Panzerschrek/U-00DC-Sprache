@@ -28,6 +28,9 @@ static SizeType GetFundamentalTypeSize( const U_FundamentalType type )
 	case U_FundamentalType::u64: return 8u;
 	case U_FundamentalType::f32: return 4u;
 	case U_FundamentalType::f64: return 8u;
+	case U_FundamentalType::char8 : return 1u;
+	case U_FundamentalType::char16: return 2u;
+	case U_FundamentalType::char32: return 4u;
 	case U_FundamentalType::LastType: break;
 	};
 
@@ -1445,6 +1448,9 @@ const ProgramString& GetFundamentalTypeName( const U_FundamentalType type )
 	case U_FundamentalType::u64: return Keyword( Keywords::u64_ );
 	case U_FundamentalType::f32: return Keyword( Keywords::f32_ );
 	case U_FundamentalType::f64: return Keyword( Keywords::f64_ );
+	case U_FundamentalType::char8 : return Keyword( Keywords::char8_  );
+	case U_FundamentalType::char16: return Keyword( Keywords::char16_ );
+	case U_FundamentalType::char32: return Keyword( Keywords::char32_ );
 	case U_FundamentalType::LastType: break;
 	};
 

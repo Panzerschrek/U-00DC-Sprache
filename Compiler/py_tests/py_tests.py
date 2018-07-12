@@ -18,6 +18,7 @@ def GetTestsList( tests_modules_list ):
 
 def main():
 	tests_modules_list= [
+		"char_test",
 		"code_builder_test",
 		"constexpr_functions_errors_test",
 		"constexpr_functions_test",
@@ -35,6 +36,7 @@ def main():
 		"reference_check_for_templates_test",
 		"stack_variables_move_errors_test",
 		"stack_variables_move_test",
+		"string_literals_test",
 		"type_templates_overloading_test",
 		"typeinfo_test",
 		"static_if_test",

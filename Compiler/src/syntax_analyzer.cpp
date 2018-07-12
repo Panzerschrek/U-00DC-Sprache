@@ -510,6 +510,7 @@ IExpressionComponentPtr SyntaxAnalyzer::ParseExpression()
 			case Lexem::Type::Identifier:
 			case Lexem::Type::Scope:
 			case Lexem::Type::Number:
+			case Lexem::Type::String:
 			case Lexem::Type::BracketLeft:
 			case Lexem::Type::SquareBracketLeft:
 				goto parse_operand;
@@ -754,6 +755,20 @@ IExpressionComponentPtr SyntaxAnalyzer::ParseExpression()
 		{
 			current_node= ParseNumericConstant();
 			NextLexem();
+		}
+		else if( it_->type == Lexem::Type::String )
+		{
+			std::unique_ptr<StringLiteral> string_literal( new StringLiteral( it_->file_pos ) );
+			string_literal->value_= it_->text;
+			NextLexem();
+
+			if( it_->type == Lexem::Type::LiteralSuffix )
+			{
+				string_literal->type_suffix_= it_->text;
+				NextLexem();
+			}
+
+			current_node= std::move(string_literal);
 		}
 		else if( it_->type == Lexem::Type::BracketLeft )
 		{

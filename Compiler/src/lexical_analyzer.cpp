@@ -179,8 +179,11 @@ static void ParseNumberImpl(
 
 static Lexem ParseString(
 	ProgramString::const_iterator& it,
-	const ProgramString::const_iterator it_end )
+	const ProgramString::const_iterator it_end,
+	LexicalErrorMessages& out_errors )
 {
+	// Ü-string fromat is simular to JSON string format.
+
 	U_ASSERT( *it == '"' );
 	++it;
 
@@ -191,29 +194,77 @@ static Lexem ParseString(
 	{
 		if( it == it_end )
 			break;
-
-		if( *it == '"' )
+		else if( *it == '"' )
 		{
 			++it;
 			break;
 		}
-
-		if( *it == '\\' )
+		else if( ( /* *it >= 0x00u && */ *it < 0x20u ) || *it == 0x7Fu ) // TODO - is this correct control character?
+		{
+			out_errors.push_back( "control character inside string" );
+			return result;
+		}
+		else if( *it == '\\' )
 		{
 			++it;
 			if( it == it_end )
+				return result;
+			switch( *it )
+			{
+			case '"':
+			case '\\':
+			case '/':
+				result.text.push_back(*it);
+				++it;
 				break;
-			if( *it != '"' )
+
+			case 'b': result.text.push_back('\b'); ++it; break;
+			case 'f': result.text.push_back('\f'); ++it; break;
+			case 'n': result.text.push_back('\n'); ++it; break;
+			case 'r': result.text.push_back('\r'); ++it; break;
+			case 't': result.text.push_back('\t'); ++it; break;
+
+			case 'u':
+				{
+					// Parse hex number.
+					++it;
+					if( it_end - it < 4 )
+					{
+						out_errors.push_back( "expected 4 hex digits" );
+						return result;
+					}
+
+					uint32_t char_code= 0u;
+					for( size_t i= 0u; i < 4u; i++ )
+					{
+						uint32_t digit;
+							 if( *it >= '0' && *it <= '9' ) digit= uint32_t( *it - '0' );
+						else if( *it >= 'a' && *it <= 'f' ) digit= uint32_t( *it - 'a' + 10 );
+						else if( *it >= 'A' && *it <= 'F' ) digit= uint32_t( *it - 'A' + 10 );
+						else
+						{
+							out_errors.push_back( "expected hex number" );
+							return result;
+						}
+						char_code|= digit << ( ( 3u - i ) * 4u );
+						++it;
+					}
+
+					result.text.push_back( sprache_char(char_code) ); // TODO - maybe convert to UTF-16?
+				}
 				break;
-			result.text.push_back(*it);
-			++it;
+
+			default:
+				out_errors.push_back( std::string("invalid escape sequence: \\") + char(*it) );
+				return result;
+			};
 		}
 		else
 		{
 			result.text.push_back(*it);
 			++it;
 		}
-	}
+	} // while true
 
 	return result;
 }
@@ -282,6 +333,7 @@ static Lexem ParseNumber(
 			true );
 	}
 
+	// TODO - produce separate lexem for it.
 	// Type suffix.
 	while( it < it_end && IsIdentifierChar(*it) )
 	{
@@ -336,7 +388,19 @@ LexicalAnalysisResult LexicalAnalysis( const ProgramString& program_text )
 			continue;
 		}
 		else if( c == '"' )
-			lexem= ParseString( it, it_end );
+		{
+			lexem= ParseString( it, it_end, result.error_messages );
+			if( it < it_end && IsIdentifierStartChar( *it ) )
+			{
+				// Parse string suffix.
+				lexem.file_pos.line= static_cast<unsigned short>(line);
+				lexem.file_pos.pos_in_line= static_cast<unsigned short>( it - last_newline_it );
+				result.lexems.emplace_back( std::move(lexem) );
+
+				lexem= ParseIdentifier( it, it_end );
+				lexem.type= Lexem::Type::LiteralSuffix;
+			}
+		}
 
 		else if( IsNumberStartChar(c) )
 			lexem= ParseNumber( it, it_end );

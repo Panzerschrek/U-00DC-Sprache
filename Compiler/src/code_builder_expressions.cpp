@@ -244,6 +244,11 @@ Value CodeBuilder::BuildExpressionCode(
 	{
 		result= BuildNumericConstant( *numeric_constant, function_context );
 	}
+	else if( const auto string_literal=
+		dynamic_cast<const Synt::StringLiteral*>(&expression) )
+	{
+		result= BuildStringLiteral( *string_literal, function_context );
+	}
 	else if( const auto boolean_constant=
 		dynamic_cast<const Synt::BooleanConstant*>(&expression) )
 	{
@@ -619,7 +624,7 @@ Value CodeBuilder::BuildBinaryOperator(
 			const FundamentalType raw_fundamental_type= l_fundamental_type != nullptr ? *l_fundamental_type : l_var.type.GetEnumType()->underlaying_type;
 
 			const bool if_float= IsFloatingPoint( raw_fundamental_type.fundamental_type );
-			if( !( IsInteger( raw_fundamental_type.fundamental_type ) || if_float || raw_fundamental_type.fundamental_type == U_FundamentalType::Bool ) )
+			if( !( IsInteger( raw_fundamental_type.fundamental_type ) || IsChar( raw_fundamental_type.fundamental_type ) || if_float || raw_fundamental_type == bool_type_ ) )
 			{
 				errors_.push_back( ReportOperationNotSupportedForThisType( file_pos, l_type.ToString() ) );
 				return ErrorValue();
@@ -703,8 +708,9 @@ Value CodeBuilder::BuildBinaryOperator(
 		else
 		{
 			const bool if_float= IsFloatingPoint( l_fundamental_type->fundamental_type );
-			const bool is_signed= IsSignedInteger( l_fundamental_type->fundamental_type );
-			if( !( IsInteger( l_fundamental_type->fundamental_type ) || if_float ) )
+			const bool is_char= IsChar( l_fundamental_type->fundamental_type );
+			const bool is_signed= !is_char && IsSignedInteger( l_fundamental_type->fundamental_type );
+			if( !( IsInteger( l_fundamental_type->fundamental_type ) || if_float || is_char ) )
 			{
 				errors_.push_back( ReportOperationNotSupportedForThisType( file_pos, l_type.ToString() ) );
 				return ErrorValue();
@@ -1489,6 +1495,65 @@ Value CodeBuilder::BuildNumericConstant(
 	function_context.stack_variables_stack.back()->RegisterVariable( stored_result );
 
 	return Value( result, numeric_constant.file_pos_ );
+}
+
+Value CodeBuilder::BuildStringLiteral( const Synt::StringLiteral& string_literal, FunctionContext& function_context )
+{
+	Array string_literal_type;
+	llvm::Constant* initializer= nullptr;
+
+	if( string_literal.type_suffix_.empty() || string_literal.type_suffix_ == "u8"_SpC )
+	{
+		const std::string value= ToUTF8( string_literal.value_ );
+
+		string_literal_type.type= FundamentalType( U_FundamentalType::char8 , fundamental_llvm_types_.char8  );
+		string_literal_type.size= value.size();
+
+		initializer= llvm::ConstantDataArray::getString( llvm_context_, value, false /* not null terminated */ );
+	}
+	else if(string_literal.type_suffix_ == "u16"_SpC )
+	{
+		string_literal_type.type= FundamentalType( U_FundamentalType::char16, fundamental_llvm_types_.char16 );
+		string_literal_type.size= string_literal.value_.size();
+
+		initializer=
+			llvm::ConstantDataArray::get(
+				llvm_context_,
+				llvm::ArrayRef<uint16_t>(string_literal.value_.data(), string_literal.value_.size() ) );
+	}
+	else if( string_literal.type_suffix_ == "u32"_SpC )
+	{
+		std::vector<uint32_t> str;
+		str.resize( string_literal.value_.size() );
+		for( size_t i= 0u; i < string_literal.value_.size(); ++i )
+			str[i]= string_literal.value_[i];
+
+		string_literal_type.type= FundamentalType( U_FundamentalType::char32, fundamental_llvm_types_.char32 );
+		string_literal_type.size= str.size();
+
+		initializer= llvm::ConstantDataArray::get( llvm_context_, str );
+	}
+	else
+	{
+		errors_.push_back( ReportUnknownStringLiteralSuffix( string_literal.file_pos_, string_literal.type_suffix_ ) );
+		return ErrorValue();
+	}
+
+	string_literal_type.llvm_type= llvm::ArrayType::get( string_literal_type.type.GetLLVMType(), string_literal_type.size );
+
+	Variable result;
+	result.location= Variable::Location::Pointer;
+	result.value_type= ValueType::ConstReference;
+	result.type= string_literal_type;
+
+	result.constexpr_value= initializer;
+	result.llvm_value=
+		CreateGlobalConstantVariable(
+			result.type,
+			"_string_literal_" + std::to_string( reinterpret_cast<uintptr_t>(&string_literal) ),
+			result.constexpr_value );
+
+	return Value( std::move(result), string_literal.file_pos_ );
 }
 
 Variable CodeBuilder::BuildBooleanConstant(

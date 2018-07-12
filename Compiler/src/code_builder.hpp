@@ -450,7 +450,8 @@ private:
 	Value BuildNamedOperand( const Synt::NamedOperand& named_operand, NamesScope& names, FunctionContext& function_context );
 	Value BuildMoveOpeator( const Synt::MoveOperator& move_operator, NamesScope& names, FunctionContext& function_context );
 	Value BuildNumericConstant( const Synt::NumericConstant& numeric_constant, FunctionContext& function_context );
-	Variable BuildBooleanConstant( const Synt::BooleanConstant& boolean_constant, FunctionContext& function_context  );
+	Value BuildStringLiteral( const Synt::StringLiteral& string_literal, FunctionContext& function_context );
+	Variable BuildBooleanConstant( const Synt::BooleanConstant& boolean_constant, FunctionContext& function_context );
 
 	Value BuildIndexationOperator(
 		const Value& value,
@@ -791,6 +792,10 @@ private:
 
 		llvm::Type* f32;
 		llvm::Type* f64;
+
+		llvm::IntegerType* char8 ;
+		llvm::IntegerType* char16;
+		llvm::IntegerType* char32;
 
 		llvm::IntegerType* void_;
 		llvm::Type* void_for_ret_;
