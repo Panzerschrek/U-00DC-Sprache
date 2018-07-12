@@ -193,3 +193,63 @@ def StringLiteral_UTF16_Test0():
 		static_assert( ArraySize( "ღთႭა"u16 ) == size_type( 4 ) );
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def StringLiteral_EscapeSequences_Test0():
+	c_program_text= """
+		fn Foo() : char8
+		{
+			return "\\n"[0u];
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == ord('\n') )
+
+
+def StringLiteral_EscapeSequences_Test1():
+	c_program_text= """
+		fn Foo() : char8
+		{
+			return "\\\\"[0u];
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == ord('\\') )
+
+
+def StringLiteral_EscapeSequences_Test2():
+	c_program_text= """
+		fn Foo() : char8
+		{
+			return "\\""[0u];
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == ord('"') )
+
+
+def StringLiteral_CharNumber_Test0():
+	c_program_text= """
+		fn Foo() : char16
+		{
+			return "\\u00DC"u16[0u];
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == ord('Ü') )
+
+
+def StringLiteral_CharNumber_Test1():
+	c_program_text= """
+		fn Foo() : char16
+		{
+			return "\\u0565"u16[0u];
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == ord('ե') )
