@@ -282,6 +282,7 @@ static Lexem ParseNumber(
 			true );
 	}
 
+	// TODO - produce separate lexem for it.
 	// Type suffix.
 	while( it < it_end && IsIdentifierChar(*it) )
 	{
@@ -336,7 +337,19 @@ LexicalAnalysisResult LexicalAnalysis( const ProgramString& program_text )
 			continue;
 		}
 		else if( c == '"' )
+		{
 			lexem= ParseString( it, it_end );
+			if( it < it_end && IsIdentifierStartChar( *it ) )
+			{
+				// Parse string suffix.
+				lexem.file_pos.line= static_cast<unsigned short>(line);
+				lexem.file_pos.pos_in_line= static_cast<unsigned short>( it - last_newline_it );
+				result.lexems.emplace_back( std::move(lexem) );
+
+				lexem= ParseIdentifier( it, it_end );
+				lexem.type= Lexem::Type::LiteralSuffix;
+			}
+		}
 
 		else if( IsNumberStartChar(c) )
 			lexem= ParseNumber( it, it_end );

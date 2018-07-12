@@ -760,8 +760,15 @@ IExpressionComponentPtr SyntaxAnalyzer::ParseExpression()
 		{
 			std::unique_ptr<StringLiteral> string_literal( new StringLiteral( it_->file_pos ) );
 			string_literal->value_= it_->text;
-			current_node= std::move(string_literal);
 			NextLexem();
+
+			if( it_->type == Lexem::Type::LiteralSuffix )
+			{
+				string_literal->type_suffix_= it_->text;
+				NextLexem();
+			}
+
+			current_node= std::move(string_literal);
 		}
 		else if( it_->type == Lexem::Type::BracketLeft )
 		{

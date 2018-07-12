@@ -23,6 +23,8 @@ const char* CodeBuilderErrorCodeToString( const CodeBuilderErrorCode code )
 		return "DeclarationOutsideEnclosingNamespace";
 	case CodeBuilderErrorCode::UnknownNumericConstantType:
 		return "UnknownNumericConstantType";
+	case CodeBuilderErrorCode::UnknownStringLiteralSuffix:
+		return "UnknownStringLiteralSuffix";
 	case CodeBuilderErrorCode::OperationNotSupportedForThisType:
 		return "OperationNotSupportedForThisType";
 	case CodeBuilderErrorCode::TypesMismatch:
@@ -373,6 +375,17 @@ CodeBuilderError ReportUnknownNumericConstantType( const FilePos& file_pos, cons
 	error.code= CodeBuilderErrorCode::UnknownNumericConstantType;
 
 	error.text= "Unknown numeric constant type - "_SpC + unknown_type + "."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportUnknownStringLiteralSuffix( const FilePos& file_pos, const ProgramString& unknown_suffix )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::UnknownStringLiteralSuffix;
+
+	error.text= "Unknown string literal suffix - "_SpC + unknown_suffix + "."_SpC;
 
 	return error;
 }

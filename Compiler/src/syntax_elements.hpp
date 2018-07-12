@@ -331,6 +331,7 @@ public:
 	StringLiteral( const FilePos& file_pos );
 
 	ProgramString value_;
+	ProgramString type_suffix_;
 };
 
 class BracketExpression final : public ExpressionComponentWithUnaryOperators

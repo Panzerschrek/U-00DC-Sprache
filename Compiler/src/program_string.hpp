@@ -18,6 +18,8 @@ ProgramString ToProgramString( const char* c );
 // Program string to ASCII. Warning, possible lost of data in conversion.
 std::string ToStdString( const ProgramString& str );
 
+std::string ToUTF8( const ProgramString& str );
+
 ProgramString DecodeUTF8( const std::vector<char>& str );
 ProgramString DecodeUTF8( const std::string& str );
 

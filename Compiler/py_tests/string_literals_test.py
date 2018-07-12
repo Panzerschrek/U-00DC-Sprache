@@ -81,3 +81,115 @@ def StringLiteralIsConstantReference_Test0():
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ExpectedReferenceValue" )
 	assert( errors_list[0].file_pos.line == 4 )
+
+
+def StringLiteralIsNotNullTerminated_Test0():
+	c_program_text= """
+		template</ type T, size_type S /> fn constexpr ArraySize( [ T, S ]& arr ) : size_type {  return S;  }
+		auto &constexpr str= "abc";
+		static_assert( str[ ArraySize(str) - size_type(1) ] == "c"[0u] );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def StringLiteralSuffix_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			auto& str= "str8"u8;
+			var char8 c= str[1u];
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def StringLiteralSuffix_Test1():
+	c_program_text= """
+		fn Foo()
+		{
+			auto& str= "str16"u16;
+			var char16 c= str[1u];
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def StringLiteralSuffix_Test2():
+	c_program_text= """
+		fn Foo()
+		{
+			auto& str= "str32"u32;
+			var char32 c= str[1u];
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def StringLiteralSuffix_Test3():
+	c_program_text= """
+		fn Foo()
+		{
+			auto& str= "str8";  // Empty suffix means char8 string.
+			var char8 c= str[1u];
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def UnknownStringLiteralSuffix_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			"str"fff;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "UnknownStringLiteralSuffix" )
+	assert( errors_list[0].file_pos.line == 4 )
+
+
+def UnknownStringLiteralSuffix_Test1():
+	c_program_text= """
+		fn Foo()
+		{
+			"str"a;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "UnknownStringLiteralSuffix" )
+	assert( errors_list[0].file_pos.line == 4 )
+
+
+def UnknownStringLiteralSuffix_Test2():
+	c_program_text= """
+		fn Foo()
+		{
+			"str"u64;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "UnknownStringLiteralSuffix" )
+	assert( errors_list[0].file_pos.line == 4 )
+
+
+def StringLiteral_UTF8_Test0():
+	c_program_text= """
+		template</ type T, size_type S /> fn constexpr ArraySize( [ T, S ]& arr ) : size_type {  return S;  }
+		static_assert( ArraySize( "строка" ) == size_type( 6 * 2 ) ); // Each cyrillic letter converted into 2-bytes symbol.
+		static_assert( ArraySize( "string" ) == size_type( 6 ) ); // Here all letter are ASCII, so, size of each letter is 1.
+		static_assert( ArraySize( "ღთႭა" ) == size_type( 4 * 3 ) ); // Georgian letters have size 3.
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def StringLiteral_UTF16_Test0():
+	c_program_text= """
+		template</ type T, size_type S /> fn constexpr ArraySize( [ T, S ]& arr ) : size_type {  return S;  }
+		static_assert( ArraySize( "строка"u16 ) == size_type( 6 ) );
+		static_assert( ArraySize( "string"u16 ) == size_type( 6 ) );
+		static_assert( ArraySize( "ღთႭა"u16 ) == size_type( 4 ) );
+	"""
+	tests_lib.build_program( c_program_text )

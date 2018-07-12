@@ -1499,11 +1499,46 @@ Value CodeBuilder::BuildNumericConstant(
 
 Value CodeBuilder::BuildStringLiteral( const Synt::StringLiteral& string_literal, FunctionContext& function_context )
 {
-	const std::string value= ToStdString( string_literal.value_ );
-	// TODO - use postfix for different type string literals.
 	Array string_literal_type;
-	string_literal_type.type= FundamentalType( U_FundamentalType::char8, fundamental_llvm_types_.char8 );
-	string_literal_type.size= value.size();
+	llvm::Constant* initializer= nullptr;
+
+	if( string_literal.type_suffix_.empty() || string_literal.type_suffix_ == "u8"_SpC )
+	{
+		const std::string value= ToUTF8( string_literal.value_ );
+
+		string_literal_type.type= FundamentalType( U_FundamentalType::char8 , fundamental_llvm_types_.char8  );
+		string_literal_type.size= value.size();
+
+		initializer= llvm::ConstantDataArray::getString( llvm_context_, value, false /* not null terminated */ );
+	}
+	else if(string_literal.type_suffix_ == "u16"_SpC )
+	{
+		string_literal_type.type= FundamentalType( U_FundamentalType::char16, fundamental_llvm_types_.char16 );
+		string_literal_type.size= string_literal.value_.size();
+
+		initializer=
+			llvm::ConstantDataArray::get(
+				llvm_context_,
+				llvm::ArrayRef<uint16_t>(string_literal.value_.data(), string_literal.value_.size() ) );
+	}
+	else if( string_literal.type_suffix_ == "u32"_SpC )
+	{
+		std::vector<uint32_t> str;
+		str.resize( string_literal.value_.size() );
+		for( size_t i= 0u; i < string_literal.value_.size(); ++i )
+			str[i]= string_literal.value_[i];
+
+		string_literal_type.type= FundamentalType( U_FundamentalType::char32, fundamental_llvm_types_.char32 );
+		string_literal_type.size= str.size();
+
+		initializer= llvm::ConstantDataArray::get( llvm_context_, str );
+	}
+	else
+	{
+		errors_.push_back( ReportUnknownStringLiteralSuffix( string_literal.file_pos_, string_literal.type_suffix_ ) );
+		return ErrorValue();
+	}
+
 	string_literal_type.llvm_type= llvm::ArrayType::get( string_literal_type.type.GetLLVMType(), string_literal_type.size );
 
 	Variable result;
@@ -1511,16 +1546,12 @@ Value CodeBuilder::BuildStringLiteral( const Synt::StringLiteral& string_literal
 	result.value_type= ValueType::ConstReference;
 	result.type= string_literal_type;
 
-	result.constexpr_value= llvm::ConstantDataArray::getString( llvm_context_, value, false ); // NOT null-terminated
+	result.constexpr_value= initializer;
 	result.llvm_value=
 		CreateGlobalConstantVariable(
 			result.type,
 			"_string_literal_" + std::to_string( reinterpret_cast<uintptr_t>(&string_literal) ),
 			result.constexpr_value );
-
-	const StoredVariablePtr stored_result= std::make_shared<StoredVariable>( "string literal"_SpC, result );
-	result.referenced_variables.emplace( stored_result );
-	function_context.stack_variables_stack.back()->RegisterVariable( stored_result );
 
 	return Value( std::move(result), string_literal.file_pos_ );
 }

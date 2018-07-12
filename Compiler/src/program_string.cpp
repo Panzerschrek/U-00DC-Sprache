@@ -43,6 +43,30 @@ std::string ToStdString( const ProgramString& str )
 	return result;
 }
 
+std::string ToUTF8( const ProgramString& str )
+{
+	// TODO - check this.
+	std::string result;
+	for( const sprache_char& c : str )
+	{
+		if( c <= 0x7Fu )
+			result.push_back( static_cast<char>(c) );
+		else if( c <= 0x7FFu )
+		{
+			result.push_back( static_cast<char>( 0b11000000u | (c >>  6u) ) );
+			result.push_back( static_cast<char>( 0b10000000u | (c &  63u) ) );
+		}
+		else
+		{
+			result.push_back( static_cast<char>( 0b11100000u |  (c >> 12u) ) );
+			result.push_back( static_cast<char>( 0b11000000u | ((c >> 6u) & 63u) ) );
+			result.push_back( static_cast<char>( 0b10000000u |  (c  & 63u) ) );
+		}
+	}
+
+	return result;
+}
+
 static ProgramString DecodeUTF8( const char* start, const char* end )
 {
 	U_ASSERT( start <= end );
