@@ -510,3 +510,60 @@ def TypeinfoList_EnumList_Test1():
 		static_assert( GetEnumNodeValue( typeinfo</ E />.elements_list, "Frtr" ) == 4u );
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def TypeinfoList_ClassFieldsList_Test0():
+	c_program_text= """
+		template</ type T />
+		fn constexpr IsEmptyClassFieldsList( T& node ) : bool { return T::is_end; }
+
+		struct S{}
+		static_assert( IsEmptyClassFieldsList( typeinfo</S/>.fields_list ) );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def TypeinfoList_ClassFieldsList_Test1():
+	c_program_text= """
+		template</ size_type size0, size_type size1 />
+		fn constexpr StringEquals( [ char8, size0 ]& s0, [ char8, size1 ]& s1 ) : bool
+		{
+			if( size0 != size1 ) { return false; }
+			var size_type mut i(0);
+			while( i < size0 )
+			{
+				if( s0[i] != s1[i] ) { return false; }
+				++i;
+			}
+			return true;
+		}
+
+		template</ type T, size_type name_size />
+		fn constexpr NodeListHaveName( T& node, [ char8, name_size ]& name ) : bool
+		{
+			static_if( T::is_end )
+			{
+				return false;
+			}
+			else
+			{
+				if( StringEquals( node.name, name ) )
+				{
+					return true;
+				}
+				else
+				{
+					return ::NodeListHaveName( node.next, name );
+				}
+			}
+		}
+
+		struct S{ i32 x; f32 y; bool zzz; }
+
+		static_assert( NodeListHaveName( typeinfo</S/>.fields_list, "x" ) );
+		static_assert( NodeListHaveName( typeinfo</S/>.fields_list, "y" ) );
+		static_assert( NodeListHaveName( typeinfo</S/>.fields_list, "zzz" ) );
+		static_assert( !NodeListHaveName( typeinfo</S/>.fields_list, "xx" ) );
+		static_assert( !NodeListHaveName( typeinfo</S/>.fields_list, "fff" ) );
+	"""
+	tests_lib.build_program( c_program_text )
