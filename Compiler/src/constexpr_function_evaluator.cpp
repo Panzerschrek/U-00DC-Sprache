@@ -105,6 +105,7 @@ ConstexprFunctionEvaluator::Result ConstexprFunctionEvaluator::Evaluate(
 
 	instructions_map_.clear();
 	stack_.clear();
+	external_constant_mapping_.clear();
 
 	return result;
 }
@@ -257,8 +258,14 @@ llvm::GenericValue ConstexprFunctionEvaluator::CallFunction( const llvm::Functio
 
 size_t ConstexprFunctionEvaluator::MoveConstantToStack( const llvm::Constant& constant )
 {
+	const auto prev_it= external_constant_mapping_.find( &constant );
+	if( prev_it != external_constant_mapping_.end() )
+		return prev_it->second;
+
 	const size_t stack_offset= stack_.size();
 	stack_.resize( stack_.size() + size_t( data_layout_.getTypeAllocSize( constant.getType() ) ) );
+
+	external_constant_mapping_[&constant]= stack_offset;
 
 	CopyConstantToStack( constant, stack_offset );
 
