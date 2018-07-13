@@ -415,3 +415,98 @@ def TypeinfoFieldsDependsOnTypeKind_Test8():
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "NameNotFound" )
 	assert( errors_list[0].file_pos.line == 4 )
+
+
+def TypeinfoList_EnumList_Test0():
+	c_program_text= """
+		template</ size_type size0, size_type size1 />
+		fn constexpr StringEquals( [ char8, size0 ]& s0, [ char8, size1 ]& s1 ) : bool
+		{
+			if( size0 != size1 ) { return false; }
+			var size_type mut i(0);
+			while( i < size0 )
+			{
+				if( s0[i] != s1[i] ) { return false; }
+				++i;
+			}
+			return true;
+		}
+
+		template</ type T, size_type name_size />
+		fn constexpr NodeListHaveName( T& node, [ char8, name_size ]& name ) : bool
+		{
+			static_if( T::is_end )
+			{
+				return false;
+			}
+			else
+			{
+				if( StringEquals( node.name, name ) )
+				{
+					return true;
+				}
+				else
+				{
+					return ::NodeListHaveName( node.next, name );
+				}
+			}
+		}
+
+		enum E{ A, B, C, Dee, Frtr }
+
+		static_assert( NodeListHaveName( typeinfo</E/>.elements_list, "A" ) );
+		static_assert( NodeListHaveName( typeinfo</E/>.elements_list, "B" ) );
+		static_assert( NodeListHaveName( typeinfo</E/>.elements_list, "C" ) );
+		static_assert( NodeListHaveName( typeinfo</E/>.elements_list, "Dee" ) );
+		static_assert( NodeListHaveName( typeinfo</E/>.elements_list, "Frtr" ) );
+		static_assert( !NodeListHaveName( typeinfo</E/>.elements_list, "D" ) );
+		static_assert( !NodeListHaveName( typeinfo</E/>.elements_list, "LOL" ) );
+		static_assert( !NodeListHaveName( typeinfo</E/>.elements_list, "a" ) );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def TypeinfoList_EnumList_Test1():
+	c_program_text= """
+		template</ size_type size0, size_type size1 />
+		fn constexpr StringEquals( [ char8, size0 ]& s0, [ char8, size1 ]& s1 ) : bool
+		{
+			if( size0 != size1 ) { return false; }
+			var size_type mut i(0);
+			while( i < size0 )
+			{
+				if( s0[i] != s1[i] ) { return false; }
+				++i;
+			}
+			return true;
+		}
+
+		template</ type T, size_type name_size />
+		fn constexpr GetEnumNodeValue( T& node, [ char8, name_size ]& name ) : u32
+		{
+			static_if( T::is_end )
+			{
+				halt;
+			}
+			else
+			{
+				if( StringEquals( node.name, name ) )
+				{
+					return node.value;
+				}
+				else
+				{
+					return ::GetEnumNodeValue( node.next, name );
+				}
+			}
+		}
+
+		enum E : u32 { A, B, C, Dee, Frtr }
+
+		static_assert( GetEnumNodeValue( typeinfo</ E />.elements_list, "A" ) == 0u );
+		static_assert( GetEnumNodeValue( typeinfo</ E />.elements_list, "B" ) == 1u );
+		static_assert( GetEnumNodeValue( typeinfo</ E />.elements_list, "C" ) == 2u );
+		static_assert( GetEnumNodeValue( typeinfo</ E />.elements_list, "Dee" ) == 3u );
+		static_assert( GetEnumNodeValue( typeinfo</ E />.elements_list, "Frtr" ) == 4u );
+	"""
+	tests_lib.build_program( c_program_text )

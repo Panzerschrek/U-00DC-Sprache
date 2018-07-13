@@ -136,7 +136,22 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, Variable& typeinfo_variab
 
 		typeinfo_class.members.AddName( name, Value( std::move(field), file_pos ) );
 		fields_llvm_types.push_back( llvm::PointerType::get( dependent_type_typeinfo.type.GetLLVMType(), 0u ) );
-		fields_initializers.push_back( llvm::dyn_cast<llvm::Constant>( dependent_type_typeinfo.llvm_value ) );
+		fields_initializers.push_back( llvm::dyn_cast<llvm::GlobalVariable>( dependent_type_typeinfo.llvm_value ) );
+	};
+
+	const auto add_list_head_field=
+	[&]( const ProgramString& name, const Variable& variable )
+	{
+		ClassField field;
+		field.class_= typeinfo_class_proxy;
+		field.type= variable.type;
+		field.index= static_cast<unsigned int>(fields_llvm_types.size());
+		field.is_reference= true;
+		field.is_mutable= false;
+
+		typeinfo_class.members.AddName( name, Value( std::move(field), file_pos ) );
+		fields_llvm_types.push_back( llvm::PointerType::get( variable.type.GetLLVMType(), 0u ) );
+		fields_initializers.push_back( llvm::dyn_cast<llvm::GlobalVariable>( variable.llvm_value ) );
 	};
 
 	const llvm::DataLayout& data_layout= module_->getDataLayout();
@@ -167,6 +182,7 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, Variable& typeinfo_variab
 	{
 		add_size_field( "element_count"_SpC, enum_type->element_count );
 		add_typeinfo_field( "underlaying_type"_SpC, enum_type->underlaying_type );
+		add_list_head_field( "elements_list"_SpC, BuildTypeinfoEnumElementsList( *enum_type, root_namespace ) );
 	}
 	else if( const Array* const array_type= type.GetArrayType() )
 	{
@@ -225,6 +241,187 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, Variable& typeinfo_variab
 	llvm::dyn_cast<llvm::GlobalVariable>(typeinfo_variable.llvm_value)->setInitializer( typeinfo_variable.constexpr_value );
 
 	UpdateTypeinfoForDependentTypes( typeinfo_class_proxy );
+}
+
+const Variable& CodeBuilder::GetTypeinfoListEndNode( const NamesScope& root_namespace )
+{
+	if (typeinfo_list_end_node_ != boost::none )
+		return *typeinfo_list_end_node_;
+
+	const ProgramString node_class_name= "_end_node"_SpC;
+	const ClassProxyPtr node_type= std::make_shared<ClassProxy>( new Class( node_class_name, &root_namespace ) );
+	Class& node_type_class= *node_type->class_;
+	node_type_class.llvm_type= llvm::StructType::create( llvm_context_, MangleType( node_type ) );
+
+	const FilePos file_pos{ 0u, 0u, 0u };
+
+	std::vector<llvm::Type*> fields_llvm_types;
+	std::vector<llvm::Constant*> fields_initializers;
+
+	{
+		// Add "is_end" as static variable for contexpr possibility.
+		Variable var;
+
+		var.type= bool_type_;
+		var.location= Variable::Location::Pointer;
+		var.value_type= ValueType::ConstReference;
+		var.constexpr_value= llvm::Constant::getIntegerValue( fundamental_llvm_types_.bool_, llvm::APInt( 1u, 1u ) );
+		var.llvm_value=
+			CreateGlobalConstantVariable(
+				var.type,
+				MangleGlobalVariable( node_type_class.members, "is_end"_SpC ),
+				var.constexpr_value );
+
+		node_type_class.members.AddName( "is_end"_SpC, Value( std::move(var), file_pos ) );
+	}
+	{
+		ClassField field;
+		field.class_= node_type;
+		field.type= node_type;
+		field.index= static_cast<unsigned int>(fields_llvm_types.size());
+		field.is_reference= true;
+		field.is_mutable= false;
+
+		node_type_class.members.AddName( "next"_SpC, Value( std::move(field), file_pos ) );
+		fields_llvm_types.push_back( llvm::PointerType::get( node_type_class.llvm_type, 0u ) );
+		fields_initializers.push_back( nullptr );
+	}
+
+	node_type_class.llvm_type->setBody( fields_llvm_types );
+	node_type_class.kind= Class::Kind::Struct;
+	node_type_class.completeness= Class::Completeness::Complete;
+	node_type_class.can_be_constexpr= true;
+	// TODO - generate some methods?
+
+	llvm::GlobalVariable* const global_variable=
+		new llvm::GlobalVariable(
+			*module_,
+			node_type_class.llvm_type,
+			true, // is constant
+			llvm::GlobalValue::InternalLinkage, // We have no external variables, so, use internal linkage.
+			nullptr,
+			ToStdString( "_val_of_"_SpC + node_class_name ) );
+
+	// Save self-reference.
+	fields_initializers[0u]= global_variable;
+	global_variable->setInitializer( llvm::ConstantStruct::get( node_type_class.llvm_type, fields_initializers ) );
+
+	Variable result;
+	result.type= node_type;
+	result.location= Variable::Location::Pointer;
+	result.value_type= ValueType::ConstReference;
+	result.llvm_value= global_variable;
+	result.constexpr_value= global_variable->getInitializer();
+
+	typeinfo_list_end_node_= std::move(result);
+	return *typeinfo_list_end_node_;
+}
+
+Variable CodeBuilder::BuildTypeinfoEnumElementsList( const Enum& enum_type, const NamesScope& root_namespace )
+{
+	const FilePos file_pos{ 0u, 0u, 0u };
+
+	Variable head= GetTypeinfoListEndNode( root_namespace );
+
+	enum_type.members.ForEachInThisScope(
+		[&]( const NamesScope::InsertedName& enum_member )
+		{
+			const Variable& var= *enum_member.second.GetVariable();
+
+			const ProgramString node_class_name= "_node_"_SpC + enum_member.first + "_of_"_SpC + enum_type.members.GetThisNamespaceName();
+			const ClassProxyPtr node_type= std::make_shared<ClassProxy>( new Class( node_class_name, &root_namespace ) );
+			Class& node_type_class= *node_type->class_;
+			node_type_class.llvm_type= llvm::StructType::create( llvm_context_, MangleType( node_type ) );
+
+			std::vector<llvm::Type*> fields_llvm_types;
+			std::vector<llvm::Constant*> fields_initializers;
+
+			// TODO - maybe reorder fields for better result struct layout?
+			{
+				// Add "is_end" as static variable for contexpr possibility.
+				Variable var;
+
+				var.type= bool_type_;
+				var.location= Variable::Location::Pointer;
+				var.value_type= ValueType::ConstReference;
+				var.constexpr_value= llvm::Constant::getIntegerValue( fundamental_llvm_types_.bool_, llvm::APInt( 1u, 0u ) );
+				var.llvm_value=
+					CreateGlobalConstantVariable(
+						var.type,
+						MangleGlobalVariable( node_type_class.members, "is_end"_SpC ),
+						var.constexpr_value );
+
+				node_type_class.members.AddName( "is_end"_SpC, Value( std::move(var), file_pos ) );
+			}
+			{
+				ClassField field;
+				field.class_= node_type;
+				field.type= head.type;
+				field.index= static_cast<unsigned int>(fields_llvm_types.size());
+				field.is_reference= true;
+				field.is_mutable= false;
+
+				node_type_class.members.AddName( "next"_SpC, Value( std::move(field), file_pos ) );
+				fields_llvm_types.push_back( llvm::PointerType::get( head.type.GetLLVMType(), 0u ) );
+				fields_initializers.push_back( llvm::dyn_cast<llvm::GlobalVariable>(head.llvm_value) );
+			}
+			{
+				ClassField field;
+				field.class_= node_type;
+				field.type= enum_type.underlaying_type;
+				field.index= static_cast<unsigned int>(fields_llvm_types.size());
+				field.is_reference= false;
+				field.is_mutable= true;
+
+				node_type_class.members.AddName( "value"_SpC, Value( std::move(field), file_pos ) );
+				fields_llvm_types.push_back( enum_type.underlaying_type.llvm_type );
+				fields_initializers.push_back( var.constexpr_value );
+			}
+			{
+				std::string name_str= ToUTF8( enum_member.first );
+				Array name_type;
+				name_type.type= FundamentalType( U_FundamentalType::char8, fundamental_llvm_types_.char8 );
+				name_type.size= name_str.size();
+				name_type.llvm_type= llvm::ArrayType::get( name_type.type.GetLLVMType(), name_type.size );
+
+				ClassField field;
+				field.class_= node_type;
+				field.type= name_type;
+				field.index= static_cast<unsigned int>(fields_llvm_types.size());
+				field.is_reference= false;
+				field.is_mutable= true;
+
+				node_type_class.members.AddName( "name"_SpC, Value( std::move(field), file_pos ) );
+				fields_llvm_types.push_back( name_type.llvm_type );
+				fields_initializers.push_back( llvm::ConstantDataArray::getString( llvm_context_, name_str, false /* not null terminated */ ) );
+			}
+
+			node_type_class.llvm_type->setBody( fields_llvm_types );
+			node_type_class.kind= Class::Kind::Struct;
+			node_type_class.completeness= Class::Completeness::Complete;
+			node_type_class.can_be_constexpr= true;
+			// TODO - generate some methods?
+
+			llvm::GlobalVariable* const global_variable=
+				new llvm::GlobalVariable(
+					*module_,
+					node_type_class.llvm_type,
+					true, // is constant
+					llvm::GlobalValue::InternalLinkage, // We have no external variables, so, use internal linkage.
+					llvm::ConstantStruct::get( node_type_class.llvm_type, fields_initializers ),
+					ToStdString( "_val_of_"_SpC + node_class_name ) );
+
+			Variable new_head;
+			new_head.type= node_type;
+			new_head.location= Variable::Location::Pointer;
+			new_head.value_type= ValueType::ConstReference;
+			new_head.llvm_value= global_variable;
+			new_head.constexpr_value= global_variable->getInitializer();
+
+			head= std::move(new_head);
+		}); // for enum elements
+
+	return head;
 }
 
 void CodeBuilder::UpdateTypeinfoForDependentTypes( const ClassProxyPtr& class_type )

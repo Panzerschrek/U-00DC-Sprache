@@ -507,6 +507,8 @@ private:
 	Variable BuildTypeInfo( const Type& type, const NamesScope& root_namespace );
 	Variable BuildTypeinfoPrototype( const Type& type, const NamesScope& root_namespace );
 	void BuildFullTypeinfo( const Type& type, Variable& typeinfo_variable, const NamesScope& root_namespace );
+	const Variable& GetTypeinfoListEndNode( const NamesScope& root_namespace );
+	Variable BuildTypeinfoEnumElementsList( const Enum& enum_type, const NamesScope& root_namespace );
 	void UpdateTypeinfoForDependentTypes( const ClassProxyPtr& class_type );
 
 	// Block elements
@@ -833,6 +835,7 @@ private:
 	// We needs to generate same typeinfo classes for same types. Use cache for it.
 	// TODO - create hasher for type and use unordered_map.
 	std::vector< std::pair< Type, Variable > > typeinfo_cache_;
+	boost::optional< Variable > typeinfo_list_end_node_; // Lazy initialized.
 
 	std::vector<std::unique_ptr<PreResolveFunc>> resolving_funcs_stack_;
 };

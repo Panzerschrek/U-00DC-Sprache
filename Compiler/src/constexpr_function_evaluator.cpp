@@ -86,7 +86,7 @@ ConstexprFunctionEvaluator::Result ConstexprFunctionEvaluator::Evaluate(
 	U_ASSERT( !function_type.return_value_is_reference ); // Currently can not return references.
 	if( const FundamentalType* const fundamental= function_type.return_type.GetFundamentalType() )
 	{
-		if( IsInteger( fundamental->fundamental_type ) || fundamental->fundamental_type == U_FundamentalType::Bool )
+		if( IsInteger( fundamental->fundamental_type ) || IsChar( fundamental->fundamental_type ) || fundamental->fundamental_type == U_FundamentalType::Bool )
 			result.result_constant= llvm::Constant::getIntegerValue( function_type.return_type.GetLLVMType(), res.IntVal );
 		else if( IsFloatingPoint( fundamental->fundamental_type ) )
 			result.result_constant=
@@ -426,7 +426,7 @@ void ConstexprFunctionEvaluator::ProcessAlloca( const llvm::Instruction* const i
 void ConstexprFunctionEvaluator::ProcessLoad( const llvm::Instruction* const instruction )
 {
 	const llvm::Value* const address= instruction->getOperand(0u);
-	U_ASSERT( instructions_map_.find( address ) != instructions_map_.end() );
+	U_ASSERT( instructions_map_.find( address ) != instructions_map_.end() ); // TODO - what if address is global constant?
 	const llvm::GenericValue& address_val= instructions_map_[address];
 
 	const size_t offset= size_t(address_val.IntVal.getLimitedValue());
