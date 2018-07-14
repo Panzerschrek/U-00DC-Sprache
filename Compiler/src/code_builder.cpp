@@ -4198,6 +4198,13 @@ U_FundamentalType CodeBuilder::GetNumericConstantType( const Synt::NumericConsta
 	// Simple "f" suffix for 32bit floats.
 	else if( number.type_suffix_ == "f"_SpC )
 		return U_FundamentalType::f32;
+	// Short suffixes for chars
+	else if( number.type_suffix_ ==  "c8"_SpC )
+		return U_FundamentalType::char8 ;
+	else if( number.type_suffix_ == "c16"_SpC )
+		return U_FundamentalType::char16;
+	else if( number.type_suffix_ == "c32"_SpC )
+		return U_FundamentalType::char32;
 
 	auto it= g_types_map.find( number.type_suffix_ );
 	if( it == g_types_map.end() )

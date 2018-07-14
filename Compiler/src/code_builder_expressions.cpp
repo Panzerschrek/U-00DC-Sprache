@@ -1479,7 +1479,7 @@ Value CodeBuilder::BuildNumericConstant(
 	result.value_type= ValueType::Value;
 	result.type= FundamentalType( type, llvm_type );
 
-	if( IsInteger( type ) )
+	if( IsInteger( type ) || IsChar( type ) )
 		result.constexpr_value=
 			llvm::Constant::getIntegerValue( llvm_type, llvm::APInt( llvm_type->getIntegerBitWidth(), uint64_t(numeric_constant.value_) ) );
 	else if( IsFloatingPoint( type ) )

@@ -10,6 +10,18 @@ def CharSize_Test0():
 	tests_lib.build_program( c_program_text )
 
 
+def CharLiteral_Test0():
+	c_program_text= """
+		static_assert( char8 (     89) ==      89char8 );
+		static_assert( char8 (    211) ==     211c8 );
+		static_assert( char16(  62547) ==   62547c16 );
+		static_assert( char16(     55) ==      55char16 );
+		static_assert( char32( 158745) ==  158745c32 );
+		static_assert( char32(9587452) == 9587452char32 );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
 def CharIsConstructibleFromInt_Test0():
 	c_program_text= """
 		fn Foo() : char8
