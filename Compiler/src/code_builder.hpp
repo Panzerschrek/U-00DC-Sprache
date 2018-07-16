@@ -510,6 +510,7 @@ private:
 	const Variable& GetTypeinfoListEndNode( const NamesScope& root_namespace );
 	Variable BuildTypeinfoEnumElementsList( const Enum& enum_type, const NamesScope& root_namespace );
 	Variable BuildTypeinfoClassFieldsList( const ClassProxyPtr& class_type, const NamesScope& root_namespace );
+	Variable BuildTypeinfoClassTypesList( const ClassProxyPtr& class_type, const NamesScope& root_namespace );
 	void UpdateTypeinfoForDependentTypes( const ClassProxyPtr& class_type );
 
 	// Block elements

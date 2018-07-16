@@ -2004,6 +2004,7 @@ Value CodeBuilder::BuildCallOperator(
 		const StackVariablesStorage dummy_stack_variables_storage( dummy_function_context );
 		dummy_function_context.this_= function_context.this_;
 		dummy_function_context.whole_this_is_unavailable= function_context.whole_this_is_unavailable;
+		dummy_function_context.is_in_unsafe_block= function_context.is_in_unsafe_block;
 		dummy_function_context.variables_state= function_context.variables_state; // TODO - support copy-on-write for variables_state
 		function_context.variables_state.DeactivateLocks();
 
