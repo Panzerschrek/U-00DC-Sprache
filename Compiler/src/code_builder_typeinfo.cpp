@@ -220,19 +220,7 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, Variable& typeinfo_variab
 	}
 	else U_ASSERT(false);
 
-	// TODO - add other stuff
-
-	// Prepare class
-
-	typeinfo_class.llvm_type->setBody( fields_llvm_types );
-	typeinfo_class.kind= Class::Kind::Struct;
-	typeinfo_class.completeness= Class::Completeness::Complete;
-	typeinfo_class.can_be_constexpr= true;
-
-	TryGenerateDefaultConstructor( typeinfo_class, typeinfo_class_proxy );
-	TryGenerateDestructor( typeinfo_class, typeinfo_class_proxy );
-	TryGenerateCopyConstructor( typeinfo_class, typeinfo_class_proxy );
-	TryGenerateCopyAssignmentOperator( typeinfo_class, typeinfo_class_proxy );
+	FinishTypeinfoClass( typeinfo_class, typeinfo_class_proxy, fields_llvm_types );
 
 	// Prepare result value
 	typeinfo_variable.constexpr_value= llvm::ConstantStruct::get( typeinfo_class.llvm_type, fields_initializers );
@@ -279,11 +267,7 @@ const Variable& CodeBuilder::GetTypeinfoListEndNode( const NamesScope& root_name
 	fields_llvm_types.push_back( llvm::PointerType::get( node_type_class.llvm_type, 0u ) );
 	fields_initializers.push_back( nullptr );
 
-	node_type_class.llvm_type->setBody( fields_llvm_types );
-	node_type_class.kind= Class::Kind::Struct;
-	node_type_class.completeness= Class::Completeness::Complete;
-	node_type_class.can_be_constexpr= true;
-	// TODO - generate some methods?
+	FinishTypeinfoClass( node_type_class, node_type, fields_llvm_types );
 
 	llvm::GlobalVariable* const global_variable=
 		CreateGlobalConstantVariable(
@@ -304,6 +288,18 @@ const Variable& CodeBuilder::GetTypeinfoListEndNode( const NamesScope& root_name
 
 	typeinfo_list_end_node_= std::move(result);
 	return *typeinfo_list_end_node_;
+}
+
+void CodeBuilder::FinishTypeinfoClass( Class& class_, const ClassProxyPtr class_proxy, const std::vector<llvm::Type*>& fields_llvm_types )
+{
+	class_.llvm_type->setBody( fields_llvm_types );
+	class_.kind= Class::Kind::Struct;
+	class_.completeness= Class::Completeness::Complete;
+	class_.can_be_constexpr= true;
+
+	// Generate only destructor, because almost all structs and classes must have it.
+	// Other methods - constructors, assignment operators does not needs for typeinfo classes.
+	TryGenerateDestructor( class_, class_proxy );
 }
 
 Variable CodeBuilder::BuildTypeinfoEnumElementsList( const Enum& enum_type, const NamesScope& root_namespace )
@@ -369,11 +365,7 @@ Variable CodeBuilder::BuildTypeinfoEnumElementsList( const Enum& enum_type, cons
 				fields_initializers.push_back( llvm::ConstantDataArray::getString( llvm_context_, name_str, false /* not null terminated */ ) );
 			}
 
-			node_type_class.llvm_type->setBody( fields_llvm_types );
-			node_type_class.kind= Class::Kind::Struct;
-			node_type_class.completeness= Class::Completeness::Complete;
-			node_type_class.can_be_constexpr= true;
-			// TODO - generate some methods?
+			FinishTypeinfoClass( node_type_class, node_type, fields_llvm_types );
 
 			llvm::GlobalVariable* const global_variable=
 				CreateGlobalConstantVariable(
@@ -476,11 +468,7 @@ Variable CodeBuilder::BuildTypeinfoClassFieldsList( const ClassProxyPtr& class_t
 			fields_llvm_types.push_back( fundamental_llvm_types_.bool_ );
 			fields_initializers.push_back( llvm::Constant::getIntegerValue( fundamental_llvm_types_.bool_, llvm::APInt( 1u, class_field->is_mutable ) ) );
 
-			node_type_class.llvm_type->setBody( fields_llvm_types );
-			node_type_class.kind= Class::Kind::Struct;
-			node_type_class.completeness= Class::Completeness::Complete;
-			node_type_class.can_be_constexpr= true;
-			// TODO - generate some methods?
+			FinishTypeinfoClass( node_type_class, node_type, fields_llvm_types );
 
 			llvm::GlobalVariable* const global_variable=
 				CreateGlobalConstantVariable(
@@ -568,11 +556,7 @@ Variable CodeBuilder::BuildTypeinfoClassTypesList( const ClassProxyPtr& class_ty
 				fields_initializers.push_back( llvm::ConstantDataArray::getString( llvm_context_, name_str, false /* not null terminated */ ) );
 			}
 
-			node_type_class.llvm_type->setBody( fields_llvm_types );
-			node_type_class.kind= Class::Kind::Struct;
-			node_type_class.completeness= Class::Completeness::Complete;
-			node_type_class.can_be_constexpr= true;
-			// TODO - generate some methods?
+			FinishTypeinfoClass( node_type_class, node_type, fields_llvm_types );
 
 			llvm::GlobalVariable* const global_variable=
 				CreateGlobalConstantVariable(
@@ -688,11 +672,7 @@ Variable CodeBuilder::BuildTypeinfoClassFunctionsList( const ClassProxyPtr& clas
 				fields_llvm_types.push_back( fundamental_llvm_types_.bool_ );
 				fields_initializers.push_back( llvm::Constant::getIntegerValue( fundamental_llvm_types_.bool_, llvm::APInt( 1u, function.virtual_table_index != ~0u ) ) );
 
-				node_type_class.llvm_type->setBody( fields_llvm_types );
-				node_type_class.kind= Class::Kind::Struct;
-				node_type_class.completeness= Class::Completeness::Complete;
-				node_type_class.can_be_constexpr= true;
-				// TODO - generate some methods?
+				FinishTypeinfoClass( node_type_class, node_type, fields_llvm_types );
 
 				llvm::GlobalVariable* const global_variable=
 					CreateGlobalConstantVariable(
@@ -776,11 +756,7 @@ Variable CodeBuilder::BuildTypeinfoFunctionArguments( const Function& function_t
 
 		// SPRACHE_TODO - add reference pollution
 
-		node_type_class.llvm_type->setBody( fields_llvm_types );
-		node_type_class.kind= Class::Kind::Struct;
-		node_type_class.completeness= Class::Completeness::Complete;
-		node_type_class.can_be_constexpr= true;
-		// TODO - generate some methods?
+		FinishTypeinfoClass( node_type_class, node_type, fields_llvm_types );
 
 		llvm::GlobalVariable* const global_variable=
 			CreateGlobalConstantVariable(

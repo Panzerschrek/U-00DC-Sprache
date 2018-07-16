@@ -239,15 +239,15 @@ def TypeinfoForTemplateDependentType_Test0():
 
 def TypeinfoCalssIsSameForSameTypes_Test0():
 	c_program_text= """
+		template</ type T /> fn MustBeSame( T& a, T& b ) : bool { return true; }
+		enum E : i32{ zero }
 		fn Foo()
 		{
-			auto mut t= typeinfo</i32/>;
-			t= typeinfo</i32/>;  // Must asign here, because types of both typeinfo expressions is same.
-			halt if( ! t.is_fundamental );
+			MustBeSame( typeinfo</i32/>, typeinfo</i32/> );
+			MustBeSame( typeinfo</i32/>, typeinfo</E/>.underlaying_type );
 		}
 	"""
 	tests_lib.build_program( c_program_text )
-	tests_lib.run_function( "_Z3Foov" )
 
 
 def TypeinfoForIncompleteType_Test0():
