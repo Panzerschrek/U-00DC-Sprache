@@ -61,10 +61,7 @@ Variable CodeBuilder::BuildTypeinfoPrototype( const Type& type, const NamesScope
 
 	typeinfo_class.llvm_type= llvm::StructType::create( llvm_context_, MangleType( typeinfo_class_proxy ) );
 
-	Variable result;
-	result.type= typeinfo_class_proxy;
-	result.location= Variable::Location::Pointer;
-	result.value_type= ValueType::ConstReference;
+	Variable result( typeinfo_class_proxy, Variable::Location::Pointer, ValueType::ConstReference );
 
 	result.constexpr_value= llvm::UndefValue::get( typeinfo_class.llvm_type ); // Currently uninitialized.
 	result.llvm_value=
@@ -244,22 +241,7 @@ const Variable& CodeBuilder::GetTypeinfoListEndNode( const NamesScope& root_name
 	std::vector<llvm::Type*> fields_llvm_types;
 	std::vector<llvm::Constant*> fields_initializers;
 
-	{
-		// Add "is_end" as static variable for contexpr possibility.
-		Variable var;
-
-		var.type= bool_type_;
-		var.location= Variable::Location::Pointer;
-		var.value_type= ValueType::ConstReference;
-		var.constexpr_value= llvm::Constant::getIntegerValue( fundamental_llvm_types_.bool_, llvm::APInt( 1u, 1u ) );
-		var.llvm_value=
-			CreateGlobalConstantVariable(
-				var.type,
-				MangleGlobalVariable( node_type_class.members, g_is_end_var_name ),
-				var.constexpr_value );
-
-		node_type_class.members.AddName( g_is_end_var_name, Value( std::move(var), file_pos ) );
-	}
+	AddTypeinfoNodeIsEndVariable( node_type_class, true );
 
 	node_type_class.members.AddName(
 		g_next_node_name,
@@ -279,15 +261,22 @@ const Variable& CodeBuilder::GetTypeinfoListEndNode( const NamesScope& root_name
 	fields_initializers[0u]= global_variable;
 	global_variable->setInitializer( llvm::ConstantStruct::get( node_type_class.llvm_type, fields_initializers ) );
 
-	Variable result;
-	result.type= node_type;
-	result.location= Variable::Location::Pointer;
-	result.value_type= ValueType::ConstReference;
-	result.llvm_value= global_variable;
-	result.constexpr_value= global_variable->getInitializer();
-
-	typeinfo_list_end_node_= std::move(result);
+	typeinfo_list_end_node_= Variable( node_type, Variable::Location::Pointer, ValueType::ConstReference, global_variable, global_variable->getInitializer() );
 	return *typeinfo_list_end_node_;
+}
+
+void CodeBuilder::AddTypeinfoNodeIsEndVariable( Class& node_class, const bool is_end )
+{
+	Variable var( bool_type_, Variable::Location::Pointer, ValueType::ConstReference );
+
+	var.constexpr_value= llvm::Constant::getIntegerValue( fundamental_llvm_types_.bool_, llvm::APInt( 1u, is_end ) );
+	var.llvm_value=
+		CreateGlobalConstantVariable(
+			var.type,
+			MangleGlobalVariable( node_class.members, g_is_end_var_name ),
+			var.constexpr_value );
+
+	node_class.members.AddName( g_is_end_var_name, Value( std::move(var), FilePos() ) );
 }
 
 void CodeBuilder::FinishTypeinfoClass( Class& class_, const ClassProxyPtr class_proxy, const std::vector<llvm::Type*>& fields_llvm_types )
@@ -322,22 +311,7 @@ Variable CodeBuilder::BuildTypeinfoEnumElementsList( const Enum& enum_type, cons
 			std::vector<llvm::Constant*> fields_initializers;
 
 			// TODO - maybe reorder fields for better result struct layout?
-			{
-				// Add "is_end" as static variable for contexpr possibility.
-				Variable var;
-
-				var.type= bool_type_;
-				var.location= Variable::Location::Pointer;
-				var.value_type= ValueType::ConstReference;
-				var.constexpr_value= llvm::Constant::getIntegerValue( fundamental_llvm_types_.bool_, llvm::APInt( 1u, 0u ) );
-				var.llvm_value=
-					CreateGlobalConstantVariable(
-						var.type,
-						MangleGlobalVariable( node_type_class.members, g_is_end_var_name ),
-						var.constexpr_value );
-
-				node_type_class.members.AddName( g_is_end_var_name, Value( std::move(var), file_pos ) );
-			}
+			AddTypeinfoNodeIsEndVariable( node_type_class );
 
 			node_type_class.members.AddName(
 				g_next_node_name,
@@ -373,14 +347,7 @@ Variable CodeBuilder::BuildTypeinfoEnumElementsList( const Enum& enum_type, cons
 					MangleGlobalVariable( root_namespace, "_val_of_"_SpC + node_class_name ),
 					llvm::ConstantStruct::get( node_type_class.llvm_type, fields_initializers ) );
 
-			Variable new_head;
-			new_head.type= node_type;
-			new_head.location= Variable::Location::Pointer;
-			new_head.value_type= ValueType::ConstReference;
-			new_head.llvm_value= global_variable;
-			new_head.constexpr_value= global_variable->getInitializer();
-
-			head= std::move(new_head);
+			head= Variable( node_type, Variable::Location::Pointer, ValueType::ConstReference, global_variable, global_variable->getInitializer() );
 		}); // for enum elements
 
 	return head;
@@ -410,22 +377,7 @@ Variable CodeBuilder::BuildTypeinfoClassFieldsList( const ClassProxyPtr& class_t
 			std::vector<llvm::Constant*> fields_initializers;
 
 			// TODO - maybe reorder fields for better result struct layout?
-			{
-				// Add "is_end" as static variable for contexpr possibility.
-				Variable var;
-
-				var.type= bool_type_;
-				var.location= Variable::Location::Pointer;
-				var.value_type= ValueType::ConstReference;
-				var.constexpr_value= llvm::Constant::getIntegerValue( fundamental_llvm_types_.bool_, llvm::APInt( 1u, 0u ) );
-				var.llvm_value=
-					CreateGlobalConstantVariable(
-						var.type,
-						MangleGlobalVariable( node_type_class.members, g_is_end_var_name ),
-						var.constexpr_value );
-
-				node_type_class.members.AddName( g_is_end_var_name, Value( std::move(var), file_pos ) );
-			}
+			AddTypeinfoNodeIsEndVariable( node_type_class );
 
 			node_type_class.members.AddName(
 				g_next_node_name,
@@ -476,14 +428,7 @@ Variable CodeBuilder::BuildTypeinfoClassFieldsList( const ClassProxyPtr& class_t
 					MangleGlobalVariable( root_namespace, "_val_of_"_SpC + node_class_name ),
 					llvm::ConstantStruct::get( node_type_class.llvm_type, fields_initializers ) );
 
-			Variable new_head;
-			new_head.type= node_type;
-			new_head.location= Variable::Location::Pointer;
-			new_head.value_type= ValueType::ConstReference;
-			new_head.llvm_value= global_variable;
-			new_head.constexpr_value= global_variable->getInitializer();
-
-			head= std::move(new_head);
+			head= Variable( node_type, Variable::Location::Pointer, ValueType::ConstReference, global_variable, global_variable->getInitializer() );
 		} ); // for class elements
 
 	return head;
@@ -511,22 +456,7 @@ Variable CodeBuilder::BuildTypeinfoClassTypesList( const ClassProxyPtr& class_ty
 			std::vector<llvm::Constant*> fields_initializers;
 
 			// TODO - maybe reorder fields for better result struct layout?
-			{
-				// Add "is_end" as static variable for contexpr possibility.
-				Variable var;
-
-				var.type= bool_type_;
-				var.location= Variable::Location::Pointer;
-				var.value_type= ValueType::ConstReference;
-				var.constexpr_value= llvm::Constant::getIntegerValue( fundamental_llvm_types_.bool_, llvm::APInt( 1u, 0u ) );
-				var.llvm_value=
-					CreateGlobalConstantVariable(
-						var.type,
-						MangleGlobalVariable( node_type_class.members, g_is_end_var_name ),
-						var.constexpr_value );
-
-				node_type_class.members.AddName( g_is_end_var_name, Value( std::move(var), file_pos ) );
-			}
+			AddTypeinfoNodeIsEndVariable( node_type_class );
 
 			node_type_class.members.AddName(
 				g_next_node_name,
@@ -564,14 +494,7 @@ Variable CodeBuilder::BuildTypeinfoClassTypesList( const ClassProxyPtr& class_ty
 					MangleGlobalVariable( root_namespace, "_val_of_"_SpC + node_class_name ),
 					llvm::ConstantStruct::get( node_type_class.llvm_type, fields_initializers ) );
 
-			Variable new_head;
-			new_head.type= node_type;
-			new_head.location= Variable::Location::Pointer;
-			new_head.value_type= ValueType::ConstReference;
-			new_head.llvm_value= global_variable;
-			new_head.constexpr_value= global_variable->getInitializer();
-
-			head= std::move(new_head);
+			head= Variable( node_type, Variable::Location::Pointer, ValueType::ConstReference, global_variable, global_variable->getInitializer() );
 		} ); // for class elements
 
 	return head;
@@ -603,22 +526,7 @@ Variable CodeBuilder::BuildTypeinfoClassFunctionsList( const ClassProxyPtr& clas
 				std::vector<llvm::Constant*> fields_initializers;
 
 				// TODO - maybe reorder fields for better result struct layout?
-				{
-					// Add "is_end" as static variable for contexpr possibility.
-					Variable var;
-
-					var.type= bool_type_;
-					var.location= Variable::Location::Pointer;
-					var.value_type= ValueType::ConstReference;
-					var.constexpr_value= llvm::Constant::getIntegerValue( fundamental_llvm_types_.bool_, llvm::APInt( 1u, 0u ) );
-					var.llvm_value=
-						CreateGlobalConstantVariable(
-							var.type,
-							MangleGlobalVariable( node_type_class.members, g_is_end_var_name ),
-							var.constexpr_value );
-
-					node_type_class.members.AddName( g_is_end_var_name, Value( std::move(var), file_pos ) );
-				}
+				AddTypeinfoNodeIsEndVariable( node_type_class );
 
 				node_type_class.members.AddName(
 					g_next_node_name,
@@ -680,14 +588,7 @@ Variable CodeBuilder::BuildTypeinfoClassFunctionsList( const ClassProxyPtr& clas
 						MangleGlobalVariable( root_namespace, "_val_of_"_SpC + node_class_name ),
 						llvm::ConstantStruct::get( node_type_class.llvm_type, fields_initializers ) );
 
-				Variable new_head;
-				new_head.type= node_type;
-				new_head.location= Variable::Location::Pointer;
-				new_head.value_type= ValueType::ConstReference;
-				new_head.llvm_value= global_variable;
-				new_head.constexpr_value= global_variable->getInitializer();
-
-				head= std::move(new_head);
+				head= Variable( node_type, Variable::Location::Pointer, ValueType::ConstReference, global_variable, global_variable->getInitializer() );
 			} // for functions
 		} ); // for class elements
 
@@ -710,22 +611,7 @@ Variable CodeBuilder::BuildTypeinfoFunctionArguments( const Function& function_t
 		std::vector<llvm::Constant*> fields_initializers;
 
 		// TODO - maybe reorder fields for better result struct layout?
-		{
-			// Add "is_end" as static variable for contexpr possibility.
-			Variable var;
-
-			var.type= bool_type_;
-			var.location= Variable::Location::Pointer;
-			var.value_type= ValueType::ConstReference;
-			var.constexpr_value= llvm::Constant::getIntegerValue( fundamental_llvm_types_.bool_, llvm::APInt( 1u, 0u ) );
-			var.llvm_value=
-				CreateGlobalConstantVariable(
-					var.type,
-					MangleGlobalVariable( node_type_class.members, g_is_end_var_name ),
-					var.constexpr_value );
-
-			node_type_class.members.AddName( g_is_end_var_name, Value( std::move(var), file_pos ) );
-		}
+		AddTypeinfoNodeIsEndVariable( node_type_class );
 
 		node_type_class.members.AddName(
 			g_next_node_name,
@@ -764,14 +650,7 @@ Variable CodeBuilder::BuildTypeinfoFunctionArguments( const Function& function_t
 				MangleGlobalVariable( root_namespace, "_val_of_"_SpC + node_class_name ),
 				llvm::ConstantStruct::get( node_type_class.llvm_type, fields_initializers ) );
 
-		Variable new_head;
-		new_head.type= node_type;
-		new_head.location= Variable::Location::Pointer;
-		new_head.value_type= ValueType::ConstReference;
-		new_head.llvm_value= global_variable;
-		new_head.constexpr_value= global_variable->getInitializer();
-
-		head= std::move(new_head);
+		head= Variable( node_type, Variable::Location::Pointer, ValueType::ConstReference, global_variable, global_variable->getInitializer() );
 	}
 
 	return head;

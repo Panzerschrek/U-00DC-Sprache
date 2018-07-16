@@ -302,6 +302,11 @@ struct Variable final
 	llvm::Constant* constexpr_value= nullptr;
 
 	std::unordered_set<StoredVariablePtr> referenced_variables;
+
+	Variable()= default;
+	Variable(Type in_type,
+		Location in_location= Location::Pointer, ValueType in_value_type= ValueType::ConstReference,
+		llvm::Value* in_llvm_value= nullptr, llvm::Constant* in_constexpr_value= nullptr );
 };
 
 class StoredVariable

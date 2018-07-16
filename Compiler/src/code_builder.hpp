@@ -508,6 +508,7 @@ private:
 	Variable BuildTypeinfoPrototype( const Type& type, const NamesScope& root_namespace );
 	void BuildFullTypeinfo( const Type& type, Variable& typeinfo_variable, const NamesScope& root_namespace );
 	const Variable& GetTypeinfoListEndNode( const NamesScope& root_namespace );
+	void AddTypeinfoNodeIsEndVariable( Class& node_class, bool is_end= false );
 	void FinishTypeinfoClass( Class& class_, const ClassProxyPtr class_proxy, const std::vector<llvm::Type*>& fields_llvm_types );
 	Variable BuildTypeinfoEnumElementsList( const Enum& enum_type, const NamesScope& root_namespace );
 	Variable BuildTypeinfoClassFieldsList( const ClassProxyPtr& class_type, const NamesScope& root_namespace );

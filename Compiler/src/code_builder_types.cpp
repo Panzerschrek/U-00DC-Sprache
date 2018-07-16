@@ -833,6 +833,14 @@ Enum::Enum( const ProgramString& in_name, const NamesScope* parent_scope )
 	: members( in_name, parent_scope )
 {}
 
+Variable::Variable(
+	Type in_type,
+	const Location in_location, const ValueType in_value_type,
+	llvm::Value* const in_llvm_value, llvm::Constant* const in_constexpr_value )
+	: type(std::move(in_type)), location(in_location), value_type(in_value_type)
+	, llvm_value(in_llvm_value), constexpr_value(in_constexpr_value)
+{}
+
 //
 // StoredVariable
 //
