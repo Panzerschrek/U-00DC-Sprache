@@ -363,10 +363,8 @@ Variable CodeBuilder::BuildTypeinfoClassFieldsList( const ClassProxyPtr& class_t
 		[&]( const NamesScope::InsertedName& class_member )
 		{
 			const ClassField* const class_field= class_member.second.GetClassField();
-			if( class_field == nullptr || class_field->class_.lock() != class_type )
+			if( class_field == nullptr )
 				return;
-
-			// TODO - maybe add fileds of parents and type of field`s parent class?
 
 			const ProgramString node_class_name= "_node_"_SpC + class_member.first + "_of_"_SpC + class_type->class_->members.GetThisNamespaceName();
 			const ClassProxyPtr node_type= std::make_shared<ClassProxy>( new Class( node_class_name, &root_namespace ) );
@@ -393,7 +391,40 @@ Variable CodeBuilder::BuildTypeinfoClassFieldsList( const ClassProxyPtr& class_t
 				fields_llvm_types.push_back( llvm::PointerType::get( field_type_typeinfo.type.GetLLVMType(), 0u ) );
 				fields_initializers.push_back( llvm::dyn_cast<llvm::GlobalVariable>( field_type_typeinfo.llvm_value ) );
 			}
-			// TODO - add offset, number.
+			{
+				const Variable fields_class_type_typeinfo= BuildTypeInfo( class_field->class_.lock(), root_namespace );
+				ClassField field( node_type, fields_class_type_typeinfo.type, static_cast<unsigned int>(fields_llvm_types.size()), false, true );
+
+				node_type_class.members.AddName( "class_type"_SpC, Value( std::move(field), file_pos ) );
+				fields_llvm_types.push_back( llvm::PointerType::get( fields_class_type_typeinfo.type.GetLLVMType(), 0u ) );
+				fields_initializers.push_back( llvm::dyn_cast<llvm::GlobalVariable>( fields_class_type_typeinfo.llvm_value ) );
+			}
+			{
+				// For ancestor fields accumulate offset.
+				const llvm::DataLayout& data_layout= module_->getDataLayout();
+				uint64_t offset= 0u;
+				ClassProxyPtr class_for_field_search= class_type;
+				while(true)
+				{
+					if( class_for_field_search == class_field->class_.lock() )
+					{
+						offset+= data_layout.getStructLayout( class_for_field_search->class_->llvm_type )->getElementOffset( class_field->index );
+						break;
+					}
+					else
+					{
+						U_ASSERT( class_for_field_search->class_->base_class != nullptr );
+						offset+= data_layout.getStructLayout( class_for_field_search->class_->llvm_type )->getElementOffset( class_for_field_search->class_->base_class_field_number );
+						class_for_field_search= class_for_field_search->class_->base_class;
+					}
+				}
+
+				node_type_class.members.AddName(
+					"offset"_SpC,
+					Value( ClassField( node_type, size_type_, static_cast<unsigned int>(fields_llvm_types.size()), true, false ), file_pos ) );
+				fields_llvm_types.push_back( size_type_.GetLLVMType() );
+				fields_initializers.push_back( llvm::Constant::getIntegerValue( size_type_.GetLLVMType(), llvm::APInt( size_type_.GetLLVMType()->getIntegerBitWidth(), offset ) ) );
+			}
 			{
 				const std::string name_str= ToUTF8( class_member.first );
 				Array name_type;

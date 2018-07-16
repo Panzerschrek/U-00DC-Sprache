@@ -216,6 +216,72 @@ def ClassTypesInfo_Test1():
 	tests_lib.build_program( c_program_text )
 
 
+def ClassTypesInfo_Test2():
+	c_program_text= """
+		class A polymorph { i32 x; }
+		class B : A {}
+
+		template</ type T /> fn constexpr MustBeSame( T& a, T& b ) : bool { return true; }
+		fn Foo()
+		{
+			static_assert( MustBeSame( typeinfo</B/>.fields_list.class_type, typeinfo</A/> ) );
+			static_assert( MustBeSame( typeinfo</A/>.fields_list.class_type, typeinfo</A/>.fields_list.class_type ) );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def ClassTypesInfo_Test3():
+	c_program_text= """
+	template</ size_type size0, size_type size1 />
+	fn constexpr StringEquals( [ char8, size0 ]& s0, [ char8, size1 ]& s1 ) : bool
+	{
+		if( size0 != size1 ) { return false; }
+		var size_type mut i(0);
+		while( i < size0 )
+		{
+			if( s0[i] != s1[i] ) { return false; }
+			++i;
+		}
+		return true;
+	}
+
+	template</ type T, size_type name_size />
+	fn constexpr ClassFieldsListNodeOffset( T& node, [ char8, name_size ]& name ) : size_type
+	{
+		static_if( T::is_end )
+		{
+			halt;
+		}
+		else
+		{
+			if( StringEquals( node.name, name ) )
+			{
+				return node.offset;
+			}
+			else
+			{
+				return ::ClassFieldsListNodeOffset( node.next, name );
+			}
+		}
+	}
+
+	struct S
+	{
+		i32 x;
+		i32 y;
+	}
+
+	auto constexpr size_of_i32= typeinfo</i32/>.size_of;
+	auto constexpr x_offset= ClassFieldsListNodeOffset( typeinfo</S/>.fields_list, "x" );
+	auto constexpr y_offset= ClassFieldsListNodeOffset( typeinfo</S/>.fields_list, "y" );
+	static_assert( x_offset != y_offset );
+	static_assert( x_offset == size_type(0) || x_offset == size_of_i32 );
+	static_assert( y_offset == size_type(0) || y_offset == size_of_i32 );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
 def TypeinfoForTemplateDependentType_Test0():
 	c_program_text= """
 		template</ type T />
