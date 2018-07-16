@@ -268,16 +268,25 @@ const Variable& CodeBuilder::GetTypeinfoListEndNode( const NamesScope& root_name
 
 void CodeBuilder::AddTypeinfoNodeIsEndVariable( Class& node_class, const bool is_end )
 {
-	Variable var( bool_type_, Variable::Location::Pointer, ValueType::ConstReference );
+	// Reuse llvm global variable for "is_end" variables.
+	// TODO - maybe reuse all scalar constants?
 
-	var.constexpr_value= llvm::Constant::getIntegerValue( fundamental_llvm_types_.bool_, llvm::APInt( 1u, is_end ) );
-	var.llvm_value=
-		CreateGlobalConstantVariable(
-			var.type,
-			MangleGlobalVariable( node_class.members, g_is_end_var_name ),
-			var.constexpr_value );
+	const unsigned int i= is_end ? 1u : 0u;
+	if( typeinfo_is_end_variable_[i] == nullptr )
+		typeinfo_is_end_variable_[i]=
+			CreateGlobalConstantVariable(
+				bool_type_,
+				MangleGlobalVariable( node_class.members, g_is_end_var_name ),
+				llvm::Constant::getIntegerValue( fundamental_llvm_types_.bool_, llvm::APInt( 1u, i ) ) );
 
-	node_class.members.AddName( g_is_end_var_name, Value( std::move(var), FilePos() ) );
+	node_class.members.AddName(
+		g_is_end_var_name,
+		Value(
+			Variable(
+				bool_type_,
+				Variable::Location::Pointer, ValueType::ConstReference,
+				typeinfo_is_end_variable_[i], typeinfo_is_end_variable_[i]->getInitializer() ),
+			FilePos() ) );
 }
 
 void CodeBuilder::FinishTypeinfoClass( Class& class_, const ClassProxyPtr class_proxy, const std::vector<llvm::Type*>& fields_llvm_types )

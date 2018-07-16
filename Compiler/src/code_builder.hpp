@@ -846,6 +846,7 @@ private:
 	// TODO - create hasher for type and use unordered_map.
 	std::vector< std::pair< Type, Variable > > typeinfo_cache_;
 	boost::optional< Variable > typeinfo_list_end_node_; // Lazy initialized.
+	llvm::GlobalVariable* typeinfo_is_end_variable_[2u]= { nullptr, nullptr }; // Lazy initialized.
 
 	std::vector<std::unique_ptr<PreResolveFunc>> resolving_funcs_stack_;
 };
