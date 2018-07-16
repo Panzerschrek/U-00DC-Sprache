@@ -238,6 +238,98 @@ static NamePair GetTypeName_r( const Type& type, NamesCache& names_cache )
 	{
 		result= GetNestedName( class_type->members.GetThisNamespaceName(), true, *class_type->members.GetParent(), false, names_cache );
 	}
+	else if( const Enum* const enum_type= type.GetEnumType() )
+	{
+		result= GetNestedName( enum_type->members.GetThisNamespaceName(), true, *enum_type->members.GetParent(), false, names_cache );
+	}
+	else if( const FunctionPointer* const function_pointer= type.GetFunctionPointerType() )
+	{
+		const ProgramString prefix= "P"_SpC;
+		const NamePair function_type_name= GetTypeName_r( function_pointer->function, names_cache );
+		result.full= prefix + function_type_name.full;
+
+		const size_t replacement_candidate= names_cache.GetRepalcement( result.full );
+		if( replacement_candidate != std::numeric_limits<size_t>::max() )
+			result.compressed_and_escaped= names_cache.RetReplacementString( replacement_candidate );
+		else
+		{
+			result.compressed_and_escaped= prefix + function_type_name.compressed_and_escaped;
+			names_cache.AddName( result.full );
+		}
+	}
+	else if( const Function* const function= type.GetFunctionType() )
+	{
+		std::vector<Function::Arg> signature;
+		{
+			Function::Arg ret;
+			ret.is_mutable= function->return_value_is_mutable;
+			ret.is_reference= function->return_value_is_reference;
+			ret.type= function->return_type;
+			signature.push_back(ret);
+		}
+		if( function->args.empty() )
+		{
+			Function::Arg arg;
+			arg.is_mutable= false;
+			arg.is_reference= false;
+			arg.type= FundamentalType( U_FundamentalType::Void );
+			signature.push_back(arg);
+		}
+		signature.insert( signature.end(), function->args.begin(), function->args.end() );
+
+		for( const Function::Arg& arg : signature )
+		{
+			NamePair type_name= GetTypeName_r( arg.type, names_cache );
+			if( !arg.is_mutable && arg.is_reference ) // push "Konst" for reference immutable arguments
+			{
+				const ProgramString prefix= "K"_SpC;
+				const ProgramString prefixed_type_name= prefix + type_name.full;
+				type_name.full= prefixed_type_name;
+
+				const size_t replacement_candidate= names_cache.GetRepalcement( prefixed_type_name );
+				if( replacement_candidate != std::numeric_limits<size_t>::max() )
+					type_name.compressed_and_escaped= names_cache.RetReplacementString( replacement_candidate );
+				else
+				{
+					type_name.compressed_and_escaped= prefix + type_name.compressed_and_escaped;
+					names_cache.AddName( prefixed_type_name );
+				}
+			}
+			if( arg.is_reference )
+			{
+				const ProgramString prefix= "R"_SpC;
+				const ProgramString prefixed_type_name= prefix + type_name.full;
+				type_name.full= prefixed_type_name;
+
+				const size_t replacement_candidate= names_cache.GetRepalcement( prefixed_type_name );
+				if( replacement_candidate != std::numeric_limits<size_t>::max() )
+					type_name.compressed_and_escaped= names_cache.RetReplacementString( replacement_candidate );
+				else
+				{
+					type_name.compressed_and_escaped= prefix + type_name.compressed_and_escaped;
+					names_cache.AddName( prefixed_type_name );
+				}
+			}
+
+			result.full+= type_name.full;
+			result.compressed_and_escaped+= type_name.compressed_and_escaped;
+		}
+
+		const ProgramString function_prefix= "F"_SpC;
+		const ProgramString function_postfix= "E"_SpC;
+		const ProgramString prefixed_type_name= function_prefix + result.full + function_postfix;
+		result.full= prefixed_type_name;
+
+		const size_t replacement_candidate= names_cache.GetRepalcement( prefixed_type_name );
+		if( replacement_candidate != std::numeric_limits<size_t>::max() )
+			result.compressed_and_escaped= names_cache.RetReplacementString( replacement_candidate );
+		else
+		{
+			result.compressed_and_escaped= function_prefix + result.compressed_and_escaped + function_postfix;
+			names_cache.AddName( prefixed_type_name );
+		}
+	}
+	else U_ASSERT(false);
 
 	return result;
 }
