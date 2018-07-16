@@ -158,14 +158,22 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, Variable& typeinfo_variab
 	};
 
 	const llvm::DataLayout& data_layout= module_->getDataLayout();
-	add_size_field(  "size_of"_SpC, data_layout.getTypeAllocSize( type.GetLLVMType() ) );
-	add_size_field( "align_of"_SpC, data_layout.getABITypeAlignment( type.GetLLVMType() ) ); // TODO - is this correct alignment?
+	if( type.GetFunctionType() == nullptr )
+	{
+		llvm::Type* llvm_type= type.GetLLVMType();
+		if( llvm_type == fundamental_llvm_types_.void_for_ret_ )
+			llvm_type= fundamental_llvm_types_.void_;
+
+		add_size_field(  "size_of"_SpC, data_layout.getTypeAllocSize( llvm_type ) );
+		add_size_field( "align_of"_SpC, data_layout.getABITypeAlignment( llvm_type ) ); // TODO - is this correct alignment?
+	}
 
 	add_bool_field(      "is_fundamental"_SpC, type.GetFundamentalType()     != nullptr );
 	add_bool_field(             "is_enum"_SpC, type.GetEnumType()            != nullptr );
 	add_bool_field(            "is_array"_SpC, type.GetArrayType()           != nullptr );
 	add_bool_field(            "is_class"_SpC, type.GetClassType()           != nullptr );
 	add_bool_field( "is_function_pointer"_SpC, type.GetFunctionPointerType() != nullptr );
+	add_bool_field(         "is_function"_SpC, type.GetFunctionType()        != nullptr );
 
 	add_bool_field( "is_default_constructible"_SpC, type.IsDefaultConstructible() );
 	add_bool_field(    "is_copy_constructible"_SpC, type.IsCopyConstructible()    );
@@ -220,11 +228,20 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, Variable& typeinfo_variab
 		const ClassProxyPtr class_proxy= type.GetClassTypeProxy();
 		add_list_head_field( "fields_list"_SpC, BuildTypeinfoClassFieldsList( class_proxy, root_namespace ) );
 		add_list_head_field( "types_list"_SpC, BuildTypeinfoClassTypesList( class_proxy, root_namespace ) );
-		// SPRACHE_TODO - add complete information about class type - fields, member types, functions, etc.
+		add_list_head_field( "functions_list"_SpC, BuildTypeinfoClassFunctionsList( class_proxy, root_namespace ) );
 	}
-	else if( type.GetFunctionPointerType() != nullptr )
+	else if( const FunctionPointer* const function_pointer_type= type.GetFunctionPointerType() )
 	{
-		// SPRACHE_DOTO - add complete information about function pointer type - arguments, return value, pollution, unsafe, etc.
+		add_typeinfo_field( "element_type"_SpC, function_pointer_type->function );
+	}
+	else if( const Function* const function_type= type.GetFunctionType() )
+	{
+		add_typeinfo_field( "return_type"_SpC, function_type->return_type );
+		add_bool_field( "return_value_is_reference"_SpC, function_type->return_value_is_reference );
+		add_bool_field( "return_value_is_mutable"_SpC, function_type->return_value_is_mutable );
+		add_bool_field( "unsafe"_SpC, function_type->unsafe );
+		add_list_head_field( "arguments_list"_SpC, BuildTypeinfoFunctionArguments( *function_type, root_namespace ) );
+		// SPRACHE_TODO - add also reference pollution.
 	}
 	else U_ASSERT(false);
 
@@ -675,6 +692,282 @@ Variable CodeBuilder::BuildTypeinfoClassTypesList( const ClassProxyPtr& class_ty
 
 			head= std::move(new_head);
 		} ); // for class elements
+
+	return head;
+}
+
+Variable CodeBuilder::BuildTypeinfoClassFunctionsList( const ClassProxyPtr& class_type, const NamesScope& root_namespace )
+{
+	const FilePos file_pos{ 0u, 0u, 0u };
+
+	Variable head= GetTypeinfoListEndNode( root_namespace );
+
+	class_type->class_->members.ForEachInThisScope(
+		[&]( const NamesScope::InsertedName& class_member )
+		{
+			const OverloadedFunctionsSet* const functions_set= class_member.second.GetFunctionsSet();
+			if( functions_set == nullptr )
+				return;
+			size_t i= 0u;
+			for( const FunctionVariable& function : functions_set->functions )
+			{
+				const ProgramString node_class_name= "_node_"_SpC + class_member.first + "_"_SpC + ToProgramString(std::to_string(i).c_str()) + "_of_"_SpC + class_type->class_->members.GetThisNamespaceName();
+				const ClassProxyPtr node_type= std::make_shared<ClassProxy>( new Class( node_class_name, &root_namespace ) );
+				Class& node_type_class= *node_type->class_;
+				node_type_class.llvm_type= llvm::StructType::create( llvm_context_, MangleType( node_type ) );
+
+				++i;
+
+				std::vector<llvm::Type*> fields_llvm_types;
+				std::vector<llvm::Constant*> fields_initializers;
+
+				// TODO - maybe reorder fields for better result struct layout?
+				{
+					// Add "is_end" as static variable for contexpr possibility.
+					Variable var;
+
+					var.type= bool_type_;
+					var.location= Variable::Location::Pointer;
+					var.value_type= ValueType::ConstReference;
+					var.constexpr_value= llvm::Constant::getIntegerValue( fundamental_llvm_types_.bool_, llvm::APInt( 1u, 0u ) );
+					var.llvm_value=
+						CreateGlobalConstantVariable(
+							var.type,
+							MangleGlobalVariable( node_type_class.members, g_is_end_var_name ),
+							var.constexpr_value );
+
+					node_type_class.members.AddName( g_is_end_var_name, Value( std::move(var), file_pos ) );
+				}
+				{
+					ClassField field;
+					field.class_= node_type;
+					field.type= head.type;
+					field.index= static_cast<unsigned int>(fields_llvm_types.size());
+					field.is_reference= true;
+					field.is_mutable= false;
+
+					node_type_class.members.AddName( g_next_node_name, Value( std::move(field), file_pos ) );
+					fields_llvm_types.push_back( llvm::PointerType::get( head.type.GetLLVMType(), 0u ) );
+					fields_initializers.push_back( llvm::dyn_cast<llvm::GlobalVariable>(head.llvm_value) );
+				}
+				{
+					const Variable dependent_type_typeinfo= BuildTypeInfo( function.type, root_namespace );
+
+					ClassField field;
+					field.class_= node_type;
+					field.type= dependent_type_typeinfo.type;
+					field.index= static_cast<unsigned int>(fields_llvm_types.size());
+					field.is_reference= true;
+					field.is_mutable= false;
+
+					node_type_class.members.AddName( "type"_SpC, Value( std::move(field), file_pos ) );
+					fields_llvm_types.push_back( llvm::PointerType::get( dependent_type_typeinfo.type.GetLLVMType(), 0u ) );
+					fields_initializers.push_back( llvm::dyn_cast<llvm::GlobalVariable>( dependent_type_typeinfo.llvm_value ) );
+				}
+				{
+					std::string name_str= ToUTF8( class_member.first );
+					Array name_type;
+					name_type.type= FundamentalType( U_FundamentalType::char8, fundamental_llvm_types_.char8 );
+					name_type.size= name_str.size();
+					name_type.llvm_type= llvm::ArrayType::get( name_type.type.GetLLVMType(), name_type.size );
+
+					ClassField field;
+					field.class_= node_type;
+					field.type= name_type;
+					field.index= static_cast<unsigned int>(fields_llvm_types.size());
+					field.is_reference= false;
+					field.is_mutable= true;
+
+					node_type_class.members.AddName( "name"_SpC, Value( std::move(field), file_pos ) );
+					fields_llvm_types.push_back( name_type.llvm_type );
+					fields_initializers.push_back( llvm::ConstantDataArray::getString( llvm_context_, name_str, false /* not null terminated */ ) );
+				}
+				{
+					ClassField field;
+					field.class_= node_type;
+					field.type= bool_type_;
+					field.index= static_cast<unsigned int>(fields_llvm_types.size());
+					field.is_reference= false;
+					field.is_mutable= true;
+
+					node_type_class.members.AddName( "is_this_call"_SpC, Value( std::move(field), file_pos ) );
+					fields_llvm_types.push_back( fundamental_llvm_types_.bool_ );
+					fields_initializers.push_back( llvm::Constant::getIntegerValue( fundamental_llvm_types_.bool_, llvm::APInt( 1u, function.is_this_call ) ) );
+				}
+				{
+					ClassField field;
+					field.class_= node_type;
+					field.type= bool_type_;
+					field.index= static_cast<unsigned int>(fields_llvm_types.size());
+					field.is_reference= false;
+					field.is_mutable= true;
+
+					node_type_class.members.AddName( "is_generated"_SpC, Value( std::move(field), file_pos ) );
+					fields_llvm_types.push_back( fundamental_llvm_types_.bool_ );
+					fields_initializers.push_back( llvm::Constant::getIntegerValue( fundamental_llvm_types_.bool_, llvm::APInt( 1u, function.is_generated ) ) );
+				}
+				{
+					ClassField field;
+					field.class_= node_type;
+					field.type= bool_type_;
+					field.index= static_cast<unsigned int>(fields_llvm_types.size());
+					field.is_reference= false;
+					field.is_mutable= true;
+
+					node_type_class.members.AddName( "is_deleted"_SpC, Value( std::move(field), file_pos ) );
+					fields_llvm_types.push_back( fundamental_llvm_types_.bool_ );
+					fields_initializers.push_back( llvm::Constant::getIntegerValue( fundamental_llvm_types_.bool_, llvm::APInt( 1u, function.is_deleted ) ) );
+				}
+				{
+					ClassField field;
+					field.class_= node_type;
+					field.type= bool_type_;
+					field.index= static_cast<unsigned int>(fields_llvm_types.size());
+					field.is_reference= false;
+					field.is_mutable= true;
+
+					node_type_class.members.AddName( "is_virtual"_SpC, Value( std::move(field), file_pos ) );
+					fields_llvm_types.push_back( fundamental_llvm_types_.bool_ );
+					fields_initializers.push_back( llvm::Constant::getIntegerValue( fundamental_llvm_types_.bool_, llvm::APInt( 1u, function.virtual_table_index != ~0u ) ) );
+				}
+
+				node_type_class.llvm_type->setBody( fields_llvm_types );
+				node_type_class.kind= Class::Kind::Struct;
+				node_type_class.completeness= Class::Completeness::Complete;
+				node_type_class.can_be_constexpr= true;
+				// TODO - generate some methods?
+
+				llvm::GlobalVariable* const global_variable=
+					new llvm::GlobalVariable(
+						*module_,
+						node_type_class.llvm_type,
+						true, // is constant
+						llvm::GlobalValue::InternalLinkage, // We have no external variables, so, use internal linkage.
+						llvm::ConstantStruct::get( node_type_class.llvm_type, fields_initializers ),
+						ToStdString( "_val_of_"_SpC + node_class_name ) );
+
+				Variable new_head;
+				new_head.type= node_type;
+				new_head.location= Variable::Location::Pointer;
+				new_head.value_type= ValueType::ConstReference;
+				new_head.llvm_value= global_variable;
+				new_head.constexpr_value= global_variable->getInitializer();
+
+				head= std::move(new_head);
+			} // for functions
+		} ); // for class elements
+
+	return head;
+}
+
+Variable CodeBuilder::BuildTypeinfoFunctionArguments( const Function& function_type, const NamesScope& root_namespace )
+{
+	const FilePos file_pos{ 0u, 0u, 0u };
+
+	Variable head= GetTypeinfoListEndNode( root_namespace );
+	for( const Function::Arg& arg : function_type.args )
+	{
+		const ProgramString node_class_name= "_node_"_SpC; // TODO - set correct name.
+		const ClassProxyPtr node_type= std::make_shared<ClassProxy>( new Class( node_class_name, &root_namespace ) );
+		Class& node_type_class= *node_type->class_;
+		node_type_class.llvm_type= llvm::StructType::create( llvm_context_, MangleType( node_type ) );
+
+		std::vector<llvm::Type*> fields_llvm_types;
+		std::vector<llvm::Constant*> fields_initializers;
+
+		// TODO - maybe reorder fields for better result struct layout?
+		{
+			// Add "is_end" as static variable for contexpr possibility.
+			Variable var;
+
+			var.type= bool_type_;
+			var.location= Variable::Location::Pointer;
+			var.value_type= ValueType::ConstReference;
+			var.constexpr_value= llvm::Constant::getIntegerValue( fundamental_llvm_types_.bool_, llvm::APInt( 1u, 0u ) );
+			var.llvm_value=
+				CreateGlobalConstantVariable(
+					var.type,
+					MangleGlobalVariable( node_type_class.members, g_is_end_var_name ),
+					var.constexpr_value );
+
+			node_type_class.members.AddName( g_is_end_var_name, Value( std::move(var), file_pos ) );
+		}
+		{
+			ClassField field;
+			field.class_= node_type;
+			field.type= head.type;
+			field.index= static_cast<unsigned int>(fields_llvm_types.size());
+			field.is_reference= true;
+			field.is_mutable= false;
+
+			node_type_class.members.AddName( g_next_node_name, Value( std::move(field), file_pos ) );
+			fields_llvm_types.push_back( llvm::PointerType::get( head.type.GetLLVMType(), 0u ) );
+			fields_initializers.push_back( llvm::dyn_cast<llvm::GlobalVariable>(head.llvm_value) );
+		}
+		{
+			const Variable dependent_type_typeinfo= BuildTypeInfo( arg.type, root_namespace );
+
+			ClassField field;
+			field.class_= node_type;
+			field.type= dependent_type_typeinfo.type;
+			field.index= static_cast<unsigned int>(fields_llvm_types.size());
+			field.is_reference= true;
+			field.is_mutable= false;
+
+			node_type_class.members.AddName( "type"_SpC, Value( std::move(field), file_pos ) );
+			fields_llvm_types.push_back( llvm::PointerType::get( dependent_type_typeinfo.type.GetLLVMType(), 0u ) );
+			fields_initializers.push_back( llvm::dyn_cast<llvm::GlobalVariable>( dependent_type_typeinfo.llvm_value ) );
+		}
+		{
+			ClassField field;
+			field.class_= node_type;
+			field.type= bool_type_;
+			field.index= static_cast<unsigned int>(fields_llvm_types.size());
+			field.is_reference= false;
+			field.is_mutable= true;
+
+			node_type_class.members.AddName( "is_reference"_SpC, Value( std::move(field), file_pos ) );
+			fields_llvm_types.push_back( fundamental_llvm_types_.bool_ );
+			fields_initializers.push_back( llvm::Constant::getIntegerValue( fundamental_llvm_types_.bool_, llvm::APInt( 1u, arg.is_reference ) ) );
+		}
+		{
+			ClassField field;
+			field.class_= node_type;
+			field.type= bool_type_;
+			field.index= static_cast<unsigned int>(fields_llvm_types.size());
+			field.is_reference= false;
+			field.is_mutable= true;
+
+			node_type_class.members.AddName( "is_mutable"_SpC, Value( std::move(field), file_pos ) );
+			fields_llvm_types.push_back( fundamental_llvm_types_.bool_ );
+			fields_initializers.push_back( llvm::Constant::getIntegerValue( fundamental_llvm_types_.bool_, llvm::APInt( 1u, arg.is_mutable ) ) );
+		}
+		// SPRACHE_TODO - add reference pollution
+
+		node_type_class.llvm_type->setBody( fields_llvm_types );
+		node_type_class.kind= Class::Kind::Struct;
+		node_type_class.completeness= Class::Completeness::Complete;
+		node_type_class.can_be_constexpr= true;
+		// TODO - generate some methods?
+
+		llvm::GlobalVariable* const global_variable=
+			new llvm::GlobalVariable(
+				*module_,
+				node_type_class.llvm_type,
+				true, // is constant
+				llvm::GlobalValue::InternalLinkage, // We have no external variables, so, use internal linkage.
+				llvm::ConstantStruct::get( node_type_class.llvm_type, fields_initializers ),
+				ToStdString( "_val_of_"_SpC + node_class_name ) );
+
+		Variable new_head;
+		new_head.type= node_type;
+		new_head.location= Variable::Location::Pointer;
+		new_head.value_type= ValueType::ConstReference;
+		new_head.llvm_value= global_variable;
+		new_head.constexpr_value= global_variable->getInitializer();
+
+		head= std::move(new_head);
+	}
 
 	return head;
 }

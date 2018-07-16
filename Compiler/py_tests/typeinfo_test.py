@@ -620,3 +620,111 @@ def TypeinfoList_ClassTypesList_Test0():
 		static_assert( !NodeListHaveName( typeinfo</S/>.types_list, "fff" ) );
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def TypeinfoList_ClassFunctionsList_Test0():
+	c_program_text= """
+		template</ size_type size0, size_type size1 />
+		fn constexpr StringEquals( [ char8, size0 ]& s0, [ char8, size1 ]& s1 ) : bool
+		{
+			if( size0 != size1 ) { return false; }
+			var size_type mut i(0);
+			while( i < size0 )
+			{
+				if( s0[i] != s1[i] ) { return false; }
+				++i;
+			}
+			return true;
+		}
+
+		template</ type T, size_type name_size />
+		fn constexpr NodeListNameCount( T& node, [ char8, name_size ]& name ) : u32
+		{
+			static_if( T::is_end )
+			{
+				return 0u;
+			}
+			else
+			{
+				var u32 mut result(0);
+				if( StringEquals( node.name, name ) )
+				{
+					++result;
+				}
+				return result + ::NodeListNameCount( node.next, name );
+			}
+		}
+
+		struct S
+		{
+			fn Foo(){}
+			fn Bar(){}
+			fn Bar( i32 x, f32 y ) {}
+
+			fn constructor(this)= default;
+			fn constructor(this, S& other)= default;
+			op+( S& a, S& b ) {}
+		}
+
+		static_assert( NodeListNameCount( typeinfo</S/>.functions_list, "Foo" ) == 1u );
+		static_assert( NodeListNameCount( typeinfo</S/>.functions_list, "Bar" ) == 2u );
+		static_assert( NodeListNameCount( typeinfo</S/>.functions_list, "constructor" ) == 2u );
+		static_assert( NodeListNameCount( typeinfo</S/>.functions_list, "destructor" ) == 1u );
+		static_assert( NodeListNameCount( typeinfo</S/>.functions_list, "+" ) == 1u );
+		static_assert( NodeListNameCount( typeinfo</S/>.functions_list, "-" ) == 0u );
+		static_assert( NodeListNameCount( typeinfo</S/>.functions_list, "UnknownFunc" ) == 0u );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def TypeinfoList_ClassFunctionsList_Test1():
+	c_program_text= """
+		template</ size_type size0, size_type size1 />
+		fn constexpr StringEquals( [ char8, size0 ]& s0, [ char8, size1 ]& s1 ) : bool
+		{
+			if( size0 != size1 ) { return false; }
+			var size_type mut i(0);
+			while( i < size0 )
+			{
+				if( s0[i] != s1[i] ) { return false; }
+				++i;
+			}
+			return true;
+		}
+
+		template</ type T, size_type name_size />
+		fn constexpr GetFunctionUnsafe( T& node, [ char8, name_size ]& name ) : bool
+		{
+			static_if( T::is_end )
+			{
+				halt;
+			}
+			else
+			{
+				if( StringEquals( node.name, name ) )
+				{
+					return node.type.unsafe;
+				}
+				else
+				{
+					return ::GetFunctionUnsafe( node.next, name );
+				}
+			}
+		}
+
+		class A
+		{
+			fn Foo() unsafe;
+			fn Bar();
+			fn ZFF() unsafe;
+			fn TTTR();
+			fn constructor()= default;
+		}
+
+		static_assert( GetFunctionUnsafe( typeinfo</ A />.functions_list, "Foo" ) == true );
+		static_assert( GetFunctionUnsafe( typeinfo</ A />.functions_list, "Bar" ) == false );
+		static_assert( GetFunctionUnsafe( typeinfo</ A />.functions_list, "ZFF" ) == true );
+		static_assert( GetFunctionUnsafe( typeinfo</ A />.functions_list, "TTTR" ) == false );
+		static_assert( GetFunctionUnsafe( typeinfo</ A />.functions_list, "constructor" ) == false );
+	"""
+	tests_lib.build_program( c_program_text )
