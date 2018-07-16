@@ -511,6 +511,10 @@ private:
 	void AddTypeinfoNodeIsEndVariable( Class& node_class, bool is_end= false );
 	void FinishTypeinfoClass( Class& class_, const ClassProxyPtr class_proxy, const std::vector<llvm::Type*>& fields_llvm_types );
 	Variable BuildTypeinfoEnumElementsList( const Enum& enum_type, const NamesScope& root_namespace );
+	void CreateTypeinfoClassMembersListNodeCommonFields(
+		const Class& class_, const ClassProxyPtr& node_class_proxy,
+		const ProgramString& member_name,
+		std::vector<llvm::Type*>& fields_llvm_types, std::vector<llvm::Constant*>& fields_initializers );
 	Variable BuildTypeinfoClassFieldsList( const ClassProxyPtr& class_type, const NamesScope& root_namespace );
 	Variable BuildTypeinfoClassTypesList( const ClassProxyPtr& class_type, const NamesScope& root_namespace );
 	Variable BuildTypeinfoClassFunctionsList( const ClassProxyPtr& class_type, const NamesScope& root_namespace );

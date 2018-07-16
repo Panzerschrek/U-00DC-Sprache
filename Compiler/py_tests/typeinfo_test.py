@@ -282,6 +282,82 @@ def ClassTypesInfo_Test3():
 	tests_lib.build_program( c_program_text )
 
 
+def ClassTypesInfo_Test4():
+	c_program_text= """
+	template</ size_type size0, size_type size1 />
+	fn constexpr StringEquals( [ char8, size0 ]& s0, [ char8, size1 ]& s1 ) : bool
+	{
+		if( size0 != size1 ) { return false; }
+		var size_type mut i(0);
+		while( i < size0 )
+		{
+			if( s0[i] != s1[i] ) { return false; }
+			++i;
+		}
+		return true;
+	}
+
+	struct PPP
+	{
+		bool is_public;
+		bool is_private;
+		bool is_protected;
+	}
+	template</ type T, size_type name_size />
+	fn constexpr GetVisibility( T& node, [ char8, name_size ]& name ) : PPP
+	{
+		static_if( T::is_end )
+		{
+			halt;
+		}
+		else
+		{
+			if( StringEquals( node.name, name ) )
+			{
+				var PPP result{ .is_public= node.is_public, .is_private= node.is_private, .is_protected= node.is_protected };
+				return result;
+			}
+			else
+			{
+				return ::GetVisibility( node.next, name );
+			}
+		}
+	}
+
+	class A polymorph
+	{
+	public:
+		fn Foo();
+		type T0= A;
+		i32 x;
+	protected:
+		fn Bar();
+		type T1= A;
+		i32 y;
+	private:
+		fn Baz();
+		type T2= A;
+		i32 z;
+	}
+
+	auto &constexpr ti_a= typeinfo</A/>;
+	static_assert( GetVisibility( ti_a.functions_list, "Foo" ).is_public );
+	static_assert( GetVisibility( ti_a.types_list, "T0" ).is_public );
+	static_assert( GetVisibility( ti_a.fields_list, "x" ).is_public );
+	static_assert( GetVisibility( ti_a.functions_list, "Bar" ).is_protected );
+	static_assert( GetVisibility( ti_a.types_list, "T1" ).is_protected );
+	static_assert( GetVisibility( ti_a.fields_list, "y" ).is_protected );
+	static_assert( GetVisibility( ti_a.functions_list, "Baz" ).is_private );
+	static_assert( GetVisibility( ti_a.types_list, "T2" ).is_private );
+	static_assert( GetVisibility( ti_a.fields_list, "z" ).is_private );
+
+	static_assert( !GetVisibility( ti_a.fields_list, "z" ).is_public );
+	static_assert( !GetVisibility( ti_a.types_list, "T1" ).is_public );
+	static_assert( !GetVisibility( ti_a.functions_list, "Foo" ).is_private );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
 def TypeinfoForTemplateDependentType_Test0():
 	c_program_text= """
 		template</ type T />

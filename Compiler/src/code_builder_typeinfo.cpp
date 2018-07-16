@@ -88,20 +88,20 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, Variable& typeinfo_variab
 	const auto add_bool_field=
 	[&]( const ProgramString& name, const bool value )
 	{
-		ClassField field( typeinfo_class_proxy, bool_type_, static_cast<unsigned int>(fields_llvm_types.size()), true, false );
-
-		typeinfo_class.members.AddName( name, Value( std::move(field), file_pos ) );
+		typeinfo_class.members.AddName(
+			name,
+			Value(ClassField( typeinfo_class_proxy, bool_type_, static_cast<unsigned int>(fields_llvm_types.size()), true, false ), file_pos ) );
 		fields_llvm_types.push_back( fundamental_llvm_types_.bool_ );
-		fields_initializers.push_back( llvm::Constant::getIntegerValue( field.type.GetLLVMType(), llvm::APInt( 1u, uint64_t(value) ) ) );
+		fields_initializers.push_back( llvm::Constant::getIntegerValue( fundamental_llvm_types_.bool_, llvm::APInt( 1u, uint64_t(value) ) ) );
 	};
 
 	const auto add_size_field=
 	[&]( const ProgramString& name, const SizeType value )
 	{
-		ClassField field( typeinfo_class_proxy, size_type_, static_cast<unsigned int>(fields_llvm_types.size()), true, false );
-
-		typeinfo_class.members.AddName( name, Value( std::move(field), file_pos ) );
-		fields_llvm_types.push_back( field.type.GetLLVMType() );
+		typeinfo_class.members.AddName(
+			name,
+			Value( ClassField( typeinfo_class_proxy, size_type_, static_cast<unsigned int>(fields_llvm_types.size()), true, false ), file_pos ) );
+		fields_llvm_types.push_back( size_type_.GetLLVMType() );
 		fields_initializers.push_back(
 			llvm::Constant::getIntegerValue(
 				size_type_.GetLLVMType(),
@@ -112,9 +112,10 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, Variable& typeinfo_variab
 	[&]( const ProgramString& name, const Type& dependent_type )
 	{
 		const Variable dependent_type_typeinfo= BuildTypeInfo( dependent_type, root_namespace );
-		ClassField field( typeinfo_class_proxy, dependent_type_typeinfo.type, static_cast<unsigned int>(fields_llvm_types.size()), false, true );
 
-		typeinfo_class.members.AddName( name, Value( std::move(field), file_pos ) );
+		typeinfo_class.members.AddName(
+			name,
+			Value( ClassField( typeinfo_class_proxy, dependent_type_typeinfo.type, static_cast<unsigned int>(fields_llvm_types.size()), false, true ), file_pos ) );
 		fields_llvm_types.push_back( llvm::PointerType::get( dependent_type_typeinfo.type.GetLLVMType(), 0u ) );
 		fields_initializers.push_back( llvm::dyn_cast<llvm::GlobalVariable>( dependent_type_typeinfo.llvm_value ) );
 	};
@@ -122,9 +123,9 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, Variable& typeinfo_variab
 	const auto add_list_head_field=
 	[&]( const ProgramString& name, const Variable& variable )
 	{
-		ClassField field( typeinfo_class_proxy, variable.type, static_cast<unsigned int>(fields_llvm_types.size()), false, true );
-
-		typeinfo_class.members.AddName( name, Value( std::move(field), file_pos ) );
+		typeinfo_class.members.AddName(
+			name,
+			Value( ClassField( typeinfo_class_proxy, variable.type, static_cast<unsigned int>(fields_llvm_types.size()), false, true ), file_pos ) );
 		fields_llvm_types.push_back( llvm::PointerType::get( variable.type.GetLLVMType(), 0u ) );
 		fields_initializers.push_back( llvm::dyn_cast<llvm::GlobalVariable>( variable.llvm_value ) );
 	};
@@ -310,7 +311,6 @@ Variable CodeBuilder::BuildTypeinfoEnumElementsList( const Enum& enum_type, cons
 			std::vector<llvm::Type*> fields_llvm_types;
 			std::vector<llvm::Constant*> fields_initializers;
 
-			// TODO - maybe reorder fields for better result struct layout?
 			AddTypeinfoNodeIsEndVariable( node_type_class );
 
 			node_type_class.members.AddName(
@@ -353,6 +353,49 @@ Variable CodeBuilder::BuildTypeinfoEnumElementsList( const Enum& enum_type, cons
 	return head;
 }
 
+void CodeBuilder::CreateTypeinfoClassMembersListNodeCommonFields(
+	const Class& class_, const ClassProxyPtr& node_class_proxy,
+	const ProgramString& member_name,
+	std::vector<llvm::Type*>& fields_llvm_types, std::vector<llvm::Constant*>& fields_initializers )
+{
+	const FilePos file_pos{ 0u, 0u, 0u };
+	Class& node_class= *node_class_proxy->class_;
+
+	{
+		const std::string name_str= ToUTF8( member_name );
+		Array name_type;
+		name_type.type= FundamentalType( U_FundamentalType::char8, fundamental_llvm_types_.char8 );
+		name_type.size= name_str.size();
+		name_type.llvm_type= llvm::ArrayType::get( name_type.type.GetLLVMType(), name_type.size );
+
+		node_class.members.AddName(
+			g_name_field_name,
+			Value( ClassField( node_class_proxy, name_type, static_cast<unsigned int>(fields_llvm_types.size()), true, false ), file_pos ) );
+		fields_llvm_types.push_back( name_type.llvm_type );
+		fields_initializers.push_back( llvm::ConstantDataArray::getString( llvm_context_, name_str, false /* not null terminated */ ) );
+	}
+
+	const ClassMemberVisibility member_visibility= class_.GetMemberVisibility( member_name );
+
+	node_class.members.AddName(
+		"is_public"_SpC,
+		Value( ClassField( node_class_proxy, bool_type_, static_cast<unsigned int>(fields_llvm_types.size()), true, false ), file_pos ) );
+	fields_llvm_types.push_back( fundamental_llvm_types_.bool_ );
+	fields_initializers.push_back( llvm::Constant::getIntegerValue( fundamental_llvm_types_.bool_, llvm::APInt( 1u, member_visibility == ClassMemberVisibility::Public    ) ) );
+
+	node_class.members.AddName(
+		"is_protected"_SpC,
+		Value( ClassField( node_class_proxy, bool_type_, static_cast<unsigned int>(fields_llvm_types.size()), true, false ), file_pos ) );
+	fields_llvm_types.push_back( fundamental_llvm_types_.bool_ );
+	fields_initializers.push_back( llvm::Constant::getIntegerValue( fundamental_llvm_types_.bool_, llvm::APInt( 1u, member_visibility == ClassMemberVisibility::Protected ) ) );
+
+	node_class.members.AddName(
+		"is_private"_SpC,
+		Value( ClassField( node_class_proxy, bool_type_, static_cast<unsigned int>(fields_llvm_types.size()), true, false ), file_pos ) );
+	fields_llvm_types.push_back( fundamental_llvm_types_.bool_ );
+	fields_initializers.push_back( llvm::Constant::getIntegerValue( fundamental_llvm_types_.bool_, llvm::APInt( 1u, member_visibility == ClassMemberVisibility::Private   ) ) );
+}
+
 Variable CodeBuilder::BuildTypeinfoClassFieldsList( const ClassProxyPtr& class_type, const NamesScope& root_namespace )
 {
 	const FilePos file_pos{ 0u, 0u, 0u };
@@ -374,7 +417,6 @@ Variable CodeBuilder::BuildTypeinfoClassFieldsList( const ClassProxyPtr& class_t
 			std::vector<llvm::Type*> fields_llvm_types;
 			std::vector<llvm::Constant*> fields_initializers;
 
-			// TODO - maybe reorder fields for better result struct layout?
 			AddTypeinfoNodeIsEndVariable( node_type_class );
 
 			node_type_class.members.AddName(
@@ -425,19 +467,6 @@ Variable CodeBuilder::BuildTypeinfoClassFieldsList( const ClassProxyPtr& class_t
 				fields_llvm_types.push_back( size_type_.GetLLVMType() );
 				fields_initializers.push_back( llvm::Constant::getIntegerValue( size_type_.GetLLVMType(), llvm::APInt( size_type_.GetLLVMType()->getIntegerBitWidth(), offset ) ) );
 			}
-			{
-				const std::string name_str= ToUTF8( class_member.first );
-				Array name_type;
-				name_type.type= FundamentalType( U_FundamentalType::char8, fundamental_llvm_types_.char8 );
-				name_type.size= name_str.size();
-				name_type.llvm_type= llvm::ArrayType::get( name_type.type.GetLLVMType(), name_type.size );
-
-				ClassField field( node_type, name_type, static_cast<unsigned int>(fields_llvm_types.size()), true, false );
-
-				node_type_class.members.AddName( g_name_field_name, Value( std::move(field), file_pos ) );
-				fields_llvm_types.push_back( name_type.llvm_type );
-				fields_initializers.push_back( llvm::ConstantDataArray::getString( llvm_context_, name_str, false /* not null terminated */ ) );
-			}
 
 			node_type_class.members.AddName(
 				"is_reference"_SpC,
@@ -450,6 +479,8 @@ Variable CodeBuilder::BuildTypeinfoClassFieldsList( const ClassProxyPtr& class_t
 				Value( ClassField( node_type, bool_type_, static_cast<unsigned int>(fields_llvm_types.size()), true, false ), file_pos ) );
 			fields_llvm_types.push_back( fundamental_llvm_types_.bool_ );
 			fields_initializers.push_back( llvm::Constant::getIntegerValue( fundamental_llvm_types_.bool_, llvm::APInt( 1u, class_field->is_mutable ) ) );
+
+			CreateTypeinfoClassMembersListNodeCommonFields( *class_type->class_, node_type, class_member.first, fields_llvm_types, fields_initializers );
 
 			FinishTypeinfoClass( node_type_class, node_type, fields_llvm_types );
 
@@ -486,7 +517,6 @@ Variable CodeBuilder::BuildTypeinfoClassTypesList( const ClassProxyPtr& class_ty
 			std::vector<llvm::Type*> fields_llvm_types;
 			std::vector<llvm::Constant*> fields_initializers;
 
-			// TODO - maybe reorder fields for better result struct layout?
 			AddTypeinfoNodeIsEndVariable( node_type_class );
 
 			node_type_class.members.AddName(
@@ -503,19 +533,8 @@ Variable CodeBuilder::BuildTypeinfoClassTypesList( const ClassProxyPtr& class_ty
 				fields_llvm_types.push_back( llvm::PointerType::get( dependent_type_typeinfo.type.GetLLVMType(), 0u ) );
 				fields_initializers.push_back( llvm::dyn_cast<llvm::GlobalVariable>( dependent_type_typeinfo.llvm_value ) );
 			}
-			{
-				std::string name_str= ToUTF8( class_member.first );
-				Array name_type;
-				name_type.type= FundamentalType( U_FundamentalType::char8, fundamental_llvm_types_.char8 );
-				name_type.size= name_str.size();
-				name_type.llvm_type= llvm::ArrayType::get( name_type.type.GetLLVMType(), name_type.size );
 
-				ClassField field( node_type, name_type, static_cast<unsigned int>(fields_llvm_types.size()), true, false );
-
-				node_type_class.members.AddName( g_name_field_name, Value( std::move(field), file_pos ) );
-				fields_llvm_types.push_back( name_type.llvm_type );
-				fields_initializers.push_back( llvm::ConstantDataArray::getString( llvm_context_, name_str, false /* not null terminated */ ) );
-			}
+			CreateTypeinfoClassMembersListNodeCommonFields( *class_type->class_, node_type, class_member.first, fields_llvm_types, fields_initializers );
 
 			FinishTypeinfoClass( node_type_class, node_type, fields_llvm_types );
 
@@ -556,7 +575,6 @@ Variable CodeBuilder::BuildTypeinfoClassFunctionsList( const ClassProxyPtr& clas
 				std::vector<llvm::Type*> fields_llvm_types;
 				std::vector<llvm::Constant*> fields_initializers;
 
-				// TODO - maybe reorder fields for better result struct layout?
 				AddTypeinfoNodeIsEndVariable( node_type_class );
 
 				node_type_class.members.AddName(
@@ -572,19 +590,6 @@ Variable CodeBuilder::BuildTypeinfoClassFunctionsList( const ClassProxyPtr& clas
 					node_type_class.members.AddName( "type"_SpC, Value( std::move(field), file_pos ) );
 					fields_llvm_types.push_back( llvm::PointerType::get( dependent_type_typeinfo.type.GetLLVMType(), 0u ) );
 					fields_initializers.push_back( llvm::dyn_cast<llvm::GlobalVariable>( dependent_type_typeinfo.llvm_value ) );
-				}
-				{
-					std::string name_str= ToUTF8( class_member.first );
-					Array name_type;
-					name_type.type= FundamentalType( U_FundamentalType::char8, fundamental_llvm_types_.char8 );
-					name_type.size= name_str.size();
-					name_type.llvm_type= llvm::ArrayType::get( name_type.type.GetLLVMType(), name_type.size );
-
-					ClassField field( node_type, name_type, static_cast<unsigned int>(fields_llvm_types.size()), true, false );
-
-					node_type_class.members.AddName( g_name_field_name, Value( std::move(field), file_pos ) );
-					fields_llvm_types.push_back( name_type.llvm_type );
-					fields_initializers.push_back( llvm::ConstantDataArray::getString( llvm_context_, name_str, false /* not null terminated */ ) );
 				}
 
 				node_type_class.members.AddName(
@@ -610,6 +615,8 @@ Variable CodeBuilder::BuildTypeinfoClassFunctionsList( const ClassProxyPtr& clas
 					Value( ClassField( node_type, bool_type_, static_cast<unsigned int>(fields_llvm_types.size()), true, false ), file_pos ) );
 				fields_llvm_types.push_back( fundamental_llvm_types_.bool_ );
 				fields_initializers.push_back( llvm::Constant::getIntegerValue( fundamental_llvm_types_.bool_, llvm::APInt( 1u, function.virtual_table_index != ~0u ) ) );
+
+				CreateTypeinfoClassMembersListNodeCommonFields( *class_type->class_, node_type, class_member.first, fields_llvm_types, fields_initializers );
 
 				FinishTypeinfoClass( node_type_class, node_type, fields_llvm_types );
 
@@ -641,7 +648,6 @@ Variable CodeBuilder::BuildTypeinfoFunctionArguments( const Function& function_t
 		std::vector<llvm::Type*> fields_llvm_types;
 		std::vector<llvm::Constant*> fields_initializers;
 
-		// TODO - maybe reorder fields for better result struct layout?
 		AddTypeinfoNodeIsEndVariable( node_type_class );
 
 		node_type_class.members.AddName(
