@@ -870,3 +870,41 @@ def TypeinfoList_ClassFunctionsList_Test1():
 		static_assert( GetFunctionUnsafe( typeinfo</ A />.functions_list, "constructor" ) == false );
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def TypeinfoList_ClassParentsList_Test0():
+	c_program_text= """
+		template</ type T />
+		fn constexpr GetParentCount( T& node ) : u32
+		{
+			static_if( T::is_end )
+			{
+				return 0u;
+			}
+			else
+			{
+				return 1u + ::GetParentCount( node.next );
+			}
+		}
+
+		class A interface{}
+		class B interface{}
+		class C polymorph{}
+		class D : A, B, C {}
+		class E : D {}
+		class F : C, A {}
+
+		static_assert( GetParentCount( typeinfo</A/>.parents_list ) == 0u );
+		static_assert( GetParentCount( typeinfo</B/>.parents_list ) == 0u );
+		static_assert( GetParentCount( typeinfo</C/>.parents_list ) == 0u );
+		static_assert( GetParentCount( typeinfo</D/>.parents_list ) == 3u );
+		static_assert( GetParentCount( typeinfo</E/>.parents_list ) == 1u );
+		static_assert( GetParentCount( typeinfo</F/>.parents_list ) == 2u );
+		static_assert( typeinfo</A/>.parent_count == size_type(0) );
+		static_assert( typeinfo</B/>.parent_count == size_type(0) );
+		static_assert( typeinfo</C/>.parent_count == size_type(0) );
+		static_assert( typeinfo</D/>.parent_count == size_type(3) );
+		static_assert( typeinfo</E/>.parent_count == size_type(1) );
+		static_assert( typeinfo</F/>.parent_count == size_type(2) );
+	"""
+	tests_lib.build_program( c_program_text )
