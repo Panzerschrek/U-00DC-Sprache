@@ -505,6 +505,7 @@ private:
 
 	Value BuildTypeinfoOperator( const Synt::TypeInfo& typeinfo_op, NamesScope& names );
 	Variable BuildTypeInfo( const Type& type, const NamesScope& root_namespace );
+	ClassProxyPtr CreateTypeinfoClass( const NamesScope& root_namespace );
 	Variable BuildTypeinfoPrototype( const Type& type, const NamesScope& root_namespace );
 	void BuildFullTypeinfo( const Type& type, Variable& typeinfo_variable, const NamesScope& root_namespace );
 	const Variable& GetTypeinfoListEndNode( const NamesScope& root_namespace );
