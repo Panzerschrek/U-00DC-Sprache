@@ -833,6 +833,14 @@ Enum::Enum( const ProgramString& in_name, const NamesScope* parent_scope )
 	: members( in_name, parent_scope )
 {}
 
+Variable::Variable(
+	Type in_type,
+	const Location in_location, const ValueType in_value_type,
+	llvm::Value* const in_llvm_value, llvm::Constant* const in_constexpr_value )
+	: type(std::move(in_type)), location(in_location), value_type(in_value_type)
+	, llvm_value(in_llvm_value), constexpr_value(in_constexpr_value)
+{}
+
 //
 // StoredVariable
 //
@@ -977,6 +985,10 @@ void VariablesState::DeactivateLocks()
 		for( auto& ref_pair : variable_pair.second.inner_references )
 			ref_pair.second.use_counter= nullptr;
 }
+
+ClassField::ClassField( const ClassProxyPtr& in_class, Type in_type, const unsigned int in_index, const bool in_is_mutable, const bool in_is_reference )
+	: type(std::move(in_type)), index(in_index), class_(in_class), is_mutable(in_is_mutable), is_reference(in_is_reference)
+{}
 
 //
 // Value

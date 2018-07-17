@@ -504,7 +504,24 @@ private:
 		FunctionContext& function_context );
 
 	Value BuildTypeinfoOperator( const Synt::TypeInfo& typeinfo_op, NamesScope& names );
-	Variable BuildTypeInfo( const Type& type, const NamesScope& root_namespace, const FilePos& file_pos );
+	Variable BuildTypeInfo( const Type& type, const NamesScope& root_namespace );
+	ClassProxyPtr CreateTypeinfoClass( const NamesScope& root_namespace );
+	Variable BuildTypeinfoPrototype( const Type& type, const NamesScope& root_namespace );
+	void BuildFullTypeinfo( const Type& type, Variable& typeinfo_variable, const NamesScope& root_namespace );
+	const Variable& GetTypeinfoListEndNode( const NamesScope& root_namespace );
+	void AddTypeinfoNodeIsEndVariable( Class& node_class, bool is_end= false );
+	void FinishTypeinfoClass( Class& class_, const ClassProxyPtr class_proxy, const std::vector<llvm::Type*>& fields_llvm_types );
+	Variable BuildTypeinfoEnumElementsList( const Enum& enum_type, const NamesScope& root_namespace );
+	void CreateTypeinfoClassMembersListNodeCommonFields(
+		const Class& class_, const ClassProxyPtr& node_class_proxy,
+		const ProgramString& member_name,
+		std::vector<llvm::Type*>& fields_llvm_types, std::vector<llvm::Constant*>& fields_initializers );
+	Variable BuildTypeinfoClassFieldsList( const ClassProxyPtr& class_type, const NamesScope& root_namespace );
+	Variable BuildTypeinfoClassTypesList( const ClassProxyPtr& class_type, const NamesScope& root_namespace );
+	Variable BuildTypeinfoClassFunctionsList( const ClassProxyPtr& class_type, const NamesScope& root_namespace );
+	Variable BuildeTypeinfoClassParentsList( const ClassProxyPtr& class_type, const NamesScope& root_namespace );
+	Variable BuildTypeinfoFunctionArguments( const Function& function_type, const NamesScope& root_namespace );
+	void UpdateTypeinfoForDependentTypes( const ClassProxyPtr& class_type );
 
 	// Block elements
 
@@ -830,6 +847,8 @@ private:
 	// We needs to generate same typeinfo classes for same types. Use cache for it.
 	// TODO - create hasher for type and use unordered_map.
 	std::vector< std::pair< Type, Variable > > typeinfo_cache_;
+	boost::optional< Variable > typeinfo_list_end_node_; // Lazy initialized.
+	llvm::GlobalVariable* typeinfo_is_end_variable_[2u]= { nullptr, nullptr }; // Lazy initialized.
 
 	std::vector<std::unique_ptr<PreResolveFunc>> resolving_funcs_stack_;
 };

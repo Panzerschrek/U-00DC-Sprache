@@ -86,7 +86,7 @@ ConstexprFunctionEvaluator::Result ConstexprFunctionEvaluator::Evaluate(
 	U_ASSERT( !function_type.return_value_is_reference ); // Currently can not return references.
 	if( const FundamentalType* const fundamental= function_type.return_type.GetFundamentalType() )
 	{
-		if( IsInteger( fundamental->fundamental_type ) || fundamental->fundamental_type == U_FundamentalType::Bool )
+		if( IsInteger( fundamental->fundamental_type ) || IsChar( fundamental->fundamental_type ) || fundamental->fundamental_type == U_FundamentalType::Bool )
 			result.result_constant= llvm::Constant::getIntegerValue( function_type.return_type.GetLLVMType(), res.IntVal );
 		else if( IsFloatingPoint( fundamental->fundamental_type ) )
 			result.result_constant=
@@ -105,6 +105,7 @@ ConstexprFunctionEvaluator::Result ConstexprFunctionEvaluator::Evaluate(
 
 	instructions_map_.clear();
 	stack_.clear();
+	external_constant_mapping_.clear();
 
 	return result;
 }
@@ -257,8 +258,14 @@ llvm::GenericValue ConstexprFunctionEvaluator::CallFunction( const llvm::Functio
 
 size_t ConstexprFunctionEvaluator::MoveConstantToStack( const llvm::Constant& constant )
 {
+	const auto prev_it= external_constant_mapping_.find( &constant );
+	if( prev_it != external_constant_mapping_.end() )
+		return prev_it->second;
+
 	const size_t stack_offset= stack_.size();
 	stack_.resize( stack_.size() + size_t( data_layout_.getTypeAllocSize( constant.getType() ) ) );
+
+	external_constant_mapping_[&constant]= stack_offset;
 
 	CopyConstantToStack( constant, stack_offset );
 
@@ -419,7 +426,7 @@ void ConstexprFunctionEvaluator::ProcessAlloca( const llvm::Instruction* const i
 void ConstexprFunctionEvaluator::ProcessLoad( const llvm::Instruction* const instruction )
 {
 	const llvm::Value* const address= instruction->getOperand(0u);
-	U_ASSERT( instructions_map_.find( address ) != instructions_map_.end() );
+	U_ASSERT( instructions_map_.find( address ) != instructions_map_.end() ); // TODO - what if address is global constant?
 	const llvm::GenericValue& address_val= instructions_map_[address];
 
 	const size_t offset= size_t(address_val.IntVal.getLimitedValue());

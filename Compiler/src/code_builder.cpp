@@ -205,6 +205,13 @@ ICodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_g
 
 	dummy_function->eraseFromParent(); // Kill dummy function.
 
+	// Fix incomplete typeinfo.
+	for( const auto& typeinfo_entry : typeinfo_cache_ )
+	{
+		if( typeinfo_entry.second.type.IsIncomplete() )
+			typeinfo_entry.second.type.GetClassType()->llvm_type->setBody( llvm::ArrayRef<llvm::Type*>() );
+	}
+
 	compiled_sources_cache_.clear();
 
 	BuildResult build_result;
@@ -1236,6 +1243,8 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 	TryGenerateDestructor( *the_class, class_type );
 	TryGenerateCopyConstructor( *the_class, class_type );
 	TryGenerateCopyAssignmentOperator( *the_class, class_type );
+
+	UpdateTypeinfoForDependentTypes( the_class_proxy );
 
 	// Prepare function templates
 	// Here we can face some problems: lower templates can not be seen from upper templtes.

@@ -256,4 +256,31 @@ U_TEST( OperatorsManglingTest )
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN3BoxixERKS_j" ) != nullptr ); // []
 }
 
+U_TEST( FunctionTypesMangling_Test0 )
+{
+	static const char c_program_text[]=
+	R"(
+		struct S{}
+		struct OtherStruct{}
+
+		fn Foo( (fn()) void_fn ){}
+		fn Bar( (fn() : i32 ) ptr ){}
+		fn Baz( (fn( i32 x ) ) ptr ){}
+		fn Binary( (fn( f32 x, f32 y ) ) ptr ){}
+		fn BinaryRet( (fn( f32 x, f32 y ) : bool ) ptr ){}
+		fn RetS( (fn() : S ) ptr ){}
+		fn Pass( (fn( OtherStruct& o ) : OtherStruct ) ptr ){}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z3FooPFvvE" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z3BarPFivE" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z3BazPFviE" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z6BinaryPFvffE" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z9BinaryRetPFbffE" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z4RetSPF1SvE" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z4PassPF11OtherStructRKS_E" ) != nullptr );
+}
+
 } // namespace U

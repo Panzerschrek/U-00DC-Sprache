@@ -302,6 +302,11 @@ struct Variable final
 	llvm::Constant* constexpr_value= nullptr;
 
 	std::unordered_set<StoredVariablePtr> referenced_variables;
+
+	Variable()= default;
+	Variable(Type in_type,
+		Location in_location= Location::Pointer, ValueType in_value_type= ValueType::ConstReference,
+		llvm::Value* in_llvm_value= nullptr, llvm::Constant* in_constexpr_value= nullptr );
 };
 
 class StoredVariable
@@ -393,8 +398,11 @@ struct ClassField final
 	Type type;
 	unsigned int index= 0u;
 	ClassProxyWeakPtr class_;
-	bool is_reference= false;
 	bool is_mutable= true;
+	bool is_reference= false;
+
+	ClassField()= default;
+	ClassField( const ClassProxyPtr& in_class, Type in_type, unsigned int in_index, bool in_is_mutable, bool in_is_reference );
 };
 
 // "this" + functions set of class of "this"
