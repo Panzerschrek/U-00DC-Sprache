@@ -161,22 +161,6 @@ def VariableInitializerIsNotConstantExpression_ForStructs_Test2():
 	assert( errors_list[0].file_pos.line == 4 )
 
 
-def InvalidTypeForConstantExpressionVariable_ForStructs_Test0():
-	c_program_text= """
-		struct S
-		{
-			fn constructor(){}
-		}
-
-		var S constexpr s; // Error, 's' can not be constexpr, because it have explicit noncopy constructor.
-
-	"""
-	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "InvalidTypeForConstantExpressionVariable" )
-	assert( errors_list[0].file_pos.line == 7 )
-
-
 def InvalidTypeForConstantExpressionVariable_ForStructs_Test1():
 	c_program_text= """
 		class T{} // 'T' can not be constexpr, because it is class.
@@ -192,26 +176,6 @@ def InvalidTypeForConstantExpressionVariable_ForStructs_Test1():
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "InvalidTypeForConstantExpressionVariable" )
 	assert( errors_list[0].file_pos.line == 8 )
-
-
-def InvalidTypeForConstantExpressionVariable_ForStructs_Test2():
-	c_program_text= """
-		struct T
-		{
-			fn constructor(){}
-		} // 'T' con not be constexpr, because it have explicit noncopy constructor.
-		struct S
-		{
-			[ T, 2 ] t;
-		}
-
-		var S constexpr s; // Error, 's' can not be constexpr, because it have non-constexpr field 't'.
-
-	"""
-	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "InvalidTypeForConstantExpressionVariable" )
-	assert( errors_list[0].file_pos.line == 11 )
 
 
 def InvalidTypeForConstantExpressionVariable_ForStructs_Test3():

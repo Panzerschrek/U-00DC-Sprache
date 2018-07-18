@@ -89,27 +89,35 @@ void CodeBuilder::StackVariablesStorage::RegisterVariable( const StoredVariableP
 	variables.push_back( variable );
 }
 
-CodeBuilder::CodeBuilder()
-	: llvm_context_( llvm::getGlobalContext() )
+static std::string InitializeTarget()
 {
 	// Prepare target machine.
 	// Currently can work only with native target.
 	// TODO - allow compiler user to change target.
-	{
-		llvm::InitializeNativeTarget();
-		target_triple_str_= llvm::sys::getDefaultTargetTriple();
-		std::string error_str;
-		const llvm::Target* const target= llvm::TargetRegistry::lookupTarget(target_triple_str_, error_str);
+	llvm::InitializeNativeTarget();
+	return llvm::sys::getDefaultTargetTriple();
+}
 
-		std::string features_str;
-		target_machine_=
-			target->createTargetMachine(
-				target_triple_str_,
-				llvm::sys::getHostCPUName(),
-				features_str,
-				llvm::TargetOptions() );
-	}
+static const llvm::TargetMachine* CreateTargetMachine( const std::string& target_triple_str )
+{
+	std::string error_str;
+	const llvm::Target* const target= llvm::TargetRegistry::lookupTarget( target_triple_str, error_str );
 
+	std::string features_str;
+	return
+		target->createTargetMachine(
+			target_triple_str,
+			llvm::sys::getHostCPUName(),
+			features_str,
+			llvm::TargetOptions() );
+}
+
+CodeBuilder::CodeBuilder()
+	: llvm_context_( llvm::getGlobalContext() )
+	, target_triple_str_( InitializeTarget() )
+	, target_machine_( CreateTargetMachine( target_triple_str_ ) )
+	, constexpr_function_evaluator_( target_machine_->createDataLayout() )
+{
 	fundamental_llvm_types_. i8= llvm::Type::getInt8Ty( llvm_context_ );
 	fundamental_llvm_types_. u8= llvm::Type::getInt8Ty( llvm_context_ );
 	fundamental_llvm_types_.i16= llvm::Type::getInt16Ty( llvm_context_ );
@@ -1037,7 +1045,6 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 			if( !( constructor_type.args.size() == 2u && constructor_type.args.back().type == class_type && !constructor_type.args.back().is_mutable ) )
 			{
 				the_class->have_explicit_noncopy_constructors= true;
-				the_class->can_be_constexpr= false; // Disable constexpr possibility too.
 				break;
 			}
 		};
@@ -2493,27 +2500,20 @@ void CodeBuilder::BuildFuncCode(
 		// Function type checked here, because in case of constexpr methods not all types are complete yet.
 
 		bool can_be_constexpr= true;
-		if( function_type->unsafe )
-			can_be_constexpr= false;
-		if( function_type->return_value_is_reference ) // Currently, constexpr function evaluator can not return references back.
-			can_be_constexpr= false;
-		if( !function_type->return_type.IsIncomplete() )
-		{
-			if( !function_type->return_type.CanBeConstexpr() ||
-				function_type->return_type.ReferencesTagsCount() > 0u ) // Currently, constexpr function evaluator can not return references back.
-				can_be_constexpr= false;
-		}
-		if( !function_type->references_pollution.empty() ) // Side effects, such pollution, not allowed.
+		if( function_type->unsafe ||
+			!function_type->return_type.CanBeConstexpr() ||
+			!function_type->references_pollution.empty() ) // Side effects, such pollution, not allowed.
 			can_be_constexpr= false;
 
 		for( const Function::Arg& arg : function_type->args )
 		{
-			if( !arg.type.IsIncomplete() && !arg.type.CanBeConstexpr() )
+			if( !arg.type.CanBeConstexpr() ) // Incomplete types are not constexpr.
 				can_be_constexpr= false; // Allowed only constexpr types.
-			if( arg.is_mutable && arg.is_reference )
-				can_be_constexpr= false;
 			if( arg.type == void_type_ ) // Disallow "void" arguments, because we currently can not constantly convert any reference to "void" in constexpr function call.
 				can_be_constexpr= false;
+
+			// We support constexpr functions with mutable reference-arguments, but such functions can not be used as root for constexpr function evaluation.
+			// We support also constexpr constructors (except constexpr copy constructors), but constexpr constructors currently can not e used for constexpr variables initialization.
 		}
 
 		if( !can_be_constexpr )

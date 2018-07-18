@@ -258,6 +258,161 @@ def ConstexprFunctionControlFlow_Test2():
 	tests_lib.build_program( c_program_text )
 
 
+def ConstexprFunctionAccessGlobalVariable_Test0():
+	c_program_text= """
+		auto constexpr g_x= 666;
+
+		fn constexpr Mul( i32& x, i32& y ) : i32
+		{
+			return x * y;
+		}
+
+		fn constexpr GetX( i32 mul ) : i32
+		{
+			return Mul( g_x, mul );
+		}
+
+		static_assert( GetX( 999 ) == 999 * 666 );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def ConstexprFunctionAccessGlobalVariable_Test1():
+	c_program_text= """
+		struct S{ i32 x; }
+		var S constexpr g_s{ .x= 42 };
+
+		fn constexpr GetXImpl( S& s, i32 mul ) : i32
+		{
+			return s.x * mul;
+		}
+
+		fn constexpr GetX( i32 mul ) : i32
+		{
+			return GetXImpl( g_s, mul );
+		}
+
+		static_assert( GetX( 5 ) == 42 * 5 );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def ConstexprStructGeneratedMethodsAreConstexpr_Test0():
+	c_program_text= """
+		struct S{}
+		fn constexpr Foo()
+		{
+			// Call default constructor here, it must be constexpr.
+			var S s0;
+			var S s1();
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def ConstexprStructGeneratedMethodsAreConstexpr_Test1():
+	c_program_text= """
+		struct S{ i32 x; }
+		fn constexpr Foo()
+		{
+			var S s0{ .x= 555 };
+			var S s1(s0); // Call copy constructor here, it must be constexpr.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def ConstexprStructGeneratedMethodsAreConstexpr_Test2():
+	c_program_text= """
+		struct S{ i32 x; }
+		fn constexpr Foo()
+		{
+			var S mut s0{ .x= 555 }, mut s1{ .x=666 };
+			s0= s1; // Call copy assignment operator  here, it must be constexpr.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def ConstexprFunctionWithMutableArguments_Test0():
+	c_program_text= """
+		fn constexpr SetZero( i32&mut x ) { x= 0; }
+
+		fn constexpr Sum( i32 x, i32 y ) : i32
+		{
+			var i32 mut r= zero_init;
+			SetZero(r); // Call here constexpr function with mutable-reference argument.
+			r= x + y;
+			return r;
+		}
+
+		static_assert( Sum( 85, 74 ) == 85 + 74 );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def ConstexprFunctionWithMutableArguments_Test1():
+	c_program_text= """
+		struct Box
+		{
+			i32 x;
+			fn constexpr constructor( i32 in_x )
+			( x= in_x ) {}
+		}
+
+		fn constexpr Sum( i32 x, i32 y ) : i32
+		{
+			var Box mut r(0); // Call here constexpr constructor.
+			r.x= x + y;
+			return r.x;
+		}
+
+		static_assert( Sum( 85, 74 ) == 85 + 74 );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def ConstexprFunctionWithMutableArguments_Test2():
+	c_program_text= """
+		struct Box
+		{
+			i32 x;
+			fn constexpr constructor()
+			( x= 0 ) {}
+		}
+
+		fn constexpr Div( i32 x, i32 y ) : i32
+		{
+			var Box mut r; // Call here constexpr constructor.
+			r.x= x / y;
+			return r.x;
+		}
+
+		static_assert( Div( 98547, 74 ) == 98547 / 74 );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def ConstexprFunction_ReturningReference_Test0():
+	c_program_text= """
+		fn constexpr MaxImpl( i32& x, i32& y ) : i32&
+		{
+			if( x > y ) { return x; }
+			return y;
+		}
+		fn constexpr Max( i32 x, i32 y ) : i32
+		{
+			return MaxImpl( x, y );  // Call here function, returning reference.
+		}
+
+		static_assert( Max( -5, 85 ) == 85 );
+		static_assert( Max( -658, 14 ) == 14 );
+		static_assert( Max( 8854, 55 ) == 8854 );
+		static_assert( Max( 55, -985 ) == 55 );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
 def ConstexprFunctionInternalArray_Test0():
 	c_program_text= """
 		fn constexpr Bar( i32 x ) : i32

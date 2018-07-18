@@ -70,6 +70,39 @@ def ConstexprFunctionEvaluationError_Test2():
 	assert( errors_list[0].file_pos.line == 9 )
 
 
+def ConstexprFunctionEvaluationError_Test3():
+	c_program_text= """
+		fn constexpr Count( u32 x ) : u32
+		{
+			if( x == 0u ) { return 0u; }
+			return 1u + Count( x - 1u );
+		}
+		fn Foo()
+		{
+			Count(16u * 65536u);  // Recursive call depth here is too big.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ConstexprFunctionEvaluationError" )
+	assert( errors_list[0].file_pos.line == 9 )
+
+
+def ConstexprFunctionEvaluationError_Test4():
+	c_program_text= """
+		fn constexpr Bar( u32 x ) : u32
+		{
+			var [ u8, 1024u * 1024u * 80u ] imut bytes= zero_init;   // Allocating too big chunk of memory on stack.
+			return x;
+		}
+		static_assert( Bar(0u) == 0u );
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ConstexprFunctionEvaluationError" )
+	assert( errors_list[0].file_pos.line == 7 )
+
+
 def ConstexprFunctionsMustHaveBody_Test0():
 	c_program_text= """
 		fn constexpr Foo();
@@ -119,17 +152,6 @@ def ConstexprFunctionCanNotBeVirtual_Test1():
 	assert( errors_list[0].file_pos.line == 4 )
 
 
-def InvalidTypeForConstexprFunction_Test0():
-	c_program_text= """
-		// mutable reference args not allowed.
-		fn constexpr Foo( i32& mut x ){}
-	"""
-	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "InvalidTypeForConstexprFunction" )
-	assert( errors_list[0].file_pos.line == 3 )
-
-
 def InvalidTypeForConstexprFunction_Test1():
 	c_program_text= """
 		struct S{ i32& mut r; }  // Struct is not constexpr.
@@ -151,33 +173,6 @@ def InvalidTypeForConstexprFunction_Test2():
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "InvalidTypeForConstexprFunction" )
 	assert( errors_list[0].file_pos.line == 3 )
-
-
-def InvalidTypeForConstexprFunction_Test3():
-	c_program_text= """
-		// Function, returnig reference, can not be constexpr.
-		fn constexpr Foo( i32& x ) : i32& { return x; }
-	"""
-	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "InvalidTypeForConstexprFunction" )
-	assert( errors_list[0].file_pos.line == 3 )
-
-
-def InvalidTypeForConstexprFunction_Test4():
-	c_program_text= """
-		struct S{ i32& r; }
-		// Function, returnig reference inside struct, can not be constexpr.
-		fn constexpr Foo( i32&'a x ) : S'a'
-		{
-			var S s{ .r= x };
-			return s;
-		}
-	"""
-	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "InvalidTypeForConstexprFunction" )
-	assert( errors_list[0].file_pos.line == 4 )
 
 
 def InvalidTypeForConstexprFunction_Test5():
