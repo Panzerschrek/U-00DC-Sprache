@@ -13,10 +13,11 @@ namespace U
 namespace CodeBuilderPrivate
 {
 
+static constexpr size_t g_constants_segment_offset= 1024u * 1024u * 256u; // 256 Megabytes will be enough for stack.
+
 ConstexprFunctionEvaluator::ConstexprFunctionEvaluator( const llvm::DataLayout& data_layout )
 	: data_layout_(data_layout)
-{
-}
+{}
 
 ConstexprFunctionEvaluator::Result ConstexprFunctionEvaluator::Evaluate(
 	const Function& function_type,
@@ -106,6 +107,7 @@ ConstexprFunctionEvaluator::Result ConstexprFunctionEvaluator::Evaluate(
 	instructions_map_.clear();
 	stack_.clear();
 	external_constant_mapping_.clear();
+	constants_stack_.clear();
 
 	return result;
 }
@@ -262,17 +264,19 @@ size_t ConstexprFunctionEvaluator::MoveConstantToStack( const llvm::Constant& co
 	if( prev_it != external_constant_mapping_.end() )
 		return prev_it->second;
 
-	const size_t stack_offset= stack_.size();
-	stack_.resize( stack_.size() + size_t( data_layout_.getTypeAllocSize( constant.getType() ) ) );
+	// Use separate stack for constants, because we can push constants to int in any time.
 
-	external_constant_mapping_[&constant]= stack_offset;
+	const size_t stack_offset= constants_stack_.size();
+	constants_stack_.resize( constants_stack_.size() + size_t( data_layout_.getTypeAllocSize( constant.getType() ) ) );
+
+	external_constant_mapping_[&constant]= stack_offset + g_constants_segment_offset;
 
 	CopyConstantToStack( constant, stack_offset );
 
-	return stack_offset;
+	return stack_offset + g_constants_segment_offset;
 }
 
-void ConstexprFunctionEvaluator::CopyConstantToStack( const llvm::Constant& constant, size_t stack_offset )
+void ConstexprFunctionEvaluator::CopyConstantToStack( const llvm::Constant& constant, const size_t stack_offset )
 {
 	// TODO - check big-endian/little-endian correctness.
 
@@ -294,7 +298,7 @@ void ConstexprFunctionEvaluator::CopyConstantToStack( const llvm::Constant& cons
 				else
 				{
 					const size_t element_ptr= MoveConstantToStack( *llvm::dyn_cast<llvm::GlobalVariable>(element)->getInitializer() );
-					std::memcpy( stack_.data() + stack_offset + element_offset, &element_ptr, sizeof(size_t) );
+					std::memcpy( constants_stack_.data() + stack_offset + element_offset, &element_ptr, sizeof(size_t) );
 				}
 			}
 			else
@@ -312,17 +316,17 @@ void ConstexprFunctionEvaluator::CopyConstantToStack( const llvm::Constant& cons
 	else if( constant_type->isIntegerTy() )
 	{
 		const uint64_t val= constant.getUniqueInteger().getLimitedValue();
-		std::memcpy( stack_.data() + stack_offset, &val, size_t(data_layout_.getTypeAllocSize( constant_type )) );
+		std::memcpy( constants_stack_.data() + stack_offset, &val, size_t(data_layout_.getTypeAllocSize( constant_type )) );
 	}
 	else if( constant_type->isFloatTy() )
 	{
 		const float val= llvm::dyn_cast<llvm::ConstantFP>(&constant)->getValueAPF().convertToFloat();
-		std::memcpy( stack_.data() + stack_offset, &val, sizeof(float) );
+		std::memcpy( constants_stack_.data() + stack_offset, &val, sizeof(float) );
 	}
 	else if( constant_type->isDoubleTy() )
 	{
 		const double val= llvm::dyn_cast<llvm::ConstantFP>(&constant)->getValueAPF().convertToDouble();
-		std::memcpy( stack_.data() + stack_offset, &val, sizeof(double) );
+		std::memcpy( constants_stack_.data() + stack_offset, &val, sizeof(double) );
 	}
 	else if( constant_type->isPointerTy() )
 	{
@@ -330,7 +334,7 @@ void ConstexprFunctionEvaluator::CopyConstantToStack( const llvm::Constant& cons
 		if( pointer_type->getElementType()->isFunctionTy() )
 			errors_.push_back( ReportConstexprFunctionEvaluationError( *file_pos_, "passing function pointer to constexpr function" ) );
 		else U_ASSERT(false);
-		std::memset( stack_.data() + stack_offset, 0, size_t(data_layout_.getTypeAllocSize( constant_type )) );
+		std::memset( constants_stack_.data() + stack_offset, 0, size_t(data_layout_.getTypeAllocSize( constant_type )) );
 	}
 	else U_ASSERT(false);
 }
@@ -399,6 +403,8 @@ llvm::GenericValue ConstexprFunctionEvaluator::GetVal( const llvm::Value* const 
 			res.DoubleVal= constant_fp->getValueAPF().convertToDouble();
 		else U_ASSERT(false);
 	}
+	else if( const auto global_variable= llvm::dyn_cast<llvm::GlobalVariable>( val ) )
+		res.IntVal= llvm::APInt( 64u, MoveConstantToStack( *global_variable->getInitializer() ) );
 	else if( llvm::dyn_cast<llvm::Function>(val) != nullptr )
 		errors_.push_back( ReportConstexprFunctionEvaluationError( *file_pos_, "accessing function pointer" ) );
 	else if( const auto constant= llvm::dyn_cast<llvm::Constant>(val) )
@@ -430,13 +436,17 @@ void ConstexprFunctionEvaluator::ProcessLoad( const llvm::Instruction* const ins
 	const llvm::GenericValue& address_val= instructions_map_[address];
 
 	const size_t offset= size_t(address_val.IntVal.getLimitedValue());
-	U_ASSERT( offset < stack_.size() );
+	const unsigned char* data_ptr= nullptr;
+	if( offset >= g_constants_segment_offset )
+		data_ptr= constants_stack_.data() + ( offset - g_constants_segment_offset );
+	else
+		data_ptr= stack_.data() + offset;
 
 	llvm::Type* const element_type= llvm::dyn_cast<llvm::PointerType>(address->getType())->getElementType();
 	if( element_type->isIntegerTy() )
 	{
 		uint64_t buff[4];
-		std::memcpy( buff, stack_.data() + offset, size_t(data_layout_.getTypeStoreSize( element_type )) );
+		std::memcpy( buff, data_ptr, size_t(data_layout_.getTypeStoreSize( element_type )) );
 
 		llvm::GenericValue val;
 		val.IntVal= llvm::APInt( element_type->getIntegerBitWidth() , buff );
@@ -445,19 +455,19 @@ void ConstexprFunctionEvaluator::ProcessLoad( const llvm::Instruction* const ins
 	else if( element_type->isFloatTy() )
 	{
 		llvm::GenericValue val;
-		std::memcpy( &val.FloatVal, stack_.data() + offset, sizeof(float) );
+		std::memcpy( &val.FloatVal, data_ptr, sizeof(float) );
 		instructions_map_[ instruction ]= val;
 	}
 	else if( element_type->isDoubleTy() )
 	{
 		llvm::GenericValue val;
-		std::memcpy( &val.DoubleVal, stack_.data() + offset, sizeof(double) );
+		std::memcpy( &val.DoubleVal, data_ptr, sizeof(double) );
 		instructions_map_[ instruction ]= val;
 	}
 	else if( element_type->isPointerTy() )
 	{
 		SizeType ptr;
-		std::memcpy( &ptr, stack_.data() + offset, size_t(data_layout_.getTypeAllocSize( element_type )) );
+		std::memcpy( &ptr, data_ptr, size_t(data_layout_.getTypeAllocSize( element_type )) );
 		llvm::GenericValue val;
 		val.IntVal= llvm::APInt( 64u , ptr );
 		instructions_map_[ instruction ]= val;
@@ -472,7 +482,11 @@ void ConstexprFunctionEvaluator::ProcessStore( const llvm::Instruction* const in
 	const llvm::GenericValue& address_val= instructions_map_[address];
 
 	const size_t offset= size_t(address_val.IntVal.getLimitedValue());
-	U_ASSERT( offset < stack_.size() );
+	unsigned char* data_ptr= nullptr;
+	if( offset >= g_constants_segment_offset )
+		data_ptr= constants_stack_.data() + ( offset - g_constants_segment_offset );
+	else
+		data_ptr= stack_.data() + offset;
 
 	const llvm::GenericValue val= GetVal( instruction->getOperand(0u) );
 
@@ -480,16 +494,16 @@ void ConstexprFunctionEvaluator::ProcessStore( const llvm::Instruction* const in
 	if( element_type->isIntegerTy() )
 	{
 		uint64_t limited_value= val.IntVal.getLimitedValue();
-		std::memcpy( stack_.data() + offset, &limited_value, size_t(data_layout_.getTypeStoreSize( element_type )) );
+		std::memcpy( data_ptr, &limited_value, size_t(data_layout_.getTypeStoreSize( element_type )) );
 	}
 	else if( element_type->isFloatTy() )
-		std::memcpy( stack_.data() + offset, &val.FloatVal, size_t(data_layout_.getTypeAllocSize( element_type )) );
+		std::memcpy( data_ptr, &val.FloatVal, size_t(data_layout_.getTypeAllocSize( element_type )) );
 	else if( element_type->isDoubleTy() )
-		std::memcpy( stack_.data() + offset, &val.DoubleVal, size_t(data_layout_.getTypeAllocSize( element_type )) );
+		std::memcpy( data_ptr, &val.DoubleVal, size_t(data_layout_.getTypeAllocSize( element_type )) );
 	else if( element_type->isPointerTy() )
 	{
 		SizeType ptr= val.IntVal.getLimitedValue();
-		std::memcpy( stack_.data() + offset, &ptr, size_t(data_layout_.getTypeAllocSize( element_type )) );
+		std::memcpy( data_ptr, &ptr, size_t(data_layout_.getTypeAllocSize( element_type )) );
 	}
 	else U_ASSERT(false);
 }

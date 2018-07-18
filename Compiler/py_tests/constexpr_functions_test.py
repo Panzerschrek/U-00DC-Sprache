@@ -258,6 +258,45 @@ def ConstexprFunctionControlFlow_Test2():
 	tests_lib.build_program( c_program_text )
 
 
+def ConstexprFunctionAccessGlobalVariable_Test0():
+	c_program_text= """
+		auto constexpr g_x= 666;
+
+		fn constexpr Mul( i32& x, i32& y ) : i32
+		{
+			return x * y;
+		}
+
+		fn constexpr GetX( i32 mul ) : i32
+		{
+			return Mul( g_x, mul );
+		}
+
+		static_assert( GetX( 999 ) == 999 * 666 );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def ConstexprFunctionAccessGlobalVariable_Test1():
+	c_program_text= """
+		struct S{ i32 x; }
+		var S constexpr g_s{ .x= 42 };
+
+		fn constexpr GetXImpl( S& s, i32 mul ) : i32
+		{
+			return s.x * mul;
+		}
+
+		fn constexpr GetX( i32 mul ) : i32
+		{
+			return GetXImpl( g_s, mul );
+		}
+
+		static_assert( GetX( 5 ) == 42 * 5 );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
 def ConstexprFunctionInternalArray_Test0():
 	c_program_text= """
 		fn constexpr Bar( i32 x ) : i32

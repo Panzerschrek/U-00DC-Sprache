@@ -57,6 +57,7 @@ private:
 
 	InstructionsMap instructions_map_;
 	std::vector<unsigned char> stack_;
+	std::vector<unsigned char> constants_stack_;
 
 	std::unordered_map<const llvm::Constant*, size_t> external_constant_mapping_;
 
