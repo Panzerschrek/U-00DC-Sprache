@@ -4,7 +4,6 @@
 #include "pop_llvm_warnings.hpp"
 
 #include "assert.hpp"
-#include "constexpr_function_evaluator.hpp"
 #include "keywords.hpp"
 #include "lang_types.hpp"
 
@@ -2341,7 +2340,7 @@ Value CodeBuilder::DoCallFunction(
 			!function_type.return_value_is_reference && function_type.return_type.ReferencesTagsCount() == 0u )
 		{
 			const ConstexprFunctionEvaluator::Result evaluation_result=
-				ConstexprFunctionEvaluator( module_->getDataLayout() ).Evaluate( function_type, llvm::dyn_cast<llvm::Function>(function), constant_llvm_args, call_file_pos );
+				constexpr_function_evaluator_.Evaluate( function_type, llvm::dyn_cast<llvm::Function>(function), constant_llvm_args, call_file_pos );
 
 			errors_.insert( errors_.end(), evaluation_result.errors.begin(), evaluation_result.errors.end() );
 			if( evaluation_result.errors.empty() && evaluation_result.result_constant != nullptr )

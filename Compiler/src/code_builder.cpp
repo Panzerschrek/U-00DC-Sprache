@@ -89,27 +89,35 @@ void CodeBuilder::StackVariablesStorage::RegisterVariable( const StoredVariableP
 	variables.push_back( variable );
 }
 
-CodeBuilder::CodeBuilder()
-	: llvm_context_( llvm::getGlobalContext() )
+static std::string InitializeTarget()
 {
 	// Prepare target machine.
 	// Currently can work only with native target.
 	// TODO - allow compiler user to change target.
-	{
-		llvm::InitializeNativeTarget();
-		target_triple_str_= llvm::sys::getDefaultTargetTriple();
-		std::string error_str;
-		const llvm::Target* const target= llvm::TargetRegistry::lookupTarget(target_triple_str_, error_str);
+	llvm::InitializeNativeTarget();
+	return llvm::sys::getDefaultTargetTriple();
+}
 
-		std::string features_str;
-		target_machine_=
-			target->createTargetMachine(
-				target_triple_str_,
-				llvm::sys::getHostCPUName(),
-				features_str,
-				llvm::TargetOptions() );
-	}
+static const llvm::TargetMachine* CreateTargetMachine( const std::string& target_triple_str )
+{
+	std::string error_str;
+	const llvm::Target* const target= llvm::TargetRegistry::lookupTarget( target_triple_str, error_str );
 
+	std::string features_str;
+	return
+		target->createTargetMachine(
+			target_triple_str,
+			llvm::sys::getHostCPUName(),
+			features_str,
+			llvm::TargetOptions() );
+}
+
+CodeBuilder::CodeBuilder()
+	: llvm_context_( llvm::getGlobalContext() )
+	, target_triple_str_( InitializeTarget() )
+	, target_machine_( CreateTargetMachine( target_triple_str_ ) )
+	, constexpr_function_evaluator_( target_machine_->createDataLayout() )
+{
 	fundamental_llvm_types_. i8= llvm::Type::getInt8Ty( llvm_context_ );
 	fundamental_llvm_types_. u8= llvm::Type::getInt8Ty( llvm_context_ );
 	fundamental_llvm_types_.i16= llvm::Type::getInt16Ty( llvm_context_ );

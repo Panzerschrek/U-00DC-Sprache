@@ -10,6 +10,7 @@
 
 #include "code_builder_errors.hpp"
 #include "code_builder_types.hpp"
+#include "constexpr_function_evaluator.hpp"
 #include "i_code_builder.hpp"
 #include "syntax_elements.hpp"
 
@@ -829,6 +830,8 @@ private:
 	Type void_type_for_ret_;
 	Type bool_type_;
 	Type size_type_; // Alias for u32 or u64
+
+	ConstexprFunctionEvaluator constexpr_function_evaluator_;
 
 	FunctionContext* dummy_function_context_= nullptr;
 
