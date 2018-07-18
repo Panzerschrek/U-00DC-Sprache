@@ -334,6 +334,65 @@ def ConstexprStructGeneratedMethodsAreConstexpr_Test2():
 	tests_lib.build_program( c_program_text )
 
 
+def ConstexprFunctionWithMutableArguments_Test0():
+	c_program_text= """
+		fn constexpr SetZero( i32&mut x ) { x= 0; }
+
+		fn constexpr Sum( i32 x, i32 y ) : i32
+		{
+			var i32 mut r= zero_init;
+			SetZero(r); // Call here constexpr function with mutable-reference argument.
+			r= x + y;
+			return r;
+		}
+
+		static_assert( Sum( 85, 74 ) == 85 + 74 );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def ConstexprFunctionWithMutableArguments_Test1():
+	c_program_text= """
+		struct Box
+		{
+			i32 x;
+			fn constexpr constructor( i32 in_x )
+			( x= in_x ) {}
+		}
+
+		fn constexpr Sum( i32 x, i32 y ) : i32
+		{
+			var Box mut r(0); // Call here constexpr constructor.
+			r.x= x + y;
+			return r.x;
+		}
+
+		static_assert( Sum( 85, 74 ) == 85 + 74 );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def ConstexprFunctionWithMutableArguments_Test2():
+	c_program_text= """
+		struct Box
+		{
+			i32 x;
+			fn constexpr constructor()
+			( x= 0 ) {}
+		}
+
+		fn constexpr Div( i32 x, i32 y ) : i32
+		{
+			var Box mut r; // Call here constexpr constructor.
+			r.x= x / y;
+			return r.x;
+		}
+
+		static_assert( Div( 98547, 74 ) == 98547 / 74 );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
 def ConstexprFunctionInternalArray_Test0():
 	c_program_text= """
 		fn constexpr Bar( i32 x ) : i32

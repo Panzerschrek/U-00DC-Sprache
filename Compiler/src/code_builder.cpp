@@ -1037,7 +1037,6 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 			if( !( constructor_type.args.size() == 2u && constructor_type.args.back().type == class_type && !constructor_type.args.back().is_mutable ) )
 			{
 				the_class->have_explicit_noncopy_constructors= true;
-				the_class->can_be_constexpr= false; // Disable constexpr possibility too.
 				break;
 			}
 		};
@@ -2508,12 +2507,13 @@ void CodeBuilder::BuildFuncCode(
 
 		for( const Function::Arg& arg : function_type->args )
 		{
-			if( !arg.type.IsIncomplete() && !arg.type.CanBeConstexpr() )
+			if( !arg.type.CanBeConstexpr() ) // Incomplete types are not constexpr.
 				can_be_constexpr= false; // Allowed only constexpr types.
-			if( arg.is_mutable && arg.is_reference )
-				can_be_constexpr= false;
 			if( arg.type == void_type_ ) // Disallow "void" arguments, because we currently can not constantly convert any reference to "void" in constexpr function call.
 				can_be_constexpr= false;
+
+			// We support constexpr functions with mutable reference-arguments, but such functions can not be used as root for constexpr function evaluation.
+			// We support also constexpr constructors (except constexpr copy constructors), but constexpr constructors currently can not e used for constexpr variables initialization.
 		}
 
 		if( !can_be_constexpr )
