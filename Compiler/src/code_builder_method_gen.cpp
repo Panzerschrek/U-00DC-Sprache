@@ -160,6 +160,7 @@ void CodeBuilder::TryGenerateDefaultConstructor( Class& the_class, const Type& c
 	constructor_variable.have_body= true;
 	constructor_variable.is_this_call= true;
 	constructor_variable.is_generated= true;
+	constructor_variable.constexpr_kind= the_class.can_be_constexpr ? FunctionVariable::ConstexprKind::ConstexprComplete : FunctionVariable::ConstexprKind::NonConstexpr;
 	constructor_variable.llvm_function= llvm_constructor_function;
 
 	if( prev_constructor_variable != nullptr )
@@ -343,6 +344,7 @@ void CodeBuilder::TryGenerateCopyConstructor( Class& the_class, const Type& clas
 	constructor_variable.have_body= true;
 	constructor_variable.is_this_call= true;
 	constructor_variable.is_generated= true;
+	constructor_variable.constexpr_kind= the_class.can_be_constexpr ? FunctionVariable::ConstexprKind::ConstexprComplete : FunctionVariable::ConstexprKind::NonConstexpr;
 	constructor_variable.llvm_function= llvm_constructor_function;
 
 	if( prev_constructor_variable != nullptr )
@@ -619,6 +621,7 @@ void CodeBuilder::TryGenerateCopyAssignmentOperator( Class& the_class, const Typ
 	op_variable.have_body= true;
 	op_variable.is_this_call= true;
 	op_variable.is_generated= true;
+	op_variable.constexpr_kind= the_class.can_be_constexpr ? FunctionVariable::ConstexprKind::ConstexprComplete : FunctionVariable::ConstexprKind::NonConstexpr;
 	op_variable.llvm_function= llvm_op_function;
 
 	if( prev_operator_variable != nullptr )

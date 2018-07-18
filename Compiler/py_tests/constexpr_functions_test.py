@@ -297,6 +297,43 @@ def ConstexprFunctionAccessGlobalVariable_Test1():
 	tests_lib.build_program( c_program_text )
 
 
+def ConstexprStructGeneratedMethodsAreConstexpr_Test0():
+	c_program_text= """
+		struct S{}
+		fn constexpr Foo()
+		{
+			// Call default constructor here, it must be constexpr.
+			var S s0;
+			var S s1();
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def ConstexprStructGeneratedMethodsAreConstexpr_Test1():
+	c_program_text= """
+		struct S{ i32 x; }
+		fn constexpr Foo()
+		{
+			var S s0{ .x= 555 };
+			var S s1(s0); // Call copy constructor here, it must be constexpr.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def ConstexprStructGeneratedMethodsAreConstexpr_Test2():
+	c_program_text= """
+		struct S{ i32 x; }
+		fn constexpr Foo()
+		{
+			var S mut s0{ .x= 555 }, mut s1{ .x=666 };
+			s0= s1; // Call copy assignment operator  here, it must be constexpr.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
 def ConstexprFunctionInternalArray_Test0():
 	c_program_text= """
 		fn constexpr Bar( i32 x ) : i32
