@@ -32,7 +32,7 @@ public:
 		const FilePos& file_pos );
 
 private:
-	llvm::GenericValue CallFunction( const llvm::Function& llvm_function );
+	llvm::GenericValue CallFunction( const llvm::Function& llvm_function, size_t stack_depth );
 
 	// Returns offset
 	size_t MoveConstantToStack( const llvm::Constant& constant );
@@ -45,10 +45,13 @@ private:
 	void ProcessLoad( const llvm::Instruction* instruction );
 	void ProcessStore( const llvm::Instruction* instruction );
 	void ProcessGEP( const llvm::Instruction* instruction );
-	void ProcessCall( const llvm::Instruction* instruction );
+	void ProcessCall( const llvm::Instruction* instruction, size_t stack_depth );
 
 	void ProcessUnaryArithmeticInstruction( const llvm::Instruction* instruction );
 	void ProcessBinaryArithmeticInstruction( const llvm::Instruction* instruction );
+
+	void ReportDataStackOverflow();
+	void ReportConstantsStackOverflow();
 
 private:
 	using InstructionsMap= std::unordered_map< const llvm::Value*, llvm::GenericValue >;

@@ -70,6 +70,39 @@ def ConstexprFunctionEvaluationError_Test2():
 	assert( errors_list[0].file_pos.line == 9 )
 
 
+def ConstexprFunctionEvaluationError_Test3():
+	c_program_text= """
+		fn constexpr Count( u32 x ) : u32
+		{
+			if( x == 0u ) { return 0u; }
+			return 1u + Count( x - 1u );
+		}
+		fn Foo()
+		{
+			Count(16u * 65536u);  // Recursive call depth here is too big.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ConstexprFunctionEvaluationError" )
+	assert( errors_list[0].file_pos.line == 9 )
+
+
+def ConstexprFunctionEvaluationError_Test4():
+	c_program_text= """
+		fn constexpr Bar( u32 x ) : u32
+		{
+			var [ u8, 1024u * 1024u * 80u ] imut bytes= zero_init;   // Allocating too big chunk of memory on stack.
+			return x;
+		}
+		static_assert( Bar(0u) == 0u );
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ConstexprFunctionEvaluationError" )
+	assert( errors_list[0].file_pos.line == 7 )
+
+
 def ConstexprFunctionsMustHaveBody_Test0():
 	c_program_text= """
 		fn constexpr Foo();
