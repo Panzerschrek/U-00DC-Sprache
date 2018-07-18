@@ -393,6 +393,26 @@ def ConstexprFunctionWithMutableArguments_Test2():
 	tests_lib.build_program( c_program_text )
 
 
+def ConstexprFunction_ReturningReference_Test0():
+	c_program_text= """
+		fn constexpr MaxImpl( i32& x, i32& y ) : i32&
+		{
+			if( x > y ) { return x; }
+			return y;
+		}
+		fn constexpr Max( i32 x, i32 y ) : i32
+		{
+			return MaxImpl( x, y );  // Call here function, returning reference.
+		}
+
+		static_assert( Max( -5, 85 ) == 85 );
+		static_assert( Max( -658, 14 ) == 14 );
+		static_assert( Max( 8854, 55 ) == 8854 );
+		static_assert( Max( 55, -985 ) == 55 );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
 def ConstexprFunctionInternalArray_Test0():
 	c_program_text= """
 		fn constexpr Bar( i32 x ) : i32

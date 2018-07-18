@@ -2492,17 +2492,9 @@ void CodeBuilder::BuildFuncCode(
 		// Function type checked here, because in case of constexpr methods not all types are complete yet.
 
 		bool can_be_constexpr= true;
-		if( function_type->unsafe )
-			can_be_constexpr= false;
-		if( function_type->return_value_is_reference ) // Currently, constexpr function evaluator can not return references back.
-			can_be_constexpr= false;
-		if( !function_type->return_type.IsIncomplete() )
-		{
-			if( !function_type->return_type.CanBeConstexpr() ||
-				function_type->return_type.ReferencesTagsCount() > 0u ) // Currently, constexpr function evaluator can not return references back.
-				can_be_constexpr= false;
-		}
-		if( !function_type->references_pollution.empty() ) // Side effects, such pollution, not allowed.
+		if( function_type->unsafe ||
+			!function_type->return_type.CanBeConstexpr() ||
+			!function_type->references_pollution.empty() ) // Side effects, such pollution, not allowed.
 			can_be_constexpr= false;
 
 		for( const Function::Arg& arg : function_type->args )

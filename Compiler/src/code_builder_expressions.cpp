@@ -2151,7 +2151,7 @@ Value CodeBuilder::DoCallFunction(
 
 		const FilePos& file_pos= is_first_arg ? call_file_pos : args[ j - first_arg_count ]->GetFilePos();
 
-		if( expr.constexpr_value != nullptr )
+		if( expr.constexpr_value != nullptr && !( arg.is_reference && arg.is_mutable ) )
 			constant_llvm_args.push_back( expr.constexpr_value );
 
 		if( arg.is_reference )
@@ -2336,7 +2336,9 @@ Value CodeBuilder::DoCallFunction(
 	llvm::Constant* constant_call_result= nullptr;
 	if( std::find( llvm_args.begin(), llvm_args.end(), nullptr ) == llvm_args.end() )
 	{
-		if( func_is_constexpr && constant_llvm_args.size() == llvm_args.size() )
+		// Currently, we can not pass back referenes from constexpr functions evaluator.
+		if( func_is_constexpr && constant_llvm_args.size() == llvm_args.size() &&
+			!function_type.return_value_is_reference && function_type.return_type.ReferencesTagsCount() == 0u )
 		{
 			const ConstexprFunctionEvaluator::Result evaluation_result=
 				ConstexprFunctionEvaluator( module_->getDataLayout() ).Evaluate( function_type, llvm::dyn_cast<llvm::Function>(function), constant_llvm_args, call_file_pos );
