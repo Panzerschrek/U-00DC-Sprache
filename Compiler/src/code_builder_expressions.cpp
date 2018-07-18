@@ -67,6 +67,7 @@ boost::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 			const StackVariablesStorage dummy_stack_variables_storage( dummy_function_context );
 			dummy_function_context.this_= function_context.this_;
 			dummy_function_context.whole_this_is_unavailable= function_context.whole_this_is_unavailable;
+			dummy_function_context.is_in_unsafe_block= function_context.is_in_unsafe_block;
 			dummy_function_context.variables_state= function_context.variables_state;
 			function_context.variables_state.DeactivateLocks();
 
@@ -1619,6 +1620,7 @@ Value CodeBuilder::BuildIndexationOperator(
 			const StackVariablesStorage dummy_stack_variables_storage( dummy_function_context );
 			dummy_function_context.this_= function_context.this_;
 			dummy_function_context.whole_this_is_unavailable= function_context.whole_this_is_unavailable;
+			dummy_function_context.is_in_unsafe_block= function_context.is_in_unsafe_block;
 			dummy_function_context.variables_state= function_context.variables_state;
 			function_context.variables_state.DeactivateLocks();
 
