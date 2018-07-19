@@ -70,6 +70,8 @@ ClassProxyPtr CodeBuilder::CreateTypeinfoClass( const NamesScope& root_namespace
 
 	llvm_type->setName( ToStdString( typeinfo_class_name ) );
 
+	typeinfo_class_proxy->class_->references_tags_count= 1u; // Almost all typeinfo have references to another typeinfo.
+
 	return typeinfo_class_proxy;
 }
 
