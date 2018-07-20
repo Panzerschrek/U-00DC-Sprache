@@ -43,6 +43,40 @@ static const ProgramString& GetNameForGeneratedClass()
 
 static const ProgramString g_template_parameters_namespace_prefix= "_tp_ns-"_SpC;
 
+static ProgramString EncodeTemplateParameters( DeducibleTemplateParameters& deduced_template_args )
+{
+	ProgramString r;
+	for(const auto& arg : deduced_template_args )
+	{
+		if( const Type* const type= boost::get<Type>( &arg ) )
+		{
+			// We needs full mangled name of template parameter here, because short type names from different spaces may coincide.
+			r+= ToProgramString( MangleType( *type ).c_str() );
+		}
+		else if( const Variable* const variable= boost::get<Variable>( &arg ) )
+		{
+			// Currently, can be only integer, char or enum type.
+			FundamentalType raw_type;
+			if( const FundamentalType* const fundamental_type= variable->type.GetFundamentalType () )
+				raw_type= *fundamental_type;
+			else if( const Enum* const enum_type= variable->type.GetEnumType () )
+				raw_type= enum_type->underlaying_type;
+			else U_ASSERT( false );
+
+			r+= "_val_of_t_"_SpC + GetFundamentalTypeName( raw_type.fundamental_type ) + "_"_SpC;
+
+			const llvm::APInt& int_value= variable->constexpr_value->getUniqueInteger();
+			if( IsSignedInteger( raw_type.fundamental_type ) && int_value.isNegative() )
+				r+= ToProgramString( std::to_string(  int64_t(int_value.getLimitedValue()) ).c_str() );
+			else
+				r+= ToProgramString( std::to_string( uint64_t(int_value.getLimitedValue()) ).c_str() );
+		}
+		else U_ASSERT(false);
+		r += "_"_SpC;
+	}
+	return r;
+}
+
 ProgramString CodeBuilder::PrepareTypeTemplate(
 	const Synt::TypeTemplateBase& type_template_declaration,
 	NamesScope& names_scope )
@@ -1059,33 +1093,7 @@ CodeBuilder::TemplateTypeGenerationResult CodeBuilder::GenTemplateType(
 	// Encode name.
 	// TODO - maybe generate correct mangled name for template?
 	ProgramString name_encoded= g_template_parameters_namespace_prefix + type_template.syntax_element->name_;
-	for( size_t i = 0u; i < deduced_template_args.size() ; ++i )
-	{
-		const auto& arg = deduced_template_args[i];
-		if( const Type* const type= boost::get<Type>( &arg ) )
-		{
-			// We needs full mangled name of template parameter here, because short type names from different spaces may coincide.
-			name_encoded+= ToProgramString( MangleType( *type ).c_str() );
-		}
-		else if( const Variable* const variable= boost::get<Variable>( &arg ) )
-		{
-			// Currently, can be only integer or enum type.
-			FundamentalType raw_type;
-			if( const FundamentalType* const fundamental_type= variable->type.GetFundamentalType () )
-				raw_type= *fundamental_type;
-			else if( const Enum* const enum_type= variable->type.GetEnumType () )
-				raw_type= enum_type->underlaying_type;
-			else
-				U_ASSERT( false );
-
-			const llvm::APInt& int_value= variable->constexpr_value->getUniqueInteger();
-			if( IsSignedInteger( raw_type.fundamental_type ) && int_value.isNegative() )
-				name_encoded+= ToProgramString( std::to_string(  int64_t(int_value.getLimitedValue()) ).c_str() );
-			else
-				name_encoded+= ToProgramString( std::to_string( uint64_t(int_value.getLimitedValue()) ).c_str() );
-		}
-		else U_ASSERT(false);
-	}
+	name_encoded+= EncodeTemplateParameters( deduced_template_args );
 	name_encoded+= ToProgramString( std::to_string( reinterpret_cast<uintptr_t>(&type_template) ).c_str() ); // HACK. encode also template itself, because we can have multiple templates with same name.
 
 	// Check, if already type generated.
@@ -1329,37 +1337,10 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 		}
 	}
 
-	// TODO - move to function, with same code in CodeBuilder::GenTemplateType
 	// Encode name.
 	// TODO - maybe generate correct mangled name for template?
 	ProgramString name_encoded= g_template_parameters_namespace_prefix + function_template.syntax_element->function_->name_.components.front().name;
-	for( size_t i = 0u; i < deduced_template_args.size() ; ++i )
-	{
-		const auto& arg = deduced_template_args[i];
-		if( const Type* const type= boost::get<Type>( &arg ) )
-		{
-			// We needs full mangled name of template parameter here, because short type names from different spaces may coincide.
-			name_encoded+= ToProgramString( MangleType( *type ).c_str() );
-		}
-		else if( const Variable* const variable= boost::get<Variable>( &arg ) )
-		{
-			// Currently, can be only integer or enum type.
-			FundamentalType raw_type;
-			if( const FundamentalType* const fundamental_type= variable->type.GetFundamentalType () )
-				raw_type= *fundamental_type;
-			else if( const Enum* const enum_type= variable->type.GetEnumType () )
-				raw_type= enum_type->underlaying_type;
-			else
-				U_ASSERT( false );
-
-			const llvm::APInt& int_value= variable->constexpr_value->getUniqueInteger();
-			if( IsSignedInteger( raw_type.fundamental_type ) && int_value.isNegative() )
-				name_encoded+= ToProgramString( std::to_string(  int64_t(int_value.getLimitedValue()) ).c_str() );
-			else
-				name_encoded+= ToProgramString( std::to_string( uint64_t(int_value.getLimitedValue()) ).c_str() );
-		}
-		else U_ASSERT(false);
-	}
+	name_encoded+= EncodeTemplateParameters( deduced_template_args );
 	name_encoded += ToProgramString( std::to_string( reinterpret_cast<uintptr_t>(&function_template) ).c_str() ); // HACK! use address of template object, because we can have multiple templates with same name.
 
 	if( const NamesScope::InsertedName* const inserted_name= function_template.parent_namespace->GetThisScopeName( name_encoded ) )
@@ -1441,35 +1422,7 @@ const NamesScope::InsertedName* CodeBuilder::GenTemplateFunctionsUsingTemplatePa
 
 	// Encode name, based on set of function templates and given tempate parameters.
 	ProgramString name_encoded= g_template_parameters_namespace_prefix;
-	for( const FunctionTemplatePtr& function_template_ptr : function_templates )
-		name_encoded += ToProgramString( std::to_string( reinterpret_cast<uintptr_t>(function_template_ptr.get()) ).c_str() );
-	for( size_t i = 0u; i < template_parameters.size() ; ++i )
-	{
-		const auto& arg = template_parameters[i];
-		if( const Type* const type= boost::get<Type>( &arg ) )
-		{
-			// We needs full mangled name of template parameter here, because short type names from different spaces may coincide.
-			name_encoded+= ToProgramString( MangleType( *type ).c_str() );
-		}
-		else if( const Variable* const variable= boost::get<Variable>( &arg ) )
-		{
-			// Currently, can be only integer or enum type.
-			FundamentalType raw_type;
-			if( const FundamentalType* const fundamental_type= variable->type.GetFundamentalType () )
-				raw_type= *fundamental_type;
-			else if( const Enum* const enum_type= variable->type.GetEnumType () )
-				raw_type= enum_type->underlaying_type;
-			else
-				U_ASSERT( false );
-
-			const llvm::APInt& int_value= variable->constexpr_value->getUniqueInteger();
-			if( IsSignedInteger( raw_type.fundamental_type ) && int_value.isNegative() )
-				name_encoded+= ToProgramString( std::to_string(  int64_t(int_value.getLimitedValue()) ).c_str() );
-			else
-				name_encoded+= ToProgramString( std::to_string( uint64_t(int_value.getLimitedValue()) ).c_str() );
-		}
-		else U_ASSERT(false);
-	}
+	name_encoded+= EncodeTemplateParameters( template_parameters );
 
 	if( const auto prev_name= template_names_scope.GetThisScopeName( name_encoded ) )
 		return prev_name; // Already generated.
