@@ -192,6 +192,10 @@ struct CodeBuilderError
 	ProgramString text;
 };
 
+bool operator==( const CodeBuilderError& l, const CodeBuilderError& r );
+bool operator!=( const CodeBuilderError& l, const CodeBuilderError& r );
+bool operator< ( const CodeBuilderError& l, const CodeBuilderError& r ); // For sorting, using file_pos
+
 const char* CodeBuilderErrorCodeToString( CodeBuilderErrorCode code );
 
 // Helper functions for errors generation.

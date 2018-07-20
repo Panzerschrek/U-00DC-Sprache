@@ -7,6 +7,25 @@
 namespace U
 {
 
+bool operator==( const CodeBuilderError& l, const CodeBuilderError& r )
+{
+	return l.code == r.code && l.file_pos == r.file_pos && l.text == r.text;
+}
+
+bool operator!=( const CodeBuilderError& l, const CodeBuilderError& r )
+{
+	return !(l == r);
+}
+
+bool operator< ( const CodeBuilderError& l, const CodeBuilderError& r )
+{
+	if( l.file_pos.file_index != r.file_pos.file_index )
+		return l.file_pos.file_index < r.file_pos.file_index;
+	if( l.file_pos.line != r.file_pos.line )
+		return l.file_pos.line < r.file_pos.line;
+	return l.file_pos.pos_in_line < r.file_pos.pos_in_line;
+}
+
 const char* CodeBuilderErrorCodeToString( const CodeBuilderErrorCode code )
 {
 	switch(code)

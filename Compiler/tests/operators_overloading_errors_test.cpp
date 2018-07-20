@@ -80,12 +80,12 @@ U_TEST( InvalidArgumentCountForOperator_Test )
 	R"(
 		struct S
 		{
-			op*( i32 x, S &imut s, f32 f ) : bool {} // 3 arguments, expected 2
+			op*( i32 x, S &imut s, f32 f ) : bool { return true; } // 3 arguments, expected 2
 			op=( S &mut s ) {} // 1 argument, expected 1
 			op=( i32 x, S &imut s, f32 f ) {} // 2 arguments,e xpected 1
 			op++( i32 x, S &imut s ){} // 2 arguments, expected 1
 			op--( i32 x, S &imut s, f32 f ) {}
-			op!( S &imut s, f32 x ) : bool {} //  2 arguments, expected 1
+			op!( S &imut s, f32 x ) : bool { return false; } //  2 arguments, expected 1
 		}
 	)";
 
@@ -120,15 +120,9 @@ U_TEST( InvalidReturnTypeForOperator_Test )
 	)";
 
 	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
-
-	U_TEST_ASSERT( build_result.errors.size() >= 3u );
-
-	U_TEST_ASSERT( build_result.errors[0].code == CodeBuilderErrorCode::InvalidReturnTypeForOperator );
-	U_TEST_ASSERT( build_result.errors[0].file_pos.line == 4u );
-	U_TEST_ASSERT( build_result.errors[1].code == CodeBuilderErrorCode::InvalidReturnTypeForOperator );
-	U_TEST_ASSERT( build_result.errors[1].file_pos.line == 5u );
-	U_TEST_ASSERT( build_result.errors[2].code == CodeBuilderErrorCode::InvalidReturnTypeForOperator );
-	U_TEST_ASSERT( build_result.errors[2].file_pos.line == 6u );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::InvalidReturnTypeForOperator, 4u ) );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::InvalidReturnTypeForOperator, 5u ) );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::InvalidReturnTypeForOperator, 6u ) );
 }
 
 U_TEST( UsingIncompleteTypeForOperator )

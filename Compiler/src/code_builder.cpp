@@ -221,6 +221,12 @@ ICodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_g
 	}
 
 	compiled_sources_cache_.clear();
+	typeinfo_cache_.clear();
+
+	// Soprt by file/line and left only unique error messages.
+	// TODO - provide template arguments for error messages inside templates.
+	std::sort( errors_.begin(), errors_.end() );
+	errors_.erase( std::unique( errors_.begin(), errors_.end() ), errors_.end() );
 
 	BuildResult build_result;
 	build_result.errors= errors_;
@@ -3126,7 +3132,7 @@ std::vector<ProgramString> CodeBuilder::BuildVariablesDeclarationCode(
 				variable.constexpr_value=
 					ApplyInitializer( variable, stored_variable, *variable_declaration.initializer, block_names, function_context );
 			else
-				ApplyEmptyInitializer( variable_declaration.name, variables_declaration.file_pos_, variable, function_context );
+				ApplyEmptyInitializer( variable_declaration.name, variable_declaration.file_pos, variable, function_context );
 			variable.referenced_variables.erase( stored_variable );
 
 			// Make immutable, if needed, only after initialization, because in initialization we need call constructors, which is mutable methods.
@@ -3213,7 +3219,7 @@ std::vector<ProgramString> CodeBuilder::BuildVariablesDeclarationCode(
 		if( variable_declaration.mutability_modifier == MutabilityModifier::Constexpr &&
 			variable.constexpr_value == nullptr )
 		{
-			errors_.push_back( ReportVariableInitializerIsNotConstantExpression( variables_declaration.file_pos_ ) );
+			errors_.push_back( ReportVariableInitializerIsNotConstantExpression( variable_declaration.file_pos ) );
 			continue;
 		}
 

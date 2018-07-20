@@ -194,7 +194,7 @@ def StaticIfHaveSeparateVisibilityScope_Test():
 			{
 				auto mut x= 0;
 			}
-			++x;
+			var i32 y= x;
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )

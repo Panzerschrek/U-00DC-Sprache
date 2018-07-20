@@ -4,7 +4,7 @@ from py_tests_common import *
 def CouldNotConvertFunctionPointer_Test0():
 	c_program_text= """
 		fn a( i32 &mut x ){}
-		var ( fn( i32 &imut x ) ) constexpr ptr= a;   // Mutable to immutable argument conversion.
+		fn Foo(){  var ( fn( i32 &imut x ) ) ptr= a;  }   // Mutable to immutable argument conversion.
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
@@ -15,7 +15,7 @@ def CouldNotConvertFunctionPointer_Test0():
 def CouldNotConvertFunctionPointer_Test1():
 	c_program_text= """
 		fn a( i32 x ){}
-		var ( fn( i32 & x ) ) constexpr ptr= a;   // Value argument to reference argument conversion.
+		fn Foo(){  var ( fn( i32 & x ) ) ptr= a;  }   // Value argument to reference argument conversion.
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
@@ -26,7 +26,7 @@ def CouldNotConvertFunctionPointer_Test1():
 def CouldNotConvertFunctionPointer_Test2():
 	c_program_text= """
 		fn a( i32& x ){}
-		var ( fn( i32 x ) ) constexpr ptr= a;   // Reference argument to value argument conversion.
+		fn Foo(){  var ( fn( i32 x ) ) ptr= a;  }   // Reference argument to value argument conversion.
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
@@ -37,7 +37,7 @@ def CouldNotConvertFunctionPointer_Test2():
 def CouldNotConvertFunctionPointer_Test3():
 	c_program_text= """
 		fn a( i32&mut x ) : i32 &imut { return x; }
-		var ( fn( i32&mut x ) : i32 &mut  ) constexpr ptr= a;   // Immutable to mutable return reference conversion.
+		fn Foo(){  var ( fn( i32&mut x ) : i32 &mut  ) ptr= a;  }   // Immutable to mutable return reference conversion.
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
@@ -48,7 +48,7 @@ def CouldNotConvertFunctionPointer_Test3():
 def CouldNotConvertFunctionPointer_Test4():
 	c_program_text= """
 		fn a( i32& x ) : i32 { return x; }
-		var ( fn( i32& x ) : i32&  ) constexpr ptr= a;   // Value return value to reference conversion.
+		fn Foo(){  var ( fn( i32& x ) : i32&  ) ptr= a;  }   // Value return value to reference conversion.
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
@@ -59,7 +59,7 @@ def CouldNotConvertFunctionPointer_Test4():
 def CouldNotConvertFunctionPointer_Test5():
 	c_program_text= """
 		fn a( i32& x ) : i32& { return x; }
-		var ( fn( i32& x ) : i32  ) constexpr ptr= a;   // Reference return value to value conversion.
+		fn Foo(){  var ( fn( i32& x ) : i32  ) ptr= a;  }   // Reference return value to value conversion.
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
@@ -70,7 +70,7 @@ def CouldNotConvertFunctionPointer_Test5():
 def CouldNotConvertFunctionPointer_Test6():
 	c_program_text= """
 		fn a( f32 x ){}
-		var ( fn( i32 x ) ) constexpr ptr= a;   // Different argument types
+		fn Foo(){  var ( fn( i32 x ) ) ptr= a;  }  // Different argument types
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
@@ -81,7 +81,7 @@ def CouldNotConvertFunctionPointer_Test6():
 def CouldNotConvertFunctionPointer_Test7():
 	c_program_text= """
 		fn a() : f32 {  return 0.0f;  }
-		var ( fn() : i32 ) constexpr ptr= a;   // Different return value types.
+		fn Foo(){  var ( fn() : i32 ) ptr= a;  }   // Different return value types.
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
@@ -92,7 +92,7 @@ def CouldNotConvertFunctionPointer_Test7():
 def CouldNotConvertFunctionPointer_Test8():
 	c_program_text= """
 		fn a( i32 a, i32 b ) {}
-		var ( fn( i32 a ) ) constexpr ptr= a;   // Different argument count.
+		fn Foo(){  var ( fn( i32 a ) ) ptr= a;  }   // Different argument count.
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
@@ -103,7 +103,7 @@ def CouldNotConvertFunctionPointer_Test8():
 def CouldNotConvertFunctionPointer_Test9():
 	c_program_text= """
 		fn a( i32 a ) {}
-		var ( fn( i32 a, i32 b ) ) constexpr ptr= a;   // Different argument count.
+		fn Foo(){  var ( fn( i32 a, i32 b ) ) ptr= a;  }   // Different argument count.
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
@@ -114,7 +114,7 @@ def CouldNotConvertFunctionPointer_Test9():
 def CouldNotConvertFunctionPointer_Test10():
 	c_program_text= """
 		fn a() unsafe {}
-		var ( fn() ) constexpr ptr= a;   // Unsafe to safe conversion.
+		fn Foo(){  var ( fn() ) ptr= a;  }   // Unsafe to safe conversion.
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
@@ -132,7 +132,7 @@ def CouldNotConvertFunctionPointer_Test11():
 			return b;
 		}
 
-		var RetOnyFirstType constexpr ptr= RetBoth;   // Destination have less return references, than source function.
+		fn Foo(){  var RetOnyFirstType ptr= RetBoth;  }   // Destination have less return references, than source function.
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
@@ -144,7 +144,7 @@ def CouldNotConvertFunctionPointer_Test12():
 	c_program_text= """
 		struct S{ i32& r; }
 		fn DoPolltion( S &mut s'a', i32&'b r ) ' a <- imut b ' {}
-		var ( fn( S &mut s, i32& r ) )  constexpr ptr= DoPolltion;   // Destination have less references pollution, than source function.
+		fn Foo(){  var ( fn( S &mut s, i32& r ) ) ptr= DoPolltion;  }   // Destination have less references pollution, than source function.
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
@@ -156,7 +156,7 @@ def CouldNotSelectFunctionForPointer_Test0():
 	c_program_text= """
 		fn a( i32& mut x, i32&imut y ){}
 		fn a( i32&imut x, i32& mut y ){}
-		var ( fn( i32&mut x, i32&mut y ) ) constexpr ptr= a;  // Error, exist more, then one function, convertible to pointer type, but not equal to it.
+		fn Foo(){  var ( fn( i32&mut x, i32&mut y ) ) ptr= a;  }  // Error, exist more, then one function, convertible to pointer type, but not equal to it.
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )

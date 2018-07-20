@@ -154,6 +154,16 @@ TestId AddTestFuncPrivate( TestFunc* func, const char* const file_name, const ch
 	return counter++;
 }
 
+bool HaveError( const std::vector<CodeBuilderError>& errors, const CodeBuilderErrorCode code, const unsigned int line )
+{
+	for( const CodeBuilderError& error : errors )
+	{
+		if( error.code == code && error.file_pos.line == line )
+			return true;
+	}
+	return false;
+}
+
 } // namespace U
 
 // Entry point for tests executable.

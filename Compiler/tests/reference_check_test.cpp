@@ -17,12 +17,7 @@ U_TEST( ReferenceCheckTest_MultipleMutableReferencesOnStack )
 	)";
 
 	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
-
-	U_TEST_ASSERT( !build_result.errors.empty() );
-	const CodeBuilderError& error= build_result.errors.front();
-
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::AccessingVariableThatHaveMutableReference );
-	U_TEST_ASSERT( error.file_pos.line == 6u );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::AccessingVariableThatHaveMutableReference, 6u ) );
 }
 
 U_TEST( ReferenceCheckTest_MutableReferenceAfterImmutableReferenceOnStack )
@@ -59,12 +54,7 @@ U_TEST( ReferenceCheckTest_ImmutableReferenceAfterMutableReferenceOnStack )
 	)";
 
 	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
-
-	U_TEST_ASSERT( !build_result.errors.empty() );
-	const CodeBuilderError& error= build_result.errors.front();
-
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::AccessingVariableThatHaveMutableReference );
-	U_TEST_ASSERT( error.file_pos.line == 6u );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::AccessingVariableThatHaveMutableReference, 6u ) );
 }
 
 U_TEST( ReferenceCheckTest_MultipleImmutableReferencesShouldBeOk )
@@ -95,12 +85,7 @@ U_TEST( ReferenceCheckTest_MultipleMutableReferencesPassedToFunction )
 	)";
 
 	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
-
-	U_TEST_ASSERT( !build_result.errors.empty() );
-	const CodeBuilderError& error= build_result.errors.front();
-
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::AccessingVariableThatHaveMutableReference );
-	U_TEST_ASSERT( error.file_pos.line == 6u );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::AccessingVariableThatHaveMutableReference, 6u ) );
 }
 
 U_TEST( ReferenceCheckTest_MutableAndImmutableReferencesPassedToFunction )
@@ -176,12 +161,7 @@ U_TEST( ReferenceCheckTest_FunctionWithSingleArgumentReturnsReferenceToInputVari
 	)";
 
 	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
-
-	U_TEST_ASSERT( !build_result.errors.empty() );
-	const CodeBuilderError& error= build_result.errors.front();
-
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::AccessingVariableThatHaveMutableReference );
-	U_TEST_ASSERT( error.file_pos.line == 7u );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::AccessingVariableThatHaveMutableReference, 7u ) );
 }
 
 U_TEST( ReferenceCheckTest_StructMemberRefersToStruct_0 )
@@ -198,12 +178,7 @@ U_TEST( ReferenceCheckTest_StructMemberRefersToStruct_0 )
 	)";
 
 	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
-
-	U_TEST_ASSERT( !build_result.errors.empty() );
-	const CodeBuilderError& error= build_result.errors.front();
-
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::AccessingVariableThatHaveMutableReference );
-	U_TEST_ASSERT( error.file_pos.line == 7u );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::AccessingVariableThatHaveMutableReference, 7u ) );
 }
 
 U_TEST( ReferenceCheckTest_StructMemberRefersToStruct_1 )
@@ -225,12 +200,7 @@ U_TEST( ReferenceCheckTest_StructMemberRefersToStruct_1 )
 	)";
 
 	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
-
-	U_TEST_ASSERT( !build_result.errors.empty() );
-	const CodeBuilderError& error= build_result.errors.front();
-
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::AccessingVariableThatHaveMutableReference );
-	U_TEST_ASSERT( error.file_pos.line == 12u );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::AccessingVariableThatHaveMutableReference, 12u ) );
 }
 
 
@@ -247,12 +217,7 @@ U_TEST( ReferenceCheckTest_ArrayMemberRefersToArray_0 )
 	)";
 
 	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
-
-	U_TEST_ASSERT( !build_result.errors.empty() );
-	const CodeBuilderError& error= build_result.errors.front();
-
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::AccessingVariableThatHaveMutableReference );
-	U_TEST_ASSERT( error.file_pos.line == 6u );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::AccessingVariableThatHaveMutableReference, 6u ) );
 }
 
 U_TEST( ReferenceCheckTest_ArrayMemberRefersToArray_1 )
@@ -310,12 +275,7 @@ U_TEST( ReferenceCheckTest_ReferenceInInnerScopeInteractsWithReferenceInOuterSco
 	)";
 
 	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
-
-	U_TEST_ASSERT( !build_result.errors.empty() );
-	const CodeBuilderError& error= build_result.errors.front();
-
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::AccessingVariableThatHaveMutableReference );
-	U_TEST_ASSERT( error.file_pos.line == 8u );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::AccessingVariableThatHaveMutableReference, 8u ) );
 }
 
 U_TEST( ReferenceCheckTest_ReferenceCanReferToMultipleVariables )
@@ -610,12 +570,7 @@ U_TEST( ReferenceCheckTest_ReferenceShouldLockVariableAfterConditionalReturn )
 	)";
 
 	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
-
-	U_TEST_ASSERT( !build_result.errors.empty() );
-	const CodeBuilderError& error= build_result.errors.front();
-
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::AccessingVariableThatHaveMutableReference );
-	U_TEST_ASSERT( error.file_pos.line == 7u );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::AccessingVariableThatHaveMutableReference, 7u ) );
 }
 
 U_TEST( ReferenceCheckTest_AssignmentForReferencedVariable_0 )
@@ -887,12 +842,7 @@ U_TEST( ReferenceCheckTest_TryPassTwoMutableReferencesIntoFunction_0 )
 	)";
 
 	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
-
-	U_TEST_ASSERT( !build_result.errors.empty() );
-	const CodeBuilderError& error= build_result.errors.front();
-
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::AccessingVariableThatHaveMutableReference );
-	U_TEST_ASSERT( error.file_pos.line == 6u );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::AccessingVariableThatHaveMutableReference, 6u ) );
 }
 
 U_TEST( ReferenceCheckTest_TryPassTwoMutableReferencesIntoFunction_1 )
@@ -931,12 +881,7 @@ U_TEST( ReferenceCheckTest_TryPassTwoMutableReferencesIntoFunction_2 )
 	)";
 
 	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
-
-	U_TEST_ASSERT( !build_result.errors.empty() );
-	const CodeBuilderError& error= build_result.errors.front();
-
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::AccessingVariableThatHaveMutableReference );
-	U_TEST_ASSERT( error.file_pos.line == 7u );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::AccessingVariableThatHaveMutableReference, 7u ) );
 }
 
 U_TEST( ReferenceCheckTest_TryUseVariableWhenReferenceInFunctionCallExists_0 )
@@ -1122,12 +1067,7 @@ U_TEST( ReferenceCheckTest_BinaryOperatorsModifyValue )
 	)";
 
 	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
-
-	U_TEST_ASSERT( !build_result.errors.empty() );
-	const CodeBuilderError& error= build_result.errors.front();
-
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::AccessingVariableThatHaveMutableReference );
-	U_TEST_ASSERT( error.file_pos.line == 13u );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::AccessingVariableThatHaveMutableReference, 13u ) );
 }
 
 U_TEST( ReferenceCheckTest_AssignmentOperatorsModifyValue )

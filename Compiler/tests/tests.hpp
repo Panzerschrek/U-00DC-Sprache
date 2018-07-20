@@ -67,4 +67,6 @@ ICodeBuilder::BuildResult BuildMultisourceProgramWithErrors( std::vector<SourceE
 
 EnginePtr CreateEngine( std::unique_ptr<llvm::Module> module, bool needs_dump= false );
 
+bool HaveError( const std::vector<CodeBuilderError>& errors, CodeBuilderErrorCode code, unsigned int line );
+
 } // namespace U

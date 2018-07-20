@@ -537,7 +537,7 @@ def PrivateMembersNotInherited_Test0():
 		{
 			fn Foo( this )
 			{
-				auto x_copy= x; // Error, 'x' not visible here
+				var i32 x_copy= x; // Error, 'x' not visible here
 			}
 		}
 	"""

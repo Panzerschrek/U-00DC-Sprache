@@ -9,7 +9,7 @@ def ConstexprHalt_Test0():
 			return x | 0xFF;
 		}
 
-		auto constexpr x= Foo( 84 );
+		fn Baz(){  Foo( 84 );  }
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
@@ -26,7 +26,7 @@ def ConstexprFunctionEvaluationError_Test0():
 		}
 
 		fn Bar(){}
-		auto constexpr x= Foo( fn_ptr(Bar) );  // Passing function pointer to constexpr function.
+		fn Baz(){  Foo( fn_ptr(Bar) );  }  // Passing function pointer to constexpr function.
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
@@ -45,7 +45,7 @@ def ConstexprFunctionEvaluationError_Test1():
 
 		fn Bar(){}
 		var S constexpr s{ .ptr(Bar) };
-		auto constexpr x= Foo( s );  // Passing function pointer to constexpr function.
+		fn Baz(){  Foo( s );  } // Passing function pointer to constexpr function.
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
@@ -62,7 +62,7 @@ def ConstexprFunctionEvaluationError_Test2():
 			return fn_ptr(Bar);
 		}
 
-		auto constexpr x= Foo();  // Returning function pointer in constexpr function.
+		fn Baz(){  Foo();  }  // Returning function pointer in constexpr function.
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
@@ -95,7 +95,7 @@ def ConstexprFunctionEvaluationError_Test4():
 			var [ u8, 1024u * 1024u * 80u ] imut bytes= zero_init;   // Allocating too big chunk of memory on stack.
 			return x;
 		}
-		static_assert( Bar(0u) == 0u );
+		fn Foo(){  Bar(0u);  }
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )

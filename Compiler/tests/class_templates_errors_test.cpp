@@ -116,7 +116,6 @@ U_TEST( ValueIsNotTemplateTest0 )
 
 	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
@@ -137,7 +136,6 @@ U_TEST( TemplateInstantiationRequiredTest0 )
 	)";
 
 	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
-
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
@@ -165,9 +163,7 @@ U_TEST( CouldNotOverloadFunction_ForClassTemplates_Test0 )
 
 	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-
 	U_TEST_ASSERT( !build_result.errors.empty() );
-
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::CouldNotOverloadFunction );
@@ -201,10 +197,10 @@ U_TEST( CouldNotOverloadFunction_ForClassTemplates_Test1 )
 
 	U_TEST_ASSERT( build_result.errors[0].code == CodeBuilderErrorCode::CouldNotOverloadFunction );
 	U_TEST_ASSERT( build_result.errors[0].file_pos.line == 6u );
-	U_TEST_ASSERT( build_result.errors[1].code == CodeBuilderErrorCode::CouldNotOverloadFunction );
-	U_TEST_ASSERT( build_result.errors[1].file_pos.line == 10u );
-	U_TEST_ASSERT( build_result.errors[2].code == CodeBuilderErrorCode::FunctionBodyDuplication );
-	U_TEST_ASSERT( build_result.errors[2].file_pos.line == 7u );
+	U_TEST_ASSERT( build_result.errors[1].code == CodeBuilderErrorCode::FunctionBodyDuplication );
+	U_TEST_ASSERT( build_result.errors[1].file_pos.line == 7u );
+	U_TEST_ASSERT( build_result.errors[2].code == CodeBuilderErrorCode::CouldNotOverloadFunction );
+	U_TEST_ASSERT( build_result.errors[2].file_pos.line == 10u );
 }
 
 U_TEST( MandatoryTemplateSignatureArgumentAfterOptionalArgument_Test0 )
@@ -261,12 +257,7 @@ U_TEST( TemplateArgumentIsNotDeducedYet_Test1 )
 	)";
 
 	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
-
-	U_TEST_ASSERT( !build_result.errors.empty() );
-	const CodeBuilderError& error= build_result.errors.front();
-
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::TemplateArgumentIsNotDeducedYet );
-	U_TEST_ASSERT( error.file_pos.line == 5u );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::TemplateArgumentIsNotDeducedYet, 5u ) );
 }
 
 U_TEST( TemplateArgumentNotUsedInSignature_Test0 )
@@ -491,12 +482,7 @@ U_TEST( TemplateParametersDeductionFailed_Test9 )
 	)";
 
 	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
-
-	U_TEST_ASSERT( !build_result.errors.empty() );
-	const CodeBuilderError& error= build_result.errors.front();
-
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NameNotFound );
-	U_TEST_ASSERT( error.file_pos.line == 10u );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::NameNotFound, 10u ) );
 }
 
 U_TEST( TemplateParametersDeductionFailed_Test10 )

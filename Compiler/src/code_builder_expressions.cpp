@@ -51,7 +51,6 @@ boost::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 	{
 		std::vector<Function::Arg> args;
 		args.reserve( 2u );
-		const size_t error_count_before= errors_.size();
 
 		bool needs_move_assign= false;
 		// Know args types.
@@ -106,7 +105,6 @@ boost::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 			args.back().is_reference= r_var->value_type != ValueType::Value;
 			args.back().is_mutable= r_var->value_type == ValueType::Reference;
 		}
-		errors_.resize( error_count_before );
 		function_context.variables_state.ActivateLocks();
 
 		// Apply here move-assignment for class types.
@@ -1601,7 +1599,6 @@ Value CodeBuilder::BuildIndexationOperator(
 	{
 		std::vector<Function::Arg> args;
 		args.reserve( 2u );
-		const size_t error_count_before= errors_.size();
 
 		args.emplace_back();
 		args.back().type= variable.type;
@@ -1644,7 +1641,6 @@ Value CodeBuilder::BuildIndexationOperator(
 			args.back().is_reference= index_variable->value_type != ValueType::Value;
 			args.back().is_mutable= index_variable->value_type == ValueType::Reference;
 		}
-		errors_.resize( error_count_before );
 		function_context.variables_state.ActivateLocks();
 
 		const FunctionVariable* const overloaded_operator=
@@ -1982,8 +1978,6 @@ Value CodeBuilder::BuildCallOperator(
 	size_t this_count= this_ == nullptr ? 0u : 1u;
 	size_t total_args= this_count + call_operator.arguments_.size();
 
-	const size_t error_count_before= errors_.size();
-
 	const FunctionVariable* function_ptr= nullptr;
 
 	// Make preevaluation af arguments for selection of overloaded function. Try also get function from cache.
@@ -2073,8 +2067,6 @@ Value CodeBuilder::BuildCallOperator(
 		errors_.push_back( ReportCallOfThiscallFunctionUsingNonthisArgument( call_operator.file_pos_ ) );
 		return ErrorValue();
 	}
-
-	errors_.resize( error_count_before ); // Drop errors from first pass.
 
 	if( function_ptr->is_deleted )
 		errors_.push_back( ReportAccessingDeletedMethod( call_operator.file_pos_ ) );
