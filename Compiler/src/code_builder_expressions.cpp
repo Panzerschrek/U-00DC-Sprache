@@ -1499,6 +1499,7 @@ Value CodeBuilder::BuildNumericConstant(
 
 Value CodeBuilder::BuildStringLiteral( const Synt::StringLiteral& string_literal, FunctionContext& function_context )
 {
+	U_UNUSED( function_context );
 	Array string_literal_type;
 	llvm::Constant* initializer= nullptr;
 
@@ -2134,7 +2135,7 @@ Value CodeBuilder::DoCallFunction(
 
 	for( unsigned int i= 0u; i < arg_count; i++ )
 	{
-		const unsigned int j= evaluate_args_in_reverse_order ? arg_count - i - 1u : i;
+		const unsigned int j= evaluate_args_in_reverse_order ? static_cast<unsigned int>(arg_count) - i - 1u : i;
 
 		const bool is_first_arg= first_arg != nullptr && j == 0u;
 		const Function::Arg& arg= function_type.args[j];
