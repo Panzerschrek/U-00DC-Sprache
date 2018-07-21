@@ -32,13 +32,14 @@ fn TheClass::StaticMethod()
 	StaticMethod2( 666 );
 }
 
-fn U32ToStr( u32 mut x, [ i8, 64 ] &mut out_str )
+fn U32ToStr( u32 mut x, [ char8, 64 ] &mut out_str )
 {
-	auto constexpr zero_char= 48u;
+	auto constexpr zero_char= "0"[0u];
+	auto constexpr end_null= 0c8;
 	if( x == 0u )
 	{
-		out_str[0u]= i8(zero_char);
-		out_str[1u]= 0i8;
+		out_str[0u]= zero_char;
+		out_str[1u]= end_null;
 		return;
 	}
 	var u32 mut dst= 0u;
@@ -51,13 +52,13 @@ fn U32ToStr( u32 mut x, [ i8, 64 ] &mut out_str )
 
 	while( div > 0u )
 	{
-		auto imut digit= x / div;
-		out_str[dst]= i8( digit + zero_char );
+		auto digit= x / div;
+		out_str[dst]= char8( digit + u32(zero_char) );
 		++dst;
 		x-= digit * div;
 		div/= 10u;
 	}
-	out_str[dst]= 0i8;
+	out_str[dst]= end_null;
 }
 
 fn CondHalt( bool cond )

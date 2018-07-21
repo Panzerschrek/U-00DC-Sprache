@@ -29,7 +29,7 @@ void TheClass::StaticMethod2( int x )
 	std::cout << "Call StaticMethod2: " << x << std::endl;
 }
 
-void U32ToStr( unsigned int x, signed char (&str)[64] );
+void U32ToStr( unsigned int x, char (&str)[64] );
 
 void CondHalt( bool cond );
 
@@ -42,7 +42,7 @@ int main()
 	the_class.StaticMethod();
 
 	// Real usable function - convert number to string.
-	signed char str[64];
+	char str[64];
 	static const unsigned int numbers[]= { 0u, 1u, 5u, 10u, 99u, 100u, 101u, 58u, 586u, 1024u, 1000000000u, 4294967295u };
 	for( unsigned int number : numbers )
 	{
