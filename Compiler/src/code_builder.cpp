@@ -2219,7 +2219,7 @@ void CodeBuilder::BuildFuncCode(
 			llvm::Function::Create(
 				function_type->llvm_function_type,
 				llvm::Function::LinkageTypes::ExternalLinkage, // External - for prototype.
-				MangleFunction( parent_names_scope, func_name, *function_type, func_variable.is_this_call ),
+				MangleFunction( parent_names_scope, func_name, *function_type ),
 				module_.get() );
 
 		// Merge functions with identical code.

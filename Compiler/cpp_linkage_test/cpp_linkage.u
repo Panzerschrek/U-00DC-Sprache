@@ -23,22 +23,13 @@ fn TakeS( NameSpace::S &imut s )
 
 struct TheClass
 {
-	fn Method( mut this );
-	fn ImutMethod( imut this, TheClass &mut other );
-
 	fn StaticMethod();
-	fn StaticMethod2();
-}
-
-fn TheClass::Method( mut this )
-{
-	var TheClass mut other_instance;
-	ImutMethod( other_instance );
+	fn StaticMethod2( i32 x );
 }
 
 fn TheClass::StaticMethod()
 {
-	StaticMethod2();
+	StaticMethod2( 666 );
 }
 
 fn U32ToStr( u32 mut x, [ i8, 64 ] &mut out_str )

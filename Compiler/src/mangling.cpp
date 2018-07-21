@@ -337,11 +337,8 @@ static NamePair GetTypeName_r( const Type& type, NamesCache& names_cache )
 std::string MangleFunction(
 	const NamesScope& parent_scope,
 	const ProgramString& function_name,
-	const Function& function_type,
-	bool is_this_call_method )
+	const Function& function_type )
 {
-	U_ASSERT( !( is_this_call_method && function_type.args.empty() ) );
-
 	NamesCache names_cache;
 	ProgramString result;
 
@@ -364,22 +361,13 @@ std::string MangleFunction(
 				is_op ? op_name : function_name,
 				!is_op,
 				parent_scope,
-				is_this_call_method && !function_type.args.front().is_mutable,
+				false,
 				names_cache,
 				true ).compressed_and_escaped;
 	}
 
-	size_t arg_count= function_type.args.size();
-	const Function::Arg* args= function_type.args.data();
-	if( is_this_call_method )
+	for( const Function::Arg& arg : function_type.args )
 	{
-		arg_count--;
-		args++;
-	}
-	for( size_t i= 0u; i < arg_count; i++ )
-	{
-		const Function::Arg& arg= args[i];
-
 		NamePair type_name= GetTypeName_r( arg.type, names_cache );
 
 		if( !arg.is_mutable && arg.is_reference ) // push "Konst" for reference immutable arguments
@@ -417,7 +405,7 @@ std::string MangleFunction(
 
 		result+= type_name.compressed_and_escaped;
 	}
-	if( arg_count == 0u )
+	if( function_type.args.empty() )
 		result+= "v"_SpC;
 
 	return ToStdString( result );

@@ -20,21 +20,13 @@ extern void TakeS( const NameSpace::S& );
 
 struct TheClass final
 {
-	void Method();
-	void ImutMethod( TheClass& ) const;
-
 	static void StaticMethod();
-	static void StaticMethod2();
+	static void StaticMethod2( int x );
 };
 
-void TheClass::ImutMethod( TheClass& ) const
+void TheClass::StaticMethod2( int x )
 {
-	std::cout << "Call ImutMethod" << std::endl;
-}
-
-void TheClass::StaticMethod2()
-{
-	std::cout << "Call StaticMethod2" << std::endl;
+	std::cout << "Call StaticMethod2: " << x << std::endl;
 }
 
 void U32ToStr( unsigned int x, signed char (&str)[64] );
@@ -47,7 +39,6 @@ int main()
 	NameSpace::Nested();
 	TakeS( NameSpace::S() );
 	TheClass the_class;
-	the_class.Method();
 	the_class.StaticMethod();
 
 	// Real usable function - convert number to string.
