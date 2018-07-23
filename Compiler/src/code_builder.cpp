@@ -404,17 +404,17 @@ void CodeBuilder::MergeNameScopes( NamesScope& dst, const NamesScope& src, Class
 
 					U_ASSERT( dst_class->forward_declaration_file_pos == src_class.forward_declaration_file_pos );
 
-					if( dst_class->completeness == Class::Completeness::Incomplete && src_class.completeness == Class::Completeness::Incomplete )
+					if( dst_class->completeness == TypeCompleteness::Incomplete && src_class.completeness == TypeCompleteness::Incomplete )
 					{} // Ok
-					if( dst_class->completeness != Class::Completeness::Incomplete && src_class.completeness == Class::Completeness::Incomplete )
+					if( dst_class->completeness != TypeCompleteness::Incomplete && src_class.completeness == TypeCompleteness::Incomplete )
 					{} // Dst class is complete, so, use it.
-					if( dst_class->completeness != Class::Completeness::Incomplete && src_class.completeness != Class::Completeness::Incomplete &&
+					if( dst_class->completeness != TypeCompleteness::Incomplete && src_class.completeness != TypeCompleteness::Incomplete &&
 						dst_class->body_file_pos != src_class.body_file_pos )
 					{
 						// Different bodies from different files.
 						errors_.push_back( ReportClassBodyDuplication( src_class.body_file_pos ) );
 					}
-					if(  dst_class->completeness == Class::Completeness::Incomplete && src_class.completeness != Class::Completeness::Incomplete )
+					if(  dst_class->completeness == TypeCompleteness::Incomplete && src_class.completeness != TypeCompleteness::Incomplete )
 					{
 						// Take body of more complete class and store in destintation class table.
 						CopyClass( src_class.forward_declaration_file_pos, src_class_proxy, dst_class_table, dst );
@@ -777,7 +777,7 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 		{
 			if( const ClassProxyPtr previous_class= previous_type->GetClassTypeProxy() )
 			{
-				if( previous_class->class_->completeness != Class::Completeness::Incomplete )
+				if( previous_class->class_->completeness != TypeCompleteness::Incomplete )
 				{
 					errors_.push_back( ReportClassBodyDuplication( class_declaration.file_pos_ ) );
 					return nullptr;
@@ -1010,7 +1010,7 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 	}
 
 	// After we processed fields and parents, we know exactly, how many reference tag this class have.
-	the_class->completeness= Class::Completeness::ReferenceTagsComplete;
+	the_class->completeness= TypeCompleteness::ReferenceTagsComplete;
 
 	// Now, we know parents, fields, inner types and type templates. Process member functions and function templates.
 	current_visibility= ClassMemberVisibility::Public;
@@ -1250,7 +1250,7 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 
 	BuildClassVirtualTables( *the_class, class_type );
 
-	the_class->completeness= Class::Completeness::Complete;
+	the_class->completeness= TypeCompleteness::Complete;
 
 	TryGenerateDefaultConstructor( *the_class, class_type );
 	TryGenerateDestructor( *the_class, class_type );
@@ -3358,7 +3358,7 @@ ProgramString CodeBuilder::BuildAutoVariableDeclarationCode(
 		}
 		else if( const ClassProxyPtr class_type= variable.type.GetClassTypeProxy() )
 		{
-			U_ASSERT( class_type->class_->completeness == Class::Completeness::Complete );
+			U_ASSERT( class_type->class_->completeness == TypeCompleteness::Complete );
 			if( initializer_experrsion.value_type == ValueType::Value )
 			{
 				U_ASSERT( initializer_experrsion.referenced_variables.size() == 1u );

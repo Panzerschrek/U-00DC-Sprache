@@ -321,20 +321,27 @@ SizeType Type::SizeOf() const
 
 bool Type::IsIncomplete() const
 {
+	return GetCompleteness() != TypeCompleteness::Complete;
+}
+
+TypeCompleteness Type::GetCompleteness() const
+{
 	if( const FundamentalType* const fundamental= boost::get<FundamentalType>( &something_ ) )
-		return fundamental->fundamental_type == U_FundamentalType::Void;
+		return fundamental->fundamental_type == U_FundamentalType::Void ? TypeCompleteness::Incomplete : TypeCompleteness::Complete;
 	else if( const ClassProxyPtr* const class_= boost::get<ClassProxyPtr>( &something_ ) )
 	{
 		U_ASSERT( *class_ != nullptr && (*class_)->class_ != nullptr );
-		return (*class_)->class_->completeness != Class::Completeness::Complete;
+		return (*class_)->class_->completeness;
 	}
 	else if( const ArrayPtr* const array= boost::get<ArrayPtr>( &something_ ) )
 	{
 		U_ASSERT( *array != nullptr );
-		return (*array)->type.IsIncomplete();
+		return (*array)->type.GetCompleteness();
 	}
 
-	return false;
+	// TODO - what about incomplete enums?
+
+	return TypeCompleteness::Complete;
 }
 
 bool Type::IsDefaultConstructible() const

@@ -58,6 +58,13 @@ typedef std::shared_ptr<FunctionTemplate> FunctionTemplatePtr;
 
 class DeducedTemplateParameter;
 
+enum class TypeCompleteness
+{
+	Incomplete, // Known nothing
+	ReferenceTagsComplete, // Known fields, parents.
+	Complete, // Known member functions and function templates.
+};
+
 struct FundamentalType final
 {
 	U_FundamentalType fundamental_type;
@@ -121,6 +128,7 @@ public:
 	// TODO - does this method needs?
 	SizeType SizeOf() const;
 
+	TypeCompleteness GetCompleteness() const;
 	bool IsIncomplete() const;
 	bool IsDefaultConstructible() const;
 	bool IsCopyConstructible() const;
@@ -636,13 +644,6 @@ public:
 		bool is_final= false;
 	};
 
-	enum class Completeness
-	{
-		Incomplete, // Known nothing
-		ReferenceTagsComplete, // Known fields, parents, inner types and type templates.
-		Complete, // Known member functions and function templates.
-	};
-
 public:
 	// If you change this, you must change CodeBuilder::CopyClass too!
 
@@ -654,7 +655,7 @@ public:
 
 	size_t field_count= 0u;
 	size_t references_tags_count= 0u;
-	Completeness completeness= Completeness::Incomplete;
+	TypeCompleteness completeness= TypeCompleteness::Incomplete;
 	bool have_explicit_noncopy_constructors= false;
 	bool is_default_constructible= false;
 	bool is_copy_constructible= false;

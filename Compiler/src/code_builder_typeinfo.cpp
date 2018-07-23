@@ -193,7 +193,7 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, Variable& typeinfo_variab
 	}
 	else if( const Class* const class_type= type.GetClassType() )
 	{
-		U_ASSERT( class_type->completeness == Class::Completeness::Complete );
+		U_ASSERT( class_type->completeness == TypeCompleteness::Complete );
 
 		add_size_field( "field_count"_SpC, class_type->field_count );
 		add_size_field( "parent_count"_SpC, class_type->parents.size() );
@@ -310,7 +310,7 @@ void CodeBuilder::FinishTypeinfoClass( Class& class_, const ClassProxyPtr class_
 {
 	class_.llvm_type->setBody( fields_llvm_types );
 	class_.kind= Class::Kind::Struct;
-	class_.completeness= Class::Completeness::Complete;
+	class_.completeness= TypeCompleteness::Complete;
 	class_.can_be_constexpr= true;
 
 	// Generate only destructor, because almost all structs and classes must have it.

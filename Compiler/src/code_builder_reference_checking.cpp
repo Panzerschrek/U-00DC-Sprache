@@ -38,7 +38,7 @@ void CodeBuilder::ProcessFunctionArgReferencesTags(
 		if( out_arg.type.IsIncomplete() )
 		{
 			const Class& class_= GetClassForIncompleteType( out_arg.type );
-			if( class_.completeness < Class::Completeness::ReferenceTagsComplete )
+			if( class_.completeness < TypeCompleteness::ReferenceTagsComplete )
 				errors_.push_back( ReportUsingIncompleteType( in_arg.file_pos_, class_.members.GetThisNamespaceName() ) );
 		}
 
@@ -154,7 +154,7 @@ void CodeBuilder::ProcessFunctionReturnValueReferenceTags( const Synt::FunctionT
 		if( function_type.return_type.IsIncomplete() )
 		{
 			const Class& class_= GetClassForIncompleteType( function_type.return_type );
-			if( class_.completeness < Class::Completeness::ReferenceTagsComplete )
+			if( class_.completeness < TypeCompleteness::ReferenceTagsComplete )
 				errors_.push_back( ReportUsingIncompleteType( func.file_pos_, class_.members.GetThisNamespaceName() ) );
 		}
 

@@ -122,7 +122,7 @@ const NamesScope::InsertedName* CodeBuilder::ResolveName(
 		{
 			if( Class* const class_= type->GetClassType() )
 			{
-				if( component_count >= 2u && class_->completeness != Class::Completeness::Complete )
+				if( component_count >= 2u && class_->completeness != TypeCompleteness::Complete )
 				{
 					errors_.push_back( ReportUsingIncompleteType( file_pos, type->ToString() ) );
 					return nullptr;
