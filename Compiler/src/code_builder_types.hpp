@@ -342,6 +342,7 @@ public:
 
 	const Kind kind;
 	const bool is_global_constant;
+	bool is_incomplete= true;
 
 	StoredVariable( ProgramString iname, Variable icontent, Kind ikind= Kind::Variable, bool iis_global_constant= false );
 };
@@ -694,6 +695,7 @@ struct Enum
 	NamesScope members;
 	SizeType element_count= 0u;
 	FundamentalType underlaying_type; // must be integer
+	bool is_incomplete= false;
 };
 
 struct TemplateBase

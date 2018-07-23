@@ -338,8 +338,8 @@ TypeCompleteness Type::GetCompleteness() const
 		U_ASSERT( *array != nullptr );
 		return (*array)->type.GetCompleteness();
 	}
-
-	// TODO - what about incomplete enums?
+	else if( const Enum* const enum_= GetEnumType() )
+		return enum_->is_incomplete ? TypeCompleteness::Incomplete : TypeCompleteness::Complete;
 
 	return TypeCompleteness::Complete;
 }
