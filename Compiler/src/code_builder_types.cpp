@@ -861,6 +861,10 @@ StoredVariable::StoredVariable(
 	, kind(in_kind), is_global_constant(in_is_global_constant)
 {}
 
+StoredVariable::StoredVariable( ProgramString in_name )
+	: name(std::move(in_name) )
+{}
+
 //
 // VariablesState
 //

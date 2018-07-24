@@ -87,6 +87,8 @@ set( COMPILER_LIB_SOURCES
 	src/code_builder_expressions.cpp
 	src/code_builder_initializers.cpp
 	src/code_builder_method_gen.cpp
+	src/code_builder_names_scope_build.cpp
+	src/code_builder_names_scope_prepare.cpp
 	src/code_builder_overloading_resolution.cpp
 	src/code_builder_preresolve.cpp
 	src/code_builder_reference_checking.cpp

@@ -102,6 +102,7 @@ const NamesScope::InsertedName* CodeBuilder::ResolveName(
 	components+= skip_components - 1u;
 	component_count-= skip_components - 1u;
 	const NamesScope::InsertedName* name= resolve_start_point;
+	NamesScope* last_space= nullptr;
 	do
 	{
 		if( name == nullptr )
@@ -198,11 +199,19 @@ const NamesScope::InsertedName* CodeBuilder::ResolveName(
 
 		++components;
 		--component_count;
+		last_space= next_space;
 	} while ( component_count > 0u );
 
 	if( name != nullptr && name->second.GetType() == NontypeStub::YetNotDeducedTemplateArg )
 		errors_.push_back( ReportTemplateArgumentIsNotDeducedYet( file_pos, name == nullptr ? ""_SpC : name->first ) );
 
+	// Complete some things in resolve.
+	if( name != nullptr )
+	{
+		// TODO - remove const_cast
+		if( OverloadedFunctionsSet* const functions_set= const_cast<OverloadedFunctionsSet*>(name->second.GetFunctionsSet()) )
+			NamesScopeBuildFunctionsSet( *last_space, *functions_set, false );
+	}
 	return name;
 }
 

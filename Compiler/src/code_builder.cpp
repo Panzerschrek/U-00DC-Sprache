@@ -269,7 +269,8 @@ CodeBuilder::BuildResultInternal CodeBuilder::BuildProgramInternal(
 	SetCurrentClassTable( *result.class_table );
 
 	// Do work for this node.
-	BuildNamespaceBody( source_graph_node.ast.program_elements, *result.names_map );
+	NamesScopeFill( *result.names_map, source_graph_node.ast.program_elements );
+	NamesScopeBuild( *result.names_map );
 
 	return result;
 }

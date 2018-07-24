@@ -778,6 +778,18 @@ private:
 	void PreResolveExpression( const Synt::IExpressionComponent& expression, NamesScope& names );
 	// PreResolve End
 
+	// NamesScope fill start
+	void NamesScopeFill( NamesScope& names_scope, const Synt::ProgramElements& namespace_elements );
+	void NamesScopeFill( NamesScope& names_scope, const Synt::VariablesDeclaration& variables_declaration );
+	void NamesScopeFill( NamesScope& names_scope, const Synt::AutoVariableDeclaration& variable_declaration );
+	void NamesScopeFill( NamesScope& names_scope, const Synt::Function& function_declaration );
+	void NamesScopeFill( NamesScope& names_scope, const Synt::FunctionTemplate& function_template_declaration );
+	// NamesScope fill end
+
+	void NamesScopeBuild( NamesScope& names_scope );
+	void NamesScopeBuildFunctionsSet( NamesScope& names_scope, OverloadedFunctionsSet& functions_set, bool build_body );
+	void NamesScopeBuildFunction( NamesScope& names_scope, ClassProxyPtr base_class, OverloadedFunctionsSet& functions_set, const Synt::Function& function_declaration );
+
 	static U_FundamentalType GetNumericConstantType( const Synt::NumericConstant& number );
 
 	llvm::Type* GetFundamentalLLVMType( U_FundamentalType fundmantal_type );

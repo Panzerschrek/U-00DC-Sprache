@@ -246,6 +246,8 @@ bool operator!=( const Array& r, const Array& l );
 
 struct FunctionVariable final
 {
+	const Synt::Function* syntax_element= nullptr;
+
 	enum class ConstexprKind
 	{
 		NonConstexpr,
@@ -277,8 +279,12 @@ struct FunctionVariable final
 struct OverloadedFunctionsSet
 {
 	std::vector<FunctionVariable> functions;
-
 	std::vector<FunctionTemplatePtr> template_functions;
+
+	std::vector<const Synt::Function*> syntax_elements;
+	std::vector<const Synt::FunctionTemplate*> template_syntax_elements;
+
+	bool is_incomplete= true;
 };
 
 class StoredVariable;
@@ -340,10 +346,11 @@ public:
 	const VariableStorageUseCounter  mut_use_counter= std::make_shared<int>();
 	const VariableStorageUseCounter imut_use_counter= std::make_shared<int>();
 
-	const Kind kind;
-	const bool is_global_constant;
+	Kind kind= Kind::Variable;
+	bool is_global_constant= false;
 	bool is_incomplete= true;
 
+	explicit StoredVariable( ProgramString in_name );
 	StoredVariable( ProgramString iname, Variable icontent, Kind ikind= Kind::Variable, bool iis_global_constant= false );
 };
 
