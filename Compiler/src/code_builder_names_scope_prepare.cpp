@@ -104,7 +104,7 @@ void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::AutoVaria
 	// TODO - add syntax elements for later variable initialization.
 }
 
-void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::Function& function_declaration, const ClassProxyPtr base_class )
+void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::Function& function_declaration, const ClassProxyPtr base_class, ClassMemberVisibility visibility )
 {
 	U_UNUSED(base_class); // TODO - use it
 
@@ -118,19 +118,27 @@ void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::Function&
 	if( NamesScope::InsertedName* const prev_name= names_scope.GetThisScopeName( func_name ) )
 	{
 		if( OverloadedFunctionsSet* const functions_set= prev_name->second.GetFunctionsSet() )
+		{
+			if( base_class != nullptr && base_class->class_->GetMemberVisibility( func_name ) != visibility )
+				errors_.push_back( ReportFunctionsVisibilityMismatch( function_declaration.file_pos_, func_name ) );
+
 			functions_set->syntax_elements.push_back( &function_declaration );
+		}
 		else
 			errors_.push_back( ReportRedefinition( function_declaration.file_pos_, func_name ) );
 	}
 	else
 	{
+		if( base_class != nullptr )
+			base_class->class_->SetMemberVisibility( func_name, visibility );
+
 		OverloadedFunctionsSet functions_set;
 		functions_set.syntax_elements.push_back( &function_declaration );
 		names_scope.AddName( func_name, Value( std::move(functions_set) ) );
 	}
 }
 
-void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::FunctionTemplate& function_template_declaration , const ClassProxyPtr base_class )
+void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::FunctionTemplate& function_template_declaration, const ClassProxyPtr base_class )
 {
 	U_UNUSED(base_class); // TODO - use it
 
@@ -182,6 +190,7 @@ void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::Class& cl
 
 	the_class.llvm_type= llvm::StructType::create( llvm_context_, MangleType( class_type ) );
 
+	ClassMemberVisibility current_visibility= ClassMemberVisibility::Public;
 	for( const Synt::IClassElementPtr& member : class_declaration.elements_ )
 	{
 		// TODO - process visibility
@@ -189,9 +198,16 @@ void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::Class& cl
 		if( dynamic_cast<const Synt::ClassField*>( member.get() ) != nullptr )
 		{} // Do not place class fields. Any access to class fields must be accesible only for complete classes.
 		else if( const auto func= dynamic_cast<const Synt::Function*>( member.get() ) )
-			NamesScopeFill( the_class.members, *func, class_type );
+			NamesScopeFill( the_class.members, *func, class_type, current_visibility );
 		else if( const auto func_template= dynamic_cast<const Synt::FunctionTemplate*>( member.get() ) )
 			NamesScopeFill( the_class.members, *func_template, class_type );
+		else if( const auto visibility_label=
+			dynamic_cast<const Synt::ClassVisibilityLabel*>( member.get() ) )
+		{
+			if( class_declaration.kind_attribute_ == Synt::ClassKindAttribute::Struct )
+				errors_.push_back( ReportVisibilityForStruct( visibility_label->file_pos_, class_name ) );
+			current_visibility= visibility_label->visibility_;
+		}
 		else U_ASSERT(false); // TODO - process another members.
 	} // for class elements
 }

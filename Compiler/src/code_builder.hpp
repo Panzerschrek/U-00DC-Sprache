@@ -782,7 +782,7 @@ private:
 	void NamesScopeFill( NamesScope& names_scope, const Synt::ProgramElements& namespace_elements );
 	void NamesScopeFill( NamesScope& names_scope, const Synt::VariablesDeclaration& variables_declaration );
 	void NamesScopeFill( NamesScope& names_scope, const Synt::AutoVariableDeclaration& variable_declaration );
-	void NamesScopeFill( NamesScope& names_scope, const Synt::Function& function_declaration, ClassProxyPtr base_class );
+	void NamesScopeFill( NamesScope& names_scope, const Synt::Function& function_declaration, ClassProxyPtr base_class, ClassMemberVisibility visibility= ClassMemberVisibility::Public );
 	void NamesScopeFill( NamesScope& names_scope, const Synt::FunctionTemplate& function_template_declaration, ClassProxyPtr base_class );
 	void NamesScopeFill( NamesScope& names_scope, const Synt::Class& class_declaration );
 	// NamesScope fill end

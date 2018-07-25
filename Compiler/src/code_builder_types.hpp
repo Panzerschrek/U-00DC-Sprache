@@ -412,7 +412,7 @@ struct VaraibleReferencesCounter
 struct ClassField final
 {
 	Type type;
-	unsigned int index= 0u;
+	unsigned int index= ~0u;
 	ClassProxyWeakPtr class_;
 	bool is_mutable= true;
 	bool is_reference= false;
