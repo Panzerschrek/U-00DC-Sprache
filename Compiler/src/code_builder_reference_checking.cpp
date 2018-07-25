@@ -21,7 +21,8 @@ void CodeBuilder::ProcessFunctionArgReferencesTags(
 
 	if( !in_arg.inner_arg_reference_tags_.empty() )
 	{
-		EnsureTypeCompleteness( out_arg.type, TypeCompleteness::ReferenceTagsComplete );
+		if( !EnsureTypeCompleteness( out_arg.type, TypeCompleteness::ReferenceTagsComplete ) )
+			errors_.push_back( ReportUsingIncompleteType( in_arg.file_pos_, out_arg.type.ToString() ) );
 
 		if( has_continuous_tag )
 		{
@@ -132,7 +133,8 @@ void CodeBuilder::ProcessFunctionReturnValueReferenceTags( const Synt::FunctionT
 		const size_t regular_tag_count= has_continuous_tag ? ( func.return_value_inner_reference_tags_.size() - 2u ) : func.return_value_inner_reference_tags_.size();
 		const size_t reference_tag_count= function_type.return_type.ReferencesTagsCount();
 
-		EnsureTypeCompleteness( function_type.return_type, TypeCompleteness::ReferenceTagsComplete );
+		if( !EnsureTypeCompleteness( function_type.return_type, TypeCompleteness::ReferenceTagsComplete ) )
+			errors_.push_back( ReportUsingIncompleteType( func.file_pos_, function_type.return_type.ToString() ) );
 
 		if( has_continuous_tag )
 		{

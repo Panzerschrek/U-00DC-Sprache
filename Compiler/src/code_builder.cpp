@@ -829,7 +829,7 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 		}
 		if( !EnsureTypeCompleteness( *type_name, TypeCompleteness::Complete ) )
 		{
-			//errors_.push_back( ReportUsingIncompleteType( class_declaration.file_pos_, type_name->ToString() ) );
+			errors_.push_back( ReportUsingIncompleteType( class_declaration.file_pos_, type_name->ToString() ) );
 			continue;
 		}
 		if( std::find( the_class->parents.begin(), the_class->parents.end(), parent_class_proxy ) != the_class->parents.end() )
@@ -2272,8 +2272,14 @@ void CodeBuilder::BuildFuncCode(
 
 	// Ensure completeness only for functions body.
 	for( const Function::Arg& arg : function_type->args )
-		EnsureTypeCompleteness( arg.type, arg.is_reference ? TypeCompleteness::Incomplete : TypeCompleteness::Complete );
-	EnsureTypeCompleteness( function_type->return_type, function_type->return_value_is_reference ? TypeCompleteness::Incomplete : TypeCompleteness::Complete );
+	{
+		if( !arg.is_reference && arg.type != void_type_ &&
+			!EnsureTypeCompleteness( arg.type, TypeCompleteness::Complete ) )
+			errors_.push_back( ReportUsingIncompleteType( args.front()->file_pos_, arg.type.ToString() ) );
+	}
+	if( !function_type->return_value_is_reference && function_type->return_type != void_type_ &&
+		!EnsureTypeCompleteness( function_type->return_type, TypeCompleteness::Complete ) )
+		errors_.push_back( ReportUsingIncompleteType( func_variable.body_file_pos, function_type->return_type.ToString() ) );
 
 	NamesScope function_names( ""_SpC, &parent_names_scope );
 	FunctionContext function_context(
@@ -3075,7 +3081,10 @@ std::vector<ProgramString> CodeBuilder::BuildVariablesDeclarationCode(
 	{
 		// Report about incomplete type only for values, not references.
 		if( !EnsureTypeCompleteness( type, variable_declaration.reference_modifier == ReferenceModifier::Reference ? TypeCompleteness::Incomplete : TypeCompleteness::Complete ) )
+		{
+			errors_.push_back( ReportUsingIncompleteType( variables_declaration.file_pos_, type.ToString() ) );
 			continue;
+		}
 
 		if( variable_declaration.reference_modifier != ReferenceModifier::Reference && !type.CanBeConstexpr() )
 			function_context.have_non_constexpr_operations_inside= true; // Declaring variable with non-constexpr type in constexpr function not allowed.
@@ -3326,7 +3335,10 @@ ProgramString CodeBuilder::BuildAutoVariableDeclarationCode(
 		VariablesState::VariableReferences moved_variable_referenced_variables;
 
 		if( !EnsureTypeCompleteness( variable.type, TypeCompleteness::Complete ) )
+		{
+			errors_.push_back( ReportUsingIncompleteType( auto_variable_declaration.file_pos_, variable.type.ToString() ) );
 			return auto_variable_declaration.name;
+		}
 
 		if( !variable.type.CanBeConstexpr() )
 			function_context.have_non_constexpr_operations_inside= true; // Declaring variable with non-constexpr type in constexpr function not allowed.

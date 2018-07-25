@@ -1142,8 +1142,11 @@ Value CodeBuilder::DoReferenceCast(
 	{
 		// Complete types required for both safe and unsafe casting, except unsafe void to anything cast.
 		// This needs, becasue we must emit same code for places where types yet not complete, and where they are complete.
-		EnsureTypeCompleteness( type, TypeCompleteness::Complete );
-		EnsureTypeCompleteness( var->type, TypeCompleteness::Complete );
+		if( !EnsureTypeCompleteness( type, TypeCompleteness::Complete ) )
+			errors_.push_back( ReportUsingIncompleteType( file_pos, type.ToString() ) );
+
+		if( !( enable_unsafe && var->type == void_type_ ) && !EnsureTypeCompleteness( var->type, TypeCompleteness::Complete ) )
+			errors_.push_back( ReportUsingIncompleteType( file_pos, var->type.ToString() ) );
 
 		if( var->type.ReferenceIsConvertibleTo( type ) )
 			result.llvm_value= CreateReferenceCast( src_value, var->type, type, function_context );
@@ -1785,7 +1788,7 @@ Value CodeBuilder::BuildMemberAccessOperator(
 		return ErrorValue();
 	}
 
-	if( class_type->completeness != TypeCompleteness::Complete )
+	if( !EnsureTypeCompleteness( value.GetType(), TypeCompleteness::Complete ) )
 	{
 		errors_.push_back( ReportUsingIncompleteType( member_access_operator.file_pos_, value.GetType().ToString() ) );
 		return ErrorValue();
@@ -2370,7 +2373,8 @@ Value CodeBuilder::DoCallFunction(
 	}
 	else
 	{
-		EnsureTypeCompleteness( function_type.return_type, TypeCompleteness::Complete );
+		if( function_type.return_type != void_type_ && !EnsureTypeCompleteness( function_type.return_type, TypeCompleteness::Complete ) )
+			errors_.push_back( ReportUsingIncompleteType( call_file_pos, function_type.return_type.ToString() ) );
 
 		result.location= return_value_is_sret ? Variable::Location::Pointer : Variable::Location::LLVMRegister;
 		result.value_type= ValueType::Value;

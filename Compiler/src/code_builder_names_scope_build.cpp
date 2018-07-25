@@ -350,7 +350,10 @@ void CodeBuilder::NamesScopeBuildClass( const ClassProxyPtr class_type, const Ty
 				continue;
 			}
 			if( !EnsureTypeCompleteness( *type_name, TypeCompleteness::Complete ) )
+			{
+				errors_.push_back( ReportUsingIncompleteType( class_declaration.file_pos_, type_name->ToString() ) );
 				continue;
+			}
 
 			if( std::find( the_class.parents.begin(), the_class.parents.end(), parent_class_proxy ) != the_class.parents.end() )
 			{
@@ -404,7 +407,10 @@ void CodeBuilder::NamesScopeBuildClass( const ClassProxyPtr class_type, const Ty
 				out_field.type= PrepareType( in_field->type, the_class.members );
 
 				if( !EnsureTypeCompleteness( out_field.type, out_field.is_reference ? TypeCompleteness::Incomplete : TypeCompleteness::Complete ) )
+				{
+					errors_.push_back( ReportUsingIncompleteType( in_field->file_pos_, out_field.type.ToString() ) );
 					continue;
+				}
 
 				if( out_field.is_reference ) // Reference-fields are immutable by default
 					out_field.is_mutable= in_field->mutability_modifier == Synt::MutabilityModifier::Mutable;
