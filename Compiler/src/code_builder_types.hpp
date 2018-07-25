@@ -661,6 +661,8 @@ public:
 	// TODO - maybe use unordered_map?
 	std::map< ProgramString, ClassMemberVisibility > members_visibility;
 
+	const Synt::Class* syntax_element= nullptr;
+
 	size_t field_count= 0u;
 	size_t references_tags_count= 0u;
 	TypeCompleteness completeness= TypeCompleteness::Incomplete;

@@ -782,13 +782,18 @@ private:
 	void NamesScopeFill( NamesScope& names_scope, const Synt::ProgramElements& namespace_elements );
 	void NamesScopeFill( NamesScope& names_scope, const Synt::VariablesDeclaration& variables_declaration );
 	void NamesScopeFill( NamesScope& names_scope, const Synt::AutoVariableDeclaration& variable_declaration );
-	void NamesScopeFill( NamesScope& names_scope, const Synt::Function& function_declaration );
-	void NamesScopeFill( NamesScope& names_scope, const Synt::FunctionTemplate& function_template_declaration );
+	void NamesScopeFill( NamesScope& names_scope, const Synt::Function& function_declaration, ClassProxyPtr base_class );
+	void NamesScopeFill( NamesScope& names_scope, const Synt::FunctionTemplate& function_template_declaration, ClassProxyPtr base_class );
+	void NamesScopeFill( NamesScope& names_scope, const Synt::Class& class_declaration );
 	// NamesScope fill end
+
+	// Returns true, if all ok
+	bool EnsureTypeCompleteness( const Type& type, TypeCompleteness completeness );
 
 	void NamesScopeBuild( NamesScope& names_scope );
 	void NamesScopeBuildFunctionsSet( NamesScope& names_scope, OverloadedFunctionsSet& functions_set, bool build_body );
 	void NamesScopeBuildFunction( NamesScope& names_scope, ClassProxyPtr base_class, OverloadedFunctionsSet& functions_set, const Synt::Function& function_declaration );
+	void NamesScopeBuildClass( ClassProxyPtr class_type, TypeCompleteness completeness );
 
 	static U_FundamentalType GetNumericConstantType( const Synt::NumericConstant& number );
 

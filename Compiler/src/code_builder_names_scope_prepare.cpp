@@ -1,5 +1,6 @@
 #include "assert.hpp"
 #include "keywords.hpp"
+#include "mangling.hpp"
 #include "code_builder.hpp"
 
 namespace U
@@ -14,11 +15,11 @@ void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::ProgramEl
 	{
 		if( const auto func= dynamic_cast<const Synt::Function*>( program_element.get() ) )
 		{
-			NamesScopeFill( names_scope, *func );
+			NamesScopeFill( names_scope, *func, nullptr );
 		}
 		else if( const auto class_= dynamic_cast<const Synt::Class*>( program_element.get() ) )
 		{
-			U_UNUSED(class_); U_ASSERT(false); // TODO
+			NamesScopeFill( names_scope, *class_ );
 		}
 		else if( const auto namespace_= dynamic_cast<const Synt::Namespace*>( program_element.get() ) )
 		{
@@ -68,7 +69,7 @@ void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::ProgramEl
 		}
 		else if( const auto function_template= 	dynamic_cast<const Synt::FunctionTemplate*>( program_element.get() ) )
 		{
-			NamesScopeFill( names_scope, *function_template );
+			NamesScopeFill( names_scope, *function_template, nullptr );
 		}
 		else U_ASSERT(false);
 	}
@@ -103,8 +104,10 @@ void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::AutoVaria
 	// TODO - add syntax elements for later variable initialization.
 }
 
-void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::Function& function_declaration )
+void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::Function& function_declaration, const ClassProxyPtr base_class )
 {
+	U_UNUSED(base_class); // TODO - use it
+
 	if( function_declaration.name_.components.size() != 1u )
 	{
 		return; // TODO - process body functions later.
@@ -127,8 +130,10 @@ void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::Function&
 	}
 }
 
-void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::FunctionTemplate& function_template_declaration )
+void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::FunctionTemplate& function_template_declaration , const ClassProxyPtr base_class )
 {
+	U_UNUSED(base_class); // TODO - use it
+
 	const Synt::ComplexName& complex_name = function_template_declaration.function_->name_;
 	const ProgramString& function_template_name= complex_name.components.front().name;
 
@@ -150,6 +155,45 @@ void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::FunctionT
 		functions_set.template_syntax_elements.push_back( &function_template_declaration );
 		names_scope.AddName( function_template_name, Value( std::move(functions_set) ) );
 	}
+}
+
+void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::Class& class_declaration )
+{
+	const ProgramString& class_name= class_declaration.name_.components.back().name;
+	if( IsKeyword( class_name ) )
+		errors_.push_back( ReportUsingKeywordAsName( class_declaration.file_pos_ ) );
+
+	if( class_declaration.name_.components.size() != 1u )
+	{
+		return; // TODO - process class functions later.
+	}
+
+	const ClassProxyPtr class_type= std::make_shared<ClassProxy>( new Class( class_name, &names_scope ) );
+	Class& the_class= *class_type->class_;
+
+	// TODO - set file pos
+	if( names_scope.AddName( class_name, Value( Type( class_type ), class_declaration.file_pos_ ) ) == nullptr )
+		errors_.push_back( ReportRedefinition( class_declaration.file_pos_, class_name ) );
+
+	if( class_declaration.is_forward_declaration_ )
+		return;
+
+	the_class.syntax_element= &class_declaration;
+
+	the_class.llvm_type= llvm::StructType::create( llvm_context_, MangleType( class_type ) );
+
+	for( const Synt::IClassElementPtr& member : class_declaration.elements_ )
+	{
+		// TODO - process visibility
+
+		if( dynamic_cast<const Synt::ClassField*>( member.get() ) != nullptr )
+		{} // Do not place class fields. Any access to class fields must be accesible only for complete classes.
+		else if( const auto func= dynamic_cast<const Synt::Function*>( member.get() ) )
+			NamesScopeFill( the_class.members, *func, class_type );
+		else if( const auto func_template= dynamic_cast<const Synt::FunctionTemplate*>( member.get() ) )
+			NamesScopeFill( the_class.members, *func_template, class_type );
+		else U_ASSERT(false); // TODO - process another members.
+	} // for class elements
 }
 
 } // namespace CodeBuilderPrivate

@@ -629,7 +629,7 @@ Type CodeBuilder::PrepareType(
 				errors_.push_back( ReportNameIsNotTypeName( named_type_name->file_pos_, name->first ) );
 		}
 		else
-			errors_.push_back( ReportNameNotFound( named_type_name->file_pos_, named_type_name->name  ) );
+			errors_.push_back( ReportNameNotFound( named_type_name->file_pos_, named_type_name->name ) );
 	}
 	else U_ASSERT(false);
 
@@ -827,9 +827,9 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 			errors_.push_back( ReportCanNotDeriveFromThisType( class_declaration.file_pos_, type_name->ToString() ) );
 			continue;
 		}
-		if( type_name->IsIncomplete() )
+		if( !EnsureTypeCompleteness( *type_name, TypeCompleteness::Complete ) )
 		{
-			errors_.push_back( ReportUsingIncompleteType( class_declaration.file_pos_, type_name->ToString() ) );
+			//errors_.push_back( ReportUsingIncompleteType( class_declaration.file_pos_, type_name->ToString() ) );
 			continue;
 		}
 		if( std::find( the_class->parents.begin(), the_class->parents.end(), parent_class_proxy ) != the_class->parents.end() )
@@ -2270,14 +2270,10 @@ void CodeBuilder::BuildFuncCode(
 
 	func_variable.have_body= true;
 
-	// Check completeness only for functions body.
+	// Ensure completeness only for functions body.
 	for( const Function::Arg& arg : function_type->args )
-	{
-		if( !arg.is_reference && arg.type.IsIncomplete() )
-			errors_.push_back( ReportUsingIncompleteType( args.front()->file_pos_, arg.type.ToString() ) );
-	}
-	if( !function_type->return_value_is_reference && function_type->return_type != void_type_ && function_type->return_type.IsIncomplete() )
-		errors_.push_back( ReportUsingIncompleteType( func_variable.body_file_pos, function_type->return_type.ToString() ) );
+		EnsureTypeCompleteness( arg.type, arg.is_reference ? TypeCompleteness::Incomplete : TypeCompleteness::Complete );
+	EnsureTypeCompleteness( function_type->return_type, function_type->return_value_is_reference ? TypeCompleteness::Incomplete : TypeCompleteness::Complete );
 
 	NamesScope function_names( ""_SpC, &parent_names_scope );
 	FunctionContext function_context(
@@ -3078,11 +3074,9 @@ std::vector<ProgramString> CodeBuilder::BuildVariablesDeclarationCode(
 	for( const Synt::VariablesDeclaration::VariableEntry& variable_declaration : variables_declaration.variables )
 	{
 		// Report about incomplete type only for values, not references.
-		if( variable_declaration.reference_modifier != ReferenceModifier::Reference && type.IsIncomplete() )
-		{
-			errors_.push_back( ReportUsingIncompleteType( variables_declaration.file_pos_, type.ToString() ) );
+		if( !EnsureTypeCompleteness( type, variable_declaration.reference_modifier == ReferenceModifier::Reference ? TypeCompleteness::Incomplete : TypeCompleteness::Complete ) )
 			continue;
-		}
+
 		if( variable_declaration.reference_modifier != ReferenceModifier::Reference && !type.CanBeConstexpr() )
 			function_context.have_non_constexpr_operations_inside= true; // Declaring variable with non-constexpr type in constexpr function not allowed.
 
@@ -3331,11 +3325,9 @@ ProgramString CodeBuilder::BuildAutoVariableDeclarationCode(
 	{	
 		VariablesState::VariableReferences moved_variable_referenced_variables;
 
-		if( variable.type.IsIncomplete() )
-		{
-			errors_.push_back( ReportUsingIncompleteType( auto_variable_declaration.file_pos_, variable.type.ToString() ) );
+		if( !EnsureTypeCompleteness( variable.type, TypeCompleteness::Complete ) )
 			return auto_variable_declaration.name;
-		}
+
 		if( !variable.type.CanBeConstexpr() )
 			function_context.have_non_constexpr_operations_inside= true; // Declaring variable with non-constexpr type in constexpr function not allowed.
 

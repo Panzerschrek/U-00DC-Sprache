@@ -13,3 +13,18 @@ def OrederIndependentFunctions_Test0():
 	tests_lib.build_program( c_program_text )
 	call_result= tests_lib.run_function( "_Z3Foov" )
 	assert( call_result == 52414 * 81 )
+
+
+def OrederIndependentClasses_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			var S s;
+		}
+
+		struct T{}
+		struct S{ F f; T t; }  // Here used classes abowe and below.
+		struct F{}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )

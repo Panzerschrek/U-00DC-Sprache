@@ -1,5 +1,6 @@
 #include "assert.hpp"
 #include "keywords.hpp"
+#include "mangling.hpp"
 #include "code_builder.hpp"
 
 namespace U
@@ -7,6 +8,35 @@ namespace U
 
 namespace CodeBuilderPrivate
 {
+
+bool CodeBuilder::EnsureTypeCompleteness( const Type& type, const TypeCompleteness completeness )
+{
+	if( completeness == TypeCompleteness::Incomplete )
+		return true;
+
+	if( const auto fundamental_type= type.GetFundamentalType() )
+	{
+		if( completeness > TypeCompleteness::Incomplete )
+			return fundamental_type->fundamental_type != U_FundamentalType::Void;
+		return true;
+	}
+	else if( type.GetFunctionPointerType() != nullptr )
+		return true;
+	else if( const auto enum_type= type.GetEnumType() )
+	{
+		U_ASSERT(false); U_UNUSED(enum_type); // TODO
+	}
+	else if( const auto array_type= type.GetArrayType() )
+		return EnsureTypeCompleteness( array_type->type, completeness );
+	else if( const auto class_type= type.GetClassTypeProxy() )
+	{
+		NamesScopeBuildClass( class_type, completeness );
+		return class_type->class_->completeness >= completeness; // Return true if we achived required completeness.
+	}
+	else U_ASSERT(false);
+
+	return false;
+}
 
 void CodeBuilder::NamesScopeBuild( NamesScope& names_scope )
 {
@@ -23,8 +53,14 @@ void CodeBuilder::NamesScopeBuild( NamesScope& names_scope )
 			{
 				if( type->GetFundamentalType() != nullptr )
 				{}
+				else if( const ClassProxyPtr class_type= type->GetClassTypeProxy() )
+				{
+					NamesScopeBuildClass( class_type, TypeCompleteness::Complete );
+					NamesScopeBuild( class_type->class_->members );
+				}
 				else U_ASSERT(false);
 			}
+			else if( name.second.GetClassField() != nullptr ) {} // Can be in classes.
 			else U_ASSERT(false);
 		});
 }
@@ -44,7 +80,8 @@ void CodeBuilder::NamesScopeBuildFunctionsSet( NamesScope& names_scope, Overload
 	{
 		for( FunctionVariable& function_variable : functions_set.functions )
 		{
-			if( function_variable.syntax_element->block_ != nullptr )
+			if( function_variable.syntax_element != nullptr && function_variable.syntax_element->block_ != nullptr &&
+				!function_variable.have_body )
 			{
 				BuildFuncCode(
 					function_variable,
@@ -201,6 +238,103 @@ void CodeBuilder::NamesScopeBuildFunction(
 		func.type_.arguments_,
 		nullptr,
 		func.constructor_initialization_list_.get() );
+}
+
+void CodeBuilder::NamesScopeBuildClass( const ClassProxyPtr class_type, const TypeCompleteness completeness )
+{
+	Class& the_class= *class_type->class_;
+
+	if( completeness <= the_class.completeness )
+		return;
+
+	if( completeness == TypeCompleteness::Incomplete )
+		return;
+
+	const Synt::Class& class_declaration= *the_class.syntax_element;
+	if( completeness >= TypeCompleteness::ReferenceTagsComplete )
+	{
+		// TODO - process parents here.
+
+		std::vector<llvm::Type*> fields_llvm_types;
+
+		for( const Synt::IClassElementPtr& member : class_declaration.elements_ )
+		{
+			if( const auto in_field= dynamic_cast<const Synt::ClassField*>( member.get() ) )
+			{
+				ClassField out_field;
+				out_field.index= static_cast<unsigned int>(fields_llvm_types.size());
+				out_field.class_= class_type;
+				out_field.is_reference= in_field->reference_modifier == Synt::ReferenceModifier::Reference;
+				out_field.type= PrepareType( in_field->type, the_class.members );
+
+				if( !EnsureTypeCompleteness( out_field.type, out_field.is_reference ? TypeCompleteness::Incomplete : TypeCompleteness::Complete ) )
+					continue;
+
+				if( out_field.is_reference ) // Reference-fields are immutable by default
+					out_field.is_mutable= in_field->mutability_modifier == Synt::MutabilityModifier::Mutable;
+				else // But value-fields are mutable by default
+					out_field.is_mutable= in_field->mutability_modifier != Synt::MutabilityModifier::Immutable;
+
+				// Disable constexpr, if field can not be constexpr, or if field is mutable reference.
+				if( !out_field.type.CanBeConstexpr() || ( out_field.is_reference && out_field.is_mutable ) )
+					the_class.can_be_constexpr= false;
+
+				if( out_field.is_reference )
+					fields_llvm_types.emplace_back( llvm::PointerType::get( out_field.type.GetLLVMType(), 0u ) );
+				else
+					fields_llvm_types.emplace_back( out_field.type.GetLLVMType() );
+
+				if( NameShadowsTemplateArgument( in_field->name, the_class.members ) )
+					errors_.push_back( ReportDeclarationShadowsTemplateArgument( in_field->file_pos_, in_field->name ) );
+				else
+				{
+					const NamesScope::InsertedName* const inserted_field=
+						the_class.members.AddName( in_field->name, Value( std::move( out_field ), in_field->file_pos_ ) );
+					if( inserted_field == nullptr )
+						errors_.push_back( ReportRedefinition( in_field->file_pos_, in_field->name ) );
+
+					++the_class.field_count;
+				}
+			}
+		}
+
+		the_class.members.ForEachInThisScope(
+			[&]( const NamesScope::InsertedName& name )
+			{
+				const ClassField* const field= name.second.GetClassField();
+				if( field != nullptr && ( field->is_reference || field->type.ReferencesTagsCount() != 0u ) )
+					the_class.references_tags_count= 1u;
+			});
+
+		for( const ClassProxyPtr& parent_class : the_class.parents )
+		{
+			if( parent_class->class_->references_tags_count != 0u )
+				the_class.references_tags_count= 1u;
+		}
+
+		the_class.llvm_type->setBody( fields_llvm_types );
+
+		the_class.completeness= TypeCompleteness::ReferenceTagsComplete;
+	}
+
+	if( completeness == TypeCompleteness::Complete )
+	{
+		the_class.members.ForEachInThisScope(
+			[&]( const NamesScope::InsertedName& name )
+			{
+				if( const auto functions_set= const_cast<OverloadedFunctionsSet*>(name.second.GetFunctionsSet()) )
+					NamesScopeBuildFunctionsSet( the_class.members, *functions_set, false );
+				else if( name.second.GetClassField() != nullptr ) {}
+				else U_ASSERT(false);
+			});
+
+		the_class.completeness= TypeCompleteness::Complete;
+
+		TryGenerateDefaultConstructor( the_class, class_type );
+		TryGenerateDestructor( the_class, class_type );
+		TryGenerateCopyConstructor( the_class, class_type );
+		TryGenerateCopyAssignmentOperator( the_class, class_type );
+	}
 }
 
 } // namespace CodeBuilderPrivate
