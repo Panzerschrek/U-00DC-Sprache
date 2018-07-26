@@ -150,13 +150,6 @@ private:
 
 	llvm::FunctionType* GetLLVMFunctionType( const Function& function_type );
 
-	// Returns nullptr on fail.
-	ClassProxyPtr PrepareClass(
-		const Synt::Class& class_declaration,
-		const Synt::ComplexName& class_complex_name,
-		NamesScope& names_scope,
-		bool force_forward_declaration= false );
-
 	void PrepareEnum( const Synt::Enum& enum_decl, NamesScope& names_scope );
 
 	// Virtual stuff
@@ -184,13 +177,13 @@ private:
 	ProgramString PrepareTypeTemplate(
 		const Synt::TypeTemplateBase& type_template_declaration,
 		TypeTemplatesSet& type_templates_set,
-		NamesScope& names_scope );  // returns names of type template in case of success
+		NamesScope& names_scope ); // returns names of type template in case of success
+
 	void PrepareFunctionTemplate(
-		const Synt::FunctionTemplate&
-		unction_template_declaration,
+		const Synt::FunctionTemplate& function_template_declaration,
+		OverloadedFunctionsSet& functions_set,
 		NamesScope& names_scope,
-		const ClassProxyPtr& base_class,
-		ClassMemberVisibility visibility= ClassMemberVisibility::Public );
+		const ClassProxyPtr& base_class );
 
 	void ProcessTemplateArgs(
 		const std::vector<Synt::TemplateBase::Arg>& args,
@@ -359,10 +352,6 @@ private:
 	void CallDestructorsForLoopInnerVariables( FunctionContext& function_context, const FilePos& file_pos );
 	void CallDestructorsBeforeReturn( FunctionContext& function_context, const FilePos& file_pos );
 	void CallMembersDestructors( FunctionContext& function_context, const FilePos& file_pos );
-
-	void BuildNamespaceBody(
-		const Synt::ProgramElements& body_elements,
-		NamesScope& names_scope );
 
 	PrepareFunctionResult PrepareFunction(
 		const Synt::Function& func,
@@ -787,7 +776,7 @@ private:
 	void NamesScopeFill( NamesScope& names_scope, const Synt::AutoVariableDeclaration& variable_declaration );
 	void NamesScopeFill( NamesScope& names_scope, const Synt::Function& function_declaration, ClassProxyPtr base_class, ClassMemberVisibility visibility= ClassMemberVisibility::Public );
 	void NamesScopeFill( NamesScope& names_scope, const Synt::FunctionTemplate& function_template_declaration, ClassProxyPtr base_class );
-	void NamesScopeFill( NamesScope& names_scope, const Synt::Class& class_declaration );
+	ClassProxyPtr NamesScopeFill( NamesScope& names_scope, const Synt::Class& class_declaration );
 	void NamesScopeFill( NamesScope& names_scope, const Synt::TypeTemplateBase& type_template_declaration );
 	void NamesScopeFillOutOfLineElements( NamesScope& names_scope, const Synt::ProgramElements& namespace_elements );
 	// NamesScope fill end

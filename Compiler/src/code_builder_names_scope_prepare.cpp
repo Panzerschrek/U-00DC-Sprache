@@ -163,7 +163,7 @@ void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::FunctionT
 	}
 }
 
-void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::Class& class_declaration )
+ClassProxyPtr CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::Class& class_declaration )
 {
 	const ProgramString& class_name= class_declaration.name_.components.back().name;
 	if( IsKeyword( class_name ) )
@@ -171,7 +171,7 @@ void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::Class& cl
 
 	if( class_declaration.name_.components.size() != 1u )
 	{
-		return; // TODO - process class functions later.
+		return nullptr; // TODO - process class functions later.
 	}
 
 	const ClassProxyPtr class_type= std::make_shared<ClassProxy>( new Class( class_name, &names_scope ) );
@@ -182,7 +182,7 @@ void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::Class& cl
 		errors_.push_back( ReportRedefinition( class_declaration.file_pos_, class_name ) );
 
 	if( class_declaration.is_forward_declaration_ )
-		return;
+		return class_type;
 
 	the_class.syntax_element= &class_declaration;
 
@@ -210,6 +210,8 @@ void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::Class& cl
 			NamesScopeFill( names_scope, *type_template );
 		else U_ASSERT(false); // TODO - process another members.
 	} // for class elements
+
+	return class_type;
 }
 
 void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::TypeTemplateBase& type_template_declaration )

@@ -72,6 +72,7 @@ void CodeBuilder::NamesScopeBuild( NamesScope& names_scope )
 				else U_ASSERT(false);
 			}
 			else if( name.second.GetClassField() != nullptr ) {} // Can be in classes.
+			else if( name.second.GetFunctionVariable() != nullptr ) {} // It is function, generating from template.
 			else if( TypeTemplatesSet* const type_templates_set= name.second.GetTypeTemplatesSet() )
 				NamesScopeBuildTypetemplatesSet( names_scope, *type_templates_set );
 			else U_ASSERT(false);
@@ -86,6 +87,8 @@ void CodeBuilder::NamesScopeBuildFunctionsSet( NamesScope& names_scope, Overload
 	{
 		for( const Synt::Function* const function : functions_set.syntax_elements )
 			NamesScopeBuildFunction( names_scope, base_class, functions_set, *function );
+		for( const Synt::FunctionTemplate* const function_template : functions_set.template_syntax_elements )
+			PrepareFunctionTemplate( *function_template, functions_set, names_scope, base_class );
 		functions_set.is_incomplete= false;
 	}
 

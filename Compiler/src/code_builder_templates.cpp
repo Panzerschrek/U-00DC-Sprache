@@ -171,9 +171,9 @@ ProgramString CodeBuilder::PrepareTypeTemplate(
 
 void CodeBuilder::PrepareFunctionTemplate(
 	const Synt::FunctionTemplate& function_template_declaration,
+	OverloadedFunctionsSet& functions_set,
 	NamesScope& names_scope,
-	const ClassProxyPtr& base_class,
-	const ClassMemberVisibility visibility )
+	const ClassProxyPtr& base_class )
 {
 	const Synt::ComplexName& complex_name = function_template_declaration.function_->name_;
 	const ProgramString& function_template_name= complex_name.components.front().name;
@@ -214,29 +214,8 @@ void CodeBuilder::PrepareFunctionTemplate(
 
 	PopResolveHandler();
 
-	// Insert function template
-	if( NamesScope::InsertedName* const same_name= names_scope.GetThisScopeName( function_template_name ) )
-	{
-		if( OverloadedFunctionsSet* const functions_set= same_name->second.GetFunctionsSet() )
-		{
-			if( base_class != nullptr && base_class->class_->GetMemberVisibility( function_template_name ) != visibility )
-				errors_.push_back( ReportFunctionsVisibilityMismatch( function_template_declaration.file_pos_, function_template_name ) ); // All functions with same name must have same visibility.
-
-			// SPRACHE_TODO - check equality of different template functions.
-			functions_set->template_functions.push_back( function_template );
-		}
-		else
-			errors_.push_back( ReportRedefinition( function_template_declaration.file_pos_, function_template_name ) );
-	}
-	else
-	{
-		OverloadedFunctionsSet functions_set;
-		functions_set.template_functions.push_back( function_template );
-		names_scope.AddName( function_template_name, std::move(functions_set) );
-
-		if( base_class != nullptr )
-			base_class->class_->SetMemberVisibility( function_template_name, visibility );
-	}
+	// TODO - check duplicates and function templates with same signature.
+	functions_set.template_functions.push_back( function_template );
 }
 
 void CodeBuilder::ProcessTemplateArgs(
@@ -1121,11 +1100,19 @@ CodeBuilder::TemplateTypeGenerationResult CodeBuilder::GenTemplateType(
 			return result;
 		}
 
-		const ClassProxyPtr class_proxy= PrepareClass( *template_class->class_, GetComplexNameForGeneratedClass(), *template_parameters_namespace );
+		const ClassProxyPtr class_proxy= NamesScopeFill( *template_parameters_namespace, *template_class->class_ );
+		if( class_proxy == nullptr )
+		{
+			PopResolveHandler();
+			return result;
+		}
+
+		NamesScopeBuildClass( class_proxy, TypeCompleteness::Complete );
+		NamesScopeBuild( class_proxy->class_->members );
 
 		PopResolveHandler();
 
-		if( class_proxy == nullptr )
+		if( class_proxy->class_->completeness != TypeCompleteness::Complete )
 			return result;
 
 		Class& the_class= *class_proxy->class_;
