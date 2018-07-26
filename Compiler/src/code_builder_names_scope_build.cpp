@@ -88,14 +88,12 @@ void CodeBuilder::NamesScopeBuild( NamesScope& names_scope )
 
 void CodeBuilder::NamesScopeBuildFunctionsSet( NamesScope& names_scope, OverloadedFunctionsSet& functions_set, const bool build_body )
 {
-	const ClassProxyPtr base_class= nullptr; // TODO
-
 	if( functions_set.is_incomplete )
 	{
 		for( const Synt::Function* const function : functions_set.syntax_elements )
-			NamesScopeBuildFunction( names_scope, base_class, functions_set, *function );
+			NamesScopeBuildFunction( names_scope, functions_set.base_class, functions_set, *function );
 		for( const Synt::FunctionTemplate* const function_template : functions_set.template_syntax_elements )
-			PrepareFunctionTemplate( *function_template, functions_set, names_scope, base_class );
+			PrepareFunctionTemplate( *function_template, functions_set, names_scope, functions_set.base_class );
 		functions_set.is_incomplete= false;
 	}
 
@@ -108,7 +106,7 @@ void CodeBuilder::NamesScopeBuildFunctionsSet( NamesScope& names_scope, Overload
 			{
 				BuildFuncCode(
 					function_variable,
-					base_class,
+					functions_set.base_class,
 					names_scope,
 					function_variable.syntax_element->name_.components.back().name,
 					function_variable.syntax_element->type_.arguments_,
@@ -273,7 +271,6 @@ void CodeBuilder::NamesScopeBuildFunction(
 		if( base_class != nullptr && ( base_class->class_->kind == Class::Kind::Struct || base_class->class_->kind == Class::Kind::NonPolymorph ) )
 			errors_.push_back( ReportVirtualForNonpolymorphClass( func.file_pos_, func_name ) );
 	}
-
 
 	// Check "=default" / "=delete".
 	if( func.body_kind != Synt::Function::BodyKind::None )
@@ -502,7 +499,6 @@ void CodeBuilder::NamesScopeBuildClass( const ClassProxyPtr class_type, const Ty
 						fields_llvm_types.emplace_back( llvm::PointerType::get( class_field->type.GetLLVMType(), 0u ) );
 					else
 						fields_llvm_types.emplace_back( class_field->type.GetLLVMType() );
-
 				}
 			});
 
@@ -511,7 +507,18 @@ void CodeBuilder::NamesScopeBuildClass( const ClassProxyPtr class_type, const Ty
 			[&]( const NamesScope::InsertedName& name )
 			{
 				if( const auto functions_set= const_cast<OverloadedFunctionsSet*>(name.second.GetFunctionsSet()) )
+				{
 					NamesScopeBuildFunctionsSet( the_class.members, *functions_set, false );
+
+					PrepareFunctionResult prepare_function_result; // TODO - remove "PrepareFunctionResult"
+					prepare_function_result.functions_set= functions_set;
+					for( const FunctionVariable& function : functions_set->functions )
+					{
+						prepare_function_result.func_syntax_element= function.syntax_element;
+						prepare_function_result.function_index= static_cast<size_t>(&function - functions_set->functions.data());
+						ProcessClassVirtualFunction( the_class, prepare_function_result );
+					}
+				}
 				else if( name.second.GetClassField() != nullptr ) {}
 				else U_ASSERT(false);
 			});

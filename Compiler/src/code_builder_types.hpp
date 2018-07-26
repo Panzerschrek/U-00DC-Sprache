@@ -286,6 +286,8 @@ struct OverloadedFunctionsSet
 	std::vector<const Synt::Function*> syntax_elements;
 	std::vector<const Synt::FunctionTemplate*> template_syntax_elements;
 
+	ClassProxyPtr base_class;
+
 	bool is_incomplete= true;
 };
 

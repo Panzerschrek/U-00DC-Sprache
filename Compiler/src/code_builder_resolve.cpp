@@ -138,10 +138,14 @@ const NamesScope::InsertedName* CodeBuilder::ResolveName(
 		{
 			if( Class* const class_= type->GetClassType() )
 			{
-				if( component_count >= 2u && class_->completeness != TypeCompleteness::Complete )
+				if( component_count >= 2u )
 				{
-					errors_.push_back( ReportUsingIncompleteType( file_pos, type->ToString() ) );
-					return nullptr;
+					if( class_->syntax_element->is_forward_declaration_  )
+					{
+						errors_.push_back( ReportUsingIncompleteType( file_pos, type->ToString() ) );
+						return nullptr;
+					}
+					NamesScopeBuildClass( type->GetClassTypeProxy(), TypeCompleteness::Complete );
 				}
 				next_space= &class_->members;
 				next_space_class= type->GetClassTypeProxy();

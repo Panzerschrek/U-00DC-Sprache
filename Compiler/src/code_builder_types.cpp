@@ -568,6 +568,8 @@ ProgramString Type::ToString() const
 				return "namespace"_SpC;
 			case NontypeStub::TypeTemplate:
 				return "type template"_SpC;
+			case NontypeStub::StaticAssertTypeStub:
+				return "static assert"_SpC;
 			case NontypeStub::YetNotDeducedTemplateArg:
 				return "yet not deduced template arg"_SpC;
 			case NontypeStub::ErrorValue:

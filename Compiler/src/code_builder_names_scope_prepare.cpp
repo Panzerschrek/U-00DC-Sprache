@@ -96,8 +96,6 @@ void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::AutoVaria
 
 void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::Function& function_declaration, const ClassProxyPtr base_class, ClassMemberVisibility visibility )
 {
-	U_UNUSED(base_class); // TODO - use it
-
 	if( function_declaration.name_.components.size() != 1u )
 	{
 		return; // TODO - process body functions later.
@@ -112,6 +110,7 @@ void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::Function&
 			if( base_class != nullptr && base_class->class_->GetMemberVisibility( func_name ) != visibility )
 				errors_.push_back( ReportFunctionsVisibilityMismatch( function_declaration.file_pos_, func_name ) );
 
+			U_ASSERT( functions_set->base_class == base_class );
 			functions_set->syntax_elements.push_back( &function_declaration );
 		}
 		else
@@ -123,15 +122,15 @@ void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::Function&
 			base_class->class_->SetMemberVisibility( func_name, visibility );
 
 		OverloadedFunctionsSet functions_set;
+		functions_set.base_class= base_class;
 		functions_set.syntax_elements.push_back( &function_declaration );
+
 		names_scope.AddName( func_name, Value( std::move(functions_set) ) );
 	}
 }
 
 void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::FunctionTemplate& function_template_declaration, const ClassProxyPtr base_class )
 {
-	U_UNUSED(base_class); // TODO - use it
-
 	const Synt::ComplexName& complex_name = function_template_declaration.function_->name_;
 	const ProgramString& function_template_name= complex_name.components.front().name;
 
@@ -143,14 +142,19 @@ void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::FunctionT
 	if( NamesScope::InsertedName* const prev_name= names_scope.GetThisScopeName( function_template_name ) )
 	{
 		if( OverloadedFunctionsSet* const functions_set= prev_name->second.GetFunctionsSet() )
+		{
+			U_ASSERT( functions_set->base_class == base_class );
 			functions_set->template_syntax_elements.push_back( &function_template_declaration );
+		}
 		else
 			errors_.push_back( ReportRedefinition( function_template_declaration.file_pos_, function_template_name ) );
 	}
 	else
 	{
 		OverloadedFunctionsSet functions_set;
+		functions_set.base_class= base_class;
 		functions_set.template_syntax_elements.push_back( &function_template_declaration );
+
 		names_scope.AddName( function_template_name, Value( std::move(functions_set) ) );
 	}
 }
@@ -163,11 +167,12 @@ ClassProxyPtr CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::
 
 	if( class_declaration.name_.components.size() != 1u )
 	{
-		return nullptr; // TODO - process class functions later.
+		return nullptr; // TODO - disable out-of-line possibility for classes.
 	}
 
 	const ClassProxyPtr class_type= std::make_shared<ClassProxy>( new Class( class_name, &names_scope ) );
 	Class& the_class= *class_type->class_;
+	the_class.body_file_pos= the_class.forward_declaration_file_pos= class_declaration.file_pos_;
 
 	// TODO - set file pos
 	if( names_scope.AddName( class_name, Value( Type( class_type ), class_declaration.file_pos_ ) ) == nullptr )
