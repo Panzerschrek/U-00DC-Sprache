@@ -175,7 +175,7 @@ const NamesScope::InsertedName* CodeBuilder::ResolveName(
 			}
 			else if( component_count >= 2u )
 			{
-				errors_.push_back( ReportTemplateInstantiationRequired( file_pos, type_templates_set->front()->syntax_element->name_ ) );
+				errors_.push_back( ReportTemplateInstantiationRequired( file_pos, type_templates_set->type_templates.front()->syntax_element->name_ ) );
 				return nullptr;
 			}
 		}
@@ -226,6 +226,8 @@ const NamesScope::InsertedName* CodeBuilder::ResolveName(
 		// TODO - remove const_cast
 		if( OverloadedFunctionsSet* const functions_set= const_cast<OverloadedFunctionsSet*>(name->second.GetFunctionsSet()) )
 			NamesScopeBuildFunctionsSet( *last_space, *functions_set, false );
+		else if( TypeTemplatesSet* const type_templates_set= const_cast<TypeTemplatesSet*>(name->second.GetTypeTemplatesSet()) )
+			NamesScopeBuildTypetemplatesSet( *last_space, *type_templates_set );
 	}
 	return name;
 }

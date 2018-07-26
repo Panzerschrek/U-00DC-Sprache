@@ -72,6 +72,8 @@ void CodeBuilder::NamesScopeBuild( NamesScope& names_scope )
 				else U_ASSERT(false);
 			}
 			else if( name.second.GetClassField() != nullptr ) {} // Can be in classes.
+			else if( TypeTemplatesSet* const type_templates_set= name.second.GetTypeTemplatesSet() )
+				NamesScopeBuildTypetemplatesSet( names_scope, *type_templates_set );
 			else U_ASSERT(false);
 		});
 }
@@ -720,6 +722,17 @@ void CodeBuilder::NamesScopeBuildClass( const ClassProxyPtr class_type, const Ty
 		TryGenerateCopyConstructor( the_class, class_type );
 		TryGenerateCopyAssignmentOperator( the_class, class_type );
 	} // if full comleteness required
+}
+
+void CodeBuilder::NamesScopeBuildTypetemplatesSet( NamesScope& names_scope, TypeTemplatesSet& type_templates_set )
+{
+	if( !type_templates_set.is_incomplete )
+		return;
+
+	for( const auto syntax_element : type_templates_set.syntax_elements )
+		PrepareTypeTemplate( *syntax_element, type_templates_set, names_scope );
+
+	type_templates_set.is_incomplete= false;
 }
 
 } // namespace CodeBuilderPrivate

@@ -181,7 +181,10 @@ private:
 		FunctionContext& function_context );
 
 	// Templates
-	ProgramString PrepareTypeTemplate( const Synt::TypeTemplateBase& type_template_declaration, NamesScope& names_scope );  // returns names of type template in case of success
+	ProgramString PrepareTypeTemplate(
+		const Synt::TypeTemplateBase& type_template_declaration,
+		TypeTemplatesSet& type_templates_set,
+		NamesScope& names_scope );  // returns names of type template in case of success
 	void PrepareFunctionTemplate(
 		const Synt::FunctionTemplate&
 		unction_template_declaration,
@@ -785,6 +788,7 @@ private:
 	void NamesScopeFill( NamesScope& names_scope, const Synt::Function& function_declaration, ClassProxyPtr base_class, ClassMemberVisibility visibility= ClassMemberVisibility::Public );
 	void NamesScopeFill( NamesScope& names_scope, const Synt::FunctionTemplate& function_template_declaration, ClassProxyPtr base_class );
 	void NamesScopeFill( NamesScope& names_scope, const Synt::Class& class_declaration );
+	void NamesScopeFill( NamesScope& names_scope, const Synt::TypeTemplateBase& type_template_declaration );
 	void NamesScopeFillOutOfLineElements( NamesScope& names_scope, const Synt::ProgramElements& namespace_elements );
 	// NamesScope fill end
 
@@ -795,6 +799,7 @@ private:
 	void NamesScopeBuildFunctionsSet( NamesScope& names_scope, OverloadedFunctionsSet& functions_set, bool build_body );
 	void NamesScopeBuildFunction( NamesScope& names_scope, ClassProxyPtr base_class, OverloadedFunctionsSet& functions_set, const Synt::Function& function_declaration );
 	void NamesScopeBuildClass( ClassProxyPtr class_type, TypeCompleteness completeness );
+	void NamesScopeBuildTypetemplatesSet( NamesScope& names_scope, TypeTemplatesSet& type_templates_set );
 
 	static U_FundamentalType GetNumericConstantType( const Synt::NumericConstant& number );
 

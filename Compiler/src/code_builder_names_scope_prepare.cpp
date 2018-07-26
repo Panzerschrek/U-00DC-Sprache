@@ -64,9 +64,7 @@ void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::ProgramEl
 			U_UNUSED(typedef_); U_ASSERT(false); // TODO
 		}
 		else if( const auto type_template= dynamic_cast<const Synt::TypeTemplateBase*>( program_element.get() ) )
-		{
-			U_UNUSED(type_template); U_ASSERT(false); // TODO
-		}
+			NamesScopeFill( names_scope, *type_template );
 		else if( const auto function_template= 	dynamic_cast<const Synt::FunctionTemplate*>( program_element.get() ) )
 		{
 			NamesScopeFill( names_scope, *function_template, nullptr );
@@ -208,8 +206,28 @@ void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::Class& cl
 				errors_.push_back( ReportVisibilityForStruct( visibility_label->file_pos_, class_name ) );
 			current_visibility= visibility_label->visibility_;
 		}
+		else if( const auto type_template= dynamic_cast<const Synt::TypeTemplateBase*>( member.get() ) )
+			NamesScopeFill( names_scope, *type_template );
 		else U_ASSERT(false); // TODO - process another members.
 	} // for class elements
+}
+
+void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::TypeTemplateBase& type_template_declaration )
+{
+	const ProgramString type_template_name= type_template_declaration.name_;
+	if( NamesScope::InsertedName* const prev_name= names_scope.GetThisScopeName( type_template_name ) )
+	{
+		if( TypeTemplatesSet* const type_templates_set= prev_name->second.GetTypeTemplatesSet() )
+			type_templates_set->syntax_elements.push_back( &type_template_declaration );
+		else
+			errors_.push_back( ReportRedefinition( type_template_declaration.file_pos_, type_template_name ) );
+	}
+	else
+	{
+		TypeTemplatesSet type_templates_set;
+		type_templates_set.syntax_elements.push_back( &type_template_declaration );
+		names_scope.AddName( type_template_name, Value( std::move(type_templates_set), type_template_declaration.file_pos_ ) );
+	}
 }
 
 void CodeBuilder::NamesScopeFillOutOfLineElements( NamesScope& names_scope, const Synt::ProgramElements& namespace_elements )

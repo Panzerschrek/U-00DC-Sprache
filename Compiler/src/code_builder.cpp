@@ -299,7 +299,7 @@ void CodeBuilder::MergeNameScopes( NamesScope& dst, const NamesScope& src, Class
 				{
 					// Type template must know it parent namespace.
 					// Change namespace at this point.
-					for( const TypeTemplatePtr& type_template : *type_templates_set )
+					for( const TypeTemplatePtr& type_template : type_templates_set->type_templates )
 					{
 						if( type_template->parent_namespace == &src )
 							type_template->parent_namespace= &dst;
@@ -977,9 +977,10 @@ ClassProxyPtr CodeBuilder::PrepareClass(
 		else if( const auto type_template=
 			dynamic_cast<const Synt::TypeTemplateBase*>( member.get() ) )
 		{
-			const ProgramString type_template_name=
-				PrepareTypeTemplate( *type_template, the_class->members );
-			the_class->SetMemberVisibility( type_template_name, current_visibility );
+			U_UNUSED(type_template); // TODO - remove whole function.
+			//const ProgramString type_template_name=
+			//	PrepareTypeTemplate( *type_template, the_class->members );
+			//the_class->SetMemberVisibility( type_template_name, current_visibility );
 		}
 		else if( dynamic_cast<const Synt::FunctionTemplate*>( member.get() ) != nullptr ) {}
 		else if( const auto visibility_label=
@@ -1709,7 +1710,7 @@ void CodeBuilder::BuildNamespaceBody(
 		else if( const auto type_template=
 			dynamic_cast<const Synt::TypeTemplateBase*>( program_element.get() ) )
 		{
-			PrepareTypeTemplate( *type_template, names_scope );
+			U_ASSERT(false); U_UNUSED(type_template); // TODO - remove whole function.
 		}
 		else if( const auto function_template=
 			dynamic_cast<const Synt::FunctionTemplate*>( program_element.get() ) )

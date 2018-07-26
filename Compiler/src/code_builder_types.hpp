@@ -50,8 +50,8 @@ struct TemplateBase;
 typedef std::shared_ptr<TemplateBase> TemplateBasePtr;
 
 struct TypeTemplate;
+struct TypeTemplatesSet;
 typedef std::shared_ptr<TypeTemplate> TypeTemplatePtr;
-using TypeTemplatesSet= std::vector<TypeTemplatePtr>; // Set of type templates with same name.
 
 struct FunctionTemplate;
 typedef std::shared_ptr<FunctionTemplate> FunctionTemplatePtr;
@@ -284,6 +284,13 @@ struct OverloadedFunctionsSet
 	std::vector<const Synt::Function*> syntax_elements;
 	std::vector<const Synt::FunctionTemplate*> template_syntax_elements;
 
+	bool is_incomplete= true;
+};
+
+struct TypeTemplatesSet
+{
+	std::vector<TypeTemplatePtr> type_templates;
+	std::vector<const Synt::TypeTemplateBase*> syntax_elements;
 	bool is_incomplete= true;
 };
 
@@ -732,7 +739,6 @@ struct TypeTemplate final : TemplateBase
 	// Store syntax tree element for instantiation.
 	// Syntax tree must live longer, than this struct.
 	const Synt::TypeTemplateBase* syntax_element= nullptr;
-
 };
 
 typedef boost::variant< int, Type, Variable > DeducibleTemplateParameter; // int means not deduced

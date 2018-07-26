@@ -79,6 +79,7 @@ static ProgramString EncodeTemplateParameters( DeducibleTemplateParameters& dedu
 
 ProgramString CodeBuilder::PrepareTypeTemplate(
 	const Synt::TypeTemplateBase& type_template_declaration,
+	TypeTemplatesSet& type_templates_set,
 	NamesScope& names_scope )
 {
 	/* SPRACHE_TODO:
@@ -91,19 +92,7 @@ ProgramString CodeBuilder::PrepareTypeTemplate(
 
 	const TypeTemplatePtr type_template( new TypeTemplate );
 	const ProgramString& type_template_name= type_template_declaration.name_;
-
-	if( NamesScope::InsertedName* const prev_name= names_scope.GetThisScopeName( type_template_name ) )
-	{
-		if( TypeTemplatesSet* const type_templates_set= prev_name->second.GetTypeTemplatesSet() )
-			type_templates_set->push_back( type_template ); // TODO - check typpe template signature equality.
-		else
-		{
-			errors_.push_back( ReportRedefinition( type_template_declaration.file_pos_, type_template_name ) );
-			return type_template_name;
-		}
-	}
-	else
-		names_scope.AddName( type_template_name, Value( TypeTemplatesSet{type_template}, type_template_declaration.file_pos_ ) );
+	type_templates_set.type_templates.push_back( type_template );
 
 	type_template->parent_namespace= &names_scope;
 	type_template->syntax_element= &type_template_declaration;
@@ -513,7 +502,7 @@ const NamesScope::InsertedName* CodeBuilder::ResolveForTemplateSignatureParamete
 			}
 			else if( !is_last_component )
 			{
-				errors_.push_back( ReportTemplateInstantiationRequired( file_pos, type_templates_set->front()->syntax_element->name_ ) );
+				errors_.push_back( ReportTemplateInstantiationRequired( file_pos, type_templates_set->type_templates.front()->syntax_element->name_ ) );
 				return nullptr;
 			}
 
@@ -691,8 +680,9 @@ DeducedTemplateParameter CodeBuilder::DeduceTemplateArguments(
 		if( given_type_class->base_template == boost::none )
 			return DeducedTemplateParameter::Invalid();
 
+		// TODO - build type templates set here
 		const TypeTemplate* inner_type_template= nullptr;
-		for( const TypeTemplatePtr& candidate_template : *inner_type_templates_set)
+		for( const TypeTemplatePtr& candidate_template : inner_type_templates_set->type_templates )
 		{
 			if( candidate_template == given_type_class->base_template->class_template )
 			{
@@ -931,11 +921,13 @@ NamesScope::InsertedName* CodeBuilder::GenTemplateType(
 	const std::vector<Synt::IExpressionComponentPtr>& template_arguments,
 	NamesScope& arguments_names_scope )
 {
-	if( type_templates_set.size() == 1u )
-		return GenTemplateType( file_pos, type_templates_set.front(), template_arguments, arguments_names_scope, false ).type;
+	// TODO - build set here
+
+	if( type_templates_set.type_templates.size() == 1u )
+		return GenTemplateType( file_pos, type_templates_set.type_templates.front(), template_arguments, arguments_names_scope, false ).type;
 
 	std::vector<TemplateTypeGenerationResult> generated_types;
-	for( const TypeTemplatePtr& type_template : type_templates_set )
+	for( const TypeTemplatePtr& type_template : type_templates_set.type_templates )
 	{
 		TemplateTypeGenerationResult generated_type=
 			GenTemplateType(
