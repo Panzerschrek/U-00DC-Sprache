@@ -79,3 +79,30 @@ def OrederIndependent_OutOfLineFunction_Test3():
 	tests_lib.build_program( c_program_text )
 	call_result= tests_lib.run_function( "_Z3Foov" )
 	assert( call_result == 5623222 )
+
+
+def OrederIndependent_Enums_Test0():
+	c_program_text= """
+		fn Foo() : i32
+		{
+			return i32(E::C);
+		}
+		enum E{ A, B, C, D }
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 2 )
+
+
+def OrederIndependent_Enums_Test1():
+	c_program_text= """
+		fn Foo() : i32
+		{
+			var SS ss= SS::D;
+			return i32(ss);
+		}
+		enum SS{ A, B, C, D }
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 3 )

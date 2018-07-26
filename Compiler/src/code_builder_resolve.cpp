@@ -146,8 +146,9 @@ const NamesScope::InsertedName* CodeBuilder::ResolveName(
 				next_space= &class_->members;
 				next_space_class= type->GetClassTypeProxy();
 			}
-			else if( Enum* const enum_= type->GetEnumType() )
+			else if( EnumPtr const enum_= type->GetEnumTypePtr() )
 			{
+				NamesScopeBuildEnum( enum_, TypeCompleteness::Complete );
 				next_space= &enum_->members;
 			}
 		}

@@ -150,8 +150,6 @@ private:
 
 	llvm::FunctionType* GetLLVMFunctionType( const Function& function_type );
 
-	void PrepareEnum( const Synt::Enum& enum_decl, NamesScope& names_scope );
-
 	// Virtual stuff
 	void ProcessClassParentsVirtualTables( Class& the_class );
 	void TryGenerateDestructorPrototypeForPolymorphClass( Class& the_class, const Type& class_type );
@@ -778,6 +776,7 @@ private:
 	void NamesScopeFill( NamesScope& names_scope, const Synt::FunctionTemplate& function_template_declaration, ClassProxyPtr base_class );
 	ClassProxyPtr NamesScopeFill( NamesScope& names_scope, const Synt::Class& class_declaration );
 	void NamesScopeFill( NamesScope& names_scope, const Synt::TypeTemplateBase& type_template_declaration );
+	void NamesScopeFill( NamesScope& names_scope, const Synt::Enum& enum_declaration );
 	void NamesScopeFillOutOfLineElements( NamesScope& names_scope, const Synt::ProgramElements& namespace_elements );
 	// NamesScope fill end
 
@@ -788,6 +787,7 @@ private:
 	void NamesScopeBuildFunctionsSet( NamesScope& names_scope, OverloadedFunctionsSet& functions_set, bool build_body );
 	void NamesScopeBuildFunction( NamesScope& names_scope, ClassProxyPtr base_class, OverloadedFunctionsSet& functions_set, const Synt::Function& function_declaration );
 	void NamesScopeBuildClass( ClassProxyPtr class_type, TypeCompleteness completeness );
+	void NamesScopeBuildEnum( const EnumPtr& enum_, TypeCompleteness completeness );
 	void NamesScopeBuildTypetemplatesSet( NamesScope& names_scope, TypeTemplatesSet& type_templates_set );
 
 	static U_FundamentalType GetNumericConstantType( const Synt::NumericConstant& number );

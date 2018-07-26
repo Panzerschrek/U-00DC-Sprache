@@ -33,9 +33,10 @@ bool CodeBuilder::EnsureTypeCompleteness( const Type& type, const TypeCompletene
 	}
 	else if( type.GetFunctionPointerType() != nullptr )
 		return true;
-	else if( const auto enum_type= type.GetEnumType() )
+	else if( const auto enum_type= type.GetEnumTypePtr() )
 	{
-		U_ASSERT(false); U_UNUSED(enum_type); // TODO
+		NamesScopeBuildEnum( enum_type, completeness );
+		return true;
 	}
 	else if( const auto array_type= type.GetArrayType() )
 		return EnsureTypeCompleteness( array_type->type, completeness );
@@ -62,13 +63,17 @@ void CodeBuilder::NamesScopeBuild( NamesScope& names_scope )
 				NamesScopeBuildFunctionsSet( names_scope, *functions_set, true );
 			else if( const Type* const type= name.second.GetTypeName() )
 			{
-				if( type->GetFundamentalType() != nullptr )
+				if( type->GetFundamentalType() != nullptr ||
+					type->GetFunctionPointerType() != nullptr ||
+					type->GetArrayType() != nullptr )
 				{}
 				else if( const ClassProxyPtr class_type= type->GetClassTypeProxy() )
 				{
 					NamesScopeBuildClass( class_type, TypeCompleteness::Complete );
 					NamesScopeBuild( class_type->class_->members );
 				}
+				else if( const EnumPtr enum_type= type->GetEnumTypePtr() )
+					NamesScopeBuildEnum( enum_type, TypeCompleteness::Complete );
 				else U_ASSERT(false);
 			}
 			else if( name.second.GetClassField() != nullptr ) {} // Can be in classes.
@@ -725,6 +730,78 @@ void CodeBuilder::NamesScopeBuildClass( const ClassProxyPtr class_type, const Ty
 		TryGenerateCopyConstructor( the_class, class_type );
 		TryGenerateCopyAssignmentOperator( the_class, class_type );
 	} // if full comleteness required
+}
+
+void CodeBuilder::NamesScopeBuildEnum( const EnumPtr& enum_, TypeCompleteness completeness )
+{
+	if( completeness < TypeCompleteness::Complete )
+		return;
+	if( !enum_->is_incomplete )
+		return;
+
+	// Default underlaying type is 32bit. TODO - maybe do it platform-dependent?
+	enum_->underlaying_type= FundamentalType( U_FundamentalType::u32, fundamental_llvm_types_.u32 );
+
+	const Synt::Enum& enum_decl= *enum_->syntax_element;
+	NamesScope& names_scope= const_cast<NamesScope&>(*enum_->members.GetParent()); // TODO - remove const_cast
+
+	if( !enum_decl.underlaying_type_name.components.empty() )
+	{
+		const NamesScope::InsertedName* const type_name= ResolveName( enum_decl.file_pos_, names_scope, enum_decl.underlaying_type_name );
+		if( type_name == nullptr )
+			errors_.push_back( ReportNameNotFound( enum_decl.file_pos_, enum_decl.underlaying_type_name ) );
+		else
+		{
+			const Type* const type= type_name->second.GetTypeName();
+			if( type == nullptr )
+				errors_.push_back( ReportNameIsNotTypeName( enum_decl.file_pos_, enum_decl.underlaying_type_name.components.back().name ) );
+			else
+			{
+				const FundamentalType* const fundamental_type= type->GetFundamentalType();
+				if( fundamental_type == nullptr || !IsInteger( fundamental_type->fundamental_type ) )
+				{
+					// SPRACHE_TODO - maybe allow inheritance of enums?
+					errors_.push_back( ReportTypesMismatch( enum_decl.file_pos_, "any integer type"_SpC, type->ToString() ) );
+				}
+				else
+					enum_->underlaying_type= *fundamental_type;
+			}
+		}
+	}
+
+	for( const Synt::Enum::Member& in_member : enum_decl.members )
+	{
+		Variable var;
+
+		var.type= enum_;
+		var.location= Variable::Location::Pointer;
+		var.value_type= ValueType::ConstReference;
+		var.constexpr_value=
+			llvm::Constant::getIntegerValue(
+				enum_->underlaying_type.llvm_type,
+				llvm::APInt( enum_->underlaying_type.llvm_type->getIntegerBitWidth(), enum_->element_count ) );
+		var.llvm_value=
+			CreateGlobalConstantVariable(
+				var.type,
+				MangleGlobalVariable( enum_->members, in_member.name ),
+				var.constexpr_value );
+
+		if( enum_->members.AddName( in_member.name, Value( var, in_member.file_pos ) ) == nullptr )
+			errors_.push_back( ReportRedefinition( in_member.file_pos, in_member.name ) );
+
+		++enum_->element_count;
+	}
+
+	{
+		const SizeType max_value_plus_one=
+			SizeType(1) << ( SizeType(enum_->underlaying_type.llvm_type->getIntegerBitWidth()) - ( IsSignedInteger( enum_->underlaying_type.fundamental_type ) ? 1u : 0u ) );
+		const SizeType max_value= max_value_plus_one - 1u;
+
+		if( enum_->element_count > max_value )
+			errors_.push_back( ReportUnderlayingTypeForEnumIsTooSmall( enum_decl.file_pos_, enum_->element_count - 1u, max_value ) );
+	}
+
+	enum_->is_incomplete= false;
 }
 
 void CodeBuilder::NamesScopeBuildTypetemplatesSet( NamesScope& names_scope, TypeTemplatesSet& type_templates_set )

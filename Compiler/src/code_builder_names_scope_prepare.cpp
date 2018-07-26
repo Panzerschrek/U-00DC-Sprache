@@ -56,9 +56,7 @@ void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::ProgramEl
 			U_UNUSED(static_assert_); U_ASSERT(false); // TODO
 		}
 		else if( const auto enum_= dynamic_cast<const Synt::Enum*>( program_element.get() ) )
-		{
-			U_UNUSED(enum_); U_ASSERT(false); // TODO
-		}
+			NamesScopeFill( names_scope, *enum_ );
 		else if( const auto typedef_= dynamic_cast<const Synt::Typedef*>( program_element.get() ) )
 		{
 			U_UNUSED(typedef_); U_ASSERT(false); // TODO
@@ -207,7 +205,9 @@ ClassProxyPtr CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::
 			current_visibility= visibility_label->visibility_;
 		}
 		else if( const auto type_template= dynamic_cast<const Synt::TypeTemplateBase*>( member.get() ) )
-			NamesScopeFill( names_scope, *type_template );
+			NamesScopeFill( the_class.members, *type_template );
+		else if( const auto enum_= dynamic_cast<const Synt::Enum*>( member.get() ) )
+			NamesScopeFill( the_class.members, *enum_ );
 		else U_ASSERT(false); // TODO - process another members.
 	} // for class elements
 
@@ -230,6 +230,15 @@ void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::TypeTempl
 		type_templates_set.syntax_elements.push_back( &type_template_declaration );
 		names_scope.AddName( type_template_name, Value( std::move(type_templates_set), type_template_declaration.file_pos_ ) );
 	}
+}
+
+void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::Enum& enum_declaration )
+{
+	const EnumPtr enum_= std::make_shared<Enum>( enum_declaration.name, &names_scope );
+	enum_->syntax_element= &enum_declaration;
+
+	if( names_scope.AddName( enum_declaration.name, Value( Type( enum_ ), enum_declaration.file_pos_ ) ) == nullptr )
+		errors_.push_back( ReportRedefinition( enum_declaration.file_pos_, enum_declaration.name ) );
 }
 
 void CodeBuilder::NamesScopeFillOutOfLineElements( NamesScope& names_scope, const Synt::ProgramElements& namespace_elements )
@@ -267,7 +276,7 @@ void CodeBuilder::NamesScopeFillOutOfLineElements( NamesScope& names_scope, cons
 		{}
 		else if( dynamic_cast<const Synt::Enum*>( program_element.get() ) != nullptr )
 		{
-			U_ASSERT(false); // TODO - emnable out-of-line enums
+			// SPRACHE_TODO - enable out-of-line enums
 		}
 		else if( dynamic_cast<const Synt::Typedef*>( program_element.get() ) != nullptr )
 		{}

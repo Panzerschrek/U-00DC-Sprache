@@ -122,6 +122,7 @@ public:
 	ClassProxyPtr GetClassTypeProxy() const;
 	Class* GetClassType() const;
 	Enum* GetEnumType() const;
+	EnumPtr GetEnumTypePtr() const;
 
 	bool ReferenceIsConvertibleTo( const Type& other ) const;
 
@@ -711,7 +712,9 @@ struct Enum
 	NamesScope members;
 	SizeType element_count= 0u;
 	FundamentalType underlaying_type; // must be integer
-	bool is_incomplete= false;
+
+	const Synt::Enum* syntax_element= nullptr;
+	bool is_incomplete= true;
 };
 
 struct TemplateBase
