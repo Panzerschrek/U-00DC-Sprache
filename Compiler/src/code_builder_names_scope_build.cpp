@@ -300,16 +300,18 @@ void CodeBuilder::NamesScopeBuildFunction(
 	}
 
 	// TODO - process visibility
-	// TODO - set correct file_pos
 
 	if( FunctionVariable* const prev_function= GetFunctionWithSameType( *func_variable.type.GetFunctionType(), functions_set ) )
 	{
 			 if( prev_function->syntax_element->block_ == nullptr && func.block_ != nullptr )
 		{ // Ok, body after prototype.
 			prev_function->syntax_element= &func;
+			prev_function->body_file_pos= func.file_pos_;
 		}
 		else if( prev_function->syntax_element->block_ != nullptr && func.block_ == nullptr )
-		{} // Ok, prototype after body. Since order-independent resolving this is correct.
+		{ // Ok, prototype after body. Since order-independent resolving this is correct.
+			prev_function->prototype_file_pos= func.file_pos_;
+		}
 		else if( prev_function->syntax_element->block_ == nullptr && func.block_ == nullptr )
 			errors_.push_back( ReportFunctionPrototypeDuplication( func.file_pos_, func_name ) );
 		else if( prev_function->syntax_element->block_ != nullptr && func.block_ != nullptr )
@@ -322,6 +324,7 @@ void CodeBuilder::NamesScopeBuildFunction(
 			return;
 
 		FunctionVariable& inserted_func_variable= functions_set.functions.back();
+		inserted_func_variable.body_file_pos= inserted_func_variable.prototype_file_pos= func.file_pos_;
 		inserted_func_variable.syntax_element= &func;
 
 		BuildFuncCode(

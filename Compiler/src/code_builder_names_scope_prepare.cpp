@@ -174,7 +174,6 @@ ClassProxyPtr CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::
 	Class& the_class= *class_type->class_;
 	the_class.body_file_pos= the_class.forward_declaration_file_pos= class_declaration.file_pos_;
 
-	// TODO - set file pos
 	if( names_scope.AddName( class_name, Value( Type( class_type ), class_declaration.file_pos_ ) ) == nullptr )
 		errors_.push_back( ReportRedefinition( class_declaration.file_pos_, class_name ) );
 
