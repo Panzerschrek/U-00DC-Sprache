@@ -28,3 +28,54 @@ def OrederIndependentClasses_Test0():
 	"""
 	tests_lib.build_program( c_program_text )
 	call_result= tests_lib.run_function( "_Z3Foov" )
+
+
+def OrederIndependent_OutOfLineFunction_Test0():
+	c_program_text= """
+		fn Bar() : i32;
+		fn Foo() : i32  { return Bar(); }
+		fn Bar() : i32  { return 88524; }
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 88524 )
+
+
+def OrederIndependent_OutOfLineFunction_Test1():
+	c_program_text= """
+		fn Bar() : i32  { return 665235; }
+		fn Foo() : i32  { return Bar(); }
+		fn Bar() : i32; // ok, prototype after body
+
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 665235 )
+
+
+def OrederIndependent_OutOfLineFunction_Test2():
+	c_program_text= """
+		fn Foo() : i32  { return N::Bar(); }
+		namespace N
+		{
+			fn Bar() : i32;
+		}
+		fn N::Bar() : i32 { return 5632478; }
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 5632478 )
+
+
+def OrederIndependent_OutOfLineFunction_Test3():
+	c_program_text= """
+		fn Foo() : i32  { return N::Bar(); }
+		namespace N
+		{
+			fn Bar() : i32;
+			fn Bar() : i32  { return 5623222; }
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 5623222 )

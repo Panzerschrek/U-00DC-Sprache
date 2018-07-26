@@ -785,6 +785,7 @@ private:
 	void NamesScopeFill( NamesScope& names_scope, const Synt::Function& function_declaration, ClassProxyPtr base_class, ClassMemberVisibility visibility= ClassMemberVisibility::Public );
 	void NamesScopeFill( NamesScope& names_scope, const Synt::FunctionTemplate& function_template_declaration, ClassProxyPtr base_class );
 	void NamesScopeFill( NamesScope& names_scope, const Synt::Class& class_declaration );
+	void NamesScopeFillOutOfLineElements( NamesScope& names_scope, const Synt::ProgramElements& namespace_elements );
 	// NamesScope fill end
 
 	// Returns true, if all ok

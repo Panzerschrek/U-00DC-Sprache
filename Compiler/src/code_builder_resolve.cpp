@@ -90,21 +90,36 @@ const NamesScope::InsertedName* CodeBuilder::ResolveName(
 	size_t component_count,
 	const bool for_declaration )
 {
-	U_ASSERT( !resolving_funcs_stack_.empty() );
+	U_ASSERT( component_count > 0u );
 
-	size_t skip_components= 0u;
-	const NamesScope::InsertedName* const resolve_start_point=
-		PreResolve( names_scope, components, component_count, skip_components );
-	if( resolve_start_point == nullptr )
-		return nullptr;
-	U_ASSERT( skip_components > 0u && skip_components <= component_count );
-
-	components+= skip_components - 1u;
-	component_count-= skip_components - 1u;
-	const NamesScope::InsertedName* name= resolve_start_point;
-	NamesScope* last_space= nullptr;
-	do
+	NamesScope* last_space= &names_scope;
+	if( components[0].name.empty() )
 	{
+		U_ASSERT( component_count >= 2u );
+		last_space= const_cast<NamesScope*>(names_scope.GetRoot());
+		++components;
+		--component_count;
+	}
+	else
+	{
+		const ProgramString& start= components[0].name;
+		NamesScope* space= &names_scope;
+		while(true)
+		{
+			NamesScope::InsertedName* const find= space->GetThisScopeName( start );
+			if( find != nullptr )
+				break;
+			space= const_cast<NamesScope*>(space->GetParent());
+			if( space == nullptr )
+				return nullptr;
+		}
+		last_space= space;
+	}
+
+	const NamesScope::InsertedName* name= nullptr;
+	while( true )
+	{
+		name= last_space->GetThisScopeName( components[0].name );
 		if( name == nullptr )
 			return nullptr;
 
@@ -200,13 +215,13 @@ const NamesScope::InsertedName* CodeBuilder::ResolveName(
 		++components;
 		--component_count;
 		last_space= next_space;
-	} while ( component_count > 0u );
+	}
 
 	if( name != nullptr && name->second.GetType() == NontypeStub::YetNotDeducedTemplateArg )
 		errors_.push_back( ReportTemplateArgumentIsNotDeducedYet( file_pos, name == nullptr ? ""_SpC : name->first ) );
 
 	// Complete some things in resolve.
-	if( name != nullptr )
+	if( name != nullptr && !for_declaration )
 	{
 		// TODO - remove const_cast
 		if( OverloadedFunctionsSet* const functions_set= const_cast<OverloadedFunctionsSet*>(name->second.GetFunctionsSet()) )

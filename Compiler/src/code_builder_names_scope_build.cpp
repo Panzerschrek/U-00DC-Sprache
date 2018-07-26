@@ -290,25 +290,40 @@ void CodeBuilder::NamesScopeBuildFunction(
 		}
 	}
 
-	const bool overloading_ok= ApplyOverloadedFunction( functions_set, func_variable, func.file_pos_ );
-	if( !overloading_ok )
-		return;
-
-	FunctionVariable& inserted_func_variable= functions_set.functions.back();
-	inserted_func_variable.syntax_element= &func;
-
 	// TODO - process visibility
-
 	// TODO - set correct file_pos
 
-	BuildFuncCode(
-		inserted_func_variable,
-		base_class,
-		names_scope,
-		func_name,
-		func.type_.arguments_,
-		nullptr,
-		func.constructor_initialization_list_.get() );
+	if( FunctionVariable* const prev_function= GetFunctionWithSameType( *func_variable.type.GetFunctionType(), functions_set ) )
+	{
+			 if( prev_function->syntax_element->block_ == nullptr && func.block_ != nullptr )
+		{ // Ok, body after prototype.
+			prev_function->syntax_element= &func;
+		}
+		else if( prev_function->syntax_element->block_ != nullptr && func.block_ == nullptr )
+		{} // Ok, prototype after body. Since order-independent resolving this is correct.
+		else if( prev_function->syntax_element->block_ == nullptr && func.block_ == nullptr )
+			errors_.push_back( ReportFunctionPrototypeDuplication( func.file_pos_, func_name ) );
+		else if( prev_function->syntax_element->block_ != nullptr && func.block_ != nullptr )
+			errors_.push_back( ReportFunctionPrototypeDuplication( func.file_pos_, func_name ) );
+	}
+	else
+	{
+		const bool overloading_ok= ApplyOverloadedFunction( functions_set, func_variable, func.file_pos_ );
+		if( !overloading_ok )
+			return;
+
+		FunctionVariable& inserted_func_variable= functions_set.functions.back();
+		inserted_func_variable.syntax_element= &func;
+
+		BuildFuncCode(
+			inserted_func_variable,
+			base_class,
+			names_scope,
+			func_name,
+			func.type_.arguments_,
+			nullptr,
+			func.constructor_initialization_list_.get() );
+	}
 }
 
 void CodeBuilder::NamesScopeBuildClass( const ClassProxyPtr class_type, const TypeCompleteness completeness )

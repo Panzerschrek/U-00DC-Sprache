@@ -270,6 +270,7 @@ CodeBuilder::BuildResultInternal CodeBuilder::BuildProgramInternal(
 
 	// Do work for this node.
 	NamesScopeFill( *result.names_map, source_graph_node.ast.program_elements );
+	NamesScopeFillOutOfLineElements( *result.names_map, source_graph_node.ast.program_elements );
 	NamesScopeBuild( *result.names_map );
 
 	return result;

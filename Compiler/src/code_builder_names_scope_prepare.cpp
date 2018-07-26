@@ -212,6 +212,53 @@ void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::Class& cl
 	} // for class elements
 }
 
+void CodeBuilder::NamesScopeFillOutOfLineElements( NamesScope& names_scope, const Synt::ProgramElements& namespace_elements )
+{
+	for (const Synt::IProgramElementPtr& program_element : namespace_elements )
+	{
+		if( const auto func= dynamic_cast<const Synt::Function*>( program_element.get() ) )
+		{
+			if( func->name_.components.size() != 1u )
+			{
+				const NamesScope::InsertedName* const func_name= ResolveName( func->file_pos_, names_scope, func->name_, true );
+				if( func_name == nullptr || func_name->second.GetFunctionsSet() == nullptr )
+				{
+					errors_.push_back( ReportFunctionDeclarationOutsideItsScope( func->file_pos_ ) );
+					continue;
+				}
+				const_cast<OverloadedFunctionsSet*>(func_name->second.GetFunctionsSet())->syntax_elements.push_back(func); // TODO - remove const_cast
+			}
+		}
+		else if( const auto namespace_= dynamic_cast<const Synt::Namespace*>( program_element.get() ) )
+		{
+			if( const NamesScope::InsertedName* const inner_namespace_name= names_scope.GetThisScopeName( namespace_->name_ ) )
+			{
+				if( const NamesScopePtr inner_namespace= inner_namespace_name->second.GetNamespace() )
+					NamesScopeFillOutOfLineElements( *inner_namespace, namespace_->elements_ );
+			}
+		}
+		else if( dynamic_cast<const Synt::Class*>( program_element.get() ) != nullptr )
+		{}
+		else if( dynamic_cast<const Synt::VariablesDeclaration*>( program_element.get() ) != nullptr )
+		{}
+		else if( dynamic_cast<const Synt::AutoVariableDeclaration*>( program_element.get() ) != nullptr )
+		{}
+		else if( dynamic_cast<const Synt::StaticAssert*>( program_element.get() ) != nullptr )
+		{}
+		else if( dynamic_cast<const Synt::Enum*>( program_element.get() ) != nullptr )
+		{
+			U_ASSERT(false); // TODO - emnable out-of-line enums
+		}
+		else if( dynamic_cast<const Synt::Typedef*>( program_element.get() ) != nullptr )
+		{}
+		else if( dynamic_cast<const Synt::TypeTemplateBase*>( program_element.get() ) != nullptr )
+		{}
+		else if( dynamic_cast<const Synt::FunctionTemplate*>( program_element.get() ) != nullptr )
+		{}
+		else U_ASSERT(false);
+	}
+}
+
 } // namespace CodeBuilderPrivate
 
 } // namespace U
