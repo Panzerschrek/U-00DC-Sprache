@@ -423,8 +423,9 @@ struct VaraibleReferencesCounter
 struct ClassField final
 {
 	Type type;
-	unsigned int index= ~0u;
 	ClassProxyWeakPtr class_;
+	const Synt::ClassField* syntax_element= nullptr;
+	unsigned int index= ~0u;
 	bool is_mutable= true;
 	bool is_reference= false;
 

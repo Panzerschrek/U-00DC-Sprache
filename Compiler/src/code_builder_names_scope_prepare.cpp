@@ -189,8 +189,16 @@ ClassProxyPtr CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::
 	{
 		// TODO - process visibility
 
-		if( dynamic_cast<const Synt::ClassField*>( member.get() ) != nullptr )
-		{} // Do not place class fields. Any access to class fields must be accesible only for complete classes.
+		if( const auto in_class_field= dynamic_cast<const Synt::ClassField*>( member.get() ) )
+		{
+			ClassField class_field;
+			class_field.syntax_element= in_class_field;
+
+			if( NameShadowsTemplateArgument( in_class_field->name, the_class.members ) )
+				errors_.push_back( ReportDeclarationShadowsTemplateArgument( in_class_field->file_pos_, in_class_field->name ) );
+			if( the_class.members.AddName( in_class_field->name, Value( class_field, in_class_field->file_pos_ ) ) == nullptr )
+				errors_.push_back( ReportRedefinition( in_class_field->file_pos_, in_class_field->name ) );
+		}
 		else if( const auto func= dynamic_cast<const Synt::Function*>( member.get() ) )
 			NamesScopeFill( the_class.members, *func, class_type, current_visibility );
 		else if( const auto func_template= dynamic_cast<const Synt::FunctionTemplate*>( member.get() ) )

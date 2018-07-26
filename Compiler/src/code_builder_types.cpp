@@ -1008,7 +1008,7 @@ void VariablesState::DeactivateLocks()
 }
 
 ClassField::ClassField( const ClassProxyPtr& in_class, Type in_type, const unsigned int in_index, const bool in_is_mutable, const bool in_is_reference )
-	: type(std::move(in_type)), index(in_index), class_(in_class), is_mutable(in_is_mutable), is_reference(in_is_reference)
+	: type(std::move(in_type)), class_(in_class), index(in_index), is_mutable(in_is_mutable), is_reference(in_is_reference)
 {}
 
 //

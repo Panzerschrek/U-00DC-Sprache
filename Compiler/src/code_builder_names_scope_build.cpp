@@ -424,44 +424,39 @@ void CodeBuilder::NamesScopeBuildClass( const ClassProxyPtr class_type, const Ty
 
 		the_class.can_be_constexpr= the_class.kind == Class::Kind::Struct;
 
-		for( const Synt::IClassElementPtr& member : class_declaration.elements_ )
-		{
-			if( const auto in_field= dynamic_cast<const Synt::ClassField*>( member.get() ) )
+		the_class.members.ForEachInThisScope(
+			[&]( const NamesScope::InsertedName& name_imut )
 			{
-				ClassField out_field;
-				out_field.class_= class_type;
-				out_field.is_reference= in_field->reference_modifier == Synt::ReferenceModifier::Reference;
-				out_field.type= PrepareType( in_field->type, the_class.members );
+				ClassField* const class_field= const_cast<ClassField*>(name_imut.second.GetClassField()); // TODO - remove const_cast
+				if( class_field == nullptr )
+					return;
 
-				if( !EnsureTypeCompleteness( out_field.type, out_field.is_reference ? TypeCompleteness::Incomplete : TypeCompleteness::Complete ) )
+				const Synt::ClassField& in_field= *class_field->syntax_element;
+
+				class_field->class_= class_type;
+				class_field->is_reference= in_field.reference_modifier == Synt::ReferenceModifier::Reference;
+				class_field->type= PrepareType( class_field->syntax_element->type, the_class.members );
+
+				if( !EnsureTypeCompleteness( class_field->type, class_field->is_reference ? TypeCompleteness::Incomplete : TypeCompleteness::Complete ) )
 				{
-					errors_.push_back( ReportUsingIncompleteType( in_field->file_pos_, out_field.type.ToString() ) );
-					continue;
+					errors_.push_back( ReportUsingIncompleteType( in_field.file_pos_, class_field->type.ToString() ) );
+					return;
 				}
 
-				if( out_field.is_reference ) // Reference-fields are immutable by default
-					out_field.is_mutable= in_field->mutability_modifier == Synt::MutabilityModifier::Mutable;
+				if( class_field->is_reference ) // Reference-fields are immutable by default
+					class_field->is_mutable= in_field.mutability_modifier == Synt::MutabilityModifier::Mutable;
 				else // But value-fields are mutable by default
-					out_field.is_mutable= in_field->mutability_modifier != Synt::MutabilityModifier::Immutable;
+					class_field->is_mutable= in_field.mutability_modifier != Synt::MutabilityModifier::Immutable;
 
 				// Disable constexpr, if field can not be constexpr, or if field is mutable reference.
-				if( !out_field.type.CanBeConstexpr() || ( out_field.is_reference && out_field.is_mutable ) )
+				if( !class_field->type.CanBeConstexpr() || ( class_field->is_reference && class_field->is_mutable ) )
 					the_class.can_be_constexpr= false;
 
-				if( NameShadowsTemplateArgument( in_field->name, the_class.members ) )
-					errors_.push_back( ReportDeclarationShadowsTemplateArgument( in_field->file_pos_, in_field->name ) );
-				else
-				{
-					const NamesScope::InsertedName* const inserted_field=
-						the_class.members.AddName( in_field->name, Value( std::move( out_field ), in_field->file_pos_ ) );
-					if( inserted_field == nullptr )
-						errors_.push_back( ReportRedefinition( in_field->file_pos_, in_field->name ) );
-					else
-						++the_class.field_count;
-				}
-			}
-		} // for fields
+				++the_class.field_count;
+			} );
 
+		// Count reference tags.
+		// SPRACHE_TODO - allow user explicitly set tag count.
 		the_class.members.ForEachInThisScope(
 			[&]( const NamesScope::InsertedName& name )
 			{
@@ -469,7 +464,6 @@ void CodeBuilder::NamesScopeBuildClass( const ClassProxyPtr class_type, const Ty
 				if( field != nullptr && ( field->is_reference || field->type.ReferencesTagsCount() != 0u ) )
 					the_class.references_tags_count= 1u;
 			});
-
 		for( const ClassProxyPtr& parent_class : the_class.parents )
 		{
 			if( parent_class->class_->references_tags_count != 0u )
