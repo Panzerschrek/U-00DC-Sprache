@@ -3287,9 +3287,15 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildIfOperatorCode(
 	return if_operator_blocks_build_info;
 }
 
-void CodeBuilder::BuildStaticAssert(
-	const Synt::StaticAssert& static_assert_,
-	NamesScope& names )
+void CodeBuilder::BuildStaticAssert( StaticAssert& static_assert_, NamesScope& names )
+{
+	if( !static_assert_.is_incomplete )
+		return;
+	static_assert_.is_incomplete= false;
+	BuildStaticAssert( *static_assert_.syntax_element, names );
+}
+
+void CodeBuilder::BuildStaticAssert( const Synt::StaticAssert& static_assert_, NamesScope& names )
 {
 	const Value expression_result= BuildExpressionCode( *static_assert_.expression, names, *dummy_function_context_ );
 	if( expression_result.GetType() != bool_type_ )

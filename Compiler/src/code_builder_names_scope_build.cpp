@@ -80,6 +80,8 @@ void CodeBuilder::NamesScopeBuild( NamesScope& names_scope )
 			else if( name.second.GetFunctionVariable() != nullptr ) {} // It is function, generating from template.
 			else if( TypeTemplatesSet* const type_templates_set= name.second.GetTypeTemplatesSet() )
 				NamesScopeBuildTypetemplatesSet( names_scope, *type_templates_set );
+			else if( const auto static_assert_= name.second.GetStaticAssert() )
+				BuildStaticAssert( *static_assert_, names_scope );
 			else U_ASSERT(false);
 		});
 }

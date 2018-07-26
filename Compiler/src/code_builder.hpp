@@ -569,9 +569,8 @@ private:
 		NamesScope& names,
 		FunctionContext& function_context );
 
-	void BuildStaticAssert(
-		const Synt::StaticAssert& static_assert_,
-		NamesScope& names );
+	void BuildStaticAssert( StaticAssert& static_assert_, NamesScope& names );
+	void BuildStaticAssert( const Synt::StaticAssert& static_assert_, NamesScope& names );
 
 	BlockBuildInfo BuildStaticIfOperatorCode(
 		const Synt::StaticIfOperator& static_if_operator,
@@ -777,6 +776,7 @@ private:
 	ClassProxyPtr NamesScopeFill( NamesScope& names_scope, const Synt::Class& class_declaration );
 	void NamesScopeFill( NamesScope& names_scope, const Synt::TypeTemplateBase& type_template_declaration );
 	void NamesScopeFill( NamesScope& names_scope, const Synt::Enum& enum_declaration );
+	void NamesScopeFill( NamesScope& names_scope, const Synt::StaticAssert& static_assert_ );
 	void NamesScopeFillOutOfLineElements( NamesScope& names_scope, const Synt::ProgramElements& namespace_elements );
 	// NamesScope fill end
 

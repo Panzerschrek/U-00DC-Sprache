@@ -44,17 +44,11 @@ void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::ProgramEl
 			NamesScopeFill( *result_scope, namespace_->elements_ );
 		}
 		else if( const auto variables_declaration= dynamic_cast<const Synt::VariablesDeclaration*>( program_element.get() ) )
-		{
 			NamesScopeFill( names_scope, *variables_declaration );
-		}
 		else if( const auto auto_variable_declaration= dynamic_cast<const Synt::AutoVariableDeclaration*>( program_element.get() ) )
-		{
 			NamesScopeFill( names_scope, *auto_variable_declaration );
-		}
 		else if( const auto static_assert_= dynamic_cast<const Synt::StaticAssert*>( program_element.get() ) )
-		{
-			U_UNUSED(static_assert_); U_ASSERT(false); // TODO
-		}
+			NamesScopeFill( names_scope, *static_assert_ );
 		else if( const auto enum_= dynamic_cast<const Synt::Enum*>( program_element.get() ) )
 			NamesScopeFill( names_scope, *enum_ );
 		else if( const auto typedef_= dynamic_cast<const Synt::Typedef*>( program_element.get() ) )
@@ -208,6 +202,8 @@ ClassProxyPtr CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::
 			NamesScopeFill( the_class.members, *type_template );
 		else if( const auto enum_= dynamic_cast<const Synt::Enum*>( member.get() ) )
 			NamesScopeFill( the_class.members, *enum_ );
+		else if( const auto static_assert_= dynamic_cast<const Synt::StaticAssert*>( member.get() ) )
+			NamesScopeFill( the_class.members, *static_assert_ );
 		else U_ASSERT(false); // TODO - process another members.
 	} // for class elements
 
@@ -239,6 +235,16 @@ void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::Enum& enu
 
 	if( names_scope.AddName( enum_declaration.name, Value( Type( enum_ ), enum_declaration.file_pos_ ) ) == nullptr )
 		errors_.push_back( ReportRedefinition( enum_declaration.file_pos_, enum_declaration.name ) );
+}
+
+void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::StaticAssert& static_assert_declaration )
+{
+	StaticAssert static_assert_;
+	static_assert_.syntax_element= &static_assert_declaration;
+
+	names_scope.AddName(
+		"_sa_"_SpC + ToProgramString( std::to_string(reinterpret_cast<uintptr_t>(&static_assert_declaration)).c_str() ),
+		Value( static_assert_, static_assert_declaration.file_pos_ ) );
 }
 
 void CodeBuilder::NamesScopeFillOutOfLineElements( NamesScope& names_scope, const Synt::ProgramElements& namespace_elements )

@@ -1018,6 +1018,7 @@ static const Type g_this_overloaded_methods_set_stub_type=NontypeStub::ThisOverl
 static const Type g_typename_type_stub= NontypeStub::TypeName;
 static const Type g_namespace_type_stub= NontypeStub::Namespace;
 static const Type g_type_template_type_stub= NontypeStub::TypeTemplate;
+static const Type g_static_assert_type_stub= NontypeStub::StaticAssertTypeStub;
 static const Type g_yet_not_deduced_template_arg_type_stub= NontypeStub::YetNotDeducedTemplateArg;
 static const Type g_error_value_type_stub= NontypeStub::ErrorValue;
 static const Type g_variable_storage_type_stub= NontypeStub::VariableStorage;
@@ -1078,6 +1079,13 @@ Value::Value( TypeTemplatesSet type_templates, const FilePos& file_pos )
 	something_= std::move(type_templates);
 }
 
+
+Value::Value( StaticAssert static_assert_, const FilePos& file_pos )
+	: file_pos_(file_pos)
+{
+	something_= std::move(static_assert_);
+}
+
 Value::Value( YetNotDeducedTemplateArg yet_not_deduced_template_arg )
 {
 	something_= std::move(yet_not_deduced_template_arg);
@@ -1118,6 +1126,9 @@ const Type& Value::GetType() const
 
 		const Type& operator()( const TypeTemplatesSet& ) const
 		{ return g_type_template_type_stub; }
+
+		const Type& operator()( const StaticAssert& ) const
+		{ return g_static_assert_type_stub; }
 
 		const Type& operator()( const YetNotDeducedTemplateArg& ) const
 		{ return g_yet_not_deduced_template_arg_type_stub; }
@@ -1228,6 +1239,16 @@ TypeTemplatesSet* Value::GetTypeTemplatesSet()
 const TypeTemplatesSet* Value::GetTypeTemplatesSet() const
 {
 	return boost::get<TypeTemplatesSet>( &something_ );
+}
+
+StaticAssert* Value::GetStaticAssert()
+{
+	return boost::get<StaticAssert>( &something_ );
+}
+
+const StaticAssert* Value::GetStaticAssert() const
+{
+	return boost::get<StaticAssert>( &something_ );
 }
 
 YetNotDeducedTemplateArg* Value::GetYetNotDeducedTemplateArg()

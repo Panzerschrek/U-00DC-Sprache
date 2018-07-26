@@ -81,6 +81,7 @@ enum class NontypeStub
 	TypeName,
 	Namespace,
 	TypeTemplate,
+	StaticAssertTypeStub,
 	YetNotDeducedTemplateArg,
 	ErrorValue,
 	VariableStorage,
@@ -436,6 +437,12 @@ struct ThisOverloadedMethodsSet final
 	OverloadedFunctionsSet overloaded_methods_set;
 };
 
+struct StaticAssert
+{
+	const Synt::StaticAssert* syntax_element= nullptr;
+	bool is_incomplete = true;
+};
+
 struct YetNotDeducedTemplateArg final
 {};
 
@@ -455,6 +462,7 @@ public:
 	Value( ThisOverloadedMethodsSet class_field );
 	Value( const NamesScopePtr& namespace_, const FilePos& file_pos );
 	Value( TypeTemplatesSet type_templates, const FilePos& file_pos );
+	Value( StaticAssert static_assert_, const FilePos& file_pos );
 	Value( YetNotDeducedTemplateArg yet_not_deduced_template_arg );
 	Value( ErrorValue error_value );
 
@@ -489,6 +497,9 @@ public:
 	// Type templates sel
 	TypeTemplatesSet* GetTypeTemplatesSet();
 	const TypeTemplatesSet* GetTypeTemplatesSet() const;
+	// static assert
+	StaticAssert* GetStaticAssert();
+	const StaticAssert* GetStaticAssert() const;
 	// Yet not deduced template arg
 	YetNotDeducedTemplateArg* GetYetNotDeducedTemplateArg();
 	const YetNotDeducedTemplateArg* GetYetNotDeducedTemplateArg() const;
@@ -507,6 +518,7 @@ private:
 		ThisOverloadedMethodsSet,
 		NamesScopePtr,
 		TypeTemplatesSet,
+		StaticAssert,
 		YetNotDeducedTemplateArg,
 		ErrorValue > something_;
 
