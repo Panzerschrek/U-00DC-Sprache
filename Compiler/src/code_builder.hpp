@@ -119,13 +119,6 @@ private:
 		bool have_uncodnitional_break_or_continue= false;
 	};
 
-	struct PrepareFunctionResult
-	{
-		const Synt::Function* func_syntax_element= nullptr;
-		OverloadedFunctionsSet* functions_set= nullptr;
-		size_t function_index= 0u;
-	};
-
 	struct TemplateTypeGenerationResult
 	{
 		TypeTemplatePtr type_template;
@@ -350,13 +343,6 @@ private:
 	void CallDestructorsForLoopInnerVariables( FunctionContext& function_context, const FilePos& file_pos );
 	void CallDestructorsBeforeReturn( FunctionContext& function_context, const FilePos& file_pos );
 	void CallMembersDestructors( FunctionContext& function_context, const FilePos& file_pos );
-
-	PrepareFunctionResult PrepareFunction(
-		const Synt::Function& func,
-		bool force_prototype,
-		ClassProxyPtr base_class,
-		NamesScope& scope,
-		ClassMemberVisibility visibility= ClassMemberVisibility::Public );
 
 	void CheckOverloadedOperator(
 		const ClassProxyPtr& base_class,
@@ -712,20 +698,6 @@ private:
 
 	// Name resolving.
 
-	// PreResolve function.
-	// Returns name (if found) and parent namespace, if name found not in cache.
-	typedef
-		std::function<
-			std::pair<const NamesScope::InsertedName*, NamesScope*>(
-				NamesScope& names_scope,
-				const Synt::ComplexName::Component* components,
-				size_t component_count,
-				size_t& out_skip_components ) > PreResolveFunc;
-
-	void PushCacheFillResolveHandler( ResolvingCache& resolving_cache, NamesScope& start_namespace );
-	void PushCacheGetResolveHandelr( const ResolvingCache& resolving_cache );
-	void PopResolveHandler();
-
 	const NamesScope::InsertedName* ResolveName( const FilePos& file_pos, NamesScope& names_scope, const Synt::ComplexName& complex_name, bool for_declaration= false );
 
 	const NamesScope::InsertedName* ResolveName(
@@ -735,11 +707,6 @@ private:
 		size_t component_count,
 		bool for_declaration= false );
 
-	const NamesScope::InsertedName* PreResolve(
-		NamesScope& names_scope,
-		const Synt::ComplexName::Component* components,
-		size_t component_count,
-		size_t& out_skip_components );
 
 	// Finds namespace, where are name. Do not search in classes (returns class itself)
 	std::pair<const NamesScope::InsertedName*, NamesScope*> PreResolveDefault(
@@ -747,25 +714,6 @@ private:
 		const Synt::ComplexName::Component* components,
 		size_t component_count,
 		size_t& out_skip_components );
-
-	// PreResolve
-	void PreResolveName( const Synt::ComplexName& name, NamesScope& names );
-	void PreResolveEnum( const Synt::Enum& enum_, NamesScope& names );
-	void PreResolveTypedef( const Synt::Typedef& typedef_, NamesScope& names );
-	void PreResolveTypeTemplate( const Synt::TypeTemplateBase& type_template, NamesScope& names );
-	void PreResolveFunctionTemplate( const Synt::FunctionTemplate& function_template, NamesScope& names );
-	void PreResovleClass( const Synt::Class& class_declaration, NamesScope& names, bool only_prototype );
-	void PreResolveType( const Synt::ITypeName& type_name, NamesScope& names );
-
-	void PreResolveFunctionPrototype( const Synt::Function& function, NamesScope& names );
-	void PreResolveFunctionBody( const Synt::Function& function, NamesScope& names );
-	void PreResolveBlock( const Synt::Block& block, NamesScope& names );
-
-	void PreResolveVariablesDeclaration( const Synt::VariablesDeclaration& variables_declaration, NamesScope& names );
-	void PreResolveAutoVariableDeclaration( const Synt::AutoVariableDeclaration& auto_variable_declaration, NamesScope& names );
-	void PreResolveStaticAssert( const Synt::StaticAssert& static_assert_, NamesScope& names );
-	void PreResolveExpression( const Synt::IExpressionComponent& expression, NamesScope& names );
-	// PreResolve End
 
 	// NamesScope fill start
 	void NamesScopeFill( NamesScope& names_scope, const Synt::ProgramElements& namespace_elements );
@@ -867,8 +815,6 @@ private:
 	std::vector< std::pair< Type, Variable > > typeinfo_cache_;
 	boost::optional< Variable > typeinfo_list_end_node_; // Lazy initialized.
 	llvm::GlobalVariable* typeinfo_is_end_variable_[2u]= { nullptr, nullptr }; // Lazy initialized.
-
-	std::vector<std::unique_ptr<PreResolveFunc>> resolving_funcs_stack_;
 };
 
 using MutabilityModifier= Synt::MutabilityModifier;

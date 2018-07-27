@@ -562,9 +562,6 @@ void CodeBuilder::NamesScopeBuildClass( const ClassProxyPtr class_type, const Ty
 				if( const auto functions_set= const_cast<OverloadedFunctionsSet*>(name.second.GetFunctionsSet()) )
 				{
 					NamesScopeBuildFunctionsSet( the_class.members, *functions_set, false );
-
-					PrepareFunctionResult prepare_function_result; // TODO - remove "PrepareFunctionResult"
-					prepare_function_result.functions_set= functions_set;
 					for( FunctionVariable& function : functions_set->functions )
 						ProcessClassVirtualFunction( the_class, function );
 				}
