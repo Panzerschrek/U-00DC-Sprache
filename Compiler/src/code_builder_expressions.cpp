@@ -2518,6 +2518,12 @@ Variable CodeBuilder::BuildTempVariableConstruction(
 	NamesScope& names,
 	FunctionContext& function_context )
 {
+	if( !EnsureTypeCompleteness( type, TypeCompleteness::Complete ) )
+	{
+		errors_.push_back( ReportUsingIncompleteType( call_operator.file_pos_, type.ToString() ) );
+		return Variable();
+	}
+
 	const StoredVariablePtr stored_variable= std::make_shared<StoredVariable>( "temp "_SpC + type.ToString(), Variable() );
 	function_context.stack_variables_stack.back()->RegisterVariable( stored_variable );
 	Variable& variable= stored_variable->content;
@@ -2532,7 +2538,6 @@ Variable CodeBuilder::BuildTempVariableConstruction(
 	variable.value_type= ValueType::Value; // Make value after construction
 
 	variable.referenced_variables.emplace( stored_variable );
-
 
 	return variable;
 }
