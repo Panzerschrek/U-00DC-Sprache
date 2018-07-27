@@ -129,7 +129,7 @@ void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::Function&
 	}
 }
 
-void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::FunctionTemplate& function_template_declaration, const ClassProxyPtr base_class )
+void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::FunctionTemplate& function_template_declaration, const ClassProxyPtr base_class, ClassMemberVisibility visibility )
 {
 	const Synt::ComplexName& complex_name = function_template_declaration.function_->name_;
 	const ProgramString& function_template_name= complex_name.components.front().name;
@@ -143,6 +143,9 @@ void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::FunctionT
 	{
 		if( OverloadedFunctionsSet* const functions_set= prev_name->second.GetFunctionsSet() )
 		{
+			if( base_class != nullptr && base_class->class_->GetMemberVisibility( function_template_name ) != visibility )
+				errors_.push_back( ReportFunctionsVisibilityMismatch( function_template_declaration.file_pos_, function_template_name ) );
+
 			U_ASSERT( functions_set->base_class == base_class );
 			functions_set->template_syntax_elements.push_back( &function_template_declaration );
 		}
@@ -151,6 +154,9 @@ void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::FunctionT
 	}
 	else
 	{
+		if( base_class != nullptr )
+			base_class->class_->SetMemberVisibility( function_template_name, visibility );
+
 		OverloadedFunctionsSet functions_set;
 		functions_set.base_class= base_class;
 		functions_set.template_syntax_elements.push_back( &function_template_declaration );
@@ -187,8 +193,6 @@ ClassProxyPtr CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::
 	ClassMemberVisibility current_visibility= ClassMemberVisibility::Public;
 	for( const Synt::IClassElementPtr& member : class_declaration.elements_ )
 	{
-		// TODO - process visibility
-
 		if( const auto in_class_field= dynamic_cast<const Synt::ClassField*>( member.get() ) )
 		{
 			ClassField class_field;
@@ -198,13 +202,14 @@ ClassProxyPtr CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::
 				errors_.push_back( ReportDeclarationShadowsTemplateArgument( in_class_field->file_pos_, in_class_field->name ) );
 			if( the_class.members.AddName( in_class_field->name, Value( class_field, in_class_field->file_pos_ ) ) == nullptr )
 				errors_.push_back( ReportRedefinition( in_class_field->file_pos_, in_class_field->name ) );
+
+			the_class.SetMemberVisibility( in_class_field->name, current_visibility );
 		}
 		else if( const auto func= dynamic_cast<const Synt::Function*>( member.get() ) )
 			NamesScopeFill( the_class.members, *func, class_type, current_visibility );
 		else if( const auto func_template= dynamic_cast<const Synt::FunctionTemplate*>( member.get() ) )
-			NamesScopeFill( the_class.members, *func_template, class_type );
-		else if( const auto visibility_label=
-			dynamic_cast<const Synt::ClassVisibilityLabel*>( member.get() ) )
+			NamesScopeFill( the_class.members, *func_template, class_type, current_visibility );
+		else if( const auto visibility_label= dynamic_cast<const Synt::ClassVisibilityLabel*>( member.get() ) )
 		{
 			if( class_declaration.kind_attribute_ == Synt::ClassKindAttribute::Struct )
 				errors_.push_back( ReportVisibilityForStruct( visibility_label->file_pos_, class_name ) );
