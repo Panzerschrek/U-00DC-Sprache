@@ -358,6 +358,9 @@ void CodeBuilder::NamesScopeBuildFunction(
 		else if( prev_function->syntax_element->block_ != nullptr && func.block_ != nullptr )
 			errors_.push_back( ReportFunctionBodyDuplication( func.file_pos_, func_name ) );
 
+		if( prev_function->is_this_call != func_variable.is_this_call )
+			errors_.push_back( ReportThiscallMismatch( func.file_pos_, func_name ) );
+
 		if( !is_out_of_line_function ) // Previous function must be out of line. Set virtual specifier for it.
 			prev_function->virtual_function_kind= func.virtual_function_kind_;
 		else
@@ -575,6 +578,7 @@ void CodeBuilder::NamesScopeBuildClass( const ClassProxyPtr class_type, const Ty
 				else if( name.second.GetVariable() != nullptr ){}
 				else if( name.second.GetStoredVariable() != nullptr ){}
 				else if( name.second.GetErrorValue() != nullptr ){}
+				else if( name.second.GetStaticAssert() != nullptr ){}
 				else if( name.second.GetTypedef() != nullptr )
 					NamesScopeBuildTypedef( the_class.members, const_cast<Value&>(name.second) );
 				else if( name.second.GetIncompleteGlobalVariable() != nullptr )
@@ -606,8 +610,8 @@ void CodeBuilder::NamesScopeBuildClass( const ClassProxyPtr class_type, const Ty
 			the_class.members.GetThisScopeName( Keyword( Keywords::destructor_ ) ) )
 		{
 			const OverloadedFunctionsSet* const destructors= destructor_name->second.GetFunctionsSet();
-			U_ASSERT( destructors != nullptr && destructors->functions.size() == 1u );
-			if( !destructors->functions[0].is_generated )
+			// Destructors may be invalid in case of error.
+			if( !destructors->functions.empty() && !destructors->functions[0].is_generated )
 				the_class.can_be_constexpr= false;
 		}
 		if( const NamesScope::InsertedName* const constructor_name=
@@ -970,7 +974,6 @@ void CodeBuilder::NamesScopeBuildGlobalVariable( NamesScope& names_scope, Value&
 		{
 			llvm::GlobalVariable* global_variable= nullptr;
 			variable.llvm_value= global_variable= CreateGlobalConstantVariable( type, MangleGlobalVariable( names_scope, variable_declaration.name ) );
-			variable.llvm_value->setName( ToStdString( variable_declaration.name ) );
 
 			variable.referenced_variables.insert( stored_variable );
 			if( variable_declaration.initializer != nullptr )
