@@ -106,3 +106,33 @@ def OrederIndependent_Enums_Test1():
 	tests_lib.build_program( c_program_text )
 	call_result= tests_lib.run_function( "_Z3Foov" )
 	assert( call_result == 3 )
+
+
+def OrderIndependent_Typedef_Test0():
+	c_program_text= """
+		fn Foo() : i32
+		{
+			var I r= 51245;
+			return r;
+		}
+		type I= i32;
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 51245 )
+
+
+def OrderIndependent_Typedef_Test1():
+	c_program_text= """
+		type A= RRR;
+		fn Foo() : A
+		{
+			return 653524;
+		}
+		type FFF= i32;
+		type RRR= FFF;
+		type UnusedType= [ bool, 1024 ];
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 653524 )

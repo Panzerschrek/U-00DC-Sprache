@@ -776,6 +776,7 @@ private:
 	ClassProxyPtr NamesScopeFill( NamesScope& names_scope, const Synt::Class& class_declaration );
 	void NamesScopeFill( NamesScope& names_scope, const Synt::TypeTemplateBase& type_template_declaration );
 	void NamesScopeFill( NamesScope& names_scope, const Synt::Enum& enum_declaration );
+	void NamesScopeFill( NamesScope& names_scope, const Synt::Typedef& typedef_declaration );
 	void NamesScopeFill( NamesScope& names_scope, const Synt::StaticAssert& static_assert_ );
 	void NamesScopeFillOutOfLineElements( NamesScope& names_scope, const Synt::ProgramElements& namespace_elements );
 	// NamesScope fill end
@@ -789,6 +790,7 @@ private:
 	void NamesScopeBuildClass( ClassProxyPtr class_type, TypeCompleteness completeness );
 	void NamesScopeBuildEnum( const EnumPtr& enum_, TypeCompleteness completeness );
 	void NamesScopeBuildTypetemplatesSet( NamesScope& names_scope, TypeTemplatesSet& type_templates_set );
+	void NamesScopeBuildTypedef( NamesScope& names_scope, Value& typedef_value );
 
 	static U_FundamentalType GetNumericConstantType( const Synt::NumericConstant& number );
 

@@ -1088,6 +1088,12 @@ Value::Value( StaticAssert static_assert_, const FilePos& file_pos )
 	something_= std::move(static_assert_);
 }
 
+Value::Value( Typedef typedef_, const FilePos& file_pos )
+	: file_pos_(file_pos)
+{
+	something_= std::move(typedef_);
+}
+
 Value::Value( YetNotDeducedTemplateArg yet_not_deduced_template_arg )
 {
 	something_= std::move(yet_not_deduced_template_arg);
@@ -1100,6 +1106,7 @@ Value::Value( ErrorValue error_value )
 
 const Type& Value::GetType() const
 {
+	// TODO - remove this method.
 	struct Visitor final : public boost::static_visitor< const Type& >
 	{
 		const Type& operator()( const Variable& variable ) const
@@ -1131,6 +1138,9 @@ const Type& Value::GetType() const
 
 		const Type& operator()( const StaticAssert& ) const
 		{ return g_static_assert_type_stub; }
+
+		const Type& operator()( const Typedef& ) const
+		{ return g_static_assert_type_stub; } // hack
 
 		const Type& operator()( const YetNotDeducedTemplateArg& ) const
 		{ return g_yet_not_deduced_template_arg_type_stub; }
@@ -1251,6 +1261,16 @@ StaticAssert* Value::GetStaticAssert()
 const StaticAssert* Value::GetStaticAssert() const
 {
 	return boost::get<StaticAssert>( &something_ );
+}
+
+Typedef* Value::GetTypedef()
+{
+	return boost::get<Typedef>( &something_ );
+}
+
+const Typedef* Value::GetTypedef() const
+{
+	return boost::get<Typedef>( &something_ );
 }
 
 YetNotDeducedTemplateArg* Value::GetYetNotDeducedTemplateArg()

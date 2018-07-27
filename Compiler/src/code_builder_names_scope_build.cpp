@@ -82,6 +82,8 @@ void CodeBuilder::NamesScopeBuild( NamesScope& names_scope )
 				NamesScopeBuildTypetemplatesSet( names_scope, *type_templates_set );
 			else if( const auto static_assert_= name.second.GetStaticAssert() )
 				BuildStaticAssert( *static_assert_, names_scope );
+			else if( name.second.GetTypedef() != nullptr )
+				NamesScopeBuildTypedef( names_scope, name.second );
 			else U_ASSERT(false);
 		});
 }
@@ -819,6 +821,15 @@ void CodeBuilder::NamesScopeBuildTypetemplatesSet( NamesScope& names_scope, Type
 		PrepareTypeTemplate( *syntax_element, type_templates_set, names_scope );
 
 	type_templates_set.is_incomplete= false;
+}
+
+void CodeBuilder::NamesScopeBuildTypedef( NamesScope& names_scope, Value& typedef_value )
+{
+	U_ASSERT( typedef_value.GetTypedef() != nullptr );
+	const Synt::Typedef& syntax_element= *typedef_value.GetTypedef()->syntax_element;
+
+	// Replace value in names map, when typedef is comlete.
+	typedef_value= Value( PrepareType( syntax_element.value, names_scope ), syntax_element.file_pos_ );
 }
 
 } // namespace CodeBuilderPrivate

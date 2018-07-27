@@ -233,6 +233,8 @@ const NamesScope::InsertedName* CodeBuilder::ResolveName(
 			NamesScopeBuildFunctionsSet( *last_space, *functions_set, false );
 		else if( TypeTemplatesSet* const type_templates_set= const_cast<TypeTemplatesSet*>(name->second.GetTypeTemplatesSet()) )
 			NamesScopeBuildTypetemplatesSet( *last_space, *type_templates_set );
+		else if( name->second.GetTypedef() != nullptr )
+			NamesScopeBuildTypedef( *last_space, const_cast<Value&>(name->second) );
 	}
 	return name;
 }

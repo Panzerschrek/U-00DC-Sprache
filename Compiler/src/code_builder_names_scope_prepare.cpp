@@ -14,13 +14,9 @@ void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::ProgramEl
 	for (const Synt::IProgramElementPtr& program_element : namespace_elements )
 	{
 		if( const auto func= dynamic_cast<const Synt::Function*>( program_element.get() ) )
-		{
 			NamesScopeFill( names_scope, *func, nullptr );
-		}
 		else if( const auto class_= dynamic_cast<const Synt::Class*>( program_element.get() ) )
-		{
 			NamesScopeFill( names_scope, *class_ );
-		}
 		else if( const auto namespace_= dynamic_cast<const Synt::Namespace*>( program_element.get() ) )
 		{
 			NamesScope* result_scope= &names_scope;
@@ -52,9 +48,7 @@ void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::ProgramEl
 		else if( const auto enum_= dynamic_cast<const Synt::Enum*>( program_element.get() ) )
 			NamesScopeFill( names_scope, *enum_ );
 		else if( const auto typedef_= dynamic_cast<const Synt::Typedef*>( program_element.get() ) )
-		{
-			U_UNUSED(typedef_); U_ASSERT(false); // TODO
-		}
+			NamesScopeFill( names_scope, *typedef_ );
 		else if( const auto type_template= dynamic_cast<const Synt::TypeTemplateBase*>( program_element.get() ) )
 			NamesScopeFill( names_scope, *type_template );
 		else if( const auto function_template= 	dynamic_cast<const Synt::FunctionTemplate*>( program_element.get() ) )
@@ -221,6 +215,11 @@ ClassProxyPtr CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::
 			NamesScopeFill( the_class.members, *enum_ );
 		else if( const auto static_assert_= dynamic_cast<const Synt::StaticAssert*>( member.get() ) )
 			NamesScopeFill( the_class.members, *static_assert_ );
+		else if( const auto typedef_= dynamic_cast<const Synt::Typedef*>( member.get() ) )
+		{
+			NamesScopeFill( the_class.members, *typedef_ );
+			the_class.SetMemberVisibility( typedef_->name, current_visibility );
+		}
 		else U_ASSERT(false); // TODO - process another members.
 	} // for class elements
 
@@ -252,6 +251,18 @@ void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::Enum& enu
 
 	if( names_scope.AddName( enum_declaration.name, Value( Type( enum_ ), enum_declaration.file_pos_ ) ) == nullptr )
 		errors_.push_back( ReportRedefinition( enum_declaration.file_pos_, enum_declaration.name ) );
+}
+
+void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::Typedef& typedef_declaration )
+{
+	if( NameShadowsTemplateArgument( typedef_declaration.name, names_scope ) )
+		errors_.push_back( ReportDeclarationShadowsTemplateArgument( typedef_declaration.file_pos_, typedef_declaration.name ) );
+
+	Typedef typedef_;
+	typedef_.syntax_element= &typedef_declaration;
+
+	if( names_scope.AddName( typedef_declaration.name, Value( typedef_, typedef_declaration.file_pos_ ) ) == nullptr )
+		errors_.push_back( ReportRedefinition( typedef_declaration.file_pos_, typedef_declaration.name ) );
 }
 
 void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::StaticAssert& static_assert_declaration )
