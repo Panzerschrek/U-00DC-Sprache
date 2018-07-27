@@ -432,43 +432,82 @@ const NamesScope::InsertedName* CodeBuilder::ResolveForTemplateSignatureParamete
 	const Synt::ComplexName& signature_parameter,
 	NamesScope& names_scope )
 {
-	size_t component_number= 0u;
-	const NamesScope::InsertedName* const start_name=
-		PreResolve( names_scope, signature_parameter.components.data(), signature_parameter.components.size(), component_number );
-	if( start_name == nullptr )
-		return nullptr;
-	const NamesScope::InsertedName* current_name= start_name;
-	while( component_number < signature_parameter.components.size() )
+	NamesScope* last_space= &names_scope;
+
+	const Synt::ComplexName::Component* components= signature_parameter.components.data();
+	size_t component_count= signature_parameter.components.size();
+	if( signature_parameter.components[0].name.empty() )
 	{
+		U_ASSERT( signature_parameter.components.size() >= 2u );
+		last_space= const_cast<NamesScope*>(names_scope.GetRoot());
+		++components;
+		--component_count;
+	}
+	else
+	{
+		const ProgramString& start= components[0].name;
+		NamesScope* space= &names_scope;
+		while(true)
+		{
+			NamesScope::InsertedName* const find= space->GetThisScopeName( start );
+			if( find != nullptr )
+				break;
+			space= const_cast<NamesScope*>(space->GetParent());
+			if( space == nullptr )
+				return nullptr;
+		}
+		last_space= space;
+	}
+
+	const NamesScope::InsertedName* name= nullptr;
+	while( true )
+	{
+		name= last_space->GetThisScopeName( components[0].name );
+		if( name == nullptr )
+			return nullptr;
+
+		if( components[0].have_template_parameters && name->second.GetTypeTemplatesSet() == nullptr && name->second.GetFunctionsSet() == nullptr )
+		{
+			errors_.push_back( ReportValueIsNotTemplate( file_pos ) );
+			return nullptr;
+		}
+
 		NamesScope* next_space= nullptr;
 		ClassProxyPtr next_space_class= nullptr;
-		const Synt::ComplexName::Component& component= signature_parameter.components[component_number - 1u];
-		const bool is_last_component= component_number + 1u == signature_parameter.components.size();
 
-		if( const NamesScopePtr inner_namespace= current_name->second.GetNamespace() )
+		if( const NamesScopePtr inner_namespace= name->second.GetNamespace() )
 			next_space= inner_namespace.get();
-		else if( const Type* const type= current_name->second.GetTypeName() )
+		else if( const Type* const type= name->second.GetTypeName() )
 		{
 			if( Class* const class_= type->GetClassType() )
 			{
-				if( !is_last_component && class_->completeness != TypeCompleteness::Complete )
+				if( component_count >= 2u )
 				{
-					errors_.push_back( ReportUsingIncompleteType( file_pos, type->ToString() ) );
-					return nullptr;
+					if( class_->syntax_element->is_forward_declaration_  )
+					{
+						errors_.push_back( ReportUsingIncompleteType( file_pos, type->ToString() ) );
+						return nullptr;
+					}
+					NamesScopeBuildClass( type->GetClassTypeProxy(), TypeCompleteness::Complete );
 				}
 				next_space= &class_->members;
 				next_space_class= type->GetClassTypeProxy();
 			}
+			else if( EnumPtr const enum_= type->GetEnumTypePtr() )
+			{
+				NamesScopeBuildEnum( enum_, TypeCompleteness::Complete );
+				next_space= &enum_->members;
+			}
 		}
-		else if( const TypeTemplatesSet* const type_templates_set = current_name->second.GetTypeTemplatesSet() )
+		else if( const TypeTemplatesSet* const type_templates_set = name->second.GetTypeTemplatesSet() )
 		{
-			if( component.have_template_parameters && !is_last_component )
+			if( components[0].have_template_parameters && component_count == 1u )
 			{
 				const NamesScope::InsertedName* generated_type=
 					GenTemplateType(
 						file_pos,
 						*type_templates_set,
-						component.template_parameters,
+						components[0].template_parameters,
 						names_scope );
 				if( generated_type == nullptr )
 					return nullptr;
@@ -476,36 +515,73 @@ const NamesScope::InsertedName* CodeBuilder::ResolveForTemplateSignatureParamete
 				const Type* const type= generated_type->second.GetTypeName();
 				U_ASSERT( type != nullptr );
 				if( Class* const class_= type->GetClassType() )
+				{
 					next_space= &class_->members;
-				next_space_class= type->GetClassTypeProxy();
+					next_space_class= type->GetClassTypeProxy();
+				}
+				name= generated_type;
 			}
-			else if( !is_last_component )
+			else if( component_count >= 2u )
 			{
 				errors_.push_back( ReportTemplateInstantiationRequired( file_pos, type_templates_set->type_templates.front()->syntax_element->name_ ) );
 				return nullptr;
 			}
+		}
+		else if( const OverloadedFunctionsSet* const functions_set= name->second.GetFunctionsSet() )
+		{
+			if( components[0].have_template_parameters )
+			{
+				if( functions_set->template_functions.empty() )
+				{
+					errors_.push_back( ReportValueIsNotTemplate( file_pos ) );
+					return nullptr;
+				}
 
+				name=
+					GenTemplateFunctionsUsingTemplateParameters(
+						file_pos,
+						functions_set->template_functions,
+						components[0].template_parameters,
+						*functions_set->template_functions.front()->parent_namespace, // All template functions in one set have one parent namespace.
+						names_scope );
+			}
+		}
+
+		if( component_count == 1u )
+			break;
+		else if( next_space != nullptr )
+		{
+			name= next_space->GetThisScopeName( components[1].name );
+
+			if( next_space_class != nullptr &&
+				names_scope.GetAccessFor( next_space_class ) < next_space_class->class_->GetMemberVisibility( components[1].name ) )
+				errors_.push_back( ReportAccessingNonpublicClassMember( file_pos, next_space_class->class_->members.GetThisNamespaceName(), components[1].name ) );
 		}
 		else
 			return nullptr;
 
-		const Synt::ComplexName::Component& next_component= signature_parameter.components[component_number];
-		if( next_space != nullptr )
-		{
-			current_name= next_space->GetThisScopeName( next_component.name );
-
-			if( next_space_class != nullptr &&
-				names_scope.GetAccessFor( next_space_class ) < next_space_class->class_->GetMemberVisibility( next_component.name ) )
-				errors_.push_back( ReportAccessingNonpublicClassMember( file_pos, next_space_class->class_->members.GetThisNamespaceName(), next_component.name ) );
-
-		}
-		else if( !is_last_component )
-			return nullptr;
-
-		++component_number;
+		++components;
+		--component_count;
+		last_space= next_space;
 	}
 
-	return current_name;
+	if( name != nullptr && name->second.GetType() == NontypeStub::YetNotDeducedTemplateArg )
+		errors_.push_back( ReportTemplateArgumentIsNotDeducedYet( file_pos, name == nullptr ? ""_SpC : name->first ) );
+
+	// Complete some things in resolve.
+	if( name != nullptr )
+	{
+		// TODO - remove const_cast
+		if( OverloadedFunctionsSet* const functions_set= const_cast<OverloadedFunctionsSet*>(name->second.GetFunctionsSet()) )
+			NamesScopeBuildFunctionsSet( *last_space, *functions_set, false );
+		else if( TypeTemplatesSet* const type_templates_set= const_cast<TypeTemplatesSet*>(name->second.GetTypeTemplatesSet()) )
+			NamesScopeBuildTypetemplatesSet( *last_space, *type_templates_set );
+		else if( name->second.GetTypedef() != nullptr )
+			NamesScopeBuildTypedef( *last_space, const_cast<Value&>(name->second) );
+		else if( name->second.GetIncompleteGlobalVariable() != nullptr )
+			NamesScopeBuildGlobalVariable( *last_space, const_cast<Value&>(name->second) );
+	}
+	return name;
 }
 
 DeducedTemplateParameter CodeBuilder::DeduceTemplateArguments(
@@ -900,8 +976,6 @@ NamesScope::InsertedName* CodeBuilder::GenTemplateType(
 	const std::vector<Synt::IExpressionComponentPtr>& template_arguments,
 	NamesScope& arguments_names_scope )
 {
-	// TODO - build set here
-
 	if( type_templates_set.type_templates.size() == 1u )
 		return GenTemplateType( file_pos, type_templates_set.type_templates.front(), template_arguments, arguments_names_scope, false ).type;
 
@@ -1100,7 +1174,7 @@ CodeBuilder::TemplateTypeGenerationResult CodeBuilder::GenTemplateType(
 			return result;
 		}
 
-		const ClassProxyPtr class_proxy= NamesScopeFill( *template_parameters_namespace, *template_class->class_ );
+		const ClassProxyPtr class_proxy= NamesScopeFill( *template_parameters_namespace, *template_class->class_, GetNameForGeneratedClass() );
 		if( class_proxy == nullptr )
 		{
 			PopResolveHandler();

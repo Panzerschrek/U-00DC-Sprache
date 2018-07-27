@@ -158,9 +158,9 @@ void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::FunctionT
 	}
 }
 
-ClassProxyPtr CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::Class& class_declaration )
+ClassProxyPtr CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::Class& class_declaration, const ProgramString& override_name )
 {
-	const ProgramString& class_name= class_declaration.name_.components.back().name;
+	const ProgramString& class_name= override_name.empty() ? class_declaration.name_.components.back().name : override_name;
 	if( IsKeyword( class_name ) )
 		errors_.push_back( ReportUsingKeywordAsName( class_declaration.file_pos_ ) );
 

@@ -773,7 +773,7 @@ private:
 	void NamesScopeFill( NamesScope& names_scope, const Synt::AutoVariableDeclaration& variable_declaration );
 	void NamesScopeFill( NamesScope& names_scope, const Synt::Function& function_declaration, ClassProxyPtr base_class, ClassMemberVisibility visibility= ClassMemberVisibility::Public );
 	void NamesScopeFill( NamesScope& names_scope, const Synt::FunctionTemplate& function_template_declaration, ClassProxyPtr base_class, ClassMemberVisibility visibility= ClassMemberVisibility::Public );
-	ClassProxyPtr NamesScopeFill( NamesScope& names_scope, const Synt::Class& class_declaration );
+	ClassProxyPtr NamesScopeFill( NamesScope& names_scope, const Synt::Class& class_declaration, const ProgramString& override_name= ""_SpC );
 	void NamesScopeFill( NamesScope& names_scope, const Synt::TypeTemplateBase& type_template_declaration );
 	void NamesScopeFill( NamesScope& names_scope, const Synt::Enum& enum_declaration );
 	void NamesScopeFill( NamesScope& names_scope, const Synt::Typedef& typedef_declaration );
