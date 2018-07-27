@@ -126,6 +126,25 @@ void CodeBuilder::NamesScopeBuildFunctionsSet( NamesScope& names_scope, Overload
 			}
 		}
 	}
+	else if( functions_set.base_class == nullptr )
+	{
+		// Immediately build constexpr functions.
+		for( FunctionVariable& function_variable : functions_set.functions )
+		{
+			if( function_variable.syntax_element != nullptr && function_variable.syntax_element->block_ != nullptr &&
+				!function_variable.have_body && function_variable.constexpr_kind != FunctionVariable::ConstexprKind::NonConstexpr )
+			{
+				BuildFuncCode(
+					function_variable,
+					functions_set.base_class,
+					names_scope,
+					function_variable.syntax_element->name_.components.back().name,
+					function_variable.syntax_element->type_.arguments_,
+					function_variable.syntax_element->block_.get(),
+					function_variable.syntax_element->constructor_initialization_list_.get() );
+			}
+		}
+	}
 }
 
 void CodeBuilder::NamesScopeBuildFunction(
@@ -262,13 +281,22 @@ void CodeBuilder::NamesScopeBuildFunction(
 
 		function_type.unsafe= func.type_.unsafe_;
 
-		// TODO - process "constexpr"
-
 		TryGenerateFunctionReturnReferencesMapping( func.type_, function_type );
 		ProcessFunctionReferencesPollution( func, function_type, base_class );
 		CheckOverloadedOperator( base_class, function_type, func.overloaded_operator_, func.file_pos_ );
 
 	} // end prepare function type
+
+	// Set constexpr.
+	if( func.constexpr_ )
+	{
+		if( func.block_ == nullptr )
+			errors_.push_back( ReportConstexprFunctionsMustHaveBody( func.file_pos_ ) );
+		if( func.virtual_function_kind_ != Synt::VirtualFunctionKind::None )
+			errors_.push_back( ReportConstexprFunctionCanNotBeVirtual( func.file_pos_ ) );
+
+		func_variable.constexpr_kind= FunctionVariable::ConstexprKind::ConstexprIncomplete;
+	}
 
 	// Set virtual.
 	if( func.virtual_function_kind_ != Synt::VirtualFunctionKind::None )
@@ -771,6 +799,29 @@ void CodeBuilder::NamesScopeBuildClass( const ClassProxyPtr class_type, const Ty
 		TryGenerateDestructor( the_class, class_type );
 		TryGenerateCopyConstructor( the_class, class_type );
 		TryGenerateCopyAssignmentOperator( the_class, class_type );
+
+		// Immediately build constexpr functions.
+		the_class.members.ForEachInThisScope(
+			[&]( const NamesScope::InsertedName& name )
+			{
+				OverloadedFunctionsSet* const functions_set= const_cast<OverloadedFunctionsSet*>(name.second.GetFunctionsSet());
+				if( functions_set == nullptr )
+					return;
+
+				for( FunctionVariable& function : functions_set->functions )
+				{
+					if( function.constexpr_kind != FunctionVariable::ConstexprKind::NonConstexpr &&
+						function.syntax_element != nullptr )
+						BuildFuncCode(
+							function,
+							class_type,
+							the_class.members,
+							name.first,
+							function.syntax_element->type_.arguments_,
+							function.syntax_element->block_.get(),
+							function.syntax_element->constructor_initialization_list_.get() );
+				}
+			}); // for functions
 	} // if full comleteness required
 }
 
@@ -873,6 +924,7 @@ void CodeBuilder::NamesScopeBuildGlobalVariable( NamesScope& names_scope, Value&
 	global_variable_value= ErrorValue();
 
 	FunctionContext& function_context= *dummy_function_context_;
+	const StackVariablesStorage dummy_stack( function_context );
 
 	if( const auto variables_declaration= dynamic_cast<const Synt::VariablesDeclaration*>(incomplete_global_variable.syntax_element) )
 	{
@@ -907,6 +959,7 @@ void CodeBuilder::NamesScopeBuildGlobalVariable( NamesScope& names_scope, Value&
 				Variable(),
 				variable_declaration.reference_modifier == ReferenceModifier::Reference ? StoredVariable::Kind::Reference : StoredVariable::Kind::Variable,
 				true );
+		function_context.stack_variables_stack[ function_context.stack_variables_stack.size() - 2u ]->RegisterVariable( stored_variable );
 
 		Variable& variable= stored_variable->content;
 		variable.type= type;
@@ -1004,8 +1057,7 @@ void CodeBuilder::NamesScopeBuildGlobalVariable( NamesScope& names_scope, Value&
 			return;
 		}
 
-		// After lock of references we can call destructors.
-		CallDestructors( *function_context.stack_variables_stack.back(), function_context, variable_declaration.file_pos );
+		// Do not call destructors, because global variables can be only constexpr and any constexpr type have trivial destructor.
 
 		global_variable_value= Value( stored_variable, variable_declaration.file_pos );
 	}
@@ -1045,6 +1097,7 @@ void CodeBuilder::NamesScopeBuildGlobalVariable( NamesScope& names_scope, Value&
 				Variable(),
 				auto_variable_declaration->reference_modifier == ReferenceModifier::Reference ? StoredVariable::Kind::Reference : StoredVariable::Kind::Variable,
 				true );
+		function_context.stack_variables_stack[ function_context.stack_variables_stack.size() - 2u ]->RegisterVariable( stored_variable );
 
 		Variable& variable= stored_variable->content;
 		variable.type= initializer_experrsion.type;
@@ -1149,8 +1202,7 @@ void CodeBuilder::NamesScopeBuildGlobalVariable( NamesScope& names_scope, Value&
 			return;
 		}
 
-		// After lock of references we can call destructors.
-		CallDestructors( *function_context.stack_variables_stack.back(), function_context, auto_variable_declaration->file_pos_ );
+		// Do not call destructors, because global variables can be only constexpr and any constexpr type have trivial destructor.
 
 		global_variable_value= Value( stored_variable, auto_variable_declaration->file_pos_ );
 	}
