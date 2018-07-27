@@ -879,38 +879,6 @@ def PreResolve_Test2():
 	assert( errors_list[0].file_pos.line == 14 )
 
 
-def PreResolve_Test3():
-	c_program_text= """
-		fn DoubleIt( i32&imut x ) : i32
-		{
-			return x * 2;
-		}
-
-		template</ type T />
-		fn TryDoubleIt( T &mut x ) : i32
-		{
-			return DoubleIt(x);  // DoubleIt( i32&imut x ) should be visible here, not DoubleIt( i32& mut x ).
-		}
-
-		fn DoubleIt( i32& mut x ) : i32
-		{
-			x*= 2;
-			return x;
-		}
-
-		fn Foo() : i32
-		{
-			var i32 mut x= 7;
-			auto r= TryDoubleIt(x); // Should NOT modyfy 'x'.
-			halt if( r != 2 * x );
-			return x;
-		}
-	"""
-	tests_lib.build_program( c_program_text )
-	call_result= tests_lib.run_function( "_Z3Foov" )
-	assert( call_result == 7 )
-
-
 def PreResolve_Test4():
 	c_program_text= """
 		type I= i32;

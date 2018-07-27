@@ -158,6 +158,7 @@ const NamesScope::InsertedName* CodeBuilder::ResolveName(
 		}
 		else if( const TypeTemplatesSet* const type_templates_set = name->second.GetTypeTemplatesSet() )
 		{
+			NamesScopeBuildTypetemplatesSet( *last_space, const_cast<TypeTemplatesSet&>(*type_templates_set) );
 			if( components[0].have_template_parameters )
 			{
 				const NamesScope::InsertedName* generated_type=
@@ -186,6 +187,8 @@ const NamesScope::InsertedName* CodeBuilder::ResolveName(
 		}
 		else if( const OverloadedFunctionsSet* const functions_set= name->second.GetFunctionsSet() )
 		{
+			if( !for_declaration )
+				NamesScopeBuildFunctionsSet( *last_space, const_cast<OverloadedFunctionsSet&>(*functions_set), false );
 			if( components[0].have_template_parameters )
 			{
 				if( functions_set->template_functions.empty() )
