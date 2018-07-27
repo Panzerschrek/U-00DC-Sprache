@@ -138,7 +138,6 @@ def CastRef_Test7_CompleteteTypeRequiredForSource():
 		{
 			return cast_ref</ A />(b);
 		}
-		class B : A {}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
@@ -148,14 +147,12 @@ def CastRef_Test7_CompleteteTypeRequiredForSource():
 
 def CastRef_Test8_CompleteteTypeRequiredForDestination():
 	c_program_text= """
-		class A;
+		class A {}
 		class B;
 		fn ToA( B& b ) : A&
 		{
 			return cast_ref</ A />(b);
 		}
-		class A polymorph {}
-		class B : A {}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )

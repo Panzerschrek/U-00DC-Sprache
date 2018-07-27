@@ -145,7 +145,7 @@ def AccessingPrivateMemberOutsideClass_Test3():
 	assert( errors_list[0].file_pos.line == 10 )
 
 
-def AccessingPrivateMemberOutsideClass_Test3():
+def AccessingPrivateMemberOutsideClass_Test4():
 	c_program_text= """
 		class A
 		{
@@ -222,23 +222,6 @@ def AccessingPrivateMemberInsideClass_Test3():
 	tests_lib.build_program( c_program_text )
 
 
-def AccessingPrivateMemberInsideClass_Test4():
-	c_program_text= """
-		class A
-		{
-		private:
-			type II= i32;
-			struct Inner;
-		}
-
-		struct A::Inner // Ok, accessing private struct, but for declaration
-		{
-			II i; // Ok, accessing private member of outer class.
-		}
-	"""
-	tests_lib.build_program( c_program_text )
-
-
 def AccessingPrivateMemberInsideClass_Test5():
 	c_program_text= """
 		class A
@@ -263,12 +246,10 @@ def AccessingPrivateMemberInsideClass_Test6():
 		private:
 			type II= i32;
 		public:
-			struct Inner;
-		}
-
-		struct A::Inner
-		{
-			II i; // Ok, accessing private member of outer class form public class of uter class.
+			struct Inner
+			{
+				II i; // Ok, accessing private member of outer class form public class of outer class.
+			}
 		}
 	"""
 	tests_lib.build_program( c_program_text )
@@ -498,19 +479,6 @@ def FunctionsVisibilityMismatch_Test6():
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "FunctionsVisibilityMismatch" )
 	assert( errors_list[0].file_pos.line == 10 )
-
-
-def FunctionBodyVisibilityIsUnsignificant_Test0():
-	c_program_text= """
-		class A
-		{
-		public:
-			fn Foo();
-		private:
-			fn Foo(){} // Ok, body can have any visibility, we check visibility only for prototype
-		}
-	"""
-	tests_lib.build_program( c_program_text )
 
 
 def FunctionBodyVisibilityIsUnsignificant_Test1():

@@ -351,10 +351,9 @@ void CodeBuilder::NamesScopeBuildClass( const ClassProxyPtr class_type, const Ty
 {
 	Class& the_class= *class_type->class_;
 
-	if( completeness <= the_class.completeness )
-		return;
-
-	if( completeness == TypeCompleteness::Incomplete )
+	if( completeness <= the_class.completeness ||
+		completeness == TypeCompleteness::Incomplete ||
+		the_class.syntax_element->is_forward_declaration_ )
 		return;
 
 	const Synt::Class& class_declaration= *the_class.syntax_element;
