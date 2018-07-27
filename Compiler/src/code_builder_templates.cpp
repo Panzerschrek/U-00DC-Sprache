@@ -103,7 +103,7 @@ ProgramString CodeBuilder::PrepareTypeTemplate(
 	std::vector<bool> template_parameters_usage_flags;
 
 	PushCacheFillResolveHandler( type_template->resolving_cache, names_scope );
-	const NamesScopePtr template_parameters_namespace = std::make_shared<NamesScope>( g_template_parameters_namespace_prefix, &names_scope );
+	const NamesScopePtr template_parameters_namespace = std::make_shared<NamesScope>( g_template_parameters_namespace_prefix, &names_scope ); // TODO - remove shared
 
 	ProcessTemplateArgs(
 		type_template_declaration.args_,
@@ -501,7 +501,7 @@ const NamesScope::InsertedName* CodeBuilder::ResolveForTemplateSignatureParamete
 		}
 		else if( const TypeTemplatesSet* const type_templates_set = name->second.GetTypeTemplatesSet() )
 		{
-			if( components[0].have_template_parameters && component_count == 1u )
+			if( components[0].have_template_parameters && component_count != 1u )
 			{
 				const NamesScope::InsertedName* generated_type=
 					GenTemplateType(
