@@ -791,6 +791,7 @@ private:
 	void NamesScopeBuildEnum( const EnumPtr& enum_, TypeCompleteness completeness );
 	void NamesScopeBuildTypetemplatesSet( NamesScope& names_scope, TypeTemplatesSet& type_templates_set );
 	void NamesScopeBuildTypedef( NamesScope& names_scope, Value& typedef_value );
+	void NamesScopeBuildGlobalVariable( NamesScope& names_scope, Value& global_variable_value );
 
 	static U_FundamentalType GetNumericConstantType( const Synt::NumericConstant& number );
 

@@ -66,12 +66,12 @@ void  CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::Variable
 		if( IsKeyword( variable_declaration.name ) )
 			errors_.push_back( ReportUsingKeywordAsName( variable_declaration.file_pos ) );
 
-		const auto stored_variable= std::make_shared<StoredVariable>( variable_declaration.name );
-		const NamesScope::InsertedName* const inserted_variable= names_scope.AddName( variable_declaration.name, Value( stored_variable, variable_declaration.file_pos ) );
-		if( inserted_variable == nullptr )
-			errors_.push_back( ReportRedefinition( variable_declaration.file_pos, variable_declaration.name ) );
+		IncompleteGlobalVariable incomplete_global_variable;
+		incomplete_global_variable.syntax_element= &variables_declaration;
+		incomplete_global_variable.element_index= size_t( &variable_declaration - variables_declaration.variables.data() );
 
-		// TODO - add syntax elements for later variable initialization.
+		if( names_scope.AddName( variable_declaration.name, Value( incomplete_global_variable, variable_declaration.file_pos ) ) == nullptr )
+			errors_.push_back( ReportRedefinition( variable_declaration.file_pos, variable_declaration.name ) );
 	}
 }
 
@@ -80,12 +80,11 @@ void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::AutoVaria
 	if( IsKeyword( variable_declaration.name ) )
 		errors_.push_back( ReportUsingKeywordAsName( variable_declaration.file_pos_ ) );
 
-	const auto stored_variable= std::make_shared<StoredVariable>( variable_declaration.name );
-	const NamesScope::InsertedName* const inserted_variable= names_scope.AddName( variable_declaration.name, Value( stored_variable, variable_declaration.file_pos_ ) );
-	if( inserted_variable == nullptr )
-		errors_.push_back( ReportRedefinition( variable_declaration.file_pos_, variable_declaration.name ) );
+	IncompleteGlobalVariable incomplete_global_variable;
+	incomplete_global_variable.syntax_element= &variable_declaration;
 
-	// TODO - add syntax elements for later variable initialization.
+	if( names_scope.AddName( variable_declaration.name, Value( incomplete_global_variable, variable_declaration.file_pos_ ) ) == nullptr )
+		errors_.push_back( ReportRedefinition( variable_declaration.file_pos_, variable_declaration.name ) );
 }
 
 void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::Function& function_declaration, const ClassProxyPtr base_class, ClassMemberVisibility visibility )
@@ -219,6 +218,17 @@ ClassProxyPtr CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::
 		{
 			NamesScopeFill( the_class.members, *typedef_ );
 			the_class.SetMemberVisibility( typedef_->name, current_visibility );
+		}
+		else if( const auto variables_declaration= dynamic_cast<const Synt::VariablesDeclaration*>( member.get() ) )
+		{
+			NamesScopeFill( the_class.members, *variables_declaration );
+			for( const auto& variable_declaration : variables_declaration->variables )
+				the_class.SetMemberVisibility( variable_declaration.name, current_visibility );
+		}
+		else if( const auto auto_variable_declaration= dynamic_cast<const Synt::AutoVariableDeclaration*>( member.get() ) )
+		{
+			NamesScopeFill( the_class.members, *auto_variable_declaration );
+			the_class.SetMemberVisibility( auto_variable_declaration->name, current_visibility );
 		}
 		else U_ASSERT(false); // TODO - process another members.
 	} // for class elements

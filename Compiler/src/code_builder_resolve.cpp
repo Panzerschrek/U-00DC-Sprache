@@ -235,6 +235,8 @@ const NamesScope::InsertedName* CodeBuilder::ResolveName(
 			NamesScopeBuildTypetemplatesSet( *last_space, *type_templates_set );
 		else if( name->second.GetTypedef() != nullptr )
 			NamesScopeBuildTypedef( *last_space, const_cast<Value&>(name->second) );
+		else if( name->second.GetIncompleteGlobalVariable() != nullptr )
+			NamesScopeBuildGlobalVariable( *last_space, const_cast<Value&>(name->second) );
 	}
 	return name;
 }

@@ -76,14 +76,21 @@ void CodeBuilder::NamesScopeBuild( NamesScope& names_scope )
 					NamesScopeBuildEnum( enum_type, TypeCompleteness::Complete );
 				else U_ASSERT(false);
 			}
+			else if( const auto type_templates_set= name.second.GetTypeTemplatesSet() )
+				NamesScopeBuildTypetemplatesSet( names_scope, *type_templates_set );
 			else if( name.second.GetClassField() != nullptr ) {} // Can be in classes.
 			else if( name.second.GetFunctionVariable() != nullptr ) {} // It is function, generating from template.
+			else if( name.second.GetVariable() != nullptr ){}
+			else if( name.second.GetStoredVariable() != nullptr ){}
+			else if( name.second.GetErrorValue() != nullptr ){}
 			else if( TypeTemplatesSet* const type_templates_set= name.second.GetTypeTemplatesSet() )
 				NamesScopeBuildTypetemplatesSet( names_scope, *type_templates_set );
 			else if( const auto static_assert_= name.second.GetStaticAssert() )
 				BuildStaticAssert( *static_assert_, names_scope );
 			else if( name.second.GetTypedef() != nullptr )
 				NamesScopeBuildTypedef( names_scope, name.second );
+			else if( name.second.GetIncompleteGlobalVariable() != nullptr )
+				NamesScopeBuildGlobalVariable( names_scope, name.second );
 			else U_ASSERT(false);
 		});
 }
@@ -518,7 +525,20 @@ void CodeBuilder::NamesScopeBuildClass( const ClassProxyPtr class_type, const Ty
 						ProcessClassVirtualFunction( the_class, prepare_function_result );
 					}
 				}
+				else if( const auto* type= name.second.GetTypeName() )
+				{
+					U_UNUSED(type); // TODO
+				}
+				else if( const auto type_templates_set= name.second.GetTypeTemplatesSet() )
+					NamesScopeBuildTypetemplatesSet( the_class.members, const_cast<TypeTemplatesSet&>(*type_templates_set) );
 				else if( name.second.GetClassField() != nullptr ) {}
+				else if( name.second.GetVariable() != nullptr ){}
+				else if( name.second.GetStoredVariable() != nullptr ){}
+				else if( name.second.GetErrorValue() != nullptr ){}
+				else if( name.second.GetTypedef() != nullptr )
+					NamesScopeBuildTypedef( the_class.members, const_cast<Value&>(name.second) );
+				else if( name.second.GetIncompleteGlobalVariable() != nullptr )
+					NamesScopeBuildGlobalVariable( the_class.members, const_cast<Value&>(name.second) );
 				else U_ASSERT(false);
 			});
 
@@ -830,6 +850,297 @@ void CodeBuilder::NamesScopeBuildTypedef( NamesScope& names_scope, Value& typede
 
 	// Replace value in names map, when typedef is comlete.
 	typedef_value= Value( PrepareType( syntax_element.value, names_scope ), syntax_element.file_pos_ );
+}
+
+void CodeBuilder::NamesScopeBuildGlobalVariable( NamesScope& names_scope, Value& global_variable_value )
+{
+	U_ASSERT( global_variable_value.GetIncompleteGlobalVariable() != nullptr );
+	const IncompleteGlobalVariable incomplete_global_variable= *global_variable_value.GetIncompleteGlobalVariable();
+	global_variable_value= ErrorValue();
+
+	FunctionContext& function_context= *dummy_function_context_;
+
+	if( const auto variables_declaration= dynamic_cast<const Synt::VariablesDeclaration*>(incomplete_global_variable.syntax_element) )
+	{
+		const Synt::VariablesDeclaration::VariableEntry& variable_declaration= variables_declaration->variables[ incomplete_global_variable.element_index ];
+
+		if( variable_declaration.mutability_modifier == Synt::MutabilityModifier::Mutable )
+		{
+			errors_.push_back( ReportGlobalVariableMustBeConstexpr( variable_declaration.file_pos, variable_declaration.name ) );
+			return;
+		}
+
+		const Type type= PrepareType( variables_declaration->type, names_scope );
+		// Report about incomplete type only for values, not references.
+		if( !EnsureTypeCompleteness( type, variable_declaration.reference_modifier == ReferenceModifier::Reference ? TypeCompleteness::Incomplete : TypeCompleteness::Complete ) )
+		{
+			errors_.push_back( ReportUsingIncompleteType( variable_declaration.file_pos, type.ToString() ) );
+			return;
+		}
+
+		if( !type.CanBeConstexpr() )
+		{
+			errors_.push_back( ReportInvalidTypeForConstantExpressionVariable( variable_declaration.file_pos ) );
+			return;
+		}
+
+		// Destruction frame for temporary variables of initializer expression.
+		const StackVariablesStorage temp_variables_storage( function_context );
+
+		const StoredVariablePtr stored_variable=
+			std::make_shared<StoredVariable>(
+				variable_declaration.name,
+				Variable(),
+				variable_declaration.reference_modifier == ReferenceModifier::Reference ? StoredVariable::Kind::Reference : StoredVariable::Kind::Variable,
+				true );
+
+		Variable& variable= stored_variable->content;
+		variable.type= type;
+		variable.location= Variable::Location::Pointer;
+		variable.value_type= ValueType::Reference;
+
+		if( variable_declaration.reference_modifier == ReferenceModifier::None )
+		{
+			llvm::GlobalVariable* global_variable= nullptr;
+			variable.llvm_value= global_variable= CreateGlobalConstantVariable( type, MangleGlobalVariable( names_scope, variable_declaration.name ) );
+			variable.llvm_value->setName( ToStdString( variable_declaration.name ) );
+
+			variable.referenced_variables.insert( stored_variable );
+			if( variable_declaration.initializer != nullptr )
+				variable.constexpr_value= ApplyInitializer( variable, stored_variable, *variable_declaration.initializer, names_scope, function_context );
+			else
+				ApplyEmptyInitializer( variable_declaration.name, variable_declaration.file_pos, variable, function_context );
+			variable.referenced_variables.erase( stored_variable );
+
+			// Make immutable, if needed, only after initialization, because in initialization we need call constructors, which is mutable methods.
+			variable.value_type= ValueType::ConstReference;
+
+			for( const auto& referenced_variable_pair : function_context.variables_state.GetVariableReferences( stored_variable ) )
+				CheckVariableReferences( *referenced_variable_pair.first, variable_declaration.file_pos );
+
+			if( global_variable != nullptr && variable.constexpr_value != nullptr )
+				global_variable->setInitializer( variable.constexpr_value );
+		}
+		else if( variable_declaration.reference_modifier == ReferenceModifier::Reference )
+		{
+			if( variable_declaration.initializer == nullptr )
+			{
+				errors_.push_back( ReportExpectedInitializer( variable_declaration.file_pos, variable_declaration.name ) );
+				return;
+			}
+
+			variable.value_type= ValueType::ConstReference;
+
+			const Synt::IExpressionComponent* initializer_expression= nullptr;
+			if( const auto expression_initializer= dynamic_cast<const Synt::ExpressionInitializer*>( variable_declaration.initializer.get() ) )
+				initializer_expression= expression_initializer->expression.get();
+			else if( const auto constructor_initializer= dynamic_cast<const Synt::ConstructorInitializer*>( variable_declaration.initializer.get() ) )
+			{
+				if( constructor_initializer->call_operator.arguments_.size() != 1u )
+				{
+					errors_.push_back( ReportReferencesHaveConstructorsWithExactlyOneParameter( constructor_initializer->file_pos_ ) );
+					return;
+				}
+				initializer_expression= constructor_initializer->call_operator.arguments_.front().get();
+			}
+			else
+			{
+				errors_.push_back( ReportUnsupportedInitializerForReference( variable_declaration.initializer->GetFilePos() ) );
+				return;
+			}
+
+			const Value expression_result_value= BuildExpressionCode( *initializer_expression, names_scope, function_context );
+
+			if( !expression_result_value.GetType().ReferenceIsConvertibleTo( variable.type ) )
+			{
+				errors_.push_back( ReportTypesMismatch( variable_declaration.file_pos, variable.type.ToString(), expression_result_value.GetType().ToString() ) );
+				return;
+			}
+			const Variable& expression_result= *expression_result_value.GetVariable();
+
+			if( expression_result.value_type == ValueType::Value )
+			{
+				errors_.push_back( ReportExpectedReferenceValue( variable_declaration.file_pos ) );
+				return;
+			}
+			if( expression_result.value_type == ValueType::ConstReference && variable.value_type == ValueType::Reference )
+			{
+				errors_.push_back( ReportBindingConstReferenceToNonconstReference( variable_declaration.file_pos ) );
+				return;
+			}
+
+			variable.referenced_variables= expression_result.referenced_variables;
+
+			for( const StoredVariablePtr& referenced_variable : variable.referenced_variables )
+				function_context.variables_state.AddPollution( stored_variable, referenced_variable, false );
+			CheckReferencedVariables( stored_variable->content, variable_declaration.file_pos );
+
+			// TODO - maybe make copy of varaible address in new llvm register?
+			llvm::Value* result_ref= expression_result.llvm_value;
+			if( variable.type != expression_result.type )
+				result_ref= CreateReferenceCast( result_ref, expression_result.type, variable.type, function_context );
+			variable.llvm_value= result_ref;
+			variable.constexpr_value= expression_result.constexpr_value;
+		}
+		else U_ASSERT(false);
+
+		if( variable.constexpr_value == nullptr )
+		{
+			errors_.push_back( ReportVariableInitializerIsNotConstantExpression( variable_declaration.file_pos ) );
+			return;
+		}
+
+		// After lock of references we can call destructors.
+		CallDestructors( *function_context.stack_variables_stack.back(), function_context, variable_declaration.file_pos );
+
+		global_variable_value= Value( stored_variable, variable_declaration.file_pos );
+	}
+	else if( const auto auto_variable_declaration= dynamic_cast<const Synt::AutoVariableDeclaration*>(incomplete_global_variable.syntax_element) )
+	{
+		if( auto_variable_declaration->mutability_modifier == MutabilityModifier::Mutable )
+		{
+			errors_.push_back( ReportGlobalVariableMustBeConstexpr( auto_variable_declaration->file_pos_, auto_variable_declaration->name ) );
+			return;
+		}
+
+		// Destruction frame for temporary variables of initializer expression.
+		const StackVariablesStorage temp_variables_storage( function_context );
+
+		const Value initializer_experrsion_value= BuildExpressionCode( *auto_variable_declaration->initializer_expression, names_scope, function_context );
+
+		{ // Check expression type. Expression can have exotic types, such "Overloading functions set", "class name", etc.
+			const Type& type= initializer_experrsion_value.GetType();
+			const bool type_is_ok=
+				type.GetFundamentalType() != nullptr ||
+				type.GetArrayType() != nullptr ||
+				type.GetClassType() != nullptr ||
+				type.GetEnumType() != nullptr ||
+				type.GetFunctionPointerType() != nullptr;
+			if( !type_is_ok )
+			{
+				errors_.push_back( ReportInvalidTypeForAutoVariable( auto_variable_declaration->file_pos_, initializer_experrsion_value.GetType().ToString() ) );
+				return;
+			}
+		}
+
+		const Variable& initializer_experrsion= *initializer_experrsion_value.GetVariable();
+
+		const StoredVariablePtr stored_variable=
+			std::make_shared<StoredVariable>(
+				auto_variable_declaration->name,
+				Variable(),
+				auto_variable_declaration->reference_modifier == ReferenceModifier::Reference ? StoredVariable::Kind::Reference : StoredVariable::Kind::Variable,
+				true );
+
+		Variable& variable= stored_variable->content;
+		variable.type= initializer_experrsion.type;
+		variable.value_type= ValueType::ConstReference;
+		variable.location= Variable::Location::Pointer;
+
+		// Report about incomplete type only for values, not references.
+		if( !EnsureTypeCompleteness( variable.type, auto_variable_declaration->reference_modifier == ReferenceModifier::Reference ? TypeCompleteness::Incomplete : TypeCompleteness::Complete ) )
+		{
+			errors_.push_back( ReportUsingIncompleteType( auto_variable_declaration->file_pos_, variable.type.ToString() ) );
+			return;
+		}
+		if( !variable.type.CanBeConstexpr() )
+		{
+			errors_.push_back( ReportInvalidTypeForConstantExpressionVariable( auto_variable_declaration->file_pos_ ) );
+			return;
+		}
+
+		if( auto_variable_declaration->reference_modifier == ReferenceModifier::Reference )
+		{
+			if( initializer_experrsion.value_type == ValueType::Value )
+			{
+				errors_.push_back( ReportExpectedReferenceValue( auto_variable_declaration->file_pos_ ) );
+				return;
+			}
+			if( initializer_experrsion.value_type == ValueType::ConstReference && variable.value_type != ValueType::ConstReference )
+			{
+				errors_.push_back( ReportBindingConstReferenceToNonconstReference( auto_variable_declaration->file_pos_ ) );
+				return;
+			}
+
+			variable.referenced_variables= initializer_experrsion.referenced_variables;
+
+			variable.llvm_value= initializer_experrsion.llvm_value;
+			variable.constexpr_value= initializer_experrsion.constexpr_value;
+
+			for( const StoredVariablePtr& referenced_variable : variable.referenced_variables )
+				function_context.variables_state.AddPollution( stored_variable, referenced_variable, false );
+			CheckReferencedVariables( variable, auto_variable_declaration->file_pos_ );
+		}
+		else if( auto_variable_declaration->reference_modifier == ReferenceModifier::None )
+		{
+			VariablesState::VariableReferences moved_variable_referenced_variables;
+
+			llvm::GlobalVariable* const global_variable= CreateGlobalConstantVariable( variable.type, MangleGlobalVariable( names_scope, auto_variable_declaration->name ) );
+			variable.llvm_value= global_variable;
+
+			if( variable.type.GetFundamentalType() != nullptr || variable.type.GetEnumType() != nullptr || variable.type.GetFunctionPointerType() != nullptr )
+			{
+				llvm::Value* const value_for_assignment= CreateMoveToLLVMRegisterInstruction( initializer_experrsion, function_context );
+				function_context.llvm_ir_builder.CreateStore( value_for_assignment, variable.llvm_value );
+				variable.constexpr_value= initializer_experrsion.constexpr_value;
+			}
+			else if( const ClassProxyPtr class_type= variable.type.GetClassTypeProxy() )
+			{
+				U_ASSERT( class_type->class_->completeness == TypeCompleteness::Complete );
+				if( initializer_experrsion.value_type == ValueType::Value )
+				{
+					U_ASSERT( initializer_experrsion.referenced_variables.size() == 1u );
+					const StoredVariablePtr& variable_for_move= *initializer_experrsion.referenced_variables.begin();
+
+					moved_variable_referenced_variables= function_context.variables_state.GetVariableReferences( variable_for_move );
+					function_context.variables_state.Move( variable_for_move );
+
+					CopyBytes( initializer_experrsion.llvm_value, variable.llvm_value, variable.type, function_context );
+					variable.constexpr_value= initializer_experrsion.constexpr_value; // Move can preserve constexpr.
+				}
+				else
+					TryCallCopyConstructor(
+						auto_variable_declaration->file_pos_,
+						variable.llvm_value, initializer_experrsion.llvm_value,
+						variable.type.GetClassTypeProxy(),
+						function_context );
+			}
+			else
+			{
+				errors_.push_back( ReportNotImplemented( auto_variable_declaration->file_pos_, "expression initialization for nonfundamental types" ) );
+				return;
+			}
+
+			if( global_variable != nullptr && variable.constexpr_value != nullptr )
+				global_variable->setInitializer( variable.constexpr_value );
+
+			// Take references inside variables in initializer expression.
+			for( const auto& ref : moved_variable_referenced_variables )
+				function_context.variables_state.AddPollution( stored_variable, ref.first, ref.second.IsMutable() );
+			for( const StoredVariablePtr& referenced_variable : initializer_experrsion.referenced_variables )
+			{
+				for( const auto& inner_variable_pair : function_context.variables_state.GetVariableReferences( referenced_variable ) )
+				{
+					const bool ok= function_context.variables_state.AddPollution( stored_variable, inner_variable_pair.first, inner_variable_pair.second.IsMutable() );
+					if(!ok)
+						errors_.push_back( ReportReferenceProtectionError( auto_variable_declaration->file_pos_, inner_variable_pair.first->name ) );
+				}
+			}
+		}
+		else U_ASSERT(false);
+
+		if( variable.constexpr_value == nullptr )
+		{
+			errors_.push_back( ReportVariableInitializerIsNotConstantExpression( auto_variable_declaration->file_pos_ ) );
+			return;
+		}
+
+		// After lock of references we can call destructors.
+		CallDestructors( *function_context.stack_variables_stack.back(), function_context, auto_variable_declaration->file_pos_ );
+
+		global_variable_value= Value( stored_variable, auto_variable_declaration->file_pos_ );
+	}
+	else U_ASSERT(false);
 }
 
 } // namespace CodeBuilderPrivate

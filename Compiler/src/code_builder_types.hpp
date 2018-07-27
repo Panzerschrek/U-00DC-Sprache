@@ -359,7 +359,6 @@ public:
 
 	Kind kind= Kind::Variable;
 	bool is_global_constant= false;
-	bool is_incomplete= true;
 
 	explicit StoredVariable( ProgramString in_name );
 	StoredVariable( ProgramString iname, Variable icontent, Kind ikind= Kind::Variable, bool iis_global_constant= false );
@@ -451,6 +450,12 @@ struct Typedef
 	const Synt::Typedef* syntax_element= nullptr;
 };
 
+struct IncompleteGlobalVariable
+{
+	const Synt::SyntaxElementBase* syntax_element= nullptr; // VariablesDeclaration or AutoVariableDeclaration
+	size_t element_index= ~0u; // For VariablesDeclaration - index of variable.
+};
+
 struct YetNotDeducedTemplateArg final
 {};
 
@@ -472,6 +477,7 @@ public:
 	Value( TypeTemplatesSet type_templates, const FilePos& file_pos );
 	Value( StaticAssert static_assert_, const FilePos& file_pos );
 	Value( Typedef typedef_, const FilePos& file_pos );
+	Value( IncompleteGlobalVariable incomplete_global_variable, const FilePos& file_pos );
 	Value( YetNotDeducedTemplateArg yet_not_deduced_template_arg );
 	Value( ErrorValue error_value );
 
@@ -512,6 +518,9 @@ public:
 	// typedef
 	Typedef* GetTypedef();
 	const Typedef* GetTypedef() const;
+	// incomplete global variable
+	IncompleteGlobalVariable* GetIncompleteGlobalVariable();
+	const IncompleteGlobalVariable* GetIncompleteGlobalVariable() const;
 	// Yet not deduced template arg
 	YetNotDeducedTemplateArg* GetYetNotDeducedTemplateArg();
 	const YetNotDeducedTemplateArg* GetYetNotDeducedTemplateArg() const;
@@ -532,6 +541,7 @@ private:
 		TypeTemplatesSet,
 		StaticAssert,
 		Typedef,
+		IncompleteGlobalVariable,
 		YetNotDeducedTemplateArg,
 		ErrorValue > something_;
 

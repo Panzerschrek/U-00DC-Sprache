@@ -1094,6 +1094,12 @@ Value::Value( Typedef typedef_, const FilePos& file_pos )
 	something_= std::move(typedef_);
 }
 
+Value::Value( IncompleteGlobalVariable incomplete_global_variable, const FilePos& file_pos )
+	: file_pos_(file_pos)
+{
+	something_= std::move(incomplete_global_variable);
+}
+
 Value::Value( YetNotDeducedTemplateArg yet_not_deduced_template_arg )
 {
 	something_= std::move(yet_not_deduced_template_arg);
@@ -1140,6 +1146,9 @@ const Type& Value::GetType() const
 		{ return g_static_assert_type_stub; }
 
 		const Type& operator()( const Typedef& ) const
+		{ return g_static_assert_type_stub; } // hack
+
+		const Type& operator()( const IncompleteGlobalVariable& ) const
 		{ return g_static_assert_type_stub; } // hack
 
 		const Type& operator()( const YetNotDeducedTemplateArg& ) const
@@ -1271,6 +1280,16 @@ Typedef* Value::GetTypedef()
 const Typedef* Value::GetTypedef() const
 {
 	return boost::get<Typedef>( &something_ );
+}
+
+IncompleteGlobalVariable* Value::GetIncompleteGlobalVariable()
+{
+	return boost::get<IncompleteGlobalVariable>( &something_ );
+}
+
+const IncompleteGlobalVariable* Value::GetIncompleteGlobalVariable() const
+{
+	return boost::get<IncompleteGlobalVariable>( &something_ );
 }
 
 YetNotDeducedTemplateArg* Value::GetYetNotDeducedTemplateArg()

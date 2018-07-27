@@ -2301,7 +2301,7 @@ std::vector<ProgramString> CodeBuilder::BuildVariablesDeclarationCode(
 	const Synt::VariablesDeclaration& variables_declaration,
 	NamesScope& block_names,
 	FunctionContext& function_context,
-	const bool global )
+	const bool global /* TODO - remove global here */ )
 {
 	std::vector<ProgramString> result_variables_names;
 
@@ -2493,7 +2493,7 @@ ProgramString CodeBuilder::BuildAutoVariableDeclarationCode(
 	const Synt::AutoVariableDeclaration& auto_variable_declaration,
 	NamesScope& block_names,
 	FunctionContext& function_context,
-	const bool global )
+	const bool global /* TODO - remove global here */ )
 {
 	// Destruction frame for temporary variables of initializer expression.
 	const StackVariablesStorage temp_variables_storage( function_context );
