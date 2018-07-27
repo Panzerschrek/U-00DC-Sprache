@@ -483,7 +483,7 @@ const NamesScope::InsertedName* CodeBuilder::ResolveForTemplateSignatureParamete
 		}
 		else if( const TypeTemplatesSet* const type_templates_set = name->second.GetTypeTemplatesSet() )
 		{
-			NamesScopeBuildTypetemplatesSet( *last_space, const_cast<TypeTemplatesSet&>(*type_templates_set) );
+			NamesScopeBuildTypeTemplatesSet( *last_space, const_cast<TypeTemplatesSet&>(*type_templates_set) );
 			if( components[0].have_template_parameters && component_count != 1u )
 			{
 				const NamesScope::InsertedName* generated_type=
@@ -559,7 +559,7 @@ const NamesScope::InsertedName* CodeBuilder::ResolveForTemplateSignatureParamete
 		if( OverloadedFunctionsSet* const functions_set= const_cast<OverloadedFunctionsSet*>(name->second.GetFunctionsSet()) )
 			NamesScopeBuildFunctionsSet( *last_space, *functions_set, false );
 		else if( TypeTemplatesSet* const type_templates_set= const_cast<TypeTemplatesSet*>(name->second.GetTypeTemplatesSet()) )
-			NamesScopeBuildTypetemplatesSet( *last_space, *type_templates_set );
+			NamesScopeBuildTypeTemplatesSet( *last_space, *type_templates_set );
 		else if( name->second.GetTypedef() != nullptr )
 			NamesScopeBuildTypedef( *last_space, const_cast<Value&>(name->second) );
 		else if( name->second.GetIncompleteGlobalVariable() != nullptr )
@@ -1603,100 +1603,6 @@ bool CodeBuilder::TypeIsValidForTemplateVariableArgument( const Type& type )
 		return true;
 
 	return false;
-}
-
-void CodeBuilder::RemoveTempClassLLVMValues( Class& class_ )
-{
-	RemoveTempClassLLVMValues_impl( class_, false );
-	RemoveTempClassLLVMValues_impl( class_, true );
-}
-
-void CodeBuilder::RemoveTempClassLLVMValues_impl( Class& class_, const bool is_delete_pass )
-{
-	class_.members.ForEachInThisScope(
-		[&]( const NamesScope::InsertedName& name )
-		{
-			if( const Type* const type= name.second.GetTypeName() )
-			{
-				if( Class* const subclass= type->GetClassType() )
-					RemoveTempClassLLVMValues_impl( *subclass, is_delete_pass );
-			}
-			else if( const OverloadedFunctionsSet* const functions_set= name.second.GetFunctionsSet() )
-			{
-				for( const FunctionVariable& function : functions_set->functions )
-				{
-					if( is_delete_pass )
-						function.llvm_function->eraseFromParent();
-					else
-					{
-						function.llvm_function->dropAllReferences();
-					}
-				}
-			}
-			else if( name.second.GetClassField() != nullptr )
-			{}
-			else if( name.second.GetTypeTemplatesSet() != nullptr )
-			{}
-			else if( const NamesScopePtr inner_namespace= name.second.GetNamespace() )
-			{
-				const ProgramString& generated_class_name= GetNameForGeneratedClass();
-
-				// This must be only namespace for class template instantiation.
-				inner_namespace->ForEachInThisScope(
-					[&]( const NamesScope::InsertedName& inner_namespace_name )
-					{
-						if( inner_namespace_name.first == generated_class_name )
-						{
-							const Type* const generated_class_type= inner_namespace_name.second.GetTypeName();
-							U_ASSERT( generated_class_type != nullptr );
-							Class* const generated_class= generated_class_type->GetClassType();
-							U_ASSERT( generated_class != nullptr );
-							U_ASSERT( generated_class->base_template != boost::none );
-							RemoveTempClassLLVMValues_impl( *generated_class, is_delete_pass );
-						}
-					});
-			}
-			else if( const Variable* const variable= name.second.GetVariable() )
-			{
-				U_UNUSED(variable);
-				// TODO - maybe we can delete global variable without breaking llvm code structure?
-			}
-			else if( const StoredVariablePtr stored_variable= name.second.GetStoredVariable() )
-			{
-				U_UNUSED(stored_variable);
-				// TODO - maybe we can delete global variable without breaking llvm code structure?
-			}
-			else U_ASSERT(false);
-		});
-
-	if( is_delete_pass )
-	{
-		if( class_.this_class_virtual_table != nullptr )
-			class_.this_class_virtual_table->eraseFromParent();
-		for( const auto& vt : class_.ancestors_virtual_tables )
-			vt.second->eraseFromParent();
-	}
-	else
-	{
-		if( class_.this_class_virtual_table != nullptr )
-			class_.this_class_virtual_table->dropAllReferences();
-		for( const auto& vt : class_.ancestors_virtual_tables )
-			vt.second->dropAllReferences();
-	}
-}
-
-void CodeBuilder::CleareDummyFunction()
-{
-	llvm::Function::BasicBlockListType& bb_list= dummy_function_context_->function->getBasicBlockList();
-
-	// Clear blocks in reverse order, because newer blocks can depend on elder blocks.
-	for (llvm::BasicBlock& block : boost::adaptors::reverse(bb_list))
-	{
-		// Destroy instructions in reverse order.
-		while( ! block.getInstList().empty() )
-			block.getInstList().pop_back();
-		//block.getInstList().clear();
-	}
 }
 
 void CodeBuilder::ReportAboutIncompleteMembersOfTemplateClass( const FilePos& file_pos, Class& class_ )

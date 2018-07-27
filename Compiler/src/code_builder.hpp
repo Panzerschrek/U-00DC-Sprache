@@ -268,11 +268,6 @@ private:
 
 	bool TypeIsValidForTemplateVariableArgument( const Type& type );
 
-	// Removes llvm-functions and functions of subclasses.
-	// Warning! Class must be not used after call of this function!
-	void RemoveTempClassLLVMValues( Class& class_ );
-	void RemoveTempClassLLVMValues_impl( Class& class_, bool is_delete_pass );
-	void CleareDummyFunction();
 
 	void ReportAboutIncompleteMembersOfTemplateClass( const FilePos& file_pos, Class& class_ );
 
@@ -480,6 +475,8 @@ private:
 		const Synt::BitwiseNot& bitwise_not,
 		FunctionContext& function_context );
 
+	// Typeinfo
+
 	Value BuildTypeinfoOperator( const Synt::TypeInfo& typeinfo_op, NamesScope& names );
 	Variable BuildTypeInfo( const Type& type, const NamesScope& root_namespace );
 	ClassProxyPtr CreateTypeinfoClass( const NamesScope& root_namespace );
@@ -502,17 +499,15 @@ private:
 
 	// Block elements
 
-	std::vector<ProgramString> BuildVariablesDeclarationCode(  // returns list of variables names
+	void BuildVariablesDeclarationCode(
 		const Synt::VariablesDeclaration& variables_declaration,
 		NamesScope& block_names,
-		FunctionContext& function_context,
-		bool global= false );
+		FunctionContext& function_context );
 
-	ProgramString BuildAutoVariableDeclarationCode( // returns variable name or empty string in case of error
+	void BuildAutoVariableDeclarationCode(
 		const Synt::AutoVariableDeclaration& auto_variable_declaration,
 		NamesScope& block_names,
-		FunctionContext& function_context,
-		bool global= false );
+		FunctionContext& function_context );
 
 	void BuildAssignmentOperatorCode(
 		const Synt::AssignmentOperator& assignment_operator,
@@ -707,15 +702,8 @@ private:
 		size_t component_count,
 		bool for_declaration= false );
 
+	// NamesScope fill
 
-	// Finds namespace, where are name. Do not search in classes (returns class itself)
-	std::pair<const NamesScope::InsertedName*, NamesScope*> PreResolveDefault(
-		NamesScope& names_scope,
-		const Synt::ComplexName::Component* components,
-		size_t component_count,
-		size_t& out_skip_components );
-
-	// NamesScope fill start
 	void NamesScopeFill( NamesScope& names_scope, const Synt::ProgramElements& namespace_elements );
 	void NamesScopeFill( NamesScope& names_scope, const Synt::VariablesDeclaration& variables_declaration );
 	void NamesScopeFill( NamesScope& names_scope, const Synt::AutoVariableDeclaration& variable_declaration );
@@ -727,19 +715,21 @@ private:
 	void NamesScopeFill( NamesScope& names_scope, const Synt::Typedef& typedef_declaration );
 	void NamesScopeFill( NamesScope& names_scope, const Synt::StaticAssert& static_assert_ );
 	void NamesScopeFillOutOfLineElements( NamesScope& names_scope, const Synt::ProgramElements& namespace_elements );
-	// NamesScope fill end
 
-	// Returns true, if all ok
-	bool EnsureTypeCompleteness( const Type& type, TypeCompleteness completeness );
+	// NamesScope build
+
+	bool EnsureTypeCompleteness( const Type& type, TypeCompleteness completeness ); // Returns true, if all ok
 
 	void NamesScopeBuild( NamesScope& names_scope );
 	void NamesScopeBuildFunctionsSet( NamesScope& names_scope, OverloadedFunctionsSet& functions_set, bool build_body );
 	void NamesScopeBuildFunction( NamesScope& names_scope, ClassProxyPtr base_class, OverloadedFunctionsSet& functions_set, const Synt::Function& function_declaration, bool is_out_of_line_function );
 	void NamesScopeBuildClass( ClassProxyPtr class_type, TypeCompleteness completeness );
 	void NamesScopeBuildEnum( const EnumPtr& enum_, TypeCompleteness completeness );
-	void NamesScopeBuildTypetemplatesSet( NamesScope& names_scope, TypeTemplatesSet& type_templates_set );
+	void NamesScopeBuildTypeTemplatesSet( NamesScope& names_scope, TypeTemplatesSet& type_templates_set );
 	void NamesScopeBuildTypedef( NamesScope& names_scope, Value& typedef_value );
 	void NamesScopeBuildGlobalVariable( NamesScope& names_scope, Value& global_variable_value );
+
+	// Other stuff
 
 	static U_FundamentalType GetNumericConstantType( const Synt::NumericConstant& number );
 

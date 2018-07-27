@@ -77,14 +77,14 @@ void CodeBuilder::NamesScopeBuild( NamesScope& names_scope )
 				else U_ASSERT(false);
 			}
 			else if( const auto type_templates_set= name.second.GetTypeTemplatesSet() )
-				NamesScopeBuildTypetemplatesSet( names_scope, *type_templates_set );
+				NamesScopeBuildTypeTemplatesSet( names_scope, *type_templates_set );
 			else if( name.second.GetClassField() != nullptr ) {} // Can be in classes.
 			else if( name.second.GetFunctionVariable() != nullptr ) {} // It is function, generating from template.
 			else if( name.second.GetVariable() != nullptr ){}
 			else if( name.second.GetStoredVariable() != nullptr ){}
 			else if( name.second.GetErrorValue() != nullptr ){}
 			else if( TypeTemplatesSet* const type_templates_set= name.second.GetTypeTemplatesSet() )
-				NamesScopeBuildTypetemplatesSet( names_scope, *type_templates_set );
+				NamesScopeBuildTypeTemplatesSet( names_scope, *type_templates_set );
 			else if( const auto static_assert_= name.second.GetStaticAssert() )
 				BuildStaticAssert( *static_assert_, names_scope );
 			else if( name.second.GetTypedef() != nullptr )
@@ -570,7 +570,7 @@ void CodeBuilder::NamesScopeBuildClass( const ClassProxyPtr class_type, const Ty
 					U_UNUSED(type); // TODO
 				}
 				else if( const auto type_templates_set= name.second.GetTypeTemplatesSet() )
-					NamesScopeBuildTypetemplatesSet( the_class.members, const_cast<TypeTemplatesSet&>(*type_templates_set) );
+					NamesScopeBuildTypeTemplatesSet( the_class.members, const_cast<TypeTemplatesSet&>(*type_templates_set) );
 				else if( name.second.GetClassField() != nullptr ) {}
 				else if( name.second.GetVariable() != nullptr ){}
 				else if( name.second.GetStoredVariable() != nullptr ){}
@@ -898,7 +898,7 @@ void CodeBuilder::NamesScopeBuildEnum( const EnumPtr& enum_, TypeCompleteness co
 	enum_->is_incomplete= false;
 }
 
-void CodeBuilder::NamesScopeBuildTypetemplatesSet( NamesScope& names_scope, TypeTemplatesSet& type_templates_set )
+void CodeBuilder::NamesScopeBuildTypeTemplatesSet( NamesScope& names_scope, TypeTemplatesSet& type_templates_set )
 {
 	if( !type_templates_set.is_incomplete )
 		return;

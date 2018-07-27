@@ -1920,14 +1920,11 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockCode(
 	return block_build_info;
 }
 
-std::vector<ProgramString> CodeBuilder::BuildVariablesDeclarationCode(
+void CodeBuilder::BuildVariablesDeclarationCode(
 	const Synt::VariablesDeclaration& variables_declaration,
 	NamesScope& block_names,
-	FunctionContext& function_context,
-	const bool global /* TODO - remove global here */ )
+	FunctionContext& function_context )
 {
-	std::vector<ProgramString> result_variables_names;
-
 	const Type type= PrepareType( variables_declaration.type, block_names );
 
 	for( const Synt::VariablesDeclaration::VariableEntry& variable_declaration : variables_declaration.variables )
@@ -1962,7 +1959,7 @@ std::vector<ProgramString> CodeBuilder::BuildVariablesDeclarationCode(
 				variable_declaration.name,
 				Variable(),
 				variable_declaration.reference_modifier == ReferenceModifier::Reference ? StoredVariable::Kind::Reference : StoredVariable::Kind::Variable,
-				global );
+				false );
 		function_context.stack_variables_stack[ function_context.stack_variables_stack.size() - 2u ]->RegisterVariable( stored_variable );
 
 		Variable& variable= stored_variable->content;
@@ -1972,17 +1969,8 @@ std::vector<ProgramString> CodeBuilder::BuildVariablesDeclarationCode(
 
 		if( variable_declaration.reference_modifier == ReferenceModifier::None )
 		{
-			llvm::GlobalVariable* global_variable= nullptr;
-			if( global )
-			{
-				variable.llvm_value= global_variable=
-					CreateGlobalConstantVariable( type, MangleGlobalVariable( block_names, variable_declaration.name ) );
-			}
-			else
-			{
-				variable.llvm_value= function_context.alloca_ir_builder.CreateAlloca( variable.type.GetLLVMType() );
-				variable.llvm_value->setName( ToStdString( variable_declaration.name ) );
-			}
+			variable.llvm_value= function_context.alloca_ir_builder.CreateAlloca( variable.type.GetLLVMType() );
+			variable.llvm_value->setName( ToStdString( variable_declaration.name ) );
 
 			variable.referenced_variables.insert( stored_variable );
 			if( variable_declaration.initializer != nullptr )
@@ -1998,9 +1986,6 @@ std::vector<ProgramString> CodeBuilder::BuildVariablesDeclarationCode(
 
 			for( const auto& referenced_variable_pair : function_context.variables_state.GetVariableReferences( stored_variable ) )
 				CheckVariableReferences( *referenced_variable_pair.first, variable_declaration.file_pos );
-
-			if( global_variable != nullptr && variable.constexpr_value != nullptr )
-				global_variable->setInitializer( variable.constexpr_value );
 		}
 		else if( variable_declaration.reference_modifier == ReferenceModifier::Reference )
 		{
@@ -2084,12 +2069,6 @@ std::vector<ProgramString> CodeBuilder::BuildVariablesDeclarationCode(
 		if( variable.value_type != ValueType::ConstReference )
 			variable.constexpr_value= nullptr;
 
-		if( global && variable.constexpr_value == nullptr )
-		{
-			errors_.push_back( ReportGlobalVariableMustBeConstexpr( variables_declaration.file_pos_, variable_declaration.name ) );
-			continue;
-		}
-
 		if( NameShadowsTemplateArgument( variable_declaration.name, block_names ) )
 		{
 			errors_.push_back( ReportDeclarationShadowsTemplateArgument( variables_declaration.file_pos_, variable_declaration.name ) );
@@ -2103,20 +2082,16 @@ std::vector<ProgramString> CodeBuilder::BuildVariablesDeclarationCode(
 			errors_.push_back( ReportRedefinition( variables_declaration.file_pos_, variable_declaration.name ) );
 			continue;
 		}
-		result_variables_names.push_back( variable_declaration.name );
 
 		// After lock of references we can call destructors.
 		CallDestructors( *function_context.stack_variables_stack.back(), function_context, variable_declaration.file_pos );
 	} // for variables
-
-	return result_variables_names;
 }
 
-ProgramString CodeBuilder::BuildAutoVariableDeclarationCode(
+void CodeBuilder::BuildAutoVariableDeclarationCode(
 	const Synt::AutoVariableDeclaration& auto_variable_declaration,
 	NamesScope& block_names,
-	FunctionContext& function_context,
-	const bool global /* TODO - remove global here */ )
+	FunctionContext& function_context )
 {
 	// Destruction frame for temporary variables of initializer expression.
 	const StackVariablesStorage temp_variables_storage( function_context );
@@ -2135,7 +2110,7 @@ ProgramString CodeBuilder::BuildAutoVariableDeclarationCode(
 		if( !type_is_ok )
 		{
 			errors_.push_back( ReportInvalidTypeForAutoVariable( auto_variable_declaration.file_pos_, initializer_experrsion_value.GetType().ToString() ) );
-			return auto_variable_declaration.name;
+			return;
 		}
 	}
 
@@ -2146,7 +2121,7 @@ ProgramString CodeBuilder::BuildAutoVariableDeclarationCode(
 			auto_variable_declaration.name,
 			Variable(),
 			auto_variable_declaration.reference_modifier == ReferenceModifier::Reference ? StoredVariable::Kind::Reference : StoredVariable::Kind::Variable,
-			global );
+			false );
 	function_context.stack_variables_stack[ function_context.stack_variables_stack.size() - 2u ]->RegisterVariable( stored_variable );
 
 	Variable& variable= stored_variable->content;
@@ -2157,7 +2132,7 @@ ProgramString CodeBuilder::BuildAutoVariableDeclarationCode(
 	if( auto_variable_declaration.mutability_modifier == MutabilityModifier::Constexpr && !variable.type.CanBeConstexpr() )
 	{
 		errors_.push_back( ReportInvalidTypeForConstantExpressionVariable( auto_variable_declaration.file_pos_ ) );
-		return auto_variable_declaration.name;
+		return;
 	}
 
 	if( auto_variable_declaration.reference_modifier == ReferenceModifier::Reference )
@@ -2165,12 +2140,12 @@ ProgramString CodeBuilder::BuildAutoVariableDeclarationCode(
 		if( initializer_experrsion.value_type == ValueType::Value )
 		{
 			errors_.push_back( ReportExpectedReferenceValue( auto_variable_declaration.file_pos_ ) );
-			return auto_variable_declaration.name;
+			return;
 		}
 		if( initializer_experrsion.value_type == ValueType::ConstReference && variable.value_type != ValueType::ConstReference )
 		{
 			errors_.push_back( ReportBindingConstReferenceToNonconstReference( auto_variable_declaration.file_pos_ ) );
-			return auto_variable_declaration.name;
+			return;
 		}
 
 		variable.referenced_variables= initializer_experrsion.referenced_variables;
@@ -2190,23 +2165,14 @@ ProgramString CodeBuilder::BuildAutoVariableDeclarationCode(
 		if( !EnsureTypeCompleteness( variable.type, TypeCompleteness::Complete ) )
 		{
 			errors_.push_back( ReportUsingIncompleteType( auto_variable_declaration.file_pos_, variable.type.ToString() ) );
-			return auto_variable_declaration.name;
+			return;
 		}
 
 		if( !variable.type.CanBeConstexpr() )
 			function_context.have_non_constexpr_operations_inside= true; // Declaring variable with non-constexpr type in constexpr function not allowed.
 
-		llvm::GlobalVariable* global_variable= nullptr;
-		if( global )
-		{
-			variable.llvm_value= global_variable=
-				CreateGlobalConstantVariable( variable.type, MangleGlobalVariable( block_names, auto_variable_declaration.name ) );
-		}
-		else
-		{
-			variable.llvm_value= function_context.alloca_ir_builder.CreateAlloca( variable.type.GetLLVMType() );
-			variable.llvm_value->setName( ToStdString( auto_variable_declaration.name ) );
-		}
+		variable.llvm_value= function_context.alloca_ir_builder.CreateAlloca( variable.type.GetLLVMType() );
+		variable.llvm_value->setName( ToStdString( auto_variable_declaration.name ) );
 
 		if( variable.type.GetFundamentalType() != nullptr || variable.type.GetEnumType() != nullptr || variable.type.GetFunctionPointerType() != nullptr )
 		{
@@ -2238,11 +2204,8 @@ ProgramString CodeBuilder::BuildAutoVariableDeclarationCode(
 		else
 		{
 			errors_.push_back( ReportNotImplemented( auto_variable_declaration.file_pos_, "expression initialization for nonfundamental types" ) );
-			return auto_variable_declaration.name;
+			return;
 		}
-
-		if( global_variable != nullptr && variable.constexpr_value != nullptr )
-			global_variable->setInitializer( variable.constexpr_value );
 
 		// Take references inside variables in initializer expression.
 		for( const auto& ref : moved_variable_referenced_variables )
@@ -2263,23 +2226,17 @@ ProgramString CodeBuilder::BuildAutoVariableDeclarationCode(
 		variable.constexpr_value == nullptr )
 	{
 		errors_.push_back( ReportVariableInitializerIsNotConstantExpression( auto_variable_declaration.file_pos_ ) );
-		return auto_variable_declaration.name;
+		return;
 	}
 
 	// Reset constexpr initial value for mutable variables.
 	if( variable.value_type != ValueType::ConstReference )
 		variable.constexpr_value= nullptr;
 
-	if( global && variable.constexpr_value == nullptr )
-	{
-		errors_.push_back( ReportGlobalVariableMustBeConstexpr( auto_variable_declaration.file_pos_, auto_variable_declaration.name ) );
-		return auto_variable_declaration.name;
-	}
-
 	if( NameShadowsTemplateArgument( auto_variable_declaration.name, block_names ) )
 	{
 		errors_.push_back( ReportDeclarationShadowsTemplateArgument( auto_variable_declaration.file_pos_, auto_variable_declaration.name ) );
-		return auto_variable_declaration.name;
+		return;
 	}
 
 	const NamesScope::InsertedName* const inserted_name=
@@ -2289,8 +2246,6 @@ ProgramString CodeBuilder::BuildAutoVariableDeclarationCode(
 
 	// After lock of references we can call destructors.
 	CallDestructors( *function_context.stack_variables_stack.back(), function_context, auto_variable_declaration.file_pos_ );
-
-	return auto_variable_declaration.name;
 }
 
 void CodeBuilder::BuildAssignmentOperatorCode(

@@ -52,9 +52,7 @@ void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::ProgramEl
 		else if( const auto type_template= dynamic_cast<const Synt::TypeTemplateBase*>( program_element.get() ) )
 			NamesScopeFill( names_scope, *type_template, nullptr );
 		else if( const auto function_template= 	dynamic_cast<const Synt::FunctionTemplate*>( program_element.get() ) )
-		{
 			NamesScopeFill( names_scope, *function_template, nullptr );
-		}
 		else U_ASSERT(false);
 	}
 }
@@ -90,9 +88,7 @@ void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::AutoVaria
 void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::Function& function_declaration, const ClassProxyPtr base_class, ClassMemberVisibility visibility )
 {
 	if( function_declaration.name_.components.size() != 1u )
-	{
-		return; // TODO - process body functions later.
-	}
+		return; // process out of line functions later.
 
 	const ProgramString& func_name= function_declaration.name_.components.back().name;
 
@@ -268,7 +264,7 @@ ClassProxyPtr CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::
 			}
 			else if( const auto inner_class= dynamic_cast<const Synt::Class*>( member.get() ) )
 				NamesScopeFill( the_class.members, *inner_class );
-			else U_ASSERT(false); // TODO - process another members.
+			else U_ASSERT(false);
 		} // for class elements
 	}
 
