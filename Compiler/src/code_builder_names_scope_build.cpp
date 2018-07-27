@@ -100,7 +100,9 @@ void CodeBuilder::NamesScopeBuildFunctionsSet( NamesScope& names_scope, Overload
 	if( functions_set.is_incomplete )
 	{
 		for( const Synt::Function* const function : functions_set.syntax_elements )
-			NamesScopeBuildFunction( names_scope, functions_set.base_class, functions_set, *function );
+			NamesScopeBuildFunction( names_scope, functions_set.base_class, functions_set, *function, false );
+		for( const Synt::Function* const function : functions_set.out_of_line_syntax_elements )
+			NamesScopeBuildFunction( names_scope, functions_set.base_class, functions_set, *function, true );
 		for( const Synt::FunctionTemplate* const function_template : functions_set.template_syntax_elements )
 			PrepareFunctionTemplate( *function_template, functions_set, names_scope, functions_set.base_class );
 		functions_set.is_incomplete= false;
@@ -130,7 +132,8 @@ void CodeBuilder::NamesScopeBuildFunction(
 	NamesScope& names_scope,
 	const ClassProxyPtr base_class,
 	OverloadedFunctionsSet& functions_set,
-	const Synt::Function& func )
+	const Synt::Function& func,
+	const bool is_out_of_line_function )
 {
 	const ProgramString& func_name= func.name_.components.back().name;
 	const bool is_constructor= func_name == Keywords::constructor_;
@@ -267,8 +270,7 @@ void CodeBuilder::NamesScopeBuildFunction(
 
 	} // end prepare function type
 
-	// Check virtual.
-	// TODO - maybe do this in other place?
+	// Set virtual.
 	if( func.virtual_function_kind_ != Synt::VirtualFunctionKind::None )
 	{
 		if( base_class == nullptr )
@@ -279,6 +281,10 @@ void CodeBuilder::NamesScopeBuildFunction(
 			errors_.push_back( ReportFunctionCanNotBeVirtual( func.file_pos_, func_name ) );
 		if( base_class != nullptr && ( base_class->class_->kind == Class::Kind::Struct || base_class->class_->kind == Class::Kind::NonPolymorph ) )
 			errors_.push_back( ReportVirtualForNonpolymorphClass( func.file_pos_, func_name ) );
+		if( is_out_of_line_function )
+			errors_.push_back( ReportVirtualForFunctionImplementation( func.file_pos_, func_name ) );
+
+		func_variable.virtual_function_kind= func.virtual_function_kind_;
 	}
 
 	// Check "=default" / "=delete".
@@ -308,8 +314,6 @@ void CodeBuilder::NamesScopeBuildFunction(
 		}
 	}
 
-	// TODO - process visibility
-
 	if( FunctionVariable* const prev_function= GetFunctionWithSameType( *func_variable.type.GetFunctionType(), functions_set ) )
 	{
 			 if( prev_function->syntax_element->block_ == nullptr && func.block_ != nullptr )
@@ -324,10 +328,23 @@ void CodeBuilder::NamesScopeBuildFunction(
 		else if( prev_function->syntax_element->block_ == nullptr && func.block_ == nullptr )
 			errors_.push_back( ReportFunctionPrototypeDuplication( func.file_pos_, func_name ) );
 		else if( prev_function->syntax_element->block_ != nullptr && func.block_ != nullptr )
-			errors_.push_back( ReportFunctionPrototypeDuplication( func.file_pos_, func_name ) );
+			errors_.push_back( ReportFunctionBodyDuplication( func.file_pos_, func_name ) );
+
+		if( !is_out_of_line_function ) // Previous function must be out of line. Set virtual specifier for it.
+			prev_function->virtual_function_kind= func.virtual_function_kind_;
+		else
+		{
+			// TODO - produce error, if it out of line is body for virtual function.
+		}
+		// TODO - produce error, if function with prototype and implementation inside class have different virtual function kind.
 	}
 	else
 	{
+		if( is_out_of_line_function )
+		{
+			errors_.push_back( ReportFunctionDeclarationOutsideItsScope( func.file_pos_ ) );
+			return;
+		}
 		const bool overloading_ok= ApplyOverloadedFunction( functions_set, func_variable, func.file_pos_ );
 		if( !overloading_ok )
 			return;
@@ -517,12 +534,8 @@ void CodeBuilder::NamesScopeBuildClass( const ClassProxyPtr class_type, const Ty
 
 					PrepareFunctionResult prepare_function_result; // TODO - remove "PrepareFunctionResult"
 					prepare_function_result.functions_set= functions_set;
-					for( const FunctionVariable& function : functions_set->functions )
-					{
-						prepare_function_result.func_syntax_element= function.syntax_element;
-						prepare_function_result.function_index= static_cast<size_t>(&function - functions_set->functions.data());
-						ProcessClassVirtualFunction( the_class, prepare_function_result );
-					}
+					for( FunctionVariable& function : functions_set->functions )
+						ProcessClassVirtualFunction( the_class, function );
 				}
 				else if( const auto* type= name.second.GetTypeName() )
 				{
@@ -749,6 +762,8 @@ void CodeBuilder::NamesScopeBuildClass( const ClassProxyPtr class_type, const Ty
 		}
 
 		the_class.llvm_type->setBody( fields_llvm_types );
+
+		BuildClassVirtualTables( the_class, class_type );
 
 		the_class.completeness= TypeCompleteness::Complete;
 

@@ -249,6 +249,7 @@ bool operator!=( const Array& r, const Array& l );
 struct FunctionVariable final
 {
 	const Synt::Function* syntax_element= nullptr;
+	Synt::VirtualFunctionKind virtual_function_kind= Synt::VirtualFunctionKind::None;
 
 	enum class ConstexprKind
 	{
@@ -284,6 +285,7 @@ struct OverloadedFunctionsSet
 	std::vector<FunctionTemplatePtr> template_functions;
 
 	std::vector<const Synt::Function*> syntax_elements;
+	std::vector<const Synt::Function*> out_of_line_syntax_elements;
 	std::vector<const Synt::FunctionTemplate*> template_syntax_elements;
 
 	ClassProxyPtr base_class;

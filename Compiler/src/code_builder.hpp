@@ -153,7 +153,7 @@ private:
 	// Virtual stuff
 	void ProcessClassParentsVirtualTables( Class& the_class );
 	void TryGenerateDestructorPrototypeForPolymorphClass( Class& the_class, const Type& class_type );
-	void ProcessClassVirtualFunction( Class& the_class, PrepareFunctionResult& function );
+	void ProcessClassVirtualFunction( Class& the_class, FunctionVariable& function );
 	void PrepareClassVirtualTableType( Class& the_class );
 	void BuildClassVirtualTables_r( Class& the_class, const Type& class_type, const std::vector< ClassProxyPtr >& dst_class_path, llvm::Value* dst_class_ptr_null_based );
 	void BuildClassVirtualTables( Class& the_class, const Type& class_type ); // Returns type of vtable pointer or nullptr.
@@ -786,7 +786,7 @@ private:
 
 	void NamesScopeBuild( NamesScope& names_scope );
 	void NamesScopeBuildFunctionsSet( NamesScope& names_scope, OverloadedFunctionsSet& functions_set, bool build_body );
-	void NamesScopeBuildFunction( NamesScope& names_scope, ClassProxyPtr base_class, OverloadedFunctionsSet& functions_set, const Synt::Function& function_declaration );
+	void NamesScopeBuildFunction( NamesScope& names_scope, ClassProxyPtr base_class, OverloadedFunctionsSet& functions_set, const Synt::Function& function_declaration, bool is_out_of_line_function );
 	void NamesScopeBuildClass( ClassProxyPtr class_type, TypeCompleteness completeness );
 	void NamesScopeBuildEnum( const EnumPtr& enum_, TypeCompleteness completeness );
 	void NamesScopeBuildTypetemplatesSet( NamesScope& names_scope, TypeTemplatesSet& type_templates_set );

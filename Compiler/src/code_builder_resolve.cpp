@@ -145,7 +145,8 @@ const NamesScope::InsertedName* CodeBuilder::ResolveName(
 						errors_.push_back( ReportUsingIncompleteType( file_pos, type->ToString() ) );
 						return nullptr;
 					}
-					NamesScopeBuildClass( type->GetClassTypeProxy(), TypeCompleteness::Complete );
+					if( !for_declaration )
+						NamesScopeBuildClass( type->GetClassTypeProxy(), TypeCompleteness::Complete );
 				}
 				next_space= &class_->members;
 				next_space_class= type->GetClassTypeProxy();

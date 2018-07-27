@@ -344,7 +344,7 @@ void CodeBuilder::NamesScopeFillOutOfLineElements( NamesScope& names_scope, cons
 					errors_.push_back( ReportFunctionDeclarationOutsideItsScope( func->file_pos_ ) );
 					continue;
 				}
-				const_cast<OverloadedFunctionsSet*>(func_name->second.GetFunctionsSet())->syntax_elements.push_back(func); // TODO - remove const_cast
+				const_cast<OverloadedFunctionsSet*>(func_name->second.GetFunctionsSet())->out_of_line_syntax_elements.push_back(func); // TODO - remove const_cast
 			}
 		}
 		else if( const auto namespace_= dynamic_cast<const Synt::Namespace*>( program_element.get() ) )
