@@ -340,20 +340,19 @@ def ClassTypesInfo_Test4():
 		i32 z;
 	}
 
-	auto &constexpr ti_a= typeinfo</A/>;
-	static_assert( GetVisibility( ti_a.functions_list, "Foo" ).is_public );
-	static_assert( GetVisibility( ti_a.types_list, "T0" ).is_public );
-	static_assert( GetVisibility( ti_a.fields_list, "x" ).is_public );
-	static_assert( GetVisibility( ti_a.functions_list, "Bar" ).is_protected );
-	static_assert( GetVisibility( ti_a.types_list, "T1" ).is_protected );
-	static_assert( GetVisibility( ti_a.fields_list, "y" ).is_protected );
-	static_assert( GetVisibility( ti_a.functions_list, "Baz" ).is_private );
-	static_assert( GetVisibility( ti_a.types_list, "T2" ).is_private );
-	static_assert( GetVisibility( ti_a.fields_list, "z" ).is_private );
+	static_assert( GetVisibility( typeinfo</A/>.functions_list, "Foo" ).is_public );
+	static_assert( GetVisibility( typeinfo</A/>.types_list, "T0" ).is_public );
+	static_assert( GetVisibility( typeinfo</A/>.fields_list, "x" ).is_public );
+	static_assert( GetVisibility( typeinfo</A/>.functions_list, "Bar" ).is_protected );
+	static_assert( GetVisibility( typeinfo</A/>.types_list, "T1" ).is_protected );
+	static_assert( GetVisibility( typeinfo</A/>.fields_list, "y" ).is_protected );
+	static_assert( GetVisibility( typeinfo</A/>.functions_list, "Baz" ).is_private );
+	static_assert( GetVisibility( typeinfo</A/>.types_list, "T2" ).is_private );
+	static_assert( GetVisibility( typeinfo</A/>.fields_list, "z" ).is_private );
 
-	static_assert( !GetVisibility( ti_a.fields_list, "z" ).is_public );
-	static_assert( !GetVisibility( ti_a.types_list, "T1" ).is_public );
-	static_assert( !GetVisibility( ti_a.functions_list, "Foo" ).is_private );
+	static_assert( !GetVisibility( typeinfo</A/>.fields_list, "z" ).is_public );
+	static_assert( !GetVisibility( typeinfo</A/>.types_list, "T1" ).is_public );
+	static_assert( !GetVisibility( typeinfo</A/>.functions_list, "Foo" ).is_private );
 	"""
 	tests_lib.build_program( c_program_text )
 

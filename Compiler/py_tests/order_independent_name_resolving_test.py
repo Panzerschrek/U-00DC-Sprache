@@ -136,3 +136,13 @@ def OrderIndependent_Typedef_Test1():
 	tests_lib.build_program( c_program_text )
 	call_result= tests_lib.run_function( "_Z3Foov" )
 	assert( call_result == 653524 )
+
+
+def OrederIndependent_RecursiveTypedef_Test0():
+	c_program_text= """
+		struct S
+		{
+			type Self= S;
+		}
+	"""
+	tests_lib.build_program( c_program_text )

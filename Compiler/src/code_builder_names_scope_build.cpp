@@ -69,8 +69,13 @@ void CodeBuilder::NamesScopeBuild( NamesScope& names_scope )
 				{}
 				else if( const ClassProxyPtr class_type= type->GetClassTypeProxy() )
 				{
-					NamesScopeBuildClass( class_type, TypeCompleteness::Complete );
-					NamesScopeBuild( class_type->class_->members );
+					// Build classes only from parent namespace.
+					// Otherwise we can get loop, using typedef.
+					if( class_type->class_->members.GetParent() == &names_scope )
+					{
+						NamesScopeBuildClass( class_type, TypeCompleteness::Complete );
+						NamesScopeBuild( class_type->class_->members );
+					}
 				}
 				else if( const EnumPtr enum_type= type->GetEnumTypePtr() )
 					NamesScopeBuildEnum( enum_type, TypeCompleteness::Complete );
@@ -519,6 +524,10 @@ void CodeBuilder::NamesScopeBuildClass( const ClassProxyPtr class_type, const Ty
 					class_field->is_mutable= in_field.mutability_modifier == Synt::MutabilityModifier::Mutable;
 				else // But value-fields are mutable by default
 					class_field->is_mutable= in_field.mutability_modifier != Synt::MutabilityModifier::Immutable;
+
+				// TODO - One problem exists here.
+				// For constexpr check for reference fields we needs complete types. But we can not call EnsureTypeCompleteness here, because reference field with non-complete type is ok.
+				// Maybe disable by-default constexpr possibility for reference fields and require explicit "constexpr" word?
 
 				// Disable constexpr, if field can not be constexpr, or if field is mutable reference.
 				if( !class_field->type.CanBeConstexpr() || ( class_field->is_reference && class_field->is_mutable ) )
