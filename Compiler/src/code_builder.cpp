@@ -442,10 +442,12 @@ void CodeBuilder::CopyClass(
 	// Copy fields.
 	copy->members_visibility= src.members_visibility;
 
+	copy->syntax_element= src.syntax_element;
 	copy->field_count= src.field_count;
 	copy->references_tags_count= src.references_tags_count;
 	copy->completeness= src.completeness;
 
+	copy->is_typeinfo= src.is_typeinfo;
 	copy->have_explicit_noncopy_constructors= src.have_explicit_noncopy_constructors;
 	copy->is_default_constructible= src.is_default_constructible;
 	copy->is_copy_constructible= src.is_copy_constructible;
@@ -1361,6 +1363,9 @@ void CodeBuilder::BuildFuncCode(
 		// Check function type and function body.
 		// Function type checked here, because in case of constexpr methods not all types are complete yet.
 
+		if( function_type->return_type != void_type_for_ret_ && !EnsureTypeCompleteness( function_type->return_type, TypeCompleteness::Complete ) )
+			errors_.push_back( ReportUsingIncompleteType( func_variable.body_file_pos, function_type->return_type.ToString() ) ); // Completeness required for constexpr possibility check.
+
 		bool can_be_constexpr= true;
 		if( function_type->unsafe ||
 			!function_type->return_type.CanBeConstexpr() ||
@@ -1369,6 +1374,9 @@ void CodeBuilder::BuildFuncCode(
 
 		for( const Function::Arg& arg : function_type->args )
 		{
+			if( arg.type != void_type_ && !EnsureTypeCompleteness( arg.type, TypeCompleteness::Complete ) )
+				errors_.push_back( ReportUsingIncompleteType( func_variable.body_file_pos, arg.type.ToString() ) ); // Completeness required for constexpr possibility check.
+
 			if( !arg.type.CanBeConstexpr() ) // Incomplete types are not constexpr.
 				can_be_constexpr= false; // Allowed only constexpr types.
 			if( arg.type == void_type_ ) // Disallow "void" arguments, because we currently can not constantly convert any reference to "void" in constexpr function call.

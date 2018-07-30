@@ -46,17 +46,7 @@ Variable CodeBuilder::BuildTypeInfo( const Type& type, const NamesScope& root_na
 			return cache_value.second;
 
 	typeinfo_cache_.push_back( std::make_pair( type, BuildTypeinfoPrototype( type, root_namespace ) ) );
-
-	Variable result= typeinfo_cache_.back().second;
-
-	if( !type.IsIncomplete() || type == void_type_ )
-	{
-		const size_t index= typeinfo_cache_.size() - 1u;
-		BuildFullTypeinfo( type, result, root_namespace );
-		typeinfo_cache_[index].second= result;
-	}
-
-	return result;
+	return typeinfo_cache_.back().second;
 }
 
 ClassProxyPtr CodeBuilder::CreateTypeinfoClass( const NamesScope& root_namespace )
@@ -71,6 +61,7 @@ ClassProxyPtr CodeBuilder::CreateTypeinfoClass( const NamesScope& root_namespace
 	llvm_type->setName( ToStdString( typeinfo_class_name ) );
 
 	typeinfo_class_proxy->class_->references_tags_count= 1u; // Almost all typeinfo have references to another typeinfo.
+	typeinfo_class_proxy->class_->completeness=  TypeCompleteness::ReferenceTagsComplete;
 
 	return typeinfo_class_proxy;
 }
@@ -80,6 +71,7 @@ Variable CodeBuilder::BuildTypeinfoPrototype( const Type& type, const NamesScope
 	U_UNUSED(type);
 
 	const ClassProxyPtr typeinfo_class_proxy= CreateTypeinfoClass( root_namespace );
+	typeinfo_class_proxy->class_->is_typeinfo= true;
 	Variable result( typeinfo_class_proxy, Variable::Location::Pointer, ValueType::ConstReference );
 
 	result.constexpr_value= llvm::UndefValue::get( typeinfo_class_proxy->class_->llvm_type ); // Currently uninitialized.
@@ -94,7 +86,12 @@ Variable CodeBuilder::BuildTypeinfoPrototype( const Type& type, const NamesScope
 
 void CodeBuilder::BuildFullTypeinfo( const Type& type, Variable& typeinfo_variable, const NamesScope& root_namespace )
 {
-	U_ASSERT( !type.IsIncomplete() || type == void_type_ );
+	if( type != void_type_ && !EnsureTypeCompleteness( type, TypeCompleteness::Complete ) )
+	{
+		errors_.push_back( ReportUsingIncompleteType( g_dummy_file_pos, type.ToString() ) ); // TODO - use correct file_pos
+		return;
+	}
+
 	U_ASSERT( typeinfo_variable.type.GetClassType() != nullptr );
 
 	const ClassProxyPtr typeinfo_class_proxy= typeinfo_variable.type.GetClassTypeProxy();
@@ -244,8 +241,6 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, Variable& typeinfo_variab
 	// Prepare result value
 	typeinfo_variable.constexpr_value= llvm::ConstantStruct::get( typeinfo_class.llvm_type, fields_initializers );
 	llvm::dyn_cast<llvm::GlobalVariable>(typeinfo_variable.llvm_value)->setInitializer( typeinfo_variable.constexpr_value );
-
-	UpdateTypeinfoForDependentTypes( typeinfo_class_proxy );
 }
 
 const Variable& CodeBuilder::GetTypeinfoListEndNode( const NamesScope& root_namespace )
@@ -746,22 +741,6 @@ Variable CodeBuilder::BuildTypeinfoFunctionArguments( const Function& function_t
 	}
 
 	return head;
-}
-
-void CodeBuilder::UpdateTypeinfoForDependentTypes( const ClassProxyPtr& class_type )
-{
-	for( size_t i= 0u; i < typeinfo_cache_.size(); ++i )
-	{
-		if( TypeIsClassOrArrayOfClasses( class_type, typeinfo_cache_[i].first ) )
-		{
-			if( typeinfo_cache_[i].second.type.IsIncomplete() )
-			{
-				Variable typeinfo_variable= typeinfo_cache_[i].second;
-				BuildFullTypeinfo( typeinfo_cache_[i].first, typeinfo_variable, *typeinfo_variable.type.GetClassType()->members.GetRoot() );
-				typeinfo_cache_[i].second= typeinfo_variable;
-			}
-		}
-	}
 }
 
 } // namespace CodeBuilderPrivate

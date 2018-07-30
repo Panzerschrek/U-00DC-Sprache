@@ -1,4 +1,5 @@
 #pragma once
+#include <list>
 #include <set>
 #include <vector>
 #include <unordered_map>
@@ -495,7 +496,6 @@ private:
 	Variable BuildTypeinfoClassFunctionsList( const ClassProxyPtr& class_type, const NamesScope& root_namespace );
 	Variable BuildeTypeinfoClassParentsList( const ClassProxyPtr& class_type, const NamesScope& root_namespace );
 	Variable BuildTypeinfoFunctionArguments( const Function& function_type, const NamesScope& root_namespace );
-	void UpdateTypeinfoForDependentTypes( const ClassProxyPtr& class_type );
 
 	// Block elements
 
@@ -802,7 +802,7 @@ private:
 
 	// We needs to generate same typeinfo classes for same types. Use cache for it.
 	// TODO - create hasher for type and use unordered_map.
-	std::vector< std::pair< Type, Variable > > typeinfo_cache_;
+	std::list< std::pair< Type, Variable > > typeinfo_cache_;
 	boost::optional< Variable > typeinfo_list_end_node_; // Lazy initialized.
 	llvm::GlobalVariable* typeinfo_is_end_variable_[2u]= { nullptr, nullptr }; // Lazy initialized.
 };

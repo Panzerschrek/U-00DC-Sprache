@@ -465,7 +465,7 @@ const NamesScope::InsertedName* CodeBuilder::ResolveForTemplateSignatureParamete
 			{
 				if( component_count >= 2u )
 				{
-					if( class_->syntax_element->is_forward_declaration_  )
+					if( class_->syntax_element != nullptr && class_->syntax_element->is_forward_declaration_ )
 					{
 						errors_.push_back( ReportUsingIncompleteType( file_pos, type->ToString() ) );
 						return nullptr;

@@ -1884,7 +1884,20 @@ Value CodeBuilder::BuildMemberAccessOperator(
 
 	if( variable.constexpr_value != nullptr )
 	{
-		result.constexpr_value= variable.constexpr_value->getAggregateElement( static_cast<unsigned int>( field->index ) );
+		llvm::Constant* var_constexpr_value= variable.constexpr_value;
+		if( class_type->is_typeinfo ) // HACK!!! Replace old constexpr value with new for typeinfo, because constexpr value for incomplete type may be undef.
+		{
+			for( const auto& typeinfo_cache_entry : typeinfo_cache_ )
+			{
+				if( typeinfo_cache_entry.second.type == variable.type )
+				{
+					var_constexpr_value= typeinfo_cache_entry.second.constexpr_value;
+					break;
+				}
+			}
+		}
+
+		result.constexpr_value= var_constexpr_value->getAggregateElement( static_cast<unsigned int>( field->index ) );
 		if( field->is_reference )
 		{
 			// TODO - what if storage for constexpr reference valus is not "GlobalVariable"?

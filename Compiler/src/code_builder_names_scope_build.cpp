@@ -31,7 +31,7 @@ bool CodeBuilder::EnsureTypeCompleteness( const Type& type, const TypeCompletene
 			return fundamental_type->fundamental_type != U_FundamentalType::Void;
 		return true;
 	}
-	else if( type.GetFunctionPointerType() != nullptr )
+	else if( type.GetFunctionType() != nullptr || type.GetFunctionPointerType() != nullptr )
 		return true;
 	else if( const auto enum_type= type.GetEnumTypePtr() )
 	{
@@ -401,8 +401,24 @@ void CodeBuilder::NamesScopeBuildClass( const ClassProxyPtr class_type, const Ty
 
 	if( completeness <= the_class.completeness ||
 		completeness == TypeCompleteness::Incomplete ||
-		the_class.syntax_element->is_forward_declaration_ )
+		( the_class.syntax_element != nullptr && the_class.syntax_element->is_forward_declaration_ ) )
 		return;
+
+	if( the_class.is_typeinfo )
+	{
+		if( completeness <= TypeCompleteness::ReferenceTagsComplete )
+			return;
+
+		for( auto& typeinfo_cache_entry : typeinfo_cache_ )
+		{
+			if( typeinfo_cache_entry.second.type == class_type )
+			{
+				BuildFullTypeinfo( typeinfo_cache_entry.first, typeinfo_cache_entry.second, *class_type->class_->members.GetRoot() );
+				return;
+			}
+		}
+		U_ASSERT(false);
+	}
 
 	const Synt::Class& class_declaration= *the_class.syntax_element;
 	const ProgramString& class_name= class_declaration.name_.components.back().name;
