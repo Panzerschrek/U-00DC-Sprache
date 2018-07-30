@@ -1937,11 +1937,15 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 
 	for( const Synt::VariablesDeclaration::VariableEntry& variable_declaration : variables_declaration.variables )
 	{
-		// Report about incomplete type only for values, not references.
-		if( !EnsureTypeCompleteness( type, variable_declaration.reference_modifier == ReferenceModifier::Reference ? TypeCompleteness::Incomplete : TypeCompleteness::Complete ) )
+		if( variable_declaration.reference_modifier != ReferenceModifier::Reference ||
+			variable_declaration.mutability_modifier == Synt::MutabilityModifier::Constexpr )
 		{
-			errors_.push_back( ReportUsingIncompleteType( variables_declaration.file_pos_, type.ToString() ) );
-			continue;
+			// Full completeness required for value-variables and any constexpr variable.
+			if( !EnsureTypeCompleteness( type, TypeCompleteness::Complete ) )
+			{
+				errors_.push_back( ReportUsingIncompleteType( variables_declaration.file_pos_, type.ToString() ) );
+				continue;
+			}
 		}
 
 		if( variable_declaration.reference_modifier != ReferenceModifier::Reference && !type.CanBeConstexpr() )
@@ -2137,6 +2141,17 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 	variable.value_type= auto_variable_declaration.mutability_modifier == MutabilityModifier::Mutable ? ValueType::Reference : ValueType::ConstReference;
 	variable.location= Variable::Location::Pointer;
 
+	if( auto_variable_declaration.reference_modifier != ReferenceModifier::Reference ||
+		auto_variable_declaration.mutability_modifier == Synt::MutabilityModifier::Constexpr )
+	{
+		// Full completeness required for value-variables and any constexpr variable.
+		if( !EnsureTypeCompleteness( variable.type, TypeCompleteness::Complete ) )
+		{
+			errors_.push_back( ReportUsingIncompleteType( auto_variable_declaration.file_pos_, variable.type.ToString() ) );
+			return;
+		}
+	}
+
 	if( auto_variable_declaration.mutability_modifier == MutabilityModifier::Constexpr && !variable.type.CanBeConstexpr() )
 	{
 		errors_.push_back( ReportInvalidTypeForConstantExpressionVariable( auto_variable_declaration.file_pos_ ) );
@@ -2169,12 +2184,6 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 	else if( auto_variable_declaration.reference_modifier == ReferenceModifier::None )
 	{	
 		VariablesState::VariableReferences moved_variable_referenced_variables;
-
-		if( !EnsureTypeCompleteness( variable.type, TypeCompleteness::Complete ) )
-		{
-			errors_.push_back( ReportUsingIncompleteType( auto_variable_declaration.file_pos_, variable.type.ToString() ) );
-			return;
-		}
 
 		if( !variable.type.CanBeConstexpr() )
 			function_context.have_non_constexpr_operations_inside= true; // Declaring variable with non-constexpr type in constexpr function not allowed.

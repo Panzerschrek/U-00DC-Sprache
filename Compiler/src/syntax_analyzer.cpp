@@ -2813,8 +2813,10 @@ std::unique_ptr<Class> SyntaxAnalyzer::ParseClassBody()
 
 			field->type= ParseTypeName();
 
+			bool is_reference= false;
 			if( it_->type == Lexem::Type::And )
 			{
+				is_reference= true;
 				NextLexem();
 				field->reference_modifier= ReferenceModifier::Reference;
 			}
@@ -2830,6 +2832,11 @@ std::unique_ptr<Class> SyntaxAnalyzer::ParseClassBody()
 				{
 					NextLexem();
 					field->mutability_modifier= MutabilityModifier::Immutable;
+				}
+				if( is_reference && it_->text == Keywords::constexpr_ ) // Allow "constexpr" modifier only for reference fields.
+				{
+					NextLexem();
+					field->mutability_modifier= MutabilityModifier::Constexpr;
 				}
 			}
 

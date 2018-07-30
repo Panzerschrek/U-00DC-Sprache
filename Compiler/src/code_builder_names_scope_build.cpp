@@ -514,20 +514,20 @@ void CodeBuilder::NamesScopeBuildClass( const ClassProxyPtr class_type, const Ty
 				class_field->is_reference= in_field.reference_modifier == Synt::ReferenceModifier::Reference;
 				class_field->type= PrepareType( class_field->syntax_element->type, the_class.members );
 
-				if( !EnsureTypeCompleteness( class_field->type, class_field->is_reference ? TypeCompleteness::Incomplete : TypeCompleteness::Complete ) )
+				if( !class_field->is_reference || in_field.mutability_modifier == Synt::MutabilityModifier::Constexpr )
 				{
-					errors_.push_back( ReportUsingIncompleteType( in_field.file_pos_, class_field->type.ToString() ) );
-					return;
+					// Full type completeness required for value-fields and constexpr reference-fields.
+					if( !EnsureTypeCompleteness( class_field->type, TypeCompleteness::Complete ) )
+					{
+						errors_.push_back( ReportUsingIncompleteType( in_field.file_pos_, class_field->type.ToString() ) );
+						return;
+					}
 				}
 
 				if( class_field->is_reference ) // Reference-fields are immutable by default
 					class_field->is_mutable= in_field.mutability_modifier == Synt::MutabilityModifier::Mutable;
 				else // But value-fields are mutable by default
 					class_field->is_mutable= in_field.mutability_modifier != Synt::MutabilityModifier::Immutable;
-
-				// TODO - One problem exists here.
-				// For constexpr check for reference fields we needs complete types. But we can not call EnsureTypeCompleteness here, because reference field with non-complete type is ok.
-				// Maybe disable by-default constexpr possibility for reference fields and require explicit "constexpr" word?
 
 				// Disable constexpr, if field can not be constexpr, or if field is mutable reference.
 				if( !class_field->type.CanBeConstexpr() || ( class_field->is_reference && class_field->is_mutable ) )
@@ -963,8 +963,7 @@ void CodeBuilder::NamesScopeBuildGlobalVariable( NamesScope& names_scope, Value&
 		}
 
 		const Type type= PrepareType( variables_declaration->type, names_scope );
-		// Report about incomplete type only for values, not references.
-		if( !EnsureTypeCompleteness( type, variable_declaration.reference_modifier == ReferenceModifier::Reference ? TypeCompleteness::Incomplete : TypeCompleteness::Complete ) )
+		if( !EnsureTypeCompleteness( type, TypeCompleteness::Complete ) ) // Global variables are all constexpr. Full completeness required for constexpr.
 		{
 			errors_.push_back( ReportUsingIncompleteType( variable_declaration.file_pos, type.ToString() ) );
 			return;
@@ -1129,8 +1128,7 @@ void CodeBuilder::NamesScopeBuildGlobalVariable( NamesScope& names_scope, Value&
 		variable.value_type= ValueType::ConstReference;
 		variable.location= Variable::Location::Pointer;
 
-		// Report about incomplete type only for values, not references.
-		if( !EnsureTypeCompleteness( variable.type, auto_variable_declaration->reference_modifier == ReferenceModifier::Reference ? TypeCompleteness::Incomplete : TypeCompleteness::Complete ) )
+		if( !EnsureTypeCompleteness( variable.type, TypeCompleteness::Complete ) ) // Global variables are all constexpr. Full completeness required for constexpr.
 		{
 			errors_.push_back( ReportUsingIncompleteType( auto_variable_declaration->file_pos_, variable.type.ToString() ) );
 			return;

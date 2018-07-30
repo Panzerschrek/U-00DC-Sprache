@@ -48,7 +48,7 @@ def ConstexprStructMemberIsConstexpr_Test2():
 
 def ConstexprReferenceInsideStruct_Test0():
 	c_program_text= """
-		struct S{ u64& r; }
+		struct S{ u64 &constexpr r; }
 
 		auto constexpr x= 999854u64;
 		var S constexpr s{ .r= x };
@@ -61,7 +61,7 @@ def ConstexprReferenceInsideStruct_Test0():
 
 def ConstexprReferenceInsideStruct_Test1():
 	c_program_text= """
-		struct S{ [ i32, 2 ]& r; }
+		struct S{ [ i32, 2 ] &constexpr r; }
 
 		var [ i32, 2 ] constexpr arr[ 999, 77785 ];
 		var S constexpr s{ .r= arr };
