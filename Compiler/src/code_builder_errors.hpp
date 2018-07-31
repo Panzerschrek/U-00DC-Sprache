@@ -46,6 +46,7 @@ enum class CodeBuilderErrorCode : unsigned int
 	ClassDeclarationOutsideItsScope,
 	ClassBodyDuplication,
 	UsingIncompleteType,
+	GlobalsLoopDetected,
 
 	// Visibility
 	AccessingNonpublicClassMember,
@@ -234,6 +235,7 @@ CodeBuilderError ReportFunctionDeclarationOutsideItsScope( const FilePos& file_p
 CodeBuilderError ReportClassDeclarationOutsideItsScope( const FilePos& file_pos );
 CodeBuilderError ReportClassBodyDuplication( const FilePos& file_pos );
 CodeBuilderError ReportUsingIncompleteType( const FilePos& file_pos, const ProgramString& type_name );
+CodeBuilderError ReportGlobalsLoopDetected( const FilePos& file_pos, const ProgramString& loop_description );
 CodeBuilderError ReportAccessingNonpublicClassMember( const FilePos& file_pos, const ProgramString& class_name, const ProgramString& member_name );
 CodeBuilderError ReportFunctionsVisibilityMismatch( const FilePos& file_pos, const ProgramString& function_name );
 CodeBuilderError ReportVisibilityForStruct( const FilePos& file_pos, const ProgramString& struct_name );

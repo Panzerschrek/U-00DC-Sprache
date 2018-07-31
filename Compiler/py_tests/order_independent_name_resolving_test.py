@@ -146,3 +146,81 @@ def OrederIndependent_RecursiveTypedef_Test0():
 		}
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def GlobalsLoopDetected_Test0():
+	c_program_text= """
+		struct S{ S s; }  // Type depends on itself
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "GlobalsLoopDetected" )
+	assert( errors_list[0].file_pos.line == 2 )
+
+
+def GlobalsLoopDetected_Test1():
+	c_program_text= """
+		struct A{ B b; }
+		struct B{ C c; }
+		struct C{ A a; }
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "GlobalsLoopDetected" )
+	#assert( errors_list[0].file_pos.line == 2 )
+
+
+def GlobalsLoopDetected_Test2():
+	c_program_text= """
+		var i32 x= x; // Variable self-initialization
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "GlobalsLoopDetected" )
+	assert( errors_list[0].file_pos.line == 2 )
+
+
+def GlobalsLoopDetected_Test3():
+	c_program_text= """
+		var i32 a= b + 1; // Variables loop.
+		var i32 b= c + 1;
+		var i32 c= d + 1;
+		var i32 d= a + 1;
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "GlobalsLoopDetected" )
+	#assert( errors_list[0].file_pos.line == 2 )
+
+
+def GlobalsLoopDetected_Test4():
+	c_program_text= """
+		type T= T; // Typedef self-initialization.
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "GlobalsLoopDetected" )
+	assert( errors_list[0].file_pos.line == 2 )
+
+
+def GlobalsLoopDetected_Test5():
+	c_program_text= """
+		type A= B; // Typedef loop.
+		type B= C;
+		type C= [ A, 2 ];
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "GlobalsLoopDetected" )
+	#assert( errors_list[0].file_pos.line == 2 )
+
+
+def GlobalsLoopDetected_Test6():
+	c_program_text= """
+		fn constexpr Foo() : u32 { return 2u; }
+		fn Foo( [ i32, Foo() ]& arr ) {}  // Declaration of function inside functions set depends on first function.
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "GlobalsLoopDetected" )
+	#assert( errors_list[0].file_pos.line == 2 )

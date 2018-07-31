@@ -19,11 +19,7 @@ bool operator!=( const CodeBuilderError& l, const CodeBuilderError& r )
 
 bool operator< ( const CodeBuilderError& l, const CodeBuilderError& r )
 {
-	if( l.file_pos.file_index != r.file_pos.file_index )
-		return l.file_pos.file_index < r.file_pos.file_index;
-	if( l.file_pos.line != r.file_pos.line )
-		return l.file_pos.line < r.file_pos.line;
-	return l.file_pos.pos_in_line < r.file_pos.pos_in_line;
+	return l.file_pos < r.file_pos;
 }
 
 const char* CodeBuilderErrorCodeToString( const CodeBuilderErrorCode code )
@@ -94,6 +90,8 @@ const char* CodeBuilderErrorCodeToString( const CodeBuilderErrorCode code )
 		return "ClassBodyDuplication";
 	case CodeBuilderErrorCode::UsingIncompleteType:
 		return "UsingIncompleteType";
+	case CodeBuilderErrorCode::GlobalsLoopDetected:
+		return "GlobalsLoopDetected";
 	case CodeBuilderErrorCode::AccessingNonpublicClassMember:
 		return "AccessingNonpublicClassMember";
 	case CodeBuilderErrorCode::FunctionsVisibilityMismatch:
@@ -696,6 +694,17 @@ CodeBuilderError ReportUsingIncompleteType( const FilePos& file_pos, const Progr
 	error.code= CodeBuilderErrorCode::UsingIncompleteType;
 
 	error.text= "Using incomplete type \""_SpC + type_name + "\", expected complete type."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportGlobalsLoopDetected( const FilePos& file_pos, const ProgramString& loop_description )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::GlobalsLoopDetected;
+
+	error.text= "Globals loop detected:\n"_SpC + loop_description;
 
 	return error;
 }

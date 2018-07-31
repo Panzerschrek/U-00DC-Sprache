@@ -456,6 +456,7 @@ struct IncompleteGlobalVariable
 {
 	const Synt::SyntaxElementBase* syntax_element= nullptr; // VariablesDeclaration or AutoVariableDeclaration
 	size_t element_index= ~0u; // For VariablesDeclaration - index of variable.
+	ProgramString name;
 };
 
 struct YetNotDeducedTemplateArg final

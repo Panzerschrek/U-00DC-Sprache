@@ -20,6 +20,31 @@ static void AddAncestorsAccessRights_r( Class& the_class, const ClassProxyPtr& a
 // CodeBuilder
 //
 
+class GlobalsLoopsDetectorGuard final
+{
+public:
+	GlobalsLoopsDetectorGuard( std::function<void()> function ) : function_(std::move(function)) {}
+	~GlobalsLoopsDetectorGuard(){ function_(); }
+private:
+	std::function<void()> function_;
+};
+#define DETECT_GLOBALS_LOOP( in_thing_ptr, in_name, in_file_pos, in_completeness ) \
+	{ \
+		const void* const thing_ptr_void= static_cast<const void*>(in_thing_ptr); \
+		const FilePos file_pos= in_file_pos; \
+		for( const GlobalThing& prev_thing : global_things_stack_ ) \
+		{ \
+			if( prev_thing.thing_ptr == thing_ptr_void && prev_thing.completeness == in_completeness ) \
+			{ \
+				NamesScopeReportAboutLoop( size_t( &prev_thing - global_things_stack_.data() ), in_name, in_file_pos ); \
+				return; \
+			} \
+		} \
+		global_things_stack_.emplace_back( thing_ptr_void, in_name, file_pos, in_completeness ); \
+	} \
+	GlobalsLoopsDetectorGuard glbals_loop_detector_guard( [this]{ global_things_stack_.pop_back(); } );
+
+
 bool CodeBuilder::EnsureTypeCompleteness( const Type& type, const TypeCompleteness completeness )
 {
 	if( completeness == TypeCompleteness::Incomplete )
@@ -104,6 +129,20 @@ void CodeBuilder::NamesScopeBuildFunctionsSet( NamesScope& names_scope, Overload
 {
 	if( functions_set.is_incomplete )
 	{
+		FilePos functions_set_file_pos{ 0u, 0u, 0u };
+		ProgramString functions_set_name;
+		if( !functions_set.syntax_elements.empty() )
+		{
+			functions_set_file_pos= functions_set.syntax_elements.front()->file_pos_;
+			functions_set_name= functions_set.syntax_elements.front()->name_.components.back().name;
+		}
+		else if( !functions_set.template_syntax_elements.empty() )
+		{
+			functions_set_file_pos= functions_set.template_syntax_elements.front()->file_pos_;
+			functions_set_name= functions_set.template_syntax_elements.front()->function_->name_.components.back().name;
+		}
+		DETECT_GLOBALS_LOOP( &functions_set, functions_set_name, functions_set_file_pos, TypeCompleteness::Complete );
+
 		for( const Synt::Function* const function : functions_set.syntax_elements )
 			NamesScopeBuildFunction( names_scope, functions_set.base_class, functions_set, *function, false );
 		for( const Synt::Function* const function : functions_set.out_of_line_syntax_elements )
@@ -430,6 +469,8 @@ void CodeBuilder::NamesScopeBuildClass( const ClassProxyPtr class_type, const Ty
 
 	if( completeness >= TypeCompleteness::ReferenceTagsComplete )
 	{
+		DETECT_GLOBALS_LOOP( &the_class, the_class.members.GetThisNamespaceName(), the_class.body_file_pos, TypeCompleteness::ReferenceTagsComplete );
+
 		NamesScope& class_parent_namespace= const_cast<NamesScope&>(*the_class.members.GetParent()); // TODO - remove const cast
 		for( const Synt::ComplexName& parent : class_declaration.parents_ )
 		{
@@ -556,6 +597,8 @@ void CodeBuilder::NamesScopeBuildClass( const ClassProxyPtr class_type, const Ty
 
 	if( completeness == TypeCompleteness::Complete )
 	{
+		DETECT_GLOBALS_LOOP( &the_class, the_class.members.GetThisNamespaceName(), the_class.body_file_pos, TypeCompleteness::Complete );
+
 		// Fill llvm struct type fields
 		std::vector<llvm::Type*> fields_llvm_types;
 		for( const ClassProxyPtr& parent : the_class.parents )
@@ -576,7 +619,12 @@ void CodeBuilder::NamesScopeBuildClass( const ClassProxyPtr class_type, const Ty
 					if( class_field->is_reference )
 						fields_llvm_types.emplace_back( llvm::PointerType::get( class_field->type.GetLLVMType(), 0u ) );
 					else
-						fields_llvm_types.emplace_back( class_field->type.GetLLVMType() );
+					{
+						if( !class_field->type.GetLLVMType()->isSized() )
+							fields_llvm_types.emplace_back( fundamental_llvm_types_.i8 );// May be in case of error (such dependency loop )
+						else
+							fields_llvm_types.emplace_back( class_field->type.GetLLVMType() );
+					}
 				}
 			});
 
@@ -858,6 +906,8 @@ void CodeBuilder::NamesScopeBuildEnum( const EnumPtr& enum_, TypeCompleteness co
 	if( !enum_->is_incomplete )
 		return;
 
+	DETECT_GLOBALS_LOOP( enum_.get(), enum_->members.GetThisNamespaceName(), enum_->syntax_element->file_pos_, TypeCompleteness::Complete );
+
 	// Default underlaying type is 32bit. TODO - maybe do it platform-dependent?
 	enum_->underlaying_type= FundamentalType( U_FundamentalType::u32, fundamental_llvm_types_.u32 );
 
@@ -928,6 +978,8 @@ void CodeBuilder::NamesScopeBuildTypeTemplatesSet( NamesScope& names_scope, Type
 	if( !type_templates_set.is_incomplete )
 		return;
 
+	DETECT_GLOBALS_LOOP( &type_templates_set, type_templates_set.syntax_elements.front()->name_, type_templates_set.syntax_elements.front()->file_pos_, TypeCompleteness::Complete );
+
 	for( const auto syntax_element : type_templates_set.syntax_elements )
 		PrepareTypeTemplate( *syntax_element, type_templates_set, names_scope );
 
@@ -939,6 +991,8 @@ void CodeBuilder::NamesScopeBuildTypedef( NamesScope& names_scope, Value& typede
 	U_ASSERT( typedef_value.GetTypedef() != nullptr );
 	const Synt::Typedef& syntax_element= *typedef_value.GetTypedef()->syntax_element;
 
+	DETECT_GLOBALS_LOOP( &typedef_value, syntax_element.name, typedef_value.GetFilePos(), TypeCompleteness::Complete );
+
 	// Replace value in names map, when typedef is comlete.
 	typedef_value= Value( PrepareType( syntax_element.value, names_scope ), syntax_element.file_pos_ );
 }
@@ -947,7 +1001,9 @@ void CodeBuilder::NamesScopeBuildGlobalVariable( NamesScope& names_scope, Value&
 {
 	U_ASSERT( global_variable_value.GetIncompleteGlobalVariable() != nullptr );
 	const IncompleteGlobalVariable incomplete_global_variable= *global_variable_value.GetIncompleteGlobalVariable();
-	global_variable_value= ErrorValue();
+
+	DETECT_GLOBALS_LOOP( &global_variable_value, incomplete_global_variable.name, global_variable_value.GetFilePos(), TypeCompleteness::Complete );
+	#define FAIL_RETURN { global_variable_value= ErrorValue(); return; }
 
 	FunctionContext& function_context= *dummy_function_context_;
 	const StackVariablesStorage dummy_stack( function_context );
@@ -959,20 +1015,20 @@ void CodeBuilder::NamesScopeBuildGlobalVariable( NamesScope& names_scope, Value&
 		if( variable_declaration.mutability_modifier == Synt::MutabilityModifier::Mutable )
 		{
 			errors_.push_back( ReportGlobalVariableMustBeConstexpr( variable_declaration.file_pos, variable_declaration.name ) );
-			return;
+			FAIL_RETURN;
 		}
 
 		const Type type= PrepareType( variables_declaration->type, names_scope );
 		if( !EnsureTypeCompleteness( type, TypeCompleteness::Complete ) ) // Global variables are all constexpr. Full completeness required for constexpr.
 		{
 			errors_.push_back( ReportUsingIncompleteType( variable_declaration.file_pos, type.ToString() ) );
-			return;
+			FAIL_RETURN;
 		}
 
 		if( !type.CanBeConstexpr() )
 		{
 			errors_.push_back( ReportInvalidTypeForConstantExpressionVariable( variable_declaration.file_pos ) );
-			return;
+			FAIL_RETURN;
 		}
 
 		// Destruction frame for temporary variables of initializer expression.
@@ -1017,7 +1073,7 @@ void CodeBuilder::NamesScopeBuildGlobalVariable( NamesScope& names_scope, Value&
 			if( variable_declaration.initializer == nullptr )
 			{
 				errors_.push_back( ReportExpectedInitializer( variable_declaration.file_pos, variable_declaration.name ) );
-				return;
+				FAIL_RETURN;
 			}
 
 			variable.value_type= ValueType::ConstReference;
@@ -1030,14 +1086,14 @@ void CodeBuilder::NamesScopeBuildGlobalVariable( NamesScope& names_scope, Value&
 				if( constructor_initializer->call_operator.arguments_.size() != 1u )
 				{
 					errors_.push_back( ReportReferencesHaveConstructorsWithExactlyOneParameter( constructor_initializer->file_pos_ ) );
-					return;
+					FAIL_RETURN;
 				}
 				initializer_expression= constructor_initializer->call_operator.arguments_.front().get();
 			}
 			else
 			{
 				errors_.push_back( ReportUnsupportedInitializerForReference( variable_declaration.initializer->GetFilePos() ) );
-				return;
+				FAIL_RETURN;
 			}
 
 			const Value expression_result_value= BuildExpressionCode( *initializer_expression, names_scope, function_context );
@@ -1045,19 +1101,19 @@ void CodeBuilder::NamesScopeBuildGlobalVariable( NamesScope& names_scope, Value&
 			if( !expression_result_value.GetType().ReferenceIsConvertibleTo( variable.type ) )
 			{
 				errors_.push_back( ReportTypesMismatch( variable_declaration.file_pos, variable.type.ToString(), expression_result_value.GetType().ToString() ) );
-				return;
+				FAIL_RETURN;
 			}
 			const Variable& expression_result= *expression_result_value.GetVariable();
 
 			if( expression_result.value_type == ValueType::Value )
 			{
 				errors_.push_back( ReportExpectedReferenceValue( variable_declaration.file_pos ) );
-				return;
+				FAIL_RETURN;
 			}
 			if( expression_result.value_type == ValueType::ConstReference && variable.value_type == ValueType::Reference )
 			{
 				errors_.push_back( ReportBindingConstReferenceToNonconstReference( variable_declaration.file_pos ) );
-				return;
+				FAIL_RETURN;
 			}
 
 			variable.referenced_variables= expression_result.referenced_variables;
@@ -1078,7 +1134,7 @@ void CodeBuilder::NamesScopeBuildGlobalVariable( NamesScope& names_scope, Value&
 		if( variable.constexpr_value == nullptr )
 		{
 			errors_.push_back( ReportVariableInitializerIsNotConstantExpression( variable_declaration.file_pos ) );
-			return;
+			FAIL_RETURN;
 		}
 
 		// Do not call destructors, because global variables can be only constexpr and any constexpr type have trivial destructor.
@@ -1090,7 +1146,7 @@ void CodeBuilder::NamesScopeBuildGlobalVariable( NamesScope& names_scope, Value&
 		if( auto_variable_declaration->mutability_modifier == MutabilityModifier::Mutable )
 		{
 			errors_.push_back( ReportGlobalVariableMustBeConstexpr( auto_variable_declaration->file_pos_, auto_variable_declaration->name ) );
-			return;
+			FAIL_RETURN;
 		}
 
 		// Destruction frame for temporary variables of initializer expression.
@@ -1109,7 +1165,7 @@ void CodeBuilder::NamesScopeBuildGlobalVariable( NamesScope& names_scope, Value&
 			if( !type_is_ok )
 			{
 				errors_.push_back( ReportInvalidTypeForAutoVariable( auto_variable_declaration->file_pos_, initializer_experrsion_value.GetType().ToString() ) );
-				return;
+				FAIL_RETURN;
 			}
 		}
 
@@ -1131,12 +1187,12 @@ void CodeBuilder::NamesScopeBuildGlobalVariable( NamesScope& names_scope, Value&
 		if( !EnsureTypeCompleteness( variable.type, TypeCompleteness::Complete ) ) // Global variables are all constexpr. Full completeness required for constexpr.
 		{
 			errors_.push_back( ReportUsingIncompleteType( auto_variable_declaration->file_pos_, variable.type.ToString() ) );
-			return;
+			FAIL_RETURN;
 		}
 		if( !variable.type.CanBeConstexpr() )
 		{
 			errors_.push_back( ReportInvalidTypeForConstantExpressionVariable( auto_variable_declaration->file_pos_ ) );
-			return;
+			FAIL_RETURN;
 		}
 
 		if( auto_variable_declaration->reference_modifier == ReferenceModifier::Reference )
@@ -1144,12 +1200,12 @@ void CodeBuilder::NamesScopeBuildGlobalVariable( NamesScope& names_scope, Value&
 			if( initializer_experrsion.value_type == ValueType::Value )
 			{
 				errors_.push_back( ReportExpectedReferenceValue( auto_variable_declaration->file_pos_ ) );
-				return;
+				FAIL_RETURN;
 			}
 			if( initializer_experrsion.value_type == ValueType::ConstReference && variable.value_type != ValueType::ConstReference )
 			{
 				errors_.push_back( ReportBindingConstReferenceToNonconstReference( auto_variable_declaration->file_pos_ ) );
-				return;
+				FAIL_RETURN;
 			}
 
 			variable.referenced_variables= initializer_experrsion.referenced_variables;
@@ -1198,7 +1254,7 @@ void CodeBuilder::NamesScopeBuildGlobalVariable( NamesScope& names_scope, Value&
 			else
 			{
 				errors_.push_back( ReportNotImplemented( auto_variable_declaration->file_pos_, "expression initialization for nonfundamental types" ) );
-				return;
+				FAIL_RETURN;
 			}
 
 			if( global_variable != nullptr && variable.constexpr_value != nullptr )
@@ -1222,7 +1278,7 @@ void CodeBuilder::NamesScopeBuildGlobalVariable( NamesScope& names_scope, Value&
 		if( variable.constexpr_value == nullptr )
 		{
 			errors_.push_back( ReportVariableInitializerIsNotConstantExpression( auto_variable_declaration->file_pos_ ) );
-			return;
+			FAIL_RETURN;
 		}
 
 		// Do not call destructors, because global variables can be only constexpr and any constexpr type have trivial destructor.
@@ -1230,6 +1286,23 @@ void CodeBuilder::NamesScopeBuildGlobalVariable( NamesScope& names_scope, Value&
 		global_variable_value= Value( stored_variable, auto_variable_declaration->file_pos_ );
 	}
 	else U_ASSERT(false);
+
+	#undef FAIL_RETURN
+}
+
+void CodeBuilder::NamesScopeReportAboutLoop( const size_t loop_start_stack_index, const ProgramString& last_loop_element_name, const FilePos& last_loop_element_file_pos )
+{
+	ProgramString description;
+
+	FilePos min_file_pos= last_loop_element_file_pos;
+	for( size_t i= loop_start_stack_index; i < global_things_stack_.size(); ++i )
+	{
+		min_file_pos= std::min( min_file_pos, global_things_stack_[i].file_pos );
+		description+= global_things_stack_[i].name + " -> "_SpC;
+	}
+	description+= last_loop_element_name;
+
+	errors_.push_back( ReportGlobalsLoopDetected( min_file_pos, description ) );
 }
 
 } // namespace CodeBuilderPrivate

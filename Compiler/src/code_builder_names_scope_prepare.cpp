@@ -67,6 +67,7 @@ void  CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::Variable
 		IncompleteGlobalVariable incomplete_global_variable;
 		incomplete_global_variable.syntax_element= &variables_declaration;
 		incomplete_global_variable.element_index= size_t( &variable_declaration - variables_declaration.variables.data() );
+		incomplete_global_variable.name= variable_declaration.name;
 
 		if( names_scope.AddName( variable_declaration.name, Value( incomplete_global_variable, variable_declaration.file_pos ) ) == nullptr )
 			errors_.push_back( ReportRedefinition( variable_declaration.file_pos, variable_declaration.name ) );
@@ -80,6 +81,7 @@ void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::AutoVaria
 
 	IncompleteGlobalVariable incomplete_global_variable;
 	incomplete_global_variable.syntax_element= &variable_declaration;
+	incomplete_global_variable.name= variable_declaration.name;
 
 	if( names_scope.AddName( variable_declaration.name, Value( incomplete_global_variable, variable_declaration.file_pos_ ) ) == nullptr )
 		errors_.push_back( ReportRedefinition( variable_declaration.file_pos_, variable_declaration.name ) );

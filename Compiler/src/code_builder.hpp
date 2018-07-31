@@ -728,6 +728,7 @@ private:
 	void NamesScopeBuildTypeTemplatesSet( NamesScope& names_scope, TypeTemplatesSet& type_templates_set );
 	void NamesScopeBuildTypedef( NamesScope& names_scope, Value& typedef_value );
 	void NamesScopeBuildGlobalVariable( NamesScope& names_scope, Value& global_variable_value );
+	void NamesScopeReportAboutLoop( size_t loop_start_stack_index, const ProgramString& last_loop_element_name, const FilePos& last_loop_element_file_pos );
 
 	// Other stuff
 
@@ -805,6 +806,20 @@ private:
 	std::list< std::pair< Type, Variable > > typeinfo_cache_;
 	boost::optional< Variable > typeinfo_list_end_node_; // Lazy initialized.
 	llvm::GlobalVariable* typeinfo_is_end_variable_[2u]= { nullptr, nullptr }; // Lazy initialized.
+
+	struct GlobalThing // TODO - move struct out of here
+	{
+		const void* thing_ptr= nullptr;
+		ProgramString name;
+		FilePos file_pos;
+		TypeCompleteness completeness= TypeCompleteness::Incomplete;
+
+		GlobalThing( const void* const in_thing_ptr, const ProgramString& in_name, const FilePos& in_file_pos, const TypeCompleteness in_completeness )
+			: thing_ptr(in_thing_ptr), name(in_name), file_pos(in_file_pos), completeness(in_completeness)
+		{}
+	};
+
+	std::vector<GlobalThing> global_things_stack_;
 };
 
 using MutabilityModifier= Synt::MutabilityModifier;
