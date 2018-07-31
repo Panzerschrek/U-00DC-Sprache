@@ -468,7 +468,7 @@ void CodeBuilder::NamesScopeBuildClass( const ClassProxyPtr class_type, const Ty
 	}
 
 	const Synt::Class& class_declaration= *the_class.syntax_element;
-	const ProgramString& class_name= class_declaration.name_.components.back().name;
+	const ProgramString& class_name= class_declaration.name_;
 
 	if( completeness >= TypeCompleteness::ReferenceTagsComplete )
 	{

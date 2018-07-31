@@ -158,15 +158,9 @@ void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::FunctionT
 
 ClassProxyPtr CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::Class& class_declaration, const ProgramString& override_name )
 {
-	const ProgramString& class_name= override_name.empty() ? class_declaration.name_.components.back().name : override_name;
+	const ProgramString& class_name= override_name.empty() ? class_declaration.name_: override_name;
 	if( IsKeyword( class_name ) )
 		errors_.push_back( ReportUsingKeywordAsName( class_declaration.file_pos_ ) );
-
-	if( class_declaration.name_.components.size() != 1u )
-	{
-		errors_.push_back( ReportNotImplemented( class_declaration.file_pos_, "out of line classes" ) );
-		return nullptr;
-	}
 
 	ClassProxyPtr class_type;
 	if( const NamesScope::InsertedName* const prev_name= names_scope.GetThisScopeName( class_name ) )
