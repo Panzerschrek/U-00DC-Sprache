@@ -1823,7 +1823,6 @@ Value CodeBuilder::BuildMemberAccessOperator(
 						member_access_operator.file_pos_,
 						functions_set->template_functions,
 						member_access_operator.template_parameters,
-						class_type->members,
 						names );
 				if( inserted_name == nullptr )
 					return ErrorValue();

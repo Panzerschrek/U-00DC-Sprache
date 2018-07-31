@@ -526,7 +526,6 @@ const NamesScope::InsertedName* CodeBuilder::ResolveForTemplateSignatureParamete
 						file_pos,
 						functions_set->template_functions,
 						components[0].template_parameters,
-						*functions_set->template_functions.front()->parent_namespace, // All template functions in one set have one parent namespace.
 						names_scope );
 			}
 		}
@@ -1211,13 +1210,14 @@ CodeBuilder::TemplateTypeGenerationResult CodeBuilder::GenTemplateType(
 const FunctionVariable* CodeBuilder::GenTemplateFunction(
 	const FilePos& file_pos,
 	const FunctionTemplatePtr& function_template_ptr,
-	NamesScope& template_names_scope,
 	const std::vector<Function::Arg>& actual_args,
 	const bool first_actual_arg_is_this,
 	bool skip_arguments )
 {
 	const FunctionTemplate& function_template= *function_template_ptr;
 	const Synt::Function& function_declaration= *function_template.syntax_element->function_;
+
+	NamesScope& template_names_scope= *function_template.parent_namespace;
 
 	const Function::Arg* given_args= actual_args.data();
 	size_t given_arg_count= actual_args.size();
@@ -1425,10 +1425,11 @@ const NamesScope::InsertedName* CodeBuilder::GenTemplateFunctionsUsingTemplatePa
 	const FilePos& file_pos,
 	const std::vector<FunctionTemplatePtr>& function_templates,
 	const std::vector<Synt::IExpressionComponentPtr>& template_arguments,
-	NamesScope& template_names_scope,
 	NamesScope& arguments_names_scope )
 {
 	U_ASSERT( !function_templates.empty() );
+
+	NamesScope& template_names_scope= *function_templates.front()->parent_namespace;
 
 	DeducibleTemplateParameters template_parameters;
 	bool something_is_wrong= false;

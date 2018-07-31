@@ -127,7 +127,7 @@ void CodeBuilder::NamesScopeBuild( NamesScope& names_scope )
 
 void CodeBuilder::NamesScopeBuildFunctionsSet( NamesScope& names_scope, OverloadedFunctionsSet& functions_set, const bool build_body )
 {
-	if( functions_set.is_incomplete )
+	if( !functions_set.syntax_elements.empty() || !functions_set.out_of_line_syntax_elements.empty() || !functions_set.template_syntax_elements.empty() )
 	{
 		FilePos functions_set_file_pos{ 0u, 0u, 0u };
 		ProgramString functions_set_name;
@@ -149,7 +149,10 @@ void CodeBuilder::NamesScopeBuildFunctionsSet( NamesScope& names_scope, Overload
 			NamesScopeBuildFunction( names_scope, functions_set.base_class, functions_set, *function, true );
 		for( const Synt::FunctionTemplate* const function_template : functions_set.template_syntax_elements )
 			PrepareFunctionTemplate( *function_template, functions_set, names_scope, functions_set.base_class );
-		functions_set.is_incomplete= false;
+
+		functions_set.syntax_elements.clear();
+		functions_set.out_of_line_syntax_elements.clear();
+		functions_set.template_syntax_elements.clear();
 	}
 
 	if( build_body )
@@ -863,7 +866,9 @@ void CodeBuilder::NamesScopeBuildClass( const ClassProxyPtr class_type, const Ty
 			fields_llvm_types.push_back( llvm::PointerType::get( the_class.virtual_table_llvm_type, 0u ) ); // TODO - maybe store virtual table pointer in base class?
 		}
 
-		the_class.llvm_type->setBody( fields_llvm_types );
+		// Check opaque before set body for cases of errors (class body duplication).
+		if( the_class.llvm_type->isOpaque() )
+			the_class.llvm_type->setBody( fields_llvm_types );
 
 		BuildClassVirtualTables( the_class, class_type );
 
@@ -975,15 +980,15 @@ void CodeBuilder::NamesScopeBuildEnum( const EnumPtr& enum_, TypeCompleteness co
 
 void CodeBuilder::NamesScopeBuildTypeTemplatesSet( NamesScope& names_scope, TypeTemplatesSet& type_templates_set )
 {
-	if( !type_templates_set.is_incomplete )
-		return;
+	if( !type_templates_set.syntax_elements.empty() )
+	{
+		DETECT_GLOBALS_LOOP( &type_templates_set, type_templates_set.syntax_elements.front()->name_, type_templates_set.syntax_elements.front()->file_pos_, TypeCompleteness::Complete );
 
-	DETECT_GLOBALS_LOOP( &type_templates_set, type_templates_set.syntax_elements.front()->name_, type_templates_set.syntax_elements.front()->file_pos_, TypeCompleteness::Complete );
+		for( const auto syntax_element : type_templates_set.syntax_elements )
+			PrepareTypeTemplate( *syntax_element, type_templates_set, names_scope );
 
-	for( const auto syntax_element : type_templates_set.syntax_elements )
-		PrepareTypeTemplate( *syntax_element, type_templates_set, names_scope );
-
-	type_templates_set.is_incomplete= false;
+		type_templates_set.syntax_elements.clear();
+	}
 }
 
 void CodeBuilder::NamesScopeBuildTypedef( NamesScope& names_scope, Value& typedef_value )

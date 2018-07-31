@@ -178,7 +178,6 @@ void CodeBuilder::TryGenerateDefaultConstructor( Class& the_class, const Type& c
 		{
 			OverloadedFunctionsSet constructors;
 			constructors.functions.push_back( std::move( constructor_variable ) );
-			constructors.is_incomplete= false;
 			the_class.members.AddName( Keyword( Keywords::constructor_ ), std::move( constructors ) );
 		}
 	}
@@ -363,7 +362,6 @@ void CodeBuilder::TryGenerateCopyConstructor( Class& the_class, const Type& clas
 		{
 			OverloadedFunctionsSet constructors;
 			constructors.functions.push_back( std::move( constructor_variable ) );
-			constructors.is_incomplete= false;
 			the_class.members.AddName( Keyword( Keywords::constructor_ ), std::move( constructors ) );
 		}
 	}
@@ -463,7 +461,6 @@ void CodeBuilder::TryGenerateDestructor( Class& the_class, const Type& class_typ
 	// TODO - destructor have no overloads. Maybe store it as FunctionVariable, not as FunctionsSet?
 	OverloadedFunctionsSet destructors;
 	destructors.functions.push_back( std::move( destructor_variable ) );
-	destructors.is_incomplete= false;
 
 	the_class.members.AddName(
 		Keyword( Keywords::destructor_ ),
@@ -642,7 +639,6 @@ void CodeBuilder::TryGenerateCopyAssignmentOperator( Class& the_class, const Typ
 		{
 			OverloadedFunctionsSet operators;
 			operators.functions.push_back( std::move( op_variable ) );
-			operators.is_incomplete= false;
 			the_class.members.AddName( op_name , std::move( operators ) );
 		}
 	}

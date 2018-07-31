@@ -408,7 +408,7 @@ const FunctionVariable* CodeBuilder::GetOverloadedFunction(
 		for( const FunctionTemplatePtr& function_template_ptr : functions_set.template_functions )
 		{
 			const FunctionVariable* const generated_function=
-				GenTemplateFunction( file_pos, function_template_ptr, *function_template_ptr->parent_namespace, actual_args, first_actual_arg_is_this );
+				GenTemplateFunction( file_pos, function_template_ptr, actual_args, first_actual_arg_is_this );
 			if( generated_function != nullptr )
 				match_functions.push_back( generated_function );
 		}

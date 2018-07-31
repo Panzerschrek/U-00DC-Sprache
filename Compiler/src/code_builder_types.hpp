@@ -284,20 +284,20 @@ struct OverloadedFunctionsSet
 	std::vector<FunctionVariable> functions;
 	std::vector<FunctionTemplatePtr> template_functions;
 
+	// Is incomplete, if there are some syntax elements in containers.
 	std::vector<const Synt::Function*> syntax_elements;
 	std::vector<const Synt::Function*> out_of_line_syntax_elements;
 	std::vector<const Synt::FunctionTemplate*> template_syntax_elements;
 
 	ClassProxyPtr base_class;
-
-	bool is_incomplete= true;
 };
 
 struct TypeTemplatesSet
 {
 	std::vector<TypeTemplatePtr> type_templates;
+
+	// Is incomplete, if there are some syntax elements in containers.
 	std::vector<const Synt::TypeTemplateBase*> syntax_elements;
-	bool is_incomplete= true;
 };
 
 class StoredVariable;
@@ -767,7 +767,7 @@ struct TemplateBase
 	std::vector< TemplateParameter > template_parameters;
 
 	ResolvingCache resolving_cache;
-	NamesScope* parent_namespace= nullptr; // Changes after import.
+	NamesScope* parent_namespace= nullptr; // NamesScope, where defined. NOT changed after import.
 
 	FilePos file_pos;
 };

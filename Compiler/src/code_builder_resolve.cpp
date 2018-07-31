@@ -133,7 +133,6 @@ const NamesScope::InsertedName* CodeBuilder::ResolveName(
 						file_pos,
 						functions_set->template_functions,
 						components[0].template_parameters,
-						*functions_set->template_functions.front()->parent_namespace, // All template functions in one set have one parent namespace.
 						names_scope );
 			}
 		}

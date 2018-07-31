@@ -284,17 +284,6 @@ void CodeBuilder::MergeNameScopes( NamesScope& dst, const NamesScope& src, Class
 
 					// TODO - copy access rights.
 				}
-				else if( const TypeTemplatesSet* const type_templates_set= src_member.second.GetTypeTemplatesSet() )
-				{
-					// Type template must know it parent namespace.
-					// Change namespace at this point.
-					for( const TypeTemplatePtr& type_template : type_templates_set->type_templates )
-					{
-						if( type_template->parent_namespace == &src )
-							type_template->parent_namespace= &dst;
-					}
-					dst.AddName( src_member.first, src_member.second );
-				}
 				else
 				{
 					bool class_copied= false;
@@ -364,15 +353,6 @@ void CodeBuilder::MergeNameScopes( NamesScope& dst, const NamesScope& src, Class
 					}
 					else
 						ApplyOverloadedFunction( *dst_funcs_set, src_func, src_func.prototype_file_pos );
-
-					for( const FunctionTemplatePtr& function_template : src_funcs_set->template_functions )
-					{
-						// Function template must know it parent namespace.
-						// Change namespace at this point.
-						if( function_template->parent_namespace == &src )
-							function_template->parent_namespace= &dst;
-						dst_funcs_set->template_functions.push_back( function_template );
-					}
 				}
 				return;
 			}

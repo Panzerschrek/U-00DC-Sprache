@@ -253,7 +253,6 @@ private:
 	const FunctionVariable* GenTemplateFunction(
 		const FilePos& file_pos,
 		const FunctionTemplatePtr& function_template_ptr,
-		NamesScope& template_names_scope,
 		const std::vector<Function::Arg>& actual_args,
 		bool first_actual_arg_is_this,
 		bool skip_arguments= false );
@@ -262,7 +261,6 @@ private:
 		const FilePos& file_pos,
 		const std::vector<FunctionTemplatePtr>& function_templates,
 		const std::vector<Synt::IExpressionComponentPtr>& template_arguments,
-		NamesScope& template_names_scope,
 		NamesScope& arguments_names_scope );
 
 	bool NameShadowsTemplateArgument( const ProgramString& name, NamesScope& names_scope );
