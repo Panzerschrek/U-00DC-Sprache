@@ -470,20 +470,20 @@ const NamesScope::InsertedName* CodeBuilder::ResolveForTemplateSignatureParamete
 						errors_.push_back( ReportUsingIncompleteType( file_pos, type->ToString() ) );
 						return nullptr;
 					}
-					NamesScopeBuildClass( type->GetClassTypeProxy(), TypeCompleteness::Complete );
+					GlobalThingBuildClass( type->GetClassTypeProxy(), TypeCompleteness::Complete );
 				}
 				next_space= &class_->members;
 				next_space_class= type->GetClassTypeProxy();
 			}
 			else if( EnumPtr const enum_= type->GetEnumTypePtr() )
 			{
-				NamesScopeBuildEnum( enum_, TypeCompleteness::Complete );
+				GlobalThingBuildEnum( enum_, TypeCompleteness::Complete );
 				next_space= &enum_->members;
 			}
 		}
 		else if( const TypeTemplatesSet* const type_templates_set = name->second.GetTypeTemplatesSet() )
 		{
-			NamesScopeBuildTypeTemplatesSet( *last_space, const_cast<TypeTemplatesSet&>(*type_templates_set) );
+			GlobalThingTypeTemplatesSet( *last_space, const_cast<TypeTemplatesSet&>(*type_templates_set) );
 			if( components[0].have_template_parameters && component_count != 1u )
 			{
 				const NamesScope::InsertedName* generated_type=
@@ -512,7 +512,7 @@ const NamesScope::InsertedName* CodeBuilder::ResolveForTemplateSignatureParamete
 		}
 		else if( const OverloadedFunctionsSet* const functions_set= name->second.GetFunctionsSet() )
 		{
-			NamesScopeBuildFunctionsSet( *last_space, const_cast<OverloadedFunctionsSet&>(*functions_set), false );
+			GlobalThingBuildFunctionsSet( *last_space, const_cast<OverloadedFunctionsSet&>(*functions_set), false );
 			if( components[0].have_template_parameters )
 			{
 				if( functions_set->template_functions.empty() )
@@ -556,13 +556,13 @@ const NamesScope::InsertedName* CodeBuilder::ResolveForTemplateSignatureParamete
 	{
 		// TODO - remove const_cast
 		if( OverloadedFunctionsSet* const functions_set= const_cast<OverloadedFunctionsSet*>(name->second.GetFunctionsSet()) )
-			NamesScopeBuildFunctionsSet( *last_space, *functions_set, false );
+			GlobalThingBuildFunctionsSet( *last_space, *functions_set, false );
 		else if( TypeTemplatesSet* const type_templates_set= const_cast<TypeTemplatesSet*>(name->second.GetTypeTemplatesSet()) )
-			NamesScopeBuildTypeTemplatesSet( *last_space, *type_templates_set );
+			GlobalThingTypeTemplatesSet( *last_space, *type_templates_set );
 		else if( name->second.GetTypedef() != nullptr )
-			NamesScopeBuildTypedef( *last_space, const_cast<Value&>(name->second) );
+			GlobalThingTypedef( *last_space, const_cast<Value&>(name->second) );
 		else if( name->second.GetIncompleteGlobalVariable() != nullptr )
-			NamesScopeBuildGlobalVariable( *last_space, const_cast<Value&>(name->second) );
+			GlobalThingVariable( *last_space, const_cast<Value&>(name->second) );
 	}
 	return name;
 }
@@ -1164,8 +1164,8 @@ CodeBuilder::TemplateTypeGenerationResult CodeBuilder::GenTemplateType(
 			return result;
 		}
 
-		NamesScopeBuildClass( class_proxy, TypeCompleteness::Complete );
-		NamesScopeBuild( class_proxy->class_->members );
+		GlobalThingBuildClass( class_proxy, TypeCompleteness::Complete );
+		GlobalThingBuildNamespace( class_proxy->class_->members );
 
 		// TODO - unset namespace of template here.
 
@@ -1390,7 +1390,7 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 	// First, prepare only as prototype.
 	NamesScopeFill( template_parameters_namespace, *function_template.syntax_element->function_, function_template.base_class );
 	OverloadedFunctionsSet& result_functions_set= *template_parameters_namespace.GetThisScopeName( function_template.syntax_element->function_->name_.components.back().name )->second.GetFunctionsSet();
-	NamesScopeBuildFunctionsSet( template_parameters_namespace, result_functions_set, false );
+	GlobalThingBuildFunctionsSet( template_parameters_namespace, result_functions_set, false );
 
 	if( result_functions_set.functions.empty() )
 	{

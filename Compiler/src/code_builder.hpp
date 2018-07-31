@@ -127,6 +127,18 @@ private:
 		std::vector<DeducedTemplateParameter> deduced_template_parameters;
 	};
 
+	struct GlobalThing // TODO - move struct out of here
+	{
+		const void* thing_ptr= nullptr;
+		ProgramString name;
+		FilePos file_pos;
+		TypeCompleteness completeness= TypeCompleteness::Incomplete;
+
+		GlobalThing( const void* const in_thing_ptr, const ProgramString& in_name, const FilePos& in_file_pos, const TypeCompleteness in_completeness )
+			: thing_ptr(in_thing_ptr), name(in_name), file_pos(in_file_pos), completeness(in_completeness)
+		{}
+	};
+
 private:
 	BuildResultInternal BuildProgramInternal( const SourceGraph& source_graph, size_t node_index );
 
@@ -338,6 +350,13 @@ private:
 	void CallDestructorsBeforeReturn( FunctionContext& function_context, const FilePos& file_pos );
 	void CallMembersDestructors( FunctionContext& function_context, const FilePos& file_pos );
 
+	void PrepareFunction(
+		NamesScope& names_scope,
+		const ClassProxyPtr& base_class,
+		OverloadedFunctionsSet& functions_set,
+		const Synt::Function& function_declaration,
+		bool is_out_of_line_function );
+
 	void CheckOverloadedOperator(
 		const ClassProxyPtr& base_class,
 		const Function& func_type,
@@ -346,7 +365,7 @@ private:
 
 	void BuildFuncCode(
 		FunctionVariable& func,
-		ClassProxyPtr base_class,
+		const ClassProxyPtr& base_class,
 		NamesScope& parent_names_scope,
 		const ProgramString& func_name,
 		const Synt::FunctionArgumentsDeclaration& args,
@@ -705,28 +724,28 @@ private:
 	void NamesScopeFill( NamesScope& names_scope, const Synt::ProgramElements& namespace_elements );
 	void NamesScopeFill( NamesScope& names_scope, const Synt::VariablesDeclaration& variables_declaration );
 	void NamesScopeFill( NamesScope& names_scope, const Synt::AutoVariableDeclaration& variable_declaration );
-	void NamesScopeFill( NamesScope& names_scope, const Synt::Function& function_declaration, ClassProxyPtr base_class, ClassMemberVisibility visibility= ClassMemberVisibility::Public );
-	void NamesScopeFill( NamesScope& names_scope, const Synt::FunctionTemplate& function_template_declaration, ClassProxyPtr base_class, ClassMemberVisibility visibility= ClassMemberVisibility::Public );
+	void NamesScopeFill( NamesScope& names_scope, const Synt::Function& function_declaration, const ClassProxyPtr& base_class, ClassMemberVisibility visibility= ClassMemberVisibility::Public );
+	void NamesScopeFill( NamesScope& names_scope, const Synt::FunctionTemplate& function_template_declaration, const ClassProxyPtr& base_class, ClassMemberVisibility visibility= ClassMemberVisibility::Public );
 	ClassProxyPtr NamesScopeFill( NamesScope& names_scope, const Synt::Class& class_declaration, const ProgramString& override_name= ""_SpC );
-	void NamesScopeFill( NamesScope& names_scope, const Synt::TypeTemplateBase& type_template_declaration, ClassProxyPtr base_class, ClassMemberVisibility visibility= ClassMemberVisibility::Public );
+	void NamesScopeFill( NamesScope& names_scope, const Synt::TypeTemplateBase& type_template_declaration, const ClassProxyPtr& base_class, ClassMemberVisibility visibility= ClassMemberVisibility::Public );
 	void NamesScopeFill( NamesScope& names_scope, const Synt::Enum& enum_declaration );
 	void NamesScopeFill( NamesScope& names_scope, const Synt::Typedef& typedef_declaration );
 	void NamesScopeFill( NamesScope& names_scope, const Synt::StaticAssert& static_assert_ );
 	void NamesScopeFillOutOfLineElements( NamesScope& names_scope, const Synt::ProgramElements& namespace_elements );
 
-	// NamesScope build
+	// Global things build
 
 	bool EnsureTypeCompleteness( const Type& type, TypeCompleteness completeness ); // Returns true, if all ok
 
-	void NamesScopeBuild( NamesScope& names_scope );
-	void NamesScopeBuildFunctionsSet( NamesScope& names_scope, OverloadedFunctionsSet& functions_set, bool build_body );
-	void NamesScopeBuildFunction( NamesScope& names_scope, ClassProxyPtr base_class, OverloadedFunctionsSet& functions_set, const Synt::Function& function_declaration, bool is_out_of_line_function );
-	void NamesScopeBuildClass( ClassProxyPtr class_type, TypeCompleteness completeness );
-	void NamesScopeBuildEnum( const EnumPtr& enum_, TypeCompleteness completeness );
-	void NamesScopeBuildTypeTemplatesSet( NamesScope& names_scope, TypeTemplatesSet& type_templates_set );
-	void NamesScopeBuildTypedef( NamesScope& names_scope, Value& typedef_value );
-	void NamesScopeBuildGlobalVariable( NamesScope& names_scope, Value& global_variable_value );
-	void NamesScopeReportAboutLoop( size_t loop_start_stack_index, const ProgramString& last_loop_element_name, const FilePos& last_loop_element_file_pos );
+	void GlobalThingBuildNamespace( NamesScope& names_scope );
+	void GlobalThingBuildFunctionsSet( NamesScope& names_scope, OverloadedFunctionsSet& functions_set, bool build_body );
+	void GlobalThingBuildClass( ClassProxyPtr class_type, TypeCompleteness completeness );
+	void GlobalThingBuildEnum( const EnumPtr& enum_, TypeCompleteness completeness );
+	void GlobalThingTypeTemplatesSet( NamesScope& names_scope, TypeTemplatesSet& type_templates_set );
+	void GlobalThingTypedef( NamesScope& names_scope, Value& typedef_value );
+	void GlobalThingVariable( NamesScope& names_scope, Value& global_variable_value );
+	size_t GlobalThingDetectloop( const GlobalThing& global_thing ); // returns loop start index or ~0u
+	void GlobalThingReportAboutLoop( size_t loop_start_stack_index, const ProgramString& last_loop_element_name, const FilePos& last_loop_element_file_pos );
 
 	// Other stuff
 
@@ -804,18 +823,6 @@ private:
 	std::list< std::pair< Type, Variable > > typeinfo_cache_;
 	boost::optional< Variable > typeinfo_list_end_node_; // Lazy initialized.
 	llvm::GlobalVariable* typeinfo_is_end_variable_[2u]= { nullptr, nullptr }; // Lazy initialized.
-
-	struct GlobalThing // TODO - move struct out of here
-	{
-		const void* thing_ptr= nullptr;
-		ProgramString name;
-		FilePos file_pos;
-		TypeCompleteness completeness= TypeCompleteness::Incomplete;
-
-		GlobalThing( const void* const in_thing_ptr, const ProgramString& in_name, const FilePos& in_file_pos, const TypeCompleteness in_completeness )
-			: thing_ptr(in_thing_ptr), name(in_name), file_pos(in_file_pos), completeness(in_completeness)
-		{}
-	};
 
 	std::vector<GlobalThing> global_things_stack_;
 };

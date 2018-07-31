@@ -260,7 +260,7 @@ CodeBuilder::BuildResultInternal CodeBuilder::BuildProgramInternal(
 	// Do work for this node.
 	NamesScopeFill( *result.names_map, source_graph_node.ast.program_elements );
 	NamesScopeFillOutOfLineElements( *result.names_map, source_graph_node.ast.program_elements );
-	NamesScopeBuild( *result.names_map );
+	GlobalThingBuildNamespace( *result.names_map );
 
 	return result;
 }
@@ -921,6 +921,254 @@ void CodeBuilder::CallMembersDestructors( FunctionContext& function_context, con
 		} );
 }
 
+void CodeBuilder::PrepareFunction(
+	NamesScope& names_scope,
+	const ClassProxyPtr& base_class,
+	OverloadedFunctionsSet& functions_set,
+	const Synt::Function& func,
+	const bool is_out_of_line_function )
+{
+	const ProgramString& func_name= func.name_.components.back().name;
+	const bool is_constructor= func_name == Keywords::constructor_;
+	const bool is_destructor= func_name == Keywords::destructor_;
+	const bool is_special_method= is_constructor || is_destructor;
+
+	if( !is_special_method && IsKeyword( func_name ) )
+		errors_.push_back( ReportUsingKeywordAsName( func.file_pos_ ) );
+
+	if( is_special_method && base_class == nullptr )
+	{
+		errors_.push_back( ReportConstructorOrDestructorOutsideClass( func.file_pos_ ) );
+		return;
+	}
+	if( !is_constructor && func.constructor_initialization_list_ != nullptr )
+	{
+		errors_.push_back( ReportInitializationListInNonconstructor( func.constructor_initialization_list_->file_pos_ ) );
+		return;
+	}
+	if( is_destructor && !func.type_.arguments_.empty() )
+	{
+		errors_.push_back( ReportExplicitArgumentsInDestructor( func.file_pos_ ) );
+		return;
+	}
+
+	FunctionVariable func_variable;
+	func_variable.type= Function();
+	{ // Prepare function type
+		Function& function_type= *func_variable.type.GetFunctionType();
+
+		if( func.type_.return_type_ == nullptr )
+			function_type.return_type= void_type_for_ret_;
+		else
+		{
+			function_type.return_type= PrepareType( func.type_.return_type_, names_scope );
+			if( function_type.return_type == invalid_type_ )
+				return;
+		}
+
+		function_type.return_value_is_mutable= func.type_.return_value_mutability_modifier_ == MutabilityModifier::Mutable;
+		function_type.return_value_is_reference= func.type_.return_value_reference_modifier_ == ReferenceModifier::Reference;
+
+		// HACK. We have different llvm types for "void".
+		// llvm::void used only for empty return value, for other purposes we use "i8" for Ü::void.
+		if( !function_type.return_value_is_reference && function_type.return_type == void_type_ )
+			function_type.return_type= void_type_for_ret_;
+
+		if( !function_type.return_value_is_reference &&
+			!( function_type.return_type.GetFundamentalType() != nullptr ||
+			   function_type.return_type.GetClassType() != nullptr ||
+			   function_type.return_type.GetEnumType() != nullptr ||
+			   function_type.return_type.GetFunctionPointerType() != nullptr ) )
+		{
+			errors_.push_back( ReportNotImplemented( func.file_pos_, "return value types except fundamentals, enums, classes, function pointers" ) );
+			return;
+		}
+
+		if( is_special_method && function_type.return_type != void_type_ )
+			errors_.push_back( ReportConstructorAndDestructorMustReturnVoid( func.file_pos_ ) );
+
+		ProcessFunctionReturnValueReferenceTags( func.type_, function_type );
+
+		// Args.
+		function_type.args.reserve( func.type_.arguments_.size() );
+
+		// Generate "this" arg for constructors.
+		if( is_special_method )
+		{
+			func_variable.is_this_call= true;
+
+			function_type.args.emplace_back();
+			Function::Arg& arg= function_type.args.back();
+			arg.type= base_class;
+			arg.is_reference= true;
+			arg.is_mutable= true;
+		}
+
+		for( const Synt::FunctionArgumentPtr& arg : func.type_.arguments_ )
+		{
+			const bool is_this= arg == func.type_.arguments_.front() && arg->name_ == Keywords::this_;
+
+			if( !is_this && IsKeyword( arg->name_ ) )
+				errors_.push_back( ReportUsingKeywordAsName( arg->file_pos_ ) );
+
+			if( is_this && is_destructor )
+				errors_.push_back( ReportExplicitThisInDestructor( arg->file_pos_ ) );
+			if( is_this && is_constructor )
+			{
+				// Explicit this for constructor.
+				U_ASSERT( function_type.args.size() == 1u );
+				ProcessFunctionArgReferencesTags( func.type_, function_type, *arg, function_type.args.back(), function_type.args.size() - 1u );
+				continue;
+			}
+
+			function_type.args.emplace_back();
+			Function::Arg& out_arg= function_type.args.back();
+
+			if( is_this )
+			{
+				func_variable.is_this_call= true;
+				if( base_class == nullptr )
+				{
+					errors_.push_back( ReportThisInNonclassFunction( func.file_pos_, func_name ) );
+					return;
+				}
+				out_arg.type= base_class;
+			}
+			else
+				out_arg.type= PrepareType( arg->type_, names_scope );
+
+			out_arg.is_mutable= arg->mutability_modifier_ == MutabilityModifier::Mutable;
+			out_arg.is_reference= is_this || arg->reference_modifier_ == ReferenceModifier::Reference;
+
+			if( !out_arg.is_reference &&
+				!( out_arg.type.GetFundamentalType() != nullptr ||
+				   out_arg.type.GetClassType() != nullptr ||
+				   out_arg.type.GetEnumType() != nullptr ||
+				   out_arg.type.GetFunctionPointerType() != nullptr ) )
+			{
+				errors_.push_back( ReportNotImplemented( func.file_pos_, "parameters types except fundamentals, classes, enums, functionpointers" ) );
+				return;
+			}
+
+			ProcessFunctionArgReferencesTags( func.type_, function_type, *arg, out_arg, function_type.args.size() - 1u );
+		} // for arguments
+
+		function_type.unsafe= func.type_.unsafe_;
+
+		TryGenerateFunctionReturnReferencesMapping( func.type_, function_type );
+		ProcessFunctionReferencesPollution( func, function_type, base_class );
+		CheckOverloadedOperator( base_class, function_type, func.overloaded_operator_, func.file_pos_ );
+
+	} // end prepare function type
+
+	// Set constexpr.
+	if( func.constexpr_ )
+	{
+		if( func.block_ == nullptr )
+			errors_.push_back( ReportConstexprFunctionsMustHaveBody( func.file_pos_ ) );
+		if( func.virtual_function_kind_ != Synt::VirtualFunctionKind::None )
+			errors_.push_back( ReportConstexprFunctionCanNotBeVirtual( func.file_pos_ ) );
+
+		func_variable.constexpr_kind= FunctionVariable::ConstexprKind::ConstexprIncomplete;
+	}
+
+	// Set virtual.
+	if( func.virtual_function_kind_ != Synt::VirtualFunctionKind::None )
+	{
+		if( base_class == nullptr )
+			errors_.push_back( ReportVirtualForNonclassFunction( func.file_pos_, func_name ) );
+		if( !func_variable.is_this_call )
+			errors_.push_back( ReportVirtualForNonThisCallFunction( func.file_pos_, func_name ) );
+		if( is_constructor )
+			errors_.push_back( ReportFunctionCanNotBeVirtual( func.file_pos_, func_name ) );
+		if( base_class != nullptr && ( base_class->class_->kind == Class::Kind::Struct || base_class->class_->kind == Class::Kind::NonPolymorph ) )
+			errors_.push_back( ReportVirtualForNonpolymorphClass( func.file_pos_, func_name ) );
+		if( is_out_of_line_function )
+			errors_.push_back( ReportVirtualForFunctionImplementation( func.file_pos_, func_name ) );
+
+		func_variable.virtual_function_kind= func.virtual_function_kind_;
+	}
+
+	// Check "=default" / "=delete".
+	if( func.body_kind != Synt::Function::BodyKind::None )
+	{
+		U_ASSERT( func.block_ == nullptr );
+		const Function& function_type= *func_variable.type.GetFunctionType();
+
+		bool invalid_func= false;
+		if( base_class == nullptr )
+			invalid_func= true;
+		else if( is_constructor )
+			invalid_func= !( IsDefaultConstructor( function_type, base_class ) || IsCopyConstructor( function_type, base_class ) );
+		else if( func.overloaded_operator_ == OverloadedOperator::Assign )
+			invalid_func= !IsCopyAssignmentOperator( function_type, base_class );
+		else
+			invalid_func= true;
+
+		if( invalid_func )
+			errors_.push_back( ReportInvalidMethodForBodyGeneration( func.file_pos_ ) );
+		else
+		{
+			if( func.body_kind == Synt::Function::BodyKind::BodyGenerationRequired )
+				func_variable.is_generated= true;
+			else
+				func_variable.is_deleted= true;
+		}
+	}
+
+	if( FunctionVariable* const prev_function= GetFunctionWithSameType( *func_variable.type.GetFunctionType(), functions_set ) )
+	{
+			 if( prev_function->syntax_element->block_ == nullptr && func.block_ != nullptr )
+		{ // Ok, body after prototype.
+			prev_function->syntax_element= &func;
+			prev_function->body_file_pos= func.file_pos_;
+		}
+		else if( prev_function->syntax_element->block_ != nullptr && func.block_ == nullptr )
+		{ // Ok, prototype after body. Since order-independent resolving this is correct.
+			prev_function->prototype_file_pos= func.file_pos_;
+		}
+		else if( prev_function->syntax_element->block_ == nullptr && func.block_ == nullptr )
+			errors_.push_back( ReportFunctionPrototypeDuplication( func.file_pos_, func_name ) );
+		else if( prev_function->syntax_element->block_ != nullptr && func.block_ != nullptr )
+			errors_.push_back( ReportFunctionBodyDuplication( func.file_pos_, func_name ) );
+
+		if( prev_function->is_this_call != func_variable.is_this_call )
+			errors_.push_back( ReportThiscallMismatch( func.file_pos_, func_name ) );
+
+		if( !is_out_of_line_function ) // Previous function must be out of line. Set virtual specifier for it.
+			prev_function->virtual_function_kind= func.virtual_function_kind_;
+		else
+		{
+			// TODO - produce error, if it out of line is body for virtual function.
+		}
+		// TODO - produce error, if function with prototype and implementation inside class have different virtual function kind.
+	}
+	else
+	{
+		if( is_out_of_line_function )
+		{
+			errors_.push_back( ReportFunctionDeclarationOutsideItsScope( func.file_pos_ ) );
+			return;
+		}
+		const bool overloading_ok= ApplyOverloadedFunction( functions_set, func_variable, func.file_pos_ );
+		if( !overloading_ok )
+			return;
+
+		FunctionVariable& inserted_func_variable= functions_set.functions.back();
+		inserted_func_variable.body_file_pos= inserted_func_variable.prototype_file_pos= func.file_pos_;
+		inserted_func_variable.syntax_element= &func;
+
+		BuildFuncCode(
+			inserted_func_variable,
+			base_class,
+			names_scope,
+			func_name,
+			func.type_.arguments_,
+			nullptr,
+			func.constructor_initialization_list_.get() );
+	}
+}
+
 void CodeBuilder::CheckOverloadedOperator(
 	const ClassProxyPtr& base_class,
 	const Function& func_type,
@@ -1035,7 +1283,7 @@ void CodeBuilder::CheckOverloadedOperator(
 
 void CodeBuilder::BuildFuncCode(
 	FunctionVariable& func_variable,
-	const ClassProxyPtr base_class,
+	const ClassProxyPtr& base_class,
 	NamesScope& parent_names_scope,
 	const ProgramString& func_name,
 	const Synt::FunctionArgumentsDeclaration& args,

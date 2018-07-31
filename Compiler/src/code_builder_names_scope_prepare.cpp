@@ -87,7 +87,11 @@ void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::AutoVaria
 		errors_.push_back( ReportRedefinition( variable_declaration.file_pos_, variable_declaration.name ) );
 }
 
-void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::Function& function_declaration, const ClassProxyPtr base_class, ClassMemberVisibility visibility )
+void CodeBuilder::NamesScopeFill(
+	NamesScope& names_scope,
+	const Synt::Function& function_declaration,
+	const ClassProxyPtr& base_class,
+	const ClassMemberVisibility visibility )
 {
 	if( function_declaration.name_.components.size() != 1u )
 		return; // process out of line functions later.
@@ -120,7 +124,11 @@ void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::Function&
 	}
 }
 
-void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::FunctionTemplate& function_template_declaration, const ClassProxyPtr base_class, ClassMemberVisibility visibility )
+void CodeBuilder::NamesScopeFill(
+	NamesScope& names_scope,
+	const Synt::FunctionTemplate& function_template_declaration,
+	const ClassProxyPtr& base_class,
+	const ClassMemberVisibility visibility )
 {
 	const Synt::ComplexName& complex_name = function_template_declaration.function_->name_;
 	const ProgramString& function_template_name= complex_name.components.front().name;
@@ -269,7 +277,11 @@ ClassProxyPtr CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::
 	return class_type;
 }
 
-void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::TypeTemplateBase& type_template_declaration, ClassProxyPtr base_class, ClassMemberVisibility visibility )
+void CodeBuilder::NamesScopeFill(
+	NamesScope& names_scope,
+	const Synt::TypeTemplateBase& type_template_declaration,
+	const ClassProxyPtr& base_class,
+	const ClassMemberVisibility visibility )
 {
 	const ProgramString type_template_name= type_template_declaration.name_;
 	if( NamesScope::InsertedName* const prev_name= names_scope.GetThisScopeName( type_template_name ) )
