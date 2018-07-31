@@ -1590,24 +1590,6 @@ U_TEST(FunctionPrototypeDuplicationTest1)
 	U_TEST_ASSERT( error.file_pos.line == 3u );
 }
 
-U_TEST(FunctionPrototypeDuplicationTest2)
-{
-	// Prototype after body
-	static const char c_program_text[]=
-	R"(
-		fn Bar( i32 x ){}
-		fn Bar( i32 x );
-	)";
-
-	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
-
-	U_TEST_ASSERT( !build_result.errors.empty() );
-	const CodeBuilderError& error= build_result.errors.front();
-
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::FunctionPrototypeDuplication );
-	U_TEST_ASSERT( error.file_pos.line == 3u );
-}
-
 U_TEST(FunctionBodyDuplicationTest0)
 {
 	// Simple body duplication.
