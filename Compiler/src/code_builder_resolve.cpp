@@ -8,17 +8,17 @@ namespace U
 namespace CodeBuilderPrivate
 {
 
-const NamesScope::InsertedName* CodeBuilder::ResolveName( const FilePos& file_pos, NamesScope& names_scope, const Synt::ComplexName& complex_name, const bool for_declaration )
+NamesScope::InsertedName* CodeBuilder::ResolveName( const FilePos& file_pos, NamesScope& names_scope, const Synt::ComplexName& complex_name, const ResolveMode resolve_mode )
 {
-	return ResolveName( file_pos, names_scope, complex_name.components.data(), complex_name.components.size(), for_declaration );
+	return ResolveName( file_pos, names_scope, complex_name.components.data(), complex_name.components.size(), resolve_mode );
 }
 
-const NamesScope::InsertedName* CodeBuilder::ResolveName(
+NamesScope::InsertedName* CodeBuilder::ResolveName(
 	const FilePos& file_pos,
 	NamesScope& names_scope,
 	const Synt::ComplexName::Component* components,
 	size_t component_count,
-	const bool for_declaration )
+	const ResolveMode resolve_mode  )
 {
 	U_ASSERT( component_count > 0u );
 
@@ -26,7 +26,7 @@ const NamesScope::InsertedName* CodeBuilder::ResolveName(
 	if( components[0].name.empty() )
 	{
 		U_ASSERT( component_count >= 2u );
-		last_space= const_cast<NamesScope*>(names_scope.GetRoot());
+		last_space= names_scope.GetRoot();
 		++components;
 		--component_count;
 	}
@@ -39,14 +39,14 @@ const NamesScope::InsertedName* CodeBuilder::ResolveName(
 			NamesScope::InsertedName* const find= space->GetThisScopeName( start );
 			if( find != nullptr )
 				break;
-			space= const_cast<NamesScope*>(space->GetParent());
+			space= space->GetParent();
 			if( space == nullptr )
 				return nullptr;
 		}
 		last_space= space;
 	}
 
-	const NamesScope::InsertedName* name= nullptr;
+	NamesScope::InsertedName* name= nullptr;
 	while( true )
 	{
 		name= last_space->GetThisScopeName( components[0].name );
@@ -75,7 +75,7 @@ const NamesScope::InsertedName* CodeBuilder::ResolveName(
 						errors_.push_back( ReportUsingIncompleteType( file_pos, type->ToString() ) );
 						return nullptr;
 					}
-					if( !for_declaration )
+					if( resolve_mode != ResolveMode::ForDeclaration )
 						GlobalThingBuildClass( type->GetClassTypeProxy(), TypeCompleteness::Complete );
 				}
 				next_space= &class_->members;
@@ -87,12 +87,12 @@ const NamesScope::InsertedName* CodeBuilder::ResolveName(
 				next_space= &enum_->members;
 			}
 		}
-		else if( const TypeTemplatesSet* const type_templates_set = name->second.GetTypeTemplatesSet() )
+		else if( TypeTemplatesSet* const type_templates_set = name->second.GetTypeTemplatesSet() )
 		{
-			GlobalThingTypeTemplatesSet( *last_space, const_cast<TypeTemplatesSet&>(*type_templates_set) );
-			if( components[0].have_template_parameters )
+			GlobalThingBuildTypeTemplatesSet( *last_space, *type_templates_set );
+			if( components[0].have_template_parameters && !( resolve_mode == ResolveMode::ForTemplateSignatureParameter && component_count == 1u ) )
 			{
-				const NamesScope::InsertedName* generated_type=
+				NamesScope::InsertedName* generated_type=
 					GenTemplateType(
 						file_pos,
 						*type_templates_set,
@@ -116,10 +116,10 @@ const NamesScope::InsertedName* CodeBuilder::ResolveName(
 				return nullptr;
 			}
 		}
-		else if( const OverloadedFunctionsSet* const functions_set= name->second.GetFunctionsSet() )
+		else if( OverloadedFunctionsSet* const functions_set= name->second.GetFunctionsSet() )
 		{
-			if( !for_declaration )
-				GlobalThingBuildFunctionsSet( *last_space, const_cast<OverloadedFunctionsSet&>(*functions_set), false );
+			if( resolve_mode != ResolveMode::ForDeclaration )
+				GlobalThingBuildFunctionsSet( *last_space, *functions_set, false );
 			if( components[0].have_template_parameters )
 			{
 				if( functions_set->template_functions.empty() )
@@ -143,7 +143,7 @@ const NamesScope::InsertedName* CodeBuilder::ResolveName(
 		{
 			name= next_space->GetThisScopeName( components[1].name );
 
-			if( next_space_class != nullptr && !for_declaration &&
+			if( next_space_class != nullptr && resolve_mode != ResolveMode::ForDeclaration &&
 				names_scope.GetAccessFor( next_space_class ) < next_space_class->class_->GetMemberVisibility( components[1].name ) )
 				errors_.push_back( ReportAccessingNonpublicClassMember( file_pos, next_space_class->class_->members.GetThisNamespaceName(), components[1].name ) );
 		}
@@ -159,17 +159,16 @@ const NamesScope::InsertedName* CodeBuilder::ResolveName(
 		errors_.push_back( ReportTemplateArgumentIsNotDeducedYet( file_pos, name == nullptr ? ""_SpC : name->first ) );
 
 	// Complete some things in resolve.
-	if( name != nullptr && !for_declaration )
+	if( name != nullptr && resolve_mode != ResolveMode::ForDeclaration )
 	{
-		// TODO - remove const_cast
-		if( OverloadedFunctionsSet* const functions_set= const_cast<OverloadedFunctionsSet*>(name->second.GetFunctionsSet()) )
+		if( OverloadedFunctionsSet* const functions_set= name->second.GetFunctionsSet() )
 			GlobalThingBuildFunctionsSet( *last_space, *functions_set, false );
-		else if( TypeTemplatesSet* const type_templates_set= const_cast<TypeTemplatesSet*>(name->second.GetTypeTemplatesSet()) )
-			GlobalThingTypeTemplatesSet( *last_space, *type_templates_set );
+		else if( TypeTemplatesSet* const type_templates_set= name->second.GetTypeTemplatesSet() )
+			GlobalThingBuildTypeTemplatesSet( *last_space, *type_templates_set );
 		else if( name->second.GetTypedef() != nullptr )
-			GlobalThingTypedef( *last_space, const_cast<Value&>(name->second) );
+			GlobalThingBuildTypedef( *last_space, name->second );
 		else if( name->second.GetIncompleteGlobalVariable() != nullptr )
-			GlobalThingVariable( *last_space, const_cast<Value&>(name->second) );
+			GlobalThingBuildVariable( *last_space, name->second );
 	}
 	return name;
 }

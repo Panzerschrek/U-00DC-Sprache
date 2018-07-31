@@ -178,10 +178,10 @@ private:
 		FunctionContext& function_context );
 
 	// Templates
-	ProgramString PrepareTypeTemplate(
+	void PrepareTypeTemplate(
 		const Synt::TypeTemplateBase& type_template_declaration,
 		TypeTemplatesSet& type_templates_set,
-		NamesScope& names_scope ); // returns names of type template in case of success
+		NamesScope& names_scope );
 
 	void PrepareFunctionTemplate(
 		const Synt::FunctionTemplate& function_template_declaration,
@@ -217,7 +217,7 @@ private:
 		std::vector<bool>& template_parameters_usage_flags );
 
 	// Resolve as deep, as can, but does not instantiate last component, if it is template.
-	const NamesScope::InsertedName* ResolveForTemplateSignatureParameter(
+	NamesScope::InsertedName* ResolveForTemplateSignatureParameter(
 		const FilePos& file_pos,
 		const Synt::ComplexName& signature_parameter,
 		NamesScope& names_scope );
@@ -269,7 +269,7 @@ private:
 		bool first_actual_arg_is_this,
 		bool skip_arguments= false );
 
-	const NamesScope::InsertedName* GenTemplateFunctionsUsingTemplateParameters(
+	NamesScope::InsertedName* GenTemplateFunctionsUsingTemplateParameters(
 		const FilePos& file_pos,
 		const std::vector<FunctionTemplatePtr>& function_templates,
 		const std::vector<Synt::IExpressionComponentPtr>& template_arguments,
@@ -496,23 +496,23 @@ private:
 	// Typeinfo
 
 	Value BuildTypeinfoOperator( const Synt::TypeInfo& typeinfo_op, NamesScope& names );
-	Variable BuildTypeInfo( const Type& type, const NamesScope& root_namespace );
-	ClassProxyPtr CreateTypeinfoClass( const NamesScope& root_namespace );
-	Variable BuildTypeinfoPrototype( const Type& type, const NamesScope& root_namespace );
-	void BuildFullTypeinfo( const Type& type, Variable& typeinfo_variable, const NamesScope& root_namespace );
-	const Variable& GetTypeinfoListEndNode( const NamesScope& root_namespace );
+	Variable BuildTypeInfo( const Type& type, NamesScope& root_namespace );
+	ClassProxyPtr CreateTypeinfoClass( NamesScope& root_namespace );
+	Variable BuildTypeinfoPrototype( const Type& type, NamesScope& root_namespace );
+	void BuildFullTypeinfo( const Type& type, Variable& typeinfo_variable, NamesScope& root_namespace );
+	const Variable& GetTypeinfoListEndNode( NamesScope& root_namespace );
 	void AddTypeinfoNodeIsEndVariable( Class& node_class, bool is_end= false );
 	void FinishTypeinfoClass( Class& class_, const ClassProxyPtr class_proxy, const std::vector<llvm::Type*>& fields_llvm_types );
-	Variable BuildTypeinfoEnumElementsList( const Enum& enum_type, const NamesScope& root_namespace );
+	Variable BuildTypeinfoEnumElementsList( const Enum& enum_type, NamesScope& root_namespace );
 	void CreateTypeinfoClassMembersListNodeCommonFields(
 		const Class& class_, const ClassProxyPtr& node_class_proxy,
 		const ProgramString& member_name,
 		std::vector<llvm::Type*>& fields_llvm_types, std::vector<llvm::Constant*>& fields_initializers );
-	Variable BuildTypeinfoClassFieldsList( const ClassProxyPtr& class_type, const NamesScope& root_namespace );
-	Variable BuildTypeinfoClassTypesList( const ClassProxyPtr& class_type, const NamesScope& root_namespace );
-	Variable BuildTypeinfoClassFunctionsList( const ClassProxyPtr& class_type, const NamesScope& root_namespace );
-	Variable BuildeTypeinfoClassParentsList( const ClassProxyPtr& class_type, const NamesScope& root_namespace );
-	Variable BuildTypeinfoFunctionArguments( const Function& function_type, const NamesScope& root_namespace );
+	Variable BuildTypeinfoClassFieldsList( const ClassProxyPtr& class_type, NamesScope& root_namespace );
+	Variable BuildTypeinfoClassTypesList( const ClassProxyPtr& class_type, NamesScope& root_namespace );
+	Variable BuildTypeinfoClassFunctionsList( const ClassProxyPtr& class_type, NamesScope& root_namespace );
+	Variable BuildeTypeinfoClassParentsList( const ClassProxyPtr& class_type, NamesScope& root_namespace );
+	Variable BuildTypeinfoFunctionArguments( const Function& function_type, NamesScope& root_namespace );
 
 	// Block elements
 
@@ -709,15 +709,20 @@ private:
 	void CheckWhileBlokVariablesState( const VariablesState& state_before, const VariablesState& state_after, const FilePos& file_pos );
 
 	// Name resolving.
+	enum class ResolveMode
+	{
+		Regular,
+		ForDeclaration,
+		ForTemplateSignatureParameter,
+	};
+	NamesScope::InsertedName* ResolveName( const FilePos& file_pos, NamesScope& names_scope, const Synt::ComplexName& complex_name, ResolveMode resolve_mode= ResolveMode::Regular );
 
-	const NamesScope::InsertedName* ResolveName( const FilePos& file_pos, NamesScope& names_scope, const Synt::ComplexName& complex_name, bool for_declaration= false );
-
-	const NamesScope::InsertedName* ResolveName(
+	NamesScope::InsertedName* ResolveName(
 		const FilePos& file_pos,
 		NamesScope& names_scope,
 		const Synt::ComplexName::Component* components,
 		size_t component_count,
-		bool for_declaration= false );
+		ResolveMode resolve_mode );
 
 	// NamesScope fill
 
@@ -741,9 +746,9 @@ private:
 	void GlobalThingBuildFunctionsSet( NamesScope& names_scope, OverloadedFunctionsSet& functions_set, bool build_body );
 	void GlobalThingBuildClass( ClassProxyPtr class_type, TypeCompleteness completeness );
 	void GlobalThingBuildEnum( const EnumPtr& enum_, TypeCompleteness completeness );
-	void GlobalThingTypeTemplatesSet( NamesScope& names_scope, TypeTemplatesSet& type_templates_set );
-	void GlobalThingTypedef( NamesScope& names_scope, Value& typedef_value );
-	void GlobalThingVariable( NamesScope& names_scope, Value& global_variable_value );
+	void GlobalThingBuildTypeTemplatesSet( NamesScope& names_scope, TypeTemplatesSet& type_templates_set );
+	void GlobalThingBuildTypedef( NamesScope& names_scope, Value& typedef_value );
+	void GlobalThingBuildVariable( NamesScope& names_scope, Value& global_variable_value );
 	size_t GlobalThingDetectloop( const GlobalThing& global_thing ); // returns loop start index or ~0u
 	void GlobalThingReportAboutLoop( size_t loop_start_stack_index, const ProgramString& last_loop_element_name, const FilePos& last_loop_element_file_pos );
 

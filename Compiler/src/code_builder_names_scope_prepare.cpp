@@ -344,7 +344,7 @@ void CodeBuilder::NamesScopeFillOutOfLineElements( NamesScope& names_scope, cons
 		{
 			if( func->name_.components.size() != 1u )
 			{
-				const NamesScope::InsertedName* const func_name= ResolveName( func->file_pos_, names_scope, func->name_, true );
+				const NamesScope::InsertedName* const func_name= ResolveName( func->file_pos_, names_scope, func->name_, ResolveMode::ForDeclaration );
 				if( func_name == nullptr || func_name->second.GetFunctionsSet() == nullptr )
 				{
 					errors_.push_back( ReportFunctionDeclarationOutsideItsScope( func->file_pos_ ) );

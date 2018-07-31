@@ -824,7 +824,7 @@ bool FunctionVariable::VirtuallyEquals( const FunctionVariable& other ) const
 // Class
 //
 
-Class::Class( const ProgramString& in_name, const NamesScope* const parent_scope )
+Class::Class( const ProgramString& in_name, NamesScope* const parent_scope )
 	: members( in_name, parent_scope )
 {}
 
@@ -846,7 +846,7 @@ void Class::SetMemberVisibility( const ProgramString& member_name, const ClassMe
 	members_visibility[member_name]= visibility;
 }
 
-Enum::Enum( const ProgramString& in_name, const NamesScope* parent_scope )
+Enum::Enum( const ProgramString& in_name, NamesScope* const parent_scope )
 	: members( in_name, parent_scope )
 {}
 
@@ -1229,6 +1229,11 @@ const Type* Value::GetTypeName() const
 	return boost::get<Type>( &something_ );
 }
 
+ClassField* Value::GetClassField()
+{
+	return boost::get<ClassField>( &something_ );
+}
+
 const ClassField* Value::GetClassField() const
 {
 	return boost::get<ClassField>( &something_ );
@@ -1340,9 +1345,7 @@ ArgOverloadingClass GetArgOverloadingClass( const Function::Arg& arg )
 	return GetArgOverloadingClass( arg.is_mutable, arg.is_reference );
 }
 
-NamesScope::NamesScope(
-	ProgramString name,
-	const NamesScope* const parent )
+NamesScope::NamesScope( ProgramString name, NamesScope* const parent )
 	: name_(std::move(name) )
 	, parent_(parent)
 {}
@@ -1381,17 +1384,35 @@ NamesScope::InsertedName* NamesScope::AddName(
 	return nullptr;
 }
 
-NamesScope::InsertedName* NamesScope::GetThisScopeName( const ProgramString& name ) const
+NamesScope::InsertedName* NamesScope::GetThisScopeName( const ProgramString& name )
 {
 	const auto it= names_map_.find( name );
 	if( it != names_map_.end() )
-		return const_cast<InsertedName*>(&*it);
+		return &*it;
 	return nullptr;
+}
+
+const NamesScope::InsertedName* NamesScope::GetThisScopeName( const ProgramString& name ) const
+{
+	return const_cast<NamesScope*>(this)->GetThisScopeName( name );
+}
+
+NamesScope* NamesScope::GetParent()
+{
+	return parent_;
 }
 
 const NamesScope* NamesScope::GetParent() const
 {
 	return parent_;
+}
+
+NamesScope* NamesScope::GetRoot()
+{
+	NamesScope* root= this;
+	while( root->parent_ != nullptr )
+		root= root->parent_;
+	return root;
 }
 
 const NamesScope* NamesScope::GetRoot() const
@@ -1402,7 +1423,7 @@ const NamesScope* NamesScope::GetRoot() const
 	return root;
 }
 
-void NamesScope::SetParent( const NamesScope* const parent )
+void NamesScope::SetParent( NamesScope* const parent )
 {
 	parent_= parent;
 }

@@ -506,6 +506,7 @@ public:
 	Type* GetTypeName();
 	const Type* GetTypeName() const;
 	// Class fields
+	ClassField* GetClassField();
 	const ClassField* GetClassField() const;
 	// This + methods set
 	ThisOverloadedMethodsSet* GetThisOverloadedMethodsSet();
@@ -576,9 +577,7 @@ public:
 	typedef std::map< ProgramString, Value > NamesMap;
 	typedef NamesMap::value_type InsertedName;
 
-	NamesScope(
-		ProgramString name,
-		const NamesScope* parent );
+	NamesScope( ProgramString name, NamesScope* parent );
 
 	NamesScope( const NamesScope&)= delete;
 	NamesScope& operator=( const NamesScope&)= delete;
@@ -591,14 +590,24 @@ public:
 	InsertedName* AddName( const ProgramString& name, Value value );
 
 	// Resolve simple name only in this scope.
-	InsertedName* GetThisScopeName( const ProgramString& name ) const;
+	InsertedName* GetThisScopeName( const ProgramString& name );
+	const InsertedName* GetThisScopeName( const ProgramString& name ) const;
 
+	NamesScope* GetParent();
 	const NamesScope* GetParent() const;
+	NamesScope* GetRoot();
 	const NamesScope* GetRoot() const;
-	void SetParent( const NamesScope* parent );
+	void SetParent( NamesScope* parent );
 
 	void AddAccessRightsFor( const ClassProxyPtr& class_, ClassMemberVisibility visibility );
 	ClassMemberVisibility GetAccessFor( const ClassProxyPtr& class_ ) const;
+
+	template<class Func>
+	void ForEachInThisScope( const Func& func )
+	{
+		for( InsertedName& inserted_name : names_map_ )
+			func( inserted_name );
+	}
 
 	template<class Func>
 	void ForEachInThisScope( const Func& func ) const
@@ -611,7 +620,7 @@ public:
 
 private:
 	ProgramString name_;
-	const NamesScope* parent_;
+	NamesScope* parent_;
 	NamesMap names_map_;
 	std::unordered_map<ClassProxyPtr, ClassMemberVisibility> access_rights_;
 };
@@ -660,7 +669,7 @@ typedef std::unordered_map< TemplateClassKey, ClassProxyPtr, TemplateClassKeyHas
 class Class final
 {
 public:
-	Class( const ProgramString& name, const NamesScope* parent_scope );
+	Class( const ProgramString& name, NamesScope* parent_scope );
 	~Class();
 
 	Class( const Class& )= delete;
@@ -746,7 +755,7 @@ public:
 
 struct Enum
 {
-	Enum( const ProgramString& name, const NamesScope* parent_scope );
+	Enum( const ProgramString& name, NamesScope* parent_scope );
 
 	NamesScope members;
 	SizeType element_count= 0u;

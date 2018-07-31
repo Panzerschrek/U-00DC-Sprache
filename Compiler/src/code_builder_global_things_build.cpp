@@ -79,10 +79,8 @@ bool CodeBuilder::EnsureTypeCompleteness( const Type& type, const TypeCompletene
 void CodeBuilder::GlobalThingBuildNamespace( NamesScope& names_scope )
 {
 	names_scope.ForEachInThisScope(
-		[&]( const NamesScope::InsertedName& name_imut )
+		[&]( NamesScope::InsertedName& name )
 		{
-			NamesScope::InsertedName& name= const_cast<NamesScope::InsertedName&>(name_imut); // TODO - remove const_cast
-
 			if( const NamesScopePtr inner_namespace= name.second.GetNamespace() )
 				GlobalThingBuildNamespace( *inner_namespace );
 			else if( OverloadedFunctionsSet* const functions_set= name.second.GetFunctionsSet() )
@@ -108,20 +106,20 @@ void CodeBuilder::GlobalThingBuildNamespace( NamesScope& names_scope )
 				else U_ASSERT(false);
 			}
 			else if( const auto type_templates_set= name.second.GetTypeTemplatesSet() )
-				GlobalThingTypeTemplatesSet( names_scope, *type_templates_set );
+				GlobalThingBuildTypeTemplatesSet( names_scope, *type_templates_set );
 			else if( name.second.GetClassField() != nullptr ) {} // Can be in classes.
 			else if( name.second.GetFunctionVariable() != nullptr ) {} // It is function, generating from template.
 			else if( name.second.GetVariable() != nullptr ){}
 			else if( name.second.GetStoredVariable() != nullptr ){}
 			else if( name.second.GetErrorValue() != nullptr ){}
 			else if( TypeTemplatesSet* const type_templates_set= name.second.GetTypeTemplatesSet() )
-				GlobalThingTypeTemplatesSet( names_scope, *type_templates_set );
+				GlobalThingBuildTypeTemplatesSet( names_scope, *type_templates_set );
 			else if( const auto static_assert_= name.second.GetStaticAssert() )
 				BuildStaticAssert( *static_assert_, names_scope );
 			else if( name.second.GetTypedef() != nullptr )
-				GlobalThingTypedef( names_scope, name.second );
+				GlobalThingBuildTypedef( names_scope, name.second );
 			else if( name.second.GetIncompleteGlobalVariable() != nullptr )
-				GlobalThingVariable( names_scope, name.second );
+				GlobalThingBuildVariable( names_scope, name.second );
 			else U_ASSERT(false);
 		});
 }
@@ -227,7 +225,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type, const T
 	{
 		DETECT_GLOBALS_LOOP( &the_class, the_class.members.GetThisNamespaceName(), the_class.body_file_pos, TypeCompleteness::ReferenceTagsComplete );
 
-		NamesScope& class_parent_namespace= const_cast<NamesScope&>(*the_class.members.GetParent()); // TODO - remove const cast
+		NamesScope& class_parent_namespace= *the_class.members.GetParent();
 		for( const Synt::ComplexName& parent : class_declaration.parents_ )
 		{
 			const NamesScope::InsertedName* const parent_name= ResolveName( class_declaration.file_pos_, class_parent_namespace, parent );
@@ -299,9 +297,9 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type, const T
 		the_class.can_be_constexpr= the_class.kind == Class::Kind::Struct;
 
 		the_class.members.ForEachInThisScope(
-			[&]( const NamesScope::InsertedName& name_imut )
+			[&]( NamesScope::InsertedName& name )
 			{
-				ClassField* const class_field= const_cast<ClassField*>(name_imut.second.GetClassField()); // TODO - remove const_cast
+				ClassField* const class_field= name.second.GetClassField();
 				if( class_field == nullptr )
 					return;
 
@@ -367,9 +365,9 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type, const T
 			fields_llvm_types.emplace_back( parent->class_->llvm_type );
 		}
 		the_class.members.ForEachInThisScope(
-			[&]( const NamesScope::InsertedName& name )
+			[&]( NamesScope::InsertedName& name )
 			{
-				if( ClassField* const class_field= const_cast<ClassField*>(name.second.GetClassField()) ) // TODO - remove const cast
+				if( ClassField* const class_field= name.second.GetClassField() )
 				{
 					class_field->index= static_cast<unsigned int>(fields_llvm_types.size());
 					if( class_field->is_reference )
@@ -386,9 +384,9 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type, const T
 
 		// Complete another body elements.
 		the_class.members.ForEachInThisScope(
-			[&]( const NamesScope::InsertedName& name )
+			[&]( NamesScope::InsertedName& name )
 			{
-				if( const auto functions_set= const_cast<OverloadedFunctionsSet*>(name.second.GetFunctionsSet()) )
+				if( const auto functions_set= name.second.GetFunctionsSet() )
 				{
 					GlobalThingBuildFunctionsSet( the_class.members, *functions_set, false );
 					for( FunctionVariable& function : functions_set->functions )
@@ -399,16 +397,16 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type, const T
 					U_UNUSED(type); // TODO
 				}
 				else if( const auto type_templates_set= name.second.GetTypeTemplatesSet() )
-					GlobalThingTypeTemplatesSet( the_class.members, const_cast<TypeTemplatesSet&>(*type_templates_set) );
+					GlobalThingBuildTypeTemplatesSet( the_class.members, const_cast<TypeTemplatesSet&>(*type_templates_set) );
 				else if( name.second.GetClassField() != nullptr ) {}
 				else if( name.second.GetVariable() != nullptr ){}
 				else if( name.second.GetStoredVariable() != nullptr ){}
 				else if( name.second.GetErrorValue() != nullptr ){}
 				else if( name.second.GetStaticAssert() != nullptr ){}
 				else if( name.second.GetTypedef() != nullptr )
-					GlobalThingTypedef( the_class.members, const_cast<Value&>(name.second) );
+					GlobalThingBuildTypedef( the_class.members, name.second );
 				else if( name.second.GetIncompleteGlobalVariable() != nullptr )
-					GlobalThingVariable( the_class.members, const_cast<Value&>(name.second) );
+					GlobalThingBuildVariable( the_class.members, name.second );
 				else U_ASSERT(false);
 			});
 
@@ -634,9 +632,9 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type, const T
 
 		// Immediately build constexpr functions.
 		the_class.members.ForEachInThisScope(
-			[&]( const NamesScope::InsertedName& name )
+			[&]( NamesScope::InsertedName& name )
 			{
-				OverloadedFunctionsSet* const functions_set= const_cast<OverloadedFunctionsSet*>(name.second.GetFunctionsSet());
+				OverloadedFunctionsSet* const functions_set= name.second.GetFunctionsSet();
 				if( functions_set == nullptr )
 					return;
 
@@ -670,7 +668,7 @@ void CodeBuilder::GlobalThingBuildEnum( const EnumPtr& enum_, TypeCompleteness c
 	enum_->underlaying_type= FundamentalType( U_FundamentalType::u32, fundamental_llvm_types_.u32 );
 
 	const Synt::Enum& enum_decl= *enum_->syntax_element;
-	NamesScope& names_scope= const_cast<NamesScope&>(*enum_->members.GetParent()); // TODO - remove const_cast
+	NamesScope& names_scope= *enum_->members.GetParent();
 
 	if( !enum_decl.underlaying_type_name.components.empty() )
 	{
@@ -731,7 +729,7 @@ void CodeBuilder::GlobalThingBuildEnum( const EnumPtr& enum_, TypeCompleteness c
 	enum_->is_incomplete= false;
 }
 
-void CodeBuilder::GlobalThingTypeTemplatesSet( NamesScope& names_scope, TypeTemplatesSet& type_templates_set )
+void CodeBuilder::GlobalThingBuildTypeTemplatesSet( NamesScope& names_scope, TypeTemplatesSet& type_templates_set )
 {
 	if( !type_templates_set.syntax_elements.empty() )
 	{
@@ -744,7 +742,7 @@ void CodeBuilder::GlobalThingTypeTemplatesSet( NamesScope& names_scope, TypeTemp
 	}
 }
 
-void CodeBuilder::GlobalThingTypedef( NamesScope& names_scope, Value& typedef_value )
+void CodeBuilder::GlobalThingBuildTypedef( NamesScope& names_scope, Value& typedef_value )
 {
 	U_ASSERT( typedef_value.GetTypedef() != nullptr );
 	const Synt::Typedef& syntax_element= *typedef_value.GetTypedef()->syntax_element;
@@ -755,7 +753,7 @@ void CodeBuilder::GlobalThingTypedef( NamesScope& names_scope, Value& typedef_va
 	typedef_value= Value( PrepareType( syntax_element.value, names_scope ), syntax_element.file_pos_ );
 }
 
-void CodeBuilder::GlobalThingVariable( NamesScope& names_scope, Value& global_variable_value )
+void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& global_variable_value )
 {
 	U_ASSERT( global_variable_value.GetIncompleteGlobalVariable() != nullptr );
 	const IncompleteGlobalVariable incomplete_global_variable= *global_variable_value.GetIncompleteGlobalVariable();
