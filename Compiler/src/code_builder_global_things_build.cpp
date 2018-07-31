@@ -112,8 +112,6 @@ void CodeBuilder::GlobalThingBuildNamespace( NamesScope& names_scope )
 			else if( name.second.GetVariable() != nullptr ){}
 			else if( name.second.GetStoredVariable() != nullptr ){}
 			else if( name.second.GetErrorValue() != nullptr ){}
-			else if( TypeTemplatesSet* const type_templates_set= name.second.GetTypeTemplatesSet() )
-				GlobalThingBuildTypeTemplatesSet( names_scope, *type_templates_set );
 			else if( const auto static_assert_= name.second.GetStaticAssert() )
 				BuildStaticAssert( *static_assert_, names_scope );
 			else if( name.second.GetTypedef() != nullptr )
@@ -383,6 +381,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type, const T
 			});
 
 		// Complete another body elements.
+		// For class completeness we needs only fields, functions. Constants, types and type templates dones not needed.
 		the_class.members.ForEachInThisScope(
 			[&]( NamesScope::InsertedName& name )
 			{
@@ -392,21 +391,15 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type, const T
 					for( FunctionVariable& function : functions_set->functions )
 						ProcessClassVirtualFunction( the_class, function );
 				}
-				else if( const auto* type= name.second.GetTypeName() )
-				{
-					U_UNUSED(type); // TODO
-				}
-				else if( const auto type_templates_set= name.second.GetTypeTemplatesSet() )
-					GlobalThingBuildTypeTemplatesSet( the_class.members, const_cast<TypeTemplatesSet&>(*type_templates_set) );
-				else if( name.second.GetClassField() != nullptr ) {}
+				else if( name.second.GetClassField() != nullptr ) {} // Fields are already complete.
+				else if( name.second.GetTypeName() != nullptr ) {}
 				else if( name.second.GetVariable() != nullptr ){}
 				else if( name.second.GetStoredVariable() != nullptr ){}
 				else if( name.second.GetErrorValue() != nullptr ){}
 				else if( name.second.GetStaticAssert() != nullptr ){}
-				else if( name.second.GetTypedef() != nullptr )
-					GlobalThingBuildTypedef( the_class.members, name.second );
-				else if( name.second.GetIncompleteGlobalVariable() != nullptr )
-					GlobalThingBuildVariable( the_class.members, name.second );
+				else if( name.second.GetTypedef() != nullptr ) {}
+				else if( name.second.GetTypeTemplatesSet() != nullptr ) {}
+				else if( name.second.GetIncompleteGlobalVariable() != nullptr ) {}
 				else U_ASSERT(false);
 			});
 
@@ -575,7 +568,6 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type, const T
 								}
 
 								// Merge function sets, if result class have functions set with given name.
-								// TODO - merge function templates
 								for( const FunctionVariable& parent_function : functions->functions )
 								{
 									bool overrides= false;
@@ -591,6 +583,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type, const T
 										ApplyOverloadedFunction( *result_class_functions, parent_function, class_declaration.file_pos_ );
 								} // for parent functions
 
+								// TODO - merge function templates smarter.
 								for( const FunctionTemplatePtr& function_template : functions->template_functions )
 									result_class_functions->template_functions.push_back(function_template);
 							}

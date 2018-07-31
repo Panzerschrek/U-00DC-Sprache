@@ -344,13 +344,13 @@ void CodeBuilder::NamesScopeFillOutOfLineElements( NamesScope& names_scope, cons
 		{
 			if( func->name_.components.size() != 1u )
 			{
-				const NamesScope::InsertedName* const func_name= ResolveName( func->file_pos_, names_scope, func->name_, ResolveMode::ForDeclaration );
+				NamesScope::InsertedName* const func_name= ResolveName( func->file_pos_, names_scope, func->name_, ResolveMode::ForDeclaration );
 				if( func_name == nullptr || func_name->second.GetFunctionsSet() == nullptr )
 				{
 					errors_.push_back( ReportFunctionDeclarationOutsideItsScope( func->file_pos_ ) );
 					continue;
 				}
-				const_cast<OverloadedFunctionsSet*>(func_name->second.GetFunctionsSet())->out_of_line_syntax_elements.push_back(func); // TODO - remove const_cast
+				func_name->second.GetFunctionsSet()->out_of_line_syntax_elements.push_back(func);
 			}
 		}
 		else if( const auto namespace_= dynamic_cast<const Synt::Namespace*>( program_element.get() ) )

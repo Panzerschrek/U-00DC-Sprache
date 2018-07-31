@@ -857,8 +857,6 @@ CodeBuilder::TemplateTypeGenerationResult CodeBuilder::GenTemplateType(
 
 	DeducibleTemplateParameters deduced_template_args( type_template.template_parameters.size() );
 
-	// TODO - set as active root namespace of template here.
-
 	const NamesScopePtr template_parameters_namespace = std::make_shared<NamesScope>( ""_SpC, &template_names_scope );
 	for( const TypeTemplate::TemplateParameter& param : type_template.template_parameters )
 		template_parameters_namespace->AddName( param.name, YetNotDeducedTemplateArg() );
@@ -940,7 +938,6 @@ CodeBuilder::TemplateTypeGenerationResult CodeBuilder::GenTemplateType(
 
 	if( deduction_failed )
 	{
-		// TODO - unset namespace of template here.
 		return result;
 	}
 	result.type_template= type_template_ptr;
@@ -954,14 +951,12 @@ CodeBuilder::TemplateTypeGenerationResult CodeBuilder::GenTemplateType(
 			// SPRACHE_TODO - maybe not generate this error?
 			// Other function templates, for example, can match given aruments.
 			errors_.push_back( ReportTemplateParametersDeductionFailed( file_pos ) );
-			// TODO - unset namespace of template here.
 			return result;
 		}
 	}
 
 	if( skip_type_generation )
 	{
-		// TODO - unset namespace of template here.
 		return result;
 	}
 
@@ -976,7 +971,6 @@ CodeBuilder::TemplateTypeGenerationResult CodeBuilder::GenTemplateType(
 	if( NamesScope::InsertedName* const inserted_name= template_names_scope.GetThisScopeName( name_encoded ) )
 	{
 		// Already generated.
-		// TODO - unset namespace of template here.
 
 		const NamesScopePtr template_parameters_space= inserted_name->second.GetNamespace();
 		U_ASSERT( template_parameters_space != nullptr );
@@ -993,8 +987,6 @@ CodeBuilder::TemplateTypeGenerationResult CodeBuilder::GenTemplateType(
 		const auto cache_class_it= template_classes_cache_.find( class_key );
 		if( cache_class_it != template_classes_cache_.end() )
 		{
-			// TODO - unset namespace of template here.
-
 			result.type=
 				template_parameters_namespace->AddName(
 					GetNameForGeneratedClass(),
@@ -1006,15 +998,10 @@ CodeBuilder::TemplateTypeGenerationResult CodeBuilder::GenTemplateType(
 
 		const ClassProxyPtr class_proxy= NamesScopeFill( *template_parameters_namespace, *template_class->class_, GetNameForGeneratedClass() );
 		if( class_proxy == nullptr )
-		{
-			// TODO - unset namespace of template here.
 			return result;
-		}
 
 		GlobalThingBuildClass( class_proxy, TypeCompleteness::Complete );
 		GlobalThingBuildNamespace( class_proxy->class_->members );
-
-		// TODO - unset namespace of template here.
 
 		if( class_proxy->class_->completeness != TypeCompleteness::Complete )
 			return result;
@@ -1040,8 +1027,6 @@ CodeBuilder::TemplateTypeGenerationResult CodeBuilder::GenTemplateType(
 	else if( const Synt::TypedefTemplate* const typedef_template= dynamic_cast<const Synt::TypedefTemplate*>( type_template.syntax_element ) )
 	{
 		const Type type= PrepareType( typedef_template->typedef_->value, *template_parameters_namespace );
-
-		// TODO - unset namespace of template here.
 
 		if( type == invalid_type_ )
 			return result;
@@ -1086,8 +1071,6 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 		template_parameters_namespace.AddName( function_template.template_parameters[i].name, YetNotDeducedTemplateArg() );
 	for( size_t i= 0u; i < function_template.known_template_parameters.size(); ++i )
 		template_parameters_namespace.AddName( function_template.known_template_parameters[i].first, function_template.known_template_parameters[i].second );
-
-	// TODO - set as active root namespace of template here.
 
 	bool deduction_failed= false;
 	std::vector<DeducedTemplateParameter> deduced_temlpate_parameters( function_declaration.type_.arguments_.size() );
@@ -1204,10 +1187,7 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 	} // for template function arguments
 
 	if( deduction_failed )
-	{
-		// TODO - unset namespace of template here.
 		return nullptr;
-	}
 
 	for( size_t i = 0u; i < deduced_template_args.size() ; ++i )
 	{
@@ -1216,7 +1196,6 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 		if( boost::get<int>( &arg ) != nullptr )
 		{
 			errors_.push_back( ReportTemplateParametersDeductionFailed( file_pos ) );
-			// TODO - unset namespace of template here.
 			return nullptr;
 		}
 	}
@@ -1230,7 +1209,6 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 	if( const NamesScope::InsertedName* const inserted_name= function_template.parent_namespace->GetThisScopeName( name_encoded ) )
 	{
 		//Function for this template arguments already generated.
-		// TODO - unset namespace of template here.
 		return inserted_name->second.GetFunctionVariable();
 	}
 
@@ -1240,10 +1218,7 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 	GlobalThingBuildFunctionsSet( template_parameters_namespace, result_functions_set, false );
 
 	if( result_functions_set.functions.empty() )
-	{
-		// TODO - unset namespace of template here.
 		return nullptr; // Function prepare failed
-	}
 
 	// Insert generated function
 	FunctionVariable function_variable= result_functions_set.functions.front();
@@ -1261,7 +1236,6 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 		function_template.syntax_element->function_->type_.arguments_,
 		function_template.syntax_element->function_->block_.get(),
 		nullptr );
-	// TODO - unset namespace of template here.
 
 	// Two-step preparation needs for recursive function template call.
 
@@ -1362,7 +1336,6 @@ NamesScope::InsertedName* CodeBuilder::GenTemplateFunctionsUsingTemplateParamete
 				}
 				else
 				{
-					// TODO - set as active root namespace of template here.
 					if( const NamesScope::InsertedName* const type_name=
 							ResolveName( function_template.file_pos, *function_template.parent_namespace, *function_template_parameter.type_name ) )
 					{
@@ -1373,7 +1346,6 @@ NamesScope::InsertedName* CodeBuilder::GenTemplateFunctionsUsingTemplateParamete
 					}
 					else
 						ok= false;
-					// TODO - unset namespace of template here.
 				}
 
 				if( !ok )
