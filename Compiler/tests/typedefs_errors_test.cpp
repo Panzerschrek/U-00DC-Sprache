@@ -109,6 +109,8 @@ U_TEST( NameNotFound_ForTypedefTemplate_Test0 )
 	R"(
 		template</ type T />
 		type Box</ T />= Can</ T />;    // "Can" - unknown
+
+		type BoxI= Box</i32/>;
 	)";
 
 	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );

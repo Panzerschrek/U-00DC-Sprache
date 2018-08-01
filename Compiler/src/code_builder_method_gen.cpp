@@ -439,7 +439,8 @@ void CodeBuilder::TryGenerateDestructor( Class& the_class, const Type& class_typ
 		the_class.members.GetThisScopeName( Keyword( Keywords::destructor_ ) ) )
 	{
 		OverloadedFunctionsSet* const destructors= destructor_name->second.GetFunctionsSet();
-		U_ASSERT( destructors != nullptr && destructors->functions.size() == 1u );
+		if( destructors->functions.empty() )
+			return; // destructors may be invalid in case of error.
 
 		FunctionVariable& destructor_function= destructors->functions.front();
 		if( destructor_function.is_generated && !destructor_function.have_body )

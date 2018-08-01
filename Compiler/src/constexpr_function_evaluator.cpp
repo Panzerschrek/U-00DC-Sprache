@@ -30,6 +30,8 @@ ConstexprFunctionEvaluator::Result ConstexprFunctionEvaluator::Evaluate(
 {
 	file_pos_ = &file_pos;
 
+	stack_.resize(16u); // reserve null pointer
+
 	U_ASSERT( args.size() == llvm_function->getFunctionType()->getNumParams() );
 
 	size_t s_ret_ptr= 0u;
@@ -284,7 +286,10 @@ size_t ConstexprFunctionEvaluator::MoveConstantToStack( const llvm::Constant& co
 	if( prev_it != external_constant_mapping_.end() )
 		return prev_it->second;
 
-	// Use separate stack for constants, because we can push constants to int in any time.
+	if( !constant.getType()->isSized() )
+		return 0u; // Constant have incomplete type.
+
+	// Use separate stack for constants, because we can push constants to it in any time.
 
 	const size_t stack_offset= constants_stack_.size();
 	const size_t new_stack_size= constants_stack_.size() + size_t( data_layout_.getTypeAllocSize( constant.getType() ) );

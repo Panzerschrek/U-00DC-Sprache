@@ -51,8 +51,6 @@ U_TEST( NameNotFound_ForClassTemplateSingatureArguments_Test0 )
 	static const char c_program_text[]=
 	R"(
 		template</  /> class CC</ SSSS /> {} // Name in signature argument not known yet.
-
-		struct SSSS{}
 	)";
 
 	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
@@ -70,8 +68,6 @@ U_TEST( NameNotFound_ForClassTemplateArguments_Test0 )
 	static const char c_program_text[]=
 	R"(
 		template</ SSS xx /> class CC</ xx /> {} // Name in type of value-argument not known yet.
-
-		struct SSS{}
 	)";
 
 	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
@@ -89,8 +85,6 @@ U_TEST( NameNotFound_ForClassTemplateDefaultSignatureArguments_Test0 )
 	static const char c_program_text[]=
 	R"(
 		template</ type T /> class CC</ T= SSS /> {} // Name of default signature argument not known here yet.
-
-		struct SSS{}
 	)";
 
 	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );

@@ -208,6 +208,30 @@ U_TEST(Redefinition3)
 	U_TEST_ASSERT( error.file_pos.line == 8u );
 }
 
+U_TEST( Redefinition4 )
+{
+	static const char c_program_text[]=
+	R"(
+		namespace A
+		{
+			struct S;
+		}
+		namespace B
+		{
+			type LocalS= A::S;
+			struct LocalS{} // Error, redefine typedef
+		}
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::Redefinition );
+	U_TEST_ASSERT( error.file_pos.line == 9u );
+}
+
 U_TEST(UnknownNumericConstantTypeTest0)
 {
 	// unknown name
@@ -1579,24 +1603,6 @@ U_TEST(FunctionPrototypeDuplicationTest1)
 	R"(
 		fn Bar( i32 x, f64 y );
 		fn Bar( i32 xx, f64 yy );
-	)";
-
-	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
-
-	U_TEST_ASSERT( !build_result.errors.empty() );
-	const CodeBuilderError& error= build_result.errors.front();
-
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::FunctionPrototypeDuplication );
-	U_TEST_ASSERT( error.file_pos.line == 3u );
-}
-
-U_TEST(FunctionPrototypeDuplicationTest2)
-{
-	// Prototype after body
-	static const char c_program_text[]=
-	R"(
-		fn Bar( i32 x ){}
-		fn Bar( i32 x );
 	)";
 
 	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );

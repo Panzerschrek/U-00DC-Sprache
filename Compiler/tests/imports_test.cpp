@@ -374,7 +374,7 @@ U_TEST( ImportsTest9_ImportFileWithClassPrototypeAfterFileWithClassBody )
 	U_TEST_ASSERT( static_cast<uint64_t>(123567845) == result_value.IntVal.getLimitedValue() );
 }
 
-U_TEST( ImportsTest10_ImportFileWithClassBodyAfterFileWithClassprototype )
+U_TEST( ImportsTest10_ImportFileWithClassBodyAfterFileWithClassPrototype )
 {
 	static const char c_program_text_a[]=
 	R"(
@@ -680,6 +680,141 @@ U_TEST( ImportsTest14_ImportFunctionTemplate1 )
 
 	const llvm::GenericValue result_value= engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
 	U_TEST_ASSERT( static_cast<uint64_t>(1917) == result_value.IntVal.getLimitedValue() );
+}
+
+U_TEST( ImportsTest15_NewSymbolsNotVisibleInImportedFunctionTemplate )
+{
+	static const char c_program_text_a[]=
+	R"(
+		auto constexpr g_count= 584;
+		namespace A
+		{
+			template</ type T />
+			fn GetCount() : T { return T(g_count); }  // Must select ::g_count
+		}
+	)";
+
+	static const char c_program_text_root[]=
+	R"(
+		import "a"
+
+		namespace A
+		{
+			auto constexpr g_count= 9999;  // But this variable must not be visible from imporded template function
+		}
+
+		fn Foo() : f32
+		{
+			return A::GetCount</f32/>();
+		}
+	)";
+
+	const EnginePtr engine=
+		CreateEngine(
+			BuildMultisourceProgram(
+				{
+					{ "a"_SpC, c_program_text_a },
+					{ "root"_SpC, c_program_text_root }
+				},
+				"root"_SpC ) );
+
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	const llvm::GenericValue result_value= engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+	U_TEST_ASSERT( 584.0f == result_value.FloatVal );
+}
+
+U_TEST( ImportsTest16_NewSymbolsNotVisibleInImportedClassTemplate )
+{
+	static const char c_program_text_a[]=
+	R"(
+		auto constexpr g_count= 65474;
+		namespace A
+		{
+			template</ type T />
+			struct S
+			{
+				fn GetCount() : T { return T(g_count); }  // Must select ::g_count
+			}
+		}
+	)";
+
+	static const char c_program_text_root[]=
+	R"(
+		import "a"
+
+		namespace A
+		{
+			auto constexpr g_count= 111111;  // But this variable must not be visible from imporded template function
+		}
+
+		fn Foo() : f32
+		{
+			return A::S</f32/>::GetCount();
+		}
+	)";
+
+	const EnginePtr engine=
+		CreateEngine(
+			BuildMultisourceProgram(
+				{
+					{ "a"_SpC, c_program_text_a },
+					{ "root"_SpC, c_program_text_root }
+				},
+				"root"_SpC ) );
+
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	const llvm::GenericValue result_value= engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+	U_TEST_ASSERT( 65474.0f == result_value.FloatVal );
+}
+
+
+U_TEST( ImportsTest17_NewSymbolsNotVisibleInImportedClassTemplate )
+{
+	static const char c_program_text_a[]=
+	R"(
+		template</ type T /> fn Bar( T &imut t ) : i32 { return 999; }
+
+		template</ type T />
+		struct S
+		{
+			fn Bar() : i32
+			{
+				var T mut x= zero_init;
+				return ::Bar(x); // Must select function with immutable argument, because function with mutable argument defined in different module.
+			}
+		}
+	)";
+
+	static const char c_program_text_root[]=
+	R"(
+		import "a"
+
+		template</ type T /> fn Bar( T &mut t ) : i32 { return 666; }
+
+		fn Foo() : i32
+		{
+			return S</f64/>::Bar();
+		}
+	)";
+
+	const EnginePtr engine=
+		CreateEngine(
+			BuildMultisourceProgram(
+				{
+					{ "a"_SpC, c_program_text_a },
+					{ "root"_SpC, c_program_text_root }
+				},
+				"root"_SpC ) );
+
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	const llvm::GenericValue result_value= engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+	U_TEST_ASSERT( static_cast<uint64_t>(999) == result_value.IntVal.getLimitedValue() );
 }
 
 } // namespace U

@@ -1142,9 +1142,10 @@ Value CodeBuilder::DoReferenceCast(
 	{
 		// Complete types required for both safe and unsafe casting, except unsafe void to anything cast.
 		// This needs, becasue we must emit same code for places where types yet not complete, and where they are complete.
-		if( type.IsIncomplete() )
+		if( !EnsureTypeCompleteness( type, TypeCompleteness::Complete ) )
 			errors_.push_back( ReportUsingIncompleteType( file_pos, type.ToString() ) );
-		if( var->type.IsIncomplete() && !( enable_unsafe && var->type == void_type_ ) )
+
+		if( !( enable_unsafe && var->type == void_type_ ) && !EnsureTypeCompleteness( var->type, TypeCompleteness::Complete ) )
 			errors_.push_back( ReportUsingIncompleteType( file_pos, var->type.ToString() ) );
 
 		if( var->type.ReferenceIsConvertibleTo( type ) )
@@ -1787,7 +1788,7 @@ Value CodeBuilder::BuildMemberAccessOperator(
 		return ErrorValue();
 	}
 
-	if( class_type->completeness != Class::Completeness::Complete )
+	if( !EnsureTypeCompleteness( value.GetType(), TypeCompleteness::Complete ) )
 	{
 		errors_.push_back( ReportUsingIncompleteType( member_access_operator.file_pos_, value.GetType().ToString() ) );
 		return ErrorValue();
@@ -1822,7 +1823,6 @@ Value CodeBuilder::BuildMemberAccessOperator(
 						member_access_operator.file_pos_,
 						functions_set->template_functions,
 						member_access_operator.template_parameters,
-						class_type->members,
 						names );
 				if( inserted_name == nullptr )
 					return ErrorValue();
@@ -1883,7 +1883,20 @@ Value CodeBuilder::BuildMemberAccessOperator(
 
 	if( variable.constexpr_value != nullptr )
 	{
-		result.constexpr_value= variable.constexpr_value->getAggregateElement( static_cast<unsigned int>( field->index ) );
+		llvm::Constant* var_constexpr_value= variable.constexpr_value;
+		if( class_type->is_typeinfo ) // HACK!!! Replace old constexpr value with new for typeinfo, because constexpr value for incomplete type may be undef.
+		{
+			for( const auto& typeinfo_cache_entry : typeinfo_cache_ )
+			{
+				if( typeinfo_cache_entry.second.type == variable.type )
+				{
+					var_constexpr_value= typeinfo_cache_entry.second.constexpr_value;
+					break;
+				}
+			}
+		}
+
+		result.constexpr_value= var_constexpr_value->getAggregateElement( static_cast<unsigned int>( field->index ) );
 		if( field->is_reference )
 		{
 			// TODO - what if storage for constexpr reference valus is not "GlobalVariable"?
@@ -2372,7 +2385,7 @@ Value CodeBuilder::DoCallFunction(
 	}
 	else
 	{
-		if( function_type.return_type != void_type_ && function_type.return_type.IsIncomplete() )
+		if( function_type.return_type != void_type_ && !EnsureTypeCompleteness( function_type.return_type, TypeCompleteness::Complete ) )
 			errors_.push_back( ReportUsingIncompleteType( call_file_pos, function_type.return_type.ToString() ) );
 
 		result.location= return_value_is_sret ? Variable::Location::Pointer : Variable::Location::LLVMRegister;
@@ -2517,6 +2530,12 @@ Variable CodeBuilder::BuildTempVariableConstruction(
 	NamesScope& names,
 	FunctionContext& function_context )
 {
+	if( !EnsureTypeCompleteness( type, TypeCompleteness::Complete ) )
+	{
+		errors_.push_back( ReportUsingIncompleteType( call_operator.file_pos_, type.ToString() ) );
+		return Variable();
+	}
+
 	const StoredVariablePtr stored_variable= std::make_shared<StoredVariable>( "temp "_SpC + type.ToString(), Variable() );
 	function_context.stack_variables_stack.back()->RegisterVariable( stored_variable );
 	Variable& variable= stored_variable->content;
@@ -2531,7 +2550,6 @@ Variable CodeBuilder::BuildTempVariableConstruction(
 	variable.value_type= ValueType::Value; // Make value after construction
 
 	variable.referenced_variables.emplace( stored_variable );
-
 
 	return variable;
 }

@@ -50,13 +50,20 @@ struct TemplateBase;
 typedef std::shared_ptr<TemplateBase> TemplateBasePtr;
 
 struct TypeTemplate;
+struct TypeTemplatesSet;
 typedef std::shared_ptr<TypeTemplate> TypeTemplatePtr;
-using TypeTemplatesSet= std::vector<TypeTemplatePtr>; // Set of type templates with same name.
 
 struct FunctionTemplate;
 typedef std::shared_ptr<FunctionTemplate> FunctionTemplatePtr;
 
 class DeducedTemplateParameter;
+
+enum class TypeCompleteness
+{
+	Incomplete, // Known nothing
+	ReferenceTagsComplete, // Known fields, parents.
+	Complete, // Known also member functions
+};
 
 struct FundamentalType final
 {
@@ -74,6 +81,7 @@ enum class NontypeStub
 	TypeName,
 	Namespace,
 	TypeTemplate,
+	StaticAssertTypeStub,
 	YetNotDeducedTemplateArg,
 	ErrorValue,
 	VariableStorage,
@@ -115,13 +123,13 @@ public:
 	ClassProxyPtr GetClassTypeProxy() const;
 	Class* GetClassType() const;
 	Enum* GetEnumType() const;
+	EnumPtr GetEnumTypePtr() const;
 
 	bool ReferenceIsConvertibleTo( const Type& other ) const;
 
 	// TODO - does this method needs?
 	SizeType SizeOf() const;
 
-	bool IsIncomplete() const;
 	bool IsDefaultConstructible() const;
 	bool IsCopyConstructible() const;
 	bool IsCopyAssignable() const;
@@ -238,6 +246,9 @@ bool operator!=( const Array& r, const Array& l );
 
 struct FunctionVariable final
 {
+	const Synt::Function* syntax_element= nullptr;
+	Synt::VirtualFunctionKind virtual_function_kind= Synt::VirtualFunctionKind::None;
+
 	enum class ConstexprKind
 	{
 		NonConstexpr,
@@ -251,7 +262,7 @@ struct FunctionVariable final
 	std::vector<DeducedTemplateParameter> deduced_temlpate_parameters;
 
 	unsigned int virtual_table_index= ~0u; // For virtual functions number in virtual functions table in class of first arg(this).
-	bool have_body= true;
+	bool have_body= false;
 	bool is_this_call= false;
 	bool is_generated= false;
 	bool is_deleted= false;
@@ -269,8 +280,22 @@ struct FunctionVariable final
 struct OverloadedFunctionsSet
 {
 	std::vector<FunctionVariable> functions;
-
 	std::vector<FunctionTemplatePtr> template_functions;
+
+	// Is incomplete, if there are some syntax elements in containers.
+	std::vector<const Synt::Function*> syntax_elements;
+	std::vector<const Synt::Function*> out_of_line_syntax_elements;
+	std::vector<const Synt::FunctionTemplate*> template_syntax_elements;
+
+	ClassProxyPtr base_class;
+};
+
+struct TypeTemplatesSet
+{
+	std::vector<TypeTemplatePtr> type_templates;
+
+	// Is incomplete, if there are some syntax elements in containers.
+	std::vector<const Synt::TypeTemplateBase*> syntax_elements;
 };
 
 class StoredVariable;
@@ -332,9 +357,10 @@ public:
 	const VariableStorageUseCounter  mut_use_counter= std::make_shared<int>();
 	const VariableStorageUseCounter imut_use_counter= std::make_shared<int>();
 
-	const Kind kind;
-	const bool is_global_constant;
+	Kind kind= Kind::Variable;
+	bool is_global_constant= false;
 
+	explicit StoredVariable( ProgramString in_name );
 	StoredVariable( ProgramString iname, Variable icontent, Kind ikind= Kind::Variable, bool iis_global_constant= false );
 };
 
@@ -396,8 +422,9 @@ struct VaraibleReferencesCounter
 struct ClassField final
 {
 	Type type;
-	unsigned int index= 0u;
 	ClassProxyWeakPtr class_;
+	const Synt::ClassField* syntax_element= nullptr;
+	unsigned int index= ~0u;
 	bool is_mutable= true;
 	bool is_reference= false;
 
@@ -410,6 +437,23 @@ struct ThisOverloadedMethodsSet final
 {
 	Variable this_;
 	OverloadedFunctionsSet overloaded_methods_set;
+};
+
+struct StaticAssert
+{
+	const Synt::StaticAssert* syntax_element= nullptr; // Null if completed.
+};
+
+struct Typedef
+{
+	const Synt::Typedef* syntax_element= nullptr;
+};
+
+struct IncompleteGlobalVariable
+{
+	const Synt::SyntaxElementBase* syntax_element= nullptr; // VariablesDeclaration or AutoVariableDeclaration
+	size_t element_index= ~0u; // For VariablesDeclaration - index of variable.
+	ProgramString name;
 };
 
 struct YetNotDeducedTemplateArg final
@@ -431,6 +475,9 @@ public:
 	Value( ThisOverloadedMethodsSet class_field );
 	Value( const NamesScopePtr& namespace_, const FilePos& file_pos );
 	Value( TypeTemplatesSet type_templates, const FilePos& file_pos );
+	Value( StaticAssert static_assert_, const FilePos& file_pos );
+	Value( Typedef typedef_, const FilePos& file_pos );
+	Value( IncompleteGlobalVariable incomplete_global_variable, const FilePos& file_pos );
 	Value( YetNotDeducedTemplateArg yet_not_deduced_template_arg );
 	Value( ErrorValue error_value );
 
@@ -456,6 +503,7 @@ public:
 	Type* GetTypeName();
 	const Type* GetTypeName() const;
 	// Class fields
+	ClassField* GetClassField();
 	const ClassField* GetClassField() const;
 	// This + methods set
 	ThisOverloadedMethodsSet* GetThisOverloadedMethodsSet();
@@ -465,6 +513,15 @@ public:
 	// Type templates sel
 	TypeTemplatesSet* GetTypeTemplatesSet();
 	const TypeTemplatesSet* GetTypeTemplatesSet() const;
+	// static assert
+	StaticAssert* GetStaticAssert();
+	const StaticAssert* GetStaticAssert() const;
+	// typedef
+	Typedef* GetTypedef();
+	const Typedef* GetTypedef() const;
+	// incomplete global variable
+	IncompleteGlobalVariable* GetIncompleteGlobalVariable();
+	const IncompleteGlobalVariable* GetIncompleteGlobalVariable() const;
 	// Yet not deduced template arg
 	YetNotDeducedTemplateArg* GetYetNotDeducedTemplateArg();
 	const YetNotDeducedTemplateArg* GetYetNotDeducedTemplateArg() const;
@@ -483,6 +540,9 @@ private:
 		ThisOverloadedMethodsSet,
 		NamesScopePtr,
 		TypeTemplatesSet,
+		StaticAssert,
+		Typedef,
+		IncompleteGlobalVariable,
 		YetNotDeducedTemplateArg,
 		ErrorValue > something_;
 
@@ -514,9 +574,7 @@ public:
 	typedef std::map< ProgramString, Value > NamesMap;
 	typedef NamesMap::value_type InsertedName;
 
-	NamesScope(
-		ProgramString name,
-		const NamesScope* parent );
+	NamesScope( ProgramString name, NamesScope* parent );
 
 	NamesScope( const NamesScope&)= delete;
 	NamesScope& operator=( const NamesScope&)= delete;
@@ -529,14 +587,24 @@ public:
 	InsertedName* AddName( const ProgramString& name, Value value );
 
 	// Resolve simple name only in this scope.
-	InsertedName* GetThisScopeName( const ProgramString& name ) const;
+	InsertedName* GetThisScopeName( const ProgramString& name );
+	const InsertedName* GetThisScopeName( const ProgramString& name ) const;
 
+	NamesScope* GetParent();
 	const NamesScope* GetParent() const;
+	NamesScope* GetRoot();
 	const NamesScope* GetRoot() const;
-	void SetParent( const NamesScope* parent );
+	void SetParent( NamesScope* parent );
 
 	void AddAccessRightsFor( const ClassProxyPtr& class_, ClassMemberVisibility visibility );
 	ClassMemberVisibility GetAccessFor( const ClassProxyPtr& class_ ) const;
+
+	template<class Func>
+	void ForEachInThisScope( const Func& func )
+	{
+		for( InsertedName& inserted_name : names_map_ )
+			func( inserted_name );
+	}
 
 	template<class Func>
 	void ForEachInThisScope( const Func& func ) const
@@ -549,7 +617,7 @@ public:
 
 private:
 	ProgramString name_;
-	const NamesScope* parent_;
+	NamesScope* parent_;
 	NamesMap names_map_;
 	std::unordered_map<ClassProxyPtr, ClassMemberVisibility> access_rights_;
 };
@@ -598,7 +666,7 @@ typedef std::unordered_map< TemplateClassKey, ClassProxyPtr, TemplateClassKeyHas
 class Class final
 {
 public:
-	Class( const ProgramString& name, const NamesScope* parent_scope );
+	Class( const ProgramString& name, NamesScope* parent_scope );
 	~Class();
 
 	Class( const Class& )= delete;
@@ -636,13 +704,6 @@ public:
 		bool is_final= false;
 	};
 
-	enum class Completeness
-	{
-		Incomplete, // Known nothing
-		ReferenceTagsComplete, // Known fields, parents, inner types and type templates.
-		Complete, // Known member functions and function templates.
-	};
-
 public:
 	// If you change this, you must change CodeBuilder::CopyClass too!
 
@@ -652,9 +713,12 @@ public:
 	// TODO - maybe use unordered_map?
 	std::map< ProgramString, ClassMemberVisibility > members_visibility;
 
+	const Synt::Class* syntax_element= nullptr;
+
 	size_t field_count= 0u;
 	size_t references_tags_count= 0u;
-	Completeness completeness= Completeness::Incomplete;
+	TypeCompleteness completeness= TypeCompleteness::Incomplete;
+	bool is_typeinfo= false;
 	bool have_explicit_noncopy_constructors= false;
 	bool is_default_constructible= false;
 	bool is_copy_constructible= false;
@@ -688,11 +752,13 @@ public:
 
 struct Enum
 {
-	Enum( const ProgramString& name, const NamesScope* parent_scope );
+	Enum( const ProgramString& name, NamesScope* parent_scope );
 
 	NamesScope members;
 	SizeType element_count= 0u;
 	FundamentalType underlaying_type; // must be integer
+
+	const Synt::Enum* syntax_element= nullptr; // Null if completed
 };
 
 struct TemplateBase
@@ -706,7 +772,7 @@ struct TemplateBase
 	std::vector< TemplateParameter > template_parameters;
 
 	ResolvingCache resolving_cache;
-	NamesScope* parent_namespace= nullptr; // Changes after import.
+	NamesScope* parent_namespace= nullptr; // NamesScope, where defined. NOT changed after import.
 
 	FilePos file_pos;
 };
@@ -720,7 +786,6 @@ struct TypeTemplate final : TemplateBase
 	// Store syntax tree element for instantiation.
 	// Syntax tree must live longer, than this struct.
 	const Synt::TypeTemplateBase* syntax_element= nullptr;
-
 };
 
 typedef boost::variant< int, Type, Variable > DeducibleTemplateParameter; // int means not deduced

@@ -30,6 +30,7 @@ def main():
 		"inheritance_test",
 		"inheritance_errors_test",
 		"methods_generation_test",
+		"order_independent_name_resolving_test",
 		"overloading_resolution_test",
 		"public_private_protected_test",
 		"reference_cast_operators_test",

@@ -11,7 +11,7 @@ namespace CodeBuilderPrivate
 
 void CodeBuilder::ProcessClassParentsVirtualTables( Class& the_class )
 {
-	U_ASSERT( the_class.completeness != Class::Completeness::Complete );
+	U_ASSERT( the_class.completeness != TypeCompleteness::Complete );
 	U_ASSERT( the_class.virtual_table.empty() );
 
 	// Copy virtual table of base class.
@@ -45,7 +45,7 @@ void CodeBuilder::ProcessClassParentsVirtualTables( Class& the_class )
 
 void CodeBuilder::TryGenerateDestructorPrototypeForPolymorphClass( Class& the_class, const Type& class_type )
 {
-	U_ASSERT( the_class.completeness != Class::Completeness::Complete );
+	U_ASSERT( the_class.completeness != TypeCompleteness::Complete );
 	U_ASSERT( the_class.virtual_table_llvm_type == nullptr );
 	U_ASSERT( the_class.this_class_virtual_table == nullptr );
 
@@ -86,29 +86,27 @@ void CodeBuilder::TryGenerateDestructorPrototypeForPolymorphClass( Class& the_cl
 	the_class.members.AddName( Keyword( Keywords::destructor_ ), destructors_set );
 }
 
-void CodeBuilder::ProcessClassVirtualFunction( Class& the_class, PrepareFunctionResult& function )
+void CodeBuilder::ProcessClassVirtualFunction( Class& the_class, FunctionVariable& function )
 {
-	U_ASSERT( the_class.completeness != Class::Completeness::Complete );
-	U_ASSERT( function.functions_set != nullptr );
+	U_ASSERT( the_class.completeness != TypeCompleteness::Complete );
 
-	FunctionVariable& function_variable= (function.functions_set->functions)[function.function_index];
-	const ProgramString& function_name= function.func_syntax_element->name_.components.back().name; // TODO - does this right?
-	const FilePos& file_pos= function.func_syntax_element->file_pos_;
+	const ProgramString& function_name= function.syntax_element->name_.components.back().name;
+	const FilePos& file_pos= function.syntax_element->file_pos_;
 
-	if( function.func_syntax_element->virtual_function_kind_ != Synt::VirtualFunctionKind::None &&
+	if( function.virtual_function_kind != Synt::VirtualFunctionKind::None &&
 		the_class.GetMemberVisibility( function_name ) == ClassMemberVisibility::Private )
 	{
 		// Private members not visible in child classes. So, virtual private function is 100% error.
 		errors_.push_back( ReportVirtualForPrivateFunction( file_pos, function_name ) );
 	}
 
-	if( !function_variable.is_this_call )
+	if( !function.is_this_call )
 		return; // May be in case of error
 
 	Class::VirtualTableEntry* virtual_table_entry= nullptr;
 	for( Class::VirtualTableEntry& e : the_class.virtual_table )
 	{
-		if( e.name == function_name && e.function_variable.VirtuallyEquals( function_variable ) )
+		if( e.name == function_name && e.function_variable.VirtuallyEquals( function ) )
 		{
 			virtual_table_entry= &e;
 			break;
@@ -118,7 +116,7 @@ void CodeBuilder::ProcessClassVirtualFunction( Class& the_class, PrepareFunction
 	if( virtual_table_entry != nullptr )
 		virtual_table_index= static_cast<unsigned int>(virtual_table_entry - the_class.virtual_table.data());
 
-	switch( function.func_syntax_element->virtual_function_kind_ )
+	switch( function.virtual_function_kind )
 	{
 	case Synt::VirtualFunctionKind::None:
 		if( function_name == Keywords::destructor_ )
@@ -127,17 +125,17 @@ void CodeBuilder::ProcessClassVirtualFunction( Class& the_class, PrepareFunction
 			// If destructor not marked as virtual, but it placed in polymorph class, make it virtual.
 			if( virtual_table_entry != nullptr )
 			{
-				function_variable.virtual_table_index= virtual_table_index;
-				virtual_table_entry->function_variable= function_variable;
+				function.virtual_table_index= virtual_table_index;
+				virtual_table_entry->function_variable= function;
 			}
 			else if( the_class.kind == Class::Kind::PolymorphFinal || the_class.kind == Class::Kind::PolymorphNonFinal ||
 					 the_class.kind == Class::Kind::Interface || the_class.kind == Class::Kind::Abstract )
 			{
-				function_variable.virtual_table_index= static_cast<unsigned int>(the_class.virtual_table.size());
+				function.virtual_table_index= static_cast<unsigned int>(the_class.virtual_table.size());
 
 				Class::VirtualTableEntry new_virtual_table_entry;
 				new_virtual_table_entry.name= function_name;
-				new_virtual_table_entry.function_variable= function_variable;
+				new_virtual_table_entry.function_variable= function;
 				new_virtual_table_entry.is_pure= false;
 				new_virtual_table_entry.is_final= false;
 				the_class.virtual_table.push_back( std::move( new_virtual_table_entry ) );
@@ -152,11 +150,11 @@ void CodeBuilder::ProcessClassVirtualFunction( Class& the_class, PrepareFunction
 			errors_.push_back( ReportOverrideRequired( file_pos, function_name ) );
 		else
 		{
-			function_variable.virtual_table_index= static_cast<unsigned int>(the_class.virtual_table.size());
+			function.virtual_table_index= static_cast<unsigned int>(the_class.virtual_table.size());
 
 			Class::VirtualTableEntry new_virtual_table_entry;
 			new_virtual_table_entry.name= function_name;
-			new_virtual_table_entry.function_variable= function_variable;
+			new_virtual_table_entry.function_variable= function;
 			new_virtual_table_entry.is_pure= false;
 			new_virtual_table_entry.is_final= false;
 			the_class.virtual_table.push_back( std::move( new_virtual_table_entry ) );
@@ -170,8 +168,8 @@ void CodeBuilder::ProcessClassVirtualFunction( Class& the_class, PrepareFunction
 			errors_.push_back( ReportOverrideFinalFunction( file_pos, function_name  ) );
 		else
 		{
-			function_variable.virtual_table_index= virtual_table_index;
-			virtual_table_entry->function_variable= function_variable;
+			function.virtual_table_index= virtual_table_index;
+			virtual_table_entry->function_variable= function;
 			virtual_table_entry->is_pure= false;
 		}
 		break;
@@ -185,8 +183,8 @@ void CodeBuilder::ProcessClassVirtualFunction( Class& the_class, PrepareFunction
 				errors_.push_back( ReportOverrideFinalFunction( file_pos, function_name ) );
 			else
 			{
-				function_variable.virtual_table_index= virtual_table_index;
-				virtual_table_entry->function_variable= function_variable;
+				function.virtual_table_index= virtual_table_index;
+				virtual_table_entry->function_variable= function;
 				virtual_table_entry->is_pure= false;
 				virtual_table_entry->is_final= true;
 			}
@@ -198,17 +196,17 @@ void CodeBuilder::ProcessClassVirtualFunction( Class& the_class, PrepareFunction
 			errors_.push_back( ReportOverrideRequired( file_pos, function_name ) );
 		else
 		{
-			if( function.func_syntax_element->block_ != nullptr )
+			if( function.syntax_element->block_ != nullptr )
 				errors_.push_back( ReportBodyForPureVirtualFunction( file_pos, function_name ) );
 			if( function_name == Keyword( Keywords::destructor_ ) )
 				errors_.push_back( ReportPureDestructor( file_pos, the_class.members.GetThisNamespaceName() ) );
-			function_variable.have_body= true; // Mark pure function as "with body", because we needs to disable real body creation for pure function.
+			function.have_body= true; // Mark pure function as "with body", because we needs to disable real body creation for pure function.
 
-			function_variable.virtual_table_index= static_cast<unsigned int>(the_class.virtual_table.size());
+			function.virtual_table_index= static_cast<unsigned int>(the_class.virtual_table.size());
 
 			Class::VirtualTableEntry new_virtual_table_entry;
 			new_virtual_table_entry.name= function_name;
-			new_virtual_table_entry.function_variable= function_variable;
+			new_virtual_table_entry.function_variable= function;
 			new_virtual_table_entry.is_pure= true;
 			new_virtual_table_entry.is_final= false;
 			the_class.virtual_table.push_back( std::move( new_virtual_table_entry ) );
@@ -219,7 +217,7 @@ void CodeBuilder::ProcessClassVirtualFunction( Class& the_class, PrepareFunction
 
 void CodeBuilder::PrepareClassVirtualTableType( Class& the_class )
 {
-	U_ASSERT( the_class.completeness != Class::Completeness::Complete );
+	U_ASSERT( the_class.completeness != TypeCompleteness::Complete );
 	U_ASSERT( the_class.virtual_table_llvm_type == nullptr );
 
 	if( the_class.virtual_table.empty() )
@@ -312,7 +310,7 @@ void CodeBuilder::BuildClassVirtualTables_r( Class& the_class, const Type& class
 
 void CodeBuilder::BuildClassVirtualTables( Class& the_class, const Type& class_type )
 {
-	U_ASSERT( the_class.completeness != Class::Completeness::Complete );
+	U_ASSERT( the_class.completeness != TypeCompleteness::Complete );
 	U_ASSERT( the_class.this_class_virtual_table == nullptr );
 	U_ASSERT( the_class.ancestors_virtual_tables.empty() );
 

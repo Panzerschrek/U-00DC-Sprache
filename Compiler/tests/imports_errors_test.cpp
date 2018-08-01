@@ -148,13 +148,13 @@ U_TEST( ImportedClassShouldNotBeModified_Test1 )
 {
 	static const char c_program_text_a[]=
 	R"(
-		struct A{ struct B; }
+		namespace A{ struct B; }
 	)";
 
 	static const char c_program_text_b[]=
 	R"(
 		import "a"
-		struct A::B{} // Extend imported class. Imported class must not be affected.
+		namespace A{ struct B{} } // Extend imported class. Imported class must not be affected.
 	)";
 
 	static const char c_program_text_c[]=

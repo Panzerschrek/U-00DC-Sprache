@@ -1,4 +1,5 @@
 #pragma once
+#include <list>
 #include <set>
 #include <vector>
 #include <unordered_map>
@@ -119,18 +120,23 @@ private:
 		bool have_uncodnitional_break_or_continue= false;
 	};
 
-	struct PrepareFunctionResult
-	{
-		const Synt::Function* func_syntax_element= nullptr;
-		OverloadedFunctionsSet* functions_set= nullptr;
-		size_t function_index= 0u;
-	};
-
 	struct TemplateTypeGenerationResult
 	{
 		TypeTemplatePtr type_template;
 		NamesScope::InsertedName* type= nullptr;
 		std::vector<DeducedTemplateParameter> deduced_template_parameters;
+	};
+
+	struct GlobalThing // TODO - move struct out of here
+	{
+		const void* thing_ptr= nullptr;
+		ProgramString name;
+		FilePos file_pos;
+		TypeCompleteness completeness= TypeCompleteness::Incomplete;
+
+		GlobalThing( const void* const in_thing_ptr, const ProgramString& in_name, const FilePos& in_file_pos, const TypeCompleteness in_completeness )
+			: thing_ptr(in_thing_ptr), name(in_name), file_pos(in_file_pos), completeness(in_completeness)
+		{}
 	};
 
 private:
@@ -150,19 +156,10 @@ private:
 
 	llvm::FunctionType* GetLLVMFunctionType( const Function& function_type );
 
-	// Returns nullptr on fail.
-	ClassProxyPtr PrepareClass(
-		const Synt::Class& class_declaration,
-		const Synt::ComplexName& class_complex_name,
-		NamesScope& names_scope,
-		bool force_forward_declaration= false );
-
-	void PrepareEnum( const Synt::Enum& enum_decl, NamesScope& names_scope );
-
 	// Virtual stuff
 	void ProcessClassParentsVirtualTables( Class& the_class );
 	void TryGenerateDestructorPrototypeForPolymorphClass( Class& the_class, const Type& class_type );
-	void ProcessClassVirtualFunction( Class& the_class, PrepareFunctionResult& function );
+	void ProcessClassVirtualFunction( Class& the_class, FunctionVariable& function );
 	void PrepareClassVirtualTableType( Class& the_class );
 	void BuildClassVirtualTables_r( Class& the_class, const Type& class_type, const std::vector< ClassProxyPtr >& dst_class_path, llvm::Value* dst_class_ptr_null_based );
 	void BuildClassVirtualTables( Class& the_class, const Type& class_type ); // Returns type of vtable pointer or nullptr.
@@ -181,13 +178,16 @@ private:
 		FunctionContext& function_context );
 
 	// Templates
-	ProgramString PrepareTypeTemplate( const Synt::TypeTemplateBase& type_template_declaration, NamesScope& names_scope );  // returns names of type template in case of success
+	void PrepareTypeTemplate(
+		const Synt::TypeTemplateBase& type_template_declaration,
+		TypeTemplatesSet& type_templates_set,
+		NamesScope& names_scope );
+
 	void PrepareFunctionTemplate(
-		const Synt::FunctionTemplate&
-		unction_template_declaration,
+		const Synt::FunctionTemplate& function_template_declaration,
+		OverloadedFunctionsSet& functions_set,
 		NamesScope& names_scope,
-		const ClassProxyPtr& base_class,
-		ClassMemberVisibility visibility= ClassMemberVisibility::Public );
+		const ClassProxyPtr& base_class );
 
 	void ProcessTemplateArgs(
 		const std::vector<Synt::TemplateBase::Arg>& args,
@@ -217,7 +217,7 @@ private:
 		std::vector<bool>& template_parameters_usage_flags );
 
 	// Resolve as deep, as can, but does not instantiate last component, if it is template.
-	const NamesScope::InsertedName* ResolveForTemplateSignatureParameter(
+	NamesScope::InsertedName* ResolveForTemplateSignatureParameter(
 		const FilePos& file_pos,
 		const Synt::ComplexName& signature_parameter,
 		NamesScope& names_scope );
@@ -265,27 +265,20 @@ private:
 	const FunctionVariable* GenTemplateFunction(
 		const FilePos& file_pos,
 		const FunctionTemplatePtr& function_template_ptr,
-		NamesScope& template_names_scope,
 		const std::vector<Function::Arg>& actual_args,
 		bool first_actual_arg_is_this,
 		bool skip_arguments= false );
 
-	const NamesScope::InsertedName* GenTemplateFunctionsUsingTemplateParameters(
+	NamesScope::InsertedName* GenTemplateFunctionsUsingTemplateParameters(
 		const FilePos& file_pos,
 		const std::vector<FunctionTemplatePtr>& function_templates,
 		const std::vector<Synt::IExpressionComponentPtr>& template_arguments,
-		NamesScope& template_names_scope,
 		NamesScope& arguments_names_scope );
 
 	bool NameShadowsTemplateArgument( const ProgramString& name, NamesScope& names_scope );
 
 	bool TypeIsValidForTemplateVariableArgument( const Type& type );
 
-	// Removes llvm-functions and functions of subclasses.
-	// Warning! Class must be not used after call of this function!
-	void RemoveTempClassLLVMValues( Class& class_ );
-	void RemoveTempClassLLVMValues_impl( Class& class_, bool is_delete_pass );
-	void CleareDummyFunction();
 
 	void ReportAboutIncompleteMembersOfTemplateClass( const FilePos& file_pos, Class& class_ );
 
@@ -357,16 +350,12 @@ private:
 	void CallDestructorsBeforeReturn( FunctionContext& function_context, const FilePos& file_pos );
 	void CallMembersDestructors( FunctionContext& function_context, const FilePos& file_pos );
 
-	void BuildNamespaceBody(
-		const Synt::ProgramElements& body_elements,
-		NamesScope& names_scope );
-
-	PrepareFunctionResult PrepareFunction(
-		const Synt::Function& func,
-		bool force_prototype,
-		ClassProxyPtr base_class,
-		NamesScope& scope,
-		ClassMemberVisibility visibility= ClassMemberVisibility::Public );
+	void PrepareFunction(
+		NamesScope& names_scope,
+		const ClassProxyPtr& base_class,
+		OverloadedFunctionsSet& functions_set,
+		const Synt::Function& function_declaration,
+		bool is_out_of_line_function );
 
 	void CheckOverloadedOperator(
 		const ClassProxyPtr& base_class,
@@ -376,7 +365,7 @@ private:
 
 	void BuildFuncCode(
 		FunctionVariable& func,
-		ClassProxyPtr base_class,
+		const ClassProxyPtr& base_class,
 		NamesScope& parent_names_scope,
 		const ProgramString& func_name,
 		const Synt::FunctionArgumentsDeclaration& args,
@@ -504,39 +493,38 @@ private:
 		const Synt::BitwiseNot& bitwise_not,
 		FunctionContext& function_context );
 
+	// Typeinfo
+
 	Value BuildTypeinfoOperator( const Synt::TypeInfo& typeinfo_op, NamesScope& names );
-	Variable BuildTypeInfo( const Type& type, const NamesScope& root_namespace );
-	ClassProxyPtr CreateTypeinfoClass( const NamesScope& root_namespace );
-	Variable BuildTypeinfoPrototype( const Type& type, const NamesScope& root_namespace );
-	void BuildFullTypeinfo( const Type& type, Variable& typeinfo_variable, const NamesScope& root_namespace );
-	const Variable& GetTypeinfoListEndNode( const NamesScope& root_namespace );
+	Variable BuildTypeInfo( const Type& type, NamesScope& root_namespace );
+	ClassProxyPtr CreateTypeinfoClass( NamesScope& root_namespace );
+	Variable BuildTypeinfoPrototype( const Type& type, NamesScope& root_namespace );
+	void BuildFullTypeinfo( const Type& type, Variable& typeinfo_variable, NamesScope& root_namespace );
+	const Variable& GetTypeinfoListEndNode( NamesScope& root_namespace );
 	void AddTypeinfoNodeIsEndVariable( Class& node_class, bool is_end= false );
 	void FinishTypeinfoClass( Class& class_, const ClassProxyPtr class_proxy, const std::vector<llvm::Type*>& fields_llvm_types );
-	Variable BuildTypeinfoEnumElementsList( const Enum& enum_type, const NamesScope& root_namespace );
+	Variable BuildTypeinfoEnumElementsList( const Enum& enum_type, NamesScope& root_namespace );
 	void CreateTypeinfoClassMembersListNodeCommonFields(
 		const Class& class_, const ClassProxyPtr& node_class_proxy,
 		const ProgramString& member_name,
 		std::vector<llvm::Type*>& fields_llvm_types, std::vector<llvm::Constant*>& fields_initializers );
-	Variable BuildTypeinfoClassFieldsList( const ClassProxyPtr& class_type, const NamesScope& root_namespace );
-	Variable BuildTypeinfoClassTypesList( const ClassProxyPtr& class_type, const NamesScope& root_namespace );
-	Variable BuildTypeinfoClassFunctionsList( const ClassProxyPtr& class_type, const NamesScope& root_namespace );
-	Variable BuildeTypeinfoClassParentsList( const ClassProxyPtr& class_type, const NamesScope& root_namespace );
-	Variable BuildTypeinfoFunctionArguments( const Function& function_type, const NamesScope& root_namespace );
-	void UpdateTypeinfoForDependentTypes( const ClassProxyPtr& class_type );
+	Variable BuildTypeinfoClassFieldsList( const ClassProxyPtr& class_type, NamesScope& root_namespace );
+	Variable BuildTypeinfoClassTypesList( const ClassProxyPtr& class_type, NamesScope& root_namespace );
+	Variable BuildTypeinfoClassFunctionsList( const ClassProxyPtr& class_type, NamesScope& root_namespace );
+	Variable BuildeTypeinfoClassParentsList( const ClassProxyPtr& class_type, NamesScope& root_namespace );
+	Variable BuildTypeinfoFunctionArguments( const Function& function_type, NamesScope& root_namespace );
 
 	// Block elements
 
-	std::vector<ProgramString> BuildVariablesDeclarationCode(  // returns list of variables names
+	void BuildVariablesDeclarationCode(
 		const Synt::VariablesDeclaration& variables_declaration,
 		NamesScope& block_names,
-		FunctionContext& function_context,
-		bool global= false );
+		FunctionContext& function_context );
 
-	ProgramString BuildAutoVariableDeclarationCode( // returns variable name or empty string in case of error
+	void BuildAutoVariableDeclarationCode(
 		const Synt::AutoVariableDeclaration& auto_variable_declaration,
 		NamesScope& block_names,
-		FunctionContext& function_context,
-		bool global= false );
+		FunctionContext& function_context );
 
 	void BuildAssignmentOperatorCode(
 		const Synt::AssignmentOperator& assignment_operator,
@@ -579,9 +567,8 @@ private:
 		NamesScope& names,
 		FunctionContext& function_context );
 
-	void BuildStaticAssert(
-		const Synt::StaticAssert& static_assert_,
-		NamesScope& names );
+	void BuildStaticAssert( StaticAssert& static_assert_, NamesScope& names );
+	void BuildStaticAssert( const Synt::StaticAssert& static_assert_, NamesScope& names );
 
 	BlockBuildInfo BuildStaticIfOperatorCode(
 		const Synt::StaticIfOperator& static_if_operator,
@@ -722,61 +709,50 @@ private:
 	void CheckWhileBlokVariablesState( const VariablesState& state_before, const VariablesState& state_after, const FilePos& file_pos );
 
 	// Name resolving.
+	enum class ResolveMode
+	{
+		Regular,
+		ForDeclaration,
+		ForTemplateSignatureParameter,
+	};
+	NamesScope::InsertedName* ResolveName( const FilePos& file_pos, NamesScope& names_scope, const Synt::ComplexName& complex_name, ResolveMode resolve_mode= ResolveMode::Regular );
 
-	// PreResolve function.
-	// Returns name (if found) and parent namespace, if name found not in cache.
-	typedef
-		std::function<
-			std::pair<const NamesScope::InsertedName*, NamesScope*>(
-				NamesScope& names_scope,
-				const Synt::ComplexName::Component* components,
-				size_t component_count,
-				size_t& out_skip_components ) > PreResolveFunc;
-
-	void PushCacheFillResolveHandler( ResolvingCache& resolving_cache, NamesScope& start_namespace );
-	void PushCacheGetResolveHandelr( const ResolvingCache& resolving_cache );
-	void PopResolveHandler();
-
-	const NamesScope::InsertedName* ResolveName( const FilePos& file_pos, NamesScope& names_scope, const Synt::ComplexName& complex_name, bool for_declaration= false );
-
-	const NamesScope::InsertedName* ResolveName(
+	NamesScope::InsertedName* ResolveName(
 		const FilePos& file_pos,
 		NamesScope& names_scope,
 		const Synt::ComplexName::Component* components,
 		size_t component_count,
-		bool for_declaration= false );
+		ResolveMode resolve_mode );
 
-	const NamesScope::InsertedName* PreResolve(
-		NamesScope& names_scope,
-		const Synt::ComplexName::Component* components,
-		size_t component_count,
-		size_t& out_skip_components );
+	// NamesScope fill
 
-	// Finds namespace, where are name. Do not search in classes (returns class itself)
-	std::pair<const NamesScope::InsertedName*, NamesScope*> PreResolveDefault(
-		NamesScope& names_scope,
-		const Synt::ComplexName::Component* components,
-		size_t component_count,
-		size_t& out_skip_components );
+	void NamesScopeFill( NamesScope& names_scope, const Synt::ProgramElements& namespace_elements );
+	void NamesScopeFill( NamesScope& names_scope, const Synt::VariablesDeclaration& variables_declaration );
+	void NamesScopeFill( NamesScope& names_scope, const Synt::AutoVariableDeclaration& variable_declaration );
+	void NamesScopeFill( NamesScope& names_scope, const Synt::Function& function_declaration, const ClassProxyPtr& base_class, ClassMemberVisibility visibility= ClassMemberVisibility::Public );
+	void NamesScopeFill( NamesScope& names_scope, const Synt::FunctionTemplate& function_template_declaration, const ClassProxyPtr& base_class, ClassMemberVisibility visibility= ClassMemberVisibility::Public );
+	ClassProxyPtr NamesScopeFill( NamesScope& names_scope, const Synt::Class& class_declaration, const ProgramString& override_name= ""_SpC );
+	void NamesScopeFill( NamesScope& names_scope, const Synt::TypeTemplateBase& type_template_declaration, const ClassProxyPtr& base_class, ClassMemberVisibility visibility= ClassMemberVisibility::Public );
+	void NamesScopeFill( NamesScope& names_scope, const Synt::Enum& enum_declaration );
+	void NamesScopeFill( NamesScope& names_scope, const Synt::Typedef& typedef_declaration );
+	void NamesScopeFill( NamesScope& names_scope, const Synt::StaticAssert& static_assert_ );
+	void NamesScopeFillOutOfLineElements( NamesScope& names_scope, const Synt::ProgramElements& namespace_elements );
 
-	// PreResolve
-	void PreResolveName( const Synt::ComplexName& name, NamesScope& names );
-	void PreResolveEnum( const Synt::Enum& enum_, NamesScope& names );
-	void PreResolveTypedef( const Synt::Typedef& typedef_, NamesScope& names );
-	void PreResolveTypeTemplate( const Synt::TypeTemplateBase& type_template, NamesScope& names );
-	void PreResolveFunctionTemplate( const Synt::FunctionTemplate& function_template, NamesScope& names );
-	void PreResovleClass( const Synt::Class& class_declaration, NamesScope& names, bool only_prototype );
-	void PreResolveType( const Synt::ITypeName& type_name, NamesScope& names );
+	// Global things build
 
-	void PreResolveFunctionPrototype( const Synt::Function& function, NamesScope& names );
-	void PreResolveFunctionBody( const Synt::Function& function, NamesScope& names );
-	void PreResolveBlock( const Synt::Block& block, NamesScope& names );
+	bool EnsureTypeCompleteness( const Type& type, TypeCompleteness completeness ); // Returns true, if all ok
 
-	void PreResolveVariablesDeclaration( const Synt::VariablesDeclaration& variables_declaration, NamesScope& names );
-	void PreResolveAutoVariableDeclaration( const Synt::AutoVariableDeclaration& auto_variable_declaration, NamesScope& names );
-	void PreResolveStaticAssert( const Synt::StaticAssert& static_assert_, NamesScope& names );
-	void PreResolveExpression( const Synt::IExpressionComponent& expression, NamesScope& names );
-	// PreResolve End
+	void GlobalThingBuildNamespace( NamesScope& names_scope );
+	void GlobalThingBuildFunctionsSet( NamesScope& names_scope, OverloadedFunctionsSet& functions_set, bool build_body );
+	void GlobalThingBuildClass( ClassProxyPtr class_type, TypeCompleteness completeness );
+	void GlobalThingBuildEnum( const EnumPtr& enum_, TypeCompleteness completeness );
+	void GlobalThingBuildTypeTemplatesSet( NamesScope& names_scope, TypeTemplatesSet& type_templates_set );
+	void GlobalThingBuildTypedef( NamesScope& names_scope, Value& typedef_value );
+	void GlobalThingBuildVariable( NamesScope& names_scope, Value& global_variable_value );
+	size_t GlobalThingDetectloop( const GlobalThing& global_thing ); // returns loop start index or ~0u
+	void GlobalThingReportAboutLoop( size_t loop_start_stack_index, const ProgramString& last_loop_element_name, const FilePos& last_loop_element_file_pos );
+
+	// Other stuff
 
 	static U_FundamentalType GetNumericConstantType( const Synt::NumericConstant& number );
 
@@ -849,11 +825,11 @@ private:
 
 	// We needs to generate same typeinfo classes for same types. Use cache for it.
 	// TODO - create hasher for type and use unordered_map.
-	std::vector< std::pair< Type, Variable > > typeinfo_cache_;
+	std::list< std::pair< Type, Variable > > typeinfo_cache_;
 	boost::optional< Variable > typeinfo_list_end_node_; // Lazy initialized.
 	llvm::GlobalVariable* typeinfo_is_end_variable_[2u]= { nullptr, nullptr }; // Lazy initialized.
 
-	std::vector<std::unique_ptr<PreResolveFunc>> resolving_funcs_stack_;
+	std::vector<GlobalThing> global_things_stack_;
 };
 
 using MutabilityModifier= Synt::MutabilityModifier;

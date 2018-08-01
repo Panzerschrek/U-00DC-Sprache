@@ -750,7 +750,7 @@ public:
 	explicit Class( const FilePos& file_pos );
 
 	ClassElements elements_;
-	ComplexName name_;
+	ProgramString name_;
 	bool is_forward_declaration_= false;
 	ClassKindAttribute kind_attribute_ = ClassKindAttribute::Struct;
 	std::vector<ComplexName> parents_;

@@ -143,7 +143,7 @@ def ConstexprFunctionCanNotBeVirtual_Test1():
 	c_program_text= """
 		class S polymorph
 		{
-			op virtual constexpr [](){}
+			op virtual constexpr []( this, u32 x ){}
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )

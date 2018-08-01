@@ -75,7 +75,6 @@ def CouldNotSelectOverloadedFunction_Test0():
 		{
 			Foo(GetA()); // Error, type "A" is incomplete and we can not check it relations with type "B".
 		}
-		class A : B{}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )

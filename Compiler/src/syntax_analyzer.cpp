@@ -2697,7 +2697,13 @@ std::unique_ptr<Class> SyntaxAnalyzer::ParseClass()
 	const bool is_class= it_->text == Keywords::class_;
 	NextLexem();
 
-	ComplexName name= ParseComplexName();
+	if( it_->type != Lexem::Type::Identifier )
+	{
+		PushErrorMessage();
+		return nullptr;
+	}
+	ProgramString name= it_->text;
+	NextLexem();
 
 	ClassKindAttribute class_kind_attribute= ClassKindAttribute::Struct;
 	std::vector<ComplexName> parents_list;
@@ -2813,8 +2819,10 @@ std::unique_ptr<Class> SyntaxAnalyzer::ParseClassBody()
 
 			field->type= ParseTypeName();
 
+			bool is_reference= false;
 			if( it_->type == Lexem::Type::And )
 			{
+				is_reference= true;
 				NextLexem();
 				field->reference_modifier= ReferenceModifier::Reference;
 			}
@@ -2830,6 +2838,11 @@ std::unique_ptr<Class> SyntaxAnalyzer::ParseClassBody()
 				{
 					NextLexem();
 					field->mutability_modifier= MutabilityModifier::Immutable;
+				}
+				if( is_reference && it_->text == Keywords::constexpr_ ) // Allow "constexpr" modifier only for reference fields.
+				{
+					NextLexem();
+					field->mutability_modifier= MutabilityModifier::Constexpr;
 				}
 			}
 
@@ -3038,8 +3051,7 @@ TemplateBasePtr SyntaxAnalyzer::ParseTemplate()
 			class_template->class_= ParseClassBody();
 			if( class_template->class_ != nullptr )
 			{
-				class_template->class_->name_.components.emplace_back();
-				class_template->class_->name_.components.back().name= std::move(name);
+				class_template->class_->name_= std::move(name);
 				class_template->class_->kind_attribute_= class_kind_attribute;
 				class_template->class_->parents_= std::move(class_parents_list);
 			}

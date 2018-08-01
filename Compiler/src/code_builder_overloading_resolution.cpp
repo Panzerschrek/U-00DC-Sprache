@@ -361,12 +361,12 @@ const FunctionVariable* CodeBuilder::GetOverloadedFunction(
 				// We needs complete types for checking possible conversions.
 				// We can not just skip this function, if types are incomplete, because it will break "template instantiation equality rule".
 				if( function_type.args[i].type != void_type_ && actual_args_begin[i].type != void_type_ &&
-					( actual_args_begin[i].type.IsIncomplete() || function_type.args[i].type.IsIncomplete() ) )
+					!( EnsureTypeCompleteness( function_type.args[i].type, TypeCompleteness::Complete ) && EnsureTypeCompleteness( actual_args_begin[i].type, TypeCompleteness::Complete ) ) )
 				{
 					errors_.push_back( ReportCouldNotSelectOverloadedFunction( file_pos ) );
 					all_args_is_compatible= false;
 					break;
-				};
+				}
 			}
 
 			const bool types_are_compatible= actual_args_begin[i].type.ReferenceIsConvertibleTo( function_type.args[i].type );
@@ -408,7 +408,7 @@ const FunctionVariable* CodeBuilder::GetOverloadedFunction(
 		for( const FunctionTemplatePtr& function_template_ptr : functions_set.template_functions )
 		{
 			const FunctionVariable* const generated_function=
-				GenTemplateFunction( file_pos, function_template_ptr, *function_template_ptr->parent_namespace, actual_args, first_actual_arg_is_this );
+				GenTemplateFunction( file_pos, function_template_ptr, actual_args, first_actual_arg_is_this );
 			if( generated_function != nullptr )
 				match_functions.push_back( generated_function );
 		}
@@ -549,7 +549,7 @@ const FunctionVariable* CodeBuilder::GetOverloadedOperator(
 
 		if( const Class* const class_= arg.type.GetClassType() )
 		{
-			if( class_->completeness != Class::Completeness::Complete )
+			if( !EnsureTypeCompleteness( arg.type, TypeCompleteness::Complete ) )
 			{
 				errors_.push_back( ReportUsingIncompleteType( file_pos, arg.type.ToString() ) );
 				return nullptr;

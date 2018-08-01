@@ -18,6 +18,15 @@ bool operator!=( const FilePos& l, const FilePos& r )
 	return !( l == r );
 }
 
+bool operator< ( const FilePos& l, const FilePos& r )
+{
+	if( l.file_index != r.file_index )
+		return l.file_index < r.file_index;
+	if( l.line != r.line )
+		return l.line < r.line;
+	return l.pos_in_line < r.pos_in_line;
+}
+
 typedef std::map<ProgramString, Lexem::Type> FixedLexemsMap;
 static const size_t g_max_fixed_lexem_size= 3;
 

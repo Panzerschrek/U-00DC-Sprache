@@ -17,7 +17,6 @@ enum class CodeBuilderErrorCode : unsigned int
 	NameNotFound= 101u,
 	UsingKeywordAsName,
 	Redefinition,
-	DeclarationOutsideEnclosingNamespace,
 	UnknownNumericConstantType,
 	UnknownStringLiteralSuffix,
 	OperationNotSupportedForThisType,
@@ -46,10 +45,12 @@ enum class CodeBuilderErrorCode : unsigned int
 	ClassDeclarationOutsideItsScope,
 	ClassBodyDuplication,
 	UsingIncompleteType,
+	GlobalsLoopDetected,
 
 	// Visibility
 	AccessingNonpublicClassMember,
 	FunctionsVisibilityMismatch,
+	TypeTemplatesVisibilityMismatch,
 	VisibilityForStruct,
 
 	// Constexpr errors.
@@ -206,7 +207,6 @@ CodeBuilderError ReportNameNotFound( const FilePos& file_pos, const ProgramStrin
 CodeBuilderError ReportNameNotFound( const FilePos& file_pos, const Synt::ComplexName& name );
 CodeBuilderError ReportUsingKeywordAsName( const FilePos& file_pos );
 CodeBuilderError ReportRedefinition( const FilePos& file_pos, const ProgramString& name );
-CodeBuilderError ReportDeclarationOutsideEnclosingNamespace( const FilePos& file_pos );
 CodeBuilderError ReportUnknownNumericConstantType( const FilePos& file_pos, const ProgramString& unknown_type );
 CodeBuilderError ReportUnknownStringLiteralSuffix( const FilePos& file_pos, const ProgramString& unknown_suffix );
 CodeBuilderError ReportOperationNotSupportedForThisType( const FilePos& file_pos, const ProgramString& type_name );
@@ -234,8 +234,10 @@ CodeBuilderError ReportFunctionDeclarationOutsideItsScope( const FilePos& file_p
 CodeBuilderError ReportClassDeclarationOutsideItsScope( const FilePos& file_pos );
 CodeBuilderError ReportClassBodyDuplication( const FilePos& file_pos );
 CodeBuilderError ReportUsingIncompleteType( const FilePos& file_pos, const ProgramString& type_name );
+CodeBuilderError ReportGlobalsLoopDetected( const FilePos& file_pos, const ProgramString& loop_description );
 CodeBuilderError ReportAccessingNonpublicClassMember( const FilePos& file_pos, const ProgramString& class_name, const ProgramString& member_name );
 CodeBuilderError ReportFunctionsVisibilityMismatch( const FilePos& file_pos, const ProgramString& function_name );
+CodeBuilderError ReportTypeTemplatesVisibilityMismatch( const FilePos& file_pos, const ProgramString& type_template_name );
 CodeBuilderError ReportVisibilityForStruct( const FilePos& file_pos, const ProgramString& struct_name );
 CodeBuilderError ReportExpectedConstantExpression( const FilePos& file_pos );
 CodeBuilderError ReportVariableInitializerIsNotConstantExpression( const FilePos& file_pos );

@@ -19,11 +19,7 @@ bool operator!=( const CodeBuilderError& l, const CodeBuilderError& r )
 
 bool operator< ( const CodeBuilderError& l, const CodeBuilderError& r )
 {
-	if( l.file_pos.file_index != r.file_pos.file_index )
-		return l.file_pos.file_index < r.file_pos.file_index;
-	if( l.file_pos.line != r.file_pos.line )
-		return l.file_pos.line < r.file_pos.line;
-	return l.file_pos.pos_in_line < r.file_pos.pos_in_line;
+	return l.file_pos < r.file_pos;
 }
 
 const char* CodeBuilderErrorCodeToString( const CodeBuilderErrorCode code )
@@ -38,8 +34,6 @@ const char* CodeBuilderErrorCodeToString( const CodeBuilderErrorCode code )
 		return "UsingKeywordAsName";
 	case CodeBuilderErrorCode::Redefinition:
 		return "Redefinition";
-	case CodeBuilderErrorCode::DeclarationOutsideEnclosingNamespace:
-		return "DeclarationOutsideEnclosingNamespace";
 	case CodeBuilderErrorCode::UnknownNumericConstantType:
 		return "UnknownNumericConstantType";
 	case CodeBuilderErrorCode::UnknownStringLiteralSuffix:
@@ -94,10 +88,14 @@ const char* CodeBuilderErrorCodeToString( const CodeBuilderErrorCode code )
 		return "ClassBodyDuplication";
 	case CodeBuilderErrorCode::UsingIncompleteType:
 		return "UsingIncompleteType";
+	case CodeBuilderErrorCode::GlobalsLoopDetected:
+		return "GlobalsLoopDetected";
 	case CodeBuilderErrorCode::AccessingNonpublicClassMember:
 		return "AccessingNonpublicClassMember";
 	case CodeBuilderErrorCode::FunctionsVisibilityMismatch:
 		return "FunctionsVisibilityMismatch";
+	case CodeBuilderErrorCode::TypeTemplatesVisibilityMismatch:
+		return "TypeTemplatesVisibilityMismatch";
 	case CodeBuilderErrorCode::VisibilityForStruct:
 		return "VisibilityForStruct";
 	case CodeBuilderErrorCode::ExpectedConstantExpression:
@@ -372,17 +370,6 @@ CodeBuilderError ReportRedefinition( const FilePos& file_pos, const ProgramStrin
 	error.code= CodeBuilderErrorCode::Redefinition;
 
 	error.text= name + " redefinition."_SpC;
-
-	return error;
-}
-
-CodeBuilderError ReportDeclarationOutsideEnclosingNamespace( const FilePos& file_pos )
-{
-	CodeBuilderError error;
-	error.file_pos= file_pos;
-	error.code= CodeBuilderErrorCode::DeclarationOutsideEnclosingNamespace;
-
-	error.text= "Declaration outside enclosing namespace."_SpC;
 
 	return error;
 }
@@ -700,6 +687,17 @@ CodeBuilderError ReportUsingIncompleteType( const FilePos& file_pos, const Progr
 	return error;
 }
 
+CodeBuilderError ReportGlobalsLoopDetected( const FilePos& file_pos, const ProgramString& loop_description )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::GlobalsLoopDetected;
+
+	error.text= "Globals loop detected:\n"_SpC + loop_description;
+
+	return error;
+}
+
 CodeBuilderError ReportAccessingNonpublicClassMember( const FilePos& file_pos, const ProgramString& class_name, const ProgramString& member_name )
 {
 	CodeBuilderError error;
@@ -718,6 +716,17 @@ CodeBuilderError ReportFunctionsVisibilityMismatch( const FilePos& file_pos, con
 	error.code= CodeBuilderErrorCode::FunctionsVisibilityMismatch;
 
 	error.text= "Visibility mismatch for function \""_SpC + function_name + "\". All functions with same name in class must have same visibility."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportTypeTemplatesVisibilityMismatch( const FilePos& file_pos, const ProgramString& type_template_name )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::TypeTemplatesVisibilityMismatch;
+
+	error.text= "Visibility mismatch for type template \""_SpC + type_template_name + "\". All type templates with same name in class must have same visibility."_SpC;
 
 	return error;
 }

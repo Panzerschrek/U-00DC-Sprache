@@ -3,61 +3,12 @@
 namespace U
 {
 
-U_TEST( ClassDeclarationOutsideItsScopeTest0 )
-{
-	static const char c_program_text[]=
-	R"(
-		struct Foo::Bar;
-	)";
-
-	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
-
-	U_TEST_ASSERT( !build_result.errors.empty() );
-	const CodeBuilderError& error= build_result.errors.front();
-
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ClassDeclarationOutsideItsScope );
-	U_TEST_ASSERT( error.file_pos.line == 2u );
-}
-
-U_TEST( ClassDeclarationOutsideItsScopeTest1 )
-{
-	static const char c_program_text[]=
-	R"(
-		struct Foo::Bar{}
-	)";
-
-	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
-
-	U_TEST_ASSERT( !build_result.errors.empty() );
-	const CodeBuilderError& error= build_result.errors.front();
-
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ClassDeclarationOutsideItsScope );
-	U_TEST_ASSERT( error.file_pos.line == 2u );
-}
-
 U_TEST( ClassBodyDuplicationTest0 )
 {
 	static const char c_program_text[]=
 	R"(
 		struct Bar{}
 		struct Bar{}
-	)";
-
-	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
-
-	U_TEST_ASSERT( !build_result.errors.empty() );
-	const CodeBuilderError& error= build_result.errors.front();
-
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ClassBodyDuplication );
-	U_TEST_ASSERT( error.file_pos.line == 3u );
-}
-
-U_TEST( ClassBodyDuplicationTest1 )
-{
-	static const char c_program_text[]=
-	R"(
-		namespace Foo{ struct Bar{} }
-		struct Foo::Bar{}
 	)";
 
 	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
@@ -165,23 +116,6 @@ U_TEST( UsingIncompleteTypeTest3 )
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::UsingIncompleteType );
 	U_TEST_ASSERT( error.file_pos.line == 3u );
-}
-
-U_TEST( UsingIncompleteTypeTest4 )
-{
-	// Field of incomplete "this" type.
-	static const char c_program_text[]=
-	R"(
-		struct Bar{ Bar bar; }
-	)";
-
-	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
-
-	U_TEST_ASSERT( !build_result.errors.empty() );
-	const CodeBuilderError& error= build_result.errors.front();
-
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::UsingIncompleteType );
-	U_TEST_ASSERT( error.file_pos.line == 2u );
 }
 
 U_TEST( UsingIncompleteTypeTest5 )

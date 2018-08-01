@@ -17,6 +17,7 @@ struct FilePos
 
 bool operator==( const FilePos& l, const FilePos& r );
 bool operator!=( const FilePos& l, const FilePos& r );
+bool operator< ( const FilePos& l, const FilePos& r );
 
 struct Lexem
 {

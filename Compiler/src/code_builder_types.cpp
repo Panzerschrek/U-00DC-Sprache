@@ -246,6 +246,14 @@ Enum* Type::GetEnumType() const
 	return enum_ptr->get();
 }
 
+EnumPtr Type::GetEnumTypePtr() const
+{
+	const EnumPtr* enum_ptr= boost::get<EnumPtr>( &something_ );
+	if( enum_ptr == nullptr )
+		return nullptr;
+	return *enum_ptr;
+}
+
 bool Type::ReferenceIsConvertibleTo( const Type& other ) const
 {
 	if( *this == other )
@@ -317,24 +325,6 @@ SizeType Type::SizeOf() const
 	};
 
 	return boost::apply_visitor( Visitor(), something_ );
-}
-
-bool Type::IsIncomplete() const
-{
-	if( const FundamentalType* const fundamental= boost::get<FundamentalType>( &something_ ) )
-		return fundamental->fundamental_type == U_FundamentalType::Void;
-	else if( const ClassProxyPtr* const class_= boost::get<ClassProxyPtr>( &something_ ) )
-	{
-		U_ASSERT( *class_ != nullptr && (*class_)->class_ != nullptr );
-		return (*class_)->class_->completeness != Class::Completeness::Complete;
-	}
-	else if( const ArrayPtr* const array= boost::get<ArrayPtr>( &something_ ) )
-	{
-		U_ASSERT( *array != nullptr );
-		return (*array)->type.IsIncomplete();
-	}
-
-	return false;
 }
 
 bool Type::IsDefaultConstructible() const
@@ -553,6 +543,8 @@ ProgramString Type::ToString() const
 				return "namespace"_SpC;
 			case NontypeStub::TypeTemplate:
 				return "type template"_SpC;
+			case NontypeStub::StaticAssertTypeStub:
+				return "static assert"_SpC;
 			case NontypeStub::YetNotDeducedTemplateArg:
 				return "yet not deduced template arg"_SpC;
 			case NontypeStub::ErrorValue:
@@ -807,7 +799,7 @@ bool FunctionVariable::VirtuallyEquals( const FunctionVariable& other ) const
 // Class
 //
 
-Class::Class( const ProgramString& in_name, const NamesScope* const parent_scope )
+Class::Class( const ProgramString& in_name, NamesScope* const parent_scope )
 	: members( in_name, parent_scope )
 {}
 
@@ -829,7 +821,7 @@ void Class::SetMemberVisibility( const ProgramString& member_name, const ClassMe
 	members_visibility[member_name]= visibility;
 }
 
-Enum::Enum( const ProgramString& in_name, const NamesScope* parent_scope )
+Enum::Enum( const ProgramString& in_name, NamesScope* const parent_scope )
 	: members( in_name, parent_scope )
 {}
 
@@ -852,6 +844,10 @@ StoredVariable::StoredVariable(
 	bool in_is_global_constant )
 	: name(std::move(in_name) ), content(std::move(in_content))
 	, kind(in_kind), is_global_constant(in_is_global_constant)
+{}
+
+StoredVariable::StoredVariable( ProgramString in_name )
+	: name(std::move(in_name) )
 {}
 
 //
@@ -987,7 +983,7 @@ void VariablesState::DeactivateLocks()
 }
 
 ClassField::ClassField( const ClassProxyPtr& in_class, Type in_type, const unsigned int in_index, const bool in_is_mutable, const bool in_is_reference )
-	: type(std::move(in_type)), index(in_index), class_(in_class), is_mutable(in_is_mutable), is_reference(in_is_reference)
+	: type(std::move(in_type)), class_(in_class), index(in_index), is_mutable(in_is_mutable), is_reference(in_is_reference)
 {}
 
 //
@@ -999,6 +995,7 @@ static const Type g_this_overloaded_methods_set_stub_type=NontypeStub::ThisOverl
 static const Type g_typename_type_stub= NontypeStub::TypeName;
 static const Type g_namespace_type_stub= NontypeStub::Namespace;
 static const Type g_type_template_type_stub= NontypeStub::TypeTemplate;
+static const Type g_static_assert_type_stub= NontypeStub::StaticAssertTypeStub;
 static const Type g_yet_not_deduced_template_arg_type_stub= NontypeStub::YetNotDeducedTemplateArg;
 static const Type g_error_value_type_stub= NontypeStub::ErrorValue;
 static const Type g_variable_storage_type_stub= NontypeStub::VariableStorage;
@@ -1059,6 +1056,25 @@ Value::Value( TypeTemplatesSet type_templates, const FilePos& file_pos )
 	something_= std::move(type_templates);
 }
 
+
+Value::Value( StaticAssert static_assert_, const FilePos& file_pos )
+	: file_pos_(file_pos)
+{
+	something_= std::move(static_assert_);
+}
+
+Value::Value( Typedef typedef_, const FilePos& file_pos )
+	: file_pos_(file_pos)
+{
+	something_= std::move(typedef_);
+}
+
+Value::Value( IncompleteGlobalVariable incomplete_global_variable, const FilePos& file_pos )
+	: file_pos_(file_pos)
+{
+	something_= std::move(incomplete_global_variable);
+}
+
 Value::Value( YetNotDeducedTemplateArg yet_not_deduced_template_arg )
 {
 	something_= std::move(yet_not_deduced_template_arg);
@@ -1071,6 +1087,7 @@ Value::Value( ErrorValue error_value )
 
 const Type& Value::GetType() const
 {
+	// TODO - remove this method.
 	struct Visitor final : public boost::static_visitor< const Type& >
 	{
 		const Type& operator()( const Variable& variable ) const
@@ -1099,6 +1116,15 @@ const Type& Value::GetType() const
 
 		const Type& operator()( const TypeTemplatesSet& ) const
 		{ return g_type_template_type_stub; }
+
+		const Type& operator()( const StaticAssert& ) const
+		{ return g_static_assert_type_stub; }
+
+		const Type& operator()( const Typedef& ) const
+		{ return g_static_assert_type_stub; } // hack
+
+		const Type& operator()( const IncompleteGlobalVariable& ) const
+		{ return g_static_assert_type_stub; } // hack
 
 		const Type& operator()( const YetNotDeducedTemplateArg& ) const
 		{ return g_yet_not_deduced_template_arg_type_stub; }
@@ -1178,6 +1204,11 @@ const Type* Value::GetTypeName() const
 	return boost::get<Type>( &something_ );
 }
 
+ClassField* Value::GetClassField()
+{
+	return boost::get<ClassField>( &something_ );
+}
+
 const ClassField* Value::GetClassField() const
 {
 	return boost::get<ClassField>( &something_ );
@@ -1209,6 +1240,36 @@ TypeTemplatesSet* Value::GetTypeTemplatesSet()
 const TypeTemplatesSet* Value::GetTypeTemplatesSet() const
 {
 	return boost::get<TypeTemplatesSet>( &something_ );
+}
+
+StaticAssert* Value::GetStaticAssert()
+{
+	return boost::get<StaticAssert>( &something_ );
+}
+
+const StaticAssert* Value::GetStaticAssert() const
+{
+	return boost::get<StaticAssert>( &something_ );
+}
+
+Typedef* Value::GetTypedef()
+{
+	return boost::get<Typedef>( &something_ );
+}
+
+const Typedef* Value::GetTypedef() const
+{
+	return boost::get<Typedef>( &something_ );
+}
+
+IncompleteGlobalVariable* Value::GetIncompleteGlobalVariable()
+{
+	return boost::get<IncompleteGlobalVariable>( &something_ );
+}
+
+const IncompleteGlobalVariable* Value::GetIncompleteGlobalVariable() const
+{
+	return boost::get<IncompleteGlobalVariable>( &something_ );
 }
 
 YetNotDeducedTemplateArg* Value::GetYetNotDeducedTemplateArg()
@@ -1259,9 +1320,7 @@ ArgOverloadingClass GetArgOverloadingClass( const Function::Arg& arg )
 	return GetArgOverloadingClass( arg.is_mutable, arg.is_reference );
 }
 
-NamesScope::NamesScope(
-	ProgramString name,
-	const NamesScope* const parent )
+NamesScope::NamesScope( ProgramString name, NamesScope* const parent )
 	: name_(std::move(name) )
 	, parent_(parent)
 {}
@@ -1300,17 +1359,35 @@ NamesScope::InsertedName* NamesScope::AddName(
 	return nullptr;
 }
 
-NamesScope::InsertedName* NamesScope::GetThisScopeName( const ProgramString& name ) const
+NamesScope::InsertedName* NamesScope::GetThisScopeName( const ProgramString& name )
 {
 	const auto it= names_map_.find( name );
 	if( it != names_map_.end() )
-		return const_cast<InsertedName*>(&*it);
+		return &*it;
 	return nullptr;
+}
+
+const NamesScope::InsertedName* NamesScope::GetThisScopeName( const ProgramString& name ) const
+{
+	return const_cast<NamesScope*>(this)->GetThisScopeName( name );
+}
+
+NamesScope* NamesScope::GetParent()
+{
+	return parent_;
 }
 
 const NamesScope* NamesScope::GetParent() const
 {
 	return parent_;
+}
+
+NamesScope* NamesScope::GetRoot()
+{
+	NamesScope* root= this;
+	while( root->parent_ != nullptr )
+		root= root->parent_;
+	return root;
 }
 
 const NamesScope* NamesScope::GetRoot() const
@@ -1321,7 +1398,7 @@ const NamesScope* NamesScope::GetRoot() const
 	return root;
 }
 
-void NamesScope::SetParent( const NamesScope* const parent )
+void NamesScope::SetParent( NamesScope* const parent )
 {
 	parent_= parent;
 }
