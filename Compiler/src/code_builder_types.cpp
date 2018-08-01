@@ -327,31 +327,6 @@ SizeType Type::SizeOf() const
 	return boost::apply_visitor( Visitor(), something_ );
 }
 
-bool Type::IsIncomplete() const
-{
-	return GetCompleteness() != TypeCompleteness::Complete;
-}
-
-TypeCompleteness Type::GetCompleteness() const
-{
-	if( const FundamentalType* const fundamental= boost::get<FundamentalType>( &something_ ) )
-		return fundamental->fundamental_type == U_FundamentalType::Void ? TypeCompleteness::Incomplete : TypeCompleteness::Complete;
-	else if( const ClassProxyPtr* const class_= boost::get<ClassProxyPtr>( &something_ ) )
-	{
-		U_ASSERT( *class_ != nullptr && (*class_)->class_ != nullptr );
-		return (*class_)->class_->completeness;
-	}
-	else if( const ArrayPtr* const array= boost::get<ArrayPtr>( &something_ ) )
-	{
-		U_ASSERT( *array != nullptr );
-		return (*array)->type.GetCompleteness();
-	}
-	else if( const Enum* const enum_= GetEnumType() )
-		return enum_->is_incomplete ? TypeCompleteness::Incomplete : TypeCompleteness::Complete;
-
-	return TypeCompleteness::Complete;
-}
-
 bool Type::IsDefaultConstructible() const
 {
 	if( const ClassProxyPtr* const class_= boost::get<ClassProxyPtr>( &something_ ) )

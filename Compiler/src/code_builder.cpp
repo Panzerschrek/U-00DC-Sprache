@@ -205,7 +205,7 @@ ICodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_g
 	// Fix incomplete typeinfo.
 	for( const auto& typeinfo_entry : typeinfo_cache_ )
 	{
-		if( typeinfo_entry.second.type.IsIncomplete() )
+		if( !typeinfo_entry.second.type.GetLLVMType()->isSized() )
 			typeinfo_entry.second.type.GetClassType()->llvm_type->setBody( llvm::ArrayRef<llvm::Type*>() );
 	}
 
@@ -1139,7 +1139,7 @@ void CodeBuilder::PrepareFunction(
 			prev_function->virtual_function_kind= func.virtual_function_kind_;
 		else
 		{
-			// TODO - produce error, if it out of line is body for virtual function.
+			// TODO - produce error, if it out of line is body for pure virtual function.
 		}
 		// TODO - produce error, if function with prototype and implementation inside class have different virtual function kind.
 	}
@@ -3112,10 +3112,11 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildIfOperatorCode(
 
 void CodeBuilder::BuildStaticAssert( StaticAssert& static_assert_, NamesScope& names )
 {
-	if( !static_assert_.is_incomplete )
+	if( static_assert_.syntax_element == nullptr )
 		return;
-	static_assert_.is_incomplete= false;
+
 	BuildStaticAssert( *static_assert_.syntax_element, names );
+	static_assert_.syntax_element= nullptr;
 }
 
 void CodeBuilder::BuildStaticAssert( const Synt::StaticAssert& static_assert_, NamesScope& names )

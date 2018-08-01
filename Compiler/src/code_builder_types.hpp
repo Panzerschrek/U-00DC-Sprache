@@ -62,7 +62,7 @@ enum class TypeCompleteness
 {
 	Incomplete, // Known nothing
 	ReferenceTagsComplete, // Known fields, parents.
-	Complete, // Known member functions and function templates.
+	Complete, // Known also member functions
 };
 
 struct FundamentalType final
@@ -130,8 +130,6 @@ public:
 	// TODO - does this method needs?
 	SizeType SizeOf() const;
 
-	TypeCompleteness GetCompleteness() const;
-	bool IsIncomplete() const;
 	bool IsDefaultConstructible() const;
 	bool IsCopyConstructible() const;
 	bool IsCopyAssignable() const;
@@ -443,8 +441,7 @@ struct ThisOverloadedMethodsSet final
 
 struct StaticAssert
 {
-	const Synt::StaticAssert* syntax_element= nullptr;
-	bool is_incomplete = true;
+	const Synt::StaticAssert* syntax_element= nullptr; // Null if completed.
 };
 
 struct Typedef
@@ -761,8 +758,7 @@ struct Enum
 	SizeType element_count= 0u;
 	FundamentalType underlaying_type; // must be integer
 
-	const Synt::Enum* syntax_element= nullptr;
-	bool is_incomplete= true;
+	const Synt::Enum* syntax_element= nullptr; // Null if completed
 };
 
 struct TemplateBase

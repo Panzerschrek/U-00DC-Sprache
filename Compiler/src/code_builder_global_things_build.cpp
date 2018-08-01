@@ -652,7 +652,7 @@ void CodeBuilder::GlobalThingBuildEnum( const EnumPtr& enum_, TypeCompleteness c
 {
 	if( completeness < TypeCompleteness::Complete )
 		return;
-	if( !enum_->is_incomplete )
+	if( enum_->syntax_element == nullptr )
 		return;
 
 	DETECT_GLOBALS_LOOP( enum_.get(), enum_->members.GetThisNamespaceName(), enum_->syntax_element->file_pos_, TypeCompleteness::Complete );
@@ -724,7 +724,7 @@ void CodeBuilder::GlobalThingBuildEnum( const EnumPtr& enum_, TypeCompleteness c
 			errors_.push_back( ReportUnderlayingTypeForEnumIsTooSmall( enum_decl.file_pos_, enum_->element_count - 1u, max_value ) );
 	}
 
-	enum_->is_incomplete= false;
+	enum_->syntax_element= nullptr;
 }
 
 void CodeBuilder::GlobalThingBuildTypeTemplatesSet( NamesScope& names_scope, TypeTemplatesSet& type_templates_set )
