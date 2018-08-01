@@ -1395,14 +1395,10 @@ NamesScope::InsertedName* CodeBuilder::GenTemplateFunctionsUsingTemplateParamete
 
 bool CodeBuilder::NameShadowsTemplateArgument( const ProgramString& name, NamesScope& names_scope )
 {
-	Synt::ComplexName::Component component;
-	component.name= name;
-	component.is_generated= true;
-	const NamesScope::InsertedName* const name_resolved= ResolveName( FilePos(), names_scope, &component, 1u, ResolveMode::Regular );
-	if( name_resolved == nullptr )
-		return false;
-
-	return name_resolved->second.IsTemplateParameter();
+	// Not implemented correctly yet.
+	U_UNUSED(name);
+	U_UNUSED(names_scope);
+	return false;
 }
 
 bool CodeBuilder::TypeIsValidForTemplateVariableArgument( const Type& type )

@@ -219,7 +219,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type, const T
 	const Synt::Class& class_declaration= *the_class.syntax_element;
 	const ProgramString& class_name= class_declaration.name_;
 
-	if( completeness >= TypeCompleteness::ReferenceTagsComplete )
+	if( completeness >= TypeCompleteness::ReferenceTagsComplete && the_class.completeness < TypeCompleteness::ReferenceTagsComplete )
 	{
 		DETECT_GLOBALS_LOOP( &the_class, the_class.members.GetThisNamespaceName(), the_class.body_file_pos, TypeCompleteness::ReferenceTagsComplete );
 
@@ -689,6 +689,11 @@ void CodeBuilder::GlobalThingBuildEnum( const EnumPtr& enum_, TypeCompleteness c
 
 	for( const Synt::Enum::Member& in_member : enum_decl.members )
 	{
+		if( IsKeyword( in_member.name ) )
+			errors_.push_back( ReportUsingKeywordAsName( in_member.file_pos ) );
+		if( NameShadowsTemplateArgument( in_member.name, names_scope ) )
+			errors_.push_back( ReportDeclarationShadowsTemplateArgument( in_member.file_pos, in_member.name ) );
+
 		Variable var;
 
 		var.type= enum_;

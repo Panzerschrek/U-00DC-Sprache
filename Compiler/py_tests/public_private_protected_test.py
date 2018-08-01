@@ -481,6 +481,22 @@ def FunctionsVisibilityMismatch_Test6():
 	assert( errors_list[0].file_pos.line == 10 )
 
 
+def TypeTemplatesVisibilityMismatch_Test0():
+	c_program_text= """
+		class A
+		{
+		public:
+			template</ type T /> struct S{}
+		private:
+			template</ /> struct S</ i32 />{}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "TypeTemplatesVisibilityMismatch" )
+	assert( errors_list[0].file_pos.line == 7 )
+
+
 def FunctionBodyVisibilityIsUnsignificant_Test1():
 	c_program_text= """
 		class A

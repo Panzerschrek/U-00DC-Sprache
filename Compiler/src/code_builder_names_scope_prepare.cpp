@@ -29,8 +29,9 @@ void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::ProgramEl
 			}
 			else
 			{
-				// There are no templates abowe namespace. Namespaces inside classes does not exists.
-				U_ASSERT( !NameShadowsTemplateArgument( namespace_->name_, names_scope ) );
+				if( IsKeyword( namespace_->name_ ) )
+					errors_.push_back( ReportUsingKeywordAsName( namespace_->file_pos_ ) );
+				U_ASSERT( !NameShadowsTemplateArgument( namespace_->name_, names_scope ) ); // There are no templates abowe namespace. Namespaces inside classes does not exists.
 
 				const auto new_names_scope= std::make_shared<NamesScope>( namespace_->name_, &names_scope );
 				names_scope.AddName( namespace_->name_, Value( new_names_scope, namespace_->file_pos_ ) );
@@ -63,6 +64,8 @@ void  CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::Variable
 	{
 		if( IsKeyword( variable_declaration.name ) )
 			errors_.push_back( ReportUsingKeywordAsName( variable_declaration.file_pos ) );
+		if( NameShadowsTemplateArgument( variable_declaration.name, names_scope ) )
+			errors_.push_back( ReportDeclarationShadowsTemplateArgument( variable_declaration.file_pos, variable_declaration.name ) );
 
 		IncompleteGlobalVariable incomplete_global_variable;
 		incomplete_global_variable.syntax_element= &variables_declaration;
@@ -78,6 +81,8 @@ void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::AutoVaria
 {
 	if( IsKeyword( variable_declaration.name ) )
 		errors_.push_back( ReportUsingKeywordAsName( variable_declaration.file_pos_ ) );
+	if( NameShadowsTemplateArgument( variable_declaration.name, names_scope ) )
+		errors_.push_back( ReportDeclarationShadowsTemplateArgument( variable_declaration.file_pos_, variable_declaration.name ) );
 
 	IncompleteGlobalVariable incomplete_global_variable;
 	incomplete_global_variable.syntax_element= &variable_declaration;
@@ -97,6 +102,10 @@ void CodeBuilder::NamesScopeFill(
 		return; // process out of line functions later.
 
 	const ProgramString& func_name= function_declaration.name_.components.back().name;
+	if( IsKeyword( func_name ) && func_name != Keywords::constructor_ && func_name != Keywords::destructor_ )
+		errors_.push_back( ReportUsingKeywordAsName( function_declaration.file_pos_ ) );
+	if( NameShadowsTemplateArgument( func_name, names_scope ) )
+		errors_.push_back( ReportDeclarationShadowsTemplateArgument( function_declaration.file_pos_, func_name ) );
 
 	if( NamesScope::InsertedName* const prev_name= names_scope.GetThisScopeName( func_name ) )
 	{
@@ -137,6 +146,10 @@ void CodeBuilder::NamesScopeFill(
 		errors_.push_back( ReportFunctionDeclarationOutsideItsScope( function_template_declaration.file_pos_ ) );
 	if( complex_name.components.front().have_template_parameters )
 		errors_.push_back( ReportValueIsNotTemplate( function_template_declaration.file_pos_ ) );
+	if( IsKeyword( function_template_name ) )
+		errors_.push_back( ReportUsingKeywordAsName( function_template_declaration.file_pos_ ) );
+	if( NameShadowsTemplateArgument( function_template_name, names_scope ) )
+		errors_.push_back( ReportDeclarationShadowsTemplateArgument( function_template_declaration.file_pos_, function_template_name ) );
 
 	if( NamesScope::InsertedName* const prev_name= names_scope.GetThisScopeName( function_template_name ) )
 	{
@@ -169,6 +182,8 @@ ClassProxyPtr CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::
 	const ProgramString& class_name= override_name.empty() ? class_declaration.name_: override_name;
 	if( IsKeyword( class_name ) )
 		errors_.push_back( ReportUsingKeywordAsName( class_declaration.file_pos_ ) );
+	if( NameShadowsTemplateArgument( class_name, names_scope ) )
+		errors_.push_back( ReportDeclarationShadowsTemplateArgument( class_declaration.file_pos_, class_name ) );
 
 	ClassProxyPtr class_type;
 	if( const NamesScope::InsertedName* const prev_name= names_scope.GetThisScopeName( class_name ) )
@@ -226,6 +241,8 @@ ClassProxyPtr CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::
 				ClassField class_field;
 				class_field.syntax_element= in_class_field;
 
+				if( IsKeyword( in_class_field->name ) )
+					errors_.push_back( ReportUsingKeywordAsName( class_declaration.file_pos_ ) );
 				if( NameShadowsTemplateArgument( in_class_field->name, the_class.members ) )
 					errors_.push_back( ReportDeclarationShadowsTemplateArgument( in_class_field->file_pos_, in_class_field->name ) );
 				if( the_class.members.AddName( in_class_field->name, Value( class_field, in_class_field->file_pos_ ) ) == nullptr )
@@ -284,10 +301,15 @@ void CodeBuilder::NamesScopeFill(
 	const ClassMemberVisibility visibility )
 {
 	const ProgramString type_template_name= type_template_declaration.name_;
+	if( IsKeyword( type_template_name ) )
+		errors_.push_back( ReportUsingKeywordAsName( type_template_declaration.file_pos_ ) );
+	if( NameShadowsTemplateArgument( type_template_name, names_scope ) )
+		errors_.push_back( ReportDeclarationShadowsTemplateArgument( type_template_declaration.file_pos_, type_template_name ) );
+
 	if( NamesScope::InsertedName* const prev_name= names_scope.GetThisScopeName( type_template_name ) )
 	{
 		if( base_class != nullptr && base_class->class_->GetMemberVisibility( type_template_name ) != visibility )
-			errors_.push_back( ReportFunctionsVisibilityMismatch( type_template_declaration.file_pos_, type_template_name ) ); // TODO - use separate error code
+			errors_.push_back( ReportTypeTemplatesVisibilityMismatch( type_template_declaration.file_pos_, type_template_name ) ); // TODO - use separate error code
 
 		if( TypeTemplatesSet* const type_templates_set= prev_name->second.GetTypeTemplatesSet() )
 			type_templates_set->syntax_elements.push_back( &type_template_declaration );
@@ -307,6 +329,11 @@ void CodeBuilder::NamesScopeFill(
 
 void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::Enum& enum_declaration )
 {
+	if( IsKeyword( enum_declaration.name ) )
+		errors_.push_back( ReportUsingKeywordAsName( enum_declaration.file_pos_ ) );
+	if( NameShadowsTemplateArgument( enum_declaration.name, names_scope ) )
+		errors_.push_back( ReportDeclarationShadowsTemplateArgument( enum_declaration.file_pos_, enum_declaration.name ) );
+
 	const EnumPtr enum_= std::make_shared<Enum>( enum_declaration.name, &names_scope );
 	enum_->syntax_element= &enum_declaration;
 
@@ -316,6 +343,8 @@ void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::Enum& enu
 
 void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::Typedef& typedef_declaration )
 {
+	if( IsKeyword( typedef_declaration.name ) )
+		errors_.push_back( ReportUsingKeywordAsName( typedef_declaration.file_pos_ ) );
 	if( NameShadowsTemplateArgument( typedef_declaration.name, names_scope ) )
 		errors_.push_back( ReportDeclarationShadowsTemplateArgument( typedef_declaration.file_pos_, typedef_declaration.name ) );
 
