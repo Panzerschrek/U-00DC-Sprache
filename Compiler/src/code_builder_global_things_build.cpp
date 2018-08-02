@@ -850,15 +850,13 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 				FAIL_RETURN;
 			}
 
-			const Value expression_result_value= BuildExpressionCode( *initializer_expression, names_scope, function_context );
+			const Variable expression_result= BuildExpressionCodeEnsureVariable( *initializer_expression, names_scope, function_context );
 
-			if( !expression_result_value.GetType().ReferenceIsConvertibleTo( variable.type ) )
+			if( !expression_result.type.ReferenceIsConvertibleTo( variable.type ) ) // TODO - completeness required here
 			{
-				errors_.push_back( ReportTypesMismatch( variable_declaration.file_pos, variable.type.ToString(), expression_result_value.GetType().ToString() ) );
+				errors_.push_back( ReportTypesMismatch( variable_declaration.file_pos, variable.type.ToString(), expression_result.type.ToString() ) );
 				FAIL_RETURN;
 			}
-			const Variable& expression_result= *expression_result_value.GetVariable();
-
 			if( expression_result.value_type == ValueType::Value )
 			{
 				errors_.push_back( ReportExpectedReferenceValue( variable_declaration.file_pos ) );
@@ -906,24 +904,21 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 		// Destruction frame for temporary variables of initializer expression.
 		const StackVariablesStorage temp_variables_storage( function_context );
 
-		const Value initializer_experrsion_value= BuildExpressionCode( *auto_variable_declaration->initializer_expression, names_scope, function_context );
+		const Variable initializer_experrsion= BuildExpressionCodeEnsureVariable( *auto_variable_declaration->initializer_expression, names_scope, function_context );
 
 		{ // Check expression type. Expression can have exotic types, such "Overloading functions set", "class name", etc.
-			const Type& type= initializer_experrsion_value.GetType();
 			const bool type_is_ok=
-				type.GetFundamentalType() != nullptr ||
-				type.GetArrayType() != nullptr ||
-				type.GetClassType() != nullptr ||
-				type.GetEnumType() != nullptr ||
-				type.GetFunctionPointerType() != nullptr;
-			if( !type_is_ok )
+				initializer_experrsion.type.GetFundamentalType() != nullptr ||
+				initializer_experrsion.type.GetArrayType() != nullptr ||
+				initializer_experrsion.type.GetClassType() != nullptr ||
+				initializer_experrsion.type.GetEnumType() != nullptr ||
+				initializer_experrsion.type.GetFunctionPointerType() != nullptr;
+			if( !type_is_ok || initializer_experrsion.type == invalid_type_ )
 			{
-				errors_.push_back( ReportInvalidTypeForAutoVariable( auto_variable_declaration->file_pos_, initializer_experrsion_value.GetType().ToString() ) );
+				errors_.push_back( ReportInvalidTypeForAutoVariable( auto_variable_declaration->file_pos_, initializer_experrsion.type.ToString() ) );
 				FAIL_RETURN;
 			}
 		}
-
-		const Variable& initializer_experrsion= *initializer_experrsion_value.GetVariable();
 
 		const StoredVariablePtr stored_variable=
 			std::make_shared<StoredVariable>(

@@ -32,6 +32,27 @@ Value CodeBuilder::BuildExpressionCodeAndDestroyTemporaries(
 	return result;
 }
 
+Variable CodeBuilder::BuildExpressionCodeEnsureVariable(
+	const Synt::IExpressionComponent& expression,
+	NamesScope& names,
+	FunctionContext& function_context )
+{
+	Value result= BuildExpressionCode( expression, names, function_context );
+
+	Variable* const result_variable= result.GetVariable();
+	if( result_variable == nullptr )
+	{
+		if( result.GetErrorValue() == nullptr )
+			errors_.push_back( ReportExpectedVariable( expression.GetFilePos(), result.GetKindName() ) );
+
+		Variable dummy_result;
+		dummy_result.type= invalid_type_;
+		dummy_result.llvm_value= llvm::UndefValue::get( llvm::PointerType::get( invalid_type_.GetLLVMType(), 0u ) );
+		return dummy_result;
+	}
+	return std::move( *result_variable );
+}
+
 boost::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 	const OverloadedOperator op,
 	const Synt::SyntaxElementBase& op_syntax_element,
@@ -83,9 +104,9 @@ boost::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 			const Variable* const r_var= r_var_value.GetVariable();
 
 			if( l_var == nullptr )
-				errors_.push_back( ReportExpectedVariable( file_pos, l_var_value.GetType().ToString() ) );
+				errors_.push_back( ReportExpectedVariable( file_pos, l_var_value.GetKindName() ) );
 			if( r_var == nullptr )
-				errors_.push_back( ReportExpectedVariable( file_pos, r_var_value.GetType().ToString() ) );
+				errors_.push_back( ReportExpectedVariable( file_pos, r_var_value.GetKindName() ) );
 			if( l_var == nullptr || r_var == nullptr )
 				return Value(ErrorValue());
 
@@ -321,7 +342,7 @@ Value CodeBuilder::BuildExpressionCode(
 			const Variable* const var= result.GetVariable();
 			if( var == nullptr )
 			{
-				errors_.push_back( ReportOperationNotSupportedForThisType( expression_with_unary_operators->file_pos_, result.GetType().ToString() ) );
+				errors_.push_back( ReportOperationNotSupportedForThisType( expression_with_unary_operators->file_pos_, result.GetKindName() ) );
 				continue;
 			}
 
@@ -1004,15 +1025,13 @@ Value CodeBuilder::BuildLazyBinaryOperator(
 	NamesScope& names,
 	FunctionContext& function_context )
 {
-	const Value l_var_value= BuildExpressionCode( l_expression, names, function_context );
-	CHECK_RETURN_ERROR_VALUE(l_var_value);
+	const Variable l_var= BuildExpressionCodeEnsureVariable( l_expression, names, function_context );
 
-	if( l_var_value.GetType() != bool_type_ )
+	if( l_var.type != bool_type_ )
 	{
-		errors_.push_back( ReportTypesMismatch( binary_operator.file_pos_, bool_type_.ToString(), l_var_value.GetType().ToString() ) );
+		errors_.push_back( ReportTypesMismatch( binary_operator.file_pos_, bool_type_.ToString(), l_var.type.ToString() ) );
 		return ErrorValue();
 	}
-	const Variable l_var= *l_var_value.GetVariable();
 
 	llvm::BasicBlock* const l_part_block= function_context.llvm_ir_builder.GetInsertBlock();
 	llvm::BasicBlock* const r_part_block= llvm::BasicBlock::Create( llvm_context_ );
@@ -1038,15 +1057,12 @@ Value CodeBuilder::BuildLazyBinaryOperator(
 		// We doesn`t needs longer lifetime of epxression temporaries, because we use only bool result.
 		const StackVariablesStorage r_var_temp_variables_storage( function_context );
 
-		const Value r_var_value= BuildExpressionCode( r_expression, names, function_context );
-		CHECK_RETURN_ERROR_VALUE(r_var_value);
-
-		if( r_var_value.GetType() != bool_type_ )
+		const Variable r_var= BuildExpressionCodeEnsureVariable( r_expression, names, function_context );
+		if( r_var.type != bool_type_ )
 		{
-			errors_.push_back( ReportTypesMismatch( binary_operator.file_pos_, bool_type_.ToString(), r_var_value.GetType().ToString() ) );
+			errors_.push_back( ReportTypesMismatch( binary_operator.file_pos_, bool_type_.ToString(), r_var.type.ToString() ) );
 			return ErrorValue();
 		}
-		const Variable& r_var= *r_var_value.GetVariable();
 		r_var_constepxr_value= r_var.constexpr_value;
 		r_var_in_register= CreateMoveToLLVMRegisterInstruction( r_var, function_context );
 
@@ -1112,32 +1128,25 @@ Value CodeBuilder::DoReferenceCast(
 	if( type == invalid_type_ )
 		return ErrorValue();
 
-	const Value expr= BuildExpressionCode( *expression, names, function_context );
-	CHECK_RETURN_ERROR_VALUE(expr);
-	const Variable* var= expr.GetVariable();
-	if( var == nullptr )
-	{
-		errors_.push_back( ReportExpectedVariable( file_pos, expr.GetType().ToString() ) );
-		return ErrorValue();
-	}
+	const Variable var= BuildExpressionCodeEnsureVariable( *expression, names, function_context );
 
 	Variable result;
 	result.type= type;
-	result.value_type= var->value_type == ValueType::Reference ? ValueType::Reference : ValueType::ConstReference; // "ValueType" here converts inot ConstReference.
+	result.value_type= var.value_type == ValueType::Reference ? ValueType::Reference : ValueType::ConstReference; // "ValueType" here converts inot ConstReference.
 	result.location= Variable::Location::Pointer;
-	result.referenced_variables= var->referenced_variables;
+	result.referenced_variables= var.referenced_variables;
 
-	llvm::Value* src_value= var->llvm_value;
-	if( var->location == Variable::Location::LLVMRegister )
+	llvm::Value* src_value= var.llvm_value;
+	if( var.location == Variable::Location::LLVMRegister )
 	{
-		src_value= function_context.alloca_ir_builder.CreateAlloca( var->type.GetLLVMType() );
-		function_context.llvm_ir_builder.CreateStore( var->llvm_value, src_value );
+		src_value= function_context.alloca_ir_builder.CreateAlloca( var.type.GetLLVMType() );
+		function_context.llvm_ir_builder.CreateStore( var.llvm_value, src_value );
 	}
 
-	if( type == var->type )
+	if( type == var.type )
 		result.llvm_value= src_value;
 	else if( type == void_type_ )
-		result.llvm_value= CreateReferenceCast( src_value, var->type, type, function_context );
+		result.llvm_value= CreateReferenceCast( src_value, var.type, type, function_context );
 	else
 	{
 		// Complete types required for both safe and unsafe casting, except unsafe void to anything cast.
@@ -1145,16 +1154,16 @@ Value CodeBuilder::DoReferenceCast(
 		if( !EnsureTypeCompleteness( type, TypeCompleteness::Complete ) )
 			errors_.push_back( ReportUsingIncompleteType( file_pos, type.ToString() ) );
 
-		if( !( enable_unsafe && var->type == void_type_ ) && !EnsureTypeCompleteness( var->type, TypeCompleteness::Complete ) )
-			errors_.push_back( ReportUsingIncompleteType( file_pos, var->type.ToString() ) );
+		if( !( enable_unsafe && var.type == void_type_ ) && !EnsureTypeCompleteness( var.type, TypeCompleteness::Complete ) )
+			errors_.push_back( ReportUsingIncompleteType( file_pos, var.type.ToString() ) );
 
-		if( var->type.ReferenceIsConvertibleTo( type ) )
-			result.llvm_value= CreateReferenceCast( src_value, var->type, type, function_context );
+		if( var.type.ReferenceIsConvertibleTo( type ) )
+			result.llvm_value= CreateReferenceCast( src_value, var.type, type, function_context );
 		else
 		{
 			result.llvm_value= function_context.llvm_ir_builder.CreatePointerCast( src_value, llvm::PointerType::get( type.GetLLVMType(), 0 ) );
 			if( !enable_unsafe )
-				errors_.push_back( ReportTypesMismatch( file_pos, type.ToString(), var->type.ToString() ) );
+				errors_.push_back( ReportTypesMismatch( file_pos, type.ToString(), var.type.ToString() ) );
 		}
 	}
 
@@ -1163,22 +1172,15 @@ Value CodeBuilder::DoReferenceCast(
 
 Value CodeBuilder::BuildCastImut( const Synt::CastImut& cast_imut, NamesScope& names, FunctionContext& function_context )
 {
-	const Value expr= BuildExpressionCode( *cast_imut.expression_, names, function_context );
-	CHECK_RETURN_ERROR_VALUE(expr);
-	const Variable* var= expr.GetVariable();
-	if( var == nullptr )
-	{
-		errors_.push_back( ReportExpectedVariable( cast_imut.file_pos_, expr.GetType().ToString() ) );
-		return ErrorValue();
-	}
+	const Variable var= BuildExpressionCodeEnsureVariable( *cast_imut.expression_, names, function_context );
 
-	Variable result= *var;
+	Variable result= var;
 	result.value_type= ValueType::ConstReference;
 
-	if( var->location == Variable::Location::LLVMRegister )
+	if( var.location == Variable::Location::LLVMRegister )
 	{
-		result.llvm_value= function_context.alloca_ir_builder.CreateAlloca( var->type.GetLLVMType() );
-		function_context.llvm_ir_builder.CreateStore( var->llvm_value, result.llvm_value );
+		result.llvm_value= function_context.alloca_ir_builder.CreateAlloca( var.type.GetLLVMType() );
+		function_context.llvm_ir_builder.CreateStore( var.llvm_value, result.llvm_value );
 	}
 
 	return Value( result, cast_imut.file_pos_ );
@@ -1189,22 +1191,15 @@ Value CodeBuilder::BuildCastMut( const Synt::CastMut& cast_mut, NamesScope& name
 	if( !function_context.is_in_unsafe_block )
 		errors_.push_back( ReportMutableReferenceCastOutsideUnsafeBlock( cast_mut.file_pos_ ) );
 
-	const Value expr= BuildExpressionCode( *cast_mut.expression_, names, function_context );
-	CHECK_RETURN_ERROR_VALUE(expr);
-	const Variable* var= expr.GetVariable();
-	if( var == nullptr )
-	{
-		errors_.push_back( ReportExpectedVariable( cast_mut.file_pos_, expr.GetType().ToString() ) );
-		return ErrorValue();
-	}
+	const Variable var= BuildExpressionCodeEnsureVariable( *cast_mut.expression_, names, function_context );
 
-	Variable result= *var;
+	Variable result= var;
 	result.value_type= ValueType::Reference;
 
-	if( var->location == Variable::Location::LLVMRegister )
+	if( var.location == Variable::Location::LLVMRegister )
 	{
-		result.llvm_value= function_context.alloca_ir_builder.CreateAlloca( var->type.GetLLVMType() );
-		function_context.llvm_ir_builder.CreateStore( var->llvm_value, result.llvm_value );
+		result.llvm_value= function_context.alloca_ir_builder.CreateAlloca( var.type.GetLLVMType() );
+		function_context.llvm_ir_builder.CreateStore( var.llvm_value, result.llvm_value );
 	}
 
 	return Value( result, cast_mut.file_pos_ );
@@ -1416,7 +1411,7 @@ Value CodeBuilder::BuildMoveOpeator( const Synt::MoveOperator& move_operator, Na
 	if( variable_for_move == nullptr ||
 		variable_for_move->kind != StoredVariable::Kind::Variable )
 	{
-		errors_.push_back( ReportExpectedVariable( move_operator.file_pos_, resolved_name->second.GetType().ToString() ) );
+		errors_.push_back( ReportExpectedVariable( move_operator.file_pos_, resolved_name->second.GetKindName() ) );
 		return ErrorValue();
 	}
 
@@ -1590,7 +1585,7 @@ Value CodeBuilder::BuildIndexationOperator(
 
 	if( value.GetVariable() == nullptr )
 	{
-		errors_.push_back( ReportExpectedVariable( indexation_operator.file_pos_, value.GetType().ToString() ) );
+		errors_.push_back( ReportExpectedVariable( indexation_operator.file_pos_, value.GetKindName() ) );
 		return ErrorValue();
 	}
 
@@ -1622,25 +1617,16 @@ Value CodeBuilder::BuildIndexationOperator(
 			dummy_function_context.variables_state= function_context.variables_state;
 			function_context.variables_state.DeactivateLocks();
 
-			const Value index_value= BuildExpressionCode( *indexation_operator.index_, names, dummy_function_context );
+			const Variable index_variable= BuildExpressionCodeEnsureVariable( *indexation_operator.index_, names, dummy_function_context );
 
 			function_context.overloading_resolutin_cache.insert(
 				dummy_function_context.overloading_resolutin_cache.begin(),
 				dummy_function_context.overloading_resolutin_cache.end() );
 
-			CHECK_RETURN_ERROR_VALUE(index_value);
-
-			const Variable* const index_variable= index_value.GetVariable();
-			if( index_variable == nullptr )
-			{
-				errors_.push_back( ReportExpectedVariable( indexation_operator.index_->GetFilePos(), index_value.GetType().ToString() ) );
-				return ErrorValue();
-			}
-
 			args.emplace_back();
-			args.back().type= index_variable->type;
-			args.back().is_reference= index_variable->value_type != ValueType::Value;
-			args.back().is_mutable= index_variable->value_type == ValueType::Reference;
+			args.back().type= index_variable.type;
+			args.back().is_reference= index_variable.value_type != ValueType::Value;
+			args.back().is_mutable= index_variable.value_type == ValueType::Reference;
 		}
 		function_context.variables_state.ActivateLocks();
 
@@ -1680,7 +1666,7 @@ Value CodeBuilder::BuildIndexationOperator(
 	const Array* const array_type= variable.type.GetArrayType();
 	if( array_type == nullptr )
 	{
-		errors_.push_back( ReportOperationNotSupportedForThisType( indexation_operator.file_pos_, value.GetType().ToString() ) );
+		errors_.push_back( ReportOperationNotSupportedForThisType( indexation_operator.file_pos_, value.GetKindName() ) );
 		return ErrorValue();
 	}
 
@@ -1689,21 +1675,14 @@ Value CodeBuilder::BuildIndexationOperator(
 	for( const StoredVariablePtr& stored_variable : variable.referenced_variables )
 		array_locks.push_back( variable.value_type == ValueType::Reference ? stored_variable->mut_use_counter : stored_variable->imut_use_counter );
 
-	const Value index_value=
-		BuildExpressionCode(
-			*indexation_operator.index_,
-			names,
-			function_context );
-	CHECK_RETURN_ERROR_VALUE(index_value);
+	const Variable index= BuildExpressionCodeEnsureVariable( *indexation_operator.index_, names, function_context );
 
-	const FundamentalType* const index_fundamental_type= index_value.GetType().GetFundamentalType();
-	if( index_fundamental_type == nullptr ||
-		!IsUnsignedInteger( index_fundamental_type->fundamental_type ) )
+	const FundamentalType* const index_fundamental_type= index.type.GetFundamentalType();
+	if( index_fundamental_type == nullptr || !IsUnsignedInteger( index_fundamental_type->fundamental_type ) )
 	{
-		errors_.push_back( ReportTypesMismatch( indexation_operator.file_pos_, "any unsigned integer"_SpC, index_value.GetType().ToString() ) );
+		errors_.push_back( ReportTypesMismatch( indexation_operator.file_pos_, "any unsigned integer"_SpC, index.type.ToString() ) );
 		return ErrorValue();
 	}
-	const Variable& index= *index_value.GetVariable();
 
 	if( variable.location != Variable::Location::Pointer )
 	{
@@ -1781,20 +1760,25 @@ Value CodeBuilder::BuildMemberAccessOperator(
 {
 	CHECK_RETURN_ERROR_VALUE(value);
 
-	Class* const class_type= value.GetType().GetClassType();
+	if( value.GetVariable() == nullptr )
+	{
+		errors_.push_back( ReportExpectedVariable( member_access_operator.file_pos_, value.GetKindName() ) );
+		return ErrorValue();
+	}
+	const Variable& variable= *value.GetVariable();
+
+	Class* const class_type= variable.type.GetClassType();
 	if( class_type == nullptr )
 	{
-		errors_.push_back( ReportOperationNotSupportedForThisType( member_access_operator.file_pos_, value.GetType().ToString() ) );
+		errors_.push_back( ReportOperationNotSupportedForThisType( member_access_operator.file_pos_, value.GetKindName() ) );
 		return ErrorValue();
 	}
 
-	if( !EnsureTypeCompleteness( value.GetType(), TypeCompleteness::Complete ) )
+	if( !EnsureTypeCompleteness( variable.type, TypeCompleteness::Complete ) )
 	{
-		errors_.push_back( ReportUsingIncompleteType( member_access_operator.file_pos_, value.GetType().ToString() ) );
+		errors_.push_back( ReportUsingIncompleteType( member_access_operator.file_pos_, value.GetKindName() ) );
 		return ErrorValue();
 	}
-
-	const Variable& variable= *value.GetVariable();
 
 	const NamesScope::InsertedName* const class_member= class_type->members.GetThisScopeName( member_access_operator.member_name_ );
 	if( class_member == nullptr )
@@ -1807,7 +1791,7 @@ Value CodeBuilder::BuildMemberAccessOperator(
 		( member_access_operator.member_name_ == Keywords::constructor_ || member_access_operator.member_name_ == Keywords::destructor_ ) )
 		errors_.push_back( ReportExplicitAccessToThisMethodIsUnsafe( member_access_operator.file_pos_,  member_access_operator.member_name_ ) );
 
-	if( names.GetAccessFor( value.GetType().GetClassTypeProxy() ) < class_type->GetMemberVisibility( member_access_operator.member_name_ ) )
+	if( names.GetAccessFor( variable.type.GetClassTypeProxy() ) < class_type->GetMemberVisibility( member_access_operator.member_name_ ) )
 		errors_.push_back( ReportAccessingNonpublicClassMember( member_access_operator.file_pos_, class_type->members.GetThisNamespaceName(), member_access_operator.member_name_ ) );
 
 	if( const OverloadedFunctionsSet* functions_set= class_member->second.GetFunctionsSet() )
@@ -1854,12 +1838,12 @@ Value CodeBuilder::BuildMemberAccessOperator(
 	U_ASSERT( field_class_proxy != nullptr );
 
 	llvm::Value* actual_field_class_ptr= nullptr;
-	if( field_class_proxy == value.GetType().GetClassTypeProxy() )
+	if( field_class_proxy == variable.type.GetClassTypeProxy() )
 		actual_field_class_ptr= variable.llvm_value;
 	else
 	{
 		// For parent filed we needs make several GEP isntructions.
-		ClassProxyPtr actual_field_class= value.GetType().GetClassTypeProxy();
+		ClassProxyPtr actual_field_class= variable.type.GetClassTypeProxy();
 		actual_field_class_ptr= variable.llvm_value;
 		while( actual_field_class != field_class_proxy )
 		{
@@ -1984,7 +1968,7 @@ Value CodeBuilder::BuildCallOperator(
 
 	if( functions_set == nullptr )
 	{
-		errors_.push_back( ReportOperationNotSupportedForThisType( call_operator.file_pos_, function_value.GetType().ToString() ) );
+		errors_.push_back( ReportOperationNotSupportedForThisType( call_operator.file_pos_, function_value.GetKindName() ) );
 		return ErrorValue();
 	}
 
@@ -2029,20 +2013,12 @@ Value CodeBuilder::BuildCallOperator(
 		for( const Synt::IExpressionComponentPtr& arg_expression : call_operator.arguments_ )
 		{
 			U_ASSERT( arg_expression != nullptr );
-			const Value expr_value= BuildExpressionCode( *arg_expression, names, dummy_function_context );
-			CHECK_RETURN_ERROR_VALUE(expr_value);
-
-			const Variable* const expr= expr_value.GetVariable();
-			if( expr == nullptr )
-			{
-				errors_.push_back( ReportExpectedVariable( arg_expression->GetFilePos(), expr_value.GetType().ToString() ) );
-				return ErrorValue();
-			}
+			const Variable expr= BuildExpressionCodeEnsureVariable( *arg_expression, names, dummy_function_context );
 
 			actual_args.emplace_back();
-			actual_args.back().type= expr->type;
-			actual_args.back().is_reference= expr->value_type != ValueType::Value;
-			actual_args.back().is_mutable= expr->value_type == ValueType::Reference;
+			actual_args.back().type= expr.type;
+			actual_args.back().is_reference= expr.value_type != ValueType::Value;
+			actual_args.back().is_mutable= expr.value_type == ValueType::Reference;
 		}
 
 		function_context.overloading_resolutin_cache.insert(
@@ -2149,10 +2125,7 @@ Value CodeBuilder::DoCallFunction(
 		if( is_first_arg )
 			expr= *first_arg;
 		else
-		{
-			Value expr_val= BuildExpressionCode( *args[ j - first_arg_count ], names, function_context );
-			expr= *expr_val.GetVariable();
-		}
+			expr= BuildExpressionCodeEnsureVariable( *args[ j - first_arg_count ], names, function_context );
 
 		const FilePos& file_pos= is_first_arg ? call_file_pos : args[ j - first_arg_count ]->GetFilePos();
 
@@ -2560,14 +2533,19 @@ Value CodeBuilder::BuildUnaryMinus(
 	FunctionContext& function_context )
 {
 	CHECK_RETURN_ERROR_VALUE(value);
-
-	const FundamentalType* const fundamental_type= value.GetType().GetFundamentalType();
-	if( fundamental_type == nullptr )
+	if( value.GetVariable() == nullptr )
 	{
-		errors_.push_back( ReportOperationNotSupportedForThisType( unary_minus.file_pos_, value.GetType().ToString() ) );
+		errors_.push_back( ReportExpectedVariable( unary_minus.file_pos_, value.GetKindName() ) );
 		return ErrorValue();
 	}
-	const Variable variable= *value.GetVariable();
+	const Variable& variable= *value.GetVariable();
+
+	const FundamentalType* const fundamental_type= variable.type.GetFundamentalType();
+	if( fundamental_type == nullptr )
+	{
+		errors_.push_back( ReportOperationNotSupportedForThisType( unary_minus.file_pos_, value.GetKindName() ) );
+		return ErrorValue();
+	}
 
 	const bool is_float= IsFloatingPoint( fundamental_type->fundamental_type );
 	if( !( IsInteger( fundamental_type->fundamental_type ) || is_float ) )
@@ -2611,13 +2589,18 @@ Value CodeBuilder::BuildLogicalNot(
 	FunctionContext& function_context )
 {
 	CHECK_RETURN_ERROR_VALUE(value);
-
-	if( value.GetType() != bool_type_ )
+	if( value.GetVariable() == nullptr )
 	{
-		errors_.push_back( ReportOperationNotSupportedForThisType( logical_not.file_pos_, value.GetType().ToString() ) );
+		errors_.push_back( ReportExpectedVariable( logical_not.file_pos_, value.GetKindName() ) );
 		return ErrorValue();
 	}
 	const Variable& variable= *value.GetVariable();
+
+	if( variable.type != bool_type_ )
+	{
+		errors_.push_back( ReportOperationNotSupportedForThisType( logical_not.file_pos_, value.GetKindName() ) );
+		return ErrorValue();
+	}
 
 	Variable result;
 	result.type= variable.type;
@@ -2645,20 +2628,26 @@ Value CodeBuilder::BuildBitwiseNot(
 	FunctionContext& function_context )
 {
 	CHECK_RETURN_ERROR_VALUE(value);
+	if( value.GetVariable() == nullptr )
+	{
+		errors_.push_back( ReportExpectedVariable( bitwise_not.file_pos_, value.GetKindName() ) );
+		return ErrorValue();
+	}
+	const Variable& variable= *value.GetVariable();
 
-	const FundamentalType* const fundamental_type= value.GetType().GetFundamentalType();
+	const FundamentalType* const fundamental_type= variable.type.GetFundamentalType();
 	if( fundamental_type == nullptr )
 	{
-		errors_.push_back( ReportOperationNotSupportedForThisType( bitwise_not.file_pos_, value.GetType().ToString() ) );
+		errors_.push_back( ReportOperationNotSupportedForThisType( bitwise_not.file_pos_, value.GetKindName() ) );
 		return ErrorValue();
 	}
 	if( !IsInteger( fundamental_type->fundamental_type ) )
 	{
-		errors_.push_back( ReportOperationNotSupportedForThisType( bitwise_not.file_pos_, value.GetType().ToString() ) );
+		errors_.push_back( ReportOperationNotSupportedForThisType( bitwise_not.file_pos_, value.GetKindName() ) );
 		return ErrorValue();
 	}
 
-	const Variable variable= *value.GetVariable();
+
 
 	Variable result;
 	result.type= variable.type;

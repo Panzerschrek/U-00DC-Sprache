@@ -503,37 +503,32 @@ Type CodeBuilder::PrepareType(
 
 		const Synt::IExpressionComponent& num= *array_type_name->size;
 
-		const Value size_expression= BuildExpressionCode( num, names_scope, *dummy_function_context_ );
-		if( const Variable* const size_variable= size_expression.GetVariable() )
+		const Variable size_variable= BuildExpressionCodeEnsureVariable( num, names_scope, *dummy_function_context_ );
+		if( size_variable.constexpr_value != nullptr )
 		{
-			if( size_variable->constexpr_value != nullptr )
+			if( const FundamentalType* const size_fundamental_type= size_variable.type.GetFundamentalType() )
 			{
-				if( const FundamentalType* const size_fundamental_type= size_variable->type.GetFundamentalType() )
+				if( IsInteger( size_fundamental_type->fundamental_type ) )
 				{
-					if( IsInteger( size_fundamental_type->fundamental_type ) )
-					{
-						if( llvm::dyn_cast<llvm::UndefValue>(size_variable->constexpr_value) != nullptr )
-							array_type.size= Array::c_undefined_size;
-						else
-						{
-							const llvm::APInt& size_value= size_variable->constexpr_value->getUniqueInteger();
-							if( IsSignedInteger( size_fundamental_type->fundamental_type ) && size_value.isNegative() )
-								errors_.push_back( ReportArraySizeIsNegative( num.GetFilePos() ) );
-							else
-								array_type.size= SizeType( size_value.getLimitedValue() );
-						}
-					}
+					if( llvm::dyn_cast<llvm::UndefValue>(size_variable.constexpr_value) != nullptr )
+						array_type.size= Array::c_undefined_size;
 					else
-						errors_.push_back( ReportArraySizeIsNotInteger( num.GetFilePos() ) );
+					{
+						const llvm::APInt& size_value= size_variable.constexpr_value->getUniqueInteger();
+						if( IsSignedInteger( size_fundamental_type->fundamental_type ) && size_value.isNegative() )
+							errors_.push_back( ReportArraySizeIsNegative( num.GetFilePos() ) );
+						else
+							array_type.size= SizeType( size_value.getLimitedValue() );
+					}
 				}
 				else
-					U_ASSERT( false && "Nonfundamental constexpr? WTF?" );
+					errors_.push_back( ReportArraySizeIsNotInteger( num.GetFilePos() ) );
 			}
 			else
-				errors_.push_back( ReportExpectedConstantExpression( num.GetFilePos() ) );
+				U_ASSERT( false && "Nonfundamental constexpr? WTF?" );
 		}
 		else
-			errors_.push_back( ReportExpectedVariable( num.GetFilePos(), size_expression.GetType().ToString() ) );
+			errors_.push_back( ReportExpectedConstantExpression( num.GetFilePos() ) );
 
 		array_type.llvm_type= llvm::ArrayType::get( array_type.type.GetLLVMType(), array_type.ArraySizeOrZero() );
 
@@ -2261,15 +2256,12 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 				continue;
 			}
 
-			const Value expression_result_value=
-				BuildExpressionCode( *initializer_expression, block_names, function_context );
-
-			if( !expression_result_value.GetType().ReferenceIsConvertibleTo( variable.type ) )
+			const Variable expression_result= BuildExpressionCodeEnsureVariable( *initializer_expression, block_names, function_context );
+			if( !expression_result.type.ReferenceIsConvertibleTo( variable.type ) )
 			{
-				errors_.push_back( ReportTypesMismatch( variables_declaration.file_pos_, variable.type.ToString(), expression_result_value.GetType().ToString() ) );
+				errors_.push_back( ReportTypesMismatch( variables_declaration.file_pos_, variable.type.ToString(), expression_result.type.ToString() ) );
 				continue;
 			}
-			const Variable& expression_result= *expression_result_value.GetVariable();
 
 			if( expression_result.value_type == ValueType::Value )
 			{
@@ -2336,25 +2328,21 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 	// Destruction frame for temporary variables of initializer expression.
 	const StackVariablesStorage temp_variables_storage( function_context );
 
-	const Value initializer_experrsion_value=
-		BuildExpressionCode( *auto_variable_declaration.initializer_expression, block_names, function_context );
+	const Variable initializer_experrsion= BuildExpressionCodeEnsureVariable( *auto_variable_declaration.initializer_expression, block_names, function_context );
 
 	{ // Check expression type. Expression can have exotic types, such "Overloading functions set", "class name", etc.
-		const Type& type= initializer_experrsion_value.GetType();
 		const bool type_is_ok=
-			type.GetFundamentalType() != nullptr ||
-			type.GetArrayType() != nullptr ||
-			type.GetClassType() != nullptr ||
-			type.GetEnumType() != nullptr ||
-			type.GetFunctionPointerType() != nullptr;
-		if( !type_is_ok )
+			initializer_experrsion.type.GetFundamentalType() != nullptr ||
+			initializer_experrsion.type.GetArrayType() != nullptr ||
+			initializer_experrsion.type.GetClassType() != nullptr ||
+			initializer_experrsion.type.GetEnumType() != nullptr ||
+			initializer_experrsion.type.GetFunctionPointerType() != nullptr;
+		if( !type_is_ok || initializer_experrsion.type == invalid_type_ )
 		{
-			errors_.push_back( ReportInvalidTypeForAutoVariable( auto_variable_declaration.file_pos_, initializer_experrsion_value.GetType().ToString() ) );
+			errors_.push_back( ReportInvalidTypeForAutoVariable( auto_variable_declaration.file_pos_, initializer_experrsion.type.ToString() ) );
 			return;
 		}
 	}
-
-	const Variable& initializer_experrsion= *initializer_experrsion_value.GetVariable();
 
 	const StoredVariablePtr stored_variable=
 		std::make_shared<StoredVariable>(
@@ -2520,7 +2508,7 @@ void CodeBuilder::BuildAssignmentOperatorCode(
 	Value r_var_value= BuildExpressionCode( *assignment_operator.r_value_, block_names, function_context );
 	Variable* const r_var= r_var_value.GetVariable();
 	if( r_var == nullptr )
-		errors_.push_back( ReportExpectedVariable( assignment_operator.file_pos_, r_var_value.GetType().ToString() ) );
+		errors_.push_back( ReportExpectedVariable( assignment_operator.file_pos_, r_var_value.GetKindName() ) );
 
 	if( r_var != nullptr && ( r_var->type.GetFundamentalType() != nullptr || r_var->type.GetEnumType() != nullptr || r_var->type.GetFunctionPointerType() != nullptr ) )
 	{
@@ -2537,7 +2525,7 @@ void CodeBuilder::BuildAssignmentOperatorCode(
 	const Value l_var_value= BuildExpressionCode( *assignment_operator.l_value_, block_names, function_context );
 	const Variable* const l_var= l_var_value.GetVariable();
 	if( l_var == nullptr )
-		errors_.push_back( ReportExpectedVariable( assignment_operator.file_pos_, l_var_value.GetType().ToString() ) );
+		errors_.push_back( ReportExpectedVariable( assignment_operator.file_pos_, l_var_value.GetKindName() ) );
 
 	if( l_var == nullptr || r_var == nullptr )
 		return;
@@ -2632,9 +2620,9 @@ void CodeBuilder::BuildAdditiveAssignmentOperatorCode(
 	const Variable* const l_var= l_var_value.GetVariable();
 
 	if( l_var == nullptr )
-		errors_.push_back( ReportExpectedVariable( additive_assignment_operator.file_pos_, l_var_value.GetType().ToString() ) );
+		errors_.push_back( ReportExpectedVariable( additive_assignment_operator.file_pos_, l_var_value.GetKindName() ) );
 	if( r_var == nullptr )
-		errors_.push_back( ReportExpectedVariable( additive_assignment_operator.file_pos_, r_var_value.GetType().ToString() ) );
+		errors_.push_back( ReportExpectedVariable( additive_assignment_operator.file_pos_, r_var_value.GetKindName() ) );
 
 	if( l_var == nullptr || r_var == nullptr )
 		return;
@@ -2703,7 +2691,7 @@ void CodeBuilder::BuildDeltaOneOperatorCode(
 	const Variable* const variable= value.GetVariable();
 	if( variable == nullptr )
 	{
-		errors_.push_back( ReportExpectedVariable( file_pos, value.GetType().ToString() ) );
+		errors_.push_back( ReportExpectedVariable( file_pos, value.GetKindName() ) );
 		return;
 	}
 
@@ -2797,27 +2785,20 @@ void CodeBuilder::BuildReturnOperatorCode(
 	// Destruction frame for temporary variables of result expression.
 	const StackVariablesStorage temp_variables_storage( function_context );
 
-	const Value expression_result_value=
-		BuildExpressionCode(
-			*return_operator.expression_,
-			names,
-			function_context );
-
-	if( expression_result_value.GetType() == NontypeStub::ErrorValue )
+	const Variable expression_result= BuildExpressionCodeEnsureVariable( *return_operator.expression_, names, function_context );
+	if( expression_result.type == invalid_type_ )
 	{
 		// Add "ret void", because we do not need to break llvm basic blocks structure.
 		function_context.llvm_ir_builder.CreateRetVoid();
 		return;
 	}
 
-	const Variable& expression_result= *expression_result_value.GetVariable();
-
 	if( function_context.return_value_is_reference )
 	{
 		if( expression_result.type != function_context.return_type &&
 			!expression_result.type.ReferenceIsConvertibleTo( function_context.return_type ) )
 		{
-			errors_.push_back( ReportTypesMismatch( return_operator.file_pos_, function_context.return_type.ToString(), expression_result_value.GetType().ToString() ) );
+			errors_.push_back( ReportTypesMismatch( return_operator.file_pos_, function_context.return_type.ToString(), expression_result.type.ToString() ) );
 			return;
 		}
 
@@ -2856,7 +2837,7 @@ void CodeBuilder::BuildReturnOperatorCode(
 	{
 		if( expression_result.type != function_context.return_type )
 		{
-			errors_.push_back( ReportTypesMismatch( return_operator.file_pos_, function_context.return_type.ToString(), expression_result_value.GetType().ToString() ) );
+			errors_.push_back( ReportTypesMismatch( return_operator.file_pos_, function_context.return_type.ToString(), expression_result.type.ToString() ) );
 			return;
 		}
 
@@ -2920,22 +2901,22 @@ void CodeBuilder::BuildWhileOperatorCode(
 	function_context.llvm_ir_builder.SetInsertPoint( test_block );
 
 	const StackVariablesStorage temp_variables_storage( function_context );
-	const Value condition_expression= BuildExpressionCode( *while_operator.condition_, names, function_context );
+	const Variable condition_expression= BuildExpressionCodeEnsureVariable( *while_operator.condition_, names, function_context );
 
 	VariablesState variables_state_before_while= function_context.variables_state;
 	variables_state_before_while.DeactivateLocks();
 
-	if( condition_expression.GetType() != bool_type_ )
+	if( condition_expression.type != bool_type_ )
 	{
 		errors_.push_back(
 			ReportTypesMismatch(
 				while_operator.condition_->GetFilePos(),
 				bool_type_.ToString(),
-				condition_expression.GetType().ToString() ) );
+				condition_expression.type.ToString() ) );
 		return;
 	}
 
-	llvm::Value* condition_in_register= CreateMoveToLLVMRegisterInstruction( *condition_expression.GetVariable(), function_context );
+	llvm::Value* condition_in_register= CreateMoveToLLVMRegisterInstruction( condition_expression, function_context );
 	CallDestructors( *function_context.stack_variables_stack.back(), function_context, while_operator.condition_->GetFilePos() );
 
 	function_context.llvm_ir_builder.CreateCondBr( condition_in_register, while_block, block_after_while );
@@ -3046,19 +3027,18 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildIfOperatorCode(
 			conditions_variable_state.DeactivateLocks();
 			{
 				const StackVariablesStorage temp_variables_storage( function_context );
-				const Value condition_expression= BuildExpressionCode( *branch.condition, names, function_context );
-
-				if( condition_expression.GetType() != bool_type_ )
+				const Variable condition_expression= BuildExpressionCodeEnsureVariable( *branch.condition, names, function_context );
+				if( condition_expression.type != bool_type_ )
 				{
 					errors_.push_back(
 						ReportTypesMismatch(
 							branch.condition->GetFilePos(),
 							bool_type_.ToString(),
-							condition_expression.GetType().ToString() ) );
+							condition_expression.type.ToString() ) );
 					return if_operator_blocks_build_info;
 				}
 
-				llvm::Value* condition_in_register= CreateMoveToLLVMRegisterInstruction( *condition_expression.GetVariable(), function_context );
+				llvm::Value* condition_in_register= CreateMoveToLLVMRegisterInstruction( condition_expression, function_context );
 				CallDestructors( *function_context.stack_variables_stack.back(), function_context, branch.condition->GetFilePos() );
 
 				function_context.llvm_ir_builder.CreateCondBr( condition_in_register, body_block, next_condition_block );
@@ -3121,28 +3101,25 @@ void CodeBuilder::BuildStaticAssert( StaticAssert& static_assert_, NamesScope& n
 
 void CodeBuilder::BuildStaticAssert( const Synt::StaticAssert& static_assert_, NamesScope& names )
 {
-	const Value expression_result= BuildExpressionCode( *static_assert_.expression, names, *dummy_function_context_ );
-	if( expression_result.GetType() != bool_type_ )
+	const Variable variable= BuildExpressionCodeEnsureVariable( *static_assert_.expression, names, *dummy_function_context_ );
+	if( variable.type != bool_type_ )
 	{
 		errors_.push_back( ReportStaticAssertExpressionMustHaveBoolType( static_assert_.file_pos_ ) );
 		return;
 	}
 
-	const Variable* const variable= expression_result.GetVariable();
-	U_ASSERT( variable != nullptr );
-
-	if( variable->constexpr_value == nullptr )
+	if( variable.constexpr_value == nullptr )
 	{
 		errors_.push_back( ReportStaticAssertExpressionIsNotConstant( static_assert_.file_pos_ ) );
 		return;
 	}
-	if( llvm::dyn_cast<llvm::UndefValue>(variable->constexpr_value) != nullptr )
+	if( llvm::dyn_cast<llvm::UndefValue>(variable.constexpr_value) != nullptr )
 	{
 		// Undef value means, that value is constexpr, but we are in template prepass, and exact value is unknown. Skip this static_assert
 		return;
 	}
 
-	if( !variable->constexpr_value->isOneValue() )
+	if( !variable.constexpr_value->isOneValue() )
 	{
 		errors_.push_back( ReportStaticAssertionFailed( static_assert_.file_pos_ ) );
 		return;
@@ -3164,26 +3141,19 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildStaticIfOperatorCode(
 
 			const StackVariablesStorage temp_variables_storage( function_context );
 
-			const Value condition_expression= BuildExpressionCode( condition, names, function_context );
-			const Variable* const var= condition_expression.GetVariable();
-			if( var == nullptr )
+			const Variable condition_expression= BuildExpressionCodeEnsureVariable( condition, names, function_context );
+			if( condition_expression.type != bool_type_ )
 			{
-				errors_.push_back( ReportExpectedVariable( condition.GetFilePos(), condition_expression.GetType().ToString() ) );
+				errors_.push_back( ReportTypesMismatch( condition.GetFilePos(), bool_type_.ToString(), condition_expression.type.ToString() ) );
 				continue;
 			}
-
-			if( var->type != bool_type_ )
-			{
-				errors_.push_back( ReportTypesMismatch( condition.GetFilePos(), bool_type_.ToString(), var->type.ToString() ) );
-				continue;
-			}
-			if( var->constexpr_value == nullptr )
+			if( condition_expression.constexpr_value == nullptr )
 			{
 				errors_.push_back( ReportExpectedConstantExpression( condition.GetFilePos() ) );
 				continue;
 			}
 
-			if( var->constexpr_value->getUniqueInteger().getLimitedValue() != 0u )
+			if( condition_expression.constexpr_value->getUniqueInteger().getLimitedValue() != 0u )
 				return BuildBlockCode( *branch.block, names, function_context ); // Ok, this static if produdes block.
 
 			CallDestructors( *function_context.stack_variables_stack.back(), function_context, condition.GetFilePos() );
@@ -3215,19 +3185,18 @@ void CodeBuilder::BuildHaltIf(const Synt::HaltIf& halt_if, NamesScope& names, Fu
 	llvm::BasicBlock* const false_block= llvm::BasicBlock::Create( llvm_context_ );
 
 	const StackVariablesStorage temp_variables_storage( function_context );
-	const Value condition_expression= BuildExpressionCode( *halt_if.condition, names, function_context );
-
-	if( condition_expression.GetType() != bool_type_ )
+	const Variable condition_expression= BuildExpressionCodeEnsureVariable( *halt_if.condition, names, function_context );
+	if( condition_expression.type!= bool_type_ )
 	{
 		errors_.push_back(
 			ReportTypesMismatch(
 				halt_if.condition->GetFilePos(),
 				bool_type_.ToString(),
-				condition_expression.GetType().ToString() ) );
+				condition_expression.type.ToString() ) );
 		return;
 	}
 
-	llvm::Value* const condition_in_register= CreateMoveToLLVMRegisterInstruction( *condition_expression.GetVariable(), function_context );
+	llvm::Value* const condition_in_register= CreateMoveToLLVMRegisterInstruction( condition_expression, function_context );
 	CallDestructors( *function_context.stack_variables_stack.back(), function_context, halt_if.condition->GetFilePos() );
 
 	function_context.llvm_ir_builder.CreateCondBr( condition_in_register, true_block, false_block );

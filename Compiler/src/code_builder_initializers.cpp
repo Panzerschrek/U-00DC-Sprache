@@ -310,25 +310,22 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 			return nullptr;
 		}
 
-		const Value expression_result=
-			BuildExpressionCode( *call_operator.arguments_.front(), block_names, function_context );
+		const Variable src_var= BuildExpressionCodeEnsureVariable( *call_operator.arguments_.front(), block_names, function_context );
 
-		const Type expression_type= expression_result.GetType();
-		const FundamentalType* src_type= expression_type.GetFundamentalType();
+		const FundamentalType* src_type= src_var.type.GetFundamentalType();
 		if( src_type == nullptr )
 		{
 			// Allow explicit conversions of enums to ints.
-			if( const Enum* const enum_type= expression_type.GetEnumType () )
+			if( const Enum* const enum_type= src_var.type.GetEnumType () )
 				src_type= &enum_type->underlaying_type;
 		}
 
 		if( src_type == nullptr )
 		{
-			errors_.push_back( ReportTypesMismatch( call_operator.file_pos_, variable.type.ToString(), expression_result.GetType().ToString() ) );
+			errors_.push_back( ReportTypesMismatch( call_operator.file_pos_, variable.type.ToString(), src_var.type.ToString() ) );
 			return nullptr;
 		}
 
-		const Variable& src_var= *expression_result.GetVariable();
 		llvm::Value* value_for_assignment= CreateMoveToLLVMRegisterInstruction( src_var, function_context );
 
 		llvm::Constant* constant_value= nullptr;
@@ -338,7 +335,7 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 		{
 			// Perform fundamental types conversion.
 
-			const SizeType src_size= expression_type.SizeOf();
+			const SizeType src_size= src_var.type.SizeOf();
 			const SizeType dst_size= variable.type.SizeOf();
 			if( IsInteger( dst_type->fundamental_type ) && IsInteger( src_type->fundamental_type ) )
 			{
@@ -493,7 +490,7 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 				{
 					// TODO - error, bool have no constructors from other types
 				}
-				errors_.push_back( ReportTypesMismatch( call_operator.file_pos_, variable.type.ToString(), expression_result.GetType().ToString() ) );
+				errors_.push_back( ReportTypesMismatch( call_operator.file_pos_, variable.type.ToString(), src_var.type.ToString() ) );
 				return nullptr;
 			}
 		} // If needs conversion
@@ -521,21 +518,18 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 			return nullptr;
 		}
 
-		const Value expression_result=
-			BuildExpressionCode( *call_operator.arguments_.front(), block_names, function_context );
-		if( expression_result.GetType() != variable.type )
+		const Variable expression_result= BuildExpressionCodeEnsureVariable( *call_operator.arguments_.front(), block_names, function_context );
+		if( expression_result.type != variable.type )
 		{
-			errors_.push_back( ReportTypesMismatch( call_operator.file_pos_, variable.type.ToString(), expression_result.GetType().ToString() ) );
+			errors_.push_back( ReportTypesMismatch( call_operator.file_pos_, variable.type.ToString(), expression_result.type.ToString() ) );
 			return nullptr;
 		}
 
-		const Variable& expression_result_variable= *expression_result.GetVariable();
-
 		function_context.llvm_ir_builder.CreateStore(
-			CreateMoveToLLVMRegisterInstruction( expression_result_variable, function_context ),
+			CreateMoveToLLVMRegisterInstruction( expression_result, function_context ),
 			variable.llvm_value );
 
-		return expression_result_variable.constexpr_value;
+		return expression_result.constexpr_value;
 	}
 	else if( variable.type.GetFunctionPointerType() != nullptr )
 	{
@@ -568,10 +562,8 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 			dummy_function_context.variables_state= function_context.variables_state;
 			function_context.variables_state.DeactivateLocks();
 
-			const Value initializer_value= BuildExpressionCode( *call_operator.arguments_.front(), block_names, dummy_function_context );
-			needs_move_constuct=
-				initializer_value.GetType() == variable.type &&
-				initializer_value.GetVariable()->value_type == ValueType::Value ;
+			const Variable initializer_value= BuildExpressionCodeEnsureVariable( *call_operator.arguments_.front(), block_names, dummy_function_context );
+			needs_move_constuct= initializer_value.type == variable.type && initializer_value.value_type == ValueType::Value ;
 
 			function_context.variables_state.ActivateLocks();
 
@@ -581,7 +573,7 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 		}
 		if( needs_move_constuct )
 		{
-			const Variable initializer_variable= *BuildExpressionCode( *call_operator.arguments_.front(), block_names, function_context ).GetVariable();
+			const Variable initializer_variable= BuildExpressionCodeEnsureVariable( *call_operator.arguments_.front(), block_names, function_context );
 			CopyBytes( initializer_variable.llvm_value, variable.llvm_value, variable.type, function_context );
 
 			// Lock references and move.
@@ -631,20 +623,20 @@ llvm::Constant* CodeBuilder::ApplyExpressionInitializer(
 	NamesScope& block_names,
 	FunctionContext& function_context )
 {
+
 	if( variable.type.GetFundamentalType() != nullptr || variable.type.GetEnumType() != nullptr )
 	{
-		const Value expression_result=
-			BuildExpressionCode( *initializer.expression, block_names, function_context );
-		if( expression_result.GetType() != variable.type )
+		const Variable expression_result= BuildExpressionCodeEnsureVariable( *initializer.expression, block_names, function_context );
+		if( expression_result.type != variable.type )
 		{
-			errors_.push_back( ReportTypesMismatch( initializer.file_pos_, variable.type.ToString(), expression_result.GetType().ToString() ) );
+			errors_.push_back( ReportTypesMismatch( initializer.file_pos_, variable.type.ToString(), expression_result.type.ToString() ) );
 			return nullptr;
 		}
 
-		llvm::Value* const value_for_assignment= CreateMoveToLLVMRegisterInstruction( *expression_result.GetVariable(), function_context );
+		llvm::Value* const value_for_assignment= CreateMoveToLLVMRegisterInstruction( expression_result, function_context );
 		function_context.llvm_ir_builder.CreateStore( value_for_assignment, variable.llvm_value );
 
-		if( llvm::Constant* const constexpr_value= expression_result.GetVariable()->constexpr_value )
+		if( llvm::Constant* const constexpr_value= expression_result.constexpr_value )
 			return constexpr_value;
 	}
 	else if( variable.type.GetFunctionPointerType() != nullptr )
@@ -653,14 +645,12 @@ llvm::Constant* CodeBuilder::ApplyExpressionInitializer(
 	{
 		// Currently we support "=" initializer for copying and moving of structs.
 
-		const Value expression_result_value=
-			BuildExpressionCode( *initializer.expression, block_names, function_context );
-		if( !expression_result_value.GetType().ReferenceIsConvertibleTo( variable.type ) )
+		const Variable expression_result= BuildExpressionCodeEnsureVariable( *initializer.expression, block_names, function_context );
+		if( !expression_result.type.ReferenceIsConvertibleTo( variable.type ) ) // TODO - completeness required here
 		{
-			errors_.push_back( ReportTypesMismatch( initializer.file_pos_, variable.type.ToString(), expression_result_value.GetType().ToString() ) );
+			errors_.push_back( ReportTypesMismatch( initializer.file_pos_, variable.type.ToString(), expression_result.type.ToString() ) );
 			return nullptr;
 		}
-		const Variable& expression_result= *expression_result_value.GetVariable();
 
 		// Lock references.
 		if( variable.type.ReferencesTagsCount() > 0u )
@@ -903,40 +893,33 @@ llvm::Constant* CodeBuilder::InitializeReferenceField(
 		return nullptr;
 	}
 
-	const Value initializer_value= BuildExpressionCode( *initializer_expression, block_names, function_context );
+	const Variable initializer_variable= BuildExpressionCodeEnsureVariable( *initializer_expression, block_names, function_context );
 
-	const Variable* const initializer_variable= initializer_value.GetVariable();
-	if( initializer_variable == nullptr )
+	if( !initializer_variable.type.ReferenceIsConvertibleTo( field.type ) )
 	{
-		errors_.push_back( ReportExpectedVariable( initializer_expression->GetFilePos(), initializer_value.GetType().ToString() ) );
+		errors_.push_back( ReportTypesMismatch( initializer_expression->GetFilePos(), field.type.ToString(), initializer_variable.type.ToString() ) );
 		return nullptr;
 	}
-
-	if( !initializer_variable->type.ReferenceIsConvertibleTo( field.type ) )
-	{
-		errors_.push_back( ReportTypesMismatch( initializer_expression->GetFilePos(), field.type.ToString(), initializer_variable->type.ToString() ) );
-		return nullptr;
-	}
-	if( initializer_variable->value_type == ValueType::Value )
+	if( initializer_variable.value_type == ValueType::Value )
 	{
 		errors_.push_back( ReportExpectedReferenceValue( initializer_expression->GetFilePos() ) );
 		return nullptr;
 	}
-	U_ASSERT( initializer_variable->location == Variable::Location::Pointer );
+	U_ASSERT( initializer_variable.location == Variable::Location::Pointer );
 
-	if( field.is_mutable && initializer_variable->value_type == ValueType::ConstReference )
+	if( field.is_mutable && initializer_variable.value_type == ValueType::ConstReference )
 	{
 		errors_.push_back( ReportBindingConstReferenceToNonconstReference( initializer_expression->GetFilePos() ) );
 		return nullptr;
 	}
 
-	for( const StoredVariablePtr& referenced_variable : initializer_variable->referenced_variables )
+	for( const StoredVariablePtr& referenced_variable : initializer_variable.referenced_variables )
 	{
 		const bool ok= function_context.variables_state.AddPollution( variable_storage, referenced_variable, field.is_mutable );
 		if( !ok )
 			errors_.push_back( ReportReferenceProtectionError( initializer.GetFilePos(), referenced_variable->name ) );
 	}
-	CheckReferencedVariables( *initializer_variable, initializer.GetFilePos() );
+	CheckReferencedVariables( initializer_variable, initializer.GetFilePos() );
 
 	// Make first index = 0 for array to pointer conversion.
 	llvm::Value* index_list[2];
@@ -945,19 +928,19 @@ llvm::Constant* CodeBuilder::InitializeReferenceField(
 	llvm::Value* const address_of_reference=
 		function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, llvm::ArrayRef<llvm::Value*> ( index_list, 2u ) );
 
-	llvm::Value* ref_to_store= initializer_variable->llvm_value;
-	if( field.type != initializer_variable->type )
-		ref_to_store= CreateReferenceCast( ref_to_store, initializer_variable->type, field.type, function_context );
+	llvm::Value* ref_to_store= initializer_variable.llvm_value;
+	if( field.type != initializer_variable.type )
+		ref_to_store= CreateReferenceCast( ref_to_store, initializer_variable.type, field.type, function_context );
 	function_context.llvm_ir_builder.CreateStore( ref_to_store, address_of_reference );
 
-	if( initializer_variable->constexpr_value != nullptr )
+	if( initializer_variable.constexpr_value != nullptr )
 	{
 		// We needs to store constant somewhere. Create global variable for it.
-		llvm::Constant* constant_stored= CreateGlobalConstantVariable( initializer_variable->type, "_temp_const", initializer_variable->constexpr_value );
+		llvm::Constant* constant_stored= CreateGlobalConstantVariable( initializer_variable.type, "_temp_const", initializer_variable.constexpr_value );
 
-		if( field.type != initializer_variable->type )
+		if( field.type != initializer_variable.type )
 			constant_stored=
-				llvm::dyn_cast<llvm::Constant>( CreateReferenceCast( constant_stored, initializer_variable->type, field.type, function_context ) );
+				llvm::dyn_cast<llvm::Constant>( CreateReferenceCast( constant_stored, initializer_variable.type, field.type, function_context ) );
 
 		return constant_stored;
 	}
@@ -1004,7 +987,7 @@ llvm::Constant* CodeBuilder::InitializeFunctionPointer(
 	else
 	{
 		// TODO - generate separate error
-		errors_.push_back( ReportExpectedVariable( initializer_expression.GetFilePos(), initializer_value.GetType().ToString() ) );
+		errors_.push_back( ReportExpectedVariable( initializer_expression.GetFilePos(), initializer_value.GetKindName() ) );
 		return nullptr;
 	}
 

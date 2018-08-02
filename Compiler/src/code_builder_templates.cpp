@@ -363,22 +363,14 @@ void CodeBuilder::PrepareTemplateSignatureParameter(
 
 	// If this is not special expression - assume that this is variable-expression.
 
-	const Value val= BuildExpressionCode( *template_parameter, names_scope, *dummy_function_context_ );
-	if( val.GetErrorValue() != nullptr )
-		return;
+	const Variable var= BuildExpressionCodeEnsureVariable( *template_parameter, names_scope, *dummy_function_context_ );
 
-	const Variable* const var= val.GetVariable();
-	if( var == nullptr )
+	if( !TypeIsValidForTemplateVariableArgument( var.type ) )
 	{
-		errors_.push_back( ReportExpectedVariable( template_parameter->GetFilePos(), val.GetType().ToString() ) );
+		errors_.push_back( ReportInvalidTypeOfTemplateVariableArgument( template_parameter->GetFilePos(), var.type.ToString() ) );
 		return;
 	}
-	if( !TypeIsValidForTemplateVariableArgument( var->type ) )
-	{
-		errors_.push_back( ReportInvalidTypeOfTemplateVariableArgument( template_parameter->GetFilePos(), var->type.ToString() ) );
-		return;
-	}
-	if( var->constexpr_value == nullptr )
+	if( var.constexpr_value == nullptr )
 		errors_.push_back( ReportExpectedConstantExpression( template_parameter->GetFilePos() ) );
 }
 
@@ -899,7 +891,7 @@ CodeBuilder::TemplateTypeGenerationResult CodeBuilder::GenTemplateType(
 		}
 		else
 		{
-			errors_.push_back( ReportInvalidValueAsTemplateArgument( file_pos, value.GetType().ToString() ) );
+			errors_.push_back( ReportInvalidValueAsTemplateArgument( file_pos, value.GetKindName() ) );
 			continue;
 		}
 
@@ -1270,7 +1262,7 @@ NamesScope::InsertedName* CodeBuilder::GenTemplateFunctionsUsingTemplateParamete
 		}
 		else
 		{
-			errors_.push_back( ReportInvalidValueAsTemplateArgument( file_pos, value.GetType().ToString() ) );
+			errors_.push_back( ReportInvalidValueAsTemplateArgument( file_pos, value.GetKindName() ) );
 			something_is_wrong= true;
 		}
 

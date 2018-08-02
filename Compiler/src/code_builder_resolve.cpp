@@ -155,7 +155,7 @@ NamesScope::InsertedName* CodeBuilder::ResolveName(
 		last_space= next_space;
 	}
 
-	if( name != nullptr && name->second.GetType() == NontypeStub::YetNotDeducedTemplateArg )
+	if( name != nullptr && name->second.GetYetNotDeducedTemplateArg() != nullptr )
 		errors_.push_back( ReportTemplateArgumentIsNotDeducedYet( file_pos, name == nullptr ? ""_SpC : name->first ) );
 
 	// Complete some things in resolve.

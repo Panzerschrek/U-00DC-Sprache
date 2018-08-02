@@ -105,11 +105,6 @@ Type::Type( EnumPtr enum_type )
 	something_= std::move( enum_type );
 }
 
-Type::Type( const NontypeStub nontype_strub )
-{
-	something_= nontype_strub;
-}
-
 Type& Type::operator=( const Type& other )
 {
 	struct Visitor final : public boost::static_visitor<>
@@ -145,11 +140,6 @@ Type& Type::operator=( const Type& other )
 		void operator()( const EnumPtr& enum_ )
 		{
 			this_.something_= enum_;
-		}
-
-		void operator()( const NontypeStub& stub )
-		{
-			this_.something_= stub;
 		}
 
 		void operator()( const FunctionPointerPtr& function_pointer )
@@ -311,12 +301,6 @@ SizeType Type::SizeOf() const
 			return GetFundamentalTypeSize( enum_type->underlaying_type.fundamental_type );
 		}
 
-		SizeType operator()( const NontypeStub& ) const
-		{
-			U_ASSERT( false && "SizeOf method not supported for stub types." );
-			return 1u;
-		}
-
 		SizeType operator()( const FunctionPointerPtr& ) const
 		{
 			U_ASSERT( false && "SizeOf method not supported for function-pointer types." );
@@ -465,10 +449,6 @@ llvm::Type* Type::GetLLVMType() const
 			return enum_->underlaying_type.llvm_type;
 		}
 
-		llvm::Type* operator()( const NontypeStub& ) const
-		{
-			return nullptr;
-		}
 
 		llvm::Type* operator()( const FunctionPointerPtr& function_pointer_type ) const
 		{
@@ -529,33 +509,6 @@ ProgramString Type::ToString() const
 			return "enum "_SpC + enum_->members.GetThisNamespaceName();
 		}
 
-		ProgramString operator()( const NontypeStub& stub ) const
-		{
-			switch(stub)
-			{
-			case NontypeStub::OverloadedFunctionsSet:
-				return "overloaded functions set"_SpC;
-			case NontypeStub::ThisOverloadedMethodsSet:
-				return "this + overloaded methods set"_SpC;
-			case NontypeStub::TypeName:
-				return "class name"_SpC;
-			case NontypeStub::Namespace:
-				return "namespace"_SpC;
-			case NontypeStub::TypeTemplate:
-				return "type template"_SpC;
-			case NontypeStub::StaticAssertTypeStub:
-				return "static assert"_SpC;
-			case NontypeStub::YetNotDeducedTemplateArg:
-				return "yet not deduced template arg"_SpC;
-			case NontypeStub::ErrorValue:
-				return "error value"_SpC;
-			case NontypeStub::VariableStorage:
-				return "variable storage"_SpC;
-			};
-			U_ASSERT(false);
-			return ProgramString();
-		}
-
 		ProgramString operator()( const FunctionPointerPtr& function_pointer ) const
 		{
 			U_UNUSED(function_pointer);
@@ -591,11 +544,8 @@ bool operator==( const Type& r, const Type& l )
 	{
 		return r.GetEnumType() == l.GetEnumType();
 	}
+
 	else if( r.something_.which() == 5 )
-	{
-		return boost::get<NontypeStub>(r.something_) == boost::get<NontypeStub>(l.something_);
-	}
-	else if( r.something_.which() == 6 )
 	{
 		return *r.GetFunctionPointerType() == *l.GetFunctionPointerType();
 	}
@@ -990,16 +940,6 @@ ClassField::ClassField( const ClassProxyPtr& in_class, Type in_type, const unsig
 // Value
 //
 
-static const Type g_overloaded_functions_set_stub_type= NontypeStub::OverloadedFunctionsSet;
-static const Type g_this_overloaded_methods_set_stub_type=NontypeStub::ThisOverloadedMethodsSet;
-static const Type g_typename_type_stub= NontypeStub::TypeName;
-static const Type g_namespace_type_stub= NontypeStub::Namespace;
-static const Type g_type_template_type_stub= NontypeStub::TypeTemplate;
-static const Type g_static_assert_type_stub= NontypeStub::StaticAssertTypeStub;
-static const Type g_yet_not_deduced_template_arg_type_stub= NontypeStub::YetNotDeducedTemplateArg;
-static const Type g_error_value_type_stub= NontypeStub::ErrorValue;
-static const Type g_variable_storage_type_stub= NontypeStub::VariableStorage;
-
 Value::Value()
 {}
 
@@ -1085,60 +1025,32 @@ Value::Value( ErrorValue error_value )
 	something_= std::move(error_value);
 }
 
-const Type& Value::GetType() const
-{
-	// TODO - remove this method.
-	struct Visitor final : public boost::static_visitor< const Type& >
-	{
-		const Type& operator()( const Variable& variable ) const
-		{ return variable.type; }
-
-		const Type& operator()( const StoredVariablePtr& ) const
-		{ return g_variable_storage_type_stub; }
-
-		const Type& operator()( const FunctionVariable& function_variable ) const
-		{ return function_variable.type; }
-
-		const Type& operator()( const OverloadedFunctionsSet& ) const
-		{ return g_overloaded_functions_set_stub_type; }
-
-		const Type& operator()( const Type& ) const
-		{ return g_typename_type_stub; }
-
-		const Type& operator()( const ClassField& class_field ) const
-		{ return class_field.type; }
-
-		const Type& operator()( const ThisOverloadedMethodsSet& ) const
-		{ return g_this_overloaded_methods_set_stub_type; }
-
-		const Type& operator()( const NamesScopePtr& ) const
-		{ return g_namespace_type_stub; }
-
-		const Type& operator()( const TypeTemplatesSet& ) const
-		{ return g_type_template_type_stub; }
-
-		const Type& operator()( const StaticAssert& ) const
-		{ return g_static_assert_type_stub; }
-
-		const Type& operator()( const Typedef& ) const
-		{ return g_static_assert_type_stub; } // hack
-
-		const Type& operator()( const IncompleteGlobalVariable& ) const
-		{ return g_static_assert_type_stub; } // hack
-
-		const Type& operator()( const YetNotDeducedTemplateArg& ) const
-		{ return g_yet_not_deduced_template_arg_type_stub; }
-
-		const Type& operator()( const ErrorValue& ) const
-		{ return g_error_value_type_stub; }
-	};
-
-	return boost::apply_visitor( Visitor(), something_ );
-}
-
 int Value::GetKindIndex() const
 {
 	return something_.which();
+}
+
+ProgramString Value::GetKindName() const
+{
+	struct Visitor final : public boost::static_visitor< ProgramString >
+	{
+		ProgramString operator()( const Variable& ) const { return "variable"_SpC; }
+		ProgramString operator()( const StoredVariablePtr& ) const { return "sored variable"_SpC; }
+		ProgramString operator()( const FunctionVariable& ) const { return "function variable"_SpC; }
+		ProgramString operator()( const OverloadedFunctionsSet& ) const { return "functions set"_SpC; }
+		ProgramString operator()( const Type& ) const { return "typename"_SpC; }
+		ProgramString operator()( const ClassField& ) const { return "class field"_SpC; }
+		ProgramString operator()( const ThisOverloadedMethodsSet& ) const { return "this + functions set"_SpC; }
+		ProgramString operator()( const NamesScopePtr& ) const { return "namespace"_SpC; }
+		ProgramString operator()( const TypeTemplatesSet& ) const { return "type templates set"_SpC; }
+		ProgramString operator()( const StaticAssert& ) const { return "static assert"_SpC; }
+		ProgramString operator()( const Typedef& ) const { return "incomplete typedef"_SpC; }
+		ProgramString operator()( const IncompleteGlobalVariable& ) const { return "incomplete global variable"_SpC; }
+		ProgramString operator()( const YetNotDeducedTemplateArg& ) const { return "yet not deduced template arg"_SpC; }
+		ProgramString operator()( const ErrorValue& ) const { return "error value"_SpC; }
+	};
+
+	return boost::apply_visitor( Visitor(), something_ );
 }
 
 const FilePos& Value::GetFilePos() const

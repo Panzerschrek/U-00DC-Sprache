@@ -73,20 +73,6 @@ struct FundamentalType final
 	FundamentalType( U_FundamentalType fundamental_type= U_FundamentalType::Void, llvm::Type* llvm_type= nullptr );
 };
 
-// Stub for type of non-variable "Values".
-enum class NontypeStub
-{
-	OverloadedFunctionsSet,
-	ThisOverloadedMethodsSet,
-	TypeName,
-	Namespace,
-	TypeTemplate,
-	StaticAssertTypeStub,
-	YetNotDeducedTemplateArg,
-	ErrorValue,
-	VariableStorage,
-};
-
 bool operator==( const FundamentalType& r, const FundamentalType& l );
 bool operator!=( const FundamentalType& r, const FundamentalType& l );
 
@@ -109,7 +95,6 @@ public:
 	Type( Array&& array_type );
 	Type( ClassProxyPtr class_type );
 	Type( EnumPtr enum_type );
-	Type( NontypeStub nontype_strub );
 
 	// Get different type kinds.
 	FundamentalType* GetFundamentalType();
@@ -153,7 +138,6 @@ private:
 		ArrayPtr,
 		ClassProxyPtr,
 		EnumPtr,
-		NontypeStub,
 		FunctionPointerPtr> something_;
 };
 
@@ -481,8 +465,8 @@ public:
 	Value( YetNotDeducedTemplateArg yet_not_deduced_template_arg );
 	Value( ErrorValue error_value );
 
-	const Type& GetType() const;
 	int GetKindIndex() const;
+	ProgramString GetKindName() const;
 	const FilePos& GetFilePos() const;
 
 	bool IsTemplateParameter() const;

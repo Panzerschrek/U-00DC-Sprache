@@ -32,7 +32,7 @@ static std::string GetTypeinfoVariableName( const ClassProxyPtr& typeinfo_class 
 Value CodeBuilder::BuildTypeinfoOperator( const Synt::TypeInfo& typeinfo_op, NamesScope& names )
 {
 	const Type type= PrepareType( typeinfo_op.type_, names );
-	if( type == NontypeStub::ErrorValue || type == invalid_type_ )
+	if( type == invalid_type_|| type == invalid_type_ )
 		return ErrorValue();
 
 	return Value( BuildTypeInfo( type, *names.GetRoot() ), typeinfo_op.file_pos_ );

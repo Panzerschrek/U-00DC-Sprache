@@ -391,6 +391,11 @@ private:
 		NamesScope& names,
 		FunctionContext& function_context );
 
+	Variable BuildExpressionCodeEnsureVariable(
+		const Synt::IExpressionComponent& expression,
+		NamesScope& names,
+		FunctionContext& function_context );
+
 	Value BuildExpressionCode(
 		const Synt::IExpressionComponent& expression,
 		NamesScope& names,
