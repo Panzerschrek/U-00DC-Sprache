@@ -76,6 +76,22 @@ bool CodeBuilder::EnsureTypeCompleteness( const Type& type, const TypeCompletene
 	return false;
 }
 
+bool CodeBuilder::ReferenceIsConvertible( const Type& from, const Type& to, const FilePos& file_pos )
+{
+	if( from == to )
+		return true;
+
+	if( from != void_type_ && to != void_type_ )
+	{
+		if( !EnsureTypeCompleteness( from, TypeCompleteness::Complete ) )
+			errors_.push_back( ReportUsingIncompleteType( file_pos, from.ToString() ) );
+		if( !EnsureTypeCompleteness(   to, TypeCompleteness::Complete ) )
+			errors_.push_back( ReportUsingIncompleteType( file_pos,   to.ToString() ) );
+	}
+
+	return from.ReferenceIsConvertibleTo(to);
+}
+
 void CodeBuilder::GlobalThingBuildNamespace( NamesScope& names_scope )
 {
 	names_scope.ForEachInThisScope(
@@ -852,7 +868,7 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 
 			const Variable expression_result= BuildExpressionCodeEnsureVariable( *initializer_expression, names_scope, function_context );
 
-			if( !expression_result.type.ReferenceIsConvertibleTo( variable.type ) ) // TODO - completeness required here
+			if( !ReferenceIsConvertible( expression_result.type, variable.type, variable_declaration.file_pos ) )
 			{
 				errors_.push_back( ReportTypesMismatch( variable_declaration.file_pos, variable.type.ToString(), expression_result.type.ToString() ) );
 				FAIL_RETURN;

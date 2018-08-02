@@ -360,7 +360,7 @@ std::pair<Variable, llvm::Value*> CodeBuilder::TryFetchVirtualFunction( const Va
 {
 	const Function& function_type= *function.type.GetFunctionType();
 
-	if( !this_.type.ReferenceIsConvertibleTo( function_type.args.front().type ) )
+	if( !ReferenceIsConvertible( this_.type, function_type.args.front().type, FilePos() ) )
 		return std::make_pair( this_, function.llvm_function );
 
 	Variable this_casted;

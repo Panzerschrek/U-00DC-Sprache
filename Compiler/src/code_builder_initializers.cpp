@@ -646,7 +646,7 @@ llvm::Constant* CodeBuilder::ApplyExpressionInitializer(
 		// Currently we support "=" initializer for copying and moving of structs.
 
 		const Variable expression_result= BuildExpressionCodeEnsureVariable( *initializer.expression, block_names, function_context );
-		if( !expression_result.type.ReferenceIsConvertibleTo( variable.type ) ) // TODO - completeness required here
+		if( !ReferenceIsConvertible( expression_result.type, variable.type, initializer.file_pos_ ) )
 		{
 			errors_.push_back( ReportTypesMismatch( initializer.file_pos_, variable.type.ToString(), expression_result.type.ToString() ) );
 			return nullptr;
@@ -895,7 +895,7 @@ llvm::Constant* CodeBuilder::InitializeReferenceField(
 
 	const Variable initializer_variable= BuildExpressionCodeEnsureVariable( *initializer_expression, block_names, function_context );
 
-	if( !initializer_variable.type.ReferenceIsConvertibleTo( field.type ) )
+	if( !ReferenceIsConvertible( initializer_variable.type, field.type, initializer_expression->GetFilePos() ) )
 	{
 		errors_.push_back( ReportTypesMismatch( initializer_expression->GetFilePos(), field.type.ToString(), initializer_variable.type.ToString() ) );
 		return nullptr;

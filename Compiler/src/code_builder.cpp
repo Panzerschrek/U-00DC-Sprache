@@ -2257,7 +2257,7 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 			}
 
 			const Variable expression_result= BuildExpressionCodeEnsureVariable( *initializer_expression, block_names, function_context );
-			if( !expression_result.type.ReferenceIsConvertibleTo( variable.type ) )
+			if( !ReferenceIsConvertible( expression_result.type, variable.type, variables_declaration.file_pos_ ) )
 			{
 				errors_.push_back( ReportTypesMismatch( variables_declaration.file_pos_, variable.type.ToString(), expression_result.type.ToString() ) );
 				continue;
@@ -2795,8 +2795,7 @@ void CodeBuilder::BuildReturnOperatorCode(
 
 	if( function_context.return_value_is_reference )
 	{
-		if( expression_result.type != function_context.return_type &&
-			!expression_result.type.ReferenceIsConvertibleTo( function_context.return_type ) )
+		if( !ReferenceIsConvertible( expression_result.type, function_context.return_type, return_operator.file_pos_ ) )
 		{
 			errors_.push_back( ReportTypesMismatch( return_operator.file_pos_, function_context.return_type.ToString(), expression_result.type.ToString() ) );
 			return;

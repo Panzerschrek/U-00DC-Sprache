@@ -1121,7 +1121,7 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 					}
 					if( const Type* const type= signature_parameter_name->second.GetTypeName() )
 					{
-						if( *type == given_args[i].type || given_args[i].type.ReferenceIsConvertibleTo( *type ) )
+						if( *type == given_args[i].type || ReferenceIsConvertible( given_args[i].type, *type, file_pos ) )
 						{
 							deduced_temlpate_parameters[i]= DeducedTemplateParameter::Type();
 							deduced_specially= true;

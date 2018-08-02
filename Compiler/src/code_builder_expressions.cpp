@@ -1157,7 +1157,7 @@ Value CodeBuilder::DoReferenceCast(
 		if( !( enable_unsafe && var.type == void_type_ ) && !EnsureTypeCompleteness( var.type, TypeCompleteness::Complete ) )
 			errors_.push_back( ReportUsingIncompleteType( file_pos, var.type.ToString() ) );
 
-		if( var.type.ReferenceIsConvertibleTo( type ) )
+		if( ReferenceIsConvertible( var.type, type, file_pos ) )
 			result.llvm_value= CreateReferenceCast( src_value, var.type, type, function_context );
 		else
 		{
@@ -2134,7 +2134,7 @@ Value CodeBuilder::DoCallFunction(
 
 		if( arg.is_reference )
 		{
-			if( !expr.type.ReferenceIsConvertibleTo(arg.type) )
+			if( !ReferenceIsConvertible( expr.type, arg.type, call_file_pos ) )
 			{
 				errors_.push_back( ReportTypesMismatch( file_pos, arg.type.ToString(), expr.type.ToString() ) );
 				return ErrorValue();
@@ -2200,7 +2200,7 @@ Value CodeBuilder::DoCallFunction(
 		}
 		else
 		{
-			if( !expr.type.ReferenceIsConvertibleTo( arg.type ) )
+			if( !ReferenceIsConvertible( expr.type, arg.type, call_file_pos ) )
 			{
 				errors_.push_back( ReportTypesMismatch( file_pos, arg.type.ToString(), expr.type.ToString() ) );
 				return ErrorValue();

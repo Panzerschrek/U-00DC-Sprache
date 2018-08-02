@@ -369,7 +369,7 @@ const FunctionVariable* CodeBuilder::GetOverloadedFunction(
 				}
 			}
 
-			const bool types_are_compatible= actual_args_begin[i].type.ReferenceIsConvertibleTo( function_type.args[i].type );
+			const bool types_are_compatible= ReferenceIsConvertible( actual_args_begin[i].type, function_type.args[i].type, file_pos );
 			// SPRACHE_TODO - support type-casting for function call.
 			if( !types_are_compatible )
 			{

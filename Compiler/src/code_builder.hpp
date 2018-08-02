@@ -746,6 +746,7 @@ private:
 	// Global things build
 
 	bool EnsureTypeCompleteness( const Type& type, TypeCompleteness completeness ); // Returns true, if all ok
+	bool ReferenceIsConvertible( const Type& from, const Type& to, const FilePos& file_pos ); // Returns true of all ok. If types are different can call EnsureTypeCompleteness.
 
 	void GlobalThingBuildNamespace( NamesScope& names_scope );
 	void GlobalThingBuildFunctionsSet( NamesScope& names_scope, OverloadedFunctionsSet& functions_set, bool build_body );
