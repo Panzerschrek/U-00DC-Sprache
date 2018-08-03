@@ -218,6 +218,8 @@ ClassProxyPtr CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::
 		class_type->class_->body_file_pos= class_type->class_->forward_declaration_file_pos= class_declaration.file_pos_;
 		class_type->class_->llvm_type= llvm::StructType::create( llvm_context_, MangleType( class_type ) );
 
+		class_type->class_->members.AddAccessRightsFor( class_type, ClassMemberVisibility::Private );
+
 		(*current_class_table_)[ class_type ]= class_type->class_;
 	}
 
