@@ -282,7 +282,7 @@ void CodeBuilder::MergeNameScopes( NamesScope& dst, const NamesScope& src, Class
 					MergeNameScopes( *names_scope_copy, *names_scope, dst_class_table );
 					dst.AddName( src_member.first, Value( names_scope_copy, src_member.second.GetFilePos() ) );
 
-					// TODO - copy access rights.
+					names_scope_copy->CopyAccessRightsFrom( *names_scope );
 				}
 				else
 				{

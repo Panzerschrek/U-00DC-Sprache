@@ -582,6 +582,7 @@ public:
 
 	void AddAccessRightsFor( const ClassProxyPtr& class_, ClassMemberVisibility visibility );
 	ClassMemberVisibility GetAccessFor( const ClassProxyPtr& class_ ) const;
+	void CopyAccessRightsFrom( const NamesScope& src );
 
 	template<class Func>
 	void ForEachInThisScope( const Func& func )

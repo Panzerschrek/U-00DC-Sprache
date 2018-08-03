@@ -1328,6 +1328,11 @@ ClassMemberVisibility NamesScope::GetAccessFor( const ClassProxyPtr& class_ ) co
 	return std::max( this_rights, parent_rights );
 }
 
+void NamesScope::CopyAccessRightsFrom( const NamesScope& src )
+{
+	access_rights_= src.access_rights_;
+}
+
 //
 // DeducedTemplateParameter
 //
