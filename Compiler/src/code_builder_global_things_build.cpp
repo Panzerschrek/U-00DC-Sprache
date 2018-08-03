@@ -416,6 +416,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type, const T
 				else if( name.second.GetTypedef() != nullptr ) {}
 				else if( name.second.GetTypeTemplatesSet() != nullptr ) {}
 				else if( name.second.GetIncompleteGlobalVariable() != nullptr ) {}
+				else if( name.second.GetNamespace() != nullptr ) {} // Can be in case of type template parameters namespace.
 				else U_ASSERT(false);
 			});
 
