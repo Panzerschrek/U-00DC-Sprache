@@ -512,8 +512,11 @@ Variable CodeBuilder::BuildTypeinfoClassTypesList( const ClassProxyPtr& class_ty
 	Variable head= GetTypeinfoListEndNode( root_namespace );
 
 	class_type->class_->members.ForEachInThisScope(
-		[&]( const NamesScope::InsertedName& class_member )
+		[&]( NamesScope::InsertedName& class_member )
 		{
+			if( class_member.second.GetTypedef() != nullptr ) // Event in complete class typedefs may be not yet complete. Complete it now.
+				GlobalThingBuildTypedef( class_type->class_->members, class_member.second );
+
 			const Type* const class_inner_type= class_member.second.GetTypeName();
 			if( class_inner_type == nullptr )
 				return;
