@@ -24,36 +24,18 @@ llvm::Constant* CodeBuilder::ApplyInitializer(
 	NamesScope& block_names,
 	FunctionContext& function_context )
 {
-	if( const auto array_initializer=
-		dynamic_cast<const Synt::ArrayInitializer*>(&initializer) )
-	{
+	if( const auto array_initializer= dynamic_cast<const Synt::ArrayInitializer*>(&initializer) )
 		return ApplyArrayInitializer( variable, variable_storage, *array_initializer, block_names, function_context );
-	}
-	else if( const auto struct_named_initializer=
-		dynamic_cast<const Synt::StructNamedInitializer*>(&initializer) )
-	{
+	else if( const auto struct_named_initializer= dynamic_cast<const Synt::StructNamedInitializer*>(&initializer) )
 		return ApplyStructNamedInitializer( variable, variable_storage, *struct_named_initializer, block_names, function_context );
-	}
-	else if( const auto constructor_initializer=
-		dynamic_cast<const Synt::ConstructorInitializer*>(&initializer) )
-	{
+	else if( const auto constructor_initializer= dynamic_cast<const Synt::ConstructorInitializer*>(&initializer) )
 		return ApplyConstructorInitializer( variable, variable_storage, constructor_initializer->call_operator, block_names, function_context );
-	}
-	else if( const auto expression_initializer=
-		dynamic_cast<const Synt::ExpressionInitializer*>(&initializer) )
-	{
+	else if( const auto expression_initializer= dynamic_cast<const Synt::ExpressionInitializer*>(&initializer) )
 		return ApplyExpressionInitializer( variable, variable_storage, *expression_initializer, block_names, function_context );
-	}
-	else if( const auto zero_initializer=
-		dynamic_cast<const Synt::ZeroInitializer*>(&initializer) )
-	{
+	else if( const auto zero_initializer= dynamic_cast<const Synt::ZeroInitializer*>(&initializer) )
 		return ApplyZeroInitializer( variable, *zero_initializer, function_context );
-	}
-	else if( const auto uninitialized_initializer=
-		dynamic_cast<const Synt::UninitializedInitializer*>(&initializer) )
-	{
+	else if( const auto uninitialized_initializer= dynamic_cast<const Synt::UninitializedInitializer*>(&initializer) )
 		return ApplyUninitializedInitializer( variable, *uninitialized_initializer, function_context );
-	}
 	else U_ASSERT(false);
 
 	return nullptr;

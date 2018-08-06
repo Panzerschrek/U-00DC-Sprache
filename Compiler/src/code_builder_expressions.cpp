@@ -196,8 +196,7 @@ Value CodeBuilder::BuildExpressionCode(
 {
 	Value result;
 
-	if( const auto binary_operator=
-		dynamic_cast<const Synt::BinaryOperator*>(&expression) )
+	if( const auto binary_operator= dynamic_cast<const Synt::BinaryOperator*>(&expression) )
 	{
 		if( binary_operator->operator_type_ == BinaryOperatorType::LazyLogicalAnd ||
 			binary_operator->operator_type_ == BinaryOperatorType::LazyLogicalOr )
@@ -253,88 +252,46 @@ Value CodeBuilder::BuildExpressionCode(
 			return BuildBinaryOperator( *l_var, *r_var, binary_operator->operator_type_, binary_operator->file_pos_, function_context );
 		}
 	}
-	else if( const auto named_operand=
-		dynamic_cast<const Synt::NamedOperand*>(&expression) )
-	{
+	else if( const auto named_operand= dynamic_cast<const Synt::NamedOperand*>(&expression) )
 		result= BuildNamedOperand( *named_operand, names, function_context );
-	}
-	else if( const auto numeric_constant=
-		dynamic_cast<const Synt::NumericConstant*>(&expression) )
-	{
+	else if( const auto numeric_constant= dynamic_cast<const Synt::NumericConstant*>(&expression) )
 		result= BuildNumericConstant( *numeric_constant, function_context );
-	}
-	else if( const auto string_literal=
-		dynamic_cast<const Synt::StringLiteral*>(&expression) )
-	{
+	else if( const auto string_literal= dynamic_cast<const Synt::StringLiteral*>(&expression) )
 		result= BuildStringLiteral( *string_literal, function_context );
-	}
-	else if( const auto boolean_constant=
-		dynamic_cast<const Synt::BooleanConstant*>(&expression) )
-	{
+	else if( const auto boolean_constant= dynamic_cast<const Synt::BooleanConstant*>(&expression) )
 		result= Value( BuildBooleanConstant( *boolean_constant, function_context ), boolean_constant->file_pos_ );
-	}
-	else if( const auto bracket_expression=
-		dynamic_cast<const Synt::BracketExpression*>(&expression) )
-	{
+	else if( const auto bracket_expression= dynamic_cast<const Synt::BracketExpression*>(&expression) )
 		result= BuildExpressionCode( *bracket_expression->expression_, names, function_context );
-	}
-	else if( const auto type_name_in_expression=
-		dynamic_cast<const Synt::TypeNameInExpression*>(&expression) )
-	{
+	else if( const auto type_name_in_expression= dynamic_cast<const Synt::TypeNameInExpression*>(&expression) )
 		result=
 			Value(
 				PrepareType( type_name_in_expression->type_name, names ),
 				type_name_in_expression->file_pos_ );
-	}
-	else if( const auto move_operator=
-		dynamic_cast<const Synt::MoveOperator*>(&expression) )
-	{
+	else if( const auto move_operator= dynamic_cast<const Synt::MoveOperator*>(&expression) )
 		result= BuildMoveOpeator( *move_operator, names, function_context );
-	}
 	else if( const auto cast_ref= dynamic_cast<const Synt::CastRef*>(&expression) )
-	{
 		result= BuildCastRef( *cast_ref, names, function_context );
-	}
 	else if( const auto cast_ref_unsafe= dynamic_cast<const Synt::CastRefUnsafe*>(&expression) )
-	{
 		result= BuildCastRefUnsafe( *cast_ref_unsafe, names, function_context );
-	}
 	else if( const auto cast_imut= dynamic_cast<const Synt::CastImut*>(&expression) )
-	{
 		result= BuildCastImut( *cast_imut, names, function_context );
-	}
 	else if( const auto cast_mut= dynamic_cast<const Synt::CastMut*>(&expression) )
-	{
 		result= BuildCastMut( *cast_mut, names, function_context );
-	}
 	else if( const auto typeinfo_= dynamic_cast<const Synt::TypeInfo*>(&expression) )
-	{
 		result= BuildTypeinfoOperator( *typeinfo_, names );
-	}
 	else U_ASSERT(false);
 
-	if( const auto expression_with_unary_operators=
-		dynamic_cast<const Synt::ExpressionComponentWithUnaryOperators*>( &expression ) )
+	if( const auto expression_with_unary_operators= dynamic_cast<const Synt::ExpressionComponentWithUnaryOperators*>( &expression ) )
 	{
 		for( const Synt::IUnaryPostfixOperatorPtr& postfix_operator : expression_with_unary_operators->postfix_operators_ )
 		{
-			if( const auto indexation_operator=
-				dynamic_cast<const Synt::IndexationOperator*>( postfix_operator.get() ) )
-			{
+			if( const auto indexation_operator= dynamic_cast<const Synt::IndexationOperator*>( postfix_operator.get() ) )
 				result= BuildIndexationOperator( result, *indexation_operator, names, function_context );
-			}
-			else if( const auto member_access_operator=
-				dynamic_cast<const Synt::MemberAccessOperator*>( postfix_operator.get() ) )
-			{
+			else if( const auto member_access_operator= dynamic_cast<const Synt::MemberAccessOperator*>( postfix_operator.get() ) )
 				result= BuildMemberAccessOperator( result, *member_access_operator, names, function_context );
-			}
-			else if( const auto call_operator=
-				dynamic_cast<const Synt::CallOperator*>( postfix_operator.get() ) )
-			{
+			else if( const auto call_operator= dynamic_cast<const Synt::CallOperator*>( postfix_operator.get() ) )
 				result= BuildCallOperator( result, *call_operator, names, function_context );
-			}
-			else
-				U_ASSERT(false);
+			else U_ASSERT(false);
 		} // for unary postfix operators
 
 		for( const Synt::IUnaryPrefixOperatorPtr& prefix_operator : expression_with_unary_operators->prefix_operators_ )
@@ -379,29 +336,18 @@ Value CodeBuilder::BuildExpressionCode(
 			}
 			else
 			{
-				if( const auto unary_minus=
-					dynamic_cast<const Synt::UnaryMinus*>( prefix_operator.get() ) )
-				{
+				if( const auto unary_minus= dynamic_cast<const Synt::UnaryMinus*>( prefix_operator.get() ) )
 					result= BuildUnaryMinus( result, *unary_minus, function_context );
-				}
-				else if( const auto unary_plus=
-					dynamic_cast<const Synt::UnaryPlus*>( prefix_operator.get() ) )
+				else if( const auto unary_plus= dynamic_cast<const Synt::UnaryPlus*>( prefix_operator.get() ) )
 				{
 					// TODO - maybe do something here?
 					(void)unary_plus;
 				}
-				else if( const auto logical_not=
-					dynamic_cast<const Synt::LogicalNot*>( prefix_operator.get() ) )
-				{
+				else if( const auto logical_not= dynamic_cast<const Synt::LogicalNot*>( prefix_operator.get() ) )
 					result= BuildLogicalNot( result, *logical_not, function_context );
-				}
-				else if( const auto bitwise_not=
-					dynamic_cast<const Synt::BitwiseNot*>( prefix_operator.get() ) )
-				{
+				else if( const auto bitwise_not= dynamic_cast<const Synt::BitwiseNot*>( prefix_operator.get() ) )
 					result= BuildBitwiseNot( result, *bitwise_not, function_context );
-				}
-				else
-					U_ASSERT(false);
+				else U_ASSERT(false);
 			}
 		} // for unary prefix operators
 	}

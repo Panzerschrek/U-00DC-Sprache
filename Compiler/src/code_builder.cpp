@@ -1952,56 +1952,34 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockCode(
 				errors_.push_back( ReportUnreachableCode( block.elements_[ block_element_index + 1u ]->GetFilePos() ) );
 		};
 
-		if( const auto variables_declaration=
-			dynamic_cast<const Synt::VariablesDeclaration*>( block_element_ptr ) )
-		{
+		if( const auto variables_declaration= dynamic_cast<const Synt::VariablesDeclaration*>( block_element_ptr ) )
 			BuildVariablesDeclarationCode( *variables_declaration, block_names, function_context );
-		}
-		else if( const auto auto_variable_declaration=
-			dynamic_cast<const Synt::AutoVariableDeclaration*>( block_element_ptr ) )
-		{
+		else if( const auto auto_variable_declaration= dynamic_cast<const Synt::AutoVariableDeclaration*>( block_element_ptr ) )
 			BuildAutoVariableDeclarationCode( *auto_variable_declaration, block_names, function_context );
-		}
-		else if( const auto expression=
-			dynamic_cast<const Synt::SingleExpressionOperator*>( block_element_ptr ) )
-		{
+		else if( const auto expression= dynamic_cast<const Synt::SingleExpressionOperator*>( block_element_ptr ) )
 			BuildExpressionCodeAndDestroyTemporaries(
 				*expression->expression_,
 				block_names,
 				function_context );
-		}
-		else if( const auto assignment_operator=
-			dynamic_cast<const Synt::AssignmentOperator*>( block_element_ptr ) )
-		{
+		else if( const auto assignment_operator= dynamic_cast<const Synt::AssignmentOperator*>( block_element_ptr ) )
 			BuildAssignmentOperatorCode( *assignment_operator, block_names, function_context );
-		}
-		else if( const auto additive_assignment_operator=
-			dynamic_cast<const Synt::AdditiveAssignmentOperator*>( block_element_ptr ) )
-		{
+		else if( const auto additive_assignment_operator= dynamic_cast<const Synt::AdditiveAssignmentOperator*>( block_element_ptr ) )
 			BuildAdditiveAssignmentOperatorCode( *additive_assignment_operator, block_names, function_context );
-		}
-		else if( const auto increment_operator=
-			dynamic_cast<const Synt::IncrementOperator*>( block_element_ptr ) )
-		{
+		else if( const auto increment_operator= dynamic_cast<const Synt::IncrementOperator*>( block_element_ptr ) )
 			BuildDeltaOneOperatorCode(
 				*increment_operator->expression,
 				increment_operator->file_pos_,
 				true,
 				block_names,
 				function_context );
-		}
-		else if( const auto decrement_operator=
-			dynamic_cast<const Synt::DecrementOperator*>( block_element_ptr ) )
-		{
+		else if( const auto decrement_operator= dynamic_cast<const Synt::DecrementOperator*>( block_element_ptr ) )
 			BuildDeltaOneOperatorCode(
 				*decrement_operator->expression,
 				decrement_operator->file_pos_,
 				false,
 				block_names,
 				function_context );
-		}
-		else if( const auto return_operator=
-			dynamic_cast<const Synt::ReturnOperator*>( block_element_ptr ) )
+		else if( const auto return_operator= dynamic_cast<const Synt::ReturnOperator*>( block_element_ptr ) )
 		{
 			BuildReturnOperatorCode(
 				*return_operator,
@@ -2011,16 +1989,12 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockCode(
 			block_build_info.have_unconditional_return_inside= true;
 			try_report_unreachable_code();
 		}
-		else if( const auto while_operator=
-			dynamic_cast<const Synt::WhileOperator*>( block_element_ptr ) )
-		{
+		else if( const auto while_operator= dynamic_cast<const Synt::WhileOperator*>( block_element_ptr ) )
 			BuildWhileOperatorCode(
 				*while_operator,
 				block_names,
 				function_context );
-		}
-		else if( const auto break_operator=
-			dynamic_cast<const Synt::BreakOperator*>( block_element_ptr ) )
+		else if( const auto break_operator= dynamic_cast<const Synt::BreakOperator*>( block_element_ptr ) )
 		{
 			BuildBreakOperatorCode(
 				*break_operator,
@@ -2029,8 +2003,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockCode(
 			block_build_info.have_uncodnitional_break_or_continue= true;
 			try_report_unreachable_code();
 		}
-		else if( const auto continue_operator=
-			dynamic_cast<const Synt::ContinueOperator*>( block_element_ptr ) )
+		else if( const auto continue_operator= dynamic_cast<const Synt::ContinueOperator*>( block_element_ptr ) )
 		{
 			BuildContinueOperatorCode(
 				*continue_operator,
@@ -2039,9 +2012,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockCode(
 			block_build_info.have_uncodnitional_break_or_continue= true;
 			try_report_unreachable_code();
 		}
-		else if(
-			const auto if_operator=
-			dynamic_cast<const Synt::IfOperator*>( block_element_ptr ) )
+		else if( const auto if_operator= dynamic_cast<const Synt::IfOperator*>( block_element_ptr ) )
 		{
 			const CodeBuilder::BlockBuildInfo if_block_info=
 				BuildIfOperatorCode(
@@ -2058,8 +2029,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockCode(
 				block_build_info.have_uncodnitional_break_or_continue )
 				try_report_unreachable_code();
 		}
-		else if( const auto static_if_operator=
-			dynamic_cast<const Synt::StaticIfOperator*>( block_element_ptr ) )
+		else if( const auto static_if_operator= dynamic_cast<const Synt::StaticIfOperator*>( block_element_ptr ) )
 		{
 			const CodeBuilder::BlockBuildInfo static_if_block_info=
 				BuildStaticIfOperatorCode(
@@ -2076,26 +2046,18 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockCode(
 				block_build_info.have_uncodnitional_break_or_continue )
 				try_report_unreachable_code();
 		}
-		else if( const auto static_assert_=
-			dynamic_cast<const Synt::StaticAssert*>( block_element_ptr ) )
-		{
+		else if( const auto static_assert_= dynamic_cast<const Synt::StaticAssert*>( block_element_ptr ) )
 			BuildStaticAssert( *static_assert_, block_names );
-		}
-		else if( const auto halt=
-			dynamic_cast<const Synt::Halt*>( block_element_ptr ) )
+		else if( const auto halt= dynamic_cast<const Synt::Halt*>( block_element_ptr ) )
 		{
 			BuildHalt( *halt, function_context );
 
 			block_build_info.have_unconditional_return_inside= true;
 			try_report_unreachable_code();
 		}
-		else if( const auto halt_if=
-			dynamic_cast<const Synt::HaltIf*>( block_element_ptr ) )
-		{
+		else if( const auto halt_if= dynamic_cast<const Synt::HaltIf*>( block_element_ptr ) )
 			BuildHaltIf( *halt_if, block_names, function_context );
-		}
-		else if( const auto block=
-			dynamic_cast<const Synt::Block*>( block_element_ptr ) )
+		else if( const auto block= dynamic_cast<const Synt::Block*>( block_element_ptr ) )
 		{
 			const BlockBuildInfo inner_block_build_info=
 				BuildBlockCode( *block, block_names, function_context );
@@ -2109,8 +2071,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockCode(
 				block_build_info.have_uncodnitional_break_or_continue )
 				try_report_unreachable_code();
 		}
-		else if( const auto unsafe_block=
-			dynamic_cast<const Synt::UnsafeBlock*>( block_element_ptr ) )
+		else if( const auto unsafe_block= dynamic_cast<const Synt::UnsafeBlock*>( block_element_ptr ) )
 		{
 			function_context.have_non_constexpr_operations_inside= true; // Unsafe operations can not be used in constexpr functions.
 
@@ -2131,8 +2092,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockCode(
 
 			function_context.is_in_unsafe_block= prev_unsafe;
 		}
-		else
-			U_ASSERT(false);
+		else U_ASSERT(false);
 	}
 
 	// If there are undconditional "break", "continue", "return" operators,
@@ -2228,13 +2188,9 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 			}
 
 			const Synt::IExpressionComponent* initializer_expression= nullptr;
-			if( const auto expression_initializer=
-				dynamic_cast<const Synt::ExpressionInitializer*>( variable_declaration.initializer.get() ) )
-			{
+			if( const auto expression_initializer= dynamic_cast<const Synt::ExpressionInitializer*>( variable_declaration.initializer.get() ) )
 				initializer_expression= expression_initializer->expression.get();
-			}
-			else if( const auto constructor_initializer=
-				dynamic_cast<const Synt::ConstructorInitializer*>( variable_declaration.initializer.get() ) )
+			else if( const auto constructor_initializer= dynamic_cast<const Synt::ConstructorInitializer*>( variable_declaration.initializer.get() ) )
 			{
 				if( constructor_initializer->call_operator.arguments_.size() != 1u )
 				{
