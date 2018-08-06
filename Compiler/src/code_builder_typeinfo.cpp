@@ -14,16 +14,6 @@ static const ProgramString g_name_field_name= "name"_SpC;
 static const ProgramString g_type_field_name= "type"_SpC;
 static const FilePos g_dummy_file_pos{ 0u, 0u, 0u };
 
-static bool TypeIsClassOrArrayOfClasses( const ClassProxyPtr& class_type, const Type& type )
-{
-	if( class_type == type )
-		return true;
-	if( const Array* const array_type= type.GetArrayType() )
-		return TypeIsClassOrArrayOfClasses( class_type, array_type->type );
-
-	return false;
-}
-
 static std::string GetTypeinfoVariableName( const ClassProxyPtr& typeinfo_class )
 {
 	return "_val_of_" + std::string(typeinfo_class->class_->llvm_type->getName());

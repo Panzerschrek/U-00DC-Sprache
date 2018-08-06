@@ -617,7 +617,7 @@ const CodeBuilder::TemplateTypeGenerationResult* CodeBuilder::SelectTemplateType
 						TemplateSpecializationCompare( candidate_l.deduced_template_parameters[arg_n], candidate_r.deduced_template_parameters[arg_n] );
 
 					if( comp != ConversionsCompareResult::Same )
-						best_templates[ &candidate_r - candidate_templates.data() ]= false;
+						best_templates[ size_t(&candidate_r - candidate_templates.data()) ]= false;
 				}
 			}
 		}

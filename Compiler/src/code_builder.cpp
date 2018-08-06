@@ -46,13 +46,6 @@ const TypesMap g_types_map=
 namespace CodeBuilderPrivate
 {
 
-static void AddAncestorsAccessRights_r( Class& the_class, const ClassProxyPtr& ancestor_class )
-{
-	the_class.members.AddAccessRightsFor( ancestor_class, ClassMemberVisibility::Protected );
-	for( const ClassProxyPtr& parent : ancestor_class->class_->parents )
-		AddAncestorsAccessRights_r( the_class, parent );
-}
-
 CodeBuilder::FunctionContext::FunctionContext(
 	const Type in_return_type,
 	const bool in_return_value_is_mutable,

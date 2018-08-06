@@ -259,7 +259,7 @@ void CodeBuilder::ProcessTemplateArgs(
 				{
 					if( template_parameter.name == arg.arg_type->components.front().name )
 					{
-						template_parameters_usage_flags[ &template_parameter - template_parameters.data() ]= true;
+						template_parameters_usage_flags[ size_t(&template_parameter - template_parameters.data()) ]= true;
 						break;
 					}
 				}
@@ -310,7 +310,7 @@ void CodeBuilder::PrepareTemplateSignatureParameter(
 		{
 			if( template_parameter.name == signature_parameter.components.front().name )
 			{
-				template_parameters_usage_flags[ &template_parameter - template_parameters.data() ]= true;
+				template_parameters_usage_flags[ size_t(&template_parameter - template_parameters.data()) ]= true;
 				break;
 			}
 		}
@@ -424,7 +424,7 @@ DeducedTemplateParameter CodeBuilder::DeduceTemplateArguments(
 		{
 			if( param.name == signature_parameter.components.front().name )
 			{
-				dependend_arg_index= &param - template_.template_parameters.data();
+				dependend_arg_index= size_t(&param - template_.template_parameters.data());
 				break;
 			}
 		}
@@ -1103,7 +1103,7 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 					{
 						if( param.name == named_type_name->name.components.front().name )
 						{
-							dependend_arg_index= &param - function_template.template_parameters.data();
+							dependend_arg_index= size_t(&param - function_template.template_parameters.data());
 							break;
 						}
 					}
@@ -1354,7 +1354,7 @@ NamesScope::InsertedName* CodeBuilder::GenTemplateFunctionsUsingTemplateParamete
 		// Reduce count of template arguments in new function template.
 		new_template->template_parameters.insert(
 			new_template->template_parameters.end(),
-			function_template.template_parameters.begin() + template_parameters.size(), function_template.template_parameters.end() );
+			function_template.template_parameters.begin() + std::ptrdiff_t(template_parameters.size()), function_template.template_parameters.end() );
 
 		new_template->resolving_cache= function_template.resolving_cache;
 		new_template->parent_namespace= function_template.parent_namespace;
