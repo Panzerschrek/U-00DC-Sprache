@@ -21,26 +21,7 @@ namespace U
 namespace CodeBuilderPrivate
 {
 
-static const Synt::ComplexName& GetComplexNameForGeneratedClass()
-{
-	static Synt::ComplexName name;
-	static bool init= false;
-	if( !init )
-	{
-		name.components.emplace_back();
-		name.components.back().name= "_"_SpC;
-		name.components.back().is_generated= true;
-
-		init= true;
-	}
-	return name;
-}
-
-static const ProgramString& GetNameForGeneratedClass()
-{
-	return GetComplexNameForGeneratedClass().components.front().name;
-}
-
+static const ProgramString g_name_for_generated_class= "_"_SpC;
 static const ProgramString g_template_parameters_namespace_prefix= "_tp_ns-"_SpC;
 
 static ProgramString EncodeTemplateParameters( DeducibleTemplateParameters& deduced_template_args )
@@ -85,12 +66,11 @@ void CodeBuilder::PrepareTypeTemplate(
 	/* SPRACHE_TODO:
 	 *) Support default template arguments for short form.
 	 *) Convert signature and template arguments to "default form" for equality comparison.
-	 *) Support templates overloading.
 	 *) Add "enable_if".
 	 *) Support template-dependent types for value parameters, such template</ type T, U</ T /> ut />.
 	*/
 
-	const TypeTemplatePtr type_template( new TypeTemplate );
+	const auto type_template= std::make_shared<TypeTemplate>();
 	type_templates_set.type_templates.push_back( type_template );
 
 	type_template->parent_namespace= &names_scope;
@@ -101,14 +81,14 @@ void CodeBuilder::PrepareTypeTemplate(
 	template_parameters.reserve( type_template_declaration.args_.size() );
 	std::vector<bool> template_parameters_usage_flags;
 
-	const NamesScopePtr template_parameters_namespace = std::make_shared<NamesScope>( g_template_parameters_namespace_prefix, &names_scope ); // TODO - remove shared
+	NamesScope template_parameters_namespace( g_template_parameters_namespace_prefix, &names_scope );
 
 	ProcessTemplateArgs(
 		type_template_declaration.args_,
 		names_scope,
 		type_template_declaration.file_pos_,
 		template_parameters,
-		*template_parameters_namespace,
+		template_parameters_namespace,
 		template_parameters_usage_flags );
 
 	if( type_template_declaration.is_short_form_ )
@@ -117,7 +97,7 @@ void CodeBuilder::PrepareTypeTemplate(
 		// Assign template arguments to signature arguments.
 		for( const Synt::TypeTemplateBase::Arg& arg : type_template_declaration.args_ )
 		{
-			PrepareTemplateSignatureParameter( type_template_declaration.file_pos_, *arg.name, *template_parameters_namespace, template_parameters, template_parameters_usage_flags );
+			PrepareTemplateSignatureParameter( type_template_declaration.file_pos_, *arg.name, template_parameters_namespace, template_parameters, template_parameters_usage_flags );
 			type_template->signature_arguments.push_back(arg.name_expr.get());
 			type_template->default_signature_arguments.push_back(nullptr);
 		}
@@ -129,12 +109,12 @@ void CodeBuilder::PrepareTypeTemplate(
 		type_template->first_optional_signature_argument= 0u;
 		for( const Synt::TypeTemplateBase::SignatureArg& signature_arg : type_template_declaration.signature_args_ )
 		{
-			PrepareTemplateSignatureParameter( signature_arg.name, *template_parameters_namespace, template_parameters, template_parameters_usage_flags );
+			PrepareTemplateSignatureParameter( signature_arg.name, template_parameters_namespace, template_parameters, template_parameters_usage_flags );
 			type_template->signature_arguments.push_back(signature_arg.name.get());
 
 			if( signature_arg.default_value != nullptr )
 			{
-				PrepareTemplateSignatureParameter( signature_arg.default_value, *template_parameters_namespace, template_parameters, template_parameters_usage_flags );
+				PrepareTemplateSignatureParameter( signature_arg.default_value, template_parameters_namespace, template_parameters, template_parameters_usage_flags );
 				type_template->default_signature_arguments.push_back(signature_arg.default_value.get());
 			}
 			else
@@ -175,7 +155,7 @@ void CodeBuilder::PrepareFunctionTemplate(
 	if( function_template_declaration.function_->virtual_function_kind_ != Synt::VirtualFunctionKind::None )
 		errors_.push_back( ReportVirtualForFunctionTemplate( function_template_declaration.file_pos_, function_template_name ) );
 
-	const FunctionTemplatePtr function_template( new FunctionTemplate );
+	const auto function_template= std::make_shared<FunctionTemplate>();
 	function_template->syntax_element= &function_template_declaration;
 	function_template->file_pos= function_template_declaration.file_pos_;
 	function_template->parent_namespace= &names_scope;
@@ -183,14 +163,14 @@ void CodeBuilder::PrepareFunctionTemplate(
 
 	std::vector<bool> template_parameters_usage_flags; // Currently unused, because function template have no signature.
 
-	const NamesScopePtr template_parameters_namespace = std::make_shared<NamesScope>( g_template_parameters_namespace_prefix, &names_scope );
+	NamesScope template_parameters_namespace( g_template_parameters_namespace_prefix, &names_scope );
 
 	ProcessTemplateArgs(
 		function_template_declaration.args_,
 		names_scope,
 		function_template_declaration.file_pos_,
 		function_template->template_parameters,
-		*template_parameters_namespace,
+		template_parameters_namespace,
 		template_parameters_usage_flags );
 
 	// TODO - check duplicates and function templates with same signature.
@@ -843,9 +823,7 @@ CodeBuilder::TemplateTypeGenerationResult CodeBuilder::GenTemplateType(
 	NamesScope& template_names_scope= *type_template.parent_namespace;
 
 	if( template_arguments.size() < type_template.first_optional_signature_argument )
-	{
 		return result;
-	}
 
 	DeducibleTemplateParameters deduced_template_args( type_template.template_parameters.size() );
 
@@ -963,10 +941,9 @@ CodeBuilder::TemplateTypeGenerationResult CodeBuilder::GenTemplateType(
 	if( NamesScope::InsertedName* const inserted_name= template_names_scope.GetThisScopeName( name_encoded ) )
 	{
 		// Already generated.
-
 		const NamesScopePtr template_parameters_space= inserted_name->second.GetNamespace();
 		U_ASSERT( template_parameters_space != nullptr );
-		result.type= template_parameters_space->GetThisScopeName( GetNameForGeneratedClass() );
+		result.type= template_parameters_space->GetThisScopeName( g_name_for_generated_class );
 		return result;
 	}
 
@@ -981,14 +958,14 @@ CodeBuilder::TemplateTypeGenerationResult CodeBuilder::GenTemplateType(
 		{
 			result.type=
 				template_parameters_namespace->AddName(
-					GetNameForGeneratedClass(),
+					g_name_for_generated_class,
 					Value(
 						cache_class_it->second,
 						type_template_ptr->syntax_element->file_pos_ /* TODO - check file_pos */ ) );
 			return result;
 		}
 
-		const ClassProxyPtr class_proxy= NamesScopeFill( *template_parameters_namespace, *template_class->class_, GetNameForGeneratedClass() );
+		const ClassProxyPtr class_proxy= NamesScopeFill( *template_parameters_namespace, *template_class->class_, g_name_for_generated_class );
 		if( class_proxy == nullptr )
 			return result;
 
@@ -1013,7 +990,7 @@ CodeBuilder::TemplateTypeGenerationResult CodeBuilder::GenTemplateType(
 		the_class.base_template->signature_parameters= std::move(result_signature_parameters);
 
 		template_classes_cache_[class_key]= class_proxy;
-		result.type= template_parameters_namespace->GetThisScopeName( GetNameForGeneratedClass() );
+		result.type= template_parameters_namespace->GetThisScopeName( g_name_for_generated_class );
 		return result;
 	}
 	else if( const Synt::TypedefTemplate* const typedef_template= dynamic_cast<const Synt::TypedefTemplate*>( type_template.syntax_element ) )
@@ -1023,7 +1000,7 @@ CodeBuilder::TemplateTypeGenerationResult CodeBuilder::GenTemplateType(
 		if( type == invalid_type_ )
 			return result;
 
-		result.type= template_parameters_namespace->AddName( GetNameForGeneratedClass(), Value( type, file_pos /* TODO - check file_pos */ ) );
+		result.type= template_parameters_namespace->AddName( g_name_for_generated_class, Value( type, file_pos /* TODO - check file_pos */ ) );
 		return result;
 	}
 	else U_ASSERT(false);
@@ -1350,7 +1327,7 @@ NamesScope::InsertedName* CodeBuilder::GenTemplateFunctionsUsingTemplateParamete
 		if( !ok )
 			continue;
 
-		FunctionTemplatePtr new_template( new FunctionTemplate );
+		const auto new_template= std::make_shared<FunctionTemplate>();
 		// Reduce count of template arguments in new function template.
 		new_template->template_parameters.insert(
 			new_template->template_parameters.end(),
@@ -1407,8 +1384,6 @@ bool CodeBuilder::TypeIsValidForTemplateVariableArgument( const Type& type )
 		U_ASSERT( TypeIsValidForTemplateVariableArgument( type.GetEnumType()->underlaying_type ) );
 		return true;
 	}
-	if( type.GetFunctionPointerType() != nullptr )
-		return true;
 
 	return false;
 }
@@ -1442,7 +1417,7 @@ void CodeBuilder::ReportAboutIncompleteMembersOfTemplateClass( const FilePos& fi
 			{}
 			else if( const NamesScopePtr inner_namespace= name.second.GetNamespace() )
 			{
-				const ProgramString& generated_class_name= GetNameForGeneratedClass();
+				const ProgramString& generated_class_name= g_name_for_generated_class;
 
 				// This must be only namespace for class template instantiation.
 				inner_namespace->ForEachInThisScope(
