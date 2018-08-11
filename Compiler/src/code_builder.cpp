@@ -4,7 +4,6 @@
 #include <llvm/Support/Host.h>
 #include <llvm/Support/TargetRegistry.h>
 #include <llvm/Support/TargetSelect.h>
-#include <llvm/Target/TargetMachine.h>
 #include "pop_llvm_warnings.hpp"
 
 #include "assert.hpp"
@@ -82,34 +81,13 @@ void CodeBuilder::StackVariablesStorage::RegisterVariable( const StoredVariableP
 	variables.push_back( variable );
 }
 
-static std::string InitializeTarget()
-{
-	// Prepare target machine.
-	// Currently can work only with native target.
-	// TODO - allow compiler user to change target.
-	llvm::InitializeNativeTarget();
-	return llvm::sys::getDefaultTargetTriple();
-}
-
-static const llvm::TargetMachine* CreateTargetMachine( const std::string& target_triple_str )
-{
-	std::string error_str;
-	const llvm::Target* const target= llvm::TargetRegistry::lookupTarget( target_triple_str, error_str );
-
-	std::string features_str;
-	return
-		target->createTargetMachine(
-			target_triple_str,
-			llvm::sys::getHostCPUName(),
-			features_str,
-			llvm::TargetOptions() );
-}
-
-CodeBuilder::CodeBuilder()
+CodeBuilder::CodeBuilder(
+	std::string target_triple_str,
+	const llvm::DataLayout& data_layout )
 	: llvm_context_( llvm::getGlobalContext() )
-	, target_triple_str_( InitializeTarget() )
-	, target_machine_( CreateTargetMachine( target_triple_str_ ) )
-	, constexpr_function_evaluator_( target_machine_->createDataLayout() )
+	, target_triple_str_(std::move(target_triple_str))
+	, data_layout_(data_layout)
+	, constexpr_function_evaluator_( data_layout_ )
 {
 	fundamental_llvm_types_. i8= llvm::Type::getInt8Ty( llvm_context_ );
 	fundamental_llvm_types_. u8= llvm::Type::getInt8Ty( llvm_context_ );
@@ -132,7 +110,7 @@ CodeBuilder::CodeBuilder()
 	fundamental_llvm_types_.void_for_ret_= llvm::Type::getVoidTy( llvm_context_ );
 	fundamental_llvm_types_.bool_= llvm::Type::getInt1Ty( llvm_context_ );
 
-	fundamental_llvm_types_.int_ptr= target_machine_->createDataLayout().getIntPtrType(llvm_context_);
+	fundamental_llvm_types_.int_ptr= data_layout_.getIntPtrType(llvm_context_);
 
 	invalid_type_= FundamentalType( U_FundamentalType::InvalidType, fundamental_llvm_types_.invalid_type_ );
 	void_type_= FundamentalType( U_FundamentalType::Void, fundamental_llvm_types_.void_ );
@@ -159,8 +137,7 @@ ICodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_g
 			llvm_context_ ) );
 
 	// Setup data layout
-	const llvm::DataLayout data_layout= target_machine_->createDataLayout();
-	module_->setDataLayout(data_layout);
+	module_->setDataLayout(data_layout_);
 	module_->setTargetTriple(target_triple_str_);
 
 	// Prepare halt func.

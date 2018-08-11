@@ -7,6 +7,7 @@
 #include "../src/syntax_analyzer.hpp"
 #include "../src/code_builder.hpp"
 #include "../src/source_graph_loader.hpp"
+#include "tests_common.hpp"
 
 #include "tests.hpp"
 
@@ -61,7 +62,10 @@ std::unique_ptr<llvm::Module> BuildProgram( const char* const text )
 	U_TEST_ASSERT( source_graph->syntax_errors.empty() );
 	U_TEST_ASSERT( source_graph->root_node_index < source_graph->nodes_storage.size() );
 
-	ICodeBuilder::BuildResult build_result= CodeBuilder().BuildProgram( *source_graph );
+	ICodeBuilder::BuildResult build_result=
+		CodeBuilder(
+			Constants::tests_target_triple_str,
+			llvm::DataLayout( Constants::tests_data_layout_str ) ).BuildProgram( *source_graph );
 
 	for( const CodeBuilderError& error : build_result.errors )
 		std::cout << error.file_pos.line << ":" << error.file_pos.pos_in_line << " " << ToStdString( error.text ) << "\n";
@@ -81,7 +85,10 @@ ICodeBuilder::BuildResult BuildProgramWithErrors( const char* const text )
 	U_TEST_ASSERT( source_graph->lexical_errors.empty() );
 	U_TEST_ASSERT( source_graph->syntax_errors.empty() );
 
-	return CodeBuilder().BuildProgram( *source_graph );
+	return
+		CodeBuilder(
+			Constants::tests_target_triple_str,
+			llvm::DataLayout( Constants::tests_data_layout_str ) ).BuildProgram( *source_graph );
 }
 
 std::unique_ptr<llvm::Module> BuildMultisourceProgram( std::vector<SourceEntry> sources, const ProgramString& root_file_path )
@@ -93,7 +100,10 @@ std::unique_ptr<llvm::Module> BuildMultisourceProgram( std::vector<SourceEntry> 
 	U_TEST_ASSERT( source_graph->lexical_errors.empty() );
 	U_TEST_ASSERT( source_graph->syntax_errors.empty() );
 
-	ICodeBuilder::BuildResult build_result= CodeBuilder().BuildProgram( *source_graph );
+	ICodeBuilder::BuildResult build_result=
+		CodeBuilder(
+			Constants::tests_target_triple_str,
+			llvm::DataLayout( Constants::tests_data_layout_str ) ).BuildProgram( *source_graph );
 
 	for( const CodeBuilderError& error : build_result.errors )
 		std::cout << error.file_pos.line << ":" << error.file_pos.pos_in_line << " " << ToStdString( error.text ) << "\n";
@@ -112,7 +122,10 @@ ICodeBuilder::BuildResult BuildMultisourceProgramWithErrors( std::vector<SourceE
 	U_TEST_ASSERT( source_graph->lexical_errors.empty() );
 	U_TEST_ASSERT( source_graph->syntax_errors.empty() );
 
-	return CodeBuilder().BuildProgram( *source_graph );
+	return
+		CodeBuilder(
+			Constants::tests_target_triple_str,
+			llvm::DataLayout( Constants::tests_data_layout_str ) ).BuildProgram( *source_graph );
 }
 
 EnginePtr CreateEngine( std::unique_ptr<llvm::Module> module, const bool needs_dump )

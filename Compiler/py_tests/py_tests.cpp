@@ -8,6 +8,7 @@
 #include "../src/syntax_analyzer.hpp"
 #include "../src/code_builder.hpp"
 #include "../src/source_graph_loader.hpp"
+#include "../tests/tests_common.hpp"
 
 #include "../src/push_disable_llvm_warnings.hpp"
 #include <llvm/ExecutionEngine/ExecutionEngine.h>
@@ -47,6 +48,15 @@ private:
 	const char* const file_text_;
 };
 
+static std::unique_ptr<CodeBuilder> CreateCodeBuilder()
+{
+	return
+		std::unique_ptr<CodeBuilder>(
+			new CodeBuilder(
+				Constants::tests_target_triple_str,
+				llvm::DataLayout( Constants::tests_data_layout_str ) ) );
+}
+
 std::unique_ptr<llvm::Module> BuildProgram( const char* const text )
 {
 	const ProgramString file_path= "_"_SpC;
@@ -59,7 +69,7 @@ std::unique_ptr<llvm::Module> BuildProgram( const char* const text )
 		!( source_graph->root_node_index < source_graph->nodes_storage.size() ) )
 		return nullptr;
 
-	ICodeBuilder::BuildResult build_result= CodeBuilder().BuildProgram( *source_graph );
+	ICodeBuilder::BuildResult build_result= CreateCodeBuilder()->BuildProgram( *source_graph );
 
 	for( const CodeBuilderError& error : build_result.errors )
 		std::cout << error.file_pos.line << ":" << error.file_pos.pos_in_line << " " << ToStdString( error.text ) << "\n";
@@ -313,7 +323,7 @@ static PyObject* BuildProgramWithErrors( PyObject* const self, PyObject* const a
 	}
 
 	PyObject* const list= PyList_New(0);
-	for( const U::CodeBuilderError& error : U::CodeBuilder().BuildProgram( *source_graph ).errors )
+	for( const U::CodeBuilderError& error : U::CreateCodeBuilder()->BuildProgram( *source_graph ).errors )
 	{
 		PyObject* const file_pos_dict= PyDict_New();
 		PyDict_SetItemString( file_pos_dict, "file_index", PyLong_FromLongLong( error.file_pos.file_index ) );

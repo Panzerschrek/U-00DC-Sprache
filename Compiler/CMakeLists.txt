@@ -71,8 +71,8 @@ find_package(LLVM REQUIRED CONFIG)
 include_directories(${LLVM_INCLUDE_DIRS})
 add_definitions(${LLVM_DEFINITIONS})
 
-llvm_map_components_to_libnames( LLVM_LIBS_FOR_COMPILER_LIB Core native ) # "native" is alias for native code generator.
-llvm_map_components_to_libnames( LLVM_LIBS_FOR_COMPILER BitWriter AsmParser Linker )
+llvm_map_components_to_libnames( LLVM_LIBS_FOR_COMPILER_LIB Core )
+llvm_map_components_to_libnames( LLVM_LIBS_FOR_COMPILER BitWriter AsmParser Linker native ) # "native" is alias for native code generator.
 llvm_map_components_to_libnames( LLVM_LIBS_FOR_TESTS ExecutionEngine Interpreter )
 
 get_filename_component( LLVM_UTILS_DIR ${LLVM_INSTALL_DIR}/bin ABSOLUTE )
@@ -191,6 +191,7 @@ if( BUILD_TESTS )
 		tests/references_tags_test.cpp
 		tests/temp_variables_moving_test.cpp
 		tests/tests.cpp
+		tests/tests_common.hpp
 		tests/type_conversions_test.cpp
 		tests/typedefs_errors_test.cpp
 		tests/typedefs_test.cpp
@@ -211,7 +212,8 @@ if( BUILD_PY_TESTS )
 	find_package( PythonInterp REQUIRED )
 
 	set( PY_TESTS_SOURCES
-		py_tests/py_tests.cpp )
+		py_tests/py_tests.cpp
+		tests/tests_common.hpp )
 
 	add_library( PyTestsLib SHARED ${PY_TESTS_SOURCES} )
 	target_link_libraries( PyTestsLib CompilerLib )

@@ -193,6 +193,40 @@ Usage:
 		return 1;
 	}
 
+	// Prepare target machine.
+	// Currently can work only with native target.
+	// TODO - allow compiler user to change target.
+	llvm::InitializeNativeTarget();
+	llvm::InitializeNativeTargetAsmParser();
+	llvm::InitializeNativeTargetAsmPrinter();
+	const std::string target_triple_str= llvm::sys::getDefaultTargetTriple();
+
+	std::unique_ptr<llvm::TargetMachine> target_machine;
+	{
+		std::string error_str;
+		const llvm::Target* const target= llvm::TargetRegistry::lookupTarget( target_triple_str, error_str );
+		if( target == nullptr )
+		{
+			std::cout << "Error, selecting target: " << error_str << std::endl;
+			return 1;
+		}
+
+		std::string features_str; // TODO - set features
+		// TODO - set optimization level, reloc model, etc.
+		target_machine.reset(
+			target->createTargetMachine(
+				target_triple_str,
+				llvm::sys::getHostCPUName(),
+				features_str,
+				llvm::TargetOptions() ) );
+
+		if( target_machine == nullptr )
+		{
+			std::cout << "Error, creating target machine." << std::endl;
+			return 1;
+		}
+	}
+
 	// Compile multiple input files and link them together.
 	U::SourceGraphLoader source_graph_loader( std::make_shared<U::VfsOverSystemFS>() );
 	std::unique_ptr<llvm::Module> result_module;
@@ -208,7 +242,7 @@ Usage:
 		}
 
 		U::CodeBuilder::BuildResult build_result=
-			U::CodeBuilder().BuildProgram( *source_graph );
+			U::CodeBuilder( target_triple_str, target_machine->createDataLayout() ).BuildProgram( *source_graph );
 
 		for( const U::CodeBuilderError& error : build_result.errors )
 			std::cout << U::ToStdString( source_graph->nodes_storage[error.file_pos.file_index ].file_path )
@@ -273,11 +307,6 @@ Usage:
 
 	if( produce_object_file )
 	{
-		// TODO - support selecting other, than native, target.
-		llvm::InitializeNativeTarget();
-		llvm::InitializeNativeTargetAsmParser();
-		llvm::InitializeNativeTargetAsmPrinter();
-
 		llvm::PassRegistry& registry= *llvm::PassRegistry::getPassRegistry();
 		llvm::initializeCore(registry);
 		llvm::initializeCodeGen(registry);
@@ -285,43 +314,11 @@ Usage:
 		llvm::initializeLowerIntrinsicsPass(registry);
 		llvm::initializeUnreachableBlockElimPass(registry);
 
-		const std::string target_triple_str= result_module->getTargetTriple();
-
-		std::string error;
-		const llvm::Target* const target= llvm::TargetRegistry::lookupTarget( target_triple_str, error );
-		if( target == nullptr )
-		{
-			std::cout << "Error, selecting target: " << error << std::endl;
-			return 1;
-		}
-
-		const auto cpu_str= llvm::sys::getHostCPUName();
-		const std::string features_str= ""; // TODO - set it
-
-		llvm::TargetOptions options;
-		const llvm::Reloc::Model reloc_model= llvm::Reloc::Model::Default;
-		const llvm::CodeModel::Model code_model= llvm::CodeModel::Model::Default;
-		const llvm::CodeGenOpt::Level optimization_level = llvm::CodeGenOpt::Default;
 		const llvm::TargetMachine::CodeGenFileType file_type= llvm::TargetMachine::CodeGenFileType::CGFT_ObjectFile;
 		const bool no_verify= true;
 		llvm::AnalysisID start_before_id= nullptr;
 		llvm::AnalysisID start_after_id = nullptr;
 		llvm::AnalysisID stop_after_id = nullptr;
-
-		const std::unique_ptr<llvm::TargetMachine> target_machine(
-			target->createTargetMachine(
-				target_triple_str,
-				cpu_str,
-				features_str,
-				options,
-				reloc_model,
-				code_model,
-				optimization_level));
-		if( target_machine == nullptr )
-		{
-			std::cout << "Error, creating target machine." << std::endl;
-			return 1;
-		}
 
 		llvm::legacy::PassManager pass_manager;
 

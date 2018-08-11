@@ -24,7 +24,9 @@ namespace CodeBuilderPrivate
 class CodeBuilder final : public ICodeBuilder
 {
 public:
-	CodeBuilder();
+	CodeBuilder(
+		std::string target_triple_str,
+		const llvm::DataLayout& data_layout );
 	virtual ~CodeBuilder() override;
 
 	virtual BuildResult BuildProgram( const SourceGraph& source_graph ) override;
@@ -777,7 +779,7 @@ private:
 private:
 	llvm::LLVMContext& llvm_context_;
 	std::string target_triple_str_;
-	const llvm::TargetMachine* target_machine_= nullptr;
+	const llvm::DataLayout data_layout_;
 
 	struct
 	{
