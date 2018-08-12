@@ -1100,13 +1100,15 @@ void CodeBuilder::PrepareFunction(
 		if( prev_function->is_this_call != func_variable.is_this_call )
 			errors_.push_back( ReportThiscallMismatch( func.file_pos_, func_name ) );
 
-		if( !is_out_of_line_function ) // Previous function must be out of line. Set virtual specifier for it.
-			prev_function->virtual_function_kind= func.virtual_function_kind_;
-		else
+		if( !is_out_of_line_function )
 		{
-			// TODO - produce error, if it out of line is body for pure virtual function.
+			if( prev_function->virtual_function_kind != func.virtual_function_kind_ )
+				errors_.push_back( ReportVirtualMismatch( func.file_pos_, func_name ) );
 		}
-		// TODO - produce error, if function with prototype and implementation inside class have different virtual function kind.
+		if( prev_function->is_deleted != func_variable.is_deleted )
+			errors_.push_back( ReportBodyForDeletedFunction( prev_function->prototype_file_pos, func_name ) );
+		if( prev_function->is_generated != func_variable.is_generated )
+			errors_.push_back( ReportBodyForGeneratedFunction( prev_function->prototype_file_pos, func_name ) );
 	}
 	else
 	{

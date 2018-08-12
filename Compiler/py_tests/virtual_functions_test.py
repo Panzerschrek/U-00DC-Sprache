@@ -752,6 +752,24 @@ def BodyForPureVirtualFunction_Test1():
 	assert( errors_list[0].file_pos.line == 6 )
 
 
+def VirtualMismatch_Test0():
+	c_program_text= """
+		class C polymorph
+		{
+			fn virtual Foo(this){}
+		}
+		class D : C
+		{
+			fn virtual override Foo(this);
+			fn virtual final Foo(this){}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "VirtualMismatch" )
+	assert( errors_list[0].file_pos.line == 9 )
+
+
 def VirtualForNonpolymorphClass_Test0():
 	c_program_text= """
 		class A

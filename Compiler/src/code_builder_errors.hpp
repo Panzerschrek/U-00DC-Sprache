@@ -41,6 +41,8 @@ enum class CodeBuilderErrorCode : unsigned int
 	CouldNotSelectOverloadedFunction,
 	FunctionPrototypeDuplication,
 	FunctionBodyDuplication,
+	BodyForGeneratedFunction,
+	BodyForDeletedFunction,
 	FunctionDeclarationOutsideItsScope,
 	ClassDeclarationOutsideItsScope,
 	ClassBodyDuplication,
@@ -177,6 +179,7 @@ enum class CodeBuilderErrorCode : unsigned int
 	VirtualForPrivateFunction,
 	VirtualForFunctionTemplate,
 	VirtualForFunctionImplementation,
+	VirtualMismatch,
 
 	// Unsafe
 	UnsafeFunctionCallOutsideUnsafeBlock,
@@ -230,6 +233,8 @@ CodeBuilderError ReportTooManySuitableOverloadedFunctions( const FilePos& file_p
 CodeBuilderError ReportCouldNotSelectOverloadedFunction( const FilePos& file_pos );
 CodeBuilderError ReportFunctionPrototypeDuplication( const FilePos& file_pos, const ProgramString& func_name );
 CodeBuilderError ReportFunctionBodyDuplication( const FilePos& file_pos, const ProgramString& func_name );
+CodeBuilderError ReportBodyForGeneratedFunction( const FilePos& file_pos, const ProgramString& func_name );
+CodeBuilderError ReportBodyForDeletedFunction( const FilePos& file_pos, const ProgramString& func_name );
 CodeBuilderError ReportFunctionDeclarationOutsideItsScope( const FilePos& file_pos );
 CodeBuilderError ReportClassDeclarationOutsideItsScope( const FilePos& file_pos );
 CodeBuilderError ReportClassBodyDuplication( const FilePos& file_pos );
@@ -338,6 +343,7 @@ CodeBuilderError ReportPureDestructor( const FilePos& file_pos, const ProgramStr
 CodeBuilderError ReportVirtualForPrivateFunction( const FilePos& file_pos, const ProgramString& function_name );
 CodeBuilderError ReportVirtualForFunctionTemplate( const FilePos& file_pos, const ProgramString& function_name );
 CodeBuilderError ReportVirtualForFunctionImplementation( const FilePos& file_pos, const ProgramString& function_name );
+CodeBuilderError ReportVirtualMismatch( const FilePos& file_pos, const ProgramString& function_name );
 CodeBuilderError ReportUnsafeFunctionCallOutsideUnsafeBlock( const FilePos& file_pos );
 CodeBuilderError ReportExplicitAccessToThisMethodIsUnsafe( const FilePos& file_pos, const ProgramString& method_name );
 CodeBuilderError ReportUnsafeReferenceCastOutsideUnsafeBlock( const FilePos& file_pos );

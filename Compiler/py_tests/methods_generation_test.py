@@ -167,6 +167,62 @@ def DisableCopyAssignmentOperator_Test0():
 	assert( errors_list[0].file_pos.line == 9 )
 
 
+def BodyForGeneratedFunction_Test0():
+	c_program_text= """
+		struct S
+		{
+			fn constructor()= default;
+		}
+		fn S::constructor(){}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "BodyForGeneratedFunction" )
+	assert( errors_list[0].file_pos.line == 4 )
+
+
+def BodyForGeneratedFunction_Test1():
+	c_program_text= """
+		struct S
+		{
+			fn constructor()= default;
+			fn constructor(){}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "BodyForGeneratedFunction" )
+	assert( errors_list[0].file_pos.line == 4 )
+
+
+def BodyForDeletedFunction_Test0():
+	c_program_text= """
+		struct S
+		{
+			fn constructor()= delete;
+		}
+		fn S::constructor(){}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "BodyForDeletedFunction" )
+	assert( errors_list[0].file_pos.line == 4 )
+
+
+def BodyForDeletedFunction_Test1():
+	c_program_text= """
+		struct S
+		{
+			fn constructor()= delete;
+			fn constructor(){}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "BodyForDeletedFunction" )
+	assert( errors_list[0].file_pos.line == 4 )
+
+
 def InvalidMethodForBodyGeneration_Test0():
 	c_program_text= """
 		fn Foo()= default; // Non-class function.

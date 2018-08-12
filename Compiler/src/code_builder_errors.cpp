@@ -80,6 +80,10 @@ const char* CodeBuilderErrorCodeToString( const CodeBuilderErrorCode code )
 		return "FunctionPrototypeDuplication";
 	case CodeBuilderErrorCode::FunctionBodyDuplication:
 		return "FunctionBodyDuplication";
+	case CodeBuilderErrorCode::BodyForGeneratedFunction:
+		return "BodyForGeneratedFunction";
+	case CodeBuilderErrorCode::BodyForDeletedFunction:
+		return "BodyForDeletedFunction";
 	case CodeBuilderErrorCode::FunctionDeclarationOutsideItsScope:
 		return "FunctionDeclarationOutsideItsScope";
 	case CodeBuilderErrorCode::ClassDeclarationOutsideItsScope:
@@ -296,6 +300,8 @@ const char* CodeBuilderErrorCodeToString( const CodeBuilderErrorCode code )
 		return "VirtualForFunctionTemplate";
 	case CodeBuilderErrorCode::VirtualForFunctionImplementation:
 		return "VirtualForFunctionImplementation";
+	case CodeBuilderErrorCode::VirtualMismatch:
+		return "VirtualMismatch";
 	case CodeBuilderErrorCode::UnsafeFunctionCallOutsideUnsafeBlock:
 		return "UnsafeFunctionCallOutsideUnsafeBlock";
 	case CodeBuilderErrorCode::ExplicitAccessToThisMethodIsUnsafe:
@@ -639,6 +645,28 @@ CodeBuilderError ReportFunctionBodyDuplication( const FilePos& file_pos, const P
 	error.code= CodeBuilderErrorCode::FunctionBodyDuplication;
 
 	error.text= "Body fo function \""_SpC + func_name + "\" already exists."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportBodyForGeneratedFunction( const FilePos& file_pos, const ProgramString& func_name )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::BodyForGeneratedFunction;
+
+	error.text= "Body for generated function \""_SpC + func_name + "\"."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportBodyForDeletedFunction( const FilePos& file_pos, const ProgramString& func_name )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::BodyForDeletedFunction;
+
+	error.text= "Body for deleted function \""_SpC + func_name + "\"."_SpC;
 
 	return error;
 }
@@ -1841,6 +1869,17 @@ CodeBuilderError ReportVirtualForFunctionImplementation( const FilePos& file_pos
 	error.code= CodeBuilderErrorCode::VirtualForFunctionImplementation;
 
 	error.text= "\"virtual\" for function implementation \"."_SpC + function_name + "\"."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportVirtualMismatch( const FilePos& file_pos, const ProgramString& function_name )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::VirtualMismatch;
+
+	error.text= "\"virtual\" specifiers mismatch for function \"."_SpC + function_name + "\"."_SpC;
 
 	return error;
 }
