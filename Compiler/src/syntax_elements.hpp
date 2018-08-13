@@ -683,6 +683,7 @@ public:
 	Function( const FilePos& file_pos );
 
 	ComplexName name_;
+	IExpressionComponentPtr condition_;
 	FunctionType type_;
 	std::unique_ptr<StructNamedInitializer> constructor_initialization_list_;
 	BlockPtr block_;

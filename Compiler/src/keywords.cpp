@@ -45,6 +45,7 @@ static const Globals& GetGlobals()
 		[ size_t(Keywords::continue_) ]= "continue",
 		[ size_t(Keywords::if_) ]= "if",
 		[ size_t(Keywords::static_if_) ]= "static_if",
+		[ size_t(Keywords::enable_if_) ]= "enable_if",
 		[ size_t(Keywords::else_) ]= "else",
 		[ size_t(Keywords::move_) ]= "move",
 

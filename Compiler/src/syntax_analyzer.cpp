@@ -2347,54 +2347,62 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 
 	std::unique_ptr<Function> result( new Function( it_->file_pos ) );
 
-	const auto try_parse_virtual_specifiers=
-	[&]
+	const ProgramString& function_defenition_lexem= it_->text;
+	NextLexem();
+
+	if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::virtual_ )
 	{
-		if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::virtual_ )
+		NextLexem();
+		result->virtual_function_kind_= VirtualFunctionKind::DeclareVirtual;
+		if( it_->type == Lexem::Type::Identifier )
 		{
-			NextLexem();
-			if( it_->type == Lexem::Type::Identifier )
+			if( it_->text == Keywords::override_ )
 			{
-				VirtualFunctionKind virtual_function_kind= VirtualFunctionKind::None;
-				if( it_->text == Keywords::override_ )
-				{
-					virtual_function_kind= VirtualFunctionKind::VirtualOverride;
-					NextLexem();
-				}
-				else if( it_->text == Keywords::final_ )
-				{
-					virtual_function_kind= VirtualFunctionKind::VirtualFinal;
-					NextLexem();
-				}
-				else if( it_->text == Keywords::pure_ )
-				{
-					virtual_function_kind= VirtualFunctionKind::VirtualPure;
-					NextLexem();
-				}
-				else
-					virtual_function_kind= VirtualFunctionKind::DeclareVirtual;
-				result->virtual_function_kind_= virtual_function_kind;
+				result->virtual_function_kind_= VirtualFunctionKind::VirtualOverride;
+				NextLexem();
+			}
+			else if( it_->text == Keywords::final_ )
+			{
+				result->virtual_function_kind_= VirtualFunctionKind::VirtualFinal;
+				NextLexem();
+			}
+			else if( it_->text == Keywords::pure_ )
+			{
+				result->virtual_function_kind_= VirtualFunctionKind::VirtualPure;
+				NextLexem();
 			}
 		}
-		if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::constexpr_ )
-		{
-			NextLexem();
-			result->constexpr_= true;
-		}
-	};
-
-	if( it_->text == Keywords::fn_ )
+	}
+	if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::constexpr_ )
+	{
+		NextLexem();
+		result->constexpr_= true;
+	}
+	if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::enable_if_ )
 	{
 		NextLexem();
 
-		try_parse_virtual_specifiers();
-		result->name_= ParseComplexName();
+		if( it_->type != Lexem::Type::BracketLeft )
+		{
+			PushErrorMessage();
+			return result;
+		}
+		NextLexem();
+
+		result->condition_= ParseExpression();
+
+		if( it_->type != Lexem::Type::BracketRight )
+		{
+			PushErrorMessage();
+			return result;
+		}
+		NextLexem();
 	}
+
+	if( function_defenition_lexem == Keywords::fn_ )
+		result->name_= ParseComplexName();
 	else
 	{
-		NextLexem();
-		try_parse_virtual_specifiers();
-
 		if( it_->type == Lexem::Type::Identifier || it_->type == Lexem::Type::Scope )
 		{
 			// Parse complex name before op name - such "op MyStruct::+"
