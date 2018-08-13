@@ -3,9 +3,7 @@ compiler. Features grouped and sorted by priority inside each group.
 When feature was implemented, delete it from list.
 
 Common:
-*) Order-independent name resolving
 *) raw_pointer
-*) Conditional functions, something, like "enable_if"
 *) Continious initializer for arrays
 *) array_view, array view take operator
 *) Type conversions
