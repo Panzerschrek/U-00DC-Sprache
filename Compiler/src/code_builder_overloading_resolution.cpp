@@ -324,7 +324,6 @@ const FunctionVariable* CodeBuilder::GetOverloadedFunction(
 	const bool first_actual_arg_is_this,
 	const FilePos& file_pos )
 {
-	U_ASSERT( !functions_set.functions.empty() || ! functions_set.template_functions.empty() );
 	U_ASSERT( !( first_actual_arg_is_this && actual_args.empty() ) );
 
 	std::vector<const FunctionVariable*> match_functions;
