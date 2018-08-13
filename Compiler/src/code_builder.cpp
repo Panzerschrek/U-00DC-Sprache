@@ -917,6 +917,23 @@ void CodeBuilder::PrepareFunction(
 		return;
 	}
 
+	if( func.condition_ != nullptr )
+	{
+		const Variable expression= BuildExpressionCodeEnsureVariable( *func.condition_, names_scope, *dummy_function_context_ );
+		if( expression.type == bool_type_ )
+		{
+			if( expression.constexpr_value != nullptr )
+			{
+				if( expression.constexpr_value->isZeroValue() )
+					return; // Function disabled.
+			}
+			else
+				errors_.push_back( ReportExpectedConstantExpression( func.condition_->GetFilePos() ) );
+		}
+		else
+			errors_.push_back( ReportTypesMismatch( func.condition_->GetFilePos(), bool_type_.ToString(), expression.type.ToString() ) );
+	}
+
 	FunctionVariable func_variable;
 	func_variable.type= Function();
 	{ // Prepare function type
