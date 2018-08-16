@@ -26,9 +26,8 @@
 #include "code_builder.hpp"
 #include "source_graph_loader.hpp"
 
-#include "stdlib_asm.hpp"
 
-static bool ReadFile( const char* const name, U::ProgramString& out_file_content )
+static bool ReadFileRaw( const char* const name, std::string& out_file_content )
 {
 	std::FILE* const f= std::fopen( name, "rb" );
 	if( f == nullptr )
@@ -38,13 +37,13 @@ static bool ReadFile( const char* const name, U::ProgramString& out_file_content
 	const size_t file_size= size_t(std::ftell( f ));
 	std::fseek( f, 0, SEEK_SET );
 
-	std::vector<char> file_content_raw( file_size );
+	out_file_content.resize(file_size);
 
 	size_t read_total= 0u;
 	bool read_error= false;
 	do
 	{
-		const size_t read= std::fread( static_cast<char*>(file_content_raw.data()) + read_total, 1, file_size - read_total, f );
+		const size_t read= std::fread( const_cast<char*>(out_file_content.data()) + read_total, 1, file_size - read_total, f );
 		if( std::ferror(f) != 0 )
 		{
 			read_error= true;
@@ -58,7 +57,13 @@ static bool ReadFile( const char* const name, U::ProgramString& out_file_content
 
 	std::fclose(f);
 
-	if( read_error )
+	return !read_error;
+}
+
+static bool ReadFile( const char* const name, U::ProgramString& out_file_content )
+{
+	std::string file_content_raw;
+	if( !ReadFileRaw( name, file_content_raw ) )
 		return false;
 
 	out_file_content= U::DecodeUTF8( file_content_raw );
@@ -272,28 +277,36 @@ Usage:
 		return 1;
 
 	{ // Link stdlib with result module.
-		llvm::SMDiagnostic err;
-		const std::unique_ptr<llvm::Module> std_lib_module=
-			llvm::parseAssemblyString( g_std_lib_asm, err, result_module->getContext() );
+		std::string file_content;
+		if( !ReadFileRaw( "asm_funcs.bc", file_content ) )
+		{
+			std::cout << "Internal compiler error - stdlib read error." << std::endl;
+			return 1;
+		}
 
-		if( std_lib_module == nullptr )
+		const llvm::ErrorOr<std::unique_ptr<llvm::Module>> std_lib_module=
+			llvm::parseBitcodeFile(
+				llvm::MemoryBufferRef( file_content, "ustlib asm file" ),
+				result_module->getContext() );
+
+		if( !std_lib_module )
 		{
 			std::cout << "Internal compiler error - stdlib parse error." << std::endl;
 			return 1;
 		}
 
-		std_lib_module->setDataLayout( result_module->getDataLayout() );
-		std_lib_module->setTargetTriple( result_module->getTargetTriple() );
+		std_lib_module.get()->setDataLayout( result_module->getDataLayout() );
+		std_lib_module.get()->setTargetTriple( result_module->getTargetTriple() );
 
 		std::string err_stream_str;
 		llvm::raw_string_ostream err_stream( err_stream_str );
-		if( llvm::verifyModule( *std_lib_module, &err_stream ) )
+		if( llvm::verifyModule( *std_lib_module.get(), &err_stream ) )
 		{
 			std::cout << "Internal compiler error - stdlib verify error:\n" << err_stream.str() << std::endl;
 			return 1;
 		}
 
-		llvm::Linker::LinkModules( result_module.get(), std_lib_module.get() );
+		llvm::Linker::LinkModules( result_module.get(), std_lib_module.get().get() );
 	}
 
 	if( print_llvm_asm )

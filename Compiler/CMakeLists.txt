@@ -70,7 +70,7 @@ include_directories(${LLVM_INCLUDE_DIRS})
 add_definitions(${LLVM_DEFINITIONS})
 
 llvm_map_components_to_libnames( LLVM_LIBS_FOR_COMPILER_LIB Core )
-llvm_map_components_to_libnames( LLVM_LIBS_FOR_COMPILER BitWriter AsmParser Linker native ) # "native" is alias for native code generator.
+llvm_map_components_to_libnames( LLVM_LIBS_FOR_COMPILER BitWriter BitReader Linker native ) # "native" is alias for native code generator.
 llvm_map_components_to_libnames( LLVM_LIBS_FOR_TESTS ExecutionEngine Interpreter )
 
 get_filename_component( LLVM_UTILS_DIR ${LLVM_INSTALL_DIR}/bin ABSOLUTE )
@@ -132,14 +132,17 @@ endif()
 #
 # Compiler
 #
+
 if( BUILD_COMPILER )
 	set( COMPILER_SOURCES
 		src/main.cpp )
 
-	set( COMPILER_HEADERS
-		src/stdlib_asm.hpp )
+	add_custom_command(
+		OUTPUT asm_funcs.bc
+		DEPENDS ${CMAKE_SOURCE_DIR}/ustlib/src/asm_funcs.ll
+		COMMAND ${LLVM_UTILS_DIR}/llvm-as ${CMAKE_SOURCE_DIR}/ustlib/src/asm_funcs.ll -o asm_funcs.bc )
 
-	add_executable( Compiler ${COMPILER_SOURCES} ${COMPILER_HEADERS} )
+	add_executable( Compiler ${COMPILER_SOURCES} asm_funcs.bc )
 	target_link_libraries( Compiler CompilerLib ${LLVM_LIBS_FOR_COMPILER} )
 	target_link_libraries( Compiler ${Boost_LIBRARIES} )
 endif( BUILD_COMPILER )
