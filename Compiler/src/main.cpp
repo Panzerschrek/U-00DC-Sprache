@@ -231,6 +231,7 @@ Usage:
 			return 1;
 		}
 	}
+	const llvm::DataLayout data_layout= target_machine->createDataLayout();
 
 	// Compile multiple input files and link them together.
 	U::SourceGraphLoader source_graph_loader( std::make_shared<U::VfsOverSystemFS>() );
@@ -247,7 +248,7 @@ Usage:
 		}
 
 		U::CodeBuilder::BuildResult build_result=
-			U::CodeBuilder( target_triple_str, target_machine->createDataLayout() ).BuildProgram( *source_graph );
+			U::CodeBuilder( target_triple_str, data_layout ).BuildProgram( *source_graph );
 
 		for( const U::CodeBuilderError& error : build_result.errors )
 			std::cout << U::ToStdString( source_graph->nodes_storage[error.file_pos.file_index ].file_path )
@@ -276,11 +277,18 @@ Usage:
 	if( have_some_errors )
 		return 1;
 
-	{ // Link stdlib with result module.
+	// Prepare stdlib modules set.
+	std::vector<std::string> asm_funcs_modules;
+	asm_funcs_modules.push_back( "asm_funcs.bc" );
+	asm_funcs_modules.push_back( data_layout.getPointerSizeInBits() == 32u ? "asm_funcs_32.bc" : "asm_funcs_64.bc" );
+
+	// Link stdlib with result module.
+	for( const std::string& asm_funcs_module : asm_funcs_modules )
+	{
 		std::string file_content;
-		if( !ReadFileRaw( "asm_funcs.bc", file_content ) )
+		if( !ReadFileRaw( asm_funcs_module.c_str(), file_content ) )
 		{
-			std::cout << "Internal compiler error - stdlib read error." << std::endl;
+			std::cout << "Internal compiler error - stdlib module read error: " << asm_funcs_module << std::endl;
 			return 1;
 		}
 
@@ -291,18 +299,18 @@ Usage:
 
 		if( !std_lib_module )
 		{
-			std::cout << "Internal compiler error - stdlib parse error." << std::endl;
+			std::cout << "Internal compiler error - stdlib module parse error: " << asm_funcs_module << std::endl;
 			return 1;
 		}
 
-		std_lib_module.get()->setDataLayout( result_module->getDataLayout() );
-		std_lib_module.get()->setTargetTriple( result_module->getTargetTriple() );
+		std_lib_module.get()->setDataLayout( data_layout );
+		std_lib_module.get()->setTargetTriple( target_triple_str );
 
 		std::string err_stream_str;
 		llvm::raw_string_ostream err_stream( err_stream_str );
 		if( llvm::verifyModule( *std_lib_module.get(), &err_stream ) )
 		{
-			std::cout << "Internal compiler error - stdlib verify error:\n" << err_stream.str() << std::endl;
+			std::cout << "Internal compiler error - stdlib module verify error: " << asm_funcs_module << ":\n" << err_stream.str() << std::endl;
 			return 1;
 		}
 
