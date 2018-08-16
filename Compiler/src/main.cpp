@@ -2,6 +2,7 @@
 #include <cstring>
 #include <iostream>
 
+#include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
 
 #include "push_disable_llvm_warnings.hpp"
@@ -77,27 +78,61 @@ namespace fs= boost::filesystem;
 
 class VfsOverSystemFS final : public IVfs
 {
+	struct PrivateTag{};
+
+public:
+	static std::shared_ptr<VfsOverSystemFS> Create( const std::vector<const char*> include_dirs )
+	{
+		std::vector<fs::path> result_include_dirs;
+
+		bool all_ok= true;
+		for( const char* const include_dir : include_dirs )
+		{
+			try
+			{
+				fs::path dir_path{ std::string(include_dir) };
+				dir_path.make_preferred();
+				if( !fs::exists( dir_path ) )
+				{
+					std::cout << "include dir \"" << include_dir << "\" does not exists." << std::endl;
+					all_ok= false;
+					continue;
+				}
+
+				result_include_dirs.push_back( std::move( dir_path ) );
+			}
+			catch( const std::exception& e )
+			{
+				std::cout << e.what() << std::endl;
+				all_ok= false;
+			}
+		}
+
+		if( !all_ok )
+			return nullptr;
+
+		return std::make_shared<VfsOverSystemFS>( std::move(result_include_dirs), PrivateTag() );
+	}
+
+	VfsOverSystemFS( std::vector<fs::path> include_dirs, PrivateTag )
+		: include_dirs_(std::move(include_dirs))
+	{}
+
 public:
 	virtual boost::optional<LoadFileResult> LoadFileContent( const Path& file_path, const Path& full_parent_file_path ) override
 	{
 		try
 		{
-			const fs::path file_path_r( ToStdString(file_path) );
-			fs::path result_path;
-			if( full_parent_file_path.empty() || file_path_r.is_absolute() )
-				result_path= file_path_r;
-			else
-			{
-				const fs::path base_dir= fs::path( ToStdString(full_parent_file_path) ).parent_path();
-				result_path= base_dir / file_path_r;
-			}
+			fs::path result_path= GetFullFilePathInternal( file_path, full_parent_file_path );
+			if( result_path.empty() )
+				return boost::none;
 
 			LoadFileResult result;
 			// TODO - maybe use here native format of path string?
 			if( !ReadFile( result_path.string<std::string>().c_str(), result.file_content ) )
 				return boost::none;
 
-			result.full_file_path= ToProgramString( result_path.make_preferred().string<std::string>().c_str() );
+			result.full_file_path= ToProgramString( result_path.string<std::string>().c_str() );
 			return std::move(result);
 		}
 		catch( const std::exception& e )
@@ -110,26 +145,50 @@ public:
 
 	virtual Path GetFullFilePath( const Path& file_path, const Path& full_parent_file_path ) override
 	{
+		return ToProgramString( GetFullFilePathInternal( file_path, full_parent_file_path ).string<std::string>().c_str() );
+	}
+
+private:
+	fs::path GetFullFilePathInternal( const Path& file_path, const Path& full_parent_file_path )
+	{
 		try
 		{
 			const fs::path file_path_r( ToStdString(file_path) );
 			fs::path result_path;
-			if( full_parent_file_path.empty() || file_path_r.is_absolute() )
+
+			if( full_parent_file_path.empty() )
 				result_path= file_path_r;
+			else if( !file_path.empty() && file_path[0] == '/' )
+			{
+				// If file path is absolute, like "/some_lib/some_file.u" search file in include dirs.
+				// Return real file system path to first existent file.
+				for( const fs::path& include_dir : include_dirs_ )
+				{
+					fs::path full_file_path= include_dir / file_path_r;
+					if( fs::exists( full_file_path ) )
+					{
+						result_path= std::move(full_file_path);
+						break;
+					}
+				}
+			}
 			else
 			{
 				const fs::path base_dir= fs::path( ToStdString(full_parent_file_path) ).parent_path();
 				result_path= base_dir / file_path_r;
 			}
-			return ToProgramString( result_path.make_preferred().string<std::string>().c_str() );
+			return result_path.make_preferred();
 		}
 		catch( const std::exception& e )
 		{
 			std::cout << e.what() << std::endl;
 		}
 
-		return Path();
+		return fs::path();
 	}
+
+private:
+	const std::vector<fs::path> include_dirs_;
 };
 
 } // namespace U
@@ -148,11 +207,14 @@ Usage:
 		return 1;
 	}
 
+	// Options
 	std::vector<const char*> input_files;
+	std::vector<const char*> include_directories;
 	const char* output_file= nullptr;
 	bool print_llvm_asm= false;
 	bool produce_object_file= false;
 
+	// Parse command line
 	for( int i = 1; i < argc; )
 	{
 		if( std::strcmp( argv[i], "-o" ) == 0 )
@@ -163,6 +225,16 @@ Usage:
 				return 1;
 			}
 			output_file= argv[ i + 1 ];
+			i+= 2;
+		}
+		else if( std::strcmp( argv[i], "--include-dir" ) == 0 )
+		{
+			if( i + 1 >= argc )
+			{
+				std::cout << "Expeted path after\"--include-dir\"" << std::endl;
+				return 1;
+			}
+			include_directories.push_back( argv[ i + 1 ] );
 			i+= 2;
 		}
 		else if( std::strcmp( argv[i], "--print-llvm-asm" ) == 0 )
@@ -233,8 +305,12 @@ Usage:
 	}
 	const llvm::DataLayout data_layout= target_machine->createDataLayout();
 
+	const auto vfs= U::VfsOverSystemFS::Create( include_directories );
+	if( vfs == nullptr )
+		return 1u;
+
 	// Compile multiple input files and link them together.
-	U::SourceGraphLoader source_graph_loader( std::make_shared<U::VfsOverSystemFS>() );
+	U::SourceGraphLoader source_graph_loader( vfs );
 	std::unique_ptr<llvm::Module> result_module;
 	bool have_some_errors= false;
 	for( const char* const input_file : input_files )

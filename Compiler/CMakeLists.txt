@@ -316,3 +316,17 @@ if( BUILD_LINKAGE_TESTS )
 	add_executable( ImportTest import_test/entry.c ${IMPORT_TEST_OBJECTS} )
 	add_dependencies( ImportTest Compiler )
 endif( BUILD_LINKAGE_TESTS )
+
+#
+# Include dirs test
+#
+if( BUILD_LINKAGE_TESTS )
+
+	add_custom_command(
+		OUTPUT include_dirs_test.o
+		DEPENDS ${u_source_file} Compiler
+		COMMAND Compiler --produce-object-file ${CMAKE_SOURCE_DIR}/include_dirs_test/root.u -o include_dirs_test.o --include-dir ${CMAKE_SOURCE_DIR}/include_dirs_test/a --include-dir ${CMAKE_SOURCE_DIR}/include_dirs_test/b --include-dir ${CMAKE_SOURCE_DIR}/include_dirs_test/c )
+
+	add_executable( IncludeDirsTest include_dirs_test/entry.c include_dirs_test.o )
+	add_dependencies( IncludeDirsTest Compiler )
+endif( BUILD_LINKAGE_TESTS )
