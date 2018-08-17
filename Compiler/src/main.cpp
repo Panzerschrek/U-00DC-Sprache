@@ -27,6 +27,7 @@
 #include "code_builder.hpp"
 #include "source_graph_loader.hpp"
 
+namespace fs= boost::filesystem;
 
 static bool ReadFileRaw( const char* const name, std::string& out_file_content )
 {
@@ -73,8 +74,6 @@ static bool ReadFile( const char* const name, U::ProgramString& out_file_content
 
 namespace U
 {
-
-namespace fs= boost::filesystem;
 
 class VfsOverSystemFS final : public IVfs
 {
@@ -211,31 +210,31 @@ Usage:
 	std::vector<const char*> input_files;
 	std::vector<const char*> include_directories;
 	const char* output_file= nullptr;
+	fs::path compiler_data_dir= fs::system_complete( argv[0] ).parent_path(); // By default search compiler data near it`s executable.
 	bool print_llvm_asm= false;
 	bool produce_object_file= false;
 	bool tests_output= false;
 
 	// Parse command line
+	#define EXPECT_ARG_VALUE if( i + 1 >= argc ) { std::cout << "Expeted name after \"" << argv[i] << "\"" << std::endl; return 1; }
 	for( int i = 1; i < argc; )
 	{
 		if( std::strcmp( argv[i], "-o" ) == 0 )
 		{
-			if( i + 1 >= argc )
-			{
-				std::cout << "Expeted name after\"-o\"" << std::endl;
-				return 1;
-			}
+			EXPECT_ARG_VALUE
 			output_file= argv[ i + 1 ];
 			i+= 2;
 		}
 		else if( std::strcmp( argv[i], "--include-dir" ) == 0 )
 		{
-			if( i + 1 >= argc )
-			{
-				std::cout << "Expeted path after\"--include-dir\"" << std::endl;
-				return 1;
-			}
+			EXPECT_ARG_VALUE
 			include_directories.push_back( argv[ i + 1 ] );
+			i+= 2;
+		}
+		else if( std::strcmp( argv[i], "--compiler-data-dir" ) == 0 )
+		{
+			EXPECT_ARG_VALUE
+			compiler_data_dir= fs::path( argv[ i + 1 ] );
 			i+= 2;
 		}
 		else if( std::strcmp( argv[i], "--print-llvm-asm" ) == 0 )
@@ -264,6 +263,7 @@ Usage:
 			++i;
 		}
 	}
+	#undef EXPECT_ARG_VALUE
 
 	if( input_files.empty() )
 	{
@@ -378,7 +378,8 @@ Usage:
 	for( const std::string& asm_funcs_module : asm_funcs_modules )
 	{
 		std::string file_content;
-		if( !ReadFileRaw( asm_funcs_module.c_str(), file_content ) )
+		const fs::path module_full_path= compiler_data_dir / fs::path( asm_funcs_module );
+		if( !ReadFileRaw( module_full_path.string().c_str(), file_content ) )
 		{
 			std::cout << "Internal compiler error - stdlib module read error: " << asm_funcs_module << std::endl;
 			return 1;
