@@ -213,6 +213,7 @@ Usage:
 	const char* output_file= nullptr;
 	bool print_llvm_asm= false;
 	bool produce_object_file= false;
+	bool tests_output= false;
 
 	// Parse command line
 	for( int i = 1; i < argc; )
@@ -240,6 +241,11 @@ Usage:
 		else if( std::strcmp( argv[i], "--print-llvm-asm" ) == 0 )
 		{
 			print_llvm_asm= true;
+			++i;
+		}
+		else if( std::strcmp( argv[i], "--tests-output" ) == 0 )
+		{
+			tests_output= true;
 			++i;
 		}
 		else if( std::strcmp( argv[i], "--produce-object-file" ) == 0 )
@@ -326,9 +332,19 @@ Usage:
 		U::CodeBuilder::BuildResult build_result=
 			U::CodeBuilder( target_triple_str, data_layout ).BuildProgram( *source_graph );
 
-		for( const U::CodeBuilderError& error : build_result.errors )
-			std::cout << U::ToStdString( source_graph->nodes_storage[error.file_pos.file_index ].file_path )
-				<< ":" << error.file_pos.line << ":" << error.file_pos.pos_in_line << " " << U::ToStdString( error.text ) << "\n";
+		if( tests_output )
+		{
+			// For tests we print errors as "file.u 88 NameNotFound"
+			for( const U::CodeBuilderError& error : build_result.errors )
+				std::cout << U::ToStdString( source_graph->nodes_storage[error.file_pos.file_index ].file_path )
+					<< " " << error.file_pos.line << " " << U::CodeBuilderErrorCodeToString( error.code ) << "\n";
+		}
+		else
+		{
+			for( const U::CodeBuilderError& error : build_result.errors )
+				std::cout << U::ToStdString( source_graph->nodes_storage[error.file_pos.file_index ].file_path )
+					<< ":" << error.file_pos.line << ":" << error.file_pos.pos_in_line << " " << U::ToStdString( error.text ) << "\n";
+		}
 
 		if( !build_result.errors.empty() )
 		{
