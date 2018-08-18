@@ -17,7 +17,7 @@ class ParseResult:
 
 
 g_compiler_executable= "Compiler"
-g_entry_point_executable= "../Compiler/data/entry.cpp"
+g_entry_point_source= "entry.cpp"
 g_cpp_compiler_executable= "g++"
 
 
@@ -170,7 +170,7 @@ def DoSuccessTest( file_path ):
 		print( "Compilation failed" )
 		return 1
 
-	if subprocess.call( [ g_cpp_compiler_executable, g_entry_point_executable, object_file, "-o", executable_file ] ) != 0:
+	if subprocess.call( [ g_cpp_compiler_executable, g_entry_point_source, object_file, "-o", executable_file ] ) != 0:
 		print( "linking failed" )
 		os.remove( object_file )
 		return 1
@@ -186,13 +186,7 @@ def DoSuccessTest( file_path ):
 	return 0
 
 
-def main():
-	parser= argparse.ArgumentParser( description= 'Run annotated Ü tests.' )
-	parser.add_argument( "-i", help= "input Ü test source", type=str, required= True )
-
-	args= parser.parse_args()
-	file_path= args.i
-
+def RunTestForFile( file_path ):
 	file_content= LoadFile( file_path )
 	parse_result= ParseFile( file_content )
 
@@ -203,6 +197,51 @@ def main():
 		return DoFailTest( file_path, parse_result.errors_list )
 	elif parse_result.test_kind == "success":
 		return DoSuccessTest( file_path )
+
+
+def RunTestsInDirectory( dir_path ):
+
+	result= 0
+	for path in os.listdir( dir_path ):
+
+		full_name= os.path.join( dir_path, path )
+
+		if os.path.isfile( full_name ) and full_name.endswith( ".u" ):
+			result= result + RunTestForFile( full_name )
+
+	return result
+
+
+def main():
+	parser= argparse.ArgumentParser( description= 'Run annotated Ü tests.' )
+	parser.add_argument( "--input-file", help= "input Ü test source", type=str )
+	parser.add_argument( "--input-dir", help= "input Ü test sources directory", type=str )
+	parser.add_argument( "--compiler-executable", help= "path to compiler executable", type=str )
+	parser.add_argument( "--entry-point-source", help= "path to entry point cpp file", type=str )
+	parser.add_argument( "--cpp-compiler-executable", help= "path to c++ compiler/linker executable", type=str )
+
+	args= parser.parse_args()
+
+	if args.compiler_executable is not None:
+		global g_compiler_executable
+		g_compiler_executable= args.compiler_executable
+
+	if args.entry_point_source is not None:
+		global g_entry_point_source
+		g_entry_point_source= args.entry_point_source
+
+	if args.cpp_compiler_executable is not None:
+		global g_cpp_compiler_executable
+		g_cpp_compiler_executable= args.cpp_compiler_executable
+
+	if args.input_file is not None:
+		return RunTestForFile( args.input_file )
+	elif args.input_dir is not None:
+		return RunTestsInDirectory( args.input_dir )
+	else:
+		print( "expected single input file or directory with files" )
+		return 1
+
 
 if __name__ == "__main__":
 	sys.exit(main())
