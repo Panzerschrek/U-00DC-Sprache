@@ -1204,7 +1204,7 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 		function_template.syntax_element->function_->name_.components.back().name,
 		function_template.syntax_element->function_->type_.arguments_,
 		function_template.syntax_element->function_->block_.get(),
-		nullptr );
+		function_template.syntax_element->function_->constructor_initialization_list_.get() );
 
 	// Two-step preparation needs for recursive function template call.
 

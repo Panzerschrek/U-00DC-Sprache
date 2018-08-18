@@ -146,7 +146,7 @@ void CodeBuilder::NamesScopeFill(
 		errors_.push_back( ReportFunctionDeclarationOutsideItsScope( function_template_declaration.file_pos_ ) );
 	if( complex_name.components.front().have_template_parameters )
 		errors_.push_back( ReportValueIsNotTemplate( function_template_declaration.file_pos_ ) );
-	if( IsKeyword( function_template_name ) )
+	if( IsKeyword( function_template_name ) && function_template_name != Keywords::constructor_ && function_template_name != Keywords::destructor_ )
 		errors_.push_back( ReportUsingKeywordAsName( function_template_declaration.file_pos_ ) );
 	if( NameShadowsTemplateArgument( function_template_name, names_scope ) )
 		errors_.push_back( ReportDeclarationShadowsTemplateArgument( function_template_declaration.file_pos_, function_template_name ) );
