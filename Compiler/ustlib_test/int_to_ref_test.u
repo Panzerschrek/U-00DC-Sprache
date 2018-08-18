@@ -1,0 +1,23 @@
+//##success_test
+import "../ustlib/memory.u"
+
+fn U_Main() : i32
+{
+	unsafe
+	{
+		// int -> ref -> int must save value
+		var size_type num(9684);
+		halt if( ust::ref_to_int( ust::int_to_ref( num ) ) != num );
+	}
+
+	unsafe
+	{
+		// ref -> int -> ref must save value
+		var f32 num= 65.54f;
+		auto ref_num= ust::ref_to_int( num );
+		var f32& ref= cast_ref_unsafe</f32/>( ust::int_to_ref( ref_num ) );
+		halt if( ref != num );
+	}
+
+	return 0;
+}
