@@ -187,19 +187,29 @@ def DoSuccessTest( file_path ):
 
 
 def RunTestForFile( file_path ):
+	print( "Running test for file \"" + file_path + "\"" )
 	file_content= LoadFile( file_path )
 	parse_result= ParseFile( file_content )
 
 	if not parse_result.parse_ok:
 		return 1
 
+	result= 0
 	if parse_result.test_kind == "fail":
-		return DoFailTest( file_path, parse_result.errors_list )
+		result= DoFailTest( file_path, parse_result.errors_list )
 	elif parse_result.test_kind == "success":
-		return DoSuccessTest( file_path )
+		result= DoSuccessTest( file_path )
+
+	if( result == 0 ):
+		print( "Test for file \"" + file_path + "\" successed" )
+	else:
+		print( "Test for file \"" + file_path + "\" failed" )
+
+	return result
 
 
 def RunTestsInDirectory( dir_path ):
+	print( "Running test for directory \"" + dir_path + "\"" )
 
 	result= 0
 	for path in os.listdir( dir_path ):
