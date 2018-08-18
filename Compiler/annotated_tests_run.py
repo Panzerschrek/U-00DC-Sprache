@@ -75,10 +75,6 @@ def ParseFile( file_content ):
 
 			result.errors_list.append( expected_error )
 
-			while file_content[i] != '\n' and i < len(file_content):
-				i= i + 1
-			line_number= line_number + 1
-
 		elif file_content[i] == '\n':
 
 			line_number= line_number + 1
@@ -138,24 +134,27 @@ def DoFailTest( file_path, expected_errors_list ):
 	except subprocess.CalledProcessError as called_process_error:
 		output_str= str(called_process_error.output)
 
-	acutal_errors_list= ParseCompilerErrorsOutput( output_str )
+	actual_errors_list= ParseCompilerErrorsOutput( output_str )
 	all_ok= True
 
 	file_path_normalized= os.path.normpath( file_path )
-	for error in acutal_errors_list:
+	for error in actual_errors_list:
 		if os.path.normpath( error.file_name ) != file_path_normalized:
 			all_ok= False
 			print( "Unexpected error in included file:\n" + error.file_name + " " + str(error.line_number) + " " + error.error_code )
 
 	for expected_error in expected_errors_list:
 		found= False
-		for acutal_error in acutal_errors_list:
-			if expected_error.line_number == acutal_error.line_number and expected_error.error_code == acutal_error.error_code:
+		for actual_error in actual_errors_list:
+			if expected_error.line_number == actual_error.line_number and expected_error.error_code == actual_error.error_code:
 				found= True
 				break
 		if not found:
 			all_ok= False
 			print( "Expected error " + expected_error.error_code + " at line " + str( expected_error.line_number ) + " not found in actual compiler output" )
+
+	if not all_ok:
+		print( "Actual errors:\n" + output_str )
 
 	if all_ok:
 		return 0
@@ -163,8 +162,9 @@ def DoFailTest( file_path, expected_errors_list ):
 
 
 def DoSuccessTest( file_path ):
-	object_file= "temp.o"
-	executable_file= "temp.exe"
+	file_name= os.path.basename( file_path )
+	object_file= file_name + "_temp.o"
+	executable_file= file_name + "_temp.exe"
 
 	if subprocess.call( [ g_compiler_executable, file_path, "--produce-object-file", "-o", object_file ] ) != 0:
 		print( "Compilation failed" )
