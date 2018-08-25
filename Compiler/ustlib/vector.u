@@ -1,0 +1,245 @@
+import "pointer.u"
+import "container_utils.u"
+
+namespace ust
+{
+
+template</ type T />
+class vector
+{
+public:
+	type this_type= vector</T/>;
+
+	fn constructor()
+	( ptr_(), size_(0), capacity_(0) )
+	{}
+
+	fn destructor()
+	{
+		unsafe
+		{
+			var size_type mut i(0);
+			while( i < size_ )
+			{
+				call_destructor( ptr_[i] );
+				++i;
+			}
+			if( !ptr_.is_null() )
+			{
+				memory_free( ptr_.get_ref() );
+			}
+		}
+	}
+
+	fn size( this ) : size_type
+	{
+		return size_;
+	}
+
+	fn empty( this ) : bool
+	{
+		return size_ == size_type(0);
+	}
+
+	fn capacity( this ) : size_type
+	{
+		return capacity_;
+	}
+
+	// Indexing
+
+	op[]( mut this, size_type index ) : T &mut
+	{
+		halt if( index >= size_ );
+		unsafe{  return ptr_[ index ];  }
+	}
+
+	op[]( imut this, size_type index ) : T &imut
+	{
+		halt if( index >= size_ );
+		unsafe{  return ptr_[ index ];  }
+	}
+
+	op enable_if( c_size_type_is_u64_ ) []( mut this, u32 index ) : T &mut
+	{
+		return this[ size_type(index) ];
+	}
+
+	op enable_if( c_size_type_is_u64_ ) []( imut this, u32 index ) : T &imut
+	{
+		return this[ size_type(index) ];
+	}
+
+	op enable_if( c_size_type_is_u32_ ) []( mut this, u64 index ) : T &mut
+	{
+		halt if( index > u64(size_) );
+		return this[ size_type(index) ];
+	}
+
+	op enable_if( c_size_type_is_u32_ ) []( imut this, u64 index ) : T &imut
+	{
+		halt if( index > u64(size_) );
+		return this[ size_type(index) ];
+	}
+
+	// front/back
+
+	fn front( mut this ) : T &mut
+	{
+		halt if(empty());
+		unsafe{  return ptr_[ size_type(0) ];  }
+	}
+
+	fn front( imut this ) : T &imut
+	{
+		halt if(empty());
+		unsafe{  return ptr_[ size_type(0) ];  }
+	}
+
+	fn back( mut this ) : T &mut
+	{
+		halt if(empty());
+		unsafe{  return ptr_[ size_ - size_type(1) ];  }
+	}
+
+	fn back( imut this ) : T &imut
+	{
+		halt if(empty());
+		unsafe{  return ptr_[ size_ - size_type(1) ];  }
+	}
+
+	// modificators
+
+	fn swap( mut this, size_type i0, size_type i1 )
+	{
+		halt if( i0 >= size_ );
+		halt if( i1 >= size_ );
+
+		if( i0 == i1 ){ return; }
+
+		unsafe
+		{
+			var ptr_type mut ptr0= ptr_ + i0;
+			var ptr_type mut ptr1= ptr_ + i1;
+
+			var T mut temp= uninitialized;
+			memory_copy( temp          , ptr0.get_ref(), c_element_size_ );
+			memory_copy( ptr0.get_ref(), ptr1.get_ref(), c_element_size_ );
+			memory_copy( ptr1.get_ref(), temp          , c_element_size_ );
+		}
+	}
+
+	fn enable_if( c_size_type_is_u64_ ) swap( mut this, u32 i0, u32 i1 )
+	{
+		return swap( size_type(i0), size_type(i1) );
+	}
+
+	fn enable_if( c_size_type_is_u32_ ) swap( mut this, u64 i0, u64 i1 )
+	{
+		halt if( i0 >= u64(size_) );
+		halt if( i1 >= u64(size_) );
+		return swap( size_type(i0), size_type(i1) );
+	}
+
+	fn push_back( mut this'a...', T mut val'b...' ) ' a <- b '
+	{
+		unsafe
+		{
+			if( capacity_ == size_type(0) )
+			{
+				capacity_= get_first_allocation_size();
+				auto &mut ref= cast_ref_unsafe</T/>( memory_allocate( capacity_ * c_element_size_ ) );
+				ptr_= ptr_type( ref );
+			}
+			else if( capacity_ == size_ )
+			{
+				capacity_*= size_type(2);
+				auto &mut ref= cast_ref_unsafe</T/>( memory_reallocate( ptr_.get_ref(), capacity_ * c_element_size_ ) );
+				ptr_= ptr_type( ref );
+			}
+
+			move_unsafe</T/>( ptr_[size_], move(val) );
+			++size_;
+		}
+	}
+
+	fn drop_back( mut this )
+	{
+		halt if(empty());
+		unsafe
+		{
+			--size_;
+			call_destructor(ptr_[size_]);
+		}
+	}
+
+	fn pop_back( mut this'a...' ) : T'a...'
+	{
+		halt if(empty());
+		unsafe
+		{
+			var T mut result= uninitialized;
+			memory_copy( result, back(), c_element_size_ );
+			--size_;
+			return move(result);
+		}
+	}
+
+	fn clear( mut this )
+	{
+		var size_type mut i(0);
+		while( i < size_ )
+		{
+			unsafe{  call_destructor(ptr_[i]);  }
+			++i;
+		}
+		size_= size_type(0);
+	}
+
+	fn shrink_to_fit( mut this )
+	{
+		if( capacity_ > size_ )
+		{
+			capacity_= size_;
+			unsafe
+			{
+				if( capacity_ == size_type(0) )
+				{
+					memory_free( ptr_.get_ref() );
+					ptr_= ptr_type();
+				}
+				else
+				{
+					auto &mut ref= cast_ref_unsafe</T/>( memory_reallocate( ptr_.get_ref(), capacity_ * c_element_size_ ) );
+					ptr_= ptr_type( ref );
+				}
+			}
+		}
+	}
+
+private:
+	type ptr_type= raw_ptr_mut</T/>;
+	auto constexpr c_element_size_= typeinfo</T/>.size_of;
+
+	fn constexpr get_first_allocation_size() : size_type
+	{
+		// Typical allocator allocates memory with block size=16 or more.
+		// For first allocation we can allocate more, than one element for elements, smaller, then 16/2.
+
+		static_if( c_element_size_ == size_type(0) ) { return ~size_type(0); } // Max for zero-sized elements.
+		else if  ( c_element_size_ >= size_type(16) ) { return size_type(1); }
+		else { return size_type(16) / c_element_size_; }
+	}
+
+	auto c_size_type_is_u32_= typeinfo</ size_type />.size_of == typeinfo</ u32 />.size_of;
+	auto c_size_type_is_u64_= typeinfo</ size_type />.size_of == typeinfo</ u64 />.size_of;
+
+private:
+	ContainerTag</ T /> container_tag_;
+
+	ptr_type ptr_;
+	size_type size_;
+	size_type capacity_;
+}
+
+} // namespace ust
