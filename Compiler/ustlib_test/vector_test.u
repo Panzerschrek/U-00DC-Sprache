@@ -24,11 +24,16 @@ struct R // Have destructor with side-effects.
 	}
 }
 
+class NC // Non-copyable by-default.
+{
+}
+
 type I32Vec= ust::vector</i32/>;
 type AVec= ust::vector</A/>;
 type BVec= ust::vector</B/>;
 type CVec= ust::vector</C/>;
 type RVec= ust::vector</R/>;
+type NCVec= ust::vector</NC/>;
 
 template</ type T /> fn IsMutableReference( T & mut r ) : bool { return true ; }
 template</ type T /> fn IsMutableReference( T &imut r ) : bool { return false; }
@@ -191,6 +196,108 @@ fn U_Main() : i32
 		halt if( i[ 0u   ] != 0 );
 		halt if( i[ 1u32 ] != 1 );
 		halt if( i[ 2u64 ] != 2 );
+	}
+
+	{ // Vectors copying.
+		static_assert( typeinfo</ I32Vec />.is_copy_constructible );
+		static_assert( typeinfo</ I32Vec />.is_copy_assignable );
+
+		static_assert( typeinfo</ AVec />.is_copy_constructible );
+		static_assert( typeinfo</ AVec />.is_copy_assignable );
+
+		static_assert( typeinfo</ BVec />.is_copy_constructible );
+		static_assert( typeinfo</ BVec />.is_copy_assignable );
+
+		static_assert( !typeinfo</ NCVec />.is_copy_constructible );
+		static_assert( !typeinfo</ NCVec />.is_copy_assignable );
+	}
+	{ // Vector is copy-constructible if element is copy-constructible.
+		var I32Vec mut i;
+
+		i.push_back(0);
+		i.push_back(1);
+		i.push_back(2);
+
+		var I32Vec i_copy(i);
+
+		halt if( i_copy.size() != size_type(3) );
+		halt if( i_copy[0u] != 0 );
+		halt if( i_copy[1u] != 1 );
+		halt if( i_copy[2u] != 2 );
+	}
+	{ // Copy-assign to empty vector.
+		var I32Vec mut i, mut j;
+
+		i.push_back(0);
+		i.push_back(1);
+		i.push_back(2);
+
+		j= i;
+		halt if( j[0u] != 0 );
+		halt if( j[1u] != 1 );
+		halt if( j[2u] != 2 );
+	}
+	{ // Copy-assign empty vector.
+		var I32Vec mut i, mut j;
+
+		i.push_back(0);
+		i.push_back(1);
+		i.push_back(2);
+
+		i= j;
+		halt if( !i.empty() );
+	}
+	{ // Copy-assign, element count increase.
+		var I32Vec mut i, mut j;
+
+		i.push_back(0);
+		i.push_back(1);
+		i.push_back(2);
+		j.push_back(10);
+		j.push_back(11);
+		j.push_back(12);
+		j.push_back(13);
+		j.push_back(14);
+
+		i= j;
+
+		halt if( j.size() != size_type(5) );
+		halt if( i[0u] != 10 );
+		halt if( i[1u] != 11 );
+		halt if( i[2u] != 12 );
+		halt if( i[3u] != 13 );
+		halt if( i[4u] != 14 );
+	}
+	{ // Copy-assign, element count decrease.
+		var I32Vec mut i, mut j;
+
+		i.push_back(0);
+		i.push_back(1);
+		i.push_back(2);
+		j.push_back(10);
+		j.push_back(11);
+		j.push_back(12);
+		j.push_back(13);
+		j.push_back(14);
+
+		j= i;
+
+		halt if( j.size() != size_type(3) );
+		halt if( j[0u] != 0 );
+		halt if( j[1u] != 1 );
+		halt if( j[2u] != 2 );
+	}
+	{ // Assignment of empty vector calls all destructors of destination vector.
+		var i32 mut x= 0;
+		var RVec mut v;
+
+		unsafe // Use unsafe, because mutable reference to "x" after "push_back" linked with "v" and we can not access "x".
+		{
+			var i32& x_ref_unsafe= cast_ref_unsafe</ i32 />( ust::int_to_ref( ust::ref_to_int( x ) ) );
+			v.push_back( R(x) );
+			v= RVec();
+			halt if( x_ref_unsafe != 1 );
+		}
 	}
 	return 0;
 }

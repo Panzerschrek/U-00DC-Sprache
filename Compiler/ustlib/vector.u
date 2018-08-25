@@ -14,6 +14,71 @@ public:
 	( ptr_(), size_(0), capacity_(0) )
 	{}
 
+	fn enable_if( typeinfo</T/>.is_copy_constructible ) constructor( this_type& other )
+	( ptr_(), size_(other.size_), capacity_(0) )
+	{
+		if( other.empty() ){ return; }
+
+		unsafe
+		{
+			capacity_= get_first_allocation_size();
+			if( capacity_ < other.size_ ) { capacity_= other.size_; }
+			ptr_= ptr_type( cast_ref_unsafe</T/>( memory_allocate( capacity_ * c_element_size_ ) ) );
+
+			var size_type mut i(0);
+			while( i < size_ )
+			{
+				move_unsafe( ptr_[i], other.ptr_[i] ); // Copy-constructor called here.
+				++i;
+			}
+		}
+	}
+
+	op enable_if( typeinfo</T/>.is_copy_constructible & typeinfo</T/>.is_copy_assignable ) =( mut this, this_type& other )
+	{
+		unsafe
+		{
+			var size_type mut i(0);
+			while( i < this.size_ & i < other.size_ )
+			{
+				this.ptr_[i]= other.ptr_[i]; // Copy-assignment operator called here.
+				++i;
+			}
+
+			if( this.size_ < other.size_ ) // Copy-construct tail.
+			{
+				if( capacity_ < other.size_ )
+				{
+					capacity_= other.size_;
+					if( ptr_.is_null() )
+					{
+						ptr_= ptr_type( cast_ref_unsafe</T/>( memory_allocate( capacity_ * c_element_size_ ) ) );
+					}
+					else
+					{
+						ptr_= ptr_type( cast_ref_unsafe</T/>( memory_reallocate( ptr_.get_ref(), capacity_ * c_element_size_ ) ) );
+					}
+				}
+
+				while( i < other.size_ )
+				{
+					move_unsafe( ptr_[i], other.ptr_[i] ); // Copy-constructor called here.
+					++i;
+				}
+			}
+			else if( this.size_ > other.size_ ) // Cut tail.
+			{
+				while( i < this.size_ )
+				{
+					call_destructor( ptr_[i] );
+					++i;
+				}
+			}
+
+			this.size_= other.size_;
+		}
+	}
+
 	fn destructor()
 	{
 		unsafe
