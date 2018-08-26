@@ -1,5 +1,6 @@
 import "pointer.u"
 import "container_utils.u"
+import "minmax.u"
 
 namespace ust
 {
@@ -23,8 +24,7 @@ public:
 
 		unsafe
 		{
-			capacity_= get_first_allocation_size();
-			if( capacity_ < other.size_ ) { capacity_= other.size_; }
+			capacity_= max( get_first_allocation_size(), other.size_ );
 			ptr_= ptr_type( cast_ref_unsafe</T/>( memory_allocate( capacity_ * c_element_size_ ) ) );
 
 			var size_type mut i(0);
@@ -44,8 +44,7 @@ public:
 
 		unsafe
 		{
-			capacity_= get_first_allocation_size();
-			if( capacity_ < size_ ) { capacity_= size_; }
+			capacity_= max( get_first_allocation_size(), size_ );
 			ptr_= ptr_type( cast_ref_unsafe</T/>( memory_allocate( capacity_ * c_element_size_ ) ) );
 
 			var size_type mut i(0);
@@ -65,8 +64,7 @@ public:
 
 		unsafe
 		{
-			capacity_= get_first_allocation_size();
-			if( capacity_ < size_ ) { capacity_= size_; }
+			capacity_= max( get_first_allocation_size(), size_ );
 			ptr_= ptr_type( cast_ref_unsafe</T/>( memory_allocate( capacity_ * c_element_size_ ) ) );
 
 			var size_type mut i(0);
@@ -413,8 +411,7 @@ private:
 			}
 			else if( capacity_ == size_type(0) )
 			{
-				capacity_= get_first_allocation_size();
-				if( capacity_ < new_size ) { capacity_= new_size; }
+				capacity_= max( get_first_allocation_size(), new_size );
 				ptr_= ptr_type( cast_ref_unsafe</T/>( memory_allocate( capacity_ * c_element_size_ ) ) );
 			}
 			else // if( capacity_ < new_size )
