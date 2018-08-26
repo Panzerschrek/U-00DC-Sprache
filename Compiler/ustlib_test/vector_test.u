@@ -11,7 +11,7 @@ struct B // Non-default-constructible, non-empty
 struct C // Default-constructible, non-empty
 {
 	i32 x;
-	fn constructor() ( x= 0 ) {}
+	fn constructor() ( x= 666 ) {}
 }
 
 struct R // Have destructor with side-effects.
@@ -297,6 +297,30 @@ fn U_Main() : i32
 			v.push_back( R(x) );
 			v= RVec();
 			halt if( x_ref_unsafe != 1 );
+		}
+	}
+	{ // Fill constructor.
+		var I32Vec mut v( size_type(50), 22 );
+
+		halt if( v.size() != size_type(50) );
+
+		var size_type mut i(0);
+		while( i < v.size() )
+		{
+			halt if( v[i] != 22 );
+			++i;
+		}
+	}
+	{ // Constructor with size for default-constructible elements.
+		var CVec mut v( size_type(100) );
+
+		halt if( v.size() != size_type(100) );
+
+		var size_type mut i(0);
+		while( i < v.size() )
+		{
+			halt if( v[i].x != 666 );
+			++i;
 		}
 	}
 	return 0;

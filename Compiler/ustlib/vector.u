@@ -10,10 +10,12 @@ class vector
 public:
 	type this_type= vector</T/>;
 
+	// Default constructor.
 	fn constructor()
 	( ptr_(), size_(0), capacity_(0) )
 	{}
 
+	// Copy constructor.
 	fn enable_if( typeinfo</T/>.is_copy_constructible ) constructor( this_type& other )
 	( ptr_(), size_(other.size_), capacity_(0) )
 	{
@@ -34,6 +36,49 @@ public:
 		}
 	}
 
+	// Fill constructor.
+	fn enable_if( typeinfo</T/>.is_copy_constructible ) constructor( size_type count, T& value )
+	( ptr_(), size_(count), capacity_(0) )
+	{
+		if( size_ == size_type(0) ) { return; }
+
+		unsafe
+		{
+			capacity_= get_first_allocation_size();
+			if( capacity_ < size_ ) { capacity_= size_; }
+			ptr_= ptr_type( cast_ref_unsafe</T/>( memory_allocate( capacity_ * c_element_size_ ) ) );
+
+			var size_type mut i(0);
+			while( i < size_ )
+			{
+				move_unsafe( ptr_[i], value ); // Copy-constructor called here.
+				++i;
+			}
+		}
+	}
+
+	// Constructor with size only (for default-constructible elements).
+	fn enable_if( typeinfo</T/>.is_default_constructible ) constructor( size_type count )
+	( ptr_(), size_(count), capacity_(0) )
+	{
+		if( size_ == size_type(0) ) { return; }
+
+		unsafe
+		{
+			capacity_= get_first_allocation_size();
+			if( capacity_ < size_ ) { capacity_= size_; }
+			ptr_= ptr_type( cast_ref_unsafe</T/>( memory_allocate( capacity_ * c_element_size_ ) ) );
+
+			var size_type mut i(0);
+			while( i < size_ )
+			{
+				ptr_[i].constructor(); // Call default constructor here.
+				++i;
+			}
+		}
+	}
+
+	// Copy assignment operator.
 	op enable_if( typeinfo</T/>.is_copy_constructible & typeinfo</T/>.is_copy_assignable ) =( mut this, this_type& other )
 	{
 		unsafe
