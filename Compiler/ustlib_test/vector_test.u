@@ -323,5 +323,53 @@ fn U_Main() : i32
 			++i;
 		}
 	}
+	{ // Can push back multiple values and drop multiple values.
+		var I32Vec mut v;
+
+		v.push_back( size_type(3), 0 );
+		v.push_back( size_type(2), 1 );
+
+		halt if( v.size() != size_type(5) );
+		halt if( v[0u] != 0 );
+		halt if( v[1u] != 0 );
+		halt if( v[2u] != 0 );
+		halt if( v[3u] != 1 );
+		halt if( v[4u] != 1 );
+
+		v.drop_back( size_type(0) );
+		halt if( v.size() != size_type(5) );
+
+		v.drop_back( size_type(4) );
+		halt if( v.size() != size_type(1) );
+
+		v.drop_back( size_type(1) );
+		halt if( v.size() != size_type(0) );
+	}
+	{ // Can resize with new value.
+		var I32Vec mut v;
+		v.resize( size_type(4), 333 );
+
+		halt if( v.size() != size_type(4) );
+		halt if( v[0u] != 333 );
+		halt if( v[1u] != 333 );
+		halt if( v[2u] != 333 );
+		halt if( v[3u] != 333 );
+
+		v.resize( size_type(0), 0 );
+		halt if( !v.empty() );
+	}
+	{ // Can resize with default value.
+		var CVec mut v;
+		v.resize( size_type( 365 ) );
+
+		halt if( v.size() != size_type(365) );
+
+		var size_type mut i(0);
+		while( i < v.size() )
+		{
+			halt if( v[i].x != 666 );
+			++i;
+		}
+	}
 	return 0;
 }
