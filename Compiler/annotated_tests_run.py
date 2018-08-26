@@ -5,15 +5,17 @@ import sys
 
 
 class CodeBuilderError:
-	file_name= ""
-	error_code= ""
-	line_number= 0
+	def __init__(self):
+		self.file_name= ""
+		self.error_code= ""
+		self.line_number= 0
 
 
 class ParseResult:
-	test_kind= "success" # may be "fail", and "success"
-	errors_list= []
-	parse_ok= False
+	def __init__(self):
+		self.test_kind= "success" # may be "fail", and "success"
+		self.errors_list= []
+		self.parse_ok= False
 
 
 g_compiler_executable= "Compiler"
@@ -216,8 +218,10 @@ def RunTestsInDirectory( dir_path ):
 
 		full_name= os.path.join( dir_path, path )
 
-		if os.path.isfile( full_name ) and full_name.endswith( ".u" ):
-			result= result + RunTestForFile( full_name )
+		if os.path.isdir(full_name):
+			result+= RunTestsInDirectory( full_name )
+		elif os.path.isfile( full_name ) and full_name.endswith( ".u" ):
+			result+= RunTestForFile( full_name )
 
 	return result
 
