@@ -1,0 +1,11 @@
+{
+    \"Name\" : \"USprache\",
+    \"Version\" : \"0.0.1\",
+    \"CompatVersion\" : \"0.0.1\",
+    \"Vendor\" : \"Panzerschrek\",
+    \"Copyright\" : \"(C) Panzerschrek\",
+    \"License\" : \"Put your license information here\",
+    \"Description\" : \"Put a short description of your plugin here\",
+    \"Url\" : \"\",
+    $$dependencyList
+}
