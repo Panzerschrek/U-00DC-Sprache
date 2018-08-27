@@ -1,15 +1,17 @@
 import sprache_compiler_tests_py_lib as tests_lib
 
 class FilePos:
-	file_index= 0
-	line= 0
-	pos_in_line= 0
+	def __init__(self):
+		self.file_index= 0
+		self.line= 0
+		self.pos_in_line= 0
 
 
 class CodeBuilderError:
-	error_code= ""
-	text= ""
-	file_pos= FilePos()
+	def __init__(self):
+		self.error_code= ""
+		self.text= ""
+		self.file_pos= FilePos()
 
 
 def ConvertErrors( errors_list ):
