@@ -1,0 +1,25 @@
+//##success_test
+import "../ustlib/vector.u"
+
+fn U_Main() : i32
+{
+	// "min" and "max" for immutable arguments.
+	halt if( ust::max( 85, 96 ) != 96 );
+	halt if( ust::max( -0.5f, -47.1f ) != -0.5f );
+	halt if( ust::min( 85u, 96u ) != 85u );
+	halt if( ust::min( -0.5, -47.1 ) != -47.1 );
+
+	// "min" and "max" for mutable arguments
+	{
+		var i64 mut a(968), mut b(654);
+		ust::max( a, b )= i64(0);
+		halt if( a != i64(0) );
+	}
+	{
+		var i64 mut a(968), mut b(654);
+		ust::min( a, b )= i64(0);
+		halt if( b != i64(0) );
+	}
+
+	return 0;
+}

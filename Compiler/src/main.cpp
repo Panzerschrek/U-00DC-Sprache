@@ -2,6 +2,7 @@
 #include <cstring>
 #include <iostream>
 
+#include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
 
 #include "push_disable_llvm_warnings.hpp"
@@ -26,6 +27,7 @@
 #include "code_builder.hpp"
 #include "source_graph_loader.hpp"
 
+namespace fs= boost::filesystem;
 
 static bool ReadFileRaw( const char* const name, std::string& out_file_content )
 {
@@ -73,31 +75,63 @@ static bool ReadFile( const char* const name, U::ProgramString& out_file_content
 namespace U
 {
 
-namespace fs= boost::filesystem;
-
 class VfsOverSystemFS final : public IVfs
 {
+	struct PrivateTag{};
+
+public:
+	static std::shared_ptr<VfsOverSystemFS> Create( const std::vector<const char*> include_dirs )
+	{
+		std::vector<fs::path> result_include_dirs;
+
+		bool all_ok= true;
+		for( const char* const include_dir : include_dirs )
+		{
+			try
+			{
+				fs::path dir_path{ std::string(include_dir) };
+				dir_path.make_preferred();
+				if( !fs::exists( dir_path ) )
+				{
+					std::cout << "include dir \"" << include_dir << "\" does not exists." << std::endl;
+					all_ok= false;
+					continue;
+				}
+
+				result_include_dirs.push_back( std::move( dir_path ) );
+			}
+			catch( const std::exception& e )
+			{
+				std::cout << e.what() << std::endl;
+				all_ok= false;
+			}
+		}
+
+		if( !all_ok )
+			return nullptr;
+
+		return std::make_shared<VfsOverSystemFS>( std::move(result_include_dirs), PrivateTag() );
+	}
+
+	VfsOverSystemFS( std::vector<fs::path> include_dirs, PrivateTag )
+		: include_dirs_(std::move(include_dirs))
+	{}
+
 public:
 	virtual boost::optional<LoadFileResult> LoadFileContent( const Path& file_path, const Path& full_parent_file_path ) override
 	{
 		try
 		{
-			const fs::path file_path_r( ToStdString(file_path) );
-			fs::path result_path;
-			if( full_parent_file_path.empty() || file_path_r.is_absolute() )
-				result_path= file_path_r;
-			else
-			{
-				const fs::path base_dir= fs::path( ToStdString(full_parent_file_path) ).parent_path();
-				result_path= base_dir / file_path_r;
-			}
+			fs::path result_path= GetFullFilePathInternal( file_path, full_parent_file_path );
+			if( result_path.empty() )
+				return boost::none;
 
 			LoadFileResult result;
 			// TODO - maybe use here native format of path string?
 			if( !ReadFile( result_path.string<std::string>().c_str(), result.file_content ) )
 				return boost::none;
 
-			result.full_file_path= ToProgramString( result_path.make_preferred().string<std::string>().c_str() );
+			result.full_file_path= ToProgramString( result_path.string<std::string>().c_str() );
 			return std::move(result);
 		}
 		catch( const std::exception& e )
@@ -110,26 +144,50 @@ public:
 
 	virtual Path GetFullFilePath( const Path& file_path, const Path& full_parent_file_path ) override
 	{
+		return ToProgramString( GetFullFilePathInternal( file_path, full_parent_file_path ).string<std::string>().c_str() );
+	}
+
+private:
+	fs::path GetFullFilePathInternal( const Path& file_path, const Path& full_parent_file_path )
+	{
 		try
 		{
 			const fs::path file_path_r( ToStdString(file_path) );
 			fs::path result_path;
-			if( full_parent_file_path.empty() || file_path_r.is_absolute() )
+
+			if( full_parent_file_path.empty() )
 				result_path= file_path_r;
+			else if( !file_path.empty() && file_path[0] == '/' )
+			{
+				// If file path is absolute, like "/some_lib/some_file.u" search file in include dirs.
+				// Return real file system path to first existent file.
+				for( const fs::path& include_dir : include_dirs_ )
+				{
+					fs::path full_file_path= include_dir / file_path_r;
+					if( fs::exists( full_file_path ) )
+					{
+						result_path= std::move(full_file_path);
+						break;
+					}
+				}
+			}
 			else
 			{
 				const fs::path base_dir= fs::path( ToStdString(full_parent_file_path) ).parent_path();
 				result_path= base_dir / file_path_r;
 			}
-			return ToProgramString( result_path.make_preferred().string<std::string>().c_str() );
+			return result_path.make_preferred();
 		}
 		catch( const std::exception& e )
 		{
 			std::cout << e.what() << std::endl;
 		}
 
-		return Path();
+		return fs::path();
 	}
+
+private:
+	const std::vector<fs::path> include_dirs_;
 };
 
 } // namespace U
@@ -148,26 +206,45 @@ Usage:
 		return 1;
 	}
 
+	// Options
 	std::vector<const char*> input_files;
+	std::vector<const char*> include_directories;
 	const char* output_file= nullptr;
+	fs::path compiler_data_dir= fs::system_complete( argv[0] ).parent_path(); // By default search compiler data near it`s executable.
 	bool print_llvm_asm= false;
 	bool produce_object_file= false;
+	bool tests_output= false;
 
+	// Parse command line
+	#define EXPECT_ARG_VALUE if( i + 1 >= argc ) { std::cout << "Expeted name after \"" << argv[i] << "\"" << std::endl; return 1; }
 	for( int i = 1; i < argc; )
 	{
 		if( std::strcmp( argv[i], "-o" ) == 0 )
 		{
-			if( i + 1 >= argc )
-			{
-				std::cout << "Expeted name after\"-o\"" << std::endl;
-				return 1;
-			}
+			EXPECT_ARG_VALUE
 			output_file= argv[ i + 1 ];
+			i+= 2;
+		}
+		else if( std::strcmp( argv[i], "--include-dir" ) == 0 )
+		{
+			EXPECT_ARG_VALUE
+			include_directories.push_back( argv[ i + 1 ] );
+			i+= 2;
+		}
+		else if( std::strcmp( argv[i], "--compiler-data-dir" ) == 0 )
+		{
+			EXPECT_ARG_VALUE
+			compiler_data_dir= fs::path( argv[ i + 1 ] );
 			i+= 2;
 		}
 		else if( std::strcmp( argv[i], "--print-llvm-asm" ) == 0 )
 		{
 			print_llvm_asm= true;
+			++i;
+		}
+		else if( std::strcmp( argv[i], "--tests-output" ) == 0 )
+		{
+			tests_output= true;
 			++i;
 		}
 		else if( std::strcmp( argv[i], "--produce-object-file" ) == 0 )
@@ -186,6 +263,7 @@ Usage:
 			++i;
 		}
 	}
+	#undef EXPECT_ARG_VALUE
 
 	if( input_files.empty() )
 	{
@@ -231,9 +309,14 @@ Usage:
 			return 1;
 		}
 	}
+	const llvm::DataLayout data_layout= target_machine->createDataLayout();
+
+	const auto vfs= U::VfsOverSystemFS::Create( include_directories );
+	if( vfs == nullptr )
+		return 1u;
 
 	// Compile multiple input files and link them together.
-	U::SourceGraphLoader source_graph_loader( std::make_shared<U::VfsOverSystemFS>() );
+	U::SourceGraphLoader source_graph_loader( vfs );
 	std::unique_ptr<llvm::Module> result_module;
 	bool have_some_errors= false;
 	for( const char* const input_file : input_files )
@@ -247,11 +330,21 @@ Usage:
 		}
 
 		U::CodeBuilder::BuildResult build_result=
-			U::CodeBuilder( target_triple_str, target_machine->createDataLayout() ).BuildProgram( *source_graph );
+			U::CodeBuilder( target_triple_str, data_layout ).BuildProgram( *source_graph );
 
-		for( const U::CodeBuilderError& error : build_result.errors )
-			std::cout << U::ToStdString( source_graph->nodes_storage[error.file_pos.file_index ].file_path )
-				<< ":" << error.file_pos.line << ":" << error.file_pos.pos_in_line << " " << U::ToStdString( error.text ) << "\n";
+		if( tests_output )
+		{
+			// For tests we print errors as "file.u 88 NameNotFound"
+			for( const U::CodeBuilderError& error : build_result.errors )
+				std::cout << U::ToStdString( source_graph->nodes_storage[error.file_pos.file_index ].file_path )
+					<< " " << error.file_pos.line << " " << U::CodeBuilderErrorCodeToString( error.code ) << "\n";
+		}
+		else
+		{
+			for( const U::CodeBuilderError& error : build_result.errors )
+				std::cout << U::ToStdString( source_graph->nodes_storage[error.file_pos.file_index ].file_path )
+					<< ":" << error.file_pos.line << ":" << error.file_pos.pos_in_line << " " << U::ToStdString( error.text ) << "\n";
+		}
 
 		if( !build_result.errors.empty() )
 		{
@@ -276,11 +369,19 @@ Usage:
 	if( have_some_errors )
 		return 1;
 
-	{ // Link stdlib with result module.
+	// Prepare stdlib modules set.
+	std::vector<std::string> asm_funcs_modules;
+	asm_funcs_modules.push_back( "asm_funcs.bc" );
+	asm_funcs_modules.push_back( data_layout.getPointerSizeInBits() == 32u ? "asm_funcs_32.bc" : "asm_funcs_64.bc" );
+
+	// Link stdlib with result module.
+	for( const std::string& asm_funcs_module : asm_funcs_modules )
+	{
 		std::string file_content;
-		if( !ReadFileRaw( "asm_funcs.bc", file_content ) )
+		const fs::path module_full_path= compiler_data_dir / fs::path( asm_funcs_module );
+		if( !ReadFileRaw( module_full_path.string().c_str(), file_content ) )
 		{
-			std::cout << "Internal compiler error - stdlib read error." << std::endl;
+			std::cout << "Internal compiler error - stdlib module read error: " << asm_funcs_module << std::endl;
 			return 1;
 		}
 
@@ -291,18 +392,18 @@ Usage:
 
 		if( !std_lib_module )
 		{
-			std::cout << "Internal compiler error - stdlib parse error." << std::endl;
+			std::cout << "Internal compiler error - stdlib module parse error: " << asm_funcs_module << std::endl;
 			return 1;
 		}
 
-		std_lib_module.get()->setDataLayout( result_module->getDataLayout() );
-		std_lib_module.get()->setTargetTriple( result_module->getTargetTriple() );
+		std_lib_module.get()->setDataLayout( data_layout );
+		std_lib_module.get()->setTargetTriple( target_triple_str );
 
 		std::string err_stream_str;
 		llvm::raw_string_ostream err_stream( err_stream_str );
 		if( llvm::verifyModule( *std_lib_module.get(), &err_stream ) )
 		{
-			std::cout << "Internal compiler error - stdlib verify error:\n" << err_stream.str() << std::endl;
+			std::cout << "Internal compiler error - stdlib module verify error: " << asm_funcs_module << ":\n" << err_stream.str() << std::endl;
 			return 1;
 		}
 

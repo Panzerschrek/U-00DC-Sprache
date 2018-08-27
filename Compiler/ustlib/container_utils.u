@@ -1,0 +1,49 @@
+import "memory.u"
+
+namespace ust
+{
+
+// Place this struct inside each containter.
+template</ type T /> struct ContainerTag{ [ T, 0 ] dummy; }
+
+template</ type T />
+fn call_destructor( T&mut t ) unsafe
+{
+	static_if( typeinfo</T/>.is_class )
+	{
+		unsafe{ t.destructor(); }
+	}
+	else if( typeinfo</T/>.is_array )
+	{
+		var size_type mut i(0);
+		while( i < typeinfo</T/>.element_count )
+		{
+			unsafe{ ust::call_destructor( t[i] ); }
+			++i;
+		}
+	}
+}
+
+fn move_into_nowhere_impl(){}
+
+template</ type T />
+fn move_into_nowhere( T mut t ) unsafe
+{
+	// Hack! Use function pointer conversions to call () function as (T) function.
+	// It works, because compiler uses "c calling convention".
+	var ( fn( T t ) ) mut ptr= zero_init;
+	unsafe{  cast_ref_unsafe</ fn() />(ptr)= (fn())(move_into_nowhere_impl);  }
+	ptr( move(t) );
+}
+
+template</ type T />
+fn move_unsafe( T& mut uninitialized_dst, T mut src ) unsafe
+{
+	unsafe
+	{
+		memory_copy( uninitialized_dst, src, typeinfo</T/>.size_of );
+		move_into_nowhere( move(src) );
+	}
+}
+
+} // namespace ust

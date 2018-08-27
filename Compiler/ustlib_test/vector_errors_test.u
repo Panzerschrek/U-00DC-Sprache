@@ -1,0 +1,73 @@
+//##fail_test
+import "../ustlib/vector.u"
+
+struct RI
+{
+	i32&imut r;
+	fn constructor( this'a', i32&'b imut in_r ) ' a <- imut b ' ( r= in_r ) {}
+}
+
+struct RM
+{
+	i32&mut r;
+	fn constructor( this'a', i32&'b mut in_r ) ' a <- mut b ' ( r= in_r ) {}
+}
+
+struct S // Non-default-constructible.
+{
+	i32 x;
+}
+
+class C {} // Class is not copy-constructible by-default.
+
+fn U_Main() : i32
+{
+	{ // "push_back" does reference-pollution.
+		var i32 mut x= 0;
+		var ust::vector</RM/> mut r;
+
+		r.push_back( RM(x) );
+		var i32 y= x; //##expect_error AccessingVariableThatHaveMutableReference
+	}
+	{ // "push_back" does reference-pollution.
+		var i32 mut x= 0;
+		var ust::vector</RI/> mut r;
+
+		r.push_back( RI(x) );
+		++x; //##expect_error ReferenceProtectionError
+	}
+	{ // "front" returns correct inner reference.
+		var i32 mut x= 0;
+		var ust::vector</RM/> mut r;
+
+		r.push_back( RM(x) );
+		auto &mut second_ref= r.front().r; //##expect_error ReferenceProtectionError
+	}
+	{
+		// Can not fill vector with default values, because element type is not default-constructible.
+		var ust::vector</S/> vec( size_type(64) ); //##expect_error CouldNotSelectOverloadedFunction
+	}
+	{
+		// Can not fill vector with values, because element type is not copy-constructible.
+		var C c;
+		var ust::vector</S/> vec( size_type(4), c ); //##expect_error CouldNotSelectOverloadedFunction
+	}
+	{
+		// Can not fill vector with values, because element type is not copy-constructible.
+		var C c;
+		var ust::vector</S/> vec;
+		vec.resize( size_type(4), c ); //##expect_error CouldNotSelectOverloadedFunction
+	}
+	{
+		// Can not fill vector with values, because element type is not default-constructible.
+		var ust::vector</i32/> vec;
+		vec.resize( size_type(4) ); //##expect_error CouldNotSelectOverloadedFunction
+	}
+	{
+		// Can not push back multiple values, because element type is not copyable.
+		var C c;
+		var ust::vector</C/> vec;
+		vec.push_back( size_type(10), c ); //##expect_error CouldNotSelectOverloadedFunction
+	}
+	return 0;
+}

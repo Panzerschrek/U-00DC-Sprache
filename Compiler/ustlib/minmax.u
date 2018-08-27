@@ -1,0 +1,35 @@
+namespace ust
+{
+
+// SPRACHE_TODO - make conditional constexpr.
+// TODO - maybe add "enable_if" for discarding of function for types without "op<" ?
+
+template</ type T />
+fn min( T &imut a, T &imut b ) : T &imut
+{
+	if( a < b ) { return a; }
+	return b;
+}
+
+template</ type T />
+fn min( T & mut a, T & mut b ) : T & mut
+{
+	if( a < b ) { return a; }
+	return b;
+}
+
+template</ type T />
+fn max( T &imut a, T &imut b ) : T &imut
+{
+	if( a < b ) { return b; }
+	return a;
+}
+
+template</ type T />
+fn max( T & mut a, T & mut b ) : T & mut
+{
+	if( a < b ) { return b; }
+	return a;
+}
+
+} // namespace ust

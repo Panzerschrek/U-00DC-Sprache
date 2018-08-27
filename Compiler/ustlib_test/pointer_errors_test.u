@@ -1,0 +1,19 @@
+//##fail_test
+import "../ustlib/pointer.u"
+
+
+fn U_Main() : i32
+{
+	auto mut x= 98547;
+	var ust::raw_ptr_mut</i32/> ptr( x );
+
+	// Dereference is unsafe.
+	ptr.get_ref(); //##expect_error UnsafeFunctionCallOutsideUnsafeBlock
+	// Indexing is unsafe.
+	ptr[ size_type(0) ]; //##expect_error UnsafeFunctionCallOutsideUnsafeBlock
+	// Dereference as array is unsafe.
+	ptr.as_array</ size_type(1) />(); //##expect_error UnsafeFunctionCallOutsideUnsafeBlock
+
+
+	return 0;
+}

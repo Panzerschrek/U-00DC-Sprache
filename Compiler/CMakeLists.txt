@@ -137,12 +137,24 @@ if( BUILD_COMPILER )
 	set( COMPILER_SOURCES
 		src/main.cpp )
 
-	add_custom_command(
-		OUTPUT asm_funcs.bc
-		DEPENDS ${CMAKE_SOURCE_DIR}/ustlib/src/asm_funcs.ll
-		COMMAND ${LLVM_UTILS_DIR}/llvm-as ${CMAKE_SOURCE_DIR}/ustlib/src/asm_funcs.ll -o asm_funcs.bc )
+	function( CompileLLFile ll_file )
+		get_filename_component( source_name ${ll_file} NAME_WE )
+		set( bc_name ${source_name}.bc )
+		add_custom_command(
+			OUTPUT ${bc_name}
+			DEPENDS ${CMAKE_SOURCE_DIR}/ustlib/src/${ll_file}
+			COMMAND ${LLVM_UTILS_DIR}/llvm-as ${CMAKE_SOURCE_DIR}/ustlib/src/${ll_file} -o ${bc_name} )
+		set( BC_FILE ${bc_name} PARENT_SCOPE )
+	endfunction()
 
-	add_executable( Compiler ${COMPILER_SOURCES} asm_funcs.bc )
+	CompileLLFile( asm_funcs.ll )
+	list( APPEND bc_files ${BC_FILE} )
+	CompileLLFile( asm_funcs_32.ll )
+	list( APPEND bc_files ${BC_FILE} )
+	CompileLLFile( asm_funcs_64.ll )
+	list( APPEND bc_files ${BC_FILE} )
+
+	add_executable( Compiler ${COMPILER_SOURCES} ${bc_files} )
 	target_link_libraries( Compiler CompilerLib ${LLVM_LIBS_FOR_COMPILER} )
 	target_link_libraries( Compiler ${Boost_LIBRARIES} )
 endif( BUILD_COMPILER )
@@ -303,4 +315,18 @@ if( BUILD_LINKAGE_TESTS )
 
 	add_executable( ImportTest import_test/entry.c ${IMPORT_TEST_OBJECTS} )
 	add_dependencies( ImportTest Compiler )
+endif( BUILD_LINKAGE_TESTS )
+
+#
+# Include dirs test
+#
+if( BUILD_LINKAGE_TESTS )
+
+	add_custom_command(
+		OUTPUT include_dirs_test.o
+		DEPENDS ${u_source_file} Compiler
+		COMMAND Compiler --produce-object-file ${CMAKE_SOURCE_DIR}/include_dirs_test/root.u -o include_dirs_test.o --include-dir ${CMAKE_SOURCE_DIR}/include_dirs_test/a --include-dir ${CMAKE_SOURCE_DIR}/include_dirs_test/b --include-dir ${CMAKE_SOURCE_DIR}/include_dirs_test/c )
+
+	add_executable( IncludeDirsTest include_dirs_test/entry.c include_dirs_test.o )
+	add_dependencies( IncludeDirsTest Compiler )
 endif( BUILD_LINKAGE_TESTS )

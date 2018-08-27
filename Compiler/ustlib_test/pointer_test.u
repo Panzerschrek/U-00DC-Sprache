@@ -1,0 +1,105 @@
+//##success_test
+import "../ustlib/pointer.u"
+
+struct S
+{
+	i32 x;
+	i32 y;
+	fn constructor() ( x= 0, y= 0 ) {}
+}
+
+fn U_Main() : i32
+{
+	unsafe // Pointer is default constructible. Default value is null.
+	{
+
+		var ust::raw_ptr_mut</i32/> ptr;
+		halt if( !ptr.is_null() );
+		halt if( ust::ref_to_int( ptr.get_ref() ) != size_type(0) );
+	}
+	unsafe // Pointer is constructible from reference.
+	{
+		auto mut x= 98547;
+		var ust::raw_ptr_mut</i32/> ptr( x );
+		halt if( ust::ref_to_int( ptr.get_ref() ) != ust::ref_to_int(x) );
+	}
+	unsafe // Pointer is constructible from reference to array.
+	{
+		var [ i32, 3 ] mut arr[ 9845, 84, -87 ];
+		var ust::raw_ptr_mut</i32/> ptr( arr );
+		halt if( ust::ref_to_int( ptr.get_ref() ) != ust::ref_to_int(arr) );
+	}
+	unsafe // Pointer can be converted to array.
+	{
+		auto mut x= 98547;
+		var ust::raw_ptr_mut</i32/> ptr( x );
+		halt if( ptr.as_array</size_type(1)/>()[0u] != 98547 );
+	}
+	unsafe // Pointer can be converted to array.
+	{
+		var [ i32, 3 ] mut arr[ 9845, 84, -87 ];
+		var ust::raw_ptr_mut</i32/> ptr( arr );
+		halt if( ptr.as_array</size_type(3)/>()[0u] != 9845 );
+		halt if( ptr.as_array</size_type(3)/>()[1u] !=   84 );
+		halt if( ptr.as_array</size_type(3)/>()[2u] !=  -87 );
+	}
+	unsafe // pointer can be indexed.
+	{
+		var [ i32, 3 ] mut arr[ 51, 65822, 1414174 ];
+		var ust::raw_ptr_mut</i32/> ptr( arr );
+		halt if( ptr[size_type(0)] !=      51 );
+		halt if( ptr[size_type(1)] !=   65822 );
+		halt if( ptr[size_type(2)] != 1414174 );
+	}
+	// Pointers are comparable. Must be SAFE!
+	{
+		var [ S, 4 ] mut s_arr;
+		var ust::raw_ptr_mut</S/> ptr0(s_arr[0u]), ptr1(s_arr[1u]), ptr2(s_arr[2u]), ptr22(s_arr[2u]);
+		halt if( ptr0 == ptr1 );
+		halt if( ptr0 != ptr0 );
+		halt if( ptr22 != ptr22 );
+		halt if( ptr0 >  ptr1 );
+		halt if( ptr0 >= ptr1 );
+		halt if( ptr2 <  ptr1 );
+		halt if( ptr2 <= ptr1 );
+		halt if( !( ptr0 <= ptr1 ) );
+		halt if( !( ptr0 <  ptr1 ) );
+		halt if( !( ptr2 >= ptr1 ) );
+		halt if( !( ptr0 <  ptr1 ) );
+		halt if( !( ptr0 <= ptr0 ) );
+		halt if( !( ptr0 >= ptr0 ) );
+	}
+	// Immutable arithmetic operations between pointers. Must be SAFE!
+	{
+		var [ S, 4 ] mut s_arr;
+		var ust::raw_ptr_mut</S/> ptr0(s_arr[0u]), ptr1(s_arr[1u]), ptr2(s_arr[2u]);
+
+		halt if( !( ptr0 + size_type(1) == ptr1 ) );
+		halt if( !( size_type(1) + ptr0 == ptr1 ) );
+		halt if( !( ptr0 + size_type(2) == ptr2 ) );
+		halt if( !( size_type(2) + ptr0 == ptr2 ) );
+		halt if( !( ptr1 - ptr0 == ust::ptr_diff_type(+1) ) );
+		halt if( !( ptr2 - ptr0 == ust::ptr_diff_type(+2) ) );
+		halt if( !( ptr0 - ptr1 == ust::ptr_diff_type(-1) ) );
+		halt if( !( ptr0 - ptr2 == ust::ptr_diff_type(-2) ) );
+	}
+	// Mutable arithmetic operations between pointers. Must be SAFE!
+	{
+		var [ S, 4 ] mut s_arr;
+		var ust::raw_ptr_mut</S/> ptr0(s_arr[0u]), ptr1(s_arr[1u]), ptr2(s_arr[2u]);
+		var ust::raw_ptr_mut</S/> mut ptr= ptr0;
+
+		halt if( !( ptr == ptr0 ) );
+
+		++ptr;
+		halt if( !( ptr == ptr1 ) );
+
+		ptr+= size_type(1);
+		halt if( !( ptr == ptr2 ) );
+
+		ptr-= size_type(2);
+		halt if( !( ptr == ptr0 ) );
+	}
+
+	return 0;
+}

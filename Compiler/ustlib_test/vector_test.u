@@ -1,0 +1,375 @@
+//##success_test
+import "../ustlib/vector.u"
+
+struct A {} // Default-constructible, empty
+
+struct B // Non-default-constructible, non-empty
+{
+	i32 x;
+}
+
+struct C // Default-constructible, non-empty
+{
+	i32 x;
+	fn constructor() ( x= 666 ) {}
+}
+
+struct R // Have destructor with side-effects.
+{
+	i32&mut r;
+	fn constructor( this'a', i32&'b mut in_r ) ' a <- mut b ' ( r= in_r ) {}
+	fn destructor()
+	{
+		++r;
+	}
+}
+
+class NC // Non-copyable by-default.
+{
+}
+
+type I32Vec= ust::vector</i32/>;
+type AVec= ust::vector</A/>;
+type BVec= ust::vector</B/>;
+type CVec= ust::vector</C/>;
+type RVec= ust::vector</R/>;
+type NCVec= ust::vector</NC/>;
+
+template</ type T /> fn IsMutableReference( T & mut r ) : bool { return true ; }
+template</ type T /> fn IsMutableReference( T &imut r ) : bool { return false; }
+
+fn U_Main() : i32
+{
+	{ // vector is default construtible. Default state is empty.
+		var I32Vec i;
+		var AVec a;
+		var BVec b;
+		var CVec c;
+
+		halt if( !i.empty() );
+		halt if(  i.size() != size_type(0) );
+		halt if( !a.empty() );
+		halt if(  a.size() != size_type(0) );
+		halt if( !b.empty() );
+		halt if(  b.size() != size_type(0) );
+		halt if( !c.empty() );
+		halt if(  c.size() != size_type(0) );
+	}
+	{ // "push_back"/"drop_back" changes size.
+		var I32Vec mut i;
+
+		i.push_back(5);  halt if( i.size() != size_type(1) );
+		i.push_back(0);  halt if( i.size() != size_type(2) );
+		i.push_back(2);  halt if( i.size() != size_type(3) );
+		i.drop_back();   halt if( i.size() != size_type(2) );
+		i.push_back(7);  halt if( i.size() != size_type(3) );
+		i.push_back(8);  halt if( i.size() != size_type(4) );
+		i.drop_back();   halt if( i.size() != size_type(3) );
+		i.drop_back();   halt if( i.size() != size_type(2) );
+		i.drop_back();   halt if( i.size() != size_type(1) );
+		i.drop_back();   halt if( i.size() != size_type(0) );
+	}
+	{ // "drop_back" calls destructor.
+		var i32 mut x= 0;
+		var RVec mut v;
+
+		unsafe // Use unsafe, because mutable reference to "x" after "push_back" linked with "v" and we can not access "x".
+		{
+			var i32& x_ref_unsafe= cast_ref_unsafe</ i32 />( ust::int_to_ref( ust::ref_to_int( x ) ) );
+			v.push_back( R(x) );
+			v.drop_back();  halt if( x_ref_unsafe != 1 );
+		}
+	}
+	{ // Destructor calls destructors of elements.
+		var i32 mut x= 0;
+		{
+			var RVec mut v;
+			v.push_back( R(x) );
+		} // call R::destructor here
+		halt if( x != 1 );
+	}
+	{ // Destructor calls destructors of all elements.
+		var i32 mut a= 0, mut b= 0, mut c= 0;
+		{
+			var RVec mut v;
+			v.push_back( R(a) );
+			v.push_back( R(b) );
+			v.push_back( R(c) );
+		} // call R::destructor here for all elements.
+		halt if( a != 1 );
+		halt if( b != 1 );
+		halt if( c != 1 );
+	}
+	{ // "clear" calls destructor.
+		var i32 mut x= 0, mut y= 0;
+		var RVec mut v;
+
+		unsafe // Use unsafe, because mutable reference to "x" after "push_back" linked with "v" and we can not access "x".
+		{
+			var i32& x_ref_unsafe= cast_ref_unsafe</ i32 />( ust::int_to_ref( ust::ref_to_int( x ) ) );
+			var i32& y_ref_unsafe= cast_ref_unsafe</ i32 />( ust::int_to_ref( ust::ref_to_int( y ) ) );
+			v.push_back( R(x) );
+			v.push_back( R(y) );
+			v.clear();
+			halt if( x_ref_unsafe != 1 );
+			halt if( y_ref_unsafe != 1 );
+		}
+	}
+	{ // "pop_back" moves value.
+		var i32 mut x= 0;
+
+		unsafe // Use unsafe, because mutable reference to "x" after "push_back" linked with "v" and we can not access "x".
+		{
+			var i32& x_ref_unsafe= cast_ref_unsafe</ i32 />( ust::int_to_ref( ust::ref_to_int( x ) ) );
+
+			var RVec mut v;
+			v.push_back( R(x) );
+
+			auto r= v.pop_back();
+			halt if( x_ref_unsafe != 0 ); // Move last value out of vector, destructor not called.
+			v.clear();
+			halt if( x_ref_unsafe != 0 );  // Destructor not called even after "clear".
+		}
+		halt if( x != 1 ); // Destructor called only for "r" local variable.
+	}
+	{ // "swap" does swap.
+		var I32Vec mut i;
+
+		i.push_back(0);
+		i.push_back(1);
+		i.push_back(2);
+		i.push_back(3);
+		i.push_back(4);
+		i.push_back(5);
+		i.push_back(6);
+		i.push_back(7);
+
+		i.swap( 1u, 7u );
+		halt if( i[1u] != 7 );
+		halt if( i[7u] != 1 );
+
+		i.swap( 2u, 2u ); // Does nothing, if indeces are equal.
+	}
+	{ // "front" and "back"
+		var I32Vec mut i;
+
+		i.push_back(66);
+		halt if( i.front() != 66 );
+		halt if( i.back () != 66 );
+
+		i.push_back(11);
+		halt if( i.front() != 66 );
+		halt if( i.back () != 11 );
+
+		i.front()= 666; // If vector is mutable, "front" and "back" returns mutable reference.
+		i.back() = 999;
+		halt if( i.front() != 666 );
+		halt if( i.back () != 999 );
+
+		auto &r= i; // If vector is immutable, "front" and "back" returns immutable reference.
+		halt if( IsMutableReference( r.front() ) );
+		halt if( IsMutableReference( r.back () ) );
+	}
+	{ // Indexing.
+		var I32Vec mut i;
+
+		i.push_back(0);
+		i.push_back(1);
+		i.push_back(2);
+		i.push_back(3);
+		halt if( i[0u] != 0 );
+		halt if( i[1u] != 1 );
+		halt if( i[2u] != 2 );
+		halt if( i[3u] != 3 );
+
+		i[0u]= 666; // If vector is mutable, op[] returns mutable reference.
+
+		auto &r= i; // If vector is immutable, op[] returns immutable reference.
+		halt if( IsMutableReference( r[1u] ) );
+	}
+	{ // Indexing for u32 and u64 indexes.
+		var I32Vec mut i;
+
+		i.push_back(0);
+		i.push_back(1);
+		i.push_back(2);
+		halt if( i[ 0u   ] != 0 );
+		halt if( i[ 1u32 ] != 1 );
+		halt if( i[ 2u64 ] != 2 );
+	}
+
+	{ // Vectors copying.
+		static_assert( typeinfo</ I32Vec />.is_copy_constructible );
+		static_assert( typeinfo</ I32Vec />.is_copy_assignable );
+
+		static_assert( typeinfo</ AVec />.is_copy_constructible );
+		static_assert( typeinfo</ AVec />.is_copy_assignable );
+
+		static_assert( typeinfo</ BVec />.is_copy_constructible );
+		static_assert( typeinfo</ BVec />.is_copy_assignable );
+
+		static_assert( !typeinfo</ NCVec />.is_copy_constructible );
+		static_assert( !typeinfo</ NCVec />.is_copy_assignable );
+	}
+	{ // Vector is copy-constructible if element is copy-constructible.
+		var I32Vec mut i;
+
+		i.push_back(0);
+		i.push_back(1);
+		i.push_back(2);
+
+		var I32Vec i_copy(i);
+
+		halt if( i_copy.size() != size_type(3) );
+		halt if( i_copy[0u] != 0 );
+		halt if( i_copy[1u] != 1 );
+		halt if( i_copy[2u] != 2 );
+	}
+	{ // Copy-assign to empty vector.
+		var I32Vec mut i, mut j;
+
+		i.push_back(0);
+		i.push_back(1);
+		i.push_back(2);
+
+		j= i;
+		halt if( j[0u] != 0 );
+		halt if( j[1u] != 1 );
+		halt if( j[2u] != 2 );
+	}
+	{ // Copy-assign empty vector.
+		var I32Vec mut i, mut j;
+
+		i.push_back(0);
+		i.push_back(1);
+		i.push_back(2);
+
+		i= j;
+		halt if( !i.empty() );
+	}
+	{ // Copy-assign, element count increase.
+		var I32Vec mut i, mut j;
+
+		i.push_back(0);
+		i.push_back(1);
+		i.push_back(2);
+		j.push_back(10);
+		j.push_back(11);
+		j.push_back(12);
+		j.push_back(13);
+		j.push_back(14);
+
+		i= j;
+
+		halt if( j.size() != size_type(5) );
+		halt if( i[0u] != 10 );
+		halt if( i[1u] != 11 );
+		halt if( i[2u] != 12 );
+		halt if( i[3u] != 13 );
+		halt if( i[4u] != 14 );
+	}
+	{ // Copy-assign, element count decrease.
+		var I32Vec mut i, mut j;
+
+		i.push_back(0);
+		i.push_back(1);
+		i.push_back(2);
+		j.push_back(10);
+		j.push_back(11);
+		j.push_back(12);
+		j.push_back(13);
+		j.push_back(14);
+
+		j= i;
+
+		halt if( j.size() != size_type(3) );
+		halt if( j[0u] != 0 );
+		halt if( j[1u] != 1 );
+		halt if( j[2u] != 2 );
+	}
+	{ // Assignment of empty vector calls all destructors of destination vector.
+		var i32 mut x= 0;
+		var RVec mut v;
+
+		unsafe // Use unsafe, because mutable reference to "x" after "push_back" linked with "v" and we can not access "x".
+		{
+			var i32& x_ref_unsafe= cast_ref_unsafe</ i32 />( ust::int_to_ref( ust::ref_to_int( x ) ) );
+			v.push_back( R(x) );
+			v= RVec();
+			halt if( x_ref_unsafe != 1 );
+		}
+	}
+	{ // Fill constructor.
+		var I32Vec mut v( size_type(50), 22 );
+
+		halt if( v.size() != size_type(50) );
+
+		var size_type mut i(0);
+		while( i < v.size() )
+		{
+			halt if( v[i] != 22 );
+			++i;
+		}
+	}
+	{ // Constructor with size for default-constructible elements.
+		var CVec mut v( size_type(100) );
+
+		halt if( v.size() != size_type(100) );
+
+		var size_type mut i(0);
+		while( i < v.size() )
+		{
+			halt if( v[i].x != 666 );
+			++i;
+		}
+	}
+	{ // Can push back multiple values and drop multiple values.
+		var I32Vec mut v;
+
+		v.push_back( size_type(3), 0 );
+		v.push_back( size_type(2), 1 );
+
+		halt if( v.size() != size_type(5) );
+		halt if( v[0u] != 0 );
+		halt if( v[1u] != 0 );
+		halt if( v[2u] != 0 );
+		halt if( v[3u] != 1 );
+		halt if( v[4u] != 1 );
+
+		v.drop_back( size_type(0) );
+		halt if( v.size() != size_type(5) );
+
+		v.drop_back( size_type(4) );
+		halt if( v.size() != size_type(1) );
+
+		v.drop_back( size_type(1) );
+		halt if( v.size() != size_type(0) );
+	}
+	{ // Can resize with new value.
+		var I32Vec mut v;
+		v.resize( size_type(4), 333 );
+
+		halt if( v.size() != size_type(4) );
+		halt if( v[0u] != 333 );
+		halt if( v[1u] != 333 );
+		halt if( v[2u] != 333 );
+		halt if( v[3u] != 333 );
+
+		v.resize( size_type(0), 0 );
+		halt if( !v.empty() );
+	}
+	{ // Can resize with default value.
+		var CVec mut v;
+		v.resize( size_type( 365 ) );
+
+		halt if( v.size() != size_type(365) );
+
+		var size_type mut i(0);
+		while( i < v.size() )
+		{
+			halt if( v[i].x != 666 );
+			++i;
+		}
+	}
+	return 0;
+}
