@@ -177,7 +177,7 @@ def DoSuccessTest( file_path ):
 		os.remove( object_file )
 		return 1
 
-	if subprocess.call( [ executable_file ] ) != 0:
+	if subprocess.call( [ os.path.abspath( executable_file ) ] ) != 0:
 		print( "running failed" )
 		os.remove( object_file )
 		os.remove( executable_file )
