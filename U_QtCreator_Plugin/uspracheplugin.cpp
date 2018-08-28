@@ -8,13 +8,89 @@
 #include <coreplugin/actionmanager/actioncontainer.h>
 #include <coreplugin/coreconstants.h>
 
+#include <coreplugin/editormanager/editormanager.h>
+
+#include <plugins/texteditor/texteditor.h>
+#include <plugins/texteditor/textdocument.h>
+
 #include <QAction>
 #include <QMessageBox>
 #include <QMainWindow>
 #include <QMenu>
 
-namespace USprache {
-namespace Internal {
+namespace USprache
+{
+
+namespace Internal
+{
+
+const char g_editor_id[]= "sprache_editor";
+//const char g_mime_type[]= "text/u-spr";
+const char g_mime_type[]= "text/x-pascal"; // TODO - create own MIME-type
+
+class USpracheEditorWidget final : public TextEditor::TextEditorWidget
+{
+	//Q_OBJECT
+
+public:
+	USpracheEditorWidget()
+	{
+	}
+
+	virtual ~USpracheEditorWidget() override
+	{
+	}
+
+private:
+	void finalizeInitialization() override
+	{
+		// TODO - add here out cool U-Sprache widget.
+		auto toolbar_widget= new QLabel( QString("dummy stub") );
+
+		insertExtraToolBarWidget(TextEditorWidget::Left, toolbar_widget );
+	}
+};
+
+class USpracheEditorDocument final : public TextEditor::TextDocument
+{
+	//Q_OBJECT
+
+public:
+	USpracheEditorDocument()
+	{
+		setId(g_editor_id);
+
+		// setSyntaxHighlighter(new CppHighlighter);
+		// setIndenter(new CppTools::CppQtStyleIndenter);
+	}
+};
+
+class USpracheEditor final : public TextEditor::BaseTextEditor
+{
+	//Q_OBJECT
+
+public:
+	USpracheEditor()
+	{
+	}
+};
+
+class USpracheEditorFactory final : public TextEditor::TextEditorFactory
+{
+public:
+	USpracheEditorFactory()
+	{
+		setId(g_editor_id);
+		setDisplayName(u8"Ü sprache editor");
+		addMimeType(g_mime_type);
+
+		setDocumentCreator([]() { return new USpracheEditorDocument; });
+		setEditorWidgetCreator([]() { return new USpracheEditorWidget; });
+		setEditorCreator([]() { return new USpracheEditor; });
+	}
+
+private:
+};
 
 USprachePlugin::USprachePlugin()
 {
@@ -39,16 +115,7 @@ bool USprachePlugin::initialize(const QStringList &arguments, QString *errorStri
 	Q_UNUSED(arguments)
 	Q_UNUSED(errorString)
 
-	auto action = new QAction(tr("USprache Action"), this);
-	Core::Command *cmd = Core::ActionManager::registerAction(action, Constants::ACTION_ID,
-															 Core::Context(Core::Constants::C_GLOBAL));
-	cmd->setDefaultKeySequence(QKeySequence(tr("Ctrl+Alt+Meta+A")));
-	connect(action, &QAction::triggered, this, &USprachePlugin::triggerAction);
-
-	Core::ActionContainer *menu = Core::ActionManager::createMenu(Constants::MENU_ID);
-	menu->menu()->setTitle(tr("USprache"));
-	menu->addAction(cmd);
-	Core::ActionManager::actionContainer(Core::Constants::M_TOOLS)->addMenu(menu);
+	addAutoReleasedObject(new USpracheEditorFactory);
 
 	return true;
 }
@@ -68,12 +135,6 @@ ExtensionSystem::IPlugin::ShutdownFlag USprachePlugin::aboutToShutdown()
 	return SynchronousShutdown;
 }
 
-void USprachePlugin::triggerAction()
-{
-	QMessageBox::information(Core::ICore::mainWindow(),
-							 tr("Action Triggered"),
-							 tr("This is an action from USprache."));
-}
-
 } // namespace Internal
+
 } // namespace USprache
