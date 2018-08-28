@@ -9,14 +9,25 @@
 #include <coreplugin/coreconstants.h>
 
 #include <coreplugin/editormanager/editormanager.h>
+#include <coreplugin/messagemanager.h>
 
 #include <plugins/texteditor/texteditor.h>
 #include <plugins/texteditor/textdocument.h>
+
+#include <utils/treeviewcombobox.h>
+#include <utils/dropsupport.h>
 
 #include <QAction>
 #include <QMessageBox>
 #include <QMainWindow>
 #include <QMenu>
+#include <QTimer>
+#include <QAbstractItemModel>
+#include <QStringListModel>
+
+#include "../Compiler/src/lexical_analyzer.hpp"
+#include "../Compiler/src/program_string.hpp"
+#include "../Compiler/src/syntax_analyzer.hpp"
 
 namespace USprache
 {
@@ -28,27 +39,186 @@ const char g_editor_id[]= "sprache_editor";
 //const char g_mime_type[]= "text/u-spr";
 const char g_mime_type[]= "text/x-pascal"; // TODO - create own MIME-type
 
+/* UNFINISHED
+class USpracheModel final : public QAbstractItemModel
+{
+	//Q_OBJECT
+
+public:
+	USpracheModel( QObject *parent = nullptr )
+		: QAbstractItemModel(parent)
+	{
+		data_.push_back("@class foo");
+		data_.push_back("@class bar");
+		data_.push_back("@class baz");
+		data_.push_back("@function lol");
+	}
+
+	virtual QModelIndex index(int row, int column, const QModelIndex &parent = QModelIndex()) const
+	{
+		if( column != 0 || row < 0 || row >= data_.size() )
+			return QModelIndex();
+
+		return createIndex( row, column );
+	}
+
+	virtual QModelIndex parent(const QModelIndex &child) const
+	{
+		if( child.row() == 0 && child.column() == 0 )
+			return QModelIndex();
+
+		return createIndex( 0, 0 );
+	}
+
+	virtual int rowCount(const QModelIndex &parent = QModelIndex()) const
+	{
+	}
+	virtual int columnCount(const QModelIndex &parent = QModelIndex()) const
+	{
+		return 1;
+	}
+
+	virtual QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const
+	{
+		if( index.row() >= data_.size() )
+			return QString("");
+
+		switch(role)
+		{
+		default:
+		case Qt::DisplayRole:
+		case Qt::EditRole:
+			return data_[ index.row() ];
+
+		case Qt::DecorationRole:
+			// TODO - return icon
+			return data_[ index.row() ];
+
+		};
+	}
+
+	Qt::ItemFlags flags(const QModelIndex &index) const
+	{
+		return Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsDragEnabled;
+	}
+
+	Qt::DropActions supportedDragActions() const
+	{
+		return Qt::MoveAction;
+	}
+
+	QStringList mimeTypes() const
+	{
+		//return Utils::DropSupport::mimeTypesForFilePaths();
+		return QStringList{ g_mime_type };
+	}
+
+	QMimeData *mimeData(const QModelIndexList &indexes) const
+	{
+		auto mime_data = new Utils::DropMimeData;
+		return mime_data;
+	}
+
+private:
+	QStringList data_;
+};
+*/
+
 class USpracheEditorWidget final : public TextEditor::TextEditorWidget
 {
 	//Q_OBJECT
 
 public:
 	USpracheEditorWidget()
+		: timer_(this)
 	{
-	}
-
-	virtual ~USpracheEditorWidget() override
-	{
+		timer_.setInterval(3000);
+		timer_.setSingleShot(true);
 	}
 
 private:
 	void finalizeInitialization() override
 	{
-		// TODO - add here out cool U-Sprache widget.
-		auto toolbar_widget= new QLabel( QString("dummy stub") );
+		insertExtraToolBarWidget(TextEditorWidget::Left, new QLabel( QString("Ü editor"), this ) );
 
-		insertExtraToolBarWidget(TextEditorWidget::Left, toolbar_widget );
+		combo_box_.setMinimumContentsLength(20);
+
+		QSizePolicy policy = combo_box_.sizePolicy();
+		policy.setHorizontalPolicy(QSizePolicy::Expanding);
+		combo_box_.setSizePolicy(policy);
+		combo_box_.setMaxVisibleItems(40);
+
+		insertExtraToolBarWidget( TextEditorWidget::Left, &combo_box_ );
+
+		connect( this, &QPlainTextEdit::textChanged, this, &USpracheEditorWidget::OnTextChanged );
+		connect( &timer_, &QTimer::timeout, this, &USpracheEditorWidget::OnTimerExpired );
+
+		connect( &combo_box_, static_cast<void(QComboBox::*)(int)>(&QComboBox::activated), this, &USpracheEditorWidget::OnItemActivated );
 	}
+
+private:
+	void OnTextChanged()
+	{
+		//Core::MessageManager::write( QString( "text changed" ) );
+		timer_.stop();
+		timer_.start();
+	}
+
+	void OnTimerExpired()
+	{
+		// TODO - use custom model.
+
+		const U::ProgramString program_text= U::DecodeUTF8( USpracheEditorWidget::textDocument()->contents().toStdString() );
+
+		const U::LexicalAnalysisResult lex_result= U::LexicalAnalysis( program_text );
+		if( !lex_result.error_messages.empty() )
+			return;
+
+		U::Synt::SyntaxAnalysisResult synt_result= U::Synt::SyntaxAnalysis( lex_result.lexems );
+		if( !synt_result.error_messages.empty() )
+			return;
+
+		combo_box_.clear();
+		current_program_parsed_= std::move(synt_result.program_elements);
+
+		for( const U::Synt::IProgramElementPtr& program_element : current_program_parsed_ )
+		{
+			if( const auto namespace_= dynamic_cast<const U::Synt::Namespace*>( program_element.get() ) )
+				combo_box_.addItem( QString::fromUtf8( U::ToUTF8( namespace_->name_).data() ) );
+			else if( const auto class_= dynamic_cast<const U::Synt::Class*>( program_element.get() ) )
+				combo_box_.addItem( QString::fromUtf8( U::ToUTF8( class_->name_ ).data() ) );
+			else if( const auto function_= dynamic_cast<const U::Synt::Function*>( program_element.get() ) )
+				combo_box_.addItem( QString::fromUtf8( U::ToUTF8( function_->name_.components.back().name ).data() ) );
+			else if( const auto variables_= dynamic_cast<const U::Synt::VariablesDeclaration*>( program_element.get() ) )
+			{
+				for( const auto& variable : variables_->variables )
+					combo_box_.addItem( QString::fromUtf8( U::ToUTF8( variable.name ).data() ) );
+			}
+			else if( const auto auto_variable_= dynamic_cast<const U::Synt::AutoVariableDeclaration*>( program_element.get() ) )
+				combo_box_.addItem( QString::fromUtf8( U::ToUTF8( auto_variable_->name ).data() ) );
+		}
+	}
+
+	void OnItemActivated( int index )
+	{
+		if( index < 0 || index >= static_cast<int>(current_program_parsed_.size()) )
+			return;
+
+		const U::FilePos& file_pos= dynamic_cast<const U::Synt::SyntaxElementBase*>(current_program_parsed_[index].get())->file_pos_;
+
+		Core::EditorManager::cutForwardNavigationHistory();
+		Core::EditorManager::addCurrentPositionToNavigationHistory();
+
+		setFocus();
+		gotoLine( file_pos.line, file_pos.pos_in_line );
+	}
+
+private:
+	QTimer timer_;
+	Utils::TreeViewComboBox combo_box_;
+	//USpracheModel combo_box_model_;
+
+	U::Synt::ProgramElements current_program_parsed_;
 };
 
 class USpracheEditorDocument final : public TextEditor::TextDocument

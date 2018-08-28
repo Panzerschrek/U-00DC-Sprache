@@ -1,12 +1,30 @@
 DEFINES += USPRACHE_LIBRARY
 
+INCLUDEPATH+= ../../boost_1_65_1/
+
 # USprache files
 
-SOURCES += uspracheplugin.cpp
+SOURCES += \
+	uspracheplugin.cpp \
+	../Compiler/src/keywords.cpp \
+	../Compiler/src/lang_types.cpp \
+	../Compiler/src/lexical_analyzer.cpp \
+	../Compiler/src/operators.cpp \
+	../Compiler/src/program_string.cpp \
+	../Compiler/src/syntax_analyzer.cpp \
+	../Compiler/src/syntax_elements.cpp \
 
-HEADERS += uspracheplugin.h \
-        usprache_global.h \
-        uspracheconstants.h
+HEADERS += \
+	uspracheplugin.h \
+	usprache_global.h \
+	uspracheconstants.h \
+	../Compiler/src/keywords.hpp \
+	../Compiler/src/lang_types.hpp \
+	../Compiler/src/lexical_analyzer.hpp \
+	../Compiler/src/operators.hpp \
+	../Compiler/src/program_string.hpp \
+	../Compiler/src/syntax_analyzer.hpp \
+	../Compiler/src/syntax_elements.hpp \
 
 # Qt Creator linking
 
@@ -34,7 +52,7 @@ USE_USER_DESTDIR = yes
 
 QTC_PLUGIN_NAME = USprache
 QTC_LIB_DEPENDS += \
-    # nothing here at this time
+	utils \
 
 QTC_PLUGIN_DEPENDS += \
 	coreplugin \
