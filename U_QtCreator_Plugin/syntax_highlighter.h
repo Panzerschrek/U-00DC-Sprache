@@ -16,6 +16,7 @@ public:
 		Keyword,
 		Number,
 		String,
+		Comment,
 		Regular,
 	};
 

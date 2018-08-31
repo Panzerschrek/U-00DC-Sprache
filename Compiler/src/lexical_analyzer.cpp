@@ -374,7 +374,7 @@ static Lexem ParseIdentifier(
 	return result;
 }
 
-LexicalAnalysisResult LexicalAnalysis( const ProgramString& program_text )
+LexicalAnalysisResult LexicalAnalysis( const ProgramString& program_text, const bool collect_comments )
 {
 	LexicalAnalysisResult result;
 
@@ -389,17 +389,50 @@ LexicalAnalysisResult LexicalAnalysis( const ProgramString& program_text )
 		const sprache_char c= *it;
 		Lexem lexem;
 		lexem.file_pos.file_index= 0;
+		auto pos_in_line= static_cast<unsigned short>( it - last_newline_it );
 
 		// line comment.
 		if( c == '/' && it_end - it > 1 && *(it+1) == '/' )
 		{
-			while( it < it_end && !IsNewline(*it) ) ++it;
+			if( collect_comments )
+			{
+				Lexem comment_lexem;
+				comment_lexem.file_pos.line= static_cast<unsigned short>(line);
+				comment_lexem.file_pos.pos_in_line= pos_in_line;
+				comment_lexem.type= Lexem::Type::Comment;
+
+				while( it < it_end && !IsNewline(*it) )
+				{
+					comment_lexem.text.push_back(*it);
+					++it;
+				}
+				result.lexems.emplace_back( std::move(comment_lexem) );
+			}
+			else
+				while( it < it_end && !IsNewline(*it) ) ++it;
+
 			if( it == it_end ) break;
 
 			line++;
 			last_newline_it= it;
+			pos_in_line= 0;
 			++it;
 
+			continue;
+		}
+		else if( IsNewline(c) )
+		{
+			line++;
+			last_newline_it= it;
+			pos_in_line= 0;
+
+			++it;
+			continue;
+		}
+		else if( IsWhitespace(c) )
+		{
+			++it;
+			++pos_in_line;
 			continue;
 		}
 		else if( c == '"' )
@@ -409,7 +442,7 @@ LexicalAnalysisResult LexicalAnalysis( const ProgramString& program_text )
 			{
 				// Parse string suffix.
 				lexem.file_pos.line= static_cast<unsigned short>(line);
-				lexem.file_pos.pos_in_line= static_cast<unsigned short>( it - last_newline_it );
+				lexem.file_pos.pos_in_line= pos_in_line;
 				result.lexems.emplace_back( std::move(lexem) );
 
 				lexem= ParseIdentifier( it, it_end );
@@ -422,20 +455,6 @@ LexicalAnalysisResult LexicalAnalysis( const ProgramString& program_text )
 
 		else if( IsIdentifierStartChar(c) )
 			lexem= ParseIdentifier( it, it_end );
-
-		else if( IsNewline(c) )
-		{
-			line++;
-			last_newline_it= it;
-
-			++it;
-			continue;
-		}
-		else if( IsWhitespace(c) )
-		{
-			++it;
-			continue;
-		}
 		else
 		{
 			// Try find fixed lexems.
@@ -468,7 +487,7 @@ LexicalAnalysisResult LexicalAnalysis( const ProgramString& program_text )
 
 	push_lexem:
 		lexem.file_pos.line= static_cast<unsigned short>(line);
-		lexem.file_pos.pos_in_line= static_cast<unsigned short>( it - last_newline_it );
+		lexem.file_pos.pos_in_line= static_cast<unsigned short>( pos_in_line );
 		lexem.file_pos.file_index= 0;
 
 		result.lexems.emplace_back( std::move(lexem) );

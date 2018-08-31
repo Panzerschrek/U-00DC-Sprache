@@ -18,14 +18,16 @@ SyntaxHighlighter::SyntaxHighlighter()
 		TextEditor::C_KEYWORD,
 		TextEditor::C_NUMBER,
 		TextEditor::C_STRING,
+		TextEditor::C_COMMENT,
 		TextEditor::C_FUNCTION,
+
 	});
 	setTextFormatCategories(categories);
 }
 
 void SyntaxHighlighter::highlightBlock(const QString &text)
 {
-	LexicalAnalysisResult lex_result= LexicalAnalysis( DecodeUTF8( text.toUtf8().data() ) );
+	LexicalAnalysisResult lex_result= LexicalAnalysis( DecodeUTF8( text.toUtf8().data() ), true );
 	if( !lex_result.error_messages.empty() )
 	{
 		setFormat( 0, text.size(), QColor(Qt::red ) );
@@ -52,6 +54,9 @@ void SyntaxHighlighter::highlightBlock(const QString &text)
 		{
 		case Lexem::Type::None:
 			format= Formats::Regular; break;
+
+		case Lexem::Type::Comment:
+			format= Formats::Comment; break;
 
 		case Lexem::Type::Identifier:
 			if( IsKeyword( lexem.text ) )

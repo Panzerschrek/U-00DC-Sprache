@@ -26,6 +26,8 @@ struct Lexem
 	{
 		None,
 
+		Comment,
+
 		Identifier,
 		String,
 		Number,
@@ -119,6 +121,6 @@ struct LexicalAnalysisResult
 	LexicalErrorMessages error_messages;
 };
 
-LexicalAnalysisResult LexicalAnalysis( const ProgramString& program_text );
+LexicalAnalysisResult LexicalAnalysis( const ProgramString& program_text, bool collect_comments= false );
 
 } // namespace U
