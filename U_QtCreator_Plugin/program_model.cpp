@@ -12,6 +12,16 @@ namespace U
 namespace QtCreatorPlugin
 {
 
+static QString ProgramStringToQString( const ProgramString& program_string )
+{
+	return QString::fromUtf16( program_string.data(), int(program_string.size()) );
+}
+
+static ProgramString QStringToProgramString( const QString& q_string )
+{
+	return DecodeUTF8( q_string.toUtf8().data() );
+}
+
 static ProgramString Stringify( const Synt::ComplexName& complex_name );
 static ProgramString Stringify( const Synt::ITypeName& type_name );
 
@@ -23,7 +33,7 @@ static ProgramString Stringify( const Synt::IExpressionComponent& expression )
 	else if( const auto named_operand= dynamic_cast<const Synt::NamedOperand*>(&expression) )
 		result= Stringify( named_operand->name_ );
 	else if( const auto numeric_constant= dynamic_cast<const Synt::NumericConstant*>(&expression) )
-		result= ToProgramString(std::to_string(numeric_constant->value_).data()) + numeric_constant->type_suffix_; // TODO - fix this
+		result= QStringToProgramString( QString::number(static_cast<double>(numeric_constant->value_)) ) + numeric_constant->type_suffix_;
 	else if( const auto string_literal= dynamic_cast<const Synt::StringLiteral*>(&expression) )
 		result= "\""_SpC + string_literal->value_ + "\""_SpC + string_literal->type_suffix_;
 	else if( const auto boolean_constant= dynamic_cast<const Synt::BooleanConstant*>(&expression) )
@@ -378,11 +388,6 @@ static ProgramString Stringify( const Synt::AutoVariableDeclaration& varaible )
 	}
 
 	return result;
-}
-
-static QString ProgramStringToQString( const ProgramString& program_string )
-{
-	return QString::fromUtf16( program_string.data(), int(program_string.size()) );
 }
 
 static std::vector<ProgramModel::ProgramTreeNode> BuildProgramModel_r( const Synt::ClassElements& elements )
