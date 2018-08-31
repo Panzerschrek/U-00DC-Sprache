@@ -414,19 +414,19 @@ LexicalAnalysisResult LexicalAnalysis( const ProgramString& program_text, const 
 			if( it == it_end ) break;
 
 			line++;
+			++it;
 			last_newline_it= it;
 			pos_in_line= 0;
-			++it;
 
 			continue;
 		}
 		else if( IsNewline(c) )
 		{
 			line++;
+			++it;
 			last_newline_it= it;
 			pos_in_line= 0;
 
-			++it;
 			continue;
 		}
 		else if( IsWhitespace(c) )

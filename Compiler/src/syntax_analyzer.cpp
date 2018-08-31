@@ -2886,10 +2886,10 @@ std::unique_ptr<Class> SyntaxAnalyzer::ParseClassBody()
 TemplateBasePtr SyntaxAnalyzer::ParseTemplate()
 {
 	U_ASSERT( it_->type == Lexem::Type::Identifier && it_->text == Keywords::template_ );
+	const FilePos& template_file_pos= it_->file_pos;
 	NextLexem();
 
 	// TemplateBase parameters
-	const FilePos& template_file_pos= it_->file_pos;
 	std::vector<TemplateBase::Arg> args;
 
 	if( it_->type != Lexem::Type::TemplateBracketLeft )
