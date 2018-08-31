@@ -211,7 +211,7 @@ private:
 private:
 	void OnTextChanged();
 	void OnTimerExpired();
-	void OnItemActivated( int index );
+	void OnItemActivated();
 
 private:
 	QTimer timer_;

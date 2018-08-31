@@ -7,6 +7,7 @@
 #include <coreplugin/actionmanager/command.h>
 #include <coreplugin/actionmanager/actioncontainer.h>
 #include <coreplugin/coreconstants.h>
+#include <coreplugin/editormanager/editormanager.h>
 
 namespace U
 {
@@ -45,7 +46,7 @@ void USpracheEditorWidget::finalizeInitialization()
 	connect( this, &QPlainTextEdit::textChanged, this, &USpracheEditorWidget::OnTextChanged );
 	connect( &timer_, &QTimer::timeout, this, &USpracheEditorWidget::OnTimerExpired );
 
-	//connect( &combo_box_, static_cast<void(QComboBox::*)(int)>(&QComboBox::activated), this, &USpracheEditorWidget::OnItemActivated );
+	connect( &combo_box_, static_cast<void(QComboBox::*)(int)>(&QComboBox::activated), this, &USpracheEditorWidget::OnItemActivated );
 }
 
 void USpracheEditorWidget::OnTextChanged()
@@ -66,6 +67,20 @@ void USpracheEditorWidget::OnTimerExpired()
 		combo_box_model_.Update( program_model );
 }
 
+void USpracheEditorWidget::OnItemActivated()
+{
+	const QModelIndex model_index = combo_box_.view()->currentIndex();
+	const auto node_ptr= reinterpret_cast<const ProgramModel::ProgramTreeNode*>(model_index.internalPointer());
+	if( node_ptr == nullptr )
+		return;
+
+	Core::EditorManager::cutForwardNavigationHistory();
+	Core::EditorManager::addCurrentPositionToNavigationHistory();
+
+	setFocus();
+	gotoLine( node_ptr->file_pos.line, node_ptr->file_pos.pos_in_line );
+}
+
 USpracheEditorDocument::USpracheEditorDocument()
 {
 	setId(g_editor_id);
@@ -84,23 +99,6 @@ USpracheEditorFactory::USpracheEditorFactory()
 	setEditorWidgetCreator([]() { return new USpracheEditorWidget; });
 	setEditorCreator([]() { return new USpracheEditor; });
 }
-
-void OnItemActivated( int index )
-{
-	/*
-	if( index < 0 || index >= static_cast<int>(current_program_parsed_->size()) )
-		return;
-
-	const U::FilePos& file_pos= dynamic_cast<const U::Synt::SyntaxElementBase*>((*current_program_parsed_)[index].get())->file_pos_;
-
-	Core::EditorManager::cutForwardNavigationHistory();
-	Core::EditorManager::addCurrentPositionToNavigationHistory();
-
-	setFocus();
-	gotoLine( file_pos.line, file_pos.pos_in_line );
-	*/
-}
-
 
 USprachePlugin::USprachePlugin()
 {

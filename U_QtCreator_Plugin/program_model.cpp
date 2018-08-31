@@ -397,6 +397,7 @@ static std::vector<ProgramModel::ProgramTreeNode> BuildProgramModel_r( const Syn
 			element.name= ProgramStringToQString( class_->name_ );
 			element.childs= BuildProgramModel_r( class_->elements_ );
 			element.number_in_parent= result.size();
+			element.file_pos= class_->file_pos_;
 			result.push_back(element);
 		}
 		else if( const auto function_= dynamic_cast<const Synt::Function*>( class_element.get() ) )
@@ -404,6 +405,7 @@ static std::vector<ProgramModel::ProgramTreeNode> BuildProgramModel_r( const Syn
 			ProgramModel::ProgramTreeNode element;
 			element.name= ProgramStringToQString( Stringify( *function_ ).data() );
 			element.number_in_parent= result.size();
+			element.file_pos= function_->file_pos_;
 			result.push_back(element);
 		}
 		else if( const auto variables_= dynamic_cast<const Synt::VariablesDeclaration*>( class_element.get() ) )
@@ -414,6 +416,7 @@ static std::vector<ProgramModel::ProgramTreeNode> BuildProgramModel_r( const Syn
 				ProgramModel::ProgramTreeNode element;
 				element.name= ProgramStringToQString( Stringify( variable, type_name ) );
 				element.number_in_parent= result.size();
+				element.file_pos= variable.file_pos;
 				result.push_back(element);
 			}
 		}
@@ -422,6 +425,7 @@ static std::vector<ProgramModel::ProgramTreeNode> BuildProgramModel_r( const Syn
 			ProgramModel::ProgramTreeNode element;
 			element.name= ProgramStringToQString( Stringify( *auto_variable_ ) );
 			element.number_in_parent= result.size();
+			element.file_pos= auto_variable_->file_pos_;
 			result.push_back(element);
 		}
 		else if( const auto class_field_= dynamic_cast<const Synt::ClassField*>( class_element.get() ) )
@@ -429,6 +433,7 @@ static std::vector<ProgramModel::ProgramTreeNode> BuildProgramModel_r( const Syn
 			ProgramModel::ProgramTreeNode element;
 			element.name= ProgramStringToQString( Stringify( *class_field_ ) );
 			element.number_in_parent= result.size();
+			element.file_pos= class_field_->file_pos_;
 			result.push_back(element);
 		}
 		else if( const auto class_template= dynamic_cast<const Synt::ClassTemplate*>( class_element.get() ) )
@@ -437,6 +442,7 @@ static std::vector<ProgramModel::ProgramTreeNode> BuildProgramModel_r( const Syn
 			element.name= ProgramStringToQString( Stringify( *class_template ) );
 			element.childs= BuildProgramModel_r( class_template->class_->elements_ );
 			element.number_in_parent= result.size();
+			element.file_pos= class_template->file_pos_;
 			result.push_back(element);
 		}
 		else if( const auto typedef_template= dynamic_cast<const Synt::TypedefTemplate*>( class_element.get() ) )
@@ -444,6 +450,7 @@ static std::vector<ProgramModel::ProgramTreeNode> BuildProgramModel_r( const Syn
 			ProgramModel::ProgramTreeNode element;
 			element.name= ProgramStringToQString( Stringify( *typedef_template ) );
 			element.number_in_parent= result.size();
+			element.file_pos= typedef_template->file_pos_;
 			result.push_back(element);
 		}
 		else if( const auto function_template= dynamic_cast<const Synt::FunctionTemplate*>( class_element.get() ) )
@@ -451,6 +458,7 @@ static std::vector<ProgramModel::ProgramTreeNode> BuildProgramModel_r( const Syn
 			ProgramModel::ProgramTreeNode element;
 			element.name= ProgramStringToQString( Stringify( *function_template ) );
 			element.number_in_parent= result.size();
+			element.file_pos= function_template->file_pos_;
 			result.push_back(element);
 		}
 	}
@@ -466,10 +474,12 @@ static std::vector<ProgramModel::ProgramTreeNode> BuildProgramModel_r( const Syn
 	{
 		if( const auto namespace_= dynamic_cast<const Synt::Namespace*>( program_element.get() ) )
 		{
+			// TODO - what if there are multiple declarations of same namespace in single source file?
 			ProgramModel::ProgramTreeNode element;
 			element.name= ProgramStringToQString( namespace_->name_ );
 			element.childs= BuildProgramModel_r( namespace_->elements_ );
 			element.number_in_parent= result.size();
+			element.file_pos= namespace_->file_pos_;
 			result.push_back(element);
 		}
 		else if( const auto class_= dynamic_cast<const Synt::Class*>( program_element.get() ) )
@@ -478,6 +488,7 @@ static std::vector<ProgramModel::ProgramTreeNode> BuildProgramModel_r( const Syn
 			element.name= ProgramStringToQString( class_->name_ );
 			element.childs= BuildProgramModel_r( class_->elements_ );
 			element.number_in_parent= result.size();
+			element.file_pos= class_->file_pos_;
 			result.push_back(element);
 		}
 		else if( const auto function_= dynamic_cast<const Synt::Function*>( program_element.get() ) )
@@ -485,6 +496,7 @@ static std::vector<ProgramModel::ProgramTreeNode> BuildProgramModel_r( const Syn
 			ProgramModel::ProgramTreeNode element;
 			element.name= ProgramStringToQString( Stringify( *function_ ).data() );
 			element.number_in_parent= result.size();
+			element.file_pos= function_->file_pos_;
 			result.push_back(element);
 		}
 		else if( const auto variables_= dynamic_cast<const Synt::VariablesDeclaration*>( program_element.get() ) )
@@ -495,6 +507,7 @@ static std::vector<ProgramModel::ProgramTreeNode> BuildProgramModel_r( const Syn
 				ProgramModel::ProgramTreeNode element;
 				element.name= ProgramStringToQString( Stringify( variable, type_name ) );
 				element.number_in_parent= result.size();
+				element.file_pos= variable.file_pos;
 				result.push_back(element);
 			}
 		}
@@ -503,6 +516,7 @@ static std::vector<ProgramModel::ProgramTreeNode> BuildProgramModel_r( const Syn
 			ProgramModel::ProgramTreeNode element;
 			element.name= ProgramStringToQString( Stringify( *auto_variable_ ) );
 			element.number_in_parent= result.size();
+			element.file_pos= auto_variable_->file_pos_;
 			result.push_back(element);
 		}
 		else if( const auto class_template= dynamic_cast<const Synt::ClassTemplate*>( program_element.get() ) )
@@ -511,6 +525,7 @@ static std::vector<ProgramModel::ProgramTreeNode> BuildProgramModel_r( const Syn
 			element.name= ProgramStringToQString( Stringify( *class_template ) );
 			element.childs= BuildProgramModel_r( class_template->class_->elements_ );
 			element.number_in_parent= result.size();
+			element.file_pos= class_template->file_pos_;
 			result.push_back(element);
 		}
 		else if( const auto typedef_template= dynamic_cast<const Synt::TypedefTemplate*>( program_element.get() ) )
@@ -518,6 +533,7 @@ static std::vector<ProgramModel::ProgramTreeNode> BuildProgramModel_r( const Syn
 			ProgramModel::ProgramTreeNode element;
 			element.name= ProgramStringToQString( Stringify( *typedef_template ) );
 			element.number_in_parent= result.size();
+			element.file_pos= typedef_template->file_pos_;
 			result.push_back(element);
 		}
 		else if( const auto function_template= dynamic_cast<const Synt::FunctionTemplate*>( program_element.get() ) )
@@ -525,6 +541,7 @@ static std::vector<ProgramModel::ProgramTreeNode> BuildProgramModel_r( const Syn
 			ProgramModel::ProgramTreeNode element;
 			element.name= ProgramStringToQString( Stringify( *function_template ) );
 			element.number_in_parent= result.size();
+			element.file_pos= function_template->file_pos_;
 			result.push_back(element);
 		}
 	}
