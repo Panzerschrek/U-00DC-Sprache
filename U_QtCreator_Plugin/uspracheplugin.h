@@ -9,6 +9,7 @@
 
 #include <coreplugin/messagemanager.h>
 #include <extensionsystem/iplugin.h>
+#include <libs/cplusplus/Icons.h>
 #include <plugins/texteditor/textdocument.h>
 #include <plugins/texteditor/texteditor.h>
 #include <utils/dropsupport.h>
@@ -20,6 +21,8 @@ namespace U
 
 namespace QtCreatorPlugin
 {
+
+CPlusPlus::Icons::IconType ProgramElementKindToIcon( const ProgramModel::ElementKind element_kind );
 
 class USprachePlugin : public ExtensionSystem::IPlugin
 {
@@ -124,8 +127,7 @@ public:
 			return ptr->name;
 
 		case Qt::DecorationRole:
-			// TODO - return icon
-			//return QString( "info.ico" );
+			return  CPlusPlus::Icons::iconForType( ProgramElementKindToIcon( ptr->kind ) );
 
 		case FileNameRole:
 			return QString("some_file");

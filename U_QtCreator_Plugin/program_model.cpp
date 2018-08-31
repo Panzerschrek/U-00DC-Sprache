@@ -395,6 +395,7 @@ static std::vector<ProgramModel::ProgramTreeNode> BuildProgramModel_r( const Syn
 		{
 			ProgramModel::ProgramTreeNode element;
 			element.name= ProgramStringToQString( class_->name_ );
+			element.kind= ProgramModel::ElementKind::Class;
 			element.childs= BuildProgramModel_r( class_->elements_ );
 			element.number_in_parent= result.size();
 			element.file_pos= class_->file_pos_;
@@ -404,6 +405,7 @@ static std::vector<ProgramModel::ProgramTreeNode> BuildProgramModel_r( const Syn
 		{
 			ProgramModel::ProgramTreeNode element;
 			element.name= ProgramStringToQString( Stringify( *function_ ).data() );
+			element.kind= ProgramModel::ElementKind::Function;
 			element.number_in_parent= result.size();
 			element.file_pos= function_->file_pos_;
 			result.push_back(element);
@@ -415,6 +417,7 @@ static std::vector<ProgramModel::ProgramTreeNode> BuildProgramModel_r( const Syn
 			{
 				ProgramModel::ProgramTreeNode element;
 				element.name= ProgramStringToQString( Stringify( variable, type_name ) );
+				element.kind= ProgramModel::ElementKind::Variable;
 				element.number_in_parent= result.size();
 				element.file_pos= variable.file_pos;
 				result.push_back(element);
@@ -424,6 +427,7 @@ static std::vector<ProgramModel::ProgramTreeNode> BuildProgramModel_r( const Syn
 		{
 			ProgramModel::ProgramTreeNode element;
 			element.name= ProgramStringToQString( Stringify( *auto_variable_ ) );
+			element.kind= ProgramModel::ElementKind::Variable;
 			element.number_in_parent= result.size();
 			element.file_pos= auto_variable_->file_pos_;
 			result.push_back(element);
@@ -432,6 +436,7 @@ static std::vector<ProgramModel::ProgramTreeNode> BuildProgramModel_r( const Syn
 		{
 			ProgramModel::ProgramTreeNode element;
 			element.name= ProgramStringToQString( Stringify( *class_field_ ) );
+			element.kind= ProgramModel::ElementKind::ClassFiled;
 			element.number_in_parent= result.size();
 			element.file_pos= class_field_->file_pos_;
 			result.push_back(element);
@@ -440,6 +445,7 @@ static std::vector<ProgramModel::ProgramTreeNode> BuildProgramModel_r( const Syn
 		{
 			ProgramModel::ProgramTreeNode element;
 			element.name= ProgramStringToQString( Stringify( *class_template ) );
+			element.kind= ProgramModel::ElementKind::ClassTemplate;
 			element.childs= BuildProgramModel_r( class_template->class_->elements_ );
 			element.number_in_parent= result.size();
 			element.file_pos= class_template->file_pos_;
@@ -449,6 +455,7 @@ static std::vector<ProgramModel::ProgramTreeNode> BuildProgramModel_r( const Syn
 		{
 			ProgramModel::ProgramTreeNode element;
 			element.name= ProgramStringToQString( Stringify( *typedef_template ) );
+			element.kind= ProgramModel::ElementKind::TypedefTemplate;
 			element.number_in_parent= result.size();
 			element.file_pos= typedef_template->file_pos_;
 			result.push_back(element);
@@ -457,6 +464,7 @@ static std::vector<ProgramModel::ProgramTreeNode> BuildProgramModel_r( const Syn
 		{
 			ProgramModel::ProgramTreeNode element;
 			element.name= ProgramStringToQString( Stringify( *function_template ) );
+			element.kind= ProgramModel::ElementKind::FunctionTemplate;
 			element.number_in_parent= result.size();
 			element.file_pos= function_template->file_pos_;
 			result.push_back(element);
@@ -477,6 +485,7 @@ static std::vector<ProgramModel::ProgramTreeNode> BuildProgramModel_r( const Syn
 			// TODO - what if there are multiple declarations of same namespace in single source file?
 			ProgramModel::ProgramTreeNode element;
 			element.name= ProgramStringToQString( namespace_->name_ );
+			element.kind= ProgramModel::ElementKind::Namespace;
 			element.childs= BuildProgramModel_r( namespace_->elements_ );
 			element.number_in_parent= result.size();
 			element.file_pos= namespace_->file_pos_;
@@ -486,6 +495,7 @@ static std::vector<ProgramModel::ProgramTreeNode> BuildProgramModel_r( const Syn
 		{
 			ProgramModel::ProgramTreeNode element;
 			element.name= ProgramStringToQString( class_->name_ );
+			element.kind= ProgramModel::ElementKind::Class;
 			element.childs= BuildProgramModel_r( class_->elements_ );
 			element.number_in_parent= result.size();
 			element.file_pos= class_->file_pos_;
@@ -495,6 +505,7 @@ static std::vector<ProgramModel::ProgramTreeNode> BuildProgramModel_r( const Syn
 		{
 			ProgramModel::ProgramTreeNode element;
 			element.name= ProgramStringToQString( Stringify( *function_ ).data() );
+			element.kind= ProgramModel::ElementKind::Function;
 			element.number_in_parent= result.size();
 			element.file_pos= function_->file_pos_;
 			result.push_back(element);
@@ -506,6 +517,7 @@ static std::vector<ProgramModel::ProgramTreeNode> BuildProgramModel_r( const Syn
 			{
 				ProgramModel::ProgramTreeNode element;
 				element.name= ProgramStringToQString( Stringify( variable, type_name ) );
+				element.kind= ProgramModel::ElementKind::Variable;
 				element.number_in_parent= result.size();
 				element.file_pos= variable.file_pos;
 				result.push_back(element);
@@ -515,6 +527,7 @@ static std::vector<ProgramModel::ProgramTreeNode> BuildProgramModel_r( const Syn
 		{
 			ProgramModel::ProgramTreeNode element;
 			element.name= ProgramStringToQString( Stringify( *auto_variable_ ) );
+			element.kind= ProgramModel::ElementKind::Variable;
 			element.number_in_parent= result.size();
 			element.file_pos= auto_variable_->file_pos_;
 			result.push_back(element);
@@ -523,6 +536,7 @@ static std::vector<ProgramModel::ProgramTreeNode> BuildProgramModel_r( const Syn
 		{
 			ProgramModel::ProgramTreeNode element;
 			element.name= ProgramStringToQString( Stringify( *class_template ) );
+			element.kind= ProgramModel::ElementKind::ClassTemplate;
 			element.childs= BuildProgramModel_r( class_template->class_->elements_ );
 			element.number_in_parent= result.size();
 			element.file_pos= class_template->file_pos_;
@@ -532,6 +546,7 @@ static std::vector<ProgramModel::ProgramTreeNode> BuildProgramModel_r( const Syn
 		{
 			ProgramModel::ProgramTreeNode element;
 			element.name= ProgramStringToQString( Stringify( *typedef_template ) );
+			element.kind= ProgramModel::ElementKind::TypedefTemplate;
 			element.number_in_parent= result.size();
 			element.file_pos= typedef_template->file_pos_;
 			result.push_back(element);
@@ -540,6 +555,7 @@ static std::vector<ProgramModel::ProgramTreeNode> BuildProgramModel_r( const Syn
 		{
 			ProgramModel::ProgramTreeNode element;
 			element.name= ProgramStringToQString( Stringify( *function_template ) );
+			element.kind= ProgramModel::ElementKind::FunctionTemplate;
 			element.number_in_parent= result.size();
 			element.file_pos= function_template->file_pos_;
 			result.push_back(element);

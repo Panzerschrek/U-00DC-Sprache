@@ -15,9 +15,24 @@ namespace QtCreatorPlugin
 struct ProgramModel
 {
 public:
+	enum class ElementKind
+	{
+		Unknown,
+		Namespace,
+		Class,
+		Function,
+		ClassFiled,
+		Variable,
+		ClassTemplate,
+		Typedef,
+		TypedefTemplate,
+		FunctionTemplate,
+	};
+
 	struct ProgramTreeNode
 	{
 		QString name;
+		ElementKind kind= ElementKind::Unknown;
 
 		// Elements in order of original file.
 		std::vector<ProgramTreeNode> childs;

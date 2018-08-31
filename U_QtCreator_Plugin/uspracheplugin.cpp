@@ -19,6 +19,26 @@ const char g_editor_id[]= "sprache_editor";
 //const char g_mime_type[]= "text/u-spr";
 const char g_mime_type[]= "text/x-pascal"; // TODO - create own MIME-type
 
+CPlusPlus::Icons::IconType ProgramElementKindToIcon( const ProgramModel::ElementKind element_kind )
+{
+	switch( element_kind )
+	{
+		case ProgramModel::ElementKind::Unknown: return CPlusPlus::Icons::UnknownIconType;
+		case ProgramModel::ElementKind::Namespace: return CPlusPlus::Icons::NamespaceIconType;
+		case ProgramModel::ElementKind::Class: return CPlusPlus::Icons::ClassIconType;
+		case ProgramModel::ElementKind::Function: return CPlusPlus::Icons::FuncPublicIconType;
+		case ProgramModel::ElementKind::ClassFiled: return CPlusPlus::Icons::VarPublicIconType;
+		case ProgramModel::ElementKind::Variable: return CPlusPlus::Icons::VarPublicIconType;
+		case ProgramModel::ElementKind::ClassTemplate: return CPlusPlus::Icons::ClassIconType;
+		case ProgramModel::ElementKind::Typedef: return CPlusPlus::Icons::ClassIconType;
+		case ProgramModel::ElementKind::TypedefTemplate: return CPlusPlus::Icons::ClassIconType;
+		case ProgramModel::ElementKind::FunctionTemplate: return CPlusPlus::Icons::FuncPublicIconType;
+	};
+
+	Q_ASSERT(false);
+	return CPlusPlus::Icons::ClassIconType;
+}
+
 USpracheEditorWidget::USpracheEditorWidget()
 	: timer_(this)
 	, combo_box_(this)

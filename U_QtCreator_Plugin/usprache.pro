@@ -54,6 +54,7 @@ USE_USER_DESTDIR = yes
 QTC_PLUGIN_NAME = USprache
 QTC_LIB_DEPENDS += \
 	utils \
+	cplusplus \
 
 QTC_PLUGIN_DEPENDS += \
 	coreplugin \
