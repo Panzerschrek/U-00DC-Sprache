@@ -13,6 +13,8 @@
 #include <plugins/texteditor/texteditor.h>
 #include <utils/dropsupport.h>
 
+#include "program_model.h"
+
 namespace U
 {
 
@@ -36,15 +38,6 @@ private:
 	void triggerAction();
 };
 
-struct ProgramTreeNode
-{
-	QString name;
-	std::vector<ProgramTreeNode> childs;
-	ProgramTreeNode* parent= nullptr;
-	size_t number_in_parent= 0;
-	int line= 0, pos_in_line= 0;
-};
-
 class USpracheModel final : public QAbstractItemModel
 {
 	Q_OBJECT
@@ -58,28 +51,29 @@ public:
 	USpracheModel( QObject *parent = nullptr )
 		: QAbstractItemModel(parent)
 	{
-		tree_.name= QString( "<no data>" );
 	}
 
 	~USpracheModel(){}
 
-	void Update( ProgramTreeNode tree )
+	void Update( ProgramModelPtr program_model )
 	{
 		beginResetModel();
-		tree_= std::move(tree);
-		FixParents( tree_ );
+		program_model_= std::move(program_model);
 		endResetModel();
 	}
 
 	virtual QModelIndex index(int row, int column, const QModelIndex &parent = QModelIndex()) const override
 	{
 		Q_UNUSED(column);
+		if( program_model_ == nullptr )
+			return QModelIndex();
+
 		if( !parent.isValid() )
-			return createIndex( row, 0, const_cast<ProgramTreeNode*>(&tree_.childs[row]) );
+			return createIndex( row, 0, const_cast<Node*>(&program_model_->program_elements[row]) );
 		else
 		{
-			const ProgramTreeNode* const parent_ptr= reinterpret_cast<const ProgramTreeNode*>(parent.internalPointer());
-			return createIndex( row, 0, const_cast<ProgramTreeNode*>(&parent_ptr->childs[row]) );
+			const Node* const parent_ptr= reinterpret_cast<const Node*>(parent.internalPointer());
+			return createIndex( row, 0, const_cast<Node*>(&parent_ptr->childs[row]) );
 		}
 	}
 
@@ -88,19 +82,19 @@ public:
 		if( !element.isValid() )
 			return QModelIndex();
 
-		const ProgramTreeNode* const element_ptr= reinterpret_cast<const ProgramTreeNode*>(element.internalPointer());
+		const Node* const element_ptr= reinterpret_cast<const Node*>(element.internalPointer());
 		if( element_ptr->parent == nullptr )
 			return QModelIndex();
 
-		return createIndex( element_ptr->parent->number_in_parent, 0, const_cast<ProgramTreeNode*>(element_ptr->parent) ); // TODO - select correct row
+		return createIndex( element_ptr->parent->number_in_parent, 0, const_cast<Node*>(element_ptr->parent) );
 	}
 
 	virtual int rowCount(const QModelIndex &parent = QModelIndex()) const override
 	{
 		if( !parent.isValid() )
-			return tree_.childs.size();
+			return program_model_ == nullptr ? 0 : int(program_model_->program_elements.size());
 
-		const ProgramTreeNode* const element_ptr= reinterpret_cast<const ProgramTreeNode*>(parent.internalPointer());
+		const Node* const element_ptr= reinterpret_cast<const Node*>(parent.internalPointer());
 		return int(element_ptr->childs.size());
 
 	}
@@ -112,7 +106,7 @@ public:
 
 	virtual QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override
 	{
-		const ProgramTreeNode* const ptr= reinterpret_cast<const ProgramTreeNode*>(index.internalPointer());
+		const Node* const ptr= reinterpret_cast<const Node*>(index.internalPointer());
 		if( ptr == nullptr )
 			return QVariant();
 
@@ -157,17 +151,10 @@ public:
 	}
 
 private:
-	void FixParents( ProgramTreeNode& tree )
-	{
-		for( ProgramTreeNode& child : tree.childs )
-		{
-			child.parent= &tree;
-			FixParents(child);
-		}
-	}
+	using Node= ProgramModel::ProgramTreeNode;
 
 private:
-	ProgramTreeNode tree_;
+	ProgramModelPtr program_model_;
 };
 
 class TreeViewComboBox : public QComboBox
