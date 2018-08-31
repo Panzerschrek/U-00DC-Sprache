@@ -13,11 +13,10 @@
 #include <plugins/texteditor/texteditor.h>
 #include <utils/dropsupport.h>
 
-
-namespace USprache
+namespace U
 {
 
-namespace Internal
+namespace QtCreatorPlugin
 {
 
 class USprachePlugin : public ExtensionSystem::IPlugin
@@ -258,6 +257,6 @@ public:
 private:
 };
 
+} // namespace QtCreatorPlugin
 
-} // namespace Internal
-} // namespace USprache
+} // namespace U

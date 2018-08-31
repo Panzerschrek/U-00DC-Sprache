@@ -17,7 +17,6 @@ SOURCES += \
 HEADERS += \
 	uspracheplugin.h \
 	usprache_global.h \
-	uspracheconstants.h \
 	../Compiler/src/keywords.hpp \
 	../Compiler/src/lang_types.hpp \
 	../Compiler/src/lexical_analyzer.hpp \

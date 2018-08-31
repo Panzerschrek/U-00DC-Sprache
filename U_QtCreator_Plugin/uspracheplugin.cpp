@@ -1,5 +1,4 @@
 #include "uspracheplugin.h"
-#include "uspracheconstants.h"
 
 #include <QObject>
 #include <coreplugin/icore.h>
@@ -13,60 +12,60 @@
 #include "../Compiler/src/program_string.hpp"
 #include "../Compiler/src/syntax_analyzer.hpp"
 
-namespace USprache
+namespace U
 {
 
-namespace Internal
+namespace QtCreatorPlugin
 {
 
 const char g_editor_id[]= "sprache_editor";
 //const char g_mime_type[]= "text/u-spr";
 const char g_mime_type[]= "text/x-pascal"; // TODO - create own MIME-type
 
-ProgramTreeNode ConvertProgramForOutline( const U::Synt::ProgramElements& elements )
+ProgramTreeNode ConvertProgramForOutline( const Synt::ProgramElements& elements )
 {
 	ProgramTreeNode result;
 	result.number_in_parent= 0;
 	result.name= QString( "global namespace" );
 
-	for( const U::Synt::IProgramElementPtr& program_element : elements )
+	for( const Synt::IProgramElementPtr& program_element : elements )
 	{
-		if( const auto namespace_= dynamic_cast<const U::Synt::Namespace*>( program_element.get() ) )
+		if( const auto namespace_= dynamic_cast<const Synt::Namespace*>( program_element.get() ) )
 		{
 			ProgramTreeNode element;
-			element.name= QString::fromUtf8( U::ToUTF8( namespace_->name_).data() );
+			element.name= QString::fromUtf8( ToUTF8( namespace_->name_).data() );
 			element.childs= ConvertProgramForOutline( namespace_->elements_ ).childs;
 			element.number_in_parent= result.childs.size();
 			result.childs.push_back(element);
 		}
-		else if( const auto class_= dynamic_cast<const U::Synt::Class*>( program_element.get() ) )
+		else if( const auto class_= dynamic_cast<const Synt::Class*>( program_element.get() ) )
 		{
 			ProgramTreeNode element;
-			element.name= QString::fromUtf8( U::ToUTF8( class_->name_ ).data() );
+			element.name= QString::fromUtf8( ToUTF8( class_->name_ ).data() );
 			element.number_in_parent= result.childs.size();
 			result.childs.push_back(element);
 		}
-		else if( const auto function_= dynamic_cast<const U::Synt::Function*>( program_element.get() ) )
+		else if( const auto function_= dynamic_cast<const Synt::Function*>( program_element.get() ) )
 		{
 			ProgramTreeNode element;
-			element.name= QString::fromUtf8( U::ToUTF8( function_->name_.components.back().name ).data() );
+			element.name= QString::fromUtf8( ToUTF8( function_->name_.components.back().name ).data() );
 			element.number_in_parent= result.childs.size();
 			result.childs.push_back(element);
 		}
-		else if( const auto variables_= dynamic_cast<const U::Synt::VariablesDeclaration*>( program_element.get() ) )
+		else if( const auto variables_= dynamic_cast<const Synt::VariablesDeclaration*>( program_element.get() ) )
 		{
 			for( const auto& variable : variables_->variables )
 			{
 				ProgramTreeNode element;
-				element.name= QString::fromUtf8( U::ToUTF8( variable.name ).data() );
+				element.name= QString::fromUtf8( ToUTF8( variable.name ).data() );
 				element.number_in_parent= result.childs.size();
 				result.childs.push_back(element);
 			}
 		}
-		else if( const auto auto_variable_= dynamic_cast<const U::Synt::AutoVariableDeclaration*>( program_element.get() ) )
+		else if( const auto auto_variable_= dynamic_cast<const Synt::AutoVariableDeclaration*>( program_element.get() ) )
 		{
 			ProgramTreeNode element;
-			element.name= QString::fromUtf8( U::ToUTF8( auto_variable_->name ).data() );
+			element.name= QString::fromUtf8( ToUTF8( auto_variable_->name ).data() );
 			element.number_in_parent= result.childs.size();
 			result.childs.push_back(element);
 		}
@@ -74,8 +73,6 @@ ProgramTreeNode ConvertProgramForOutline( const U::Synt::ProgramElements& elemen
 
 	return result;
 }
-
-///* UNFINISHED
 
 USpracheEditorWidget::USpracheEditorWidget()
 	: timer_(this)
@@ -211,6 +208,6 @@ ExtensionSystem::IPlugin::ShutdownFlag USprachePlugin::aboutToShutdown()
 	return SynchronousShutdown;
 }
 
-} // namespace Internal
+} // namespace UQtCreatorPlugin
 
-} // namespace USprache
+} // namespace U
