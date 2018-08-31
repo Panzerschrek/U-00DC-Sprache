@@ -5,6 +5,8 @@ INCLUDEPATH+= ../../boost_1_65_1/
 # USprache files
 
 SOURCES += \
+	editor_widget.cpp \
+	outline_widget_model.cpp \
 	program_model.cpp \
 	uspracheplugin.cpp \
 	../Compiler/src/keywords.cpp \
@@ -16,6 +18,8 @@ SOURCES += \
 	../Compiler/src/syntax_elements.cpp \
 
 HEADERS += \
+	editor_widget.h \
+	outline_widget_model.h \
 	program_model.h \
 	uspracheplugin.h \
 	usprache_global.h \
