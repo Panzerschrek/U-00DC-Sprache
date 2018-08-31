@@ -8,8 +8,8 @@
 #include <coreplugin/actionmanager/actioncontainer.h>
 #include <coreplugin/coreconstants.h>
 #include <coreplugin/editormanager/editormanager.h>
-
 #include "editor_widget.h"
+#include "syntax_highlighter.h"
 
 namespace U
 {
@@ -25,7 +25,7 @@ USpracheEditorDocument::USpracheEditorDocument()
 {
 	setId(g_editor_id);
 
-	// setSyntaxHighlighter(new CppHighlighter);
+	 setSyntaxHighlighter(new SyntaxHighlighter );
 	// setIndenter(new CppTools::CppQtStyleIndenter);
 }
 

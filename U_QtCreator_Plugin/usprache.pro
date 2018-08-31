@@ -8,6 +8,7 @@ SOURCES += \
 	editor_widget.cpp \
 	outline_widget_model.cpp \
 	program_model.cpp \
+	syntax_highlighter.cpp \
 	uspracheplugin.cpp \
 	../Compiler/src/keywords.cpp \
 	../Compiler/src/lang_types.cpp \
@@ -21,6 +22,7 @@ HEADERS += \
 	editor_widget.h \
 	outline_widget_model.h \
 	program_model.h \
+	syntax_highlighter.h \
 	uspracheplugin.h \
 	usprache_global.h \
 	../Compiler/src/keywords.hpp \
