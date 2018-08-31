@@ -14,6 +14,7 @@ namespace QtCreatorPlugin
 
 struct ProgramModel
 {
+public:
 	struct ProgramTreeNode
 	{
 		QString name;
@@ -26,8 +27,12 @@ struct ProgramModel
 		FilePos file_pos= FilePos{ 0, 0, 0 };
 	};
 
+public:
 	// Elements in order of original file.
 	std::vector<ProgramTreeNode> program_elements;
+
+public:
+	const ProgramModel::ProgramTreeNode* GetNodeForFilePos( const FilePos& file_pos ) const;
 };
 
 using ProgramModelPtr= std::shared_ptr<ProgramModel>;

@@ -62,6 +62,14 @@ public:
 		endResetModel();
 	}
 
+	QModelIndex IndexForNode( const ProgramModel::ProgramTreeNode* const node )
+	{
+		if( node == nullptr )
+			return QModelIndex();
+
+		return createIndex( node->number_in_parent, 0, const_cast<Node*>(node) );
+	}
+
 	virtual QModelIndex index(int row, int column, const QModelIndex &parent = QModelIndex()) const override
 	{
 		Q_UNUSED(column);
@@ -212,11 +220,14 @@ private:
 	void OnTextChanged();
 	void OnTimerExpired();
 	void OnItemActivated();
+	void OnCursorPositionChanged();
 
 private:
 	QTimer timer_;
 	TreeViewComboBox combo_box_;
 	USpracheModel combo_box_model_;
+	ProgramModelPtr program_model_;
+	bool block_cursor_sync_= false;
 };
 
 class USpracheEditorDocument final : public TextEditor::TextDocument

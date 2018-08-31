@@ -558,6 +558,40 @@ static void SetupParents( ProgramModel::ProgramTreeNode& tree )
 	}
 }
 
+const ProgramModel::ProgramTreeNode* GetNode_r( const std::vector<ProgramModel::ProgramTreeNode>& nodes, const FilePos& file_pos )
+{
+	// TODO - optimize, make O(log(n)), instead of O(n).
+	for( size_t i= 0u; i < nodes.size(); ++i )
+	{
+		const ProgramModel::ProgramTreeNode& node= nodes[i];
+
+		FilePos next_file_pos;
+		if( i + 1u < nodes.size() )
+			next_file_pos= nodes[i+1u].file_pos;
+		else
+		{
+			next_file_pos.line= ~0u;
+			next_file_pos.pos_in_line= ~0u;
+			next_file_pos.file_index= 0u;
+		}
+
+		if( node.file_pos <= file_pos && file_pos < next_file_pos )
+		{
+			const ProgramModel::ProgramTreeNode* const child_node= GetNode_r( node.childs, file_pos );
+			if( child_node != nullptr )
+				return child_node;
+			return &node;
+		}
+	}
+
+	return nullptr;
+}
+
+const ProgramModel::ProgramTreeNode* ProgramModel::GetNodeForFilePos( const FilePos& file_pos ) const
+{
+	return GetNode_r( program_elements, file_pos );
+}
+
 ProgramModelPtr BuildProgramModel( const ProgramString& program_text )
 {
 	const U::LexicalAnalysisResult lex_result= U::LexicalAnalysis( program_text );
