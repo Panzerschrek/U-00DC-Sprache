@@ -27,6 +27,11 @@ bool operator< ( const FilePos& l, const FilePos& r )
 	return l.pos_in_line < r.pos_in_line;
 }
 
+bool operator<=( const FilePos& l, const FilePos& r )
+{
+	return l < r || l == r;
+}
+
 typedef std::map<ProgramString, Lexem::Type> FixedLexemsMap;
 static const size_t g_max_fixed_lexem_size= 3;
 
@@ -383,6 +388,7 @@ LexicalAnalysisResult LexicalAnalysis( const ProgramString& program_text )
 	{
 		const sprache_char c= *it;
 		Lexem lexem;
+		lexem.file_pos.file_index= 0;
 
 		// line comment.
 		if( c == '/' && it_end - it > 1 && *(it+1) == '/' )
@@ -463,6 +469,7 @@ LexicalAnalysisResult LexicalAnalysis( const ProgramString& program_text )
 	push_lexem:
 		lexem.file_pos.line= static_cast<unsigned short>(line);
 		lexem.file_pos.pos_in_line= static_cast<unsigned short>( it - last_newline_it );
+		lexem.file_pos.file_index= 0;
 
 		result.lexems.emplace_back( std::move(lexem) );
 
@@ -473,6 +480,7 @@ LexicalAnalysisResult LexicalAnalysis( const ProgramString& program_text )
 	eof_lexem.text= "EOF"_SpC;
 	eof_lexem.file_pos.line= static_cast<unsigned short>(line);
 	eof_lexem.file_pos.pos_in_line= static_cast<unsigned short>( it - last_newline_it );
+	eof_lexem.file_pos.file_index= 0;
 
 	result.lexems.emplace_back( std::move(eof_lexem) );
 

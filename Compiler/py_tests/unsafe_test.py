@@ -236,7 +236,7 @@ def UnsafeFunctionCallOutsideUnsafeBlock_Test12():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "UnsafeFunctionCallOutsideUnsafeBlock" )
-	assert( errors_list[0].file_pos.line == 7 )
+	assert( errors_list[0].file_pos.line == 6 )
 
 
 def UnsafeFunctionCallInsideUnsafeBlock_Test0():
