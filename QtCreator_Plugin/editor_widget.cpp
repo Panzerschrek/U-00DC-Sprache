@@ -12,22 +12,23 @@ namespace QtCreatorPlugin
 
 OutlineTreeViewComboBox::OutlineTreeViewComboBox( QWidget* const parent )
 	: QComboBox(parent)
+	, view_( this )
 {
-	view_ = new QTreeView;
-	view_->setHeaderHidden(true);
-	view_->setItemsExpandable(true);
-	view_->expandAll();
-	setView(view_);
+	view_.setHeaderHidden(true);
+	view_.setItemsExpandable(true);
+	view_.expandAll();
+	setView(&view_);
 
-	view_->viewport()->installEventFilter(this);
+	view_.viewport()->installEventFilter(this);
 }
 
 bool OutlineTreeViewComboBox::eventFilter( QObject* object, QEvent* event )
 {
-	if (event->type() == QEvent::MouseButtonPress && object == view()->viewport()) {
-		QMouseEvent* mouseEvent = static_cast<QMouseEvent*>(event);
-		QModelIndex index = view()->indexAt(mouseEvent->pos());
-		if (!view()->visualRect(index).contains(mouseEvent->pos()))
+	if( event->type() == QEvent::MouseButtonPress && object == view()->viewport() )
+	{
+		QMouseEvent* mouse_event = static_cast<QMouseEvent*>(event);
+		QModelIndex index = view()->indexAt(mouse_event->pos());
+		if( !view()->visualRect(index).contains(mouse_event->pos()) )
 			skip_next_hide_ = true;
 	}
 	return false;
@@ -83,6 +84,8 @@ void EditorWidget::OnTimerExpired()
 	{
 		program_model_= program_model;
 		combo_box_model_.Update( program_model );
+
+		OnCursorPositionChanged();
 	}
 }
 

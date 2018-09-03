@@ -40,6 +40,8 @@ class Editor final : public TextEditor::BaseTextEditor
 
 class EditorFactory final : public TextEditor::TextEditorFactory
 {
+	Q_OBJECT
+
 public:
 	EditorFactory();
 };

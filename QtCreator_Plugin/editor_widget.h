@@ -25,7 +25,7 @@ public:
 	virtual void hidePopup() override;
 
 private:
-	QTreeView* view_= nullptr;
+	QTreeView view_;
 	bool skip_next_hide_= false;
 };
 
@@ -37,7 +37,7 @@ public:
 	EditorWidget();
 
 private:
-	void finalizeInitialization() override;
+	virtual void finalizeInitialization() override;
 
 private:
 	void OnTextChanged();
