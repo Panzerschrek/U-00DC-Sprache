@@ -34,7 +34,7 @@ bool OutlineTreeViewComboBox::eventFilter( QObject* object, QEvent* event )
 }
 
 void OutlineTreeViewComboBox::hidePopup()
-{
+{	
 	if (skip_next_hide_)
 		skip_next_hide_ = false;
 	else
@@ -56,8 +56,6 @@ void EditorWidget::finalizeInitialization()
 
 	combo_box_.setModel( &combo_box_model_ );
 
-	combo_box_.setMinimumContentsLength(20);
-
 	QSizePolicy policy = combo_box_.sizePolicy();
 	policy.setHorizontalPolicy(QSizePolicy::Expanding);
 	combo_box_.setSizePolicy(policy);
@@ -67,9 +65,7 @@ void EditorWidget::finalizeInitialization()
 
 	connect( this, &QPlainTextEdit::textChanged, this, &EditorWidget::OnTextChanged );
 	connect( &timer_, &QTimer::timeout, this, &EditorWidget::OnTimerExpired );
-
 	connect( &combo_box_, static_cast<void(QComboBox::*)(int)>(&QComboBox::activated), this, &EditorWidget::OnItemActivated );
-
 	connect( this, &EditorWidget::cursorPositionChanged, this, &EditorWidget::OnCursorPositionChanged );
 }
 

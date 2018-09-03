@@ -7,10 +7,10 @@ INCLUDEPATH+= ../../boost_1_65_1/
 SOURCES += \
 	editor_widget.cpp \
 	outline_widget_model.cpp \
+	plugin.cpp \
 	program_model.cpp \
 	strings.cpp \
 	syntax_highlighter.cpp \
-	uspracheplugin.cpp \
 	../Compiler/src/keywords.cpp \
 	../Compiler/src/lang_types.cpp \
 	../Compiler/src/lexical_analyzer.cpp \
@@ -22,10 +22,10 @@ SOURCES += \
 HEADERS += \
 	editor_widget.h \
 	outline_widget_model.h \
+	plugin.h \
 	program_model.h \
 	strings.h \
 	syntax_highlighter.h \
-	uspracheplugin.h \
 	usprache_global.h \
 	../Compiler/src/keywords.hpp \
 	../Compiler/src/lang_types.hpp \
