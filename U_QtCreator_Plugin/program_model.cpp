@@ -171,7 +171,16 @@ static ProgramString Stringify( const Synt::Function& function )
 	for( const Synt::FunctionArgumentPtr& arg : function.type_.arguments_ )
 	{
 		if( arg->name_ == Keywords::this_ )
+		{
+			switch( arg->mutability_modifier_ )
+			{
+			case Synt::MutabilityModifier::None: break;
+			case Synt::MutabilityModifier::Mutable  : result+= Keyword( Keywords::mut_       ); result+= " "_SpC; break;
+			case Synt::MutabilityModifier::Immutable: result+= Keyword( Keywords::imut_      ); result+= " "_SpC; break;
+			case Synt::MutabilityModifier::Constexpr: result+= Keyword( Keywords::constexpr_ ); result+= " "_SpC; break;
+			}
 			result+= Keyword( Keywords::this_ );
+		}
 		else
 		{
 			result+= Stringify( *arg->type_ );
@@ -192,7 +201,7 @@ static ProgramString Stringify( const Synt::Function& function )
 			case Synt::MutabilityModifier::None: break;
 			case Synt::MutabilityModifier::Mutable  : result+= Keyword( Keywords::mut_       ); break;
 			case Synt::MutabilityModifier::Immutable: result+= Keyword( Keywords::imut_      ); break;
-			case Synt::MutabilityModifier::Constexpr: result+= Keyword( Keywords::constexpr_ );break;
+			case Synt::MutabilityModifier::Constexpr: result+= Keyword( Keywords::constexpr_ ); break;
 			}
 
 			result+= " "_SpC;
@@ -203,8 +212,11 @@ static ProgramString Stringify( const Synt::Function& function )
 				result+= "'"_SpC;
 				for( const ProgramString& tag : arg->inner_arg_reference_tags_ )
 				{
-					result+= tag;
-					if( &tag != &arg->inner_arg_reference_tags_.back() )
+					if( tag.empty() )
+						result+= "..."_SpC;
+					else
+						result+= tag;
+					if( &tag != &arg->inner_arg_reference_tags_.back() && !arg->inner_arg_reference_tags_.back().empty() )
 						result+= ", "_SpC;
 				}
 				result+= "'"_SpC;
@@ -243,6 +255,21 @@ static ProgramString Stringify( const Synt::Function& function )
 		result+= Keyword( Keywords::void_ );
 	else
 		result+= Stringify( *function.type_.return_type_ );
+
+	if( !function.type_.return_value_inner_reference_tags_.empty() )
+	{
+		result+= "'"_SpC;
+		for( const ProgramString& tag : function.type_.return_value_inner_reference_tags_ )
+		{
+			if( tag.empty() )
+				result+= "..."_SpC;
+			else
+				result+= tag;
+			if( &tag != &function.type_.return_value_inner_reference_tags_.back() && !function.type_.return_value_inner_reference_tags_.back().empty() )
+				result+= ", "_SpC;
+		}
+		result+= "'"_SpC;
+	}
 
 	switch( function.type_.return_value_reference_modifier_ )
 	{
