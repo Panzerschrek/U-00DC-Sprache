@@ -19,6 +19,7 @@ SyntaxHighlighter::SyntaxHighlighter()
 		TextEditor::C_NUMBER,
 		TextEditor::C_STRING,
 		TextEditor::C_COMMENT,
+		TextEditor::C_VISUAL_WHITESPACE,
 		TextEditor::C_FUNCTION,
 
 	});
@@ -34,6 +35,7 @@ void SyntaxHighlighter::highlightBlock(const QString &text)
 		return;
 	}
 
+	setFormat( 0, text.size(), formatForCategory( int(Formats::Whitespace) ) );
 	for( size_t i= 0u; i < lex_result.lexems.size(); ++i )
 	{
 		FilePos next_file_pos;
@@ -127,6 +129,13 @@ void SyntaxHighlighter::highlightBlock(const QString &text)
 
 		// TODO - what if we have more, then one line?
 		setFormat( lexem.file_pos.pos_in_line, next_file_pos.pos_in_line, formatForCategory( int(format) ) );
+
+		int whitespace_start= next_file_pos.pos_in_line - 1;
+		while( whitespace_start >= 0 && text[whitespace_start].isSpace() )
+			--whitespace_start;
+		++whitespace_start;
+
+		setFormat( whitespace_start, next_file_pos.pos_in_line, formatForCategory( int(Formats::Whitespace) ) );
 	} // for lexems
 }
 

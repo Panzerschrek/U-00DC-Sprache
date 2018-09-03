@@ -17,6 +17,7 @@ public:
 		Number,
 		String,
 		Comment,
+		Whitespace,
 		Regular,
 	};
 
