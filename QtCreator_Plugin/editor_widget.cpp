@@ -53,8 +53,6 @@ EditorWidget::EditorWidget()
 
 void EditorWidget::finalizeInitialization()
 {
-	insertExtraToolBarWidget(TextEditorWidget::Left, new QLabel( QString("Ü editor"), this ) );
-
 	combo_box_.setModel( &combo_box_model_ );
 
 	QSizePolicy policy = combo_box_.sizePolicy();
