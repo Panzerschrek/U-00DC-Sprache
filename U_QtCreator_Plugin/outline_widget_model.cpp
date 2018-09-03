@@ -19,6 +19,8 @@ static CPlusPlus::Icons::IconType ProgramElementKindToIcon( const ProgramModel::
 			return CPlusPlus::Icons::NamespaceIconType;
 		case ProgramModel::ElementKind::Class:
 			return CPlusPlus::Icons::ClassIconType;
+		case ProgramModel::ElementKind::Enum:
+			return CPlusPlus::Icons::ClassIconType;
 		case ProgramModel::ElementKind::Function:
 			return CPlusPlus::Icons::FuncPublicIconType;
 		case ProgramModel::ElementKind::ClassFiled:

@@ -20,6 +20,7 @@ public:
 		Unknown,
 		Namespace,
 		Class,
+		Enum,
 		Function,
 		ClassFiled,
 		Variable,

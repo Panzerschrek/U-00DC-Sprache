@@ -382,6 +382,23 @@ static ProgramString Stringify( const Synt::AutoVariableDeclaration& varaible )
 	return result;
 }
 
+static std::vector<ProgramModel::ProgramTreeNode> BuildProgramModel_r( const Synt::Enum& enum_ )
+{
+	std::vector<ProgramModel::ProgramTreeNode> result;
+
+	for( const Synt::Enum::Member& member : enum_.members )
+	{
+		ProgramModel::ProgramTreeNode element;
+		element.name= ProgramStringToQString( member.name );
+		element.kind= ProgramModel::ElementKind::Variable;
+		element.number_in_parent= result.size();
+		element.file_pos= member.file_pos;
+		result.push_back(element);
+	}
+
+	return result;
+}
+
 static std::vector<ProgramModel::ProgramTreeNode> BuildProgramModel_r( const Synt::ClassElements& elements )
 {
 	std::vector<ProgramModel::ProgramTreeNode> result;
@@ -396,6 +413,16 @@ static std::vector<ProgramModel::ProgramTreeNode> BuildProgramModel_r( const Syn
 			element.childs= BuildProgramModel_r( class_->elements_ );
 			element.number_in_parent= result.size();
 			element.file_pos= class_->file_pos_;
+			result.push_back(element);
+		}
+		else if( const auto enum_= dynamic_cast<const Synt::Enum*>( class_element.get() ) )
+		{
+			ProgramModel::ProgramTreeNode element;
+			element.name= ProgramStringToQString( enum_->name );
+			element.kind= ProgramModel::ElementKind::Enum;
+			element.childs= BuildProgramModel_r( *enum_ );
+			element.number_in_parent= result.size();
+			element.file_pos= enum_->file_pos_;
 			result.push_back(element);
 		}
 		else if( const auto typedef_= dynamic_cast<const Synt::Typedef*>( class_element.get() ) )
@@ -505,6 +532,16 @@ static std::vector<ProgramModel::ProgramTreeNode> BuildProgramModel_r( const Syn
 			element.childs= BuildProgramModel_r( class_->elements_ );
 			element.number_in_parent= result.size();
 			element.file_pos= class_->file_pos_;
+			result.push_back(element);
+		}
+		else if( const auto enum_= dynamic_cast<const Synt::Enum*>( program_element.get() ) )
+		{
+			ProgramModel::ProgramTreeNode element;
+			element.name= ProgramStringToQString( enum_->name );
+			element.kind= ProgramModel::ElementKind::Enum;
+			element.childs= BuildProgramModel_r( *enum_ );
+			element.number_in_parent= result.size();
+			element.file_pos= enum_->file_pos_;
 			result.push_back(element);
 		}
 		else if( const auto typedef_= dynamic_cast<const Synt::Typedef*>( program_element.get() ) )
