@@ -126,6 +126,7 @@ void SyntaxHighlighter::highlightBlock( const QString& text )
 		case Lexem::Type::TemplateBracketRight:
 			parentheses.push_back( TextEditor::Parenthesis( TextEditor::Parenthesis::Closed, ParenthesCodeForLexem(lexem.type), current_linear_pos ) );
 			break;
+		default: break;
 		}
 	} // for lexems
 
