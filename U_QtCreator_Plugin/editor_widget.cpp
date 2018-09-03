@@ -1,5 +1,6 @@
 #include <plugins/texteditor/textdocument.h>
 #include <coreplugin/editormanager/editormanager.h>
+#include "strings.h"
 
 #include "editor_widget.h"
 
@@ -81,9 +82,7 @@ void EditorWidget::OnTextChanged()
 
 void EditorWidget::OnTimerExpired()
 {
-	const U::ProgramString program_text= U::DecodeUTF8( EditorWidget::textDocument()->contents().toStdString() );
-
-	const auto program_model= BuildProgramModel( program_text );
+	const auto program_model= BuildProgramModel( QStringToProgramString( EditorWidget::textDocument()->plainText() ) );
 	if( program_model != nullptr )
 	{
 		program_model_= program_model;

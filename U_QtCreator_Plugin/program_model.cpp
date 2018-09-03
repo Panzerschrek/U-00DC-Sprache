@@ -3,6 +3,7 @@
 #include "../Compiler/src/lexical_analyzer.hpp"
 #include "../Compiler/src/program_string.hpp"
 #include "../Compiler/src/syntax_analyzer.hpp"
+#include "strings.h"
 
 #include "program_model.h"
 
@@ -12,15 +13,6 @@ namespace U
 namespace QtCreatorPlugin
 {
 
-static QString ProgramStringToQString( const ProgramString& program_string )
-{
-	return QString::fromUtf16( program_string.data(), int(program_string.size()) );
-}
-
-static ProgramString QStringToProgramString( const QString& q_string )
-{
-	return DecodeUTF8( q_string.toUtf8().data() );
-}
 
 static ProgramString Stringify( const Synt::ComplexName& complex_name );
 static ProgramString Stringify( const Synt::ITypeName& type_name );

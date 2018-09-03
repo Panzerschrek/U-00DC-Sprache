@@ -2,6 +2,7 @@
 
 #include "../Compiler/src/lexical_analyzer.hpp"
 #include "../Compiler/src/keywords.hpp"
+#include "strings.h"
 
 #include "syntax_highlighter.h"
 
@@ -26,9 +27,9 @@ SyntaxHighlighter::SyntaxHighlighter()
 	setTextFormatCategories(categories);
 }
 
-void SyntaxHighlighter::highlightBlock(const QString &text)
+void SyntaxHighlighter::highlightBlock( const QString& text )
 {
-	LexicalAnalysisResult lex_result= LexicalAnalysis( DecodeUTF8( text.toUtf8().data() ), true );
+	LexicalAnalysisResult lex_result= LexicalAnalysis( QStringToProgramString(text), true );
 	if( !lex_result.error_messages.empty() )
 	{
 		setFormat( 0, text.size(), QColor(Qt::red ) );
