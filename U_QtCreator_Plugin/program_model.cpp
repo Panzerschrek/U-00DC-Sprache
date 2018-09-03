@@ -404,7 +404,7 @@ static std::vector<ProgramModel::ProgramTreeNode> BuildProgramModel_r( const Syn
 			element.name= ProgramStringToQString( typedef_->name );
 			element.kind= ProgramModel::ElementKind::Typedef;
 			element.number_in_parent= result.size();
-			element.file_pos= class_->file_pos_;
+			element.file_pos= typedef_->file_pos_;
 			result.push_back(element);
 		}
 		else if( const auto function_= dynamic_cast<const Synt::Function*>( class_element.get() ) )
