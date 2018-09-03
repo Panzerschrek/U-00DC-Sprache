@@ -20,9 +20,6 @@ public:
 	virtual bool initialize( const QStringList& arguments, QString* error_string ) override;
 	virtual void extensionsInitialized() override;
 	virtual ShutdownFlag aboutToShutdown() override;
-
-private:
-	void triggerAction();
 };
 
 class EditorDocument final : public TextEditor::TextDocument

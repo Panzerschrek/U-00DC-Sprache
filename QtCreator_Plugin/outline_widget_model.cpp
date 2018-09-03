@@ -1,5 +1,4 @@
 #include <libs/cplusplus/Icons.h>
-#include <utils/dropsupport.h>
 
 #include "outline_widget_model.h"
 
@@ -127,13 +126,7 @@ QVariant OutlineWidgetModel::data( const QModelIndex& index, const int role ) co
 		return ptr->name;
 
 	case Qt::DecorationRole:
-		return  CPlusPlus::Icons::iconForType( GetIconType( *ptr ) );
-
-	case FileNameRole:
-		return QString("some_file");
-
-	case LineNumberRole:
-		return QString("666");
+		return CPlusPlus::Icons::iconForType( GetIconType( *ptr ) );
 
 	case Qt::EditRole:
 	default:
@@ -147,17 +140,7 @@ Qt::ItemFlags OutlineWidgetModel::flags(const QModelIndex &index) const
 	if (!index.isValid())
 		return 0;
 
-	return Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsDragEnabled;
-}
-
-Qt::DropActions OutlineWidgetModel::supportedDragActions() const
-{
-	return Qt::MoveAction;
-}
-
-QStringList OutlineWidgetModel::mimeTypes() const
-{
-	return Utils::DropSupport::mimeTypesForFilePaths();
+	return Qt::ItemIsEnabled | Qt::ItemIsSelectable;
 }
 
 } // namespace QtCreatorPlugin

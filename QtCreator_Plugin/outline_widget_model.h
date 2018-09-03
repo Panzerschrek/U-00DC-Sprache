@@ -13,12 +13,7 @@ class OutlineWidgetModel final : public QAbstractItemModel
 	Q_OBJECT
 
 public:
-	enum Role {
-		FileNameRole = Qt::UserRole + 1,
-		LineNumberRole
-	};
-
-	OutlineWidgetModel( QObject* parent = nullptr );
+	OutlineWidgetModel( QObject* parent= nullptr );
 
 	void Update( ProgramModelPtr program_model );
 	QModelIndex IndexForNode( const ProgramModel::ProgramTreeNode* const node );
@@ -30,8 +25,6 @@ public:
 	virtual QVariant data( const QModelIndex &index, int role = Qt::DisplayRole ) const override;
 
 	Qt::ItemFlags flags( const QModelIndex &index ) const override;
-	Qt::DropActions supportedDragActions() const override;
-	QStringList mimeTypes() const override;
 
 private:
 	using Node= ProgramModel::ProgramTreeNode;
