@@ -16,12 +16,24 @@ static CPlusPlus::Icons::IconType GetIconType( const ProgramModel::ProgramTreeNo
 			return CPlusPlus::Icons::UnknownIconType;
 		case ProgramModel::ElementKind::Namespace:
 			return CPlusPlus::Icons::NamespaceIconType;
+
+		case ProgramModel::ElementKind::Struct:
+			return CPlusPlus::Icons::StructIconType;
+
 		case ProgramModel::ElementKind::Class:
-			return CPlusPlus::Icons::ClassIconType;
-		case ProgramModel::ElementKind::Enum:
+		case ProgramModel::ElementKind::ClassTemplate:
+		case ProgramModel::ElementKind::Typedef:
+		case ProgramModel::ElementKind::TypedefTemplate:
 			return CPlusPlus::Icons::ClassIconType;
 
+		case ProgramModel::ElementKind::Enum:
+			return CPlusPlus::Icons::EnumIconType;
+
+		case ProgramModel::ElementKind::EnumElement:
+			return CPlusPlus::Icons::EnumeratorIconType;
+
 		case ProgramModel::ElementKind::Function:
+		case ProgramModel::ElementKind::FunctionTemplate:
 			switch( node.visibility )
 			{
 			case ProgramModel::Visibility::Public   : return CPlusPlus::Icons::FuncPublicIconType   ;
@@ -37,15 +49,6 @@ static CPlusPlus::Icons::IconType GetIconType( const ProgramModel::ProgramTreeNo
 			case ProgramModel::Visibility::Protected: return CPlusPlus::Icons::VarProtectedIconType;
 			case ProgramModel::Visibility::Private  : return CPlusPlus::Icons::VarPrivateIconType  ;
 			};
-
-		case ProgramModel::ElementKind::ClassTemplate:
-			return CPlusPlus::Icons::ClassIconType;
-		case ProgramModel::ElementKind::Typedef:
-			return CPlusPlus::Icons::ClassIconType;
-		case ProgramModel::ElementKind::TypedefTemplate:
-			return CPlusPlus::Icons::ClassIconType;
-		case ProgramModel::ElementKind::FunctionTemplate:
-			return CPlusPlus::Icons::FuncPublicIconType;
 	};
 
 	Q_ASSERT(false);

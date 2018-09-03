@@ -417,7 +417,7 @@ static std::vector<ProgramModel::ProgramTreeNode> BuildProgramModel_r( const Syn
 	{
 		ProgramModel::ProgramTreeNode element;
 		element.name= ProgramStringToQString( member.name );
-		element.kind= ProgramModel::ElementKind::Variable;
+		element.kind= ProgramModel::ElementKind::EnumElement;
 		element.number_in_parent= result.size();
 		element.file_pos= member.file_pos;
 		result.push_back(element);
@@ -437,7 +437,7 @@ static std::vector<ProgramModel::ProgramTreeNode> BuildProgramModel_r( const Syn
 		{
 			ProgramModel::ProgramTreeNode element;
 			element.name= ProgramStringToQString( class_->name_ );
-			element.kind= ProgramModel::ElementKind::Class;
+			element.kind= class_->kind_attribute_ == Synt::ClassKindAttribute::Struct ? ProgramModel::ElementKind::Struct : ProgramModel::ElementKind::Class;
 			element.childs= BuildProgramModel_r( class_->elements_ );
 			element.number_in_parent= result.size();
 			element.file_pos= class_->file_pos_;
@@ -567,7 +567,7 @@ static std::vector<ProgramModel::ProgramTreeNode> BuildProgramModel_r( const Syn
 		{
 			ProgramModel::ProgramTreeNode element;
 			element.name= ProgramStringToQString( class_->name_ );
-			element.kind= ProgramModel::ElementKind::Class;
+			element.kind= class_->kind_attribute_ == Synt::ClassKindAttribute::Struct ? ProgramModel::ElementKind::Struct : ProgramModel::ElementKind::Class;
 			element.childs= BuildProgramModel_r( class_->elements_ );
 			element.number_in_parent= result.size();
 			element.file_pos= class_->file_pos_;
