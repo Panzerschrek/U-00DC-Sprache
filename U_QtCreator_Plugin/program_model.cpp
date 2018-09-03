@@ -430,6 +430,7 @@ static std::vector<ProgramModel::ProgramTreeNode> BuildProgramModel_r( const Syn
 {
 	std::vector<ProgramModel::ProgramTreeNode> result;
 
+	ProgramModel::Visibility current_visibility= ProgramModel::Visibility::Public;
 	for( const Synt::IClassElementPtr& class_element : elements )
 	{
 		if( const auto class_= dynamic_cast<const Synt::Class*>( class_element.get() ) )
@@ -466,6 +467,7 @@ static std::vector<ProgramModel::ProgramTreeNode> BuildProgramModel_r( const Syn
 			ProgramModel::ProgramTreeNode element;
 			element.name= ProgramStringToQString( Stringify( *function_ ).data() );
 			element.kind= ProgramModel::ElementKind::Function;
+			element.visibility= current_visibility;
 			element.number_in_parent= result.size();
 			element.file_pos= function_->file_pos_;
 			result.push_back(element);
@@ -478,6 +480,7 @@ static std::vector<ProgramModel::ProgramTreeNode> BuildProgramModel_r( const Syn
 				ProgramModel::ProgramTreeNode element;
 				element.name= ProgramStringToQString( Stringify( variable, type_name ) );
 				element.kind= ProgramModel::ElementKind::Variable;
+				element.visibility= current_visibility;
 				element.number_in_parent= result.size();
 				element.file_pos= variable.file_pos;
 				result.push_back(element);
@@ -488,6 +491,7 @@ static std::vector<ProgramModel::ProgramTreeNode> BuildProgramModel_r( const Syn
 			ProgramModel::ProgramTreeNode element;
 			element.name= ProgramStringToQString( Stringify( *auto_variable_ ) );
 			element.kind= ProgramModel::ElementKind::Variable;
+			element.visibility= current_visibility;
 			element.number_in_parent= result.size();
 			element.file_pos= auto_variable_->file_pos_;
 			result.push_back(element);
@@ -497,6 +501,7 @@ static std::vector<ProgramModel::ProgramTreeNode> BuildProgramModel_r( const Syn
 			ProgramModel::ProgramTreeNode element;
 			element.name= ProgramStringToQString( Stringify( *class_field_ ) );
 			element.kind= ProgramModel::ElementKind::ClassFiled;
+			element.visibility= current_visibility;
 			element.number_in_parent= result.size();
 			element.file_pos= class_field_->file_pos_;
 			result.push_back(element);
@@ -506,6 +511,7 @@ static std::vector<ProgramModel::ProgramTreeNode> BuildProgramModel_r( const Syn
 			ProgramModel::ProgramTreeNode element;
 			element.name= ProgramStringToQString( Stringify( *class_template ) );
 			element.kind= ProgramModel::ElementKind::ClassTemplate;
+			element.visibility= current_visibility;
 			element.childs= BuildProgramModel_r( class_template->class_->elements_ );
 			element.number_in_parent= result.size();
 			element.file_pos= class_template->file_pos_;
@@ -516,6 +522,7 @@ static std::vector<ProgramModel::ProgramTreeNode> BuildProgramModel_r( const Syn
 			ProgramModel::ProgramTreeNode element;
 			element.name= ProgramStringToQString( Stringify( *typedef_template ) );
 			element.kind= ProgramModel::ElementKind::TypedefTemplate;
+			element.visibility= current_visibility;
 			element.number_in_parent= result.size();
 			element.file_pos= typedef_template->file_pos_;
 			result.push_back(element);
@@ -525,9 +532,14 @@ static std::vector<ProgramModel::ProgramTreeNode> BuildProgramModel_r( const Syn
 			ProgramModel::ProgramTreeNode element;
 			element.name= ProgramStringToQString( Stringify( *function_template ) );
 			element.kind= ProgramModel::ElementKind::FunctionTemplate;
+			element.visibility= current_visibility;
 			element.number_in_parent= result.size();
 			element.file_pos= function_template->file_pos_;
 			result.push_back(element);
+		}
+		else if( const auto visibility_label= dynamic_cast<const Synt::ClassVisibilityLabel*>( class_element.get() ) )
+		{
+			current_visibility= visibility_label->visibility_;
 		}
 	}
 

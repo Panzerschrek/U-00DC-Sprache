@@ -9,9 +9,9 @@ namespace U
 namespace QtCreatorPlugin
 {
 
-static CPlusPlus::Icons::IconType ProgramElementKindToIcon( const ProgramModel::ElementKind element_kind )
+static CPlusPlus::Icons::IconType GetIconType( const ProgramModel::ProgramTreeNode& node )
 {
-	switch( element_kind )
+	switch( node.kind )
 	{
 		case ProgramModel::ElementKind::Unknown:
 			return CPlusPlus::Icons::UnknownIconType;
@@ -21,12 +21,24 @@ static CPlusPlus::Icons::IconType ProgramElementKindToIcon( const ProgramModel::
 			return CPlusPlus::Icons::ClassIconType;
 		case ProgramModel::ElementKind::Enum:
 			return CPlusPlus::Icons::ClassIconType;
+
 		case ProgramModel::ElementKind::Function:
-			return CPlusPlus::Icons::FuncPublicIconType;
+			switch( node.visibility )
+			{
+			case ProgramModel::Visibility::Public   : return CPlusPlus::Icons::FuncPublicIconType   ;
+			case ProgramModel::Visibility::Protected: return CPlusPlus::Icons::FuncProtectedIconType;
+			case ProgramModel::Visibility::Private  : return CPlusPlus::Icons::FuncPrivateIconType  ;
+			};
+
 		case ProgramModel::ElementKind::ClassFiled:
-			return CPlusPlus::Icons::VarPublicIconType;
 		case ProgramModel::ElementKind::Variable:
-			return CPlusPlus::Icons::VarPublicIconType;
+			switch( node.visibility )
+			{
+			case ProgramModel::Visibility::Public   : return CPlusPlus::Icons::VarPublicIconType   ;
+			case ProgramModel::Visibility::Protected: return CPlusPlus::Icons::VarProtectedIconType;
+			case ProgramModel::Visibility::Private  : return CPlusPlus::Icons::VarPrivateIconType  ;
+			};
+
 		case ProgramModel::ElementKind::ClassTemplate:
 			return CPlusPlus::Icons::ClassIconType;
 		case ProgramModel::ElementKind::Typedef:
@@ -115,7 +127,7 @@ QVariant OutlineWidgetModel::data( const QModelIndex& index, const int role ) co
 		return ptr->name;
 
 	case Qt::DecorationRole:
-		return  CPlusPlus::Icons::iconForType( ProgramElementKindToIcon( ptr->kind ) );
+		return  CPlusPlus::Icons::iconForType( GetIconType( *ptr ) );
 
 	case FileNameRole:
 		return QString("some_file");

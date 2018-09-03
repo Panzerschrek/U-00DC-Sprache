@@ -5,6 +5,7 @@
 
 #include "../Compiler/src/program_string.hpp"
 #include "../Compiler/src/lexical_analyzer.hpp"
+#include "../Compiler/src/syntax_elements.hpp"
 
 namespace U
 {
@@ -30,10 +31,13 @@ public:
 		FunctionTemplate,
 	};
 
+	using Visibility= Synt::ClassMemberVisibility;
+
 	struct ProgramTreeNode
 	{
 		QString name;
 		ElementKind kind= ElementKind::Unknown;
+		Visibility visibility= Visibility::Public;
 
 		// Elements in order of original file.
 		std::vector<ProgramTreeNode> childs;
