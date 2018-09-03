@@ -307,6 +307,7 @@ ProgramElements SyntaxAnalyzer::ParseNamespaceBody( const Lexem::Type end_lexem 
 		}
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::namespace_ )
 		{
+			std::unique_ptr<Namespace> namespace_( new Namespace( it_->file_pos ) );
 			NextLexem();
 
 			ProgramString name;
@@ -325,7 +326,6 @@ ProgramElements SyntaxAnalyzer::ParseNamespaceBody( const Lexem::Type end_lexem 
 			}
 			NextLexem();
 
-			std::unique_ptr<Namespace> namespace_( new Namespace( (it_-2)->file_pos ) );
 			namespace_->name_= std::move(name);
 			namespace_->elements_= ParseNamespaceBody( Lexem::Type::BraceRight );
 			program_elements.push_back( std::move( namespace_ ) );
@@ -1583,9 +1583,8 @@ std::unique_ptr<ExpressionInitializer> SyntaxAnalyzer::ParseExpressionInitialize
 VariablesDeclarationPtr SyntaxAnalyzer::ParseVariablesDeclaration()
 {
 	U_ASSERT( it_->type == Lexem::Type::Identifier && it_->text == Keywords::var_ );
+	VariablesDeclarationPtr decl( new VariablesDeclaration( it_->file_pos ) );
 	NextLexem();
-
-	VariablesDeclarationPtr decl( new VariablesDeclaration( (it_-1)->file_pos ) );
 
 	decl->type= ParseTypeName();
 
@@ -1593,7 +1592,6 @@ VariablesDeclarationPtr SyntaxAnalyzer::ParseVariablesDeclaration()
 	{
 		decl->variables.emplace_back();
 		VariablesDeclaration::VariableEntry& variable_entry= decl->variables.back();
-		variable_entry.file_pos= it_->file_pos;
 
 		if( it_->type == Lexem::Type::And )
 		{
@@ -1630,6 +1628,7 @@ VariablesDeclarationPtr SyntaxAnalyzer::ParseVariablesDeclaration()
 		}
 
 		variable_entry.name= it_->text;
+		variable_entry.file_pos= it_->file_pos;
 		NextLexem();
 
 		if( it_->type == Lexem::Type::Assignment )
@@ -1679,9 +1678,8 @@ VariablesDeclarationPtr SyntaxAnalyzer::ParseVariablesDeclaration()
 std::unique_ptr<AutoVariableDeclaration> SyntaxAnalyzer::ParseAutoVariableDeclaration()
 {
 	U_ASSERT( it_->type == Lexem::Type::Identifier && it_->text == Keywords::auto_ );
-	NextLexem();
-
 	std::unique_ptr<AutoVariableDeclaration> result( new AutoVariableDeclaration( it_->file_pos ) );
+	NextLexem();
 
 	if( it_->type == Lexem::Type::And )
 	{
@@ -2703,6 +2701,7 @@ std::unique_ptr<Class> SyntaxAnalyzer::ParseClass()
 {
 	U_ASSERT( it_->text == Keywords::struct_ || it_->text == Keywords::class_ );
 	const bool is_class= it_->text == Keywords::class_;
+	const FilePos& class_file_pos= it_->file_pos;
 	NextLexem();
 
 	if( it_->type != Lexem::Type::Identifier )
@@ -2724,6 +2723,7 @@ std::unique_ptr<Class> SyntaxAnalyzer::ParseClass()
 	std::unique_ptr<Class> result= ParseClassBody();
 	if( result != nullptr )
 	{
+		result->file_pos_= class_file_pos;
 		result->name_= std::move(name);
 		result->kind_attribute_= class_kind_attribute;
 		result->parents_= std::move(parents_list);
@@ -2886,10 +2886,10 @@ std::unique_ptr<Class> SyntaxAnalyzer::ParseClassBody()
 TemplateBasePtr SyntaxAnalyzer::ParseTemplate()
 {
 	U_ASSERT( it_->type == Lexem::Type::Identifier && it_->text == Keywords::template_ );
+	const FilePos& template_file_pos= it_->file_pos;
 	NextLexem();
 
 	// TemplateBase parameters
-	const FilePos& template_file_pos= it_->file_pos;
 	std::vector<TemplateBase::Arg> args;
 
 	if( it_->type != Lexem::Type::TemplateBracketLeft )
@@ -2960,6 +2960,7 @@ TemplateBasePtr SyntaxAnalyzer::ParseTemplate()
 	TemplateKind template_kind= TemplateKind::Invalid;
 
 	ProgramString name;
+	const FilePos& template_thing_file_pos= it_->file_pos;
 	if( it_->type == Lexem::Type::Identifier && ( it_->text == Keywords::struct_ || it_->text == Keywords::class_ ) )
 	{
 		template_kind= it_->text == Keywords::struct_ ? TemplateKind::Struct : TemplateKind::Class;
@@ -3059,6 +3060,7 @@ TemplateBasePtr SyntaxAnalyzer::ParseTemplate()
 			class_template->class_= ParseClassBody();
 			if( class_template->class_ != nullptr )
 			{
+				class_template->class_->file_pos_= template_thing_file_pos;
 				class_template->class_->name_= std::move(name);
 				class_template->class_->kind_attribute_= class_kind_attribute;
 				class_template->class_->parents_= std::move(class_parents_list);

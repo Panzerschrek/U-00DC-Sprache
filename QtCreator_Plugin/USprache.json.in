@@ -1,0 +1,11 @@
+{
+	\"Name\" : \"Ü plugin\",
+	\"Version\" : \"0.1\",
+	\"CompatVersion\" : \"0.1\",
+	\"Vendor\" : \"Panzerschrek\",
+	\"Copyright\" : \"(C) Panzerschrek 2018\",
+	\"License\" : \"GNU GPL v3\",
+	\"Description\" : \"Ü programming language plugin.\",
+	\"Url\" : \"https://github.com/Panzerschrek/U-00DC-Sprache\",
+	$$dependencyList
+}
