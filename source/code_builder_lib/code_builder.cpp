@@ -1584,6 +1584,9 @@ void CodeBuilder::BuildFuncCode(
 			!function_type->references_pollution.empty() ) // Side effects, such pollution, not allowed.
 			can_be_constexpr= false;
 
+		if( function_type->return_type.GetFunctionPointerType() != nullptr ) // Currently function pointers not supported.
+			can_be_constexpr= false;
+
 		for( const Function::Arg& arg : function_type->args )
 		{
 			if( arg.type != void_type_ && !EnsureTypeCompleteness( arg.type, TypeCompleteness::Complete ) )
@@ -1592,6 +1595,8 @@ void CodeBuilder::BuildFuncCode(
 			if( !arg.type.CanBeConstexpr() ) // Incomplete types are not constexpr.
 				can_be_constexpr= false; // Allowed only constexpr types.
 			if( arg.type == void_type_ ) // Disallow "void" arguments, because we currently can not constantly convert any reference to "void" in constexpr function call.
+				can_be_constexpr= false;
+			if( arg.type.GetFunctionPointerType() != nullptr ) // Currently function pointers not supported.
 				can_be_constexpr= false;
 
 			// We support constexpr functions with mutable reference-arguments, but such functions can not be used as root for constexpr function evaluation.

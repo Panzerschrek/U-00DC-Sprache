@@ -17,23 +17,6 @@ def ConstexprHalt_Test0():
 	assert( errors_list[0].file_pos.line == 8 )
 
 
-def ConstexprFunctionEvaluationError_Test0():
-	c_program_text= """
-		type fn_ptr= fn();
-		fn constexpr Foo( fn_ptr ptr ) : i32
-		{
-			return 0;
-		}
-
-		fn Bar(){}
-		fn Baz(){  Foo( fn_ptr(Bar) );  }  // Passing function pointer to constexpr function.
-	"""
-	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "ConstexprFunctionEvaluationError" )
-	assert( errors_list[0].file_pos.line == 9 )
-
-
 def ConstexprFunctionEvaluationError_Test1():
 	c_program_text= """
 		type fn_ptr= fn();
@@ -51,23 +34,6 @@ def ConstexprFunctionEvaluationError_Test1():
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ConstexprFunctionEvaluationError" )
 	assert( errors_list[0].file_pos.line == 11 )
-
-
-def ConstexprFunctionEvaluationError_Test2():
-	c_program_text= """
-		type fn_ptr= fn();
-		fn Bar(){}
-		fn constexpr Foo() : fn_ptr
-		{
-			return fn_ptr(Bar);
-		}
-
-		fn Baz(){  Foo();  }  // Returning function pointer in constexpr function.
-	"""
-	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "ConstexprFunctionEvaluationError" )
-	assert( errors_list[0].file_pos.line == 9 )
 
 
 def ConstexprFunctionEvaluationError_Test3():
@@ -173,6 +139,18 @@ def InvalidTypeForConstexprFunction_Test2():
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "InvalidTypeForConstexprFunction" )
 	assert( errors_list[0].file_pos.line == 3 )
+
+
+def InvalidTypeForConstexprFunction_Test3():
+	c_program_text= """
+		// Function with function pointer in signature can not be constexpr.
+		type fn_ptr= (fn());
+		fn constexpr Foo( fn_ptr ptr ) {}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "InvalidTypeForConstexprFunction" )
+	assert( errors_list[0].file_pos.line == 4 )
 
 
 def InvalidTypeForConstexprFunction_Test5():
