@@ -238,6 +238,7 @@ struct FunctionVariable final
 		NonConstexpr,
 		ConstexprIncomplete,  // Can be used in body of constexpr functions, but result of call can not be constexpr.
 		ConstexprComplete,
+		ConstexprAuto, // May be, or may be not constexpr.
 	};
 
 	Type type; // Function type 100%

@@ -170,7 +170,7 @@ boost::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 	{
 		if( overloaded_operator->is_deleted )
 			errors_.push_back( ReportAccessingDeletedMethod( file_pos ) );
-		if( overloaded_operator->constexpr_kind == FunctionVariable::ConstexprKind::NonConstexpr )
+		if( !( overloaded_operator->constexpr_kind == FunctionVariable::ConstexprKind::ConstexprIncomplete || overloaded_operator->constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete ) )
 			function_context.have_non_constexpr_operations_inside= true; // Can not call non-constexpr function in constexpr function.
 
 		if( overloaded_operator->virtual_table_index != ~0u )
@@ -323,7 +323,7 @@ Value CodeBuilder::BuildExpressionCode(
 			const FunctionVariable* const overloaded_operator= GetOverloadedOperator( args, op, expression_with_unary_operators->file_pos_ );
 			if( overloaded_operator != nullptr )
 			{
-				if( overloaded_operator->constexpr_kind == FunctionVariable::ConstexprKind::NonConstexpr )
+				if( !( overloaded_operator->constexpr_kind == FunctionVariable::ConstexprKind::ConstexprIncomplete || overloaded_operator->constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete ) )
 					function_context.have_non_constexpr_operations_inside= true; // Can not call non-constexpr function in constexpr function.
 
 				if( overloaded_operator->is_this_call && overloaded_operator->virtual_table_index != ~0u )
@@ -1580,7 +1580,7 @@ Value CodeBuilder::BuildIndexationOperator(
 			GetOverloadedOperator( args, OverloadedOperator::Indexing, indexation_operator.file_pos_ );
 		if( overloaded_operator != nullptr )
 		{
-			if( overloaded_operator->constexpr_kind == FunctionVariable::ConstexprKind::NonConstexpr )
+			if( !( overloaded_operator->constexpr_kind == FunctionVariable::ConstexprKind::ConstexprIncomplete || overloaded_operator->constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete ) )
 				function_context.have_non_constexpr_operations_inside= true; // Can not call non-constexpr function in constexpr function.
 
 			if( overloaded_operator->is_this_call && overloaded_operator->virtual_table_index != ~0u  )
@@ -2006,7 +2006,7 @@ Value CodeBuilder::BuildCallOperator(
 	if( function_ptr->is_deleted )
 		errors_.push_back( ReportAccessingDeletedMethod( call_operator.file_pos_ ) );
 
-	if( function_ptr->constexpr_kind == FunctionVariable::ConstexprKind::NonConstexpr )
+	if( !( function_ptr->constexpr_kind == FunctionVariable::ConstexprKind::ConstexprIncomplete || function_ptr->constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete ) )
 		function_context.have_non_constexpr_operations_inside= true; // Can not call non-constexpr function in constexpr function.
 
 	std::vector<const Synt::IExpressionComponent*> synt_args;
