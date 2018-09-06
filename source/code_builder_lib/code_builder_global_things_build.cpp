@@ -46,6 +46,23 @@ private:
 // CodeBuilder
 //
 
+bool CodeBuilder::IsTypeComplete( const Type& type ) const
+{
+	if( const auto fundamental_type= type.GetFundamentalType() )
+		return fundamental_type->fundamental_type != U_FundamentalType::Void;
+	else if( type.GetFunctionType() != nullptr || type.GetFunctionPointerType() != nullptr )
+		return true;
+	else if( const auto enum_type= type.GetEnumTypePtr() )
+		return enum_type->syntax_element == nullptr;
+	else if( const auto array_type= type.GetArrayType() )
+		return IsTypeComplete( array_type->type );
+	else if( const auto class_type= type.GetClassTypeProxy() )
+		return class_type->class_->completeness == TypeCompleteness::Complete;
+	else U_ASSERT(false);
+
+	return false;
+}
+
 bool CodeBuilder::EnsureTypeCompleteness( const Type& type, const TypeCompleteness completeness )
 {
 	if( completeness == TypeCompleteness::Incomplete )

@@ -747,6 +747,7 @@ private:
 
 	// Global things build
 
+	bool IsTypeComplete( const Type& type ) const;
 	bool EnsureTypeCompleteness( const Type& type, TypeCompleteness completeness ); // Returns true, if all ok
 	bool ReferenceIsConvertible( const Type& from, const Type& to, const FilePos& file_pos ); // Returns true of all ok. If types are different can call EnsureTypeCompleteness.
 

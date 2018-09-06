@@ -1575,41 +1575,66 @@ void CodeBuilder::BuildFuncCode(
 		// Check function type and function body.
 		// Function type checked here, because in case of constexpr methods not all types are complete yet.
 
-		if( function_type->return_type != void_type_for_ret_ && !EnsureTypeCompleteness( function_type->return_type, TypeCompleteness::Complete ) )
-			errors_.push_back( ReportUsingIncompleteType( func_variable.body_file_pos, function_type->return_type.ToString() ) ); // Completeness required for constexpr possibility check.
+		// For auto-constexpr functions we do not force type completeness. If function is really-constexpr, it must already make complete using types.
 
+		const bool auto_contexpr= func_variable.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprAuto;
 		bool can_be_constexpr= true;
+
+		if( !auto_contexpr )
+		{
+			if( function_type->return_type != void_type_for_ret_ && !EnsureTypeCompleteness( function_type->return_type, TypeCompleteness::Complete ) )
+				errors_.push_back( ReportUsingIncompleteType( func_variable.body_file_pos, function_type->return_type.ToString() ) ); // Completeness required for constexpr possibility check.
+		}
+
 		if( function_type->unsafe ||
 			!function_type->return_type.CanBeConstexpr() ||
 			!function_type->references_pollution.empty() ) // Side effects, such pollution, not allowed.
 			can_be_constexpr= false;
 
+		if( function_type->return_type.GetFunctionPointerType() != nullptr ) // Currently function pointers not supported.
+			can_be_constexpr= false;
+
 		for( const Function::Arg& arg : function_type->args )
 		{
-			if( arg.type != void_type_ && !EnsureTypeCompleteness( arg.type, TypeCompleteness::Complete ) )
-				errors_.push_back( ReportUsingIncompleteType( func_variable.body_file_pos, arg.type.ToString() ) ); // Completeness required for constexpr possibility check.
+			if( !auto_contexpr )
+			{
+				if( arg.type != void_type_ && !EnsureTypeCompleteness( arg.type, TypeCompleteness::Complete ) )
+					errors_.push_back( ReportUsingIncompleteType( func_variable.body_file_pos, arg.type.ToString() ) ); // Completeness required for constexpr possibility check.
+			}
 
 			if( !arg.type.CanBeConstexpr() ) // Incomplete types are not constexpr.
 				can_be_constexpr= false; // Allowed only constexpr types.
 			if( arg.type == void_type_ ) // Disallow "void" arguments, because we currently can not constantly convert any reference to "void" in constexpr function call.
+				can_be_constexpr= false;
+			if( arg.type.GetFunctionPointerType() != nullptr ) // Currently function pointers not supported.
 				can_be_constexpr= false;
 
 			// We support constexpr functions with mutable reference-arguments, but such functions can not be used as root for constexpr function evaluation.
 			// We support also constexpr constructors (except constexpr copy constructors), but constexpr constructors currently can not e used for constexpr variables initialization.
 		}
 
-		if( !can_be_constexpr )
+		if( auto_contexpr )
 		{
-			errors_.push_back( ReportInvalidTypeForConstexprFunction( func_variable.body_file_pos ) );
-			func_variable.constexpr_kind= FunctionVariable::ConstexprKind::NonConstexpr;
-		}
-		else if( function_context.have_non_constexpr_operations_inside )
-		{
-			errors_.push_back( ReportConstexprFunctionContainsUnallowedOperations( func_variable.body_file_pos ) );
-			func_variable.constexpr_kind= FunctionVariable::ConstexprKind::NonConstexpr;
+			if( can_be_constexpr && !function_context.have_non_constexpr_operations_inside )
+				func_variable.constexpr_kind= FunctionVariable::ConstexprKind::ConstexprComplete;
+			else
+				func_variable.constexpr_kind= FunctionVariable::ConstexprKind::NonConstexpr;
 		}
 		else
-			func_variable.constexpr_kind= FunctionVariable::ConstexprKind::ConstexprComplete;
+		{
+			if( !can_be_constexpr )
+			{
+				errors_.push_back( ReportInvalidTypeForConstexprFunction( func_variable.body_file_pos ) );
+				func_variable.constexpr_kind= FunctionVariable::ConstexprKind::NonConstexpr;
+			}
+			else if( function_context.have_non_constexpr_operations_inside )
+			{
+				errors_.push_back( ReportConstexprFunctionContainsUnallowedOperations( func_variable.body_file_pos ) );
+				func_variable.constexpr_kind= FunctionVariable::ConstexprKind::NonConstexpr;
+			}
+			else
+				func_variable.constexpr_kind= FunctionVariable::ConstexprKind::ConstexprComplete;
+		}
 	}
 
 	// We need call destructors for arguments only if function returns "void".
