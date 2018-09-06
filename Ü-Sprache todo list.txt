@@ -23,7 +23,6 @@ Common:
 *) Constructor initializer for constexpr structs
 *) Function pointers inside constexpr functions
 *) Reference result of constexpr function evaluation
-*) Auto-constexpr for templates
 
 References:
 *) Tags for struct/class references
@@ -56,3 +55,9 @@ Compiler:
 *) Return value optimization
 *) Precompiled modules
 *) Compiler uses a lot of shared pointers. Check for memory leaks.
+
+QtCreator plugin:
+*) Symbol table construction for document
+*) "go to defenition" possibility
+*) Indentation in editor
+*) More advanced program model updating
