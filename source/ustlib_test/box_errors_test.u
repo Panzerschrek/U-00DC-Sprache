@@ -1,0 +1,24 @@
+//##fail_test
+import "../ustlib/box.u"
+
+struct DefaultConstructible{}
+
+fn U_Main() : i32
+{
+	{ // box have no default constructor.
+		var ust::box</ i32 /> b; //##expect_error ExpectedInitializer
+	}
+	{ // box have no default constructor even for default-constructible types.
+		var ust::box</ DefaultConstructible /> b; //##expect_error ExpectedInitializer
+	}
+	{ // box is not copyable.
+		var ust::box</ i32 /> b(0);
+		var ust::box</ i32 /> b_copy= b; //##expect_error OperationNotSupportedForThisType
+	}
+	{ // box saves mutability.
+		var ust::box</ i32 /> imut b(0);
+		b.get_ref()= 0; //##expect_error ExpectedReferenceValue
+	}
+
+	return 0;
+}
