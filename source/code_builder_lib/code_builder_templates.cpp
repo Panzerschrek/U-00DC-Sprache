@@ -1192,7 +1192,10 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 	// Insert generated function
 	FunctionVariable function_variable= result_functions_set.functions.front();
 	function_variable.deduced_temlpate_parameters= std::move(deduced_temlpate_parameters);
-	function_variable.constexpr_kind= FunctionVariable::ConstexprKind::ConstexprAuto;
+
+	if( function_variable.constexpr_kind == FunctionVariable::ConstexprKind::NonConstexpr )
+		function_variable.constexpr_kind= FunctionVariable::ConstexprKind::ConstexprAuto;
+
 	NamesScope::InsertedName* const inserted_function_name= function_template.parent_namespace->AddName( name_encoded, function_variable );
 	U_ASSERT( inserted_function_name != nullptr );
 	FunctionVariable& function_variable_inserted= *inserted_function_name->second.GetFunctionVariable();
