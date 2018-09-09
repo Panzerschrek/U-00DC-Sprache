@@ -54,7 +54,7 @@ if( NOT DEFINED BOOST_ROOT )
 	message( STATUS "you can define path to boost library, using variable BOOST_ROOT" )
 endif()
 set( Boost_USE_STATIC_LIBS yes )
-find_package( Boost COMPONENTS system filesystem REQUIRED )
+find_package( Boost COMPONENTS system filesystem program_options REQUIRED )
 include_directories( ${Boost_INCLUDE_DIRS} )
 
 # LLVM

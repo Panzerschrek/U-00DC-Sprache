@@ -4,6 +4,7 @@
 
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
+#include <boost/program_options.hpp>
 
 #include "../code_builder_lib/push_disable_llvm_warnings.hpp"
 #include <llvm/ADT/Triple.h>
@@ -28,6 +29,7 @@
 #include "../code_builder_lib/code_builder.hpp"
 
 namespace fs= boost::filesystem;
+namespace po = boost::program_options;
 
 static bool ReadFileRaw( const char* const name, std::string& out_file_content )
 {
@@ -80,16 +82,16 @@ class VfsOverSystemFS final : public IVfs
 	struct PrivateTag{};
 
 public:
-	static std::shared_ptr<VfsOverSystemFS> Create( const std::vector<const char*> include_dirs )
+	static std::shared_ptr<VfsOverSystemFS> Create( const std::vector<std::string>& include_dirs )
 	{
 		std::vector<fs::path> result_include_dirs;
 
 		bool all_ok= true;
-		for( const char* const include_dir : include_dirs )
+		for( const std::string& include_dir : include_dirs )
 		{
 			try
 			{
-				fs::path dir_path{ std::string(include_dir) };
+				fs::path dir_path{ include_dir };
 				dir_path.make_preferred();
 				if( !fs::exists( dir_path ) )
 				{
@@ -194,83 +196,84 @@ private:
 
 int main( const int argc, const char* const argv[])
 {
-	static const char help_message[]=
-	R"(
-Ü-Sprache compiler
-Usage:
-	Compiler -i [input_file] -o [output_ir_file] [--print-llvm-asm])";
+	// Options
+	std::vector<std::string> input_files;
+	std::vector<std::string> include_directories;
+	std::string output_file;
+	fs::path compiler_data_dir= fs::system_complete( argv[0] ).parent_path(); // By default search compiler data near it`s executable.
+	bool produce_object_file= false;
+	bool tests_output= false;
+	bool print_llvm_asm= false;
+
+	po::options_description program_options( u8"Ǖ-compiler options" );
+	program_options.add_options()
+		( "help,h", "produce help message" )
+		( "input", po::value< std::vector< std::string> >()->composing(), "add input file" )
+		( "output,o", po::value<std::string>()->required(), "set output file" )
+		( "include-dir", po::value< std::vector<std::string> >(), "add include dir" )
+		( "compiler-data-dir", po::value< std::string >(), "set path to compiler data directory" )
+		( "produce-object-file", po::bool_switch()->default_value(false), "poduce native object file, instead of .ir file" )
+		( "tests-output", po::bool_switch()->default_value(false), "print code builder errors in test mode" )
+		( "print-llvm-asm", po::bool_switch()->default_value(false), "print llvm asm" )
+	;
+
+	po::positional_options_description positional_options;
+	positional_options.add( "input", -1 );
 
 	if( argc <= 1 )
 	{
-		std::cout << help_message << std::endl;
+		program_options.print( std::cout );
+		return 0;
+	}
+
+	po::variables_map program_options_map;
+	try
+	{
+		const auto options_parsed=
+			po::command_line_parser( argc, argv )
+				.options(program_options)
+				.positional(positional_options)
+				.allow_unregistered()
+				.run();
+		po::store( options_parsed, program_options_map );
+		po::notify( program_options_map );
+	} catch( std::exception& e )
+	{
+		std::cout << e.what() << std::endl;
 		return 1;
 	}
 
-	// Options
-	std::vector<const char*> input_files;
-	std::vector<const char*> include_directories;
-	const char* output_file= nullptr;
-	fs::path compiler_data_dir= fs::system_complete( argv[0] ).parent_path(); // By default search compiler data near it`s executable.
-	bool print_llvm_asm= false;
-	bool produce_object_file= false;
-	bool tests_output= false;
-
-	// Parse command line
-	#define EXPECT_ARG_VALUE if( i + 1 >= argc ) { std::cout << "Expeted name after \"" << argv[i] << "\"" << std::endl; return 1; }
-	for( int i = 1; i < argc; )
+	if( program_options_map.count( "help" ) )
 	{
-		if( std::strcmp( argv[i], "-o" ) == 0 )
-		{
-			EXPECT_ARG_VALUE
-			output_file= argv[ i + 1 ];
-			i+= 2;
-		}
-		else if( std::strcmp( argv[i], "--include-dir" ) == 0 )
-		{
-			EXPECT_ARG_VALUE
-			include_directories.push_back( argv[ i + 1 ] );
-			i+= 2;
-		}
-		else if( std::strcmp( argv[i], "--compiler-data-dir" ) == 0 )
-		{
-			EXPECT_ARG_VALUE
-			compiler_data_dir= fs::path( argv[ i + 1 ] );
-			i+= 2;
-		}
-		else if( std::strcmp( argv[i], "--print-llvm-asm" ) == 0 )
-		{
-			print_llvm_asm= true;
-			++i;
-		}
-		else if( std::strcmp( argv[i], "--tests-output" ) == 0 )
-		{
-			tests_output= true;
-			++i;
-		}
-		else if( std::strcmp( argv[i], "--produce-object-file" ) == 0 )
-		{
-			produce_object_file= true;
-			++i;
-		}
-		else if( std::strcmp( argv[i], "--help" ) == 0 )
-		{
-			std::cout << help_message << std::endl;
-			return 0;
-		}
-		else
-		{
-			input_files.push_back( argv[i] );
-			++i;
-		}
+		program_options.print( std::cout );
+		return 0;
 	}
-	#undef EXPECT_ARG_VALUE
+
+	if( program_options_map.count( "include-dir" ) != 0 )
+		include_directories= program_options_map["include-dir"].as< std::vector<std::string> >();
+
+	if( program_options_map.count( "compiler-data-dir" ) != 0 )
+		compiler_data_dir= fs::path( program_options_map["compiler-data-dir"].as<std::string>() );
+
+	if( program_options_map.count( "produce-object-file" ) != 0 )
+		produce_object_file= program_options_map[ "produce-object-file" ].as<bool>();
+	if( program_options_map.count( "tests-output" ) != 0 )
+		tests_output= program_options_map[ "tests-output" ].as<bool>();
+	if( program_options_map.count( "print-llvm-asm" ) != 0 )
+		print_llvm_asm= program_options_map[ "print-llvm-asm" ].as<bool>();
+
+	if( program_options_map.count( "output" ) != 0 )
+		output_file= program_options_map["output"].as< std::string >();
+
+	if( program_options_map.count( "input" ) != 0 )
+		input_files= program_options_map["input"].as< std::vector< std::string > >();
 
 	if( input_files.empty() )
 	{
 		std::cout << "No input files" << std::endl;
 		return 1;
 	}
-	if( output_file == nullptr )
+	if( output_file.empty() )
 	{
 		std::cout << "No output file" << std::endl;
 		return 1;
@@ -319,9 +322,9 @@ Usage:
 	U::SourceGraphLoader source_graph_loader( vfs );
 	std::unique_ptr<llvm::Module> result_module;
 	bool have_some_errors= false;
-	for( const char* const input_file : input_files )
+	for( const std::string& input_file : input_files )
 	{
-		const U::SourceGraphPtr source_graph= source_graph_loader.LoadSource( U::ToProgramString( input_file ) );
+		const U::SourceGraphPtr source_graph= source_graph_loader.LoadSource( U::ToProgramString( input_file.c_str() ) );
 		U_ASSERT( source_graph != nullptr );
 		if( !source_graph->lexical_errors.empty() || !source_graph->syntax_errors.empty() )
 		{
