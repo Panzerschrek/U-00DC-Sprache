@@ -11,6 +11,34 @@ namespace U
 namespace Synt
 {
 
+struct ExpectedLexem
+{
+	ExpectedLexem( const Lexem::Type in_type ) : type(in_type) {}
+	ExpectedLexem( const Keywords keyword ) : type(Lexem::Type::Identifier), text( Keyword( keyword) ) {}
+
+	Lexem::Type type;
+	ProgramString text;
+};
+
+static const std::vector<ExpectedLexem> g_namespace_body_elements_start_lexems
+{
+	ExpectedLexem(Keywords::namespace_),
+	ExpectedLexem(Keywords::class_), ExpectedLexem(Keywords::struct_),
+	ExpectedLexem(Keywords::fn_), ExpectedLexem(Keywords::op_),
+	ExpectedLexem(Keywords::var_), ExpectedLexem(Keywords::auto_),
+	ExpectedLexem(Keywords::static_assert_),
+};
+
+static const std::vector<ExpectedLexem> g_function_arguments_list_control_lexems
+{
+	ExpectedLexem(Lexem::Type::Comma), ExpectedLexem(Lexem::Type::BracketRight),
+};
+
+static const std::vector<ExpectedLexem> g_template_arguments_list_control_lexems
+{
+	ExpectedLexem(Lexem::Type::Comma), ExpectedLexem(Lexem::Type::TemplateBracketRight),
+};
+
 static int GetBinaryOperatorPriority( const BinaryOperatorType binary_operator )
 {
 	#define PRIORITY ( - __LINE__ )
@@ -206,6 +234,11 @@ private:
 	TemplateBasePtr ParseTemplate();
 
 	void NextLexem();
+
+	void TryRecoverAfterError( const std::vector<ExpectedLexem>& expected_lexems );
+	void TryRecoverAfterError( const std::vector<ExpectedLexem>& expected_lexems0, const std::vector<ExpectedLexem>& expected_lexems1 );
+	void TryRecoverAfterError( const std::vector<ExpectedLexem>& expected_lexems0, const std::vector<ExpectedLexem>& expected_lexems1, const std::vector<ExpectedLexem>& expected_lexems2 );
+	void TrySkipBrackets( Lexem::Type bracket_type );
 	void PushErrorMessage();
 
 private:
@@ -227,22 +260,20 @@ SyntaxAnalysisResult SyntaxAnalyzer::DoAnalyzis( const Lexems& lexems )
 			break;
 		NextLexem();
 
-		if( it_->type != Lexem::Type::String )
+		if( it_->type == Lexem::Type::String )
+		{
+			result.imports.emplace_back( it_->file_pos );
+			result.imports.back().import_name= it_->text;
+			NextLexem();
+		}
+		else
 		{
 			PushErrorMessage();
-			break;
+			TryRecoverAfterError( { ExpectedLexem(Keywords::import_), ExpectedLexem(Lexem::Type::String) }, g_namespace_body_elements_start_lexems );
 		}
-
-		result.imports.emplace_back( it_->file_pos );
-		result.imports.back().import_name= it_->text;
-		NextLexem();
 	}
 
-	while( it_ < it_end_ )
-	{
-		result.program_elements= ParseNamespaceBody( Lexem::Type::EndOfFile );
-		NextLexem();
-	}
+	result.program_elements= ParseNamespaceBody( Lexem::Type::EndOfFile );
 
 	result.error_messages.swap( error_messages_ );
 	return result;
@@ -252,7 +283,7 @@ ProgramElements SyntaxAnalyzer::ParseNamespaceBody( const Lexem::Type end_lexem 
 {
 	ProgramElements program_elements;
 
-	while( it_ < it_end_ )
+	while( it_ < it_end_ && it_->type != Lexem::Type::EndOfFile )
 	{
 		if( it_->type == Lexem::Type::Identifier && ( it_->text == Keywords::fn_ || it_->text == Keywords::op_ ) )
 		{
@@ -311,20 +342,21 @@ ProgramElements SyntaxAnalyzer::ParseNamespaceBody( const Lexem::Type end_lexem 
 			NextLexem();
 
 			ProgramString name;
-			if( it_->type != Lexem::Type::Identifier )
+			if( it_->type == Lexem::Type::Identifier )
 			{
-				PushErrorMessage();
-				return program_elements;
+				name= it_->text;
+				NextLexem();
 			}
-			name= it_->text;
-			NextLexem();
+			else
+				PushErrorMessage();
 
-			if( it_->type != Lexem::Type::BraceLeft )
+			if( it_->type == Lexem::Type::BraceLeft )
+				NextLexem();
+			else
 			{
 				PushErrorMessage();
-				return program_elements;
+				TryRecoverAfterError( g_namespace_body_elements_start_lexems );
 			}
-			NextLexem();
 
 			namespace_->name_= std::move(name);
 			namespace_->elements_= ParseNamespaceBody( Lexem::Type::BraceRight );
@@ -339,7 +371,7 @@ ProgramElements SyntaxAnalyzer::ParseNamespaceBody( const Lexem::Type end_lexem 
 		else
 		{
 			PushErrorMessage();
-			return program_elements;
+			TryRecoverAfterError( g_namespace_body_elements_start_lexems );
 		}
 	} // while not end of file
 
@@ -498,12 +530,12 @@ IExpressionComponentPtr SyntaxAnalyzer::ParseExpression()
 {
 	IExpressionComponentPtr root;
 
-	while(1)
+	while( std::next(it_) < it_end_ )
 	{
 		PrefixOperators prefix_operators;
 
 		// Prefix operators.
-		while(1)
+		while( std::next(it_) < it_end_ )
 		{
 			switch( it_->type )
 			{
@@ -828,7 +860,7 @@ IExpressionComponentPtr SyntaxAnalyzer::ParseExpression()
 					NextLexem();
 
 					std::vector<IExpressionComponentPtr> arguments;
-					while(1)
+					while( std::next(it_) < it_end_ )
 					{
 						if( it_->type == Lexem::Type::BracketRight )
 						{
@@ -842,10 +874,7 @@ IExpressionComponentPtr SyntaxAnalyzer::ParseExpression()
 						{
 							NextLexem();
 							if( it_->type == Lexem::Type::BracketRight )
-							{
 								PushErrorMessage();
-								return nullptr;
-							}
 						}
 						else if( it_->type == Lexem::Type::BracketRight )
 						{
@@ -976,19 +1005,24 @@ FunctionArgumentPtr SyntaxAnalyzer::ParseFunctionArgument()
 		{
 			NextLexem();
 
-			if( it_->type != Lexem::Type::Identifier )
+			if( it_->type == Lexem::Type::Identifier )
+			{
+				reference_tag = it_->text;
+				NextLexem();
+			}
+			else
 			{
 				PushErrorMessage();
+				TryRecoverAfterError( g_function_arguments_list_control_lexems );
 				return nullptr;
 			}
-			reference_tag = it_->text;
-			NextLexem();
 		}
 	}
 
 	if( it_->type != Lexem::Type::Identifier )
 	{
 		PushErrorMessage();
+		TryRecoverAfterError( g_function_arguments_list_control_lexems );
 		return nullptr;
 	}
 
@@ -1006,6 +1040,7 @@ FunctionArgumentPtr SyntaxAnalyzer::ParseFunctionArgument()
 	if( it_->type != Lexem::Type::Identifier )
 	{
 		PushErrorMessage();
+		TryRecoverAfterError( g_function_arguments_list_control_lexems );
 		return nullptr;
 	}
 
@@ -1053,29 +1088,28 @@ void SyntaxAnalyzer::ParseFunctionTypeEnding( FunctionType& result )
 			{
 				NextLexem();
 
-				if( it_->type != Lexem::Type::Identifier )
+				if( it_->type == Lexem::Type::Identifier )
+				{
+					result.return_value_reference_tag_ = it_->text;
+					NextLexem();
+				}
+				else
 				{
 					PushErrorMessage();
+					TryRecoverAfterError( { ExpectedLexem(Lexem::Type::BraceLeft), ExpectedLexem(Lexem::Type::BraceLeft), ExpectedLexem(Lexem::Type::Semicolon) } );
 					return;
 				}
-				result.return_value_reference_tag_ = it_->text;
-				NextLexem();
 			}
 
 			if( it_->type == Lexem::Type::Identifier )
 			{
 				if( it_->text == Keywords::mut_ )
-				{
 					result.return_value_mutability_modifier_= MutabilityModifier::Mutable;
-					NextLexem();
-				}
 				else if( it_->text == Keywords::imut_ )
-				{
 					result.return_value_mutability_modifier_= MutabilityModifier::Immutable;
-					NextLexem();
-				}
 				else
 					PushErrorMessage();
+				NextLexem();
 			}
 		}
 		else if( it_->type == Lexem::Type::Apostrophe )
@@ -1097,7 +1131,7 @@ std::unique_ptr<FunctionType> SyntaxAnalyzer::ParseFunctionType()
 	}
 	NextLexem();
 
-	while( true )
+	while( it_ < it_end_ && it_->type != Lexem::Type::EndOfFile )
 	{
 		if( it_->type == Lexem::Type::BracketRight )
 		{
@@ -1114,17 +1148,14 @@ std::unique_ptr<FunctionType> SyntaxAnalyzer::ParseFunctionType()
 			NextLexem();
 			// Disallov constructions, like "fn f( a : int, ){}"
 			if( it_->type == Lexem::Type::BracketRight )
-			{
 				PushErrorMessage();
-				return nullptr;
-			}
 		}
 		else if( it_->type == Lexem::Type::BracketRight )
 		{}
 		else
 		{
 			PushErrorMessage();
-			return nullptr;
+			TryRecoverAfterError( g_function_arguments_list_control_lexems );
 		}
 	} // for arguments
 
@@ -1192,7 +1223,7 @@ std::vector<IExpressionComponentPtr> SyntaxAnalyzer::ParseTemplateParameters()
 
 	std::vector<IExpressionComponentPtr> result;
 
-	while(true)
+	while( std::next(it_) < it_end_ )
 	{
 		if( it_->type == Lexem::Type::TemplateBracketRight )
 		{
@@ -1206,10 +1237,14 @@ std::vector<IExpressionComponentPtr> SyntaxAnalyzer::ParseTemplateParameters()
 		{
 			NextLexem();
 			if( it_->type == Lexem::Type::TemplateBracketRight )
-			{
 				PushErrorMessage();
-				return result;
-			}
+		}
+		else if( it_->type == Lexem::Type::TemplateBracketRight )
+		{}
+		else
+		{
+			PushErrorMessage();
+			TryRecoverAfterError( g_template_arguments_list_control_lexems );
 		}
 	}
 
@@ -1250,13 +1285,11 @@ ComplexName SyntaxAnalyzer::ParseComplexName()
 		}
 
 		if( it_->type == Lexem::Type::Scope )
-		{
 			NextLexem();
-		}
 		else
 			break;
 
-	} while(true);
+	} while( std::next(it_) < it_end_ );
 
 	return complex_name;
 }
@@ -1275,7 +1308,7 @@ ReferencesTagsList SyntaxAnalyzer::ParseReferencesTagsList()
 		return result;
 	}
 
-	while(1)
+	while( std::next(it_) < it_end_ )
 	{
 		if( it_->type == Lexem::Type::Identifier )
 		{
@@ -1334,7 +1367,7 @@ FunctionReferencesPollutionList SyntaxAnalyzer::ParseFunctionReferencesPollution
 		return result;
 	}
 
-	while(1)
+	while( std::next(it_) < it_end_ )
 	{
 		if( it_->type == Lexem::Type::Identifier )
 		{
@@ -1879,7 +1912,7 @@ std::unique_ptr<IfOperator> SyntaxAnalyzer::ParseIfOperator()
 	}
 	branches.back().block= ParseBlock();
 
-	while(1)
+	while( std::next(it_) < it_end_ )
 	{
 		if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::else_ )
 		{
@@ -1951,30 +1984,27 @@ std::unique_ptr<StaticAssert> SyntaxAnalyzer::ParseStaticAssert()
 
 	NextLexem();
 
-	if( it_->type != Lexem::Type::BracketLeft )
-	{
+	if( it_->type == Lexem::Type::BracketLeft )
+		NextLexem();
+	else
 		PushErrorMessage();
-		return nullptr;
-	}
-	NextLexem();
 
 	result->expression= ParseExpression();
 
-	if( it_->type != Lexem::Type::BracketRight )
+	if( it_->type == Lexem::Type::BracketRight )
+		NextLexem();
+	else
+		PushErrorMessage();
+
+	if( it_->type == Lexem::Type::Semicolon )
+		NextLexem();
+	else
 	{
 		PushErrorMessage();
 		return nullptr;
 	}
-	NextLexem();
 
-	if( it_->type != Lexem::Type::Semicolon )
-	{
-		PushErrorMessage();
-		return nullptr;
-	}
-	NextLexem();
-
-	return std::move(result);
+	return result;
 }
 
 std::unique_ptr<Enum> SyntaxAnalyzer::ParseEnum()
@@ -2006,7 +2036,7 @@ std::unique_ptr<Enum> SyntaxAnalyzer::ParseEnum()
 	}
 	NextLexem();
 
-	while( true )
+	while( std::next(it_) < it_end_ )
 	{
 		if( it_->type != Lexem::Type::Identifier )
 		{
@@ -2105,7 +2135,7 @@ BlockPtr SyntaxAnalyzer::ParseBlock()
 
 	BlockElements elements;
 
-	while( it_->type != Lexem::Type::EndOfFile )
+	while( std::next(it_) < it_end_ && it_->type != Lexem::Type::EndOfFile )
 	{
 		if( it_->type == Lexem::Type::BraceLeft )
 			elements.emplace_back( ParseBlock() );
@@ -2225,7 +2255,7 @@ BlockPtr SyntaxAnalyzer::ParseBlock()
 			else
 			{
 				PushErrorMessage();
-				return nullptr;
+				TryRecoverAfterError( { ExpectedLexem(Lexem::Type::Semicolon) } );
 			}
 		}
 	}
@@ -2278,7 +2308,7 @@ std::vector<ComplexName> SyntaxAnalyzer::TryParseClassParentsList()
 
 	NextLexem();
 
-	while(true)
+	while( std::next(it_) < it_end_ )
 	{
 		result.push_back(ParseComplexName());
 		if( it_->type == Lexem::Type::Comma )
@@ -2410,7 +2440,7 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 				NextLexem();
 			}
 
-			while(true)
+			while( std::next(it_) < it_end_ )
 			{
 				if( it_->type != Lexem::Type::Identifier )
 				{
@@ -2558,10 +2588,7 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 				NextLexem();
 				// Disallov constructions, like "fn f( mut this, ){}"
 				if( it_->type == Lexem::Type::BracketRight )
-				{
 					PushErrorMessage();
-					return nullptr;
-				}
 			}
 
 			arguments.emplace_back(
@@ -2576,7 +2603,7 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 		}
 	}
 
-	while(1)
+	while( it_ < it_end_ && it_->type != Lexem::Type::EndOfFile )
 	{
 		if( it_->type == Lexem::Type::BracketRight )
 		{
@@ -2593,17 +2620,14 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 			NextLexem();
 			// Disallov constructions, like "fn f( a : int, ){}"
 			if( it_->type == Lexem::Type::BracketRight )
-			{
 				PushErrorMessage();
-				return nullptr;
-			}
 		}
 		else if( it_->type == Lexem::Type::BracketRight )
 		{}
 		else
 		{
 			PushErrorMessage();
-			return nullptr;
+			TryRecoverAfterError( g_function_arguments_list_control_lexems );
 		}
 	}
 
@@ -2643,7 +2667,7 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 			result->constructor_initialization_list_.reset( new StructNamedInitializer( it_->file_pos ) );
 			NextLexem();
 
-			while( true )
+			while( std::next(it_) < it_end_ )
 			{
 				if( it_->type == Lexem::Type::BracketRight )
 				{
@@ -2899,7 +2923,7 @@ TemplateBasePtr SyntaxAnalyzer::ParseTemplate()
 	}
 	NextLexem();
 
-	while( true )
+	while( std::next(it_) < it_end_ )
 	{
 		if( it_->type == Lexem::Type::TemplateBracketRight )
 		{
@@ -2937,10 +2961,14 @@ TemplateBasePtr SyntaxAnalyzer::ParseTemplate()
 		{
 			NextLexem();
 			if( it_->type == Lexem::Type::TemplateBracketRight )
-			{
 				PushErrorMessage();
-				return nullptr;
-			}
+		}
+		else if( it_->type == Lexem::Type::TemplateBracketRight )
+		{}
+		else
+		{
+			PushErrorMessage();
+			TryRecoverAfterError( g_template_arguments_list_control_lexems );
 		}
 	} // for arg parameters
 
@@ -3008,7 +3036,7 @@ TemplateBasePtr SyntaxAnalyzer::ParseTemplate()
 	{
 		// Parse signature args
 		NextLexem();
-		while( true )
+		while( std::next(it_) < it_end_ )
 		{
 			if( it_->type == Lexem::Type::TemplateBracketRight )
 			{
@@ -3029,10 +3057,14 @@ TemplateBasePtr SyntaxAnalyzer::ParseTemplate()
 			{
 				NextLexem();
 				if( it_->type == Lexem::Type::TemplateBracketRight )
-				{
 					PushErrorMessage();
-					return nullptr;
-				}
+			}
+			else if( it_->type == Lexem::Type::TemplateBracketRight )
+			{}
+			else
+			{
+				PushErrorMessage();
+				TryRecoverAfterError( g_template_arguments_list_control_lexems );
 			}
 		} // for signature args
 	}
@@ -3094,14 +3126,85 @@ TemplateBasePtr SyntaxAnalyzer::ParseTemplate()
 
 void SyntaxAnalyzer::NextLexem()
 {
+	if( it_ < it_end_ )
+		++it_;
+}
+
+void SyntaxAnalyzer::TryRecoverAfterError( const std::vector<ExpectedLexem>& expected_lexems0 )
+{
+	return TryRecoverAfterError( expected_lexems0, std::vector<ExpectedLexem>(), std::vector<ExpectedLexem>() );
+}
+
+void SyntaxAnalyzer::TryRecoverAfterError( const std::vector<ExpectedLexem>& expected_lexems0, const std::vector<ExpectedLexem>& expected_lexems1 )
+{
+	return TryRecoverAfterError( expected_lexems0, expected_lexems1, std::vector<ExpectedLexem>() );
+}
+
+void SyntaxAnalyzer::TryRecoverAfterError( const std::vector<ExpectedLexem>& expected_lexems0, const std::vector<ExpectedLexem>& expected_lexems1, const std::vector<ExpectedLexem>& expected_lexems2 )
+{
+	const auto eq=
+	[]( const Lexem& lexem, const ExpectedLexem& expected_lexem ) -> bool
+	{
+		if( lexem.type == Lexem::Type::Identifier )
+			return lexem.type == expected_lexem.type && lexem.text == expected_lexem.text;
+		return lexem.type == expected_lexem.type;
+	};
+
+	while( std::next(it_) < it_end_ )
+	{
+		if( it_->type == Lexem::Type::BracketLeft || it_->type == Lexem::Type::SquareBracketLeft ||
+			it_->type == Lexem::Type::BraceLeft || it_->type == Lexem::Type::TemplateBracketLeft )
+		{
+			TrySkipBrackets( it_->type );
+			if( std::next(it_) >= it_end_ )
+				return;
+		}
+
+		for( const ExpectedLexem& expected_lexem : expected_lexems0 )
+			if( eq( *it_, expected_lexem ) )
+				return;
+		for( const ExpectedLexem& expected_lexem : expected_lexems1 )
+			if( eq( *it_, expected_lexem ) )
+				return;
+		for( const ExpectedLexem& expected_lexem : expected_lexems2 )
+			if( eq( *it_, expected_lexem ) )
+				return;
+
+		++it_;
+	}
+	return;
+}
+
+void SyntaxAnalyzer::TrySkipBrackets( Lexem::Type bracket_type )
+{
 	++it_;
+	while( std::next(it_) < it_end_ )
+	{
+		if( it_->type == Lexem::Type::BracketLeft || it_->type == Lexem::Type::SquareBracketLeft ||
+			it_->type == Lexem::Type::BraceLeft || it_->type == Lexem::Type::TemplateBracketLeft )
+		{
+			TrySkipBrackets( it_->type );
+			if( std::next(it_) >= it_end_ )
+				return;
+		}
+		if( it_->type == static_cast<Lexem::Type>(int(bracket_type) + 1) )
+		{
+			++it_;
+			return;
+		}
+		++it_;
+	}
 }
 
 void SyntaxAnalyzer::PushErrorMessage()
 {
-	error_messages_.emplace_back(
-		std::to_string(it_->file_pos.line) + ":" + std::to_string(it_->file_pos.pos_in_line) +
-		" Syntax error - unexpected lexem: " + ToStdString(it_->text) );
+	if( error_messages_.empty() || error_messages_.back().file_pos != it_->file_pos )
+	{
+		SyntaxErrorMessage error_message;
+		error_message.file_pos= it_->file_pos;
+		error_message.text= "Syntax error - unexpected lexem \""_SpC + it_->text + "\""_SpC;
+		error_messages_.push_back( std::move(error_message) );
+	}
 }
 
 SyntaxAnalysisResult SyntaxAnalysis( const Lexems& lexems )

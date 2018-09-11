@@ -10,7 +10,12 @@ namespace U
 namespace Synt
 {
 
-typedef std::string SyntaxErrorMessage;
+struct SyntaxErrorMessage
+{
+	ProgramString text;
+	FilePos file_pos;
+};
+
 typedef std::vector<SyntaxErrorMessage> SyntaxErrorMessages;
 
 struct SyntaxAnalysisResult
