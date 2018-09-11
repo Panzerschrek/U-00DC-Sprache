@@ -29,6 +29,15 @@ static const std::vector<ExpectedLexem> g_namespace_body_elements_start_lexems
 	ExpectedLexem(Keywords::static_assert_),
 };
 
+static const std::vector<ExpectedLexem> g_class_body_elements_control_lexems
+{
+	ExpectedLexem(Keywords::class_), ExpectedLexem(Keywords::struct_),
+	ExpectedLexem(Keywords::fn_), ExpectedLexem(Keywords::op_),
+	ExpectedLexem(Keywords::var_), ExpectedLexem(Keywords::auto_),
+	ExpectedLexem(Keywords::static_assert_),
+	ExpectedLexem(Lexem::Type::BraceRight),
+};
+
 static const std::vector<ExpectedLexem> g_function_arguments_list_control_lexems
 {
 	ExpectedLexem(Lexem::Type::Comma), ExpectedLexem(Lexem::Type::BracketRight),
@@ -2773,7 +2782,7 @@ std::unique_ptr<Class> SyntaxAnalyzer::ParseClassBody()
 	else
 	{
 		PushErrorMessage();
-		return nullptr;
+		return result;
 	}
 
 	while( !(
@@ -2878,20 +2887,26 @@ std::unique_ptr<Class> SyntaxAnalyzer::ParseClassBody()
 				}
 			}
 
-			if( it_->type != Lexem::Type::Identifier )
+			if( it_->type == Lexem::Type::Identifier )
+			{
+				field->name= it_->text;
+				NextLexem();
+			}
+			else
 			{
 				PushErrorMessage();
-				return nullptr;
+				TryRecoverAfterError( g_class_body_elements_control_lexems );
+				continue;
 			}
-			field->name= it_->text;
-			NextLexem();
 
-			if( it_->type != Lexem::Type::Semicolon )
+			if( it_->type == Lexem::Type::Semicolon )
+				NextLexem();
+			else
 			{
 				PushErrorMessage();
-				return nullptr;
+				TryRecoverAfterError( g_class_body_elements_control_lexems );
+				continue;
 			}
-			NextLexem();
 
 			result->elements_.emplace_back( std::move( field ) );
 		}
@@ -2900,7 +2915,7 @@ std::unique_ptr<Class> SyntaxAnalyzer::ParseClassBody()
 	if( it_->type != Lexem::Type::BraceRight )
 	{
 		PushErrorMessage();
-		return nullptr;
+		return result;
 	}
 	NextLexem();
 

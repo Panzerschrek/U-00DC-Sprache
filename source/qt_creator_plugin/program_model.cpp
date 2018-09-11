@@ -702,8 +702,7 @@ ProgramModelPtr BuildProgramModel( const ProgramString& program_text )
 		return nullptr;
 
 	U::Synt::SyntaxAnalysisResult synt_result= U::Synt::SyntaxAnalysis( lex_result.lexems );
-	if( !synt_result.error_messages.empty() )
-		return nullptr;
+	// Do NOT abort on errors, because in process of source code editing may occurs some errors.
 
 	const auto result= std::make_shared<ProgramModel>();
 	result->program_elements= BuildProgramModel_r( synt_result.program_elements );
