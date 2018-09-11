@@ -89,7 +89,6 @@ set( COMPILER_LIB_SOURCES
 	code_builder_lib/code_builder_names_scope_prepare.cpp
 	code_builder_lib/code_builder_overloading_resolution.cpp
 	code_builder_lib/code_builder_reference_checking.cpp
-	code_builder_lib/code_builder_resolve.cpp
 	code_builder_lib/code_builder_templates.cpp
 	code_builder_lib/code_builder_typeinfo.cpp
 	code_builder_lib/code_builder_types.cpp

@@ -589,6 +589,22 @@ private:
 		const Synt::Typedef& typedef_,
 		NamesScope& names );
 
+	// Name resolving.
+	enum class ResolveMode
+	{
+		Regular,
+		ForDeclaration,
+		ForTemplateSignatureParameter,
+	};
+	NamesScope::InsertedName* ResolveName( const FilePos& file_pos, NamesScope& names_scope, const Synt::ComplexName& complex_name, ResolveMode resolve_mode= ResolveMode::Regular );
+
+	NamesScope::InsertedName* ResolveName(
+		const FilePos& file_pos,
+		NamesScope& names_scope,
+		const Synt::ComplexName::Component* components,
+		size_t component_count,
+		ResolveMode resolve_mode );
+
 	// Functions
 
 	FunctionVariable* GetFunctionWithSameType(
@@ -714,22 +730,6 @@ private:
 
 	VariablesState MergeVariablesStateAfterIf( const std::vector<VariablesState>& bracnhes_variables_state, const FilePos& file_pos );
 	void CheckWhileBlokVariablesState( const VariablesState& state_before, const VariablesState& state_after, const FilePos& file_pos );
-
-	// Name resolving.
-	enum class ResolveMode
-	{
-		Regular,
-		ForDeclaration,
-		ForTemplateSignatureParameter,
-	};
-	NamesScope::InsertedName* ResolveName( const FilePos& file_pos, NamesScope& names_scope, const Synt::ComplexName& complex_name, ResolveMode resolve_mode= ResolveMode::Regular );
-
-	NamesScope::InsertedName* ResolveName(
-		const FilePos& file_pos,
-		NamesScope& names_scope,
-		const Synt::ComplexName::Component* components,
-		size_t component_count,
-		ResolveMode resolve_mode );
 
 	// NamesScope fill
 
