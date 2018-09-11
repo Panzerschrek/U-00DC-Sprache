@@ -122,5 +122,6 @@ struct LexicalAnalysisResult
 };
 
 LexicalAnalysisResult LexicalAnalysis( const ProgramString& program_text, bool collect_comments= false );
+LexicalAnalysisResult LexicalAnalysis( const sprache_char* program_text_data, size_t program_text_size, bool collect_comments= false );
 
 } // namespace U

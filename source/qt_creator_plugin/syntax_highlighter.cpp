@@ -47,7 +47,7 @@ SyntaxHighlighter::SyntaxHighlighter()
 
 void SyntaxHighlighter::highlightBlock( const QString& text )
 {
-	LexicalAnalysisResult lex_result= LexicalAnalysis( QStringToProgramString(text), true );
+	LexicalAnalysisResult lex_result= LexicalAnalysis( text.utf16(), size_t(text.size()), true );
 	if( !lex_result.error_messages.empty() )
 	{
 		setFormat( 0, text.size(), QColor(Qt::red ) );

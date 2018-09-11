@@ -77,7 +77,7 @@ void EditorWidget::OnTextChanged()
 
 void EditorWidget::OnTimerExpired()
 {
-	const auto program_model= BuildProgramModel( QStringToProgramString( EditorWidget::textDocument()->plainText() ) );
+	const auto program_model= BuildProgramModel( EditorWidget::textDocument()->plainText() );
 	if( program_model != nullptr )
 	{
 		program_model_= program_model;

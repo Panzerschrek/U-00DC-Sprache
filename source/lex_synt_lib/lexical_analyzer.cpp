@@ -108,6 +108,8 @@ static const FixedLexemsMap g_fixed_lexems[ g_max_fixed_lexem_size + 1 ]=
 	},
 };
 
+using Iterator= const sprache_char*;
+
 static bool IsWhitespace( sprache_char c )
 {
 	return std::isspace( c ) || std::iscntrl( c );
@@ -145,8 +147,8 @@ static bool IsIdentifierChar( sprache_char c )
 }
 
 static void ParseNumberImpl(
-		ProgramString::const_iterator& it,
-		const ProgramString::const_iterator it_end,
+		Iterator& it,
+		const Iterator it_end,
 		Lexem& result,
 		bool (*is_digit_func)(sprache_char c),
 		bool exponent_allowed= false )
@@ -192,8 +194,8 @@ static void ParseNumberImpl(
 }
 
 static Lexem ParseString(
-	ProgramString::const_iterator& it,
-	const ProgramString::const_iterator it_end,
+	Iterator& it,
+	const Iterator it_end,
 	LexicalErrorMessages& out_errors )
 {
 	// Ü-string fromat is simular to JSON string format.
@@ -284,8 +286,8 @@ static Lexem ParseString(
 }
 
 static Lexem ParseNumber(
-	ProgramString::const_iterator& it,
-	const ProgramString::const_iterator it_end )
+	Iterator& it,
+	const Iterator it_end )
 {
 	Lexem result;
 	result.type= Lexem::Type::Number;
@@ -359,8 +361,8 @@ static Lexem ParseNumber(
 }
 
 static Lexem ParseIdentifier(
-	ProgramString::const_iterator& it,
-	const ProgramString::const_iterator it_end )
+	Iterator& it,
+	const Iterator it_end )
 {
 	Lexem result;
 	result.type= Lexem::Type::Identifier;
@@ -376,13 +378,18 @@ static Lexem ParseIdentifier(
 
 LexicalAnalysisResult LexicalAnalysis( const ProgramString& program_text, const bool collect_comments )
 {
+	return LexicalAnalysis( program_text.data(), program_text.size(), collect_comments );
+}
+
+LexicalAnalysisResult LexicalAnalysis( const sprache_char* const program_text_data, const size_t program_text_size, const bool collect_comments )
+{
 	LexicalAnalysisResult result;
 
-	ProgramString::const_iterator it= program_text.begin();
-	const ProgramString::const_iterator it_end= program_text.end();
+	Iterator it= program_text_data;
+	const Iterator it_end= program_text_data + program_text_size;
 
 	unsigned int line= 1; // Count lines from "1", in human-readable format.
-	ProgramString::const_iterator last_newline_it= program_text.begin();
+	Iterator last_newline_it= program_text_data;
 
 	while( it < it_end )
 	{

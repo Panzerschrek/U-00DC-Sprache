@@ -695,9 +695,9 @@ const ProgramModel::ProgramTreeNode* ProgramModel::GetNodeForFilePos( const File
 	return GetNode_r( program_elements, file_pos );
 }
 
-ProgramModelPtr BuildProgramModel( const ProgramString& program_text )
+ProgramModelPtr BuildProgramModel( const QString& program_text )
 {
-	const U::LexicalAnalysisResult lex_result= U::LexicalAnalysis( program_text );
+	const U::LexicalAnalysisResult lex_result= U::LexicalAnalysis( program_text.utf16(), size_t(program_text.size()) );
 	if( !lex_result.error_messages.empty() )
 		return nullptr;
 

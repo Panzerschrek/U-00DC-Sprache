@@ -59,7 +59,7 @@ public:
 
 using ProgramModelPtr= std::shared_ptr<ProgramModel>;
 
-ProgramModelPtr BuildProgramModel( const ProgramString& program_text );
+ProgramModelPtr BuildProgramModel( const QString& program_text );
 
 } // namespace QtCreatorPlugin
 
