@@ -181,6 +181,10 @@ enum class CodeBuilderErrorCode : unsigned int
 	VirtualForFunctionImplementation,
 	VirtualMismatch,
 
+	// NoMangle
+	NoMangleForNonglobalFunction,
+	NoMangleMismatch,
+
 	// Unsafe
 	UnsafeFunctionCallOutsideUnsafeBlock,
 	ExplicitAccessToThisMethodIsUnsafe,
@@ -344,6 +348,8 @@ CodeBuilderError ReportVirtualForPrivateFunction( const FilePos& file_pos, const
 CodeBuilderError ReportVirtualForFunctionTemplate( const FilePos& file_pos, const ProgramString& function_name );
 CodeBuilderError ReportVirtualForFunctionImplementation( const FilePos& file_pos, const ProgramString& function_name );
 CodeBuilderError ReportVirtualMismatch( const FilePos& file_pos, const ProgramString& function_name );
+CodeBuilderError ReportNoMangleForNonglobalFunction( const FilePos& file_pos, const ProgramString& function_name );
+CodeBuilderError ReportNoMangleMismatch( const FilePos& file_pos, const ProgramString& function_name );
 CodeBuilderError ReportUnsafeFunctionCallOutsideUnsafeBlock( const FilePos& file_pos );
 CodeBuilderError ReportExplicitAccessToThisMethodIsUnsafe( const FilePos& file_pos, const ProgramString& method_name );
 CodeBuilderError ReportUnsafeReferenceCastOutsideUnsafeBlock( const FilePos& file_pos );

@@ -1071,6 +1071,16 @@ void CodeBuilder::PrepareFunction(
 		func_variable.virtual_function_kind= func.virtual_function_kind_;
 	}
 
+	// Set no_mangle
+	if( func.no_mangle_ )
+	{
+		// Allow only global no-mangle function. This prevents existing of multiple "nomangle" functions with same name in different namespaces.
+		// If function is operator, it can not be global.
+		if( names_scope.GetParent() != nullptr )
+			errors_.push_back( ReportNoMangleForNonglobalFunction( func.file_pos_, func_name ) );
+		func_variable.no_mangle= true;
+	}
+
 	// Check "=default" / "=delete".
 	if( func.body_kind != Synt::Function::BodyKind::None )
 	{
@@ -1126,6 +1136,9 @@ void CodeBuilder::PrepareFunction(
 			errors_.push_back( ReportBodyForDeletedFunction( prev_function->prototype_file_pos, func_name ) );
 		if( prev_function->is_generated != func_variable.is_generated )
 			errors_.push_back( ReportBodyForGeneratedFunction( prev_function->prototype_file_pos, func_name ) );
+
+		if( !prev_function->no_mangle && func_variable.no_mangle )
+			errors_.push_back( ReportNoMangleMismatch( func.file_pos_, func_name ) );
 	}
 	else
 	{
@@ -1134,9 +1147,18 @@ void CodeBuilder::PrepareFunction(
 			errors_.push_back( ReportFunctionDeclarationOutsideItsScope( func.file_pos_ ) );
 			return;
 		}
+		if( functions_set.have_nomangle_function || ( !functions_set.functions.empty() && func_variable.no_mangle ) )
+		{
+			errors_.push_back( ReportCouldNotOverloadFunction( func.file_pos_ ) );
+			return;
+		}
+
 		const bool overloading_ok= ApplyOverloadedFunction( functions_set, func_variable, func.file_pos_ );
 		if( !overloading_ok )
 			return;
+
+		if( func_variable.no_mangle )
+			functions_set.have_nomangle_function= true;
 
 		FunctionVariable& inserted_func_variable= functions_set.functions.back();
 		inserted_func_variable.body_file_pos= inserted_func_variable.prototype_file_pos= func.file_pos_;
@@ -1287,7 +1309,7 @@ void CodeBuilder::BuildFuncCode(
 			llvm::Function::Create(
 				function_type->llvm_function_type,
 				llvm::Function::LinkageTypes::ExternalLinkage, // External - for prototype.
-				MangleFunction( parent_names_scope, func_name, *function_type ),
+				func_variable.no_mangle ? ToStdString( func_name ) : MangleFunction( parent_names_scope, func_name, *function_type ),
 				module_.get() );
 
 		// Merge functions with identical code.

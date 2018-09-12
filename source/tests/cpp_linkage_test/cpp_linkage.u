@@ -65,3 +65,10 @@ fn CondHalt( bool cond )
 {
 	halt if( cond );
 }
+
+fn nomangle NoMangleFunctionCPPSide() : i32;
+
+fn nomangle NoMangleFunction() : i32
+{
+	return NoMangleFunctionCPPSide();
+}

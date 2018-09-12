@@ -2415,6 +2415,11 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 		NextLexem();
 		result->constexpr_= true;
 	}
+	if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::nomangle_ )
+	{
+		NextLexem();
+		result->no_mangle_= true;
+	}
 	if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::enable_if_ )
 	{
 		NextLexem();

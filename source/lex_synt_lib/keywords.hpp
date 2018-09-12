@@ -31,6 +31,7 @@ enum class Keywords : unsigned int
 	interface_,
 	abstract_,
 
+	nomangle_,
 	virtual_,
 	override_,
 	pure_,

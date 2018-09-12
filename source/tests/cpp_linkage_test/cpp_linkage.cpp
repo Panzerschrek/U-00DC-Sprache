@@ -33,6 +33,13 @@ void U32ToStr( unsigned int x, char (&str)[64] );
 
 void CondHalt( bool cond );
 
+extern "C" int NoMangleFunction();
+
+extern "C" int NoMangleFunctionCPPSide()
+{
+	return 1917;
+}
+
 int main()
 {
 	// Call some Ü-Sprache functions
@@ -52,6 +59,7 @@ int main()
 
 	const double res= Do( 42 );
 	std::cout << "Res: " << res << std::endl;
+	std::cout << "NoMangle res: " << NoMangleFunction() << std::endl;
 
 	CondHalt(false);
 

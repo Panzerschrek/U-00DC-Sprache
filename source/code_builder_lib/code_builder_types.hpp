@@ -251,6 +251,7 @@ struct FunctionVariable final
 	bool is_this_call= false;
 	bool is_generated= false;
 	bool is_deleted= false;
+	bool no_mangle= false;
 
 	ConstexprKind constexpr_kind= ConstexprKind::NonConstexpr;
 
@@ -266,6 +267,7 @@ struct OverloadedFunctionsSet
 {
 	std::vector<FunctionVariable> functions;
 	std::vector<FunctionTemplatePtr> template_functions;
+	bool have_nomangle_function= false;
 
 	// Is incomplete, if there are some syntax elements in containers.
 	std::vector<const Synt::Function*> syntax_elements;

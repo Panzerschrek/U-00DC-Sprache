@@ -302,6 +302,10 @@ const char* CodeBuilderErrorCodeToString( const CodeBuilderErrorCode code )
 		return "VirtualForFunctionImplementation";
 	case CodeBuilderErrorCode::VirtualMismatch:
 		return "VirtualMismatch";
+	case CodeBuilderErrorCode::NoMangleForNonglobalFunction:
+		return "NoMangleForNonglobalFunction";
+	case CodeBuilderErrorCode::NoMangleMismatch:
+		return "NoMangleMismatch";
 	case CodeBuilderErrorCode::UnsafeFunctionCallOutsideUnsafeBlock:
 		return "UnsafeFunctionCallOutsideUnsafeBlock";
 	case CodeBuilderErrorCode::ExplicitAccessToThisMethodIsUnsafe:
@@ -1879,7 +1883,29 @@ CodeBuilderError ReportVirtualMismatch( const FilePos& file_pos, const ProgramSt
 	error.file_pos= file_pos;
 	error.code= CodeBuilderErrorCode::VirtualMismatch;
 
-	error.text= "\"virtual\" specifiers mismatch for function \"."_SpC + function_name + "\"."_SpC;
+	error.text= "\"virtual\" specifiers mismatch for function \""_SpC + function_name + "\"."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportNoMangleForNonglobalFunction( const FilePos& file_pos, const ProgramString& function_name )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::NoMangleForNonglobalFunction;
+
+	error.text= "\"nomangle\" for non-global function \""_SpC + function_name + "\"."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportNoMangleMismatch( const FilePos& file_pos, const ProgramString& function_name )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::NoMangleMismatch;
+
+	error.text= "\"nomangle\" specifiers mismatch for function \""_SpC + function_name + "\"."_SpC;
 
 	return error;
 }

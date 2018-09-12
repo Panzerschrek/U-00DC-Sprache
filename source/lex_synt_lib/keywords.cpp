@@ -56,6 +56,7 @@ static const Globals& GetGlobals()
 		[ size_t(Keywords::interface_) ]= "interface",
 		[ size_t(Keywords::abstract_) ]= "abstract",
 
+		[ size_t(Keywords::nomangle_) ]= "nomangle",
 		[ size_t(Keywords::virtual_) ]= "virtual",
 		[ size_t(Keywords::override_) ]= "override",
 		[ size_t(Keywords::pure_) ]= "pure",
