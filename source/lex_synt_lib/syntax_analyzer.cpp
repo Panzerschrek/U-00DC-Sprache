@@ -38,6 +38,15 @@ static const std::vector<ExpectedLexem> g_class_body_elements_control_lexems
 	ExpectedLexem(Lexem::Type::BraceRight),
 };
 
+static const std::vector<ExpectedLexem> g_block_body_elements_control_lexems
+{
+	ExpectedLexem(Keywords::if_), ExpectedLexem(Keywords::static_if_), ExpectedLexem(Keywords::while_),
+	ExpectedLexem(Keywords::return_), ExpectedLexem(Keywords::break_), ExpectedLexem(Keywords::continue_),
+	ExpectedLexem(Keywords::var_), ExpectedLexem(Keywords::auto_),
+	ExpectedLexem(Keywords::halt_),
+	ExpectedLexem(Keywords::static_assert_),
+};
+
 static const std::vector<ExpectedLexem> g_function_arguments_list_control_lexems
 {
 	ExpectedLexem(Lexem::Type::Comma), ExpectedLexem(Lexem::Type::BracketRight),
@@ -2179,7 +2188,6 @@ BlockPtr SyntaxAnalyzer::ParseBlock()
 			if( block != nullptr )
 				elements.emplace_back( new UnsafeBlock( std::move( block ) ) );
 		}
-
 		else if( it_->type == Lexem::Type::Increment )
 		{
 			std::unique_ptr<IncrementOperator> op( new IncrementOperator( it_->file_pos ) );
@@ -2223,7 +2231,8 @@ BlockPtr SyntaxAnalyzer::ParseBlock()
 				if( it_->type != Lexem::Type::Semicolon )
 				{
 					PushErrorMessage();
-					return nullptr;
+					TryRecoverAfterError( g_block_body_elements_control_lexems );
+					continue;
 				}
 				NextLexem();
 
@@ -2248,7 +2257,8 @@ BlockPtr SyntaxAnalyzer::ParseBlock()
 				if( it_->type != Lexem::Type::Semicolon )
 				{
 					PushErrorMessage();
-					return nullptr;
+					TryRecoverAfterError( g_block_body_elements_control_lexems );
+					continue;
 				}
 				NextLexem();
 			}
@@ -2264,7 +2274,8 @@ BlockPtr SyntaxAnalyzer::ParseBlock()
 			else
 			{
 				PushErrorMessage();
-				TryRecoverAfterError( { ExpectedLexem(Lexem::Type::Semicolon) } );
+				TryRecoverAfterError( g_block_body_elements_control_lexems );
+				continue;
 			}
 		}
 	}
