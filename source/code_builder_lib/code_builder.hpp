@@ -621,7 +621,8 @@ private:
 		const OverloadedFunctionsSet& functions_set,
 		const std::vector<Function::Arg>& actual_args,
 		bool first_actual_arg_is_this,
-		const FilePos& file_pos );
+		const FilePos& file_pos,
+		bool produce_errors= true );
 
 	const FunctionVariable* GetOverloadedOperator(
 		const std::vector<Function::Arg>& actual_args,

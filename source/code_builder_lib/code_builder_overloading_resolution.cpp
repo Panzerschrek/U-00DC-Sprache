@@ -322,7 +322,8 @@ const FunctionVariable* CodeBuilder::GetOverloadedFunction(
 	const OverloadedFunctionsSet& functions_set,
 	const std::vector<Function::Arg>& actual_args,
 	const bool first_actual_arg_is_this,
-	const FilePos& file_pos )
+	const FilePos& file_pos,
+	const bool produce_errors )
 {
 	U_ASSERT( !( first_actual_arg_is_this && actual_args.empty() ) );
 
@@ -362,7 +363,8 @@ const FunctionVariable* CodeBuilder::GetOverloadedFunction(
 				if( function_type.args[i].type != void_type_ && actual_args_begin[i].type != void_type_ &&
 					!( EnsureTypeCompleteness( function_type.args[i].type, TypeCompleteness::Complete ) && EnsureTypeCompleteness( actual_args_begin[i].type, TypeCompleteness::Complete ) ) )
 				{
-					errors_.push_back( ReportCouldNotSelectOverloadedFunction( file_pos ) );
+					if( produce_errors )
+						errors_.push_back( ReportCouldNotSelectOverloadedFunction( file_pos ) );
 					all_args_is_compatible= false;
 					break;
 				}
@@ -415,7 +417,8 @@ const FunctionVariable* CodeBuilder::GetOverloadedFunction(
 
 	if( match_functions.empty() )
 	{
-		errors_.push_back( ReportCouldNotSelectOverloadedFunction( file_pos ) );
+		if( produce_errors )
+			errors_.push_back( ReportCouldNotSelectOverloadedFunction( file_pos ) );
 		return nullptr;
 	}
 	else if( match_functions.size() == 1u )
@@ -527,7 +530,8 @@ const FunctionVariable* CodeBuilder::GetOverloadedFunction(
 	}
 
 	if( selected_function == nullptr )
-		errors_.push_back( ReportTooManySuitableOverloadedFunctions( file_pos ) );
+		if( produce_errors )
+			errors_.push_back( ReportTooManySuitableOverloadedFunctions( file_pos ) );
 
 	return selected_function;
 }
@@ -538,8 +542,6 @@ const FunctionVariable* CodeBuilder::GetOverloadedOperator(
 	const FilePos& file_pos )
 {
 	const ProgramString op_name= OverloadedOperatorToString( op );
-
-	const size_t errors_before= errors_.size();
 
 	for( const Function::Arg& arg : actual_args )
 	{
@@ -561,12 +563,9 @@ const FunctionVariable* CodeBuilder::GetOverloadedOperator(
 			const OverloadedFunctionsSet* const operators_set= name_in_class->second.GetFunctionsSet();
 			U_ASSERT( operators_set != nullptr ); // If we found something in names map with operator name, it must be operator.
 
-			const FunctionVariable* const func= GetOverloadedFunction( *operators_set, actual_args, false, file_pos );
+			const FunctionVariable* const func= GetOverloadedFunction( *operators_set, actual_args, false, file_pos, false );
 			if( func != nullptr )
-			{
-				errors_.resize( errors_before ); // Clear potential errors only in case of success.
 				return func;
-			}
 		}
 	}
 
