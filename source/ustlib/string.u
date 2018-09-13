@@ -1,0 +1,10 @@
+import "string_base.u"
+
+namespace ust
+{
+
+type string8 = string_base</char8 />;
+type string16= string_base</char16/>;
+type string32= string_base</char32/>;
+
+} // namespace ust

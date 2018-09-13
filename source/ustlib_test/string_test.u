@@ -1,0 +1,160 @@
+//##success_test
+import "../ustlib/string.u"
+
+fn U_Main() : i32
+{
+	{ // string is default-constructible. Default state is empty.
+		var ust::string8  s8 ;
+		var ust::string16 s16;
+		var ust::string32 s32;
+
+		halt if( !s8 .empty() );
+		halt if( !s16.empty() );
+		halt if( !s32.empty() );
+	}
+	{ // string is constructible from char array.
+		var ust::string8  s8 ( "jedem das seine" );
+		var ust::string16 s16( "u16 строка"u16 );
+
+		halt if( s8 .empty() );
+		halt if( s16.empty() );
+		halt if( s8  != "jedem das seine" );
+		halt if( s16 != "u16 строка"u16 );
+	}
+	{ // String is copy-constructible.
+		var ust::string32 s0( "xdcfvg "u32 );
+		var ust::string32 s1(s0);
+
+		halt if( s0 != s1 );
+		halt if( s1 != "xdcfvg "u32 );
+	}
+	{ // String is copy-assignable.
+		var ust::string8 mut s0, s1( "qwerty" );
+
+		halt if( ! s0.empty() );
+		s0= s1;
+		halt if( s0.empty() );
+		halt if( s0 != "qwerty" );
+
+		var ust::string8 s2;
+		s0= s2;
+		halt if( !s0.empty() );
+		halt if( s0 != "" );
+	}
+	{ // String is fill-constructible.
+
+		var ust::string8 s( size_type(7), "a"[0u] );
+		halt if( s.empty() );
+		halt if( s != "aaaaaaa" );
+	}
+	{ // Can assign char array to string.
+		var ust::string16 mut s;
+
+		halt if( !s.empty() );
+		s= "a + a"u16;
+		halt if( s.empty() );
+		halt if( !( "a + a"u16 == s ) );
+
+		auto& arr= "quick brown fox jumps over the lazy dog"u16;
+
+		s= arr;
+		halt if( arr != s );
+	}
+	{ // front/back
+		var ust::string32 mut s( "R"u32 );
+		halt if( s.front() != "R"u32[0u] );
+		halt if( s.back () != "R"u32[0u] );
+		s.push_back( "t"u32[0u] );
+		halt if( s.front() != "R"u32[0u] );
+		halt if( s.back () != "t"u32[0u] );
+		s[0u]= "Ä"u32[0u];
+		halt if( s.front() != "Ä"u32[0u] );
+		halt if( s.back () != "t"u32[0u] );
+	}
+	{ // push_back/ pop_back
+		var ust::string8 mut s;
+
+		halt if( s != "" ); halt if( s.size() != size_type(0) );
+		s.push_back( "Q"[0u] );
+		halt if( s != "Q" ); halt if( s.size() != size_type(1) );
+		s.push_back( "u"[0u] );
+		halt if( s != "Qu" ); halt if( s.size() != size_type(2) );
+		s.push_back( size_type(3), "e"[0u] );
+		halt if( s != "Queee" ); halt if( s.size() != size_type(5) );
+		halt if( s.pop_back() != "e"[0u] );
+		halt if( s != "Quee" ); halt if( s.size() != size_type(4) );
+		s.drop_back();
+		halt if( s != "Que" ); halt if( s.size() != size_type(3) );
+		s.push_back( size_type(7), "!"[0u] );
+		halt if( s != "Que!!!!!!!" ); halt if( s.size() != size_type(10) );
+		s.drop_back(size_type(9));
+		halt if( s != "Q" ); halt if( s.size() != size_type(1) );
+		s.drop_back();
+		halt if( s != "" ); halt if( s.size() != size_type(0) );
+	}
+	{ // resize
+		var ust::string16 mut s;
+		halt if( s != ""u16 );
+
+		s.resize( size_type(4), ","u16[0u] );
+		halt if( s != ",,,,"u16 );
+		s.resize( size_type(6), "r"u16[0u] );
+		halt if( s != ",,,,rr"u16 );
+		s.resize( size_type(1), " "u16[0u] );
+		halt if( s != ","u16 );
+	}
+	{ // swap
+		var ust::string8 mut s("0123456789");
+
+		s.swap( 2u, 7u );
+		halt if( s != "0173456289" );
+		s.swap( 1u, 1u );
+		halt if( s != "0173456289" );
+		s.swap( 0u, 8u );
+		halt if( s != "8173456209" );
+	}
+	{ // Indexing.
+		var ust::string8 s0("HjN"), mut s1("tyuio");
+
+		halt if( s0[0u] != "H"[0u] );
+		halt if( s0[1u] != "j"[0u] );
+		halt if( s0[2u] != "N"[0u] );
+
+		s1[2u]= "&"[0u]; // Can modify.
+		halt if( s1 != "ty&io" );
+	}
+	{ // +
+		var ust::string16 s0("foo"u16), s1("-bar"u16);
+		auto s2= s0 + s1; // string + string
+		halt if( s2 != "foo-bar"u16 );
+
+		var ust::string16 s3= s2 + "_RT"u16; // string + array
+		halt if( s3 != "foo-bar_RT"u16 );
+
+		var ust::string16 s4= "ÜÄÖ"u16 + s1; // array + string
+		halt if( s4 != "ÜÄÖ-bar"u16 );
+	}
+	{ // +=
+		var ust::string32 mut s0("üÜ__/"u32), mut s1("325abc"u32);
+		s0+= s1; // string += string
+		halt if( s0 != "üÜ__/325abc"u32 );
+
+		var ust::string32 mut s2(">"u32);
+		s2+= "bfrtkhr"u32; // string + array
+		halt if( s2 != ">bfrtkhr"u32 );
+	}
+
+	{ // Compare.
+		var ust::string8 a("ada"), b("a"), c("ADA"), d("ada"), e("adam");
+		halt if( a == b );
+		halt if( a == c );
+		halt if( a != d );
+		halt if( a == e );
+
+		halt if( e != "adam" );
+		halt if( "adam" != e );
+		halt if( !( e == "adam" ) );
+		halt if( !( "adam" == e ) );
+	}
+	return 0;
+}

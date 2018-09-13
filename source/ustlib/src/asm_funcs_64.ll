@@ -6,6 +6,7 @@ declare i8* @malloc( i64 )
 declare void @free( i8* )
 declare i8* @realloc( i8*, i64 )
 declare i8* @memcpy( i8*, i8*, i64 )
+declare i32 @memcmp( i8*, i8*, i64 )
 
 ;
 ; halt
@@ -75,4 +76,13 @@ define linkonce_odr void @_ZN3ust11memory_copyERvRKvy( i8* %dst, i8* %src, i64 %
 {
 	%1= call i8* @memcpy( i8* %dst, i8* %src, i64 %size )
 	ret void
+}
+
+; fn memory_equals( void& a, void& b, size_type size ) unsafe : bool;
+$_ZN3ust13memory_equalsERKvS1_y = comdat any
+define linkonce_odr i1 @_ZN3ust13memory_equalsERKvS1_y( i8* %a, i8* %b, i64 %size ) unnamed_addr comdat
+{
+	%1= call i32 @memcmp( i8* %a, i8* %b, i64 %size )
+	%2= icmp eq i32 %1, 0
+	ret i1 %2
 }
