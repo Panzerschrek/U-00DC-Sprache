@@ -1253,7 +1253,7 @@ NamesScope::InsertedName* CodeBuilder::GenTemplateFunctionsUsingTemplateParamete
 		return nullptr;
 
 	// Encode name, based on set of function templates and given tempate parameters.
-	ProgramString name_encoded= g_template_parameters_namespace_prefix;
+	ProgramString name_encoded= g_template_parameters_namespace_prefix + function_templates.front()->syntax_element->function_->name_.components.front().name;
 	name_encoded+= EncodeTemplateParameters( template_parameters );
 
 	if( const auto prev_name= template_names_scope.GetThisScopeName( name_encoded ) )
