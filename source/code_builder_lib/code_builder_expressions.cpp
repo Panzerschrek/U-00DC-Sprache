@@ -90,41 +90,28 @@ boost::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 			dummy_function_context.variables_state= function_context.variables_state;
 			function_context.variables_state.DeactivateLocks();
 
-			const Value l_var_value= BuildExpressionCode( left_expr , names, dummy_function_context );
-			const Value r_var_value= BuildExpressionCode( right_expr, names, dummy_function_context );
+			const Variable l_var= BuildExpressionCodeEnsureVariable( left_expr , names, dummy_function_context );
+			const Variable r_var= BuildExpressionCodeEnsureVariable( right_expr, names, dummy_function_context );
 
 			function_context.overloading_resolutin_cache.insert(
 				dummy_function_context.overloading_resolutin_cache.begin(),
 				dummy_function_context.overloading_resolutin_cache.end() );
 
-			CHECK_RETURN_ERROR_VALUE(l_var_value);
-			CHECK_RETURN_ERROR_VALUE(l_var_value);
-
-			const Variable* const l_var= l_var_value.GetVariable();
-			const Variable* const r_var= r_var_value.GetVariable();
-
-			if( l_var == nullptr )
-				errors_.push_back( ReportExpectedVariable( file_pos, l_var_value.GetKindName() ) );
-			if( r_var == nullptr )
-				errors_.push_back( ReportExpectedVariable( file_pos, r_var_value.GetKindName() ) );
-			if( l_var == nullptr || r_var == nullptr )
-				return Value(ErrorValue());
-
 			// Try apply move-assignment for class types.
 			needs_move_assign=
-				op == OverloadedOperator::Assign && r_var->value_type == ValueType::Value &&
-				r_var->type == l_var->type && r_var->type.GetClassType() != nullptr &&
-				l_var->value_type == ValueType::Reference;
+				op == OverloadedOperator::Assign && r_var.value_type == ValueType::Value &&
+				r_var.type == l_var.type && r_var.type.GetClassType() != nullptr &&
+				l_var.value_type == ValueType::Reference;
 
 			args.emplace_back();
-			args.back().type= l_var->type;
-			args.back().is_reference= l_var->value_type != ValueType::Value;
-			args.back().is_mutable= l_var->value_type == ValueType::Reference;
+			args.back().type= l_var.type;
+			args.back().is_reference= l_var.value_type != ValueType::Value;
+			args.back().is_mutable= l_var.value_type == ValueType::Reference;
 
 			args.emplace_back();
-			args.back().type= r_var->type;
-			args.back().is_reference= r_var->value_type != ValueType::Value;
-			args.back().is_mutable= r_var->value_type == ValueType::Reference;
+			args.back().type= r_var.type;
+			args.back().is_reference= r_var.value_type != ValueType::Value;
+			args.back().is_mutable= r_var.value_type == ValueType::Reference;
 		}
 		function_context.variables_state.ActivateLocks();
 
@@ -224,32 +211,30 @@ Value CodeBuilder::BuildExpressionCode(
 			if( overloaded_operator_call_try != boost::none )
 				return *overloaded_operator_call_try;
 
-			Value l_var_value=
-				BuildExpressionCode(
+			Variable l_var=
+				BuildExpressionCodeEnsureVariable(
 					*binary_operator->left_,
 					names,
 					function_context );
-			Variable* const l_var= l_var_value.GetVariable(); U_ASSERT( l_var != nullptr );
 
-			if( l_var->type.GetFundamentalType() != nullptr || l_var->type.GetEnumType() != nullptr || l_var->type.GetFunctionPointerType() != nullptr )
+			if( l_var.type.GetFundamentalType() != nullptr || l_var.type.GetEnumType() != nullptr || l_var.type.GetFunctionPointerType() != nullptr )
 			{
 				// Save l_var in register, because build-in binary operators require value-parameters.
-				if( l_var->location == Variable::Location::Pointer )
+				if( l_var.location == Variable::Location::Pointer )
 				{
-					l_var->llvm_value= CreateMoveToLLVMRegisterInstruction( *l_var, function_context );
-					l_var->location= Variable::Location::LLVMRegister;
+					l_var.llvm_value= CreateMoveToLLVMRegisterInstruction( l_var, function_context );
+					l_var.location= Variable::Location::LLVMRegister;
 				}
-				l_var->value_type= ValueType::Value;
+				l_var.value_type= ValueType::Value;
 			}
 
-			Value r_var_value=
-				BuildExpressionCode(
+			const Variable r_var=
+				BuildExpressionCodeEnsureVariable(
 					*binary_operator->right_,
 					names,
 					function_context );
-			Variable* const r_var= r_var_value.GetVariable(); U_ASSERT( r_var != nullptr );
 
-			return BuildBinaryOperator( *l_var, *r_var, binary_operator->operator_type_, binary_operator->file_pos_, function_context );
+			return BuildBinaryOperator( l_var, r_var, binary_operator->operator_type_, binary_operator->file_pos_, function_context );
 		}
 	}
 	else if( const auto named_operand= dynamic_cast<const Synt::NamedOperand*>(&expression) )
