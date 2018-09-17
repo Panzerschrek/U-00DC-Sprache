@@ -1,0 +1,85 @@
+namespace ust
+{
+
+namespace type_traits_impl
+{
+
+template</ type A />
+struct is_same_type_impl
+{
+	// Use type templates overloading for type equality comparison.
+	template</ type B /> struct same</ B />
+	{
+		auto constexpr value= false;
+	}
+
+	template</ /> struct same</ A />
+	{
+		auto constexpr value= true;
+	}
+}
+
+// Use this function only for typeinfo arguments, which are allways constexpr.
+template</ type A, type B />
+fn constexpr args_are_same( A& a, B& b ) : bool
+{
+	return is_same_type_impl</A/>::same</B/>::value;
+}
+
+template</ type ParentCandidate, type NodeListType />
+fn constexpr has_parent( NodeListType& parents_list_node ) : bool
+{
+	static_if( NodeListType::is_end )
+	{ return false; }
+	else
+	{
+		if( args_are_same( typeinfo</ParentCandidate/>, parents_list_node.type ) )
+		{ return true; }
+		return type_traits_impl::has_parent</ ParentCandidate />( parents_list_node.next );
+	}
+}
+
+template</ type ParentCandidate, type NodeListType />
+fn constexpr has_ancestor( NodeListType& parents_list_node ) : bool
+{
+	static_if( NodeListType::is_end )
+	{ return false; }
+	else
+	{
+		if( args_are_same( typeinfo</ParentCandidate/>, parents_list_node.type ) )
+		{ return true; }
+		if( type_traits_impl::has_ancestor</ ParentCandidate />( parents_list_node.type.parents_list ) )
+		{ return true; }
+		return type_traits_impl::has_ancestor</ ParentCandidate />( parents_list_node.next );
+	}
+}
+
+} // namespace type_traits_impl
+
+template</ type A, type B />
+fn constexpr is_same_type() : bool
+{
+	return type_traits_impl::is_same_type_impl</A/>::same</B/>::value;
+}
+
+template</ type A, type B />
+fn is_parent_for() : bool
+{
+	static_if( typeinfo</A/>.is_class & typeinfo</B/>.is_class )
+	{
+		return type_traits_impl::has_parent</ A />( typeinfo</B/>.parents_list );
+	}
+	else{ return false; }
+}
+
+template</ type A, type B />
+fn is_ancestor_for() : bool
+{
+	static_if( typeinfo</A/>.is_class & typeinfo</B/>.is_class )
+	{
+		return type_traits_impl::has_ancestor</ A />( typeinfo</B/>.parents_list );
+	}
+	else{ return false; }
+}
+
+} // namespace ust
