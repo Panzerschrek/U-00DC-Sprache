@@ -263,6 +263,9 @@ private:
 	SyntaxErrorMessages error_messages_;
 	Lexems::const_iterator it_;
 	Lexems::const_iterator it_end_;
+
+	Lexems::const_iterator last_error_it_;
+	size_t last_error_repeats_;
 };
 
 SyntaxAnalysisResult SyntaxAnalyzer::DoAnalyzis( const Lexems& lexems )
@@ -271,6 +274,8 @@ SyntaxAnalysisResult SyntaxAnalyzer::DoAnalyzis( const Lexems& lexems )
 
 	it_= lexems.begin();
 	it_end_= lexems.end();
+	last_error_it_= lexems.end();
+	last_error_repeats_= 0u;
 
 	while( it_ < it_end_ )
 	{
@@ -3235,6 +3240,24 @@ void SyntaxAnalyzer::PushErrorMessage()
 		error_message.file_pos= it_->file_pos;
 		error_message.text= "Syntax error - unexpected lexem \""_SpC + it_->text + "\""_SpC;
 		error_messages_.push_back( std::move(error_message) );
+	}
+
+	// HACK!
+	// If we report about error in same position multiple times, advance lexems iterator for looping prevention.
+
+	if( it_ == last_error_it_ )
+		++last_error_repeats_;
+	else
+	{
+		last_error_it_= it_;
+		last_error_repeats_= 0u;
+	}
+
+	if( last_error_repeats_ > 10u )
+	{
+		++it_;
+		last_error_it_= it_;
+		last_error_repeats_= 0u;
 	}
 }
 
