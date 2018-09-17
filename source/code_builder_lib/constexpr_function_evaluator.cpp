@@ -434,18 +434,50 @@ llvm::GenericValue ConstexprFunctionEvaluator::GetVal( const llvm::Value* const 
 			res.DoubleVal= constant_fp->getValueAPF().convertToDouble();
 		else U_ASSERT(false);
 	}
+	else if( const auto constant_int= llvm::dyn_cast<llvm::ConstantInt>(val) )
+		res.IntVal= constant_int->getValue();
 	else if( const auto global_variable= llvm::dyn_cast<llvm::GlobalVariable>( val ) )
 		res.IntVal= llvm::APInt( 64u, MoveConstantToStack( *global_variable->getInitializer() ) );
 	else if( llvm::dyn_cast<llvm::Function>(val) != nullptr )
 		errors_.push_back( ReportConstexprFunctionEvaluationError( *file_pos_, "accessing function pointer" ) );
-	else if( const auto constant= llvm::dyn_cast<llvm::Constant>(val) )
-		res.IntVal= constant->getUniqueInteger();
+	else if( auto constant_expression= llvm::dyn_cast<llvm::ConstantExpr>( val ) )
+	{
+		// Process here constant GEP.
+		if( constant_expression->getOpcode() == llvm::Instruction::GetElementPtr )
+		{
+			const llvm::GenericValue ptr= GetVal( constant_expression->getOperand(0u) );
+			const llvm::GenericValue index= GetVal( constant_expression->getOperand(2u) );
+
+			llvm::Type* const aggregate_type= llvm::dyn_cast<llvm::PointerType>(constant_expression->getOperand(0u)->getType())->getElementType();
+
+			llvm::GenericValue new_ptr;
+			if( aggregate_type->isArrayTy() )
+			{
+				llvm::Type* const element_type= llvm::dyn_cast<llvm::ArrayType>( aggregate_type )->getElementType();
+				new_ptr.IntVal=
+					ptr.IntVal +
+					llvm::APInt( ptr.IntVal.getBitWidth(), index.IntVal.getLimitedValue() ) *
+					llvm::APInt( ptr.IntVal.getBitWidth(), data_layout_.getTypeAllocSize( element_type ) );
+			}
+			else if( aggregate_type->isStructTy() )
+			{
+				const llvm::StructLayout& struct_layout= *data_layout_.getStructLayout( llvm::dyn_cast<llvm::StructType>(aggregate_type) );
+				new_ptr.IntVal=
+					ptr.IntVal +
+					llvm::APInt( ptr.IntVal.getBitWidth(), struct_layout.getElementOffset( static_cast<unsigned int>(index.IntVal.getLimitedValue()) ) );
+			}
+			else U_ASSERT(false);
+			return new_ptr;
+		}
+		else U_ASSERT(false);
+	}
 	else
 	{
 		U_ASSERT( instructions_map_.find( val ) != instructions_map_.end() );
 		res= instructions_map_[val];
 	}
 	return res;
+
 }
 
 void ConstexprFunctionEvaluator::ProcessAlloca( const llvm::Instruction* const instruction )
@@ -468,9 +500,7 @@ void ConstexprFunctionEvaluator::ProcessAlloca( const llvm::Instruction* const i
 
 void ConstexprFunctionEvaluator::ProcessLoad( const llvm::Instruction* const instruction )
 {
-	const llvm::Value* const address= instruction->getOperand(0u);
-	U_ASSERT( instructions_map_.find( address ) != instructions_map_.end() ); // TODO - what if address is global constant?
-	const llvm::GenericValue& address_val= instructions_map_[address];
+	const llvm::GenericValue address_val= GetVal( instruction->getOperand(0u) );
 
 	const size_t offset= size_t(address_val.IntVal.getLimitedValue());
 	const unsigned char* data_ptr= nullptr;
@@ -479,7 +509,7 @@ void ConstexprFunctionEvaluator::ProcessLoad( const llvm::Instruction* const ins
 	else
 		data_ptr= stack_.data() + offset;
 
-	llvm::Type* const element_type= llvm::dyn_cast<llvm::PointerType>(address->getType())->getElementType();
+	llvm::Type* const element_type= instruction->getType();
 	if( element_type->isIntegerTy() )
 	{
 		uint64_t buff[4];
