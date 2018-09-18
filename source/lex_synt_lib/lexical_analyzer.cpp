@@ -1,4 +1,3 @@
-#include <cctype>
 #include <map>
 
 #include "assert.hpp"
@@ -112,7 +111,9 @@ using Iterator= const sprache_char*;
 
 static bool IsWhitespace( sprache_char c )
 {
-	return std::isspace( c ) || std::iscntrl( c );
+	return
+		c == ' ' || c == '\f' || c == '\n' || c == '\r' || c == '\t' || c == '\v' ||
+		c <= 0x1Fu || c == 0x7Fu;
 }
 
 static bool IsNewline( sprache_char c )
@@ -122,7 +123,7 @@ static bool IsNewline( sprache_char c )
 
 static bool IsNumberStartChar( sprache_char c )
 {
-	return std::isdigit(c);
+	return c >= '0' && c <= '9';
 }
 
 static bool IsIdentifierStartChar( sprache_char c )
@@ -328,7 +329,7 @@ static Lexem ParseNumber(
 				it, it_end, result,
 				[]( sprache_char c ) -> bool
 				{
-					return std::isxdigit(c);
+					return IsNumberStartChar(c) || ( c >= 'a' && c <= 'f' ) || ( c >= 'A' && c <= 'F' );
 				} );
 
 			break;
@@ -344,7 +345,7 @@ static Lexem ParseNumber(
 			it, it_end, result,
 			[]( sprache_char c ) -> bool
 			{
-				return std::isdigit(c);
+				return IsNumberStartChar(c);
 			},
 			true );
 	}
