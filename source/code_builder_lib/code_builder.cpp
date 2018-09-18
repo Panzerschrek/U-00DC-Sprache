@@ -1309,7 +1309,7 @@ void CodeBuilder::BuildFuncCode(
 			llvm::Function::Create(
 				function_type->llvm_function_type,
 				llvm::Function::LinkageTypes::ExternalLinkage, // External - for prototype.
-				func_variable.no_mangle ? ToStdString( func_name ) : MangleFunction( parent_names_scope, func_name, *function_type ),
+				func_variable.no_mangle ? ToUTF8( func_name ) : MangleFunction( parent_names_scope, func_name, *function_type ),
 				module_.get() );
 
 		// Merge functions with identical code.

@@ -408,7 +408,7 @@ std::string MangleFunction(
 	if( function_type.args.empty() )
 		result+= "v"_SpC;
 
-	return ToStdString( result );
+	return ToUTF8( result );
 }
 
 std::string MangleGlobalVariable(
@@ -417,20 +417,20 @@ std::string MangleGlobalVariable(
 {
 	// Variables inside global namespace have simple names.
 	if( parent_scope.GetParent() == nullptr )
-		return ToStdString( variable_name );
+		return ToUTF8( variable_name );
 
 	NamesCache names_cache;
 	ProgramString result= "_Z"_SpC;
 
 	result+= GetNestedName( variable_name, true, parent_scope, false, names_cache ).compressed_and_escaped;
 
-	return ToStdString( result );
+	return ToUTF8( result );
 }
 
 std::string MangleType( const Type& type )
 {
 	NamesCache names_cache;
-	return ToStdString( GetTypeName_r( type, names_cache ).compressed_and_escaped );
+	return ToUTF8( GetTypeName_r( type, names_cache ).compressed_and_escaped );
 }
 
 } // namespace CodeBuilderPrivate
