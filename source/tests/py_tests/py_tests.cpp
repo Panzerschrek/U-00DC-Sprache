@@ -72,7 +72,7 @@ std::unique_ptr<llvm::Module> BuildProgram( const char* const text )
 	ICodeBuilder::BuildResult build_result= CreateCodeBuilder()->BuildProgram( *source_graph );
 
 	for( const CodeBuilderError& error : build_result.errors )
-		std::cout << error.file_pos.line << ":" << error.file_pos.pos_in_line << " " << ToStdString( error.text ) << "\n";
+		std::cout << error.file_pos.line << ":" << error.file_pos.pos_in_line << " " << ToUTF8( error.text ) << "\n";
 
 	if( !build_result.errors.empty() )
 		return nullptr;
@@ -334,10 +334,10 @@ static PyObject* BuildProgramWithErrors( PyObject* const self, PyObject* const a
 		PyDict_SetItemString( dict, "file_pos", file_pos_dict );
 
 		const char* const error_code_str= U::CodeBuilderErrorCodeToString( error.code );
-		PyDict_SetItemString( dict, "code", PyUnicode_DecodeASCII( error_code_str, std::strlen(error_code_str), nullptr ) );
+		PyDict_SetItemString( dict, "code", PyUnicode_DecodeUTF8( error_code_str, std::strlen(error_code_str), nullptr ) );
 
-		std::string message= U::ToStdString( error.text );
-		PyDict_SetItemString( dict, "text", PyUnicode_DecodeASCII( message.data(), message.size(), nullptr ) );
+		std::string message= U::ToUTF8( error.text );
+		PyDict_SetItemString( dict, "text", PyUnicode_DecodeUTF8( message.data(), message.size(), nullptr ) );
 
 		PyList_Append( list, dict );
 	}

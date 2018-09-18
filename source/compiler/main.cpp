@@ -154,7 +154,7 @@ private:
 	{
 		try
 		{
-			const fs::path file_path_r( ToStdString(file_path) );
+			const fs::path file_path_r( ToUTF8(file_path) );
 			fs::path result_path;
 
 			if( full_parent_file_path.empty() )
@@ -175,7 +175,7 @@ private:
 			}
 			else
 			{
-				const fs::path base_dir= fs::path( ToStdString(full_parent_file_path) ).parent_path();
+				const fs::path base_dir= fs::path( ToUTF8(full_parent_file_path) ).parent_path();
 				result_path= base_dir / file_path_r;
 			}
 			return result_path.make_preferred();
@@ -339,14 +339,14 @@ int main( const int argc, const char* const argv[])
 		{
 			// For tests we print errors as "file.u 88 NameNotFound"
 			for( const U::CodeBuilderError& error : build_result.errors )
-				std::cout << U::ToStdString( source_graph->nodes_storage[error.file_pos.file_index ].file_path )
+				std::cout << U::ToUTF8( source_graph->nodes_storage[error.file_pos.file_index ].file_path )
 					<< " " << error.file_pos.line << " " << U::CodeBuilderErrorCodeToString( error.code ) << "\n";
 		}
 		else
 		{
 			for( const U::CodeBuilderError& error : build_result.errors )
-				std::cout << U::ToStdString( source_graph->nodes_storage[error.file_pos.file_index ].file_path )
-					<< ":" << error.file_pos.line << ":" << error.file_pos.pos_in_line << " " << U::ToStdString( error.text ) << "\n";
+				std::cout << U::ToUTF8( source_graph->nodes_storage[error.file_pos.file_index ].file_path )
+					<< ":" << error.file_pos.line << ":" << error.file_pos.pos_in_line << " " << U::ToUTF8( error.text ) << "\n";
 		}
 
 		if( !build_result.errors.empty() )

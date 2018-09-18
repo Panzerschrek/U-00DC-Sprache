@@ -48,7 +48,7 @@ ClassProxyPtr CodeBuilder::CreateTypeinfoClass( NamesScope& root_namespace )
 	const ClassProxyPtr typeinfo_class_proxy= std::make_shared<ClassProxy>( new Class( typeinfo_class_name, &root_namespace ) );
 	typeinfo_class_proxy->class_->llvm_type= llvm_type;
 
-	llvm_type->setName( ToStdString( typeinfo_class_name ) );
+	llvm_type->setName( ToUTF8( typeinfo_class_name ) );
 
 	typeinfo_class_proxy->class_->references_tags_count= 1u; // Almost all typeinfo have references to another typeinfo.
 	typeinfo_class_proxy->class_->completeness=  TypeCompleteness::ReferenceTagsComplete;

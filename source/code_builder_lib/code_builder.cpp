@@ -133,7 +133,7 @@ ICodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_g
 
 	module_.reset(
 		new llvm::Module(
-			ToStdString( source_graph.nodes_storage[ source_graph.root_node_index ].file_path ),
+			ToUTF8( source_graph.nodes_storage[ source_graph.root_node_index ].file_path ),
 			llvm_context_ ) );
 
 	// Setup data layout
@@ -1456,7 +1456,7 @@ void CodeBuilder::BuildFuncCode(
 				// Move parameters to stack for assignment possibility.
 				// TODO - do it, only if parameters are not constant.
 				llvm::Value* address= function_context.alloca_ir_builder.CreateAlloca( var.type.GetLLVMType() );
-				address->setName( ToStdString( arg_name ) );
+				address->setName( ToUTF8( arg_name ) );
 				function_context.llvm_ir_builder.CreateStore( var.llvm_value, address );
 
 				var.llvm_value= address;
@@ -1512,7 +1512,7 @@ void CodeBuilder::BuildFuncCode(
 			}
 		}
 
-		llvm_arg.setName( "_arg_" + ToStdString( arg_name ) );
+		llvm_arg.setName( "_arg_" + ToUTF8( arg_name ) );
 		++arg_number;
 	}
 
@@ -2201,7 +2201,7 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 		if( variable_declaration.reference_modifier == ReferenceModifier::None )
 		{
 			variable.llvm_value= function_context.alloca_ir_builder.CreateAlloca( variable.type.GetLLVMType() );
-			variable.llvm_value->setName( ToStdString( variable_declaration.name ) );
+			variable.llvm_value->setName( ToUTF8( variable_declaration.name ) );
 
 			variable.referenced_variables.insert( stored_variable );
 			if( variable_declaration.initializer != nullptr )
@@ -2397,7 +2397,7 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 			function_context.have_non_constexpr_operations_inside= true; // Declaring variable with non-constexpr type in constexpr function not allowed.
 
 		variable.llvm_value= function_context.alloca_ir_builder.CreateAlloca( variable.type.GetLLVMType() );
-		variable.llvm_value->setName( ToStdString( auto_variable_declaration.name ) );
+		variable.llvm_value->setName( ToUTF8( auto_variable_declaration.name ) );
 
 		if( variable.type.GetFundamentalType() != nullptr || variable.type.GetEnumType() != nullptr || variable.type.GetFunctionPointerType() != nullptr )
 		{

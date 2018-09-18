@@ -68,7 +68,7 @@ std::unique_ptr<llvm::Module> BuildProgram( const char* const text )
 			llvm::DataLayout( Constants::tests_data_layout_str ) ).BuildProgram( *source_graph );
 
 	for( const CodeBuilderError& error : build_result.errors )
-		std::cout << error.file_pos.line << ":" << error.file_pos.pos_in_line << " " << ToStdString( error.text ) << "\n";
+		std::cout << error.file_pos.line << ":" << error.file_pos.pos_in_line << " " << ToUTF8( error.text ) << "\n";
 
 	U_TEST_ASSERT( build_result.errors.empty() );
 
@@ -106,7 +106,7 @@ std::unique_ptr<llvm::Module> BuildMultisourceProgram( std::vector<SourceEntry> 
 			llvm::DataLayout( Constants::tests_data_layout_str ) ).BuildProgram( *source_graph );
 
 	for( const CodeBuilderError& error : build_result.errors )
-		std::cout << error.file_pos.line << ":" << error.file_pos.pos_in_line << " " << ToStdString( error.text ) << "\n";
+		std::cout << error.file_pos.line << ":" << error.file_pos.pos_in_line << " " << ToUTF8( error.text ) << "\n";
 
 	U_TEST_ASSERT( build_result.errors.empty() );
 
