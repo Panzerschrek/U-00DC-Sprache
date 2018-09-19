@@ -1,0 +1,21 @@
+namespace ust
+{
+
+// add/sub/mul with overflow check. If overflow occurs - functions halted.
+
+fn add_overflow_check_halt( i32 a, i32 b ) : i32;
+fn add_overflow_check_halt( u32 a, u32 b ) : u32;
+fn add_overflow_check_halt( i64 a, i64 b ) : i64;
+fn add_overflow_check_halt( u64 a, u64 b ) : u64;
+
+fn sub_overflow_check_halt( i32 a, i32 b ) : i32;
+fn sub_overflow_check_halt( u32 a, u32 b ) : u32;
+fn sub_overflow_check_halt( i64 a, i64 b ) : i64;
+fn sub_overflow_check_halt( u64 a, u64 b ) : u64;
+
+fn mul_overflow_check_halt( i32 a, i32 b ) : i32;
+fn mul_overflow_check_halt( u32 a, u32 b ) : u32;
+fn mul_overflow_check_halt( i64 a, i64 b ) : i64;
+fn mul_overflow_check_halt( u64 a, u64 b ) : u64;
+
+} // namespace ust
