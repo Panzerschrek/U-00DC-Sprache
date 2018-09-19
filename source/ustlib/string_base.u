@@ -1,3 +1,4 @@
+import "checked_math.u"
 import "minmax.u"
 import "pointer.u"
 
@@ -258,9 +259,10 @@ class string_base
 	{
 		unsafe
 		{
-			ensure_capacity( size_ + size_type(1) );
+			auto new_size= add_overflow_check_halt( size_, size_type(1) );
+			ensure_capacity( new_size );
 			ptr_[size_]= val;
-			++size_;
+			size_= new_size;
 		}
 	}
 
@@ -268,7 +270,7 @@ class string_base
 	{
 		unsafe
 		{
-			auto new_size= size_ + count; // TODO - check overflow?
+			auto new_size= add_overflow_check_halt( size_, count );
 			ensure_capacity( new_size );
 
 			var size_type mut i(0);
@@ -349,7 +351,7 @@ class string_base
 		var this_type mut result;
 		unsafe
 		{
-			auto result_size= l.size_ + r.size_; // TODO - check overflow.
+			auto result_size= add_overflow_check_halt( l.size_, r.size_ );
 			result.ensure_capacity( result_size );
 			result.size_= result_size;
 			memory_copy( result.ptr_.get_ref(), l.ptr_.get_ref(), l.size_ * c_element_size_ );
@@ -365,7 +367,7 @@ class string_base
 		var this_type mut result;
 		unsafe
 		{
-			auto result_size= l.size_ + array_size; // TODO - check overflow.
+			auto result_size= add_overflow_check_halt( l.size_, array_size );
 			result.ensure_capacity( result_size );
 			result.size_= result_size;
 			memory_copy( result.ptr_.get_ref(), l.ptr_.get_ref(), l.size_ * c_element_size_ );
@@ -381,7 +383,7 @@ class string_base
 		var this_type mut result;
 		unsafe
 		{
-			auto result_size= array_size + r.size_; // TODO - check overflow.
+			auto result_size= add_overflow_check_halt( array_size, r.size_ );
 			result.ensure_capacity( result_size );
 			result.size_= result_size;
 			memory_copy( result.ptr_.get_ref(), array, array_size * c_element_size_ );
@@ -397,7 +399,7 @@ class string_base
 	{
 		unsafe
 		{
-			auto new_size= this.size_ + other.size_; // TODO - check overflow.
+			auto new_size= add_overflow_check_halt( this.size_, other.size_ );
 			ensure_capacity( new_size );
 			memory_copy( ptr_[size_], other.ptr_.get_ref(), other.size_ * c_element_size_ );
 			size_= new_size;
@@ -409,7 +411,7 @@ class string_base
 	{
 		unsafe
 		{
-			auto new_size= this.size_ + array_size; // TODO - check overflow.
+			auto new_size= add_overflow_check_halt( this.size_, array_size );
 			ensure_capacity( new_size );
 			memory_copy( ptr_[size_], array, array_size * c_element_size_ );
 			size_= new_size;
@@ -449,7 +451,7 @@ private:
 			}
 			else // if( capacity_ < new_size )
 			{
-				while( capacity_ < new_size ) { capacity_*= size_type(2); }
+				while( capacity_ < new_size ) { capacity_= mul_overflow_check_halt( capacity_, size_type(2) ); }
 				ptr_= ptr_type( cast_ref_unsafe</char_type/>( memory_reallocate( ptr_.get_ref(), capacity_ * c_element_size_ ) ) );
 			}
 		}
