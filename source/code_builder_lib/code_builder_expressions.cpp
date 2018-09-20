@@ -170,7 +170,16 @@ boost::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 		synt_args.reserve( 2u );
 		synt_args.push_back( & left_expr );
 		synt_args.push_back( &right_expr );
-		return DoCallFunction( overloaded_operator->llvm_function, *overloaded_operator->type.GetFunctionType(), file_pos, nullptr, synt_args, evaluate_args_in_reverse_order, names, function_context );
+		return
+			DoCallFunction(
+				overloaded_operator->llvm_function,
+				*overloaded_operator->type.GetFunctionType(),
+				file_pos,
+				{},
+				synt_args,
+				evaluate_args_in_reverse_order,
+				names,
+				function_context );
 	}
 
 	return boost::none;
@@ -314,10 +323,22 @@ Value CodeBuilder::BuildExpressionCode(
 				if( overloaded_operator->is_this_call && overloaded_operator->virtual_table_index != ~0u )
 				{
 					const auto fetch_result= TryFetchVirtualFunction( *var, *overloaded_operator, function_context );
-					result= DoCallFunction( fetch_result.second, *overloaded_operator->type.GetFunctionType(), expression_with_unary_operators->file_pos_, &fetch_result.first, {}, false, names, function_context );
+
+					result= DoCallFunction( fetch_result.second, *overloaded_operator->type.GetFunctionType(), expression_with_unary_operators->file_pos_, { fetch_result.first }, {}, false, names, function_context );
 				}
 				else
-					result= DoCallFunction( overloaded_operator->llvm_function, *overloaded_operator->type.GetFunctionType(), expression_with_unary_operators->file_pos_, var, {}, false, names, function_context );
+				{
+					result=
+						DoCallFunction(
+							overloaded_operator->llvm_function,
+							*overloaded_operator->type.GetFunctionType(),
+							expression_with_unary_operators->file_pos_,
+							{ *var },
+							{},
+							false,
+							names,
+							function_context );
+				}
 			}
 			else
 			{
@@ -1576,7 +1597,7 @@ Value CodeBuilder::BuildIndexationOperator(
 						fetch_result.second,
 						*overloaded_operator->type.GetFunctionType(),
 						indexation_operator.file_pos_,
-						&fetch_result.first, { indexation_operator.index_.get() }, false,
+						{ fetch_result.first }, { indexation_operator.index_.get() }, false,
 						names, function_context );
 			}
 			else
@@ -1585,7 +1606,7 @@ Value CodeBuilder::BuildIndexationOperator(
 						overloaded_operator->llvm_function,
 						*overloaded_operator->type.GetFunctionType(),
 						indexation_operator.file_pos_,
-						&variable, { indexation_operator.index_.get() }, false,
+						{ variable }, { indexation_operator.index_.get() }, false,
 						names, function_context );
 
 			function_context.overloading_resolutin_cache[ &indexation_operator ]= *overloaded_operator;
@@ -1892,7 +1913,7 @@ Value CodeBuilder::BuildCallOperator(
 			return
 				DoCallFunction(
 					func_itself, function_pointer->function, call_operator.file_pos_,
-					nullptr, args, false,
+					{}, args, false,
 					names, function_context );
 		}
 	}
@@ -2012,7 +2033,8 @@ Value CodeBuilder::BuildCallOperator(
 		DoCallFunction(
 			llvm_function_ptr, function_type,
 			call_operator.file_pos_,
-			this_, synt_args, false,
+			this_ == nullptr ? std::vector<Variable>() : std::vector<Variable>{ *this_ },
+			synt_args, false,
 			names, function_context,
 			function.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete );
 }
@@ -2021,20 +2043,17 @@ Value CodeBuilder::DoCallFunction(
 	llvm::Value* function,
 	const Function& function_type,
 	const FilePos& call_file_pos,
-	const Variable* first_arg,
-	std::vector<const Synt::IExpressionComponent*> args,
+	const std::vector<Variable>& preevaluated_args,
+	const std::vector<const Synt::IExpressionComponent*>& args,
 	const bool evaluate_args_in_reverse_order,
 	NamesScope& names,
 	FunctionContext& function_context,
 	const bool func_is_constexpr )
 {
-	U_ASSERT( !( evaluate_args_in_reverse_order && first_arg != nullptr ) );
-
 	if( function_type.unsafe && !function_context.is_in_unsafe_block )
 		errors_.push_back( ReportUnsafeFunctionCallOutsideUnsafeBlock( call_file_pos ) );
 
-	const size_t first_arg_count= first_arg == 0u ? 0u : 1u;
-	const size_t arg_count= args.size() + first_arg_count;
+	const size_t arg_count= preevaluated_args.size() + args.size();
 	U_ASSERT( arg_count == function_type.args.size() );
 
 	std::vector<llvm::Value*> llvm_args;
@@ -2045,20 +2064,24 @@ Value CodeBuilder::DoCallFunction(
 	std::vector< std::unordered_set<StoredVariablePtr> > arg_to_variables( arg_count );
 	std::vector< std::pair< std::unordered_set<StoredVariablePtr>, bool > > arg_to_inner_variables( arg_count ); // second param - is mutable
 
-	for( unsigned int i= 0u; i < arg_count; i++ )
+	for( size_t i= 0u; i < arg_count; ++i )
 	{
-		const unsigned int j= evaluate_args_in_reverse_order ? static_cast<unsigned int>(arg_count) - i - 1u : i;
+		const size_t j= evaluate_args_in_reverse_order ? arg_count - i - 1u : i;
 
-		const bool is_first_arg= first_arg != nullptr && j == 0u;
 		const Function::Arg& arg= function_type.args[j];
 
 		Variable expr;
-		if( is_first_arg )
-			expr= *first_arg;
+		FilePos file_pos;
+		if( j < preevaluated_args.size() )
+		{
+			expr= preevaluated_args[j];
+			file_pos= call_file_pos;
+		}
 		else
-			expr= BuildExpressionCodeEnsureVariable( *args[ j - first_arg_count ], names, function_context );
-
-		const FilePos& file_pos= is_first_arg ? call_file_pos : args[ j - first_arg_count ]->GetFilePos();
+		{
+			expr= BuildExpressionCodeEnsureVariable( *args[ j - preevaluated_args.size() ], names, function_context );
+			file_pos= args[ j - preevaluated_args.size() ]->GetFilePos();
+		}
 
 		if( expr.constexpr_value != nullptr && !( arg.is_reference && arg.is_mutable ) )
 			constant_llvm_args.push_back( expr.constexpr_value );
