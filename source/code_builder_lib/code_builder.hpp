@@ -485,6 +485,14 @@ private:
 		NamesScope& names,
 		FunctionContext& function_context );
 
+	Variable ConvertVariable(
+		const Variable& variable,
+		const Type& dst_type,
+		const FunctionVariable& conversion_constructor,
+		NamesScope& names,
+		FunctionContext& function_context,
+		const FilePos& file_pos );
+
 	Value BuildUnaryMinus(
 		const Value& value,
 		const Synt::UnaryMinus& unary_minus,
@@ -627,6 +635,11 @@ private:
 	const FunctionVariable* GetOverloadedOperator(
 		const std::vector<Function::Arg>& actual_args,
 		OverloadedOperator op,
+		const FilePos& file_pos );
+
+	const FunctionVariable* GetConversionConstructor(
+		const Type& src_type,
+		const Type& dst_type,
 		const FilePos& file_pos );
 
 	const TemplateTypeGenerationResult* SelectTemplateType(

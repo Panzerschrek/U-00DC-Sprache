@@ -627,8 +627,17 @@ llvm::Constant* CodeBuilder::ApplyExpressionInitializer(
 	{
 		// Currently we support "=" initializer for copying and moving of structs.
 
-		const Variable expression_result= BuildExpressionCodeEnsureVariable( *initializer.expression, block_names, function_context );
-		if( !ReferenceIsConvertible( expression_result.type, variable.type, initializer.file_pos_ ) )
+		Variable expression_result= BuildExpressionCodeEnsureVariable( *initializer.expression, block_names, function_context );
+		if( expression_result.type == variable.type )
+		{} // Ok, same types.
+		else if( ReferenceIsConvertible( expression_result.type, variable.type, initializer.file_pos_ ) )
+		{} // Ok, can do reference conversion.
+		else if( const FunctionVariable* const conversion_constructor= GetConversionConstructor( expression_result.type, variable.type, initializer.file_pos_ ) )
+		{
+			// Type conversion required.
+			expression_result= ConvertVariable( expression_result, variable.type, *conversion_constructor, block_names, function_context, initializer.file_pos_ );
+		}
+		else
 		{
 			errors_.push_back( ReportTypesMismatch( initializer.file_pos_, variable.type.ToString(), expression_result.type.ToString() ) );
 			return nullptr;

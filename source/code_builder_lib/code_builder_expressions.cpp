@@ -2481,6 +2481,45 @@ Variable CodeBuilder::BuildTempVariableConstruction(
 	return variable;
 }
 
+Variable CodeBuilder::ConvertVariable(
+	const Variable& variable,
+	const Type& dst_type,
+	const FunctionVariable& conversion_constructor,
+	NamesScope& names,
+	FunctionContext& function_context,
+	const FilePos& file_pos )
+{
+	if( !EnsureTypeCompleteness( dst_type, TypeCompleteness::Complete ) )
+	{
+		errors_.push_back( ReportUsingIncompleteType( file_pos, dst_type.ToString() ) );
+		return Variable();
+	}
+
+	const StoredVariablePtr stored_variable= std::make_shared<StoredVariable>( "temp "_SpC + dst_type.ToString(), Variable() );
+	function_context.stack_variables_stack.back()->RegisterVariable( stored_variable );
+	Variable& result= stored_variable->content;
+	result.type= dst_type;
+	result.location= Variable::Location::Pointer;
+	result.value_type= ValueType::Reference;
+	result.llvm_value= function_context.alloca_ir_builder.CreateAlloca( dst_type.GetLLVMType() );
+	result.referenced_variables.insert(stored_variable);
+
+	DoCallFunction(
+		conversion_constructor.llvm_function,
+		*conversion_constructor.type.GetFunctionType(),
+		file_pos,
+		{ result, variable },
+		{},
+		false,
+		names,
+		function_context,
+		false );
+
+	result.value_type= ValueType::Value; // Make value after construction
+
+	return result;
+}
+
 Value CodeBuilder::BuildUnaryMinus(
 	const Value& value,
 	const Synt::UnaryMinus& unary_minus,

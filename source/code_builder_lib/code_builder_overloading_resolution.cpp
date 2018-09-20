@@ -572,6 +572,42 @@ const FunctionVariable* CodeBuilder::GetOverloadedOperator(
 	return nullptr;
 }
 
+const FunctionVariable* CodeBuilder::GetConversionConstructor(
+	const Type& src_type,
+	const Type& dst_type,
+	const FilePos& file_pos )
+{
+	if( !EnsureTypeCompleteness( dst_type, TypeCompleteness::Complete ) )
+	{
+		errors_.push_back( ReportUsingIncompleteType( file_pos, dst_type.ToString() ) );
+		return nullptr;
+	}
+	const Class* const dst_class_type= dst_type.GetClassType();
+	if( dst_class_type == nullptr )
+		return nullptr;
+
+	const NamesScope::InsertedName* const constructors_name= dst_class_type->members.GetThisScopeName( Keyword( Keywords::constructor_ ) );
+	if( constructors_name == nullptr )
+		return nullptr;
+
+	const OverloadedFunctionsSet& constructors= *constructors_name->second.GetFunctionsSet();
+
+	std::vector<Function::Arg> actual_args;
+	actual_args.resize(2u);
+	actual_args[0u].type= dst_type;
+	actual_args[0u].is_mutable= true;
+	actual_args[0u].is_reference= true;
+	actual_args[1u].type= src_type;
+	actual_args[1u].is_mutable= false;
+	actual_args[1u].is_reference= true;
+
+	const FunctionVariable* const func= GetOverloadedFunction( constructors, actual_args, false, file_pos, false );
+	if( func != nullptr && func->is_conversion_constructor )
+		return func;
+
+	return nullptr;
+}
+
 const CodeBuilder::TemplateTypeGenerationResult* CodeBuilder::SelectTemplateType(
 	const std::vector<TemplateTypeGenerationResult>& candidate_templates,
 	const size_t arg_count )
