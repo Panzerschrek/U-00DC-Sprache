@@ -76,6 +76,7 @@ enum class Keywords : unsigned int
 	base_,
 	constructor_,
 	destructor_,
+	conversion_constructor_,
 
 	static_assert_,
 	halt_,

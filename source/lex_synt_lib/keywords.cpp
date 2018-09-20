@@ -98,6 +98,7 @@ static const Globals& GetGlobals()
 		[ size_t(Keywords::base_) ]= "base",
 		[ size_t(Keywords::constructor_) ]= "constructor",
 		[ size_t(Keywords::destructor_) ]= "destructor",
+		[ size_t(Keywords::conversion_constructor_) ]= "conversion_constructor",
 
 		[ size_t(Keywords::static_assert_) ]= "static_assert",
 		[ size_t(Keywords::halt_) ]= "halt",

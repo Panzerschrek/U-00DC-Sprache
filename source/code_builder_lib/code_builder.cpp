@@ -1081,6 +1081,10 @@ void CodeBuilder::PrepareFunction(
 		func_variable.no_mangle= true;
 	}
 
+	// Set conversion constructor.
+	func_variable.is_conversion_constructor= func.is_conversion_constructor_;
+	U_ASSERT( !( func.is_conversion_constructor_ && !is_constructor ) );
+
 	// Check "=default" / "=delete".
 	if( func.body_kind != Synt::Function::BodyKind::None )
 	{
