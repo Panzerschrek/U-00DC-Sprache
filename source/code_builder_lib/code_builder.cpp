@@ -1143,6 +1143,9 @@ void CodeBuilder::PrepareFunction(
 
 		if( !prev_function->no_mangle && func_variable.no_mangle )
 			errors_.push_back( ReportNoMangleMismatch( func.file_pos_, func_name ) );
+
+		if( prev_function->is_conversion_constructor != func_variable.is_conversion_constructor )
+			errors_.push_back( ReportCouldNotOverloadFunction( func.file_pos_ ) ); // Maybe generate separate error?
 	}
 	else
 	{
