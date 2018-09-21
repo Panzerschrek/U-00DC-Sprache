@@ -21,6 +21,7 @@ class ParseResult:
 g_compiler_executable= "Compiler"
 g_entry_point_source= "entry.cpp"
 g_cpp_compiler_executable= "g++"
+g_use_position_independent_code= False
 
 
 def LoadFile( file_name ):
@@ -168,7 +169,11 @@ def DoSuccessTest( file_path ):
 	object_file= file_name + "_temp.o"
 	executable_file= file_name + "_temp.exe"
 
-	if subprocess.call( [ g_compiler_executable, file_path, "--produce-object-file", "-o", object_file ] ) != 0:
+	compiler_args= [ g_compiler_executable, file_path, "--produce-object-file", "-o", object_file ]
+	if g_use_position_independent_code :
+		compiler_args= compiler_args + [ "--relocation-model", "pic", "--enable-pie" ]
+
+	if subprocess.call( compiler_args ) != 0:
 		print( "Compilation failed" )
 		return 1
 
@@ -233,6 +238,7 @@ def main():
 	parser.add_argument( "--compiler-executable", help= "path to compiler executable", type=str )
 	parser.add_argument( "--entry-point-source", help= "path to entry point cpp file", type=str )
 	parser.add_argument( "--cpp-compiler-executable", help= "path to c++ compiler/linker executable", type=str )
+	parser.add_argument( "--use-position-independent-code", help= "use or not position independent code", action="store_true" )
 
 	args= parser.parse_args()
 
@@ -247,6 +253,10 @@ def main():
 	if args.cpp_compiler_executable is not None:
 		global g_cpp_compiler_executable
 		g_cpp_compiler_executable= args.cpp_compiler_executable
+
+	if args.use_position_independent_code is not None:
+		global g_use_position_independent_code
+		g_use_position_independent_code= args.use_position_independent_code
 
 	if args.input_file is not None:
 		return RunTestForFile( args.input_file )
