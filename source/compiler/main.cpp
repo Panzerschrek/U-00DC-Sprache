@@ -201,9 +201,11 @@ int main( const int argc, const char* const argv[])
 	std::vector<std::string> include_directories;
 	std::string output_file;
 	fs::path compiler_data_dir= fs::system_complete( argv[0] ).parent_path(); // By default search compiler data near it`s executable.
+	llvm::Reloc::Model relocation_model= llvm::Reloc::Default;
 	bool produce_object_file= false;
 	bool tests_output= false;
 	bool print_llvm_asm= false;
+	bool enable_pie= false;
 
 	po::options_description program_options( u8"Ǖ-compiler options" );
 	program_options.add_options()
@@ -215,6 +217,8 @@ int main( const int argc, const char* const argv[])
 		( "produce-object-file", po::bool_switch()->default_value(false), "poduce native object file, instead of .ir file" )
 		( "tests-output", po::bool_switch()->default_value(false), "print code builder errors in test mode" )
 		( "print-llvm-asm", po::bool_switch()->default_value(false), "print llvm asm" )
+		( "relocation-model", po::value< std::string >(), "relocation model of target" )
+		( "enable-pie", po::bool_switch()->default_value(false), "assume the creation of a position independent executable" )
 	;
 
 	po::positional_options_description positional_options;
@@ -268,6 +272,23 @@ int main( const int argc, const char* const argv[])
 	if( program_options_map.count( "input" ) != 0 )
 		input_files= program_options_map["input"].as< std::vector< std::string > >();
 
+	if( program_options_map.count( "relocation-model" ) != 0 )
+	{
+		const std::string model_str= program_options_map["relocation-model"].as<std::string>();
+		if( model_str == "default" ) relocation_model= llvm::Reloc::Default;
+		else if( model_str == "static" ) relocation_model= llvm::Reloc::Static;
+		else if( model_str == "pic" ) relocation_model= llvm::Reloc::PIC_;
+		else if( model_str == "dynamic-no-pic" ) relocation_model= llvm::Reloc::DynamicNoPIC;
+		else
+		{
+			std::cout << "Unknown relocation model: " << model_str << ". Supported relocation models are \"default\", \"static\", \"pic\", \"dynamic-no-pic\"." << std::endl;
+			return 1;
+		}
+	}
+
+	if( program_options_map.count( "enable-pie" ) != 0 )
+		enable_pie= program_options_map[ "enable-pie" ].as<bool>();
+
 	if( input_files.empty() )
 	{
 		std::cout << "No input files" << std::endl;
@@ -297,6 +318,9 @@ int main( const int argc, const char* const argv[])
 			return 1;
 		}
 
+		llvm::TargetOptions target_options;
+		target_options.PositionIndependentExecutable= enable_pie;
+
 		std::string features_str; // TODO - set features
 		// TODO - set optimization level, reloc model, etc.
 		target_machine.reset(
@@ -304,7 +328,8 @@ int main( const int argc, const char* const argv[])
 				target_triple_str,
 				llvm::sys::getHostCPUName(),
 				features_str,
-				llvm::TargetOptions() ) );
+				target_options,
+				relocation_model ) );
 
 		if( target_machine == nullptr )
 		{
