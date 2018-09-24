@@ -23,6 +23,10 @@ static ConversionsCompareResult CompareConversionsTypes(
 {
 	if( dst_left == dst_right )
 		return ConversionsCompareResult::Same;
+	else if( src == dst_left )
+		return ConversionsCompareResult::LeftIsBetter;
+	else if( src == dst_right )
+		return ConversionsCompareResult::RightIsBetter;
 
 	if( src.ReferenceIsConvertibleTo( dst_left ) && src.ReferenceIsConvertibleTo( dst_right ) )
 	{
