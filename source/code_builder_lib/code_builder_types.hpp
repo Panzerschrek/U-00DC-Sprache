@@ -252,6 +252,7 @@ struct FunctionVariable final
 	bool is_generated= false;
 	bool is_deleted= false;
 	bool no_mangle= false;
+	bool is_conversion_constructor= false;
 
 	ConstexprKind constexpr_kind= ConstexprKind::NonConstexpr;
 

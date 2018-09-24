@@ -42,6 +42,7 @@ def main():
 		"stack_variables_move_test",
 		"string_literals_test",
 		"type_templates_overloading_test",
+		"type_conversions_test",
 		"typeinfo_test",
 		"static_if_test",
 		"uninitialized_initializer_test",

@@ -472,8 +472,8 @@ private:
 		llvm::Value* function,
 		const Function& function_type,
 		const FilePos& call_file_pos,
-		const Variable* first_arg,
-		std::vector<const Synt::IExpressionComponent*> args,
+		const std::vector<Variable>& preevaluated_args,
+		const std::vector<const Synt::IExpressionComponent*>& args,
 		const bool evaluate_args_in_reverse_order,
 		NamesScope& names,
 		FunctionContext& function_context,
@@ -484,6 +484,14 @@ private:
 		const Synt::CallOperator& call_operator,
 		NamesScope& names,
 		FunctionContext& function_context );
+
+	Variable ConvertVariable(
+		const Variable& variable,
+		const Type& dst_type,
+		const FunctionVariable& conversion_constructor,
+		NamesScope& names,
+		FunctionContext& function_context,
+		const FilePos& file_pos );
 
 	Value BuildUnaryMinus(
 		const Value& value,
@@ -622,11 +630,17 @@ private:
 		const std::vector<Function::Arg>& actual_args,
 		bool first_actual_arg_is_this,
 		const FilePos& file_pos,
-		bool produce_errors= true );
+		bool produce_errors= true,
+		bool enable_type_conversions= true);
 
 	const FunctionVariable* GetOverloadedOperator(
 		const std::vector<Function::Arg>& actual_args,
 		OverloadedOperator op,
+		const FilePos& file_pos );
+
+	const FunctionVariable* GetConversionConstructor(
+		const Type& src_type,
+		const Type& dst_type,
 		const FilePos& file_pos );
 
 	const TemplateTypeGenerationResult* SelectTemplateType(

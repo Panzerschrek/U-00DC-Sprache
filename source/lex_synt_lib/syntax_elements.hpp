@@ -690,6 +690,7 @@ public:
 	OverloadedOperator overloaded_operator_= OverloadedOperator::None;
 	VirtualFunctionKind virtual_function_kind_= VirtualFunctionKind::None;
 	bool no_mangle_= false;
+	bool is_conversion_constructor_= false;
 
 	enum class BodyKind
 	{

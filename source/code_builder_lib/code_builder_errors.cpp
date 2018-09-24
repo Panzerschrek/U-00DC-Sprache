@@ -160,6 +160,8 @@ const char* CodeBuilderErrorCodeToString( const CodeBuilderErrorCode code )
 		return "ConstructorOrDestructorOutsideClass";
 	case CodeBuilderErrorCode::ConstructorAndDestructorMustReturnVoid:
 		return "ConstructorAndDestructorMustReturnVoid";
+	case CodeBuilderErrorCode::ConversionConstructorMustHaveOneArgument:
+		return "ConversionConstructorMustHaveOneArgument";
 	case CodeBuilderErrorCode::InitializationListInNonconstructor:
 		return "InitializationListInNonconstructor";
 	case CodeBuilderErrorCode::ClassHaveNoConstructors:
@@ -1099,6 +1101,17 @@ CodeBuilderError ReportConstructorAndDestructorMustReturnVoid( const FilePos& fi
 	error.code= CodeBuilderErrorCode::ConstructorAndDestructorMustReturnVoid;
 
 	error.text= "Constructors and destructors must return void."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportConversionConstructorMustHaveOneArgument( const FilePos& file_pos )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::ConversionConstructorMustHaveOneArgument;
+
+	error.text= "Conversion constructor must have exactly 1 argument (except \"this\")."_SpC;
 
 	return error;
 }

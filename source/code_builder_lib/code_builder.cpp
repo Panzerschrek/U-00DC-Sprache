@@ -1081,6 +1081,12 @@ void CodeBuilder::PrepareFunction(
 		func_variable.no_mangle= true;
 	}
 
+	// Set conversion constructor.
+	func_variable.is_conversion_constructor= func.is_conversion_constructor_;
+	U_ASSERT( !( func.is_conversion_constructor_ && !is_constructor ) );
+	if( func.is_conversion_constructor_ && func_variable.type.GetFunctionType()->args.size() != 2u )
+		errors_.push_back( ReportConversionConstructorMustHaveOneArgument( func.file_pos_ ) );
+
 	// Check "=default" / "=delete".
 	if( func.body_kind != Synt::Function::BodyKind::None )
 	{
@@ -1139,6 +1145,9 @@ void CodeBuilder::PrepareFunction(
 
 		if( !prev_function->no_mangle && func_variable.no_mangle )
 			errors_.push_back( ReportNoMangleMismatch( func.file_pos_, func_name ) );
+
+		if( prev_function->is_conversion_constructor != func_variable.is_conversion_constructor )
+			errors_.push_back( ReportCouldNotOverloadFunction( func.file_pos_ ) ); // Maybe generate separate error?
 	}
 	else
 	{
@@ -2689,10 +2698,10 @@ void CodeBuilder::BuildDeltaOneOperatorCode(
 		if( overloaded_operator->is_this_call )
 		{
 			const auto fetch_result= TryFetchVirtualFunction( *variable, *overloaded_operator, function_context );
-			DoCallFunction( fetch_result.second, *overloaded_operator->type.GetFunctionType(), file_pos, &fetch_result.first, {}, false, block_names, function_context );
+			DoCallFunction( fetch_result.second, *overloaded_operator->type.GetFunctionType(), file_pos, { fetch_result.first }, {}, false, block_names, function_context );
 		}
 		else
-			DoCallFunction( overloaded_operator->llvm_function, *overloaded_operator->type.GetFunctionType(), file_pos, variable, {}, false, block_names, function_context );
+			DoCallFunction( overloaded_operator->llvm_function, *overloaded_operator->type.GetFunctionType(), file_pos, { *variable }, {}, false, block_names, function_context );
 	}
 	else if( const FundamentalType* const fundamental_type= variable->type.GetFundamentalType() )
 	{

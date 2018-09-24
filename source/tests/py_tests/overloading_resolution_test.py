@@ -644,3 +644,72 @@ def OverloadingResolutionTest_ParentClassCall_Test2():
 	tests_lib.build_program( c_program_text )
 	call_result= tests_lib.run_function( "_Z3Foov" )
 	assert( call_result == 111 )
+
+
+def OverloadingResolutionTest_TypeConversions_Test0():
+	c_program_text= """
+		struct A
+		{
+			fn conversion_constructor( f32 f ){}
+		}
+		struct B
+		{
+			fn conversion_constructor( f32 f ){}
+		}
+
+		fn Bar( A a ){}
+		fn Bar( B b ){}
+
+		fn Foo()
+		{
+			Bar( 0.145f ); // Error, there is 2 type conversions f32->A and f32->B. Could not select better.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "TooManySuitableOverloadedFunctions" )
+	assert( errors_list[0].file_pos.line == 16 )
+
+
+def OverloadingResolutionTest_TypeConversions_Test1():
+	c_program_text= """
+		class A polymorph{}
+		class B : A {}
+
+		class C
+		{
+			fn conversion_constructor( B& b ) {}
+		}
+
+		fn Bar( A& a ) : i32 { return 5552; }
+		fn Bar( C& c ) : i32 { return 4441; }
+
+		fn Foo() : i32
+		{
+			var B b;
+			return Bar(b); // Ok, select Bar( A& a ), because reference conversion B->A is better, then type conversion B->C.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 5552 )
+
+
+def OverloadingResolutionTest_TypeConversions_Test2():
+	c_program_text= """
+		class A
+		{
+			fn conversion_constructor( i32 x ) {}
+		}
+
+		fn Bar( i32 x ) : i32 { return 9995; }
+		fn Bar( A   a ) : i32 { return 1115; }
+
+		fn Foo() : i32
+		{
+			return Bar( 568 ); // Ok, select Bar( i32 x ), because it better, than conversion i32 -> A.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 9995 )
