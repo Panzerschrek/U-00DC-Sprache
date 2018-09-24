@@ -16,6 +16,9 @@ struct BigStruct
 	[ i32, 1024 ] one_k_ints;
 }
 
+class A polymorph{}
+class B : A{}
+
 fn U_Main() : i32
 {
 	// Box have pointer size.
@@ -61,6 +64,14 @@ fn U_Main() : i32
 		var ust::box</ i32 /> mut b(42);
 		var ust::box_nullable</ i32 /> b_n( move(b) );
 		halt if( b_n.get_ref() != 42 );
+	}
+	{ // can construct from non-nullable box of other type
+		var ust::box</ B /> mut b_box(B());
+		var ust::box_nullable</ A /> a_box( move(b_box) );
+	}
+	{ // can construct from nullable box of other type
+		var ust::box_nullable</ B /> mut b_box;
+		var ust::box_nullable</ A /> a_box( move(b_box) );
 	}
 
 	return 0;

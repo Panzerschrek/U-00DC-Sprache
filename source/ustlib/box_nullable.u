@@ -1,6 +1,7 @@
-import "pointer.u"
-import "container_utils.u"
 import "box.u"
+import "container_utils.u"
+import "pointer.u"
+import "type_traits.u"
 
 namespace ust
 {
@@ -29,6 +30,34 @@ public:
 		{
 			static_assert( typeinfo</ box</T/> />.size_of == typeinfo</ raw_ptr_mut</T/> />.size_of );
 			memory_copy( ptr_, val, typeinfo</ box</T/> />.size_of );
+			move_into_nowhere( move(val) );
+		}
+	}
+	
+	// Construct with value, taken from nullable box of compatible type.
+	template</ type U />
+	fn enable_if( !is_same_type</T, U/>() && is_ancestor_for</T, U/>() )
+	constructor( mut this'a...', box_nullable</U/> mut val'b...' ) ' a <- b '
+	{
+		unsafe
+		{
+			if( !val.empty() )
+			{
+				// TODO - do not call "get_ref", because it checks value.
+				ptr_= raw_ptr_mut</ T />( val.get_ref() ); // Convert reference here.
+			}
+			move_into_nowhere( move(val) );
+		}
+	}
+	
+	// Construct with value, taken from box of compatible type.
+	template</ type U />
+	fn enable_if( !is_same_type</T, U/>() && is_ancestor_for</T, U/>() )
+	constructor( mut this'a...', box</U/> mut val'b...' ) ' a <- b '
+	{
+		unsafe
+		{
+			ptr_= raw_ptr_mut</ T />( val.get_ref() ); // Convert reference here.
 			move_into_nowhere( move(val) );
 		}
 	}

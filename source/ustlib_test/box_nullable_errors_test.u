@@ -1,6 +1,12 @@
 //##fail_test
 import "../ustlib/box_nullable.u"
 
+struct A{}
+struct B{}
+
+class C : polymorph {}
+class D {}
+
 fn U_Main() : i32
 {
 	{ // box_nullable is not copyable.
@@ -10,6 +16,22 @@ fn U_Main() : i32
 	{ // box_nullable saves mutability.
 		var ust::box_nullable</ i32 /> imut b(0);
 		b.get_ref()= 0; //##expect_error ExpectedReferenceValue
+	}
+	{ // is convertible form other box, only if reference is convertible.
+		var ust::box_nullable</ B /> mut box_b( B() );
+		var ust::box_nullable</ A /> box_a( move(box_b) );  //##expect_error CouldNotSelectOverloadedFunction
+	}
+	{ // is convertible form other box, only if reference is convertible.
+		var ust::box_nullable</ C /> mut box_c( C() );
+		var ust::box_nullable</ D /> box_d( move(box_c) );  //##expect_error CouldNotSelectOverloadedFunction
+	}
+	{ // is convertible form other box, only if reference is convertible.
+		var ust::box</ B /> mut box_b( B() );
+		var ust::box_nullable</ A /> box_a( move(box_b) );  //##expect_error CouldNotSelectOverloadedFunction
+	}
+	{ // is convertible form other box, only if reference is convertible.
+		var ust::box</ C /> mut box_c( C() );
+		var ust::box_nullable</ D /> box_d( move(box_c) );  //##expect_error CouldNotSelectOverloadedFunction
 	}
 
 	return 0;

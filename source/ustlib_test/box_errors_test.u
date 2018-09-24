@@ -3,6 +3,12 @@ import "../ustlib/box.u"
 
 struct DefaultConstructible{}
 
+struct A{}
+struct B{}
+
+class C : polymorph {}
+class D {}
+
 fn U_Main() : i32
 {
 	{ // box have no default constructor.
@@ -18,6 +24,14 @@ fn U_Main() : i32
 	{ // box saves mutability.
 		var ust::box</ i32 /> imut b(0);
 		b.get_ref()= 0; //##expect_error ExpectedReferenceValue
+	}
+	{ // is convertible form other box, only if reference is convertible.
+		var ust::box</ B /> mut box_b( B() );
+		var ust::box</ A /> box_a( move(box_b) );  //##expect_error CouldNotSelectOverloadedFunction
+	}
+	{ // is convertible form other box, only if reference is convertible.
+		var ust::box</ C /> mut box_c( C() );
+		var ust::box</ D /> box_d( move(box_c) );  //##expect_error CouldNotSelectOverloadedFunction
 	}
 
 	return 0;

@@ -15,6 +15,9 @@ struct BigStruct
 	[ i32, 1024 ] one_k_ints;
 }
 
+class A polymorph{}
+class B : A{}
+
 fn U_Main() : i32
 {
 	// Box have pointer size.
@@ -37,6 +40,10 @@ fn U_Main() : i32
 		var ust::box</ i32 /> mut box(0);
 		box.get_ref()= 666;
 		halt if( box.get_ref() != 666 );
+	}
+	{ // is convertible form other box.
+		var ust::box</ B /> mut box_b( B() );
+		var ust::box</ A /> mut box_a( move(box_b) );
 	}
 
 	return 0;

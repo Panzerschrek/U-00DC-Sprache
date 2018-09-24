@@ -1,5 +1,6 @@
-import "pointer.u"
 import "container_utils.u"
+import "pointer.u"
+import "type_traits.u"
 
 namespace ust
 {
@@ -16,6 +17,17 @@ public:
 		{
 			ptr_= raw_ptr_mut</ T />( cast_ref_unsafe</T/>( memory_allocate( typeinfo</T/>.size_of ) ) );
 			move_unsafe</T/>( ptr_.get_ref(), move(val) );
+		}
+	}
+
+	template</ type U />
+	fn enable_if( !is_same_type</T, U/>() && is_ancestor_for</T, U/>() )
+	constructor( mut this'a...', box</U/> mut val'b...' ) ' a <- b '
+	{
+		unsafe
+		{
+			ptr_= raw_ptr_mut</ T />( val.get_ref() ); // Convert reference here.
+			move_into_nowhere( move(val) );
 		}
 	}
 
