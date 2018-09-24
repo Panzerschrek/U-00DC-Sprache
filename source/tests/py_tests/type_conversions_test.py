@@ -185,3 +185,59 @@ def TypeConversion_InFunctionCall_Test3():
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "CouldNotSelectOverloadedFunction" )
 	assert( errors_list[0].file_pos.line == 12 )
+
+
+def ConversionConstructorMustHaveOneArgument_Test0():
+	c_program_text= """
+		struct IntWrapper
+		{
+			i32 x;
+			fn conversion_constructor() ( x= 0 ) {}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ConversionConstructorMustHaveOneArgument" )
+	assert( errors_list[0].file_pos.line == 5 )
+
+
+def ConversionConstructorMustHaveOneArgument_Test1():
+	c_program_text= """
+		struct IntWrapper
+		{
+			i32 x;
+			fn conversion_constructor( mut this ) ( x= 0 ) {}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ConversionConstructorMustHaveOneArgument" )
+	assert( errors_list[0].file_pos.line == 5 )
+
+
+def ConversionConstructorMustHaveOneArgument_Test2():
+	c_program_text= """
+		struct IntWrapper
+		{
+			i32 x;
+			fn conversion_constructor( i32 a, i32 b ) ( x= a * b ) {}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ConversionConstructorMustHaveOneArgument" )
+	assert( errors_list[0].file_pos.line == 5 )
+
+
+def ConversionConstructorMustHaveOneArgument_Test3():
+	c_program_text= """
+		struct IntWrapper
+		{
+			i32 x;
+			fn conversion_constructor( mut this, i32 a, i32 b ) ( x= a * b ) {}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ConversionConstructorMustHaveOneArgument" )
+	assert( errors_list[0].file_pos.line == 5 )

@@ -93,6 +93,7 @@ enum class CodeBuilderErrorCode : unsigned int
 	// Constructors errors
 	ConstructorOrDestructorOutsideClass,
 	ConstructorAndDestructorMustReturnVoid,
+	ConversionConstructorMustHaveOneArgument,
 	InitializationListInNonconstructor,
 	ClassHaveNoConstructors,
 	ExplicitThisInDestructor,
@@ -277,6 +278,7 @@ CodeBuilderError ReportInvalidTypeForAutoVariable( const FilePos& file_pos, cons
 CodeBuilderError ReportGlobalVariableMustBeConstexpr( const FilePos& file_pos, const ProgramString& variable_name );
 CodeBuilderError ReportConstructorOrDestructorOutsideClass( const FilePos& file_pos );
 CodeBuilderError ReportConstructorAndDestructorMustReturnVoid( const FilePos& file_pos );
+CodeBuilderError ReportConversionConstructorMustHaveOneArgument( const FilePos& file_pos );
 CodeBuilderError ReportInitializationListInNonconstructor( const FilePos& file_pos );
 CodeBuilderError ReportClassHaveNoConstructors( const FilePos& file_pos );
 CodeBuilderError ReportExplicitThisInDestructor( const FilePos& file_pos );

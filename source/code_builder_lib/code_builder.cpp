@@ -1084,6 +1084,8 @@ void CodeBuilder::PrepareFunction(
 	// Set conversion constructor.
 	func_variable.is_conversion_constructor= func.is_conversion_constructor_;
 	U_ASSERT( !( func.is_conversion_constructor_ && !is_constructor ) );
+	if( func.is_conversion_constructor_ && func_variable.type.GetFunctionType()->args.size() != 2u )
+		errors_.push_back( ReportConversionConstructorMustHaveOneArgument( func.file_pos_ ) );
 
 	// Check "=default" / "=delete".
 	if( func.body_kind != Synt::Function::BodyKind::None )
