@@ -19,38 +19,46 @@ enum class ConversionsCompareResult
 static ConversionsCompareResult CompareConversionsTypes(
 	const Type& src,
 	const Type& dst_left,
-	const Type& dst_right)
+	const Type& dst_right )
 {
-	U_ASSERT( src.ReferenceIsConvertibleTo( dst_left  ) );
-	U_ASSERT( src.ReferenceIsConvertibleTo( dst_right ) );
-
 	if( dst_left == dst_right )
 		return ConversionsCompareResult::Same;
 
-	const Type void_type( FundamentalType( U_FundamentalType::Void, nullptr ) );
-
-	// If one of types are void - other is better (because it is not void ).
-	if( dst_left  == void_type )
+	if( src.ReferenceIsConvertibleTo( dst_left ) && src.ReferenceIsConvertibleTo( dst_right ) )
 	{
-		U_ASSERT( dst_right != void_type );
-		return ConversionsCompareResult::RightIsBetter;
+		const Type void_type( FundamentalType( U_FundamentalType::Void, nullptr ) );
+
+		// If one of types are void - other is better (because it is not void ).
+		if( dst_left  == void_type )
+		{
+			U_ASSERT( dst_right != void_type );
+			return ConversionsCompareResult::RightIsBetter;
+		}
+		if( dst_right == void_type )
+		{
+			U_ASSERT( dst_left  != void_type );
+			return ConversionsCompareResult::LeftIsBetter;
+		}
+
+		// SPRACHE_TODO - select more relevant compare function.
+
+		//const Class&   src_class= *src.GetClassType();
+		//const Class&  left_class= *src.GetClassType();
+		//const Class& right_class= *src.GetClassType();
+
+		if( dst_right.ReferenceIsConvertibleTo( dst_left  ) )
+			return ConversionsCompareResult::RightIsBetter;
+		if( dst_left .ReferenceIsConvertibleTo( dst_right ) )
+			return ConversionsCompareResult::LeftIsBetter;
+
+		return ConversionsCompareResult::Incomparable;
 	}
-	if( dst_right == void_type )
-	{
-		U_ASSERT( dst_left  != void_type );
-		return ConversionsCompareResult::LeftIsBetter;
-	}
-
-	// SPRACHE_TODO - select more relevant compare function.
-
-	//const Class&   src_class= *src.GetClassType();
-	//const Class&  left_class= *src.GetClassType();
-	//const Class& right_class= *src.GetClassType();
-
-	if( dst_right.ReferenceIsConvertibleTo( dst_left  ) )
+	// Reference conversions are better, then type conversions.
+	else if( src.ReferenceIsConvertibleTo( dst_left  ) )
+		return ConversionsCompareResult::LeftIsBetter ;
+	else if( src.ReferenceIsConvertibleTo( dst_right ) )
 		return ConversionsCompareResult::RightIsBetter;
-	if( dst_left .ReferenceIsConvertibleTo( dst_right ) )
-		return ConversionsCompareResult::LeftIsBetter;
+	// Two type conversions are incomparable.
 
 	return ConversionsCompareResult::Incomparable;
 }
@@ -323,7 +331,8 @@ const FunctionVariable* CodeBuilder::GetOverloadedFunction(
 	const std::vector<Function::Arg>& actual_args,
 	const bool first_actual_arg_is_this,
 	const FilePos& file_pos,
-	const bool produce_errors )
+	const bool produce_errors,
+	const bool enable_type_conversions )
 {
 	U_ASSERT( !( first_actual_arg_is_this && actual_args.empty() ) );
 
@@ -355,8 +364,12 @@ const FunctionVariable* CodeBuilder::GetOverloadedFunction(
 		bool all_args_is_compatible= true;
 		for( unsigned int i= 0u; i < actial_arg_count; i++ )
 		{
-			const bool types_are_same= actual_args_begin[i].type == function_type.args[i].type;
-			if( !types_are_same )
+			const ArgOverloadingClass arg_overloading_class= GetArgOverloadingClass( actual_args_begin[i] );
+			const ArgOverloadingClass parameter_overloading_class= GetArgOverloadingClass( function_type.args[i] );
+
+			if( actual_args_begin[i].type == function_type.args[i].type )
+			{} // ok
+			else
 			{
 				// We needs complete types for checking possible conversions.
 				// We can not just skip this function, if types are incomplete, because it will break "template instantiation equality rule".
@@ -368,18 +381,20 @@ const FunctionVariable* CodeBuilder::GetOverloadedFunction(
 					all_args_is_compatible= false;
 					break;
 				}
+
+				if( ReferenceIsConvertible( actual_args_begin[i].type, function_type.args[i].type, file_pos ) )
+				{}
+				// Enable type conversion only if argument is not mutable reference.
+				else if( enable_type_conversions && parameter_overloading_class == ArgOverloadingClass::ImmutableReference &&
+					GetConversionConstructor( actual_args_begin[i].type, function_type.args[i].type, file_pos ) != nullptr )
+				{}
+				else
+				{
+					all_args_is_compatible= false;
+					break;
+				}
 			}
 
-			const bool types_are_compatible= ReferenceIsConvertible( actual_args_begin[i].type, function_type.args[i].type, file_pos );
-			// SPRACHE_TODO - support type-casting for function call.
-			if( !types_are_compatible )
-			{
-				all_args_is_compatible= false;
-				break;
-			}
-
-			const ArgOverloadingClass arg_overloading_class= GetArgOverloadingClass( actual_args_begin[i] );
-			const ArgOverloadingClass parameter_overloading_class= GetArgOverloadingClass( function_type.args[i] );
 			if( arg_overloading_class == parameter_overloading_class )
 			{} // All ok, exact match
 			else if( parameter_overloading_class == ArgOverloadingClass::MutalbeReference &&
@@ -392,8 +407,7 @@ const FunctionVariable* CodeBuilder::GetOverloadedFunction(
 			else if( parameter_overloading_class == ArgOverloadingClass::ImmutableReference &&
 				arg_overloading_class == ArgOverloadingClass::MutalbeReference )
 			{} // Ok, mut to imut conversion.
-			else
-				U_ASSERT(false);
+			else U_ASSERT(false);
 
 		} // for candidate function args.
 
@@ -601,7 +615,7 @@ const FunctionVariable* CodeBuilder::GetConversionConstructor(
 	actual_args[1u].is_mutable= false;
 	actual_args[1u].is_reference= true;
 
-	const FunctionVariable* const func= GetOverloadedFunction( constructors, actual_args, false, file_pos, false );
+	const FunctionVariable* const func= GetOverloadedFunction( constructors, actual_args, false, file_pos, false, false );
 	if( func != nullptr && func->is_conversion_constructor )
 		return func;
 

@@ -630,7 +630,8 @@ private:
 		const std::vector<Function::Arg>& actual_args,
 		bool first_actual_arg_is_this,
 		const FilePos& file_pos,
-		bool produce_errors= true );
+		bool produce_errors= true,
+		bool enable_type_conversions= true);
 
 	const FunctionVariable* GetOverloadedOperator(
 		const std::vector<Function::Arg>& actual_args,

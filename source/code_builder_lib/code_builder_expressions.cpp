@@ -2088,7 +2088,7 @@ Value CodeBuilder::DoCallFunction(
 
 		if( arg.is_reference )
 		{
-			if( !ReferenceIsConvertible( expr.type, arg.type, call_file_pos ) )
+			if( !ReferenceIsConvertible( expr.type, arg.type, call_file_pos ) && GetConversionConstructor( expr.type, arg.type, file_pos ) == nullptr )
 			{
 				errors_.push_back( ReportTypesMismatch( file_pos, arg.type.ToString(), expr.type.ToString() ) );
 				return ErrorValue();
@@ -2134,7 +2134,17 @@ Value CodeBuilder::DoCallFunction(
 					llvm_args[j]= expr.llvm_value;
 
 				if( expr.type != arg.type )
-					llvm_args[j]= CreateReferenceCast( llvm_args[j], expr.type, arg.type, function_context );
+				{
+					if( expr.type.ReferenceIsConvertibleTo( arg.type ) )
+						llvm_args[j]= CreateReferenceCast( llvm_args[j], expr.type, arg.type, function_context );
+					else
+					{
+						const auto conversion_constructor= GetConversionConstructor( expr.type, arg.type, file_pos );
+						U_ASSERT( conversion_constructor != nullptr );
+						expr= ConvertVariable( expr, arg.type, *conversion_constructor, names, function_context, file_pos );
+						llvm_args[j]= expr.llvm_value;
+					}
+				}
 
 				// Lock references.
 				arg_to_inner_variables[j].second= false; // Non-mutable
@@ -2154,10 +2164,21 @@ Value CodeBuilder::DoCallFunction(
 		}
 		else
 		{
-			if( !ReferenceIsConvertible( expr.type, arg.type, call_file_pos ) )
+			if( !ReferenceIsConvertible( expr.type, arg.type, call_file_pos ) && GetConversionConstructor( expr.type, arg.type, file_pos ) == nullptr )
 			{
 				errors_.push_back( ReportTypesMismatch( file_pos, arg.type.ToString(), expr.type.ToString() ) );
 				return ErrorValue();
+			}
+
+			if( expr.type != arg.type )
+			{
+				if( expr.type.ReferenceIsConvertibleTo( arg.type ) ){}
+				else
+				{
+					const auto conversion_constructor= GetConversionConstructor( expr.type, arg.type, file_pos );
+					U_ASSERT( conversion_constructor != nullptr );
+					expr= ConvertVariable( expr, arg.type, *conversion_constructor, names, function_context, file_pos );
+				}
 			}
 
 			if( arg.type.GetFundamentalType() != nullptr || arg.type.GetEnumType() != nullptr || arg.type.GetFunctionPointerType() != nullptr )

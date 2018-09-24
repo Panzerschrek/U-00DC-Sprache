@@ -42,3 +42,43 @@ def TypeConversion_InExpressionInitializer_Test0():
 	tests_lib.build_program( c_program_text )
 	call_result= tests_lib.run_function( "_Z3Foov" )
 	assert( call_result == 185474 )
+
+
+def TypeConversion_InFunctionCall_Test0():
+	c_program_text= """
+		struct IntWrapper
+		{
+			i32 x;
+			fn conversion_constructor( i32 in_x ) ( x= in_x ) {}
+		}
+
+		fn Extract( IntWrapper iw ) : i32 { return iw.x; }
+
+		fn Foo() : i32
+		{
+			return Extract( 854777 ); // Type conversion for value arg.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 854777 )
+
+
+def TypeConversion_InFunctionCall_Test1():
+	c_program_text= """
+		struct IntWrapper
+		{
+			i32 x;
+			fn conversion_constructor( i32 in_x ) ( x= in_x ) {}
+		}
+
+		fn Extract( IntWrapper &imut iw ) : i32 { return iw.x; }
+
+		fn Foo() : i32
+		{
+			return Extract( 652321 ); // Type conversion for const-reference arg.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 652321 )
