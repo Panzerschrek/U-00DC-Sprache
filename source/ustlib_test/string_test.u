@@ -1,6 +1,11 @@
 //##success_test
 import "../ustlib/string.u"
 
+fn AcceptStringOnly( ust::string8 str )
+{
+	halt if( str != "rtgbg__" );
+}
+
 fn U_Main() : i32
 {
 	{ // string is default-constructible. Default state is empty.
@@ -20,6 +25,12 @@ fn U_Main() : i32
 		halt if( s16.empty() );
 		halt if( s8  != "jedem das seine" );
 		halt if( s16 != "u16 строка"u16 );
+	}
+	{ // Char array convertible to string.
+		AcceptStringOnly( "rtgbg__" );
+
+		var ust::string16 str= "B N --r"u16;
+		halt if( str != "B N --r"u16 );
 	}
 	{ // String is copy-constructible.
 		var ust::string32 s0( "xdcfvg "u32 );

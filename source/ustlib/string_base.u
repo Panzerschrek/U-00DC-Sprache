@@ -35,7 +35,7 @@ class string_base
 
 	// Construct form char array.
 	template</ size_type array_size />
-	fn constructor( [ char_type, array_size ]& array )
+	fn conversion_constructor( [ char_type, array_size ]& array )
 	( ptr_(), size_(array_size), capacity_(0) )
 	{
 		if( array_size == size_type(0) ){ return; }
