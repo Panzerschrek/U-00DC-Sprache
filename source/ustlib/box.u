@@ -22,7 +22,7 @@ public:
 
 	template</ type U />
 	fn enable_if( !is_same_type</T, U/>() && is_ancestor_for</T, U/>() )
-	constructor( mut this'a...', box</U/> mut val'b...' ) ' a <- b '
+	conversion_constructor( mut this'a...', box</U/> mut val'b...' ) ' a <- b '
 	{
 		unsafe
 		{

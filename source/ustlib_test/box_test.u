@@ -45,6 +45,10 @@ fn U_Main() : i32
 		var ust::box</ B /> mut box_b( B() );
 		var ust::box</ A /> mut box_a( move(box_b) );
 	}
+	{ // is convertible form other box.
+		var ust::box</ B /> mut box_b( B() );
+		var ust::box</ A /> mut box_a= move(box_b);
+	}
 
 	return 0;
 }

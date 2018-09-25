@@ -24,7 +24,7 @@ public:
 	}
 
 	// Construct with value, taken from box.
-	fn constructor( mut this'a...', box</T/> mut val'b...' ) ' a <- b '
+	fn conversion_constructor( mut this'a...', box</T/> mut val'b...' ) ' a <- b '
 	{
 		unsafe
 		{
@@ -37,7 +37,7 @@ public:
 	// Construct with value, taken from nullable box of compatible type.
 	template</ type U />
 	fn enable_if( !is_same_type</T, U/>() && is_ancestor_for</T, U/>() )
-	constructor( mut this'a...', box_nullable</U/> mut val'b...' ) ' a <- b '
+	conversion_constructor( mut this'a...', box_nullable</U/> mut val'b...' ) ' a <- b '
 	{
 		unsafe
 		{
@@ -53,7 +53,7 @@ public:
 	// Construct with value, taken from box of compatible type.
 	template</ type U />
 	fn enable_if( !is_same_type</T, U/>() && is_ancestor_for</T, U/>() )
-	constructor( mut this'a...', box</U/> mut val'b...' ) ' a <- b '
+	conversion_constructor( mut this'a...', box</U/> mut val'b...' ) ' a <- b '
 	{
 		unsafe
 		{

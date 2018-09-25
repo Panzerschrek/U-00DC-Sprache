@@ -73,6 +73,10 @@ fn U_Main() : i32
 		var ust::box_nullable</ B /> mut b_box;
 		var ust::box_nullable</ A /> a_box( move(b_box) );
 	}
+	{ // can be implicitly constructed from nullable box of other type
+		var ust::box_nullable</ B /> mut a_box, mut b_box;
+		a_box= move(b_box);
+	}
 
 	return 0;
 }
