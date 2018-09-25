@@ -252,6 +252,7 @@ private:
 	TemplateBasePtr ParseTemplate();
 
 	void NextLexem();
+	bool NotEndOfFile();
 
 	void TryRecoverAfterError( const std::vector<ExpectedLexem>& expected_lexems );
 	void TryRecoverAfterError( const std::vector<ExpectedLexem>& expected_lexems0, const std::vector<ExpectedLexem>& expected_lexems1 );
@@ -277,7 +278,7 @@ SyntaxAnalysisResult SyntaxAnalyzer::DoAnalyzis( const Lexems& lexems )
 	last_error_it_= lexems.end();
 	last_error_repeats_= 0u;
 
-	while( it_ < it_end_ )
+	while( NotEndOfFile() )
 	{
 		if( !( it_->type == Lexem::Type::Identifier && it_->text == Keywords::import_ ) )
 			break;
@@ -306,7 +307,7 @@ ProgramElements SyntaxAnalyzer::ParseNamespaceBody( const Lexem::Type end_lexem 
 {
 	ProgramElements program_elements;
 
-	while( it_ < it_end_ && it_->type != Lexem::Type::EndOfFile )
+	while( NotEndOfFile() && it_->type != Lexem::Type::EndOfFile )
 	{
 		if( it_->type == Lexem::Type::Identifier && ( it_->text == Keywords::fn_ || it_->text == Keywords::op_ ) )
 		{
@@ -553,12 +554,12 @@ IExpressionComponentPtr SyntaxAnalyzer::ParseExpression()
 {
 	IExpressionComponentPtr root;
 
-	while( std::next(it_) < it_end_ )
+	while( NotEndOfFile() )
 	{
 		PrefixOperators prefix_operators;
 
 		// Prefix operators.
-		while( std::next(it_) < it_end_ )
+		while( NotEndOfFile() )
 		{
 			switch( it_->type )
 			{
@@ -883,7 +884,7 @@ IExpressionComponentPtr SyntaxAnalyzer::ParseExpression()
 					NextLexem();
 
 					std::vector<IExpressionComponentPtr> arguments;
-					while( std::next(it_) < it_end_ )
+					while( NotEndOfFile() )
 					{
 						if( it_->type == Lexem::Type::BracketRight )
 						{
@@ -1154,7 +1155,7 @@ std::unique_ptr<FunctionType> SyntaxAnalyzer::ParseFunctionType()
 	}
 	NextLexem();
 
-	while( it_ < it_end_ && it_->type != Lexem::Type::EndOfFile )
+	while( NotEndOfFile() && it_->type != Lexem::Type::EndOfFile )
 	{
 		if( it_->type == Lexem::Type::BracketRight )
 		{
@@ -1246,7 +1247,7 @@ std::vector<IExpressionComponentPtr> SyntaxAnalyzer::ParseTemplateParameters()
 
 	std::vector<IExpressionComponentPtr> result;
 
-	while( std::next(it_) < it_end_ )
+	while( NotEndOfFile() )
 	{
 		if( it_->type == Lexem::Type::TemplateBracketRight )
 		{
@@ -1312,7 +1313,7 @@ ComplexName SyntaxAnalyzer::ParseComplexName()
 		else
 			break;
 
-	} while( std::next(it_) < it_end_ );
+	} while( NotEndOfFile() );
 
 	return complex_name;
 }
@@ -1331,7 +1332,7 @@ ReferencesTagsList SyntaxAnalyzer::ParseReferencesTagsList()
 		return result;
 	}
 
-	while( std::next(it_) < it_end_ )
+	while( NotEndOfFile() )
 	{
 		if( it_->type == Lexem::Type::Identifier )
 		{
@@ -1390,7 +1391,7 @@ FunctionReferencesPollutionList SyntaxAnalyzer::ParseFunctionReferencesPollution
 		return result;
 	}
 
-	while( std::next(it_) < it_end_ )
+	while( NotEndOfFile() )
 	{
 		if( it_->type == Lexem::Type::Identifier )
 		{
@@ -1500,7 +1501,7 @@ std::unique_ptr<ArrayInitializer> SyntaxAnalyzer::ParseArrayInitializer()
 	std::unique_ptr<ArrayInitializer> result( new ArrayInitializer( it_->file_pos ) );
 	NextLexem();
 
-	while( it_ < it_end_ && it_->type != Lexem::Type::SquareBracketRight )
+	while( NotEndOfFile() && it_->type != Lexem::Type::SquareBracketRight )
 	{
 		result->initializers.push_back( ParseInitializer( true ) );
 		if( it_->type == Lexem::Type::Comma )
@@ -1509,7 +1510,7 @@ std::unique_ptr<ArrayInitializer> SyntaxAnalyzer::ParseArrayInitializer()
 			break;
 		// TODO - parse continious flag here
 	}
-	if( it_ == it_end_ || it_->type != Lexem::Type::SquareBracketRight )
+	if( it_->type != Lexem::Type::SquareBracketRight )
 	{
 		PushErrorMessage();
 		return result;
@@ -1527,7 +1528,7 @@ std::unique_ptr<StructNamedInitializer> SyntaxAnalyzer::ParseStructNamedInitiali
 	std::unique_ptr<StructNamedInitializer> result( new StructNamedInitializer( it_->file_pos ) );
 	NextLexem();
 
-	while( it_ < it_end_ && it_->type != Lexem::Type::BraceRight )
+	while( NotEndOfFile() && it_->type != Lexem::Type::BraceRight )
 	{
 		if( it_->type == Lexem::Type::Dot )
 			NextLexem();
@@ -1579,7 +1580,7 @@ std::unique_ptr<StructNamedInitializer> SyntaxAnalyzer::ParseStructNamedInitiali
 		if( it_->type == Lexem::Type::Comma )
 			NextLexem();
 	}
-	if( it_ == it_end_ || it_->type != Lexem::Type::BraceRight )
+	if( it_->type != Lexem::Type::BraceRight )
 	{
 		PushErrorMessage();
 		return result;
@@ -1597,7 +1598,7 @@ std::unique_ptr<ConstructorInitializer> SyntaxAnalyzer::ParseConstructorInitiali
 	NextLexem();
 
 	std::vector<IExpressionComponentPtr> args;
-	while( it_ < it_end_ && it_->type != Lexem::Type::BracketRight )
+	while( NotEndOfFile() && it_->type != Lexem::Type::BracketRight )
 	{
 		args.push_back( ParseExpression() );
 		if( it_->type == Lexem::Type::Comma )
@@ -1613,7 +1614,7 @@ std::unique_ptr<ConstructorInitializer> SyntaxAnalyzer::ParseConstructorInitiali
 		else
 			break;
 	}
-	if( it_ == it_end_ || it_->type != Lexem::Type::BracketRight )
+	if( it_->type != Lexem::Type::BracketRight )
 	{
 		PushErrorMessage();
 		return nullptr;
@@ -1726,7 +1727,7 @@ VariablesDeclarationPtr SyntaxAnalyzer::ParseVariablesDeclaration()
 			return nullptr;
 		}
 
-	} while( it_ < it_end_ );
+	} while( NotEndOfFile() );
 
 	return decl;
 }
@@ -1935,7 +1936,7 @@ std::unique_ptr<IfOperator> SyntaxAnalyzer::ParseIfOperator()
 	}
 	branches.back().block= ParseBlock();
 
-	while( std::next(it_) < it_end_ )
+	while( NotEndOfFile() )
 	{
 		if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::else_ )
 		{
@@ -2059,7 +2060,7 @@ std::unique_ptr<Enum> SyntaxAnalyzer::ParseEnum()
 	}
 	NextLexem();
 
-	while( std::next(it_) < it_end_ )
+	while( NotEndOfFile() )
 	{
 		if( it_->type != Lexem::Type::Identifier )
 		{
@@ -2158,7 +2159,7 @@ BlockPtr SyntaxAnalyzer::ParseBlock()
 
 	BlockElements elements;
 
-	while( std::next(it_) < it_end_ && it_->type != Lexem::Type::EndOfFile )
+	while( NotEndOfFile() && it_->type != Lexem::Type::EndOfFile )
 	{
 		if( it_->type == Lexem::Type::BraceLeft )
 			elements.emplace_back( ParseBlock() );
@@ -2333,7 +2334,7 @@ std::vector<ComplexName> SyntaxAnalyzer::TryParseClassParentsList()
 
 	NextLexem();
 
-	while( std::next(it_) < it_end_ )
+	while( NotEndOfFile() )
 	{
 		result.push_back(ParseComplexName());
 		if( it_->type == Lexem::Type::Comma )
@@ -2477,7 +2478,7 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 				NextLexem();
 			}
 
-			while( std::next(it_) < it_end_ )
+			while( NotEndOfFile() )
 			{
 				if( it_->type != Lexem::Type::Identifier )
 				{
@@ -2640,7 +2641,7 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 		}
 	}
 
-	while( it_ < it_end_ && it_->type != Lexem::Type::EndOfFile )
+	while( NotEndOfFile() && it_->type != Lexem::Type::EndOfFile )
 	{
 		if( it_->type == Lexem::Type::BracketRight )
 		{
@@ -2704,7 +2705,7 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 			result->constructor_initialization_list_.reset( new StructNamedInitializer( it_->file_pos ) );
 			NextLexem();
 
-			while( std::next(it_) < it_end_ )
+			while( NotEndOfFile() )
 			{
 				if( it_->type == Lexem::Type::BracketRight )
 				{
@@ -2813,9 +2814,7 @@ std::unique_ptr<Class> SyntaxAnalyzer::ParseClassBody()
 		return result;
 	}
 
-	while( !(
-		it_->type == Lexem::Type::BraceRight ||
-		it_->type == Lexem::Type::EndOfFile ) )
+	while( NotEndOfFile() && !( it_->type == Lexem::Type::BraceRight || it_->type == Lexem::Type::EndOfFile ) )
 	{
 		if( it_->type == Lexem::Type::Identifier && ( it_->text == Keywords::fn_ || it_->text == Keywords::op_ ) )
 		{
@@ -2966,7 +2965,7 @@ TemplateBasePtr SyntaxAnalyzer::ParseTemplate()
 	}
 	NextLexem();
 
-	while( std::next(it_) < it_end_ )
+	while( NotEndOfFile() )
 	{
 		if( it_->type == Lexem::Type::TemplateBracketRight )
 		{
@@ -3079,7 +3078,7 @@ TemplateBasePtr SyntaxAnalyzer::ParseTemplate()
 	{
 		// Parse signature args
 		NextLexem();
-		while( std::next(it_) < it_end_ )
+		while( NotEndOfFile() )
 		{
 			if( it_->type == Lexem::Type::TemplateBracketRight )
 			{
@@ -3169,8 +3168,14 @@ TemplateBasePtr SyntaxAnalyzer::ParseTemplate()
 
 void SyntaxAnalyzer::NextLexem()
 {
-	if( it_ < it_end_ )
+	if( NotEndOfFile() )
 		++it_;
+}
+
+bool SyntaxAnalyzer::NotEndOfFile()
+{
+	// ise std::next, because we need possibility to dereference iterator after "end".
+	return std::next(it_) < it_end_;
 }
 
 void SyntaxAnalyzer::TryRecoverAfterError( const std::vector<ExpectedLexem>& expected_lexems0 )
@@ -3262,7 +3267,7 @@ void SyntaxAnalyzer::PushErrorMessage()
 
 	if( last_error_repeats_ > 10u )
 	{
-		++it_;
+		NextLexem();
 		last_error_it_= it_;
 		last_error_repeats_= 0u;
 	}
