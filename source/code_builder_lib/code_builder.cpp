@@ -2487,6 +2487,9 @@ void CodeBuilder::BuildAssignmentOperatorCode(
 	NamesScope& block_names,
 	FunctionContext& function_context )
 {
+	// Destruction frame for temporary variables of expressions.
+	const StackVariablesStorage temp_variables_storage( function_context );
+
 	if(
 		TryCallOverloadedBinaryOperator(
 			OverloadedOperator::Assign,
@@ -2497,71 +2500,66 @@ void CodeBuilder::BuildAssignmentOperatorCode(
 			assignment_operator.file_pos_,
 			block_names,
 			function_context ) != boost::none )
-	{
-		return;
-	}
-	// Here process default assignment operator for fundamental types.
+	{}
+	else
+	{ // Here process default assignment operator for fundamental types.
+		// Evalueate right part
+		Variable r_var= BuildExpressionCodeEnsureVariable( *assignment_operator.r_value_, block_names, function_context );
 
-	// Destruction frame for temporary variables of expressions.
-	const StackVariablesStorage temp_variables_storage( function_context );
-
-	// Evalueate right part
-	Variable r_var= BuildExpressionCodeEnsureVariable( *assignment_operator.r_value_, block_names, function_context );
-
-	if(  r_var.type.GetFundamentalType() != nullptr || r_var.type.GetEnumType() != nullptr || r_var.type.GetFunctionPointerType() != nullptr )
-	{
-		// We must read value, because referenced by reference value may be changed in l_var evaluation.
-		if( r_var.location != Variable::Location::LLVMRegister )
+		if(  r_var.type.GetFundamentalType() != nullptr || r_var.type.GetEnumType() != nullptr || r_var.type.GetFunctionPointerType() != nullptr )
 		{
-			r_var.llvm_value= CreateMoveToLLVMRegisterInstruction( r_var, function_context );
-			r_var.location= Variable::Location::LLVMRegister;
+			// We must read value, because referenced by reference value may be changed in l_var evaluation.
+			if( r_var.location != Variable::Location::LLVMRegister )
+			{
+				r_var.llvm_value= CreateMoveToLLVMRegisterInstruction( r_var, function_context );
+				r_var.location= Variable::Location::LLVMRegister;
+			}
+			r_var.value_type= ValueType::Value;
 		}
-		r_var.value_type= ValueType::Value;
-	}
 
-	// Evaluate left part.
-	const Variable l_var= BuildExpressionCodeEnsureVariable( *assignment_operator.l_value_, block_names, function_context );
+		// Evaluate left part.
+		const Variable l_var= BuildExpressionCodeEnsureVariable( *assignment_operator.l_value_, block_names, function_context );
 
-	if( l_var.type == invalid_type_ || r_var.type == invalid_type_ )
-		return;
+		if( l_var.type == invalid_type_ || r_var.type == invalid_type_ )
+			return;
 
-	if( l_var.value_type != ValueType::Reference )
-	{
-		errors_.push_back( ReportExpectedReferenceValue( assignment_operator.file_pos_ ) );
-		return;
-	}
-	if( l_var.type != r_var.type )
-	{
-		errors_.push_back( ReportTypesMismatch( assignment_operator.file_pos_, l_var.type.ToString(), r_var.type.ToString() ) );
-		return;
-	}
-
-	// Check references of destination.
-	for( const StoredVariablePtr& referenced_variable : l_var.referenced_variables )
-	{
-		if( referenced_variable->imut_use_counter.use_count() > 1u )
+		if( l_var.value_type != ValueType::Reference )
 		{
-			// Assign to variable, that have nonzero immutable references.
-			errors_.push_back( ReportReferenceProtectionError( assignment_operator.file_pos_, referenced_variable->name ) );
-		}
-	}
-
-	if( l_var.type.GetFundamentalType() != nullptr || l_var.type.GetEnumType() != nullptr || l_var.type.GetFunctionPointerType() != nullptr )
-	{
-		if( l_var.location != Variable::Location::Pointer )
-		{
-			U_ASSERT(false);
+			errors_.push_back( ReportExpectedReferenceValue( assignment_operator.file_pos_ ) );
 			return;
 		}
-		U_ASSERT( r_var.location == Variable::Location::LLVMRegister );
-		function_context.llvm_ir_builder.CreateStore( r_var.llvm_value, l_var.llvm_value );
-	}
-	else
-	{
-		errors_.push_back( ReportOperationNotSupportedForThisType( assignment_operator.file_pos_, l_var.type.ToString() ) );
-		return;
-	}
+		if( l_var.type != r_var.type )
+		{
+			errors_.push_back( ReportTypesMismatch( assignment_operator.file_pos_, l_var.type.ToString(), r_var.type.ToString() ) );
+			return;
+		}
 
+		// Check references of destination.
+		for( const StoredVariablePtr& referenced_variable : l_var.referenced_variables )
+		{
+			if( referenced_variable->imut_use_counter.use_count() > 1u )
+			{
+				// Assign to variable, that have nonzero immutable references.
+				errors_.push_back( ReportReferenceProtectionError( assignment_operator.file_pos_, referenced_variable->name ) );
+			}
+		}
+
+		if( l_var.type.GetFundamentalType() != nullptr || l_var.type.GetEnumType() != nullptr || l_var.type.GetFunctionPointerType() != nullptr )
+		{
+			if( l_var.location != Variable::Location::Pointer )
+			{
+				U_ASSERT(false);
+				return;
+			}
+			U_ASSERT( r_var.location == Variable::Location::LLVMRegister );
+			function_context.llvm_ir_builder.CreateStore( r_var.llvm_value, l_var.llvm_value );
+		}
+		else
+		{
+			errors_.push_back( ReportOperationNotSupportedForThisType( assignment_operator.file_pos_, l_var.type.ToString() ) );
+			return;
+		}
+	}
 	// Destruct temporary variables of right and left expressions.
 	CallDestructors( *function_context.stack_variables_stack.back(), function_context, assignment_operator.file_pos_ );
 }
@@ -2571,7 +2569,10 @@ void CodeBuilder::BuildAdditiveAssignmentOperatorCode(
 	NamesScope& block_names,
 	FunctionContext& function_context )
 {
-	if(
+	// Destruction frame for temporary variables of expressions.
+	const StackVariablesStorage temp_variables_storage( function_context );
+
+	if( // TODO - create temp variables frame here.
 		TryCallOverloadedBinaryOperator(
 			GetOverloadedOperatorForAdditiveAssignmentOperator( additive_assignment_operator.additive_operation_ ),
 			additive_assignment_operator,
@@ -2584,84 +2585,81 @@ void CodeBuilder::BuildAdditiveAssignmentOperatorCode(
 	{
 		return;
 	}
-	// Here process default additive assignment operators for fundamental types.
-
-	// Destruction frame for temporary variables of expressions.
-	const StackVariablesStorage temp_variables_storage( function_context );
-
-	Variable r_var=
-		BuildExpressionCodeEnsureVariable(
-			*additive_assignment_operator.r_value_,
-			block_names,
-			function_context );
-
-	if( r_var.type.GetFundamentalType() != nullptr )
-	{
-		// We must read value, because referenced by reference value may be changed in l_var evaluation.
-		if( r_var.location != Variable::Location::LLVMRegister )
-		{
-			r_var.llvm_value= CreateMoveToLLVMRegisterInstruction( r_var, function_context );
-			r_var.location= Variable::Location::LLVMRegister;
-		}
-		r_var.value_type= ValueType::Value;
-	}
-
-	const Variable l_var=
-		BuildExpressionCodeEnsureVariable(
-			*additive_assignment_operator.l_value_,
-			block_names,
-			function_context );
-
-	if( l_var.type == invalid_type_ || r_var.type == invalid_type_)
-		return;
-
-	// Check references of destination.
-	for( const StoredVariablePtr& stored_variable : l_var.referenced_variables )
-	{
-		if( stored_variable->imut_use_counter.use_count() > 1u )
-		{
-			// Assign to variable, that have nonzero immutable references.
-			errors_.push_back( ReportReferenceProtectionError( additive_assignment_operator.file_pos_, stored_variable->name ) );
-		}
-	}
-
-	const FundamentalType* const l_var_fundamental_type= l_var.type.GetFundamentalType();
-	const FundamentalType* const r_var_fundamental_type= r_var.type.GetFundamentalType();
-	if( l_var_fundamental_type != nullptr && r_var_fundamental_type != nullptr )
-	{
-		// Generate binary operator and assignment for fundamental types.
-		const Value operation_result_value=
-			BuildBinaryOperator(
-				l_var, r_var,
-				additive_assignment_operator.additive_operation_,
-				additive_assignment_operator.file_pos_,
-				function_context );
-		if( operation_result_value.GetVariable() == nullptr ) // Not variable in case of error or if template-dependent stuff.
-			return;
-		const Variable& operation_result= *operation_result_value.GetVariable();
-
-		if( l_var.value_type != ValueType::Reference )
-		{
-			errors_.push_back( ReportExpectedReferenceValue( additive_assignment_operator.file_pos_ ) );
-			return;
-		}
-
-		if( operation_result.type != l_var.type )
-		{
-			errors_.push_back( ReportTypesMismatch( additive_assignment_operator.file_pos_, l_var.type.ToString(), operation_result.type.ToString() ) );
-			return;
-		}
-
-		U_ASSERT( l_var.location == Variable::Location::Pointer );
-		llvm::Value* const value_in_register= CreateMoveToLLVMRegisterInstruction( operation_result, function_context );
-		function_context.llvm_ir_builder.CreateStore( value_in_register, l_var.llvm_value );
-	}
 	else
-	{
-		errors_.push_back( ReportOperationNotSupportedForThisType( additive_assignment_operator.file_pos_, l_var.type.ToString() ) );
-		return;
-	}
+	{ // Here process default additive assignment operators for fundamental types.
+		Variable r_var=
+			BuildExpressionCodeEnsureVariable(
+				*additive_assignment_operator.r_value_,
+				block_names,
+				function_context );
 
+		if( r_var.type.GetFundamentalType() != nullptr )
+		{
+			// We must read value, because referenced by reference value may be changed in l_var evaluation.
+			if( r_var.location != Variable::Location::LLVMRegister )
+			{
+				r_var.llvm_value= CreateMoveToLLVMRegisterInstruction( r_var, function_context );
+				r_var.location= Variable::Location::LLVMRegister;
+			}
+			r_var.value_type= ValueType::Value;
+		}
+
+		const Variable l_var=
+			BuildExpressionCodeEnsureVariable(
+				*additive_assignment_operator.l_value_,
+				block_names,
+				function_context );
+
+		if( l_var.type == invalid_type_ || r_var.type == invalid_type_)
+			return;
+
+		// Check references of destination.
+		for( const StoredVariablePtr& stored_variable : l_var.referenced_variables )
+		{
+			if( stored_variable->imut_use_counter.use_count() > 1u )
+			{
+				// Assign to variable, that have nonzero immutable references.
+				errors_.push_back( ReportReferenceProtectionError( additive_assignment_operator.file_pos_, stored_variable->name ) );
+			}
+		}
+
+		const FundamentalType* const l_var_fundamental_type= l_var.type.GetFundamentalType();
+		const FundamentalType* const r_var_fundamental_type= r_var.type.GetFundamentalType();
+		if( l_var_fundamental_type != nullptr && r_var_fundamental_type != nullptr )
+		{
+			// Generate binary operator and assignment for fundamental types.
+			const Value operation_result_value=
+				BuildBinaryOperator(
+					l_var, r_var,
+					additive_assignment_operator.additive_operation_,
+					additive_assignment_operator.file_pos_,
+					function_context );
+			if( operation_result_value.GetVariable() == nullptr ) // Not variable in case of error or if template-dependent stuff.
+				return;
+			const Variable& operation_result= *operation_result_value.GetVariable();
+
+			if( l_var.value_type != ValueType::Reference )
+			{
+				errors_.push_back( ReportExpectedReferenceValue( additive_assignment_operator.file_pos_ ) );
+				return;
+			}
+
+			if( operation_result.type != l_var.type )
+			{
+				errors_.push_back( ReportTypesMismatch( additive_assignment_operator.file_pos_, l_var.type.ToString(), operation_result.type.ToString() ) );
+				return;
+			}
+
+			U_ASSERT( l_var.location == Variable::Location::Pointer );
+			llvm::Value* const value_in_register= CreateMoveToLLVMRegisterInstruction( operation_result, function_context );
+			function_context.llvm_ir_builder.CreateStore( value_in_register, l_var.llvm_value );
+		}
+		else
+		{
+			errors_.push_back( ReportOperationNotSupportedForThisType( additive_assignment_operator.file_pos_, l_var.type.ToString() ) );
+			return;
+		}
+	}
 	// Destruct temporary variables of right and left expressions.
 	CallDestructors( *function_context.stack_variables_stack.back(), function_context, additive_assignment_operator.file_pos_ );
 }
