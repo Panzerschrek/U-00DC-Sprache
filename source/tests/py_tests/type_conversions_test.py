@@ -187,6 +187,27 @@ def TypeConversion_InFunctionCall_Test3():
 	assert( errors_list[0].file_pos.line == 12 )
 
 
+def TypeConversion_InFunctionCall_Test4():
+	c_program_text= """
+		struct IntWrapper
+		{
+			i32 x;
+			template</ size_type size />
+			fn conversion_constructor( [ char8, size ]& arr ) ( x= i32(size) ) {}
+		}
+
+		fn Extract( IntWrapper iw ) : i32 { return iw.x; }
+
+		fn Foo() : i32
+		{
+			return Extract( "abcRf" ); // Call to tepmplate conversion constructor
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 5 )
+
+
 def ConversionConstructorMustHaveOneArgument_Test0():
 	c_program_text= """
 		struct IntWrapper

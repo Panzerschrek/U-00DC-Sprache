@@ -619,7 +619,7 @@ const FunctionVariable* CodeBuilder::GetConversionConstructor(
 	actual_args[1u].is_mutable= false;
 	actual_args[1u].is_reference= true;
 
-	const FunctionVariable* const func= GetOverloadedFunction( constructors, actual_args, false, file_pos, false, false );
+	const FunctionVariable* const func= GetOverloadedFunction( constructors, actual_args, true, file_pos, false, false );
 	if( func != nullptr && func->is_conversion_constructor )
 		return func;
 
