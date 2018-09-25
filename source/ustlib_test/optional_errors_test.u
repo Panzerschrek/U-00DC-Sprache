@@ -1,0 +1,43 @@
+//##fail_test
+import "../ustlib/optional.u"
+
+struct RI
+{
+	i32&imut r;
+	fn constructor( this'a', i32&'b imut in_r ) ' a <- imut b ' ( r= in_r ) {}
+}
+
+struct RM
+{
+	i32&mut r;
+	fn constructor( this'a', i32&'b mut in_r ) ' a <- mut b ' ( r= in_r ) {}
+}
+
+fn U_Main() : i32
+{
+	{ // constructor does reference-pollution.
+		var i32 mut x= 0;
+		var ust::optional</RM/> mut opt( RM(x) );
+
+		var i32 y= x; //##expect_error AccessingVariableThatHaveMutableReference
+	}
+	{ // "reset" does reference-pollution.
+		var i32 mut x= 0;
+		var ust::optional</RM/> mut opt;
+
+		opt.reset( RM(x) );
+		var i32 y= x; //##expect_error AccessingVariableThatHaveMutableReference
+	}
+	{ // "reset" does reference-pollution.
+		var i32 mut x= 0;
+		var ust::optional</RI/> mut opt;
+
+		opt.reset( RI(x) );
+		++x; //##expect_error ReferenceProtectionError
+	}
+	{ // optional saves mutability.
+		var ust::optional</ i32 /> imut opt(0);
+		opt.get_ref()= 0; //##expect_error ExpectedReferenceValue
+	}
+	return 0;
+}
