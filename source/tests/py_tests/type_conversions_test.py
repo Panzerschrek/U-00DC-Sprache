@@ -208,6 +208,28 @@ def TypeConversion_InFunctionCall_Test4():
 	assert( call_result == 5 )
 
 
+def TypeConversion_InFunctionCall_Test5():
+	c_program_text= """
+		struct IntWrapper
+		{
+			i32 x;
+			fn conversion_constructor( i32 in_x ) ( x= in_x ) {}
+			fn destructor(){} // Prevent constexpr
+		}
+
+		template</ i32 mul />
+		fn Extract( IntWrapper iw ) : i32 { return iw.x * mul; }
+
+		fn Foo() : i32
+		{
+			return Extract</31/>( 856 ); // Should convert type in calling of template function, where argument is not template-dependent.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 856 * 31 )
+
+
 def ConversionConstructorMustHaveOneArgument_Test0():
 	c_program_text= """
 		struct IntWrapper

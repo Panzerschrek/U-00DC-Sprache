@@ -1047,10 +1047,12 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 	{
 		const Synt::FunctionArgument& function_argument= *function_declaration.type_.arguments_[i];
 
+		const bool expected_arg_is_mutalbe_reference=
+			function_argument.mutability_modifier_ == Synt::MutabilityModifier::Mutable &&
+			( function_argument.reference_modifier_ == Synt::ReferenceModifier::Reference || function_argument.name_ == Keywords::this_ );
+
 		// Functin arg declared as "mut&", but given something immutable.
-		if( function_argument.mutability_modifier_ == Synt::MutabilityModifier::Mutable &&
-			( function_argument.reference_modifier_ == Synt::ReferenceModifier::Reference || function_argument.name_ == Keywords::this_ ) &&
-			!given_args[i].is_mutable )
+		if( expected_arg_is_mutalbe_reference && !given_args[i].is_mutable )
 		{
 			deduction_failed= true;
 			continue;
@@ -1062,6 +1064,7 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 				given_args[i].type != function_template.base_class )
 			{
 				// Givent type and type of "this" are different.
+				// TODO - what if given type reference is convertible to expected type?
 				deduction_failed= true;
 				continue;
 			}
@@ -1069,7 +1072,7 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 		}
 		else
 		{
-			// For named types we check, if reference (and type in future) conversion is possible, and if not, do arguments deduction.
+			// For named types we check, if reference or type conversion is possible, and if not, do arguments deduction.
 			bool deduced_specially= false;
 			if( const Synt::NamedTypeName* const named_type_name= dynamic_cast<Synt::NamedTypeName*>( function_argument.type_.get() ) )
 			{
@@ -1098,7 +1101,8 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 					}
 					if( const Type* const type= signature_parameter_name->second.GetTypeName() )
 					{
-						if( *type == given_args[i].type || ReferenceIsConvertible( given_args[i].type, *type, file_pos ) )
+						if( *type == given_args[i].type || ReferenceIsConvertible( given_args[i].type, *type, file_pos ) ||
+							( !expected_arg_is_mutalbe_reference && GetConversionConstructor( given_args[i].type, *type, file_pos ) != nullptr ) )
 						{
 							deduced_temlpate_parameters[i]= DeducedTemplateParameter::Type();
 							deduced_specially= true;
