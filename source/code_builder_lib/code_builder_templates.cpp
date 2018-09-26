@@ -1060,11 +1060,10 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 
 		if( i == 0u && function_argument.name_ == Keywords::this_ )
 		{
-			if( function_template.base_class == nullptr || // Can be in case of error.
-				given_args[i].type != function_template.base_class )
+			if( function_template.base_class != nullptr &&
+				!( given_args[i].type == function_template.base_class || ReferenceIsConvertible( given_args[i].type, function_template.base_class, file_pos ) ) )
 			{
 				// Givent type and type of "this" are different.
-				// TODO - what if given type reference is convertible to expected type?
 				deduction_failed= true;
 				continue;
 			}

@@ -315,6 +315,31 @@ def TemplateMethod_Test6():
 	assert( call_result == 885214 )
 
 
+def TemplateMethod_Test7():
+	c_program_text= """
+		class A polymorph
+		{
+			i32 x;
+			fn constructor( i32 in_x ) ( x= in_x ) {}
+			template</ i32 mul/> fn GetXMul(this) : i32 { return x * mul; }
+		}
+
+		class B : A
+		{
+			fn constructor( i32 in_x ) ( base(in_x) ) {}
+		}
+
+		fn Foo() : i32
+		{
+			var B b(66521);
+			return b.GetXMul</23/>(); // Should call here template template method of base class.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 66521 * 23 )
+
+
 def TemplateOperator_Test0():
 	c_program_text= """
 		struct Num
