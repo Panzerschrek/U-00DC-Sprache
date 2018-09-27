@@ -134,6 +134,102 @@ static ProgramString Stringify( const Synt::ComplexName& complex_name )
 	return result;
 }
 
+
+static ProgramString Stringify( const Synt::FunctionArgumentPtr& arg )
+{
+	ProgramString result;
+	if( arg == nullptr )
+		return result;
+
+	result+= Stringify( arg->type_ );
+	switch( arg->reference_modifier_ )
+	{
+	case Synt::ReferenceModifier::None: break;
+	case Synt::ReferenceModifier::Reference: result+= "&"_SpC; break;
+	}
+
+	if( !arg->reference_tag_.empty() )
+	{
+		result+= "'"_SpC;
+		result+= arg->reference_tag_;
+	}
+
+	switch( arg->mutability_modifier_ )
+	{
+	case Synt::MutabilityModifier::None: break;
+	case Synt::MutabilityModifier::Mutable  : result+= Keyword( Keywords::mut_       ); break;
+	case Synt::MutabilityModifier::Immutable: result+= Keyword( Keywords::imut_      ); break;
+	case Synt::MutabilityModifier::Constexpr: result+= Keyword( Keywords::constexpr_ ); break;
+	}
+
+	result+= " "_SpC;
+	result+= arg->name_;
+
+	if( !arg->inner_arg_reference_tags_.empty() )
+	{
+		result+= "'"_SpC;
+		for( const ProgramString& tag : arg->inner_arg_reference_tags_ )
+		{
+			if( tag.empty() )
+				result+= "..."_SpC;
+			else
+				result+= tag;
+			if( &tag != &arg->inner_arg_reference_tags_.back() && !arg->inner_arg_reference_tags_.back().empty() )
+				result+= ", "_SpC;
+		}
+		result+= "'"_SpC;
+	}
+
+	return result;
+}
+
+static ProgramString StringifyFunctionTypeEnding( const Synt::FunctionType& function_type )
+{
+	ProgramString result;
+	if( function_type.unsafe_ )
+		result+= Keyword( Keywords::unsafe_ );
+
+	// return value
+	result+= " : "_SpC;
+	if( function_type.return_type_ == nullptr )
+		result+= Keyword( Keywords::void_ );
+	else
+		result+= Stringify( function_type.return_type_ );
+
+	if( !function_type.return_value_inner_reference_tags_.empty() )
+	{
+		result+= "'"_SpC;
+		for( const ProgramString& tag : function_type.return_value_inner_reference_tags_ )
+		{
+			if( tag.empty() )
+				result+= "..."_SpC;
+			else
+				result+= tag;
+			if( &tag != &function_type.return_value_inner_reference_tags_.back() && !function_type.return_value_inner_reference_tags_.back().empty() )
+				result+= ", "_SpC;
+		}
+		result+= "'"_SpC;
+	}
+
+	switch( function_type.return_value_reference_modifier_ )
+	{
+	case Synt::ReferenceModifier::None: break;
+	case Synt::ReferenceModifier::Reference:
+		result+= "&"_SpC;
+		break;
+	}
+
+	switch( function_type.return_value_mutability_modifier_ )
+	{
+	case Synt::MutabilityModifier::None: break;
+	case Synt::MutabilityModifier::Mutable  : result+= Keyword( Keywords::mut_       ); break;
+	case Synt::MutabilityModifier::Immutable: result+= Keyword( Keywords::imut_      ); break;
+	case Synt::MutabilityModifier::Constexpr: result+= Keyword( Keywords::constexpr_ );break;
+	}
+
+	return result;
+}
+
 static ProgramString Stringify( const Synt::ITypeNamePtr& type_name )
 {
 	if (const auto named_type_name= dynamic_cast<const Synt::NamedTypeName*>(type_name.get()) )
@@ -152,6 +248,20 @@ static ProgramString Stringify( const Synt::ITypeNamePtr& type_name )
 	}
 	else if( const auto function_type_name= dynamic_cast<const Synt::FunctionType*>(type_name.get()) )
 	{
+		ProgramString result;
+		result+= "fn("_SpC;
+
+		for( const Synt::FunctionArgumentPtr& arg : function_type_name->arguments_ )
+		{
+			result+= Stringify(arg);
+
+			if( &arg != &function_type_name->arguments_.back() )
+				result+= ", "_SpC;
+		}
+		result+=") "_SpC;
+
+		result+= StringifyFunctionTypeEnding( *function_type_name );
+		return result;
 	}
 	else U_ASSERT(false);
 
@@ -183,46 +293,7 @@ static ProgramString Stringify( const Synt::Function& function )
 			result+= Keyword( Keywords::this_ );
 		}
 		else
-		{
-			result+= Stringify( arg->type_ );
-			switch( arg->reference_modifier_ )
-			{
-			case Synt::ReferenceModifier::None: break;
-			case Synt::ReferenceModifier::Reference: result+= "&"_SpC; break;
-			}
-
-			if( !arg->reference_tag_.empty() )
-			{
-				result+= "'"_SpC;
-				result+= arg->reference_tag_;
-			}
-
-			switch( arg->mutability_modifier_ )
-			{
-			case Synt::MutabilityModifier::None: break;
-			case Synt::MutabilityModifier::Mutable  : result+= Keyword( Keywords::mut_       ); break;
-			case Synt::MutabilityModifier::Immutable: result+= Keyword( Keywords::imut_      ); break;
-			case Synt::MutabilityModifier::Constexpr: result+= Keyword( Keywords::constexpr_ ); break;
-			}
-
-			result+= " "_SpC;
-			result+= arg->name_;
-
-			if( !arg->inner_arg_reference_tags_.empty() )
-			{
-				result+= "'"_SpC;
-				for( const ProgramString& tag : arg->inner_arg_reference_tags_ )
-				{
-					if( tag.empty() )
-						result+= "..."_SpC;
-					else
-						result+= tag;
-					if( &tag != &arg->inner_arg_reference_tags_.back() && !arg->inner_arg_reference_tags_.back().empty() )
-						result+= ", "_SpC;
-				}
-				result+= "'"_SpC;
-			}
-		}
+			result+= Stringify( arg );
 
 		if( &arg != &function.type_.arguments_.back() )
 			result+= ", "_SpC;
@@ -230,64 +301,7 @@ static ProgramString Stringify( const Synt::Function& function )
 
 	result+= ") "_SpC;
 
-	if( !function.type_.referecnces_pollution_list_.empty() )
-	{
-		result+= "'"_SpC;
-		for( const Synt::FunctionReferencesPollution& pollution : function.type_.referecnces_pollution_list_ )
-		{
-			result+= pollution.first;
-			result+= " <- "_SpC;
-			result+= pollution.second.is_mutable ? Keyword( Keywords::mut_ ) : Keyword( Keywords::imut_ );
-			result+= " "_SpC;
-			result+= pollution.second.name;
-
-			if( &pollution != &function.type_.referecnces_pollution_list_.back() )
-				result+= ", "_SpC;
-		}
-		result+= "' "_SpC;
-	}
-
-	if( function.type_.unsafe_ )
-		result+= Keyword( Keywords::unsafe_ );
-
-	// return value
-	result+= " : "_SpC;
-	if( function.type_.return_type_ == nullptr )
-		result+= Keyword( Keywords::void_ );
-	else
-		result+= Stringify( function.type_.return_type_ );
-
-	if( !function.type_.return_value_inner_reference_tags_.empty() )
-	{
-		result+= "'"_SpC;
-		for( const ProgramString& tag : function.type_.return_value_inner_reference_tags_ )
-		{
-			if( tag.empty() )
-				result+= "..."_SpC;
-			else
-				result+= tag;
-			if( &tag != &function.type_.return_value_inner_reference_tags_.back() && !function.type_.return_value_inner_reference_tags_.back().empty() )
-				result+= ", "_SpC;
-		}
-		result+= "'"_SpC;
-	}
-
-	switch( function.type_.return_value_reference_modifier_ )
-	{
-	case Synt::ReferenceModifier::None: break;
-	case Synt::ReferenceModifier::Reference:
-		result+= "&"_SpC;
-		break;
-	}
-
-	switch( function.type_.return_value_mutability_modifier_ )
-	{
-	case Synt::MutabilityModifier::None: break;
-	case Synt::MutabilityModifier::Mutable  : result+= Keyword( Keywords::mut_       ); break;
-	case Synt::MutabilityModifier::Immutable: result+= Keyword( Keywords::imut_      ); break;
-	case Synt::MutabilityModifier::Constexpr: result+= Keyword( Keywords::constexpr_ );break;
-	}
-
+	result+= StringifyFunctionTypeEnding( function.type_ );
 	return result;
 }
 
