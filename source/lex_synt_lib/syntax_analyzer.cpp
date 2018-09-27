@@ -593,7 +593,11 @@ IExpressionComponentPtr SyntaxAnalyzer::ParseExpression()
 
 			default:
 				if( prefix_operators.empty() )
+				{
+					if( root == nullptr )
+						PushErrorMessage();
 					return root;
+				}
 				else
 				{
 					PushErrorMessage();
