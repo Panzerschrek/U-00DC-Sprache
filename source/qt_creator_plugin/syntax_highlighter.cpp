@@ -40,6 +40,7 @@ SyntaxHighlighter::SyntaxHighlighter()
 		TextEditor::C_COMMENT,
 		TextEditor::C_VISUAL_WHITESPACE,
 		TextEditor::C_FUNCTION,
+		TextEditor::C_ERROR,
 
 	});
 	setTextFormatCategories(categories);
@@ -50,7 +51,7 @@ void SyntaxHighlighter::highlightBlock( const QString& text )
 	LexicalAnalysisResult lex_result= LexicalAnalysis( text.utf16(), size_t(text.size()), true );
 	if( !lex_result.error_messages.empty() )
 	{
-		setFormat( 0, text.size(), QColor(Qt::red ) );
+		setFormat( 0, text.size(), formatForCategory( int(Formats::LexicalError) ) );
 		return;
 	}
 

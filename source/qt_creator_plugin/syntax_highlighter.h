@@ -19,6 +19,7 @@ public:
 		Comment,
 		Whitespace,
 		Regular,
+		LexicalError,
 	};
 
 	SyntaxHighlighter();
