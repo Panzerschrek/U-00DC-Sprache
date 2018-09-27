@@ -15,45 +15,48 @@ namespace QtCreatorPlugin
 
 
 static ProgramString Stringify( const Synt::ComplexName& complex_name );
-static ProgramString Stringify( const Synt::ITypeName& type_name );
+static ProgramString Stringify( const Synt::ITypeNamePtr& type_name );
 
-static ProgramString Stringify( const Synt::IExpressionComponent& expression )
+static ProgramString Stringify( const Synt::IExpressionComponentPtr& expression )
 {
+	if( expression == nullptr )
+		return ProgramString();
+
 	ProgramString result;
-	if( const auto binary_operator= dynamic_cast<const Synt::BinaryOperator*>(&expression) )
-		result= Stringify( *binary_operator->left_ ) + " "_SpC + BinaryOperatorToString(binary_operator->operator_type_) + " "_SpC + Stringify( *binary_operator->right_ );
-	else if( const auto named_operand= dynamic_cast<const Synt::NamedOperand*>(&expression) )
+	if( const auto binary_operator= dynamic_cast<const Synt::BinaryOperator*>(expression.get()) )
+		result= Stringify( binary_operator->left_ ) + " "_SpC + BinaryOperatorToString(binary_operator->operator_type_) + " "_SpC + Stringify( binary_operator->right_ );
+	else if( const auto named_operand= dynamic_cast<const Synt::NamedOperand*>(expression.get()) )
 		result= Stringify( named_operand->name_ );
-	else if( const auto numeric_constant= dynamic_cast<const Synt::NumericConstant*>(&expression) )
+	else if( const auto numeric_constant= dynamic_cast<const Synt::NumericConstant*>(expression.get()) )
 		result= QStringToProgramString( QString::number(static_cast<double>(numeric_constant->value_)) ) + numeric_constant->type_suffix_;
-	else if( const auto string_literal= dynamic_cast<const Synt::StringLiteral*>(&expression) )
+	else if( const auto string_literal= dynamic_cast<const Synt::StringLiteral*>(expression.get()) )
 		result= "\""_SpC + string_literal->value_ + "\""_SpC + string_literal->type_suffix_;
-	else if( const auto boolean_constant= dynamic_cast<const Synt::BooleanConstant*>(&expression) )
+	else if( const auto boolean_constant= dynamic_cast<const Synt::BooleanConstant*>(expression.get()) )
 		result= boolean_constant->value_ ? Keyword( Keywords::true_ ) : Keyword( Keywords::false_ );
-	else if( const auto bracket_expression= dynamic_cast<const Synt::BracketExpression*>(&expression) )
-		result= "("_SpC + Stringify( *bracket_expression->expression_ ) + ")"_SpC;
-	else if( const auto type_name_in_expression= dynamic_cast<const Synt::TypeNameInExpression*>(&expression) )
-		result= Stringify( *type_name_in_expression->type_name );
-	else if( const auto move_operator= dynamic_cast<const Synt::MoveOperator*>(&expression) )
+	else if( const auto bracket_expression= dynamic_cast<const Synt::BracketExpression*>(expression.get()) )
+		result= "("_SpC + Stringify( bracket_expression->expression_ ) + ")"_SpC;
+	else if( const auto type_name_in_expression= dynamic_cast<const Synt::TypeNameInExpression*>(expression.get()) )
+		result= Stringify( type_name_in_expression->type_name );
+	else if( const auto move_operator= dynamic_cast<const Synt::MoveOperator*>(expression.get()) )
 		result= Keyword( Keywords::move_ ) + "("_SpC + move_operator->var_name_ + ")"_SpC;
-	else if( const auto cast_ref= dynamic_cast<const Synt::CastRef*>(&expression) )
-		result= Keyword( Keywords::cast_ref ) + "</"_SpC + Stringify( *cast_ref->expression_ )  + "/>"_SpC + "("_SpC + Stringify( *cast_ref->expression_ ) + ")"_SpC;
-	else if( const auto cast_ref_unsafe= dynamic_cast<const Synt::CastRefUnsafe*>(&expression) )
-		result= Keyword( Keywords::cast_ref_unsafe ) + "</"_SpC + Stringify( *cast_ref_unsafe->expression_ )  + "/>"_SpC + "("_SpC + Stringify( *cast_ref_unsafe->expression_ ) + ")"_SpC;
-	else if( const auto cast_imut= dynamic_cast<const Synt::CastImut*>(&expression) )
-		result= Keyword( Keywords::cast_imut ) + "("_SpC + Stringify( *cast_imut->expression_ ) + ")"_SpC;
-	else if( const auto cast_mut= dynamic_cast<const Synt::CastMut*>(&expression) )
-		result= Keyword( Keywords::cast_mut ) + "("_SpC + Stringify( *cast_mut->expression_ ) + ")"_SpC;
-	else if( const auto typeinfo_= dynamic_cast<const Synt::TypeInfo*>(&expression) )
-		result= Keyword( Keywords::cast_ref ) + "</"_SpC + Stringify( *typeinfo_->type_ )  + "/>"_SpC;
+	else if( const auto cast_ref= dynamic_cast<const Synt::CastRef*>(expression.get()) )
+		result= Keyword( Keywords::cast_ref ) + "</"_SpC + Stringify( cast_ref->expression_ )  + "/>"_SpC + "("_SpC + Stringify( cast_ref->expression_ ) + ")"_SpC;
+	else if( const auto cast_ref_unsafe= dynamic_cast<const Synt::CastRefUnsafe*>(expression.get()) )
+		result= Keyword( Keywords::cast_ref_unsafe ) + "</"_SpC + Stringify( cast_ref_unsafe->expression_ )  + "/>"_SpC + "("_SpC + Stringify( cast_ref_unsafe->expression_ ) + ")"_SpC;
+	else if( const auto cast_imut= dynamic_cast<const Synt::CastImut*>(expression.get()) )
+		result= Keyword( Keywords::cast_imut ) + "("_SpC + Stringify( cast_imut->expression_ ) + ")"_SpC;
+	else if( const auto cast_mut= dynamic_cast<const Synt::CastMut*>(expression.get()) )
+		result= Keyword( Keywords::cast_mut ) + "("_SpC + Stringify( cast_mut->expression_ ) + ")"_SpC;
+	else if( const auto typeinfo_= dynamic_cast<const Synt::TypeInfo*>(expression.get()) )
+		result= Keyword( Keywords::cast_ref ) + "</"_SpC + Stringify( typeinfo_->type_ )  + "/>"_SpC;
 	else U_ASSERT(false);
 
-	if( const auto expression_with_unary_operators= dynamic_cast<const Synt::ExpressionComponentWithUnaryOperators*>( &expression ) )
+	if( const auto expression_with_unary_operators= dynamic_cast<const Synt::ExpressionComponentWithUnaryOperators*>( expression.get() ) )
 	{
 		for( const Synt::IUnaryPostfixOperatorPtr& postfix_operator : expression_with_unary_operators->postfix_operators_ )
 		{
 			if( const auto indexation_operator= dynamic_cast<const Synt::IndexationOperator*>( postfix_operator.get() ) )
-				result+= "["_SpC + Stringify( *indexation_operator->index_ ) + "]"_SpC;
+				result+= "["_SpC + Stringify( indexation_operator->index_ ) + "]"_SpC;
 			else if( const auto member_access_operator= dynamic_cast<const Synt::MemberAccessOperator*>( postfix_operator.get() ) )
 			{
 				result+= "."_SpC + member_access_operator->member_name_;
@@ -62,7 +65,7 @@ static ProgramString Stringify( const Synt::IExpressionComponent& expression )
 					result+= "</"_SpC;
 					for( const Synt::IExpressionComponentPtr& template_param : member_access_operator->template_parameters )
 					{
-						result+= Stringify(*template_param);
+						result+= Stringify(template_param);
 
 						if( &template_param != &member_access_operator->template_parameters.back() )
 							result+= ", "_SpC;
@@ -75,7 +78,7 @@ static ProgramString Stringify( const Synt::IExpressionComponent& expression )
 				result+= "("_SpC;
 				for( const Synt::IExpressionComponentPtr& arg : call_operator->arguments_ )
 				{
-					result+= Stringify(*arg);
+					result+= Stringify(arg);
 
 					if( &arg != &call_operator->arguments_.back() )
 						result+= ", "_SpC;
@@ -116,7 +119,7 @@ static ProgramString Stringify( const Synt::ComplexName& complex_name )
 			result+= "</"_SpC;
 			for( const Synt::IExpressionComponentPtr& template_param : component.template_parameters )
 			{
-				result+= Stringify(*template_param);
+				result+= Stringify(template_param);
 
 				if( &template_param != &component.template_parameters.back() )
 					result+= ", "_SpC;
@@ -131,25 +134,23 @@ static ProgramString Stringify( const Synt::ComplexName& complex_name )
 	return result;
 }
 
-static ProgramString Stringify( const Synt::ITypeName& type_name )
+static ProgramString Stringify( const Synt::ITypeNamePtr& type_name )
 {
-	if (const auto named_type_name= dynamic_cast<const Synt::NamedTypeName*>(&type_name) )
-	{
+	if (const auto named_type_name= dynamic_cast<const Synt::NamedTypeName*>(type_name.get()) )
 		return Stringify( named_type_name->name );
-	}
-	else if( const auto array_type_name= dynamic_cast<const Synt::ArrayTypeName*>(&type_name) )
+	else if( const auto array_type_name= dynamic_cast<const Synt::ArrayTypeName*>(type_name.get()) )
 	{
 		ProgramString result;
 
 		result+= "[ "_SpC;
-		result+= Stringify( *array_type_name->element_type );
+		result+= Stringify( array_type_name->element_type );
 		result+= ", "_SpC;
-		result+= Stringify( *array_type_name->size );
+		result+= Stringify( array_type_name->size );
 		result+= " ]"_SpC;
 
 		return result;
 	}
-	else if( const auto function_type_name= dynamic_cast<const Synt::FunctionType*>(&type_name) )
+	else if( const auto function_type_name= dynamic_cast<const Synt::FunctionType*>(type_name.get()) )
 	{
 	}
 	else U_ASSERT(false);
@@ -183,7 +184,7 @@ static ProgramString Stringify( const Synt::Function& function )
 		}
 		else
 		{
-			result+= Stringify( *arg->type_ );
+			result+= Stringify( arg->type_ );
 			switch( arg->reference_modifier_ )
 			{
 			case Synt::ReferenceModifier::None: break;
@@ -254,7 +255,7 @@ static ProgramString Stringify( const Synt::Function& function )
 	if( function.type_.return_type_ == nullptr )
 		result+= Keyword( Keywords::void_ );
 	else
-		result+= Stringify( *function.type_.return_type_ );
+		result+= Stringify( function.type_.return_type_ );
 
 	if( !function.type_.return_value_inner_reference_tags_.empty() )
 	{
@@ -296,7 +297,7 @@ static ProgramString Stringify( const Synt::TypeTemplateBase& type_template )
 
 	if( const auto class_template= dynamic_cast<const Synt::ClassTemplate*>( &type_template ) )
 		result+= class_template->class_->name_;
-	else if( const auto typedef_template= dynamic_cast<const Synt::TypedefTemplate*>( &type_template ) )
+	else if( const auto typedef_template= dynamic_cast<const Synt::TypedefTemplate*>( &type_template) )
 		result+= typedef_template->name_;
 	else U_ASSERT(false);
 
@@ -314,7 +315,7 @@ static ProgramString Stringify( const Synt::TypeTemplateBase& type_template )
 	{
 		for( const Synt::TypeTemplateBase::SignatureArg& arg : type_template.signature_args_ )
 		{
-			result+= Stringify( *arg.name );
+			result+= Stringify( arg.name );
 			if( &arg != &type_template.signature_args_.back() )
 				result+= ", "_SpC;
 		}
@@ -346,7 +347,7 @@ static ProgramString Stringify( const Synt::FunctionTemplate& function_template 
 static ProgramString Stringify( const Synt::ClassField& class_field )
 {
 	ProgramString result= class_field.name;
-	result+= ": "_SpC + Stringify( *class_field.type ) + " "_SpC;
+	result+= ": "_SpC + Stringify( class_field.type ) + " "_SpC;
 
 	switch( class_field.reference_modifier )
 	{
@@ -474,7 +475,7 @@ static std::vector<ProgramModel::ProgramTreeNode> BuildProgramModel_r( const Syn
 		}
 		else if( const auto variables_= dynamic_cast<const Synt::VariablesDeclaration*>( class_element.get() ) )
 		{
-			const ProgramString type_name= Stringify( *variables_->type );
+			const ProgramString type_name= Stringify( variables_->type );
 			for( const auto& variable : variables_->variables )
 			{
 				ProgramModel::ProgramTreeNode element;
@@ -603,7 +604,7 @@ static std::vector<ProgramModel::ProgramTreeNode> BuildProgramModel_r( const Syn
 		}
 		else if( const auto variables_= dynamic_cast<const Synt::VariablesDeclaration*>( program_element.get() ) )
 		{
-			const ProgramString type_name= Stringify( *variables_->type );
+			const ProgramString type_name= Stringify( variables_->type );
 			for( const auto& variable : variables_->variables )
 			{
 				ProgramModel::ProgramTreeNode element;
