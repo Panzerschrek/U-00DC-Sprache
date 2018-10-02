@@ -225,7 +225,7 @@ Class* Type::GetClassType() const
 	const ClassProxyPtr class_proxy= GetClassTypeProxy();
 	if( class_proxy == nullptr )
 		return nullptr;
-	return class_proxy->class_.get();
+	return class_proxy->class_;
 }
 
 Enum* Type::GetEnumType() const
@@ -260,7 +260,7 @@ bool Type::ReferenceIsConvertibleTo( const Type& other ) const
 	{
 		for( const ClassProxyPtr& parent : class_type->parents )
 		{
-			if( parent->class_.get() == other_class_type )
+			if( parent->class_ == other_class_type )
 				return true;
 			if( Type(parent).ReferenceIsConvertibleTo( other ) )
 				return true;

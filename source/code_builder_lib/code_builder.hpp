@@ -32,7 +32,7 @@ public:
 	virtual BuildResult BuildProgram( const SourceGraph& source_graph ) override;
 
 private:
-	typedef std::unordered_map< ClassProxyPtr, std::shared_ptr<Class> > ClassTable;
+	typedef std::unordered_map< ClassProxyPtr, std::unique_ptr<Class> > ClassTable;
 	struct BuildResultInternal
 	{
 		std::unique_ptr<NamesScope> names_map;
@@ -852,6 +852,7 @@ private:
 	std::list< std::pair< Type, Variable > > typeinfo_cache_;
 	boost::optional< Variable > typeinfo_list_end_node_; // Lazy initialized.
 	llvm::GlobalVariable* typeinfo_is_end_variable_[2u]= { nullptr, nullptr }; // Lazy initialized.
+	ClassTable typeinfo_class_table_;
 
 	std::vector<GlobalThing> global_things_stack_;
 };

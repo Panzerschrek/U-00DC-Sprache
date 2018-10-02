@@ -33,10 +33,9 @@ struct Enum;
 
 struct ClassProxy
 {
-	ClassProxy( Class* in_class ) // Pointer must be new-allocated. Takes ownership.
-		: class_( in_class )
-	{}
-	std::shared_ptr<Class> class_;
+	// Observer pointer to class.
+	// Class itself stored in class table.
+	Class* class_= nullptr;
 };
 typedef std::shared_ptr<ClassProxy> ClassProxyPtr;
 typedef std::weak_ptr<ClassProxy> ClassProxyWeakPtr;

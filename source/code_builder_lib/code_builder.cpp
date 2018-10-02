@@ -339,7 +339,7 @@ void CodeBuilder::MergeNameScopes( NamesScope& dst, const NamesScope& src, Class
 						return;
 					}
 
-					const std::shared_ptr<Class> dst_class= dst_class_table[dst_class_proxy];
+					const auto& dst_class= dst_class_table[dst_class_proxy];
 					U_ASSERT( dst_class != nullptr );
 					const Class& src_class= *src_class_proxy->class_;
 
@@ -383,8 +383,7 @@ void CodeBuilder::CopyClass(
 	// This needs for prevention of modification of source class and affection of imported file.
 
 	const Class& src= *src_class->class_;
-	const std::shared_ptr<Class> copy=
-		std::make_shared<Class>( src.members.GetThisNamespaceName(), &dst_namespace );
+	std::unique_ptr<Class> copy( new Class( src.members.GetThisNamespaceName(), &dst_namespace ) );
 
 	// Make deep copy of inner namespace.
 	MergeNameScopes( copy->members, src.members, dst_class_table );
@@ -425,7 +424,7 @@ void CodeBuilder::CopyClass(
 
 	// Register copy in destination namespace and current class table.
 	dst_namespace.AddName( src.members.GetThisNamespaceName(), Value( src_class, file_pos ) );
-	dst_class_table[ src_class ]= copy;
+	dst_class_table[ src_class ]= std::move(copy);
 }
 
 void CodeBuilder::SetCurrentClassTable( ClassTable& table )
@@ -434,7 +433,7 @@ void CodeBuilder::SetCurrentClassTable( ClassTable& table )
 
 	// Make all ClassProxy pointed to Classes from current table.
 	for( const ClassTable::value_type& table_entry : table )
-		table_entry.first->class_= table_entry.second;
+		table_entry.first->class_= table_entry.second.get();
 }
 
 void CodeBuilder::FillGlobalNamesScope( NamesScope& global_names_scope )
@@ -872,7 +871,7 @@ void CodeBuilder::CallMembersDestructors( FunctionContext& function_context, con
 		{
 			const ClassField* const field= member.second.GetClassField();
 			if( field == nullptr || field->is_reference || !field->type.HaveDestructor() ||
-				field->class_.lock()->class_.get() != class_ )
+				field->class_.lock()->class_ != class_ )
 				return;
 
 			llvm::Value* index_list[2];
@@ -1845,7 +1844,7 @@ void CodeBuilder::BuildConstructorInitialization(
 			errors_.push_back( ReportInitializerForNonfieldStructMember( constructor_initialization_list.file_pos_, field_initializer.name ) );
 			continue;
 		}
-		if( field->class_.lock()->class_.get() != &base_class )
+		if( field->class_.lock()->class_ != &base_class )
 		{
 			have_fields_errors= true;
 			errors_.push_back( ReportInitializerForBaseClassField( constructor_initialization_list.file_pos_, field_initializer.name ) );
@@ -1871,7 +1870,7 @@ void CodeBuilder::BuildConstructorInitialization(
 			const ClassField* const field= member.second.GetClassField();
 			if( field == nullptr )
 				return;
-			if( field->class_.lock()->class_.get() != &base_class ) // Parent class field.
+			if( field->class_.lock()->class_ != &base_class ) // Parent class field.
 				return;
 
 			if( initialized_fields.find( member.first ) == initialized_fields.end() )
