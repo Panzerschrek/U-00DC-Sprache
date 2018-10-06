@@ -337,7 +337,9 @@ void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::Enum& enu
 	if( NameShadowsTemplateArgument( enum_declaration.name, names_scope ) )
 		errors_.push_back( ReportDeclarationShadowsTemplateArgument( enum_declaration.file_pos_, enum_declaration.name ) );
 
-	const EnumPtr enum_= std::make_shared<Enum>( enum_declaration.name, &names_scope );
+	enums_table_.emplace_back( new Enum( enum_declaration.name, &names_scope ) );
+	const EnumPtr enum_= enums_table_.back().get();
+
 	enum_->syntax_element= &enum_declaration;
 
 	if( names_scope.AddName( enum_declaration.name, Value( Type( enum_ ), enum_declaration.file_pos_ ) ) == nullptr )

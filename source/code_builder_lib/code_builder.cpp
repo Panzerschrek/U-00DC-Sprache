@@ -3286,7 +3286,7 @@ NamesScope::InsertedName* CodeBuilder::ResolveName(
 				next_space= &class_->members;
 				next_space_class= type->GetClassTypeProxy();
 			}
-			else if( EnumPtr const enum_= type->GetEnumTypePtr() )
+			else if( EnumPtr const enum_= type->GetEnumType() )
 			{
 				GlobalThingBuildEnum( enum_, TypeCompleteness::Complete );
 				next_space= &enum_->members;

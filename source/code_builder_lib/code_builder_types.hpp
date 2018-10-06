@@ -40,7 +40,9 @@ struct ClassProxy
 typedef std::shared_ptr<ClassProxy> ClassProxyPtr;
 typedef std::weak_ptr<ClassProxy> ClassProxyWeakPtr;
 
-typedef std::shared_ptr<Enum> EnumPtr;
+// Observer pointer to class.
+// Enum itself stored in class table.
+typedef Enum* EnumPtr;
 
 class NamesScope;
 typedef std::shared_ptr<NamesScope> NamesScopePtr;
@@ -107,7 +109,6 @@ public:
 	ClassProxyPtr GetClassTypeProxy() const;
 	Class* GetClassType() const;
 	Enum* GetEnumType() const;
-	EnumPtr GetEnumTypePtr() const;
 
 	bool ReferenceIsConvertibleTo( const Type& other ) const;
 

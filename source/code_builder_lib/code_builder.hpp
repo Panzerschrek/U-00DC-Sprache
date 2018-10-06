@@ -769,7 +769,7 @@ private:
 	void GlobalThingBuildNamespace( NamesScope& names_scope );
 	void GlobalThingBuildFunctionsSet( NamesScope& names_scope, OverloadedFunctionsSet& functions_set, bool build_body );
 	void GlobalThingBuildClass( ClassProxyPtr class_type, TypeCompleteness completeness );
-	void GlobalThingBuildEnum( const EnumPtr& enum_, TypeCompleteness completeness );
+	void GlobalThingBuildEnum( const EnumPtr enum_, TypeCompleteness completeness );
 	void GlobalThingBuildTypeTemplatesSet( NamesScope& names_scope, TypeTemplatesSet& type_templates_set );
 	void GlobalThingBuildTypedef( NamesScope& names_scope, Value& typedef_value );
 	void GlobalThingBuildVariable( NamesScope& names_scope, Value& global_variable_value );
@@ -841,6 +841,9 @@ private:
 
 	std::unordered_map< size_t, BuildResultInternal > compiled_sources_cache_;
 	ClassTable* current_class_table_= nullptr;
+
+	// Storage for enum types. Do not use shared pointers for enums for loops preventing.
+	std::vector< std::unique_ptr<Enum> > enums_table_;
 
 	// Cache needs for generating same classes as template instantiation result in different source files.
 	// We can use same classes in different files, because template classes are logically unchangeable after instantiation.

@@ -233,14 +233,6 @@ Enum* Type::GetEnumType() const
 	const EnumPtr* enum_ptr= boost::get<EnumPtr>( &something_ );
 	if( enum_ptr == nullptr )
 		return nullptr;
-	return enum_ptr->get();
-}
-
-EnumPtr Type::GetEnumTypePtr() const
-{
-	const EnumPtr* enum_ptr= boost::get<EnumPtr>( &something_ );
-	if( enum_ptr == nullptr )
-		return nullptr;
 	return *enum_ptr;
 }
 
