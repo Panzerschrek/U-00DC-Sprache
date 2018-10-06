@@ -2873,9 +2873,7 @@ void CodeBuilder::BuildWhileOperatorCode(
 	NamesScope& names,
 	FunctionContext& function_context )
 {
-	llvm::BasicBlock* test_block= llvm::BasicBlock::Create( llvm_context_ );
-	llvm::BasicBlock* while_block= llvm::BasicBlock::Create( llvm_context_ );
-	llvm::BasicBlock* block_after_while= llvm::BasicBlock::Create( llvm_context_ );
+	llvm::BasicBlock* const test_block= llvm::BasicBlock::Create( llvm_context_ );
 
 	// Break to test block. We must push terminal instruction at and of current block.
 	function_context.llvm_ir_builder.CreateBr( test_block );
@@ -2903,6 +2901,8 @@ void CodeBuilder::BuildWhileOperatorCode(
 	llvm::Value* condition_in_register= CreateMoveToLLVMRegisterInstruction( condition_expression, function_context );
 	CallDestructors( *function_context.stack_variables_stack.back(), function_context, while_operator.condition_->GetFilePos() );
 
+	llvm::BasicBlock* const while_block= llvm::BasicBlock::Create( llvm_context_ );
+	llvm::BasicBlock* const block_after_while= llvm::BasicBlock::Create( llvm_context_ );
 	function_context.llvm_ir_builder.CreateCondBr( condition_in_register, while_block, block_after_while );
 
 	// While block code.
@@ -2971,7 +2971,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildIfOperatorCode(
 	// TODO - optimize this method. Make less basic blocks.
 	//
 
-	llvm::BasicBlock* block_after_if= llvm::BasicBlock::Create( llvm_context_ );
+	llvm::BasicBlock* const block_after_if= llvm::BasicBlock::Create( llvm_context_ );
 
 	llvm::BasicBlock* next_condition_block= llvm::BasicBlock::Create( llvm_context_ );
 	// Break to first condition. We must push terminal instruction at end of current block.
@@ -2985,8 +2985,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildIfOperatorCode(
 	{
 		const Synt::IfOperator::Branch& branch= if_operator.branches_[i];
 
-		llvm::BasicBlock* body_block= llvm::BasicBlock::Create( llvm_context_ );
-		llvm::BasicBlock* current_condition_block= next_condition_block;
+		llvm::BasicBlock* const body_block= llvm::BasicBlock::Create( llvm_context_ );
+		llvm::BasicBlock* const current_condition_block= next_condition_block;
 
 		if( i + 1u < if_operator.branches_.size() )
 			next_condition_block= llvm::BasicBlock::Create( llvm_context_ );
@@ -3019,13 +3019,17 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildIfOperatorCode(
 							branch.condition->GetFilePos(),
 							bool_type_.ToString(),
 							condition_expression.type.ToString() ) );
-					return if_operator_blocks_build_info;
+
+					// Create instruction even in case of error, because we needs to store basic blocs somewhere.
+					function_context.llvm_ir_builder.CreateCondBr( llvm::UndefValue::get( fundamental_llvm_types_.bool_ ), body_block, next_condition_block );
 				}
+				else
+				{
+					llvm::Value* condition_in_register= CreateMoveToLLVMRegisterInstruction( condition_expression, function_context );
+					CallDestructors( *function_context.stack_variables_stack.back(), function_context, branch.condition->GetFilePos() );
 
-				llvm::Value* condition_in_register= CreateMoveToLLVMRegisterInstruction( condition_expression, function_context );
-				CallDestructors( *function_context.stack_variables_stack.back(), function_context, branch.condition->GetFilePos() );
-
-				function_context.llvm_ir_builder.CreateCondBr( condition_in_register, body_block, next_condition_block );
+					function_context.llvm_ir_builder.CreateCondBr( condition_in_register, body_block, next_condition_block );
+				}
 			}
 			conditions_variable_state= function_context.variables_state;
 			conditions_variable_state.DeactivateLocks();
