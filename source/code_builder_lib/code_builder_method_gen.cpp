@@ -57,7 +57,7 @@ void CodeBuilder::TryGenerateDefaultConstructor( Class& the_class, const Type& c
 			const ClassField* const field= member.second.GetClassField();
 			if( field == nullptr )
 				return;
-			if( field->class_.lock()->class_.get() != &the_class )
+			if( field->class_.lock()->class_ != &the_class )
 				return; // Skip fields of parent classes.
 
 			if( field->is_reference || !field->type.IsDefaultConstructible() )
@@ -133,7 +133,7 @@ void CodeBuilder::TryGenerateDefaultConstructor( Class& the_class, const Type& c
 			const ClassField* const field= member.second.GetClassField();
 			if( field == nullptr )
 				return;
-			if( field->class_.lock()->class_.get() != &the_class )
+			if( field->class_.lock()->class_ != &the_class )
 				return; // Skip fields of parent classes.
 
 			Variable field_variable;
@@ -310,7 +310,7 @@ void CodeBuilder::TryGenerateCopyConstructor( Class& the_class, const Type& clas
 		[&]( const NamesScope::InsertedName& member )
 		{
 			const ClassField* const field= member.second.GetClassField();
-			if( field == nullptr || field->class_.lock()->class_.get() != &the_class )
+			if( field == nullptr || field->class_.lock()->class_ != &the_class )
 				return;
 
 			llvm::Value* index_list[2];

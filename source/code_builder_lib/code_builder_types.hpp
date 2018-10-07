@@ -33,15 +33,16 @@ struct Enum;
 
 struct ClassProxy
 {
-	ClassProxy( Class* in_class ) // Pointer must be new-allocated. Takes ownership.
-		: class_( in_class )
-	{}
-	std::shared_ptr<Class> class_;
+	// Observer pointer to class.
+	// Class itself stored in class table.
+	Class* class_= nullptr;
 };
 typedef std::shared_ptr<ClassProxy> ClassProxyPtr;
 typedef std::weak_ptr<ClassProxy> ClassProxyWeakPtr;
 
-typedef std::shared_ptr<Enum> EnumPtr;
+// Observer pointer to class.
+// Enum itself stored in class table.
+typedef Enum* EnumPtr;
 
 class NamesScope;
 typedef std::shared_ptr<NamesScope> NamesScopePtr;
@@ -108,7 +109,6 @@ public:
 	ClassProxyPtr GetClassTypeProxy() const;
 	Class* GetClassType() const;
 	Enum* GetEnumType() const;
-	EnumPtr GetEnumTypePtr() const;
 
 	bool ReferenceIsConvertibleTo( const Type& other ) const;
 

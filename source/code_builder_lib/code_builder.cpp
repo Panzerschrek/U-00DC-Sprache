@@ -179,8 +179,15 @@ ICodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_g
 			typeinfo_entry.second.type.GetClassType()->llvm_type->setBody( llvm::ArrayRef<llvm::Type*>() );
 	}
 
+	// Clear internal structures.
 	compiled_sources_cache_.clear();
+	current_class_table_= nullptr;
+	enums_table_.clear();
+	template_classes_cache_.clear();
 	typeinfo_cache_.clear();
+	typeinfo_list_end_node_.reset();
+	typeinfo_is_end_variable_[0]= typeinfo_is_end_variable_[1]= nullptr;
+	typeinfo_class_table_.clear();
 
 	// Soprt by file/line and left only unique error messages.
 	// TODO - provide template arguments for error messages inside templates.
@@ -339,7 +346,7 @@ void CodeBuilder::MergeNameScopes( NamesScope& dst, const NamesScope& src, Class
 						return;
 					}
 
-					const std::shared_ptr<Class> dst_class= dst_class_table[dst_class_proxy];
+					const auto& dst_class= dst_class_table[dst_class_proxy];
 					U_ASSERT( dst_class != nullptr );
 					const Class& src_class= *src_class_proxy->class_;
 
@@ -383,8 +390,7 @@ void CodeBuilder::CopyClass(
 	// This needs for prevention of modification of source class and affection of imported file.
 
 	const Class& src= *src_class->class_;
-	const std::shared_ptr<Class> copy=
-		std::make_shared<Class>( src.members.GetThisNamespaceName(), &dst_namespace );
+	std::unique_ptr<Class> copy( new Class( src.members.GetThisNamespaceName(), &dst_namespace ) );
 
 	// Make deep copy of inner namespace.
 	MergeNameScopes( copy->members, src.members, dst_class_table );
@@ -425,7 +431,7 @@ void CodeBuilder::CopyClass(
 
 	// Register copy in destination namespace and current class table.
 	dst_namespace.AddName( src.members.GetThisNamespaceName(), Value( src_class, file_pos ) );
-	dst_class_table[ src_class ]= copy;
+	dst_class_table[ src_class ]= std::move(copy);
 }
 
 void CodeBuilder::SetCurrentClassTable( ClassTable& table )
@@ -434,7 +440,7 @@ void CodeBuilder::SetCurrentClassTable( ClassTable& table )
 
 	// Make all ClassProxy pointed to Classes from current table.
 	for( const ClassTable::value_type& table_entry : table )
-		table_entry.first->class_= table_entry.second;
+		table_entry.first->class_= table_entry.second.get();
 }
 
 void CodeBuilder::FillGlobalNamesScope( NamesScope& global_names_scope )
@@ -872,7 +878,7 @@ void CodeBuilder::CallMembersDestructors( FunctionContext& function_context, con
 		{
 			const ClassField* const field= member.second.GetClassField();
 			if( field == nullptr || field->is_reference || !field->type.HaveDestructor() ||
-				field->class_.lock()->class_.get() != class_ )
+				field->class_.lock()->class_ != class_ )
 				return;
 
 			llvm::Value* index_list[2];
@@ -1845,7 +1851,7 @@ void CodeBuilder::BuildConstructorInitialization(
 			errors_.push_back( ReportInitializerForNonfieldStructMember( constructor_initialization_list.file_pos_, field_initializer.name ) );
 			continue;
 		}
-		if( field->class_.lock()->class_.get() != &base_class )
+		if( field->class_.lock()->class_ != &base_class )
 		{
 			have_fields_errors= true;
 			errors_.push_back( ReportInitializerForBaseClassField( constructor_initialization_list.file_pos_, field_initializer.name ) );
@@ -1871,7 +1877,7 @@ void CodeBuilder::BuildConstructorInitialization(
 			const ClassField* const field= member.second.GetClassField();
 			if( field == nullptr )
 				return;
-			if( field->class_.lock()->class_.get() != &base_class ) // Parent class field.
+			if( field->class_.lock()->class_ != &base_class ) // Parent class field.
 				return;
 
 			if( initialized_fields.find( member.first ) == initialized_fields.end() )
@@ -2874,9 +2880,7 @@ void CodeBuilder::BuildWhileOperatorCode(
 	NamesScope& names,
 	FunctionContext& function_context )
 {
-	llvm::BasicBlock* test_block= llvm::BasicBlock::Create( llvm_context_ );
-	llvm::BasicBlock* while_block= llvm::BasicBlock::Create( llvm_context_ );
-	llvm::BasicBlock* block_after_while= llvm::BasicBlock::Create( llvm_context_ );
+	llvm::BasicBlock* const test_block= llvm::BasicBlock::Create( llvm_context_ );
 
 	// Break to test block. We must push terminal instruction at and of current block.
 	function_context.llvm_ir_builder.CreateBr( test_block );
@@ -2904,6 +2908,8 @@ void CodeBuilder::BuildWhileOperatorCode(
 	llvm::Value* condition_in_register= CreateMoveToLLVMRegisterInstruction( condition_expression, function_context );
 	CallDestructors( *function_context.stack_variables_stack.back(), function_context, while_operator.condition_->GetFilePos() );
 
+	llvm::BasicBlock* const while_block= llvm::BasicBlock::Create( llvm_context_ );
+	llvm::BasicBlock* const block_after_while= llvm::BasicBlock::Create( llvm_context_ );
 	function_context.llvm_ir_builder.CreateCondBr( condition_in_register, while_block, block_after_while );
 
 	// While block code.
@@ -2972,7 +2978,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildIfOperatorCode(
 	// TODO - optimize this method. Make less basic blocks.
 	//
 
-	llvm::BasicBlock* block_after_if= llvm::BasicBlock::Create( llvm_context_ );
+	llvm::BasicBlock* const block_after_if= llvm::BasicBlock::Create( llvm_context_ );
 
 	llvm::BasicBlock* next_condition_block= llvm::BasicBlock::Create( llvm_context_ );
 	// Break to first condition. We must push terminal instruction at end of current block.
@@ -2986,8 +2992,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildIfOperatorCode(
 	{
 		const Synt::IfOperator::Branch& branch= if_operator.branches_[i];
 
-		llvm::BasicBlock* body_block= llvm::BasicBlock::Create( llvm_context_ );
-		llvm::BasicBlock* current_condition_block= next_condition_block;
+		llvm::BasicBlock* const body_block= llvm::BasicBlock::Create( llvm_context_ );
+		llvm::BasicBlock* const current_condition_block= next_condition_block;
 
 		if( i + 1u < if_operator.branches_.size() )
 			next_condition_block= llvm::BasicBlock::Create( llvm_context_ );
@@ -3020,13 +3026,17 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildIfOperatorCode(
 							branch.condition->GetFilePos(),
 							bool_type_.ToString(),
 							condition_expression.type.ToString() ) );
-					return if_operator_blocks_build_info;
+
+					// Create instruction even in case of error, because we needs to store basic blocs somewhere.
+					function_context.llvm_ir_builder.CreateCondBr( llvm::UndefValue::get( fundamental_llvm_types_.bool_ ), body_block, next_condition_block );
 				}
+				else
+				{
+					llvm::Value* condition_in_register= CreateMoveToLLVMRegisterInstruction( condition_expression, function_context );
+					CallDestructors( *function_context.stack_variables_stack.back(), function_context, branch.condition->GetFilePos() );
 
-				llvm::Value* condition_in_register= CreateMoveToLLVMRegisterInstruction( condition_expression, function_context );
-				CallDestructors( *function_context.stack_variables_stack.back(), function_context, branch.condition->GetFilePos() );
-
-				function_context.llvm_ir_builder.CreateCondBr( condition_in_register, body_block, next_condition_block );
+					function_context.llvm_ir_builder.CreateCondBr( condition_in_register, body_block, next_condition_block );
+				}
 			}
 			conditions_variable_state= function_context.variables_state;
 			conditions_variable_state.DeactivateLocks();
@@ -3287,7 +3297,7 @@ NamesScope::InsertedName* CodeBuilder::ResolveName(
 				next_space= &class_->members;
 				next_space_class= type->GetClassTypeProxy();
 			}
-			else if( EnumPtr const enum_= type->GetEnumTypePtr() )
+			else if( EnumPtr const enum_= type->GetEnumType() )
 			{
 				GlobalThingBuildEnum( enum_, TypeCompleteness::Complete );
 				next_space= &enum_->members;

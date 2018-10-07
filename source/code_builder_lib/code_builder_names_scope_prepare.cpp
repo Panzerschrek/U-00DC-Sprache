@@ -212,15 +212,16 @@ ClassProxyPtr CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::
 	}
 	else
 	{
-		class_type= std::make_shared<ClassProxy>( new Class( class_name, &names_scope ) );
+		class_type= std::make_shared<ClassProxy>();
+		(*current_class_table_)[ class_type ].reset( new Class( class_name, &names_scope ) );
+		class_type->class_= (*current_class_table_)[ class_type ].get();
+
 		names_scope.AddName( class_name, Value( Type( class_type ), class_declaration.file_pos_ ) );
 		class_type->class_->syntax_element= &class_declaration;
 		class_type->class_->body_file_pos= class_type->class_->forward_declaration_file_pos= class_declaration.file_pos_;
 		class_type->class_->llvm_type= llvm::StructType::create( llvm_context_, MangleType( class_type ) );
 
 		class_type->class_->members.AddAccessRightsFor( class_type, ClassMemberVisibility::Private );
-
-		(*current_class_table_)[ class_type ]= class_type->class_;
 	}
 
 	Class& the_class= *class_type->class_;
@@ -336,7 +337,9 @@ void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::Enum& enu
 	if( NameShadowsTemplateArgument( enum_declaration.name, names_scope ) )
 		errors_.push_back( ReportDeclarationShadowsTemplateArgument( enum_declaration.file_pos_, enum_declaration.name ) );
 
-	const EnumPtr enum_= std::make_shared<Enum>( enum_declaration.name, &names_scope );
+	enums_table_.emplace_back( new Enum( enum_declaration.name, &names_scope ) );
+	const EnumPtr enum_= enums_table_.back().get();
+
 	enum_->syntax_element= &enum_declaration;
 
 	if( names_scope.AddName( enum_declaration.name, Value( Type( enum_ ), enum_declaration.file_pos_ ) ) == nullptr )

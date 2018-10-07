@@ -2497,9 +2497,10 @@ Variable CodeBuilder::BuildTempVariableConstruction(
 	variable.referenced_variables.erase(stored_variable);
 	variable.value_type= ValueType::Value; // Make value after construction
 
-	variable.referenced_variables.emplace( stored_variable );
+	Variable result= variable;
+	result.referenced_variables.emplace( stored_variable );
 
-	return variable;
+	return result;
 }
 
 Variable CodeBuilder::ConvertVariable(
@@ -2538,7 +2539,10 @@ Variable CodeBuilder::ConvertVariable(
 
 	result.value_type= ValueType::Value; // Make value after construction
 
-	return result;
+	Variable result_copy= result;
+	result.referenced_variables.erase(stored_variable);
+
+	return result_copy;
 }
 
 Value CodeBuilder::BuildUnaryMinus(

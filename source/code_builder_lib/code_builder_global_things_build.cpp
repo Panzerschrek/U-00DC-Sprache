@@ -52,7 +52,7 @@ bool CodeBuilder::IsTypeComplete( const Type& type ) const
 		return fundamental_type->fundamental_type != U_FundamentalType::Void;
 	else if( type.GetFunctionType() != nullptr || type.GetFunctionPointerType() != nullptr )
 		return true;
-	else if( const auto enum_type= type.GetEnumTypePtr() )
+	else if( const auto enum_type= type.GetEnumType() )
 		return enum_type->syntax_element == nullptr;
 	else if( const auto array_type= type.GetArrayType() )
 		return IsTypeComplete( array_type->type );
@@ -76,7 +76,7 @@ bool CodeBuilder::EnsureTypeCompleteness( const Type& type, const TypeCompletene
 	}
 	else if( type.GetFunctionType() != nullptr || type.GetFunctionPointerType() != nullptr )
 		return true;
-	else if( const auto enum_type= type.GetEnumTypePtr() )
+	else if( const auto enum_type= type.GetEnumType() )
 	{
 		GlobalThingBuildEnum( enum_type, completeness );
 		return true;
@@ -134,7 +134,7 @@ void CodeBuilder::GlobalThingBuildNamespace( NamesScope& names_scope )
 						GlobalThingBuildNamespace( class_type->class_->members );
 					}
 				}
-				else if( const EnumPtr enum_type= type->GetEnumTypePtr() )
+				else if( const EnumPtr enum_type= type->GetEnumType() )
 					GlobalThingBuildEnum( enum_type, TypeCompleteness::Complete );
 				else U_ASSERT(false);
 			}
@@ -682,14 +682,14 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type, const T
 	} // if full comleteness required
 }
 
-void CodeBuilder::GlobalThingBuildEnum( const EnumPtr& enum_, TypeCompleteness completeness )
+void CodeBuilder::GlobalThingBuildEnum( const EnumPtr enum_, TypeCompleteness completeness )
 {
 	if( completeness < TypeCompleteness::Complete )
 		return;
 	if( enum_->syntax_element == nullptr )
 		return;
 
-	DETECT_GLOBALS_LOOP( enum_.get(), enum_->members.GetThisNamespaceName(), enum_->syntax_element->file_pos_, TypeCompleteness::Complete );
+	DETECT_GLOBALS_LOOP( enum_, enum_->members.GetThisNamespaceName(), enum_->syntax_element->file_pos_, TypeCompleteness::Complete );
 
 	// Default underlaying type is 32bit. TODO - maybe do it platform-dependent?
 	enum_->underlaying_type= FundamentalType( U_FundamentalType::u32, fundamental_llvm_types_.u32 );
