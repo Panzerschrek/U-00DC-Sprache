@@ -22,6 +22,7 @@
 #include <llvm/Support/raw_os_ostream.h>
 #include <llvm/Target/TargetOptions.h>
 #include <llvm/Target/TargetMachine.h>
+#include <llvm/MC/SubtargetFeature.h>
 #include "../code_builder_lib/pop_llvm_warnings.hpp"
 
 #include "../lex_synt_lib/assert.hpp"
@@ -194,6 +195,20 @@ private:
 
 } // namespace U
 
+static std::string GetNativeTargetFeaturesStr()
+{
+	llvm::SubtargetFeatures features;
+
+	llvm::StringMap<bool> host_features;
+	if( llvm::sys::getHostCPUFeatures(host_features) )
+	{
+		for( auto& f : host_features )
+			features.AddFeature( f.first(), f.second );
+	}
+
+	return features.getString();
+}
+
 int main( const int argc, const char* const argv[])
 {
 	// Options
@@ -321,15 +336,18 @@ int main( const int argc, const char* const argv[])
 		llvm::TargetOptions target_options;
 		target_options.PositionIndependentExecutable= enable_pie;
 
-		std::string features_str; // TODO - set features
-		// TODO - set optimization level, reloc model, etc.
+		const std::string features_str= GetNativeTargetFeaturesStr();
+
+		// TODO - set code model, optimization level.
 		target_machine.reset(
 			target->createTargetMachine(
 				target_triple_str,
 				llvm::sys::getHostCPUName(),
 				features_str,
 				target_options,
-				relocation_model ) );
+				relocation_model,
+				llvm::CodeModel::Default,
+				llvm::CodeGenOpt::Default ) );
 
 		if( target_machine == nullptr )
 		{
