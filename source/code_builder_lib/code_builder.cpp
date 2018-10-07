@@ -179,8 +179,15 @@ ICodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_g
 			typeinfo_entry.second.type.GetClassType()->llvm_type->setBody( llvm::ArrayRef<llvm::Type*>() );
 	}
 
+	// Clear internal structures.
 	compiled_sources_cache_.clear();
+	current_class_table_= nullptr;
+	enums_table_.clear();
+	template_classes_cache_.clear();
 	typeinfo_cache_.clear();
+	typeinfo_list_end_node_.reset();
+	typeinfo_is_end_variable_[0]= typeinfo_is_end_variable_[1]= nullptr;
+	typeinfo_class_table_.clear();
 
 	// Soprt by file/line and left only unique error messages.
 	// TODO - provide template arguments for error messages inside templates.
