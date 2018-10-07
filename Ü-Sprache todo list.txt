@@ -3,6 +3,7 @@ compiler. Features grouped and sorted by priority inside each group.
 When feature was implemented, delete it from list.
 
 Common:
+*) "if var"
 *) Continious initializer for arrays
 *) array_view, array view take operator
 *) Dereference operator - for pointer-like classes
@@ -39,7 +40,6 @@ Templates:
 
 Standart library:
 *) Type traits
-*) optional
 *) shared_ptr
 *) thread class
 *) thread-safe shared_ptr
@@ -53,7 +53,6 @@ Compiler:
 *) Virtual call for final function optimization
 *) Return value optimization
 *) Precompiled modules
-*) Compiler uses a lot of shared pointers. Check for memory leaks.
 
 QtCreator plugin:
 *) Symbol table construction for document
