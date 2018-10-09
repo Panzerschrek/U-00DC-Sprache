@@ -29,6 +29,7 @@ struct Lexem
 		Comment,
 
 		Identifier,
+		MacroIdentifier,
 		String,
 		Number,
 
@@ -45,6 +46,9 @@ struct Lexem
 
 		TemplateBracketLeft , // </
 		TemplateBracketRight, // />
+
+		MacroBracketLeft,  // <?
+		MacroBracketRight, // ?>
 
 		Scope, // ::
 
@@ -96,7 +100,9 @@ struct Lexem
 		AssignShiftLeft , // <<=
 		AssignShiftRight, // >>=
 
-		LeftArrow, // <-
+		LeftArrow,  // <-
+		RightArrow, // ->
+
 		Ellipsis, // ...
 
 		// TODO - add other lexems.

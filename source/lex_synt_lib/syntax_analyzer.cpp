@@ -203,6 +203,10 @@ public:
 	SyntaxAnalysisResult DoAnalyzis( const Lexems& lexems );
 
 private:
+	struct Macro;
+
+private:
+	Macro ParseMacro();
 	ProgramElements ParseNamespaceBody( Lexem::Type end_lexem );
 
 	std::unique_ptr<NumericConstant> ParseNumericConstant();
@@ -261,12 +265,52 @@ private:
 	void PushErrorMessage();
 
 private:
+	struct Macro
+	{
+		enum class ElementKind
+		{
+			Lexem,
+			Identifier,
+			ComplexName,
+			Expression,
+			Block,
+			TypeName,
+		};
+
+		enum class ResultElementKind
+		{
+			Lexem,
+			SubElement,
+		};
+
+		struct MatchElement
+		{
+			ElementKind kind= ElementKind::Lexem;
+			Lexem lexem;
+			ProgramString name; // for non-lexems
+		};
+
+		struct ResultElement
+		{
+			ResultElementKind kind= ResultElementKind::Lexem;
+			Lexem lexem;
+			ProgramString name; // for non-lexems
+		};
+
+		ProgramString name;
+		std::vector<MatchElement> match_template_elements;
+		std::vector<ResultElement> result_template_elements;
+	};
+
+private:
 	SyntaxErrorMessages error_messages_;
 	Lexems::const_iterator it_;
 	Lexems::const_iterator it_end_;
 
 	Lexems::const_iterator last_error_it_;
 	size_t last_error_repeats_;
+
+	std::vector<Macro> macros_;
 };
 
 SyntaxAnalysisResult SyntaxAnalyzer::DoAnalyzis( const Lexems& lexems )
@@ -296,11 +340,140 @@ SyntaxAnalysisResult SyntaxAnalyzer::DoAnalyzis( const Lexems& lexems )
 			TryRecoverAfterError( { ExpectedLexem(Keywords::import_), ExpectedLexem(Lexem::Type::String) }, g_namespace_body_elements_start_lexems );
 		}
 	}
+	while( NotEndOfFile() )
+	{
+		if( !( it_->type == Lexem::Type::MacroIdentifier && it_->text == "?macro"_SpC ) )
+			break;
+
+		macros_.push_back( ParseMacro() );
+	}
 
 	result.program_elements= ParseNamespaceBody( Lexem::Type::EndOfFile );
 
 	result.error_messages.swap( error_messages_ );
 	return result;
+}
+
+SyntaxAnalyzer::Macro SyntaxAnalyzer::ParseMacro()
+{
+	Macro macro;
+
+	U_ASSERT( it_->type == Lexem::Type::MacroIdentifier && it_->text == "?macro"_SpC );
+	NextLexem();
+
+	// Match body
+	if( it_->type != Lexem::Type::MacroBracketLeft )
+	{
+		PushErrorMessage();
+		return macro;
+	}
+	NextLexem();
+
+	if( it_->type != Lexem::Type::Identifier )
+	{
+		PushErrorMessage();
+		return macro;
+	}
+	macro.name= it_->text;
+	NextLexem();
+
+	while( NotEndOfFile() )
+	{
+		if( it_->type == Lexem::Type::MacroBracketRight )
+		{
+			NextLexem();
+			break;
+		}
+		else if( it_->type == Lexem::Type::MacroIdentifier )
+		{
+			Macro::MatchElement element;
+			element.name= it_->text;
+
+			NextLexem();
+
+			if( it_->type != Lexem::Type::Colon )
+			{
+				PushErrorMessage();
+				return macro;
+			}
+			NextLexem();
+
+			if( it_->type != Lexem::Type::Identifier )
+			{
+				PushErrorMessage();
+				return macro;
+			}
+			const ProgramString& element_type_str= it_->text;
+			NextLexem();
+
+			if( element_type_str == "expr"_SpC )
+				element.kind= Macro::ElementKind::Expression;
+			else if( element_type_str == "block"_SpC )
+				element.kind= Macro::ElementKind::Block;
+			// TODO - add other stuff
+			else
+			{
+				PushErrorMessage();
+				return macro;
+			}
+
+			macro.match_template_elements.push_back( element );
+		}
+		else
+		{
+			Macro::MatchElement element;
+			element.kind= Macro::ElementKind::Lexem;
+			element.lexem= *it_;
+
+			macro.match_template_elements.push_back(std::move(element));
+
+			NextLexem();
+		}
+	}
+
+	if( it_->type != Lexem::Type::RightArrow )
+	{
+		PushErrorMessage();
+		return macro;
+	}
+	NextLexem();
+
+	// Result body.
+	if( it_->type != Lexem::Type::MacroBracketLeft )
+	{
+		PushErrorMessage();
+		return macro;
+	}
+	NextLexem();
+
+	while( NotEndOfFile() )
+	{
+		if( it_->type == Lexem::Type::MacroBracketRight )
+		{
+			NextLexem();
+			break;
+		}
+		else if( it_->type == Lexem::Type::MacroIdentifier )
+		{
+			Macro::ResultElement element;
+			element.kind= Macro::ResultElementKind::SubElement;
+			element.name= it_->text;
+			macro.result_template_elements.push_back(std::move(element));
+
+			NextLexem();
+		}
+		else
+		{
+			Macro::ResultElement element;
+			element.kind= Macro::ResultElementKind::Lexem;
+			element.lexem= *it_;
+			macro.result_template_elements.push_back(std::move(element));
+
+			NextLexem();
+		}
+	}
+
+	return macro;
 }
 
 ProgramElements SyntaxAnalyzer::ParseNamespaceBody( const Lexem::Type end_lexem )

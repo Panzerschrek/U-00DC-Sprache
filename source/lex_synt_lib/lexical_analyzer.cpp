@@ -73,6 +73,9 @@ static const FixedLexemsMap g_fixed_lexems[ g_max_fixed_lexem_size + 1 ]=
 		{ "</"_SpC, Lexem::Type::TemplateBracketLeft  },
 		{ "/>"_SpC, Lexem::Type::TemplateBracketRight },
 
+		{ "<?"_SpC, Lexem::Type::MacroBracketLeft  },
+		{ "?>"_SpC, Lexem::Type::MacroBracketRight },
+
 		{ "::"_SpC, Lexem::Type::Scope },
 
 		{ "++"_SpC, Lexem::Type::Increment },
@@ -98,7 +101,8 @@ static const FixedLexemsMap g_fixed_lexems[ g_max_fixed_lexem_size + 1 ]=
 		{ "<<"_SpC, Lexem::Type::ShiftLeft  },
 		{ ">>"_SpC, Lexem::Type::ShiftRight },
 
-		{ "<-"_SpC, Lexem::Type::LeftArrow },
+		{ "<-"_SpC, Lexem::Type::LeftArrow  },
+		{ "->"_SpC, Lexem::Type::RightArrow },
 	},
 	{ // Three symbol lexems.
 		{ "<<="_SpC, Lexem::Type::AssignShiftLeft  },
@@ -377,6 +381,31 @@ static Lexem ParseIdentifier(
 	return result;
 }
 
+static bool IsMacroIdentifierStartChar( const sprache_char c )
+{
+	return c == '?';
+}
+
+static Lexem ParseMacroIdentifier(
+	Iterator& it,
+	const Iterator it_end )
+{
+	Lexem result;
+	result.type= Lexem::Type::MacroIdentifier;
+
+	U_ASSERT(IsMacroIdentifierStartChar(*it));
+	result.text.push_back(*it);
+	++it;
+
+	while( it < it_end && IsIdentifierChar(*it) )
+	{
+		result.text.push_back(*it);
+		++it;
+	}
+
+	return result;
+}
+
 LexicalAnalysisResult LexicalAnalysis( const ProgramString& program_text, const bool collect_comments )
 {
 	return LexicalAnalysis( program_text.data(), program_text.size(), collect_comments );
@@ -463,6 +492,8 @@ LexicalAnalysisResult LexicalAnalysis( const sprache_char* const program_text_da
 
 		else if( IsIdentifierStartChar(c) )
 			lexem= ParseIdentifier( it, it_end );
+		else if( IsMacroIdentifierStartChar(c) && std::next(it) < it_end && *std::next(it) != '>' )
+			lexem= ParseMacroIdentifier( it, it_end );
 		else
 		{
 			// Try find fixed lexems.
