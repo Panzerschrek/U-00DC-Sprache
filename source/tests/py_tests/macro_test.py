@@ -140,3 +140,57 @@ def ExpandMacroInArgumentOfOtherMacro_Test1():
 	tests_lib.build_program( c_program_text )
 	call_result= tests_lib.run_function( "_Z3Foov" )
 	assert( call_result == 5 * 5 * 11 )
+
+
+def MacroParamIdentifier_Test0():
+	c_program_text= """
+	?macro <? ADD_COUNTER:block ( ?i:ident ) ?>  ->  <? var size_type mut ?i(0); ?>
+
+	fn Foo() : i32
+	{
+		auto mut x= 7;
+		ADD_COUNTER( counter )
+		while( counter < size_type(4) )
+		{
+			x*= 3;
+			++counter;
+		}
+
+		return x;
+	}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 7 * 3 * 3 * 3 * 3 )
+
+
+def MacroParamTypeName_Test0():
+	c_program_text= """
+	?macro <? DECLARE_ZERO_VAR:block ( ?type:ty, ?name:ident ) ?>  ->  <? var ?type ?name=zero_init; ?>
+
+	struct Vec{ f32 x; f32 y; }
+	fn Foo()
+	{
+		DECLARE_ZERO_VAR( i32, x )
+		DECLARE_ZERO_VAR( [ i32, 4 ], arr )
+		DECLARE_ZERO_VAR( (fn()), fn_ptr )
+		DECLARE_ZERO_VAR( Vec, vec )
+	}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def MacroParamExpression_Test0():
+	c_program_text= """
+	?macro <? SET:block ( ?dst:expr TO ?src:expr ) ?>  ->  <? ?dst= ?src; ?>
+
+	fn Foo() : i32
+	{
+		var i32 mut x= 0;
+		SET( x TO 2 + 2 * 2 )
+		return x;
+	}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 2 + 2 * 2 )

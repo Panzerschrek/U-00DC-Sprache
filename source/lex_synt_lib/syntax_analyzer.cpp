@@ -218,6 +218,7 @@ private:
 		{
 			Lexem,
 			Identifier,
+			Typename,
 			Expression,
 			Block,
 		};
@@ -461,11 +462,14 @@ void SyntaxAnalyzer::ParseMacro()
 			const ProgramString& element_type_str= it_->text;
 			NextLexem();
 
-			if( element_type_str == "expr"_SpC )
+			if( element_type_str == "ident"_SpC )
+				element.kind= Macro::ElementKind::Identifier;
+			else if( element_type_str == "ty"_SpC )
+				element.kind= Macro::ElementKind::Typename;
+			else if( element_type_str == "expr"_SpC )
 				element.kind= Macro::ElementKind::Expression;
 			else if( element_type_str == "block"_SpC )
 				element.kind= Macro::ElementKind::Block;
-			// TODO - add other stuff
 			else
 			{
 				PushErrorMessage();
@@ -3495,6 +3499,20 @@ ParseFnResult SyntaxAnalyzer::ExpandMacro( const Macro& macro, ParseFnResult (Sy
 			{
 				push_macro_error();
 				return ParseFnResult();
+			}
+			break;
+
+		case Macro::ElementKind::Typename:
+			{
+				ParsedElement element;
+				element.begin= it_;
+				if( ParseTypeName() == nullptr )
+				{
+					push_macro_error();
+					return ParseFnResult();
+				}
+				element.end= it_;
+				elements_map[match_element.name]= std::move(element);
 			}
 			break;
 
