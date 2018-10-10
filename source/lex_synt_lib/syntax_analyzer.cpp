@@ -205,6 +205,49 @@ public:
 	SyntaxAnalysisResult DoAnalyzis( const Lexems& lexems );
 
 private:
+	struct Macro
+	{
+		enum class Context
+		{
+			Expression,
+			Block,
+			// TODO - add other context
+		};
+
+		enum class ElementKind
+		{
+			Lexem,
+			Identifier,
+			Expression,
+			Block,
+		};
+
+		enum class ResultElementKind
+		{
+			Lexem,
+			SubElement,
+		};
+
+		struct MatchElement
+		{
+			ElementKind kind= ElementKind::Lexem;
+			Lexem lexem;
+			ProgramString name; // for non-lexems
+		};
+
+		struct ResultElement
+		{
+			ResultElementKind kind= ResultElementKind::Lexem;
+			Lexem lexem;
+			ProgramString name; // for non-lexems
+		};
+
+		ProgramString name;
+		std::vector<MatchElement> match_template_elements;
+		std::vector<ResultElement> result_template_elements;
+		Context context= Context::Block;
+	};
+
 	struct Macro;
 	using Macros= std::vector<Macro>;
 	using MacrosPtr= std::shared_ptr<Macros>;
@@ -262,8 +305,7 @@ private:
 
 	TemplateBasePtr ParseTemplate();
 
-	IExpressionComponentPtr ParseCustomMacroExpression( const ProgramString& macro_name );
-	std::vector<IBlockElementPtr> ParseCustomMacroBlockContent( const ProgramString& macro_name );
+	const Macro* FetchMacro( const ProgramString& macro_name, const Macro::Context context );
 
 	template<typename ParseFnResult>
 	ParseFnResult ExpandMacro( const Macro& macro, ParseFnResult (SyntaxAnalyzer::*parse_fn)() );
@@ -276,50 +318,6 @@ private:
 	void TryRecoverAfterError( const std::vector<ExpectedLexem>& expected_lexems0, const std::vector<ExpectedLexem>& expected_lexems1, const std::vector<ExpectedLexem>& expected_lexems2 );
 	void TrySkipBrackets( Lexem::Type bracket_type );
 	void PushErrorMessage();
-
-private:
-	struct Macro
-	{
-		enum class Context
-		{
-			Expression,
-			Block,
-			// TODO - add other context
-		};
-
-		enum class ElementKind
-		{
-			Lexem,
-			Identifier,
-			Expression,
-			Block,
-		};
-
-		enum class ResultElementKind
-		{
-			Lexem,
-			SubElement,
-		};
-
-		struct MatchElement
-		{
-			ElementKind kind= ElementKind::Lexem;
-			Lexem lexem;
-			ProgramString name; // for non-lexems
-		};
-
-		struct ResultElement
-		{
-			ResultElementKind kind= ResultElementKind::Lexem;
-			Lexem lexem;
-			ProgramString name; // for non-lexems
-		};
-
-		ProgramString name;
-		std::vector<MatchElement> match_template_elements;
-		std::vector<ResultElement> result_template_elements;
-		Context context= Context::Block;
-	};
 
 private:
 	SyntaxErrorMessages error_messages_;
@@ -1034,9 +1032,11 @@ IExpressionComponentPtr SyntaxAnalyzer::ParseExpression()
 			}
 			else
 			{
-				if( auto macro_expression= ParseCustomMacroExpression( it_->text ) )
+				if( auto macro= FetchMacro( it_->text, Macro::Context::Expression ) )
 				{
-					// TODO - maybe not use bracket expression?
+					IExpressionComponentPtr macro_expression= ExpandMacro( *macro, &SyntaxAnalyzer::ParseExpression );
+					if( macro_expression == nullptr )
+						return nullptr;
 					current_node.reset( new BracketExpression( macro_expression->GetFilePos(), std::move(macro_expression ) ) );
 				}
 				else
@@ -2461,9 +2461,9 @@ std::vector<IBlockElementPtr> SyntaxAnalyzer::ParseBlockElements()
 		{
 			if( it_->type == Lexem::Type::Identifier )
 			{
-				BlockElements macro_elements= ParseCustomMacroBlockContent( it_->text );
-				if( !macro_elements.empty() ) // TODO - what if valid macro produces empty sequence
+				if( const auto macro= FetchMacro( it_->text, Macro::Context::Block ) )
 				{
+					BlockElements macro_elements= ExpandMacro( *macro, &SyntaxAnalyzer::ParseBlockElements );
 					for( auto& element : macro_elements )
 						elements.push_back( std::move(element) );
 					continue;
@@ -3423,30 +3423,13 @@ TemplateBasePtr SyntaxAnalyzer::ParseTemplate()
 	return nullptr;
 }
 
-IExpressionComponentPtr SyntaxAnalyzer::ParseCustomMacroExpression( const ProgramString& macro_name )
+const SyntaxAnalyzer::Macro* SyntaxAnalyzer::FetchMacro( const ProgramString& macro_name, const Macro::Context context )
 {
 	for( const Macro& macro : *macros_ )
-	{
-		if( macro.context == Macro::Context::Expression && macro.name == macro_name )
-		{
-			return ExpandMacro( macro, &SyntaxAnalyzer::ParseExpression );
-		}
-	}
+		if( macro.context == context && macro.name == macro_name )
+			return &macro;
 
 	return nullptr;
-}
-
-std::vector<IBlockElementPtr> SyntaxAnalyzer::ParseCustomMacroBlockContent( const ProgramString& macro_name )
-{
-	for( const Macro& macro : *macros_ )
-	{
-		if( macro.context == Macro::Context::Block && macro.name == macro_name )
-		{
-			return ExpandMacro( macro, &SyntaxAnalyzer::ParseBlockElements );
-		}
-	}
-
-	return {};
 }
 
 template<typename ParseFnResult>
