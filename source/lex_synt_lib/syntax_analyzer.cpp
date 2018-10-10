@@ -203,60 +203,13 @@ class SyntaxAnalyzer final
 {
 public:
 	SyntaxAnalyzer();
+	SyntaxAnalyzer( const MacrosPtr& macros );
+
 	SyntaxAnalysisResult DoAnalyzis( const Lexems& lexems );
+	std::vector<Import> ParseImportsOnly( const Lexems& lexems );
 
 private:
-	struct Macro
-	{
-		enum class Context
-		{
-			Expression,
-			Block,
-			// TODO - add other context
-		};
-
-		enum class ElementKind
-		{
-			Lexem,
-			Identifier,
-			Typename,
-			Expression,
-			Block,
-		};
-
-		enum class ResultElementKind
-		{
-			Lexem,
-			SubElement,
-		};
-
-		struct MatchElement
-		{
-			ElementKind kind= ElementKind::Lexem;
-			Lexem lexem;
-			ProgramString name; // for non-lexems
-		};
-
-		struct ResultElement
-		{
-			ResultElementKind kind= ResultElementKind::Lexem;
-			Lexem lexem;
-			ProgramString name; // for non-lexems
-		};
-
-		ProgramString name;
-		std::vector<MatchElement> match_template_elements;
-		std::vector<ResultElement> result_template_elements;
-	};
-
-	using MacroMap= std::map< ProgramString, Macro >;
-	using MacrosByContextMap= std::map< Macro::Context, MacroMap >;
-
-	using MacrosPtr= std::shared_ptr<MacrosByContextMap>;
-
-private:
-	explicit SyntaxAnalyzer( const MacrosPtr& macros );
-
+	std::vector<Import> ParseImports();
 	void ParseMacro();
 	ProgramElements ParseNamespaceBody( Lexem::Type end_lexem );
 
@@ -336,6 +289,10 @@ SyntaxAnalyzer::SyntaxAnalyzer()
 	: macros_(std::make_shared<MacrosByContextMap>())
 {}
 
+SyntaxAnalyzer::SyntaxAnalyzer( const MacrosPtr& macros )
+	: macros_(macros)
+{}
+
 SyntaxAnalysisResult SyntaxAnalyzer::DoAnalyzis( const Lexems& lexems )
 {
 	SyntaxAnalysisResult result;
@@ -345,6 +302,37 @@ SyntaxAnalysisResult SyntaxAnalyzer::DoAnalyzis( const Lexems& lexems )
 	last_error_it_= lexems.end();
 	last_error_repeats_= 0u;
 
+	result.imports= ParseImports();
+	while( NotEndOfFile() )
+	{
+		if( !( it_->type == Lexem::Type::MacroIdentifier && it_->text == "?macro"_SpC ) )
+			break;
+
+		ParseMacro();
+	}
+
+	result.program_elements= ParseNamespaceBody( Lexem::Type::EndOfFile );
+
+	result.error_messages.swap( error_messages_ );
+	result.macros= macros_;
+
+	return result;
+}
+
+std::vector<Import> SyntaxAnalyzer::ParseImportsOnly( const Lexems& lexems )
+{
+	it_= lexems.begin();
+	it_end_= lexems.end();
+	last_error_it_= lexems.end();
+	last_error_repeats_= 0u;
+
+	return ParseImports();
+}
+
+std::vector<Import> SyntaxAnalyzer::ParseImports()
+{
+	std::vector<Import> imports;
+
 	while( NotEndOfFile() )
 	{
 		if( !( it_->type == Lexem::Type::Identifier && it_->text == Keywords::import_ ) )
@@ -353,8 +341,8 @@ SyntaxAnalysisResult SyntaxAnalyzer::DoAnalyzis( const Lexems& lexems )
 
 		if( it_->type == Lexem::Type::String )
 		{
-			result.imports.emplace_back( it_->file_pos );
-			result.imports.back().import_name= it_->text;
+			imports.emplace_back( it_->file_pos );
+			imports.back().import_name= it_->text;
 			NextLexem();
 		}
 		else
@@ -363,24 +351,9 @@ SyntaxAnalysisResult SyntaxAnalyzer::DoAnalyzis( const Lexems& lexems )
 			TryRecoverAfterError( { ExpectedLexem(Keywords::import_), ExpectedLexem(Lexem::Type::String) }, g_namespace_body_elements_start_lexems );
 		}
 	}
-	while( NotEndOfFile() )
-	{
-		if( !( it_->type == Lexem::Type::MacroIdentifier && it_->text == "?macro"_SpC ) )
-			break;
 
-		U_ASSERT( macros_.unique() ); // If we parse macroses, we must not use borrowed macroses.
-		ParseMacro();
-	}
-
-	result.program_elements= ParseNamespaceBody( Lexem::Type::EndOfFile );
-
-	result.error_messages.swap( error_messages_ );
-	return result;
+	return imports;
 }
-
-SyntaxAnalyzer::SyntaxAnalyzer( const MacrosPtr& macros )
-	: macros_(macros)
-{}
 
 void SyntaxAnalyzer::ParseMacro()
 {
@@ -3449,7 +3422,7 @@ TemplateBasePtr SyntaxAnalyzer::ParseTemplate()
 	return nullptr;
 }
 
-const SyntaxAnalyzer::Macro* SyntaxAnalyzer::FetchMacro( const ProgramString& macro_name, const Macro::Context context )
+const Macro* SyntaxAnalyzer::FetchMacro( const ProgramString& macro_name, const Macro::Context context )
 {
 	const MacroMap& macro_map= (*macros_)[context];
 	const auto it= macro_map.find(macro_name);
@@ -3704,9 +3677,15 @@ void SyntaxAnalyzer::PushErrorMessage()
 	}
 }
 
-SyntaxAnalysisResult SyntaxAnalysis( const Lexems& lexems )
+std::vector<Import> ParseImports( const Lexems& lexems )
 {
-	return SyntaxAnalyzer().DoAnalyzis( lexems );
+	return SyntaxAnalyzer().ParseImportsOnly( lexems );
+}
+
+SyntaxAnalysisResult SyntaxAnalysis( const Lexems& lexems, const MacrosPtr& macros )
+{
+	MacrosPtr macros_copy= std::make_shared<MacrosByContextMap>( *macros );
+	return SyntaxAnalyzer( std::move(macros_copy) ).DoAnalyzis( lexems );
 }
 
 } // namespace Synt

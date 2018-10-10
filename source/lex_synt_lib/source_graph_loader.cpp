@@ -50,19 +50,16 @@ size_t SourceGraphLoader::LoadNode_r(
 	for( Lexem& lexem :lex_result.lexems )
 		lexem.file_pos.file_index= static_cast<unsigned short>(node_index);
 
-	Synt::SyntaxAnalysisResult synt_result= Synt::SyntaxAnalysis( lex_result.lexems );
-	for( const Synt::SyntaxErrorMessage& syntax_error_message : synt_result.error_messages )
-		std::cout << std::to_string(syntax_error_message.file_pos.line) << ":" << std::to_string(syntax_error_message.file_pos.pos_in_line) << ": " << ToUTF8( syntax_error_message.text ) << "\n";
-	result.syntax_errors.insert( result.syntax_errors.end(), synt_result.error_messages.begin(), synt_result.error_messages.end() );
-	if( !synt_result.error_messages.empty() )
-		return ~0u;
+	const std::vector<Synt::Import> imports= Synt::ParseImports( lex_result.lexems );
 
 	processed_files_stack_.push_back( file_path );
 	// TODO - check loops
 
 	result.nodes_storage.emplace_back();
 	result.nodes_storage[node_index].file_path= loaded_file->full_file_path;
-	result.nodes_storage[node_index].child_nodes_indeces.resize( synt_result.imports.size() );
+	result.nodes_storage[node_index].child_nodes_indeces.resize( imports.size() );
+
+	std::vector<Synt::MacrosPtr> imported_macroses;
 
 	for( size_t i= 0; i < result.nodes_storage[node_index].child_nodes_indeces.size(); ++i )
 	{
@@ -70,7 +67,7 @@ size_t SourceGraphLoader::LoadNode_r(
 		bool prev_found= false;
 		for( size_t j= 0u; j < result.nodes_storage.size(); ++j )
 		{
-			if( result.nodes_storage[j].file_path == vfs_->GetFullFilePath( synt_result.imports[i].import_name, loaded_file->full_file_path ) )
+			if( result.nodes_storage[j].file_path == vfs_->GetFullFilePath( imports[i].import_name, loaded_file->full_file_path ) )
 			{
 				result.nodes_storage[node_index].child_nodes_indeces[i]= j;
 				prev_found= true;
@@ -80,12 +77,46 @@ size_t SourceGraphLoader::LoadNode_r(
 		if( prev_found )
 			continue;
 
-		const size_t child_node_index= LoadNode_r( synt_result.imports[i].import_name, loaded_file->full_file_path, result );
+		const size_t child_node_index= LoadNode_r( imports[i].import_name, loaded_file->full_file_path, result );
 		if( child_node_index != ~0u )
+		{
+			imported_macroses.push_back( result.nodes_storage[child_node_index].ast.macros );
 			result.nodes_storage[node_index].child_nodes_indeces[i]= child_node_index;
+		}
 	}
 
 	processed_files_stack_.pop_back();
+
+	// Merge macroses
+	Synt::MacrosPtr merged_macroses= std::make_shared<Synt::MacrosByContextMap>();
+	for( const Synt::MacrosPtr& macros : imported_macroses )
+	{
+		for( const auto& context_macro_map_pair : *macros )
+		{
+			Synt::MacroMap& dst_map= (*merged_macroses)[context_macro_map_pair.first];
+			for( const auto& macro_map_pair : context_macro_map_pair.second )
+			{
+				if (dst_map.find(macro_map_pair.first) != dst_map.end())
+				{
+					Synt::SyntaxErrorMessage error_message;
+					error_message.text= "Macro \""_SpC + macro_map_pair.first + "\" redefinition."_SpC;
+					error_message.file_pos= FilePos{ 0u, 0u, static_cast<unsigned short>(node_index) };
+
+					std::cout << ToUTF8(error_message.text) << std::endl;
+					result.syntax_errors.push_back( std::move(error_message) );
+				}
+				else
+					dst_map[macro_map_pair.first]= macro_map_pair.second;
+			}
+		}
+	}
+
+	Synt::SyntaxAnalysisResult synt_result= Synt::SyntaxAnalysis( lex_result.lexems, std::move(merged_macroses) );
+	for( const Synt::SyntaxErrorMessage& syntax_error_message : synt_result.error_messages )
+		std::cout << std::to_string(syntax_error_message.file_pos.line) << ":" << std::to_string(syntax_error_message.file_pos.pos_in_line) << ": " << ToUTF8( syntax_error_message.text ) << "\n";
+	result.syntax_errors.insert( result.syntax_errors.end(), synt_result.error_messages.begin(), synt_result.error_messages.end() );
+	if( !synt_result.error_messages.empty() )
+		return ~0u;
 
 	result.nodes_storage[node_index].ast= std::move( synt_result );
 

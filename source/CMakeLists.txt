@@ -116,6 +116,7 @@ set( COMPILER_LIB_HEADERS
 	lex_synt_lib/assert.hpp
 	lex_synt_lib/keywords.hpp
 	lex_synt_lib/lexical_analyzer.hpp
+	lex_synt_lib/macro.hpp
 	lex_synt_lib/operators.hpp
 	lex_synt_lib/program_string.hpp
 	lex_synt_lib/source_graph_loader.hpp
