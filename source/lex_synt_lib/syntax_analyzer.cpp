@@ -1,6 +1,7 @@
 #include <cctype>
 #include <cmath>
 #include <map>
+#include <set>
 
 #include "assert.hpp"
 #include "keywords.hpp"
@@ -433,6 +434,8 @@ void SyntaxAnalyzer::ParseMacro()
 		return;
 	}
 
+	std::set<ProgramString> elements_set;
+
 	while( NotEndOfFile() )
 	{
 		if( it_->type == Lexem::Type::MacroBracketRight )
@@ -445,6 +448,13 @@ void SyntaxAnalyzer::ParseMacro()
 			Macro::MatchElement element;
 			element.name= it_->text;
 
+			if( elements_set.find( element.name ) != elements_set.end() )
+			{
+				SyntaxErrorMessage msg;
+				msg.file_pos= it_->file_pos;
+				msg.text= "\""_SpC + element.name + "\" macro parameter redefinition."_SpC;
+				error_messages_.push_back(std::move(msg));
+			}
 			NextLexem();
 
 			if( it_->type != Lexem::Type::Colon )
@@ -476,6 +486,7 @@ void SyntaxAnalyzer::ParseMacro()
 				return;
 			}
 
+			elements_set.emplace( element.name );
 			macro.match_template_elements.push_back( element );
 		}
 		else
