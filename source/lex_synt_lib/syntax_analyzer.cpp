@@ -245,17 +245,17 @@ private:
 		ProgramString name;
 		std::vector<MatchElement> match_template_elements;
 		std::vector<ResultElement> result_template_elements;
-		Context context= Context::Block;
 	};
 
-	struct Macro;
-	using Macros= std::vector<Macro>;
-	using MacrosPtr= std::shared_ptr<Macros>;
+	using MacroMap= std::map< ProgramString, Macro >;
+	using MacrosByContextMap= std::map< Macro::Context, MacroMap >;
+
+	using MacrosPtr= std::shared_ptr<MacrosByContextMap>;
 
 private:
 	explicit SyntaxAnalyzer( const MacrosPtr& macros );
 
-	Macro ParseMacro();
+	void ParseMacro();
 	ProgramElements ParseNamespaceBody( Lexem::Type end_lexem );
 
 	std::unique_ptr<NumericConstant> ParseNumericConstant();
@@ -331,7 +331,7 @@ private:
 };
 
 SyntaxAnalyzer::SyntaxAnalyzer()
-	: macros_(std::make_shared<Macros>())
+	: macros_(std::make_shared<MacrosByContextMap>())
 {}
 
 SyntaxAnalysisResult SyntaxAnalyzer::DoAnalyzis( const Lexems& lexems )
@@ -367,7 +367,7 @@ SyntaxAnalysisResult SyntaxAnalyzer::DoAnalyzis( const Lexems& lexems )
 			break;
 
 		U_ASSERT( macros_.unique() ); // If we parse macroses, we must not use borrowed macroses.
-		macros_->push_back( ParseMacro() );
+		ParseMacro();
 	}
 
 	result.program_elements= ParseNamespaceBody( Lexem::Type::EndOfFile );
@@ -380,9 +380,10 @@ SyntaxAnalyzer::SyntaxAnalyzer( const MacrosPtr& macros )
 	: macros_(macros)
 {}
 
-SyntaxAnalyzer::Macro SyntaxAnalyzer::ParseMacro()
+void SyntaxAnalyzer::ParseMacro()
 {
 	Macro macro;
+	Macro::Context macro_context= Macro::Context::Expression;
 
 	U_ASSERT( it_->type == Lexem::Type::MacroIdentifier && it_->text == "?macro"_SpC );
 	NextLexem();
@@ -391,7 +392,7 @@ SyntaxAnalyzer::Macro SyntaxAnalyzer::ParseMacro()
 	if( it_->type != Lexem::Type::MacroBracketLeft )
 	{
 		PushErrorMessage();
-		return macro;
+		return;
 	}
 	NextLexem();
 
@@ -399,35 +400,36 @@ SyntaxAnalyzer::Macro SyntaxAnalyzer::ParseMacro()
 	if( it_->type != Lexem::Type::Identifier )
 	{
 		PushErrorMessage();
-		return macro;
+		return;
 	}
 	macro.name= it_->text;
+	const FilePos& macro_definition_file_pos= it_->file_pos;
 	NextLexem();
 
 	if( it_->type != Lexem::Type::Colon )
 	{
 		PushErrorMessage();
-		return macro;
+		return;
 	}
 	NextLexem();
 
 	if( it_->type != Lexem::Type::Identifier )
 	{
 		PushErrorMessage();
-		return macro;
+		return;
 	}
 	const ProgramString& context_str= it_->text;
 	NextLexem();
 
 	if( context_str == "expr"_SpC )
-		macro.context= Macro::Context::Expression;
+		macro_context= Macro::Context::Expression;
 	else if( context_str == "block"_SpC )
-		macro.context= Macro::Context::Block;
+		macro_context= Macro::Context::Block;
 	// TODO - add other stuff
 	else
 	{
 		PushErrorMessage();
-		return macro;
+		return;
 	}
 
 	while( NotEndOfFile() )
@@ -447,14 +449,14 @@ SyntaxAnalyzer::Macro SyntaxAnalyzer::ParseMacro()
 			if( it_->type != Lexem::Type::Colon )
 			{
 				PushErrorMessage();
-				return macro;
+				return;
 			}
 			NextLexem();
 
 			if( it_->type != Lexem::Type::Identifier )
 			{
 				PushErrorMessage();
-				return macro;
+				return;
 			}
 			const ProgramString& element_type_str= it_->text;
 			NextLexem();
@@ -467,7 +469,7 @@ SyntaxAnalyzer::Macro SyntaxAnalyzer::ParseMacro()
 			else
 			{
 				PushErrorMessage();
-				return macro;
+				return;
 			}
 
 			macro.match_template_elements.push_back( element );
@@ -487,7 +489,7 @@ SyntaxAnalyzer::Macro SyntaxAnalyzer::ParseMacro()
 	if( it_->type != Lexem::Type::RightArrow )
 	{
 		PushErrorMessage();
-		return macro;
+		return;
 	}
 	NextLexem();
 
@@ -495,7 +497,7 @@ SyntaxAnalyzer::Macro SyntaxAnalyzer::ParseMacro()
 	if( it_->type != Lexem::Type::MacroBracketLeft )
 	{
 		PushErrorMessage();
-		return macro;
+		return;
 	}
 	NextLexem();
 
@@ -526,7 +528,16 @@ SyntaxAnalyzer::Macro SyntaxAnalyzer::ParseMacro()
 		}
 	}
 
-	return macro;
+	MacroMap& macro_map= (*macros_)[macro_context];
+	if( macro_map.find( macro.name ) != macro_map.end() )
+	{
+		SyntaxErrorMessage msg;
+		msg.file_pos= macro_definition_file_pos;
+		msg.text= "\""_SpC + macro.name + "\" macro redefinition."_SpC;
+		error_messages_.push_back(std::move(msg));
+	}
+	else
+		macro_map[macro.name]= std::move(macro);
 }
 
 ProgramElements SyntaxAnalyzer::ParseNamespaceBody( const Lexem::Type end_lexem )
@@ -3425,9 +3436,10 @@ TemplateBasePtr SyntaxAnalyzer::ParseTemplate()
 
 const SyntaxAnalyzer::Macro* SyntaxAnalyzer::FetchMacro( const ProgramString& macro_name, const Macro::Context context )
 {
-	for( const Macro& macro : *macros_ )
-		if( macro.context == context && macro.name == macro_name )
-			return &macro;
+	const MacroMap& macro_map= (*macros_)[context];
+	const auto it= macro_map.find(macro_name);
+	if( it != macro_map.end() )
+		return &it->second;
 
 	return nullptr;
 }
