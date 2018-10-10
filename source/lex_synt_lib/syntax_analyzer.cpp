@@ -201,12 +201,17 @@ static BinaryOperatorType GetAdditiveAssignmentOperator( const Lexem& lexem )
 class SyntaxAnalyzer final
 {
 public:
+	SyntaxAnalyzer();
 	SyntaxAnalysisResult DoAnalyzis( const Lexems& lexems );
 
 private:
 	struct Macro;
+	using Macros= std::vector<Macro>;
+	using MacrosPtr= std::shared_ptr<Macros>;
 
 private:
+	explicit SyntaxAnalyzer( const MacrosPtr& macros );
+
 	Macro ParseMacro();
 	ProgramElements ParseNamespaceBody( Lexem::Type end_lexem );
 
@@ -324,8 +329,12 @@ private:
 	Lexems::const_iterator last_error_it_;
 	size_t last_error_repeats_;
 
-	std::vector<Macro> macros_;
+	const MacrosPtr macros_;
 };
+
+SyntaxAnalyzer::SyntaxAnalyzer()
+	: macros_(std::make_shared<Macros>())
+{}
 
 SyntaxAnalysisResult SyntaxAnalyzer::DoAnalyzis( const Lexems& lexems )
 {
@@ -359,7 +368,8 @@ SyntaxAnalysisResult SyntaxAnalyzer::DoAnalyzis( const Lexems& lexems )
 		if( !( it_->type == Lexem::Type::MacroIdentifier && it_->text == "?macro"_SpC ) )
 			break;
 
-		macros_.push_back( ParseMacro() );
+		U_ASSERT( macros_.unique() ); // If we parse macroses, we must not use borrowed macroses.
+		macros_->push_back( ParseMacro() );
 	}
 
 	result.program_elements= ParseNamespaceBody( Lexem::Type::EndOfFile );
@@ -367,6 +377,10 @@ SyntaxAnalysisResult SyntaxAnalyzer::DoAnalyzis( const Lexems& lexems )
 	result.error_messages.swap( error_messages_ );
 	return result;
 }
+
+SyntaxAnalyzer::SyntaxAnalyzer( const MacrosPtr& macros )
+	: macros_(macros)
+{}
 
 SyntaxAnalyzer::Macro SyntaxAnalyzer::ParseMacro()
 {
@@ -3411,7 +3425,7 @@ TemplateBasePtr SyntaxAnalyzer::ParseTemplate()
 
 IExpressionComponentPtr SyntaxAnalyzer::ParseCustomMacroExpression( const ProgramString& macro_name )
 {
-	for( const Macro& macro : macros_ )
+	for( const Macro& macro : *macros_ )
 	{
 		if( macro.context == Macro::Context::Expression && macro.name == macro_name )
 		{
@@ -3424,7 +3438,7 @@ IExpressionComponentPtr SyntaxAnalyzer::ParseCustomMacroExpression( const Progra
 
 std::vector<IBlockElementPtr> SyntaxAnalyzer::ParseCustomMacroBlockContent( const ProgramString& macro_name )
 {
-	for( const Macro& macro : macros_ )
+	for( const Macro& macro : *macros_ )
 	{
 		if( macro.context == Macro::Context::Block && macro.name == macro_name )
 		{
@@ -3550,7 +3564,7 @@ ParseFnResult SyntaxAnalyzer::ExpandMacro( const Macro& macro, ParseFnResult (Sy
 	eof.type= Lexem::Type::EndOfFile;
 	result_lexems.push_back(eof);
 
-	SyntaxAnalyzer result_analyzer;
+	SyntaxAnalyzer result_analyzer( macros_ );
 	result_analyzer.it_= result_lexems.begin();
 	result_analyzer.it_end_= result_lexems.end();
 

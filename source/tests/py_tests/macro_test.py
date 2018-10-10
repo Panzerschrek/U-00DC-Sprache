@@ -76,3 +76,67 @@ def MacroExpansion_Test3():
 	tests_lib.build_program( c_program_text )
 	call_result= tests_lib.run_function( "_Z3Foov" )
 	assert( call_result == 1 )
+
+
+def ExpandMacroWhileExpandingMacro_Test0():
+	c_program_text= """
+	?macro <? FiveTimes:block ?b:block ?>  ->  <? ?b ?b ?b ?b ?b ?>
+	?macro <? TenTimes:block ?b:block ?>  ->  <? FiveTimes ?b FiveTimes ?b ?>
+
+	fn Foo() : i32
+	{
+		auto mut x= 0;
+		TenTimes { ++x; }
+		return x;
+	}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 10 )
+
+
+def ExpandMacroWhileExpandingMacro_Test1():
+	c_program_text= """
+	?macro <? MulFive:expr ( ?e:expr ) ?>  ->  <? ( ?e * 5 ) ?>
+	?macro <? MulTen:expr ( ?e:expr ) ?>  ->  <? ( MulFive(?e) * 2 ) ?>
+
+	fn Foo() : i32
+	{
+		return MulTen(31);
+	}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 31 * 10 )
+
+
+def ExpandMacroInArgumentOfOtherMacro_Test0():
+	c_program_text= """
+	?macro <? FourTimes:block ?b:block ?>  ->  <? ?b ?b ?b ?b ?>
+	?macro <? FiveTimes:block ?b:block ?>  ->  <? ?b ?b ?b ?b ?b ?>
+	?macro <? TenTimes:block ?b:block ?>  ->  <? FiveTimes ?b FiveTimes ?b ?>
+
+	fn Foo() : i32
+	{
+		auto mut x= 0;
+		TenTimes { FourTimes{ ++x; } }
+		return x;
+	}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 10 * 4 )
+
+
+def ExpandMacroInArgumentOfOtherMacro_Test1():
+	c_program_text= """
+	?macro <? MulFive:expr ( ?e:expr ) ?>  ->  <? ( ?e * 5 ) ?>
+
+	fn Foo() : i32
+	{
+		return MulFive( MulFive(11) );
+	}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 5 * 5 * 11 )
