@@ -3494,9 +3494,7 @@ llvm::Value* CodeBuilder::CreateReferenceCast( llvm::Value* const ref, const Typ
 	else
 	{
 		const Class* const src_class_type= src_type.GetClassType();
-		const Class* const dst_class_tepe= dst_type.GetClassType();
 		U_ASSERT( src_class_type != nullptr );
-		U_ASSERT( dst_class_tepe != nullptr );
 
 		for( const ClassProxyPtr& src_parent_class : src_class_type->parents )
 		{
