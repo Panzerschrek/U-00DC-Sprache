@@ -134,6 +134,10 @@ if( BUILD_COMPILER )
 	set( COMPILER_SOURCES
 		compiler/main.cpp )
 
+	set( COMPILER_HEADERS
+		compiler/push_disable_boost_warnings.hpp
+		compiler/pop_boost_warnings.hpp )
+
 	function( CompileLLFile ll_file )
 		get_filename_component( source_name ${ll_file} NAME_WE )
 		set( bc_name ${source_name}.bc )
@@ -151,7 +155,7 @@ if( BUILD_COMPILER )
 	CompileLLFile( asm_funcs_64.ll )
 	list( APPEND bc_files ${BC_FILE} )
 
-	add_executable( Compiler ${COMPILER_SOURCES} ${bc_files} )
+	add_executable( Compiler ${COMPILER_SOURCES} ${COMPILER_HEADERS} ${bc_files} )
 	target_link_libraries( Compiler CompilerLib ${LLVM_LIBS_FOR_COMPILER} )
 	target_link_libraries( Compiler ${Boost_LIBRARIES} )
 endif( BUILD_COMPILER )

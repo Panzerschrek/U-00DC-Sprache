@@ -2,9 +2,11 @@
 #include <cstring>
 #include <iostream>
 
+#include "push_disable_boost_warnings.hpp"
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
 #include <boost/program_options.hpp>
+#include "pop_boost_warnings.hpp"
 
 #include "../code_builder_lib/push_disable_llvm_warnings.hpp"
 #include <llvm/ADT/Triple.h>
