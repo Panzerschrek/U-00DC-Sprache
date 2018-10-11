@@ -194,3 +194,34 @@ def MacroParamExpression_Test0():
 	tests_lib.build_program( c_program_text )
 	call_result= tests_lib.run_function( "_Z3Foov" )
 	assert( call_result == 2 + 2 * 2 )
+
+
+def MacroOptional_Test0():
+	c_program_text= """
+	?macro <? ADD:expr ( ?a:expr, ?b:expr ?o:opt<? ,?c:expr ?> ) ?>  ->  <? (?a) + (?b) ?o<? + (?c) ?> ?>
+
+	static_assert( ADD( 985, 11024 ) == 985 + 11024 );
+	static_assert( ADD( 81, 47, -11 ) == 81 + 47 - 11 );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def MacroOptional_Test1():
+	c_program_text= """
+	?macro <? ADD:expr ( ?a:expr ?o:opt<? FF ?> TO ?b:expr ) ?>  ->  <? (?a) + ?o<? - ?> (?b) ?>
+
+	static_assert( ADD( 985 TO 11024 ) == 985 + 11024 );
+	static_assert( ADD( 985 FF TO 11024 ) == 985 - 11024 );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def MacroOptional_Test2():
+	c_program_text= """
+	// Inside optional visible outer macro variables.
+	?macro <? DO:expr ( ?a:expr ?o:opt<? SQUARE ?> ) ?>  ->  <? (?a) ?o<? * (?a) ?> ?>
+
+	static_assert( DO( 12411 ) == 12411 );
+	static_assert( DO( 66 SQUARE ) == 66 * 66 );
+	"""
+	tests_lib.build_program( c_program_text )

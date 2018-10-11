@@ -27,12 +27,14 @@ struct Macro
 		Typename,
 		Expression,
 		Block,
+		Optional,
 	};
 
 	enum class ResultElementKind
 	{
 		Lexem,
-		SubElement,
+		SimpleElement, // Identifier, typename, expression, block
+		ElementWithMacroBlock, // Optional, loop
 	};
 
 	struct MatchElement
@@ -40,6 +42,7 @@ struct Macro
 		ElementKind kind= ElementKind::Lexem;
 		Lexem lexem;
 		ProgramString name; // for non-lexems
+		std::vector<MatchElement> sub_elements; // For optionals, loops
 	};
 
 	struct ResultElement
@@ -47,6 +50,7 @@ struct Macro
 		ResultElementKind kind= ResultElementKind::Lexem;
 		Lexem lexem;
 		ProgramString name; // for non-lexems
+		std::vector<ResultElement> sub_elements; // For optionals, loops
 	};
 
 	ProgramString name;
