@@ -50,8 +50,7 @@ add_compile_options( -Wall -Wextra -Wconversion )
 
 # Boost
 if( NOT DEFINED BOOST_ROOT )
-	set( BOOST_ROOT ../../boost_1_60_0 )
-	message( STATUS "you can define path to boost library, using variable BOOST_ROOT" )
+	message( FATAL_ERROR "BOOST_ROOT not defined. You can define path to boost library, using variable BOOST_ROOT" )
 endif()
 set( Boost_USE_STATIC_LIBS yes )
 find_package( Boost COMPONENTS system filesystem program_options REQUIRED )
@@ -59,8 +58,7 @@ include_directories( ${Boost_INCLUDE_DIRS} )
 
 # LLVM
 if( NOT DEFINED LLVM_INSTALL_DIR )
-	set( LLVM_INSTALL_DIR ../../llvm-3.7.1.src/build/ )
-	message( STATUS "you can define path to llvm library, using variable LLVM_INSTALL_DIR" )
+	message( FATAL_ERROR "LLVM_INSTALL_DIR not defined. You can define path to llvm library, using variable LLVM_INSTALL_DIR" )
 endif()
 set( LLVM_DIR ${LLVM_INSTALL_DIR}/share/llvm/cmake/ )
 
