@@ -28,6 +28,7 @@ struct Macro
 		Expression,
 		Block,
 		Optional,
+		Repeated,
 	};
 
 	enum class ResultElementKind

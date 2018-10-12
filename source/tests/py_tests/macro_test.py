@@ -225,3 +225,15 @@ def MacroOptional_Test2():
 	static_assert( DO( 66 SQUARE ) == 66 * 66 );
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def MacroRepeated_Test0():
+	c_program_text= """
+	?macro <? SUM:expr ( ?sequence:rep<? ?e:expr ?> ) ?>  ->  <?  ?sequence<? (?e) + ?> 0  ?>
+
+	static_assert( SUM( ) == 0 );
+	static_assert( SUM( 854 ) == 854 );
+	static_assert( SUM( 5 23 ) == 5 + 23 );
+	static_assert( SUM( 11 -4 854 77 ) == 11 -4 + 854 + 77 );
+	"""
+	tests_lib.build_program( c_program_text )

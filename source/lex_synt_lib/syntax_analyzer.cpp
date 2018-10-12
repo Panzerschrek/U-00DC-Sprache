@@ -534,13 +534,15 @@ std::vector<Macro::MatchElement> SyntaxAnalyzer::ParseMacroMatchBlock()
 				element.kind= Macro::ElementKind::Block;
 			else if( element_type_str == "opt"_SpC )
 				element.kind= Macro::ElementKind::Optional;
+			else if( element_type_str == "rep"_SpC )
+				element.kind= Macro::ElementKind::Repeated;
 			else
 			{
 				PushErrorMessage();
 				return result;
 			}
 
-			if( element.kind == Macro::ElementKind::Optional )
+			if( element.kind == Macro::ElementKind::Optional || element.kind == Macro::ElementKind::Repeated )
 			{
 				if( it_->type != Lexem::Type::MacroBracketLeft )
 				{
@@ -577,7 +579,7 @@ std::vector<Macro::MatchElement> SyntaxAnalyzer::ParseMacroMatchBlock()
 	// After optionals/loops expected optional/loop terminator lexem.
 	for( size_t i= 0u; i < result.size(); ++i )
 	{
-		if( result[i].kind == Macro::ElementKind::Optional &&
+		if( ( result[i].kind == Macro::ElementKind::Optional || result[i].kind == Macro::ElementKind::Repeated ) &&
 			( i + 1u == result.size() || result[i+1u].kind != Macro::ElementKind::Lexem ) )
 		{
 			SyntaxErrorMessage msg;
@@ -3684,6 +3686,33 @@ bool SyntaxAnalyzer::MatchMacroBlock(
 							return false;
 					}
 
+					out_elements[match_element.name]= std::move(element);
+				}
+			}
+			break;
+
+		case Macro::ElementKind::Repeated:
+			{
+				if( i + 1u < match_elements.size() &&
+					match_elements[i+1u].kind == Macro::ElementKind::Lexem )
+				{
+					ParsedMacroElement element;
+					element.kind= match_element.kind;
+
+					const Lexem& terminator_lexem= match_elements[i+1u].lexem;
+					while(NotEndOfFile())
+					{
+						if( it_->type == terminator_lexem.type && it_->text == terminator_lexem.text )
+							break;
+						else
+						{
+							std::map<ProgramString, ParsedMacroElement> optional_elements;
+							if( MatchMacroBlock( match_element.sub_elements, macro_name, optional_elements ) )
+								element.sub_elements.push_back( std::move(optional_elements) );
+							else
+								return false;
+						}
+					}
 					out_elements[match_element.name]= std::move(element);
 				}
 			}
