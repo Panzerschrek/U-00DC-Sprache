@@ -24,6 +24,8 @@
 #include <llvm/Support/raw_os_ostream.h>
 #include <llvm/Target/TargetOptions.h>
 #include <llvm/Target/TargetMachine.h>
+#include <llvm/Transforms/IPO.h>
+#include "llvm/Transforms/IPO/PassManagerBuilder.h"
 #include <llvm/MC/SubtargetFeature.h>
 #include "../code_builder_lib/pop_llvm_warnings.hpp"
 
@@ -223,6 +225,7 @@ int main( const int argc, const char* const argv[])
 	bool tests_output= false;
 	bool print_llvm_asm= false;
 	bool enable_pie= false;
+	unsigned int optimization_level= 0u;
 
 	po::options_description program_options( u8"Ǖ-compiler options" );
 	program_options.add_options()
@@ -236,6 +239,7 @@ int main( const int argc, const char* const argv[])
 		( "print-llvm-asm", po::bool_switch()->default_value(false), "print llvm asm" )
 		( "relocation-model", po::value< std::string >(), "relocation model of target" )
 		( "enable-pie", po::bool_switch()->default_value(false), "assume the creation of a position independent executable" )
+		( "optimization-level,O", po::value<unsigned int>(), "optimization level" )
 	;
 
 	po::positional_options_description positional_options;
@@ -305,6 +309,9 @@ int main( const int argc, const char* const argv[])
 
 	if( program_options_map.count( "enable-pie" ) != 0 )
 		enable_pie= program_options_map[ "enable-pie" ].as<bool>();
+
+	if( program_options_map.count( "optimization-level" ) != 0 )
+		optimization_level= std::min( program_options_map["optimization-level"].as<unsigned int>(), 2u );
 
 	if( input_files.empty() )
 	{
@@ -458,6 +465,38 @@ int main( const int argc, const char* const argv[])
 		llvm::Linker::LinkModules( result_module.get(), std_lib_module.get().get() );
 	}
 
+	if( optimization_level > 0u )
+	{
+		llvm::legacy::FunctionPassManager function_pass_manager( result_module.get() );
+		llvm::legacy::PassManager pass_manager;
+
+		{
+			llvm::PassManagerBuilder pass_manager_builder;
+
+			const unsigned int size_level= 0u;
+
+			pass_manager_builder.OptLevel = optimization_level;
+			pass_manager_builder.SizeLevel = size_level;
+
+			if( optimization_level == 0u )
+				pass_manager_builder.Inliner= nullptr;
+			else
+				pass_manager_builder.Inliner= llvm::createFunctionInliningPass( optimization_level, size_level );
+
+			pass_manager_builder.populateFunctionPassManager(function_pass_manager);
+			pass_manager_builder.populateModulePassManager(pass_manager);
+		}
+
+		// Run per-function optimizations.
+		function_pass_manager.doInitialization();
+		for( llvm::Function& func : *result_module )
+			function_pass_manager.run(func);
+		function_pass_manager.doFinalization();
+
+		// Run optimizations for module.
+		pass_manager.run( *result_module );
+	}
+
 	if( print_llvm_asm )
 	{
 		llvm::raw_os_ostream stream(std::cout);
@@ -478,9 +517,6 @@ int main( const int argc, const char* const argv[])
 
 		const llvm::TargetMachine::CodeGenFileType file_type= llvm::TargetMachine::CodeGenFileType::CGFT_ObjectFile;
 		const bool no_verify= true;
-		llvm::AnalysisID start_before_id= nullptr;
-		llvm::AnalysisID start_after_id = nullptr;
-		llvm::AnalysisID stop_after_id = nullptr;
 
 		llvm::legacy::PassManager pass_manager;
 
@@ -488,11 +524,7 @@ int main( const int argc, const char* const argv[])
 				pass_manager,
 				out_file_stream,
 				file_type,
-				no_verify,
-				start_before_id,
-				start_after_id,
-				stop_after_id,
-				nullptr) )
+				no_verify ) )
 		{
 			std::cout << "Error, creating file emit pass." << std::endl;
 			return 1;

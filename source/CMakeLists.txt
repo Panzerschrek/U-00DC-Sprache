@@ -68,7 +68,13 @@ include_directories(${LLVM_INCLUDE_DIRS})
 add_definitions(${LLVM_DEFINITIONS})
 
 llvm_map_components_to_libnames( LLVM_LIBS_FOR_COMPILER_LIB Core )
-llvm_map_components_to_libnames( LLVM_LIBS_FOR_COMPILER BitWriter BitReader Linker native ) # "native" is alias for native code generator.
+llvm_map_components_to_libnames( LLVM_LIBS_FOR_COMPILER
+	BitWriter # for writing of result bitcode
+	BitReader # for reading of stdlib bitcode
+	Linker # for linking of multiple llvm modules
+	IPO # for pass manager builder, etc.
+	native # "native" is alias for native code generator.
+	)
 llvm_map_components_to_libnames( LLVM_LIBS_FOR_TESTS ExecutionEngine Interpreter )
 
 get_filename_component( LLVM_UTILS_DIR ${LLVM_INSTALL_DIR}/bin ABSOLUTE )
