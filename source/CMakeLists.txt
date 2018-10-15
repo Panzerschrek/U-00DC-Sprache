@@ -41,6 +41,9 @@ endif()
 
 if( NOT WIN32 )
 	add_compile_options( -fPIC )
+	set( SPRACHE_COMPILER_PIC_OPTIONS --relocation-model pic --enable-pie )
+else()
+	set( SPRACHE_COMPILER_PIC_OPTIONS "" )
 endif()
 add_compile_options( -Wall -Wextra -Wconversion )
 
@@ -267,7 +270,7 @@ function( CompileUSource u_source_file )
 	add_custom_command(
 		OUTPUT ${object_name}
 		DEPENDS ${u_source_file} Compiler
-		COMMAND Compiler --produce-object-file ${CMAKE_SOURCE_DIR}/${u_source_file} -o ${object_name} )
+		COMMAND Compiler --produce-object-file ${CMAKE_SOURCE_DIR}/${u_source_file} -o ${object_name} ${SPRACHE_COMPILER_PIC_OPTIONS} )
 	set( U_SOURCE_OBJECT ${object_name} PARENT_SCOPE )
 endfunction()
 
@@ -332,7 +335,13 @@ if( BUILD_LINKAGE_TESTS )
 	add_custom_command(
 		OUTPUT include_dirs_test.o
 		DEPENDS ${u_source_file} Compiler
-		COMMAND Compiler --produce-object-file ${CMAKE_SOURCE_DIR}/tests/include_dirs_test/root.u -o include_dirs_test.o --include-dir ${CMAKE_SOURCE_DIR}/tests/include_dirs_test/a --include-dir ${CMAKE_SOURCE_DIR}/tests/include_dirs_test/b --include-dir ${CMAKE_SOURCE_DIR}/tests/include_dirs_test/c )
+		COMMAND
+			Compiler --produce-object-file
+			${CMAKE_SOURCE_DIR}/tests/include_dirs_test/root.u -o include_dirs_test.o
+			${SPRACHE_COMPILER_PIC_OPTIONS}
+			--include-dir ${CMAKE_SOURCE_DIR}/tests/include_dirs_test/a
+			--include-dir ${CMAKE_SOURCE_DIR}/tests/include_dirs_test/b
+			--include-dir ${CMAKE_SOURCE_DIR}/tests/include_dirs_test/c )
 
 	add_executable( IncludeDirsTest tests/include_dirs_test/entry.c include_dirs_test.o )
 	add_dependencies( IncludeDirsTest Compiler )
