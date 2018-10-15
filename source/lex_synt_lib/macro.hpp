@@ -17,6 +17,7 @@ struct Macro
 	{
 		Expression,
 		Block,
+		Class,
 		// TODO - add other context
 	};
 

@@ -78,6 +78,27 @@ def MacroExpansion_Test3():
 	assert( call_result == 1 )
 
 
+def MacroExpansion_Test4():
+	c_program_text= """
+	// Class context macro.
+	?macro <? MAKE_NONCOPYABLE:class ( ?class_name:ident ) ?>  ->
+	<?
+	fn constructor( mut this, ?class_name& other )= delete;
+	op=( mut this, ?class_name& other )= delete;
+	?>
+
+	struct S
+	{
+		i32 x;
+		MAKE_NONCOPYABLE( S )
+	}
+
+	static_assert( !typeinfo</S/>.is_copy_constructible );
+	static_assert( !typeinfo</S/>.is_copy_assignable );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
 def ExpandMacroWhileExpandingMacro_Test0():
 	c_program_text= """
 	?macro <? FiveTimes:block ?b:block ?>  ->  <? ?b ?b ?b ?b ?b ?>
