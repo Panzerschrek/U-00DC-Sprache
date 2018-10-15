@@ -226,6 +226,7 @@ int main( const int argc, const char* const argv[])
 	bool print_llvm_asm= false;
 	bool enable_pie= false;
 	unsigned int optimization_level= 0u;
+	unsigned int size_optimization_level= 0u;
 
 	po::options_description program_options( u8"Ǖ-compiler options" );
 	program_options.add_options()
@@ -239,7 +240,7 @@ int main( const int argc, const char* const argv[])
 		( "print-llvm-asm", po::bool_switch()->default_value(false), "print llvm asm" )
 		( "relocation-model", po::value< std::string >(), "relocation model of target" )
 		( "enable-pie", po::bool_switch()->default_value(false), "assume the creation of a position independent executable" )
-		( "optimization-level,O", po::value<unsigned int>(), "optimization level" )
+		( "optimization-level,O", po::value<std::string>(), "optimization level" )
 	;
 
 	po::positional_options_description positional_options;
@@ -311,7 +312,30 @@ int main( const int argc, const char* const argv[])
 		enable_pie= program_options_map[ "enable-pie" ].as<bool>();
 
 	if( program_options_map.count( "optimization-level" ) != 0 )
-		optimization_level= std::min( program_options_map["optimization-level"].as<unsigned int>(), 2u );
+	{
+		const std::string& str= program_options_map["optimization-level"].as<std::string>();
+		if( str == "0" )
+			optimization_level= 0u;
+		else if( str == "1" )
+			optimization_level= 1u;
+		else if( str == "2" )
+			optimization_level= 2u;
+		else if( str == "s" )
+		{
+			size_optimization_level= 1u;
+			optimization_level= 2u;
+		}
+		else if( str == "z" )
+		{
+			size_optimization_level= 2u;
+			optimization_level= 2u;
+		}
+		else
+		{
+			std::cout << "Unknown optimization: " << str << std::endl;
+			return 1;
+		}
+	}
 
 	if( input_files.empty() )
 	{
@@ -465,7 +489,7 @@ int main( const int argc, const char* const argv[])
 		llvm::Linker::LinkModules( result_module.get(), std_lib_module.get().get() );
 	}
 
-	if( optimization_level > 0u )
+	if( optimization_level > 0u || size_optimization_level > 0u )
 	{
 		llvm::legacy::FunctionPassManager function_pass_manager( result_module.get() );
 		llvm::legacy::PassManager pass_manager;
@@ -473,15 +497,13 @@ int main( const int argc, const char* const argv[])
 		{
 			llvm::PassManagerBuilder pass_manager_builder;
 
-			const unsigned int size_level= 0u;
-
 			pass_manager_builder.OptLevel = optimization_level;
-			pass_manager_builder.SizeLevel = size_level;
+			pass_manager_builder.SizeLevel = size_optimization_level;
 
 			if( optimization_level == 0u )
 				pass_manager_builder.Inliner= nullptr;
 			else
-				pass_manager_builder.Inliner= llvm::createFunctionInliningPass( optimization_level, size_level );
+				pass_manager_builder.Inliner= llvm::createFunctionInliningPass( optimization_level, size_optimization_level );
 
 			pass_manager_builder.populateFunctionPassManager(function_pass_manager);
 			pass_manager_builder.populateModulePassManager(pass_manager);
