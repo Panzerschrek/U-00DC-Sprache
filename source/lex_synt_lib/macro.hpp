@@ -18,6 +18,7 @@ struct Macro
 		Expression,
 		Block,
 		Class,
+		Namespace,
 		// TODO - add other context
 	};
 

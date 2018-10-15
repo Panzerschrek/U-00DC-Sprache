@@ -238,6 +238,7 @@ private:
 	std::vector<Macro::MatchElement> ParseMacroMatchBlock();
 	std::vector<Macro::ResultElement> ParseMacroResultBlock();
 
+	ProgramElements ParseNamespaceBody() { return ParseNamespaceBody( Lexem::Type::BraceRight ); }
 	ProgramElements ParseNamespaceBody( Lexem::Type end_lexem );
 
 	std::unique_ptr<NumericConstant> ParseNumericConstant();
@@ -439,6 +440,8 @@ void SyntaxAnalyzer::ParseMacro()
 		macro_context= Macro::Context::Block;
 	else if( context_str == "class"_SpC )
 		macro_context= Macro::Context::Class;
+	else if( context_str == "namespace"_SpC )
+		macro_context= Macro::Context::Namespace;
 	// TODO - add other stuff
 	else
 	{
@@ -701,7 +704,7 @@ ProgramElements SyntaxAnalyzer::ParseNamespaceBody( const Lexem::Type end_lexem 
 {
 	ProgramElements program_elements;
 
-	while( NotEndOfFile() && it_->type != Lexem::Type::EndOfFile )
+	while( NotEndOfFile() )
 	{
 		if( it_->type == Lexem::Type::Identifier && ( it_->text == Keywords::fn_ || it_->text == Keywords::op_ ) )
 		{
@@ -778,16 +781,30 @@ ProgramElements SyntaxAnalyzer::ParseNamespaceBody( const Lexem::Type end_lexem 
 
 			namespace_->name_= std::move(name);
 			namespace_->elements_= ParseNamespaceBody( Lexem::Type::BraceRight );
+
+			if( it_->type != Lexem::Type::BraceRight )
+				PushErrorMessage();
+			NextLexem();
+
 			program_elements.push_back( std::move( namespace_ ) );
 		}
 		else if( it_->type == end_lexem )
 		{
 			// End of namespace
-			NextLexem();
 			return program_elements;
 		}
 		else
 		{
+			if( it_->type == Lexem::Type::Identifier )
+			{
+				if( const Macro* const macro= FetchMacro( it_->text, Macro::Context::Namespace ) )
+				{
+					for( auto& element : ExpandMacro( *macro, &SyntaxAnalyzer::ParseNamespaceBody ) )
+						program_elements.push_back( std::move(element) );
+					continue;
+				}
+			}
+
 			PushErrorMessage();
 			TryRecoverAfterError( g_namespace_body_elements_start_lexems );
 		}

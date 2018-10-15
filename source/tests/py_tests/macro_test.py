@@ -99,6 +99,27 @@ def MacroExpansion_Test4():
 	tests_lib.build_program( c_program_text )
 
 
+def MacroExpansion_Test5():
+	c_program_text= """
+	// Namespace context macro.
+	?macro <? DEFINE_CONSTANT:namespace ?name:ident ?value:expr ; ?>  ->
+	<?
+		auto constexpr ?name= ?value;
+	?>
+
+	DEFINE_CONSTANT pi 3.14;
+
+	namespace NS
+	{
+		DEFINE_CONSTANT k1 1024;
+	}
+
+	static_assert( pi == 3.14 );
+	static_assert( NS::k1 == 1024 );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
 def ExpandMacroWhileExpandingMacro_Test0():
 	c_program_text= """
 	?macro <? FiveTimes:block ?b:block ?>  ->  <? ?b ?b ?b ?b ?b ?>
