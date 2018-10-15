@@ -371,7 +371,14 @@ int main( const int argc, const char* const argv[])
 
 		const std::string features_str= GetNativeTargetFeaturesStr();
 
-		// TODO - set code model, optimization level.
+		llvm::CodeGenOpt::Level code_gen_optimization_level;
+		if( optimization_level >= 2u || size_optimization_level > 0u )
+			code_gen_optimization_level= llvm::CodeGenOpt::Default;
+		else if( optimization_level == 1u )
+			code_gen_optimization_level= llvm::CodeGenOpt::Less;
+		else
+			code_gen_optimization_level= llvm::CodeGenOpt::None;
+
 		target_machine.reset(
 			target->createTargetMachine(
 				target_triple_str,
@@ -380,7 +387,7 @@ int main( const int argc, const char* const argv[])
 				target_options,
 				relocation_model,
 				llvm::CodeModel::Default,
-				llvm::CodeGenOpt::Default ) );
+				code_gen_optimization_level ) );
 
 		if( target_machine == nullptr )
 		{
