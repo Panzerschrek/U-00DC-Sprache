@@ -414,7 +414,7 @@ void SyntaxAnalyzer::ParseMacro()
 		return;
 	}
 	macro.name= it_->text;
-	const FilePos& macro_definition_file_pos= it_->file_pos;
+	macro.file_pos= it_->file_pos;
 	NextLexem();
 
 	if( it_->type != Lexem::Type::Colon )
@@ -478,7 +478,7 @@ void SyntaxAnalyzer::ParseMacro()
 	if( macro_map.find( macro.name ) != macro_map.end() )
 	{
 		SyntaxErrorMessage msg;
-		msg.file_pos= macro_definition_file_pos;
+		msg.file_pos= macro.file_pos;
 		msg.text= "\""_SpC + macro.name + "\" macro redefinition."_SpC;
 		error_messages_.push_back(std::move(msg));
 	}

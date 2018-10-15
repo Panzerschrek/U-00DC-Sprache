@@ -1,1 +1,3 @@
+?macro <? UNSAFE:block ?b:block ?> -> <? unsafe ?b ?>
+
 var i32 constexpr g_some_constant= 666;

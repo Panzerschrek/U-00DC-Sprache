@@ -54,6 +54,7 @@ struct Macro
 		std::vector<ResultElement> sub_elements; // For optionals, loops
 	};
 
+	FilePos file_pos;
 	ProgramString name;
 	std::vector<MatchElement> match_template_elements;
 	std::vector<ResultElement> result_template_elements;

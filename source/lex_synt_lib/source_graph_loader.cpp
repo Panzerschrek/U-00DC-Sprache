@@ -69,6 +69,7 @@ size_t SourceGraphLoader::LoadNode_r(
 		{
 			if( result.nodes_storage[j].file_path == vfs_->GetFullFilePath( imports[i].import_name, loaded_file->full_file_path ) )
 			{
+				imported_macroses.push_back( result.nodes_storage[j].ast.macros );
 				result.nodes_storage[node_index].child_nodes_indeces[i]= j;
 				prev_found= true;
 				break;
@@ -96,7 +97,8 @@ size_t SourceGraphLoader::LoadNode_r(
 			Synt::MacroMap& dst_map= (*merged_macroses)[context_macro_map_pair.first];
 			for( const auto& macro_map_pair : context_macro_map_pair.second )
 			{
-				if (dst_map.find(macro_map_pair.first) != dst_map.end())
+				if( dst_map.find(macro_map_pair.first) != dst_map.end() &&
+					macro_map_pair.second.file_pos != dst_map.find(macro_map_pair.first)->second.file_pos )
 				{
 					Synt::SyntaxErrorMessage error_message;
 					error_message.text= "Macro \""_SpC + macro_map_pair.first + "\" redefinition."_SpC;
