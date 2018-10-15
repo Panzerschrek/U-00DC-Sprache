@@ -560,6 +560,28 @@ std::vector<Macro::MatchElement> SyntaxAnalyzer::ParseMacroMatchBlock()
 				}
 				NextLexem();
 			}
+			// Loop separator.
+			if( element.kind == Macro::ElementKind::Repeated && it_->type == Lexem::Type::MacroBracketLeft )
+			{
+				NextLexem();
+				if( it_->type == Lexem::Type::MacroIdentifier || it_->type == Lexem::Type::MacroBracketLeft || it_->type == Lexem::Type::MacroBracketRight )
+				{
+					PushErrorMessage();
+					return result;
+				}
+
+				element.lexem= *it_;
+				NextLexem();
+
+				if( it_->type != Lexem::Type::MacroBracketRight )
+				{
+					PushErrorMessage();
+					return result;
+				}
+				NextLexem();
+			}
+			else
+				element.lexem.type= Lexem::Type::EndOfFile;
 
 			elements_set.emplace( element.name );
 			result.push_back( element );
@@ -622,6 +644,28 @@ std::vector<Macro::ResultElement> SyntaxAnalyzer::ParseMacroResultBlock()
 					return result;
 				}
 				NextLexem();
+
+				if( it_->type == Lexem::Type::MacroBracketLeft )
+				{
+					NextLexem();
+					if( it_->type == Lexem::Type::MacroIdentifier || it_->type == Lexem::Type::MacroBracketLeft || it_->type == Lexem::Type::MacroBracketRight )
+					{
+						PushErrorMessage();
+						return result;
+					}
+
+					element.lexem= *it_;
+					NextLexem();
+
+					if( it_->type != Lexem::Type::MacroBracketRight )
+					{
+						PushErrorMessage();
+						return result;
+					}
+					NextLexem();
+				}
+				else
+					element.lexem.type= Lexem::Type::EndOfFile;
 			}
 
 			result.push_back(std::move(element));
@@ -3711,6 +3755,27 @@ bool SyntaxAnalyzer::MatchMacroBlock(
 								element.sub_elements.push_back( std::move(optional_elements) );
 							else
 								return false;
+
+							// Process separator.
+							if( !( it_->type == terminator_lexem.type && it_->text == terminator_lexem.text ) &&
+								match_elements[i].lexem.type != Lexem::Type::EndOfFile )
+							{
+								if( it_->type == match_elements[i].lexem.type && it_->text == match_elements[i].lexem.text )
+								{
+									NextLexem();
+									if( it_->type == terminator_lexem.type && it_->text == terminator_lexem.text )
+									{
+										// Disable end lexem after separator.
+										push_macro_error();
+										return false;
+									}
+								}
+								else
+								{
+									push_macro_error();
+									return false;
+								}
+							}
 						}
 					}
 					out_elements[match_element.name]= std::move(element);
@@ -3776,6 +3841,10 @@ Lexems SyntaxAnalyzer::DoExpandMacro(
 
 							Lexems element_lexems= DoExpandMacro( sub_elements_map, result_element.sub_elements );
 							result_lexems.insert( result_lexems.end(), element_lexems.begin(), element_lexems.end() );
+
+							// Push separator.
+							if( &sub_elements != &element->sub_elements.back() && result_element.lexem.type != Lexem::Type::EndOfFile )
+								result_lexems.push_back( result_element.lexem );
 						}
 					}
 					else

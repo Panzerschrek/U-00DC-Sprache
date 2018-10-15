@@ -237,3 +237,44 @@ def MacroRepeated_Test0():
 	static_assert( SUM( 11 -4 854 77 ) == 11 -4 + 854 + 77 );
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def MacroRepeated_Test1():
+	c_program_text= """
+	// Macro with separator
+	?macro <? SUM:expr ( ?sequence:rep<? ?e:expr ?><?,?> ) ?>  ->  <?  ?sequence<? (?e) + ?> 0  ?>
+
+	static_assert( SUM( ) == 0 );
+	static_assert( SUM( 854 ) == 854 );
+	static_assert( SUM( 5, 23 ) == 5 + 23 );
+	static_assert( SUM( 11, -4, 854, 77 ) == 11 -4 + 854 + 77 );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def MacroRepeated_Test2():
+	c_program_text= """
+	// Macro with separator
+	?macro <? DO_CALL:expr ?foo:ident ( ?args:rep<? ?e:expr ?><?,?> ) ?>  ->  <?  ?foo( ?args<? (?e) ?><?,?> ) ?>
+
+	fn constexpr Zero() : i32 { return 0; }
+	fn constexpr Pass( i32 x ) : i32 { return x; }
+	fn constexpr Mul( i32 x, i32 y ) : i32 { return x * y; }
+
+	static_assert( ( DO_CALL Zero() ) == 0 );
+	static_assert( ( DO_CALL Pass( -854 + 48 ) ) == -854 + 48 );
+	static_assert( ( DO_CALL Mul( 85, 11 ) ) == 85 * 11 );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def MacroRepeated_Test3():
+	c_program_text= """
+	// Macro with identifier separator.
+	?macro <? SUM:expr ( ?args:rep<? ?e:expr ?><?AND?> ) ?>  ->  <?  ?args<? (?e) ?><?+?> ) ?>
+
+	static_assert( SUM( -999854 ) == -999854 );
+	static_assert( SUM( 595 AND 1123 ) == 595 + 1123 );
+	static_assert( SUM( 11 AND -4 AND 854 AND 77 ) == 11 -4 + 854 + 77 );
+	"""
+	tests_lib.build_program( c_program_text )

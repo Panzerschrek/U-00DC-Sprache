@@ -41,7 +41,7 @@ struct Macro
 	struct MatchElement
 	{
 		ElementKind kind= ElementKind::Lexem;
-		Lexem lexem;
+		Lexem lexem; // lexem for lexem elements, separator or EOF for loops
 		ProgramString name; // for non-lexems
 		std::vector<MatchElement> sub_elements; // For optionals, loops
 	};
@@ -49,7 +49,7 @@ struct Macro
 	struct ResultElement
 	{
 		ResultElementKind kind= ResultElementKind::Lexem;
-		Lexem lexem;
+		Lexem lexem; // lexem for SimpleElement, separator or EOF for loops
 		ProgramString name; // for non-lexems
 		std::vector<ResultElement> sub_elements; // For optionals, loops
 	};
