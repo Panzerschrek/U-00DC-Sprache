@@ -495,6 +495,11 @@ std::vector<Macro::MatchElement> SyntaxAnalyzer::ParseMacroMatchBlock()
 	{
 		if( it_->type == Lexem::Type::MacroBracketRight )
 			break;
+		else if( it_->type == Lexem::Type::MacroBracketLeft )
+		{
+			PushErrorMessage();
+			return result;
+		}
 		else if( it_->type == Lexem::Type::MacroIdentifier )
 		{
 			Macro::MatchElement element;
@@ -622,6 +627,11 @@ std::vector<Macro::ResultElement> SyntaxAnalyzer::ParseMacroResultBlock()
 	{
 		if( it_->type == Lexem::Type::MacroBracketRight )
 			break;
+		else if( it_->type == Lexem::Type::MacroBracketLeft )
+		{
+			PushErrorMessage();
+			return result;
+		}
 		else if( it_->type == Lexem::Type::MacroIdentifier )
 		{
 			Macro::ResultElement element;
