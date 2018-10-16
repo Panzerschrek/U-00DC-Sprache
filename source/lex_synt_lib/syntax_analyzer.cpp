@@ -419,6 +419,14 @@ void SyntaxAnalyzer::ParseMacro()
 	macro.file_pos= it_->file_pos;
 	NextLexem();
 
+	if( IsKeyword( macro.name ) )
+	{
+		SyntaxErrorMessage msg;
+		msg.file_pos= macro.file_pos;
+		msg.text= "Using keyword as macro name"_SpC;
+		error_messages_.push_back(std::move(msg));
+	}
+
 	if( it_->type != Lexem::Type::Colon )
 	{
 		PushErrorMessage();
@@ -516,6 +524,13 @@ std::vector<Macro::MatchElement> SyntaxAnalyzer::ParseMacroMatchBlock()
 				SyntaxErrorMessage msg;
 				msg.file_pos= it_->file_pos;
 				msg.text= "\""_SpC + element.name + "\" macro parameter redefinition."_SpC;
+				error_messages_.push_back(std::move(msg));
+			}
+			if( IsKeyword( element.name ) )
+			{
+				SyntaxErrorMessage msg;
+				msg.file_pos= it_->file_pos;
+				msg.text= "Using keyword as macro element name"_SpC;
 				error_messages_.push_back(std::move(msg));
 			}
 			NextLexem();
