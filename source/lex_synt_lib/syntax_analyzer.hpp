@@ -2,6 +2,7 @@
 #include <memory>
 #include <vector>
 
+#include "macro.hpp"
 #include "syntax_elements.hpp"
 
 namespace U
@@ -21,11 +22,13 @@ typedef std::vector<SyntaxErrorMessage> SyntaxErrorMessages;
 struct SyntaxAnalysisResult
 {
 	std::vector<Import> imports;
+	MacrosPtr macros;
 	ProgramElements program_elements;
 	SyntaxErrorMessages error_messages;
 };
 
-SyntaxAnalysisResult SyntaxAnalysis( const Lexems& lexems );
+std::vector<Import> ParseImports( const Lexems& lexems );
+SyntaxAnalysisResult SyntaxAnalysis( const Lexems& lexems, const MacrosPtr& macros );
 
 } // namespace Synt
 

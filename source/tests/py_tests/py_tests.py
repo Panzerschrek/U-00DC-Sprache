@@ -2,6 +2,8 @@ import importlib
 import inspect
 import sys
 import traceback
+import os
+os.path.join( "/home/akhvosch/Projects/U-Sprache/build" )
 from py_tests_common import *
 
 
@@ -31,6 +33,7 @@ def main():
 		"function_templates_test",
 		"inheritance_test",
 		"inheritance_errors_test",
+		"macro_test",
 		"methods_generation_test",
 		"nomangle_test",
 		"order_independent_name_resolving_test",

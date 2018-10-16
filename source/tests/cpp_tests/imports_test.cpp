@@ -817,4 +817,37 @@ U_TEST( ImportsTest17_NewSymbolsNotVisibleInImportedClassTemplate )
 	U_TEST_ASSERT( static_cast<uint64_t>(999) == result_value.IntVal.getLimitedValue() );
 }
 
+U_TEST( ImportMacro_Test0 )
+{
+	static const char c_program_text_a[]=
+	R"(
+		?macro <? TWICE:expr ( ?e:expr ) ?>  ->  <? ?e * 2 ?>
+	)";
+
+	static const char c_program_text_root[]=
+	R"(
+		import "a"
+
+		fn Foo() : i32
+		{
+			return TWICE(31);
+		}
+	)";
+
+	const EnginePtr engine=
+		CreateEngine(
+			BuildMultisourceProgram(
+				{
+					{ "a"_SpC, c_program_text_a },
+					{ "root"_SpC, c_program_text_root }
+				},
+				"root"_SpC ) );
+
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	const llvm::GenericValue result_value= engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+	U_TEST_ASSERT( static_cast<uint64_t>(31 * 2) == result_value.IntVal.getLimitedValue() );
+}
+
 } // namespace U
