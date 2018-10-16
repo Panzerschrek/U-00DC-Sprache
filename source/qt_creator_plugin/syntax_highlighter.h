@@ -13,6 +13,7 @@ public:
 	enum class Formats
 	{
 		Identifier,
+		MacroIdentifier,
 		Keyword,
 		Number,
 		String,

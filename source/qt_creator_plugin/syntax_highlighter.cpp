@@ -26,6 +26,8 @@ static QChar ParenthesCodeForLexem( const Lexem::Type lexem_type )
 	case Lexem::Type::BraceRight: return '}';
 	case Lexem::Type::TemplateBracketLeft : return '<';
 	case Lexem::Type::TemplateBracketRight: return '>';
+	case Lexem::Type::MacroBracketLeft : return '<';
+	case Lexem::Type::MacroBracketRight: return '>';
 	default: U_ASSERT(false); return ' ';
 	}
 }
@@ -34,6 +36,7 @@ SyntaxHighlighter::SyntaxHighlighter()
 {
 	static const QVector<TextEditor::TextStyle> categories({
 		TextEditor::C_LOCAL,
+		TextEditor::C_PREPROCESSOR,
 		TextEditor::C_KEYWORD,
 		TextEditor::C_NUMBER,
 		TextEditor::C_STRING,
@@ -90,6 +93,11 @@ void SyntaxHighlighter::highlightBlock( const QString& text )
 				format= Formats::Identifier;
 			break;
 
+		case Lexem::Type::MacroIdentifier:
+		case Lexem::Type::MacroBracketLeft :
+		case Lexem::Type::MacroBracketRight:
+			format= Formats::MacroIdentifier; break;
+
 		case Lexem::Type::String:
 			format= Formats::String; break;
 
@@ -100,7 +108,6 @@ void SyntaxHighlighter::highlightBlock( const QString& text )
 		default:
 			format= Formats::Regular; break;
 		}
-
 
 		setFormat( current_linear_pos, next_linear_pos, formatForCategory( int(format) ) );
 
@@ -118,6 +125,7 @@ void SyntaxHighlighter::highlightBlock( const QString& text )
 		case Lexem::Type::SquareBracketLeft:
 		case Lexem::Type::BraceLeft:
 		case Lexem::Type::TemplateBracketLeft :
+		case Lexem::Type::MacroBracketLeft :
 			parentheses.push_back( TextEditor::Parenthesis( TextEditor::Parenthesis::Opened, ParenthesCodeForLexem(lexem.type), current_linear_pos ) );
 			break;
 
@@ -125,6 +133,7 @@ void SyntaxHighlighter::highlightBlock( const QString& text )
 		case Lexem::Type::SquareBracketRight:
 		case Lexem::Type::BraceRight:
 		case Lexem::Type::TemplateBracketRight:
+		case Lexem::Type::MacroBracketRight:
 			parentheses.push_back( TextEditor::Parenthesis( TextEditor::Parenthesis::Closed, ParenthesCodeForLexem(lexem.type), current_linear_pos ) );
 			break;
 		default: break;
