@@ -716,7 +716,7 @@ ProgramModelPtr BuildProgramModel( const QString& program_text )
 	if( !lex_result.error_messages.empty() )
 		return nullptr;
 
-	U::Synt::SyntaxAnalysisResult synt_result= U::Synt::SyntaxAnalysis( lex_result.lexems );
+	U::Synt::SyntaxAnalysisResult synt_result= U::Synt::SyntaxAnalysis( lex_result.lexems, std::make_shared<Synt::MacrosByContextMap>() );
 	// Do NOT abort on errors, because in process of source code editing may occurs some errors.
 
 	const auto result= std::make_shared<ProgramModel>();
