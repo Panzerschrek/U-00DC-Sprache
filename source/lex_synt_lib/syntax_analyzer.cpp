@@ -214,7 +214,7 @@ private:
 		Lexems::const_iterator begin;
 		Lexems::const_iterator end;
 		std::vector< std::map<ProgramString, ParsedMacroElement> > sub_elements;
-		Macro::ElementKind kind= Macro::ElementKind::Lexem;
+		Macro::MatchElementKind kind= Macro::MatchElementKind::Lexem;
 	};
 
 	struct MacroNamesMap
@@ -450,11 +450,12 @@ void SyntaxAnalyzer::ParseMacro()
 		macro_context= Macro::Context::Class;
 	else if( context_str == "namespace"_SpC )
 		macro_context= Macro::Context::Namespace;
-	// TODO - add other stuff
 	else
 	{
-		PushErrorMessage();
-		return;
+		SyntaxErrorMessage msg;
+		msg.file_pos= macro.file_pos;
+		msg.text= "\""_SpC + context_str + "\" unknown macro context"_SpC;
+		error_messages_.push_back(std::move(msg));
 	}
 
 	macro.match_template_elements= ParseMacroMatchBlock();
@@ -551,24 +552,26 @@ std::vector<Macro::MatchElement> SyntaxAnalyzer::ParseMacroMatchBlock()
 			NextLexem();
 
 			if( element_type_str == "ident"_SpC )
-				element.kind= Macro::ElementKind::Identifier;
+				element.kind= Macro::MatchElementKind::Identifier;
 			else if( element_type_str == "ty"_SpC )
-				element.kind= Macro::ElementKind::Typename;
+				element.kind= Macro::MatchElementKind::Typename;
 			else if( element_type_str == "expr"_SpC )
-				element.kind= Macro::ElementKind::Expression;
+				element.kind= Macro::MatchElementKind::Expression;
 			else if( element_type_str == "block"_SpC )
-				element.kind= Macro::ElementKind::Block;
+				element.kind= Macro::MatchElementKind::Block;
 			else if( element_type_str == "opt"_SpC )
-				element.kind= Macro::ElementKind::Optional;
+				element.kind= Macro::MatchElementKind::Optional;
 			else if( element_type_str == "rep"_SpC )
-				element.kind= Macro::ElementKind::Repeated;
+				element.kind= Macro::MatchElementKind::Repeated;
 			else
 			{
-				PushErrorMessage();
-				return result;
+				SyntaxErrorMessage msg;
+				msg.file_pos= it_->file_pos;
+				msg.text= "\""_SpC + element_type_str + "\" unknown macro variable type"_SpC;
+				error_messages_.push_back(std::move(msg));
 			}
 
-			if( element.kind == Macro::ElementKind::Optional || element.kind == Macro::ElementKind::Repeated )
+			if( element.kind == Macro::MatchElementKind::Optional || element.kind == Macro::MatchElementKind::Repeated )
 			{
 				if( it_->type != Lexem::Type::MacroBracketLeft )
 				{
@@ -587,7 +590,7 @@ std::vector<Macro::MatchElement> SyntaxAnalyzer::ParseMacroMatchBlock()
 				NextLexem();
 			}
 			// Loop separator.
-			if( element.kind == Macro::ElementKind::Repeated && it_->type == Lexem::Type::MacroBracketLeft )
+			if( element.kind == Macro::MatchElementKind::Repeated && it_->type == Lexem::Type::MacroBracketLeft )
 			{
 				NextLexem();
 				if( it_->type == Lexem::Type::MacroIdentifier || it_->type == Lexem::Type::MacroBracketLeft || it_->type == Lexem::Type::MacroBracketRight )
@@ -615,7 +618,7 @@ std::vector<Macro::MatchElement> SyntaxAnalyzer::ParseMacroMatchBlock()
 		else
 		{
 			Macro::MatchElement element;
-			element.kind= Macro::ElementKind::Lexem;
+			element.kind= Macro::MatchElementKind::Lexem;
 			element.lexem= *it_;
 
 			result.push_back(std::move(element));
@@ -627,8 +630,8 @@ std::vector<Macro::MatchElement> SyntaxAnalyzer::ParseMacroMatchBlock()
 	// After optionals/loops expected optional/loop terminator lexem.
 	for( size_t i= 0u; i < result.size(); ++i )
 	{
-		if( ( result[i].kind == Macro::ElementKind::Optional || result[i].kind == Macro::ElementKind::Repeated ) &&
-			( i + 1u == result.size() || result[i+1u].kind != Macro::ElementKind::Lexem ) )
+		if( ( result[i].kind == Macro::MatchElementKind::Optional || result[i].kind == Macro::MatchElementKind::Repeated ) &&
+			( i + 1u == result.size() || result[i+1u].kind != Macro::MatchElementKind::Lexem ) )
 		{
 			SyntaxErrorMessage msg;
 			msg.file_pos= it_->file_pos;
@@ -656,7 +659,7 @@ std::vector<Macro::ResultElement> SyntaxAnalyzer::ParseMacroResultBlock()
 		else if( it_->type == Lexem::Type::MacroIdentifier )
 		{
 			Macro::ResultElement element;
-			element.kind= Macro::ResultElementKind::SimpleElement;
+			element.kind= Macro::ResultElementKind::VariableElement;
 			element.name= it_->text;
 			NextLexem();
 
@@ -666,7 +669,7 @@ std::vector<Macro::ResultElement> SyntaxAnalyzer::ParseMacroResultBlock()
 			{
 				NextLexem();
 
-				element.kind= Macro::ResultElementKind::ElementWithMacroBlock;
+				element.kind= Macro::ResultElementKind::VariableElementWithMacroBlock;
 				element.sub_elements= ParseMacroResultBlock();
 
 				if( it_->type != Lexem::Type::MacroBracketRight )
@@ -3703,7 +3706,7 @@ bool SyntaxAnalyzer::MatchMacroBlock(
 
 		switch( match_element.kind )
 		{
-		case Macro::ElementKind::Lexem:
+		case Macro::MatchElementKind::Lexem:
 			if( it_->type == match_element.lexem.type &&
 				it_->text == match_element.lexem.text )
 				NextLexem();
@@ -3714,7 +3717,7 @@ bool SyntaxAnalyzer::MatchMacroBlock(
 			}
 			break;
 
-		case Macro::ElementKind::Identifier:
+		case Macro::MatchElementKind::Identifier:
 			if( it_->type == Lexem::Type::Identifier )
 			{
 				ParsedMacroElement element;
@@ -3731,7 +3734,7 @@ bool SyntaxAnalyzer::MatchMacroBlock(
 			}
 			break;
 
-		case Macro::ElementKind::Typename:
+		case Macro::MatchElementKind::Typename:
 			{
 				ParsedMacroElement element;
 				element.begin= it_;
@@ -3746,7 +3749,7 @@ bool SyntaxAnalyzer::MatchMacroBlock(
 			}
 			break;
 
-		case Macro::ElementKind::Expression:
+		case Macro::MatchElementKind::Expression:
 			{
 				ParsedMacroElement element;
 				element.begin= it_;
@@ -3761,7 +3764,7 @@ bool SyntaxAnalyzer::MatchMacroBlock(
 			}
 			break;
 
-		case Macro::ElementKind::Block:
+		case Macro::MatchElementKind::Block:
 			{
 				ParsedMacroElement element;
 				element.begin= it_;
@@ -3776,10 +3779,10 @@ bool SyntaxAnalyzer::MatchMacroBlock(
 			}
 			break;
 
-		case Macro::ElementKind::Optional:
+		case Macro::MatchElementKind::Optional:
 			{
 				if( i + 1u < match_elements.size() &&
-					match_elements[i+1u].kind == Macro::ElementKind::Lexem )
+					match_elements[i+1u].kind == Macro::MatchElementKind::Lexem )
 				{
 					ParsedMacroElement element;
 					element.kind= match_element.kind;
@@ -3801,10 +3804,10 @@ bool SyntaxAnalyzer::MatchMacroBlock(
 			}
 			break;
 
-		case Macro::ElementKind::Repeated:
+		case Macro::MatchElementKind::Repeated:
 			{
 				if( i + 1u < match_elements.size() &&
-					match_elements[i+1u].kind == Macro::ElementKind::Lexem )
+					match_elements[i+1u].kind == Macro::MatchElementKind::Lexem )
 				{
 					ParsedMacroElement element;
 					element.kind= match_element.kind;
@@ -3867,7 +3870,7 @@ Lexems SyntaxAnalyzer::DoExpandMacro(
 			result_lexems.push_back( result_element.lexem );
 			break;
 
-		case Macro::ResultElementKind::SimpleElement:
+		case Macro::ResultElementKind::VariableElement:
 			{
 				const auto element= parsed_elements.GetElement( result_element.name );
 				if( element == nullptr )
@@ -3883,7 +3886,7 @@ Lexems SyntaxAnalyzer::DoExpandMacro(
 			}
 			break;
 
-		case Macro::ResultElementKind::ElementWithMacroBlock:
+		case Macro::ResultElementKind::VariableElementWithMacroBlock:
 			{
 				const auto element= parsed_elements.GetElement( result_element.name );
 				if( element == nullptr )
@@ -3896,9 +3899,8 @@ Lexems SyntaxAnalyzer::DoExpandMacro(
 				}
 				else
 				{
-					if( result_element.kind == Macro::ResultElementKind::ElementWithMacroBlock )
+					if( result_element.kind == Macro::ResultElementKind::VariableElementWithMacroBlock )
 					{
-						// TODO - process loops, add separators for loops.
 						for( const auto& sub_elements : element->sub_elements )
 						{
 							MacroNamesMap sub_elements_map;

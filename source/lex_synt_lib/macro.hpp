@@ -19,10 +19,9 @@ struct Macro
 		Block,
 		Class,
 		Namespace,
-		// TODO - add other context
 	};
 
-	enum class ElementKind
+	enum class MatchElementKind
 	{
 		Lexem,
 		Identifier,
@@ -36,13 +35,13 @@ struct Macro
 	enum class ResultElementKind
 	{
 		Lexem,
-		SimpleElement, // Identifier, typename, expression, block
-		ElementWithMacroBlock, // Optional, loop
+		VariableElement, // Identifier, typename, expression, block
+		VariableElementWithMacroBlock, // Optional, loop
 	};
 
 	struct MatchElement
 	{
-		ElementKind kind= ElementKind::Lexem;
+		MatchElementKind kind= MatchElementKind::Lexem;
 		Lexem lexem; // lexem for lexem elements, separator or EOF for loops
 		ProgramString name; // for non-lexems
 		std::vector<MatchElement> sub_elements; // For optionals, loops
