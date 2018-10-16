@@ -671,11 +671,43 @@ static std::vector<ProgramModel::ProgramTreeNode> BuildProgramModel_r( const Syn
 	return result;
 }
 
+static std::vector<ProgramModel::ProgramTreeNode> BuildProgramModelMacros( const Synt::MacrosPtr& macros )
+{
+	std::vector<ProgramModel::ProgramTreeNode> result;
+	if( macros == nullptr )
+		return result;
+
+	for( const auto& constex_macro_map_pair : *macros )
+	{
+		for( const auto& name_macro_pair : constex_macro_map_pair.second )
+		{
+			ProgramModel::ProgramTreeNode node;
+			node.kind= ProgramModel::ElementKind::Macro;
+			node.name= ProgramStringToQString( name_macro_pair.second.name );
+			node.file_pos= name_macro_pair.second.file_pos;
+			result.push_back(node);
+		}
+	}
+
+	std::sort(
+		result.begin(),
+		result.end(),
+		[](const ProgramModel::ProgramTreeNode& l, const ProgramModel::ProgramTreeNode& r ) -> bool
+		{
+			return l.file_pos < r.file_pos;
+		});
+
+	return result;
+}
+
 static void SetupParents( ProgramModel::ProgramTreeNode& tree )
 {
+	size_t i= 0u;
 	for( ProgramModel::ProgramTreeNode& child : tree.childs )
 	{
 		child.parent= &tree;
+		child.number_in_parent= i;
+		++i;
 		SetupParents(child);
 	}
 }
@@ -720,10 +752,20 @@ ProgramModelPtr BuildProgramModel( const QString& program_text )
 	// Do NOT abort on errors, because in process of source code editing may occurs some errors.
 
 	const auto result= std::make_shared<ProgramModel>();
-	result->program_elements= BuildProgramModel_r( synt_result.program_elements );
 
+	result->program_elements= BuildProgramModelMacros( synt_result.macros );
+
+	auto program_elements= BuildProgramModel_r( synt_result.program_elements );
+	for( auto& element : program_elements )
+		result->program_elements.push_back(std::move(element));
+
+	size_t i= 0u;
 	for( ProgramModel::ProgramTreeNode& node : result->program_elements )
+	{
+		node.number_in_parent= i;
+		++i;
 		SetupParents( node );
+	}
 
 	return result;
 }

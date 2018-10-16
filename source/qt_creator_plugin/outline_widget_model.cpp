@@ -14,6 +14,10 @@ static CPlusPlus::Icons::IconType GetIconType( const ProgramModel::ProgramTreeNo
 	{
 		case ProgramModel::ElementKind::Unknown:
 			return CPlusPlus::Icons::UnknownIconType;
+
+		case ProgramModel::ElementKind::Macro:
+			return CPlusPlus::Icons::MacroIconType;
+
 		case ProgramModel::ElementKind::Namespace:
 			return CPlusPlus::Icons::NamespaceIconType;
 

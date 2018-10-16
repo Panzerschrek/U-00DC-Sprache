@@ -19,6 +19,7 @@ public:
 	enum class ElementKind
 	{
 		Unknown,
+		Macro,
 		Namespace,
 		Class,
 		Struct,
