@@ -429,6 +429,8 @@ void CodeBuilder::GenerateDestructorBody( Class& the_class, const Type& class_ty
 	function_context.alloca_ir_builder.CreateBr( function_context.function_basic_block );
 	function_context.llvm_ir_builder.CreateRetVoid();
 
+	SetupGeneratedFunctionLinkageAttributes( *destructor_function.llvm_function );
+
 	destructor_function.have_body= true;
 }
 
