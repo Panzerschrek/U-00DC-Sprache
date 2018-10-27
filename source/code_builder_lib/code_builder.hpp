@@ -743,6 +743,8 @@ private:
 	void CheckVariableReferences( const StoredVariable& var, const FilePos& file_pos );
 	std::vector<VariableStorageUseCounter> LockReferencedVariables( const Variable& reference );
 
+	void DestroyUnusedTemporaryVariables( FunctionContext& function_context, const FilePos& file_pos );
+
 	VariablesState MergeVariablesStateAfterIf( const std::vector<VariablesState>& bracnhes_variables_state, const FilePos& file_pos );
 	void CheckWhileBlokVariablesState( const VariablesState& state_before, const VariablesState& state_after, const FilePos& file_pos );
 

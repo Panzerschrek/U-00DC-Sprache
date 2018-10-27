@@ -2469,6 +2469,17 @@ Value CodeBuilder::DoCallFunction(
 		}
 	} // for function_type.references_pollution
 
+	// Destroy unused temporary variables after each call.
+	{
+		std::vector< VariableStorageUseCounter > call_result_locks;
+		if( function_type.return_value_is_reference )
+		{
+			for( const auto& referenced_variable : result.referenced_variables )
+				call_result_locks.push_back( referenced_variable->mut_use_counter );
+		}
+		DestroyUnusedTemporaryVariables( function_context, call_file_pos );
+	}
+
 	return Value( result, call_file_pos );
 }
 
@@ -2491,6 +2502,9 @@ Variable CodeBuilder::BuildTempVariableConstruction(
 	variable.location= Variable::Location::Pointer;
 	variable.value_type= ValueType::Reference;
 	variable.llvm_value= function_context.alloca_ir_builder.CreateAlloca( type.GetLLVMType() );
+
+	// Lock variable, for preventing of temporary destruction.
+	VariableStorageUseCounter variable_lock= stored_variable->mut_use_counter;
 
 	variable.referenced_variables.insert(stored_variable);
 	variable.constexpr_value= ApplyConstructorInitializer( variable, stored_variable, call_operator, names, function_context );
