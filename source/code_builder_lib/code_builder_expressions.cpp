@@ -2242,6 +2242,9 @@ Value CodeBuilder::DoCallFunction(
 			}
 			else U_ASSERT( false );
 		}
+
+		// Destroy unused temporary variables after each argument evaluation.
+		DestroyUnusedTemporaryVariables( function_context, call_file_pos );
 	} // for args
 
 	// Check references.

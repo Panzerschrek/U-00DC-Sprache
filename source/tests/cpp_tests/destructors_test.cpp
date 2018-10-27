@@ -879,4 +879,120 @@ U_TEST(DestructorsTest21_ChangeDestructionOrderUsingMoveOperator)
 	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 333, 111, 222 } ) );
 }
 
+U_TEST(EralyTempVariablesDestruction_Test0)
+{
+	DestructorTestPrepare();
+
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+
+		class S
+		{
+			i32 x;
+			fn constructor( i32 in_x ) ( x= in_x ) {}
+			fn destructor() { DestructorCalled(x); x= 0; }
+		}
+
+		fn Extract( S& s ) : i32 { return s.x; }
+		fn Pass( i32 x ) : i32
+		{
+			var S s( x * 11 );
+			return x;
+		}
+
+		fn Foo()
+		{
+			auto x= Pass( Extract( S(854) ) );  // Temporary variable S mut be destroyed after call of "Extract", but before "Pass" execution
+			//halt if( x != 854 );
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT(
+		g_destructors_call_sequence ==
+		std::vector<int>( { 854, 854 * 11 } ) );
+}
+
+U_TEST(EralyTempVariablesDestruction_Test1)
+{
+	DestructorTestPrepare();
+
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+
+		class S
+		{
+			i32 x;
+			fn constructor( i32 in_x ) ( x= in_x ) {}
+			fn destructor() { DestructorCalled(x); x= 0; }
+		}
+
+		fn Bar( i32 x ) : i32
+		{
+			var S s( x * 2 );
+			return x;
+		}
+
+		fn Foo()
+		{
+			auto x= Bar( S(44).x );  // Temporary variable S mut be destroyed, when Bar executed
+			halt if( x != 44 );
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT(
+		g_destructors_call_sequence ==
+		std::vector<int>( { 44, 88 } ) );
+}
+
+U_TEST(EralyTempVariablesDestruction_Test2)
+{
+	DestructorTestPrepare();
+
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+
+		class S
+		{
+			i32 x;
+			fn constructor( i32 in_x ) ( x= in_x ) {}
+			fn destructor() { DestructorCalled(x); x= 0; }
+		}
+
+		fn Bar( i32 x, i32 y ) : i32
+		{
+			var S s( x * y );
+			return x / y;
+		}
+
+		fn Foo()
+		{
+			// Must construct S(95), take value, destroy it, then construct S(13), take value, destroy it.
+			auto x= Bar( S(95).x, S(13).x );
+			halt if( x != 95 / 13 );
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT(
+		g_destructors_call_sequence ==
+		std::vector<int>( { 95, 13, 95 * 13 } ) );
+}
+
 } // namespace U
