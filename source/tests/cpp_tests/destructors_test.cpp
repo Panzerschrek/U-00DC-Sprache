@@ -1214,4 +1214,83 @@ U_TEST(EralyTempVariablesDestruction_Test8)
 		std::vector<int>( { -2, 2,  -1, 1,  -666, 666 } ) );
 }
 
+U_TEST(EralyTempVariablesDestruction_Test9)
+{
+	DestructorTestPrepare();
+
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+
+		class S
+		{
+			i32 x;
+			fn constructor( i32 in_x ) ( x= in_x ) { DestructorCalled(-x); }
+			fn destructor() { DestructorCalled(x); x= 0; }
+		}
+
+		fn GetOne() : size_type
+		{
+			return size_type( S(1).x );
+		}
+		fn Foo()
+		{
+			var [ i32, 2 ] mut arr= zero_init;
+			arr[ GetOne() ]= S(66).x; // Must destroy S(66) before evaluation of left part of assignment.
+
+			halt if( arr[1u] != 66 );
+			var S s(666);
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT(
+		g_destructors_call_sequence ==
+		std::vector<int>( { -66, 66,  -1, 1,  -666, 666 } ) );
+}
+
+U_TEST(EralyTempVariablesDestruction_Test10)
+{
+	DestructorTestPrepare();
+
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+
+		class S
+		{
+			i32 x;
+			fn constructor( i32 in_x ) ( x= in_x ) { DestructorCalled(-x); }
+			fn destructor() { DestructorCalled(x); x= 0; }
+		}
+
+		fn GetOne() : size_type
+		{
+			return size_type( S(1).x );
+		}
+		fn Foo()
+		{
+			var [ i32, 2 ] mut arr[ 0, 33 ];
+			arr[ GetOne() ]+= S(66).x; // Must destroy S(66) before evaluation of left part of additive assignment.
+
+			halt if( arr[1u] != 66 + 33 );
+			var S s(666);
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT(
+		g_destructors_call_sequence ==
+		std::vector<int>( { -66, 66,  -1, 1,  -666, 666 } ) );
+}
+
+
 } // namespace U

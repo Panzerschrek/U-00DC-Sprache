@@ -2524,7 +2524,7 @@ void CodeBuilder::BuildAssignmentOperatorCode(
 		// Evalueate right part
 		Variable r_var= BuildExpressionCodeEnsureVariable( *assignment_operator.r_value_, block_names, function_context );
 
-		if(  r_var.type.GetFundamentalType() != nullptr || r_var.type.GetEnumType() != nullptr || r_var.type.GetFunctionPointerType() != nullptr )
+		if( r_var.type.GetFundamentalType() != nullptr || r_var.type.GetEnumType() != nullptr || r_var.type.GetFunctionPointerType() != nullptr )
 		{
 			// We must read value, because referenced by reference value may be changed in l_var evaluation.
 			if( r_var.location != Variable::Location::LLVMRegister )
@@ -2534,6 +2534,7 @@ void CodeBuilder::BuildAssignmentOperatorCode(
 			}
 			r_var.value_type= ValueType::Value;
 		}
+		DestroyUnusedTemporaryVariables( function_context, assignment_operator.file_pos_ ); // Destroy temporaries of right expression.
 
 		// Evaluate left part.
 		const Variable l_var= BuildExpressionCodeEnsureVariable( *assignment_operator.l_value_, block_names, function_context );
@@ -2621,6 +2622,7 @@ void CodeBuilder::BuildAdditiveAssignmentOperatorCode(
 			}
 			r_var.value_type= ValueType::Value;
 		}
+		DestroyUnusedTemporaryVariables( function_context, additive_assignment_operator.file_pos_ ); // Destroy temporaries of right expression.
 
 		const Variable l_var=
 			BuildExpressionCodeEnsureVariable(
