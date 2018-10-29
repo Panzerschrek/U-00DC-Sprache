@@ -1363,4 +1363,88 @@ U_TEST(EralyTempVariablesDestruction_Test12)
 		std::vector<int>( { -1, 1,  -2, 2,  -666, 666 } ) );
 }
 
+U_TEST(EralyTempVariablesDestruction_Test13)
+{
+	DestructorTestPrepare();
+
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+
+		class S
+		{
+			i32 x;
+			fn constructor( i32 in_x ) ( x= in_x ) { DestructorCalled(-x); }
+			fn destructor() { DestructorCalled(x); x= 0; }
+		}
+
+		struct T
+		{
+			op[]( this, S& s ) : i32
+			{
+				return s.x;
+			}
+		}
+
+		fn Foo()
+		{
+			var T t;
+			auto x= t[ S(22) ] + S(66).x; // Must destroy S(22) before call to overloaded [] operator.
+			halt if( x != 22 + 66 );
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT(
+		g_destructors_call_sequence ==
+		std::vector<int>( { -22, 22,  -66, 66 } ) );
+}
+
+U_TEST(EralyTempVariablesDestruction_Test14)
+{
+	DestructorTestPrepare();
+
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+
+		class S
+		{
+			i32 x;
+			fn constructor( i32 in_x ) ( x= in_x ) { DestructorCalled(-x); }
+			fn destructor() { DestructorCalled(x); x= 0; }
+		}
+
+		struct T
+		{
+			i32 x;
+			op>>=( mut this, i32 sh )
+			{
+				var S s(666);
+				x >>= u32(sh);
+			}
+		}
+
+		fn Foo()
+		{
+			var T mut t{ .x= 665214 };
+			t >>= S(3).x; // Must destroy temporary S(3) before call to operator >>=.
+			halt if( t.x != 665214 >> u32(3) );
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT(
+		g_destructors_call_sequence ==
+		std::vector<int>( { -3, 3,  -666, 666 } ) );
+}
+
 } // namespace U
