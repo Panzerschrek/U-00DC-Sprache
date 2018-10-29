@@ -236,6 +236,7 @@ Value CodeBuilder::BuildExpressionCode(
 				}
 				l_var.value_type= ValueType::Value;
 			}
+			DestroyUnusedTemporaryVariables( function_context, binary_operator->GetFilePos() );
 
 			const Variable r_var=
 				BuildExpressionCodeEnsureVariable(

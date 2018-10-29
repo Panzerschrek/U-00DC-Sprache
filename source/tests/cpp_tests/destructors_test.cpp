@@ -995,4 +995,81 @@ U_TEST(EralyTempVariablesDestruction_Test2)
 		std::vector<int>( { 95, 13, 95 * 13 } ) );
 }
 
+U_TEST(EralyTempVariablesDestruction_Test3)
+{
+	DestructorTestPrepare();
+
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+
+		class S
+		{
+			i32 x;
+			fn constructor( i32 in_x ) ( x= in_x ) {}
+			fn destructor() { DestructorCalled(x); x= 0; }
+		}
+
+		fn Bar() : i32
+		{
+			var S s(33321);
+			return s.x;
+		}
+		fn Foo()
+		{
+			auto x= S(21).x + Bar(); // temporary S(21) must be destroyed before "Bar" call
+			halt if( x != 21 + 33321 );
+			var S s(666);
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT(
+		g_destructors_call_sequence ==
+		std::vector<int>( { 21, 33321, 666 } ) );
+}
+
+U_TEST(EralyTempVariablesDestruction_Test4)
+{
+	DestructorTestPrepare();
+
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+
+		class S
+		{
+			i32 x;
+			fn constructor( i32 in_x ) ( x= in_x ) {}
+			fn destructor() { DestructorCalled(x); x= 0; }
+		}
+
+		fn Bar( i32 x ) : i32
+		{
+			var S s(x);
+			return s.x;
+		}
+
+		fn Foo()
+		{
+			auto x= ( Bar(955) * S(21).x ) / Bar(3); // temporary S(21) must be destroyed before Bar(3) call.
+			halt if( x != 955 * 21 / 3 );
+			var S s(666);
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT(
+		g_destructors_call_sequence ==
+		std::vector<int>( { 955, 21, 3, 666 } ) );
+}
+
 } // namespace U
