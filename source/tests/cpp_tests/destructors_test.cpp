@@ -1072,4 +1072,146 @@ U_TEST(EralyTempVariablesDestruction_Test4)
 		std::vector<int>( { 955, 21, 3, 666 } ) );
 }
 
+
+U_TEST(EralyTempVariablesDestruction_Test5)
+{
+	DestructorTestPrepare();
+
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+
+		class S
+		{
+			i32 x;
+			fn constructor( i32 in_x ) ( x= in_x ) { DestructorCalled(-x); }
+			fn destructor() { DestructorCalled(x); x= 0; }
+			fn set_x( mut this, i32 in_x ){ x= in_x; }
+		}
+
+		fn Foo()
+		{
+			var [ S, 3 ] mut arr[ (100), (200), (300) ];
+			arr[ size_type(S(1).x) ].set_x( S(124).x / S(5).x ); // Must destroy temporary S(1) before set_x argumnet calculation.
+
+			halt if( arr[1u].x != 124 / 5 );
+			var S s(666);
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT(
+		g_destructors_call_sequence ==
+		std::vector<int>( { -100, -200, -300,  -1, 1,  -124, 124,  -5, 5,  -666, 666,  100, 124 / 5, 300 } ) );
+}
+
+U_TEST(EralyTempVariablesDestruction_Test6)
+{
+	DestructorTestPrepare();
+
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+
+		class S
+		{
+			i32 x;
+			fn constructor( i32 in_x ) ( x= in_x ) { DestructorCalled(-x); }
+			fn destructor() { DestructorCalled(x); x= 0; }
+			fn set_x( mut this, i32 in_x ){ x= in_x; }
+		}
+
+		fn Foo()
+		{
+			var [ S, 3 ] mut arr[ (100), (200), (300) ];
+			auto x= arr[ size_type(S(1).x) ].x + ( S(124).x / S(5).x ); // Must destroy temporary S(1) before op+ second argumnet calculation.
+
+			halt if( x != 200 + 124 / 5 );
+			var S s(666);
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT(
+		g_destructors_call_sequence ==
+		std::vector<int>( { -100, -200, -300,  -1, 1,  -124, 124,  -5, 5,  -666, 666,  100, 200, 300 } ) );
+}
+
+U_TEST(EralyTempVariablesDestruction_Test7)
+{
+	DestructorTestPrepare();
+
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+
+		class S
+		{
+			i32 x;
+			fn constructor( i32 in_x ) ( x= in_x ) { DestructorCalled(-x); }
+			fn destructor() { DestructorCalled(x); x= 0; }
+		}
+
+		fn Foo()
+		{
+			var [ [ S, 2 ], 2 ] mut arr[ [ (900), (901) ], [ (910), (911) ] ];
+			arr[ size_type(S(0).x) ][ size_type(S(1).x) ].x= 999; // Must destroy S(0) before second index calculation
+
+			var S s(666);
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT(
+		g_destructors_call_sequence ==
+		std::vector<int>( { -900, -901, -910, -911,  -0, 0,  -1, 1,  -666, 666,  900, 999, 910, 911 } ) );
+}
+
+U_TEST(EralyTempVariablesDestruction_Test8)
+{
+	DestructorTestPrepare();
+
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+
+		class S
+		{
+			i32 x;
+			fn constructor( i32 in_x ) ( x= in_x ) { DestructorCalled(-x); }
+			fn destructor() { DestructorCalled(x); x= 0; }
+		}
+
+		fn Foo()
+		{
+			var [ [ i32, 2 ], 3 ] mut arr= zero_init;
+			arr[ size_type(S(2).x) ][ size_type(S(1).x) ]= 999; // Must destroy S(66) before second index calculation.
+
+			halt if( arr[2u][1u] != 999 );
+			var S s(666);
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT(
+		g_destructors_call_sequence ==
+		std::vector<int>( { -2, 2,  -1, 1,  -666, 666 } ) );
+}
+
 } // namespace U

@@ -1699,6 +1699,8 @@ Value CodeBuilder::BuildIndexationOperator(
 		function_context.llvm_ir_builder.SetInsertPoint( block_after_if );
 	}
 
+	DestroyUnusedTemporaryVariables( function_context, indexation_operator.file_pos_ ); // Destroy temporaries of index expression.
+
 	result.llvm_value=
 		function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, llvm::ArrayRef< llvm::Value*> ( index_list, 2u ) );
 
