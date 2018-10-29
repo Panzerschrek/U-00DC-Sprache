@@ -1072,7 +1072,6 @@ U_TEST(EralyTempVariablesDestruction_Test4)
 		std::vector<int>( { 955, 21, 3, 666 } ) );
 }
 
-
 U_TEST(EralyTempVariablesDestruction_Test5)
 {
 	DestructorTestPrepare();
@@ -1292,5 +1291,76 @@ U_TEST(EralyTempVariablesDestruction_Test10)
 		std::vector<int>( { -66, 66,  -1, 1,  -666, 666 } ) );
 }
 
+U_TEST(EralyTempVariablesDestruction_Test11)
+{
+	DestructorTestPrepare();
+
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+
+		class S
+		{
+			i32 x;
+			fn constructor( i32 in_x ) ( x= in_x ) { DestructorCalled(-x); }
+			fn destructor() { DestructorCalled(x); x= 0; }
+		}
+
+		fn GetTwo() : i32
+		{
+			return S(2).x;
+		}
+		fn Foo()
+		{
+			var [ i32, 2 ] arr[ S(1).x, GetTwo() ]; // Must destroy S(1) before GetTwo() call.
+			var S s(666);
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT(
+		g_destructors_call_sequence ==
+		std::vector<int>( { -1, 1,  -2, 2,  -666, 666 } ) );
+}
+
+U_TEST(EralyTempVariablesDestruction_Test12)
+{
+	DestructorTestPrepare();
+
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+
+		class S
+		{
+			i32 x;
+			fn constructor( i32 in_x ) ( x= in_x ) { DestructorCalled(-x); }
+			fn destructor() { DestructorCalled(x); x= 0; }
+		}
+
+		fn GetTwo() : i32
+		{
+			return S(2).x;
+		}
+		fn Foo()
+		{
+			var [ i32, 2 ] arr[ (S(1).x), GetTwo() ]; // Must destroy S(1) before GetTwo() call.
+			var S s(666);
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT(
+		g_destructors_call_sequence ==
+		std::vector<int>( { -1, 1,  -2, 2,  -666, 666 } ) );
+}
 
 } // namespace U
