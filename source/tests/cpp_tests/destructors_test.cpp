@@ -566,7 +566,7 @@ U_TEST(DestructorsTest11)
 
 	U_TEST_ASSERT(
 		g_destructors_call_sequence ==
-		std::vector<int>( { 1, 0,   3, 2,   4,   6, 7,   8, 9,   10,  11,   12,   13,   14,   13 } ) );
+		std::vector<int>( { 0, 1,   2, 3,   4,   7, 6,   9, 8,   10,  11,   12,   13,   14,   13 } ) );
 }
 
 U_TEST( DestructorsTest12_ShouldCorrectlyReturnValueFromDestructibleStruct )
