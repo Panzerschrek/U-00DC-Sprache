@@ -1887,6 +1887,8 @@ void CodeBuilder::BuildConstructorInitialization(
 	// Initialize fields, missing in initializer list.
 	for( const ProgramString& field_name : uninitialized_fields )
 	{
+		const StackVariablesStorage temp_variables_storage( function_context );
+
 		const NamesScope::InsertedName* const class_member=
 			base_class.members.GetThisScopeName( field_name );
 		U_ASSERT( class_member != nullptr );
@@ -1912,9 +1914,13 @@ void CodeBuilder::BuildConstructorInitialization(
 
 			ApplyEmptyInitializer( field_name, constructor_initialization_list.file_pos_, field_variable, function_context );
 		}
+
+		CallDestructors( *function_context.stack_variables_stack.back(), function_context, constructor_initialization_list.file_pos_ );
 	}
 	if( !base_initialized && base_class.base_class != nullptr )
 	{
+		const StackVariablesStorage temp_variables_storage( function_context );
+
 		// Apply default initializer for base class.
 		Variable base_variable;
 		base_variable.type= base_class.base_class;
@@ -1929,6 +1935,8 @@ void CodeBuilder::BuildConstructorInitialization(
 
 		ApplyEmptyInitializer( base_class.base_class->class_->members.GetThisNamespaceName(), constructor_initialization_list.file_pos_, base_variable, function_context );
 		function_context.base_initialized= true;
+
+		CallDestructors( *function_context.stack_variables_stack.back(), function_context, constructor_initialization_list.file_pos_ );
 	}
 
 	if( have_fields_errors )
@@ -1936,6 +1944,8 @@ void CodeBuilder::BuildConstructorInitialization(
 
 	for( const Synt::StructNamedInitializer::MemberInitializer& field_initializer : constructor_initialization_list.members_initializers )
 	{
+		const StackVariablesStorage temp_variables_storage( function_context );
+
 		U_ASSERT( this_.referenced_variables.size() == 1u );
 		const StoredVariablePtr& this_storage= *this_.referenced_variables.begin();
 
@@ -1983,6 +1993,8 @@ void CodeBuilder::BuildConstructorInitialization(
 		}
 
 		function_context.uninitialized_this_fields.erase( field );
+
+		CallDestructors( *function_context.stack_variables_stack.back(), function_context, field_initializer.initializer->GetFilePos() );
 	} // for fields initializers
 
 	SetupVirtualTablePointers( this_.llvm_value, base_class, function_context );
@@ -2512,7 +2524,7 @@ void CodeBuilder::BuildAssignmentOperatorCode(
 		// Evalueate right part
 		Variable r_var= BuildExpressionCodeEnsureVariable( *assignment_operator.r_value_, block_names, function_context );
 
-		if(  r_var.type.GetFundamentalType() != nullptr || r_var.type.GetEnumType() != nullptr || r_var.type.GetFunctionPointerType() != nullptr )
+		if( r_var.type.GetFundamentalType() != nullptr || r_var.type.GetEnumType() != nullptr || r_var.type.GetFunctionPointerType() != nullptr )
 		{
 			// We must read value, because referenced by reference value may be changed in l_var evaluation.
 			if( r_var.location != Variable::Location::LLVMRegister )
@@ -2522,6 +2534,7 @@ void CodeBuilder::BuildAssignmentOperatorCode(
 			}
 			r_var.value_type= ValueType::Value;
 		}
+		DestroyUnusedTemporaryVariables( function_context, assignment_operator.file_pos_ ); // Destroy temporaries of right expression.
 
 		// Evaluate left part.
 		const Variable l_var= BuildExpressionCodeEnsureVariable( *assignment_operator.l_value_, block_names, function_context );
@@ -2609,6 +2622,7 @@ void CodeBuilder::BuildAdditiveAssignmentOperatorCode(
 			}
 			r_var.value_type= ValueType::Value;
 		}
+		DestroyUnusedTemporaryVariables( function_context, additive_assignment_operator.file_pos_ ); // Destroy temporaries of right expression.
 
 		const Variable l_var=
 			BuildExpressionCodeEnsureVariable(
@@ -2677,9 +2691,10 @@ void CodeBuilder::BuildDeltaOneOperatorCode(
 	NamesScope& block_names,
 	FunctionContext& function_context )
 {
-	// SPRACHE_TODO - maybe destory temporaries after?
-	const Value value= BuildExpressionCodeAndDestroyTemporaries( expression, block_names, function_context );
+	// Destruction frame for temporary variables of expressions.
+	const StackVariablesStorage temp_variables_storage( function_context );
 
+	const Value value= BuildExpressionCode( expression, block_names, function_context );
 	const Variable* const variable= value.GetVariable();
 	if( variable == nullptr )
 	{
@@ -2746,6 +2761,8 @@ void CodeBuilder::BuildDeltaOneOperatorCode(
 		errors_.push_back( ReportOperationNotSupportedForThisType( file_pos, variable->type.ToString() ) );
 		return;
 	}
+
+	CallDestructors( *function_context.stack_variables_stack.back(), function_context, file_pos );
 }
 
 void CodeBuilder::BuildReturnOperatorCode(

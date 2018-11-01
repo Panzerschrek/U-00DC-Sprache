@@ -489,6 +489,9 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 		}
 
 		function_context.llvm_ir_builder.CreateStore( value_for_assignment, variable.llvm_value );
+
+		DestroyUnusedTemporaryVariables( function_context, call_operator.file_pos_ );
+
 		return constant_value;
 	}
 	else if( variable.type.GetEnumType() != nullptr )
@@ -510,6 +513,8 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 		function_context.llvm_ir_builder.CreateStore(
 			CreateMoveToLLVMRegisterInstruction( expression_result, function_context ),
 			variable.llvm_value );
+
+		DestroyUnusedTemporaryVariables( function_context, call_operator.file_pos_ );
 
 		return expression_result.constexpr_value;
 	}
@@ -605,7 +610,6 @@ llvm::Constant* CodeBuilder::ApplyExpressionInitializer(
 	NamesScope& block_names,
 	FunctionContext& function_context )
 {
-
 	if( variable.type.GetFundamentalType() != nullptr || variable.type.GetEnumType() != nullptr )
 	{
 		const Variable expression_result= BuildExpressionCodeEnsureVariable( *initializer.expression, block_names, function_context );
@@ -617,6 +621,8 @@ llvm::Constant* CodeBuilder::ApplyExpressionInitializer(
 
 		llvm::Value* const value_for_assignment= CreateMoveToLLVMRegisterInstruction( expression_result, function_context );
 		function_context.llvm_ir_builder.CreateStore( value_for_assignment, variable.llvm_value );
+
+		DestroyUnusedTemporaryVariables( function_context, initializer.file_pos_ );
 
 		if( llvm::Constant* const constexpr_value= expression_result.constexpr_value )
 			return constexpr_value;
@@ -664,6 +670,9 @@ llvm::Constant* CodeBuilder::ApplyExpressionInitializer(
 			U_ASSERT( expression_result.referenced_variables.size() == 1u );
 			function_context.variables_state.Move( *expression_result.referenced_variables.begin() );
 			CopyBytes( expression_result.llvm_value, variable.llvm_value, variable.type, function_context );
+
+			DestroyUnusedTemporaryVariables( function_context, initializer.file_pos_ );
+
 			return expression_result.constexpr_value; // Move can preserve constexpr.
 		}
 		else

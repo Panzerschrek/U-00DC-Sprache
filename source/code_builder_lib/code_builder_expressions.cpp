@@ -236,6 +236,7 @@ Value CodeBuilder::BuildExpressionCode(
 				}
 				l_var.value_type= ValueType::Value;
 			}
+			DestroyUnusedTemporaryVariables( function_context, binary_operator->GetFilePos() );
 
 			const Variable r_var=
 				BuildExpressionCodeEnsureVariable(
@@ -1698,6 +1699,8 @@ Value CodeBuilder::BuildIndexationOperator(
 		function_context.llvm_ir_builder.SetInsertPoint( block_after_if );
 	}
 
+	DestroyUnusedTemporaryVariables( function_context, indexation_operator.file_pos_ ); // Destroy temporaries of index expression.
+
 	result.llvm_value=
 		function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, llvm::ArrayRef< llvm::Value*> ( index_list, 2u ) );
 
@@ -2242,6 +2245,9 @@ Value CodeBuilder::DoCallFunction(
 			}
 			else U_ASSERT( false );
 		}
+
+		// Destroy unused temporary variables after each argument evaluation.
+		DestroyUnusedTemporaryVariables( function_context, call_file_pos );
 	} // for args
 
 	// Check references.
@@ -2469,6 +2475,13 @@ Value CodeBuilder::DoCallFunction(
 		}
 	} // for function_type.references_pollution
 
+	{ // Destroy unused temporary variables after each call.
+		std::vector< VariableStorageUseCounter > call_result_locks;
+		for( const auto& referenced_variable : result.referenced_variables )
+			call_result_locks.push_back( referenced_variable->mut_use_counter );
+		DestroyUnusedTemporaryVariables( function_context, call_file_pos );
+	}
+
 	return Value( result, call_file_pos );
 }
 
@@ -2491,6 +2504,9 @@ Variable CodeBuilder::BuildTempVariableConstruction(
 	variable.location= Variable::Location::Pointer;
 	variable.value_type= ValueType::Reference;
 	variable.llvm_value= function_context.alloca_ir_builder.CreateAlloca( type.GetLLVMType() );
+
+	// Lock variable, for preventing of temporary destruction.
+	VariableStorageUseCounter variable_lock= stored_variable->mut_use_counter;
 
 	variable.referenced_variables.insert(stored_variable);
 	variable.constexpr_value= ApplyConstructorInitializer( variable, stored_variable, call_operator, names, function_context );
@@ -2525,6 +2541,9 @@ Variable CodeBuilder::ConvertVariable(
 	result.value_type= ValueType::Reference;
 	result.llvm_value= function_context.alloca_ir_builder.CreateAlloca( dst_type.GetLLVMType() );
 	result.referenced_variables.insert(stored_variable);
+
+	// Lock variable, for preventing of temporary destruction.
+	VariableStorageUseCounter variable_lock= stored_variable->mut_use_counter;
 
 	DoCallFunction(
 		conversion_constructor.llvm_function,

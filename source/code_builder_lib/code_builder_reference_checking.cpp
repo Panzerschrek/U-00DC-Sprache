@@ -373,6 +373,21 @@ std::vector<VariableStorageUseCounter> CodeBuilder::LockReferencedVariables( con
 	return locks;
 }
 
+void CodeBuilder::DestroyUnusedTemporaryVariables( FunctionContext& function_context, const FilePos& file_pos )
+{
+	StackVariablesStorage& temporary_variables_storage= *function_context.stack_variables_stack.back();
+	for( const StoredVariablePtr& variable : temporary_variables_storage.variables )
+	{
+		if( variable->imut_use_counter.use_count() == 1 && variable->mut_use_counter.use_count() == 1 &&
+			!function_context.variables_state.VariableIsMoved( variable ) )
+		{
+			if( variable->content.type.HaveDestructor() )
+				CallDestructor( variable->content.llvm_value, variable->content.type, function_context, file_pos );
+			function_context.variables_state.Move( variable );
+		}
+	}
+}
+
 VariablesState CodeBuilder::MergeVariablesStateAfterIf( const std::vector<VariablesState>& bracnhes_variables_state, const FilePos& file_pos )
 {
 	U_UNUSED( file_pos );
