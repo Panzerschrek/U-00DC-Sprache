@@ -1447,23 +1447,23 @@ Value CodeBuilder::BuildNumericConstant(
 Value CodeBuilder::BuildStringLiteral( const Synt::StringLiteral& string_literal, FunctionContext& function_context )
 {
 	U_UNUSED( function_context );
-	Array string_literal_type;
+
+	U_FundamentalType char_type= U_FundamentalType::InvalidType;
+	SizeType array_size= ~0u; // ~0 - means non-array
 	llvm::Constant* initializer= nullptr;
 
 	if( string_literal.type_suffix_.empty() || string_literal.type_suffix_ == "u8"_SpC )
 	{
 		const std::string value= ToUTF8( string_literal.value_ );
 
-		string_literal_type.type= FundamentalType( U_FundamentalType::char8 , fundamental_llvm_types_.char8  );
-		string_literal_type.size= value.size();
-
+		char_type= U_FundamentalType::char8;
+		array_size= value.size();
 		initializer= llvm::ConstantDataArray::getString( llvm_context_, value, false /* not null terminated */ );
 	}
 	else if(string_literal.type_suffix_ == "u16"_SpC )
 	{
-		string_literal_type.type= FundamentalType( U_FundamentalType::char16, fundamental_llvm_types_.char16 );
-		string_literal_type.size= string_literal.value_.size();
-
+		char_type= U_FundamentalType::char16;
+		array_size= string_literal.value_.size();
 		initializer=
 			llvm::ConstantDataArray::get(
 				llvm_context_,
@@ -1476,10 +1476,40 @@ Value CodeBuilder::BuildStringLiteral( const Synt::StringLiteral& string_literal
 		for( size_t i= 0u; i < string_literal.value_.size(); ++i )
 			str[i]= string_literal.value_[i];
 
-		string_literal_type.type= FundamentalType( U_FundamentalType::char32, fundamental_llvm_types_.char32 );
-		string_literal_type.size= str.size();
-
+		char_type= U_FundamentalType::char32;
+		array_size= str.size();
 		initializer= llvm::ConstantDataArray::get( llvm_context_, str );
+	}
+	// If string literal have char suffix, process it as single char literal.
+	else if( string_literal.type_suffix_ ==  "c8"_SpC || string_literal.type_suffix_ == GetFundamentalTypeName( U_FundamentalType::char8  ) )
+	{
+		if( string_literal.value_.size() == 1u && GetUTF8CharBytes(string_literal.value_[0]) == 1u )
+		{
+			char_type= U_FundamentalType::char8 ;
+			initializer= llvm::ConstantInt::get( fundamental_llvm_types_.char8 , uint64_t(string_literal.value_[0]), false );
+		}
+		else
+			errors_.push_back( ReportInvalidSizeForCharLiteral( string_literal.file_pos_, string_literal.value_ ) );
+	}
+	else if( string_literal.type_suffix_ == "c16"_SpC || string_literal.type_suffix_ == GetFundamentalTypeName( U_FundamentalType::char16 ) )
+	{
+		if( string_literal.value_.size() == 1u )
+		{
+			char_type= U_FundamentalType::char16;
+			initializer= llvm::ConstantInt::get( fundamental_llvm_types_.char16, uint64_t(string_literal.value_[0]), false );
+		}
+		else
+			errors_.push_back( ReportInvalidSizeForCharLiteral( string_literal.file_pos_, string_literal.value_ ) );
+	}
+	else if( string_literal.type_suffix_ == "c32"_SpC || string_literal.type_suffix_ == GetFundamentalTypeName( U_FundamentalType::char32 ) )
+	{
+		if( string_literal.value_.size() == 1u )
+		{
+			char_type= U_FundamentalType::char32;
+			initializer= llvm::ConstantInt::get( fundamental_llvm_types_.char32, uint64_t(string_literal.value_[0]), false );
+		}
+		else
+			errors_.push_back( ReportInvalidSizeForCharLiteral( string_literal.file_pos_, string_literal.value_ ) );
 	}
 	else
 	{
@@ -1487,19 +1517,33 @@ Value CodeBuilder::BuildStringLiteral( const Synt::StringLiteral& string_literal
 		return ErrorValue();
 	}
 
-	string_literal_type.llvm_type= llvm::ArrayType::get( string_literal_type.type.GetLLVMType(), string_literal_type.size );
-
 	Variable result;
-	result.location= Variable::Location::Pointer;
-	result.value_type= ValueType::ConstReference;
-	result.type= string_literal_type;
+	if( array_size == ~0u )
+	{
+		result.type= FundamentalType( char_type, GetFundamentalLLVMType( char_type ) );
 
-	result.constexpr_value= initializer;
-	result.llvm_value=
-		CreateGlobalConstantVariable(
-			result.type,
-			"_string_literal_" + std::to_string( reinterpret_cast<uintptr_t>(&string_literal) ),
-			result.constexpr_value );
+		result.value_type= ValueType::Value;
+		result.location= Variable::Location::LLVMRegister;
+		result.llvm_value= result.constexpr_value= initializer;
+	}
+	else
+	{
+		Array array_type;
+		array_type.type= FundamentalType( char_type, GetFundamentalLLVMType( char_type ) );
+		array_type.size= array_size;
+		array_type.llvm_type= llvm::ArrayType::get( GetFundamentalLLVMType( char_type ), array_size );
+		result.type= std::move(array_type);
+
+		result.value_type= ValueType::ConstReference;
+		result.location= Variable::Location::Pointer;
+
+		result.constexpr_value= initializer;
+		result.llvm_value=
+			CreateGlobalConstantVariable(
+				result.type,
+				"_string_literal_" + std::to_string( reinterpret_cast<uintptr_t>(&string_literal) ),
+				result.constexpr_value );
+	}
 
 	return Value( std::move(result), string_literal.file_pos_ );
 }

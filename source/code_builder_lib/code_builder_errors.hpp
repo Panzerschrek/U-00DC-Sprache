@@ -19,6 +19,7 @@ enum class CodeBuilderErrorCode : unsigned int
 	Redefinition,
 	UnknownNumericConstantType,
 	UnknownStringLiteralSuffix,
+	InvalidSizeForCharLiteral,
 	OperationNotSupportedForThisType,
 	TypesMismatch,
 	NoMatchBinaryOperatorForGivenTypes,
@@ -217,6 +218,7 @@ CodeBuilderError ReportUsingKeywordAsName( const FilePos& file_pos );
 CodeBuilderError ReportRedefinition( const FilePos& file_pos, const ProgramString& name );
 CodeBuilderError ReportUnknownNumericConstantType( const FilePos& file_pos, const ProgramString& unknown_type );
 CodeBuilderError ReportUnknownStringLiteralSuffix( const FilePos& file_pos, const ProgramString& unknown_suffix );
+CodeBuilderError ReportInvalidSizeForCharLiteral( const FilePos& file_pos, const ProgramString& literal );
 CodeBuilderError ReportOperationNotSupportedForThisType( const FilePos& file_pos, const ProgramString& type_name );
 CodeBuilderError ReportTypesMismatch( const FilePos& file_pos, const ProgramString& expected_type_name, const ProgramString& actual_type_name );
 CodeBuilderError ReportNoMatchBinaryOperatorForGivenTypes( const FilePos& file_pos, const ProgramString& type_l_name, const ProgramString& type_r_name, const ProgramString& binary_operator );

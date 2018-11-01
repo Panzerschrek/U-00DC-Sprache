@@ -33,6 +33,17 @@ ProgramString ToProgramString( const char* str )
 	return result;
 }
 
+
+size_t GetUTF8CharBytes( const sprache_char c )
+{
+	if( c <= 0x7Fu )
+		return 1u;
+	else if( c <= 0x7FFu )
+		return 2u;
+	else
+		return 3u;
+}
+
 std::string ToUTF8( const ProgramString& str )
 {
 	// TODO - check this.

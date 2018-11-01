@@ -21,6 +21,7 @@ def GetTestsList( tests_modules_list ):
 def main():
 	tests_modules_list= [
 		"auto_constexpr_function_templates_test",
+		"char_literals_test",
 		"char_test",
 		"code_builder_test",
 		"constexpr_functions_errors_test",

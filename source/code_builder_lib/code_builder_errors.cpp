@@ -38,6 +38,8 @@ const char* CodeBuilderErrorCodeToString( const CodeBuilderErrorCode code )
 		return "UnknownNumericConstantType";
 	case CodeBuilderErrorCode::UnknownStringLiteralSuffix:
 		return "UnknownStringLiteralSuffix";
+	case CodeBuilderErrorCode::InvalidSizeForCharLiteral:
+		return "InvalidSizeForCharLiteral";
 	case CodeBuilderErrorCode::OperationNotSupportedForThisType:
 		return "OperationNotSupportedForThisType";
 	case CodeBuilderErrorCode::TypesMismatch:
@@ -404,6 +406,17 @@ CodeBuilderError ReportUnknownStringLiteralSuffix( const FilePos& file_pos, cons
 	error.code= CodeBuilderErrorCode::UnknownStringLiteralSuffix;
 
 	error.text= "Unknown string literal suffix - "_SpC + unknown_suffix + "."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportInvalidSizeForCharLiteral( const FilePos& file_pos, const ProgramString& literal )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::InvalidSizeForCharLiteral;
+
+	error.text= "Invalid char literal - \""_SpC + literal + "\" expected literal with exactly one symbol."_SpC;
 
 	return error;
 }
