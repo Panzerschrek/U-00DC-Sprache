@@ -254,12 +254,15 @@ if( BUILD_PY_TESTS )
 			PROPERTIES OUTPUT_NAME sprache_compiler_tests_py_lib.so PREFIX "" SUFFIX "" )
 	endif()
 
+	file( GLOB PY_TESTS_PY_SOURCES "tests/py_tests/*.py" ) # Add all python files to sources list of target.
+
 	# Run result test.
 	add_custom_target(
 		PyTestsRun ALL
 		COMMAND ${CMAKE_COMMAND} -E env PYTHONPATH=${CMAKE_CURRENT_BINARY_DIR} ${PYTHON_EXECUTABLE} tests/py_tests/py_tests.py
 		DEPENDS PyTestsLib
-		WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} )
+		WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+		SOURCES ${PY_TESTS_PY_SOURCES} )
 
 endif( BUILD_PY_TESTS )
 
