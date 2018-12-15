@@ -7,10 +7,27 @@
 namespace U
 {
 
-SourceGraphLoader::SourceGraphLoader( IVfsPtr vfs )
-	: vfs_(std::move(vfs))
+extern const char c_build_in_macros_text[]=
+#include "built_in_macros.h"
+;
+
+static Synt::MacrosPtr PrepareBuiltInMacros()
 {
-	U_ASSERT( vfs_ != nullptr );
+	const LexicalAnalysisResult lex_result= LexicalAnalysis( DecodeUTF8( c_build_in_macros_text ) );
+	U_ASSERT( lex_result.error_messages.empty() );
+
+	Synt::SyntaxAnalysisResult synt_result= Synt::SyntaxAnalysis( lex_result.lexems, std::make_shared<Synt::MacrosByContextMap>() );
+	U_ASSERT( synt_result.error_messages.empty() );
+
+	return synt_result.macros;
+}
+
+SourceGraphLoader::SourceGraphLoader( IVfsPtr vfs )
+	: built_in_macros_(PrepareBuiltInMacros())
+	, vfs_(std::move(vfs))
+{
+	U_ASSERT( built_in_macros_ != nullptr );
+	U_ASSERT( vfs_ != nullptr );	
 }
 
 SourceGraphPtr SourceGraphLoader::LoadSource( const IVfs::Path& root_file_path )
@@ -89,7 +106,7 @@ size_t SourceGraphLoader::LoadNode_r(
 	processed_files_stack_.pop_back();
 
 	// Merge macroses
-	Synt::MacrosPtr merged_macroses= std::make_shared<Synt::MacrosByContextMap>();
+	Synt::MacrosPtr merged_macroses= std::make_shared<Synt::MacrosByContextMap>( *built_in_macros_ );
 	for( const Synt::MacrosPtr& macros : imported_macroses )
 	{
 		for( const auto& context_macro_map_pair : *macros )

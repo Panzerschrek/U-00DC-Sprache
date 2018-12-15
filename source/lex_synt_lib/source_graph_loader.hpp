@@ -60,7 +60,8 @@ private:
 	size_t LoadNode_r( const IVfs::Path& file_path, const IVfs::Path& parent_file_path, SourceGraph& result );
 
 private:
-	IVfsPtr vfs_;
+	const Synt::MacrosPtr built_in_macros_;
+	const IVfsPtr vfs_;
 
 	std::vector<IVfs::Path> processed_files_stack_;
 };
