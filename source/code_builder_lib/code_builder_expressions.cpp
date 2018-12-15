@@ -2586,8 +2586,12 @@ Variable CodeBuilder::ConvertVariable(
 	result.llvm_value= function_context.alloca_ir_builder.CreateAlloca( dst_type.GetLLVMType() );
 	result.referenced_variables.insert(stored_variable);
 
-	// Lock variable, for preventing of temporary destruction.
-	VariableStorageUseCounter variable_lock= stored_variable->mut_use_counter;
+	// Lock variables, for preventing of temporary destruction.
+	std::vector<VariableStorageUseCounter> src_variable_locks;
+	for( const auto& var : variable.referenced_variables )
+		src_variable_locks.push_back( var->mut_use_counter );
+
+	VariableStorageUseCounter dst_variable_lock= stored_variable->mut_use_counter;
 
 	DoCallFunction(
 		conversion_constructor.llvm_function,
