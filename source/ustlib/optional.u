@@ -194,5 +194,6 @@ private:
 	ContainerTag</ T /> container_tag_;
 	storage_type storage_;
 	bool has_value_;
+}
 
 } // namespace ust
