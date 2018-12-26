@@ -1,6 +1,6 @@
 #pragma once
 #include <memory>
-#include <unordered_set>
+#include <unordered_map>
 #include <vector>
 
 namespace U
@@ -39,8 +39,17 @@ public:
 	// Creating temporary mutable reference to reference node with outgoing links is compilation error.
 	bool HaveOutgoingLinks( const ReferencesGraphNodePtr& from ) const;
 
+	void MoveNode( const ReferencesGraphNodePtr& node );
+	bool NodeMoved( const ReferencesGraphNodePtr& node ) const;
+
 private:
-	std::unordered_set<ReferencesGraphNodePtr> nodes_;
+	struct NodeState
+	{
+		bool moved= false;
+	};
+
+private:
+	std::unordered_map<ReferencesGraphNodePtr, NodeState> nodes_;
 	std::vector< std::pair<ReferencesGraphNodePtr, ReferencesGraphNodePtr> > links_;
 };
 

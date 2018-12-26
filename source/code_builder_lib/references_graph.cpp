@@ -10,7 +10,7 @@ namespace CodeBuilderPrivate
 void ReferencesGraph::AddNode( ReferencesGraphNodePtr node )
 {
 	U_ASSERT( nodes_.count(node) == 0 );
-	nodes_.insert( std::move(node) );
+	nodes_.emplace( std::move(node), NodeState() );
 }
 
 void ReferencesGraph::RemoveNode( const ReferencesGraphNodePtr& node )
@@ -62,6 +62,26 @@ bool ReferencesGraph::HaveOutgoingLinks( const ReferencesGraphNodePtr& from ) co
 	}
 
 	return false;
+}
+
+void ReferencesGraph::MoveNode( const ReferencesGraphNodePtr& node )
+{
+	U_ASSERT( nodes_.count(node) != 0 );
+
+	NodeState& node_state= nodes_[node];
+	U_ASSERT( !node_state.moved );
+
+	node_state.moved= true;
+
+	// TODO - remove links between nodes?
+}
+
+bool ReferencesGraph::NodeMoved( const ReferencesGraphNodePtr& node ) const
+{
+	const auto it= nodes_.find(node);
+	U_ASSERT( it != nodes_.end() );
+
+	return it->second.moved;
 }
 
 } // namespace CodeBuilderPrivate
