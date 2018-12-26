@@ -48,13 +48,18 @@ private:
 	// But you still need call "CallDestructors" manually.
 	struct StackVariablesStorage final
 	{
+	public:
+		using NodeAndVariable= std::pair< ReferencesGraphNodePtr, Variable >;
+
 		StackVariablesStorage( FunctionContext& function_context );
 		~StackVariablesStorage();
 
-		void RegisterVariable( const StoredVariablePtr& variable );
+		void RegisterVariable( NodeAndVariable node_and_variable );
 
-		FunctionContext& function_context;
-		std::vector<StoredVariablePtr> variables;
+
+	private:
+		FunctionContext& function_context_;
+		std::vector<NodeAndVariable> variables_;
 	};
 
 	struct LoopFrame final
@@ -109,7 +114,7 @@ private:
 		// Also, evaluation of some operators and expressions adds their variables storages.
 		// Do not push/pop to t his stack manually!
 		std::vector<StackVariablesStorage*> stack_variables_stack;
-		VariablesState variables_state;
+		ReferencesGraph variables_state;
 
 		OverloadingResolutionCache overloading_resolutin_cache;
 
@@ -652,7 +657,6 @@ private:
 
 	llvm::Constant* ApplyInitializer(
 		const Variable& variable,
-		const StoredVariablePtr& variable_storage,
 		const Synt::IInitializer& initializer,
 		NamesScope& block_names,
 		FunctionContext& function_context );
@@ -665,28 +669,24 @@ private:
 
 	llvm::Constant* ApplyArrayInitializer(
 		const Variable& variable,
-		const StoredVariablePtr& variable_storage,
 		const Synt::ArrayInitializer& initializer,
 		NamesScope& block_names,
 		FunctionContext& function_context );
 
 	llvm::Constant* ApplyStructNamedInitializer(
 		const Variable& variable,
-		const StoredVariablePtr& variable_storage,
 		const Synt::StructNamedInitializer& initializer,
 		NamesScope& block_names,
 		FunctionContext& function_context );
 
 	llvm::Constant* ApplyConstructorInitializer(
 		const Variable& variable,
-		const StoredVariablePtr& variable_storage,
 		const Synt::CallOperator& call_operator,
 		NamesScope& block_names,
 		FunctionContext& function_context );
 
 	llvm::Constant* ApplyExpressionInitializer(
 		const Variable& variable,
-		const StoredVariablePtr& variable_storage,
 		const Synt::ExpressionInitializer& initializer,
 		NamesScope& block_names,
 		FunctionContext& function_context );
@@ -703,7 +703,6 @@ private:
 
 	llvm::Constant* InitializeReferenceField(
 		const Variable& variable,
-		const StoredVariablePtr& variable_storage,
 		const ClassField& field,
 		const Synt::IInitializer& initializer,
 		NamesScope& block_names,
@@ -745,8 +744,8 @@ private:
 
 	void DestroyUnusedTemporaryVariables( FunctionContext& function_context, const FilePos& file_pos );
 
-	VariablesState MergeVariablesStateAfterIf( const std::vector<VariablesState>& bracnhes_variables_state, const FilePos& file_pos );
-	void CheckWhileBlokVariablesState( const VariablesState& state_before, const VariablesState& state_after, const FilePos& file_pos );
+	ReferencesGraph MergeVariablesStateAfterIf( const std::vector<ReferencesGraph>& bracnhes_variables_state, const FilePos& file_pos );
+	void CheckWhileBlokVariablesState( const ReferencesGraph& state_before, const ReferencesGraph& state_after, const FilePos& file_pos );
 
 	// NamesScope fill
 

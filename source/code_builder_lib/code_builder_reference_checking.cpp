@@ -348,7 +348,7 @@ void CodeBuilder::ProcessFunctionTypeReferencesPollution(
 
 void CodeBuilder::CheckReferencedVariables( const Variable& reference, const FilePos& file_pos )
 {
-	for( const StoredVariablePtr& referenced_variable : reference.referenced_variables )
+	for( const StoredVariablePtr& referenced_variable : reference.references )
 		CheckVariableReferences( *referenced_variable, file_pos );
 }
 
@@ -367,7 +367,7 @@ void CodeBuilder::CheckVariableReferences( const StoredVariable& var, const File
 std::vector<VariableStorageUseCounter> CodeBuilder::LockReferencedVariables( const Variable& reference )
 {
 	std::vector<VariableStorageUseCounter> locks;
-	for( const StoredVariablePtr& referenced_variable : reference.referenced_variables )
+	for( const StoredVariablePtr& referenced_variable : reference.references )
 		locks.push_back( reference.value_type == ValueType::Reference ? referenced_variable->mut_use_counter : referenced_variable->imut_use_counter );
 
 	return locks;
@@ -388,7 +388,7 @@ void CodeBuilder::DestroyUnusedTemporaryVariables( FunctionContext& function_con
 	}
 }
 
-VariablesState CodeBuilder::MergeVariablesStateAfterIf( const std::vector<VariablesState>& bracnhes_variables_state, const FilePos& file_pos )
+ReferencesGraph CodeBuilder::MergeVariablesStateAfterIf( const std::vector<ReferencesGraph>& bracnhes_variables_state, const FilePos& file_pos )
 {
 	U_UNUSED( file_pos );
 	U_ASSERT( !bracnhes_variables_state.empty() );
@@ -429,7 +429,7 @@ VariablesState CodeBuilder::MergeVariablesStateAfterIf( const std::vector<Variab
 	return VariablesState(std::move(result));
 }
 
-void CodeBuilder::CheckWhileBlokVariablesState( const VariablesState& state_before, const VariablesState& state_after, const FilePos& file_pos )
+void CodeBuilder::CheckWhileBlokVariablesState( const ReferencesGraph& state_before, const ReferencesGraph& state_after, const FilePos& file_pos )
 {
 	U_ASSERT( state_before.GetVariables().size() == state_after.GetVariables().size() );
 

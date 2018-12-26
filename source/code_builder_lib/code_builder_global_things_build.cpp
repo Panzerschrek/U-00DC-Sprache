@@ -822,15 +822,7 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 		// Destruction frame for temporary variables of initializer expression.
 		const StackVariablesStorage temp_variables_storage( function_context );
 
-		const StoredVariablePtr stored_variable=
-			std::make_shared<StoredVariable>(
-				variable_declaration.name,
-				Variable(),
-				variable_declaration.reference_modifier == ReferenceModifier::Reference ? StoredVariable::Kind::Reference : StoredVariable::Kind::Variable,
-				true );
-		function_context.stack_variables_stack[ function_context.stack_variables_stack.size() - 2u ]->RegisterVariable( stored_variable );
-
-		Variable& variable= stored_variable->content;
+		Variable variable;
 		variable.type= type;
 		variable.location= Variable::Location::Pointer;
 		variable.value_type= ValueType::Reference;
@@ -840,12 +832,10 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 			llvm::GlobalVariable* global_variable= nullptr;
 			variable.llvm_value= global_variable= CreateGlobalConstantVariable( type, MangleGlobalVariable( names_scope, variable_declaration.name ) );
 
-			variable.referenced_variables.insert( stored_variable );
 			if( variable_declaration.initializer != nullptr )
-				variable.constexpr_value= ApplyInitializer( variable, stored_variable, *variable_declaration.initializer, names_scope, function_context );
+				variable.constexpr_value= ApplyInitializer( variable, *variable_declaration.initializer, names_scope, function_context );
 			else
 				ApplyEmptyInitializer( variable_declaration.name, variable_declaration.file_pos, variable, function_context );
-			variable.referenced_variables.erase( stored_variable );
 
 			// Make immutable, if needed, only after initialization, because in initialization we need call constructors, which is mutable methods.
 			variable.value_type= ValueType::ConstReference;
@@ -902,9 +892,9 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 				FAIL_RETURN;
 			}
 
-			variable.referenced_variables= expression_result.referenced_variables;
+			variable.references= expression_result.references;
 
-			for( const StoredVariablePtr& referenced_variable : variable.referenced_variables )
+			for( const StoredVariablePtr& referenced_variable : variable.references )
 				function_context.variables_state.AddPollution( stored_variable, referenced_variable, false );
 			CheckReferencedVariables( stored_variable->content, variable_declaration.file_pos );
 
@@ -954,15 +944,7 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 			}
 		}
 
-		const StoredVariablePtr stored_variable=
-			std::make_shared<StoredVariable>(
-				auto_variable_declaration->name,
-				Variable(),
-				auto_variable_declaration->reference_modifier == ReferenceModifier::Reference ? StoredVariable::Kind::Reference : StoredVariable::Kind::Variable,
-				true );
-		function_context.stack_variables_stack[ function_context.stack_variables_stack.size() - 2u ]->RegisterVariable( stored_variable );
-
-		Variable& variable= stored_variable->content;
+		Variable variable;
 		variable.type= initializer_experrsion.type;
 		variable.value_type= ValueType::ConstReference;
 		variable.location= Variable::Location::Pointer;
@@ -991,12 +973,10 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 				FAIL_RETURN;
 			}
 
-			variable.referenced_variables= initializer_experrsion.referenced_variables;
-
 			variable.llvm_value= initializer_experrsion.llvm_value;
 			variable.constexpr_value= initializer_experrsion.constexpr_value;
 
-			for( const StoredVariablePtr& referenced_variable : variable.referenced_variables )
+			for( const StoredVariablePtr& referenced_variable : variable.references )
 				function_context.variables_state.AddPollution( stored_variable, referenced_variable, false );
 			CheckReferencedVariables( variable, auto_variable_declaration->file_pos_ );
 		}
@@ -1018,8 +998,8 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 				U_ASSERT( class_type->class_->completeness == TypeCompleteness::Complete );
 				if( initializer_experrsion.value_type == ValueType::Value )
 				{
-					U_ASSERT( initializer_experrsion.referenced_variables.size() == 1u );
-					const StoredVariablePtr& variable_for_move= *initializer_experrsion.referenced_variables.begin();
+					U_ASSERT( initializer_experrsion.references.size() == 1u );
+					const StoredVariablePtr& variable_for_move= *initializer_experrsion.references.begin();
 
 					moved_variable_referenced_variables= function_context.variables_state.GetVariableReferences( variable_for_move );
 					function_context.variables_state.Move( variable_for_move );
@@ -1046,7 +1026,7 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 			// Take references inside variables in initializer expression.
 			for( const auto& ref : moved_variable_referenced_variables )
 				function_context.variables_state.AddPollution( stored_variable, ref.first, ref.second.IsMutable() );
-			for( const StoredVariablePtr& referenced_variable : initializer_experrsion.referenced_variables )
+			for( const StoredVariablePtr& referenced_variable : initializer_experrsion.references )
 			{
 				for( const auto& inner_variable_pair : function_context.variables_state.GetVariableReferences( referenced_variable ) )
 				{
@@ -1066,7 +1046,7 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 
 		// Do not call destructors, because global variables can be only constexpr and any constexpr type have trivial destructor.
 
-		global_variable_value= Value( stored_variable, auto_variable_declaration->file_pos_ );
+		global_variable_value= Value( variable, auto_variable_declaration->file_pos_ );
 	}
 	else U_ASSERT(false);
 

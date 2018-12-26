@@ -19,19 +19,18 @@ namespace CodeBuilderPrivate
 
 llvm::Constant* CodeBuilder::ApplyInitializer(
 	const Variable& variable,
-	const StoredVariablePtr& variable_storage,
 	const Synt::IInitializer& initializer,
 	NamesScope& block_names,
 	FunctionContext& function_context )
 {
 	if( const auto array_initializer= dynamic_cast<const Synt::ArrayInitializer*>(&initializer) )
-		return ApplyArrayInitializer( variable, variable_storage, *array_initializer, block_names, function_context );
+		return ApplyArrayInitializer( variable, *array_initializer, block_names, function_context );
 	else if( const auto struct_named_initializer= dynamic_cast<const Synt::StructNamedInitializer*>(&initializer) )
-		return ApplyStructNamedInitializer( variable, variable_storage, *struct_named_initializer, block_names, function_context );
+		return ApplyStructNamedInitializer( variable, *struct_named_initializer, block_names, function_context );
 	else if( const auto constructor_initializer= dynamic_cast<const Synt::ConstructorInitializer*>(&initializer) )
-		return ApplyConstructorInitializer( variable, variable_storage, constructor_initializer->call_operator, block_names, function_context );
+		return ApplyConstructorInitializer( variable, constructor_initializer->call_operator, block_names, function_context );
 	else if( const auto expression_initializer= dynamic_cast<const Synt::ExpressionInitializer*>(&initializer) )
-		return ApplyExpressionInitializer( variable, variable_storage, *expression_initializer, block_names, function_context );
+		return ApplyExpressionInitializer( variable, *expression_initializer, block_names, function_context );
 	else if( const auto zero_initializer= dynamic_cast<const Synt::ZeroInitializer*>(&initializer) )
 		return ApplyZeroInitializer( variable, *zero_initializer, function_context );
 	else if( const auto uninitialized_initializer= dynamic_cast<const Synt::UninitializedInitializer*>(&initializer) )
@@ -103,7 +102,6 @@ void CodeBuilder::ApplyEmptyInitializer(
 
 llvm::Constant* CodeBuilder::ApplyArrayInitializer(
 	const Variable& variable,
-	const StoredVariablePtr& variable_storage,
 	const Synt::ArrayInitializer& initializer,
 	NamesScope& block_names,
 	FunctionContext& function_context )
@@ -145,7 +143,7 @@ llvm::Constant* CodeBuilder::ApplyArrayInitializer(
 
 		U_ASSERT( initializer.initializers[i] != nullptr );
 		llvm::Constant* const member_constant=
-			ApplyInitializer( array_member, variable_storage, *initializer.initializers[i], block_names, function_context );
+			ApplyInitializer( array_member, *initializer.initializers[i], block_names, function_context );
 
 		if( is_constant && member_constant != nullptr )
 			members_constants.push_back( member_constant );
@@ -168,7 +166,6 @@ llvm::Constant* CodeBuilder::ApplyArrayInitializer(
 
 llvm::Constant* CodeBuilder::ApplyStructNamedInitializer(
 	const Variable& variable,
-	const StoredVariablePtr& variable_storage,
 	const Synt::StructNamedInitializer& initializer,
 	NamesScope& block_names,
 	FunctionContext& function_context )
@@ -230,7 +227,7 @@ llvm::Constant* CodeBuilder::ApplyStructNamedInitializer(
 		llvm::Constant* constant_initializer= nullptr;
 		if( field->is_reference )
 			constant_initializer=
-				InitializeReferenceField( variable, variable_storage, *field, *member_initializer.initializer, block_names, function_context );
+				InitializeReferenceField( variable, *field, *member_initializer.initializer, block_names, function_context );
 		else
 		{
 			struct_member.type= field->type;
@@ -240,7 +237,7 @@ llvm::Constant* CodeBuilder::ApplyStructNamedInitializer(
 
 			U_ASSERT( member_initializer.initializer != nullptr );
 			constant_initializer=
-				ApplyInitializer( struct_member, variable_storage, *member_initializer.initializer, block_names, function_context );
+				ApplyInitializer( struct_member, *member_initializer.initializer, block_names, function_context );
 		}
 
 		if( constant_initializer == nullptr )
@@ -279,7 +276,6 @@ llvm::Constant* CodeBuilder::ApplyStructNamedInitializer(
 
 llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 	const Variable& variable,
-	const StoredVariablePtr& variable_storage,
 	const Synt::CallOperator& call_operator,
 	NamesScope& block_names,
 	FunctionContext& function_context )
@@ -547,12 +543,9 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 			dummy_function_context.whole_this_is_unavailable= function_context.whole_this_is_unavailable;
 			dummy_function_context.is_in_unsafe_block= function_context.is_in_unsafe_block;
 			dummy_function_context.variables_state= function_context.variables_state;
-			function_context.variables_state.DeactivateLocks();
 
 			const Variable initializer_value= BuildExpressionCodeEnsureVariable( *call_operator.arguments_.front(), block_names, dummy_function_context );
 			needs_move_constuct= initializer_value.type == variable.type && initializer_value.value_type == ValueType::Value ;
-
-			function_context.variables_state.ActivateLocks();
 
 			function_context.overloading_resolutin_cache.insert(
 				dummy_function_context.overloading_resolutin_cache.begin(),
@@ -564,15 +557,15 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 			CopyBytes( initializer_variable.llvm_value, variable.llvm_value, variable.type, function_context );
 
 			// Lock references and move.
-			U_ASSERT( initializer_variable.referenced_variables.size() == 1u );
-			for( const auto& inner_variable : function_context.variables_state.GetVariableReferences( *initializer_variable.referenced_variables.begin() ) )
+			U_ASSERT( initializer_variable.references.size() == 1u );
+			for( const auto& inner_variable : function_context.variables_state.GetVariableReferences( *initializer_variable.references.begin() ) )
 			{
 				const bool ok= function_context.variables_state.AddPollution( variable_storage, inner_variable.first, inner_variable.second.IsMutable() );
 				if( !ok )
 					errors_.push_back( ReportReferenceProtectionError( call_operator.file_pos_, inner_variable.first->name ) );
 			}
 
-			function_context.variables_state.Move( *initializer_variable.referenced_variables.begin() );
+			function_context.variables_state.Move( *initializer_variable.references.begin() );
 
 			return initializer_variable.constexpr_value; // Move can preserve constexpr.
 		}
@@ -605,7 +598,6 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 
 llvm::Constant* CodeBuilder::ApplyExpressionInitializer(
 	const Variable& variable,
-	const StoredVariablePtr& variable_storage,
 	const Synt::ExpressionInitializer& initializer,
 	NamesScope& block_names,
 	FunctionContext& function_context )
@@ -652,11 +644,11 @@ llvm::Constant* CodeBuilder::ApplyExpressionInitializer(
 		// Lock references.
 		if( variable.type.ReferencesTagsCount() > 0u )
 		{
-			for( const StoredVariablePtr& referenced_variable : expression_result.referenced_variables )
+			for( const StoredVariablePtr& referenced_variable : expression_result.references )
 			{
 				for( const auto& inner_variable : function_context.variables_state.GetVariableReferences( referenced_variable ) )
 				{
-					const bool ok= function_context.variables_state.AddPollution( variable_storage, inner_variable.first, inner_variable.second.IsMutable() );
+					const bool ok= function_context.variables_state.AddPollution( inner_variable.first, inner_variable.second.IsMutable() );
 					if( !ok )
 						errors_.push_back( ReportReferenceProtectionError( initializer.file_pos_, inner_variable.first->name ) );
 				}
@@ -667,8 +659,8 @@ llvm::Constant* CodeBuilder::ApplyExpressionInitializer(
 		// TODO - produce constant initializer for generated copy constructor, if source is constant.
 		if( expression_result.value_type == ValueType::Value && expression_result.type == variable.type )
 		{
-			U_ASSERT( expression_result.referenced_variables.size() == 1u );
-			function_context.variables_state.Move( *expression_result.referenced_variables.begin() );
+			U_ASSERT( expression_result.references.size() == 1u );
+			function_context.variables_state.Move( *expression_result.references.begin() );
 			CopyBytes( expression_result.llvm_value, variable.llvm_value, variable.type, function_context );
 
 			DestroyUnusedTemporaryVariables( function_context, initializer.file_pos_ );
@@ -862,7 +854,6 @@ llvm::Constant* CodeBuilder::ApplyUninitializedInitializer(
 
 llvm::Constant* CodeBuilder::InitializeReferenceField(
 	const Variable& variable,
-	const StoredVariablePtr& variable_storage,
 	const ClassField& field,
 	const Synt::IInitializer& initializer,
 	NamesScope& block_names,
@@ -913,7 +904,7 @@ llvm::Constant* CodeBuilder::InitializeReferenceField(
 		return nullptr;
 	}
 
-	for( const StoredVariablePtr& referenced_variable : initializer_variable.referenced_variables )
+	for( const StoredVariablePtr& referenced_variable : initializer_variable.references )
 	{
 		const bool ok= function_context.variables_state.AddPollution( variable_storage, referenced_variable, field.is_mutable );
 		if( !ok )

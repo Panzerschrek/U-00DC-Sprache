@@ -88,7 +88,6 @@ boost::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 			dummy_function_context.whole_this_is_unavailable= function_context.whole_this_is_unavailable;
 			dummy_function_context.is_in_unsafe_block= function_context.is_in_unsafe_block;
 			dummy_function_context.variables_state= function_context.variables_state;
-			function_context.variables_state.DeactivateLocks();
 
 			const Variable l_var= BuildExpressionCodeEnsureVariable( left_expr , names, dummy_function_context );
 			const Variable r_var= BuildExpressionCodeEnsureVariable( right_expr, names, dummy_function_context );
@@ -113,7 +112,6 @@ boost::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 			args.back().is_reference= r_var.value_type != ValueType::Value;
 			args.back().is_mutable= r_var.value_type == ValueType::Reference;
 		}
-		function_context.variables_state.ActivateLocks();
 
 		// Apply here move-assignment for class types.
 		if( needs_move_assign )
@@ -126,8 +124,8 @@ boost::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 			CopyBytes( r_var_real.llvm_value, l_var_real.llvm_value, l_var_real.type, function_context );
 
 			// Write references from src to dst and check it.
-			for( const StoredVariablePtr& l_var_variable : l_var_real.referenced_variables )
-			for( const StoredVariablePtr& r_var_variable : r_var_real.referenced_variables )
+			for( const StoredVariablePtr& l_var_variable : l_var_real.references )
+			for( const StoredVariablePtr& r_var_variable : r_var_real.references )
 			{
 				for( const auto& inner_reference : function_context.variables_state.GetVariableReferences( r_var_variable ) )
 				{
@@ -137,8 +135,8 @@ boost::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 				}
 			}
 
-			U_ASSERT( r_var_real.referenced_variables.size() == 1u );
-			function_context.variables_state.Move( *r_var_real.referenced_variables.begin() );
+			U_ASSERT( r_var_real.references.size() == 1u );
+			function_context.variables_state.Move( *r_var_real.references.begin() );
 
 			Variable move_result;
 			move_result.type= void_type_;
@@ -963,10 +961,9 @@ Value CodeBuilder::BuildBinaryOperator(
 		}
 	}
 
-	const StoredVariablePtr stored_result= std::make_shared<StoredVariable>( BinaryOperatorToString(binary_operator), result );
-	result.referenced_variables.emplace( stored_result );
-	function_context.stack_variables_stack.back()->RegisterVariable( stored_result );
-
+	const auto node= std::make_shared<ReferencesGraphNode>( BinaryOperatorToString(binary_operator), ReferencesGraphNode::Kind::Variable );
+	function_context.stack_variables_stack.back()->RegisterVariable( std::make_pair( node, result ) );
+	result.references.insert(node);
 	return Value( result, file_pos );
 }
 
@@ -1000,8 +997,7 @@ Value CodeBuilder::BuildLazyBinaryOperator(
 	function_context.function->getBasicBlockList().push_back( r_part_block );
 	function_context.llvm_ir_builder.SetInsertPoint( r_part_block );	
 
-	VariablesState variables_state_before_r_branch= function_context.variables_state;
-	variables_state_before_r_branch.DeactivateLocks();
+	ReferencesGraph variables_state_before_r_branch= function_context.variables_state;
 
 	llvm::Value* r_var_in_register= nullptr;
 	llvm::Constant* r_var_constepxr_value= nullptr;
@@ -1050,9 +1046,9 @@ Value CodeBuilder::BuildLazyBinaryOperator(
 			U_ASSERT(false);
 	}
 
-	const StoredVariablePtr stored_result= std::make_shared<StoredVariable>( BinaryOperatorToString(binary_operator.operator_type_), result );
-	result.referenced_variables.emplace( stored_result );
-	function_context.stack_variables_stack.back()->RegisterVariable( stored_result );
+	const auto node= std::make_shared<ReferencesGraphNode>( BinaryOperatorToString(binary_operator.operator_type_), ReferencesGraphNode::Kind::Variable );
+	function_context.stack_variables_stack.back()->RegisterVariable( std::make_pair( node, result ) );
+	result.references.emplace( node );
 	return Value( result, file_pos );
 }
 
@@ -1087,7 +1083,7 @@ Value CodeBuilder::DoReferenceCast(
 	result.type= type;
 	result.value_type= var.value_type == ValueType::Reference ? ValueType::Reference : ValueType::ConstReference; // "ValueType" here converts inot ConstReference.
 	result.location= Variable::Location::Pointer;
-	result.referenced_variables= var.referenced_variables;
+	result.references= var.references;
 
 	llvm::Value* src_value= var.llvm_value;
 	if( var.location == Variable::Location::LLVMRegister )
@@ -1271,7 +1267,7 @@ Value CodeBuilder::BuildNamedOperand(
 		field_variable.type= field->type;
 		field_variable.location= Variable::Location::Pointer;
 		field_variable.value_type= ( function_context.this_->value_type == ValueType::Reference && field->is_mutable ) ? ValueType::Reference : ValueType::ConstReference;
-		field_variable.referenced_variables= function_context.this_->referenced_variables;
+		field_variable.references= function_context.this_->references;
 
 		index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(field->index) ) );
 		field_variable.llvm_value=
@@ -1282,11 +1278,11 @@ Value CodeBuilder::BuildNamedOperand(
 			field_variable.value_type= field->is_mutable ? ValueType::Reference : ValueType::ConstReference;
 			field_variable.llvm_value= function_context.llvm_ir_builder.CreateLoad( field_variable.llvm_value );
 
-			field_variable.referenced_variables.clear();
-			for( const StoredVariablePtr& struct_variable : function_context.this_->referenced_variables )
+			field_variable.references.clear();
+			for( const StoredVariablePtr& struct_variable : function_context.this_->references )
 			{
 				for( const auto& referenced_variable_pair : function_context.variables_state.GetVariableReferences( struct_variable ) )
-					field_variable.referenced_variables.insert( referenced_variable_pair.first );
+					field_variable.references.insert( referenced_variable_pair.first );
 			}
 		}
 
@@ -1328,7 +1324,7 @@ Value CodeBuilder::BuildNamedOperand(
 			if( function_context.variables_state.VariableIsMoved( referenced_variable ) )
 				errors_.push_back( ReportAccessingMovedVariable( named_operand.file_pos_, referenced_variable->name ) );
 
-			result.referenced_variables.emplace( referenced_variable );
+			result.references.emplace( referenced_variable );
 
 			// If we have mutable reference to variable, we can not access variable itself.
 			if( referenced_variable->content.value_type == ValueType::Reference && referenced_variable->mut_use_counter.use_count() >= 2u )
@@ -1391,10 +1387,10 @@ Value CodeBuilder::BuildMoveOpeator( const Synt::MoveOperator& move_operator, Na
 
 	Variable content= variable_for_move->content;
 	content.value_type= ValueType::Value;
-	content.referenced_variables.clear();
+	content.references.clear();
 
 	const StoredVariablePtr moved_result= std::make_shared<StoredVariable>( "_moved_"_SpC + variable_for_move->name, content );
-	content.referenced_variables.emplace( moved_result );
+	content.references.emplace( moved_result );
 	function_context.stack_variables_stack.back()->RegisterVariable( moved_result );
 
 	// We must save inner references of moved variable.
@@ -1438,7 +1434,7 @@ Value CodeBuilder::BuildNumericConstant(
 	result.llvm_value= result.constexpr_value;
 
 	const StoredVariablePtr stored_result= std::make_shared<StoredVariable>( "numeric constant"_SpC, result );
-	result.referenced_variables.emplace( stored_result );
+	result.references.emplace( stored_result );
 	function_context.stack_variables_stack.back()->RegisterVariable( stored_result );
 
 	return Value( result, numeric_constant.file_pos_ );
@@ -1566,7 +1562,7 @@ Variable CodeBuilder::BuildBooleanConstant(
 		std::make_shared<StoredVariable>(
 			Keyword( boolean_constant.value_ ? Keywords::true_ : Keywords::false_ ),
 			result );
-	result.referenced_variables.emplace( stored_result );
+	result.references.emplace( stored_result );
 	function_context.stack_variables_stack.back()->RegisterVariable( stored_result );
 
 	return result;
@@ -1612,7 +1608,6 @@ Value CodeBuilder::BuildIndexationOperator(
 			dummy_function_context.whole_this_is_unavailable= function_context.whole_this_is_unavailable;
 			dummy_function_context.is_in_unsafe_block= function_context.is_in_unsafe_block;
 			dummy_function_context.variables_state= function_context.variables_state;
-			function_context.variables_state.DeactivateLocks();
 
 			const Variable index_variable= BuildExpressionCodeEnsureVariable( *indexation_operator.index_, names, dummy_function_context );
 
@@ -1625,7 +1620,6 @@ Value CodeBuilder::BuildIndexationOperator(
 			args.back().is_reference= index_variable.value_type != ValueType::Value;
 			args.back().is_mutable= index_variable.value_type == ValueType::Reference;
 		}
-		function_context.variables_state.ActivateLocks();
 
 		const FunctionVariable* const overloaded_operator=
 			GetOverloadedOperator( args, OverloadedOperator::Indexing, indexation_operator.file_pos_ );
@@ -1669,7 +1663,7 @@ Value CodeBuilder::BuildIndexationOperator(
 
 	// Lock array. We must prevent modification of array in index calcualtion.
 	std::vector<VariableStorageUseCounter> array_locks;
-	for( const StoredVariablePtr& stored_variable : variable.referenced_variables )
+	for( const StoredVariablePtr& stored_variable : variable.references )
 		array_locks.push_back( variable.value_type == ValueType::Reference ? stored_variable->mut_use_counter : stored_variable->imut_use_counter );
 
 	const Variable index= BuildExpressionCodeEnsureVariable( *indexation_operator.index_, names, function_context );
@@ -1699,7 +1693,7 @@ Value CodeBuilder::BuildIndexationOperator(
 	Variable result;
 	result.location= Variable::Location::Pointer;
 	result.value_type= variable.value_type == ValueType::Reference ? ValueType::Reference : ValueType::ConstReference;
-	result.referenced_variables= variable.referenced_variables;
+	result.references= variable.references;
 	result.type= array_type->type;
 
 	if( variable.constexpr_value != nullptr && index.constexpr_value != nullptr )
@@ -1859,7 +1853,7 @@ Value CodeBuilder::BuildMemberAccessOperator(
 	Variable result;
 	result.location= Variable::Location::Pointer;
 	result.value_type= ( variable.value_type == ValueType::Reference && field->is_mutable ) ? ValueType::Reference : ValueType::ConstReference;
-	result.referenced_variables= variable.referenced_variables;
+	result.references= variable.references;
 	result.type= field->type;
 	result.llvm_value=
 		function_context.llvm_ir_builder.CreateGEP( actual_field_class_ptr, index_list );
@@ -1893,11 +1887,11 @@ Value CodeBuilder::BuildMemberAccessOperator(
 		result.value_type= field->is_mutable ? ValueType::Reference : ValueType::ConstReference;
 		result.llvm_value= function_context.llvm_ir_builder.CreateLoad( result.llvm_value );
 
-		result.referenced_variables.clear();
-		for( const StoredVariablePtr& struct_variable : variable.referenced_variables )
+		result.references.clear();
+		for( const StoredVariablePtr& struct_variable : variable.references )
 		{
 			for( const auto& referenced_variable_pair : function_context.variables_state.GetVariableReferences( struct_variable ) )
-				result.referenced_variables.insert( referenced_variable_pair.first );
+				result.references.insert( referenced_variable_pair.first );
 		}
 	}
 
@@ -1998,8 +1992,6 @@ Value CodeBuilder::BuildCallOperator(
 		dummy_function_context.whole_this_is_unavailable= function_context.whole_this_is_unavailable;
 		dummy_function_context.is_in_unsafe_block= function_context.is_in_unsafe_block;
 		dummy_function_context.variables_state= function_context.variables_state; // TODO - support copy-on-write for variables_state
-		function_context.variables_state.DeactivateLocks();
-
 		// Push "this" argument.
 		if( this_ != nullptr )
 		{
@@ -2032,7 +2024,6 @@ Value CodeBuilder::BuildCallOperator(
 		else
 			function_context.overloading_resolutin_cache[ &call_operator ]= *function_ptr;
 	}
-	function_context.variables_state.ActivateLocks();
 
 	// SPRACHE_TODO - try get function with "this" parameter in signature and without it.
 	// We must support static functions call using "this".
@@ -2160,7 +2151,7 @@ Value CodeBuilder::DoCallFunction(
 					llvm_args[j]= CreateReferenceCast( expr.llvm_value, expr.type, arg.type, function_context );
 
 				// Lock references.
-				for( const StoredVariablePtr& referenced_variable : expr.referenced_variables )
+				for( const StoredVariablePtr& referenced_variable : expr.references )
 				{
 					++locked_variable_counters[referenced_variable].mut;
 					temp_args_locks.push_back( referenced_variable->mut_use_counter );
@@ -2195,7 +2186,7 @@ Value CodeBuilder::DoCallFunction(
 
 				// Lock references.
 				arg_to_inner_variables[j].second= false; // Non-mutable
-				for( const StoredVariablePtr& referenced_variable : expr.referenced_variables )
+				for( const StoredVariablePtr& referenced_variable : expr.references )
 				{
 					++locked_variable_counters[referenced_variable].imut;
 					temp_args_locks.push_back( referenced_variable->imut_use_counter );
@@ -2238,7 +2229,7 @@ Value CodeBuilder::DoCallFunction(
 				if( arg.type.ReferencesTagsCount() > 0u )
 				{
 					arg_to_inner_variables[j].second= false; // Non-mutable
-					for( const StoredVariablePtr& var_itself : expr.referenced_variables )
+					for( const StoredVariablePtr& var_itself : expr.references )
 					{
 						for( const auto& referenced_variable_pair : function_context.variables_state.GetVariableReferences( var_itself ) )
 						{
@@ -2263,8 +2254,8 @@ Value CodeBuilder::DoCallFunction(
 				if( expr.value_type == ValueType::Value && expr.type == arg.type )
 				{
 					// Do not call copy constructors - just move.
-					U_ASSERT( expr.referenced_variables.size() == 1u );
-					function_context.variables_state.Move( *expr.referenced_variables.begin() );
+					U_ASSERT( expr.references.size() == 1u );
+					function_context.variables_state.Move( *expr.references.begin() );
 					llvm_args[j]= expr.llvm_value;
 				}
 				else
@@ -2390,7 +2381,7 @@ Value CodeBuilder::DoCallFunction(
 		result.value_type= ValueType::Value;
 
 		const StoredVariablePtr stored_result= std::make_shared<StoredVariable>( "fn result"_SpC, result );
-		result.referenced_variables.emplace( stored_result );
+		result.references.emplace( stored_result );
 
 		function_context.stack_variables_stack.back()->RegisterVariable( stored_result );
 	}
@@ -2406,7 +2397,7 @@ Value CodeBuilder::DoCallFunction(
 			if( function_type.args[ arg_n ].is_reference )
 			{
 				for( const StoredVariablePtr& var : arg_to_variables[arg_n] )
-					result.referenced_variables.emplace(var);
+					result.references.emplace(var);
 			}
 		}
 
@@ -2418,16 +2409,16 @@ Value CodeBuilder::DoCallFunction(
 
 			for( const StoredVariablePtr& var : arg_to_inner_variables[arg_n_and_tag_n.first].first )
 			{
-				result.referenced_variables.emplace(var);
+				result.references.emplace(var);
 				for( const StoredVariablePtr& referenced_variable : function_context.variables_state.RecursiveGetAllReferencedVariables(var).variables )
-					result.referenced_variables.emplace(referenced_variable);
+					result.references.emplace(referenced_variable);
 			}
 		}
 	}
 	else if( function_type.return_type.ReferencesTagsCount() > 0u )
 	{
-		U_ASSERT( result.referenced_variables.size() == 1u );
-		const StoredVariablePtr& stored_result= *result.referenced_variables.begin();
+		U_ASSERT( result.references.size() == 1u );
+		const StoredVariablePtr& stored_result= *result.references.begin();
 
 		// Returned value references refers to args, listed in function type.
 		U_ASSERT( arg_to_variables.size() == function_type.args.size() );
@@ -2521,7 +2512,7 @@ Value CodeBuilder::DoCallFunction(
 
 	{ // Destroy unused temporary variables after each call.
 		std::vector< VariableStorageUseCounter > call_result_locks;
-		for( const auto& referenced_variable : result.referenced_variables )
+		for( const auto& referenced_variable : result.references )
 			call_result_locks.push_back( referenced_variable->mut_use_counter );
 		DestroyUnusedTemporaryVariables( function_context, call_file_pos );
 	}
@@ -2552,13 +2543,13 @@ Variable CodeBuilder::BuildTempVariableConstruction(
 	// Lock variable, for preventing of temporary destruction.
 	VariableStorageUseCounter variable_lock= stored_variable->mut_use_counter;
 
-	variable.referenced_variables.insert(stored_variable);
+	variable.references.insert(stored_variable);
 	variable.constexpr_value= ApplyConstructorInitializer( variable, stored_variable, call_operator, names, function_context );
-	variable.referenced_variables.erase(stored_variable);
+	variable.references.erase(stored_variable);
 	variable.value_type= ValueType::Value; // Make value after construction
 
 	Variable result= variable;
-	result.referenced_variables.emplace( stored_variable );
+	result.references.emplace( stored_variable );
 
 	return result;
 }
@@ -2584,11 +2575,11 @@ Variable CodeBuilder::ConvertVariable(
 	result.location= Variable::Location::Pointer;
 	result.value_type= ValueType::Reference;
 	result.llvm_value= function_context.alloca_ir_builder.CreateAlloca( dst_type.GetLLVMType() );
-	result.referenced_variables.insert(stored_variable);
+	result.references.insert(stored_variable);
 
 	// Lock variables, for preventing of temporary destruction.
 	std::vector<VariableStorageUseCounter> src_variable_locks;
-	for( const auto& var : variable.referenced_variables )
+	for( const auto& var : variable.references )
 		src_variable_locks.push_back( var->mut_use_counter );
 
 	VariableStorageUseCounter dst_variable_lock= stored_variable->mut_use_counter;
@@ -2607,7 +2598,7 @@ Variable CodeBuilder::ConvertVariable(
 	result.value_type= ValueType::Value; // Make value after construction
 
 	Variable result_copy= result;
-	result.referenced_variables.erase(stored_variable);
+	result.references.erase(stored_variable);
 
 	return result_copy;
 }
@@ -2661,10 +2652,9 @@ Value CodeBuilder::BuildUnaryMinus(
 			result.llvm_value= function_context.llvm_ir_builder.CreateNeg( value_for_neg );
 	}
 
-	const StoredVariablePtr stored_result= std::make_shared<StoredVariable>( OverloadedOperatorToString(OverloadedOperator::Sub), result );
-	result.referenced_variables.emplace( stored_result );
-	function_context.stack_variables_stack.back()->RegisterVariable( stored_result );
-
+	const auto node= std::make_shared<ReferencesGraphNode>( OverloadedOperatorToString(OverloadedOperator::Sub), ReferencesGraphNode::Kind::Variable );
+	function_context.stack_variables_stack.back()->RegisterVariable( std::make_pair( node, result ) );
+	result.references.emplace( node );
 	return Value( result, unary_minus.file_pos_ );
 }
 
@@ -2700,10 +2690,9 @@ Value CodeBuilder::BuildLogicalNot(
 		result.llvm_value= function_context.llvm_ir_builder.CreateNot( value_in_register );
 	}
 
-	const StoredVariablePtr stored_result= std::make_shared<StoredVariable>( OverloadedOperatorToString(OverloadedOperator::LogicalNot), result );
-	result.referenced_variables.emplace( stored_result );
-	function_context.stack_variables_stack.back()->RegisterVariable( stored_result );
-
+	const auto node= std::make_shared<ReferencesGraphNode>( OverloadedOperatorToString(OverloadedOperator::LogicalNot), ReferencesGraphNode::Kind::Variable );
+	function_context.stack_variables_stack.back()->RegisterVariable( std::make_pair( node, result ) );
+	result.references.emplace( node );
 	return Value( result, logical_not.file_pos_ );
 }
 
@@ -2732,8 +2721,6 @@ Value CodeBuilder::BuildBitwiseNot(
 		return ErrorValue();
 	}
 
-
-
 	Variable result;
 	result.type= variable.type;
 	result.location= Variable::Location::LLVMRegister;
@@ -2747,10 +2734,9 @@ Value CodeBuilder::BuildBitwiseNot(
 		result.llvm_value= function_context.llvm_ir_builder.CreateNot( value_in_register );
 	}
 
-	const StoredVariablePtr stored_result= std::make_shared<StoredVariable>( OverloadedOperatorToString(OverloadedOperator::BitwiseNot), result );
-	result.referenced_variables.emplace( stored_result );
-	function_context.stack_variables_stack.back()->RegisterVariable( stored_result );
-
+	const auto node= std::make_shared<ReferencesGraphNode>( OverloadedOperatorToString(OverloadedOperator::BitwiseNot), ReferencesGraphNode::Kind::Variable );
+	function_context.stack_variables_stack.back()->RegisterVariable( std::make_pair( node, result ) );
+	result.references.emplace( node );
 	return Value( result, bitwise_not.file_pos_ );
 }
 
