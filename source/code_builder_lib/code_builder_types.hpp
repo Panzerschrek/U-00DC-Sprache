@@ -397,8 +397,6 @@ public:
 	// Fundamental, class, array types
 	Variable* GetVariable();
 	const Variable* GetVariable() const;
-	// Stored variable
-	StoredVariablePtr GetStoredVariable() const;
 	// Function types
 	FunctionVariable* GetFunctionVariable();
 	const FunctionVariable* GetFunctionVariable() const;
@@ -438,7 +436,6 @@ public:
 private:
 	boost::variant<
 		Variable,
-		StoredVariablePtr,
 		FunctionVariable,
 		OverloadedFunctionsSet,
 		Type,

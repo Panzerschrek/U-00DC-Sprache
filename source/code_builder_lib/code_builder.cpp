@@ -2297,9 +2297,13 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 			}
 
 			const bool is_mutable= variable.value_type == ValueType::Reference;
-			for( const StoredVariablePtr& referenced_variable : variable.references )
-				function_context.variables_state.AddPollution( stored_variable, referenced_variable, is_mutable );
-			CheckReferencedVariables( stored_variable->content, variable_declaration.file_pos );
+			for( const ReferencesGraphNodePtr& node : variable.references )
+			{
+				if( is_mutable && function_context.variables_state.HaveOutgoingLinks( node ) )
+					errors_.push_back( ReportReferenceProtectionError( variable_declaration.file_pos, node->name ) );
+				else
+					function_context.variables_state.AddLink( var_node, node );
+			}
 
 			// TODO - maybe make copy of varaible address in new llvm register?
 			llvm::Value* result_ref= expression_result.llvm_value;
@@ -2415,9 +2419,13 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 		variable.constexpr_value= initializer_experrsion.constexpr_value;
 
 		const bool is_mutable= variable.value_type == ValueType::Reference;
-		for( const StoredVariablePtr& referenced_variable : variable.references )
-			function_context.variables_state.AddPollution( stored_variable, referenced_variable, is_mutable );
-		CheckReferencedVariables( variable, auto_variable_declaration.file_pos_ );
+		for( const ReferencesGraphNodePtr& node : initializer_experrsion.references )
+		{
+			if( is_mutable && function_context.variables_state.HaveOutgoingLinks( node ) )
+				errors_.push_back( ReportReferenceProtectionError( auto_variable_declaration.file_pos_, node->name ) );
+			else
+				function_context.variables_state.AddLink( node, var_node );
+		}
 	}
 	else if( auto_variable_declaration.reference_modifier == ReferenceModifier::None )
 	{	

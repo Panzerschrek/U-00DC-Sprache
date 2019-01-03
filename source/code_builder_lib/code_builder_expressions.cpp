@@ -136,7 +136,7 @@ boost::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 			}
 
 			U_ASSERT( r_var_real.references.size() == 1u );
-			function_context.variables_state.Move( *r_var_real.references.begin() );
+			function_context.variables_state.MoveNode( *r_var_real.references.begin() );
 
 			Variable move_result;
 			move_result.type= void_type_;
@@ -1400,7 +1400,7 @@ Value CodeBuilder::BuildMoveOpeator( const Synt::MoveOperator& move_operator, Na
 		if( !ok )
 			errors_.push_back( ReportReferenceProtectionError( move_operator.file_pos_, inner_variable.first->name ) );
 	}
-	function_context.variables_state.Move( variable_for_move );
+	function_context.variables_state.MoveNode( variable_for_move );
 
 	return Value( content, move_operator.file_pos_ );
 }

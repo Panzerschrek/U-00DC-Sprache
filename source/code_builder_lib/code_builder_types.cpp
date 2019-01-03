@@ -871,7 +871,6 @@ ProgramString Value::GetKindName() const
 	struct Visitor final : public boost::static_visitor< ProgramString >
 	{
 		ProgramString operator()( const Variable& ) const { return "variable"_SpC; }
-		ProgramString operator()( const StoredVariablePtr& ) const { return "sored variable"_SpC; }
 		ProgramString operator()( const FunctionVariable& ) const { return "function variable"_SpC; }
 		ProgramString operator()( const OverloadedFunctionsSet& ) const { return "functions set"_SpC; }
 		ProgramString operator()( const Type& ) const { return "typename"_SpC; }
@@ -912,14 +911,6 @@ Variable* Value::GetVariable()
 const Variable* Value::GetVariable() const
 {
 	return boost::get<Variable>( &something_ );
-}
-
-StoredVariablePtr Value::GetStoredVariable() const
-{
-	const StoredVariablePtr* const stored_variable= boost::get<StoredVariablePtr>( &something_ );
-	if( stored_variable == nullptr )
-		return nullptr;
-	return *stored_variable;
 }
 
 FunctionVariable* Value::GetFunctionVariable()
