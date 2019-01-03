@@ -348,10 +348,10 @@ void CodeBuilder::ProcessFunctionTypeReferencesPollution(
 
 void CodeBuilder::CheckReferencedVariables( const Variable& reference, const FilePos& file_pos )
 {
-	for( const StoredVariablePtr& referenced_variable : reference.references )
-		CheckVariableReferences( *referenced_variable, file_pos );
+	//for( const StoredVariablePtr& referenced_variable : reference.references )
+	//	CheckVariableReferences( *referenced_variable, file_pos );
 }
-
+/*
 void CodeBuilder::CheckVariableReferences( const StoredVariable& var, const FilePos& file_pos )
 {
 	if(
@@ -363,7 +363,8 @@ void CodeBuilder::CheckVariableReferences( const StoredVariable& var, const File
 	else
 		errors_.push_back( ReportReferenceProtectionError( file_pos, var.name ) );
 }
-
+*/
+/*
 std::vector<VariableStorageUseCounter> CodeBuilder::LockReferencedVariables( const Variable& reference )
 {
 	std::vector<VariableStorageUseCounter> locks;
@@ -372,9 +373,11 @@ std::vector<VariableStorageUseCounter> CodeBuilder::LockReferencedVariables( con
 
 	return locks;
 }
+*/
 
 void CodeBuilder::DestroyUnusedTemporaryVariables( FunctionContext& function_context, const FilePos& file_pos )
 {
+	/*
 	StackVariablesStorage& temporary_variables_storage= *function_context.stack_variables_stack.back();
 	for( const StoredVariablePtr& variable : temporary_variables_storage.variables )
 	{
@@ -386,12 +389,12 @@ void CodeBuilder::DestroyUnusedTemporaryVariables( FunctionContext& function_con
 			function_context.variables_state.Move( variable );
 		}
 	}
+	*/
 }
 
 ReferencesGraph CodeBuilder::MergeVariablesStateAfterIf( const std::vector<ReferencesGraph>& bracnhes_variables_state, const FilePos& file_pos )
 {
-	U_UNUSED( file_pos );
-	U_ASSERT( !bracnhes_variables_state.empty() );
+	/*
 
 	VariablesState::VariablesContainer result;
 
@@ -427,10 +430,12 @@ ReferencesGraph CodeBuilder::MergeVariablesStateAfterIf( const std::vector<Refer
 	} // for branches.
 
 	return VariablesState(std::move(result));
+	*/
 }
 
 void CodeBuilder::CheckWhileBlokVariablesState( const ReferencesGraph& state_before, const ReferencesGraph& state_after, const FilePos& file_pos )
 {
+	/*
 	U_ASSERT( state_before.GetVariables().size() == state_after.GetVariables().size() );
 
 	for( const auto& var_before : state_before.GetVariables() )
@@ -454,6 +459,7 @@ void CodeBuilder::CheckWhileBlokVariablesState( const ReferencesGraph& state_bef
 			}
 		}
 	}
+	*/
 }
 
 } // namespace CodeBuilderPrivate

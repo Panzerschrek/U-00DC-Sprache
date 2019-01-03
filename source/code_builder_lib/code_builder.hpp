@@ -87,7 +87,7 @@ private:
 
 		// For reference-returned functions - references of returning reference.
 		// For value-returned functions - references inside value.
-		std::unordered_set<StoredVariablePtr> allowed_for_returning_references;
+		//std::unordered_set<StoredVariablePtr> allowed_for_returning_references;
 
 		const Variable* this_= nullptr; // null for nonclass functions or static member functions.
 		llvm::Value* s_ret_= nullptr; // Value for assignment for "sret" functions.
@@ -334,12 +334,11 @@ private:
 		FunctionContext& function_context);
 
 	// Store counter of destroyed references to this variable.
-	typedef std::unordered_map<StoredVariablePtr, size_t> DestroyedVariableReferencesCount;
+	//typedef std::unordered_map<StoredVariablePtr, size_t> DestroyedVariableReferencesCount;
 
 	void CallDestructorsImpl(
 		const StackVariablesStorage& stack_variables_storage,
 		FunctionContext& function_context,
-		DestroyedVariableReferencesCount& destroyed_variable_references,
 		const FilePos& file_pos );
 
 	void CallDestructors(
@@ -739,8 +738,8 @@ private:
 		bool first_arg_is_implicit_this= false );
 
 	void CheckReferencedVariables( const Variable& reference, const FilePos& file_pos );
-	void CheckVariableReferences( const StoredVariable& var, const FilePos& file_pos );
-	std::vector<VariableStorageUseCounter> LockReferencedVariables( const Variable& reference );
+	//void CheckVariableReferences( const StoredVariable& var, const FilePos& file_pos );
+	//std::vector<VariableStorageUseCounter> LockReferencedVariables( const Variable& reference );
 
 	void DestroyUnusedTemporaryVariables( FunctionContext& function_context, const FilePos& file_pos );
 

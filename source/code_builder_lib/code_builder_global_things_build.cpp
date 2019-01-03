@@ -143,7 +143,6 @@ void CodeBuilder::GlobalThingBuildNamespace( NamesScope& names_scope )
 			else if( name.second.GetClassField() != nullptr ) {} // Can be in classes.
 			else if( name.second.GetFunctionVariable() != nullptr ) {} // It is function, generating from template.
 			else if( name.second.GetVariable() != nullptr ){}
-			else if( name.second.GetStoredVariable() != nullptr ){}
 			else if( name.second.GetErrorValue() != nullptr ){}
 			else if( const auto static_assert_= name.second.GetStaticAssert() )
 				BuildStaticAssert( *static_assert_, names_scope );
@@ -427,7 +426,6 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type, const T
 				else if( name.second.GetClassField() != nullptr ) {} // Fields are already complete.
 				else if( name.second.GetTypeName() != nullptr ) {}
 				else if( name.second.GetVariable() != nullptr ){}
-				else if( name.second.GetStoredVariable() != nullptr ){}
 				else if( name.second.GetErrorValue() != nullptr ){}
 				else if( name.second.GetStaticAssert() != nullptr ){}
 				else if( name.second.GetTypedef() != nullptr ) {}
@@ -840,8 +838,8 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 			// Make immutable, if needed, only after initialization, because in initialization we need call constructors, which is mutable methods.
 			variable.value_type= ValueType::ConstReference;
 
-			for( const auto& referenced_variable_pair : function_context.variables_state.GetVariableReferences( stored_variable ) )
-				CheckVariableReferences( *referenced_variable_pair.first, variable_declaration.file_pos );
+			//for( const auto& referenced_variable_pair : function_context.variables_state.GetVariableReferences( stored_variable ) )
+			//	CheckVariableReferences( *referenced_variable_pair.first, variable_declaration.file_pos );
 
 			if( global_variable != nullptr && variable.constexpr_value != nullptr )
 				global_variable->setInitializer( variable.constexpr_value );
@@ -894,9 +892,9 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 
 			variable.references= expression_result.references;
 
-			for( const StoredVariablePtr& referenced_variable : variable.references )
-				function_context.variables_state.AddPollution( stored_variable, referenced_variable, false );
-			CheckReferencedVariables( stored_variable->content, variable_declaration.file_pos );
+			//for( const StoredVariablePtr& referenced_variable : variable.references )
+			//	function_context.variables_state.AddPollution( stored_variable, referenced_variable, false );
+			//CheckReferencedVariables( stored_variable->content, variable_declaration.file_pos );
 
 			// TODO - maybe make copy of varaible address in new llvm register?
 			llvm::Value* result_ref= expression_result.llvm_value;
@@ -915,7 +913,7 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 
 		// Do not call destructors, because global variables can be only constexpr and any constexpr type have trivial destructor.
 
-		global_variable_value= Value( stored_variable, variable_declaration.file_pos );
+		global_variable_value= Value( variable, variable_declaration.file_pos );
 	}
 	else if( const auto auto_variable_declaration= dynamic_cast<const Synt::AutoVariableDeclaration*>(incomplete_global_variable.syntax_element) )
 	{
@@ -976,13 +974,13 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 			variable.llvm_value= initializer_experrsion.llvm_value;
 			variable.constexpr_value= initializer_experrsion.constexpr_value;
 
-			for( const StoredVariablePtr& referenced_variable : variable.references )
-				function_context.variables_state.AddPollution( stored_variable, referenced_variable, false );
-			CheckReferencedVariables( variable, auto_variable_declaration->file_pos_ );
+			//for( const StoredVariablePtr& referenced_variable : variable.references )
+			//	function_context.variables_state.AddPollution( stored_variable, referenced_variable, false );
+			//CheckReferencedVariables( variable, auto_variable_declaration->file_pos_ );
 		}
 		else if( auto_variable_declaration->reference_modifier == ReferenceModifier::None )
 		{
-			VariablesState::VariableReferences moved_variable_referenced_variables;
+			//VariablesState::VariableReferences moved_variable_referenced_variables;
 
 			llvm::GlobalVariable* const global_variable= CreateGlobalConstantVariable( variable.type, MangleGlobalVariable( names_scope, auto_variable_declaration->name ) );
 			variable.llvm_value= global_variable;
@@ -999,10 +997,10 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 				if( initializer_experrsion.value_type == ValueType::Value )
 				{
 					U_ASSERT( initializer_experrsion.references.size() == 1u );
-					const StoredVariablePtr& variable_for_move= *initializer_experrsion.references.begin();
+					const auto& variable_for_move= *initializer_experrsion.references.begin();
 
-					moved_variable_referenced_variables= function_context.variables_state.GetVariableReferences( variable_for_move );
-					function_context.variables_state.Move( variable_for_move );
+					//moved_variable_referenced_variables= function_context.variables_state.GetVariableReferences( variable_for_move );
+					function_context.variables_state.MoveNode( variable_for_move );
 
 					CopyBytes( initializer_experrsion.llvm_value, variable.llvm_value, variable.type, function_context );
 					variable.constexpr_value= initializer_experrsion.constexpr_value; // Move can preserve constexpr.
@@ -1023,6 +1021,7 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 			if( global_variable != nullptr && variable.constexpr_value != nullptr )
 				global_variable->setInitializer( variable.constexpr_value );
 
+			/*
 			// Take references inside variables in initializer expression.
 			for( const auto& ref : moved_variable_referenced_variables )
 				function_context.variables_state.AddPollution( stored_variable, ref.first, ref.second.IsMutable() );
@@ -1035,6 +1034,7 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 						errors_.push_back( ReportReferenceProtectionError( auto_variable_declaration->file_pos_, inner_variable_pair.first->name ) );
 				}
 			}
+			*/
 		}
 		else U_ASSERT(false);
 

@@ -556,7 +556,8 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 			const Variable initializer_variable= BuildExpressionCodeEnsureVariable( *call_operator.arguments_.front(), block_names, function_context );
 			CopyBytes( initializer_variable.llvm_value, variable.llvm_value, variable.type, function_context );
 
-			// Lock references and move.
+			// Lock references and move
+			/*.
 			U_ASSERT( initializer_variable.references.size() == 1u );
 			for( const auto& inner_variable : function_context.variables_state.GetVariableReferences( *initializer_variable.references.begin() ) )
 			{
@@ -564,8 +565,9 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 				if( !ok )
 					errors_.push_back( ReportReferenceProtectionError( call_operator.file_pos_, inner_variable.first->name ) );
 			}
+			*/
 
-			function_context.variables_state.Move( *initializer_variable.references.begin() );
+			function_context.variables_state.MoveNode( *initializer_variable.references.begin() );
 
 			return initializer_variable.constexpr_value; // Move can preserve constexpr.
 		}
@@ -642,6 +644,7 @@ llvm::Constant* CodeBuilder::ApplyExpressionInitializer(
 		}
 
 		// Lock references.
+		/*
 		if( variable.type.ReferencesTagsCount() > 0u )
 		{
 			for( const StoredVariablePtr& referenced_variable : expression_result.references )
@@ -654,13 +657,14 @@ llvm::Constant* CodeBuilder::ApplyExpressionInitializer(
 				}
 			}
 		}
+		*/
 
 		// Move or try call copy constructor.
 		// TODO - produce constant initializer for generated copy constructor, if source is constant.
 		if( expression_result.value_type == ValueType::Value && expression_result.type == variable.type )
 		{
 			U_ASSERT( expression_result.references.size() == 1u );
-			function_context.variables_state.Move( *expression_result.references.begin() );
+			function_context.variables_state.MoveNode( *expression_result.references.begin() );
 			CopyBytes( expression_result.llvm_value, variable.llvm_value, variable.type, function_context );
 
 			DestroyUnusedTemporaryVariables( function_context, initializer.file_pos_ );
@@ -904,6 +908,7 @@ llvm::Constant* CodeBuilder::InitializeReferenceField(
 		return nullptr;
 	}
 
+	/*
 	for( const StoredVariablePtr& referenced_variable : initializer_variable.references )
 	{
 		const bool ok= function_context.variables_state.AddPollution( variable_storage, referenced_variable, field.is_mutable );
@@ -911,6 +916,7 @@ llvm::Constant* CodeBuilder::InitializeReferenceField(
 			errors_.push_back( ReportReferenceProtectionError( initializer.GetFilePos(), referenced_variable->name ) );
 	}
 	CheckReferencedVariables( initializer_variable, initializer.GetFilePos() );
+	*/
 
 	// Make first index = 0 for array to pointer conversion.
 	llvm::Value* index_list[2];

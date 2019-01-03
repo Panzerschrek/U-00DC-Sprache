@@ -419,13 +419,7 @@ DeducedTemplateParameter CodeBuilder::DeduceTemplateArguments(
 			if( signature_parameter_name == nullptr )
 				return DeducedTemplateParameter::Invalid();
 
-			const Variable* named_variable = signature_parameter_name->second.GetVariable();
-			if( named_variable == nullptr )
-			{
-				if( const StoredVariablePtr stored_variable= signature_parameter_name->second.GetStoredVariable() )
-					named_variable= &stored_variable->content;
-			}
-			if( named_variable != nullptr )
+			if( const Variable* const named_variable= signature_parameter_name->second.GetVariable() )
 			{
 				if( named_variable->type == variable->type &&
 					TypeIsValidForTemplateVariableArgument( named_variable->type ) &&
@@ -1442,8 +1436,6 @@ void CodeBuilder::ReportAboutIncompleteMembersOfTemplateClass( const FilePos& fi
 					});
 			}
 			else if( name.second.GetVariable() != nullptr )
-			{}
-			else if( name.second.GetStoredVariable() != nullptr )
 			{}
 			else U_ASSERT(false);
 		} );
