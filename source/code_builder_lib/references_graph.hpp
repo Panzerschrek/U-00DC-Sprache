@@ -55,6 +55,7 @@ private:
 
 private:
 	std::unordered_map<ReferencesGraphNodePtr, NodeState> nodes_;
+	// first - from, second - to
 	std::vector< std::pair<ReferencesGraphNodePtr, ReferencesGraphNodePtr> > links_;
 };
 

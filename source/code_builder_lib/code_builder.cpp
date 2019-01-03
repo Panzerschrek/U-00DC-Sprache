@@ -2217,6 +2217,11 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 		// Destruction frame for temporary variables of initializer expression.
 		const StackVariablesStorage temp_variables_storage( function_context );
 
+		Variable variable;
+		variable.type= type;
+		variable.location= Variable::Location::Pointer;
+		variable.value_type= ValueType::Reference;
+
 		ReferencesGraphNode::Kind node_kind;
 		if( variable_declaration.reference_modifier != ReferenceModifier::Reference )
 			node_kind= ReferencesGraphNode::Kind::Variable;
@@ -2226,10 +2231,7 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 			node_kind= ReferencesGraphNode::Kind::ReferenceImut;
 		const auto var_node= std::make_shared<ReferencesGraphNode>( variable_declaration.name, node_kind );
 
-		Variable variable;
-		variable.type= type;
-		variable.location= Variable::Location::Pointer;
-		variable.value_type= ValueType::Reference;
+		function_context.stack_variables_stack[ function_context.stack_variables_stack.size() - 2u ]->RegisterVariable( std::make_pair( var_node, variable ) );
 		variable.references.insert(var_node);
 
 		if( variable_declaration.reference_modifier == ReferenceModifier::None )
@@ -2299,12 +2301,12 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 			}
 
 			const bool is_mutable= variable.value_type == ValueType::Reference;
-			for( const ReferencesGraphNodePtr& node : variable.references )
+			for( const ReferencesGraphNodePtr& node : expression_result.references )
 			{
 				if( is_mutable && function_context.variables_state.HaveOutgoingLinks( node ) )
 					errors_.push_back( ReportReferenceProtectionError( variable_declaration.file_pos, node->name ) );
 				else
-					function_context.variables_state.AddLink( var_node, node );
+					function_context.variables_state.AddLink( node, var_node );
 			}
 
 			// TODO - maybe make copy of varaible address in new llvm register?
@@ -2341,8 +2343,6 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 			continue;
 		}
 
-		function_context.stack_variables_stack[ function_context.stack_variables_stack.size() - 2u ]->RegisterVariable( std::make_pair( var_node, variable ) );
-
 		// After lock of references we can call destructors.
 		CallDestructors( *function_context.stack_variables_stack.back(), function_context, variable_declaration.file_pos );
 	} // for variables
@@ -2372,6 +2372,11 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 		}
 	}
 
+	Variable variable;
+	variable.type= initializer_experrsion.type;
+	variable.value_type= auto_variable_declaration.mutability_modifier == MutabilityModifier::Mutable ? ValueType::Reference : ValueType::ConstReference;
+	variable.location= Variable::Location::Pointer;
+
 	ReferencesGraphNode::Kind node_kind;
 	if( auto_variable_declaration.reference_modifier != ReferenceModifier::Reference )
 		node_kind= ReferencesGraphNode::Kind::Variable;
@@ -2381,10 +2386,7 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 		node_kind= ReferencesGraphNode::Kind::ReferenceImut;
 	const auto var_node= std::make_shared<ReferencesGraphNode>( auto_variable_declaration.name, node_kind );
 
-	Variable variable;
-	variable.type= initializer_experrsion.type;
-	variable.value_type= auto_variable_declaration.mutability_modifier == MutabilityModifier::Mutable ? ValueType::Reference : ValueType::ConstReference;
-	variable.location= Variable::Location::Pointer;
+	function_context.stack_variables_stack[ function_context.stack_variables_stack.size() - 2u ]->RegisterVariable( std::make_pair( var_node, variable ) );
 	variable.references.insert( var_node );
 
 	if( auto_variable_declaration.reference_modifier != ReferenceModifier::Reference ||
@@ -2509,8 +2511,6 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 		block_names.AddName( auto_variable_declaration.name, Value( variable, auto_variable_declaration.file_pos_ ) );
 	if( inserted_name == nullptr )
 		errors_.push_back( ReportRedefinition( auto_variable_declaration.file_pos_, auto_variable_declaration.name ) );
-
-	function_context.stack_variables_stack[ function_context.stack_variables_stack.size() - 2u ]->RegisterVariable( std::make_pair( var_node, variable ) );
 
 	// After lock of references we can call destructors.
 	CallDestructors( *function_context.stack_variables_stack.back(), function_context, auto_variable_declaration.file_pos_ );
