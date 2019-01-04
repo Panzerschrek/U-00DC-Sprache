@@ -44,6 +44,8 @@ public:
 	// Creating temporary mutable reference to reference node with outgoing links is compilation error.
 	bool HaveOutgoingLinks( const ReferencesGraphNodePtr& from ) const;
 
+	bool HaveOutgoingMutableNodes( const ReferencesGraphNodePtr& from ) const;
+
 	void MoveNode( const ReferencesGraphNodePtr& node );
 	bool NodeMoved( const ReferencesGraphNodePtr& node ) const;
 

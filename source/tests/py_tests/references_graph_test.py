@@ -98,3 +98,46 @@ def CreateMutableReferenceToAnotherMutableReference_Test1():
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ReferenceProtectionError" )
 	assert( errors_list[0].file_pos.line == 7 )
+
+
+def AccessingVariableThatHaveMutableReference_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			auto mut x= 0;
+			var i32 &mut r= x;
+			var i32 x_copy= x; // error, accessing 'x'
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "AccessingVariableThatHaveMutableReference" )
+	assert( errors_list[0].file_pos.line == 6 )
+
+
+def AccessingVariableThatHaveMutableReference_Test1():
+	c_program_text= """
+		fn Foo()
+		{
+			auto mut x= 0;
+			var i32 &mut r0= x;
+			var i32 &mut r1= r0;
+			var i32 x_copy= r0; // error, accessing 'r0', that have reference 'r1'
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "AccessingVariableThatHaveMutableReference" )
+	assert( errors_list[0].file_pos.line == 7 )
+
+
+def AccessingVariableThatHaveMutableReference_Test2():
+	c_program_text= """
+		fn Foo()
+		{
+			auto mut x= 0;
+			var i32 &mut r= x;
+			var i32 x_copy= r; //ok, accessing end reference
+		}
+	"""
+	tests_lib.build_program( c_program_text )

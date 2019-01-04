@@ -1199,14 +1199,14 @@ Value CodeBuilder::BuildNamedOperand(
 		}
 	}
 
-	const NamesScope::InsertedName* name_entry= ResolveName( named_operand.file_pos_, names, named_operand.name_ );
+	const NamesScope::InsertedName* const name_entry= ResolveName( named_operand.file_pos_, names, named_operand.name_ );
 	if( !name_entry )
 	{
 		errors_.push_back( ReportNameNotFound( named_operand.file_pos_, named_operand.name_ ) );
 		return ErrorValue();
 	}
 
-	const ProgramString back_name_component= named_operand.name_.components.back().name ;
+	const ProgramString& back_name_component= named_operand.name_.components.back().name;
 	if( !function_context.is_in_unsafe_block &&
 		( back_name_component == Keywords::constructor_ || back_name_component == Keywords::destructor_ ) )
 		errors_.push_back( ReportExplicitAccessToThisMethodIsUnsafe( named_operand.file_pos_, back_name_component ) );
@@ -1292,8 +1292,7 @@ Value CodeBuilder::BuildNamedOperand(
 
 		return Value( field_variable, named_operand.file_pos_ );
 	}
-	else if( const OverloadedFunctionsSet* const overloaded_functions_set=
-		name_entry->second.GetFunctionsSet() )
+	else if( const OverloadedFunctionsSet* const overloaded_functions_set= name_entry->second.GetFunctionsSet() )
 	{
 		if( function_context.this_ != nullptr )
 		{
@@ -1317,34 +1316,14 @@ Value CodeBuilder::BuildNamedOperand(
 			}
 		}
 	}
-	/*
-	else if( const StoredVariablePtr referenced_variable= name_entry->second.GetStoredVariable() )
+	else if( const Variable* const variable= name_entry->second.GetVariable() )
 	{
-		// Unwrap stored variable here.
-		Variable result;
-		result= referenced_variable->content;
-		if( referenced_variable->kind == StoredVariable::Kind::Variable ||
-			referenced_variable->kind == StoredVariable::Kind::ReferenceArg )
-		{
-			if( function_context.variables_state.VariableIsMoved( referenced_variable ) )
-				errors_.push_back( ReportAccessingMovedVariable( named_operand.file_pos_, referenced_variable->name ) );
-
-			result.references.emplace( referenced_variable );
-
-			// If we have mutable reference to variable, we can not access variable itself.
-			if( referenced_variable->content.value_type == ValueType::Reference && referenced_variable->mut_use_counter.use_count() >= 2u )
-				errors_.push_back( ReportAccessingVariableThatHaveMutableReference( named_operand.file_pos_, referenced_variable->name ) );
-		}
-		else if( referenced_variable->kind == StoredVariable::Kind::ArgInnerVariable )
-		{
-			// If we have mutable reference to variable, we can not access variable itself.
-			if( referenced_variable->content.value_type == ValueType::Reference && referenced_variable->mut_use_counter.use_count() >= 2u )
-				errors_.push_back( ReportAccessingVariableThatHaveMutableReference( named_operand.file_pos_, referenced_variable->name ) );
-		}
-
-		return Value( result, name_entry->second.GetFilePos() );
+		bool access_error= false;
+		for( const ReferencesGraphNodePtr& node : variable->references )
+			access_error= access_error || function_context.variables_state.HaveOutgoingMutableNodes( node );
+		if( access_error )
+			errors_.push_back( ReportAccessingVariableThatHaveMutableReference( named_operand.file_pos_, back_name_component ) );
 	}
-	*/
 
 	return name_entry->second;
 }
