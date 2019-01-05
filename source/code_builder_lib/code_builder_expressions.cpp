@@ -2083,6 +2083,8 @@ Value CodeBuilder::DoCallFunction(
 	std::vector<llvm::Value*> llvm_args;
 	std::vector<llvm::Constant*> constant_llvm_args;
 	llvm_args.resize( arg_count, nullptr );
+
+	std::vector< ReferencesGraphNodeHolder > locked_args_references;
 	//std::unordered_map<StoredVariablePtr, VaraibleReferencesCounter> locked_variable_counters;
 	//std::vector<VariableStorageUseCounter> temp_args_locks; // We need lock reference argument before evaluating next arguments.
 	//std::vector< std::unordered_set<StoredVariablePtr> > arg_to_variables( arg_count );
@@ -2137,14 +2139,17 @@ Value CodeBuilder::DoCallFunction(
 					llvm_args[j]= CreateReferenceCast( expr.llvm_value, expr.type, arg.type, function_context );
 
 				// Lock references.
-				/*
-				for( const StoredVariablePtr& referenced_variable : expr.references )
+				locked_args_references.emplace_back(
+					std::make_shared<ReferencesGraphNode>( ToProgramString( "reference_arg_" + std::to_string(i) ), ReferencesGraphNode::Kind::ReferenceMut ),
+					function_context );
+				const auto& arg_node= locked_args_references.back().Node();
+				for( const ReferencesGraphNodePtr& arg_reference : expr.references )
 				{
-					++locked_variable_counters[referenced_variable].mut;
-					temp_args_locks.push_back( referenced_variable->mut_use_counter );
-					arg_to_variables[j].emplace( referenced_variable );
+					if( function_context.variables_state.HaveOutgoingLinks( arg_reference ) )
+						errors_.push_back( ReportReferenceProtectionError( file_pos, arg_reference->name ) );
+					else
+						function_context.variables_state.AddLink( arg_reference, arg_node );
 				}
-				*/
 			}
 			else
 			{
@@ -2173,25 +2178,20 @@ Value CodeBuilder::DoCallFunction(
 				}
 
 				// Lock references.
-				/*
-				arg_to_inner_variables[j].second= false; // Non-mutable
-				for( const StoredVariablePtr& referenced_variable : expr.references )
-				{
-					++locked_variable_counters[referenced_variable].imut;
-					temp_args_locks.push_back( referenced_variable->imut_use_counter );
-					arg_to_variables[j].emplace( referenced_variable );
-
-					for( const auto& inner_variable_pair : function_context.variables_state.GetVariableReferences( referenced_variable ) )
-					{
-						arg_to_inner_variables[j].second= arg_to_inner_variables[j].second || inner_variable_pair.second.IsMutable();
-						arg_to_inner_variables[j].first.emplace( inner_variable_pair.first );
-					}
-				}
-				*/
+				locked_args_references.emplace_back(
+					std::make_shared<ReferencesGraphNode>( ToProgramString( "reference_arg_" + std::to_string(i) ), ReferencesGraphNode::Kind::ReferenceImut ),
+					function_context );
+				const auto& arg_node= locked_args_references.back().Node();
+				for( const ReferencesGraphNodePtr& arg_reference : expr.references )
+					function_context.variables_state.AddLink( arg_reference, arg_node );
 			}
 		}
 		else
 		{
+			locked_args_references.emplace_back(
+				std::make_shared<ReferencesGraphNode>( ToProgramString( "value_arg_" + std::to_string(i) ), ReferencesGraphNode::Kind::Variable ),
+				function_context );
+
 			if( !ReferenceIsConvertible( expr.type, arg.type, call_file_pos ) && GetConversionConstructor( expr.type, arg.type, file_pos ) == nullptr )
 			{
 				errors_.push_back( ReportTypesMismatch( file_pos, arg.type.ToString(), expr.type.ToString() ) );
@@ -2276,6 +2276,7 @@ Value CodeBuilder::DoCallFunction(
 		// Destroy unused temporary variables after each argument evaluation.
 		DestroyUnusedTemporaryVariables( function_context, call_file_pos );
 	} // for args
+	U_ASSERT( locked_args_references.size() == arg_count );
 
 	// Check references.
 	/*
@@ -2358,6 +2359,8 @@ Value CodeBuilder::DoCallFunction(
 
 	result.type= function_type.return_type;
 	result.llvm_value= call_result;
+
+	ReferencesGraphNodePtr result_node;
 	if( function_type.return_value_is_reference )
 	{
 		result.location= Variable::Location::Pointer;
@@ -2365,6 +2368,10 @@ Value CodeBuilder::DoCallFunction(
 			result.value_type= ValueType::Reference;
 		else
 			result.value_type= ValueType::ConstReference;
+
+		result_node= std::make_shared<ReferencesGraphNode>( "fn result"_SpC, function_type.return_value_is_mutable ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut );
+		function_context.stack_variables_stack.back()->RegisterVariable( std::make_pair( result_node, result ) );
+		result.references.emplace( result_node );
 	}
 	else
 	{
@@ -2374,12 +2381,20 @@ Value CodeBuilder::DoCallFunction(
 		result.location= return_value_is_sret ? Variable::Location::Pointer : Variable::Location::LLVMRegister;
 		result.value_type= ValueType::Value;
 
-		const ReferencesGraphNodePtr node= std::make_shared<ReferencesGraphNode>( "fn result"_SpC, ReferencesGraphNode::Kind::Variable );
-		function_context.stack_variables_stack.back()->RegisterVariable( std::make_pair( node, result ) );
-		result.references.emplace( node );
+		result_node= std::make_shared<ReferencesGraphNode>( "fn result"_SpC, ReferencesGraphNode::Kind::Variable );
+		function_context.stack_variables_stack.back()->RegisterVariable( std::make_pair( result_node, result ) );
+		result.references.emplace( result_node );
 	}
 
 	// Prepare reference result.
+	if( function_type.return_value_is_reference )
+	{
+		for( const size_t arg_n : function_type.return_references.args_references )
+		{
+			U_ASSERT( arg_n < locked_args_references.size() );
+			function_context.variables_state.AddLink( locked_args_references[arg_n].Node(), result_node );
+		}
+	}
 	/*
 	if( function_type.return_value_is_reference )
 	{

@@ -81,6 +81,24 @@ void CodeBuilder::StackVariablesStorage::RegisterVariable( NodeAndVariable node_
 	variables_.push_back( std::move(node_and_variable) );
 }
 
+CodeBuilder::ReferencesGraphNodeHolder::ReferencesGraphNodeHolder( ReferencesGraphNodePtr node, FunctionContext& function_context )
+	: node_(std::move(node)), function_context_(function_context)
+{
+	function_context_.variables_state.AddNode( node_ );
+}
+
+CodeBuilder::ReferencesGraphNodeHolder::ReferencesGraphNodeHolder( ReferencesGraphNodeHolder&& other)
+	: node_(other.node_), function_context_(other.function_context_)
+{
+	other.node_= nullptr;
+}
+
+CodeBuilder::ReferencesGraphNodeHolder::~ReferencesGraphNodeHolder()
+{
+	if( node_ != nullptr )
+		function_context_.variables_state.RemoveNode( node_ );
+}
+
 CodeBuilder::CodeBuilder(
 	std::string target_triple_str,
 	const llvm::DataLayout& data_layout )

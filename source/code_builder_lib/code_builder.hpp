@@ -146,6 +146,22 @@ private:
 		{}
 	};
 
+	class ReferencesGraphNodeHolder final
+	{
+	public:
+		ReferencesGraphNodeHolder( ReferencesGraphNodePtr node, FunctionContext& function_context );
+		ReferencesGraphNodeHolder( const ReferencesGraphNodeHolder& )= delete;
+		ReferencesGraphNodeHolder( ReferencesGraphNodeHolder&& other );
+
+		~ReferencesGraphNodeHolder();
+
+		const ReferencesGraphNodePtr& Node() const { return node_; }
+
+	private:
+		ReferencesGraphNodePtr node_;
+		FunctionContext& function_context_;
+	};
+
 private:
 	BuildResultInternal BuildProgramInternal( const SourceGraph& source_graph, size_t node_index );
 

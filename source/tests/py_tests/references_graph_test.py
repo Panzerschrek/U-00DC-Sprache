@@ -141,3 +141,48 @@ def AccessingVariableThatHaveMutableReference_Test2():
 		}
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def FunctionReferencePass_Test0():
+	c_program_text= """
+		fn Pass( i32& x ) : i32& { return x; }
+		fn Foo()
+		{
+			auto mut x= 0;
+			auto &imut ri= Pass(x);
+			auto &mut rm= x; // Error, 'x' have reference already.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ReferenceProtectionError" )
+	assert( errors_list[0].file_pos.line == 7 )
+
+
+def FunctionReferencePass_Test1():
+	c_program_text= """
+		fn PassFirst( i32&'f x, i32&'s y ) : i32&'f { return x; }
+		fn Foo()
+		{
+			var i32 mut x= 0, mut y= 0;
+			auto &imut ri= PassFirst( x, y );
+			auto &mut rm= y; // Ok, 'y' have no references.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def FunctionReferencePass_Test2():
+	c_program_text= """
+		fn Pass( i32&mut x ) : i32&mut { return x; }
+		fn Foo()
+		{
+			auto mut x= 0;
+			auto &mut r0= Pass(x);
+			auto x_copy= x; // Error, accessing 'x', which have mutable rerefernce.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "AccessingVariableThatHaveMutableReference" )
+	assert( errors_list[0].file_pos.line == 7 )
