@@ -312,18 +312,12 @@ struct Variable final
 	// Undef, if value is template-dependent.
 	llvm::Constant* constexpr_value= nullptr;
 
-	std::unordered_set<ReferencesGraphNodePtr> references;
+	std::unordered_set<ReferencesGraphNodePtr> references; // TODO - make single reference, not set?
 
 	Variable()= default;
 	Variable(Type in_type,
 		Location in_location= Location::Pointer, ValueType in_value_type= ValueType::ConstReference,
 		llvm::Value* in_llvm_value= nullptr, llvm::Constant* in_constexpr_value= nullptr );
-};
-
-struct VaraibleReferencesCounter
-{
-	unsigned int  mut= 0u;
-	unsigned int imut= 0u;
 };
 
 struct ClassField final

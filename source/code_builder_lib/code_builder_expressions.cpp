@@ -1164,6 +1164,9 @@ Value CodeBuilder::BuildNamedOperand(
 	if( named_operand.name_.components.size() == 1u &&
 		named_operand.name_.components.back().template_parameters.empty() )
 	{
+		// TODO - ReportAccessingVariableThatHaveMutableReference if 'this' have mutalbe references.
+
+
 		if( named_operand.name_.components.back().name == Keywords::this_ )
 		{
 			if( function_context.this_ == nullptr || function_context.whole_this_is_unavailable )
@@ -1213,6 +1216,9 @@ Value CodeBuilder::BuildNamedOperand(
 
 	if( const ClassField* const field= name_entry->second.GetClassField() )
 	{
+		// TODO - ReportAccessingVariableThatHaveMutableReference if 'this' have mutalbe references.
+
+
 		if( function_context.this_ == nullptr )
 		{
 			errors_.push_back( ReportClassFiledAccessInStaticMethod( named_operand.file_pos_, named_operand.name_.components.back().name ) );
@@ -1294,6 +1300,9 @@ Value CodeBuilder::BuildNamedOperand(
 	}
 	else if( const OverloadedFunctionsSet* const overloaded_functions_set= name_entry->second.GetFunctionsSet() )
 	{
+		// TODO - ReportAccessingVariableThatHaveMutableReference if 'this' have mutalbe references.
+
+
 		if( function_context.this_ != nullptr )
 		{
 			// Trying add "this" to functions set.
@@ -2085,7 +2094,6 @@ Value CodeBuilder::DoCallFunction(
 	llvm_args.resize( arg_count, nullptr );
 
 	std::vector< ReferencesGraphNodeHolder > locked_args_references;
-	//std::unordered_map<StoredVariablePtr, VaraibleReferencesCounter> locked_variable_counters;
 	//std::vector<VariableStorageUseCounter> temp_args_locks; // We need lock reference argument before evaluating next arguments.
 	//std::vector< std::unordered_set<StoredVariablePtr> > arg_to_variables( arg_count );
 	//std::vector< std::pair< std::unordered_set<StoredVariablePtr>, bool > > arg_to_inner_variables( arg_count ); // second param - is mutable
@@ -2277,39 +2285,6 @@ Value CodeBuilder::DoCallFunction(
 		DestroyUnusedTemporaryVariables( function_context, call_file_pos );
 	} // for args
 	U_ASSERT( locked_args_references.size() == arg_count );
-
-	// Check references.
-	/*
-	temp_args_locks.clear(); // clear temporary locks.
-	for( const auto& pair : locked_variable_counters )
-	{
-		// Check references, passed into function.
-		const VaraibleReferencesCounter& counter= pair.second;
-		if( counter.mut == 1u && counter.imut == 0u )
-		{} // All ok - one mutable reference.
-		else if( counter.mut == 0u )
-		{} // All ok - 0-infinity immutable references.
-		else
-		{
-			errors_.push_back( ReportReferenceProtectionError( call_file_pos, pair.first->name ) );
-			continue;
-		}
-
-		// Check interaction between references, passed into function and references on stack.
-		const StoredVariable& var= *pair.first;
-		if( counter.mut == 1u &&
-			( var.imut_use_counter.use_count() > 1u || var.mut_use_counter.use_count() > 2u ) )
-		{
-			// Pass mutable reference into function, while there are references on stack or somewhere else.
-			// We can have one mutable reference on stack, but no more.
-			errors_.push_back( ReportReferenceProtectionError( call_file_pos, var.name ) );
-		}
-		if( counter.mut == 1u && var.mut_use_counter.use_count() == 2u )
-		{} // Ok - we take one mutable reference from stack and pass it into function.
-		if( counter.mut == 0u && var.imut_use_counter.use_count() > 1u )
-		{} // Ok - pass immutable references into function, while mutable references on stack exists.
-	}
-	*/
 
 	const bool return_value_is_sret= function_type.return_type.GetClassType() != nullptr && !function_type.return_value_is_reference;
 

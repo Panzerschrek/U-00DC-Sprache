@@ -186,3 +186,35 @@ def FunctionReferencePass_Test2():
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "AccessingVariableThatHaveMutableReference" )
 	assert( errors_list[0].file_pos.line == 7 )
+
+
+def ReferenceInsideStruct_Test0():
+	c_program_text= """
+		struct S{ i32 &imut r; }
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var S s{ .r= x };
+			++x; // Error, 'x' have reference.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ReferenceProtectionError" )
+	assert( errors_list[0].file_pos.line == 7 )
+
+
+def ReferenceInsideStruct_Test1():
+	c_program_text= """
+		struct S{ i32 &mut r; }
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			auto &imut r= x;
+			var S s{ .r= x }; // Error, creating mutable reference to variable, that have reference.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ReferenceProtectionError" )
+	assert( errors_list[0].file_pos.line == 7 )

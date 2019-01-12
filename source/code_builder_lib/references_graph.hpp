@@ -26,7 +26,7 @@ struct ReferencesGraphNode
 
 	ProgramString name;
 	Kind kind= Kind::Variable;
-	ReferencesGraphNodePtr inner_reference; // TODO - make vector, when type can hold more, then one internal references storage.
+	ReferencesGraphNodePtr inner_reference; // SPRACHE_TODO - make vector, when type can hold more, then one internal references storage.
 
 	ReferencesGraphNode( ProgramString in_name, Kind in_kind ) : name(std::move(in_name)), kind(in_kind) {}
 };

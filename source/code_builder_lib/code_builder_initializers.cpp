@@ -908,15 +908,33 @@ llvm::Constant* CodeBuilder::InitializeReferenceField(
 		return nullptr;
 	}
 
-	/*
-	for( const StoredVariablePtr& referenced_variable : initializer_variable.references )
+	// Check references.
+	for( const ReferencesGraphNodePtr& src_node : initializer_variable.references )
 	{
-		const bool ok= function_context.variables_state.AddPollution( variable_storage, referenced_variable, field.is_mutable );
-		if( !ok )
-			errors_.push_back( ReportReferenceProtectionError( initializer.GetFilePos(), referenced_variable->name ) );
+		if( field.is_mutable && function_context.variables_state.HaveOutgoingLinks( src_node ) )
+		{
+			errors_.push_back( ReportReferenceProtectionError( initializer.GetFilePos(), src_node->name ) );
+			continue;
+		}
+		for( const ReferencesGraphNodePtr& dst_node : variable.references )
+		{
+			if( dst_node->inner_reference == nullptr )
+			{
+				dst_node->inner_reference= std::make_shared<ReferencesGraphNode>( dst_node->name + "/inner_variable"_SpC, field.is_mutable ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut );
+				function_context.variables_state.AddNode( dst_node->inner_reference );
+			}
+			else
+			{
+				if( dst_node->inner_reference->kind == ReferencesGraphNode::Kind::ReferenceImut && field.is_mutable )
+				{
+					// TODO - make separate error.
+					errors_.push_back( ReportNotImplemented( initializer.GetFilePos(), "inner reference mutability changing" ) );
+					continue;
+				}
+			}
+			function_context.variables_state.AddLink( src_node, dst_node->inner_reference );
+		}
 	}
-	CheckReferencedVariables( initializer_variable, initializer.GetFilePos() );
-	*/
 
 	// Make first index = 0 for array to pointer conversion.
 	llvm::Value* index_list[2];

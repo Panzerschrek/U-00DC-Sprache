@@ -71,7 +71,11 @@ CodeBuilder::StackVariablesStorage::StackVariablesStorage( FunctionContext& in_f
 CodeBuilder::StackVariablesStorage::~StackVariablesStorage()
 {
 	for( const NodeAndVariable& node_and_variable : variables_ )
+	{
 		function_context_.variables_state.RemoveNode( node_and_variable.first );
+		if( node_and_variable.first->inner_reference != nullptr )
+			function_context_.variables_state.RemoveNode( node_and_variable.first->inner_reference );
+	}
 	function_context_.stack_variables_stack.pop_back();
 }
 
