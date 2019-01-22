@@ -21,7 +21,8 @@ struct ReferencesGraphNode
 		ReferenceMut,
 		ReferenceImut,
 		ReferenceArg,
-		ArgInnerVariable,
+		ArgInnerVariableLevel0, // Arg or ReferenceArg have reference to
+		ArgInnerVariableLevel1, // ArgInnerVariableLevel0 Have reference to. Also ArgInnerVariableLevel1 hae "virtual" reeference to itself.
 	};
 
 	ProgramString name;

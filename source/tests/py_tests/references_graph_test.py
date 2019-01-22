@@ -218,3 +218,24 @@ def ReferenceInsideStruct_Test1():
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ReferenceProtectionError" )
 	assert( errors_list[0].file_pos.line == 7 )
+
+
+def ReturnReferenceInsideStruct_Test0():
+	c_program_text= """
+		struct S{ i32 &imut r; }
+		fn GetS( i32 &'a imut x ) : S'a'
+		{
+			var S s{ .r= x };
+			return s;
+		}
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			auto &imut r= GetS(x).r;
+			++x; // Error, reference to 'x' exists inside 'r'.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ReferenceProtectionError" )
+	assert( errors_list[0].file_pos.line == 12 )

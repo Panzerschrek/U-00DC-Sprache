@@ -1881,13 +1881,9 @@ Value CodeBuilder::BuildMemberAccessOperator(
 		result.llvm_value= function_context.llvm_ir_builder.CreateLoad( result.llvm_value );
 
 		result.references.clear();
-		/*
-		for( const StoredVariablePtr& struct_variable : variable.references )
-		{
-			for( const auto& referenced_variable_pair : function_context.variables_state.GetVariableReferences( struct_variable ) )
-				result.references.insert( referenced_variable_pair.first );
-		}
-		*/
+		for( const ReferencesGraphNodePtr& node : variable.references )
+			if( node->inner_reference != nullptr )
+				result.references.insert( node->inner_reference );
 	}
 
 	return Value( result, member_access_operator.file_pos_ );
@@ -2369,6 +2365,39 @@ Value CodeBuilder::DoCallFunction(
 			U_ASSERT( arg_n < locked_args_references.size() );
 			function_context.variables_state.AddLink( locked_args_references[arg_n].Node(), result_node );
 		}
+	}
+	else if( function_type.return_type.ReferencesTagsCount() > 0u )
+	{
+		bool inner_reference_is_mutable= false;
+
+		// First, know, what kind of reference we needs - mutable or immutable.
+		for( const size_t arg_n : function_type.return_references.args_references )
+		{
+			U_ASSERT( arg_n < locked_args_references.size() );
+			const auto node_kind= locked_args_references[arg_n].Node()->kind;
+
+			if( node_kind == ReferencesGraphNode::Kind::Variable )
+				inner_reference_is_mutable= true;
+			else if( node_kind == ReferencesGraphNode::Kind::ReferenceMut )
+				inner_reference_is_mutable= true;
+			else if( node_kind == ReferencesGraphNode::Kind::ReferenceImut )
+				{}
+			else
+				U_ASSERT( false ); // Unexpected node kind.
+		}
+
+		const auto inner_reference_node=
+			std::make_shared<ReferencesGraphNode>( "fn result inner node"_SpC, inner_reference_is_mutable ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut );
+		result_node->inner_reference= inner_reference_node;
+		function_context.variables_state.AddNode( inner_reference_node );
+
+		for( const size_t arg_n : function_type.return_references.args_references )
+		{
+			U_ASSERT( arg_n < locked_args_references.size() );
+			function_context.variables_state.AddLink( locked_args_references[arg_n].Node(), inner_reference_node );
+		}
+
+		U_ASSERT( function_type.return_references.inner_args_references.empty() ); // Not implemented.
 	}
 	/*
 	if( function_type.return_value_is_reference )
