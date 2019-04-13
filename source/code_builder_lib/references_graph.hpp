@@ -1,6 +1,7 @@
 #pragma once
 #include <memory>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 #include "../lex_synt_lib/program_string.hpp"
 
@@ -49,6 +50,8 @@ public:
 
 	void MoveNode( const ReferencesGraphNodePtr& node );
 	bool NodeMoved( const ReferencesGraphNodePtr& node ) const;
+
+	std::unordered_set<ReferencesGraphNodePtr> GetAllAccessibleInnerNodes_r( const ReferencesGraphNodePtr& node ) const;
 
 private:
 	struct NodeState

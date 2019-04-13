@@ -125,6 +125,32 @@ bool ReferencesGraph::NodeMoved( const ReferencesGraphNodePtr& node ) const
 	return it->second.moved;
 }
 
+std::unordered_set<ReferencesGraphNodePtr> ReferencesGraph::GetAllAccessibleInnerNodes_r( const ReferencesGraphNodePtr& node ) const
+{
+	U_ASSERT( nodes_.find(node) != nodes_.end() );
+
+	std::unordered_set<ReferencesGraphNodePtr> result;
+
+	if( node->inner_reference != nullptr )
+	{
+		result.emplace( node->inner_reference );
+
+		auto inner_reference_inner_references= GetAllAccessibleInnerNodes_r( node->inner_reference );
+		result.insert( inner_reference_inner_references.begin(), inner_reference_inner_references.end() );
+	}
+
+	for( const auto& link : links_ )
+	{
+		if( link.second == node )
+		{
+			auto accesible_inner_references= GetAllAccessibleInnerNodes_r( link.first );
+			result.insert( accesible_inner_references.begin(), accesible_inner_references.end() );
+		}
+	}
+
+	return result;
+}
+
 } // namespace CodeBuilderPrivate
 
 } // namespace U

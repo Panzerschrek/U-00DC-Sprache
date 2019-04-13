@@ -239,3 +239,72 @@ def ReturnReferenceInsideStruct_Test0():
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ReferenceProtectionError" )
 	assert( errors_list[0].file_pos.line == 12 )
+
+
+def ReturnReferenceFromStruct_Test0():
+	c_program_text= """
+		struct S{ i32 &mut r; }
+		fn GetR( S& s'x' ) : i32 &'x mut
+		{
+			return s.r;
+		}
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var S s{ .r= x };
+			var i32 &mut x_ref= GetR( s );
+			++s.r; // Error, reference to 'x' exists inside 'r'.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ReferenceProtectionError" )
+	assert( errors_list[0].file_pos.line == 12 )
+
+
+def ReturnReferenceFromStruct_Test1():
+	c_program_text= """
+		struct A { i32& mut r; }
+		struct B { A& imut a; }
+		fn GetR( B& b'x' ) : i32 &'x mut
+		{
+			return b.a.r;
+		}
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var A a{ .r= x };
+			var B b{ .a= a };
+			var i32 &mut x_ref= GetR( b );
+			++a.r; // Error, reference to 'x' exists inside 'r'.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ReferenceProtectionError" )
+	assert( errors_list[0].file_pos.line == 14 )
+
+
+def ReturnReferenceFromStruct_Test2():
+	c_program_text= """
+		struct A { i32& mut r; }
+		struct B { A& imut a; }
+		fn GetR( B& b'x' ) : i32 &'x mut
+		{
+			return b.a.r;
+		}
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var A a{ .r= x };
+			auto& a_ref0= a;
+			auto& a_ref1= a_ref0;
+			var B b{ .a= a_ref1 };
+			var i32 &mut x_ref= GetR( b );
+			++a.r; // Error, reference to 'x' exists inside 'r'.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ReferenceProtectionError" )
+	assert( errors_list[0].file_pos.line == 16 )

@@ -2365,6 +2365,14 @@ Value CodeBuilder::DoCallFunction(
 			U_ASSERT( arg_n < locked_args_references.size() );
 			function_context.variables_state.AddLink( locked_args_references[arg_n].Node(), result_node );
 		}
+		for( const Function::ArgReference& arg_reference : function_type.return_references.inner_args_references )
+		{
+			const ReferencesGraphNodePtr& node= locked_args_references[arg_reference.first].Node();
+
+			function_context.variables_state.AddLink( node, result_node );
+			for( const ReferencesGraphNodePtr& accesible_node : function_context.variables_state.GetAllAccessibleInnerNodes_r( node ) )
+				function_context.variables_state.AddLink( accesible_node, result_node );
+		}
 	}
 	else if( function_type.return_type.ReferencesTagsCount() > 0u )
 	{
