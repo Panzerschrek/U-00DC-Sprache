@@ -114,7 +114,17 @@ void ReferencesGraph::MoveNode( const ReferencesGraphNodePtr& node )
 
 	node_state.moved= true;
 
-	// TODO - remove links between nodes?
+	for( size_t i= 0u; i < links_.size(); )
+	{
+		if( links_[i].first == node || links_[i].second == node )
+		{
+			if( &links_[i] != &links_.back() )
+				links_[i]= links_.back();
+			links_.pop_back();
+		}
+		else
+			++i;
+	}
 }
 
 bool ReferencesGraph::NodeMoved( const ReferencesGraphNodePtr& node ) const

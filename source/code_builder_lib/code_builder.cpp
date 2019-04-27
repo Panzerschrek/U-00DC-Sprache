@@ -2455,8 +2455,6 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 	}
 	else if( auto_variable_declaration.reference_modifier == ReferenceModifier::None )
 	{	
-		//VariablesState::VariableReferences moved_variable_referenced_variables;
-
 		if( !variable.type.CanBeConstexpr() )
 			function_context.have_non_constexpr_operations_inside= true; // Declaring variable with non-constexpr type in constexpr function not allowed.
 
@@ -2477,39 +2475,38 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 				U_ASSERT( initializer_experrsion.references.size() == 1u );
 				const ReferencesGraphNodePtr& variable_for_move= *initializer_experrsion.references.begin();
 
-				//moved_variable_referenced_variables= function_context.variables_state.GetVariableReferences( variable_for_move );
+				// Take inner node from moved variable.
+				variable_for_move->inner_reference.swap(var_node->inner_reference);
 				function_context.variables_state.MoveNode( variable_for_move );
 
 				CopyBytes( initializer_experrsion.llvm_value, variable.llvm_value, variable.type, function_context );
 				variable.constexpr_value= initializer_experrsion.constexpr_value; // Move can preserve constexpr.
 			}
 			else
+			{
 				TryCallCopyConstructor(
 					auto_variable_declaration.file_pos_,
 					variable.llvm_value, initializer_experrsion.llvm_value,
 					variable.type.GetClassTypeProxy(),
 					function_context );
+
+				U_ASSERT(initializer_experrsion.references.size() == 1u);
+				const ReferencesGraphNodePtr& initializer_expression_inner_node= (*initializer_experrsion.references.begin())->inner_reference;
+				if( initializer_expression_inner_node != nullptr )
+				{
+					var_node->inner_reference= std::make_shared<ReferencesGraphNode>(
+						"var"_SpC + auto_variable_declaration.name + " inner node"_SpC,
+						initializer_expression_inner_node->kind);
+					function_context.variables_state.AddNode( var_node->inner_reference );
+					function_context.variables_state.AddLink( initializer_expression_inner_node, var_node->inner_reference );
+				}
+			}
 		}
 		else
 		{
 			errors_.push_back( ReportNotImplemented( auto_variable_declaration.file_pos_, "expression initialization for nonfundamental types" ) );
 			return;
 		}
-
-		// Take references inside variables in initializer expression.
-		/*
-		for( const auto& ref : moved_variable_referenced_variables )
-			function_context.variables_state.AddPollution( stored_variable, ref.first, ref.second.IsMutable() );
-		for( const StoredVariablePtr& referenced_variable : initializer_experrsion.references )
-		{
-			for( const auto& inner_variable_pair : function_context.variables_state.GetVariableReferences( referenced_variable ) )
-			{
-				const bool ok= function_context.variables_state.AddPollution( stored_variable, inner_variable_pair.first, inner_variable_pair.second.IsMutable() );
-				if(!ok)
-					errors_.push_back( ReportReferenceProtectionError( auto_variable_declaration.file_pos_, inner_variable_pair.first->name ) );
-			}
-		}
-		*/
 	}
 	else U_ASSERT(false);
 

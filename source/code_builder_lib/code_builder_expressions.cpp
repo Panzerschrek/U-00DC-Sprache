@@ -2388,10 +2388,20 @@ Value CodeBuilder::DoCallFunction(
 				inner_reference_is_mutable= true;
 			else if( node_kind == ReferencesGraphNode::Kind::ReferenceMut )
 				inner_reference_is_mutable= true;
-			else if( node_kind == ReferencesGraphNode::Kind::ReferenceImut )
-				{}
-			else
-				U_ASSERT( false ); // Unexpected node kind.
+			else if( node_kind == ReferencesGraphNode::Kind::ReferenceImut ) {}
+			else U_ASSERT( false ); // Unexpected node kind.
+		}
+		for( const Function::ArgReference& arg_reference : function_type.return_references.inner_args_references )
+		{
+			for( const ReferencesGraphNodePtr& accesible_node : function_context.variables_state.GetAllAccessibleInnerNodes_r( locked_args_references[arg_reference.first].Node() ) )
+			{
+				if( accesible_node->kind == ReferencesGraphNode::Kind::Variable )
+					inner_reference_is_mutable= true;
+				else if( accesible_node->kind == ReferencesGraphNode::Kind::ReferenceMut )
+					inner_reference_is_mutable= true;
+				else if( accesible_node->kind == ReferencesGraphNode::Kind::ReferenceImut ) {}
+				else U_ASSERT( false ); // Unexpected node kind.
+			}
 		}
 
 		const auto inner_reference_node=
@@ -2404,76 +2414,15 @@ Value CodeBuilder::DoCallFunction(
 			U_ASSERT( arg_n < locked_args_references.size() );
 			function_context.variables_state.AddLink( locked_args_references[arg_n].Node(), inner_reference_node );
 		}
-
-		U_ASSERT( function_type.return_references.inner_args_references.empty() ); // Not implemented.
-	}
-	/*
-	if( function_type.return_value_is_reference )
-	{
-		// Returned reference refers to args, listed in function type.
-		U_ASSERT( arg_to_variables.size() == function_type.args.size() );
-		for( const size_t arg_n : function_type.return_references.args_references )
+		for( const Function::ArgReference& arg_reference : function_type.return_references.inner_args_references )
 		{
-			U_ASSERT( arg_n < arg_to_variables.size() );
-			if( function_type.args[ arg_n ].is_reference )
-			{
-				for( const StoredVariablePtr& var : arg_to_variables[arg_n] )
-					result.references.emplace(var);
-			}
-		}
+			const ReferencesGraphNodePtr& node= locked_args_references[arg_reference.first].Node();
 
-		// Returned reference also may be linked with references, passed inside structs.
-		for( const Function::ArgReference& arg_n_and_tag_n : function_type.return_references.inner_args_references )
-		{
-			U_ASSERT( arg_n_and_tag_n.first < arg_to_variables.size() );
-			U_ASSERT( arg_n_and_tag_n.second == 0u ); // Currently, support only 0 or 1 tags
-
-			for( const StoredVariablePtr& var : arg_to_inner_variables[arg_n_and_tag_n.first].first )
-			{
-				result.references.emplace(var);
-				for( const StoredVariablePtr& referenced_variable : function_context.variables_state.RecursiveGetAllReferencedVariables(var).variables )
-					result.references.emplace(referenced_variable);
-			}
+			function_context.variables_state.AddLink( node, result_node );
+			for( const ReferencesGraphNodePtr& accesible_node : function_context.variables_state.GetAllAccessibleInnerNodes_r( node ) )
+				function_context.variables_state.AddLink( accesible_node, inner_reference_node );
 		}
 	}
-	else if( function_type.return_type.ReferencesTagsCount() > 0u )
-	{
-		U_ASSERT( result.references.size() == 1u );
-		const StoredVariablePtr& stored_result= *result.references.begin();
-
-		// Returned value references refers to args, listed in function type.
-		U_ASSERT( arg_to_variables.size() == function_type.args.size() );
-		for( const size_t arg_n : function_type.return_references.args_references )
-		{
-			U_ASSERT( arg_n < arg_to_variables.size() );
-			if( function_type.args[ arg_n ].is_reference )
-			{
-				const bool is_mutable= function_type.args[arg_n].is_mutable;
-				for( const StoredVariablePtr& var : arg_to_variables[arg_n] )
-					function_context.variables_state.AddPollution( stored_result, var, is_mutable );
-			}
-		}
-
-		// Returned vale references also may be linked with references, passed inside structs.
-		for( const Function::ArgReference& arg_n_and_tag_n : function_type.return_references.inner_args_references )
-		{
-			U_ASSERT( arg_n_and_tag_n.first < arg_to_variables.size() );
-			U_ASSERT( arg_n_and_tag_n.second == 0u ); // Currently, support only 0 or 1 tags
-			// TODO - if we pass value-argument, we needs to call copy constructor. In this constructor we can swap tags.
-			// We need correct result in such case.
-
-			for( const StoredVariablePtr& var : arg_to_inner_variables[arg_n_and_tag_n.first].first )
-			{
-				const bool is_mutable= arg_to_inner_variables[arg_n_and_tag_n.first].second;
-				function_context.variables_state.AddPollution( stored_result, var, is_mutable );
-
-				const VariablesState::AchievableVariables achievable_variables= function_context.variables_state.RecursiveGetAllReferencedVariables( var );
-				for( const auto& referenced_variable_pair : achievable_variables.variables )
-					function_context.variables_state.AddPollution( stored_result, referenced_variable_pair, achievable_variables.any_variable_is_mutable );
-			}
-		}
-	}
-	*/
 
 	// Setup references after call.
 	/*
