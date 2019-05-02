@@ -634,7 +634,6 @@ U_TEST( ReferencePollutionTest3_LinkAsImmutableIfAllLinkedVariablesAreMutable )
 
 U_TEST( ConstructorLinksPassedReference_Test0 )
 {
-	DISABLE_TEST;
 	static const char c_program_text[]=
 	R"(
 		struct S
@@ -664,7 +663,6 @@ U_TEST( ConstructorLinksPassedReference_Test0 )
 
 U_TEST( ConstructorLinksPassedReference_Test1 )
 {
-	DISABLE_TEST;
 	static const char c_program_text[]=
 	R"(
 		struct S
@@ -694,7 +692,6 @@ U_TEST( ConstructorLinksPassedReference_Test1 )
 
 U_TEST( ConvertedVariableCanLostInnerReference_Test0 )
 {
-	DISABLE_TEST;
 	static const char c_program_text[]=
 	R"(
 		class A polymorph
@@ -723,7 +720,6 @@ U_TEST( ConvertedVariableCanLostInnerReference_Test0 )
 
 U_TEST( ConvertedVariableCanLostInnerReference_Test1 )
 {
-	DISABLE_TEST;
 	static const char c_program_text[]=
 	R"(
 		class A polymorph
@@ -757,7 +753,6 @@ U_TEST( ConvertedVariableCanLostInnerReference_Test1 )
 
 U_TEST( AutoVariableContainsCopyOfReference_Test0 )
 {
-	DISABLE_TEST;
 	static const char c_program_text[]=
 	R"(
 		struct S
@@ -787,7 +782,6 @@ U_TEST( AutoVariableContainsCopyOfReference_Test0 )
 
 U_TEST( ExpressionInitializedVariableContainsCopyOfReference_Test0 )
 {
-	DISABLE_TEST;
 	static const char c_program_text[]=
 	R"(
 		struct S
@@ -1220,7 +1214,6 @@ U_TEST( TryGrabReferenceToTempVariable_Test1 )
 
 U_TEST( TryGrabReferenceToTempVariable_Test2 )
 {
-	DISABLE_TEST;
 	static const char c_program_text[]=
 	R"(
 		struct S
@@ -1252,7 +1245,6 @@ U_TEST( TryGrabReferenceToTempVariable_Test2 )
 
 U_TEST( TryGrabReferenceToTempVariable_Test3 )
 {
-	DISABLE_TEST;
 	static const char c_program_text[]=
 	R"(
 		struct R
@@ -1278,7 +1270,6 @@ U_TEST( TryGrabReferenceToTempVariable_Test3 )
 
 U_TEST( TryGrabReferenceToTempVariable_Test4 )
 {
-	DISABLE_TEST;
 	static const char c_program_text[]=
 	R"(
 		struct R
@@ -1305,7 +1296,6 @@ U_TEST( TryGrabReferenceToTempVariable_Test4 )
 
 U_TEST( TryGrabReferenceToTempVariable_Test5 )
 {
-	DISABLE_TEST;
 	static const char c_program_text[]=
 	R"(
 		struct R

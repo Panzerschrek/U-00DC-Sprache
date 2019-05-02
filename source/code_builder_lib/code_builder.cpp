@@ -1443,7 +1443,7 @@ void CodeBuilder::BuildFuncCode(
 			const ReferencesGraphNodePtr this_node= std::make_shared<ReferencesGraphNode>( Keyword(Keywords::this_), ReferencesGraphNode::Kind::ReferenceArg );
 			this_.references.emplace(this_node);
 
-			//function_context.variables_state.AddVariable( this_storage );
+			function_context.variables_state.AddNode( this_node );
 			//args_stored_variables[arg_number].first= this_storage;
 
 			/*

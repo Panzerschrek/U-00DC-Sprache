@@ -330,8 +330,6 @@ U_TEST(ConstructorTest8)
 
 U_TEST(ConstructorTest9)
 {
-	DISABLE_TEST;
-
 	// Call method of default-initialized filed for other filed initialization.
 	static const char c_program_text[]=
 	R"(

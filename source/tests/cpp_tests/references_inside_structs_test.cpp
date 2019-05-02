@@ -77,7 +77,6 @@ U_TEST( GeneratedCopyConstructorForStructsWithReferencesTest )
 
 U_TEST( InitializingReferencesInsideStructsInConstructorInitializerList )
 {
-	DISABLE_TEST;
 	static const char c_program_text[]=
 	R"(
 		struct S
