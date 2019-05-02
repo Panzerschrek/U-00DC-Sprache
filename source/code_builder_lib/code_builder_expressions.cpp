@@ -1882,8 +1882,8 @@ Value CodeBuilder::BuildMemberAccessOperator(
 
 		result.references.clear();
 		for( const ReferencesGraphNodePtr& node : variable.references )
-			if( node->inner_reference != nullptr )
-				result.references.insert( node->inner_reference );
+			if( ReferencesGraphNodePtr inner_reference= function_context.variables_state.GetNodeInnerReference( node ) )
+				result.references.insert( std::move(inner_reference) );
 	}
 
 	return Value( result, member_access_operator.file_pos_ );
@@ -2406,8 +2406,7 @@ Value CodeBuilder::DoCallFunction(
 
 		const auto inner_reference_node=
 			std::make_shared<ReferencesGraphNode>( "fn result inner node"_SpC, inner_reference_is_mutable ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut );
-		result_node->inner_reference= inner_reference_node;
-		function_context.variables_state.AddNode( inner_reference_node );
+		function_context.variables_state.SetNodeInnerReference( result_node, inner_reference_node );
 
 		for( const size_t arg_n : function_type.return_references.args_references )
 		{
@@ -2451,10 +2450,10 @@ Value CodeBuilder::DoCallFunction(
 			src_variables_is_mutable= false; // Even if reference-pollution is mutable, but if src vars is immutable, link as immutable.
 			for( const ReferencesGraphNodePtr& variable_node : function_context.variables_state.GetAllAccessibleVariableNodes_r( locked_args_references[ referene_pollution.src.first ].Node() ) )
 			{
-				if( variable_node->inner_reference != nullptr )
+				if( const ReferencesGraphNodePtr inner_reference= function_context.variables_state.GetNodeInnerReference( variable_node ) )
 				{
-					src_nodes.insert( variable_node->inner_reference );
-					if( variable_node->inner_reference->kind != ReferencesGraphNode::Kind::ReferenceImut )
+					src_nodes.insert( inner_reference );
+					if( inner_reference->kind != ReferencesGraphNode::Kind::ReferenceImut )
 						src_variables_is_mutable= true;
 				}
 			}
@@ -2466,17 +2465,18 @@ Value CodeBuilder::DoCallFunction(
 			{
 				for( const ReferencesGraphNodePtr& src_node : src_nodes )
 				{
-					if( dst_node->inner_reference == nullptr )
+					ReferencesGraphNodePtr inner_reference= function_context.variables_state.GetNodeInnerReference( dst_node );
+					if( inner_reference == nullptr )
 					{
-						dst_node->inner_reference=
+						inner_reference=
 							std::make_shared<ReferencesGraphNode>(
 								"arg"_SpC + ToProgramString(std::to_string(dst_arg)) + "_inner variable"_SpC,
 								src_variables_is_mutable ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut );
-						function_context.variables_state.AddNode( dst_node->inner_reference );
+						function_context.variables_state.SetNodeInnerReference( dst_node, inner_reference );
 					}
-					if( dst_node->inner_reference->kind != ReferencesGraphNode::Kind::ReferenceMut && src_variables_is_mutable )
+					if( inner_reference->kind != ReferencesGraphNode::Kind::ReferenceMut && src_variables_is_mutable )
 						errors_.push_back( ReportNotImplemented( call_file_pos, "changind inner node reference kind immutable to mutable" ) );
-					function_context.variables_state.AddLink( src_node, dst_node->inner_reference );
+					function_context.variables_state.AddLink( src_node, inner_reference );
 				}
 			}
 		}

@@ -71,11 +71,7 @@ CodeBuilder::StackVariablesStorage::StackVariablesStorage( FunctionContext& in_f
 CodeBuilder::StackVariablesStorage::~StackVariablesStorage()
 {
 	for( const NodeAndVariable& node_and_variable : variables_ )
-	{
 		function_context_.variables_state.RemoveNode( node_and_variable.first );
-		if( node_and_variable.first->inner_reference != nullptr )
-			function_context_.variables_state.RemoveNode( node_and_variable.first->inner_reference );
-	}
 	function_context_.stack_variables_stack.pop_back();
 }
 
@@ -2475,8 +2471,15 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 				U_ASSERT( initializer_experrsion.references.size() == 1u );
 				const ReferencesGraphNodePtr& variable_for_move= *initializer_experrsion.references.begin();
 
-				// Take inner node from moved variable.
-				variable_for_move->inner_reference.swap(var_node->inner_reference);
+				const ReferencesGraphNodePtr initializer_expression_inner_node= function_context.variables_state.GetNodeInnerReference( variable_for_move );
+				if( initializer_expression_inner_node != nullptr )
+				{
+					const ReferencesGraphNodePtr inner_reference= std::make_shared<ReferencesGraphNode>(
+						"var"_SpC + auto_variable_declaration.name + " inner node"_SpC,
+						initializer_expression_inner_node->kind);
+					function_context.variables_state.SetNodeInnerReference( var_node, inner_reference );
+					function_context.variables_state.AddLink( initializer_expression_inner_node, inner_reference );
+				}
 				function_context.variables_state.MoveNode( variable_for_move );
 
 				CopyBytes( initializer_experrsion.llvm_value, variable.llvm_value, variable.type, function_context );
@@ -2491,14 +2494,14 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 					function_context );
 
 				U_ASSERT(initializer_experrsion.references.size() == 1u);
-				const ReferencesGraphNodePtr& initializer_expression_inner_node= (*initializer_experrsion.references.begin())->inner_reference;
+				const ReferencesGraphNodePtr initializer_expression_inner_node= function_context.variables_state.GetNodeInnerReference( (*initializer_experrsion.references.begin()) );
 				if( initializer_expression_inner_node != nullptr )
 				{
-					var_node->inner_reference= std::make_shared<ReferencesGraphNode>(
+					const ReferencesGraphNodePtr inner_reference= std::make_shared<ReferencesGraphNode>(
 						"var"_SpC + auto_variable_declaration.name + " inner node"_SpC,
 						initializer_expression_inner_node->kind);
-					function_context.variables_state.AddNode( var_node->inner_reference );
-					function_context.variables_state.AddLink( initializer_expression_inner_node, var_node->inner_reference );
+					function_context.variables_state.SetNodeInnerReference( var_node, inner_reference );
+					function_context.variables_state.AddLink( initializer_expression_inner_node, inner_reference );
 				}
 			}
 		}

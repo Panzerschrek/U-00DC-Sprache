@@ -83,6 +83,23 @@ void ReferencesGraph::RemoveLink( const ReferencesGraphNodePtr& from, const Refe
 	U_ASSERT(false); // Removing unexistent link.
 }
 
+ReferencesGraphNodePtr ReferencesGraph::GetNodeInnerReference( const ReferencesGraphNodePtr& node ) const
+{
+	const auto it= nodes_.find( node );
+	U_ASSERT( it != nodes_.end() );
+	return it->second.inner_reference;
+}
+
+void ReferencesGraph::SetNodeInnerReference( const ReferencesGraphNodePtr& node, ReferencesGraphNodePtr inner_reference )
+{
+	AddNode( inner_reference );
+
+	const auto it= nodes_.find( node );
+	U_ASSERT( it != nodes_.end() );
+	U_ASSERT( it->second.inner_reference == nullptr );
+	it->second.inner_reference= std::move(inner_reference);
+}
+
 bool ReferencesGraph::HaveOutgoingLinks( const ReferencesGraphNodePtr& from ) const
 {
 	for( const auto& link : links_ )
@@ -141,11 +158,11 @@ std::unordered_set<ReferencesGraphNodePtr> ReferencesGraph::GetAllAccessibleInne
 
 	std::unordered_set<ReferencesGraphNodePtr> result;
 
-	if( node->inner_reference != nullptr )
+	if( const ReferencesGraphNodePtr inner_reference= GetNodeInnerReference( node ) )
 	{
-		result.emplace( node->inner_reference );
+		result.emplace( inner_reference );
 
-		auto inner_reference_inner_references= GetAllAccessibleInnerNodes_r( node->inner_reference );
+		auto inner_reference_inner_references= GetAllAccessibleInnerNodes_r( inner_reference );
 		result.insert( inner_reference_inner_references.begin(), inner_reference_inner_references.end() );
 	}
 

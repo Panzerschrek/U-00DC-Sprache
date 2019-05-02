@@ -11,9 +11,6 @@ namespace U
 namespace CodeBuilderPrivate
 {
 
-struct ReferencesGraphNode;
-using ReferencesGraphNodePtr= std::shared_ptr<ReferencesGraphNode>;
-
 struct ReferencesGraphNode
 {
 	enum class Kind
@@ -26,12 +23,13 @@ struct ReferencesGraphNode
 		ArgInnerVariableLevel1, // ArgInnerVariableLevel0 Have reference to. Also ArgInnerVariableLevel1 hae "virtual" reeference to itself.
 	};
 
-	ProgramString name;
-	Kind kind= Kind::Variable;
-	ReferencesGraphNodePtr inner_reference; // SPRACHE_TODO - make vector, when type can hold more, then one internal references storage.
+	const ProgramString name;
+	const Kind kind= Kind::Variable;
 
 	ReferencesGraphNode( ProgramString in_name, Kind in_kind ) : name(std::move(in_name)), kind(in_kind) {}
 };
+
+using ReferencesGraphNodePtr= std::shared_ptr<const ReferencesGraphNode>;
 
 class ReferencesGraph
 {
@@ -41,6 +39,9 @@ public:
 
 	void AddLink( const ReferencesGraphNodePtr& from, const ReferencesGraphNodePtr& to );
 	void RemoveLink( const ReferencesGraphNodePtr& from, const ReferencesGraphNodePtr& to );
+
+	ReferencesGraphNodePtr GetNodeInnerReference( const ReferencesGraphNodePtr& node ) const;
+	void SetNodeInnerReference( const ReferencesGraphNodePtr& node, ReferencesGraphNodePtr inner_reference );
 
 	// Each access to variable must produce temporary reference to it.
 	// Creating temporary mutable reference to reference node with outgoing links is compilation error.
@@ -58,6 +59,7 @@ private:
 	struct NodeState
 	{
 		bool moved= false;
+		ReferencesGraphNodePtr inner_reference; // SPRACHE_TODO - make vector, when type can hold more, then one internal references storage.
 	};
 
 private:
