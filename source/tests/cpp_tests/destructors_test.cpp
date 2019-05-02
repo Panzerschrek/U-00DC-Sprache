@@ -814,6 +814,7 @@ U_TEST(DestructorsTest19_DestuctorForInterface)
 
 U_TEST(DestructorsTest20_EarlyDestructorCallUsingMoveOperator)
 {
+	DISABLE_TEST;
 	DestructorTestPrepare();
 
 	static const char c_program_text[]=
@@ -845,6 +846,7 @@ U_TEST(DestructorsTest20_EarlyDestructorCallUsingMoveOperator)
 
 U_TEST(DestructorsTest21_ChangeDestructionOrderUsingMoveOperator)
 {
+	DISABLE_TEST;
 	DestructorTestPrepare();
 
 	static const char c_program_text[]=

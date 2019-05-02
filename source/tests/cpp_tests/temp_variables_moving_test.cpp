@@ -451,6 +451,7 @@ U_TEST(TempVariablesMovingTest7_MoveTempVariableReturningFromFunctionToAnotherFu
 
 U_TEST(TempVariablesMovingTest8_MoveVariableFromFunctionResultWithMutableReferenceInside)
 {
+	DISABLE_TEST;
 	static const char c_program_text[]=
 	R"(
 		struct Box

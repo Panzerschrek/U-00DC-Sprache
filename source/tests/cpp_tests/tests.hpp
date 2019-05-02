@@ -23,6 +23,14 @@ public:
 	{}
 };
 
+class DisableTestException  final : public std::runtime_error
+{
+public:
+	DisableTestException()
+		: std::runtime_error( "" )
+	{}
+};
+
 TestId AddTestFuncPrivate( TestFunc* func, const char* const file_name, const char* const func_name );
 
 /*
@@ -46,6 +54,8 @@ static void NAME##Func()
 	{\
 		throw TestException( #x );\
 	}
+
+#define DISABLE_TEST throw DisableTestException()
 
 // Utility tests functions.
 

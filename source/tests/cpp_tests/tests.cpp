@@ -188,16 +188,24 @@ int main()
 
 	std::cout << "Run " << funcs_container.size() << " tests" << std::endl << std::endl;
 
+	unsigned int passed= 0u;
+	unsigned int disabled= 0u;
 	unsigned int failed= 0u;
 	for(const FuncData& func_data : funcs_container )
 	{
 		try
 		{
 			func_data.func();
+			++passed;
+		}
+		catch( const DisableTestException& ex )
+		{
+			std::cout << "Test " << func_data.name << " disabled\n";
+			disabled++;
 		}
 		catch( const TestException& ex )
 		{
-			std::cout << "Test " << func_data.name << " failed: " << ex.what() << std::endl;
+			std::cout << "Test " << func_data.name << " failed: " << ex.what() << "\n" << std::endl;
 			failed++;
 		};
 
@@ -205,7 +213,10 @@ int main()
 		llvm::llvm_shutdown();
 	}
 
-	std::cout << std::endl << funcs_container.size() - failed << " tests passed\n" << failed << " tests failed" << std::endl;
+	std::cout << std::endl <<
+		passed << " tests passed\n" <<
+		disabled << " tests disabled\n" <<
+		failed << " tests failed" << std::endl;
 
 	return -int(failed);
 }

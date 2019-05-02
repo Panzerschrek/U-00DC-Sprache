@@ -199,6 +199,78 @@ std::unordered_set<ReferencesGraphNodePtr> ReferencesGraph::GetAllAccessibleVari
 	return result;
 }
 
+ReferencesGraph::MergeResult ReferencesGraph::MergeVariablesStateAfterIf( const std::vector<ReferencesGraph>& branches_variables_state, const FilePos& file_pos )
+{
+	ReferencesGraph result;
+	std::vector<CodeBuilderError> errors;
+
+	for( const ReferencesGraph& branch_state : branches_variables_state )
+	{
+		U_ASSERT( branch_state.nodes_.size() ==  branches_variables_state.front().nodes_.size() );
+
+		std::vector< std::pair<ReferencesGraphNodePtr, ReferencesGraphNodePtr> > replaced_nodes; // First node replaced with second node.
+		for( const auto& node_pair : branch_state.nodes_ )
+		{
+			if( result.nodes_.find( node_pair.first ) == result.nodes_.end() )
+				result.nodes_[ node_pair.first ]= node_pair.second;
+
+			const NodeState& src_state= node_pair.second;
+			NodeState& result_state= result.nodes_[ node_pair.first ];
+
+			if( result_state.moved != src_state.moved )
+				errors.push_back( ReportConditionalMove( file_pos, node_pair.first->name ) );
+
+				 if( result_state.inner_reference == nullptr && src_state.inner_reference == nullptr ) {}
+			else if( result_state.inner_reference == nullptr && src_state.inner_reference != nullptr )
+			{
+				result.nodes_[ result_state.inner_reference ]= NodeState();
+				result_state.inner_reference= src_state.inner_reference;
+			}
+			else if( result_state.inner_reference != nullptr && src_state.inner_reference == nullptr ) {}
+			else // both nonnull
+			{
+				// Variable inner reference created in multiple braches.
+
+				// If linked as mutable and as immutable in different branches - result is mutable.
+				if( result_state.inner_reference->kind != ReferencesGraphNode::Kind::ReferenceMut &&
+					src_state.inner_reference->kind == ReferencesGraphNode::Kind::ReferenceMut )
+				{
+					result.nodes_.erase( result_state.inner_reference );
+					replaced_nodes.emplace_back( result_state.inner_reference, src_state.inner_reference );
+				}
+			}
+		}
+
+		for( const auto& src_link : branch_state.links_ )
+		{
+			if( std::find( result.links_.begin(), result.links_.end(), src_link ) == result.links_.end() )
+				result.links_.push_back( src_link );
+		}
+		for( auto& link : result.links_ )
+		{
+			for( const auto& replaced_node : replaced_nodes )
+			{
+				if( link.first  == replaced_node.first )
+					link.first = replaced_node.second;
+				if( link.second == replaced_node.first )
+					link.second= replaced_node.second;
+			}
+		}
+	}
+
+	return std::make_pair( std::move(result), std::move(errors) );
+}
+
+std::vector<CodeBuilderError> ReferencesGraph::CheckWhileBlokVariablesState( const ReferencesGraph& state_before, const ReferencesGraph& state_after, const FilePos& file_pos )
+{
+	U_UNUSED( state_before );
+	U_UNUSED( state_after );
+	U_UNUSED( file_pos );
+
+	std::vector<CodeBuilderError> errors;
+	return errors;
+}
+
 } // namespace CodeBuilderPrivate
 
 } // namespace U

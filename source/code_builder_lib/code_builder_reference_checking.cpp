@@ -394,6 +394,9 @@ void CodeBuilder::DestroyUnusedTemporaryVariables( FunctionContext& function_con
 
 ReferencesGraph CodeBuilder::MergeVariablesStateAfterIf( const std::vector<ReferencesGraph>& bracnhes_variables_state, const FilePos& file_pos )
 {
+	ReferencesGraph::MergeResult res= ReferencesGraph::MergeVariablesStateAfterIf( bracnhes_variables_state, file_pos );
+	errors_.insert( errors_.end(), res.second.begin(), res.second.end() );
+	return std::move(res.first);
 	/*
 
 	VariablesState::VariablesContainer result;
@@ -435,6 +438,8 @@ ReferencesGraph CodeBuilder::MergeVariablesStateAfterIf( const std::vector<Refer
 
 void CodeBuilder::CheckWhileBlokVariablesState( const ReferencesGraph& state_before, const ReferencesGraph& state_after, const FilePos& file_pos )
 {
+	const auto errors= ReferencesGraph::CheckWhileBlokVariablesState( state_before, state_after, file_pos );
+	errors_.insert( errors_.end(), errors.begin(), errors.end() );
 	/*
 	U_ASSERT( state_before.GetVariables().size() == state_after.GetVariables().size() );
 

@@ -4,6 +4,7 @@
 #include <unordered_set>
 #include <vector>
 #include "../lex_synt_lib/program_string.hpp"
+#include "code_builder_errors.hpp"
 
 namespace U
 {
@@ -54,6 +55,10 @@ public:
 
 	std::unordered_set<ReferencesGraphNodePtr> GetAllAccessibleInnerNodes_r( const ReferencesGraphNodePtr& node ) const;
 	std::unordered_set<ReferencesGraphNodePtr> GetAllAccessibleVariableNodes_r( const ReferencesGraphNodePtr& node ) const;
+
+	using MergeResult= std::pair<ReferencesGraph, std::vector<CodeBuilderError> >;
+	static MergeResult MergeVariablesStateAfterIf( const std::vector<ReferencesGraph>& branches_variables_state, const FilePos& file_pos );
+	static std::vector<CodeBuilderError> CheckWhileBlokVariablesState( const ReferencesGraph& state_before, const ReferencesGraph& state_after, const FilePos& file_pos );
 
 private:
 	struct NodeState
