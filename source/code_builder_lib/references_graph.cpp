@@ -161,6 +161,27 @@ std::unordered_set<ReferencesGraphNodePtr> ReferencesGraph::GetAllAccessibleInne
 	return result;
 }
 
+std::unordered_set<ReferencesGraphNodePtr> ReferencesGraph::GetAllAccessibleVariableNodes_r( const ReferencesGraphNodePtr& node ) const
+{
+	U_ASSERT( nodes_.find(node) != nodes_.end() );
+
+	std::unordered_set<ReferencesGraphNodePtr> result;
+
+	if( node->kind == ReferencesGraphNode::Kind::Variable || node->kind == ReferencesGraphNode::Kind::ReferenceArg )
+		result.emplace( node );
+
+	for( const auto& link : links_ )
+	{
+		if( link.second == node )
+		{
+			auto accesible_variable_nodes= GetAllAccessibleVariableNodes_r( link.first );
+			result.insert( accesible_variable_nodes.begin(), accesible_variable_nodes.end() );
+		}
+	}
+
+	return result;
+}
+
 } // namespace CodeBuilderPrivate
 
 } // namespace U

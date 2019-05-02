@@ -329,3 +329,61 @@ def ReturnReferenceInsideStruct_Test0():
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ReferenceProtectionError" )
 	assert( errors_list[0].file_pos.line == 12 )
+
+
+def PollutionTest0():
+	c_program_text= """
+		struct S{ i32& x; }
+		fn Pollution( S &mut s'dst', i32&'src x ) ' dst <- src' {}
+		fn Foo()
+		{
+			var i32 mut x= 0, mut y= 0;
+			var S mut s{ .x= x };
+			Pollution( s, y );
+			++y;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ReferenceProtectionError" )
+	assert( errors_list[0].file_pos.line == 9 )
+
+
+def PollutionTest1():
+	c_program_text= """
+		struct S{ i32& x; }
+		fn Pollution( S &mut s'dst', i32&'src x ) ' dst <- src' {}
+		fn Foo()
+		{
+			var i32 mut x= 0, mut y= 0;
+			var S mut s{ .x= x };
+			auto& mut s_ref= s;
+			Pollution( s_ref, y );
+			++y;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ReferenceProtectionError" )
+	assert( errors_list[0].file_pos.line == 10 )
+
+
+def PollutionTest2():
+	c_program_text= """
+		struct S{ i32& x; }
+		fn Pollution( S &mut a'dst', S& b'src' ) ' dst <- src' {}
+		fn Foo()
+		{
+			var i32 mut x= 0, mut y= 0;
+			var S mut a{ .x= x };
+			{
+				var S mut b{ .x= y };
+				Pollution( a, b ); // Now, 'a', contains reference to 'y'
+			}
+			++y;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ReferenceProtectionError" )
+	assert( errors_list[0].file_pos.line == 12 )

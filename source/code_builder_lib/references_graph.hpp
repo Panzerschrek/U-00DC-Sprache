@@ -52,6 +52,7 @@ public:
 	bool NodeMoved( const ReferencesGraphNodePtr& node ) const;
 
 	std::unordered_set<ReferencesGraphNodePtr> GetAllAccessibleInnerNodes_r( const ReferencesGraphNodePtr& node ) const;
+	std::unordered_set<ReferencesGraphNodePtr> GetAllAccessibleVariableNodes_r( const ReferencesGraphNodePtr& node ) const;
 
 private:
 	struct NodeState
