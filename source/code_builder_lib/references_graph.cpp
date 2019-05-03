@@ -17,6 +17,9 @@ void ReferencesGraph::RemoveNode( const ReferencesGraphNodePtr& node )
 {
 	U_ASSERT( nodes_.count(node) != 0 );
 
+	if( const auto inner_reference= GetNodeInnerReference( node ) )
+		RemoveNode( inner_reference );
+
 	// Collect in/out nodes.
 	std::vector<ReferencesGraphNodePtr> in_nodes;
 	std::vector<ReferencesGraphNodePtr> out_nodes;
@@ -130,6 +133,11 @@ void ReferencesGraph::MoveNode( const ReferencesGraphNodePtr& node )
 	U_ASSERT( !node_state.moved );
 
 	node_state.moved= true;
+	if( node_state.inner_reference != nullptr )
+	{
+		RemoveNode( node_state.inner_reference );
+		node_state.inner_reference= nullptr;
+	}
 
 	for( size_t i= 0u; i < links_.size(); )
 	{

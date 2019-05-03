@@ -348,12 +348,10 @@ private:
 		const std::function<void(llvm::Value* counter_value)>& loop_body,
 		FunctionContext& function_context);
 
-	// Store counter of destroyed references to this variable.
-	//typedef std::unordered_map<StoredVariablePtr, size_t> DestroyedVariableReferencesCount;
-
 	void CallDestructorsImpl(
 		const StackVariablesStorage& stack_variables_storage,
 		FunctionContext& function_context,
+		ReferencesGraph& variables_state_copy,
 		const FilePos& file_pos );
 
 	void CallDestructors(
