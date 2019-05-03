@@ -2486,14 +2486,14 @@ Value CodeBuilder::DoCallFunction(
 		}
 	}
 
-	/*
+	locked_args_references.clear();
 	{ // Destroy unused temporary variables after each call.
-		std::vector< VariableStorageUseCounter > call_result_locks;
-		for( const auto& referenced_variable : result.references )
-			call_result_locks.push_back( referenced_variable->mut_use_counter );
+		const ReferencesGraphNodeHolder call_result_lock(
+			std::make_shared<ReferencesGraphNode>( "result_lock"_SpC, ReferencesGraphNode::Kind::ReferenceImut ),
+			function_context );
+		function_context.variables_state.AddLink( result_node, call_result_lock.Node() );
 		DestroyUnusedTemporaryVariables( function_context, call_file_pos );
 	}
-	*/
 
 	return Value( result, call_file_pos );
 }
@@ -2518,13 +2518,19 @@ Variable CodeBuilder::BuildTempVariableConstruction(
 
 	const ReferencesGraphNodePtr node= std::make_shared<ReferencesGraphNode>( "temp "_SpC + type.ToString(), ReferencesGraphNode::Kind::Variable );
 	function_context.stack_variables_stack.back()->RegisterVariable( std::make_pair( node, variable ) );
-	variable.references.insert(node);
 
 	// Lock variable, for preventing of temporary destruction.
-	//	VariableStorageUseCounter variable_lock= stored_variable->mut_use_counter;
+	const ReferencesGraphNodeHolder variable_lock(
+		std::make_shared<ReferencesGraphNode>( type.ToString() + " temp variable lock"_SpC, ReferencesGraphNode::Kind::ReferenceMut ),
+		function_context );
+	function_context.variables_state.AddLink( node, variable_lock.Node() );
+	variable.references.insert( variable_lock.Node() );
 
 	variable.constexpr_value= ApplyConstructorInitializer( variable, call_operator, names, function_context );
 	variable.value_type= ValueType::Value; // Make value after construction
+
+	variable.references.clear();
+	variable.references.insert( node );
 
 	return variable;
 }
@@ -2551,14 +2557,19 @@ Variable CodeBuilder::ConvertVariable(
 
 	const ReferencesGraphNodePtr node= std::make_shared<ReferencesGraphNode>( "temp "_SpC + dst_type.ToString(), ReferencesGraphNode::Kind::Variable );
 	function_context.stack_variables_stack.back()->RegisterVariable( std::make_pair( node, variable ) );
-	result.references.insert(node);
 
 	// Lock variables, for preventing of temporary destruction.
-	//std::vector<VariableStorageUseCounter> src_variable_locks;
-	//for( const auto& var : variable.references )
-	//	src_variable_locks.push_back( var->mut_use_counter );
+	const ReferencesGraphNodeHolder src_variable_lock(
+		std::make_shared<ReferencesGraphNode>( variable.type.ToString() + " variable lock"_SpC, ReferencesGraphNode::Kind::ReferenceImut ),
+		function_context );
+	for( const auto& var : variable.references )
+		function_context.variables_state.AddLink( var, src_variable_lock.Node() );
 
-	//VariableStorageUseCounter dst_variable_lock= stored_variable->mut_use_counter;
+	const ReferencesGraphNodeHolder dst_variable_lock(
+		std::make_shared<ReferencesGraphNode>( dst_type.ToString() + " variable lock"_SpC, ReferencesGraphNode::Kind::ReferenceMut ),
+		function_context );
+	function_context.variables_state.AddLink( node, dst_variable_lock.Node() );
+	result.references.insert( dst_variable_lock.Node() );
 
 	DoCallFunction(
 		conversion_constructor.llvm_function,
@@ -2570,6 +2581,9 @@ Variable CodeBuilder::ConvertVariable(
 		names,
 		function_context,
 		false );
+
+	result.references.clear();
+	result.references.insert( node );
 
 	result.value_type= ValueType::Value; // Make value after construction
 	return result;

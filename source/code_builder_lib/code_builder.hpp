@@ -56,8 +56,7 @@ private:
 
 		void RegisterVariable( NodeAndVariable node_and_variable );
 
-
-	private:
+	public:
 		FunctionContext& function_context_;
 		std::vector<NodeAndVariable> variables_;
 	};

@@ -377,19 +377,20 @@ std::vector<VariableStorageUseCounter> CodeBuilder::LockReferencedVariables( con
 
 void CodeBuilder::DestroyUnusedTemporaryVariables( FunctionContext& function_context, const FilePos& file_pos )
 {
-	/*
 	StackVariablesStorage& temporary_variables_storage= *function_context.stack_variables_stack.back();
-	for( const StoredVariablePtr& variable : temporary_variables_storage.variables )
+	for( const StackVariablesStorage::NodeAndVariable& variable : temporary_variables_storage.variables_ )
 	{
-		if( variable->imut_use_counter.use_count() == 1 && variable->mut_use_counter.use_count() == 1 &&
-			!function_context.variables_state.VariableIsMoved( variable ) )
+		if( ( variable.first->kind == ReferencesGraphNode::Kind::Variable ||
+			  variable.first->kind == ReferencesGraphNode::Kind::ReferenceImut ||
+			  variable.first->kind == ReferencesGraphNode::Kind::ReferenceMut ) &&
+			!function_context.variables_state.HaveOutgoingLinks( variable.first ) &&
+			!function_context.variables_state.NodeMoved( variable.first ) )
 		{
-			if( variable->content.type.HaveDestructor() )
-				CallDestructor( variable->content.llvm_value, variable->content.type, function_context, file_pos );
-			function_context.variables_state.Move( variable );
+			if( variable.first->kind == ReferencesGraphNode::Kind::Variable && variable.second.type.HaveDestructor() )
+				CallDestructor( variable.second.llvm_value, variable.second.type, function_context, file_pos );
+			function_context.variables_state.MoveNode( variable.first );
 		}
 	}
-	*/
 }
 
 ReferencesGraph CodeBuilder::MergeVariablesStateAfterIf( const std::vector<ReferencesGraph>& bracnhes_variables_state, const FilePos& file_pos )
