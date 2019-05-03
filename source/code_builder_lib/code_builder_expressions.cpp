@@ -123,22 +123,15 @@ boost::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 				CallDestructor( l_var_real.llvm_value, l_var_real.type, function_context, file_pos );
 			CopyBytes( r_var_real.llvm_value, l_var_real.llvm_value, l_var_real.type, function_context );
 
-			// Write references from src to dst and check it.
-			/*
-			for( const StoredVariablePtr& l_var_variable : l_var_real.references )
-			for( const StoredVariablePtr& r_var_variable : r_var_real.references )
+			const ReferencesGraphNodePtr& src_node= *r_var_real.references.begin();
+			const ReferencesGraphNodePtr& dst_node= *l_var_real.references.begin();
+			if( const auto src_node_inner_reference= function_context.variables_state.GetNodeInnerReference( src_node ) )
 			{
-				for( const auto& inner_reference : function_context.variables_state.GetVariableReferences( r_var_variable ) )
-				{
-					const bool ok= function_context.variables_state.AddPollution( l_var_variable, inner_reference.first, inner_reference.second.IsMutable() );
-					if( !ok )
-						errors_.push_back( ReportReferenceProtectionError( file_pos, inner_reference.first->name ) );
-				}
+				const auto inner_reference_copy= std::make_shared<ReferencesGraphNode>( dst_node->name + " inner variable"_SpC, src_node_inner_reference->kind );
+				function_context.variables_state.SetNodeInnerReference( dst_node, inner_reference_copy );
+				function_context.variables_state.AddLink( src_node_inner_reference, inner_reference_copy );
 			}
-			*/
-
-			U_ASSERT( r_var_real.references.size() == 1u );
-			function_context.variables_state.MoveNode( *r_var_real.references.begin() );
+			function_context.variables_state.MoveNode( src_node );
 
 			Variable move_result;
 			move_result.type= void_type_;
@@ -2096,9 +2089,6 @@ Value CodeBuilder::DoCallFunction(
 	llvm_args.resize( arg_count, nullptr );
 
 	std::vector< ReferencesGraphNodeHolder > locked_args_references;
-	//std::vector<VariableStorageUseCounter> temp_args_locks; // We need lock reference argument before evaluating next arguments.
-	//std::vector< std::unordered_set<StoredVariablePtr> > arg_to_variables( arg_count );
-	//std::vector< std::pair< std::unordered_set<StoredVariablePtr>, bool > > arg_to_inner_variables( arg_count ); // second param - is mutable
 
 	for( size_t i= 0u; i < arg_count; ++i )
 	{
@@ -2160,6 +2150,7 @@ Value CodeBuilder::DoCallFunction(
 					else
 						function_context.variables_state.AddLink( arg_reference, arg_node );
 				}
+				// TODO - lock also accesible inner variables.
 			}
 			else
 			{
@@ -2194,6 +2185,7 @@ Value CodeBuilder::DoCallFunction(
 				const auto& arg_node= locked_args_references.back().Node();
 				for( const ReferencesGraphNodePtr& arg_reference : expr.references )
 					function_context.variables_state.AddLink( arg_reference, arg_node );
+				// TODO - lock also accesible inner variables.
 			}
 		}
 		else

@@ -556,18 +556,15 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 			const Variable initializer_variable= BuildExpressionCodeEnsureVariable( *call_operator.arguments_.front(), block_names, function_context );
 			CopyBytes( initializer_variable.llvm_value, variable.llvm_value, variable.type, function_context );
 
-			// Lock references and move
-			/*.
-			U_ASSERT( initializer_variable.references.size() == 1u );
-			for( const auto& inner_variable : function_context.variables_state.GetVariableReferences( *initializer_variable.references.begin() ) )
+			const ReferencesGraphNodePtr& src_node= *initializer_variable.references.begin();
+			const ReferencesGraphNodePtr& dst_node= *variable.references.begin();
+			if( const auto moved_node_inner_reference= function_context.variables_state.GetNodeInnerReference( src_node ) )
 			{
-				const bool ok= function_context.variables_state.AddPollution( variable_storage, inner_variable.first, inner_variable.second.IsMutable() );
-				if( !ok )
-					errors_.push_back( ReportReferenceProtectionError( call_operator.file_pos_, inner_variable.first->name ) );
+				const auto inner_reference_copy= std::make_shared<ReferencesGraphNode>( dst_node->name + " inner variable"_SpC, moved_node_inner_reference->kind );
+				function_context.variables_state.SetNodeInnerReference( dst_node, inner_reference_copy );
+				function_context.variables_state.AddLink( moved_node_inner_reference, inner_reference_copy );
 			}
-			*/
-
-			function_context.variables_state.MoveNode( *initializer_variable.references.begin() );
+			function_context.variables_state.MoveNode( src_node );
 
 			return initializer_variable.constexpr_value; // Move can preserve constexpr.
 		}
@@ -643,28 +640,20 @@ llvm::Constant* CodeBuilder::ApplyExpressionInitializer(
 			return nullptr;
 		}
 
-		// Lock references.
-		/*
-		if( variable.type.ReferencesTagsCount() > 0u )
+		const ReferencesGraphNodePtr& src_node= *expression_result.references.begin();
+		const ReferencesGraphNodePtr& dst_node= *variable.references.begin();
+		if( const auto src_node_inner_reference= function_context.variables_state.GetNodeInnerReference( src_node ) )
 		{
-			for( const StoredVariablePtr& referenced_variable : expression_result.references )
-			{
-				for( const auto& inner_variable : function_context.variables_state.GetVariableReferences( referenced_variable ) )
-				{
-					const bool ok= function_context.variables_state.AddPollution( inner_variable.first, inner_variable.second.IsMutable() );
-					if( !ok )
-						errors_.push_back( ReportReferenceProtectionError( initializer.file_pos_, inner_variable.first->name ) );
-				}
-			}
+			const auto inner_reference_copy= std::make_shared<ReferencesGraphNode>( dst_node->name + " inner variable"_SpC, src_node_inner_reference->kind );
+			function_context.variables_state.SetNodeInnerReference( dst_node, inner_reference_copy );
+			function_context.variables_state.AddLink( src_node_inner_reference, inner_reference_copy );
 		}
-		*/
 
 		// Move or try call copy constructor.
 		// TODO - produce constant initializer for generated copy constructor, if source is constant.
 		if( expression_result.value_type == ValueType::Value && expression_result.type == variable.type )
 		{
-			U_ASSERT( expression_result.references.size() == 1u );
-			function_context.variables_state.MoveNode( *expression_result.references.begin() );
+			function_context.variables_state.MoveNode( src_node );
 			CopyBytes( expression_result.llvm_value, variable.llvm_value, variable.type, function_context );
 
 			DestroyUnusedTemporaryVariables( function_context, initializer.file_pos_ );
