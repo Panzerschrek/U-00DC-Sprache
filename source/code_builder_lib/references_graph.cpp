@@ -272,11 +272,23 @@ ReferencesGraph::MergeResult ReferencesGraph::MergeVariablesStateAfterIf( const 
 
 std::vector<CodeBuilderError> ReferencesGraph::CheckWhileBlokVariablesState( const ReferencesGraph& state_before, const ReferencesGraph& state_after, const FilePos& file_pos )
 {
-	U_UNUSED( state_before );
-	U_UNUSED( state_after );
-	U_UNUSED( file_pos );
-
 	std::vector<CodeBuilderError> errors;
+
+	U_ASSERT( state_before.nodes_.size() <= state_after.nodes_.size() ); // Pollution can add nodes.
+
+	for( const auto& var_before : state_before.nodes_ )
+	{
+		U_ASSERT( state_after.nodes_.find( var_before.first ) != state_after.nodes_.end() );
+		const auto& var_after= *state_after.nodes_.find( var_before.first );
+
+		if( !var_before.second.moved && var_after.second.moved )
+			errors.push_back( ReportOuterVariableMoveInsideLoop( file_pos, var_before.first->name ) );
+
+		// Add mutalbe reference in while loop.
+		if( !state_before.HaveOutgoingLinks( var_before.first ) && state_after.HaveOutgoingMutableNodes( var_after.first ) )
+			errors.push_back( ReportMutableReferencePollutionOfOuterLoopVariable( file_pos, var_before.first->name, var_after.first->name ) );
+	}
+
 	return errors;
 }
 
