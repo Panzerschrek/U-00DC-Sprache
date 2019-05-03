@@ -2830,11 +2830,17 @@ void CodeBuilder::BuildReturnOperatorCode(
 			return;
 		}
 
-		// Lock references to return value variables.
-		//std::vector<VariableStorageUseCounter> return_value_locks= LockReferencedVariables( expression_result );
+		{ // Lock references to return value variables.
+			ReferencesGraphNodeHolder return_value_lock(
+				std::make_shared<ReferencesGraphNode>(
+					"ret result"_SpC,
+					function_context.return_value_is_mutable ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut ),
+				function_context );
+			for( const ReferencesGraphNodePtr& node : expression_result.references )
+				function_context.variables_state.AddLink( node, return_value_lock.Node() );
 
-		CallDestructorsBeforeReturn( function_context, return_operator.file_pos_ );
-		//return_value_locks.clear(); // Reset locks AFTER destructors call. We must get error in case of returning of reference to stack variable or value-argument.
+			CallDestructorsBeforeReturn( function_context, return_operator.file_pos_ );
+		} // Reset locks AFTER destructors call. We must get error in case of returning of reference to stack variable or value-argument.
 
 		/*
 		// Check correctness of returning reference.
