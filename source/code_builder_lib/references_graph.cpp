@@ -267,6 +267,25 @@ ReferencesGraph::MergeResult ReferencesGraph::MergeVariablesStateAfterIf( const 
 		}
 	}
 
+	// Check mutable reference count correctness.
+	for( const auto& node : result.nodes_ )
+	{
+		size_t mutable_links_count= 0u;
+		size_t immutable_links_count= 0u;
+		for( const auto& link : result.links_ )
+		{
+			if( link.first == node.first )
+			{
+				if( link.second->kind == ReferencesGraphNode::Kind::ReferenceMut )
+					++mutable_links_count;
+				else
+					++immutable_links_count;
+			}
+		}
+		if( mutable_links_count > 1u || ( immutable_links_count > 0u && mutable_links_count > 0u ) )
+			errors.push_back( ReportReferenceProtectionError( file_pos, node.first->name ) );
+	}
+
 	return std::make_pair( std::move(result), std::move(errors) );
 }
 
