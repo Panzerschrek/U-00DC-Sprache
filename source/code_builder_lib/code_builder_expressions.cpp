@@ -1332,6 +1332,12 @@ Value CodeBuilder::BuildNamedOperand(
 			access_error= access_error || function_context.variables_state.HaveOutgoingMutableNodes( node );
 		if( access_error )
 			errors_.push_back( ReportAccessingVariableThatHaveMutableReference( named_operand.file_pos_, back_name_component ) );
+
+		for( const ReferencesGraphNodePtr& node : variable->references )
+		{
+			if( function_context.variables_state.NodeMoved( node ) )
+				errors_.push_back( ReportAccessingMovedVariable( named_operand.file_pos_, node->name ) );
+		}
 	}
 
 	return name_entry->second;
@@ -1339,7 +1345,6 @@ Value CodeBuilder::BuildNamedOperand(
 
 Value CodeBuilder::BuildMoveOpeator( const Synt::MoveOperator& move_operator, NamesScope& names, FunctionContext& function_context )
 {
-	/*
 	Synt::ComplexName complex_name;
 	complex_name.components.emplace_back();
 	complex_name.components.back().name= move_operator.var_name_;
@@ -1351,54 +1356,55 @@ Value CodeBuilder::BuildMoveOpeator( const Synt::MoveOperator& move_operator, Na
 		errors_.push_back( ReportNameNotFound( move_operator.file_pos_, move_operator.var_name_ ) );
 		return ErrorValue();
 	}
-	const StoredVariablePtr variable_for_move= resolved_name->second.GetStoredVariable();
+	const Variable* const variable_for_move= resolved_name->second.GetVariable();
 	if( variable_for_move == nullptr ||
-		variable_for_move->kind != StoredVariable::Kind::Variable )
+		variable_for_move->references.empty() ||
+		(*variable_for_move->references.begin())->kind != ReferencesGraphNode::Kind::Variable )
 	{
 		errors_.push_back( ReportExpectedVariable( move_operator.file_pos_, resolved_name->second.GetKindName() ) );
 		return ErrorValue();
 	}
+	const ReferencesGraphNodePtr& node= (*variable_for_move->references.begin());
 
 	// TODO - maybe allow moving for immutable variables?
-	if( variable_for_move->content.value_type != ValueType::Reference )
+	if( variable_for_move->value_type != ValueType::Reference )
 	{
 		errors_.push_back( ReportExpectedReferenceValue( move_operator.file_pos_ ) );
 		return ErrorValue();
 	}
-	if( function_context.variables_state.VariableIsMoved( variable_for_move ) )
+	if( function_context.variables_state.NodeMoved( node ) )
 	{
-		errors_.push_back( ReportAccessingMovedVariable( move_operator.file_pos_, variable_for_move->name ) );
+		errors_.push_back( ReportAccessingMovedVariable( move_operator.file_pos_, node->name ) );
 		return ErrorValue();
 	}
 
 	// If this is mutable variable - it is stack variable or value argument.
 	// This can not be temp variable, global variable, or inner argument variable.
 
-	if( variable_for_move->mut_use_counter.use_count() > 1u || variable_for_move->imut_use_counter.use_count() > 1u )
+	if( function_context.variables_state.HaveOutgoingLinks( node ) )
 	{
-		errors_.push_back( ReportMovedVariableHaveReferences( move_operator.file_pos_, variable_for_move->name ) );
+		errors_.push_back( ReportMovedVariableHaveReferences( move_operator.file_pos_, node->name ) );
 		return ErrorValue();
 	}
 
-	Variable content= variable_for_move->content;
+	Variable content= *variable_for_move;
 	content.value_type= ValueType::Value;
 	content.references.clear();
 
-	const StoredVariablePtr moved_result= std::make_shared<StoredVariable>( "_moved_"_SpC + variable_for_move->name, content );
+	const ReferencesGraphNodePtr moved_result= std::make_shared<ReferencesGraphNode>( "_moved_"_SpC + node->name, ReferencesGraphNode::Kind::Variable );
 	content.references.emplace( moved_result );
-	function_context.stack_variables_stack.back()->RegisterVariable( moved_result );
+	function_context.stack_variables_stack.back()->RegisterVariable( std::make_pair( moved_result, content ) );
 
 	// We must save inner references of moved variable.
-	for( const auto& inner_variable : function_context.variables_state.GetVariableReferences( variable_for_move ) )
+	if( const auto move_variable_inner_node= function_context.variables_state.GetNodeInnerReference( node ) )
 	{
-		const bool ok= function_context.variables_state.AddPollution( moved_result, inner_variable.first, inner_variable.second.IsMutable() );
-		if( !ok )
-			errors_.push_back( ReportReferenceProtectionError( move_operator.file_pos_, inner_variable.first->name ) );
+		const auto inner_node= std::make_shared<ReferencesGraphNode>( moved_result->name + " inner node"_SpC, move_variable_inner_node->kind );
+		function_context.variables_state.SetNodeInnerReference( moved_result, inner_node );
+		function_context.variables_state.AddLink( move_variable_inner_node, inner_node );
 	}
-	function_context.variables_state.MoveNode( variable_for_move );
+	function_context.variables_state.MoveNode( node );
 
 	return Value( content, move_operator.file_pos_ );
-	*/
 }
 
 Value CodeBuilder::BuildNumericConstant(

@@ -746,10 +746,10 @@ void CodeBuilder::CallDestructorsImpl(
 
 		if( ! variables_state_copy.NodeMoved( stored_variable.first ) )
 		{
-			if( variables_state_copy.HaveOutgoingLinks( stored_variable.first ) )
-				errors_.push_back( ReportDestroyedVariableStillHaveReferences( file_pos, stored_variable.first->name ) );
 			if( stored_variable.first->kind == ReferencesGraphNode::Kind::Variable )
 			{
+				if( variables_state_copy.HaveOutgoingLinks( stored_variable.first ) )
+					errors_.push_back( ReportDestroyedVariableStillHaveReferences( file_pos, stored_variable.first->name ) );
 				const Variable& var= stored_variable.second;
 				if( var.type.HaveDestructor() )
 					CallDestructor( var.llvm_value, var.type, function_context, file_pos );

@@ -155,7 +155,8 @@ void ReferencesGraph::MoveNode( const ReferencesGraphNodePtr& node )
 bool ReferencesGraph::NodeMoved( const ReferencesGraphNodePtr& node ) const
 {
 	const auto it= nodes_.find(node);
-	U_ASSERT( it != nodes_.end() );
+	if( it == nodes_.end() ) // Can be for global constants, for example.
+		return false;
 
 	return it->second.moved;
 }
