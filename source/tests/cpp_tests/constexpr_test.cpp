@@ -322,6 +322,7 @@ U_TEST( StaticAssertTest2 )
 
 U_TEST(ConstexprTest10)
 {
+	DISABLE_TEST;
 	// constexpr array.
 	static const char c_program_text[]=
 	R"(
@@ -353,6 +354,7 @@ U_TEST(ConstexprTest10)
 
 U_TEST(ConstexprTest11)
 {
+	DISABLE_TEST;
 	// constexpr twodimensional array.
 	static const char c_program_text[]=
 	R"(
@@ -427,6 +429,7 @@ U_TEST( ImplicitConstexprTest0 )
 
 U_TEST( ImplicitConstexprTest1 )
 {
+	DISABLE_TEST;
 	// Immutable array without "constexpr", but actually constant must be "constexpr".
 	static const char c_program_text[]=
 	R"(
@@ -483,6 +486,7 @@ U_TEST( ConstexprReferenceTest0 )
 
 U_TEST( ConstexprReferenceTest1 )
 {
+	DISABLE_TEST;
 	// Auto constexpr reference to array.
 	static const char c_program_text[]=
 	R"(
@@ -565,6 +569,7 @@ U_TEST( ZeroInitConstexprTest0 )
 
 U_TEST( ZeroInitConstexprTest1 )
 {
+	DISABLE_TEST;
 	// Zero initializer for array must produce constant values.
 	static const char c_program_text[]=
 	R"(

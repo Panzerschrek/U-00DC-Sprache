@@ -1428,7 +1428,7 @@ Value CodeBuilder::BuildNumericConstant(
 
 	result.llvm_value= result.constexpr_value;
 
-	const ReferencesGraphNodePtr node= std::make_shared<ReferencesGraphNode>( "numeric constant"_SpC, ReferencesGraphNode::Kind::Variable );
+	const ReferencesGraphNodePtr node= std::make_shared<ReferencesGraphNode>( ToProgramString( "numeric constant " + std::to_string(numeric_constant.value_) ), ReferencesGraphNode::Kind::Variable );
 	function_context.stack_variables_stack.back()->RegisterVariable( std::make_pair( node, result ) );
 	result.references.emplace( node );
 	return Value( result, numeric_constant.file_pos_ );
@@ -1652,11 +1652,11 @@ Value CodeBuilder::BuildIndexationOperator(
 	}
 
 	// Lock array. We must prevent modification of array in index calcualtion.
-	/*
-	std::vector<VariableStorageUseCounter> array_locks;
-	for( const StoredVariablePtr& stored_variable : variable.references )
-		array_locks.push_back( variable.value_type == ValueType::Reference ? stored_variable->mut_use_counter : stored_variable->imut_use_counter );
-	*/
+	const ReferencesGraphNodeHolder array_lock(
+		std::make_shared<ReferencesGraphNode>( "array lock"_SpC, variable.value_type == ValueType::Reference ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut ),
+		function_context );
+	for( const ReferencesGraphNodePtr& node : variable.references )
+		function_context.variables_state.AddLink( node, array_lock.Node() );
 
 	const Variable index= BuildExpressionCodeEnsureVariable( *indexation_operator.index_, names, function_context );
 
