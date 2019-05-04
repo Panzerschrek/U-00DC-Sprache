@@ -387,3 +387,21 @@ def PollutionTest2():
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ReferenceProtectionError" )
 	assert( errors_list[0].file_pos.line == 12 )
+
+
+def ReferenceFieldAccess_Test0():
+	c_program_text= """
+		struct S{ i32 &mut x; }
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var S s{ .x= x };
+			auto& s_ref= s;
+			auto& x_ref= s_ref.x; // Accessing reference filed of struct 's', using reference to struct 's'
+			++s.x; // Error, reference to 'x' inside 's' is not unique.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ReferenceProtectionError" )
+	assert( errors_list[0].file_pos.line == 9 )

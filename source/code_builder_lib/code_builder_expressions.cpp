@@ -1881,8 +1881,8 @@ Value CodeBuilder::BuildMemberAccessOperator(
 
 		result.references.clear();
 		for( const ReferencesGraphNodePtr& node : variable.references )
-			if( ReferencesGraphNodePtr inner_reference= function_context.variables_state.GetNodeInnerReference( node ) )
-				result.references.insert( std::move(inner_reference) );
+			for( const ReferencesGraphNodePtr& inner_reference : function_context.variables_state.GetAllAccessibleInnerNodes_r( node ) )
+				result.references.insert( inner_reference );
 	}
 
 	return Value( result, member_access_operator.file_pos_ );

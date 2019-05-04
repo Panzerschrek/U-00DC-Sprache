@@ -105,7 +105,7 @@ def MoveOperatorTest2():
 	tests_lib.build_program( c_program_text )
 
 
-def MoveOperatorTest2():
+def MoveOperatorTest3():
 	c_program_text= """
 		struct S
 		{
