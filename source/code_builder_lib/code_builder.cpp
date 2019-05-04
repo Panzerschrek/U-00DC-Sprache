@@ -2448,6 +2448,7 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 			{
 				U_ASSERT( initializer_experrsion.references.size() == 1u );
 				const ReferencesGraphNodePtr& variable_for_move= *initializer_experrsion.references.begin();
+				U_ASSERT(variable_for_move->kind == ReferencesGraphNode::Kind::Variable );
 
 				const ReferencesGraphNodePtr initializer_expression_inner_node= function_context.variables_state.GetNodeInnerReference( variable_for_move );
 				if( initializer_expression_inner_node != nullptr )
@@ -2472,14 +2473,18 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 					function_context );
 
 				U_ASSERT(initializer_experrsion.references.size() == 1u);
-				const ReferencesGraphNodePtr initializer_expression_inner_node= function_context.variables_state.GetNodeInnerReference( (*initializer_experrsion.references.begin()) );
-				if( initializer_expression_inner_node != nullptr )
+				const ReferencesGraphNodePtr& src_node= *initializer_experrsion.references.begin();
+				const auto src_node_inner_references= function_context.variables_state.GetAllAccessibleInnerNodes_r( src_node );
+				if( !src_node_inner_references.empty() )
 				{
-					const ReferencesGraphNodePtr inner_reference= std::make_shared<ReferencesGraphNode>(
-						"var"_SpC + auto_variable_declaration.name + " inner node"_SpC,
-						initializer_expression_inner_node->kind);
-					function_context.variables_state.SetNodeInnerReference( var_node, inner_reference );
-					function_context.variables_state.AddLink( initializer_expression_inner_node, inner_reference );
+					bool node_is_mutable= false;
+					for( const ReferencesGraphNodePtr& src_node_inner_reference : src_node_inner_references )
+						node_is_mutable= node_is_mutable || src_node_inner_reference->kind == ReferencesGraphNode::Kind::ReferenceMut;
+
+					const auto dst_node_inner_reference= std::make_shared<ReferencesGraphNode>( var_node->name + " inner variable"_SpC, node_is_mutable ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut );
+					function_context.variables_state.SetNodeInnerReference( var_node, dst_node_inner_reference );
+					for( const ReferencesGraphNodePtr& src_node_inner_reference : src_node_inner_references )
+						function_context.variables_state.AddLink( src_node_inner_reference, dst_node_inner_reference );
 				}
 			}
 		}

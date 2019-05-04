@@ -125,6 +125,7 @@ boost::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 
 			const ReferencesGraphNodePtr& src_node= *r_var_real.references.begin();
 			const ReferencesGraphNodePtr& dst_node= *l_var_real.references.begin();
+			U_ASSERT( src_node->kind == ReferencesGraphNode::Kind::Variable );
 			if( const auto src_node_inner_reference= function_context.variables_state.GetNodeInnerReference( src_node ) )
 			{
 				const auto inner_reference_copy= std::make_shared<ReferencesGraphNode>( dst_node->name + " inner variable"_SpC, src_node_inner_reference->kind );

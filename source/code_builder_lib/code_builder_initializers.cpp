@@ -558,6 +558,7 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 
 			const ReferencesGraphNodePtr& src_node= *initializer_variable.references.begin();
 			const ReferencesGraphNodePtr& dst_node= *variable.references.begin();
+			U_ASSERT( src_node->kind == ReferencesGraphNode::Kind::Variable );
 			if( const auto moved_node_inner_reference= function_context.variables_state.GetNodeInnerReference( src_node ) )
 			{
 				const auto inner_reference_copy= std::make_shared<ReferencesGraphNode>( dst_node->name + " inner variable"_SpC, moved_node_inner_reference->kind );
@@ -642,17 +643,24 @@ llvm::Constant* CodeBuilder::ApplyExpressionInitializer(
 
 		const ReferencesGraphNodePtr& src_node= *expression_result.references.begin();
 		const ReferencesGraphNodePtr& dst_node= *variable.references.begin();
-		if( const auto src_node_inner_reference= function_context.variables_state.GetNodeInnerReference( src_node ) )
+		const auto src_node_inner_references= function_context.variables_state.GetAllAccessibleInnerNodes_r( src_node );
+		if( !src_node_inner_references.empty() )
 		{
-			const auto inner_reference_copy= std::make_shared<ReferencesGraphNode>( dst_node->name + " inner variable"_SpC, src_node_inner_reference->kind );
-			function_context.variables_state.SetNodeInnerReference( dst_node, inner_reference_copy );
-			function_context.variables_state.AddLink( src_node_inner_reference, inner_reference_copy );
+			bool node_is_mutable= false;
+			for( const ReferencesGraphNodePtr& src_node_inner_reference : src_node_inner_references )
+				node_is_mutable= node_is_mutable || src_node_inner_reference->kind == ReferencesGraphNode::Kind::ReferenceMut;
+
+			const auto dst_node_inner_reference= std::make_shared<ReferencesGraphNode>( dst_node->name + " inner variable"_SpC, node_is_mutable ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut );
+			function_context.variables_state.SetNodeInnerReference( dst_node, dst_node_inner_reference );
+			for( const ReferencesGraphNodePtr& src_node_inner_reference : src_node_inner_references )
+				function_context.variables_state.AddLink( src_node_inner_reference, dst_node_inner_reference );
 		}
 
 		// Move or try call copy constructor.
 		// TODO - produce constant initializer for generated copy constructor, if source is constant.
 		if( expression_result.value_type == ValueType::Value && expression_result.type == variable.type )
 		{
+			U_ASSERT( src_node->kind == ReferencesGraphNode::Kind::Variable );
 			function_context.variables_state.MoveNode( src_node );
 			CopyBytes( expression_result.llvm_value, variable.llvm_value, variable.type, function_context );
 
