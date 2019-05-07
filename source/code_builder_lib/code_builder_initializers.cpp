@@ -908,7 +908,8 @@ llvm::Constant* CodeBuilder::InitializeReferenceField(
 	// Check references.
 	for( const ReferencesGraphNodePtr& src_node : initializer_variable.references )
 	{
-		if( field.is_mutable && function_context.variables_state.HaveOutgoingLinks( src_node ) )
+		if( ( field.is_mutable && function_context.variables_state.HaveOutgoingLinks( src_node ) ) ||
+			(!field.is_mutable && function_context.variables_state.HaveOutgoingMutableNodes( src_node ) ) )
 		{
 			errors_.push_back( ReportReferenceProtectionError( initializer.GetFilePos(), src_node->name ) );
 			continue;

@@ -100,21 +100,6 @@ def CreateMutableReferenceToAnotherMutableReference_Test1():
 	assert( errors_list[0].file_pos.line == 7 )
 
 
-def AccessingVariableThatHaveMutableReference_Test0():
-	c_program_text= """
-		fn Foo()
-		{
-			auto mut x= 0;
-			var i32 &mut r= x;
-			var i32 x_copy= x; // error, accessing 'x'
-		}
-	"""
-	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "AccessingVariableThatHaveMutableReference" )
-	assert( errors_list[0].file_pos.line == 6 )
-
-
 def AccessingVariableThatHaveMutableReference_Test1():
 	c_program_text= """
 		fn Foo()
@@ -122,12 +107,12 @@ def AccessingVariableThatHaveMutableReference_Test1():
 			auto mut x= 0;
 			var i32 &mut r0= x;
 			var i32 &mut r1= r0;
-			var i32 x_copy= r0; // error, accessing 'r0', that have reference 'r1'
+			var i32& r2= r0; // error, accessing 'r0', that have reference 'r1'
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "AccessingVariableThatHaveMutableReference" )
+	assert( errors_list[0].error_code == "ReferenceProtectionError" )
 	assert( errors_list[0].file_pos.line == 7 )
 
 
@@ -179,12 +164,12 @@ def FunctionReferencePass_Test2():
 		{
 			auto mut x= 0;
 			auto &mut r0= Pass(x);
-			auto x_copy= x; // Error, accessing 'x', which have mutable rerefernce.
+			auto& x_ref= x; // Error, taking reference to 'x', which have mutable rerefernce.
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "AccessingVariableThatHaveMutableReference" )
+	assert( errors_list[0].error_code == "ReferenceProtectionError" )
 	assert( errors_list[0].file_pos.line == 7 )
 
 

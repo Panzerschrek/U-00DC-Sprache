@@ -76,7 +76,7 @@ U_TEST( IfMergeTest2_MutablePollutionSelectedAsResult )
 	)";
 
 	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::AccessingVariableThatHaveMutableReference, 14u ) );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ReferenceProtectionError, 14u ) );
 }
 
 U_TEST( IfMergeTest3_ResultPollutionOccursIfPollutionOccursNotInAllBranches )
@@ -106,7 +106,7 @@ U_TEST( IfMergeTest3_ResultPollutionOccursIfPollutionOccursNotInAllBranches )
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::AccessingVariableThatHaveMutableReference );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferenceProtectionError );
 	U_TEST_ASSERT( error.file_pos.line == 16u );
 }
 
@@ -197,7 +197,7 @@ U_TEST( IfMergeTest6_ConditionAffectsLowerBranches0 )
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::AccessingVariableThatHaveMutableReference );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferenceProtectionError );
 	U_TEST_ASSERT( error.file_pos.line == 11u );
 }
 
@@ -225,7 +225,7 @@ U_TEST( IfMergeTest7_ConditionAffectsLowerBranches1 )
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::AccessingVariableThatHaveMutableReference );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferenceProtectionError );
 	U_TEST_ASSERT( error.file_pos.line == 12u );
 }
 
@@ -250,7 +250,7 @@ U_TEST( IfMergeTest8_ConditionAffectsLowerBranches2 )
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::AccessingVariableThatHaveMutableReference );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferenceProtectionError );
 	U_TEST_ASSERT( error.file_pos.line == 10u );
 }
 
@@ -271,7 +271,7 @@ U_TEST( IfMergeTest9_ConditionAffectsLowerBranches3 )
 	)";
 
 	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::AccessingVariableThatHaveMutableReference, 10u ) );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ReferenceProtectionError, 10u ) );
 }
 
 U_TEST( WhileMergeTest0_MutablePollutionInsideLoop0 )
