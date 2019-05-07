@@ -1158,9 +1158,6 @@ Value CodeBuilder::BuildNamedOperand(
 	if( named_operand.name_.components.size() == 1u &&
 		named_operand.name_.components.back().template_parameters.empty() )
 	{
-		// TODO - ReportAccessingVariableThatHaveMutableReference if 'this' have mutalbe references.
-
-
 		if( named_operand.name_.components.back().name == Keywords::this_ )
 		{
 			if( function_context.this_ == nullptr || function_context.whole_this_is_unavailable )
@@ -1210,9 +1207,6 @@ Value CodeBuilder::BuildNamedOperand(
 
 	if( const ClassField* const field= name_entry->second.GetClassField() )
 	{
-		// TODO - ReportAccessingVariableThatHaveMutableReference if 'this' have mutalbe references.
-
-
 		if( function_context.this_ == nullptr )
 		{
 			errors_.push_back( ReportClassFiledAccessInStaticMethod( named_operand.file_pos_, named_operand.name_.components.back().name ) );
@@ -1294,9 +1288,6 @@ Value CodeBuilder::BuildNamedOperand(
 	}
 	else if( const OverloadedFunctionsSet* const overloaded_functions_set= name_entry->second.GetFunctionsSet() )
 	{
-		// TODO - ReportAccessingVariableThatHaveMutableReference if 'this' have mutalbe references.
-
-
 		if( function_context.this_ != nullptr )
 		{
 			// Trying add "this" to functions set.
@@ -1321,12 +1312,6 @@ Value CodeBuilder::BuildNamedOperand(
 	}
 	else if( const Variable* const variable= name_entry->second.GetVariable() )
 	{
-		bool access_error= false;
-		for( const ReferencesGraphNodePtr& node : variable->references )
-			access_error= access_error || function_context.variables_state.HaveOutgoingMutableNodes( node );
-		if( access_error )
-			errors_.push_back( ReportAccessingVariableThatHaveMutableReference( named_operand.file_pos_, back_name_component ) );
-
 		for( const ReferencesGraphNodePtr& node : variable->references )
 		{
 			if( function_context.variables_state.NodeMoved( node ) )
@@ -2185,7 +2170,12 @@ Value CodeBuilder::DoCallFunction(
 					function_context );
 				const auto& arg_node= locked_args_references.back().Node();
 				for( const ReferencesGraphNodePtr& arg_reference : expr.references )
-					function_context.variables_state.AddLink( arg_reference, arg_node );
+				{
+					if( function_context.variables_state.HaveOutgoingMutableNodes( arg_reference ) )
+						errors_.push_back( ReportReferenceProtectionError( file_pos, arg_reference->name ) );
+					else
+						function_context.variables_state.AddLink( arg_reference, arg_node );
+				}
 				// TODO - lock also accesible inner variables.
 			}
 		}

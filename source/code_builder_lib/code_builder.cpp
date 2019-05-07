@@ -2303,10 +2303,14 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 			const bool is_mutable= variable.value_type == ValueType::Reference;
 			for( const ReferencesGraphNodePtr& node : expression_result.references )
 			{
-				if( is_mutable && function_context.variables_state.HaveOutgoingLinks( node ) )
+				if( is_mutable )
+				{
+					if( function_context.variables_state.HaveOutgoingLinks( node ) )
+						errors_.push_back( ReportReferenceProtectionError( variable_declaration.file_pos, node->name ) );
+				}
+				else if( function_context.variables_state.HaveOutgoingMutableNodes( node ) )
 					errors_.push_back( ReportReferenceProtectionError( variable_declaration.file_pos, node->name ) );
-				else
-					function_context.variables_state.AddLink( node, var_node );
+				function_context.variables_state.AddLink( node, var_node );
 			}
 		}
 		else U_ASSERT(false);
@@ -2418,10 +2422,14 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 		const bool is_mutable= variable.value_type == ValueType::Reference;
 		for( const ReferencesGraphNodePtr& node : initializer_experrsion.references )
 		{
-			if( is_mutable && function_context.variables_state.HaveOutgoingLinks( node ) )
+			if( is_mutable )
+			{
+				if( function_context.variables_state.HaveOutgoingLinks( node ) )
+					errors_.push_back( ReportReferenceProtectionError( auto_variable_declaration.file_pos_, node->name ) );
+			}
+			else if( function_context.variables_state.HaveOutgoingMutableNodes( node ) )
 				errors_.push_back( ReportReferenceProtectionError( auto_variable_declaration.file_pos_, node->name ) );
-			else
-				function_context.variables_state.AddLink( node, var_node );
+			function_context.variables_state.AddLink( node, var_node );
 		}
 	}
 	else if( auto_variable_declaration.reference_modifier == ReferenceModifier::None )
