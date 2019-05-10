@@ -1693,72 +1693,48 @@ void CodeBuilder::BuildFuncCode(
 		}
 	}
 
-	/*
 	// Now, we can check references pollution. After this point only code is destructors calls, which can not link references.
-	const auto find_reference=
-	[&]( const StoredVariablePtr& stored_variable ) -> boost::optional<Function::ArgReference>
-	{
-		for( size_t i= 0u; i < function_type->args.size(); ++i )
-		{
-			if( stored_variable == args_stored_variables[i].first )
-				return Function::ArgReference( i, Function::c_arg_reference_tag_number );
-			if( stored_variable == args_stored_variables[i].second )
-				return Function::ArgReference( i, 0u );
-		}
-		return boost::none;
-	};
 	for( size_t i= 0u; i < function_type->args.size(); ++i )
 	{
-		if( args_stored_variables[i].first == nullptr ) // May be in templates.
+		const auto& node_pair= args_nodes[i];
+		if( node_pair.second != nullptr && function_context.variables_state.GetNodeInnerReference( node_pair.second ) != nullptr )
+			errors_.push_back( ReportReferencePollutionForArgReference( block->end_file_pos_ ) );
+
+		const ReferencesGraphNodePtr inner_reference= function_context.variables_state.GetNodeInnerReference( node_pair.first );
+		if( inner_reference == nullptr )
 			continue;
 
-		const auto check_reference=
-		[&]( const StoredVariablePtr& referenced_variable )
+		for( const ReferencesGraphNodePtr& accesible_variable : function_context.variables_state.GetAllAccessibleVariableNodes_r( inner_reference ) )
 		{
-			const boost::optional<Function::ArgReference> reference= find_reference( referenced_variable );
-			if( reference == boost::none )
+			if( accesible_variable == node_pair.second )
+				continue;
+
+			boost::optional<Function::ArgReference> reference;
+			for( size_t j= 0u; j < function_type->args.size(); ++j )
 			{
-				errors_.push_back( ReportUnallowedReferencePollution( block->end_file_pos_ ) );
-				return;
+				if( accesible_variable == args_nodes[j].first )
+					reference= Function::ArgReference( j, Function::c_arg_reference_tag_number );
+				if( accesible_variable == args_nodes[j].second )
+					reference= Function::ArgReference( j, 0u );
 			}
 
-			Function::ReferencePollution pollution;
-			pollution.src= *reference;
-			pollution.dst.first= i;
-			pollution.dst.second= 0u;
-			// Currently check both mutable and immutable. TODO - maybe akt more smarter?
-			pollution.src_is_mutable= true;
-			if( function_type->references_pollution.count( pollution ) != 0u )
-				return;
-			pollution.src_is_mutable= false;
-			if( function_type->references_pollution.count( pollution ) != 0u )
-				return;
-			errors_.push_back( ReportUnallowedReferencePollution( block->end_file_pos_ ) );
-		};
-
-		if( function_type->args[i].is_reference )
-		{
-			for( const auto& referenced_variable_pair : function_context.variables_state.GetVariableReferences( args_stored_variables[i].first ) )
+			if( reference != boost::none )
 			{
-				if( referenced_variable_pair.first->kind == StoredVariable::Kind::ArgInnerVariable &&
-					referenced_variable_pair.first == args_stored_variables[i].second ) // Ok, arg inner variable.
+				Function::ReferencePollution pollution;
+				pollution.src= *reference;
+				pollution.dst.first= i;
+				pollution.dst.second= 0u;
+				// Currently check both mutable and immutable. TODO - maybe akt more smarter?
+				pollution.src_is_mutable= true;
+				if( function_type->references_pollution.count( pollution ) != 0u )
 					continue;
-				// TODO - what if self-linking of inner variable occurs?
-
-				check_reference( referenced_variable_pair.first );
+				pollution.src_is_mutable= false;
+				if( function_type->references_pollution.count( pollution ) != 0u )
+					continue;
 			}
-		}
-
-		if( args_stored_variables[i].second == nullptr ) // May be in templates.
-			continue;
-
-		if( function_type->args[i].type.ReferencesTagsCount() > 0u )
-		{
-			for( const auto& referenced_variable_pair : function_context.variables_state.GetVariableReferences( args_stored_variables[i].second ) )
-				check_reference( referenced_variable_pair.first );
+			errors_.push_back( ReportUnallowedReferencePollution( block->end_file_pos_ ) );
 		}
 	}
-	*/
 
 	llvm::Function::BasicBlockListType& bb_list= llvm_function->getBasicBlockList();
 
