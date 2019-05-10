@@ -1380,8 +1380,8 @@ void CodeBuilder::BuildFuncCode(
 		llvm_function );
 	const StackVariablesStorage args_storage( function_context );
 
-	//std::vector< std::pair< StoredVariablePtr, StoredVariablePtr > > args_stored_variables;
-	//args_stored_variables.resize( function_type->args.size() );
+	// arg node + optional inner reference variable node.
+	std::vector< std::pair< ReferencesGraphNodePtr, ReferencesGraphNodePtr > > args_nodes( function_type->args.size() );
 
 	// push args
 	Variable this_;
@@ -1415,13 +1415,20 @@ void CodeBuilder::BuildFuncCode(
 			// Create variable node, because only variable node can have inner reference node.
 			const auto this_node= std::make_shared<ReferencesGraphNode>( Keyword(Keywords::this_), ReferencesGraphNode::Kind::Variable );
 			function_context.variables_state.AddNode( this_node );
+			args_nodes[ arg_number ].first= this_node;
 			this_.references.emplace(this_node);
 
 			if (arg.type.ReferencesTagsCount() > 0u )
 			{
-				function_context.variables_state.SetNodeInnerReference(
-					this_node,
-					std::make_shared<ReferencesGraphNode>( Keyword(Keywords::this_) + " inner reference"_SpC, ReferencesGraphNode::Kind::ReferenceMut ) );
+				// Create inner node + root variable.
+				const auto accesible_variable= std::make_shared<ReferencesGraphNode>( Keyword(Keywords::this_) + " inner variable"_SpC, ReferencesGraphNode::Kind::Variable );
+				function_context.variables_state.AddNode( accesible_variable );
+
+				const auto inner_reference= std::make_shared<ReferencesGraphNode>( Keyword(Keywords::this_) + " inner reference"_SpC, ReferencesGraphNode::Kind::ReferenceMut );
+				function_context.variables_state.SetNodeInnerReference( this_node, inner_reference );
+				function_context.variables_state.AddLink( accesible_variable, inner_reference );
+
+				args_nodes[ arg_number ].second= accesible_variable;
 			}
 
 			arg_number++;
@@ -1476,13 +1483,20 @@ void CodeBuilder::BuildFuncCode(
 			function_context.variables_state.AddNode( var_node );
 		else
 			function_context.stack_variables_stack.back()->RegisterVariable( std::make_pair( var_node, var ) );
+		args_nodes[ arg_number ].first= var_node;
 		var.references.insert(var_node);
 
 		if (arg.type.ReferencesTagsCount() > 0u )
 		{
-			function_context.variables_state.SetNodeInnerReference(
-				var_node,
-				std::make_shared<ReferencesGraphNode>( arg_name + " inner reference"_SpC, ReferencesGraphNode::Kind::ReferenceMut ) );
+			// Create inner node + root variable.
+			const auto accesible_variable= std::make_shared<ReferencesGraphNode>( arg_name + " inner variable"_SpC, ReferencesGraphNode::Kind::Variable );
+			function_context.variables_state.AddNode( accesible_variable );
+
+			const auto inner_reference= std::make_shared<ReferencesGraphNode>( arg_name + " inner reference"_SpC, ReferencesGraphNode::Kind::ReferenceMut );
+			function_context.variables_state.SetNodeInnerReference( var_node, inner_reference );
+			function_context.variables_state.AddLink( accesible_variable, inner_reference );
+
+			args_nodes[ arg_number ].second= accesible_variable;
 		}
 
 		if( is_this )
@@ -1526,7 +1540,7 @@ void CodeBuilder::BuildFuncCode(
 				{
 					if( arg_n == i )
 					{
-						//function_context.allowed_for_returning_references.emplace( args_stored_variables[i].first );
+						function_context.allowed_for_returning_references.emplace( args_nodes[i].first );
 						break;
 					}
 				}
@@ -1537,7 +1551,7 @@ void CodeBuilder::BuildFuncCode(
 				{
 					if( arg_and_tag.first == i && arg_and_tag.second == 0u )
 					{
-						//function_context.allowed_for_returning_references.emplace( args_stored_variables[i].second );
+						function_context.allowed_for_returning_references.emplace( args_nodes[i].second );
 						break;
 					}
 				}
@@ -2843,16 +2857,15 @@ void CodeBuilder::BuildReturnOperatorCode(
 			CallDestructorsBeforeReturn( function_context, return_operator.file_pos_ );
 		} // Reset locks AFTER destructors call. We must get error in case of returning of reference to stack variable or value-argument.
 
-		/*
 		// Check correctness of returning reference.
-		for( const StoredVariablePtr& var : expression_result.references )
+		for( const ReferencesGraphNodePtr& node : expression_result.references )
 		{
-			if( var->is_global_constant ) // Always allow return of global constants.
-				continue;
-			if( function_context.allowed_for_returning_references.count(var) == 0u )
-				errors_.push_back( ReportReturningUnallowedReference( return_operator.file_pos_ ) );
+			for( const ReferencesGraphNodePtr& var_node : function_context.variables_state.GetAllAccessibleVariableNodes_r( node ) )
+			{
+				if( function_context.allowed_for_returning_references.count( var_node ) == 0 )
+					errors_.push_back( ReportReturningUnallowedReference( return_operator.file_pos_ ) );
+			}
 		}
-		*/
 
 		llvm::Value* ret_value= expression_result.llvm_value;
 		if( expression_result.type != function_context.return_type )
@@ -2867,20 +2880,21 @@ void CodeBuilder::BuildReturnOperatorCode(
 			return;
 		}
 
-		/*
 		if( expression_result.type.ReferencesTagsCount() > 0u )
 		{
 			// Check correctness of returning references.
-			for( const StoredVariablePtr& var : expression_result.references )
-			for( const auto& inner_var :function_context.variables_state.GetVariableReferences( var ) )
+			for( const ReferencesGraphNodePtr& node : expression_result.references )
 			{
-				if( inner_var.first->is_global_constant ) // Always allow return of global constants.
-					continue;
-				if( function_context.allowed_for_returning_references.count(inner_var.first) == 0u )
-					errors_.push_back( ReportReturningUnallowedReference( return_operator.file_pos_ ) );
+				if( const ReferencesGraphNodePtr& inner_reference = function_context.variables_state.GetNodeInnerReference( node ) )
+				{
+					for( const ReferencesGraphNodePtr& var_node : function_context.variables_state.GetAllAccessibleVariableNodes_r( inner_reference ) )
+					{
+						if( function_context.allowed_for_returning_references.count( var_node ) == 0 )
+							errors_.push_back( ReportReturningUnallowedReference( return_operator.file_pos_ ) );
+					}
+				}
 			}
 		}
-		*/
 
 		if( function_context.s_ret_ != nullptr )
 		{

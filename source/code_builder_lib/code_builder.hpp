@@ -86,7 +86,7 @@ private:
 
 		// For reference-returned functions - references of returning reference.
 		// For value-returned functions - references inside value.
-		//std::unordered_set<StoredVariablePtr> allowed_for_returning_references;
+		std::unordered_set<ReferencesGraphNodePtr> allowed_for_returning_references;
 
 		const Variable* this_= nullptr; // null for nonclass functions or static member functions.
 		llvm::Value* s_ret_= nullptr; // Value for assignment for "sret" functions.
