@@ -193,7 +193,7 @@ std::unordered_set<ReferencesGraphNodePtr> ReferencesGraph::GetAllAccessibleVari
 
 	std::unordered_set<ReferencesGraphNodePtr> result;
 
-	if( node->kind == ReferencesGraphNode::Kind::Variable || node->kind == ReferencesGraphNode::Kind::ReferenceArg )
+	if( node->kind == ReferencesGraphNode::Kind::Variable )
 		result.emplace( node );
 
 	for( const auto& link : links_ )

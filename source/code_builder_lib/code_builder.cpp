@@ -1412,21 +1412,17 @@ void CodeBuilder::BuildFuncCode(
 			llvm_arg.setName( KeywordAscii( Keywords::this_ ) );
 			function_context.this_= &this_;
 
-			const ReferencesGraphNodePtr this_node= std::make_shared<ReferencesGraphNode>( Keyword(Keywords::this_), ReferencesGraphNode::Kind::ReferenceArg );
+			// Create variable node, because only variable node can have inner reference node.
+			const auto this_node= std::make_shared<ReferencesGraphNode>( Keyword(Keywords::this_), ReferencesGraphNode::Kind::Variable );
+			function_context.variables_state.AddNode( this_node );
 			this_.references.emplace(this_node);
 
-			function_context.variables_state.AddNode( this_node );
-			//args_stored_variables[arg_number].first= this_storage;
-
-			/*
 			if (arg.type.ReferencesTagsCount() > 0u )
 			{
-				const StoredVariablePtr inner_variable = std::make_shared<StoredVariable>( Keyword(Keywords::this_) + " inner reference"_SpC, Variable(), StoredVariable::Kind::ArgInnerVariable );
-				function_context.variables_state.AddPollutionForArgInnerVariable( this_storage, inner_variable );
-				function_context.variables_state.AddVariable( inner_variable );
-				//args_stored_variables[arg_number].second= inner_variable;
+				function_context.variables_state.SetNodeInnerReference(
+					this_node,
+					std::make_shared<ReferencesGraphNode>( Keyword(Keywords::this_) + " inner reference"_SpC, ReferencesGraphNode::Kind::ReferenceMut ) );
 			}
-			*/
 
 			arg_number++;
 			continue;
@@ -1473,29 +1469,21 @@ void CodeBuilder::BuildFuncCode(
 			else U_ASSERT(false);
 		}
 
-		const auto var_node=
-			std::make_shared<ReferencesGraphNode>(
-				arg_name,
-				arg.is_reference ? ReferencesGraphNode::Kind::ReferenceArg : ReferencesGraphNode::Kind::Variable );
-
+		// Create variable node, because only variable node can have inner reference node.
+		// Register arg on stack, only if it is value-argument.
+		const auto var_node= std::make_shared<ReferencesGraphNode>( arg_name, ReferencesGraphNode::Kind::Variable );
 		if( arg.is_reference )
 			function_context.variables_state.AddNode( var_node );
 		else
 			function_context.stack_variables_stack.back()->RegisterVariable( std::make_pair( var_node, var ) );
 		var.references.insert(var_node);
 
-		//args_stored_variables[arg_number].first= var_storage;
-		// For arguments with references inside create variable storage.
-		/*
-		if( arg.type.ReferencesTagsCount() > 0u )
+		if (arg.type.ReferencesTagsCount() > 0u )
 		{
-			U_ASSERT( arg.type.ReferencesTagsCount() == 1u ); // Currently, support 0 or 1 tags.
-			const StoredVariablePtr inner_variable = std::make_shared<StoredVariable>( arg_name + " inner reference"_SpC, Variable(), StoredVariable::Kind::ArgInnerVariable );
-			function_context.variables_state.AddVariable( inner_variable );
-			function_context.variables_state.AddPollutionForArgInnerVariable( var_storage, inner_variable );
-			args_stored_variables[arg_number].second= inner_variable;
+			function_context.variables_state.SetNodeInnerReference(
+				var_node,
+				std::make_shared<ReferencesGraphNode>( arg_name + " inner reference"_SpC, ReferencesGraphNode::Kind::ReferenceMut ) );
 		}
-		*/
 
 		if( is_this )
 		{
