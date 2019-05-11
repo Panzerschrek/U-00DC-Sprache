@@ -97,6 +97,7 @@ CodeBuilder::ReferencesGraphNodeHolder& CodeBuilder::ReferencesGraphNodeHolder::
 {
 	this->node_= other.node_;
 	other.node_= nullptr;
+	return *this;
 }
 
 CodeBuilder::ReferencesGraphNodeHolder::~ReferencesGraphNodeHolder()
