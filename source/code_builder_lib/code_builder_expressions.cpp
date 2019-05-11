@@ -2283,6 +2283,8 @@ Value CodeBuilder::DoCallFunction(
 		DestroyUnusedTemporaryVariables( function_context, call_file_pos );
 	} // for args
 	U_ASSERT( locked_args_references.size() == arg_count );
+	if( evaluate_args_in_reverse_order )
+		std::reverse( locked_args_references.begin(), locked_args_references.end() );
 
 	const bool return_value_is_sret= function_type.return_type.GetClassType() != nullptr && !function_type.return_value_is_reference;
 
@@ -2471,6 +2473,7 @@ Value CodeBuilder::DoCallFunction(
 		}
 	}
 
+	locked_args_inner_references.clear();
 	locked_args_references.clear();
 	{ // Destroy unused temporary variables after each call.
 		const ReferencesGraphNodeHolder call_result_lock(

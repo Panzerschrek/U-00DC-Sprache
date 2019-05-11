@@ -150,8 +150,10 @@ private:
 	public:
 		ReferencesGraphNodeHolder( ReferencesGraphNodePtr node, FunctionContext& function_context );
 		ReferencesGraphNodeHolder( const ReferencesGraphNodeHolder& )= delete;
-		ReferencesGraphNodeHolder( ReferencesGraphNodeHolder&& other );
+		ReferencesGraphNodeHolder( ReferencesGraphNodeHolder&& other ) noexcept;
 
+		ReferencesGraphNodeHolder& operator=( const ReferencesGraphNodeHolder& )= delete;
+		ReferencesGraphNodeHolder& operator=( ReferencesGraphNodeHolder&& other ) noexcept;
 		~ReferencesGraphNodeHolder();
 
 		const ReferencesGraphNodePtr& Node() const { return node_; }

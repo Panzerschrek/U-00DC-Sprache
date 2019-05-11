@@ -350,7 +350,8 @@ U_TEST( ReturnStructWithReferenceFromFunction_Test0 )
 		{
 			var i32 mut x= 0;
 			auto &mut r0= x;
-			auto &mut r1= ToRef( r0 ).r; // Error, reference, inside struct, refers to "x", but there is reference "r0" on stack.
+			auto &mut r1= ToRef( r0 ).r;
+			--r0; // Error, reference to 'x' inside 's' is not terminal.
 		}
 	)";
 
@@ -360,7 +361,7 @@ U_TEST( ReturnStructWithReferenceFromFunction_Test0 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferenceProtectionError );
-	U_TEST_ASSERT( error.file_pos.line == 14u );
+	U_TEST_ASSERT( error.file_pos.line == 15u );
 }
 
 U_TEST( ReturnStructWithReferenceFromFunction_Test1 )

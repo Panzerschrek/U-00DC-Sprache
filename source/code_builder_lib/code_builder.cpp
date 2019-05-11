@@ -87,9 +87,15 @@ CodeBuilder::ReferencesGraphNodeHolder::ReferencesGraphNodeHolder( ReferencesGra
 	function_context_.variables_state.AddNode( node_ );
 }
 
-CodeBuilder::ReferencesGraphNodeHolder::ReferencesGraphNodeHolder( ReferencesGraphNodeHolder&& other)
+CodeBuilder::ReferencesGraphNodeHolder::ReferencesGraphNodeHolder( ReferencesGraphNodeHolder&& other) noexcept
 	: node_(other.node_), function_context_(other.function_context_)
 {
+	other.node_= nullptr;
+}
+
+CodeBuilder::ReferencesGraphNodeHolder& CodeBuilder::ReferencesGraphNodeHolder::operator=( ReferencesGraphNodeHolder&& other ) noexcept
+{
+	this->node_= other.node_;
 	other.node_= nullptr;
 }
 
