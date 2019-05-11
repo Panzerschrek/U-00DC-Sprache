@@ -2075,6 +2075,7 @@ Value CodeBuilder::DoCallFunction(
 	llvm_args.resize( arg_count, nullptr );
 
 	std::vector< ReferencesGraphNodeHolder > locked_args_references;
+	std::vector< ReferencesGraphNodeHolder > locked_args_inner_references;
 
 	for( size_t i= 0u; i < arg_count; ++i )
 	{
@@ -2136,7 +2137,6 @@ Value CodeBuilder::DoCallFunction(
 					else
 						function_context.variables_state.AddLink( arg_reference, arg_node );
 				}
-				// TODO - lock also accesible inner variables.
 			}
 			else
 			{
@@ -2176,7 +2176,22 @@ Value CodeBuilder::DoCallFunction(
 					else
 						function_context.variables_state.AddLink( arg_reference, arg_node );
 				}
-				// TODO - lock also accesible inner variables.
+			}
+
+			// Lock inner references.
+			for( const ReferencesGraphNodePtr& arg_reference : expr.references )
+			{
+				if( const ReferencesGraphNodePtr inner_reference= function_context.variables_state.GetNodeInnerReference( arg_reference ) )
+				{
+					locked_args_inner_references.emplace_back(
+						std::make_shared<ReferencesGraphNode>( ToProgramString( "arg_lock_" + std::to_string(i) ), inner_reference->kind ),
+						function_context );
+
+					if( inner_reference->kind == ReferencesGraphNode::Kind::ReferenceMut  && function_context.variables_state.HaveOutgoingLinks( inner_reference ) )
+						errors_.push_back( ReportReferenceProtectionError( file_pos, inner_reference->name ) );
+					else
+						function_context.variables_state.AddLink( inner_reference, locked_args_inner_references.back().Node() );
+				}
 			}
 		}
 		else
@@ -2206,35 +2221,26 @@ Value CodeBuilder::DoCallFunction(
 				llvm_args[j]= CreateMoveToLLVMRegisterInstruction( expr, function_context );
 			else if( const ClassProxyPtr class_type= arg.type.GetClassTypeProxy() )
 			{
-				// Save references inside referenced variables, because we need check references inside it.
+				// Lock inner references.
 				// Do it only if arg type can contain any reference inside.
 				// Do it before potential moving.
-				/*
 				if( arg.type.ReferencesTagsCount() > 0u )
 				{
-					arg_to_inner_variables[j].second= false; // Non-mutable
-					for( const StoredVariablePtr& var_itself : expr.references )
+					for( const ReferencesGraphNodePtr& arg_reference : expr.references )
 					{
-						for( const auto& referenced_variable_pair : function_context.variables_state.GetVariableReferences( var_itself ) )
+						if( const ReferencesGraphNodePtr inner_reference= function_context.variables_state.GetNodeInnerReference( arg_reference ) )
 						{
-							const StoredVariablePtr& referenced_variable = referenced_variable_pair.first;
-							if( referenced_variable_pair.second.IsMutable() )
-							{
-								++locked_variable_counters[referenced_variable].mut;
-								temp_args_locks.push_back( referenced_variable->mut_use_counter );
-							}
+							locked_args_inner_references.emplace_back(
+								std::make_shared<ReferencesGraphNode>( ToProgramString( "arg_lock_" + std::to_string(i) ), inner_reference->kind ),
+								function_context );
+
+							if( inner_reference->kind == ReferencesGraphNode::Kind::ReferenceMut  && function_context.variables_state.HaveOutgoingLinks( inner_reference ) )
+								errors_.push_back( ReportReferenceProtectionError( file_pos, inner_reference->name ) );
 							else
-							{
-								++locked_variable_counters[referenced_variable].imut;
-								temp_args_locks.push_back( referenced_variable->imut_use_counter );
-							}
-							arg_to_inner_variables[j].second= arg_to_inner_variables[j].second || referenced_variable_pair.second.IsMutable();
-							arg_to_inner_variables[j].first.emplace( referenced_variable );
+								function_context.variables_state.AddLink( inner_reference, locked_args_inner_references.back().Node() );
 						}
-						//arg_to_variables[j].emplace( var_itself );
 					}
 				}
-				*/
 
 				if( expr.value_type == ValueType::Value && expr.type == arg.type )
 				{

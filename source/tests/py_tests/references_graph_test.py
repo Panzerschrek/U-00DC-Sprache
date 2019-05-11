@@ -390,3 +390,71 @@ def ReferenceFieldAccess_Test0():
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ReferenceProtectionError" )
 	assert( errors_list[0].file_pos.line == 9 )
+
+
+def PassMutableReferenceTwoTimes_Tes0():
+	c_program_text= """
+		struct S{ i32 &mut x; }
+		fn Bar( S& s, i32 &mut i ) {}
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var S s{ .x= x };
+			Bar( s, s.x );
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ReferenceProtectionError" )
+	assert( errors_list[0].file_pos.line == 8 )
+
+
+def PassMutableReferenceTwoTimes_Tes1():
+	c_program_text= """
+		struct S{ i32 &mut x; }
+		fn Bar( S s, i32 &mut i ) {}
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var S s{ .x= x };
+			Bar( s, s.x );
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ReferenceProtectionError" )
+	assert( errors_list[0].file_pos.line == 8 )
+
+
+def PassMutableReferenceTwoTimes_Tes2():
+	c_program_text= """
+		struct S{ i32 &mut x; }
+		fn Bar( S& a, S& b ) { ++a.x; ++b.x; }
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var S s{ .x= x };
+			Bar( s, s );
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ReferenceProtectionError" )
+	assert( errors_list[0].file_pos.line == 8 )
+
+
+def PassMutableReferenceTwoTimes_Tes3():
+	c_program_text= """
+		struct S{ i32 &mut x; }
+		fn Bar( S a, S b ) { ++a.x; ++b.x; }
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var S s{ .x= x };
+			Bar( s, s );
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ReferenceProtectionError" )
+	assert( errors_list[0].file_pos.line == 8 )
