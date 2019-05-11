@@ -145,7 +145,7 @@ void CodeBuilder::GlobalThingBuildNamespace( NamesScope& names_scope )
 			else if( name.second.GetVariable() != nullptr ){}
 			else if( name.second.GetErrorValue() != nullptr ){}
 			else if( const auto static_assert_= name.second.GetStaticAssert() )
-				BuildStaticAssert( *static_assert_, names_scope );
+				BuildStaticAssert( *static_assert_, names_scope, *dummy_function_context_ );
 			else if( name.second.GetTypedef() != nullptr )
 				GlobalThingBuildTypedef( names_scope, name.second );
 			else if( name.second.GetIncompleteGlobalVariable() != nullptr )

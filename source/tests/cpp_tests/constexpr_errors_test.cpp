@@ -307,7 +307,6 @@ U_TEST( ExpectedReferenceValue_ForConstexpr_Test0 )
 
 U_TEST( ExpectedReferenceValue_ForConstexpr_Test1 )
 {
-	DISABLE_TEST;
 	// Try mutate constexpr array.
 	static const char c_program_text[]=
 	R"(

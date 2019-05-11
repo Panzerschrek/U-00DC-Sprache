@@ -2097,7 +2097,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockCode(
 				try_report_unreachable_code();
 		}
 		else if( const auto static_assert_= dynamic_cast<const Synt::StaticAssert*>( block_element_ptr ) )
-			BuildStaticAssert( *static_assert_, block_names );
+			BuildStaticAssert( *static_assert_, block_names, function_context );
 		else if( const auto halt= dynamic_cast<const Synt::Halt*>( block_element_ptr ) )
 		{
 			BuildHalt( *halt, function_context );
@@ -3111,18 +3111,26 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildIfOperatorCode(
 	return if_operator_blocks_build_info;
 }
 
-void CodeBuilder::BuildStaticAssert( StaticAssert& static_assert_, NamesScope& names )
+void CodeBuilder::BuildStaticAssert( StaticAssert& static_assert_, NamesScope& names, FunctionContext& function_context )
 {
 	if( static_assert_.syntax_element == nullptr )
 		return;
 
-	BuildStaticAssert( *static_assert_.syntax_element, names );
+	BuildStaticAssert( *static_assert_.syntax_element, names, function_context );
 	static_assert_.syntax_element= nullptr;
 }
 
-void CodeBuilder::BuildStaticAssert( const Synt::StaticAssert& static_assert_, NamesScope& names )
+void CodeBuilder::BuildStaticAssert( const Synt::StaticAssert& static_assert_, NamesScope& names, FunctionContext& function_context )
 {
-	const Variable variable= BuildExpressionCodeEnsureVariable( *static_assert_.expression, names, *dummy_function_context_ );
+	// Destruction frame for temporary variables of static assert expression.
+	const StackVariablesStorage temp_variables_storage( function_context );
+
+	const Variable variable= BuildExpressionCodeEnsureVariable( *static_assert_.expression, names, function_context );
+
+	// Destruct temporary variables of right and left expressions.
+	// In non-error case, this call produces no code.
+	CallDestructors( *function_context.stack_variables_stack.back(), function_context, static_assert_.file_pos_ );
+
 	if( variable.type != bool_type_ )
 	{
 		errors_.push_back( ReportStaticAssertExpressionMustHaveBoolType( static_assert_.file_pos_ ) );

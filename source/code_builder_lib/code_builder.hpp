@@ -601,8 +601,8 @@ private:
 		NamesScope& names,
 		FunctionContext& function_context );
 
-	void BuildStaticAssert( StaticAssert& static_assert_, NamesScope& names );
-	void BuildStaticAssert( const Synt::StaticAssert& static_assert_, NamesScope& names );
+	void BuildStaticAssert( StaticAssert& static_assert_, NamesScope& names, FunctionContext& function_context );
+	void BuildStaticAssert( const Synt::StaticAssert& static_assert_, NamesScope& names, FunctionContext& function_context );
 
 	BlockBuildInfo BuildStaticIfOperatorCode(
 		const Synt::StaticIfOperator& static_if_operator,
