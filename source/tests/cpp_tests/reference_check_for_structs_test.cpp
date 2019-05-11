@@ -288,7 +288,8 @@ U_TEST( GetReturnedReferencePassedThroughArgument_Test0 )
 		{
 			var i32 mut x= 0;
 			var S s{ .x= x };
-			auto &mut r0= Foo( s ); // Error, r0 contains second mutable reference
+			auto &mut r0= Foo( s );
+			++s.x; // Error, reference to 'x' inside 's' is not terminal.
 		}
 	)";
 
@@ -298,7 +299,7 @@ U_TEST( GetReturnedReferencePassedThroughArgument_Test0 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferenceProtectionError );
-	U_TEST_ASSERT( error.file_pos.line == 12u );
+	U_TEST_ASSERT( error.file_pos.line == 13u );
 }
 
 U_TEST( GetReturnedReferencePassedThroughArgument_Test1 )

@@ -2226,18 +2226,25 @@ Value CodeBuilder::DoCallFunction(
 				// Do it before potential moving.
 				if( arg.type.ReferencesTagsCount() > 0u )
 				{
+					bool is_mutable= false;
+					for( const ReferencesGraphNodePtr& arg_reference : expr.references )
+					{
+						if( const ReferencesGraphNodePtr inner_reference= function_context.variables_state.GetNodeInnerReference( arg_reference ) )
+							is_mutable= is_mutable || inner_reference->kind == ReferencesGraphNode::Kind::ReferenceMut;
+					}
+
+					const auto value_arg_inner_node= std::make_shared<ReferencesGraphNode>( ToProgramString( "value_arg_inner_reference_" + std::to_string(i) ), is_mutable ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut );
+					//locked_args_inner_references.emplace_back( value_arg_inner_node, function_context );
+					function_context.variables_state.SetNodeInnerReference( locked_args_references.back().Node(), value_arg_inner_node );
+
 					for( const ReferencesGraphNodePtr& arg_reference : expr.references )
 					{
 						if( const ReferencesGraphNodePtr inner_reference= function_context.variables_state.GetNodeInnerReference( arg_reference ) )
 						{
-							locked_args_inner_references.emplace_back(
-								std::make_shared<ReferencesGraphNode>( ToProgramString( "arg_lock_" + std::to_string(i) ), inner_reference->kind ),
-								function_context );
-
 							if( inner_reference->kind == ReferencesGraphNode::Kind::ReferenceMut  && function_context.variables_state.HaveOutgoingLinks( inner_reference ) )
 								errors_.push_back( ReportReferenceProtectionError( file_pos, inner_reference->name ) );
 							else
-								function_context.variables_state.AddLink( inner_reference, locked_args_inner_references.back().Node() );
+								function_context.variables_state.AddLink( inner_reference, value_arg_inner_node );
 						}
 					}
 				}
