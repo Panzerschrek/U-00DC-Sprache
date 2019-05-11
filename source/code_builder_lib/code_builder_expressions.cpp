@@ -1345,6 +1345,23 @@ Value CodeBuilder::BuildMoveOpeator( const Synt::MoveOperator& move_operator, Na
 	}
 	const ReferencesGraphNodePtr& node= (*variable_for_move->references.begin());
 
+	bool found_in_variables= false;
+	for( const auto& stack_frame : function_context.stack_variables_stack )
+	for( const StackVariablesStorage::NodeAndVariable& arg_node : stack_frame->variables_ )
+	{
+		if( arg_node.first == node )
+		{
+			found_in_variables= true;
+			goto end_variable_search;
+		}
+	}
+	end_variable_search:
+	if( !found_in_variables )
+	{
+		errors_.push_back( ReportExpectedVariable( move_operator.file_pos_, resolved_name->second.GetKindName() ) );
+		return ErrorValue();
+	}
+
 	// TODO - maybe allow moving for immutable variables?
 	if( variable_for_move->value_type != ValueType::Reference )
 	{
