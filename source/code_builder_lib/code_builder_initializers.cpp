@@ -531,14 +531,13 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 		bool needs_move_constuct= false;
 		if( call_operator.arguments_.size() == 1u )
 		{
-			// Prepare dummy function context for first pass.
-			const StackVariablesStorage dummy_stack_variables_storage( function_context );
-
 			const auto state= SaveInstructionsState( function_context );
+			{
+				const StackVariablesStorage dummy_stack_variables_storage( function_context );
 
-			const Variable initializer_value= BuildExpressionCodeEnsureVariable( *call_operator.arguments_.front(), block_names, function_context );
-			needs_move_constuct= initializer_value.type == variable.type && initializer_value.value_type == ValueType::Value ;
-
+				const Variable initializer_value= BuildExpressionCodeEnsureVariable( *call_operator.arguments_.front(), block_names, function_context );
+				needs_move_constuct= initializer_value.type == variable.type && initializer_value.value_type == ValueType::Value ;
+			}
 			RestoreInstructionsState( function_context, state );
 		}
 		if( needs_move_constuct )

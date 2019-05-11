@@ -809,6 +809,7 @@ private:
 
 	struct InstructionsState
 	{
+		ReferencesGraph variables_state;
 		size_t current_block_instruction_count;
 		size_t alloca_block_instructin_count;
 		size_t block_count;

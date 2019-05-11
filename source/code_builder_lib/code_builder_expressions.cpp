@@ -73,17 +73,14 @@ boost::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 		std::vector<Function::Arg> args;
 		args.reserve( 2u );
 
-		bool needs_move_assign= false;
 		// Know args types.
+		bool needs_move_assign= false;
+		const auto state= SaveInstructionsState( function_context );
 		{
 			const StackVariablesStorage dummy_stack_variables_storage( function_context );
 
-			const auto state= SaveInstructionsState( function_context );
-
 			const Variable l_var= BuildExpressionCodeEnsureVariable( left_expr , names, function_context );
 			const Variable r_var= BuildExpressionCodeEnsureVariable( right_expr, names, function_context );
-
-			RestoreInstructionsState( function_context, state );
 
 			// Try apply move-assignment for class types.
 			needs_move_assign=
@@ -101,6 +98,7 @@ boost::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 			args.back().is_reference= r_var.value_type != ValueType::Value;
 			args.back().is_mutable= r_var.value_type == ValueType::Reference;
 		}
+		RestoreInstructionsState( function_context, state );
 
 		// Apply here move-assignment for class types.
 		if( needs_move_assign )
@@ -1577,21 +1575,18 @@ Value CodeBuilder::BuildIndexationOperator(
 		args.back().is_mutable= variable.value_type == ValueType::Reference;
 
 		// Know type of index.
+		const auto state= SaveInstructionsState( function_context );
 		{
-			// Prepare dummy function context for first pass.
 			const StackVariablesStorage dummy_stack_variables_storage( function_context );
 
-			const auto state= SaveInstructionsState( function_context );
-
 			const Variable index_variable= BuildExpressionCodeEnsureVariable( *indexation_operator.index_, names, function_context );
-
-			RestoreInstructionsState( function_context, state );
 
 			args.emplace_back();
 			args.back().type= index_variable.type;
 			args.back().is_reference= index_variable.value_type != ValueType::Value;
 			args.back().is_mutable= index_variable.value_type == ValueType::Reference;
 		}
+		RestoreInstructionsState( function_context, state );
 
 		const FunctionVariable* const overloaded_operator=
 			GetOverloadedOperator( args, OverloadedOperator::Indexing, indexation_operator.file_pos_ );
@@ -1952,30 +1947,30 @@ Value CodeBuilder::BuildCallOperator(
 		std::vector<Function::Arg> actual_args;
 		actual_args.reserve( total_args );
 
-		// Prepare dummy function context for first pass.
-		const StackVariablesStorage dummy_stack_variables_storage( function_context );
-
 		const auto state= SaveInstructionsState( function_context );
-		// Push "this" argument.
-		if( this_ != nullptr )
 		{
-			actual_args.emplace_back();
-			actual_args.back().type= this_->type;
-			actual_args.back().is_reference= true;
-			actual_args.back().is_mutable= this_->value_type == ValueType::Reference;
-		}
-		// Push arguments from call operator.
-		for( const Synt::IExpressionComponentPtr& arg_expression : call_operator.arguments_ )
-		{
-			U_ASSERT( arg_expression != nullptr );
-			const Variable expr= BuildExpressionCodeEnsureVariable( *arg_expression, names, function_context );
+			const StackVariablesStorage dummy_stack_variables_storage( function_context );
 
-			actual_args.emplace_back();
-			actual_args.back().type= expr.type;
-			actual_args.back().is_reference= expr.value_type != ValueType::Value;
-			actual_args.back().is_mutable= expr.value_type == ValueType::Reference;
-		}
+			// Push "this" argument.
+			if( this_ != nullptr )
+			{
+				actual_args.emplace_back();
+				actual_args.back().type= this_->type;
+				actual_args.back().is_reference= true;
+				actual_args.back().is_mutable= this_->value_type == ValueType::Reference;
+			}
+			// Push arguments from call operator.
+			for( const Synt::IExpressionComponentPtr& arg_expression : call_operator.arguments_ )
+			{
+				U_ASSERT( arg_expression != nullptr );
+				const Variable expr= BuildExpressionCodeEnsureVariable( *arg_expression, names, function_context );
 
+				actual_args.emplace_back();
+				actual_args.back().type= expr.type;
+				actual_args.back().is_reference= expr.value_type != ValueType::Value;
+				actual_args.back().is_mutable= expr.value_type == ValueType::Reference;
+			}
+		}
 		RestoreInstructionsState( function_context, state );
 
 		function_ptr=

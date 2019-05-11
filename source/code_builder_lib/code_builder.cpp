@@ -3589,6 +3589,7 @@ void CodeBuilder::SetupGeneratedFunctionLinkageAttributes( llvm::Function& funct
 CodeBuilder::InstructionsState CodeBuilder::SaveInstructionsState( FunctionContext& function_context )
 {
 	InstructionsState result;
+	result.variables_state= function_context.variables_state;
 	result.current_block_instruction_count= function_context.llvm_ir_builder.GetInsertBlock()->size();
 	result.alloca_block_instructin_count= function_context.alloca_ir_builder.GetInsertBlock()->size();
 	result.block_count= function_context.function->getBasicBlockList().size();
@@ -3599,6 +3600,8 @@ void CodeBuilder::RestoreInstructionsState(
 	FunctionContext& function_context,
 	const InstructionsState& state )
 {
+	function_context.variables_state= state.variables_state;
+
 	// Remove instructions of some operations, that must be discarded.
 
 	auto& bb_list= function_context.function->getBasicBlockList();
