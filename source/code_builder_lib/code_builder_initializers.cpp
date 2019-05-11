@@ -532,24 +532,14 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 		if( call_operator.arguments_.size() == 1u )
 		{
 			// Prepare dummy function context for first pass.
-			FunctionContext dummy_function_context(
-				function_context.return_type,
-				function_context.return_value_is_mutable,
-				function_context.return_value_is_reference,
-				llvm_context_,
-				dummy_function_context_->function );
-			const StackVariablesStorage dummy_stack_variables_storage( dummy_function_context );
-			dummy_function_context.this_= function_context.this_;
-			dummy_function_context.whole_this_is_unavailable= function_context.whole_this_is_unavailable;
-			dummy_function_context.is_in_unsafe_block= function_context.is_in_unsafe_block;
-			dummy_function_context.variables_state= function_context.variables_state;
+			const StackVariablesStorage dummy_stack_variables_storage( function_context );
 
-			const Variable initializer_value= BuildExpressionCodeEnsureVariable( *call_operator.arguments_.front(), block_names, dummy_function_context );
+			const auto state= SaveInstructionsState( function_context );
+
+			const Variable initializer_value= BuildExpressionCodeEnsureVariable( *call_operator.arguments_.front(), block_names, function_context );
 			needs_move_constuct= initializer_value.type == variable.type && initializer_value.value_type == ValueType::Value ;
 
-			function_context.overloading_resolutin_cache.insert(
-				dummy_function_context.overloading_resolutin_cache.begin(),
-				dummy_function_context.overloading_resolutin_cache.end() );
+			RestoreInstructionsState( function_context, state );
 		}
 		if( needs_move_constuct )
 		{

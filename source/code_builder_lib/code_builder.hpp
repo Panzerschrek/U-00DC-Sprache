@@ -807,6 +807,18 @@ private:
 
 	void SetupGeneratedFunctionLinkageAttributes( llvm::Function& function );
 
+	struct InstructionsState
+	{
+		size_t current_block_instruction_count;
+		size_t alloca_block_instructin_count;
+		size_t block_count;
+	};
+
+	InstructionsState SaveInstructionsState( FunctionContext& function_context );
+	void RestoreInstructionsState(
+		FunctionContext& function_context,
+		const InstructionsState& state );
+
 private:
 	llvm::LLVMContext& llvm_context_;
 	std::string target_triple_str_;

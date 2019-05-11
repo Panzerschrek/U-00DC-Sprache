@@ -76,25 +76,14 @@ boost::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 		bool needs_move_assign= false;
 		// Know args types.
 		{
-			// Prepare dummy function context for first pass.
-			FunctionContext dummy_function_context(
-				function_context.return_type,
-				function_context.return_value_is_mutable,
-				function_context.return_value_is_reference,
-				llvm_context_,
-				dummy_function_context_->function );
-			const StackVariablesStorage dummy_stack_variables_storage( dummy_function_context );
-			dummy_function_context.this_= function_context.this_;
-			dummy_function_context.whole_this_is_unavailable= function_context.whole_this_is_unavailable;
-			dummy_function_context.is_in_unsafe_block= function_context.is_in_unsafe_block;
-			dummy_function_context.variables_state= function_context.variables_state;
+			const StackVariablesStorage dummy_stack_variables_storage( function_context );
 
-			const Variable l_var= BuildExpressionCodeEnsureVariable( left_expr , names, dummy_function_context );
-			const Variable r_var= BuildExpressionCodeEnsureVariable( right_expr, names, dummy_function_context );
+			const auto state= SaveInstructionsState( function_context );
 
-			function_context.overloading_resolutin_cache.insert(
-				dummy_function_context.overloading_resolutin_cache.begin(),
-				dummy_function_context.overloading_resolutin_cache.end() );
+			const Variable l_var= BuildExpressionCodeEnsureVariable( left_expr , names, function_context );
+			const Variable r_var= BuildExpressionCodeEnsureVariable( right_expr, names, function_context );
+
+			RestoreInstructionsState( function_context, state );
 
 			// Try apply move-assignment for class types.
 			needs_move_assign=
@@ -1590,23 +1579,13 @@ Value CodeBuilder::BuildIndexationOperator(
 		// Know type of index.
 		{
 			// Prepare dummy function context for first pass.
-			FunctionContext dummy_function_context(
-				function_context.return_type,
-				function_context.return_value_is_mutable,
-				function_context.return_value_is_reference,
-				llvm_context_,
-				dummy_function_context_->function );
-			const StackVariablesStorage dummy_stack_variables_storage( dummy_function_context );
-			dummy_function_context.this_= function_context.this_;
-			dummy_function_context.whole_this_is_unavailable= function_context.whole_this_is_unavailable;
-			dummy_function_context.is_in_unsafe_block= function_context.is_in_unsafe_block;
-			dummy_function_context.variables_state= function_context.variables_state;
+			const StackVariablesStorage dummy_stack_variables_storage( function_context );
 
-			const Variable index_variable= BuildExpressionCodeEnsureVariable( *indexation_operator.index_, names, dummy_function_context );
+			const auto state= SaveInstructionsState( function_context );
 
-			function_context.overloading_resolutin_cache.insert(
-				dummy_function_context.overloading_resolutin_cache.begin(),
-				dummy_function_context.overloading_resolutin_cache.end() );
+			const Variable index_variable= BuildExpressionCodeEnsureVariable( *indexation_operator.index_, names, function_context );
+
+			RestoreInstructionsState( function_context, state );
 
 			args.emplace_back();
 			args.back().type= index_variable.type;
@@ -1974,17 +1953,9 @@ Value CodeBuilder::BuildCallOperator(
 		actual_args.reserve( total_args );
 
 		// Prepare dummy function context for first pass.
-		FunctionContext dummy_function_context(
-			function_context.return_type,
-			function_context.return_value_is_mutable,
-			function_context.return_value_is_reference,
-			llvm_context_,
-			dummy_function_context_->function );
-		const StackVariablesStorage dummy_stack_variables_storage( dummy_function_context );
-		dummy_function_context.this_= function_context.this_;
-		dummy_function_context.whole_this_is_unavailable= function_context.whole_this_is_unavailable;
-		dummy_function_context.is_in_unsafe_block= function_context.is_in_unsafe_block;
-		dummy_function_context.variables_state= function_context.variables_state; // TODO - support copy-on-write for variables_state
+		const StackVariablesStorage dummy_stack_variables_storage( function_context );
+
+		const auto state= SaveInstructionsState( function_context );
 		// Push "this" argument.
 		if( this_ != nullptr )
 		{
@@ -1997,7 +1968,7 @@ Value CodeBuilder::BuildCallOperator(
 		for( const Synt::IExpressionComponentPtr& arg_expression : call_operator.arguments_ )
 		{
 			U_ASSERT( arg_expression != nullptr );
-			const Variable expr= BuildExpressionCodeEnsureVariable( *arg_expression, names, dummy_function_context );
+			const Variable expr= BuildExpressionCodeEnsureVariable( *arg_expression, names, function_context );
 
 			actual_args.emplace_back();
 			actual_args.back().type= expr.type;
@@ -2005,9 +1976,7 @@ Value CodeBuilder::BuildCallOperator(
 			actual_args.back().is_mutable= expr.value_type == ValueType::Reference;
 		}
 
-		function_context.overloading_resolutin_cache.insert(
-			dummy_function_context.overloading_resolutin_cache.begin(),
-			dummy_function_context.overloading_resolutin_cache.end() );
+		RestoreInstructionsState( function_context, state );
 
 		function_ptr=
 			GetOverloadedFunction( *functions_set, actual_args, this_ != nullptr, call_operator.file_pos_ );

@@ -3586,6 +3586,39 @@ void CodeBuilder::SetupGeneratedFunctionLinkageAttributes( llvm::Function& funct
 	function.setComdat( comdat );
 }
 
+CodeBuilder::InstructionsState CodeBuilder::SaveInstructionsState( FunctionContext& function_context )
+{
+	InstructionsState result;
+	result.current_block_instruction_count= function_context.llvm_ir_builder.GetInsertBlock()->size();
+	result.alloca_block_instructin_count= function_context.alloca_ir_builder.GetInsertBlock()->size();
+	result.block_count= function_context.function->getBasicBlockList().size();
+	return result;
+}
+
+void CodeBuilder::RestoreInstructionsState(
+	FunctionContext& function_context,
+	const InstructionsState& state )
+{
+	// Remove instructions of some operations, that must be discarded.
+
+	auto& bb_list= function_context.function->getBasicBlockList();
+	while( bb_list.size() > state.block_count )
+	{
+		for( const auto use : bb_list.back().users() )
+			use->dropAllReferences();
+		bb_list.pop_back();
+	}
+
+	auto& inst_list= bb_list.back().getInstList();
+	while( inst_list.size() > state.current_block_instruction_count )
+		inst_list.pop_back();
+	function_context.llvm_ir_builder.SetInsertPoint( &bb_list.back(), bb_list.back().end() );
+
+	while( function_context.alloca_basic_block->getInstList().size() > state.alloca_block_instructin_count )
+		function_context.alloca_basic_block->getInstList().pop_back();
+	function_context.alloca_ir_builder.SetInsertPoint( function_context.alloca_basic_block, function_context.alloca_basic_block->end() );
+}
+
 } // namespace CodeBuilderLLVMPrivate
 
 } // namespace U
