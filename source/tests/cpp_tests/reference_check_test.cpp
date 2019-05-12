@@ -1173,7 +1173,7 @@ U_TEST( ReferenceCheckTest_TryChangeArgs2 )
 		fn Foo( i32 &mut x )
 		{
 			auto &mut r0= x;
-			auto &mut r1= r0; // Error, taking second mutable reference.
+			++x; // Error, 'x' have mutable reference.
 		}
 	)";
 
