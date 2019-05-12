@@ -145,6 +145,7 @@ enum class CodeBuilderErrorCode : unsigned int
 	ReferencePollutionForArgReference,
 	ExplicitReferencePollutionForCopyConstructor,
 	ExplicitReferencePollutionForCopyAssignmentOperator,
+	ReferenceFiledOfTypeWithReferencesInside,
 
 	// Operators overloading
 	OperatorDeclarationOutsideClass,
@@ -322,6 +323,7 @@ CodeBuilderError ReportUnallowedReferencePollution( const FilePos& file_pos ); /
 CodeBuilderError ReportReferencePollutionForArgReference( const FilePos& file_pos ); // TODO - add some string information
 CodeBuilderError ReportExplicitReferencePollutionForCopyConstructor( const FilePos& file_pos );
 CodeBuilderError ReportExplicitReferencePollutionForCopyAssignmentOperator( const FilePos& file_pos );
+CodeBuilderError ReportReferenceFiledOfTypeWithReferencesInside( const FilePos& file_pos, const ProgramString& field_name );
 CodeBuilderError ReportOperatorDeclarationOutsideClass( const FilePos& file_pos );
 CodeBuilderError ReportOperatorDoesNotHaveParentClassArguments( const FilePos& file_pos );
 CodeBuilderError ReportInvalidArgumentCountForOperator( const FilePos& file_pos );

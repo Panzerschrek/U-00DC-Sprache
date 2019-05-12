@@ -248,6 +248,8 @@ const char* CodeBuilderErrorCodeToString( const CodeBuilderErrorCode code )
 		return "ExplicitReferencePollutionForCopyConstructor";
 	case CodeBuilderErrorCode::ExplicitReferencePollutionForCopyAssignmentOperator:
 		return "ExplicitReferencePollutionForCopyAssignmentOperator";
+	case CodeBuilderErrorCode::ReferenceFiledOfTypeWithReferencesInside:
+		return "ReferenceFiledOfTypeWithReferencesInside";
 	case CodeBuilderErrorCode::OperatorDeclarationOutsideClass:
 		return "OperatorDeclarationOutsideClass";
 	case CodeBuilderErrorCode::OperatorDoesNotHaveParentClassArguments:
@@ -1587,6 +1589,17 @@ CodeBuilderError ReportExplicitReferencePollutionForCopyAssignmentOperator( cons
 	error.code= CodeBuilderErrorCode::ExplicitReferencePollutionForCopyAssignmentOperator;
 
 	error.text= "Explicit reference pollution for copy assignment operator. Reference pollution for copy assignment operators generated automatically."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportReferenceFiledOfTypeWithReferencesInside( const FilePos& file_pos, const ProgramString& field_name )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::ReferenceFiledOfTypeWithReferencesInside;
+
+	error.text= "Reference filed \""_SpC + field_name + "\" have type, with other references inside."_SpC;
 
 	return error;
 }

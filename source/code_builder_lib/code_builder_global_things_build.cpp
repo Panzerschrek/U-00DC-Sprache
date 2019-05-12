@@ -349,6 +349,17 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type, const T
 					}
 				}
 
+				if( class_field->is_reference )
+				{
+					if( class_field->type != void_type_ && !EnsureTypeCompleteness( class_field->type, TypeCompleteness::ReferenceTagsComplete ) )
+					{
+						errors_.push_back( ReportUsingIncompleteType( in_field.file_pos_, class_field->type.ToString() ) );
+						return;
+					}
+					if( class_field->type.ReferencesTagsCount() > 0u )
+						errors_.push_back( ReportReferenceFiledOfTypeWithReferencesInside( in_field.file_pos_, in_field.name ) );
+				}
+
 				if( class_field->is_reference ) // Reference-fields are immutable by default
 					class_field->is_mutable= in_field.mutability_modifier == Synt::MutabilityModifier::Mutable;
 				else // But value-fields are mutable by default
