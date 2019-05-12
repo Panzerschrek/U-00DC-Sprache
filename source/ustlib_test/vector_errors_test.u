@@ -27,7 +27,7 @@ fn U_Main() : i32
 		var ust::vector</RM/> mut r;
 
 		r.push_back( RM(x) );
-		var i32 y= x; //##expect_error AccessingVariableThatHaveMutableReference
+		var i32& y= x; //##expect_error ReferenceProtectionError
 	}
 	{ // "push_back" does reference-pollution.
 		var i32 mut x= 0;
@@ -41,7 +41,7 @@ fn U_Main() : i32
 		var ust::vector</RM/> mut r;
 
 		r.push_back( RM(x) );
-		auto &mut second_ref= r.front().r; //##expect_error ReferenceProtectionError
+		auto &mut second_ref= x; //##expect_error ReferenceProtectionError
 	}
 	{
 		// Can not fill vector with default values, because element type is not default-constructible.

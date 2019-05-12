@@ -17,6 +17,8 @@
 #include "../lex_synt_lib/program_string.hpp"
 #include "../lex_synt_lib/syntax_elements.hpp"
 
+#include "references_graph.hpp"
+
 namespace U
 {
 
@@ -286,10 +288,6 @@ struct TypeTemplatesSet
 	std::vector<const Synt::TypeTemplateBase*> syntax_elements;
 };
 
-class StoredVariable;
-typedef std::shared_ptr<StoredVariable> StoredVariablePtr;
-typedef std::shared_ptr<void> VariableStorageUseCounter;
-
 enum class ValueType
 {
 	Value,
@@ -314,97 +312,12 @@ struct Variable final
 	// Undef, if value is template-dependent.
 	llvm::Constant* constexpr_value= nullptr;
 
-	std::unordered_set<StoredVariablePtr> referenced_variables;
+	ReferencesGraphNodePtr node; // May be null for global variables.
 
 	Variable()= default;
 	Variable(Type in_type,
 		Location in_location= Location::Pointer, ValueType in_value_type= ValueType::ConstReference,
 		llvm::Value* in_llvm_value= nullptr, llvm::Constant* in_constexpr_value= nullptr );
-};
-
-class StoredVariable
-{
-public:
-	struct ReferencedVariable
-	{
-		StoredVariablePtr variable;
-		VariableStorageUseCounter use_counter;
-		bool IsMutable() const{ return use_counter == variable->mut_use_counter; }
-	};
-
-	enum class Kind
-	{
-		Variable,
-		Reference,
-		ReferenceArg,
-		ArgInnerVariable,
-	};
-
-	const ProgramString name; // needs for error messages
-	Variable content;
-	const VariableStorageUseCounter  mut_use_counter= std::make_shared<int>();
-	const VariableStorageUseCounter imut_use_counter= std::make_shared<int>();
-
-	Kind kind= Kind::Variable;
-	bool is_global_constant= false;
-
-	explicit StoredVariable( ProgramString in_name );
-	StoredVariable( ProgramString iname, Variable icontent, Kind ikind= Kind::Variable, bool iis_global_constant= false );
-};
-
-class VariablesState
-{
-public:
-	struct Reference
-	{
-		VariableStorageUseCounter use_counter;
-		bool is_mutable= true;
-		bool is_arg_inner_variable= false;
-		bool IsMutable() const { return is_mutable; }
-	};
-	using VariableReferences= std::unordered_map<StoredVariablePtr, Reference>;
-
-	struct VariableEntry
-	{
-		VariableReferences inner_references;
-		bool is_moved= false;
-	};
-
-	struct AchievableVariables
-	{
-		std::unordered_set<StoredVariablePtr> variables;
-		bool any_variable_is_mutable= false;
-	};
-
-	using VariablesContainer= std::unordered_map<StoredVariablePtr, VariableEntry>;
-
-public:
-	VariablesState()= default;
-	explicit VariablesState( VariablesContainer variables );
-
-	void AddVariable( const StoredVariablePtr& var );
-	void RemoveVariable( const StoredVariablePtr& var );
-	bool AddPollution( const StoredVariablePtr& dst, const StoredVariablePtr& src, bool is_mutable ); // returns true, if ok
-	void AddPollutionForArgInnerVariable( const StoredVariablePtr& arg, const StoredVariablePtr& inner_variable );
-	void Move( const StoredVariablePtr& var ); // returns true, if ok
-	bool VariableIsMoved( const StoredVariablePtr& var ) const;
-
-	const VariablesContainer& GetVariables() const;
-	const VariableReferences& GetVariableReferences( const StoredVariablePtr& var ) const;
-	AchievableVariables RecursiveGetAllReferencedVariables( const StoredVariablePtr& stored_variable ) const;
-
-	// For merging of 'if-else' and 'while' we needs deactivate and reactivate locks.
-	void ActivateLocks();
-	void DeactivateLocks();
-
-private:
-	VariablesContainer variables_;
-};
-
-struct VaraibleReferencesCounter
-{
-	unsigned int  mut= 0u;
-	unsigned int imut= 0u;
 };
 
 struct ClassField final
@@ -455,7 +368,6 @@ class Value final
 public:
 	Value();
 	Value( Variable variable, const FilePos& file_pos );
-	Value( StoredVariablePtr stored_variable, const FilePos& file_pos  );
 	Value( FunctionVariable function_variable );
 	Value( OverloadedFunctionsSet functions_set );
 	Value( Type type, const FilePos& file_pos );
@@ -479,8 +391,6 @@ public:
 	// Fundamental, class, array types
 	Variable* GetVariable();
 	const Variable* GetVariable() const;
-	// Stored variable
-	StoredVariablePtr GetStoredVariable() const;
 	// Function types
 	FunctionVariable* GetFunctionVariable();
 	const FunctionVariable* GetFunctionVariable() const;
@@ -520,7 +430,6 @@ public:
 private:
 	boost::variant<
 		Variable,
-		StoredVariablePtr,
 		FunctionVariable,
 		OverloadedFunctionsSet,
 		Type,

@@ -105,7 +105,7 @@ def MoveOperatorTest2():
 	tests_lib.build_program( c_program_text )
 
 
-def MoveOperatorTest2():
+def MoveOperatorTest3():
 	c_program_text= """
 		struct S
 		{
@@ -124,7 +124,7 @@ def MoveOperatorTest2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "AccessingVariableThatHaveMutableReference" )
+	assert( errors_list[0].error_code == "ReferenceProtectionError" )
 	assert( errors_list[0].file_pos.line == 14 )
 
 

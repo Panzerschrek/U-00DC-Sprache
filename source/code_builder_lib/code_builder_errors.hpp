@@ -132,7 +132,6 @@ enum class CodeBuilderErrorCode : unsigned int
 	// Reference checking
 	ReferenceProtectionError,
 	DestroyedVariableStillHaveReferences,
-	AccessingVariableThatHaveMutableReference,
 	AccessingMovedVariable,
 	ReturningUnallowedReference,
 	InvalidReferenceTagCount,
@@ -146,6 +145,7 @@ enum class CodeBuilderErrorCode : unsigned int
 	ReferencePollutionForArgReference,
 	ExplicitReferencePollutionForCopyConstructor,
 	ExplicitReferencePollutionForCopyAssignmentOperator,
+	ReferenceFiledOfTypeWithReferencesInside,
 
 	// Operators overloading
 	OperatorDeclarationOutsideClass,
@@ -310,7 +310,6 @@ CodeBuilderError ReportTemplateFunctionGenerationFailed( const FilePos& file_pos
 CodeBuilderError ReportCouldNotSelectMoreSpicializedTypeTemplate( const FilePos& file_pos );
 CodeBuilderError ReportReferenceProtectionError( const FilePos& file_pos, const ProgramString& var_name );
 CodeBuilderError ReportDestroyedVariableStillHaveReferences( const FilePos& file_pos, const ProgramString& var_name );
-CodeBuilderError ReportAccessingVariableThatHaveMutableReference( const FilePos& file_pos, const ProgramString& var_name );
 CodeBuilderError ReportAccessingMovedVariable( const FilePos& file_pos, const ProgramString& var_name );
 CodeBuilderError ReportReturningUnallowedReference( const FilePos& file_pos ); // TODO - add variable name
 CodeBuilderError ReportInvalidReferenceTagCount( const FilePos& file_pos, size_t given, size_t required );
@@ -324,6 +323,7 @@ CodeBuilderError ReportUnallowedReferencePollution( const FilePos& file_pos ); /
 CodeBuilderError ReportReferencePollutionForArgReference( const FilePos& file_pos ); // TODO - add some string information
 CodeBuilderError ReportExplicitReferencePollutionForCopyConstructor( const FilePos& file_pos );
 CodeBuilderError ReportExplicitReferencePollutionForCopyAssignmentOperator( const FilePos& file_pos );
+CodeBuilderError ReportReferenceFiledOfTypeWithReferencesInside( const FilePos& file_pos, const ProgramString& field_name );
 CodeBuilderError ReportOperatorDeclarationOutsideClass( const FilePos& file_pos );
 CodeBuilderError ReportOperatorDoesNotHaveParentClassArguments( const FilePos& file_pos );
 CodeBuilderError ReportInvalidArgumentCountForOperator( const FilePos& file_pos );

@@ -14,6 +14,7 @@ ProgramString operator "" _SpC( const char* str, size_t size );
 
 // Same as literal operator.
 ProgramString ToProgramString( const char* c );
+ProgramString ToProgramString( const std::string& str );
 
 size_t GetUTF8CharBytes( sprache_char c );
 std::string ToUTF8( const ProgramString& str );

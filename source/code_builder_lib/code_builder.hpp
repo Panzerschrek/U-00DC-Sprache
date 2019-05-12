@@ -48,13 +48,17 @@ private:
 	// But you still need call "CallDestructors" manually.
 	struct StackVariablesStorage final
 	{
+	public:
+		using NodeAndVariable= std::pair< ReferencesGraphNodePtr, Variable >;
+
 		StackVariablesStorage( FunctionContext& function_context );
 		~StackVariablesStorage();
 
-		void RegisterVariable( const StoredVariablePtr& variable );
+		void RegisterVariable( NodeAndVariable node_and_variable );
 
-		FunctionContext& function_context;
-		std::vector<StoredVariablePtr> variables;
+	public:
+		FunctionContext& function_context_;
+		std::vector<NodeAndVariable> variables_;
 	};
 
 	struct LoopFrame final
@@ -82,7 +86,7 @@ private:
 
 		// For reference-returned functions - references of returning reference.
 		// For value-returned functions - references inside value.
-		std::unordered_set<StoredVariablePtr> allowed_for_returning_references;
+		std::unordered_set<ReferencesGraphNodePtr> allowed_for_returning_references;
 
 		const Variable* this_= nullptr; // null for nonclass functions or static member functions.
 		llvm::Value* s_ret_= nullptr; // Value for assignment for "sret" functions.
@@ -109,7 +113,7 @@ private:
 		// Also, evaluation of some operators and expressions adds their variables storages.
 		// Do not push/pop to t his stack manually!
 		std::vector<StackVariablesStorage*> stack_variables_stack;
-		VariablesState variables_state;
+		ReferencesGraph variables_state;
 
 		OverloadingResolutionCache overloading_resolutin_cache;
 
@@ -139,6 +143,24 @@ private:
 		GlobalThing( const void* const in_thing_ptr, const ProgramString& in_name, const FilePos& in_file_pos, const TypeCompleteness in_completeness )
 			: thing_ptr(in_thing_ptr), name(in_name), file_pos(in_file_pos), completeness(in_completeness)
 		{}
+	};
+
+	class ReferencesGraphNodeHolder final
+	{
+	public:
+		ReferencesGraphNodeHolder( ReferencesGraphNodePtr node, FunctionContext& function_context );
+		ReferencesGraphNodeHolder( const ReferencesGraphNodeHolder& )= delete;
+		ReferencesGraphNodeHolder( ReferencesGraphNodeHolder&& other ) noexcept;
+
+		ReferencesGraphNodeHolder& operator=( const ReferencesGraphNodeHolder& )= delete;
+		ReferencesGraphNodeHolder& operator=( ReferencesGraphNodeHolder&& other ) noexcept;
+		~ReferencesGraphNodeHolder();
+
+		const ReferencesGraphNodePtr& Node() const { return node_; }
+
+	private:
+		ReferencesGraphNodePtr node_;
+		FunctionContext& function_context_;
 	};
 
 private:
@@ -328,13 +350,10 @@ private:
 		const std::function<void(llvm::Value* counter_value)>& loop_body,
 		FunctionContext& function_context);
 
-	// Store counter of destroyed references to this variable.
-	typedef std::unordered_map<StoredVariablePtr, size_t> DestroyedVariableReferencesCount;
-
 	void CallDestructorsImpl(
 		const StackVariablesStorage& stack_variables_storage,
 		FunctionContext& function_context,
-		DestroyedVariableReferencesCount& destroyed_variable_references,
+		ReferencesGraph& variables_state_copy,
 		const FilePos& file_pos );
 
 	void CallDestructors(
@@ -582,8 +601,8 @@ private:
 		NamesScope& names,
 		FunctionContext& function_context );
 
-	void BuildStaticAssert( StaticAssert& static_assert_, NamesScope& names );
-	void BuildStaticAssert( const Synt::StaticAssert& static_assert_, NamesScope& names );
+	void BuildStaticAssert( StaticAssert& static_assert_, NamesScope& names, FunctionContext& function_context );
+	void BuildStaticAssert( const Synt::StaticAssert& static_assert_, NamesScope& names, FunctionContext& function_context );
 
 	BlockBuildInfo BuildStaticIfOperatorCode(
 		const Synt::StaticIfOperator& static_if_operator,
@@ -652,7 +671,6 @@ private:
 
 	llvm::Constant* ApplyInitializer(
 		const Variable& variable,
-		const StoredVariablePtr& variable_storage,
 		const Synt::IInitializer& initializer,
 		NamesScope& block_names,
 		FunctionContext& function_context );
@@ -665,28 +683,24 @@ private:
 
 	llvm::Constant* ApplyArrayInitializer(
 		const Variable& variable,
-		const StoredVariablePtr& variable_storage,
 		const Synt::ArrayInitializer& initializer,
 		NamesScope& block_names,
 		FunctionContext& function_context );
 
 	llvm::Constant* ApplyStructNamedInitializer(
 		const Variable& variable,
-		const StoredVariablePtr& variable_storage,
 		const Synt::StructNamedInitializer& initializer,
 		NamesScope& block_names,
 		FunctionContext& function_context );
 
 	llvm::Constant* ApplyConstructorInitializer(
 		const Variable& variable,
-		const StoredVariablePtr& variable_storage,
 		const Synt::CallOperator& call_operator,
 		NamesScope& block_names,
 		FunctionContext& function_context );
 
 	llvm::Constant* ApplyExpressionInitializer(
 		const Variable& variable,
-		const StoredVariablePtr& variable_storage,
 		const Synt::ExpressionInitializer& initializer,
 		NamesScope& block_names,
 		FunctionContext& function_context );
@@ -703,7 +717,6 @@ private:
 
 	llvm::Constant* InitializeReferenceField(
 		const Variable& variable,
-		const StoredVariablePtr& variable_storage,
 		const ClassField& field,
 		const Synt::IInitializer& initializer,
 		NamesScope& block_names,
@@ -739,14 +752,9 @@ private:
 		Function& function_type,
 		bool first_arg_is_implicit_this= false );
 
-	void CheckReferencedVariables( const Variable& reference, const FilePos& file_pos );
-	void CheckVariableReferences( const StoredVariable& var, const FilePos& file_pos );
-	std::vector<VariableStorageUseCounter> LockReferencedVariables( const Variable& reference );
-
 	void DestroyUnusedTemporaryVariables( FunctionContext& function_context, const FilePos& file_pos );
 
-	VariablesState MergeVariablesStateAfterIf( const std::vector<VariablesState>& bracnhes_variables_state, const FilePos& file_pos );
-	void CheckWhileBlokVariablesState( const VariablesState& state_before, const VariablesState& state_after, const FilePos& file_pos );
+	ReferencesGraph MergeVariablesStateAfterIf( const std::vector<ReferencesGraph>& bracnhes_variables_state, const FilePos& file_pos );
 
 	// NamesScope fill
 
@@ -793,6 +801,19 @@ private:
 	llvm::GlobalVariable* CreateGlobalConstantVariable( const Type& type, const std::string& mangled_name, llvm::Constant* initializer= nullptr );
 
 	void SetupGeneratedFunctionLinkageAttributes( llvm::Function& function );
+
+	struct InstructionsState
+	{
+		ReferencesGraph variables_state;
+		size_t current_block_instruction_count;
+		size_t alloca_block_instructin_count;
+		size_t block_count;
+	};
+
+	InstructionsState SaveInstructionsState( FunctionContext& function_context );
+	void RestoreInstructionsState(
+		FunctionContext& function_context,
+		const InstructionsState& state );
 
 private:
 	llvm::LLVMContext& llvm_context_;

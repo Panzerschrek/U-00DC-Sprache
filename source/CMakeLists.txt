@@ -102,6 +102,7 @@ set( COMPILER_LIB_SOURCES
 	code_builder_lib/code_builder_virtual.cpp
 	code_builder_lib/constexpr_function_evaluator.cpp
 	code_builder_lib/mangling.cpp
+	code_builder_lib/references_graph.cpp
 	lex_synt_lib/keywords.cpp
 	lex_synt_lib/lang_types.cpp
 	lex_synt_lib/lexical_analyzer.cpp
@@ -120,6 +121,7 @@ set( COMPILER_LIB_HEADERS
 	code_builder_lib/mangling.hpp
 	code_builder_lib/pop_llvm_warnings.hpp
 	code_builder_lib/push_disable_llvm_warnings.hpp
+	code_builder_lib/references_graph.hpp
 	lex_synt_lib/assert.hpp
 	lex_synt_lib/keywords.hpp
 	lex_synt_lib/lexical_analyzer.hpp

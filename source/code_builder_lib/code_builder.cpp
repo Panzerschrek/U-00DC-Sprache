@@ -63,22 +63,47 @@ CodeBuilder::FunctionContext::FunctionContext(
 }
 
 CodeBuilder::StackVariablesStorage::StackVariablesStorage( FunctionContext& in_function_context )
-	: function_context(in_function_context)
+	: function_context_(in_function_context)
 {
-	function_context.stack_variables_stack.push_back(this);
+	function_context_.stack_variables_stack.push_back(this);
 }
 
 CodeBuilder::StackVariablesStorage::~StackVariablesStorage()
 {
-	for( const StoredVariablePtr& var : variables )
-		function_context.variables_state.RemoveVariable(var);
-	function_context.stack_variables_stack.pop_back();
+	for( const NodeAndVariable& node_and_variable : variables_ )
+		function_context_.variables_state.RemoveNode( node_and_variable.first );
+	function_context_.stack_variables_stack.pop_back();
 }
 
-void CodeBuilder::StackVariablesStorage::RegisterVariable( const StoredVariablePtr& variable )
+void CodeBuilder::StackVariablesStorage::RegisterVariable( NodeAndVariable node_and_variable )
 {
-	function_context.variables_state.AddVariable( variable );
-	variables.push_back( variable );
+	function_context_.variables_state.AddNode( node_and_variable.first );
+	variables_.push_back( std::move(node_and_variable) );
+}
+
+CodeBuilder::ReferencesGraphNodeHolder::ReferencesGraphNodeHolder( ReferencesGraphNodePtr node, FunctionContext& function_context )
+	: node_(std::move(node)), function_context_(function_context)
+{
+	function_context_.variables_state.AddNode( node_ );
+}
+
+CodeBuilder::ReferencesGraphNodeHolder::ReferencesGraphNodeHolder( ReferencesGraphNodeHolder&& other) noexcept
+	: node_(other.node_), function_context_(other.function_context_)
+{
+	other.node_= nullptr;
+}
+
+CodeBuilder::ReferencesGraphNodeHolder& CodeBuilder::ReferencesGraphNodeHolder::operator=( ReferencesGraphNodeHolder&& other ) noexcept
+{
+	this->node_= other.node_;
+	other.node_= nullptr;
+	return *this;
+}
+
+CodeBuilder::ReferencesGraphNodeHolder::~ReferencesGraphNodeHolder()
+{
+	if( node_ != nullptr )
+		function_context_.variables_state.RemoveNode( node_ );
 }
 
 CodeBuilder::CodeBuilder(
@@ -718,57 +743,26 @@ void CodeBuilder::GenerateLoop(
 void CodeBuilder::CallDestructorsImpl(
 	const StackVariablesStorage& stack_variables_storage,
 	FunctionContext& function_context,
-	DestroyedVariableReferencesCount& destroyed_variable_references,
+	ReferencesGraph& variables_state_copy,
 	const FilePos& file_pos )
 {
 	// Call destructors in reverse order.
-	for( auto it = stack_variables_storage.variables.rbegin(); it != stack_variables_storage.variables.rend(); ++it )
+	for( auto it = stack_variables_storage.variables_.rbegin(); it != stack_variables_storage.variables_.rend(); ++it )
 	{
-		StoredVariable& stored_variable= **it;
+		const StackVariablesStorage::NodeAndVariable& stored_variable= *it;
 
-		if( function_context.variables_state.VariableIsMoved( *it ) )
-			continue;
-
-		if( stored_variable.kind == StoredVariable::Kind::Reference )
+		if( ! variables_state_copy.NodeMoved( stored_variable.first ) )
 		{
-			// Increment coounter of destroyed reference for referenced variables.
-			for( const StoredVariablePtr& referenced_variable : stored_variable.content.referenced_variables )
+			if( stored_variable.first->kind == ReferencesGraphNode::Kind::Variable )
 			{
-				if( destroyed_variable_references.find( referenced_variable ) == destroyed_variable_references.end() )
-					destroyed_variable_references[ referenced_variable ]= 1u;
-				else
-					++destroyed_variable_references[ referenced_variable ];
+				if( variables_state_copy.HaveOutgoingLinks( stored_variable.first ) )
+					errors_.push_back( ReportDestroyedVariableStillHaveReferences( file_pos, stored_variable.first->name ) );
+				const Variable& var= stored_variable.second;
+				if( var.type.HaveDestructor() )
+					CallDestructor( var.llvm_value, var.type, function_context, file_pos );
 			}
+			variables_state_copy.RemoveNode( stored_variable.first );
 		}
-		else if( stored_variable.kind == StoredVariable::Kind::Variable )
-		{
-			// Increment coounter of destroyed reference for referenced variables of references inside this variable.
-			for( const auto& referenced_variable_pair : function_context.variables_state.GetVariableReferences( *it ) )
-			{
-				if( destroyed_variable_references.find( referenced_variable_pair.first ) == destroyed_variable_references.end() )
-					destroyed_variable_references[ referenced_variable_pair.first ]= 1u;
-				else
-					++destroyed_variable_references[ referenced_variable_pair.first ];
-			}
-
-			// Check references.
-			U_ASSERT( stored_variable.imut_use_counter.use_count() >= 1u && stored_variable.mut_use_counter.use_count() >= 1u );
-
-			size_t alive_ref_count= ( stored_variable.imut_use_counter.use_count() - 1u ) + ( stored_variable.mut_use_counter.use_count() - 1u );
-			const auto map_it= destroyed_variable_references.find( *it );
-			if( map_it != destroyed_variable_references.end() )
-				alive_ref_count-= map_it->second;
-
-			if( alive_ref_count > 0u )
-				errors_.push_back( ReportDestroyedVariableStillHaveReferences( file_pos, stored_variable.name ) );
-		}
-		else
-			U_ASSERT( false );
-
-		// Call destructors.
-		const Variable& var= stored_variable.content;
-		if( stored_variable.kind == StoredVariable::Kind::Variable && var.type.HaveDestructor() )
-			CallDestructor( var.llvm_value, var.type, function_context, file_pos );
 	}
 }
 
@@ -777,8 +771,8 @@ void CodeBuilder::CallDestructors(
 	FunctionContext& function_context,
 	const FilePos& file_pos )
 {
-	DestroyedVariableReferencesCount destroyed_variable_references;
-	CallDestructorsImpl( stack_variables_storage, function_context, destroyed_variable_references, file_pos );
+	ReferencesGraph variables_state_copy= function_context.variables_state;
+	CallDestructorsImpl( stack_variables_storage, function_context, variables_state_copy, file_pos );
 }
 
 void CodeBuilder::CallDestructor(
@@ -829,9 +823,9 @@ void CodeBuilder::CallDestructor(
 
 void CodeBuilder::CallDestructorsForLoopInnerVariables( FunctionContext& function_context, const FilePos& file_pos )
 {
-	U_ASSERT( !function_context.loops_stack.empty() );
+	ReferencesGraph variables_state_copy= function_context.variables_state;
 
-	DestroyedVariableReferencesCount destroyed_variable_references;
+	U_ASSERT( !function_context.loops_stack.empty() );
 
 	// Destroy all local variables before "break"/"continue" in all blocks inside loop.
 	size_t undestructed_stack_size= function_context.stack_variables_stack.size();
@@ -841,17 +835,16 @@ void CodeBuilder::CallDestructorsForLoopInnerVariables( FunctionContext& functio
 		undestructed_stack_size > function_context.loops_stack.back().stack_variables_stack_size;
 		++it, --undestructed_stack_size )
 	{
-		CallDestructorsImpl( **it, function_context, destroyed_variable_references, file_pos );
+		CallDestructorsImpl( **it, function_context, variables_state_copy, file_pos );
 	}
 }
 
 void CodeBuilder::CallDestructorsBeforeReturn( FunctionContext& function_context, const FilePos& file_pos )
 {
-	DestroyedVariableReferencesCount destroyed_variable_references;
-
+	ReferencesGraph variables_state_copy= function_context.variables_state;
 	// We must call ALL destructors of local variables, arguments, etc before each return.
 	for( auto it= function_context.stack_variables_stack.rbegin(); it != function_context.stack_variables_stack.rend(); ++it )
-		CallDestructorsImpl( **it, function_context, destroyed_variable_references, file_pos );
+		CallDestructorsImpl( **it, function_context, variables_state_copy, file_pos );
 }
 
 void CodeBuilder::CallMembersDestructors( FunctionContext& function_context, const FilePos& file_pos )
@@ -1394,8 +1387,8 @@ void CodeBuilder::BuildFuncCode(
 		llvm_function );
 	const StackVariablesStorage args_storage( function_context );
 
-	std::vector< std::pair< StoredVariablePtr, StoredVariablePtr > > args_stored_variables;
-	args_stored_variables.resize( function_type->args.size() );
+	// arg node + optional inner reference variable node.
+	std::vector< std::pair< ReferencesGraphNodePtr, ReferencesGraphNodePtr > > args_nodes( function_type->args.size() );
 
 	// push args
 	Variable this_;
@@ -1426,18 +1419,23 @@ void CodeBuilder::BuildFuncCode(
 			llvm_arg.setName( KeywordAscii( Keywords::this_ ) );
 			function_context.this_= &this_;
 
-			const StoredVariablePtr this_storage= std::make_shared<StoredVariable>( Keyword(Keywords::this_), this_ );
-			this_.referenced_variables.emplace(this_storage);
-
-			function_context.variables_state.AddVariable( this_storage );
-			args_stored_variables[arg_number].first= this_storage;
+			// Create variable node, because only variable node can have inner reference node.
+			const auto this_node= std::make_shared<ReferencesGraphNode>( Keyword(Keywords::this_), ReferencesGraphNode::Kind::Variable );
+			function_context.variables_state.AddNode( this_node );
+			args_nodes[ arg_number ].first= this_node;
+			this_.node= this_node;
 
 			if (arg.type.ReferencesTagsCount() > 0u )
 			{
-				const StoredVariablePtr inner_variable = std::make_shared<StoredVariable>( Keyword(Keywords::this_) + " inner reference"_SpC, Variable(), StoredVariable::Kind::ArgInnerVariable );
-				function_context.variables_state.AddPollutionForArgInnerVariable( this_storage, inner_variable );
-				function_context.variables_state.AddVariable( inner_variable );
-				args_stored_variables[arg_number].second= inner_variable;
+				// Create inner node + root variable.
+				const auto accesible_variable= std::make_shared<ReferencesGraphNode>( Keyword(Keywords::this_) + " inner variable"_SpC, ReferencesGraphNode::Kind::Variable );
+				function_context.variables_state.AddNode( accesible_variable );
+
+				const auto inner_reference= std::make_shared<ReferencesGraphNode>( Keyword(Keywords::this_) + " inner reference"_SpC, ReferencesGraphNode::Kind::ReferenceMut );
+				function_context.variables_state.SetNodeInnerReference( this_node, inner_reference );
+				function_context.variables_state.AddLink( accesible_variable, inner_reference );
+
+				args_nodes[ arg_number ].second= accesible_variable;
 			}
 
 			arg_number++;
@@ -1485,23 +1483,27 @@ void CodeBuilder::BuildFuncCode(
 			else U_ASSERT(false);
 		}
 
-		const StoredVariablePtr var_storage=
-			std::make_shared<StoredVariable>( arg_name, var, arg.is_reference ? StoredVariable::Kind::ReferenceArg : StoredVariable::Kind::Variable );
+		// Create variable node, because only variable node can have inner reference node.
+		// Register arg on stack, only if it is value-argument.
+		const auto var_node= std::make_shared<ReferencesGraphNode>( arg_name, ReferencesGraphNode::Kind::Variable );
 		if( arg.is_reference )
-			function_context.variables_state.AddVariable( var_storage );
+			function_context.variables_state.AddNode( var_node );
 		else
-			function_context.stack_variables_stack.back()->RegisterVariable( var_storage );
-		var.referenced_variables.emplace(var_storage);
+			function_context.stack_variables_stack.back()->RegisterVariable( std::make_pair( var_node, var ) );
+		args_nodes[ arg_number ].first= var_node;
+		var.node= var_node;
 
-		args_stored_variables[arg_number].first= var_storage;
-		// For arguments with references inside create variable storage.
-		if( arg.type.ReferencesTagsCount() > 0u )
+		if (arg.type.ReferencesTagsCount() > 0u )
 		{
-			U_ASSERT( arg.type.ReferencesTagsCount() == 1u ); // Currently, support 0 or 1 tags.
-			const StoredVariablePtr inner_variable = std::make_shared<StoredVariable>( arg_name + " inner reference"_SpC, Variable(), StoredVariable::Kind::ArgInnerVariable );
-			function_context.variables_state.AddVariable( inner_variable );
-			function_context.variables_state.AddPollutionForArgInnerVariable( var_storage, inner_variable );
-			args_stored_variables[arg_number].second= inner_variable;
+			// Create inner node + root variable.
+			const auto accesible_variable= std::make_shared<ReferencesGraphNode>( arg_name + " inner variable"_SpC, ReferencesGraphNode::Kind::Variable );
+			function_context.variables_state.AddNode( accesible_variable );
+
+			const auto inner_reference= std::make_shared<ReferencesGraphNode>( arg_name + " inner reference"_SpC, ReferencesGraphNode::Kind::ReferenceMut );
+			function_context.variables_state.SetNodeInnerReference( var_node, inner_reference );
+			function_context.variables_state.AddLink( accesible_variable, inner_reference );
+
+			args_nodes[ arg_number ].second= accesible_variable;
 		}
 
 		if( is_this )
@@ -1519,7 +1521,7 @@ void CodeBuilder::BuildFuncCode(
 			}
 
 			const NamesScope::InsertedName* const inserted_arg=
-				function_names.AddName( arg_name, Value( var_storage, declaration_arg.file_pos_ ) );
+				function_names.AddName( arg_name, Value( var, declaration_arg.file_pos_ ) );
 			if( !inserted_arg )
 			{
 				errors_.push_back( ReportRedefinition( declaration_arg.file_pos_, arg_name ) );
@@ -1545,7 +1547,7 @@ void CodeBuilder::BuildFuncCode(
 				{
 					if( arg_n == i )
 					{
-						function_context.allowed_for_returning_references.emplace( args_stored_variables[i].first );
+						function_context.allowed_for_returning_references.emplace( args_nodes[i].first );
 						break;
 					}
 				}
@@ -1556,7 +1558,7 @@ void CodeBuilder::BuildFuncCode(
 				{
 					if( arg_and_tag.first == i && arg_and_tag.second == 0u )
 					{
-						function_context.allowed_for_returning_references.emplace( args_stored_variables[i].second );
+						function_context.allowed_for_returning_references.emplace( args_nodes[i].second );
 						break;
 					}
 				}
@@ -1699,67 +1701,45 @@ void CodeBuilder::BuildFuncCode(
 	}
 
 	// Now, we can check references pollution. After this point only code is destructors calls, which can not link references.
-	const auto find_reference=
-	[&]( const StoredVariablePtr& stored_variable ) -> boost::optional<Function::ArgReference>
-	{
-		for( size_t i= 0u; i < function_type->args.size(); ++i )
-		{
-			if( stored_variable == args_stored_variables[i].first )
-				return Function::ArgReference( i, Function::c_arg_reference_tag_number );
-			if( stored_variable == args_stored_variables[i].second )
-				return Function::ArgReference( i, 0u );
-		}
-		return boost::none;
-	};
 	for( size_t i= 0u; i < function_type->args.size(); ++i )
 	{
-		if( args_stored_variables[i].first == nullptr ) // May be in templates.
+		const auto& node_pair= args_nodes[i];
+		if( node_pair.second != nullptr && function_context.variables_state.GetNodeInnerReference( node_pair.second ) != nullptr )
+			errors_.push_back( ReportReferencePollutionForArgReference( block->end_file_pos_ ) );
+
+		const ReferencesGraphNodePtr inner_reference= function_context.variables_state.GetNodeInnerReference( node_pair.first );
+		if( inner_reference == nullptr )
 			continue;
 
-		const auto check_reference=
-		[&]( const StoredVariablePtr& referenced_variable )
+		for( const ReferencesGraphNodePtr& accesible_variable : function_context.variables_state.GetAllAccessibleVariableNodes_r( inner_reference ) )
 		{
-			const boost::optional<Function::ArgReference> reference= find_reference( referenced_variable );
-			if( reference == boost::none )
+			if( accesible_variable == node_pair.second )
+				continue;
+
+			boost::optional<Function::ArgReference> reference;
+			for( size_t j= 0u; j < function_type->args.size(); ++j )
 			{
-				errors_.push_back( ReportUnallowedReferencePollution( block->end_file_pos_ ) );
-				return;
+				if( accesible_variable == args_nodes[j].first )
+					reference= Function::ArgReference( j, Function::c_arg_reference_tag_number );
+				if( accesible_variable == args_nodes[j].second )
+					reference= Function::ArgReference( j, 0u );
 			}
 
-			Function::ReferencePollution pollution;
-			pollution.src= *reference;
-			pollution.dst.first= i;
-			pollution.dst.second= 0u;
-			// Currently check both mutable and immutable. TODO - maybe akt more smarter?
-			pollution.src_is_mutable= true;
-			if( function_type->references_pollution.count( pollution ) != 0u )
-				return;
-			pollution.src_is_mutable= false;
-			if( function_type->references_pollution.count( pollution ) != 0u )
-				return;
-			errors_.push_back( ReportUnallowedReferencePollution( block->end_file_pos_ ) );
-		};
-
-		if( function_type->args[i].is_reference )
-		{
-			for( const auto& referenced_variable_pair : function_context.variables_state.GetVariableReferences( args_stored_variables[i].first ) )
+			if( reference != boost::none )
 			{
-				if( referenced_variable_pair.first->kind == StoredVariable::Kind::ArgInnerVariable &&
-					referenced_variable_pair.first == args_stored_variables[i].second ) // Ok, arg inner variable.
+				Function::ReferencePollution pollution;
+				pollution.src= *reference;
+				pollution.dst.first= i;
+				pollution.dst.second= 0u;
+				// Currently check both mutable and immutable. TODO - maybe akt more smarter?
+				pollution.src_is_mutable= true;
+				if( function_type->references_pollution.count( pollution ) != 0u )
 					continue;
-				// TODO - what if self-linking of inner variable occurs?
-
-				check_reference( referenced_variable_pair.first );
+				pollution.src_is_mutable= false;
+				if( function_type->references_pollution.count( pollution ) != 0u )
+					continue;
 			}
-		}
-
-		if( args_stored_variables[i].second == nullptr ) // May be in templates.
-			continue;
-
-		if( function_type->args[i].type.ReferencesTagsCount() > 0u )
-		{
-			for( const auto& referenced_variable_pair : function_context.variables_state.GetVariableReferences( args_stored_variables[i].second ) )
-				check_reference( referenced_variable_pair.first );
+			errors_.push_back( ReportUnallowedReferencePollution( block->end_file_pos_ ) );
 		}
 	}
 
@@ -1946,9 +1926,6 @@ void CodeBuilder::BuildConstructorInitialization(
 	{
 		const StackVariablesStorage temp_variables_storage( function_context );
 
-		U_ASSERT( this_.referenced_variables.size() == 1u );
-		const StoredVariablePtr& this_storage= *this_.referenced_variables.begin();
-
 		if( field_initializer.name == Keywords::base_ )
 		{
 			Variable base_variable;
@@ -1962,7 +1939,7 @@ void CodeBuilder::BuildConstructorInitialization(
 			base_variable.llvm_value=
 				function_context.llvm_ir_builder.CreateGEP( this_.llvm_value, llvm::ArrayRef<llvm::Value*> ( index_list, 2u ) );
 
-			ApplyInitializer( base_variable, this_storage, *field_initializer.initializer, names_scope, function_context );
+			ApplyInitializer( base_variable, *field_initializer.initializer, names_scope, function_context );
 			function_context.base_initialized= true;
 			continue;
 		}
@@ -1974,7 +1951,7 @@ void CodeBuilder::BuildConstructorInitialization(
 		U_ASSERT( field != nullptr );
 
 		if( field->is_reference )
-			InitializeReferenceField( this_, this_storage, *field, *field_initializer.initializer, names_scope, function_context );
+			InitializeReferenceField( this_, *field, *field_initializer.initializer, names_scope, function_context );
 		else
 		{
 			Variable field_variable;
@@ -1989,7 +1966,7 @@ void CodeBuilder::BuildConstructorInitialization(
 				function_context.llvm_ir_builder.CreateGEP( this_.llvm_value, llvm::ArrayRef<llvm::Value*> ( index_list, 2u ) );
 
 			U_ASSERT( field_initializer.initializer != nullptr );
-			ApplyInitializer( field_variable, this_storage, *field_initializer.initializer, names_scope, function_context );
+			ApplyInitializer( field_variable, *field_initializer.initializer, names_scope, function_context );
 		}
 
 		function_context.uninitialized_this_fields.erase( field );
@@ -2117,7 +2094,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockCode(
 				try_report_unreachable_code();
 		}
 		else if( const auto static_assert_= dynamic_cast<const Synt::StaticAssert*>( block_element_ptr ) )
-			BuildStaticAssert( *static_assert_, block_names );
+			BuildStaticAssert( *static_assert_, block_names, function_context );
 		else if( const auto halt= dynamic_cast<const Synt::Halt*>( block_element_ptr ) )
 		{
 			BuildHalt( *halt, function_context );
@@ -2212,38 +2189,37 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 		// Destruction frame for temporary variables of initializer expression.
 		const StackVariablesStorage temp_variables_storage( function_context );
 
-		const StoredVariablePtr stored_variable=
-			std::make_shared<StoredVariable>(
-				variable_declaration.name,
-				Variable(),
-				variable_declaration.reference_modifier == ReferenceModifier::Reference ? StoredVariable::Kind::Reference : StoredVariable::Kind::Variable,
-				false );
-		function_context.stack_variables_stack[ function_context.stack_variables_stack.size() - 2u ]->RegisterVariable( stored_variable );
-
-		Variable& variable= stored_variable->content;
+		Variable variable;
 		variable.type= type;
 		variable.location= Variable::Location::Pointer;
 		variable.value_type= ValueType::Reference;
+
+		ReferencesGraphNode::Kind node_kind;
+		if( variable_declaration.reference_modifier != ReferenceModifier::Reference )
+			node_kind= ReferencesGraphNode::Kind::Variable;
+		else if( variable_declaration.mutability_modifier == MutabilityModifier::Mutable )
+			node_kind= ReferencesGraphNode::Kind::ReferenceMut;
+		else
+			node_kind= ReferencesGraphNode::Kind::ReferenceImut;
+		const auto var_node= std::make_shared<ReferencesGraphNode>( variable_declaration.name, node_kind );
 
 		if( variable_declaration.reference_modifier == ReferenceModifier::None )
 		{
 			variable.llvm_value= function_context.alloca_ir_builder.CreateAlloca( variable.type.GetLLVMType() );
 			variable.llvm_value->setName( ToUTF8( variable_declaration.name ) );
 
-			variable.referenced_variables.insert( stored_variable );
+			function_context.stack_variables_stack[ function_context.stack_variables_stack.size() - 2u ]->RegisterVariable( std::make_pair( var_node, variable ) );
+			variable.node= var_node;
+
 			if( variable_declaration.initializer != nullptr )
 				variable.constexpr_value=
-					ApplyInitializer( variable, stored_variable, *variable_declaration.initializer, block_names, function_context );
+					ApplyInitializer( variable, *variable_declaration.initializer, block_names, function_context );
 			else
 				ApplyEmptyInitializer( variable_declaration.name, variable_declaration.file_pos, variable, function_context );
-			variable.referenced_variables.erase( stored_variable );
 
 			// Make immutable, if needed, only after initialization, because in initialization we need call constructors, which is mutable methods.
 			if( variable_declaration.mutability_modifier != MutabilityModifier::Mutable )
 				variable.value_type= ValueType::ConstReference;
-
-			for( const auto& referenced_variable_pair : function_context.variables_state.GetVariableReferences( stored_variable ) )
-				CheckVariableReferences( *referenced_variable_pair.first, variable_declaration.file_pos );
 		}
 		else if( variable_declaration.reference_modifier == ReferenceModifier::Reference )
 		{
@@ -2293,19 +2269,28 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 				continue;
 			}
 
-			variable.referenced_variables= expression_result.referenced_variables;
-
-			const bool is_mutable= variable.value_type == ValueType::Reference;
-			for( const StoredVariablePtr& referenced_variable : variable.referenced_variables )
-				function_context.variables_state.AddPollution( stored_variable, referenced_variable, is_mutable );
-			CheckReferencedVariables( stored_variable->content, variable_declaration.file_pos );
-
 			// TODO - maybe make copy of varaible address in new llvm register?
 			llvm::Value* result_ref= expression_result.llvm_value;
 			if( variable.type != expression_result.type )
 				result_ref= CreateReferenceCast( result_ref, expression_result.type, variable.type, function_context );
 			variable.llvm_value= result_ref;
 			variable.constexpr_value= expression_result.constexpr_value;
+
+			function_context.stack_variables_stack[ function_context.stack_variables_stack.size() - 2u ]->RegisterVariable( std::make_pair( var_node, variable ) );
+			variable.node= var_node;
+
+			const bool is_mutable= variable.value_type == ValueType::Reference;
+			if( expression_result.node != nullptr )
+			{
+				if( is_mutable )
+				{
+					if( function_context.variables_state.HaveOutgoingLinks( expression_result.node ) )
+						errors_.push_back( ReportReferenceProtectionError( variable_declaration.file_pos, expression_result.node->name ) );
+				}
+				else if( function_context.variables_state.HaveOutgoingMutableNodes( expression_result.node ) )
+					errors_.push_back( ReportReferenceProtectionError( variable_declaration.file_pos, expression_result.node->name ) );
+				function_context.variables_state.AddLink( expression_result.node, var_node );
+			}
 		}
 		else U_ASSERT(false);
 
@@ -2327,7 +2312,7 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 		}
 
 		const NamesScope::InsertedName* const inserted_name=
-			block_names.AddName( variable_declaration.name, Value( stored_variable, variable_declaration.file_pos ) );
+			block_names.AddName( variable_declaration.name, Value( variable, variable_declaration.file_pos ) );
 		if( !inserted_name )
 		{
 			errors_.push_back( ReportRedefinition( variables_declaration.file_pos_, variable_declaration.name ) );
@@ -2363,18 +2348,19 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 		}
 	}
 
-	const StoredVariablePtr stored_variable=
-		std::make_shared<StoredVariable>(
-			auto_variable_declaration.name,
-			Variable(),
-			auto_variable_declaration.reference_modifier == ReferenceModifier::Reference ? StoredVariable::Kind::Reference : StoredVariable::Kind::Variable,
-			false );
-	function_context.stack_variables_stack[ function_context.stack_variables_stack.size() - 2u ]->RegisterVariable( stored_variable );
-
-	Variable& variable= stored_variable->content;
+	Variable variable;
 	variable.type= initializer_experrsion.type;
 	variable.value_type= auto_variable_declaration.mutability_modifier == MutabilityModifier::Mutable ? ValueType::Reference : ValueType::ConstReference;
 	variable.location= Variable::Location::Pointer;
+
+	ReferencesGraphNode::Kind node_kind;
+	if( auto_variable_declaration.reference_modifier != ReferenceModifier::Reference )
+		node_kind= ReferencesGraphNode::Kind::Variable;
+	else if( auto_variable_declaration.mutability_modifier == MutabilityModifier::Mutable )
+		node_kind= ReferencesGraphNode::Kind::ReferenceMut;
+	else
+		node_kind= ReferencesGraphNode::Kind::ReferenceImut;
+	const auto var_node= std::make_shared<ReferencesGraphNode>( auto_variable_declaration.name, node_kind );
 
 	if( auto_variable_declaration.reference_modifier != ReferenceModifier::Reference ||
 		auto_variable_declaration.mutability_modifier == Synt::MutabilityModifier::Constexpr )
@@ -2406,25 +2392,35 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 			return;
 		}
 
-		variable.referenced_variables= initializer_experrsion.referenced_variables;
-
 		variable.llvm_value= initializer_experrsion.llvm_value;
 		variable.constexpr_value= initializer_experrsion.constexpr_value;
 
+		function_context.stack_variables_stack[ function_context.stack_variables_stack.size() - 2u ]->RegisterVariable( std::make_pair( var_node, variable ) );
+		variable.node= var_node;
+
 		const bool is_mutable= variable.value_type == ValueType::Reference;
-		for( const StoredVariablePtr& referenced_variable : variable.referenced_variables )
-			function_context.variables_state.AddPollution( stored_variable, referenced_variable, is_mutable );
-		CheckReferencedVariables( variable, auto_variable_declaration.file_pos_ );
+		if( initializer_experrsion.node != nullptr )
+		{
+			if( is_mutable )
+			{
+				if( function_context.variables_state.HaveOutgoingLinks( initializer_experrsion.node ) )
+					errors_.push_back( ReportReferenceProtectionError( auto_variable_declaration.file_pos_, initializer_experrsion.node->name ) );
+			}
+			else if( function_context.variables_state.HaveOutgoingMutableNodes( initializer_experrsion.node ) )
+				errors_.push_back( ReportReferenceProtectionError( auto_variable_declaration.file_pos_, initializer_experrsion.node->name ) );
+			function_context.variables_state.AddLink( initializer_experrsion.node, var_node );
+		}
 	}
 	else if( auto_variable_declaration.reference_modifier == ReferenceModifier::None )
 	{	
-		VariablesState::VariableReferences moved_variable_referenced_variables;
-
 		if( !variable.type.CanBeConstexpr() )
 			function_context.have_non_constexpr_operations_inside= true; // Declaring variable with non-constexpr type in constexpr function not allowed.
 
 		variable.llvm_value= function_context.alloca_ir_builder.CreateAlloca( variable.type.GetLLVMType() );
 		variable.llvm_value->setName( ToUTF8( auto_variable_declaration.name ) );
+
+		function_context.stack_variables_stack[ function_context.stack_variables_stack.size() - 2u ]->RegisterVariable( std::make_pair( var_node, variable ) );
+		variable.node= var_node;
 
 		if( variable.type.GetFundamentalType() != nullptr || variable.type.GetEnumType() != nullptr || variable.type.GetFunctionPointerType() != nullptr )
 		{
@@ -2437,45 +2433,61 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 			U_ASSERT( class_type->class_->completeness == TypeCompleteness::Complete );
 			if( initializer_experrsion.value_type == ValueType::Value )
 			{
-				U_ASSERT( initializer_experrsion.referenced_variables.size() == 1u );
-				const StoredVariablePtr& variable_for_move= *initializer_experrsion.referenced_variables.begin();
+				const ReferencesGraphNodePtr& variable_for_move= initializer_experrsion.node;
+				if( variable_for_move != nullptr )
+				{
+					U_ASSERT(variable_for_move->kind == ReferencesGraphNode::Kind::Variable );
 
-				moved_variable_referenced_variables= function_context.variables_state.GetVariableReferences( variable_for_move );
-				function_context.variables_state.Move( variable_for_move );
+					const ReferencesGraphNodePtr initializer_expression_inner_node= function_context.variables_state.GetNodeInnerReference( variable_for_move );
+					if( initializer_expression_inner_node != nullptr )
+					{
+						const ReferencesGraphNodePtr inner_reference= std::make_shared<ReferencesGraphNode>(
+							"var"_SpC + auto_variable_declaration.name + " inner node"_SpC,
+							initializer_expression_inner_node->kind);
+						function_context.variables_state.SetNodeInnerReference( var_node, inner_reference );
+						function_context.variables_state.AddLink( initializer_expression_inner_node, inner_reference );
+					}
+					function_context.variables_state.MoveNode( variable_for_move );
+				}
 
 				CopyBytes( initializer_experrsion.llvm_value, variable.llvm_value, variable.type, function_context );
 				variable.constexpr_value= initializer_experrsion.constexpr_value; // Move can preserve constexpr.
 			}
 			else
+			{
 				TryCallCopyConstructor(
 					auto_variable_declaration.file_pos_,
 					variable.llvm_value, initializer_experrsion.llvm_value,
 					variable.type.GetClassTypeProxy(),
 					function_context );
+
+				const ReferencesGraphNodePtr& src_node= initializer_experrsion.node;
+				if( src_node != nullptr )
+				{
+					const auto src_node_inner_references= function_context.variables_state.GetAllAccessibleInnerNodes_r( src_node );
+					if( !src_node_inner_references.empty() )
+					{
+						bool node_is_mutable= false;
+						for( const ReferencesGraphNodePtr& src_node_inner_reference : src_node_inner_references )
+							node_is_mutable= node_is_mutable || src_node_inner_reference->kind == ReferencesGraphNode::Kind::ReferenceMut;
+
+						const auto dst_node_inner_reference= std::make_shared<ReferencesGraphNode>( var_node->name + " inner variable"_SpC, node_is_mutable ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut );
+						function_context.variables_state.SetNodeInnerReference( var_node, dst_node_inner_reference );
+						for( const ReferencesGraphNodePtr& src_node_inner_reference : src_node_inner_references )
+							function_context.variables_state.AddLink( src_node_inner_reference, dst_node_inner_reference );
+					}
+				}
+			}
 		}
 		else
 		{
 			errors_.push_back( ReportNotImplemented( auto_variable_declaration.file_pos_, "expression initialization for nonfundamental types" ) );
 			return;
 		}
-
-		// Take references inside variables in initializer expression.
-		for( const auto& ref : moved_variable_referenced_variables )
-			function_context.variables_state.AddPollution( stored_variable, ref.first, ref.second.IsMutable() );
-		for( const StoredVariablePtr& referenced_variable : initializer_experrsion.referenced_variables )
-		{
-			for( const auto& inner_variable_pair : function_context.variables_state.GetVariableReferences( referenced_variable ) )
-			{
-				const bool ok= function_context.variables_state.AddPollution( stored_variable, inner_variable_pair.first, inner_variable_pair.second.IsMutable() );
-				if(!ok)
-					errors_.push_back( ReportReferenceProtectionError( auto_variable_declaration.file_pos_, inner_variable_pair.first->name ) );
-			}
-		}
 	}
 	else U_ASSERT(false);
 
-	if( auto_variable_declaration.mutability_modifier == MutabilityModifier::Constexpr &&
-		variable.constexpr_value == nullptr )
+	if( auto_variable_declaration.mutability_modifier == MutabilityModifier::Constexpr && variable.constexpr_value == nullptr )
 	{
 		errors_.push_back( ReportVariableInitializerIsNotConstantExpression( auto_variable_declaration.file_pos_ ) );
 		return;
@@ -2492,7 +2504,7 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 	}
 
 	const NamesScope::InsertedName* const inserted_name=
-		block_names.AddName( auto_variable_declaration.name, Value( stored_variable, auto_variable_declaration.file_pos_ ) );
+		block_names.AddName( auto_variable_declaration.name, Value( variable, auto_variable_declaration.file_pos_ ) );
 	if( inserted_name == nullptr )
 		errors_.push_back( ReportRedefinition( auto_variable_declaration.file_pos_, auto_variable_declaration.name ) );
 
@@ -2554,14 +2566,8 @@ void CodeBuilder::BuildAssignmentOperatorCode(
 		}
 
 		// Check references of destination.
-		for( const StoredVariablePtr& referenced_variable : l_var.referenced_variables )
-		{
-			if( referenced_variable->imut_use_counter.use_count() > 1u )
-			{
-				// Assign to variable, that have nonzero immutable references.
-				errors_.push_back( ReportReferenceProtectionError( assignment_operator.file_pos_, referenced_variable->name ) );
-			}
-		}
+		if( l_var.node != nullptr && function_context.variables_state.HaveOutgoingLinks( l_var.node ) )
+			errors_.push_back( ReportReferenceProtectionError( assignment_operator.file_pos_, l_var.node->name ) );
 
 		if( l_var.type.GetFundamentalType() != nullptr || l_var.type.GetEnumType() != nullptr || l_var.type.GetFunctionPointerType() != nullptr )
 		{
@@ -2630,18 +2636,12 @@ void CodeBuilder::BuildAdditiveAssignmentOperatorCode(
 				block_names,
 				function_context );
 
-		if( l_var.type == invalid_type_ || r_var.type == invalid_type_)
+		if( l_var.type == invalid_type_ || r_var.type == invalid_type_ )
 			return;
 
 		// Check references of destination.
-		for( const StoredVariablePtr& stored_variable : l_var.referenced_variables )
-		{
-			if( stored_variable->imut_use_counter.use_count() > 1u )
-			{
-				// Assign to variable, that have nonzero immutable references.
-				errors_.push_back( ReportReferenceProtectionError( additive_assignment_operator.file_pos_, stored_variable->name ) );
-			}
-		}
+		if( l_var.node != nullptr && function_context.variables_state.HaveOutgoingLinks( l_var.node ) )
+			errors_.push_back( ReportReferenceProtectionError( additive_assignment_operator.file_pos_, l_var.node->name ) );
 
 		const FundamentalType* const l_var_fundamental_type= l_var.type.GetFundamentalType();
 		const FundamentalType* const r_var_fundamental_type= r_var.type.GetFundamentalType();
@@ -2735,12 +2735,8 @@ void CodeBuilder::BuildDeltaOneOperatorCode(
 			return;
 		}
 
-		for( const StoredVariablePtr& referenced_variable : variable->referenced_variables )
-		{
-			if( referenced_variable->imut_use_counter.use_count() > 1u ) // Changing variable, that have immutable references.
-				errors_.push_back( ReportReferenceProtectionError( file_pos, referenced_variable->name ) );
-			// If "mut_counter" is not 0 or 1, error must be generated previosly.
-		}
+		if( variable->node != nullptr && function_context.variables_state.HaveOutgoingLinks( variable->node ) )
+			errors_.push_back( ReportReferenceProtectionError( file_pos, variable->node->name ) );
 
 		llvm::Value* const value_in_register= CreateMoveToLLVMRegisterInstruction( *variable, function_context );
 		llvm::Value* const one=
@@ -2821,19 +2817,26 @@ void CodeBuilder::BuildReturnOperatorCode(
 			return;
 		}
 
-		// Lock references to return value variables.
-		std::vector<VariableStorageUseCounter> return_value_locks= LockReferencedVariables( expression_result );
+		{ // Lock references to return value variables.
+			ReferencesGraphNodeHolder return_value_lock(
+				std::make_shared<ReferencesGraphNode>(
+					"ret result"_SpC,
+					function_context.return_value_is_mutable ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut ),
+				function_context );
+			if( expression_result.node != nullptr )
+				function_context.variables_state.AddLink( expression_result.node, return_value_lock.Node() );
 
-		CallDestructorsBeforeReturn( function_context, return_operator.file_pos_ );
-		return_value_locks.clear(); // Reset locks AFTER destructors call. We must get error in case of returning of reference to stack variable or value-argument.
+			CallDestructorsBeforeReturn( function_context, return_operator.file_pos_ );
+		} // Reset locks AFTER destructors call. We must get error in case of returning of reference to stack variable or value-argument.
 
 		// Check correctness of returning reference.
-		for( const StoredVariablePtr& var : expression_result.referenced_variables )
+		if( expression_result.node != nullptr )
 		{
-			if( var->is_global_constant ) // Always allow return of global constants.
-				continue;
-			if( function_context.allowed_for_returning_references.count(var) == 0u )
-				errors_.push_back( ReportReturningUnallowedReference( return_operator.file_pos_ ) );
+			for( const ReferencesGraphNodePtr& var_node : function_context.variables_state.GetAllAccessibleVariableNodes_r( expression_result.node ) )
+			{
+				if( function_context.allowed_for_returning_references.count( var_node ) == 0 )
+					errors_.push_back( ReportReturningUnallowedReference( return_operator.file_pos_ ) );
+			}
 		}
 
 		llvm::Value* ret_value= expression_result.llvm_value;
@@ -2852,13 +2855,16 @@ void CodeBuilder::BuildReturnOperatorCode(
 		if( expression_result.type.ReferencesTagsCount() > 0u )
 		{
 			// Check correctness of returning references.
-			for( const StoredVariablePtr& var : expression_result.referenced_variables )
-			for( const auto& inner_var :function_context.variables_state.GetVariableReferences( var ) )
+			if( expression_result.node != nullptr )
 			{
-				if( inner_var.first->is_global_constant ) // Always allow return of global constants.
-					continue;
-				if( function_context.allowed_for_returning_references.count(inner_var.first) == 0u )
-					errors_.push_back( ReportReturningUnallowedReference( return_operator.file_pos_ ) );
+				if( const ReferencesGraphNodePtr& inner_reference = function_context.variables_state.GetNodeInnerReference( expression_result.node ) )
+				{
+					for( const ReferencesGraphNodePtr& var_node : function_context.variables_state.GetAllAccessibleVariableNodes_r( inner_reference ) )
+					{
+						if( function_context.allowed_for_returning_references.count( var_node ) == 0 )
+							errors_.push_back( ReportReturningUnallowedReference( return_operator.file_pos_ ) );
+					}
+				}
 			}
 		}
 
@@ -2868,8 +2874,8 @@ void CodeBuilder::BuildReturnOperatorCode(
 			U_ASSERT( class_ != nullptr );
 			if( expression_result.value_type == ValueType::Value )
 			{
-				U_ASSERT( expression_result.referenced_variables.size() == 1u );
-				function_context.variables_state.Move( *expression_result.referenced_variables.begin() );
+				if( expression_result.node != nullptr )
+					function_context.variables_state.MoveNode( expression_result.node );
 				CopyBytes( expression_result.llvm_value, function_context.s_ret_, function_context.return_type, function_context );
 			}
 			else
@@ -2909,8 +2915,7 @@ void CodeBuilder::BuildWhileOperatorCode(
 	const StackVariablesStorage temp_variables_storage( function_context );
 	const Variable condition_expression= BuildExpressionCodeEnsureVariable( *while_operator.condition_, names, function_context );
 
-	VariablesState variables_state_before_while= function_context.variables_state;
-	variables_state_before_while.DeactivateLocks();
+	ReferencesGraph variables_state_before_while= function_context.variables_state;
 
 	if( condition_expression.type != bool_type_ )
 	{
@@ -2948,7 +2953,8 @@ void CodeBuilder::BuildWhileOperatorCode(
 	function_context.function->getBasicBlockList().push_back( block_after_while );
 	function_context.llvm_ir_builder.SetInsertPoint( block_after_while );
 
-	CheckWhileBlokVariablesState( variables_state_before_while, function_context.variables_state, while_operator.block_->end_file_pos_ );
+	const auto errors= ReferencesGraph::CheckWhileBlokVariablesState( variables_state_before_while, function_context.variables_state, while_operator.block_->end_file_pos_ );
+	errors_.insert( errors_.end(), errors.begin(), errors.end() );
 }
 
 void CodeBuilder::BuildBreakOperatorCode(
@@ -3001,9 +3007,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildIfOperatorCode(
 	// Break to first condition. We must push terminal instruction at end of current block.
 	function_context.llvm_ir_builder.CreateBr( next_condition_block );
 
-	VariablesState conditions_variable_state= function_context.variables_state;
-	conditions_variable_state.DeactivateLocks();
-	std::vector<VariablesState> bracnhes_variables_state( if_operator.branches_.size() );
+	ReferencesGraph conditions_variable_state= function_context.variables_state;
+	std::vector<ReferencesGraph> bracnhes_variables_state( if_operator.branches_.size() );
 
 	for( unsigned int i= 0u; i < if_operator.branches_.size(); i++ )
 	{
@@ -3031,8 +3036,6 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildIfOperatorCode(
 		else
 		{
 			function_context.variables_state= conditions_variable_state;
-			function_context.variables_state.ActivateLocks();
-			conditions_variable_state.DeactivateLocks();
 			{
 				const StackVariablesStorage temp_variables_storage( function_context );
 				const Variable condition_expression= BuildExpressionCodeEnsureVariable( *branch.condition, names, function_context );
@@ -3056,7 +3059,6 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildIfOperatorCode(
 				}
 			}
 			conditions_variable_state= function_context.variables_state;
-			conditions_variable_state.DeactivateLocks();
 		}
 
 		// Make body block code.
@@ -3072,9 +3074,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildIfOperatorCode(
 		function_context.llvm_ir_builder.CreateBr( block_after_if );
 
 		bracnhes_variables_state[i]= function_context.variables_state;
-		bracnhes_variables_state[i].DeactivateLocks();
 		function_context.variables_state= conditions_variable_state;
-		function_context.variables_state.ActivateLocks();
 	}
 
 	U_ASSERT( next_condition_block == block_after_if );
@@ -3089,9 +3089,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildIfOperatorCode(
 	}
 
 	function_context.variables_state= MergeVariablesStateAfterIf( bracnhes_variables_state, if_operator.end_file_pos_ );
-	function_context.variables_state.ActivateLocks();
-	for( const auto& var_pair : function_context.variables_state.GetVariables() )
-		CheckVariableReferences( *var_pair.first, if_operator.end_file_pos_ );
+	//for( const auto& var_pair : function_context.variables_state.GetVariables() )
+	//	CheckVariableReferences( *var_pair.first, if_operator.end_file_pos_ );
 
 	// Block after if code.
 	function_context.function->getBasicBlockList().push_back( block_after_if );
@@ -3102,18 +3101,26 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildIfOperatorCode(
 	return if_operator_blocks_build_info;
 }
 
-void CodeBuilder::BuildStaticAssert( StaticAssert& static_assert_, NamesScope& names )
+void CodeBuilder::BuildStaticAssert( StaticAssert& static_assert_, NamesScope& names, FunctionContext& function_context )
 {
 	if( static_assert_.syntax_element == nullptr )
 		return;
 
-	BuildStaticAssert( *static_assert_.syntax_element, names );
+	BuildStaticAssert( *static_assert_.syntax_element, names, function_context );
 	static_assert_.syntax_element= nullptr;
 }
 
-void CodeBuilder::BuildStaticAssert( const Synt::StaticAssert& static_assert_, NamesScope& names )
+void CodeBuilder::BuildStaticAssert( const Synt::StaticAssert& static_assert_, NamesScope& names, FunctionContext& function_context )
 {
-	const Variable variable= BuildExpressionCodeEnsureVariable( *static_assert_.expression, names, *dummy_function_context_ );
+	// Destruction frame for temporary variables of static assert expression.
+	const StackVariablesStorage temp_variables_storage( function_context );
+
+	const Variable variable= BuildExpressionCodeEnsureVariable( *static_assert_.expression, names, function_context );
+
+	// Destruct temporary variables of right and left expressions.
+	// In non-error case, this call produces no code.
+	CallDestructors( *function_context.stack_variables_stack.back(), function_context, static_assert_.file_pos_ );
+
 	if( variable.type != bool_type_ )
 	{
 		errors_.push_back( ReportStaticAssertExpressionMustHaveBoolType( static_assert_.file_pos_ ) );
@@ -3567,6 +3574,42 @@ void CodeBuilder::SetupGeneratedFunctionLinkageAttributes( llvm::Function& funct
 	llvm::Comdat* const comdat= module_->getOrInsertComdat( function.getName() );
 	comdat->setSelectionKind( llvm::Comdat::Any ); // Actually, we needs something, like ExactMatch, but it works not in all cases.
 	function.setComdat( comdat );
+}
+
+CodeBuilder::InstructionsState CodeBuilder::SaveInstructionsState( FunctionContext& function_context )
+{
+	InstructionsState result;
+	result.variables_state= function_context.variables_state;
+	result.current_block_instruction_count= function_context.llvm_ir_builder.GetInsertBlock()->size();
+	result.alloca_block_instructin_count= function_context.alloca_ir_builder.GetInsertBlock()->size();
+	result.block_count= function_context.function->getBasicBlockList().size();
+	return result;
+}
+
+void CodeBuilder::RestoreInstructionsState(
+	FunctionContext& function_context,
+	const InstructionsState& state )
+{
+	function_context.variables_state= state.variables_state;
+
+	// Remove instructions of some operations, that must be discarded.
+
+	auto& bb_list= function_context.function->getBasicBlockList();
+	while( bb_list.size() > state.block_count )
+	{
+		for( const auto use : bb_list.back().users() )
+			use->dropAllReferences();
+		bb_list.pop_back();
+	}
+
+	auto& inst_list= bb_list.back().getInstList();
+	while( inst_list.size() > state.current_block_instruction_count )
+		inst_list.pop_back();
+	function_context.llvm_ir_builder.SetInsertPoint( &bb_list.back(), bb_list.back().end() );
+
+	while( function_context.alloca_basic_block->getInstList().size() > state.alloca_block_instructin_count )
+		function_context.alloca_basic_block->getInstList().pop_back();
+	function_context.alloca_ir_builder.SetInsertPoint( function_context.alloca_basic_block, function_context.alloca_basic_block->end() );
 }
 
 } // namespace CodeBuilderLLVMPrivate

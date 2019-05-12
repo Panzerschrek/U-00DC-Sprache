@@ -222,8 +222,6 @@ const char* CodeBuilderErrorCodeToString( const CodeBuilderErrorCode code )
 		return "ReferenceProtectionError";
 	case CodeBuilderErrorCode::DestroyedVariableStillHaveReferences:
 		return "DestroyedVariableStillHaveReferences";
-	case CodeBuilderErrorCode::AccessingVariableThatHaveMutableReference:
-		return "AccessingVariableThatHaveMutableReference";
 	case CodeBuilderErrorCode::AccessingMovedVariable:
 		return "AccessingMovedVariable";
 	case CodeBuilderErrorCode::ReturningUnallowedReference:
@@ -250,6 +248,8 @@ const char* CodeBuilderErrorCodeToString( const CodeBuilderErrorCode code )
 		return "ExplicitReferencePollutionForCopyConstructor";
 	case CodeBuilderErrorCode::ExplicitReferencePollutionForCopyAssignmentOperator:
 		return "ExplicitReferencePollutionForCopyAssignmentOperator";
+	case CodeBuilderErrorCode::ReferenceFiledOfTypeWithReferencesInside:
+		return "ReferenceFiledOfTypeWithReferencesInside";
 	case CodeBuilderErrorCode::OperatorDeclarationOutsideClass:
 		return "OperatorDeclarationOutsideClass";
 	case CodeBuilderErrorCode::OperatorDoesNotHaveParentClassArguments:
@@ -1448,17 +1448,6 @@ CodeBuilderError ReportDestroyedVariableStillHaveReferences( const FilePos& file
 	return error;
 }
 
-CodeBuilderError ReportAccessingVariableThatHaveMutableReference( const FilePos& file_pos, const ProgramString& var_name )
-{
-	CodeBuilderError error;
-	error.file_pos= file_pos;
-	error.code= CodeBuilderErrorCode::AccessingVariableThatHaveMutableReference;
-
-	error.text= "Accessing variable \""_SpC + var_name + "\", that have mutable reference."_SpC;
-
-	return error;
-}
-
 CodeBuilderError ReportAccessingMovedVariable( const FilePos& file_pos, const ProgramString& var_name )
 {
 	CodeBuilderError error;
@@ -1600,6 +1589,17 @@ CodeBuilderError ReportExplicitReferencePollutionForCopyAssignmentOperator( cons
 	error.code= CodeBuilderErrorCode::ExplicitReferencePollutionForCopyAssignmentOperator;
 
 	error.text= "Explicit reference pollution for copy assignment operator. Reference pollution for copy assignment operators generated automatically."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportReferenceFiledOfTypeWithReferencesInside( const FilePos& file_pos, const ProgramString& field_name )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::ReferenceFiledOfTypeWithReferencesInside;
+
+	error.text= "Reference filed \""_SpC + field_name + "\" have type, with other references inside."_SpC;
 
 	return error;
 }

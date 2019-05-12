@@ -17,7 +17,7 @@ U_TEST( BasicReferenceInVariableCheck )
 	)";
 
 	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::AccessingVariableThatHaveMutableReference, 7u ) );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ReferenceProtectionError, 7u ) );
 }
 
 U_TEST( DestructionOfVariableWithReferenceDestroysReference )
@@ -86,7 +86,7 @@ U_TEST( LockVariableMultipleTimesInSameStruct_Test1 )
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::AccessingVariableThatHaveMutableReference );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferenceProtectionError );
 	U_TEST_ASSERT( error.file_pos.line == 11u );
 }
 
@@ -112,7 +112,7 @@ U_TEST( LockVariableMultipleTimesInSameStruct_Test2 )
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::AccessingVariableThatHaveMutableReference );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferenceProtectionError );
 	U_TEST_ASSERT( error.file_pos.line == 11u );
 }
 
@@ -288,7 +288,8 @@ U_TEST( GetReturnedReferencePassedThroughArgument_Test0 )
 		{
 			var i32 mut x= 0;
 			var S s{ .x= x };
-			auto &mut r0= Foo( s ); // Error, r0 contains second mutable reference
+			auto &mut r0= Foo( s );
+			++s.x; // Error, reference to 'x' inside 's' is not terminal.
 		}
 	)";
 
@@ -298,7 +299,7 @@ U_TEST( GetReturnedReferencePassedThroughArgument_Test0 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferenceProtectionError );
-	U_TEST_ASSERT( error.file_pos.line == 12u );
+	U_TEST_ASSERT( error.file_pos.line == 13u );
 }
 
 U_TEST( GetReturnedReferencePassedThroughArgument_Test1 )
@@ -349,7 +350,8 @@ U_TEST( ReturnStructWithReferenceFromFunction_Test0 )
 		{
 			var i32 mut x= 0;
 			auto &mut r0= x;
-			auto &mut r1= ToRef( r0 ).r; // Error, reference, inside struct, refers to "x", but there is reference "r0" on stack.
+			auto &mut r1= ToRef( r0 ).r;
+			--r0; // Error, reference to 'x' inside 's' is not terminal.
 		}
 	)";
 
@@ -359,7 +361,7 @@ U_TEST( ReturnStructWithReferenceFromFunction_Test0 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferenceProtectionError );
-	U_TEST_ASSERT( error.file_pos.line == 14u );
+	U_TEST_ASSERT( error.file_pos.line == 15u );
 }
 
 U_TEST( ReturnStructWithReferenceFromFunction_Test1 )
@@ -421,17 +423,6 @@ U_TEST( TwoLevelsOfIndirection_Test0 )
 	R"(
 		struct A{ i32 &mut x; }
 		struct B{ A   &imut x; }
-
-		fn Baz( i32 &mut x, i32 &mut y ){}
-
-		fn Foo()
-		{
-			var i32 mut x= 0;
-			var A a{ .x= x };
-			var B b{ .x= a };
-
-			Baz( a.x, b.x.x ); // Error, both argument references refers to "x".
-		}
 	)";
 
 	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
@@ -439,8 +430,8 @@ U_TEST( TwoLevelsOfIndirection_Test0 )
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferenceProtectionError );
-	U_TEST_ASSERT( error.file_pos.line == 13u );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferenceFiledOfTypeWithReferencesInside );
+	U_TEST_ASSERT( error.file_pos.line == 3u );
 }
 
 U_TEST( TwoLevelsOfIndirection_Test1 )
@@ -449,21 +440,6 @@ U_TEST( TwoLevelsOfIndirection_Test1 )
 	R"(
 		struct A{ i32 &mut x; }
 		struct B{ A   &imut x; }
-
-		fn Extract( B & b'x' ) : i32 &'x mut
-		{
-			return b.x.x;
-		}
-		fn Baz( i32 &mut x, i32 &mut y ){}
-
-		fn Foo()
-		{
-			var i32 mut x= 0;
-			var A a{ .x= x };
-			var B b{ .x= a };
-
-			Baz( Extract(b), a.x ); // Error, both argument references refers to "x".
-		}
 	)";
 
 	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
@@ -471,75 +447,8 @@ U_TEST( TwoLevelsOfIndirection_Test1 )
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferenceProtectionError );
-	U_TEST_ASSERT( error.file_pos.line == 17u );
-}
-
-U_TEST( ThreeLevelsOfIndirection_Test0 )
-{
-	static const char c_program_text[]=
-	R"(
-		struct A{ i32 &mut x; }
-		struct B{ A   &imut x; }
-		struct C{ B   &imut x; }
-
-		fn Extract( C & c'x' ) : i32 &'x mut
-		{
-			return c.x.x.x;
-		}
-		fn Baz( i32 &mut x, i32 &mut y ){}
-
-		fn Foo()
-		{
-			var i32 mut x= 0;
-			var A a{ .x= x };
-			var B b{ .x= a };
-			var C c{ .x= b };
-
-			Baz( a.x, Extract(c) ); // Error, both argument references refers to "x".
-		}
-	)";
-
-	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
-
-	U_TEST_ASSERT( !build_result.errors.empty() );
-	const CodeBuilderError& error= build_result.errors.front();
-
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferenceProtectionError );
-	U_TEST_ASSERT( error.file_pos.line == 19u );
-}
-
-U_TEST( ThreeLevelsOfIndirection_Test1 )
-{
-	static const char c_program_text[]=
-	R"(
-		struct A{ i32 &mut x; }
-		struct B{ A   &imut x; }
-		struct C{ B   &imut x; }
-
-		fn Extract( C & c'x' ) : i32 &'x mut
-		{
-			return c.x.x.x;
-		}
-
-		fn Foo()
-		{
-			var i32 mut x= 0;
-			var A a{ .x= x };
-			var B b{ .x= a };
-			var C c{ .x= b };
-
-			auto &imut ref= Extract(c); // error, 'ref' contains reference to 'x', while mutable reference inside 'a' exists.
-		}
-	)";
-
-	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
-
-	U_TEST_ASSERT( !build_result.errors.empty() );
-	const CodeBuilderError& error= build_result.errors.front();
-
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferenceProtectionError );
-	U_TEST_ASSERT( error.file_pos.line == 18u );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferenceFiledOfTypeWithReferencesInside );
+	U_TEST_ASSERT( error.file_pos.line == 3u );
 }
 
 U_TEST( ReferencePollutionTest0 )
@@ -657,7 +566,7 @@ U_TEST( ConstructorLinksPassedReference_Test0 )
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::AccessingVariableThatHaveMutableReference );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferenceProtectionError );
 	U_TEST_ASSERT( error.file_pos.line == 14u );
 }
 
@@ -917,11 +826,11 @@ U_TEST( ReferencePollutionErrorsTest_UnallowedReferencePollution_Test1 )
 
 	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_TEST_ASSERT( build_result.errors.size() >= 2u );
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
 
-	U_TEST_ASSERT( build_result.errors[0].code == CodeBuilderErrorCode::DestroyedVariableStillHaveReferences );
-	U_TEST_ASSERT( build_result.errors[1].code == CodeBuilderErrorCode::UnallowedReferencePollution );
-	U_TEST_ASSERT( build_result.errors[1].file_pos.line == 10u );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::DestroyedVariableStillHaveReferences );
+	U_TEST_ASSERT( error.file_pos.line == 10u );
 }
 
 U_TEST( ReferencePollutionErrorsTest_UnallowedReferencePollution_Test2 )
@@ -949,30 +858,6 @@ U_TEST( ReferencePollutionErrorsTest_UnallowedReferencePollution_Test2 )
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::UnallowedReferencePollution );
 	U_TEST_ASSERT( error.file_pos.line == 12u );
-}
-
-U_TEST( ReferencePollutionErrorsTest_ReferencePollutionForArgReference_Test0 )
-{
-	static const char c_program_text[]=
-	R"(
-		struct S{ i32 &imut x; }
-		struct P{ S &mut x; }
-		fn FakePollution( S &mut s'x', i32 &'y i ) ' x <- y ' // reference pollution allowed in signature, but actually not happens.
-		{}
-
-		fn Foo( P &mut p'x', i32 &'y r )
-		{
-			FakePollution( p.x, r );
-		} // Error, pollution of "p" with "r", which is not allowed.
-	)";
-
-	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
-
-	U_TEST_ASSERT( !build_result.errors.empty() );
-	const CodeBuilderError& error= build_result.errors.front();
-
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferencePollutionForArgReference );
-	U_TEST_ASSERT( error.file_pos.line == 9u );
 }
 
 U_TEST( ReferencePollutionErrorsTest_ExplicitReferencePollutionForCopyConstructor )

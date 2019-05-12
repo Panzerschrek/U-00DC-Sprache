@@ -33,6 +33,10 @@ ProgramString ToProgramString( const char* str )
 	return result;
 }
 
+ProgramString ToProgramString( const std::string& str )
+{
+	return ToProgramString( str.c_str() );
+}
 
 size_t GetUTF8CharBytes( const sprache_char c )
 {

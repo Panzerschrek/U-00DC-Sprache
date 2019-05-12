@@ -51,7 +51,9 @@ def main():
 		"static_if_test",
 		"uninitialized_initializer_test",
 		"unsafe_test",
-		"virtual_functions_test" ]
+		"virtual_functions_test",
+		"references_graph_test"
+		]
 
 	tests_list= GetTestsList( tests_modules_list )
 
