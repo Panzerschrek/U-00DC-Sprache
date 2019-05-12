@@ -635,7 +635,7 @@ llvm::Constant* CodeBuilder::ApplyExpressionInitializer(
 
 		const ReferencesGraphNodePtr& src_node= expression_result.node;
 		const ReferencesGraphNodePtr& dst_node= variable.node;
-		if( src_node != nullptr && dst_node != nullptr )
+		if( src_node != nullptr && dst_node != nullptr && variable.type.ReferencesTagsCount() > 0u )
 		{
 			const auto src_node_inner_references= function_context.variables_state.GetAllAccessibleInnerNodes_r( src_node );
 			if( !src_node_inner_references.empty() )
