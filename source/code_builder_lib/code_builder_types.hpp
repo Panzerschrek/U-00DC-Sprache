@@ -312,7 +312,7 @@ struct Variable final
 	// Undef, if value is template-dependent.
 	llvm::Constant* constexpr_value= nullptr;
 
-	std::unordered_set<ReferencesGraphNodePtr> references; // TODO - make single reference, not set?
+	ReferencesGraphNodePtr node; // May be null for global variables.
 
 	Variable()= default;
 	Variable(Type in_type,

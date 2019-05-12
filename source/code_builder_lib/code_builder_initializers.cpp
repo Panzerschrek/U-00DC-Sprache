@@ -545,16 +545,19 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 			const Variable initializer_variable= BuildExpressionCodeEnsureVariable( *call_operator.arguments_.front(), block_names, function_context );
 			CopyBytes( initializer_variable.llvm_value, variable.llvm_value, variable.type, function_context );
 
-			const ReferencesGraphNodePtr& src_node= *initializer_variable.references.begin();
-			const ReferencesGraphNodePtr& dst_node= *variable.references.begin();
-			U_ASSERT( src_node->kind == ReferencesGraphNode::Kind::Variable );
-			if( const auto moved_node_inner_reference= function_context.variables_state.GetNodeInnerReference( src_node ) )
+			const ReferencesGraphNodePtr& src_node= initializer_variable.node;
+			const ReferencesGraphNodePtr& dst_node= variable.node;
+			if( src_node != nullptr && dst_node != nullptr )
 			{
-				const auto inner_reference_copy= std::make_shared<ReferencesGraphNode>( dst_node->name + " inner variable"_SpC, moved_node_inner_reference->kind );
-				function_context.variables_state.SetNodeInnerReference( dst_node, inner_reference_copy );
-				function_context.variables_state.AddLink( moved_node_inner_reference, inner_reference_copy );
+				U_ASSERT( src_node->kind == ReferencesGraphNode::Kind::Variable );
+				if( const auto moved_node_inner_reference= function_context.variables_state.GetNodeInnerReference( src_node ) )
+				{
+					const auto inner_reference_copy= std::make_shared<ReferencesGraphNode>( dst_node->name + " inner variable"_SpC, moved_node_inner_reference->kind );
+					function_context.variables_state.SetNodeInnerReference( dst_node, inner_reference_copy );
+					function_context.variables_state.AddLink( moved_node_inner_reference, inner_reference_copy );
+				}
+				function_context.variables_state.MoveNode( src_node );
 			}
-			function_context.variables_state.MoveNode( src_node );
 
 			return initializer_variable.constexpr_value; // Move can preserve constexpr.
 		}
@@ -630,27 +633,33 @@ llvm::Constant* CodeBuilder::ApplyExpressionInitializer(
 			return nullptr;
 		}
 
-		const ReferencesGraphNodePtr& src_node= *expression_result.references.begin();
-		const ReferencesGraphNodePtr& dst_node= *variable.references.begin();
-		const auto src_node_inner_references= function_context.variables_state.GetAllAccessibleInnerNodes_r( src_node );
-		if( !src_node_inner_references.empty() )
+		const ReferencesGraphNodePtr& src_node= expression_result.node;
+		const ReferencesGraphNodePtr& dst_node= variable.node;
+		if( src_node != nullptr && dst_node != nullptr )
 		{
-			bool node_is_mutable= false;
-			for( const ReferencesGraphNodePtr& src_node_inner_reference : src_node_inner_references )
-				node_is_mutable= node_is_mutable || src_node_inner_reference->kind == ReferencesGraphNode::Kind::ReferenceMut;
+			const auto src_node_inner_references= function_context.variables_state.GetAllAccessibleInnerNodes_r( src_node );
+			if( !src_node_inner_references.empty() )
+			{
+				bool node_is_mutable= false;
+				for( const ReferencesGraphNodePtr& src_node_inner_reference : src_node_inner_references )
+					node_is_mutable= node_is_mutable || src_node_inner_reference->kind == ReferencesGraphNode::Kind::ReferenceMut;
 
-			const auto dst_node_inner_reference= std::make_shared<ReferencesGraphNode>( dst_node->name + " inner variable"_SpC, node_is_mutable ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut );
-			function_context.variables_state.SetNodeInnerReference( dst_node, dst_node_inner_reference );
-			for( const ReferencesGraphNodePtr& src_node_inner_reference : src_node_inner_references )
-				function_context.variables_state.AddLink( src_node_inner_reference, dst_node_inner_reference );
+				const auto dst_node_inner_reference= std::make_shared<ReferencesGraphNode>( dst_node->name + " inner variable"_SpC, node_is_mutable ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut );
+				function_context.variables_state.SetNodeInnerReference( dst_node, dst_node_inner_reference );
+				for( const ReferencesGraphNodePtr& src_node_inner_reference : src_node_inner_references )
+					function_context.variables_state.AddLink( src_node_inner_reference, dst_node_inner_reference );
+			}
 		}
 
 		// Move or try call copy constructor.
 		// TODO - produce constant initializer for generated copy constructor, if source is constant.
 		if( expression_result.value_type == ValueType::Value && expression_result.type == variable.type )
 		{
-			U_ASSERT( src_node->kind == ReferencesGraphNode::Kind::Variable );
-			function_context.variables_state.MoveNode( src_node );
+			if( src_node != nullptr )
+			{
+				U_ASSERT( src_node->kind == ReferencesGraphNode::Kind::Variable );
+				function_context.variables_state.MoveNode( src_node );
+			}
 			CopyBytes( expression_result.llvm_value, variable.llvm_value, variable.type, function_context );
 
 			DestroyUnusedTemporaryVariables( function_context, initializer.file_pos_ );
@@ -895,33 +904,33 @@ llvm::Constant* CodeBuilder::InitializeReferenceField(
 	}
 
 	// Check references.
-	for( const ReferencesGraphNodePtr& src_node : initializer_variable.references )
+	const ReferencesGraphNodePtr& src_node= initializer_variable.node;
+	const ReferencesGraphNodePtr& dst_node= variable.node;
+	if( src_node != nullptr && dst_node != nullptr )
 	{
 		if( ( field.is_mutable && function_context.variables_state.HaveOutgoingLinks( src_node ) ) ||
 			(!field.is_mutable && function_context.variables_state.HaveOutgoingMutableNodes( src_node ) ) )
 		{
 			errors_.push_back( ReportReferenceProtectionError( initializer.GetFilePos(), src_node->name ) );
-			continue;
+			return nullptr;
 		}
-		for( const ReferencesGraphNodePtr& dst_node : variable.references )
+
+		ReferencesGraphNodePtr inner_reference= function_context.variables_state.GetNodeInnerReference( dst_node );
+		if( inner_reference == nullptr )
 		{
-			ReferencesGraphNodePtr inner_reference= function_context.variables_state.GetNodeInnerReference( dst_node );
-			if( inner_reference == nullptr )
-			{
-				inner_reference= std::make_shared<ReferencesGraphNode>( dst_node->name + "/inner_variable"_SpC, field.is_mutable ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut );
-				function_context.variables_state.SetNodeInnerReference( dst_node, inner_reference );
-			}
-			else
-			{
-				if( inner_reference->kind == ReferencesGraphNode::Kind::ReferenceImut && field.is_mutable )
-				{
-					// TODO - make separate error.
-					errors_.push_back( ReportNotImplemented( initializer.GetFilePos(), "inner reference mutability changing" ) );
-					continue;
-				}
-			}
-			function_context.variables_state.AddLink( src_node, inner_reference );
+			inner_reference= std::make_shared<ReferencesGraphNode>( dst_node->name + "/inner_variable"_SpC, field.is_mutable ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut );
+			function_context.variables_state.SetNodeInnerReference( dst_node, inner_reference );
 		}
+		else
+		{
+			if( inner_reference->kind == ReferencesGraphNode::Kind::ReferenceImut && field.is_mutable )
+			{
+				// TODO - make separate error.
+				errors_.push_back( ReportNotImplemented( initializer.GetFilePos(), "inner reference mutability changing" ) );
+				return nullptr;
+			}
+		}
+		function_context.variables_state.AddLink( src_node, inner_reference );
 	}
 
 	// Make first index = 0 for array to pointer conversion.

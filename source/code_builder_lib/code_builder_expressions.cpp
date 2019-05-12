@@ -110,16 +110,19 @@ boost::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 				CallDestructor( l_var_real.llvm_value, l_var_real.type, function_context, file_pos );
 			CopyBytes( r_var_real.llvm_value, l_var_real.llvm_value, l_var_real.type, function_context );
 
-			const ReferencesGraphNodePtr& src_node= *r_var_real.references.begin();
-			const ReferencesGraphNodePtr& dst_node= *l_var_real.references.begin();
-			U_ASSERT( src_node->kind == ReferencesGraphNode::Kind::Variable );
-			if( const auto src_node_inner_reference= function_context.variables_state.GetNodeInnerReference( src_node ) )
+			const ReferencesGraphNodePtr& src_node= r_var_real.node;
+			const ReferencesGraphNodePtr& dst_node= l_var_real.node;
+			if( src_node != nullptr && dst_node != nullptr )
 			{
-				const auto inner_reference_copy= std::make_shared<ReferencesGraphNode>( dst_node->name + " inner variable"_SpC, src_node_inner_reference->kind );
-				function_context.variables_state.SetNodeInnerReference( dst_node, inner_reference_copy );
-				function_context.variables_state.AddLink( src_node_inner_reference, inner_reference_copy );
+				U_ASSERT( src_node->kind == ReferencesGraphNode::Kind::Variable );
+				if( const auto src_node_inner_reference= function_context.variables_state.GetNodeInnerReference( src_node ) )
+				{
+					const auto inner_reference_copy= std::make_shared<ReferencesGraphNode>( dst_node->name + " inner variable"_SpC, src_node_inner_reference->kind );
+					function_context.variables_state.SetNodeInnerReference( dst_node, inner_reference_copy );
+					function_context.variables_state.AddLink( src_node_inner_reference, inner_reference_copy );
+				}
+				function_context.variables_state.MoveNode( src_node );
 			}
-			function_context.variables_state.MoveNode( src_node );
 
 			Variable move_result;
 			move_result.type= void_type_;
@@ -946,7 +949,7 @@ Value CodeBuilder::BuildBinaryOperator(
 
 	const auto node= std::make_shared<ReferencesGraphNode>( BinaryOperatorToString(binary_operator), ReferencesGraphNode::Kind::Variable );
 	function_context.stack_variables_stack.back()->RegisterVariable( std::make_pair( node, result ) );
-	result.references.insert(node);
+	result.node= node;
 	return Value( result, file_pos );
 }
 
@@ -1031,7 +1034,7 @@ Value CodeBuilder::BuildLazyBinaryOperator(
 
 	const auto node= std::make_shared<ReferencesGraphNode>( BinaryOperatorToString(binary_operator.operator_type_), ReferencesGraphNode::Kind::Variable );
 	function_context.stack_variables_stack.back()->RegisterVariable( std::make_pair( node, result ) );
-	result.references.emplace( node );
+	result.node= node;
 	return Value( result, file_pos );
 }
 
@@ -1066,7 +1069,7 @@ Value CodeBuilder::DoReferenceCast(
 	result.type= type;
 	result.value_type= var.value_type == ValueType::Reference ? ValueType::Reference : ValueType::ConstReference; // "ValueType" here converts inot ConstReference.
 	result.location= Variable::Location::Pointer;
-	result.references= var.references;
+	result.node= var.node;
 
 	llvm::Value* src_value= var.llvm_value;
 	if( var.location == Variable::Location::LLVMRegister )
@@ -1250,7 +1253,7 @@ Value CodeBuilder::BuildNamedOperand(
 		field_variable.type= field->type;
 		field_variable.location= Variable::Location::Pointer;
 		field_variable.value_type= ( function_context.this_->value_type == ValueType::Reference && field->is_mutable ) ? ValueType::Reference : ValueType::ConstReference;
-		field_variable.references= function_context.this_->references;
+		field_variable.node= function_context.this_->node;
 
 		index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(field->index) ) );
 		field_variable.llvm_value=
@@ -1261,14 +1264,20 @@ Value CodeBuilder::BuildNamedOperand(
 			field_variable.value_type= field->is_mutable ? ValueType::Reference : ValueType::ConstReference;
 			field_variable.llvm_value= function_context.llvm_ir_builder.CreateLoad( field_variable.llvm_value );
 
-			field_variable.references.clear();
-			/*
-			for( const StoredVariablePtr& struct_variable : function_context.this_->references )
+			if( function_context.this_->node != nullptr )
 			{
-				for( const auto& referenced_variable_pair : function_context.variables_state.GetVariableReferences( struct_variable ) )
-					field_variable.references.insert( referenced_variable_pair.first );
+				const auto field_node= std::make_shared<ReferencesGraphNode>( "this."_SpC + name_entry->first, field->is_mutable ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut );
+				function_context.stack_variables_stack.back()->RegisterVariable( std::make_pair( field_node, field_variable ) );
+				field_variable.node= field_node;
+				for( const ReferencesGraphNodePtr& node : function_context.variables_state.GetAllAccessibleInnerNodes_r( function_context.this_->node ) )
+				{
+					if( (  field->is_mutable && function_context.variables_state.HaveOutgoingLinks( node ) ) ||
+						( !field->is_mutable && function_context.variables_state.HaveOutgoingMutableNodes( node ) ) )
+						errors_.push_back( ReportReferenceProtectionError( named_operand.file_pos_, node->name ) );
+					else
+						function_context.variables_state.AddLink( node, field_node );
+				}
 			}
-			*/
 		}
 
 		return Value( field_variable, named_operand.file_pos_ );
@@ -1299,11 +1308,8 @@ Value CodeBuilder::BuildNamedOperand(
 	}
 	else if( const Variable* const variable= name_entry->second.GetVariable() )
 	{
-		for( const ReferencesGraphNodePtr& node : variable->references )
-		{
-			if( function_context.variables_state.NodeMoved( node ) )
-				errors_.push_back( ReportAccessingMovedVariable( named_operand.file_pos_, node->name ) );
-		}
+		if( variable->node != nullptr && function_context.variables_state.NodeMoved( variable->node ) )
+			errors_.push_back( ReportAccessingMovedVariable( named_operand.file_pos_, variable->node->name ) );
 	}
 
 	return name_entry->second;
@@ -1324,13 +1330,13 @@ Value CodeBuilder::BuildMoveOpeator( const Synt::MoveOperator& move_operator, Na
 	}
 	const Variable* const variable_for_move= resolved_name->second.GetVariable();
 	if( variable_for_move == nullptr ||
-		variable_for_move->references.empty() ||
-		(*variable_for_move->references.begin())->kind != ReferencesGraphNode::Kind::Variable )
+		variable_for_move->node == nullptr ||
+		variable_for_move->node->kind != ReferencesGraphNode::Kind::Variable )
 	{
 		errors_.push_back( ReportExpectedVariable( move_operator.file_pos_, resolved_name->second.GetKindName() ) );
 		return ErrorValue();
 	}
-	const ReferencesGraphNodePtr& node= (*variable_for_move->references.begin());
+	const ReferencesGraphNodePtr& node= variable_for_move->node;
 
 	bool found_in_variables= false;
 	for( const auto& stack_frame : function_context.stack_variables_stack )
@@ -1372,10 +1378,9 @@ Value CodeBuilder::BuildMoveOpeator( const Synt::MoveOperator& move_operator, Na
 
 	Variable content= *variable_for_move;
 	content.value_type= ValueType::Value;
-	content.references.clear();
 
 	const ReferencesGraphNodePtr moved_result= std::make_shared<ReferencesGraphNode>( "_moved_"_SpC + node->name, ReferencesGraphNode::Kind::Variable );
-	content.references.emplace( moved_result );
+	content.node= moved_result;
 	function_context.stack_variables_stack.back()->RegisterVariable( std::make_pair( moved_result, content ) );
 
 	// We must save inner references of moved variable.
@@ -1420,7 +1425,7 @@ Value CodeBuilder::BuildNumericConstant(
 
 	const ReferencesGraphNodePtr node= std::make_shared<ReferencesGraphNode>( ToProgramString( "numeric constant " + std::to_string(numeric_constant.value_) ), ReferencesGraphNode::Kind::Variable );
 	function_context.stack_variables_stack.back()->RegisterVariable( std::make_pair( node, result ) );
-	result.references.emplace( node );
+	result.node= node;
 	return Value( result, numeric_constant.file_pos_ );
 }
 
@@ -1544,7 +1549,7 @@ Variable CodeBuilder::BuildBooleanConstant(
 
 	const ReferencesGraphNodePtr node= std::make_shared<ReferencesGraphNode>( Keyword( boolean_constant.value_ ? Keywords::true_ : Keywords::false_ ), ReferencesGraphNode::Kind::Variable );
 	function_context.stack_variables_stack.back()->RegisterVariable( std::make_pair( node, result ) );
-	result.references.emplace( node );
+	result.node= node;
 	return result;
 }
 
@@ -1632,8 +1637,8 @@ Value CodeBuilder::BuildIndexationOperator(
 	const ReferencesGraphNodeHolder array_lock(
 		std::make_shared<ReferencesGraphNode>( "array lock"_SpC, variable.value_type == ValueType::Reference ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut ),
 		function_context );
-	for( const ReferencesGraphNodePtr& node : variable.references )
-		function_context.variables_state.AddLink( node, array_lock.Node() );
+	if( variable.node != nullptr )
+		function_context.variables_state.AddLink( variable.node, array_lock.Node() );
 
 	const Variable index= BuildExpressionCodeEnsureVariable( *indexation_operator.index_, names, function_context );
 
@@ -1662,7 +1667,7 @@ Value CodeBuilder::BuildIndexationOperator(
 	Variable result;
 	result.location= Variable::Location::Pointer;
 	result.value_type= variable.value_type == ValueType::Reference ? ValueType::Reference : ValueType::ConstReference;
-	result.references= variable.references;
+	result.node= variable.node;
 	result.type= array_type->type;
 
 	if( variable.constexpr_value != nullptr && index.constexpr_value != nullptr )
@@ -1822,7 +1827,7 @@ Value CodeBuilder::BuildMemberAccessOperator(
 	Variable result;
 	result.location= Variable::Location::Pointer;
 	result.value_type= ( variable.value_type == ValueType::Reference && field->is_mutable ) ? ValueType::Reference : ValueType::ConstReference;
-	result.references= variable.references;
+	result.node= variable.node;
 	result.type= field->type;
 	result.llvm_value=
 		function_context.llvm_ir_builder.CreateGEP( actual_field_class_ptr, index_list );
@@ -1856,10 +1861,20 @@ Value CodeBuilder::BuildMemberAccessOperator(
 		result.value_type= field->is_mutable ? ValueType::Reference : ValueType::ConstReference;
 		result.llvm_value= function_context.llvm_ir_builder.CreateLoad( result.llvm_value );
 
-		result.references.clear();
-		for( const ReferencesGraphNodePtr& node : variable.references )
-			for( const ReferencesGraphNodePtr& inner_reference : function_context.variables_state.GetAllAccessibleInnerNodes_r( node ) )
-				result.references.insert( inner_reference );
+		if( variable.node != nullptr )
+		{
+			const auto field_node= std::make_shared<ReferencesGraphNode>( "this."_SpC + member_access_operator.member_name_, field->is_mutable ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut );
+			function_context.stack_variables_stack.back()->RegisterVariable( std::make_pair( field_node, result ) );
+			result.node= field_node;
+			for( const ReferencesGraphNodePtr& inner_reference : function_context.variables_state.GetAllAccessibleInnerNodes_r( variable.node ) )
+			{
+				if( (  field->is_mutable && function_context.variables_state.HaveOutgoingLinks( inner_reference ) ) ||
+					( !field->is_mutable && function_context.variables_state.HaveOutgoingMutableNodes( inner_reference ) ) )
+					errors_.push_back( ReportReferenceProtectionError( member_access_operator.file_pos_, inner_reference->name ) );
+				else
+					function_context.variables_state.AddLink( inner_reference, result.node );
+			}
+		}
 	}
 
 	return Value( result, member_access_operator.file_pos_ );
@@ -2111,12 +2126,12 @@ Value CodeBuilder::DoCallFunction(
 					std::make_shared<ReferencesGraphNode>( ToProgramString( "reference_arg_" + std::to_string(i) ), ReferencesGraphNode::Kind::ReferenceMut ),
 					function_context );
 				const auto& arg_node= locked_args_references.back().Node();
-				for( const ReferencesGraphNodePtr& arg_reference : expr.references )
+				if( expr.node != nullptr )
 				{
-					if( function_context.variables_state.HaveOutgoingLinks( arg_reference ) )
-						errors_.push_back( ReportReferenceProtectionError( file_pos, arg_reference->name ) );
+					if( function_context.variables_state.HaveOutgoingLinks( expr.node ) )
+						errors_.push_back( ReportReferenceProtectionError( file_pos, expr.node->name ) );
 					else
-						function_context.variables_state.AddLink( arg_reference, arg_node );
+						function_context.variables_state.AddLink( expr.node, arg_node );
 				}
 			}
 			else
@@ -2150,19 +2165,19 @@ Value CodeBuilder::DoCallFunction(
 					std::make_shared<ReferencesGraphNode>( ToProgramString( "reference_arg_" + std::to_string(i) ), ReferencesGraphNode::Kind::ReferenceImut ),
 					function_context );
 				const auto& arg_node= locked_args_references.back().Node();
-				for( const ReferencesGraphNodePtr& arg_reference : expr.references )
+				if( expr.node != nullptr )
 				{
-					if( function_context.variables_state.HaveOutgoingMutableNodes( arg_reference ) )
-						errors_.push_back( ReportReferenceProtectionError( file_pos, arg_reference->name ) );
+					if( function_context.variables_state.HaveOutgoingMutableNodes( expr.node ) )
+						errors_.push_back( ReportReferenceProtectionError( file_pos, expr.node->name ) );
 					else
-						function_context.variables_state.AddLink( arg_reference, arg_node );
+						function_context.variables_state.AddLink( expr.node, arg_node );
 				}
 			}
 
 			// Lock inner references.
-			for( const ReferencesGraphNodePtr& arg_reference : expr.references )
+			if( expr.node != nullptr )
 			{
-				if( const ReferencesGraphNodePtr inner_reference= function_context.variables_state.GetNodeInnerReference( arg_reference ) )
+				if( const ReferencesGraphNodePtr inner_reference= function_context.variables_state.GetNodeInnerReference( expr.node ) )
 				{
 					locked_args_inner_references.emplace_back(
 						std::make_shared<ReferencesGraphNode>( ToProgramString( "arg_lock_" + std::to_string(i) ), inner_reference->kind ),
@@ -2208,9 +2223,9 @@ Value CodeBuilder::DoCallFunction(
 				if( arg.type.ReferencesTagsCount() > 0u )
 				{
 					bool is_mutable= false;
-					for( const ReferencesGraphNodePtr& arg_reference : expr.references )
+					if( expr.node != nullptr )
 					{
-						if( const ReferencesGraphNodePtr inner_reference= function_context.variables_state.GetNodeInnerReference( arg_reference ) )
+						if( const ReferencesGraphNodePtr inner_reference= function_context.variables_state.GetNodeInnerReference( expr.node ) )
 							is_mutable= is_mutable || inner_reference->kind == ReferencesGraphNode::Kind::ReferenceMut;
 					}
 
@@ -2218,9 +2233,9 @@ Value CodeBuilder::DoCallFunction(
 					//locked_args_inner_references.emplace_back( value_arg_inner_node, function_context );
 					function_context.variables_state.SetNodeInnerReference( locked_args_references.back().Node(), value_arg_inner_node );
 
-					for( const ReferencesGraphNodePtr& arg_reference : expr.references )
+					if( expr.node != nullptr )
 					{
-						if( const ReferencesGraphNodePtr inner_reference= function_context.variables_state.GetNodeInnerReference( arg_reference ) )
+						if( const ReferencesGraphNodePtr inner_reference= function_context.variables_state.GetNodeInnerReference( expr.node ) )
 						{
 							if( inner_reference->kind == ReferencesGraphNode::Kind::ReferenceMut  && function_context.variables_state.HaveOutgoingLinks( inner_reference ) )
 								errors_.push_back( ReportReferenceProtectionError( file_pos, inner_reference->name ) );
@@ -2233,8 +2248,8 @@ Value CodeBuilder::DoCallFunction(
 				if( expr.value_type == ValueType::Value && expr.type == arg.type )
 				{
 					// Do not call copy constructors - just move.
-					U_ASSERT( expr.references.size() == 1u );
-					function_context.variables_state.MoveNode( *expr.references.begin() );
+					if( expr.node != nullptr )
+						function_context.variables_state.MoveNode( expr.node );
 					llvm_args[j]= expr.llvm_value;
 				}
 				else
@@ -2332,7 +2347,7 @@ Value CodeBuilder::DoCallFunction(
 		result_node= std::make_shared<ReferencesGraphNode>( "fn result"_SpC, ReferencesGraphNode::Kind::Variable );
 	}
 	function_context.stack_variables_stack.back()->RegisterVariable( std::make_pair( result_node, result ) );
-	result.references.emplace( result_node );
+	result.node= result_node;
 
 	// Prepare result references.
 	if( function_type.return_value_is_reference )
@@ -2493,13 +2508,12 @@ Variable CodeBuilder::BuildTempVariableConstruction(
 		std::make_shared<ReferencesGraphNode>( type.ToString() + " temp variable lock"_SpC, ReferencesGraphNode::Kind::ReferenceMut ),
 		function_context );
 	function_context.variables_state.AddLink( node, variable_lock.Node() );
-	variable.references.insert( variable_lock.Node() );
+	variable.node= variable_lock.Node();
 
 	variable.constexpr_value= ApplyConstructorInitializer( variable, call_operator, names, function_context );
 	variable.value_type= ValueType::Value; // Make value after construction
 
-	variable.references.clear();
-	variable.references.insert( node );
+	variable.node= node;
 
 	return variable;
 }
@@ -2531,14 +2545,14 @@ Variable CodeBuilder::ConvertVariable(
 	const ReferencesGraphNodeHolder src_variable_lock(
 		std::make_shared<ReferencesGraphNode>( variable.type.ToString() + " variable lock"_SpC, ReferencesGraphNode::Kind::ReferenceImut ),
 		function_context );
-	for( const auto& var : variable.references )
-		function_context.variables_state.AddLink( var, src_variable_lock.Node() );
+	if( variable.node != nullptr )
+		function_context.variables_state.AddLink( variable.node, src_variable_lock.Node() );
 
 	const ReferencesGraphNodeHolder dst_variable_lock(
 		std::make_shared<ReferencesGraphNode>( dst_type.ToString() + " variable lock"_SpC, ReferencesGraphNode::Kind::ReferenceMut ),
 		function_context );
 	function_context.variables_state.AddLink( node, dst_variable_lock.Node() );
-	result.references.insert( dst_variable_lock.Node() );
+	result.node= dst_variable_lock.Node();
 
 	DoCallFunction(
 		conversion_constructor.llvm_function,
@@ -2551,8 +2565,7 @@ Variable CodeBuilder::ConvertVariable(
 		function_context,
 		false );
 
-	result.references.clear();
-	result.references.insert( node );
+	result.node= node;
 
 	result.value_type= ValueType::Value; // Make value after construction
 	return result;
@@ -2609,7 +2622,7 @@ Value CodeBuilder::BuildUnaryMinus(
 
 	const auto node= std::make_shared<ReferencesGraphNode>( OverloadedOperatorToString(OverloadedOperator::Sub), ReferencesGraphNode::Kind::Variable );
 	function_context.stack_variables_stack.back()->RegisterVariable( std::make_pair( node, result ) );
-	result.references.emplace( node );
+	result.node= node;
 	return Value( result, unary_minus.file_pos_ );
 }
 
@@ -2647,7 +2660,7 @@ Value CodeBuilder::BuildLogicalNot(
 
 	const auto node= std::make_shared<ReferencesGraphNode>( OverloadedOperatorToString(OverloadedOperator::LogicalNot), ReferencesGraphNode::Kind::Variable );
 	function_context.stack_variables_stack.back()->RegisterVariable( std::make_pair( node, result ) );
-	result.references.emplace( node );
+	result.node= node;
 	return Value( result, logical_not.file_pos_ );
 }
 
@@ -2691,7 +2704,7 @@ Value CodeBuilder::BuildBitwiseNot(
 
 	const auto node= std::make_shared<ReferencesGraphNode>( OverloadedOperatorToString(OverloadedOperator::BitwiseNot), ReferencesGraphNode::Kind::Variable );
 	function_context.stack_variables_stack.back()->RegisterVariable( std::make_pair( node, result ) );
-	result.references.emplace( node );
+	result.node= node;
 	return Value( result, bitwise_not.file_pos_ );
 }
 

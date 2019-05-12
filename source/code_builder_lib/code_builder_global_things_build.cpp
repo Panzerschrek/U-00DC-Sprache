@@ -901,12 +901,6 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 				FAIL_RETURN;
 			}
 
-			variable.references= expression_result.references;
-
-			//for( const StoredVariablePtr& referenced_variable : variable.references )
-			//	function_context.variables_state.AddPollution( stored_variable, referenced_variable, false );
-			//CheckReferencedVariables( stored_variable->content, variable_declaration.file_pos );
-
 			// TODO - maybe make copy of varaible address in new llvm register?
 			llvm::Value* result_ref= expression_result.llvm_value;
 			if( variable.type != expression_result.type )
@@ -984,15 +978,9 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 
 			variable.llvm_value= initializer_experrsion.llvm_value;
 			variable.constexpr_value= initializer_experrsion.constexpr_value;
-
-			//for( const StoredVariablePtr& referenced_variable : variable.references )
-			//	function_context.variables_state.AddPollution( stored_variable, referenced_variable, false );
-			//CheckReferencedVariables( variable, auto_variable_declaration->file_pos_ );
 		}
 		else if( auto_variable_declaration->reference_modifier == ReferenceModifier::None )
 		{
-			//VariablesState::VariableReferences moved_variable_referenced_variables;
-
 			llvm::GlobalVariable* const global_variable= CreateGlobalConstantVariable( variable.type, MangleGlobalVariable( names_scope, auto_variable_declaration->name ) );
 			variable.llvm_value= global_variable;
 
@@ -1007,12 +995,6 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 				U_ASSERT( class_type->class_->completeness == TypeCompleteness::Complete );
 				if( initializer_experrsion.value_type == ValueType::Value )
 				{
-					U_ASSERT( initializer_experrsion.references.size() == 1u );
-					const auto& variable_for_move= *initializer_experrsion.references.begin();
-
-					//moved_variable_referenced_variables= function_context.variables_state.GetVariableReferences( variable_for_move );
-					function_context.variables_state.MoveNode( variable_for_move );
-
 					CopyBytes( initializer_experrsion.llvm_value, variable.llvm_value, variable.type, function_context );
 					variable.constexpr_value= initializer_experrsion.constexpr_value; // Move can preserve constexpr.
 				}
