@@ -127,7 +127,7 @@ fn U_Main() : i32
 
 			auto r= v.pop_back();
 			halt if( x_ref_unsafe != 0 ); // Move last value out of vector, destructor not called.
-			v.clear();
+			cast_ref_unsafe</ RVec />( ust::int_to_ref( ust::ref_to_int( v ) ) );  // Use unsafe casts, because methods of vector practically unaccesible, when reference to class inner reference exists.
 			halt if( x_ref_unsafe != 0 );  // Destructor not called even after "clear".
 		}
 		halt if( x != 1 ); // Destructor called only for "r" local variable.

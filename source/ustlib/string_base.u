@@ -237,9 +237,10 @@ class string_base
 
 		unsafe
 		{
-			var char_type tmp= ptr_[i0];
-			ptr_[i0]= ptr_[i1];
-			ptr_[i1]= tmp;
+			var char_type c0= ptr_[i0];
+			var char_type c1= ptr_[i1];
+			ptr_[i0]= c1;
+			ptr_[i1]= c0;
 		}
 	}
 

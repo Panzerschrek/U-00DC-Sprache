@@ -19,14 +19,14 @@ fn U_Main() : i32
 		var i32 mut x= 0;
 		var ust::optional</RM/> mut opt( RM(x) );
 
-		var i32 y= x; //##expect_error AccessingVariableThatHaveMutableReference
+		var i32& y= x; //##expect_error ReferenceProtectionError
 	}
 	{ // "reset" does reference-pollution.
 		var i32 mut x= 0;
 		var ust::optional</RM/> mut opt;
 
 		opt.reset( RM(x) );
-		var i32 y= x; //##expect_error AccessingVariableThatHaveMutableReference
+		++x; //##expect_error ReferenceProtectionError
 	}
 	{ // "reset" does reference-pollution.
 		var i32 mut x= 0;
