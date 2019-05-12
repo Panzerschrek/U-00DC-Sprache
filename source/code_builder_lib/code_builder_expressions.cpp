@@ -2230,7 +2230,6 @@ Value CodeBuilder::DoCallFunction(
 					}
 
 					const auto value_arg_inner_node= std::make_shared<ReferencesGraphNode>( ToProgramString( "value_arg_inner_reference_" + std::to_string(i) ), is_mutable ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut );
-					//locked_args_inner_references.emplace_back( value_arg_inner_node, function_context );
 					function_context.variables_state.SetNodeInnerReference( locked_args_references.back().Node(), value_arg_inner_node );
 
 					if( expr.node != nullptr )

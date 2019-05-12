@@ -2220,9 +2220,6 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 			// Make immutable, if needed, only after initialization, because in initialization we need call constructors, which is mutable methods.
 			if( variable_declaration.mutability_modifier != MutabilityModifier::Mutable )
 				variable.value_type= ValueType::ConstReference;
-
-			//for( const auto& referenced_variable_pair : function_context.variables_state.GetVariableReferences( stored_variable ) )
-			//	CheckVariableReferences( *referenced_variable_pair.first, variable_declaration.file_pos );
 		}
 		else if( variable_declaration.reference_modifier == ReferenceModifier::Reference )
 		{
@@ -2956,7 +2953,8 @@ void CodeBuilder::BuildWhileOperatorCode(
 	function_context.function->getBasicBlockList().push_back( block_after_while );
 	function_context.llvm_ir_builder.SetInsertPoint( block_after_while );
 
-	CheckWhileBlokVariablesState( variables_state_before_while, function_context.variables_state, while_operator.block_->end_file_pos_ );
+	const auto errors= ReferencesGraph::CheckWhileBlokVariablesState( variables_state_before_while, function_context.variables_state, while_operator.block_->end_file_pos_ );
+	errors_.insert( errors_.end(), errors.begin(), errors.end() );
 }
 
 void CodeBuilder::BuildBreakOperatorCode(

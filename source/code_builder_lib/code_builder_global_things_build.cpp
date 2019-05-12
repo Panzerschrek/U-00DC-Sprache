@@ -849,9 +849,6 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 			// Make immutable, if needed, only after initialization, because in initialization we need call constructors, which is mutable methods.
 			variable.value_type= ValueType::ConstReference;
 
-			//for( const auto& referenced_variable_pair : function_context.variables_state.GetVariableReferences( stored_variable ) )
-			//	CheckVariableReferences( *referenced_variable_pair.first, variable_declaration.file_pos );
-
 			if( global_variable != nullptr && variable.constexpr_value != nullptr )
 				global_variable->setInitializer( variable.constexpr_value );
 		}
@@ -1013,21 +1010,6 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 
 			if( global_variable != nullptr && variable.constexpr_value != nullptr )
 				global_variable->setInitializer( variable.constexpr_value );
-
-			/*
-			// Take references inside variables in initializer expression.
-			for( const auto& ref : moved_variable_referenced_variables )
-				function_context.variables_state.AddPollution( stored_variable, ref.first, ref.second.IsMutable() );
-			for( const StoredVariablePtr& referenced_variable : initializer_experrsion.references )
-			{
-				for( const auto& inner_variable_pair : function_context.variables_state.GetVariableReferences( referenced_variable ) )
-				{
-					const bool ok= function_context.variables_state.AddPollution( stored_variable, inner_variable_pair.first, inner_variable_pair.second.IsMutable() );
-					if(!ok)
-						errors_.push_back( ReportReferenceProtectionError( auto_variable_declaration->file_pos_, inner_variable_pair.first->name ) );
-				}
-			}
-			*/
 		}
 		else U_ASSERT(false);
 

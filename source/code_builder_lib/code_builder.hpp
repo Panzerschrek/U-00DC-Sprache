@@ -752,14 +752,9 @@ private:
 		Function& function_type,
 		bool first_arg_is_implicit_this= false );
 
-	void CheckReferencedVariables( const Variable& reference, const FilePos& file_pos );
-	//void CheckVariableReferences( const StoredVariable& var, const FilePos& file_pos );
-	//std::vector<VariableStorageUseCounter> LockReferencedVariables( const Variable& reference );
-
 	void DestroyUnusedTemporaryVariables( FunctionContext& function_context, const FilePos& file_pos );
 
 	ReferencesGraph MergeVariablesStateAfterIf( const std::vector<ReferencesGraph>& bracnhes_variables_state, const FilePos& file_pos );
-	void CheckWhileBlokVariablesState( const ReferencesGraph& state_before, const ReferencesGraph& state_after, const FilePos& file_pos );
 
 	// NamesScope fill
 

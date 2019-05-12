@@ -346,44 +346,12 @@ void CodeBuilder::ProcessFunctionTypeReferencesPollution(
 	} // for pollution
 }
 
-void CodeBuilder::CheckReferencedVariables( const Variable& reference, const FilePos& file_pos )
-{
-	//for( const StoredVariablePtr& referenced_variable : reference.references )
-	//	CheckVariableReferences( *referenced_variable, file_pos );
-}
-/*
-void CodeBuilder::CheckVariableReferences( const StoredVariable& var, const FilePos& file_pos )
-{
-	if(
-		var. mut_use_counter.use_count() <= 2u &&
-		var.imut_use_counter.use_count() == 1u)
-	{} // All ok - one mutable reference.
-	else if( var. mut_use_counter.use_count() == 1u )
-	{} // All ok - 0-infinity immutable references.
-	else
-		errors_.push_back( ReportReferenceProtectionError( file_pos, var.name ) );
-}
-*/
-/*
-std::vector<VariableStorageUseCounter> CodeBuilder::LockReferencedVariables( const Variable& reference )
-{
-	std::vector<VariableStorageUseCounter> locks;
-	for( const StoredVariablePtr& referenced_variable : reference.references )
-		locks.push_back( reference.value_type == ValueType::Reference ? referenced_variable->mut_use_counter : referenced_variable->imut_use_counter );
-
-	return locks;
-}
-*/
-
 void CodeBuilder::DestroyUnusedTemporaryVariables( FunctionContext& function_context, const FilePos& file_pos )
 {
 	StackVariablesStorage& temporary_variables_storage= *function_context.stack_variables_stack.back();
 	for( const StackVariablesStorage::NodeAndVariable& variable : temporary_variables_storage.variables_ )
 	{
-		if( ( variable.first->kind == ReferencesGraphNode::Kind::Variable ||
-			  variable.first->kind == ReferencesGraphNode::Kind::ReferenceImut ||
-			  variable.first->kind == ReferencesGraphNode::Kind::ReferenceMut ) &&
-			!function_context.variables_state.HaveOutgoingLinks( variable.first ) &&
+		if( !function_context.variables_state.HaveOutgoingLinks( variable.first ) &&
 			!function_context.variables_state.NodeMoved( variable.first ) )
 		{
 			if( variable.first->kind == ReferencesGraphNode::Kind::Variable && variable.second.type.HaveDestructor() )
@@ -398,74 +366,6 @@ ReferencesGraph CodeBuilder::MergeVariablesStateAfterIf( const std::vector<Refer
 	ReferencesGraph::MergeResult res= ReferencesGraph::MergeVariablesStateAfterIf( bracnhes_variables_state, file_pos );
 	errors_.insert( errors_.end(), res.second.begin(), res.second.end() );
 	return std::move(res.first);
-	/*
-
-	VariablesState::VariablesContainer result;
-
-	for( const VariablesState& branch_state : bracnhes_variables_state )
-	{
-		U_ASSERT( branch_state.GetVariables().size() == bracnhes_variables_state.front().GetVariables().size() );
-		for (const auto& variable_pair : branch_state.GetVariables() )
-		{
-			if( result.find( variable_pair.first ) == result.end() )
-				result[variable_pair.first].is_moved= variable_pair.second.is_moved;
-
-			VariablesState::VariableEntry& result_entry= result[variable_pair.first];
-
-			if( result_entry.is_moved != variable_pair.second.is_moved )
-				errors_.push_back( ReportConditionalMove( file_pos, variable_pair.first->name ) );
-
-			for( auto& reference : variable_pair.second.inner_references )
-			{
-				const auto it= result_entry.inner_references.find( reference.first );
-				if( it == result_entry.inner_references.end() )
-				{
-					// Ok, inserted one time.
-					result_entry.inner_references.insert( reference );
-				}
-				else
-				{
-					// If linked as mutable and as immutable in different branches - result is mutable.
-					if( !it->second.IsMutable() && reference.second.IsMutable() )
-						it->second= reference.second;
-				}
-			}
-		}
-	} // for branches.
-
-	return VariablesState(std::move(result));
-	*/
-}
-
-void CodeBuilder::CheckWhileBlokVariablesState( const ReferencesGraph& state_before, const ReferencesGraph& state_after, const FilePos& file_pos )
-{
-	const auto errors= ReferencesGraph::CheckWhileBlokVariablesState( state_before, state_after, file_pos );
-	errors_.insert( errors_.end(), errors.begin(), errors.end() );
-	/*
-	U_ASSERT( state_before.GetVariables().size() == state_after.GetVariables().size() );
-
-	for( const auto& var_before : state_before.GetVariables() )
-	{
-		U_ASSERT( state_after.GetVariables().find( var_before.first ) != state_after.GetVariables().end() );
-		const auto& var_after= *state_after.GetVariables().find( var_before.first );
-
-		U_ASSERT( var_before.second.inner_references.size() <= var_after.second.inner_references.size() ); // Currently, can only add references.
-
-		if( !var_before.second.is_moved && var_after.second.is_moved )
-			errors_.push_back( ReportOuterVariableMoveInsideLoop( file_pos, var_before.first->name ) );
-
-		for( const auto& reference_after : var_after.second.inner_references )
-		{
-			const auto reference_before_it= var_before.second.inner_references.find( reference_after.first );
-			if( reference_before_it == var_before.second.inner_references.end() )
-			{
-				//add reference in while loop
-				if( reference_after.second.IsMutable() )
-					errors_.push_back( ReportMutableReferencePollutionOfOuterLoopVariable( file_pos, var_before.first->name, reference_after.first->name ) );
-			}
-		}
-	}
-	*/
 }
 
 } // namespace CodeBuilderPrivate
