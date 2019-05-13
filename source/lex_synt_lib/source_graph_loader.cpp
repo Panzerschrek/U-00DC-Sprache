@@ -52,14 +52,14 @@ size_t SourceGraphLoader::LoadNode_r(
 		error_message.text= "Can not read file \""_SpC + file_path +"\""_SpC;
 		error_message.file_pos= FilePos{ 0u, 0u, static_cast<unsigned short>(node_index) };
 
-		std::cout << ToUTF8(error_message.text) << std::endl;
+		std::cerr << ToUTF8(error_message.text) << std::endl;
 		result.syntax_errors.push_back( std::move(error_message) );
 		return ~0u;
 	}
 
 	LexicalAnalysisResult lex_result= LexicalAnalysis( loaded_file->file_content );
 	for( const std::string& lexical_error_message : lex_result.error_messages )
-		std::cout << lexical_error_message << "\n";
+		std::cerr << ToUTF8(loaded_file->full_file_path) << ": error: " << lexical_error_message << "\n";
 	result.lexical_errors.insert( result.lexical_errors.end(), lex_result.error_messages.begin(), lex_result.error_messages.end() );
 	if( !lex_result.error_messages.empty() )
 		return ~0u;
@@ -132,7 +132,9 @@ size_t SourceGraphLoader::LoadNode_r(
 
 	Synt::SyntaxAnalysisResult synt_result= Synt::SyntaxAnalysis( lex_result.lexems, std::move(merged_macroses) );
 	for( const Synt::SyntaxErrorMessage& syntax_error_message : synt_result.error_messages )
-		std::cout << std::to_string(syntax_error_message.file_pos.line) << ":" << std::to_string(syntax_error_message.file_pos.pos_in_line) << ": " << ToUTF8( syntax_error_message.text ) << "\n";
+		std::cerr << ToUTF8(loaded_file->full_file_path) << ":"
+			<< std::to_string(syntax_error_message.file_pos.line) << ":" << std::to_string(syntax_error_message.file_pos.pos_in_line) << ": error: " << ToUTF8( syntax_error_message.text ) << "\n";
+
 	result.syntax_errors.insert( result.syntax_errors.end(), synt_result.error_messages.begin(), synt_result.error_messages.end() );
 	if( !synt_result.error_messages.empty() )
 		return ~0u;

@@ -441,8 +441,8 @@ int main( const int argc, const char* const argv[])
 		else
 		{
 			for( const U::CodeBuilderError& error : build_result.errors )
-				std::cout << U::ToUTF8( source_graph->nodes_storage[error.file_pos.file_index ].file_path )
-					<< ":" << error.file_pos.line << ":" << error.file_pos.pos_in_line << " " << U::ToUTF8( error.text ) << "\n";
+				std::cerr << U::ToUTF8( source_graph->nodes_storage[error.file_pos.file_index ].file_path )
+					<< ":" << error.file_pos.line << ":" << error.file_pos.pos_in_line << ": error: " << U::ToUTF8( error.text ) << "\n";
 		}
 
 		if( !build_result.errors.empty() )
