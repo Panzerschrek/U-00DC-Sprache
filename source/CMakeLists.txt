@@ -86,53 +86,9 @@ get_filename_component( LLVM_UTILS_DIR ${LLVM_INSTALL_DIR}/bin ABSOLUTE )
 # CompilerLib
 #
 
-set( COMPILER_LIB_SOURCES
-	code_builder_lib/code_builder_errors.cpp
-	code_builder_lib/code_builder.cpp
-	code_builder_lib/code_builder_expressions.cpp
-	code_builder_lib/code_builder_initializers.cpp
-	code_builder_lib/code_builder_method_gen.cpp
-	code_builder_lib/code_builder_global_things_build.cpp
-	code_builder_lib/code_builder_names_scope_prepare.cpp
-	code_builder_lib/code_builder_overloading_resolution.cpp
-	code_builder_lib/code_builder_reference_checking.cpp
-	code_builder_lib/code_builder_templates.cpp
-	code_builder_lib/code_builder_typeinfo.cpp
-	code_builder_lib/code_builder_types.cpp
-	code_builder_lib/code_builder_virtual.cpp
-	code_builder_lib/constexpr_function_evaluator.cpp
-	code_builder_lib/mangling.cpp
-	code_builder_lib/references_graph.cpp
-	lex_synt_lib/keywords.cpp
-	lex_synt_lib/lang_types.cpp
-	lex_synt_lib/lexical_analyzer.cpp
-	lex_synt_lib/operators.cpp
-	lex_synt_lib/program_string.cpp
-	lex_synt_lib/source_graph_loader.cpp
-	lex_synt_lib/syntax_analyzer.cpp
-	lex_synt_lib/syntax_elements.cpp )
+file( GLOB COMPILER_LIB_SOURCES "code_builder_lib/*" "lex_synt_lib/*" )
 
-set( COMPILER_LIB_HEADERS
-	code_builder_lib/code_builder_errors.hpp
-	code_builder_lib/code_builder.hpp
-	code_builder_lib/code_builder_types.hpp
-	code_builder_lib/constexpr_function_evaluator.hpp
-	code_builder_lib/i_code_builder.hpp
-	code_builder_lib/mangling.hpp
-	code_builder_lib/pop_llvm_warnings.hpp
-	code_builder_lib/push_disable_llvm_warnings.hpp
-	code_builder_lib/references_graph.hpp
-	lex_synt_lib/assert.hpp
-	lex_synt_lib/keywords.hpp
-	lex_synt_lib/lexical_analyzer.hpp
-	lex_synt_lib/macro.hpp
-	lex_synt_lib/operators.hpp
-	lex_synt_lib/program_string.hpp
-	lex_synt_lib/source_graph_loader.hpp
-	lex_synt_lib/syntax_elements.hpp
-	lex_synt_lib/syntax_analyzer.hpp )
-
-add_library( CompilerLib ${COMPILER_LIB_SOURCES} ${COMPILER_LIB_HEADERS} )
+add_library( CompilerLib ${COMPILER_LIB_SOURCES} )
 target_link_libraries( CompilerLib ${LLVM_LIBS_FOR_COMPILER_LIB} )
 if( NOT WIN32 )
 	target_link_libraries( CompilerLib pthread dl )
@@ -141,14 +97,8 @@ endif()
 #
 # Compiler
 #
-
 if( BUILD_COMPILER )
-	set( COMPILER_SOURCES
-		compiler/main.cpp )
-
-	set( COMPILER_HEADERS
-		compiler/push_disable_boost_warnings.hpp
-		compiler/pop_boost_warnings.hpp )
+	file( GLOB COMPILER_SOURCES "compiler/*" )
 
 	function( CompileLLFile ll_file )
 		get_filename_component( source_name ${ll_file} NAME_WE )
@@ -167,7 +117,7 @@ if( BUILD_COMPILER )
 	CompileLLFile( asm_funcs_64.ll )
 	list( APPEND bc_files ${BC_FILE} )
 
-	add_executable( Compiler ${COMPILER_SOURCES} ${COMPILER_HEADERS} ${bc_files} )
+	add_executable( Compiler ${COMPILER_SOURCES} ${bc_files} )
 	target_link_libraries( Compiler CompilerLib ${LLVM_LIBS_FOR_COMPILER} )
 	target_link_libraries( Compiler ${Boost_LIBRARIES} )
 endif( BUILD_COMPILER )
@@ -176,57 +126,9 @@ endif( BUILD_COMPILER )
 # Tests
 #
 if( BUILD_TESTS )
-	set( TESTS_SOURCES
-		tests/cpp_tests/auto_variables_test.cpp
-		tests/cpp_tests/auto_variables_errors_test.cpp
-		tests/cpp_tests/class_templates_errors_test.cpp
-		tests/cpp_tests/class_templates_test.cpp
-		tests/cpp_tests/classes_declaration_errors_test.cpp
-		tests/cpp_tests/classes_declaration_test.cpp
-		tests/cpp_tests/code_builder_errors_test.cpp
-		tests/cpp_tests/code_builder_test.cpp
-		tests/cpp_tests/constexpr_errors_test.cpp
-		tests/cpp_tests/constexpr_test.cpp
-		tests/cpp_tests/constructors_errors_test.cpp
-		tests/cpp_tests/constructors_test.cpp
-		tests/cpp_tests/destructors_errors_test.cpp
-		tests/cpp_tests/destructors_test.cpp
-		tests/cpp_tests/enums_errors_test.cpp
-		tests/cpp_tests/enums_test.cpp
-		tests/cpp_tests/global_variables_errors_test.cpp
-		tests/cpp_tests/global_variables_test.cpp
-		tests/cpp_tests/halt_test.cpp
-		tests/cpp_tests/imports_errors_test.cpp
-		tests/cpp_tests/imports_test.cpp
-		tests/cpp_tests/initializers_errors_test.cpp
-		tests/cpp_tests/initializers_test.cpp
-		tests/cpp_tests/mangling_test.cpp
-		tests/cpp_tests/methods_errors_test.cpp
-		tests/cpp_tests/methods_test.cpp
-		tests/cpp_tests/mutability_errors_test.cpp
-		tests/cpp_tests/namespaces_errors_test.cpp
-		tests/cpp_tests/namespaces_test.cpp
-		tests/cpp_tests/operators_overloading_errors_test.cpp
-		tests/cpp_tests/operators_overloading_test.cpp
-		tests/cpp_tests/operators_priority_test.cpp
-		tests/cpp_tests/operators_test.cpp
-		tests/cpp_tests/reference_check_test.cpp
-		tests/cpp_tests/reference_check_for_structs_test.cpp
-		tests/cpp_tests/references_inside_structs_errors_test.cpp
-		tests/cpp_tests/references_inside_structs_test.cpp
-		tests/cpp_tests/references_tags_test.cpp
-		tests/cpp_tests/temp_variables_moving_test.cpp
-		tests/cpp_tests/tests.cpp
-		tests/cpp_tests/type_conversions_test.cpp
-		tests/cpp_tests/typedefs_errors_test.cpp
-		tests/cpp_tests/typedefs_test.cpp
-		tests/cpp_tests/variables_state_merge_test.cpp
-		tests/tests_common.hpp )
+	file( GLOB TESTS_SOURCES "tests/cpp_tests/*" )
 
-	set( TESTS_HEADERS
-		tests/cpp_tests/tests.hpp )
-
-	add_executable( Tests ${TESTS_SOURCES} ${TESTS_HEADERS} )
+	add_executable( Tests ${TESTS_SOURCES}  )
 	target_link_libraries( Tests CompilerLib ${LLVM_LIBS_FOR_TESTS} )
 endif( BUILD_TESTS )
 
