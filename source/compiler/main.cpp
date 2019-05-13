@@ -213,6 +213,19 @@ static std::string GetNativeTargetFeaturesStr()
 	return features.getString();
 }
 
+// Linked into executable resource files with standart library bitcode.
+extern const char _binary_asm_funcs_bc_start;
+extern const char _binary_asm_funcs_bc_end;
+extern const char _binary_asm_funcs_bc_size;
+
+extern const char _binary_asm_funcs_32_bc_start;
+extern const char _binary_asm_funcs_32_bc_end;
+extern const char _binary_asm_funcs_32_bc_size;
+
+extern const char _binary_asm_funcs_64_bc_start;
+extern const char _binary_asm_funcs_64_bc_end;
+extern const char _binary_asm_funcs_64_bc_size;
+
 int main( const int argc, const char* const argv[])
 {
 	// Options
@@ -456,29 +469,25 @@ int main( const int argc, const char* const argv[])
 		return 1;
 
 	// Prepare stdlib modules set.
-	std::vector<std::string> asm_funcs_modules;
-	asm_funcs_modules.push_back( "asm_funcs.bc" );
-	asm_funcs_modules.push_back( data_layout.getPointerSizeInBits() == 32u ? "asm_funcs_32.bc" : "asm_funcs_64.bc" );
+	const llvm::StringRef asm_funcs_modules[]=
+	{
+		llvm::StringRef(&_binary_asm_funcs_bc_start, reinterpret_cast<size_t>(&_binary_asm_funcs_bc_size)),
+		( data_layout.getPointerSizeInBits() == 32u
+			? llvm::StringRef(&_binary_asm_funcs_32_bc_start, reinterpret_cast<size_t>(&_binary_asm_funcs_32_bc_size))
+			: llvm::StringRef(&_binary_asm_funcs_64_bc_start, reinterpret_cast<size_t>(&_binary_asm_funcs_64_bc_size)) ),
+	};
 
 	// Link stdlib with result module.
-	for( const std::string& asm_funcs_module : asm_funcs_modules )
+	for( const llvm::StringRef& asm_funcs_module : asm_funcs_modules )
 	{
-		std::string file_content;
-		const fs::path module_full_path= compiler_data_dir / fs::path( asm_funcs_module );
-		if( !ReadFileRaw( module_full_path.string().c_str(), file_content ) )
-		{
-			std::cout << "Internal compiler error - stdlib module read error: " << asm_funcs_module << std::endl;
-			return 1;
-		}
-
 		const llvm::ErrorOr<std::unique_ptr<llvm::Module>> std_lib_module=
 			llvm::parseBitcodeFile(
-				llvm::MemoryBufferRef( file_content, "ustlib asm file" ),
+				llvm::MemoryBufferRef( asm_funcs_module, "ustlib asm file" ),
 				result_module->getContext() );
 
 		if( !std_lib_module )
 		{
-			std::cout << "Internal compiler error - stdlib module parse error: " << asm_funcs_module << std::endl;
+			std::cout << "Internal compiler error - stdlib module parse error" << std::endl;
 			return 1;
 		}
 
@@ -489,7 +498,7 @@ int main( const int argc, const char* const argv[])
 		llvm::raw_string_ostream err_stream( err_stream_str );
 		if( llvm::verifyModule( *std_lib_module.get(), &err_stream ) )
 		{
-			std::cout << "Internal compiler error - stdlib module verify error: " << asm_funcs_module << ":\n" << err_stream.str() << std::endl;
+			std::cout << "Internal compiler error - stdlib module verify error:\n" << err_stream.str() << std::endl;
 			return 1;
 		}
 

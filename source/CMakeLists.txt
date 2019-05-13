@@ -103,11 +103,16 @@ if( BUILD_COMPILER )
 	function( CompileLLFile ll_file )
 		get_filename_component( source_name ${ll_file} NAME_WE )
 		set( bc_name ${source_name}.bc )
+		set( bc_object_name ${source_name}.o )
 		add_custom_command(
 			OUTPUT ${bc_name}
 			DEPENDS ${CMAKE_SOURCE_DIR}/ustlib/src/${ll_file}
 			COMMAND ${LLVM_UTILS_DIR}/llvm-as ${CMAKE_SOURCE_DIR}/ustlib/src/${ll_file} -o ${bc_name} )
-		set( BC_FILE ${bc_name} PARENT_SCOPE )
+		add_custom_command(
+			OUTPUT ${bc_object_name}
+			DEPENDS ${bc_name}
+			COMMAND ld -r -b binary -o ${bc_object_name} ${bc_name} ) # Convert binary file to object file, using "ld"
+		set( BC_FILE ${bc_object_name} PARENT_SCOPE )
 	endfunction()
 
 	CompileLLFile( asm_funcs.ll )
