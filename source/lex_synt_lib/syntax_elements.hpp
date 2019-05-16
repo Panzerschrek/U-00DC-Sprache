@@ -454,6 +454,7 @@ struct AutoVariableDeclaration final
 	IExpressionComponentPtr initializer_expression;
 	MutabilityModifier mutability_modifier= MutabilityModifier::None;
 	ReferenceModifier reference_modifier= ReferenceModifier::None;
+	bool lock_temps= false;
 };
 
 class ReturnOperator final : public SyntaxElementBase, public IBlockElement

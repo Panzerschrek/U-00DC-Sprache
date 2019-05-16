@@ -14,6 +14,7 @@ enum class Keywords : unsigned int
 	op_,
 	var_,
 	auto_,
+	lock_temps_,
 	return_,
 	while_,
 	break_,
