@@ -2511,12 +2511,25 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 	if( auto_variable_declaration.lock_temps )
 	{
 		const auto accesible_variable_nodes= function_context.variables_state.GetAllAccessibleVariableNodes_r( var_node );
+		std::unordered_set<ReferencesGraphNodePtr> indirect_accesible_variable_nodes;
+
+		// Get accesible by inner references variables. Currently, we have onyl 1 level of indirection.
+		for( const ReferencesGraphNodePtr& accesible_variable_node : accesible_variable_nodes )
+		{
+			if( const ReferencesGraphNodePtr& inner_reference = function_context.variables_state.GetNodeInnerReference( accesible_variable_node ) )
+			{
+				const auto accesible_variable_nodes2= function_context.variables_state.GetAllAccessibleVariableNodes_r( inner_reference );
+				indirect_accesible_variable_nodes.insert( accesible_variable_nodes2.begin(), accesible_variable_nodes2.end() );
+			}
+		}
 
 		std::vector<StackVariablesStorage::NodeAndVariable>& src_storage= function_context.stack_variables_stack.back()->variables_;
 		std::vector<StackVariablesStorage::NodeAndVariable>& dst_storage= function_context.stack_variables_stack[ function_context.stack_variables_stack.size() - 2u ]->variables_;
 		for( size_t i = 0u; i < src_storage.size(); )
 		{
-			if( src_storage[i].first->kind == ReferencesGraphNode::Kind::Variable &&  accesible_variable_nodes .count( src_storage[i].first ) != 0  )
+			if( src_storage[i].first->kind == ReferencesGraphNode::Kind::Variable &&
+				( accesible_variable_nodes .count( src_storage[i].first ) != 0 ||
+				indirect_accesible_variable_nodes.count( src_storage[i].first ) != 0 ) )
 			{
 				dst_storage.insert( dst_storage.begin() + dst_storage.size() - 1u, src_storage[i] ); // insert before declared variable storage.
 				src_storage.erase( src_storage.begin() + i );

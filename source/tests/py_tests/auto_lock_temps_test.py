@@ -84,7 +84,7 @@ def AutoLockTemps_Test2():
 	tests_lib.build_program( c_program_text )
 
 
-def AutoLockTemps_Test2():
+def AutoLockTemps_Test3():
 	c_program_text= """
 	struct S
 	{
@@ -106,3 +106,44 @@ def AutoLockTemps_Test2():
 	"""
 	tests_lib.build_program( c_program_text )
 	tests_lib.run_function( "_Z3Foov" )
+
+
+def AutoLockTemps_Test4():
+	c_program_text= """
+	struct S
+	{
+		i32& x;
+	}
+	fn CreateS( i32&'r x ) : S'r'
+	{
+		var S s{ .x= x };
+		return s;
+	}
+	fn Foo()
+	{
+		// Lock reference to temp numeric constant inside value.
+		auto lock_temps ref= CreateS( 44 );
+	}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def AutoLockTemps_Test5():
+	c_program_text= """
+	struct S
+	{
+		i32& x;
+	}
+	fn CreateS( i32&'r x ) : S'r'
+	{
+		var S s{ .x= x };
+		return s;
+	}
+	fn Pass( S& s ) : S& { return s; }
+	fn Foo()
+	{
+		// Lock 'temp S' and reference to temp numeric constant inside 'temp S'.
+		auto lock_temps& ref= Pass( CreateS( 44 ) );
+	}
+	"""
+	tests_lib.build_program( c_program_text )
