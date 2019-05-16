@@ -4,28 +4,22 @@
 
 #include "push_disable_boost_warnings.hpp"
 #include <boost/filesystem/operations.hpp>
-#include <boost/filesystem/path.hpp>
 #include <boost/program_options.hpp>
 #include "pop_boost_warnings.hpp"
 
 #include "../code_builder_lib/push_disable_llvm_warnings.hpp"
-#include <llvm/ADT/Triple.h>
 #include <llvm/AsmParser/Parser.h>
 #include <llvm/Bitcode/ReaderWriter.h>
 #include <llvm/IR/LegacyPassManager.h>
 #include <llvm/IR/Verifier.h>
 #include <llvm/Linker/Linker.h>
 #include <llvm/Support/FileSystem.h>
-#include <llvm/Support/SourceMgr.h>
 #include <llvm/Support/TargetSelect.h>
 #include <llvm/Support/TargetRegistry.h>
-#include <llvm/Support/ToolOutputFile.h>
-#include <llvm/Support/raw_ostream.h>
 #include <llvm/Support/raw_os_ostream.h>
-#include <llvm/Target/TargetOptions.h>
 #include <llvm/Target/TargetMachine.h>
 #include <llvm/Transforms/IPO.h>
-#include "llvm/Transforms/IPO/PassManagerBuilder.h"
+#include <llvm/Transforms/IPO/PassManagerBuilder.h>
 #include <llvm/MC/SubtargetFeature.h>
 #include "../code_builder_lib/pop_llvm_warnings.hpp"
 
