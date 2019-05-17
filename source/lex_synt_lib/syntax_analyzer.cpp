@@ -627,16 +627,56 @@ std::vector<Macro::MatchElement> SyntaxAnalyzer::ParseMacroMatchBlock()
 		}
 	}
 
-	// After optionals/loops expected optional/loop terminator lexem.
+	// Detect kind of end lexems for optionals/loops.
 	for( size_t i= 0u; i < result.size(); ++i )
 	{
-		if( ( result[i].kind == Macro::MatchElementKind::Optional || result[i].kind == Macro::MatchElementKind::Repeated ) &&
-			( i + 1u == result.size() || result[i+1u].kind != Macro::MatchElementKind::Lexem ) )
+		if( result[i].kind == Macro::MatchElementKind::Optional || result[i].kind == Macro::MatchElementKind::Repeated )
 		{
-			SyntaxErrorMessage msg;
-			msg.file_pos= it_->file_pos;
-			msg.text= "Expected lexem after \""_SpC + result[i].name + "\" element."_SpC;
-			error_messages_.push_back(std::move(msg));
+			if( !result[i].sub_elements.empty() && result[i].sub_elements.front().kind == Macro::MatchElementKind::Lexem )
+				result[i].block_check_lexem_kind= Macro::BlockCheckLexemKind::LexemAtBlockStart;
+			else if( i + 1u < result.size() && result[i+1u].kind == Macro::MatchElementKind::Lexem )
+				result[i].block_check_lexem_kind= Macro::BlockCheckLexemKind::LexemAfterBlockEnd;
+			else
+			{
+				SyntaxErrorMessage msg;
+				msg.file_pos= it_->file_pos;
+				msg.text= "Expected lexem at start or after \""_SpC + result[i].name + "\" element."_SpC;
+				error_messages_.push_back(std::move(msg));
+			}
+
+			if( i + 1u < result.size() && result[i+1u].kind == Macro::MatchElementKind::Lexem )
+			{
+				if( result[i].kind == Macro::MatchElementKind::Optional &&
+					!result[i].sub_elements.empty() && result[i].sub_elements.front().kind == Macro::MatchElementKind::Lexem &&
+					result[i].sub_elements.front().lexem.type == result[i+1u].lexem.type && result[i].sub_elements.front().lexem.text == result[i+1u].lexem.text )
+				{
+					SyntaxErrorMessage msg;
+					msg.file_pos= it_->file_pos;
+					msg.text= "Start lexem of optional macro block must be different from first lexem after optional block."_SpC;
+					error_messages_.push_back(std::move(msg));
+				}
+
+				if( result[i].kind == Macro::MatchElementKind::Repeated &&
+					result[i].lexem.type != Lexem::Type::EndOfFile &&
+					result[i].lexem.type == result[i+1].lexem.type && result[i].lexem.text == result[i+1].lexem.text )
+				{
+					SyntaxErrorMessage msg;
+					msg.file_pos= it_->file_pos;
+					msg.text= "Separator lexem of repeated macro block must be different from first lexem after repeated block."_SpC;
+					error_messages_.push_back(std::move(msg));
+				}
+
+				if( result[i].kind == Macro::MatchElementKind::Repeated &&
+					result[i].lexem.type == Lexem::Type::EndOfFile &&
+					!result[i].sub_elements.empty() && result[i].sub_elements.front().kind == Macro::MatchElementKind::Lexem &&
+					result[i].sub_elements.front().lexem.type == result[i+1u].lexem.type && result[i].sub_elements.front().lexem.text == result[i+1u].lexem.text )
+				{
+					SyntaxErrorMessage msg;
+					msg.file_pos= it_->file_pos;
+					msg.text= "Start lexem of repeated macro block without separator must be different from first lexem after repeated block."_SpC;
+					error_messages_.push_back(std::move(msg));
+				}
+			}
 		}
 	}
 
@@ -3787,12 +3827,11 @@ bool SyntaxAnalyzer::MatchMacroBlock(
 
 		case Macro::MatchElementKind::Optional:
 			{
-				if( i + 1u < match_elements.size() &&
-					match_elements[i+1u].kind == Macro::MatchElementKind::Lexem )
-				{
-					ParsedMacroElement element;
-					element.kind= match_element.kind;
+				ParsedMacroElement element;
+				element.kind= match_element.kind;
 
+				if( i + 1u < match_elements.size() && match_element.block_check_lexem_kind == Macro::BlockCheckLexemKind::LexemAfterBlockEnd )
+				{
 					const Lexem& terminator_lexem= match_elements[i+1u].lexem;
 					if( it_->type == terminator_lexem.type && it_->text == terminator_lexem.text )
 					{} // Optional is empty
@@ -3804,57 +3843,100 @@ bool SyntaxAnalyzer::MatchMacroBlock(
 						else
 							return false;
 					}
-
-					out_elements[match_element.name]= std::move(element);
 				}
+				else if( match_element.block_check_lexem_kind == Macro::BlockCheckLexemKind::LexemAtBlockStart )
+				{
+					U_ASSERT( ! match_element.sub_elements.empty() && match_element.sub_elements.front().kind == Macro::MatchElementKind::Lexem );
+					const Lexem& check_lexem= match_element.sub_elements.front().lexem;
+					if( it_->type == check_lexem.type && it_->text == check_lexem.text )
+					{
+						std::map<ProgramString, ParsedMacroElement> optional_elements;
+						if( MatchMacroBlock( match_element.sub_elements, macro_name, optional_elements ) )
+							element.sub_elements.push_back( std::move(optional_elements) );
+						else
+							return false;
+					}
+					else {} // Optional is empty.
+				}
+				else U_ASSERT(false);
+
+				out_elements[match_element.name]= std::move(element);
 			}
 			break;
 
 		case Macro::MatchElementKind::Repeated:
 			{
-				if( i + 1u < match_elements.size() &&
-					match_elements[i+1u].kind == Macro::MatchElementKind::Lexem )
-				{
-					ParsedMacroElement element;
-					element.kind= match_element.kind;
+				ParsedMacroElement element;
+				element.kind= match_element.kind;
 
+				if( i + 1u < match_elements.size() && match_element.block_check_lexem_kind == Macro::BlockCheckLexemKind::LexemAfterBlockEnd )
+				{
 					const Lexem& terminator_lexem= match_elements[i+1u].lexem;
 					while(NotEndOfFile())
 					{
 						if( it_->type == terminator_lexem.type && it_->text == terminator_lexem.text )
 							break;
-						else
-						{
-							std::map<ProgramString, ParsedMacroElement> optional_elements;
-							if( MatchMacroBlock( match_element.sub_elements, macro_name, optional_elements ) )
-								element.sub_elements.push_back( std::move(optional_elements) );
-							else
-								return false;
 
-							// Process separator.
-							if( !( it_->type == terminator_lexem.type && it_->text == terminator_lexem.text ) &&
-								match_elements[i].lexem.type != Lexem::Type::EndOfFile )
+						std::map<ProgramString, ParsedMacroElement> optional_elements;
+						if( MatchMacroBlock( match_element.sub_elements, macro_name, optional_elements ) )
+							element.sub_elements.push_back( std::move(optional_elements) );
+						else
+							return false;
+
+						// Process separator.
+						if( match_element.lexem.type != Lexem::Type::EndOfFile )
+						{
+							if( it_->type == match_element.lexem.type && it_->text == match_element.lexem.text )
 							{
-								if( it_->type == match_elements[i].lexem.type && it_->text == match_elements[i].lexem.text )
+								NextLexem();
+								if( it_->type == terminator_lexem.type && it_->text == terminator_lexem.text )
 								{
-									NextLexem();
-									if( it_->type == terminator_lexem.type && it_->text == terminator_lexem.text )
-									{
-										// Disable end lexem after separator.
-										push_macro_error();
-										return false;
-									}
-								}
-								else
-								{
+									// Disable end lexem after separator.
 									push_macro_error();
 									return false;
 								}
 							}
+							else
+								break;
 						}
 					}
-					out_elements[match_element.name]= std::move(element);
 				}
+				else if( match_element.block_check_lexem_kind == Macro::BlockCheckLexemKind::LexemAtBlockStart )
+				{
+					U_ASSERT( ! match_element.sub_elements.empty() && match_element.sub_elements.front().kind == Macro::MatchElementKind::Lexem );
+					const Lexem& check_lexem= match_element.sub_elements.front().lexem;
+					while(NotEndOfFile())
+					{
+						if( !( it_->type == check_lexem.type && it_->text == check_lexem.text ) )
+							break;
+
+						std::map<ProgramString, ParsedMacroElement> optional_elements;
+						if( MatchMacroBlock( match_element.sub_elements, macro_name, optional_elements ) )
+							element.sub_elements.push_back( std::move(optional_elements) );
+						else
+							return false;
+
+						// Process separator.
+						if( match_element.lexem.type != Lexem::Type::EndOfFile )
+						{
+							if( it_->type == match_element.lexem.type && it_->text == match_element.lexem.text )
+							{
+								NextLexem();
+								if( !( it_->type == check_lexem.type && it_->text == check_lexem.text ) )
+								{
+									// After separator must be start lexem of block.
+									push_macro_error();
+									return false;
+								}
+							}
+							else
+								break;
+						}
+					}
+				}
+				else U_ASSERT(false);
+
+				out_elements[match_element.name]= std::move(element);
 			}
 			break;
 		};

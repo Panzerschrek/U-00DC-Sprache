@@ -320,3 +320,45 @@ def MacroRepeated_Test3():
 	static_assert( SUM( 11 AND -4 AND 854 AND 77 ) == 11 -4 + 854 + 77 );
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def StartBlockLexemAsOptionalIndicator_Test0():
+	c_program_text= """
+	?macro <? DOUBLE_IT:expr ( ?quad_factor:opt<? QUAD ?> ?e:expr ) ?>  ->  <? ?e * 2 ?quad_factor<? *2 ?> ?>
+
+	static_assert( DOUBLE_IT( 31 ) == 62 );
+	static_assert( DOUBLE_IT( QUAD 120 ) == 480 );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def StartBlockLexemAsOptionalIndicator_Test1():
+	c_program_text= """
+	?macro <? DOUBLE_IT:expr ( ?quad_factor:opt<? QUAD ?> & ?e:expr ) ?>  ->  <? ?e * 2 ?quad_factor<? *2 ?> ?>
+
+	static_assert( DOUBLE_IT( & -14 ) == -28 );
+	static_assert( DOUBLE_IT( QUAD & 63 * 74 ) == 63 * 74 * 4 );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def StartBlockLexemAsRepeatedIndicator_Test0():
+	c_program_text= """
+	?macro <? POW2:expr ( ?r:rep<? DO it ?> ?e:expr ) ?>  ->  <? ?e ?r<? *2 ?> ?>
+
+	static_assert( POW2( 11 ) == 11 );
+	static_assert( POW2( DO it 98 ) == 98 * 2 );
+	static_assert( POW2( DO it DO it DO it -51 ) == -51 * 2 * 2 * 2 );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def StartBlockLexemAsRepeatedIndicator_Test1():
+	c_program_text= """
+	?macro <? SEQ:expr ( ?r:rep<? MUL ?n:expr ?><?,?> ?e:expr ) ?>  ->  <? ?e ?r<? * (?n) ?> ?>
+
+	static_assert( SEQ( 11 ) == 11 );
+	static_assert( SEQ( MUL 5 94 ) == 5 * 94 );
+	static_assert( SEQ( MUL -1 + 2, MUL 89, MUL 74 66 ) == ( -1 +2 ) * 89 * 74 * 66 );
+	"""
+	tests_lib.build_program( c_program_text )

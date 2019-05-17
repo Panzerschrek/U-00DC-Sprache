@@ -39,9 +39,16 @@ struct Macro
 		VariableElementWithMacroBlock, // Optional, loop
 	};
 
+	enum class BlockCheckLexemKind
+	{
+		LexemAfterBlockEnd, // Detect optional/loop end, using lexem after optional/loop as terminator.
+		LexemAtBlockStart, // Detect optional/loop, using lexem in beginning of optional/loop.
+	};
+
 	struct MatchElement
 	{
 		MatchElementKind kind= MatchElementKind::Lexem;
+		BlockCheckLexemKind block_check_lexem_kind= BlockCheckLexemKind::LexemAfterBlockEnd; // For optionals and loops.
 		Lexem lexem; // lexem for lexem elements, separator or EOF for loops
 		ProgramString name; // for non-lexems
 		std::vector<MatchElement> sub_elements; // For optionals, loops
