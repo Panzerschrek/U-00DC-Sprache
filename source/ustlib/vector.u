@@ -240,14 +240,14 @@ public:
 
 	fn enable_if( c_size_type_is_u64_ ) swap( mut this, u32 i0, u32 i1 )
 	{
-		return swap( size_type(i0), size_type(i1) );
+		swap( size_type(i0), size_type(i1) );
 	}
 
 	fn enable_if( c_size_type_is_u32_ ) swap( mut this, u64 i0, u64 i1 )
 	{
 		halt if( i0 >= u64(size_) );
 		halt if( i1 >= u64(size_) );
-		return swap( size_type(i0), size_type(i1) );
+		swap( size_type(i0), size_type(i1) );
 	}
 
 	fn push_back( mut this'a...', T mut val'b...' ) ' a <- b '
