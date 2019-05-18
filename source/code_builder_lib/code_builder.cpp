@@ -2912,11 +2912,24 @@ void CodeBuilder::BuildReturnOperatorCode(
 			// Now we can return by value only fundamentals end enums.
 			U_ASSERT( expression_result.type.GetFundamentalType() != nullptr || expression_result.type.GetEnumType() != nullptr || expression_result.type.GetFunctionPointerType() != nullptr );
 
-			// We must read return value before call of destructors.
-			llvm::Value* const value_for_return= CreateMoveToLLVMRegisterInstruction( expression_result, function_context );
+			if( expression_result.type == void_type_ || expression_result.type == void_type_for_ret_ )
+			{
+				if( function_context.destructor_end_block == nullptr )
+					function_context.llvm_ir_builder.CreateRetVoid();
+				else
+				{
+					// In explicit destructor, break to block with destructor calls for class members.
+					function_context.llvm_ir_builder.CreateBr( function_context.destructor_end_block );
+				}
+			}
+			else
+			{
+				// We must read return value before call of destructors.
+				llvm::Value* const value_for_return= CreateMoveToLLVMRegisterInstruction( expression_result, function_context );
 
-			CallDestructorsBeforeReturn( function_context, return_operator.file_pos_ );
-			function_context.llvm_ir_builder.CreateRet( value_for_return );
+				CallDestructorsBeforeReturn( function_context, return_operator.file_pos_ );
+				function_context.llvm_ir_builder.CreateRet( value_for_return );
+			}
 		}
 	}
 }

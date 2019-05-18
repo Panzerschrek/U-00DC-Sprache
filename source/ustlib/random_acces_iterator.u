@@ -1,0 +1,74 @@
+import "pointer.u"
+
+namespace ust
+{
+
+template</ type T, bool is_mutable />
+class random_acces_iterator
+{
+public:
+	// Constructors must be used only inside containers code.
+	fn enable_if( !is_mutable )
+	constructor( this'x', T&'y imut ref ) ' x <- imut y '
+	{
+		unsafe
+		{
+			ptr_= ptr_type( cast_mut( ref ) );
+		}
+	}
+
+	fn enable_if( is_mutable )
+	constructor( this'x', T&'y  mut ref ) ' x <-  mut y '
+		( ptr_(ref) )
+	{}
+
+	// Copy constructor.
+	fn constructor( mut this, this_type& other )
+		( ptr_( other.ptr_ ) )
+	{}
+
+	// Compare.
+	op< ( this, this_type other ) : bool  { return this.ptr_ <  other.ptr_; }
+	op<=( this, this_type other ) : bool  { return this.ptr_ <= other.ptr_; }
+	op> ( this, this_type other ) : bool  { return this.ptr_ >  other.ptr_; }
+	op>=( this, this_type other ) : bool  { return this.ptr_ >= other.ptr_; }
+	op==( this, this_type other ) : bool  { return this.ptr_ == other.ptr_; }
+	op!=( this, this_type other ) : bool  { return this.ptr_ != other.ptr_; }
+
+	// Iterator to int operations.
+	op++( mut this )  { ++ptr_; }
+	op--( mut this )  { --ptr_; }
+	op+=( mut this, size_type s )  { ptr_+= s; }
+	op-=( mut this, size_type s )  { ptr_-= s; }
+
+	// Dereference.
+	fn enable_if( !is_mutable )
+	get_ref( this'x' ) unsafe : T &'x imut
+	{
+		unsafe
+		{
+			return cast_ref_unsafe</ T />( int_to_ref( ref_to_int( ptr_.get_ref() ) ) );
+		}
+	}
+
+	fn enable_if( is_mutable )
+	get_ref( this'x' ) unsafe : T &'x mut
+	{
+		unsafe
+		{
+			return cast_mut( cast_ref_unsafe</ T />( int_to_ref( ref_to_int( ptr_.get_ref() ) ) ) );
+		}
+	}
+
+private:
+	type ptr_type= raw_ptr_mut</T/>;
+	type this_type= random_acces_iterator</ T, is_mutable />;
+
+	struct ReferenceTag{ void& v; }
+
+private:
+	[ ReferenceTag, 0 ] reference_tag_;
+	ptr_type ptr_;
+}
+
+} // namespace ust
