@@ -180,11 +180,6 @@ Block::Block( const FilePos& start_file_pos, const FilePos& end_file_pos, BlockE
 	, elements_( std::move( elements ) )
 {}
 
-UnsafeBlock::UnsafeBlock( BlockPtr block )
-	: SyntaxElementBase(block->file_pos_)
-	, block_(std::move(block))
-{}
-
 VariablesDeclaration::VariablesDeclaration( const FilePos& file_pos )
 	: SyntaxElementBase(file_pos)
 {}

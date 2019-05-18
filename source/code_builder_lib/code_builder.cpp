@@ -2106,27 +2106,19 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockCode(
 			BuildHaltIf( *halt_if, block_names, function_context );
 		else if( const auto block= dynamic_cast<const Synt::Block*>( block_element_ptr ) )
 		{
+			const bool prev_unsafe= function_context.is_in_unsafe_block;
+			if( block->safety_ == Synt::Block::Safety::Unsafe )
+			{
+				function_context.have_non_constexpr_operations_inside= true; // Unsafe operations can not be used in constexpr functions.
+				function_context.is_in_unsafe_block= true;
+			}
+			else if( block->safety_ == Synt::Block::Safety::Safe )
+				function_context.is_in_unsafe_block= false;
+			else if( block->safety_ == Synt::Block::Safety::None ) {}
+			else U_ASSERT(false);
+
 			const BlockBuildInfo inner_block_build_info=
 				BuildBlockCode( *block, block_names, function_context );
-
-			block_build_info.have_unconditional_return_inside=
-				block_build_info.have_unconditional_return_inside || inner_block_build_info.have_unconditional_return_inside;
-			block_build_info.have_uncodnitional_break_or_continue=
-				block_build_info.have_uncodnitional_break_or_continue || inner_block_build_info.have_uncodnitional_break_or_continue;
-
-			if( inner_block_build_info.have_unconditional_return_inside ||
-				block_build_info.have_uncodnitional_break_or_continue )
-				try_report_unreachable_code();
-		}
-		else if( const auto unsafe_block= dynamic_cast<const Synt::UnsafeBlock*>( block_element_ptr ) )
-		{
-			function_context.have_non_constexpr_operations_inside= true; // Unsafe operations can not be used in constexpr functions.
-
-			const bool prev_unsafe= function_context.is_in_unsafe_block;
-			function_context.is_in_unsafe_block= true;
-
-			const BlockBuildInfo inner_block_build_info=
-				BuildBlockCode( *unsafe_block->block_, block_names, function_context );
 
 			block_build_info.have_unconditional_return_inside=
 				block_build_info.have_unconditional_return_inside || inner_block_build_info.have_unconditional_return_inside;

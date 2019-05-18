@@ -384,20 +384,20 @@ class Block final : public SyntaxElementBase, public IBlockElement
 public:
 	Block( const FilePos& start_file_pos, const FilePos& end_file_pos, BlockElements elements );
 
+	enum class Safety
+	{
+		None,
+		Safe,
+		Unsafe,
+	};
 public:
 	const FilePos end_file_pos_;
 	const BlockElements elements_;
+	Safety safety_= Safety::None;
+
 };
 
 typedef std::unique_ptr<Block> BlockPtr;
-
-class UnsafeBlock final : public SyntaxElementBase, public IBlockElement
-{
-public:
-	UnsafeBlock( BlockPtr block );
-
-	const BlockPtr block_;
-};
 
 enum class MutabilityModifier
 {

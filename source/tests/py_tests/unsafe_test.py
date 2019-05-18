@@ -455,3 +455,42 @@ def ExplicitAccessToSpecialMethodsIsUnsafe_Test5():
 		}
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def SafeBlockResetsUnsafe_Test():
+	c_program_text= """
+		fn Bar() unsafe;
+		fn Foo()
+		{
+			unsafe
+			{
+				safe
+				{
+					Bar();
+				}
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "UnsafeFunctionCallOutsideUnsafeBlock" )
+	assert( errors_list[0].file_pos.line == 9 )
+
+
+def UnsafeInsideUnsafe_Test():
+	c_program_text= """
+		fn Bar() unsafe;
+		fn Foo()
+		{
+			unsafe
+			{
+				{
+					unsafe
+					{
+						Bar();
+					}
+				}
+			}
+		}
+	"""
+	tests_lib.build_program( c_program_text )

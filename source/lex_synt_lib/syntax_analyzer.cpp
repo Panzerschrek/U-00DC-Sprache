@@ -2669,12 +2669,23 @@ std::vector<IBlockElementPtr> SyntaxAnalyzer::ParseBlockElements()
 			elements.emplace_back( ParseStaticAssert() );
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::halt_ )
 			elements.emplace_back( ParseHalt() );
+		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::safe_ )
+		{
+			NextLexem();
+			if( BlockPtr block= ParseBlock() )
+			{
+				block->safety_= Block::Safety::Safe;
+				elements.emplace_back( std::move( block ) );
+			}
+		}
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::unsafe_ )
 		{
 			NextLexem();
-			BlockPtr block= ParseBlock();
-			if( block != nullptr )
-				elements.emplace_back( new UnsafeBlock( std::move( block ) ) );
+			if( BlockPtr block= ParseBlock() )
+			{
+				block->safety_= Block::Safety::Unsafe;
+				elements.emplace_back( std::move( block ) );
+			}
 		}
 		else if( it_->type == Lexem::Type::Increment )
 		{
