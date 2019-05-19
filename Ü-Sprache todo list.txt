@@ -3,18 +3,18 @@ compiler. Features grouped and sorted by priority inside each group.
 When feature was implemented, delete it from list.
 
 Common:
-*) "if var"
-*) Continious initializer for arrays
+*) "for" operator - for ranges
+*) Build-in macroses.
 *) array_view, array view take operator
 *) Dereference operator - for pointer-like classes
+*) Auto for function return type
+*) Continious initializer for arrays
 *) Tuples. Template-like iteration over tuples.
-*) Add possibility to save temp variables in current block.
 *) "shared" tag for shared_ptr and it propagation to structures with shared
 	pointers inside
 *) Multithreading support
 *) "Disassembly operator" - declare variables with initializer as members of
 	value of structure type.
-*) "for" operator - for ranges
 *) Function to function pointer assignment
 *) == and != methods generation
 *) Functions references info in "typeinfo".
@@ -23,7 +23,6 @@ Common:
 *) Constructor initializer for constexpr structs
 *) Function pointers inside constexpr functions
 *) Reference result of constexpr function evaluation
-*) Build-in macroses.
 
 References:
 *) Tags for struct/class references
@@ -40,12 +39,12 @@ Templates:
 *) Function pointers as template variable-parameters
 
 Standart library:
+*) Ranges
 *) Type traits
 *) shared_ptr
 *) thread class
 *) thread-safe shared_ptr
 *) Math functions
-*) Iterators
 
 Compiler:
 *) move-assignment without hacks.
