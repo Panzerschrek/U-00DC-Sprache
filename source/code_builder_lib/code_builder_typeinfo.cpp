@@ -144,20 +144,20 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, Variable& typeinfo_variab
 		if( llvm_type == fundamental_llvm_types_.void_for_ret_ )
 			llvm_type= fundamental_llvm_types_.void_;
 
-		add_size_field(  "size_of"_SpC, data_layout.getTypeAllocSize( llvm_type ) );
+		add_size_field( "size_of"_SpC , data_layout.getTypeAllocSize   ( llvm_type ) );
 		add_size_field( "align_of"_SpC, data_layout.getABITypeAlignment( llvm_type ) ); // TODO - is this correct alignment?
 	}
 
-	add_bool_field(      "is_fundamental"_SpC, type.GetFundamentalType()     != nullptr );
-	add_bool_field(             "is_enum"_SpC, type.GetEnumType()            != nullptr );
-	add_bool_field(            "is_array"_SpC, type.GetArrayType()           != nullptr );
-	add_bool_field(            "is_class"_SpC, type.GetClassType()           != nullptr );
+	add_bool_field( "is_fundamental"_SpC     , type.GetFundamentalType()     != nullptr );
+	add_bool_field( "is_enum"_SpC            , type.GetEnumType()            != nullptr );
+	add_bool_field( "is_array"_SpC           , type.GetArrayType()           != nullptr );
+	add_bool_field( "is_class"_SpC           , type.GetClassType()           != nullptr );
 	add_bool_field( "is_function_pointer"_SpC, type.GetFunctionPointerType() != nullptr );
-	add_bool_field(         "is_function"_SpC, type.GetFunctionType()        != nullptr );
+	add_bool_field(  "is_function"_SpC       , type.GetFunctionType()        != nullptr );
 
 	add_bool_field( "is_default_constructible"_SpC, type.IsDefaultConstructible() );
-	add_bool_field(    "is_copy_constructible"_SpC, type.IsCopyConstructible()    );
-	add_bool_field(       "is_copy_assignable"_SpC, type.IsCopyAssignable()       );
+	add_bool_field( "is_copy_constructible"_SpC   , type.IsCopyConstructible()    );
+	add_bool_field( "is_copy_assignable"_SpC      , type.IsCopyAssignable()       );
 
 	if( const FundamentalType* const fundamental_type= type.GetFundamentalType() )
 	{
@@ -207,10 +207,10 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, Variable& typeinfo_variab
 		add_bool_field( "is_interface"_SpC, class_type->kind == Class::Kind::Interface );
 
 		const ClassProxyPtr class_proxy= type.GetClassTypeProxy();
-		add_list_head_field( "fields_list"_SpC, BuildTypeinfoClassFieldsList( class_proxy, root_namespace ) );
-		add_list_head_field( "types_list"_SpC, BuildTypeinfoClassTypesList( class_proxy, root_namespace ) );
+		add_list_head_field( "fields_list"_SpC   , BuildTypeinfoClassFieldsList(    class_proxy, root_namespace ) );
+		add_list_head_field( "types_list"_SpC    , BuildTypeinfoClassTypesList(     class_proxy, root_namespace ) );
 		add_list_head_field( "functions_list"_SpC, BuildTypeinfoClassFunctionsList( class_proxy, root_namespace ) );
-		add_list_head_field( "parents_list"_SpC, BuildeTypeinfoClassParentsList( class_proxy, root_namespace ) );
+		add_list_head_field( "parents_list"_SpC  , BuildeTypeinfoClassParentsList(  class_proxy, root_namespace ) );
 
 	}
 	else if( const FunctionPointer* const function_pointer_type= type.GetFunctionPointerType() )
@@ -221,9 +221,9 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, Variable& typeinfo_variab
 	{
 		add_typeinfo_field( "return_type"_SpC, function_type->return_type );
 		add_bool_field( "return_value_is_reference"_SpC, function_type->return_value_is_reference );
-		add_bool_field( "return_value_is_mutable"_SpC, function_type->return_value_is_mutable );
-		add_bool_field( "unsafe"_SpC, function_type->unsafe );
-		add_list_head_field( "arguments_list"_SpC, BuildTypeinfoFunctionArguments( *function_type, root_namespace ) );
+		add_bool_field( "return_value_is_mutable"_SpC  , function_type->return_value_is_mutable );
+		add_bool_field( "unsafe"_SpC                   , function_type->unsafe );
+		add_list_head_field( "arguments_list"_SpC      , BuildTypeinfoFunctionArguments( *function_type, root_namespace ) );
 		// SPRACHE_TODO - add also reference pollution.
 	}
 	else U_ASSERT(false);
