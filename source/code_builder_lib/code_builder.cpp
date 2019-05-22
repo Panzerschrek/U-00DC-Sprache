@@ -1348,7 +1348,7 @@ void CodeBuilder::BuildFuncCode(
 		func_variable.llvm_function= llvm_function;
 	}
 	else
-		llvm_function= llvm::dyn_cast<llvm::Function>( func_variable.llvm_function );
+		llvm_function= func_variable.llvm_function;
 
 	if( block == nullptr )
 	{
