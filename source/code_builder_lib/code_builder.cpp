@@ -46,7 +46,7 @@ namespace CodeBuilderPrivate
 {
 
 CodeBuilder::FunctionContext::FunctionContext(
-	const Type in_return_type,
+	const boost::optional<Type>& in_return_type,
 	const bool in_return_value_is_mutable,
 	const bool in_return_value_is_reference,
 	llvm::LLVMContext& llvm_context,
@@ -942,9 +942,31 @@ void CodeBuilder::PrepareFunction(
 			function_type.return_type= void_type_for_ret_;
 		else
 		{
-			function_type.return_type= PrepareType( func.type_.return_type_, names_scope );
-			if( function_type.return_type == invalid_type_ )
-				return;
+			if( const auto named_return_type = dynamic_cast<const Synt::NamedTypeName*>(func.type_.return_type_.get()) )
+			{
+				if( named_return_type->name.components.size() == 1u &&
+					!named_return_type->name.components.front().have_template_parameters &&
+					named_return_type->name.components.front().name == Keywords::auto_ )
+				{
+					func_variable.return_type_is_auto= true;
+					if( base_class != nullptr )
+						++error_count_; // TODO - auto disabled for class methods.
+					if( func.block_ == nullptr )
+						++error_count_; // TODO - expected body.
+
+					if( func.type_.return_value_reference_modifier_ == ReferenceModifier::Reference )
+						function_type.return_type= void_type_;
+					else
+						function_type.return_type= void_type_for_ret_;
+				}
+			}
+
+			if( !func_variable.return_type_is_auto )
+			{
+				function_type.return_type= PrepareType( func.type_.return_type_, names_scope );
+				if( function_type.return_type == invalid_type_ )
+					return;
+			}
 		}
 
 		function_type.return_value_is_mutable= func.type_.return_value_mutability_modifier_ == MutabilityModifier::Mutable;
@@ -1295,7 +1317,7 @@ void CodeBuilder::CheckOverloadedOperator(
 	};
 }
 
-void CodeBuilder::BuildFuncCode(
+Type CodeBuilder::BuildFuncCode(
 	FunctionVariable& func_variable,
 	const ClassProxyPtr& base_class,
 	NamesScope& parent_names_scope,
@@ -1354,7 +1376,7 @@ void CodeBuilder::BuildFuncCode(
 	{
 		// This is only prototype, then, function preparing work is done.
 		func_variable.have_body= false;
-		return;
+		return function_type->return_type;
 	}
 
 	// For functions with body we can use comdat.
@@ -1380,7 +1402,7 @@ void CodeBuilder::BuildFuncCode(
 
 	NamesScope function_names( ""_SpC, &parent_names_scope );
 	FunctionContext function_context(
-		function_type->return_type,
+		func_variable.return_type_is_auto ? boost::optional<Type>(): function_type->return_type,
 		function_type->return_value_is_mutable,
 		function_type->return_value_is_reference,
 		llvm_context_,
@@ -1515,18 +1537,12 @@ void CodeBuilder::BuildFuncCode(
 		else
 		{
 			if( NameShadowsTemplateArgument( arg_name, function_names ) )
-			{
 				errors_.push_back( ReportDeclarationShadowsTemplateArgument( declaration_arg.file_pos_, arg_name ) );
-				return;
-			}
 
 			const NamesScope::InsertedName* const inserted_arg=
 				function_names.AddName( arg_name, Value( var, declaration_arg.file_pos_ ) );
 			if( !inserted_arg )
-			{
 				errors_.push_back( ReportRedefinition( declaration_arg.file_pos_, arg_name ) );
-				return;
-			}
 		}
 
 		llvm_arg.setName( "_arg_" + ToUTF8( arg_name ) );
@@ -1608,6 +1624,12 @@ void CodeBuilder::BuildFuncCode(
 	const BlockBuildInfo block_build_info= BuildBlockCode( *block, function_names, function_context );
 	U_ASSERT( function_context.stack_variables_stack.size() == 1u );
 
+	// If we build func code only for return type deducing - we can return. Function code will be generated later.
+	if( func_variable.return_type_is_auto )
+	{
+		func_variable.return_type_is_auto= false;
+		return function_context.deduced_return_type ? *function_context.deduced_return_type : void_type_for_ret_;
+	}
 
 	if( func_variable.constexpr_kind != FunctionVariable::ConstexprKind::NonConstexpr )
 	{
@@ -1696,7 +1718,7 @@ void CodeBuilder::BuildFuncCode(
 		else
 		{
 			errors_.push_back( ReportNoReturnInFunctionReturningNonVoid( block->end_file_pos_ ) );
-			return;
+			return function_type->return_type;
 		}
 	}
 
@@ -1779,6 +1801,8 @@ void CodeBuilder::BuildFuncCode(
 		else
 			++it;
 	}
+
+	return function_type->return_type;
 }
 
 void CodeBuilder::BuildConstructorInitialization(
@@ -2791,9 +2815,18 @@ void CodeBuilder::BuildReturnOperatorCode(
 {
 	if( return_operator.expression_ == nullptr )
 	{
+		if( function_context.return_type == boost::none )
+		{
+			if( function_context.deduced_return_type == boost::none )
+				function_context.deduced_return_type = void_type_for_ret_;
+			else if( *function_context.deduced_return_type != void_type_for_ret_ )
+				errors_.push_back( ReportTypesMismatch( return_operator.file_pos_, function_context.deduced_return_type->ToString(), void_type_for_ret_.ToString() ) );
+			return;
+		}
+
 		if( !( function_context.return_type == void_type_ && !function_context.return_value_is_reference ) )
 		{
-			errors_.push_back( ReportTypesMismatch( return_operator.file_pos_, void_type_.ToString(), function_context.return_type.ToString() ) );
+			errors_.push_back( ReportTypesMismatch( return_operator.file_pos_, void_type_.ToString(), function_context.return_type->ToString() ) );
 			return;
 		}
 
@@ -2821,11 +2854,21 @@ void CodeBuilder::BuildReturnOperatorCode(
 		return;
 	}
 
+	// For functions with "auto" on return type use type of first return expression.
+	if( function_context.return_type == boost::none )
+	{
+		if( function_context.deduced_return_type == boost::none )
+			function_context.deduced_return_type = expression_result.type;
+		else if( *function_context.deduced_return_type != expression_result.type )
+			errors_.push_back( ReportTypesMismatch( return_operator.file_pos_, function_context.deduced_return_type->ToString(), expression_result.type.ToString() ) );
+		return;
+	}
+
 	if( function_context.return_value_is_reference )
 	{
-		if( !ReferenceIsConvertible( expression_result.type, function_context.return_type, return_operator.file_pos_ ) )
+		if( !ReferenceIsConvertible( expression_result.type, *function_context.return_type, return_operator.file_pos_ ) )
 		{
-			errors_.push_back( ReportTypesMismatch( return_operator.file_pos_, function_context.return_type.ToString(), expression_result.type.ToString() ) );
+			errors_.push_back( ReportTypesMismatch( return_operator.file_pos_, function_context.return_type->ToString(), expression_result.type.ToString() ) );
 			return;
 		}
 
@@ -2864,14 +2907,14 @@ void CodeBuilder::BuildReturnOperatorCode(
 
 		llvm::Value* ret_value= expression_result.llvm_value;
 		if( expression_result.type != function_context.return_type )
-			ret_value= CreateReferenceCast( ret_value, expression_result.type, function_context.return_type, function_context );
+			ret_value= CreateReferenceCast( ret_value, expression_result.type, *function_context.return_type, function_context );
 		function_context.llvm_ir_builder.CreateRet( ret_value );
 	}
 	else
 	{
 		if( expression_result.type != function_context.return_type )
 		{
-			errors_.push_back( ReportTypesMismatch( return_operator.file_pos_, function_context.return_type.ToString(), expression_result.type.ToString() ) );
+			errors_.push_back( ReportTypesMismatch( return_operator.file_pos_, function_context.return_type->ToString(), expression_result.type.ToString() ) );
 			return;
 		}
 
@@ -2893,13 +2936,13 @@ void CodeBuilder::BuildReturnOperatorCode(
 
 		if( function_context.s_ret_ != nullptr )
 		{
-			const ClassProxyPtr class_= function_context.return_type.GetClassTypeProxy();
+			const ClassProxyPtr class_= function_context.return_type->GetClassTypeProxy();
 			U_ASSERT( class_ != nullptr );
 			if( expression_result.value_type == ValueType::Value )
 			{
 				if( expression_result.node != nullptr )
 					function_context.variables_state.MoveNode( expression_result.node );
-				CopyBytes( expression_result.llvm_value, function_context.s_ret_, function_context.return_type, function_context );
+				CopyBytes( expression_result.llvm_value, function_context.s_ret_, *function_context.return_type, function_context );
 			}
 			else
 				TryCallCopyConstructor( return_operator.file_pos_, function_context.s_ret_, expression_result.llvm_value, class_, function_context );

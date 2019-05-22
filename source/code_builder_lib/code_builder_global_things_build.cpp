@@ -189,7 +189,7 @@ void CodeBuilder::GlobalThingBuildFunctionsSet( NamesScope& names_scope, Overloa
 		for( FunctionVariable& function_variable : functions_set.functions )
 		{
 			if( function_variable.syntax_element != nullptr && function_variable.syntax_element->block_ != nullptr &&
-				!function_variable.have_body )
+				!function_variable.have_body && !function_variable.return_type_is_auto )
 			{
 				BuildFuncCode(
 					function_variable,
@@ -219,6 +219,42 @@ void CodeBuilder::GlobalThingBuildFunctionsSet( NamesScope& names_scope, Overloa
 					function_variable.syntax_element->block_.get(),
 					function_variable.syntax_element->constructor_initialization_list_.get() );
 			}
+		}
+	}
+
+	// Immediately build functions with auto return type.
+	for( FunctionVariable& function_variable : functions_set.functions )
+	{
+		if( !function_variable.have_body && function_variable.return_type_is_auto )
+		{
+			// First, compile function only for return type deducing.
+			const Type return_type=
+				BuildFuncCode(
+					function_variable,
+					functions_set.base_class,
+					names_scope,
+					function_variable.syntax_element->name_.components.back().name,
+					function_variable.syntax_element->type_.arguments_,
+					function_variable.syntax_element->block_.get(),
+					function_variable.syntax_element->constructor_initialization_list_.get() );
+
+			function_variable.have_body= false;
+			function_variable.type.GetFunctionType()->return_type= return_type;
+			function_variable.return_type_is_auto= false;
+
+			function_variable.type.GetFunctionType()->llvm_function_type= nullptr;
+			function_variable.llvm_function->eraseFromParent();
+			function_variable.llvm_function= nullptr;
+
+			// Then, compile function again, when type already known.
+			BuildFuncCode(
+				function_variable,
+				functions_set.base_class,
+				names_scope,
+				function_variable.syntax_element->name_.components.back().name,
+				function_variable.syntax_element->type_.arguments_,
+				function_variable.syntax_element->block_.get(),
+				function_variable.syntax_element->constructor_initialization_list_.get() );
 		}
 	}
 }
