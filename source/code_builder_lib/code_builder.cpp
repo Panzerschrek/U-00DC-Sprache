@@ -1707,7 +1707,7 @@ Type CodeBuilder::BuildFuncCode(
 
 	// We need call destructors for arguments only if function returns "void".
 	// In other case, we have "return" in all branches and destructors call before each "return".
-	if( !block_build_info.have_unconditional_return_inside )
+	if( !block_build_info.have_terminal_instruction_inside )
 	{
 		if( function_type->return_type == void_type_ && !function_type->return_value_is_reference )
 		{
@@ -2019,17 +2019,11 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockCode(
 
 	const StackVariablesStorage block_variables_storage( function_context );
 
+	size_t block_element_index= 0u;
 	for( const Synt::IBlockElementPtr& block_element : block.elements_ )
 	{
+		++block_element_index;
 		const Synt::IBlockElement* const block_element_ptr= block_element.get();
-
-		const auto try_report_unreachable_code=
-		[&]
-		{
-			const size_t block_element_index= size_t(&block_element - block.elements_.data());
-			if( block_element_index + 1u < block.elements_.size() )
-				errors_.push_back( ReportUnreachableCode( block.elements_[ block_element_index + 1u ]->GetFilePos() ) );
-		};
 
 		if( const auto variables_declaration= dynamic_cast<const Synt::VariablesDeclaration*>( block_element_ptr ) )
 			BuildVariablesDeclarationCode( *variables_declaration, block_names, function_context );
@@ -2065,8 +2059,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockCode(
 				block_names,
 				function_context );
 
-			block_build_info.have_unconditional_return_inside= true;
-			try_report_unreachable_code();
+			block_build_info.have_terminal_instruction_inside= true;
+			break;
 		}
 		else if( const auto while_operator= dynamic_cast<const Synt::WhileOperator*>( block_element_ptr ) )
 			BuildWhileOperatorCode(
@@ -2079,8 +2073,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockCode(
 				*break_operator,
 				function_context );
 
-			block_build_info.have_uncodnitional_break_or_continue= true;
-			try_report_unreachable_code();
+			block_build_info.have_terminal_instruction_inside= true;
+			break;
 		}
 		else if( const auto continue_operator= dynamic_cast<const Synt::ContinueOperator*>( block_element_ptr ) )
 		{
@@ -2088,8 +2082,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockCode(
 				*continue_operator,
 				function_context );
 
-			block_build_info.have_uncodnitional_break_or_continue= true;
-			try_report_unreachable_code();
+			block_build_info.have_terminal_instruction_inside= true;
+			break;
 		}
 		else if( const auto if_operator= dynamic_cast<const Synt::IfOperator*>( block_element_ptr ) )
 		{
@@ -2099,14 +2093,11 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockCode(
 					block_names,
 					function_context );
 
-			block_build_info.have_unconditional_return_inside=
-				block_build_info.have_unconditional_return_inside || if_block_info.have_unconditional_return_inside;
-			block_build_info.have_uncodnitional_break_or_continue=
-				block_build_info.have_uncodnitional_break_or_continue || if_block_info.have_uncodnitional_break_or_continue;
-
-			if( if_block_info.have_unconditional_return_inside ||
-				block_build_info.have_uncodnitional_break_or_continue )
-				try_report_unreachable_code();
+			if( if_block_info.have_terminal_instruction_inside )
+			{
+				block_build_info.have_terminal_instruction_inside= true;
+				break;
+			}
 		}
 		else if( const auto static_if_operator= dynamic_cast<const Synt::StaticIfOperator*>( block_element_ptr ) )
 		{
@@ -2116,14 +2107,11 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockCode(
 					block_names,
 					function_context );
 
-			block_build_info.have_unconditional_return_inside=
-				block_build_info.have_unconditional_return_inside || static_if_block_info.have_unconditional_return_inside;
-			block_build_info.have_uncodnitional_break_or_continue=
-				block_build_info.have_uncodnitional_break_or_continue || static_if_block_info.have_uncodnitional_break_or_continue;
-
-			if( static_if_block_info.have_unconditional_return_inside ||
-				block_build_info.have_uncodnitional_break_or_continue )
-				try_report_unreachable_code();
+			if( static_if_block_info.have_terminal_instruction_inside )
+			{
+				block_build_info.have_terminal_instruction_inside= true;
+				break;
+			}
 		}
 		else if( const auto static_assert_= dynamic_cast<const Synt::StaticAssert*>( block_element_ptr ) )
 			BuildStaticAssert( *static_assert_, block_names, function_context );
@@ -2131,8 +2119,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockCode(
 		{
 			BuildHalt( *halt, function_context );
 
-			block_build_info.have_unconditional_return_inside= true;
-			try_report_unreachable_code();
+			block_build_info.have_terminal_instruction_inside= true;
+			break;
 		}
 		else if( const auto halt_if= dynamic_cast<const Synt::HaltIf*>( block_element_ptr ) )
 			BuildHaltIf( *halt_if, block_names, function_context );
@@ -2152,25 +2140,24 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockCode(
 			const BlockBuildInfo inner_block_build_info=
 				BuildBlockCode( *block, block_names, function_context );
 
-			block_build_info.have_unconditional_return_inside=
-				block_build_info.have_unconditional_return_inside || inner_block_build_info.have_unconditional_return_inside;
-			block_build_info.have_uncodnitional_break_or_continue=
-				block_build_info.have_uncodnitional_break_or_continue || inner_block_build_info.have_uncodnitional_break_or_continue;
-
-			if( inner_block_build_info.have_unconditional_return_inside ||
-				block_build_info.have_uncodnitional_break_or_continue )
-				try_report_unreachable_code();
-
 			function_context.is_in_unsafe_block= prev_unsafe;
+
+			if( inner_block_build_info.have_terminal_instruction_inside )
+			{
+				block_build_info.have_terminal_instruction_inside= true;
+				break;
+			}
 		}
 		else U_ASSERT(false);
 	}
 
+	if( block_element_index < block.elements_.size() )
+		errors_.push_back( ReportUnreachableCode( block.elements_[ block_element_index ]->GetFilePos() ) );
+
 	// If there are undconditional "break", "continue", "return" operators,
 	// we didn`t need call destructors, it must be called in this operators.
-	if( !( block_build_info.have_uncodnitional_break_or_continue || block_build_info.have_unconditional_return_inside ) )
+	if( ! block_build_info.have_terminal_instruction_inside )
 		CallDestructors( *function_context.stack_variables_stack.back(), function_context, block.end_file_pos_ );
-
 
 	return block_build_info;
 }
@@ -3088,8 +3075,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildIfOperatorCode(
 	U_ASSERT( !if_operator.branches_.empty() );
 
 	BlockBuildInfo if_operator_blocks_build_info;
-	bool have_return_in_all_branches= true;
-	bool have_break_or_continue_in_all_branches= true;
+	if_operator_blocks_build_info.have_terminal_instruction_inside= true;
 
 	// TODO - optimize this method. Make less basic blocks.
 	//
@@ -3161,8 +3147,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildIfOperatorCode(
 		const BlockBuildInfo block_build_info=
 			BuildBlockCode( *branch.block, names, function_context );
 
-		have_return_in_all_branches= have_return_in_all_branches && block_build_info.have_unconditional_return_inside;
-		have_break_or_continue_in_all_branches= have_break_or_continue_in_all_branches && block_build_info.have_uncodnitional_break_or_continue;
+		if_operator_blocks_build_info.have_terminal_instruction_inside=
+			if_operator_blocks_build_info.have_terminal_instruction_inside && block_build_info.have_terminal_instruction_inside;
 
 		function_context.llvm_ir_builder.CreateBr( block_after_if );
 
@@ -3176,21 +3162,14 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildIfOperatorCode(
 		bracnhes_variables_state.push_back( conditions_variable_state );
 
 	if( if_operator.branches_.back().condition != nullptr )
-	{
-		have_return_in_all_branches= false;
-		have_break_or_continue_in_all_branches= false;
-	}
+		if_operator_blocks_build_info.have_terminal_instruction_inside= false;
 
 	function_context.variables_state= MergeVariablesStateAfterIf( bracnhes_variables_state, if_operator.end_file_pos_ );
-	//for( const auto& var_pair : function_context.variables_state.GetVariables() )
-	//	CheckVariableReferences( *var_pair.first, if_operator.end_file_pos_ );
 
 	// Block after if code.
 	function_context.function->getBasicBlockList().push_back( block_after_if );
 	function_context.llvm_ir_builder.SetInsertPoint( block_after_if );
 
-	if_operator_blocks_build_info.have_unconditional_return_inside= have_return_in_all_branches;
-	if_operator_blocks_build_info.have_uncodnitional_break_or_continue= have_break_or_continue_in_all_branches;
 	return if_operator_blocks_build_info;
 }
 
