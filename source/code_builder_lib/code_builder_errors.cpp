@@ -272,6 +272,10 @@ const char* CodeBuilderErrorCodeToString( const CodeBuilderErrorCode code )
 		return "BaseClassForInterface";
 	case CodeBuilderErrorCode::ConstructorForInterface:
 		return "ConstructorForInterface";
+	case CodeBuilderErrorCode::ExpectedBodyForAutoFunction:
+		return "ExpectedBodyForAutoFunction";
+	case CodeBuilderErrorCode::AutoFunctionInsideClassesNotAllowed:
+		return "AutoFunctionInsideClassesNotAllowed";
 	case CodeBuilderErrorCode::VirtualForNonclassFunction:
 		return "VirtualForNonclassFunction";
 	case CodeBuilderErrorCode::VirtualForNonThisCallFunction:
@@ -1723,6 +1727,28 @@ CodeBuilderError ReportConstructorForInterface( const FilePos& file_pos )
 	error.code= CodeBuilderErrorCode::ConstructorForInterface;
 
 	error.text= "Constructor for interface."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportExpectedBodyForAutoFunction( const FilePos& file_pos, const ProgramString& function_name )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::ExpectedBodyForAutoFunction;
+
+	error.text= "Expected body for function \""_SpC + function_name + "\", because return type declared as \"auto\"."_SpC;
+
+	return error;
+}
+
+CodeBuilderError ReportAutoFunctionInsideClassesNotAllowed( const FilePos& file_pos, const ProgramString& function_name )
+{
+	CodeBuilderError error;
+	error.file_pos= file_pos;
+	error.code= CodeBuilderErrorCode::AutoFunctionInsideClassesNotAllowed;
+
+	error.text= "\"auto\" for member function \""_SpC + function_name + "\"."_SpC;
 
 	return error;
 }

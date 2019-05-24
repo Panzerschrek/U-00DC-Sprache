@@ -72,7 +72,7 @@ private:
 	struct FunctionContext
 	{
 		FunctionContext(
-			const Type return_type,
+			const boost::optional<Type>& return_type,
 			bool return_value_is_mutable,
 			bool return_value_is_reference,
 			llvm::LLVMContext& llvm_context,
@@ -80,7 +80,8 @@ private:
 
 		FunctionContext(const FunctionContext&)= delete;
 
-		Type return_type;
+		boost::optional<Type> return_type; // boost::none if type not known yet and must be deduced.
+		boost::optional<Type> deduced_return_type; // for functions with "auto" return type.
 		bool return_value_is_mutable;
 		bool return_value_is_reference;
 
@@ -371,7 +372,8 @@ private:
 	void CallDestructorsBeforeReturn( FunctionContext& function_context, const FilePos& file_pos );
 	void CallMembersDestructors( FunctionContext& function_context, const FilePos& file_pos );
 
-	void PrepareFunction(
+	// Returns index of function in set, if function successfuly prepared and inserted. Returns ~0 on fail.
+	size_t PrepareFunction(
 		NamesScope& names_scope,
 		const ClassProxyPtr& base_class,
 		OverloadedFunctionsSet& functions_set,
@@ -384,7 +386,8 @@ private:
 		OverloadedOperator overloaded_operator,
 		const FilePos& file_pos );
 
-	void BuildFuncCode(
+	// Returns type of return value.
+	Type BuildFuncCode(
 		FunctionVariable& func,
 		const ClassProxyPtr& base_class,
 		NamesScope& parent_names_scope,

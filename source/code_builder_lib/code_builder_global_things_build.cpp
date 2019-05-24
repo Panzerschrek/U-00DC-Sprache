@@ -173,9 +173,50 @@ void CodeBuilder::GlobalThingBuildFunctionsSet( NamesScope& names_scope, Overloa
 		DETECT_GLOBALS_LOOP( &functions_set, functions_set_name, functions_set_file_pos, TypeCompleteness::Complete );
 
 		for( const Synt::Function* const function : functions_set.syntax_elements )
-			PrepareFunction( names_scope, functions_set.base_class, functions_set, *function, false );
+		{
+			const size_t function_index= PrepareFunction( names_scope, functions_set.base_class, functions_set, *function, false );
+
+			if( function_index == ~0u )
+				continue;
+			FunctionVariable& function_variable= functions_set.functions[function_index];
+
+			// Immediately build functions with auto return type.
+			if( function_variable.return_type_is_auto && !function_variable.have_body )
+			{
+				// First, compile function only for return type deducing.
+				const Type return_type=
+					BuildFuncCode(
+						function_variable,
+						functions_set.base_class,
+						names_scope,
+						function_variable.syntax_element->name_.components.back().name,
+						function_variable.syntax_element->type_.arguments_,
+						function_variable.syntax_element->block_.get(),
+						function_variable.syntax_element->constructor_initialization_list_.get() );
+
+				function_variable.have_body= false;
+				function_variable.type.GetFunctionType()->return_type= return_type;
+				function_variable.return_type_is_auto= false;
+
+				function_variable.type.GetFunctionType()->llvm_function_type= nullptr;
+				function_variable.llvm_function->eraseFromParent();
+				function_variable.llvm_function= nullptr;
+
+				// Then, compile function again, when type already known.
+				BuildFuncCode(
+					function_variable,
+					functions_set.base_class,
+					names_scope,
+					function_variable.syntax_element->name_.components.back().name,
+					function_variable.syntax_element->type_.arguments_,
+					function_variable.syntax_element->block_.get(),
+					function_variable.syntax_element->constructor_initialization_list_.get() );
+			}
+		}
+
 		for( const Synt::Function* const function : functions_set.out_of_line_syntax_elements )
 			PrepareFunction( names_scope, functions_set.base_class, functions_set, *function, true );
+
 		for( const Synt::FunctionTemplate* const function_template : functions_set.template_syntax_elements )
 			PrepareFunctionTemplate( *function_template, functions_set, names_scope, functions_set.base_class );
 
@@ -189,7 +230,7 @@ void CodeBuilder::GlobalThingBuildFunctionsSet( NamesScope& names_scope, Overloa
 		for( FunctionVariable& function_variable : functions_set.functions )
 		{
 			if( function_variable.syntax_element != nullptr && function_variable.syntax_element->block_ != nullptr &&
-				!function_variable.have_body )
+				!function_variable.have_body && !function_variable.return_type_is_auto )
 			{
 				BuildFuncCode(
 					function_variable,
