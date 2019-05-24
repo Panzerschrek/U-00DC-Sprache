@@ -75,3 +75,45 @@ def AutoFunctionInsideClassesNotAllowed_Test1():
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "AutoFunctionInsideClassesNotAllowed" )
 	assert( errors_list[0].file_pos.line == 4 )
+
+def TypesMismtach_ForAutoReturnValue_Test0():
+	c_program_text= """
+		fn Foo( bool b ) : auto
+		{
+			if( b )
+			{ return 1; } // return type deduced to i32
+			return -1.0; // return type deduced to f64
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "TypesMismatch" )
+	assert( errors_list[0].file_pos.line == 6 )
+
+
+def TypesMismtach_ForAutoReturnValue_Test1():
+	c_program_text= """
+		fn Foo( bool b ) : auto
+		{
+			if( b )
+			{ return; } // return type deduced to void
+			return -1.0; // return type deduced to f64
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "TypesMismatch" )
+	assert( errors_list[0].file_pos.line == 6 )
+
+
+def ExpectedReferenceValue_ForAutoReturnValue_Test0():
+	c_program_text= """
+		fn Foo( bool b ) : auto&
+		{
+			return; // Error, expected reference
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ExpectedReferenceValue" )
+	assert( errors_list[0].file_pos.line == 4 )

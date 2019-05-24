@@ -1632,7 +1632,10 @@ Type CodeBuilder::BuildFuncCode(
 	if( func_variable.return_type_is_auto )
 	{
 		func_variable.return_type_is_auto= false;
-		return function_context.deduced_return_type ? *function_context.deduced_return_type : void_type_for_ret_;
+		return
+			function_context.deduced_return_type
+				? *function_context.deduced_return_type
+				: ( function_type->return_value_is_reference ? void_type_ : void_type_for_ret_ );
 	}
 
 	if( func_variable.constexpr_kind != FunctionVariable::ConstexprKind::NonConstexpr )
@@ -1800,7 +1803,8 @@ Type CodeBuilder::BuildFuncCode(
 	auto it= bb_list.begin();
 	while(it != bb_list.end())
 	{
-		if( &*it != function_context.function_basic_block && it->empty() )
+		if( &*it != function_context.function_basic_block && it->empty() &&
+			it->user_empty())
 			it= bb_list.erase(it);
 		else
 			++it;
@@ -2821,6 +2825,12 @@ void CodeBuilder::BuildReturnOperatorCode(
 	{
 		if( function_context.return_type == boost::none )
 		{
+			if( function_context.return_value_is_reference )
+			{
+				errors_.push_back( ReportExpectedReferenceValue( return_operator.file_pos_ ) );
+				return;
+			}
+
 			if( function_context.deduced_return_type == boost::none )
 				function_context.deduced_return_type = void_type_for_ret_;
 			else if( *function_context.deduced_return_type != void_type_for_ret_ )
