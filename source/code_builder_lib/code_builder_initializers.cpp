@@ -67,11 +67,8 @@ void CodeBuilder::ApplyEmptyInitializer(
 			array_type->ArraySizeOrZero(),
 			[&](llvm::Value* const counter_value)
 			{
-				llvm::Value* index_list[2];
-				index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
-				index_list[1]= counter_value;
 				array_member.llvm_value=
-					function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, llvm::ArrayRef<llvm::Value*> ( index_list, 2u ) );
+					function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, { GetZeroGEPIndex(), counter_value } );
 
 				ApplyEmptyInitializer( variable_name, file_pos, array_member, function_context );
 			},
@@ -130,7 +127,7 @@ llvm::Constant* CodeBuilder::ApplyArrayInitializer(
 
 	// Make first index = 0 for array to pointer conversion.
 	llvm::Value* index_list[2];
-	index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
+	index_list[0]= GetZeroGEPIndex();
 
 	bool is_constant= array_type->type.CanBeConstexpr();
 	std::vector<llvm::Constant*> members_constants;
@@ -139,7 +136,7 @@ llvm::Constant* CodeBuilder::ApplyArrayInitializer(
 	{
 		index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(i) ) );
 		array_member.llvm_value=
-			function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, llvm::ArrayRef<llvm::Value*> ( index_list, 2u ) );
+			function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, index_list );
 
 		U_ASSERT( initializer.initializers[i] != nullptr );
 		llvm::Constant* const member_constant=
@@ -192,9 +189,6 @@ llvm::Constant* CodeBuilder::ApplyStructNamedInitializer(
 
 	Variable struct_member= variable;
 	struct_member.location= Variable::Location::Pointer;
-	// Make first index = 0 for array to pointer conversion.
-	llvm::Value* index_list[2];
-	index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
 
 	for( const Synt::StructNamedInitializer::MemberInitializer& member_initializer : initializer.members_initializers )
 	{
@@ -231,9 +225,8 @@ llvm::Constant* CodeBuilder::ApplyStructNamedInitializer(
 		else
 		{
 			struct_member.type= field->type;
-			index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(field->index) ) );
 			struct_member.llvm_value=
-				function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, llvm::ArrayRef<llvm::Value*> ( index_list, 2u ) );
+				function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, { GetZeroGEPIndex(), GetFieldGEPIndex( field->index ) } );
 
 			U_ASSERT( member_initializer.initializer != nullptr );
 			constant_initializer=
@@ -259,9 +252,8 @@ llvm::Constant* CodeBuilder::ApplyStructNamedInitializer(
 					else
 					{
 						struct_member.type= field->type;
-						index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(field->index) ) );
 						struct_member.llvm_value=
-							function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, llvm::ArrayRef<llvm::Value*> ( index_list, 2u ) );
+							function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, { GetZeroGEPIndex(), GetFieldGEPIndex( field->index ) } );
 						ApplyEmptyInitializer( class_member.first, initializer.file_pos_, struct_member, function_context );
 					}
 				}
@@ -761,11 +753,8 @@ llvm::Constant* CodeBuilder::ApplyZeroInitializer(
 			array_type->ArraySizeOrZero(),
 			[&](llvm::Value* const counter_value)
 			{
-				llvm::Value* index_list[2];
-				index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
-				index_list[1]= counter_value;
 				array_member.llvm_value=
-					function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, llvm::ArrayRef<llvm::Value*>( index_list, 2u ) );
+					function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, { GetZeroGEPIndex(), counter_value } );
 				const_value= ApplyZeroInitializer( array_member, initializer, function_context );
 			},
 			function_context);
@@ -798,9 +787,6 @@ llvm::Constant* CodeBuilder::ApplyZeroInitializer(
 
 		Variable struct_member= variable;
 		struct_member.location= Variable::Location::Pointer;
-		// Make first index = 0 for array to pointer conversion.
-		llvm::Value* index_list[2];
-		index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
 
 		class_type->members.ForEachInThisScope(
 			[&]( const NamesScope::InsertedName& member )
@@ -816,9 +802,8 @@ llvm::Constant* CodeBuilder::ApplyZeroInitializer(
 				}
 
 				struct_member.type= field->type;
-				index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(field->index) ) );
 				struct_member.llvm_value=
-					function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, llvm::ArrayRef<llvm::Value*> ( index_list, 2u ) );
+					function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, { GetZeroGEPIndex(), GetFieldGEPIndex( field->index ) } );
 
 				llvm::Constant* const constant_initializer=
 					ApplyZeroInitializer( struct_member, initializer, function_context );
@@ -933,12 +918,8 @@ llvm::Constant* CodeBuilder::InitializeReferenceField(
 		function_context.variables_state.AddLink( src_node, inner_reference );
 	}
 
-	// Make first index = 0 for array to pointer conversion.
-	llvm::Value* index_list[2];
-	index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
-	index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(field.index) ) );
 	llvm::Value* const address_of_reference=
-		function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, llvm::ArrayRef<llvm::Value*> ( index_list, 2u ) );
+		function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, { GetZeroGEPIndex(), GetFieldGEPIndex( field.index ) } );
 
 	llvm::Value* ref_to_store= initializer_variable.llvm_value;
 	if( field.type != initializer_variable.type )

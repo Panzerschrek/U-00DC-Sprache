@@ -118,11 +118,10 @@ void CodeBuilder::TryGenerateDefaultConstructor( Class& the_class, const Type& c
 		base_variable.type= the_class.base_class;
 		base_variable.value_type= ValueType::Reference;
 
-		llvm::Value* index_list[2];
-		index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
-		index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(the_class.base_class_field_number) ) );
 		base_variable.llvm_value=
-			function_context.llvm_ir_builder.CreateGEP( this_llvm_value, llvm::ArrayRef<llvm::Value*>( index_list, 2u ) );
+			function_context.llvm_ir_builder.CreateGEP(
+				this_llvm_value,
+				{ GetZeroGEPIndex(), GetFieldGEPIndex( the_class.base_class_field_number ) } );
 
 		ApplyEmptyInitializer( Keyword( Keywords::base_ ), FilePos()/*TODO*/, base_variable, function_context );
 	}
@@ -140,11 +139,8 @@ void CodeBuilder::TryGenerateDefaultConstructor( Class& the_class, const Type& c
 			field_variable.type= field->type;
 			field_variable.value_type= ValueType::Reference;
 
-			llvm::Value* index_list[2];
-			index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
-			index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(field->index) ) );
 			field_variable.llvm_value=
-				function_context.llvm_ir_builder.CreateGEP( this_llvm_value, llvm::ArrayRef<llvm::Value*> ( index_list, 2u ) );
+				function_context.llvm_ir_builder.CreateGEP( this_llvm_value, { GetZeroGEPIndex(), GetFieldGEPIndex( field->index ) } );
 
 			ApplyEmptyInitializer( member.first, FilePos()/*TODO*/, field_variable, function_context );
 		} );
@@ -299,10 +295,10 @@ void CodeBuilder::TryGenerateCopyConstructor( Class& the_class, const Type& clas
 	if( the_class.base_class != nullptr )
 	{
 		llvm::Value* index_list[2];
-		index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
-		index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(the_class.base_class_field_number) ) );
-		llvm::Value* const src= function_context.llvm_ir_builder.CreateGEP( src_llvm_value , llvm::ArrayRef<llvm::Value*>( index_list, 2u ) );
-		llvm::Value* const dst= function_context.llvm_ir_builder.CreateGEP( this_llvm_value, llvm::ArrayRef<llvm::Value*>( index_list, 2u ) );
+		index_list[0]= GetZeroGEPIndex();
+		index_list[1]= GetFieldGEPIndex( the_class.base_class_field_number );
+		llvm::Value* const src= function_context.llvm_ir_builder.CreateGEP( src_llvm_value , index_list );
+		llvm::Value* const dst= function_context.llvm_ir_builder.CreateGEP( this_llvm_value, index_list );
 		BuildCopyConstructorPart( src, dst, the_class.base_class, function_context );
 	}
 
@@ -314,10 +310,10 @@ void CodeBuilder::TryGenerateCopyConstructor( Class& the_class, const Type& clas
 				return;
 
 			llvm::Value* index_list[2];
-			index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
-			index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(field->index) ) );
-			llvm::Value* const src= function_context.llvm_ir_builder.CreateGEP( src_llvm_value , llvm::ArrayRef<llvm::Value*>( index_list, 2u ) );
-			llvm::Value* const dst= function_context.llvm_ir_builder.CreateGEP( this_llvm_value, llvm::ArrayRef<llvm::Value*>( index_list, 2u ) );
+			index_list[0]= GetZeroGEPIndex();
+			index_list[1]= GetFieldGEPIndex( field->index );
+			llvm::Value* const src= function_context.llvm_ir_builder.CreateGEP( src_llvm_value , index_list );
+			llvm::Value* const dst= function_context.llvm_ir_builder.CreateGEP( this_llvm_value, index_list );
 
 			if( field->is_reference )
 			{
@@ -589,10 +585,10 @@ void CodeBuilder::TryGenerateCopyAssignmentOperator( Class& the_class, const Typ
 	if( the_class.base_class != nullptr )
 	{
 		llvm::Value* index_list[2];
-		index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
-		index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(the_class.base_class_field_number) ) );
-		llvm::Value* const src= function_context.llvm_ir_builder.CreateGEP( src_llvm_value , llvm::ArrayRef<llvm::Value*>( index_list, 2u ) );
-		llvm::Value* const dst= function_context.llvm_ir_builder.CreateGEP( this_llvm_value, llvm::ArrayRef<llvm::Value*>( index_list, 2u ) );
+		index_list[0]= GetZeroGEPIndex();
+		index_list[1]= GetFieldGEPIndex( the_class.base_class_field_number );
+		llvm::Value* const src= function_context.llvm_ir_builder.CreateGEP( src_llvm_value , index_list );
+		llvm::Value* const dst= function_context.llvm_ir_builder.CreateGEP( this_llvm_value, index_list );
 		BuildCopyAssignmentOperatorPart( src, dst, the_class.base_class, function_context );
 	}
 
@@ -605,12 +601,12 @@ void CodeBuilder::TryGenerateCopyAssignmentOperator( Class& the_class, const Typ
 			U_ASSERT( field->type.IsCopyAssignable() );
 
 			llvm::Value* index_list[2];
-			index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
-			index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(field->index) ) );
+			index_list[0]= GetZeroGEPIndex();
+			index_list[1]= GetFieldGEPIndex( field->index );
 
 			BuildCopyAssignmentOperatorPart(
-				function_context.llvm_ir_builder.CreateGEP( src_llvm_value , llvm::ArrayRef<llvm::Value*>( index_list, 2u ) ),
-				function_context.llvm_ir_builder.CreateGEP( this_llvm_value, llvm::ArrayRef<llvm::Value*>( index_list, 2u ) ),
+				function_context.llvm_ir_builder.CreateGEP( src_llvm_value , index_list ),
+				function_context.llvm_ir_builder.CreateGEP( this_llvm_value, index_list ),
 				field->type,
 				function_context );
 		} ); // For fields.
@@ -669,12 +665,12 @@ void CodeBuilder::BuildCopyConstructorPart(
 			[&](llvm::Value* const counter_value)
 			{
 				llvm::Value* index_list[2];
-				index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
+				index_list[0]= GetZeroGEPIndex();
 				index_list[1]= counter_value;
 
 				BuildCopyConstructorPart(
-					function_context.llvm_ir_builder.CreateGEP( src, llvm::ArrayRef<llvm::Value*>( index_list, 2u ) ),
-					function_context.llvm_ir_builder.CreateGEP( dst, llvm::ArrayRef<llvm::Value*>( index_list, 2u ) ),
+					function_context.llvm_ir_builder.CreateGEP( src, index_list ),
+					function_context.llvm_ir_builder.CreateGEP( dst, index_list ),
 					array_type.type,
 					function_context );
 			},
@@ -707,12 +703,7 @@ void CodeBuilder::BuildCopyConstructorPart(
 		U_ASSERT( constructor != nullptr );
 
 		// Call it.
-		std::vector<llvm::Value*> llvm_args;
-		llvm_args.push_back( dst );
-		llvm_args.push_back( src );
-		function_context.llvm_ir_builder.CreateCall(
-			llvm::dyn_cast<llvm::Function>(constructor->llvm_function),
-			llvm_args );
+		function_context.llvm_ir_builder.CreateCall(constructor->llvm_function, { dst, src } );
 	}
 	else
 		U_ASSERT(false);
@@ -738,12 +729,12 @@ void CodeBuilder::BuildCopyAssignmentOperatorPart(
 			[&](llvm::Value* const counter_value)
 			{
 				llvm::Value* index_list[2];
-				index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
+				index_list[0]= GetZeroGEPIndex();
 				index_list[1]= counter_value;
 
 				BuildCopyAssignmentOperatorPart(
-					function_context.llvm_ir_builder.CreateGEP( src, llvm::ArrayRef<llvm::Value*>( index_list, 2u ) ),
-					function_context.llvm_ir_builder.CreateGEP( dst, llvm::ArrayRef<llvm::Value*>( index_list, 2u ) ),
+					function_context.llvm_ir_builder.CreateGEP( src, index_list ),
+					function_context.llvm_ir_builder.CreateGEP( dst, index_list ),
 					array_type.type,
 					function_context );
 			},
@@ -776,12 +767,7 @@ void CodeBuilder::BuildCopyAssignmentOperatorPart(
 		U_ASSERT( op != nullptr );
 
 		// Call it.
-		std::vector<llvm::Value*> llvm_args;
-		llvm_args.push_back( dst );
-		llvm_args.push_back( src );
-		function_context.llvm_ir_builder.CreateCall(
-			llvm::dyn_cast<llvm::Function>(op->llvm_function),
-			llvm_args );
+		function_context.llvm_ir_builder.CreateCall( op->llvm_function, { dst, src } );
 	}
 	else
 		U_ASSERT(false);
@@ -807,12 +793,12 @@ void CodeBuilder::CopyBytes(
 			[&](llvm::Value* const counter_value)
 			{
 				llvm::Value* index_list[2];
-				index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
+				index_list[0]= GetZeroGEPIndex();
 				index_list[1]= counter_value;
 
 				CopyBytes(
-					function_context.llvm_ir_builder.CreateGEP( src, llvm::ArrayRef<llvm::Value*>( index_list, 2u ) ),
-					function_context.llvm_ir_builder.CreateGEP( dst, llvm::ArrayRef<llvm::Value*>( index_list, 2u ) ),
+					function_context.llvm_ir_builder.CreateGEP( src, index_list ),
+					function_context.llvm_ir_builder.CreateGEP( dst, index_list ),
 					array_type.type,
 					function_context );
 			},
@@ -825,12 +811,12 @@ void CodeBuilder::CopyBytes(
 		if( class_type.base_class != nullptr )
 		{
 			llvm::Value* index_list[2];
-			index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
-			index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(class_type.base_class_field_number) ) );
+			index_list[0]= GetZeroGEPIndex();
+			index_list[1]= GetFieldGEPIndex( class_type.base_class_field_number );
 
 			CopyBytes(
-				function_context.llvm_ir_builder.CreateGEP( src, llvm::ArrayRef<llvm::Value*> ( index_list, 2u ) ),
-				function_context.llvm_ir_builder.CreateGEP( dst, llvm::ArrayRef<llvm::Value*> ( index_list, 2u ) ),
+				function_context.llvm_ir_builder.CreateGEP( src, index_list ),
+				function_context.llvm_ir_builder.CreateGEP( dst, index_list ),
 				class_type.base_class,
 				function_context );
 		}
@@ -843,11 +829,11 @@ void CodeBuilder::CopyBytes(
 					return;
 
 				llvm::Value* index_list[2];
-				index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
-				index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(field->index) ) );
+				index_list[0]= GetZeroGEPIndex();
+				index_list[1]= GetFieldGEPIndex( field->index );
 
-				llvm::Value* const field_src= function_context.llvm_ir_builder.CreateGEP( src, llvm::ArrayRef<llvm::Value*> ( index_list, 2u ) );
-				llvm::Value* const field_dst= function_context.llvm_ir_builder.CreateGEP( dst, llvm::ArrayRef<llvm::Value*> ( index_list, 2u ) );
+				llvm::Value* const field_src= function_context.llvm_ir_builder.CreateGEP( src, index_list );
+				llvm::Value* const field_dst= function_context.llvm_ir_builder.CreateGEP( dst, index_list );
 				if( field->is_reference )
 				{
 					llvm::Value* const val= function_context.llvm_ir_builder.CreateLoad( field_src );
@@ -866,7 +852,7 @@ void CodeBuilder::MoveConstantToMemory(
 	FunctionContext& function_context )
 {
 	llvm::Value* index_list[2];
-	index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
+	index_list[0]= GetZeroGEPIndex();
 
 	llvm::Type* const type= constant->getType();
 	if( type->isStructTy() )

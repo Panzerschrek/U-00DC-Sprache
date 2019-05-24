@@ -798,6 +798,9 @@ private:
 	// If variable already in register - does nothing.
 	llvm::Value* CreateMoveToLLVMRegisterInstruction( const Variable& variable, FunctionContext& function_context );
 
+	llvm::Constant* GetZeroGEPIndex();
+	llvm::Constant* GetFieldGEPIndex( uint64_t field_index );
+
 	llvm::Value* CreateReferenceCast( llvm::Value* ref, const Type& src_type, const Type& dst_type, FunctionContext& function_context );
 
 	llvm::GlobalVariable* CreateGlobalConstantVariable( const Type& type, const std::string& mangled_name, llvm::Constant* initializer= nullptr );

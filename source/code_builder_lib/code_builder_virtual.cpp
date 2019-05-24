@@ -299,8 +299,8 @@ void CodeBuilder::BuildClassVirtualTables_r( Class& the_class, const Type& class
 			parent_path.back()= dst_class.parents[i];
 
 			llvm::Value* index_list[2];
-			index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
-			index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(dst_class.parents_fields_numbers[i]) ) );
+			index_list[0]= GetZeroGEPIndex();
+			index_list[1]= GetFieldGEPIndex( dst_class.parents_fields_numbers[i] );
 			llvm::Value* const offset_ptr= dummy_function_context_->llvm_ir_builder.CreateGEP( dst_class_ptr_null_based, index_list );
 
 			BuildClassVirtualTables_r( the_class, class_type, parent_path, offset_ptr );
@@ -348,8 +348,8 @@ void CodeBuilder::BuildClassVirtualTables( Class& the_class, const Type& class_t
 	for( size_t i= 0u; i < the_class.parents.size(); ++i )
 	{
 		llvm::Value* index_list[2];
-		index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
-		index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(the_class.parents_fields_numbers[i]) ) );
+		index_list[0]= GetZeroGEPIndex();
+		index_list[1]= GetFieldGEPIndex( the_class.parents_fields_numbers[i] );
 		llvm::Value* const offset_ptr= dummy_function_context_->llvm_ir_builder.CreateGEP( this_nullptr, index_list );
 		BuildClassVirtualTables_r( the_class, class_type, {the_class.parents[i]}, offset_ptr );
 	}
@@ -383,17 +383,17 @@ std::pair<Variable, llvm::Value*> CodeBuilder::TryFetchVirtualFunction( const Va
 
 		// Fetch vtable pointer.
 		llvm::Value* index_list[2];
-		index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
-		index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(class_type->virtual_table_field_number) ) );
-		llvm::Value* const ptr_to_virtual_table_ptr= function_context.llvm_ir_builder.CreateGEP( this_casted.llvm_value, llvm::ArrayRef<llvm::Value*> ( index_list, 2u ) );
+		index_list[0]= GetZeroGEPIndex();
+		index_list[1]= GetFieldGEPIndex( class_type->virtual_table_field_number );
+		llvm::Value* const ptr_to_virtual_table_ptr= function_context.llvm_ir_builder.CreateGEP( this_casted.llvm_value, index_list );
 		llvm::Value* const virtual_table_ptr= function_context.llvm_ir_builder.CreateLoad( ptr_to_virtual_table_ptr );
 		// Fetch function.
-		index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(func_ptr_field_number) ) );
-		llvm::Value* const ptr_to_function_ptr= function_context.llvm_ir_builder.CreateGEP( virtual_table_ptr, llvm::ArrayRef<llvm::Value*> ( index_list, 2u ) );
+		index_list[1]= GetFieldGEPIndex( func_ptr_field_number );
+		llvm::Value* const ptr_to_function_ptr= function_context.llvm_ir_builder.CreateGEP( virtual_table_ptr, index_list );
 		llvm_function_ptr= function_context.llvm_ir_builder.CreateLoad( ptr_to_function_ptr );
 		// Fetch "this" pointer offset.
-		index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(offset_field_number) ) );
-		llvm::Value* const offset_ptr= function_context.llvm_ir_builder.CreateGEP( virtual_table_ptr, llvm::ArrayRef<llvm::Value*> ( index_list, 2u ) );
+		index_list[1]= GetFieldGEPIndex( offset_field_number );
+		llvm::Value* const offset_ptr= function_context.llvm_ir_builder.CreateGEP( virtual_table_ptr, index_list );
 		llvm::Value* const offset= function_context.llvm_ir_builder.CreateLoad( offset_ptr );
 		// Correct "this" pointer.
 		llvm::Value* const this_ptr_as_int= function_context.llvm_ir_builder.CreatePtrToInt( this_casted.llvm_value, fundamental_llvm_types_.int_ptr );
@@ -415,10 +415,10 @@ void CodeBuilder::SetupVirtualTablePointers_r(
 	U_ASSERT( virtual_tables.find( class_path ) != virtual_tables.end() );
 
 	llvm::Value* index_list[2];
-	index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
+	index_list[0]= GetZeroGEPIndex();
 
-	index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(the_class.virtual_table_field_number) ) );
-	llvm::Value* const ptr_to_vtable_ptr= function_context.llvm_ir_builder.CreateGEP( this_, llvm::ArrayRef<llvm::Value*> ( index_list, 2u ) );
+	index_list[1]= GetFieldGEPIndex( the_class.virtual_table_field_number );
+	llvm::Value* const ptr_to_vtable_ptr= function_context.llvm_ir_builder.CreateGEP( this_, index_list );
 	function_context.llvm_ir_builder.CreateStore( virtual_tables.find(class_path)->second, ptr_to_vtable_ptr );
 
 	if( !the_class.parents.empty() )
@@ -429,7 +429,7 @@ void CodeBuilder::SetupVirtualTablePointers_r(
 		{
 			parent_path.back()= the_class.parents[i];
 
-			index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(the_class.parents_fields_numbers[i]) ) );
+			index_list[1]= GetFieldGEPIndex( the_class.parents_fields_numbers[i] );
 			llvm::Value* const parent_ptr= function_context.llvm_ir_builder.CreateGEP( this_, index_list );
 			SetupVirtualTablePointers_r( parent_ptr, parent_path, virtual_tables, function_context );
 		}
@@ -455,15 +455,15 @@ void CodeBuilder::SetupVirtualTablePointers(
 		return; // May be in case of errors.
 
 	llvm::Value* index_list[2];
-	index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
+	index_list[0]= GetZeroGEPIndex();
 
-	index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(the_class.virtual_table_field_number) ) );
-	llvm::Value* const ptr_to_vtable_ptr= function_context.llvm_ir_builder.CreateGEP( this_, llvm::ArrayRef<llvm::Value*> ( index_list, 2u ) );
+	index_list[1]= GetFieldGEPIndex( the_class.virtual_table_field_number );
+	llvm::Value* const ptr_to_vtable_ptr= function_context.llvm_ir_builder.CreateGEP( this_, index_list );
 	function_context.llvm_ir_builder.CreateStore( the_class.this_class_virtual_table, ptr_to_vtable_ptr );
 
 	for( size_t i= 0u; i < the_class.parents.size(); ++i )
 	{
-		index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(the_class.parents_fields_numbers[i]) ) );
+		index_list[1]= GetFieldGEPIndex( the_class.parents_fields_numbers[i] );
 		llvm::Value* const parent_ptr= function_context.llvm_ir_builder.CreateGEP( this_, index_list );
 		SetupVirtualTablePointers_r( parent_ptr, { the_class.parents[i] }, the_class.ancestors_virtual_tables, function_context );
 	}

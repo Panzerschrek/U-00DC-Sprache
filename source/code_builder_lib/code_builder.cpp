@@ -692,10 +692,7 @@ void CodeBuilder::TryCallCopyConstructor(
 
 	// Call it
 	U_ASSERT(constructor != nullptr);
-	llvm::Value* const constructor_args[2u]= { this_, src };
-	function_context.llvm_ir_builder.CreateCall(
-		constructor->llvm_function,
-		llvm::ArrayRef<llvm::Value*>( constructor_args, 2u ) );
+	function_context.llvm_ir_builder.CreateCall( constructor->llvm_function, { this_, src } );
 
 	if( constructor->type.GetFunctionType()->unsafe && !function_context.is_in_unsafe_block )
 		errors_.push_back( ReportUnsafeFunctionCallOutsideUnsafeBlock( file_pos ) );
@@ -791,10 +788,7 @@ void CodeBuilder::CallDestructor(
 		U_ASSERT(destructors != nullptr && destructors->functions.size() == 1u );
 
 		const FunctionVariable& destructor= destructors->functions.front();
-		llvm::Value* const destructor_args[]= { ptr };
-		function_context.llvm_ir_builder.CreateCall(
-			destructor.llvm_function,
-			llvm::ArrayRef<llvm::Value*>( destructor_args, 1u ) );
+		function_context.llvm_ir_builder.CreateCall( destructor.llvm_function, { ptr } );
 
 		if( destructor.type.GetFunctionType()->unsafe && !function_context.is_in_unsafe_block )
 			errors_.push_back( ReportUnsafeFunctionCallOutsideUnsafeBlock( file_pos ) );
@@ -806,11 +800,9 @@ void CodeBuilder::CallDestructor(
 			array_type->ArraySizeOrZero(),
 			[&]( llvm::Value* const index )
 			{
-				llvm::Value* index_list[2];
-				index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
-				index_list[1]= index;
+
 				CallDestructor(
-					function_context.llvm_ir_builder.CreateGEP( ptr, llvm::ArrayRef<llvm::Value*> ( index_list, 2u ) ),
+					function_context.llvm_ir_builder.CreateGEP( ptr, { GetZeroGEPIndex(), index } ),
 					array_type->type,
 					function_context,
 					file_pos );
@@ -856,11 +848,10 @@ void CodeBuilder::CallMembersDestructors( FunctionContext& function_context, con
 	for( size_t i= 0u; i < class_->parents.size(); ++i )
 	{
 		U_ASSERT( class_->parents[i]->class_->have_destructor ); // Parents are polymorph, polymorph classes always have destructors.
-		llvm::Value* index_list[2];
-		index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
-		index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(class_->parents_fields_numbers[i]) ) );
 		CallDestructor(
-			function_context.llvm_ir_builder.CreateGEP( function_context.this_->llvm_value, index_list ),
+			function_context.llvm_ir_builder.CreateGEP(
+				function_context.this_->llvm_value,
+				{ GetZeroGEPIndex(), GetFieldGEPIndex( class_->parents_fields_numbers[i] ) } ),
 			class_->parents[i],
 			function_context,
 			file_pos );
@@ -874,11 +865,10 @@ void CodeBuilder::CallMembersDestructors( FunctionContext& function_context, con
 				field->class_.lock()->class_ != class_ )
 				return;
 
-			llvm::Value* index_list[2];
-			index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
-			index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(field->index) ) );
 			CallDestructor(
-				function_context.llvm_ir_builder.CreateGEP( function_context.this_->llvm_value, index_list ),
+				function_context.llvm_ir_builder.CreateGEP(
+					function_context.this_->llvm_value,
+					{ GetZeroGEPIndex(), GetFieldGEPIndex(field->index ) } ),
 				field->type,
 				function_context,
 				file_pos );
@@ -1893,11 +1883,8 @@ void CodeBuilder::BuildConstructorInitialization(
 			field_variable.location= Variable::Location::Pointer;
 			field_variable.value_type= ValueType::Reference;
 
-			llvm::Value* index_list[2];
-			index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
-			index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(field->index) ) );
 			field_variable.llvm_value=
-				function_context.llvm_ir_builder.CreateGEP( this_.llvm_value, llvm::ArrayRef<llvm::Value*> ( index_list, 2u ) );
+				function_context.llvm_ir_builder.CreateGEP( this_.llvm_value, { GetZeroGEPIndex(), GetFieldGEPIndex( field->index ) } );
 
 			ApplyEmptyInitializer( field_name, constructor_initialization_list.file_pos_, field_variable, function_context );
 		}
@@ -1914,11 +1901,8 @@ void CodeBuilder::BuildConstructorInitialization(
 		base_variable.location= Variable::Location::Pointer;
 		base_variable.value_type= ValueType::Reference;
 
-		llvm::Value* index_list[2];
-		index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
-		index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(base_class.base_class_field_number) ) );
 		base_variable.llvm_value=
-			function_context.llvm_ir_builder.CreateGEP( this_.llvm_value, llvm::ArrayRef<llvm::Value*> ( index_list, 2u ) );
+			function_context.llvm_ir_builder.CreateGEP( this_.llvm_value, { GetZeroGEPIndex(), GetFieldGEPIndex( base_class.base_class_field_number ) } );
 
 		ApplyEmptyInitializer( base_class.base_class->class_->members.GetThisNamespaceName(), constructor_initialization_list.file_pos_, base_variable, function_context );
 		function_context.base_initialized= true;
@@ -1940,11 +1924,10 @@ void CodeBuilder::BuildConstructorInitialization(
 			base_variable.location= Variable::Location::Pointer;
 			base_variable.value_type= ValueType::Reference;
 
-			llvm::Value* index_list[2];
-			index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
-			index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(base_class.base_class_field_number) ) );
 			base_variable.llvm_value=
-				function_context.llvm_ir_builder.CreateGEP( this_.llvm_value, llvm::ArrayRef<llvm::Value*> ( index_list, 2u ) );
+				function_context.llvm_ir_builder.CreateGEP(
+					this_.llvm_value,
+					{ GetZeroGEPIndex(), GetFieldGEPIndex( base_class.base_class_field_number ) } );
 
 			ApplyInitializer( base_variable, *field_initializer.initializer, names_scope, function_context );
 			function_context.base_initialized= true;
@@ -1966,11 +1949,8 @@ void CodeBuilder::BuildConstructorInitialization(
 			field_variable.location= Variable::Location::Pointer;
 			field_variable.value_type= ValueType::Reference;
 
-			llvm::Value* index_list[2];
-			index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
-			index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(field->index) ) );
 			field_variable.llvm_value=
-				function_context.llvm_ir_builder.CreateGEP( this_.llvm_value, llvm::ArrayRef<llvm::Value*> ( index_list, 2u ) );
+				function_context.llvm_ir_builder.CreateGEP( this_.llvm_value, { GetZeroGEPIndex(), GetFieldGEPIndex(field->index) } );
 
 			U_ASSERT( field_initializer.initializer != nullptr );
 			ApplyInitializer( field_variable, *field_initializer.initializer, names_scope, function_context );
@@ -3563,6 +3543,16 @@ llvm::Value*CodeBuilder::CreateMoveToLLVMRegisterInstruction(
 	return nullptr;
 }
 
+llvm::Constant* CodeBuilder::GetZeroGEPIndex()
+{
+	return llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
+}
+
+llvm::Constant* CodeBuilder::GetFieldGEPIndex( const uint64_t field_index )
+{
+	return llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, field_index ) );
+}
+
 llvm::Value* CodeBuilder::CreateReferenceCast( llvm::Value* const ref, const Type& src_type, const Type& dst_type, FunctionContext& function_context )
 {
 	U_ASSERT( src_type.ReferenceIsConvertibleTo( dst_type ) );
@@ -3579,17 +3569,17 @@ llvm::Value* CodeBuilder::CreateReferenceCast( llvm::Value* const ref, const Typ
 			const size_t parent_index= &src_parent_class - src_class_type->parents.data();
 			if( src_parent_class == dst_type )
 			{
-				llvm::Value* index_list[2];
-				index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
-				index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(src_class_type->parents_fields_numbers[parent_index]) ) );
-				return function_context.llvm_ir_builder.CreateGEP( ref, llvm::ArrayRef< llvm::Value*> ( index_list, 2u ) );
+				return
+					function_context.llvm_ir_builder.CreateGEP(
+						ref,
+						{ GetZeroGEPIndex(), llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(src_class_type->parents_fields_numbers[parent_index]) ) ) } );
 			}
 			else if( Type(src_parent_class).ReferenceIsConvertibleTo( dst_type ) )
 			{
-				llvm::Value* index_list[2];
-				index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
-				index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(src_class_type->parents_fields_numbers[parent_index]) ) );
-				llvm::Value* const sub_ref= function_context.llvm_ir_builder.CreateGEP( ref, llvm::ArrayRef< llvm::Value*> ( index_list, 2u ) );
+				llvm::Value* const sub_ref=
+					function_context.llvm_ir_builder.CreateGEP(
+						ref,
+						{ GetZeroGEPIndex(), llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(src_class_type->parents_fields_numbers[parent_index]) ) ) } );
 				return CreateReferenceCast( sub_ref, src_parent_class, dst_type, function_context );
 			}
 		}

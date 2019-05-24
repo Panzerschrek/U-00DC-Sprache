@@ -1208,7 +1208,7 @@ Value CodeBuilder::BuildNamedOperand(
 
 		// Make first index = 0 for array to pointer conversion.
 		llvm::Value* index_list[2];
-		index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
+		index_list[0]= GetZeroGEPIndex();
 
 		const ClassProxyPtr field_class_proxy= field->class_.lock();
 		U_ASSERT( field_class_proxy != nullptr );
@@ -1229,7 +1229,7 @@ Value CodeBuilder::BuildNamedOperand(
 					return ErrorValue();
 				}
 
-				index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(actual_field_class->class_->base_class_field_number) ) );
+				index_list[1]= GetFieldGEPIndex( actual_field_class->class_->base_class_field_number );
 				actual_field_class_ptr= function_context.llvm_ir_builder.CreateGEP( actual_field_class_ptr, index_list );
 				actual_field_class= actual_field_class->class_->base_class;
 			}
@@ -1255,7 +1255,7 @@ Value CodeBuilder::BuildNamedOperand(
 		field_variable.value_type= ( function_context.this_->value_type == ValueType::Reference && field->is_mutable ) ? ValueType::Reference : ValueType::ConstReference;
 		field_variable.node= function_context.this_->node;
 
-		index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(field->index) ) );
+		index_list[1]= GetFieldGEPIndex( field->index );
 		field_variable.llvm_value=
 			function_context.llvm_ir_builder.CreateGEP( actual_field_class_ptr, index_list );
 
@@ -1681,7 +1681,7 @@ Value CodeBuilder::BuildIndexationOperator(
 
 	// Make first index = 0 for array to pointer conversion.
 	llvm::Value* index_list[2];
-	index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
+	index_list[0]= GetZeroGEPIndex();
 	index_list[1]= CreateMoveToLLVMRegisterInstruction( index, function_context );
 
 	// If index is not const and array size is not undefined - check bounds.
@@ -1714,7 +1714,7 @@ Value CodeBuilder::BuildIndexationOperator(
 	DestroyUnusedTemporaryVariables( function_context, indexation_operator.file_pos_ ); // Destroy temporaries of index expression.
 
 	result.llvm_value=
-		function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, llvm::ArrayRef< llvm::Value*> ( index_list, 2u ) );
+		function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, index_list );
 
 	return Value( result, indexation_operator.file_pos_ );
 }
@@ -1799,7 +1799,7 @@ Value CodeBuilder::BuildMemberAccessOperator(
 
 	// Make first index = 0 for array to pointer conversion.
 	llvm::Value* index_list[2];
-	index_list[0]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
+	index_list[0]= GetZeroGEPIndex();
 
 	const ClassProxyPtr field_class_proxy= field->class_.lock();
 	U_ASSERT( field_class_proxy != nullptr );
@@ -1814,7 +1814,7 @@ Value CodeBuilder::BuildMemberAccessOperator(
 		actual_field_class_ptr= variable.llvm_value;
 		while( actual_field_class != field_class_proxy )
 		{
-			index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(actual_field_class->class_->base_class_field_number) ) );
+			index_list[1]= GetFieldGEPIndex( actual_field_class->class_->base_class_field_number );
 			actual_field_class_ptr= function_context.llvm_ir_builder.CreateGEP( actual_field_class_ptr, index_list );
 
 			actual_field_class= actual_field_class->class_->base_class;
@@ -1822,7 +1822,7 @@ Value CodeBuilder::BuildMemberAccessOperator(
 		}
 	}
 
-	index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(field->index) ) );
+	index_list[1]= GetFieldGEPIndex( field->index );
 
 	Variable result;
 	result.location= Variable::Location::Pointer;
