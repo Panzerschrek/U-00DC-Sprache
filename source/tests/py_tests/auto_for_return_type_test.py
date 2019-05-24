@@ -92,3 +92,50 @@ def AutoForReturnType_Test5():
 	"""
 	tests_lib.build_program( c_program_text )
 	call_result= tests_lib.run_function( "_Z3Foov" )
+
+
+def AutoForReturnType_Test6():
+	c_program_text= """
+		fn nomangle Foo() : auto // auto + nomangle
+		{
+			return 54;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "Foo" )
+	assert( call_result == 54 )
+
+
+def AutoForFunctionTemplate_Test0():
+	c_program_text= """
+		template</ type T />
+		fn GetX( T& t ) : auto { return t.x; }
+
+		struct A{ i32 x; }
+		struct B{ f32 x; }
+		struct C{ A x; }
+		fn Foo()
+		{
+			var A a{ .x= 58 };
+			var B b{ .x= -95.4f };
+			var C c{ .x{ .x= 999 } };
+			halt if( GetX(a) != 58 );
+			halt if( GetX(b) != -95.4f );
+			halt if( GetX(c).x != 999 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+
+
+def AutoForFunctionTemplate_Test1():
+	c_program_text= """
+		template</ type T />
+		fn Pass( T t ) : auto { return t; }
+
+		// template function with "auto" for return type may be constexpr.
+		static_assert( Pass(99954) == 99954 );
+		static_assert( Pass(false) == false );
+		static_assert( Pass(-85.1) == -85.1 );
+	"""
+	tests_lib.build_program( c_program_text )
