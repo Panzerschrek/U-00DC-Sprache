@@ -22,6 +22,7 @@ def main():
 	tests_modules_list= [
 		"auto_constexpr_function_templates_test",
 		"auto_for_return_type_test",
+		"auto_for_return_type_errors_test",
 		"auto_lock_temps_test",
 		"char_literals_test",
 		"char_test",

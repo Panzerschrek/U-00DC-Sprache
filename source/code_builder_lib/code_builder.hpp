@@ -372,7 +372,8 @@ private:
 	void CallDestructorsBeforeReturn( FunctionContext& function_context, const FilePos& file_pos );
 	void CallMembersDestructors( FunctionContext& function_context, const FilePos& file_pos );
 
-	void PrepareFunction(
+	// Returns index of function in set, if function successfuly prepared and inserted. Returns ~0 on fail.
+	size_t PrepareFunction(
 		NamesScope& names_scope,
 		const ClassProxyPtr& base_class,
 		OverloadedFunctionsSet& functions_set,

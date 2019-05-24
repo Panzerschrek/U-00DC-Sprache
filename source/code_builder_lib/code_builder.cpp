@@ -885,7 +885,7 @@ void CodeBuilder::CallMembersDestructors( FunctionContext& function_context, con
 		} );
 }
 
-void CodeBuilder::PrepareFunction(
+size_t CodeBuilder::PrepareFunction(
 	NamesScope& names_scope,
 	const ClassProxyPtr& base_class,
 	OverloadedFunctionsSet& functions_set,
@@ -903,17 +903,17 @@ void CodeBuilder::PrepareFunction(
 	if( is_special_method && base_class == nullptr )
 	{
 		errors_.push_back( ReportConstructorOrDestructorOutsideClass( func.file_pos_ ) );
-		return;
+		return ~0u;
 	}
 	if( !is_constructor && func.constructor_initialization_list_ != nullptr )
 	{
 		errors_.push_back( ReportInitializationListInNonconstructor( func.constructor_initialization_list_->file_pos_ ) );
-		return;
+		return ~0u;
 	}
 	if( is_destructor && !func.type_.arguments_.empty() )
 	{
 		errors_.push_back( ReportExplicitArgumentsInDestructor( func.file_pos_ ) );
-		return;
+		return ~0u;
 	}
 
 	if( func.condition_ != nullptr )
@@ -924,7 +924,7 @@ void CodeBuilder::PrepareFunction(
 			if( expression.constexpr_value != nullptr )
 			{
 				if( expression.constexpr_value->isZeroValue() )
-					return; // Function disabled.
+					return ~0u; // Function disabled.
 			}
 			else
 				errors_.push_back( ReportExpectedConstantExpression( func.condition_->GetFilePos() ) );
@@ -965,7 +965,7 @@ void CodeBuilder::PrepareFunction(
 			{
 				function_type.return_type= PrepareType( func.type_.return_type_, names_scope );
 				if( function_type.return_type == invalid_type_ )
-					return;
+					return ~0u;
 			}
 		}
 
@@ -984,7 +984,7 @@ void CodeBuilder::PrepareFunction(
 			   function_type.return_type.GetFunctionPointerType() != nullptr ) )
 		{
 			errors_.push_back( ReportNotImplemented( func.file_pos_, "return value types except fundamentals, enums, classes, function pointers" ) );
-			return;
+			return ~0u;
 		}
 
 		if( is_special_method && function_type.return_type != void_type_ )
@@ -1033,7 +1033,7 @@ void CodeBuilder::PrepareFunction(
 				if( base_class == nullptr )
 				{
 					errors_.push_back( ReportThisInNonclassFunction( func.file_pos_, func_name ) );
-					return;
+					return ~0u;
 				}
 				out_arg.type= base_class;
 			}
@@ -1050,7 +1050,7 @@ void CodeBuilder::PrepareFunction(
 				   out_arg.type.GetFunctionPointerType() != nullptr ) )
 			{
 				errors_.push_back( ReportNotImplemented( func.file_pos_, "parameters types except fundamentals, classes, enums, functionpointers" ) );
-				return;
+				return ~0u;
 			}
 
 			ProcessFunctionArgReferencesTags( func.type_, function_type, *arg, out_arg, function_type.args.size() - 1u );
@@ -1169,23 +1169,25 @@ void CodeBuilder::PrepareFunction(
 
 		if( prev_function->is_conversion_constructor != func_variable.is_conversion_constructor )
 			errors_.push_back( ReportCouldNotOverloadFunction( func.file_pos_ ) ); // Maybe generate separate error?
+
+		return size_t(prev_function - functions_set.functions.data());
 	}
 	else
 	{
 		if( is_out_of_line_function )
 		{
 			errors_.push_back( ReportFunctionDeclarationOutsideItsScope( func.file_pos_ ) );
-			return;
+			return ~0u;
 		}
 		if( functions_set.have_nomangle_function || ( !functions_set.functions.empty() && func_variable.no_mangle ) )
 		{
 			errors_.push_back( ReportCouldNotOverloadFunction( func.file_pos_ ) );
-			return;
+			return ~0u;
 		}
 
 		const bool overloading_ok= ApplyOverloadedFunction( functions_set, func_variable, func.file_pos_ );
 		if( !overloading_ok )
-			return;
+			return ~0u;
 
 		if( func_variable.no_mangle )
 			functions_set.have_nomangle_function= true;
@@ -1202,6 +1204,8 @@ void CodeBuilder::PrepareFunction(
 			func.type_.arguments_,
 			nullptr,
 			func.constructor_initialization_list_.get() );
+
+		return functions_set.functions.size() - 1u;
 	}
 }
 
