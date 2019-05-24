@@ -1772,8 +1772,6 @@ Type CodeBuilder::BuildFuncCode(
 		}
 	}
 
-	llvm::Function::BasicBlockListType& bb_list= llvm_function->getBasicBlockList();
-
 	function_context.alloca_ir_builder.CreateBr( function_context.function_basic_block );
 
 	if( is_destructor )
@@ -1781,33 +1779,10 @@ Type CodeBuilder::BuildFuncCode(
 		// Fill destructors block.
 		U_ASSERT( function_context.destructor_end_block != nullptr );
 		function_context.llvm_ir_builder.SetInsertPoint( function_context.destructor_end_block );
-		bb_list.push_back( function_context.destructor_end_block );
+		llvm_function->getBasicBlockList().push_back( function_context.destructor_end_block );
 
 		CallMembersDestructors( function_context, block->end_file_pos_ );
 		function_context.llvm_ir_builder.CreateRetVoid();
-	}
-
-	// Remove duplicated terminator instructions at end of all function blocks.
-	// This needs, for example, when "return" is last operator inside "if" or "while" blocks.
-	for (llvm::BasicBlock& block : bb_list)
-	{
-		llvm::BasicBlock::InstListType& instr_list = block.getInstList();
-		while (instr_list.size() >= 2u && instr_list.back().isTerminator() &&
-			(std::next(instr_list.rbegin()))->isTerminator())
-		{
-			instr_list.pop_back();
-		}
-	}
-
-	// Remove basic blocks without instructions. Such block can exist after if/else with return in all branches, for example.
-	auto it= bb_list.begin();
-	while(it != bb_list.end())
-	{
-		if( &*it != function_context.function_basic_block && it->empty() &&
-			it->user_empty())
-			it= bb_list.erase(it);
-		else
-			++it;
 	}
 
 	return function_type->return_type;
@@ -3147,10 +3122,12 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildIfOperatorCode(
 		const BlockBuildInfo block_build_info=
 			BuildBlockCode( *branch.block, names, function_context );
 
-		if_operator_blocks_build_info.have_terminal_instruction_inside=
-			if_operator_blocks_build_info.have_terminal_instruction_inside && block_build_info.have_terminal_instruction_inside;
-
-		function_context.llvm_ir_builder.CreateBr( block_after_if );
+		if( !block_build_info.have_terminal_instruction_inside )
+		{
+			// Create break instruction, only if block does not contains terminal instructions.
+			if_operator_blocks_build_info.have_terminal_instruction_inside= false;
+			function_context.llvm_ir_builder.CreateBr( block_after_if );
+		}
 
 		bracnhes_variables_state[i]= function_context.variables_state;
 		function_context.variables_state= conditions_variable_state;
@@ -3167,8 +3144,13 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildIfOperatorCode(
 	function_context.variables_state= MergeVariablesStateAfterIf( bracnhes_variables_state, if_operator.end_file_pos_ );
 
 	// Block after if code.
-	function_context.function->getBasicBlockList().push_back( block_after_if );
-	function_context.llvm_ir_builder.SetInsertPoint( block_after_if );
+	if( if_operator_blocks_build_info.have_terminal_instruction_inside )
+		delete block_after_if;
+	else
+	{
+		function_context.function->getBasicBlockList().push_back( block_after_if );
+		function_context.llvm_ir_builder.SetInsertPoint( block_after_if );
+	}
 
 	return if_operator_blocks_build_info;
 }
