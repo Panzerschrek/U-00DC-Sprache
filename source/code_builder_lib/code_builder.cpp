@@ -950,9 +950,9 @@ size_t CodeBuilder::PrepareFunction(
 				{
 					func_variable.return_type_is_auto= true;
 					if( base_class != nullptr )
-						++error_count_; // TODO - auto disabled for class methods.
+						errors_.push_back( ReportAutoFunctionInsideClassesNotAllowed( func.file_pos_, func_name ) );
 					if( func.block_ == nullptr )
-						++error_count_; // TODO - expected body.
+						errors_.push_back( ReportExpectedBodyForAutoFunction( func.file_pos_, func_name ) );
 
 					if( func.type_.return_value_reference_modifier_ == ReferenceModifier::Reference )
 						function_type.return_type= void_type_;

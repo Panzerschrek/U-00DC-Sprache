@@ -164,6 +164,10 @@ enum class CodeBuilderErrorCode : unsigned int
 	BaseClassForInterface,
 	ConstructorForInterface,
 
+	// Auto functions errors
+	ExpectedBodyForAutoFunction,
+	AutoFunctionInsideClassesNotAllowed,
+
 	// Virtual functions errors
 	VirtualForNonclassFunction,
 	VirtualForNonThisCallFunction,
@@ -335,6 +339,8 @@ CodeBuilderError ReportDuplicatedBaseClass( const FilePos& file_pos, const Progr
 CodeBuilderError ReportFieldsForInterfacesNotAllowed( const FilePos& file_pos );
 CodeBuilderError ReportBaseClassForInterface( const FilePos& file_pos );
 CodeBuilderError ReportConstructorForInterface( const FilePos& file_pos );
+CodeBuilderError ReportExpectedBodyForAutoFunction( const FilePos& file_pos, const ProgramString& function_name );
+CodeBuilderError ReportAutoFunctionInsideClassesNotAllowed( const FilePos& file_pos, const ProgramString& function_name );
 CodeBuilderError ReportVirtualForNonclassFunction( const FilePos& file_pos, const ProgramString& function_name );
 CodeBuilderError ReportVirtualForNonThisCallFunction( const FilePos& file_pos, const ProgramString& function_name );
 CodeBuilderError ReportFunctionCanNotBeVirtual( const FilePos& file_pos, const ProgramString& function_name );
