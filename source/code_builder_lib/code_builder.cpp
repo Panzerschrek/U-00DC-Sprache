@@ -714,10 +714,8 @@ void CodeBuilder::GenerateLoop(
 		llvm::Constant::getIntegerValue( size_type_llvm, llvm::APInt( size_type_llvm->getIntegerBitWidth(), uint64_t(1u) ) );
 	llvm::Value* const loop_count_value=
 		llvm::Constant::getIntegerValue( size_type_llvm, llvm::APInt( size_type_llvm->getIntegerBitWidth(), uint64_t(iteration_count) ) );
-	llvm::Value* const couter_address= function_context.alloca_ir_builder.CreateAlloca( size_type_llvm );
-	couter_address->setName( "loop_counter" );
-	function_context.llvm_ir_builder.CreateStore( zero_value, couter_address );
 
+	llvm::BasicBlock* const block_before_loop= function_context.llvm_ir_builder.GetInsertBlock();
 	llvm::BasicBlock* const loop_block= llvm::BasicBlock::Create( llvm_context_ );
 	llvm::BasicBlock* const block_after_loop= llvm::BasicBlock::Create( llvm_context_ );
 
@@ -725,13 +723,15 @@ void CodeBuilder::GenerateLoop(
 	function_context.function->getBasicBlockList().push_back( loop_block );
 	function_context.llvm_ir_builder.SetInsertPoint( loop_block );
 
-	llvm::Value* const current_counter_value= function_context.llvm_ir_builder.CreateLoad( couter_address );
-	loop_body( current_counter_value );
+	llvm::PHINode* const counter_value= function_context.llvm_ir_builder.CreatePHI( size_type_llvm, 2u );
+	loop_body( counter_value );
 
-	llvm::Value* const counter_value_plus_one= function_context.llvm_ir_builder.CreateAdd( current_counter_value, one_value );
-	function_context.llvm_ir_builder.CreateStore( counter_value_plus_one, couter_address );
+	llvm::Value* const counter_value_plus_one= function_context.llvm_ir_builder.CreateAdd( counter_value, one_value );
 	llvm::Value* const counter_test= function_context.llvm_ir_builder.CreateICmpULT( counter_value_plus_one, loop_count_value );
 	function_context.llvm_ir_builder.CreateCondBr( counter_test, loop_block, block_after_loop );
+
+	counter_value->addIncoming( zero_value, block_before_loop );
+	counter_value->addIncoming( counter_value_plus_one, function_context.llvm_ir_builder.GetInsertBlock() );
 
 	function_context.function->getBasicBlockList().push_back( block_after_loop );
 	function_context.llvm_ir_builder.SetInsertPoint( block_after_loop );
