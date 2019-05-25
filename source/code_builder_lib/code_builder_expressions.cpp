@@ -244,7 +244,7 @@ Value CodeBuilder::BuildExpressionCode(
 	else if( const auto type_name_in_expression= dynamic_cast<const Synt::TypeNameInExpression*>(&expression) )
 		result=
 			Value(
-				PrepareType( type_name_in_expression->type_name, names ),
+				PrepareType( type_name_in_expression->type_name, names, function_context ),
 				type_name_in_expression->file_pos_ );
 	else if( const auto move_operator= dynamic_cast<const Synt::MoveOperator*>(&expression) )
 		result= BuildMoveOpeator( *move_operator, names, function_context );
@@ -257,7 +257,7 @@ Value CodeBuilder::BuildExpressionCode(
 	else if( const auto cast_mut= dynamic_cast<const Synt::CastMut*>(&expression) )
 		result= BuildCastMut( *cast_mut, names, function_context );
 	else if( const auto typeinfo_= dynamic_cast<const Synt::TypeInfo*>(&expression) )
-		result= BuildTypeinfoOperator( *typeinfo_, names );
+		result= BuildTypeinfoOperator( *typeinfo_, names, function_context );
 	else U_ASSERT(false);
 
 	if( const auto expression_with_unary_operators= dynamic_cast<const Synt::ExpressionComponentWithUnaryOperators*>( &expression ) )
@@ -1059,7 +1059,7 @@ Value CodeBuilder::DoReferenceCast(
 	NamesScope& names,
 	FunctionContext& function_context )
 {
-	const Type type= PrepareType( type_name, names );
+	const Type type= PrepareType( type_name, names, function_context );
 	if( type == invalid_type_ )
 		return ErrorValue();
 

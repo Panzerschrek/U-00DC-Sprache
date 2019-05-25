@@ -489,7 +489,8 @@ void CodeBuilder::FillGlobalNamesScope( NamesScope& global_names_scope )
 
 Type CodeBuilder::PrepareType(
 	const Synt::ITypeNamePtr& type_name,
-	NamesScope& names_scope )
+	NamesScope& names_scope,
+	FunctionContext& function_context )
 {
 	U_ASSERT( type_name != nullptr );
 
@@ -500,11 +501,11 @@ Type CodeBuilder::PrepareType(
 		result= Array();
 		Array& array_type= *result.GetArrayType();
 
-		array_type.type= PrepareType( array_type_name->element_type, names_scope );
+		array_type.type= PrepareType( array_type_name->element_type, names_scope, function_context );
 
 		const Synt::IExpressionComponent& num= *array_type_name->size;
 
-		const Variable size_variable= BuildExpressionCodeEnsureVariable( num, names_scope, *dummy_function_context_ );
+		const Variable size_variable= BuildExpressionCodeEnsureVariable( num, names_scope, function_context );
 		if( size_variable.constexpr_value != nullptr )
 		{
 			if( const FundamentalType* const size_fundamental_type= size_variable.type.GetFundamentalType() )
@@ -543,7 +544,7 @@ Type CodeBuilder::PrepareType(
 		if( function_type_name->return_type_ == nullptr )
 			function_type.return_type= void_type_for_ret_;
 		else
-			function_type.return_type= PrepareType( function_type_name->return_type_, names_scope );
+			function_type.return_type= PrepareType( function_type_name->return_type_, names_scope, function_context );
 		function_type.return_value_is_mutable= function_type_name->return_value_mutability_modifier_ == MutabilityModifier::Mutable;
 		function_type.return_value_is_reference= function_type_name->return_value_reference_modifier_ == ReferenceModifier::Reference;
 
@@ -561,7 +562,7 @@ Type CodeBuilder::PrepareType(
 
 			function_type.args.emplace_back();
 			Function::Arg& out_arg= function_type.args.back();
-			out_arg.type= PrepareType( arg->type_, names_scope );
+			out_arg.type= PrepareType( arg->type_, names_scope, function_context );
 
 			out_arg.is_mutable= arg->mutability_modifier_ == MutabilityModifier::Mutable;
 			out_arg.is_reference= arg->reference_modifier_ == ReferenceModifier::Reference;
@@ -953,7 +954,7 @@ size_t CodeBuilder::PrepareFunction(
 
 			if( !func_variable.return_type_is_auto )
 			{
-				function_type.return_type= PrepareType( func.type_.return_type_, names_scope );
+				function_type.return_type= PrepareType( func.type_.return_type_, names_scope, *dummy_function_context_ );
 				if( function_type.return_type == invalid_type_ )
 					return ~0u;
 			}
@@ -1028,7 +1029,7 @@ size_t CodeBuilder::PrepareFunction(
 				out_arg.type= base_class;
 			}
 			else
-				out_arg.type= PrepareType( arg->type_, names_scope );
+				out_arg.type= PrepareType( arg->type_, names_scope, *dummy_function_context_ );
 
 			out_arg.is_mutable= arg->mutability_modifier_ == MutabilityModifier::Mutable;
 			out_arg.is_reference= is_this || arg->reference_modifier_ == ReferenceModifier::Reference;
@@ -2122,7 +2123,7 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 	NamesScope& block_names,
 	FunctionContext& function_context )
 {
-	const Type type= PrepareType( variables_declaration.type, block_names );
+	const Type type= PrepareType( variables_declaration.type, block_names, function_context );
 
 	for( const Synt::VariablesDeclaration::VariableEntry& variable_declaration : variables_declaration.variables )
 	{
@@ -3270,7 +3271,7 @@ void CodeBuilder::BuildTypedef(
 	const Synt::Typedef& typedef_,
 	NamesScope& names )
 {
-	const Type type= PrepareType( typedef_.value, names );
+	const Type type= PrepareType( typedef_.value, names, *dummy_function_context_ );
 	if( type == invalid_type_ )
 		return;
 

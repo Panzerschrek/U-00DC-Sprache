@@ -176,7 +176,9 @@ private:
 	void SetCurrentClassTable( ClassTable& table );
 
 	void FillGlobalNamesScope( NamesScope& global_names_scope );
-	Type PrepareType( const Synt::ITypeNamePtr& type_name, NamesScope& names_scope );
+
+	// Function context required for accesing local constexpr variables.
+	Type PrepareType( const Synt::ITypeNamePtr& type_name, NamesScope& names_scope, FunctionContext& function_context );
 
 	llvm::FunctionType* GetLLVMFunctionType( const Function& function_type );
 
@@ -531,7 +533,7 @@ private:
 
 	// Typeinfo
 
-	Value BuildTypeinfoOperator( const Synt::TypeInfo& typeinfo_op, NamesScope& names );
+	Value BuildTypeinfoOperator( const Synt::TypeInfo& typeinfo_op, NamesScope& names, FunctionContext& function_context );
 	Variable BuildTypeInfo( const Type& type, NamesScope& root_namespace );
 	ClassProxyPtr CreateTypeinfoClass( NamesScope& root_namespace );
 	Variable BuildTypeinfoPrototype( const Type& type, NamesScope& root_namespace );

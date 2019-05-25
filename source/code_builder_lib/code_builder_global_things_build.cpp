@@ -378,7 +378,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type, const T
 
 				class_field->class_= class_type;
 				class_field->is_reference= in_field.reference_modifier == Synt::ReferenceModifier::Reference;
-				class_field->type= PrepareType( class_field->syntax_element->type, the_class.members );
+				class_field->type= PrepareType( class_field->syntax_element->type, the_class.members, *dummy_function_context_ );
 
 				if( !class_field->is_reference || in_field.mutability_modifier == Synt::MutabilityModifier::Constexpr )
 				{
@@ -832,7 +832,7 @@ void CodeBuilder::GlobalThingBuildTypedef( NamesScope& names_scope, Value& typed
 	DETECT_GLOBALS_LOOP( &typedef_value, syntax_element.name, typedef_value.GetFilePos(), TypeCompleteness::Complete );
 
 	// Replace value in names map, when typedef is comlete.
-	typedef_value= Value( PrepareType( syntax_element.value, names_scope ), syntax_element.file_pos_ );
+	typedef_value= Value( PrepareType( syntax_element.value, names_scope, *dummy_function_context_ ), syntax_element.file_pos_ );
 }
 
 void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& global_variable_value )
@@ -856,7 +856,7 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 			FAIL_RETURN;
 		}
 
-		const Type type= PrepareType( variables_declaration->type, names_scope );
+		const Type type= PrepareType( variables_declaration->type, names_scope, *dummy_function_context_ );
 		if( !EnsureTypeCompleteness( type, TypeCompleteness::Complete ) ) // Global variables are all constexpr. Full completeness required for constexpr.
 		{
 			errors_.push_back( ReportUsingIncompleteType( variable_declaration.file_pos, type.ToString() ) );

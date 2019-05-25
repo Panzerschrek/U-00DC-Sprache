@@ -19,9 +19,9 @@ static std::string GetTypeinfoVariableName( const ClassProxyPtr& typeinfo_class 
 	return "_val_of_" + std::string(typeinfo_class->class_->llvm_type->getName());
 }
 
-Value CodeBuilder::BuildTypeinfoOperator( const Synt::TypeInfo& typeinfo_op, NamesScope& names )
+Value CodeBuilder::BuildTypeinfoOperator( const Synt::TypeInfo& typeinfo_op, NamesScope& names, FunctionContext& function_context )
 {
-	const Type type= PrepareType( typeinfo_op.type_, names );
+	const Type type= PrepareType( typeinfo_op.type_, names, function_context );
 	if( type == invalid_type_ )
 		return ErrorValue();
 

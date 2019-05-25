@@ -989,7 +989,7 @@ CodeBuilder::TemplateTypeGenerationResult CodeBuilder::GenTemplateType(
 	}
 	else if( const Synt::TypedefTemplate* const typedef_template= dynamic_cast<const Synt::TypedefTemplate*>( type_template.syntax_element ) )
 	{
-		const Type type= PrepareType( typedef_template->typedef_->value, *template_parameters_namespace );
+		const Type type= PrepareType( typedef_template->typedef_->value, *template_parameters_namespace, *dummy_function_context_ );
 
 		if( type == invalid_type_ )
 			return result;
