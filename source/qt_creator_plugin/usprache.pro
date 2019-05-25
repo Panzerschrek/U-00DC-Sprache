@@ -1,39 +1,16 @@
 DEFINES += USPRACHE_LIBRARY
 
-INCLUDEPATH+= ../../../boost_1_65_1/
+INCLUDEPATH+= ../../../boost_1_60_0/
 
 # USprache files
 
 SOURCES += \
-	editor_widget.cpp \
-	outline_widget_model.cpp \
-	plugin.cpp \
-	program_model.cpp \
-	strings.cpp \
-	syntax_highlighter.cpp \
-	../lex_synt_lib/keywords.cpp \
-	../lex_synt_lib/lang_types.cpp \
-	../lex_synt_lib/lexical_analyzer.cpp \
-	../lex_synt_lib/operators.cpp \
-	../lex_synt_lib/program_string.cpp \
-	../lex_synt_lib/syntax_analyzer.cpp \
-	../lex_synt_lib/syntax_elements.cpp \
+	*.cpp \
+	../lex_synt_lib/*.cpp \
 
 HEADERS += \
-	editor_widget.h \
-	outline_widget_model.h \
-	plugin.h \
-	program_model.h \
-	strings.h \
-	syntax_highlighter.h \
-	usprache_global.h \
-	../lex_synt_lib/keywords.hpp \
-	../lex_synt_lib/lang_types.hpp \
-	../lex_synt_lib/lexical_analyzer.hpp \
-	../lex_synt_lib/operators.hpp \
-	../lex_synt_lib/program_string.hpp \
-	../lex_synt_lib/syntax_analyzer.hpp \
-	../lex_synt_lib/syntax_elements.hpp \
+	*.h \
+	../lex_synt_lib/*.hpp \
 
 # Qt Creator linking
 
