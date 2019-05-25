@@ -42,9 +42,8 @@ SyntaxHighlighter::SyntaxHighlighter()
 		TextEditor::C_STRING,
 		TextEditor::C_COMMENT,
 		TextEditor::C_VISUAL_WHITESPACE,
-		TextEditor::C_FUNCTION,
+		TextEditor::C_OPERATOR,
 		TextEditor::C_ERROR,
-
 	});
 	setTextFormatCategories(categories);
 }
