@@ -86,6 +86,7 @@ enum class Keywords : unsigned int
 
 	type_,
 	typeinfo_,
+	typeof_,
 	template_,
 	enum_,
 

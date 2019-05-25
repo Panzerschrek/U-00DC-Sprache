@@ -1713,6 +1713,30 @@ ITypeNamePtr SyntaxAnalyzer::ParseTypeName()
 
 		return type_name;
 	}
+	else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::typeof_ )
+	{
+		NextLexem();
+
+		std::unique_ptr<TypeofTypeName> typeof_type_name( new TypeofTypeName(it_->file_pos) );
+
+		if( it_->type != Lexem::Type::BracketLeft )
+		{
+			PushErrorMessage();
+			return typeof_type_name;
+		}
+		NextLexem();
+
+		typeof_type_name->expression= ParseExpression();
+
+		if( it_->type != Lexem::Type::BracketRight )
+		{
+			PushErrorMessage();
+			return typeof_type_name;
+		}
+		NextLexem();
+
+		return typeof_type_name;
+	}
 	else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::fn_ )
 		return ParseFunctionType();
 	else

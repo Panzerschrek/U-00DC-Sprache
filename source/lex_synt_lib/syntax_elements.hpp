@@ -80,6 +80,14 @@ public:
 	IExpressionComponentPtr size;
 };
 
+class TypeofTypeName final : public SyntaxElementBase, public ITypeName
+{
+public:
+	explicit TypeofTypeName( const FilePos& file_pos );
+
+	IExpressionComponentPtr expression;
+};
+
 class NamedTypeName final : public SyntaxElementBase, public ITypeName
 {
 public:
