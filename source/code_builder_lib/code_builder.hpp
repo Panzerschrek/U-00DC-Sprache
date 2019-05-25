@@ -27,7 +27,7 @@ public:
 	CodeBuilder(
 		std::string target_triple_str,
 		const llvm::DataLayout& data_layout );
-	virtual ~CodeBuilder() override;
+	virtual ~CodeBuilder() override= default;
 
 	virtual BuildResult BuildProgram( const SourceGraph& source_graph ) override;
 

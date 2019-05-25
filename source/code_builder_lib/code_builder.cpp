@@ -114,8 +114,8 @@ CodeBuilder::CodeBuilder(
 	, data_layout_(data_layout)
 	, constexpr_function_evaluator_( data_layout_ )
 {
-	fundamental_llvm_types_. i8= llvm::Type::getInt8Ty( llvm_context_ );
-	fundamental_llvm_types_. u8= llvm::Type::getInt8Ty( llvm_context_ );
+	fundamental_llvm_types_.i8 = llvm::Type::getInt8Ty( llvm_context_ );
+	fundamental_llvm_types_.u8 = llvm::Type::getInt8Ty( llvm_context_ );
 	fundamental_llvm_types_.i16= llvm::Type::getInt16Ty( llvm_context_ );
 	fundamental_llvm_types_.u16= llvm::Type::getInt16Ty( llvm_context_ );
 	fundamental_llvm_types_.i32= llvm::Type::getInt32Ty( llvm_context_ );
@@ -147,10 +147,6 @@ CodeBuilder::CodeBuilder(
 		: FundamentalType( U_FundamentalType::u64, fundamental_llvm_types_.u64 );
 }
 
-CodeBuilder::~CodeBuilder()
-{
-}
-
 ICodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_graph )
 {
 	errors_.clear();
@@ -166,13 +162,15 @@ ICodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_g
 	module_->setTargetTriple(target_triple_str_);
 
 	// Prepare halt func.
-	{
-		llvm::FunctionType* void_function_type= llvm::FunctionType::get( fundamental_llvm_types_.void_for_ret_, false );
-		halt_func_= llvm::Function::Create( void_function_type, llvm::Function::ExternalLinkage, "__U_halt", module_.get() );
-		halt_func_->setDoesNotReturn();
-		halt_func_->setDoesNotThrow();
-		halt_func_->setUnnamedAddr( true );
-	}
+	halt_func_=
+		llvm::Function::Create(
+			llvm::FunctionType::get( fundamental_llvm_types_.void_for_ret_, false ),
+			llvm::Function::ExternalLinkage,
+			"__U_halt",
+			module_.get() );
+	halt_func_->setDoesNotReturn();
+	halt_func_->setDoesNotThrow();
+	halt_func_->setUnnamedAddr( true );
 
 	// In some places outside functions we need to execute expression evaluation.
 	// Create for this function context.
@@ -192,10 +190,9 @@ ICodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_g
 	global_function_context_= &global_function_context;
 
 	// Build graph.
-	BuildResultInternal build_result_internal=
-		BuildProgramInternal( source_graph, source_graph.root_node_index );
+	BuildProgramInternal( source_graph, source_graph.root_node_index );
 
-	global_function->eraseFromParent(); // Kill dummy function.
+	global_function->eraseFromParent(); // Kill global function.
 
 	// Fix incomplete typeinfo.
 	for( const auto& typeinfo_entry : typeinfo_cache_ )
@@ -220,9 +217,8 @@ ICodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_g
 	errors_.erase( std::unique( errors_.begin(), errors_.end() ), errors_.end() );
 
 	BuildResult build_result;
-	build_result.errors= errors_;
-	build_result.module= std::move( module_ );
-
+	build_result.errors.swap( errors_ );
+	build_result.module.swap( module_ );
 	return build_result;
 }
 
