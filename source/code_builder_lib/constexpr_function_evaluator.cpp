@@ -477,7 +477,6 @@ llvm::GenericValue ConstexprFunctionEvaluator::GetVal( const llvm::Value* const 
 		res= instructions_map_[val];
 	}
 	return res;
-
 }
 
 void ConstexprFunctionEvaluator::ProcessAlloca( const llvm::Instruction* const instruction )
@@ -883,7 +882,8 @@ void ConstexprFunctionEvaluator::ProcessBinaryArithmeticInstruction( const llvm:
 
 	case llvm::Instruction::FRem:
 		{
-			const auto rounding_mode= llvm::APFloat::roundingMode::rmNearestTiesToAway; // TODO - is this correct?
+			// see llvm-3.7.1.src/lib/IR/ConstantFold.cpp:1190
+			const auto rounding_mode= llvm::APFloat::roundingMode::rmNearestTiesToEven;
 			if( type->isFloatTy() )
 			{
 				llvm::APFloat result_val(op0.FloatVal);
@@ -934,7 +934,7 @@ void ConstexprFunctionEvaluator::ProcessBinaryArithmeticInstruction( const llvm:
 			default: U_ASSERT(false); break;
 			case llvm::FCmpInst::FCMP_FALSE: val.IntVal= llvm::APInt( 1u, 0u ); break;
 			case llvm::FCmpInst::FCMP_TRUE : val.IntVal= llvm::APInt( 1u, 1u ); break;
-			case llvm:: FCmpInst::FCMP_UNO : val.IntVal= llvm::APInt( 1u, cmp_result == llvm::APFloat::cmpUnordered ); break;
+			case llvm::FCmpInst::FCMP_UNO  : val.IntVal= llvm::APInt( 1u, cmp_result == llvm::APFloat::cmpUnordered ); break;
 			case llvm::FCmpInst::FCMP_ORD  : val.IntVal= llvm::APInt( 1u, cmp_result != llvm::APFloat::cmpUnordered ); break;
 			case llvm::FCmpInst::FCMP_UEQ  : val.IntVal= llvm::APInt( 1u, cmp_result == llvm::APFloat::cmpUnordered || cmp_result == llvm::APFloat::cmpEqual ); break;
 			case llvm::FCmpInst::FCMP_OEQ  : val.IntVal= llvm::APInt( 1u, cmp_result == llvm::APFloat::cmpEqual ); break;
