@@ -1813,7 +1813,6 @@ void CodeBuilder::BuildConstructorInitialization(
 
 		const NamesScope::InsertedName* const class_member=
 			base_class.members.GetThisScopeName( field_initializer.name );
-
 		if( class_member == nullptr )
 		{
 			have_fields_errors= true;
@@ -1875,19 +1874,18 @@ void CodeBuilder::BuildConstructorInitialization(
 		if( field->is_reference )
 		{
 			errors_.push_back( ReportExpectedInitializer( class_member->second.GetFilePos(), field_name ) );
+			continue;
 		}
-		else
-		{
-			Variable field_variable;
-			field_variable.type= field->type;
-			field_variable.location= Variable::Location::Pointer;
-			field_variable.value_type= ValueType::Reference;
 
-			field_variable.llvm_value=
-				function_context.llvm_ir_builder.CreateGEP( this_.llvm_value, { GetZeroGEPIndex(), GetFieldGEPIndex( field->index ) } );
+		Variable field_variable;
+		field_variable.type= field->type;
+		field_variable.location= Variable::Location::Pointer;
+		field_variable.value_type= ValueType::Reference;
 
-			ApplyEmptyInitializer( field_name, constructor_initialization_list.file_pos_, field_variable, function_context );
-		}
+		field_variable.llvm_value=
+			function_context.llvm_ir_builder.CreateGEP( this_.llvm_value, { GetZeroGEPIndex(), GetFieldGEPIndex( field->index ) } );
+
+		ApplyEmptyInitializer( field_name, constructor_initialization_list.file_pos_, field_variable, function_context );
 
 		CallDestructors( *function_context.stack_variables_stack.back(), function_context, constructor_initialization_list.file_pos_ );
 	}
@@ -1923,6 +1921,7 @@ void CodeBuilder::BuildConstructorInitialization(
 			base_variable.type= base_class.base_class;
 			base_variable.location= Variable::Location::Pointer;
 			base_variable.value_type= ValueType::Reference;
+			base_variable.node= this_.node;
 
 			base_variable.llvm_value=
 				function_context.llvm_ir_builder.CreateGEP(
@@ -1948,6 +1947,7 @@ void CodeBuilder::BuildConstructorInitialization(
 			field_variable.type= field->type;
 			field_variable.location= Variable::Location::Pointer;
 			field_variable.value_type= ValueType::Reference;
+			field_variable.node= this_.node;
 
 			field_variable.llvm_value=
 				function_context.llvm_ir_builder.CreateGEP( this_.llvm_value, { GetZeroGEPIndex(), GetFieldGEPIndex(field->index) } );
