@@ -145,7 +145,7 @@ void CodeBuilder::GlobalThingBuildNamespace( NamesScope& names_scope )
 			else if( name.second.GetVariable() != nullptr ){}
 			else if( name.second.GetErrorValue() != nullptr ){}
 			else if( const auto static_assert_= name.second.GetStaticAssert() )
-				BuildStaticAssert( *static_assert_, names_scope, *dummy_function_context_ );
+				BuildStaticAssert( *static_assert_, names_scope, *global_function_context_ );
 			else if( name.second.GetTypedef() != nullptr )
 				GlobalThingBuildTypedef( names_scope, name.second );
 			else if( name.second.GetIncompleteGlobalVariable() != nullptr )
@@ -378,7 +378,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type, const T
 
 				class_field->class_= class_type;
 				class_field->is_reference= in_field.reference_modifier == Synt::ReferenceModifier::Reference;
-				class_field->type= PrepareType( class_field->syntax_element->type, the_class.members, *dummy_function_context_ );
+				class_field->type= PrepareType( class_field->syntax_element->type, the_class.members, *global_function_context_ );
 
 				if( !class_field->is_reference || in_field.mutability_modifier == Synt::MutabilityModifier::Constexpr )
 				{
@@ -832,7 +832,7 @@ void CodeBuilder::GlobalThingBuildTypedef( NamesScope& names_scope, Value& typed
 	DETECT_GLOBALS_LOOP( &typedef_value, syntax_element.name, typedef_value.GetFilePos(), TypeCompleteness::Complete );
 
 	// Replace value in names map, when typedef is comlete.
-	typedef_value= Value( PrepareType( syntax_element.value, names_scope, *dummy_function_context_ ), syntax_element.file_pos_ );
+	typedef_value= Value( PrepareType( syntax_element.value, names_scope, *global_function_context_ ), syntax_element.file_pos_ );
 }
 
 void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& global_variable_value )
@@ -843,7 +843,7 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 	DETECT_GLOBALS_LOOP( &global_variable_value, incomplete_global_variable.name, global_variable_value.GetFilePos(), TypeCompleteness::Complete );
 	#define FAIL_RETURN { global_variable_value= ErrorValue(); return; }
 
-	FunctionContext& function_context= *dummy_function_context_;
+	FunctionContext& function_context= *global_function_context_;
 	const StackVariablesStorage dummy_stack( function_context );
 
 	if( const auto variables_declaration= dynamic_cast<const Synt::VariablesDeclaration*>(incomplete_global_variable.syntax_element) )
@@ -856,7 +856,7 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 			FAIL_RETURN;
 		}
 
-		const Type type= PrepareType( variables_declaration->type, names_scope, *dummy_function_context_ );
+		const Type type= PrepareType( variables_declaration->type, names_scope, *global_function_context_ );
 		if( !EnsureTypeCompleteness( type, TypeCompleteness::Complete ) ) // Global variables are all constexpr. Full completeness required for constexpr.
 		{
 			errors_.push_back( ReportUsingIncompleteType( variable_declaration.file_pos, type.ToString() ) );

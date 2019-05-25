@@ -859,7 +859,7 @@ private:
 
 	ConstexprFunctionEvaluator constexpr_function_evaluator_;
 
-	FunctionContext* dummy_function_context_= nullptr;
+	FunctionContext* global_function_context_= nullptr;
 
 	std::unique_ptr<llvm::Module> module_;
 	unsigned int error_count_= 0u;

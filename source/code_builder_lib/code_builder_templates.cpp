@@ -343,7 +343,7 @@ void CodeBuilder::PrepareTemplateSignatureParameter(
 
 	// If this is not special expression - assume that this is variable-expression.
 
-	const Variable var= BuildExpressionCodeEnsureVariable( *template_parameter, names_scope, *dummy_function_context_ );
+	const Variable var= BuildExpressionCodeEnsureVariable( *template_parameter, names_scope, *global_function_context_ );
 
 	if( !TypeIsValidForTemplateVariableArgument( var.type ) )
 	{
@@ -614,7 +614,7 @@ DeducedTemplateParameter CodeBuilder::DeduceTemplateArguments(
 	if( !TypeIsValidForTemplateVariableArgument( param_var->type ) )
 		return DeducedTemplateParameter::Invalid();
 
-	const Value val= BuildExpressionCode( signature_parameter, names_scope, *dummy_function_context_ );
+	const Value val= BuildExpressionCode( signature_parameter, names_scope, *global_function_context_ );
 	if( val.GetVariable() == nullptr )
 		return DeducedTemplateParameter::Invalid();
 	const Variable& var= *val.GetVariable();
@@ -832,9 +832,9 @@ CodeBuilder::TemplateTypeGenerationResult CodeBuilder::GenTemplateType(
 	{
 		Value value;
 		if( i < template_arguments.size() )
-			value= BuildExpressionCode( *template_arguments[i], arguments_names_scope, *dummy_function_context_ );
+			value= BuildExpressionCode( *template_arguments[i], arguments_names_scope, *global_function_context_ );
 		else
-			value= BuildExpressionCode( *type_template.default_signature_arguments[i], *template_parameters_namespace, *dummy_function_context_ );
+			value= BuildExpressionCode( *type_template.default_signature_arguments[i], *template_parameters_namespace, *global_function_context_ );
 
 		if( value.GetErrorValue() != nullptr )
 			continue;
@@ -891,7 +891,7 @@ CodeBuilder::TemplateTypeGenerationResult CodeBuilder::GenTemplateType(
 
 		if( !deduction_failed )
 		{
-			const Value result_singature_parameter= BuildExpressionCode( expr, *template_parameters_namespace, *dummy_function_context_ );
+			const Value result_singature_parameter= BuildExpressionCode( expr, *template_parameters_namespace, *global_function_context_ );
 			if( const Type* const type_name= result_singature_parameter.GetTypeName() )
 				result_signature_parameters[i]= *type_name;
 			else if( const Variable* const variable= result_singature_parameter.GetVariable() )
@@ -989,7 +989,7 @@ CodeBuilder::TemplateTypeGenerationResult CodeBuilder::GenTemplateType(
 	}
 	else if( const Synt::TypedefTemplate* const typedef_template= dynamic_cast<const Synt::TypedefTemplate*>( type_template.syntax_element ) )
 	{
-		const Type type= PrepareType( typedef_template->typedef_->value, *template_parameters_namespace, *dummy_function_context_ );
+		const Type type= PrepareType( typedef_template->typedef_->value, *template_parameters_namespace, *global_function_context_ );
 
 		if( type == invalid_type_ )
 			return result;
@@ -1226,7 +1226,7 @@ NamesScope::InsertedName* CodeBuilder::GenTemplateFunctionsUsingTemplateParamete
 	bool something_is_wrong= false;
 	for( const Synt::IExpressionComponentPtr& expr : template_arguments )
 	{
-		const Value value= BuildExpressionCode( *expr, arguments_names_scope, *dummy_function_context_ );
+		const Value value= BuildExpressionCode( *expr, arguments_names_scope, *global_function_context_ );
 		if( const auto type_name= value.GetTypeName() )
 			template_parameters.push_back( *type_name );
 		else if( const auto variable= value.GetVariable() )

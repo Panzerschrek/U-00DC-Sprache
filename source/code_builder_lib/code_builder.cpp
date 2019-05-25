@@ -175,27 +175,27 @@ ICodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_g
 	}
 
 	// In some places outside functions we need to execute expression evaluation.
-	// Create for this dummy function context.
-	llvm::Function* const dummy_function=
+	// Create for this function context.
+	llvm::Function* const global_function=
 		llvm::Function::Create(
-			llvm::FunctionType::get( fundamental_llvm_types_.void_, false ),
+			llvm::FunctionType::get( fundamental_llvm_types_.void_for_ret_, false ),
 			llvm::Function::LinkageTypes::ExternalLinkage,
 			"",
 			module_.get() );
 
-	FunctionContext dummy_function_context(
+	FunctionContext global_function_context(
 		void_type_for_ret_,
 		false, false,
 		llvm_context_,
-		dummy_function );
-	const StackVariablesStorage dummy_function_variables_storage( dummy_function_context );
-	dummy_function_context_= &dummy_function_context;
+		global_function );
+	const StackVariablesStorage global_function_variables_storage( global_function_context );
+	global_function_context_= &global_function_context;
 
 	// Build graph.
 	BuildResultInternal build_result_internal=
 		BuildProgramInternal( source_graph, source_graph.root_node_index );
 
-	dummy_function->eraseFromParent(); // Kill dummy function.
+	global_function->eraseFromParent(); // Kill dummy function.
 
 	// Fix incomplete typeinfo.
 	for( const auto& typeinfo_entry : typeinfo_cache_ )
@@ -919,7 +919,7 @@ size_t CodeBuilder::PrepareFunction(
 
 	if( func.condition_ != nullptr )
 	{
-		const Variable expression= BuildExpressionCodeEnsureVariable( *func.condition_, names_scope, *dummy_function_context_ );
+		const Variable expression= BuildExpressionCodeEnsureVariable( *func.condition_, names_scope, *global_function_context_ );
 		if( expression.type == bool_type_ )
 		{
 			if( expression.constexpr_value != nullptr )
@@ -964,7 +964,7 @@ size_t CodeBuilder::PrepareFunction(
 
 			if( !func_variable.return_type_is_auto )
 			{
-				function_type.return_type= PrepareType( func.type_.return_type_, names_scope, *dummy_function_context_ );
+				function_type.return_type= PrepareType( func.type_.return_type_, names_scope, *global_function_context_ );
 				if( function_type.return_type == invalid_type_ )
 					return ~0u;
 			}
@@ -1039,7 +1039,7 @@ size_t CodeBuilder::PrepareFunction(
 				out_arg.type= base_class;
 			}
 			else
-				out_arg.type= PrepareType( arg->type_, names_scope, *dummy_function_context_ );
+				out_arg.type= PrepareType( arg->type_, names_scope, *global_function_context_ );
 
 			out_arg.is_mutable= arg->mutability_modifier_ == MutabilityModifier::Mutable;
 			out_arg.is_reference= is_this || arg->reference_modifier_ == ReferenceModifier::Reference;

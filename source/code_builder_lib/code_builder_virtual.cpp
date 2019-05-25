@@ -245,7 +245,7 @@ void CodeBuilder::BuildClassVirtualTables_r( Class& the_class, const Type& class
 
 	// Calculate offset from this class pointer to ancestor class pointer.
 	// In virtual call we must subtract this offset.
-	llvm::Value* const offset_as_int= dummy_function_context_->llvm_ir_builder.CreatePtrToInt( dst_class_ptr_null_based, fundamental_llvm_types_.int_ptr );
+	llvm::Value* const offset_as_int= global_function_context_->llvm_ir_builder.CreatePtrToInt( dst_class_ptr_null_based, fundamental_llvm_types_.int_ptr );
 	llvm::Constant* const offset_const= llvm::dyn_cast<llvm::Constant>( offset_as_int );
 	initializer_values.push_back( offset_const );
 
@@ -265,7 +265,7 @@ void CodeBuilder::BuildClassVirtualTables_r( Class& the_class, const Type& class
 		U_ASSERT( overriden_in_this_class != nullptr ); // We must override, or inherit function.
 
 		llvm::Value* const function_pointer_casted=
-			dummy_function_context_->llvm_ir_builder.CreateBitOrPointerCast(
+			global_function_context_->llvm_ir_builder.CreateBitOrPointerCast(
 				overriden_in_this_class->function_variable.llvm_function,
 				llvm::PointerType::get( ancestor_virtual_table_entry.function_variable.type.GetFunctionType()->llvm_function_type, 0 ) );
 
@@ -301,7 +301,7 @@ void CodeBuilder::BuildClassVirtualTables_r( Class& the_class, const Type& class
 			llvm::Value* index_list[2];
 			index_list[0]= GetZeroGEPIndex();
 			index_list[1]= GetFieldGEPIndex( dst_class.parents_fields_numbers[i] );
-			llvm::Value* const offset_ptr= dummy_function_context_->llvm_ir_builder.CreateGEP( dst_class_ptr_null_based, index_list );
+			llvm::Value* const offset_ptr= global_function_context_->llvm_ir_builder.CreateGEP( dst_class_ptr_null_based, index_list );
 
 			BuildClassVirtualTables_r( the_class, class_type, parent_path, offset_ptr );
 		}
@@ -350,7 +350,7 @@ void CodeBuilder::BuildClassVirtualTables( Class& the_class, const Type& class_t
 		llvm::Value* index_list[2];
 		index_list[0]= GetZeroGEPIndex();
 		index_list[1]= GetFieldGEPIndex( the_class.parents_fields_numbers[i] );
-		llvm::Value* const offset_ptr= dummy_function_context_->llvm_ir_builder.CreateGEP( this_nullptr, index_list );
+		llvm::Value* const offset_ptr= global_function_context_->llvm_ir_builder.CreateGEP( this_nullptr, index_list );
 		BuildClassVirtualTables_r( the_class, class_type, {the_class.parents[i]}, offset_ptr );
 	}
 }
