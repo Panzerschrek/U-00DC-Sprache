@@ -349,3 +349,17 @@ def DeepExpressionsCompilationTest2():
 	tests_lib.build_program( c_program_text )
 	call_result= tests_lib.run_function( "_Z3Foov" )
 	assert( call_result == 64 )
+
+
+def FunctionContextForTypePreparing_Test0():
+	c_program_text= """
+	struct S { i32& x; }
+	fn Foo()
+	{
+		auto constexpr x = 4;
+		var S constexpr s{ .x= x };
+		var [ i32, s.x ] arr= zero_init;
+		static_assert( typeinfo</ [ i32, s.x ] />.element_count == size_type(4) );
+	}
+	"""
+	tests_lib.build_program( c_program_text )
