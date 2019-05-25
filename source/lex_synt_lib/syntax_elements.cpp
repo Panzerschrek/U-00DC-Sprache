@@ -15,10 +15,13 @@ ArrayTypeName::ArrayTypeName( const FilePos& file_pos )
 	: SyntaxElementBase(file_pos)
 {}
 
-NamedTypeName::NamedTypeName( const FilePos& file_pos )
+TypeofTypeName::TypeofTypeName( const FilePos& file_pos )
 	: SyntaxElementBase(file_pos)
 {}
 
+NamedTypeName::NamedTypeName( const FilePos& file_pos )
+	: SyntaxElementBase(file_pos)
+{}
 
 UnaryPlus::UnaryPlus( const FilePos& file_pos )
 	: SyntaxElementBase(file_pos)

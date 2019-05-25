@@ -536,6 +536,11 @@ Type CodeBuilder::PrepareType(
 
 		// TODO - generate error, if total size of type (incuding arrays) is more, than half of address space of target architecture.
 	}
+	else if( const auto typeof_type_name= dynamic_cast<const Synt::TypeofTypeName*>(type_name.get()) )
+	{
+		U_UNUSED(typeof_type_name); // TODO
+		return invalid_type_;
+	}
 	else if( const auto function_type_name= dynamic_cast<const Synt::FunctionType*>(type_name.get()) )
 	{
 		FunctionPointer function_pointer_type;

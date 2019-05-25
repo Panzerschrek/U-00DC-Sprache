@@ -51,6 +51,7 @@ def main():
 		"type_templates_overloading_test",
 		"type_conversions_test",
 		"typeinfo_test",
+		"typeof_test",
 		"static_if_test",
 		"uninitialized_initializer_test",
 		"unsafe_test",
