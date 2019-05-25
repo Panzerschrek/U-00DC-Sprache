@@ -538,8 +538,13 @@ Type CodeBuilder::PrepareType(
 	}
 	else if( const auto typeof_type_name= dynamic_cast<const Synt::TypeofTypeName*>(type_name.get()) )
 	{
-		U_UNUSED(typeof_type_name); // TODO
-		return invalid_type_;
+		const auto prev_state= SaveInstructionsState( function_context );
+		{
+			const StackVariablesStorage dummy_stack_variables_storage( function_context );
+			const Variable variable= BuildExpressionCodeEnsureVariable( *typeof_type_name->expression, names_scope, function_context );
+			result= variable.type;
+		}
+		RestoreInstructionsState( function_context, prev_state );
 	}
 	else if( const auto function_type_name= dynamic_cast<const Synt::FunctionType*>(type_name.get()) )
 	{
