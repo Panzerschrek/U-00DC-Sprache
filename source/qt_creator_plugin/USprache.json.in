@@ -7,5 +7,16 @@
 	\"License\" : \"GNU GPL v3\",
 	\"Description\" : \"Ü programming language plugin.\",
 	\"Url\" : \"https://github.com/Panzerschrek/U-00DC-Sprache\",
+
+	\"Mimetypes\" : [
+		\"<?xml version=\'1.0\'?>\",
+		\"<mime-info xmlns=\'http://www.freedesktop.org/standards/shared-mime-info\'>\",
+		\"    <mime-type type=\'text/u-spr\'>\",
+		\"        <sub-class-of type=\'text/plain\'/>\",
+		\"        <comment>Ü-Sprache source</comment>\",
+		\"        <glob pattern=\'*.u\'/>\",
+		\"    </mime-type>\",
+		\"</mime-info>\"
+	],
 	$$dependencyList
 }

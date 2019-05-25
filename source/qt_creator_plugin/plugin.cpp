@@ -12,14 +12,13 @@ namespace QtCreatorPlugin
 {
 
 const char g_editor_id[]= "sprache_editor";
-//const char g_mime_type[]= "text/u-spr";
-const char g_mime_type[]= "text/x-pascal"; // TODO - create own MIME-type
+const char g_mime_type[]= "text/u-spr"; // Own MIME-type. Must be equal to MIME-type inside Metadata JSON.
 
 EditorDocument::EditorDocument()
 {
 	setId(g_editor_id);
 
-	 setSyntaxHighlighter(new SyntaxHighlighter );
+	setSyntaxHighlighter( new SyntaxHighlighter );
 	// setIndenter(new CppTools::CppQtStyleIndenter);
 }
 
