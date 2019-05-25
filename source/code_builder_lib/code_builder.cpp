@@ -3267,22 +3267,6 @@ void CodeBuilder::BuildHaltIf(const Synt::HaltIf& halt_if, NamesScope& names, Fu
 	function_context.llvm_ir_builder.SetInsertPoint( false_block );
 }
 
-void CodeBuilder::BuildTypedef(
-	const Synt::Typedef& typedef_,
-	NamesScope& names )
-{
-	const Type type= PrepareType( typedef_.value, names, *dummy_function_context_ );
-	if( type == invalid_type_ )
-		return;
-
-	if( NameShadowsTemplateArgument( typedef_.name, names ) )
-		errors_.push_back( ReportDeclarationShadowsTemplateArgument( typedef_.file_pos_, typedef_.name ) );
-
-	const NamesScope::InsertedName* const inserted_name= names.AddName( typedef_.name, Value( type, typedef_.file_pos_ ) );
-	if( inserted_name == nullptr )
-		errors_.push_back( ReportRedefinition( typedef_.file_pos_, typedef_.name ) );
-}
-
 NamesScope::InsertedName* CodeBuilder::ResolveName( const FilePos& file_pos, NamesScope& names_scope, const Synt::ComplexName& complex_name, const ResolveMode resolve_mode )
 {
 	return ResolveName( file_pos, names_scope, complex_name.components.data(), complex_name.components.size(), resolve_mode );

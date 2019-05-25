@@ -616,10 +616,6 @@ private:
 	void BuildHalt( const Synt::Halt& halt, FunctionContext& function_context );
 	void BuildHaltIf( const Synt::HaltIf& halt_if, NamesScope& names, FunctionContext& function_context );
 
-	void BuildTypedef(
-		const Synt::Typedef& typedef_,
-		NamesScope& names );
-
 	// Name resolving.
 	enum class ResolveMode
 	{
