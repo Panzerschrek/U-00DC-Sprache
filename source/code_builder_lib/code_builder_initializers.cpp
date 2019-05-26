@@ -1122,6 +1122,52 @@ llvm::Constant* CodeBuilder::InitializeReferenceClassFieldWithInClassIninitalize
 	return result;
 }
 
+void CodeBuilder::CheckClassFieldsInitializers( const ClassProxyPtr& class_type )
+{
+	// Run code generation for initializers.
+	// We must check it, becauseinitializers may not be executed later.
+
+	const Class& class_= *class_type->class_;
+	U_ASSERT( class_.completeness == TypeCompleteness::Complete );
+
+	FunctionContext& function_context= *global_function_context_;
+	const StackVariablesStorage dummy_stack_variables_storage( function_context );
+
+	llvm::Value* const variable_llvm_value=
+		function_context.alloca_ir_builder.CreateAlloca( class_.llvm_type );
+
+	class_.members.ForEachInThisScope(
+		[&]( const NamesScope::InsertedName& name )
+		{
+			const ClassField* const class_field= name.second.GetClassField();
+			if( class_field == nullptr )
+				return;
+
+			if( class_field->syntax_element->initializer == nullptr )
+				return;
+
+			if( class_field->is_reference )
+			{
+				Variable variable;
+				variable.type= class_type;
+				variable.value_type= ValueType::Reference;
+				variable.llvm_value= variable_llvm_value;
+				InitializeReferenceClassFieldWithInClassIninitalizer( variable, *class_field, function_context );
+			}
+			else
+			{
+				Variable field_variable;
+				field_variable.type= class_field->type;
+				field_variable.value_type= ValueType::Reference;
+				field_variable.llvm_value=
+					function_context.llvm_ir_builder.CreateGEP(
+						variable_llvm_value,
+						{ GetZeroGEPIndex(), GetFieldGEPIndex( class_field->index ) } );
+				InitializeClassFieldWithInClassIninitalizer( field_variable, *class_field, function_context );
+			}
+		});
+}
+
 } // namespace CodeBuilderPrivate
 
 } // namespace U

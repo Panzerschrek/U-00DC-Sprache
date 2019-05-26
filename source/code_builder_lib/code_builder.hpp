@@ -738,6 +738,8 @@ private:
 		const ClassField& class_field,
 		FunctionContext& function_context );
 
+	void CheckClassFieldsInitializers( const ClassProxyPtr& class_type );
+
 	// Reference-checking.
 	void ProcessFunctionArgReferencesTags(
 		const Synt::FunctionType& func,
