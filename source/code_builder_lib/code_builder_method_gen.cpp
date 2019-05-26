@@ -60,7 +60,8 @@ void CodeBuilder::TryGenerateDefaultConstructor( Class& the_class, const Type& c
 			if( field->class_.lock()->class_ != &the_class )
 				return; // Skip fields of parent classes.
 
-			if( field->is_reference || !field->type.IsDefaultConstructible() )
+			if( field->is_reference ||
+				( !field->type.IsDefaultConstructible() && field->syntax_element->initializer == nullptr ) )
 				all_fields_is_default_constructible= false;
 		} );
 
@@ -142,7 +143,10 @@ void CodeBuilder::TryGenerateDefaultConstructor( Class& the_class, const Type& c
 			field_variable.llvm_value=
 				function_context.llvm_ir_builder.CreateGEP( this_llvm_value, { GetZeroGEPIndex(), GetFieldGEPIndex( field->index ) } );
 
-			ApplyEmptyInitializer( member.first, FilePos()/*TODO*/, field_variable, function_context );
+			if( field->syntax_element->initializer != nullptr )
+				InitializeClassFieldWithInClassIninitalizer( field_variable, *field, function_context );
+			else
+				ApplyEmptyInitializer( member.first, FilePos()/*TODO*/, field_variable, function_context );
 		} );
 
 	SetupVirtualTablePointers( this_llvm_value, the_class, function_context );

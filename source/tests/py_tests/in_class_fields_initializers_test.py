@@ -146,6 +146,46 @@ def InClassFieldInitializer_InConstructorInitializer_Test1():
 	assert( call_result == 89 * 5 - 89 )
 
 
+def InClassFieldInitializer_InDefaultConstructor_Test0():
+	c_program_text= """
+		struct S
+		{
+			i32 x= -1;
+			f32 y= -99.0f;
+		}
+		fn Foo() : i32
+		{
+			var S s; // Default constructor generated, because struct have initializer for all fields.
+			return i32(f32(s.x) * s.y);
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 99 )
+
+
+def InClassFieldInitializer_InDefaultConstructor_Test1():
+	c_program_text= """
+		struct S
+		{
+			i32 x= 0;
+		}
+		struct T
+		{
+			S s; // Have default constructor.
+			bool b= false;
+		}
+		fn Foo()
+		{
+			var T t; // Default constructor generated.
+			halt if( t.s.x != 0 );
+			halt if( t.b );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
 def ImplicitInitializerUsedInsteadOf_InClassFieldInitializer_Test0():
 	c_program_text= """
 		struct S
