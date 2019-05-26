@@ -248,7 +248,12 @@ llvm::Constant* CodeBuilder::ApplyStructNamedInitializer(
 				if( initialized_members_names.count( class_member.first ) == 0 )
 				{
 					if( field->is_reference )
-						errors_.push_back( ReportExpectedInitializer( class_member.second.GetFilePos(), class_member.first ) ); // References is not default-constructible.
+					{
+						if( field->syntax_element->initializer == nullptr )
+							errors_.push_back( ReportExpectedInitializer( class_member.second.GetFilePos(), class_member.first ) ); // References is not default-constructible.
+						else
+							InitializeReferenceClassFieldWithInClassIninitalizer( variable, *field, function_context );
+					}
 					else
 					{
 						struct_member.type= field->type;
@@ -1067,11 +1072,12 @@ llvm::Constant* CodeBuilder::InitializeFunctionPointer(
 }
 
 llvm::Constant* CodeBuilder::InitializeClassFieldWithInClassIninitalizer(
-	const Variable& variable,
+	const Variable& field_variable,
 	const ClassField& class_field,
 	FunctionContext& function_context )
 {
 	U_ASSERT( class_field.syntax_element->initializer != nullptr );
+	U_ASSERT( !class_field.is_reference );
 
 	// Reset "this" for function context.
 	// TODO - maybe reset also other function context fields?
@@ -1080,7 +1086,33 @@ llvm::Constant* CodeBuilder::InitializeClassFieldWithInClassIninitalizer(
 
 	llvm::Constant* const result=
 		ApplyInitializer(
+			field_variable,
+			*class_field.syntax_element->initializer,
+			class_field.class_.lock()->class_->members, // Use class members names scope.
+			function_context );
+
+	function_context.this_= prev_this;
+
+	return result;
+}
+
+llvm::Constant* CodeBuilder::InitializeReferenceClassFieldWithInClassIninitalizer(
+	const Variable& variable,
+	const ClassField& class_field,
+	FunctionContext& function_context )
+{
+	U_ASSERT( class_field.syntax_element->initializer != nullptr );
+	U_ASSERT( class_field.is_reference );
+
+	// Reset "this" for function context.
+	// TODO - maybe reset also other function context fields?
+	const Variable* const prev_this= function_context.this_;
+	function_context.this_= nullptr;
+
+	llvm::Constant* const result=
+		InitializeReferenceField(
 			variable,
+			class_field,
 			*class_field.syntax_element->initializer,
 			class_field.class_.lock()->class_->members, // Use class members names scope.
 			function_context );

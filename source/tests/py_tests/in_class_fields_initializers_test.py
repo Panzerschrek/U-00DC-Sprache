@@ -186,6 +186,62 @@ def InClassFieldInitializer_InDefaultConstructor_Test1():
 	tests_lib.run_function( "_Z3Foov" )
 
 
+def InClassFieldInitializer_ForReferenceField_Test0():
+	c_program_text= """
+		auto global_constant= 1917;
+		struct S
+		{
+			i32& r= global_constant;
+		}
+		fn Foo() : i32
+		{
+			var S s{}; // Initialize reference field in struct initializer.
+			return s.r;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 1917 )
+
+
+def InClassFieldInitializer_ForReferenceField_Test1():
+	c_program_text= """
+		auto pi= 3.1415926535;
+		struct S
+		{
+			f64& r= pi;
+		}
+		fn Foo() : i32
+		{
+			var S s; // Call generated default constructor.
+			return i32( s.r * 100.0 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 314 )
+
+
+def InClassFieldInitializer_ForReferenceField_Test2():
+	c_program_text= """
+		auto e= 2.718281828f;
+		struct S
+		{
+			f32& r= e;
+			fn constructor()
+			() {} // Call here initializer for reference field.
+		}
+		fn Foo() : i32
+		{
+			var S s; // Call generated default constructor.
+			return i32( s.r * 100.0f );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 271 )
+
+
 def ImplicitInitializerUsedInsteadOf_InClassFieldInitializer_Test0():
 	c_program_text= """
 		struct S
@@ -220,7 +276,6 @@ def ImplicitInitializerUsedInsteadOf_InClassFieldInitializer_Test1():
 	assert( call_result == 4 + int(8 * 15 / 16) + 23 - 42 )
 
 
-
 def ImplicitInitializerUsedInsteadOf_InClassFieldInitializer_Test2():
 	c_program_text= """
 		struct S
@@ -239,3 +294,25 @@ def ImplicitInitializerUsedInsteadOf_InClassFieldInitializer_Test2():
 	tests_lib.build_program( c_program_text )
 	call_result= tests_lib.run_function( "_Z3Foov" )
 	assert( call_result == 33369 )
+
+
+def ImplicitInitializerUsedInsteadOf_InClassFieldInitializer_Test3():
+	c_program_text= """
+		auto constexpr global_zero= 0;
+		struct S
+		{
+			i32& x= global_zero;
+			fn constructor( this'a', i32&'b in_x ) ' a <- imut b '
+			( x(in_x) )
+			{}
+		}
+		fn Foo() : i32
+		{
+			auto non_zero= 666;
+			var S s( non_zero );
+			return s.x;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 666 )
