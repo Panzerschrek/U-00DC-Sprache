@@ -256,6 +256,7 @@ private:
 	FunctionReferencesPollutionList ParseFunctionReferencesPollutionList();
 
 	IInitializerPtr ParseInitializer( bool parse_expression_initializer );
+	IInitializerPtr ParseVariableInitializer();
 	std::unique_ptr<ArrayInitializer> ParseArrayInitializer();
 	std::unique_ptr<StructNamedInitializer> ParseStructNamedInitializer();
 	std::unique_ptr<ConstructorInitializer> ParseConstructorInitializer();
@@ -2001,6 +2002,34 @@ IInitializerPtr SyntaxAnalyzer::ParseInitializer( const bool parse_expression_in
 	}
 }
 
+IInitializerPtr SyntaxAnalyzer::ParseVariableInitializer()
+{
+	IInitializerPtr initializer;
+	if( it_->type == Lexem::Type::Assignment )
+	{
+		NextLexem();
+		if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::zero_init_ )
+		{
+			initializer.reset( new ZeroInitializer( it_->file_pos ) );
+			NextLexem();
+		}
+		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::uninitialized_ )
+		{
+			initializer.reset( new UninitializedInitializer( it_->file_pos ) );
+			NextLexem();
+		}
+		else
+			initializer.reset( new ExpressionInitializer( it_->file_pos, ParseExpression() ) );
+	}
+	else if(
+		it_->type == Lexem::Type::BracketLeft ||
+		it_->type == Lexem::Type::SquareBracketLeft ||
+		it_->type == Lexem::Type::BraceLeft )
+		initializer= ParseInitializer( false );
+
+	return initializer;
+}
+
 std::unique_ptr<ArrayInitializer> SyntaxAnalyzer::ParseArrayInitializer()
 {
 	U_ASSERT( it_->type == Lexem::Type::SquareBracketLeft );
@@ -2053,32 +2082,9 @@ std::unique_ptr<StructNamedInitializer> SyntaxAnalyzer::ParseStructNamedInitiali
 		ProgramString name= it_->text;
 		NextLexem();
 
-		IInitializerPtr initializer;
-		if( it_->type == Lexem::Type::Assignment )
-		{
-			NextLexem();
-			if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::zero_init_ )
-			{
-				initializer.reset( new ZeroInitializer( it_->file_pos ) );
-				NextLexem();
-			}
-			else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::uninitialized_ )
-			{
-				initializer.reset( new UninitializedInitializer( it_->file_pos ) );
-				NextLexem();
-			}
-			else
-			{
-				initializer.reset( new ExpressionInitializer( it_->file_pos, ParseExpression() ) );
-			}
-		}
-		else if(
-			it_->type == Lexem::Type::BracketLeft ||
-			it_->type == Lexem::Type::SquareBracketLeft ||
-			it_->type == Lexem::Type::BraceLeft )
-		{
-			initializer= ParseInitializer( false );
-		}
+		IInitializerPtr initializer= ParseVariableInitializer();
+		if( initializer == nullptr )
+			PushErrorMessage();
 
 		result->members_initializers.emplace_back();
 		result->members_initializers.back().name= std::move(name);
@@ -2195,31 +2201,7 @@ VariablesDeclarationPtr SyntaxAnalyzer::ParseVariablesDeclaration()
 		variable_entry.file_pos= it_->file_pos;
 		NextLexem();
 
-		if( it_->type == Lexem::Type::Assignment )
-		{
-			NextLexem();
-			if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::zero_init_ )
-			{
-				variable_entry.initializer.reset( new ZeroInitializer( it_->file_pos ) );
-				NextLexem();
-			}
-			else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::uninitialized_ )
-			{
-				variable_entry.initializer.reset( new UninitializedInitializer( it_->file_pos ) );
-				NextLexem();
-			}
-			else
-			{
-				variable_entry.initializer.reset( new ExpressionInitializer( it_->file_pos, ParseExpression() ) );
-			}
-		}
-		else if(
-			it_->type == Lexem::Type::BracketLeft ||
-			it_->type == Lexem::Type::SquareBracketLeft ||
-			it_->type == Lexem::Type::BraceLeft )
-		{
-			variable_entry.initializer= ParseInitializer( false );
-		}
+		variable_entry.initializer= ParseVariableInitializer();
 
 		if( it_->type == Lexem::Type::Comma )
 			NextLexem();
@@ -3264,24 +3246,9 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 				IInitializerPtr& initializer= result->constructor_initialization_list_->members_initializers.back().initializer;
 
 				NextLexem();
-				if( it_->type == Lexem::Type::Assignment )
-				{
-					NextLexem();
-					if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::zero_init_ )
-					{
-						initializer.reset( new ZeroInitializer( it_->file_pos ) );
-						NextLexem();
-					}
-					else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::uninitialized_ )
-					{
-						initializer.reset( new UninitializedInitializer( it_->file_pos ) );
-						NextLexem();
-					}
-					else
-						initializer.reset( new ExpressionInitializer( it_->file_pos, ParseExpression() ) );
-				}
-				else
-					initializer= ParseInitializer( false );
+				initializer= ParseVariableInitializer();
+				if( initializer == nullptr )
+					PushErrorMessage();
 
 				if( it_->type == Lexem::Type::Comma )
 					NextLexem();
@@ -3462,6 +3429,8 @@ ClassElements SyntaxAnalyzer::ParseClassBodyElements()
 				TryRecoverAfterError( g_class_body_elements_control_lexems );
 				continue;
 			}
+
+			field->initializer= ParseVariableInitializer();
 
 			if( it_->type == Lexem::Type::Semicolon )
 				NextLexem();
