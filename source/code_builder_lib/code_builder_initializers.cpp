@@ -254,7 +254,18 @@ llvm::Constant* CodeBuilder::ApplyStructNamedInitializer(
 						struct_member.type= field->type;
 						struct_member.llvm_value=
 							function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, { GetZeroGEPIndex(), GetFieldGEPIndex( field->index ) } );
-						ApplyEmptyInitializer( class_member.first, initializer.file_pos_, struct_member, function_context );
+
+						llvm::Constant* constant_initializer= nullptr;
+						if( field->syntax_element->initializer != nullptr )
+							constant_initializer=
+								InitializeClassFieldWithInClassIninitalizer( struct_member, *field, function_context );
+						else
+							ApplyEmptyInitializer( class_member.first, initializer.file_pos_, struct_member, function_context );
+
+						if( constant_initializer == nullptr )
+							all_fields_are_constant= false;
+						if( all_fields_are_constant )
+							constant_initializers[field->index]= constant_initializer;
 					}
 				}
 			}
@@ -1053,6 +1064,30 @@ llvm::Constant* CodeBuilder::InitializeFunctionPointer(
 
 	function_context.llvm_ir_builder.CreateStore( function_value, variable.llvm_value );
 	return function_variable->llvm_function;
+}
+
+llvm::Constant* CodeBuilder::InitializeClassFieldWithInClassIninitalizer(
+	const Variable& variable,
+	const ClassField& class_field,
+	FunctionContext& function_context )
+{
+	U_ASSERT( class_field.syntax_element->initializer != nullptr );
+
+	// Reset "this" for function context.
+	// TODO - maybe reset also other function context fields?
+	const Variable* const prev_this= function_context.this_;
+	function_context.this_= nullptr;
+
+	llvm::Constant* const result=
+		ApplyInitializer(
+			variable,
+			*class_field.syntax_element->initializer,
+			class_field.class_.lock()->class_->members, // Use class members names scope.
+			function_context );
+
+	function_context.this_= prev_this;
+
+	return result;
 }
 
 } // namespace CodeBuilderPrivate
