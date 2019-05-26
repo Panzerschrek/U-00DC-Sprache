@@ -1892,7 +1892,10 @@ void CodeBuilder::BuildConstructorInitialization(
 		field_variable.llvm_value=
 			function_context.llvm_ir_builder.CreateGEP( this_.llvm_value, { GetZeroGEPIndex(), GetFieldGEPIndex( field->index ) } );
 
-		ApplyEmptyInitializer( field_name, constructor_initialization_list.file_pos_, field_variable, function_context );
+		if( field->syntax_element->initializer != nullptr )
+			InitializeClassFieldWithInClassIninitalizer( field_variable, *field, function_context );
+		else
+			ApplyEmptyInitializer( field_name, constructor_initialization_list.file_pos_, field_variable, function_context );
 
 		CallDestructors( *function_context.stack_variables_stack.back(), function_context, constructor_initialization_list.file_pos_ );
 	}

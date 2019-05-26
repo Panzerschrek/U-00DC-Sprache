@@ -104,3 +104,43 @@ def InClassFieldInitializer_InStructNamedInitializer_Test2():
 	tests_lib.build_program( c_program_text )
 	call_result= tests_lib.run_function( "_Z3Foov" )
 	assert( call_result == 77 - 14 )
+
+
+def InClassFieldInitializer_InConstructorInitializer_Test0():
+	c_program_text= """
+		struct S
+		{
+			i32 x= 3258;
+			fn constructor()
+			// In default initializer list initializer for 'x' called
+			{}
+		}
+		fn Foo() : i32
+		{
+			return S().x;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 3258 )
+
+
+def InClassFieldInitializer_InConstructorInitializer_Test1():
+	c_program_text= """
+		struct S
+		{
+			i32 x= 89;
+			i32 y;
+			fn constructor()
+			( y= x * 5 ) // 'x' initialized before 'y'
+			{}
+		}
+		fn Foo() : i32
+		{
+			var S s;
+			return s.y - s.x;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 89 * 5 - 89 )
