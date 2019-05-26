@@ -331,3 +331,62 @@ def InClassFieldInitializer_MayBeConstexpr_Test0():
 		}
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def InClassFieldInitializer_EvaluatesInClassScope_Test0():
+	c_program_text= """
+		struct S
+		{
+			auto constant= 2019;
+			i32 x= constant;
+		}
+		auto constant= 0;
+		fn Foo() : i32
+		{
+			var S s{}; // 's.x' must be initialized, using 'S::constant', not '::constant'
+			return s.x;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 2019 )
+
+
+def InClassFieldInitializer_EvaluatesInClassScope_Test1():
+	c_program_text= """
+		struct S
+		{
+			fn Baz() : i32 { return 99965; }
+			i32 x= Baz();
+		}
+		fn Baz();
+		fn Foo() : i32
+		{
+			var S s; // S::Baz() must be called from generated default constructor.
+			return s.x;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 99965 )
+
+
+def InClassFieldInitializer_EvaluatesInClassScope_Test2():
+	c_program_text= """
+		namespace N
+		{
+			struct S
+			{
+				f32 x= Baz();
+			}
+			fn Baz() : f32 { return 9.8f; }
+		}
+		fn Foo() : f32
+		{
+			var N::S s{}; // 'N::Baz' must be called for initialization here.
+			return s.x * 10.0f;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 98.0 )
