@@ -144,3 +144,58 @@ def InClassFieldInitializer_InConstructorInitializer_Test1():
 	tests_lib.build_program( c_program_text )
 	call_result= tests_lib.run_function( "_Z3Foov" )
 	assert( call_result == 89 * 5 - 89 )
+
+
+def ImplicitInitializerUsedInsteadOf_InClassFieldInitializer_Test0():
+	c_program_text= """
+		struct S
+		{
+			i32 x= 95;
+		}
+		fn Foo() : i32
+		{
+			var S s{ .x= 77 };
+			return s.x;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 77 )
+
+
+def ImplicitInitializerUsedInsteadOf_InClassFieldInitializer_Test1():
+	c_program_text= """
+		struct S
+		{
+			[ i64, 6 ] arr= zero_init;
+		}
+		fn Foo() : i64
+		{
+			var S s{ .arr[ 4i64, 8i64, 15i64, 16i64, 23i64, 42i64 ] };
+			return s.arr[0u] + s.arr[1u] * s.arr[2u] / s.arr[3u] + s.arr[4u] - s.arr[5u];
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 4 + int(8 * 15 / 16) + 23 - 42 )
+
+
+
+def ImplicitInitializerUsedInsteadOf_InClassFieldInitializer_Test2():
+	c_program_text= """
+		struct S
+		{
+			i32 x= 0;
+			fn constructor( i32 in_x )
+			( x(in_x) )
+			{}
+		}
+		fn Foo() : i32
+		{
+			var S s( 33369 );
+			return s.x;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 33369 )
