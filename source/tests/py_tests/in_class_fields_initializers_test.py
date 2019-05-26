@@ -316,3 +316,18 @@ def ImplicitInitializerUsedInsteadOf_InClassFieldInitializer_Test3():
 	tests_lib.build_program( c_program_text )
 	call_result= tests_lib.run_function( "_Z3Foov" )
 	assert( call_result == 666 )
+
+
+def InClassFieldInitializer_MayBeConstexpr_Test0():
+	c_program_text= """
+		struct S
+		{
+			i32 x= 99951;
+		}
+		fn Foo()
+		{
+			var S constexpr s{};
+			static_assert( s.x == 99951 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
