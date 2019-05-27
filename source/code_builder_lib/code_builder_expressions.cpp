@@ -1320,7 +1320,6 @@ Value CodeBuilder::BuildMoveOpeator( const Synt::MoveOperator& move_operator, Na
 	Synt::ComplexName complex_name;
 	complex_name.components.emplace_back();
 	complex_name.components.back().name= move_operator.var_name_;
-	complex_name.components.back().is_generated= true;
 
 	const NamesScope::InsertedName* const resolved_name= ResolveName( move_operator.file_pos_, names, complex_name );
 	if( resolved_name == nullptr )
