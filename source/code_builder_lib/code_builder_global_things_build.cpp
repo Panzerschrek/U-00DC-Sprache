@@ -707,6 +707,8 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type, const T
 		TryGenerateCopyConstructor( the_class, class_type );
 		TryGenerateCopyAssignmentOperator( the_class, class_type );
 
+		CheckClassFieldsInitializers( class_type );
+
 		// Immediately build constexpr functions.
 		the_class.members.ForEachInThisScope(
 			[&]( NamesScope::InsertedName& name )

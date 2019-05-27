@@ -247,20 +247,36 @@ llvm::Constant* CodeBuilder::ApplyStructNamedInitializer(
 			{
 				if( initialized_members_names.count( class_member.first ) == 0 )
 				{
+					llvm::Constant* constant_initializer= nullptr;
 					if( field->is_reference )
-						errors_.push_back( ReportExpectedInitializer( class_member.second.GetFilePos(), class_member.first ) ); // References is not default-constructible.
+					{
+						if( field->syntax_element->initializer == nullptr )
+							errors_.push_back( ReportExpectedInitializer( class_member.second.GetFilePos(), class_member.first ) ); // References is not default-constructible.
+						else
+							constant_initializer= InitializeReferenceClassFieldWithInClassIninitalizer( variable, *field, function_context );
+					}
 					else
 					{
 						struct_member.type= field->type;
 						struct_member.llvm_value=
 							function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, { GetZeroGEPIndex(), GetFieldGEPIndex( field->index ) } );
-						ApplyEmptyInitializer( class_member.first, initializer.file_pos_, struct_member, function_context );
+
+						if( field->syntax_element->initializer != nullptr )
+							constant_initializer=
+								InitializeClassFieldWithInClassIninitalizer( struct_member, *field, function_context );
+						else
+							ApplyEmptyInitializer( class_member.first, initializer.file_pos_, struct_member, function_context );
 					}
+
+					if( constant_initializer == nullptr )
+						all_fields_are_constant= false;
+					if( all_fields_are_constant )
+						constant_initializers[field->index]= constant_initializer;
 				}
 			}
 		});
 
-	if( all_fields_are_constant && initialized_members_names.size() == class_type->field_count )
+	if( all_fields_are_constant && constant_initializers.size() == class_type->field_count )
 		return llvm::ConstantStruct::get( class_type->llvm_type, constant_initializers );
 
 	return nullptr;
@@ -1053,6 +1069,103 @@ llvm::Constant* CodeBuilder::InitializeFunctionPointer(
 
 	function_context.llvm_ir_builder.CreateStore( function_value, variable.llvm_value );
 	return function_variable->llvm_function;
+}
+
+llvm::Constant* CodeBuilder::InitializeClassFieldWithInClassIninitalizer(
+	const Variable& field_variable,
+	const ClassField& class_field,
+	FunctionContext& function_context )
+{
+	U_ASSERT( class_field.syntax_element->initializer != nullptr );
+	U_ASSERT( !class_field.is_reference );
+
+	// Reset "this" for function context.
+	// TODO - maybe reset also other function context fields?
+	const Variable* const prev_this= function_context.this_;
+	function_context.this_= nullptr;
+
+	llvm::Constant* const result=
+		ApplyInitializer(
+			field_variable,
+			*class_field.syntax_element->initializer,
+			class_field.class_.lock()->class_->members, // Use class members names scope.
+			function_context );
+
+	function_context.this_= prev_this;
+
+	return result;
+}
+
+llvm::Constant* CodeBuilder::InitializeReferenceClassFieldWithInClassIninitalizer(
+	const Variable& variable,
+	const ClassField& class_field,
+	FunctionContext& function_context )
+{
+	U_ASSERT( class_field.syntax_element->initializer != nullptr );
+	U_ASSERT( class_field.is_reference );
+
+	// Reset "this" for function context.
+	// TODO - maybe reset also other function context fields?
+	const Variable* const prev_this= function_context.this_;
+	function_context.this_= nullptr;
+
+	llvm::Constant* const result=
+		InitializeReferenceField(
+			variable,
+			class_field,
+			*class_field.syntax_element->initializer,
+			class_field.class_.lock()->class_->members, // Use class members names scope.
+			function_context );
+
+	function_context.this_= prev_this;
+
+	return result;
+}
+
+void CodeBuilder::CheckClassFieldsInitializers( const ClassProxyPtr& class_type )
+{
+	// Run code generation for initializers.
+	// We must check it, becauseinitializers may not be executed later.
+
+	const Class& class_= *class_type->class_;
+	U_ASSERT( class_.completeness == TypeCompleteness::Complete );
+
+	FunctionContext& function_context= *global_function_context_;
+	const StackVariablesStorage dummy_stack_variables_storage( function_context );
+
+	llvm::Value* const variable_llvm_value=
+		function_context.alloca_ir_builder.CreateAlloca( class_.llvm_type );
+
+	class_.members.ForEachInThisScope(
+		[&]( const NamesScope::InsertedName& name )
+		{
+			const ClassField* const class_field= name.second.GetClassField();
+			if( class_field == nullptr )
+				return;
+
+			if( class_field->syntax_element->initializer == nullptr )
+				return;
+
+			if( class_field->is_reference )
+			{
+				Variable variable;
+				variable.type= class_type;
+				variable.value_type= ValueType::Reference;
+				variable.llvm_value= variable_llvm_value;
+				InitializeReferenceClassFieldWithInClassIninitalizer( variable, *class_field, function_context );
+			}
+			else
+			{
+				Variable field_variable;
+				field_variable.type= class_field->type;
+				field_variable.value_type= ValueType::Reference;
+				field_variable.llvm_value=
+					function_context.llvm_ir_builder.CreateGEP(
+						variable_llvm_value,
+						{ GetZeroGEPIndex(), GetFieldGEPIndex( class_field->index ) } );
+				InitializeClassFieldWithInClassIninitalizer( field_variable, *class_field, function_context );
+			}
+		});
 }
 
 } // namespace CodeBuilderPrivate

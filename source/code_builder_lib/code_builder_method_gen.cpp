@@ -60,7 +60,8 @@ void CodeBuilder::TryGenerateDefaultConstructor( Class& the_class, const Type& c
 			if( field->class_.lock()->class_ != &the_class )
 				return; // Skip fields of parent classes.
 
-			if( field->is_reference || !field->type.IsDefaultConstructible() )
+			if( field->syntax_element->initializer == nullptr &&
+				( field->is_reference || !field->type.IsDefaultConstructible() ) )
 				all_fields_is_default_constructible= false;
 		} );
 
@@ -135,14 +136,29 @@ void CodeBuilder::TryGenerateDefaultConstructor( Class& the_class, const Type& c
 			if( field->class_.lock()->class_ != &the_class )
 				return; // Skip fields of parent classes.
 
-			Variable field_variable;
-			field_variable.type= field->type;
-			field_variable.value_type= ValueType::Reference;
+			if( field->is_reference )
+			{
+				U_ASSERT( field->syntax_element->initializer != nullptr ); // Can initialize reference field only with class field initializer.
+				Variable variable;
+				variable.type= class_type;
+				variable.value_type= ValueType::Reference;
+				variable.llvm_value= this_llvm_value;
+				InitializeReferenceClassFieldWithInClassIninitalizer( variable, *field, function_context );
+			}
+			else
+			{
+				Variable field_variable;
+				field_variable.type= field->type;
+				field_variable.value_type= ValueType::Reference;
 
-			field_variable.llvm_value=
-				function_context.llvm_ir_builder.CreateGEP( this_llvm_value, { GetZeroGEPIndex(), GetFieldGEPIndex( field->index ) } );
+				field_variable.llvm_value=
+					function_context.llvm_ir_builder.CreateGEP( this_llvm_value, { GetZeroGEPIndex(), GetFieldGEPIndex( field->index ) } );
 
-			ApplyEmptyInitializer( member.first, FilePos()/*TODO*/, field_variable, function_context );
+				if( field->syntax_element->initializer != nullptr )
+					InitializeClassFieldWithInClassIninitalizer( field_variable, *field, function_context );
+				else
+					ApplyEmptyInitializer( member.first, FilePos()/*TODO*/, field_variable, function_context );
+			}
 		} );
 
 	SetupVirtualTablePointers( this_llvm_value, the_class, function_context );

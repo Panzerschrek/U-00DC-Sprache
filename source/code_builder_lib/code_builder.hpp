@@ -728,6 +728,18 @@ private:
 		NamesScope& block_names,
 		FunctionContext& function_context );
 
+	llvm::Constant* InitializeClassFieldWithInClassIninitalizer(
+		const Variable& field_variable,
+		const ClassField& class_field,
+		FunctionContext& function_context );
+
+	llvm::Constant* InitializeReferenceClassFieldWithInClassIninitalizer(
+		const Variable& variable,
+		const ClassField& class_field,
+		FunctionContext& function_context );
+
+	void CheckClassFieldsInitializers( const ClassProxyPtr& class_type );
+
 	// Reference-checking.
 	void ProcessFunctionArgReferencesTags(
 		const Synt::FunctionType& func,

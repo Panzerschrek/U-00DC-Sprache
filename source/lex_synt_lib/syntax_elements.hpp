@@ -723,6 +723,7 @@ public:
 	ProgramString name;
 	MutabilityModifier mutability_modifier= MutabilityModifier::None;
 	ReferenceModifier reference_modifier= ReferenceModifier::None;
+	IInitializerPtr initializer; // May be null.
 };
 
 enum class ClassKindAttribute

@@ -1880,20 +1880,28 @@ void CodeBuilder::BuildConstructorInitialization(
 
 		if( field->is_reference )
 		{
-			errors_.push_back( ReportExpectedInitializer( class_member->second.GetFilePos(), field_name ) );
-			continue;
+			if( field->syntax_element->initializer == nullptr )
+			{
+				errors_.push_back( ReportExpectedInitializer( class_member->second.GetFilePos(), field_name ) );
+				continue;
+			}
+			InitializeReferenceClassFieldWithInClassIninitalizer( this_, *field, function_context );
 		}
+		else
+		{
+			Variable field_variable;
+			field_variable.type= field->type;
+			field_variable.location= Variable::Location::Pointer;
+			field_variable.value_type= ValueType::Reference;
 
-		Variable field_variable;
-		field_variable.type= field->type;
-		field_variable.location= Variable::Location::Pointer;
-		field_variable.value_type= ValueType::Reference;
+			field_variable.llvm_value=
+				function_context.llvm_ir_builder.CreateGEP( this_.llvm_value, { GetZeroGEPIndex(), GetFieldGEPIndex( field->index ) } );
 
-		field_variable.llvm_value=
-			function_context.llvm_ir_builder.CreateGEP( this_.llvm_value, { GetZeroGEPIndex(), GetFieldGEPIndex( field->index ) } );
-
-		ApplyEmptyInitializer( field_name, constructor_initialization_list.file_pos_, field_variable, function_context );
-
+			if( field->syntax_element->initializer != nullptr )
+				InitializeClassFieldWithInClassIninitalizer( field_variable, *field, function_context );
+			else
+				ApplyEmptyInitializer( field_name, constructor_initialization_list.file_pos_, field_variable, function_context );
+		}
 		CallDestructors( *function_context.stack_variables_stack.back(), function_context, constructor_initialization_list.file_pos_ );
 	}
 	if( !base_initialized && base_class.base_class != nullptr )
