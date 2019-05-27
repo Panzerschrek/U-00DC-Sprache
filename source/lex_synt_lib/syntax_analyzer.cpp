@@ -1722,7 +1722,7 @@ ITypeNamePtr SyntaxAnalyzer::ParseTypeName()
 		if( it_->type != Lexem::Type::BracketLeft )
 		{
 			PushErrorMessage();
-			return typeof_type_name;
+			return std::move(typeof_type_name);
 		}
 		NextLexem();
 
@@ -1731,11 +1731,11 @@ ITypeNamePtr SyntaxAnalyzer::ParseTypeName()
 		if( it_->type != Lexem::Type::BracketRight )
 		{
 			PushErrorMessage();
-			return typeof_type_name;
+			return std::move(typeof_type_name);
 		}
 		NextLexem();
 
-		return typeof_type_name;
+		return std::move(typeof_type_name);
 	}
 	else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::fn_ )
 		return ParseFunctionType();
