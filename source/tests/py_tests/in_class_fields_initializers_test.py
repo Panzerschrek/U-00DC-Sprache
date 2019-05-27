@@ -333,6 +333,22 @@ def InClassFieldInitializer_MayBeConstexpr_Test0():
 	tests_lib.build_program( c_program_text )
 
 
+def InClassFieldInitializer_MayBeConstexpr_Test1():
+	c_program_text= """
+		struct S
+		{
+			auto constant= 1953;
+			i32& x= constant;
+		}
+		fn Foo()
+		{
+			var S constexpr s{}; // Reference field must be constexpr here.
+			static_assert( s.x == 1953 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
 def InClassFieldInitializer_EvaluatesInClassScope_Test0():
 	c_program_text= """
 		struct S
@@ -390,3 +406,23 @@ def InClassFieldInitializer_EvaluatesInClassScope_Test2():
 	tests_lib.build_program( c_program_text )
 	call_result= tests_lib.run_function( "_Z3Foov" )
 	assert( call_result == 98.0 )
+
+
+def InClassFieldInitializer_EvaluatesInClassScope_Test3():
+	c_program_text= """
+		class C
+		{
+		private:
+			auto constant= 999;
+		public:
+			i32 x= constant; // Ok, initializer called in 'C' scope
+		}
+		fn Foo() : i32
+		{
+			var C c;
+			return c.x;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 999 )
