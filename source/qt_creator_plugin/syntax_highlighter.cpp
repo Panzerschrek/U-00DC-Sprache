@@ -45,7 +45,13 @@ SyntaxHighlighter::SyntaxHighlighter()
 		TextEditor::C_OPERATOR,
 		TextEditor::C_ERROR,
 	});
-	setTextFormatCategories(categories);
+
+	setTextFormatCategories(
+		9,
+		[&](int category) -> TextEditor::TextStyle
+		{
+			return TextEditor::TextStyle(categories[category]);
+		});
 }
 
 void SyntaxHighlighter::highlightBlock( const QString& text )
