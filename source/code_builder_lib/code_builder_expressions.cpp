@@ -360,7 +360,7 @@ Value CodeBuilder::BuildBinaryOperator(
 	const Type& l_type= l_var.type;
 	const Type& r_type= r_var.type;
 	const FundamentalType* const l_fundamental_type= l_type.GetFundamentalType();
-	const FundamentalType* const r_fundamental_type= r_var.type.GetFundamentalType();
+	const FundamentalType* const r_fundamental_type= r_type.GetFundamentalType();
 
 	using BinaryOperatorType= BinaryOperatorType;
 	switch( binary_operator )

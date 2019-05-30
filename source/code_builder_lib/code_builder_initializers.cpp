@@ -89,7 +89,7 @@ void CodeBuilder::ApplyEmptyInitializer(
 		this_overloaded_methods_set.overloaded_methods_set= *constructors_set;
 
 		// TODO - fix this.
-		// "CallOperator" pointer used as key in overloading resolution cache. Passing stack ovject is not safe.
+		// "CallOperator" pointer used as key in overloading resolution cache. Passing stack object is not safe.
 		const Synt::CallOperator call_operator( file_pos, std::vector<Synt::IExpressionComponentPtr>() );
 		NamesScope dummy_names_scope( ProgramString(), nullptr );
 		BuildCallOperator( this_overloaded_methods_set, call_operator, dummy_names_scope, function_context );

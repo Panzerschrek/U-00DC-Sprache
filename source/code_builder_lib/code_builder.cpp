@@ -807,7 +807,6 @@ void CodeBuilder::CallDestructor(
 			array_type->ArraySizeOrZero(),
 			[&]( llvm::Value* const index )
 			{
-
 				CallDestructor(
 					function_context.llvm_ir_builder.CreateGEP( ptr, { GetZeroGEPIndex(), index } ),
 					array_type->type,
@@ -816,8 +815,7 @@ void CodeBuilder::CallDestructor(
 			},
 			function_context );
 	}
-	else
-		U_ASSERT( false && "WTF? strange type for variable" );
+	else U_ASSERT(false);
 }
 
 void CodeBuilder::CallDestructorsForLoopInnerVariables( FunctionContext& function_context, const FilePos& file_pos )
@@ -2000,10 +1998,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockCode(
 		else if( const auto auto_variable_declaration= dynamic_cast<const Synt::AutoVariableDeclaration*>( block_element_ptr ) )
 			BuildAutoVariableDeclarationCode( *auto_variable_declaration, block_names, function_context );
 		else if( const auto expression= dynamic_cast<const Synt::SingleExpressionOperator*>( block_element_ptr ) )
-			BuildExpressionCodeAndDestroyTemporaries(
-				*expression->expression_,
-				block_names,
-				function_context );
+			BuildExpressionCodeAndDestroyTemporaries( *expression->expression_, block_names, function_context );
 		else if( const auto assignment_operator= dynamic_cast<const Synt::AssignmentOperator*>( block_element_ptr ) )
 			BuildAssignmentOperatorCode( *assignment_operator, block_names, function_context );
 		else if( const auto additive_assignment_operator= dynamic_cast<const Synt::AdditiveAssignmentOperator*>( block_element_ptr ) )
@@ -2024,33 +2019,23 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockCode(
 				function_context );
 		else if( const auto return_operator= dynamic_cast<const Synt::ReturnOperator*>( block_element_ptr ) )
 		{
-			BuildReturnOperatorCode(
-				*return_operator,
-				block_names,
-				function_context );
+			BuildReturnOperatorCode( *return_operator, block_names, function_context );
 
 			block_build_info.have_terminal_instruction_inside= true;
 			break;
 		}
 		else if( const auto while_operator= dynamic_cast<const Synt::WhileOperator*>( block_element_ptr ) )
-			BuildWhileOperatorCode(
-				*while_operator,
-				block_names,
-				function_context );
+			BuildWhileOperatorCode( *while_operator, block_names, function_context );
 		else if( const auto break_operator= dynamic_cast<const Synt::BreakOperator*>( block_element_ptr ) )
 		{
-			BuildBreakOperatorCode(
-				*break_operator,
-				function_context );
+			BuildBreakOperatorCode( *break_operator, function_context );
 
 			block_build_info.have_terminal_instruction_inside= true;
 			break;
 		}
 		else if( const auto continue_operator= dynamic_cast<const Synt::ContinueOperator*>( block_element_ptr ) )
 		{
-			BuildContinueOperatorCode(
-				*continue_operator,
-				function_context );
+			BuildContinueOperatorCode( *continue_operator, function_context );
 
 			block_build_info.have_terminal_instruction_inside= true;
 			break;
@@ -2107,8 +2092,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockCode(
 			else if( block->safety_ == Synt::Block::Safety::None ) {}
 			else U_ASSERT(false);
 
-			const BlockBuildInfo inner_block_build_info=
-				BuildBlockCode( *block, block_names, function_context );
+			const BlockBuildInfo inner_block_build_info= BuildBlockCode( *block, block_names, function_context );
 
 			function_context.is_in_unsafe_block= prev_unsafe;
 
@@ -2541,9 +2525,7 @@ void CodeBuilder::BuildAssignmentOperatorCode(
 			true, // evaluate args in reverse order
 			assignment_operator.file_pos_,
 			block_names,
-			function_context ) != boost::none )
-	{}
-	else
+			function_context ) == boost::none )
 	{ // Here process default assignment operator for fundamental types.
 		// Evalueate right part
 		Variable r_var= BuildExpressionCodeEnsureVariable( *assignment_operator.r_value_, block_names, function_context );
@@ -2618,11 +2600,7 @@ void CodeBuilder::BuildAdditiveAssignmentOperatorCode(
 			true, // evaluate args in reverse order
 			additive_assignment_operator.file_pos_,
 			block_names,
-			function_context ) != boost::none )
-	{
-		return;
-	}
-	else
+			function_context ) == boost::none )
 	{ // Here process default additive assignment operators for fundamental types.
 		Variable r_var=
 			BuildExpressionCodeEnsureVariable(
