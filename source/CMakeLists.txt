@@ -144,6 +144,7 @@ if( BUILD_COMPILER )
 	add_executable( Compiler ${COMPILER_SOURCES} ${bc_files} )
 	target_link_libraries( Compiler CompilerLib ${LLVM_LIBS_FOR_COMPILER} )
 	target_link_libraries( Compiler ${Boost_LIBRARIES} )
+	set_target_properties( Compiler PROPERTIES LINK_FLAGS_RELEASE "${LINK_FLAGS_RELEASE} -s" ) # Strip result executable.
 endif( BUILD_COMPILER )
 
 #
