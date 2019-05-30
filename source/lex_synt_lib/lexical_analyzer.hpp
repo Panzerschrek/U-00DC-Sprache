@@ -111,7 +111,7 @@ struct Lexem
 	};
 
 	Type type= Type::None;
-	ProgramString text;
+	ProgramString text; // Non-empty for identifiers, strings, numbers. Empty for simple lexems.
 
 	FilePos file_pos;
 };

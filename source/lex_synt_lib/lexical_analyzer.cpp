@@ -421,6 +421,7 @@ LexicalAnalysisResult LexicalAnalysis( const sprache_char* const program_text_da
 	unsigned int line= 1; // Count lines from "1", in human-readable format.
 	Iterator last_newline_it= program_text_data;
 
+	ProgramString fixed_lexem_str;
 	while( it < it_end )
 	{
 		const sprache_char c= *it;
@@ -496,24 +497,21 @@ LexicalAnalysisResult LexicalAnalysis( const sprache_char* const program_text_da
 			lexem= ParseMacroIdentifier( it, it_end );
 		else
 		{
-			// Try find fixed lexems.
-			for( unsigned int s= g_max_fixed_lexem_size; s >= 1; --s )
+			size_t s= std::min( g_max_fixed_lexem_size, size_t( it_end - it ) );
+			fixed_lexem_str.clear();
+			fixed_lexem_str.insert( fixed_lexem_str.end(), it, it + s );
+			for( ; s >= 1u; --s )
 			{
-				if( it + s <= it_end )
+				const FixedLexemsMap& m= g_fixed_lexems[s];
+
+				const auto lexem_it= m.find( fixed_lexem_str );
+				if( lexem_it != m.end() )
 				{
-					const FixedLexemsMap& m= g_fixed_lexems[s];
-					ProgramString str( &*it, &*it + s );
-
-					const auto lexem_it= m.find( str );
-					if( lexem_it != m.end() )
-					{
-						it+= s;
-
-						lexem.type= lexem_it->second;
-						lexem.text= std::move(str);
-						goto push_lexem;
-					}
+					it+= s;
+					lexem.type= lexem_it->second;
+					goto push_lexem;
 				}
+				fixed_lexem_str.pop_back();
 			}
 
 			result.error_messages.emplace_back(
