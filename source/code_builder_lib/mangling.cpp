@@ -347,9 +347,13 @@ std::string MangleFunction(
 
 	if( function_name == Keywords::constructor_ )
 	{
-		// TODO
-		// Itanium ABI requires at least 2  cnstructors - "C1" and "C2". We should generate both.
+		// Itanium ABI requires at least 2  cnstructors - "C1" and "C2".
+		// 2 constructors required for virtual inheritance. Ü has no virtual inheritanse, so, second constructor does not needed.
 		result+= GetNestedName( "C1"_SpC, false, parent_scope, false, names_cache, true ).compressed_and_escaped;
+	}
+	else if( function_name == Keywords::destructor_ )
+	{
+		result+= GetNestedName( "D0"_SpC, false, parent_scope, false, names_cache, true ).compressed_and_escaped;
 	}
 	else
 	{
@@ -368,6 +372,9 @@ std::string MangleFunction(
 
 	for( const Function::Arg& arg : function_type.args )
 	{
+		// We breaking some mangling rules here.
+		// In C++ "this" argument skipped. In Ü "this" processed as regular argument.
+
 		NamePair type_name= GetTypeName_r( arg.type, names_cache );
 
 		if( !arg.is_mutable && arg.is_reference ) // push "Konst" for reference immutable arguments

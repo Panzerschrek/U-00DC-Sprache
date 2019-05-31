@@ -3,6 +3,103 @@
 namespace U
 {
 
+U_TEST( NamespacesManglingTest )
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo(){}
+		namespace BlaBla
+		{
+			fn Foo(){}
+
+			namespace Goblin
+			{
+				fn Tupichok(){}
+			}
+		}
+
+		struct StructIsNamespace
+		{
+			fn Foo() {}
+
+			struct InnerStruct
+			{
+				fn Ratatatata(){}
+			}
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z3Foov" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN6BlaBla3FooEv" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN6BlaBla6Goblin8TupichokEv" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN17StructIsNamespace3FooEv" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN17StructIsNamespace11InnerStruct10RatatatataEv" ) != nullptr );
+}
+
+U_TEST( FunctionsParametersManglingTest )
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo(){}
+		fn Foo( u32 x ) {}
+		fn Foo( i32 x, i32 y ) {}
+		fn Foo( bool b ) {}
+		fn Foo( f32 & mut x ) {}
+		fn Foo( f32 &imut x ) {}
+		fn Foo( i64  mut x, f32 f ) {}
+		fn Foo( u64 imut x, f64 d ) {}
+
+		struct CustomType{}
+		type ArrayType= [ i32, 55 ];
+
+		fn Foo( CustomType t ) {}
+		fn Foo( CustomType &mut t ) {}
+		fn Foo( ArrayType &mut a ) {}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z3Foov" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z3Fooj" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z3Fooii" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z3Foob" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z3FooRf" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z3FooRKf" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z3Fooxf" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z3Fooyd" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z3Foo10CustomType" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z3FooR10CustomType" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z3FooRA55_i" ) != nullptr );
+}
+
+U_TEST( ClassmethodsManglingTest )
+{
+	static const char c_program_text[]=
+	R"(
+		struct SomeStruct
+		{
+			fn Foo( this ) {}
+			fn Bar( mut this ) {}
+			fn Baz() {}
+			fn constructor(){}
+			fn constructor( i32 x, f32 y ){}
+			fn destructor(){}
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	// Here is difference between Ü and C++. In Ü "this" processed as regular argument.
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN10SomeStruct3FooERKS_" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN10SomeStruct3BarERS_" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN10SomeStruct3BazEv" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN10SomeStructC1ERS_" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN10SomeStructC1ERS_if" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN10SomeStructD0ERS_" ) != nullptr );
+}
+
 U_TEST( GlobalVariablesManglingTest0 )
 {
 	static const char c_program_text[]=
