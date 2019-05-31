@@ -66,7 +66,7 @@ private:
 	std::vector<ProgramString> names_container_;
 };
 
-// Returns empty string if func_name is not oeprator name.
+// Returns empty string if func_name is not operatorname.
 static const ProgramString& DecodeOperator( const ProgramString& func_name )
 {
 	static const std::map<ProgramString, ProgramString> c_op_names

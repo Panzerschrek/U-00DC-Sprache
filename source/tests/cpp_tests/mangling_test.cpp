@@ -100,6 +100,56 @@ U_TEST( ClassmethodsManglingTest )
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN10SomeStructD0ERS_" ) != nullptr );
 }
 
+U_TEST( NamesCompressionTest )
+{
+	static const char c_program_text[]=
+	R"(
+		struct CustomType{}
+		fn Foo( CustomType a, CustomType b ) {}
+
+		namespace NnN
+		{
+			fn Baz( CustomType a, CustomType b ) {}
+		}
+
+		namespace Fr
+		{
+			struct CustomType{}
+			fn Bar( CustomType a, CustomType b ) {}
+		}
+
+		fn AstFF( CustomType &mut a, CustomType &mut b ) {}
+		fn FFAst( CustomType &mut a, CustomType b ) {}
+		fn AstLL( CustomType &imut a, CustomType &imut b ) {}
+
+		namespace AAA
+		{
+			namespace BBB
+			{
+				namespace CCC
+				{
+					struct CustomType{}
+					fn Foo( CustomType &imut a, CustomType &imut b, CustomType &imut c, CustomType &mut d ) {}
+					fn Bar( CustomType& mut a, CustomType &imut b ) {}
+					fn Baz( CustomType a, CustomType &mut b ) {}
+				}
+			}
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z3Foo10CustomTypeS_" ) != nullptr ); // "CustomType" is "S_"
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN3NnN3BazE10CustomTypeS0_" ) != nullptr ); // "NnN" is "S_", "CustomType" iz "S1_"
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN2Fr3BarENS_10CustomTypeES0_" ) != nullptr ); // "Fr" is "S_", "Fr::CustomType" is "S0_"
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z5AstFFR10CustomTypeS0_" ) != nullptr ); // "CustomType" is "S_", "CustomType &mut" is "S0_"
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z5FFAstR10CustomTypeS_" ) != nullptr ); // "CustomType" is "S_"
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z5AstLLRK10CustomTypeS1_" ) != nullptr ); // "CustomType" is "S_", "CustomType &mut" is "S0_", "CustmType &imut" is "S1_"
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN3AAA3BBB3CCC3FooERKNS1_10CustomTypeES4_S4_RS2_" ) != nullptr ); // "AAA" is "S_", "BBB" is "S0_", CCC is "S1_", "CustomType" is "S2_", "CustomType &mut" is "S3_", "CustomType &imut" is "S4_"
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN3AAA3BBB3CCC3BarERNS1_10CustomTypeERKS2_" ) != nullptr ); // "AAA" is "S_", "BBB" is "S0_", CCC is "S1_", "CustomType" is "S2_"
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN3AAA3BBB3CCC3BazENS1_10CustomTypeERS2_" ) != nullptr ); // "AAA" is "S_", "BBB" is "S0_", CCC is "S1_", "CustomType" is "S2_"
+}
+
 U_TEST( GlobalVariablesManglingTest0 )
 {
 	static const char c_program_text[]=
