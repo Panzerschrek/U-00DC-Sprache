@@ -4,6 +4,7 @@
 #include <vector>
 
 #include <boost/optional.hpp>
+#include <boost/variant.hpp>
 
 #include "lexical_analyzer.hpp"
 #include "operators.hpp"
@@ -40,6 +41,23 @@ typedef std::vector<IUnaryPostfixOperatorPtr> PostfixOperators;
 class IInitializer;
 typedef std::unique_ptr<IInitializer> IInitializerPtr;
 
+enum class MutabilityModifier
+{
+	None,
+	Mutable,
+	Immutable,
+	Constexpr,
+};
+
+enum class ReferenceModifier
+{
+	None,
+	Reference,
+	// SPRACE_TODO - add "move" references here
+};
+
+typedef std::vector<ProgramString> ReferencesTagsList; // If last tag is empty string - means continuous tag - like arg' a, b, c... '
+
 struct ComplexName final
 {
 	// A
@@ -60,24 +78,23 @@ struct ComplexName final
 	std::vector<Component> components;
 };
 
-class ITypeName
-{
-public:
-	virtual ~ITypeName()= default;
-};
 
-typedef std::unique_ptr<ITypeName> ITypeNamePtr;
+class ArrayTypeName;
+class TypeofTypeName;
+class NamedTypeName;
+class FunctionType;
+using TypeName= boost::variant< int /* means none */, ArrayTypeName, TypeofTypeName, NamedTypeName, FunctionType >;
 
-class ArrayTypeName final : public SyntaxElementBase, public ITypeName
+class ArrayTypeName final : public SyntaxElementBase
 {
 public:
 	explicit ArrayTypeName( const FilePos& file_pos );
 
-	ITypeNamePtr element_type;
+	std::unique_ptr<TypeName> element_type;
 	IExpressionComponentPtr size;
 };
 
-class TypeofTypeName final : public SyntaxElementBase, public ITypeName
+class TypeofTypeName final : public SyntaxElementBase
 {
 public:
 	explicit TypeofTypeName( const FilePos& file_pos );
@@ -85,12 +102,60 @@ public:
 	IExpressionComponentPtr expression;
 };
 
-class NamedTypeName final : public SyntaxElementBase, public ITypeName
+class NamedTypeName final : public SyntaxElementBase
 {
 public:
 	explicit NamedTypeName( const FilePos& file_pos );
 
 	ComplexName name;
+};
+
+class FunctionArgument;
+typedef std::unique_ptr<FunctionArgument> FunctionArgumentPtr;
+typedef std::vector<FunctionArgumentPtr> FunctionArgumentsDeclaration;
+
+struct ReferencePollutionSrc
+{
+	ProgramString name;
+	bool is_mutable= true;
+};
+typedef std::pair< ProgramString, ReferencePollutionSrc > FunctionReferencesPollution;
+typedef std::vector<FunctionReferencesPollution> FunctionReferencesPollutionList;
+
+class FunctionType final : public SyntaxElementBase
+{
+public:
+	FunctionType( const FilePos& file_pos );
+
+	std::unique_ptr<TypeName> return_type_;
+	MutabilityModifier return_value_mutability_modifier_= MutabilityModifier::None;
+	ReferenceModifier return_value_reference_modifier_= ReferenceModifier::None;
+	ProgramString return_value_reference_tag_;
+	ReferencesTagsList return_value_inner_reference_tags_;
+	FunctionReferencesPollutionList referecnces_pollution_list_;
+	FunctionArgumentsDeclaration arguments_;
+	bool unsafe_= false;
+};
+
+class FunctionArgument final : public SyntaxElementBase
+{
+public:
+	FunctionArgument(
+		const FilePos& file_pos,
+		ProgramString name,
+		TypeName type,
+		MutabilityModifier mutability_modifier,
+		ReferenceModifier reference_modifier,
+		ProgramString reference_tag,
+		ReferencesTagsList inner_arg_reference_tags );
+
+public:
+	const ProgramString name_;
+	const TypeName type_;
+	const MutabilityModifier mutability_modifier_;
+	const ReferenceModifier reference_modifier_;
+	const ProgramString reference_tag_;
+	const ReferencesTagsList inner_arg_reference_tags_;
 };
 
 class IUnaryPrefixOperator
@@ -266,7 +331,7 @@ class CastRef final : public ExpressionComponentWithUnaryOperators
 public:
 	CastRef( const FilePos& file_pos );
 
-	ITypeNamePtr type_;
+	TypeName type_;
 	IExpressionComponentPtr expression_;
 };
 
@@ -275,7 +340,7 @@ class CastRefUnsafe final : public ExpressionComponentWithUnaryOperators
 public:
 	CastRefUnsafe( const FilePos& file_pos );
 
-	ITypeNamePtr type_;
+	TypeName type_;
 	IExpressionComponentPtr expression_;
 };
 
@@ -300,7 +365,7 @@ class TypeInfo final : public ExpressionComponentWithUnaryOperators
 public:
 	TypeInfo( const FilePos& file_pos );
 
-	ITypeNamePtr type_;
+	TypeName type_;
 };
 
 class BooleanConstant final : public ExpressionComponentWithUnaryOperators
@@ -352,7 +417,7 @@ class TypeNameInExpression final : public ExpressionComponentWithUnaryOperators
 public:
 	explicit TypeNameInExpression( const FilePos& file_pos );
 
-	ITypeNamePtr type_name;
+	TypeName type_name;
 };
 
 class IProgramElement
@@ -404,21 +469,6 @@ public:
 
 typedef std::unique_ptr<Block> BlockPtr;
 
-enum class MutabilityModifier
-{
-	None,
-	Mutable,
-	Immutable,
-	Constexpr,
-};
-
-enum class ReferenceModifier
-{
-	None,
-	Reference,
-	// SPRACE_TODO - add "move" references here
-};
-
 struct VariablesDeclaration final
 	: public SyntaxElementBase
 	, public IBlockElement
@@ -442,7 +492,7 @@ struct VariablesDeclaration final
 	};
 
 	std::vector<VariableEntry> variables;
-	ITypeNamePtr type;
+	TypeName type;
 };
 
 typedef std::unique_ptr<VariablesDeclaration> VariablesDeclarationPtr;
@@ -597,7 +647,7 @@ public:
 	explicit Typedef( const FilePos& file_pos );
 
 	ProgramString name;
-	ITypeNamePtr value;
+	TypeName value;
 };
 
 class Enum final
@@ -619,41 +669,6 @@ public:
 	std::vector<Member> members;
 };
 
-typedef std::vector<ProgramString> ReferencesTagsList; // If last tag is empty string - means continuous tag - like arg' a, b, c... '
-
-class FunctionArgument final : public SyntaxElementBase
-{
-public:
-	FunctionArgument(
-		const FilePos& file_pos,
-		ProgramString name,
-		ITypeNamePtr type,
-		MutabilityModifier mutability_modifier,
-		ReferenceModifier reference_modifier,
-		ProgramString reference_tag,
-		ReferencesTagsList inner_arg_reference_tags );
-
-public:
-	const ProgramString name_;
-	const ITypeNamePtr type_;
-	const MutabilityModifier mutability_modifier_;
-	const ReferenceModifier reference_modifier_;
-	const ProgramString reference_tag_;
-	const ReferencesTagsList inner_arg_reference_tags_;
-};
-
-typedef std::unique_ptr<FunctionArgument> FunctionArgumentPtr;
-typedef std::vector<FunctionArgumentPtr> FunctionArgumentsDeclaration;
-
-struct ReferencePollutionSrc
-{
-	ProgramString name;
-	bool is_mutable= true;
-};
-typedef std::pair< ProgramString, ReferencePollutionSrc > FunctionReferencesPollution;
-typedef std::vector<FunctionReferencesPollution> FunctionReferencesPollutionList;
-
-
 enum class VirtualFunctionKind
 {
 	None, // Regular, non-virtual
@@ -661,23 +676,6 @@ enum class VirtualFunctionKind
 	VirtualOverride,
 	VirtualFinal,
 	VirtualPure,
-};
-
-class FunctionType final
-	: public SyntaxElementBase
-	, public ITypeName
-{
-public:
-	FunctionType( const FilePos& file_pos );
-
-	ITypeNamePtr return_type_;
-	MutabilityModifier return_value_mutability_modifier_= MutabilityModifier::None;
-	ReferenceModifier return_value_reference_modifier_= ReferenceModifier::None;
-	ProgramString return_value_reference_tag_;
-	ReferencesTagsList return_value_inner_reference_tags_;
-	FunctionReferencesPollutionList referecnces_pollution_list_;
-	FunctionArgumentsDeclaration arguments_;
-	bool unsafe_= false;
 };
 
 class Function final
@@ -716,7 +714,7 @@ class ClassField final
 public:
 	explicit ClassField( const FilePos& file_pos );
 
-	ITypeNamePtr type;
+	TypeName type;
 	ProgramString name;
 	MutabilityModifier mutability_modifier= MutabilityModifier::None;
 	ReferenceModifier reference_modifier= ReferenceModifier::None;

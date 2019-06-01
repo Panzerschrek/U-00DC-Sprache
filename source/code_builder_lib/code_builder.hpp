@@ -179,7 +179,7 @@ private:
 	void FillGlobalNamesScope( NamesScope& global_names_scope );
 
 	// Function context required for accesing local constexpr variables.
-	Type PrepareType( const Synt::ITypeNamePtr& type_name, NamesScope& names_scope, FunctionContext& function_context );
+	Type PrepareType( const Synt::TypeName& type_name, NamesScope& names_scope, FunctionContext& function_context );
 
 	llvm::FunctionType* GetLLVMFunctionType( const Function& function_type );
 
@@ -238,7 +238,7 @@ private:
 		std::vector<bool>& template_parameters_usage_flags );
 
 	void PrepareTemplateSignatureParameter(
-		const Synt::ITypeName& template_parameter,
+		const Synt::TypeName& template_parameter,
 		NamesScope& names_scope,
 		const std::vector<TypeTemplate::TemplateParameter>& template_parameters,
 		std::vector<bool>& template_parameters_usage_flags );
@@ -269,7 +269,7 @@ private:
 	DeducedTemplateParameter DeduceTemplateArguments(
 		const TemplateBase& template_,
 		const TemplateParameter& template_parameter,
-		const Synt::ITypeName& signature_parameter,
+		const Synt::TypeName& signature_parameter,
 		const FilePos& signature_parameter_file_pos,
 		DeducibleTemplateParameters& deducible_template_parameters,
 		NamesScope& names_scope );
@@ -459,7 +459,7 @@ private:
 	Value BuildCastRefUnsafe( const Synt::CastRefUnsafe& cast_ref_unsafe, NamesScope& names, FunctionContext& function_context );
 	Value DoReferenceCast(
 		const FilePos& file_pos,
-		const Synt::ITypeNamePtr& type_name,
+		const Synt::TypeName& type_name,
 		const Synt::IExpressionComponentPtr& expression,
 		bool enable_unsafe,
 		NamesScope& names,

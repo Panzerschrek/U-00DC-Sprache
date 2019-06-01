@@ -247,9 +247,9 @@ private:
 
 	FunctionArgumentPtr ParseFunctionArgument();
 	void ParseFunctionTypeEnding( FunctionType& result );
-	std::unique_ptr<FunctionType> ParseFunctionType();
+	FunctionType ParseFunctionType();
 
-	ITypeNamePtr ParseTypeName();
+	TypeName ParseTypeName();
 	std::vector<IExpressionComponentPtr> ParseTemplateParameters();
 	ComplexName ParseComplexName();
 	ReferencesTagsList ParseReferencesTagsList();
@@ -1497,7 +1497,7 @@ IExpressionComponentPtr SyntaxAnalyzer::ParseExpression()
 
 FunctionArgumentPtr SyntaxAnalyzer::ParseFunctionArgument()
 {
-	ITypeNamePtr arg_type= ParseTypeName();
+	TypeName arg_type= ParseTypeName();
 
 	ReferenceModifier reference_modifier= ReferenceModifier::None;
 	MutabilityModifier mutability_modifier= MutabilityModifier::None;
@@ -1585,7 +1585,7 @@ void SyntaxAnalyzer::ParseFunctionTypeEnding( FunctionType& result )
 	{
 		NextLexem();
 
-		result.return_type_= ParseTypeName();
+		result.return_type_.reset( new TypeName( ParseTypeName() ) );
 
 		if( it_->type == Lexem::Type::And )
 		{
@@ -1625,9 +1625,9 @@ void SyntaxAnalyzer::ParseFunctionTypeEnding( FunctionType& result )
 	}
 }
 
-std::unique_ptr<FunctionType> SyntaxAnalyzer::ParseFunctionType()
+FunctionType SyntaxAnalyzer::ParseFunctionType()
 {
-	std::unique_ptr<FunctionType> result( new FunctionType( it_->file_pos ) );
+	FunctionType result( it_->file_pos );
 
 	U_ASSERT( it_->type == Lexem::Type::Identifier && it_->text == Keywords::fn_ );
 	NextLexem();
@@ -1649,7 +1649,7 @@ std::unique_ptr<FunctionType> SyntaxAnalyzer::ParseFunctionType()
 
 		auto arg= ParseFunctionArgument();
 		if( arg != nullptr )
-			result->arguments_.push_back( std::move(arg) );
+			result.arguments_.push_back( std::move(arg) );
 
 		if( it_->type == Lexem::Type::Comma )
 		{
@@ -1667,19 +1667,19 @@ std::unique_ptr<FunctionType> SyntaxAnalyzer::ParseFunctionType()
 		}
 	} // for arguments
 
-	ParseFunctionTypeEnding( *result );
+	ParseFunctionTypeEnding( result );
 
 	return result;
 }
 
-ITypeNamePtr SyntaxAnalyzer::ParseTypeName()
+TypeName SyntaxAnalyzer::ParseTypeName()
 {
 	if( it_->type == Lexem::Type::SquareBracketLeft )
 	{
 		NextLexem();
 
-		std::unique_ptr<ArrayTypeName> array_type_name( new ArrayTypeName(it_->file_pos) );
-		array_type_name->element_type= ParseTypeName();
+		ArrayTypeName array_type_name(it_->file_pos);
+		array_type_name.element_type.reset( new TypeName( ParseTypeName() ) );
 
 		if( it_->type != Lexem::Type::Comma )
 		{
@@ -1687,7 +1687,7 @@ ITypeNamePtr SyntaxAnalyzer::ParseTypeName()
 			return std::move(array_type_name);
 		}
 		NextLexem();
-		array_type_name->size= ParseExpression();
+		array_type_name.size= ParseExpression();
 
 		if( it_->type != Lexem::Type::SquareBracketRight )
 		{
@@ -1703,7 +1703,7 @@ ITypeNamePtr SyntaxAnalyzer::ParseTypeName()
 		// Type name inside (). We needs this for better parsing of function pointer types, for example.
 		NextLexem();
 
-		ITypeNamePtr type_name= ParseTypeName();
+		TypeName type_name= ParseTypeName();
 
 		if( it_->type != Lexem::Type::BracketRight )
 		{
@@ -1718,7 +1718,7 @@ ITypeNamePtr SyntaxAnalyzer::ParseTypeName()
 	{
 		NextLexem();
 
-		std::unique_ptr<TypeofTypeName> typeof_type_name( new TypeofTypeName(it_->file_pos) );
+		TypeofTypeName typeof_type_name( it_->file_pos );
 
 		if( it_->type != Lexem::Type::BracketLeft )
 		{
@@ -1727,7 +1727,7 @@ ITypeNamePtr SyntaxAnalyzer::ParseTypeName()
 		}
 		NextLexem();
 
-		typeof_type_name->expression= ParseExpression();
+		typeof_type_name.expression= ParseExpression();
 
 		if( it_->type != Lexem::Type::BracketRight )
 		{
@@ -1742,8 +1742,8 @@ ITypeNamePtr SyntaxAnalyzer::ParseTypeName()
 		return ParseFunctionType();
 	else
 	{
-		std::unique_ptr<NamedTypeName> named_type_name( new NamedTypeName(it_->file_pos) );
-		named_type_name->name= ParseComplexName();
+		NamedTypeName named_type_name( it_->file_pos );
+		named_type_name.name= ParseComplexName();
 		return std::move(named_type_name);
 	}
 }
@@ -3156,7 +3156,7 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 				new FunctionArgument(
 					file_pos,
 					Keyword( Keywords::this_ ),
-					ITypeNamePtr(),
+					TypeName(),
 					mutability_modifier,
 					ReferenceModifier::Reference,
 					Keyword( Keywords::this_ ), // Implicit set name for tag of "this" to "this".
@@ -3788,11 +3788,7 @@ bool SyntaxAnalyzer::MatchMacroBlock(
 			{
 				ParsedMacroElement element;
 				element.begin= it_;
-				if( ParseTypeName() == nullptr )
-				{
-					push_macro_error();
-					return false;
-				}
+				ParseTypeName();
 				element.end= it_;
 				element.kind= match_element.kind;
 				out_elements[match_element.name]= std::move(element);

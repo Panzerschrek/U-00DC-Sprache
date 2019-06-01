@@ -488,7 +488,7 @@ void CodeBuilder::FillGlobalNamesScope( NamesScope& global_names_scope )
 }
 
 Type CodeBuilder::PrepareType(
-	const Synt::ITypeNamePtr& type_name,
+	const Synt::TypeName& type_name,
 	NamesScope& names_scope,
 	FunctionContext& function_context )
 {
@@ -496,12 +496,12 @@ Type CodeBuilder::PrepareType(
 
 	Type result= invalid_type_;
 
-	if( const auto array_type_name= dynamic_cast<const Synt::ArrayTypeName*>(type_name.get()) )
+	if( const auto array_type_name= boost::get<const Synt::ArrayTypeName>(&type_name) )
 	{
 		result= Array();
 		Array& array_type= *result.GetArrayType();
 
-		array_type.type= PrepareType( array_type_name->element_type, names_scope, function_context );
+		array_type.type= PrepareType( *array_type_name->element_type, names_scope, function_context );
 
 		const Synt::IExpressionComponent& num= *array_type_name->size;
 
@@ -536,7 +536,7 @@ Type CodeBuilder::PrepareType(
 
 		// TODO - generate error, if total size of type (incuding arrays) is more, than half of address space of target architecture.
 	}
-	else if( const auto typeof_type_name= dynamic_cast<const Synt::TypeofTypeName*>(type_name.get()) )
+	else if( const auto typeof_type_name= boost::get<const Synt::TypeofTypeName>(&type_name) )
 	{
 		const auto prev_state= SaveInstructionsState( function_context );
 		{
@@ -546,7 +546,7 @@ Type CodeBuilder::PrepareType(
 		}
 		RestoreInstructionsState( function_context, prev_state );
 	}
-	else if( const auto function_type_name= dynamic_cast<const Synt::FunctionType*>(type_name.get()) )
+	else if( const auto function_type_name= boost::get<const Synt::FunctionType>(&type_name) )
 	{
 		FunctionPointer function_pointer_type;
 		Function& function_type= function_pointer_type.function;
@@ -554,7 +554,7 @@ Type CodeBuilder::PrepareType(
 		if( function_type_name->return_type_ == nullptr )
 			function_type.return_type= void_type_for_ret_;
 		else
-			function_type.return_type= PrepareType( function_type_name->return_type_, names_scope, function_context );
+			function_type.return_type= PrepareType( *function_type_name->return_type_, names_scope, function_context );
 		function_type.return_value_is_mutable= function_type_name->return_value_mutability_modifier_ == MutabilityModifier::Mutable;
 		function_type.return_value_is_reference= function_type_name->return_value_reference_modifier_ == ReferenceModifier::Reference;
 
@@ -597,7 +597,7 @@ Type CodeBuilder::PrepareType(
 
 		return function_pointer_type;
 	}
-	else if( const auto named_type_name= dynamic_cast<const Synt::NamedTypeName*>(type_name.get()) )
+	else if( const auto named_type_name= boost::get<const Synt::NamedTypeName>(&type_name) )
 	{
 		if( const Value* value=
 			ResolveValue( named_type_name->file_pos_, names_scope, named_type_name->name ) )
@@ -941,7 +941,7 @@ size_t CodeBuilder::PrepareFunction(
 			function_type.return_type= void_type_for_ret_;
 		else
 		{
-			if( const auto named_return_type = dynamic_cast<const Synt::NamedTypeName*>(func.type_.return_type_.get()) )
+			if( const auto named_return_type = boost::get<const Synt::NamedTypeName>(func.type_.return_type_.get()) )
 			{
 				if( named_return_type->name.components.size() == 1u &&
 					!named_return_type->name.components.front().have_template_parameters &&
@@ -962,7 +962,7 @@ size_t CodeBuilder::PrepareFunction(
 
 			if( !func_variable.return_type_is_auto )
 			{
-				function_type.return_type= PrepareType( func.type_.return_type_, names_scope, *global_function_context_ );
+				function_type.return_type= PrepareType( *func.type_.return_type_, names_scope, *global_function_context_ );
 				if( function_type.return_type == invalid_type_ )
 					return ~0u;
 			}

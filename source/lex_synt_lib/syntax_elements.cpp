@@ -285,7 +285,7 @@ Enum::Enum( const FilePos& file_pos )
 FunctionArgument::FunctionArgument(
 	const FilePos& file_pos,
 	ProgramString name,
-	ITypeNamePtr type,
+	TypeName type,
 	MutabilityModifier mutability_modifier,
 	ReferenceModifier reference_modifier,
 	ProgramString reference_tag,

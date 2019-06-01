@@ -1052,7 +1052,7 @@ Value CodeBuilder::BuildCastRefUnsafe( const Synt::CastRefUnsafe& cast_ref_unsaf
 
 Value CodeBuilder::DoReferenceCast(
 	const FilePos& file_pos,
-	const Synt::ITypeNamePtr& type_name,
+	const Synt::TypeName& type_name,
 	const Synt::IExpressionComponentPtr& expression,
 	bool enable_unsafe,
 	NamesScope& names,

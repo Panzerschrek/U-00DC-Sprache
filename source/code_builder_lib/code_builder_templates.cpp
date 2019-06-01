@@ -327,7 +327,7 @@ void CodeBuilder::PrepareTemplateSignatureParameter(
 			special_expr_type= false;
 	}
 	else if( const auto type_name= dynamic_cast<const Synt::TypeNameInExpression*>(template_parameter.get()) )
-		PrepareTemplateSignatureParameter( *type_name->type_name, names_scope, template_parameters, template_parameters_usage_flags );
+		PrepareTemplateSignatureParameter( type_name->type_name, names_scope, template_parameters, template_parameters_usage_flags );
 	else if( const auto bracket_expression= dynamic_cast<const Synt::BracketExpression*>(template_parameter.get()) )
 	{
 		if( bracket_expression->postfix_operators_.empty() && bracket_expression->prefix_operators_.empty() )
@@ -355,25 +355,25 @@ void CodeBuilder::PrepareTemplateSignatureParameter(
 }
 
 void CodeBuilder::PrepareTemplateSignatureParameter(
-	const Synt::ITypeName& type_name_template_parameter,
+	const Synt::TypeName& type_name_template_parameter,
 	NamesScope& names_scope,
 	const std::vector<TypeTemplate::TemplateParameter>& template_parameters,
 	std::vector<bool>& template_parameters_usage_flags )
 {
-	if( const auto named_type_name= dynamic_cast<const Synt::NamedTypeName*>(&type_name_template_parameter) )
+	if( const auto named_type_name= boost::get<const Synt::NamedTypeName>(&type_name_template_parameter) )
 		PrepareTemplateSignatureParameter( named_type_name->file_pos_, named_type_name->name, names_scope, template_parameters, template_parameters_usage_flags );
-	else if( const auto array_type_name= dynamic_cast<const Synt::ArrayTypeName*>(&type_name_template_parameter) )
+	else if( const auto array_type_name= boost::get<const Synt::ArrayTypeName>(&type_name_template_parameter) )
 	{
 		PrepareTemplateSignatureParameter( array_type_name->size, names_scope, template_parameters, template_parameters_usage_flags );
 		PrepareTemplateSignatureParameter( *array_type_name->element_type, names_scope, template_parameters, template_parameters_usage_flags );
 	}
-	else if( const auto function_pointer_type_name= dynamic_cast<const Synt::FunctionType*>(&type_name_template_parameter) )
+	else if( const auto function_pointer_type_name= boost::get<const Synt::FunctionType>(&type_name_template_parameter) )
 	{
 		// TODO - maybe check also reference tags?
 		if( function_pointer_type_name->return_type_ != nullptr )
 			PrepareTemplateSignatureParameter(*function_pointer_type_name->return_type_, names_scope, template_parameters, template_parameters_usage_flags );
 		for( const Synt::FunctionArgumentPtr& arg : function_pointer_type_name->arguments_ )
-			PrepareTemplateSignatureParameter( *arg->type_, names_scope, template_parameters, template_parameters_usage_flags );
+			PrepareTemplateSignatureParameter( arg->type_, names_scope, template_parameters, template_parameters_usage_flags );
 	}
 	else U_ASSERT(false);
 }
@@ -599,7 +599,7 @@ DeducedTemplateParameter CodeBuilder::DeduceTemplateArguments(
 			return DeduceTemplateArguments( template_, template_parameter, named_operand->name_, signature_parameter_file_pos, deducible_template_parameters, names_scope );
 	}
 	else if( const auto type_name= dynamic_cast<const Synt::TypeNameInExpression*>(&signature_parameter) )
-		return DeduceTemplateArguments( template_, template_parameter, *type_name->type_name, signature_parameter_file_pos, deducible_template_parameters, names_scope );
+		return DeduceTemplateArguments( template_, template_parameter, type_name->type_name, signature_parameter_file_pos, deducible_template_parameters, names_scope );
 	else if( const auto bracket_expression= dynamic_cast<const Synt::BracketExpression*>(&signature_parameter) )
 	{
 		if( bracket_expression->postfix_operators_.empty() && bracket_expression->prefix_operators_.empty() )
@@ -633,14 +633,14 @@ DeducedTemplateParameter CodeBuilder::DeduceTemplateArguments(
 DeducedTemplateParameter CodeBuilder::DeduceTemplateArguments(
 	const TemplateBase& template_,
 	const TemplateParameter& template_parameter,
-	const Synt::ITypeName& signature_parameter,
+	const Synt::TypeName& signature_parameter,
 	const FilePos& signature_parameter_file_pos,
 	DeducibleTemplateParameters& deducible_template_parameters,
 	NamesScope& names_scope )
 {
-	if( const auto named_type= dynamic_cast<const Synt::NamedTypeName*>(&signature_parameter) )
+	if( const auto named_type= boost::get<const Synt::NamedTypeName>(&signature_parameter) )
 		return DeduceTemplateArguments( template_, template_parameter, named_type->name, signature_parameter_file_pos, deducible_template_parameters, names_scope );
-	else if( const auto array_type= dynamic_cast<const Synt::ArrayTypeName*>(&signature_parameter) )
+	else if( const auto array_type= boost::get<const Synt::ArrayTypeName>(&signature_parameter) )
 	{
 		const Type* const param_type= boost::get<const Type>( &template_parameter );
 		if( param_type == nullptr )
@@ -671,7 +671,7 @@ DeducedTemplateParameter CodeBuilder::DeduceTemplateArguments(
 
 		return std::move(result);
 	}
-	else if( const auto function_pointer_type= dynamic_cast<const Synt::FunctionType*>(&signature_parameter) )
+	else if( const auto function_pointer_type= boost::get<const Synt::FunctionType>(&signature_parameter) )
 	{
 		const Type* const param_type= boost::get<const Type>( &template_parameter );
 		if( param_type == nullptr )
@@ -729,7 +729,7 @@ DeducedTemplateParameter CodeBuilder::DeduceTemplateArguments(
 				return DeducedTemplateParameter::Invalid();
 
 			result.argument_types.push_back(
-				DeduceTemplateArguments( template_, given_arg.type, *expected_arg.type_, signature_parameter_file_pos, deducible_template_parameters, names_scope ));
+				DeduceTemplateArguments( template_, given_arg.type, expected_arg.type_, signature_parameter_file_pos, deducible_template_parameters, names_scope ));
 
 			if( result.argument_types.back().IsInvalid() )
 				return DeducedTemplateParameter::Invalid();
@@ -1067,7 +1067,7 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 		{
 			// For named types we check, if reference or type conversion is possible, and if not, do arguments deduction.
 			bool deduced_specially= false;
-			if( const Synt::NamedTypeName* const named_type_name= dynamic_cast<Synt::NamedTypeName*>( function_argument.type_.get() ) )
+			if( const Synt::NamedTypeName* const named_type_name= boost::get<const Synt::NamedTypeName>( &function_argument.type_ ) )
 			{
 				size_t dependend_arg_index= ~0u;
 				if( named_type_name->name.components.size() == 1u && !named_type_name->name.components.front().have_template_parameters )
@@ -1115,7 +1115,7 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 					DeduceTemplateArguments(
 						function_template,
 						given_args[i].type,
-						*function_argument.type_,
+						function_argument.type_,
 						function_argument.file_pos_,
 						deduced_template_args,
 						*template_parameters_namespace /*TODO - is this correct namespace? */ );
