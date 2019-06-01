@@ -76,3 +76,44 @@ def InClassFieldInitializerCheck_Test4():
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "AccessingNonpublicClassMember" )
 	assert( errors_list[0].file_pos.line == 9 )
+
+
+def InClassFieldInitializer_UnsafeInitializerDisabled_Test0():
+	c_program_text= """
+	struct S
+	{
+		i32 x= uninitialized;
+	}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "UninitializedInitializerOutsideUnsafeBlock" )
+	assert( errors_list[0].file_pos.line == 4 )
+
+
+def InClassFieldInitializer_OtherFieldCanNotBeUsed_Test0():
+	c_program_text= """
+	struct S
+	{
+		i32 x= 0;
+		i32 y= x;
+	}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ClassFiledAccessInStaticMethod" )
+	assert( errors_list[0].file_pos.line == 5 )
+
+
+def InClassFieldInitializer_OtherFieldCanNotBeUsed_Test1():
+	c_program_text= """
+	struct S
+	{
+		i32 x= y;
+		i32 y= 0;
+	}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ClassFiledAccessInStaticMethod" )
+	assert( errors_list[0].file_pos.line == 4 )
