@@ -1065,16 +1065,25 @@ Value* NamesScope::AddName(
 	Value value )
 {
 	U_ASSERT( iterating_ == 0u );
-	auto it_bool_pair = names_map_.emplace( name, std::move( value ) );
+	auto it_bool_pair=
+		names_map_.insert(
+			std::make_pair(
+				llvm::StringRef( reinterpret_cast<const char*>(name.data()), name.size() * sizeof(sprache_char) ),
+				std::move( value ) ) );
+
 	if( it_bool_pair.second )
+	{
+		max_key_size_= std::max( max_key_size_, name.size() );
 		return &it_bool_pair.first->second;
+	}
 
 	return nullptr;
 }
 
 Value* NamesScope::GetThisScopeValue( const ProgramString& name )
 {
-	const auto it= names_map_.find( name );
+	const auto it= names_map_.find(
+		llvm::StringRef( reinterpret_cast<const char*>(name.data()), name.size() * sizeof(sprache_char) ) );
 	if( it != names_map_.end() )
 		return &it->second;
 	return nullptr;

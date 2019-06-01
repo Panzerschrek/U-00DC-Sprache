@@ -270,53 +270,53 @@ CodeBuilder::BuildResultInternal CodeBuilder::BuildProgramInternal(
 void CodeBuilder::MergeNameScopes( NamesScope& dst, const NamesScope& src, ClassTable& dst_class_table )
 {
 	src.ForEachInThisScope(
-		[&]( const NamesScope::InsertedName& src_member )
+		[&]( const ProgramString& src_name, const Value& src_member )
 		{
-			Value* const dst_member= dst.GetThisScopeValue( src_member.first );
+			Value* const dst_member= dst.GetThisScopeValue(src_name );
 			if( dst_member == nullptr )
 			{
 				// All ok - name form "src" does not exists in "dst".
-				if( const NamesScopePtr names_scope= src_member.second.GetNamespace() )
+				if( const NamesScopePtr names_scope= src_member.GetNamespace() )
 				{
 					// We copy namespaces, instead of taking same shared pointer,
 					// because using same shared pointer we can change state of "src".
 					const NamesScopePtr names_scope_copy= std::make_shared<NamesScope>( names_scope->GetThisNamespaceName(), &dst );
 					MergeNameScopes( *names_scope_copy, *names_scope, dst_class_table );
-					dst.AddName( src_member.first, Value( names_scope_copy, src_member.second.GetFilePos() ) );
+					dst.AddName( src_name, Value( names_scope_copy, src_member.GetFilePos() ) );
 
 					names_scope_copy->CopyAccessRightsFrom( *names_scope );
 				}
 				else
 				{
 					bool class_copied= false;
-					if( const Type* const type= src_member.second.GetTypeName() )
+					if( const Type* const type= src_member.GetTypeName() )
 					{
 						if( const ClassProxyPtr class_proxy= type->GetClassTypeProxy() )
 						{
 							// If current namespace is parent for this class and name is primary.
 							if( class_proxy->class_->members.GetParent() == &src &&
-								class_proxy->class_->members.GetThisNamespaceName() == src_member.first )
+								class_proxy->class_->members.GetThisNamespaceName() == src_name )
 							{
-								CopyClass( src_member.second.GetFilePos(), class_proxy, dst_class_table, dst );
+								CopyClass( src_member.GetFilePos(), class_proxy, dst_class_table, dst );
 								class_copied= true;
 							}
 						}
 					}
 
 					if( !class_copied )
-						dst.AddName( src_member.first, src_member.second );
+						dst.AddName( src_name, src_member );
 				}
 				return;
 			}
 
-			if( dst_member->GetKindIndex() != src_member.second.GetKindIndex() )
+			if( dst_member->GetKindIndex() != src_member.GetKindIndex() )
 			{
 				// Different kind of symbols - 100% error.
-				errors_.push_back( ReportRedefinition( src_member.second.GetFilePos(), src_member.first ) );
+				errors_.push_back( ReportRedefinition( src_member.GetFilePos(), src_name ) );
 				return;
 			}
 
-			if( const NamesScopePtr sub_namespace= src_member.second.GetNamespace() )
+			if( const NamesScopePtr sub_namespace= src_member.GetNamespace() )
 			{
 				// Merge namespaces.
 				// TODO - detect here template instantiation namespaces.
@@ -329,7 +329,7 @@ void CodeBuilder::MergeNameScopes( NamesScope& dst, const NamesScope& src, Class
 				OverloadedFunctionsSet* const dst_funcs_set=
 				dst_member->GetFunctionsSet() )
 			{
-				const OverloadedFunctionsSet* const src_funcs_set= src_member.second.GetFunctionsSet();
+				const OverloadedFunctionsSet* const src_funcs_set= src_member.GetFunctionsSet();
 				U_ASSERT( src_funcs_set != nullptr );
 
 				for( const FunctionVariable& src_func : src_funcs_set->functions )
@@ -341,7 +341,7 @@ void CodeBuilder::MergeNameScopes( NamesScope& dst, const NamesScope& src, Class
 						if( same_dst_func->prototype_file_pos != src_func.prototype_file_pos )
 						{
 							// Prototypes are in differrent files.
-							errors_.push_back( ReportFunctionPrototypeDuplication( src_func.prototype_file_pos, src_member.first ) );
+							errors_.push_back( ReportFunctionPrototypeDuplication( src_func.prototype_file_pos, src_name ) );
 							continue;
 						}
 
@@ -351,7 +351,7 @@ void CodeBuilder::MergeNameScopes( NamesScope& dst, const NamesScope& src, Class
 						{} // Ok, prototype imported later.
 						if(  same_dst_func->have_body &&  src_func.have_body &&
 							same_dst_func->body_file_pos != src_func.body_file_pos )
-							errors_.push_back( ReportFunctionBodyDuplication( src_func.body_file_pos, src_member.first ) );
+							errors_.push_back( ReportFunctionBodyDuplication( src_func.body_file_pos, src_name ) );
 					}
 					else
 						ApplyOverloadedFunction( *dst_funcs_set, src_func, src_func.prototype_file_pos );
@@ -362,12 +362,12 @@ void CodeBuilder::MergeNameScopes( NamesScope& dst, const NamesScope& src, Class
 			{
 				if( const ClassProxyPtr dst_class_proxy= type->GetClassTypeProxy() )
 				{
-					const ClassProxyPtr src_class_proxy= src_member.second.GetTypeName()->GetClassTypeProxy();
+					const ClassProxyPtr src_class_proxy= src_member.GetTypeName()->GetClassTypeProxy();
 
 					if( src_class_proxy == nullptr || dst_class_proxy != src_class_proxy )
 					{
 						// Differnet proxy means 100% different classes.
-						errors_.push_back( ReportRedefinition( src_member.second.GetFilePos(), src_member.first ) );
+						errors_.push_back( ReportRedefinition( src_member.GetFilePos(), src_name ) );
 						return;
 					}
 
@@ -397,11 +397,11 @@ void CodeBuilder::MergeNameScopes( NamesScope& dst, const NamesScope& src, Class
 				}
 			}
 
-			if( dst_member->GetFilePos() == src_member.second.GetFilePos() )
+			if( dst_member->GetFilePos() == src_member.GetFilePos() )
 				return; // All ok - things from one source.
 
 			// Can not merge other kinds of values.
-			errors_.push_back( ReportRedefinition( src_member.second.GetFilePos(), src_member.first ) );
+			errors_.push_back( ReportRedefinition( src_member.GetFilePos(), src_name ) );
 		} );
 }
 
@@ -866,10 +866,10 @@ void CodeBuilder::CallMembersDestructors( FunctionContext& function_context, con
 			file_pos );
 	}
 
-	class_->members.ForEachInThisScope(
-		[&]( const NamesScope::InsertedName& member )
+	class_->members.ForEachValueInThisScope(
+		[&]( const Value& member )
 		{
-			const ClassField* const field= member.second.GetClassField();
+			const ClassField* const field= member.GetClassField();
 			if( field == nullptr || field->is_reference || !field->type.HaveDestructor() ||
 				field->class_.lock()->class_ != class_ )
 				return;
@@ -1855,17 +1855,17 @@ void CodeBuilder::BuildConstructorInitialization(
 
 	ProgramStringSet uninitialized_fields;
 
-	base_class.members.ForEachInThisScope(
-		[&]( const NamesScope::InsertedName& member )
+	base_class.members.ForEachValueInThisScope(
+		[&]( const Value& member )
 		{
-			const ClassField* const field= member.second.GetClassField();
+			const ClassField* const field= member.GetClassField();
 			if( field == nullptr )
 				return;
 			if( field->class_.lock()->class_ != &base_class ) // Parent class field.
 				return;
 
-			if( initialized_fields.find( member.first ) == initialized_fields.end() )
-				uninitialized_fields.insert( member.first );
+			if( initialized_fields.find( field->syntax_element->name ) == initialized_fields.end() )
+				uninitialized_fields.insert( field->syntax_element->name );
 		} );
 
 	// Initialize fields, missing in initializer list.

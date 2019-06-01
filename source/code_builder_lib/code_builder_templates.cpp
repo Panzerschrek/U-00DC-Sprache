@@ -1396,41 +1396,41 @@ bool CodeBuilder::TypeIsValidForTemplateVariableArgument( const Type& type )
 void CodeBuilder::ReportAboutIncompleteMembersOfTemplateClass( const FilePos& file_pos, Class& class_ )
 {
 	class_.members.ForEachInThisScope(
-		[this, file_pos]( const NamesScope::InsertedName& name )
+		[this, file_pos]( const ProgramString& name, const Value& value )
 		{
-			if( const Type* const type= name.second.GetTypeName() )
+			if( const Type* const type= value.GetTypeName() )
 			{
 				if( Class* const subclass= type->GetClassType() )
 				{
 					if( subclass->completeness != TypeCompleteness::Complete )
-						errors_.push_back( ReportIncompleteMemberOfClassTemplate( file_pos, name.first ) );
+						errors_.push_back( ReportIncompleteMemberOfClassTemplate( file_pos, name ) );
 					else
 						ReportAboutIncompleteMembersOfTemplateClass( file_pos, *subclass );
 				}
 			}
-			else if( const OverloadedFunctionsSet* const functions_set= name.second.GetFunctionsSet() )
+			else if( const OverloadedFunctionsSet* const functions_set= value.GetFunctionsSet() )
 			{
 				for( const FunctionVariable& function : functions_set->functions )
 				{
 					if( !function.have_body )
-						errors_.push_back( ReportIncompleteMemberOfClassTemplate( file_pos, name.first ) );
+						errors_.push_back( ReportIncompleteMemberOfClassTemplate( file_pos, name ) );
 				}
 			}
-			else if( name.second.GetClassField() != nullptr )
+			else if( value.GetClassField() != nullptr )
 			{}
-			else if( name.second.GetTypeTemplatesSet() != nullptr )
+			else if( value.GetTypeTemplatesSet() != nullptr )
 			{}
-			else if( const NamesScopePtr inner_namespace= name.second.GetNamespace() )
+			else if( const NamesScopePtr inner_namespace= value.GetNamespace() )
 			{
 				const ProgramString& generated_class_name= g_name_for_generated_class;
 
 				// This must be only namespace for class template instantiation.
 				inner_namespace->ForEachInThisScope(
-					[&]( const NamesScope::InsertedName& inner_namespace_name )
+					[&]( const ProgramString& name, const Value& inner_namespace_value )
 					{
-						if( inner_namespace_name.first == generated_class_name )
+						if( name == generated_class_name )
 						{
-							const Type* const generated_class_type= inner_namespace_name.second.GetTypeName();
+							const Type* const generated_class_type= inner_namespace_value.GetTypeName();
 							U_ASSERT( generated_class_type != nullptr );
 							Class* const generated_class= generated_class_type->GetClassType();
 							U_ASSERT( generated_class != nullptr );
@@ -1439,7 +1439,7 @@ void CodeBuilder::ReportAboutIncompleteMembersOfTemplateClass( const FilePos& fi
 						}
 					});
 			}
-			else if( name.second.GetVariable() != nullptr )
+			else if( value.GetVariable() != nullptr )
 			{}
 			else U_ASSERT(false);
 		} );

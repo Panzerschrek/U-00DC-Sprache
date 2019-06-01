@@ -468,10 +468,6 @@ ArgOverloadingClass GetArgOverloadingClass( const Function::Arg& arg );
 class NamesScope final
 {
 public:
-
-	typedef ProgramStringMap< Value > NamesMap;
-	typedef NamesMap::value_type InsertedName;
-
 	NamesScope( ProgramString name, NamesScope* parent );
 
 	NamesScope( const NamesScope&)= delete;
@@ -502,8 +498,15 @@ public:
 	void ForEachInThisScope( const Func& func )
 	{
 		++iterating_;
-		for( InsertedName& inserted_name : names_map_ )
-			func( inserted_name );
+		ProgramString name;
+		name.reserve(max_key_size_);
+		for( auto& inserted_name : names_map_ )
+		{
+			name.assign(
+				reinterpret_cast<const sprache_char*>(inserted_name.getKeyData()),
+				inserted_name.getKeyLength() / sizeof(sprache_char) );
+			func( const_cast<const ProgramString&>(name), inserted_name.second );
+		}
 		--iterating_;
 	}
 
@@ -511,17 +514,46 @@ public:
 	void ForEachInThisScope( const Func& func ) const
 	{
 		++iterating_;
-		for( const InsertedName& inserted_name : names_map_ )
-			func( inserted_name );
+		ProgramString name;
+		name.reserve(max_key_size_);
+		for( const auto& inserted_name : names_map_ )
+		{
+			name.assign(
+				reinterpret_cast<const sprache_char*>(inserted_name.getKeyData()),
+				inserted_name.getKeyLength() / sizeof(sprache_char) );
+			func( const_cast<const ProgramString&>(name), inserted_name.second );
+		}
 		--iterating_;
 	}
 
-	// TODO - maybe add for_each in all scopes?
+	template<class Func>
+	void ForEachValueInThisScope( const Func& func )
+	{
+		++iterating_;
+		for( auto& inserted_name : names_map_ )
+			func( inserted_name.second );
+		--iterating_;
+	}
+
+	template<class Func>
+	void ForEachValueInThisScope( const Func& func ) const
+	{
+		++iterating_;
+		for( const auto& inserted_name : names_map_ )
+			func( inserted_name.second );
+		--iterating_;
+	}
 
 private:
 	ProgramString name_;
 	NamesScope* parent_;
-	NamesMap names_map_;
+
+	// Use StringMap here, with "const char*" key.
+	// interpritate ProgramString bytes as chars.
+	// TODO - maybe replace "ProgramString" with UTF-8 std::string?
+	llvm::StringMap< Value > names_map_;
+	size_t max_key_size_= 0u;
+
 	mutable size_t iterating_= 0u;
 	std::unordered_map<ClassProxyPtr, ClassMemberVisibility> access_rights_;
 };

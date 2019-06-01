@@ -240,18 +240,18 @@ llvm::Constant* CodeBuilder::ApplyStructNamedInitializer(
 	}
 
 	U_ASSERT( initialized_members_names.size() <= class_type->field_count );
-	class_type->members.ForEachInThisScope(
-		[&]( const NamesScope::InsertedName& class_member )
+	class_type->members.ForEachValueInThisScope(
+		[&]( const Value& class_member )
 		{
-			if( const ClassField* const field = class_member.second.GetClassField() )
+			if( const ClassField* const field= class_member.GetClassField() )
 			{
-				if( initialized_members_names.count( class_member.first ) == 0 )
+				if( initialized_members_names.count( field->syntax_element->name ) == 0 )
 				{
 					llvm::Constant* constant_initializer= nullptr;
 					if( field->is_reference )
 					{
 						if( field->syntax_element->initializer == nullptr )
-							errors_.push_back( ReportExpectedInitializer( class_member.second.GetFilePos(), class_member.first ) ); // References is not default-constructible.
+							errors_.push_back( ReportExpectedInitializer( class_member.GetFilePos(), field->syntax_element->name ) ); // References is not default-constructible.
 						else
 							constant_initializer= InitializeReferenceClassFieldWithInClassIninitalizer( variable, *field, function_context );
 					}
@@ -265,7 +265,7 @@ llvm::Constant* CodeBuilder::ApplyStructNamedInitializer(
 							constant_initializer=
 								InitializeClassFieldWithInClassIninitalizer( struct_member, *field, function_context );
 						else
-							ApplyEmptyInitializer( class_member.first, initializer.file_pos_, struct_member, function_context );
+							ApplyEmptyInitializer( field->syntax_element->name, initializer.file_pos_, struct_member, function_context );
 					}
 
 					if( constant_initializer == nullptr )
@@ -804,10 +804,10 @@ llvm::Constant* CodeBuilder::ApplyZeroInitializer(
 		Variable struct_member= variable;
 		struct_member.location= Variable::Location::Pointer;
 
-		class_type->members.ForEachInThisScope(
-			[&]( const NamesScope::InsertedName& member )
+		class_type->members.ForEachValueInThisScope(
+			[&]( const Value& member )
 			{
-				const ClassField* const field= member.second.GetClassField();
+				const ClassField* const field= member.GetClassField();
 				if( field == nullptr || field->class_.lock() != variable.type )
 					return;
 				if( field->is_reference )
@@ -1136,10 +1136,10 @@ void CodeBuilder::CheckClassFieldsInitializers( const ClassProxyPtr& class_type 
 	llvm::Value* const variable_llvm_value=
 		function_context.alloca_ir_builder.CreateAlloca( class_.llvm_type );
 
-	class_.members.ForEachInThisScope(
-		[&]( const NamesScope::InsertedName& name )
+	class_.members.ForEachValueInThisScope(
+		[&]( const Value& value )
 		{
-			const ClassField* const class_field= name.second.GetClassField();
+			const ClassField* const class_field= value.GetClassField();
 			if( class_field == nullptr )
 				return;
 

@@ -310,7 +310,7 @@ Variable CodeBuilder::BuildTypeinfoEnumElementsList( const Enum& enum_type, Name
 	Variable head= GetTypeinfoListEndNode( root_namespace );
 
 	enum_type.members.ForEachInThisScope(
-		[&]( const NamesScope::InsertedName& enum_member )
+		[&]( const ProgramString& name, const Value& enum_member )
 		{
 			const ClassProxyPtr node_type= CreateTypeinfoClass( root_namespace );
 			Class& node_type_class= *node_type->class_;
@@ -330,10 +330,10 @@ Variable CodeBuilder::BuildTypeinfoEnumElementsList( const Enum& enum_type, Name
 				"value"_SpC,
 				Value( ClassField( node_type, enum_type.underlaying_type, static_cast<unsigned int>(fields_llvm_types.size()), true, false ), g_dummy_file_pos ) );
 			fields_llvm_types.push_back( enum_type.underlaying_type.llvm_type );
-			fields_initializers.push_back( enum_member.second.GetVariable()->constexpr_value );
+			fields_initializers.push_back( enum_member.GetVariable()->constexpr_value );
 
 			{
-				const std::string name_str= ToUTF8( enum_member.first );
+				const std::string name_str= ToUTF8( name );
 				Array name_type;
 				name_type.type= FundamentalType( U_FundamentalType::char8, fundamental_llvm_types_.char8 );
 				name_type.size= name_str.size();
@@ -408,10 +408,10 @@ Variable CodeBuilder::BuildTypeinfoClassFieldsList( const ClassProxyPtr& class_t
 
 	const llvm::DataLayout& data_layout= module_->getDataLayout();
 
-	class_type->class_->members.ForEachInThisScope(
-		[&]( const NamesScope::InsertedName& class_member )
+	class_type->class_->members.ForEachValueInThisScope(
+		[&]( const Value& class_member )
 		{
-			const ClassField* const class_field= class_member.second.GetClassField();
+			const ClassField* const class_field= class_member.GetClassField();
 			if( class_field == nullptr )
 				return;
 
@@ -483,7 +483,7 @@ Variable CodeBuilder::BuildTypeinfoClassFieldsList( const ClassProxyPtr& class_t
 			fields_llvm_types.push_back( fundamental_llvm_types_.bool_ );
 			fields_initializers.push_back( llvm::Constant::getIntegerValue( fundamental_llvm_types_.bool_, llvm::APInt( 1u, class_field->is_mutable ) ) );
 
-			CreateTypeinfoClassMembersListNodeCommonFields( *class_type->class_, node_type, class_member.first, fields_llvm_types, fields_initializers );
+			CreateTypeinfoClassMembersListNodeCommonFields( *class_type->class_, node_type, class_field->syntax_element->name, fields_llvm_types, fields_initializers );
 
 			FinishTypeinfoClass( node_type_class, node_type, fields_llvm_types );
 
@@ -504,12 +504,12 @@ Variable CodeBuilder::BuildTypeinfoClassTypesList( const ClassProxyPtr& class_ty
 	Variable head= GetTypeinfoListEndNode( root_namespace );
 
 	class_type->class_->members.ForEachInThisScope(
-		[&]( NamesScope::InsertedName& class_member )
+		[&]( const ProgramString& name, Value& class_member )
 		{
-			if( class_member.second.GetTypedef() != nullptr ) // Event in complete class typedefs may be not yet complete. Complete it now.
-				GlobalThingBuildTypedef( class_type->class_->members, class_member.second );
+			if( class_member.GetTypedef() != nullptr ) // Event in complete class typedefs may be not yet complete. Complete it now.
+				GlobalThingBuildTypedef( class_type->class_->members, class_member );
 
-			const Type* const class_inner_type= class_member.second.GetTypeName();
+			const Type* const class_inner_type= class_member.GetTypeName();
 			if( class_inner_type == nullptr )
 				return;
 
@@ -536,7 +536,7 @@ Variable CodeBuilder::BuildTypeinfoClassTypesList( const ClassProxyPtr& class_ty
 				fields_initializers.push_back( llvm::dyn_cast<llvm::GlobalVariable>( dependent_type_typeinfo.llvm_value ) );
 			}
 
-			CreateTypeinfoClassMembersListNodeCommonFields( *class_type->class_, node_type, class_member.first, fields_llvm_types, fields_initializers );
+			CreateTypeinfoClassMembersListNodeCommonFields( *class_type->class_, node_type, name, fields_llvm_types, fields_initializers );
 
 			FinishTypeinfoClass( node_type_class, node_type, fields_llvm_types );
 
@@ -557,9 +557,9 @@ Variable CodeBuilder::BuildTypeinfoClassFunctionsList( const ClassProxyPtr& clas
 	Variable head= GetTypeinfoListEndNode( root_namespace );
 
 	class_type->class_->members.ForEachInThisScope(
-		[&]( const NamesScope::InsertedName& class_member )
+		[&]( const ProgramString& name, const Value& class_member )
 		{
-			const OverloadedFunctionsSet* const functions_set= class_member.second.GetFunctionsSet();
+			const OverloadedFunctionsSet* const functions_set= class_member.GetFunctionsSet();
 			if( functions_set == nullptr )
 				return;
 			for( const FunctionVariable& function : functions_set->functions )
@@ -611,7 +611,7 @@ Variable CodeBuilder::BuildTypeinfoClassFunctionsList( const ClassProxyPtr& clas
 				fields_llvm_types.push_back( fundamental_llvm_types_.bool_ );
 				fields_initializers.push_back( llvm::Constant::getIntegerValue( fundamental_llvm_types_.bool_, llvm::APInt( 1u, function.virtual_table_index != ~0u ) ) );
 
-				CreateTypeinfoClassMembersListNodeCommonFields( *class_type->class_, node_type, class_member.first, fields_llvm_types, fields_initializers );
+				CreateTypeinfoClassMembersListNodeCommonFields( *class_type->class_, node_type, name, fields_llvm_types, fields_initializers );
 
 				FinishTypeinfoClass( node_type_class, node_type, fields_llvm_types );
 

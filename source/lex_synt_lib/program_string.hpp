@@ -2,6 +2,9 @@
 
 #include <string>
 #include <vector>
+#include <unordered_map>
+#include <unordered_set>
+#include <boost/functional/hash.hpp>
 
 namespace U
 {
@@ -21,5 +24,19 @@ std::string ToUTF8( const ProgramString& str );
 
 ProgramString DecodeUTF8( const std::vector<char>& str );
 ProgramString DecodeUTF8( const std::string& str );
+
+// String map/set.
+struct ProgramStringHasher
+{
+	size_t operator()( const ProgramString& str ) const
+	{
+		return boost::hash_range( str.begin(), str.end() );
+	}
+};
+
+template<class T>
+using ProgramStringMap= std::unordered_map< ProgramString, T, ProgramStringHasher >;
+
+using ProgramStringSet= std::unordered_set< ProgramString, ProgramStringHasher >;
 
 } // namespace U

@@ -51,10 +51,10 @@ void CodeBuilder::TryGenerateDefaultConstructor( Class& the_class, const Type& c
 	// Generate default constructor, if all fields is default constructible.
 	bool all_fields_is_default_constructible= true;
 
-	the_class.members.ForEachInThisScope(
-		[&]( const NamesScope::InsertedName& member )
+	the_class.members.ForEachValueInThisScope(
+		[&]( const Value& value )
 		{
-			const ClassField* const field= member.second.GetClassField();
+			const ClassField* const field= value.GetClassField();
 			if( field == nullptr )
 				return;
 			if( field->class_.lock()->class_ != &the_class )
@@ -127,10 +127,10 @@ void CodeBuilder::TryGenerateDefaultConstructor( Class& the_class, const Type& c
 		ApplyEmptyInitializer( Keyword( Keywords::base_ ), FilePos()/*TODO*/, base_variable, function_context );
 	}
 
-	the_class.members.ForEachInThisScope(
-		[&]( const NamesScope::InsertedName& member )
+	the_class.members.ForEachValueInThisScope(
+		[&](const Value& value )
 		{
-			const ClassField* const field= member.second.GetClassField();
+			const ClassField* const field= value.GetClassField();
 			if( field == nullptr )
 				return;
 			if( field->class_.lock()->class_ != &the_class )
@@ -157,7 +157,7 @@ void CodeBuilder::TryGenerateDefaultConstructor( Class& the_class, const Type& c
 				if( field->syntax_element->initializer != nullptr )
 					InitializeClassFieldWithInClassIninitalizer( field_variable, *field, function_context );
 				else
-					ApplyEmptyInitializer( member.first, FilePos()/*TODO*/, field_variable, function_context );
+					ApplyEmptyInitializer( field->syntax_element->name, FilePos()/*TODO*/, field_variable, function_context );
 			}
 		} );
 
@@ -231,10 +231,10 @@ void CodeBuilder::TryGenerateCopyConstructor( Class& the_class, const Type& clas
 
 	bool all_fields_is_copy_constructible= true;
 
-	the_class.members.ForEachInThisScope(
-		[&]( const NamesScope::InsertedName& member )
+	the_class.members.ForEachValueInThisScope(
+		[&]( const Value& value )
 		{
-			const ClassField* const field= member.second.GetClassField();
+			const ClassField* const field= value.GetClassField();
 			if( field == nullptr )
 				return;
 
@@ -318,10 +318,10 @@ void CodeBuilder::TryGenerateCopyConstructor( Class& the_class, const Type& clas
 		BuildCopyConstructorPart( src, dst, the_class.base_class, function_context );
 	}
 
-	the_class.members.ForEachInThisScope(
-		[&]( const NamesScope::InsertedName& member )
+	the_class.members.ForEachValueInThisScope(
+		[&]( const Value& member )
 		{
-			const ClassField* const field= member.second.GetClassField();
+			const ClassField* const field= member.GetClassField();
 			if( field == nullptr || field->class_.lock()->class_ != &the_class )
 				return;
 
@@ -520,10 +520,10 @@ void CodeBuilder::TryGenerateCopyAssignmentOperator( Class& the_class, const Typ
 
 	bool all_fields_is_copy_assignable= true;
 
-	the_class.members.ForEachInThisScope(
-		[&]( const NamesScope::InsertedName& member )
+	the_class.members.ForEachValueInThisScope(
+		[&]( const Value& member )
 		{
-			const ClassField* const field= member.second.GetClassField();
+			const ClassField* const field= member.GetClassField();
 			if( field == nullptr )
 				return;
 
@@ -608,10 +608,10 @@ void CodeBuilder::TryGenerateCopyAssignmentOperator( Class& the_class, const Typ
 		BuildCopyAssignmentOperatorPart( src, dst, the_class.base_class, function_context );
 	}
 
-	the_class.members.ForEachInThisScope(
-		[&]( const NamesScope::InsertedName& member )
+	the_class.members.ForEachValueInThisScope(
+		[&]( const Value& member )
 		{
-			const ClassField* const field= member.second.GetClassField();
+			const ClassField* const field= member.GetClassField();
 			if( field == nullptr )
 				return;
 			U_ASSERT( field->type.IsCopyAssignable() );
@@ -837,10 +837,10 @@ void CodeBuilder::CopyBytes(
 				function_context );
 		}
 
-		class_type.members.ForEachInThisScope(
-			[&]( const NamesScope::InsertedName& class_member )
+		class_type.members.ForEachValueInThisScope(
+			[&]( const Value& class_member )
 			{
-				const ClassField* const field = class_member.second.GetClassField();
+				const ClassField* const field = class_member.GetClassField();
 				if( field == nullptr || field->class_.lock() != class_type_proxy )
 					return;
 
