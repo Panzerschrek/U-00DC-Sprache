@@ -177,7 +177,7 @@ llvm::Constant* CodeBuilder::ApplyStructNamedInitializer(
 	if( class_type->have_explicit_noncopy_constructors )
 		errors_.push_back( ReportInitializerDisabledBecauseClassHaveExplicitNoncopyConstructors( initializer.file_pos_ ) );
 
-	std::set<ProgramString> initialized_members_names;
+	ProgramStringSet initialized_members_names;
 
 	ClassFieldsVector<llvm::Constant*> constant_initializers;
 	bool all_fields_are_constant= false;

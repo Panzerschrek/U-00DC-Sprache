@@ -469,7 +469,7 @@ class NamesScope final
 {
 public:
 
-	typedef std::map< ProgramString, Value > NamesMap;
+	typedef ProgramStringMap< Value > NamesMap;
 	typedef NamesMap::value_type InsertedName;
 
 	NamesScope( ProgramString name, NamesScope* parent );
@@ -528,7 +528,7 @@ private:
 
 typedef boost::variant< Variable, Type > TemplateParameter;
 
-typedef std::map< ProgramString, ClassProxyPtr > TemplateClassesCache;
+typedef ProgramStringMap< ClassProxyPtr > TemplateClassesCache;
 
 class Class final
 {
@@ -577,8 +577,7 @@ public:
 	NamesScope members;
 
 	// have no visibility for member, means it is public.
-	// TODO - maybe use unordered_map?
-	std::map< ProgramString, ClassMemberVisibility > members_visibility;
+	ProgramStringMap< ClassMemberVisibility > members_visibility;
 
 	const Synt::Class* syntax_element= nullptr;
 

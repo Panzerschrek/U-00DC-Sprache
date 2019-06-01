@@ -36,7 +36,7 @@ private:
 	struct BuildResultInternal
 	{
 		std::unique_ptr<NamesScope> names_map;
-		std::unique_ptr< std::map<ProgramString, Value > > generated_template_things_storage;
+		std::unique_ptr< ProgramStringMap< Value > > generated_template_things_storage;
 		std::unique_ptr<ClassTable> class_table;
 	};
 
@@ -897,7 +897,7 @@ private:
 	ClassTable typeinfo_class_table_;
 
 	// Names map for generated template types/functions. We can not insert it in regular namespaces, because we needs insert it, while iterating regular namespaces.
-	std::map<ProgramString, Value> generated_template_things_storage_;
+	ProgramStringMap<Value> generated_template_things_storage_;
 
 	std::vector<GlobalThing> global_things_stack_;
 };

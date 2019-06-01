@@ -19,7 +19,7 @@ namespace U
 namespace
 {
 
-typedef std::map< ProgramString, U_FundamentalType > TypesMap;
+typedef ProgramStringMap< U_FundamentalType > TypesMap;
 
 const TypesMap g_types_map=
 {
@@ -261,7 +261,7 @@ CodeBuilder::BuildResultInternal CodeBuilder::BuildProgramInternal(
 	GlobalThingBuildNamespace( *result.names_map );
 
 	// Take generated template things.
-	result.generated_template_things_storage.reset( new std::map<ProgramString, Value>() );
+	result.generated_template_things_storage.reset( new ProgramStringMap<Value>() );
 	result.generated_template_things_storage->swap( generated_template_things_storage_ );
 
 	return result;
@@ -1794,7 +1794,7 @@ void CodeBuilder::BuildConstructorInitialization(
 	FunctionContext& function_context,
 	const Synt::StructNamedInitializer& constructor_initialization_list )
 {
-	std::set<ProgramString> initialized_fields;
+	ProgramStringSet initialized_fields;
 
 	// Check for errors, build list of initialized fields.
 	bool have_fields_errors= false;
@@ -1854,7 +1854,7 @@ void CodeBuilder::BuildConstructorInitialization(
 		function_context.uninitialized_this_fields.insert( field );
 	} // for fields initializers
 
-	std::set<ProgramString> uninitialized_fields;
+	ProgramStringSet uninitialized_fields;
 
 	base_class.members.ForEachInThisScope(
 		[&]( const NamesScope::InsertedName& member )
