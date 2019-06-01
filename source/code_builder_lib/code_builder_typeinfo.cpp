@@ -89,8 +89,8 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, Variable& typeinfo_variab
 	const ClassProxyPtr typeinfo_class_proxy= typeinfo_variable.type.GetClassTypeProxy();
 	Class& typeinfo_class= *typeinfo_variable.type.GetClassType();
 
-	std::vector<llvm::Type*> fields_llvm_types;
-	std::vector<llvm::Constant*> fields_initializers;
+	ClassFieldsVector<llvm::Type*> fields_llvm_types;
+	ClassFieldsVector<llvm::Constant*> fields_initializers;
 
 	const auto add_bool_field=
 	[&]( const ProgramString& name, const bool value )
@@ -243,8 +243,8 @@ const Variable& CodeBuilder::GetTypeinfoListEndNode( NamesScope& root_namespace 
 	const ClassProxyPtr node_type= CreateTypeinfoClass( root_namespace );
 	Class& node_type_class= *node_type->class_;
 
-	std::vector<llvm::Type*> fields_llvm_types;
-	std::vector<llvm::Constant*> fields_initializers;
+	ClassFieldsVector<llvm::Type*> fields_llvm_types;
+	ClassFieldsVector<llvm::Constant*> fields_initializers;
 
 	AddTypeinfoNodeIsEndVariable( node_type_class, true );
 
@@ -293,7 +293,7 @@ void CodeBuilder::AddTypeinfoNodeIsEndVariable( Class& node_class, const bool is
 			FilePos() ) );
 }
 
-void CodeBuilder::FinishTypeinfoClass( Class& class_, const ClassProxyPtr class_proxy, const std::vector<llvm::Type*>& fields_llvm_types )
+void CodeBuilder::FinishTypeinfoClass( Class& class_, const ClassProxyPtr class_proxy, const ClassFieldsVector<llvm::Type*>& fields_llvm_types )
 {
 	class_.llvm_type->setBody( fields_llvm_types );
 	class_.kind= Class::Kind::Struct;
@@ -315,8 +315,8 @@ Variable CodeBuilder::BuildTypeinfoEnumElementsList( const Enum& enum_type, Name
 			const ClassProxyPtr node_type= CreateTypeinfoClass( root_namespace );
 			Class& node_type_class= *node_type->class_;
 
-			std::vector<llvm::Type*> fields_llvm_types;
-			std::vector<llvm::Constant*> fields_initializers;
+			ClassFieldsVector<llvm::Type*> fields_llvm_types;
+			ClassFieldsVector<llvm::Constant*> fields_initializers;
 
 			AddTypeinfoNodeIsEndVariable( node_type_class );
 
@@ -363,7 +363,7 @@ Variable CodeBuilder::BuildTypeinfoEnumElementsList( const Enum& enum_type, Name
 void CodeBuilder::CreateTypeinfoClassMembersListNodeCommonFields(
 	const Class& class_, const ClassProxyPtr& node_class_proxy,
 	const ProgramString& member_name,
-	std::vector<llvm::Type*>& fields_llvm_types, std::vector<llvm::Constant*>& fields_initializers )
+	ClassFieldsVector<llvm::Type*>& fields_llvm_types, ClassFieldsVector<llvm::Constant*>& fields_initializers )
 {
 	Class& node_class= *node_class_proxy->class_;
 
@@ -418,8 +418,8 @@ Variable CodeBuilder::BuildTypeinfoClassFieldsList( const ClassProxyPtr& class_t
 			const ClassProxyPtr node_type= CreateTypeinfoClass( root_namespace );
 			Class& node_type_class= *node_type->class_;
 
-			std::vector<llvm::Type*> fields_llvm_types;
-			std::vector<llvm::Constant*> fields_initializers;
+			ClassFieldsVector<llvm::Type*> fields_llvm_types;
+			ClassFieldsVector<llvm::Constant*> fields_initializers;
 
 			AddTypeinfoNodeIsEndVariable( node_type_class );
 
@@ -516,8 +516,8 @@ Variable CodeBuilder::BuildTypeinfoClassTypesList( const ClassProxyPtr& class_ty
 			const ClassProxyPtr node_type= CreateTypeinfoClass( root_namespace );
 			Class& node_type_class= *node_type->class_;
 
-			std::vector<llvm::Type*> fields_llvm_types;
-			std::vector<llvm::Constant*> fields_initializers;
+			ClassFieldsVector<llvm::Type*> fields_llvm_types;
+			ClassFieldsVector<llvm::Constant*> fields_initializers;
 
 			AddTypeinfoNodeIsEndVariable( node_type_class );
 
@@ -567,8 +567,8 @@ Variable CodeBuilder::BuildTypeinfoClassFunctionsList( const ClassProxyPtr& clas
 				const ClassProxyPtr node_type= CreateTypeinfoClass( root_namespace );
 				Class& node_type_class= *node_type->class_;
 
-				std::vector<llvm::Type*> fields_llvm_types;
-				std::vector<llvm::Constant*> fields_initializers;
+				ClassFieldsVector<llvm::Type*> fields_llvm_types;
+				ClassFieldsVector<llvm::Constant*> fields_initializers;
 
 				AddTypeinfoNodeIsEndVariable( node_type_class );
 
@@ -641,8 +641,8 @@ Variable CodeBuilder::BuildeTypeinfoClassParentsList( const ClassProxyPtr& class
 		const ClassProxyPtr node_type= CreateTypeinfoClass( root_namespace );
 		Class& node_type_class= *node_type->class_;
 
-		std::vector<llvm::Type*> fields_llvm_types;
-		std::vector<llvm::Constant*> fields_initializers;
+		ClassFieldsVector<llvm::Type*> fields_llvm_types;
+		ClassFieldsVector<llvm::Constant*> fields_initializers;
 
 		AddTypeinfoNodeIsEndVariable( node_type_class );
 
@@ -690,8 +690,8 @@ Variable CodeBuilder::BuildTypeinfoFunctionArguments( const Function& function_t
 		const ClassProxyPtr node_type= CreateTypeinfoClass( root_namespace );
 		Class& node_type_class= *node_type->class_;
 
-		std::vector<llvm::Type*> fields_llvm_types;
-		std::vector<llvm::Constant*> fields_initializers;
+		ClassFieldsVector<llvm::Type*> fields_llvm_types;
+		ClassFieldsVector<llvm::Constant*> fields_initializers;
 
 		AddTypeinfoNodeIsEndVariable( node_type_class );
 

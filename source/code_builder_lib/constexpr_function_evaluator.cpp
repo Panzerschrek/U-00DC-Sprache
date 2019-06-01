@@ -407,7 +407,7 @@ llvm::Constant* ConstexprFunctionEvaluator::CreateInitializerForStructElement( l
 		llvm::StructType* const struct_type= llvm::dyn_cast<llvm::StructType>(type);
 		const llvm::StructLayout& struct_layout= *data_layout_.getStructLayout( struct_type );
 
-		std::vector<llvm::Constant*> initializers( struct_type->getNumElements(), nullptr );
+		ClassFieldsVector<llvm::Constant*> initializers( struct_type->getNumElements(), nullptr );
 		for( unsigned int i= 0u; i < struct_type->getNumElements(); ++i )
 			initializers[i]= CreateInitializerForStructElement( struct_type->getElementType(i), element_ptr + size_t(struct_layout.getElementOffset(i)) );
 

@@ -16,17 +16,14 @@
 #include "../lex_synt_lib/lang_types.hpp"
 #include "../lex_synt_lib/program_string.hpp"
 #include "../lex_synt_lib/syntax_elements.hpp"
-
 #include "references_graph.hpp"
+#include "small_types.hpp"
 
 namespace U
 {
 
 namespace CodeBuilderPrivate
 {
-
-template<class T>
-using ArgsVector = llvm::SmallVector<T, 4u>;
 
 using Synt::ClassMemberVisibility;
 

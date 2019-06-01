@@ -179,7 +179,7 @@ llvm::Constant* CodeBuilder::ApplyStructNamedInitializer(
 
 	std::set<ProgramString> initialized_members_names;
 
-	std::vector<llvm::Constant*> constant_initializers;
+	ClassFieldsVector<llvm::Constant*> constant_initializers;
 	bool all_fields_are_constant= false;
 	if( class_type->can_be_constexpr )
 	{
@@ -793,7 +793,7 @@ llvm::Constant* CodeBuilder::ApplyZeroInitializer(
 		if( class_type->kind != Class::Kind::Struct )
 			errors_.push_back( ReportZeroInitializerForClass( initializer.file_pos_ ) );
 
-		std::vector<llvm::Constant*> constant_initializers;
+		ClassFieldsVector<llvm::Constant*> constant_initializers;
 		bool all_fields_are_constant= false;
 		if( class_type->can_be_constexpr )
 		{

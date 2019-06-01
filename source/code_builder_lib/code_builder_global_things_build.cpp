@@ -436,7 +436,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type, const T
 		DETECT_GLOBALS_LOOP( &the_class, the_class.members.GetThisNamespaceName(), the_class.body_file_pos, TypeCompleteness::Complete );
 
 		// Fill llvm struct type fields
-		std::vector<llvm::Type*> fields_llvm_types;
+		ClassFieldsVector<llvm::Type*> fields_llvm_types;
 		for( const ClassProxyPtr& parent : the_class.parents )
 		{
 			const auto field_number= static_cast<unsigned int>(fields_llvm_types.size());
