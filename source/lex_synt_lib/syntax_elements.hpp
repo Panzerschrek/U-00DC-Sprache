@@ -29,15 +29,6 @@ typedef std::unique_ptr<IExpressionComponent> IExpressionComponentPtr;
 class ExpressionComponentWithUnaryOperators;
 typedef std::unique_ptr<ExpressionComponentWithUnaryOperators> ExpressionComponentWithUnaryOperatorsPtr;
 
-class IUnaryPrefixOperator ;
-class IUnaryPostfixOperator;
-
-typedef std::unique_ptr<IUnaryPrefixOperator > IUnaryPrefixOperatorPtr ;
-typedef std::unique_ptr<IUnaryPostfixOperator> IUnaryPostfixOperatorPtr;
-
-typedef std::vector<IUnaryPrefixOperatorPtr > PrefixOperators ;
-typedef std::vector<IUnaryPostfixOperatorPtr> PostfixOperators;
-
 class IInitializer;
 typedef std::unique_ptr<IInitializer> IInitializerPtr;
 
@@ -158,61 +149,49 @@ public:
 	const ReferencesTagsList inner_arg_reference_tags_;
 };
 
-class IUnaryPrefixOperator
-{
-public:
-	virtual ~IUnaryPrefixOperator()= default;
-};
-
-class IUnaryPostfixOperator
-{
-public:
-	virtual ~IUnaryPostfixOperator()= default;
-};
-
-class UnaryPlus final : public SyntaxElementBase, public IUnaryPrefixOperator
+class UnaryPlus final : public SyntaxElementBase
 {
 public:
 	explicit UnaryPlus( const FilePos& file_pos );
 };
 
-class UnaryMinus final : public SyntaxElementBase, public IUnaryPrefixOperator
+class UnaryMinus final : public SyntaxElementBase
 {
 public:
 	explicit UnaryMinus( const FilePos& file_pos );
 };
 
-class LogicalNot final : public SyntaxElementBase, public IUnaryPrefixOperator
+class LogicalNot final : public SyntaxElementBase
 {
 public:
 	explicit LogicalNot( const FilePos& file_pos );
 };
 
-class BitwiseNot final : public SyntaxElementBase, public IUnaryPrefixOperator
+class BitwiseNot final : public SyntaxElementBase
 {
 public:
 	explicit BitwiseNot( const FilePos& file_pos );
 };
 
-class CallOperator final : public SyntaxElementBase, public IUnaryPostfixOperator
+class CallOperator final : public SyntaxElementBase
 {
 public:
 	CallOperator(
 		const FilePos& file_pos,
 		std::vector<IExpressionComponentPtr> arguments );
 
-	const std::vector<IExpressionComponentPtr> arguments_;
+	std::vector<IExpressionComponentPtr> arguments_;
 };
 
-class IndexationOperator final : public SyntaxElementBase, public IUnaryPostfixOperator
+class IndexationOperator final : public SyntaxElementBase
 {
 public:
 	explicit IndexationOperator( const FilePos& file_pos, IExpressionComponentPtr index );
 
-	const IExpressionComponentPtr index_;
+	IExpressionComponentPtr index_;
 };
 
-class MemberAccessOperator final : public SyntaxElementBase, public IUnaryPostfixOperator
+class MemberAccessOperator final : public SyntaxElementBase
 {
 public:
 	MemberAccessOperator( const FilePos& file_pos );
@@ -221,6 +200,12 @@ public:
 	std::vector<IExpressionComponentPtr> template_parameters;
 	bool have_template_parameters= false;
 };
+
+using UnaryPrefixOperator= boost::variant< UnaryPlus, UnaryMinus, LogicalNot, BitwiseNot >;
+using UnaryPostfixOperator= boost::variant< CallOperator, IndexationOperator, MemberAccessOperator >;
+
+using PrefixOperators= std::vector<UnaryPrefixOperator>;
+using PostfixOperators= std::vector<UnaryPostfixOperator>;
 
 class IExpressionComponent
 {
@@ -306,8 +291,8 @@ class ExpressionComponentWithUnaryOperators : public SyntaxElementBase, public I
 public:
 	explicit ExpressionComponentWithUnaryOperators( const FilePos& file_pos );
 
-	std::vector<IUnaryPrefixOperatorPtr > prefix_operators_ ;
-	std::vector<IUnaryPostfixOperatorPtr> postfix_operators_;
+	std::vector<UnaryPrefixOperator > prefix_operators_ ;
+	std::vector<UnaryPostfixOperator> postfix_operators_;
 };
 
 class NamedOperand final : public ExpressionComponentWithUnaryOperators

@@ -1042,22 +1042,22 @@ IExpressionComponentPtr SyntaxAnalyzer::ParseExpression()
 				goto parse_operand;
 
 			case Lexem::Type::Plus:
-				 prefix_operators.emplace_back( new UnaryPlus( it_->file_pos ) );
+				 prefix_operators.emplace_back( UnaryPlus( it_->file_pos ) );
 				NextLexem();
 				break;
 
 			case Lexem::Type::Minus:
-				prefix_operators.emplace_back( new UnaryMinus( it_->file_pos ) );
+				prefix_operators.emplace_back( UnaryMinus( it_->file_pos ) );
 				NextLexem();
 				break;
 
 			case Lexem::Type::Not:
-				prefix_operators.emplace_back( new LogicalNot( it_->file_pos ) );
+				prefix_operators.emplace_back( LogicalNot( it_->file_pos ) );
 				NextLexem();
 				break;
 
 			case Lexem::Type::Tilda:
-				prefix_operators.emplace_back( new BitwiseNot( it_->file_pos ) );
+				prefix_operators.emplace_back( BitwiseNot( it_->file_pos ) );
 				NextLexem();
 				break;
 
@@ -1349,7 +1349,7 @@ IExpressionComponentPtr SyntaxAnalyzer::ParseExpression()
 					NextLexem();
 
 					current_node->postfix_operators_.emplace_back(
-						new IndexationOperator(
+						IndexationOperator(
 							(it_-1)->file_pos,
 							ParseExpression() ) );
 
@@ -1391,16 +1391,13 @@ IExpressionComponentPtr SyntaxAnalyzer::ParseExpression()
 						}
 					}
 
-					current_node->postfix_operators_.emplace_back(
-						new CallOperator(
-							call_operator_pos,
-							std::move( arguments ) ) );
+					current_node->postfix_operators_.emplace_back( CallOperator( call_operator_pos, std::move( arguments ) ) );
 
 				} break;
 
 			case Lexem::Type::Dot:
 				{
-					std::unique_ptr<MemberAccessOperator> member_access_operator( new MemberAccessOperator( it_->file_pos ) );
+					MemberAccessOperator member_access_operator( it_->file_pos );
 					NextLexem();
 
 					if( it_->type != Lexem::Type::Identifier )
@@ -1409,16 +1406,16 @@ IExpressionComponentPtr SyntaxAnalyzer::ParseExpression()
 						return nullptr;
 					}
 
-					member_access_operator->member_name_= it_->text;
+					member_access_operator.member_name_= it_->text;
 					NextLexem();
 
 					if( it_->type == Lexem::Type::TemplateBracketLeft )
 					{
-						member_access_operator->have_template_parameters= true;
-						member_access_operator->template_parameters= ParseTemplateParameters();
+						member_access_operator.have_template_parameters= true;
+						member_access_operator.template_parameters= ParseTemplateParameters();
 					}
 
-					current_node->postfix_operators_.push_back( std::move( member_access_operator ) );
+					current_node->postfix_operators_.emplace_back( std::move( member_access_operator ) );
 				} break;
 
 			default:

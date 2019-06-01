@@ -261,18 +261,18 @@ Value CodeBuilder::BuildExpressionCode(
 
 	if( const auto expression_with_unary_operators= dynamic_cast<const Synt::ExpressionComponentWithUnaryOperators*>( &expression ) )
 	{
-		for( const Synt::IUnaryPostfixOperatorPtr& postfix_operator : expression_with_unary_operators->postfix_operators_ )
+		for( const Synt::UnaryPostfixOperator& postfix_operator : expression_with_unary_operators->postfix_operators_ )
 		{
-			if( const auto indexation_operator= dynamic_cast<const Synt::IndexationOperator*>( postfix_operator.get() ) )
+			if( const auto indexation_operator= boost::get<const Synt::IndexationOperator>( &postfix_operator ) )
 				result= BuildIndexationOperator( result, *indexation_operator, names, function_context );
-			else if( const auto member_access_operator= dynamic_cast<const Synt::MemberAccessOperator*>( postfix_operator.get() ) )
+			else if( const auto member_access_operator= boost::get<const Synt::MemberAccessOperator>( &postfix_operator ) )
 				result= BuildMemberAccessOperator( result, *member_access_operator, names, function_context );
-			else if( const auto call_operator= dynamic_cast<const Synt::CallOperator*>( postfix_operator.get() ) )
+			else if( const auto call_operator= boost::get<const Synt::CallOperator>( &postfix_operator ) )
 				result= BuildCallOperator( result, *call_operator, names, function_context );
 			else U_ASSERT(false);
 		} // for unary postfix operators
 
-		for( const Synt::IUnaryPrefixOperatorPtr& prefix_operator : expression_with_unary_operators->prefix_operators_ )
+		for( const Synt::UnaryPrefixOperator& prefix_operator : expression_with_unary_operators->prefix_operators_ )
 		{
 			const Variable* const var= result.GetVariable();
 			if( var == nullptr )
@@ -288,13 +288,13 @@ Value CodeBuilder::BuildExpressionCode(
 			args.back().is_reference= var->value_type != ValueType::Value;
 
 			OverloadedOperator op= OverloadedOperator::None;
-			if( dynamic_cast<const Synt::UnaryMinus*>( prefix_operator.get() ) != nullptr )
+			if( boost::get<const Synt::UnaryMinus>( &prefix_operator ) != nullptr )
 				op= OverloadedOperator::Sub;
-			else if( dynamic_cast<const Synt::UnaryPlus*>( prefix_operator.get() ) != nullptr )
+			else if( boost::get<const Synt::UnaryPlus>( &prefix_operator ) != nullptr )
 				op= OverloadedOperator::Add;
-			else if( dynamic_cast<const Synt::LogicalNot*>( prefix_operator.get() ) != nullptr )
+			else if( boost::get<const Synt::LogicalNot>( &prefix_operator ) != nullptr )
 				op= OverloadedOperator::LogicalNot;
-			else if( dynamic_cast<const Synt::BitwiseNot*>( prefix_operator.get() ) != nullptr )
+			else if( boost::get<const Synt::BitwiseNot>( &prefix_operator ) != nullptr )
 				op= OverloadedOperator::BitwiseNot;
 			else U_ASSERT( false );
 
@@ -326,16 +326,16 @@ Value CodeBuilder::BuildExpressionCode(
 			}
 			else
 			{
-				if( const auto unary_minus= dynamic_cast<const Synt::UnaryMinus*>( prefix_operator.get() ) )
+				if( const auto unary_minus= boost::get<const Synt::UnaryMinus>( &prefix_operator ) )
 					result= BuildUnaryMinus( result, *unary_minus, function_context );
-				else if( const auto unary_plus= dynamic_cast<const Synt::UnaryPlus*>( prefix_operator.get() ) )
+				else if( const auto unary_plus= boost::get<const Synt::UnaryPlus>( &prefix_operator ) )
 				{
 					// TODO - maybe do something here?
 					(void)unary_plus;
 				}
-				else if( const auto logical_not= dynamic_cast<const Synt::LogicalNot*>( prefix_operator.get() ) )
+				else if( const auto logical_not= boost::get<const Synt::LogicalNot>( &prefix_operator ) )
 					result= BuildLogicalNot( result, *logical_not, function_context );
-				else if( const auto bitwise_not= dynamic_cast<const Synt::BitwiseNot*>( prefix_operator.get() ) )
+				else if( const auto bitwise_not= boost::get<const Synt::BitwiseNot>( &prefix_operator ) )
 					result= BuildBitwiseNot( result, *bitwise_not, function_context );
 				else U_ASSERT(false);
 			}
