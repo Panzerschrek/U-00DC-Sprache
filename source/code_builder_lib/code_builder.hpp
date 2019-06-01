@@ -130,7 +130,7 @@ private:
 	struct TemplateTypeGenerationResult
 	{
 		TypeTemplatePtr type_template;
-		NamesScope::InsertedName* type= nullptr;
+		Value* type= nullptr;
 		std::vector<DeducedTemplateParameter> deduced_template_parameters;
 	};
 
@@ -244,7 +244,7 @@ private:
 		std::vector<bool>& template_parameters_usage_flags );
 
 	// Resolve as deep, as can, but does not instantiate last component, if it is template.
-	NamesScope::InsertedName* ResolveForTemplateSignatureParameter(
+	Value* ResolveForTemplateSignatureParameter(
 		const FilePos& file_pos,
 		const Synt::ComplexName& signature_parameter,
 		NamesScope& names_scope );
@@ -275,7 +275,7 @@ private:
 		NamesScope& names_scope );
 
 	// Returns nullptr in case of fail.
-	NamesScope::InsertedName* GenTemplateType(
+	Value* GenTemplateType(
 		const FilePos& file_pos,
 		const TypeTemplatesSet& type_templates_set,
 		const std::vector<Synt::IExpressionComponentPtr>& template_arguments,
@@ -296,7 +296,7 @@ private:
 		bool first_actual_arg_is_this,
 		bool skip_arguments= false );
 
-	NamesScope::InsertedName* GenTemplateFunctionsUsingTemplateParameters(
+	Value* GenTemplateFunctionsUsingTemplateParameters(
 		const FilePos& file_pos,
 		const std::vector<FunctionTemplatePtr>& function_templates,
 		const std::vector<Synt::IExpressionComponentPtr>& template_arguments,
@@ -624,9 +624,9 @@ private:
 		ForDeclaration,
 		ForTemplateSignatureParameter,
 	};
-	NamesScope::InsertedName* ResolveName( const FilePos& file_pos, NamesScope& names_scope, const Synt::ComplexName& complex_name, ResolveMode resolve_mode= ResolveMode::Regular );
+	Value* ResolveValue( const FilePos& file_pos, NamesScope& names_scope, const Synt::ComplexName& complex_name, ResolveMode resolve_mode= ResolveMode::Regular );
 
-	NamesScope::InsertedName* ResolveName(
+	Value* ResolveValue(
 		const FilePos& file_pos,
 		NamesScope& names_scope,
 		const Synt::ComplexName::Component* components,

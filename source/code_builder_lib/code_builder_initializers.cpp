@@ -78,10 +78,10 @@ void CodeBuilder::ApplyEmptyInitializer(
 	{
 		// If initializer for class variable is empty, try to call default constructor.
 
-		const NamesScope::InsertedName* constructor_name=
-			class_type->members.GetThisScopeName( Keyword( Keywords::constructor_ ) );
-		U_ASSERT( constructor_name != nullptr );
-		const OverloadedFunctionsSet* const constructors_set= constructor_name->second.GetFunctionsSet();
+		const Value* constructor_value=
+			class_type->members.GetThisScopeValue( Keyword( Keywords::constructor_ ) );
+		U_ASSERT( constructor_value != nullptr );
+		const OverloadedFunctionsSet* const constructors_set= constructor_value->GetFunctionsSet();
 		U_ASSERT( constructors_set != nullptr );
 
 		ThisOverloadedMethodsSet this_overloaded_methods_set;
@@ -198,13 +198,13 @@ llvm::Constant* CodeBuilder::ApplyStructNamedInitializer(
 			continue;
 		}
 
-		const NamesScope::InsertedName* const class_member= class_type->members.GetThisScopeName( member_initializer.name );
+		const Value* const class_member= class_type->members.GetThisScopeValue( member_initializer.name );
 		if( class_member == nullptr )
 		{
 			errors_.push_back( ReportNameNotFound( initializer.file_pos_, member_initializer.name ) );
 			continue;
 		}
-		const ClassField* const field= class_member->second.GetClassField();
+		const ClassField* const field= class_member->GetClassField();
 		if( field == nullptr )
 		{
 			errors_.push_back( ReportInitializerForNonfieldStructMember( initializer.file_pos_, member_initializer.name ) );
@@ -570,15 +570,15 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 			return initializer_variable.constexpr_value; // Move can preserve constexpr.
 		}
 
-		const NamesScope::InsertedName* constructor_name=
-			class_type->members.GetThisScopeName( Keyword( Keywords::constructor_ ) );
-		if( constructor_name == nullptr )
+		const Value* constructor_value=
+			class_type->members.GetThisScopeValue( Keyword( Keywords::constructor_ ) );
+		if( constructor_value == nullptr )
 		{
 			errors_.push_back( ReportClassHaveNoConstructors( call_operator.file_pos_ ) );
 			return nullptr;
 		}
 
-		const OverloadedFunctionsSet* const constructors_set= constructor_name->second.GetFunctionsSet();
+		const OverloadedFunctionsSet* const constructors_set= constructor_value->GetFunctionsSet();
 		U_ASSERT( constructors_set != nullptr );
 
 		ThisOverloadedMethodsSet this_overloaded_methods_set;

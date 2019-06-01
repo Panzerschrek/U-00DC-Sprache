@@ -1182,8 +1182,8 @@ Value CodeBuilder::BuildNamedOperand(
 		}
 	}
 
-	const NamesScope::InsertedName* const name_entry= ResolveName( named_operand.file_pos_, names, named_operand.name_ );
-	if( !name_entry )
+	const Value* const value_entry= ResolveValue( named_operand.file_pos_, names, named_operand.name_ );
+	if( value_entry == nullptr )
 	{
 		errors_.push_back( ReportNameNotFound( named_operand.file_pos_, named_operand.name_ ) );
 		return ErrorValue();
@@ -1194,7 +1194,7 @@ Value CodeBuilder::BuildNamedOperand(
 		( back_name_component == Keywords::constructor_ || back_name_component == Keywords::destructor_ ) )
 		errors_.push_back( ReportExplicitAccessToThisMethodIsUnsafe( named_operand.file_pos_, back_name_component ) );
 
-	if( const ClassField* const field= name_entry->second.GetClassField() )
+	if( const ClassField* const field= value_entry->GetClassField() )
 	{
 		if( function_context.this_ == nullptr )
 		{
@@ -1265,7 +1265,7 @@ Value CodeBuilder::BuildNamedOperand(
 
 			if( function_context.this_->node != nullptr )
 			{
-				const auto field_node= std::make_shared<ReferencesGraphNode>( "this."_SpC + name_entry->first, field->is_mutable ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut );
+				const auto field_node= std::make_shared<ReferencesGraphNode>( "this."_SpC + back_name_component, field->is_mutable ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut );
 				function_context.stack_variables_stack.back()->RegisterVariable( std::make_pair( field_node, field_variable ) );
 				field_variable.node= field_node;
 				for( const ReferencesGraphNodePtr& node : function_context.variables_state.GetAllAccessibleInnerNodes_r( function_context.this_->node ) )
@@ -1281,7 +1281,7 @@ Value CodeBuilder::BuildNamedOperand(
 
 		return Value( field_variable, named_operand.file_pos_ );
 	}
-	else if( const OverloadedFunctionsSet* const overloaded_functions_set= name_entry->second.GetFunctionsSet() )
+	else if( const OverloadedFunctionsSet* const overloaded_functions_set= value_entry->GetFunctionsSet() )
 	{
 		if( function_context.this_ != nullptr )
 		{
@@ -1289,10 +1289,10 @@ Value CodeBuilder::BuildNamedOperand(
 			const Class* const class_= function_context.this_->type.GetClassType();
 
 			// SPRACHE_TODO - mabe this kind of search is incorrect?
-			const NamesScope::InsertedName* const same_set_in_class=
-				class_->members.GetThisScopeName( named_operand.name_.components.back().name );
+			const Value* const same_set_in_class=
+				class_->members.GetThisScopeValue( named_operand.name_.components.back().name );
 			// SPRACHE_TODO - add "this" for functions from parent classes.
-			if( name_entry == same_set_in_class )
+			if( value_entry == same_set_in_class )
 			{
 				if( !function_context.whole_this_is_unavailable )
 				{
@@ -1305,13 +1305,13 @@ Value CodeBuilder::BuildNamedOperand(
 			}
 		}
 	}
-	else if( const Variable* const variable= name_entry->second.GetVariable() )
+	else if( const Variable* const variable= value_entry->GetVariable() )
 	{
 		if( variable->node != nullptr && function_context.variables_state.NodeMoved( variable->node ) )
 			errors_.push_back( ReportAccessingMovedVariable( named_operand.file_pos_, variable->node->name ) );
 	}
 
-	return name_entry->second;
+	return *value_entry;
 }
 
 Value CodeBuilder::BuildMoveOpeator( const Synt::MoveOperator& move_operator, NamesScope& names, FunctionContext& function_context )
@@ -1320,18 +1320,18 @@ Value CodeBuilder::BuildMoveOpeator( const Synt::MoveOperator& move_operator, Na
 	complex_name.components.emplace_back();
 	complex_name.components.back().name= move_operator.var_name_;
 
-	const NamesScope::InsertedName* const resolved_name= ResolveName( move_operator.file_pos_, names, complex_name );
-	if( resolved_name == nullptr )
+	const Value* const resolved_value= ResolveValue( move_operator.file_pos_, names, complex_name );
+	if( resolved_value == nullptr )
 	{
 		errors_.push_back( ReportNameNotFound( move_operator.file_pos_, move_operator.var_name_ ) );
 		return ErrorValue();
 	}
-	const Variable* const variable_for_move= resolved_name->second.GetVariable();
+	const Variable* const variable_for_move= resolved_value->GetVariable();
 	if( variable_for_move == nullptr ||
 		variable_for_move->node == nullptr ||
 		variable_for_move->node->kind != ReferencesGraphNode::Kind::Variable )
 	{
-		errors_.push_back( ReportExpectedVariable( move_operator.file_pos_, resolved_name->second.GetKindName() ) );
+		errors_.push_back( ReportExpectedVariable( move_operator.file_pos_, resolved_value->GetKindName() ) );
 		return ErrorValue();
 	}
 	const ReferencesGraphNodePtr& node= variable_for_move->node;
@@ -1349,7 +1349,7 @@ Value CodeBuilder::BuildMoveOpeator( const Synt::MoveOperator& move_operator, Na
 	end_variable_search:
 	if( !found_in_variables )
 	{
-		errors_.push_back( ReportExpectedVariable( move_operator.file_pos_, resolved_name->second.GetKindName() ) );
+		errors_.push_back( ReportExpectedVariable( move_operator.file_pos_, resolved_value->GetKindName() ) );
 		return ErrorValue();
 	}
 
@@ -1743,7 +1743,7 @@ Value CodeBuilder::BuildMemberAccessOperator(
 		return ErrorValue();
 	}
 
-	const NamesScope::InsertedName* const class_member= class_type->members.GetThisScopeName( member_access_operator.member_name_ );
+	const Value* const class_member= class_type->members.GetThisScopeValue( member_access_operator.member_name_ );
 	if( class_member == nullptr )
 	{
 		errors_.push_back( ReportNameNotFound( member_access_operator.file_pos_, member_access_operator.member_name_ ) );
@@ -1757,7 +1757,7 @@ Value CodeBuilder::BuildMemberAccessOperator(
 	if( names.GetAccessFor( variable.type.GetClassTypeProxy() ) < class_type->GetMemberVisibility( member_access_operator.member_name_ ) )
 		errors_.push_back( ReportAccessingNonpublicClassMember( member_access_operator.file_pos_, class_type->members.GetThisNamespaceName(), member_access_operator.member_name_ ) );
 
-	if( const OverloadedFunctionsSet* functions_set= class_member->second.GetFunctionsSet() )
+	if( const OverloadedFunctionsSet* functions_set= class_member->GetFunctionsSet() )
 	{
 		if( member_access_operator.have_template_parameters )
 		{
@@ -1765,16 +1765,16 @@ Value CodeBuilder::BuildMemberAccessOperator(
 				errors_.push_back( ReportValueIsNotTemplate( member_access_operator.file_pos_ ) );
 			else
 			{
-				const NamesScope::InsertedName* const inserted_name=
+				const Value* const inserted_value=
 					GenTemplateFunctionsUsingTemplateParameters(
 						member_access_operator.file_pos_,
 						functions_set->template_functions,
 						member_access_operator.template_parameters,
 						names );
-				if( inserted_name == nullptr )
+				if( inserted_value == nullptr )
 					return ErrorValue();
 
-				functions_set= inserted_name->second.GetFunctionsSet();
+				functions_set= inserted_value->GetFunctionsSet();
 			}
 		}
 		ThisOverloadedMethodsSet this_overloaded_methods_set;
@@ -1786,7 +1786,7 @@ Value CodeBuilder::BuildMemberAccessOperator(
 	if( member_access_operator.have_template_parameters )
 		errors_.push_back( ReportValueIsNotTemplate( member_access_operator.file_pos_ ) );
 
-	const ClassField* const field= class_member->second.GetClassField();
+	const ClassField* const field= class_member->GetClassField();
 	if( field == nullptr )
 	{
 		errors_.push_back( ReportNotImplemented( member_access_operator.file_pos_, "class members, except fields or methods" ) );
@@ -1903,10 +1903,10 @@ Value CodeBuilder::BuildCallOperator(
 		if( const Class* const class_type= callable_variable->type.GetClassType() )
 		{
 			// For classes try to find () operator inside it.
-			if( const NamesScope::InsertedName* const name=
-				class_type->members.GetThisScopeName( OverloadedOperatorToString( OverloadedOperator::Call ) ) )
+			if( const Value* const value=
+				class_type->members.GetThisScopeValue( OverloadedOperatorToString( OverloadedOperator::Call ) ) )
 			{
-				functions_set= name->second.GetFunctionsSet();
+				functions_set= value->GetFunctionsSet();
 				U_ASSERT( functions_set != nullptr ); // If we found (), this must be functions set.
 				this_= callable_variable;
 				// SPRACHE_TODO - maybe support not only thiscall () operators ?

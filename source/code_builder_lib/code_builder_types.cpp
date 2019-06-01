@@ -1060,29 +1060,29 @@ void NamesScope::SetThisNamespaceName( ProgramString name )
 	name_= std::move(name);
 }
 
-NamesScope::InsertedName* NamesScope::AddName(
+Value* NamesScope::AddName(
 	const ProgramString& name,
 	Value value )
 {
 	U_ASSERT( iterating_ == 0u );
 	auto it_bool_pair = names_map_.emplace( name, std::move( value ) );
 	if( it_bool_pair.second )
-		return &*it_bool_pair.first;
+		return &it_bool_pair.first->second;
 
 	return nullptr;
 }
 
-NamesScope::InsertedName* NamesScope::GetThisScopeName( const ProgramString& name )
+Value* NamesScope::GetThisScopeValue( const ProgramString& name )
 {
 	const auto it= names_map_.find( name );
 	if( it != names_map_.end() )
-		return &*it;
+		return &it->second;
 	return nullptr;
 }
 
-const NamesScope::InsertedName* NamesScope::GetThisScopeName( const ProgramString& name ) const
+const Value* NamesScope::GetThisScopeValue( const ProgramString& name ) const
 {
-	return const_cast<NamesScope*>(this)->GetThisScopeName( name );
+	return const_cast<NamesScope*>(this)->GetThisScopeValue( name );
 }
 
 NamesScope* NamesScope::GetParent()

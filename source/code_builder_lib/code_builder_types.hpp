@@ -482,11 +482,11 @@ public:
 	void SetThisNamespaceName( ProgramString name );
 
 	// Returns nullptr, if name already exists in this scope.
-	InsertedName* AddName( const ProgramString& name, Value value );
+	Value* AddName( const ProgramString& name, Value value );
 
 	// Resolve simple name only in this scope.
-	InsertedName* GetThisScopeName( const ProgramString& name );
-	const InsertedName* GetThisScopeName( const ProgramString& name ) const;
+	Value* GetThisScopeValue( const ProgramString& name );
+	const Value* GetThisScopeValue( const ProgramString& name ) const;
 
 	NamesScope* GetParent();
 	const NamesScope* GetParent() const;

@@ -20,9 +20,9 @@ void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::ProgramEl
 		else if( const auto namespace_= dynamic_cast<const Synt::Namespace*>( program_element.get() ) )
 		{
 			NamesScope* result_scope= &names_scope;
-			if( const NamesScope::InsertedName* const same_name= names_scope.GetThisScopeName( namespace_->name_ ) )
+			if( const Value* const same_value= names_scope.GetThisScopeValue( namespace_->name_ ) )
 			{
-				if( const NamesScopePtr same_namespace= same_name->second.GetNamespace() )
+				if( const NamesScopePtr same_namespace= same_value->GetNamespace() )
 					result_scope= same_namespace.get(); // Extend existend namespace.
 				else
 					errors_.push_back( ReportRedefinition( namespace_->file_pos_, namespace_->name_ ) );
@@ -107,9 +107,9 @@ void CodeBuilder::NamesScopeFill(
 	if( NameShadowsTemplateArgument( func_name, names_scope ) )
 		errors_.push_back( ReportDeclarationShadowsTemplateArgument( function_declaration.file_pos_, func_name ) );
 
-	if( NamesScope::InsertedName* const prev_name= names_scope.GetThisScopeName( func_name ) )
+	if( Value* const prev_value= names_scope.GetThisScopeValue( func_name ) )
 	{
-		if( OverloadedFunctionsSet* const functions_set= prev_name->second.GetFunctionsSet() )
+		if( OverloadedFunctionsSet* const functions_set= prev_value->GetFunctionsSet() )
 		{
 			if( base_class != nullptr && base_class->class_->GetMemberVisibility( func_name ) != visibility )
 				errors_.push_back( ReportFunctionsVisibilityMismatch( function_declaration.file_pos_, func_name ) );
@@ -151,9 +151,9 @@ void CodeBuilder::NamesScopeFill(
 	if( NameShadowsTemplateArgument( function_template_name, names_scope ) )
 		errors_.push_back( ReportDeclarationShadowsTemplateArgument( function_template_declaration.file_pos_, function_template_name ) );
 
-	if( NamesScope::InsertedName* const prev_name= names_scope.GetThisScopeName( function_template_name ) )
+	if( Value* const prev_value= names_scope.GetThisScopeValue( function_template_name ) )
 	{
-		if( OverloadedFunctionsSet* const functions_set= prev_name->second.GetFunctionsSet() )
+		if( OverloadedFunctionsSet* const functions_set= prev_value->GetFunctionsSet() )
 		{
 			if( base_class != nullptr && base_class->class_->GetMemberVisibility( function_template_name ) != visibility )
 				errors_.push_back( ReportFunctionsVisibilityMismatch( function_template_declaration.file_pos_, function_template_name ) );
@@ -186,9 +186,9 @@ ClassProxyPtr CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::
 		errors_.push_back( ReportDeclarationShadowsTemplateArgument( class_declaration.file_pos_, class_name ) );
 
 	ClassProxyPtr class_type;
-	if( const NamesScope::InsertedName* const prev_name= names_scope.GetThisScopeName( class_name ) )
+	if( const Value* const prev_value= names_scope.GetThisScopeValue( class_name ) )
 	{
-		if( const Type* const type= prev_name->second.GetTypeName() )
+		if( const Type* const type= prev_value->GetTypeName() )
 		{
 			if( const ClassProxyPtr prev_class_type= type->GetClassTypeProxy() )
 			{
@@ -309,12 +309,12 @@ void CodeBuilder::NamesScopeFill(
 	if( NameShadowsTemplateArgument( type_template_name, names_scope ) )
 		errors_.push_back( ReportDeclarationShadowsTemplateArgument( type_template_declaration.file_pos_, type_template_name ) );
 
-	if( NamesScope::InsertedName* const prev_name= names_scope.GetThisScopeName( type_template_name ) )
+	if( Value* const prev_value= names_scope.GetThisScopeValue( type_template_name ) )
 	{
 		if( base_class != nullptr && base_class->class_->GetMemberVisibility( type_template_name ) != visibility )
 			errors_.push_back( ReportTypeTemplatesVisibilityMismatch( type_template_declaration.file_pos_, type_template_name ) ); // TODO - use separate error code
 
-		if( TypeTemplatesSet* const type_templates_set= prev_name->second.GetTypeTemplatesSet() )
+		if( TypeTemplatesSet* const type_templates_set= prev_value->GetTypeTemplatesSet() )
 			type_templates_set->syntax_elements.push_back( &type_template_declaration );
 		else
 			errors_.push_back( ReportRedefinition( type_template_declaration.file_pos_, type_template_name ) );
@@ -378,20 +378,20 @@ void CodeBuilder::NamesScopeFillOutOfLineElements( NamesScope& names_scope, cons
 		{
 			if( func->name_.components.size() != 1u )
 			{
-				NamesScope::InsertedName* const func_name= ResolveName( func->file_pos_, names_scope, func->name_, ResolveMode::ForDeclaration );
-				if( func_name == nullptr || func_name->second.GetFunctionsSet() == nullptr )
+				Value* const func_value= ResolveValue( func->file_pos_, names_scope, func->name_, ResolveMode::ForDeclaration );
+				if( func_value == nullptr || func_value->GetFunctionsSet() == nullptr )
 				{
 					errors_.push_back( ReportFunctionDeclarationOutsideItsScope( func->file_pos_ ) );
 					continue;
 				}
-				func_name->second.GetFunctionsSet()->out_of_line_syntax_elements.push_back(func);
+				func_value->GetFunctionsSet()->out_of_line_syntax_elements.push_back(func);
 			}
 		}
 		else if( const auto namespace_= dynamic_cast<const Synt::Namespace*>( program_element.get() ) )
 		{
-			if( const NamesScope::InsertedName* const inner_namespace_name= names_scope.GetThisScopeName( namespace_->name_ ) )
+			if( const Value* const inner_namespace_value= names_scope.GetThisScopeValue( namespace_->name_ ) )
 			{
-				if( const NamesScopePtr inner_namespace= inner_namespace_name->second.GetNamespace() )
+				if( const NamesScopePtr inner_namespace= inner_namespace_value->GetNamespace() )
 					NamesScopeFillOutOfLineElements( *inner_namespace, namespace_->elements_ );
 			}
 		}

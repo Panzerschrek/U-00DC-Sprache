@@ -299,17 +299,17 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type, const T
 		NamesScope& class_parent_namespace= *the_class.members.GetParent();
 		for( const Synt::ComplexName& parent : class_declaration.parents_ )
 		{
-			const NamesScope::InsertedName* const parent_name= ResolveName( class_declaration.file_pos_, class_parent_namespace, parent );
-			if( parent_name == nullptr )
+			const Value* const parent_value= ResolveValue( class_declaration.file_pos_, class_parent_namespace, parent );
+			if( parent_value == nullptr )
 			{
 				errors_.push_back( ReportNameNotFound( class_declaration.file_pos_, parent ) );
 				continue;
 			}
 
-			const Type* const type_name= parent_name->second.GetTypeName();
+			const Type* const type_name= parent_value->GetTypeName();
 			if( type_name == nullptr )
 			{
-				errors_.push_back( ReportNameIsNotTypeName( class_declaration.file_pos_, parent_name->first ) );
+				errors_.push_back( ReportNameIsNotTypeName( class_declaration.file_pos_, parent.components.back().name ) );
 				continue;
 			}
 
@@ -488,10 +488,10 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type, const T
 			});
 
 		// Search for explicit noncopy constructors.
-		if( const NamesScope::InsertedName* const constructors_name=
-			the_class.members.GetThisScopeName( Keyword( Keywords::constructor_ ) ) )
+		if( const Value* const constructors_value=
+			the_class.members.GetThisScopeValue( Keyword( Keywords::constructor_ ) ) )
 		{
-			const OverloadedFunctionsSet* const constructors= constructors_name->second.GetFunctionsSet();
+			const OverloadedFunctionsSet* const constructors= constructors_value->GetFunctionsSet();
 			U_ASSERT( constructors != nullptr );
 			for( const FunctionVariable& constructor : constructors->functions )
 			{
@@ -507,18 +507,18 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type, const T
 		}
 
 		// Disable constexpr possibility for structs with explicit destructors, non-default copy-assignment operators and non-default copy constructors.
-		if( const NamesScope::InsertedName* const destructor_name=
-			the_class.members.GetThisScopeName( Keyword( Keywords::destructor_ ) ) )
+		if( const Value* const destructor_value=
+			the_class.members.GetThisScopeValue( Keyword( Keywords::destructor_ ) ) )
 		{
-			const OverloadedFunctionsSet* const destructors= destructor_name->second.GetFunctionsSet();
+			const OverloadedFunctionsSet* const destructors= destructor_value->GetFunctionsSet();
 			// Destructors may be invalid in case of error.
 			if( !destructors->functions.empty() && !destructors->functions[0].is_generated )
 				the_class.can_be_constexpr= false;
 		}
-		if( const NamesScope::InsertedName* const constructor_name=
-			the_class.members.GetThisScopeName( Keyword( Keywords::constructor_ ) ) )
+		if( const Value* const constructor_value=
+			the_class.members.GetThisScopeValue( Keyword( Keywords::constructor_ ) ) )
 		{
-			const OverloadedFunctionsSet* const constructors= constructor_name->second.GetFunctionsSet();
+			const OverloadedFunctionsSet* const constructors= constructor_value->GetFunctionsSet();
 			U_ASSERT( constructors != nullptr );
 			for( const FunctionVariable& constructor : constructors->functions )
 			{
@@ -526,10 +526,10 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type, const T
 					the_class.can_be_constexpr= false;
 			}
 		}
-		if( const NamesScope::InsertedName* const assignment_operator_name=
-			the_class.members.GetThisScopeName( OverloadedOperatorToString( OverloadedOperator::Assign ) ) )
+		if( const Value* const assignment_operator_value=
+			the_class.members.GetThisScopeValue( OverloadedOperatorToString( OverloadedOperator::Assign ) ) )
 		{
-			const OverloadedFunctionsSet* const operators= assignment_operator_name->second.GetFunctionsSet();
+			const OverloadedFunctionsSet* const operators= assignment_operator_value->GetFunctionsSet();
 			U_ASSERT( operators != nullptr );
 			for( const FunctionVariable& op : operators->functions )
 			{
@@ -598,7 +598,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type, const T
 				errors_.push_back( ReportFieldsForInterfacesNotAllowed( class_declaration.file_pos_ ) );
 			if( the_class.base_class != nullptr )
 				errors_.push_back( ReportBaseClassForInterface( class_declaration.file_pos_ ) );
-			if( the_class.members.GetThisScopeName( Keyword( Keywords::constructor_ ) ) != nullptr )
+			if( the_class.members.GetThisScopeValue( Keyword( Keywords::constructor_ ) ) != nullptr )
 				errors_.push_back( ReportConstructorForInterface( class_declaration.file_pos_ ) );
 			for( const Class::VirtualTableEntry& virtual_table_entry : the_class.virtual_table )
 			{
@@ -631,7 +631,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type, const T
 					if( parent->class_->GetMemberVisibility( name.first ) == ClassMemberVisibility::Private )
 						return; // Do not inherit private members.
 
-					NamesScope::InsertedName* const result_class_name= the_class.members.GetThisScopeName(name.first);
+					Value* const result_class_value= the_class.members.GetThisScopeValue(name.first);
 
 					if( const OverloadedFunctionsSet* const functions= name.second.GetFunctionsSet() )
 					{
@@ -641,9 +641,9 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type, const T
 							name.first == OverloadedOperatorToString( OverloadedOperator::Assign ) )
 							return; // Did not inherit constructors, destructors, assignment operators.
 
-						if( result_class_name != nullptr )
+						if( result_class_value != nullptr )
 						{
-							if( OverloadedFunctionsSet* const result_class_functions= result_class_name->second.GetFunctionsSet() )
+							if( OverloadedFunctionsSet* const result_class_functions= result_class_value->GetFunctionsSet() )
 							{
 								if( the_class.GetMemberVisibility( name.first ) != parent->class_->GetMemberVisibility( name.first ) )
 								{
@@ -681,7 +681,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type, const T
 					else
 					{
 						// Just override other kinds of symbols.
-						if( result_class_name == nullptr )
+						if( result_class_value == nullptr )
 							the_class.members.AddName( name.first, name.second );
 					}
 				});
@@ -751,12 +751,12 @@ void CodeBuilder::GlobalThingBuildEnum( const EnumPtr enum_, TypeCompleteness co
 
 	if( !enum_decl.underlaying_type_name.components.empty() )
 	{
-		const NamesScope::InsertedName* const type_name= ResolveName( enum_decl.file_pos_, names_scope, enum_decl.underlaying_type_name );
-		if( type_name == nullptr )
+		const Value* const type_value= ResolveValue( enum_decl.file_pos_, names_scope, enum_decl.underlaying_type_name );
+		if( type_value == nullptr )
 			errors_.push_back( ReportNameNotFound( enum_decl.file_pos_, enum_decl.underlaying_type_name ) );
 		else
 		{
-			const Type* const type= type_name->second.GetTypeName();
+			const Type* const type= type_value->GetTypeName();
 			if( type == nullptr )
 				errors_.push_back( ReportNameIsNotTypeName( enum_decl.file_pos_, enum_decl.underlaying_type_name.components.back().name ) );
 			else

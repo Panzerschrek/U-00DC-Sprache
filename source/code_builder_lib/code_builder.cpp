@@ -272,7 +272,7 @@ void CodeBuilder::MergeNameScopes( NamesScope& dst, const NamesScope& src, Class
 	src.ForEachInThisScope(
 		[&]( const NamesScope::InsertedName& src_member )
 		{
-			NamesScope::InsertedName* const dst_member= dst.GetThisScopeName( src_member.first );
+			Value* const dst_member= dst.GetThisScopeValue( src_member.first );
 			if( dst_member == nullptr )
 			{
 				// All ok - name form "src" does not exists in "dst".
@@ -309,7 +309,7 @@ void CodeBuilder::MergeNameScopes( NamesScope& dst, const NamesScope& src, Class
 				return;
 			}
 
-			if( dst_member->second.GetKindIndex() != src_member.second.GetKindIndex() )
+			if( dst_member->GetKindIndex() != src_member.second.GetKindIndex() )
 			{
 				// Different kind of symbols - 100% error.
 				errors_.push_back( ReportRedefinition( src_member.second.GetFilePos(), src_member.first ) );
@@ -320,14 +320,14 @@ void CodeBuilder::MergeNameScopes( NamesScope& dst, const NamesScope& src, Class
 			{
 				// Merge namespaces.
 				// TODO - detect here template instantiation namespaces.
-				const NamesScopePtr dst_sub_namespace= dst_member->second.GetNamespace();
+				const NamesScopePtr dst_sub_namespace= dst_member->GetNamespace();
 				U_ASSERT( dst_sub_namespace != nullptr );
 				MergeNameScopes( *dst_sub_namespace, *sub_namespace, dst_class_table );
 				return;
 			}
 			else if(
 				OverloadedFunctionsSet* const dst_funcs_set=
-				dst_member->second.GetFunctionsSet() )
+				dst_member->GetFunctionsSet() )
 			{
 				const OverloadedFunctionsSet* const src_funcs_set= src_member.second.GetFunctionsSet();
 				U_ASSERT( src_funcs_set != nullptr );
@@ -358,7 +358,7 @@ void CodeBuilder::MergeNameScopes( NamesScope& dst, const NamesScope& src, Class
 				}
 				return;
 			}
-			else if( const Type* const type= dst_member->second.GetTypeName() )
+			else if( const Type* const type= dst_member->GetTypeName() )
 			{
 				if( const ClassProxyPtr dst_class_proxy= type->GetClassTypeProxy() )
 				{
@@ -397,7 +397,7 @@ void CodeBuilder::MergeNameScopes( NamesScope& dst, const NamesScope& src, Class
 				}
 			}
 
-			if( dst_member->second.GetFilePos() == src_member.second.GetFilePos() )
+			if( dst_member->GetFilePos() == src_member.second.GetFilePos() )
 				return; // All ok - things from one source.
 
 			// Can not merge other kinds of values.
@@ -599,13 +599,13 @@ Type CodeBuilder::PrepareType(
 	}
 	else if( const auto named_type_name= dynamic_cast<const Synt::NamedTypeName*>(type_name.get()) )
 	{
-		if( const NamesScope::InsertedName* name=
-			ResolveName( named_type_name->file_pos_, names_scope, named_type_name->name ) )
+		if( const Value* value=
+			ResolveValue( named_type_name->file_pos_, names_scope, named_type_name->name ) )
 		{
-			if( const Type* const type= name->second.GetTypeName() )
+			if( const Type* const type= value->GetTypeName() )
 				result= *type;
 			else
-				errors_.push_back( ReportNameIsNotTypeName( named_type_name->file_pos_, name->first ) );
+				errors_.push_back( ReportNameIsNotTypeName( named_type_name->file_pos_, named_type_name->name.components.back().name ) );
 		}
 		else
 			errors_.push_back( ReportNameNotFound( named_type_name->file_pos_, named_type_name->name ) );
@@ -685,9 +685,9 @@ void CodeBuilder::TryCallCopyConstructor(
 	}
 
 	// Search for copy-constructor.
-	const NamesScope::InsertedName* const constructos_name= class_.members.GetThisScopeName( Keyword( Keywords::constructor_ ) );
-	U_ASSERT( constructos_name != nullptr );
-	const OverloadedFunctionsSet* const constructors= constructos_name->second.GetFunctionsSet();
+	const Value* const constructos_value= class_.members.GetThisScopeValue( Keyword( Keywords::constructor_ ) );
+	U_ASSERT( constructos_value != nullptr );
+	const OverloadedFunctionsSet* const constructors= constructos_value->GetFunctionsSet();
 	U_ASSERT(constructors != nullptr );
 	const FunctionVariable* constructor= nullptr;
 	for( const FunctionVariable& candidate : constructors->functions )
@@ -793,9 +793,9 @@ void CodeBuilder::CallDestructor(
 
 	if( const Class* const class_= type.GetClassType() )
 	{
-		const NamesScope::InsertedName* const destructor_name= class_->members.GetThisScopeName( Keyword( Keywords::destructor_ ) );
-		U_ASSERT( destructor_name != nullptr );
-		const OverloadedFunctionsSet* const destructors= destructor_name->second.GetFunctionsSet();
+		const Value* const destructor_value= class_->members.GetThisScopeValue( Keyword( Keywords::destructor_ ) );
+		U_ASSERT( destructor_value != nullptr );
+		const OverloadedFunctionsSet* const destructors= destructor_value->GetFunctionsSet();
 		U_ASSERT(destructors != nullptr && destructors->functions.size() == 1u );
 
 		const FunctionVariable& destructor= destructors->functions.front();
@@ -1542,9 +1542,9 @@ Type CodeBuilder::BuildFuncCode(
 			if( NameShadowsTemplateArgument( arg_name, function_names ) )
 				errors_.push_back( ReportDeclarationShadowsTemplateArgument( declaration_arg.file_pos_, arg_name ) );
 
-			const NamesScope::InsertedName* const inserted_arg=
+			const Value* const inserted_arg=
 				function_names.AddName( arg_name, Value( var, declaration_arg.file_pos_ ) );
-			if( !inserted_arg )
+			if( inserted_arg == nullptr )
 				errors_.push_back( ReportRedefinition( declaration_arg.file_pos_, arg_name ) );
 		}
 
@@ -1820,8 +1820,7 @@ void CodeBuilder::BuildConstructorInitialization(
 			continue;
 		}
 
-		const NamesScope::InsertedName* const class_member=
-			base_class.members.GetThisScopeName( field_initializer.name );
+		const Value* const class_member= base_class.members.GetThisScopeValue( field_initializer.name );
 		if( class_member == nullptr )
 		{
 			have_fields_errors= true;
@@ -1829,7 +1828,7 @@ void CodeBuilder::BuildConstructorInitialization(
 			continue;
 		}
 
-		const ClassField* const field= class_member->second.GetClassField();
+		const ClassField* const field= class_member->GetClassField();
 		if( field == nullptr )
 		{
 			have_fields_errors= true;
@@ -1874,17 +1873,17 @@ void CodeBuilder::BuildConstructorInitialization(
 	{
 		const StackVariablesStorage temp_variables_storage( function_context );
 
-		const NamesScope::InsertedName* const class_member=
-			base_class.members.GetThisScopeName( field_name );
+		const Value* const class_member=
+			base_class.members.GetThisScopeValue( field_name );
 		U_ASSERT( class_member != nullptr );
-		const ClassField* const field= class_member->second.GetClassField();
+		const ClassField* const field= class_member->GetClassField();
 		U_ASSERT( field != nullptr );
 
 		if( field->is_reference )
 		{
 			if( field->syntax_element->initializer == nullptr )
 			{
-				errors_.push_back( ReportExpectedInitializer( class_member->second.GetFilePos(), field_name ) );
+				errors_.push_back( ReportExpectedInitializer( class_member->GetFilePos(), field_name ) );
 				continue;
 			}
 			InitializeReferenceClassFieldWithInClassIninitalizer( this_, *field, function_context );
@@ -1950,10 +1949,10 @@ void CodeBuilder::BuildConstructorInitialization(
 			continue;
 		}
 
-		const NamesScope::InsertedName* const class_member=
-			base_class.members.GetThisScopeName( field_initializer.name );
+		const Value* const class_member=
+			base_class.members.GetThisScopeValue( field_initializer.name );
 		U_ASSERT( class_member != nullptr );
-		const ClassField* const field= class_member->second.GetClassField();
+		const ClassField* const field= class_member->GetClassField();
 		U_ASSERT( field != nullptr );
 
 		if( field->is_reference )
@@ -2280,9 +2279,9 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 			continue;
 		}
 
-		const NamesScope::InsertedName* const inserted_name=
+		const Value* const inserted_value=
 			block_names.AddName( variable_declaration.name, Value( variable, variable_declaration.file_pos ) );
-		if( !inserted_name )
+		if( inserted_value == nullptr )
 		{
 			errors_.push_back( ReportRedefinition( variables_declaration.file_pos_, variable_declaration.name ) );
 			continue;
@@ -2472,9 +2471,9 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 		return;
 	}
 
-	const NamesScope::InsertedName* const inserted_name=
+	const Value* const inserted_value=
 		block_names.AddName( auto_variable_declaration.name, Value( variable, auto_variable_declaration.file_pos_ ) );
-	if( inserted_name == nullptr )
+	if( inserted_value == nullptr )
 		errors_.push_back( ReportRedefinition( auto_variable_declaration.file_pos_, auto_variable_declaration.name ) );
 
 	if( auto_variable_declaration.lock_temps )
@@ -3263,19 +3262,20 @@ void CodeBuilder::BuildHaltIf(const Synt::HaltIf& halt_if, NamesScope& names, Fu
 	function_context.llvm_ir_builder.SetInsertPoint( false_block );
 }
 
-NamesScope::InsertedName* CodeBuilder::ResolveName( const FilePos& file_pos, NamesScope& names_scope, const Synt::ComplexName& complex_name, const ResolveMode resolve_mode )
+Value* CodeBuilder::ResolveValue( const FilePos& file_pos, NamesScope& names_scope, const Synt::ComplexName& complex_name, const ResolveMode resolve_mode )
 {
-	return ResolveName( file_pos, names_scope, complex_name.components.data(), complex_name.components.size(), resolve_mode );
+	return ResolveValue( file_pos, names_scope, complex_name.components.data(), complex_name.components.size(), resolve_mode );
 }
 
-NamesScope::InsertedName* CodeBuilder::ResolveName(
+Value* CodeBuilder::ResolveValue(
 	const FilePos& file_pos,
 	NamesScope& names_scope,
 	const Synt::ComplexName::Component* components,
 	size_t component_count,
-	const ResolveMode resolve_mode  )
+	const ResolveMode resolve_mode )
 {
 	U_ASSERT( component_count > 0u );
+	const ProgramString& last_component_name= components[component_count-1u].name;
 
 	NamesScope* last_space= &names_scope;
 	if( components[0].name.empty() )
@@ -3291,8 +3291,7 @@ NamesScope::InsertedName* CodeBuilder::ResolveName(
 		NamesScope* space= &names_scope;
 		while(true)
 		{
-			NamesScope::InsertedName* const find= space->GetThisScopeName( start );
-			if( find != nullptr )
+			if( space->GetThisScopeValue( start ) != nullptr )
 				break;
 			space= space->GetParent();
 			if( space == nullptr )
@@ -3301,14 +3300,14 @@ NamesScope::InsertedName* CodeBuilder::ResolveName(
 		last_space= space;
 	}
 
-	NamesScope::InsertedName* name= nullptr;
+	Value* value= nullptr;
 	while( true )
 	{
-		name= last_space->GetThisScopeName( components[0].name );
-		if( name == nullptr )
+		value= last_space->GetThisScopeValue( components[0].name );
+		if( value == nullptr )
 			return nullptr;
 
-		if( components[0].have_template_parameters && name->second.GetTypeTemplatesSet() == nullptr && name->second.GetFunctionsSet() == nullptr )
+		if( components[0].have_template_parameters && value->GetTypeTemplatesSet() == nullptr && value->GetFunctionsSet() == nullptr )
 		{
 			errors_.push_back( ReportValueIsNotTemplate( file_pos ) );
 			return nullptr;
@@ -3317,9 +3316,9 @@ NamesScope::InsertedName* CodeBuilder::ResolveName(
 		NamesScope* next_space= nullptr;
 		ClassProxyPtr next_space_class= nullptr;
 
-		if( const NamesScopePtr inner_namespace= name->second.GetNamespace() )
+		if( const NamesScopePtr inner_namespace= value->GetNamespace() )
 			next_space= inner_namespace.get();
-		else if( const Type* const type= name->second.GetTypeName() )
+		else if( const Type* const type= value->GetTypeName() )
 		{
 			if( Class* const class_= type->GetClassType() )
 			{
@@ -3342,12 +3341,12 @@ NamesScope::InsertedName* CodeBuilder::ResolveName(
 				next_space= &enum_->members;
 			}
 		}
-		else if( TypeTemplatesSet* const type_templates_set = name->second.GetTypeTemplatesSet() )
+		else if( TypeTemplatesSet* const type_templates_set = value->GetTypeTemplatesSet() )
 		{
 			GlobalThingBuildTypeTemplatesSet( *last_space, *type_templates_set );
 			if( components[0].have_template_parameters && !( resolve_mode == ResolveMode::ForTemplateSignatureParameter && component_count == 1u ) )
 			{
-				NamesScope::InsertedName* generated_type=
+				Value* const generated_type=
 					GenTemplateType(
 						file_pos,
 						*type_templates_set,
@@ -3356,14 +3355,14 @@ NamesScope::InsertedName* CodeBuilder::ResolveName(
 				if( generated_type == nullptr )
 					return nullptr;
 
-				const Type* const type= generated_type->second.GetTypeName();
+				const Type* const type= generated_type->GetTypeName();
 				U_ASSERT( type != nullptr );
 				if( Class* const class_= type->GetClassType() )
 				{
 					next_space= &class_->members;
 					next_space_class= type->GetClassTypeProxy();
 				}
-				name= generated_type;
+				value= generated_type;
 			}
 			else if( component_count >= 2u )
 			{
@@ -3371,7 +3370,7 @@ NamesScope::InsertedName* CodeBuilder::ResolveName(
 				return nullptr;
 			}
 		}
-		else if( OverloadedFunctionsSet* const functions_set= name->second.GetFunctionsSet() )
+		else if( OverloadedFunctionsSet* const functions_set= value->GetFunctionsSet() )
 		{
 			if( resolve_mode != ResolveMode::ForDeclaration )
 				GlobalThingBuildFunctionsSet( *last_space, *functions_set, false );
@@ -3383,7 +3382,7 @@ NamesScope::InsertedName* CodeBuilder::ResolveName(
 					return nullptr;
 				}
 
-				name=
+				value=
 					GenTemplateFunctionsUsingTemplateParameters(
 						file_pos,
 						functions_set->template_functions,
@@ -3396,7 +3395,7 @@ NamesScope::InsertedName* CodeBuilder::ResolveName(
 			break;
 		else if( next_space != nullptr )
 		{
-			name= next_space->GetThisScopeName( components[1].name );
+			value= next_space->GetThisScopeValue( components[1].name );
 
 			if( next_space_class != nullptr && resolve_mode != ResolveMode::ForDeclaration &&
 				names_scope.GetAccessFor( next_space_class ) < next_space_class->class_->GetMemberVisibility( components[1].name ) )
@@ -3410,22 +3409,22 @@ NamesScope::InsertedName* CodeBuilder::ResolveName(
 		last_space= next_space;
 	}
 
-	if( name != nullptr && name->second.GetYetNotDeducedTemplateArg() != nullptr )
-		errors_.push_back( ReportTemplateArgumentIsNotDeducedYet( file_pos, name == nullptr ? ""_SpC : name->first ) );
+	if( value != nullptr && value->GetYetNotDeducedTemplateArg() != nullptr )
+		errors_.push_back( ReportTemplateArgumentIsNotDeducedYet( file_pos, value == nullptr ? ""_SpC : last_component_name ) );
 
 	// Complete some things in resolve.
-	if( name != nullptr && resolve_mode != ResolveMode::ForDeclaration )
+	if( value != nullptr && resolve_mode != ResolveMode::ForDeclaration )
 	{
-		if( OverloadedFunctionsSet* const functions_set= name->second.GetFunctionsSet() )
+		if( OverloadedFunctionsSet* const functions_set= value->GetFunctionsSet() )
 			GlobalThingBuildFunctionsSet( *last_space, *functions_set, false );
-		else if( TypeTemplatesSet* const type_templates_set= name->second.GetTypeTemplatesSet() )
+		else if( TypeTemplatesSet* const type_templates_set= value->GetTypeTemplatesSet() )
 			GlobalThingBuildTypeTemplatesSet( *last_space, *type_templates_set );
-		else if( name->second.GetTypedef() != nullptr )
-			GlobalThingBuildTypedef( *last_space, name->second );
-		else if( name->second.GetIncompleteGlobalVariable() != nullptr )
-			GlobalThingBuildVariable( *last_space, name->second );
+		else if( value->GetTypedef() != nullptr )
+			GlobalThingBuildTypedef( *last_space, *value );
+		else if( value->GetIncompleteGlobalVariable() != nullptr )
+			GlobalThingBuildVariable( *last_space, *value );
 	}
-	return name;
+	return value;
 }
 
 U_FundamentalType CodeBuilder::GetNumericConstantType( const Synt::NumericConstant& number )
