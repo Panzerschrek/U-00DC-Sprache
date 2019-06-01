@@ -21,12 +21,11 @@ struct KeywordEntry
 	const char* const ascii;
 };
 
-typedef std::set<ProgramString> KeywordsSet;
 
 struct Globals
 {
 	const KeywordEntry (&keywords)[ size_t(Keywords::LastKeyword) ];
-	const KeywordsSet& keywords_set;
+	const ProgramStringSet& keywords_set;
 };
 
 // Hack for initialization.
@@ -135,10 +134,10 @@ static const Globals& GetGlobals()
 		[ size_t(Keywords::export_) ]= "export",
 	};
 
-	static const KeywordsSet c_keywords_set=
-	[]() -> KeywordsSet
+	static const ProgramStringSet c_keywords_set=
+	[]() -> ProgramStringSet
 	{
-		KeywordsSet result;
+		ProgramStringSet result;
 		for( const KeywordEntry& k : c_keywords )
 			result.emplace( k.program_string );
 		return result;
