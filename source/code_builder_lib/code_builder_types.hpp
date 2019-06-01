@@ -526,31 +526,6 @@ private:
 	std::unordered_map<ClassProxyPtr, ClassMemberVisibility> access_rights_;
 };
 
-struct NameResolvingKey final
-{
-	const Synt::ComplexName::Component* components;
-	size_t component_count;
-};
-
-struct NameResolvingKeyHasher
-{
-	size_t operator()( const NameResolvingKey& key ) const;
-	bool operator()( const NameResolvingKey& a, const NameResolvingKey& b ) const;
-};
-
-struct ResolvingCacheValue final
-{
-	NamesScope::InsertedName name;
-	size_t name_components_cut;
-};
-
-typedef
-	std::unordered_map<
-		NameResolvingKey,
-		ResolvingCacheValue,
-		NameResolvingKeyHasher,
-		NameResolvingKeyHasher > ResolvingCache;
-
 typedef boost::variant< Variable, Type > TemplateParameter;
 
 typedef std::map< ProgramString, ClassProxyPtr > TemplateClassesCache;
@@ -663,7 +638,6 @@ struct TemplateBase
 
 	std::vector< TemplateParameter > template_parameters;
 
-	ResolvingCache resolving_cache;
 	NamesScope* parent_namespace= nullptr; // NamesScope, where defined. NOT changed after import.
 
 	FilePos file_pos;

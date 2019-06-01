@@ -1339,7 +1339,6 @@ NamesScope::InsertedName* CodeBuilder::GenTemplateFunctionsUsingTemplateParamete
 			new_template->template_parameters.end(),
 			function_template.template_parameters.begin() + std::ptrdiff_t(template_parameters.size()), function_template.template_parameters.end() );
 
-		new_template->resolving_cache= function_template.resolving_cache;
 		new_template->parent_namespace= function_template.parent_namespace;
 		new_template->file_pos= function_template.file_pos;
 		new_template->syntax_element= function_template.syntax_element;

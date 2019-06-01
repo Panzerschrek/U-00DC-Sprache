@@ -692,20 +692,6 @@ size_t Function::ReferencePollutionHasher::operator()( const ReferencePollution&
 	return result;
 }
 
-size_t NameResolvingKeyHasher::operator()( const NameResolvingKey& key ) const
-{
-	size_t result= 0u;
-	boost::hash_combine( result, key.components );
-	boost::hash_combine( result, key.component_count );
-
-	return result;
-}
-
-bool NameResolvingKeyHasher::operator()( const NameResolvingKey& a, const NameResolvingKey& b ) const
-{
-	return a.components == b.components && a.component_count == b.component_count;
-}
-
 bool FunctionVariable::VirtuallyEquals( const FunctionVariable& other ) const
 {
 	U_ASSERT( this->is_this_call && other.is_this_call );
