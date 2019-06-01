@@ -36,6 +36,7 @@ private:
 	struct BuildResultInternal
 	{
 		std::unique_ptr<NamesScope> names_map;
+		std::unique_ptr< std::map<ProgramString, Value > > generated_template_things_storage;
 		std::unique_ptr<ClassTable> class_table;
 	};
 
@@ -894,6 +895,9 @@ private:
 	boost::optional< Variable > typeinfo_list_end_node_; // Lazy initialized.
 	llvm::GlobalVariable* typeinfo_is_end_variable_[2u]= { nullptr, nullptr }; // Lazy initialized.
 	ClassTable typeinfo_class_table_;
+
+	// Names map for generated template types/functions. We can not insert it in regular namespaces, because we needs insert it, while iterating regular namespaces.
+	std::map<ProgramString, Value> generated_template_things_storage_;
 
 	std::vector<GlobalThing> global_things_stack_;
 };

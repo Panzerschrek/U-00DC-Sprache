@@ -706,19 +706,6 @@ bool NameResolvingKeyHasher::operator()( const NameResolvingKey& a, const NameRe
 	return a.components == b.components && a.component_count == b.component_count;
 }
 
-size_t TemplateClassKeyHasher::operator()( const TemplateClassKey& key ) const
-{
-	size_t result= 0u;
-	boost::hash_combine( result, key.template_ );
-	boost::hash_combine( result, key.class_name_encoded );
-	return result;
-}
-bool TemplateClassKeyHasher::operator()( const TemplateClassKey& a, const TemplateClassKey& b ) const
-{
-	return a.template_ == b.template_ && a.class_name_encoded == b.class_name_encoded;
-}
-
-
 bool FunctionVariable::VirtuallyEquals( const FunctionVariable& other ) const
 {
 	U_ASSERT( this->is_this_call && other.is_this_call );
@@ -1091,6 +1078,7 @@ NamesScope::InsertedName* NamesScope::AddName(
 	const ProgramString& name,
 	Value value )
 {
+	U_ASSERT( iterating_ == 0u );
 	auto it_bool_pair = names_map_.emplace( name, std::move( value ) );
 	if( it_bool_pair.second )
 		return &*it_bool_pair.first;

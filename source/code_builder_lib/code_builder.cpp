@@ -260,6 +260,10 @@ CodeBuilder::BuildResultInternal CodeBuilder::BuildProgramInternal(
 	NamesScopeFillOutOfLineElements( *result.names_map, source_graph_node.ast.program_elements );
 	GlobalThingBuildNamespace( *result.names_map );
 
+	// Take generated template things.
+	result.generated_template_things_storage.reset( new std::map<ProgramString, Value>() );
+	result.generated_template_things_storage->swap( generated_template_things_storage_ );
+
 	return result;
 }
 

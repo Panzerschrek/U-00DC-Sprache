@@ -501,15 +501,19 @@ public:
 	template<class Func>
 	void ForEachInThisScope( const Func& func )
 	{
+		++iterating_;
 		for( InsertedName& inserted_name : names_map_ )
 			func( inserted_name );
+		--iterating_;
 	}
 
 	template<class Func>
 	void ForEachInThisScope( const Func& func ) const
 	{
+		++iterating_;
 		for( const InsertedName& inserted_name : names_map_ )
 			func( inserted_name );
+		--iterating_;
 	}
 
 	// TODO - maybe add for_each in all scopes?
@@ -518,6 +522,7 @@ private:
 	ProgramString name_;
 	NamesScope* parent_;
 	NamesMap names_map_;
+	mutable size_t iterating_= 0u;
 	std::unordered_map<ClassProxyPtr, ClassMemberVisibility> access_rights_;
 };
 
@@ -548,19 +553,7 @@ typedef
 
 typedef boost::variant< Variable, Type > TemplateParameter;
 
-struct TemplateClassKey
-{
-	TypeTemplatePtr template_;
-	ProgramString class_name_encoded;
-};
-
-struct TemplateClassKeyHasher
-{
-	size_t operator()( const TemplateClassKey& key ) const;
-	bool operator()( const TemplateClassKey& a, const TemplateClassKey& b ) const;
-};
-
-typedef std::unordered_map< TemplateClassKey, ClassProxyPtr, TemplateClassKeyHasher, TemplateClassKeyHasher > TemplateClassesCache;
+typedef std::map< ProgramString, ClassProxyPtr > TemplateClassesCache;
 
 class Class final
 {
