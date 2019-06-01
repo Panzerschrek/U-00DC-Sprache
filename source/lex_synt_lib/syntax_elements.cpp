@@ -66,12 +66,19 @@ const FilePos& IExpressionComponent::GetFilePos() const
 	return base->file_pos_;
 }
 
-const FilePos& IInitializer::GetFilePos() const
+FilePos GetInitializerFilePos( const Initializer& initializer )
 {
-	// All non-abstract childs must be based on SyntaxElementBase.
-	const SyntaxElementBase* const base= dynamic_cast<const SyntaxElementBase*>( this );
-	U_ASSERT( base != nullptr );
-	return base->file_pos_;
+	if( const auto array_initializer= boost::get<ArrayInitializer>( &initializer ) )
+		return array_initializer->file_pos_;
+	if( const auto struct_named_initializer= boost::get<StructNamedInitializer>( &initializer ) )
+		return struct_named_initializer->file_pos_;
+	if( const auto expression_initializer= boost::get<ExpressionInitializer>( &initializer ) )
+		return expression_initializer->file_pos_;
+	if( const auto zero_initializer= boost::get<ZeroInitializer>( &initializer ) )
+		return zero_initializer->file_pos_;
+	if( const auto uninitialized_initializer= boost::get<UninitializedInitializer>( &initializer ) )
+		return uninitialized_initializer->file_pos_;
+	return FilePos();
 }
 
 ArrayInitializer::ArrayInitializer( const FilePos& file_pos )

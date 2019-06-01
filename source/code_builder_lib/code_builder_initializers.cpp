@@ -19,21 +19,21 @@ namespace CodeBuilderPrivate
 
 llvm::Constant* CodeBuilder::ApplyInitializer(
 	const Variable& variable,
-	const Synt::IInitializer& initializer,
+	const Synt::Initializer& initializer,
 	NamesScope& block_names,
 	FunctionContext& function_context )
 {
-	if( const auto array_initializer= dynamic_cast<const Synt::ArrayInitializer*>(&initializer) )
+	if( const auto array_initializer= boost::get<const Synt::ArrayInitializer>(&initializer) )
 		return ApplyArrayInitializer( variable, *array_initializer, block_names, function_context );
-	else if( const auto struct_named_initializer= dynamic_cast<const Synt::StructNamedInitializer*>(&initializer) )
+	else if( const auto struct_named_initializer= boost::get<const Synt::StructNamedInitializer>(&initializer) )
 		return ApplyStructNamedInitializer( variable, *struct_named_initializer, block_names, function_context );
-	else if( const auto constructor_initializer= dynamic_cast<const Synt::ConstructorInitializer*>(&initializer) )
+	else if( const auto constructor_initializer= boost::get<const Synt::ConstructorInitializer>(&initializer) )
 		return ApplyConstructorInitializer( variable, constructor_initializer->call_operator, block_names, function_context );
-	else if( const auto expression_initializer= dynamic_cast<const Synt::ExpressionInitializer*>(&initializer) )
+	else if( const auto expression_initializer= boost::get<const Synt::ExpressionInitializer>(&initializer) )
 		return ApplyExpressionInitializer( variable, *expression_initializer, block_names, function_context );
-	else if( const auto zero_initializer= dynamic_cast<const Synt::ZeroInitializer*>(&initializer) )
+	else if( const auto zero_initializer= boost::get<const Synt::ZeroInitializer>(&initializer) )
 		return ApplyZeroInitializer( variable, *zero_initializer, function_context );
-	else if( const auto uninitialized_initializer= dynamic_cast<const Synt::UninitializedInitializer*>(&initializer) )
+	else if( const auto uninitialized_initializer= boost::get<const Synt::UninitializedInitializer>(&initializer) )
 		return ApplyUninitializedInitializer( variable, *uninitialized_initializer, function_context );
 	else U_ASSERT(false);
 
@@ -138,9 +138,8 @@ llvm::Constant* CodeBuilder::ApplyArrayInitializer(
 		array_member.llvm_value=
 			function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, index_list );
 
-		U_ASSERT( initializer.initializers[i] != nullptr );
 		llvm::Constant* const member_constant=
-			ApplyInitializer( array_member, *initializer.initializers[i], block_names, function_context );
+			ApplyInitializer( array_member, initializer.initializers[i], block_names, function_context );
 
 		if( is_constant && member_constant != nullptr )
 			members_constants.push_back( member_constant );
@@ -221,16 +220,15 @@ llvm::Constant* CodeBuilder::ApplyStructNamedInitializer(
 		llvm::Constant* constant_initializer= nullptr;
 		if( field->is_reference )
 			constant_initializer=
-				InitializeReferenceField( variable, *field, *member_initializer.initializer, block_names, function_context );
+				InitializeReferenceField( variable, *field, member_initializer.initializer, block_names, function_context );
 		else
 		{
 			struct_member.type= field->type;
 			struct_member.llvm_value=
 				function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, { GetZeroGEPIndex(), GetFieldGEPIndex( field->index ) } );
 
-			U_ASSERT( member_initializer.initializer != nullptr );
 			constant_initializer=
-				ApplyInitializer( struct_member, *member_initializer.initializer, block_names, function_context );
+				ApplyInitializer( struct_member, member_initializer.initializer, block_names, function_context );
 		}
 
 		if( constant_initializer == nullptr )
@@ -855,7 +853,7 @@ llvm::Constant* CodeBuilder::ApplyUninitializedInitializer(
 llvm::Constant* CodeBuilder::InitializeReferenceField(
 	const Variable& variable,
 	const ClassField& field,
-	const Synt::IInitializer& initializer,
+	const Synt::Initializer& initializer,
 	NamesScope& block_names,
 	FunctionContext& function_context )
 {
@@ -863,13 +861,11 @@ llvm::Constant* CodeBuilder::InitializeReferenceField(
 	U_ASSERT( variable.type.GetClassTypeProxy() == field.class_.lock() );
 
 	const Synt::IExpressionComponent* initializer_expression= nullptr;
-	if( const auto expression_initializer=
-		dynamic_cast<const Synt::ExpressionInitializer*>( &initializer ) )
+	if( const auto expression_initializer= boost::get<const Synt::ExpressionInitializer>( &initializer ) )
 	{
 		initializer_expression= expression_initializer->expression.get();
 	}
-	else if( const auto constructor_initializer=
-		dynamic_cast<const Synt::ConstructorInitializer*>( &initializer ) )
+	else if( const auto constructor_initializer= boost::get<const Synt::ConstructorInitializer>( &initializer ) )
 	{
 		if( constructor_initializer->call_operator.arguments_.size() != 1u )
 		{
@@ -880,7 +876,7 @@ llvm::Constant* CodeBuilder::InitializeReferenceField(
 	}
 	else
 	{
-		errors_.push_back( ReportUnsupportedInitializerForReference( initializer.GetFilePos() ) );
+		errors_.push_back( ReportUnsupportedInitializerForReference( Synt::GetInitializerFilePos( initializer ) ) );
 		return nullptr;
 	}
 
@@ -912,7 +908,7 @@ llvm::Constant* CodeBuilder::InitializeReferenceField(
 		if( ( field.is_mutable && function_context.variables_state.HaveOutgoingLinks( src_node ) ) ||
 			(!field.is_mutable && function_context.variables_state.HaveOutgoingMutableNodes( src_node ) ) )
 		{
-			errors_.push_back( ReportReferenceProtectionError( initializer.GetFilePos(), src_node->name ) );
+			errors_.push_back( ReportReferenceProtectionError( Synt::GetInitializerFilePos( initializer ), src_node->name ) );
 			return nullptr;
 		}
 
@@ -927,7 +923,7 @@ llvm::Constant* CodeBuilder::InitializeReferenceField(
 			if( inner_reference->kind == ReferencesGraphNode::Kind::ReferenceImut && field.is_mutable )
 			{
 				// TODO - make separate error.
-				errors_.push_back( ReportNotImplemented( initializer.GetFilePos(), "inner reference mutability changing" ) );
+				errors_.push_back( ReportNotImplemented( Synt::GetInitializerFilePos( initializer ), "inner reference mutability changing" ) );
 				return nullptr;
 			}
 		}

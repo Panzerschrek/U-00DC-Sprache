@@ -906,9 +906,9 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 			variable.value_type= ValueType::ConstReference;
 
 			const Synt::IExpressionComponent* initializer_expression= nullptr;
-			if( const auto expression_initializer= dynamic_cast<const Synt::ExpressionInitializer*>( variable_declaration.initializer.get() ) )
+			if( const auto expression_initializer= boost::get<const Synt::ExpressionInitializer>( variable_declaration.initializer.get() ) )
 				initializer_expression= expression_initializer->expression.get();
-			else if( const auto constructor_initializer= dynamic_cast<const Synt::ConstructorInitializer*>( variable_declaration.initializer.get() ) )
+			else if( const auto constructor_initializer= boost::get<const Synt::ConstructorInitializer>( variable_declaration.initializer.get() ) )
 			{
 				if( constructor_initializer->call_operator.arguments_.size() != 1u )
 				{
@@ -919,7 +919,7 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 			}
 			else
 			{
-				errors_.push_back( ReportUnsupportedInitializerForReference( variable_declaration.initializer->GetFilePos() ) );
+				errors_.push_back( ReportUnsupportedInitializerForReference( variable_declaration.file_pos ) );
 				FAIL_RETURN;
 			}
 

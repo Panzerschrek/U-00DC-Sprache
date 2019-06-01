@@ -29,9 +29,6 @@ typedef std::unique_ptr<IExpressionComponent> IExpressionComponentPtr;
 class ExpressionComponentWithUnaryOperators;
 typedef std::unique_ptr<ExpressionComponentWithUnaryOperators> ExpressionComponentWithUnaryOperatorsPtr;
 
-class IInitializer;
-typedef std::unique_ptr<IInitializer> IInitializerPtr;
-
 enum class MutabilityModifier
 {
 	None,
@@ -215,48 +212,48 @@ public:
 	const FilePos& GetFilePos() const;
 };
 
-class IInitializer
-{
-public:
-	virtual ~IInitializer()= default;
+class ArrayInitializer;
+class StructNamedInitializer;
+class ConstructorInitializer;
+class ExpressionInitializer;
+class ZeroInitializer;
+class UninitializedInitializer;
 
-	const FilePos& GetFilePos() const;
-};
+using Initializer= boost::variant< int, ArrayInitializer, StructNamedInitializer, ConstructorInitializer, ExpressionInitializer, ZeroInitializer, UninitializedInitializer >;
+using InitializerPtr= std::shared_ptr<Initializer>; // TODO - does this needs?
 
-class ArrayInitializer final : public SyntaxElementBase, public IInitializer
+FilePos GetInitializerFilePos( const Initializer& initializer );
+
+class ArrayInitializer final : public SyntaxElementBase
 {
 public:
 	explicit ArrayInitializer( const FilePos& file_pos );
 
-	std::vector<IInitializerPtr> initializers;
+	std::vector<Initializer> initializers;
 	bool has_continious_initializer= false; // ... after last initializator.
 };
 
-class StructNamedInitializer final : public SyntaxElementBase, public IInitializer
+class StructNamedInitializer final : public SyntaxElementBase
 {
 public:
 	explicit StructNamedInitializer( const FilePos& file_pos );
 
-	struct MemberInitializer
-	{
-		ProgramString name;
-		IInitializerPtr initializer;
-	};
+	struct MemberInitializer;
 
 	std::vector<MemberInitializer> members_initializers;
 };
 
-class ConstructorInitializer final : public SyntaxElementBase, public IInitializer
+class ConstructorInitializer final : public SyntaxElementBase
 {
 public:
 	ConstructorInitializer(
 		const FilePos& file_pos,
 		std::vector<IExpressionComponentPtr> arguments );
 
-	const CallOperator call_operator;
+	CallOperator call_operator;
 };
 
-class ExpressionInitializer final : public SyntaxElementBase, public IInitializer
+class ExpressionInitializer final : public SyntaxElementBase
 {
 public:
 	ExpressionInitializer( const FilePos& file_pos, IExpressionComponentPtr expression );
@@ -264,16 +261,22 @@ public:
 	IExpressionComponentPtr expression;
 };
 
-class ZeroInitializer final : public SyntaxElementBase, public IInitializer
+class ZeroInitializer final : public SyntaxElementBase
 {
 public:
 	explicit ZeroInitializer( const FilePos& file_pos );
 };
 
-class UninitializedInitializer final : public SyntaxElementBase, public IInitializer
+class UninitializedInitializer final : public SyntaxElementBase
 {
 public:
 	explicit UninitializedInitializer( const FilePos& file_pos );
+};
+
+struct StructNamedInitializer::MemberInitializer
+{
+	ProgramString name;
+	Initializer initializer;
 };
 
 class BinaryOperator final : public SyntaxElementBase, public IExpressionComponent
@@ -471,7 +474,7 @@ struct VariablesDeclaration final
 	{
 		FilePos file_pos;
 		ProgramString name;
-		IInitializerPtr initializer; // May be null for types with default constructor.
+		InitializerPtr initializer; // May be null for types with default constructor.
 		MutabilityModifier mutability_modifier= MutabilityModifier::None;
 		ReferenceModifier reference_modifier= ReferenceModifier::None;
 	};
@@ -703,7 +706,7 @@ public:
 	ProgramString name;
 	MutabilityModifier mutability_modifier= MutabilityModifier::None;
 	ReferenceModifier reference_modifier= ReferenceModifier::None;
-	IInitializerPtr initializer; // May be null.
+	InitializerPtr initializer; // May be null.
 };
 
 enum class ClassKindAttribute

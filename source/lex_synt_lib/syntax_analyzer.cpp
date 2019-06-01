@@ -255,12 +255,12 @@ private:
 	ReferencesTagsList ParseReferencesTagsList();
 	FunctionReferencesPollutionList ParseFunctionReferencesPollutionList();
 
-	IInitializerPtr ParseInitializer( bool parse_expression_initializer );
-	IInitializerPtr ParseVariableInitializer();
-	std::unique_ptr<ArrayInitializer> ParseArrayInitializer();
-	std::unique_ptr<StructNamedInitializer> ParseStructNamedInitializer();
-	std::unique_ptr<ConstructorInitializer> ParseConstructorInitializer();
-	std::unique_ptr<ExpressionInitializer> ParseExpressionInitializer();
+	Initializer ParseInitializer( bool parse_expression_initializer );
+	Initializer ParseVariableInitializer();
+	Initializer ParseArrayInitializer();
+	Initializer ParseStructNamedInitializer();
+	Initializer ParseConstructorInitializer();
+	Initializer ParseExpressionInitializer();
 
 	VariablesDeclarationPtr ParseVariablesDeclaration();
 	std::unique_ptr<AutoVariableDeclaration> ParseAutoVariableDeclaration();
@@ -1961,7 +1961,7 @@ FunctionReferencesPollutionList SyntaxAnalyzer::ParseFunctionReferencesPollution
 	return result;
 }
 
-IInitializerPtr SyntaxAnalyzer::ParseInitializer( const bool parse_expression_initializer )
+Initializer SyntaxAnalyzer::ParseInitializer( const bool parse_expression_initializer )
 {
 	if( it_->type == Lexem::Type::SquareBracketLeft )
 	{
@@ -1979,13 +1979,13 @@ IInitializerPtr SyntaxAnalyzer::ParseInitializer( const bool parse_expression_in
 	{
 		const auto prev_it= it_;
 		NextLexem();
-		return IInitializerPtr( new ZeroInitializer( prev_it->file_pos ) );
+		return ZeroInitializer( prev_it->file_pos );
 	}
 	else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::uninitialized_ )
 	{
 		const auto prev_it= it_;
 		NextLexem();
-		return IInitializerPtr( new UninitializedInitializer( prev_it->file_pos ) );
+		return UninitializedInitializer( prev_it->file_pos );
 	}
 	else if( parse_expression_initializer )
 	{
@@ -1995,48 +1995,48 @@ IInitializerPtr SyntaxAnalyzer::ParseInitializer( const bool parse_expression_in
 	else
 	{
 		PushErrorMessage();
-		return nullptr;
+		return 0;
 	}
 }
 
-IInitializerPtr SyntaxAnalyzer::ParseVariableInitializer()
+Initializer SyntaxAnalyzer::ParseVariableInitializer()
 {
-	IInitializerPtr initializer;
+	Initializer initializer;
 	if( it_->type == Lexem::Type::Assignment )
 	{
 		NextLexem();
 		if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::zero_init_ )
 		{
-			initializer.reset( new ZeroInitializer( it_->file_pos ) );
+			initializer= ZeroInitializer( it_->file_pos );
 			NextLexem();
 		}
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::uninitialized_ )
 		{
-			initializer.reset( new UninitializedInitializer( it_->file_pos ) );
+			initializer= UninitializedInitializer( it_->file_pos );
 			NextLexem();
 		}
 		else
-			initializer.reset( new ExpressionInitializer( it_->file_pos, ParseExpression() ) );
+			initializer= ExpressionInitializer( it_->file_pos, ParseExpression() );
 	}
 	else if(
 		it_->type == Lexem::Type::BracketLeft ||
 		it_->type == Lexem::Type::SquareBracketLeft ||
 		it_->type == Lexem::Type::BraceLeft )
-		initializer= ParseInitializer( false );
+		return ParseInitializer( false );
 
 	return initializer;
 }
 
-std::unique_ptr<ArrayInitializer> SyntaxAnalyzer::ParseArrayInitializer()
+Initializer SyntaxAnalyzer::ParseArrayInitializer()
 {
 	U_ASSERT( it_->type == Lexem::Type::SquareBracketLeft );
 
-	std::unique_ptr<ArrayInitializer> result( new ArrayInitializer( it_->file_pos ) );
+	ArrayInitializer result( it_->file_pos );
 	NextLexem();
 
 	while( NotEndOfFile() && it_->type != Lexem::Type::SquareBracketRight )
 	{
-		result->initializers.push_back( ParseInitializer( true ) );
+		result.initializers.push_back( ParseInitializer( true ) );
 		if( it_->type == Lexem::Type::Comma )
 			NextLexem();
 		else
@@ -2046,19 +2046,19 @@ std::unique_ptr<ArrayInitializer> SyntaxAnalyzer::ParseArrayInitializer()
 	if( it_->type != Lexem::Type::SquareBracketRight )
 	{
 		PushErrorMessage();
-		return result;
+		return std::move(result);
 	}
 
 	NextLexem();
 
-	return result;
+	return std::move(result);
 }
 
-std::unique_ptr<StructNamedInitializer> SyntaxAnalyzer::ParseStructNamedInitializer()
+Initializer SyntaxAnalyzer::ParseStructNamedInitializer()
 {
 	U_ASSERT( it_->type == Lexem::Type::BraceLeft );
 
-	std::unique_ptr<StructNamedInitializer> result( new StructNamedInitializer( it_->file_pos ) );
+	StructNamedInitializer result( it_->file_pos );
 	NextLexem();
 
 	while( NotEndOfFile() && it_->type != Lexem::Type::BraceRight )
@@ -2068,24 +2068,24 @@ std::unique_ptr<StructNamedInitializer> SyntaxAnalyzer::ParseStructNamedInitiali
 		else
 		{
 			PushErrorMessage();
-			return result;
+			return std::move(result);
 		}
 
 		if( it_->type != Lexem::Type::Identifier )
 		{
 			PushErrorMessage();
-			return result;
+			return std::move(result);
 		}
 		ProgramString name= it_->text;
 		NextLexem();
 
-		IInitializerPtr initializer= ParseVariableInitializer();
-		if( initializer == nullptr )
+		Initializer initializer= ParseVariableInitializer();
+		if( boost::get<int>(&initializer) != nullptr )
 			PushErrorMessage();
 
-		result->members_initializers.emplace_back();
-		result->members_initializers.back().name= std::move(name);
-		result->members_initializers.back().initializer= std::move(initializer);
+		result.members_initializers.emplace_back();
+		result.members_initializers.back().name= std::move(name);
+		result.members_initializers.back().initializer= std::move(initializer);
 
 		if( it_->type == Lexem::Type::Comma )
 			NextLexem();
@@ -2093,15 +2093,15 @@ std::unique_ptr<StructNamedInitializer> SyntaxAnalyzer::ParseStructNamedInitiali
 	if( it_->type != Lexem::Type::BraceRight )
 	{
 		PushErrorMessage();
-		return result;
+		return std::move(result);
 	}
 
 	NextLexem();
 
-	return result;
+	return std::move(result);
 }
 
-std::unique_ptr<ConstructorInitializer> SyntaxAnalyzer::ParseConstructorInitializer()
+Initializer SyntaxAnalyzer::ParseConstructorInitializer()
 {
 	U_ASSERT( it_->type == Lexem::Type::BracketLeft );
 
@@ -2118,7 +2118,7 @@ std::unique_ptr<ConstructorInitializer> SyntaxAnalyzer::ParseConstructorInitiali
 			if( it_->type == Lexem::Type::BracketRight )
 			{
 				PushErrorMessage();
-				return nullptr;
+				return Initializer();
 			}
 		}
 		else
@@ -2127,24 +2127,19 @@ std::unique_ptr<ConstructorInitializer> SyntaxAnalyzer::ParseConstructorInitiali
 	if( it_->type != Lexem::Type::BracketRight )
 	{
 		PushErrorMessage();
-		return nullptr;
+		return Initializer();
 	}
 	NextLexem();
 
-	std::unique_ptr<ConstructorInitializer> result(
-		new ConstructorInitializer( it_->file_pos, std::move(args) ) );
-
-	return result;
+	return ConstructorInitializer( it_->file_pos, std::move(args) );
 }
 
-std::unique_ptr<ExpressionInitializer> SyntaxAnalyzer::ParseExpressionInitializer()
+Initializer SyntaxAnalyzer::ParseExpressionInitializer()
 {
-	std::unique_ptr<ExpressionInitializer> result(
-		new ExpressionInitializer(
-			it_->file_pos,
-			ParseExpression() ) );
-
-	return result;
+	return
+		ExpressionInitializer(
+				it_->file_pos,
+				ParseExpression() );
 }
 
 VariablesDeclarationPtr SyntaxAnalyzer::ParseVariablesDeclaration()
@@ -2198,7 +2193,9 @@ VariablesDeclarationPtr SyntaxAnalyzer::ParseVariablesDeclaration()
 		variable_entry.file_pos= it_->file_pos;
 		NextLexem();
 
-		variable_entry.initializer= ParseVariableInitializer();
+		Initializer variable_initializer=  ParseVariableInitializer();
+		if( boost::get<int>( &variable_initializer ) == nullptr )
+			variable_entry.initializer.reset( new Initializer( std::move(variable_initializer) ) );
 
 		if( it_->type == Lexem::Type::Comma )
 			NextLexem();
@@ -3240,11 +3237,11 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 				}
 				result->constructor_initialization_list_->members_initializers.emplace_back();
 				result->constructor_initialization_list_->members_initializers.back().name= it_->text;
-				IInitializerPtr& initializer= result->constructor_initialization_list_->members_initializers.back().initializer;
+				Initializer& initializer= result->constructor_initialization_list_->members_initializers.back().initializer;
 
 				NextLexem();
 				initializer= ParseVariableInitializer();
-				if( initializer == nullptr )
+				if( boost::get<int>(&initializer) != nullptr )
 					PushErrorMessage();
 
 				if( it_->type == Lexem::Type::Comma )
@@ -3427,7 +3424,9 @@ ClassElements SyntaxAnalyzer::ParseClassBodyElements()
 				continue;
 			}
 
-			field->initializer= ParseVariableInitializer();
+			Initializer field_initializer= ParseVariableInitializer();
+			if( boost::get<int>( &field_initializer ) == nullptr )
+				field->initializer.reset( new Initializer( std::move(field_initializer) ) );
 
 			if( it_->type == Lexem::Type::Semicolon )
 				NextLexem();

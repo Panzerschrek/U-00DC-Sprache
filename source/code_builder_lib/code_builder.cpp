@@ -492,8 +492,6 @@ Type CodeBuilder::PrepareType(
 	NamesScope& names_scope,
 	FunctionContext& function_context )
 {
-	U_ASSERT( type_name != nullptr );
-
 	Type result= invalid_type_;
 
 	if( const auto array_type_name= boost::get<const Synt::ArrayTypeName>(&type_name) )
@@ -1944,7 +1942,7 @@ void CodeBuilder::BuildConstructorInitialization(
 					this_.llvm_value,
 					{ GetZeroGEPIndex(), GetFieldGEPIndex( base_class.base_class_field_number ) } );
 
-			ApplyInitializer( base_variable, *field_initializer.initializer, names_scope, function_context );
+			ApplyInitializer( base_variable, field_initializer.initializer, names_scope, function_context );
 			function_context.base_initialized= true;
 			continue;
 		}
@@ -1956,7 +1954,7 @@ void CodeBuilder::BuildConstructorInitialization(
 		U_ASSERT( field != nullptr );
 
 		if( field->is_reference )
-			InitializeReferenceField( this_, *field, *field_initializer.initializer, names_scope, function_context );
+			InitializeReferenceField( this_, *field, field_initializer.initializer, names_scope, function_context );
 		else
 		{
 			Variable field_variable;
@@ -1968,13 +1966,12 @@ void CodeBuilder::BuildConstructorInitialization(
 			field_variable.llvm_value=
 				function_context.llvm_ir_builder.CreateGEP( this_.llvm_value, { GetZeroGEPIndex(), GetFieldGEPIndex(field->index) } );
 
-			U_ASSERT( field_initializer.initializer != nullptr );
-			ApplyInitializer( field_variable, *field_initializer.initializer, names_scope, function_context );
+			ApplyInitializer( field_variable, field_initializer.initializer, names_scope, function_context );
 		}
 
 		function_context.uninitialized_this_fields.erase( field );
 
-		CallDestructors( *function_context.stack_variables_stack.back(), function_context, field_initializer.initializer->GetFilePos() );
+		CallDestructors( *function_context.stack_variables_stack.back(), function_context, Synt::GetInitializerFilePos( field_initializer.initializer ) );
 	} // for fields initializers
 
 	SetupVirtualTablePointers( this_.llvm_value, base_class, function_context );
@@ -2202,9 +2199,9 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 			}
 
 			const Synt::IExpressionComponent* initializer_expression= nullptr;
-			if( const auto expression_initializer= dynamic_cast<const Synt::ExpressionInitializer*>( variable_declaration.initializer.get() ) )
+			if( const auto expression_initializer= boost::get<const Synt::ExpressionInitializer>( variable_declaration.initializer.get() ) )
 				initializer_expression= expression_initializer->expression.get();
-			else if( const auto constructor_initializer= dynamic_cast<const Synt::ConstructorInitializer*>( variable_declaration.initializer.get() ) )
+			else if( const auto constructor_initializer= boost::get<const Synt::ConstructorInitializer>( variable_declaration.initializer.get() ) )
 			{
 				if( constructor_initializer->call_operator.arguments_.size() != 1u )
 				{
@@ -2215,7 +2212,7 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 			}
 			else
 			{
-				errors_.push_back( ReportUnsupportedInitializerForReference( variable_declaration.initializer->GetFilePos() ) );
+				errors_.push_back( ReportUnsupportedInitializerForReference( variable_declaration.file_pos ) );
 				continue;
 			}
 

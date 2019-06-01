@@ -672,7 +672,7 @@ private:
 
 	llvm::Constant* ApplyInitializer(
 		const Variable& variable,
-		const Synt::IInitializer& initializer,
+		const Synt::Initializer& initializer,
 		NamesScope& block_names,
 		FunctionContext& function_context );
 
@@ -719,7 +719,7 @@ private:
 	llvm::Constant* InitializeReferenceField(
 		const Variable& variable,
 		const ClassField& field,
-		const Synt::IInitializer& initializer,
+		const Synt::Initializer& initializer,
 		NamesScope& block_names,
 		FunctionContext& function_context );
 
