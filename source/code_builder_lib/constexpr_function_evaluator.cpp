@@ -25,7 +25,7 @@ ConstexprFunctionEvaluator::ConstexprFunctionEvaluator( const llvm::DataLayout& 
 ConstexprFunctionEvaluator::Result ConstexprFunctionEvaluator::Evaluate(
 	const Function& function_type,
 	llvm::Function* const llvm_function,
-	const std::vector<llvm::Constant*>& args,
+	const ArgsVector<llvm::Constant*>& args,
 	const FilePos& file_pos )
 {
 	file_pos_ = &file_pos;

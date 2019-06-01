@@ -291,7 +291,7 @@ private:
 	const FunctionVariable* GenTemplateFunction(
 		const FilePos& file_pos,
 		const FunctionTemplatePtr& function_template_ptr,
-		const std::vector<Function::Arg>& actual_args,
+		const ArgsVector<Function::Arg>& actual_args,
 		bool first_actual_arg_is_this,
 		bool skip_arguments= false );
 
@@ -646,14 +646,14 @@ private:
 
 	const FunctionVariable* GetOverloadedFunction(
 		const OverloadedFunctionsSet& functions_set,
-		const std::vector<Function::Arg>& actual_args,
+		const ArgsVector<Function::Arg>& actual_args,
 		bool first_actual_arg_is_this,
 		const FilePos& file_pos,
 		bool produce_errors= true,
 		bool enable_type_conversions= true);
 
 	const FunctionVariable* GetOverloadedOperator(
-		const std::vector<Function::Arg>& actual_args,
+		const ArgsVector<Function::Arg>& actual_args,
 		OverloadedOperator op,
 		const FilePos& file_pos );
 

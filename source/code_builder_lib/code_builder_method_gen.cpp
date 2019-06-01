@@ -84,7 +84,7 @@ void CodeBuilder::TryGenerateDefaultConstructor( Class& the_class, const Type& c
 	constructor_type.args.back().is_mutable= true;
 	constructor_type.args.back().is_reference= true;
 
-	std::vector<llvm::Type*> args_llvm_types;
+	ArgsVector<llvm::Type*> args_llvm_types;
 	args_llvm_types.push_back( llvm::PointerType::get( class_type.GetLLVMType(), 0u ) );
 
 	constructor_type.llvm_function_type=
@@ -275,7 +275,7 @@ void CodeBuilder::TryGenerateCopyConstructor( Class& the_class, const Type& clas
 		constructor_type.references_pollution.emplace(pollution);
 	}
 
-	std::vector<llvm::Type*> args_llvm_types;
+	ArgsVector<llvm::Type*> args_llvm_types;
 	args_llvm_types.push_back( llvm::PointerType::get( class_type.GetLLVMType(), 0u ) );
 	args_llvm_types.push_back( llvm::PointerType::get( class_type.GetLLVMType(), 0u ) );
 
@@ -565,7 +565,7 @@ void CodeBuilder::TryGenerateCopyAssignmentOperator( Class& the_class, const Typ
 		op_type.references_pollution.emplace(pollution);
 	}
 
-	std::vector<llvm::Type*> args_llvm_types;
+	ArgsVector<llvm::Type*> args_llvm_types;
 	args_llvm_types.push_back( llvm::PointerType::get( class_type.GetLLVMType(), 0u ) );
 	args_llvm_types.push_back( llvm::PointerType::get( class_type.GetLLVMType(), 0u ) );
 

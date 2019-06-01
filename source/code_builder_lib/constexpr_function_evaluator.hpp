@@ -28,7 +28,7 @@ public:
 	Result Evaluate(
 		const Function& function_type,
 		llvm::Function* const llvm_function,
-		const std::vector<llvm::Constant*>& args,
+		const ArgsVector<llvm::Constant*>& args,
 		const FilePos& file_pos );
 
 private:

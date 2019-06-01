@@ -25,6 +25,9 @@ namespace U
 namespace CodeBuilderPrivate
 {
 
+template<class T>
+using ArgsVector = llvm::SmallVector<T, 4u>;
+
 using Synt::ClassMemberVisibility;
 
 struct Function;
@@ -163,9 +166,9 @@ public:
 	struct InToOutReferences
 	{
 		// Numers of args.
-		std::vector<size_t> args_references;
+		ArgsVector<size_t> args_references;
 		// Pairs of arg number and tag number.
-		std::vector< ArgReference > inner_args_references;
+		ArgsVector< ArgReference> inner_args_references;
 	};
 
 	struct ReferencePollution
@@ -188,7 +191,7 @@ public:
 	Type return_type;
 	bool return_value_is_reference= false;
 	bool return_value_is_mutable= false;
-	std::vector<Arg> args;
+	ArgsVector<Arg> args;
 	bool unsafe= false;
 
 	// for functions, returning references this is references of reference itslef.

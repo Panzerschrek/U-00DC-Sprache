@@ -613,7 +613,7 @@ Type CodeBuilder::PrepareType(
 
 llvm::FunctionType* CodeBuilder::GetLLVMFunctionType( const Function& function_type )
 {
-	std::vector<llvm::Type*> args_llvm_types;
+	ArgsVector<llvm::Type*> args_llvm_types;
 
 	bool first_arg_is_sret= false;
 	if( !function_type.return_value_is_reference )
@@ -1409,7 +1409,7 @@ Type CodeBuilder::BuildFuncCode(
 	const StackVariablesStorage args_storage( function_context );
 
 	// arg node + optional inner reference variable node.
-	std::vector< std::pair< ReferencesGraphNodePtr, ReferencesGraphNodePtr > > args_nodes( function_type->args.size() );
+	ArgsVector< std::pair< ReferencesGraphNodePtr, ReferencesGraphNodePtr > > args_nodes( function_type->args.size() );
 
 	// push args
 	Variable this_;
@@ -2692,7 +2692,7 @@ void CodeBuilder::BuildDeltaOneOperatorCode(
 		return;
 	}
 
-	std::vector<Function::Arg> args;
+	ArgsVector<Function::Arg> args;
 	args.emplace_back();
 	args.back().type= variable->type;
 	args.back().is_mutable= variable->value_type == ValueType::Reference;

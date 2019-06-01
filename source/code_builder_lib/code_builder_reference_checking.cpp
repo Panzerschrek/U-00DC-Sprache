@@ -275,9 +275,9 @@ void CodeBuilder::ProcessFunctionTypeReferencesPollution(
 	const bool first_arg_is_implicit_this )
 {
 	const auto get_references=
-	[&]( const ProgramString& name ) -> std::vector<Function::ArgReference>
+	[&]( const ProgramString& name ) -> ArgsVector<Function::ArgReference>
 	{
-		std::vector<Function::ArgReference> result;
+		ArgsVector<Function::ArgReference> result;
 		bool any_ref_found= false;
 
 		for( size_t arg_n= 0u; arg_n < function_type.args.size(); ++arg_n )
@@ -323,8 +323,8 @@ void CodeBuilder::ProcessFunctionTypeReferencesPollution(
 			continue;
 		}
 
-		const std::vector<Function::ArgReference> dst_references= get_references( pollution.first );
-		const std::vector<Function::ArgReference> src_references= get_references( pollution.second.name );
+		const ArgsVector<Function::ArgReference> dst_references= get_references( pollution.first );
+		const ArgsVector<Function::ArgReference> src_references= get_references( pollution.second.name );
 
 		for( const Function::ArgReference& dst_ref : dst_references )
 		{

@@ -1005,7 +1005,7 @@ CodeBuilder::TemplateTypeGenerationResult CodeBuilder::GenTemplateType(
 const FunctionVariable* CodeBuilder::GenTemplateFunction(
 	const FilePos& file_pos,
 	const FunctionTemplatePtr& function_template_ptr,
-	const std::vector<Function::Arg>& actual_args,
+	const ArgsVector<Function::Arg>& actual_args,
 	const bool first_actual_arg_is_this,
 	bool skip_arguments )
 {

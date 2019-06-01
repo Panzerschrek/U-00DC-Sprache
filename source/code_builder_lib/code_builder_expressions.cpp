@@ -70,8 +70,7 @@ boost::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 		overloaded_operator= cache_it->second.get_ptr();
 	else
 	{
-		std::vector<Function::Arg> args;
-		args.reserve( 2u );
+		ArgsVector<Function::Arg> args;
 
 		// Know args types.
 		bool needs_move_assign= false;
@@ -282,7 +281,7 @@ Value CodeBuilder::BuildExpressionCode(
 				continue;
 			}
 
-			std::vector<Function::Arg> args;
+			ArgsVector<Function::Arg> args;
 			args.emplace_back();
 			args.back().type= var->type;
 			args.back().is_mutable= var->value_type == ValueType::Reference;
@@ -1570,9 +1569,7 @@ Value CodeBuilder::BuildIndexationOperator(
 
 	if( variable.type.GetClassType() != nullptr ) // If this is class - try call overloaded [] operator.
 	{
-		std::vector<Function::Arg> args;
-		args.reserve( 2u );
-
+		ArgsVector<Function::Arg> args;
 		args.emplace_back();
 		args.back().type= variable.type;
 		args.back().is_reference= variable.value_type != ValueType::Value;
@@ -1958,7 +1955,7 @@ Value CodeBuilder::BuildCallOperator(
 		function_ptr= cache_it->second.get_ptr();
 	else
 	{
-		std::vector<Function::Arg> actual_args;
+		ArgsVector<Function::Arg> actual_args;
 		actual_args.reserve( total_args );
 
 		const auto state= SaveInstructionsState( function_context );
@@ -2065,8 +2062,8 @@ Value CodeBuilder::DoCallFunction(
 	const size_t arg_count= preevaluated_args.size() + args.size();
 	U_ASSERT( arg_count == function_type.args.size() );
 
-	std::vector<llvm::Value*> llvm_args;
-	std::vector<llvm::Constant*> constant_llvm_args;
+	ArgsVector<llvm::Value*> llvm_args;
+	ArgsVector<llvm::Constant*> constant_llvm_args;
 	llvm_args.resize( arg_count, nullptr );
 
 	std::vector< ReferencesGraphNodeHolder > locked_args_references;

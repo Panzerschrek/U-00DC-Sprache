@@ -332,7 +332,7 @@ bool CodeBuilder::ApplyOverloadedFunction(
 
 const FunctionVariable* CodeBuilder::GetOverloadedFunction(
 	const OverloadedFunctionsSet& functions_set,
-	const std::vector<Function::Arg>& actual_args,
+	const ArgsVector<Function::Arg>& actual_args,
 	const bool first_actual_arg_is_this,
 	const FilePos& file_pos,
 	const bool produce_errors,
@@ -555,7 +555,7 @@ const FunctionVariable* CodeBuilder::GetOverloadedFunction(
 }
 
 const FunctionVariable* CodeBuilder::GetOverloadedOperator(
-	const std::vector<Function::Arg>& actual_args,
+	const ArgsVector<Function::Arg>& actual_args,
 	OverloadedOperator op,
 	const FilePos& file_pos )
 {
@@ -610,7 +610,7 @@ const FunctionVariable* CodeBuilder::GetConversionConstructor(
 
 	const OverloadedFunctionsSet& constructors= *constructors_name->second.GetFunctionsSet();
 
-	std::vector<Function::Arg> actual_args;
+	ArgsVector<Function::Arg> actual_args;
 	actual_args.resize(2u);
 	actual_args[0u].type= dst_type;
 	actual_args[0u].is_mutable= true;

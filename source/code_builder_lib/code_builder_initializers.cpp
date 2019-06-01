@@ -1022,7 +1022,7 @@ llvm::Constant* CodeBuilder::InitializeFunctionPointer(
 				GenTemplateFunction(
 					initializer_expression.GetFilePos(),
 					function_template,
-					std::vector<Function::Arg>(), false, true );
+					ArgsVector<Function::Arg>(), false, true );
 			if( func != nullptr )
 			{
 				if( func->type == function_pointer_type.function )
