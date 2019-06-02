@@ -173,9 +173,6 @@ Value CodeBuilder::BuildExpressionCode(
 	NamesScope& names,
 	FunctionContext& function_context )
 {
-	Value result;
-
-	const Synt::ExpressionComponentWithUnaryOperators* expression_with_unary_operators= nullptr;
 	if( const auto binary_operator= boost::get<const Synt::BinaryOperator>(&expression) )
 	{
 		if( binary_operator->operator_type_ == BinaryOperatorType::LazyLogicalAnd ||
@@ -231,72 +228,99 @@ Value CodeBuilder::BuildExpressionCode(
 			return BuildBinaryOperator( l_var, r_var, binary_operator->operator_type_, binary_operator->file_pos_, function_context );
 		}
 	}
-	else if( const auto named_operand= boost::get<const Synt::NamedOperand>(&expression) )
-	{
-		expression_with_unary_operators= named_operand;
-		result= BuildNamedOperand( *named_operand, names, function_context );
-	}
-	else if( const auto numeric_constant= boost::get<const Synt::NumericConstant>(&expression) )
-	{
-		expression_with_unary_operators= numeric_constant;
-		result= BuildNumericConstant( *numeric_constant, function_context );
-	}
-	else if( const auto string_literal= boost::get<const Synt::StringLiteral>(&expression) )
-	{
-		expression_with_unary_operators= string_literal;
-		result= BuildStringLiteral( *string_literal, function_context );
-	}
-	else if( const auto boolean_constant= boost::get<const Synt::BooleanConstant>(&expression) )
-	{
-		expression_with_unary_operators= boolean_constant;
-		result= Value( BuildBooleanConstant( *boolean_constant, function_context ), boolean_constant->file_pos_ );
-	}
-	else if( const auto bracket_expression= boost::get<const Synt::BracketExpression>(&expression) )
-	{
-		expression_with_unary_operators= bracket_expression;
-		result= BuildExpressionCode( *bracket_expression->expression_, names, function_context );
-	}
-	else if( const auto type_name_in_expression= boost::get<const Synt::TypeNameInExpression>(&expression) )
-	{
-		expression_with_unary_operators= type_name_in_expression;
-		result=
-			Value(
-				PrepareType( type_name_in_expression->type_name, names, function_context ),
-				type_name_in_expression->file_pos_ );
-	}
-	else if( const auto move_operator= boost::get<const Synt::MoveOperator>(&expression) )
-	{
-		expression_with_unary_operators= move_operator;
-		result= BuildMoveOpeator( *move_operator, names, function_context );
-	}
-	else if( const auto cast_ref= boost::get<const Synt::CastRef>(&expression) )
-	{
-		expression_with_unary_operators= cast_ref;
-		result= BuildCastRef( *cast_ref, names, function_context );
-	}
-	else if( const auto cast_ref_unsafe= boost::get<const Synt::CastRefUnsafe>(&expression) )
-	{
-		expression_with_unary_operators= cast_ref_unsafe;
-		result= BuildCastRefUnsafe( *cast_ref_unsafe, names, function_context );
-	}
-	else if( const auto cast_imut= boost::get<const Synt::CastImut>(&expression) )
-	{
-		expression_with_unary_operators= cast_imut;
-		result= BuildCastImut( *cast_imut, names, function_context );
-	}
-	else if( const auto cast_mut= boost::get<const Synt::CastMut>(&expression) )
-	{
-		expression_with_unary_operators= cast_mut;
-		result= BuildCastMut( *cast_mut, names, function_context );
-	}
-	else if( const auto typeinfo_= boost::get<const Synt::TypeInfo>(&expression) )
-	{
-		expression_with_unary_operators= typeinfo_;
-		result= BuildTypeinfoOperator( *typeinfo_, names, function_context );
-	}
-	else U_ASSERT(false);
 
-	if( expression_with_unary_operators != nullptr )
+	struct Visitor final : public boost::static_visitor<Value>
+	{
+		CodeBuilder& this_;
+		NamesScope& names;
+		FunctionContext& function_context;
+
+		Visitor( CodeBuilder& in_this, NamesScope& in_names, FunctionContext& in_function_context )
+			: this_(in_this), names(in_names), function_context(in_function_context)
+		{}
+
+		Value operator()( const Synt::EmptyVariant& )
+		{
+			U_ASSERT(false);
+			return ErrorValue();
+		}
+		Value operator()( const Synt::BinaryOperator& )
+		{
+			U_ASSERT(false); // Processed earlier.
+			return ErrorValue();
+		}
+		Value operator()( const Synt::NamedOperand& named_operand )
+		{
+			return this_.BuildNamedOperand( named_operand, names, function_context );
+		}
+		Value operator()( const Synt::NumericConstant& numeric_constant )
+		{
+			return this_.BuildNumericConstant( numeric_constant, function_context );
+		}
+		Value operator()( const Synt::StringLiteral& string_literal )
+		{
+			return this_.BuildStringLiteral( string_literal, function_context );
+		}
+		Value operator()( const Synt::BooleanConstant& boolean_constant )
+		{
+			return Value( this_.BuildBooleanConstant( boolean_constant, function_context ), boolean_constant.file_pos_ );
+		}
+		Value operator()( const Synt::BracketExpression& bracket_expression )
+		{
+			return this_.BuildExpressionCode( *bracket_expression.expression_, names, function_context );
+		}
+		Value operator()( const Synt::TypeNameInExpression& type_name_in_expression )
+		{
+			return Value(
+				this_.PrepareType( type_name_in_expression.type_name, names, function_context ),
+				type_name_in_expression.file_pos_ );
+		}
+		Value operator()( const Synt::MoveOperator& move_operator )
+		{
+			return this_.BuildMoveOpeator( move_operator, names, function_context );
+		}
+		Value operator()( const Synt::CastRef& cast_ref )
+		{
+			return this_.BuildCastRef( cast_ref, names, function_context );
+		}
+		Value operator()( const Synt::CastRefUnsafe& cast_ref_unsafe )
+		{
+			return this_.BuildCastRefUnsafe( cast_ref_unsafe, names, function_context );
+		}
+		Value operator()( const Synt::CastImut& cast_imut )
+		{
+			return this_.BuildCastImut( cast_imut, names, function_context );
+		}
+		Value operator()( const Synt::CastMut& cast_mut )
+		{
+			return this_.BuildCastMut( cast_mut, names, function_context );
+		}
+		Value operator()( const Synt::TypeInfo& typeinfo_ )
+		{
+			return this_.BuildTypeinfoOperator( typeinfo_, names, function_context );
+		}
+	};
+	Visitor visitor( *this, names, function_context );
+	Value result= boost::apply_visitor( visitor, expression );
+
+	struct ExpressionWithUnaryOperatorsVisitor final : public boost::static_visitor<const Synt::ExpressionComponentWithUnaryOperators*>
+	{
+		const Synt::ExpressionComponentWithUnaryOperators* operator()( const Synt::ExpressionComponentWithUnaryOperators& expression_with_unary_operators ) const
+		{
+			return &expression_with_unary_operators;
+		}
+		const Synt::ExpressionComponentWithUnaryOperators* operator()( const Synt::BinaryOperator& ) const
+		{
+			return nullptr;
+		}
+		const Synt::ExpressionComponentWithUnaryOperators* operator()( const Synt::EmptyVariant& ) const
+		{
+			U_ASSERT(false);
+			return nullptr;
+		}
+	};
+
+	if( const auto expression_with_unary_operators= boost::apply_visitor( ExpressionWithUnaryOperatorsVisitor(), expression ) )
 	{
 		for( const Synt::UnaryPostfixOperator& postfix_operator : expression_with_unary_operators->postfix_operators_ )
 		{
