@@ -77,18 +77,20 @@ FilePos GetExpressionFilePos( const Expression& expression )
 
 FilePos GetInitializerFilePos( const Initializer& initializer )
 {
-	// TODO - use visitor
-	if( const auto array_initializer= boost::get<ArrayInitializer>( &initializer ) )
-		return array_initializer->file_pos_;
-	if( const auto struct_named_initializer= boost::get<StructNamedInitializer>( &initializer ) )
-		return struct_named_initializer->file_pos_;
-	if( const auto expression_initializer= boost::get<ExpressionInitializer>( &initializer ) )
-		return expression_initializer->file_pos_;
-	if( const auto zero_initializer= boost::get<ZeroInitializer>( &initializer ) )
-		return zero_initializer->file_pos_;
-	if( const auto uninitialized_initializer= boost::get<UninitializedInitializer>( &initializer ) )
-		return uninitialized_initializer->file_pos_;
-	return FilePos();
+	struct Visitor final : public boost::static_visitor<FilePos>
+	{
+		FilePos operator()( const EmptyVariant& ) const
+		{
+			return FilePos();
+		}
+
+		FilePos operator()( const SyntaxElementBase& element ) const
+		{
+			return element.file_pos_;
+		}
+	};
+
+	return boost::apply_visitor( Visitor(), initializer );
 }
 
 FilePos GetBlockElementFilePos( const BlockElement& block_element )
