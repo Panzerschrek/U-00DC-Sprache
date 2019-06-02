@@ -7,6 +7,21 @@ namespace U
 namespace Synt
 {
 
+namespace Asserts
+{
+
+// Sizes for x86-64.
+// If one of types inside variant becomes too big, put it inside "unique_ptr".
+
+static_assert( sizeof(TypeName) <= 48u, "Size of variant too big" );
+static_assert( sizeof(Expression) <= 128u, "Size of variant too big" );
+static_assert( sizeof(Initializer) <= 160u, "Size of variant too big" );
+static_assert( sizeof(BlockElement) <= 304u, "Size of variant too big" );
+static_assert( sizeof(ClassElement) <= 208u, "Size of variant too big" );
+static_assert( sizeof(ProgramElement) <= 208u, "Size of variant too big" );
+
+}
+
 SyntaxElementBase::SyntaxElementBase( const FilePos& file_pos )
 	: file_pos_(file_pos)
 {}
@@ -173,15 +188,8 @@ BooleanConstant::BooleanConstant( const FilePos& file_pos, bool value )
 	, value_( value )
 {}
 
-NumericConstant::NumericConstant(
-	const FilePos& file_pos,
-	LongFloat value,
-	ProgramString type_suffix,
-	bool has_fractional_point )
+NumericConstant::NumericConstant( const FilePos& file_pos )
 	: ExpressionComponentWithUnaryOperators(file_pos)
-	, value_( value )
-	, type_suffix_( std::move(type_suffix) )
-	, has_fractional_point_( has_fractional_point )
 {}
 
 StringLiteral::StringLiteral( const FilePos& file_pos )

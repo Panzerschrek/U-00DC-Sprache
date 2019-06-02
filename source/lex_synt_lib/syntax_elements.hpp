@@ -82,7 +82,7 @@ class FunctionTemplate;
 
 class Namespace;
 
-// Store "heavy" classes, using pointers, because "variant" have size of heavies ot it element.
+using FunctionTypePtr= std::unique_ptr<FunctionType>;
 using BlockPtr= std::unique_ptr<Block>;
 using ClassPtr= std::unique_ptr<Class>;
 using FunctionPtr= std::unique_ptr<Function>;
@@ -93,7 +93,7 @@ using TypeName= boost::variant<
 	ArrayTypeName,
 	TypeofTypeName,
 	NamedTypeName,
-	FunctionType >;
+	FunctionTypePtr >;
 
 using UnaryPrefixOperator= boost::variant<
 	UnaryPlus,
@@ -338,7 +338,7 @@ class CastRef final : public ExpressionComponentWithUnaryOperators
 public:
 	CastRef( const FilePos& file_pos );
 
-	TypeName type_;
+	std::unique_ptr<TypeName> type_;
 	std::unique_ptr<Expression> expression_;
 };
 
@@ -347,7 +347,7 @@ class CastRefUnsafe final : public ExpressionComponentWithUnaryOperators
 public:
 	CastRefUnsafe( const FilePos& file_pos );
 
-	TypeName type_;
+	std::unique_ptr<TypeName> type_;
 	std::unique_ptr<Expression> expression_;
 };
 
@@ -372,7 +372,7 @@ class TypeInfo final : public ExpressionComponentWithUnaryOperators
 public:
 	TypeInfo( const FilePos& file_pos );
 
-	TypeName type_;
+	std::unique_ptr<TypeName> type_;
 };
 
 class BooleanConstant final : public ExpressionComponentWithUnaryOperators
@@ -383,6 +383,8 @@ public:
 	bool value_;
 };
 
+using TypeSuffix= std::array<sprache_char, 7>;
+
 class NumericConstant final : public ExpressionComponentWithUnaryOperators
 {
 public:
@@ -391,15 +393,11 @@ public:
 		std::numeric_limits<LongFloat>::digits >= 64,
 		"Too short \"LongFloat\". LongFloat must store all uint64_t and int64_t values exactly." );
 
-	NumericConstant(
-		const FilePos& file_pos,
-		LongFloat value,
-		ProgramString type_suffix,
-		bool has_fractional_point );
+	NumericConstant( const FilePos& file_pos );
 
 	LongFloat value_;
-	ProgramString type_suffix_;
-	bool has_fractional_point_;
+	TypeSuffix type_suffix_{0};
+	bool has_fractional_point_= false;
 };
 
 class StringLiteral final : public ExpressionComponentWithUnaryOperators
@@ -408,7 +406,7 @@ public:
 	StringLiteral( const FilePos& file_pos );
 
 	ProgramString value_;
-	ProgramString type_suffix_;
+	TypeSuffix type_suffix_{0};
 };
 
 class BracketExpression final : public ExpressionComponentWithUnaryOperators

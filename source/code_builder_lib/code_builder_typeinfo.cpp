@@ -21,7 +21,7 @@ static std::string GetTypeinfoVariableName( const ClassProxyPtr& typeinfo_class 
 
 Value CodeBuilder::BuildTypeinfoOperator( const Synt::TypeInfo& typeinfo_op, NamesScope& names, FunctionContext& function_context )
 {
-	const Type type= PrepareType( typeinfo_op.type_, names, function_context );
+	const Type type= PrepareType( *typeinfo_op.type_, names, function_context );
 	if( type == invalid_type_ )
 		return ErrorValue();
 

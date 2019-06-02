@@ -367,12 +367,13 @@ void CodeBuilder::PrepareTemplateSignatureParameter(
 		PrepareTemplateSignatureParameter( *array_type_name->size, names_scope, template_parameters, template_parameters_usage_flags );
 		PrepareTemplateSignatureParameter( *array_type_name->element_type, names_scope, template_parameters, template_parameters_usage_flags );
 	}
-	else if( const auto function_pointer_type_name= boost::get<const Synt::FunctionType>(&type_name_template_parameter) )
+	else if( const auto function_pointer_type_name_ptr= boost::get<const Synt::FunctionTypePtr>(&type_name_template_parameter) )
 	{
+		const Synt::FunctionType& function_pointer_type_name= **function_pointer_type_name_ptr;
 		// TODO - maybe check also reference tags?
-		if( function_pointer_type_name->return_type_ != nullptr )
-			PrepareTemplateSignatureParameter(*function_pointer_type_name->return_type_, names_scope, template_parameters, template_parameters_usage_flags );
-		for( const Synt::FunctionArgument& arg : function_pointer_type_name->arguments_ )
+		if( function_pointer_type_name.return_type_ != nullptr )
+			PrepareTemplateSignatureParameter(*function_pointer_type_name.return_type_, names_scope, template_parameters, template_parameters_usage_flags );
+		for( const Synt::FunctionArgument& arg : function_pointer_type_name.arguments_ )
 			PrepareTemplateSignatureParameter( arg.type_, names_scope, template_parameters, template_parameters_usage_flags );
 	}
 	else U_ASSERT(false);
@@ -671,8 +672,9 @@ DeducedTemplateParameter CodeBuilder::DeduceTemplateArguments(
 
 		return std::move(result);
 	}
-	else if( const auto function_pointer_type= boost::get<const Synt::FunctionType>(&signature_parameter) )
+	else if( const auto function_pointer_type_ptr= boost::get<const Synt::FunctionTypePtr>(&signature_parameter) )
 	{
+		const Synt::FunctionType* const function_pointer_type= function_pointer_type_ptr->get();
 		const Type* const param_type= boost::get<const Type>( &template_parameter );
 		if( param_type == nullptr )
 			return DeducedTemplateParameter::Invalid();

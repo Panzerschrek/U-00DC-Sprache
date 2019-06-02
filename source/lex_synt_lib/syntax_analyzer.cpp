@@ -247,7 +247,7 @@ private:
 
 	FunctionArgument ParseFunctionArgument();
 	void ParseFunctionTypeEnding( FunctionType& result );
-	FunctionType ParseFunctionType();
+	FunctionTypePtr ParseFunctionType();
 
 	TypeName ParseTypeName();
 	std::vector<Expression> ParseTemplateParameters();
@@ -1005,14 +1005,23 @@ NumericConstant SyntaxAnalyzer::ParseNumericConstant()
 		number*= std::pow<NumericConstant::LongFloat>( base, power );
 	}
 
-	ProgramString type_suffix( it, it_end );
 
-	return
-		NumericConstant(
-			it_->file_pos,
-			number,
-			std::move( type_suffix ),
-			has_fraction_point );
+
+	NumericConstant result( it_->file_pos );
+	result.value_= number;
+	result.has_fractional_point_= has_fraction_point;
+
+	if( size_t(it_end - it) > sizeof(TypeSuffix) / sizeof(TypeSuffix::value_type) - 1 )
+	{
+		SyntaxErrorMessage msg;
+		msg.file_pos= it_->file_pos;
+		msg.text= "String literal is too long"_SpC;
+		error_messages_.push_back( msg );
+		return result;
+	}
+	std::copy( it, it_end, result.type_suffix_.begin() );
+
+	return result;
 }
 
 Expression SyntaxAnalyzer::ParseExpression()
@@ -1132,7 +1141,7 @@ Expression SyntaxAnalyzer::ParseExpression()
 				}
 				NextLexem();
 
-				cast.type_= ParseTypeName();
+				cast.type_.reset( new TypeName( ParseTypeName() ) );
 				if( it_->type != Lexem::Type::TemplateBracketRight )
 				{
 					PushErrorMessage();
@@ -1171,7 +1180,7 @@ Expression SyntaxAnalyzer::ParseExpression()
 				}
 				NextLexem();
 
-				cast.type_= ParseTypeName();
+				cast.type_.reset( new TypeName( ParseTypeName() ) );
 				if( it_->type != Lexem::Type::TemplateBracketRight )
 				{
 					PushErrorMessage();
@@ -1260,7 +1269,7 @@ Expression SyntaxAnalyzer::ParseExpression()
 				}
 				NextLexem();
 
-				typeinfo_.type_= ParseTypeName();
+				typeinfo_.type_.reset( new TypeName( ParseTypeName() ) );
 				if( it_->type != Lexem::Type::TemplateBracketRight )
 				{
 					PushErrorMessage();
@@ -1320,7 +1329,15 @@ Expression SyntaxAnalyzer::ParseExpression()
 
 			if( it_->type == Lexem::Type::LiteralSuffix )
 			{
-				string_literal.type_suffix_= it_->text;
+				if( it_->text.size() > sizeof(TypeSuffix) / sizeof(TypeSuffix::value_type) - 1 )
+				{
+					SyntaxErrorMessage msg;
+					msg.file_pos= it_->file_pos;
+					msg.text= "String literal is too long"_SpC;
+					error_messages_.push_back( msg );
+					return EmptyVariant();
+				}
+				std::copy( it_->text.begin(), it_->text.end(), string_literal.type_suffix_.begin() );
 				NextLexem();
 			}
 
@@ -1628,9 +1645,9 @@ void SyntaxAnalyzer::ParseFunctionTypeEnding( FunctionType& result )
 	}
 }
 
-FunctionType SyntaxAnalyzer::ParseFunctionType()
+FunctionTypePtr SyntaxAnalyzer::ParseFunctionType()
 {
-	FunctionType result( it_->file_pos );
+	FunctionTypePtr result( new FunctionType( it_->file_pos ) );
 
 	U_ASSERT( it_->type == Lexem::Type::Identifier && it_->text == Keywords::fn_ );
 	NextLexem();
@@ -1650,7 +1667,7 @@ FunctionType SyntaxAnalyzer::ParseFunctionType()
 			break;
 		}
 
-		result.arguments_.push_back( ParseFunctionArgument() );
+		result->arguments_.push_back( ParseFunctionArgument() );
 
 		if( it_->type == Lexem::Type::Comma )
 		{
@@ -1668,7 +1685,7 @@ FunctionType SyntaxAnalyzer::ParseFunctionType()
 		}
 	} // for arguments
 
-	ParseFunctionTypeEnding( result );
+	ParseFunctionTypeEnding( *result );
 
 	return result;
 }

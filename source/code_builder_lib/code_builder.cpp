@@ -560,8 +560,9 @@ Type CodeBuilder::PrepareType(
 			return result;
 		}
 
-		Type operator()( const Synt::FunctionType& function_type_name )
+		Type operator()( const Synt::FunctionTypePtr& function_type_name_ptr )
 		{
+			const Synt::FunctionType& function_type_name= *function_type_name_ptr;
 			FunctionPointer function_pointer_type;
 			Function& function_type= function_pointer_type.function;
 
@@ -3488,7 +3489,8 @@ Value* CodeBuilder::ResolveValue(
 
 U_FundamentalType CodeBuilder::GetNumericConstantType( const Synt::NumericConstant& number )
 {
-	if( number.type_suffix_.empty() )
+	const ProgramString type_suffix= number.type_suffix_.data();
+	if( type_suffix.empty() )
 	{
 		if( number.has_fractional_point_ )
 			return U_FundamentalType::f64;
@@ -3498,20 +3500,20 @@ U_FundamentalType CodeBuilder::GetNumericConstantType( const Synt::NumericConsta
 
 	// Allow simple "u" suffix for unsigned 32bit values.
 	// SPRACHE_TODO - maybe add "i" suffix for i32 type?
-	if( number.type_suffix_ == "u"_SpC )
+	if( type_suffix == "u"_SpC )
 		return U_FundamentalType::u32;
 	// Simple "f" suffix for 32bit floats.
-	else if( number.type_suffix_ == "f"_SpC )
+	else if( type_suffix == "f"_SpC )
 		return U_FundamentalType::f32;
 	// Short suffixes for chars
-	else if( number.type_suffix_ ==  "c8"_SpC )
+	else if( type_suffix ==  "c8"_SpC )
 		return U_FundamentalType::char8 ;
-	else if( number.type_suffix_ == "c16"_SpC )
+	else if( type_suffix == "c16"_SpC )
 		return U_FundamentalType::char16;
-	else if( number.type_suffix_ == "c32"_SpC )
+	else if( type_suffix == "c32"_SpC )
 		return U_FundamentalType::char32;
 
-	auto it= g_types_map.find( number.type_suffix_ );
+	auto it= g_types_map.find( type_suffix );
 	if( it == g_types_map.end() )
 		return U_FundamentalType::InvalidType;
 

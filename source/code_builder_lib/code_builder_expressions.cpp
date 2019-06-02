@@ -1100,7 +1100,7 @@ Value CodeBuilder::BuildLazyBinaryOperator(
 
 Value CodeBuilder::BuildCastRef( const Synt::CastRef& cast_ref, NamesScope& names, FunctionContext& function_context )
 {
-	return DoReferenceCast( cast_ref.file_pos_, cast_ref.type_, *cast_ref.expression_, false, names, function_context );
+	return DoReferenceCast( cast_ref.file_pos_, *cast_ref.type_, *cast_ref.expression_, false, names, function_context );
 }
 
 Value CodeBuilder::BuildCastRefUnsafe( const Synt::CastRefUnsafe& cast_ref_unsafe, NamesScope& names, FunctionContext& function_context )
@@ -1108,7 +1108,7 @@ Value CodeBuilder::BuildCastRefUnsafe( const Synt::CastRefUnsafe& cast_ref_unsaf
 	if( !function_context.is_in_unsafe_block )
 		errors_.push_back( ReportUnsafeReferenceCastOutsideUnsafeBlock( cast_ref_unsafe.file_pos_ ) );
 
-	return DoReferenceCast( cast_ref_unsafe.file_pos_, cast_ref_unsafe.type_, *cast_ref_unsafe.expression_, true, names, function_context );
+	return DoReferenceCast( cast_ref_unsafe.file_pos_, *cast_ref_unsafe.type_, *cast_ref_unsafe.expression_, true, names, function_context );
 }
 
 Value CodeBuilder::DoReferenceCast(
@@ -1461,7 +1461,7 @@ Value CodeBuilder::BuildNumericConstant(
 	const U_FundamentalType type= GetNumericConstantType( numeric_constant );
 	if( type == U_FundamentalType::InvalidType )
 	{
-		errors_.push_back( ReportUnknownNumericConstantType( numeric_constant.file_pos_, numeric_constant.type_suffix_ ) );
+		errors_.push_back( ReportUnknownNumericConstantType( numeric_constant.file_pos_, numeric_constant.type_suffix_.data() ) );
 		return ErrorValue();
 	}
 	llvm::Type* const llvm_type= GetFundamentalLLVMType( type );
@@ -1496,7 +1496,9 @@ Value CodeBuilder::BuildStringLiteral( const Synt::StringLiteral& string_literal
 	SizeType array_size= ~0u; // ~0 - means non-array
 	llvm::Constant* initializer= nullptr;
 
-	if( string_literal.type_suffix_.empty() || string_literal.type_suffix_ == "u8"_SpC )
+	const ProgramString type_suffix= string_literal.type_suffix_.data();
+
+	if( type_suffix.empty() || type_suffix == "u8"_SpC )
 	{
 		const std::string value= ToUTF8( string_literal.value_ );
 
@@ -1504,7 +1506,7 @@ Value CodeBuilder::BuildStringLiteral( const Synt::StringLiteral& string_literal
 		array_size= value.size();
 		initializer= llvm::ConstantDataArray::getString( llvm_context_, value, false /* not null terminated */ );
 	}
-	else if(string_literal.type_suffix_ == "u16"_SpC )
+	else if( type_suffix == "u16"_SpC )
 	{
 		char_type= U_FundamentalType::char16;
 		array_size= string_literal.value_.size();
@@ -1513,7 +1515,7 @@ Value CodeBuilder::BuildStringLiteral( const Synt::StringLiteral& string_literal
 				llvm_context_,
 				llvm::ArrayRef<uint16_t>(string_literal.value_.data(), string_literal.value_.size() ) );
 	}
-	else if( string_literal.type_suffix_ == "u32"_SpC )
+	else if( type_suffix == "u32"_SpC )
 	{
 		std::vector<uint32_t> str;
 		str.resize( string_literal.value_.size() );
@@ -1525,7 +1527,7 @@ Value CodeBuilder::BuildStringLiteral( const Synt::StringLiteral& string_literal
 		initializer= llvm::ConstantDataArray::get( llvm_context_, str );
 	}
 	// If string literal have char suffix, process it as single char literal.
-	else if( string_literal.type_suffix_ ==  "c8"_SpC || string_literal.type_suffix_ == GetFundamentalTypeName( U_FundamentalType::char8  ) )
+	else if( type_suffix ==  "c8"_SpC || type_suffix == GetFundamentalTypeName( U_FundamentalType::char8  ) )
 	{
 		if( string_literal.value_.size() == 1u && GetUTF8CharBytes(string_literal.value_[0]) == 1u )
 		{
@@ -1535,7 +1537,7 @@ Value CodeBuilder::BuildStringLiteral( const Synt::StringLiteral& string_literal
 		else
 			errors_.push_back( ReportInvalidSizeForCharLiteral( string_literal.file_pos_, string_literal.value_ ) );
 	}
-	else if( string_literal.type_suffix_ == "c16"_SpC || string_literal.type_suffix_ == GetFundamentalTypeName( U_FundamentalType::char16 ) )
+	else if( type_suffix == "c16"_SpC || type_suffix == GetFundamentalTypeName( U_FundamentalType::char16 ) )
 	{
 		if( string_literal.value_.size() == 1u )
 		{
@@ -1545,7 +1547,7 @@ Value CodeBuilder::BuildStringLiteral( const Synt::StringLiteral& string_literal
 		else
 			errors_.push_back( ReportInvalidSizeForCharLiteral( string_literal.file_pos_, string_literal.value_ ) );
 	}
-	else if( string_literal.type_suffix_ == "c32"_SpC || string_literal.type_suffix_ == GetFundamentalTypeName( U_FundamentalType::char32 ) )
+	else if( type_suffix == "c32"_SpC || type_suffix== GetFundamentalTypeName( U_FundamentalType::char32 ) )
 	{
 		if( string_literal.value_.size() == 1u )
 		{
@@ -1557,7 +1559,7 @@ Value CodeBuilder::BuildStringLiteral( const Synt::StringLiteral& string_literal
 	}
 	else
 	{
-		errors_.push_back( ReportUnknownStringLiteralSuffix( string_literal.file_pos_, string_literal.type_suffix_ ) );
+		errors_.push_back( ReportUnknownStringLiteralSuffix( string_literal.file_pos_, type_suffix ) );
 		return ErrorValue();
 	}
 
