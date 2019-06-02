@@ -174,10 +174,6 @@ public:
 	ComplexName name;
 };
 
-class FunctionArgument;
-typedef std::unique_ptr<FunctionArgument> FunctionArgumentPtr;
-typedef std::vector<FunctionArgumentPtr> FunctionArgumentsDeclaration;
-
 struct ReferencePollutionSrc
 {
 	ProgramString name;
@@ -185,6 +181,9 @@ struct ReferencePollutionSrc
 };
 typedef std::pair< ProgramString, ReferencePollutionSrc > FunctionReferencesPollution;
 typedef std::vector<FunctionReferencesPollution> FunctionReferencesPollutionList;
+
+class FunctionArgument;
+using FunctionArgumentsDeclaration= std::vector<FunctionArgument>;
 
 class FunctionType final : public SyntaxElementBase
 {
@@ -204,22 +203,15 @@ public:
 class FunctionArgument final : public SyntaxElementBase
 {
 public:
-	FunctionArgument(
-		const FilePos& file_pos,
-		ProgramString name,
-		TypeName type,
-		MutabilityModifier mutability_modifier,
-		ReferenceModifier reference_modifier,
-		ProgramString reference_tag,
-		ReferencesTagsList inner_arg_reference_tags );
+	FunctionArgument( const FilePos& file_pos );
 
 public:
-	const ProgramString name_;
-	const TypeName type_;
-	const MutabilityModifier mutability_modifier_;
-	const ReferenceModifier reference_modifier_;
-	const ProgramString reference_tag_;
-	const ReferencesTagsList inner_arg_reference_tags_;
+	ProgramString name_;
+	TypeName type_;
+	MutabilityModifier mutability_modifier_;
+	ReferenceModifier reference_modifier_;
+	ProgramString reference_tag_;
+	ReferencesTagsList inner_arg_reference_tags_;
 };
 
 FilePos GetExpressionFilePos( const Expression& expression );

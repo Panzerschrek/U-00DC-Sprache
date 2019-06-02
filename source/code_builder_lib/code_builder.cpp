@@ -579,26 +579,26 @@ Type CodeBuilder::PrepareType(
 				   function_type.return_type.GetFunctionPointerType() != nullptr ) )
 				this_.errors_.push_back( ReportNotImplemented( function_type_name.file_pos_, "return value types except fundamentals, enums, classes, function pointers" ) );
 
-			for( const Synt::FunctionArgumentPtr& arg : function_type_name.arguments_ )
+			for( const Synt::FunctionArgument& arg : function_type_name.arguments_ )
 			{
-				if( IsKeyword( arg->name_ ) )
-					this_.errors_.push_back( ReportUsingKeywordAsName( arg->file_pos_ ) );
+				if( IsKeyword( arg.name_ ) )
+					this_.errors_.push_back( ReportUsingKeywordAsName( arg.file_pos_ ) );
 
 				function_type.args.emplace_back();
 				Function::Arg& out_arg= function_type.args.back();
-				out_arg.type= this_.PrepareType( arg->type_, names_scope, function_context );
+				out_arg.type= this_.PrepareType( arg.type_, names_scope, function_context );
 
-				out_arg.is_mutable= arg->mutability_modifier_ == MutabilityModifier::Mutable;
-				out_arg.is_reference= arg->reference_modifier_ == ReferenceModifier::Reference;
+				out_arg.is_mutable= arg.mutability_modifier_ == MutabilityModifier::Mutable;
+				out_arg.is_reference= arg.reference_modifier_ == ReferenceModifier::Reference;
 
 				if( !out_arg.is_reference &&
 					!( out_arg.type.GetFundamentalType() != nullptr ||
 					   out_arg.type.GetClassType() != nullptr ||
 					   out_arg.type.GetEnumType() != nullptr ||
 					   out_arg.type.GetFunctionPointerType() != nullptr ) )
-					this_.errors_.push_back( ReportNotImplemented( arg->file_pos_, "parameters types except fundamentals, classes, enums, functionpointers" ) );
+					this_.errors_.push_back( ReportNotImplemented( arg.file_pos_, "parameters types except fundamentals, classes, enums, functionpointers" ) );
 
-				this_.ProcessFunctionArgReferencesTags( function_type_name, function_type, *arg, out_arg, function_type.args.size() - 1u );
+				this_.ProcessFunctionArgReferencesTags( function_type_name, function_type, arg, out_arg, function_type.args.size() - 1u );
 			}
 
 			function_type.unsafe= function_type_name.unsafe_;
@@ -1021,20 +1021,20 @@ size_t CodeBuilder::PrepareFunction(
 			arg.is_mutable= true;
 		}
 
-		for( const Synt::FunctionArgumentPtr& arg : func.type_.arguments_ )
+		for( const Synt::FunctionArgument& arg : func.type_.arguments_ )
 		{
-			const bool is_this= arg == func.type_.arguments_.front() && arg->name_ == Keywords::this_;
+			const bool is_this= &arg == &func.type_.arguments_.front() && arg.name_ == Keywords::this_;
 
-			if( !is_this && IsKeyword( arg->name_ ) )
-				errors_.push_back( ReportUsingKeywordAsName( arg->file_pos_ ) );
+			if( !is_this && IsKeyword( arg.name_ ) )
+				errors_.push_back( ReportUsingKeywordAsName( arg.file_pos_ ) );
 
 			if( is_this && is_destructor )
-				errors_.push_back( ReportExplicitThisInDestructor( arg->file_pos_ ) );
+				errors_.push_back( ReportExplicitThisInDestructor( arg.file_pos_ ) );
 			if( is_this && is_constructor )
 			{
 				// Explicit this for constructor.
 				U_ASSERT( function_type.args.size() == 1u );
-				ProcessFunctionArgReferencesTags( func.type_, function_type, *arg, function_type.args.back(), function_type.args.size() - 1u );
+				ProcessFunctionArgReferencesTags( func.type_, function_type, arg, function_type.args.back(), function_type.args.size() - 1u );
 				continue;
 			}
 
@@ -1052,10 +1052,10 @@ size_t CodeBuilder::PrepareFunction(
 				out_arg.type= base_class;
 			}
 			else
-				out_arg.type= PrepareType( arg->type_, names_scope, *global_function_context_ );
+				out_arg.type= PrepareType( arg.type_, names_scope, *global_function_context_ );
 
-			out_arg.is_mutable= arg->mutability_modifier_ == MutabilityModifier::Mutable;
-			out_arg.is_reference= is_this || arg->reference_modifier_ == ReferenceModifier::Reference;
+			out_arg.is_mutable= arg.mutability_modifier_ == MutabilityModifier::Mutable;
+			out_arg.is_reference= is_this || arg.reference_modifier_ == ReferenceModifier::Reference;
 
 			if( !out_arg.is_reference &&
 				!( out_arg.type.GetFundamentalType() != nullptr ||
@@ -1067,7 +1067,7 @@ size_t CodeBuilder::PrepareFunction(
 				return ~0u;
 			}
 
-			ProcessFunctionArgReferencesTags( func.type_, function_type, *arg, out_arg, function_type.args.size() - 1u );
+			ProcessFunctionArgReferencesTags( func.type_, function_type, arg, out_arg, function_type.args.size() - 1u );
 		} // for arguments
 
 		function_type.unsafe= func.type_.unsafe_;
@@ -1412,7 +1412,7 @@ Type CodeBuilder::BuildFuncCode(
 	{
 		if( !arg.is_reference && arg.type != void_type_ &&
 			!EnsureTypeCompleteness( arg.type, TypeCompleteness::Complete ) )
-			errors_.push_back( ReportUsingIncompleteType( args.front()->file_pos_, arg.type.ToString() ) );
+			errors_.push_back( ReportUsingIncompleteType( args.front().file_pos_, arg.type.ToString() ) );
 	}
 	if( !function_type->return_value_is_reference && function_type->return_type != void_type_ &&
 		!EnsureTypeCompleteness( function_type->return_type, TypeCompleteness::Complete ) )
@@ -1436,7 +1436,7 @@ Type CodeBuilder::BuildFuncCode(
 
 	const bool is_constructor= func_name == Keywords::constructor_;
 	const bool is_destructor= func_name == Keywords::destructor_;
-	const bool have_implicit_this= is_destructor || ( is_constructor && ( args.empty() || args.front()->name_ != Keywords::this_ ) );
+	const bool have_implicit_this= is_destructor || ( is_constructor && ( args.empty() || args.front().name_ != Keywords::this_ ) );
 
 	for( llvm::Argument& llvm_arg : llvm_function->args() )
 	{
@@ -1482,7 +1482,7 @@ Type CodeBuilder::BuildFuncCode(
 			continue;
 		}
 
-		const Synt::FunctionArgument& declaration_arg= *args[ have_implicit_this ? ( arg_number - 1u ) : arg_number ];
+		const Synt::FunctionArgument& declaration_arg= args[ have_implicit_this ? ( arg_number - 1u ) : arg_number ];
 		const ProgramString& arg_name= declaration_arg.name_;
 
 		const bool is_this= arg_number == 0u && arg_name == Keywords::this_;

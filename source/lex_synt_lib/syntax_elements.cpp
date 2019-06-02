@@ -275,21 +275,8 @@ Enum::Enum( const FilePos& file_pos )
 	: SyntaxElementBase(file_pos)
 {}
 
-FunctionArgument::FunctionArgument(
-	const FilePos& file_pos,
-	ProgramString name,
-	TypeName type,
-	MutabilityModifier mutability_modifier,
-	ReferenceModifier reference_modifier,
-	ProgramString reference_tag,
-	ReferencesTagsList inner_arg_reference_tags )
+FunctionArgument::FunctionArgument( const FilePos& file_pos )
 	: SyntaxElementBase( file_pos )
-	, name_(std::move(name))
-	, type_(std::move(type))
-	, mutability_modifier_(mutability_modifier)
-	, reference_modifier_(reference_modifier)
-	, reference_tag_(std::move(reference_tag))
-	, inner_arg_reference_tags_(std::move(inner_arg_reference_tags))
 {}
 
 FunctionType::FunctionType( const FilePos& file_pos )

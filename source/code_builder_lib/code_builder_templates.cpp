@@ -372,8 +372,8 @@ void CodeBuilder::PrepareTemplateSignatureParameter(
 		// TODO - maybe check also reference tags?
 		if( function_pointer_type_name->return_type_ != nullptr )
 			PrepareTemplateSignatureParameter(*function_pointer_type_name->return_type_, names_scope, template_parameters, template_parameters_usage_flags );
-		for( const Synt::FunctionArgumentPtr& arg : function_pointer_type_name->arguments_ )
-			PrepareTemplateSignatureParameter( arg->type_, names_scope, template_parameters, template_parameters_usage_flags );
+		for( const Synt::FunctionArgument& arg : function_pointer_type_name->arguments_ )
+			PrepareTemplateSignatureParameter( arg.type_, names_scope, template_parameters, template_parameters_usage_flags );
 	}
 	else U_ASSERT(false);
 }
@@ -719,7 +719,7 @@ DeducedTemplateParameter CodeBuilder::DeduceTemplateArguments(
 			return DeducedTemplateParameter::Invalid();
 		for( size_t i= 0u; i < function_pointer_type->arguments_.size(); ++i)
 		{
-			const Synt::FunctionArgument& expected_arg= *function_pointer_type->arguments_[i];
+			const Synt::FunctionArgument& expected_arg= function_pointer_type->arguments_[i];
 			const Function::Arg& given_arg= param_function_pointer_type->function.args[i];
 
 			const bool expected_mutable= expected_arg.mutability_modifier_ == MutabilityModifier::Mutable;
@@ -1018,7 +1018,7 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 	size_t given_arg_count= actual_args.size();
 
 	if( first_actual_arg_is_this &&
-		!function_declaration.type_.arguments_.empty() && function_declaration.type_.arguments_.front()->name_ != Keywords::this_ )
+		!function_declaration.type_.arguments_.empty() && function_declaration.type_.arguments_.front().name_ != Keywords::this_ )
 	{
 		++given_args;
 		--given_arg_count;
@@ -1039,7 +1039,7 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 	std::vector<DeducedTemplateParameter> deduced_temlpate_parameters( function_declaration.type_.arguments_.size() );
 	for( size_t i= 0u; i < function_declaration.type_.arguments_.size() && !skip_arguments; ++i )
 	{
-		const Synt::FunctionArgument& function_argument= *function_declaration.type_.arguments_[i];
+		const Synt::FunctionArgument& function_argument= function_declaration.type_.arguments_[i];
 
 		const bool expected_arg_is_mutalbe_reference=
 			function_argument.mutability_modifier_ == Synt::MutabilityModifier::Mutable &&

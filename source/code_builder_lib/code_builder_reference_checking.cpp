@@ -153,14 +153,14 @@ void CodeBuilder::ProcessFunctionReturnValueReferenceTags( const Synt::FunctionT
 			const ProgramString& tag = func.return_value_inner_reference_tags_[i];
 
 			bool found= false;
-			for( const Synt::FunctionArgumentPtr& arg : func.arguments_ )
+			for( const Synt::FunctionArgument& arg : func.arguments_ )
 			{
-				if( tag == arg->reference_tag_ )
+				if( tag == arg.reference_tag_ )
 				{
 					found= true;
 					break;
 				}
-				for( const ProgramString& inner_arg_tag : arg->inner_arg_reference_tags_ )
+				for( const ProgramString& inner_arg_tag : arg.inner_arg_reference_tags_ )
 				{
 					if( tag == inner_arg_tag )
 					{
@@ -187,12 +187,12 @@ void CodeBuilder::TryGenerateFunctionReturnReferencesMapping(
 		if( !func.return_value_reference_tag_.empty() )
 		{
 			bool tag_found= false;
-			for( const Synt::FunctionArgumentPtr& arg : func.arguments_ )
+			for( const Synt::FunctionArgument& arg : func.arguments_ )
 			{
-				for( const ProgramString& tag : arg->inner_arg_reference_tags_ )
+				for( const ProgramString& tag : arg.inner_arg_reference_tags_ )
 					if( tag == func.return_value_reference_tag_ )
 						tag_found= true;
-				if( arg->reference_tag_ == func.return_value_reference_tag_ )
+				if( arg.reference_tag_ == func.return_value_reference_tag_ )
 					tag_found= true;
 				if( tag_found )
 					break;
@@ -229,7 +229,7 @@ void CodeBuilder::ProcessFunctionReferencesPollution(
 {
 	const bool first_arg_is_implicit_this=
 		( func.name_.components.back().name == Keywords::destructor_ ) ||
-		( func.name_.components.back().name == Keywords::constructor_ && ( func.type_.arguments_.empty() || func.type_.arguments_.front()->name_ != Keywords::this_ ) );
+		( func.name_.components.back().name == Keywords::constructor_ && ( func.type_.arguments_.empty() || func.type_.arguments_.front().name_ != Keywords::this_ ) );
 
 	if( func.name_.components.back().name == Keywords::constructor_ && IsCopyConstructor( function_type, base_class ) )
 	{
@@ -285,7 +285,7 @@ void CodeBuilder::ProcessFunctionTypeReferencesPollution(
 			if( arg_n == 0u && first_arg_is_implicit_this )
 				continue;
 
-			const Synt::FunctionArgument& in_arg= *func.arguments_[ arg_n - ( first_arg_is_implicit_this ? 1u : 0u ) ];
+			const Synt::FunctionArgument& in_arg= func.arguments_[ arg_n - ( first_arg_is_implicit_this ? 1u : 0u ) ];
 
 			if( !in_arg.reference_tag_.empty() && in_arg.reference_tag_ == name )
 				result.emplace_back( arg_n, Function::c_arg_reference_tag_number );

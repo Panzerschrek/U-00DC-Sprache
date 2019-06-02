@@ -245,7 +245,7 @@ private:
 
 	Expression ParseExpression();
 
-	FunctionArgumentPtr ParseFunctionArgument();
+	FunctionArgument ParseFunctionArgument();
 	void ParseFunctionTypeEnding( FunctionType& result );
 	FunctionType ParseFunctionType();
 
@@ -1509,18 +1509,17 @@ Expression SyntaxAnalyzer::ParseExpression()
 	return root;
 }
 
-FunctionArgumentPtr SyntaxAnalyzer::ParseFunctionArgument()
+FunctionArgument SyntaxAnalyzer::ParseFunctionArgument()
 {
-	TypeName arg_type= ParseTypeName();
+	FunctionArgument result( it_->file_pos );
+	result.type_= ParseTypeName();
 
-	ReferenceModifier reference_modifier= ReferenceModifier::None;
-	MutabilityModifier mutability_modifier= MutabilityModifier::None;
-	ProgramString reference_tag;
-	ReferencesTagsList tags_list;
+	result.reference_modifier_= ReferenceModifier::None;
+	result.mutability_modifier_= MutabilityModifier::None;
 
 	if( it_->type == Lexem::Type::And )
 	{
-		reference_modifier= ReferenceModifier::Reference;
+		result.reference_modifier_= ReferenceModifier::Reference;
 		NextLexem();
 
 		if( it_->type == Lexem::Type::Apostrophe )
@@ -1529,14 +1528,14 @@ FunctionArgumentPtr SyntaxAnalyzer::ParseFunctionArgument()
 
 			if( it_->type == Lexem::Type::Identifier )
 			{
-				reference_tag = it_->text;
+				result.reference_tag_ = it_->text;
 				NextLexem();
 			}
 			else
 			{
 				PushErrorMessage();
 				TryRecoverAfterError( g_function_arguments_list_control_lexems );
-				return nullptr;
+				return result;
 			}
 		}
 	}
@@ -1545,17 +1544,17 @@ FunctionArgumentPtr SyntaxAnalyzer::ParseFunctionArgument()
 	{
 		PushErrorMessage();
 		TryRecoverAfterError( g_function_arguments_list_control_lexems );
-		return nullptr;
+		return result;
 	}
 
 	if( it_->text == Keywords::mut_ )
 	{
-		mutability_modifier= MutabilityModifier::Mutable;
+		result.mutability_modifier_= MutabilityModifier::Mutable;
 		NextLexem();
 	}
 	else if( it_->text == Keywords::imut_ )
 	{
-		mutability_modifier= MutabilityModifier::Immutable;
+		result.mutability_modifier_= MutabilityModifier::Immutable;
 		NextLexem();
 	}
 
@@ -1563,25 +1562,16 @@ FunctionArgumentPtr SyntaxAnalyzer::ParseFunctionArgument()
 	{
 		PushErrorMessage();
 		TryRecoverAfterError( g_function_arguments_list_control_lexems );
-		return nullptr;
+		return result;
 	}
 
-	const FilePos& arg_file_pos= it_->file_pos;
-	const ProgramString& arg_name= it_->text;
+	result.name_= it_->text;
 	NextLexem();
 
 	if( it_->type == Lexem::Type::Apostrophe )
-		tags_list= ParseReferencesTagsList();
+		result.inner_arg_reference_tags_= ParseReferencesTagsList();
 
-	return FunctionArgumentPtr(
-		new FunctionArgument(
-			arg_file_pos,
-			arg_name,
-			std::move(arg_type),
-			mutability_modifier,
-			reference_modifier,
-			std::move(reference_tag),
-			std::move(tags_list) ) );
+	return result;
 }
 
 void SyntaxAnalyzer::ParseFunctionTypeEnding( FunctionType& result )
@@ -1661,9 +1651,7 @@ FunctionType SyntaxAnalyzer::ParseFunctionType()
 			break;
 		}
 
-		auto arg= ParseFunctionArgument();
-		if( arg != nullptr )
-			result.arguments_.push_back( std::move(arg) );
+		result.arguments_.push_back( ParseFunctionArgument() );
 
 		if( it_->type == Lexem::Type::Comma )
 		{
@@ -3077,7 +3065,7 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 
 	NextLexem();
 
-	std::vector<FunctionArgumentPtr>& arguments= result->type_.arguments_;
+	FunctionArgumentsDeclaration& arguments= result->type_.arguments_;
 
 	// Try parse "this"
 	if( it_->type == Lexem::Type::Identifier )
@@ -3132,15 +3120,13 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 					PushErrorMessage();
 			}
 
-			arguments.emplace_back(
-				new FunctionArgument(
-					file_pos,
-					Keyword( Keywords::this_ ),
-					TypeName(),
-					mutability_modifier,
-					ReferenceModifier::Reference,
-					Keyword( Keywords::this_ ), // Implicit set name for tag of "this" to "this".
-					tags_list ) );
+			FunctionArgument this_argument( file_pos );
+			this_argument.name_= Keyword( Keywords::this_ );
+			this_argument.mutability_modifier_= mutability_modifier;
+			this_argument.reference_modifier_= ReferenceModifier::Reference;
+			this_argument.reference_tag_= Keyword( Keywords::this_ ); // Implicit set name for tag of "this" to "this".
+			this_argument.inner_arg_reference_tags_= std::move(tags_list);
+			arguments.push_back( std::move( this_argument ) );
 		}
 	}
 
@@ -3152,9 +3138,7 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 			break;
 		}
 
-		auto arg= ParseFunctionArgument();
-		if( arg != nullptr )
-			arguments.push_back( std::move(arg) );
+		arguments.push_back( ParseFunctionArgument() );
 
 		if( it_->type == Lexem::Type::Comma )
 		{
