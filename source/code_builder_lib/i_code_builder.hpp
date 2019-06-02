@@ -10,15 +10,6 @@
 namespace U
 {
 
-namespace Synt
-{
-
-class IProgramElement;
-typedef std::unique_ptr<IProgramElement> IProgramElementPtr;
-typedef std::vector<IProgramElementPtr> ProgramElements;
-
-}
-
 struct CodeBuilderError;
 
 // Use interface class for boost of compilation.

@@ -80,6 +80,8 @@ class ClassTemplate;
 class TypedefTemplate;
 class FunctionTemplate;
 
+class Namespace;
+
 using TypeName= boost::variant< EmptyVariant, ArrayTypeName, TypeofTypeName, NamedTypeName, FunctionType >;
 
 using UnaryPrefixOperator= boost::variant< UnaryPlus, UnaryMinus, LogicalNot, BitwiseNot >;
@@ -128,6 +130,21 @@ using ClassElement= boost::variant<
 	std::unique_ptr<FunctionTemplate> >;
 
 typedef std::vector<ClassElement> ClassElements;
+
+using ProgramElement= boost::variant<
+	VariablesDeclaration,
+	AutoVariableDeclaration,
+	StaticAssert,
+	Typedef,
+	Enum,
+	std::unique_ptr<Function>,
+	std::unique_ptr<Class>,
+	ClassTemplate,
+	TypedefTemplate,
+	std::unique_ptr<FunctionTemplate>,
+	std::unique_ptr<Namespace> >;
+
+using ProgramElements= std::vector<ProgramElement>;
 
 typedef std::vector<ProgramString> ReferencesTagsList; // If last tag is empty string - means continuous tag - like arg' a, b, c... '
 
@@ -476,16 +493,6 @@ struct StructNamedInitializer::MemberInitializer
 	Initializer initializer;
 };
 
-class IProgramElement
-{
-public:
-	virtual ~IProgramElement(){}
-};
-
-typedef std::unique_ptr<IProgramElement> IProgramElementPtr;
-typedef std::vector<IProgramElementPtr> ProgramElements;
-
-
 class Block final : public SyntaxElementBase
 {
 public:
@@ -506,7 +513,6 @@ public:
 typedef std::unique_ptr<Block> BlockPtr;
 
 struct VariablesDeclaration final : public SyntaxElementBase
-	, public IProgramElement
 {
 	VariablesDeclaration( const FilePos& file_pos );
 
@@ -525,9 +531,7 @@ struct VariablesDeclaration final : public SyntaxElementBase
 
 typedef std::unique_ptr<VariablesDeclaration> VariablesDeclarationPtr;
 
-struct AutoVariableDeclaration final
-	: public SyntaxElementBase
-	, public IProgramElement
+struct AutoVariableDeclaration final : public SyntaxElementBase
 {
 	explicit AutoVariableDeclaration( const FilePos& file_pos );
 
@@ -634,9 +638,7 @@ public:
 	Expression expression;
 };
 
-class StaticAssert final
-	: public SyntaxElementBase
-	, public IProgramElement
+class StaticAssert final : public SyntaxElementBase
 {
 public:
 	explicit StaticAssert( const FilePos& file_pos );
@@ -662,9 +664,7 @@ public:
 	Expression condition;
 };
 
-class Typedef final
-	: public SyntaxElementBase
-	, public IProgramElement
+class Typedef final : public SyntaxElementBase
 {
 public:
 	explicit Typedef( const FilePos& file_pos );
@@ -673,9 +673,7 @@ public:
 	TypeName value;
 };
 
-class Enum final
-	: public SyntaxElementBase
-	, public IProgramElement
+class Enum final : public SyntaxElementBase
 {
 public:
 	explicit Enum( const FilePos& file_pos );
@@ -700,9 +698,7 @@ enum class VirtualFunctionKind
 	VirtualPure,
 };
 
-class Function final
-	: public SyntaxElementBase
-	, public IProgramElement
+class Function final : public SyntaxElementBase
 {
 public:
 	Function( const FilePos& file_pos );
@@ -767,9 +763,7 @@ public:
 	const ClassMemberVisibility visibility_;
 };
 
-class Class final
-	: public SyntaxElementBase
-	, public IProgramElement
+class Class final : public SyntaxElementBase
 {
 public:
 	explicit Class( const FilePos& file_pos );
@@ -823,9 +817,7 @@ public:
 
 typedef std::unique_ptr<TypeTemplateBase> TypeTemplateBasePtr;
 
-class ClassTemplate final
-	: public TypeTemplateBase
-	, public IProgramElement
+class ClassTemplate final : public TypeTemplateBase
 {
 public:
 	explicit ClassTemplate( const FilePos& file_pos );
@@ -833,9 +825,7 @@ public:
 	std::unique_ptr<Class> class_;
 };
 
-class TypedefTemplate final
-	: public TypeTemplateBase
-	, public IProgramElement
+class TypedefTemplate final : public TypeTemplateBase
 {
 public:
 	explicit TypedefTemplate( const FilePos& file_pos );
@@ -843,9 +833,7 @@ public:
 	std::unique_ptr<Typedef> typedef_;
 };
 
-class FunctionTemplate final
-	: public TemplateBase
-	, public IProgramElement
+class FunctionTemplate final : public TemplateBase
 {
 public:
 	explicit FunctionTemplate( const FilePos& file_pos );
@@ -853,9 +841,7 @@ public:
 	std::unique_ptr<Function> function_;
 };
 
-class Namespace final
-	: public SyntaxElementBase
-	, public IProgramElement
+class Namespace final : public SyntaxElementBase
 {
 public:
 	explicit Namespace( const FilePos& file_pos );

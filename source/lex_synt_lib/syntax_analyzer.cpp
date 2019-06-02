@@ -767,22 +767,31 @@ ProgramElements SyntaxAnalyzer::ParseNamespaceBody( const Lexem::Type end_lexem 
 	{
 		if( it_->type == Lexem::Type::Identifier && ( it_->text == Keywords::fn_ || it_->text == Keywords::op_ ) )
 		{
-			if( IProgramElementPtr program_element= ParseFunction() )
-				program_elements.emplace_back( std::move( program_element ) );
+			if( auto function= ParseFunction() )
+				program_elements.emplace_back( std::move( function ) );
 		}
 		else if( it_->type == Lexem::Type::Identifier && ( it_->text == Keywords::struct_ || it_->text == Keywords::class_ ) )
 		{
-			if( IProgramElementPtr program_element= ParseClass() )
-				program_elements.emplace_back( std::move( program_element ) );
+			if( auto class_= ParseClass() )
+				program_elements.emplace_back( std::move( class_ ) );
 		}
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::template_ )
 		{
 			if( TemplateBasePtr template_= ParseTemplate() )
 			{
-				if( IProgramElement* const program_element= dynamic_cast<IProgramElement*>(template_.get()) )
+				if( ClassTemplate* const class_template= dynamic_cast<ClassTemplate*>(template_.get()) )
 				{
 					template_.release();
-					program_elements.emplace_back( program_element );
+					program_elements.emplace_back( ClassTemplate( std::move(*class_template) ) );
+				}
+				else if( TypedefTemplate* const typedef_template= dynamic_cast<TypedefTemplate*>(template_.get()) )
+				{
+					program_elements.emplace_back( TypedefTemplate( std::move(*typedef_template) ) );
+				}
+				else if( FunctionTemplate* const function_template= dynamic_cast<FunctionTemplate*>(template_.get()) )
+				{
+					template_.release();
+					program_elements.emplace_back( std::unique_ptr<FunctionTemplate>( function_template ) );
 				}
 				else
 				{
@@ -793,23 +802,23 @@ ProgramElements SyntaxAnalyzer::ParseNamespaceBody( const Lexem::Type end_lexem 
 		}
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::var_ )
 		{
-			program_elements.emplace_back( new VariablesDeclaration( ParseVariablesDeclaration() ) );
+			program_elements.emplace_back( ParseVariablesDeclaration() );
 		}
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::auto_ )
 		{
-			program_elements.emplace_back( new AutoVariableDeclaration( ParseAutoVariableDeclaration() ) );
+			program_elements.emplace_back( ParseAutoVariableDeclaration() );
 		}
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::static_assert_ )
 		{
-			program_elements.emplace_back( new StaticAssert( ParseStaticAssert() ) );
+			program_elements.emplace_back( ParseStaticAssert() );
 		}
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::enum_ )
 		{
-			program_elements.emplace_back( new Enum( ParseEnum() ) );
+			program_elements.emplace_back( ParseEnum() );
 		}
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::type_ )
 		{
-			program_elements.emplace_back( new Typedef( ParseTypedef() ) );
+			program_elements.emplace_back(ParseTypedef() );
 		}
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::namespace_ )
 		{
