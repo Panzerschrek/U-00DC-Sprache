@@ -70,6 +70,16 @@ class StaticAssert;
 class Halt;
 class HaltIf;
 
+class Function;
+class Typedef;
+class Enum;
+class Class;
+class ClassField;
+class ClassVisibilityLabel;
+class ClassTemplate;
+class TypedefTemplate;
+class FunctionTemplate;
+
 using TypeName= boost::variant< EmptyVariant, ArrayTypeName, TypeofTypeName, NamedTypeName, FunctionType >;
 
 using UnaryPrefixOperator= boost::variant< UnaryPlus, UnaryMinus, LogicalNot, BitwiseNot >;
@@ -102,6 +112,22 @@ using BlockElement= boost::variant<
 	Halt,
 	HaltIf
 >;
+
+using ClassElement= boost::variant<
+	VariablesDeclaration,
+	AutoVariableDeclaration,
+	StaticAssert,
+	Typedef,
+	Enum,
+	std::unique_ptr<Function>,
+	ClassField,
+	ClassVisibilityLabel,
+	std::unique_ptr<Class>,
+	ClassTemplate,
+	TypedefTemplate,
+	std::unique_ptr<FunctionTemplate> >;
+
+typedef std::vector<ClassElement> ClassElements;
 
 typedef std::vector<ProgramString> ReferencesTagsList; // If last tag is empty string - means continuous tag - like arg' a, b, c... '
 
@@ -459,14 +485,6 @@ public:
 typedef std::unique_ptr<IProgramElement> IProgramElementPtr;
 typedef std::vector<IProgramElementPtr> ProgramElements;
 
-class IClassElement
-{
-public:
-	virtual ~IClassElement(){}
-};
-
-typedef std::unique_ptr<IClassElement> IClassElementPtr;
-typedef std::vector<IClassElementPtr> ClassElements;
 
 class Block final : public SyntaxElementBase
 {
@@ -489,7 +507,6 @@ typedef std::unique_ptr<Block> BlockPtr;
 
 struct VariablesDeclaration final : public SyntaxElementBase
 	, public IProgramElement
-	, public IClassElement
 {
 	VariablesDeclaration( const FilePos& file_pos );
 
@@ -510,9 +527,7 @@ typedef std::unique_ptr<VariablesDeclaration> VariablesDeclarationPtr;
 
 struct AutoVariableDeclaration final
 	: public SyntaxElementBase
-
 	, public IProgramElement
-	, public IClassElement
 {
 	explicit AutoVariableDeclaration( const FilePos& file_pos );
 
@@ -621,9 +636,7 @@ public:
 
 class StaticAssert final
 	: public SyntaxElementBase
-
 	, public IProgramElement
-	, public IClassElement
 {
 public:
 	explicit StaticAssert( const FilePos& file_pos );
@@ -652,7 +665,6 @@ public:
 class Typedef final
 	: public SyntaxElementBase
 	, public IProgramElement
-	, public IClassElement
 {
 public:
 	explicit Typedef( const FilePos& file_pos );
@@ -664,7 +676,6 @@ public:
 class Enum final
 	: public SyntaxElementBase
 	, public IProgramElement
-	, public IClassElement
 {
 public:
 	explicit Enum( const FilePos& file_pos );
@@ -692,7 +703,6 @@ enum class VirtualFunctionKind
 class Function final
 	: public SyntaxElementBase
 	, public IProgramElement
-	, public IClassElement
 {
 public:
 	Function( const FilePos& file_pos );
@@ -718,9 +728,7 @@ public:
 	bool constexpr_= false;
 };
 
-class ClassField final
-	: public SyntaxElementBase
-	, public IClassElement
+class ClassField final : public SyntaxElementBase
 {
 public:
 	explicit ClassField( const FilePos& file_pos );
@@ -752,7 +760,6 @@ enum class ClassMemberVisibility
 
 class ClassVisibilityLabel final
 	: public SyntaxElementBase
-	, public IClassElement
 {
 public:
 	ClassVisibilityLabel( const FilePos& file_pos, ClassMemberVisibility visibility );
@@ -763,7 +770,6 @@ public:
 class Class final
 	: public SyntaxElementBase
 	, public IProgramElement
-	, public IClassElement
 {
 public:
 	explicit Class( const FilePos& file_pos );
@@ -820,7 +826,6 @@ typedef std::unique_ptr<TypeTemplateBase> TypeTemplateBasePtr;
 class ClassTemplate final
 	: public TypeTemplateBase
 	, public IProgramElement
-	, public IClassElement
 {
 public:
 	explicit ClassTemplate( const FilePos& file_pos );
@@ -831,7 +836,6 @@ public:
 class TypedefTemplate final
 	: public TypeTemplateBase
 	, public IProgramElement
-	, public IClassElement
 {
 public:
 	explicit TypedefTemplate( const FilePos& file_pos );
@@ -842,7 +846,6 @@ public:
 class FunctionTemplate final
 	: public TemplateBase
 	, public IProgramElement
-	, public IClassElement
 {
 public:
 	explicit FunctionTemplate( const FilePos& file_pos );

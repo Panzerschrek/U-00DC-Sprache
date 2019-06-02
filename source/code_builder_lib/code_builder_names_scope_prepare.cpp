@@ -236,62 +236,85 @@ ClassProxyPtr CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::
 
 	if( !class_declaration.is_forward_declaration_ )
 	{
-		ClassMemberVisibility current_visibility= ClassMemberVisibility::Public;
-		for( const Synt::IClassElementPtr& member : class_declaration.elements_ )
+		struct Visitor final : public boost::static_visitor<>
 		{
-			if( const auto in_class_field= dynamic_cast<const Synt::ClassField*>( member.get() ) )
+			CodeBuilder& this_;
+			const Synt::Class& class_declaration;
+			ClassProxyPtr& class_type;
+			Class& the_class;
+			const ProgramString& class_name;
+			ClassMemberVisibility current_visibility= ClassMemberVisibility::Public;
+
+			Visitor( CodeBuilder& in_this, const Synt::Class& in_class_declaration, ClassProxyPtr& in_class_type, Class& in_the_class, const ProgramString& in_class_name )
+				: this_(in_this), class_declaration(in_class_declaration), class_type(in_class_type), the_class(in_the_class), class_name(in_class_name)
+			{}
+
+			void operator()( const Synt::ClassField& in_class_field )
 			{
 				ClassField class_field;
-				class_field.syntax_element= in_class_field;
+				class_field.syntax_element= &in_class_field;
 
-				if( IsKeyword( in_class_field->name ) )
-					errors_.push_back( ReportUsingKeywordAsName( class_declaration.file_pos_ ) );
-				if( NameShadowsTemplateArgument( in_class_field->name, the_class.members ) )
-					errors_.push_back( ReportDeclarationShadowsTemplateArgument( in_class_field->file_pos_, in_class_field->name ) );
-				if( the_class.members.AddName( in_class_field->name, Value( class_field, in_class_field->file_pos_ ) ) == nullptr )
-					errors_.push_back( ReportRedefinition( in_class_field->file_pos_, in_class_field->name ) );
+				if( IsKeyword( in_class_field.name ) )
+					this_.errors_.push_back( ReportUsingKeywordAsName( class_declaration.file_pos_ ) );
+				if( this_.NameShadowsTemplateArgument( in_class_field.name, the_class.members ) )
+					this_.errors_.push_back( ReportDeclarationShadowsTemplateArgument( in_class_field.file_pos_, in_class_field.name ) );
+				if( the_class.members.AddName( in_class_field.name, Value( class_field, in_class_field.file_pos_ ) ) == nullptr )
+					this_.errors_.push_back( ReportRedefinition( in_class_field.file_pos_, in_class_field.name ) );
 
-				the_class.SetMemberVisibility( in_class_field->name, current_visibility );
+				the_class.SetMemberVisibility( in_class_field.name, current_visibility );
 			}
-			else if( const auto func= dynamic_cast<const Synt::Function*>( member.get() ) )
-				NamesScopeFill( the_class.members, *func, class_type, current_visibility );
-			else if( const auto func_template= dynamic_cast<const Synt::FunctionTemplate*>( member.get() ) )
-				NamesScopeFill( the_class.members, *func_template, class_type, current_visibility );
-			else if( const auto visibility_label= dynamic_cast<const Synt::ClassVisibilityLabel*>( member.get() ) )
+			void operator()( const std::unique_ptr<Synt::Function>& func )
+			{
+				this_.NamesScopeFill( the_class.members, *func, class_type, current_visibility );
+			}
+			void operator()( const std::unique_ptr<Synt::FunctionTemplate>& func_template )
+			{
+				this_.NamesScopeFill( the_class.members, *func_template, class_type, current_visibility );
+			}
+			void operator()( const Synt::ClassVisibilityLabel& visibility_label )
 			{
 				if( class_declaration.kind_attribute_ == Synt::ClassKindAttribute::Struct )
-					errors_.push_back( ReportVisibilityForStruct( visibility_label->file_pos_, class_name ) );
-				current_visibility= visibility_label->visibility_;
+					this_.errors_.push_back( ReportVisibilityForStruct( visibility_label.file_pos_, class_name ) );
+				current_visibility= visibility_label.visibility_;
 			}
-			else if( const auto type_template= dynamic_cast<const Synt::TypeTemplateBase*>( member.get() ) )
-				NamesScopeFill( the_class.members, *type_template, class_type, current_visibility );
-			else if( const auto enum_= dynamic_cast<const Synt::Enum*>( member.get() ) )
+			void operator()( const Synt::TypeTemplateBase& type_template )
 			{
-				NamesScopeFill( the_class.members, *enum_ );
-				the_class.SetMemberVisibility( enum_->name, current_visibility );
+				this_.NamesScopeFill( the_class.members, type_template, class_type, current_visibility );
 			}
-			else if( const auto static_assert_= dynamic_cast<const Synt::StaticAssert*>( member.get() ) )
-				NamesScopeFill( the_class.members, *static_assert_ );
-			else if( const auto typedef_= dynamic_cast<const Synt::Typedef*>( member.get() ) )
+			void operator()( const Synt::Enum& enum_ )
 			{
-				NamesScopeFill( the_class.members, *typedef_ );
-				the_class.SetMemberVisibility( typedef_->name, current_visibility );
+				this_.NamesScopeFill( the_class.members, enum_ );
+				the_class.SetMemberVisibility( enum_.name, current_visibility );
 			}
-			else if( const auto variables_declaration= dynamic_cast<const Synt::VariablesDeclaration*>( member.get() ) )
+			void operator()( const Synt::StaticAssert& static_assert_ )
 			{
-				NamesScopeFill( the_class.members, *variables_declaration );
-				for( const auto& variable_declaration : variables_declaration->variables )
+				this_.NamesScopeFill( the_class.members, static_assert_ );
+			}
+			void operator()( const Synt::Typedef& typedef_ )
+			{
+				this_.NamesScopeFill( the_class.members, typedef_ );
+				the_class.SetMemberVisibility( typedef_.name, current_visibility );
+			}
+			void operator()( const Synt::VariablesDeclaration& variables_declaration )
+			{
+				this_.NamesScopeFill( the_class.members, variables_declaration );
+				for( const auto& variable_declaration : variables_declaration.variables )
 					the_class.SetMemberVisibility( variable_declaration.name, current_visibility );
 			}
-			else if( const auto auto_variable_declaration= dynamic_cast<const Synt::AutoVariableDeclaration*>( member.get() ) )
+			void operator()( const Synt::AutoVariableDeclaration& auto_variable_declaration )
 			{
-				NamesScopeFill( the_class.members, *auto_variable_declaration );
-				the_class.SetMemberVisibility( auto_variable_declaration->name, current_visibility );
+				this_.NamesScopeFill( the_class.members, auto_variable_declaration );
+				the_class.SetMemberVisibility( auto_variable_declaration.name, current_visibility );
 			}
-			else if( const auto inner_class= dynamic_cast<const Synt::Class*>( member.get() ) )
-				NamesScopeFill( the_class.members, *inner_class );
-			else U_ASSERT(false);
-		} // for class elements
+			void operator()( const std::unique_ptr<Synt::Class>& inner_class )
+			{
+				this_.NamesScopeFill( the_class.members, *inner_class );
+			}
+		};
+
+		Visitor visitor( *this, class_declaration, class_type, the_class, class_name );
+		for( const Synt::ClassElement& class_element : class_declaration.elements_ )
+			boost::apply_visitor( visitor, class_element );
 	}
 
 	return class_type;

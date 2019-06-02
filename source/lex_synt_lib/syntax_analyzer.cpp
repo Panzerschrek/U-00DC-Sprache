@@ -272,7 +272,7 @@ private:
 	IfOperator ParseIfOperator();
 	StaticIfOperator ParseStaticIfOperator();
 	StaticAssert ParseStaticAssert();
-	std::unique_ptr<Enum> ParseEnum();
+	Enum ParseEnum();
 	BlockElement ParseHalt();
 
 	std::vector<BlockElement> ParseBlockElements();
@@ -281,8 +281,8 @@ private:
 	ClassKindAttribute TryParseClassKindAttribute();
 	std::vector<ComplexName> TryParseClassParentsList();
 
-	std::unique_ptr<Typedef> ParseTypedef();
-	std::unique_ptr<Typedef> ParseTypedefBody();
+	Typedef ParseTypedef();
+	Typedef ParseTypedefBody();
 	std::unique_ptr<Function> ParseFunction();
 	std::unique_ptr<Class> ParseClass();
 	ClassElements ParseClassBodyElements();
@@ -805,13 +805,11 @@ ProgramElements SyntaxAnalyzer::ParseNamespaceBody( const Lexem::Type end_lexem 
 		}
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::enum_ )
 		{
-			if( IProgramElementPtr program_element= ParseEnum() )
-				program_elements.emplace_back( std::move(program_element) );
+			program_elements.emplace_back( new Enum( ParseEnum() ) );
 		}
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::type_ )
 		{
-			if( IProgramElementPtr program_element= ParseTypedef() )
-				program_elements.emplace_back( std::move(program_element) );
+			program_elements.emplace_back( new Typedef( ParseTypedef() ) );
 		}
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::namespace_ )
 		{
@@ -2507,26 +2505,24 @@ StaticAssert SyntaxAnalyzer::ParseStaticAssert()
 	return result;
 }
 
-std::unique_ptr<Enum> SyntaxAnalyzer::ParseEnum()
+Enum SyntaxAnalyzer::ParseEnum()
 {
 	U_ASSERT( it_->type == Lexem::Type::Identifier && it_->text == Keywords::enum_ );
-
-	std::unique_ptr<Enum> result( new Enum( it_->file_pos ) );
-
+	Enum result( it_->file_pos );
 	NextLexem();
 
 	if( it_->type != Lexem::Type::Identifier )
 	{
 		PushErrorMessage();
-		return nullptr;
+		return result;
 	}
-	result->name= it_->text;
+	result.name= it_->text;
 	NextLexem();
 
 	if( it_->type == Lexem::Type::Colon )
 	{
 		NextLexem();
-		result->underlaying_type_name= ParseComplexName();
+		result.underlaying_type_name= ParseComplexName();
 	}
 
 	if( it_->type != Lexem::Type::BraceLeft )
@@ -2544,9 +2540,9 @@ std::unique_ptr<Enum> SyntaxAnalyzer::ParseEnum()
 			return result;
 		}
 
-		result->members.emplace_back();
-		result->members.back().file_pos= it_->file_pos;
-		result->members.back().name= it_->text;
+		result.members.emplace_back();
+		result.members.back().file_pos= it_->file_pos;
+		result.members.back().name= it_->text;
 		NextLexem();
 
 		if( it_->type == Lexem::Type::Comma )
@@ -2840,7 +2836,7 @@ std::vector<ComplexName> SyntaxAnalyzer::TryParseClassParentsList()
 	return result;
 }
 
-std::unique_ptr<Typedef> SyntaxAnalyzer::ParseTypedef()
+Typedef SyntaxAnalyzer::ParseTypedef()
 {
 	U_ASSERT( it_->text == Keywords::type_ );
 
@@ -2849,23 +2845,22 @@ std::unique_ptr<Typedef> SyntaxAnalyzer::ParseTypedef()
 	if( it_->type != Lexem::Type::Identifier )
 	{
 		PushErrorMessage();
-		return nullptr;
+		return Typedef( it_->file_pos );
 	}
 
 	const ProgramString& name= it_->text;
 	NextLexem();
 
-	std::unique_ptr<Typedef> result= ParseTypedefBody();
-	if( result != nullptr )
-		result->name= name;
+	Typedef result= ParseTypedefBody();
+	result.name= name;
 	return result;
 }
 
-std::unique_ptr<Typedef> SyntaxAnalyzer::ParseTypedefBody()
+Typedef SyntaxAnalyzer::ParseTypedefBody()
 {
 	// Parse something like "- i32;"
 
-	std::unique_ptr<Typedef> result( new Typedef( it_->file_pos ) );
+	Typedef result( it_->file_pos );
 
 	if( it_->type != Lexem::Type::Assignment )
 	{
@@ -2874,7 +2869,7 @@ std::unique_ptr<Typedef> SyntaxAnalyzer::ParseTypedefBody()
 	}
 	NextLexem();
 
-	result->value= ParseTypeName();
+	result.value= ParseTypeName();
 
 	if( it_->type != Lexem::Type::Semicolon )
 	{
@@ -3284,34 +3279,36 @@ ClassElements SyntaxAnalyzer::ParseClassBodyElements()
 		}
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::var_ )
 		{
-			result.emplace_back( new VariablesDeclaration( ParseVariablesDeclaration() ) );
+			result.emplace_back( ParseVariablesDeclaration() );
 		}
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::auto_ )
 		{
-			result.emplace_back( new AutoVariableDeclaration( ParseAutoVariableDeclaration() ) );
+			result.emplace_back( ParseAutoVariableDeclaration() );
 		}
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::static_assert_ )
 		{
-			result.emplace_back( new StaticAssert( ParseStaticAssert() ) );
+			result.emplace_back( ParseStaticAssert() );
 		}
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::enum_ )
 		{
-			if( IClassElementPtr class_element= ParseEnum() )
-				result.emplace_back( std::move(class_element) );
+			result.emplace_back( ParseEnum() );
 		}
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::type_ )
 		{
-			if( IClassElementPtr class_element= ParseTypedef() )
-				result.emplace_back( std::move(class_element) );
+			result.emplace_back( ParseTypedef() );
 		}
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::template_ )
 		{
 			if( TemplateBasePtr template_= ParseTemplate() )
 			{
-				if( IClassElement* const class_element= dynamic_cast<IClassElement*>(template_.get()) )
+				if( ClassTemplate* const class_template= dynamic_cast<ClassTemplate*>(template_.get()) )
+					result.emplace_back( std::move( *class_template ) );
+				else if( TypedefTemplate* const typedef_template= dynamic_cast<TypedefTemplate*>(template_.get()) )
+					result.emplace_back( std::move( *typedef_template ) );
+				else if( FunctionTemplate* const function_template= dynamic_cast<FunctionTemplate*>(template_.get()) )
 				{
 					template_.release();
-					result.emplace_back( class_element );
+					result.emplace_back( std::unique_ptr<FunctionTemplate>( function_template ) );
 				}
 				else
 				{
@@ -3329,7 +3326,7 @@ ClassElements SyntaxAnalyzer::ParseClassBodyElements()
 			if( it_->text == Keywords::protected_ )
 				visibility= ClassMemberVisibility::Protected;
 
-			result.emplace_back( new ClassVisibilityLabel( it_->file_pos, visibility ) );
+			result.emplace_back( ClassVisibilityLabel( it_->file_pos, visibility ) );
 
 			NextLexem();
 			if( it_->type != Lexem::Type::Colon )
@@ -3348,16 +3345,16 @@ ClassElements SyntaxAnalyzer::ParseClassBodyElements()
 				}
 			}
 
-			std::unique_ptr<ClassField> field( new ClassField( it_->file_pos ) );
+			ClassField field( it_->file_pos );
 
-			field->type= ParseTypeName();
+			field.type= ParseTypeName();
 
 			bool is_reference= false;
 			if( it_->type == Lexem::Type::And )
 			{
 				is_reference= true;
 				NextLexem();
-				field->reference_modifier= ReferenceModifier::Reference;
+				field.reference_modifier= ReferenceModifier::Reference;
 			}
 
 			if( it_->type == Lexem::Type::Identifier )
@@ -3365,23 +3362,23 @@ ClassElements SyntaxAnalyzer::ParseClassBodyElements()
 				if( it_->text == Keywords::mut_ )
 				{
 					NextLexem();
-					field->mutability_modifier= MutabilityModifier::Mutable;
+					field.mutability_modifier= MutabilityModifier::Mutable;
 				}
 				if( it_->text == Keywords::imut_ )
 				{
 					NextLexem();
-					field->mutability_modifier= MutabilityModifier::Immutable;
+					field.mutability_modifier= MutabilityModifier::Immutable;
 				}
 				if( is_reference && it_->text == Keywords::constexpr_ ) // Allow "constexpr" modifier only for reference fields.
 				{
 					NextLexem();
-					field->mutability_modifier= MutabilityModifier::Constexpr;
+					field.mutability_modifier= MutabilityModifier::Constexpr;
 				}
 			}
 
 			if( it_->type == Lexem::Type::Identifier )
 			{
-				field->name= it_->text;
+				field.name= it_->text;
 				NextLexem();
 			}
 			else
@@ -3393,7 +3390,7 @@ ClassElements SyntaxAnalyzer::ParseClassBodyElements()
 
 			Initializer field_initializer= ParseVariableInitializer();
 			if( boost::get<EmptyVariant>( &field_initializer ) == nullptr )
-				field->initializer.reset( new Initializer( std::move(field_initializer) ) );
+				field.initializer.reset( new Initializer( std::move(field_initializer) ) );
 
 			if( it_->type == Lexem::Type::Semicolon )
 				NextLexem();
@@ -3644,11 +3641,8 @@ TemplateBasePtr SyntaxAnalyzer::ParseTemplate()
 			typedef_template->name_= name;
 			typedef_template->is_short_form_= is_short_form;
 
-			typedef_template->typedef_= ParseTypedefBody();
-			if( typedef_template->typedef_ != nullptr )
-			{
-				typedef_template->typedef_->name= std::move(name);
-			}
+			typedef_template->typedef_.reset( new Typedef( ParseTypedefBody() ) );
+			typedef_template->typedef_->name= std::move(name);
 			return std::move(typedef_template);
 		}
 
