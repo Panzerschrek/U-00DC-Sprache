@@ -82,18 +82,54 @@ class FunctionTemplate;
 
 class Namespace;
 
-using TypeName= boost::variant< EmptyVariant, ArrayTypeName, TypeofTypeName, NamedTypeName, FunctionType >;
+// Store "heavy" classes, using pointers, because "variant" have size of heavies ot it element.
+using BlockPtr= std::unique_ptr<Block>;
+using ClassPtr= std::unique_ptr<Class>;
+using FunctionPtr= std::unique_ptr<Function>;
+using NamespacePtr= std::unique_ptr<Namespace>;
 
-using UnaryPrefixOperator= boost::variant< UnaryPlus, UnaryMinus, LogicalNot, BitwiseNot >;
-using UnaryPostfixOperator= boost::variant< CallOperator, IndexationOperator, MemberAccessOperator >;
+using TypeName= boost::variant<
+	EmptyVariant,
+	ArrayTypeName,
+	TypeofTypeName,
+	NamedTypeName,
+	FunctionType >;
 
-using PrefixOperators= std::vector<UnaryPrefixOperator>;
-using PostfixOperators= std::vector<UnaryPostfixOperator>;
+using UnaryPrefixOperator= boost::variant<
+	UnaryPlus,
+	UnaryMinus,
+	LogicalNot,
+	BitwiseNot >;
 
-using Expression= boost::variant< EmptyVariant, BinaryOperator, NamedOperand, TypeNameInExpression, NumericConstant, BracketExpression, BooleanConstant, StringLiteral, MoveOperator, CastMut, CastImut, CastRef, CastRefUnsafe, TypeInfo >;
+using UnaryPostfixOperator= boost::variant<
+	CallOperator,
+	IndexationOperator,
+	MemberAccessOperator >;
 
-using Initializer= boost::variant< EmptyVariant, ArrayInitializer, StructNamedInitializer, ConstructorInitializer, ExpressionInitializer, ZeroInitializer, UninitializedInitializer >;
-using InitializerPtr= std::shared_ptr<Initializer>; // TODO - does this needs?
+using Expression= boost::variant<
+	EmptyVariant,
+	BinaryOperator,
+	NamedOperand,
+	TypeNameInExpression,
+	NumericConstant,
+	BracketExpression,
+	BooleanConstant,
+	StringLiteral,
+	MoveOperator,
+	CastMut,
+	CastImut,
+	CastRef,
+	CastRefUnsafe,
+	TypeInfo >;
+
+using Initializer= boost::variant<
+	EmptyVariant,
+	ArrayInitializer,
+	StructNamedInitializer,
+	ConstructorInitializer,
+	ExpressionInitializer,
+	ZeroInitializer,
+	UninitializedInitializer >;
 
 using BlockElement= boost::variant<
 	Block,
@@ -121,13 +157,13 @@ using ClassElement= boost::variant<
 	StaticAssert,
 	Typedef,
 	Enum,
-	std::unique_ptr<Function>,
+	FunctionPtr,
 	ClassField,
 	ClassVisibilityLabel,
-	std::unique_ptr<Class>,
+	ClassPtr,
 	ClassTemplate,
 	TypedefTemplate,
-	std::unique_ptr<FunctionTemplate> >;
+	FunctionTemplate >;
 
 typedef std::vector<ClassElement> ClassElements;
 
@@ -137,12 +173,12 @@ using ProgramElement= boost::variant<
 	StaticAssert,
 	Typedef,
 	Enum,
-	std::unique_ptr<Function>,
-	std::unique_ptr<Class>,
+	FunctionPtr,
+	ClassPtr,
 	ClassTemplate,
 	TypedefTemplate,
-	std::unique_ptr<FunctionTemplate>,
-	std::unique_ptr<Namespace> >;
+	FunctionTemplate,
+	NamespacePtr >;
 
 using ProgramElements= std::vector<ProgramElement>;
 
@@ -157,7 +193,7 @@ public:
 	FilePos file_pos_;
 };
 
-enum class MutabilityModifier
+enum class MutabilityModifier : uint8_t
 {
 	None,
 	Mutable,
@@ -165,7 +201,7 @@ enum class MutabilityModifier
 	Constexpr,
 };
 
-enum class ReferenceModifier
+enum class ReferenceModifier : uint8_t
 {
 	None,
 	Reference,
@@ -222,8 +258,8 @@ struct ReferencePollutionSrc
 	ProgramString name;
 	bool is_mutable= true;
 };
-typedef std::pair< ProgramString, ReferencePollutionSrc > FunctionReferencesPollution;
-typedef std::vector<FunctionReferencesPollution> FunctionReferencesPollutionList;
+using FunctionReferencesPollution= std::pair< ProgramString, ReferencePollutionSrc >;
+using FunctionReferencesPollutionList= std::vector<FunctionReferencesPollution>;
 
 class FunctionArgument;
 using FunctionArgumentsDeclaration= std::vector<FunctionArgument>;
@@ -234,12 +270,13 @@ public:
 	FunctionType( const FilePos& file_pos );
 
 	std::unique_ptr<TypeName> return_type_;
-	MutabilityModifier return_value_mutability_modifier_= MutabilityModifier::None;
-	ReferenceModifier return_value_reference_modifier_= ReferenceModifier::None;
 	ProgramString return_value_reference_tag_;
-	ReferencesTagsList return_value_inner_reference_tags_;
 	FunctionReferencesPollutionList referecnces_pollution_list_;
 	FunctionArgumentsDeclaration arguments_;
+	ReferencesTagsList return_value_inner_reference_tags_;
+
+	MutabilityModifier return_value_mutability_modifier_= MutabilityModifier::None;
+	ReferenceModifier return_value_reference_modifier_= ReferenceModifier::None;
 	bool unsafe_= false;
 };
 
@@ -251,10 +288,10 @@ public:
 public:
 	ProgramString name_;
 	TypeName type_;
-	MutabilityModifier mutability_modifier_;
-	ReferenceModifier reference_modifier_;
 	ProgramString reference_tag_;
 	ReferencesTagsList inner_arg_reference_tags_;
+	MutabilityModifier mutability_modifier_;
+	ReferenceModifier reference_modifier_;
 };
 
 FilePos GetExpressionFilePos( const Expression& expression );
@@ -349,7 +386,7 @@ public:
 class NumericConstant final : public ExpressionComponentWithUnaryOperators
 {
 public:
-	typedef long double LongFloat;
+	using LongFloat= long double;
 	static_assert(
 		std::numeric_limits<LongFloat>::digits >= 64,
 		"Too short \"LongFloat\". LongFloat must store all uint64_t and int64_t values exactly." );
@@ -498,7 +535,7 @@ class Block final : public SyntaxElementBase
 public:
 	Block( const FilePos& start_file_pos );
 
-	enum class Safety
+	enum class Safety : uint8_t
 	{
 		None,
 		Safe,
@@ -510,8 +547,6 @@ public:
 	Safety safety_= Safety::None;
 };
 
-typedef std::unique_ptr<Block> BlockPtr;
-
 struct VariablesDeclaration final : public SyntaxElementBase
 {
 	VariablesDeclaration( const FilePos& file_pos );
@@ -520,7 +555,7 @@ struct VariablesDeclaration final : public SyntaxElementBase
 	{
 		FilePos file_pos;
 		ProgramString name;
-		InitializerPtr initializer; // May be null for types with default constructor.
+		std::unique_ptr<Initializer> initializer; // May be null for types with default constructor.
 		MutabilityModifier mutability_modifier= MutabilityModifier::None;
 		ReferenceModifier reference_modifier= ReferenceModifier::None;
 	};
@@ -528,8 +563,6 @@ struct VariablesDeclaration final : public SyntaxElementBase
 	std::vector<VariableEntry> variables;
 	TypeName type;
 };
-
-typedef std::unique_ptr<VariablesDeclaration> VariablesDeclarationPtr;
 
 struct AutoVariableDeclaration final : public SyntaxElementBase
 {
@@ -689,7 +722,7 @@ public:
 	std::vector<Member> members;
 };
 
-enum class VirtualFunctionKind
+enum class VirtualFunctionKind : uint8_t
 {
 	None, // Regular, non-virtual
 	DeclareVirtual,
@@ -703,6 +736,13 @@ class Function final : public SyntaxElementBase
 public:
 	Function( const FilePos& file_pos );
 
+	enum class BodyKind : uint8_t
+	{
+		None,
+		BodyGenerationRequired,
+		BodyGenerationDisabled,
+	};
+
 	ComplexName name_;
 	Expression condition_;
 	FunctionType type_;
@@ -710,17 +750,9 @@ public:
 	BlockPtr block_;
 	OverloadedOperator overloaded_operator_= OverloadedOperator::None;
 	VirtualFunctionKind virtual_function_kind_= VirtualFunctionKind::None;
+	BodyKind body_kind= BodyKind::None;
 	bool no_mangle_= false;
 	bool is_conversion_constructor_= false;
-
-	enum class BodyKind
-	{
-		None,
-		BodyGenerationRequired,
-		BodyGenerationDisabled,
-	};
-	BodyKind body_kind= BodyKind::None;
-
 	bool constexpr_= false;
 };
 
@@ -731,12 +763,12 @@ public:
 
 	TypeName type;
 	ProgramString name;
+	std::unique_ptr<Initializer> initializer; // May be null.
 	MutabilityModifier mutability_modifier= MutabilityModifier::None;
 	ReferenceModifier reference_modifier= ReferenceModifier::None;
-	InitializerPtr initializer; // May be null.
 };
 
-enum class ClassKindAttribute
+enum class ClassKindAttribute : uint8_t
 {
 	Struct,
 	Class,
@@ -746,7 +778,7 @@ enum class ClassKindAttribute
 	Abstract,
 };
 
-enum class ClassMemberVisibility
+enum class ClassMemberVisibility : uint8_t
 {
 	// Must be ordered from less access to more access.
 	Public,
@@ -754,8 +786,7 @@ enum class ClassMemberVisibility
 	Private,
 };
 
-class ClassVisibilityLabel final
-	: public SyntaxElementBase
+class ClassVisibilityLabel final : public SyntaxElementBase
 {
 public:
 	ClassVisibilityLabel( const FilePos& file_pos, ClassMemberVisibility visibility );
@@ -770,9 +801,9 @@ public:
 
 	ClassElements elements_;
 	ProgramString name_;
-	bool is_forward_declaration_= false;
-	ClassKindAttribute kind_attribute_ = ClassKindAttribute::Struct;
 	std::vector<ComplexName> parents_;
+	ClassKindAttribute kind_attribute_ = ClassKindAttribute::Struct;
+	bool is_forward_declaration_= false;
 };
 
 class TemplateBase : public SyntaxElementBase
@@ -794,7 +825,7 @@ public:
 	std::vector<Arg> args_;
 };
 
-typedef std::unique_ptr<TemplateBase> TemplateBasePtr;
+using TemplateBasePtr= std::unique_ptr<TemplateBase>;
 
 class TypeTemplateBase : public TemplateBase
 {
@@ -815,14 +846,12 @@ public:
 	bool is_short_form_= false;
 };
 
-typedef std::unique_ptr<TypeTemplateBase> TypeTemplateBasePtr;
-
 class ClassTemplate final : public TypeTemplateBase
 {
 public:
 	explicit ClassTemplate( const FilePos& file_pos );
 
-	std::unique_ptr<Class> class_;
+	ClassPtr class_;
 };
 
 class TypedefTemplate final : public TypeTemplateBase
@@ -838,7 +867,7 @@ class FunctionTemplate final : public TemplateBase
 public:
 	explicit FunctionTemplate( const FilePos& file_pos );
 
-	std::unique_ptr<Function> function_;
+	FunctionPtr function_;
 };
 
 class Namespace final : public SyntaxElementBase

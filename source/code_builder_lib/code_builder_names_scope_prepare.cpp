@@ -20,15 +20,15 @@ void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::ProgramEl
 			: this_(in_this), names_scope(in_names_scope)
 		{}
 
-		void operator()( const std::unique_ptr<Synt::Function>& func )
+		void operator()( const Synt::FunctionPtr& func )
 		{
 			this_.NamesScopeFill( names_scope, *func, nullptr );
 		}
-		void operator()( const std::unique_ptr<Synt::Class>& class_ )
+		void operator()( const Synt::ClassPtr& class_ )
 		{
 			this_.NamesScopeFill( names_scope, *class_ );
 		}
-		void operator()( const std::unique_ptr<Synt::Namespace>& namespace_ )
+		void operator()( const Synt::NamespacePtr& namespace_ )
 		{
 			NamesScope* result_scope= &names_scope;
 			if( const Value* const same_value= names_scope.GetThisScopeValue( namespace_->name_ ) )
@@ -75,9 +75,9 @@ void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::ProgramEl
 		{
 			this_.NamesScopeFill( names_scope, type_template, nullptr );
 		}
-		void operator()( const std::unique_ptr<Synt::FunctionTemplate>& function_template )
+		void operator()( const Synt::FunctionTemplate& function_template )
 		{
-			this_.NamesScopeFill( names_scope, *function_template, nullptr );
+			this_.NamesScopeFill( names_scope, function_template, nullptr );
 		}
 	};
 
@@ -291,13 +291,13 @@ ClassProxyPtr CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::
 
 				the_class.SetMemberVisibility( in_class_field.name, current_visibility );
 			}
-			void operator()( const std::unique_ptr<Synt::Function>& func )
+			void operator()( const Synt::FunctionPtr& func )
 			{
 				this_.NamesScopeFill( the_class.members, *func, class_type, current_visibility );
 			}
-			void operator()( const std::unique_ptr<Synt::FunctionTemplate>& func_template )
+			void operator()( const Synt::FunctionTemplate& func_template )
 			{
-				this_.NamesScopeFill( the_class.members, *func_template, class_type, current_visibility );
+				this_.NamesScopeFill( the_class.members, func_template, class_type, current_visibility );
 			}
 			void operator()( const Synt::ClassVisibilityLabel& visibility_label )
 			{
@@ -334,7 +334,7 @@ ClassProxyPtr CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::
 				this_.NamesScopeFill( the_class.members, auto_variable_declaration );
 				the_class.SetMemberVisibility( auto_variable_declaration.name, current_visibility );
 			}
-			void operator()( const std::unique_ptr<Synt::Class>& inner_class )
+			void operator()( const Synt::ClassPtr& inner_class )
 			{
 				this_.NamesScopeFill( the_class.members, *inner_class );
 			}
@@ -425,7 +425,7 @@ void CodeBuilder::NamesScopeFillOutOfLineElements( NamesScope& names_scope, cons
 {
 	for (const Synt::ProgramElement& program_element : namespace_elements )
 	{
-		if( const auto func_ptr= boost::get< const std::unique_ptr<Synt::Function> >( &program_element ) )
+		if( const auto func_ptr= boost::get< const Synt::FunctionPtr >( &program_element ) )
 		{
 			const Synt::Function& func= **func_ptr;
 			if( func.name_.components.size() != 1u )
@@ -439,7 +439,7 @@ void CodeBuilder::NamesScopeFillOutOfLineElements( NamesScope& names_scope, cons
 				func_value->GetFunctionsSet()->out_of_line_syntax_elements.push_back(&func);
 			}
 		}
-		else if( const auto namespace_ptr= boost::get< const std::unique_ptr<Synt::Namespace> >( &program_element ) )
+		else if( const auto namespace_ptr= boost::get< const Synt::NamespacePtr >( &program_element ) )
 		{
 			const Synt::Namespace& namespace_= **namespace_ptr;
 			if( const Value* const inner_namespace_value= names_scope.GetThisScopeValue( namespace_.name_ ) )

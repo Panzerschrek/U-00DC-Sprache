@@ -780,19 +780,11 @@ ProgramElements SyntaxAnalyzer::ParseNamespaceBody( const Lexem::Type end_lexem 
 			if( TemplateBasePtr template_= ParseTemplate() )
 			{
 				if( ClassTemplate* const class_template= dynamic_cast<ClassTemplate*>(template_.get()) )
-				{
-					template_.release();
 					program_elements.emplace_back( ClassTemplate( std::move(*class_template) ) );
-				}
 				else if( TypedefTemplate* const typedef_template= dynamic_cast<TypedefTemplate*>(template_.get()) )
-				{
 					program_elements.emplace_back( TypedefTemplate( std::move(*typedef_template) ) );
-				}
 				else if( FunctionTemplate* const function_template= dynamic_cast<FunctionTemplate*>(template_.get()) )
-				{
-					template_.release();
-					program_elements.emplace_back( std::unique_ptr<FunctionTemplate>( function_template ) );
-				}
+					program_elements.emplace_back( std::move( *function_template ) );
 				else
 				{
 					// TODO - push more relevant message.
@@ -1029,7 +1021,7 @@ Expression SyntaxAnalyzer::ParseExpression()
 
 	while( NotEndOfFile() )
 	{
-		PrefixOperators prefix_operators;
+		std::vector<UnaryPrefixOperator> prefix_operators;
 
 		// Prefix operators.
 		while( NotEndOfFile() )
@@ -3315,10 +3307,7 @@ ClassElements SyntaxAnalyzer::ParseClassBodyElements()
 				else if( TypedefTemplate* const typedef_template= dynamic_cast<TypedefTemplate*>(template_.get()) )
 					result.emplace_back( std::move( *typedef_template ) );
 				else if( FunctionTemplate* const function_template= dynamic_cast<FunctionTemplate*>(template_.get()) )
-				{
-					template_.release();
-					result.emplace_back( std::unique_ptr<FunctionTemplate>( function_template ) );
-				}
+					result.emplace_back( std::move( *function_template ) );
 				else
 				{
 					// TODO - push more relevant message.
