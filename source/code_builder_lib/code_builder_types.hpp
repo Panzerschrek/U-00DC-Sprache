@@ -676,8 +676,8 @@ struct TemplateBase
 
 struct TypeTemplate final : TemplateBase
 {
-	std::vector< const Synt::IExpressionComponent* > signature_arguments;
-	std::vector< const Synt::IExpressionComponent* > default_signature_arguments;
+	std::vector< const Synt::Expression* > signature_arguments;
+	std::vector< const Synt::Expression* > default_signature_arguments;
 	size_t first_optional_signature_argument= ~0u;
 
 	// Store syntax tree element for instantiation.

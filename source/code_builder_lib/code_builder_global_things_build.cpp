@@ -905,9 +905,9 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 
 			variable.value_type= ValueType::ConstReference;
 
-			const Synt::IExpressionComponent* initializer_expression= nullptr;
+			const Synt::Expression* initializer_expression= nullptr;
 			if( const auto expression_initializer= boost::get<const Synt::ExpressionInitializer>( variable_declaration.initializer.get() ) )
-				initializer_expression= expression_initializer->expression.get();
+				initializer_expression= &expression_initializer->expression;
 			else if( const auto constructor_initializer= boost::get<const Synt::ConstructorInitializer>( variable_declaration.initializer.get() ) )
 			{
 				if( constructor_initializer->call_operator.arguments_.size() != 1u )
@@ -915,7 +915,7 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 					errors_.push_back( ReportReferencesHaveConstructorsWithExactlyOneParameter( constructor_initializer->file_pos_ ) );
 					FAIL_RETURN;
 				}
-				initializer_expression= constructor_initializer->call_operator.arguments_.front().get();
+				initializer_expression= &constructor_initializer->call_operator.arguments_.front();
 			}
 			else
 			{
@@ -971,7 +971,7 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 		// Destruction frame for temporary variables of initializer expression.
 		const StackVariablesStorage temp_variables_storage( function_context );
 
-		const Variable initializer_experrsion= BuildExpressionCodeEnsureVariable( *auto_variable_declaration->initializer_expression, names_scope, function_context );
+		const Variable initializer_experrsion= BuildExpressionCodeEnsureVariable( auto_variable_declaration->initializer_expression, names_scope, function_context );
 
 		{ // Check expression type. Expression can have exotic types, such "Overloading functions set", "class name", etc.
 			const bool type_is_ok=

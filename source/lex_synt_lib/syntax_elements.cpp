@@ -39,35 +39,45 @@ BitwiseNot::BitwiseNot( const FilePos& file_pos )
 	: SyntaxElementBase(file_pos)
 {}
 
-CallOperator::CallOperator(
-	const FilePos& file_pos,
-	std::vector<IExpressionComponentPtr> arguments )
+CallOperator::CallOperator( const FilePos& file_pos )
 	: SyntaxElementBase(file_pos)
-	, arguments_( std::move( arguments ) )
 {}
 
-IndexationOperator::IndexationOperator( const FilePos& file_pos, IExpressionComponentPtr index )
+IndexationOperator::IndexationOperator( const FilePos& file_pos )
 	: SyntaxElementBase(file_pos)
-	,index_( std::move( index ) )
-{
-	U_ASSERT( index_ );
-}
+{}
 
 MemberAccessOperator::MemberAccessOperator(
 	const FilePos& file_pos )
 	: SyntaxElementBase( file_pos )
 {}
 
-const FilePos& IExpressionComponent::GetFilePos() const
+FilePos GetExpressionFilePos( const Expression& expression )
 {
-	// All non-abstract childs must be based on SyntaxElementBase.
-	const SyntaxElementBase* const base= dynamic_cast<const SyntaxElementBase*>( this );
-	U_ASSERT( base != nullptr );
-	return base->file_pos_;
+	struct Visitor final : public boost::static_visitor<FilePos>
+	{
+		FilePos operator()( const EmptyVariant& ) const
+		{
+			return FilePos();
+		}
+
+		FilePos operator()( const ExpressionComponentWithUnaryOperators& expression_with_unary_operators ) const
+		{
+			return expression_with_unary_operators.file_pos_;
+		}
+
+		FilePos operator()( const BinaryOperator& binary_operator ) const
+		{
+			return binary_operator.file_pos_;
+		}
+	};
+
+	return boost::apply_visitor( Visitor(), expression );
 }
 
 FilePos GetInitializerFilePos( const Initializer& initializer )
 {
+	// TODO - use visitor
 	if( const auto array_initializer= boost::get<ArrayInitializer>( &initializer ) )
 		return array_initializer->file_pos_;
 	if( const auto struct_named_initializer= boost::get<StructNamedInitializer>( &initializer ) )
@@ -89,17 +99,13 @@ StructNamedInitializer::StructNamedInitializer( const FilePos& file_pos )
 	: SyntaxElementBase( file_pos )
 {}
 
-ConstructorInitializer::ConstructorInitializer(
-	const FilePos& file_pos,
-	std::vector<IExpressionComponentPtr> arguments )
+ConstructorInitializer::ConstructorInitializer( const FilePos& file_pos )
 	: SyntaxElementBase( file_pos )
-	, call_operator( file_pos, std::move(arguments) )
+	, call_operator( file_pos )
 {}
 
-ExpressionInitializer::ExpressionInitializer(
-	const FilePos& file_pos , IExpressionComponentPtr in_expression )
+ExpressionInitializer::ExpressionInitializer( const FilePos& file_pos )
 	: SyntaxElementBase( file_pos )
-	, expression(std::move(in_expression))
 {}
 
 ZeroInitializer::ZeroInitializer( const FilePos& file_pos )
@@ -167,9 +173,8 @@ StringLiteral::StringLiteral( const FilePos& file_pos )
 	: ExpressionComponentWithUnaryOperators(file_pos)
 {}
 
-BracketExpression::BracketExpression( const FilePos& file_pos, IExpressionComponentPtr expression )
+BracketExpression::BracketExpression( const FilePos& file_pos)
 	: ExpressionComponentWithUnaryOperators(file_pos)
-	, expression_( std::move( expression ) )
 {}
 
 TypeNameInExpression::TypeNameInExpression( const FilePos& file_pos )
@@ -214,15 +219,12 @@ AutoVariableDeclaration::AutoVariableDeclaration( const FilePos& file_pos )
 	: SyntaxElementBase( file_pos )
 {}
 
-ReturnOperator::ReturnOperator( const FilePos& file_pos, IExpressionComponentPtr expression )
+ReturnOperator::ReturnOperator( const FilePos& file_pos )
 	: SyntaxElementBase(file_pos)
-	, expression_( std::move( expression ) )
 {}
 
-WhileOperator::WhileOperator( const FilePos& file_pos, IExpressionComponentPtr condition, BlockPtr block )
+WhileOperator::WhileOperator( const FilePos& file_pos)
 	: SyntaxElementBase(file_pos)
-	, condition_( std::move( condition ) )
-	, block_( std::move( block ) )
 {}
 
 BreakOperator::BreakOperator( const FilePos& file_pos )
@@ -243,18 +245,13 @@ StaticIfOperator::StaticIfOperator( const FilePos& file_pos )
 	: SyntaxElementBase(file_pos)
 {}
 
-SingleExpressionOperator::SingleExpressionOperator( const FilePos& file_pos, IExpressionComponentPtr expression )
+SingleExpressionOperator::SingleExpressionOperator( const FilePos& file_pos )
 	: SyntaxElementBase(file_pos)
-	, expression_( std::move( expression ) )
 {}
 
 AssignmentOperator::AssignmentOperator(
-	const FilePos& file_pos,
-	IExpressionComponentPtr l_value,
-	IExpressionComponentPtr r_value )
+	const FilePos& file_pos )
 	: SyntaxElementBase(file_pos)
-	, l_value_( std::move( l_value ) )
-	, r_value_( std::move( r_value ) )
 {}
 
 AdditiveAssignmentOperator::AdditiveAssignmentOperator( const FilePos& file_pos )

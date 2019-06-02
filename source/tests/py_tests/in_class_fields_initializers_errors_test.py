@@ -10,9 +10,9 @@ def InClassFieldInitializerCheck_Test0():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "NameNotFound" )
-	assert( errors_list[0].file_pos.line == 4 )
+	assert( len(errors_list) > 1 )
+	assert( errors_list[1].error_code == "NameNotFound" )
+	assert( errors_list[1].file_pos.line == 4 )
 
 
 def InClassFieldInitializerCheck_Test1():
@@ -100,9 +100,9 @@ def InClassFieldInitializer_OtherFieldCanNotBeUsed_Test0():
 	}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "ClassFiledAccessInStaticMethod" )
-	assert( errors_list[0].file_pos.line == 5 )
+	assert( len(errors_list) > 1 )
+	assert( errors_list[1].error_code == "ClassFiledAccessInStaticMethod" )
+	assert( errors_list[1].file_pos.line == 5 )
 
 
 def InClassFieldInitializer_OtherFieldCanNotBeUsed_Test1():
@@ -114,6 +114,6 @@ def InClassFieldInitializer_OtherFieldCanNotBeUsed_Test1():
 	}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "ClassFiledAccessInStaticMethod" )
-	assert( errors_list[0].file_pos.line == 4 )
+	assert( len(errors_list) > 1 )
+	assert( errors_list[1].error_code == "ClassFiledAccessInStaticMethod" )
+	assert( errors_list[1].file_pos.line == 4 )

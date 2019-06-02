@@ -18,7 +18,7 @@ namespace CodeBuilderPrivate
 {
 
 Value CodeBuilder::BuildExpressionCodeAndDestroyTemporaries(
-	const Synt::IExpressionComponent& expression,
+	const Synt::Expression& expression,
 	NamesScope& names,
 	FunctionContext& function_context )
 {
@@ -27,13 +27,13 @@ Value CodeBuilder::BuildExpressionCodeAndDestroyTemporaries(
 
 	const Value result= BuildExpressionCode( expression, names, function_context );
 
-	CallDestructors( *function_context.stack_variables_stack.back(), function_context, expression.GetFilePos() );
+	CallDestructors( *function_context.stack_variables_stack.back(), function_context, Synt::GetExpressionFilePos( expression ) );
 
 	return result;
 }
 
 Variable CodeBuilder::BuildExpressionCodeEnsureVariable(
-	const Synt::IExpressionComponent& expression,
+	const Synt::Expression& expression,
 	NamesScope& names,
 	FunctionContext& function_context )
 {
@@ -43,7 +43,7 @@ Variable CodeBuilder::BuildExpressionCodeEnsureVariable(
 	if( result_variable == nullptr )
 	{
 		if( result.GetErrorValue() == nullptr )
-			errors_.push_back( ReportExpectedVariable( expression.GetFilePos(), result.GetKindName() ) );
+			errors_.push_back( ReportExpectedVariable( Synt::GetExpressionFilePos( expression ), result.GetKindName() ) );
 
 		Variable dummy_result;
 		dummy_result.type= invalid_type_;
@@ -56,8 +56,8 @@ Variable CodeBuilder::BuildExpressionCodeEnsureVariable(
 boost::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 	const OverloadedOperator op,
 	const Synt::SyntaxElementBase& op_syntax_element,
-	const Synt::IExpressionComponent&  left_expr,
-	const Synt::IExpressionComponent& right_expr,
+	const Synt::Expression&  left_expr,
+	const Synt::Expression& right_expr,
 	const bool evaluate_args_in_reverse_order,
 	const FilePos& file_pos,
 	NamesScope& names,
@@ -149,7 +149,7 @@ boost::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 			errors_.push_back( ReportNotImplemented( file_pos, "calling virtual binary operators" ) );
 		}
 
-		std::vector<const Synt::IExpressionComponent*> synt_args;
+		std::vector<const Synt::Expression*> synt_args;
 		synt_args.reserve( 2u );
 		synt_args.push_back( & left_expr );
 		synt_args.push_back( &right_expr );
@@ -169,13 +169,14 @@ boost::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 }
 
 Value CodeBuilder::BuildExpressionCode(
-	const Synt::IExpressionComponent& expression,
+	const Synt::Expression& expression,
 	NamesScope& names,
 	FunctionContext& function_context )
 {
 	Value result;
 
-	if( const auto binary_operator= dynamic_cast<const Synt::BinaryOperator*>(&expression) )
+	const Synt::ExpressionComponentWithUnaryOperators* expression_with_unary_operators= nullptr;
+	if( const auto binary_operator= boost::get<const Synt::BinaryOperator>(&expression) )
 	{
 		if( binary_operator->operator_type_ == BinaryOperatorType::LazyLogicalAnd ||
 			binary_operator->operator_type_ == BinaryOperatorType::LazyLogicalOr )
@@ -219,7 +220,7 @@ Value CodeBuilder::BuildExpressionCode(
 				}
 				l_var.value_type= ValueType::Value;
 			}
-			DestroyUnusedTemporaryVariables( function_context, binary_operator->GetFilePos() );
+			DestroyUnusedTemporaryVariables( function_context, binary_operator->file_pos_ );
 
 			const Variable r_var=
 				BuildExpressionCodeEnsureVariable(
@@ -230,36 +231,72 @@ Value CodeBuilder::BuildExpressionCode(
 			return BuildBinaryOperator( l_var, r_var, binary_operator->operator_type_, binary_operator->file_pos_, function_context );
 		}
 	}
-	else if( const auto named_operand= dynamic_cast<const Synt::NamedOperand*>(&expression) )
+	else if( const auto named_operand= boost::get<const Synt::NamedOperand>(&expression) )
+	{
+		expression_with_unary_operators= named_operand;
 		result= BuildNamedOperand( *named_operand, names, function_context );
-	else if( const auto numeric_constant= dynamic_cast<const Synt::NumericConstant*>(&expression) )
+	}
+	else if( const auto numeric_constant= boost::get<const Synt::NumericConstant>(&expression) )
+	{
+		expression_with_unary_operators= numeric_constant;
 		result= BuildNumericConstant( *numeric_constant, function_context );
-	else if( const auto string_literal= dynamic_cast<const Synt::StringLiteral*>(&expression) )
+	}
+	else if( const auto string_literal= boost::get<const Synt::StringLiteral>(&expression) )
+	{
+		expression_with_unary_operators= string_literal;
 		result= BuildStringLiteral( *string_literal, function_context );
-	else if( const auto boolean_constant= dynamic_cast<const Synt::BooleanConstant*>(&expression) )
+	}
+	else if( const auto boolean_constant= boost::get<const Synt::BooleanConstant>(&expression) )
+	{
+		expression_with_unary_operators= boolean_constant;
 		result= Value( BuildBooleanConstant( *boolean_constant, function_context ), boolean_constant->file_pos_ );
-	else if( const auto bracket_expression= dynamic_cast<const Synt::BracketExpression*>(&expression) )
+	}
+	else if( const auto bracket_expression= boost::get<const Synt::BracketExpression>(&expression) )
+	{
+		expression_with_unary_operators= bracket_expression;
 		result= BuildExpressionCode( *bracket_expression->expression_, names, function_context );
-	else if( const auto type_name_in_expression= dynamic_cast<const Synt::TypeNameInExpression*>(&expression) )
+	}
+	else if( const auto type_name_in_expression= boost::get<const Synt::TypeNameInExpression>(&expression) )
+	{
+		expression_with_unary_operators= type_name_in_expression;
 		result=
 			Value(
 				PrepareType( type_name_in_expression->type_name, names, function_context ),
 				type_name_in_expression->file_pos_ );
-	else if( const auto move_operator= dynamic_cast<const Synt::MoveOperator*>(&expression) )
+	}
+	else if( const auto move_operator= boost::get<const Synt::MoveOperator>(&expression) )
+	{
+		expression_with_unary_operators= move_operator;
 		result= BuildMoveOpeator( *move_operator, names, function_context );
-	else if( const auto cast_ref= dynamic_cast<const Synt::CastRef*>(&expression) )
+	}
+	else if( const auto cast_ref= boost::get<const Synt::CastRef>(&expression) )
+	{
+		expression_with_unary_operators= cast_ref;
 		result= BuildCastRef( *cast_ref, names, function_context );
-	else if( const auto cast_ref_unsafe= dynamic_cast<const Synt::CastRefUnsafe*>(&expression) )
+	}
+	else if( const auto cast_ref_unsafe= boost::get<const Synt::CastRefUnsafe>(&expression) )
+	{
+		expression_with_unary_operators= cast_ref_unsafe;
 		result= BuildCastRefUnsafe( *cast_ref_unsafe, names, function_context );
-	else if( const auto cast_imut= dynamic_cast<const Synt::CastImut*>(&expression) )
+	}
+	else if( const auto cast_imut= boost::get<const Synt::CastImut>(&expression) )
+	{
+		expression_with_unary_operators= cast_imut;
 		result= BuildCastImut( *cast_imut, names, function_context );
-	else if( const auto cast_mut= dynamic_cast<const Synt::CastMut*>(&expression) )
+	}
+	else if( const auto cast_mut= boost::get<const Synt::CastMut>(&expression) )
+	{
+		expression_with_unary_operators= cast_mut;
 		result= BuildCastMut( *cast_mut, names, function_context );
-	else if( const auto typeinfo_= dynamic_cast<const Synt::TypeInfo*>(&expression) )
+	}
+	else if( const auto typeinfo_= boost::get<const Synt::TypeInfo>(&expression) )
+	{
+		expression_with_unary_operators= typeinfo_;
 		result= BuildTypeinfoOperator( *typeinfo_, names, function_context );
+	}
 	else U_ASSERT(false);
 
-	if( const auto expression_with_unary_operators= dynamic_cast<const Synt::ExpressionComponentWithUnaryOperators*>( &expression ) )
+	if( expression_with_unary_operators != nullptr )
 	{
 		for( const Synt::UnaryPostfixOperator& postfix_operator : expression_with_unary_operators->postfix_operators_ )
 		{
@@ -953,8 +990,8 @@ Value CodeBuilder::BuildBinaryOperator(
 }
 
 Value CodeBuilder::BuildLazyBinaryOperator(
-	const Synt::IExpressionComponent& l_expression,
-	const Synt::IExpressionComponent& r_expression,
+	const Synt::Expression& l_expression,
+	const Synt::Expression& r_expression,
 	const Synt::BinaryOperator& binary_operator,
 	const FilePos& file_pos,
 	NamesScope& names,
@@ -1039,7 +1076,7 @@ Value CodeBuilder::BuildLazyBinaryOperator(
 
 Value CodeBuilder::BuildCastRef( const Synt::CastRef& cast_ref, NamesScope& names, FunctionContext& function_context )
 {
-	return DoReferenceCast( cast_ref.file_pos_, cast_ref.type_, cast_ref.expression_, false, names, function_context );
+	return DoReferenceCast( cast_ref.file_pos_, cast_ref.type_, *cast_ref.expression_, false, names, function_context );
 }
 
 Value CodeBuilder::BuildCastRefUnsafe( const Synt::CastRefUnsafe& cast_ref_unsafe, NamesScope& names, FunctionContext& function_context )
@@ -1047,13 +1084,13 @@ Value CodeBuilder::BuildCastRefUnsafe( const Synt::CastRefUnsafe& cast_ref_unsaf
 	if( !function_context.is_in_unsafe_block )
 		errors_.push_back( ReportUnsafeReferenceCastOutsideUnsafeBlock( cast_ref_unsafe.file_pos_ ) );
 
-	return DoReferenceCast( cast_ref_unsafe.file_pos_, cast_ref_unsafe.type_, cast_ref_unsafe.expression_, true, names, function_context );
+	return DoReferenceCast( cast_ref_unsafe.file_pos_, cast_ref_unsafe.type_, *cast_ref_unsafe.expression_, true, names, function_context );
 }
 
 Value CodeBuilder::DoReferenceCast(
 	const FilePos& file_pos,
 	const Synt::TypeName& type_name,
-	const Synt::IExpressionComponentPtr& expression,
+	const Synt::Expression& expression,
 	bool enable_unsafe,
 	NamesScope& names,
 	FunctionContext& function_context )
@@ -1062,7 +1099,7 @@ Value CodeBuilder::DoReferenceCast(
 	if( type == invalid_type_ )
 		return ErrorValue();
 
-	const Variable var= BuildExpressionCodeEnsureVariable( *expression, names, function_context );
+	const Variable var= BuildExpressionCodeEnsureVariable( expression, names, function_context );
 
 	Variable result;
 	result.type= type;
@@ -1580,7 +1617,7 @@ Value CodeBuilder::BuildIndexationOperator(
 		{
 			const StackVariablesStorage dummy_stack_variables_storage( function_context );
 
-			const Variable index_variable= BuildExpressionCodeEnsureVariable( *indexation_operator.index_, names, function_context );
+			const Variable index_variable= BuildExpressionCodeEnsureVariable( indexation_operator.index_, names, function_context );
 
 			args.emplace_back();
 			args.back().type= index_variable.type;
@@ -1604,7 +1641,7 @@ Value CodeBuilder::BuildIndexationOperator(
 						fetch_result.second,
 						*overloaded_operator->type.GetFunctionType(),
 						indexation_operator.file_pos_,
-						{ fetch_result.first }, { indexation_operator.index_.get() }, false,
+						{ fetch_result.first }, { &indexation_operator.index_ }, false,
 						names, function_context );
 			}
 			else
@@ -1613,7 +1650,7 @@ Value CodeBuilder::BuildIndexationOperator(
 						overloaded_operator->llvm_function,
 						*overloaded_operator->type.GetFunctionType(),
 						indexation_operator.file_pos_,
-						{ variable }, { indexation_operator.index_.get() }, false,
+						{ variable }, { &indexation_operator.index_ }, false,
 						names, function_context );
 
 			function_context.overloading_resolutin_cache[ &indexation_operator ]= *overloaded_operator;
@@ -1636,7 +1673,7 @@ Value CodeBuilder::BuildIndexationOperator(
 	if( variable.node != nullptr )
 		function_context.variables_state.AddLink( variable.node, array_lock.Node() );
 
-	const Variable index= BuildExpressionCodeEnsureVariable( *indexation_operator.index_, names, function_context );
+	const Variable index= BuildExpressionCodeEnsureVariable( indexation_operator.index_, names, function_context );
 
 	const FundamentalType* const index_fundamental_type= index.type.GetFundamentalType();
 	if( index_fundamental_type == nullptr || !IsUnsignedInteger( index_fundamental_type->fundamental_type ) )
@@ -1923,9 +1960,10 @@ Value CodeBuilder::BuildCallOperator(
 				return ErrorValue();
 			}
 
-			std::vector<const Synt::IExpressionComponent*> args;
-			for( const auto& arg : call_operator.arguments_ )
-				args.push_back( arg.get() );
+			std::vector<const Synt::Expression*> args;
+			args.reserve( call_operator.arguments_.size() );
+			for( const Synt::Expression& arg : call_operator.arguments_ )
+				args.push_back( &arg );
 
 			llvm::Value* const func_itself= CreateMoveToLLVMRegisterInstruction( *callable_variable, function_context );
 
@@ -1971,10 +2009,9 @@ Value CodeBuilder::BuildCallOperator(
 				actual_args.back().is_mutable= this_->value_type == ValueType::Reference;
 			}
 			// Push arguments from call operator.
-			for( const Synt::IExpressionComponentPtr& arg_expression : call_operator.arguments_ )
+			for( const Synt::Expression& arg_expression : call_operator.arguments_ )
 			{
-				U_ASSERT( arg_expression != nullptr );
-				const Variable expr= BuildExpressionCodeEnsureVariable( *arg_expression, names, function_context );
+				const Variable expr= BuildExpressionCodeEnsureVariable( arg_expression, names, function_context );
 
 				actual_args.emplace_back();
 				actual_args.back().type= expr.type;
@@ -2021,9 +2058,10 @@ Value CodeBuilder::BuildCallOperator(
 	if( !( function_ptr->constexpr_kind == FunctionVariable::ConstexprKind::ConstexprIncomplete || function_ptr->constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete ) )
 		function_context.have_non_constexpr_operations_inside= true; // Can not call non-constexpr function in constexpr function.
 
-	std::vector<const Synt::IExpressionComponent*> synt_args;
-	for( const Synt::IExpressionComponentPtr& arg : call_operator.arguments_ )
-		synt_args.push_back( arg.get() );
+	std::vector<const Synt::Expression*> synt_args;
+	synt_args.reserve( call_operator.arguments_.size() );
+	for( const Synt::Expression& arg : call_operator.arguments_ )
+		synt_args.push_back( &arg );
 
 	Variable this_casted;
 	llvm::Value* llvm_function_ptr= function.llvm_function;
@@ -2050,7 +2088,7 @@ Value CodeBuilder::DoCallFunction(
 	const Function& function_type,
 	const FilePos& call_file_pos,
 	const std::vector<Variable>& preevaluated_args,
-	const std::vector<const Synt::IExpressionComponent*>& args,
+	const std::vector<const Synt::Expression*>& args,
 	const bool evaluate_args_in_reverse_order,
 	NamesScope& names,
 	FunctionContext& function_context,
@@ -2085,7 +2123,7 @@ Value CodeBuilder::DoCallFunction(
 		else
 		{
 			expr= BuildExpressionCodeEnsureVariable( *args[ j - preevaluated_args.size() ], names, function_context );
-			file_pos= args[ j - preevaluated_args.size() ]->GetFilePos();
+			file_pos= Synt::GetExpressionFilePos( *args[ j - preevaluated_args.size() ] );
 		}
 
 		if( expr.constexpr_value != nullptr && !( arg.is_reference && arg.is_mutable ) )

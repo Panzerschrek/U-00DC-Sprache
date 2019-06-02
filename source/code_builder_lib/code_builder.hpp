@@ -232,7 +232,7 @@ private:
 		std::vector<bool>& template_parameters_usage_flags );
 
 	void PrepareTemplateSignatureParameter(
-		const Synt::IExpressionComponentPtr& template_parameter,
+		const Synt::Expression& template_parameter,
 		NamesScope& names_scope,
 		const std::vector<TypeTemplate::TemplateParameter>& template_parameters,
 		std::vector<bool>& template_parameters_usage_flags );
@@ -261,7 +261,7 @@ private:
 	DeducedTemplateParameter DeduceTemplateArguments(
 		const TemplateBase& template_,
 		const TemplateParameter& template_parameter,
-		const Synt::IExpressionComponent& signature_parameter,
+		const Synt::Expression& signature_parameter,
 		const FilePos& signature_parameter_file_pos,
 		DeducibleTemplateParameters& deducible_template_parameters,
 		NamesScope& names_scope );
@@ -278,14 +278,14 @@ private:
 	Value* GenTemplateType(
 		const FilePos& file_pos,
 		const TypeTemplatesSet& type_templates_set,
-		const std::vector<Synt::IExpressionComponentPtr>& template_arguments,
+		const std::vector<Synt::Expression>& template_arguments,
 		NamesScope& arguments_names_scope );
 
 	// Returns nullptr in case of fail.
 	TemplateTypeGenerationResult GenTemplateType(
 		const FilePos& file_pos,
 		const TypeTemplatePtr& type_template_ptr,
-		const std::vector<Synt::IExpressionComponentPtr>& template_arguments,
+		const std::vector<Synt::Expression>& template_arguments,
 		NamesScope& arguments_names_scope,
 		bool skip_type_generation );
 
@@ -299,7 +299,7 @@ private:
 	Value* GenTemplateFunctionsUsingTemplateParameters(
 		const FilePos& file_pos,
 		const std::vector<FunctionTemplatePtr>& function_templates,
-		const std::vector<Synt::IExpressionComponentPtr>& template_arguments,
+		const std::vector<Synt::Expression>& template_arguments,
 		NamesScope& arguments_names_scope );
 
 	bool NameShadowsTemplateArgument( const ProgramString& name, NamesScope& names_scope );
@@ -413,17 +413,17 @@ private:
 	// Expressions.
 
 	Value BuildExpressionCodeAndDestroyTemporaries(
-		const Synt::IExpressionComponent& expression,
+		const Synt::Expression& expression,
 		NamesScope& names,
 		FunctionContext& function_context );
 
 	Variable BuildExpressionCodeEnsureVariable(
-		const Synt::IExpressionComponent& expression,
+		const Synt::Expression& expression,
 		NamesScope& names,
 		FunctionContext& function_context );
 
 	Value BuildExpressionCode(
-		const Synt::IExpressionComponent& expression,
+		const Synt::Expression& expression,
 		NamesScope& names,
 		FunctionContext& function_context );
 
@@ -433,8 +433,8 @@ private:
 	boost::optional<Value> TryCallOverloadedBinaryOperator(
 		OverloadedOperator op,
 		const Synt::SyntaxElementBase& op_syntax_element,
-		const Synt::IExpressionComponent&  left_expr,
-		const Synt::IExpressionComponent& right_expr,
+		const Synt::Expression&  left_expr,
+		const Synt::Expression& right_expr,
 		bool evaluate_args_in_reverse_order,
 		const FilePos& file_pos,
 		NamesScope& names,
@@ -448,8 +448,8 @@ private:
 		FunctionContext& function_context );
 		
 	Value BuildLazyBinaryOperator(
-		const Synt::IExpressionComponent& l_expression,
-		const Synt::IExpressionComponent& r_expression,
+		const Synt::Expression& l_expression,
+		const Synt::Expression& r_expression,
 		const Synt::BinaryOperator& binary_operator,
 		const FilePos& file_pos,
 		NamesScope& names,
@@ -460,7 +460,7 @@ private:
 	Value DoReferenceCast(
 		const FilePos& file_pos,
 		const Synt::TypeName& type_name,
-		const Synt::IExpressionComponentPtr& expression,
+		const Synt::Expression& expression,
 		bool enable_unsafe,
 		NamesScope& names,
 		FunctionContext& function_context );
@@ -497,7 +497,7 @@ private:
 		const Function& function_type,
 		const FilePos& call_file_pos,
 		const std::vector<Variable>& preevaluated_args,
-		const std::vector<const Synt::IExpressionComponent*>& args,
+		const std::vector<const Synt::Expression*>& args,
 		const bool evaluate_args_in_reverse_order,
 		NamesScope& names,
 		FunctionContext& function_context,
@@ -577,7 +577,7 @@ private:
 
 	// ++ and -- operations
 	void BuildDeltaOneOperatorCode(
-		const Synt::IExpressionComponent& expression,
+		const Synt::Expression& expression,
 		const FilePos& file_pos,
 		bool positive, // true - increment, false - decrement
 		NamesScope& block_names,
@@ -725,7 +725,7 @@ private:
 
 	llvm::Constant* InitializeFunctionPointer(
 		const Variable& variable,
-		const Synt::IExpressionComponent& initializer_expression,
+		const Synt::Expression& initializer_expression,
 		NamesScope& block_names,
 		FunctionContext& function_context );
 
