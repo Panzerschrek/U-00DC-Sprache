@@ -11,6 +11,9 @@ namespace U
 namespace CodeBuilderPrivate
 {
 
+static_assert( sizeof(Type) <=24u, "Type is too heavy!" );
+static_assert( sizeof(Value) <= 160u, "Value is too heavy!" );
+
 static SizeType GetFundamentalTypeSize( const U_FundamentalType type )
 {
 	switch(type)
@@ -751,6 +754,35 @@ Variable::Variable(
 ClassField::ClassField( const ClassProxyPtr& in_class, Type in_type, const unsigned int in_index, const bool in_is_mutable, const bool in_is_reference )
 	: type(std::move(in_type)), class_(in_class), index(in_index), is_mutable(in_is_mutable), is_reference(in_is_reference)
 {}
+
+//
+// ThisOverloadedMethodsSet
+//
+
+ThisOverloadedMethodsSet::ThisOverloadedMethodsSet()
+	: overloaded_methods_set_(new OverloadedFunctionsSet() )
+{}
+
+ThisOverloadedMethodsSet::ThisOverloadedMethodsSet( const ThisOverloadedMethodsSet& other )
+	: this_(other.this_), overloaded_methods_set_( new OverloadedFunctionsSet( *other.overloaded_methods_set_ ) )
+{}
+
+ThisOverloadedMethodsSet& ThisOverloadedMethodsSet::operator=( const ThisOverloadedMethodsSet& other )
+{
+	this->this_= other.this_;
+	*this->overloaded_methods_set_= *other.overloaded_methods_set_;
+	return *this;
+}
+
+OverloadedFunctionsSet& ThisOverloadedMethodsSet::GetOverloadedFunctionsSet()
+{
+	return *overloaded_methods_set_;
+}
+
+const OverloadedFunctionsSet& ThisOverloadedMethodsSet::GetOverloadedFunctionsSet() const
+{
+	return *overloaded_methods_set_;
+}
 
 //
 // Value

@@ -1360,8 +1360,8 @@ Value CodeBuilder::BuildNamedOperand(
 					// Append "this" only if whole "this" is available.
 					ThisOverloadedMethodsSet this_overloaded_methods_set;
 					this_overloaded_methods_set.this_= *function_context.this_;
-					this_overloaded_methods_set.overloaded_methods_set= *overloaded_functions_set;
-					return this_overloaded_methods_set;
+					this_overloaded_methods_set.GetOverloadedFunctionsSet()= *overloaded_functions_set;
+					return std::move(this_overloaded_methods_set);
 				}
 			}
 		}
@@ -1842,8 +1842,8 @@ Value CodeBuilder::BuildMemberAccessOperator(
 		}
 		ThisOverloadedMethodsSet this_overloaded_methods_set;
 		this_overloaded_methods_set.this_= variable;
-		this_overloaded_methods_set.overloaded_methods_set= *functions_set;
-		return this_overloaded_methods_set;
+		this_overloaded_methods_set.GetOverloadedFunctionsSet()= *functions_set;
+		return std::move(this_overloaded_methods_set);
 	}
 
 	if( member_access_operator.have_template_parameters )
@@ -1958,7 +1958,7 @@ Value CodeBuilder::BuildCallOperator(
 	else if( const ThisOverloadedMethodsSet* const this_overloaded_methods_set=
 		function_value.GetThisOverloadedMethodsSet() )
 	{
-		functions_set= &this_overloaded_methods_set->overloaded_methods_set;
+		functions_set= &this_overloaded_methods_set->GetOverloadedFunctionsSet();
 		this_= &this_overloaded_methods_set->this_;
 	}
 	else if( const Variable* const callable_variable= function_value.GetVariable() )

@@ -271,7 +271,6 @@ struct OverloadedFunctionsSet
 {
 	std::vector<FunctionVariable> functions;
 	std::vector<FunctionTemplatePtr> template_functions;
-	bool have_nomangle_function= false;
 
 	// Is incomplete, if there are some syntax elements in containers.
 	std::vector<const Synt::Function*> syntax_elements;
@@ -279,6 +278,8 @@ struct OverloadedFunctionsSet
 	std::vector<const Synt::FunctionTemplate*> template_syntax_elements;
 
 	ClassProxyPtr base_class;
+
+	bool have_nomangle_function= false;
 };
 
 struct TypeTemplatesSet
@@ -337,8 +338,23 @@ struct ClassField final
 // "this" + functions set of class of "this"
 struct ThisOverloadedMethodsSet final
 {
+public:
+	ThisOverloadedMethodsSet();
+	ThisOverloadedMethodsSet( const ThisOverloadedMethodsSet& other );
+	ThisOverloadedMethodsSet( ThisOverloadedMethodsSet&& other ) noexcept= default;
+
+	ThisOverloadedMethodsSet& operator=( const ThisOverloadedMethodsSet& other );
+	ThisOverloadedMethodsSet& operator=( ThisOverloadedMethodsSet&& other ) noexcept= default;
+
+	OverloadedFunctionsSet& GetOverloadedFunctionsSet();
+	const OverloadedFunctionsSet& GetOverloadedFunctionsSet() const;
+
+public:
 	Variable this_;
-	OverloadedFunctionsSet overloaded_methods_set;
+
+private:
+	// Store "OverloadedFunctionsSet" indirectly, because it is too hevy, to put it in value together with "variable".
+	std::unique_ptr<OverloadedFunctionsSet> overloaded_methods_set_;
 };
 
 struct StaticAssert

@@ -114,13 +114,13 @@ void CodeBuilder::ApplyEmptyInitializer(
 
 		ThisOverloadedMethodsSet this_overloaded_methods_set;
 		this_overloaded_methods_set.this_= variable;
-		this_overloaded_methods_set.overloaded_methods_set= *constructors_set;
+		this_overloaded_methods_set.GetOverloadedFunctionsSet()= *constructors_set;
 
 		// TODO - fix this.
 		// "CallOperator" pointer used as key in overloading resolution cache. Passing stack object is not safe.
 		const Synt::CallOperator call_operator( file_pos );
 		NamesScope dummy_names_scope( ProgramString(), nullptr );
-		BuildCallOperator( this_overloaded_methods_set, call_operator, dummy_names_scope, function_context );
+		BuildCallOperator( std::move(this_overloaded_methods_set), call_operator, dummy_names_scope, function_context );
 	}
 	else U_ASSERT(false);
 }
@@ -609,9 +609,9 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 
 		ThisOverloadedMethodsSet this_overloaded_methods_set;
 		this_overloaded_methods_set.this_= variable;
-		this_overloaded_methods_set.overloaded_methods_set= *constructors_set;
+		this_overloaded_methods_set.GetOverloadedFunctionsSet()= *constructors_set;
 
-		BuildCallOperator( this_overloaded_methods_set, call_operator, block_names, function_context );
+		BuildCallOperator( std::move(this_overloaded_methods_set), call_operator, block_names, function_context );
 	}
 	else
 	{
@@ -1016,7 +1016,7 @@ llvm::Constant* CodeBuilder::InitializeFunctionPointer(
 	if( const OverloadedFunctionsSet* const overloaded_functions_set= initializer_value.GetFunctionsSet() )
 		candidate_functions= overloaded_functions_set;
 	else if( const ThisOverloadedMethodsSet* const overloaded_methods_set= initializer_value.GetThisOverloadedMethodsSet() )
-		candidate_functions= &overloaded_methods_set->overloaded_methods_set;
+		candidate_functions= &overloaded_methods_set->GetOverloadedFunctionsSet();
 	else
 	{
 		// TODO - generate separate error
