@@ -492,125 +492,142 @@ Type CodeBuilder::PrepareType(
 	NamesScope& names_scope,
 	FunctionContext& function_context )
 {
-	Type result= invalid_type_;
-
-	if( const auto array_type_name= boost::get<const Synt::ArrayTypeName>(&type_name) )
+	struct Visitor final : public boost::static_visitor<Type>
 	{
-		result= Array();
-		Array& array_type= *result.GetArrayType();
+		CodeBuilder& this_;
+		NamesScope& names_scope;
+		FunctionContext& function_context;
 
-		array_type.type= PrepareType( *array_type_name->element_type, names_scope, function_context );
+		Visitor( CodeBuilder& in_this, NamesScope& in_names_scope, FunctionContext& in_function_context )
+			: this_(in_this), names_scope(in_names_scope), function_context(in_function_context)
+		{}
 
-		const Synt::Expression& num= *array_type_name->size;
-
-		const Variable size_variable= BuildExpressionCodeEnsureVariable( num, names_scope, function_context );
-		if( size_variable.constexpr_value != nullptr )
+		Type operator()( const Synt::EmptyVariant& )
 		{
-			if( const FundamentalType* const size_fundamental_type= size_variable.type.GetFundamentalType() )
+			U_ASSERT(false);
+			return this_.invalid_type_;
+		}
+
+		Type operator()( const Synt::ArrayTypeName& array_type_name )
+		{
+			Array array_type;
+			array_type.type= this_.PrepareType( *array_type_name.element_type, names_scope, function_context );
+
+			const Synt::Expression& num= *array_type_name.size;
+
+			const Variable size_variable= this_.BuildExpressionCodeEnsureVariable( num, names_scope, function_context );
+			if( size_variable.constexpr_value != nullptr )
 			{
-				if( IsInteger( size_fundamental_type->fundamental_type ) )
+				if( const FundamentalType* const size_fundamental_type= size_variable.type.GetFundamentalType() )
 				{
-					if( llvm::dyn_cast<llvm::UndefValue>(size_variable.constexpr_value) != nullptr )
-						array_type.size= Array::c_undefined_size;
-					else
+					if( IsInteger( size_fundamental_type->fundamental_type ) )
 					{
-						const llvm::APInt& size_value= size_variable.constexpr_value->getUniqueInteger();
-						if( IsSignedInteger( size_fundamental_type->fundamental_type ) && size_value.isNegative() )
-							errors_.push_back( ReportArraySizeIsNegative( Synt::GetExpressionFilePos( num ) ) );
+						if( llvm::dyn_cast<llvm::UndefValue>(size_variable.constexpr_value) != nullptr )
+							array_type.size= Array::c_undefined_size;
 						else
-							array_type.size= SizeType( size_value.getLimitedValue() );
+						{
+							const llvm::APInt& size_value= size_variable.constexpr_value->getUniqueInteger();
+							if( IsSignedInteger( size_fundamental_type->fundamental_type ) && size_value.isNegative() )
+								this_.errors_.push_back( ReportArraySizeIsNegative( Synt::GetExpressionFilePos( num ) ) );
+							else
+								array_type.size= SizeType( size_value.getLimitedValue() );
+						}
 					}
+					else
+						this_.errors_.push_back( ReportArraySizeIsNotInteger( Synt::GetExpressionFilePos( num ) ) );
 				}
 				else
-					errors_.push_back( ReportArraySizeIsNotInteger( Synt::GetExpressionFilePos( num ) ) );
+					U_ASSERT( false && "Nonfundamental constexpr? WTF?" );
 			}
 			else
-				U_ASSERT( false && "Nonfundamental constexpr? WTF?" );
-		}
-		else
-			errors_.push_back( ReportExpectedConstantExpression( Synt::GetExpressionFilePos( num ) ) );
+				this_.errors_.push_back( ReportExpectedConstantExpression( Synt::GetExpressionFilePos( num ) ) );
 
-		array_type.llvm_type= llvm::ArrayType::get( array_type.type.GetLLVMType(), array_type.ArraySizeOrZero() );
-
-		// TODO - generate error, if total size of type (incuding arrays) is more, than half of address space of target architecture.
-	}
-	else if( const auto typeof_type_name= boost::get<const Synt::TypeofTypeName>(&type_name) )
-	{
-		const auto prev_state= SaveInstructionsState( function_context );
-		{
-			const StackVariablesStorage dummy_stack_variables_storage( function_context );
-			const Variable variable= BuildExpressionCodeEnsureVariable( *typeof_type_name->expression, names_scope, function_context );
-			result= variable.type;
-		}
-		RestoreInstructionsState( function_context, prev_state );
-	}
-	else if( const auto function_type_name= boost::get<const Synt::FunctionType>(&type_name) )
-	{
-		FunctionPointer function_pointer_type;
-		Function& function_type= function_pointer_type.function;
-
-		if( function_type_name->return_type_ == nullptr )
-			function_type.return_type= void_type_for_ret_;
-		else
-			function_type.return_type= PrepareType( *function_type_name->return_type_, names_scope, function_context );
-		function_type.return_value_is_mutable= function_type_name->return_value_mutability_modifier_ == MutabilityModifier::Mutable;
-		function_type.return_value_is_reference= function_type_name->return_value_reference_modifier_ == ReferenceModifier::Reference;
-
-		if( !function_type.return_value_is_reference &&
-			!( function_type.return_type.GetFundamentalType() != nullptr ||
-			   function_type.return_type.GetClassType() != nullptr ||
-			   function_type.return_type.GetEnumType() != nullptr ||
-			   function_type.return_type.GetFunctionPointerType() != nullptr ) )
-			errors_.push_back( ReportNotImplemented( function_type_name->file_pos_, "return value types except fundamentals, enums, classes, function pointers" ) );
-
-		for( const Synt::FunctionArgumentPtr& arg : function_type_name->arguments_ )
-		{
-			if( IsKeyword( arg->name_ ) )
-				errors_.push_back( ReportUsingKeywordAsName( arg->file_pos_ ) );
-
-			function_type.args.emplace_back();
-			Function::Arg& out_arg= function_type.args.back();
-			out_arg.type= PrepareType( arg->type_, names_scope, function_context );
-
-			out_arg.is_mutable= arg->mutability_modifier_ == MutabilityModifier::Mutable;
-			out_arg.is_reference= arg->reference_modifier_ == ReferenceModifier::Reference;
-
-			if( !out_arg.is_reference &&
-				!( out_arg.type.GetFundamentalType() != nullptr ||
-				   out_arg.type.GetClassType() != nullptr ||
-				   out_arg.type.GetEnumType() != nullptr ||
-				   out_arg.type.GetFunctionPointerType() != nullptr ) )
-				errors_.push_back( ReportNotImplemented( arg->file_pos_, "parameters types except fundamentals, classes, enums, functionpointers" ) );
-
-			ProcessFunctionArgReferencesTags( *function_type_name, function_type, *arg, out_arg, function_type.args.size() - 1u );
+			// TODO - generate error, if total size of type (incuding arrays) is more, than half of address space of target architecture.
+			array_type.llvm_type= llvm::ArrayType::get( array_type.type.GetLLVMType(), array_type.ArraySizeOrZero() );
+			return array_type;
 		}
 
-		function_type.unsafe= function_type_name->unsafe_;
-
-		TryGenerateFunctionReturnReferencesMapping( *function_type_name, function_type );
-		ProcessFunctionTypeReferencesPollution( *function_type_name, function_type );
-
-		function_type.llvm_function_type= GetLLVMFunctionType( function_type );
-		function_pointer_type.llvm_function_pointer_type= llvm::PointerType::get( function_type.llvm_function_type, 0u );
-
-		return function_pointer_type;
-	}
-	else if( const auto named_type_name= boost::get<const Synt::NamedTypeName>(&type_name) )
-	{
-		if( const Value* value=
-			ResolveValue( named_type_name->file_pos_, names_scope, named_type_name->name ) )
+		Type operator()( const Synt::TypeofTypeName& typeof_type_name )
 		{
-			if( const Type* const type= value->GetTypeName() )
-				result= *type;
+			Type result;
+			const auto prev_state= this_.SaveInstructionsState( function_context );
+			{
+				const StackVariablesStorage dummy_stack_variables_storage( function_context );
+				const Variable variable= this_.BuildExpressionCodeEnsureVariable( *typeof_type_name.expression, names_scope, function_context );
+				result= variable.type;
+			}
+			this_.RestoreInstructionsState( function_context, prev_state );
+			return result;
+		}
+
+		Type operator()( const Synt::FunctionType& function_type_name )
+		{
+			FunctionPointer function_pointer_type;
+			Function& function_type= function_pointer_type.function;
+
+			if( function_type_name.return_type_ == nullptr )
+				function_type.return_type= this_.void_type_for_ret_;
 			else
-				errors_.push_back( ReportNameIsNotTypeName( named_type_name->file_pos_, named_type_name->name.components.back().name ) );
-		}
-		else
-			errors_.push_back( ReportNameNotFound( named_type_name->file_pos_, named_type_name->name ) );
-	}
-	else U_ASSERT(false);
+				function_type.return_type= this_.PrepareType( *function_type_name.return_type_, names_scope, function_context );
+			function_type.return_value_is_mutable= function_type_name.return_value_mutability_modifier_ == MutabilityModifier::Mutable;
+			function_type.return_value_is_reference= function_type_name.return_value_reference_modifier_ == ReferenceModifier::Reference;
 
-	return result;
+			if( !function_type.return_value_is_reference &&
+				!( function_type.return_type.GetFundamentalType() != nullptr ||
+				   function_type.return_type.GetClassType() != nullptr ||
+				   function_type.return_type.GetEnumType() != nullptr ||
+				   function_type.return_type.GetFunctionPointerType() != nullptr ) )
+				this_.errors_.push_back( ReportNotImplemented( function_type_name.file_pos_, "return value types except fundamentals, enums, classes, function pointers" ) );
+
+			for( const Synt::FunctionArgumentPtr& arg : function_type_name.arguments_ )
+			{
+				if( IsKeyword( arg->name_ ) )
+					this_.errors_.push_back( ReportUsingKeywordAsName( arg->file_pos_ ) );
+
+				function_type.args.emplace_back();
+				Function::Arg& out_arg= function_type.args.back();
+				out_arg.type= this_.PrepareType( arg->type_, names_scope, function_context );
+
+				out_arg.is_mutable= arg->mutability_modifier_ == MutabilityModifier::Mutable;
+				out_arg.is_reference= arg->reference_modifier_ == ReferenceModifier::Reference;
+
+				if( !out_arg.is_reference &&
+					!( out_arg.type.GetFundamentalType() != nullptr ||
+					   out_arg.type.GetClassType() != nullptr ||
+					   out_arg.type.GetEnumType() != nullptr ||
+					   out_arg.type.GetFunctionPointerType() != nullptr ) )
+					this_.errors_.push_back( ReportNotImplemented( arg->file_pos_, "parameters types except fundamentals, classes, enums, functionpointers" ) );
+
+				this_.ProcessFunctionArgReferencesTags( function_type_name, function_type, *arg, out_arg, function_type.args.size() - 1u );
+			}
+
+			function_type.unsafe= function_type_name.unsafe_;
+
+			this_.TryGenerateFunctionReturnReferencesMapping( function_type_name, function_type );
+			this_.ProcessFunctionTypeReferencesPollution( function_type_name, function_type );
+
+			function_type.llvm_function_type= this_.GetLLVMFunctionType( function_type );
+			function_pointer_type.llvm_function_pointer_type= llvm::PointerType::get( function_type.llvm_function_type, 0u );
+			return function_pointer_type;
+		}
+
+		Type operator()( const Synt::NamedTypeName& named_type_name )
+		{
+			if( const Value* value= this_.ResolveValue( named_type_name.file_pos_, names_scope, named_type_name.name ) )
+			{
+				if( const Type* const type= value->GetTypeName() )
+					return *type;
+				else
+					this_.errors_.push_back( ReportNameIsNotTypeName( named_type_name.file_pos_, named_type_name.name.components.back().name ) );
+			}
+			else
+				this_.errors_.push_back( ReportNameNotFound( named_type_name.file_pos_, named_type_name.name ) );
+			return this_.invalid_type_;
+		}
+	};
+
+	Visitor visitor( *this, names_scope, function_context );
+	return boost::apply_visitor( visitor, type_name );
 }
 
 llvm::FunctionType* CodeBuilder::GetLLVMFunctionType( const Function& function_type )
