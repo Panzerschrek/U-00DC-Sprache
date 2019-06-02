@@ -544,7 +544,7 @@ Type CodeBuilder::PrepareType(
 
 			// TODO - generate error, if total size of type (incuding arrays) is more, than half of address space of target architecture.
 			array_type.llvm_type= llvm::ArrayType::get( array_type.type.GetLLVMType(), array_type.ArraySizeOrZero() );
-			return array_type;
+			return std::move(array_type);
 		}
 
 		Type operator()( const Synt::TypeofTypeName& typeof_type_name )
@@ -554,7 +554,7 @@ Type CodeBuilder::PrepareType(
 			{
 				const StackVariablesStorage dummy_stack_variables_storage( function_context );
 				const Variable variable= this_.BuildExpressionCodeEnsureVariable( *typeof_type_name.expression, names_scope, function_context );
-				result= variable.type;
+				result= std::move(variable.type);
 			}
 			this_.RestoreInstructionsState( function_context, prev_state );
 			return result;
@@ -609,7 +609,7 @@ Type CodeBuilder::PrepareType(
 
 			function_type.llvm_function_type= this_.GetLLVMFunctionType( function_type );
 			function_pointer_type.llvm_function_pointer_type= llvm::PointerType::get( function_type.llvm_function_type, 0u );
-			return function_pointer_type;
+			return std::move(function_pointer_type);
 		}
 
 		Type operator()( const Synt::NamedTypeName& named_type_name )

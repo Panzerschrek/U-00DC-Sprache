@@ -125,7 +125,7 @@ boost::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 
 			Variable move_result;
 			move_result.type= void_type_;
-			return Value( move_result, file_pos );
+			return Value( std::move(move_result), file_pos );
 		}
 
 		overloaded_operator= GetOverloadedOperator( args, op, file_pos );
@@ -189,7 +189,7 @@ Value CodeBuilder::BuildExpressionCode(
 		}
 		else
 		{
-			const boost::optional<Value> overloaded_operator_call_try=
+			boost::optional<Value> overloaded_operator_call_try=
 				TryCallOverloadedBinaryOperator(
 					GetOverloadedOperatorForBinaryOperator( binary_operator->operator_type_ ),
 					*binary_operator,
@@ -199,7 +199,7 @@ Value CodeBuilder::BuildExpressionCode(
 					names,
 					function_context );
 			if( overloaded_operator_call_try != boost::none )
-				return *overloaded_operator_call_try;
+				return std::move(*overloaded_operator_call_try);
 
 			Variable l_var=
 				BuildExpressionCodeEnsureVariable(
@@ -1010,7 +1010,7 @@ Value CodeBuilder::BuildBinaryOperator(
 	const auto node= std::make_shared<ReferencesGraphNode>( BinaryOperatorToString(binary_operator), ReferencesGraphNode::Kind::Variable );
 	function_context.stack_variables_stack.back()->RegisterVariable( std::make_pair( node, result ) );
 	result.node= node;
-	return Value( result, file_pos );
+	return Value( std::move(result), file_pos );
 }
 
 Value CodeBuilder::BuildLazyBinaryOperator(
@@ -1095,7 +1095,7 @@ Value CodeBuilder::BuildLazyBinaryOperator(
 	const auto node= std::make_shared<ReferencesGraphNode>( BinaryOperatorToString(binary_operator.operator_type_), ReferencesGraphNode::Kind::Variable );
 	function_context.stack_variables_stack.back()->RegisterVariable( std::make_pair( node, result ) );
 	result.node= node;
-	return Value( result, file_pos );
+	return Value( std::move(result), file_pos );
 }
 
 Value CodeBuilder::BuildCastRef( const Synt::CastRef& cast_ref, NamesScope& names, FunctionContext& function_context )
@@ -1162,7 +1162,7 @@ Value CodeBuilder::DoReferenceCast(
 		}
 	}
 
-	return Value( result, file_pos );
+	return Value( std::move(result), file_pos );
 }
 
 Value CodeBuilder::BuildCastImut( const Synt::CastImut& cast_imut, NamesScope& names, FunctionContext& function_context )
@@ -1178,7 +1178,7 @@ Value CodeBuilder::BuildCastImut( const Synt::CastImut& cast_imut, NamesScope& n
 		function_context.llvm_ir_builder.CreateStore( var.llvm_value, result.llvm_value );
 	}
 
-	return Value( result, cast_imut.file_pos_ );
+	return Value( std::move(result), cast_imut.file_pos_ );
 }
 
 Value CodeBuilder::BuildCastMut( const Synt::CastMut& cast_mut, NamesScope& names, FunctionContext& function_context )
@@ -1197,7 +1197,7 @@ Value CodeBuilder::BuildCastMut( const Synt::CastMut& cast_mut, NamesScope& name
 		function_context.llvm_ir_builder.CreateStore( var.llvm_value, result.llvm_value );
 	}
 
-	return Value( result, cast_mut.file_pos_ );
+	return Value( std::move(result), cast_mut.file_pos_ );
 }
 
 Value CodeBuilder::BuildNamedOperand(
@@ -1239,7 +1239,7 @@ Value CodeBuilder::BuildNamedOperand(
 			Variable base= *function_context.this_;
 			base.type= class_.base_class;
 			base.llvm_value= CreateReferenceCast( function_context.this_->llvm_value, function_context.this_->type, base.type, function_context );
-			return Value( base, named_operand.file_pos_ );
+			return Value( std::move(base), named_operand.file_pos_ );
 		}
 	}
 
@@ -1340,7 +1340,7 @@ Value CodeBuilder::BuildNamedOperand(
 			}
 		}
 
-		return Value( field_variable, named_operand.file_pos_ );
+		return Value( std::move(field_variable), named_operand.file_pos_ );
 	}
 	else if( const OverloadedFunctionsSet* const overloaded_functions_set= value_entry->GetFunctionsSet() )
 	{
@@ -1451,7 +1451,7 @@ Value CodeBuilder::BuildMoveOpeator( const Synt::MoveOperator& move_operator, Na
 	}
 	function_context.variables_state.MoveNode( node );
 
-	return Value( content, move_operator.file_pos_ );
+	return Value( std::move(content), move_operator.file_pos_ );
 }
 
 Value CodeBuilder::BuildNumericConstant(
@@ -1485,7 +1485,7 @@ Value CodeBuilder::BuildNumericConstant(
 	const ReferencesGraphNodePtr node= std::make_shared<ReferencesGraphNode>( ToProgramString( "numeric constant " + std::to_string(numeric_constant.value_) ), ReferencesGraphNode::Kind::Variable );
 	function_context.stack_variables_stack.back()->RegisterVariable( std::make_pair( node, result ) );
 	result.node= node;
-	return Value( result, numeric_constant.file_pos_ );
+	return Value( std::move(result), numeric_constant.file_pos_ );
 }
 
 Value CodeBuilder::BuildStringLiteral( const Synt::StringLiteral& string_literal, FunctionContext& function_context )
@@ -1611,7 +1611,7 @@ Variable CodeBuilder::BuildBooleanConstant(
 	const ReferencesGraphNodePtr node= std::make_shared<ReferencesGraphNode>( Keyword( boolean_constant.value_ ? Keywords::true_ : Keywords::false_ ), ReferencesGraphNode::Kind::Variable );
 	function_context.stack_variables_stack.back()->RegisterVariable( std::make_pair( node, result ) );
 	result.node= node;
-	return result;
+	return std::move(result);
 }
 
 Value CodeBuilder::BuildIndexationOperator(
@@ -1775,7 +1775,7 @@ Value CodeBuilder::BuildIndexationOperator(
 	result.llvm_value=
 		function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, index_list );
 
-	return Value( result, indexation_operator.file_pos_ );
+	return Value( std::move(result), indexation_operator.file_pos_ );
 }
 
 Value CodeBuilder::BuildMemberAccessOperator(
@@ -1936,7 +1936,7 @@ Value CodeBuilder::BuildMemberAccessOperator(
 		}
 	}
 
-	return Value( result, member_access_operator.file_pos_ );
+	return Value( std::move(result), member_access_operator.file_pos_ );
 }
 
 Value CodeBuilder::BuildCallOperator(
@@ -2547,7 +2547,7 @@ Value CodeBuilder::DoCallFunction(
 		DestroyUnusedTemporaryVariables( function_context, call_file_pos );
 	}
 
-	return Value( result, call_file_pos );
+	return Value( std::move(result), call_file_pos );
 }
 
 Variable CodeBuilder::BuildTempVariableConstruction(
@@ -2691,7 +2691,7 @@ Value CodeBuilder::BuildUnaryMinus(
 	const auto node= std::make_shared<ReferencesGraphNode>( OverloadedOperatorToString(OverloadedOperator::Sub), ReferencesGraphNode::Kind::Variable );
 	function_context.stack_variables_stack.back()->RegisterVariable( std::make_pair( node, result ) );
 	result.node= node;
-	return Value( result, unary_minus.file_pos_ );
+	return Value( std::move(result), unary_minus.file_pos_ );
 }
 
 Value CodeBuilder::BuildLogicalNot(
@@ -2729,7 +2729,7 @@ Value CodeBuilder::BuildLogicalNot(
 	const auto node= std::make_shared<ReferencesGraphNode>( OverloadedOperatorToString(OverloadedOperator::LogicalNot), ReferencesGraphNode::Kind::Variable );
 	function_context.stack_variables_stack.back()->RegisterVariable( std::make_pair( node, result ) );
 	result.node= node;
-	return Value( result, logical_not.file_pos_ );
+	return Value( std::move(result), logical_not.file_pos_ );
 }
 
 Value CodeBuilder::BuildBitwiseNot(
@@ -2773,7 +2773,7 @@ Value CodeBuilder::BuildBitwiseNot(
 	const auto node= std::make_shared<ReferencesGraphNode>( OverloadedOperatorToString(OverloadedOperator::BitwiseNot), ReferencesGraphNode::Kind::Variable );
 	function_context.stack_variables_stack.back()->RegisterVariable( std::make_pair( node, result ) );
 	result.node= node;
-	return Value( result, bitwise_not.file_pos_ );
+	return Value( std::move(result), bitwise_not.file_pos_ );
 }
 
 } // namespace CodeBuilderPrivate
