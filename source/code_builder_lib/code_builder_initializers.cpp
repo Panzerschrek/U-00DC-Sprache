@@ -23,21 +23,49 @@ llvm::Constant* CodeBuilder::ApplyInitializer(
 	NamesScope& block_names,
 	FunctionContext& function_context )
 {
-	if( const auto array_initializer= boost::get<const Synt::ArrayInitializer>(&initializer) )
-		return ApplyArrayInitializer( variable, *array_initializer, block_names, function_context );
-	else if( const auto struct_named_initializer= boost::get<const Synt::StructNamedInitializer>(&initializer) )
-		return ApplyStructNamedInitializer( variable, *struct_named_initializer, block_names, function_context );
-	else if( const auto constructor_initializer= boost::get<const Synt::ConstructorInitializer>(&initializer) )
-		return ApplyConstructorInitializer( variable, constructor_initializer->call_operator, block_names, function_context );
-	else if( const auto expression_initializer= boost::get<const Synt::ExpressionInitializer>(&initializer) )
-		return ApplyExpressionInitializer( variable, *expression_initializer, block_names, function_context );
-	else if( const auto zero_initializer= boost::get<const Synt::ZeroInitializer>(&initializer) )
-		return ApplyZeroInitializer( variable, *zero_initializer, function_context );
-	else if( const auto uninitialized_initializer= boost::get<const Synt::UninitializedInitializer>(&initializer) )
-		return ApplyUninitializedInitializer( variable, *uninitialized_initializer, function_context );
-	else U_ASSERT(false);
+	struct Visitor final : public boost::static_visitor<llvm::Constant*>
+	{
+		CodeBuilder& this_;
+		const Variable& variable;
+		NamesScope& block_names;
+		FunctionContext& function_context;
 
-	return nullptr;
+		Visitor( CodeBuilder& in_this, const Variable& in_variable, NamesScope& in_block_names, FunctionContext& in_function_context )
+			: this_(in_this), variable(in_variable), block_names(in_block_names), function_context(in_function_context)
+		{}
+
+		llvm::Constant* operator()( const Synt::EmptyVariant& )
+		{
+			return nullptr;
+		}
+		llvm::Constant* operator()( const Synt::ArrayInitializer& array_initializer )
+		{
+			return this_.ApplyArrayInitializer( variable, array_initializer, block_names, function_context );
+		}
+		llvm::Constant* operator()( const Synt::StructNamedInitializer& struct_named_initializer )
+		{
+			return this_.ApplyStructNamedInitializer( variable, struct_named_initializer, block_names, function_context );
+		}
+		llvm::Constant* operator()( const Synt::ConstructorInitializer& constructor_initializer )
+		{
+			return this_.ApplyConstructorInitializer( variable, constructor_initializer.call_operator, block_names, function_context );
+		}
+		llvm::Constant* operator()( const Synt::ExpressionInitializer& expression_initializer )
+		{
+			return this_.ApplyExpressionInitializer( variable, expression_initializer, block_names, function_context );
+		}
+		llvm::Constant* operator()( const Synt::ZeroInitializer& zero_initializer )
+		{
+			return this_.ApplyZeroInitializer( variable, zero_initializer, function_context );
+		}
+		llvm::Constant* operator()( const Synt::UninitializedInitializer& uninitialized_initializer )
+		{
+			return this_.ApplyUninitializedInitializer( variable, uninitialized_initializer, function_context );
+		}
+	};
+
+	Visitor visitor( *this, variable, block_names, function_context );
+	return boost::apply_visitor( visitor, initializer );
 }
 
 void CodeBuilder::ApplyEmptyInitializer(
