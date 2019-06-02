@@ -91,6 +91,19 @@ FilePos GetInitializerFilePos( const Initializer& initializer )
 	return FilePos();
 }
 
+FilePos GetBlockElementFilePos( const BlockElement& block_element )
+{
+	struct Visitor final : public boost::static_visitor<FilePos>
+	{
+		FilePos operator()( const SyntaxElementBase& syntax_element ) const
+		{
+			return syntax_element.file_pos_;
+		}
+	};
+
+	return boost::apply_visitor( Visitor(), block_element );
+}
+
 ArrayInitializer::ArrayInitializer( const FilePos& file_pos )
 	: SyntaxElementBase( file_pos )
 {}
@@ -181,39 +194,13 @@ TypeNameInExpression::TypeNameInExpression( const FilePos& file_pos )
 	: ExpressionComponentWithUnaryOperators( file_pos )
 {}
 
-const FilePos& IBlockElement::GetFilePos() const
-{
-	// All non-abstract childs must be based on SyntaxElementBase.
-	const SyntaxElementBase* const base= dynamic_cast<const SyntaxElementBase*>( this );
-	U_ASSERT( base != nullptr );
-	return base->file_pos_;
-}
-
-Block::Block( const FilePos& start_file_pos, const FilePos& end_file_pos, BlockElements elements )
+Block::Block( const FilePos& start_file_pos )
 	: SyntaxElementBase(start_file_pos)
-	, end_file_pos_(end_file_pos)
-	, elements_( std::move( elements ) )
 {}
 
 VariablesDeclaration::VariablesDeclaration( const FilePos& file_pos )
 	: SyntaxElementBase(file_pos)
 {}
-
-VariablesDeclaration::VariablesDeclaration( VariablesDeclaration&& other )
-	: SyntaxElementBase(other.file_pos_)
-{
-	*this= std::move(other);
-}
-
-VariablesDeclaration& VariablesDeclaration::operator=( VariablesDeclaration&& other )
-{
-	file_pos_= other.file_pos_;
-
-	variables= std::move( other.variables );
-	type= std::move( other.type );
-
-	return *this;
-}
 
 AutoVariableDeclaration::AutoVariableDeclaration( const FilePos& file_pos )
 	: SyntaxElementBase( file_pos )
@@ -225,6 +212,7 @@ ReturnOperator::ReturnOperator( const FilePos& file_pos )
 
 WhileOperator::WhileOperator( const FilePos& file_pos)
 	: SyntaxElementBase(file_pos)
+	, block_(file_pos)
 {}
 
 BreakOperator::BreakOperator( const FilePos& file_pos )
@@ -235,14 +223,13 @@ ContinueOperator::ContinueOperator( const FilePos& file_pos )
 	: SyntaxElementBase(file_pos)
 {}
 
-IfOperator::IfOperator( const FilePos& start_file_pos, const FilePos& end_file_pos, std::vector<Branch> branches )
+IfOperator::IfOperator( const FilePos& start_file_pos )
 	: SyntaxElementBase(start_file_pos)
-	, branches_( std::move( branches ) )
-	, end_file_pos_(end_file_pos)
 {}
 
 StaticIfOperator::StaticIfOperator( const FilePos& file_pos )
 	: SyntaxElementBase(file_pos)
+	, if_operator_(file_pos)
 {}
 
 SingleExpressionOperator::SingleExpressionOperator( const FilePos& file_pos )

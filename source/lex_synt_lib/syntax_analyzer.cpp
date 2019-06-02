@@ -262,21 +262,21 @@ private:
 	Initializer ParseConstructorInitializer();
 	Initializer ParseExpressionInitializer();
 
-	VariablesDeclarationPtr ParseVariablesDeclaration();
-	std::unique_ptr<AutoVariableDeclaration> ParseAutoVariableDeclaration();
+	VariablesDeclaration ParseVariablesDeclaration();
+	AutoVariableDeclaration ParseAutoVariableDeclaration();
 
-	IBlockElementPtr ParseReturnOperator();
-	IBlockElementPtr ParseWhileOperator();
-	IBlockElementPtr ParseBreakOperator();
-	IBlockElementPtr ParseContinueOperator();
-	std::unique_ptr<IfOperator> ParseIfOperator();
-	IBlockElementPtr ParseStaticIfOperator();
-	std::unique_ptr<StaticAssert> ParseStaticAssert();
+	ReturnOperator ParseReturnOperator();
+	WhileOperator ParseWhileOperator();
+	BreakOperator ParseBreakOperator();
+	ContinueOperator ParseContinueOperator();
+	IfOperator ParseIfOperator();
+	StaticIfOperator ParseStaticIfOperator();
+	StaticAssert ParseStaticAssert();
 	std::unique_ptr<Enum> ParseEnum();
-	IBlockElementPtr ParseHalt();
+	BlockElement ParseHalt();
 
-	std::vector<IBlockElementPtr> ParseBlockElements();
-	BlockPtr ParseBlock();
+	std::vector<BlockElement> ParseBlockElements();
+	Block ParseBlock();
 
 	ClassKindAttribute TryParseClassKindAttribute();
 	std::vector<ComplexName> TryParseClassParentsList();
@@ -793,18 +793,15 @@ ProgramElements SyntaxAnalyzer::ParseNamespaceBody( const Lexem::Type end_lexem 
 		}
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::var_ )
 		{
-			if( IProgramElementPtr program_element= ParseVariablesDeclaration() )
-				program_elements.emplace_back( std::move(program_element) );
+			program_elements.emplace_back( new VariablesDeclaration( ParseVariablesDeclaration() ) );
 		}
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::auto_ )
 		{
-			if( IProgramElementPtr program_element= ParseAutoVariableDeclaration() )
-				program_elements.emplace_back( std::move(program_element) );
+			program_elements.emplace_back( new AutoVariableDeclaration( ParseAutoVariableDeclaration() ) );
 		}
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::static_assert_ )
 		{
-			if( IProgramElementPtr program_element= ParseStaticAssert() )
-				program_elements.emplace_back( std::move(program_element) );
+			program_elements.emplace_back( new StaticAssert( ParseStaticAssert() ) );
 		}
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::enum_ )
 		{
@@ -2166,18 +2163,18 @@ Initializer SyntaxAnalyzer::ParseExpressionInitializer()
 	return std::move( initializer );
 }
 
-VariablesDeclarationPtr SyntaxAnalyzer::ParseVariablesDeclaration()
+VariablesDeclaration SyntaxAnalyzer::ParseVariablesDeclaration()
 {
 	U_ASSERT( it_->type == Lexem::Type::Identifier && it_->text == Keywords::var_ );
-	VariablesDeclarationPtr decl( new VariablesDeclaration( it_->file_pos ) );
+	VariablesDeclaration decl( it_->file_pos );
 	NextLexem();
 
-	decl->type= ParseTypeName();
+	decl.type= ParseTypeName();
 
 	do
 	{
-		decl->variables.emplace_back();
-		VariablesDeclaration::VariableEntry& variable_entry= decl->variables.back();
+		decl.variables.emplace_back();
+		VariablesDeclaration::VariableEntry& variable_entry= decl.variables.back();
 
 		if( it_->type == Lexem::Type::And )
 		{
@@ -2231,7 +2228,7 @@ VariablesDeclarationPtr SyntaxAnalyzer::ParseVariablesDeclaration()
 		else
 		{
 			PushErrorMessage();
-			return nullptr;
+			return decl;
 		}
 
 	} while( NotEndOfFile() );
@@ -2239,21 +2236,21 @@ VariablesDeclarationPtr SyntaxAnalyzer::ParseVariablesDeclaration()
 	return decl;
 }
 
-std::unique_ptr<AutoVariableDeclaration> SyntaxAnalyzer::ParseAutoVariableDeclaration()
+AutoVariableDeclaration SyntaxAnalyzer::ParseAutoVariableDeclaration()
 {
 	U_ASSERT( it_->type == Lexem::Type::Identifier && it_->text == Keywords::auto_ );
-	std::unique_ptr<AutoVariableDeclaration> result( new AutoVariableDeclaration( it_->file_pos ) );
+	AutoVariableDeclaration result( it_->file_pos );
 	NextLexem();
 
 	if (it_->type == Lexem::Type::Identifier && it_->text == Keywords::lock_temps_ )
 	{
 		NextLexem();
-		result->lock_temps= true;
+		result.lock_temps= true;
 	}
 
 	if( it_->type == Lexem::Type::And )
 	{
-		result->reference_modifier= ReferenceModifier::Reference;
+		result.reference_modifier= ReferenceModifier::Reference;
 		NextLexem();
 	}
 
@@ -2265,17 +2262,17 @@ std::unique_ptr<AutoVariableDeclaration> SyntaxAnalyzer::ParseAutoVariableDeclar
 
 	if( it_->text == Keywords::mut_ )
 	{
-		result->mutability_modifier= MutabilityModifier::Mutable;
+		result.mutability_modifier= MutabilityModifier::Mutable;
 		NextLexem();
 	}
 	else if( it_->text == Keywords::imut_ )
 	{
-		result->mutability_modifier= MutabilityModifier::Immutable;
+		result.mutability_modifier= MutabilityModifier::Immutable;
 		NextLexem();
 	}
 	else if( it_->text == Keywords::constexpr_ )
 	{
-		result->mutability_modifier= MutabilityModifier::Constexpr;
+		result.mutability_modifier= MutabilityModifier::Constexpr;
 		NextLexem();
 	}
 
@@ -2285,7 +2282,7 @@ std::unique_ptr<AutoVariableDeclaration> SyntaxAnalyzer::ParseAutoVariableDeclar
 		return result;
 	}
 
-	result->name= it_->text;
+	result.name= it_->text;
 	NextLexem();
 
 	if( it_->type != Lexem::Type::Assignment )
@@ -2295,7 +2292,7 @@ std::unique_ptr<AutoVariableDeclaration> SyntaxAnalyzer::ParseAutoVariableDeclar
 	}
 	NextLexem();
 
-	result->initializer_expression = ParseExpression();
+	result.initializer_expression = ParseExpression();
 
 	if( it_->type != Lexem::Type::Semicolon )
 	{
@@ -2307,52 +2304,52 @@ std::unique_ptr<AutoVariableDeclaration> SyntaxAnalyzer::ParseAutoVariableDeclar
 	return result;
 }
 
-IBlockElementPtr SyntaxAnalyzer::ParseReturnOperator()
+ReturnOperator SyntaxAnalyzer::ParseReturnOperator()
 {
 	U_ASSERT( it_->type == Lexem::Type::Identifier && it_->text == Keywords::return_ );
 
-	std::unique_ptr<ReturnOperator> result( new ReturnOperator( it_->file_pos ) );
+	ReturnOperator result( it_->file_pos );
 	NextLexem();
 
 	if( it_->type == Lexem::Type::Semicolon )
 	{
 		NextLexem();
-		return std::move(result);
+		return result;
 	}
 
-	result->expression_= ParseExpression();
+	result.expression_= ParseExpression();
 
 	if( it_->type != Lexem::Type::Semicolon  )
 	{
 		PushErrorMessage();
-		return std::move(result);
+		return result;
 	}
 
 	NextLexem();
 
-	return std::move(result);
+	return result;
 }
 
-IBlockElementPtr SyntaxAnalyzer::ParseWhileOperator()
+WhileOperator SyntaxAnalyzer::ParseWhileOperator()
 {
 	U_ASSERT( it_->type == Lexem::Type::Identifier && it_->text == Keywords::while_ );
-	std::unique_ptr<WhileOperator> result( new WhileOperator( it_->file_pos ) );
+	WhileOperator result( it_->file_pos );
 
 	NextLexem();
 	if( it_->type != Lexem::Type::BracketLeft )
 	{
 		PushErrorMessage();
-		return std::move(result);
+		return result;
 	}
 
 	NextLexem();
 
-	result->condition_= ParseExpression();
+	result.condition_= ParseExpression();
 
 	if( it_->type != Lexem::Type::BracketRight )
 	{
 		PushErrorMessage();
-		return std::move(result);
+		return result;
 	}
 
 	NextLexem();
@@ -2360,76 +2357,67 @@ IBlockElementPtr SyntaxAnalyzer::ParseWhileOperator()
 	if( it_->type != Lexem::Type::BraceLeft )
 	{
 		PushErrorMessage();
-		return std::move(result);
+		return result;
 	}
 
-	result->block_= ParseBlock();
-	return std::move(result);
+	result.block_= ParseBlock();
+	return result;
 }
 
-IBlockElementPtr SyntaxAnalyzer::ParseBreakOperator()
+BreakOperator SyntaxAnalyzer::ParseBreakOperator()
 {
 	U_ASSERT( it_->type == Lexem::Type::Identifier && it_->text == Keywords::break_ );
-
-	const FilePos& op_pos= it_->file_pos;
-
+	BreakOperator result( it_->file_pos );
 	NextLexem();
 
 	if( it_->type != Lexem::Type::Semicolon )
 	{
 		PushErrorMessage();
-		return nullptr;
+		return result;
 	}
 
 	NextLexem();
 
-	return IBlockElementPtr( new BreakOperator( op_pos ) );
+	return result;
 }
 
-IBlockElementPtr SyntaxAnalyzer::ParseContinueOperator()
+ContinueOperator SyntaxAnalyzer::ParseContinueOperator()
 {
 	U_ASSERT( it_->type == Lexem::Type::Identifier && it_->text == Keywords::continue_ );
-
-	const FilePos& op_pos= it_->file_pos;
-
+	ContinueOperator result( it_->file_pos );
 	NextLexem();
 
 	if( it_->type != Lexem::Type::Semicolon )
 	{
 		PushErrorMessage();
-		return nullptr;
+		return result;
 	}
 
 	NextLexem();
 
-	return IBlockElementPtr( new ContinueOperator( op_pos ) );
+	return result;
 }
 
-std::unique_ptr<IfOperator> SyntaxAnalyzer::ParseIfOperator()
+IfOperator SyntaxAnalyzer::ParseIfOperator()
 {
 	U_ASSERT( it_->type == Lexem::Type::Identifier && ( it_->text == Keywords::if_  || it_->text == Keywords::static_if_ ) );
-
-	const FilePos& op_pos= it_->file_pos;
-
+	IfOperator result( it_->file_pos );
 	NextLexem();
 
 	if( it_->type != Lexem::Type::BracketLeft )
 	{
 		PushErrorMessage();
-		return nullptr;
+		return result;
 	}
 
 	NextLexem();
 
-	std::vector<IfOperator::Branch> branches;
-	branches.emplace_back();
-
-	branches.back().condition= ParseExpression();
+	Expression if_expression= ParseExpression();
 
 	if( it_->type != Lexem::Type::BracketRight )
 	{
 		PushErrorMessage();
-		return nullptr;
+		return result;
 	}
 
 	NextLexem();
@@ -2437,19 +2425,20 @@ std::unique_ptr<IfOperator> SyntaxAnalyzer::ParseIfOperator()
 	if( it_->type != Lexem::Type::BraceLeft )
 	{
 		PushErrorMessage();
-		return nullptr;
+		return result;
 	}
-	branches.back().block= ParseBlock();
+
+	auto& branches= result.branches_;
+	branches.emplace_back( IfOperator::Branch{ std::move(if_expression), ParseBlock() } );
 
 	while( NotEndOfFile() )
 	{
 		if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::else_ )
 		{
-			branches.emplace_back();
-
 			NextLexem();
 
 			// Optional if.
+			Expression condition;
 			if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::if_ )
 			{
 				NextLexem();
@@ -2457,17 +2446,17 @@ std::unique_ptr<IfOperator> SyntaxAnalyzer::ParseIfOperator()
 				if( it_->type != Lexem::Type::BracketLeft )
 				{
 					PushErrorMessage();
-					return nullptr;
+					return result;
 				}
 
 				NextLexem();
 
-				branches.back().condition= ParseExpression();
+				condition= ParseExpression();
 
 				if( it_->type != Lexem::Type::BracketRight )
 				{
 					PushErrorMessage();
-					return nullptr;
+					return result;
 				}
 
 				NextLexem();
@@ -2476,10 +2465,10 @@ std::unique_ptr<IfOperator> SyntaxAnalyzer::ParseIfOperator()
 			if( it_->type != Lexem::Type::BraceLeft )
 			{
 				PushErrorMessage();
-				return nullptr;
+				return result;
 			}
 
-			branches.back().block= ParseBlock();
+			branches.emplace_back( IfOperator::Branch{ std::move(condition), ParseBlock() } );
 
 			if( boost::get<EmptyVariant>( &branches.back().condition ) != nullptr )
 				break;
@@ -2488,29 +2477,23 @@ std::unique_ptr<IfOperator> SyntaxAnalyzer::ParseIfOperator()
 			break;
 	}
 
-	return
-		std::unique_ptr<IfOperator>(
-			new IfOperator(
-				op_pos,
-				std::prev( it_ )->file_pos,
-				std::move( branches ) ) );
+	result.end_file_pos_= std::prev( it_ )->file_pos;
+	return result;
 }
 
-IBlockElementPtr SyntaxAnalyzer::ParseStaticIfOperator()
+StaticIfOperator SyntaxAnalyzer::ParseStaticIfOperator()
 {
 	U_ASSERT( it_->type == Lexem::Type::Identifier && it_->text == Keywords::static_if_ );
 
-	std::unique_ptr<StaticIfOperator> result( new StaticIfOperator( it_->file_pos ) );
-	result->if_operator_= ParseIfOperator();
-	return std::move(result);
+	StaticIfOperator result( it_->file_pos  );
+	result.if_operator_= ParseIfOperator();
+	return result;
 }
 
-std::unique_ptr<StaticAssert> SyntaxAnalyzer::ParseStaticAssert()
+StaticAssert SyntaxAnalyzer::ParseStaticAssert()
 {
 	U_ASSERT( it_->type == Lexem::Type::Identifier && it_->text == Keywords::static_assert_ );
-
-	std::unique_ptr<StaticAssert> result( new StaticAssert( it_->file_pos ) );
-
+	StaticAssert result( it_->file_pos );
 	NextLexem();
 
 	if( it_->type == Lexem::Type::BracketLeft )
@@ -2518,7 +2501,7 @@ std::unique_ptr<StaticAssert> SyntaxAnalyzer::ParseStaticAssert()
 	else
 		PushErrorMessage();
 
-	result->expression= ParseExpression();
+	result.expression= ParseExpression();
 
 	if( it_->type == Lexem::Type::BracketRight )
 		NextLexem();
@@ -2530,7 +2513,7 @@ std::unique_ptr<StaticAssert> SyntaxAnalyzer::ParseStaticAssert()
 	else
 	{
 		PushErrorMessage();
-		return nullptr;
+		return result;
 	}
 
 	return result;
@@ -2603,38 +2586,37 @@ std::unique_ptr<Enum> SyntaxAnalyzer::ParseEnum()
 	return result;
 }
 
-IBlockElementPtr SyntaxAnalyzer::ParseHalt()
+BlockElement SyntaxAnalyzer::ParseHalt()
 {
 	U_ASSERT( it_->type == Lexem::Type::Identifier && it_->text == Keywords::halt_ );
-
 	const FilePos& file_pos= it_->file_pos;
 	NextLexem();
 
 	if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::if_ )
 	{
 		NextLexem();
-		std::unique_ptr<HaltIf> result( new HaltIf( file_pos ) );
+		HaltIf result( file_pos );
 
 		if( it_->type != Lexem::Type::BracketLeft )
 		{
 			PushErrorMessage();
-			return nullptr;
+			return std::move(result);
 		}
 		NextLexem();
 
-		result->condition= ParseExpression();
+		result.condition= ParseExpression();
 
 		if( it_->type != Lexem::Type::BracketRight )
 		{
 			PushErrorMessage();
-			return nullptr;
+			return std::move(result);
 		}
 		NextLexem();
 
 		if( it_->type != Lexem::Type::Semicolon )
 		{
 			PushErrorMessage();
-			return nullptr;
+			return std::move(result);
 		}
 		NextLexem();
 
@@ -2643,19 +2625,18 @@ IBlockElementPtr SyntaxAnalyzer::ParseHalt()
 	else if( it_->type == Lexem::Type::Semicolon )
 	{
 		NextLexem();
-		std::unique_ptr<Halt> result( new Halt( file_pos ) );
-		return std::move(result);
+		return Halt( file_pos );
 	}
 	else
 	{
 		PushErrorMessage();
-		return nullptr;
+		return Halt( file_pos );
 	}
 }
 
-std::vector<IBlockElementPtr> SyntaxAnalyzer::ParseBlockElements()
+std::vector<BlockElement> SyntaxAnalyzer::ParseBlockElements()
 {
-	BlockElements elements;
+	std::vector<BlockElement> elements;
 
 	while( NotEndOfFile() && it_->type != Lexem::Type::EndOfFile )
 	{
@@ -2688,27 +2669,23 @@ std::vector<IBlockElementPtr> SyntaxAnalyzer::ParseBlockElements()
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::safe_ )
 		{
 			NextLexem();
-			if( BlockPtr block= ParseBlock() )
-			{
-				block->safety_= Block::Safety::Safe;
-				elements.emplace_back( std::move( block ) );
-			}
+			Block block= ParseBlock();
+			block.safety_= Block::Safety::Safe;
+			elements.emplace_back( std::move( block ) );
 		}
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::unsafe_ )
 		{
 			NextLexem();
-			if( BlockPtr block= ParseBlock() )
-			{
-				block->safety_= Block::Safety::Unsafe;
-				elements.emplace_back( std::move( block ) );
-			}
+			Block block= ParseBlock();
+			block.safety_= Block::Safety::Unsafe;
+			elements.emplace_back( std::move( block ) );
 		}
 		else if( it_->type == Lexem::Type::Increment )
 		{
-			std::unique_ptr<IncrementOperator> op( new IncrementOperator( it_->file_pos ) );
+			IncrementOperator op( it_->file_pos );
 			NextLexem();
 
-			op->expression= ParseExpression();
+			op.expression= ParseExpression();
 			elements.push_back( std::move(op) );
 
 			if( it_->type != Lexem::Type::Semicolon )
@@ -2720,10 +2697,10 @@ std::vector<IBlockElementPtr> SyntaxAnalyzer::ParseBlockElements()
 		}
 		else if( it_->type == Lexem::Type::Decrement )
 		{
-			std::unique_ptr<DecrementOperator> op( new DecrementOperator( it_->file_pos ) );
+			DecrementOperator op( it_->file_pos );
 			NextLexem();
 
-			op->expression= ParseExpression();
+			op.expression= ParseExpression();
 			elements.push_back( std::move(op) );
 
 			if( it_->type != Lexem::Type::Semicolon )
@@ -2739,7 +2716,7 @@ std::vector<IBlockElementPtr> SyntaxAnalyzer::ParseBlockElements()
 			{
 				if( const auto macro= FetchMacro( it_->text, Macro::Context::Block ) )
 				{
-					BlockElements macro_elements= ExpandMacro( *macro, &SyntaxAnalyzer::ParseBlockElements );
+					std::vector<BlockElement> macro_elements= ExpandMacro( *macro, &SyntaxAnalyzer::ParseBlockElements );
 					for( auto& element : macro_elements )
 						elements.push_back( std::move(element) );
 					continue;
@@ -2750,11 +2727,11 @@ std::vector<IBlockElementPtr> SyntaxAnalyzer::ParseBlockElements()
 
 			if( it_->type == Lexem::Type::Assignment )
 			{
-				std::unique_ptr<AssignmentOperator> assignment_operator( new AssignmentOperator( it_->file_pos ) );
+				AssignmentOperator assignment_operator( it_->file_pos );
 				NextLexem();
 
-				assignment_operator->l_value_= std::move(l_expression);
-				assignment_operator->r_value_= ParseExpression();
+				assignment_operator.l_value_= std::move(l_expression);
+				assignment_operator.r_value_= ParseExpression();
 
 				if( it_->type != Lexem::Type::Semicolon )
 				{
@@ -2768,13 +2745,13 @@ std::vector<IBlockElementPtr> SyntaxAnalyzer::ParseBlockElements()
 			}
 			else if( IsAdditiveAssignmentOperator( *it_ ) )
 			{
-				std::unique_ptr<AdditiveAssignmentOperator> op( new AdditiveAssignmentOperator( it_->file_pos ) );
+				AdditiveAssignmentOperator op( it_->file_pos );
 
-				op->additive_operation_= GetAdditiveAssignmentOperator( *it_ );
+				op.additive_operation_= GetAdditiveAssignmentOperator( *it_ );
 				NextLexem();
 
-				op->l_value_= std::move(l_expression);
-				op->r_value_= ParseExpression();
+				op.l_value_= std::move(l_expression);
+				op.r_value_= ParseExpression();
 
 				elements.push_back( std::move(op) );
 
@@ -2788,10 +2765,10 @@ std::vector<IBlockElementPtr> SyntaxAnalyzer::ParseBlockElements()
 			}
 			else if( it_->type == Lexem::Type::Semicolon )
 			{
-				std::unique_ptr<SingleExpressionOperator> expr( new SingleExpressionOperator( it_->file_pos ) );
+				SingleExpressionOperator expr(it_->file_pos );
 				NextLexem();
 
-				expr->expression_= std::move(l_expression);
+				expr.expression_= std::move(l_expression);
 				elements.emplace_back( std::move(expr) );
 			}
 			else
@@ -2806,33 +2783,28 @@ std::vector<IBlockElementPtr> SyntaxAnalyzer::ParseBlockElements()
 	return elements;
 }
 
-BlockPtr SyntaxAnalyzer::ParseBlock()
+Block SyntaxAnalyzer::ParseBlock()
 {
 	U_ASSERT( it_->type == Lexem::Type::BraceLeft );
 
-	const FilePos& block_pos= it_->file_pos;
-	FilePos block_end_file_pos= block_pos;
+	Block block( it_->file_pos );
 
 	NextLexem();
 
-	BlockElements elements= ParseBlockElements();
+	block.elements_= ParseBlockElements();
 
 	if( it_->type == Lexem::Type::BraceRight )
 	{
-		block_end_file_pos= it_->file_pos;
+		block.end_file_pos_= it_->file_pos;
 		NextLexem();
 	}
 	else
 	{
 		PushErrorMessage();
-		return nullptr;
+		return block;
 	}
 
-	return BlockPtr(
-		new Block(
-			block_pos,
-			block_end_file_pos,
-			std::move( elements ) ) );
+	return block;
 }
 
 ClassKindAttribute SyntaxAnalyzer::TryParseClassKindAttribute()
@@ -3264,7 +3236,7 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 		}
 
 		if( it_->type == Lexem::Type::BraceLeft )
-			result->block_= ParseBlock();
+			result->block_.reset( new Block( ParseBlock() ) );
 		else
 		{
 			PushErrorMessage();
@@ -3328,18 +3300,15 @@ ClassElements SyntaxAnalyzer::ParseClassBodyElements()
 		}
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::var_ )
 		{
-			if( IClassElementPtr class_element= ParseVariablesDeclaration() )
-				result.emplace_back( std::move(class_element) );
+			result.emplace_back( new VariablesDeclaration( ParseVariablesDeclaration() ) );
 		}
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::auto_ )
 		{
-			if( IClassElementPtr class_element= ParseAutoVariableDeclaration() )
-				result.emplace_back( std::move(class_element) );
+			result.emplace_back( new AutoVariableDeclaration( ParseAutoVariableDeclaration() ) );
 		}
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::static_assert_ )
 		{
-			if( IClassElementPtr class_element= ParseStaticAssert() )
-				result.emplace_back( std::move(class_element) );
+			result.emplace_back( new StaticAssert( ParseStaticAssert() ) );
 		}
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::enum_ )
 		{
@@ -3825,11 +3794,7 @@ bool SyntaxAnalyzer::MatchMacroBlock(
 			{
 				ParsedMacroElement element;
 				element.begin= it_;
-				if( ParseBlock() == nullptr )
-				{
-					push_macro_error();
-					return false;
-				}
+				ParseBlock();
 				element.end= it_;
 				element.kind= match_element.kind;
 				out_elements[match_element.name]= std::move(element);

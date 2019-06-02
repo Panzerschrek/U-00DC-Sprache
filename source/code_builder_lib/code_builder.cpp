@@ -1988,125 +1988,170 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockCode(
 	const StackVariablesStorage block_variables_storage( function_context );
 
 	size_t block_element_index= 0u;
-	for( const Synt::IBlockElementPtr& block_element : block.elements_ )
+	for( const Synt::BlockElement& block_element : block.elements_ )
 	{
 		++block_element_index;
-		const Synt::IBlockElement* const block_element_ptr= block_element.get();
 
-		if( const auto variables_declaration= dynamic_cast<const Synt::VariablesDeclaration*>( block_element_ptr ) )
-			BuildVariablesDeclarationCode( *variables_declaration, block_names, function_context );
-		else if( const auto auto_variable_declaration= dynamic_cast<const Synt::AutoVariableDeclaration*>( block_element_ptr ) )
-			BuildAutoVariableDeclarationCode( *auto_variable_declaration, block_names, function_context );
-		else if( const auto expression= dynamic_cast<const Synt::SingleExpressionOperator*>( block_element_ptr ) )
-			BuildExpressionCodeAndDestroyTemporaries( expression->expression_, block_names, function_context );
-		else if( const auto assignment_operator= dynamic_cast<const Synt::AssignmentOperator*>( block_element_ptr ) )
-			BuildAssignmentOperatorCode( *assignment_operator, block_names, function_context );
-		else if( const auto additive_assignment_operator= dynamic_cast<const Synt::AdditiveAssignmentOperator*>( block_element_ptr ) )
-			BuildAdditiveAssignmentOperatorCode( *additive_assignment_operator, block_names, function_context );
-		else if( const auto increment_operator= dynamic_cast<const Synt::IncrementOperator*>( block_element_ptr ) )
-			BuildDeltaOneOperatorCode(
-				increment_operator->expression,
-				increment_operator->file_pos_,
-				true,
-				block_names,
-				function_context );
-		else if( const auto decrement_operator= dynamic_cast<const Synt::DecrementOperator*>( block_element_ptr ) )
-			BuildDeltaOneOperatorCode(
-				decrement_operator->expression,
-				decrement_operator->file_pos_,
-				false,
-				block_names,
-				function_context );
-		else if( const auto return_operator= dynamic_cast<const Synt::ReturnOperator*>( block_element_ptr ) )
+		struct Visitor final : public boost::static_visitor<bool>
 		{
-			BuildReturnOperatorCode( *return_operator, block_names, function_context );
+			CodeBuilder& this_;
+			BlockBuildInfo& block_build_info;
+			NamesScope& block_names;
+			FunctionContext& function_context;
 
-			block_build_info.have_terminal_instruction_inside= true;
-			break;
-		}
-		else if( const auto while_operator= dynamic_cast<const Synt::WhileOperator*>( block_element_ptr ) )
-			BuildWhileOperatorCode( *while_operator, block_names, function_context );
-		else if( const auto break_operator= dynamic_cast<const Synt::BreakOperator*>( block_element_ptr ) )
-		{
-			BuildBreakOperatorCode( *break_operator, function_context );
+			Visitor( CodeBuilder& in_this, BlockBuildInfo& in_block_build_info, NamesScope& in_block_names, FunctionContext& in_function_context )
+				: this_(in_this), block_build_info(in_block_build_info), block_names(in_block_names), function_context(in_function_context)
+			{}
 
-			block_build_info.have_terminal_instruction_inside= true;
-			break;
-		}
-		else if( const auto continue_operator= dynamic_cast<const Synt::ContinueOperator*>( block_element_ptr ) )
-		{
-			BuildContinueOperatorCode( *continue_operator, function_context );
-
-			block_build_info.have_terminal_instruction_inside= true;
-			break;
-		}
-		else if( const auto if_operator= dynamic_cast<const Synt::IfOperator*>( block_element_ptr ) )
-		{
-			const CodeBuilder::BlockBuildInfo if_block_info=
-				BuildIfOperatorCode(
-					*if_operator,
+			// Returns true, if needs break.
+			bool operator()( const Synt::VariablesDeclaration& variables_declaration )
+			{
+				this_.BuildVariablesDeclarationCode( variables_declaration, block_names, function_context );
+				return false;
+			}
+			bool operator()( const Synt::AutoVariableDeclaration& auto_variable_declaration )
+			{
+				this_.BuildAutoVariableDeclarationCode( auto_variable_declaration, block_names, function_context );
+				return false;
+			}
+			bool operator()( const Synt::SingleExpressionOperator& expression )
+			{
+				this_.BuildExpressionCodeAndDestroyTemporaries( expression.expression_, block_names, function_context );
+				return false;
+			}
+			bool operator()( const Synt::AssignmentOperator& assignment_operator )
+			{
+				this_.BuildAssignmentOperatorCode( assignment_operator, block_names, function_context );
+				return false;
+			}
+			bool operator()( const Synt::AdditiveAssignmentOperator& additive_assignment_operator )
+			{
+				this_.BuildAdditiveAssignmentOperatorCode( additive_assignment_operator, block_names, function_context );
+				return false;
+			}
+			bool operator()( const Synt::IncrementOperator& increment_operator )
+			{
+				this_.BuildDeltaOneOperatorCode(
+					increment_operator.expression,
+					increment_operator.file_pos_,
+					true,
 					block_names,
 					function_context );
-
-			if( if_block_info.have_terminal_instruction_inside )
-			{
-				block_build_info.have_terminal_instruction_inside= true;
-				break;
+				return false;
 			}
-		}
-		else if( const auto static_if_operator= dynamic_cast<const Synt::StaticIfOperator*>( block_element_ptr ) )
-		{
-			const CodeBuilder::BlockBuildInfo static_if_block_info=
-				BuildStaticIfOperatorCode(
-					*static_if_operator,
+			bool operator()( const Synt::DecrementOperator& decrement_operator )
+			{
+				this_.BuildDeltaOneOperatorCode(
+					decrement_operator.expression,
+					decrement_operator.file_pos_,
+					false,
 					block_names,
 					function_context );
-
-			if( static_if_block_info.have_terminal_instruction_inside )
-			{
-				block_build_info.have_terminal_instruction_inside= true;
-				break;
+				return false;
 			}
-		}
-		else if( const auto static_assert_= dynamic_cast<const Synt::StaticAssert*>( block_element_ptr ) )
-			BuildStaticAssert( *static_assert_, block_names, function_context );
-		else if( const auto halt= dynamic_cast<const Synt::Halt*>( block_element_ptr ) )
-		{
-			BuildHalt( *halt, function_context );
+			bool operator()( const Synt::ReturnOperator& return_operator )
+			{
+				this_.BuildReturnOperatorCode( return_operator, block_names, function_context );
+				block_build_info.have_terminal_instruction_inside= true;
+				return true;
+			}
+			bool operator()( const Synt::WhileOperator& while_operator )
+			{
+				this_.BuildWhileOperatorCode( while_operator, block_names, function_context );
+				return false;
+			}
+			bool operator()( const Synt::BreakOperator& break_operator )
+			{
+				this_.BuildBreakOperatorCode( break_operator, function_context );
+				block_build_info.have_terminal_instruction_inside= true;
+				return true;
+			}
+			bool operator()( const Synt::ContinueOperator& continue_operator )
+			{
+				this_.BuildContinueOperatorCode( continue_operator, function_context );
+				block_build_info.have_terminal_instruction_inside= true;
+				return true;
+			}
+			bool operator()( const Synt::IfOperator& if_operator )
+			{
+				const BlockBuildInfo if_block_info=
+					this_.BuildIfOperatorCode(
+						if_operator,
+						block_names,
+						function_context );
 
-			block_build_info.have_terminal_instruction_inside= true;
+				if( if_block_info.have_terminal_instruction_inside )
+				{
+					block_build_info.have_terminal_instruction_inside= true;
+					return true;
+				}
+				return false;
+			}
+			bool operator()( const Synt::StaticIfOperator& static_if_operator )
+			{
+				const CodeBuilder::BlockBuildInfo static_if_block_info=
+					this_.BuildStaticIfOperatorCode(
+						static_if_operator,
+						block_names,
+						function_context );
+
+				if( static_if_block_info.have_terminal_instruction_inside )
+				{
+					block_build_info.have_terminal_instruction_inside= true;
+					return true;
+				}
+				return false;
+			}
+			bool operator()( const Synt::StaticAssert& static_assert_ )
+			{
+				this_.BuildStaticAssert( static_assert_, block_names, function_context );
+				return false;
+			}
+			bool operator()( const Synt::Halt& halt )
+			{
+				this_.BuildHalt( halt, function_context );
+				block_build_info.have_terminal_instruction_inside= true;
+				return true;
+			}
+			bool operator()( const Synt::HaltIf& halt_if )
+			{
+				this_.BuildHaltIf( halt_if, block_names, function_context );
+				return false;
+			}
+			bool operator()( const Synt::Block& block )
+			{
+				const bool prev_unsafe= function_context.is_in_unsafe_block;
+				if( block.safety_ == Synt::Block::Safety::Unsafe )
+				{
+					function_context.have_non_constexpr_operations_inside= true; // Unsafe operations can not be used in constexpr functions.
+					function_context.is_in_unsafe_block= true;
+				}
+				else if( block.safety_ == Synt::Block::Safety::Safe )
+					function_context.is_in_unsafe_block= false;
+				else if( block.safety_ == Synt::Block::Safety::None ) {}
+				else U_ASSERT(false);
+
+				const BlockBuildInfo inner_block_build_info= this_.BuildBlockCode( block, block_names, function_context );
+
+				function_context.is_in_unsafe_block= prev_unsafe;
+
+				if( inner_block_build_info.have_terminal_instruction_inside )
+				{
+					block_build_info.have_terminal_instruction_inside= true;
+					return true;
+				}
+				return false;
+			}
+		};
+
+		Visitor visitor( *this, block_build_info, block_names, function_context );
+		const bool needs_break= boost::apply_visitor( visitor, block_element );
+		if( needs_break )
 			break;
-		}
-		else if( const auto halt_if= dynamic_cast<const Synt::HaltIf*>( block_element_ptr ) )
-			BuildHaltIf( *halt_if, block_names, function_context );
-		else if( const auto block= dynamic_cast<const Synt::Block*>( block_element_ptr ) )
-		{
-			const bool prev_unsafe= function_context.is_in_unsafe_block;
-			if( block->safety_ == Synt::Block::Safety::Unsafe )
-			{
-				function_context.have_non_constexpr_operations_inside= true; // Unsafe operations can not be used in constexpr functions.
-				function_context.is_in_unsafe_block= true;
-			}
-			else if( block->safety_ == Synt::Block::Safety::Safe )
-				function_context.is_in_unsafe_block= false;
-			else if( block->safety_ == Synt::Block::Safety::None ) {}
-			else U_ASSERT(false);
-
-			const BlockBuildInfo inner_block_build_info= BuildBlockCode( *block, block_names, function_context );
-
-			function_context.is_in_unsafe_block= prev_unsafe;
-
-			if( inner_block_build_info.have_terminal_instruction_inside )
-			{
-				block_build_info.have_terminal_instruction_inside= true;
-				break;
-			}
-		}
-		else U_ASSERT(false);
 	}
 
 	if( block_element_index < block.elements_.size() )
-		errors_.push_back( ReportUnreachableCode( block.elements_[ block_element_index ]->GetFilePos() ) );
+		errors_.push_back( ReportUnreachableCode( Synt::GetBlockElementFilePos( block.elements_[ block_element_index ] ) ) );
 
 	// If there are undconditional "break", "continue", "return" operators,
 	// we didn`t need call destructors, it must be called in this operators.
@@ -2972,7 +3017,7 @@ void CodeBuilder::BuildWhileOperatorCode(
 	function_context.function->getBasicBlockList().push_back( while_block );
 	function_context.llvm_ir_builder.SetInsertPoint( while_block );
 
-	BuildBlockCode( *while_operator.block_, names, function_context );
+	BuildBlockCode( while_operator.block_, names, function_context );
 	function_context.llvm_ir_builder.CreateBr( test_block );
 
 	function_context.loops_stack.pop_back();
@@ -2981,7 +3026,7 @@ void CodeBuilder::BuildWhileOperatorCode(
 	function_context.function->getBasicBlockList().push_back( block_after_while );
 	function_context.llvm_ir_builder.SetInsertPoint( block_after_while );
 
-	const auto errors= ReferencesGraph::CheckWhileBlokVariablesState( variables_state_before_while, function_context.variables_state, while_operator.block_->end_file_pos_ );
+	const auto errors= ReferencesGraph::CheckWhileBlokVariablesState( variables_state_before_while, function_context.variables_state, while_operator.block_.end_file_pos_ );
 	errors_.insert( errors_.end(), errors.begin(), errors.end() );
 }
 
@@ -3092,8 +3137,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildIfOperatorCode(
 		function_context.function->getBasicBlockList().push_back( body_block );
 		function_context.llvm_ir_builder.SetInsertPoint( body_block );
 
-		const BlockBuildInfo block_build_info=
-			BuildBlockCode( *branch.block, names, function_context );
+		const BlockBuildInfo block_build_info= BuildBlockCode( branch.block, names, function_context );
 
 		if( !block_build_info.have_terminal_instruction_inside )
 		{
@@ -3177,7 +3221,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildStaticIfOperatorCode(
 	NamesScope& names,
 	FunctionContext& function_context )
 {
-	const auto& branches= static_if_operator.if_operator_->branches_;
+	const auto& branches= static_if_operator.if_operator_.branches_;
 	for( unsigned int i= 0u; i < branches.size(); i++ )
 	{
 		const auto& branch= branches[i];
@@ -3201,14 +3245,14 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildStaticIfOperatorCode(
 			}
 
 			if( condition_expression.constexpr_value->getUniqueInteger().getLimitedValue() != 0u )
-				return BuildBlockCode( *branch.block, names, function_context ); // Ok, this static if produdes block.
+				return BuildBlockCode( branch.block, names, function_context ); // Ok, this static if produdes block.
 
 			CallDestructors( *function_context.stack_variables_stack.back(), function_context, condition_file_pos );
 		}
 		else
 		{
 			U_ASSERT( i == branches.size() - 1u );
-			return BuildBlockCode( *branch.block, names, function_context );
+			return BuildBlockCode( branch.block, names, function_context );
 		}
 	}
 

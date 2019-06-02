@@ -52,6 +52,24 @@ class ExpressionInitializer;
 class ZeroInitializer;
 class UninitializedInitializer;
 
+class Block;
+class VariablesDeclaration;
+class AutoVariableDeclaration;
+class ReturnOperator;
+class WhileOperator;
+class BreakOperator;
+class ContinueOperator;
+class IfOperator;
+class StaticIfOperator;
+class SingleExpressionOperator;
+class AssignmentOperator;
+class AdditiveAssignmentOperator;
+class IncrementOperator;
+class DecrementOperator;
+class StaticAssert;
+class Halt;
+class HaltIf;
+
 using TypeName= boost::variant< EmptyVariant, ArrayTypeName, TypeofTypeName, NamedTypeName, FunctionType >;
 
 using UnaryPrefixOperator= boost::variant< UnaryPlus, UnaryMinus, LogicalNot, BitwiseNot >;
@@ -64,6 +82,26 @@ using Expression= boost::variant< EmptyVariant, BinaryOperator, NamedOperand, Ty
 
 using Initializer= boost::variant< EmptyVariant, ArrayInitializer, StructNamedInitializer, ConstructorInitializer, ExpressionInitializer, ZeroInitializer, UninitializedInitializer >;
 using InitializerPtr= std::shared_ptr<Initializer>; // TODO - does this needs?
+
+using BlockElement= boost::variant<
+	Block,
+	VariablesDeclaration,
+	AutoVariableDeclaration,
+	ReturnOperator,
+	WhileOperator,
+	BreakOperator,
+	ContinueOperator,
+	IfOperator,
+	StaticIfOperator,
+	SingleExpressionOperator,
+	AssignmentOperator,
+	AdditiveAssignmentOperator,
+	IncrementOperator,
+	DecrementOperator,
+	StaticAssert,
+	Halt,
+	HaltIf
+>;
 
 typedef std::vector<ProgramString> ReferencesTagsList; // If last tag is empty string - means continuous tag - like arg' a, b, c... '
 
@@ -186,6 +224,7 @@ public:
 
 FilePos GetExpressionFilePos( const Expression& expression );
 FilePos GetInitializerFilePos( const Initializer& initializer );
+FilePos GetBlockElementFilePos( const BlockElement& block_element );
 
 class BinaryOperator final : public SyntaxElementBase
 {
@@ -437,21 +476,10 @@ public:
 typedef std::unique_ptr<IClassElement> IClassElementPtr;
 typedef std::vector<IClassElementPtr> ClassElements;
 
-class IBlockElement
+class Block final : public SyntaxElementBase
 {
 public:
-	virtual ~IBlockElement()= default;
-
-	const FilePos& GetFilePos() const;
-};
-
-typedef std::unique_ptr<IBlockElement> IBlockElementPtr;
-typedef std::vector<IBlockElementPtr> BlockElements;
-
-class Block final : public SyntaxElementBase, public IBlockElement
-{
-public:
-	Block( const FilePos& start_file_pos, const FilePos& end_file_pos, BlockElements elements );
+	Block( const FilePos& start_file_pos );
 
 	enum class Safety
 	{
@@ -460,26 +488,18 @@ public:
 		Unsafe,
 	};
 public:
-	const FilePos end_file_pos_;
-	const BlockElements elements_;
+	FilePos end_file_pos_;
+	std::vector<BlockElement> elements_;
 	Safety safety_= Safety::None;
-
 };
 
 typedef std::unique_ptr<Block> BlockPtr;
 
-struct VariablesDeclaration final
-	: public SyntaxElementBase
-	, public IBlockElement
+struct VariablesDeclaration final : public SyntaxElementBase
 	, public IProgramElement
 	, public IClassElement
 {
 	VariablesDeclaration( const FilePos& file_pos );
-	VariablesDeclaration( const VariablesDeclaration& )= delete;
-	VariablesDeclaration( VariablesDeclaration&& other );
-
-	VariablesDeclaration operator=( const VariablesDeclaration& )= delete;
-	VariablesDeclaration& operator=( VariablesDeclaration&& other );
 
 	struct VariableEntry
 	{
@@ -498,7 +518,7 @@ typedef std::unique_ptr<VariablesDeclaration> VariablesDeclarationPtr;
 
 struct AutoVariableDeclaration final
 	: public SyntaxElementBase
-	, public IBlockElement
+
 	, public IProgramElement
 	, public IClassElement
 {
@@ -511,7 +531,7 @@ struct AutoVariableDeclaration final
 	bool lock_temps= false;
 };
 
-class ReturnOperator final : public SyntaxElementBase, public IBlockElement
+class ReturnOperator final : public SyntaxElementBase
 {
 public:
 	ReturnOperator( const FilePos& file_pos );
@@ -519,52 +539,52 @@ public:
 	Expression expression_;
 };
 
-class WhileOperator final : public SyntaxElementBase, public IBlockElement
+class WhileOperator final : public SyntaxElementBase
 {
 public:
 	WhileOperator( const FilePos& file_pos );
 
 	Expression condition_;
-	BlockPtr block_;
+	Block block_;
 };
 
-class BreakOperator final : public SyntaxElementBase, public IBlockElement
+class BreakOperator final : public SyntaxElementBase
 {
 public:
 	explicit BreakOperator( const FilePos& file_pos );
 };
 
-class ContinueOperator final : public SyntaxElementBase, public IBlockElement
+class ContinueOperator final : public SyntaxElementBase
 {
 public:
 	explicit ContinueOperator( const FilePos& file_pos );
 };
 
-class IfOperator final : public SyntaxElementBase, public IBlockElement
+class IfOperator final : public SyntaxElementBase
 {
 public:
 	struct Branch
 	{
 		// Condition - nullptr for last if.
 		Expression condition;
-		BlockPtr block;
+		Block block;
 	};
 
-	IfOperator( const FilePos& start_file_pos, const FilePos& end_file_pos, std::vector<Branch> branches );
+	IfOperator( const FilePos& start_file_pos );
 
-	const std::vector<Branch> branches_; // else if()
-	const FilePos end_file_pos_;
+	std::vector<Branch> branches_; // else if()
+	FilePos end_file_pos_;
 };
 
-class StaticIfOperator final : public SyntaxElementBase, public IBlockElement
+class StaticIfOperator final : public SyntaxElementBase
 {
 public:
 	StaticIfOperator( const FilePos& file_pos );
 
-	std::unique_ptr<IfOperator> if_operator_;
+	IfOperator if_operator_;
 };
 
-class SingleExpressionOperator final : public SyntaxElementBase, public IBlockElement
+class SingleExpressionOperator final : public SyntaxElementBase
 {
 public:
 	SingleExpressionOperator( const FilePos& file_pos );
@@ -572,7 +592,7 @@ public:
 	Expression expression_;
 };
 
-class AssignmentOperator final : public SyntaxElementBase, public IBlockElement
+class AssignmentOperator final : public SyntaxElementBase
 {
 public:
 	AssignmentOperator( const FilePos& file_pos );
@@ -581,7 +601,7 @@ public:
 	Expression r_value_;
 };
 
-class AdditiveAssignmentOperator final : public SyntaxElementBase, public IBlockElement
+class AdditiveAssignmentOperator final : public SyntaxElementBase
 {
 public:
 	explicit AdditiveAssignmentOperator( const FilePos& file_pos );
@@ -591,7 +611,7 @@ public:
 	BinaryOperatorType additive_operation_;
 };
 
-class IncrementOperator final : public SyntaxElementBase, public IBlockElement
+class IncrementOperator final : public SyntaxElementBase
 {
 public:
 	explicit IncrementOperator( const FilePos& file_pos );
@@ -599,7 +619,7 @@ public:
 	Expression expression;
 };
 
-class DecrementOperator final : public SyntaxElementBase, public IBlockElement
+class DecrementOperator final : public SyntaxElementBase
 {
 public:
 	explicit DecrementOperator( const FilePos& file_pos );
@@ -609,7 +629,7 @@ public:
 
 class StaticAssert final
 	: public SyntaxElementBase
-	, public IBlockElement
+
 	, public IProgramElement
 	, public IClassElement
 {
@@ -621,7 +641,7 @@ public:
 
 class Halt final
 	: public SyntaxElementBase
-	, public IBlockElement
+
 {
 public:
 	explicit Halt( const FilePos& file_pos );
@@ -629,7 +649,7 @@ public:
 
 class HaltIf final
 	: public SyntaxElementBase
-	, public IBlockElement
+
 {
 public:
 	explicit HaltIf( const FilePos& file_pos );
