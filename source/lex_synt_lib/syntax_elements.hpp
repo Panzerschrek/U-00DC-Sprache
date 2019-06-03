@@ -645,9 +645,9 @@ class AdditiveAssignmentOperator final : public SyntaxElementBase
 public:
 	explicit AdditiveAssignmentOperator( const FilePos& file_pos );
 
+	BinaryOperatorType additive_operation_;
 	Expression l_value_;
 	Expression r_value_;
-	BinaryOperatorType additive_operation_;
 };
 
 class IncrementOperator final : public SyntaxElementBase

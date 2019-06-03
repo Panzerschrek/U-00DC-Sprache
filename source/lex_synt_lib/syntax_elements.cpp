@@ -16,7 +16,7 @@ namespace Asserts
 static_assert( sizeof(TypeName) <= 40u, "Size of variant too big" );
 static_assert( sizeof(Expression) <= 128u, "Size of variant too big" );
 static_assert( sizeof(Initializer) <= 160u, "Size of variant too big" );
-static_assert( sizeof(BlockElement) <= 304u, "Size of variant too big" );
+static_assert( sizeof(BlockElement) <= 288u, "Size of variant too big" );
 static_assert( sizeof(ClassElement) <= 208u, "Size of variant too big" );
 static_assert( sizeof(ProgramElement) <= 208u, "Size of variant too big" );
 
