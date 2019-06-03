@@ -7,7 +7,6 @@ Common:
 *) Build-in macroses.
 *) array_view, array view take operator
 *) Dereference operator - for pointer-like classes
-*) Auto for function return type
 *) Continious initializer for arrays
 *) Tuples. Template-like iteration over tuples.
 *) "shared" tag for shared_ptr and it propagation to structures with shared
@@ -47,6 +46,7 @@ Standart library:
 *) Math functions
 
 Compiler:
+*) Template context in errors, generating in template code
 *) move-assignment without hacks.
 *) Standartized entry point, such "main" in some languages
 *) Virtual table optimization - store child class virtual table pointer in
