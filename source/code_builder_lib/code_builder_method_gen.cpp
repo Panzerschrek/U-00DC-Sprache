@@ -20,10 +20,10 @@ void CodeBuilder::TryGenerateDefaultConstructor( Class& the_class, const Type& c
 {
 	// Search for explicit default constructor.
 	FunctionVariable* prev_constructor_variable= nullptr;
-	if( NamesScope::InsertedName* const constructors_name=
-		the_class.members.GetThisScopeName( Keyword( Keywords::constructor_ ) ) )
+	if( Value* const constructors_value=
+		the_class.members.GetThisScopeValue( Keyword( Keywords::constructor_ ) ) )
 	{
-		OverloadedFunctionsSet* const constructors= constructors_name->second.GetFunctionsSet();
+		OverloadedFunctionsSet* const constructors= constructors_value->GetFunctionsSet();
 		U_ASSERT( constructors != nullptr );
 		for( FunctionVariable& constructor : constructors->functions )
 		{
@@ -51,10 +51,10 @@ void CodeBuilder::TryGenerateDefaultConstructor( Class& the_class, const Type& c
 	// Generate default constructor, if all fields is default constructible.
 	bool all_fields_is_default_constructible= true;
 
-	the_class.members.ForEachInThisScope(
-		[&]( const NamesScope::InsertedName& member )
+	the_class.members.ForEachValueInThisScope(
+		[&]( const Value& value )
 		{
-			const ClassField* const field= member.second.GetClassField();
+			const ClassField* const field= value.GetClassField();
 			if( field == nullptr )
 				return;
 			if( field->class_.lock()->class_ != &the_class )
@@ -127,10 +127,10 @@ void CodeBuilder::TryGenerateDefaultConstructor( Class& the_class, const Type& c
 		ApplyEmptyInitializer( Keyword( Keywords::base_ ), FilePos()/*TODO*/, base_variable, function_context );
 	}
 
-	the_class.members.ForEachInThisScope(
-		[&]( const NamesScope::InsertedName& member )
+	the_class.members.ForEachValueInThisScope(
+		[&](const Value& value )
 		{
-			const ClassField* const field= member.second.GetClassField();
+			const ClassField* const field= value.GetClassField();
 			if( field == nullptr )
 				return;
 			if( field->class_.lock()->class_ != &the_class )
@@ -157,7 +157,7 @@ void CodeBuilder::TryGenerateDefaultConstructor( Class& the_class, const Type& c
 				if( field->syntax_element->initializer != nullptr )
 					InitializeClassFieldWithInClassIninitalizer( field_variable, *field, function_context );
 				else
-					ApplyEmptyInitializer( member.first, FilePos()/*TODO*/, field_variable, function_context );
+					ApplyEmptyInitializer( field->syntax_element->name, FilePos()/*TODO*/, field_variable, function_context );
 			}
 		} );
 
@@ -179,10 +179,10 @@ void CodeBuilder::TryGenerateDefaultConstructor( Class& the_class, const Type& c
 		*prev_constructor_variable= std::move(constructor_variable);
 	else
 	{
-		if( NamesScope::InsertedName* const constructors_name=
-			the_class.members.GetThisScopeName( Keyword( Keywords::constructor_ ) ) )
+		if( Value* const constructors_value=
+			the_class.members.GetThisScopeValue( Keyword( Keywords::constructor_ ) ) )
 		{
-			OverloadedFunctionsSet* const constructors= constructors_name->second.GetFunctionsSet();
+			OverloadedFunctionsSet* const constructors= constructors_value->GetFunctionsSet();
 			U_ASSERT( constructors != nullptr );
 			constructors->functions.push_back( std::move( constructor_variable ) );
 		}
@@ -202,10 +202,10 @@ void CodeBuilder::TryGenerateCopyConstructor( Class& the_class, const Type& clas
 {
 	// Search for explicit copy constructor.
 	FunctionVariable* prev_constructor_variable= nullptr;
-	if( NamesScope::InsertedName* const constructors_name=
-		the_class.members.GetThisScopeName( Keyword( Keywords::constructor_ ) ) )
+	if( Value* const constructors_value=
+		the_class.members.GetThisScopeValue( Keyword( Keywords::constructor_ ) ) )
 	{
-		OverloadedFunctionsSet* const constructors= constructors_name->second.GetFunctionsSet();
+		OverloadedFunctionsSet* const constructors= constructors_value->GetFunctionsSet();
 		U_ASSERT( constructors != nullptr );
 		for( FunctionVariable& constructor : constructors->functions )
 		{
@@ -231,10 +231,10 @@ void CodeBuilder::TryGenerateCopyConstructor( Class& the_class, const Type& clas
 
 	bool all_fields_is_copy_constructible= true;
 
-	the_class.members.ForEachInThisScope(
-		[&]( const NamesScope::InsertedName& member )
+	the_class.members.ForEachValueInThisScope(
+		[&]( const Value& value )
 		{
-			const ClassField* const field= member.second.GetClassField();
+			const ClassField* const field= value.GetClassField();
 			if( field == nullptr )
 				return;
 
@@ -318,10 +318,10 @@ void CodeBuilder::TryGenerateCopyConstructor( Class& the_class, const Type& clas
 		BuildCopyConstructorPart( src, dst, the_class.base_class, function_context );
 	}
 
-	the_class.members.ForEachInThisScope(
-		[&]( const NamesScope::InsertedName& member )
+	the_class.members.ForEachValueInThisScope(
+		[&]( const Value& member )
 		{
-			const ClassField* const field= member.second.GetClassField();
+			const ClassField* const field= member.GetClassField();
 			if( field == nullptr || field->class_.lock()->class_ != &the_class )
 				return;
 
@@ -363,10 +363,10 @@ void CodeBuilder::TryGenerateCopyConstructor( Class& the_class, const Type& clas
 		*prev_constructor_variable= std::move(constructor_variable);
 	else
 	{
-		if( NamesScope::InsertedName* const constructors_name=
-			the_class.members.GetThisScopeName( Keyword( Keywords::constructor_ ) ) )
+		if( Value* const constructors_value=
+			the_class.members.GetThisScopeValue( Keyword( Keywords::constructor_ ) ) )
 		{
-			OverloadedFunctionsSet* const constructors= constructors_name->second.GetFunctionsSet();
+			OverloadedFunctionsSet* const constructors= constructors_value->GetFunctionsSet();
 			U_ASSERT( constructors != nullptr );
 			constructors->functions.push_back( std::move( constructor_variable ) );
 		}
@@ -449,10 +449,10 @@ void CodeBuilder::GenerateDestructorBody( Class& the_class, const Type& class_ty
 void CodeBuilder::TryGenerateDestructor( Class& the_class, const Type& class_type )
 {
 	// Search for explicit destructor.
-	if( NamesScope::InsertedName* const destructor_name=
-		the_class.members.GetThisScopeName( Keyword( Keywords::destructor_ ) ) )
+	if( Value* const destructor_value=
+		the_class.members.GetThisScopeValue( Keyword( Keywords::destructor_ ) ) )
 	{
-		OverloadedFunctionsSet* const destructors= destructor_name->second.GetFunctionsSet();
+		OverloadedFunctionsSet* const destructors= destructor_value->GetFunctionsSet();
 		if( destructors->functions.empty() )
 			return; // destructors may be invalid in case of error.
 
@@ -490,10 +490,10 @@ void CodeBuilder::TryGenerateCopyAssignmentOperator( Class& the_class, const Typ
 
 	// Search for explicit assignment operator.
 	FunctionVariable* prev_operator_variable= nullptr;
-	if( NamesScope::InsertedName* const assignment_operator_name=
-		the_class.members.GetThisScopeName( op_name ) )
+	if( Value* const assignment_operator_value=
+		the_class.members.GetThisScopeValue( op_name ) )
 	{
-		OverloadedFunctionsSet* const operators= assignment_operator_name->second.GetFunctionsSet();
+		OverloadedFunctionsSet* const operators= assignment_operator_value->GetFunctionsSet();
 		for( FunctionVariable& op : operators->functions )
 		{
 
@@ -520,10 +520,10 @@ void CodeBuilder::TryGenerateCopyAssignmentOperator( Class& the_class, const Typ
 
 	bool all_fields_is_copy_assignable= true;
 
-	the_class.members.ForEachInThisScope(
-		[&]( const NamesScope::InsertedName& member )
+	the_class.members.ForEachValueInThisScope(
+		[&]( const Value& member )
 		{
-			const ClassField* const field= member.second.GetClassField();
+			const ClassField* const field= member.GetClassField();
 			if( field == nullptr )
 				return;
 
@@ -608,10 +608,10 @@ void CodeBuilder::TryGenerateCopyAssignmentOperator( Class& the_class, const Typ
 		BuildCopyAssignmentOperatorPart( src, dst, the_class.base_class, function_context );
 	}
 
-	the_class.members.ForEachInThisScope(
-		[&]( const NamesScope::InsertedName& member )
+	the_class.members.ForEachValueInThisScope(
+		[&]( const Value& member )
 		{
-			const ClassField* const field= member.second.GetClassField();
+			const ClassField* const field= member.GetClassField();
 			if( field == nullptr )
 				return;
 			U_ASSERT( field->type.IsCopyAssignable() );
@@ -643,9 +643,9 @@ void CodeBuilder::TryGenerateCopyAssignmentOperator( Class& the_class, const Typ
 		*prev_operator_variable= std::move( op_variable );
 	else
 	{
-		if( NamesScope::InsertedName* const operators_name= the_class.members.GetThisScopeName( op_name ) )
+		if( Value* const operators_value= the_class.members.GetThisScopeValue( op_name ) )
 		{
-			OverloadedFunctionsSet* const operators= operators_name->second.GetFunctionsSet();
+			OverloadedFunctionsSet* const operators= operators_value->GetFunctionsSet();
 			U_ASSERT( operators != nullptr );
 			operators->functions.push_back( std::move( op_variable ) );
 		}
@@ -698,10 +698,10 @@ void CodeBuilder::BuildCopyConstructorPart(
 		const Class& class_type= *class_type_proxy->class_;
 
 		// Search copy constructor.
-		const NamesScope::InsertedName* constructor_name=
-			class_type.members.GetThisScopeName( Keyword( Keywords::constructor_ ) );
-		U_ASSERT( constructor_name != nullptr );
-		const OverloadedFunctionsSet* const constructors_set= constructor_name->second.GetFunctionsSet();
+		const Value* constructor_value=
+			class_type.members.GetThisScopeValue( Keyword( Keywords::constructor_ ) );
+		U_ASSERT( constructor_value != nullptr );
+		const OverloadedFunctionsSet* const constructors_set= constructor_value->GetFunctionsSet();
 		U_ASSERT( constructors_set != nullptr );
 
 		const FunctionVariable* constructor= nullptr;;
@@ -762,10 +762,10 @@ void CodeBuilder::BuildCopyAssignmentOperatorPart(
 		const Class& class_type= *class_type_proxy->class_;
 
 		// Search copy-assignment aoperator.
-		const NamesScope::InsertedName* op_name=
-			class_type.members.GetThisScopeName( "="_SpC );
-		U_ASSERT( op_name != nullptr );
-		const OverloadedFunctionsSet* const operators_set= op_name->second.GetFunctionsSet();
+		const Value* op_value=
+			class_type.members.GetThisScopeValue( "="_SpC );
+		U_ASSERT( op_value != nullptr );
+		const OverloadedFunctionsSet* const operators_set= op_value->GetFunctionsSet();
 		U_ASSERT( operators_set != nullptr );
 
 		const FunctionVariable* op= nullptr;;
@@ -837,10 +837,10 @@ void CodeBuilder::CopyBytes(
 				function_context );
 		}
 
-		class_type.members.ForEachInThisScope(
-			[&]( const NamesScope::InsertedName& class_member )
+		class_type.members.ForEachValueInThisScope(
+			[&]( const Value& class_member )
 			{
-				const ClassField* const field = class_member.second.GetClassField();
+				const ClassField* const field = class_member.GetClassField();
 				if( field == nullptr || field->class_.lock() != class_type_proxy )
 					return;
 

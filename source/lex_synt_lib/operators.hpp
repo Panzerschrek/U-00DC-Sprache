@@ -4,7 +4,7 @@
 namespace U
 {
 
-enum class BinaryOperatorType
+enum class BinaryOperatorType : uint8_t
 {
 	Add,
 	Sub,
@@ -32,7 +32,7 @@ enum class BinaryOperatorType
 	Last,
 };
 
-enum class OverloadedOperator
+enum class OverloadedOperator : uint8_t
 {
 	None,
 

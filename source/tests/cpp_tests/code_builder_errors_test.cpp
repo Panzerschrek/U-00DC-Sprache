@@ -239,7 +239,7 @@ U_TEST(UnknownNumericConstantTypeTest0)
 	R"(
 		fn Foo() : i32
 		{
-			return 45fty584s;
+			return 45hz;
 		}
 	)";
 

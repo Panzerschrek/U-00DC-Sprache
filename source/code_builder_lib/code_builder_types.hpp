@@ -74,6 +74,7 @@ struct FundamentalType final
 	llvm::Type* llvm_type;
 
 	FundamentalType( U_FundamentalType fundamental_type= U_FundamentalType::Void, llvm::Type* llvm_type= nullptr );
+	SizeType GetSize() const;
 };
 
 bool operator==( const FundamentalType& r, const FundamentalType& l );
@@ -113,9 +114,6 @@ public:
 	Enum* GetEnumType() const;
 
 	bool ReferenceIsConvertibleTo( const Type& other ) const;
-
-	// TODO - does this method needs?
-	SizeType SizeOf() const;
 
 	bool IsDefaultConstructible() const;
 	bool IsCopyConstructible() const;
@@ -271,7 +269,6 @@ struct OverloadedFunctionsSet
 {
 	std::vector<FunctionVariable> functions;
 	std::vector<FunctionTemplatePtr> template_functions;
-	bool have_nomangle_function= false;
 
 	// Is incomplete, if there are some syntax elements in containers.
 	std::vector<const Synt::Function*> syntax_elements;
@@ -279,6 +276,8 @@ struct OverloadedFunctionsSet
 	std::vector<const Synt::FunctionTemplate*> template_syntax_elements;
 
 	ClassProxyPtr base_class;
+
+	bool have_nomangle_function= false;
 };
 
 struct TypeTemplatesSet
@@ -337,8 +336,23 @@ struct ClassField final
 // "this" + functions set of class of "this"
 struct ThisOverloadedMethodsSet final
 {
+public:
+	ThisOverloadedMethodsSet();
+	ThisOverloadedMethodsSet( const ThisOverloadedMethodsSet& other );
+	ThisOverloadedMethodsSet( ThisOverloadedMethodsSet&& other ) noexcept= default;
+
+	ThisOverloadedMethodsSet& operator=( const ThisOverloadedMethodsSet& other );
+	ThisOverloadedMethodsSet& operator=( ThisOverloadedMethodsSet&& other ) noexcept= default;
+
+	OverloadedFunctionsSet& GetOverloadedFunctionsSet();
+	const OverloadedFunctionsSet& GetOverloadedFunctionsSet() const;
+
+public:
 	Variable this_;
-	OverloadedFunctionsSet overloaded_methods_set;
+
+private:
+	// Store "OverloadedFunctionsSet" indirectly, because it is too hevy, to put it in value together with "variable".
+	std::unique_ptr<OverloadedFunctionsSet> overloaded_methods_set_;
 };
 
 struct StaticAssert
@@ -353,7 +367,10 @@ struct Typedef
 
 struct IncompleteGlobalVariable
 {
-	const Synt::SyntaxElementBase* syntax_element= nullptr; // VariablesDeclaration or AutoVariableDeclaration
+	// Exists one of.
+	const Synt::VariablesDeclaration* variables_declaration= nullptr;
+	const Synt::AutoVariableDeclaration* auto_variable_declaration= nullptr;
+
 	size_t element_index= ~0u; // For VariablesDeclaration - index of variable.
 	ProgramString name;
 };
@@ -468,10 +485,6 @@ ArgOverloadingClass GetArgOverloadingClass( const Function::Arg& arg );
 class NamesScope final
 {
 public:
-
-	typedef std::map< ProgramString, Value > NamesMap;
-	typedef NamesMap::value_type InsertedName;
-
 	NamesScope( ProgramString name, NamesScope* parent );
 
 	NamesScope( const NamesScope&)= delete;
@@ -482,11 +495,11 @@ public:
 	void SetThisNamespaceName( ProgramString name );
 
 	// Returns nullptr, if name already exists in this scope.
-	InsertedName* AddName( const ProgramString& name, Value value );
+	Value* AddName( const ProgramString& name, Value value );
 
 	// Resolve simple name only in this scope.
-	InsertedName* GetThisScopeName( const ProgramString& name );
-	const InsertedName* GetThisScopeName( const ProgramString& name ) const;
+	Value* GetThisScopeValue( const ProgramString& name );
+	const Value* GetThisScopeValue( const ProgramString& name ) const;
 
 	NamesScope* GetParent();
 	const NamesScope* GetParent() const;
@@ -502,8 +515,15 @@ public:
 	void ForEachInThisScope( const Func& func )
 	{
 		++iterating_;
-		for( InsertedName& inserted_name : names_map_ )
-			func( inserted_name );
+		ProgramString name;
+		name.reserve(max_key_size_);
+		for( auto& inserted_name : names_map_ )
+		{
+			name.assign(
+				reinterpret_cast<const sprache_char*>(inserted_name.getKeyData()),
+				inserted_name.getKeyLength() / sizeof(sprache_char) );
+			func( const_cast<const ProgramString&>(name), inserted_name.second );
+		}
 		--iterating_;
 	}
 
@@ -511,24 +531,53 @@ public:
 	void ForEachInThisScope( const Func& func ) const
 	{
 		++iterating_;
-		for( const InsertedName& inserted_name : names_map_ )
-			func( inserted_name );
+		ProgramString name;
+		name.reserve(max_key_size_);
+		for( const auto& inserted_name : names_map_ )
+		{
+			name.assign(
+				reinterpret_cast<const sprache_char*>(inserted_name.getKeyData()),
+				inserted_name.getKeyLength() / sizeof(sprache_char) );
+			func( const_cast<const ProgramString&>(name), inserted_name.second );
+		}
 		--iterating_;
 	}
 
-	// TODO - maybe add for_each in all scopes?
+	template<class Func>
+	void ForEachValueInThisScope( const Func& func )
+	{
+		++iterating_;
+		for( auto& inserted_name : names_map_ )
+			func( inserted_name.second );
+		--iterating_;
+	}
+
+	template<class Func>
+	void ForEachValueInThisScope( const Func& func ) const
+	{
+		++iterating_;
+		for( const auto& inserted_name : names_map_ )
+			func( inserted_name.second );
+		--iterating_;
+	}
 
 private:
 	ProgramString name_;
 	NamesScope* parent_;
-	NamesMap names_map_;
+
+	// Use StringMap here, with "const char*" key.
+	// interpritate ProgramString bytes as chars.
+	// TODO - maybe replace "ProgramString" with UTF-8 std::string?
+	llvm::StringMap< Value > names_map_;
+	size_t max_key_size_= 0u;
+
 	mutable size_t iterating_= 0u;
 	std::unordered_map<ClassProxyPtr, ClassMemberVisibility> access_rights_;
 };
 
 typedef boost::variant< Variable, Type > TemplateParameter;
 
-typedef std::map< ProgramString, ClassProxyPtr > TemplateClassesCache;
+typedef ProgramStringMap< ClassProxyPtr > TemplateClassesCache;
 
 class Class final
 {
@@ -577,8 +626,7 @@ public:
 	NamesScope members;
 
 	// have no visibility for member, means it is public.
-	// TODO - maybe use unordered_map?
-	std::map< ProgramString, ClassMemberVisibility > members_visibility;
+	ProgramStringMap< ClassMemberVisibility > members_visibility;
 
 	const Synt::Class* syntax_element= nullptr;
 
@@ -645,8 +693,8 @@ struct TemplateBase
 
 struct TypeTemplate final : TemplateBase
 {
-	std::vector< const Synt::IExpressionComponent* > signature_arguments;
-	std::vector< const Synt::IExpressionComponent* > default_signature_arguments;
+	std::vector< const Synt::Expression* > signature_arguments;
+	std::vector< const Synt::Expression* > default_signature_arguments;
 	size_t first_optional_signature_argument= ~0u;
 
 	// Store syntax tree element for instantiation.

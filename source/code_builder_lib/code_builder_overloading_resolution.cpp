@@ -574,11 +574,11 @@ const FunctionVariable* CodeBuilder::GetOverloadedOperator(
 				return nullptr;
 			}
 
-			const NamesScope::InsertedName* const name_in_class= class_->members.GetThisScopeName( op_name );
-			if( name_in_class == nullptr )
+			const Value* const value_in_class= class_->members.GetThisScopeValue( op_name );
+			if( value_in_class == nullptr )
 				continue;
 
-			const OverloadedFunctionsSet* const operators_set= name_in_class->second.GetFunctionsSet();
+			const OverloadedFunctionsSet* const operators_set= value_in_class->GetFunctionsSet();
 			U_ASSERT( operators_set != nullptr ); // If we found something in names map with operator name, it must be operator.
 
 			const FunctionVariable* const func= GetOverloadedFunction( *operators_set, actual_args, false, file_pos, false );
@@ -604,11 +604,11 @@ const FunctionVariable* CodeBuilder::GetConversionConstructor(
 	if( dst_class_type == nullptr )
 		return nullptr;
 
-	const NamesScope::InsertedName* const constructors_name= dst_class_type->members.GetThisScopeName( Keyword( Keywords::constructor_ ) );
-	if( constructors_name == nullptr )
+	const Value* const constructors_value= dst_class_type->members.GetThisScopeValue( Keyword( Keywords::constructor_ ) );
+	if( constructors_value == nullptr )
 		return nullptr;
 
-	const OverloadedFunctionsSet& constructors= *constructors_name->second.GetFunctionsSet();
+	const OverloadedFunctionsSet& constructors= *constructors_value->GetFunctionsSet();
 
 	ArgsVector<Function::Arg> actual_args;
 	actual_args.resize(2u);

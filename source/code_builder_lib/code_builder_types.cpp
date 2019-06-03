@@ -11,6 +11,9 @@ namespace U
 namespace CodeBuilderPrivate
 {
 
+static_assert( sizeof(Type) <=24u, "Type is too heavy!" );
+static_assert( sizeof(Value) <= 160u, "Value is too heavy!" );
+
 static SizeType GetFundamentalTypeSize( const U_FundamentalType type )
 {
 	switch(type)
@@ -49,6 +52,10 @@ FundamentalType::FundamentalType(
 	, llvm_type(in_llvm_type)
 {}
 
+SizeType FundamentalType::GetSize() const
+{
+	return GetFundamentalTypeSize(fundamental_type);
+}
 
 bool operator==( const FundamentalType& r, const FundamentalType& l )
 {
@@ -260,47 +267,6 @@ bool Type::ReferenceIsConvertibleTo( const Type& other ) const
 	}
 
 	return false;
-}
-
-SizeType Type::SizeOf() const
-{
-	struct Visitor final : public boost::static_visitor<SizeType>
-	{
-		SizeType operator()( const FundamentalType& fundamental ) const
-		{
-			return GetFundamentalTypeSize( fundamental.fundamental_type );
-		}
-
-		SizeType operator()( const FunctionPtr& ) const
-		{
-			U_ASSERT( false && "SizeOf method not supported for functions." );
-			return 1u;
-		}
-
-		SizeType operator()( const ArrayPtr& array ) const
-		{
-			return array->type.SizeOf() * array->size;
-		}
-
-		SizeType operator()( const ClassProxyPtr& ) const
-		{
-			U_ASSERT( false && "SizeOf method not supported for classes." );
-			return 1u;
-		}
-
-		SizeType operator()( const EnumPtr& enum_type ) const
-		{
-			return GetFundamentalTypeSize( enum_type->underlaying_type.fundamental_type );
-		}
-
-		SizeType operator()( const FunctionPointerPtr& ) const
-		{
-			U_ASSERT( false && "SizeOf method not supported for function-pointer types." );
-			return 1u;
-		}
-	};
-
-	return boost::apply_visitor( Visitor(), something_ );
 }
 
 bool Type::IsDefaultConstructible() const
@@ -753,6 +719,35 @@ ClassField::ClassField( const ClassProxyPtr& in_class, Type in_type, const unsig
 {}
 
 //
+// ThisOverloadedMethodsSet
+//
+
+ThisOverloadedMethodsSet::ThisOverloadedMethodsSet()
+	: overloaded_methods_set_(new OverloadedFunctionsSet() )
+{}
+
+ThisOverloadedMethodsSet::ThisOverloadedMethodsSet( const ThisOverloadedMethodsSet& other )
+	: this_(other.this_), overloaded_methods_set_( new OverloadedFunctionsSet( *other.overloaded_methods_set_ ) )
+{}
+
+ThisOverloadedMethodsSet& ThisOverloadedMethodsSet::operator=( const ThisOverloadedMethodsSet& other )
+{
+	this->this_= other.this_;
+	*this->overloaded_methods_set_= *other.overloaded_methods_set_;
+	return *this;
+}
+
+OverloadedFunctionsSet& ThisOverloadedMethodsSet::GetOverloadedFunctionsSet()
+{
+	return *overloaded_methods_set_;
+}
+
+const OverloadedFunctionsSet& ThisOverloadedMethodsSet::GetOverloadedFunctionsSet() const
+{
+	return *overloaded_methods_set_;
+}
+
+//
 // Value
 //
 
@@ -1060,29 +1055,38 @@ void NamesScope::SetThisNamespaceName( ProgramString name )
 	name_= std::move(name);
 }
 
-NamesScope::InsertedName* NamesScope::AddName(
+Value* NamesScope::AddName(
 	const ProgramString& name,
 	Value value )
 {
 	U_ASSERT( iterating_ == 0u );
-	auto it_bool_pair = names_map_.emplace( name, std::move( value ) );
+	auto it_bool_pair=
+		names_map_.insert(
+			std::make_pair(
+				llvm::StringRef( reinterpret_cast<const char*>(name.data()), name.size() * sizeof(sprache_char) ),
+				std::move( value ) ) );
+
 	if( it_bool_pair.second )
-		return &*it_bool_pair.first;
+	{
+		max_key_size_= std::max( max_key_size_, name.size() );
+		return &it_bool_pair.first->second;
+	}
 
 	return nullptr;
 }
 
-NamesScope::InsertedName* NamesScope::GetThisScopeName( const ProgramString& name )
+Value* NamesScope::GetThisScopeValue( const ProgramString& name )
 {
-	const auto it= names_map_.find( name );
+	const auto it= names_map_.find(
+		llvm::StringRef( reinterpret_cast<const char*>(name.data()), name.size() * sizeof(sprache_char) ) );
 	if( it != names_map_.end() )
-		return &*it;
+		return &it->second;
 	return nullptr;
 }
 
-const NamesScope::InsertedName* NamesScope::GetThisScopeName( const ProgramString& name ) const
+const Value* NamesScope::GetThisScopeValue( const ProgramString& name ) const
 {
-	return const_cast<NamesScope*>(this)->GetThisScopeName( name );
+	return const_cast<NamesScope*>(this)->GetThisScopeValue( name );
 }
 
 NamesScope* NamesScope::GetParent()

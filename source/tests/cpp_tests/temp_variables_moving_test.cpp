@@ -461,7 +461,7 @@ U_TEST(TempVariablesMovingTest8_MoveVariableFromFunctionResultWithMutableReferen
 			{}
 		}
 
-		fn BoxIt( i32 &mut x ) : Box
+		fn BoxIt( i32 &'a mut x ) : Box'a'
 		{
 			return Box(x);
 		}

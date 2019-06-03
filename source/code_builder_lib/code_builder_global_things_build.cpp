@@ -111,14 +111,14 @@ bool CodeBuilder::ReferenceIsConvertible( const Type& from, const Type& to, cons
 
 void CodeBuilder::GlobalThingBuildNamespace( NamesScope& names_scope )
 {
-	names_scope.ForEachInThisScope(
-		[&]( NamesScope::InsertedName& name )
+	names_scope.ForEachValueInThisScope(
+		[&]( Value& value )
 		{
-			if( const NamesScopePtr inner_namespace= name.second.GetNamespace() )
+			if( const NamesScopePtr inner_namespace= value.GetNamespace() )
 				GlobalThingBuildNamespace( *inner_namespace );
-			else if( OverloadedFunctionsSet* const functions_set= name.second.GetFunctionsSet() )
+			else if( OverloadedFunctionsSet* const functions_set= value.GetFunctionsSet() )
 				GlobalThingBuildFunctionsSet( names_scope, *functions_set, true );
-			else if( const Type* const type= name.second.GetTypeName() )
+			else if( const Type* const type= value.GetTypeName() )
 			{
 				if( type->GetFundamentalType() != nullptr ||
 					type->GetFunctionPointerType() != nullptr ||
@@ -138,18 +138,18 @@ void CodeBuilder::GlobalThingBuildNamespace( NamesScope& names_scope )
 					GlobalThingBuildEnum( enum_type, TypeCompleteness::Complete );
 				else U_ASSERT(false);
 			}
-			else if( const auto type_templates_set= name.second.GetTypeTemplatesSet() )
+			else if( const auto type_templates_set= value.GetTypeTemplatesSet() )
 				GlobalThingBuildTypeTemplatesSet( names_scope, *type_templates_set );
-			else if( name.second.GetClassField() != nullptr ) {} // Can be in classes.
-			else if( name.second.GetFunctionVariable() != nullptr ) {} // It is function, generating from template.
-			else if( name.second.GetVariable() != nullptr ){}
-			else if( name.second.GetErrorValue() != nullptr ){}
-			else if( const auto static_assert_= name.second.GetStaticAssert() )
+			else if( value.GetClassField() != nullptr ) {} // Can be in classes.
+			else if( value.GetFunctionVariable() != nullptr ) {} // It is function, generating from template.
+			else if( value.GetVariable() != nullptr ){}
+			else if( value.GetErrorValue() != nullptr ){}
+			else if( const auto static_assert_= value.GetStaticAssert() )
 				BuildStaticAssert( *static_assert_, names_scope, *global_function_context_ );
-			else if( name.second.GetTypedef() != nullptr )
-				GlobalThingBuildTypedef( names_scope, name.second );
-			else if( name.second.GetIncompleteGlobalVariable() != nullptr )
-				GlobalThingBuildVariable( names_scope, name.second );
+			else if( value.GetTypedef() != nullptr )
+				GlobalThingBuildTypedef( names_scope, value );
+			else if( value.GetIncompleteGlobalVariable() != nullptr )
+				GlobalThingBuildVariable( names_scope, value );
 			else U_ASSERT(false);
 		});
 }
@@ -299,17 +299,17 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type, const T
 		NamesScope& class_parent_namespace= *the_class.members.GetParent();
 		for( const Synt::ComplexName& parent : class_declaration.parents_ )
 		{
-			const NamesScope::InsertedName* const parent_name= ResolveName( class_declaration.file_pos_, class_parent_namespace, parent );
-			if( parent_name == nullptr )
+			const Value* const parent_value= ResolveValue( class_declaration.file_pos_, class_parent_namespace, parent );
+			if( parent_value == nullptr )
 			{
 				errors_.push_back( ReportNameNotFound( class_declaration.file_pos_, parent ) );
 				continue;
 			}
 
-			const Type* const type_name= parent_name->second.GetTypeName();
+			const Type* const type_name= parent_value->GetTypeName();
 			if( type_name == nullptr )
 			{
-				errors_.push_back( ReportNameIsNotTypeName( class_declaration.file_pos_, parent_name->first ) );
+				errors_.push_back( ReportNameIsNotTypeName( class_declaration.file_pos_, parent.components.back().name ) );
 				continue;
 			}
 
@@ -367,10 +367,10 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type, const T
 
 		the_class.can_be_constexpr= the_class.kind == Class::Kind::Struct;
 
-		the_class.members.ForEachInThisScope(
-			[&]( NamesScope::InsertedName& name )
+		the_class.members.ForEachValueInThisScope(
+			[&]( Value& value )
 			{
-				ClassField* const class_field= name.second.GetClassField();
+				ClassField* const class_field= value.GetClassField();
 				if( class_field == nullptr )
 					return;
 
@@ -415,10 +415,10 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type, const T
 
 		// Count reference tags.
 		// SPRACHE_TODO - allow user explicitly set tag count.
-		the_class.members.ForEachInThisScope(
-			[&]( const NamesScope::InsertedName& name )
+		the_class.members.ForEachValueInThisScope(
+			[&]( const Value& value )
 			{
-				const ClassField* const field= name.second.GetClassField();
+				const ClassField* const field= value.GetClassField();
 				if( field != nullptr && ( field->is_reference || field->type.ReferencesTagsCount() != 0u ) )
 					the_class.references_tags_count= 1u;
 			});
@@ -446,10 +446,10 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type, const T
 			the_class.parents_fields_numbers.push_back( field_number );
 			fields_llvm_types.emplace_back( parent->class_->llvm_type );
 		}
-		the_class.members.ForEachInThisScope(
-			[&]( NamesScope::InsertedName& name )
+		the_class.members.ForEachValueInThisScope(
+			[&]( Value& value )
 			{
-				if( ClassField* const class_field= name.second.GetClassField() )
+				if( ClassField* const class_field= value.GetClassField() )
 				{
 					class_field->index= static_cast<unsigned int>(fields_llvm_types.size());
 					if( class_field->is_reference )
@@ -466,32 +466,32 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type, const T
 
 		// Complete another body elements.
 		// For class completeness we needs only fields, functions. Constants, types and type templates dones not needed.
-		the_class.members.ForEachInThisScope(
-			[&]( NamesScope::InsertedName& name )
+		the_class.members.ForEachValueInThisScope(
+			[&]( Value& value )
 			{
-				if( const auto functions_set= name.second.GetFunctionsSet() )
+				if( const auto functions_set= value.GetFunctionsSet() )
 				{
 					GlobalThingBuildFunctionsSet( the_class.members, *functions_set, false );
 					for( FunctionVariable& function : functions_set->functions )
 						ProcessClassVirtualFunction( the_class, function );
 				}
-				else if( name.second.GetClassField() != nullptr ) {} // Fields are already complete.
-				else if( name.second.GetTypeName() != nullptr ) {}
-				else if( name.second.GetVariable() != nullptr ){}
-				else if( name.second.GetErrorValue() != nullptr ){}
-				else if( name.second.GetStaticAssert() != nullptr ){}
-				else if( name.second.GetTypedef() != nullptr ) {}
-				else if( name.second.GetTypeTemplatesSet() != nullptr ) {}
-				else if( name.second.GetIncompleteGlobalVariable() != nullptr ) {}
-				else if( name.second.GetNamespace() != nullptr ) {} // Can be in case of type template parameters namespace.
+				else if( value.GetClassField() != nullptr ) {} // Fields are already complete.
+				else if( value.GetTypeName() != nullptr ) {}
+				else if( value.GetVariable() != nullptr ){}
+				else if( value.GetErrorValue() != nullptr ){}
+				else if( value.GetStaticAssert() != nullptr ){}
+				else if( value.GetTypedef() != nullptr ) {}
+				else if( value.GetTypeTemplatesSet() != nullptr ) {}
+				else if( value.GetIncompleteGlobalVariable() != nullptr ) {}
+				else if( value.GetNamespace() != nullptr ) {} // Can be in case of type template parameters namespace.
 				else U_ASSERT(false);
 			});
 
 		// Search for explicit noncopy constructors.
-		if( const NamesScope::InsertedName* const constructors_name=
-			the_class.members.GetThisScopeName( Keyword( Keywords::constructor_ ) ) )
+		if( const Value* const constructors_value=
+			the_class.members.GetThisScopeValue( Keyword( Keywords::constructor_ ) ) )
 		{
-			const OverloadedFunctionsSet* const constructors= constructors_name->second.GetFunctionsSet();
+			const OverloadedFunctionsSet* const constructors= constructors_value->GetFunctionsSet();
 			U_ASSERT( constructors != nullptr );
 			for( const FunctionVariable& constructor : constructors->functions )
 			{
@@ -507,18 +507,18 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type, const T
 		}
 
 		// Disable constexpr possibility for structs with explicit destructors, non-default copy-assignment operators and non-default copy constructors.
-		if( const NamesScope::InsertedName* const destructor_name=
-			the_class.members.GetThisScopeName( Keyword( Keywords::destructor_ ) ) )
+		if( const Value* const destructor_value=
+			the_class.members.GetThisScopeValue( Keyword( Keywords::destructor_ ) ) )
 		{
-			const OverloadedFunctionsSet* const destructors= destructor_name->second.GetFunctionsSet();
+			const OverloadedFunctionsSet* const destructors= destructor_value->GetFunctionsSet();
 			// Destructors may be invalid in case of error.
 			if( !destructors->functions.empty() && !destructors->functions[0].is_generated )
 				the_class.can_be_constexpr= false;
 		}
-		if( const NamesScope::InsertedName* const constructor_name=
-			the_class.members.GetThisScopeName( Keyword( Keywords::constructor_ ) ) )
+		if( const Value* const constructor_value=
+			the_class.members.GetThisScopeValue( Keyword( Keywords::constructor_ ) ) )
 		{
-			const OverloadedFunctionsSet* const constructors= constructor_name->second.GetFunctionsSet();
+			const OverloadedFunctionsSet* const constructors= constructor_value->GetFunctionsSet();
 			U_ASSERT( constructors != nullptr );
 			for( const FunctionVariable& constructor : constructors->functions )
 			{
@@ -526,10 +526,10 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type, const T
 					the_class.can_be_constexpr= false;
 			}
 		}
-		if( const NamesScope::InsertedName* const assignment_operator_name=
-			the_class.members.GetThisScopeName( OverloadedOperatorToString( OverloadedOperator::Assign ) ) )
+		if( const Value* const assignment_operator_value=
+			the_class.members.GetThisScopeValue( OverloadedOperatorToString( OverloadedOperator::Assign ) ) )
 		{
-			const OverloadedFunctionsSet* const operators= assignment_operator_name->second.GetFunctionsSet();
+			const OverloadedFunctionsSet* const operators= assignment_operator_value->GetFunctionsSet();
 			U_ASSERT( operators != nullptr );
 			for( const FunctionVariable& op : operators->functions )
 			{
@@ -598,7 +598,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type, const T
 				errors_.push_back( ReportFieldsForInterfacesNotAllowed( class_declaration.file_pos_ ) );
 			if( the_class.base_class != nullptr )
 				errors_.push_back( ReportBaseClassForInterface( class_declaration.file_pos_ ) );
-			if( the_class.members.GetThisScopeName( Keyword( Keywords::constructor_ ) ) != nullptr )
+			if( the_class.members.GetThisScopeValue( Keyword( Keywords::constructor_ ) ) != nullptr )
 				errors_.push_back( ReportConstructorForInterface( class_declaration.file_pos_ ) );
 			for( const Class::VirtualTableEntry& virtual_table_entry : the_class.virtual_table )
 			{
@@ -626,29 +626,29 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type, const T
 		for( const ClassProxyPtr& parent : the_class.parents )
 		{
 			parent->class_->members.ForEachInThisScope(
-				[&]( const NamesScope::InsertedName& name )
+				[&]( const ProgramString& name, const Value& value )
 				{
-					if( parent->class_->GetMemberVisibility( name.first ) == ClassMemberVisibility::Private )
+					if( parent->class_->GetMemberVisibility( name ) == ClassMemberVisibility::Private )
 						return; // Do not inherit private members.
 
-					NamesScope::InsertedName* const result_class_name= the_class.members.GetThisScopeName(name.first);
+					Value* const result_class_value= the_class.members.GetThisScopeValue(name);
 
-					if( const OverloadedFunctionsSet* const functions= name.second.GetFunctionsSet() )
+					if( const OverloadedFunctionsSet* const functions= value.GetFunctionsSet() )
 					{
 						// SPARCHE_TODO - maybe also skip additive-assignment operators?
-						if( name.first == Keyword( Keywords::constructor_ ) ||
-							name.first == Keyword( Keywords::destructor_ ) ||
-							name.first == OverloadedOperatorToString( OverloadedOperator::Assign ) )
+						if( name == Keyword( Keywords::constructor_ ) ||
+							name == Keyword( Keywords::destructor_ ) ||
+							name == OverloadedOperatorToString( OverloadedOperator::Assign ) )
 							return; // Did not inherit constructors, destructors, assignment operators.
 
-						if( result_class_name != nullptr )
+						if( result_class_value != nullptr )
 						{
-							if( OverloadedFunctionsSet* const result_class_functions= result_class_name->second.GetFunctionsSet() )
+							if( OverloadedFunctionsSet* const result_class_functions= result_class_value->GetFunctionsSet() )
 							{
-								if( the_class.GetMemberVisibility( name.first ) != parent->class_->GetMemberVisibility( name.first ) )
+								if( the_class.GetMemberVisibility( name ) != parent->class_->GetMemberVisibility( name ) )
 								{
 									const auto& file_pos= result_class_functions->functions.empty() ? result_class_functions->template_functions.front()->file_pos : result_class_functions->functions.front().prototype_file_pos;
-									errors_.push_back( ReportFunctionsVisibilityMismatch( file_pos, name.first ) );
+									errors_.push_back( ReportFunctionsVisibilityMismatch( file_pos, name ) );
 								}
 
 								// Merge function sets, if result class have functions set with given name.
@@ -675,14 +675,14 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type, const T
 						else
 						{
 							// Result class have no functions with this name. Inherit all functions from parent calass.
-							the_class.members.AddName( name.first, name.second );
+							the_class.members.AddName( name, value );
 						}
 					}
 					else
 					{
 						// Just override other kinds of symbols.
-						if( result_class_name == nullptr )
-							the_class.members.AddName( name.first, name.second );
+						if( result_class_value == nullptr )
+							the_class.members.AddName( name, value );
 					}
 				});
 		}
@@ -711,9 +711,9 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type, const T
 
 		// Immediately build constexpr functions.
 		the_class.members.ForEachInThisScope(
-			[&]( NamesScope::InsertedName& name )
+			[&]( const ProgramString& name, Value& value )
 			{
-				OverloadedFunctionsSet* const functions_set= name.second.GetFunctionsSet();
+				OverloadedFunctionsSet* const functions_set= value.GetFunctionsSet();
 				if( functions_set == nullptr )
 					return;
 
@@ -725,7 +725,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type, const T
 							function,
 							class_type,
 							the_class.members,
-							name.first,
+							name,
 							function.syntax_element->type_.arguments_,
 							function.syntax_element->block_.get(),
 							function.syntax_element->constructor_initialization_list_.get() );
@@ -751,12 +751,12 @@ void CodeBuilder::GlobalThingBuildEnum( const EnumPtr enum_, TypeCompleteness co
 
 	if( !enum_decl.underlaying_type_name.components.empty() )
 	{
-		const NamesScope::InsertedName* const type_name= ResolveName( enum_decl.file_pos_, names_scope, enum_decl.underlaying_type_name );
-		if( type_name == nullptr )
+		const Value* const type_value= ResolveValue( enum_decl.file_pos_, names_scope, enum_decl.underlaying_type_name );
+		if( type_value == nullptr )
 			errors_.push_back( ReportNameNotFound( enum_decl.file_pos_, enum_decl.underlaying_type_name ) );
 		else
 		{
-			const Type* const type= type_name->second.GetTypeName();
+			const Type* const type= type_value->GetTypeName();
 			if( type == nullptr )
 				errors_.push_back( ReportNameIsNotTypeName( enum_decl.file_pos_, enum_decl.underlaying_type_name.components.back().name ) );
 			else
@@ -848,7 +848,7 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 	FunctionContext& function_context= *global_function_context_;
 	const StackVariablesStorage dummy_stack( function_context );
 
-	if( const auto variables_declaration= dynamic_cast<const Synt::VariablesDeclaration*>(incomplete_global_variable.syntax_element) )
+	if( const auto variables_declaration= incomplete_global_variable.variables_declaration )
 	{
 		const Synt::VariablesDeclaration::VariableEntry& variable_declaration= variables_declaration->variables[ incomplete_global_variable.element_index ];
 
@@ -905,21 +905,21 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 
 			variable.value_type= ValueType::ConstReference;
 
-			const Synt::IExpressionComponent* initializer_expression= nullptr;
-			if( const auto expression_initializer= dynamic_cast<const Synt::ExpressionInitializer*>( variable_declaration.initializer.get() ) )
-				initializer_expression= expression_initializer->expression.get();
-			else if( const auto constructor_initializer= dynamic_cast<const Synt::ConstructorInitializer*>( variable_declaration.initializer.get() ) )
+			const Synt::Expression* initializer_expression= nullptr;
+			if( const auto expression_initializer= boost::get<const Synt::ExpressionInitializer>( variable_declaration.initializer.get() ) )
+				initializer_expression= &expression_initializer->expression;
+			else if( const auto constructor_initializer= boost::get<const Synt::ConstructorInitializer>( variable_declaration.initializer.get() ) )
 			{
 				if( constructor_initializer->call_operator.arguments_.size() != 1u )
 				{
 					errors_.push_back( ReportReferencesHaveConstructorsWithExactlyOneParameter( constructor_initializer->file_pos_ ) );
 					FAIL_RETURN;
 				}
-				initializer_expression= constructor_initializer->call_operator.arguments_.front().get();
+				initializer_expression= &constructor_initializer->call_operator.arguments_.front();
 			}
 			else
 			{
-				errors_.push_back( ReportUnsupportedInitializerForReference( variable_declaration.initializer->GetFilePos() ) );
+				errors_.push_back( ReportUnsupportedInitializerForReference( variable_declaration.file_pos ) );
 				FAIL_RETURN;
 			}
 
@@ -960,7 +960,7 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 
 		global_variable_value= Value( variable, variable_declaration.file_pos );
 	}
-	else if( const auto auto_variable_declaration= dynamic_cast<const Synt::AutoVariableDeclaration*>(incomplete_global_variable.syntax_element) )
+	else if( const auto auto_variable_declaration= incomplete_global_variable.auto_variable_declaration )
 	{
 		if( auto_variable_declaration->mutability_modifier == MutabilityModifier::Mutable )
 		{
@@ -971,7 +971,7 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 		// Destruction frame for temporary variables of initializer expression.
 		const StackVariablesStorage temp_variables_storage( function_context );
 
-		const Variable initializer_experrsion= BuildExpressionCodeEnsureVariable( *auto_variable_declaration->initializer_expression, names_scope, function_context );
+		const Variable initializer_experrsion= BuildExpressionCodeEnsureVariable( auto_variable_declaration->initializer_expression, names_scope, function_context );
 
 		{ // Check expression type. Expression can have exotic types, such "Overloading functions set", "class name", etc.
 			const bool type_is_ok=

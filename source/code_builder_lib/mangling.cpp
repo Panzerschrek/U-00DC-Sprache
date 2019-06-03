@@ -69,7 +69,7 @@ private:
 // Returns empty string if func_name is not operatorname.
 static const ProgramString& DecodeOperator( const ProgramString& func_name )
 {
-	static const std::map<ProgramString, ProgramString> c_op_names
+	static const ProgramStringMap<ProgramString> c_op_names
 	{
 		{ "+"_SpC, "pl"_SpC },
 		{ "-"_SpC, "mi"_SpC },

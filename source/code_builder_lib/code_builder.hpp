@@ -36,7 +36,7 @@ private:
 	struct BuildResultInternal
 	{
 		std::unique_ptr<NamesScope> names_map;
-		std::unique_ptr< std::map<ProgramString, Value > > generated_template_things_storage;
+		std::unique_ptr< ProgramStringMap< Value > > generated_template_things_storage;
 		std::unique_ptr<ClassTable> class_table;
 	};
 
@@ -130,7 +130,7 @@ private:
 	struct TemplateTypeGenerationResult
 	{
 		TypeTemplatePtr type_template;
-		NamesScope::InsertedName* type= nullptr;
+		Value* type= nullptr;
 		std::vector<DeducedTemplateParameter> deduced_template_parameters;
 	};
 
@@ -179,7 +179,7 @@ private:
 	void FillGlobalNamesScope( NamesScope& global_names_scope );
 
 	// Function context required for accesing local constexpr variables.
-	Type PrepareType( const Synt::ITypeNamePtr& type_name, NamesScope& names_scope, FunctionContext& function_context );
+	Type PrepareType( const Synt::TypeName& type_name, NamesScope& names_scope, FunctionContext& function_context );
 
 	llvm::FunctionType* GetLLVMFunctionType( const Function& function_type );
 
@@ -232,19 +232,19 @@ private:
 		std::vector<bool>& template_parameters_usage_flags );
 
 	void PrepareTemplateSignatureParameter(
-		const Synt::IExpressionComponentPtr& template_parameter,
+		const Synt::Expression& template_parameter,
 		NamesScope& names_scope,
 		const std::vector<TypeTemplate::TemplateParameter>& template_parameters,
 		std::vector<bool>& template_parameters_usage_flags );
 
 	void PrepareTemplateSignatureParameter(
-		const Synt::ITypeName& template_parameter,
+		const Synt::TypeName& template_parameter,
 		NamesScope& names_scope,
 		const std::vector<TypeTemplate::TemplateParameter>& template_parameters,
 		std::vector<bool>& template_parameters_usage_flags );
 
 	// Resolve as deep, as can, but does not instantiate last component, if it is template.
-	NamesScope::InsertedName* ResolveForTemplateSignatureParameter(
+	Value* ResolveForTemplateSignatureParameter(
 		const FilePos& file_pos,
 		const Synt::ComplexName& signature_parameter,
 		NamesScope& names_scope );
@@ -261,7 +261,7 @@ private:
 	DeducedTemplateParameter DeduceTemplateArguments(
 		const TemplateBase& template_,
 		const TemplateParameter& template_parameter,
-		const Synt::IExpressionComponent& signature_parameter,
+		const Synt::Expression& signature_parameter,
 		const FilePos& signature_parameter_file_pos,
 		DeducibleTemplateParameters& deducible_template_parameters,
 		NamesScope& names_scope );
@@ -269,23 +269,23 @@ private:
 	DeducedTemplateParameter DeduceTemplateArguments(
 		const TemplateBase& template_,
 		const TemplateParameter& template_parameter,
-		const Synt::ITypeName& signature_parameter,
+		const Synt::TypeName& signature_parameter,
 		const FilePos& signature_parameter_file_pos,
 		DeducibleTemplateParameters& deducible_template_parameters,
 		NamesScope& names_scope );
 
 	// Returns nullptr in case of fail.
-	NamesScope::InsertedName* GenTemplateType(
+	Value* GenTemplateType(
 		const FilePos& file_pos,
 		const TypeTemplatesSet& type_templates_set,
-		const std::vector<Synt::IExpressionComponentPtr>& template_arguments,
+		const std::vector<Synt::Expression>& template_arguments,
 		NamesScope& arguments_names_scope );
 
 	// Returns nullptr in case of fail.
 	TemplateTypeGenerationResult GenTemplateType(
 		const FilePos& file_pos,
 		const TypeTemplatePtr& type_template_ptr,
-		const std::vector<Synt::IExpressionComponentPtr>& template_arguments,
+		const std::vector<Synt::Expression>& template_arguments,
 		NamesScope& arguments_names_scope,
 		bool skip_type_generation );
 
@@ -296,10 +296,10 @@ private:
 		bool first_actual_arg_is_this,
 		bool skip_arguments= false );
 
-	NamesScope::InsertedName* GenTemplateFunctionsUsingTemplateParameters(
+	Value* GenTemplateFunctionsUsingTemplateParameters(
 		const FilePos& file_pos,
 		const std::vector<FunctionTemplatePtr>& function_templates,
-		const std::vector<Synt::IExpressionComponentPtr>& template_arguments,
+		const std::vector<Synt::Expression>& template_arguments,
 		NamesScope& arguments_names_scope );
 
 	bool NameShadowsTemplateArgument( const ProgramString& name, NamesScope& names_scope );
@@ -413,17 +413,17 @@ private:
 	// Expressions.
 
 	Value BuildExpressionCodeAndDestroyTemporaries(
-		const Synt::IExpressionComponent& expression,
+		const Synt::Expression& expression,
 		NamesScope& names,
 		FunctionContext& function_context );
 
 	Variable BuildExpressionCodeEnsureVariable(
-		const Synt::IExpressionComponent& expression,
+		const Synt::Expression& expression,
 		NamesScope& names,
 		FunctionContext& function_context );
 
 	Value BuildExpressionCode(
-		const Synt::IExpressionComponent& expression,
+		const Synt::Expression& expression,
 		NamesScope& names,
 		FunctionContext& function_context );
 
@@ -433,8 +433,8 @@ private:
 	boost::optional<Value> TryCallOverloadedBinaryOperator(
 		OverloadedOperator op,
 		const Synt::SyntaxElementBase& op_syntax_element,
-		const Synt::IExpressionComponent&  left_expr,
-		const Synt::IExpressionComponent& right_expr,
+		const Synt::Expression&  left_expr,
+		const Synt::Expression& right_expr,
 		bool evaluate_args_in_reverse_order,
 		const FilePos& file_pos,
 		NamesScope& names,
@@ -448,8 +448,8 @@ private:
 		FunctionContext& function_context );
 		
 	Value BuildLazyBinaryOperator(
-		const Synt::IExpressionComponent& l_expression,
-		const Synt::IExpressionComponent& r_expression,
+		const Synt::Expression& l_expression,
+		const Synt::Expression& r_expression,
 		const Synt::BinaryOperator& binary_operator,
 		const FilePos& file_pos,
 		NamesScope& names,
@@ -459,8 +459,8 @@ private:
 	Value BuildCastRefUnsafe( const Synt::CastRefUnsafe& cast_ref_unsafe, NamesScope& names, FunctionContext& function_context );
 	Value DoReferenceCast(
 		const FilePos& file_pos,
-		const Synt::ITypeNamePtr& type_name,
-		const Synt::IExpressionComponentPtr& expression,
+		const Synt::TypeName& type_name,
+		const Synt::Expression& expression,
 		bool enable_unsafe,
 		NamesScope& names,
 		FunctionContext& function_context );
@@ -497,7 +497,7 @@ private:
 		const Function& function_type,
 		const FilePos& call_file_pos,
 		const std::vector<Variable>& preevaluated_args,
-		const std::vector<const Synt::IExpressionComponent*>& args,
+		const std::vector<const Synt::Expression*>& args,
 		const bool evaluate_args_in_reverse_order,
 		NamesScope& names,
 		FunctionContext& function_context,
@@ -577,7 +577,7 @@ private:
 
 	// ++ and -- operations
 	void BuildDeltaOneOperatorCode(
-		const Synt::IExpressionComponent& expression,
+		const Synt::Expression& expression,
 		const FilePos& file_pos,
 		bool positive, // true - increment, false - decrement
 		NamesScope& block_names,
@@ -624,9 +624,9 @@ private:
 		ForDeclaration,
 		ForTemplateSignatureParameter,
 	};
-	NamesScope::InsertedName* ResolveName( const FilePos& file_pos, NamesScope& names_scope, const Synt::ComplexName& complex_name, ResolveMode resolve_mode= ResolveMode::Regular );
+	Value* ResolveValue( const FilePos& file_pos, NamesScope& names_scope, const Synt::ComplexName& complex_name, ResolveMode resolve_mode= ResolveMode::Regular );
 
-	NamesScope::InsertedName* ResolveName(
+	Value* ResolveValue(
 		const FilePos& file_pos,
 		NamesScope& names_scope,
 		const Synt::ComplexName::Component* components,
@@ -672,7 +672,7 @@ private:
 
 	llvm::Constant* ApplyInitializer(
 		const Variable& variable,
-		const Synt::IInitializer& initializer,
+		const Synt::Initializer& initializer,
 		NamesScope& block_names,
 		FunctionContext& function_context );
 
@@ -719,13 +719,13 @@ private:
 	llvm::Constant* InitializeReferenceField(
 		const Variable& variable,
 		const ClassField& field,
-		const Synt::IInitializer& initializer,
+		const Synt::Initializer& initializer,
 		NamesScope& block_names,
 		FunctionContext& function_context );
 
 	llvm::Constant* InitializeFunctionPointer(
 		const Variable& variable,
-		const Synt::IExpressionComponent& initializer_expression,
+		const Synt::Expression& initializer_expression,
 		NamesScope& block_names,
 		FunctionContext& function_context );
 
@@ -897,7 +897,7 @@ private:
 	ClassTable typeinfo_class_table_;
 
 	// Names map for generated template types/functions. We can not insert it in regular namespaces, because we needs insert it, while iterating regular namespaces.
-	std::map<ProgramString, Value> generated_template_things_storage_;
+	ProgramStringMap<Value> generated_template_things_storage_;
 
 	std::vector<GlobalThing> global_things_stack_;
 };

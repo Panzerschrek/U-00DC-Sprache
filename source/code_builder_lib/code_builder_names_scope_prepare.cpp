@@ -11,51 +11,79 @@ namespace CodeBuilderPrivate
 
 void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::ProgramElements& namespace_elements )
 {
-	for (const Synt::IProgramElementPtr& program_element : namespace_elements )
+	struct Visitor final : public boost::static_visitor<>
 	{
-		if( const auto func= dynamic_cast<const Synt::Function*>( program_element.get() ) )
-			NamesScopeFill( names_scope, *func, nullptr );
-		else if( const auto class_= dynamic_cast<const Synt::Class*>( program_element.get() ) )
-			NamesScopeFill( names_scope, *class_ );
-		else if( const auto namespace_= dynamic_cast<const Synt::Namespace*>( program_element.get() ) )
+		CodeBuilder& this_;
+		NamesScope& names_scope;
+
+		Visitor( CodeBuilder& in_this, NamesScope& in_names_scope )
+			: this_(in_this), names_scope(in_names_scope)
+		{}
+
+		void operator()( const Synt::FunctionPtr& func )
+		{
+			this_.NamesScopeFill( names_scope, *func, nullptr );
+		}
+		void operator()( const Synt::ClassPtr& class_ )
+		{
+			this_.NamesScopeFill( names_scope, *class_ );
+		}
+		void operator()( const Synt::NamespacePtr& namespace_ )
 		{
 			NamesScope* result_scope= &names_scope;
-			if( const NamesScope::InsertedName* const same_name= names_scope.GetThisScopeName( namespace_->name_ ) )
+			if( const Value* const same_value= names_scope.GetThisScopeValue( namespace_->name_ ) )
 			{
-				if( const NamesScopePtr same_namespace= same_name->second.GetNamespace() )
+				if( const NamesScopePtr same_namespace= same_value->GetNamespace() )
 					result_scope= same_namespace.get(); // Extend existend namespace.
 				else
-					errors_.push_back( ReportRedefinition( namespace_->file_pos_, namespace_->name_ ) );
+					this_.errors_.push_back( ReportRedefinition( namespace_->file_pos_, namespace_->name_ ) );
 			}
 			else
 			{
 				if( IsKeyword( namespace_->name_ ) )
-					errors_.push_back( ReportUsingKeywordAsName( namespace_->file_pos_ ) );
-				U_ASSERT( !NameShadowsTemplateArgument( namespace_->name_, names_scope ) ); // There are no templates abowe namespace. Namespaces inside classes does not exists.
+					this_.errors_.push_back( ReportUsingKeywordAsName( namespace_->file_pos_ ) );
+				U_ASSERT( !this_.NameShadowsTemplateArgument( namespace_->name_, names_scope ) ); // There are no templates abowe namespace. Namespaces inside classes does not exists.
 
 				const auto new_names_scope= std::make_shared<NamesScope>( namespace_->name_, &names_scope );
 				names_scope.AddName( namespace_->name_, Value( new_names_scope, namespace_->file_pos_ ) );
 				result_scope= new_names_scope.get();
 			}
 
-			NamesScopeFill( *result_scope, namespace_->elements_ );
+			this_.NamesScopeFill( *result_scope, namespace_->elements_ );
 		}
-		else if( const auto variables_declaration= dynamic_cast<const Synt::VariablesDeclaration*>( program_element.get() ) )
-			NamesScopeFill( names_scope, *variables_declaration );
-		else if( const auto auto_variable_declaration= dynamic_cast<const Synt::AutoVariableDeclaration*>( program_element.get() ) )
-			NamesScopeFill( names_scope, *auto_variable_declaration );
-		else if( const auto static_assert_= dynamic_cast<const Synt::StaticAssert*>( program_element.get() ) )
-			NamesScopeFill( names_scope, *static_assert_ );
-		else if( const auto enum_= dynamic_cast<const Synt::Enum*>( program_element.get() ) )
-			NamesScopeFill( names_scope, *enum_ );
-		else if( const auto typedef_= dynamic_cast<const Synt::Typedef*>( program_element.get() ) )
-			NamesScopeFill( names_scope, *typedef_ );
-		else if( const auto type_template= dynamic_cast<const Synt::TypeTemplateBase*>( program_element.get() ) )
-			NamesScopeFill( names_scope, *type_template, nullptr );
-		else if( const auto function_template= 	dynamic_cast<const Synt::FunctionTemplate*>( program_element.get() ) )
-			NamesScopeFill( names_scope, *function_template, nullptr );
-		else U_ASSERT(false);
-	}
+		void operator()( const Synt::VariablesDeclaration& variables_declaration )
+		{
+			this_.NamesScopeFill( names_scope, variables_declaration );
+		}
+		void operator()( const Synt::AutoVariableDeclaration& auto_variable_declaration )
+		{
+			this_.NamesScopeFill( names_scope, auto_variable_declaration );
+		}
+		void operator()( const Synt::StaticAssert& static_assert_ )
+		{
+			this_.NamesScopeFill( names_scope, static_assert_ );
+		}
+		void operator()( const Synt::Enum& enum_ )
+		{
+			this_.NamesScopeFill( names_scope, enum_ );
+		}
+		void operator()( const Synt::Typedef& typedef_ )
+		{
+			this_.NamesScopeFill( names_scope, typedef_ );
+		}
+		void operator()( const Synt::TypeTemplateBase& type_template )
+		{
+			this_.NamesScopeFill( names_scope, type_template, nullptr );
+		}
+		void operator()( const Synt::FunctionTemplate& function_template )
+		{
+			this_.NamesScopeFill( names_scope, function_template, nullptr );
+		}
+	};
+
+	Visitor visitor( *this, names_scope );
+	for (const Synt::ProgramElement& program_element : namespace_elements )
+		boost::apply_visitor( visitor, program_element );
 }
 
 void  CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::VariablesDeclaration& variables_declaration )
@@ -68,7 +96,7 @@ void  CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::Variable
 			errors_.push_back( ReportDeclarationShadowsTemplateArgument( variable_declaration.file_pos, variable_declaration.name ) );
 
 		IncompleteGlobalVariable incomplete_global_variable;
-		incomplete_global_variable.syntax_element= &variables_declaration;
+		incomplete_global_variable.variables_declaration= &variables_declaration;
 		incomplete_global_variable.element_index= size_t( &variable_declaration - variables_declaration.variables.data() );
 		incomplete_global_variable.name= variable_declaration.name;
 
@@ -85,7 +113,7 @@ void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::AutoVaria
 		errors_.push_back( ReportDeclarationShadowsTemplateArgument( variable_declaration.file_pos_, variable_declaration.name ) );
 
 	IncompleteGlobalVariable incomplete_global_variable;
-	incomplete_global_variable.syntax_element= &variable_declaration;
+	incomplete_global_variable.auto_variable_declaration= &variable_declaration;
 	incomplete_global_variable.name= variable_declaration.name;
 
 	if( names_scope.AddName( variable_declaration.name, Value( incomplete_global_variable, variable_declaration.file_pos_ ) ) == nullptr )
@@ -107,9 +135,9 @@ void CodeBuilder::NamesScopeFill(
 	if( NameShadowsTemplateArgument( func_name, names_scope ) )
 		errors_.push_back( ReportDeclarationShadowsTemplateArgument( function_declaration.file_pos_, func_name ) );
 
-	if( NamesScope::InsertedName* const prev_name= names_scope.GetThisScopeName( func_name ) )
+	if( Value* const prev_value= names_scope.GetThisScopeValue( func_name ) )
 	{
-		if( OverloadedFunctionsSet* const functions_set= prev_name->second.GetFunctionsSet() )
+		if( OverloadedFunctionsSet* const functions_set= prev_value->GetFunctionsSet() )
 		{
 			if( base_class != nullptr && base_class->class_->GetMemberVisibility( func_name ) != visibility )
 				errors_.push_back( ReportFunctionsVisibilityMismatch( function_declaration.file_pos_, func_name ) );
@@ -151,9 +179,9 @@ void CodeBuilder::NamesScopeFill(
 	if( NameShadowsTemplateArgument( function_template_name, names_scope ) )
 		errors_.push_back( ReportDeclarationShadowsTemplateArgument( function_template_declaration.file_pos_, function_template_name ) );
 
-	if( NamesScope::InsertedName* const prev_name= names_scope.GetThisScopeName( function_template_name ) )
+	if( Value* const prev_value= names_scope.GetThisScopeValue( function_template_name ) )
 	{
-		if( OverloadedFunctionsSet* const functions_set= prev_name->second.GetFunctionsSet() )
+		if( OverloadedFunctionsSet* const functions_set= prev_value->GetFunctionsSet() )
 		{
 			if( base_class != nullptr && base_class->class_->GetMemberVisibility( function_template_name ) != visibility )
 				errors_.push_back( ReportFunctionsVisibilityMismatch( function_template_declaration.file_pos_, function_template_name ) );
@@ -186,9 +214,9 @@ ClassProxyPtr CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::
 		errors_.push_back( ReportDeclarationShadowsTemplateArgument( class_declaration.file_pos_, class_name ) );
 
 	ClassProxyPtr class_type;
-	if( const NamesScope::InsertedName* const prev_name= names_scope.GetThisScopeName( class_name ) )
+	if( const Value* const prev_value= names_scope.GetThisScopeValue( class_name ) )
 	{
-		if( const Type* const type= prev_name->second.GetTypeName() )
+		if( const Type* const type= prev_value->GetTypeName() )
 		{
 			if( const ClassProxyPtr prev_class_type= type->GetClassTypeProxy() )
 			{
@@ -236,62 +264,85 @@ ClassProxyPtr CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::
 
 	if( !class_declaration.is_forward_declaration_ )
 	{
-		ClassMemberVisibility current_visibility= ClassMemberVisibility::Public;
-		for( const Synt::IClassElementPtr& member : class_declaration.elements_ )
+		struct Visitor final : public boost::static_visitor<>
 		{
-			if( const auto in_class_field= dynamic_cast<const Synt::ClassField*>( member.get() ) )
+			CodeBuilder& this_;
+			const Synt::Class& class_declaration;
+			ClassProxyPtr& class_type;
+			Class& the_class;
+			const ProgramString& class_name;
+			ClassMemberVisibility current_visibility= ClassMemberVisibility::Public;
+
+			Visitor( CodeBuilder& in_this, const Synt::Class& in_class_declaration, ClassProxyPtr& in_class_type, Class& in_the_class, const ProgramString& in_class_name )
+				: this_(in_this), class_declaration(in_class_declaration), class_type(in_class_type), the_class(in_the_class), class_name(in_class_name)
+			{}
+
+			void operator()( const Synt::ClassField& in_class_field )
 			{
 				ClassField class_field;
-				class_field.syntax_element= in_class_field;
+				class_field.syntax_element= &in_class_field;
 
-				if( IsKeyword( in_class_field->name ) )
-					errors_.push_back( ReportUsingKeywordAsName( class_declaration.file_pos_ ) );
-				if( NameShadowsTemplateArgument( in_class_field->name, the_class.members ) )
-					errors_.push_back( ReportDeclarationShadowsTemplateArgument( in_class_field->file_pos_, in_class_field->name ) );
-				if( the_class.members.AddName( in_class_field->name, Value( class_field, in_class_field->file_pos_ ) ) == nullptr )
-					errors_.push_back( ReportRedefinition( in_class_field->file_pos_, in_class_field->name ) );
+				if( IsKeyword( in_class_field.name ) )
+					this_.errors_.push_back( ReportUsingKeywordAsName( class_declaration.file_pos_ ) );
+				if( this_.NameShadowsTemplateArgument( in_class_field.name, the_class.members ) )
+					this_.errors_.push_back( ReportDeclarationShadowsTemplateArgument( in_class_field.file_pos_, in_class_field.name ) );
+				if( the_class.members.AddName( in_class_field.name, Value( class_field, in_class_field.file_pos_ ) ) == nullptr )
+					this_.errors_.push_back( ReportRedefinition( in_class_field.file_pos_, in_class_field.name ) );
 
-				the_class.SetMemberVisibility( in_class_field->name, current_visibility );
+				the_class.SetMemberVisibility( in_class_field.name, current_visibility );
 			}
-			else if( const auto func= dynamic_cast<const Synt::Function*>( member.get() ) )
-				NamesScopeFill( the_class.members, *func, class_type, current_visibility );
-			else if( const auto func_template= dynamic_cast<const Synt::FunctionTemplate*>( member.get() ) )
-				NamesScopeFill( the_class.members, *func_template, class_type, current_visibility );
-			else if( const auto visibility_label= dynamic_cast<const Synt::ClassVisibilityLabel*>( member.get() ) )
+			void operator()( const Synt::FunctionPtr& func )
+			{
+				this_.NamesScopeFill( the_class.members, *func, class_type, current_visibility );
+			}
+			void operator()( const Synt::FunctionTemplate& func_template )
+			{
+				this_.NamesScopeFill( the_class.members, func_template, class_type, current_visibility );
+			}
+			void operator()( const Synt::ClassVisibilityLabel& visibility_label )
 			{
 				if( class_declaration.kind_attribute_ == Synt::ClassKindAttribute::Struct )
-					errors_.push_back( ReportVisibilityForStruct( visibility_label->file_pos_, class_name ) );
-				current_visibility= visibility_label->visibility_;
+					this_.errors_.push_back( ReportVisibilityForStruct( visibility_label.file_pos_, class_name ) );
+				current_visibility= visibility_label.visibility_;
 			}
-			else if( const auto type_template= dynamic_cast<const Synt::TypeTemplateBase*>( member.get() ) )
-				NamesScopeFill( the_class.members, *type_template, class_type, current_visibility );
-			else if( const auto enum_= dynamic_cast<const Synt::Enum*>( member.get() ) )
+			void operator()( const Synt::TypeTemplateBase& type_template )
 			{
-				NamesScopeFill( the_class.members, *enum_ );
-				the_class.SetMemberVisibility( enum_->name, current_visibility );
+				this_.NamesScopeFill( the_class.members, type_template, class_type, current_visibility );
 			}
-			else if( const auto static_assert_= dynamic_cast<const Synt::StaticAssert*>( member.get() ) )
-				NamesScopeFill( the_class.members, *static_assert_ );
-			else if( const auto typedef_= dynamic_cast<const Synt::Typedef*>( member.get() ) )
+			void operator()( const Synt::Enum& enum_ )
 			{
-				NamesScopeFill( the_class.members, *typedef_ );
-				the_class.SetMemberVisibility( typedef_->name, current_visibility );
+				this_.NamesScopeFill( the_class.members, enum_ );
+				the_class.SetMemberVisibility( enum_.name, current_visibility );
 			}
-			else if( const auto variables_declaration= dynamic_cast<const Synt::VariablesDeclaration*>( member.get() ) )
+			void operator()( const Synt::StaticAssert& static_assert_ )
 			{
-				NamesScopeFill( the_class.members, *variables_declaration );
-				for( const auto& variable_declaration : variables_declaration->variables )
+				this_.NamesScopeFill( the_class.members, static_assert_ );
+			}
+			void operator()( const Synt::Typedef& typedef_ )
+			{
+				this_.NamesScopeFill( the_class.members, typedef_ );
+				the_class.SetMemberVisibility( typedef_.name, current_visibility );
+			}
+			void operator()( const Synt::VariablesDeclaration& variables_declaration )
+			{
+				this_.NamesScopeFill( the_class.members, variables_declaration );
+				for( const auto& variable_declaration : variables_declaration.variables )
 					the_class.SetMemberVisibility( variable_declaration.name, current_visibility );
 			}
-			else if( const auto auto_variable_declaration= dynamic_cast<const Synt::AutoVariableDeclaration*>( member.get() ) )
+			void operator()( const Synt::AutoVariableDeclaration& auto_variable_declaration )
 			{
-				NamesScopeFill( the_class.members, *auto_variable_declaration );
-				the_class.SetMemberVisibility( auto_variable_declaration->name, current_visibility );
+				this_.NamesScopeFill( the_class.members, auto_variable_declaration );
+				the_class.SetMemberVisibility( auto_variable_declaration.name, current_visibility );
 			}
-			else if( const auto inner_class= dynamic_cast<const Synt::Class*>( member.get() ) )
-				NamesScopeFill( the_class.members, *inner_class );
-			else U_ASSERT(false);
-		} // for class elements
+			void operator()( const Synt::ClassPtr& inner_class )
+			{
+				this_.NamesScopeFill( the_class.members, *inner_class );
+			}
+		};
+
+		Visitor visitor( *this, class_declaration, class_type, the_class, class_name );
+		for( const Synt::ClassElement& class_element : class_declaration.elements_ )
+			boost::apply_visitor( visitor, class_element );
 	}
 
 	return class_type;
@@ -309,12 +360,12 @@ void CodeBuilder::NamesScopeFill(
 	if( NameShadowsTemplateArgument( type_template_name, names_scope ) )
 		errors_.push_back( ReportDeclarationShadowsTemplateArgument( type_template_declaration.file_pos_, type_template_name ) );
 
-	if( NamesScope::InsertedName* const prev_name= names_scope.GetThisScopeName( type_template_name ) )
+	if( Value* const prev_value= names_scope.GetThisScopeValue( type_template_name ) )
 	{
 		if( base_class != nullptr && base_class->class_->GetMemberVisibility( type_template_name ) != visibility )
 			errors_.push_back( ReportTypeTemplatesVisibilityMismatch( type_template_declaration.file_pos_, type_template_name ) ); // TODO - use separate error code
 
-		if( TypeTemplatesSet* const type_templates_set= prev_name->second.GetTypeTemplatesSet() )
+		if( TypeTemplatesSet* const type_templates_set= prev_value->GetTypeTemplatesSet() )
 			type_templates_set->syntax_elements.push_back( &type_template_declaration );
 		else
 			errors_.push_back( ReportRedefinition( type_template_declaration.file_pos_, type_template_name ) );
@@ -372,48 +423,31 @@ void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::StaticAss
 
 void CodeBuilder::NamesScopeFillOutOfLineElements( NamesScope& names_scope, const Synt::ProgramElements& namespace_elements )
 {
-	for (const Synt::IProgramElementPtr& program_element : namespace_elements )
+	for (const Synt::ProgramElement& program_element : namespace_elements )
 	{
-		if( const auto func= dynamic_cast<const Synt::Function*>( program_element.get() ) )
+		if( const auto func_ptr= boost::get< const Synt::FunctionPtr >( &program_element ) )
 		{
-			if( func->name_.components.size() != 1u )
+			const Synt::Function& func= **func_ptr;
+			if( func.name_.components.size() != 1u )
 			{
-				NamesScope::InsertedName* const func_name= ResolveName( func->file_pos_, names_scope, func->name_, ResolveMode::ForDeclaration );
-				if( func_name == nullptr || func_name->second.GetFunctionsSet() == nullptr )
+				Value* const func_value= ResolveValue( func.file_pos_, names_scope, func.name_, ResolveMode::ForDeclaration );
+				if( func_value == nullptr || func_value->GetFunctionsSet() == nullptr )
 				{
-					errors_.push_back( ReportFunctionDeclarationOutsideItsScope( func->file_pos_ ) );
+					errors_.push_back( ReportFunctionDeclarationOutsideItsScope( func.file_pos_ ) );
 					continue;
 				}
-				func_name->second.GetFunctionsSet()->out_of_line_syntax_elements.push_back(func);
+				func_value->GetFunctionsSet()->out_of_line_syntax_elements.push_back(&func);
 			}
 		}
-		else if( const auto namespace_= dynamic_cast<const Synt::Namespace*>( program_element.get() ) )
+		else if( const auto namespace_ptr= boost::get< const Synt::NamespacePtr >( &program_element ) )
 		{
-			if( const NamesScope::InsertedName* const inner_namespace_name= names_scope.GetThisScopeName( namespace_->name_ ) )
+			const Synt::Namespace& namespace_= **namespace_ptr;
+			if( const Value* const inner_namespace_value= names_scope.GetThisScopeValue( namespace_.name_ ) )
 			{
-				if( const NamesScopePtr inner_namespace= inner_namespace_name->second.GetNamespace() )
-					NamesScopeFillOutOfLineElements( *inner_namespace, namespace_->elements_ );
+				if( const NamesScopePtr inner_namespace= inner_namespace_value->GetNamespace() )
+					NamesScopeFillOutOfLineElements( *inner_namespace, namespace_.elements_ );
 			}
 		}
-		else if( dynamic_cast<const Synt::Class*>( program_element.get() ) != nullptr )
-		{}
-		else if( dynamic_cast<const Synt::VariablesDeclaration*>( program_element.get() ) != nullptr )
-		{}
-		else if( dynamic_cast<const Synt::AutoVariableDeclaration*>( program_element.get() ) != nullptr )
-		{}
-		else if( dynamic_cast<const Synt::StaticAssert*>( program_element.get() ) != nullptr )
-		{}
-		else if( dynamic_cast<const Synt::Enum*>( program_element.get() ) != nullptr )
-		{
-			// SPRACHE_TODO - enable out-of-line enums
-		}
-		else if( dynamic_cast<const Synt::Typedef*>( program_element.get() ) != nullptr )
-		{}
-		else if( dynamic_cast<const Synt::TypeTemplateBase*>( program_element.get() ) != nullptr )
-		{}
-		else if( dynamic_cast<const Synt::FunctionTemplate*>( program_element.get() ) != nullptr )
-		{}
-		else U_ASSERT(false);
 	}
 }
 

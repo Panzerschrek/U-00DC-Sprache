@@ -49,8 +49,7 @@ void CodeBuilder::TryGenerateDestructorPrototypeForPolymorphClass( Class& the_cl
 	U_ASSERT( the_class.virtual_table_llvm_type == nullptr );
 	U_ASSERT( the_class.this_class_virtual_table == nullptr );
 
-	const NamesScope::InsertedName* const destructor_name= the_class.members.GetThisScopeName( Keyword( Keywords::destructor_ ) );
-	if( destructor_name != nullptr )
+	if( the_class.members.GetThisScopeValue( Keyword( Keywords::destructor_ ) ) != nullptr )
 		return;
 
 	// Generate destructor prototype.
