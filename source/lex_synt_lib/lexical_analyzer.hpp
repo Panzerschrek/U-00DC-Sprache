@@ -22,7 +22,7 @@ bool operator<=( const FilePos& l, const FilePos& r );
 
 struct Lexem
 {
-	enum class Type
+	enum class Type : uint8_t
 	{
 		None,
 
@@ -110,10 +110,9 @@ struct Lexem
 		EndOfFile,
 	};
 
-	Type type= Type::None;
 	ProgramString text; // Non-empty for identifiers, strings, numbers. Empty for simple lexems.
-
 	FilePos file_pos;
+	Type type= Type::None;
 };
 
 typedef std::vector<Lexem> Lexems;
