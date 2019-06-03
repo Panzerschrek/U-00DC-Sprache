@@ -848,7 +848,7 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 	FunctionContext& function_context= *global_function_context_;
 	const StackVariablesStorage dummy_stack( function_context );
 
-	if( const auto variables_declaration= dynamic_cast<const Synt::VariablesDeclaration*>(incomplete_global_variable.syntax_element) )
+	if( const auto variables_declaration= incomplete_global_variable.variables_declaration )
 	{
 		const Synt::VariablesDeclaration::VariableEntry& variable_declaration= variables_declaration->variables[ incomplete_global_variable.element_index ];
 
@@ -960,7 +960,7 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 
 		global_variable_value= Value( variable, variable_declaration.file_pos );
 	}
-	else if( const auto auto_variable_declaration= dynamic_cast<const Synt::AutoVariableDeclaration*>(incomplete_global_variable.syntax_element) )
+	else if( const auto auto_variable_declaration= incomplete_global_variable.auto_variable_declaration )
 	{
 		if( auto_variable_declaration->mutability_modifier == MutabilityModifier::Mutable )
 		{

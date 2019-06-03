@@ -369,7 +369,10 @@ struct Typedef
 
 struct IncompleteGlobalVariable
 {
-	const Synt::SyntaxElementBase* syntax_element= nullptr; // VariablesDeclaration or AutoVariableDeclaration
+	// Exists one of.
+	const Synt::VariablesDeclaration* variables_declaration= nullptr;
+	const Synt::AutoVariableDeclaration* auto_variable_declaration= nullptr;
+
 	size_t element_index= ~0u; // For VariablesDeclaration - index of variable.
 	ProgramString name;
 };

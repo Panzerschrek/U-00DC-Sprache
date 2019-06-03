@@ -188,7 +188,8 @@ class SyntaxElementBase
 {
 public:
 	explicit SyntaxElementBase( const FilePos& file_pos );
-	virtual ~SyntaxElementBase()= default;
+	// WARNING! This class have NO virtual destructor for, size optimization.
+	// Do not like this:  SyntaxElementBase* x= new Derived();
 
 	FilePos file_pos_;
 };
@@ -804,6 +805,13 @@ class TemplateBase : public SyntaxElementBase
 {
 public:
 	explicit TemplateBase( const FilePos& file_pos );
+	virtual ~TemplateBase()= default;
+
+	TemplateBase( const TemplateBase& )= delete;
+	TemplateBase( TemplateBase&& )= default;
+
+	TemplateBase& operator=( const TemplateBase& )= delete;
+	TemplateBase& operator=( TemplateBase&& )= default;
 
 	// For type arguments, like template</ type A, type B />, arg_type is empty.
 	// For value arguments, like template</ type A, A x, i32 y />, arg_type is comples name of argument.

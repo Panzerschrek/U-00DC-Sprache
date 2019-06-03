@@ -13,7 +13,7 @@ namespace Asserts
 // Sizes for x86-64.
 // If one of types inside variant becomes too big, put it inside "unique_ptr".
 
-static_assert( sizeof(TypeName) <= 48u, "Size of variant too big" );
+static_assert( sizeof(TypeName) <= 40u, "Size of variant too big" );
 static_assert( sizeof(Expression) <= 128u, "Size of variant too big" );
 static_assert( sizeof(Initializer) <= 160u, "Size of variant too big" );
 static_assert( sizeof(BlockElement) <= 304u, "Size of variant too big" );
