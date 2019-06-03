@@ -294,10 +294,6 @@ public:
 	ReferenceModifier reference_modifier_;
 };
 
-FilePos GetExpressionFilePos( const Expression& expression );
-FilePos GetInitializerFilePos( const Initializer& initializer );
-FilePos GetBlockElementFilePos( const BlockElement& block_element );
-
 class BinaryOperator final : public SyntaxElementBase
 {
 public:
@@ -884,6 +880,12 @@ public:
 
 	ProgramString import_name;
 };
+
+// Utility functions for mani[ulations with variants.
+
+FilePos GetExpressionFilePos( const Expression& expression );
+FilePos GetInitializerFilePos( const Initializer& initializer );
+FilePos GetBlockElementFilePos( const BlockElement& block_element );
 
 } // namespace Synt
 

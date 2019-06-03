@@ -67,60 +67,6 @@ MemberAccessOperator::MemberAccessOperator(
 	: SyntaxElementBase( file_pos )
 {}
 
-FilePos GetExpressionFilePos( const Expression& expression )
-{
-	struct Visitor final : public boost::static_visitor<FilePos>
-	{
-		FilePos operator()( const EmptyVariant& ) const
-		{
-			return FilePos();
-		}
-
-		FilePos operator()( const ExpressionComponentWithUnaryOperators& expression_with_unary_operators ) const
-		{
-			return expression_with_unary_operators.file_pos_;
-		}
-
-		FilePos operator()( const BinaryOperator& binary_operator ) const
-		{
-			return binary_operator.file_pos_;
-		}
-	};
-
-	return boost::apply_visitor( Visitor(), expression );
-}
-
-FilePos GetInitializerFilePos( const Initializer& initializer )
-{
-	struct Visitor final : public boost::static_visitor<FilePos>
-	{
-		FilePos operator()( const EmptyVariant& ) const
-		{
-			return FilePos();
-		}
-
-		FilePos operator()( const SyntaxElementBase& element ) const
-		{
-			return element.file_pos_;
-		}
-	};
-
-	return boost::apply_visitor( Visitor(), initializer );
-}
-
-FilePos GetBlockElementFilePos( const BlockElement& block_element )
-{
-	struct Visitor final : public boost::static_visitor<FilePos>
-	{
-		FilePos operator()( const SyntaxElementBase& syntax_element ) const
-		{
-			return syntax_element.file_pos_;
-		}
-	};
-
-	return boost::apply_visitor( Visitor(), block_element );
-}
-
 ArrayInitializer::ArrayInitializer( const FilePos& file_pos )
 	: SyntaxElementBase( file_pos )
 {}
@@ -339,6 +285,60 @@ Namespace::Namespace( const FilePos& file_pos )
 Import::Import( const FilePos& file_pos )
 	: SyntaxElementBase(file_pos)
 {}
+
+FilePos GetExpressionFilePos( const Expression& expression )
+{
+	struct Visitor final : public boost::static_visitor<FilePos>
+	{
+		FilePos operator()( const EmptyVariant& ) const
+		{
+			return FilePos();
+		}
+
+		FilePos operator()( const ExpressionComponentWithUnaryOperators& expression_with_unary_operators ) const
+		{
+			return expression_with_unary_operators.file_pos_;
+		}
+
+		FilePos operator()( const BinaryOperator& binary_operator ) const
+		{
+			return binary_operator.file_pos_;
+		}
+	};
+
+	return boost::apply_visitor( Visitor(), expression );
+}
+
+FilePos GetInitializerFilePos( const Initializer& initializer )
+{
+	struct Visitor final : public boost::static_visitor<FilePos>
+	{
+		FilePos operator()( const EmptyVariant& ) const
+		{
+			return FilePos();
+		}
+
+		FilePos operator()( const SyntaxElementBase& element ) const
+		{
+			return element.file_pos_;
+		}
+	};
+
+	return boost::apply_visitor( Visitor(), initializer );
+}
+
+FilePos GetBlockElementFilePos( const BlockElement& block_element )
+{
+	struct Visitor final : public boost::static_visitor<FilePos>
+	{
+		FilePos operator()( const SyntaxElementBase& syntax_element ) const
+		{
+			return syntax_element.file_pos_;
+		}
+	};
+
+	return boost::apply_visitor( Visitor(), block_element );
+}
 
 } // namespace Synt
 

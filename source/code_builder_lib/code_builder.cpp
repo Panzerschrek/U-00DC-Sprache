@@ -514,6 +514,7 @@ Type CodeBuilder::PrepareType(
 			array_type.type= this_.PrepareType( *array_type_name.element_type, names_scope, function_context );
 
 			const Synt::Expression& num= *array_type_name.size;
+			const FilePos num_file_pos= Synt::GetExpressionFilePos( num );
 
 			const Variable size_variable= this_.BuildExpressionCodeEnsureVariable( num, names_scope, function_context );
 			if( size_variable.constexpr_value != nullptr )
@@ -528,19 +529,19 @@ Type CodeBuilder::PrepareType(
 						{
 							const llvm::APInt& size_value= size_variable.constexpr_value->getUniqueInteger();
 							if( IsSignedInteger( size_fundamental_type->fundamental_type ) && size_value.isNegative() )
-								this_.errors_.push_back( ReportArraySizeIsNegative( Synt::GetExpressionFilePos( num ) ) );
+								this_.errors_.push_back( ReportArraySizeIsNegative( num_file_pos ) );
 							else
 								array_type.size= SizeType( size_value.getLimitedValue() );
 						}
 					}
 					else
-						this_.errors_.push_back( ReportArraySizeIsNotInteger( Synt::GetExpressionFilePos( num ) ) );
+						this_.errors_.push_back( ReportArraySizeIsNotInteger( num_file_pos ) );
 				}
 				else
 					U_ASSERT( false && "Nonfundamental constexpr? WTF?" );
 			}
 			else
-				this_.errors_.push_back( ReportExpectedConstantExpression( Synt::GetExpressionFilePos( num ) ) );
+				this_.errors_.push_back( ReportExpectedConstantExpression( num_file_pos ) );
 
 			// TODO - generate error, if total size of type (incuding arrays) is more, than half of address space of target architecture.
 			array_type.llvm_type= llvm::ArrayType::get( array_type.type.GetLLVMType(), array_type.ArraySizeOrZero() );
@@ -3004,18 +3005,19 @@ void CodeBuilder::BuildWhileOperatorCode(
 
 	ReferencesGraph variables_state_before_while= function_context.variables_state;
 
+	const FilePos condition_file_pos= Synt::GetExpressionFilePos( while_operator.condition_ );
 	if( condition_expression.type != bool_type_ )
 	{
 		errors_.push_back(
 			ReportTypesMismatch(
-				Synt::GetExpressionFilePos( while_operator.condition_ ),
+				condition_file_pos,
 				bool_type_.ToString(),
 				condition_expression.type.ToString() ) );
 		return;
 	}
 
 	llvm::Value* condition_in_register= CreateMoveToLLVMRegisterInstruction( condition_expression, function_context );
-	CallDestructors( *function_context.stack_variables_stack.back(), function_context, Synt::GetExpressionFilePos( while_operator.condition_ ) );
+	CallDestructors( *function_context.stack_variables_stack.back(), function_context, condition_file_pos );
 
 	llvm::BasicBlock* const while_block= llvm::BasicBlock::Create( llvm_context_ );
 	llvm::BasicBlock* const block_after_while= llvm::BasicBlock::Create( llvm_context_ );

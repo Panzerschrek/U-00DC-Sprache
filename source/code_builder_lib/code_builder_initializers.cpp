@@ -888,6 +888,7 @@ llvm::Constant* CodeBuilder::InitializeReferenceField(
 	U_ASSERT( variable.type.GetClassType() != nullptr );
 	U_ASSERT( variable.type.GetClassTypeProxy() == field.class_.lock() );
 
+	const FilePos initializer_file_pos= Synt::GetInitializerFilePos( initializer );
 	const Synt::Expression* initializer_expression= nullptr;
 	if( const auto expression_initializer= boost::get<const Synt::ExpressionInitializer>( &initializer ) )
 	{
@@ -904,27 +905,28 @@ llvm::Constant* CodeBuilder::InitializeReferenceField(
 	}
 	else
 	{
-		errors_.push_back( ReportUnsupportedInitializerForReference( Synt::GetInitializerFilePos( initializer ) ) );
+		errors_.push_back( ReportUnsupportedInitializerForReference( initializer_file_pos ) );
 		return nullptr;
 	}
 
 	const Variable initializer_variable= BuildExpressionCodeEnsureVariable( *initializer_expression, block_names, function_context );
 
-	if( !ReferenceIsConvertible( initializer_variable.type, field.type, Synt::GetExpressionFilePos( *initializer_expression ) ) )
+	const FilePos initializer_expression_file_pos= Synt::GetExpressionFilePos( *initializer_expression );
+	if( !ReferenceIsConvertible( initializer_variable.type, field.type, initializer_expression_file_pos ) )
 	{
-		errors_.push_back( ReportTypesMismatch( Synt::GetExpressionFilePos( *initializer_expression ) , field.type.ToString(), initializer_variable.type.ToString() ) );
+		errors_.push_back( ReportTypesMismatch( initializer_expression_file_pos, field.type.ToString(), initializer_variable.type.ToString() ) );
 		return nullptr;
 	}
 	if( initializer_variable.value_type == ValueType::Value )
 	{
-		errors_.push_back( ReportExpectedReferenceValue( Synt::GetExpressionFilePos( *initializer_expression ) ) );
+		errors_.push_back( ReportExpectedReferenceValue( initializer_expression_file_pos ) );
 		return nullptr;
 	}
 	U_ASSERT( initializer_variable.location == Variable::Location::Pointer );
 
 	if( field.is_mutable && initializer_variable.value_type == ValueType::ConstReference )
 	{
-		errors_.push_back( ReportBindingConstReferenceToNonconstReference( Synt::GetExpressionFilePos( *initializer_expression ) ) );
+		errors_.push_back( ReportBindingConstReferenceToNonconstReference( initializer_expression_file_pos ) );
 		return nullptr;
 	}
 
@@ -936,7 +938,7 @@ llvm::Constant* CodeBuilder::InitializeReferenceField(
 		if( ( field.is_mutable && function_context.variables_state.HaveOutgoingLinks( src_node ) ) ||
 			(!field.is_mutable && function_context.variables_state.HaveOutgoingMutableNodes( src_node ) ) )
 		{
-			errors_.push_back( ReportReferenceProtectionError( Synt::GetInitializerFilePos( initializer ), src_node->name ) );
+			errors_.push_back( ReportReferenceProtectionError( initializer_file_pos, src_node->name ) );
 			return nullptr;
 		}
 
@@ -951,7 +953,7 @@ llvm::Constant* CodeBuilder::InitializeReferenceField(
 			if( inner_reference->kind == ReferencesGraphNode::Kind::ReferenceImut && field.is_mutable )
 			{
 				// TODO - make separate error.
-				errors_.push_back( ReportNotImplemented( Synt::GetInitializerFilePos( initializer ), "inner reference mutability changing" ) );
+				errors_.push_back( ReportNotImplemented( initializer_file_pos, "inner reference mutability changing" ) );
 				return nullptr;
 			}
 		}
@@ -989,6 +991,7 @@ llvm::Constant* CodeBuilder::InitializeFunctionPointer(
 {
 	U_ASSERT( variable.type.GetFunctionPointerType() != nullptr );
 
+	const FilePos initializer_expression_file_pos= Synt::GetExpressionFilePos( initializer_expression );
 	const FunctionPointer& function_pointer_type= *variable.type.GetFunctionPointerType();
 
 	const Value initializer_value= BuildExpressionCode( initializer_expression, block_names, function_context );
@@ -999,7 +1002,7 @@ llvm::Constant* CodeBuilder::InitializeFunctionPointer(
 		if( intitializer_type == nullptr ||
 			!intitializer_type->function.PointerCanBeConvertedTo( function_pointer_type.function ) )
 		{
-			errors_.push_back( ReportTypesMismatch( Synt::GetExpressionFilePos( initializer_expression ), variable.type.ToString(), initializer_variable->type.ToString() ) );
+			errors_.push_back( ReportTypesMismatch( initializer_expression_file_pos, variable.type.ToString(), initializer_variable->type.ToString() ) );
 			return nullptr;
 		}
 		U_ASSERT( initializer_variable->type.GetFunctionPointerType() != nullptr );
@@ -1020,7 +1023,7 @@ llvm::Constant* CodeBuilder::InitializeFunctionPointer(
 	else
 	{
 		// TODO - generate separate error
-		errors_.push_back( ReportExpectedVariable( Synt::GetExpressionFilePos( initializer_expression ), initializer_value.GetKindName() ) );
+		errors_.push_back( ReportExpectedVariable( initializer_expression_file_pos, initializer_value.GetKindName() ) );
 		return nullptr;
 	}
 
@@ -1044,7 +1047,7 @@ llvm::Constant* CodeBuilder::InitializeFunctionPointer(
 		{
 			const FunctionVariable* const func=
 				GenTemplateFunction(
-					Synt::GetExpressionFilePos( initializer_expression ),
+					initializer_expression_file_pos,
 					function_template,
 					ArgsVector<Function::Arg>(), false, true );
 			if( func != nullptr )
@@ -1055,7 +1058,7 @@ llvm::Constant* CodeBuilder::InitializeFunctionPointer(
 					{
 						// Error, exist more, then one non-exact match function.
 						// TODO - maybe generate separate error?
-						errors_.push_back( ReportTooManySuitableOverloadedFunctions( Synt::GetExpressionFilePos( initializer_expression ) ) );
+						errors_.push_back( ReportTooManySuitableOverloadedFunctions( initializer_expression_file_pos ) );
 						return nullptr;
 					}
 					exact_match_function_variable= func;
@@ -1073,7 +1076,7 @@ llvm::Constant* CodeBuilder::InitializeFunctionPointer(
 		{
 			// Error, exist more, then one non-exact match function.
 			// TODO - maybe generate separate error?
-			errors_.push_back( ReportTooManySuitableOverloadedFunctions( Synt::GetExpressionFilePos( initializer_expression ) ) );
+			errors_.push_back( ReportTooManySuitableOverloadedFunctions( initializer_expression_file_pos ) );
 			return nullptr;
 		}
 		else if( !convertible_function_variables.empty() )
@@ -1081,11 +1084,11 @@ llvm::Constant* CodeBuilder::InitializeFunctionPointer(
 	}
 	if( function_variable == nullptr )
 	{
-		errors_.push_back( ReportCouldNotSelectOverloadedFunction( Synt::GetExpressionFilePos( initializer_expression ) ) );
+		errors_.push_back( ReportCouldNotSelectOverloadedFunction( initializer_expression_file_pos ) );
 		return nullptr;
 	}
 	if( function_variable->is_deleted )
-		errors_.push_back( ReportAccessingDeletedMethod( Synt::GetExpressionFilePos( initializer_expression ) ) );
+		errors_.push_back( ReportAccessingDeletedMethod( initializer_expression_file_pos ) );
 
 	llvm::Value* function_value= function_variable->llvm_function;
 	if( function_variable->type != function_pointer_type.function )
