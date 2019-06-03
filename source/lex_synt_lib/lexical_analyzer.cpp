@@ -36,8 +36,10 @@ static const size_t g_max_fixed_lexem_size= 3;
 
 static const FixedLexemsMap g_fixed_lexems[ g_max_fixed_lexem_size + 1 ]=
 {
+	FixedLexemsMap
 	{ // Zero symbol lexems.
 	},
+	FixedLexemsMap
 	{ // One symbol lexems.
 		{ "("_SpC, Lexem::Type::BracketLeft },
 		{ ")"_SpC, Lexem::Type::BracketRight },
@@ -69,6 +71,7 @@ static const FixedLexemsMap g_fixed_lexems[ g_max_fixed_lexem_size + 1 ]=
 
 		{ "'"_SpC, Lexem::Type::Apostrophe },
 	},
+	FixedLexemsMap
 	{ // Two symbol lexems.
 		{ "</"_SpC, Lexem::Type::TemplateBracketLeft  },
 		{ "/>"_SpC, Lexem::Type::TemplateBracketRight },
@@ -104,6 +107,7 @@ static const FixedLexemsMap g_fixed_lexems[ g_max_fixed_lexem_size + 1 ]=
 		{ "<-"_SpC, Lexem::Type::LeftArrow  },
 		{ "->"_SpC, Lexem::Type::RightArrow },
 	},
+	FixedLexemsMap
 	{ // Three symbol lexems.
 		{ "<<="_SpC, Lexem::Type::AssignShiftLeft  },
 		{ ">>="_SpC, Lexem::Type::AssignShiftRight },

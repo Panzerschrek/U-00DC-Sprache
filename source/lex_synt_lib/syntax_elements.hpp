@@ -396,7 +396,7 @@ public:
 	NumericConstant( const FilePos& file_pos );
 
 	LongFloat value_;
-	TypeSuffix type_suffix_{0};
+	TypeSuffix type_suffix_;
 	bool has_fractional_point_= false;
 };
 
@@ -406,7 +406,7 @@ public:
 	StringLiteral( const FilePos& file_pos );
 
 	ProgramString value_;
-	TypeSuffix type_suffix_{0};
+	TypeSuffix type_suffix_;
 };
 
 class BracketExpression final : public ExpressionComponentWithUnaryOperators
