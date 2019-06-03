@@ -443,7 +443,7 @@ Value CodeBuilder::BuildBinaryOperator(
 		}
 		else
 		{
-			if( l_type.SizeOf() < 4u )
+			if( l_fundamental_type->GetSize() < 4u )
 			{
 				// Operation supported only for 32 and 64bit operands
 				errors_.push_back( ReportOperationNotSupportedForThisType( file_pos, l_type.ToString() ) );
@@ -935,14 +935,16 @@ Value CodeBuilder::BuildBinaryOperator(
 				errors_.push_back( ReportOperationNotSupportedForThisType( file_pos, r_type.ToString() ) );
 				return ErrorValue();
 			}
+			const SizeType l_type_size= l_fundamental_type->GetSize();
+			const SizeType r_type_size= r_fundamental_type->GetSize();
 
 			if( l_var.constexpr_value != nullptr && r_var.constexpr_value != nullptr )
 			{
 				// Convert value of shift to type of shifted value. LLVM Reuqired this.
 				llvm::Constant* r_value_for_op= r_var.constexpr_value;
-				if( r_var.type.SizeOf() > l_var.type.SizeOf() )
+				if( r_type_size > l_type_size )
 					r_value_for_op= llvm::ConstantExpr::getTrunc( r_value_for_op, l_var.type.GetLLVMType() );
-				else if( r_var.type.SizeOf() < l_var.type.SizeOf() )
+				else if( r_type_size < l_type_size )
 					r_value_for_op= llvm::ConstantExpr::getZExt( r_value_for_op, l_var.type.GetLLVMType() );
 
 				if( binary_operator == BinaryOperatorType::ShiftLeft )
@@ -964,9 +966,9 @@ Value CodeBuilder::BuildBinaryOperator(
 				llvm::Value* r_value_for_op= CreateMoveToLLVMRegisterInstruction( r_var, function_context );
 
 				// Convert value of shift to type of shifted value. LLVM Reuqired this.
-				if( r_var.type.SizeOf() > l_var.type.SizeOf() )
+				if( r_type_size > l_type_size )
 					r_value_for_op= function_context.llvm_ir_builder.CreateTrunc( r_value_for_op, l_var.type.GetLLVMType() );
-				else if( r_var.type.SizeOf() < l_var.type.SizeOf() )
+				else if( r_type_size < l_type_size )
 					r_value_for_op= function_context.llvm_ir_builder.CreateZExt( r_value_for_op, l_var.type.GetLLVMType() );
 
 				if( binary_operator == BinaryOperatorType::ShiftLeft )
@@ -1747,9 +1749,11 @@ Value CodeBuilder::BuildIndexationOperator(
 	if( index.constexpr_value == nullptr && array_type->size != Array::c_undefined_size )
 	{
 		llvm::Value* index_value= index_list[1];
-		if( index.type.SizeOf() > size_type_.SizeOf() )
+		const SizeType index_size= index_fundamental_type->GetSize();
+		const SizeType size_type_size= size_type_.GetFundamentalType()->GetSize();
+		if( index_size > size_type_size )
 			index_value= function_context.llvm_ir_builder.CreateTrunc( index_value, size_type_.GetLLVMType() );
-		else if( index.type.SizeOf() < size_type_.SizeOf() )
+		else if( index_size < size_type_size )
 			index_value= function_context.llvm_ir_builder.CreateZExt( index_value, size_type_.GetLLVMType() );
 
 		llvm::Value* const condition=

@@ -74,6 +74,7 @@ struct FundamentalType final
 	llvm::Type* llvm_type;
 
 	FundamentalType( U_FundamentalType fundamental_type= U_FundamentalType::Void, llvm::Type* llvm_type= nullptr );
+	SizeType GetSize() const;
 };
 
 bool operator==( const FundamentalType& r, const FundamentalType& l );
@@ -113,9 +114,6 @@ public:
 	Enum* GetEnumType() const;
 
 	bool ReferenceIsConvertibleTo( const Type& other ) const;
-
-	// TODO - does this method needs?
-	SizeType SizeOf() const;
 
 	bool IsDefaultConstructible() const;
 	bool IsCopyConstructible() const;

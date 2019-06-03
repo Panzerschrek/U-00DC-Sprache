@@ -52,6 +52,10 @@ FundamentalType::FundamentalType(
 	, llvm_type(in_llvm_type)
 {}
 
+SizeType FundamentalType::GetSize() const
+{
+	return GetFundamentalTypeSize(fundamental_type);
+}
 
 bool operator==( const FundamentalType& r, const FundamentalType& l )
 {
@@ -263,47 +267,6 @@ bool Type::ReferenceIsConvertibleTo( const Type& other ) const
 	}
 
 	return false;
-}
-
-SizeType Type::SizeOf() const
-{
-	struct Visitor final : public boost::static_visitor<SizeType>
-	{
-		SizeType operator()( const FundamentalType& fundamental ) const
-		{
-			return GetFundamentalTypeSize( fundamental.fundamental_type );
-		}
-
-		SizeType operator()( const FunctionPtr& ) const
-		{
-			U_ASSERT( false && "SizeOf method not supported for functions." );
-			return 1u;
-		}
-
-		SizeType operator()( const ArrayPtr& array ) const
-		{
-			return array->type.SizeOf() * array->size;
-		}
-
-		SizeType operator()( const ClassProxyPtr& ) const
-		{
-			U_ASSERT( false && "SizeOf method not supported for classes." );
-			return 1u;
-		}
-
-		SizeType operator()( const EnumPtr& enum_type ) const
-		{
-			return GetFundamentalTypeSize( enum_type->underlaying_type.fundamental_type );
-		}
-
-		SizeType operator()( const FunctionPointerPtr& ) const
-		{
-			U_ASSERT( false && "SizeOf method not supported for function-pointer types." );
-			return 1u;
-		}
-	};
-
-	return boost::apply_visitor( Visitor(), something_ );
 }
 
 bool Type::IsDefaultConstructible() const
