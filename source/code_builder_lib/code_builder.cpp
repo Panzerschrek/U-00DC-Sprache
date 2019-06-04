@@ -312,7 +312,7 @@ void CodeBuilder::MergeNameScopes( NamesScope& dst, const NamesScope& src, Class
 			if( dst_member->GetKindIndex() != src_member.GetKindIndex() )
 			{
 				// Different kind of symbols - 100% error.
-				errors_.push_back( ReportRedefinition( src_member.GetFilePos(), src_name ) );
+				REPORT_ERROR( Redefinition, errors_, src_member.GetFilePos(), src_name );
 				return;
 			}
 
@@ -341,7 +341,7 @@ void CodeBuilder::MergeNameScopes( NamesScope& dst, const NamesScope& src, Class
 						if( same_dst_func->prototype_file_pos != src_func.prototype_file_pos )
 						{
 							// Prototypes are in differrent files.
-							errors_.push_back( ReportFunctionPrototypeDuplication( src_func.prototype_file_pos, src_name ) );
+							REPORT_ERROR( FunctionPrototypeDuplication, errors_,src_func.prototype_file_pos, src_name );
 							continue;
 						}
 
@@ -351,7 +351,7 @@ void CodeBuilder::MergeNameScopes( NamesScope& dst, const NamesScope& src, Class
 						{} // Ok, prototype imported later.
 						if(  same_dst_func->have_body &&  src_func.have_body &&
 							same_dst_func->body_file_pos != src_func.body_file_pos )
-							errors_.push_back( ReportFunctionBodyDuplication( src_func.body_file_pos, src_name ) );
+							REPORT_ERROR( FunctionBodyDuplication, errors_, src_func.body_file_pos, src_name );
 					}
 					else
 						ApplyOverloadedFunction( *dst_funcs_set, src_func, src_func.prototype_file_pos );
@@ -367,7 +367,7 @@ void CodeBuilder::MergeNameScopes( NamesScope& dst, const NamesScope& src, Class
 					if( src_class_proxy == nullptr || dst_class_proxy != src_class_proxy )
 					{
 						// Differnet proxy means 100% different classes.
-						errors_.push_back( ReportRedefinition( src_member.GetFilePos(), src_name ) );
+						REPORT_ERROR( Redefinition, errors_, src_member.GetFilePos(), src_name );
 						return;
 					}
 
@@ -385,7 +385,7 @@ void CodeBuilder::MergeNameScopes( NamesScope& dst, const NamesScope& src, Class
 						dst_class->body_file_pos != src_class.body_file_pos )
 					{
 						// Different bodies from different files.
-						errors_.push_back( ReportClassBodyDuplication( src_class.body_file_pos ) );
+						REPORT_ERROR( ClassBodyDuplication, errors_, src_class.body_file_pos );
 					}
 					if(  dst_class->completeness == TypeCompleteness::Incomplete && src_class.completeness != TypeCompleteness::Incomplete )
 					{
@@ -401,7 +401,7 @@ void CodeBuilder::MergeNameScopes( NamesScope& dst, const NamesScope& src, Class
 				return; // All ok - things from one source.
 
 			// Can not merge other kinds of values.
-			errors_.push_back( ReportRedefinition( src_member.GetFilePos(), src_name ) );
+			REPORT_ERROR( Redefinition, errors_, src_member.GetFilePos(), src_name );
 		} );
 }
 
@@ -529,19 +529,19 @@ Type CodeBuilder::PrepareType(
 						{
 							const llvm::APInt& size_value= size_variable.constexpr_value->getUniqueInteger();
 							if( IsSignedInteger( size_fundamental_type->fundamental_type ) && size_value.isNegative() )
-								this_.errors_.push_back( ReportArraySizeIsNegative( num_file_pos ) );
+								REPORT_ERROR( ArraySizeIsNegative, this_.errors_, num_file_pos );
 							else
 								array_type.size= SizeType( size_value.getLimitedValue() );
 						}
 					}
 					else
-						this_.errors_.push_back( ReportArraySizeIsNotInteger( num_file_pos ) );
+						REPORT_ERROR( ArraySizeIsNotInteger, this_.errors_, num_file_pos );
 				}
 				else
 					U_ASSERT( false && "Nonfundamental constexpr? WTF?" );
 			}
 			else
-				this_.errors_.push_back( ReportExpectedConstantExpression( num_file_pos ) );
+				REPORT_ERROR( ExpectedConstantExpression, this_.errors_, num_file_pos );
 
 			// TODO - generate error, if total size of type (incuding arrays) is more, than half of address space of target architecture.
 			array_type.llvm_type= llvm::ArrayType::get( array_type.type.GetLLVMType(), array_type.ArraySizeOrZero() );
@@ -579,12 +579,12 @@ Type CodeBuilder::PrepareType(
 				   function_type.return_type.GetClassType() != nullptr ||
 				   function_type.return_type.GetEnumType() != nullptr ||
 				   function_type.return_type.GetFunctionPointerType() != nullptr ) )
-				this_.errors_.push_back( ReportNotImplemented( function_type_name.file_pos_, "return value types except fundamentals, enums, classes, function pointers" ) );
+				REPORT_ERROR( NotImplemented, this_.errors_, function_type_name.file_pos_, "return value types except fundamentals, enums, classes, function pointers" );
 
 			for( const Synt::FunctionArgument& arg : function_type_name.arguments_ )
 			{
 				if( IsKeyword( arg.name_ ) )
-					this_.errors_.push_back( ReportUsingKeywordAsName( arg.file_pos_ ) );
+					REPORT_ERROR( UsingKeywordAsName, this_.errors_, arg.file_pos_ );
 
 				function_type.args.emplace_back();
 				Function::Arg& out_arg= function_type.args.back();
@@ -598,7 +598,7 @@ Type CodeBuilder::PrepareType(
 					   out_arg.type.GetClassType() != nullptr ||
 					   out_arg.type.GetEnumType() != nullptr ||
 					   out_arg.type.GetFunctionPointerType() != nullptr ) )
-					this_.errors_.push_back( ReportNotImplemented( arg.file_pos_, "parameters types except fundamentals, classes, enums, functionpointers" ) );
+					REPORT_ERROR( NotImplemented, this_.errors_, arg.file_pos_, "parameters types except fundamentals, classes, enums, functionpointers" );
 
 				this_.ProcessFunctionArgReferencesTags( function_type_name, function_type, arg, out_arg, function_type.args.size() - 1u );
 			}
@@ -620,10 +620,10 @@ Type CodeBuilder::PrepareType(
 				if( const Type* const type= value->GetTypeName() )
 					return *type;
 				else
-					this_.errors_.push_back( ReportNameIsNotTypeName( named_type_name.file_pos_, named_type_name.name.components.back().name ) );
+					REPORT_ERROR( NameIsNotTypeName, this_.errors_, named_type_name.file_pos_, named_type_name.name.components.back().name );
 			}
 			else
-				this_.errors_.push_back( ReportNameNotFound( named_type_name.file_pos_, named_type_name.name ) );
+				REPORT_ERROR( NameNotFound, this_.errors_, named_type_name.file_pos_, named_type_name.name );
 			return this_.invalid_type_;
 		}
 	};
@@ -697,7 +697,7 @@ void CodeBuilder::TryCallCopyConstructor(
 	if( !class_.is_copy_constructible )
 	{
 		// TODO - print more reliable message.
-		errors_.push_back( ReportOperationNotSupportedForThisType( file_pos, class_type.ToString() ) );
+		REPORT_ERROR( OperationNotSupportedForThisType, errors_, file_pos, class_type.ToString() );
 		return;
 	}
 
@@ -723,7 +723,7 @@ void CodeBuilder::TryCallCopyConstructor(
 	function_context.llvm_ir_builder.CreateCall( constructor->llvm_function, { this_, src } );
 
 	if( constructor->type.GetFunctionType()->unsafe && !function_context.is_in_unsafe_block )
-		errors_.push_back( ReportUnsafeFunctionCallOutsideUnsafeBlock( file_pos ) );
+		REPORT_ERROR( UnsafeFunctionCallOutsideUnsafeBlock, errors_, file_pos );
 }
 
 void CodeBuilder::GenerateLoop(
@@ -781,7 +781,7 @@ void CodeBuilder::CallDestructorsImpl(
 			if( stored_variable.first->kind == ReferencesGraphNode::Kind::Variable )
 			{
 				if( variables_state_copy.HaveOutgoingLinks( stored_variable.first ) )
-					errors_.push_back( ReportDestroyedVariableStillHaveReferences( file_pos, stored_variable.first->name ) );
+					REPORT_ERROR( DestroyedVariableStillHaveReferences, errors_, file_pos, stored_variable.first->name );
 				const Variable& var= stored_variable.second;
 				if( var.type.HaveDestructor() )
 					CallDestructor( var.llvm_value, var.type, function_context, file_pos );
@@ -819,7 +819,7 @@ void CodeBuilder::CallDestructor(
 		function_context.llvm_ir_builder.CreateCall( destructor.llvm_function, { ptr } );
 
 		if( destructor.type.GetFunctionType()->unsafe && !function_context.is_in_unsafe_block )
-			errors_.push_back( ReportUnsafeFunctionCallOutsideUnsafeBlock( file_pos ) );
+			REPORT_ERROR( UnsafeFunctionCallOutsideUnsafeBlock, errors_, file_pos );
 	}
 	else if( const Array* const array_type= type.GetArrayType() )
 	{
@@ -914,21 +914,21 @@ size_t CodeBuilder::PrepareFunction(
 	const bool is_special_method= is_constructor || is_destructor;
 
 	if( !is_special_method && IsKeyword( func_name ) )
-		errors_.push_back( ReportUsingKeywordAsName( func.file_pos_ ) );
+		REPORT_ERROR( UsingKeywordAsName, errors_, func.file_pos_ );
 
 	if( is_special_method && base_class == nullptr )
 	{
-		errors_.push_back( ReportConstructorOrDestructorOutsideClass( func.file_pos_ ) );
+		REPORT_ERROR( ConstructorOrDestructorOutsideClass, errors_, func.file_pos_ );
 		return ~0u;
 	}
 	if( !is_constructor && func.constructor_initialization_list_ != nullptr )
 	{
-		errors_.push_back( ReportInitializationListInNonconstructor( func.constructor_initialization_list_->file_pos_ ) );
+		REPORT_ERROR( InitializationListInNonconstructor, errors_, func.constructor_initialization_list_->file_pos_ );
 		return ~0u;
 	}
 	if( is_destructor && !func.type_.arguments_.empty() )
 	{
-		errors_.push_back( ReportExplicitArgumentsInDestructor( func.file_pos_ ) );
+		REPORT_ERROR( ExplicitArgumentsInDestructor, errors_, func.file_pos_ );
 		return ~0u;
 	}
 
@@ -943,10 +943,10 @@ size_t CodeBuilder::PrepareFunction(
 					return ~0u; // Function disabled.
 			}
 			else
-				errors_.push_back( ReportExpectedConstantExpression( Synt::GetExpressionFilePos( func.condition_ ) ) );
+				REPORT_ERROR( ExpectedConstantExpression, errors_, Synt::GetExpressionFilePos( func.condition_ ) );
 		}
 		else
-			errors_.push_back( ReportTypesMismatch( Synt::GetExpressionFilePos( func.condition_ ), bool_type_.ToString(), expression.type.ToString() ) );
+			REPORT_ERROR( TypesMismatch, errors_, Synt::GetExpressionFilePos( func.condition_ ), bool_type_.ToString(), expression.type.ToString() );
 	}
 
 	FunctionVariable func_variable;
@@ -966,9 +966,9 @@ size_t CodeBuilder::PrepareFunction(
 				{
 					func_variable.return_type_is_auto= true;
 					if( base_class != nullptr )
-						errors_.push_back( ReportAutoFunctionInsideClassesNotAllowed( func.file_pos_, func_name ) );
+						REPORT_ERROR( AutoFunctionInsideClassesNotAllowed, errors_, func.file_pos_, func_name );
 					if( func.block_ == nullptr )
-						errors_.push_back( ReportExpectedBodyForAutoFunction( func.file_pos_, func_name ) );
+						REPORT_ERROR( ExpectedBodyForAutoFunction, errors_, func.file_pos_, func_name );
 
 					if( func.type_.return_value_reference_modifier_ == ReferenceModifier::Reference )
 						function_type.return_type= void_type_;
@@ -999,12 +999,12 @@ size_t CodeBuilder::PrepareFunction(
 			   function_type.return_type.GetEnumType() != nullptr ||
 			   function_type.return_type.GetFunctionPointerType() != nullptr ) )
 		{
-			errors_.push_back( ReportNotImplemented( func.file_pos_, "return value types except fundamentals, enums, classes, function pointers" ) );
+			REPORT_ERROR( NotImplemented, errors_, func.file_pos_, "return value types except fundamentals, enums, classes, function pointers" );
 			return ~0u;
 		}
 
 		if( is_special_method && function_type.return_type != void_type_ )
-			errors_.push_back( ReportConstructorAndDestructorMustReturnVoid( func.file_pos_ ) );
+			REPORT_ERROR( ConstructorAndDestructorMustReturnVoid, errors_, func.file_pos_ );
 
 		ProcessFunctionReturnValueReferenceTags( func.type_, function_type );
 
@@ -1028,10 +1028,10 @@ size_t CodeBuilder::PrepareFunction(
 			const bool is_this= &arg == &func.type_.arguments_.front() && arg.name_ == Keywords::this_;
 
 			if( !is_this && IsKeyword( arg.name_ ) )
-				errors_.push_back( ReportUsingKeywordAsName( arg.file_pos_ ) );
+				REPORT_ERROR( UsingKeywordAsName, errors_, arg.file_pos_ );
 
 			if( is_this && is_destructor )
-				errors_.push_back( ReportExplicitThisInDestructor( arg.file_pos_ ) );
+				REPORT_ERROR( ExplicitThisInDestructor, errors_, arg.file_pos_ );
 			if( is_this && is_constructor )
 			{
 				// Explicit this for constructor.
@@ -1048,7 +1048,7 @@ size_t CodeBuilder::PrepareFunction(
 				func_variable.is_this_call= true;
 				if( base_class == nullptr )
 				{
-					errors_.push_back( ReportThisInNonclassFunction( func.file_pos_, func_name ) );
+					REPORT_ERROR( ThisInNonclassFunction, errors_, func.file_pos_, func_name );
 					return ~0u;
 				}
 				out_arg.type= base_class;
@@ -1065,7 +1065,7 @@ size_t CodeBuilder::PrepareFunction(
 				   out_arg.type.GetEnumType() != nullptr ||
 				   out_arg.type.GetFunctionPointerType() != nullptr ) )
 			{
-				errors_.push_back( ReportNotImplemented( func.file_pos_, "parameters types except fundamentals, classes, enums, functionpointers" ) );
+				REPORT_ERROR( NotImplemented, errors_, func.file_pos_, "parameters types except fundamentals, classes, enums, functionpointers" );
 				return ~0u;
 			}
 
@@ -1084,9 +1084,9 @@ size_t CodeBuilder::PrepareFunction(
 	if( func.constexpr_ )
 	{
 		if( func.block_ == nullptr )
-			errors_.push_back( ReportConstexprFunctionsMustHaveBody( func.file_pos_ ) );
+			REPORT_ERROR( ConstexprFunctionsMustHaveBody, errors_, func.file_pos_ );
 		if( func.virtual_function_kind_ != Synt::VirtualFunctionKind::None )
-			errors_.push_back( ReportConstexprFunctionCanNotBeVirtual( func.file_pos_ ) );
+			REPORT_ERROR( ConstexprFunctionCanNotBeVirtual, errors_, func.file_pos_ );
 
 		func_variable.constexpr_kind= FunctionVariable::ConstexprKind::ConstexprIncomplete;
 	}
@@ -1095,15 +1095,15 @@ size_t CodeBuilder::PrepareFunction(
 	if( func.virtual_function_kind_ != Synt::VirtualFunctionKind::None )
 	{
 		if( base_class == nullptr )
-			errors_.push_back( ReportVirtualForNonclassFunction( func.file_pos_, func_name ) );
+			REPORT_ERROR( VirtualForNonclassFunction, errors_, func.file_pos_, func_name );
 		if( !func_variable.is_this_call )
-			errors_.push_back( ReportVirtualForNonThisCallFunction( func.file_pos_, func_name ) );
+			REPORT_ERROR( VirtualForNonThisCallFunction, errors_, func.file_pos_, func_name );
 		if( is_constructor )
-			errors_.push_back( ReportFunctionCanNotBeVirtual( func.file_pos_, func_name ) );
+			REPORT_ERROR( FunctionCanNotBeVirtual, errors_, func.file_pos_, func_name );
 		if( base_class != nullptr && ( base_class->class_->kind == Class::Kind::Struct || base_class->class_->kind == Class::Kind::NonPolymorph ) )
-			errors_.push_back( ReportVirtualForNonpolymorphClass( func.file_pos_, func_name ) );
+			REPORT_ERROR( VirtualForNonpolymorphClass, errors_, func.file_pos_, func_name );
 		if( is_out_of_line_function )
-			errors_.push_back( ReportVirtualForFunctionImplementation( func.file_pos_, func_name ) );
+			REPORT_ERROR( VirtualForFunctionImplementation, errors_,  func.file_pos_, func_name );
 
 		func_variable.virtual_function_kind= func.virtual_function_kind_;
 	}
@@ -1114,7 +1114,7 @@ size_t CodeBuilder::PrepareFunction(
 		// Allow only global no-mangle function. This prevents existing of multiple "nomangle" functions with same name in different namespaces.
 		// If function is operator, it can not be global.
 		if( names_scope.GetParent() != nullptr )
-			errors_.push_back( ReportNoMangleForNonglobalFunction( func.file_pos_, func_name ) );
+			REPORT_ERROR( NoMangleForNonglobalFunction, errors_, func.file_pos_, func_name );
 		func_variable.no_mangle= true;
 	}
 
@@ -1122,7 +1122,7 @@ size_t CodeBuilder::PrepareFunction(
 	func_variable.is_conversion_constructor= func.is_conversion_constructor_;
 	U_ASSERT( !( func.is_conversion_constructor_ && !is_constructor ) );
 	if( func.is_conversion_constructor_ && func_variable.type.GetFunctionType()->args.size() != 2u )
-		errors_.push_back( ReportConversionConstructorMustHaveOneArgument( func.file_pos_ ) );
+		REPORT_ERROR( ConversionConstructorMustHaveOneArgument, errors_, func.file_pos_ );
 
 	// Check "=default" / "=delete".
 	if( func.body_kind != Synt::Function::BodyKind::None )
@@ -1141,7 +1141,7 @@ size_t CodeBuilder::PrepareFunction(
 			invalid_func= true;
 
 		if( invalid_func )
-			errors_.push_back( ReportInvalidMethodForBodyGeneration( func.file_pos_ ) );
+			REPORT_ERROR( InvalidMethodForBodyGeneration, errors_, func.file_pos_ );
 		else
 		{
 			if( func.body_kind == Synt::Function::BodyKind::BodyGenerationRequired )
@@ -1163,28 +1163,28 @@ size_t CodeBuilder::PrepareFunction(
 			prev_function->prototype_file_pos= func.file_pos_;
 		}
 		else if( prev_function->syntax_element->block_ == nullptr && func.block_ == nullptr )
-			errors_.push_back( ReportFunctionPrototypeDuplication( func.file_pos_, func_name ) );
+			REPORT_ERROR( FunctionPrototypeDuplication, errors_, func.file_pos_, func_name );
 		else if( prev_function->syntax_element->block_ != nullptr && func.block_ != nullptr )
-			errors_.push_back( ReportFunctionBodyDuplication( func.file_pos_, func_name ) );
+			REPORT_ERROR( FunctionBodyDuplication, errors_, func.file_pos_, func_name );
 
 		if( prev_function->is_this_call != func_variable.is_this_call )
-			errors_.push_back( ReportThiscallMismatch( func.file_pos_, func_name ) );
+			REPORT_ERROR( ThiscallMismatch, errors_, func.file_pos_, func_name );
 
 		if( !is_out_of_line_function )
 		{
 			if( prev_function->virtual_function_kind != func.virtual_function_kind_ )
-				errors_.push_back( ReportVirtualMismatch( func.file_pos_, func_name ) );
+				REPORT_ERROR( VirtualMismatch, errors_, func.file_pos_, func_name );
 		}
 		if( prev_function->is_deleted != func_variable.is_deleted )
-			errors_.push_back( ReportBodyForDeletedFunction( prev_function->prototype_file_pos, func_name ) );
+			REPORT_ERROR( BodyForDeletedFunction, errors_, prev_function->prototype_file_pos, func_name );
 		if( prev_function->is_generated != func_variable.is_generated )
-			errors_.push_back( ReportBodyForGeneratedFunction( prev_function->prototype_file_pos, func_name ) );
+			REPORT_ERROR( BodyForGeneratedFunction, errors_, prev_function->prototype_file_pos, func_name );
 
 		if( !prev_function->no_mangle && func_variable.no_mangle )
-			errors_.push_back( ReportNoMangleMismatch( func.file_pos_, func_name ) );
+			REPORT_ERROR( NoMangleMismatch, errors_, func.file_pos_, func_name );
 
 		if( prev_function->is_conversion_constructor != func_variable.is_conversion_constructor )
-			errors_.push_back( ReportCouldNotOverloadFunction( func.file_pos_ ) ); // Maybe generate separate error?
+			REPORT_ERROR( CouldNotOverloadFunction, errors_, func.file_pos_ );
 
 		return size_t(prev_function - functions_set.functions.data());
 	}
@@ -1192,12 +1192,12 @@ size_t CodeBuilder::PrepareFunction(
 	{
 		if( is_out_of_line_function )
 		{
-			errors_.push_back( ReportFunctionDeclarationOutsideItsScope( func.file_pos_ ) );
+			REPORT_ERROR( FunctionDeclarationOutsideItsScope, errors_, func.file_pos_ );
 			return ~0u;
 		}
 		if( functions_set.have_nomangle_function || ( !functions_set.functions.empty() && func_variable.no_mangle ) )
 		{
-			errors_.push_back( ReportCouldNotOverloadFunction( func.file_pos_ ) );
+			REPORT_ERROR( CouldNotOverloadFunction, errors_, func.file_pos_ );
 			return ~0u;
 		}
 
@@ -1236,7 +1236,7 @@ void CodeBuilder::CheckOverloadedOperator(
 
 	if( base_class == nullptr )
 	{
-		errors_.push_back( ReportOperatorDeclarationOutsideClass( file_pos ) );
+		REPORT_ERROR( OperatorDeclarationOutsideClass, errors_, file_pos );
 		return;
 	}
 
@@ -1251,14 +1251,14 @@ void CodeBuilder::CheckOverloadedOperator(
 	}
 
 	if( !is_this_class )
-		errors_.push_back( ReportOperatorDoesNotHaveParentClassArguments( file_pos ) );
+		REPORT_ERROR( OperatorDoesNotHaveParentClassArguments, errors_, file_pos );
 
 	switch( overloaded_operator )
 	{
 	case OverloadedOperator::Add:
 	case OverloadedOperator::Sub:
 		if( !( func_type.args.size() == 1u || func_type.args.size() == 2u ) )
-			errors_.push_back( ReportInvalidArgumentCountForOperator( file_pos ) );
+			REPORT_ERROR( InvalidArgumentCountForOperator, errors_, file_pos );
 		break;
 
 	case OverloadedOperator::Mul:
@@ -1276,7 +1276,7 @@ void CodeBuilder::CheckOverloadedOperator(
 	case OverloadedOperator::ShiftLeft :
 	case OverloadedOperator::ShiftRight:
 		if( func_type.args.size() != 2u )
-			errors_.push_back( ReportInvalidArgumentCountForOperator( file_pos ) );
+			REPORT_ERROR( InvalidArgumentCountForOperator, errors_, file_pos );
 		break;
 
 	case OverloadedOperator::AssignAdd:
@@ -1290,46 +1290,46 @@ void CodeBuilder::CheckOverloadedOperator(
 	case OverloadedOperator::AssignShiftLeft :
 	case OverloadedOperator::AssignShiftRight:
 		if( func_type.args.size() != 2u )
-			errors_.push_back( ReportInvalidArgumentCountForOperator( file_pos ) );
+			REPORT_ERROR( InvalidArgumentCountForOperator, errors_, file_pos );
 		if( func_type.return_type != void_type_ )
-			errors_.push_back( ReportInvalidReturnTypeForOperator( file_pos, void_type_.ToString() ) );
+			REPORT_ERROR( InvalidReturnTypeForOperator, errors_, file_pos, void_type_.ToString() );
 		break;
 
 	case OverloadedOperator::LogicalNot:
 	case OverloadedOperator::BitwiseNot:
 		if( func_type.args.size() != 1u )
-			errors_.push_back( ReportInvalidArgumentCountForOperator( file_pos ) );
+			REPORT_ERROR( InvalidArgumentCountForOperator, errors_, file_pos );
 		break;
 
 	case OverloadedOperator::Assign:
 		if( func_type.args.size() != 2u )
-			errors_.push_back( ReportInvalidArgumentCountForOperator( file_pos ) );
+			REPORT_ERROR( InvalidArgumentCountForOperator, errors_, file_pos );
 		if( func_type.return_type != void_type_ )
-			errors_.push_back( ReportInvalidReturnTypeForOperator( file_pos, void_type_.ToString() ) );
+			REPORT_ERROR( InvalidReturnTypeForOperator, errors_, file_pos, void_type_.ToString() );
 		break;
 
 	case OverloadedOperator::Increment:
 	case OverloadedOperator::Decrement:
 		if( func_type.args.size() != 1u )
-			errors_.push_back( ReportInvalidArgumentCountForOperator( file_pos ) );
+			REPORT_ERROR( InvalidArgumentCountForOperator, errors_, file_pos );
 		if( func_type.return_type != void_type_ )
-			errors_.push_back( ReportInvalidReturnTypeForOperator( file_pos, void_type_.ToString() ) );
+			REPORT_ERROR( InvalidReturnTypeForOperator, errors_, file_pos, void_type_.ToString() );
 		break;
 
 	case OverloadedOperator::Indexing:
 		if( func_type.args.size() != 2u )
-			errors_.push_back( ReportInvalidArgumentCountForOperator( file_pos ) );
+			REPORT_ERROR( InvalidArgumentCountForOperator, errors_, file_pos );
 		// Indexing operator must have first argument of parent class.
 		if( !func_type.args.empty() && func_type.args[0].type != base_class )
-			errors_.push_back( ReportOperatorDoesNotHaveParentClassArguments( file_pos ) );
+			REPORT_ERROR( OperatorDoesNotHaveParentClassArguments, errors_, file_pos );
 		break;
 
 	case OverloadedOperator::Call:
 		if( func_type.args.empty() )
-			errors_.push_back( ReportInvalidArgumentCountForOperator( file_pos ) );
+			REPORT_ERROR( InvalidArgumentCountForOperator, errors_, file_pos );
 		// Call operator must have first argument of parent class.
 		if( !func_type.args.empty() && func_type.args[0].type != base_class )
-			errors_.push_back( ReportOperatorDoesNotHaveParentClassArguments( file_pos ) );
+			REPORT_ERROR( OperatorDoesNotHaveParentClassArguments, errors_, file_pos );
 		break;
 
 	case OverloadedOperator::None:
@@ -1414,11 +1414,11 @@ Type CodeBuilder::BuildFuncCode(
 	{
 		if( !arg.is_reference && arg.type != void_type_ &&
 			!EnsureTypeCompleteness( arg.type, TypeCompleteness::Complete ) )
-			errors_.push_back( ReportUsingIncompleteType( args.front().file_pos_, arg.type.ToString() ) );
+			REPORT_ERROR( UsingIncompleteType, errors_, args.front().file_pos_, arg.type.ToString() );
 	}
 	if( !function_type->return_value_is_reference && function_type->return_type != void_type_ &&
 		!EnsureTypeCompleteness( function_type->return_type, TypeCompleteness::Complete ) )
-		errors_.push_back( ReportUsingIncompleteType( func_variable.body_file_pos, function_type->return_type.ToString() ) );
+		REPORT_ERROR( UsingIncompleteType, errors_, func_variable.body_file_pos, function_type->return_type.ToString() );
 
 	NamesScope function_names( ""_SpC, &parent_names_scope );
 	FunctionContext function_context(
@@ -1557,12 +1557,12 @@ Type CodeBuilder::BuildFuncCode(
 		else
 		{
 			if( NameShadowsTemplateArgument( arg_name, function_names ) )
-				errors_.push_back( ReportDeclarationShadowsTemplateArgument( declaration_arg.file_pos_, arg_name ) );
+				REPORT_ERROR( DeclarationShadowsTemplateArgument, errors_, declaration_arg.file_pos_, arg_name );
 
 			const Value* const inserted_arg=
 				function_names.AddName( arg_name, Value( var, declaration_arg.file_pos_ ) );
 			if( inserted_arg == nullptr )
-				errors_.push_back( ReportRedefinition( declaration_arg.file_pos_, arg_name ) );
+				REPORT_ERROR( Redefinition, errors_, declaration_arg.file_pos_, arg_name );
 		}
 
 		llvm_arg.setName( "_arg_" + ToUTF8( arg_name ) );
@@ -1667,7 +1667,7 @@ Type CodeBuilder::BuildFuncCode(
 		if( !auto_contexpr )
 		{
 			if( function_type->return_type != void_type_for_ret_ && !EnsureTypeCompleteness( function_type->return_type, TypeCompleteness::Complete ) )
-				errors_.push_back( ReportUsingIncompleteType( func_variable.body_file_pos, function_type->return_type.ToString() ) ); // Completeness required for constexpr possibility check.
+				REPORT_ERROR( UsingIncompleteType, errors_, func_variable.body_file_pos, function_type->return_type.ToString() ); // Completeness required for constexpr possibility check.
 		}
 
 		if( function_type->unsafe ||
@@ -1683,7 +1683,7 @@ Type CodeBuilder::BuildFuncCode(
 			if( !auto_contexpr )
 			{
 				if( arg.type != void_type_ && !EnsureTypeCompleteness( arg.type, TypeCompleteness::Complete ) )
-					errors_.push_back( ReportUsingIncompleteType( func_variable.body_file_pos, arg.type.ToString() ) ); // Completeness required for constexpr possibility check.
+					REPORT_ERROR( UsingIncompleteType, errors_, func_variable.body_file_pos, arg.type.ToString() ); // Completeness required for constexpr possibility check.
 			}
 
 			if( !arg.type.CanBeConstexpr() ) // Incomplete types are not constexpr.
@@ -1708,12 +1708,12 @@ Type CodeBuilder::BuildFuncCode(
 		{
 			if( !can_be_constexpr )
 			{
-				errors_.push_back( ReportInvalidTypeForConstexprFunction( func_variable.body_file_pos ) );
+				REPORT_ERROR( InvalidTypeForConstexprFunction, errors_, func_variable.body_file_pos );
 				func_variable.constexpr_kind= FunctionVariable::ConstexprKind::NonConstexpr;
 			}
 			else if( function_context.have_non_constexpr_operations_inside )
 			{
-				errors_.push_back( ReportConstexprFunctionContainsUnallowedOperations( func_variable.body_file_pos ) );
+				REPORT_ERROR( ConstexprFunctionContainsUnallowedOperations, errors_, func_variable.body_file_pos );
 				func_variable.constexpr_kind= FunctionVariable::ConstexprKind::NonConstexpr;
 			}
 			else
@@ -1740,7 +1740,7 @@ Type CodeBuilder::BuildFuncCode(
 		}
 		else
 		{
-			errors_.push_back( ReportNoReturnInFunctionReturningNonVoid( block->end_file_pos_ ) );
+			REPORT_ERROR( NoReturnInFunctionReturningNonVoid, errors_, block->end_file_pos_ );
 			return function_type->return_type;
 		}
 	}
@@ -1750,7 +1750,7 @@ Type CodeBuilder::BuildFuncCode(
 	{
 		const auto& node_pair= args_nodes[i];
 		if( node_pair.second != nullptr && function_context.variables_state.GetNodeInnerReference( node_pair.second ) != nullptr )
-			errors_.push_back( ReportReferencePollutionForArgReference( block->end_file_pos_ ) );
+			REPORT_ERROR( ReferencePollutionForArgReference, errors_, block->end_file_pos_ );
 
 		const ReferencesGraphNodePtr inner_reference= function_context.variables_state.GetNodeInnerReference( node_pair.first );
 		if( inner_reference == nullptr )
@@ -1784,7 +1784,7 @@ Type CodeBuilder::BuildFuncCode(
 				if( function_type->references_pollution.count( pollution ) != 0u )
 					continue;
 			}
-			errors_.push_back( ReportUnallowedReferencePollution( block->end_file_pos_ ) );
+			REPORT_ERROR( UnallowedReferencePollution, errors_, block->end_file_pos_);
 		}
 	}
 
@@ -1823,13 +1823,13 @@ void CodeBuilder::BuildConstructorInitialization(
 			if( base_class.base_class == nullptr )
 			{
 				have_fields_errors= true;
-				errors_.push_back( ReportBaseUnavailable( constructor_initialization_list.file_pos_ ) );
+				REPORT_ERROR( BaseUnavailable, errors_, constructor_initialization_list.file_pos_ );
 				continue;
 			}
 			if( base_initialized )
 			{
 				have_fields_errors= true;
-				errors_.push_back( ReportDuplicatedStructMemberInitializer( constructor_initialization_list.file_pos_, field_initializer.name ) );
+				REPORT_ERROR( DuplicatedStructMemberInitializer, errors_, constructor_initialization_list.file_pos_, field_initializer.name );
 				continue;
 			}
 			base_initialized= true;
@@ -1841,7 +1841,7 @@ void CodeBuilder::BuildConstructorInitialization(
 		if( class_member == nullptr )
 		{
 			have_fields_errors= true;
-			errors_.push_back( ReportNameNotFound( constructor_initialization_list.file_pos_, field_initializer.name ) );
+			REPORT_ERROR( NameNotFound, errors_, constructor_initialization_list.file_pos_, field_initializer.name );
 			continue;
 		}
 
@@ -1849,20 +1849,20 @@ void CodeBuilder::BuildConstructorInitialization(
 		if( field == nullptr )
 		{
 			have_fields_errors= true;
-			errors_.push_back( ReportInitializerForNonfieldStructMember( constructor_initialization_list.file_pos_, field_initializer.name ) );
+			REPORT_ERROR( InitializerForNonfieldStructMember, errors_, constructor_initialization_list.file_pos_, field_initializer.name );
 			continue;
 		}
 		if( field->class_.lock()->class_ != &base_class )
 		{
 			have_fields_errors= true;
-			errors_.push_back( ReportInitializerForBaseClassField( constructor_initialization_list.file_pos_, field_initializer.name ) );
+			REPORT_ERROR( InitializerForBaseClassField, errors_, constructor_initialization_list.file_pos_, field_initializer.name );
 			continue;
 		}
 
 		if( initialized_fields.find( field_initializer.name ) != initialized_fields.end() )
 		{
 			have_fields_errors= true;
-			errors_.push_back( ReportDuplicatedStructMemberInitializer( constructor_initialization_list.file_pos_, field_initializer.name ) );
+			REPORT_ERROR( DuplicatedStructMemberInitializer, errors_, constructor_initialization_list.file_pos_, field_initializer.name );
 			continue;
 		}
 
@@ -1900,7 +1900,7 @@ void CodeBuilder::BuildConstructorInitialization(
 		{
 			if( field->syntax_element->initializer == nullptr )
 			{
-				errors_.push_back( ReportExpectedInitializer( class_member->GetFilePos(), field_name ) );
+				REPORT_ERROR( ExpectedInitializer, errors_, class_member->GetFilePos(), field_name );
 				continue;
 			}
 			InitializeReferenceClassFieldWithInClassIninitalizer( this_, *field, function_context );
@@ -2166,7 +2166,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockCode(
 	}
 
 	if( block_element_index < block.elements_.size() )
-		errors_.push_back( ReportUnreachableCode( Synt::GetBlockElementFilePos( block.elements_[ block_element_index ] ) ) );
+		REPORT_ERROR( UnreachableCode, errors_,  Synt::GetBlockElementFilePos( block.elements_[ block_element_index ] ) );
 
 	// If there are undconditional "break", "continue", "return" operators,
 	// we didn`t need call destructors, it must be called in this operators.
@@ -2191,7 +2191,7 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 			// Full completeness required for value-variables and any constexpr variable.
 			if( !EnsureTypeCompleteness( type, TypeCompleteness::Complete ) )
 			{
-				errors_.push_back( ReportUsingIncompleteType( variables_declaration.file_pos_, type.ToString() ) );
+				REPORT_ERROR( UsingIncompleteType, errors_, variables_declaration.file_pos_, type.ToString() );
 				continue;
 			}
 		}
@@ -2201,13 +2201,13 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 
 		if( IsKeyword( variable_declaration.name ) )
 		{
-			errors_.push_back( ReportUsingKeywordAsName( variables_declaration.file_pos_ ) );
+			REPORT_ERROR( UsingKeywordAsName, errors_, variables_declaration.file_pos_ );
 			continue;
 		}
 
 		if( variable_declaration.mutability_modifier == MutabilityModifier::Constexpr && !type.CanBeConstexpr() )
 		{
-			errors_.push_back( ReportInvalidTypeForConstantExpressionVariable( variables_declaration.file_pos_ ) );
+			REPORT_ERROR( InvalidTypeForConstantExpressionVariable, errors_, variables_declaration.file_pos_ );
 			continue;
 		}
 
@@ -2254,7 +2254,7 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 
 			if( variable_declaration.initializer == nullptr )
 			{
-				errors_.push_back( ReportExpectedInitializer( variables_declaration.file_pos_, variable_declaration.name ) );
+				REPORT_ERROR( ExpectedInitializer, errors_, variables_declaration.file_pos_, variable_declaration.name );
 				continue;
 			}
 
@@ -2265,32 +2265,32 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 			{
 				if( constructor_initializer->call_operator.arguments_.size() != 1u )
 				{
-					errors_.push_back( ReportReferencesHaveConstructorsWithExactlyOneParameter( constructor_initializer->file_pos_ ) );
+					REPORT_ERROR( ReferencesHaveConstructorsWithExactlyOneParameter, errors_, constructor_initializer->file_pos_ );
 					continue;
 				}
 				initializer_expression= &constructor_initializer->call_operator.arguments_.front();
 			}
 			else
 			{
-				errors_.push_back( ReportUnsupportedInitializerForReference( variable_declaration.file_pos ) );
+				REPORT_ERROR( UnsupportedInitializerForReference, errors_, variable_declaration.file_pos );
 				continue;
 			}
 
 			const Variable expression_result= BuildExpressionCodeEnsureVariable( *initializer_expression, block_names, function_context );
 			if( !ReferenceIsConvertible( expression_result.type, variable.type, variables_declaration.file_pos_ ) )
 			{
-				errors_.push_back( ReportTypesMismatch( variables_declaration.file_pos_, variable.type.ToString(), expression_result.type.ToString() ) );
+				REPORT_ERROR( TypesMismatch, errors_,  variables_declaration.file_pos_, variable.type.ToString(), expression_result.type.ToString() );
 				continue;
 			}
 
 			if( expression_result.value_type == ValueType::Value )
 			{
-				errors_.push_back( ReportExpectedReferenceValue( variables_declaration.file_pos_ ) );
+				REPORT_ERROR( ExpectedReferenceValue, errors_, variables_declaration.file_pos_ );
 				continue;
 			}
 			if( expression_result.value_type == ValueType::ConstReference && variable.value_type == ValueType::Reference )
 			{
-				errors_.push_back( ReportBindingConstReferenceToNonconstReference( variables_declaration.file_pos_ ) );
+				REPORT_ERROR( BindingConstReferenceToNonconstReference, errors_, variable_declaration.file_pos );
 				continue;
 			}
 
@@ -2310,10 +2310,10 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 				if( is_mutable )
 				{
 					if( function_context.variables_state.HaveOutgoingLinks( expression_result.node ) )
-						errors_.push_back( ReportReferenceProtectionError( variable_declaration.file_pos, expression_result.node->name ) );
+						REPORT_ERROR( ReferenceProtectionError, errors_, variable_declaration.file_pos, expression_result.node->name );
 				}
 				else if( function_context.variables_state.HaveOutgoingMutableNodes( expression_result.node ) )
-					errors_.push_back( ReportReferenceProtectionError( variable_declaration.file_pos, expression_result.node->name ) );
+					REPORT_ERROR( ReferenceProtectionError, errors_, variable_declaration.file_pos, expression_result.node->name );
 				function_context.variables_state.AddLink( expression_result.node, var_node );
 			}
 		}
@@ -2322,7 +2322,7 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 		if( variable_declaration.mutability_modifier == MutabilityModifier::Constexpr &&
 			variable.constexpr_value == nullptr )
 		{
-			errors_.push_back( ReportVariableInitializerIsNotConstantExpression( variable_declaration.file_pos ) );
+			REPORT_ERROR( VariableInitializerIsNotConstantExpression, errors_, variable_declaration.file_pos );
 			continue;
 		}
 
@@ -2332,7 +2332,7 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 
 		if( NameShadowsTemplateArgument( variable_declaration.name, block_names ) )
 		{
-			errors_.push_back( ReportDeclarationShadowsTemplateArgument( variables_declaration.file_pos_, variable_declaration.name ) );
+			REPORT_ERROR( DeclarationShadowsTemplateArgument, errors_, variables_declaration.file_pos_, variable_declaration.name );
 			continue;
 		}
 
@@ -2340,7 +2340,7 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 			block_names.AddName( variable_declaration.name, Value( variable, variable_declaration.file_pos ) );
 		if( inserted_value == nullptr )
 		{
-			errors_.push_back( ReportRedefinition( variables_declaration.file_pos_, variable_declaration.name ) );
+			REPORT_ERROR( Redefinition, errors_, variables_declaration.file_pos_, variable_declaration.name );
 			continue;
 		}
 
@@ -2368,7 +2368,7 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 			initializer_experrsion.type.GetFunctionPointerType() != nullptr;
 		if( !type_is_ok || initializer_experrsion.type == invalid_type_ )
 		{
-			errors_.push_back( ReportInvalidTypeForAutoVariable( auto_variable_declaration.file_pos_, initializer_experrsion.type.ToString() ) );
+			REPORT_ERROR( InvalidTypeForAutoVariable, errors_, auto_variable_declaration.file_pos_, initializer_experrsion.type.ToString() );
 			return;
 		}
 	}
@@ -2393,14 +2393,14 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 		// Full completeness required for value-variables and any constexpr variable.
 		if( !EnsureTypeCompleteness( variable.type, TypeCompleteness::Complete ) )
 		{
-			errors_.push_back( ReportUsingIncompleteType( auto_variable_declaration.file_pos_, variable.type.ToString() ) );
+			REPORT_ERROR( UsingIncompleteType, errors_, auto_variable_declaration.file_pos_, variable.type.ToString() );
 			return;
 		}
 	}
 
 	if( auto_variable_declaration.mutability_modifier == MutabilityModifier::Constexpr && !variable.type.CanBeConstexpr() )
 	{
-		errors_.push_back( ReportInvalidTypeForConstantExpressionVariable( auto_variable_declaration.file_pos_ ) );
+		REPORT_ERROR( InvalidTypeForConstantExpressionVariable, errors_, auto_variable_declaration.file_pos_ );
 		return;
 	}
 
@@ -2408,12 +2408,12 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 	{
 		if( initializer_experrsion.value_type == ValueType::Value )
 		{
-			errors_.push_back( ReportExpectedReferenceValue( auto_variable_declaration.file_pos_ ) );
+			REPORT_ERROR( ExpectedReferenceValue, errors_, auto_variable_declaration.file_pos_ );
 			return;
 		}
 		if( initializer_experrsion.value_type == ValueType::ConstReference && variable.value_type != ValueType::ConstReference )
 		{
-			errors_.push_back( ReportBindingConstReferenceToNonconstReference( auto_variable_declaration.file_pos_ ) );
+			REPORT_ERROR( BindingConstReferenceToNonconstReference, errors_, auto_variable_declaration.file_pos_ );
 			return;
 		}
 
@@ -2429,10 +2429,10 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 			if( is_mutable )
 			{
 				if( function_context.variables_state.HaveOutgoingLinks( initializer_experrsion.node ) )
-					errors_.push_back( ReportReferenceProtectionError( auto_variable_declaration.file_pos_, initializer_experrsion.node->name ) );
+					REPORT_ERROR( ReferenceProtectionError, errors_, auto_variable_declaration.file_pos_, initializer_experrsion.node->name );
 			}
 			else if( function_context.variables_state.HaveOutgoingMutableNodes( initializer_experrsion.node ) )
-				errors_.push_back( ReportReferenceProtectionError( auto_variable_declaration.file_pos_, initializer_experrsion.node->name ) );
+				REPORT_ERROR( ReferenceProtectionError, errors_, auto_variable_declaration.file_pos_, initializer_experrsion.node->name );
 			function_context.variables_state.AddLink( initializer_experrsion.node, var_node );
 		}
 	}
@@ -2506,7 +2506,7 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 		}
 		else
 		{
-			errors_.push_back( ReportNotImplemented( auto_variable_declaration.file_pos_, "expression initialization for nonfundamental types" ) );
+			REPORT_ERROR( NotImplemented, errors_, auto_variable_declaration.file_pos_, "expression initialization for nonfundamental types" );
 			return;
 		}
 	}
@@ -2514,7 +2514,7 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 
 	if( auto_variable_declaration.mutability_modifier == MutabilityModifier::Constexpr && variable.constexpr_value == nullptr )
 	{
-		errors_.push_back( ReportVariableInitializerIsNotConstantExpression( auto_variable_declaration.file_pos_ ) );
+		REPORT_ERROR( VariableInitializerIsNotConstantExpression, errors_, auto_variable_declaration.file_pos_ );
 		return;
 	}
 
@@ -2524,14 +2524,14 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 
 	if( NameShadowsTemplateArgument( auto_variable_declaration.name, block_names ) )
 	{
-		errors_.push_back( ReportDeclarationShadowsTemplateArgument( auto_variable_declaration.file_pos_, auto_variable_declaration.name ) );
+		REPORT_ERROR( DeclarationShadowsTemplateArgument, errors_, auto_variable_declaration.file_pos_, auto_variable_declaration.name );
 		return;
 	}
 
 	const Value* const inserted_value=
 		block_names.AddName( auto_variable_declaration.name, Value( variable, auto_variable_declaration.file_pos_ ) );
 	if( inserted_value == nullptr )
-		errors_.push_back( ReportRedefinition( auto_variable_declaration.file_pos_, auto_variable_declaration.name ) );
+		REPORT_ERROR( Redefinition, errors_, auto_variable_declaration.file_pos_, auto_variable_declaration.name );
 
 	if( auto_variable_declaration.lock_temps )
 	{
@@ -2610,18 +2610,18 @@ void CodeBuilder::BuildAssignmentOperatorCode(
 
 		if( l_var.value_type != ValueType::Reference )
 		{
-			errors_.push_back( ReportExpectedReferenceValue( assignment_operator.file_pos_ ) );
+			REPORT_ERROR( ExpectedReferenceValue, errors_, assignment_operator.file_pos_ );
 			return;
 		}
 		if( l_var.type != r_var.type )
 		{
-			errors_.push_back( ReportTypesMismatch( assignment_operator.file_pos_, l_var.type.ToString(), r_var.type.ToString() ) );
+			REPORT_ERROR( TypesMismatch, errors_,  assignment_operator.file_pos_, l_var.type.ToString(), r_var.type.ToString() );
 			return;
 		}
 
 		// Check references of destination.
 		if( l_var.node != nullptr && function_context.variables_state.HaveOutgoingLinks( l_var.node ) )
-			errors_.push_back( ReportReferenceProtectionError( assignment_operator.file_pos_, l_var.node->name ) );
+			REPORT_ERROR( ReferenceProtectionError, errors_, assignment_operator.file_pos_, l_var.node->name );
 
 		if( l_var.type.GetFundamentalType() != nullptr || l_var.type.GetEnumType() != nullptr || l_var.type.GetFunctionPointerType() != nullptr )
 		{
@@ -2635,7 +2635,7 @@ void CodeBuilder::BuildAssignmentOperatorCode(
 		}
 		else
 		{
-			errors_.push_back( ReportOperationNotSupportedForThisType( assignment_operator.file_pos_, l_var.type.ToString() ) );
+			REPORT_ERROR( OperationNotSupportedForThisType, errors_, assignment_operator.file_pos_, l_var.type.ToString() );
 			return;
 		}
 	}
@@ -2691,7 +2691,7 @@ void CodeBuilder::BuildAdditiveAssignmentOperatorCode(
 
 		// Check references of destination.
 		if( l_var.node != nullptr && function_context.variables_state.HaveOutgoingLinks( l_var.node ) )
-			errors_.push_back( ReportReferenceProtectionError( additive_assignment_operator.file_pos_, l_var.node->name ) );
+			REPORT_ERROR( ReferenceProtectionError, errors_, additive_assignment_operator.file_pos_, l_var.node->name );
 
 		const FundamentalType* const l_var_fundamental_type= l_var.type.GetFundamentalType();
 		const FundamentalType* const r_var_fundamental_type= r_var.type.GetFundamentalType();
@@ -2710,13 +2710,13 @@ void CodeBuilder::BuildAdditiveAssignmentOperatorCode(
 
 			if( l_var.value_type != ValueType::Reference )
 			{
-				errors_.push_back( ReportExpectedReferenceValue( additive_assignment_operator.file_pos_ ) );
+				REPORT_ERROR( ExpectedReferenceValue, errors_, additive_assignment_operator.file_pos_ );
 				return;
 			}
 
 			if( operation_result.type != l_var.type )
 			{
-				errors_.push_back( ReportTypesMismatch( additive_assignment_operator.file_pos_, l_var.type.ToString(), operation_result.type.ToString() ) );
+				REPORT_ERROR( TypesMismatch, errors_,  additive_assignment_operator.file_pos_, l_var.type.ToString(), operation_result.type.ToString() );
 				return;
 			}
 
@@ -2726,7 +2726,7 @@ void CodeBuilder::BuildAdditiveAssignmentOperatorCode(
 		}
 		else
 		{
-			errors_.push_back( ReportOperationNotSupportedForThisType( additive_assignment_operator.file_pos_, l_var.type.ToString() ) );
+			REPORT_ERROR( OperationNotSupportedForThisType, errors_, additive_assignment_operator.file_pos_, l_var.type.ToString() );
 			return;
 		}
 	}
@@ -2748,7 +2748,7 @@ void CodeBuilder::BuildDeltaOneOperatorCode(
 	const Variable* const variable= value.GetVariable();
 	if( variable == nullptr )
 	{
-		errors_.push_back( ReportExpectedVariable( file_pos, value.GetKindName() ) );
+		REPORT_ERROR( ExpectedVariable, errors_, file_pos, value.GetKindName() );
 		return;
 	}
 
@@ -2776,17 +2776,17 @@ void CodeBuilder::BuildDeltaOneOperatorCode(
 	{
 		if( !IsInteger( fundamental_type->fundamental_type ) )
 		{
-			errors_.push_back( ReportOperationNotSupportedForThisType( file_pos, variable->type.ToString() ) );
+			REPORT_ERROR( OperationNotSupportedForThisType, errors_, file_pos, variable->type.ToString() );
 			return;
 		}
 		if( variable->value_type != ValueType::Reference )
 		{
-			errors_.push_back( ReportExpectedReferenceValue( file_pos ) );
+			REPORT_ERROR( ExpectedReferenceValue, errors_, file_pos );
 			return;
 		}
 
 		if( variable->node != nullptr && function_context.variables_state.HaveOutgoingLinks( variable->node ) )
-			errors_.push_back( ReportReferenceProtectionError( file_pos, variable->node->name ) );
+			REPORT_ERROR( ReferenceProtectionError, errors_, file_pos, variable->node->name );
 
 		llvm::Value* const value_in_register= CreateMoveToLLVMRegisterInstruction( *variable, function_context );
 		llvm::Value* const one=
@@ -2804,7 +2804,7 @@ void CodeBuilder::BuildDeltaOneOperatorCode(
 	}
 	else
 	{
-		errors_.push_back( ReportOperationNotSupportedForThisType( file_pos, variable->type.ToString() ) );
+		REPORT_ERROR( OperationNotSupportedForThisType, errors_, file_pos, variable->type.ToString() );
 		return;
 	}
 
@@ -2822,20 +2822,20 @@ void CodeBuilder::BuildReturnOperatorCode(
 		{
 			if( function_context.return_value_is_reference )
 			{
-				errors_.push_back( ReportExpectedReferenceValue( return_operator.file_pos_ ) );
+				REPORT_ERROR( ExpectedReferenceValue, errors_, return_operator.file_pos_ );
 				return;
 			}
 
 			if( function_context.deduced_return_type == boost::none )
 				function_context.deduced_return_type = void_type_for_ret_;
 			else if( *function_context.deduced_return_type != void_type_for_ret_ )
-				errors_.push_back( ReportTypesMismatch( return_operator.file_pos_, function_context.deduced_return_type->ToString(), void_type_for_ret_.ToString() ) );
+				REPORT_ERROR( TypesMismatch, errors_,  return_operator.file_pos_, function_context.deduced_return_type->ToString(), void_type_for_ret_.ToString() );
 			return;
 		}
 
 		if( !( function_context.return_type == void_type_ && !function_context.return_value_is_reference ) )
 		{
-			errors_.push_back( ReportTypesMismatch( return_operator.file_pos_, void_type_.ToString(), function_context.return_type->ToString() ) );
+			REPORT_ERROR( TypesMismatch, errors_,  return_operator.file_pos_, void_type_.ToString(), function_context.return_type->ToString() );
 			return;
 		}
 
@@ -2869,7 +2869,7 @@ void CodeBuilder::BuildReturnOperatorCode(
 		if( function_context.deduced_return_type == boost::none )
 			function_context.deduced_return_type = expression_result.type;
 		else if( *function_context.deduced_return_type != expression_result.type )
-			errors_.push_back( ReportTypesMismatch( return_operator.file_pos_, function_context.deduced_return_type->ToString(), expression_result.type.ToString() ) );
+			REPORT_ERROR( TypesMismatch, errors_,  return_operator.file_pos_, function_context.deduced_return_type->ToString(), expression_result.type.ToString() );
 		return;
 	}
 
@@ -2877,18 +2877,18 @@ void CodeBuilder::BuildReturnOperatorCode(
 	{
 		if( !ReferenceIsConvertible( expression_result.type, *function_context.return_type, return_operator.file_pos_ ) )
 		{
-			errors_.push_back( ReportTypesMismatch( return_operator.file_pos_, function_context.return_type->ToString(), expression_result.type.ToString() ) );
+			REPORT_ERROR( TypesMismatch, errors_,  return_operator.file_pos_, function_context.return_type->ToString(), expression_result.type.ToString() );
 			return;
 		}
 
 		if( expression_result.value_type == ValueType::Value )
 		{
-			errors_.push_back( ReportExpectedReferenceValue( return_operator.file_pos_ ) );
+			REPORT_ERROR( ExpectedReferenceValue, errors_, return_operator.file_pos_ );
 			return;
 		}
 		if( expression_result.value_type == ValueType::ConstReference && function_context.return_value_is_mutable )
 		{
-			errors_.push_back( ReportBindingConstReferenceToNonconstReference( return_operator.file_pos_ ) );
+			REPORT_ERROR( BindingConstReferenceToNonconstReference, errors_, return_operator.file_pos_ );
 			return;
 		}
 
@@ -2910,7 +2910,7 @@ void CodeBuilder::BuildReturnOperatorCode(
 			for( const ReferencesGraphNodePtr& var_node : function_context.variables_state.GetAllAccessibleVariableNodes_r( expression_result.node ) )
 			{
 				if( function_context.allowed_for_returning_references.count( var_node ) == 0 )
-					errors_.push_back( ReportReturningUnallowedReference( return_operator.file_pos_ ) );
+					REPORT_ERROR( ReturningUnallowedReference, errors_, return_operator.file_pos_ );
 			}
 		}
 
@@ -2923,7 +2923,7 @@ void CodeBuilder::BuildReturnOperatorCode(
 	{
 		if( expression_result.type != function_context.return_type )
 		{
-			errors_.push_back( ReportTypesMismatch( return_operator.file_pos_, function_context.return_type->ToString(), expression_result.type.ToString() ) );
+			REPORT_ERROR( TypesMismatch, errors_,  return_operator.file_pos_, function_context.return_type->ToString(), expression_result.type.ToString() );
 			return;
 		}
 
@@ -2937,7 +2937,7 @@ void CodeBuilder::BuildReturnOperatorCode(
 					for( const ReferencesGraphNodePtr& var_node : function_context.variables_state.GetAllAccessibleVariableNodes_r( inner_reference ) )
 					{
 						if( function_context.allowed_for_returning_references.count( var_node ) == 0 )
-							errors_.push_back( ReportReturningUnallowedReference( return_operator.file_pos_ ) );
+							REPORT_ERROR( ReturningUnallowedReference, errors_, return_operator.file_pos_ );
 					}
 				}
 			}
@@ -3008,11 +3008,11 @@ void CodeBuilder::BuildWhileOperatorCode(
 	const FilePos condition_file_pos= Synt::GetExpressionFilePos( while_operator.condition_ );
 	if( condition_expression.type != bool_type_ )
 	{
-		errors_.push_back(
-			ReportTypesMismatch(
+		REPORT_ERROR( TypesMismatch,
+				errors_,
 				condition_file_pos,
 				bool_type_.ToString(),
-				condition_expression.type.ToString() ) );
+				condition_expression.type.ToString() );
 		return;
 	}
 
@@ -3052,7 +3052,7 @@ void CodeBuilder::BuildBreakOperatorCode(
 {
 	if( function_context.loops_stack.empty() )
 	{
-		errors_.push_back( ReportBreakOutsideLoop( break_operator.file_pos_ ) );
+		REPORT_ERROR( BreakOutsideLoop, errors_, break_operator.file_pos_ );
 		return;
 	}
 	U_ASSERT( function_context.loops_stack.back().block_for_break != nullptr );
@@ -3067,7 +3067,7 @@ void CodeBuilder::BuildContinueOperatorCode(
 {
 	if( function_context.loops_stack.empty() )
 	{
-		errors_.push_back( ReportContinueOutsideLoop( continue_operator.file_pos_ ) );
+		REPORT_ERROR( ContinueOutsideLoop, errors_, continue_operator.file_pos_ );
 		return;
 	}
 	U_ASSERT( function_context.loops_stack.back().block_for_continue != nullptr );
@@ -3129,11 +3129,11 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildIfOperatorCode(
 				const Variable condition_expression= BuildExpressionCodeEnsureVariable( branch.condition, names, function_context );
 				if( condition_expression.type != bool_type_ )
 				{
-					errors_.push_back(
-						ReportTypesMismatch(
-							Synt::GetExpressionFilePos( branch.condition ),
-							bool_type_.ToString(),
-							condition_expression.type.ToString() ) );
+					REPORT_ERROR( TypesMismatch,
+						errors_,
+						Synt::GetExpressionFilePos( branch.condition ),
+						bool_type_.ToString(),
+						condition_expression.type.ToString() );
 
 					// Create instruction even in case of error, because we needs to store basic blocs somewhere.
 					function_context.llvm_ir_builder.CreateCondBr( llvm::UndefValue::get( fundamental_llvm_types_.bool_ ), body_block, next_condition_block );
@@ -3210,13 +3210,13 @@ void CodeBuilder::BuildStaticAssert( const Synt::StaticAssert& static_assert_, N
 
 	if( variable.type != bool_type_ )
 	{
-		errors_.push_back( ReportStaticAssertExpressionMustHaveBoolType( static_assert_.file_pos_ ) );
+		REPORT_ERROR( StaticAssertExpressionMustHaveBoolType, errors_, static_assert_.file_pos_ );
 		return;
 	}
 
 	if( variable.constexpr_value == nullptr )
 	{
-		errors_.push_back( ReportStaticAssertExpressionIsNotConstant( static_assert_.file_pos_ ) );
+		REPORT_ERROR( StaticAssertExpressionIsNotConstant, errors_, static_assert_.file_pos_ );
 		return;
 	}
 	if( llvm::dyn_cast<llvm::UndefValue>(variable.constexpr_value) != nullptr )
@@ -3227,7 +3227,7 @@ void CodeBuilder::BuildStaticAssert( const Synt::StaticAssert& static_assert_, N
 
 	if( !variable.constexpr_value->isOneValue() )
 	{
-		errors_.push_back( ReportStaticAssertionFailed( static_assert_.file_pos_ ) );
+		REPORT_ERROR( StaticAssertionFailed, errors_, static_assert_.file_pos_ );
 		return;
 	}
 }
@@ -3251,12 +3251,12 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildStaticIfOperatorCode(
 			const Variable condition_expression= BuildExpressionCodeEnsureVariable( condition, names, function_context );
 			if( condition_expression.type != bool_type_ )
 			{
-				errors_.push_back( ReportTypesMismatch( condition_file_pos, bool_type_.ToString(), condition_expression.type.ToString() ) );
+				REPORT_ERROR( TypesMismatch, errors_,  condition_file_pos, bool_type_.ToString(), condition_expression.type.ToString() );
 				continue;
 			}
 			if( condition_expression.constexpr_value == nullptr )
 			{
-				errors_.push_back( ReportExpectedConstantExpression( condition_file_pos ) );
+				REPORT_ERROR( ExpectedConstantExpression, errors_, condition_file_pos );
 				continue;
 			}
 
@@ -3295,11 +3295,11 @@ void CodeBuilder::BuildHaltIf(const Synt::HaltIf& halt_if, NamesScope& names, Fu
 	const FilePos condition_expression_file_pos= Synt::GetExpressionFilePos( halt_if.condition );
 	if( condition_expression.type!= bool_type_ )
 	{
-		errors_.push_back(
-			ReportTypesMismatch(
-				condition_expression_file_pos,
-				bool_type_.ToString(),
-				condition_expression.type.ToString() ) );
+		REPORT_ERROR( TypesMismatch,
+			errors_,
+			condition_expression_file_pos,
+			bool_type_.ToString(),
+			condition_expression.type.ToString() );
 		return;
 	}
 
@@ -3367,7 +3367,7 @@ Value* CodeBuilder::ResolveValue(
 
 		if( components[0].have_template_parameters && value->GetTypeTemplatesSet() == nullptr && value->GetFunctionsSet() == nullptr )
 		{
-			errors_.push_back( ReportValueIsNotTemplate( file_pos ) );
+			REPORT_ERROR( ValueIsNotTemplate, errors_, file_pos );
 			return nullptr;
 		}
 
@@ -3384,7 +3384,7 @@ Value* CodeBuilder::ResolveValue(
 				{
 					if( class_->syntax_element != nullptr && class_->syntax_element->is_forward_declaration_ )
 					{
-						errors_.push_back( ReportUsingIncompleteType( file_pos, type->ToString() ) );
+						REPORT_ERROR( UsingIncompleteType, errors_, file_pos, type->ToString() );
 						return nullptr;
 					}
 					if( resolve_mode != ResolveMode::ForDeclaration )
@@ -3424,7 +3424,7 @@ Value* CodeBuilder::ResolveValue(
 			}
 			else if( component_count >= 2u )
 			{
-				errors_.push_back( ReportTemplateInstantiationRequired( file_pos, type_templates_set->type_templates.front()->syntax_element->name_ ) );
+				REPORT_ERROR( TemplateInstantiationRequired, errors_, file_pos, type_templates_set->type_templates.front()->syntax_element->name_ );
 				return nullptr;
 			}
 		}
@@ -3436,7 +3436,7 @@ Value* CodeBuilder::ResolveValue(
 			{
 				if( functions_set->template_functions.empty() )
 				{
-					errors_.push_back( ReportValueIsNotTemplate( file_pos ) );
+					REPORT_ERROR( ValueIsNotTemplate, errors_, file_pos );
 					return nullptr;
 				}
 
@@ -3457,7 +3457,7 @@ Value* CodeBuilder::ResolveValue(
 
 			if( next_space_class != nullptr && resolve_mode != ResolveMode::ForDeclaration &&
 				names_scope.GetAccessFor( next_space_class ) < next_space_class->class_->GetMemberVisibility( components[1].name ) )
-				errors_.push_back( ReportAccessingNonpublicClassMember( file_pos, next_space_class->class_->members.GetThisNamespaceName(), components[1].name ) );
+				REPORT_ERROR( AccessingNonpublicClassMember, errors_, file_pos, next_space_class->class_->members.GetThisNamespaceName(), components[1].name );
 		}
 		else
 			return nullptr;
@@ -3468,7 +3468,7 @@ Value* CodeBuilder::ResolveValue(
 	}
 
 	if( value != nullptr && value->GetYetNotDeducedTemplateArg() != nullptr )
-		errors_.push_back( ReportTemplateArgumentIsNotDeducedYet( file_pos, value == nullptr ? ""_SpC : last_component_name ) );
+		REPORT_ERROR( TemplateArgumentIsNotDeducedYet, errors_, file_pos, value == nullptr ? ""_SpC : last_component_name );
 
 	// Complete some things in resolve.
 	if( value != nullptr && resolve_mode != ResolveMode::ForDeclaration )

@@ -76,7 +76,7 @@ void CodeBuilder::ApplyEmptyInitializer(
 {
 	if( !variable.type.IsDefaultConstructible() )
 	{
-		errors_.push_back( ReportExpectedInitializer( file_pos, variable_name ) );
+		REPORT_ERROR( ExpectedInitializer, errors_, file_pos, variable_name );
 		return;
 	}
 
@@ -134,17 +134,17 @@ llvm::Constant* CodeBuilder::ApplyArrayInitializer(
 	const Array* const array_type= variable.type.GetArrayType();
 	if( array_type == nullptr )
 	{
-		errors_.push_back( ReportArrayInitializerForNonArray( initializer.file_pos_ ) );
+		REPORT_ERROR( ArrayInitializerForNonArray, errors_, initializer.file_pos_ );
 		return nullptr;
 	}
 
 	if( array_type->size != Array::c_undefined_size && initializer.initializers.size() != array_type->size )
 	{
-		errors_.push_back(
-			ReportArrayInitializersCountMismatch(
-				initializer.file_pos_,
-				array_type->size,
-				initializer.initializers.size() ) );
+		REPORT_ERROR( ArrayInitializersCountMismatch,
+			errors_,
+			initializer.file_pos_,
+			array_type->size,
+			initializer.initializers.size() );
 		return nullptr;
 		// SPRACHE_TODO - add array continious initializers.
 	}
@@ -197,12 +197,12 @@ llvm::Constant* CodeBuilder::ApplyStructNamedInitializer(
 	const Class* const class_type= variable.type.GetClassType();
 	if( class_type == nullptr || class_type->kind != Class::Kind::Struct )
 	{
-		errors_.push_back( ReportStructInitializerForNonStruct( initializer.file_pos_ ) );
+		REPORT_ERROR( StructInitializerForNonStruct, errors_, initializer.file_pos_ );
 		return nullptr;
 	}
 
 	if( class_type->have_explicit_noncopy_constructors )
-		errors_.push_back( ReportInitializerDisabledBecauseClassHaveExplicitNoncopyConstructors( initializer.file_pos_ ) );
+		REPORT_ERROR( InitializerDisabledBecauseClassHaveExplicitNoncopyConstructors, errors_, initializer.file_pos_ );
 
 	ProgramStringSet initialized_members_names;
 
@@ -221,25 +221,25 @@ llvm::Constant* CodeBuilder::ApplyStructNamedInitializer(
 	{
 		if( initialized_members_names.count( member_initializer.name ) != 0 )
 		{
-			errors_.push_back( ReportDuplicatedStructMemberInitializer( initializer.file_pos_, member_initializer.name ) );
+			REPORT_ERROR( DuplicatedStructMemberInitializer, errors_, initializer.file_pos_, member_initializer.name );
 			continue;
 		}
 
 		const Value* const class_member= class_type->members.GetThisScopeValue( member_initializer.name );
 		if( class_member == nullptr )
 		{
-			errors_.push_back( ReportNameNotFound( initializer.file_pos_, member_initializer.name ) );
+			REPORT_ERROR( NameNotFound, errors_, initializer.file_pos_, member_initializer.name );
 			continue;
 		}
 		const ClassField* const field= class_member->GetClassField();
 		if( field == nullptr )
 		{
-			errors_.push_back( ReportInitializerForNonfieldStructMember( initializer.file_pos_, member_initializer.name ) );
+			REPORT_ERROR( InitializerForNonfieldStructMember, errors_, initializer.file_pos_, member_initializer.name );
 			continue;
 		}
 		if( field->class_.lock() != variable.type )
 		{
-			errors_.push_back( ReportInitializerForBaseClassField( initializer.file_pos_, member_initializer.name ) );
+			REPORT_ERROR( InitializerForBaseClassField, errors_, initializer.file_pos_, member_initializer.name );
 			continue;
 		}
 
@@ -277,7 +277,7 @@ llvm::Constant* CodeBuilder::ApplyStructNamedInitializer(
 					if( field->is_reference )
 					{
 						if( field->syntax_element->initializer == nullptr )
-							errors_.push_back( ReportExpectedInitializer( class_member.GetFilePos(), field->syntax_element->name ) ); // References is not default-constructible.
+							REPORT_ERROR( ExpectedInitializer, errors_, class_member.GetFilePos(), field->syntax_element->name ); // References is not default-constructible.
 						else
 							constant_initializer= InitializeReferenceClassFieldWithInClassIninitalizer( variable, *field, function_context );
 					}
@@ -318,7 +318,7 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 	{
 		if( call_operator.arguments_.size() != 1u )
 		{
-			errors_.push_back( ReportFundamentalTypesHaveConstructorsWithExactlyOneParameter( call_operator.file_pos_ ) );
+			REPORT_ERROR( FundamentalTypesHaveConstructorsWithExactlyOneParameter, errors_, call_operator.file_pos_ );
 			return nullptr;
 		}
 
@@ -334,7 +334,7 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 
 		if( src_type == nullptr )
 		{
-			errors_.push_back( ReportTypesMismatch( call_operator.file_pos_, variable.type.ToString(), src_var.type.ToString() ) );
+			REPORT_ERROR( TypesMismatch, errors_,  call_operator.file_pos_, variable.type.ToString(), src_var.type.ToString() );
 			return nullptr;
 		}
 
@@ -502,7 +502,7 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 				{
 					// TODO - error, bool have no constructors from other types
 				}
-				errors_.push_back( ReportTypesMismatch( call_operator.file_pos_, variable.type.ToString(), src_var.type.ToString() ) );
+				REPORT_ERROR( TypesMismatch, errors_,  call_operator.file_pos_, variable.type.ToString(), src_var.type.ToString() );
 				return nullptr;
 			}
 		} // If needs conversion
@@ -529,14 +529,14 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 		if( call_operator.arguments_.size() != 1u )
 		{
 			// TODO - generate separate error for enums.
-			errors_.push_back( ReportFundamentalTypesHaveConstructorsWithExactlyOneParameter( call_operator.file_pos_ ) );
+			REPORT_ERROR( FundamentalTypesHaveConstructorsWithExactlyOneParameter, errors_, call_operator.file_pos_ );
 			return nullptr;
 		}
 
 		const Variable expression_result= BuildExpressionCodeEnsureVariable( call_operator.arguments_.front(), block_names, function_context );
 		if( expression_result.type != variable.type )
 		{
-			errors_.push_back( ReportTypesMismatch( call_operator.file_pos_, variable.type.ToString(), expression_result.type.ToString() ) );
+			REPORT_ERROR( TypesMismatch, errors_,  call_operator.file_pos_, variable.type.ToString(), expression_result.type.ToString() );
 			return nullptr;
 		}
 
@@ -553,7 +553,7 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 		if( call_operator.arguments_.size() != 1u )
 		{
 			// TODO - generate separate error for function pointers.
-			errors_.push_back( ReportFundamentalTypesHaveConstructorsWithExactlyOneParameter( call_operator.file_pos_ ) );
+			REPORT_ERROR( FundamentalTypesHaveConstructorsWithExactlyOneParameter, errors_, call_operator.file_pos_ );
 			return nullptr;
 		}
 
@@ -600,7 +600,7 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 			class_type->members.GetThisScopeValue( Keyword( Keywords::constructor_ ) );
 		if( constructor_value == nullptr )
 		{
-			errors_.push_back( ReportClassHaveNoConstructors( call_operator.file_pos_ ) );
+			REPORT_ERROR( ClassHaveNoConstructors, errors_, call_operator.file_pos_ );
 			return nullptr;
 		}
 
@@ -615,7 +615,7 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 	}
 	else
 	{
-		errors_.push_back( ReportConstructorInitializerForUnsupportedType( call_operator.file_pos_ ) );
+		REPORT_ERROR( ConstructorInitializerForUnsupportedType, errors_, call_operator.file_pos_ );
 		return nullptr;
 	}
 
@@ -633,7 +633,7 @@ llvm::Constant* CodeBuilder::ApplyExpressionInitializer(
 		const Variable expression_result= BuildExpressionCodeEnsureVariable( initializer.expression, block_names, function_context );
 		if( expression_result.type != variable.type )
 		{
-			errors_.push_back( ReportTypesMismatch( initializer.file_pos_, variable.type.ToString(), expression_result.type.ToString() ) );
+			REPORT_ERROR( TypesMismatch, errors_,  initializer.file_pos_, variable.type.ToString(), expression_result.type.ToString() );
 			return nullptr;
 		}
 
@@ -663,7 +663,7 @@ llvm::Constant* CodeBuilder::ApplyExpressionInitializer(
 		}
 		else
 		{
-			errors_.push_back( ReportTypesMismatch( initializer.file_pos_, variable.type.ToString(), expression_result.type.ToString() ) );
+			REPORT_ERROR( TypesMismatch, errors_,  initializer.file_pos_, variable.type.ToString(), expression_result.type.ToString() );
 			return nullptr;
 		}
 
@@ -711,7 +711,7 @@ llvm::Constant* CodeBuilder::ApplyExpressionInitializer(
 	}
 	else
 	{
-		errors_.push_back( ReportNotImplemented( initializer.file_pos_, "expression initialization for arrays" ) );
+		REPORT_ERROR( NotImplemented, errors_, initializer.file_pos_, "expression initialization for arrays" );
 		return nullptr;
 	}
 
@@ -815,9 +815,9 @@ llvm::Constant* CodeBuilder::ApplyZeroInitializer(
 	else if( const Class* const class_type= variable.type.GetClassType() )
 	{
 		if( class_type->have_explicit_noncopy_constructors )
-			errors_.push_back( ReportInitializerDisabledBecauseClassHaveExplicitNoncopyConstructors( initializer.file_pos_ ) );
+			REPORT_ERROR( InitializerDisabledBecauseClassHaveExplicitNoncopyConstructors, errors_, initializer.file_pos_ );
 		if( class_type->kind != Class::Kind::Struct )
-			errors_.push_back( ReportZeroInitializerForClass( initializer.file_pos_ ) );
+			REPORT_ERROR( ZeroInitializerForClass, errors_, initializer.file_pos_ );
 
 		ClassFieldsVector<llvm::Constant*> constant_initializers;
 		bool all_fields_are_constant= false;
@@ -839,7 +839,7 @@ llvm::Constant* CodeBuilder::ApplyZeroInitializer(
 				if( field->is_reference )
 				{
 					all_fields_are_constant= false;
-					errors_.push_back( ReportUnsupportedInitializerForReference( initializer.file_pos_ ) );
+					REPORT_ERROR( UnsupportedInitializerForReference, errors_, initializer.file_pos_ );
 					return;
 				}
 
@@ -870,7 +870,7 @@ llvm::Constant* CodeBuilder::ApplyUninitializedInitializer(
 	FunctionContext& function_context )
 {
 	if( !function_context.is_in_unsafe_block )
-		errors_.push_back( ReportUninitializedInitializerOutsideUnsafeBlock( initializer.file_pos_ ) );
+		REPORT_ERROR( UninitializedInitializerOutsideUnsafeBlock, errors_, initializer.file_pos_ );
 
 	if( variable.type.CanBeConstexpr() )
 		return llvm::UndefValue::get( variable.type.GetLLVMType() );
@@ -898,14 +898,14 @@ llvm::Constant* CodeBuilder::InitializeReferenceField(
 	{
 		if( constructor_initializer->call_operator.arguments_.size() != 1u )
 		{
-			errors_.push_back( ReportReferencesHaveConstructorsWithExactlyOneParameter( constructor_initializer->file_pos_ ) );
+			REPORT_ERROR( ReferencesHaveConstructorsWithExactlyOneParameter, errors_, constructor_initializer->file_pos_ );
 			return nullptr;
 		}
 		initializer_expression= &constructor_initializer->call_operator.arguments_.front();
 	}
 	else
 	{
-		errors_.push_back( ReportUnsupportedInitializerForReference( initializer_file_pos ) );
+		REPORT_ERROR( UnsupportedInitializerForReference, errors_, initializer_file_pos );
 		return nullptr;
 	}
 
@@ -914,19 +914,19 @@ llvm::Constant* CodeBuilder::InitializeReferenceField(
 	const FilePos initializer_expression_file_pos= Synt::GetExpressionFilePos( *initializer_expression );
 	if( !ReferenceIsConvertible( initializer_variable.type, field.type, initializer_expression_file_pos ) )
 	{
-		errors_.push_back( ReportTypesMismatch( initializer_expression_file_pos, field.type.ToString(), initializer_variable.type.ToString() ) );
+		REPORT_ERROR( TypesMismatch, errors_,  initializer_expression_file_pos, field.type.ToString(), initializer_variable.type.ToString() );
 		return nullptr;
 	}
 	if( initializer_variable.value_type == ValueType::Value )
 	{
-		errors_.push_back( ReportExpectedReferenceValue( initializer_expression_file_pos ) );
+		REPORT_ERROR( ExpectedReferenceValue, errors_, initializer_expression_file_pos );
 		return nullptr;
 	}
 	U_ASSERT( initializer_variable.location == Variable::Location::Pointer );
 
 	if( field.is_mutable && initializer_variable.value_type == ValueType::ConstReference )
 	{
-		errors_.push_back( ReportBindingConstReferenceToNonconstReference( initializer_expression_file_pos ) );
+		REPORT_ERROR( BindingConstReferenceToNonconstReference, errors_, initializer_expression_file_pos );
 		return nullptr;
 	}
 
@@ -938,7 +938,7 @@ llvm::Constant* CodeBuilder::InitializeReferenceField(
 		if( ( field.is_mutable && function_context.variables_state.HaveOutgoingLinks( src_node ) ) ||
 			(!field.is_mutable && function_context.variables_state.HaveOutgoingMutableNodes( src_node ) ) )
 		{
-			errors_.push_back( ReportReferenceProtectionError( initializer_file_pos, src_node->name ) );
+			REPORT_ERROR( ReferenceProtectionError, errors_, initializer_file_pos, src_node->name );
 			return nullptr;
 		}
 
@@ -953,7 +953,7 @@ llvm::Constant* CodeBuilder::InitializeReferenceField(
 			if( inner_reference->kind == ReferencesGraphNode::Kind::ReferenceImut && field.is_mutable )
 			{
 				// TODO - make separate error.
-				errors_.push_back( ReportNotImplemented( initializer_file_pos, "inner reference mutability changing" ) );
+				REPORT_ERROR( NotImplemented, errors_, initializer_file_pos, "inner reference mutability changing" );
 				return nullptr;
 			}
 		}
@@ -1002,7 +1002,7 @@ llvm::Constant* CodeBuilder::InitializeFunctionPointer(
 		if( intitializer_type == nullptr ||
 			!intitializer_type->function.PointerCanBeConvertedTo( function_pointer_type.function ) )
 		{
-			errors_.push_back( ReportTypesMismatch( initializer_expression_file_pos, variable.type.ToString(), initializer_variable->type.ToString() ) );
+			REPORT_ERROR( TypesMismatch, errors_,  initializer_expression_file_pos, variable.type.ToString(), initializer_variable->type.ToString() );
 			return nullptr;
 		}
 		U_ASSERT( initializer_variable->type.GetFunctionPointerType() != nullptr );
@@ -1023,7 +1023,7 @@ llvm::Constant* CodeBuilder::InitializeFunctionPointer(
 	else
 	{
 		// TODO - generate separate error
-		errors_.push_back( ReportExpectedVariable( initializer_expression_file_pos, initializer_value.GetKindName() ) );
+		REPORT_ERROR( ExpectedVariable, errors_, initializer_expression_file_pos, initializer_value.GetKindName() );
 		return nullptr;
 	}
 
@@ -1058,7 +1058,7 @@ llvm::Constant* CodeBuilder::InitializeFunctionPointer(
 					{
 						// Error, exist more, then one non-exact match function.
 						// TODO - maybe generate separate error?
-						errors_.push_back( ReportTooManySuitableOverloadedFunctions( initializer_expression_file_pos ) );
+						REPORT_ERROR( TooManySuitableOverloadedFunctions, errors_, initializer_expression_file_pos );
 						return nullptr;
 					}
 					exact_match_function_variable= func;
@@ -1076,7 +1076,7 @@ llvm::Constant* CodeBuilder::InitializeFunctionPointer(
 		{
 			// Error, exist more, then one non-exact match function.
 			// TODO - maybe generate separate error?
-			errors_.push_back( ReportTooManySuitableOverloadedFunctions( initializer_expression_file_pos ) );
+			REPORT_ERROR( TooManySuitableOverloadedFunctions, errors_, initializer_expression_file_pos );
 			return nullptr;
 		}
 		else if( !convertible_function_variables.empty() )
@@ -1084,11 +1084,11 @@ llvm::Constant* CodeBuilder::InitializeFunctionPointer(
 	}
 	if( function_variable == nullptr )
 	{
-		errors_.push_back( ReportCouldNotSelectOverloadedFunction( initializer_expression_file_pos ) );
+		REPORT_ERROR( CouldNotSelectOverloadedFunction, errors_, initializer_expression_file_pos );
 		return nullptr;
 	}
 	if( function_variable->is_deleted )
-		errors_.push_back( ReportAccessingDeletedMethod( initializer_expression_file_pos ) );
+		REPORT_ERROR( AccessingDeletedMethod, errors_, initializer_expression_file_pos );
 
 	llvm::Value* function_value= function_variable->llvm_function;
 	if( function_variable->type != function_pointer_type.function )

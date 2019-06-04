@@ -80,7 +80,7 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, Variable& typeinfo_variab
 {
 	if( type != void_type_ && !EnsureTypeCompleteness( type, TypeCompleteness::Complete ) )
 	{
-		errors_.push_back( ReportUsingIncompleteType( g_dummy_file_pos, type.ToString() ) ); // TODO - use correct file_pos
+		REPORT_ERROR( UsingIncompleteType, errors_, g_dummy_file_pos, type.ToString() ); // TODO - use correct file_pos
 		return;
 	}
 

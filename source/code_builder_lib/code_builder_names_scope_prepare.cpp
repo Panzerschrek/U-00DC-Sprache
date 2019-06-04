@@ -36,12 +36,12 @@ void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::ProgramEl
 				if( const NamesScopePtr same_namespace= same_value->GetNamespace() )
 					result_scope= same_namespace.get(); // Extend existend namespace.
 				else
-					this_.errors_.push_back( ReportRedefinition( namespace_->file_pos_, namespace_->name_ ) );
+					this_.REPORT_ERROR( Redefinition, errors_, namespace_->file_pos_, namespace_->name_ );
 			}
 			else
 			{
 				if( IsKeyword( namespace_->name_ ) )
-					this_.errors_.push_back( ReportUsingKeywordAsName( namespace_->file_pos_ ) );
+					REPORT_ERROR( UsingKeywordAsName, this_.errors_, namespace_->file_pos_ );
 				U_ASSERT( !this_.NameShadowsTemplateArgument( namespace_->name_, names_scope ) ); // There are no templates abowe namespace. Namespaces inside classes does not exists.
 
 				const auto new_names_scope= std::make_shared<NamesScope>( namespace_->name_, &names_scope );
@@ -91,9 +91,9 @@ void  CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::Variable
 	for( const Synt::VariablesDeclaration::VariableEntry& variable_declaration : variables_declaration.variables )
 	{
 		if( IsKeyword( variable_declaration.name ) )
-			errors_.push_back( ReportUsingKeywordAsName( variable_declaration.file_pos ) );
+			REPORT_ERROR( UsingKeywordAsName, errors_, variable_declaration.file_pos );
 		if( NameShadowsTemplateArgument( variable_declaration.name, names_scope ) )
-			errors_.push_back( ReportDeclarationShadowsTemplateArgument( variable_declaration.file_pos, variable_declaration.name ) );
+			REPORT_ERROR( DeclarationShadowsTemplateArgument, errors_, variable_declaration.file_pos, variable_declaration.name );
 
 		IncompleteGlobalVariable incomplete_global_variable;
 		incomplete_global_variable.variables_declaration= &variables_declaration;
@@ -101,23 +101,23 @@ void  CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::Variable
 		incomplete_global_variable.name= variable_declaration.name;
 
 		if( names_scope.AddName( variable_declaration.name, Value( incomplete_global_variable, variable_declaration.file_pos ) ) == nullptr )
-			errors_.push_back( ReportRedefinition( variable_declaration.file_pos, variable_declaration.name ) );
+			REPORT_ERROR( Redefinition, errors_, variable_declaration.file_pos, variable_declaration.name );
 	}
 }
 
 void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::AutoVariableDeclaration& variable_declaration )
 {
 	if( IsKeyword( variable_declaration.name ) )
-		errors_.push_back( ReportUsingKeywordAsName( variable_declaration.file_pos_ ) );
+		REPORT_ERROR( UsingKeywordAsName, errors_, variable_declaration.file_pos_ );
 	if( NameShadowsTemplateArgument( variable_declaration.name, names_scope ) )
-		errors_.push_back( ReportDeclarationShadowsTemplateArgument( variable_declaration.file_pos_, variable_declaration.name ) );
+		REPORT_ERROR( DeclarationShadowsTemplateArgument, errors_, variable_declaration.file_pos_, variable_declaration.name );
 
 	IncompleteGlobalVariable incomplete_global_variable;
 	incomplete_global_variable.auto_variable_declaration= &variable_declaration;
 	incomplete_global_variable.name= variable_declaration.name;
 
 	if( names_scope.AddName( variable_declaration.name, Value( incomplete_global_variable, variable_declaration.file_pos_ ) ) == nullptr )
-		errors_.push_back( ReportRedefinition( variable_declaration.file_pos_, variable_declaration.name ) );
+		REPORT_ERROR( Redefinition, errors_, variable_declaration.file_pos_, variable_declaration.name );
 }
 
 void CodeBuilder::NamesScopeFill(
@@ -131,22 +131,22 @@ void CodeBuilder::NamesScopeFill(
 
 	const ProgramString& func_name= function_declaration.name_.components.back().name;
 	if( IsKeyword( func_name ) && func_name != Keywords::constructor_ && func_name != Keywords::destructor_ )
-		errors_.push_back( ReportUsingKeywordAsName( function_declaration.file_pos_ ) );
+		REPORT_ERROR( UsingKeywordAsName, errors_, function_declaration.file_pos_ );
 	if( NameShadowsTemplateArgument( func_name, names_scope ) )
-		errors_.push_back( ReportDeclarationShadowsTemplateArgument( function_declaration.file_pos_, func_name ) );
+		REPORT_ERROR( DeclarationShadowsTemplateArgument, errors_, function_declaration.file_pos_, func_name );
 
 	if( Value* const prev_value= names_scope.GetThisScopeValue( func_name ) )
 	{
 		if( OverloadedFunctionsSet* const functions_set= prev_value->GetFunctionsSet() )
 		{
 			if( base_class != nullptr && base_class->class_->GetMemberVisibility( func_name ) != visibility )
-				errors_.push_back( ReportFunctionsVisibilityMismatch( function_declaration.file_pos_, func_name ) );
+				REPORT_ERROR( FunctionsVisibilityMismatch, errors_, function_declaration.file_pos_, func_name );
 
 			U_ASSERT( functions_set->base_class == base_class );
 			functions_set->syntax_elements.push_back( &function_declaration );
 		}
 		else
-			errors_.push_back( ReportRedefinition( function_declaration.file_pos_, func_name ) );
+			REPORT_ERROR( Redefinition, errors_, function_declaration.file_pos_, func_name );
 	}
 	else
 	{
@@ -171,26 +171,26 @@ void CodeBuilder::NamesScopeFill(
 	const ProgramString& function_template_name= complex_name.components.front().name;
 
 	if( complex_name.components.size() > 1u )
-		errors_.push_back( ReportFunctionDeclarationOutsideItsScope( function_template_declaration.file_pos_ ) );
+		REPORT_ERROR( FunctionDeclarationOutsideItsScope, errors_, function_template_declaration.file_pos_ );
 	if( complex_name.components.front().have_template_parameters )
-		errors_.push_back( ReportValueIsNotTemplate( function_template_declaration.file_pos_ ) );
+		REPORT_ERROR( ValueIsNotTemplate, errors_, function_template_declaration.file_pos_ );
 	if( IsKeyword( function_template_name ) && function_template_name != Keywords::constructor_ && function_template_name != Keywords::destructor_ )
-		errors_.push_back( ReportUsingKeywordAsName( function_template_declaration.file_pos_ ) );
+		REPORT_ERROR( UsingKeywordAsName, errors_, function_template_declaration.file_pos_ );
 	if( NameShadowsTemplateArgument( function_template_name, names_scope ) )
-		errors_.push_back( ReportDeclarationShadowsTemplateArgument( function_template_declaration.file_pos_, function_template_name ) );
+		REPORT_ERROR( DeclarationShadowsTemplateArgument, errors_, function_template_declaration.file_pos_, function_template_name );
 
 	if( Value* const prev_value= names_scope.GetThisScopeValue( function_template_name ) )
 	{
 		if( OverloadedFunctionsSet* const functions_set= prev_value->GetFunctionsSet() )
 		{
 			if( base_class != nullptr && base_class->class_->GetMemberVisibility( function_template_name ) != visibility )
-				errors_.push_back( ReportFunctionsVisibilityMismatch( function_template_declaration.file_pos_, function_template_name ) );
+				REPORT_ERROR( FunctionsVisibilityMismatch, errors_, function_template_declaration.file_pos_, function_template_name );
 
 			U_ASSERT( functions_set->base_class == base_class );
 			functions_set->template_syntax_elements.push_back( &function_template_declaration );
 		}
 		else
-			errors_.push_back( ReportRedefinition( function_template_declaration.file_pos_, function_template_name ) );
+			REPORT_ERROR( Redefinition, errors_, function_template_declaration.file_pos_, function_template_name );
 	}
 	else
 	{
@@ -209,9 +209,9 @@ ClassProxyPtr CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::
 {
 	const ProgramString& class_name= override_name.empty() ? class_declaration.name_: override_name;
 	if( IsKeyword( class_name ) )
-		errors_.push_back( ReportUsingKeywordAsName( class_declaration.file_pos_ ) );
+		REPORT_ERROR( UsingKeywordAsName, errors_, class_declaration.file_pos_ );
 	if( NameShadowsTemplateArgument( class_name, names_scope ) )
-		errors_.push_back( ReportDeclarationShadowsTemplateArgument( class_declaration.file_pos_, class_name ) );
+		REPORT_ERROR( DeclarationShadowsTemplateArgument, errors_, class_declaration.file_pos_, class_name );
 
 	ClassProxyPtr class_type;
 	if( const Value* const prev_value= names_scope.GetThisScopeValue( class_name ) )
@@ -222,19 +222,19 @@ ClassProxyPtr CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::
 			{
 				class_type= prev_class_type;
 				if(  class_type->class_->syntax_element->is_forward_declaration_ &&  class_declaration.is_forward_declaration_ )
-					errors_.push_back( ReportRedefinition( class_declaration.file_pos_, class_name ) );
+					REPORT_ERROR( Redefinition, errors_, class_declaration.file_pos_, class_name );
 				if( !class_type->class_->syntax_element->is_forward_declaration_ && !class_declaration.is_forward_declaration_ )
-					errors_.push_back( ReportClassBodyDuplication( class_declaration.file_pos_ ) );
+					REPORT_ERROR( ClassBodyDuplication, errors_, class_declaration.file_pos_ );
 			}
 			else
 			{
-				errors_.push_back( ReportRedefinition( class_declaration.file_pos_, class_name ) );
+				REPORT_ERROR( Redefinition, errors_, class_declaration.file_pos_, class_name );
 				return nullptr;
 			}
 		}
 		else
 		{
-			errors_.push_back( ReportRedefinition( class_declaration.file_pos_, class_name ) );
+			REPORT_ERROR( Redefinition, errors_, class_declaration.file_pos_, class_name );
 			return nullptr;
 		}
 	}
@@ -283,11 +283,11 @@ ClassProxyPtr CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::
 				class_field.syntax_element= &in_class_field;
 
 				if( IsKeyword( in_class_field.name ) )
-					this_.errors_.push_back( ReportUsingKeywordAsName( class_declaration.file_pos_ ) );
+					REPORT_ERROR( UsingKeywordAsName, this_.errors_, class_declaration.file_pos_ );
 				if( this_.NameShadowsTemplateArgument( in_class_field.name, the_class.members ) )
-					this_.errors_.push_back( ReportDeclarationShadowsTemplateArgument( in_class_field.file_pos_, in_class_field.name ) );
+					REPORT_ERROR( DeclarationShadowsTemplateArgument, this_.errors_, in_class_field.file_pos_, in_class_field.name );
 				if( the_class.members.AddName( in_class_field.name, Value( class_field, in_class_field.file_pos_ ) ) == nullptr )
-					this_.errors_.push_back( ReportRedefinition( in_class_field.file_pos_, in_class_field.name ) );
+					REPORT_ERROR( Redefinition, this_.errors_, in_class_field.file_pos_, in_class_field.name );
 
 				the_class.SetMemberVisibility( in_class_field.name, current_visibility );
 			}
@@ -302,7 +302,7 @@ ClassProxyPtr CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::
 			void operator()( const Synt::ClassVisibilityLabel& visibility_label )
 			{
 				if( class_declaration.kind_attribute_ == Synt::ClassKindAttribute::Struct )
-					this_.errors_.push_back( ReportVisibilityForStruct( visibility_label.file_pos_, class_name ) );
+					REPORT_ERROR( VisibilityForStruct, this_.errors_,  visibility_label.file_pos_, class_name );
 				current_visibility= visibility_label.visibility_;
 			}
 			void operator()( const Synt::TypeTemplateBase& type_template )
@@ -356,19 +356,19 @@ void CodeBuilder::NamesScopeFill(
 {
 	const ProgramString type_template_name= type_template_declaration.name_;
 	if( IsKeyword( type_template_name ) )
-		errors_.push_back( ReportUsingKeywordAsName( type_template_declaration.file_pos_ ) );
+		REPORT_ERROR( UsingKeywordAsName, errors_, type_template_declaration.file_pos_ );
 	if( NameShadowsTemplateArgument( type_template_name, names_scope ) )
-		errors_.push_back( ReportDeclarationShadowsTemplateArgument( type_template_declaration.file_pos_, type_template_name ) );
+		REPORT_ERROR( DeclarationShadowsTemplateArgument, errors_, type_template_declaration.file_pos_, type_template_name );
 
 	if( Value* const prev_value= names_scope.GetThisScopeValue( type_template_name ) )
 	{
 		if( base_class != nullptr && base_class->class_->GetMemberVisibility( type_template_name ) != visibility )
-			errors_.push_back( ReportTypeTemplatesVisibilityMismatch( type_template_declaration.file_pos_, type_template_name ) ); // TODO - use separate error code
+			REPORT_ERROR( TypeTemplatesVisibilityMismatch, errors_, type_template_declaration.file_pos_, type_template_name ); // TODO - use separate error code
 
 		if( TypeTemplatesSet* const type_templates_set= prev_value->GetTypeTemplatesSet() )
 			type_templates_set->syntax_elements.push_back( &type_template_declaration );
 		else
-			errors_.push_back( ReportRedefinition( type_template_declaration.file_pos_, type_template_name ) );
+			REPORT_ERROR( Redefinition, errors_, type_template_declaration.file_pos_, type_template_name );
 	}
 	else
 	{
@@ -384,9 +384,9 @@ void CodeBuilder::NamesScopeFill(
 void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::Enum& enum_declaration )
 {
 	if( IsKeyword( enum_declaration.name ) )
-		errors_.push_back( ReportUsingKeywordAsName( enum_declaration.file_pos_ ) );
+		REPORT_ERROR( UsingKeywordAsName, errors_, enum_declaration.file_pos_ );
 	if( NameShadowsTemplateArgument( enum_declaration.name, names_scope ) )
-		errors_.push_back( ReportDeclarationShadowsTemplateArgument( enum_declaration.file_pos_, enum_declaration.name ) );
+		REPORT_ERROR( DeclarationShadowsTemplateArgument, errors_, enum_declaration.file_pos_, enum_declaration.name );
 
 	enums_table_.emplace_back( new Enum( enum_declaration.name, &names_scope ) );
 	const EnumPtr enum_= enums_table_.back().get();
@@ -394,21 +394,21 @@ void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::Enum& enu
 	enum_->syntax_element= &enum_declaration;
 
 	if( names_scope.AddName( enum_declaration.name, Value( Type( enum_ ), enum_declaration.file_pos_ ) ) == nullptr )
-		errors_.push_back( ReportRedefinition( enum_declaration.file_pos_, enum_declaration.name ) );
+		REPORT_ERROR( Redefinition, errors_, enum_declaration.file_pos_, enum_declaration.name );
 }
 
 void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::Typedef& typedef_declaration )
 {
 	if( IsKeyword( typedef_declaration.name ) )
-		errors_.push_back( ReportUsingKeywordAsName( typedef_declaration.file_pos_ ) );
+		REPORT_ERROR( UsingKeywordAsName, errors_, typedef_declaration.file_pos_ );
 	if( NameShadowsTemplateArgument( typedef_declaration.name, names_scope ) )
-		errors_.push_back( ReportDeclarationShadowsTemplateArgument( typedef_declaration.file_pos_, typedef_declaration.name ) );
+		REPORT_ERROR( DeclarationShadowsTemplateArgument, errors_, typedef_declaration.file_pos_, typedef_declaration.name );
 
 	Typedef typedef_;
 	typedef_.syntax_element= &typedef_declaration;
 
 	if( names_scope.AddName( typedef_declaration.name, Value( typedef_, typedef_declaration.file_pos_ ) ) == nullptr )
-		errors_.push_back( ReportRedefinition( typedef_declaration.file_pos_, typedef_declaration.name ) );
+		REPORT_ERROR( Redefinition, errors_, typedef_declaration.file_pos_, typedef_declaration.name );
 }
 
 void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::StaticAssert& static_assert_declaration )
@@ -433,7 +433,7 @@ void CodeBuilder::NamesScopeFillOutOfLineElements( NamesScope& names_scope, cons
 				Value* const func_value= ResolveValue( func.file_pos_, names_scope, func.name_, ResolveMode::ForDeclaration );
 				if( func_value == nullptr || func_value->GetFunctionsSet() == nullptr )
 				{
-					errors_.push_back( ReportFunctionDeclarationOutsideItsScope( func.file_pos_ ) );
+					REPORT_ERROR( FunctionDeclarationOutsideItsScope, errors_, func.file_pos_ );
 					continue;
 				}
 				func_value->GetFunctionsSet()->out_of_line_syntax_elements.push_back(&func);

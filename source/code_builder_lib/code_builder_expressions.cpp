@@ -43,7 +43,7 @@ Variable CodeBuilder::BuildExpressionCodeEnsureVariable(
 	if( result_variable == nullptr )
 	{
 		if( result.GetErrorValue() == nullptr )
-			errors_.push_back( ReportExpectedVariable( Synt::GetExpressionFilePos( expression ), result.GetKindName() ) );
+			REPORT_ERROR( ExpectedVariable, errors_, Synt::GetExpressionFilePos( expression ), result.GetKindName() );
 
 		Variable dummy_result;
 		dummy_result.type= invalid_type_;
@@ -139,14 +139,14 @@ boost::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 	if( overloaded_operator != nullptr )
 	{
 		if( overloaded_operator->is_deleted )
-			errors_.push_back( ReportAccessingDeletedMethod( file_pos ) );
+			REPORT_ERROR( AccessingDeletedMethod, errors_, file_pos );
 		if( !( overloaded_operator->constexpr_kind == FunctionVariable::ConstexprKind::ConstexprIncomplete || overloaded_operator->constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete ) )
 			function_context.have_non_constexpr_operations_inside= true; // Can not call non-constexpr function in constexpr function.
 
 		if( overloaded_operator->virtual_table_index != ~0u )
 		{
 			// We can not fetch virtual function here, because "this" may be evaluated as second operand for some binary operators.
-			errors_.push_back( ReportNotImplemented( file_pos, "calling virtual binary operators" ) );
+			REPORT_ERROR( NotImplemented, errors_, file_pos, "calling virtual binary operators" );
 		}
 
 		std::vector<const Synt::Expression*> synt_args;
@@ -338,7 +338,7 @@ Value CodeBuilder::BuildExpressionCode(
 			const Variable* const var= result.GetVariable();
 			if( var == nullptr )
 			{
-				errors_.push_back( ReportOperationNotSupportedForThisType( expression_with_unary_operators->file_pos_, result.GetKindName() ) );
+				REPORT_ERROR( OperationNotSupportedForThisType, errors_, expression_with_unary_operators->file_pos_, result.GetKindName() );
 				continue;
 			}
 
@@ -433,12 +433,12 @@ Value CodeBuilder::BuildBinaryOperator(
 
 		if( r_var.type != l_var.type )
 		{
-			errors_.push_back( ReportNoMatchBinaryOperatorForGivenTypes( file_pos, r_var.type.ToString(), l_var.type.ToString(), BinaryOperatorToString( binary_operator ) ) );
+			REPORT_ERROR( NoMatchBinaryOperatorForGivenTypes, errors_, file_pos, r_var.type.ToString(), l_var.type.ToString(),  BinaryOperatorToString( binary_operator ) );
 			return ErrorValue();
 		}
 		if( l_fundamental_type == nullptr )
 		{
-			errors_.push_back( ReportOperationNotSupportedForThisType( file_pos, l_type.ToString() ) );
+			REPORT_ERROR( OperationNotSupportedForThisType, errors_, file_pos, l_type.ToString() );
 			return ErrorValue();
 		}
 		else
@@ -446,14 +446,14 @@ Value CodeBuilder::BuildBinaryOperator(
 			if( l_fundamental_type->GetSize() < 4u )
 			{
 				// Operation supported only for 32 and 64bit operands
-				errors_.push_back( ReportOperationNotSupportedForThisType( file_pos, l_type.ToString() ) );
+				REPORT_ERROR( OperationNotSupportedForThisType, errors_, file_pos, l_type.ToString() );
 				return ErrorValue();
 			}
 			const bool is_float= IsFloatingPoint( l_fundamental_type->fundamental_type );
 			if( !( IsInteger( l_fundamental_type->fundamental_type ) || is_float ) )
 			{
 				// this operations allowed only for integer and floating point operands.
-				errors_.push_back( ReportOperationNotSupportedForThisType( file_pos, l_type.ToString() ) );
+				REPORT_ERROR( OperationNotSupportedForThisType, errors_, file_pos, l_type.ToString() );
 				return ErrorValue();
 			}
 
@@ -589,7 +589,7 @@ Value CodeBuilder::BuildBinaryOperator(
 
 		if( r_var.type != l_var.type )
 		{
-			errors_.push_back( ReportNoMatchBinaryOperatorForGivenTypes( file_pos, r_var.type.ToString(), l_var.type.ToString(), BinaryOperatorToString( binary_operator ) ) );
+			REPORT_ERROR( NoMatchBinaryOperatorForGivenTypes, errors_, file_pos, r_var.type.ToString(), l_var.type.ToString(), BinaryOperatorToString( binary_operator ) );
 			return ErrorValue();
 		}
 		else if( l_var.type.GetFunctionPointerType() != nullptr )
@@ -632,7 +632,7 @@ Value CodeBuilder::BuildBinaryOperator(
 		}
 		else if( !( l_var.type.GetFundamentalType() != nullptr || l_var.type.GetEnumType() != nullptr ) )
 		{
-			errors_.push_back( ReportOperationNotSupportedForThisType( file_pos, l_type.ToString() ) );
+			REPORT_ERROR( OperationNotSupportedForThisType, errors_, file_pos, l_type.ToString() );
 			return ErrorValue();
 		}
 		else
@@ -642,7 +642,7 @@ Value CodeBuilder::BuildBinaryOperator(
 			const bool if_float= IsFloatingPoint( raw_fundamental_type.fundamental_type );
 			if( !( IsInteger( raw_fundamental_type.fundamental_type ) || IsChar( raw_fundamental_type.fundamental_type ) || if_float || raw_fundamental_type == bool_type_ ) )
 			{
-				errors_.push_back( ReportOperationNotSupportedForThisType( file_pos, l_type.ToString() ) );
+				REPORT_ERROR( OperationNotSupportedForThisType, errors_, file_pos, l_type.ToString() );
 				return ErrorValue();
 			}
 
@@ -713,12 +713,12 @@ Value CodeBuilder::BuildBinaryOperator(
 
 		if( r_var.type != l_var.type )
 		{
-			errors_.push_back( ReportNoMatchBinaryOperatorForGivenTypes( file_pos, r_var.type.ToString(), l_var.type.ToString(), BinaryOperatorToString( binary_operator ) ) );
+			REPORT_ERROR( NoMatchBinaryOperatorForGivenTypes, errors_, file_pos, r_var.type.ToString(), l_var.type.ToString(), BinaryOperatorToString( binary_operator ) );
 			return ErrorValue();
 		}
 		if( l_fundamental_type == nullptr )
 		{
-			errors_.push_back( ReportOperationNotSupportedForThisType( file_pos, l_type.ToString() ) );
+			REPORT_ERROR( OperationNotSupportedForThisType, errors_, file_pos, l_type.ToString() );
 			return ErrorValue();
 		}
 		else
@@ -728,7 +728,7 @@ Value CodeBuilder::BuildBinaryOperator(
 			const bool is_signed= !is_char && IsSignedInteger( l_fundamental_type->fundamental_type );
 			if( !( IsInteger( l_fundamental_type->fundamental_type ) || if_float || is_char ) )
 			{
-				errors_.push_back( ReportOperationNotSupportedForThisType( file_pos, l_type.ToString() ) );
+				REPORT_ERROR( OperationNotSupportedForThisType, errors_, file_pos, l_type.ToString() );
 				return ErrorValue();
 			}
 
@@ -860,19 +860,19 @@ Value CodeBuilder::BuildBinaryOperator(
 
 		if( r_var.type != l_var.type )
 		{
-			errors_.push_back( ReportNoMatchBinaryOperatorForGivenTypes( file_pos, r_var.type.ToString(), l_var.type.ToString(), BinaryOperatorToString( binary_operator ) ) );
+			REPORT_ERROR( NoMatchBinaryOperatorForGivenTypes, errors_, file_pos, r_var.type.ToString(), l_var.type.ToString(), BinaryOperatorToString( binary_operator ) );
 			return ErrorValue();
 		}
 		if( l_fundamental_type == nullptr )
 		{
-			errors_.push_back( ReportOperationNotSupportedForThisType( file_pos, l_type.ToString() ) );
+			REPORT_ERROR( OperationNotSupportedForThisType, errors_, file_pos, l_type.ToString() );
 			return ErrorValue();
 		}
 		else
 		{
 			if( !( IsInteger( l_fundamental_type->fundamental_type ) || l_fundamental_type->fundamental_type == U_FundamentalType::Bool ) )
 			{
-				errors_.push_back( ReportOperationNotSupportedForThisType( file_pos, l_type.ToString() ) );
+				REPORT_ERROR( OperationNotSupportedForThisType, errors_, file_pos, l_type.ToString() );
 				return ErrorValue();
 			}
 
@@ -927,12 +927,12 @@ Value CodeBuilder::BuildBinaryOperator(
 		{
 			if( l_fundamental_type == nullptr || !IsInteger( l_fundamental_type->fundamental_type ) )
 			{
-				errors_.push_back( ReportOperationNotSupportedForThisType( file_pos, l_type.ToString() ) );
+				REPORT_ERROR( OperationNotSupportedForThisType, errors_, file_pos, l_type.ToString() );
 				return ErrorValue();
 			}
 			if( r_fundamental_type == nullptr || !IsUnsignedInteger( r_fundamental_type->fundamental_type ) )
 			{
-				errors_.push_back( ReportOperationNotSupportedForThisType( file_pos, r_type.ToString() ) );
+				REPORT_ERROR( OperationNotSupportedForThisType, errors_, file_pos, r_type.ToString() );
 				return ErrorValue();
 			}
 			const SizeType l_type_size= l_fundamental_type->GetSize();
@@ -1004,7 +1004,7 @@ Value CodeBuilder::BuildBinaryOperator(
 			llvm::dyn_cast<llvm::UndefValue >(r_var.constexpr_value) == nullptr &&
 			llvm::dyn_cast<llvm::UndefValue >(l_var.constexpr_value) == nullptr )
 		{
-			errors_.push_back( ReportConstantExpressionResultIsUndefined( file_pos ) );
+			REPORT_ERROR( ConstantExpressionResultIsUndefined, errors_, file_pos );
 			result.constexpr_value= nullptr;
 		}
 	}
@@ -1027,7 +1027,7 @@ Value CodeBuilder::BuildLazyBinaryOperator(
 
 	if( l_var.type != bool_type_ )
 	{
-		errors_.push_back( ReportTypesMismatch( binary_operator.file_pos_, bool_type_.ToString(), l_var.type.ToString() ) );
+		REPORT_ERROR( TypesMismatch, errors_,  binary_operator.file_pos_, bool_type_.ToString(), l_var.type.ToString() );
 		return ErrorValue();
 	}
 
@@ -1057,7 +1057,7 @@ Value CodeBuilder::BuildLazyBinaryOperator(
 		const Variable r_var= BuildExpressionCodeEnsureVariable( r_expression, names, function_context );
 		if( r_var.type != bool_type_ )
 		{
-			errors_.push_back( ReportTypesMismatch( binary_operator.file_pos_, bool_type_.ToString(), r_var.type.ToString() ) );
+			REPORT_ERROR( TypesMismatch, errors_,  binary_operator.file_pos_, bool_type_.ToString(), r_var.type.ToString() );
 			return ErrorValue();
 		}
 		r_var_constepxr_value= r_var.constexpr_value;
@@ -1108,7 +1108,7 @@ Value CodeBuilder::BuildCastRef( const Synt::CastRef& cast_ref, NamesScope& name
 Value CodeBuilder::BuildCastRefUnsafe( const Synt::CastRefUnsafe& cast_ref_unsafe, NamesScope& names, FunctionContext& function_context )
 {
 	if( !function_context.is_in_unsafe_block )
-		errors_.push_back( ReportUnsafeReferenceCastOutsideUnsafeBlock( cast_ref_unsafe.file_pos_ ) );
+		REPORT_ERROR( UnsafeReferenceCastOutsideUnsafeBlock, errors_, cast_ref_unsafe.file_pos_ );
 
 	return DoReferenceCast( cast_ref_unsafe.file_pos_, *cast_ref_unsafe.type_, *cast_ref_unsafe.expression_, true, names, function_context );
 }
@@ -1149,10 +1149,10 @@ Value CodeBuilder::DoReferenceCast(
 		// Complete types required for both safe and unsafe casting, except unsafe void to anything cast.
 		// This needs, becasue we must emit same code for places where types yet not complete, and where they are complete.
 		if( !EnsureTypeCompleteness( type, TypeCompleteness::Complete ) )
-			errors_.push_back( ReportUsingIncompleteType( file_pos, type.ToString() ) );
+			REPORT_ERROR( UsingIncompleteType, errors_, file_pos, type.ToString() );
 
 		if( !( enable_unsafe && var.type == void_type_ ) && !EnsureTypeCompleteness( var.type, TypeCompleteness::Complete ) )
-			errors_.push_back( ReportUsingIncompleteType( file_pos, var.type.ToString() ) );
+			REPORT_ERROR( UsingIncompleteType, errors_, file_pos, var.type.ToString() );
 
 		if( ReferenceIsConvertible( var.type, type, file_pos ) )
 			result.llvm_value= CreateReferenceCast( src_value, var.type, type, function_context );
@@ -1160,7 +1160,7 @@ Value CodeBuilder::DoReferenceCast(
 		{
 			result.llvm_value= function_context.llvm_ir_builder.CreatePointerCast( src_value, llvm::PointerType::get( type.GetLLVMType(), 0 ) );
 			if( !enable_unsafe )
-				errors_.push_back( ReportTypesMismatch( file_pos, type.ToString(), var.type.ToString() ) );
+				REPORT_ERROR( TypesMismatch, errors_,  file_pos, type.ToString(), var.type.ToString() );
 		}
 	}
 
@@ -1186,7 +1186,7 @@ Value CodeBuilder::BuildCastImut( const Synt::CastImut& cast_imut, NamesScope& n
 Value CodeBuilder::BuildCastMut( const Synt::CastMut& cast_mut, NamesScope& names, FunctionContext& function_context )
 {
 	if( !function_context.is_in_unsafe_block )
-		errors_.push_back( ReportMutableReferenceCastOutsideUnsafeBlock( cast_mut.file_pos_ ) );
+		REPORT_ERROR( MutableReferenceCastOutsideUnsafeBlock, errors_, cast_mut.file_pos_ );
 
 	const Variable var= BuildExpressionCodeEnsureVariable( *cast_mut.expression_, names, function_context );
 
@@ -1214,7 +1214,7 @@ Value CodeBuilder::BuildNamedOperand(
 		{
 			if( function_context.this_ == nullptr || function_context.whole_this_is_unavailable )
 			{
-				errors_.push_back( ReportThisUnavailable( named_operand.file_pos_ ) );
+				REPORT_ERROR( ThisUnavailable, errors_, named_operand.file_pos_ );
 				return ErrorValue();
 			}
 			return Value( *function_context.this_, named_operand.file_pos_ );
@@ -1223,18 +1223,18 @@ Value CodeBuilder::BuildNamedOperand(
 		{
 			if( function_context.this_ == nullptr )
 			{
-				errors_.push_back( ReportBaseUnavailable( named_operand.file_pos_ ) );
+				REPORT_ERROR( BaseUnavailable, errors_, named_operand.file_pos_ );
 				return ErrorValue();
 			}
 			const Class& class_= *function_context.this_->type.GetClassType();
 			if( class_.base_class == nullptr )
 			{
-				errors_.push_back( ReportBaseUnavailable( named_operand.file_pos_ ) );
+				REPORT_ERROR( BaseUnavailable, errors_, named_operand.file_pos_ );
 				return ErrorValue();
 			}
 			if( function_context.whole_this_is_unavailable && ( !function_context.base_initialized || class_.base_class->class_->kind == Class::Kind::Abstract ) )
 			{
-				errors_.push_back( ReportFieldIsNotInitializedYet( named_operand.file_pos_, Keyword( Keywords::base_ ) ) );
+				REPORT_ERROR( FieldIsNotInitializedYet, errors_, named_operand.file_pos_, Keyword( Keywords::base_ ) );
 				return ErrorValue();
 			}
 
@@ -1248,20 +1248,20 @@ Value CodeBuilder::BuildNamedOperand(
 	const Value* const value_entry= ResolveValue( named_operand.file_pos_, names, named_operand.name_ );
 	if( value_entry == nullptr )
 	{
-		errors_.push_back( ReportNameNotFound( named_operand.file_pos_, named_operand.name_ ) );
+		REPORT_ERROR( NameNotFound, errors_, named_operand.file_pos_, named_operand.name_ );
 		return ErrorValue();
 	}
 
 	const ProgramString& back_name_component= named_operand.name_.components.back().name;
 	if( !function_context.is_in_unsafe_block &&
 		( back_name_component == Keywords::constructor_ || back_name_component == Keywords::destructor_ ) )
-		errors_.push_back( ReportExplicitAccessToThisMethodIsUnsafe( named_operand.file_pos_, back_name_component ) );
+		REPORT_ERROR( ExplicitAccessToThisMethodIsUnsafe, errors_, named_operand.file_pos_, back_name_component );
 
 	if( const ClassField* const field= value_entry->GetClassField() )
 	{
 		if( function_context.this_ == nullptr )
 		{
-			errors_.push_back( ReportClassFiledAccessInStaticMethod( named_operand.file_pos_, named_operand.name_.components.back().name ) );
+			REPORT_ERROR( ClassFiledAccessInStaticMethod, errors_, named_operand.file_pos_, named_operand.name_.components.back().name );
 			return ErrorValue();
 		}
 
@@ -1287,7 +1287,7 @@ Value CodeBuilder::BuildNamedOperand(
 			{
 				if( actual_field_class->class_->base_class == nullptr )
 				{
-					errors_.push_back( ReportAccessOfNonThisClassField( named_operand.file_pos_, named_operand.name_.components.back().name ) );
+					REPORT_ERROR( AccessOfNonThisClassField, errors_, named_operand.file_pos_, named_operand.name_.components.back().name );
 					return ErrorValue();
 				}
 
@@ -1300,14 +1300,14 @@ Value CodeBuilder::BuildNamedOperand(
 		if( function_context.whole_this_is_unavailable &&
 			function_context.uninitialized_this_fields.find( field ) != function_context.uninitialized_this_fields.end() )
 		{
-			errors_.push_back( ReportFieldIsNotInitializedYet( named_operand.file_pos_, named_operand.name_.components.back().name ) );
+			REPORT_ERROR( FieldIsNotInitializedYet, errors_, named_operand.file_pos_, named_operand.name_.components.back().name );
 			return ErrorValue();
 		}
 		if( function_context.whole_this_is_unavailable &&
 			field_class_proxy != function_context.this_->type.GetClassTypeProxy() &&
 			!function_context.base_initialized )
 		{
-			errors_.push_back( ReportFieldIsNotInitializedYet( named_operand.file_pos_, Keyword( Keywords::base_ ) ) );
+			REPORT_ERROR( FieldIsNotInitializedYet, errors_, named_operand.file_pos_, Keyword( Keywords::base_ ) );
 			return ErrorValue();
 		}
 
@@ -1335,7 +1335,7 @@ Value CodeBuilder::BuildNamedOperand(
 				{
 					if( (  field->is_mutable && function_context.variables_state.HaveOutgoingLinks( node ) ) ||
 						( !field->is_mutable && function_context.variables_state.HaveOutgoingMutableNodes( node ) ) )
-						errors_.push_back( ReportReferenceProtectionError( named_operand.file_pos_, node->name ) );
+						REPORT_ERROR( ReferenceProtectionError, errors_, named_operand.file_pos_, node->name );
 					else
 						function_context.variables_state.AddLink( node, field_node );
 				}
@@ -1371,7 +1371,7 @@ Value CodeBuilder::BuildNamedOperand(
 	else if( const Variable* const variable= value_entry->GetVariable() )
 	{
 		if( variable->node != nullptr && function_context.variables_state.NodeMoved( variable->node ) )
-			errors_.push_back( ReportAccessingMovedVariable( named_operand.file_pos_, variable->node->name ) );
+			REPORT_ERROR( AccessingMovedVariable, errors_, named_operand.file_pos_, variable->node->name );
 	}
 
 	return *value_entry;
@@ -1386,7 +1386,7 @@ Value CodeBuilder::BuildMoveOpeator( const Synt::MoveOperator& move_operator, Na
 	const Value* const resolved_value= ResolveValue( move_operator.file_pos_, names, complex_name );
 	if( resolved_value == nullptr )
 	{
-		errors_.push_back( ReportNameNotFound( move_operator.file_pos_, move_operator.var_name_ ) );
+		REPORT_ERROR( NameNotFound, errors_, move_operator.file_pos_, move_operator.var_name_ );
 		return ErrorValue();
 	}
 	const Variable* const variable_for_move= resolved_value->GetVariable();
@@ -1394,7 +1394,7 @@ Value CodeBuilder::BuildMoveOpeator( const Synt::MoveOperator& move_operator, Na
 		variable_for_move->node == nullptr ||
 		variable_for_move->node->kind != ReferencesGraphNode::Kind::Variable )
 	{
-		errors_.push_back( ReportExpectedVariable( move_operator.file_pos_, resolved_value->GetKindName() ) );
+		REPORT_ERROR( ExpectedVariable, errors_, move_operator.file_pos_, resolved_value->GetKindName() );
 		return ErrorValue();
 	}
 	const ReferencesGraphNodePtr& node= variable_for_move->node;
@@ -1412,19 +1412,19 @@ Value CodeBuilder::BuildMoveOpeator( const Synt::MoveOperator& move_operator, Na
 	end_variable_search:
 	if( !found_in_variables )
 	{
-		errors_.push_back( ReportExpectedVariable( move_operator.file_pos_, resolved_value->GetKindName() ) );
+		REPORT_ERROR( ExpectedVariable, errors_, move_operator.file_pos_, resolved_value->GetKindName() );
 		return ErrorValue();
 	}
 
 	// TODO - maybe allow moving for immutable variables?
 	if( variable_for_move->value_type != ValueType::Reference )
 	{
-		errors_.push_back( ReportExpectedReferenceValue( move_operator.file_pos_ ) );
+		REPORT_ERROR( ExpectedReferenceValue, errors_, move_operator.file_pos_ );
 		return ErrorValue();
 	}
 	if( function_context.variables_state.NodeMoved( node ) )
 	{
-		errors_.push_back( ReportAccessingMovedVariable( move_operator.file_pos_, node->name ) );
+		REPORT_ERROR( AccessingMovedVariable, errors_, move_operator.file_pos_, node->name );
 		return ErrorValue();
 	}
 
@@ -1433,7 +1433,7 @@ Value CodeBuilder::BuildMoveOpeator( const Synt::MoveOperator& move_operator, Na
 
 	if( function_context.variables_state.HaveOutgoingLinks( node ) )
 	{
-		errors_.push_back( ReportMovedVariableHaveReferences( move_operator.file_pos_, node->name ) );
+		REPORT_ERROR( MovedVariableHaveReferences, errors_, move_operator.file_pos_, node->name );
 		return ErrorValue();
 	}
 
@@ -1463,7 +1463,7 @@ Value CodeBuilder::BuildNumericConstant(
 	const U_FundamentalType type= GetNumericConstantType( numeric_constant );
 	if( type == U_FundamentalType::InvalidType )
 	{
-		errors_.push_back( ReportUnknownNumericConstantType( numeric_constant.file_pos_, numeric_constant.type_suffix_.data() ) );
+		REPORT_ERROR( UnknownNumericConstantType, errors_, numeric_constant.file_pos_, numeric_constant.type_suffix_.data() );
 		return ErrorValue();
 	}
 	llvm::Type* const llvm_type= GetFundamentalLLVMType( type );
@@ -1537,7 +1537,7 @@ Value CodeBuilder::BuildStringLiteral( const Synt::StringLiteral& string_literal
 			initializer= llvm::ConstantInt::get( fundamental_llvm_types_.char8 , uint64_t(string_literal.value_[0]), false );
 		}
 		else
-			errors_.push_back( ReportInvalidSizeForCharLiteral( string_literal.file_pos_, string_literal.value_ ) );
+			REPORT_ERROR( InvalidSizeForCharLiteral, errors_, string_literal.file_pos_, string_literal.value_ );
 	}
 	else if( type_suffix == "c16"_SpC || type_suffix == GetFundamentalTypeName( U_FundamentalType::char16 ) )
 	{
@@ -1547,7 +1547,7 @@ Value CodeBuilder::BuildStringLiteral( const Synt::StringLiteral& string_literal
 			initializer= llvm::ConstantInt::get( fundamental_llvm_types_.char16, uint64_t(string_literal.value_[0]), false );
 		}
 		else
-			errors_.push_back( ReportInvalidSizeForCharLiteral( string_literal.file_pos_, string_literal.value_ ) );
+			REPORT_ERROR( InvalidSizeForCharLiteral, errors_, string_literal.file_pos_, string_literal.value_ );
 	}
 	else if( type_suffix == "c32"_SpC || type_suffix== GetFundamentalTypeName( U_FundamentalType::char32 ) )
 	{
@@ -1557,11 +1557,11 @@ Value CodeBuilder::BuildStringLiteral( const Synt::StringLiteral& string_literal
 			initializer= llvm::ConstantInt::get( fundamental_llvm_types_.char32, uint64_t(string_literal.value_[0]), false );
 		}
 		else
-			errors_.push_back( ReportInvalidSizeForCharLiteral( string_literal.file_pos_, string_literal.value_ ) );
+			REPORT_ERROR( InvalidSizeForCharLiteral, errors_, string_literal.file_pos_, string_literal.value_ );
 	}
 	else
 	{
-		errors_.push_back( ReportUnknownStringLiteralSuffix( string_literal.file_pos_, type_suffix ) );
+		REPORT_ERROR( UnknownStringLiteralSuffix, errors_, string_literal.file_pos_, type_suffix );
 		return ErrorValue();
 	}
 
@@ -1626,7 +1626,7 @@ Value CodeBuilder::BuildIndexationOperator(
 
 	if( value.GetVariable() == nullptr )
 	{
-		errors_.push_back( ReportExpectedVariable( indexation_operator.file_pos_, value.GetKindName() ) );
+		REPORT_ERROR( ExpectedVariable, errors_, indexation_operator.file_pos_, value.GetKindName() );
 		return ErrorValue();
 	}
 
@@ -1690,7 +1690,7 @@ Value CodeBuilder::BuildIndexationOperator(
 	const Array* const array_type= variable.type.GetArrayType();
 	if( array_type == nullptr )
 	{
-		errors_.push_back( ReportOperationNotSupportedForThisType( indexation_operator.file_pos_, value.GetKindName() ) );
+		REPORT_ERROR( OperationNotSupportedForThisType, errors_, indexation_operator.file_pos_, value.GetKindName() );
 		return ErrorValue();
 	}
 
@@ -1706,7 +1706,7 @@ Value CodeBuilder::BuildIndexationOperator(
 	const FundamentalType* const index_fundamental_type= index.type.GetFundamentalType();
 	if( index_fundamental_type == nullptr || !IsUnsignedInteger( index_fundamental_type->fundamental_type ) )
 	{
-		errors_.push_back( ReportTypesMismatch( indexation_operator.file_pos_, "any unsigned integer"_SpC, index.type.ToString() ) );
+		REPORT_ERROR( TypesMismatch, errors_,  indexation_operator.file_pos_, "any unsigned integer"_SpC, index.type.ToString() );
 		return ErrorValue();
 	}
 
@@ -1722,7 +1722,7 @@ Value CodeBuilder::BuildIndexationOperator(
 	{
 		const SizeType index_value= SizeType( index.constexpr_value->getUniqueInteger().getLimitedValue() );
 		if( index_value >= array_type->size )
-			errors_.push_back( ReportArrayIndexOutOfBounds( indexation_operator.file_pos_, index_value, array_type->size ) );
+			REPORT_ERROR( ArrayIndexOutOfBounds, errors_, indexation_operator.file_pos_, index_value, array_type->size );
 	}
 
 	Variable result;
@@ -1792,7 +1792,7 @@ Value CodeBuilder::BuildMemberAccessOperator(
 
 	if( value.GetVariable() == nullptr )
 	{
-		errors_.push_back( ReportExpectedVariable( member_access_operator.file_pos_, value.GetKindName() ) );
+		REPORT_ERROR( ExpectedVariable, errors_, member_access_operator.file_pos_, value.GetKindName() );
 		return ErrorValue();
 	}
 	const Variable& variable= *value.GetVariable();
@@ -1800,36 +1800,36 @@ Value CodeBuilder::BuildMemberAccessOperator(
 	Class* const class_type= variable.type.GetClassType();
 	if( class_type == nullptr )
 	{
-		errors_.push_back( ReportOperationNotSupportedForThisType( member_access_operator.file_pos_, value.GetKindName() ) );
+		REPORT_ERROR( OperationNotSupportedForThisType, errors_, member_access_operator.file_pos_, value.GetKindName() );
 		return ErrorValue();
 	}
 
 	if( !EnsureTypeCompleteness( variable.type, TypeCompleteness::Complete ) )
 	{
-		errors_.push_back( ReportUsingIncompleteType( member_access_operator.file_pos_, value.GetKindName() ) );
+		REPORT_ERROR( UsingIncompleteType, errors_, member_access_operator.file_pos_, value.GetKindName() );
 		return ErrorValue();
 	}
 
 	const Value* const class_member= class_type->members.GetThisScopeValue( member_access_operator.member_name_ );
 	if( class_member == nullptr )
 	{
-		errors_.push_back( ReportNameNotFound( member_access_operator.file_pos_, member_access_operator.member_name_ ) );
+		REPORT_ERROR( NameNotFound, errors_, member_access_operator.file_pos_, member_access_operator.member_name_ );
 		return ErrorValue();
 	}
 
 	if( !function_context.is_in_unsafe_block &&
 		( member_access_operator.member_name_ == Keywords::constructor_ || member_access_operator.member_name_ == Keywords::destructor_ ) )
-		errors_.push_back( ReportExplicitAccessToThisMethodIsUnsafe( member_access_operator.file_pos_,  member_access_operator.member_name_ ) );
+		REPORT_ERROR( ExplicitAccessToThisMethodIsUnsafe, errors_, member_access_operator.file_pos_,  member_access_operator.member_name_ );
 
 	if( names.GetAccessFor( variable.type.GetClassTypeProxy() ) < class_type->GetMemberVisibility( member_access_operator.member_name_ ) )
-		errors_.push_back( ReportAccessingNonpublicClassMember( member_access_operator.file_pos_, class_type->members.GetThisNamespaceName(), member_access_operator.member_name_ ) );
+		REPORT_ERROR( AccessingNonpublicClassMember, errors_, member_access_operator.file_pos_, class_type->members.GetThisNamespaceName(), member_access_operator.member_name_ );
 
 	if( const OverloadedFunctionsSet* functions_set= class_member->GetFunctionsSet() )
 	{
 		if( member_access_operator.have_template_parameters )
 		{
 			if( functions_set->template_functions.empty() )
-				errors_.push_back( ReportValueIsNotTemplate( member_access_operator.file_pos_ ) );
+				REPORT_ERROR( ValueIsNotTemplate, errors_, member_access_operator.file_pos_ );
 			else
 			{
 				const Value* const inserted_value=
@@ -1851,12 +1851,12 @@ Value CodeBuilder::BuildMemberAccessOperator(
 	}
 
 	if( member_access_operator.have_template_parameters )
-		errors_.push_back( ReportValueIsNotTemplate( member_access_operator.file_pos_ ) );
+		REPORT_ERROR( ValueIsNotTemplate, errors_, member_access_operator.file_pos_ );
 
 	const ClassField* const field= class_member->GetClassField();
 	if( field == nullptr )
 	{
-		errors_.push_back( ReportNotImplemented( member_access_operator.file_pos_, "class members, except fields or methods" ) );
+		REPORT_ERROR( NotImplemented, errors_, member_access_operator.file_pos_, "class members, except fields or methods" );
 		return ErrorValue();
 	}
 
@@ -1933,7 +1933,7 @@ Value CodeBuilder::BuildMemberAccessOperator(
 			{
 				if( (  field->is_mutable && function_context.variables_state.HaveOutgoingLinks( inner_reference ) ) ||
 					( !field->is_mutable && function_context.variables_state.HaveOutgoingMutableNodes( inner_reference ) ) )
-					errors_.push_back( ReportReferenceProtectionError( member_access_operator.file_pos_, inner_reference->name ) );
+					REPORT_ERROR( ReferenceProtectionError, errors_, member_access_operator.file_pos_, inner_reference->name );
 				else
 					function_context.variables_state.AddLink( inner_reference, result.node );
 			}
@@ -1986,7 +1986,7 @@ Value CodeBuilder::BuildCallOperator(
 			// Call function pointer directly.
 			if( function_pointer->function.args.size() != call_operator.arguments_.size() )
 			{
-				errors_.push_back( ReportInvalidFunctionArgumentCount( call_operator.file_pos_, call_operator.arguments_.size(), function_pointer->function.args.size() ) );
+				REPORT_ERROR( InvalidFunctionArgumentCount, errors_, call_operator.file_pos_, call_operator.arguments_.size(), function_pointer->function.args.size() );
 				return ErrorValue();
 			}
 
@@ -2007,7 +2007,7 @@ Value CodeBuilder::BuildCallOperator(
 
 	if( functions_set == nullptr )
 	{
-		errors_.push_back( ReportOperationNotSupportedForThisType( call_operator.file_pos_, function_value.GetKindName() ) );
+		REPORT_ERROR( OperationNotSupportedForThisType, errors_, call_operator.file_pos_, function_value.GetKindName() );
 		return ErrorValue();
 	}
 
@@ -2078,12 +2078,12 @@ Value CodeBuilder::BuildCallOperator(
 
 	if( this_ == nullptr && function.is_this_call )
 	{
-		errors_.push_back( ReportCallOfThiscallFunctionUsingNonthisArgument( call_operator.file_pos_ ) );
+		REPORT_ERROR( CallOfThiscallFunctionUsingNonthisArgument, errors_, call_operator.file_pos_ );
 		return ErrorValue();
 	}
 
 	if( function_ptr->is_deleted )
-		errors_.push_back( ReportAccessingDeletedMethod( call_operator.file_pos_ ) );
+		REPORT_ERROR( AccessingDeletedMethod, errors_, call_operator.file_pos_ );
 
 	if( !( function_ptr->constexpr_kind == FunctionVariable::ConstexprKind::ConstexprIncomplete || function_ptr->constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete ) )
 		function_context.have_non_constexpr_operations_inside= true; // Can not call non-constexpr function in constexpr function.
@@ -2125,7 +2125,7 @@ Value CodeBuilder::DoCallFunction(
 	const bool func_is_constexpr )
 {
 	if( function_type.unsafe && !function_context.is_in_unsafe_block )
-		errors_.push_back( ReportUnsafeFunctionCallOutsideUnsafeBlock( call_file_pos ) );
+		REPORT_ERROR( UnsafeFunctionCallOutsideUnsafeBlock, errors_, call_file_pos );
 
 	const size_t arg_count= preevaluated_args.size() + args.size();
 	U_ASSERT( arg_count == function_type.args.size() );
@@ -2163,7 +2163,7 @@ Value CodeBuilder::DoCallFunction(
 		{
 			if( !ReferenceIsConvertible( expr.type, arg.type, call_file_pos ) && GetConversionConstructor( expr.type, arg.type, file_pos ) == nullptr )
 			{
-				errors_.push_back( ReportTypesMismatch( file_pos, arg.type.ToString(), expr.type.ToString() ) );
+				REPORT_ERROR( TypesMismatch, errors_,  file_pos, arg.type.ToString(), expr.type.ToString() );
 				return ErrorValue();
 			}
 
@@ -2171,12 +2171,12 @@ Value CodeBuilder::DoCallFunction(
 			{
 				if( expr.value_type == ValueType::Value )
 				{
-					errors_.push_back( ReportExpectedReferenceValue( file_pos ) );
+					REPORT_ERROR( ExpectedReferenceValue, errors_, file_pos );
 					return ErrorValue();
 				}
 				if( expr.value_type == ValueType::ConstReference )
 				{
-					errors_.push_back( ReportBindingConstReferenceToNonconstReference( file_pos ) );
+					REPORT_ERROR( BindingConstReferenceToNonconstReference, errors_, file_pos );
 					return ErrorValue();
 				}
 
@@ -2193,7 +2193,7 @@ Value CodeBuilder::DoCallFunction(
 				if( expr.node != nullptr )
 				{
 					if( function_context.variables_state.HaveOutgoingLinks( expr.node ) )
-						errors_.push_back( ReportReferenceProtectionError( file_pos, expr.node->name ) );
+						REPORT_ERROR( ReferenceProtectionError, errors_, file_pos, expr.node->name );
 					else
 						function_context.variables_state.AddLink( expr.node, arg_node );
 				}
@@ -2232,7 +2232,7 @@ Value CodeBuilder::DoCallFunction(
 				if( expr.node != nullptr )
 				{
 					if( function_context.variables_state.HaveOutgoingMutableNodes( expr.node ) )
-						errors_.push_back( ReportReferenceProtectionError( file_pos, expr.node->name ) );
+						REPORT_ERROR( ReferenceProtectionError, errors_, file_pos, expr.node->name );
 					else
 						function_context.variables_state.AddLink( expr.node, arg_node );
 				}
@@ -2259,7 +2259,7 @@ Value CodeBuilder::DoCallFunction(
 						for( const ReferencesGraphNodePtr& inner_reference : inner_references )
 						{
 							if( inner_reference->kind == ReferencesGraphNode::Kind::ReferenceMut && function_context.variables_state.HaveOutgoingLinks( inner_reference ) )
-								errors_.push_back( ReportReferenceProtectionError( file_pos, inner_reference->name ) );
+								REPORT_ERROR( ReferenceProtectionError, errors_, file_pos, inner_reference->name );
 							else
 								function_context.variables_state.AddLink( inner_reference, locked_args_inner_references.back().Node() );
 						}
@@ -2275,7 +2275,7 @@ Value CodeBuilder::DoCallFunction(
 
 			if( !ReferenceIsConvertible( expr.type, arg.type, call_file_pos ) && GetConversionConstructor( expr.type, arg.type, file_pos ) == nullptr )
 			{
-				errors_.push_back( ReportTypesMismatch( file_pos, arg.type.ToString(), expr.type.ToString() ) );
+				REPORT_ERROR( TypesMismatch, errors_,  file_pos, arg.type.ToString(), expr.type.ToString() );
 				return ErrorValue();
 			}
 
@@ -2311,7 +2311,7 @@ Value CodeBuilder::DoCallFunction(
 					for( const ReferencesGraphNodePtr inner_reference : inner_references )
 					{
 						if( inner_reference->kind == ReferencesGraphNode::Kind::ReferenceMut  && function_context.variables_state.HaveOutgoingLinks( inner_reference ) )
-							errors_.push_back( ReportReferenceProtectionError( file_pos, inner_reference->name ) );
+							REPORT_ERROR( ReferenceProtectionError, errors_, file_pos, inner_reference->name );
 						else
 							function_context.variables_state.AddLink( inner_reference, value_arg_inner_node );
 					}
@@ -2330,7 +2330,7 @@ Value CodeBuilder::DoCallFunction(
 					{
 						// Can not call function with value parameter, because for value parameter needs copy, but parameter type is not copyable.
 						// TODO - print more reliable message.
-						errors_.push_back( ReportOperationNotSupportedForThisType( file_pos, arg.type.ToString() ) );
+						REPORT_ERROR( OperationNotSupportedForThisType, errors_, file_pos, arg.type.ToString() );
 						continue;
 					}
 
@@ -2412,7 +2412,7 @@ Value CodeBuilder::DoCallFunction(
 	else
 	{
 		if( function_type.return_type != void_type_ && !EnsureTypeCompleteness( function_type.return_type, TypeCompleteness::Complete ) )
-			errors_.push_back( ReportUsingIncompleteType( call_file_pos, function_type.return_type.ToString() ) );
+			REPORT_ERROR( UsingIncompleteType, errors_, call_file_pos, function_type.return_type.ToString() );
 
 		result.location= return_value_is_sret ? Variable::Location::Pointer : Variable::Location::LLVMRegister;
 		result.value_type= ValueType::Value;
@@ -2529,7 +2529,7 @@ Value CodeBuilder::DoCallFunction(
 					function_context.variables_state.SetNodeInnerReference( dst_node, inner_reference );
 				}
 				if( inner_reference->kind != ReferencesGraphNode::Kind::ReferenceMut && src_variables_is_mutable )
-					errors_.push_back( ReportNotImplemented( call_file_pos, "changind inner node reference kind immutable to mutable" ) );
+					REPORT_ERROR( NotImplemented, errors_, call_file_pos, "changind inner node reference kind immutable to mutable" );
 
 				for( const ReferencesGraphNodePtr& src_node : src_nodes )
 					function_context.variables_state.AddLink( src_node, inner_reference );
@@ -2562,7 +2562,7 @@ Variable CodeBuilder::BuildTempVariableConstruction(
 {
 	if( !EnsureTypeCompleteness( type, TypeCompleteness::Complete ) )
 	{
-		errors_.push_back( ReportUsingIncompleteType( call_operator.file_pos_, type.ToString() ) );
+		REPORT_ERROR( UsingIncompleteType, errors_, call_operator.file_pos_, type.ToString() );
 		return Variable();
 	}
 
@@ -2600,7 +2600,7 @@ Variable CodeBuilder::ConvertVariable(
 {
 	if( !EnsureTypeCompleteness( dst_type, TypeCompleteness::Complete ) )
 	{
-		errors_.push_back( ReportUsingIncompleteType( file_pos, dst_type.ToString() ) );
+		REPORT_ERROR( UsingIncompleteType, errors_, file_pos, dst_type.ToString() );
 		return Variable();
 	}
 
@@ -2651,7 +2651,7 @@ Value CodeBuilder::BuildUnaryMinus(
 	CHECK_RETURN_ERROR_VALUE(value);
 	if( value.GetVariable() == nullptr )
 	{
-		errors_.push_back( ReportExpectedVariable( unary_minus.file_pos_, value.GetKindName() ) );
+		REPORT_ERROR( ExpectedVariable, errors_, unary_minus.file_pos_, value.GetKindName() );
 		return ErrorValue();
 	}
 	const Variable& variable= *value.GetVariable();
@@ -2659,14 +2659,14 @@ Value CodeBuilder::BuildUnaryMinus(
 	const FundamentalType* const fundamental_type= variable.type.GetFundamentalType();
 	if( fundamental_type == nullptr )
 	{
-		errors_.push_back( ReportOperationNotSupportedForThisType( unary_minus.file_pos_, value.GetKindName() ) );
+		REPORT_ERROR( OperationNotSupportedForThisType, errors_, unary_minus.file_pos_, value.GetKindName() );
 		return ErrorValue();
 	}
 
 	const bool is_float= IsFloatingPoint( fundamental_type->fundamental_type );
 	if( !( IsInteger( fundamental_type->fundamental_type ) || is_float ) )
 	{
-		errors_.push_back( ReportOperationNotSupportedForThisType( unary_minus.file_pos_, variable.type.ToString() ) );
+		REPORT_ERROR( OperationNotSupportedForThisType, errors_, unary_minus.file_pos_, variable.type.ToString() );
 		return ErrorValue();
 	}
 	// TODO - maybe not support unary minus for 8 and 16 bot integer types?
@@ -2706,14 +2706,14 @@ Value CodeBuilder::BuildLogicalNot(
 	CHECK_RETURN_ERROR_VALUE(value);
 	if( value.GetVariable() == nullptr )
 	{
-		errors_.push_back( ReportExpectedVariable( logical_not.file_pos_, value.GetKindName() ) );
+		REPORT_ERROR( ExpectedVariable, errors_, logical_not.file_pos_, value.GetKindName() );
 		return ErrorValue();
 	}
 	const Variable& variable= *value.GetVariable();
 
 	if( variable.type != bool_type_ )
 	{
-		errors_.push_back( ReportOperationNotSupportedForThisType( logical_not.file_pos_, value.GetKindName() ) );
+		REPORT_ERROR( OperationNotSupportedForThisType, errors_, logical_not.file_pos_, value.GetKindName() );
 		return ErrorValue();
 	}
 
@@ -2744,7 +2744,7 @@ Value CodeBuilder::BuildBitwiseNot(
 	CHECK_RETURN_ERROR_VALUE(value);
 	if( value.GetVariable() == nullptr )
 	{
-		errors_.push_back( ReportExpectedVariable( bitwise_not.file_pos_, value.GetKindName() ) );
+		REPORT_ERROR( ExpectedVariable, errors_, bitwise_not.file_pos_, value.GetKindName() );
 		return ErrorValue();
 	}
 	const Variable& variable= *value.GetVariable();
@@ -2752,12 +2752,12 @@ Value CodeBuilder::BuildBitwiseNot(
 	const FundamentalType* const fundamental_type= variable.type.GetFundamentalType();
 	if( fundamental_type == nullptr )
 	{
-		errors_.push_back( ReportOperationNotSupportedForThisType( bitwise_not.file_pos_, value.GetKindName() ) );
+		REPORT_ERROR( OperationNotSupportedForThisType, errors_, bitwise_not.file_pos_, value.GetKindName() );
 		return ErrorValue();
 	}
 	if( !IsInteger( fundamental_type->fundamental_type ) )
 	{
-		errors_.push_back( ReportOperationNotSupportedForThisType( bitwise_not.file_pos_, value.GetKindName() ) );
+		REPORT_ERROR( OperationNotSupportedForThisType, errors_, bitwise_not.file_pos_, value.GetKindName() );
 		return ErrorValue();
 	}
 
