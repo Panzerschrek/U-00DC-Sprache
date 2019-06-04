@@ -31,6 +31,9 @@ const char* CodeBuilderErrorCodeToString( CodeBuilderErrorCode code );
 
 // Helper functions for errors generation.
 
+
+#define REPORT_ERROR( error_code, errors_container, ... ) errors_container.push_back( Report##error_code( __VA_ARGS__ ) )
+
 // TODO - add more parameters for errors.
 CodeBuilderError ReportBuildFailed();
 CodeBuilderError ReportNameNotFound( const FilePos& file_pos, const ProgramString& name );
