@@ -1,6 +1,8 @@
 #pragma once
 #include <string>
+#include "../lex_synt_lib/push_disable_boost_warnings.hpp"
 #include <boost/format.hpp>
+#include "../lex_synt_lib/pop_boost_warnings.hpp"
 
 #include "../lex_synt_lib/lang_types.hpp"
 #include "../lex_synt_lib/lexical_analyzer.hpp"
