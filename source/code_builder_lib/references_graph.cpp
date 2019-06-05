@@ -227,7 +227,7 @@ ReferencesGraph::MergeResult ReferencesGraph::MergeVariablesStateAfterIf( const 
 			NodeState& result_state= result.nodes_[ node_pair.first ];
 
 			if( result_state.moved != src_state.moved )
-				errors.push_back( ReportConditionalMove( file_pos, node_pair.first->name ) );
+				REPORT_ERROR( ConditionalMove, errors, file_pos, node_pair.first->name );
 
 				 if( result_state.inner_reference == nullptr && src_state.inner_reference == nullptr ) {}
 			else if( result_state.inner_reference == nullptr && src_state.inner_reference != nullptr )
@@ -283,7 +283,7 @@ ReferencesGraph::MergeResult ReferencesGraph::MergeVariablesStateAfterIf( const 
 			}
 		}
 		if( mutable_links_count > 1u || ( immutable_links_count > 0u && mutable_links_count > 0u ) )
-			errors.push_back( ReportReferenceProtectionError( file_pos, node.first->name ) );
+			REPORT_ERROR( ReferenceProtectionError, errors, file_pos, node.first->name );
 	}
 
 	return std::make_pair( std::move(result), std::move(errors) );
@@ -301,11 +301,11 @@ std::vector<CodeBuilderError> ReferencesGraph::CheckWhileBlokVariablesState( con
 		const auto& var_after= *state_after.nodes_.find( var_before.first );
 
 		if( !var_before.second.moved && var_after.second.moved )
-			errors.push_back( ReportOuterVariableMoveInsideLoop( file_pos, var_before.first->name ) );
+			REPORT_ERROR( OuterVariableMoveInsideLoop, errors, file_pos, var_before.first->name );
 
 		// Add mutalbe reference in while loop.
 		if( !state_before.HaveOutgoingLinks( var_before.first ) && state_after.HaveOutgoingMutableNodes( var_after.first ) )
-			errors.push_back( ReportMutableReferencePollutionOfOuterLoopVariable( file_pos, var_before.first->name, var_after.first->name ) );
+			REPORT_ERROR( MutableReferencePollutionOfOuterLoopVariable, errors, file_pos, var_before.first->name, var_after.first->name );
 	}
 
 	return errors;

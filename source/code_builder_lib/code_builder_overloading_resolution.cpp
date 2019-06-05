@@ -320,7 +320,7 @@ bool CodeBuilder::ApplyOverloadedFunction(
 
 		if( arg_is_same_count == function_type->args.size() )
 		{
-			errors_.push_back( ReportCouldNotOverloadFunction(file_pos) );
+			REPORT_ERROR( CouldNotOverloadFunction, errors_, file_pos );
 			return false;
 		}
 	} // For functions in set.
@@ -381,7 +381,7 @@ const FunctionVariable* CodeBuilder::GetOverloadedFunction(
 					!( EnsureTypeCompleteness( function_type.args[i].type, TypeCompleteness::Complete ) && EnsureTypeCompleteness( actual_args_begin[i].type, TypeCompleteness::Complete ) ) )
 				{
 					if( produce_errors )
-						errors_.push_back( ReportCouldNotSelectOverloadedFunction( file_pos ) );
+						REPORT_ERROR( CouldNotSelectOverloadedFunction, errors_, file_pos );
 					all_args_is_compatible= false;
 					break;
 				}
@@ -436,7 +436,7 @@ const FunctionVariable* CodeBuilder::GetOverloadedFunction(
 	if( match_functions.empty() )
 	{
 		if( produce_errors )
-			errors_.push_back( ReportCouldNotSelectOverloadedFunction( file_pos ) );
+			REPORT_ERROR( CouldNotSelectOverloadedFunction, errors_, file_pos );
 		return nullptr;
 	}
 	else if( match_functions.size() == 1u )
@@ -549,7 +549,7 @@ const FunctionVariable* CodeBuilder::GetOverloadedFunction(
 
 	if( selected_function == nullptr )
 		if( produce_errors )
-			errors_.push_back( ReportTooManySuitableOverloadedFunctions( file_pos ) );
+			REPORT_ERROR( TooManySuitableOverloadedFunctions, errors_ , file_pos );
 
 	return selected_function;
 }
@@ -570,7 +570,7 @@ const FunctionVariable* CodeBuilder::GetOverloadedOperator(
 		{
 			if( !EnsureTypeCompleteness( arg.type, TypeCompleteness::Complete ) )
 			{
-				errors_.push_back( ReportUsingIncompleteType( file_pos, arg.type.ToString() ) );
+				REPORT_ERROR( UsingIncompleteType, errors_, file_pos, arg.type.ToString() );
 				return nullptr;
 			}
 
@@ -597,7 +597,7 @@ const FunctionVariable* CodeBuilder::GetConversionConstructor(
 {
 	if( !EnsureTypeCompleteness( dst_type, TypeCompleteness::Complete ) )
 	{
-		errors_.push_back( ReportUsingIncompleteType( file_pos, dst_type.ToString() ) );
+		REPORT_ERROR( UsingIncompleteType, errors_, file_pos, dst_type.ToString() );
 		return nullptr;
 	}
 	const Class* const dst_class_type= dst_type.GetClassType();
