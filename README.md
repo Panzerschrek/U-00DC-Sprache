@@ -9,9 +9,14 @@ So, this is reference-compiler for this language.
 
 ### How to build
 * Install boost (version 1.60.0 used).  
-* Install llvm (llvm 3.7.1 used in this project).  
+* Download llvm (llvm 3.7.1 used in this project).  
 * Set path to your llvm installation in CmakeLists.txt.  
-* Run Cmake and generate project for your favorite IDE or build system.
+* Run cmake for source/CMakeLists.txt and generate project for your favorite IDE or build system. You must set paths to boost and llvm in cmake arguments.
+
+### How to build QCreator plugin
+* Download QtCreator.  
+* Download QtCreator sources.  
+* Run qmake for qt_creator_plugin/usprace.pro. You must set path to QtCreator sources and bianries in qmake arguments.
 
 ### Authors
 Copyright © 2016-2019 Artöm "Panzerscrek" Kunz.
