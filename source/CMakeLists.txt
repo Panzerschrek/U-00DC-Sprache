@@ -34,19 +34,6 @@ endif( BUILD_PY_TESTS )
 
 set( CMAKE_CXX_STANDARD 11 )
 
-if( ${CMAKE_BUILD_TYPE} STREQUAL Debug )
-	add_definitions( -DU_DEBUG )
-else()
-endif()
-
-if( NOT WIN32 )
-	add_compile_options( -fPIC )
-	set( SPRACHE_COMPILER_PIC_OPTIONS --relocation-model pic --enable-pie )
-else()
-	set( SPRACHE_COMPILER_PIC_OPTIONS "" )
-endif()
-add_compile_options( -Wall -Wextra -Wconversion )
-
 #
 # External dependencies
 #
@@ -60,15 +47,18 @@ find_package( Boost COMPONENTS system filesystem program_options REQUIRED )
 include_directories( ${Boost_INCLUDE_DIRS} )
 
 # LLVM
-if( NOT DEFINED LLVM_INSTALL_DIR )
-	message( FATAL_ERROR "LLVM_INSTALL_DIR not defined. You can define path to llvm library, using variable LLVM_INSTALL_DIR" )
+if( NOT DEFINED LLVM_SRC_DIR )
+	message( FATAL_ERROR "LLVM_SRC_DIR not defined. You can define path to llvm library, using variable LLVM_SRC_DIR" )
 endif()
-set( LLVM_DIR ${LLVM_INSTALL_DIR}/share/llvm/cmake/ )
 
-find_package(LLVM REQUIRED CONFIG)
+set( SPRACHE_COMPILER_LLVM_TARGET X86 )
+set( LLVM_TARGETS_TO_BUILD ${SPRACHE_COMPILER_LLVM_TARGET} CACHE STRING "llvm targets to build" )
+set( LLVM_ENABLE_RTTI ON CACHE BOOL "rtti for llvm" )
 
-include_directories(${LLVM_INCLUDE_DIRS})
-add_definitions(${LLVM_DEFINITIONS})
+add_subdirectory( ${LLVM_SRC_DIR} ${CMAKE_BINARY_DIR}/llvm )
+
+include_directories( ${LLVM_SRC_DIR}/include ${CMAKE_BINARY_DIR}/llvm/include )
+add_definitions( ${LLVM_DEFINITIONS} )
 
 llvm_map_components_to_libnames( LLVM_LIBS_FOR_COMPILER_LIB Core )
 llvm_map_components_to_libnames( LLVM_LIBS_FOR_COMPILER
@@ -76,11 +66,28 @@ llvm_map_components_to_libnames( LLVM_LIBS_FOR_COMPILER
 	BitReader # for reading of stdlib bitcode
 	Linker # for linking of multiple llvm modules
 	IPO # for pass manager builder, etc.
-	native # "native" is alias for native code generator.
+	${SPRACHE_COMPILER_LLVM_TARGET}
 	)
 llvm_map_components_to_libnames( LLVM_LIBS_FOR_TESTS ExecutionEngine Interpreter )
 
-get_filename_component( LLVM_UTILS_DIR ${LLVM_INSTALL_DIR}/bin ABSOLUTE )
+set( LLVM_UTILS_DIR ${CMAKE_BINARY_DIR}/llvm/bin )
+
+#
+# options for Ü-Sprache projects
+#
+
+if( ${CMAKE_BUILD_TYPE} STREQUAL Debug )
+	add_definitions( -DU_DEBUG )
+else()
+endif()
+
+if( NOT WIN32 )
+	add_compile_options( -fPIC )
+	set( SPRACHE_COMPILER_PIC_OPTIONS --relocation-model pic --enable-pie )
+else()
+	set( SPRACHE_COMPILER_PIC_OPTIONS "" )
+endif()
+add_compile_options( -Wall -Wextra -Wconversion )
 
 #
 # CompilerLib
@@ -107,6 +114,7 @@ if( BUILD_COMPILER )
 		add_custom_command(
 			OUTPUT ${bc_name}
 			DEPENDS ${CMAKE_SOURCE_DIR}/ustlib/src/${ll_file}
+			DEPENDS ${LLVM_UTILS_DIR}/llvm-as
 			COMMAND ${LLVM_UTILS_DIR}/llvm-as ${CMAKE_SOURCE_DIR}/ustlib/src/${ll_file} -o ${bc_name} )
 		add_custom_command(
 			OUTPUT ${bc_object_name}
