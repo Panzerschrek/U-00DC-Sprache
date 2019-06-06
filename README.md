@@ -16,7 +16,7 @@ So, this is reference-compiler for this language.
 ### How to build QCreator plugin
 * Download QtCreator.  
 * Download QtCreator sources.  
-* Run qmake for qt_creator_plugin/usprace.pro. You must set path to QtCreator sources and bianries in qmake arguments.
+* Run qmake for qt_creator_plugin/usprace.pro. You must set path to QtCreator sources and binaries in qmake arguments.
 
 ### Authors
 Copyright © 2016-2019 Artöm "Panzerscrek" Kunz.
