@@ -406,7 +406,14 @@ struct PyModuleDef g_module=
 
 } // namespace U
 
-PyMODINIT_FUNC PyInit_sprache_compiler_tests_py_lib(void)
+#ifdef __GNUC__
+#define U_EXTERN_VISIBILITY __attribute__ ((visibility ("default")))
+#endif // __GNUC__
+#ifdef _MSC_VER
+#define U_EXTERN_VISIBILITY __declspec(dllexport)
+#endif // _MSC_VER
+
+extern "C" U_EXTERN_VISIBILITY PyObject* PyInit_sprache_compiler_tests_py_lib()
 {
 	return PyModule_Create( &U::g_module );
 }
