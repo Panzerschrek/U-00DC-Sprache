@@ -1,4 +1,5 @@
 ﻿## Ü-Sprache
+[![Build Status (master)](https://api.travis-ci.org/Panzerschrek/U-00DC-Sprache.svg?branch=master)](https://travis-ci.org/Panzerschrek/U-00DC-Sprache)
 
 Experimental programming language.  
 It is a compilable, statically-typed C++-like language.
