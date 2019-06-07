@@ -19,11 +19,13 @@ else()
 	message( STATUS "Skip tests" )
 endif( BUILD_TESTS )
 
-if( BUILD_LINKAGE_TESTS )
+if( BUILD_LINKAGE_TESTS AND BUILD_COMPILER )
+	set( REALLY_BUILD_LINKAGE_TESTS YES )
 	message( STATUS "Build linkage tests" )
 else()
+	set( REALLY_BUILD_LINKAGE_TESTS NO )
 	message( STATUS "Skip linkage tests" )
-endif( BUILD_LINKAGE_TESTS )
+endif()
 
 if( BUILD_PY_TESTS )
 	message( STATUS "Build py_tests" )
@@ -51,11 +53,13 @@ if( NOT DEFINED LLVM_SRC_DIR )
 	message( FATAL_ERROR "LLVM_SRC_DIR not defined. You can define path to llvm library, using variable LLVM_SRC_DIR" )
 endif()
 
-if( ${BUILD_COMPILER} )
+if( BUILD_COMPILER )
 	set( SPRACHE_COMPILER_LLVM_TARGET X86 )
 else()
 	# If we build only tests, we do not needs code generators and tools
 	set( SPRACHE_COMPILER_LLVM_TARGET "" )
+endif()
+if( REALLY_BUILD_LINKAGE_TESTS )
 	set( LLVM_BUILD_TOOLS OFF CACHE BOOL "build llvm tools" )
 endif()
 
@@ -190,47 +194,44 @@ if( BUILD_PY_TESTS )
 
 endif( BUILD_PY_TESTS )
 
-# Build rule for "Ü" files
-# Returns result in U_SOURCE_OBJECT
-function( CompileUSource u_source_file )
-	get_filename_component( source_name ${u_source_file} NAME_WE )
-	set( object_name ${source_name}.o )
-	add_custom_command(
-		OUTPUT ${object_name}
-		DEPENDS ${u_source_file} Compiler
-		COMMAND Compiler --produce-object-file ${CMAKE_SOURCE_DIR}/${u_source_file} -o ${object_name} ${SPRACHE_COMPILER_PIC_OPTIONS} )
-	set( U_SOURCE_OBJECT ${object_name} PARENT_SCOPE )
-endfunction()
+if( REALLY_BUILD_LINKAGE_TESTS )
 
-# Returns list of objects in U_SOURCE_OBJECTS
-function( CompileUSources u_source_files )
-	foreach( source ${u_source_files} )
-		CompileUSource( ${source} )
-		list( APPEND out_objects ${U_SOURCE_OBJECT} )
-	endforeach()
-	set( U_SOURCE_OBJECTS ${out_objects} PARENT_SCOPE )
-endfunction()
+	# Build rule for "Ü" files
+	# Returns result in U_SOURCE_OBJECT
+	function( CompileUSource u_source_file )
+		get_filename_component( source_name ${u_source_file} NAME_WE )
+		set( object_name ${source_name}.o )
+		add_custom_command(
+			OUTPUT ${object_name}
+			DEPENDS ${u_source_file} Compiler
+			COMMAND Compiler --produce-object-file ${CMAKE_SOURCE_DIR}/${u_source_file} -o ${object_name} ${SPRACHE_COMPILER_PIC_OPTIONS} )
+		set( U_SOURCE_OBJECT ${object_name} PARENT_SCOPE )
+	endfunction()
 
-#
-# CPP-Linkage test
-#
-if( BUILD_LINKAGE_TESTS )
+	# Returns list of objects in U_SOURCE_OBJECTS
+	function( CompileUSources u_source_files )
+		foreach( source ${u_source_files} )
+			CompileUSource( ${source} )
+			list( APPEND out_objects ${U_SOURCE_OBJECT} )
+		endforeach()
+		set( U_SOURCE_OBJECTS ${out_objects} PARENT_SCOPE )
+	endfunction()
+
+	#
+	# CPP-Linkage test
+	#
 	# Compile simple program on "Ü-Sprache", link it together with C++ program.
-
 	set( CPP_LINKAGE_SOURCES tests/cpp_linkage_test/cpp_linkage.u )
 	CompileUSources( "${CPP_LINKAGE_SOURCES}" )
 	set( CPP_LINKAGE_OBJECTS ${U_SOURCE_OBJECTS} )
 
 	add_executable( CPPLinkageTest tests/cpp_linkage_test/cpp_linkage.cpp ${CPP_LINKAGE_OBJECTS} )
 	add_dependencies( CPPLinkageTest Compiler )
-endif( BUILD_LINKAGE_TESTS )
 
-#
-# Inline linkage test
-#
-if( BUILD_LINKAGE_TESTS )
+	#
+	# Inline linkage test
+	#
 	# Compile multimodule program on "Ü-Sprache". Each module includes one common file.
-
 	set( INLINE_LINKAGE_SOURCES
 		tests/inline_linkage_test/a.u
 		tests/inline_linkage_test/b.u
@@ -240,26 +241,20 @@ if( BUILD_LINKAGE_TESTS )
 
 	add_executable( InlineLinkageTest tests/inline_linkage_test/entry.cpp ${INLINE_LINKAGE_OBJECTS} )
 	add_dependencies( InlineLinkageTest Compiler )
-endif( BUILD_LINKAGE_TESTS )
 
-#
-# Imports test
-#
-if( BUILD_LINKAGE_TESTS )
-
+	#
+	# Imports test
+	#
 	set( IMPORT_TEST_SOURCES tests/import_test/root.u )
 	CompileUSources( "${IMPORT_TEST_SOURCES}" )
 	set( IMPORT_TEST_OBJECTS ${U_SOURCE_OBJECTS} )
 
 	add_executable( ImportTest tests/import_test/entry.c ${IMPORT_TEST_OBJECTS} )
 	add_dependencies( ImportTest Compiler )
-endif( BUILD_LINKAGE_TESTS )
 
-#
-# Include dirs test
-#
-if( BUILD_LINKAGE_TESTS )
-
+	#
+	# Include dirs test
+	#
 	add_custom_command(
 		OUTPUT include_dirs_test.o
 		DEPENDS ${u_source_file} Compiler
@@ -273,4 +268,5 @@ if( BUILD_LINKAGE_TESTS )
 
 	add_executable( IncludeDirsTest tests/include_dirs_test/entry.c include_dirs_test.o )
 	add_dependencies( IncludeDirsTest Compiler )
-endif( BUILD_LINKAGE_TESTS )
+
+endif( REALLY_BUILD_LINKAGE_TESTS )
