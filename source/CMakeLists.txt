@@ -51,7 +51,14 @@ if( NOT DEFINED LLVM_SRC_DIR )
 	message( FATAL_ERROR "LLVM_SRC_DIR not defined. You can define path to llvm library, using variable LLVM_SRC_DIR" )
 endif()
 
-set( SPRACHE_COMPILER_LLVM_TARGET X86 )
+if( ${BUILD_COMPILER} )
+	set( SPRACHE_COMPILER_LLVM_TARGET X86 )
+else()
+	# If we build only tests, we do not needs code generators and tools
+	set( SPRACHE_COMPILER_LLVM_TARGET "" )
+	set( LLVM_BUILD_TOOLS OFF CACHE BOOL "build llvm tools" )
+endif()
+
 set( LLVM_TARGETS_TO_BUILD ${SPRACHE_COMPILER_LLVM_TARGET} CACHE STRING "llvm targets to build" )
 set( LLVM_ENABLE_RTTI ON CACHE BOOL "rtti for llvm" )
 
