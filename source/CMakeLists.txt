@@ -187,7 +187,7 @@ if( BUILD_PY_TESTS )
 	# Run result test.
 	add_custom_target(
 		PyTestsRun ALL
-		COMMAND ${CMAKE_COMMAND} -E env PYTHONPATH=${CMAKE_CURRENT_BINARY_DIR} ${PYTHON_EXECUTABLE} tests/py_tests/py_tests.py
+		COMMAND ${CMAKE_COMMAND} -E env PYTHONPATH=${CMAKE_CURRENT_BINARY_DIR} python3 tests/py_tests/py_tests.py
 		DEPENDS PyTestsLib
 		WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
 		SOURCES ${PY_TESTS_PY_SOURCES} )
