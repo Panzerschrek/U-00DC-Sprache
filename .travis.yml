@@ -1,0 +1,4 @@
+dist: xenial
+language: cpp
+compiler: gcc
+script: ./travis_build.sh
