@@ -26,4 +26,6 @@ cmake ../source/ -DCMAKE_BUILD_TYPE=Release -DBOOST_ROOT=../boost_1_66_0 -DLLVM_
 make -j 2  &&\
 \
 # Run tests
-./Tests
+./Tests &&\
+cd .. &&\
+python3 source/annotated_tests_run.py --compiler-executable build-travis/Compiler --entry-point-source source/data/entry.cpp --use-position-independent-code --input-dir source/ustlib_test
