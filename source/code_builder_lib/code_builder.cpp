@@ -130,16 +130,16 @@ CodeBuilder::CodeBuilder(
 	fundamental_llvm_types_.char16= llvm::Type::getInt16Ty( llvm_context_ );
 	fundamental_llvm_types_.char32= llvm::Type::getInt32Ty( llvm_context_ );
 
-	fundamental_llvm_types_.invalid_type_= llvm::Type::getInt8Ty( llvm_context_ );
+	fundamental_llvm_types_.invalid_type= llvm::Type::getInt8Ty( llvm_context_ );
 	fundamental_llvm_types_.void_= llvm::Type::getInt8Ty( llvm_context_ );
-	fundamental_llvm_types_.void_for_ret_= llvm::Type::getVoidTy( llvm_context_ );
+	fundamental_llvm_types_.void_for_ret= llvm::Type::getVoidTy( llvm_context_ );
 	fundamental_llvm_types_.bool_= llvm::Type::getInt1Ty( llvm_context_ );
 
 	fundamental_llvm_types_.int_ptr= data_layout_.getIntPtrType(llvm_context_);
 
-	invalid_type_= FundamentalType( U_FundamentalType::InvalidType, fundamental_llvm_types_.invalid_type_ );
+	invalid_type_= FundamentalType( U_FundamentalType::InvalidType, fundamental_llvm_types_.invalid_type );
 	void_type_= FundamentalType( U_FundamentalType::Void, fundamental_llvm_types_.void_ );
-	void_type_for_ret_= FundamentalType( U_FundamentalType::Void, fundamental_llvm_types_.void_for_ret_ );
+	void_type_for_ret_= FundamentalType( U_FundamentalType::Void, fundamental_llvm_types_.void_for_ret );
 	bool_type_= FundamentalType( U_FundamentalType::Bool, fundamental_llvm_types_.bool_ );
 	size_type_=
 		fundamental_llvm_types_.int_ptr->getIntegerBitWidth() == 32u
@@ -163,7 +163,7 @@ ICodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_g
 	// Prepare halt func.
 	halt_func_=
 		llvm::Function::Create(
-			llvm::FunctionType::get( fundamental_llvm_types_.void_for_ret_, false ),
+			llvm::FunctionType::get( fundamental_llvm_types_.void_for_ret, false ),
 			llvm::Function::ExternalLinkage,
 			"__U_halt",
 			module_.get() );
@@ -175,7 +175,7 @@ ICodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_g
 	// Create for this function context.
 	llvm::Function* const global_function=
 		llvm::Function::Create(
-			llvm::FunctionType::get( fundamental_llvm_types_.void_for_ret_, false ),
+			llvm::FunctionType::get( fundamental_llvm_types_.void_for_ret, false ),
 			llvm::Function::LinkageTypes::ExternalLinkage,
 			"",
 			module_.get() );
@@ -672,7 +672,7 @@ llvm::FunctionType* CodeBuilder::GetLLVMFunctionType( const Function& function_t
 
 	llvm::Type* llvm_function_return_type= nullptr;
 	if( first_arg_is_sret )
-		llvm_function_return_type= fundamental_llvm_types_.void_for_ret_;
+		llvm_function_return_type= fundamental_llvm_types_.void_for_ret;
 	else
 	{
 		llvm_function_return_type= function_type.return_type.GetLLVMType();
@@ -3522,7 +3522,7 @@ llvm::Type* CodeBuilder::GetFundamentalLLVMType( const U_FundamentalType fundman
 	switch( fundmantal_type )
 	{
 	case U_FundamentalType::InvalidType:
-		return fundamental_llvm_types_.invalid_type_;
+		return fundamental_llvm_types_.invalid_type;
 	case U_FundamentalType::LastType:
 		break;
 

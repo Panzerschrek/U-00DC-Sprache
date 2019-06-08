@@ -81,10 +81,10 @@ private:
 
 		FunctionContext(const FunctionContext&)= delete;
 
-		boost::optional<Type> return_type; // boost::none if type not known yet and must be deduced.
+		const boost::optional<Type> return_type; // boost::none if type not known yet and must be deduced.
 		boost::optional<Type> deduced_return_type; // for functions with "auto" return type.
-		bool return_value_is_mutable;
-		bool return_value_is_reference;
+		const bool return_value_is_mutable;
+		const bool return_value_is_reference;
 
 		// For reference-returned functions - references of returning reference.
 		// For value-returned functions - references inside value.
@@ -117,7 +117,7 @@ private:
 		std::vector<StackVariablesStorage*> stack_variables_stack;
 		ReferencesGraph variables_state;
 
-		OverloadingResolutionCache overloading_resolutin_cache;
+		OverloadingResolutionCache overloading_resolution_cache;
 
 		llvm::BasicBlock* destructor_end_block= nullptr; // exists, if function is destructor
 	};
@@ -855,8 +855,8 @@ private:
 		llvm::IntegerType* char32;
 
 		llvm::IntegerType* void_;
-		llvm::Type* void_for_ret_;
-		llvm::Type* invalid_type_;
+		llvm::Type* void_for_ret;
+		llvm::Type* invalid_type;
 		llvm::IntegerType* bool_;
 
 		llvm::IntegerType* int_ptr; // Type with width of pointer.

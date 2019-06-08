@@ -65,8 +65,8 @@ boost::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 {
 	const FunctionVariable* overloaded_operator= nullptr;
 
-	const auto cache_it= function_context.overloading_resolutin_cache.find( &op_syntax_element );
-	if( cache_it != function_context.overloading_resolutin_cache.end() )
+	const auto cache_it= function_context.overloading_resolution_cache.find( &op_syntax_element );
+	if( cache_it != function_context.overloading_resolution_cache.end() )
 		overloaded_operator= cache_it->second.get_ptr();
 	else
 	{
@@ -131,9 +131,9 @@ boost::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 		overloaded_operator= GetOverloadedOperator( args, op, file_pos );
 
 		if( overloaded_operator == nullptr )
-			function_context.overloading_resolutin_cache[ &op_syntax_element ]= boost::none;
+			function_context.overloading_resolution_cache[ &op_syntax_element ]= boost::none;
 		else
-			function_context.overloading_resolutin_cache[ &op_syntax_element ]= *overloaded_operator;
+			function_context.overloading_resolution_cache[ &op_syntax_element ]= *overloaded_operator;
 	}
 
 	if( overloaded_operator != nullptr )
@@ -1681,10 +1681,10 @@ Value CodeBuilder::BuildIndexationOperator(
 						{ variable }, { &indexation_operator.index_ }, false,
 						names, function_context );
 
-			function_context.overloading_resolutin_cache[ &indexation_operator ]= *overloaded_operator;
+			function_context.overloading_resolution_cache[ &indexation_operator ]= *overloaded_operator;
 		}
 		else
-			function_context.overloading_resolutin_cache[ &indexation_operator ]= boost::none;
+			function_context.overloading_resolution_cache[ &indexation_operator ]= boost::none;
 	}
 
 	const Array* const array_type= variable.type.GetArrayType();
@@ -2017,8 +2017,8 @@ Value CodeBuilder::BuildCallOperator(
 	const FunctionVariable* function_ptr= nullptr;
 
 	// Make preevaluation af arguments for selection of overloaded function. Try also get function from cache.
-	const auto cache_it= function_context.overloading_resolutin_cache.find( &call_operator );
-	if( cache_it != function_context.overloading_resolutin_cache.end() &&
+	const auto cache_it= function_context.overloading_resolution_cache.find( &call_operator );
+	if( cache_it != function_context.overloading_resolution_cache.end() &&
 		!call_operator.arguments_.empty() ) // empty check - hack for dummy call operator from empty initializer.
 		function_ptr= cache_it->second.get_ptr();
 	else
@@ -2055,9 +2055,9 @@ Value CodeBuilder::BuildCallOperator(
 			GetOverloadedFunction( *functions_set, actual_args, this_ != nullptr, call_operator.file_pos_ );
 
 		if( function_ptr == nullptr )
-			function_context.overloading_resolutin_cache[ &call_operator ]= boost::none;
+			function_context.overloading_resolution_cache[ &call_operator ]= boost::none;
 		else
-			function_context.overloading_resolutin_cache[ &call_operator ]= *function_ptr;
+			function_context.overloading_resolution_cache[ &call_operator ]= *function_ptr;
 	}
 
 	// SPRACHE_TODO - try get function with "this" parameter in signature and without it.

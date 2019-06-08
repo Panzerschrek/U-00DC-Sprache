@@ -141,7 +141,7 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, Variable& typeinfo_variab
 	if( type.GetFunctionType() == nullptr )
 	{
 		llvm::Type* llvm_type= type.GetLLVMType();
-		if( llvm_type == fundamental_llvm_types_.void_for_ret_ )
+		if( llvm_type == fundamental_llvm_types_.void_for_ret )
 			llvm_type= fundamental_llvm_types_.void_;
 
 		add_size_field( "size_of"_SpC , data_layout.getTypeAllocSize   ( llvm_type ) );

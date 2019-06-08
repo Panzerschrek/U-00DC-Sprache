@@ -89,7 +89,7 @@ void CodeBuilder::TryGenerateDefaultConstructor( Class& the_class, const Type& c
 
 	constructor_type.llvm_function_type=
 		llvm::FunctionType::get(
-			fundamental_llvm_types_.void_for_ret_,
+			fundamental_llvm_types_.void_for_ret,
 			llvm::ArrayRef<llvm::Type*>( args_llvm_types.data(), args_llvm_types.size() ),
 			false );
 
@@ -281,7 +281,7 @@ void CodeBuilder::TryGenerateCopyConstructor( Class& the_class, const Type& clas
 
 	constructor_type.llvm_function_type=
 		llvm::FunctionType::get(
-			fundamental_llvm_types_.void_for_ret_,
+			fundamental_llvm_types_.void_for_ret,
 			llvm::ArrayRef<llvm::Type*>( args_llvm_types.data(), args_llvm_types.size() ),
 			false );
 
@@ -395,7 +395,7 @@ FunctionVariable CodeBuilder::GenerateDestructorPrototype( Class& the_class, con
 	llvm::Type* const this_llvm_type= llvm::PointerType::get( class_type.GetLLVMType(), 0u );
 	destructor_type.llvm_function_type=
 		llvm::FunctionType::get(
-			fundamental_llvm_types_.void_for_ret_,
+			fundamental_llvm_types_.void_for_ret,
 			llvm::ArrayRef<llvm::Type*>( &this_llvm_type, 1u ),
 			false );
 
@@ -571,7 +571,7 @@ void CodeBuilder::TryGenerateCopyAssignmentOperator( Class& the_class, const Typ
 
 	op_type.llvm_function_type=
 		llvm::FunctionType::get(
-			fundamental_llvm_types_.void_for_ret_,
+			fundamental_llvm_types_.void_for_ret,
 			llvm::ArrayRef<llvm::Type*>( args_llvm_types.data(), args_llvm_types.size() ),
 			false );
 
