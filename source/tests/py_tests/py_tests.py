@@ -79,6 +79,7 @@ def main():
 
 	print( str( len(tests_list) - tests_failed ) + " tests passed" )
 	print( str(tests_failed) + " tests failed" )
+	return tests_failed
 
 
 if __name__ == "__main__":
