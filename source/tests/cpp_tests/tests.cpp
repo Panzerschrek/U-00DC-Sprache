@@ -162,9 +162,7 @@ static FuncsContainer& GetFuncsContainer()
 TestId AddTestFuncPrivate( TestFunc* func, const char* const file_name, const char* const func_name )
 {
 	GetFuncsContainer().emplace_back( FuncData{ std::string(file_name) + ":" + func_name, func } );
-
-	static TestId counter= 0u;
-	return counter++;
+	return TestId();
 }
 
 bool HaveError( const std::vector<CodeBuilderError>& errors, const CodeBuilderErrorCode code, const unsigned int line )

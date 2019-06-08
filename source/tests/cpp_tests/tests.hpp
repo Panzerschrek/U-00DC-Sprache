@@ -13,7 +13,12 @@
 namespace U
 {
 
-typedef unsigned int TestId;
+struct TestId // Use struct with non-trivial constructor adn destructor for prevent "unused-variable" warning.
+{
+	TestId(){}
+	~TestId() {}
+};
+
 typedef void (TestFunc)();
 class TestException  final : public std::runtime_error
 {
