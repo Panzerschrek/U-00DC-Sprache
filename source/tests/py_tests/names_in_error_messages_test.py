@@ -188,3 +188,36 @@ def TypeNameInErrorMessage_ClassTemplate_Test5():
 	assert( errors_list[0].file_pos.line == 5 )
 	assert( errors_list[0].text.find( "i32" ) != -1 )
 	assert( errors_list[0].text.find( "Box<//>" ) != -1 )
+
+
+def TypeNameInErrorMessage_ClassTemplate_Test6():
+	c_program_text= """
+		template</type T/> struct F{}
+		template</type T/> struct Box</ F</T/> />{}
+		fn Foo()
+		{
+			var i32 x= Box</ F</u16/> />();
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "TypesMismatch" )
+	assert( errors_list[0].file_pos.line == 6 )
+	assert( errors_list[0].text.find( "i32" ) != -1 )
+	assert( errors_list[0].text.find( "Box</F</u16/>/>" ) != -1 )
+
+
+def TypeNameInErrorMessage_ClassTemplate_Test7():
+	c_program_text= """
+		template<//> struct Box</ i32 />{}
+		fn Foo()
+		{
+			var i32 x= Box</i32/>();
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "TypesMismatch" )
+	assert( errors_list[0].file_pos.line == 5 )
+	assert( errors_list[0].text.find( "i32" ) != -1 )
+	assert( errors_list[0].text.find( "Box</i32/>" ) != -1 )

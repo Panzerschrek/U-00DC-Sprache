@@ -469,7 +469,7 @@ ProgramString Type::ToString() const
 				const ProgramString& class_name= class_->class_->base_template->class_template->syntax_element->name_;
 				result+= class_name;
 				result+= "</"_SpC;
-				for( const TemplateParameter& param : class_->class_->base_template->template_parameters )
+				for( const TemplateParameter& param : class_->class_->base_template->signature_parameters )
 				{
 					if( const Type* const param_as_type = boost::get<Type>( &param ) )
 						result+= param_as_type->ToString();
@@ -505,7 +505,7 @@ ProgramString Type::ToString() const
 					}
 					else U_ASSERT(false);
 
-					if( &param != &class_->class_->base_template->template_parameters.back() )
+					if( &param != &class_->class_->base_template->signature_parameters.back() )
 						result+= ", "_SpC;
 				}
 				result+= "/>"_SpC;
