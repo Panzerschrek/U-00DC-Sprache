@@ -101,9 +101,9 @@ bool CodeBuilder::ReferenceIsConvertible( const Type& from, const Type& to, cons
 	if( from != void_type_ && to != void_type_ )
 	{
 		if( !EnsureTypeCompleteness( from, TypeCompleteness::Complete ) )
-			REPORT_ERROR( UsingIncompleteType, errors_, file_pos, from.ToString() );
+			REPORT_ERROR( UsingIncompleteType, errors_, file_pos, from );
 		if( !EnsureTypeCompleteness(   to, TypeCompleteness::Complete ) )
-			REPORT_ERROR( UsingIncompleteType, errors_, file_pos,   to.ToString() );
+			REPORT_ERROR( UsingIncompleteType, errors_, file_pos,   to );
 	}
 
 	return from.ReferenceIsConvertibleTo(to);
@@ -316,25 +316,25 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type, const T
 			const ClassProxyPtr parent_class_proxy= type_name->GetClassTypeProxy();
 			if( parent_class_proxy == nullptr )
 			{
-				REPORT_ERROR( CanNotDeriveFromThisType, errors_, class_declaration.file_pos_, type_name->ToString() );
+				REPORT_ERROR( CanNotDeriveFromThisType, errors_, class_declaration.file_pos_, type_name );
 				continue;
 			}
 			if( !EnsureTypeCompleteness( *type_name, TypeCompleteness::Complete ) )
 			{
-				REPORT_ERROR( UsingIncompleteType, errors_, class_declaration.file_pos_, type_name->ToString() );
+				REPORT_ERROR( UsingIncompleteType, errors_, class_declaration.file_pos_, type_name );
 				continue;
 			}
 
 			if( std::find( the_class.parents.begin(), the_class.parents.end(), parent_class_proxy ) != the_class.parents.end() )
 			{
-				REPORT_ERROR( DuplicatedParentClass, errors_, class_declaration.file_pos_, type_name->ToString() );
+				REPORT_ERROR( DuplicatedParentClass, errors_, class_declaration.file_pos_, type_name );
 				continue;
 			}
 
 			const auto parent_kind= parent_class_proxy->class_->kind;
 			if( !( parent_kind == Class::Kind::Abstract || parent_kind == Class::Kind::Interface || parent_kind == Class::Kind::PolymorphNonFinal ) )
 			{
-				REPORT_ERROR( CanNotDeriveFromThisType, errors_, class_declaration.file_pos_, type_name->ToString() );
+				REPORT_ERROR( CanNotDeriveFromThisType, errors_, class_declaration.file_pos_, type_name );
 				continue;
 			}
 
@@ -342,7 +342,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type, const T
 			{
 				if( the_class.base_class != nullptr )
 				{
-					REPORT_ERROR( DuplicatedBaseClass, errors_, class_declaration.file_pos_, type_name->ToString() );
+					REPORT_ERROR( DuplicatedBaseClass, errors_, class_declaration.file_pos_, type_name );
 					continue;
 				}
 				the_class.base_class= parent_class_proxy;
@@ -385,7 +385,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type, const T
 					// Full type completeness required for value-fields and constexpr reference-fields.
 					if( !EnsureTypeCompleteness( class_field->type, TypeCompleteness::Complete ) )
 					{
-						REPORT_ERROR( UsingIncompleteType, errors_, in_field.file_pos_, class_field->type.ToString() );
+						REPORT_ERROR( UsingIncompleteType, errors_, in_field.file_pos_, class_field->type );
 						return;
 					}
 				}
@@ -394,7 +394,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type, const T
 				{
 					if( class_field->type != void_type_ && !EnsureTypeCompleteness( class_field->type, TypeCompleteness::ReferenceTagsComplete ) )
 					{
-						REPORT_ERROR( UsingIncompleteType, errors_, in_field.file_pos_, class_field->type.ToString() );
+						REPORT_ERROR( UsingIncompleteType, errors_, in_field.file_pos_, class_field->type );
 						return;
 					}
 					if( class_field->type.ReferencesTagsCount() > 0u )
@@ -765,7 +765,7 @@ void CodeBuilder::GlobalThingBuildEnum( const EnumPtr enum_, TypeCompleteness co
 				if( fundamental_type == nullptr || !IsInteger( fundamental_type->fundamental_type ) )
 				{
 					// SPRACHE_TODO - maybe allow inheritance of enums?
-					REPORT_ERROR( TypesMismatch, errors_,  enum_decl.file_pos_, "any integer type"_SpC, type->ToString() );
+					REPORT_ERROR( TypesMismatch, errors_,  enum_decl.file_pos_, "any integer type"_SpC, type );
 				}
 				else
 					enum_->underlaying_type= *fundamental_type;
@@ -861,7 +861,7 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 		const Type type= PrepareType( variables_declaration->type, names_scope, *global_function_context_ );
 		if( !EnsureTypeCompleteness( type, TypeCompleteness::Complete ) ) // Global variables are all constexpr. Full completeness required for constexpr.
 		{
-			REPORT_ERROR( UsingIncompleteType, errors_, variable_declaration.file_pos, type.ToString() );
+			REPORT_ERROR( UsingIncompleteType, errors_, variable_declaration.file_pos, type );
 			FAIL_RETURN;
 		}
 
@@ -927,7 +927,7 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 
 			if( !ReferenceIsConvertible( expression_result.type, variable.type, variable_declaration.file_pos ) )
 			{
-				REPORT_ERROR( TypesMismatch, errors_,  variable_declaration.file_pos, variable.type.ToString(), expression_result.type.ToString() );
+				REPORT_ERROR( TypesMismatch, errors_,  variable_declaration.file_pos, variable.type, expression_result.type );
 				FAIL_RETURN;
 			}
 			if( expression_result.value_type == ValueType::Value )
@@ -982,7 +982,7 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 				initializer_experrsion.type.GetFunctionPointerType() != nullptr;
 			if( !type_is_ok || initializer_experrsion.type == invalid_type_ )
 			{
-				REPORT_ERROR( InvalidTypeForAutoVariable, errors_, auto_variable_declaration->file_pos_, initializer_experrsion.type.ToString() );
+				REPORT_ERROR( InvalidTypeForAutoVariable, errors_, auto_variable_declaration->file_pos_, initializer_experrsion.type );
 				FAIL_RETURN;
 			}
 		}
@@ -994,7 +994,7 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 
 		if( !EnsureTypeCompleteness( variable.type, TypeCompleteness::Complete ) ) // Global variables are all constexpr. Full completeness required for constexpr.
 		{
-			REPORT_ERROR( UsingIncompleteType, errors_, auto_variable_declaration->file_pos_, variable.type.ToString() );
+			REPORT_ERROR( UsingIncompleteType, errors_, auto_variable_declaration->file_pos_, variable.type );
 			FAIL_RETURN;
 		}
 		if( !variable.type.CanBeConstexpr() )

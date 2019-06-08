@@ -696,7 +696,7 @@ void CodeBuilder::TryCallCopyConstructor(
 	if( !class_.is_copy_constructible )
 	{
 		// TODO - print more reliable message.
-		REPORT_ERROR( OperationNotSupportedForThisType, errors_, file_pos, class_type.ToString() );
+		REPORT_ERROR( OperationNotSupportedForThisType, errors_, file_pos, class_type );
 		return;
 	}
 
@@ -945,7 +945,7 @@ size_t CodeBuilder::PrepareFunction(
 				REPORT_ERROR( ExpectedConstantExpression, errors_, Synt::GetExpressionFilePos( func.condition_ ) );
 		}
 		else
-			REPORT_ERROR( TypesMismatch, errors_, Synt::GetExpressionFilePos( func.condition_ ), bool_type_.ToString(), expression.type.ToString() );
+			REPORT_ERROR( TypesMismatch, errors_, Synt::GetExpressionFilePos( func.condition_ ), bool_type_, expression.type );
 	}
 
 	FunctionVariable func_variable;
@@ -1291,7 +1291,7 @@ void CodeBuilder::CheckOverloadedOperator(
 		if( func_type.args.size() != 2u )
 			REPORT_ERROR( InvalidArgumentCountForOperator, errors_, file_pos );
 		if( func_type.return_type != void_type_ )
-			REPORT_ERROR( InvalidReturnTypeForOperator, errors_, file_pos, void_type_.ToString() );
+			REPORT_ERROR( InvalidReturnTypeForOperator, errors_, file_pos, void_type_ );
 		break;
 
 	case OverloadedOperator::LogicalNot:
@@ -1304,7 +1304,7 @@ void CodeBuilder::CheckOverloadedOperator(
 		if( func_type.args.size() != 2u )
 			REPORT_ERROR( InvalidArgumentCountForOperator, errors_, file_pos );
 		if( func_type.return_type != void_type_ )
-			REPORT_ERROR( InvalidReturnTypeForOperator, errors_, file_pos, void_type_.ToString() );
+			REPORT_ERROR( InvalidReturnTypeForOperator, errors_, file_pos, void_type_ );
 		break;
 
 	case OverloadedOperator::Increment:
@@ -1312,7 +1312,7 @@ void CodeBuilder::CheckOverloadedOperator(
 		if( func_type.args.size() != 1u )
 			REPORT_ERROR( InvalidArgumentCountForOperator, errors_, file_pos );
 		if( func_type.return_type != void_type_ )
-			REPORT_ERROR( InvalidReturnTypeForOperator, errors_, file_pos, void_type_.ToString() );
+			REPORT_ERROR( InvalidReturnTypeForOperator, errors_, file_pos, void_type_ );
 		break;
 
 	case OverloadedOperator::Indexing:
@@ -1413,11 +1413,11 @@ Type CodeBuilder::BuildFuncCode(
 	{
 		if( !arg.is_reference && arg.type != void_type_ &&
 			!EnsureTypeCompleteness( arg.type, TypeCompleteness::Complete ) )
-			REPORT_ERROR( UsingIncompleteType, errors_, args.front().file_pos_, arg.type.ToString() );
+			REPORT_ERROR( UsingIncompleteType, errors_, args.front().file_pos_, arg.type );
 	}
 	if( !function_type->return_value_is_reference && function_type->return_type != void_type_ &&
 		!EnsureTypeCompleteness( function_type->return_type, TypeCompleteness::Complete ) )
-		REPORT_ERROR( UsingIncompleteType, errors_, func_variable.body_file_pos, function_type->return_type.ToString() );
+		REPORT_ERROR( UsingIncompleteType, errors_, func_variable.body_file_pos, function_type->return_type );
 
 	NamesScope function_names( ""_SpC, &parent_names_scope );
 	FunctionContext function_context(
@@ -1666,7 +1666,7 @@ Type CodeBuilder::BuildFuncCode(
 		if( !auto_contexpr )
 		{
 			if( function_type->return_type != void_type_for_ret_ && !EnsureTypeCompleteness( function_type->return_type, TypeCompleteness::Complete ) )
-				REPORT_ERROR( UsingIncompleteType, errors_, func_variable.body_file_pos, function_type->return_type.ToString() ); // Completeness required for constexpr possibility check.
+				REPORT_ERROR( UsingIncompleteType, errors_, func_variable.body_file_pos, function_type->return_type ); // Completeness required for constexpr possibility check.
 		}
 
 		if( function_type->unsafe ||
@@ -1682,7 +1682,7 @@ Type CodeBuilder::BuildFuncCode(
 			if( !auto_contexpr )
 			{
 				if( arg.type != void_type_ && !EnsureTypeCompleteness( arg.type, TypeCompleteness::Complete ) )
-					REPORT_ERROR( UsingIncompleteType, errors_, func_variable.body_file_pos, arg.type.ToString() ); // Completeness required for constexpr possibility check.
+					REPORT_ERROR( UsingIncompleteType, errors_, func_variable.body_file_pos, arg.type ); // Completeness required for constexpr possibility check.
 			}
 
 			if( !arg.type.CanBeConstexpr() ) // Incomplete types are not constexpr.
@@ -2190,7 +2190,7 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 			// Full completeness required for value-variables and any constexpr variable.
 			if( !EnsureTypeCompleteness( type, TypeCompleteness::Complete ) )
 			{
-				REPORT_ERROR( UsingIncompleteType, errors_, variables_declaration.file_pos_, type.ToString() );
+				REPORT_ERROR( UsingIncompleteType, errors_, variables_declaration.file_pos_, type );
 				continue;
 			}
 		}
@@ -2278,7 +2278,7 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 			const Variable expression_result= BuildExpressionCodeEnsureVariable( *initializer_expression, block_names, function_context );
 			if( !ReferenceIsConvertible( expression_result.type, variable.type, variables_declaration.file_pos_ ) )
 			{
-				REPORT_ERROR( TypesMismatch, errors_,  variables_declaration.file_pos_, variable.type.ToString(), expression_result.type.ToString() );
+				REPORT_ERROR( TypesMismatch, errors_,  variables_declaration.file_pos_, variable.type, expression_result.type );
 				continue;
 			}
 
@@ -2367,7 +2367,7 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 			initializer_experrsion.type.GetFunctionPointerType() != nullptr;
 		if( !type_is_ok || initializer_experrsion.type == invalid_type_ )
 		{
-			REPORT_ERROR( InvalidTypeForAutoVariable, errors_, auto_variable_declaration.file_pos_, initializer_experrsion.type.ToString() );
+			REPORT_ERROR( InvalidTypeForAutoVariable, errors_, auto_variable_declaration.file_pos_, initializer_experrsion.type );
 			return;
 		}
 	}
@@ -2392,7 +2392,7 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 		// Full completeness required for value-variables and any constexpr variable.
 		if( !EnsureTypeCompleteness( variable.type, TypeCompleteness::Complete ) )
 		{
-			REPORT_ERROR( UsingIncompleteType, errors_, auto_variable_declaration.file_pos_, variable.type.ToString() );
+			REPORT_ERROR( UsingIncompleteType, errors_, auto_variable_declaration.file_pos_, variable.type );
 			return;
 		}
 	}
@@ -2614,7 +2614,7 @@ void CodeBuilder::BuildAssignmentOperatorCode(
 		}
 		if( l_var.type != r_var.type )
 		{
-			REPORT_ERROR( TypesMismatch, errors_,  assignment_operator.file_pos_, l_var.type.ToString(), r_var.type.ToString() );
+			REPORT_ERROR( TypesMismatch, errors_,  assignment_operator.file_pos_, l_var.type, r_var.type );
 			return;
 		}
 
@@ -2634,7 +2634,7 @@ void CodeBuilder::BuildAssignmentOperatorCode(
 		}
 		else
 		{
-			REPORT_ERROR( OperationNotSupportedForThisType, errors_, assignment_operator.file_pos_, l_var.type.ToString() );
+			REPORT_ERROR( OperationNotSupportedForThisType, errors_, assignment_operator.file_pos_, l_var.type );
 			return;
 		}
 	}
@@ -2715,7 +2715,7 @@ void CodeBuilder::BuildAdditiveAssignmentOperatorCode(
 
 			if( operation_result.type != l_var.type )
 			{
-				REPORT_ERROR( TypesMismatch, errors_,  additive_assignment_operator.file_pos_, l_var.type.ToString(), operation_result.type.ToString() );
+				REPORT_ERROR( TypesMismatch, errors_,  additive_assignment_operator.file_pos_, l_var.type, operation_result.type );
 				return;
 			}
 
@@ -2725,7 +2725,7 @@ void CodeBuilder::BuildAdditiveAssignmentOperatorCode(
 		}
 		else
 		{
-			REPORT_ERROR( OperationNotSupportedForThisType, errors_, additive_assignment_operator.file_pos_, l_var.type.ToString() );
+			REPORT_ERROR( OperationNotSupportedForThisType, errors_, additive_assignment_operator.file_pos_, l_var.type );
 			return;
 		}
 	}
@@ -2775,7 +2775,7 @@ void CodeBuilder::BuildDeltaOneOperatorCode(
 	{
 		if( !IsInteger( fundamental_type->fundamental_type ) )
 		{
-			REPORT_ERROR( OperationNotSupportedForThisType, errors_, file_pos, variable->type.ToString() );
+			REPORT_ERROR( OperationNotSupportedForThisType, errors_, file_pos, variable->type );
 			return;
 		}
 		if( variable->value_type != ValueType::Reference )
@@ -2803,7 +2803,7 @@ void CodeBuilder::BuildDeltaOneOperatorCode(
 	}
 	else
 	{
-		REPORT_ERROR( OperationNotSupportedForThisType, errors_, file_pos, variable->type.ToString() );
+		REPORT_ERROR( OperationNotSupportedForThisType, errors_, file_pos, variable->type );
 		return;
 	}
 
@@ -2828,13 +2828,13 @@ void CodeBuilder::BuildReturnOperatorCode(
 			if( function_context.deduced_return_type == boost::none )
 				function_context.deduced_return_type = void_type_for_ret_;
 			else if( *function_context.deduced_return_type != void_type_for_ret_ )
-				REPORT_ERROR( TypesMismatch, errors_,  return_operator.file_pos_, function_context.deduced_return_type->ToString(), void_type_for_ret_.ToString() );
+				REPORT_ERROR( TypesMismatch, errors_, return_operator.file_pos_, *function_context.deduced_return_type, void_type_for_ret_ );
 			return;
 		}
 
 		if( !( function_context.return_type == void_type_ && !function_context.return_value_is_reference ) )
 		{
-			REPORT_ERROR( TypesMismatch, errors_,  return_operator.file_pos_, void_type_.ToString(), function_context.return_type->ToString() );
+			REPORT_ERROR( TypesMismatch, errors_,  return_operator.file_pos_, void_type_, *function_context.return_type );
 			return;
 		}
 
@@ -2868,7 +2868,7 @@ void CodeBuilder::BuildReturnOperatorCode(
 		if( function_context.deduced_return_type == boost::none )
 			function_context.deduced_return_type = expression_result.type;
 		else if( *function_context.deduced_return_type != expression_result.type )
-			REPORT_ERROR( TypesMismatch, errors_,  return_operator.file_pos_, function_context.deduced_return_type->ToString(), expression_result.type.ToString() );
+			REPORT_ERROR( TypesMismatch, errors_,  return_operator.file_pos_, *function_context.deduced_return_type, expression_result.type );
 		return;
 	}
 
@@ -2876,7 +2876,7 @@ void CodeBuilder::BuildReturnOperatorCode(
 	{
 		if( !ReferenceIsConvertible( expression_result.type, *function_context.return_type, return_operator.file_pos_ ) )
 		{
-			REPORT_ERROR( TypesMismatch, errors_,  return_operator.file_pos_, function_context.return_type->ToString(), expression_result.type.ToString() );
+			REPORT_ERROR( TypesMismatch, errors_,  return_operator.file_pos_, *function_context.return_type, expression_result.type );
 			return;
 		}
 
@@ -2922,7 +2922,7 @@ void CodeBuilder::BuildReturnOperatorCode(
 	{
 		if( expression_result.type != function_context.return_type )
 		{
-			REPORT_ERROR( TypesMismatch, errors_,  return_operator.file_pos_, function_context.return_type->ToString(), expression_result.type.ToString() );
+			REPORT_ERROR( TypesMismatch, errors_,  return_operator.file_pos_, *function_context.return_type, expression_result.type );
 			return;
 		}
 
@@ -3010,8 +3010,8 @@ void CodeBuilder::BuildWhileOperatorCode(
 		REPORT_ERROR( TypesMismatch,
 				errors_,
 				condition_file_pos,
-				bool_type_.ToString(),
-				condition_expression.type.ToString() );
+				bool_type_,
+				condition_expression.type );
 		return;
 	}
 
@@ -3131,8 +3131,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildIfOperatorCode(
 					REPORT_ERROR( TypesMismatch,
 						errors_,
 						Synt::GetExpressionFilePos( branch.condition ),
-						bool_type_.ToString(),
-						condition_expression.type.ToString() );
+						bool_type_,
+						condition_expression.type );
 
 					// Create instruction even in case of error, because we needs to store basic blocs somewhere.
 					function_context.llvm_ir_builder.CreateCondBr( llvm::UndefValue::get( fundamental_llvm_types_.bool_ ), body_block, next_condition_block );
@@ -3250,7 +3250,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildStaticIfOperatorCode(
 			const Variable condition_expression= BuildExpressionCodeEnsureVariable( condition, names, function_context );
 			if( condition_expression.type != bool_type_ )
 			{
-				REPORT_ERROR( TypesMismatch, errors_,  condition_file_pos, bool_type_.ToString(), condition_expression.type.ToString() );
+				REPORT_ERROR( TypesMismatch, errors_,  condition_file_pos, bool_type_, condition_expression.type );
 				continue;
 			}
 			if( condition_expression.constexpr_value == nullptr )
@@ -3297,8 +3297,8 @@ void CodeBuilder::BuildHaltIf(const Synt::HaltIf& halt_if, NamesScope& names, Fu
 		REPORT_ERROR( TypesMismatch,
 			errors_,
 			condition_expression_file_pos,
-			bool_type_.ToString(),
-			condition_expression.type.ToString() );
+			bool_type_,
+			condition_expression.type );
 		return;
 	}
 
@@ -3383,7 +3383,7 @@ Value* CodeBuilder::ResolveValue(
 				{
 					if( class_->syntax_element != nullptr && class_->syntax_element->is_forward_declaration_ )
 					{
-						REPORT_ERROR( UsingIncompleteType, errors_, file_pos, type->ToString() );
+						REPORT_ERROR( UsingIncompleteType, errors_, file_pos, type );
 						return nullptr;
 					}
 					if( resolve_mode != ResolveMode::ForDeclaration )

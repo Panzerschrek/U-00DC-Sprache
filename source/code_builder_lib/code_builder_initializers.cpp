@@ -334,7 +334,7 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 
 		if( src_type == nullptr )
 		{
-			REPORT_ERROR( TypesMismatch, errors_,  call_operator.file_pos_, variable.type.ToString(), src_var.type.ToString() );
+			REPORT_ERROR( TypesMismatch, errors_,  call_operator.file_pos_, variable.type, src_var.type );
 			return nullptr;
 		}
 
@@ -502,7 +502,7 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 				{
 					// TODO - error, bool have no constructors from other types
 				}
-				REPORT_ERROR( TypesMismatch, errors_,  call_operator.file_pos_, variable.type.ToString(), src_var.type.ToString() );
+				REPORT_ERROR( TypesMismatch, errors_,  call_operator.file_pos_, variable.type, src_var.type );
 				return nullptr;
 			}
 		} // If needs conversion
@@ -536,7 +536,7 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 		const Variable expression_result= BuildExpressionCodeEnsureVariable( call_operator.arguments_.front(), block_names, function_context );
 		if( expression_result.type != variable.type )
 		{
-			REPORT_ERROR( TypesMismatch, errors_,  call_operator.file_pos_, variable.type.ToString(), expression_result.type.ToString() );
+			REPORT_ERROR( TypesMismatch, errors_,  call_operator.file_pos_, variable.type, expression_result.type );
 			return nullptr;
 		}
 
@@ -633,7 +633,7 @@ llvm::Constant* CodeBuilder::ApplyExpressionInitializer(
 		const Variable expression_result= BuildExpressionCodeEnsureVariable( initializer.expression, block_names, function_context );
 		if( expression_result.type != variable.type )
 		{
-			REPORT_ERROR( TypesMismatch, errors_,  initializer.file_pos_, variable.type.ToString(), expression_result.type.ToString() );
+			REPORT_ERROR( TypesMismatch, errors_,  initializer.file_pos_, variable.type, expression_result.type );
 			return nullptr;
 		}
 
@@ -663,7 +663,7 @@ llvm::Constant* CodeBuilder::ApplyExpressionInitializer(
 		}
 		else
 		{
-			REPORT_ERROR( TypesMismatch, errors_,  initializer.file_pos_, variable.type.ToString(), expression_result.type.ToString() );
+			REPORT_ERROR( TypesMismatch, errors_,  initializer.file_pos_, variable.type, expression_result.type );
 			return nullptr;
 		}
 
@@ -914,7 +914,7 @@ llvm::Constant* CodeBuilder::InitializeReferenceField(
 	const FilePos initializer_expression_file_pos= Synt::GetExpressionFilePos( *initializer_expression );
 	if( !ReferenceIsConvertible( initializer_variable.type, field.type, initializer_expression_file_pos ) )
 	{
-		REPORT_ERROR( TypesMismatch, errors_,  initializer_expression_file_pos, field.type.ToString(), initializer_variable.type.ToString() );
+		REPORT_ERROR( TypesMismatch, errors_,  initializer_expression_file_pos, field.type, initializer_variable.type );
 		return nullptr;
 	}
 	if( initializer_variable.value_type == ValueType::Value )
@@ -1002,7 +1002,7 @@ llvm::Constant* CodeBuilder::InitializeFunctionPointer(
 		if( intitializer_type == nullptr ||
 			!intitializer_type->function.PointerCanBeConvertedTo( function_pointer_type.function ) )
 		{
-			REPORT_ERROR( TypesMismatch, errors_,  initializer_expression_file_pos, variable.type.ToString(), initializer_variable->type.ToString() );
+			REPORT_ERROR( TypesMismatch, errors_,  initializer_expression_file_pos, variable.type, initializer_variable->type );
 			return nullptr;
 		}
 		U_ASSERT( initializer_variable->type.GetFunctionPointerType() != nullptr );

@@ -570,7 +570,7 @@ const FunctionVariable* CodeBuilder::GetOverloadedOperator(
 		{
 			if( !EnsureTypeCompleteness( arg.type, TypeCompleteness::Complete ) )
 			{
-				REPORT_ERROR( UsingIncompleteType, errors_, file_pos, arg.type.ToString() );
+				REPORT_ERROR( UsingIncompleteType, errors_, file_pos, arg.type );
 				return nullptr;
 			}
 
@@ -597,7 +597,7 @@ const FunctionVariable* CodeBuilder::GetConversionConstructor(
 {
 	if( !EnsureTypeCompleteness( dst_type, TypeCompleteness::Complete ) )
 	{
-		REPORT_ERROR( UsingIncompleteType, errors_, file_pos, dst_type.ToString() );
+		REPORT_ERROR( UsingIncompleteType, errors_, file_pos, dst_type );
 		return nullptr;
 	}
 	const Class* const dst_class_type= dst_type.GetClassType();

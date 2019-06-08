@@ -433,12 +433,12 @@ Value CodeBuilder::BuildBinaryOperator(
 
 		if( r_var.type != l_var.type )
 		{
-			REPORT_ERROR( NoMatchBinaryOperatorForGivenTypes, errors_, file_pos, r_var.type.ToString(), l_var.type.ToString(),  BinaryOperatorToString( binary_operator ) );
+			REPORT_ERROR( NoMatchBinaryOperatorForGivenTypes, errors_, file_pos, r_var.type, l_var.type,  BinaryOperatorToString( binary_operator ) );
 			return ErrorValue();
 		}
 		if( l_fundamental_type == nullptr )
 		{
-			REPORT_ERROR( OperationNotSupportedForThisType, errors_, file_pos, l_type.ToString() );
+			REPORT_ERROR( OperationNotSupportedForThisType, errors_, file_pos, l_type );
 			return ErrorValue();
 		}
 		else
@@ -446,14 +446,14 @@ Value CodeBuilder::BuildBinaryOperator(
 			if( l_fundamental_type->GetSize() < 4u )
 			{
 				// Operation supported only for 32 and 64bit operands
-				REPORT_ERROR( OperationNotSupportedForThisType, errors_, file_pos, l_type.ToString() );
+				REPORT_ERROR( OperationNotSupportedForThisType, errors_, file_pos, l_type );
 				return ErrorValue();
 			}
 			const bool is_float= IsFloatingPoint( l_fundamental_type->fundamental_type );
 			if( !( IsInteger( l_fundamental_type->fundamental_type ) || is_float ) )
 			{
 				// this operations allowed only for integer and floating point operands.
-				REPORT_ERROR( OperationNotSupportedForThisType, errors_, file_pos, l_type.ToString() );
+				REPORT_ERROR( OperationNotSupportedForThisType, errors_, file_pos, l_type );
 				return ErrorValue();
 			}
 
@@ -589,7 +589,7 @@ Value CodeBuilder::BuildBinaryOperator(
 
 		if( r_var.type != l_var.type )
 		{
-			REPORT_ERROR( NoMatchBinaryOperatorForGivenTypes, errors_, file_pos, r_var.type.ToString(), l_var.type.ToString(), BinaryOperatorToString( binary_operator ) );
+			REPORT_ERROR( NoMatchBinaryOperatorForGivenTypes, errors_, file_pos, r_var.type, l_var.type, BinaryOperatorToString( binary_operator ) );
 			return ErrorValue();
 		}
 		else if( l_var.type.GetFunctionPointerType() != nullptr )
@@ -632,7 +632,7 @@ Value CodeBuilder::BuildBinaryOperator(
 		}
 		else if( !( l_var.type.GetFundamentalType() != nullptr || l_var.type.GetEnumType() != nullptr ) )
 		{
-			REPORT_ERROR( OperationNotSupportedForThisType, errors_, file_pos, l_type.ToString() );
+			REPORT_ERROR( OperationNotSupportedForThisType, errors_, file_pos, l_type );
 			return ErrorValue();
 		}
 		else
@@ -642,7 +642,7 @@ Value CodeBuilder::BuildBinaryOperator(
 			const bool if_float= IsFloatingPoint( raw_fundamental_type.fundamental_type );
 			if( !( IsInteger( raw_fundamental_type.fundamental_type ) || IsChar( raw_fundamental_type.fundamental_type ) || if_float || raw_fundamental_type == bool_type_ ) )
 			{
-				REPORT_ERROR( OperationNotSupportedForThisType, errors_, file_pos, l_type.ToString() );
+				REPORT_ERROR( OperationNotSupportedForThisType, errors_, file_pos, l_type );
 				return ErrorValue();
 			}
 
@@ -713,12 +713,12 @@ Value CodeBuilder::BuildBinaryOperator(
 
 		if( r_var.type != l_var.type )
 		{
-			REPORT_ERROR( NoMatchBinaryOperatorForGivenTypes, errors_, file_pos, r_var.type.ToString(), l_var.type.ToString(), BinaryOperatorToString( binary_operator ) );
+			REPORT_ERROR( NoMatchBinaryOperatorForGivenTypes, errors_, file_pos, r_var.type, l_var.type, BinaryOperatorToString( binary_operator ) );
 			return ErrorValue();
 		}
 		if( l_fundamental_type == nullptr )
 		{
-			REPORT_ERROR( OperationNotSupportedForThisType, errors_, file_pos, l_type.ToString() );
+			REPORT_ERROR( OperationNotSupportedForThisType, errors_, file_pos, l_type );
 			return ErrorValue();
 		}
 		else
@@ -728,7 +728,7 @@ Value CodeBuilder::BuildBinaryOperator(
 			const bool is_signed= !is_char && IsSignedInteger( l_fundamental_type->fundamental_type );
 			if( !( IsInteger( l_fundamental_type->fundamental_type ) || if_float || is_char ) )
 			{
-				REPORT_ERROR( OperationNotSupportedForThisType, errors_, file_pos, l_type.ToString() );
+				REPORT_ERROR( OperationNotSupportedForThisType, errors_, file_pos, l_type );
 				return ErrorValue();
 			}
 
@@ -860,19 +860,19 @@ Value CodeBuilder::BuildBinaryOperator(
 
 		if( r_var.type != l_var.type )
 		{
-			REPORT_ERROR( NoMatchBinaryOperatorForGivenTypes, errors_, file_pos, r_var.type.ToString(), l_var.type.ToString(), BinaryOperatorToString( binary_operator ) );
+			REPORT_ERROR( NoMatchBinaryOperatorForGivenTypes, errors_, file_pos, r_var.type, l_var.type, BinaryOperatorToString( binary_operator ) );
 			return ErrorValue();
 		}
 		if( l_fundamental_type == nullptr )
 		{
-			REPORT_ERROR( OperationNotSupportedForThisType, errors_, file_pos, l_type.ToString() );
+			REPORT_ERROR( OperationNotSupportedForThisType, errors_, file_pos, l_type );
 			return ErrorValue();
 		}
 		else
 		{
 			if( !( IsInteger( l_fundamental_type->fundamental_type ) || l_fundamental_type->fundamental_type == U_FundamentalType::Bool ) )
 			{
-				REPORT_ERROR( OperationNotSupportedForThisType, errors_, file_pos, l_type.ToString() );
+				REPORT_ERROR( OperationNotSupportedForThisType, errors_, file_pos, l_type );
 				return ErrorValue();
 			}
 
@@ -927,12 +927,12 @@ Value CodeBuilder::BuildBinaryOperator(
 		{
 			if( l_fundamental_type == nullptr || !IsInteger( l_fundamental_type->fundamental_type ) )
 			{
-				REPORT_ERROR( OperationNotSupportedForThisType, errors_, file_pos, l_type.ToString() );
+				REPORT_ERROR( OperationNotSupportedForThisType, errors_, file_pos, l_type );
 				return ErrorValue();
 			}
 			if( r_fundamental_type == nullptr || !IsUnsignedInteger( r_fundamental_type->fundamental_type ) )
 			{
-				REPORT_ERROR( OperationNotSupportedForThisType, errors_, file_pos, r_type.ToString() );
+				REPORT_ERROR( OperationNotSupportedForThisType, errors_, file_pos, r_type );
 				return ErrorValue();
 			}
 			const SizeType l_type_size= l_fundamental_type->GetSize();
@@ -1027,7 +1027,7 @@ Value CodeBuilder::BuildLazyBinaryOperator(
 
 	if( l_var.type != bool_type_ )
 	{
-		REPORT_ERROR( TypesMismatch, errors_,  binary_operator.file_pos_, bool_type_.ToString(), l_var.type.ToString() );
+		REPORT_ERROR( TypesMismatch, errors_,  binary_operator.file_pos_, bool_type_, l_var.type );
 		return ErrorValue();
 	}
 
@@ -1057,7 +1057,7 @@ Value CodeBuilder::BuildLazyBinaryOperator(
 		const Variable r_var= BuildExpressionCodeEnsureVariable( r_expression, names, function_context );
 		if( r_var.type != bool_type_ )
 		{
-			REPORT_ERROR( TypesMismatch, errors_,  binary_operator.file_pos_, bool_type_.ToString(), r_var.type.ToString() );
+			REPORT_ERROR( TypesMismatch, errors_,  binary_operator.file_pos_, bool_type_, r_var.type );
 			return ErrorValue();
 		}
 		r_var_constepxr_value= r_var.constexpr_value;
@@ -1149,10 +1149,10 @@ Value CodeBuilder::DoReferenceCast(
 		// Complete types required for both safe and unsafe casting, except unsafe void to anything cast.
 		// This needs, becasue we must emit same code for places where types yet not complete, and where they are complete.
 		if( !EnsureTypeCompleteness( type, TypeCompleteness::Complete ) )
-			REPORT_ERROR( UsingIncompleteType, errors_, file_pos, type.ToString() );
+			REPORT_ERROR( UsingIncompleteType, errors_, file_pos, type );
 
 		if( !( enable_unsafe && var.type == void_type_ ) && !EnsureTypeCompleteness( var.type, TypeCompleteness::Complete ) )
-			REPORT_ERROR( UsingIncompleteType, errors_, file_pos, var.type.ToString() );
+			REPORT_ERROR( UsingIncompleteType, errors_, file_pos, var.type );
 
 		if( ReferenceIsConvertible( var.type, type, file_pos ) )
 			result.llvm_value= CreateReferenceCast( src_value, var.type, type, function_context );
@@ -1160,7 +1160,7 @@ Value CodeBuilder::DoReferenceCast(
 		{
 			result.llvm_value= function_context.llvm_ir_builder.CreatePointerCast( src_value, llvm::PointerType::get( type.GetLLVMType(), 0 ) );
 			if( !enable_unsafe )
-				REPORT_ERROR( TypesMismatch, errors_,  file_pos, type.ToString(), var.type.ToString() );
+				REPORT_ERROR( TypesMismatch, errors_,  file_pos, type, var.type );
 		}
 	}
 
@@ -1706,7 +1706,7 @@ Value CodeBuilder::BuildIndexationOperator(
 	const FundamentalType* const index_fundamental_type= index.type.GetFundamentalType();
 	if( index_fundamental_type == nullptr || !IsUnsignedInteger( index_fundamental_type->fundamental_type ) )
 	{
-		REPORT_ERROR( TypesMismatch, errors_,  indexation_operator.file_pos_, "any unsigned integer"_SpC, index.type.ToString() );
+		REPORT_ERROR( TypesMismatch, errors_,  indexation_operator.file_pos_, "any unsigned integer"_SpC, index.type );
 		return ErrorValue();
 	}
 
@@ -2163,7 +2163,7 @@ Value CodeBuilder::DoCallFunction(
 		{
 			if( !ReferenceIsConvertible( expr.type, arg.type, call_file_pos ) && GetConversionConstructor( expr.type, arg.type, file_pos ) == nullptr )
 			{
-				REPORT_ERROR( TypesMismatch, errors_,  file_pos, arg.type.ToString(), expr.type.ToString() );
+				REPORT_ERROR( TypesMismatch, errors_,  file_pos, arg.type, expr.type );
 				return ErrorValue();
 			}
 
@@ -2275,7 +2275,7 @@ Value CodeBuilder::DoCallFunction(
 
 			if( !ReferenceIsConvertible( expr.type, arg.type, call_file_pos ) && GetConversionConstructor( expr.type, arg.type, file_pos ) == nullptr )
 			{
-				REPORT_ERROR( TypesMismatch, errors_,  file_pos, arg.type.ToString(), expr.type.ToString() );
+				REPORT_ERROR( TypesMismatch, errors_,  file_pos, arg.type, expr.type );
 				return ErrorValue();
 			}
 
@@ -2330,7 +2330,7 @@ Value CodeBuilder::DoCallFunction(
 					{
 						// Can not call function with value parameter, because for value parameter needs copy, but parameter type is not copyable.
 						// TODO - print more reliable message.
-						REPORT_ERROR( OperationNotSupportedForThisType, errors_, file_pos, arg.type.ToString() );
+						REPORT_ERROR( OperationNotSupportedForThisType, errors_, file_pos, arg.type );
 						continue;
 					}
 
@@ -2412,7 +2412,7 @@ Value CodeBuilder::DoCallFunction(
 	else
 	{
 		if( function_type.return_type != void_type_ && !EnsureTypeCompleteness( function_type.return_type, TypeCompleteness::Complete ) )
-			REPORT_ERROR( UsingIncompleteType, errors_, call_file_pos, function_type.return_type.ToString() );
+			REPORT_ERROR( UsingIncompleteType, errors_, call_file_pos, function_type.return_type );
 
 		result.location= return_value_is_sret ? Variable::Location::Pointer : Variable::Location::LLVMRegister;
 		result.value_type= ValueType::Value;
@@ -2562,7 +2562,7 @@ Variable CodeBuilder::BuildTempVariableConstruction(
 {
 	if( !EnsureTypeCompleteness( type, TypeCompleteness::Complete ) )
 	{
-		REPORT_ERROR( UsingIncompleteType, errors_, call_operator.file_pos_, type.ToString() );
+		REPORT_ERROR( UsingIncompleteType, errors_, call_operator.file_pos_, type );
 		return Variable();
 	}
 
@@ -2600,7 +2600,7 @@ Variable CodeBuilder::ConvertVariable(
 {
 	if( !EnsureTypeCompleteness( dst_type, TypeCompleteness::Complete ) )
 	{
-		REPORT_ERROR( UsingIncompleteType, errors_, file_pos, dst_type.ToString() );
+		REPORT_ERROR( UsingIncompleteType, errors_, file_pos, dst_type );
 		return Variable();
 	}
 
@@ -2666,7 +2666,7 @@ Value CodeBuilder::BuildUnaryMinus(
 	const bool is_float= IsFloatingPoint( fundamental_type->fundamental_type );
 	if( !( IsInteger( fundamental_type->fundamental_type ) || is_float ) )
 	{
-		REPORT_ERROR( OperationNotSupportedForThisType, errors_, unary_minus.file_pos_, variable.type.ToString() );
+		REPORT_ERROR( OperationNotSupportedForThisType, errors_, unary_minus.file_pos_, variable.type );
 		return ErrorValue();
 	}
 	// TODO - maybe not support unary minus for 8 and 16 bot integer types?

@@ -407,7 +407,6 @@ llvm::Type* Type::GetLLVMType() const
 			return enum_->underlaying_type.llvm_type;
 		}
 
-
 		llvm::Type* operator()( const FunctionPointerPtr& function_pointer_type ) const
 		{
 			return function_pointer_type->llvm_function_pointer_type;

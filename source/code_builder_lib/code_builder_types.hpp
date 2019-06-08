@@ -123,6 +123,8 @@ public:
 	size_t ReferencesTagsCount() const;
 
 	llvm::Type* GetLLVMType() const;
+
+	// Convert type name to human-readable format.
 	ProgramString ToString() const;
 
 private:

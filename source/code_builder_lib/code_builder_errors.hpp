@@ -12,6 +12,11 @@
 namespace U
 {
 
+namespace CodeBuilderPrivate
+{
+	class Type;
+} // namespace CodeBuilderPrivate
+
 enum class CodeBuilderErrorCode : uint16_t
 {
 	#define PROCESS_ERROR( Code, Message ) Code,
@@ -31,7 +36,6 @@ bool operator!=( const CodeBuilderError& l, const CodeBuilderError& r );
 bool operator< ( const CodeBuilderError& l, const CodeBuilderError& r ); // For sorting, using file_pos
 
 const char* CodeBuilderErrorCodeToString( CodeBuilderErrorCode code );
-const char* GetErrorMessagePattern( CodeBuilderErrorCode code );
 
 // Macro for errors reporting.
 #define REPORT_ERROR( error_code, errors_container, ... ) errors_container.push_back( ErrorReportingImpl::ReportError( CodeBuilderErrorCode::error_code, __VA_ARGS__ ) )
@@ -42,22 +46,11 @@ namespace ErrorReportingImpl
 // Using formatter for UTF-8, because formatter for "sprache_char" works incorrectly.
 using Formatter= boost::format;
 
-inline std::string PreprocessArg( const ProgramString& str )
-{
-	return ToUTF8(str);
-}
+const char* GetErrorMessagePattern( CodeBuilderErrorCode code );
 
-inline std::string PreprocessArg( const Synt::ComplexName& name )
-{
-	ProgramString str;
-	for( const Synt::ComplexName::Component& component : name.components )
-	{
-		str+= component.name;
-		if( &component != &name.components.back() )
-			str+= "::"_SpC;
-	}
-	return ToUTF8(str);
-}
+std::string PreprocessArg( const CodeBuilderPrivate::Type& type );
+std::string PreprocessArg( const Synt::ComplexName& name );
+std::string PreprocessArg( const ProgramString& str );
 
 template<class T>
 const T& PreprocessArg( const T& t )

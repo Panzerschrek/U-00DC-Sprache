@@ -228,7 +228,7 @@ void CodeBuilder::ProcessTemplateArgs(
 
 			if( !TypeIsValidForTemplateVariableArgument( *type ) )
 			{
-				REPORT_ERROR( InvalidTypeOfTemplateVariableArgument, errors_, file_pos, type->ToString() );
+				REPORT_ERROR( InvalidTypeOfTemplateVariableArgument, errors_, file_pos, type );
 				continue;
 			}
 
@@ -347,7 +347,7 @@ void CodeBuilder::PrepareTemplateSignatureParameter(
 
 	if( !TypeIsValidForTemplateVariableArgument( var.type ) )
 	{
-		REPORT_ERROR( InvalidTypeOfTemplateVariableArgument, errors_, Synt::GetExpressionFilePos( template_parameter ), var.type.ToString() );
+		REPORT_ERROR( InvalidTypeOfTemplateVariableArgument, errors_, Synt::GetExpressionFilePos( template_parameter ), var.type );
 		return;
 	}
 	if( var.constexpr_value == nullptr )
@@ -433,7 +433,7 @@ DeducedTemplateParameter CodeBuilder::DeduceTemplateArguments(
 
 		if( !TypeIsValidForTemplateVariableArgument( variable->type ) )
 		{
-			REPORT_ERROR( InvalidTypeOfTemplateVariableArgument, errors_, signature_parameter_file_pos, variable->type.ToString() );
+			REPORT_ERROR( InvalidTypeOfTemplateVariableArgument, errors_, signature_parameter_file_pos, variable->type );
 			return DeducedTemplateParameter::Invalid();
 		}
 
@@ -1236,7 +1236,7 @@ Value* CodeBuilder::GenTemplateFunctionsUsingTemplateParameters(
 		else if( const auto variable= value.GetVariable() )
 		{
 			if( !TypeIsValidForTemplateVariableArgument( variable->type ) )
-				REPORT_ERROR( InvalidTypeOfTemplateVariableArgument, errors_, Synt::GetExpressionFilePos(expr), variable->type.ToString() );
+				REPORT_ERROR( InvalidTypeOfTemplateVariableArgument, errors_, Synt::GetExpressionFilePos(expr), variable->type );
 			else if( variable->constexpr_value == nullptr )
 				REPORT_ERROR( ExpectedConstantExpression, errors_, Synt::GetExpressionFilePos(expr) );
 			else

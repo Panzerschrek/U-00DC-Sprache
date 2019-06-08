@@ -35,6 +35,9 @@ const char* CodeBuilderErrorCodeToString( const CodeBuilderErrorCode code )
 	return "";
 }
 
+namespace ErrorReportingImpl
+{
+
 const char* GetErrorMessagePattern( CodeBuilderErrorCode code )
 {
 	switch(code)
@@ -47,5 +50,29 @@ const char* GetErrorMessagePattern( CodeBuilderErrorCode code )
 	U_ASSERT(false);
 	return "";
 }
+
+std::string PreprocessArg( const ProgramString& str )
+{
+	return ToUTF8(str);
+}
+
+std::string PreprocessArg( const CodeBuilderPrivate::Type& type )
+{
+	return ToUTF8(type.ToString());
+}
+
+std::string PreprocessArg( const Synt::ComplexName& name )
+{
+	ProgramString str;
+	for( const Synt::ComplexName::Component& component : name.components )
+	{
+		str+= component.name;
+		if( &component != &name.components.back() )
+			str+= "::"_SpC;
+	}
+	return ToUTF8(str);
+}
+
+} // namespace ErrorReportingImpl
 
 } // namespace U
