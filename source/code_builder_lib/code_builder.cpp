@@ -150,7 +150,6 @@ CodeBuilder::CodeBuilder(
 ICodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_graph )
 {
 	errors_.clear();
-	error_count_= 0u;
 
 	module_.reset(
 		new llvm::Module(

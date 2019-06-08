@@ -833,7 +833,7 @@ private:
 
 private:
 	llvm::LLVMContext& llvm_context_;
-	std::string target_triple_str_;
+	const std::string target_triple_str_;
 	const llvm::DataLayout data_layout_;
 
 	struct
@@ -875,7 +875,6 @@ private:
 	FunctionContext* global_function_context_= nullptr;
 
 	std::unique_ptr<llvm::Module> module_;
-	unsigned int error_count_= 0u;
 	std::vector<CodeBuilderError> errors_;
 
 	std::unordered_map< size_t, BuildResultInternal > compiled_sources_cache_;
