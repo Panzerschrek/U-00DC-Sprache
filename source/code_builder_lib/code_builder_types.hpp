@@ -496,6 +496,9 @@ public:
 	const ProgramString& GetThisNamespaceName() const;
 	void SetThisNamespaceName( ProgramString name );
 
+	// Get full name (with enclosing namespaces) un human-readable format.
+	ProgramString ToString() const;
+
 	// Returns nullptr, if name already exists in this scope.
 	Value* AddName( const ProgramString& name, Value value );
 

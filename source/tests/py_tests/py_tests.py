@@ -41,6 +41,7 @@ def main():
 		"inheritance_errors_test",
 		"macro_test",
 		"methods_generation_test",
+		"names_in_error_messages_test",
 		"nomangle_test",
 		"order_independent_name_resolving_test",
 		"overloading_resolution_test",

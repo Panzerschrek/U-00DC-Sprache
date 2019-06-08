@@ -458,7 +458,61 @@ ProgramString Type::ToString() const
 
 		ProgramString operator()( const ClassProxyPtr& class_ ) const
 		{
-			return "class "_SpC + class_->class_->members.GetThisNamespaceName();
+			ProgramString result;
+			if( class_->class_->base_template != boost::none )
+			{
+				// Skip template parameters namespace.
+				const ProgramString template_namespace_name= class_->class_->members.GetParent()->GetParent()->ToString();
+				if( !template_namespace_name.empty() )
+					result+= template_namespace_name + "::"_SpC;
+
+				const ProgramString& class_name= class_->class_->base_template->class_template->syntax_element->name_;
+				result+= class_name;
+				result+= "</"_SpC;
+				for( const TemplateParameter& param : class_->class_->base_template->template_parameters )
+				{
+					if( const Type* const param_as_type = boost::get<Type>( &param ) )
+						result+= param_as_type->ToString();
+					else if( const Variable* const param_as_variable= boost::get<Variable>( &param ) )
+					{
+						U_ASSERT( param_as_variable->constexpr_value != nullptr );
+						const uint64_t param_numeric_value= param_as_variable->constexpr_value->getUniqueInteger().getLimitedValue();
+
+						if( const FundamentalType* fundamental_type= param_as_variable->type.GetFundamentalType())
+						{
+							if( IsSignedInteger( fundamental_type->fundamental_type ) )
+								result+= ToProgramString( std::to_string(  int64_t(param_numeric_value) ).c_str() );
+							else
+								result+= ToProgramString( std::to_string( uint64_t(param_numeric_value) ).c_str() );
+						}
+						else if( const Enum* enum_type= param_as_variable->type.GetEnumType() )
+						{
+							ProgramString enum_member_name;
+							enum_type->members.ForEachInThisScope(
+								[&]( const ProgramString& name, const Value& enum_member )
+								{
+									if( const Variable* enum_variable= enum_member.GetVariable() )
+									{
+										U_ASSERT( enum_variable->constexpr_value != nullptr );
+										if( enum_variable->constexpr_value->getUniqueInteger().getLimitedValue() == param_numeric_value )
+											enum_member_name= name;
+									}
+								});
+							U_ASSERT( !enum_member_name.empty() );
+							result+= enum_type->members.ToString() + "::"_SpC + enum_member_name;
+						}
+						else U_ASSERT(false);
+					}
+					else U_ASSERT(false);
+
+					if( &param != &class_->class_->base_template->template_parameters.back() )
+						result+= ", "_SpC;
+				}
+				result+= "/>"_SpC;
+			}
+			else
+				result+= class_->class_->members.ToString();
+			return result;
 		}
 
 		ProgramString operator()( const EnumPtr& enum_ ) const
@@ -1052,6 +1106,15 @@ const ProgramString& NamesScope::GetThisNamespaceName() const
 void NamesScope::SetThisNamespaceName( ProgramString name )
 {
 	name_= std::move(name);
+}
+
+ProgramString NamesScope::ToString() const
+{
+	if( parent_ == nullptr ) // Global namespace have no name.
+		return ""_SpC;
+	if( parent_->parent_ == nullptr )
+		return name_;
+	return parent_->ToString() + "::"_SpC + name_;
 }
 
 Value* NamesScope::AddName(
