@@ -44,7 +44,7 @@ ClassProxyPtr CodeBuilder::CreateTypeinfoClass( NamesScope& root_namespace )
 	// Currently, give "random" names for typeinfo classes.
 	llvm::StructType* const llvm_type= llvm::StructType::create( llvm_context_ );
 
-	const ProgramString typeinfo_class_name= "_typeinfo_"_SpC + ToProgramString(std::to_string(reinterpret_cast<uintptr_t>(llvm_type)).c_str());
+	const ProgramString typeinfo_class_name= "_typeinfo_"_SpC + ToProgramString(std::to_string(reinterpret_cast<uintptr_t>(llvm_type)));
 	const ClassProxyPtr typeinfo_class_proxy= std::make_shared<ClassProxy>();
 	typeinfo_class_table_[typeinfo_class_proxy].reset( new Class( typeinfo_class_name, &root_namespace ) );
 	typeinfo_class_proxy->class_= typeinfo_class_table_[typeinfo_class_proxy].get();

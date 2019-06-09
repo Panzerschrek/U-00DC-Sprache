@@ -130,7 +130,7 @@ llvm::GenericValue ConstexprFunctionEvaluator::CallFunction( const llvm::Functio
 		REPORT_ERROR( ConstexprFunctionEvaluationError,
 			errors_,
 			*file_pos_,
-			( "executing function \"" + std::string(llvm_function.getName()) + "\" with no body" ).c_str() );
+			"executing function \"" + std::string(llvm_function.getName()) + "\" with no body" );
 		return llvm::GenericValue();
 	}
 	if( stack_depth > g_max_call_stack_depth )
@@ -138,7 +138,7 @@ llvm::GenericValue ConstexprFunctionEvaluator::CallFunction( const llvm::Functio
 		REPORT_ERROR( ConstexprFunctionEvaluationError,
 			errors_,
 			*file_pos_,
-			( "Max call stack depth (" + std::to_string( g_max_call_stack_depth ) + ") reached" ).c_str() );
+			"Max call stack depth (" + std::to_string( g_max_call_stack_depth ) + ") reached" );
 		return llvm::GenericValue();
 	}
 
@@ -271,7 +271,7 @@ llvm::GenericValue ConstexprFunctionEvaluator::CallFunction( const llvm::Functio
 			REPORT_ERROR( ConstexprFunctionEvaluationError,
 				errors_,
 				*file_pos_,
-				( std::string("executing unknown instruction \"") + instruction->getOpcodeName() + "\"" ).c_str() );
+				std::string("executing unknown instruction \"") + instruction->getOpcodeName() + "\"" );
 			return llvm::GenericValue();
 		};
 
@@ -965,7 +965,7 @@ void ConstexprFunctionEvaluator::ReportDataStackOverflow()
 	REPORT_ERROR( ConstexprFunctionEvaluationError,
 		errors_,
 		*file_pos_,
-		( "Max data stack size (" + std::to_string( g_max_data_stack_size ) + ") reached" ).c_str() );
+		"Max data stack size (" + std::to_string( g_max_data_stack_size ) + ") reached");
 }
 
 void ConstexprFunctionEvaluator::ReportConstantsStackOverflow()
@@ -973,7 +973,7 @@ void ConstexprFunctionEvaluator::ReportConstantsStackOverflow()
 	REPORT_ERROR( ConstexprFunctionEvaluationError,
 		errors_,
 		*file_pos_,
-		( "Max constants stack size (" + std::to_string( g_max_constants_stack_size ) + ") reached" ).c_str() );
+		"Max constants stack size (" + std::to_string( g_max_constants_stack_size ) + ") reached" );
 }
 
 } // namespace CodeBuilderPrivate

@@ -453,7 +453,7 @@ ProgramString Type::ToString() const
 		{
 			return
 				"[ "_SpC + array->type.ToString() + ", "_SpC +
-				ToProgramString( std::to_string( array->size ).c_str() ) + " ]"_SpC;
+				ToProgramString( std::to_string( array->size ) ) + " ]"_SpC;
 		}
 
 		ProgramString operator()( const ClassProxyPtr& class_ ) const
@@ -481,9 +481,9 @@ ProgramString Type::ToString() const
 						if( const FundamentalType* fundamental_type= param_as_variable->type.GetFundamentalType())
 						{
 							if( IsSignedInteger( fundamental_type->fundamental_type ) )
-								result+= ToProgramString( std::to_string(  int64_t(param_numeric_value) ).c_str() );
+								result+= ToProgramString( std::to_string(  int64_t(param_numeric_value) ) );
 							else
-								result+= ToProgramString( std::to_string( uint64_t(param_numeric_value) ).c_str() );
+								result+= ToProgramString( std::to_string( uint64_t(param_numeric_value) ) );
 						}
 						else if( const Enum* enum_type= param_as_variable->type.GetEnumType() )
 						{

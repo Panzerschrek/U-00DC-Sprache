@@ -145,7 +145,7 @@ public:
 
 	virtual Path GetFullFilePath( const Path& file_path, const Path& full_parent_file_path ) override
 	{
-		return ToProgramString( GetFullFilePathInternal( file_path, full_parent_file_path ).string<std::string>().c_str() );
+		return ToProgramString( GetFullFilePathInternal( file_path, full_parent_file_path ).string<std::string>() );
 	}
 
 private:

@@ -32,7 +32,7 @@ static ProgramString EncodeTemplateParameters( DeducibleTemplateParameters& dedu
 		if( const Type* const type= boost::get<Type>( &arg ) )
 		{
 			// We needs full mangled name of template parameter here, because short type names from different spaces may coincide.
-			r+= ToProgramString( MangleType( *type ).c_str() );
+			r+= ToProgramString( MangleType( *type ) );
 		}
 		else if( const Variable* const variable= boost::get<Variable>( &arg ) )
 		{
@@ -48,9 +48,9 @@ static ProgramString EncodeTemplateParameters( DeducibleTemplateParameters& dedu
 
 			const llvm::APInt& int_value= variable->constexpr_value->getUniqueInteger();
 			if( IsSignedInteger( raw_type.fundamental_type ) && int_value.isNegative() )
-				r+= ToProgramString( std::to_string(  int64_t(int_value.getLimitedValue()) ).c_str() );
+				r+= ToProgramString( std::to_string(  int64_t(int_value.getLimitedValue()) ) );
 			else
-				r+= ToProgramString( std::to_string( uint64_t(int_value.getLimitedValue()) ).c_str() );
+				r+= ToProgramString( std::to_string( uint64_t(int_value.getLimitedValue()) ) );
 		}
 		else U_ASSERT(false);
 		r += "_"_SpC;
@@ -930,7 +930,7 @@ CodeBuilder::TemplateTypeGenerationResult CodeBuilder::GenTemplateType(
 	// TODO - maybe generate correct mangled name for template?
 	ProgramString name_encoded= g_template_parameters_namespace_prefix + type_template.syntax_element->name_;
 	name_encoded+= EncodeTemplateParameters( deduced_template_args );
-	name_encoded+= ToProgramString( std::to_string( reinterpret_cast<uintptr_t>(&type_template) ).c_str() ); // Encode also template itself, because we can have multiple templates with same name.
+	name_encoded+= ToProgramString( std::to_string( reinterpret_cast<uintptr_t>(&type_template) ) ); // Encode also template itself, because we can have multiple templates with same name.
 
 	{ // Check, if already type generated.
 		const auto it= generated_template_things_storage_.find( name_encoded );
@@ -1172,7 +1172,7 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 	// TODO - maybe generate correct mangled name for template?
 	ProgramString name_encoded= g_template_parameters_namespace_prefix + function_template.syntax_element->function_->name_.components.front().name;
 	name_encoded+= EncodeTemplateParameters( deduced_template_args );
-	name_encoded+= ToProgramString( std::to_string( reinterpret_cast<uintptr_t>(&function_template) ).c_str() ); // HACK! use address of template object, because we can have multiple templates with same name.
+	name_encoded+= ToProgramString( std::to_string( reinterpret_cast<uintptr_t>(&function_template) ) ); // HACK! use address of template object, because we can have multiple templates with same name.
 
 	{
 		const auto it= generated_template_things_storage_.find( name_encoded );
