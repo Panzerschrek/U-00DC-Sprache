@@ -238,10 +238,12 @@ U_TEST( UnderlayingTypeForEnumTest )
 
 		enum largeEnum: i64
 		{ A, B, C, }
+
+		static_assert( typeinfo</CompactEnum/>.size_of == typeinfo</u8/>.size_of );
+		static_assert( typeinfo</largeEnum/>.size_of == typeinfo</i64/>.size_of );
 	)";
 
 	BuildProgram( c_program_text );
-	// TODO - add size checks of result enum
 }
 
 } // namespace U
