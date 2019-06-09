@@ -19,7 +19,7 @@ namespace U
 namespace
 {
 
-typedef ProgramStringMap< U_FundamentalType > TypesMap;
+using TypesMap= ProgramStringMap< U_FundamentalType >;
 
 const TypesMap g_types_map=
 {

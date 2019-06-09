@@ -115,10 +115,10 @@ struct Lexem
 	Type type= Type::None;
 };
 
-typedef std::vector<Lexem> Lexems;
+using Lexems= std::vector<Lexem>;
 
-typedef std::string LexicalErrorMessage;
-typedef std::vector<LexicalErrorMessage> LexicalErrorMessages;
+using LexicalErrorMessage= std::string;
+using LexicalErrorMessages= std::vector<LexicalErrorMessage>;
 
 struct LexicalAnalysisResult
 {

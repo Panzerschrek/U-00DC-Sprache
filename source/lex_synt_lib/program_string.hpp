@@ -9,8 +9,8 @@
 namespace U
 {
 
-typedef std::uint16_t sprache_char;
-typedef std::basic_string<sprache_char> ProgramString;
+using sprache_char= std::uint16_t;
+using ProgramString= std::basic_string<sprache_char>;
 
 // Char to program string literal.
 ProgramString operator "" _SpC( const char* str, size_t size );

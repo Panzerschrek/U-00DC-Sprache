@@ -32,7 +32,7 @@ public:
 	virtual BuildResult BuildProgram( const SourceGraph& source_graph ) override;
 
 private:
-	typedef std::unordered_map< ClassProxyPtr, std::unique_ptr<Class> > ClassTable;
+	using ClassTable= std::unordered_map< ClassProxyPtr, std::unique_ptr<Class> >;
 	struct BuildResultInternal
 	{
 		std::unique_ptr<NamesScope> names_map;
@@ -886,7 +886,7 @@ private:
 	// Cache needs for generating same classes as template instantiation result in different source files.
 	// We can use same classes in different files, because template classes are logically unchangeable after instantiation.
 	// Unchangeable they are because incomplete template classes ( or classes inside template classes, etc. ) currently forbidden.
-	TemplateClassesCache template_classes_cache_;
+	ProgramStringMap< ClassProxyPtr > template_classes_cache_;
 
 	// We needs to generate same typeinfo classes for same types. Use cache for it.
 	// TODO - create hasher for type and use unordered_map.

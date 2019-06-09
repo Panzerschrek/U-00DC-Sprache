@@ -11,7 +11,7 @@ namespace U
 class IVfs
 {
 public:
-	typedef ProgramString Path;
+	using Path=ProgramString;
 	struct LoadFileResult
 	{
 		Path full_file_path;
@@ -26,7 +26,7 @@ public:
 	virtual Path GetFullFilePath( const Path& file_path, const Path& full_parent_file_path )= 0;
 };
 
-typedef  std::shared_ptr<IVfs> IVfsPtr;
+using IVfsPtr= std::shared_ptr<IVfs>;
 
 // Directed acyclic graph of sources.
 struct SourceGraph final
@@ -46,7 +46,7 @@ struct SourceGraph final
 	Synt::SyntaxErrorMessages syntax_errors;
 };
 
-typedef std::unique_ptr<SourceGraph> SourceGraphPtr;
+using SourceGraphPtr= std::unique_ptr<SourceGraph>;
 
 class SourceGraphLoader final
 {

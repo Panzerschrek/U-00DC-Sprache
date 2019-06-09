@@ -17,7 +17,7 @@ struct SyntaxErrorMessage
 	FilePos file_pos;
 };
 
-typedef std::vector<SyntaxErrorMessage> SyntaxErrorMessages;
+using SyntaxErrorMessages= std::vector<SyntaxErrorMessage>;
 
 struct SyntaxAnalysisResult
 {

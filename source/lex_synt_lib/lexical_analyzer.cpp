@@ -31,7 +31,7 @@ bool operator<=( const FilePos& l, const FilePos& r )
 	return l < r || l == r;
 }
 
-typedef ProgramStringMap<Lexem::Type> FixedLexemsMap;
+using FixedLexemsMap= ProgramStringMap<Lexem::Type>;
 static const size_t g_max_fixed_lexem_size= 3;
 
 static const FixedLexemsMap g_fixed_lexems[ g_max_fixed_lexem_size + 1 ]=

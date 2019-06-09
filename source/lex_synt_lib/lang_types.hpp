@@ -38,6 +38,6 @@ bool IsNumericType( U_FundamentalType type );
 bool IsChar( U_FundamentalType type );
 
 // Use only this type for representation of any size in compiled program.
-typedef uint64_t SizeType;
+using SizeType= uint64_t;
 
 } // namespace U

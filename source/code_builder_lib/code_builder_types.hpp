@@ -39,25 +39,24 @@ struct ClassProxy
 	// Class itself stored in class table.
 	Class* class_= nullptr;
 };
-typedef std::shared_ptr<ClassProxy> ClassProxyPtr;
-typedef std::weak_ptr<ClassProxy> ClassProxyWeakPtr;
+using ClassProxyPtr= std::shared_ptr<ClassProxy>;
+using ClassProxyWeakPtr= std::weak_ptr<ClassProxy>;
 
 // Observer pointer to class.
 // Enum itself stored in class table.
-typedef Enum* EnumPtr;
+using EnumPtr= Enum*;
 
 class NamesScope;
-typedef std::shared_ptr<NamesScope> NamesScopePtr;
+using NamesScopePtr= std::shared_ptr<NamesScope>;
 
 struct TemplateBase;
-typedef std::shared_ptr<TemplateBase> TemplateBasePtr;
+using TemplateBasePtr= std::shared_ptr<TemplateBase>;
 
 struct TypeTemplate;
-struct TypeTemplatesSet;
-typedef std::shared_ptr<TypeTemplate> TypeTemplatePtr;
+using TypeTemplatePtr= std::shared_ptr<TypeTemplate>;
 
 struct FunctionTemplate;
-typedef std::shared_ptr<FunctionTemplate> FunctionTemplatePtr;
+using FunctionTemplatePtr= std::shared_ptr<FunctionTemplate>;
 
 class DeducedTemplateParameter;
 
@@ -130,9 +129,9 @@ public:
 private:
 	friend bool operator==( const Type&, const Type&);
 
-	typedef std::unique_ptr<Function> FunctionPtr;
-	typedef std::unique_ptr<FunctionPointer> FunctionPointerPtr;
-	typedef std::unique_ptr<Array> ArrayPtr;
+	using FunctionPtr= std::unique_ptr<Function>;
+	using FunctionPointerPtr= std::unique_ptr<FunctionPointer>;
+	using ArrayPtr= std::unique_ptr<Array>;
 
 	boost::variant<
 		FundamentalType,
@@ -158,7 +157,7 @@ public:
 
 	// "first" - arg number, "second" is inner tag number or ~0, if it is reference itself
 	static constexpr size_t c_arg_reference_tag_number= ~0u;
-	typedef std::pair< size_t, size_t > ArgReference;
+	using ArgReference= std::pair< size_t, size_t >;
 
 	struct InToOutReferences
 	{
@@ -580,9 +579,7 @@ private:
 	std::unordered_map<ClassProxyPtr, ClassMemberVisibility> access_rights_;
 };
 
-typedef boost::variant< Variable, Type > TemplateParameter;
-
-typedef ProgramStringMap< ClassProxyPtr > TemplateClassesCache;
+using TemplateParameter= boost::variant< Variable, Type >;
 
 class Class final
 {
@@ -707,8 +704,8 @@ struct TypeTemplate final : TemplateBase
 	const Synt::TypeTemplateBase* syntax_element= nullptr;
 };
 
-typedef boost::variant< int, Type, Variable > DeducibleTemplateParameter; // int means not deduced
-typedef std::vector<DeducibleTemplateParameter> DeducibleTemplateParameters;
+using DeducibleTemplateParameter= boost::variant< int, Type, Variable >; // int means not deduced
+using DeducibleTemplateParameters= std::vector<DeducibleTemplateParameter>;
 
 struct FunctionTemplate final : public TemplateBase
 {

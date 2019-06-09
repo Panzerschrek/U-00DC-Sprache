@@ -151,7 +151,7 @@ struct FuncData
 	TestFunc* func;
 };
 
-typedef std::vector<FuncData> FuncsContainer;
+using FuncsContainer= std::vector<FuncData>;
 
 static FuncsContainer& GetFuncsContainer()
 {

@@ -165,7 +165,7 @@ using ClassElement= boost::variant<
 	TypedefTemplate,
 	FunctionTemplate >;
 
-typedef std::vector<ClassElement> ClassElements;
+using ClassElements= std::vector<ClassElement>;
 
 using ProgramElement= boost::variant<
 	VariablesDeclaration,
@@ -182,7 +182,7 @@ using ProgramElement= boost::variant<
 
 using ProgramElements= std::vector<ProgramElement>;
 
-typedef std::vector<ProgramString> ReferencesTagsList; // If last tag is empty string - means continuous tag - like arg' a, b, c... '
+using ReferencesTagsList= std::vector<ProgramString>; // If last tag is empty string - means continuous tag - like arg' a, b, c... '
 
 struct SyntaxElementBase
 {
