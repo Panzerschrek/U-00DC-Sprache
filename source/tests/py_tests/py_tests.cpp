@@ -53,8 +53,8 @@ static std::unique_ptr<CodeBuilder> CreateCodeBuilder()
 	return
 		std::unique_ptr<CodeBuilder>(
 			new CodeBuilder(
-				Constants::tests_target_triple_str,
-				llvm::DataLayout( Constants::tests_data_layout_str ) ) );
+				llvm::sys::getProcessTriple(),
+				llvm::DataLayout( GetTestsDataLayout() ) ) );
 }
 
 std::unique_ptr<llvm::Module> BuildProgram( const char* const text )

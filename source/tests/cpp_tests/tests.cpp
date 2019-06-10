@@ -64,8 +64,8 @@ std::unique_ptr<llvm::Module> BuildProgram( const char* const text )
 
 	ICodeBuilder::BuildResult build_result=
 		CodeBuilder(
-			Constants::tests_target_triple_str,
-			llvm::DataLayout( Constants::tests_data_layout_str ) ).BuildProgram( *source_graph );
+			llvm::sys::getProcessTriple(),
+			llvm::DataLayout( GetTestsDataLayout() ) ).BuildProgram( *source_graph );
 
 	for( const CodeBuilderError& error : build_result.errors )
 		std::cout << error.file_pos.line << ":" << error.file_pos.pos_in_line << " " << ToUTF8( error.text ) << "\n";
@@ -87,8 +87,8 @@ ICodeBuilder::BuildResult BuildProgramWithErrors( const char* const text )
 
 	return
 		CodeBuilder(
-			Constants::tests_target_triple_str,
-			llvm::DataLayout( Constants::tests_data_layout_str ) ).BuildProgram( *source_graph );
+			llvm::sys::getProcessTriple(),
+			llvm::DataLayout( GetTestsDataLayout() ) ).BuildProgram( *source_graph );
 }
 
 std::unique_ptr<llvm::Module> BuildMultisourceProgram( std::vector<SourceEntry> sources, const ProgramString& root_file_path )
@@ -102,8 +102,8 @@ std::unique_ptr<llvm::Module> BuildMultisourceProgram( std::vector<SourceEntry> 
 
 	ICodeBuilder::BuildResult build_result=
 		CodeBuilder(
-			Constants::tests_target_triple_str,
-			llvm::DataLayout( Constants::tests_data_layout_str ) ).BuildProgram( *source_graph );
+			llvm::sys::getProcessTriple(),
+			llvm::DataLayout( GetTestsDataLayout() ) ).BuildProgram( *source_graph );
 
 	for( const CodeBuilderError& error : build_result.errors )
 		std::cout << error.file_pos.line << ":" << error.file_pos.pos_in_line << " " << ToUTF8( error.text ) << "\n";
@@ -124,8 +124,8 @@ ICodeBuilder::BuildResult BuildMultisourceProgramWithErrors( std::vector<SourceE
 
 	return
 		CodeBuilder(
-			Constants::tests_target_triple_str,
-			llvm::DataLayout( Constants::tests_data_layout_str ) ).BuildProgram( *source_graph );
+			llvm::sys::getProcessTriple(),
+			llvm::DataLayout( GetTestsDataLayout() ) ).BuildProgram( *source_graph );
 }
 
 EnginePtr CreateEngine( std::unique_ptr<llvm::Module> module, const bool needs_dump )

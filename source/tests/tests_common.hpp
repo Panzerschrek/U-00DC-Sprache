@@ -1,16 +1,29 @@
 #pragma once
+#include <string>
+#include <boost/predef/detail/endian_compat.h>
 
 namespace U
 {
 
-namespace Constants
+const std::string GetTestsDataLayout()
 {
+	std::string result;
 
-// Hack. Use constant target triple and data layout for all tests.
-const bool is_32bit= sizeof(void*) == 4u;
-const char* const tests_target_triple_str= is_32bit ? "i686-pc-windows-gnu" : "x86_64-unknown-linux-gnu";
-const char* const tests_data_layout_str= is_32bit ? "e-m:x-p:32:32-i64:64-f80:32-n8:16:32-a:0:32-S32" : "e-m:e-i64:64-f80:128-n8:16:32:64-S128";
+#ifdef BOOST_BIG_ENDIAN
+		result+= "E";
+	else
+#else
+		result+= "e";
+#endif
 
-} // namespace Constants
+	const bool is_32_bit= sizeof(void*) <= 4u;
+	result+= is_32_bit ? "-p:32:32" : "-p:64:64";
+	result+= is_32_bit ? "-n8:16:32" : "-n8:16:32:64";
+	result+= "-i8:8-i16:16-i32:32-i64:64";
+	result+= "-f32:32-f64:64";
+	result+= "-S128";
+
+	return result;
+}
 
 } // namespace U
