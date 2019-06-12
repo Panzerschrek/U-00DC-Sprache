@@ -58,6 +58,19 @@ static ProgramString EncodeTemplateParameters( DeducibleTemplateParameters& dedu
 	return r;
 }
 
+static void CreateTemplateErrorsContext(
+	CodeBuilderErrorsContainer& errors_container,
+	const FilePos& file_pos,
+	const NamesScopePtr& template_parameters_namespace,
+	const TemplateBase& template_ )
+{
+	REPORT_ERROR( TemplateContext, errors_container, file_pos );
+	const auto template_error_context= std::make_shared<TemplateErrorsContext>();
+	template_error_context->template_declaration_file_pos= template_.file_pos;
+	errors_container.back().template_context= template_error_context;
+	template_parameters_namespace->SetErrors( template_error_context->errors );
+}
+
 void CodeBuilder::PrepareTypeTemplate(
 	const Synt::TypeTemplateBase& type_template_declaration,
 	TypeTemplatesSet& type_templates_set,
@@ -946,6 +959,8 @@ CodeBuilder::TemplateTypeGenerationResult CodeBuilder::GenTemplateType(
 	template_parameters_namespace->SetThisNamespaceName( name_encoded );
 	generated_template_things_storage_.insert( std::make_pair( name_encoded, Value( template_parameters_namespace, type_template_ptr->syntax_element->file_pos_ ) ) );
 
+	CreateTemplateErrorsContext( arguments_names_scope.GetErrors(), file_pos, template_parameters_namespace, type_template );
+
 	if( const Synt::ClassTemplate* const template_class= dynamic_cast<const Synt::ClassTemplate*>( type_template.syntax_element ) )
 	{
 		const auto cache_class_it= template_classes_cache_.find( name_encoded );
@@ -1187,6 +1202,8 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 			return &result_functions_set.functions.front();
 		}
 	}
+
+	CreateTemplateErrorsContext( errors_container, file_pos, template_parameters_namespace, function_template );
 
 	// First, prepare only as prototype.
 	NamesScopeFill( *template_parameters_namespace, *function_template.syntax_element->function_, function_template.base_class );

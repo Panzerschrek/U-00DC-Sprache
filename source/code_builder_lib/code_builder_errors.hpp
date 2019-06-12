@@ -27,16 +27,17 @@ enum class CodeBuilderErrorCode : uint16_t
 struct CodeBuilderError;
 using CodeBuilderErrorsContainer= std::vector<CodeBuilderError>;
 
-struct TemplateErrorContext
+struct TemplateErrorsContext
 {
 	CodeBuilderErrorsContainer errors;
+	FilePos template_declaration_file_pos;
 };
-using TemplateErrorContextPtr= std::shared_ptr<TemplateErrorContext>;
+using TemplateErrorsContextPtr= std::shared_ptr<TemplateErrorsContext>;
 
 struct CodeBuilderError
 {
 	ProgramString text;
-	TemplateErrorContextPtr template_context; // For errors of type "TemplateContext"
+	TemplateErrorsContextPtr template_context; // For errors of type "TemplateContext"
 	CodeBuilderErrorCode code;
 	FilePos file_pos;
 };
@@ -46,6 +47,7 @@ bool operator!=( const CodeBuilderError& l, const CodeBuilderError& r );
 bool operator< ( const CodeBuilderError& l, const CodeBuilderError& r ); // For sorting, using file_pos
 
 const char* CodeBuilderErrorCodeToString( CodeBuilderErrorCode code );
+void NormalizeErrors( CodeBuilderErrorsContainer& errors );
 
 // Macro for errors reporting.
 #define REPORT_ERROR( error_code, errors_container, ... ) errors_container.push_back( ErrorReportingImpl::ReportError( CodeBuilderErrorCode::error_code, __VA_ARGS__ ) )

@@ -210,10 +210,7 @@ ICodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_g
 	typeinfo_is_end_variable_[0]= typeinfo_is_end_variable_[1]= nullptr;
 	typeinfo_class_table_.clear();
 
-	// Soprt by file/line and left only unique error messages.
-	// TODO - provide template arguments for error messages inside templates.
-	std::sort( global_errors_.begin(), global_errors_.end() );
-	global_errors_.erase( std::unique( global_errors_.begin(), global_errors_.end() ), global_errors_.end() );
+	NormalizeErrors( global_errors_ );
 
 	BuildResult build_result;
 	build_result.errors.swap( global_errors_ );
