@@ -356,11 +356,16 @@ void CodeBuilder::BuildClassVirtualTables( Class& the_class, const Type& class_t
 }
 
 
-std::pair<Variable, llvm::Value*> CodeBuilder::TryFetchVirtualFunction( const Variable& this_, const FunctionVariable& function, FunctionContext& function_context )
+std::pair<Variable, llvm::Value*> CodeBuilder::TryFetchVirtualFunction(
+	const Variable& this_,
+	const FunctionVariable& function,
+	FunctionContext& function_context,
+	CodeBuilderErrorsContainer& errors_container,
+	const FilePos& file_pos )
 {
 	const Function& function_type= *function.type.GetFunctionType();
 
-	if( !ReferenceIsConvertible( this_.type, function_type.args.front().type, FilePos() ) )
+	if( !ReferenceIsConvertible( this_.type, function_type.args.front().type, errors_container, file_pos ) )
 		return std::make_pair( this_, function.llvm_function );
 
 	Variable this_casted;

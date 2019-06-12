@@ -1004,6 +1004,7 @@ CodeBuilder::TemplateTypeGenerationResult CodeBuilder::GenTemplateType(
 }
 
 const FunctionVariable* CodeBuilder::GenTemplateFunction(
+	CodeBuilderErrorsContainer& errors_container,
 	const FilePos& file_pos,
 	const FunctionTemplatePtr& function_template_ptr,
 	const ArgsVector<Function::Arg>& actual_args,
@@ -1057,7 +1058,7 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 		if( i == 0u && function_argument.name_ == Keywords::this_ )
 		{
 			if( function_template.base_class != nullptr &&
-				!( given_args[i].type == function_template.base_class || ReferenceIsConvertible( given_args[i].type, function_template.base_class, file_pos ) ) )
+				!( given_args[i].type == function_template.base_class || ReferenceIsConvertible( given_args[i].type, function_template.base_class, errors_container, file_pos ) ) )
 			{
 				// Givent type and type of "this" are different.
 				deduction_failed= true;
@@ -1096,8 +1097,8 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 					}
 					if( const Type* const type= signature_parameter_value->GetTypeName() )
 					{
-						if( *type == given_args[i].type || ReferenceIsConvertible( given_args[i].type, *type, file_pos ) ||
-							( !expected_arg_is_mutalbe_reference && GetConversionConstructor( given_args[i].type, *type, file_pos ) != nullptr ) )
+						if( *type == given_args[i].type || ReferenceIsConvertible( given_args[i].type, *type, errors_container, file_pos ) ||
+							( !expected_arg_is_mutalbe_reference && GetConversionConstructor( given_args[i].type, *type, errors_container, file_pos ) != nullptr ) )
 						{
 							deduced_temlpate_parameters[i]= DeducedTemplateParameter::Type();
 							deduced_specially= true;
@@ -1163,7 +1164,7 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 
 		if( boost::get<int>( &arg ) != nullptr )
 		{
-			REPORT_ERROR( TemplateParametersDeductionFailed, errors_, file_pos );
+			REPORT_ERROR( TemplateParametersDeductionFailed, errors_container, file_pos );
 			return nullptr;
 		}
 	}

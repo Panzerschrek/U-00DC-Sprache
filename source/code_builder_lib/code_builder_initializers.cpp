@@ -56,11 +56,11 @@ llvm::Constant* CodeBuilder::ApplyInitializer(
 		}
 		llvm::Constant* operator()( const Synt::ZeroInitializer& zero_initializer )
 		{
-			return this_.ApplyZeroInitializer( variable, zero_initializer, function_context );
+			return this_.ApplyZeroInitializer( variable, zero_initializer, block_names, function_context );
 		}
 		llvm::Constant* operator()( const Synt::UninitializedInitializer& uninitialized_initializer )
 		{
-			return this_.ApplyUninitializedInitializer( variable, uninitialized_initializer, function_context );
+			return this_.ApplyUninitializedInitializer( variable, uninitialized_initializer, block_names, function_context );
 		}
 	};
 
@@ -72,11 +72,12 @@ void CodeBuilder::ApplyEmptyInitializer(
 	const ProgramString& variable_name,
 	const FilePos& file_pos,
 	const Variable& variable,
+	NamesScope& block_names,
 	FunctionContext& function_context )
 {
 	if( !variable.type.IsDefaultConstructible() )
 	{
-		REPORT_ERROR( ExpectedInitializer, errors_, file_pos, variable_name );
+		REPORT_ERROR( ExpectedInitializer, block_names.GetErrors(), file_pos, variable_name );
 		return;
 	}
 
@@ -98,7 +99,7 @@ void CodeBuilder::ApplyEmptyInitializer(
 				array_member.llvm_value=
 					function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, { GetZeroGEPIndex(), counter_value } );
 
-				ApplyEmptyInitializer( variable_name, file_pos, array_member, function_context );
+				ApplyEmptyInitializer( variable_name, file_pos, array_member, block_names, function_context );
 			},
 			function_context);
 	}
@@ -119,9 +120,7 @@ void CodeBuilder::ApplyEmptyInitializer(
 		// TODO - fix this.
 		// "CallOperator" pointer used as key in overloading resolution cache. Passing stack object is not safe.
 		const Synt::CallOperator call_operator( file_pos );
-		NamesScope dummy_names_scope( ProgramString(), nullptr );
-		dummy_names_scope.SetErrors( errors_ );
-		BuildCallOperator( std::move(this_overloaded_methods_set), call_operator, dummy_names_scope, function_context );
+		BuildCallOperator( std::move(this_overloaded_methods_set), call_operator, block_names, function_context );
 	}
 	else U_ASSERT(false);
 }
@@ -292,7 +291,7 @@ llvm::Constant* CodeBuilder::ApplyStructNamedInitializer(
 							constant_initializer=
 								InitializeClassFieldWithInClassIninitalizer( struct_member, *field, function_context );
 						else
-							ApplyEmptyInitializer( field->syntax_element->name, initializer.file_pos_, struct_member, function_context );
+							ApplyEmptyInitializer( field->syntax_element->name, initializer.file_pos_, struct_member, block_names, function_context );
 					}
 
 					if( constant_initializer == nullptr )
@@ -521,7 +520,7 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 
 		function_context.llvm_ir_builder.CreateStore( value_for_assignment, variable.llvm_value );
 
-		DestroyUnusedTemporaryVariables( function_context, call_operator.file_pos_ );
+		DestroyUnusedTemporaryVariables( function_context, block_names.GetErrors(), call_operator.file_pos_ );
 
 		return constant_value;
 	}
@@ -545,7 +544,7 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 			CreateMoveToLLVMRegisterInstruction( expression_result, function_context ),
 			variable.llvm_value );
 
-		DestroyUnusedTemporaryVariables( function_context, call_operator.file_pos_ );
+		DestroyUnusedTemporaryVariables( function_context, block_names.GetErrors(), call_operator.file_pos_ );
 
 		return expression_result.constexpr_value;
 	}
@@ -641,7 +640,7 @@ llvm::Constant* CodeBuilder::ApplyExpressionInitializer(
 		llvm::Value* const value_for_assignment= CreateMoveToLLVMRegisterInstruction( expression_result, function_context );
 		function_context.llvm_ir_builder.CreateStore( value_for_assignment, variable.llvm_value );
 
-		DestroyUnusedTemporaryVariables( function_context, initializer.file_pos_ );
+		DestroyUnusedTemporaryVariables( function_context, block_names.GetErrors(), initializer.file_pos_ );
 
 		if( llvm::Constant* const constexpr_value= expression_result.constexpr_value )
 			return constexpr_value;
@@ -655,9 +654,9 @@ llvm::Constant* CodeBuilder::ApplyExpressionInitializer(
 		Variable expression_result= BuildExpressionCodeEnsureVariable( initializer.expression, block_names, function_context );
 		if( expression_result.type == variable.type )
 		{} // Ok, same types.
-		else if( ReferenceIsConvertible( expression_result.type, variable.type, initializer.file_pos_ ) )
+		else if( ReferenceIsConvertible( expression_result.type, variable.type, block_names.GetErrors(), initializer.file_pos_ ) )
 		{} // Ok, can do reference conversion.
-		else if( const FunctionVariable* const conversion_constructor= GetConversionConstructor( expression_result.type, variable.type, initializer.file_pos_ ) )
+		else if( const FunctionVariable* const conversion_constructor= GetConversionConstructor( expression_result.type, variable.type, block_names.GetErrors(), initializer.file_pos_ ) )
 		{
 			// Type conversion required.
 			expression_result= ConvertVariable( expression_result, variable.type, *conversion_constructor, block_names, function_context, initializer.file_pos_ );
@@ -697,7 +696,7 @@ llvm::Constant* CodeBuilder::ApplyExpressionInitializer(
 			}
 			CopyBytes( expression_result.llvm_value, variable.llvm_value, variable.type, function_context );
 
-			DestroyUnusedTemporaryVariables( function_context, initializer.file_pos_ );
+			DestroyUnusedTemporaryVariables( function_context, block_names.GetErrors(), initializer.file_pos_ );
 
 			return expression_result.constexpr_value; // Move can preserve constexpr.
 		}
@@ -707,7 +706,7 @@ llvm::Constant* CodeBuilder::ApplyExpressionInitializer(
 			if( expression_result.type != variable.type )
 				value_for_copy= CreateReferenceCast( value_for_copy, expression_result.type, variable.type, function_context );
 			TryCallCopyConstructor(
-				initializer.file_pos_, variable.llvm_value, value_for_copy, variable.type.GetClassTypeProxy(), function_context );
+				block_names.GetErrors(), initializer.file_pos_, variable.llvm_value, value_for_copy, variable.type.GetClassTypeProxy(), function_context );
 		}
 	}
 	else
@@ -722,6 +721,7 @@ llvm::Constant* CodeBuilder::ApplyExpressionInitializer(
 llvm::Constant* CodeBuilder::ApplyZeroInitializer(
 	const Variable& variable,
 	const Synt::ZeroInitializer& initializer,
+	NamesScope& block_names,
 	FunctionContext& function_context )
 {
 	if( const FundamentalType* const fundamental_type= variable.type.GetFundamentalType() )
@@ -798,7 +798,7 @@ llvm::Constant* CodeBuilder::ApplyZeroInitializer(
 			{
 				array_member.llvm_value=
 					function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, { GetZeroGEPIndex(), counter_value } );
-				const_value= ApplyZeroInitializer( array_member, initializer, function_context );
+				const_value= ApplyZeroInitializer( array_member, initializer, block_names, function_context );
 			},
 			function_context);
 
@@ -816,9 +816,9 @@ llvm::Constant* CodeBuilder::ApplyZeroInitializer(
 	else if( const Class* const class_type= variable.type.GetClassType() )
 	{
 		if( class_type->have_explicit_noncopy_constructors )
-			REPORT_ERROR( InitializerDisabledBecauseClassHaveExplicitNoncopyConstructors, errors_, initializer.file_pos_ );
+			REPORT_ERROR( InitializerDisabledBecauseClassHaveExplicitNoncopyConstructors, block_names.GetErrors(), initializer.file_pos_ );
 		if( class_type->kind != Class::Kind::Struct )
-			REPORT_ERROR( ZeroInitializerForClass, errors_, initializer.file_pos_ );
+			REPORT_ERROR( ZeroInitializerForClass, block_names.GetErrors(), initializer.file_pos_ );
 
 		ClassFieldsVector<llvm::Constant*> constant_initializers;
 		bool all_fields_are_constant= false;
@@ -840,7 +840,7 @@ llvm::Constant* CodeBuilder::ApplyZeroInitializer(
 				if( field->is_reference )
 				{
 					all_fields_are_constant= false;
-					REPORT_ERROR( UnsupportedInitializerForReference, errors_, initializer.file_pos_ );
+					REPORT_ERROR( UnsupportedInitializerForReference, block_names.GetErrors(), initializer.file_pos_ );
 					return;
 				}
 
@@ -849,7 +849,7 @@ llvm::Constant* CodeBuilder::ApplyZeroInitializer(
 					function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, { GetZeroGEPIndex(), GetFieldGEPIndex( field->index ) } );
 
 				llvm::Constant* const constant_initializer=
-					ApplyZeroInitializer( struct_member, initializer, function_context );
+					ApplyZeroInitializer( struct_member, initializer, block_names, function_context );
 
 				if( constant_initializer == nullptr )
 					all_fields_are_constant= false;
@@ -868,10 +868,11 @@ llvm::Constant* CodeBuilder::ApplyZeroInitializer(
 llvm::Constant* CodeBuilder::ApplyUninitializedInitializer(
 	const Variable& variable,
 	const Synt::UninitializedInitializer& initializer,
+	NamesScope& block_names,
 	FunctionContext& function_context )
 {
 	if( !function_context.is_in_unsafe_block )
-		REPORT_ERROR( UninitializedInitializerOutsideUnsafeBlock, errors_, initializer.file_pos_ );
+		REPORT_ERROR( UninitializedInitializerOutsideUnsafeBlock, block_names.GetErrors(), initializer.file_pos_ );
 
 	if( variable.type.CanBeConstexpr() )
 		return llvm::UndefValue::get( variable.type.GetLLVMType() );
@@ -913,7 +914,7 @@ llvm::Constant* CodeBuilder::InitializeReferenceField(
 	const Variable initializer_variable= BuildExpressionCodeEnsureVariable( *initializer_expression, block_names, function_context );
 
 	const FilePos initializer_expression_file_pos= Synt::GetExpressionFilePos( *initializer_expression );
-	if( !ReferenceIsConvertible( initializer_variable.type, field.type, initializer_expression_file_pos ) )
+	if( !ReferenceIsConvertible( initializer_variable.type, field.type, block_names.GetErrors(), initializer_expression_file_pos ) )
 	{
 		REPORT_ERROR( TypesMismatch, block_names.GetErrors(), initializer_expression_file_pos, field.type, initializer_variable.type );
 		return nullptr;
@@ -1048,6 +1049,7 @@ llvm::Constant* CodeBuilder::InitializeFunctionPointer(
 		{
 			const FunctionVariable* const func=
 				GenTemplateFunction(
+					block_names.GetErrors(),
 					initializer_expression_file_pos,
 					function_template,
 					ArgsVector<Function::Arg>(), false, true );

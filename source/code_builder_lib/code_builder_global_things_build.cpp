@@ -93,7 +93,7 @@ bool CodeBuilder::EnsureTypeCompleteness( const Type& type, const TypeCompletene
 	return false;
 }
 
-bool CodeBuilder::ReferenceIsConvertible( const Type& from, const Type& to, const FilePos& file_pos )
+bool CodeBuilder::ReferenceIsConvertible( const Type& from, const Type& to, CodeBuilderErrorsContainer& errors_container, const FilePos& file_pos )
 {
 	if( from == to )
 		return true;
@@ -101,9 +101,9 @@ bool CodeBuilder::ReferenceIsConvertible( const Type& from, const Type& to, cons
 	if( from != void_type_ && to != void_type_ )
 	{
 		if( !EnsureTypeCompleteness( from, TypeCompleteness::Complete ) )
-			REPORT_ERROR( UsingIncompleteType, errors_, file_pos, from );
+			REPORT_ERROR( UsingIncompleteType, errors_container, file_pos, from );
 		if( !EnsureTypeCompleteness(   to, TypeCompleteness::Complete ) )
-			REPORT_ERROR( UsingIncompleteType, errors_, file_pos,   to );
+			REPORT_ERROR( UsingIncompleteType, errors_container, file_pos,   to );
 	}
 
 	return from.ReferenceIsConvertibleTo(to);
@@ -664,7 +664,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type, const T
 										}
 									}
 									if( !overrides )
-										ApplyOverloadedFunction( *result_class_functions, parent_function, class_declaration.file_pos_ );
+										ApplyOverloadedFunction( *result_class_functions, parent_function, the_class.members.GetErrors(), class_declaration.file_pos_ );
 								} // for parent functions
 
 								// TODO - merge function templates smarter.
@@ -887,7 +887,7 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 			if( variable_declaration.initializer != nullptr )
 				variable.constexpr_value= ApplyInitializer( variable, *variable_declaration.initializer, names_scope, function_context );
 			else
-				ApplyEmptyInitializer( variable_declaration.name, variable_declaration.file_pos, variable, function_context );
+				ApplyEmptyInitializer( variable_declaration.name, variable_declaration.file_pos, variable, names_scope, function_context );
 
 			// Make immutable, if needed, only after initialization, because in initialization we need call constructors, which is mutable methods.
 			variable.value_type= ValueType::ConstReference;
@@ -925,7 +925,7 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 
 			const Variable expression_result= BuildExpressionCodeEnsureVariable( *initializer_expression, names_scope, function_context );
 
-			if( !ReferenceIsConvertible( expression_result.type, variable.type, variable_declaration.file_pos ) )
+			if( !ReferenceIsConvertible( expression_result.type, variable.type, names_scope.GetErrors(), variable_declaration.file_pos ) )
 			{
 				REPORT_ERROR( TypesMismatch, names_scope.GetErrors(), variable_declaration.file_pos, variable.type, expression_result.type );
 				FAIL_RETURN;
@@ -1040,6 +1040,7 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 				}
 				else
 					TryCallCopyConstructor(
+						names_scope.GetErrors(),
 						auto_variable_declaration->file_pos_,
 						variable.llvm_value, initializer_experrsion.llvm_value,
 						variable.type.GetClassTypeProxy(),
@@ -1092,7 +1093,7 @@ void CodeBuilder::GlobalThingReportAboutLoop( const size_t loop_start_stack_inde
 	}
 	description+= last_loop_element_name;
 
-	REPORT_ERROR( GlobalsLoopDetected, errors_, min_file_pos, description );
+	REPORT_ERROR( GlobalsLoopDetected, global_errors_, min_file_pos, description );
 }
 
 } // namespace CodeBuilderPrivate
