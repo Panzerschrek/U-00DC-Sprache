@@ -515,6 +515,9 @@ public:
 	ClassMemberVisibility GetAccessFor( const ClassProxyPtr& class_ ) const;
 	void CopyAccessRightsFrom( const NamesScope& src );
 
+	void SetErrors( CodeBuilderErrorsContainer& errors );
+	CodeBuilderErrorsContainer& GetErrors() const;
+
 	template<class Func>
 	void ForEachInThisScope( const Func& func )
 	{
@@ -577,6 +580,8 @@ private:
 
 	mutable size_t iterating_= 0u;
 	std::unordered_map<ClassProxyPtr, ClassMemberVisibility> access_rights_;
+
+	CodeBuilderErrorsContainer* errors_= nullptr;
 };
 
 using TemplateParameter= boost::variant< Variable, Type >;

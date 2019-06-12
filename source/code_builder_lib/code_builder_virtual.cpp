@@ -91,12 +91,13 @@ void CodeBuilder::ProcessClassVirtualFunction( Class& the_class, FunctionVariabl
 
 	const ProgramString& function_name= function.syntax_element->name_.components.back().name;
 	const FilePos& file_pos= function.syntax_element->file_pos_;
+	CodeBuilderErrorsContainer& errors_container= the_class.members.GetErrors();
 
 	if( function.virtual_function_kind != Synt::VirtualFunctionKind::None &&
 		the_class.GetMemberVisibility( function_name ) == ClassMemberVisibility::Private )
 	{
 		// Private members not visible in child classes. So, virtual private function is 100% error.
-		REPORT_ERROR( VirtualForPrivateFunction, errors_, file_pos, function_name );
+		REPORT_ERROR( VirtualForPrivateFunction, errors_container, file_pos, function_name );
 	}
 
 	if( !function.is_this_call )
@@ -141,12 +142,12 @@ void CodeBuilder::ProcessClassVirtualFunction( Class& the_class, FunctionVariabl
 			}
 		}
 		else if( virtual_table_entry != nullptr )
-			REPORT_ERROR( VirtualRequired, errors_, file_pos, function_name );
+			REPORT_ERROR( VirtualRequired, errors_container, file_pos, function_name );
 		break;
 
 	case Synt::VirtualFunctionKind::DeclareVirtual:
 		if( virtual_table_entry != nullptr )
-			REPORT_ERROR( OverrideRequired, errors_, file_pos, function_name );
+			REPORT_ERROR( OverrideRequired, errors_container, file_pos, function_name );
 		else
 		{
 			function.virtual_table_index= static_cast<unsigned int>(the_class.virtual_table.size());
@@ -162,9 +163,9 @@ void CodeBuilder::ProcessClassVirtualFunction( Class& the_class, FunctionVariabl
 
 	case Synt::VirtualFunctionKind::VirtualOverride:
 		if( virtual_table_entry == nullptr )
-			REPORT_ERROR( FunctionDoesNotOverride, errors_, file_pos, function_name );
+			REPORT_ERROR( FunctionDoesNotOverride, errors_container, file_pos, function_name );
 		else if( virtual_table_entry->is_final )
-			REPORT_ERROR( OverrideFinalFunction, errors_, file_pos, function_name );
+			REPORT_ERROR( OverrideFinalFunction, errors_container, file_pos, function_name );
 		else
 		{
 			function.virtual_table_index= virtual_table_index;
@@ -175,11 +176,11 @@ void CodeBuilder::ProcessClassVirtualFunction( Class& the_class, FunctionVariabl
 
 	case Synt::VirtualFunctionKind::VirtualFinal:
 		if( virtual_table_entry == nullptr )
-			REPORT_ERROR( FinalForFirstVirtualFunction, errors_, file_pos, function_name );
+			REPORT_ERROR( FinalForFirstVirtualFunction, errors_container, file_pos, function_name );
 		else
 		{
 			if( virtual_table_entry->is_final )
-				REPORT_ERROR( OverrideFinalFunction, errors_, file_pos, function_name );
+				REPORT_ERROR( OverrideFinalFunction, errors_container, file_pos, function_name );
 			else
 			{
 				function.virtual_table_index= virtual_table_index;
@@ -192,13 +193,13 @@ void CodeBuilder::ProcessClassVirtualFunction( Class& the_class, FunctionVariabl
 
 	case Synt::VirtualFunctionKind::VirtualPure:
 		if( virtual_table_entry != nullptr )
-			REPORT_ERROR( OverrideRequired, errors_, file_pos, function_name );
+			REPORT_ERROR( OverrideRequired, errors_container, file_pos, function_name );
 		else
 		{
 			if( function.syntax_element->block_ != nullptr )
-				REPORT_ERROR( BodyForPureVirtualFunction, errors_, file_pos, function_name );
+				REPORT_ERROR( BodyForPureVirtualFunction, errors_container, file_pos, function_name );
 			if( function_name == Keyword( Keywords::destructor_ ) )
-				REPORT_ERROR( PureDestructor, errors_, file_pos, the_class.members.GetThisNamespaceName() );
+				REPORT_ERROR( PureDestructor, errors_container, file_pos, the_class.members.GetThisNamespaceName() );
 			function.have_body= true; // Mark pure function as "with body", because we needs to disable real body creation for pure function.
 
 			function.virtual_table_index= static_cast<unsigned int>(the_class.virtual_table.size());
