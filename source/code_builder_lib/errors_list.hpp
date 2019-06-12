@@ -105,6 +105,7 @@ PROCESS_ERROR( MethodBodyGenerationFailed, "Method body generation failed." )
 PROCESS_ERROR( AccessingDeletedMethod, "Accessing deleted method." )
 
 // Template errors.
+PROCESS_ERROR( TemplateContext, "" )
 PROCESS_ERROR( InvalidValueAsTemplateArgument, "Invalid value as template argument. Expected variable of type, got \"%1%\"." )
 PROCESS_ERROR( InvalidTypeOfTemplateVariableArgument, "Invalid type for template variable-argument: \"%1%\"." )
 PROCESS_ERROR( TemplateParametersDeductionFailed, "Template parameters deduction failed." )

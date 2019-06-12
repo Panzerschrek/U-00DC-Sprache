@@ -24,9 +24,19 @@ enum class CodeBuilderErrorCode : uint16_t
 	#undef PROCESS_ERROR
 };
 
+struct CodeBuilderError;
+using CodeBuilderErrorsContainer= std::vector<CodeBuilderError>;
+
+struct TemplateErrorContext
+{
+	CodeBuilderErrorsContainer errors;
+};
+using TemplateErrorContextPtr= std::shared_ptr<TemplateErrorContext>;
+
 struct CodeBuilderError
 {
 	ProgramString text;
+	TemplateErrorContextPtr template_context; // For errors of type "TemplateContext"
 	CodeBuilderErrorCode code;
 	FilePos file_pos;
 };
