@@ -216,7 +216,8 @@ static void PrintErrors( const U::SourceGraph& source_graph, const U::CodeBuilde
 			U_ASSERT( error.template_context != nullptr );
 
 			std::cerr << U::ToUTF8( source_graph.nodes_storage[ error.template_context->template_declaration_file_pos.file_index ].file_path ) << ": "
-				<< "In instantiation of some template"
+				<< "In instantiation of \"" << U::ToUTF8( error.template_context->template_name )
+				<< "\" " << U::ToUTF8( error.template_context->parameters_description )
 				<< "\n";
 
 			std::cerr << U::ToUTF8( source_graph.nodes_storage[error.file_pos.file_index ].file_path )

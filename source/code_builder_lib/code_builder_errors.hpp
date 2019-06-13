@@ -31,6 +31,9 @@ struct TemplateErrorsContext
 {
 	CodeBuilderErrorsContainer errors;
 	FilePos template_declaration_file_pos;
+
+	ProgramString template_name;
+	ProgramString parameters_description;
 };
 using TemplateErrorsContextPtr= std::shared_ptr<TemplateErrorsContext>;
 

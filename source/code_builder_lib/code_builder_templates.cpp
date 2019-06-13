@@ -62,13 +62,69 @@ static void CreateTemplateErrorsContext(
 	CodeBuilderErrorsContainer& errors_container,
 	const FilePos& file_pos,
 	const NamesScopePtr& template_parameters_namespace,
-	const TemplateBase& template_ )
+	const TemplateBase& template_,
+	const DeducibleTemplateParameters& template_args,
+	const std::vector< std::pair< ProgramString, Value > >& known_template_args= {} )
 {
 	REPORT_ERROR( TemplateContext, errors_container, file_pos );
 	const auto template_error_context= std::make_shared<TemplateErrorsContext>();
 	template_error_context->template_declaration_file_pos= template_.file_pos;
 	errors_container.back().template_context= template_error_context;
 	template_parameters_namespace->SetErrors( template_error_context->errors );
+
+	{
+		ProgramString args_description;
+		args_description+= "[ with "_SpC;
+
+		size_t total_args= known_template_args.size() + template_args.size();
+		size_t args_processed= 0u;
+		for( const auto& known_arg : known_template_args )
+		{
+			args_description+= known_arg.first + " = "_SpC;
+			if( const Type* const type= known_arg.second.GetTypeName() )
+				args_description+= type->ToString();
+			else if( const Variable* const variable= known_arg.second.GetVariable() )
+				args_description+= ToProgramString( std::to_string( int64_t(variable->constexpr_value->getUniqueInteger().getLimitedValue()) ) );
+			else U_ASSERT(false);
+
+			++args_processed;
+			if( args_processed < total_args )
+				args_description+= ", "_SpC;
+		}
+
+		U_ASSERT( template_.template_parameters.size() == template_args.size() );
+		for( size_t i= 0u; i < template_args.size() ; ++i )
+		{
+			const DeducibleTemplateParameter& arg= template_args[i];
+
+			args_description+= template_.template_parameters[i].name + " = "_SpC;
+			if( const Type* const type= boost::get<Type>( &arg ) )
+				args_description+= type->ToString();
+			else if( const Variable* const variable= boost::get<Variable>( &arg ) )
+				args_description+= ToProgramString( std::to_string( int64_t(variable->constexpr_value->getUniqueInteger().getLimitedValue()) ) );
+			else U_ASSERT(false);
+
+			++args_processed;
+			if( args_processed < total_args )
+				args_description+= ", "_SpC;
+		}
+
+		args_description+= " ]"_SpC;
+		template_error_context->parameters_description= std::move(args_description);
+	}
+	{
+		ProgramString name= template_.parent_namespace->ToString();
+		if( !name.empty() )
+			name+= "::"_SpC;
+
+		if( const auto type_template= dynamic_cast<const TypeTemplate*>(&template_) )
+			name+= type_template->syntax_element->name_;
+		else if( const auto function_template= dynamic_cast<const FunctionTemplate*>(&template_) )
+			name+= function_template->syntax_element->function_->name_.components.back().name;
+		else U_ASSERT(false);
+
+		template_error_context->template_name= std::move(name);
+	}
 }
 
 void CodeBuilder::PrepareTypeTemplate(
@@ -959,7 +1015,7 @@ CodeBuilder::TemplateTypeGenerationResult CodeBuilder::GenTemplateType(
 	template_parameters_namespace->SetThisNamespaceName( name_encoded );
 	generated_template_things_storage_.insert( std::make_pair( name_encoded, Value( template_parameters_namespace, type_template_ptr->syntax_element->file_pos_ ) ) );
 
-	CreateTemplateErrorsContext( arguments_names_scope.GetErrors(), file_pos, template_parameters_namespace, type_template );
+	CreateTemplateErrorsContext( arguments_names_scope.GetErrors(), file_pos, template_parameters_namespace, type_template, deduced_template_args );
 
 	if( const Synt::ClassTemplate* const template_class= dynamic_cast<const Synt::ClassTemplate*>( type_template.syntax_element ) )
 	{
@@ -1203,7 +1259,7 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 		}
 	}
 
-	CreateTemplateErrorsContext( errors_container, file_pos, template_parameters_namespace, function_template );
+	CreateTemplateErrorsContext( errors_container, file_pos, template_parameters_namespace, function_template, deduced_template_args, function_template.known_template_parameters );
 
 	// First, prepare only as prototype.
 	NamesScopeFill( *template_parameters_namespace, *function_template.syntax_element->function_, function_template.base_class );

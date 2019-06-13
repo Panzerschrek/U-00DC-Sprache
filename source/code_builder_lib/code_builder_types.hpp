@@ -685,6 +685,8 @@ struct Enum
 
 struct TemplateBase
 {
+	virtual ~TemplateBase()= default;
+
 	struct TemplateParameter
 	{
 		ProgramString name;
