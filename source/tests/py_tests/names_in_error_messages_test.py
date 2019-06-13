@@ -221,3 +221,73 @@ def TypeNameInErrorMessage_ClassTemplate_Test7():
 	assert( errors_list[0].file_pos.line == 5 )
 	assert( errors_list[0].text.find( "i32" ) != -1 )
 	assert( errors_list[0].text.find( "Box</i32/>" ) != -1 )
+
+
+def TemplateParametersInErrorInsideTemplate_Test0():
+	c_program_text= """
+		template</ type T />
+		struct Box
+		{
+			T t;
+			UnknownName x;
+		}
+
+		type B= Box</ i32 />;
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "TemplateContext" )
+	assert( errors_list[0].file_pos.line == 9 )
+	assert( len(errors_list[0].template_errors.errors) > 0 )
+	assert( errors_list[0].template_errors.errors[0].error_code == "NameNotFound" )
+	assert( errors_list[0].template_errors.errors[0].file_pos.line == 6 )
+	assert( errors_list[0].template_errors.parameters_description.find( "T = i32" ) != -1 )
+	assert( errors_list[0].template_errors.template_name.find( "Box" ) != -1 )
+
+
+def TemplateParametersInErrorInsideTemplate_Test1():
+	c_program_text= """
+		template</ type A, type B />
+		fn Add( A a, B b ) : auto
+		{
+			return a + b;
+		}
+		fn Foo()
+		{
+			Add( -5, 0.25 );
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "TemplateContext" )
+	assert( errors_list[0].file_pos.line == 9 )
+	assert( len(errors_list[0].template_errors.errors) > 0 )
+	assert( errors_list[0].template_errors.errors[0].error_code == "NoMatchBinaryOperatorForGivenTypes" )
+	assert( errors_list[0].template_errors.errors[0].file_pos.line == 5 )
+	assert( errors_list[0].template_errors.parameters_description.find( "A = i32" ) != -1 )
+	assert( errors_list[0].template_errors.parameters_description.find( "B = f64" ) != -1 )
+	assert( errors_list[0].template_errors.template_name.find( "Add" ) != -1 )
+
+
+def TemplateParametersInErrorInsideTemplate_Test2():
+	c_program_text= """
+		template</ type A, type B />
+		fn Add( A a, B b ) : auto
+		{
+			return a + b;
+		}
+		fn Foo()
+		{
+			Add</bool, f32/>( false, 6.66f );
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "TemplateContext" )
+	assert( errors_list[0].file_pos.line == 9 )
+	assert( len(errors_list[0].template_errors.errors) > 0 )
+	assert( errors_list[0].template_errors.errors[0].error_code == "NoMatchBinaryOperatorForGivenTypes" )
+	assert( errors_list[0].template_errors.errors[0].file_pos.line == 5 )
+	assert( errors_list[0].template_errors.parameters_description.find( "A = bool" ) != -1 )
+	assert( errors_list[0].template_errors.parameters_description.find( "B = f32" ) != -1 )
+	assert( errors_list[0].template_errors.template_name.find( "Add" ) != -1 )

@@ -301,7 +301,23 @@ static PyObject* RunFunction( PyObject* const self, PyObject* const args )
 	return Py_None;
 }
 
-PyObject* BuildErrorsList( const U::CodeBuilderErrorsContainer& errors )
+
+static PyObject* BuildFilePos( const U::FilePos& file_pos )
+{
+	PyObject* const file_pos_dict= PyDict_New();
+	PyDict_SetItemString( file_pos_dict, "file_index", PyLong_FromLongLong( file_pos.file_index ) );
+	PyDict_SetItemString( file_pos_dict, "line", PyLong_FromLongLong( file_pos.line ) );
+	PyDict_SetItemString( file_pos_dict, "pos_in_line", PyLong_FromLongLong( file_pos.pos_in_line ) );
+	return file_pos_dict;
+}
+
+static PyObject* BuildString( const U::ProgramString& str )
+{
+	const std::string str_utf8= U::ToUTF8( str );
+	return PyUnicode_DecodeUTF8( str_utf8.data(), str_utf8.size(), nullptr );
+}
+
+static PyObject* BuildErrorsList( const U::CodeBuilderErrorsContainer& errors )
 {
 	PyObject* const list= PyList_New(0);
 
@@ -309,21 +325,24 @@ PyObject* BuildErrorsList( const U::CodeBuilderErrorsContainer& errors )
 	{
 		PyObject* const dict= PyDict_New();
 
-		PyObject* const file_pos_dict= PyDict_New();
-		PyDict_SetItemString( file_pos_dict, "file_index", PyLong_FromLongLong( error.file_pos.file_index ) );
-		PyDict_SetItemString( file_pos_dict, "line", PyLong_FromLongLong( error.file_pos.line ) );
-		PyDict_SetItemString( file_pos_dict, "pos_in_line", PyLong_FromLongLong( error.file_pos.pos_in_line ) );
-
-		PyDict_SetItemString( dict, "file_pos", file_pos_dict );
+		PyDict_SetItemString( dict, "file_pos", BuildFilePos( error.file_pos ) );
 
 		const char* const error_code_str= U::CodeBuilderErrorCodeToString( error.code );
 		PyDict_SetItemString( dict, "code", PyUnicode_DecodeUTF8( error_code_str, std::strlen(error_code_str), nullptr ) );
 
-		std::string message= U::ToUTF8( error.text );
-		PyDict_SetItemString( dict, "text", PyUnicode_DecodeUTF8( message.data(), message.size(), nullptr ) );
+		PyDict_SetItemString( dict, "text", BuildString( error.text ) );
 
 		if( error.template_context != nullptr )
-			PyDict_SetItemString( dict, "template_errors_context", BuildErrorsList( error.template_context->errors ) );
+		{
+			PyObject* const template_context_dict= PyDict_New();
+
+			PyDict_SetItemString( template_context_dict, "errors", BuildErrorsList( error.template_context->errors ) );
+			PyDict_SetItemString( template_context_dict, "file_pos", BuildFilePos( error.template_context->template_declaration_file_pos ) );
+			PyDict_SetItemString( template_context_dict, "template_name", BuildString( error.template_context->template_name ) );
+			PyDict_SetItemString( template_context_dict, "parameters_description", BuildString( error.template_context->parameters_description ) );
+
+			PyDict_SetItemString( dict, "template_context", template_context_dict );
+		}
 
 		PyList_Append( list, dict );
 	}
