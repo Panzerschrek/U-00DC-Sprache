@@ -23,8 +23,10 @@ R"(
 		{
 			unsafe
 			{
-				auto lock_temps ?r<? & ?> ?m<? mut ?> ?var_name= r[size_type(0)];
-				safe{ ?b }
+				{
+					auto lock_temps ?r<? & ?> ?m<? mut ?> ?var_name= r[size_type(0)];
+					safe{ ?b }
+				}
 				r.pop_front();
 			}
 		}
