@@ -71,6 +71,16 @@ fn U_Main() : i32
 			halt if( vec.size() != size_type(3) );
 		}
 	}
+	{
+		var VecType mut vec;
+		vec.push_back( 5 );
+		vec.push_back( 3 );
+		vec.push_back( 7 );
+		auto range= vec.range();
+		auto mut res= 5 * 3 * 7 * 65;
+		foreach( x : range ) { res/= x; }
+		halt if( res != 65 );
+	}
 
 	return 0;
 }
