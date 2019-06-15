@@ -1,0 +1,32 @@
+//##success_test
+
+fn U_Main() : i32
+{
+	{
+		var [ i32, 4 ] arr[ 4, 8, 15, 16 ];
+		var i32 mut sum= 0;
+		foreach( x : arr ) { sum+= x; }
+		halt if( sum != 4 + 8 + 15 + 16 );
+	}
+	{
+		var [ i32, 3 ] mut arr[ -54, 65, 895 ];
+		var size_type mut iterations(0);
+		foreach( &mut x : arr )
+		{
+			x*= -2;
+			++iterations;
+		}
+		halt if( iterations != size_type(3) );
+		halt if( arr[0u] != 108 );
+		halt if( arr[1u] != -130 );
+		halt if( arr[2u] != -1790 );
+	}
+	{
+		var [ i32, 0 ] arr[];
+		var size_type mut iterations(0);
+		foreach( x : arr ) { ++iterations; }
+		halt if( iterations != size_type(0) );
+	}
+
+	return 0;
+}

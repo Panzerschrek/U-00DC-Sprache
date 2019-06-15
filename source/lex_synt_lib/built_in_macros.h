@@ -18,16 +18,29 @@ R"(
 <?
 	{
 		auto lock_temps& ?m<? mut ?> e_result= ?e;
-		auto mut r= e_result.range();
-		while( !r.empty() )
+		static_if( typeinfo</ typeof(e_result) />.is_array )
 		{
-			unsafe
+			var size_type mut i(0u);
+			while( i < typeinfo</ typeof(e_result) />.element_count )
 			{
+				auto ?r<? & ?> ?m<? mut ?> ?var_name= e_result[i];
+				safe{ ?b }
+				++i;
+			}
+		}
+		else
+		{
+			auto mut r= e_result.range();
+			while( !r.empty() )
+			{
+				unsafe
 				{
-					auto lock_temps ?r<? & ?> ?m<? mut ?> ?var_name= r[size_type(0)];
-					safe{ ?b }
+					{
+						auto lock_temps ?r<? & ?> ?m<? mut ?> ?var_name= r[size_type(0)];
+						safe{ ?b }
+					}
+					r.pop_front();
 				}
-				r.pop_front();
 			}
 		}
 	}
