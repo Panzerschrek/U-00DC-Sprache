@@ -1,6 +1,7 @@
 import "checked_math.u"
 import "minmax.u"
 import "pointer.u"
+import "random_access_range.u"
 
 namespace ust
 {
@@ -178,6 +179,18 @@ class string_base
 	{
 		halt if(empty());
 		unsafe{  return ptr_[ size_ - size_type(1) ];  }
+	}
+
+	// ranges
+
+	fn range(  mut this ) : random_access_range</ char_type, true  />
+	{
+		unsafe{  return random_access_range</ char_type, true  />( ptr_, ptr_ + size_ );  }
+	}
+
+	fn range( imut this ) : random_access_range</ char_type, false />
+	{
+		unsafe{  return random_access_range</ char_type, false />( ptr_, ptr_ + size_ );  }
 	}
 
 	// compare
