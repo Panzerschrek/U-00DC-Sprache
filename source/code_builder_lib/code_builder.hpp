@@ -191,7 +191,12 @@ private:
 	void BuildClassVirtualTables_r( Class& the_class, const Type& class_type, const std::vector< ClassProxyPtr >& dst_class_path, llvm::Value* dst_class_ptr_null_based );
 	void BuildClassVirtualTables( Class& the_class, const Type& class_type ); // Returns type of vtable pointer or nullptr.
 
-	std::pair<Variable, llvm::Value*> TryFetchVirtualFunction( const Variable& this_, const FunctionVariable& function, FunctionContext& function_context );
+	std::pair<Variable, llvm::Value*> TryFetchVirtualFunction(
+		const Variable& this_,
+		const FunctionVariable& function,
+		FunctionContext& function_context,
+		CodeBuilderErrorsContainer& errors_container,
+		const FilePos& file_pos );
 
 	void SetupVirtualTablePointers_r(
 		llvm::Value* this_,
@@ -290,6 +295,7 @@ private:
 		bool skip_type_generation );
 
 	const FunctionVariable* GenTemplateFunction(
+		CodeBuilderErrorsContainer& errors_container,
 		const FilePos& file_pos,
 		const FunctionTemplatePtr& function_template_ptr,
 		const ArgsVector<Function::Arg>& actual_args,
@@ -337,6 +343,7 @@ private:
 		FunctionContext& function_context );
 
 	void TryCallCopyConstructor(
+		CodeBuilderErrorsContainer& errors_container,
 		const FilePos& file_pos,
 		llvm::Value* this_, llvm::Value* src,
 		const ClassProxyPtr& class_proxy,
@@ -357,10 +364,12 @@ private:
 		const StackVariablesStorage& stack_variables_storage,
 		FunctionContext& function_context,
 		ReferencesGraph& variables_state_copy,
+		CodeBuilderErrorsContainer& errors_container,
 		const FilePos& file_pos );
 
 	void CallDestructors(
 		const StackVariablesStorage& stack_variables_storage,
+		NamesScope& names_scope,
 		FunctionContext& function_context,
 		const FilePos& file_pos );
 
@@ -368,11 +377,12 @@ private:
 		llvm::Value* ptr,
 		const Type& type,
 		FunctionContext& function_context,
+		CodeBuilderErrorsContainer& errors_container,
 		const FilePos& file_pos );
 
-	void CallDestructorsForLoopInnerVariables( FunctionContext& function_context, const FilePos& file_pos );
-	void CallDestructorsBeforeReturn( FunctionContext& function_context, const FilePos& file_pos );
-	void CallMembersDestructors( FunctionContext& function_context, const FilePos& file_pos );
+	void CallDestructorsForLoopInnerVariables( NamesScope& names_scope, FunctionContext& function_context, const FilePos& file_pos );
+	void CallDestructorsBeforeReturn( NamesScope& names_scope, FunctionContext& function_context, const FilePos& file_pos );
+	void CallMembersDestructors( FunctionContext& function_context, CodeBuilderErrorsContainer& errors_container, const FilePos& file_pos );
 
 	// Returns index of function in set, if function successfuly prepared and inserted. Returns ~0 on fail.
 	size_t PrepareFunction(
@@ -386,6 +396,7 @@ private:
 		const ClassProxyPtr& base_class,
 		const Function& func_type,
 		OverloadedOperator overloaded_operator,
+		CodeBuilderErrorsContainer& errors_container,
 		const FilePos& file_pos );
 
 	// Returns type of return value.
@@ -445,6 +456,7 @@ private:
 		const Variable& r_var,
 		BinaryOperatorType binary_operator,
 		const FilePos& file_pos,
+		NamesScope& names,
 		FunctionContext& function_context );
 		
 	Value BuildLazyBinaryOperator(
@@ -470,8 +482,8 @@ private:
 
 	Value BuildNamedOperand( const Synt::NamedOperand& named_operand, NamesScope& names, FunctionContext& function_context );
 	Value BuildMoveOpeator( const Synt::MoveOperator& move_operator, NamesScope& names, FunctionContext& function_context );
-	Value BuildNumericConstant( const Synt::NumericConstant& numeric_constant, FunctionContext& function_context );
-	Value BuildStringLiteral( const Synt::StringLiteral& string_literal, FunctionContext& function_context );
+	Value BuildNumericConstant( const Synt::NumericConstant& numeric_constant, NamesScope& names, FunctionContext& function_context );
+	Value BuildStringLiteral( const Synt::StringLiteral& string_literal, NamesScope& names, FunctionContext& function_context );
 	Variable BuildBooleanConstant( const Synt::BooleanConstant& boolean_constant, FunctionContext& function_context );
 
 	Value BuildIndexationOperator(
@@ -520,16 +532,19 @@ private:
 	Value BuildUnaryMinus(
 		const Value& value,
 		const Synt::UnaryMinus& unary_minus,
+		NamesScope& names,
 		FunctionContext& function_context );
 
 	Value BuildLogicalNot(
 		const Value& value,
 		const Synt::LogicalNot& logical_not,
+		NamesScope& names,
 		FunctionContext& function_context );
 
 	Value BuildBitwiseNot(
 		const Value& value,
 		const Synt::BitwiseNot& bitwise_not,
+		NamesScope& names,
 		FunctionContext& function_context );
 
 	// Typeinfo
@@ -595,10 +610,12 @@ private:
 
 	void BuildBreakOperatorCode(
 		const Synt::BreakOperator& break_operator,
+		NamesScope& names,
 		FunctionContext& function_context );
 
 	void BuildContinueOperatorCode(
 		const Synt::ContinueOperator& continue_operator,
+		NamesScope& names,
 		FunctionContext& function_context );
 
 	BlockBuildInfo BuildIfOperatorCode(
@@ -643,12 +660,14 @@ private:
 	bool ApplyOverloadedFunction(
 		OverloadedFunctionsSet& functions_set,
 		const FunctionVariable& function,
+		CodeBuilderErrorsContainer& errors_container,
 		const FilePos& file_pos );
 
 	const FunctionVariable* GetOverloadedFunction(
 		const OverloadedFunctionsSet& functions_set,
 		const ArgsVector<Function::Arg>& actual_args,
 		bool first_actual_arg_is_this,
+		CodeBuilderErrorsContainer& errors_container,
 		const FilePos& file_pos,
 		bool produce_errors= true,
 		bool enable_type_conversions= true);
@@ -656,11 +675,13 @@ private:
 	const FunctionVariable* GetOverloadedOperator(
 		const ArgsVector<Function::Arg>& actual_args,
 		OverloadedOperator op,
+		CodeBuilderErrorsContainer& errors_container,
 		const FilePos& file_pos );
 
 	const FunctionVariable* GetConversionConstructor(
 		const Type& src_type,
 		const Type& dst_type,
+		CodeBuilderErrorsContainer& errors_container,
 		const FilePos& file_pos );
 
 	const TemplateTypeGenerationResult* SelectTemplateType(
@@ -680,6 +701,7 @@ private:
 		const ProgramString& variable_name,
 		const FilePos& file_pos,
 		const Variable& variable,
+		NamesScope& block_names,
 		FunctionContext& function_context );
 
 	llvm::Constant* ApplyArrayInitializer(
@@ -709,11 +731,13 @@ private:
 	llvm::Constant* ApplyZeroInitializer(
 		const Variable& variable,
 		const Synt::ZeroInitializer& initializer,
+		NamesScope& block_names,
 		FunctionContext& function_context );
 
 	llvm::Constant* ApplyUninitializedInitializer(
 		const Variable& variable,
 		const Synt::UninitializedInitializer& initializer,
+		NamesScope& block_names,
 		FunctionContext& function_context );
 
 	llvm::Constant* InitializeReferenceField(
@@ -743,31 +767,41 @@ private:
 
 	// Reference-checking.
 	void ProcessFunctionArgReferencesTags(
+		CodeBuilderErrorsContainer& errors_container,
 		const Synt::FunctionType& func,
 		Function& function_type,
 		const Synt::FunctionArgument& in_arg,
 		const Function::Arg& out_arg,
 		size_t arg_number );
 
-	void ProcessFunctionReturnValueReferenceTags( const Synt::FunctionType& func, const Function& function_type );
+	void ProcessFunctionReturnValueReferenceTags(
+		CodeBuilderErrorsContainer& errors_container,
+		const Synt::FunctionType& func,
+		const Function& function_type );
 
 	void TryGenerateFunctionReturnReferencesMapping(
+		CodeBuilderErrorsContainer& errors_container,
 		const Synt::FunctionType& func,
 		Function& function_type );
 
 	void ProcessFunctionReferencesPollution(
+		CodeBuilderErrorsContainer& errors_container,
 		const Synt::Function& func,
 		Function& function_type,
 		const ClassProxyPtr& base_class );
 
 	void ProcessFunctionTypeReferencesPollution(
+		CodeBuilderErrorsContainer& errors_container,
 		const Synt::FunctionType& func,
 		Function& function_type,
 		bool first_arg_is_implicit_this= false );
 
-	void DestroyUnusedTemporaryVariables( FunctionContext& function_context, const FilePos& file_pos );
+	void DestroyUnusedTemporaryVariables( FunctionContext& function_context, CodeBuilderErrorsContainer& errors_container, const FilePos& file_pos );
 
-	ReferencesGraph MergeVariablesStateAfterIf( const std::vector<ReferencesGraph>& bracnhes_variables_state, const FilePos& file_pos );
+	ReferencesGraph MergeVariablesStateAfterIf(
+		const std::vector<ReferencesGraph>& bracnhes_variables_state,
+		CodeBuilderErrorsContainer& errors_container,
+		const FilePos& file_pos );
 
 	// NamesScope fill
 
@@ -787,7 +821,7 @@ private:
 
 	bool IsTypeComplete( const Type& type ) const;
 	bool EnsureTypeCompleteness( const Type& type, TypeCompleteness completeness ); // Returns true, if all ok
-	bool ReferenceIsConvertible( const Type& from, const Type& to, const FilePos& file_pos ); // Returns true of all ok. If types are different can call EnsureTypeCompleteness.
+	bool ReferenceIsConvertible( const Type& from, const Type& to, CodeBuilderErrorsContainer& errors_container, const FilePos& file_pos ); // Returns true of all ok. If types are different can call EnsureTypeCompleteness.
 
 	void GlobalThingBuildNamespace( NamesScope& names_scope );
 	void GlobalThingBuildFunctionsSet( NamesScope& names_scope, OverloadedFunctionsSet& functions_set, bool build_body );
@@ -875,7 +909,7 @@ private:
 	FunctionContext* global_function_context_= nullptr;
 
 	std::unique_ptr<llvm::Module> module_;
-	std::vector<CodeBuilderError> errors_;
+	std::vector<CodeBuilderError> global_errors_; // Do not use directly. Use NamesScope::GetErrors() instead.
 
 	std::unordered_map< size_t, BuildResultInternal > compiled_sources_cache_;
 	ClassTable* current_class_table_= nullptr;

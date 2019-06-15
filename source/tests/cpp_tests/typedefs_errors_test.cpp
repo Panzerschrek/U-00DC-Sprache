@@ -118,8 +118,11 @@ U_TEST( NameNotFound_ForTypedefTemplate_Test0 )
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NameNotFound );
-	U_TEST_ASSERT( error.file_pos.line == 3u );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::TemplateContext );
+	U_TEST_ASSERT( error.template_context != nullptr );
+	U_TEST_ASSERT( !error.template_context->errors.empty() );
+	U_TEST_ASSERT( error.template_context->errors.front().code == CodeBuilderErrorCode::NameNotFound );
+	U_TEST_ASSERT( error.template_context->errors.front().file_pos.line == 3u );
 }
 
 U_TEST( NameNotFound_ForTypedefTemplate_Test1 )

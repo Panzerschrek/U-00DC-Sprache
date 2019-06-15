@@ -207,6 +207,33 @@ static std::string GetNativeTargetFeaturesStr()
 	return features.getString();
 }
 
+static void PrintErrors( const U::SourceGraph& source_graph, const U::CodeBuilderErrorsContainer& errors )
+{
+	for( const U::CodeBuilderError& error : errors )
+	{
+		if( error.code == U::CodeBuilderErrorCode::TemplateContext )
+		{
+			U_ASSERT( error.template_context != nullptr );
+
+			std::cerr << U::ToUTF8( source_graph.nodes_storage[ error.template_context->template_declaration_file_pos.file_index ].file_path ) << ": "
+				<< "In instantiation of \"" << U::ToUTF8( error.template_context->template_name )
+				<< "\" " << U::ToUTF8( error.template_context->parameters_description )
+				<< "\n";
+
+			std::cerr << U::ToUTF8( source_graph.nodes_storage[error.file_pos.file_index ].file_path )
+				<< ":" << error.file_pos.line << ":" << error.file_pos.pos_in_line << ": required from here: " << "\n";
+		}
+		else
+		{
+			std::cerr << U::ToUTF8( source_graph.nodes_storage[error.file_pos.file_index ].file_path )
+				<< ":" << error.file_pos.line << ":" << error.file_pos.pos_in_line << ": error: " << U::ToUTF8( error.text ) << "\n";
+		}
+
+		if( error.template_context != nullptr )
+			PrintErrors( source_graph, error.template_context->errors );
+	}
+}
+
 // Linked into executable resource files with standart library bitcode.
 extern const char _binary_asm_funcs_bc_start;
 extern const char _binary_asm_funcs_bc_end;
@@ -434,9 +461,7 @@ int main( const int argc, const char* const argv[])
 		}
 		else
 		{
-			for( const U::CodeBuilderError& error : build_result.errors )
-				std::cerr << U::ToUTF8( source_graph->nodes_storage[error.file_pos.file_index ].file_path )
-					<< ":" << error.file_pos.line << ":" << error.file_pos.pos_in_line << ": error: " << U::ToUTF8( error.text ) << "\n";
+			PrintErrors( *source_graph, build_result.errors );
 		}
 
 		if( !build_result.errors.empty() )

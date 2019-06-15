@@ -9,6 +9,7 @@ namespace CodeBuilderPrivate
 {
 
 void CodeBuilder::ProcessFunctionArgReferencesTags(
+	CodeBuilderErrorsContainer& errors_container,
 	const Synt::FunctionType& func,
 	Function& function_type,
 	const Synt::FunctionArgument& in_arg,
@@ -18,7 +19,7 @@ void CodeBuilder::ProcessFunctionArgReferencesTags(
 	if( !in_arg.inner_arg_reference_tags_.empty() )
 	{
 		if( !EnsureTypeCompleteness( out_arg.type, TypeCompleteness::ReferenceTagsComplete ) )
-			REPORT_ERROR( UsingIncompleteType, errors_, in_arg.file_pos_, out_arg.type );
+			REPORT_ERROR( UsingIncompleteType, errors_container, in_arg.file_pos_, out_arg.type );
 	}
 
 	const bool has_continuous_tag= !in_arg.inner_arg_reference_tags_.empty() && in_arg.inner_arg_reference_tags_.back().empty();
@@ -30,10 +31,10 @@ void CodeBuilder::ProcessFunctionArgReferencesTags(
 		if( has_continuous_tag )
 		{
 			if( regular_tag_count > arg_reference_tag_count )
-				REPORT_ERROR( InvalidReferenceTagCount, errors_, in_arg.file_pos_, regular_tag_count, arg_reference_tag_count );
+				REPORT_ERROR( InvalidReferenceTagCount, errors_container, in_arg.file_pos_, regular_tag_count, arg_reference_tag_count );
 		}
 		else if( regular_tag_count != arg_reference_tag_count )
-			REPORT_ERROR( InvalidReferenceTagCount, errors_, in_arg.file_pos_, regular_tag_count, arg_reference_tag_count );
+			REPORT_ERROR( InvalidReferenceTagCount, errors_container, in_arg.file_pos_, regular_tag_count, arg_reference_tag_count );
 	}
 
 	if( function_type.return_value_is_reference && !func.return_value_reference_tag_.empty() )
@@ -128,12 +129,15 @@ void CodeBuilder::ProcessFunctionArgReferencesTags(
 	}
 }
 
-void CodeBuilder::ProcessFunctionReturnValueReferenceTags( const Synt::FunctionType& func, const Function& function_type )
+void CodeBuilder::ProcessFunctionReturnValueReferenceTags(
+	CodeBuilderErrorsContainer& errors_container,
+	const Synt::FunctionType& func,
+	const Function& function_type )
 {
 	if( !function_type.return_value_is_reference && !func.return_value_inner_reference_tags_.empty() )
 	{
 		if( !EnsureTypeCompleteness( function_type.return_type, TypeCompleteness::ReferenceTagsComplete ) )
-			REPORT_ERROR( UsingIncompleteType, errors_, func.file_pos_, function_type.return_type );
+			REPORT_ERROR( UsingIncompleteType, errors_container, func.file_pos_, function_type.return_type );
 
 		const bool has_continuous_tag= !func.return_value_inner_reference_tags_.empty() && func.return_value_inner_reference_tags_.back().empty();
 		const size_t regular_tag_count= has_continuous_tag ? ( func.return_value_inner_reference_tags_.size() - 2u ) : func.return_value_inner_reference_tags_.size();
@@ -142,10 +146,10 @@ void CodeBuilder::ProcessFunctionReturnValueReferenceTags( const Synt::FunctionT
 		if( has_continuous_tag )
 		{
 			if( regular_tag_count > reference_tag_count )
-				REPORT_ERROR( InvalidReferenceTagCount, errors_, func.file_pos_, regular_tag_count, reference_tag_count );
+				REPORT_ERROR( InvalidReferenceTagCount, errors_container, func.file_pos_, regular_tag_count, reference_tag_count );
 		}
 		else if( regular_tag_count != reference_tag_count )
-			REPORT_ERROR( InvalidReferenceTagCount, errors_, func.file_pos_, regular_tag_count, reference_tag_count );
+			REPORT_ERROR( InvalidReferenceTagCount, errors_container, func.file_pos_, regular_tag_count, reference_tag_count );
 
 		// Check names of tags, report about unknown tag names.
 		for( size_t i= 0u; i < regular_tag_count; ++i )
@@ -170,12 +174,13 @@ void CodeBuilder::ProcessFunctionReturnValueReferenceTags( const Synt::FunctionT
 				}
 			}
 			if( !found )
-				REPORT_ERROR( NameNotFound, errors_, func.file_pos_, tag );
+				REPORT_ERROR( NameNotFound, errors_container, func.file_pos_, tag );
 		}
 	}
 }
 
 void CodeBuilder::TryGenerateFunctionReturnReferencesMapping(
+	CodeBuilderErrorsContainer& errors_container,
 	const Synt::FunctionType& func,
 	Function& function_type )
 {
@@ -199,7 +204,7 @@ void CodeBuilder::TryGenerateFunctionReturnReferencesMapping(
 			}
 
 			if( !tag_found ) // Tag exists, but referenced args is empty - means tag apperas only in return value, but not in any argument.
-				REPORT_ERROR( NameNotFound, errors_, func.file_pos_, func.return_value_reference_tag_ );
+				REPORT_ERROR( NameNotFound, errors_container, func.file_pos_, func.return_value_reference_tag_ );
 		}
 
 		// If there is no tag for return reference, assume, that it may refer to any reference argument, but not inner reference of any argument.
@@ -223,6 +228,7 @@ void CodeBuilder::TryGenerateFunctionReturnReferencesMapping(
 }
 
 void CodeBuilder::ProcessFunctionReferencesPollution(
+	CodeBuilderErrorsContainer& errors_container,
 	const Synt::Function& func,
 	Function& function_type,
 	const ClassProxyPtr& base_class )
@@ -234,7 +240,7 @@ void CodeBuilder::ProcessFunctionReferencesPollution(
 	if( func.name_.components.back().name == Keywords::constructor_ && IsCopyConstructor( function_type, base_class ) )
 	{
 		if( !func.type_.referecnces_pollution_list_.empty() )
-			REPORT_ERROR( ExplicitReferencePollutionForCopyConstructor, errors_, func.file_pos_ );
+			REPORT_ERROR( ExplicitReferencePollutionForCopyConstructor, errors_container, func.file_pos_ );
 
 		if( base_class->class_->references_tags_count > 0u )
 		{
@@ -251,7 +257,7 @@ void CodeBuilder::ProcessFunctionReferencesPollution(
 	else if( func.name_.components.back().name == OverloadedOperatorToString( OverloadedOperator::Assign ) && IsCopyAssignmentOperator( function_type, base_class ) )
 	{
 		if( !func.type_.referecnces_pollution_list_.empty() )
-			REPORT_ERROR( ExplicitReferencePollutionForCopyAssignmentOperator, errors_, func.file_pos_ );
+			REPORT_ERROR( ExplicitReferencePollutionForCopyAssignmentOperator, errors_container, func.file_pos_ );
 
 		if( base_class->class_->references_tags_count > 0u )
 		{
@@ -266,10 +272,11 @@ void CodeBuilder::ProcessFunctionReferencesPollution(
 		}
 	}
 	else
-		ProcessFunctionTypeReferencesPollution( func.type_, function_type, first_arg_is_implicit_this );
+		ProcessFunctionTypeReferencesPollution( errors_container, func.type_, function_type, first_arg_is_implicit_this );
 }
 
 void CodeBuilder::ProcessFunctionTypeReferencesPollution(
+	CodeBuilderErrorsContainer& errors_container,
 	const Synt::FunctionType& func,
 	Function& function_type,
 	const bool first_arg_is_implicit_this )
@@ -310,7 +317,7 @@ void CodeBuilder::ProcessFunctionTypeReferencesPollution(
 		}
 
 		if( !any_ref_found && result.empty() )
-			REPORT_ERROR( NameNotFound, errors_, func.file_pos_, name );
+			REPORT_ERROR( NameNotFound, errors_container, func.file_pos_, name );
 
 		return result;
 	};
@@ -319,7 +326,7 @@ void CodeBuilder::ProcessFunctionTypeReferencesPollution(
 	{
 		if( pollution.first == pollution.second.name )
 		{
-			REPORT_ERROR( SelfReferencePollution, errors_, func.file_pos_ );
+			REPORT_ERROR( SelfReferencePollution, errors_container, func.file_pos_ );
 			continue;
 		}
 
@@ -330,7 +337,7 @@ void CodeBuilder::ProcessFunctionTypeReferencesPollution(
 		{
 			if( dst_ref.second == Function::c_arg_reference_tag_number )
 			{
-				REPORT_ERROR( ArgReferencePollution, errors_, func.file_pos_ );
+				REPORT_ERROR( ArgReferencePollution, errors_container, func.file_pos_ );
 				continue;
 			}
 
@@ -346,7 +353,7 @@ void CodeBuilder::ProcessFunctionTypeReferencesPollution(
 	} // for pollution
 }
 
-void CodeBuilder::DestroyUnusedTemporaryVariables( FunctionContext& function_context, const FilePos& file_pos )
+void CodeBuilder::DestroyUnusedTemporaryVariables( FunctionContext& function_context, CodeBuilderErrorsContainer& errors_container, const FilePos& file_pos )
 {
 	StackVariablesStorage& temporary_variables_storage= *function_context.stack_variables_stack.back();
 	for( const StackVariablesStorage::NodeAndVariable& variable : temporary_variables_storage.variables_ )
@@ -355,16 +362,19 @@ void CodeBuilder::DestroyUnusedTemporaryVariables( FunctionContext& function_con
 			!function_context.variables_state.NodeMoved( variable.first ) )
 		{
 			if( variable.first->kind == ReferencesGraphNode::Kind::Variable && variable.second.type.HaveDestructor() )
-				CallDestructor( variable.second.llvm_value, variable.second.type, function_context, file_pos );
+				CallDestructor( variable.second.llvm_value, variable.second.type, function_context, errors_container, file_pos );
 			function_context.variables_state.MoveNode( variable.first );
 		}
 	}
 }
 
-ReferencesGraph CodeBuilder::MergeVariablesStateAfterIf( const std::vector<ReferencesGraph>& bracnhes_variables_state, const FilePos& file_pos )
+ReferencesGraph CodeBuilder::MergeVariablesStateAfterIf(
+	const std::vector<ReferencesGraph>& bracnhes_variables_state,
+	CodeBuilderErrorsContainer& errors_container,
+	const FilePos& file_pos )
 {
 	ReferencesGraph::MergeResult res= ReferencesGraph::MergeVariablesStateAfterIf( bracnhes_variables_state, file_pos );
-	errors_.insert( errors_.end(), res.second.begin(), res.second.end() );
+	errors_container.insert( errors_container.end(), res.second.begin(), res.second.end() );
 	return std::move(res.first);
 }
 

@@ -58,6 +58,75 @@ static ProgramString EncodeTemplateParameters( DeducibleTemplateParameters& dedu
 	return r;
 }
 
+static void CreateTemplateErrorsContext(
+	CodeBuilderErrorsContainer& errors_container,
+	const FilePos& file_pos,
+	const NamesScopePtr& template_parameters_namespace,
+	const TemplateBase& template_,
+	const DeducibleTemplateParameters& template_args,
+	const std::vector< std::pair< ProgramString, Value > >& known_template_args= {} )
+{
+	REPORT_ERROR( TemplateContext, errors_container, file_pos );
+	const auto template_error_context= std::make_shared<TemplateErrorsContext>();
+	template_error_context->template_declaration_file_pos= template_.file_pos;
+	errors_container.back().template_context= template_error_context;
+	template_parameters_namespace->SetErrors( template_error_context->errors );
+
+	{
+		ProgramString args_description;
+		args_description+= "[ with "_SpC;
+
+		size_t total_args= known_template_args.size() + template_args.size();
+		size_t args_processed= 0u;
+		for( const auto& known_arg : known_template_args )
+		{
+			args_description+= known_arg.first + " = "_SpC;
+			if( const Type* const type= known_arg.second.GetTypeName() )
+				args_description+= type->ToString();
+			else if( const Variable* const variable= known_arg.second.GetVariable() )
+				args_description+= ToProgramString( std::to_string( int64_t(variable->constexpr_value->getUniqueInteger().getLimitedValue()) ) );
+			else U_ASSERT(false);
+
+			++args_processed;
+			if( args_processed < total_args )
+				args_description+= ", "_SpC;
+		}
+
+		U_ASSERT( template_.template_parameters.size() == template_args.size() );
+		for( size_t i= 0u; i < template_args.size() ; ++i )
+		{
+			const DeducibleTemplateParameter& arg= template_args[i];
+
+			args_description+= template_.template_parameters[i].name + " = "_SpC;
+			if( const Type* const type= boost::get<Type>( &arg ) )
+				args_description+= type->ToString();
+			else if( const Variable* const variable= boost::get<Variable>( &arg ) )
+				args_description+= ToProgramString( std::to_string( int64_t(variable->constexpr_value->getUniqueInteger().getLimitedValue()) ) );
+			else U_ASSERT(false);
+
+			++args_processed;
+			if( args_processed < total_args )
+				args_description+= ", "_SpC;
+		}
+
+		args_description+= " ]"_SpC;
+		template_error_context->parameters_description= std::move(args_description);
+	}
+	{
+		ProgramString name= template_.parent_namespace->ToString();
+		if( !name.empty() )
+			name+= "::"_SpC;
+
+		if( const auto type_template= dynamic_cast<const TypeTemplate*>(&template_) )
+			name+= type_template->syntax_element->name_;
+		else if( const auto function_template= dynamic_cast<const FunctionTemplate*>(&template_) )
+			name+= function_template->syntax_element->function_->name_.components.back().name;
+		else U_ASSERT(false);
+
+		template_error_context->template_name= std::move(name);
+	}
+}
+
 void CodeBuilder::PrepareTypeTemplate(
 	const Synt::TypeTemplateBase& type_template_declaration,
 	TypeTemplatesSet& type_templates_set,
@@ -121,7 +190,7 @@ void CodeBuilder::PrepareTypeTemplate(
 			{
 				const size_t index= type_template->signature_arguments.size() - 1u;
 				if (index > type_template->first_optional_signature_argument )
-					REPORT_ERROR( MandatoryTemplateSignatureArgumentAfterOptionalArgument, errors_, type_template_declaration.file_pos_ );
+					REPORT_ERROR( MandatoryTemplateSignatureArgumentAfterOptionalArgument, names_scope.GetErrors(), type_template_declaration.file_pos_ );
 
 				type_template->default_signature_arguments.push_back(nullptr);
 				++type_template->first_optional_signature_argument;
@@ -133,7 +202,7 @@ void CodeBuilder::PrepareTypeTemplate(
 
 	for( size_t i= 0u; i < type_template->template_parameters.size(); ++i )
 		if( !template_parameters_usage_flags[i] )
-			REPORT_ERROR( TemplateArgumentNotUsedInSignature, errors_, type_template_declaration.file_pos_, type_template->template_parameters[i].name );
+			REPORT_ERROR( TemplateArgumentNotUsedInSignature, names_scope.GetErrors(), type_template_declaration.file_pos_, type_template->template_parameters[i].name );
 }
 
 void CodeBuilder::PrepareFunctionTemplate(
@@ -146,14 +215,14 @@ void CodeBuilder::PrepareFunctionTemplate(
 	const ProgramString& function_template_name= complex_name.components.front().name;
 
 	if( complex_name.components.size() > 1u )
-		REPORT_ERROR( FunctionDeclarationOutsideItsScope, errors_, function_template_declaration.file_pos_ );
+		REPORT_ERROR( FunctionDeclarationOutsideItsScope, names_scope.GetErrors(), function_template_declaration.file_pos_ );
 	if( complex_name.components.front().have_template_parameters )
-		REPORT_ERROR( ValueIsNotTemplate, errors_, function_template_declaration.file_pos_ );
+		REPORT_ERROR( ValueIsNotTemplate, names_scope.GetErrors(), function_template_declaration.file_pos_ );
 
 	if( function_template_declaration.function_->block_ == nullptr )
-		REPORT_ERROR( IncompleteMemberOfClassTemplate, errors_, function_template_declaration.file_pos_, function_template_name );
+		REPORT_ERROR( IncompleteMemberOfClassTemplate, names_scope.GetErrors(), function_template_declaration.file_pos_, function_template_name );
 	if( function_template_declaration.function_->virtual_function_kind_ != Synt::VirtualFunctionKind::None )
-		REPORT_ERROR( VirtualForFunctionTemplate, errors_, function_template_declaration.file_pos_, function_template_name );
+		REPORT_ERROR( VirtualForFunctionTemplate, names_scope.GetErrors(), function_template_declaration.file_pos_, function_template_name );
 
 	const auto function_template= std::make_shared<FunctionTemplate>();
 	function_template->syntax_element= &function_template_declaration;
@@ -199,12 +268,12 @@ void CodeBuilder::ProcessTemplateArgs(
 		{
 			if( prev_arg.name == arg_name )
 			{
-				REPORT_ERROR( Redefinition, errors_, file_pos, arg_name );
+				REPORT_ERROR( Redefinition, names_scope.GetErrors(), file_pos, arg_name );
 				continue;
 			}
 		}
 		if( NameShadowsTemplateArgument( arg_name, names_scope ) )
-			REPORT_ERROR( DeclarationShadowsTemplateArgument, errors_, file_pos, arg_name );
+			REPORT_ERROR( DeclarationShadowsTemplateArgument, names_scope.GetErrors(), file_pos, arg_name );
 
 		Value* inserted_template_parameter= nullptr;
 
@@ -216,19 +285,19 @@ void CodeBuilder::ProcessTemplateArgs(
 			const Value* const type_value= ResolveValue( file_pos, template_parameters_namespace, *arg.arg_type );
 			if( type_value == nullptr )
 			{
-				REPORT_ERROR( NameNotFound, errors_, file_pos, *arg.arg_type );
+				REPORT_ERROR( NameNotFound, names_scope.GetErrors(), file_pos, *arg.arg_type );
 				continue;
 			}
 			const Type* const type= type_value->GetTypeName();
 			if( type == nullptr )
 			{
-				REPORT_ERROR( NameIsNotTypeName, errors_, file_pos, arg.arg_type->components.back().name );
+				REPORT_ERROR( NameIsNotTypeName, names_scope.GetErrors(), file_pos, arg.arg_type->components.back().name );
 				continue;
 			}
 
 			if( !TypeIsValidForTemplateVariableArgument( *type ) )
 			{
-				REPORT_ERROR( InvalidTypeOfTemplateVariableArgument, errors_, file_pos, type );
+				REPORT_ERROR( InvalidTypeOfTemplateVariableArgument, names_scope.GetErrors(), file_pos, type );
 				continue;
 			}
 
@@ -301,7 +370,7 @@ void CodeBuilder::PrepareTemplateSignatureParameter(
 		ResolveForTemplateSignatureParameter( file_pos, signature_parameter, names_scope );
 	if( start_value == nullptr )
 	{
-		REPORT_ERROR( NameNotFound, errors_, file_pos, signature_parameter );
+		REPORT_ERROR( NameNotFound, names_scope.GetErrors(), file_pos, signature_parameter );
 		return;
 	}
 	if( start_value->GetTypeTemplatesSet() != nullptr )
@@ -347,11 +416,11 @@ void CodeBuilder::PrepareTemplateSignatureParameter(
 
 	if( !TypeIsValidForTemplateVariableArgument( var.type ) )
 	{
-		REPORT_ERROR( InvalidTypeOfTemplateVariableArgument, errors_, Synt::GetExpressionFilePos( template_parameter ), var.type );
+		REPORT_ERROR( InvalidTypeOfTemplateVariableArgument, names_scope.GetErrors(), Synt::GetExpressionFilePos( template_parameter ), var.type );
 		return;
 	}
 	if( var.constexpr_value == nullptr )
-		REPORT_ERROR( ExpectedConstantExpression, errors_, Synt::GetExpressionFilePos( template_parameter ) );
+		REPORT_ERROR( ExpectedConstantExpression, names_scope.GetErrors(), Synt::GetExpressionFilePos( template_parameter ) );
 }
 
 void CodeBuilder::PrepareTemplateSignatureParameter(
@@ -433,13 +502,13 @@ DeducedTemplateParameter CodeBuilder::DeduceTemplateArguments(
 
 		if( !TypeIsValidForTemplateVariableArgument( variable->type ) )
 		{
-			REPORT_ERROR( InvalidTypeOfTemplateVariableArgument, errors_, signature_parameter_file_pos, variable->type );
+			REPORT_ERROR( InvalidTypeOfTemplateVariableArgument, names_scope.GetErrors(), signature_parameter_file_pos, variable->type );
 			return DeducedTemplateParameter::Invalid();
 		}
 
 		if( variable->constexpr_value == nullptr )
 		{
-			REPORT_ERROR( ExpectedConstantExpression, errors_, signature_parameter_file_pos );
+			REPORT_ERROR( ExpectedConstantExpression, names_scope.GetErrors(), signature_parameter_file_pos );
 			return DeducedTemplateParameter::Invalid();
 		}
 
@@ -714,7 +783,7 @@ DeducedTemplateParameter CodeBuilder::DeduceTemplateArguments(
 
 		if( !function_pointer_type->return_value_inner_reference_tags_.empty() ||
 			!function_pointer_type->return_value_reference_tag_.empty() )
-			REPORT_ERROR( NotImplemented, errors_, function_pointer_type->file_pos_, "reference tags for template signature parameters" );
+			REPORT_ERROR( NotImplemented, names_scope.GetErrors(), function_pointer_type->file_pos_, "reference tags for template signature parameters" );
 
 		// Process args.
 		if( param_function_pointer_type->function.args.size() != function_pointer_type->arguments_.size() )
@@ -737,7 +806,7 @@ DeducedTemplateParameter CodeBuilder::DeduceTemplateArguments(
 				return DeducedTemplateParameter::Invalid();
 
 			if( !expected_arg.inner_arg_reference_tags_.empty() || !expected_arg.reference_tag_.empty() )
-				REPORT_ERROR( NotImplemented, errors_, function_pointer_type->file_pos_, "reference tags for template signature parameters" );
+				REPORT_ERROR( NotImplemented, names_scope.GetErrors(), function_pointer_type->file_pos_, "reference tags for template signature parameters" );
 		}
 
 		if( param_function_pointer_type->function.unsafe != function_pointer_type->unsafe_ )
@@ -798,7 +867,7 @@ Value* CodeBuilder::GenTemplateType(
 		return GenTemplateType( file_pos, selected_template->type_template, template_arguments, arguments_names_scope, false ).type;
 	else
 	{
-		REPORT_ERROR( CouldNotSelectMoreSpicializedTypeTemplate, errors_, file_pos );
+		REPORT_ERROR( CouldNotSelectMoreSpicializedTypeTemplate, arguments_names_scope.GetErrors(), file_pos );
 		return nullptr;
 	}
 }
@@ -865,7 +934,7 @@ CodeBuilder::TemplateTypeGenerationResult CodeBuilder::GenTemplateType(
 		}
 		else
 		{
-			REPORT_ERROR( InvalidValueAsTemplateArgument, errors_, file_pos, value.GetKindName() );
+			REPORT_ERROR( InvalidValueAsTemplateArgument, arguments_names_scope.GetErrors(), file_pos, value.GetKindName() );
 			continue;
 		}
 
@@ -916,7 +985,7 @@ CodeBuilder::TemplateTypeGenerationResult CodeBuilder::GenTemplateType(
 		{
 			// SPRACHE_TODO - maybe not generate this error?
 			// Other function templates, for example, can match given aruments.
-			REPORT_ERROR( TemplateParametersDeductionFailed, errors_, file_pos );
+			REPORT_ERROR( TemplateParametersDeductionFailed, arguments_names_scope.GetErrors(), file_pos );
 			return result;
 		}
 	}
@@ -945,6 +1014,8 @@ CodeBuilder::TemplateTypeGenerationResult CodeBuilder::GenTemplateType(
 
 	template_parameters_namespace->SetThisNamespaceName( name_encoded );
 	generated_template_things_storage_.insert( std::make_pair( name_encoded, Value( template_parameters_namespace, type_template_ptr->syntax_element->file_pos_ ) ) );
+
+	CreateTemplateErrorsContext( arguments_names_scope.GetErrors(), file_pos, template_parameters_namespace, type_template, deduced_template_args );
 
 	if( const Synt::ClassTemplate* const template_class= dynamic_cast<const Synt::ClassTemplate*>( type_template.syntax_element ) )
 	{
@@ -1004,6 +1075,7 @@ CodeBuilder::TemplateTypeGenerationResult CodeBuilder::GenTemplateType(
 }
 
 const FunctionVariable* CodeBuilder::GenTemplateFunction(
+	CodeBuilderErrorsContainer& errors_container,
 	const FilePos& file_pos,
 	const FunctionTemplatePtr& function_template_ptr,
 	const ArgsVector<Function::Arg>& actual_args,
@@ -1057,7 +1129,7 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 		if( i == 0u && function_argument.name_ == Keywords::this_ )
 		{
 			if( function_template.base_class != nullptr &&
-				!( given_args[i].type == function_template.base_class || ReferenceIsConvertible( given_args[i].type, function_template.base_class, file_pos ) ) )
+				!( given_args[i].type == function_template.base_class || ReferenceIsConvertible( given_args[i].type, function_template.base_class, errors_container, file_pos ) ) )
 			{
 				// Givent type and type of "this" are different.
 				deduction_failed= true;
@@ -1096,8 +1168,8 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 					}
 					if( const Type* const type= signature_parameter_value->GetTypeName() )
 					{
-						if( *type == given_args[i].type || ReferenceIsConvertible( given_args[i].type, *type, file_pos ) ||
-							( !expected_arg_is_mutalbe_reference && GetConversionConstructor( given_args[i].type, *type, file_pos ) != nullptr ) )
+						if( *type == given_args[i].type || ReferenceIsConvertible( given_args[i].type, *type, errors_container, file_pos ) ||
+							( !expected_arg_is_mutalbe_reference && GetConversionConstructor( given_args[i].type, *type, errors_container, file_pos ) != nullptr ) )
 						{
 							deduced_temlpate_parameters[i]= DeducedTemplateParameter::Type();
 							deduced_specially= true;
@@ -1163,7 +1235,7 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 
 		if( boost::get<int>( &arg ) != nullptr )
 		{
-			REPORT_ERROR( TemplateParametersDeductionFailed, errors_, file_pos );
+			REPORT_ERROR( TemplateParametersDeductionFailed, errors_container, file_pos );
 			return nullptr;
 		}
 	}
@@ -1186,6 +1258,8 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 			return &result_functions_set.functions.front();
 		}
 	}
+
+	CreateTemplateErrorsContext( errors_container, file_pos, template_parameters_namespace, function_template, deduced_template_args, function_template.known_template_parameters );
 
 	// First, prepare only as prototype.
 	NamesScopeFill( *template_parameters_namespace, *function_template.syntax_element->function_, function_template.base_class );
@@ -1236,15 +1310,15 @@ Value* CodeBuilder::GenTemplateFunctionsUsingTemplateParameters(
 		else if( const auto variable= value.GetVariable() )
 		{
 			if( !TypeIsValidForTemplateVariableArgument( variable->type ) )
-				REPORT_ERROR( InvalidTypeOfTemplateVariableArgument, errors_, Synt::GetExpressionFilePos(expr), variable->type );
+				REPORT_ERROR( InvalidTypeOfTemplateVariableArgument, arguments_names_scope.GetErrors(), Synt::GetExpressionFilePos(expr), variable->type );
 			else if( variable->constexpr_value == nullptr )
-				REPORT_ERROR( ExpectedConstantExpression, errors_, Synt::GetExpressionFilePos(expr) );
+				REPORT_ERROR( ExpectedConstantExpression, arguments_names_scope.GetErrors(), Synt::GetExpressionFilePos(expr) );
 			else
 				template_parameters.push_back( *variable );
 		}
 		else
 		{
-			REPORT_ERROR( InvalidValueAsTemplateArgument, errors_, file_pos, value.GetKindName() );
+			REPORT_ERROR( InvalidValueAsTemplateArgument, arguments_names_scope.GetErrors(), file_pos, value.GetKindName() );
 			something_is_wrong= true;
 		}
 
@@ -1362,7 +1436,7 @@ Value* CodeBuilder::GenTemplateFunctionsUsingTemplateParameters(
 
 	if( result.template_functions.empty() )
 	{
-		REPORT_ERROR( TemplateFunctionGenerationFailed, errors_, file_pos, function_templates.front()->syntax_element->function_->name_.components.back().name );
+		REPORT_ERROR( TemplateFunctionGenerationFailed, arguments_names_scope.GetErrors(), file_pos, function_templates.front()->syntax_element->function_->name_.components.back().name );
 		return nullptr;
 	}
 
@@ -1398,14 +1472,14 @@ bool CodeBuilder::TypeIsValidForTemplateVariableArgument( const Type& type )
 void CodeBuilder::ReportAboutIncompleteMembersOfTemplateClass( const FilePos& file_pos, Class& class_ )
 {
 	class_.members.ForEachInThisScope(
-		[this, file_pos]( const ProgramString& name, const Value& value )
+		[this, file_pos, &class_]( const ProgramString& name, const Value& value )
 		{
 			if( const Type* const type= value.GetTypeName() )
 			{
 				if( Class* const subclass= type->GetClassType() )
 				{
 					if( subclass->completeness != TypeCompleteness::Complete )
-						REPORT_ERROR( IncompleteMemberOfClassTemplate, errors_, file_pos, name );
+						REPORT_ERROR( IncompleteMemberOfClassTemplate, class_.members.GetErrors(), file_pos, name );
 					else
 						ReportAboutIncompleteMembersOfTemplateClass( file_pos, *subclass );
 				}
@@ -1415,7 +1489,7 @@ void CodeBuilder::ReportAboutIncompleteMembersOfTemplateClass( const FilePos& fi
 				for( const FunctionVariable& function : functions_set->functions )
 				{
 					if( !function.have_body )
-						REPORT_ERROR( IncompleteMemberOfClassTemplate, errors_, file_pos, name );
+						REPORT_ERROR( IncompleteMemberOfClassTemplate, class_.members.GetErrors(), file_pos, name );
 				}
 			}
 			else if( value.GetClassField() != nullptr )

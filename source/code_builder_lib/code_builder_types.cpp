@@ -1200,6 +1200,18 @@ void NamesScope::CopyAccessRightsFrom( const NamesScope& src )
 	access_rights_= src.access_rights_;
 }
 
+void NamesScope::SetErrors( CodeBuilderErrorsContainer& errors )
+{
+	errors_= &errors;
+}
+
+CodeBuilderErrorsContainer& NamesScope::GetErrors() const
+{
+	if( errors_ != nullptr )
+		return *errors_;
+	return parent_->GetErrors();
+}
+
 //
 // DeducedTemplateParameter
 //
