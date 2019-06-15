@@ -907,3 +907,25 @@ def TypeinfoList_ClassParentsList_Test0():
 		static_assert( typeinfo</F/>.parent_count == size_type(2) );
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def ReferencesTagsFiled_Test0():
+	c_program_text= """
+		struct S{}
+		enum E{ A }
+		type FP= fn();
+		type A= [ i32, 2 ];
+		struct R{ i32& x; }
+		type RA= [ R, 64 ];
+
+		fn Foo()
+		{
+			static_assert( typeinfo</i32/>.references_tags_count == size_type(0) );
+			static_assert( typeinfo</  A/>.references_tags_count == size_type(0) );
+			static_assert( typeinfo</  E/>.references_tags_count == size_type(0) );
+			static_assert( typeinfo</ FP/>.references_tags_count == size_type(0) );
+			static_assert( typeinfo</  R/>.references_tags_count == size_type(1) );
+			static_assert( typeinfo</ RA/>.references_tags_count == size_type(1) );
+		}
+	"""
+	tests_lib.build_program( c_program_text )

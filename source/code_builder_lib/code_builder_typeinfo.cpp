@@ -159,6 +159,8 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, Variable& typeinfo_variab
 	add_bool_field( "is_copy_constructible"_SpC   , type.IsCopyConstructible()    );
 	add_bool_field( "is_copy_assignable"_SpC      , type.IsCopyAssignable()       );
 
+	add_size_field( "references_tags_count"_SpC, type.ReferencesTagsCount() );
+
 	if( const FundamentalType* const fundamental_type= type.GetFundamentalType() )
 	{
 		add_bool_field( "is_integer"_SpC         , IsInteger        ( fundamental_type->fundamental_type ) );
