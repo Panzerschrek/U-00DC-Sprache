@@ -2,6 +2,7 @@ import "checked_math.u"
 import "container_utils.u"
 import "minmax.u"
 import "pointer.u"
+import "random_access_range.u"
 
 namespace ust
 {
@@ -351,6 +352,16 @@ public:
 		{
 			drop_back( size_ - new_size );
 		}
+	}
+
+	fn range(  mut this ) : random_access_range</ T, true  />
+	{
+		unsafe{  return random_access_range</ T, true  />( ptr_, ptr_ + size_ );  }
+	}
+
+	fn range( imut this ) : random_access_range</ T, false />
+	{
+		unsafe{  return random_access_range</ T, false />( ptr_, ptr_ + size_ );  }
 	}
 
 	fn clear( mut this )

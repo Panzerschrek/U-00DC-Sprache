@@ -39,7 +39,7 @@ public:
 
 	fn empty( this ) : bool
 	{
-		return begin_ != end_;
+		return begin_ == end_;
 	}
 
 	fn size( this ) : size_type
