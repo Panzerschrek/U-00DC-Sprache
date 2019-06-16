@@ -302,7 +302,8 @@ private:
 
 	Lexems DoExpandMacro(
 		const MacroNamesMap& parsed_elements,
-		const std::vector<Macro::ResultElement>& result_elements );
+		const std::vector<Macro::ResultElement>& result_elements,
+		ProgramStringMap<ProgramString>& unique_macro_identifier_map );
 
 	void NextLexem();
 	bool NotEndOfFile();
@@ -3693,7 +3694,8 @@ ParseFnResult SyntaxAnalyzer::ExpandMacro( const Macro& macro, ParseFnResult (Sy
 	names_map.prev= nullptr;
 	names_map.names= &elements_map;
 
-	Lexems result_lexems= DoExpandMacro( names_map, macro.result_template_elements );
+	ProgramStringMap<ProgramString> unique_macro_identifier_map;
+	Lexems result_lexems= DoExpandMacro( names_map, macro.result_template_elements, unique_macro_identifier_map );
 
 	Lexem eof;
 	eof.type= Lexem::Type::EndOfFile;
@@ -3916,7 +3918,8 @@ bool SyntaxAnalyzer::MatchMacroBlock(
 
 Lexems SyntaxAnalyzer::DoExpandMacro(
 	const MacroNamesMap& parsed_elements,
-	const std::vector<Macro::ResultElement>& result_elements )
+	const std::vector<Macro::ResultElement>& result_elements,
+	ProgramStringMap<ProgramString>& unique_macro_identifier_map )
 {
 	Lexems result_lexems;
 	for( const Macro::ResultElement& result_element : result_elements )
@@ -3924,7 +3927,26 @@ Lexems SyntaxAnalyzer::DoExpandMacro(
 		switch( result_element.kind )
 		{
 		case Macro::ResultElementKind::Lexem:
-			result_lexems.push_back( result_element.lexem );
+			if( result_element.lexem.type == Lexem::Type::MacroUniqueIdentifier )
+			{
+				// Replace ??lexems inside macro with unique identifiers.
+				Lexem l;
+				l.type= Lexem::Type::Identifier;
+				l.file_pos= result_element.lexem.file_pos;
+
+				const auto it= unique_macro_identifier_map.find( result_element.lexem.text );
+				if( it != unique_macro_identifier_map.end() )
+					l.text= it->second;
+				else
+				{
+					l.text= ToProgramString( "macro_ident_" + std::to_string( reinterpret_cast<uintptr_t>( &unique_macro_identifier_map ) ) + "_" + std::to_string( unique_macro_identifier_map.size() ) );
+					unique_macro_identifier_map[ result_element.lexem.text ]= l.text;
+				}
+
+				result_lexems.push_back( std::move(l) );
+			}
+			else
+				result_lexems.push_back( result_element.lexem );
 			break;
 
 		case Macro::ResultElementKind::VariableElement:
@@ -3964,7 +3986,7 @@ Lexems SyntaxAnalyzer::DoExpandMacro(
 							sub_elements_map.prev= &parsed_elements;
 							sub_elements_map.names= &sub_elements;
 
-							Lexems element_lexems= DoExpandMacro( sub_elements_map, result_element.sub_elements );
+							Lexems element_lexems= DoExpandMacro( sub_elements_map, result_element.sub_elements, unique_macro_identifier_map );
 							result_lexems.insert( result_lexems.end(), element_lexems.begin(), element_lexems.end() );
 
 							// Push separator.

@@ -30,6 +30,7 @@ struct Lexem
 
 		Identifier,
 		MacroIdentifier,
+		MacroUniqueIdentifier,
 		String,
 		Number,
 

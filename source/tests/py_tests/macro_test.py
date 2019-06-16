@@ -362,3 +362,46 @@ def StartBlockLexemAsRepeatedIndicator_Test1():
 	static_assert( SEQ( MUL -1 + 2, MUL 89, MUL 74 66 ) == ( -1 +2 ) * 89 * 74 * 66 );
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def UniqueMacroLexem_Test0():
+	c_program_text= """
+	?macro <? forN:block ( ?n:expr ) ?b:block ?>
+	->
+	<?
+		{
+			var size_type mut ??i(0);
+			auto ??count= ?n;
+			while( ??i < ??count )
+			{
+				?b
+				++ ??i;
+			}
+		}
+	?>
+
+	fn Foo()
+	{
+		var i32 mut i= 0;
+		forN( size_type(66) ) { ++i; } // loop variable "??i" invisible here, because it replaced with unique identifier.
+		halt if( i != 66 );
+	}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def UniqueMacroLexem_Test1():
+	c_program_text= """
+	?macro <? CreateI:block ?> -> <? var size_type mut ??i(0); ?>
+	fn Foo()
+	{
+		CreateI
+		i; // Not found
+	}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "NameNotFound" )
+	assert( errors_list[0].file_pos.line == 6 )
+	assert( errors_list[0].text.find("i") != -1 )
