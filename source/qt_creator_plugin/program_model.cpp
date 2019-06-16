@@ -322,6 +322,9 @@ static ProgramString Stringify( const Synt::TypeName& type_name )
 
 		ProgramString operator()( const Synt::FunctionTypePtr& function_type_name )
 		{
+			if( function_type_name == nullptr )
+				return ""_SpC;
+
 			ProgramString result;
 			result+= "fn("_SpC;
 
@@ -541,6 +544,9 @@ static std::vector<ProgramModel::ProgramTreeNode> BuildProgramModel_r( const Syn
 
 		void operator()( const Synt::FunctionPtr& func )
 		{
+			if( func == nullptr )
+				return;
+
 			ProgramModel::ProgramTreeNode element;
 			element.name= ProgramStringToQString( Stringify( *func ).data() );
 			element.kind= ProgramModel::ElementKind::Function;
@@ -632,6 +638,9 @@ static std::vector<ProgramModel::ProgramTreeNode> BuildProgramModel_r( const Syn
 		}
 		void operator()( const Synt::ClassPtr& class_ )
 		{
+			if( class_ == nullptr )
+				return;
+
 			ProgramModel::ProgramTreeNode element;
 			element.name= ProgramStringToQString( class_->name_ );
 			element.kind= class_->kind_attribute_ == Synt::ClassKindAttribute::Struct ? ProgramModel::ElementKind::Struct : ProgramModel::ElementKind::Class;
@@ -667,6 +676,9 @@ static std::vector<ProgramModel::ProgramTreeNode> BuildProgramModel_r( const Syn
 
 		void operator()( const Synt::FunctionPtr& func )
 		{
+			if( func == nullptr )
+				return;
+
 			ProgramModel::ProgramTreeNode element;
 			element.name= ProgramStringToQString( Stringify( *func ).data() );
 			element.kind= ProgramModel::ElementKind::Function;
@@ -748,6 +760,9 @@ static std::vector<ProgramModel::ProgramTreeNode> BuildProgramModel_r( const Syn
 		}
 		void operator()( const Synt::ClassPtr& class_ )
 		{
+			if( class_ == nullptr )
+				return;
+
 			ProgramModel::ProgramTreeNode element;
 			element.name= ProgramStringToQString( class_->name_ );
 			element.kind= class_->kind_attribute_ == Synt::ClassKindAttribute::Struct ? ProgramModel::ElementKind::Struct : ProgramModel::ElementKind::Class;
@@ -758,6 +773,9 @@ static std::vector<ProgramModel::ProgramTreeNode> BuildProgramModel_r( const Syn
 		}
 		void operator()( const Synt::NamespacePtr& namespace_ )
 		{
+			if( namespace_ == nullptr )
+				return;
+
 			// TODO - what if there are multiple declarations of same namespace in single source file?
 			ProgramModel::ProgramTreeNode element;
 			element.name= ProgramStringToQString( namespace_->name_ );
