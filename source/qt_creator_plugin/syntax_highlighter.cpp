@@ -101,6 +101,7 @@ void SyntaxHighlighter::highlightBlock( const QString& text )
 		case Lexem::Type::MacroIdentifier:
 		case Lexem::Type::MacroBracketLeft :
 		case Lexem::Type::MacroBracketRight:
+		case Lexem::Type::MacroUniqueIdentifier:
 			format= Formats::MacroIdentifier; break;
 
 		case Lexem::Type::String:
