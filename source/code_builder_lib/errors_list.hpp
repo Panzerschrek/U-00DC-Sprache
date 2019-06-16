@@ -11,7 +11,7 @@ PROCESS_ERROR( UnknownStringLiteralSuffix, "Unknown string literal suffix - \"%1
 PROCESS_ERROR( InvalidSizeForCharLiteral, "Invalid char literal - \"%1%\", expected literal with exactly one symbol." )
 PROCESS_ERROR( OperationNotSupportedForThisType, "Operation is not supported for type \"%1%\"." )
 PROCESS_ERROR( TypesMismatch, "Unexpected type, expected \"%1%\", got \"%2%\"." )
-PROCESS_ERROR( NoMatchBinaryOperatorForGivenTypes, "No match operator \"%1%\" for types \"%2%\" and \"%3%\"" )
+PROCESS_ERROR( NoMatchBinaryOperatorForGivenTypes, "No match operator \"%3%\" for types \"%2%\" and \"%1%\"" )
 PROCESS_ERROR( NotImplemented, "Sorry, %1% not implemented." )
 PROCESS_ERROR( ArraySizeIsNegative, "Array size is neagative." )
 PROCESS_ERROR( ArraySizeIsNotInteger, "Array size is not integer." )
