@@ -1,0 +1,86 @@
+//##success_test
+import "../ustlib/vector.u"
+
+type VecType= ust::vector</i32/>;
+
+
+fn U_Main() : i32
+{
+	{
+		var VecType mut vec;
+		vec.push_back( 32 );
+		vec.push_back( 37 );
+		vec.push_back( 99 );
+
+		auto mut sum= 0;
+		foreach( x : vec ) { sum+= x; }
+		halt if( sum != 32 + 37 + 99 );
+	}
+	{
+		var VecType mut vec;
+		var size_type mut iterations(0);
+		foreach( x : vec ){ ++iterations; }
+		halt if( iterations > size_type(0) );
+	}
+	{
+		var VecType mut vec;
+		vec.push_back( 66 );
+		foreach( &mut x : vec ){ x*= 2; }
+		halt if( vec[0u] != 132 );
+	}
+	{
+		var VecType mut vec;
+		vec.push_back( 17 );
+		vec.push_back( 21 );
+		vec.push_back( 1 );
+		vec.push_back( 55 );
+		var i32 mut sum= 0;
+		foreach( &x : vec )
+		{
+			sum+= x + cast_imut(vec).front();
+		}
+		halt if( sum != 17 * 4 + 17 + 21 + 1 + 55 );
+	}
+	{
+		var VecType mut vec;
+		vec.push_back( 55 );
+		vec.push_back( 66 );
+		vec.push_back( 77 );
+		halt if( vec.range().size() != size_type(3) );
+		halt if( vec.range().empty() );
+	}
+	{
+		var VecType vec;
+		halt if( vec.range().size() != size_type(0) );
+		halt if( !vec.range().empty() );
+	}
+	{
+		var VecType mut vec;
+		vec.push_back( 14 );
+		vec.push_back( 15 );
+		vec.push_back( 16 );
+		auto mut range= cast_imut(vec).range();
+		halt if( range.size() != size_type(3) );
+		unsafe
+		{
+			range.pop_front();
+			halt if( range.size() != size_type(2) );
+			halt if( vec.size() != size_type(3) );
+			range.pop_back();
+			halt if( range.size() != size_type(1) );
+			halt if( vec.size() != size_type(3) );
+		}
+	}
+	{
+		var VecType mut vec;
+		vec.push_back( 5 );
+		vec.push_back( 3 );
+		vec.push_back( 7 );
+		auto range= vec.range();
+		auto mut res= 5 * 3 * 7 * 65;
+		foreach( x : range ) { res/= x; }
+		halt if( res != 65 );
+	}
+
+	return 0;
+}

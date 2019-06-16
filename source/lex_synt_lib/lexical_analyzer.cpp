@@ -401,6 +401,13 @@ static Lexem ParseMacroIdentifier(
 	result.text.push_back(*it);
 	++it;
 
+	if( it < it_end && IsMacroIdentifierStartChar(*it) )
+	{
+		result.type= Lexem::Type::MacroUniqueIdentifier;
+		result.text.push_back(*it);
+		++it;
+	}
+
 	while( it < it_end && IsIdentifierChar(*it) )
 	{
 		result.text.push_back(*it);

@@ -1,0 +1,81 @@
+import "memory.u"
+import "pointer.u"
+
+namespace ust
+{
+
+template</ type T, bool is_mutable />
+class random_access_range
+{
+public:
+	fn constructor( mut this )= delete;
+	fn constructor( mut this, this_type &imut other )= default;
+
+	// Precondition - begin <= end, all memory in range [ begin, end ) is valid.
+	fn constructor( raw_ptr_mut</ T /> begin, raw_ptr_mut</ T /> end ) unsafe
+		( begin_(begin), end_(end) )
+	{}
+
+	// Precondition - range is nonempty.
+	op enable_if( is_mutable )
+	[]( this'x', size_type index ) unsafe : T &'x  mut
+	{
+		unsafe
+		{
+			return cast_mut( cast_ref_unsafe</T/>( int_to_ref( ref_to_int( begin_[index] ) ) ) );
+		}
+	}
+
+	// Precondition - range is nonempty.
+	op
+	enable_if( !is_mutable )
+	[]( this'x', size_type index ) unsafe : T &'x imut
+	{
+		unsafe
+		{
+			return cast_ref_unsafe</T/>( int_to_ref( ref_to_int( begin_[index] ) ) );
+		}
+	}
+
+	fn empty( this ) : bool
+	{
+		return begin_ == end_;
+	}
+
+	fn size( this ) : size_type
+	{
+		return size_type( end_ - begin_ );
+	}
+
+	// Precondition - range is nonempty.
+	fn pop_front( mut this ) unsafe
+	{
+		++begin_;
+	}
+
+	// Precondition - range is nonempty.
+	fn pop_back( mut this ) unsafe
+	{
+		--end_;
+	}
+
+	fn range( this'x' ) : this_type'x'
+	{
+		return this;
+	}
+
+private:
+	type this_type= random_access_range</ T, is_mutable />;
+	type ptr_type= raw_ptr_mut</ T />;
+
+	struct ReferenceTag{ T& v; }
+
+private:
+	[ ReferenceTag, 0 ] reference_tag_;
+
+private:
+	ptr_type begin_;
+	ptr_type end_;
+}
+
+} // namespace ust
