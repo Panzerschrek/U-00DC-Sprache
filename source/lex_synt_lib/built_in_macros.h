@@ -4,10 +4,10 @@ R"(
 ->
 <?
 	{
-		auto lock_temps& ?m<? mut ?> e_result= ?e;
-		if( !e_result.empty() )
+		auto lock_temps& ?m<? mut ?> ??e_result= ?e;
+		if( !??e_result.empty() )
 		{
-			auto lock_temps ?r<? & ?> ?m<? mut ?> ?var_name= e_result.get_ref();
+			auto lock_temps ?r<? & ?> ?m<? mut ?> ?var_name= ??e_result.get_ref();
 			?b
 		}
 	}
@@ -17,29 +17,29 @@ R"(
 ->
 <?
 	{
-		auto lock_temps& ?m<? mut ?> e_result= ?e;
-		static_if( typeinfo</ typeof(e_result) />.is_array )
+		auto lock_temps& ?m<? mut ?> ??e_result= ?e;
+		static_if( typeinfo</ typeof(??e_result) />.is_array )
 		{
-			var size_type mut i(0u);
-			while( i < typeinfo</ typeof(e_result) />.element_count )
+			var size_type mut ??i(0u);
+			while( ??i < typeinfo</ typeof(??e_result) />.element_count )
 			{
-				auto ?r<? & ?> ?m<? mut ?> ?var_name= e_result[i];
+				auto ?r<? & ?> ?m<? mut ?> ?var_name= ??e_result[??i];
 				safe{ ?b }
-				++i;
+				++ ??i;
 			}
 		}
 		else
 		{
-			auto mut r= e_result.range();
-			while( !r.empty() )
+			auto mut ??r= ??e_result.range();
+			while( !??r.empty() )
 			{
 				unsafe
 				{
 					{
-						auto lock_temps ?r<? & ?> ?m<? mut ?> ?var_name= r[size_type(0)];
+						auto lock_temps ?r<? & ?> ?m<? mut ?> ?var_name= ??r[size_type(0)];
 						safe{ ?b }
 					}
-					r.pop_front();
+					??r.pop_front();
 				}
 			}
 		}
