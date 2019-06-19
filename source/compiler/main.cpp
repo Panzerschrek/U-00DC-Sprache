@@ -253,6 +253,7 @@ int main( const int argc, const char* const argv[])
 	std::vector<std::string> input_files;
 	std::vector<std::string> include_directories;
 	std::string output_file;
+	std::string architecture;
 	fs::path compiler_data_dir= fs::system_complete( argv[0] ).parent_path(); // By default search compiler data near it`s executable.
 	llvm::Reloc::Model relocation_model= llvm::Reloc::Default;
 	bool produce_object_file= false;
@@ -275,6 +276,7 @@ int main( const int argc, const char* const argv[])
 		( "relocation-model", po::value< std::string >(), "relocation model of target" )
 		( "enable-pie", po::bool_switch()->default_value(false), "assume the creation of a position independent executable" )
 		( "optimization-level,O", po::value<std::string>(), "optimization level" )
+		( "arch", po::value<std::string>()->default_value("native"), "target architecture" )
 	;
 
 	po::positional_options_description positional_options;
@@ -371,6 +373,9 @@ int main( const int argc, const char* const argv[])
 		}
 	}
 
+	if( program_options_map.count( "arch" ) != 0 )
+		architecture= program_options_map["arch"].as<std::string>();
+
 	if( input_files.empty() )
 	{
 		std::cout << "No input files" << std::endl;
@@ -383,27 +388,48 @@ int main( const int argc, const char* const argv[])
 	}
 
 	// Prepare target machine.
-	// Currently can work only with native target.
-	// TODO - allow compiler user to change target.
-	llvm::InitializeNativeTarget();
-	llvm::InitializeNativeTargetAsmParser();
-	llvm::InitializeNativeTargetAsmPrinter();
-	const std::string target_triple_str= llvm::sys::getDefaultTargetTriple();
-
+	std::string target_triple_str;
 	std::unique_ptr<llvm::TargetMachine> target_machine;
 	{
-		std::string error_str;
-		const llvm::Target* const target= llvm::TargetRegistry::lookupTarget( target_triple_str, error_str );
+		llvm::InitializeAllTargets();
+		llvm::InitializeAllTargetMCs();
+		llvm::InitializeAllAsmPrinters();
+		llvm::InitializeAllAsmParsers();
+
+		const llvm::Target* target= nullptr;
+		std::string error_str, features_str, cpu_name;
+		if( architecture == "native" )
+		{
+			target_triple_str= llvm::sys::getDefaultTargetTriple();
+			target= llvm::TargetRegistry::lookupTarget( target_triple_str, error_str );
+			features_str= GetNativeTargetFeaturesStr();
+			cpu_name= llvm::sys::getHostCPUName();
+		}
+		else
+		{
+			llvm::Triple traget_triple;
+			target= llvm::TargetRegistry::lookupTarget( architecture, traget_triple, error_str );
+			target_triple_str= traget_triple.getTriple();
+		}
+
 		if( target == nullptr )
 		{
 			std::cout << "Error, selecting target: " << error_str << std::endl;
+
+			std::string targets_list;
+			for( const llvm::Target& target : llvm::TargetRegistry::targets() )
+			{
+				if( !targets_list.empty() )
+					targets_list+= ", ";
+				targets_list+= std::string(target.getName());
+			}
+			std::cout << "Available targets: " << targets_list << std::endl;
+
 			return 1;
 		}
 
 		llvm::TargetOptions target_options;
 		target_options.PositionIndependentExecutable= enable_pie;
-
-		const std::string features_str= GetNativeTargetFeaturesStr();
 
 		llvm::CodeGenOpt::Level code_gen_optimization_level;
 		if( optimization_level >= 2u || size_optimization_level > 0u )
@@ -416,7 +442,7 @@ int main( const int argc, const char* const argv[])
 		target_machine.reset(
 			target->createTargetMachine(
 				target_triple_str,
-				llvm::sys::getHostCPUName(),
+				cpu_name,
 				features_str,
 				target_options,
 				relocation_model,

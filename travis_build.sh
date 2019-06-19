@@ -19,7 +19,7 @@ cd .. &&\
 # Configure build
 mkdir build-travis &&\
 cd build-travis &&\
-cmake ../source/ -DCMAKE_BUILD_TYPE=Release -DBOOST_ROOT=../boost_1_66_0 -DLLVM_SRC_DIR=../llvm-3.7.1.src &&\
+cmake ../source/ -DCMAKE_BUILD_TYPE=Release -DBOOST_ROOT=../boost_1_66_0 -DLLVM_SRC_DIR=../llvm-3.7.1.src -DLLVM_TARGETS_TO_BUILD=X86 &&\
 \
 # Build it
 # travis-ci has 2 cpu cores

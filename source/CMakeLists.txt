@@ -53,17 +53,10 @@ if( NOT DEFINED LLVM_SRC_DIR )
 	message( FATAL_ERROR "LLVM_SRC_DIR not defined. You can define path to llvm library, using variable LLVM_SRC_DIR" )
 endif()
 
-if( BUILD_COMPILER )
-	set( SPRACHE_COMPILER_LLVM_TARGET X86 )
-else()
-	# If we build only tests, we do not needs code generators and tools
-	set( SPRACHE_COMPILER_LLVM_TARGET "" )
-endif()
 if( REALLY_BUILD_LINKAGE_TESTS )
 	set( LLVM_BUILD_TOOLS OFF CACHE BOOL "build llvm tools" )
 endif()
 
-set( LLVM_TARGETS_TO_BUILD ${SPRACHE_COMPILER_LLVM_TARGET} CACHE STRING "llvm targets to build" )
 set( LLVM_ENABLE_RTTI ON CACHE BOOL "rtti for llvm" )
 
 add_subdirectory( ${LLVM_SRC_DIR} ${CMAKE_BINARY_DIR}/llvm )
@@ -77,7 +70,7 @@ llvm_map_components_to_libnames( LLVM_LIBS_FOR_COMPILER
 	BitReader # for reading of stdlib bitcode
 	Linker # for linking of multiple llvm modules
 	IPO # for pass manager builder, etc.
-	${SPRACHE_COMPILER_LLVM_TARGET}
+	all
 	)
 llvm_map_components_to_libnames( LLVM_LIBS_FOR_TESTS ExecutionEngine Interpreter )
 
