@@ -70,7 +70,7 @@ llvm_map_components_to_libnames( LLVM_LIBS_FOR_COMPILER
 	BitReader # for reading of stdlib bitcode
 	Linker # for linking of multiple llvm modules
 	IPO # for pass manager builder, etc.
-	all
+	${LLVM_TARGETS_TO_BUILD}
 	)
 llvm_map_components_to_libnames( LLVM_LIBS_FOR_TESTS ExecutionEngine Interpreter )
 
