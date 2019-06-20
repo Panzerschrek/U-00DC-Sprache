@@ -1,0 +1,30 @@
+//##success_test
+import "../ustlib/unordered_map.u"
+
+enum TrafficLight{ Red, Yellow, Green }
+
+fn U_Main() : i32
+{
+	{
+		var ust::unordered_map</ i32, i32 /> mut m;
+		halt if( ! m.empty() );
+
+		m.insert( 55, -7 );
+		halt if( m.size() != size_type(1) );
+
+		{
+			auto find_result= m.find( 66 );
+			halt if( !find_result.empty() );
+		}
+		{
+			auto find_result= m.find( 55 );
+			halt if( find_result.empty() );
+			halt if( find_result.get_ref() != -7 );
+		}
+		m.clear();
+		halt if( ! m.empty() );
+		halt if( !m.find( 55 ).empty() );
+	}
+
+	return 0;
+}

@@ -1,0 +1,401 @@
+import "aligned_storage.u"
+import "container_utils.u"
+import "minmax.u"
+import "hash.u"
+import "optional_ref.u"
+import "pointer.u"
+
+namespace ust
+{
+
+template</ type K, type V />
+class unordered_map
+{
+public:
+	type key_type= K;
+	type value_type= V;
+	type this_type= unordered_map</ key_type, value_type />;
+	type hasher= default_hasher;
+
+public:
+	// Default constructor.
+	fn constructor()= default;
+
+	// Copy constructor.
+	fn constructor( mut this, this_type &imut other )
+	{
+		unsafe
+		{
+			var size_type mut i(0);
+			while( i < other.capacity_ )
+			{
+				auto &mut table_value= other.table_[i];
+				if( table_value.cell_content == TableValue::CellContent::HaveValue )
+				{
+					this.insert( table_value.key_storage, table_value.value_storage );
+				}
+				++i;
+			}
+		}
+	}
+
+	fn destructor()
+	{
+		clear();
+		if( !table_.is_null() )
+		{
+			unsafe{  memory_free( table_.get_ref() );  }
+		}
+	}
+
+	fn size( this ) : size_type
+	{
+		return size_;
+	}
+
+	fn empty( this ) : bool
+	{
+		return size_ == size_type(0);
+	}
+
+	fn insert( mut this, key_type& key, value_type value ) : value_type &'this mut
+	{
+		unsafe
+		{
+			rehash( size_ + size_type(1) );
+			auto capacity_mask= capacity_ - size_type(1);
+			auto key_hash= hash(key);
+			auto mut key_hash_wrapped= key_hash & capacity_mask;
+			while( true )
+			{
+				auto &mut table_value= cast_mut( cast_ref_unsafe</TableValue/>( int_to_ref( ref_to_int( table_[ key_hash_wrapped ] ) ) ) );
+				if( table_value.cell_content == TableValue::CellContent::Empty || table_value.cell_content == TableValue::CellContent::ValueRemoved )
+				{
+					move_unsafe( table_value.key_storage, key );
+					move_unsafe( table_value.value_storage, value ); // TODO - move value.
+					table_value.cell_content= TableValue::CellContent::HaveValue;
+					++size_;
+					return cast_ref_unsafe</ value_type />( table_value.value_storage );
+				}
+				else if( table_value.cell_content == TableValue::CellContent::HaveValue )
+				{
+					if( key == table_value.key_storage )
+					{
+						cast_ref_unsafe</ value_type />(table_value.value_storage)= value; // Replace old value with new. // TODO - move value.
+						return cast_ref_unsafe</ value_type />(table_value.value_storage);
+					}
+				}
+
+				key_hash_wrapped= ( key_hash_wrapped + size_type(1) ) & capacity_mask;
+				// We must finish loop, bacause capacity_ >= size_.
+			}
+			halt;
+		}
+	}
+
+	fn erase( mut this, key_type& key ) : value_type
+	{
+		unsafe
+		{
+			var ptr_type table_value_ptr= find_key( key );
+			if( ! table_value_ptr.is_null() )
+			{
+				auto &mut table_value= table_value_ptr.get_ref();
+				--size_;
+				table_value.cell_content= TableValue::CellContent::ValueRemoved;
+				call_destructor( table_value.key_storage );
+				var value_type mut r= uninitialized;
+				memory_copy( r, table_value.value_storage, typeinfo</ typeof(table_value.value_storage) />.size_of );
+				return move(r);
+			}
+		}
+		halt;
+	}
+
+	fn drop( mut this, key_type& key )
+	{
+		erase(key);
+	}
+
+	fn find( imut this, key_type& key ) : optional_ref</ value_type, false />'this'
+	{
+		unsafe
+		{
+			var optional_ref</ value_type, false /> mut r;
+			r= cast_mut(this).find(key);
+			return r;
+		}
+	}
+
+	fn find(  mut this, key_type& key ) : optional_ref</ value_type, true  />'this'
+	{
+		unsafe
+		{
+			var ptr_type table_value_ptr= find_key( key );
+			if( ! table_value_ptr.is_null() )
+			{
+				return optional_ref</ value_type, true  />( cast_mut( cast_ref_unsafe</value_type/>( int_to_ref( ref_to_int( table_value_ptr.get_ref().value_storage ) ) ) ) );
+			}
+		}
+
+		return optional_ref</ value_type, true  />();
+	}
+
+	fn clear( mut this )
+	{
+		if( table_.is_null() ) { return; }
+		unsafe
+		{
+			var size_type mut i(0);
+			while( i < capacity_ )
+			{
+				auto &mut table_value= table_[i];
+				if( table_value.cell_content == TableValue::CellContent::HaveValue )
+				{
+					table_value.cell_content= TableValue::CellContent::ValueRemoved;
+					call_destructor( table_value.key_storage );
+					call_destructor( table_value.value_storage );
+				}
+				++i;
+			}
+		}
+		size_= size_type(0);
+	}
+
+	fn range( imut this ) : unordered_map_range</false/>
+	{
+		unsafe{  return unordered_map_range</false/>( table_, size_, capacity_ );  }
+	}
+
+	fn range(  mut this ) : unordered_map_range</true />
+	{
+		unsafe{  return unordered_map_range</true />( table_, size_, capacity_ );  }
+	}
+
+private:
+	fn rehash( mut this, size_type expected_size )
+	{
+		if( expected_size <= size_ ) { return; }
+
+		auto mut new_capacity= max( capacity_, size_type(2) );
+		while( new_capacity < expected_size ) { new_capacity<<= 1u; }
+		while( (new_capacity >> 1u) >= expected_size ) { new_capacity>>= 1u; }
+
+		if( new_capacity == capacity_ ) { return; }
+
+		unsafe // reallocate table and rehash.
+		{
+			auto new_capacity_mask= new_capacity - size_type(1);
+
+			// Allocate and initialize new table.
+			var ptr_type new_table= ptr_type( cast_ref_unsafe</TableValue/>( memory_allocate( new_capacity * typeinfo</TableValue/>.size_of ) ) );
+			{
+				var size_type mut i(0);
+				while( i < new_capacity )
+				{
+					new_table[i].cell_content= TableValue::CellContent::Empty;
+					++i;
+				}
+			}
+
+			// Move content of old table into new table.
+			if( !table_.is_null() )
+			{
+				var size_type mut i(0);
+				while( i < capacity_ )
+				{
+					auto &mut old_value= table_[i];
+					if( old_value.cell_content == TableValue::CellContent::Empty || old_value.cell_content == TableValue::CellContent::ValueRemoved )
+					{}
+					else if( old_value.cell_content == TableValue::CellContent::HaveValue )
+					{
+						// Insert value into new table.
+						auto key_hash= hash( old_value.key_storage );
+						auto mut key_hash_wrapped= key_hash & new_capacity_mask;
+						while( true )
+						{
+							auto &mut new_value= new_table[ key_hash_wrapped ];
+							if( new_value.cell_content == TableValue::CellContent::Empty )
+							{
+								memory_copy( new_value.key_storage, old_value.key_storage, typeinfo</ key_type />.size_of );
+								memory_copy( new_value.value_storage, old_value.value_storage, typeinfo</ value_type />.size_of );
+								break; // We must find value, bacause new_capacity >= size_
+							}
+							key_hash_wrapped= ( key_hash_wrapped + size_type(1) ) & new_capacity_mask;
+						}
+					}
+					else{ halt; }
+					++i;
+				} // for all old table.
+
+				// All value moved, so, we can free old memory.
+				memory_free( table_.get_ref() );
+			}
+			table_= new_table;
+		}
+	}
+
+	// Returns bucket for specific key. Returns 'null', if key not found.
+	fn find_key( mut this, key_type& key ) : ptr_type
+	{
+		if( empty() ){ return ptr_type(); }
+
+		unsafe
+		{
+			auto capacity_mask= capacity_ - size_type(1);
+			auto key_hash= hash(key);
+			auto mut key_hash_wrapped= key_hash & capacity_mask;
+			auto key_hash_wrapped_finish= key_hash_wrapped;
+			while( true )
+			{
+				auto &mut table_value= table_[ key_hash_wrapped ];
+				if( table_value.cell_content == TableValue::CellContent::Empty ) { break; }
+				else if( table_value.cell_content == TableValue::CellContent::ValueRemoved ) {}
+				else if( table_value.cell_content == TableValue::CellContent::HaveValue )
+				{
+					if( key == table_value.key_storage )
+					{
+						return ptr_type( table_value );
+					}
+				}
+
+				key_hash_wrapped= ( key_hash_wrapped + size_type(1) ) & capacity_mask;
+				if( key_hash_wrapped == key_hash_wrapped_finish ){ break; } // Value not found in whole table.
+			}
+		}
+		return ptr_type();
+	}
+
+	fn hash( key_type& key ) : size_type
+	{
+		return default_hasher::hash(key);
+	}
+
+private:
+	struct TableValue
+	{
+		enum CellContent : u8 { Empty, HaveValue, ValueRemoved }
+		CellContent cell_content;
+		// Actually, destructors and constructors not called.
+		key_type key_storage;
+		value_type value_storage;
+	}
+
+	type ptr_type= raw_ptr_mut</ TableValue />;
+
+	template</ bool is_mutable />
+	class unordered_map_range
+	{
+		class element_imut
+		{
+			fn constructor( mut this'x', TableValue &'y imut table_value ) ' x <- imut y ' unsafe
+			( table_value_(table_value) ) {}
+
+			fn key( this'x' ) : key_type &'x
+			{
+				return table_value_.key_storage;
+			}
+
+			fn value( this'x' ) : value_type & 'x imut
+			{
+				return table_value_.value_storage;
+			}
+
+		private:
+			TableValue &imut table_value_;
+		}
+
+		class element_mut
+		{
+			fn constructor( mut this'x', TableValue &'y  mut table_value ) ' x <-  mut y ' unsafe
+			( table_value_(table_value) ) {}
+
+			fn key( this'x' ) : key_type &'x
+			{
+				return table_value_.key_storage;
+			}
+
+			fn value( this'x' ) : value_type & 'x  mut
+			{
+				return table_value_.value_storage;
+			}
+
+		private:
+			TableValue & mut table_value_;
+		}
+
+	public:
+		// 'table' must contain exactly 'size' elements.
+		fn constructor( ptr_type table, size_type size, size_type capacity ) unsafe
+		( table_(table), size_(size), capacity_(capacity) )
+		{
+			advance_to_next_element();
+		}
+
+		fn size( this ) : size_type
+		{
+			return size_;
+		}
+
+		fn empty( this ) : bool
+		{
+			return size_ == size_type(0);
+		}
+
+		fn pop_front( mut this )
+		{
+			halt if(empty());
+			--size_;
+			advance_to_next_element();
+		}
+
+		fn enable_if( is_mutable )
+		front( this'x' ) : element_mut'x'
+		{
+			halt if(empty());
+			unsafe
+			{
+				return element_mut( cast_mut( cast_ref_unsafe</TableValue/>( int_to_ref( ref_to_int( table_.get_ref() ) ) ) ) );
+			}
+		}
+
+		fn enable_if( !is_mutable )
+		front( this'x' ) : element_imut'x'
+		{
+			halt if(empty());
+			unsafe
+			{
+				return element_imut( cast_ref_unsafe</TableValue/>( int_to_ref( ref_to_int( table_[size_type(0)] ) ) ) );
+			}
+		}
+
+	private:
+		fn advance_to_next_element( mut this )
+		{
+			unsafe
+			{
+				while( capacity_ > size_type(0) && table_.get_ref().cell_content != TableValue::CellContent::HaveValue )
+				{
+					++table_;
+					--capacity_;
+				}
+			}
+		}
+
+	private:
+		struct ReferenceTag{ TableValue& v; }
+
+	private:
+		[ ReferenceTag, 0 ] reference_tag_;
+		ptr_type table_;
+		size_type size_;
+		size_type capacity_;
+	}
+
+private:
+	ptr_type table_;
+	size_type size_(0);
+	size_type capacity_(0); // Always must be power of two.
+}
+
+} // namespace ust
