@@ -119,6 +119,16 @@ def FundamentalTypesInfo_Test0():
 			static_assert( typeinfo</f32/>.is_numeric );
 			static_assert( typeinfo</u8/>.is_integer );
 			static_assert( typeinfo</void/>.is_void );
+			static_assert( typeinfo</char8 />.is_char );
+			static_assert( typeinfo</char16/>.is_char );
+			static_assert( typeinfo</char32/>.is_char );
+			static_assert( !typeinfo</f32/>.is_char );
+			static_assert( !typeinfo</bool/>.is_char );
+			static_assert( !typeinfo</void/>.is_char );
+			static_assert( !typeinfo</u8/>.is_char );
+			static_assert( !typeinfo</i8/>.is_char );
+			static_assert( !typeinfo</u32/>.is_char );
+			static_assert( !typeinfo</i32/>.is_char );
 		}
 	"""
 	tests_lib.build_program( c_program_text )

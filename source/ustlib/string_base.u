@@ -9,8 +9,7 @@ namespace ust
 template</ type char_type />
 class string_base
 {
-	// TODO - check if type really is char.
-	static_assert( typeinfo</ char_type />.is_fundamental );
+	static_assert( typeinfo</ char_type />.is_char );
 
 	type this_type= string_base</char_type/>;
 
