@@ -1,0 +1,32 @@
+namespace ust
+{
+
+fn constexpr hash( i8  x ) : size_type { return size_type(x); }
+fn constexpr hash( u8  x ) : size_type { return size_type(x); }
+fn constexpr hash( i16 x ) : size_type { return size_type(x); }
+fn constexpr hash( u16 x ) : size_type { return size_type(x); }
+fn constexpr hash( i32 x ) : size_type { return size_type(x); }
+fn constexpr hash( u32 x ) : size_type { return size_type(x); }
+fn constexpr hash( i64 x ) : size_type { return size_type(x); }
+fn constexpr hash( u64 x ) : size_type { return size_type(x); }
+fn constexpr hash( char8  x ) : size_type { return size_type(x); }
+fn constexpr hash( char16 x ) : size_type { return size_type(x); }
+fn constexpr hash( char32 x ) : size_type { return size_type(x); }
+
+fn constexpr hash( bool x ) : size_type
+{
+	if( x ) { return size_type(1); }
+	return size_type(0);
+}
+
+fn hash( f32 x ) : size_type
+{
+	unsafe{  return hash( cast_ref_unsafe</u32/>(x) );  }
+}
+
+fn hash( f64 x ) : size_type
+{
+	unsafe{  return hash( cast_ref_unsafe</u64/>(x) );  }
+}
+
+}
