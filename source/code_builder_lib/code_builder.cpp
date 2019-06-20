@@ -353,6 +353,11 @@ void CodeBuilder::MergeNameScopes( NamesScope& dst, const NamesScope& src, Class
 					else
 						ApplyOverloadedFunction( *dst_funcs_set, src_func, dst.GetErrors(), src_func.prototype_file_pos );
 				}
+
+				// TODO - check duplicates and function templates with same signature.
+				for( const FunctionTemplatePtr& function_template : src_funcs_set->template_functions )
+					dst_funcs_set->template_functions.push_back( function_template );
+
 				return;
 			}
 			else if( const Type* const type= dst_member->GetTypeName() )
