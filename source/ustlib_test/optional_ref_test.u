@@ -1,0 +1,62 @@
+//##success_test
+import "../ustlib/optional_ref.u"
+
+type IntRefImut= ust::optional_ref</ i32, false />;
+type IntRefMut = ust::optional_ref</ i32, true  />;
+
+fn U_Main() : i32
+{
+	{ // Default-constructible 'optional_ref' is empty.
+		var IntRefImut ref;
+		halt if( ! ref.empty() );
+	}
+	{ // 'optional_ref' constructible from reference.
+		auto x= 44;
+		var IntRefImut ref( x );
+		halt if( ref.empty() );
+		halt if( ref.get_ref() != 44 );
+	}
+	{  // Mutable 'optional_ref'.
+		auto mut x= 55;
+		{
+			var IntRefMut ref( x );
+			halt if( ref.empty() );
+			ref.get_ref() = 8888;
+		}
+		halt if( x != 8888 );
+	}
+	{ // 'reset' for 'optional_ref'.
+		auto x= -56;
+		var IntRefImut mut ref( x );
+		halt if( ref.empty() );
+		ref.reset();
+		halt if( !ref.empty() );
+	}
+	{ // 'reset' with value for 'optional_ref'.
+		var i32 x= -56, y= 88;
+		var IntRefImut mut ref( x );
+		halt if( ref.empty() );
+		ref.reset( y );
+		halt if( ref.empty() );
+		halt if( ref.get_ref() != y );
+	}
+	{ // assign 'optional_ref'.
+		var i32 x= 1234, y= 5678;
+		var IntRefImut mut ref( x );
+		halt if( ref.empty() );
+		ref= IntRefImut(y);
+		halt if( ref.empty() );
+		halt if( ref.get_ref() != y );
+	}
+	{ // assign mutable 'optional_ref' to immutable 'optional_ref'.
+		var i32 x= -8, mut y= -80;
+		var IntRefImut mut ref( x );
+		halt if( ref.empty() );
+		ref= IntRefMut(y);
+		halt if( ref.empty() );
+		halt if( ref.get_ref() != y );
+	}
+
+
+	return 0;
+}

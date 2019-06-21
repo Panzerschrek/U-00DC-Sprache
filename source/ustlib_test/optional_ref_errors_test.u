@@ -1,0 +1,30 @@
+//##fail_test
+import "../ustlib/optional_ref.u"
+
+type IntRefImut= ust::optional_ref</ i32, false />;
+type IntRefMut = ust::optional_ref</ i32, true  />;
+
+fn U_Main() : i32
+{
+	{
+		auto mut x= 0;
+		var IntRefImut ref(x);
+		++x; //##expect_error ReferenceProtectionError
+	}
+	{
+		auto mut x= 0;
+		var IntRefMut ref(x);
+		++x; //##expect_error ReferenceProtectionError
+	}
+	{
+		auto mut x= 0;
+		var IntRefImut ref(x);
+		++ref.get_ref(); //##expect_error ExpectedReferenceValue
+	}
+	{
+		auto x= 0;
+		var IntRefMut ref(x); //##expect_error CouldNotSelectOverloadedFunction
+	}
+
+	return 0;
+}
