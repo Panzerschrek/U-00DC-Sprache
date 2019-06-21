@@ -356,7 +356,10 @@ void CodeBuilder::MergeNameScopes( NamesScope& dst, const NamesScope& src, Class
 
 				// TODO - check duplicates and function templates with same signature.
 				for( const FunctionTemplatePtr& function_template : src_funcs_set->template_functions )
-					dst_funcs_set->template_functions.push_back( function_template );
+				{
+					if( std::find( dst_funcs_set->template_functions.begin(), dst_funcs_set->template_functions.end(), function_template ) == dst_funcs_set->template_functions.end() )
+						dst_funcs_set->template_functions.push_back( function_template );
+				}
 
 				return;
 			}
