@@ -116,9 +116,13 @@ boost::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 				U_ASSERT( src_node->kind == ReferencesGraphNode::Kind::Variable );
 				if( const auto src_node_inner_reference= function_context.variables_state.GetNodeInnerReference( src_node ) )
 				{
-					const auto inner_reference_copy= std::make_shared<ReferencesGraphNode>( dst_node->name + " inner variable"_SpC, src_node_inner_reference->kind );
-					function_context.variables_state.SetNodeInnerReference( dst_node, inner_reference_copy );
-					function_context.variables_state.AddLink( src_node_inner_reference, inner_reference_copy );
+					ReferencesGraphNodePtr dst_node_inner_reference= function_context.variables_state.GetNodeInnerReference( dst_node );
+					if( dst_node_inner_reference == nullptr )
+					{
+						dst_node_inner_reference= std::make_shared<ReferencesGraphNode>( dst_node->name + " inner variable"_SpC, src_node_inner_reference->kind );
+						function_context.variables_state.SetNodeInnerReference( dst_node, dst_node_inner_reference );
+					}
+					function_context.variables_state.AddLink( src_node_inner_reference, dst_node_inner_reference );
 				}
 				function_context.variables_state.MoveNode( src_node );
 			}
