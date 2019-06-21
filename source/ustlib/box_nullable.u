@@ -1,5 +1,6 @@
 import "box.u"
 import "container_utils.u"
+import "hash.u"
 import "pointer.u"
 import "type_traits.u"
 
@@ -9,6 +10,9 @@ namespace ust
 template</ type T />
 class box_nullable
 {
+public:
+	type hasher= box_nullable_hasher;
+
 public:
 	// Default initializer = set to zero.
 	fn constructor(){}
@@ -125,6 +129,19 @@ public:
 private:
 	ContainerTag</ T /> container_tag_;
 	raw_ptr_mut</ T /> ptr_;
+}
+
+struct box_nullable_hasher
+{
+	template</ type T />
+	fn hash( box_nullable</T/>& b ) : size_type
+	{
+		if_var( &value : b )
+		{
+			return default_hasher::hash(value);
+		}
+		return size_type(0);
+	}
 }
 
 } // namespace ust

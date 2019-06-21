@@ -1,5 +1,6 @@
 import "aligned_storage.u"
 import "container_utils.u"
+import "hash.u"
 
 namespace ust
 {
@@ -7,6 +8,9 @@ namespace ust
 template</ type T />
 class optional
 {
+public:
+	type hasher= optional_hasher;
+
 public:
 	fn constructor()
 	( storage_= zero_init, has_value_= false  ) // TODO - initialize with unsafe
@@ -174,6 +178,19 @@ private:
 	ContainerTag</ T /> container_tag_;
 	aligned_storage</ typeinfo</T/>.size_of, typeinfo</T/>.align_of /> storage_;
 	bool has_value_;
+}
+
+struct optional_hasher
+{
+	template</ type T />
+	fn hash( optional</T/>& opt ) : size_type
+	{
+		if_var( &value : opt )
+		{
+			return default_hasher::hash(value);
+		}
+		return size_type(0);
+	}
 }
 
 } // namespace ust
