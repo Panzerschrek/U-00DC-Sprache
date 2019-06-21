@@ -1,6 +1,9 @@
 namespace ust
 {
 
+struct default_hasher
+{
+
 fn constexpr hash( i8  x ) : size_type { return size_type(x); }
 fn constexpr hash( u8  x ) : size_type { return size_type(x); }
 fn constexpr hash( i16 x ) : size_type { return size_type(x); }
@@ -29,4 +32,20 @@ fn hash( f64 x ) : size_type
 	unsafe{  return hash( cast_ref_unsafe</u64/>(x) );  }
 }
 
+template</ type T />
+fn hash( T& t ) : size_type
+{
+	static_if( typeinfo</ T />.is_class )
+	{
+		// For class types search for 'haser' inside it.
+		return T::hasher::hash(t);
+	}
+	else
+	{
+		halt;
+	}
 }
+
+}
+
+} // namespace ust
