@@ -101,6 +101,48 @@ fn U_Main() : i32
 		halt if( m.find(17).get_ref() != "abcDEFghi" );
 		halt if( m[17] != "abcDEFghi" );
 	}
+	{ // Iteration
+
+		var ust::unordered_map</ i32, ust::string8 /> mut m;
+		m.insert( 11, "A" );
+		m.insert( 22, "B" );
+		m.insert( 33, "C" );
+
+		var size_type mut iterations(0);
+		foreach( mut e : m )
+		{
+			auto val= e.value();
+			e.value()= val + val;
+			++iterations;
+		}
+		halt if( iterations != m.size() );
+		halt if( m[11] != "AA" );
+		halt if( m[22] != "BB" );
+		halt if( m[33] != "CC" );
+	}
+	{ // Iteration with one-bit hash.
+
+		var ust::unordered_map</ OneBitHash, ust::string8 /> mut m;
+		m.insert( OneBitHash(0), "A" );
+		m.insert( OneBitHash(1), "B" );
+		m.insert( OneBitHash(2), "C" );
+		m.insert( OneBitHash(3), "D" );
+		m.insert( OneBitHash(4), "E" );
+
+		var size_type mut iterations(0);
+		foreach( mut e : m )
+		{
+			auto val= e.value();
+			e.value()= val + val;
+			++iterations;
+		}
+		halt if( iterations != m.size() );
+		halt if( m[OneBitHash(0)] != "AA" );
+		halt if( m[OneBitHash(1)] != "BB" );
+		halt if( m[OneBitHash(2)] != "CC" );
+		halt if( m[OneBitHash(3)] != "DD" );
+		halt if( m[OneBitHash(4)] != "EE" );
+	}
 
 	return 0;
 }

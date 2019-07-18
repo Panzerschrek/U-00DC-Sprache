@@ -308,7 +308,7 @@ private:
 				return table_value_.key_storage;
 			}
 
-			fn value( this'x' ) : value_type & 'x imut
+			fn value( this'x' ) : value_type &'x imut
 			{
 				return table_value_.value_storage;
 			}
@@ -327,7 +327,7 @@ private:
 				return table_value_.key_storage;
 			}
 
-			fn value( this'x' ) : value_type & 'x  mut
+			fn value( this'x' ) : value_type &'x  mut
 			{
 				return table_value_.value_storage;
 			}
@@ -358,6 +358,8 @@ private:
 		{
 			halt if(empty());
 			--size_;
+			++table_;
+			--capacity_;
 			advance_to_next_element();
 		}
 
@@ -365,6 +367,19 @@ private:
 		front( this'x' ) : element_mut'x'
 		{
 			halt if(empty());
+			unsafe {  return front_unsafe();  }
+		}
+
+		fn enable_if( !is_mutable )
+		front( this'x' ) : element_imut'x'
+		{
+			halt if(empty());
+			unsafe {  return front_unsafe();  }
+		}
+
+		fn enable_if( is_mutable )
+		front_unsafe( this'x' ) unsafe : element_mut'x'
+		{
 			unsafe
 			{
 				return element_mut( cast_mut( cast_ref_unsafe</TableValue/>( int_to_ref( ref_to_int( table_.get_ref() ) ) ) ) );
@@ -372,9 +387,8 @@ private:
 		}
 
 		fn enable_if( !is_mutable )
-		front( this'x' ) : element_imut'x'
+		front_unsafe( this'x' ) unsafe : element_imut'x'
 		{
-			halt if(empty());
 			unsafe
 			{
 				return element_imut( cast_ref_unsafe</TableValue/>( int_to_ref( ref_to_int( table_[size_type(0)] ) ) ) );
