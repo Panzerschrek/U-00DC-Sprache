@@ -93,6 +93,7 @@ public:
 		}
 	}
 
+	// TODO - maybe add method, like "erase_if_exists"?
 	fn erase( mut this, key_type& key ) : value_type
 	{
 		unsafe

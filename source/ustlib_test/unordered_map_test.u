@@ -143,6 +143,36 @@ fn U_Main() : i32
 		halt if( m[OneBitHash(3)] != "DD" );
 		halt if( m[OneBitHash(4)] != "EE" );
 	}
+	{ // "insert" may replace value.
+		var ust::unordered_map</ ust::string8, i32 /> mut m;
+		m.insert( "a", 22 );
+		halt if( m["a"] != 22 );
+
+		m.insert( "a", 55 );
+		halt if( m["a"] != 55 );
+
+		m.erase( "a" );
+		halt if( !m.find("a").empty() );
+
+		m.insert( "a", 666 );
+		halt if( m["a"] != 666 );
+	}
+	{ // obtain value as "erase" result
+		var ust::unordered_map</ i32, i32 /> mut m;
+		m.insert( 66, 88888 );
+		halt if( m.erase( 66 ) != 88888 );
+	}
+	{ // "drop" method
+		var ust::unordered_map</ i32, i32 /> mut m;
+		m.insert( 10, 1024 );
+		halt if( m.empty() );
+
+		m.drop(10);
+		halt if( !m.empty() );
+
+		m.insert( 5, 32 );
+		halt if( m.size() != size_type(1) );
+	}
 
 	return 0;
 }
