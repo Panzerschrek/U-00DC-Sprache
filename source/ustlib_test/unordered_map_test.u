@@ -2,6 +2,21 @@
 import "../ustlib/string.u"
 import "../ustlib/unordered_map.u"
 
+struct OneBitHashHasher
+{
+	fn hash( OneBitHash& s ) : size_type { return size_type( s.x & 1 ); }
+}
+
+struct OneBitHash
+{
+	type hasher= OneBitHashHasher;
+
+	i32 x;
+	fn constructor( i32 in_x ) ( x= in_x ) {}
+
+	op==( OneBitHash& a, OneBitHash& b ) : bool { return a.x == b.x; }
+}
+
 fn U_Main() : i32
 {
 	{
@@ -44,6 +59,34 @@ fn U_Main() : i32
 		m.erase( 1997 ); halt if( !m.find( 1997 ).empty() );
 		m.erase( 1256 ); halt if( !m.find( 1256 ).empty() );
 		m.erase(   58 ); halt if( !m.find(   58 ).empty() );
+	}
+	{ // Test for hash collisions. Key type 'OneBitHash' have only 1 bit for hash.
+		var ust::unordered_map</ OneBitHash, i32 /> mut m;
+
+		var i32 mut i(0);
+		while( i < 256 )
+		{
+			m.insert( OneBitHash(i), i * i );
+			++i;
+		}
+		i= 0;
+		while( i < 256 )
+		{
+			auto ref= m.find( OneBitHash(i) );
+			halt if( ref.empty() );
+			halt if( ref.get_ref() != i * i );
+			++i;
+		}
+
+		m.erase( OneBitHash(66) );
+		halt if( !m.find( OneBitHash(66) ).empty() );
+		halt if(  m.find( OneBitHash(65) ).empty() );
+		halt if(  m.find( OneBitHash(67) ).empty() );
+
+		m.erase( OneBitHash(101) );
+		halt if( !m.find( OneBitHash(101) ).empty() );
+		halt if(  m.find( OneBitHash(100) ).empty() );
+		halt if(  m.find( OneBitHash(102) ).empty() );
 	}
 
 	return 0;
