@@ -11,8 +11,11 @@ class string_base
 {
 	static_assert( typeinfo</ char_type />.is_char );
 
+public:
 	type this_type= string_base</char_type/>;
+	type hasher= string_base_hasher;
 
+public:
 	// Default constructor.
 	fn constructor()
 	( ptr_(), size_(0), capacity_(0) )
@@ -474,6 +477,22 @@ private:
 	ptr_type ptr_;
 	size_type size_;
 	size_type capacity_;
+}
+
+struct string_base_hasher
+{
+
+template</ type char_type />
+fn hash( string_base</char_type/>& str ) : size_type
+{
+	var size_type mut r(0);
+	foreach( c : str )
+	{
+		r= r * size_type(33) + size_type(c);
+	}
+	return r;
+}
+
 }
 
 } // namespace ust

@@ -1,0 +1,87 @@
+namespace ust
+{
+
+struct default_hasher
+{
+
+fn constexpr hash( i8  x ) : size_type { return size_type(x); }
+fn constexpr hash( u8  x ) : size_type { return size_type(x); }
+fn constexpr hash( i16 x ) : size_type { return size_type(x); }
+fn constexpr hash( u16 x ) : size_type { return size_type(x); }
+fn constexpr hash( i32 x ) : size_type { return size_type(x); }
+fn constexpr hash( u32 x ) : size_type { return size_type(x); }
+fn constexpr hash( i64 x ) : size_type { return size_type(x); }
+fn constexpr hash( u64 x ) : size_type { return size_type(x); }
+fn constexpr hash( char8  x ) : size_type { return size_type(x); }
+fn constexpr hash( char16 x ) : size_type { return size_type(x); }
+fn constexpr hash( char32 x ) : size_type { return size_type(x); }
+
+fn constexpr hash( bool x ) : size_type
+{
+	if( x ) { return size_type(1); }
+	return size_type(0);
+}
+
+fn hash( f32 x ) : size_type
+{
+	unsafe{  return hash( cast_ref_unsafe</u32/>(x) );  }
+}
+
+fn hash( f64 x ) : size_type
+{
+	unsafe{  return hash( cast_ref_unsafe</u64/>(x) );  }
+}
+
+template</ type T />
+fn hash( T& x ) : size_type
+{
+	static_if( typeinfo</T/>.is_class )
+	{
+		// For class types search for 'haser' inside it.
+		return T::hasher::hash(x);
+	}
+	else if( typeinfo</T/>.is_enum )
+	{
+		// For enums just take enum numeric value.
+		return size_type(x);
+	}
+	else if( typeinfo</T/>.is_array )
+	{
+		// Use 'range_hasher' for arrays.
+		return range_hasher::hash(x);
+	}
+	else if( typeinfo</T/>.is_function_pointer )
+	{
+		// For function pointers just take value of function pointer.
+		unsafe{  return cast_ref_unsafe</size_type/>(x);  }
+	}
+	else
+	{
+		// Other kinds of types not supported.
+		static_assert(false);
+		halt;
+	}
+}
+
+}
+
+struct range_hasher
+{
+	template</ type T />
+	fn hash( T& range ) : size_type
+	{
+		var size_type mut r(0);
+		foreach( &element : range )
+		{
+			var size_type element_hash= default_hasher::hash(element);
+
+			// Same, as 'boost::hash_range'.
+			// TODO - check correctness for 32bit/64bit.
+			r^= element_hash + size_type(0x9e3779b9u) + (r<<6u) + (r>>2u);
+		}
+
+		return r;
+	}
+}
+
+} // namespace ust

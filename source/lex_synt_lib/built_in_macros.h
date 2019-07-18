@@ -36,7 +36,7 @@ R"(
 				unsafe
 				{
 					{
-						auto lock_temps ?r<? & ?> ?m<? mut ?> ?var_name= ??r[size_type(0)];
+						auto lock_temps ?r<? & ?> ?m<? mut ?> ?var_name= ??r.front_unsafe();
 						safe{ ?b }
 					}
 					??r.pop_front();

@@ -2419,11 +2419,6 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 
 	if( auto_variable_declaration.reference_modifier == ReferenceModifier::Reference )
 	{
-		if( initializer_experrsion.value_type == ValueType::Value )
-		{
-			REPORT_ERROR( ExpectedReferenceValue, block_names.GetErrors(), auto_variable_declaration.file_pos_ );
-			return;
-		}
 		if( initializer_experrsion.value_type == ValueType::ConstReference && variable.value_type != ValueType::ConstReference )
 		{
 			REPORT_ERROR( BindingConstReferenceToNonconstReference, block_names.GetErrors(), auto_variable_declaration.file_pos_ );
@@ -2432,6 +2427,25 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 
 		variable.llvm_value= initializer_experrsion.llvm_value;
 		variable.constexpr_value= initializer_experrsion.constexpr_value;
+
+		if( initializer_experrsion.value_type == ValueType::Value )
+		{
+			if( auto_variable_declaration.lock_temps )
+			{
+				// In case of "lock_temps" we can bind "Value" to "Reference" or "ConstReference".
+				if( initializer_experrsion.location == Variable::Location::LLVMRegister )
+				{
+					llvm::Value* const storage= function_context.alloca_ir_builder.CreateAlloca( initializer_experrsion.type.GetLLVMType() );
+					function_context.llvm_ir_builder.CreateStore( initializer_experrsion.llvm_value, storage );
+					variable.llvm_value= storage;
+				}
+			}
+			else
+			{
+				REPORT_ERROR( ExpectedReferenceValue, block_names.GetErrors(), auto_variable_declaration.file_pos_ );
+				return;
+			}
+		}
 
 		function_context.stack_variables_stack[ function_context.stack_variables_stack.size() - 2u ]->RegisterVariable( std::make_pair( var_node, variable ) );
 		variable.node= var_node;

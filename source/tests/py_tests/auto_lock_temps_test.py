@@ -147,3 +147,28 @@ def AutoLockTemps_Test5():
 	}
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def AutoLockTemps_Test6():
+	c_program_text= """
+	fn Foo()
+	{
+		// Can directly bind value to reference, if reference uses "lock_temps"
+		auto lock_temps& ref= 42;
+	}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def AutoLockTemps_Test7():
+	c_program_text= """
+	fn Foo()
+	{
+		// Can directly bind value to mutable reference, if reference uses "lock_temps"
+		auto lock_temps&mut num= 42;
+		++num;
+		halt if( num != 43 );
+	}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )

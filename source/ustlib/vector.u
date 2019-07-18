@@ -1,5 +1,6 @@
 import "checked_math.u"
 import "container_utils.u"
+import "hash.u"
 import "minmax.u"
 import "pointer.u"
 import "random_access_range.u"
@@ -12,7 +13,9 @@ class vector
 {
 public:
 	type this_type= vector</T/>;
+	type hasher= range_hasher;
 
+public:
 	// Default constructor.
 	fn constructor()
 	( ptr_(), size_(0), capacity_(0) )

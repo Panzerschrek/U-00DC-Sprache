@@ -1,0 +1,105 @@
+import "container_utils.u"
+import "pointer.u"
+
+namespace ust
+{
+
+// Optional reference.
+template</ type T, bool is_mutable />
+class optional_ref
+{
+public:
+	type this_type= optional_ref</T, is_mutable/>;
+
+	fn constructor( this_type &imut other )= default;
+	op=( mut this, this_type &imut other )= default;
+
+	// Default constructor - set to zero
+	fn constructor()= default;
+
+	// Construct from reference
+	fn enable_if( is_mutable )
+	constructor( mut this'x', T &'y  mut ref ) ' x <-  mut y '
+	( ptr_(ref) ) {}
+
+	fn enable_if( !is_mutable )
+	constructor( mut this'x', T &'y imut ref ) ' x <- imut y '
+	{
+		unsafe{  ptr_= ptr_type( cast_mut(ref) );  }
+	}
+
+	// Construct 'imut' reference from 'mut' reference.
+	op enable_if( !is_mutable )
+	=( mut this'x', optional_ref</ T, true />& other'y' ) ' x <- imut y'
+	{
+		if( !other.empty() )
+		{
+			unsafe{ reset( other.get_ref_unsafe() ); }
+		}
+	}
+
+	fn empty( this ) : bool
+	{
+		return ptr_.is_null();
+	}
+
+	fn enable_if( is_mutable )
+	get_ref( this'x' ) : T &'x mut
+	{
+		halt if(empty());
+		unsafe{ return get_ref_unsafe(); }
+	}
+
+	fn enable_if( !is_mutable )
+	get_ref( this'x' ) : T &'x imut
+	{
+		halt if(empty());
+		unsafe{ return get_ref_unsafe(); }
+	}
+
+	fn enable_if( is_mutable )
+	get_ref_unsafe( this'x' ) unsafe : T &'x mut
+	{
+		unsafe
+		{
+			return cast_mut( cast_ref_unsafe</T/>( int_to_ref( ref_to_int( ptr_.get_ref() ) ) ) );
+		}
+	}
+
+	fn enable_if( !is_mutable )
+	get_ref_unsafe( this'x' ) unsafe : T &'x imut
+	{
+		unsafe
+		{
+			return cast_ref_unsafe</T/>( int_to_ref( ref_to_int( ptr_.get_ref() ) ) );
+		}
+	}
+
+	fn reset( mut this )
+	{
+		ptr_= ptr_type();
+	}
+
+	fn enable_if( is_mutable )
+	reset( mut this'x', T &'y  mut ref ) ' x <-  mut y '
+	{
+		ptr_= ptr_type(ref);
+	}
+
+	fn enable_if( !is_mutable )
+	reset( mut this'x', T &'y imut ref ) ' x <- imut y '
+	{
+		unsafe{  ptr_= ptr_type( cast_mut(ref) );  }
+	}
+
+private:
+	type ptr_type= raw_ptr_mut</T/>;
+
+	struct ContainerTag{ T& t; }
+
+private:
+	[ ContainerTag, 0 ] container_tag_;
+	ptr_type ptr_;
+}
+
+} // namespace ust

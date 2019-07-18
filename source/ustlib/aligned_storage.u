@@ -1,0 +1,21 @@
+namespace ust
+{
+
+template</ size_type size, size_type alignment />
+struct aligned_storage
+{
+	template<//> struct integer_type_for_alignment</ size_type(1) />{ type t=  u8; }
+	template<//> struct integer_type_for_alignment</ size_type(2) />{ type t= u16; }
+	template<//> struct integer_type_for_alignment</ size_type(4) />{ type t= u32; }
+	template<//> struct integer_type_for_alignment</ size_type(8) />{ type t= u64; }
+	template</ size_type S /> struct integer_type_for_alignment     { type t= u64; }
+	// TODO - support 16-bytes alignment
+
+	type integer_type= integer_type_for_alignment</ alignment />::t;
+	auto constexpr integer_type_size= typeinfo</integer_type/>.size_of;
+	auto constexpr integer_count= ( size + ( integer_type_size - size_type(1) ) ) / integer_type_size;
+
+	[ integer_type, integer_count ] storage_;
+}
+
+} // namespace ust
