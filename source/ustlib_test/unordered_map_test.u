@@ -1,7 +1,6 @@
 //##success_test
+import "../ustlib/string.u"
 import "../ustlib/unordered_map.u"
-
-enum TrafficLight{ Red, Yellow, Green }
 
 fn U_Main() : i32
 {
@@ -24,6 +23,27 @@ fn U_Main() : i32
 		m.clear();
 		halt if( ! m.empty() );
 		halt if( !m.find( 55 ).empty() );
+	}
+	{
+		var ust::unordered_map</ i32, ust::string8 /> mut m;
+
+		m.insert(   58, "foo" );
+		m.insert(    1, "wtf" );
+		m.insert(   45, "45" );
+		m.insert( 1256, "ArT" );
+		m.insert( 1997, "InEx" );
+
+		halt if( m.find(   58 ).empty() ); halt if( m.find(   58 ).get_ref() != "foo" );
+		halt if( m.find(    1 ).empty() ); halt if( m.find(    1 ).get_ref() != "wtf" );
+		halt if( m.find(   45 ).empty() ); halt if( m.find(   45 ).get_ref() != "45" );
+		halt if( m.find( 1256 ).empty() ); halt if( m.find( 1256 ).get_ref() != "ArT" );
+		halt if( m.find( 1997 ).empty() ); halt if( m.find( 1997 ).get_ref() != "InEx" );
+
+		m.erase(    1 ); halt if( !m.find(    1 ).empty() );
+		m.erase(   45 ); halt if( !m.find(   45 ).empty() );
+		m.erase( 1997 ); halt if( !m.find( 1997 ).empty() );
+		m.erase( 1256 ); halt if( !m.find( 1256 ).empty() );
+		m.erase(   58 ); halt if( !m.find(   58 ).empty() );
 	}
 
 	return 0;

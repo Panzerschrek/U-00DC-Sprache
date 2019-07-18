@@ -178,8 +178,8 @@ private:
 		if( expected_size <= size_ ) { return; }
 
 		auto mut new_capacity= max( capacity_, size_type(2) );
-		while( new_capacity < expected_size ) { new_capacity<<= 1u; }
-		while( (new_capacity >> 1u) >= expected_size ) { new_capacity>>= 1u; }
+		while( !( ( expected_size << 1u ) <= new_capacity ) ) { new_capacity<<= 1u; }
+		while( !( ( expected_size << 2u ) >  new_capacity ) ) { new_capacity>>= 1u; }
 
 		if( new_capacity == capacity_ ) { return; }
 
@@ -217,6 +217,7 @@ private:
 							auto &mut new_value= new_table[ key_hash_wrapped ];
 							if( new_value.cell_content == TableValue::CellContent::Empty )
 							{
+								new_value.cell_content= TableValue::CellContent::HaveValue;
 								memory_copy( new_value.key_storage, old_value.key_storage, typeinfo</ key_type />.size_of );
 								memory_copy( new_value.value_storage, old_value.value_storage, typeinfo</ value_type />.size_of );
 								break; // We must find value, bacause new_capacity >= size_
@@ -231,6 +232,7 @@ private:
 				// All value moved, so, we can free old memory.
 				memory_free( table_.get_ref() );
 			}
+			capacity_= new_capacity;
 			table_= new_table;
 		}
 	}
