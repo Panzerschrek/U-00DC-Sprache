@@ -10,6 +10,8 @@ Common:
 *) "shared" tag for shared_ptr and it propagation to structures with shared
 	pointers inside
 *) Multithreading support
+*) ternary operator, like ?: in C++.
+*) switch-case
 *) "Disassembly operator" - declare variables with initializer as members of
 	value of structure type.
 *) Function to function pointer assignment
@@ -41,6 +43,7 @@ Standart library:
 *) thread class
 *) thread-safe shared_ptr
 *) Math functions
+*) Associative containers - map, set, unordered_map, unordered_set, string_map
 
 Compiler:
 *) move-assignment without hacks.
@@ -49,6 +52,7 @@ Compiler:
 	parent class.
 *) Virtual call for final function optimization
 *) Return value optimization
+*) Debug info
 *) Precompiled modules
 
 QtCreator plugin:
