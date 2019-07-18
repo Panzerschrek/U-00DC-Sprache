@@ -48,11 +48,11 @@ fn U_Main() : i32
 		m.insert( 1256, "ArT" );
 		m.insert( 1997, "InEx" );
 
-		halt if( m.find(   58 ).empty() ); halt if( m.find(   58 ).get_ref() != "foo" );
-		halt if( m.find(    1 ).empty() ); halt if( m.find(    1 ).get_ref() != "wtf" );
-		halt if( m.find(   45 ).empty() ); halt if( m.find(   45 ).get_ref() != "45" );
-		halt if( m.find( 1256 ).empty() ); halt if( m.find( 1256 ).get_ref() != "ArT" );
-		halt if( m.find( 1997 ).empty() ); halt if( m.find( 1997 ).get_ref() != "InEx" );
+		halt if( m.find(   58 ).empty() ); halt if( m[  58] != "foo" );
+		halt if( m.find(    1 ).empty() ); halt if( m[   1] != "wtf" );
+		halt if( m.find(   45 ).empty() ); halt if( m[ 45 ] != "45" );
+		halt if( m.find( 1256 ).empty() ); halt if( m[1256] != "ArT" );
+		halt if( m.find( 1997 ).empty() ); halt if( m[1997] != "InEx" );
 
 		m.erase(    1 ); halt if( !m.find(    1 ).empty() );
 		m.erase(   45 ); halt if( !m.find(   45 ).empty() );
@@ -87,6 +87,19 @@ fn U_Main() : i32
 		halt if( !m.find( OneBitHash(101) ).empty() );
 		halt if(  m.find( OneBitHash(100) ).empty() );
 		halt if(  m.find( OneBitHash(102) ).empty() );
+	}
+	{ // Can modify map value.
+		var ust::unordered_map</ i32, ust::string8 /> mut m;
+		m.insert( 17, "abc" );
+		halt if( m.find(17).get_ref() != "abc" );
+
+		m[17]+= "DEF";
+		halt if( m.find(17).get_ref() != "abcDEF" );
+		halt if( m[17] != "abcDEF" );
+
+		m.find(17).get_ref()+= "ghi";
+		halt if( m.find(17).get_ref() != "abcDEFghi" );
+		halt if( m[17] != "abcDEFghi" );
 	}
 
 	return 0;
