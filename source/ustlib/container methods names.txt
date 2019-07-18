@@ -23,10 +23,10 @@ fn index_unsafe(  mut this, size_type i ) unsafe : T & mut;
 fn index_unsafe( imut this, key_type& k ) unsafe : T &imut;
 fn index_unsafe(  mut this, key_type& k ) unsafe : T & mut;
 // Unsafe access for sequential containers. Container must be nonempty.
-fn front_unsafe( imut this ) : T &imut;
-fn front_unsafe(  mut this ) : T & mut;
-fn back_unsafe ( imut this ) : T &imut;
-fn back_unsafe (  mut this ) : T & mut;
+fn front_unsafe( imut this ) unsafe : T &imut;
+fn front_unsafe(  mut this ) unsafe : T & mut;
+fn back_unsafe ( imut this ) unsafe : T &imut;
+fn back_unsafe (  mut this ) unsafe : T & mut;
 
 // Safe swap elements. "halt", if indexes out of range or keys does not exists.
 fn swap( mut this, size_type i0, size_type i1 );
