@@ -173,6 +173,16 @@ public:
 		unsafe{  return ptr_[ index ];  }
 	}
 
+	fn index_unsafe( mut this, size_type index ) unsafe : T &mut
+	{
+		unsafe{  return ptr_[ index ];  }
+	}
+
+	fn index_unsafe( imut this, size_type index ) unsafe : T &imut
+	{
+		unsafe{  return ptr_[ index ];  }
+	}
+
 	op enable_if( c_size_type_is_u64_ ) []( mut this, u32 index ) : T &mut
 	{
 		return this[ size_type(index) ];
@@ -218,6 +228,26 @@ public:
 	fn back( imut this ) : T &imut
 	{
 		halt if(empty());
+		unsafe{  return ptr_[ size_ - size_type(1) ];  }
+	}
+
+	fn front_unsafe( mut this ) unsafe : T &mut
+	{
+		unsafe{  return ptr_[ size_type(0) ];  }
+	}
+
+	fn front_unsafe( imut this ) unsafe : T &imut
+	{
+		unsafe{  return ptr_[ size_type(0) ];  }
+	}
+
+	fn back_unsafe( mut this ) unsafe : T &mut
+	{
+		unsafe{  return ptr_[ size_ - size_type(1) ];  }
+	}
+
+	fn back_unsafe( imut this ) unsafe : T &imut
+	{
 		unsafe{  return ptr_[ size_ - size_type(1) ];  }
 	}
 
@@ -311,6 +341,17 @@ public:
 	fn pop_back( mut this'a...' ) : T'a...'
 	{
 		halt if(empty());
+		unsafe
+		{
+			var T mut result= uninitialized;
+			memory_copy( result, back(), c_element_size_ );
+			--size_;
+			return move(result);
+		}
+	}
+
+	fn pop_back_unsafe( mut this'a...' ) unsafe : T'a...'
+	{
 		unsafe
 		{
 			var T mut result= uninitialized;

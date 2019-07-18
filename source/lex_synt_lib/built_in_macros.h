@@ -39,7 +39,7 @@ R"(
 						auto lock_temps ?r<? & ?> ?m<? mut ?> ?var_name= ??r.front_unsafe();
 						safe{ ?b }
 					}
-					??r.pop_front();
+					??r.drop_front_unsafe();
 				}
 			}
 		}

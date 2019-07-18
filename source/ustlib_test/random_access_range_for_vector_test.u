@@ -63,10 +63,10 @@ fn U_Main() : i32
 		halt if( range.size() != size_type(3) );
 		unsafe
 		{
-			range.pop_front();
+			range.drop_front();
 			halt if( range.size() != size_type(2) );
 			halt if( vec.size() != size_type(3) );
-			range.pop_back();
+			range.drop_back();
 			halt if( range.size() != size_type(1) );
 			halt if( vec.size() != size_type(3) );
 		}

@@ -83,12 +83,22 @@ public:
 	fn get_ref( mut this ) : T &mut
 	{
 		halt if( empty() );
-		unsafe{  return ptr_.get_ref();  }
+		unsafe{  return get_ref_unsafe();  }
 	}
 
 	fn get_ref( imut this ) : T &imut
 	{
 		halt if( empty() );
+		unsafe{  return get_ref_unsafe();  }
+	}
+
+	fn get_ref_unsafe( mut this ) unsafe : T &mut
+	{
+		unsafe{  return ptr_.get_ref();  }
+	}
+
+	fn get_ref_unsafe( imut this ) unsafe : T &imut
+	{
 		unsafe{  return ptr_.get_ref();  }
 	}
 

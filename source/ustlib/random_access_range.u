@@ -67,14 +67,26 @@ public:
 		return size_type( end_ - begin_ );
 	}
 
+	fn drop_front( mut this )
+	{
+		halt if( empty() );
+		++begin_;
+	}
+
+	fn drop_back( mut this ) unsafe
+	{
+		halt if( empty() );
+		--end_;
+	}
+
 	// Precondition - range is nonempty.
-	fn pop_front( mut this ) unsafe
+	fn drop_front_unsafe( mut this ) unsafe
 	{
 		++begin_;
 	}
 
 	// Precondition - range is nonempty.
-	fn pop_back( mut this ) unsafe
+	fn drop_back_unsafe( mut this ) unsafe
 	{
 		--end_;
 	}

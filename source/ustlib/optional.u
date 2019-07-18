@@ -136,6 +136,16 @@ public:
 		unsafe{  return get_ref_unsafe();  }
 	}
 
+	fn get_ref_unsafe( mut this ) unsafe : T &mut
+	{
+		unsafe{  return cast_ref_unsafe</T/>(storage_);  }
+	}
+
+	fn get_ref_unsafe( imut this ) unsafe : T &imut
+	{
+		unsafe{  return cast_ref_unsafe</T/>(storage_);  }
+	}
+
 	fn reset(mut this)
 	{
 		if( !empty() )
@@ -162,17 +172,6 @@ public:
 	}
 
 	// TODO - add == and !=
-	
-private:
-	fn get_ref_unsafe( mut this ) unsafe : T &mut
-	{
-		unsafe{  return cast_ref_unsafe</T/>(storage_);  }
-	}
-
-	fn get_ref_unsafe( imut this ) unsafe : T &imut
-	{
-		unsafe{  return cast_ref_unsafe</T/>(storage_);  }
-	}
 	
 private:
 	ContainerTag</ T /> container_tag_;

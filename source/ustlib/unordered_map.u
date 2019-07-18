@@ -355,7 +355,13 @@ private:
 			return size_ == size_type(0);
 		}
 
-		fn pop_front( mut this )
+		fn drop_front( mut this )
+		{
+			halt if( empty() );
+			unsafe{  drop_front_unsafe();  }
+		}
+
+		fn drop_front_unsafe( mut this ) unsafe
 		{
 			halt if(empty());
 			--size_;
