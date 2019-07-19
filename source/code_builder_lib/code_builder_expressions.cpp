@@ -255,9 +255,7 @@ Value CodeBuilder::BuildExpressionCode(
 		}
 		Value operator()( const Synt::TernaryOperator& ternary_operator )
 		{
-			// TODO
-			U_UNUSED(ternary_operator);
-			return ErrorValue();
+			return this_.BuildTernaryOperator( ternary_operator, names, function_context );
 		}
 		Value operator()( const Synt::NamedOperand& named_operand )
 		{
@@ -1386,6 +1384,143 @@ Value CodeBuilder::BuildNamedOperand(
 	}
 
 	return *value_entry;
+}
+
+Value CodeBuilder::BuildTernaryOperator( const Synt::TernaryOperator& ternary_operator, NamesScope& names, FunctionContext& function_context )
+{
+	const Variable condition= BuildExpressionCodeEnsureVariable( *ternary_operator.condition, names, function_context );
+	if( condition.type != bool_type_ )
+	{
+		REPORT_ERROR( TypesMismatch, names.GetErrors(), ternary_operator.file_pos_, bool_type_, condition.type );
+		return ErrorValue();
+	}
+
+	// Preevaluate branches for selection of type and value type for operator result.
+	Type branches_types[2u];
+	ValueType branches_value_types[2u];
+	{
+		const auto state= SaveInstructionsState( function_context );
+		{
+			const StackVariablesStorage dummy_stack_variables_storage( function_context );
+			for( size_t i= 0u; i < 2u; ++i )
+			{
+				const Variable var= BuildExpressionCodeEnsureVariable( i == 0u ? *ternary_operator.true_branch : *ternary_operator.false_branch, names, function_context );
+				branches_types[i]= var.type;
+				branches_value_types[i]= var.value_type;
+			}
+		}
+		RestoreInstructionsState( function_context, state );
+	}
+
+	if( branches_types[0] != branches_types[1] )
+	{
+		REPORT_ERROR( TypesMismatch, names.GetErrors(), ternary_operator.file_pos_, branches_types[0], branches_types[1] );
+		return ErrorValue();
+	}
+
+	Variable result;
+	result.type= branches_types[0];
+	result.location= Variable::Location::Pointer;
+	ReferencesGraphNode::Kind node_kind;
+	if( branches_value_types[0] == ValueType::Value || branches_value_types[1] == ValueType::Value )
+	{
+		result.value_type= ValueType::Value;
+		node_kind= ReferencesGraphNode::Kind::Variable;
+		result.llvm_value= function_context.alloca_ir_builder.CreateAlloca( result.type.GetLLVMType() );
+		result.llvm_value->setName( "select_result" );
+	}
+	else if( branches_value_types[0] == ValueType::ConstReference || branches_value_types[1] == ValueType::ConstReference )
+	{
+		result.value_type= ValueType::ConstReference;
+		node_kind= ReferencesGraphNode::Kind::ReferenceImut;
+	}
+	else
+	{
+		result.value_type= ValueType::Reference;
+		node_kind= ReferencesGraphNode::Kind::ReferenceMut;
+	}
+	const auto result_node= std::make_shared<ReferencesGraphNode>( "select_result"_SpC, node_kind );
+	function_context.stack_variables_stack.back()->RegisterVariable( std::make_pair( result_node, result ) );
+	result.node= result_node;
+
+	llvm::BasicBlock* const  true_branch_block= llvm::BasicBlock::Create( llvm_context_ );
+	llvm::BasicBlock* const false_branch_block= llvm::BasicBlock::Create( llvm_context_ );
+	llvm::BasicBlock* const result_block= llvm::BasicBlock::Create( llvm_context_ );
+
+	function_context.llvm_ir_builder.CreateCondBr( CreateMoveToLLVMRegisterInstruction( condition, function_context ), true_branch_block, false_branch_block );
+
+	// TODO - process constexpr values.
+	llvm::Value* branches_reference_values[2u] { nullptr, nullptr };
+	for( size_t i= 0u; i < 2u; ++i )
+	{
+		const StackVariablesStorage branch_temp_variables_storage( function_context );
+
+		llvm::BasicBlock* const branch_block= i == 0u ? true_branch_block : false_branch_block;
+		const auto& expr= i == 0u ? ternary_operator.true_branch : ternary_operator.false_branch;
+		function_context.function->getBasicBlockList().push_back( branch_block );
+		function_context.llvm_ir_builder.SetInsertPoint( branch_block );
+		const Variable branch_result= BuildExpressionCodeEnsureVariable( *expr, names, function_context );
+
+		if( result.value_type == ValueType::Value )
+		{
+			// TODO - process inner references.
+
+			// Move or create copy.
+			if( result.type.GetFundamentalType() != nullptr || result.type.GetEnumType() != nullptr || result.type.GetFunctionPointerType() != nullptr )
+				function_context.llvm_ir_builder.CreateStore( CreateMoveToLLVMRegisterInstruction( branch_result, function_context ), result.llvm_value );
+			else if( const ClassProxyPtr class_type= result.type.GetClassTypeProxy() )
+			{
+				if( branch_result.value_type == ValueType::Value )
+				{
+					// Move.
+					if( branch_result.node != nullptr )
+						function_context.variables_state.MoveNode( branch_result.node );
+					CopyBytes( branch_result.llvm_value, result.llvm_value, result.type, function_context );
+				}
+				else
+				{
+					// Copy.
+					if( !result.type.IsCopyConstructible() )
+					{
+						REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), ternary_operator.file_pos_, result.type );
+						return ErrorValue();
+					}
+					TryCallCopyConstructor( names.GetErrors(), ternary_operator.file_pos_, result.llvm_value, branch_result.llvm_value, class_type, function_context );
+				}
+			}
+			else
+			{
+				REPORT_ERROR( NotImplemented, names.GetErrors(), ternary_operator.file_pos_, "move such kind of types" );
+				return ErrorValue();
+			}
+		}
+		else
+		{
+			branches_reference_values[i]= branch_result.llvm_value;
+			if( branch_result.node != nullptr )
+			{
+				if( ( result.value_type == ValueType::ConstReference && function_context.variables_state.HaveOutgoingMutableNodes( branch_result.node ) ) ||
+					( result.value_type == ValueType::Reference && function_context.variables_state.HaveOutgoingLinks( branch_result.node ) ) )
+					REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), ternary_operator.file_pos_, branch_result.node->name );
+				else
+					function_context.variables_state.AddLink( branch_result.node, result_node );
+			}
+		}
+
+		CallDestructors( *function_context.stack_variables_stack.back(), names, function_context, ternary_operator.file_pos_ );
+		function_context.llvm_ir_builder.CreateBr( result_block );
+	}
+	function_context.function->getBasicBlockList().push_back( result_block );
+	function_context.llvm_ir_builder.SetInsertPoint( result_block );
+
+	if( result.value_type != ValueType::Value )
+	{
+		llvm::PHINode* const phi= function_context.llvm_ir_builder.CreatePHI( llvm::PointerType::get( result.type.GetLLVMType(), 0 ), 2u );
+		phi->addIncoming( branches_reference_values[0],  true_branch_block );
+		phi->addIncoming( branches_reference_values[1], false_branch_block );
+		result.llvm_value= phi;
+	}
+	return Value( result, ternary_operator.file_pos_ );
 }
 
 Value CodeBuilder::BuildMoveOpeator( const Synt::MoveOperator& move_operator, NamesScope& names, FunctionContext& function_context )
