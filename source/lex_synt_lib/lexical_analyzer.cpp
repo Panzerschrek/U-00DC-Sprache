@@ -52,6 +52,7 @@ static const FixedLexemsMap g_fixed_lexems[ g_max_fixed_lexem_size + 1 ]=
 		{ "."_SpC, Lexem::Type::Dot },
 		{ ":"_SpC, Lexem::Type::Colon },
 		{ ";"_SpC, Lexem::Type::Semicolon },
+		{ "?"_SpC, Lexem::Type::Question },
 
 		{ "="_SpC, Lexem::Type::Assignment },
 		{ "+"_SpC, Lexem::Type::Plus },
@@ -504,7 +505,10 @@ LexicalAnalysisResult LexicalAnalysis( const sprache_char* const program_text_da
 
 		else if( IsIdentifierStartChar(c) )
 			lexem= ParseIdentifier( it, it_end );
-		else if( IsMacroIdentifierStartChar(c) && std::next(it) < it_end && *std::next(it) != '>' )
+		else if( IsMacroIdentifierStartChar(c) &&
+				std::next(it) < it_end &&
+				*std::next(it) != '>' &&
+				( IsIdentifierChar(*std::next(it)) || IsMacroIdentifierStartChar(*std::next(it)) ) )
 			lexem= ParseMacroIdentifier( it, it_end );
 		else
 		{

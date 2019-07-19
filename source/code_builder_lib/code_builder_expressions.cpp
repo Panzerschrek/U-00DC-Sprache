@@ -253,6 +253,12 @@ Value CodeBuilder::BuildExpressionCode(
 			U_ASSERT(false); // Processed earlier.
 			return ErrorValue();
 		}
+		Value operator()( const Synt::TernaryOperator& ternary_operator )
+		{
+			// TODO
+			U_UNUSED(ternary_operator);
+			return ErrorValue();
+		}
 		Value operator()( const Synt::NamedOperand& named_operand )
 		{
 			return this_.BuildNamedOperand( named_operand, names, function_context );

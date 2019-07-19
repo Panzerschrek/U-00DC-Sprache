@@ -100,6 +100,10 @@ ExpressionComponentWithUnaryOperators::ExpressionComponentWithUnaryOperators( co
 	: SyntaxElementBase( file_pos )
 {}
 
+TernaryOperator::TernaryOperator( const FilePos& file_pos )
+	: ExpressionComponentWithUnaryOperators( file_pos )
+{}
+
 NamedOperand::NamedOperand( const FilePos& file_pos, ComplexName name )
 	: ExpressionComponentWithUnaryOperators(file_pos)
 	, name_( std::move(name) )

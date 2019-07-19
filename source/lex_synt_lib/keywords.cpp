@@ -48,6 +48,7 @@ static const Globals& GetGlobals()
 		[ size_t(Keywords::enable_if_) ]= "enable_if",
 		[ size_t(Keywords::else_) ]= "else",
 		[ size_t(Keywords::move_) ]= "move",
+		[ size_t(Keywords::select_) ]= "select",
 
 		[ size_t(Keywords::struct_) ]= "struct",
 		[ size_t(Keywords::class_) ]= "class",
