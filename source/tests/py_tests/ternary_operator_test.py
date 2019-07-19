@@ -112,3 +112,79 @@ def TernaryOperator_VariablesStateMerge_Test0():
 		}
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def TernaryOperator_Constexpr_Test0():
+	c_program_text= """
+		static_assert( select( true ? 5.0f : -14.3f ) == 5.0f );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def TernaryOperator_Constexpr_Test1():
+	c_program_text= """
+		fn Foo()
+		{
+			var u32 constexpr x(985), constexpr y(521);
+			static_assert( select( false ? x : y ) == 521u );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def TernaryOperator_Constexpr_Test2():
+	c_program_text= """
+		fn Foo()
+		{
+			var i32 constexpr x(222), mut y(111);
+			static_assert( select( true ? x : y ) == 222 ); // result is constexpr, even if not selected branch is not constexpr.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def TernaryOperator_Constexpr_Test3():
+	c_program_text= """
+		fn Foo()
+		{
+			var f64 constexpr pi(3.1415926535), constexpr e(2.718281828);
+			var f64 &constexpr ref= select( false ? pi : e );
+			static_assert( ref == e );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def TernaryOperator_Constexpr_Test4():
+	c_program_text= """
+		static_assert( select( true ? "Ab" : "bA" )[0u] == "A"c8 );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def TernaryOperator_Constexpr_Test5():
+	c_program_text= """
+		fn Foo()
+		{
+			var i32 constexpr x= 0, mut y= 0;
+			auto &constexpr ref= select( false ? x : y );  // Selected non-constexpr branch.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "VariableInitializerIsNotConstantExpression" )
+	assert( errors_list[0].file_pos.line == 5 )
+
+
+def TernaryOperator_Constexpr_Test6():
+	c_program_text= """
+		fn Foo( bool b )
+		{
+			var i32 constexpr x= 0, constexpr y= 1;
+			auto &constexpr ref= select( b ? x : y );  // Condition is not constexpr, result will not be constexpr.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "VariableInitializerIsNotConstantExpression" )
+	assert( errors_list[0].file_pos.line == 5 )

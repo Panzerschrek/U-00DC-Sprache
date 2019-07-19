@@ -1426,6 +1426,7 @@ Value CodeBuilder::BuildTernaryOperator( const Synt::TernaryOperator& ternary_op
 	{
 		result.value_type= ValueType::Value;
 		node_kind= ReferencesGraphNode::Kind::Variable;
+		// TODO - ensure type completeness.
 		result.llvm_value= function_context.alloca_ir_builder.CreateAlloca( result.type.GetLLVMType() );
 		result.llvm_value->setName( "select_result" );
 	}
@@ -1449,8 +1450,8 @@ Value CodeBuilder::BuildTernaryOperator( const Synt::TernaryOperator& ternary_op
 
 	function_context.llvm_ir_builder.CreateCondBr( CreateMoveToLLVMRegisterInstruction( condition, function_context ), true_branch_block, false_branch_block );
 
-	// TODO - process constexpr values.
 	llvm::Value* branches_reference_values[2u] { nullptr, nullptr };
+	llvm::Constant* branches_constexpr_values[2u] { nullptr, nullptr };
 	ReferencesGraph variables_state_before= function_context.variables_state;
 	std::vector<ReferencesGraph> branches_variables_state(2u);
 	for( size_t i= 0u; i < 2u; ++i )
@@ -1465,6 +1466,7 @@ Value CodeBuilder::BuildTernaryOperator( const Synt::TernaryOperator& ternary_op
 			function_context.llvm_ir_builder.SetInsertPoint( branch_block );
 			const Variable branch_result= BuildExpressionCodeEnsureVariable( *expr, names, function_context );
 
+			branches_constexpr_values[i]= branch_result.constexpr_value;
 			if( result.value_type == ValueType::Value )
 			{
 				// TODO - process inner references.
@@ -1528,6 +1530,10 @@ Value CodeBuilder::BuildTernaryOperator( const Synt::TernaryOperator& ternary_op
 		phi->addIncoming( branches_reference_values[1], false_branch_block );
 		result.llvm_value= phi;
 	}
+
+	if( condition.constexpr_value != nullptr )
+		result.constexpr_value= condition.constexpr_value->getUniqueInteger().getLimitedValue() != 0u ? branches_constexpr_values[0] : branches_constexpr_values[1];
+
 	return Value( result, ternary_operator.file_pos_ );
 }
 
