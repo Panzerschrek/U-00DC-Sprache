@@ -1426,9 +1426,16 @@ Value CodeBuilder::BuildTernaryOperator( const Synt::TernaryOperator& ternary_op
 	{
 		result.value_type= ValueType::Value;
 		node_kind= ReferencesGraphNode::Kind::Variable;
-		// TODO - ensure type completeness.
-		result.llvm_value= function_context.alloca_ir_builder.CreateAlloca( result.type.GetLLVMType() );
-		result.llvm_value->setName( "select_result" );
+		if( !( result.type == void_type_ || result.type == void_type_for_ret_ ) )
+		{
+			if( !EnsureTypeCompleteness( result.type, TypeCompleteness::Complete ) )
+			{
+				REPORT_ERROR( UsingIncompleteType, names.GetErrors(), ternary_operator.file_pos_, result.type );
+				return ErrorValue();
+			}
+			result.llvm_value= function_context.alloca_ir_builder.CreateAlloca( result.type.GetLLVMType() );
+			result.llvm_value->setName( "select_result" );
+		}
 	}
 	else if( branches_value_types[0] == ValueType::ConstReference || branches_value_types[1] == ValueType::ConstReference )
 	{
@@ -1472,7 +1479,9 @@ Value CodeBuilder::BuildTernaryOperator( const Synt::TernaryOperator& ternary_op
 				// TODO - process inner references.
 
 				// Move or create copy.
-				if( result.type.GetFundamentalType() != nullptr || result.type.GetEnumType() != nullptr || result.type.GetFunctionPointerType() != nullptr )
+				if( result.type == void_type_ || result.type == void_type_for_ret_ )
+				{}
+				else if( result.type.GetFundamentalType() != nullptr || result.type.GetEnumType() != nullptr || result.type.GetFunctionPointerType() != nullptr )
 					function_context.llvm_ir_builder.CreateStore( CreateMoveToLLVMRegisterInstruction( branch_result, function_context ), result.llvm_value );
 				else if( const ClassProxyPtr class_type= result.type.GetClassTypeProxy() )
 				{

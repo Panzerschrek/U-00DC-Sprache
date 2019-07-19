@@ -77,6 +77,37 @@ def TernaryOperator_ForReferenceValue_Test1():
 	assert( tests_lib.run_function( "_Z3Foob", False ) == 40 )
 
 
+def TernaryOperatorIsLazy_Test0():
+	c_program_text= """
+		fn Mul5( i32 &mut x )
+		{
+			x*= 5;
+		}
+		fn Foo( bool b ) : i32
+		{
+			var i32 mut x= 666, mut y= 33;
+			select( b ? Mul5(x) : Mul5(y) ); // Only one of expressions evaluated.
+			return x / y;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	assert( tests_lib.run_function( "_Z3Foob", True  ) == 100 )
+	assert( tests_lib.run_function( "_Z3Foob", False ) == 4 )
+
+
+def TernaryOperatorIsLazy_Test1():
+	c_program_text= """
+		fn Foo( bool b ) : i32
+		{
+			var [ i32, 1 ] arr[ 666 ];
+			auto mut invalid_index= 99999u;
+			return select( b ? arr[0u] : arr[invalid_index] ); // Programm not halted on invalid array index, if argument is "true"
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	assert( tests_lib.run_function( "_Z3Foob", True ) == 666 )
+
+
 def DestructorsCall_ForTernaryOperatorBranches_Test0():
 	c_program_text= """
 		struct S
