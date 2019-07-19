@@ -101,3 +101,14 @@ def DestructorsCall_ForTernaryOperatorBranches_Test0():
 	tests_lib.build_program( c_program_text )
 	assert( tests_lib.run_function( "_Z3Foob", True  ) == 5 )
 	assert( tests_lib.run_function( "_Z3Foob", False ) == 3 )
+
+
+def TernaryOperator_VariablesStateMerge_Test0():
+	c_program_text= """
+		fn Foo( bool b )
+		{
+			auto mut x= 0;
+			auto moved= select( b ? move(x) : move(x) ); // Ok, "x" moved in all branches.
+		}
+	"""
+	tests_lib.build_program( c_program_text )

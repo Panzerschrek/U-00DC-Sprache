@@ -117,3 +117,84 @@ def DestroyedVariableStillHaveReference_Test0():
 	assert( errors_list[0].file_pos.line == 5 )
 	assert( errors_list[1].error_code == "DestroyedVariableStillHaveReferences" )
 	assert( errors_list[1].file_pos.line == 5 )
+
+
+def VariablesStateMerge_ForTernaryOperator_Test0():
+	c_program_text= """
+		fn Foo( bool b )
+		{
+			var i32 mut x= 0;
+			auto moved= select( b ? x : move(x) );
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ConditionalMove" )
+	assert( errors_list[0].file_pos.line == 5 )
+
+
+def VariablesStateMerge_ForTernaryOperator_Test1():
+	c_program_text= """
+		fn Foo( bool b )
+		{
+			var i32 mut x= 0;
+			auto moved= select( b ? move(x) : x );
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ConditionalMove" )
+	assert( errors_list[0].file_pos.line == 5 )
+
+
+def VariablesStateMerge_ForTernaryOperator_Test2():
+	c_program_text= """
+		struct S{ i32& x; }
+		fn FakePollution( S &mut s'a', i32&'b i ) ' a <- b ' : i32 { return i; }
+		fn Foo( bool b )
+		{
+			var i32 mut x= 7, mut y= 5, t= 0;
+			var S mut s{ .x= t };
+			auto z= select( b ? FakePollution( s, x ) : y );
+			++x; // Error, 'x' already have reference
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ReferenceProtectionError" )
+	assert( errors_list[0].file_pos.line == 9 )
+
+
+def VariablesStateMerge_ForTernaryOperator_Test3():
+	c_program_text= """
+		struct S{ i32& x; }
+		fn FakePollution( S &mut s'a', i32&'b i ) ' a <- b ' : i32 { return i; }
+		fn Foo( bool b )
+		{
+			var i32 mut x= 7, mut y= 5, t= 0;
+			var S mut s{ .x= t };
+			auto z= select( b ? x : FakePollution( s, y ) );
+			++y; // Error, 'y' already have reference
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ReferenceProtectionError" )
+	assert( errors_list[0].file_pos.line == 9 )
+
+
+def VariablesStateMerge_ForTernaryOperator_Test4():
+	c_program_text= """
+		struct S{ i32 &mut x; }
+		fn FakePollution( S &mut s'a', i32&'b mut i ) ' a <- b ' : i32 { return 0; }
+		fn Foo( bool b )
+		{
+			var i32 mut x= 0, mut t= 0, mut u= 0;
+			var S mut s0{ .x= t }, mut s1{ .x= u };
+			auto z= select( b ? FakePollution( s0, x ) : FakePollution( s1, x ) ); // Create mutable references to "x" in different variables.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ReferenceProtectionError" )
+	assert( errors_list[0].file_pos.line == 8 )
