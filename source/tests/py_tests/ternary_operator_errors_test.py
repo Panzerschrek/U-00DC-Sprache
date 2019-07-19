@@ -198,3 +198,30 @@ def VariablesStateMerge_ForTernaryOperator_Test4():
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ReferenceProtectionError" )
 	assert( errors_list[0].file_pos.line == 8 )
+
+
+def TernaryOperator_SavesInnerReferences_Test0():
+	c_program_text= """
+		struct S
+		{
+			i32 &mut x;
+		}
+		fn GetS( i32 &'a mut x ) : S'a'
+		{
+			var S mut s{ .x= x };
+			return move(s);
+		}
+		fn Foo( bool b )
+		{
+			var i32 mut x= 0, mut y= 0;
+			auto res= select( b ? GetS(x) : GetS(y) );
+			++x; // Error, "x" have reference inside "res"
+			++y; // Error, "x" have reference inside "res"
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) >= 2 )
+	assert( errors_list[0].error_code == "ReferenceProtectionError" )
+	assert( errors_list[0].file_pos.line == 15 )
+	assert( errors_list[1].error_code == "ReferenceProtectionError" )
+	assert( errors_list[1].file_pos.line == 16 )

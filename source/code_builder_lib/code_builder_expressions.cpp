@@ -1476,8 +1476,6 @@ Value CodeBuilder::BuildTernaryOperator( const Synt::TernaryOperator& ternary_op
 			branches_constexpr_values[i]= branch_result.constexpr_value;
 			if( result.value_type == ValueType::Value )
 			{
-				// TODO - process inner references.
-
 				// Move or create copy.
 				if( result.type == void_type_ || result.type == void_type_for_ret_ )
 				{}
@@ -1485,6 +1483,33 @@ Value CodeBuilder::BuildTernaryOperator( const Synt::TernaryOperator& ternary_op
 					function_context.llvm_ir_builder.CreateStore( CreateMoveToLLVMRegisterInstruction( branch_result, function_context ), result.llvm_value );
 				else if( const ClassProxyPtr class_type= result.type.GetClassTypeProxy() )
 				{
+					if( branch_result.node != nullptr && result.type.ReferencesTagsCount() > 0u )
+					{
+						const auto src_node_inner_references= function_context.variables_state.GetAllAccessibleInnerNodes_r( branch_result.node );
+						if( !src_node_inner_references.empty() )
+						{
+							ReferencesGraphNodePtr result_inner_reference= function_context.variables_state.GetNodeInnerReference( result_node );
+							if( result_inner_reference == nullptr )
+							{
+								bool node_is_mutable= false;
+								for( const ReferencesGraphNodePtr& src_node_inner_reference : src_node_inner_references )
+									node_is_mutable= node_is_mutable || src_node_inner_reference->kind == ReferencesGraphNode::Kind::ReferenceMut;
+
+								result_inner_reference= std::make_shared<ReferencesGraphNode>( result_node->name + " inner variable"_SpC, node_is_mutable ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut );
+								function_context.variables_state.SetNodeInnerReference( result_node, result_inner_reference );
+							}
+
+							for( const ReferencesGraphNodePtr& src_node_inner_reference : src_node_inner_references )
+							{
+								if( ( result_inner_reference->kind == ReferencesGraphNode::Kind::ReferenceImut && function_context.variables_state.HaveOutgoingMutableNodes( src_node_inner_reference ) ) ||
+									( result_inner_reference->kind == ReferencesGraphNode::Kind::ReferenceMut  && function_context.variables_state.HaveOutgoingLinks( src_node_inner_reference ) ) )
+									REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), ternary_operator.file_pos_, branch_result.node->name );
+								else
+									function_context.variables_state.AddLink( src_node_inner_reference, result_inner_reference );
+							}
+						}
+					}
+
 					if( branch_result.value_type == ValueType::Value )
 					{
 						// Move.
