@@ -45,6 +45,20 @@ def TernaryOperator_Test1():
 	assert( tests_lib.run_function( "_Z3Foobii", False, 1, 1 ) == 7 )
 
 
+def TernaryOperator_Test2():
+	c_program_text= """
+		struct S{ i32 x; }
+		fn GetS( i32 x ) : S { var S s{ .x= x }; return s; }
+		fn Foo( bool b ) : i32
+		{
+			return select( b ? GetS(412) : GetS(632) ).x; // "select" for value-structs.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	assert( tests_lib.run_function( "_Z3Foob", True  ) == 412 )
+	assert( tests_lib.run_function( "_Z3Foob", False ) == 632 )
+
+
 def TernaryOperator_ForReferenceValue_Test0():
 	c_program_text= """
 		fn Foo( bool b ) : i32
@@ -134,6 +148,33 @@ def DestructorsCall_ForTernaryOperatorBranches_Test0():
 	assert( tests_lib.run_function( "_Z3Foob", False ) == 3 )
 
 
+def DestructorsCall_ForTernaryOperatorResult_Test0():
+	c_program_text= """
+		struct S
+		{
+			i32 &mut x;
+			fn destructor() { ++x; }
+		}
+		fn GetS( i32 &'a mut x ) : S'a'
+		{
+			var S mut s{ .x= x };
+			return move(s);
+		}
+		fn Foo( bool b ) : i32
+		{
+			var i32 mut x= 0, mut y= 0;
+			{
+				auto res= select( b ? GetS(x) : GetS(y) ); // Structure, that refers to "x" or to "y"
+				// Called destructor, that increments "x" or "y"
+			}
+			return (y << 4u) | x;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	assert( tests_lib.run_function( "_Z3Foob", True  ) ==  1 )
+	assert( tests_lib.run_function( "_Z3Foob", False ) == 16 )
+
+
 def TernaryOperator_VariablesStateMerge_Test0():
 	c_program_text= """
 		fn Foo( bool b )
@@ -219,3 +260,12 @@ def TernaryOperator_Constexpr_Test6():
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "VariableInitializerIsNotConstantExpression" )
 	assert( errors_list[0].file_pos.line == 5 )
+
+
+def TernaryOperator_Constexpr_Test7():
+	c_program_text= """
+		struct S{ i32 x; }
+		var S constexpr s0{ .x= 42 }, s1{ .x= 24 };
+		static_assert( select( true ? s0 : s1 ).x == 42 ); // Constexpr select for reference structs.
+	"""
+	tests_lib.build_program( c_program_text )
