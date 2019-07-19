@@ -213,11 +213,11 @@ ReferencesGraph::MergeResult ReferencesGraph::MergeVariablesStateAfterIf( const 
 	ReferencesGraph result;
 	std::vector<CodeBuilderError> errors;
 
+	std::vector< std::pair<ReferencesGraphNodePtr, ReferencesGraphNodePtr> > replaced_nodes; // First node replaced with second node.
 	for( const ReferencesGraph& branch_state : branches_variables_state )
 	{
 		U_ASSERT( branch_state.nodes_.size() ==  branches_variables_state.front().nodes_.size() );
 
-		std::vector< std::pair<ReferencesGraphNodePtr, ReferencesGraphNodePtr> > replaced_nodes; // First node replaced with second node.
 		for( const auto& node_pair : branch_state.nodes_ )
 		{
 			if( result.nodes_.find( node_pair.first ) == result.nodes_.end() )
@@ -241,12 +241,11 @@ ReferencesGraph::MergeResult ReferencesGraph::MergeVariablesStateAfterIf( const 
 				// Variable inner reference created in multiple braches.
 
 				// If linked as mutable and as immutable in different branches - result is mutable.
-				if( result_state.inner_reference->kind != ReferencesGraphNode::Kind::ReferenceMut &&
-					src_state.inner_reference->kind == ReferencesGraphNode::Kind::ReferenceMut )
-				{
-					result.nodes_.erase( result_state.inner_reference );
+				if( ( result_state.inner_reference->kind != ReferencesGraphNode::Kind::ReferenceMut && src_state.inner_reference->kind == ReferencesGraphNode::Kind::ReferenceMut ) )
 					replaced_nodes.emplace_back( result_state.inner_reference, src_state.inner_reference );
-				}
+				// else - remove duplicated nodes with same kind.
+				else if( result_state.inner_reference != src_state.inner_reference )
+					replaced_nodes.emplace_back( src_state.inner_reference, result_state.inner_reference );
 			}
 		}
 
@@ -255,17 +254,20 @@ ReferencesGraph::MergeResult ReferencesGraph::MergeVariablesStateAfterIf( const 
 			if( std::find( result.links_.begin(), result.links_.end(), src_link ) == result.links_.end() )
 				result.links_.push_back( src_link );
 		}
-		for( auto& link : result.links_ )
+	}
+
+	for( auto& link : result.links_ )
+	{
+		for( const auto& replaced_node : replaced_nodes )
 		{
-			for( const auto& replaced_node : replaced_nodes )
-			{
-				if( link.first  == replaced_node.first )
-					link.first = replaced_node.second;
-				if( link.second == replaced_node.first )
-					link.second= replaced_node.second;
-			}
+			if( link.first  == replaced_node.first )
+				link.first = replaced_node.second;
+			if( link.second == replaced_node.first )
+				link.second= replaced_node.second;
 		}
 	}
+	for( const auto& replaced_node_pair : replaced_nodes )
+		result.nodes_.erase( replaced_node_pair.first );
 
 	// Check mutable reference count correctness.
 	for( const auto& node : result.nodes_ )
