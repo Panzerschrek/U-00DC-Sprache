@@ -33,6 +33,10 @@ static ProgramString Stringify( const Synt::Expression& expression )
 		{
 			return Stringify( named_operand.name_ );
 		}
+		ProgramString operator()( const Synt::TernaryOperator& ternary_operator )
+		{
+			return "select( "_SpC + Stringify( *ternary_operator.condition ) + " ? "_SpC + Stringify( *ternary_operator.true_branch ) + " : "_SpC + Stringify( *ternary_operator.false_branch ) + " )"_SpC;
+		}
 		ProgramString operator()( const Synt::NumericConstant& numeric_constant )
 		{
 			return QStringToProgramString( QString::number(static_cast<double>(numeric_constant.value_)) ) + numeric_constant.type_suffix_.data();

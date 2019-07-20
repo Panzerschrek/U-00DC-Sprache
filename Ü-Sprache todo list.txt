@@ -10,7 +10,6 @@ Common:
 *) "shared" tag for shared_ptr and it propagation to structures with shared
 	pointers inside
 *) Multithreading support
-*) ternary operator, like ?: in C++.
 *) switch-case
 *) "Disassembly operator" - declare variables with initializer as members of
 	value of structure type.

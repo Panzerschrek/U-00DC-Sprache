@@ -33,6 +33,7 @@ struct MemberAccessOperator;
 
 struct BinaryOperator;
 struct NamedOperand;
+struct TernaryOperator;
 struct TypeNameInExpression;
 struct NumericConstant;
 struct BracketExpression;
@@ -110,6 +111,7 @@ using Expression= boost::variant<
 	EmptyVariant,
 	BinaryOperator,
 	NamedOperand,
+	TernaryOperator,
 	TypeNameInExpression,
 	NumericConstant,
 	BracketExpression,
@@ -312,6 +314,16 @@ public:
 
 	std::vector<UnaryPrefixOperator > prefix_operators_ ;
 	std::vector<UnaryPostfixOperator> postfix_operators_;
+};
+
+struct TernaryOperator final : public ExpressionComponentWithUnaryOperators
+{
+public:
+	explicit TernaryOperator( const FilePos& file_pos );
+
+	std::unique_ptr<Expression> condition;
+	std::unique_ptr<Expression> true_branch;
+	std::unique_ptr<Expression> false_branch;
 };
 
 struct NamedOperand final : public ExpressionComponentWithUnaryOperators

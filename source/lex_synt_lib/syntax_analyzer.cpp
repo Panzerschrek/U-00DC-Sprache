@@ -1130,6 +1130,45 @@ Expression SyntaxAnalyzer::ParseExpression()
 				current_node= std::move(move_operator);
 				current_node_ptr= boost::get<MoveOperator>( &current_node );
 			}
+			else if( it_->text == Keywords::select_ )
+			{
+				TernaryOperator ternary_operator( it_->file_pos );
+
+				NextLexem();
+				if( it_->type != Lexem::Type::BracketLeft )
+				{
+					PushErrorMessage();
+					return EmptyVariant();
+				}
+				NextLexem();
+				ternary_operator.condition.reset( new Expression( ParseExpression() ) );
+
+				if( it_->type != Lexem::Type::Question )
+				{
+					PushErrorMessage();
+					return EmptyVariant();
+				}
+				NextLexem();
+				ternary_operator.true_branch.reset( new Expression( ParseExpression() ) );
+
+				if( it_->type != Lexem::Type::Colon )
+				{
+					PushErrorMessage();
+					return EmptyVariant();
+				}
+				NextLexem();
+				ternary_operator.false_branch.reset( new Expression( ParseExpression() ) );
+
+				if( it_->type != Lexem::Type::BracketRight )
+				{
+					PushErrorMessage();
+					return EmptyVariant();
+				}
+				NextLexem();
+
+				current_node= std::move(ternary_operator);
+				current_node_ptr= boost::get<TernaryOperator>( &current_node );
+			}
 			else if( it_->text == Keywords::cast_ref )
 			{
 				CastRef cast( it_->file_pos );

@@ -24,6 +24,7 @@ enum class Keywords : unsigned int
 	enable_if_,
 	else_,
 	move_,
+	select_,
 
 	struct_,
 	class_,

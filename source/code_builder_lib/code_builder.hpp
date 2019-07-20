@@ -481,6 +481,7 @@ private:
 	Value BuildCastMut( const Synt::CastMut& cast_mut, NamesScope& names, FunctionContext& function_context );
 
 	Value BuildNamedOperand( const Synt::NamedOperand& named_operand, NamesScope& names, FunctionContext& function_context );
+	Value BuildTernaryOperator( const Synt::TernaryOperator& ternary_operator, NamesScope& names, FunctionContext& function_context );
 	Value BuildMoveOpeator( const Synt::MoveOperator& move_operator, NamesScope& names, FunctionContext& function_context );
 	Value BuildNumericConstant( const Synt::NumericConstant& numeric_constant, NamesScope& names, FunctionContext& function_context );
 	Value BuildStringLiteral( const Synt::StringLiteral& string_literal, NamesScope& names, FunctionContext& function_context );

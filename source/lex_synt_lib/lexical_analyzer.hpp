@@ -57,6 +57,7 @@ struct Lexem
 		Dot, // .
 		Colon, // :
 		Semicolon, // ;
+		Question, // ?
 
 		Assignment, // =
 		Plus, // +
