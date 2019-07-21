@@ -146,24 +146,24 @@ def TypeConversion_InFunctionCall_Test1():
 	assert( call_result == 652321 )
 
 
-def TypeConversion_DisabledForAssignmentOperators():
+def TypeConversion_InFunctionCall_Test2():
 	c_program_text= """
 		struct IntWrapper
 		{
 			i32 x;
 			fn conversion_constructor( i32 in_x ) ( x= in_x ) {}
 		}
+
 		fn Foo() : i32
 		{
 			var IntWrapper mut iw(0);
-			iw= 65411; // Error, can not call conversion constructor in call of op=.
+			iw= 65411; // Conversion in calling of assignment operator.
 			return iw.x;
 		}
 	"""
-	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "TypesMismatch" )
-	assert( errors_list[0].file_pos.line == 10 )
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 65411 )
 
 
 def TypeConversion_InFunctionCall_Test3():
