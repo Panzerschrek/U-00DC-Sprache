@@ -55,24 +55,6 @@ U_TEST( DestructorMustReturnVoidTest0 )
 	U_TEST_ASSERT( error.file_pos.line == 4u );
 }
 
-U_TEST( ExplicitArgumentsInDestructorTest0 )
-{
-	static const char c_program_text[]=
-	R"(
-		class S
-		{
-			fn destructor( this ) {} // Explicit "this"
-		}
-	)";
-
-	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( !build_result.errors.empty() );
-
-	const CodeBuilderError& error= build_result.errors.front();
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExplicitArgumentsInDestructor );
-	U_TEST_ASSERT( error.file_pos.line == 4u );
-}
-
 U_TEST( ExplicitArgumentsInDestructorTest1 )
 {
 	static const char c_program_text[]=
