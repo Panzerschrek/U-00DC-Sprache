@@ -167,5 +167,22 @@ fn U_Main() : i32
 		halt if( !( e == "adam" ) );
 		halt if( !( "adam" == e ) );
 	}
+	{
+		var ust::random_access_range_imut</char8/> range( "RaNgE" );
+		var ust::string8 mut str(range); // Construct from char range.
+		// Compare with char range.
+		halt if( str != range );
+		halt if( range != str );
+		halt if( !( range == str ) );
+		halt if( !( str == range ) );
+
+		// Concatenation with range.
+		str+= range;
+		halt if( str != "RaNgERaNgE" );
+		str= range + ust::string8("W");
+		halt if( str != "RaNgEW" );
+		str= ust::string8("W") + range;
+		halt if( str != "WRaNgE" );
+	}
 	return 0;
 }

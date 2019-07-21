@@ -3,7 +3,6 @@ compiler. Features grouped and sorted by priority inside each group.
 When feature was implemented, delete it from list.
 
 Common:
-*) array_view, array view take operator
 *) Dereference operator - for pointer-like classes
 *) Continious initializer for arrays
 *) Tuples. Template-like iteration over tuples.

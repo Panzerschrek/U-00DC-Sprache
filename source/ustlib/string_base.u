@@ -52,6 +52,21 @@ public:
 		}
 	}
 
+	// Construct from char range.
+	fn conversion_constructor( range_imut range )
+	( ptr_(), size_(range.size()), capacity_(0) )
+	{
+		if( size_ == size_type(0) ){ return; }
+
+		unsafe
+		{
+			capacity_= max( get_first_allocation_size(), size_ );
+			ptr_= ptr_type( cast_ref_unsafe</char_type/>( memory_allocate( capacity_ * c_element_size_ ) ) );
+
+			memory_copy( ptr_.get_ref(), range.data().get_ref(), size_ * c_element_size_ );
+		}
+	}
+
 	// Fill constructor.
 	fn constructor( size_type count, char_type value )
 	( ptr_(), size_(count), capacity_(0) )
@@ -92,6 +107,17 @@ public:
 			ensure_capacity( array_size );
 			size_= array_size;
 			memory_copy( this.ptr_.get_ref(), array, size_ * c_element_size_ );
+		}
+	}
+
+	// Assign char range.
+	op=( mut this, range_imut range )
+	{
+		unsafe
+		{
+			ensure_capacity( range.size() );
+			size_= range.size();
+			memory_copy( this.ptr_.get_ref(), range.data().get_ref(), size_ * c_element_size_ );
 		}
 	}
 
@@ -215,14 +241,14 @@ public:
 
 	// ranges
 
-	fn range(  mut this ) : random_access_range</ char_type, true  />
+	fn range(  mut this ) : range_mut
 	{
-		unsafe{  return random_access_range</ char_type, true  />( ptr_, ptr_ + size_ );  }
+		unsafe{  return range_mut ( ptr_, ptr_ + size_ );  }
 	}
 
-	fn range( imut this ) : random_access_range</ char_type, false />
+	fn range( imut this ) : range_imut
 	{
-		unsafe{  return random_access_range</ char_type, false />( ptr_, ptr_ + size_ );  }
+		unsafe{  return range_imut( ptr_, ptr_ + size_ );  }
 	}
 
 	// compare
@@ -254,6 +280,22 @@ public:
 		return r == array;
 	}
 
+	op==( this_type& l, range_imut r ) : bool
+	{
+		if( l.size() != r.size() ) { return false; }
+
+		unsafe
+		{
+			auto size= l.size();
+			return memory_equals( l.ptr_.get_ref(), r.data().get_ref(), size * c_element_size_ );
+		}
+	}
+
+	op==( range_imut l, this_type& r ) : bool
+	{
+		return r == l;
+	}
+
 	op!=( this_type& l, this_type& r ) : bool
 	{
 		return !( l == r );
@@ -269,6 +311,16 @@ public:
 	op!=( [ char_type, array_size ]& array, this_type& r ) : bool
 	{
 		return !( array == r );
+	}
+
+	op!=( this_type& l, range_imut r ) : bool
+	{
+		return !( l == r );
+	}
+
+	op!=( range_imut l, this_type& r ) : bool
+	{
+		return !( l == r );
 	}
 
 	// modificators
@@ -448,6 +500,36 @@ public:
 		return move(result);
 	}
 
+	op+( this_type& l, range_imut range ) : this_type
+	{
+		var this_type mut result;
+		unsafe
+		{
+			auto result_size= add_overflow_check_halt( l.size_, range.size() );
+			result.ensure_capacity( result_size );
+			result.size_= result_size;
+			memory_copy( result.ptr_.get_ref(), l.ptr_.get_ref(), l.size_ * c_element_size_ );
+			memory_copy( result.ptr_[l.size_], range.data().get_ref(), range.size() * c_element_size_ );
+		}
+
+		return move(result);
+	}
+
+	op+( range_imut range, this_type& r ) : this_type
+	{
+		var this_type mut result;
+		unsafe
+		{
+			auto result_size= add_overflow_check_halt( range.size(), r.size_ );
+			result.ensure_capacity( result_size );
+			result.size_= result_size;
+			memory_copy( result.ptr_.get_ref(), range.data().get_ref(), range.size() * c_element_size_ );
+			memory_copy( result.ptr_[range.size()], r.ptr_.get_ref(), r.size_ * c_element_size_ );
+		}
+
+		return move(result);
+	}
+
 	// +=
 
 	op+=( mut this, this_type& other )
@@ -473,8 +555,21 @@ public:
 		}
 	}
 
+	op+=( mut this, range_imut range )
+	{
+		unsafe
+		{
+			auto new_size= add_overflow_check_halt( this.size_, range.size() );
+			ensure_capacity( new_size );
+			memory_copy( ptr_[size_], range.data().get_ref(), range.size() * c_element_size_ );
+			size_= new_size;
+		}
+	}
+
 private:
 	type ptr_type= raw_ptr_mut</char_type/>;
+	type range_mut=  random_access_range</ char_type, true  />;
+	type range_imut= random_access_range</ char_type, false />;
 	auto constexpr c_element_size_= typeinfo</char_type/>.size_of;
 
 	fn constexpr get_first_allocation_size() : size_type
