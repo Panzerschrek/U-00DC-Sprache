@@ -391,7 +391,9 @@ const FunctionVariable* CodeBuilder::GetOverloadedFunction(
 				if( ReferenceIsConvertible( actual_args_begin[i].type, function_type.args[i].type, errors_container, file_pos ) )
 				{}
 				// Enable type conversion only if argument is not mutable reference.
-				else if( enable_type_conversions && parameter_overloading_class == ArgOverloadingClass::ImmutableReference &&
+				else if(
+					enable_type_conversions && parameter_overloading_class == ArgOverloadingClass::ImmutableReference &&
+					!function.is_conversion_constructor && !( function.is_constructor && IsCopyConstructor( function_type, function_type.args.front().type ) ) && // Disable convesin constructors call for copy constructors and conversion constructors
 					GetConversionConstructor( actual_args_begin[i].type, function_type.args[i].type, errors_container, file_pos ) != nullptr )
 				{}
 				else

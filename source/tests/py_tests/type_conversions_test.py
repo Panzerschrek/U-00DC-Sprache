@@ -284,3 +284,45 @@ def ConversionConstructorMustHaveOneArgument_Test3():
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ConversionConstructorMustHaveOneArgument" )
 	assert( errors_list[0].file_pos.line == 5 )
+
+
+def DeepTypeConversionDisabled_Test0():
+	c_program_text= """
+		struct View
+		{
+			fn conversion_constructor( i32 x ){}
+		}
+		struct Str
+		{
+			fn conversion_constructor( View a ){}
+		}
+		fn Foo()
+		{
+			var Str str(42); // Can not convert 42 -> View -> Str
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "CouldNotSelectOverloadedFunction" )
+	assert( errors_list[0].file_pos.line == 12 )
+
+
+def DeepTypeConversionDisabled_Test1():
+	c_program_text= """
+		struct View
+		{
+			fn conversion_constructor( i32 x ){ halt; }
+		}
+		struct Str
+		{
+			fn conversion_constructor( View a ){}
+			template</ />
+			fn conversion_constructor( i32 x ) {}
+		}
+		fn Foo()
+		{
+			var Str str(42); // Must directly call Str::conversion_constructor(i32 x), not constructor of "View"
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
