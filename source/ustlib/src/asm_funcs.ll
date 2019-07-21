@@ -27,10 +27,25 @@ declare {i64, i1} @llvm.umul.with.overflow.i64(i64 %a, i64 %b)
 ; lang functions
 ;
 
+;
+; halt
+;
+
+$_U_halt_handler = comdat any
+@_U_halt_handler = global void()* null, comdat
+
+$__U_default_halt_handler = comdat any
+define linkonce_odr void @__U_default_halt_handler() unnamed_addr #0 comdat
+{
+	call void @llvm.trap()
+	ret void
+}
+
 $__U_halt = comdat any
 define linkonce_odr void @__U_halt() unnamed_addr #0 comdat
 {
-	call void @llvm.trap()
+	%1 = load void ()*, void ()** @_U_halt_handler
+	call void %1()
 	ret void
 }
 
