@@ -1136,6 +1136,7 @@ size_t CodeBuilder::PrepareFunction(
 	if( func.is_conversion_constructor_ && func_variable.type.GetFunctionType()->args.size() != 2u )
 		REPORT_ERROR( ConversionConstructorMustHaveOneArgument, names_scope.GetErrors(), func.file_pos_ );
 	func_variable.is_constructor= is_constructor;
+	func_variable.is_assignment_operator= func.overloaded_operator_ == OverloadedOperator::Assign;
 
 	// Check "=default" / "=delete".
 	if( func.body_kind != Synt::Function::BodyKind::None )

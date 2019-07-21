@@ -393,7 +393,9 @@ const FunctionVariable* CodeBuilder::GetOverloadedFunction(
 				// Enable type conversion only if argument is not mutable reference.
 				else if(
 					enable_type_conversions && parameter_overloading_class == ArgOverloadingClass::ImmutableReference &&
-					!function.is_conversion_constructor && !( function.is_constructor && IsCopyConstructor( function_type, function_type.args.front().type ) ) && // Disable convesin constructors call for copy constructors and conversion constructors
+					!function.is_conversion_constructor && // Skip possible convesions in conversion constructors
+					!( function.is_constructor && IsCopyConstructor( function_type, function_type.args.front().type ) ) && // Skip possible convesions in copy constructors
+					!function.is_assignment_operator && // Skip possible convesions in assignment operators. Programmer must explicitly create assignment operators for conversions
 					GetConversionConstructor( actual_args_begin[i].type, function_type.args[i].type, errors_container, file_pos ) != nullptr )
 				{}
 				else
