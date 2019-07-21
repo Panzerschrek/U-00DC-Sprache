@@ -958,3 +958,57 @@ def TemplateDependentFunctionTemplateArguments_Test1():
 		}
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def TemplateFunction_versus_TypesConversion_Test0():
+	c_program_text= """
+		struct A
+		{
+			fn conversion_constructor( i32 x ){}
+		}
+		template</ />
+		fn Bar( i32 x ) : i32 { return 666; }
+		fn Bar( A a ) : i32 { return 1111; }
+		fn Foo()
+		{
+			halt if( Bar( 42 ) != 666 ); // Should call template function here, because for template functon call conversion not needed.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def TemplateFunction_versus_TypesConversion_Test1():
+	c_program_text= """
+		struct StringView
+		{
+			template</ size_type S />
+			fn conversion_constructor( [ char8, S ]& arr ) {}
+		}
+
+		template</ size_type S />
+		fn Bar( [ char8, S ]& arr ) : i32 { return 147; }
+		fn Bar( StringView sv ) : i32 { return 369; }
+
+		fn Foo()
+		{
+			halt if( Bar( "wtf" ) != 147 ); // Should call template function here, because for template functon call conversion not needed.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def TemplateFunction_versus_TypesConversion_Test2():
+	c_program_text= """
+		template</ size_type S />
+		fn Bar( [ char8, S ]& arr ) : i32 { return 88885; }
+		fn Bar( [ char8, 5 ]& arr ) : i32 { return 55558; }
+		fn Foo()
+		{
+			halt if( Bar( "01234" ) != 55558 ); // Should call non-template function here, because it is more specialized.
+			halt if( Bar( "210" ) != 88885 ); // Should call template function here.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )

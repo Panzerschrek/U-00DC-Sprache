@@ -58,7 +58,6 @@ fn hash( T& x ) : size_type
 	else
 	{
 		// Other kinds of types not supported.
-		static_assert(false);
 		halt;
 	}
 }
