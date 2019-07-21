@@ -11,6 +11,33 @@ public:
 	fn constructor( mut this )= delete;
 	fn constructor( mut this, this_type &imut other )= default;
 
+	template</ size_type size />
+	fn enable_if( is_mutable )
+	conversion_constructor( mut this'a', [ T, size ] &'b  mut arr ) ' a <-  mut b '
+	( begin_(arr), end_(begin_ + size) )
+	{}
+
+	template</ size_type size />
+	fn enable_if( !is_mutable )
+	conversion_constructor( mut this'a', [ T, size ] &'b imut arr ) ' a <- imut b '
+	{
+		unsafe
+		{
+			begin_= ptr_type( cast_mut(arr) );
+			end_= begin_ + size;
+		}
+	}
+
+	fn enable_if( !is_mutable )
+	conversion_constructor( mut this'a', random_access_range</ T, true />& src_range'b' ) ' a <- imut b '
+	{
+		unsafe
+		{	// Hack! we can not access begin_/end_ members of different range type, so, just copy memory.
+			static_assert( typeinfo</typeof(this)/>.size_of == typeinfo</typeof(src_range)/>.size_of );
+			memory_copy( this, src_range, typeinfo</typeof(this)/>.size_of );
+		}
+	}
+
 	// Precondition - begin <= end, all memory in range [ begin, end ) is valid.
 	fn constructor( raw_ptr_mut</ T /> begin, raw_ptr_mut</ T /> end ) unsafe
 		( begin_(begin), end_(end) )
@@ -35,6 +62,30 @@ public:
 		{
 			return cast_ref_unsafe</T/>( int_to_ref( ref_to_int( begin_[index] ) ) );
 		}
+	}
+
+	fn enable_if(  is_mutable ) front( this'x' ) : T &'x  mut
+	{
+		halt if(empty());
+		unsafe{  return front_unsafe();  }
+	}
+
+	fn enable_if( !is_mutable ) front( this'x' ) : T &'x imut
+	{
+		halt if(empty());
+		unsafe{  return front_unsafe();  }
+	}
+
+	fn enable_if(  is_mutable ) back ( this'x' ) : T &'x  mut
+	{
+		halt if(empty());
+		unsafe{  return back_unsafe ();  }
+	}
+
+	fn enable_if( !is_mutable ) back ( this'x' ) : T &'x imut
+	{
+		halt if(empty());
+		unsafe{  return back_unsafe ();  }
 	}
 
 	fn enable_if(  is_mutable ) front_unsafe( this'x' ) unsafe : T &'x  mut
@@ -73,7 +124,7 @@ public:
 		++begin_;
 	}
 
-	fn drop_back( mut this ) unsafe
+	fn drop_back( mut this )
 	{
 		halt if( empty() );
 		--end_;
@@ -109,5 +160,15 @@ private:
 	ptr_type begin_;
 	ptr_type end_;
 }
+
+template</ type T />
+type random_access_range_mut = random_access_range</ T, true  />;
+template</ type T />
+type array_view_mut = random_access_range</ T, true  />;
+
+template</ type T />
+type random_access_range_imut= random_access_range</ T, false />;
+template</ type T />
+type array_view_imut= random_access_range</ T, false />;
 
 } // namespace ust
