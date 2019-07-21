@@ -925,6 +925,9 @@ size_t CodeBuilder::PrepareFunction(
 	const bool is_destructor= func_name == Keywords::destructor_;
 	const bool is_special_method= is_constructor || is_destructor;
 
+	if( is_destructor || is_constructor )
+		U_ASSERT( func.type_.arguments_.size() >= 1u && func.type_.arguments_.front().name_ == Keywords::this_ );
+
 	if( !is_special_method && IsKeyword( func_name ) )
 		REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), func.file_pos_ );
 
@@ -938,7 +941,7 @@ size_t CodeBuilder::PrepareFunction(
 		REPORT_ERROR( InitializationListInNonconstructor, names_scope.GetErrors(), func.constructor_initialization_list_->file_pos_ );
 		return ~0u;
 	}
-	if( is_destructor && !func.type_.arguments_.empty() )
+	if( is_destructor && func.type_.arguments_.size() >= 2u )
 	{
 		REPORT_ERROR( ExplicitArgumentsInDestructor, names_scope.GetErrors(), func.file_pos_ );
 		return ~0u;
@@ -1023,34 +1026,12 @@ size_t CodeBuilder::PrepareFunction(
 		// Args.
 		function_type.args.reserve( func.type_.arguments_.size() );
 
-		// Generate "this" arg for constructors.
-		if( is_special_method )
-		{
-			func_variable.is_this_call= true;
-
-			function_type.args.emplace_back();
-			Function::Arg& arg= function_type.args.back();
-			arg.type= base_class;
-			arg.is_reference= true;
-			arg.is_mutable= true;
-		}
-
 		for( const Synt::FunctionArgument& arg : func.type_.arguments_ )
 		{
 			const bool is_this= &arg == &func.type_.arguments_.front() && arg.name_ == Keywords::this_;
 
 			if( !is_this && IsKeyword( arg.name_ ) )
 				REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), arg.file_pos_ );
-
-			if( is_this && is_destructor )
-				REPORT_ERROR( ExplicitThisInDestructor, names_scope.GetErrors(), arg.file_pos_ );
-			if( is_this && is_constructor )
-			{
-				// Explicit this for constructor.
-				U_ASSERT( function_type.args.size() == 1u );
-				ProcessFunctionArgReferencesTags( names_scope.GetErrors(), func.type_, function_type, arg, function_type.args.back(), function_type.args.size() - 1u );
-				continue;
-			}
 
 			function_type.args.emplace_back();
 			Function::Arg& out_arg= function_type.args.back();
@@ -1068,7 +1049,7 @@ size_t CodeBuilder::PrepareFunction(
 			else
 				out_arg.type= PrepareType( arg.type_, names_scope, *global_function_context_ );
 
-			out_arg.is_mutable= arg.mutability_modifier_ == MutabilityModifier::Mutable;
+			out_arg.is_mutable= ( is_this && is_special_method ) || arg.mutability_modifier_ == MutabilityModifier::Mutable;
 			out_arg.is_reference= is_this || arg.reference_modifier_ == ReferenceModifier::Reference;
 
 			if( !out_arg.is_reference &&
@@ -1453,8 +1434,6 @@ Type CodeBuilder::BuildFuncCode(
 
 	const bool is_constructor= func_name == Keywords::constructor_;
 	const bool is_destructor= func_name == Keywords::destructor_;
-	const bool have_implicit_this= is_destructor || ( is_constructor && ( args.empty() || args.front().name_ != Keywords::this_ ) );
-
 	for( llvm::Argument& llvm_arg : llvm_function->args() )
 	{
 		// Skip "sret".
@@ -1467,44 +1446,11 @@ Type CodeBuilder::BuildFuncCode(
 
 		const Function::Arg& arg= function_type->args[ arg_number ];
 
-		if( arg_number == 0u && ( have_implicit_this || is_constructor ) )
-		{
-			this_.location= Variable::Location::Pointer;
-			this_.value_type= ValueType::Reference;
-			this_.type= arg.type;
-			this_.llvm_value= &llvm_arg;
-			llvm_arg.setName( KeywordAscii( Keywords::this_ ) );
-			function_context.this_= &this_;
-
-			// Create variable node, because only variable node can have inner reference node.
-			const auto this_node= std::make_shared<ReferencesGraphNode>( Keyword(Keywords::this_), ReferencesGraphNode::Kind::Variable );
-			function_context.variables_state.AddNode( this_node );
-			args_nodes[ arg_number ].first= this_node;
-			this_.node= this_node;
-
-			if (arg.type.ReferencesTagsCount() > 0u )
-			{
-				// Create inner node + root variable.
-				const auto accesible_variable= std::make_shared<ReferencesGraphNode>( Keyword(Keywords::this_) + " inner variable"_SpC, ReferencesGraphNode::Kind::Variable );
-				function_context.variables_state.AddNode( accesible_variable );
-
-				const auto inner_reference= std::make_shared<ReferencesGraphNode>( Keyword(Keywords::this_) + " inner reference"_SpC, ReferencesGraphNode::Kind::ReferenceMut );
-				function_context.variables_state.SetNodeInnerReference( this_node, inner_reference );
-				function_context.variables_state.AddLink( accesible_variable, inner_reference );
-
-				args_nodes[ arg_number ].second= accesible_variable;
-			}
-
-			arg_number++;
-			continue;
-		}
-
-		const Synt::FunctionArgument& declaration_arg= args[ have_implicit_this ? ( arg_number - 1u ) : arg_number ];
+		const Synt::FunctionArgument& declaration_arg= args[arg_number ];
 		const ProgramString& arg_name= declaration_arg.name_;
 
 		const bool is_this= arg_number == 0u && arg_name == Keywords::this_;
 		U_ASSERT( !( is_this && !arg.is_reference ) );
-		U_ASSERT( !( have_implicit_this && is_this ) );
 
 		Variable var;
 		var.location= Variable::Location::LLVMRegister;

@@ -86,7 +86,6 @@ PROCESS_ERROR( ConstructorAndDestructorMustReturnVoid, "Constructors and destruc
 PROCESS_ERROR( ConversionConstructorMustHaveOneArgument, "Conversion constructor must have exactly 1 argument (except \"this\" )." )
 PROCESS_ERROR( InitializationListInNonconstructor, "Constructor outside class." )
 PROCESS_ERROR( ClassHaveNoConstructors, "Class have no constructors." )
-PROCESS_ERROR( ExplicitThisInDestructor, "Explicit \"this\" in destructor parameters." )
 PROCESS_ERROR( FieldIsNotInitializedYet, "Field \"%1%\" is not initialized yet." )
 
 // Destructors errors

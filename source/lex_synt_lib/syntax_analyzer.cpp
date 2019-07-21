@@ -3209,6 +3209,19 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 		}
 	}
 
+	// If method is constructor or destructor and "this" not explicitly specified, add it.
+	// It's easier add "this" here, than dealing with implicit "this" in CodeBuilder.
+	if( ( result->name_.components.back().name == Keywords::constructor_ || result->name_.components.back().name == Keywords::destructor_ ) &&
+		( arguments.empty() || arguments.front().name_ != Keywords::this_ ) )
+	{
+		FunctionArgument this_argument( result->file_pos_ );
+		this_argument.name_= Keyword( Keywords::this_ );
+		this_argument.mutability_modifier_= MutabilityModifier::Mutable;
+		this_argument.reference_modifier_= ReferenceModifier::Reference;
+		this_argument.reference_tag_= Keyword( Keywords::this_ );
+		arguments.insert( arguments.begin(), std::move( this_argument ) );
+	}
+
 	ParseFunctionTypeEnding( result->type_ );
 
 	if( it_->type == Lexem::Type::Semicolon )
