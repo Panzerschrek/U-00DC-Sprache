@@ -1,0 +1,19 @@
+//##success_test
+import "../ustlib/shared/shared_ptr.u"
+
+
+fn U_Main() : i32
+{
+	{
+		var ust::nullable_shared_ptr</i32/> empty_ptr;
+	}
+	{
+		var ust::shared_ptr</i32/> non_empty_ptr(0);
+		non_empty_ptr.lock_mut().get_ref()= 42;
+
+		auto ptr_copy= non_empty_ptr;
+		halt if( ptr_copy.lock_imut().get_ref() != 42 );
+	}
+
+	return 0;
+}

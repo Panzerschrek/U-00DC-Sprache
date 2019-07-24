@@ -27,7 +27,7 @@ public:
 
 	fn destructor()
 	{
-		this= this_type();
+		reset();
 	}
 
 	fn constructor( mut this, this_type &imut other )
@@ -37,30 +37,12 @@ public:
 
 	op=( mut this, this_type &imut other )
 	{
+		reset();
 		unsafe
 		{
-			if( !this.counter_.is_null() )
-			{
-				--counter_.get_ref().use_count_total;
-				--counter_.get_ref().use_count_strong;
-				if( counter_.get_ref().use_count_strong == 0u )
-				{
-					unsafe
-					{
-						call_destructor( value_.get_ref() );
-						memory_free( value_.get_ref() );
-						if( counter_.get_ref().use_count_total == 0u )
-						{
-							memory_free( counter_.get_ref() );
-						}
-						value_= value_ptr();
-						counter_= counter_ptr();
-					}
-				}
-			}
-
 			if( !other.counter_.is_null() )
 			{
+				value_= other.value_;
 				counter_= other.counter_;
 				++counter_.get_ref().use_count_total;
 				++counter_.get_ref().use_count_strong;
@@ -70,7 +52,23 @@ public:
 
 	fn reset( mut this )
 	{
-		this= this_type();
+		if( empty() ) { return; }
+		unsafe
+		{
+			--counter_.get_ref().use_count_total;
+			--counter_.get_ref().use_count_strong;
+			if( counter_.get_ref().use_count_strong == 0u )
+			{
+				call_destructor( value_.get_ref() );
+				memory_free( value_.get_ref() );
+				if( counter_.get_ref().use_count_total == 0u )
+				{
+					memory_free( counter_.get_ref() );
+				}
+			}
+			value_= value_ptr();
+			counter_= counter_ptr();
+		}
 	}
 
 	fn reset( mut this, T mut value )
@@ -133,10 +131,7 @@ public:
 
 	fn destructor()
 	{
-		unsafe
-		{
-			counter_.get_ref().lock_count= 0;
-		}
+		unsafe{  counter_.get_ref().lock_count= 0;  }
 	}
 
 	fn get_ref( this'a' ) : T &'a  mut
@@ -165,10 +160,7 @@ public:
 
 	fn destructor()
 	{
-		unsafe
-		{
-			--counter_.get_ref().lock_count;
-		}
+		unsafe{  --counter_.get_ref().lock_count;  }
 	}
 
 	fn get_ref( this'a' ) : T &'a imut

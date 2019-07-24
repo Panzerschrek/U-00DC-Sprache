@@ -11,6 +11,7 @@ public:
 	( impl_( move(value) ) )
 	{}
 
+	fn constructor( mut this, shared_ptr</T/> &imut other )= default;
 	op=( mut this, shared_ptr</T/> &imut other )= default;
 
 	fn empty( this ) : bool
