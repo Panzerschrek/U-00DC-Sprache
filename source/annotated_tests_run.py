@@ -177,7 +177,7 @@ def DoSuccessTest( file_path ):
 		print( "Compilation failed" )
 		return 1
 
-	if subprocess.call( [ g_cpp_compiler_executable, g_entry_point_source, object_file, "-o", executable_file ] ) != 0:
+	if subprocess.call( [ g_cpp_compiler_executable, g_entry_point_source, object_file, "-o", executable_file, "-lpthread" ] ) != 0:
 		print( "linking failed" )
 		os.remove( object_file )
 		return 1
