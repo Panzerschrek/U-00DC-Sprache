@@ -1,5 +1,7 @@
-import "box.u"
+import "box_nullable.u"
+import "container_utils.u"
 import "memory.u"
+import "optional.u"
 
 namespace ust
 {
@@ -62,6 +64,81 @@ private:
 	// Store function inside box, because we send raw pointer to it to thread function.
 	FuncBox func_;
 	pthread_t thread_id_(0);
+}
+
+template</ type Func, type ResultType />
+class thread_ret
+{
+public:
+	fn constructor( mut this'a...', Func mut func'b...' ) ' a <- b '
+	( impl_( Impl(move(func)) ) )
+	{
+		unsafe
+		{
+			var pthread_attr_t mut attr= zero_init;
+			var pthread_start_function fn_ptr(thread_function);
+			var pthread_t mut thread_id(0);
+
+			halt if( pthread_attr_init( attr ) != 0 );
+			halt if( pthread_create( thread_id, attr, fn_ptr, impl_.get_ref() ) != 0 );
+			halt if( pthread_attr_destroy( attr ) != 0 );
+
+			impl_.get_ref().thread_id= thread_id;
+		}
+	}
+
+	fn constructor( mut this, this_type &imut other )= delete;
+	op=( mut this, this_type &imut other )= delete;
+
+	fn join( this_type mut this_ ) : ResultType
+	{
+		this_.join_impl();
+		auto mut res= this_.impl_.get_ref().result.get_ref(); // TODO - move result out of Impl::result.
+		this_.impl_.reset();
+		return move(res);
+	}
+
+	fn destructor()
+	{
+		if( !impl_.empty() )
+		{
+			join_impl();
+		}
+	}
+
+private:
+	type this_type= ust::thread_ret</ Func, ResultType />;
+	struct Impl
+	{
+		Func func;
+		optional</ResultType/> result;
+		pthread_t thread_id(0);
+
+		fn constructor( Func mut in_func ) ( func(move(in_func)) ) {}
+	}
+
+	fn thread_function( void& mut impl_ptr ) : void& mut
+	{
+		unsafe
+		{
+			var Impl &mut impl= cast_ref_unsafe</Impl/>(impl_ptr);
+			impl.result.reset( impl.func() );
+
+			return cast_mut( int_to_ref( size_type(0) ) );
+		}
+	}
+
+	fn join_impl( mut this )
+	{
+		unsafe
+		{
+			halt if( pthread_join( impl_.get_ref().thread_id, cast_mut( int_to_ref( size_type(0) ) ) ) != 0 );
+		}
+	}
+
+private:
+	// Store content inside box, because we send raw pointer to it to thread function.
+	ust::box_nullable</Impl/> impl_;
 }
 
 } // namespace ust
