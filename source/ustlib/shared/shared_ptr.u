@@ -1,0 +1,35 @@
+import "nullable_shared_ptr.u"
+
+namespace ust
+{
+
+template</ type T />
+class shared_ptr
+{
+public:
+	fn constructor( T mut value )
+	( impl_( move(value) ) )
+	{}
+
+	op=( mut this, shared_ptr</T/> &imut other )= default;
+
+	fn empty( this ) : bool
+	{
+		return false;
+	}
+
+	fn lock_mut ( this ) : shared_ptr_impl::lock_mut </T/>'this'
+	{
+		return impl_.lock_mut ();
+	}
+
+	fn lock_imut( this ) : shared_ptr_impl::lock_imut</T/>'this'
+	{
+		return impl_.lock_imut();
+	}
+
+private:
+	nullable_shared_ptr</ T /> impl_;
+}
+
+} // namespace ust
