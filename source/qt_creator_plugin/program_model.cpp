@@ -27,6 +27,8 @@ static ProgramString Stringify( const Synt::Expression& expression )
 		}
 		ProgramString operator()( const Synt::BinaryOperator& binary_operator )
 		{
+			if( binary_operator.left_ == nullptr || binary_operator.right_ == nullptr )
+				return ProgramString();
 			return Stringify( *binary_operator.left_ ) + " "_SpC + BinaryOperatorToString(binary_operator.operator_type_) + " "_SpC + Stringify( *binary_operator.right_ );
 		}
 		ProgramString operator()( const Synt::NamedOperand& named_operand )
@@ -35,6 +37,8 @@ static ProgramString Stringify( const Synt::Expression& expression )
 		}
 		ProgramString operator()( const Synt::TernaryOperator& ternary_operator )
 		{
+			if( ternary_operator.condition == nullptr || ternary_operator.true_branch == nullptr || ternary_operator.false_branch == nullptr )
+				return ProgramString();
 			return "select( "_SpC + Stringify( *ternary_operator.condition ) + " ? "_SpC + Stringify( *ternary_operator.true_branch ) + " : "_SpC + Stringify( *ternary_operator.false_branch ) + " )"_SpC;
 		}
 		ProgramString operator()( const Synt::NumericConstant& numeric_constant )
@@ -51,6 +55,8 @@ static ProgramString Stringify( const Synt::Expression& expression )
 		}
 		ProgramString operator()( const Synt::BracketExpression& bracket_expression )
 		{
+			if( bracket_expression.expression_ == nullptr )
+				return ProgramString();
 			return "("_SpC + Stringify( *bracket_expression.expression_ ) + ")"_SpC;
 		}
 		ProgramString operator()( const Synt::TypeNameInExpression& type_name_in_expression )
@@ -63,22 +69,32 @@ static ProgramString Stringify( const Synt::Expression& expression )
 		}
 		ProgramString operator()( const Synt::CastRef& cast_ref )
 		{
+			if( cast_ref.type_ == nullptr || cast_ref.expression_ == nullptr )
+				return ProgramString();
 			return Keyword( Keywords::cast_ref ) + "</"_SpC + Stringify( *cast_ref.type_ ) + "/>("_SpC + Stringify( *cast_ref.expression_ ) + ")"_SpC;
 		}
 		ProgramString operator()( const Synt::CastRefUnsafe& cast_ref_unsafe )
 		{
+			if( cast_ref_unsafe.type_ == nullptr || cast_ref_unsafe.expression_ == nullptr )
+				return ProgramString();
 			return Keyword( Keywords::cast_ref_unsafe ) + "</"_SpC + Stringify( *cast_ref_unsafe.type_ ) + "/>("_SpC + Stringify( *cast_ref_unsafe.expression_ ) + ")"_SpC;
 		}
 		ProgramString operator()( const Synt::CastImut& cast_imut )
 		{
+			if( cast_imut.expression_ == nullptr )
+				return ProgramString();
 			return Keyword( Keywords::cast_imut ) + "("_SpC + Stringify( *cast_imut.expression_ ) + ")"_SpC;
 		}
 		ProgramString operator()( const Synt::CastMut& cast_mut )
 		{
+			if( cast_mut.expression_ == nullptr )
+				return ProgramString();
 			return Keyword( Keywords::cast_mut ) + "("_SpC + Stringify( *cast_mut.expression_ ) + ")"_SpC;
 		}
 		ProgramString operator()( const Synt::TypeInfo& typeinfo_ )
 		{
+			if( typeinfo_.type_ == nullptr )
+				return ProgramString();
 			return Keyword( Keywords::cast_ref ) + "</"_SpC + Stringify( *typeinfo_.type_ )  + "/>"_SpC;
 		}
 	};
@@ -311,9 +327,11 @@ static ProgramString Stringify( const Synt::TypeName& type_name )
 			ProgramString result;
 
 			result+= "[ "_SpC;
-			result+= Stringify( *array_type_name.element_type );
+			if( array_type_name.element_type != nullptr )
+				result+= Stringify( *array_type_name.element_type );
 			result+= ", "_SpC;
-			result+= Stringify( *array_type_name.size );
+			if( array_type_name.size != nullptr )
+				result+= Stringify( *array_type_name.size );
 			result+= " ]"_SpC;
 
 			return result;
@@ -321,6 +339,8 @@ static ProgramString Stringify( const Synt::TypeName& type_name )
 
 		ProgramString operator()( const Synt::TypeofTypeName& typeof_type_name )
 		{
+			if( typeof_type_name.expression != nullptr )
+				return ProgramString();
 			return Keyword( Keywords::typeof_ ) + "("_SpC + Stringify( *typeof_type_name.expression ) + ")"_SpC;
 		}
 
@@ -407,7 +427,8 @@ static ProgramString Stringify( const Synt::TypeTemplateBase& type_template )
 	{
 		for( const Synt::TypeTemplateBase::Arg& arg : type_template.args_ )
 		{
-			result+= Stringify( *arg.name );
+			if( arg.name != nullptr )
+				result+= Stringify( *arg.name );
 			if( &arg != &type_template.args_.back() )
 				result+= ", "_SpC;
 		}
@@ -434,14 +455,16 @@ static ProgramString Stringify( const Synt::FunctionTemplate& function_template 
 	result+= "</"_SpC;
 	for( const Synt::TypeTemplateBase::Arg& arg : function_template.args_ )
 	{
-		result+= Stringify( *arg.name );
+		if( arg.name != nullptr )
+			result+= Stringify( *arg.name );
 		if( &arg != &function_template.args_.back() )
 			result+= ", "_SpC;
 	}
 	result+= "/>"_SpC;
 
 	result+= " "_SpC;
-	result+= Stringify( *function_template.function_ );
+	if( function_template.function_ != nullptr )
+		result+= Stringify( *function_template.function_ );
 	return result;
 }
 
