@@ -1320,7 +1320,7 @@ Expression SyntaxAnalyzer::ParseExpression()
 				current_node= std::move(typeinfo_);
 				current_node_ptr= boost::get<TypeInfo>( &current_node );
 			}
-			else if( it_->text == Keywords::fn_ )
+			else if( it_->text == Keywords::fn_ || it_->text == Keywords::typeof_ )
 			{
 				// Parse function type name: fn( i32 x )
 				TypeNameInExpression type_name_in_expression( it_->file_pos );
