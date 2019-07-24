@@ -586,9 +586,22 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 				U_ASSERT( src_node->kind == ReferencesGraphNode::Kind::Variable );
 				if( const auto moved_node_inner_reference= function_context.variables_state.GetNodeInnerReference( src_node ) )
 				{
-					const auto inner_reference_copy= std::make_shared<ReferencesGraphNode>( dst_node->name + " inner variable"_SpC, moved_node_inner_reference->kind );
-					function_context.variables_state.SetNodeInnerReference( dst_node, inner_reference_copy );
-					function_context.variables_state.AddLink( moved_node_inner_reference, inner_reference_copy );
+					ReferencesGraphNodePtr dst_inner_reference= function_context.variables_state.GetNodeInnerReference( dst_node );
+					if( dst_inner_reference == nullptr )
+					{
+						dst_inner_reference= std::make_shared<ReferencesGraphNode>( dst_node->name + " inner variable"_SpC, moved_node_inner_reference->kind );
+						function_context.variables_state.SetNodeInnerReference( dst_node, dst_inner_reference );
+					}
+					else
+					{
+						if( moved_node_inner_reference->kind != dst_inner_reference->kind )
+						{
+							// TODO - make separate error.
+							REPORT_ERROR( NotImplemented, block_names.GetErrors(), call_operator.file_pos_, "inner reference mutability changing" );
+							return nullptr;
+						}
+					}
+					function_context.variables_state.AddLink( moved_node_inner_reference, dst_inner_reference );
 				}
 				function_context.variables_state.MoveNode( src_node );
 			}
