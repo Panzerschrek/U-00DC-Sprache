@@ -6,9 +6,6 @@ Common:
 *) Dereference operator - for pointer-like classes
 *) Continious initializer for arrays
 *) Tuples. Template-like iteration over tuples.
-*) "shared" tag for shared_ptr and it propagation to structures with shared
-	pointers inside
-*) Multithreading support
 *) switch-case
 *) "Disassembly operator" - declare variables with initializer as members of
 	value of structure type.
@@ -37,11 +34,12 @@ Templates:
 
 Standart library:
 *) Type traits
-*) shared_ptr
-*) thread class
+*) checked nullable_ptr -> ptr conversions
+*) ptr</Derived/> -> pt</Base/> conversions with correct memory free
+*) "final_ptr" - shared pointer for immutable values only
 *) thread-safe shared_ptr
 *) Math functions
-*) Associative containers - map, set, unordered_map, unordered_set, string_map
+*) Associative containers - map, set, unordered_set, string_map
 
 Compiler:
 *) move-assignment without hacks.
