@@ -144,6 +144,26 @@ fn U_Main() : i32
 		ptr_weak.reset();
 		halt if( !ptr_weak.lock().empty() );
 	}
+	{ // Non-nullable mutable pointer can be converted to nullable mutable pointer.
+		var IntPtrMut ptr0(66);
+		var IntPtrNullableMut ptr1(ptr0);
+		halt if( ust::ref_to_int( ptr1.lock_imut().get_ref() ) != ust::ref_to_int( ptr0.lock_imut().get_ref() ) );
+	}
+	{ // Non-nullable immutable pointer can be converted to nullable immutable pointer.
+		var IntPtrImut ptr0(22);
+		var IntPtrNullableImut ptr1(ptr0);
+		halt if( ust::ref_to_int( ptr1.lock_imut().get_ref() ) != ust::ref_to_int( ptr0.lock_imut().get_ref() ) );
+	}
+	{ // Mutable pointer can be converted to immutable pointer.
+		var IntPtrMut ptr0(32);
+		var IntPtrImut ptr1(ptr0);
+		halt if( ust::ref_to_int( ptr1.lock_imut().get_ref() ) != ust::ref_to_int( ptr0.lock_imut().get_ref() ) );
+	}
+	{ // Mutable nullable pointer can be converted to immutable nullable pointer.
+		var IntPtrNullableMut ptr0(94);
+		var IntPtrNullableImut ptr1(ptr0);
+		halt if( ust::ref_to_int( ptr1.lock_imut().get_ref() ) != ust::ref_to_int( ptr0.lock_imut().get_ref() ) );
+	}
 
 	return 0;
 }

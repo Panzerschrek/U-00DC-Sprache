@@ -1,4 +1,5 @@
 import "shared_ptr_base.u"
+import "shared_ptr_mut.u"
 
 namespace ust
 {
@@ -12,6 +13,11 @@ public:
 	fn constructor( T mut value )
 	( impl_( move(value) ) )
 	{}
+
+	fn conversion_constructor( shared_ptr_mut</T/> & ptr )
+	{
+		unsafe{  impl_= shared_ptr_base</ T />( ptr.get_impl() );  }
+	}
 
 	fn constructor( mut this, this_type &imut other )= default;
 	op=( mut this, this_type &imut other )= default;
