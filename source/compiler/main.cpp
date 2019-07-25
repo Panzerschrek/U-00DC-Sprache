@@ -167,7 +167,7 @@ private:
 					fs::path full_file_path= include_dir / file_path_r;
 					if( fs::exists( full_file_path ) )
 					{
-						result_path= std::move(full_file_path);
+						result_path= fs::canonical( fs::path(ToUTF8(file_path.substr(1u))), include_dir );
 						break;
 					}
 				}
@@ -175,9 +175,10 @@ private:
 			else
 			{
 				const fs::path base_dir= fs::path( ToUTF8(full_parent_file_path) ).parent_path();
-				result_path= base_dir / file_path_r;
+				result_path= fs::canonical( file_path_r, base_dir );
 			}
-			return result_path.make_preferred();
+			result_path.make_preferred();
+			return result_path;
 		}
 		catch( const std::exception& e )
 		{
