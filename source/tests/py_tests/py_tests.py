@@ -3,7 +3,6 @@ import inspect
 import sys
 import traceback
 import os
-os.path.join( "/home/akhvosch/Projects/U-Sprache/build" )
 from py_tests_common import *
 
 
@@ -57,6 +56,7 @@ def main():
 		"type_conversions_test",
 		"typeinfo_test",
 		"typeof_test",
+		"shared_state_test",
 		"static_if_test",
 		"uninitialized_initializer_test",
 		"unsafe_test",

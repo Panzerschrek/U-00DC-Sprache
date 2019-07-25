@@ -158,6 +158,7 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, Variable& typeinfo_variab
 	add_bool_field( "is_default_constructible"_SpC, type.IsDefaultConstructible() );
 	add_bool_field( "is_copy_constructible"_SpC   , type.IsCopyConstructible()    );
 	add_bool_field( "is_copy_assignable"_SpC      , type.IsCopyAssignable()       );
+	add_bool_field( "have_shared_state"_SpC       , type.HaveSharedState()        );
 
 	add_size_field( "references_tags_count"_SpC, type.ReferencesTagsCount() );
 
