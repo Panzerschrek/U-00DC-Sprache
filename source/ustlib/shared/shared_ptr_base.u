@@ -6,7 +6,7 @@ namespace ust
 {
 
 template</ type T />
-class nullable_shared_ptr
+class shared_ptr_base
 {
 public:
 	fn constructor()= default;
@@ -94,7 +94,7 @@ public:
 	}
 
 private:
-	type this_type= nullable_shared_ptr</ T />;
+	type this_type= shared_ptr_base</ T />;
 	type value_ptr= raw_ptr_mut</T/>;
 	type counter_ptr= raw_ptr_mut</ shared_ptr_impl::counter />;
 	type lock_mut_t = shared_ptr_impl::lock_mut </T/>;

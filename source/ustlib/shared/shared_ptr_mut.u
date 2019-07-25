@@ -1,18 +1,18 @@
-import "nullable_shared_ptr.u"
+import "shared_ptr_base.u"
 
 namespace ust
 {
 
 template</ type T />
-class shared_ptr
+class shared_ptr_mut
 {
 public:
 	fn constructor( T mut value )
 	( impl_( move(value) ) )
 	{}
 
-	fn constructor( mut this, shared_ptr</T/> &imut other )= default;
-	op=( mut this, shared_ptr</T/> &imut other )= default;
+	fn constructor( mut this, this_type &imut other )= default;
+	op=( mut this, this_type &imut other )= default;
 
 	fn empty( this ) : bool
 	{
@@ -30,7 +30,10 @@ public:
 	}
 
 private:
-	nullable_shared_ptr</ T /> impl_;
+	type this_type= shared_ptr_mut</T/>;
+
+private:
+	shared_ptr_base</ T /> impl_;
 }
 
 } // namespace ust

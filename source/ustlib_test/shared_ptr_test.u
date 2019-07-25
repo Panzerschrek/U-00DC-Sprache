@@ -1,17 +1,26 @@
 //##success_test
-import "../ustlib/shared/shared_ptr.u"
+import "../ustlib/shared/shared_ptr_mut.u"
+import "../ustlib/shared/shared_ptr_imut.u"
+import "../ustlib/shared/shared_ptr_nullable_mut.u"
+import "../ustlib/shared/shared_ptr_nullable_imut.u"
 
+
+type IntPtrMut=  ust::shared_ptr_mut </i32/>;
+type IntPtrImut= ust::shared_ptr_imut</i32/>;
+type IntPtrNullableMut=  ust::shared_ptr_nullable_mut </i32/>;
+type IntPtrNullableImut= ust::shared_ptr_nullable_imut</i32/>;
 
 fn U_Main() : i32
 {
 	{
-		var ust::nullable_shared_ptr</i32/> empty_ptr;
+		var IntPtrNullableMut empty_ptr;
 	}
 	{
-		var ust::shared_ptr</i32/> non_empty_ptr(0);
+		var IntPtrNullableMut mut non_empty_ptr(0);
 		non_empty_ptr.lock_mut().get_ref()= 42;
 
 		auto ptr_copy= non_empty_ptr;
+		non_empty_ptr.reset();
 		halt if( ptr_copy.lock_imut().get_ref() != 42 );
 	}
 

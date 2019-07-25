@@ -1,0 +1,34 @@
+import "shared_ptr_base.u"
+
+namespace ust
+{
+
+template</ type T />
+class shared_ptr_imut
+{
+public:
+	fn constructor( T mut value )
+	( impl_( move(value) ) )
+	{}
+
+	fn constructor( mut this, this_type &imut other )= default;
+	op=( mut this, this_type &imut other )= default;
+
+	fn empty( this ) : bool
+	{
+		return false;
+	}
+
+	fn lock_imut( this ) : shared_ptr_impl::lock_imut</T/>'this'
+	{
+		return impl_.lock_imut();
+	}
+
+private:
+	type this_type= shared_ptr_imut</T/>;
+
+private:
+	shared_ptr_base</ T /> impl_;
+}
+
+} // namespace ust
