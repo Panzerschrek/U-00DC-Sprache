@@ -10,14 +10,14 @@ class weak_ptr_imut
 public:
 	fn constructor()= default;
 
-	fn constructor( mut this, shared_ptr_imut</T/> & shared )
+	fn constructor( mut this, shared_ptr_imut</T/> & ptr )
 	{
-		unsafe{  impl_= weak_ptr_base</ T />( shared.get_impl() );  }
+		unsafe{  impl_= weak_ptr_base</ T />( ptr.get_impl() );  }
 	}
 
-	fn constructor( mut this, shared_ptr_nullable_imut</T/> & shared )
+	fn constructor( mut this, shared_ptr_nullable_imut</T/> & ptr )
 	{
-		unsafe{  impl_= weak_ptr_base</ T />( shared.get_impl() );  }
+		unsafe{  impl_= weak_ptr_base</ T />( ptr.get_impl() );  }
 	}
 
 	fn constructor( mut this, this_type &imut other )= default;

@@ -6,12 +6,35 @@ import "../ustlib/shared/shared_ptr_nullable_imut.u"
 import "../ustlib/shared/weak_ptr_mut.u"
 import "../ustlib/shared/weak_ptr_imut.u"
 
+import "../ustlib/box.u"
+import "../ustlib/box_nullable.u"
+import "../ustlib/optional.u"
+import "../ustlib/optional_ref.u"
+import "../ustlib/random_access_range.u"
+import "../ustlib/unordered_map.u"
+import "../ustlib/vector.u"
+
 type IntPtrMut=  ust::shared_ptr_mut </i32/>;
 type IntPtrImut= ust::shared_ptr_imut</i32/>;
 type IntPtrNullableMut=  ust::shared_ptr_nullable_mut </i32/>;
 type IntPtrNullableImut= ust::shared_ptr_nullable_imut</i32/>;
 type IntPtrWeakMut = ust::weak_ptr_mut </i32/>;
 type IntPtrWeakImut= ust::weak_ptr_imut</i32/>;
+
+static_assert( typeinfo</IntPtrMut />.have_shared_state );
+static_assert( typeinfo</IntPtrImut/>.have_shared_state );
+static_assert( typeinfo</IntPtrNullableMut />.have_shared_state );
+static_assert( typeinfo</IntPtrNullableImut/>.have_shared_state );
+static_assert( typeinfo</IntPtrWeakMut />.have_shared_state );
+static_assert( typeinfo</IntPtrWeakImut/>.have_shared_state );
+
+static_assert( typeinfo</ ust::box</ IntPtrMut /> />.have_shared_state );
+static_assert( typeinfo</ ust::box_nullable</ IntPtrMut /> />.have_shared_state );
+static_assert( typeinfo</ ust::optional</ IntPtrMut /> />.have_shared_state );
+static_assert( typeinfo</ ust::optional_ref</ IntPtrMut, true /> />.have_shared_state );
+static_assert( typeinfo</ ust::random_access_range</ IntPtrMut, true /> />.have_shared_state );
+static_assert( typeinfo</ ust::unordered_map</ i32, IntPtrMut /> />.have_shared_state );
+static_assert( typeinfo</ ust::vector</ IntPtrMut /> />.have_shared_state );
 
 fn IsMut( void&  mut r ) : bool
 {

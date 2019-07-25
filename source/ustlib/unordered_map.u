@@ -426,6 +426,8 @@ private:
 	}
 
 private:
+	ContainerTag</ K /> key_tag_;
+	ContainerTag</ V /> value_tag_;
 	ptr_type table_;
 	size_type size_(0);
 	size_type capacity_(0); // Always must be power of two.

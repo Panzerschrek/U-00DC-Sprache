@@ -6,7 +6,7 @@ namespace ust
 {
 
 template</ type T />
-class shared_ptr_base
+class shared_ptr_base shared
 {
 public:
 	fn constructor()= default;
@@ -123,17 +123,17 @@ private:
 }
 
 template</ type T />
-class weak_ptr_base
+class weak_ptr_base shared
 {
 public:
 	fn constructor()= default;
 
-	fn constructor( shared_ptr_base</T/>& shared )
+	fn constructor( shared_ptr_base</T/>& ptr )
 	{
 		unsafe
 		{
-			value_= shared.get_value_ptr();
-			counter_= shared.get_counter_ptr();
+			value_= ptr.get_value_ptr();
+			counter_= ptr.get_counter_ptr();
 			if( !counter_.is_null() )
 			{
 				++counter_.get_ref().use_count_total;
