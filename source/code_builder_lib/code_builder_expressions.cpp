@@ -2805,7 +2805,7 @@ Variable CodeBuilder::ConvertVariable(
 	result.llvm_value= function_context.alloca_ir_builder.CreateAlloca( dst_type.GetLLVMType() );
 
 	const ReferencesGraphNodePtr node= std::make_shared<ReferencesGraphNode>( "temp "_SpC + dst_type.ToString(), ReferencesGraphNode::Kind::Variable );
-	function_context.stack_variables_stack.back()->RegisterVariable( std::make_pair( node, variable ) );
+	function_context.stack_variables_stack.back()->RegisterVariable( std::make_pair( node, result ) );
 
 	// Lock variables, for preventing of temporary destruction.
 	const ReferencesGraphNodeHolder src_variable_lock(

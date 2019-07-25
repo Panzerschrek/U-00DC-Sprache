@@ -879,6 +879,37 @@ U_TEST(DestructorsTest21_ChangeDestructionOrderUsingMoveOperator)
 	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 333, 111, 222 } ) );
 }
 
+U_TEST(DestructorsTest22_DestructorForTemporaryConvertedReferenceArgument)
+{
+	DestructorTestPrepare();
+
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+
+		class S
+		{
+			i32 x;
+			fn conversion_constructor( i32 in_x ) ( x= in_x ) {}
+			fn destructor() { DestructorCalled(x); }
+		}
+
+		fn Bar( S& s ){}
+		fn Foo()
+		{
+			Bar( 66 );
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 66 } ) );
+}
+
 U_TEST(EralyTempVariablesDestruction_Test0)
 {
 	DestructorTestPrepare();
