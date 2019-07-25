@@ -280,6 +280,7 @@ private:
 
 	ClassKindAttribute TryParseClassKindAttribute();
 	std::vector<ComplexName> TryParseClassParentsList();
+	bool TryParseClassSharedState();
 
 	Typedef ParseTypedef();
 	Typedef ParseTypedefBody();
@@ -2894,6 +2895,16 @@ std::vector<ComplexName> SyntaxAnalyzer::TryParseClassParentsList()
 	return result;
 }
 
+bool SyntaxAnalyzer::TryParseClassSharedState()
+{
+	if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::shared_ )
+	{
+		NextLexem();
+		return true;
+	}
+	return false;
+}
+
 Typedef SyntaxAnalyzer::ParseTypedef()
 {
 	U_ASSERT( it_->text == Keywords::type_ );
@@ -3319,6 +3330,7 @@ std::unique_ptr<Class> SyntaxAnalyzer::ParseClass()
 		class_kind_attribute= TryParseClassKindAttribute();
 		parents_list= TryParseClassParentsList();
 	}
+	const bool have_shared_state= TryParseClassSharedState();
 
 	std::unique_ptr<Class> result= ParseClassBody();
 	if( result != nullptr )
@@ -3326,6 +3338,7 @@ std::unique_ptr<Class> SyntaxAnalyzer::ParseClass()
 		result->file_pos_= class_file_pos;
 		result->name_= std::move(name);
 		result->kind_attribute_= class_kind_attribute;
+		result->have_shared_state_= have_shared_state;
 		result->parents_= std::move(parents_list);
 	}
 
@@ -3690,12 +3703,14 @@ TemplateBasePtr SyntaxAnalyzer::ParseTemplate()
 				class_kind_attribute= TryParseClassKindAttribute();
 				class_parents_list= TryParseClassParentsList();
 			}
+			const bool have_shared_state= TryParseClassSharedState();
 			class_template->class_= ParseClassBody();
 			if( class_template->class_ != nullptr )
 			{
 				class_template->class_->file_pos_= template_thing_file_pos;
 				class_template->class_->name_= std::move(name);
 				class_template->class_->kind_attribute_= class_kind_attribute;
+				class_template->class_->have_shared_state_= have_shared_state;
 				class_template->class_->parents_= std::move(class_parents_list);
 			}
 			return std::move(class_template);

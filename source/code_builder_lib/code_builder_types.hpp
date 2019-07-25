@@ -119,6 +119,7 @@ public:
 	bool IsCopyAssignable() const;
 	bool HaveDestructor() const;
 	bool CanBeConstexpr() const;
+	bool HaveSharedState() const;
 	size_t ReferencesTagsCount() const;
 
 	llvm::Type* GetLLVMType() const;
@@ -648,6 +649,7 @@ public:
 	bool have_destructor= false;
 	bool is_copy_assignable= false;
 	bool can_be_constexpr= false;
+	bool have_shared_state= false;
 
 	FilePos forward_declaration_file_pos= FilePos{ 0u, 0u, 0u };
 	FilePos body_file_pos= FilePos{ 0u, 0u, 0u };

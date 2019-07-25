@@ -32,6 +32,7 @@ enum class Keywords : unsigned int
 	polymorph_,
 	interface_,
 	abstract_,
+	shared_,
 
 	nomangle_,
 	virtual_,

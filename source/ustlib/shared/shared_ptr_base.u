@@ -1,0 +1,281 @@
+import "../container_utils.u"
+import "../memory.u"
+import "../pointer.u"
+
+namespace ust
+{
+
+template</ type T />
+class shared_ptr_base shared
+{
+public:
+	fn constructor()= default;
+
+	fn constructor( T mut value )
+	{
+		unsafe
+		{
+			value_= value_ptr( cast_ref_unsafe</T/>( memory_allocate( typeinfo</T/>.size_of ) ) );
+			move_unsafe( value_.get_ref(), move(value) );
+
+			counter_= counter_ptr( cast_ref_unsafe</ shared_ptr_impl::counter />( memory_allocate( typeinfo</ shared_ptr_impl::counter />.size_of ) ) );
+			counter_.get_ref().use_count_total= 1u;
+			counter_.get_ref().use_count_strong= 1u;
+			counter_.get_ref().lock_count= 0;
+		}
+	}
+
+	fn constructor( mut this, this_type &imut other )
+	{
+		this= other;
+	}
+
+	fn destructor()
+	{
+		reset();
+	}
+
+	op=( mut this, this_type &imut other )
+	{
+		reset();
+		unsafe
+		{
+			if( !other.counter_.is_null() )
+			{
+				value_= other.value_;
+				counter_= other.counter_;
+				++counter_.get_ref().use_count_total;
+				++counter_.get_ref().use_count_strong;
+			}
+		}
+	}
+
+	fn reset( mut this )
+	{
+		if( empty() ) { return; }
+		unsafe
+		{
+			--counter_.get_ref().use_count_total;
+			--counter_.get_ref().use_count_strong;
+			if( counter_.get_ref().use_count_strong == 0u )
+			{
+				call_destructor( value_.get_ref() );
+				memory_free( value_.get_ref() );
+				if( counter_.get_ref().use_count_total == 0u )
+				{
+					memory_free( counter_.get_ref() );
+				}
+			}
+			value_= value_ptr();
+			counter_= counter_ptr();
+		}
+	}
+
+	fn reset( mut this, T mut value )
+	{
+		this= this_type( move(value) );
+	}
+
+	fn empty( this ) : bool
+	{
+		return value_.is_null();
+	}
+
+	fn lock_mut ( this ) : lock_mut_t 'this'
+	{
+		halt if( empty() );
+		unsafe{  return lock_mut_t ( value_.get_ref(), counter_ );  }
+	}
+
+	fn lock_imut( this ) : lock_imut_t'this'
+	{
+		halt if( empty() );
+		unsafe{  return lock_imut_t( value_.get_ref(), counter_ );  }
+	}
+
+public: // Methods for internal usage.
+
+	fn get_value_ptr( this ) unsafe : raw_ptr_mut</T/>
+	{
+		return value_;
+	}
+
+	fn get_counter_ptr( this ) unsafe : raw_ptr_mut</ shared_ptr_impl::counter />
+	{
+		return counter_;
+	}
+
+	// Counter must be incremented before this constructor call.
+	fn constructor( raw_ptr_mut</T/> value_ptr, raw_ptr_mut</ shared_ptr_impl::counter /> counter_ptr ) unsafe
+	( value_(value_ptr), counter_(counter_ptr) )
+	{}
+
+private:
+	type this_type= shared_ptr_base</ T />;
+	type value_ptr= raw_ptr_mut</T/>;
+	type counter_ptr= raw_ptr_mut</ shared_ptr_impl::counter />;
+	type lock_mut_t = shared_ptr_impl::lock_mut </T/>;
+	type lock_imut_t= shared_ptr_impl::lock_imut</T/>;
+
+private:
+	value_ptr value_();
+	counter_ptr counter_();
+}
+
+template</ type T />
+class weak_ptr_base shared
+{
+public:
+	fn constructor()= default;
+
+	fn constructor( shared_ptr_base</T/>& ptr )
+	{
+		unsafe
+		{
+			value_= ptr.get_value_ptr();
+			counter_= ptr.get_counter_ptr();
+			if( !counter_.is_null() )
+			{
+				++counter_.get_ref().use_count_total;
+			}
+		}
+	}
+
+	fn constructor( mut this, this_type &imut other )
+	{
+		this= other;
+	}
+
+	fn destructor()
+	{
+		reset();
+	}
+
+	op=( mut this, this_type &imut other )
+	{
+		reset();
+		unsafe
+		{
+			if( !other.counter_.is_null() )
+			{
+				value_= other.value_;
+				counter_= other.counter_;
+				++counter_.get_ref().use_count_total;
+			}
+		}
+	}
+
+	fn reset( mut this )
+	{
+		unsafe
+		{
+			if( !counter_.is_null() )
+			{
+				--counter_.get_ref().use_count_total;
+				if( counter_.get_ref().use_count_total == 0u )
+				{
+					memory_free( counter_.get_ref() );
+					value_= value_ptr();
+				}
+				counter_= counter_ptr();
+			}
+		}
+	}
+
+	fn lock( this ) : shared_ptr_base</T/>
+	{
+		unsafe
+		{
+			if( counter_.is_null() || counter_.get_ref().use_count_strong == 0u )
+			{
+				return shared_ptr_base</T/>();
+			}
+			++counter_.get_ref().use_count_total;
+			++counter_.get_ref().use_count_strong;
+			return shared_ptr_base</T/>( value_, counter_ );
+		}
+	}
+
+private:
+	type this_type= weak_ptr_base</ T />;
+	type value_ptr= raw_ptr_mut</T/>;
+	type counter_ptr= raw_ptr_mut</ shared_ptr_impl::counter />;
+	type lock_mut_t = shared_ptr_impl::lock_mut </T/>;
+	type lock_imut_t= shared_ptr_impl::lock_imut</T/>;
+
+private:
+	value_ptr value_();
+	counter_ptr counter_();
+}
+
+namespace shared_ptr_impl
+{
+
+struct counter
+{
+	u32 use_count_total;
+	u32 use_count_strong; // always <= use_count_total
+	i32 lock_count; // 0 - not locked, positive value - locked as imut, -1 - locked as mut.
+}
+
+template</ type T />
+class lock_mut
+{
+public:
+	fn constructor( mut this'a', T &'b  mut value, raw_ptr_mut</counter/> counter ) ' a <- b ' unsafe
+		( value_(value), counter_(counter) )
+	{
+		unsafe
+		{
+			halt if( counter_.get_ref().lock_count != 0 ); // halt if have any locks
+			counter_.get_ref().lock_count= -1;
+		}
+	}
+
+	fn destructor()
+	{
+		unsafe{  counter_.get_ref().lock_count= 0;  }
+	}
+
+	fn get_ref( this'a' ) : T &'a  mut
+	{
+		return value_;
+	}
+
+private:
+	T & mut value_;
+	raw_ptr_mut</counter/> counter_();
+}
+
+template</ type T />
+class lock_imut
+{
+public:
+	fn constructor( mut this'a', T &'b imut value, raw_ptr_mut</counter/> counter ) ' a <- b ' unsafe
+		( value_(value), counter_(counter) )
+	{
+		unsafe
+		{
+			halt if( counter_.get_ref().lock_count < 0 ); // halt if have mutable locks
+			++counter_.get_ref().lock_count;
+		}
+	}
+
+	fn destructor()
+	{
+		unsafe{  --counter_.get_ref().lock_count;  }
+	}
+
+	fn get_ref( this'a' ) : T &'a imut
+	{
+		return value_;
+	}
+
+private:
+	T &imut value_;
+	raw_ptr_mut</counter/> counter_();
+}
+
+} // namespace shared_ptr_impl
+
+} // namespace ust

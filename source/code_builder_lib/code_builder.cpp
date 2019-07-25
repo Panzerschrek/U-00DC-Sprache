@@ -440,6 +440,7 @@ void CodeBuilder::CopyClass(
 	copy->have_destructor= src.have_destructor;
 	copy->is_copy_assignable= src.is_copy_assignable;
 	copy->can_be_constexpr= src.can_be_constexpr;
+	copy->have_shared_state= src.have_shared_state;
 
 	copy->forward_declaration_file_pos= src.forward_declaration_file_pos;
 	copy->body_file_pos= src.body_file_pos;
