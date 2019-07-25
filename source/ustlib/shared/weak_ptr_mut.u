@@ -1,0 +1,43 @@
+import "shared_ptr_mut.u"
+import "shared_ptr_nullable_mut.u"
+
+namespace ust
+{
+
+template</ type T />
+class weak_ptr_mut
+{
+public:
+	fn constructor()= default;
+
+	fn constructor( mut this, shared_ptr_mut</T/> & shared )
+	{
+		unsafe{  impl_= weak_ptr_base</ T />( shared.get_impl() );  }
+	}
+
+	fn constructor( mut this, shared_ptr_nullable_mut</T/> & shared )
+	{
+		unsafe{  impl_= weak_ptr_base</ T />( shared.get_impl() );  }
+	}
+
+	fn constructor( mut this, this_type &imut other )= default;
+	op=( mut this, this_type &imut other )= default;
+
+	fn reset( mut this )
+	{
+		impl_.reset();
+	}
+
+	fn lock( this ) : shared_ptr_nullable_mut</T/>
+	{
+		unsafe{  return shared_ptr_nullable_mut</T/>( impl_.lock() );  }
+	}
+
+private:
+	type this_type= weak_ptr_mut</T/>;
+
+private:
+	weak_ptr_base</ T /> impl_;
+}
+
+} // namespace ust

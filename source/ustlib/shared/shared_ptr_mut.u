@@ -34,6 +34,12 @@ public:
 		return impl_.lock_imut();
 	}
 
+public: // Methods for internal usage
+	fn get_impl( this ) unsafe : shared_ptr_base</ T />
+	{
+		return impl_;
+	}
+
 private:
 	type this_type= shared_ptr_mut</T/>;
 

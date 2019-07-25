@@ -3,11 +3,15 @@ import "../ustlib/shared/shared_ptr_mut.u"
 import "../ustlib/shared/shared_ptr_imut.u"
 import "../ustlib/shared/shared_ptr_nullable_mut.u"
 import "../ustlib/shared/shared_ptr_nullable_imut.u"
+import "../ustlib/shared/weak_ptr_mut.u"
+import "../ustlib/shared/weak_ptr_imut.u"
 
 type IntPtrMut=  ust::shared_ptr_mut </i32/>;
 type IntPtrImut= ust::shared_ptr_imut</i32/>;
 type IntPtrNullableMut=  ust::shared_ptr_nullable_mut </i32/>;
 type IntPtrNullableImut= ust::shared_ptr_nullable_imut</i32/>;
+type IntPtrWeakMut = ust::weak_ptr_mut </i32/>;
+type IntPtrWeakImut= ust::weak_ptr_imut</i32/>;
 
 fn U_Main() : i32
 {
@@ -27,6 +31,14 @@ fn U_Main() : i32
 
 		ptr.lock_mut(); //##expect_error NameNotFound
 		ptr_nullable.lock_mut(); //##expect_error NameNotFound
+	}
+	{ // Weak pointers have no lock_mut/lock_imut methods.
+		var IntPtrWeakMut  weak_ptr_mut ;
+		var IntPtrWeakImut weak_ptr_imut;
+		weak_ptr_mut .lock_mut (); //##expect_error NameNotFound
+		weak_ptr_mut .lock_imut(); //##expect_error NameNotFound
+		weak_ptr_imut.lock_mut (); //##expect_error NameNotFound
+		weak_ptr_imut.lock_imut(); //##expect_error NameNotFound
 	}
 	return 0;
 }
