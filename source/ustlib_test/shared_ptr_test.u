@@ -187,6 +187,16 @@ fn U_Main() : i32
 		var IntPtrNullableImut ptr1(ptr0);
 		halt if( ust::ref_to_int( ptr1.lock_imut().get_ref() ) != ust::ref_to_int( ptr0.lock_imut().get_ref() ) );
 	}
+	{ // Nullable shared_ptr can be converted to non-nullable shared_ptr
+		var IntPtrNullableMut ptr0(35);
+		var IntPtrMut ptr1= ust::to_non_nullable(ptr0);
+		halt if( ust::ref_to_int( ptr1.lock_imut().get_ref() ) != ust::ref_to_int( ptr0.lock_imut().get_ref() ) );
+	}
+	{ // Nullable shared_ptr can be converted to non-nullable shared_ptr
+		var IntPtrNullableImut ptr0(35);
+		var IntPtrImut ptr1= ust::to_non_nullable(ptr0);
+		halt if( ust::ref_to_int( ptr1.lock_imut().get_ref() ) != ust::ref_to_int( ptr0.lock_imut().get_ref() ) );
+	}
 
 	return 0;
 }

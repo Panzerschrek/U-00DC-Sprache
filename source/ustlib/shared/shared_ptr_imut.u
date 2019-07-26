@@ -36,6 +36,11 @@ public:
 	}
 
 public: // Methods for internal usage
+	// impl must be non-empty
+	fn constructor( shared_ptr_base</ T /> mut impl ) unsafe
+	( impl_(move(impl)) )
+	{}
+
 	fn get_impl( this ) unsafe : shared_ptr_base</ T />
 	{
 		return impl_;

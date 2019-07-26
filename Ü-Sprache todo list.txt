@@ -34,7 +34,6 @@ Templates:
 
 Standart library:
 *) Type traits
-*) checked nullable_ptr -> ptr conversions
 *) ptr</Derived/> -> pt</Base/> conversions with correct memory free
 *) "final_ptr" - shared pointer for immutable values only
 *) thread-safe shared_ptr

@@ -154,4 +154,18 @@ struct box_nullable_hasher
 	}
 }
 
+template</ type T />
+fn to_non_nullable( box_nullable</T/> mut val ) : box</T/>
+{
+	halt if( val.empty() );
+	unsafe
+	{
+		static_assert( typeinfo</ box</T/> />.size_of == typeinfo</ box_nullable</T/> />.size_of );
+		var box</T/> mut result= uninitialized;
+		memory_copy( result, val, typeinfo</ box</T/> />.size_of );
+		move_into_nowhere( move(val) );
+		return move(result);
+	}
+}
+
 } // namespace ust

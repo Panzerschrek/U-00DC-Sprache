@@ -64,4 +64,14 @@ private:
 	shared_ptr_base</ T /> impl_;
 }
 
+template</ type T />
+fn to_non_nullable( shared_ptr_nullable_mut</T/> & val ) : shared_ptr_mut</T/>
+{
+	halt if( val.empty() );
+	unsafe
+	{
+		return shared_ptr_mut</T/>( val.get_impl() );
+	}
+}
+
 } // namespace ust

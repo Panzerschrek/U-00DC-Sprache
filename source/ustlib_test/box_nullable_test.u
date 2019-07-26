@@ -77,6 +77,15 @@ fn U_Main() : i32
 		var ust::box_nullable</ B /> mut a_box, mut b_box;
 		a_box= move(b_box);
 	}
+	{ // box_nullable can be converted to box.
+		var ust::box_nullable</ i32 /> mut box0( 46 );
+		auto addr0= ust::ref_to_int( box0.get_ref() );
+		var ust::box</ i32 /> box1= ust::to_non_nullable( move(box0) );
+		auto addr1= ust::ref_to_int( box1.get_ref() );
+
+		halt if( addr0 != addr1 );
+		halt if( box1.get_ref() != 46 );
+	}
 
 	return 0;
 }
