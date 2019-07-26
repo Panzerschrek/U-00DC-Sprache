@@ -35,7 +35,6 @@ Templates:
 Standart library:
 *) Type traits
 *) ptr</Derived/> -> pt</Base/> conversions with correct memory free
-*) "final_ptr" - shared pointer for immutable values only
 *) thread-safe shared_ptr
 *) Math functions
 *) Associative containers - map, set, unordered_set, string_map

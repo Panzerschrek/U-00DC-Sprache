@@ -1,0 +1,95 @@
+import "../container_utils.u"
+import "../memory.u"
+import "../pointer.u"
+
+namespace ust
+{
+
+// Do not mark it as "shared", because it is not possible to create shared mutable state with imut only shared pointers.
+template</ type T />
+class shared_ptr_final_base
+{
+public:
+	fn constructor()= default;
+
+	fn constructor( T mut value )
+	{
+		unsafe
+		{
+			ptr_= storage_ptr( cast_ref_unsafe</storage/>( memory_allocate( typeinfo</storage/>.size_of ) ) );
+			move_unsafe( ptr_.get_ref().value, move(value) );
+			ptr_.get_ref().counter= 1u;
+		}
+	}
+
+	fn constructor( mut this, this_type &imut other )
+	{
+		this= other;
+	}
+
+	fn destructor()
+	{
+		reset();
+	}
+
+	op=( mut this, this_type &imut other )
+	{
+		reset();
+		unsafe
+		{
+			if( !other.ptr_.is_null() )
+			{
+				ptr_= other.ptr_;
+				++ptr_.get_ref().counter;
+			}
+		}
+	}
+
+	fn reset( mut this )
+	{
+		if( empty() ) { return; }
+		unsafe
+		{
+			--ptr_.get_ref().counter;
+			if( ptr_.get_ref().counter == 0u )
+			{
+				call_destructor( ptr_.get_ref().value );
+				memory_free( ptr_.get_ref() );
+			}
+			ptr_= storage_ptr();
+		}
+	}
+
+	fn reset( mut this, T mut value )
+	{
+		this= this_type( move(value) );
+	}
+
+	fn empty( this ) : bool
+	{
+		return ptr_.is_null();
+	}
+
+	fn get_ref_unsafe( this ) unsafe : T &imut
+	{
+		unsafe
+		{
+			return ptr_.get_ref().value;
+		}
+	}
+
+private:
+	type this_type= shared_ptr_final_base</T/>;
+
+	struct storage
+	{
+		u32 counter;
+		T value;
+	}
+	type storage_ptr= raw_ptr_mut</storage/>;
+
+private:
+	storage_ptr ptr_;
+}
+
+} // namespace ust
