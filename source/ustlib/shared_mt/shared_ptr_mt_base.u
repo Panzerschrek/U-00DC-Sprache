@@ -65,11 +65,11 @@ public:
 			{
 				call_destructor( value_.get_ref() );
 				memory_free( value_.get_ref() );
-				if( ust::atomic_dec( counter_.get_ref().use_count_total ) == 1u )
-				{
-					halt if( pthread_rwlock_destroy( counter_.get_ref().rwlock ) != 0 );
-					memory_free( counter_.get_ref() );
-				}
+			}
+			if( ust::atomic_dec( counter_.get_ref().use_count_total ) == 1u )
+			{
+				halt if( pthread_rwlock_destroy( counter_.get_ref().rwlock ) != 0 );
+				memory_free( counter_.get_ref() );
 			}
 			value_= value_ptr();
 			counter_= counter_ptr();
@@ -178,6 +178,7 @@ public:
 			{
 				if( ust::atomic_dec( counter_.get_ref().use_count_total ) == 1u )
 				{
+					halt if( pthread_rwlock_destroy( counter_.get_ref().rwlock ) != 0 );
 					memory_free( counter_.get_ref() );
 					value_= value_ptr();
 				}
