@@ -20,10 +20,10 @@ fn nomangle pthread_join(
 	pthread_t thread_id,
 	void& mut ret_val ) unsafe : i32;
 
-fn nomangle pthread_rwlockattr_init( pthread_rwlockattr_t& mut attr ) : i32;
-fn nomangle pthread_rwlockattr_destroy( pthread_rwlockattr_t& mut attr ) : i32;
-fn nomangle pthread_rwlock_init( pthread_rwlock_t &mut rwlock, pthread_rwlockattr_t & attr ) : i32;
-fn nomangle pthread_rwlock_destroy( pthread_rwlock_t &mut rwlock ) : i32;
-fn nomangle pthread_rwlock_rdlock( pthread_rwlock_t &mut rwlock ) : i32;
-fn nomangle pthread_rwlock_wrlock( pthread_rwlock_t &mut rwlock ) : i32;
-fn nomangle pthread_rwlock_unlock( pthread_rwlock_t &mut rwlock ) : i32;
+fn nomangle pthread_rwlockattr_init( pthread_rwlockattr_t& mut attr ) unsafe : i32;
+fn nomangle pthread_rwlockattr_destroy( pthread_rwlockattr_t& mut attr ) unsafe : i32;
+fn nomangle pthread_rwlock_init( pthread_rwlock_t &mut rwlock, pthread_rwlockattr_t & attr ) unsafe : i32;
+fn nomangle pthread_rwlock_destroy( pthread_rwlock_t &mut rwlock ) unsafe : i32;
+fn nomangle pthread_rwlock_rdlock( pthread_rwlock_t &mut rwlock ) unsafe : i32;
+fn nomangle pthread_rwlock_wrlock( pthread_rwlock_t &mut rwlock ) unsafe : i32;
+fn nomangle pthread_rwlock_unlock( pthread_rwlock_t &mut rwlock ) unsafe : i32;

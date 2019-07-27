@@ -1,0 +1,12 @@
+//##success_test
+import "../ustlib/shared_mt/shared_ptr_mt_base.u"
+
+fn U_Main() : i32
+{
+	var ust::shared_ptr_mt_base</i32/> ptr(0);
+
+	ptr.lock_mut().get_ref()= 56;
+	halt if( ptr.lock_imut().get_ref() != 56 );
+
+	return 0;
+}
