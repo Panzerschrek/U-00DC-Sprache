@@ -75,14 +75,14 @@ public:
 					move_unsafe( table_value.value_storage, value ); // TODO - move value.
 					table_value.cell_content= TableValue::CellContent::HaveValue;
 					++size_;
-					return cast_ref_unsafe</ value_type />( table_value.value_storage );
+					return table_value.value_storage;
 				}
 				else if( table_value.cell_content == TableValue::CellContent::HaveValue )
 				{
 					if( key == table_value.key_storage )
 					{
-						cast_ref_unsafe</ value_type />(table_value.value_storage)= value; // Replace old value with new. // TODO - move value.
-						return cast_ref_unsafe</ value_type />(table_value.value_storage);
+						table_value.value_storage= value; // Replace old value with new. // TODO - move value.
+						return table_value.value_storage;
 					}
 				}
 
