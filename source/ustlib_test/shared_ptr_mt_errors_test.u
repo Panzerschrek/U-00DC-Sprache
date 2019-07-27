@@ -1,0 +1,41 @@
+//##fail_test
+import "../ustlib/shared_mt/shared_ptr_mt_mut.u"
+import "../ustlib/shared_mt/shared_ptr_mt_imut.u"
+import "../ustlib/shared_mt/shared_ptr_mt_nullable_mut.u"
+import "../ustlib/shared_mt/shared_ptr_mt_nullable_imut.u"
+
+type IntPtrMut=  ust::shared_ptr_mt_mut </i32/>;
+type IntPtrImut= ust::shared_ptr_mt_imut</i32/>;
+type IntPtrNullableMut=  ust::shared_ptr_mt_nullable_mut </i32/>;
+type IntPtrNullableImut= ust::shared_ptr_mt_nullable_imut</i32/>;
+
+fn U_Main() : i32
+{
+	//
+	// Common test with "shared_ptr"
+	//
+
+	{ // For non-nullable pointers expected initializer.
+		var IntPtrMut  ptr_mut ; //##expect_error ExpectedInitializer
+		var IntPtrImut ptr_imut; //##expect_error ExpectedInitializer
+	}
+	{ // Non-nullable pointers have no "reset to zero" methods.
+		var IntPtrMut  mut ptr_mut (0);
+		var IntPtrImut mut ptr_imut(0);
+		ptr_mut .reset(); //##expect_error CouldNotSelectOverloadedFunction
+		ptr_imut.reset(); //##expect_error CouldNotSelectOverloadedFunction
+	}
+	{ // Imut pointers have no "lock_mut" methods.
+		var IntPtrImut ptr(0);
+		var IntPtrNullableImut ptr_nullable(0);
+
+		ptr.lock_mut(); //##expect_error NameNotFound
+		ptr_nullable.lock_mut(); //##expect_error NameNotFound
+	}
+
+	//
+	// shared_ptr_mt-sepcific tests.
+	//
+
+	return 0;
+}

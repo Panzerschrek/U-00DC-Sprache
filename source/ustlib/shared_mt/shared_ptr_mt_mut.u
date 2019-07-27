@@ -1,0 +1,55 @@
+import "shared_ptr_mt_base.u"
+
+namespace ust
+{
+
+template</ type T />
+class shared_ptr_mt_mut
+{
+public:
+	fn constructor( T mut value )
+	( impl_( move(value) ) )
+	{}
+
+	fn constructor( mut this, this_type &imut other )= default;
+	op=( mut this, this_type &imut other )= default;
+
+	fn reset( mut this, T mut value )
+	{
+		impl_.reset( move(value) );
+	}
+
+	fn empty( this ) : bool
+	{
+		return false;
+	}
+
+	fn lock_mut ( this ) : shared_ptr_mt_impl::lock_mut </T/>'this'
+	{
+		return impl_.lock_mut ();
+	}
+
+	fn lock_imut( this ) : shared_ptr_mt_impl::lock_imut</T/>'this'
+	{
+		return impl_.lock_imut();
+	}
+
+public: // Methods for internal usage
+	// impl must be non-empty
+	fn constructor( shared_ptr_mt_base</ T /> mut impl ) unsafe
+	( impl_(move(impl)) )
+	{}
+
+	fn get_impl( this ) unsafe : shared_ptr_mt_base</ T />
+	{
+		return impl_;
+	}
+
+private:
+	type this_type= shared_ptr_mt_mut</T/>;
+
+private:
+	shared_ptr_mt_base</ T /> impl_;
+}
+
+} // namespace ust
