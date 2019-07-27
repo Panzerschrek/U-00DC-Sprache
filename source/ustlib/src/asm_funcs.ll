@@ -121,6 +121,70 @@ define linkonce_odr i1 @_ZN3ust23atomic_compare_and_swapERjjj( i32* %addr, i32 %
 	ret i1 %success
 }
 
+; fn atomic_compare_exchange_strong( i32 &mut dst, i32 &mut expected, i32 new ) : bool;
+$_ZN3ust30atomic_compare_exchange_strongERiS0_i = comdat any
+define linkonce_odr i1 @_ZN3ust30atomic_compare_exchange_strongERiS0_i( i32* %addr, i32* %expected, i32 %new ) unnamed_addr comdat
+{
+	%expected_read= load i32, i32* %expected
+	%res= cmpxchg volatile i32* %addr, i32 %expected_read, i32 %new acq_rel monotonic
+	%success = extractvalue { i32, i1 } %res, 1
+	br i1 %success, label %ok, label %not_ok
+ok:
+	ret i1 true
+not_ok:
+	%val = extractvalue { i32, i1 } %res, 0
+	store i32 %val, i32* %expected
+	ret i1 false
+}
+
+; fn atomic_compare_exchange_strong( u32 &mut dst, u32 &mut expected, u32 new ) : bool;
+$_ZN3ust30atomic_compare_exchange_strongERjS0_j = comdat any
+define linkonce_odr i1 @_ZN3ust30atomic_compare_exchange_strongERjS0_j( i32* %addr, i32* %expected, i32 %new ) unnamed_addr comdat
+{
+	%expected_read= load i32, i32* %expected
+	%res= cmpxchg volatile i32* %addr, i32 %expected_read, i32 %new acq_rel monotonic
+	%success = extractvalue { i32, i1 } %res, 1
+	br i1 %success, label %ok, label %not_ok
+ok:
+	ret i1 true
+not_ok:
+	%val = extractvalue { i32, i1 } %res, 0
+	store i32 %val, i32* %expected
+	ret i1 false
+}
+
+; fn atomic_compare_exchange_weak( i32 &mut dst, i32 &mut expected, i32 new ) : bool;
+$_ZN3ust28atomic_compare_exchange_weakERiS0_i = comdat any
+define linkonce_odr i1 @_ZN3ust28atomic_compare_exchange_weakERiS0_i( i32* %addr, i32* %expected, i32 %new ) unnamed_addr comdat
+{
+	%expected_read= load i32, i32* %expected
+	%res= cmpxchg weak volatile i32* %addr, i32 %expected_read, i32 %new acq_rel monotonic
+	%success = extractvalue { i32, i1 } %res, 1
+	br i1 %success, label %ok, label %not_ok
+ok:
+	ret i1 true
+not_ok:
+	%val = extractvalue { i32, i1 } %res, 0
+	store i32 %val, i32* %expected
+	ret i1 false
+}
+
+; fn atomic_compare_exchange_weak( u32 &mut dst, u32 &mut expected, u32 new ) : bool;
+$_ZN3ust28atomic_compare_exchange_weakERjS0_j = comdat any
+define linkonce_odr i1 @_ZN3ust28atomic_compare_exchange_weakERjS0_j( i32* %addr, i32* %expected, i32 %new ) unnamed_addr comdat
+{
+	%expected_read= load i32, i32* %expected
+	%res= cmpxchg weak volatile i32* %addr, i32 %expected_read, i32 %new acq_rel monotonic
+	%success = extractvalue { i32, i1 } %res, 1
+	br i1 %success, label %ok, label %not_ok
+ok:
+	ret i1 true
+not_ok:
+	%val = extractvalue { i32, i1 } %res, 0
+	store i32 %val, i32* %expected
+	ret i1 false
+}
+
 ;
 ; checked math
 ;
