@@ -50,6 +50,26 @@ define linkonce_odr void @__U_halt() unnamed_addr #0 comdat
 }
 
 ;
+; atomic
+;
+
+; fn atomic_add( i32 &mut x, i32 y ) : i32;
+$_ZN3ust10atomic_addERii = comdat any
+define linkonce_odr i32 @_ZN3ust10atomic_addERii( i32* %x, i32 %y ) unnamed_addr comdat
+{
+	%1= atomicrmw volatile add i32* %x, i32 %y acquire
+	ret i32 %1
+}
+
+; fn atomic_add( u32 &mut x, u32 y ) : i32;
+$_ZN3ust10atomic_addERjj = comdat any
+define linkonce_odr i32 @_ZN3ust10atomic_addERjj( i32* %x, i32 %y ) unnamed_addr comdat
+{
+	%1= atomicrmw volatile add i32* %x, i32 %y acquire
+	ret i32 %1
+}
+
+;
 ; checked math
 ;
 

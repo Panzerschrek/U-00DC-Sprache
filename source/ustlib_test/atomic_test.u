@@ -1,0 +1,24 @@
+//##success_test
+import "../ustlib/atomic.u"
+
+fn U_Main() : i32
+{
+	{
+		var u32 mut x= 0u;
+		halt if( ust::atomic_add( x, 56u ) !=  0u );
+		halt if( ust::atomic_sub( x,  6u ) != 56u );
+		halt if( ust::atomic_inc( x ) != 50u );
+		halt if( ust::atomic_dec( x ) != 51u );
+		halt if( x != 50u );
+	}
+	{
+		var i32 mut x= 0;
+		halt if( ust::atomic_add( x, 56 ) !=  0 );
+		halt if( ust::atomic_sub( x, 66 ) != 56 );
+		halt if( ust::atomic_inc( x ) != -10 );
+		halt if( ust::atomic_dec( x ) != - 9 );
+		halt if( x != -10 );
+	}
+
+	return 0;
+}
