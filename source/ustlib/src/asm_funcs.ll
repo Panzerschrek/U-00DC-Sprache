@@ -53,6 +53,40 @@ define linkonce_odr void @__U_halt() unnamed_addr #0 comdat
 ; atomic
 ;
 
+; TODO - check memory ordering.
+
+; fn atomic_read( i32& addr ) : i32;
+$_ZN3ust11atomic_readERKi = comdat any
+define linkonce_odr i32 @_ZN3ust11atomic_readERKi( i32* %addr ) unnamed_addr comdat
+{
+	%1= load atomic i32, i32* %addr acquire, align 4
+	ret i32 %1
+}
+
+; fn atomic_read( u32& addr ) : i32;
+$_ZN3ust11atomic_readERKj = comdat any
+define linkonce_odr i32 @_ZN3ust11atomic_readERKj( i32* %addr ) unnamed_addr comdat
+{
+	%1= load atomic volatile i32, i32* %addr acquire, align 4
+	ret i32 %1
+}
+
+; fn atomic_write( i32 &mut addr, i32 x );
+$_ZN3ust12atomic_writeERii = comdat any
+define linkonce_odr void @_ZN3ust12atomic_writeERii( i32* %addr, i32 %x ) unnamed_addr comdat
+{
+	store atomic volatile i32 %x, i32* %addr monotonic, align 4
+	ret void
+}
+
+; fn atomic_write( u32 &mut addr, u32 x );
+$_ZN3ust12atomic_writeERjj = comdat any
+define linkonce_odr void @_ZN3ust12atomic_writeERjj( i32* %addr, i32 %x ) unnamed_addr comdat
+{
+	store atomic volatile i32 %x, i32* %addr monotonic, align 4
+	ret void
+}
+
 ; fn atomic_add( i32 &mut x, i32 y ) : i32;
 $_ZN3ust10atomic_addERii = comdat any
 define linkonce_odr i32 @_ZN3ust10atomic_addERii( i32* %x, i32 %y ) unnamed_addr comdat

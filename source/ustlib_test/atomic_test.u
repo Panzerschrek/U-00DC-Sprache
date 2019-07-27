@@ -4,6 +4,18 @@ import "../ustlib/atomic.u"
 fn U_Main() : i32
 {
 	{
+		var i32 mut x=-77;
+		halt if( ust::atomic_read( x ) != -77 );
+		ust::atomic_write( x, 55 );
+		halt if( ust::atomic_read( x ) != 55 );
+	}
+	{
+		var u32 mut x=99u;
+		halt if( ust::atomic_read( x ) != 99u );
+		ust::atomic_write( x, 99999999u );
+		halt if( ust::atomic_read( x ) != 99999999u );
+	}
+	{
 		var u32 mut x= 0u;
 		halt if( ust::atomic_add( x, 56u ) !=  0u );
 		halt if( ust::atomic_sub( x,  6u ) != 56u );
