@@ -2,6 +2,7 @@ import "../container_utils.u"
 import "../memory.u"
 import "../pointer.u"
 import "../pthread.u"
+import "../atomic.u"
 
 namespace ust
 {
@@ -20,7 +21,7 @@ public:
 			move_unsafe( value_.get_ref(), move(value) );
 
 			counter_= counter_ptr( cast_ref_unsafe</ shared_ptr_mt_impl::counter />( memory_allocate( typeinfo</ shared_ptr_mt_impl::counter />.size_of ) ) );
-			counter_.get_ref().use_count_total= 1u;
+			counter_.get_ref().use_count_total = 1u;
 			counter_.get_ref().use_count_strong= 1u;
 
 			var pthread_rwlockattr_t mut attr= uninitialized;
@@ -49,8 +50,8 @@ public:
 			{
 				value_= other.value_;
 				counter_= other.counter_;
-				++counter_.get_ref().use_count_total;
-				++counter_.get_ref().use_count_strong;
+				ust::atomic_inc( counter_.get_ref().use_count_total  );
+				ust::atomic_inc( counter_.get_ref().use_count_strong );
 			}
 		}
 	}
@@ -60,13 +61,11 @@ public:
 		if( empty() ) { return; }
 		unsafe
 		{
-			--counter_.get_ref().use_count_total;
-			--counter_.get_ref().use_count_strong;
-			if( counter_.get_ref().use_count_strong == 0u )
+			if( ust::atomic_dec( counter_.get_ref().use_count_strong ) == 1u )
 			{
 				call_destructor( value_.get_ref() );
 				memory_free( value_.get_ref() );
-				if( counter_.get_ref().use_count_total == 0u )
+				if( ust::atomic_dec( counter_.get_ref().use_count_total ) == 1u )
 				{
 					halt if( pthread_rwlock_destroy( counter_.get_ref().rwlock ) != 0 );
 					memory_free( counter_.get_ref() );
