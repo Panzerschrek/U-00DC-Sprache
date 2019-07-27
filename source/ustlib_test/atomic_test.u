@@ -19,6 +19,22 @@ fn U_Main() : i32
 		halt if( ust::atomic_dec( x ) != - 9 );
 		halt if( x != -10 );
 	}
+	{
+		var i32 mut x= 0;
+		halt if( ust::atomic_compare_and_swap( x, 0, 5 ) != true );
+	}
+	{
+		var i32 mut x= 0;
+		halt if( ust::atomic_compare_and_swap( x, 1, 5 ) != false );
+	}
+	{
+		var u32 mut x= 0u;
+		halt if( ust::atomic_compare_and_swap( x, 0u, 5u ) != true );
+	}
+	{
+		var u32 mut x= 0u;
+		halt if( ust::atomic_compare_and_swap( x, 1u, 5u ) != false );
+	}
 
 	return 0;
 }
