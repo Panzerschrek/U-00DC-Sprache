@@ -144,12 +144,12 @@ public:
 	fn constructor( mut this'a', T &'b  mut value, raw_ptr_mut</counter/> counter ) ' a <- b ' unsafe
 		( value_(value), counter_(counter) )
 	{
-		unsafe{  pthread_rwlock_wrlock( counter_.get_ref().rwlock );  }
+		unsafe{  halt if( pthread_rwlock_wrlock( counter_.get_ref().rwlock ) != 0 );  }
 	}
 
 	fn destructor()
 	{
-		unsafe{  pthread_rwlock_unlock( counter_.get_ref().rwlock );  }
+		unsafe{  halt if( pthread_rwlock_unlock( counter_.get_ref().rwlock ) != 0 );  }
 	}
 
 	fn get_ref( this'a' ) : T &'a  mut
@@ -169,12 +169,12 @@ public:
 	fn constructor( mut this'a', T &'b imut value, raw_ptr_mut</counter/> counter ) ' a <- b ' unsafe
 		( value_(value), counter_(counter) )
 	{
-		unsafe{  pthread_rwlock_rdlock( counter_.get_ref().rwlock );  }
+		unsafe{  halt if( pthread_rwlock_rdlock( counter_.get_ref().rwlock ) != 0 );  }
 	}
 
 	fn destructor()
 	{
-		unsafe{  pthread_rwlock_unlock( counter_.get_ref().rwlock );  }
+		unsafe{  halt if( pthread_rwlock_unlock( counter_.get_ref().rwlock ) != 0 );  }
 	}
 
 	fn get_ref( this'a' ) : T &'a imut
