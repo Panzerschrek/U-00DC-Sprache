@@ -3,11 +3,15 @@ import "../ustlib/shared_mt/shared_ptr_mt_mut.u"
 import "../ustlib/shared_mt/shared_ptr_mt_imut.u"
 import "../ustlib/shared_mt/shared_ptr_mt_nullable_mut.u"
 import "../ustlib/shared_mt/shared_ptr_mt_nullable_imut.u"
+import "../ustlib/shared_mt/weak_ptr_mt_mut.u"
+import "../ustlib/shared_mt/weak_ptr_mt_imut.u"
 
 type IntPtrMut=  ust::shared_ptr_mt_mut </i32/>;
 type IntPtrImut= ust::shared_ptr_mt_imut</i32/>;
 type IntPtrNullableMut=  ust::shared_ptr_mt_nullable_mut </i32/>;
 type IntPtrNullableImut= ust::shared_ptr_mt_nullable_imut</i32/>;
+type IntPtrWeakMut = ust::weak_ptr_mt_mut </i32/>;
+type IntPtrWeakImut= ust::weak_ptr_mt_imut</i32/>;
 
 fn IsMut( void&  mut r ) : bool
 {
@@ -111,7 +115,39 @@ fn U_Main() : i32
 		halt if( IsMut( ptr.lock_imut().get_ref() ) );
 		halt if( !IsMut( ptr.lock_mut().get_ref() ) );
 	}
+	{ // construct shared_ptr from weak ptr.
+		var IntPtrMut mut ptr0(11);
+		var IntPtrWeakMut ptr_weak(ptr0);
 
+		var IntPtrNullableMut mut ptr1( ptr_weak.lock() );
+
+		halt if( ptr1.empty() );
+		halt if( ptr1.lock_imut().get_ref() != 11 );
+		halt if( ust::ref_to_int( ptr1.lock_imut().get_ref() ) != ust::ref_to_int( ptr0.lock_imut().get_ref() ) );
+	}
+	{ // Can not get shared_ptr with value for empty weak ptr.
+		var IntPtrWeakMut ptr_weak_empty;
+		auto ptr_shared= ptr_weak_empty.lock();
+		halt if( !ptr_shared.empty() );
+	}
+	{ // After source ponter reset, weak_ptr becomes empty.
+		var IntPtrNullableMut mut ptr(0);
+		var IntPtrWeakMut ptr_weak(ptr);
+
+		halt if( ptr_weak.lock().empty() );
+
+		ptr.reset();
+		halt if( !ptr_weak.lock().empty() );
+	}
+	{ // can reset weak_ptr.
+		var IntPtrMut mut ptr(85);
+		var IntPtrWeakMut mut ptr_weak(ptr);
+
+		halt if( ptr_weak.lock().empty() );
+
+		ptr_weak.reset();
+		halt if( !ptr_weak.lock().empty() );
+	}
 	{ // Non-nullable mutable pointer can be converted to nullable mutable pointer.
 		var IntPtrMut ptr0(66);
 		var IntPtrNullableMut ptr1(ptr0);
