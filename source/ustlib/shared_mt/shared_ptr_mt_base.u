@@ -257,7 +257,8 @@ public:
 		unsafe{  halt if( pthread_rwlock_unlock( counter_.get_ref().rwlock ) != 0 );  }
 	}
 
-	fn get_ref( this'a' ) : T &'a  mut
+	// Mark reference by "this" tag, instead of inner tag, for prevention of "lock" destruction.
+	fn get_ref( this'this' ) : T &'this  mut
 	{
 		return value_;
 	}
@@ -282,7 +283,8 @@ public:
 		unsafe{  halt if( pthread_rwlock_unlock( counter_.get_ref().rwlock ) != 0 );  }
 	}
 
-	fn get_ref( this'a' ) : T &'a imut
+	// Mark reference by "this" tag, instead of inner tag, for prevention of "lock" destruction.
+	fn get_ref( this'this' ) : T &'this imut
 	{
 		return value_;
 	}
