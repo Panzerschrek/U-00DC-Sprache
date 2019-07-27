@@ -206,7 +206,7 @@ public:
 					return shared_ptr_mt_base</T/>();
 				}
 
-				if( atomic_compare_and_swap(
+				if( atomic_compare_exchange_weak(
 						counter_.get_ref().use_count_strong,
 						count,
 						count + 1u ) )
