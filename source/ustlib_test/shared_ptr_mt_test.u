@@ -201,10 +201,32 @@ fn U_Main() : i32
 		var IntPtrImut ptr1= ust::to_non_nullable(ptr0);
 		halt if( ust::ref_to_int( ptr1.lock_imut().get_ref() ) != ust::ref_to_int( ptr0.lock_imut().get_ref() ) );
 	}
-
 	//
 	// shared_ptr_mt-sepcific tests.
 	//
+	{ // Can create multiple imut locks to one shared_ptr.
+		var IntPtrMut ptr(66);
+
+		auto lock0= ptr.lock_imut();
+		auto lock1= ptr.lock_imut();
+		auto lock2= ptr.lock_imut();
+
+		halt if( ust::ref_to_int( lock0.get_ref() ) != ust::ref_to_int( lock1.get_ref() ) );
+		halt if( ust::ref_to_int( lock0.get_ref() ) != ust::ref_to_int( lock2.get_ref() ) );
+		halt if( lock2.get_ref() != 66 );
+	}
+	{ // Can create multiple imut locks to one stored value.
+		var IntPtrMut ptr0(92);
+		var IntPtrMut ptr1= ptr0, ptr2= ptr0;
+
+		auto lock0= ptr0.lock_imut();
+		auto lock1= ptr1.lock_imut();
+		auto lock2= ptr2.lock_imut();
+
+		halt if( ust::ref_to_int( lock0.get_ref() ) != ust::ref_to_int( lock1.get_ref() ) );
+		halt if( ust::ref_to_int( lock0.get_ref() ) != ust::ref_to_int( lock2.get_ref() ) );
+		halt if( lock1.get_ref() != 92 );
+	}
 
 	return 0;
 }
