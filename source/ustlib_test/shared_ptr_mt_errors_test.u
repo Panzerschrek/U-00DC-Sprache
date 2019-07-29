@@ -15,6 +15,9 @@ type IntPtrWeakImut= ust::weak_ptr_mt_imut</i32/>;
 
 struct S{ i32& r; }
 
+// Shared pointers disabled for types with references.
+type SPtrInvalid= ust::shared_ptr_mt_mut</S/>; //##expect_error TemplateContext
+
 fn U_Main() : i32
 {
 	//

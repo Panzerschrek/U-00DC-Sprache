@@ -10,6 +10,9 @@ namespace ust
 template</ type T />
 class shared_ptr_mt_base
 {
+	// Forbid shared pointers for structs with references inside.
+	static_assert( typeinfo</T/>.references_tags_count == size_type(0) );
+
 public:
 	fn constructor()= default;
 
