@@ -1,0 +1,77 @@
+import "shared_ptr_mt_final_base.u"
+import "shared_ptr_mt_final.u"
+
+namespace ust
+{
+
+template</ type T />
+class shared_ptr_mt_final_nullable
+{
+public:
+	fn constructor()= default;
+
+	fn constructor( T mut value )
+	{
+		impl_= shared_ptr_mt_final_base</T/>( move(value) );
+	}
+
+	fn conversion_constructor( shared_ptr_mt_final</T/> & ptr )
+	{
+		unsafe{  impl_= shared_ptr_mt_final_base</ T />( ptr.get_impl() );  }
+	}
+
+	fn constructor( mut this, this_type &imut other )= default;
+	op=( mut this, this_type &imut other )= default;
+
+	fn reset( mut this )
+	{
+		impl_.reset();
+	}
+
+	fn reset( mut this, T mut value )
+	{
+		impl_.reset( move(value) );
+	}
+
+	fn empty( this ) : bool
+	{
+		return impl_.empty();
+	}
+
+	fn get_ref( this ) : T &imut
+	{
+		halt if( empty() );
+		unsafe
+		{
+			return impl_.get_ref_unsafe();
+		}
+	}
+
+public: // Methods for internal usage
+	fn constructor( shared_ptr_mt_final_base</ T /> mut impl ) unsafe
+	( impl_(move(impl)) )
+	{}
+
+	fn get_impl( this ) unsafe : shared_ptr_mt_final_base</ T />
+	{
+		return impl_;
+	}
+
+private:
+	type this_type= shared_ptr_mt_final_nullable</T/>;
+
+private:
+	shared_ptr_mt_final_base</T/> impl_;
+}
+
+template</ type T />
+fn to_non_nullable( shared_ptr_mt_final_nullable</T/> & val ) : shared_ptr_mt_final</T/>
+{
+	halt if( val.empty() );
+	unsafe
+	{
+		return shared_ptr_mt_final</T/>( val.get_impl() );
+	}
+}
+
+} // namespace ust
