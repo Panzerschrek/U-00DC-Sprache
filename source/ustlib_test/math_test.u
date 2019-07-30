@@ -84,6 +84,43 @@ fn DoTest()
 	halt if( ust::log2( T(-1) ) == ust::log2( T(-1) ) ); // result for negative value is nan
 	halt if( ust::log2( ust::minus_inf</T/>() ) == ust::log2( ust::minus_inf</T/>() ) ); // result for minus infinity is nan
 	halt if( ust::log2( ust::plus_inf</T/>() ) != ust::log2( ust::plus_inf</T/>() ) ); // result for infinity is infinity
+
+	var T pi(3.1415926535);
+	auto two_pi= T(2.0) * pi;
+	auto pi2= pi / T(2);
+	auto pi3= pi / T(3);
+	auto pi4= pi / T(4);
+	auto pi6= pi / T(6);
+	var T half_sqrt2= ust::sqrt( T(2.0) ) / T(2.0);
+	var T half_sqrt3= ust::sqrt( T(3.0) ) / T(2.0);
+
+	// sin
+	halt if( ust::sin( T(0.0) ) != T(0.0) );
+	ExpectNear( ust::sin( pi6 ), T(0.5), T(1.0e-5) );
+	ExpectNear( ust::sin( pi4 ), half_sqrt2, T(1.0e-5) );
+	ExpectNear( ust::sin( two_pi + pi4 ), half_sqrt2, T(1.0e-5) );
+	ExpectNear( ust::sin( pi3 ), half_sqrt3, T(1.0e-5) );
+	ExpectNear( ust::sin( two_pi + pi3 ), half_sqrt3, T(1.0e-5) );
+	ExpectNear( ust::sin( pi2 ), T(1.0), T(1.0e-5) );
+	ExpectNear( ust::sin( pi ), T(0.0), T(1.0e-5) );
+	ExpectNear( ust::sin( -pi2 ), T(-1.0), T(1.0e-5) );
+	halt if( ust::sin( ust::nan</T/>() ) == ust::sin( ust::nan</T/>() ) ); // result for nan is nan
+	halt if( ust::sin( ust::plus_inf </T/>() ) == ust::sin( ust::plus_inf </T/>() ) ); // result for infinity is nan
+	halt if( ust::sin( ust::minus_inf</T/>() ) == ust::sin( ust::minus_inf</T/>() ) ); // result for minus infinity is nan
+
+	// cos
+	halt if( ust::cos( T(0.0) ) != T(1.0) );
+	ExpectNear( ust::cos( pi6 ), half_sqrt3, T(1.0e-5) );
+	ExpectNear( ust::cos( pi4 ), half_sqrt2, T(1.0e-5) );
+	ExpectNear( ust::cos( two_pi + pi4 ), half_sqrt2, T(1.0e-5) );
+	ExpectNear( ust::cos( pi3 ), T(0.5), T(1.0e-5) );
+	ExpectNear( ust::cos( two_pi + pi3 ), T(0.5), T(1.0e-5) );
+	ExpectNear( ust::cos( pi2 ), T(0.0), T(1.0e-5) );
+	ExpectNear( ust::cos( pi ), T(-1.0), T(1.0e-5) );
+	ExpectNear( ust::cos( -pi2 ), T(0.0), T(1.0e-5) );
+	halt if( ust::cos( ust::nan</T/>() ) == ust::cos( ust::nan</T/>() ) ); // result for nan is nan
+	halt if( ust::cos( ust::plus_inf </T/>() ) == ust::cos( ust::plus_inf </T/>() ) ); // result for infinity is nan
+	halt if( ust::cos( ust::minus_inf</T/>() ) == ust::cos( ust::minus_inf</T/>() ) ); // result for minus infinity is nan
 }
 
 fn U_Main() : i32

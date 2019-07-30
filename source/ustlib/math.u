@@ -37,6 +37,12 @@ fn log( f64 x ) : f64;
 fn log2( f32 x ) : f32;
 fn log2( f64 x ) : f64;
 
+fn sin( f32 x ) : f32;
+fn sin( f64 x ) : f64;
+
+fn cos( f32 x ) : f32;
+fn cos( f64 x ) : f64;
+
 namespace math_impl
 {
 
