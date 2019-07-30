@@ -1,0 +1,7 @@
+namespace ust
+{
+
+fn sqrt( f32 x ) : f32;
+fn sqrt( f64 x ) : f64;
+
+} // namespace ust

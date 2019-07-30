@@ -23,6 +23,10 @@ declare {i32, i1} @llvm.umul.with.overflow.i32(i32 %a, i32 %b)
 declare {i64, i1} @llvm.smul.with.overflow.i64(i64 %a, i64 %b)
 declare {i64, i1} @llvm.umul.with.overflow.i64(i64 %a, i64 %b)
 
+declare float  @llvm.sqrt.f32(float  %x)
+declare double @llvm.sqrt.f64(double %x)
+
+
 ;
 ; lang functions
 ;
@@ -165,6 +169,26 @@ not_ok:
 	%val = extractvalue { i32, i1 } %res, 0
 	store i32 %val, i32* %expected
 	ret i1 false
+}
+
+;
+; common math
+;
+
+;fn sqrt( f32 x ) : f32;
+$_ZN3ust4sqrtEf = comdat any
+define linkonce_odr float @_ZN3ust4sqrtEf( float %x ) unnamed_addr comdat
+{
+	%1= call float @llvm.sqrt.f32( float %x )
+	ret float %1
+}
+
+;fn sqrt( f64 x ) : f64;
+$_ZN3ust4sqrtEd = comdat any
+define linkonce_odr double @_ZN3ust4sqrtEd( double %x ) unnamed_addr comdat
+{
+	%1= call double @llvm.sqrt.f64( double %x )
+	ret double %1
 }
 
 ;

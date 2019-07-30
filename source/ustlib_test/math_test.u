@@ -1,0 +1,27 @@
+//##success_test
+import "../ustlib/math.u"
+
+fn U_Main() : i32
+{
+	// sqrt(f32)
+	halt if( ust::sqrt( 0.0f ) != 0.0f );
+	halt if( ust::sqrt( -0.0f ) != 0.0f );
+	halt if( ust::sqrt( 1.0f ) != 1.0f );
+	halt if( ust::sqrt( 4.0f ) != 2.0f );
+	halt if( ust::sqrt( 9.0f ) != 3.0f );
+	halt if( ust::sqrt( 10000.0f ) != 100.0f );
+	halt if( ust::sqrt( 0.09f ) != 0.3f );
+	halt if( ust::sqrt( 40.96f ) != 6.4f );
+
+	// sqrt(f64)
+	halt if( ust::sqrt( 0.0 ) != 0.0 );
+	halt if( ust::sqrt( -0.0 ) != 0.0 );
+	halt if( ust::sqrt( 1.0 ) != 1.0 );
+	halt if( ust::sqrt( 4.0 ) != 2.0 );
+	halt if( ust::sqrt( 9.0 ) != 3.0 );
+	halt if( ust::sqrt( 10000.0 ) != 100.0 );
+	halt if( ust::sqrt( 0.09 ) != 0.3 );
+	halt if( ust::sqrt( 40.96 ) != 6.4 );
+
+	return 0;
+}
