@@ -20,10 +20,9 @@ fn atomic_sub( u32 &mut x, u32 y ) : u32 { return atomic_add( x, -y ); }
 fn atomic_inc( u32 &mut x ) : u32 { return atomic_add( x,  1u ); }
 fn atomic_dec( u32 &mut x ) : u32 { return atomic_add( x, ~0u ); }
 
-// compare and swap - returns true on success.
-fn atomic_compare_and_swap( i32 &mut addr, i32 old, i32 new ) : bool;
-fn atomic_compare_and_swap( u32 &mut addr, u32 old, u32 new ) : bool;
-
+// atomically compare 'expected' and 'dst'. If it's equals, set 'dst' to 'new', else - set 'expected' to content of 'dst'.
+// Returns true, if 'dst' == 'expected'.
+// "weak" versions may not write value, if 'dst' == 'expected'.
 fn atomic_compare_exchange_strong( i32 &mut dst, i32 &mut expected, i32 new ) : bool;
 fn atomic_compare_exchange_strong( u32 &mut dst, u32 &mut expected, u32 new ) : bool;
 fn atomic_compare_exchange_weak( i32 &mut dst, i32 &mut expected, i32 new ) : bool;

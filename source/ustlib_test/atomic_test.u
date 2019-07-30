@@ -32,27 +32,6 @@ fn U_Main() : i32
 		halt if( ust::atomic_read(x) != -10 );
 	}
 	{
-		var i32 mut x= 0;
-		halt if( ust::atomic_compare_and_swap( x, 0, 5 ) != true );
-		halt if( ust::atomic_read(x) != 5 );
-	}
-	{
-		var i32 mut x= 0;
-		halt if( ust::atomic_compare_and_swap( x, 1, 5 ) != false );
-		halt if( ust::atomic_read(x) != 0 );
-	}
-	{
-		var u32 mut x= 0u;
-		halt if( ust::atomic_compare_and_swap( x, 0u, 5u ) != true );
-		halt if( ust::atomic_read(x) != 5u );
-	}
-	{
-		var u32 mut x= 0u;
-		halt if( ust::atomic_compare_and_swap( x, 1u, 5u ) != false );
-		halt if( ust::atomic_read(x) != 0u );
-	}
-
-	{
 		var i32 mut x= 22, mut y= 22;
 		halt if( ust::atomic_compare_exchange_strong( x, y, 7 ) != true );
 		halt if( ust::atomic_read(x) !=  7 );

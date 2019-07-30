@@ -103,24 +103,6 @@ define linkonce_odr i32 @_ZN3ust10atomic_addERjj( i32* %x, i32 %y ) unnamed_addr
 	ret i32 %1
 }
 
-; fn atomic_compare_and_swap( i32 &mut addr, i32 old, i32 nes ) : bool;
-$_ZN3ust23atomic_compare_and_swapERiii = comdat any
-define linkonce_odr i1 @_ZN3ust23atomic_compare_and_swapERiii( i32* %addr, i32 %old, i32 %new ) unnamed_addr comdat
-{
-	%res= cmpxchg volatile i32* %addr, i32 %old, i32 %new acq_rel monotonic
-	%success = extractvalue { i32, i1 } %res, 1
-	ret i1 %success
-}
-
-; fn atomic_compare_and_swap( u32 &mut addr, u32 old, u32 new ) : bool;
-$_ZN3ust23atomic_compare_and_swapERjjj = comdat any
-define linkonce_odr i1 @_ZN3ust23atomic_compare_and_swapERjjj( i32* %addr, i32 %old, i32 %new ) unnamed_addr comdat
-{
-	%res= cmpxchg volatile i32* %addr, i32 %old, i32 %new acq_rel monotonic
-	%success = extractvalue { i32, i1 } %res, 1
-	ret i1 %success
-}
-
 ; fn atomic_compare_exchange_strong( i32 &mut dst, i32 &mut expected, i32 new ) : bool;
 $_ZN3ust30atomic_compare_exchange_strongERiS0_i = comdat any
 define linkonce_odr i1 @_ZN3ust30atomic_compare_exchange_strongERiS0_i( i32* %addr, i32* %expected, i32 %new ) unnamed_addr comdat
