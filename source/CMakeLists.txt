@@ -134,7 +134,11 @@ if( BUILD_COMPILER )
 	CompileLLFile( asm_funcs_64.ll )
 	list( APPEND bc_files ${BC_FILE} )
 
-	add_executable( Compiler ${COMPILER_SOURCES} ${bc_files} )
+	# Show in editor also ustlib and ustlib tests files
+	file( GLOB_RECURSE USTLIB_SOURCES "ustlib/*.u" "ustlib/src/*.ll" )
+	file( GLOB_RECURSE USTLIB_TEST_SOURCES "ustlib_test/*.u" )
+
+	add_executable( Compiler ${COMPILER_SOURCES} ${bc_files} ${USTLIB_SOURCES} ${USTLIB_TEST_SOURCES} )
 	target_link_libraries( Compiler CompilerLib ${LLVM_LIBS_FOR_COMPILER} )
 	target_link_libraries( Compiler ${Boost_LIBRARIES} )
 endif( BUILD_COMPILER )
