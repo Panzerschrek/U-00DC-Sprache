@@ -16,7 +16,7 @@ fn ExpectNear( T a, T b, T eps )
 }
 
 template</type T/>
-fn DoTest()
+fn DoFloatsTest()
 {
 	halt if( ust::nan</T/>() == ust::nan</T/>() );
 	halt if( ust::nan</T/>() == T(0.0) );
@@ -27,6 +27,22 @@ fn DoTest()
 	halt if( ust:: plus_inf</T/>() <= T(0.0) );
 	halt if( ust::minus_inf</T/>() >= T(0.0) );
 	halt if( ust::minus_inf</T/>() >= ust::plus_inf</T/>() );
+
+	// abs
+	halt if( ust::abs( T(0.0) ) != T(0.0) );
+	halt if( ust::abs( T(+1.0) ) != T(1.0) );
+	halt if( ust::abs( T(-1.0) ) != T(1.0) );
+	halt if( ust::abs( T(+942.3) ) != T(942.3) );
+	halt if( ust::abs( T(-942.3) ) != T(942.3) );
+	halt if( ust::abs( ust::minus_inf</T/>() ) != ust::plus_inf</T/>() );
+	halt if( ust::abs( ust::nan</T/>() ) == ust::nan</T/>() ); // result for nan is nan
+
+	// abs for integers
+	halt if( ust::abs( 55 ) != 55 );
+	halt if( ust::abs( -99956525 ) != 99956525 );
+	halt if( ust::abs( 722u ) != 722u );
+	halt if( ust::abs( +100005250250251i64 ) != 100005250250251i64 );
+	halt if( ust::abs( -100005250250251i64 ) != 100005250250251i64 );
 
 	// sqrt
 	halt if( ust::sqrt( T(0.0) ) != T(0.0) );
@@ -137,8 +153,8 @@ fn DoTest()
 
 fn U_Main() : i32
 {
-	DoTest</f32/>();
-	DoTest</f64/>();
+	DoFloatsTest</f32/>();
+	DoFloatsTest</f64/>();
 
 	return 0;
 }
