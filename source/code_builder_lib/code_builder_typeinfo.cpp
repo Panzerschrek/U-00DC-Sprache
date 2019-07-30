@@ -49,6 +49,7 @@ ClassProxyPtr CodeBuilder::CreateTypeinfoClass( NamesScope& root_namespace )
 	typeinfo_class_table_[typeinfo_class_proxy].reset( new Class( typeinfo_class_name, &root_namespace ) );
 	typeinfo_class_proxy->class_= typeinfo_class_table_[typeinfo_class_proxy].get();
 	typeinfo_class_proxy->class_->llvm_type= llvm_type;
+	typeinfo_class_proxy->class_->is_typeinfo= true;
 
 	llvm_type->setName( ToUTF8( typeinfo_class_name ) );
 
@@ -63,7 +64,6 @@ Variable CodeBuilder::BuildTypeinfoPrototype( const Type& type, NamesScope& root
 	U_UNUSED(type);
 
 	const ClassProxyPtr typeinfo_class_proxy= CreateTypeinfoClass( root_namespace );
-	typeinfo_class_proxy->class_->is_typeinfo= true;
 	Variable result( typeinfo_class_proxy, Variable::Location::Pointer, ValueType::ConstReference );
 
 	result.constexpr_value= llvm::UndefValue::get( typeinfo_class_proxy->class_->llvm_type ); // Currently uninitialized.
@@ -209,6 +209,8 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, Variable& typeinfo_variab
 			class_type->kind == Class::Kind::Interface );
 
 		add_bool_field( "is_interface"_SpC, class_type->kind == Class::Kind::Interface );
+
+		add_bool_field( "is_typeinfo"_SpC, class_type->is_typeinfo );
 
 		const ClassProxyPtr class_proxy= type.GetClassTypeProxy();
 		add_list_head_field( "fields_list"_SpC   , BuildTypeinfoClassFieldsList(    class_proxy, root_namespace ) );

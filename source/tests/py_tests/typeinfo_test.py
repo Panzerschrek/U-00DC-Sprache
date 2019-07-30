@@ -946,3 +946,14 @@ def TypeinfoForTypeinfo_Test0():
 		static_assert( typeinfo</ typeof( typeinfo</ f32 /> ) />.is_class );
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def TypeinfoForTypeinfo_Test1():
+	c_program_text= """
+		struct S{ i32 x; }
+		static_assert( typeinfo</ typeof( typeinfo</ f32 /> ) />.is_typeinfo );
+		static_assert( typeinfo</ typeof( typeinfo</ S /> ) />.is_typeinfo );
+		static_assert( typeinfo</ typeof( typeinfo</ S />.fields_list ) />.is_typeinfo );
+		static_assert( typeinfo</ typeof( typeinfo</ S />.fields_list.next ) />.is_typeinfo );
+	"""
+	tests_lib.build_program( c_program_text )
