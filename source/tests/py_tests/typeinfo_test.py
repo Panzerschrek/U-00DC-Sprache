@@ -939,3 +939,10 @@ def ReferencesTagsFiled_Test0():
 		}
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def TypeinfoForTypeinfo_Test0():
+	c_program_text= """
+		static_assert( typeinfo</ typeof( typeinfo</ f32 /> ) />.is_class );
+	"""
+	tests_lib.build_program( c_program_text )

@@ -412,8 +412,8 @@ Variable CodeBuilder::BuildTypeinfoClassFieldsList( const ClassProxyPtr& class_t
 
 	const llvm::DataLayout& data_layout= module_->getDataLayout();
 
-	class_type->class_->members.ForEachValueInThisScope(
-		[&]( const Value& class_member )
+	class_type->class_->members.ForEachInThisScope(
+		[&]( const ProgramString& member_name, const Value& class_member )
 		{
 			const ClassField* const class_field= class_member.GetClassField();
 			if( class_field == nullptr )
@@ -487,7 +487,7 @@ Variable CodeBuilder::BuildTypeinfoClassFieldsList( const ClassProxyPtr& class_t
 			fields_llvm_types.push_back( fundamental_llvm_types_.bool_ );
 			fields_initializers.push_back( llvm::Constant::getIntegerValue( fundamental_llvm_types_.bool_, llvm::APInt( 1u, class_field->is_mutable ) ) );
 
-			CreateTypeinfoClassMembersListNodeCommonFields( *class_type->class_, node_type, class_field->syntax_element->name, fields_llvm_types, fields_initializers );
+			CreateTypeinfoClassMembersListNodeCommonFields( *class_type->class_, node_type, member_name, fields_llvm_types, fields_initializers );
 
 			FinishTypeinfoClass( node_type_class, node_type, fields_llvm_types );
 
