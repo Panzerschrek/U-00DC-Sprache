@@ -67,6 +67,57 @@ fn constexpr has_ancestor( NodeListType& parents_list_node ) : bool
 	}
 }
 
+template</ type TypeinfoType />
+fn constexpr have_shared_state_impl( TypeinfoType& typeinfo_ ) : bool
+{
+	static_if( is_class_typeinfo_type</ TypeinfoType />() )
+	{
+		if( typeinfo_.shared )
+		{
+			return true;
+		}
+		return
+			class_have_shared_state_fields ( typeinfo_.fields_list  ) ||
+			class_have_shared_state_parents( typeinfo_.parents_list );
+	}
+	else if( is_array_typeinfo_type</ TypeinfoType />() )
+	{
+		return type_traits_impl::have_shared_state_impl( typeinfo_.element_type );
+	}
+	else
+	{
+		return false;
+	}
+}
+
+template</ type NodeType/>
+fn constexpr class_have_shared_state_fields( NodeType& fields_list_node ) : bool
+{
+	static_if( NodeType::is_end )
+	{
+		return false;
+	}
+	else
+	{
+		if( have_shared_state_impl( fields_list_node.type ) ){ return true; }
+		return type_traits_impl::class_have_shared_state_fields( fields_list_node.next );
+	}
+}
+
+template</ type NodeType/>
+fn constexpr class_have_shared_state_parents( NodeType& parents_list_node ) : bool
+{
+	static_if( NodeType::is_end )
+	{
+		return false;
+	}
+	else
+	{
+		if( have_shared_state_impl( parents_list_node.type ) ){ return true; }
+		return type_traits_impl::class_have_shared_state_parents( parents_list_node.next );
+	}
+}
+
 } // namespace type_traits_impl
 
 template</ type A, type B />
@@ -147,6 +198,12 @@ fn constexpr is_array_typeinfo_type() : bool
 		else { return false; }
 	}
 	else { return false; }
+}
+
+template</ type T />
+fn constexpr have_shared_state() : bool
+{
+	return type_traits_impl::have_shared_state_impl( typeinfo</T/> );
 }
 
 } // namespace ust

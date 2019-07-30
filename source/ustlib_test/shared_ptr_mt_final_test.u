@@ -5,8 +5,8 @@ import "../ustlib/shared_mt/shared_ptr_mt_final_nullable.u"
 type IntPtr= ust::shared_ptr_mt_final</i32/>;
 type IntPtrNullable= ust::shared_ptr_mt_final_nullable</i32/>;
 
-static_assert( !typeinfo</IntPtr/>.have_shared_state );
-static_assert( !typeinfo</IntPtrNullable/>.have_shared_state );
+static_assert( !ust::have_shared_state</IntPtr/>() );
+static_assert( !ust::have_shared_state</IntPtrNullable/>() );
 
 fn U_Main() : i32
 {

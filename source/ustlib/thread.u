@@ -3,6 +3,7 @@ import "container_utils.u"
 import "memory.u"
 import "optional.u"
 import "pthread.u"
+import "type_traits.u"
 
 namespace ust
 {
@@ -19,7 +20,7 @@ template</ type Func />
 class thread
 {
 	// Disable passing thread-unsafe shared pointers to another thread.
-	static_assert( !typeinfo</ Func />.have_shared_state );
+	static_assert( !have_shared_state</ Func />() );
 
 public:
 	fn constructor( mut this'a...', Func mut func'b...' ) ' a <- b '

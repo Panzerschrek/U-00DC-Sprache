@@ -119,7 +119,6 @@ public:
 	bool IsCopyAssignable() const;
 	bool HaveDestructor() const;
 	bool CanBeConstexpr() const;
-	bool HaveSharedState() const;
 	size_t ReferencesTagsCount() const;
 
 	llvm::Type* GetLLVMType() const;

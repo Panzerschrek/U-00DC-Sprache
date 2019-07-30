@@ -352,7 +352,6 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type, const T
 
 			the_class.parents.push_back( parent_class_proxy );
 			AddAncestorsAccessRights_r( the_class, parent_class_proxy );
-			the_class.have_shared_state= the_class.have_shared_state || parent_class_proxy->class_->have_shared_state;
 		} // for parents
 
 		ProcessClassParentsVirtualTables( the_class );
@@ -412,8 +411,6 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type, const T
 				// Disable constexpr, if field can not be constexpr, or if field is mutable reference.
 				if( !class_field->type.CanBeConstexpr() || ( class_field->is_reference && class_field->is_mutable ) )
 					the_class.can_be_constexpr= false;
-
-				the_class.have_shared_state= the_class.have_shared_state || class_field->type.HaveSharedState();
 
 				++the_class.field_count;
 			} );

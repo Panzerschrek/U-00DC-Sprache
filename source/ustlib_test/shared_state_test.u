@@ -1,0 +1,65 @@
+//##success_test
+import "../ustlib/type_traits.u"
+
+static_assert( !ust::have_shared_state</ i32   />() );
+static_assert( !ust::have_shared_state</ bool  />() );
+static_assert( !ust::have_shared_state</ f64   />() );
+static_assert( !ust::have_shared_state</ char8 />() );
+static_assert( !ust::have_shared_state</ [ i32  ,  5 ] />() );
+static_assert( !ust::have_shared_state</ [ bool ,  1 ] />() );
+static_assert( !ust::have_shared_state</ [ f64  , 52 ] />() );
+static_assert( !ust::have_shared_state</ [ char8, 11 ] />() );
+
+namespace Test2
+{
+
+enum E{ A, B, C, }
+struct A {}
+struct B { i32 x; }
+struct C { B b; }
+class D{ [ f32, 8 ] arr; }
+static_assert( !ust::have_shared_state</ fn() />() );
+static_assert( !ust::have_shared_state</ E />() );
+static_assert( !ust::have_shared_state</ A />() );
+static_assert( !ust::have_shared_state</ B />() );
+static_assert( !ust::have_shared_state</ C />() );
+static_assert( !ust::have_shared_state</ [ B, 2 ] />() );
+static_assert( !ust::have_shared_state</ D />() );
+
+}
+
+namespace Test3
+{
+
+struct A shared {}
+struct B { A a; }
+struct C { B b; }
+struct D { A & a; }
+struct E { B & b; }
+struct F{ [ C, 2 ] c_arr; }
+struct G{ [ A, 0 ] a_arr; }
+class X polymorph shared {}
+class Y final : X {}
+class Z interface shared {}
+class W : Z {}
+static_assert( ust::have_shared_state</ A />() );
+static_assert( ust::have_shared_state</ B />() );
+static_assert( ust::have_shared_state</ C />() );
+static_assert( ust::have_shared_state</ D />() );
+static_assert( ust::have_shared_state</ E />() );
+static_assert( ust::have_shared_state</ F />() );
+static_assert( ust::have_shared_state</ G />() );
+static_assert( ust::have_shared_state</ [ G, 8 ] />() );
+static_assert( ust::have_shared_state</ [ G, 0 ] />() );
+static_assert( ust::have_shared_state</ X />() );
+static_assert( ust::have_shared_state</ Y />() );
+static_assert( ust::have_shared_state</ Z />() );
+static_assert( ust::have_shared_state</ W />() );
+
+}
+
+
+fn U_Main() : i32
+{
+	return 0;
+}

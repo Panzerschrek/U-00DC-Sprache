@@ -360,19 +360,6 @@ bool Type::CanBeConstexpr() const
 	return false;
 }
 
-bool Type::HaveSharedState() const
-{
-	if( const ArrayPtr* const array= boost::get<ArrayPtr>( &something_ ) )
-	{
-		U_ASSERT( *array != nullptr );
-		return (*array)->type.HaveSharedState();
-	}
-	else if( const Class* const class_= GetClassType() )
-		return class_->have_shared_state;
-
-	return false;
-}
-
 size_t Type::ReferencesTagsCount() const
 {
 	if( const Class* const class_type= GetClassType() )

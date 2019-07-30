@@ -21,20 +21,20 @@ type IntPtrNullableImut= ust::shared_ptr_mt_nullable_imut</i32/>;
 type IntPtrWeakMut = ust::weak_ptr_mt_mut </i32/>;
 type IntPtrWeakImut= ust::weak_ptr_mt_imut</i32/>;
 
-static_assert( !typeinfo</IntPtrMut />.have_shared_state );
-static_assert( !typeinfo</IntPtrImut/>.have_shared_state );
-static_assert( !typeinfo</IntPtrNullableMut />.have_shared_state );
-static_assert( !typeinfo</IntPtrNullableImut/>.have_shared_state );
-static_assert( !typeinfo</IntPtrWeakMut />.have_shared_state );
-static_assert( !typeinfo</IntPtrWeakImut/>.have_shared_state );
+static_assert( !ust::have_shared_state</IntPtrMut />() );
+static_assert( !ust::have_shared_state</IntPtrImut/>() );
+static_assert( !ust::have_shared_state</IntPtrNullableMut />() );
+static_assert( !ust::have_shared_state</IntPtrNullableImut/>() );
+static_assert( !ust::have_shared_state</IntPtrWeakMut />() );
+static_assert( !ust::have_shared_state</IntPtrWeakImut/>() );
 
-static_assert( !typeinfo</ ust::box</ IntPtrMut /> />.have_shared_state );
-static_assert( !typeinfo</ ust::box_nullable</ IntPtrMut /> />.have_shared_state );
-static_assert( !typeinfo</ ust::optional</ IntPtrMut /> />.have_shared_state );
-static_assert( !typeinfo</ ust::optional_ref</ IntPtrMut, true /> />.have_shared_state );
-static_assert( !typeinfo</ ust::random_access_range</ IntPtrMut, true /> />.have_shared_state );
-static_assert( !typeinfo</ ust::unordered_map</ i32, IntPtrMut /> />.have_shared_state );
-static_assert( !typeinfo</ ust::vector</ IntPtrMut /> />.have_shared_state );
+static_assert( !ust::have_shared_state</ ust::box</ IntPtrMut /> />() );
+static_assert( !ust::have_shared_state</ ust::box_nullable</ IntPtrMut /> />() );
+static_assert( !ust::have_shared_state</ ust::optional</ IntPtrMut /> />() );
+static_assert( !ust::have_shared_state</ ust::optional_ref</ IntPtrMut, true /> />() );
+static_assert( !ust::have_shared_state</ ust::random_access_range</ IntPtrMut, true /> />() );
+static_assert( !ust::have_shared_state</ ust::unordered_map</ i32, IntPtrMut /> />() );
+static_assert( !ust::have_shared_state</ ust::vector</ IntPtrMut /> />() );
 
 fn IsMut( void&  mut r ) : bool
 {

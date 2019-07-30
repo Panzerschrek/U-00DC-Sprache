@@ -1,8 +1,9 @@
+import "../atomic.u"
 import "../container_utils.u"
 import "../memory.u"
 import "../pointer.u"
 import "../pthread.u"
-import "../atomic.u"
+import "../type_traits.u"
 
 namespace ust
 {
@@ -15,7 +16,7 @@ class shared_ptr_mt_base
 
 	// It's have no sence to use multithreaded shared pointer for types, with singlethreaded shared pointers inside.
 	// Use singlethreaded shared pointer instead.
-	static_assert( !typeinfo</T/>.have_shared_state );
+	static_assert( !have_shared_state</T/>() );
 
 public:
 	fn constructor()= default;
