@@ -12,6 +12,10 @@ class shared_ptr_mt_final_base
 	// Forbid shared pointers for structs with references inside.
 	static_assert( typeinfo</T/>.references_tags_count == size_type(0) );
 
+	// It's have no sence to use multithreaded shared pointer for types, with singlethreaded shared pointers inside.
+	// Use singlethreaded shared pointer instead.
+	static_assert( !typeinfo</T/>.have_shared_state );
+
 public:
 	fn constructor()= default;
 
