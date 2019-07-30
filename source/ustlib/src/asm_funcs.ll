@@ -25,7 +25,10 @@ declare {i64, i1} @llvm.umul.with.overflow.i64(i64 %a, i64 %b)
 
 declare float  @llvm.sqrt.f32(float  %x)
 declare double @llvm.sqrt.f64(double %x)
-
+declare float  @llvm.exp.f32(float  %x)
+declare double @llvm.exp.f64(double %x)
+declare float  @llvm.exp2.f32(float  %x)
+declare double @llvm.exp2.f64(double %x)
 
 ;
 ; lang functions
@@ -188,6 +191,38 @@ $_ZN3ust4sqrtEd = comdat any
 define linkonce_odr double @_ZN3ust4sqrtEd( double %x ) unnamed_addr comdat
 {
 	%1= call double @llvm.sqrt.f64( double %x )
+	ret double %1
+}
+
+;fn exp( f32 x ) : f32;
+$_ZN3ust3expEf = comdat any
+define linkonce_odr float @_ZN3ust3expEf( float %x ) unnamed_addr comdat
+{
+	%1= call float @llvm.exp.f32( float %x )
+	ret float %1
+}
+
+;fn exp( f64 x ) : f64;
+$_ZN3ust3expEd = comdat any
+define linkonce_odr double @_ZN3ust3expEd( double %x ) unnamed_addr comdat
+{
+	%1= call double @llvm.exp.f64( double %x )
+	ret double %1
+}
+
+;fn exp2( f32 x ) : f32;
+$_ZN3ust4exp2Ef = comdat any
+define linkonce_odr float @_ZN3ust4exp2Ef( float %x ) unnamed_addr comdat
+{
+	%1= call float @llvm.exp2.f32( float %x )
+	ret float %1
+}
+
+;fn exp2( f64 x ) : f64;
+$_ZN3ust4exp2Ed = comdat any
+define linkonce_odr double @_ZN3ust4exp2Ed( double %x ) unnamed_addr comdat
+{
+	%1= call double @llvm.exp2.f64( double %x )
 	ret double %1
 }
 

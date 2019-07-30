@@ -4,6 +4,18 @@ import "../ustlib/math.u"
 auto constexpr MyNan= ust::nan</f32/>();
 
 template</type T/>
+fn ExpectNear( T a, T b, T eps )
+{
+	halt if( eps < T(0) );
+
+	auto diff= a - b;
+	if( diff < T(0) )
+	{ halt if( diff < -eps ); }
+	else
+	{ halt if( diff > +eps ); }
+}
+
+template</type T/>
 fn DoTest()
 {
 	halt if( ust::nan</T/>() == ust::nan</T/>() );
@@ -29,6 +41,27 @@ fn DoTest()
 	halt if( ust::sqrt( ust::nan</T/>() ) == ust::sqrt( ust::nan</T/>() ) ); // result for nan is nan
 	halt if( ust::sqrt( ust:: plus_inf</T/>() ) != ust::sqrt( ust:: plus_inf</T/>() ) ); // result for infinity is infinity
 	halt if( ust::sqrt( ust::minus_inf</T/>() ) == ust::sqrt( ust::minus_inf</T/>() ) ); // result for minus infinity is nan
+
+	// exp
+	halt if( ust::exp( T(0.0) ) != T(1.0) );
+	ExpectNear( ust::exp( T(+1) ), T(2.718281828), T(1.0e-5) );
+	ExpectNear( ust::exp( T(-1) ), T(1.0 / 2.718281828), T(1.0e-5) );
+	ExpectNear( ust::exp( T(+1) ), T(2.718281828), T(1.0e-5) );
+	ExpectNear( ust::exp( T(2.302585) ), T(10), T(1.0e-5) );
+	halt if( ust::exp( ust::nan</T/>() ) == ust::exp( ust::nan</T/>() ) ); // result for nan is nan
+	halt if( ust::exp( ust:: plus_inf</T/>() ) != ust::plus_inf</T/>() ); // result for infinity is infinity
+	halt if( ust::exp( ust::minus_inf</T/>() ) != T(0) ); // result for minus infinity is zero
+
+	// exp2
+	halt if( ust::exp2( T(0.0) ) != T(1.0) );
+	halt if( ust::exp2( T(1.0) ) != T(2.0) );
+	halt if( ust::exp2( T(-1.0) ) != T(0.5) );
+	halt if( ust::exp2( T(2.0) ) != T(4.0) );
+	halt if( ust::exp2( T(10.0) ) != T(1024.0) );
+	ExpectNear( ust::exp2( T(6.643856) ), T(100.0), T(1.0e-3) );
+	halt if( ust::exp2( ust::nan</T/>() ) == ust::exp2( ust::nan</T/>() ) ); // result for nan is nan
+	halt if( ust::exp2( ust:: plus_inf</T/>() ) != ust::plus_inf</T/>() ); // result for infinity is infinity
+	halt if( ust::exp2( ust::minus_inf</T/>() ) != T(0) ); // result for minus infinity is zero
 }
 
 fn U_Main() : i32

@@ -25,6 +25,12 @@ minus_inf() : T
 fn sqrt( f32 x ) : f32;
 fn sqrt( f64 x ) : f64;
 
+fn exp( f32 x ) : f32;
+fn exp( f64 x ) : f64;
+
+fn exp2( f32 x ) : f32;
+fn exp2( f64 x ) : f64;
+
 namespace math_impl
 {
 
