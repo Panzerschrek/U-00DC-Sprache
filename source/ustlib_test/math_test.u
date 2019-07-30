@@ -121,6 +121,18 @@ fn DoTest()
 	halt if( ust::cos( ust::nan</T/>() ) == ust::cos( ust::nan</T/>() ) ); // result for nan is nan
 	halt if( ust::cos( ust::plus_inf </T/>() ) == ust::cos( ust::plus_inf </T/>() ) ); // result for infinity is nan
 	halt if( ust::cos( ust::minus_inf</T/>() ) == ust::cos( ust::minus_inf</T/>() ) ); // result for minus infinity is nan
+
+	// tan
+	halt if( ust::tan( T(0.0) ) != T(0.0) );
+	ExpectNear( ust::tan( pi6 ), T(1.0) / ust::sqrt( T(3.0) ), T(1.0e-5) );
+	ExpectNear( ust::tan( pi4 ), T(1.0), T(1.0e-5) );
+	ExpectNear( ust::tan( pi + pi4 ), T(1.0), T(1.0e-5) );
+	ExpectNear( ust::tan( pi3 ), ust::sqrt( T(3.0) ), T(1.0e-5) );
+	ExpectNear( ust::tan( pi + pi3 ), ust::sqrt( T(3.0) ), T(1.0e-5) );
+	ExpectNear( ust::tan( pi ), T(0.0), T(1.0e-5) );
+	halt if( ust::tan( ust::nan</T/>() ) == ust::tan( ust::nan</T/>() ) ); // result for nan is nan
+	halt if( ust::tan( ust::plus_inf </T/>() ) == ust::tan( ust::plus_inf </T/>() ) ); // result for infinity is nan
+	halt if( ust::tan( ust::minus_inf</T/>() ) == ust::tan( ust::minus_inf</T/>() ) ); // result for minus infinity is nan
 }
 
 fn U_Main() : i32

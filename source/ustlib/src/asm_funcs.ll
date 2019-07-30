@@ -39,6 +39,13 @@ declare float  @llvm.cos.f32(float  %x)
 declare double @llvm.cos.f64(double %x)
 
 ;
+; C99 math.h functions
+;
+
+declare float  @tanf(float  %x)
+declare double @tan (double %x)
+
+;
 ; lang functions
 ;
 
@@ -295,6 +302,22 @@ $_ZN3ust3cosEd = comdat any
 define linkonce_odr double @_ZN3ust3cosEd( double %x ) unnamed_addr comdat
 {
 	%1= call double @llvm.cos.f64( double %x )
+	ret double %1
+}
+
+;fn tan( f32 x ) : f32;
+$_ZN3ust3tanEf = comdat any
+define linkonce_odr float @_ZN3ust3tanEf( float %x ) unnamed_addr comdat
+{
+	%1= call float @tanf( float %x )
+	ret float %1
+}
+
+;fn tan( f64 x ) : f64;
+$_ZN3ust3tanEd = comdat any
+define linkonce_odr double @_ZN3ust3tanEd( double %x ) unnamed_addr comdat
+{
+	%1= call double @tan( double %x )
 	ret double %1
 }
 

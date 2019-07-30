@@ -43,6 +43,9 @@ fn sin( f64 x ) : f64;
 fn cos( f32 x ) : f32;
 fn cos( f64 x ) : f64;
 
+fn tan( f32 x ) : f32;
+fn tan( f64 x ) : f64;
+
 namespace math_impl
 {
 
