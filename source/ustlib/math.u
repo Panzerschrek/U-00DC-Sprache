@@ -8,6 +8,20 @@ nan() : T
 	return T(0) / T(0);
 }
 
+template</type T/>
+fn constexpr enable_if( math_impl::is_float</T/>() )
+plus_inf() : T
+{
+	return T(+1) / T(0);
+}
+
+template</type T/>
+fn constexpr enable_if( math_impl::is_float</T/>() )
+minus_inf() : T
+{
+	return T(-1) / T(0);
+}
+
 fn sqrt( f32 x ) : f32;
 fn sqrt( f64 x ) : f64;
 

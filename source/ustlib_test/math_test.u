@@ -3,37 +3,37 @@ import "../ustlib/math.u"
 
 auto constexpr MyNan= ust::nan</f32/>();
 
+template</type T/>
+fn DoTest()
+{
+	halt if( ust::nan</T/>() == ust::nan</T/>() );
+	halt if( ust::nan</T/>() == T(0.0) );
+
+	// inf
+	halt if( ust:: plus_inf</T/>() != ust:: plus_inf</T/>() );
+	halt if( ust::minus_inf</T/>() != ust::minus_inf</T/>() );
+	halt if( ust:: plus_inf</T/>() <= T(0.0) );
+	halt if( ust::minus_inf</T/>() >= T(0.0) );
+	halt if( ust::minus_inf</T/>() >= ust::plus_inf</T/>() );
+
+	// sqrt
+	halt if( ust::sqrt( T(0.0) ) != T(0.0) );
+	halt if( ust::sqrt( T(-0.0) ) != T(0.0) );
+	halt if( ust::sqrt( T(1.0) ) != T(1.0) );
+	halt if( ust::sqrt( T(4.0) ) != T(2.0) );
+	halt if( ust::sqrt( T(9.0) ) != T(3.0) );
+	halt if( ust::sqrt( T(10000.0) ) != T(100.0) );
+	halt if( ust::sqrt( T(0.09) ) != T(0.3) );
+	halt if( ust::sqrt( T(40.96) ) != T(6.4) );
+	halt if( ust::sqrt( ust::nan</T/>() ) == ust::sqrt( ust::nan</T/>() ) ); // result is nan
+	halt if( ust::sqrt( ust:: plus_inf</T/>() ) != ust::sqrt( ust:: plus_inf</T/>() ) );
+	halt if( ust::sqrt( ust::minus_inf</T/>() ) == ust::sqrt( ust::minus_inf</T/>() ) ); // result is nan
+}
+
 fn U_Main() : i32
 {
-	// nan(f32)
-	halt if( ust::nan</f32/>() == ust::nan</f32/>() );
-	halt if( ust::nan</f32/>() == 0.0f );
-
-	// nan(f64)
-	halt if( ust::nan</f64/>() == ust::nan</f64/>() );
-	halt if( ust::nan</f64/>() == 0.0 );
-
-	// sqrt(f32)
-	halt if( ust::sqrt( 0.0f ) != 0.0f );
-	halt if( ust::sqrt( -0.0f ) != 0.0f );
-	halt if( ust::sqrt( 1.0f ) != 1.0f );
-	halt if( ust::sqrt( 4.0f ) != 2.0f );
-	halt if( ust::sqrt( 9.0f ) != 3.0f );
-	halt if( ust::sqrt( 10000.0f ) != 100.0f );
-	halt if( ust::sqrt( 0.09f ) != 0.3f );
-	halt if( ust::sqrt( 40.96f ) != 6.4f );
-	halt if( ust::sqrt( ust::nan</f32/>() ) == ust::sqrt( ust::nan</f32/>() ) );
-
-	// sqrt(f64)
-	halt if( ust::sqrt( 0.0 ) != 0.0 );
-	halt if( ust::sqrt( -0.0 ) != 0.0 );
-	halt if( ust::sqrt( 1.0 ) != 1.0 );
-	halt if( ust::sqrt( 4.0 ) != 2.0 );
-	halt if( ust::sqrt( 9.0 ) != 3.0 );
-	halt if( ust::sqrt( 10000.0 ) != 100.0 );
-	halt if( ust::sqrt( 0.09 ) != 0.3 );
-	halt if( ust::sqrt( 40.96 ) != 6.4 );
-	halt if( ust::sqrt( ust::nan</f64/>() ) == ust::sqrt( ust::nan</f64/>() ) );
+	DoTest</f32/>();
+	DoTest</f64/>();
 
 	return 0;
 }
