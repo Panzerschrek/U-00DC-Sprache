@@ -1,8 +1,18 @@
 //##success_test
 import "../ustlib/math.u"
 
+auto constexpr MyNan= ust::nan</f32/>();
+
 fn U_Main() : i32
 {
+	// nan(f32)
+	halt if( ust::nan</f32/>() == ust::nan</f32/>() );
+	halt if( ust::nan</f32/>() == 0.0f );
+
+	// nan(f64)
+	halt if( ust::nan</f64/>() == ust::nan</f64/>() );
+	halt if( ust::nan</f64/>() == 0.0 );
+
 	// sqrt(f32)
 	halt if( ust::sqrt( 0.0f ) != 0.0f );
 	halt if( ust::sqrt( -0.0f ) != 0.0f );
@@ -12,6 +22,7 @@ fn U_Main() : i32
 	halt if( ust::sqrt( 10000.0f ) != 100.0f );
 	halt if( ust::sqrt( 0.09f ) != 0.3f );
 	halt if( ust::sqrt( 40.96f ) != 6.4f );
+	halt if( ust::sqrt( ust::nan</f32/>() ) == ust::sqrt( ust::nan</f32/>() ) );
 
 	// sqrt(f64)
 	halt if( ust::sqrt( 0.0 ) != 0.0 );
@@ -22,6 +33,7 @@ fn U_Main() : i32
 	halt if( ust::sqrt( 10000.0 ) != 100.0 );
 	halt if( ust::sqrt( 0.09 ) != 0.3 );
 	halt if( ust::sqrt( 40.96 ) != 6.4 );
+	halt if( ust::sqrt( ust::nan</f64/>() ) == ust::sqrt( ust::nan</f64/>() ) );
 
 	return 0;
 }

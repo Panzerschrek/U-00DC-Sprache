@@ -1,7 +1,32 @@
 namespace ust
 {
 
+template</type T/>
+fn constexpr enable_if( math_impl::is_float</T/>() )
+nan() : T
+{
+	return T(0) / T(0);
+}
+
 fn sqrt( f32 x ) : f32;
 fn sqrt( f64 x ) : f64;
+
+namespace math_impl
+{
+
+template</ type T />
+fn constexpr is_float() : bool
+{
+	static_if( typeinfo</T/>.is_fundamental )
+	{
+		return typeinfo</T/>.is_float;
+	}
+	else
+	{
+		return false;
+	}
+}
+
+} // namespace math_impl
 
 } // namespace ust
