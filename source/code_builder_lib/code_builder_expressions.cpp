@@ -2601,7 +2601,7 @@ Value CodeBuilder::DoCallFunction(
 	{
 		result.location= Variable::Location::Pointer;
 		result.value_type= function_type.return_value_is_mutable ? ValueType::Reference : ValueType::ConstReference;
-		result_node= std::make_shared<ReferencesGraphNode>( "fn result"_SpC, function_type.return_value_is_mutable ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut );
+		result_node= std::make_shared<ReferencesGraphNode>( "fn_result "_SpC + result.type.ToString(), function_type.return_value_is_mutable ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut );
 	}
 	else
 	{
@@ -2610,7 +2610,7 @@ Value CodeBuilder::DoCallFunction(
 
 		result.location= return_value_is_sret ? Variable::Location::Pointer : Variable::Location::LLVMRegister;
 		result.value_type= ValueType::Value;
-		result_node= std::make_shared<ReferencesGraphNode>( "fn result"_SpC, ReferencesGraphNode::Kind::Variable );
+		result_node= std::make_shared<ReferencesGraphNode>( "fn_result "_SpC + result.type.ToString(), ReferencesGraphNode::Kind::Variable );
 	}
 	function_context.stack_variables_stack.back()->RegisterVariable( std::make_pair( result_node, result ) );
 	result.node= result_node;
@@ -2659,7 +2659,7 @@ Value CodeBuilder::DoCallFunction(
 
 		// Then, create inner node and link input nodes with it.
 		const auto inner_reference_node=
-			std::make_shared<ReferencesGraphNode>( "fn result inner node"_SpC, inner_reference_is_mutable ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut );
+			std::make_shared<ReferencesGraphNode>( "inner_node "_SpC + result_node->name, inner_reference_is_mutable ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut );
 		function_context.variables_state.SetNodeInnerReference( result_node, inner_reference_node );
 
 		for( const size_t arg_n : function_type.return_references.args_references )
@@ -2739,7 +2739,7 @@ Value CodeBuilder::DoCallFunction(
 	locked_args_references.clear();
 	{ // Destroy unused temporary variables after each call.
 		const ReferencesGraphNodeHolder call_result_lock(
-			std::make_shared<ReferencesGraphNode>( "result_lock"_SpC, ReferencesGraphNode::Kind::ReferenceImut ),
+			std::make_shared<ReferencesGraphNode>( "lock "_SpC + result_node->name, ReferencesGraphNode::Kind::ReferenceImut ),
 			function_context );
 		function_context.variables_state.AddLink( result_node, call_result_lock.Node() );
 		DestroyUnusedTemporaryVariables( function_context, names.GetErrors(), call_file_pos );
