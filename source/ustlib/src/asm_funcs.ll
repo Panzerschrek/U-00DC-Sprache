@@ -29,6 +29,11 @@ declare float  @llvm.exp.f32(float  %x)
 declare double @llvm.exp.f64(double %x)
 declare float  @llvm.exp2.f32(float  %x)
 declare double @llvm.exp2.f64(double %x)
+declare float  @llvm.log.f32(float  %x)
+declare double @llvm.log.f64(double %x)
+declare float  @llvm.log2.f32(float  %x)
+declare double @llvm.log2.f64(double %x)
+
 
 ;
 ; lang functions
@@ -223,6 +228,38 @@ $_ZN3ust4exp2Ed = comdat any
 define linkonce_odr double @_ZN3ust4exp2Ed( double %x ) unnamed_addr comdat
 {
 	%1= call double @llvm.exp2.f64( double %x )
+	ret double %1
+}
+
+;fn log( f32 x ) : f32;
+$_ZN3ust3logEf = comdat any
+define linkonce_odr float @_ZN3ust3logEf( float %x ) unnamed_addr comdat
+{
+	%1= call float @llvm.log.f32( float %x )
+	ret float %1
+}
+
+;fn log( f64 x ) : f64;
+$_ZN3ust3logEd = comdat any
+define linkonce_odr double @_ZN3ust3logEd( double %x ) unnamed_addr comdat
+{
+	%1= call double @llvm.log.f64( double %x )
+	ret double %1
+}
+
+;fn log2( f32 x ) : f32;
+$_ZN3ust4log2Ef = comdat any
+define linkonce_odr float @_ZN3ust4log2Ef( float %x ) unnamed_addr comdat
+{
+	%1= call float @llvm.log2.f32( float %x )
+	ret float %1
+}
+
+;fn log2( f64 x ) : f64;
+$_ZN3ust4log2Ed = comdat any
+define linkonce_odr double @_ZN3ust4log2Ed( double %x ) unnamed_addr comdat
+{
+	%1= call double @llvm.log2.f64( double %x )
 	ret double %1
 }
 

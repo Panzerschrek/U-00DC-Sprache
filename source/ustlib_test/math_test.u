@@ -62,6 +62,28 @@ fn DoTest()
 	halt if( ust::exp2( ust::nan</T/>() ) == ust::exp2( ust::nan</T/>() ) ); // result for nan is nan
 	halt if( ust::exp2( ust:: plus_inf</T/>() ) != ust::plus_inf</T/>() ); // result for infinity is infinity
 	halt if( ust::exp2( ust::minus_inf</T/>() ) != T(0) ); // result for minus infinity is zero
+
+	// log
+	halt if( ust::log( T(0.0) ) >= T(-1e24) );
+	halt if( ust::log( T(1.0) ) != T(0.0) );
+	ExpectNear( ust::log( T(2.718281828) ), T(1.0), T(1.0e-5) );
+	ExpectNear( ust::log( T(10.0) ), T(2.302585), T(1.0e-5) );
+	halt if( ust::log( ust::nan</T/>() ) == ust::log( ust::nan</T/>() ) ); // result for nan is nan
+	halt if( ust::log( T(-1) ) == ust::log( T(-1) ) ); // result for negative value is nan
+	halt if( ust::log( ust::minus_inf</T/>() ) == ust::log( ust::minus_inf</T/>() ) ); // result for minus infinity is nan
+	halt if( ust::log( ust::plus_inf</T/>() ) != ust::log( ust::plus_inf</T/>() ) ); // result for infinity is infinity
+
+	// log2
+	halt if( ust::log2( T(0.0) ) >= T(-1e24) );
+	halt if( ust::log2( T(1.0) ) != T(0.0) );
+	ExpectNear( ust::log2( T(2.0) ), T(1.0), T(1.0e-5) );
+	ExpectNear( ust::log2( T(4.0) ), T(2.0), T(1.0e-5) );
+	ExpectNear( ust::log2( T(1024.0) ), T(10.0), T(1.0e-5) );
+	ExpectNear( ust::log2( T(100.0) ), T(6.643856), T(1.0e-5) );
+	halt if( ust::log2( ust::nan</T/>() ) == ust::log2( ust::nan</T/>() ) ); // result for nan is nan
+	halt if( ust::log2( T(-1) ) == ust::log2( T(-1) ) ); // result for negative value is nan
+	halt if( ust::log2( ust::minus_inf</T/>() ) == ust::log2( ust::minus_inf</T/>() ) ); // result for minus infinity is nan
+	halt if( ust::log2( ust::plus_inf</T/>() ) != ust::log2( ust::plus_inf</T/>() ) ); // result for infinity is infinity
 }
 
 fn U_Main() : i32

@@ -31,6 +31,12 @@ fn exp( f64 x ) : f64;
 fn exp2( f32 x ) : f32;
 fn exp2( f64 x ) : f64;
 
+fn log( f32 x ) : f32;
+fn log( f64 x ) : f64;
+
+fn log2( f32 x ) : f32;
+fn log2( f64 x ) : f64;
+
 namespace math_impl
 {
 
