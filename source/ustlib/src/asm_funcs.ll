@@ -53,13 +53,13 @@ define linkonce_odr void @__U_halt() unnamed_addr #0 comdat
 ; atomic
 ;
 
-; TODO - check memory ordering.
+; Use strictest memory order - "seq_cst" for all atomic operations.
 
 ; fn atomic_read( i32& addr ) : i32;
 $_ZN3ust11atomic_readERKi = comdat any
 define linkonce_odr i32 @_ZN3ust11atomic_readERKi( i32* %addr ) unnamed_addr comdat
 {
-	%1= load atomic i32, i32* %addr acquire, align 4
+	%1= load atomic i32, i32* %addr seq_cst, align 4
 	ret i32 %1
 }
 
@@ -67,7 +67,7 @@ define linkonce_odr i32 @_ZN3ust11atomic_readERKi( i32* %addr ) unnamed_addr com
 $_ZN3ust11atomic_readERKj = comdat any
 define linkonce_odr i32 @_ZN3ust11atomic_readERKj( i32* %addr ) unnamed_addr comdat
 {
-	%1= load atomic volatile i32, i32* %addr acquire, align 4
+	%1= load atomic volatile i32, i32* %addr seq_cst, align 4
 	ret i32 %1
 }
 
@@ -75,7 +75,7 @@ define linkonce_odr i32 @_ZN3ust11atomic_readERKj( i32* %addr ) unnamed_addr com
 $_ZN3ust12atomic_writeERii = comdat any
 define linkonce_odr void @_ZN3ust12atomic_writeERii( i32* %addr, i32 %x ) unnamed_addr comdat
 {
-	store atomic volatile i32 %x, i32* %addr monotonic, align 4
+	store atomic volatile i32 %x, i32* %addr seq_cst, align 4
 	ret void
 }
 
@@ -83,7 +83,7 @@ define linkonce_odr void @_ZN3ust12atomic_writeERii( i32* %addr, i32 %x ) unname
 $_ZN3ust12atomic_writeERjj = comdat any
 define linkonce_odr void @_ZN3ust12atomic_writeERjj( i32* %addr, i32 %x ) unnamed_addr comdat
 {
-	store atomic volatile i32 %x, i32* %addr monotonic, align 4
+	store atomic volatile i32 %x, i32* %addr seq_cst, align 4
 	ret void
 }
 
@@ -91,7 +91,7 @@ define linkonce_odr void @_ZN3ust12atomic_writeERjj( i32* %addr, i32 %x ) unname
 $_ZN3ust10atomic_addERii = comdat any
 define linkonce_odr i32 @_ZN3ust10atomic_addERii( i32* %x, i32 %y ) unnamed_addr comdat
 {
-	%1= atomicrmw volatile add i32* %x, i32 %y acquire
+	%1= atomicrmw volatile add i32* %x, i32 %y seq_cst
 	ret i32 %1
 }
 
@@ -99,7 +99,7 @@ define linkonce_odr i32 @_ZN3ust10atomic_addERii( i32* %x, i32 %y ) unnamed_addr
 $_ZN3ust10atomic_addERjj = comdat any
 define linkonce_odr i32 @_ZN3ust10atomic_addERjj( i32* %x, i32 %y ) unnamed_addr comdat
 {
-	%1= atomicrmw volatile add i32* %x, i32 %y acquire
+	%1= atomicrmw volatile add i32* %x, i32 %y seq_cst
 	ret i32 %1
 }
 
@@ -108,7 +108,7 @@ $_ZN3ust30atomic_compare_exchange_strongERiS0_i = comdat any
 define linkonce_odr i1 @_ZN3ust30atomic_compare_exchange_strongERiS0_i( i32* %addr, i32* %expected, i32 %new ) unnamed_addr comdat
 {
 	%expected_read= load i32, i32* %expected
-	%res= cmpxchg volatile i32* %addr, i32 %expected_read, i32 %new acq_rel monotonic
+	%res= cmpxchg volatile i32* %addr, i32 %expected_read, i32 %new seq_cst monotonic
 	%success = extractvalue { i32, i1 } %res, 1
 	br i1 %success, label %ok, label %not_ok
 ok:
@@ -124,7 +124,7 @@ $_ZN3ust30atomic_compare_exchange_strongERjS0_j = comdat any
 define linkonce_odr i1 @_ZN3ust30atomic_compare_exchange_strongERjS0_j( i32* %addr, i32* %expected, i32 %new ) unnamed_addr comdat
 {
 	%expected_read= load i32, i32* %expected
-	%res= cmpxchg volatile i32* %addr, i32 %expected_read, i32 %new acq_rel monotonic
+	%res= cmpxchg volatile i32* %addr, i32 %expected_read, i32 %new seq_cst monotonic
 	%success = extractvalue { i32, i1 } %res, 1
 	br i1 %success, label %ok, label %not_ok
 ok:
@@ -140,7 +140,7 @@ $_ZN3ust28atomic_compare_exchange_weakERiS0_i = comdat any
 define linkonce_odr i1 @_ZN3ust28atomic_compare_exchange_weakERiS0_i( i32* %addr, i32* %expected, i32 %new ) unnamed_addr comdat
 {
 	%expected_read= load i32, i32* %expected
-	%res= cmpxchg weak volatile i32* %addr, i32 %expected_read, i32 %new acq_rel monotonic
+	%res= cmpxchg weak volatile i32* %addr, i32 %expected_read, i32 %new seq_cst monotonic
 	%success = extractvalue { i32, i1 } %res, 1
 	br i1 %success, label %ok, label %not_ok
 ok:
@@ -156,7 +156,7 @@ $_ZN3ust28atomic_compare_exchange_weakERjS0_j = comdat any
 define linkonce_odr i1 @_ZN3ust28atomic_compare_exchange_weakERjS0_j( i32* %addr, i32* %expected, i32 %new ) unnamed_addr comdat
 {
 	%expected_read= load i32, i32* %expected
-	%res= cmpxchg weak volatile i32* %addr, i32 %expected_read, i32 %new acq_rel monotonic
+	%res= cmpxchg weak volatile i32* %addr, i32 %expected_read, i32 %new seq_cst monotonic
 	%success = extractvalue { i32, i1 } %res, 1
 	br i1 %success, label %ok, label %not_ok
 ok:

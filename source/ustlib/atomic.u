@@ -1,6 +1,7 @@
 namespace ust
 {
 
+// All atomic operations have strickest memory order - "sequentially consistent".
 // Use only 32-bit atomic operations, because its supported on all platforms.
 
 fn atomic_read( i32& addr ) : i32;
