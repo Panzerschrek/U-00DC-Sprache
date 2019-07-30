@@ -4,6 +4,19 @@ namespace ust
 namespace type_traits_impl
 {
 
+template</ size_type size0, size_type size1 />
+fn constexpr string_equals( [ char8, size0 ]& s0, [ char8, size1 ]& s1 ) : bool
+{
+	if( size0 != size1 ) { return false; }
+	var size_type mut i(0);
+	while( i < size0 )
+	{
+		if( s0[i] != s1[i] ) { return false; }
+		++i;
+	}
+	return true;
+}
+
 template</ type A />
 struct is_same_type_impl
 {
@@ -80,6 +93,26 @@ fn is_ancestor_for() : bool
 		return type_traits_impl::has_ancestor</ A />( typeinfo</B/>.parents_list );
 	}
 	else{ return false; }
+}
+
+template</ type NodeType, size_type name_size />
+fn constexpr class_have_field( NodeType& fields_list_node, [ char8, name_size ]& name ) : bool
+{
+	static_if( NodeType::is_end )
+	{
+		return false;
+	}
+	else
+	{
+		if( type_traits_impl::string_equals( fields_list_node.name, name ) )
+		{
+			return true;
+		}
+		else
+		{
+			return ust::class_have_field( fields_list_node.next, name );
+		}
+	}
 }
 
 } // namespace ust

@@ -9,6 +9,8 @@ struct EmptyStruct{}
 type EmptyStructAlias0= EmptyStruct;
 type EmptyStructAlias1= EmptyStruct;
 
+struct NonEmptyStruct{ i32 x; i32 y; }
+
 class A polymorph {}
 class B : A {}
 class C : B {}
@@ -97,6 +99,15 @@ static_assert(  ust::is_ancestor_for</ F, K />() );
 static_assert(  ust::is_ancestor_for</ G, K />() );
 static_assert(  ust::is_ancestor_for</ H, K />() );
 static_assert( !ust::is_ancestor_for</ K, H />() );
+
+//
+// Have field
+//
+
+static_assert( !ust::class_have_field( typeinfo</ EmptyStruct />.fields_list, "some_field" ) );
+static_assert(  ust::class_have_field( typeinfo</ NonEmptyStruct />.fields_list, "x" )  );
+static_assert(  ust::class_have_field( typeinfo</ NonEmptyStruct />.fields_list, "y" ) );
+static_assert( !ust::class_have_field( typeinfo</ NonEmptyStruct />.fields_list, "z" ) );
 
 
 fn U_Main() : i32
