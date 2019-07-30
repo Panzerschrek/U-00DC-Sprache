@@ -666,14 +666,14 @@ Value CodeBuilder::BuildBinaryOperator(
 
 			switch( binary_operator )
 			{
-			// TODO - select ordered/unordered comparision flags for floats.
+			// Use ordered floating point compare operations, which result is false for NaN.
 			case BinaryOperatorType::Equal:
 				if( if_float )
 				{
 					if( arguments_are_constexpr )
-						result.constexpr_value= llvm::ConstantExpr::getFCmp( llvm::CmpInst::FCMP_UEQ, l_var.constexpr_value, r_var.constexpr_value );
+						result.constexpr_value= llvm::ConstantExpr::getFCmp( llvm::CmpInst::FCMP_OEQ, l_var.constexpr_value, r_var.constexpr_value );
 					else
-						result_value= function_context.llvm_ir_builder.CreateFCmpUEQ( l_value_for_op, r_value_for_op );
+						result_value= function_context.llvm_ir_builder.CreateFCmpOEQ( l_value_for_op, r_value_for_op );
 				}
 				else
 				{
@@ -688,9 +688,9 @@ Value CodeBuilder::BuildBinaryOperator(
 				if( if_float )
 				{
 					if( arguments_are_constexpr )
-						result.constexpr_value= llvm::ConstantExpr::getFCmp( llvm::CmpInst::FCMP_UNE, l_var.constexpr_value, r_var.constexpr_value );
+						result.constexpr_value= llvm::ConstantExpr::getFCmp( llvm::CmpInst::FCMP_ONE, l_var.constexpr_value, r_var.constexpr_value );
 					else
-						result_value= function_context.llvm_ir_builder.CreateFCmpUNE( l_value_for_op, r_value_for_op );
+						result_value= function_context.llvm_ir_builder.CreateFCmpONE( l_value_for_op, r_value_for_op );
 				}
 				else
 				{
@@ -752,14 +752,14 @@ Value CodeBuilder::BuildBinaryOperator(
 
 			switch( binary_operator )
 			{
-			// TODO - select ordered/unordered comparision flags for floats.
+			// Use ordered floating point compare operations, which result is false for NaN.
 			case BinaryOperatorType::Less:
 				if( if_float )
 				{
 					if( arguments_are_constexpr )
-						result.constexpr_value= llvm::ConstantExpr::getFCmp( llvm::CmpInst::FCMP_ULT, l_var.constexpr_value, r_var.constexpr_value );
+						result.constexpr_value= llvm::ConstantExpr::getFCmp( llvm::CmpInst::FCMP_OLT, l_var.constexpr_value, r_var.constexpr_value );
 					else
-						result_value= function_context.llvm_ir_builder.CreateFCmpULT( l_value_for_op, r_value_for_op );
+						result_value= function_context.llvm_ir_builder.CreateFCmpOLT( l_value_for_op, r_value_for_op );
 				}
 				else if( is_signed )
 				{
@@ -781,9 +781,9 @@ Value CodeBuilder::BuildBinaryOperator(
 				if( if_float )
 				{
 					if( arguments_are_constexpr )
-						result.constexpr_value= llvm::ConstantExpr::getFCmp( llvm::CmpInst::FCMP_ULE, l_var.constexpr_value, r_var.constexpr_value );
+						result.constexpr_value= llvm::ConstantExpr::getFCmp( llvm::CmpInst::FCMP_OLE, l_var.constexpr_value, r_var.constexpr_value );
 					else
-						result_value= function_context.llvm_ir_builder.CreateFCmpULE( l_value_for_op, r_value_for_op );
+						result_value= function_context.llvm_ir_builder.CreateFCmpOLE( l_value_for_op, r_value_for_op );
 				}
 				else if( is_signed )
 				{
@@ -805,9 +805,9 @@ Value CodeBuilder::BuildBinaryOperator(
 				if( if_float )
 				{
 					if( arguments_are_constexpr )
-						result.constexpr_value= llvm::ConstantExpr::getFCmp( llvm::CmpInst::FCMP_UGT, l_var.constexpr_value, r_var.constexpr_value );
+						result.constexpr_value= llvm::ConstantExpr::getFCmp( llvm::CmpInst::FCMP_OGT, l_var.constexpr_value, r_var.constexpr_value );
 					else
-						result_value= function_context.llvm_ir_builder.CreateFCmpUGT( l_value_for_op, r_value_for_op );
+						result_value= function_context.llvm_ir_builder.CreateFCmpOGT( l_value_for_op, r_value_for_op );
 				}
 				else if( is_signed )
 				{
@@ -829,9 +829,9 @@ Value CodeBuilder::BuildBinaryOperator(
 				if( if_float )
 				{
 					if( arguments_are_constexpr )
-						result.constexpr_value= llvm::ConstantExpr::getFCmp( llvm::CmpInst::FCMP_UGE, l_var.constexpr_value, r_var.constexpr_value );
+						result.constexpr_value= llvm::ConstantExpr::getFCmp( llvm::CmpInst::FCMP_OGE, l_var.constexpr_value, r_var.constexpr_value );
 					else
-						result_value= function_context.llvm_ir_builder.CreateFCmpUGE( l_value_for_op, r_value_for_op );
+						result_value= function_context.llvm_ir_builder.CreateFCmpOGE( l_value_for_op, r_value_for_op );
 				}
 				else if( is_signed )
 				{
