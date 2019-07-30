@@ -1,0 +1,232 @@
+//##success_test
+import "../ustlib/shared_mt/shared_ptr_mt_mut.u"
+import "../ustlib/shared_mt/shared_ptr_mt_imut.u"
+import "../ustlib/shared_mt/shared_ptr_mt_nullable_mut.u"
+import "../ustlib/shared_mt/shared_ptr_mt_nullable_imut.u"
+import "../ustlib/shared_mt/weak_ptr_mt_mut.u"
+import "../ustlib/shared_mt/weak_ptr_mt_imut.u"
+
+import "../ustlib/box.u"
+import "../ustlib/box_nullable.u"
+import "../ustlib/optional.u"
+import "../ustlib/optional_ref.u"
+import "../ustlib/random_access_range.u"
+import "../ustlib/unordered_map.u"
+import "../ustlib/vector.u"
+
+type IntPtrMut=  ust::shared_ptr_mt_mut </i32/>;
+type IntPtrImut= ust::shared_ptr_mt_imut</i32/>;
+type IntPtrNullableMut=  ust::shared_ptr_mt_nullable_mut </i32/>;
+type IntPtrNullableImut= ust::shared_ptr_mt_nullable_imut</i32/>;
+type IntPtrWeakMut = ust::weak_ptr_mt_mut </i32/>;
+type IntPtrWeakImut= ust::weak_ptr_mt_imut</i32/>;
+
+static_assert( !typeinfo</IntPtrMut />.have_shared_state );
+static_assert( !typeinfo</IntPtrImut/>.have_shared_state );
+static_assert( !typeinfo</IntPtrNullableMut />.have_shared_state );
+static_assert( !typeinfo</IntPtrNullableImut/>.have_shared_state );
+static_assert( !typeinfo</IntPtrWeakMut />.have_shared_state );
+static_assert( !typeinfo</IntPtrWeakImut/>.have_shared_state );
+
+static_assert( !typeinfo</ ust::box</ IntPtrMut /> />.have_shared_state );
+static_assert( !typeinfo</ ust::box_nullable</ IntPtrMut /> />.have_shared_state );
+static_assert( !typeinfo</ ust::optional</ IntPtrMut /> />.have_shared_state );
+static_assert( !typeinfo</ ust::optional_ref</ IntPtrMut, true /> />.have_shared_state );
+static_assert( !typeinfo</ ust::random_access_range</ IntPtrMut, true /> />.have_shared_state );
+static_assert( !typeinfo</ ust::unordered_map</ i32, IntPtrMut /> />.have_shared_state );
+static_assert( !typeinfo</ ust::vector</ IntPtrMut /> />.have_shared_state );
+
+fn IsMut( void&  mut r ) : bool
+{
+	return true ;
+}
+
+fn IsMut( void& imut r ) : bool
+{
+	return false;
+}
+
+fn U_Main() : i32
+{
+	//
+	// Common test with "shared_ptr"
+	//
+
+	{ // Can create empty nullable pointers.
+		var IntPtrNullableMut  empty_ptr_mut ;
+		var IntPtrNullableImut empty_ptr_imut;
+		halt if( !empty_ptr_mut .empty() );
+		halt if( !empty_ptr_imut.empty() );
+	}
+	{ // Can reset empty nullable pointers.
+		var IntPtrNullableMut  mut ptr_mut (5);
+		var IntPtrNullableImut mut ptr_imut(7);
+
+		halt if( ptr_mut. lock_mut ().get_ref() != 5 );
+		halt if( ptr_imut.lock_imut().get_ref() != 7 );
+
+		ptr_mut.reset ();
+		ptr_imut.reset();
+		halt if( !ptr_mut. empty() );
+		halt if( !ptr_imut.empty() );
+	}
+	{ // Can modyfy stored value.
+		var IntPtrMut ptr(99);
+		++ptr.lock_mut().get_ref();
+		halt if( ptr.lock_mut ().get_ref() != 100 );
+		halt if( ptr.lock_imut().get_ref() != 100 );
+	}
+	{ // Can share value
+		var IntPtrMut ptr0(42);
+		auto ptr1= ptr0;
+
+		halt if( ptr0.lock_imut().get_ref() != 42 );
+		halt if( ptr1.lock_imut().get_ref() != 42 );
+
+		ptr0.lock_mut().get_ref()= 66;
+		halt if( ptr0.lock_imut().get_ref() != 66 );
+		halt if( ptr1.lock_imut().get_ref() != 66 );
+
+		--ptr1.lock_mut().get_ref();
+		halt if( ptr0.lock_imut().get_ref() != 65 );
+		halt if( ptr1.lock_imut().get_ref() != 65 );
+	}
+	{ // Copy shared ptr, reset src shared ptr.
+		var IntPtrNullableMut mut ptr0(9999);
+		auto ptr1= ptr0;
+		ptr0.reset();
+
+		halt if( !ptr0.empty() );
+		halt if(  ptr1.empty() );
+		halt if( ptr1.lock_imut().get_ref() != 9999 );
+	}
+	{ // Copy shared ptr, destroy src shared ptr.
+		var IntPtrNullableMut mut ptr0(555);
+		auto ptr1= ptr0;
+		move(ptr0);
+
+		halt if( ptr1.empty() );
+		halt if( ptr1.lock_imut().get_ref() != 555 );
+	}
+	{ // Reset shared_ptr with new value.
+		var IntPtrMut mut ptr0(20);
+		auto ptr1= ptr0;
+
+		halt if( ptr0.lock_imut().get_ref() != 20 );
+		halt if( ptr1.lock_imut().get_ref() != 20 );
+
+		ptr0.reset( 37 ); // Now, ptr0 and ptr1 have different values.
+		halt if( ptr0.lock_imut().get_ref() != 37 );
+		halt if( ptr1.lock_imut().get_ref() != 20 );
+
+		ptr1.lock_mut().get_ref()= 91;
+		halt if( ptr0.lock_imut().get_ref() != 37 );
+		halt if( ptr1.lock_imut().get_ref() != 91 );
+	}
+	{ // Copy assignment operator.
+		var IntPtrNullableMut mut ptr0(56), mut ptr1;
+		halt if(  ptr0.empty() );
+		halt if( !ptr1.empty() );
+		ptr1= ptr0;
+		halt if( ptr0.lock_imut().get_ref() != 56 );
+		halt if( ptr1.lock_imut().get_ref() != 56 );
+		halt if( ust::ref_to_int( ptr0.lock_imut().get_ref() ) != ust::ref_to_int( ptr1.lock_imut().get_ref() ) );
+	}
+	{ // "lock_mut" and "lock_imut" return "mut" or "imut" references.
+		var IntPtrMut ptr(0);
+
+		halt if( IsMut( ptr.lock_imut().get_ref() ) );
+		halt if( !IsMut( ptr.lock_mut().get_ref() ) );
+	}
+	{ // construct shared_ptr from weak ptr.
+		var IntPtrMut mut ptr0(11);
+		var IntPtrWeakMut ptr_weak(ptr0);
+
+		var IntPtrNullableMut mut ptr1( ptr_weak.lock() );
+
+		halt if( ptr1.empty() );
+		halt if( ptr1.lock_imut().get_ref() != 11 );
+		halt if( ust::ref_to_int( ptr1.lock_imut().get_ref() ) != ust::ref_to_int( ptr0.lock_imut().get_ref() ) );
+	}
+	{ // Can not get shared_ptr with value for empty weak ptr.
+		var IntPtrWeakMut ptr_weak_empty;
+		auto ptr_shared= ptr_weak_empty.lock();
+		halt if( !ptr_shared.empty() );
+	}
+	{ // After source ponter reset, weak_ptr becomes empty.
+		var IntPtrNullableMut mut ptr(0);
+		var IntPtrWeakMut ptr_weak(ptr);
+
+		halt if( ptr_weak.lock().empty() );
+
+		ptr.reset();
+		halt if( !ptr_weak.lock().empty() );
+	}
+	{ // can reset weak_ptr.
+		var IntPtrMut mut ptr(85);
+		var IntPtrWeakMut mut ptr_weak(ptr);
+
+		halt if( ptr_weak.lock().empty() );
+
+		ptr_weak.reset();
+		halt if( !ptr_weak.lock().empty() );
+	}
+	{ // Non-nullable mutable pointer can be converted to nullable mutable pointer.
+		var IntPtrMut ptr0(66);
+		var IntPtrNullableMut ptr1(ptr0);
+		halt if( ust::ref_to_int( ptr1.lock_imut().get_ref() ) != ust::ref_to_int( ptr0.lock_imut().get_ref() ) );
+	}
+	{ // Non-nullable immutable pointer can be converted to nullable immutable pointer.
+		var IntPtrImut ptr0(22);
+		var IntPtrNullableImut ptr1(ptr0);
+		halt if( ust::ref_to_int( ptr1.lock_imut().get_ref() ) != ust::ref_to_int( ptr0.lock_imut().get_ref() ) );
+	}
+	{ // Mutable pointer can be converted to immutable pointer.
+		var IntPtrMut ptr0(32);
+		var IntPtrImut ptr1(ptr0);
+		halt if( ust::ref_to_int( ptr1.lock_imut().get_ref() ) != ust::ref_to_int( ptr0.lock_imut().get_ref() ) );
+	}
+	{ // Mutable nullable pointer can be converted to immutable nullable pointer.
+		var IntPtrNullableMut ptr0(94);
+		var IntPtrNullableImut ptr1(ptr0);
+		halt if( ust::ref_to_int( ptr1.lock_imut().get_ref() ) != ust::ref_to_int( ptr0.lock_imut().get_ref() ) );
+	}
+	{ // Nullable shared_ptr can be converted to non-nullable shared_ptr
+		var IntPtrNullableMut ptr0(35);
+		var IntPtrMut ptr1= ust::to_non_nullable(ptr0);
+		halt if( ust::ref_to_int( ptr1.lock_imut().get_ref() ) != ust::ref_to_int( ptr0.lock_imut().get_ref() ) );
+	}
+	{ // Nullable shared_ptr can be converted to non-nullable shared_ptr
+		var IntPtrNullableImut ptr0(35);
+		var IntPtrImut ptr1= ust::to_non_nullable(ptr0);
+		halt if( ust::ref_to_int( ptr1.lock_imut().get_ref() ) != ust::ref_to_int( ptr0.lock_imut().get_ref() ) );
+	}
+	//
+	// shared_ptr_mt-sepcific tests.
+	//
+	{ // Can create multiple imut locks to one shared_ptr.
+		var IntPtrMut ptr(66);
+
+		auto lock0= ptr.lock_imut();
+		auto lock1= ptr.lock_imut();
+		auto lock2= ptr.lock_imut();
+
+		halt if( ust::ref_to_int( lock0.get_ref() ) != ust::ref_to_int( lock1.get_ref() ) );
+		halt if( ust::ref_to_int( lock0.get_ref() ) != ust::ref_to_int( lock2.get_ref() ) );
+		halt if( lock2.get_ref() != 66 );
+	}
+	{ // Can create multiple imut locks to one stored value.
+		var IntPtrMut ptr0(92);
+		var IntPtrMut ptr1= ptr0, ptr2= ptr0;
+
+		auto lock0= ptr0.lock_imut();
+		auto lock1= ptr1.lock_imut();
+		auto lock2= ptr2.lock_imut();
+
+		halt if( ust::ref_to_int( lock0.get_ref() ) != ust::ref_to_int( lock1.get_ref() ) );
+		halt if( ust::ref_to_int( lock0.get_ref() ) != ust::ref_to_int( lock2.get_ref() ) );
+		halt if( lock1.get_ref() != 92 );
+	}
+
+	return 0;
+}

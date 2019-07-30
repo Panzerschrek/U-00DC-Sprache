@@ -1,25 +1,33 @@
 //##fail_test
-import "../ustlib/shared/shared_ptr_mut.u"
-import "../ustlib/shared/shared_ptr_imut.u"
-import "../ustlib/shared/shared_ptr_nullable_mut.u"
-import "../ustlib/shared/shared_ptr_nullable_imut.u"
-import "../ustlib/shared/weak_ptr_mut.u"
-import "../ustlib/shared/weak_ptr_imut.u"
+import "../ustlib/shared_mt/shared_ptr_mt_mut.u"
+import "../ustlib/shared_mt/shared_ptr_mt_imut.u"
+import "../ustlib/shared_mt/shared_ptr_mt_nullable_mut.u"
+import "../ustlib/shared_mt/shared_ptr_mt_nullable_imut.u"
+import "../ustlib/shared_mt/weak_ptr_mt_mut.u"
+import "../ustlib/shared_mt/weak_ptr_mt_imut.u"
 
-type IntPtrMut=  ust::shared_ptr_mut </i32/>;
-type IntPtrImut= ust::shared_ptr_imut</i32/>;
-type IntPtrNullableMut=  ust::shared_ptr_nullable_mut </i32/>;
-type IntPtrNullableImut= ust::shared_ptr_nullable_imut</i32/>;
-type IntPtrWeakMut = ust::weak_ptr_mut </i32/>;
-type IntPtrWeakImut= ust::weak_ptr_imut</i32/>;
+type IntPtrMut=  ust::shared_ptr_mt_mut </i32/>;
+type IntPtrImut= ust::shared_ptr_mt_imut</i32/>;
+type IntPtrNullableMut=  ust::shared_ptr_mt_nullable_mut </i32/>;
+type IntPtrNullableImut= ust::shared_ptr_mt_nullable_imut</i32/>;
+type IntPtrWeakMut = ust::weak_ptr_mt_mut </i32/>;
+type IntPtrWeakImut= ust::weak_ptr_mt_imut</i32/>;
 
 struct S{ i32& r; }
 
 // Shared pointers disabled for types with references.
-type SPtrInvalid= ust::shared_ptr_mut</S/>; //##expect_error TemplateContext
+type SPtrInvalid= ust::shared_ptr_mt_mut</S/>; //##expect_error TemplateContext
+
+struct SharedStruct shared {}
+// Multithreaded shared pointers disabled for types with singlethreaded shared pointers inside.
+type InvalidSharedStructPtr= ust::shared_ptr_mt_mut</SharedStruct/>; //##expect_error TemplateContext
 
 fn U_Main() : i32
 {
+	//
+	// Common test with "shared_ptr"
+	//
+
 	{ // For non-nullable pointers expected initializer.
 		var IntPtrMut  ptr_mut ; //##expect_error ExpectedInitializer
 		var IntPtrImut ptr_imut; //##expect_error ExpectedInitializer
@@ -59,5 +67,10 @@ fn U_Main() : i32
 		weak_ptr_imut.lock_mut (); //##expect_error NameNotFound
 		weak_ptr_imut.lock_imut(); //##expect_error NameNotFound
 	}
+
+	//
+	// shared_ptr_mt-sepcific tests.
+	//
+
 	return 0;
 }

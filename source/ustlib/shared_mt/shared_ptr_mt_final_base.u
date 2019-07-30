@@ -1,3 +1,4 @@
+import "../atomic.u"
 import "../container_utils.u"
 import "../memory.u"
 import "../pointer.u"
@@ -5,12 +6,15 @@ import "../pointer.u"
 namespace ust
 {
 
-// Mark as "shared", because counter operations are not thread-safe.
 template</ type T />
-class shared_ptr_final_base shared
+class shared_ptr_mt_final_base
 {
 	// Forbid shared pointers for structs with references inside.
 	static_assert( typeinfo</T/>.references_tags_count == size_type(0) );
+
+	// It's have no sence to use multithreaded shared pointer for types, with singlethreaded shared pointers inside.
+	// Use singlethreaded shared pointer instead.
+	static_assert( !typeinfo</T/>.have_shared_state );
 
 public:
 	fn constructor()= default;
@@ -43,7 +47,7 @@ public:
 			if( !other.ptr_.is_null() )
 			{
 				ptr_= other.ptr_;
-				++ptr_.get_ref().counter;
+				ust::atomic_inc( ptr_.get_ref().counter );
 			}
 		}
 	}
@@ -53,8 +57,7 @@ public:
 		if( empty() ) { return; }
 		unsafe
 		{
-			--ptr_.get_ref().counter;
-			if( ptr_.get_ref().counter == 0u )
+			if( ust::atomic_dec( ptr_.get_ref().counter ) == 1u )
 			{
 				call_destructor( ptr_.get_ref().value );
 				memory_free( ptr_.get_ref() );
@@ -82,7 +85,7 @@ public:
 	}
 
 private:
-	type this_type= shared_ptr_final_base</T/>;
+	type this_type= shared_ptr_mt_final_base</T/>;
 
 	struct storage
 	{

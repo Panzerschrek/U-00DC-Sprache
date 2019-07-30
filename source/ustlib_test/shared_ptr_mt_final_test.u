@@ -1,12 +1,12 @@
 //##success_test
-import "../ustlib/shared/shared_ptr_final.u"
-import "../ustlib/shared/shared_ptr_final_nullable.u"
+import "../ustlib/shared_mt/shared_ptr_mt_final.u"
+import "../ustlib/shared_mt/shared_ptr_mt_final_nullable.u"
 
-type IntPtr= ust::shared_ptr_final</i32/>;
-type IntPtrNullable= ust::shared_ptr_final_nullable</i32/>;
+type IntPtr= ust::shared_ptr_mt_final</i32/>;
+type IntPtrNullable= ust::shared_ptr_mt_final_nullable</i32/>;
 
-static_assert( typeinfo</IntPtr/>.have_shared_state );
-static_assert( typeinfo</IntPtrNullable/>.have_shared_state );
+static_assert( !typeinfo</IntPtr/>.have_shared_state );
+static_assert( !typeinfo</IntPtrNullable/>.have_shared_state );
 
 fn U_Main() : i32
 {

@@ -1,15 +1,21 @@
 import "../container_utils.u"
 import "../memory.u"
 import "../pointer.u"
+import "../pthread.u"
+import "../atomic.u"
 
 namespace ust
 {
 
 template</ type T />
-class shared_ptr_base shared
+class shared_ptr_mt_base
 {
 	// Forbid shared pointers for structs with references inside.
 	static_assert( typeinfo</T/>.references_tags_count == size_type(0) );
+
+	// It's have no sence to use multithreaded shared pointer for types, with singlethreaded shared pointers inside.
+	// Use singlethreaded shared pointer instead.
+	static_assert( !typeinfo</T/>.have_shared_state );
 
 public:
 	fn constructor()= default;
@@ -21,10 +27,14 @@ public:
 			value_= value_ptr( cast_ref_unsafe</T/>( memory_allocate( typeinfo</T/>.size_of ) ) );
 			move_unsafe( value_.get_ref(), move(value) );
 
-			counter_= counter_ptr( cast_ref_unsafe</ shared_ptr_impl::counter />( memory_allocate( typeinfo</ shared_ptr_impl::counter />.size_of ) ) );
-			counter_.get_ref().use_count_total= 1u;
+			counter_= counter_ptr( cast_ref_unsafe</ shared_ptr_mt_impl::counter />( memory_allocate( typeinfo</ shared_ptr_mt_impl::counter />.size_of ) ) );
+			counter_.get_ref().use_count_total = 1u;
 			counter_.get_ref().use_count_strong= 1u;
-			counter_.get_ref().lock_count= 0;
+
+			var pthread_rwlockattr_t mut attr= uninitialized;
+			halt if( pthread_rwlockattr_init( attr ) != 0 );
+			halt if( pthread_rwlock_init( counter_.get_ref().rwlock, attr ) != 0 );
+			halt if( pthread_rwlockattr_destroy( attr ) != 0 );
 		}
 	}
 
@@ -47,8 +57,8 @@ public:
 			{
 				value_= other.value_;
 				counter_= other.counter_;
-				++counter_.get_ref().use_count_total;
-				++counter_.get_ref().use_count_strong;
+				ust::atomic_inc( counter_.get_ref().use_count_total  );
+				ust::atomic_inc( counter_.get_ref().use_count_strong );
 			}
 		}
 	}
@@ -58,16 +68,15 @@ public:
 		if( empty() ) { return; }
 		unsafe
 		{
-			--counter_.get_ref().use_count_total;
-			--counter_.get_ref().use_count_strong;
-			if( counter_.get_ref().use_count_strong == 0u )
+			if( ust::atomic_dec( counter_.get_ref().use_count_strong ) == 1u )
 			{
 				call_destructor( value_.get_ref() );
 				memory_free( value_.get_ref() );
-				if( counter_.get_ref().use_count_total == 0u )
-				{
-					memory_free( counter_.get_ref() );
-				}
+			}
+			if( ust::atomic_dec( counter_.get_ref().use_count_total ) == 1u )
+			{
+				halt if( pthread_rwlock_destroy( counter_.get_ref().rwlock ) != 0 );
+				memory_free( counter_.get_ref() );
 			}
 			value_= value_ptr();
 			counter_= counter_ptr();
@@ -103,22 +112,22 @@ public: // Methods for internal usage.
 		return value_;
 	}
 
-	fn get_counter_ptr( this ) unsafe : raw_ptr_mut</ shared_ptr_impl::counter />
+	fn get_counter_ptr( this ) unsafe : raw_ptr_mut</ shared_ptr_mt_impl::counter />
 	{
 		return counter_;
 	}
 
 	// Counter must be incremented before this constructor call.
-	fn constructor( raw_ptr_mut</T/> value_ptr, raw_ptr_mut</ shared_ptr_impl::counter /> counter_ptr ) unsafe
+	fn constructor( raw_ptr_mut</T/> value_ptr, raw_ptr_mut</ shared_ptr_mt_impl::counter /> counter_ptr ) unsafe
 	( value_(value_ptr), counter_(counter_ptr) )
 	{}
 
 private:
-	type this_type= shared_ptr_base</ T />;
+	type this_type= shared_ptr_mt_base</ T />;
 	type value_ptr= raw_ptr_mut</T/>;
-	type counter_ptr= raw_ptr_mut</ shared_ptr_impl::counter />;
-	type lock_mut_t = shared_ptr_impl::lock_mut </T/>;
-	type lock_imut_t= shared_ptr_impl::lock_imut</T/>;
+	type counter_ptr= raw_ptr_mut</ shared_ptr_mt_impl::counter />;
+	type lock_mut_t = shared_ptr_mt_impl::lock_mut </T/>;
+	type lock_imut_t= shared_ptr_mt_impl::lock_imut</T/>;
 
 private:
 	value_ptr value_();
@@ -126,12 +135,12 @@ private:
 }
 
 template</ type T />
-class weak_ptr_base shared
+class weak_ptr_mt_base
 {
 public:
 	fn constructor()= default;
 
-	fn constructor( shared_ptr_base</T/>& ptr )
+	fn constructor( shared_ptr_mt_base</T/>& ptr )
 	{
 		unsafe
 		{
@@ -139,7 +148,7 @@ public:
 			counter_= ptr.get_counter_ptr();
 			if( !counter_.is_null() )
 			{
-				++counter_.get_ref().use_count_total;
+				atomic_inc( counter_.get_ref().use_count_total );
 			}
 		}
 	}
@@ -163,7 +172,7 @@ public:
 			{
 				value_= other.value_;
 				counter_= other.counter_;
-				++counter_.get_ref().use_count_total;
+				ust::atomic_inc( counter_.get_ref().use_count_total );
 			}
 		}
 	}
@@ -174,9 +183,9 @@ public:
 		{
 			if( !counter_.is_null() )
 			{
-				--counter_.get_ref().use_count_total;
-				if( counter_.get_ref().use_count_total == 0u )
+				if( ust::atomic_dec( counter_.get_ref().use_count_total ) == 1u )
 				{
+					halt if( pthread_rwlock_destroy( counter_.get_ref().rwlock ) != 0 );
 					memory_free( counter_.get_ref() );
 					value_= value_ptr();
 				}
@@ -185,40 +194,59 @@ public:
 		}
 	}
 
-	fn lock( this ) : shared_ptr_base</T/>
+	fn lock( this ) : shared_ptr_mt_base</T/>
 	{
 		unsafe
 		{
-			if( counter_.is_null() || counter_.get_ref().use_count_strong == 0u )
+			if( counter_.is_null() )
 			{
-				return shared_ptr_base</T/>();
+				return shared_ptr_mt_base</T/>();
 			}
-			++counter_.get_ref().use_count_total;
-			++counter_.get_ref().use_count_strong;
-			return shared_ptr_base</T/>( value_, counter_ );
+
+			ust::atomic_inc( counter_.get_ref().use_count_total );
+
+			var u32 mut count= ust::atomic_read( counter_.get_ref().use_count_strong );
+			while(true)
+			{
+				if( count == 0u )
+				{
+					ust::atomic_dec( counter_.get_ref().use_count_total );
+					return shared_ptr_mt_base</T/>();
+				}
+
+				if( atomic_compare_exchange_weak(
+						counter_.get_ref().use_count_strong,
+						count,
+						count + 1u ) )
+				{
+					break;
+				}
+			}
+
+			return shared_ptr_mt_base</T/>( value_, counter_ );
 		}
 	}
 
 private:
-	type this_type= weak_ptr_base</ T />;
+	type this_type= weak_ptr_mt_base</ T />;
 	type value_ptr= raw_ptr_mut</T/>;
-	type counter_ptr= raw_ptr_mut</ shared_ptr_impl::counter />;
-	type lock_mut_t = shared_ptr_impl::lock_mut </T/>;
-	type lock_imut_t= shared_ptr_impl::lock_imut</T/>;
+	type counter_ptr= raw_ptr_mut</ shared_ptr_mt_impl::counter />;
+	type lock_mut_t = shared_ptr_mt_impl::lock_mut </T/>;
+	type lock_imut_t= shared_ptr_mt_impl::lock_imut</T/>;
 
 private:
 	value_ptr value_();
 	counter_ptr counter_();
 }
 
-namespace shared_ptr_impl
+namespace shared_ptr_mt_impl
 {
 
 struct counter
 {
 	u32 use_count_total;
 	u32 use_count_strong; // always <= use_count_total
-	i32 lock_count; // 0 - not locked, positive value - locked as imut, -1 - locked as mut.
+	pthread_rwlock_t rwlock;
 }
 
 template</ type T />
@@ -228,16 +256,12 @@ public:
 	fn constructor( mut this'a', T &'b  mut value, raw_ptr_mut</counter/> counter ) ' a <- b ' unsafe
 		( value_(value), counter_(counter) )
 	{
-		unsafe
-		{
-			halt if( counter_.get_ref().lock_count != 0 ); // halt if have any locks
-			counter_.get_ref().lock_count= -1;
-		}
+		unsafe{  halt if( pthread_rwlock_wrlock( counter_.get_ref().rwlock ) != 0 );  }
 	}
 
 	fn destructor()
 	{
-		unsafe{  counter_.get_ref().lock_count= 0;  }
+		unsafe{  halt if( pthread_rwlock_unlock( counter_.get_ref().rwlock ) != 0 );  }
 	}
 
 	// Mark reference by "this" tag, instead of inner tag, for prevention of "lock" destruction.
@@ -258,16 +282,12 @@ public:
 	fn constructor( mut this'a', T &'b imut value, raw_ptr_mut</counter/> counter ) ' a <- b ' unsafe
 		( value_(value), counter_(counter) )
 	{
-		unsafe
-		{
-			halt if( counter_.get_ref().lock_count < 0 ); // halt if have mutable locks
-			++counter_.get_ref().lock_count;
-		}
+		unsafe{  halt if( pthread_rwlock_rdlock( counter_.get_ref().rwlock ) != 0 );  }
 	}
 
 	fn destructor()
 	{
-		unsafe{  --counter_.get_ref().lock_count;  }
+		unsafe{  halt if( pthread_rwlock_unlock( counter_.get_ref().rwlock ) != 0 );  }
 	}
 
 	// Mark reference by "this" tag, instead of inner tag, for prevention of "lock" destruction.
@@ -281,6 +301,6 @@ private:
 	raw_ptr_mut</counter/> counter_();
 }
 
-} // namespace shared_ptr_impl
+} // namespace shared_ptr_mt_impl
 
 } // namespace ust

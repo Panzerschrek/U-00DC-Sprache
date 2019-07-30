@@ -5,6 +5,11 @@ import "../ustlib/shared/shared_ptr_final_nullable.u"
 type IntPtr= ust::shared_ptr_final</i32/>;
 type IntPtrNullable= ust::shared_ptr_final_nullable</i32/>;
 
+struct S{ i32& r; }
+
+// Shared pointers disabled for types with references.
+type SPtrInvalid= ust::shared_ptr_final</S/>; //##expect_error TemplateContext
+
 fn U_Main() : i32
 {
 	{ // For non-nullable pointers expected initializer.
