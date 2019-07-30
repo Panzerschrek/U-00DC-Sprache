@@ -35,9 +35,11 @@ Templates:
 Standart library:
 *) Type traits
 *) ptr</Derived/> -> pt</Base/> conversions with correct memory free
-*) thread-safe shared_ptr
 *) Math functions
 *) Associative containers - map, set, unordered_set, string_map
+*) Correct atomic operations
+*) Time library - get time functions, timers
+*) File library
 
 Compiler:
 *) move-assignment without hacks.
