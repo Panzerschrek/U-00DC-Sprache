@@ -184,3 +184,90 @@ def ConstructorForInterface_Test0():
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ConstructorForInterface" )
 	assert( errors_list[0].file_pos.line == 2 )
+
+
+def ConstructingAbstractClassOrInterface_Test0():
+	c_program_text= """
+		class A interface {}
+		fn Foo()
+		{
+			var A a;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ConstructingAbstractClassOrInterface" )
+	assert( errors_list[0].file_pos.line == 5 )
+
+
+def ConstructingAbstractClassOrInterface_Test1():
+	c_program_text= """
+		class A interface {}
+		fn GetA() : A&;
+		fn Foo()
+		{
+			auto a= GetA();
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ConstructingAbstractClassOrInterface" )
+	assert( errors_list[0].file_pos.line == 6 )
+
+
+def ConstructingAbstractClassOrInterface_Test2():
+	c_program_text= """
+		class A abstract {}
+		fn Bar( A& a );
+		fn Foo()
+		{
+			Bar( A() );
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ConstructingAbstractClassOrInterface" )
+	assert( errors_list[0].file_pos.line == 6 )
+
+
+def ConstructingAbstractClassOrInterface_Test3():
+	c_program_text= """
+		class A abstract {}
+		class S{ A a; }
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ConstructingAbstractClassOrInterface" )
+	assert( errors_list[0].file_pos.line == 3 )
+
+
+def ConstructingAbstractClassOrInterface_Test4():
+	c_program_text= """
+		class A interface {}
+		class S{ A& a; } // ok, because field is reference
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def ConstructingAbstractClassOrInterface_Test5():
+	c_program_text= """
+		class A abstract {}
+		fn GetA() : A&;
+		fn Foo()
+		{
+			auto& a= GetA(); // ok, because is reference
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def ConstructingAbstractClassOrInterface_Test6():
+	c_program_text= """
+		class A abstract {}
+		fn GetA() : A&;
+		fn Foo()
+		{
+			var A & a= GetA(); // ok, because is reference
+		}
+	"""
+	tests_lib.build_program( c_program_text )

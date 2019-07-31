@@ -152,6 +152,7 @@ PROCESS_ERROR( DuplicatedBaseClass, "Can not inherit from \"%1%\" because class 
 PROCESS_ERROR( FieldsForInterfacesNotAllowed, "Fields for interfaces not allowed." )
 PROCESS_ERROR( BaseClassForInterface, "Base class for interface." )
 PROCESS_ERROR( ConstructorForInterface, "Constructor for interface." )
+PROCESS_ERROR( ConstructingAbstractClassOrInterface, "Constructing object of class \"%1%\", which is abstract or interface." )
 
 // Auto functions errors
 PROCESS_ERROR( ExpectedBodyForAutoFunction, "Expected body for function \"%1%\", because return type declared as \"auto\"." )
