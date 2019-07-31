@@ -140,9 +140,9 @@ def DoFailTest( file_path, expected_errors_list ):
 	actual_errors_list= ParseCompilerErrorsOutput( output_str )
 	all_ok= True
 
-	file_path_normalized= os.path.normpath( file_path )
+	file_path_normalized= os.path.abspath( file_path )
 	for error in actual_errors_list:
-		if os.path.normpath( error.file_name ) != file_path_normalized:
+		if os.path.abspath( error.file_name ) != file_path_normalized:
 			all_ok= False
 			print( "Unexpected error in included file:\n" + error.file_name + " " + str(error.line_number) + " " + error.error_code )
 
