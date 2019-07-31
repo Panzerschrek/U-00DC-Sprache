@@ -35,10 +35,10 @@ Templates:
 Standart library:
 *) Type traits
 *) ptr</Derived/> -> pt</Base/> conversions with correct memory free
-*) Math functions
 *) Associative containers - map, set, unordered_set, string_map
 *) Time library - get time functions, timers
 *) File library
+*) More math functions
 
 Compiler:
 *) move-assignment without hacks.

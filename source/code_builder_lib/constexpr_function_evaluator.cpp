@@ -925,9 +925,9 @@ void ConstexprFunctionEvaluator::ProcessBinaryArithmeticInstruction( const llvm:
 		{
 			llvm::APFloat::cmpResult cmp_result;
 			if( type->isFloatTy() )
-				cmp_result= llvm::APFloat(op0.FloatVal).compare(llvm::APFloat(op0.FloatVal));
+				cmp_result= llvm::APFloat(op0.FloatVal).compare(llvm::APFloat(op1.FloatVal));
 			else
-				cmp_result= llvm::APFloat(op0.DoubleVal).compare(llvm::APFloat(op0.DoubleVal));
+				cmp_result= llvm::APFloat(op0.DoubleVal).compare(llvm::APFloat(op1.DoubleVal));
 			switch(llvm::dyn_cast<llvm::CmpInst>(instruction)->getPredicate())
 			{
 			// see llvm-3.7.1.src/lib/IR/ConstantFold.cpp:1752
