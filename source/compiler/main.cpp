@@ -157,7 +157,7 @@ private:
 			fs::path result_path;
 
 			if( full_parent_file_path.empty() )
-				result_path= file_path_r;
+				result_path= fs::canonical( file_path_r );
 			else if( !file_path.empty() && file_path[0] == '/' )
 			{
 				// If file path is absolute, like "/some_lib/some_file.u" search file in include dirs.
@@ -470,7 +470,7 @@ int main( const int argc, const char* const argv[])
 	{
 		const U::SourceGraphPtr source_graph= source_graph_loader.LoadSource( U::ToProgramString( input_file.c_str() ) );
 		U_ASSERT( source_graph != nullptr );
-		if( !source_graph->lexical_errors.empty() || !source_graph->syntax_errors.empty() )
+		if( source_graph->have_errors || !source_graph->lexical_errors.empty() || !source_graph->syntax_errors.empty() )
 		{
 			have_some_errors= true;
 			continue;

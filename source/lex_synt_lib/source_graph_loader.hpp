@@ -44,6 +44,7 @@ struct SourceGraph final
 
 	LexicalErrorMessages lexical_errors;
 	Synt::SyntaxErrorMessages syntax_errors;
+	bool have_errors= false;
 };
 
 using SourceGraphPtr= std::unique_ptr<SourceGraph>;
