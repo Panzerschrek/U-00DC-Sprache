@@ -32,6 +32,9 @@ abs( T x ) : T
 fn sqrt( f32 x ) : f32;
 fn sqrt( f64 x ) : f64;
 
+fn pow( f32 x, f32 exp ) : f32;
+fn pow( f64 x, f64 exp ) : f64;
+
 fn exp( f32 x ) : f32;
 fn exp( f64 x ) : f64;
 

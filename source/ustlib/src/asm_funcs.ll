@@ -25,6 +25,8 @@ declare {i64, i1} @llvm.umul.with.overflow.i64(i64 %a, i64 %b)
 
 declare float  @llvm.sqrt.f32(float  %x)
 declare double @llvm.sqrt.f64(double %x)
+declare float  @llvm.pow.f32(float  %x, float  %exp)
+declare double @llvm.pow.f64(double %x, double %exp)
 declare float  @llvm.exp.f32(float  %x)
 declare double @llvm.exp.f64(double %x)
 declare float  @llvm.exp2.f32(float  %x)
@@ -215,6 +217,22 @@ $_ZN3ust4sqrtEd = comdat any
 define linkonce_odr double @_ZN3ust4sqrtEd( double %x ) unnamed_addr comdat
 {
 	%1= call double @llvm.sqrt.f64( double %x )
+	ret double %1
+}
+
+;fn pow( f32 x, f32y ) : f32;
+$_ZN3ust3powEff = comdat any
+define linkonce_odr float @_ZN3ust3powEff( float %x, float %exp ) unnamed_addr comdat
+{
+	%1= call float @llvm.pow.f32( float %x, float %exp )
+	ret float %1
+}
+
+;fn pow( f64 x, f64 ) : f32;
+$_ZN3ust3powEdd = comdat any
+define linkonce_odr double @_ZN3ust3powEdd( double %x, double %exp ) unnamed_addr comdat
+{
+	%1= call double @llvm.pow.f64( double %x, double %exp )
 	ret double %1
 }
 

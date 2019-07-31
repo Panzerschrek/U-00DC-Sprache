@@ -58,6 +58,29 @@ fn DoFloatsTest()
 	halt if( ust::sqrt( ust:: plus_inf</T/>() ) != ust::sqrt( ust:: plus_inf</T/>() ) ); // result for infinity is infinity
 	halt if( ust::sqrt( ust::minus_inf</T/>() ) == ust::sqrt( ust::minus_inf</T/>() ) ); // result for minus infinity is nan
 
+	// pow
+	halt if( ust::pow( T(5.0), T(3.0) ) != T(125.0) );
+	halt if( ust::pow( T(1.5), T(2.0) ) != T(2.25) );
+	halt if( ust::pow( T(9.0), T(2.5) ) != T(243.0) );
+	halt if( ust::pow( T(-3.0), T(2.0) ) != T(9.0) );
+	halt if( ust::pow( T(-3.0), T(3.0) ) != T(-27.0) );
+	halt if( ust::pow( T(16.0), T(-1.5) ) != T(0.015625) );
+	ExpectNear( ust::pow( T(10.24), T(1.5) ), T(32.768), T(1.0e-5) );
+	halt if( ust::pow( T(2.0), ust::nan</T/>() ) == ust::pow( T(2.0), ust::nan</T/>() ) ); // result for nan is nan
+	halt if( ust::pow( ust::nan</T/>(), T(2.0) ) == ust::pow( ust::nan</T/>(), T(2.0) ) ); // result for nan is nan
+	halt if( ust::pow( T(1.0), ust::nan</T/>() ) != T(1.0) ); // result for base=1 is always 1, even if exponent is nan
+	halt if( ust::pow( ust::nan</T/>(), T(0.0) ) != T(1.0) ); // result for exponent=1 is always 1, even if base is nan
+	halt if( ust::pow( T(-2.1), T(2.2) ) == ust::pow( T(-2.1), T(2.2) ) ); // result is nan if base is negative and exponent is not integer
+	halt if( ust::pow( T(0.0), T(0.0) ) != T(1.0) ); // zero in power of zero is one
+	halt if( ust::pow( T(0.0), T(0.1) ) != T(0.0) ); // zero in positive power is zero
+	halt if( ust::pow( T(0.0), T(1.1) ) != T(0.0) ); // zero in positive power is zero
+	halt if( ust::pow( T(0.0), T(2.0) ) != T(0.0) ); // zero in positive power is zero
+	halt if( ust::pow( T(0.0), T(3.0) ) != T(0.0) ); // zero in positive power is zero
+	halt if( ust::pow( T(0.5), ust:: plus_inf</T/>() ) != T(0.0) );
+	halt if( ust::pow( T(2.0), ust:: plus_inf</T/>() ) != ust::plus_inf</T/>() );
+	halt if( ust::pow( T(0.5), ust::minus_inf</T/>() ) != ust::plus_inf</T/>() );
+	halt if( ust::pow( T(2.0), ust::minus_inf</T/>() ) != T(0.0) );
+
 	// exp
 	halt if( ust::exp( T(0.0) ) != T(1.0) );
 	ExpectNear( ust::exp( T(+1) ), T(2.718281828), T(1.0e-5) );
