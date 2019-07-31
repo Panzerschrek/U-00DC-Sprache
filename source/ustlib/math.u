@@ -97,6 +97,13 @@ fn round( f64 x ) : f64;
 fn trunc( f32 x ) : f32;
 fn trunc( f64 x ) : f64;
 
+// TODO:
+// * add hyperbolic trigonometric functions
+// * add more classification functions - is_finite, is_infinity, is_normal, etc.
+// * add more functions - error function, gamma function, etc.
+// * add special functions with more precision/prfomance - fma, lround, remquo, etc.
+// * add constants - pi, e, etc.
+
 namespace math_impl
 {
 
