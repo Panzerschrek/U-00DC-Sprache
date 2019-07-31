@@ -660,14 +660,14 @@ public:
 
 	Kind kind= Kind::Struct;
 	ClassProxyPtr base_class; // We can have single non-interface base class.
-	unsigned int base_class_field_number= 0u;
+	unsigned int base_class_field_number= ~0u;
 	std::vector<ClassProxyPtr> parents; // Class have fields with numbers 0-N for parents.
 	std::vector<unsigned int> parents_fields_numbers;
 
 	std::vector<VirtualTableEntry> virtual_table;
 	llvm::StructType* virtual_table_llvm_type= nullptr;
 	llvm::GlobalVariable* this_class_virtual_table= nullptr; // May be null for interfaces and abstract classes.
-	unsigned int virtual_table_field_number= 0u;
+	unsigned int virtual_table_field_number= ~0u;
 
 	// Key - sequence of classes from child to parent. This class not included.
 	// Virtual table destination is lats key element.
