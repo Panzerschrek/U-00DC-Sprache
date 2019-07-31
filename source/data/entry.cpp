@@ -6,6 +6,7 @@
   This launcher developed for usage of Ü together with some C++ code. Launcher allows you to use C++ standart library,
   which initialized normally before C++ "main" function.
 */
+#include <csignal>
 #include <cstdlib>
 #include <iostream>
 
@@ -22,8 +23,16 @@ static void HaltHandler()
 	std::exit(-1);
 }
 
+static void SigFpeHandler(int)
+{
+	// On x86-64 linux SIGFPE raises on integer division by zero.
+	std::cout << "Ü programm error - \"SIGFPE\"" << std::endl;
+	std::exit(-1);
+}
+
 int main()
 {
 	_U_halt_handler= HaltHandler;
+	std::signal( SIGFPE, SigFpeHandler );
 	U_Main();
 }
