@@ -10,6 +10,13 @@ nan() : T
 
 template</type T/>
 fn constexpr enable_if( math_impl::is_float</T/>() )
+is_nan( T x ) : bool
+{
+	return x != x;
+}
+
+template</type T/>
+fn constexpr enable_if( math_impl::is_float</T/>() )
 plus_inf() : T
 {
 	return T(+1) / T(0);

@@ -666,7 +666,7 @@ Value CodeBuilder::BuildBinaryOperator(
 
 			switch( binary_operator )
 			{
-			// Use ordered floating point compare operations, which result is false for NaN.
+			// Use ordered floating point compare operations, which result is false for NaN, except !=. nan != nan must be true.
 			case BinaryOperatorType::Equal:
 				if( if_float )
 				{
@@ -688,9 +688,9 @@ Value CodeBuilder::BuildBinaryOperator(
 				if( if_float )
 				{
 					if( arguments_are_constexpr )
-						result.constexpr_value= llvm::ConstantExpr::getFCmp( llvm::CmpInst::FCMP_ONE, l_var.constexpr_value, r_var.constexpr_value );
+						result.constexpr_value= llvm::ConstantExpr::getFCmp( llvm::CmpInst::FCMP_UNE, l_var.constexpr_value, r_var.constexpr_value );
 					else
-						result_value= function_context.llvm_ir_builder.CreateFCmpONE( l_value_for_op, r_value_for_op );
+						result_value= function_context.llvm_ir_builder.CreateFCmpUNE( l_value_for_op, r_value_for_op );
 				}
 				else
 				{
