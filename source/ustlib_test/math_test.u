@@ -85,7 +85,7 @@ fn DoFloatsTest()
 	halt if( ust::exp( T(0.0) ) != T(1.0) );
 	ExpectNear( ust::exp( T(+1) ), T(2.718281828), T(1.0e-5) );
 	ExpectNear( ust::exp( T(-1) ), T(1.0 / 2.718281828), T(1.0e-5) );
-	ExpectNear( ust::exp( T(+1) ), T(2.718281828), T(1.0e-5) );
+	ExpectNear( ust::exp( T(2) ), T(2.718281828 * 2.718281828), T(1.0e-5) );
 	ExpectNear( ust::exp( T(2.302585) ), T(10), T(1.0e-5) );
 	halt if( ust::exp( ust::nan</T/>() ) == ust::exp( ust::nan</T/>() ) ); // result for nan is nan
 	halt if( ust::exp( ust:: plus_inf</T/>() ) != ust::plus_inf</T/>() ); // result for infinity is infinity
@@ -101,6 +101,16 @@ fn DoFloatsTest()
 	halt if( ust::exp2( ust::nan</T/>() ) == ust::exp2( ust::nan</T/>() ) ); // result for nan is nan
 	halt if( ust::exp2( ust:: plus_inf</T/>() ) != ust::plus_inf</T/>() ); // result for infinity is infinity
 	halt if( ust::exp2( ust::minus_inf</T/>() ) != T(0) ); // result for minus infinity is zero
+
+	// expm1
+	halt if( ust::expm1( T(0.0) ) != T(0.0) );
+	ExpectNear( ust::expm1( T(+1) ), T(1.718281828), T(1.0e-5) );
+	ExpectNear( ust::expm1( T(-1) ), T(1.0 / 2.718281828 - 1.0), T(1.0e-5) );
+	ExpectNear( ust::expm1( T(2) ), T(2.718281828 * 2.718281828 - 1.0), T(1.0e-5) );
+	ExpectNear( ust::expm1( T(2.302585) ), T(9), T(1.0e-5) );
+	halt if( ust::expm1( ust::nan</T/>() ) == ust::expm1( ust::nan</T/>() ) ); // result for nan is nan
+	halt if( ust::expm1( ust:: plus_inf</T/>() ) != ust::plus_inf</T/>() ); // result for infinity is infinity
+	halt if( ust::expm1( ust::minus_inf</T/>() ) != T(-1) ); // result for minus infinity is minus one
 
 	// log
 	halt if( ust::log( T(0.0) ) >= T(-1e24) );
@@ -123,6 +133,16 @@ fn DoFloatsTest()
 	halt if( ust::log2( T(-1) ) == ust::log2( T(-1) ) ); // result for negative value is nan
 	halt if( ust::log2( ust::minus_inf</T/>() ) == ust::log2( ust::minus_inf</T/>() ) ); // result for minus infinity is nan
 	halt if( ust::log2( ust::plus_inf</T/>() ) != ust::plus_inf</T/>() ); // result for infinity is infinity
+
+	// log1p
+	halt if( ust::log1p( T(-1.0) ) >= T(-1e24) );
+	halt if( ust::log1p( T(0.0) ) != T(0.0) );
+	ExpectNear( ust::log1p( T(1.718281828) ), T(1.0), T(1.0e-5) );
+	ExpectNear( ust::log1p( T(9.0) ), T(2.302585), T(1.0e-5) );
+	halt if( ust::log1p( ust::nan</T/>() ) == ust::log1p( ust::nan</T/>() ) ); // result for nan is nan
+	halt if( ust::log1p( T(-1.1) ) == ust::log( T(-1.1) ) ); // result for valie less then -1 is nan
+	halt if( ust::log1p( ust::minus_inf</T/>() ) == ust::log1p( ust::minus_inf</T/>() ) ); // result for minus infinity is nan
+	halt if( ust::log1p( ust::plus_inf</T/>() ) != ust::plus_inf</T/>() ); // result for infinity is infinity
 
 	var T pi(3.1415926535);
 	auto two_pi= T(2.0) * pi;

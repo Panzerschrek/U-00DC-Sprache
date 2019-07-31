@@ -53,6 +53,10 @@ declare double @llvm.trunc.f64(double %x)
 ; C99 math.h functions
 ;
 
+declare float  @expm1f(float  %x)
+declare double @expm1 (double %x)
+declare float  @log1pf(float  %x)
+declare double @log1p (double %x)
 declare float  @tanf(float  %x)
 declare double @tan (double %x)
 declare float  @asinf(float  %x)
@@ -276,6 +280,22 @@ define linkonce_odr double @_ZN3ust4exp2Ed( double %x ) unnamed_addr comdat
 	ret double %1
 }
 
+;fn expm1( f32 x ) : f32;
+$_ZN3ust5expm1Ef = comdat any
+define linkonce_odr float @_ZN3ust5expm1Ef( float %x ) unnamed_addr comdat
+{
+	%1= call float @expm1f( float %x )
+	ret float %1
+}
+
+;fn expm1( f64 x ) : f64;
+$_ZN3ust5expm1Ed = comdat any
+define linkonce_odr double @_ZN3ust5expm1Ed( double %x ) unnamed_addr comdat
+{
+	%1= call double @expm1 ( double %x )
+	ret double %1
+}
+
 ;fn log( f32 x ) : f32;
 $_ZN3ust3logEf = comdat any
 define linkonce_odr float @_ZN3ust3logEf( float %x ) unnamed_addr comdat
@@ -305,6 +325,22 @@ $_ZN3ust4log2Ed = comdat any
 define linkonce_odr double @_ZN3ust4log2Ed( double %x ) unnamed_addr comdat
 {
 	%1= call double @llvm.log2.f64( double %x )
+	ret double %1
+}
+
+;fn log1p( f32 x ) : f32;
+$_ZN3ust5log1pEf = comdat any
+define linkonce_odr float @_ZN3ust5log1pEf( float %x ) unnamed_addr comdat
+{
+	%1= call float @log1pf( float %x )
+	ret float %1
+}
+
+;fn log1p( f64 x ) : f64;
+$_ZN3ust5log1pEd = comdat any
+define linkonce_odr double @_ZN3ust5log1pEd( double %x ) unnamed_addr comdat
+{
+	%1= call double @log1p( double %x )
 	ret double %1
 }
 

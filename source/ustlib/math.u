@@ -41,11 +41,17 @@ fn exp( f64 x ) : f64;
 fn exp2( f32 x ) : f32;
 fn exp2( f64 x ) : f64;
 
+fn expm1( f32 x ) : f32;
+fn expm1( f64 x ) : f64;
+
 fn log( f32 x ) : f32;
 fn log( f64 x ) : f64;
 
 fn log2( f32 x ) : f32;
 fn log2( f64 x ) : f64;
+
+fn log1p( f32 x ) : f32;
+fn log1p( f64 x ) : f64;
 
 fn sin( f32 x ) : f32;
 fn sin( f64 x ) : f64;
