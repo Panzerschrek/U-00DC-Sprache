@@ -65,6 +65,9 @@ fn acos( f64 x ) : f64;
 fn atan( f32 x ) : f32;
 fn atan( f64 x ) : f64;
 
+fn atan2( f32 y, f32 x ) : f32;
+fn atan2( f64 y, f64 x ) : f64;
+
 // round downward
 fn floor( f32 x ) : f32;
 fn floor( f64 x ) : f64;

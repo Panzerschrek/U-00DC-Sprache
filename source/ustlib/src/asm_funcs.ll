@@ -61,6 +61,8 @@ declare float  @acosf(float  %x)
 declare double @acos (double %x)
 declare float  @atanf(float  %x)
 declare double @atan (double %x)
+declare float  @atan2f(float  %y, float  %x)
+declare double @atan2 (double %y, double %x)
 
 ;
 ; lang functions
@@ -226,7 +228,7 @@ define linkonce_odr double @_ZN3ust4sqrtEd( double %x ) unnamed_addr comdat
 	ret double %1
 }
 
-;fn pow( f32 x, f32y ) : f32;
+;fn pow( f32 x, f32 exp ) : f32;
 $_ZN3ust3powEff = comdat any
 define linkonce_odr float @_ZN3ust3powEff( float %x, float %exp ) unnamed_addr comdat
 {
@@ -234,7 +236,7 @@ define linkonce_odr float @_ZN3ust3powEff( float %x, float %exp ) unnamed_addr c
 	ret float %1
 }
 
-;fn pow( f64 x, f64 ) : f32;
+;fn pow( f64 x, f64 exp ) : f32;
 $_ZN3ust3powEdd = comdat any
 define linkonce_odr double @_ZN3ust3powEdd( double %x, double %exp ) unnamed_addr comdat
 {
@@ -399,6 +401,22 @@ $_ZN3ust4atanEd = comdat any
 define linkonce_odr double @_ZN3ust4atanEd( double %x ) unnamed_addr comdat
 {
 	%1= call double @atan( double %x )
+	ret double %1
+}
+
+;fn atan2( f32 y, f32 x ) : f32;
+$_ZN3ust5atan2Eff = comdat any
+define linkonce_odr float @_ZN3ust5atan2Eff( float %y, float %x ) unnamed_addr comdat
+{
+	%1= call float @atan2f( float %y, float %x )
+	ret float %1
+}
+
+;fn atan2( f64 y, f64 x ) : f32;
+$_ZN3ust5atan2Edd = comdat any
+define linkonce_odr double @_ZN3ust5atan2Edd( double %y, double %x ) unnamed_addr comdat
+{
+	%1= call double @atan2( double %y, double %x )
 	ret double %1
 }
 
