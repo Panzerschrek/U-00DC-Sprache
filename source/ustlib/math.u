@@ -56,6 +56,15 @@ fn cos( f64 x ) : f64;
 fn tan( f32 x ) : f32;
 fn tan( f64 x ) : f64;
 
+fn asin( f32 x ) : f32;
+fn asin( f64 x ) : f64;
+
+fn acos( f32 x ) : f32;
+fn acos( f64 x ) : f64;
+
+fn atan( f32 x ) : f32;
+fn atan( f64 x ) : f64;
+
 // round downward
 fn floor( f32 x ) : f32;
 fn floor( f64 x ) : f64;
