@@ -53,6 +53,22 @@ fn cos( f64 x ) : f64;
 fn tan( f32 x ) : f32;
 fn tan( f64 x ) : f64;
 
+// round downward
+fn floor( f32 x ) : f32;
+fn floor( f64 x ) : f64;
+
+// round upward
+fn ceil( f32 x ) : f32;
+fn ceil( f64 x ) : f64;
+
+// round to nearest integer
+fn round( f32 x ) : f32;
+fn round( f64 x ) : f64;
+
+// round toward zero
+fn trunc( f32 x ) : f32;
+fn trunc( f64 x ) : f64;
+
 namespace math_impl
 {
 

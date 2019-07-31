@@ -38,6 +38,15 @@ declare double @llvm.sin.f64(double %x)
 declare float  @llvm.cos.f32(float  %x)
 declare double @llvm.cos.f64(double %x)
 
+declare float  @llvm.floor.f32(float  %x)
+declare double @llvm.floor.f64(double %x)
+declare float  @llvm.ceil.f32(float  %x)
+declare double @llvm.ceil.f64(double %x)
+declare float  @llvm.round.f32(float  %x)
+declare double @llvm.round.f64(double %x)
+declare float  @llvm.trunc.f32(float  %x)
+declare double @llvm.trunc.f64(double %x)
+
 ;
 ; C99 math.h functions
 ;
@@ -318,6 +327,70 @@ $_ZN3ust3tanEd = comdat any
 define linkonce_odr double @_ZN3ust3tanEd( double %x ) unnamed_addr comdat
 {
 	%1= call double @tan( double %x )
+	ret double %1
+}
+
+;fn floor( f32 x ) : f32;
+$_ZN3ust5floorEf = comdat any
+define linkonce_odr float @_ZN3ust5floorEf( float %x ) unnamed_addr comdat
+{
+	%1= call float @llvm.floor.f32( float %x )
+	ret float %1
+}
+
+;fn floor( f64 x ) : f64;
+$_ZN3ust5floorEd = comdat any
+define linkonce_odr double @_ZN3ust5floorEd( double %x ) unnamed_addr comdat
+{
+	%1= call double @llvm.floor.f64( double %x )
+	ret double %1
+}
+
+;fn ceil( f32 x ) : f32;
+$_ZN3ust4ceilEf = comdat any
+define linkonce_odr float @_ZN3ust4ceilEf( float %x ) unnamed_addr comdat
+{
+	%1= call float @llvm.ceil.f32( float %x )
+	ret float %1
+}
+
+;fn ceil( f64 x ) : f64;
+$_ZN3ust4ceilEd = comdat any
+define linkonce_odr double @_ZN3ust4ceilEd( double %x ) unnamed_addr comdat
+{
+	%1= call double @llvm.ceil.f64( double %x )
+	ret double %1
+}
+
+;fn round( f32 x ) : f32;
+$_ZN3ust5roundEf = comdat any
+define linkonce_odr float @_ZN3ust5roundEf( float %x ) unnamed_addr comdat
+{
+	%1= call float @llvm.round.f32( float %x )
+	ret float %1
+}
+
+;fn round( f64 x ) : f64;
+$_ZN3ust5roundEd = comdat any
+define linkonce_odr double @_ZN3ust5roundEd( double %x ) unnamed_addr comdat
+{
+	%1= call double @llvm.round.f64( double %x )
+	ret double %1
+}
+
+;fn trunc( f32 x ) : f32;
+$_ZN3ust5truncEf = comdat any
+define linkonce_odr float @_ZN3ust5truncEf( float %x ) unnamed_addr comdat
+{
+	%1= call float @llvm.trunc.f32( float %x )
+	ret float %1
+}
+
+;fn trunc( f64 x ) : f64;
+$_ZN3ust5truncEd = comdat any
+define linkonce_odr double @_ZN3ust5truncEd( double %x ) unnamed_addr comdat
+{
+	%1= call double @llvm.trunc.f64( double %x )
 	ret double %1
 }
 

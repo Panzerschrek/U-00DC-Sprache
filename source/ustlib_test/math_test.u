@@ -87,7 +87,7 @@ fn DoFloatsTest()
 	halt if( ust::log( ust::nan</T/>() ) == ust::log( ust::nan</T/>() ) ); // result for nan is nan
 	halt if( ust::log( T(-1) ) == ust::log( T(-1) ) ); // result for negative value is nan
 	halt if( ust::log( ust::minus_inf</T/>() ) == ust::log( ust::minus_inf</T/>() ) ); // result for minus infinity is nan
-	halt if( ust::log( ust::plus_inf</T/>() ) != ust::log( ust::plus_inf</T/>() ) ); // result for infinity is infinity
+	halt if( ust::log( ust::plus_inf</T/>() ) != ust::plus_inf</T/>() ); // result for infinity is infinity
 
 	// log2
 	halt if( ust::log2( T(0.0) ) >= T(-1e24) );
@@ -99,7 +99,7 @@ fn DoFloatsTest()
 	halt if( ust::log2( ust::nan</T/>() ) == ust::log2( ust::nan</T/>() ) ); // result for nan is nan
 	halt if( ust::log2( T(-1) ) == ust::log2( T(-1) ) ); // result for negative value is nan
 	halt if( ust::log2( ust::minus_inf</T/>() ) == ust::log2( ust::minus_inf</T/>() ) ); // result for minus infinity is nan
-	halt if( ust::log2( ust::plus_inf</T/>() ) != ust::log2( ust::plus_inf</T/>() ) ); // result for infinity is infinity
+	halt if( ust::log2( ust::plus_inf</T/>() ) != ust::plus_inf</T/>() ); // result for infinity is infinity
 
 	var T pi(3.1415926535);
 	auto two_pi= T(2.0) * pi;
@@ -149,6 +149,50 @@ fn DoFloatsTest()
 	halt if( ust::tan( ust::nan</T/>() ) == ust::tan( ust::nan</T/>() ) ); // result for nan is nan
 	halt if( ust::tan( ust::plus_inf </T/>() ) == ust::tan( ust::plus_inf </T/>() ) ); // result for infinity is nan
 	halt if( ust::tan( ust::minus_inf</T/>() ) == ust::tan( ust::minus_inf</T/>() ) ); // result for minus infinity is nan
+
+	// floor
+	halt if( ust::floor( T(0.0) ) != T(0.0) );
+	halt if( ust::floor( T(2.3) ) != T(2.0) );
+	halt if( ust::floor( T(2.9) ) != T(2.0) );
+	halt if( ust::floor( T(-10.1) ) != T(-11.0) );
+	halt if( ust::floor( T(-10.9) ) != T(-11.0) );
+	halt if( ust::floor( ust::nan</T/>() ) == ust::floor( ust::nan</T/>() ) ); // result for nan is nan
+	halt if( ust::floor( ust:: plus_inf</T/>() ) != ust:: plus_inf</T/>() ); // result for infinity is infinity
+	halt if( ust::floor( ust::minus_inf</T/>() ) != ust::minus_inf</T/>() ); // result for minus infinity is minus infinity
+
+	// ceil
+	halt if( ust::ceil( T(0.0) ) != T(0.0) );
+	halt if( ust::ceil( T(2.3) ) != T(3.0) );
+	halt if( ust::ceil( T(2.9) ) != T(3.0) );
+	halt if( ust::ceil( T(-10.1) ) != T(-10.0) );
+	halt if( ust::ceil( T(-10.9) ) != T(-10.0) );
+	halt if( ust::ceil( ust::nan</T/>() ) == ust::ceil( ust::nan</T/>() ) ); // result for nan is nan
+	halt if( ust::ceil( ust:: plus_inf</T/>() ) != ust:: plus_inf</T/>() ); // result for infinity is infinity
+	halt if( ust::ceil( ust::minus_inf</T/>() ) != ust::minus_inf</T/>() ); // result for minus infinity is minus infinity
+
+	// round
+	halt if( ust::round( T(0.0) ) != T(0.0) );
+	halt if( ust::round( T(2.3) ) != T(2.0) );
+	halt if( ust::round( T(2.9) ) != T(3.0) );
+	halt if( ust::round( T(-10.1) ) != T(-10.0) );
+	halt if( ust::round( T(-10.9) ) != T(-11.0) );
+	halt if( ust::round( T(+53.5) ) != T(+54.0) );
+	halt if( ust::round( T(-53.5) ) != T(-54.0) );
+	halt if( ust::round( ust::nan</T/>() ) == ust::round( ust::nan</T/>() ) ); // result for nan is nan
+	halt if( ust::round( ust:: plus_inf</T/>() ) != ust:: plus_inf</T/>() ); // result for infinity is infinity
+	halt if( ust::round( ust::minus_inf</T/>() ) != ust::minus_inf</T/>() ); // result for minus infinity is minus infinity
+
+	// trunc
+	halt if( ust::trunc( T(0.0) ) != T(0.0) );
+	halt if( ust::trunc( T(2.3) ) != T(2.0) );
+	halt if( ust::trunc( T(2.9) ) != T(2.0) );
+	halt if( ust::trunc( T(-10.1) ) != T(-10.0) );
+	halt if( ust::trunc( T(-10.9) ) != T(-10.0) );
+	halt if( ust::trunc( T(+53.5) ) != T(+53.0) );
+	halt if( ust::trunc( T(-53.5) ) != T(-53.0) );
+	halt if( ust::trunc( ust::nan</T/>() ) == ust::trunc( ust::nan</T/>() ) ); // result for nan is nan
+	halt if( ust::trunc( ust:: plus_inf</T/>() ) != ust:: plus_inf</T/>() ); // result for infinity is infinity
+	halt if( ust::trunc( ust::minus_inf</T/>() ) != ust::minus_inf</T/>() ); // result for minus infinity is minus infinity
 }
 
 fn U_Main() : i32
