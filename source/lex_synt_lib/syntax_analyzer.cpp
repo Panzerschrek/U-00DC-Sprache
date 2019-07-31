@@ -3634,6 +3634,7 @@ TemplateBasePtr SyntaxAnalyzer::ParseTemplate()
 		std::unique_ptr<FunctionTemplate> function_template( new FunctionTemplate( template_file_pos ) );
 		function_template->args_= std::move(args);
 		function_template->function_= ParseFunction();
+		function_template->function_->is_template_= true;
 		return std::move(function_template);
 	}
 	else

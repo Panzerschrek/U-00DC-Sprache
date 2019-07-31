@@ -1272,20 +1272,18 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 	FunctionVariable& function_variable= result_functions_set.functions.front();
 	function_variable.deduced_temlpate_parameters= std::move(deduced_temlpate_parameters);
 
-	if( function_variable.constexpr_kind == FunctionVariable::ConstexprKind::NonConstexpr )
-		function_variable.constexpr_kind= FunctionVariable::ConstexprKind::ConstexprAuto;
-
 	generated_template_things_storage_.insert( std::make_pair( name_encoded, Value( template_parameters_namespace, function_declaration.file_pos_ ) ) );
 
 	// And generate function body after insertion of prototype.
-	BuildFuncCode(
-		function_variable,
-		function_template.base_class,
-		*template_parameters_namespace,
-		function_template.syntax_element->function_->name_.components.back().name,
-		function_template.syntax_element->function_->type_.arguments_,
-		function_template.syntax_element->function_->block_.get(),
-		function_template.syntax_element->function_->constructor_initialization_list_.get() );
+	if( !function_variable.have_body ) // if function is constexpr, body may be already generated.
+		BuildFuncCode(
+			function_variable,
+			function_template.base_class,
+			*template_parameters_namespace,
+			function_template.syntax_element->function_->name_.components.back().name,
+			function_template.syntax_element->function_->type_.arguments_,
+			function_template.syntax_element->function_->block_.get(),
+			function_template.syntax_element->function_->constructor_initialization_list_.get() );
 
 	// Two-step preparation needs for recursive function template call.
 

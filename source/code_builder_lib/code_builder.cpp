@@ -1084,6 +1084,8 @@ size_t CodeBuilder::PrepareFunction(
 
 		func_variable.constexpr_kind= FunctionVariable::ConstexprKind::ConstexprIncomplete;
 	}
+	else if( func.is_template_ )
+		func_variable.constexpr_kind= FunctionVariable::ConstexprKind::ConstexprAuto;
 
 	// Set virtual.
 	if( func.virtual_function_kind_ != Synt::VirtualFunctionKind::None )
