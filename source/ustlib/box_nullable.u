@@ -2,6 +2,7 @@ import "box.u"
 import "container_utils.u"
 import "hash.u"
 import "pointer.u"
+import "polymorph.u"
 import "type_traits.u"
 
 namespace ust
@@ -75,7 +76,7 @@ public:
 			unsafe
 			{
 				call_destructor( ptr_.get_ref() );
-				memory_free( ptr_.get_ref() );
+				memory_free( polymorph_restore_original_ref( ptr_.get_ref() ) );
 			}
 		}
 	}
@@ -114,7 +115,7 @@ public:
 			unsafe
 			{
 				call_destructor( ptr_.get_ref() );
-				memory_free( ptr_.get_ref() );
+				memory_free( polymorph_restore_original_ref( ptr_.get_ref() ) );
 				ptr_= raw_ptr_mut</T/>();
 			}
 		}
