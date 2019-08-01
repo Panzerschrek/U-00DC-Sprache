@@ -455,7 +455,6 @@ void CodeBuilder::CopyClass(
 	copy->virtual_table= src.virtual_table;
 	copy->virtual_table_llvm_type= src.virtual_table_llvm_type;
 	copy->this_class_virtual_table= src.this_class_virtual_table;
-	copy->virtual_table_field_number= src.virtual_table_field_number;
 	copy->ancestors_virtual_tables= src.ancestors_virtual_tables;
 
 	// Register copy in destination namespace and current class table.

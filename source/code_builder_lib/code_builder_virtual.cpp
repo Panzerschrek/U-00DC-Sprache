@@ -18,10 +18,20 @@ void CodeBuilder::ProcessClassParentsVirtualTables( Class& the_class )
 	if( the_class.base_class != nullptr )
 		the_class.virtual_table= the_class.base_class->class_->virtual_table;
 
-	// Later, process interfaces.
+	// First, borrow virtual table of parent with 0 offset.
+	// Class reuses virtual table pointer of first parent, so, virtual table layout must be equal.
+	for( const Class::Parent& parent : the_class.parents )
+		if( parent.field_number == 0u )
+		{
+			the_class.virtual_table= parent.class_->class_->virtual_table;
+			break;
+		}
+
+	// Then, add virtual functions from other parents.
+	// Later, add new virtual functions.
 	for( const Class::Parent& parent : the_class.parents )
 	{
-		if( parent.class_ == the_class.base_class )
+		if( parent.field_number == 0u )
 			continue;
 
 		for( const Class::VirtualTableEntry& parent_vtable_entry : parent.class_->class_->virtual_table )
@@ -395,12 +405,12 @@ std::pair<Variable, llvm::Value*> CodeBuilder::TryFetchVirtualFunction(
 		const unsigned int offset_field_number= 0u;
 
 		// Fetch vtable pointer.
-		llvm::Value* index_list[2];
-		index_list[0]= GetZeroGEPIndex();
-		index_list[1]= GetFieldGEPIndex( class_type->virtual_table_field_number );
-		llvm::Value* const ptr_to_virtual_table_ptr= function_context.llvm_ir_builder.CreateGEP( this_casted.llvm_value, index_list );
+		// Virtual table pointer is always first field.
+		llvm::Value* const ptr_to_virtual_table_ptr= function_context.llvm_ir_builder.CreateBitCast( this_casted.llvm_value, llvm::PointerType::get( llvm::PointerType::get( class_type->virtual_table_llvm_type, 0u ), 0u ) );
 		llvm::Value* const virtual_table_ptr= function_context.llvm_ir_builder.CreateLoad( ptr_to_virtual_table_ptr );
 		// Fetch function.
+		llvm::Value* index_list[2];
+		index_list[0]= GetZeroGEPIndex();
 		index_list[1]= GetFieldGEPIndex( func_ptr_field_number );
 		llvm::Value* const ptr_to_function_ptr= function_context.llvm_ir_builder.CreateGEP( virtual_table_ptr, index_list );
 		llvm_function_ptr= function_context.llvm_ir_builder.CreateLoad( ptr_to_function_ptr );
@@ -427,26 +437,25 @@ void CodeBuilder::SetupVirtualTablePointers_r(
 	const Class& the_class= *class_path.back()->class_;
 	U_ASSERT( virtual_tables.find( class_path ) != virtual_tables.end() );
 
-	llvm::Value* index_list[2];
-	index_list[0]= GetZeroGEPIndex();
-
-	index_list[1]= GetFieldGEPIndex( the_class.virtual_table_field_number );
-	llvm::Value* const ptr_to_vtable_ptr= function_context.llvm_ir_builder.CreateGEP( this_, index_list );
-	function_context.llvm_ir_builder.CreateStore( virtual_tables.find(class_path)->second, ptr_to_vtable_ptr );
-
 	if( !the_class.parents.empty() )
 	{
 		auto parent_path= class_path;
 		parent_path.emplace_back();
-		for( size_t i= 0u; i < the_class.parents.size(); ++i )
+		for( const Class::Parent& parent : the_class.parents )
 		{
-			parent_path.back()= the_class.parents[i].class_;
+			parent_path.back()= parent.class_;
 
-			index_list[1]= GetFieldGEPIndex( the_class.parents[i].field_number );
+			llvm::Value* index_list[2];
+			index_list[0]= GetZeroGEPIndex();
+			index_list[1]= GetFieldGEPIndex( parent.field_number );
 			llvm::Value* const parent_ptr= function_context.llvm_ir_builder.CreateGEP( this_, index_list );
 			SetupVirtualTablePointers_r( parent_ptr, parent_path, virtual_tables, function_context );
 		}
 	}
+
+	// Overwrite, if needed, first parent virtual table.
+	llvm::Value* const ptr_to_vtable_ptr= function_context.llvm_ir_builder.CreateBitCast( this_, llvm::PointerType::get( llvm::PointerType::get( the_class.virtual_table_llvm_type, 0u ), 0u ) );
+	function_context.llvm_ir_builder.CreateStore( virtual_tables.find(class_path)->second, ptr_to_vtable_ptr );
 }
 
 void CodeBuilder::SetupVirtualTablePointers(
@@ -467,19 +476,18 @@ void CodeBuilder::SetupVirtualTablePointers(
 	if( the_class.this_class_virtual_table == nullptr )
 		return; // May be in case of errors.
 
-	llvm::Value* index_list[2];
-	index_list[0]= GetZeroGEPIndex();
-
-	index_list[1]= GetFieldGEPIndex( the_class.virtual_table_field_number );
-	llvm::Value* const ptr_to_vtable_ptr= function_context.llvm_ir_builder.CreateGEP( this_, index_list );
-	function_context.llvm_ir_builder.CreateStore( the_class.this_class_virtual_table, ptr_to_vtable_ptr );
-
-	for( size_t i= 0u; i < the_class.parents.size(); ++i )
+	for( const Class::Parent& parent : the_class.parents )
 	{
-		index_list[1]= GetFieldGEPIndex( the_class.parents[i].field_number );
+		llvm::Value* index_list[2];
+		index_list[0]= GetZeroGEPIndex();
+		index_list[1]= GetFieldGEPIndex( parent.field_number );
 		llvm::Value* const parent_ptr= function_context.llvm_ir_builder.CreateGEP( this_, index_list );
-		SetupVirtualTablePointers_r( parent_ptr, { the_class.parents[i].class_ }, the_class.ancestors_virtual_tables, function_context );
+		SetupVirtualTablePointers_r( parent_ptr, { parent.class_ }, the_class.ancestors_virtual_tables, function_context );
 	}
+
+	// Overwrite, if needed, first parent virtual table.
+	llvm::Value* const ptr_to_vtable_ptr= function_context.llvm_ir_builder.CreateBitCast( this_, llvm::PointerType::get( llvm::PointerType::get( the_class.virtual_table_llvm_type, 0u ), 0u ) );
+	function_context.llvm_ir_builder.CreateStore( the_class.this_class_virtual_table, ptr_to_vtable_ptr );
 }
 
 } // namespace CodeBuilderPrivate

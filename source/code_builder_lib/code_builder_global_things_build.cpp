@@ -466,6 +466,19 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type, const T
 			fields_llvm_types.emplace_back( parent.class_->class_->llvm_type );
 		}
 
+		// Allocate virtual table pointer, if class have no parents.
+		// If class have at least one parent, reuse it's virtual table pointer.
+		bool allocate_virtual_table_pointer= false;
+		if( the_class.parents.empty() && (
+			class_declaration.kind_attribute_ == Synt::ClassKindAttribute::Abstract ||
+			class_declaration.kind_attribute_ == Synt::ClassKindAttribute::Polymorph ||
+			class_declaration.kind_attribute_ == Synt::ClassKindAttribute::Interface ) )
+		{
+			U_ASSERT( fields_llvm_types.empty() );
+			fields_llvm_types.emplace_back( llvm::PointerType::get( fundamental_llvm_types_.void_, 0u ) ); // set exact type later.
+			allocate_virtual_table_pointer= true;
+		}
+
 		the_class.members.ForEachValueInThisScope(
 			[&]( Value& value )
 			{
@@ -709,11 +722,8 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type, const T
 		}
 
 		PrepareClassVirtualTableType( the_class );
-		if( the_class.virtual_table_llvm_type != nullptr )
-		{
-			the_class.virtual_table_field_number= static_cast<unsigned int>( fields_llvm_types.size() );
-			fields_llvm_types.push_back( llvm::PointerType::get( the_class.virtual_table_llvm_type, 0u ) ); // TODO - maybe store virtual table pointer in base class?
-		}
+		if( allocate_virtual_table_pointer )
+			fields_llvm_types[0]= llvm::PointerType::get( the_class.virtual_table_llvm_type, 0u );
 
 		// Check opaque before set body for cases of errors (class body duplication).
 		if( the_class.llvm_type->isOpaque() )

@@ -212,10 +212,7 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, Variable& typeinfo_variab
 		add_bool_field( "is_typeinfo"_SpC, class_type->is_typeinfo );
 		add_bool_field( "shared"_SpC, class_type->have_shared_state );
 
-		add_size_field( "virtual_table_offset"_SpC,
-			class_type->virtual_table_field_number == ~0u
-			? 0u
-			: data_layout.getStructLayout( class_type->llvm_type )->getElementOffset( class_type->virtual_table_field_number ) );
+		add_size_field( "virtual_table_offset"_SpC, 0u ); // Virtual table offset is always zero.
 
 		const ClassProxyPtr class_proxy= type.GetClassTypeProxy();
 		add_list_head_field( "fields_list"_SpC   , BuildTypeinfoClassFieldsList(    class_proxy, root_namespace ) );

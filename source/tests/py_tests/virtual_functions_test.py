@@ -556,8 +556,9 @@ def VirtualCallInDestructor_Test0():
 		fn Foo() : i32
 		{
 			var B mut b;
+			halt if( b.Foo() !=    42 ); // Before destructor call "b" constains virtual table for "B".
 			unsafe{ b.destructor(); } // HACK! Manual destructor call.
-			halt if( b.Foo() != 42 );  // But after parent class construction, must call B::Foo.
+			halt if( b.Foo() != 88877 ); // After  destructor call "b" constains virtual table for "A".
 			return b.x;
 		}
 	"""
