@@ -880,3 +880,129 @@ def VirtualForPrivateFunction_Test0():
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "VirtualForPrivateFunction" )
 	assert( errors_list[0].file_pos.line == 5 )
+
+
+def PointerCastForVirtualCall_Test0():
+	c_program_text= """
+		class A interface{}
+		class B polymorph
+		{
+			i32 x= 0;
+			fn virtual GetX( this ) : i32 { return x; }
+		}
+		class C interface{}
+		class D final : A, B, C {}
+
+		fn GetXB( B& b ) : i32 { return b.GetX(); }
+		fn GetXD( D& d ) : i32 { return d.GetX(); }
+		fn Foo() : i32
+		{
+			var D mut d;
+			d.x= 654;
+			halt if( GetXB(d) != GetXD(d) );
+			return d.GetX();
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 654 )
+
+
+def PointerCastForVirtualCall_Test1():
+	c_program_text= """
+		class A interface{ fn virtual pure GetX( this ) : i32; }
+		class B polymorph
+		{
+			i32 x= 0;
+			fn virtual GetX( this ) : i32 { return x; }
+		}
+		class C interface{ fn virtual pure GetX( this ) : i32; }
+		class D final : A, B, C {}
+
+		fn GetXA( A& a ) : i32 { return a.GetX(); }
+		fn GetXB( B& b ) : i32 { return b.GetX(); }
+		fn GetXC( C& c ) : i32 { return c.GetX(); }
+		fn Foo() : i32
+		{
+			var D mut d;
+			d.x= 95257;
+			auto x= cast_ref</B/>(d).GetX();
+			halt if( x != GetXA(d) );
+			halt if( x != GetXB(d) );
+			halt if( x != GetXC(d) );
+			return x;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 95257 )
+
+
+def PointerCastForVirtualCall_Test2():
+	c_program_text= """
+		class A interface{ fn virtual pure GetX( this ) : i32; }
+		class B polymorph
+		{
+			i32 x= 0;
+			fn virtual GetX( this ) : i32 { return x; }
+		}
+		class C interface{ fn virtual pure GetX( this ) : i32; }
+		class D final : A, B, C
+		{
+			fn virtual override GetX( this ) : i32 { return x; }
+		}
+
+		fn GetXA( A& a ) : i32 { return a.GetX(); }
+		fn GetXB( B& b ) : i32 { return b.GetX(); }
+		fn GetXC( C& c ) : i32 { return c.GetX(); }
+		fn Foo() : i32
+		{
+			var D mut d;
+			d.x= 95474125;
+			auto x= d.GetX();
+			halt if( x != GetXA(d) );
+			halt if( x != GetXB(d) );
+			halt if( x != GetXC(d) );
+			return x;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 95474125 )
+
+
+def PointerCastForVirtualCall_Test3():
+	c_program_text= """
+		class A interface{ fn virtual pure GetX( this ) : i32; }
+		class B polymorph
+		{
+			i32 x= 0;
+			fn virtual GetX( this ) : i32 { return x; }
+		}
+		class C interface{ fn virtual pure GetX( this ) : i32; }
+		class D : A, B, C
+		{
+			fn virtual override GetX( this ) : i32 { return x; }
+		}
+		class E interface {}
+		class F : E, D { i32 y= 0; }
+
+		fn GetXA( A& a ) : i32 { return a.GetX(); }
+		fn GetXB( B& b ) : i32 { return b.GetX(); }
+		fn GetXC( C& c ) : i32 { return c.GetX(); }
+		fn GetXD( D& d ) : i32 { return d.GetX(); }
+		fn Foo() : i32
+		{
+			var F mut f;
+			f.x= 852;
+			auto x= f.GetX();
+			halt if( x != GetXA(f) );
+			halt if( x != GetXB(f) );
+			halt if( x != GetXC(f) );
+			halt if( x != GetXD(f) );
+			return x;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 852 )
