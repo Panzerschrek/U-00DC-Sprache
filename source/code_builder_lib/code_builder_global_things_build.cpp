@@ -721,7 +721,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type, const T
 				});
 		}
 
-		PrepareClassVirtualTableType( the_class );
+		PrepareClassVirtualTableType( class_type );
 		if( allocate_virtual_table_pointer )
 			fields_llvm_types[0]= llvm::PointerType::get( the_class.virtual_table_llvm_type, 0u );
 

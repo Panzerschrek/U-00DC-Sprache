@@ -225,8 +225,9 @@ void CodeBuilder::ProcessClassVirtualFunction( Class& the_class, FunctionVariabl
 	};
 }
 
-void CodeBuilder::PrepareClassVirtualTableType( Class& the_class )
+void CodeBuilder::PrepareClassVirtualTableType( const ClassProxyPtr& class_type )
 {
+	Class& the_class= *class_type->class_;
 	U_ASSERT( the_class.completeness != TypeCompleteness::Complete );
 	U_ASSERT( the_class.virtual_table_llvm_type == nullptr );
 
@@ -252,6 +253,7 @@ void CodeBuilder::PrepareClassVirtualTableType( Class& the_class )
 	}
 
 	the_class.virtual_table_llvm_type->setBody( virtual_table_struct_fields );
+	the_class.virtual_table_llvm_type->setName( "_vtable_type_" + MangleType(class_type) );
 }
 
 void CodeBuilder::BuildClassVirtualTables_r( Class& the_class, const Type& class_type, const std::vector< ClassProxyPtr >& dst_class_path, llvm::Value* dst_class_ptr_null_based )
