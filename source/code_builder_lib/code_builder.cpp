@@ -375,6 +375,8 @@ void CodeBuilder::MergeNameScopes( NamesScope& dst, const NamesScope& src, Class
 						REPORT_ERROR( Redefinition, dst.GetErrors(), src_member.GetFilePos(), src_name );
 						return;
 					}
+					if( src_class_proxy->class_->base_template != boost::none || dst_class_proxy->class_->base_template != boost::none )
+						return; // Skip class templates.
 
 					const auto& dst_class= dst_class_table[dst_class_proxy];
 					U_ASSERT( dst_class != nullptr );
