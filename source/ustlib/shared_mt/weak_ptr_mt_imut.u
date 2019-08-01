@@ -20,6 +20,13 @@ public:
 		unsafe{  impl_= weak_ptr_mt_base</ T />( ptr.get_impl() );  }
 	}
 
+	template</ type U />
+	fn enable_if( !is_same_type</T, U/>() && is_ancestor_for</T, U/>() )
+	conversion_constructor( mut this, weak_ptr_mt_imut</U/>& ptr )
+	{
+		unsafe{  impl_= ptr.get_impl();  }
+	}
+
 	fn constructor( mut this, this_type &imut other )= default;
 	op=( mut this, this_type &imut other )= default;
 
@@ -31,6 +38,12 @@ public:
 	fn lock( this ) : shared_ptr_mt_nullable_imut</T/>
 	{
 		unsafe{  return shared_ptr_mt_nullable_imut</T/>( impl_.lock() );  }
+	}
+
+public: // Methods for internal usage
+	fn get_impl( this ) unsafe : weak_ptr_mt_base</ T />
+	{
+		return impl_;
 	}
 
 private:

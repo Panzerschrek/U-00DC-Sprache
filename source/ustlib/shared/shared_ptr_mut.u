@@ -11,6 +11,13 @@ public:
 	( impl_( move(value) ) )
 	{}
 
+	template</ type U />
+	fn enable_if( !is_same_type</T, U/>() && is_ancestor_for</T, U/>() )
+	conversion_constructor( mut this, shared_ptr_mut</U/>& ptr )
+	{
+		unsafe{  impl_= ptr.get_impl();  }
+	}
+
 	fn constructor( mut this, this_type &imut other )= default;
 	op=( mut this, this_type &imut other )= default;
 
