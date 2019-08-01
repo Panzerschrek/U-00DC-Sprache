@@ -122,7 +122,7 @@ void CodeBuilder::TryGenerateDefaultConstructor( Class& the_class, const Type& c
 		base_variable.llvm_value=
 			function_context.llvm_ir_builder.CreateGEP(
 				this_llvm_value,
-				{ GetZeroGEPIndex(), GetFieldGEPIndex( the_class.base_class_field_number ) } );
+				{ GetZeroGEPIndex(), GetFieldGEPIndex( 0u /*base class is allways first field */ ) } );
 
 		ApplyEmptyInitializer( Keyword( Keywords::base_ ), FilePos()/*TODO*/, base_variable, the_class.members, function_context );
 	}
@@ -313,7 +313,7 @@ void CodeBuilder::TryGenerateCopyConstructor( Class& the_class, const Type& clas
 	{
 		llvm::Value* index_list[2];
 		index_list[0]= GetZeroGEPIndex();
-		index_list[1]= GetFieldGEPIndex( the_class.base_class_field_number );
+		index_list[1]= GetFieldGEPIndex(  0u /*base class is allways first field */ );
 		llvm::Value* const src= function_context.llvm_ir_builder.CreateGEP( src_llvm_value , index_list );
 		llvm::Value* const dst= function_context.llvm_ir_builder.CreateGEP( this_llvm_value, index_list );
 		BuildCopyConstructorPart( src, dst, the_class.base_class, function_context );
@@ -604,7 +604,7 @@ void CodeBuilder::TryGenerateCopyAssignmentOperator( Class& the_class, const Typ
 	{
 		llvm::Value* index_list[2];
 		index_list[0]= GetZeroGEPIndex();
-		index_list[1]= GetFieldGEPIndex( the_class.base_class_field_number );
+		index_list[1]= GetFieldGEPIndex(  0u /*base class is allways first field */ );
 		llvm::Value* const src= function_context.llvm_ir_builder.CreateGEP( src_llvm_value , index_list );
 		llvm::Value* const dst= function_context.llvm_ir_builder.CreateGEP( this_llvm_value, index_list );
 		BuildCopyAssignmentOperatorPart( src, dst, the_class.base_class, function_context );
@@ -830,7 +830,7 @@ void CodeBuilder::CopyBytes(
 		{
 			llvm::Value* index_list[2];
 			index_list[0]= GetZeroGEPIndex();
-			index_list[1]= GetFieldGEPIndex( class_type.base_class_field_number );
+			index_list[1]= GetFieldGEPIndex( 0u /*base class is allways first field */ );
 
 			CopyBytes(
 				function_context.llvm_ir_builder.CreateGEP( src, index_list ),
@@ -838,6 +838,8 @@ void CodeBuilder::CopyBytes(
 				class_type.base_class,
 				function_context );
 		}
+
+		// TODO - copy also virtual table pointer.
 
 		class_type.members.ForEachValueInThisScope(
 			[&]( const Value& class_member )

@@ -659,10 +659,14 @@ public:
 	boost::optional<BaseTemplate> base_template;
 
 	Kind kind= Kind::Struct;
-	ClassProxyPtr base_class; // We can have single non-interface base class.
-	unsigned int base_class_field_number= ~0u;
-	std::vector<ClassProxyPtr> parents; // Class have fields with numbers 0-N for parents.
-	std::vector<unsigned int> parents_fields_numbers;
+
+	struct Parent
+	{
+		ClassProxyPtr class_;
+		unsigned int field_number= ~0u; // Allways 0 for base class.
+	};
+	ClassProxyPtr base_class;
+	std::vector<Parent> parents; // Parents, include base class.
 
 	std::vector<VirtualTableEntry> virtual_table;
 	llvm::StructType* virtual_table_llvm_type= nullptr;

@@ -1300,7 +1300,7 @@ Value CodeBuilder::BuildNamedOperand(
 					return ErrorValue();
 				}
 
-				index_list[1]= GetFieldGEPIndex( actual_field_class->class_->base_class_field_number );
+				index_list[1]= GetFieldGEPIndex( 0u /* base class is allways first field */ );
 				actual_field_class_ptr= function_context.llvm_ir_builder.CreateGEP( actual_field_class_ptr, index_list );
 				actual_field_class= actual_field_class->class_->base_class;
 			}
@@ -2069,7 +2069,7 @@ Value CodeBuilder::BuildMemberAccessOperator(
 		actual_field_class_ptr= variable.llvm_value;
 		while( actual_field_class != field_class_proxy )
 		{
-			index_list[1]= GetFieldGEPIndex( actual_field_class->class_->base_class_field_number );
+			index_list[1]= GetFieldGEPIndex( 0u /* base class is allways first field */ );
 			actual_field_class_ptr= function_context.llvm_ir_builder.CreateGEP( actual_field_class_ptr, index_list );
 
 			actual_field_class= actual_field_class->class_->base_class;

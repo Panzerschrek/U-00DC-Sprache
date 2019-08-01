@@ -19,12 +19,12 @@ void CodeBuilder::ProcessClassParentsVirtualTables( Class& the_class )
 		the_class.virtual_table= the_class.base_class->class_->virtual_table;
 
 	// Later, process interfaces.
-	for( const ClassProxyPtr& parent : the_class.parents )
+	for( const Class::Parent& parent : the_class.parents )
 	{
-		if( parent == the_class.base_class )
+		if( parent.class_ == the_class.base_class )
 			continue;
 
-		for( const Class::VirtualTableEntry& parent_vtable_entry : parent->class_->virtual_table )
+		for( const Class::VirtualTableEntry& parent_vtable_entry : parent.class_->class_->virtual_table )
 		{
 			bool already_exists_in_vtable= false;
 			for( const Class::VirtualTableEntry& this_class_vtable_entry : the_class.virtual_table )
@@ -327,11 +327,11 @@ void CodeBuilder::BuildClassVirtualTables_r( Class& the_class, const Type& class
 		parent_path.emplace_back();
 		for( size_t i= 0u; i < dst_class.parents.size(); ++i )
 		{
-			parent_path.back()= dst_class.parents[i];
+			parent_path.back()= dst_class.parents[i].class_;
 
 			llvm::Value* index_list[2];
 			index_list[0]= GetZeroGEPIndex();
-			index_list[1]= GetFieldGEPIndex( dst_class.parents_fields_numbers[i] );
+			index_list[1]= GetFieldGEPIndex( dst_class.parents[i].field_number );
 			llvm::Value* const offset_ptr= global_function_context_->llvm_ir_builder.CreateGEP( dst_class_ptr_null_based, index_list );
 
 			BuildClassVirtualTables_r( the_class, class_type, parent_path, offset_ptr );
@@ -403,9 +403,9 @@ void CodeBuilder::BuildClassVirtualTables( Class& the_class, const Type& class_t
 	{
 		llvm::Value* index_list[2];
 		index_list[0]= GetZeroGEPIndex();
-		index_list[1]= GetFieldGEPIndex( the_class.parents_fields_numbers[i] );
+		index_list[1]= GetFieldGEPIndex( the_class.parents[i].field_number );
 		llvm::Value* const offset_ptr= global_function_context_->llvm_ir_builder.CreateGEP( this_nullptr, index_list );
-		BuildClassVirtualTables_r( the_class, class_type, {the_class.parents[i]}, offset_ptr );
+		BuildClassVirtualTables_r( the_class, class_type, {the_class.parents[i].class_}, offset_ptr );
 	}
 }
 
@@ -485,9 +485,9 @@ void CodeBuilder::SetupVirtualTablePointers_r(
 		parent_path.emplace_back();
 		for( size_t i= 0u; i < the_class.parents.size(); ++i )
 		{
-			parent_path.back()= the_class.parents[i];
+			parent_path.back()= the_class.parents[i].class_;
 
-			index_list[1]= GetFieldGEPIndex( the_class.parents_fields_numbers[i] );
+			index_list[1]= GetFieldGEPIndex( the_class.parents[i].field_number );
 			llvm::Value* const parent_ptr= function_context.llvm_ir_builder.CreateGEP( this_, index_list );
 			SetupVirtualTablePointers_r( parent_ptr, parent_path, virtual_tables, function_context );
 		}
@@ -521,9 +521,9 @@ void CodeBuilder::SetupVirtualTablePointers(
 
 	for( size_t i= 0u; i < the_class.parents.size(); ++i )
 	{
-		index_list[1]= GetFieldGEPIndex( the_class.parents_fields_numbers[i] );
+		index_list[1]= GetFieldGEPIndex( the_class.parents[i].field_number );
 		llvm::Value* const parent_ptr= function_context.llvm_ir_builder.CreateGEP( this_, index_list );
-		SetupVirtualTablePointers_r( parent_ptr, { the_class.parents[i] }, the_class.ancestors_virtual_tables, function_context );
+		SetupVirtualTablePointers_r( parent_ptr, { the_class.parents[i].class_ }, the_class.ancestors_virtual_tables, function_context );
 	}
 }
 

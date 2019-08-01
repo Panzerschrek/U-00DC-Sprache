@@ -470,7 +470,7 @@ Variable CodeBuilder::BuildTypeinfoClassFieldsList( const ClassProxyPtr& class_t
 					else
 					{
 						U_ASSERT( class_for_field_search->class_->base_class != nullptr );
-						offset+= data_layout.getStructLayout( class_for_field_search->class_->llvm_type )->getElementOffset( class_for_field_search->class_->base_class_field_number );
+						offset+= data_layout.getStructLayout( class_for_field_search->class_->llvm_type )->getElementOffset( 0u /*base class is allways first field */ );
 						class_for_field_search= class_for_field_search->class_->base_class;
 					}
 				}
@@ -646,7 +646,6 @@ Variable CodeBuilder::BuildeTypeinfoClassParentsList( const ClassProxyPtr& class
 	const Class& class_= *class_type->class_;
 	const llvm::StructLayout* const struct_layout= module_->getDataLayout().getStructLayout( class_.llvm_type );
 
-	U_ASSERT( class_.parents.size() == class_.parents_fields_numbers.size() );
 	for( size_t i= 0u; i < class_.parents.size(); ++i )
 	{
 		const ClassProxyPtr node_type= CreateTypeinfoClass( root_namespace );
@@ -664,7 +663,7 @@ Variable CodeBuilder::BuildeTypeinfoClassParentsList( const ClassProxyPtr& class
 		fields_initializers.push_back( llvm::dyn_cast<llvm::GlobalVariable>(head.llvm_value) );
 
 		{
-			const Variable parent_type_typeinfo= BuildTypeInfo( class_.parents[i], root_namespace );
+			const Variable parent_type_typeinfo= BuildTypeInfo( class_.parents[i].class_, root_namespace );
 			ClassField field( node_type, parent_type_typeinfo.type, static_cast<unsigned int>(fields_llvm_types.size()), false, true );
 
 			node_type_class.members.AddName( g_type_field_name, Value( std::move(field), g_dummy_file_pos ) );
@@ -672,7 +671,7 @@ Variable CodeBuilder::BuildeTypeinfoClassParentsList( const ClassProxyPtr& class
 			fields_initializers.push_back( llvm::dyn_cast<llvm::GlobalVariable>( parent_type_typeinfo.llvm_value ) );
 		}
 
-		const uint64_t parent_field_offset= struct_layout->getElementOffset( class_.parents_fields_numbers[i] );
+		const uint64_t parent_field_offset= struct_layout->getElementOffset( class_.parents[i].field_number );
 		node_type_class.members.AddName(
 			"offset"_SpC,
 			Value( ClassField( node_type, size_type_, static_cast<unsigned int>(fields_llvm_types.size()), true, false ), g_dummy_file_pos ) );
