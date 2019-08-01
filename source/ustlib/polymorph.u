@@ -12,17 +12,13 @@ fn polymorph_restore_original_ref( T &imut ref ) : void &imut
 		{
 			static_if( typeinfo</T/>.is_polymorph )
 			{
-				// For polymorh class get offset of virtual table field, read this field, read first field in virtual table - original object offset.
+				// Virtual table pointer is always first filed in class.
 				auto &mut ref_mut= cast_mut(ref);
-				auto ptr0= ust::raw_ptr_mut</u8/>( cast_ref_unsafe</u8/>(ref_mut) ) + typeinfo</T/>.virtual_table_offset;
-				auto ptr1= ust::raw_ptr_mut</size_type/>( cast_ref_unsafe</size_type/>( ptr0.get_ref() ) );
-				auto virtual_table_ptr= ptr1.get_ref(); // do "load" here
+				var polymorph_impl::virtual_class_ptr ptr_to_virtual_class( cast_ref_unsafe</ polymorph_impl::virtual_class />(ref_mut) );
+				auto offset= ptr_to_virtual_class.get_ref().vptr.get_ref().offset_of_allocated_object;
 
-				auto& virtual_table= cast_ref_unsafe</ polymorph_impl::virtual_table />( ust::int_to_ref( virtual_table_ptr ) );
-				auto offset_of_allocated_object= virtual_table.offset_of_allocated_object; // do another "load" here
-
-				auto ptr_for_free= ust::raw_ptr_mut</u8/>( cast_ref_unsafe</u8/>(ref_mut) ) - offset_of_allocated_object;
-				return ust::int_to_ref( ust::ref_to_int( ptr_for_free.get_ref() ) );
+				auto original_ptr= raw_ptr_mut</u8/>( cast_ref_unsafe</u8/>(ref_mut) ) - offset;
+				return int_to_ref( ref_to_int( original_ptr.get_ref() ) );
 			}
 			else
 			{
@@ -44,6 +40,15 @@ struct virtual_table
 {
 	size_type offset_of_allocated_object;
 }
+
+type virtual_table_ptr= raw_ptr_mut</virtual_table/>;
+
+struct virtual_class
+{
+	virtual_table_ptr vptr;
+}
+
+type virtual_class_ptr= raw_ptr_mut</virtual_class/>;
 
 } // namespace polymorph_impl
 
