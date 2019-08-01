@@ -1007,3 +1007,53 @@ def PointerCastForVirtualCall_Test3():
 	tests_lib.build_program( c_program_text )
 	call_result= tests_lib.run_function( "_Z3Foov" )
 	assert( call_result == 852 )
+
+
+def VirtualCall_UsingDifferentVirtualTables_Test0():
+	c_program_text= """
+		class Interface0 interface
+		{
+			fn virtual pure Foo0( this, i32 a ) : i32;
+			fn virtual pure Foo1( this, i64 b ) : i32;
+		}
+		class Interface1 interface
+		{
+			fn virtual pure Bar0( this, f32 c ) : i32;
+			fn virtual pure Bar1( this, f64 d ) : i32;
+		}
+		class MetaInterface interface : Interface0, Interface1{}
+		class Impl : MetaInterface
+		{
+			fn virtual override Foo0( this, i32 a ) : i32 { return 0; }
+			fn virtual override Foo1( this, i64 b ) : i32 { return 1; }
+			fn virtual override Bar0( this, f32 c ) : i32 { return 2; }
+			fn virtual override Bar1( this, f64 d ) : i32 { return 3; }
+		}
+		class Impl2 : Impl
+		{
+			fn virtual Baz0( this, char16  c ) : i32 { return 4; }
+			fn virtual Baz1( this, char32 e ) : i32 { return 5; }
+		}
+		fn Foo()
+		{
+			var Impl2 impl2;
+			halt if( impl2.Foo0( 0i32 ) != 0 );
+			halt if( impl2.Foo1( 0i64 ) != 1 );
+			halt if( impl2.Bar0( 0.0f ) != 2 );
+			halt if( impl2.Bar1( 0.0  ) != 3 );
+			halt if( impl2.Baz0( "a"c16 ) != 4 );
+			halt if( impl2.Baz1( "a"c32 ) != 5 );
+			var Impl &impl_ref= impl2;
+			halt if( impl_ref.Foo0( 0i32 ) != 0 );
+			halt if( impl_ref.Foo1( 0i64 ) != 1 );
+			halt if( impl_ref.Bar0( 0.0f ) != 2 );
+			halt if( impl_ref.Bar1( 0.0  ) != 3 );
+			var MetaInterface &meta_ref= impl2;
+			halt if( meta_ref.Foo0( 0i32 ) != 0 );
+			halt if( meta_ref.Foo1( 0i64 ) != 1 );
+			halt if( meta_ref.Bar0( 0.0f ) != 2 );
+			halt if( meta_ref.Bar1( 0.0  ) != 3 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
