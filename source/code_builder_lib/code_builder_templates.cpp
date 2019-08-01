@@ -1258,6 +1258,7 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 			return &result_functions_set.functions.front();
 		}
 	}
+	template_parameters_namespace->SetThisNamespaceName( name_encoded );
 
 	CreateTemplateErrorsContext( errors_container, file_pos, template_parameters_namespace, function_template, deduced_template_args, function_template.known_template_parameters );
 
