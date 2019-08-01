@@ -1057,3 +1057,24 @@ def VirtualCall_UsingDifferentVirtualTables_Test0():
 	"""
 	tests_lib.build_program( c_program_text )
 	tests_lib.run_function( "_Z3Foov" )
+
+
+def VirtualTablePointerSave_InMove_Test0():
+	c_program_text= """
+		class A polymorph
+		{
+			fn virtual GetX( this ) : i32 { return 42; }
+		}
+		class B : A
+		{
+			fn virtual override GetX( this ) : i32 { return 55541; }
+		}
+		fn Foo() : i32
+		{
+			auto b= B(); // Must save virtual table pointer in move initialization of auto variable.
+			return b.GetX();
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 55541 )
