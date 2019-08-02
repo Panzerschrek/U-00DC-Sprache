@@ -122,7 +122,7 @@ void CodeBuilder::TryGenerateDefaultConstructor( Class& the_class, const Type& c
 		base_variable.llvm_value=
 			function_context.llvm_ir_builder.CreateGEP(
 				this_llvm_value,
-				{ GetZeroGEPIndex(), GetFieldGEPIndex( the_class.base_class_field_number ) } );
+				{ GetZeroGEPIndex(), GetFieldGEPIndex( 0u /*base class is allways first field */ ) } );
 
 		ApplyEmptyInitializer( Keyword( Keywords::base_ ), FilePos()/*TODO*/, base_variable, the_class.members, function_context );
 	}
@@ -313,7 +313,7 @@ void CodeBuilder::TryGenerateCopyConstructor( Class& the_class, const Type& clas
 	{
 		llvm::Value* index_list[2];
 		index_list[0]= GetZeroGEPIndex();
-		index_list[1]= GetFieldGEPIndex( the_class.base_class_field_number );
+		index_list[1]= GetFieldGEPIndex(  0u /*base class is allways first field */ );
 		llvm::Value* const src= function_context.llvm_ir_builder.CreateGEP( src_llvm_value , index_list );
 		llvm::Value* const dst= function_context.llvm_ir_builder.CreateGEP( this_llvm_value, index_list );
 		BuildCopyConstructorPart( src, dst, the_class.base_class, function_context );
@@ -604,7 +604,7 @@ void CodeBuilder::TryGenerateCopyAssignmentOperator( Class& the_class, const Typ
 	{
 		llvm::Value* index_list[2];
 		index_list[0]= GetZeroGEPIndex();
-		index_list[1]= GetFieldGEPIndex( the_class.base_class_field_number );
+		index_list[1]= GetFieldGEPIndex(  0u /*base class is allways first field */ );
 		llvm::Value* const src= function_context.llvm_ir_builder.CreateGEP( src_llvm_value , index_list );
 		llvm::Value* const dst= function_context.llvm_ir_builder.CreateGEP( this_llvm_value, index_list );
 		BuildCopyAssignmentOperatorPart( src, dst, the_class.base_class, function_context );
@@ -791,78 +791,54 @@ void CodeBuilder::BuildCopyAssignmentOperatorPart(
 		U_ASSERT(false);
 }
 
-void CodeBuilder::CopyBytes(
+void CodeBuilder::CopyBytes_r(
 	llvm::Value* const src, llvm::Value* const dst,
-	const Type& type,
+	const llvm::Type* const llvm_type,
 	FunctionContext& function_context )
 {
-	if( type.GetFundamentalType() != nullptr || type.GetEnumType() != nullptr || type.GetFunctionPointerType() != nullptr )
+	if( llvm_type->isIntegerTy() || llvm_type->isFloatingPointTy() || llvm_type->isPointerTy() )
 	{
 		// Create simple load-store.
 		llvm::Value* const val= function_context.llvm_ir_builder.CreateLoad( src );
 		function_context.llvm_ir_builder.CreateStore( val, dst );
 	}
-	else if( const Array* const array_type_ptr= type.GetArrayType() )
+	else if( llvm_type->isArrayTy() )
 	{
-		const Array& array_type= *array_type_ptr;
-
 		GenerateLoop(
-			array_type.ArraySizeOrZero(),
+			llvm_type->getArrayNumElements(),
 			[&](llvm::Value* const counter_value)
 			{
-				llvm::Value* index_list[2];
-				index_list[0]= GetZeroGEPIndex();
-				index_list[1]= counter_value;
-
-				CopyBytes(
+				llvm::Value* const index_list[2]{ GetZeroGEPIndex(), counter_value };
+				CopyBytes_r(
 					function_context.llvm_ir_builder.CreateGEP( src, index_list ),
 					function_context.llvm_ir_builder.CreateGEP( dst, index_list ),
-					array_type.type,
+					llvm_type->getArrayElementType(),
 					function_context );
 			},
-			function_context);
+			function_context );
 	}
-	else if( const ClassProxyPtr class_type_proxy= type.GetClassTypeProxy() )
+	else if( llvm_type->isStructTy() )
 	{
-		const Class& class_type= *class_type_proxy->class_;
-
-		if( class_type.base_class != nullptr )
+		for( unsigned int i= 0u; i < llvm_type->getStructNumElements(); ++i )
 		{
-			llvm::Value* index_list[2];
-			index_list[0]= GetZeroGEPIndex();
-			index_list[1]= GetFieldGEPIndex( class_type.base_class_field_number );
-
-			CopyBytes(
+			llvm::Value* const index_list[2]{ GetZeroGEPIndex(), GetFieldGEPIndex(i) };
+			CopyBytes_r(
 				function_context.llvm_ir_builder.CreateGEP( src, index_list ),
 				function_context.llvm_ir_builder.CreateGEP( dst, index_list ),
-				class_type.base_class,
+				llvm_type->getStructElementType(i),
 				function_context );
 		}
-
-		class_type.members.ForEachValueInThisScope(
-			[&]( const Value& class_member )
-			{
-				const ClassField* const field = class_member.GetClassField();
-				if( field == nullptr || field->class_.lock() != class_type_proxy )
-					return;
-
-				llvm::Value* index_list[2];
-				index_list[0]= GetZeroGEPIndex();
-				index_list[1]= GetFieldGEPIndex( field->index );
-
-				llvm::Value* const field_src= function_context.llvm_ir_builder.CreateGEP( src, index_list );
-				llvm::Value* const field_dst= function_context.llvm_ir_builder.CreateGEP( dst, index_list );
-				if( field->is_reference )
-				{
-					llvm::Value* const val= function_context.llvm_ir_builder.CreateLoad( field_src );
-					function_context.llvm_ir_builder.CreateStore( val, field_dst );
-				}
-				else
-					CopyBytes( field_src, field_dst, field->type, function_context );
-			} );
 	}
 	else
 		U_ASSERT(false);
+}
+
+void CodeBuilder::CopyBytes(
+	llvm::Value* const src, llvm::Value* const dst,
+	const Type& type,
+	FunctionContext& function_context )
+{
+	return CopyBytes_r( src, dst, type.GetLLVMType(), function_context );
 }
 
 void CodeBuilder::MoveConstantToMemory(

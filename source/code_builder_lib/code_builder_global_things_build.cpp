@@ -12,8 +12,8 @@ namespace CodeBuilderPrivate
 static void AddAncestorsAccessRights_r( Class& the_class, const ClassProxyPtr& ancestor_class )
 {
 	the_class.members.AddAccessRightsFor( ancestor_class, ClassMemberVisibility::Protected );
-	for( const ClassProxyPtr& parent : ancestor_class->class_->parents )
-		AddAncestorsAccessRights_r( the_class, parent );
+	for( const Class::Parent& parent : ancestor_class->class_->parents )
+		AddAncestorsAccessRights_r( the_class, parent.class_ );
 }
 
 //
@@ -327,7 +327,10 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type, const T
 				continue;
 			}
 
-			if( std::find( the_class.parents.begin(), the_class.parents.end(), parent_class_proxy ) != the_class.parents.end() )
+			bool duplicated= false;
+			for( const Class::Parent& parent : the_class.parents )
+				duplicated= duplicated || parent.class_ == parent_class_proxy;
+			if( duplicated )
 			{
 				REPORT_ERROR( DuplicatedParentClass, class_parent_namespace.GetErrors(), class_declaration.file_pos_, type_name );
 				continue;
@@ -350,7 +353,8 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type, const T
 				the_class.base_class= parent_class_proxy;
 			}
 
-			the_class.parents.push_back( parent_class_proxy );
+			the_class.parents.emplace_back();
+			the_class.parents.back().class_= parent_class_proxy;
 			AddAncestorsAccessRights_r( the_class, parent_class_proxy );
 		} // for parents
 
@@ -430,9 +434,9 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type, const T
 				if( field != nullptr && ( field->is_reference || field->type.ReferencesTagsCount() != 0u ) )
 					the_class.references_tags_count= 1u;
 			});
-		for( const ClassProxyPtr& parent_class : the_class.parents )
+		for( const Class::Parent& parent : the_class.parents )
 		{
-			if( parent_class->class_->references_tags_count != 0u )
+			if( parent.class_->class_->references_tags_count != 0u )
 				the_class.references_tags_count= 1u;
 		}
 
@@ -445,15 +449,36 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type, const T
 
 		// Fill llvm struct type fields
 		ClassFieldsVector<llvm::Type*> fields_llvm_types;
-		for( const ClassProxyPtr& parent : the_class.parents )
-		{
-			const auto field_number= static_cast<unsigned int>(fields_llvm_types.size());
-			if( parent == the_class.base_class )
-				the_class.base_class_field_number= field_number;
 
-			the_class.parents_fields_numbers.push_back( field_number );
-			fields_llvm_types.emplace_back( parent->class_->llvm_type );
+		// Base must be always first field.
+		if( the_class.base_class != nullptr )
+			fields_llvm_types.push_back( the_class.base_class->class_->llvm_type );
+		// Add non-base (interface) fields.
+		for( Class::Parent& parent : the_class.parents )
+		{
+			if( parent.class_ == the_class.base_class )
+			{
+				parent.field_number= 0u;
+				continue;
+			}
+
+			parent.field_number= static_cast<unsigned int>(fields_llvm_types.size());
+			fields_llvm_types.emplace_back( parent.class_->class_->llvm_type );
 		}
+
+		// Allocate virtual table pointer, if class have no parents.
+		// If class have at least one parent, reuse it's virtual table pointer.
+		bool allocate_virtual_table_pointer= false;
+		if( the_class.parents.empty() && (
+			class_declaration.kind_attribute_ == Synt::ClassKindAttribute::Abstract ||
+			class_declaration.kind_attribute_ == Synt::ClassKindAttribute::Polymorph ||
+			class_declaration.kind_attribute_ == Synt::ClassKindAttribute::Interface ) )
+		{
+			U_ASSERT( fields_llvm_types.empty() );
+			fields_llvm_types.emplace_back( llvm::PointerType::get( fundamental_llvm_types_.void_, 0u ) ); // set exact type later.
+			allocate_virtual_table_pointer= true;
+		}
+
 		the_class.members.ForEachValueInThisScope(
 			[&]( Value& value )
 			{
@@ -631,12 +656,13 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type, const T
 			TryGenerateDestructorPrototypeForPolymorphClass( the_class, class_type );
 
 		// Merge namespaces of parents into result class.
-		for( const ClassProxyPtr& parent : the_class.parents )
+		for( const Class::Parent& parent : the_class.parents )
 		{
-			parent->class_->members.ForEachInThisScope(
+			const Class* const parent_class= parent.class_->class_;
+			parent_class->members.ForEachInThisScope(
 				[&]( const ProgramString& name, const Value& value )
 				{
-					if( parent->class_->GetMemberVisibility( name ) == ClassMemberVisibility::Private )
+					if( parent_class->GetMemberVisibility( name ) == ClassMemberVisibility::Private )
 						return; // Do not inherit private members.
 
 					Value* const result_class_value= the_class.members.GetThisScopeValue(name);
@@ -653,7 +679,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type, const T
 						{
 							if( OverloadedFunctionsSet* const result_class_functions= result_class_value->GetFunctionsSet() )
 							{
-								if( the_class.GetMemberVisibility( name ) != parent->class_->GetMemberVisibility( name ) )
+								if( the_class.GetMemberVisibility( name ) != parent_class->GetMemberVisibility( name ) )
 								{
 									const auto& file_pos= result_class_functions->functions.empty() ? result_class_functions->template_functions.front()->file_pos : result_class_functions->functions.front().prototype_file_pos;
 									REPORT_ERROR( FunctionsVisibilityMismatch, the_class.members.GetErrors(), file_pos, name );
@@ -695,12 +721,9 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type, const T
 				});
 		}
 
-		PrepareClassVirtualTableType( the_class );
-		if( the_class.virtual_table_llvm_type != nullptr )
-		{
-			the_class.virtual_table_field_number= static_cast<unsigned int>( fields_llvm_types.size() );
-			fields_llvm_types.push_back( llvm::PointerType::get( the_class.virtual_table_llvm_type, 0u ) ); // TODO - maybe store virtual table pointer in base class?
-		}
+		PrepareClassVirtualTableType( class_type );
+		if( allocate_virtual_table_pointer )
+			fields_llvm_types[0]= llvm::PointerType::get( the_class.virtual_table_llvm_type, 0u );
 
 		// Check opaque before set body for cases of errors (class body duplication).
 		if( the_class.llvm_type->isOpaque() )

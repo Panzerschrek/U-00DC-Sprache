@@ -1,0 +1,55 @@
+import "pointer.u"
+
+namespace ust
+{
+
+template</type T/>
+fn polymorph_restore_original_ref( T &imut ref ) : void &imut
+{
+	unsafe
+	{
+		static_if( typeinfo</T/>.is_class )
+		{
+			static_if( typeinfo</T/>.is_polymorph )
+			{
+				// Virtual table pointer is always first filed in class.
+				auto &mut ref_mut= cast_mut(ref);
+				var polymorph_impl::virtual_class_ptr ptr_to_virtual_class( cast_ref_unsafe</ polymorph_impl::virtual_class />(ref_mut) );
+				auto offset= ptr_to_virtual_class.get_ref().vptr.get_ref().offset_of_allocated_object;
+
+				auto original_ptr= raw_ptr_mut</u8/>( cast_ref_unsafe</u8/>(ref_mut) ) - offset;
+				return int_to_ref( ref_to_int( original_ptr.get_ref() ) );
+			}
+			else
+			{
+				return ref;
+			}
+		}
+		else
+		{
+			return ref;
+		}
+	}
+}
+
+namespace polymorph_impl
+{
+
+// If compiler virtual table layout changed, this must be changed too!
+struct virtual_table
+{
+	size_type offset_of_allocated_object;
+}
+
+type virtual_table_ptr= raw_ptr_mut</virtual_table/>;
+
+struct virtual_class
+{
+	virtual_table_ptr vptr;
+}
+
+type virtual_class_ptr= raw_ptr_mut</virtual_class/>;
+
+} // namespace polymorph_impl
+
+} // namespace ust

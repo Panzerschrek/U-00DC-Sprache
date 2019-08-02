@@ -19,6 +19,11 @@ struct BigStruct
 class A polymorph{}
 class B : A{}
 
+class I0 interface {}
+class I1 interface {}
+class Impl : I0, I1 { i32 x=0; }
+class ImplDerived : Impl { i32 y= 0; }
+
 fn U_Main() : i32
 {
 	// Box have pointer size.
@@ -85,6 +90,14 @@ fn U_Main() : i32
 
 		halt if( addr0 != addr1 );
 		halt if( box1.get_ref() != 46 );
+	}
+	{ // is convertible form other box.
+		var ust::box_nullable</ ImplDerived /> mut box0( ImplDerived() );
+		var ust::box_nullable</ I0 /> mut box1( move(box0) );
+	}
+	{ // is convertible form other box.
+		var ust::box_nullable</ ImplDerived /> mut box0( ImplDerived() );
+		var ust::box_nullable</ I1 /> mut box1( move(box0) );
 	}
 
 	return 0;

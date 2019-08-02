@@ -452,14 +452,11 @@ void CodeBuilder::CopyClass(
 
 	copy->kind= src.kind;
 	copy->base_class= src.base_class;
-	copy->base_class_field_number= src.base_class_field_number;
 	copy->parents= src.parents;
-	copy->parents_fields_numbers= src.parents_fields_numbers;
 
 	copy->virtual_table= src.virtual_table;
 	copy->virtual_table_llvm_type= src.virtual_table_llvm_type;
 	copy->this_class_virtual_table= src.this_class_virtual_table;
-	copy->virtual_table_field_number= src.virtual_table_field_number;
 	copy->ancestors_virtual_tables= src.ancestors_virtual_tables;
 
 	// Register copy in destination namespace and current class table.
@@ -886,12 +883,12 @@ void CodeBuilder::CallMembersDestructors( FunctionContext& function_context, Cod
 
 	for( size_t i= 0u; i < class_->parents.size(); ++i )
 	{
-		U_ASSERT( class_->parents[i]->class_->have_destructor ); // Parents are polymorph, polymorph classes always have destructors.
+		U_ASSERT( class_->parents[i].class_->class_->have_destructor ); // Parents are polymorph, polymorph classes always have destructors.
 		CallDestructor(
 			function_context.llvm_ir_builder.CreateGEP(
 				function_context.this_->llvm_value,
-				{ GetZeroGEPIndex(), GetFieldGEPIndex( class_->parents_fields_numbers[i] ) } ),
-			class_->parents[i],
+				{ GetZeroGEPIndex(), GetFieldGEPIndex( class_->parents[i].field_number ) } ),
+			class_->parents[i].class_,
 			function_context,
 			errors_container,
 			file_pos );
@@ -1898,7 +1895,7 @@ void CodeBuilder::BuildConstructorInitialization(
 		base_variable.value_type= ValueType::Reference;
 
 		base_variable.llvm_value=
-			function_context.llvm_ir_builder.CreateGEP( this_.llvm_value, { GetZeroGEPIndex(), GetFieldGEPIndex( base_class.base_class_field_number ) } );
+			function_context.llvm_ir_builder.CreateGEP( this_.llvm_value, { GetZeroGEPIndex(), GetFieldGEPIndex( 0u /* base class is allways first field */ ) } );
 
 		ApplyEmptyInitializer( base_class.base_class->class_->members.GetThisNamespaceName(), constructor_initialization_list.file_pos_, base_variable, names_scope, function_context );
 		function_context.base_initialized= true;
@@ -1924,7 +1921,7 @@ void CodeBuilder::BuildConstructorInitialization(
 			base_variable.llvm_value=
 				function_context.llvm_ir_builder.CreateGEP(
 					this_.llvm_value,
-					{ GetZeroGEPIndex(), GetFieldGEPIndex( base_class.base_class_field_number ) } );
+					{ GetZeroGEPIndex(), GetFieldGEPIndex( 0u /* base class is allways first field */ ) } );
 
 			ApplyInitializer( base_variable, field_initializer.initializer, names_scope, function_context );
 			function_context.base_initialized= true;
@@ -3598,24 +3595,17 @@ llvm::Value* CodeBuilder::CreateReferenceCast( llvm::Value* const ref, const Typ
 		const Class* const src_class_type= src_type.GetClassType();
 		U_ASSERT( src_class_type != nullptr );
 
-		for( const ClassProxyPtr& src_parent_class : src_class_type->parents )
+		for( const Class::Parent& src_parent_class : src_class_type->parents )
 		{
-			const size_t parent_index= &src_parent_class - src_class_type->parents.data();
-			if( src_parent_class == dst_type )
-			{
-				return
-					function_context.llvm_ir_builder.CreateGEP(
-						ref,
-						{ GetZeroGEPIndex(), llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(src_class_type->parents_fields_numbers[parent_index]) ) ) } );
-			}
-			else if( Type(src_parent_class).ReferenceIsConvertibleTo( dst_type ) )
-			{
-				llvm::Value* const sub_ref=
-					function_context.llvm_ir_builder.CreateGEP(
-						ref,
-						{ GetZeroGEPIndex(), llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(src_class_type->parents_fields_numbers[parent_index]) ) ) } );
-				return CreateReferenceCast( sub_ref, src_parent_class, dst_type, function_context );
-			}
+			llvm::Value* const sub_ref=
+				function_context.llvm_ir_builder.CreateGEP(
+					ref,
+					{ GetZeroGEPIndex(), GetFieldGEPIndex( src_parent_class.field_number ) } );
+
+			if( src_parent_class.class_ == dst_type )
+				return sub_ref;
+			else if( Type(src_parent_class.class_).ReferenceIsConvertibleTo( dst_type ) )
+				return CreateReferenceCast( sub_ref, src_parent_class.class_, dst_type, function_context );
 		}
 	}
 

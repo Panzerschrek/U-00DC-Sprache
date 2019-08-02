@@ -1183,7 +1183,7 @@ void CodeBuilder::CheckClassFieldsInitializers( const ClassProxyPtr& class_type 
 		[&]( const Value& value )
 		{
 			const ClassField* const class_field= value.GetClassField();
-			if( class_field == nullptr )
+			if( class_field == nullptr || class_field->class_.lock() != class_type )
 				return;
 
 			if( class_field->syntax_element->initializer == nullptr )

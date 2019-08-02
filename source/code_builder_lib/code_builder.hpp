@@ -187,7 +187,7 @@ private:
 	void ProcessClassParentsVirtualTables( Class& the_class );
 	void TryGenerateDestructorPrototypeForPolymorphClass( Class& the_class, const Type& class_type );
 	void ProcessClassVirtualFunction( Class& the_class, FunctionVariable& function );
-	void PrepareClassVirtualTableType( Class& the_class );
+	void PrepareClassVirtualTableType( const ClassProxyPtr& class_type );
 	void BuildClassVirtualTables_r( Class& the_class, const Type& class_type, const std::vector< ClassProxyPtr >& dst_class_path, llvm::Value* dst_class_ptr_null_based );
 	void BuildClassVirtualTables( Class& the_class, const Type& class_type ); // Returns type of vtable pointer or nullptr.
 
@@ -331,6 +331,11 @@ private:
 	void BuildCopyAssignmentOperatorPart(
 		llvm::Value* src, llvm::Value* dst,
 		const Type& type,
+		FunctionContext& function_context );
+
+	void CopyBytes_r(
+		llvm::Value* src, llvm::Value* dst,
+		const llvm::Type* const llvm_type,
 		FunctionContext& function_context );
 
 	void CopyBytes(

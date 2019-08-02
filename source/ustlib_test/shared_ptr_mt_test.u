@@ -36,6 +36,10 @@ static_assert( !ust::have_shared_state</ ust::random_access_range</ IntPtrMut, t
 static_assert( !ust::have_shared_state</ ust::unordered_map</ i32, IntPtrMut /> />() );
 static_assert( !ust::have_shared_state</ ust::vector</ IntPtrMut /> />() );
 
+class I0 interface {}
+class I1 interface {}
+class Impl : I0, I1 { i32 x=0; }
+
 fn IsMut( void&  mut r ) : bool
 {
 	return true ;
@@ -226,6 +230,112 @@ fn U_Main() : i32
 		halt if( ust::ref_to_int( lock0.get_ref() ) != ust::ref_to_int( lock1.get_ref() ) );
 		halt if( ust::ref_to_int( lock0.get_ref() ) != ust::ref_to_int( lock2.get_ref() ) );
 		halt if( lock1.get_ref() != 92 );
+	}
+
+	// Derived to base conversion.
+	{
+		{
+			var ust::shared_ptr_mt_mut</Impl/> mut ptr0( Impl() );
+			var ust::shared_ptr_mt_mut</I0/> ptr1(ptr0);
+
+			halt if( ust::ref_to_int( ust::polymorph_restore_original_ref( ptr1.lock_imut().get_ref() ) ) != ust::ref_to_int( ptr0.lock_imut().get_ref() ) );
+			move(ptr0); // Let casted ptr free shared object.
+		}
+		{
+			var ust::shared_ptr_mt_mut</Impl/> mut ptr0( Impl() );
+			var ust::shared_ptr_mt_mut</I1/> ptr1(ptr0);
+
+			halt if( ust::ref_to_int( ust::polymorph_restore_original_ref( ptr1.lock_imut().get_ref() ) ) != ust::ref_to_int( ptr0.lock_imut().get_ref() ) );
+			move(ptr0); // Let casted ptr free shared object.
+		}
+	}
+	{
+		{
+			var ust::shared_ptr_mt_imut</Impl/> mut ptr0( Impl() );
+			var ust::shared_ptr_mt_imut</I0/> ptr1(ptr0);
+
+			halt if( ust::ref_to_int( ust::polymorph_restore_original_ref( ptr1.lock_imut().get_ref() ) ) != ust::ref_to_int( ptr0.lock_imut().get_ref() ) );
+			move(ptr0); // Let casted ptr free shared object.
+		}
+		{
+			var ust::shared_ptr_mt_imut</Impl/> mut ptr0( Impl() );
+			var ust::shared_ptr_mt_imut</I1/> ptr1(ptr0);
+
+			halt if( ust::ref_to_int( ust::polymorph_restore_original_ref( ptr1.lock_imut().get_ref() ) ) != ust::ref_to_int( ptr0.lock_imut().get_ref() ) );
+			move(ptr0); // Let casted ptr free shared object.
+		}
+	}
+	{
+		{
+			var ust::shared_ptr_mt_nullable_mut</Impl/> mut ptr0( Impl() );
+			var ust::shared_ptr_mt_nullable_mut</I0/> ptr1(ptr0);
+
+			halt if( ust::ref_to_int( ust::polymorph_restore_original_ref( ptr1.lock_imut().get_ref() ) ) != ust::ref_to_int( ptr0.lock_imut().get_ref() ) );
+			move(ptr0); // Let casted ptr free shared object.
+		}
+		{
+			var ust::shared_ptr_mt_nullable_mut</Impl/> mut ptr0( Impl() );
+			var ust::shared_ptr_mt_nullable_mut</I1/> ptr1(ptr0);
+
+			halt if( ust::ref_to_int( ust::polymorph_restore_original_ref( ptr1.lock_imut().get_ref() ) ) != ust::ref_to_int( ptr0.lock_imut().get_ref() ) );
+			move(ptr0); // Let casted ptr free shared object.
+		}
+	}
+	{
+		{
+			var ust::shared_ptr_mt_nullable_imut</Impl/> mut ptr0( Impl() );
+			var ust::shared_ptr_mt_nullable_imut</I0/> ptr1(ptr0);
+
+			halt if( ust::ref_to_int( ust::polymorph_restore_original_ref( ptr1.lock_imut().get_ref() ) ) != ust::ref_to_int( ptr0.lock_imut().get_ref() ) );
+			move(ptr0); // Let casted ptr free shared object.
+		}
+		{
+			var ust::shared_ptr_mt_nullable_imut</Impl/> mut ptr0( Impl() );
+			var ust::shared_ptr_mt_nullable_imut</I1/> ptr1(ptr0);
+
+			halt if( ust::ref_to_int( ust::polymorph_restore_original_ref( ptr1.lock_imut().get_ref() ) ) != ust::ref_to_int( ptr0.lock_imut().get_ref() ) );
+			move(ptr0); // Let casted ptr free shared object.
+		}
+	}
+	{
+		{
+			var ust::shared_ptr_mt_mut</Impl/> mut ptr0( Impl() );
+			var ust::weak_ptr_mt_mut</Impl/> ptr1(ptr0);
+			var ust::weak_ptr_mt_mut</I0/> ptr2(ptr1);
+			var ust::shared_ptr_mt_nullable_mut</I0/> ptr3(ptr2.lock());
+
+			halt if( ust::ref_to_int( ust::polymorph_restore_original_ref( ptr3.lock_imut().get_ref() ) ) != ust::ref_to_int( ptr0.lock_imut().get_ref() ) );
+			move(ptr0); // Let casted ptr free shared object.
+		}
+		{
+			var ust::shared_ptr_mt_mut</Impl/> mut ptr0( Impl() );
+			var ust::weak_ptr_mt_mut</Impl/> ptr1(ptr0);
+			var ust::weak_ptr_mt_mut</I1/> ptr2(ptr1);
+			var ust::shared_ptr_mt_nullable_mut</I1/> ptr3(ptr2.lock());
+
+			halt if( ust::ref_to_int( ust::polymorph_restore_original_ref( ptr3.lock_imut().get_ref() ) ) != ust::ref_to_int( ptr0.lock_imut().get_ref() ) );
+			move(ptr0); // Let casted ptr free shared object.
+		}
+	}
+	{
+		{
+			var ust::shared_ptr_mt_imut</Impl/> mut ptr0( Impl() );
+			var ust::weak_ptr_mt_imut</Impl/> ptr1(ptr0);
+			var ust::weak_ptr_mt_imut</I0/> ptr2(ptr1);
+			var ust::shared_ptr_mt_nullable_imut</I0/> ptr3(ptr2.lock());
+
+			halt if( ust::ref_to_int( ust::polymorph_restore_original_ref( ptr3.lock_imut().get_ref() ) ) != ust::ref_to_int( ptr0.lock_imut().get_ref() ) );
+			move(ptr0); // Let casted ptr free shared object.
+		}
+		{
+			var ust::shared_ptr_mt_imut</Impl/> mut ptr0( Impl() );
+			var ust::weak_ptr_mt_imut</Impl/> ptr1(ptr0);
+			var ust::weak_ptr_mt_imut</I1/> ptr2(ptr1);
+			var ust::shared_ptr_mt_nullable_imut</I1/> ptr3(ptr2.lock());
+
+			halt if( ust::ref_to_int( ust::polymorph_restore_original_ref( ptr3.lock_imut().get_ref() ) ) != ust::ref_to_int( ptr0.lock_imut().get_ref() ) );
+			move(ptr0); // Let casted ptr free shared object.
+		}
 	}
 
 	return 0;

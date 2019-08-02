@@ -2,6 +2,7 @@ import "../atomic.u"
 import "../container_utils.u"
 import "../memory.u"
 import "../pointer.u"
+import "../polymorph.u"
 import "../pthread.u"
 import "../type_traits.u"
 
@@ -39,6 +40,22 @@ public:
 		}
 	}
 
+	template</ type U />
+	fn enable_if( !is_same_type</T, U/>() && is_ancestor_for</T, U/>() )
+	conversion_constructor( mut this, shared_ptr_mt_base</U/>& ptr )
+	{
+		if( !ptr.empty() )
+		{
+			unsafe
+			{
+				value_= raw_ptr_mut</ T />( ptr.get_value_ptr().get_ref() ); // Convert reference here.
+				counter_= ptr.get_counter_ptr();
+				ust::atomic_inc( counter_.get_ref().use_count_total  );
+				ust::atomic_inc( counter_.get_ref().use_count_strong );
+			}
+		}
+	}
+
 	fn constructor( mut this, this_type &imut other )
 	{
 		this= other;
@@ -72,7 +89,7 @@ public:
 			if( ust::atomic_dec( counter_.get_ref().use_count_strong ) == 1u )
 			{
 				call_destructor( value_.get_ref() );
-				memory_free( value_.get_ref() );
+				memory_free( polymorph_restore_original_ref( value_.get_ref() ) );
 			}
 			if( ust::atomic_dec( counter_.get_ref().use_count_total ) == 1u )
 			{
@@ -154,6 +171,21 @@ public:
 		}
 	}
 
+	template</ type U />
+	fn enable_if( !is_same_type</T, U/>() && is_ancestor_for</T, U/>() )
+	conversion_constructor( mut this, weak_ptr_mt_base</U/>& ptr )
+	{
+		unsafe
+		{
+			if( !ptr.get_value_ptr().is_null() )
+			{
+				value_= raw_ptr_mut</ T />( ptr.get_value_ptr().get_ref() ); // Convert reference here.
+				counter_= ptr.get_counter_ptr();
+				ust::atomic_inc( counter_.get_ref().use_count_total );
+			}
+		}
+	}
+
 	fn constructor( mut this, this_type &imut other )
 	{
 		this= other;
@@ -226,6 +258,17 @@ public:
 
 			return shared_ptr_mt_base</T/>( value_, counter_ );
 		}
+	}
+
+public: // Methods for internal usage.
+	fn get_value_ptr( this ) unsafe : raw_ptr_mut</T/>
+	{
+		return value_;
+	}
+
+	fn get_counter_ptr( this ) unsafe : raw_ptr_mut</ shared_ptr_mt_impl::counter />
+	{
+		return counter_;
 	}
 
 private:

@@ -257,11 +257,11 @@ bool Type::ReferenceIsConvertibleTo( const Type& other ) const
 	const Class* const other_class_type= other.GetClassType();
 	if( class_type != nullptr && other_class_type != nullptr )
 	{
-		for( const ClassProxyPtr& parent : class_type->parents )
+		for( const Class::Parent& parent : class_type->parents )
 		{
-			if( parent->class_ == other_class_type )
+			if( parent.class_->class_ == other_class_type )
 				return true;
-			if( Type(parent).ReferenceIsConvertibleTo( other ) )
+			if( Type(parent.class_).ReferenceIsConvertibleTo( other ) )
 				return true;
 		}
 	}
