@@ -196,8 +196,7 @@ if( REALLY_BUILD_LINKAGE_TESTS )
 	# Build rule for "Ü" files
 	# Returns result in U_SOURCE_OBJECT
 	function( CompileUSource u_source_file )
-		get_filename_component( source_name ${u_source_file} ABSOLUTE )
-		file( RELATIVE_PATH source_name ${CMAKE_SOURCE_DIR} ${source_name} )
+		get_filename_component( source_name ${u_source_file} NAME_WE )
 		set( object_name ${source_name}.o )
 		add_custom_command(
 			OUTPUT ${object_name}
@@ -270,7 +269,7 @@ if( REALLY_BUILD_LINKAGE_TESTS )
 	#
 	# type_id test
 	#
-	set( TYPE_ID_TEST_SOURCES tests/type_id_test/a.u tests/type_id_test/b.u )
+	set( TYPE_ID_TEST_SOURCES tests/type_id_test/type_id_a.u tests/type_id_test/type_id_b.u )
 	CompileUSources( "${TYPE_ID_TEST_SOURCES}" )
 	set( TYPE_ID_TEST_OBJECTS ${U_SOURCE_OBJECTS} )
 
