@@ -34,17 +34,15 @@ Templates:
 
 Standart library:
 *) Type traits
-*) ptr</Derived/> -> pt</Base/> conversions with correct memory free
 *) Associative containers - map, set, unordered_set, string_map
 *) Time library - get time functions, timers
 *) File library
 *) More math functions
 
 Compiler:
+*) Sort struct fields to minimize gaps
 *) move-assignment without hacks.
 *) Standartized entry point, such "main" in some languages
-*) Virtual table optimization - store child class virtual table pointer in
-	parent class.
 *) Virtual call for final function optimization
 *) Return value optimization
 *) Debug info
