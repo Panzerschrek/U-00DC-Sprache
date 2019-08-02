@@ -187,22 +187,21 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, Variable& typeinfo_variab
 	{
 		U_ASSERT( class_type->completeness == TypeCompleteness::Complete );
 
+		const bool is_polymorph=
+			class_type->kind == Class::Kind::Interface ||
+			class_type->kind == Class::Kind::Abstract ||
+			class_type->kind == Class::Kind::PolymorphNonFinal ||
+			class_type->kind == Class::Kind::PolymorphFinal;
+
 		add_size_field( "field_count"_SpC, class_type->field_count );
 		add_size_field( "parent_count"_SpC, class_type->parents.size() );
 
 		add_bool_field( "is_struct"_SpC, class_type->kind == Class::Kind::Struct );
-
-		add_bool_field( "is_polymorph"_SpC,
-			class_type->kind == Class::Kind::Interface ||
-			class_type->kind == Class::Kind::Abstract ||
-			class_type->kind == Class::Kind::PolymorphNonFinal ||
-			class_type->kind == Class::Kind::PolymorphFinal );
-
+		add_bool_field( "is_polymorph"_SpC, is_polymorph );
 		add_bool_field( "is_final"_SpC,
 			class_type->kind == Class::Kind::Struct ||
 			class_type->kind == Class::Kind::NonPolymorph ||
 			class_type->kind == Class::Kind::PolymorphFinal );
-
 		add_bool_field( "is_abstract"_SpC,
 			class_type->kind == Class::Kind::Abstract ||
 			class_type->kind == Class::Kind::Interface );
@@ -218,6 +217,15 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, Variable& typeinfo_variab
 		add_list_head_field( "functions_list"_SpC, BuildTypeinfoClassFunctionsList( class_proxy, root_namespace ) );
 		add_list_head_field( "parents_list"_SpC  , BuildeTypeinfoClassParentsList(  class_proxy, root_namespace ) );
 
+		if( is_polymorph )
+		{
+			U_ASSERT( class_type->polymorph_type_id != nullptr );
+			typeinfo_class.members.AddName(
+				"type_id"_SpC,
+				Value( ClassField( typeinfo_class_proxy, size_type_, static_cast<unsigned int>(fields_llvm_types.size()), false, true ), g_dummy_file_pos ) );
+			fields_llvm_types.push_back( fundamental_llvm_types_.int_ptr->getPointerTo() );
+			fields_initializers.push_back( class_type->polymorph_type_id );
+		}
 	}
 	else if( const FunctionPointer* const function_pointer_type= type.GetFunctionPointerType() )
 	{

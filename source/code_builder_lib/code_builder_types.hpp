@@ -671,7 +671,7 @@ public:
 	std::vector<VirtualTableEntry> virtual_table;
 	llvm::StructType* virtual_table_llvm_type= nullptr;
 	llvm::GlobalVariable* this_class_virtual_table= nullptr; // May be null for interfaces and abstract classes.
-	llvm::GlobalVariable* polymorph_type_id= nullptr; // May be null for interfaces and abstract classes.
+	llvm::GlobalVariable* polymorph_type_id= nullptr; // Exists in polymorph classes.
 
 	// Key - sequence of classes from child to parent. This class not included.
 	// Virtual table destination is lats key element.
