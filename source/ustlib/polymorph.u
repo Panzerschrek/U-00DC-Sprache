@@ -7,50 +7,34 @@ namespace ust
 template</type T/>
 fn polymorph_restore_original_ref( T &imut ref ) : void &imut
 {
-	unsafe
+	static_if( polymorph_impl::is_polymorph</T/>() )
 	{
-		static_if( typeinfo</T/>.is_class )
+		unsafe
 		{
-			static_if( typeinfo</T/>.is_polymorph )
-			{
-				// Virtual table pointer is always first filed in class.
-				auto &mut ref_mut= cast_mut(ref);
-				var polymorph_impl::virtual_class_ptr ptr_to_virtual_class( cast_ref_unsafe</ polymorph_impl::virtual_class />(ref_mut) );
-				auto offset= ptr_to_virtual_class.get_ref().vptr.get_ref().offset_of_allocated_object;
+			// Virtual table pointer is always first filed in class.
+			auto offset= cast_ref_unsafe</ polymorph_impl::virtual_class />(ref).vptr.offset_of_allocated_object;
 
-				auto original_ptr= raw_ptr_mut</u8/>( cast_ref_unsafe</u8/>(ref_mut) ) - offset;
-				return int_to_ref( ref_to_int( original_ptr.get_ref() ) );
-			}
-			else
-			{
-				return ref;
-			}
+			auto original_ptr= raw_ptr_mut</u8/>( cast_ref_unsafe</u8/>(cast_mut(ref)) ) - offset;
+			return int_to_ref( ref_to_int( original_ptr.get_ref() ) );
 		}
-		else
-		{
-			return ref;
-		}
+	}
+	else
+	{
+		return ref;
 	}
 }
 
 template</type A, type B/>
 fn polymorph_is_same_type( A& a, B& b ) : bool
 {
-	static_if( typeinfo</A/>.is_class && typeinfo</B/>.is_class )
+	static_if( polymorph_impl::is_polymorph</A/>() && polymorph_impl::is_polymorph</B/>() )
 	{
-		static_if( typeinfo</A/>.is_polymorph && typeinfo</B/>.is_polymorph )
+		unsafe
 		{
-			unsafe
-			{
-				// Virtual table pointer is always first filed in class.
-				var polymorph_impl::virtual_class_ptr ptr_to_virtual_class_a( cast_ref_unsafe</ polymorph_impl::virtual_class />(cast_mut(a)) );
-				var polymorph_impl::virtual_class_ptr ptr_to_virtual_class_b( cast_ref_unsafe</ polymorph_impl::virtual_class />(cast_mut(b)) );
-				return ptr_to_virtual_class_a.get_ref().vptr.get_ref().type_id == ptr_to_virtual_class_b.get_ref().vptr.get_ref().type_id;
-			}
-		}
-		else
-		{
-			return is_same_type</A, B/>();
+			// Virtual table pointer is always first filed in class.
+			return
+				cast_ref_unsafe</ polymorph_impl::virtual_class />(a).vptr.type_id ==
+				cast_ref_unsafe</ polymorph_impl::virtual_class />(b).vptr.type_id;
 		}
 	}
 	else
@@ -62,6 +46,19 @@ fn polymorph_is_same_type( A& a, B& b ) : bool
 namespace polymorph_impl
 {
 
+template</type T/>
+fn constexpr is_polymorph() : bool
+{
+	static_if( typeinfo</T/>.is_class )
+	{
+		return typeinfo</T/>.is_polymorph;
+	}
+	else
+	{
+		return false;
+	}
+}
+
 // If compiler virtual table layout changed, this must be changed too!
 struct virtual_table
 {
@@ -69,14 +66,10 @@ struct virtual_table
 	size_type type_id;
 }
 
-type virtual_table_ptr= raw_ptr_mut</virtual_table/>;
-
 struct virtual_class
 {
-	virtual_table_ptr vptr;
+	virtual_table& vptr;
 }
-
-type virtual_class_ptr= raw_ptr_mut</virtual_class/>;
 
 } // namespace polymorph_impl
 
