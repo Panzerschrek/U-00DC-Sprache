@@ -196,7 +196,8 @@ if( REALLY_BUILD_LINKAGE_TESTS )
 	# Build rule for "Ü" files
 	# Returns result in U_SOURCE_OBJECT
 	function( CompileUSource u_source_file )
-		get_filename_component( source_name ${u_source_file} NAME_WE )
+		get_filename_component( source_name ${u_source_file} ABSOLUTE )
+		file( RELATIVE_PATH source_name ${CMAKE_SOURCE_DIR} ${source_name} )
 		set( object_name ${source_name}.o )
 		add_custom_command(
 			OUTPUT ${object_name}
@@ -265,5 +266,22 @@ if( REALLY_BUILD_LINKAGE_TESTS )
 
 	add_executable( IncludeDirsTest tests/include_dirs_test/entry.c include_dirs_test.o )
 	add_dependencies( IncludeDirsTest Compiler )
+
+	#
+	# type_id test
+	#
+	set( TYPE_ID_TEST_SOURCES tests/type_id_test/a.u tests/type_id_test/b.u )
+	CompileUSources( "${TYPE_ID_TEST_SOURCES}" )
+	set( TYPE_ID_TEST_OBJECTS ${U_SOURCE_OBJECTS} )
+
+	add_executable( TypeIdTest tests/type_id_test/entry.c ${TYPE_ID_TEST_OBJECTS} )
+	add_dependencies( TypeIdTest Compiler )
+
+	# Run type_id test
+	add_custom_target(
+		TypeIdTestRun ALL
+		COMMAND TypeIdTest
+		DEPENDS TypeIdTest
+		WORKING_DIRECTORY ${CMAKE_BINARY_DIR} )
 
 endif( REALLY_BUILD_LINKAGE_TESTS )
