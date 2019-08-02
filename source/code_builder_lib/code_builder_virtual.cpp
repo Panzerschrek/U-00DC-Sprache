@@ -352,6 +352,9 @@ void CodeBuilder::BuildClassVirtualTables( Class& the_class, const Type& class_t
 			llvm::GlobalValue::ExternalLinkage,
 			llvm::ConstantInt::get( type_id_type, llvm::APInt( type_id_type->getIntegerBitWidth(), 0u ) ),
 			"_type_id_for_" + MangleType( class_type ) );
+	llvm::Comdat* const type_id_comdat= module_->getOrInsertComdat( the_class.polymorph_type_id->getName() );
+	type_id_comdat->setSelectionKind( llvm::Comdat::Any );
+	the_class.polymorph_type_id->setComdat( type_id_comdat );
 
 	std::vector<llvm::Constant*> initializer_values;
 	initializer_values.reserve( the_class.virtual_table_llvm_type->elements().size() );
