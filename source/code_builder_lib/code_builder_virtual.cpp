@@ -236,6 +236,7 @@ void CodeBuilder::PrepareClassVirtualTableType( const ClassProxyPtr& class_type 
 
 	// Virtual table layout:
 	// offset to allocated object (int_ptr)
+	// type id
 	// virtual function 0 ptr
 	// virtual function 1 ptr
 	// ...
@@ -245,6 +246,7 @@ void CodeBuilder::PrepareClassVirtualTableType( const ClassProxyPtr& class_type 
 	std::vector<llvm::Type*> virtual_table_struct_fields;
 
 	virtual_table_struct_fields.push_back( fundamental_llvm_types_.int_ptr ); // Offset field.
+	virtual_table_struct_fields.push_back( fundamental_llvm_types_.int_ptr->getPointerTo() ); // type_id field
 
 	for( const Class::VirtualTableEntry& virtual_table_entry : the_class.virtual_table )
 	{
@@ -270,6 +272,8 @@ void CodeBuilder::BuildClassVirtualTables_r( Class& the_class, const Type& class
 	initializer_values.push_back(
 		llvm::dyn_cast<llvm::Constant>(
 			global_function_context_->llvm_ir_builder.CreatePtrToInt( dst_class_ptr_null_based, fundamental_llvm_types_.int_ptr ) ) );
+
+	initializer_values.push_back( the_class.polymorph_type_id );
 
 	for( const Class::VirtualTableEntry& ancestor_virtual_table_entry : dst_class.virtual_table )
 	{
@@ -339,12 +343,24 @@ void CodeBuilder::BuildClassVirtualTables( Class& the_class, const Type& class_t
 
 	U_ASSERT( the_class.virtual_table_llvm_type != nullptr );
 
+	llvm::Type* const type_id_type= the_class.virtual_table_llvm_type->getStructElementType(1u)->getPointerElementType();
+	the_class.polymorph_type_id=
+		new llvm::GlobalVariable(
+			*module_,
+			type_id_type,
+			true, // is_constant
+			llvm::GlobalValue::ExternalLinkage,
+			llvm::ConstantInt::get( type_id_type, llvm::APInt( type_id_type->getIntegerBitWidth(), 0u ) ),
+			"_type_id_for_" + MangleType( class_type ) );
+
 	std::vector<llvm::Constant*> initializer_values;
 	initializer_values.reserve( the_class.virtual_table_llvm_type->elements().size() );
 	initializer_values.push_back(
 		llvm::Constant::getIntegerValue(
 			fundamental_llvm_types_.int_ptr,
 			llvm::APInt( fundamental_llvm_types_.int_ptr->getIntegerBitWidth(), 0u ) ) ); // For this class virtual table we have zero offset to real this.
+
+	initializer_values.push_back( the_class.polymorph_type_id );
 
 	for( const Class::VirtualTableEntry& virtual_table_entry : the_class.virtual_table )
 	{
@@ -403,8 +419,9 @@ std::pair<Variable, llvm::Value*> CodeBuilder::TryFetchVirtualFunction(
 		U_ASSERT( class_type != nullptr );
 		U_ASSERT( function.virtual_table_index < class_type->virtual_table.size() );
 
-		const unsigned int func_ptr_field_number= function.virtual_table_index + 1u;
 		const unsigned int offset_field_number= 0u;
+		const unsigned int type_id_field_number= 1u;
+		const unsigned int func_ptr_field_number= type_id_field_number + 1u + function.virtual_table_index;
 
 		// Fetch vtable pointer.
 		// Virtual table pointer is always first field.

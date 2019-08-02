@@ -1,4 +1,5 @@
 import "pointer.u"
+import "type_traits.u"
 
 namespace ust
 {
@@ -32,6 +33,32 @@ fn polymorph_restore_original_ref( T &imut ref ) : void &imut
 	}
 }
 
+template</type A, type B/>
+fn polymorph_is_same_type( A& a, B& b ) : bool
+{
+	static_if( typeinfo</A/>.is_class && typeinfo</B/>.is_class )
+	{
+		static_if( typeinfo</A/>.is_polymorph && typeinfo</B/>.is_polymorph )
+		{
+			unsafe
+			{
+				// Virtual table pointer is always first filed in class.
+				var polymorph_impl::virtual_class_ptr ptr_to_virtual_class_a( cast_ref_unsafe</ polymorph_impl::virtual_class />(cast_mut(a)) );
+				var polymorph_impl::virtual_class_ptr ptr_to_virtual_class_b( cast_ref_unsafe</ polymorph_impl::virtual_class />(cast_mut(b)) );
+				return ptr_to_virtual_class_a.get_ref().vptr.get_ref().type_id == ptr_to_virtual_class_b.get_ref().vptr.get_ref().type_id;
+			}
+		}
+		else
+		{
+			return is_same_type</A, B/>();
+		}
+	}
+	else
+	{
+		return is_same_type</A, B/>();
+	}
+}
+
 namespace polymorph_impl
 {
 
@@ -39,6 +66,7 @@ namespace polymorph_impl
 struct virtual_table
 {
 	size_type offset_of_allocated_object;
+	size_type type_id;
 }
 
 type virtual_table_ptr= raw_ptr_mut</virtual_table/>;

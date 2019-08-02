@@ -458,6 +458,7 @@ void CodeBuilder::CopyClass(
 	copy->virtual_table_llvm_type= src.virtual_table_llvm_type;
 	copy->this_class_virtual_table= src.this_class_virtual_table;
 	copy->ancestors_virtual_tables= src.ancestors_virtual_tables;
+	copy->polymorph_type_id= src.polymorph_type_id;
 
 	// Register copy in destination namespace and current class table.
 	dst_namespace.AddName( src.members.GetThisNamespaceName(), Value( src_class, file_pos ) );
