@@ -1,3 +1,4 @@
+import "optional_ref.u"
 import "pointer.u"
 import "type_traits.u"
 
@@ -43,8 +44,43 @@ fn polymorph_is_same_type( A& a, B& b ) : bool
 	}
 }
 
+template</ type To, type From />
+fn polymorph_cast( From & mut from ) : optional_ref</ To, true  />
+{
+	polymorph_impl::polymorph_cast_impl</To/>(from);
+}
+
+template</ type To, type From />
+fn polymorph_cast( From &imut from ) : optional_ref</ To, false />
+{
+	unsafe
+	{
+		auto res= polymorph_impl::polymorph_cast_impl</To/>( cast_mut(from) );
+		if( !res.empty() )
+		{
+			return optional_ref</ To, false />( res.get_ref_unsafe() );
+		}
+		else
+		{
+			return optional_ref</ To, false />();
+		}
+	}
+}
+
 namespace polymorph_impl
 {
+
+// If compiler virtual table layout changed, this must be changed too!
+struct virtual_table
+{
+	size_type offset_of_allocated_object;
+	size_type type_id;
+}
+
+struct virtual_class
+{
+	virtual_table& vptr;
+}
 
 template</type T/>
 fn constexpr is_polymorph() : bool
@@ -59,16 +95,43 @@ fn constexpr is_polymorph() : bool
 	}
 }
 
-// If compiler virtual table layout changed, this must be changed too!
-struct virtual_table
+template</ type To, type From />
+fn polymorph_cast_impl( From & mut from ) : optional_ref</ To, true />
 {
-	size_type offset_of_allocated_object;
-	size_type type_id;
-}
-
-struct virtual_class
-{
-	virtual_table& vptr;
+	static_if( is_polymorph</From/>() && is_polymorph</To/>() )
+	{
+		static_if( is_same_type</ From, To />() || is_ancestor_for</ To, From />() )
+		{
+			// Derived to base cast.
+			return optional_ref</ To, true  />( from );
+		}
+		else if( is_ancestor_for</ From, To />() )
+		{
+			// Base to derived cast.
+			unsafe
+			{
+				// TODO - support cast A->B in hierarchy A->B->C
+				if( cast_ref_unsafe</ virtual_class />(from).vptr.type_id == ust::ref_to_int( typeinfo</To/>.type_id ) )
+				{
+					return optional_ref</ To, true />( cast_ref_unsafe</To/>( cast_mut( polymorph_restore_original_ref(from) ) ) );
+				}
+				else
+				{
+					return optional_ref</ To, true />();
+				}
+			}
+		}
+		else
+		{
+			static_assert(false); // Unsupported polymorph_cast.
+			halt;
+		}
+	}
+	else
+	{
+		static_assert(false); // polymorph_cast works only for polymorph classes.
+		halt;
+	}
 }
 
 } // namespace polymorph_impl

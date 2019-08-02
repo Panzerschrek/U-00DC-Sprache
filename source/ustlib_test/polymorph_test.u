@@ -8,6 +8,8 @@ class I1 interface {}
 class A : I0, I1 { i32 x= 0; }
 class B : A { i32 y= 0; }
 
+class C : I0, I1 {}
+
 fn U_Main() : i32
 {
 	{
@@ -98,6 +100,16 @@ fn U_Main() : i32
 		halt if( ust::polymorph_is_same_type( i1_0, i0_1 ) );
 		halt if( ust::polymorph_is_same_type( i1_0, i1_1 ) );
 		halt if( ust::polymorph_is_same_type( i1_0, a_1  ) );
+	}
+	{ // // dynamic cast.
+		var B imut b;
+		halt if( ust::ref_to_int( ust::polymorph_cast</B/>( cast_ref</B />(b) ).get_ref() ) != ust::ref_to_int(b) );
+		halt if( ust::ref_to_int( ust::polymorph_cast</B/>( cast_ref</A />(b) ).get_ref() ) != ust::ref_to_int(b) );
+		halt if( ust::ref_to_int( ust::polymorph_cast</B/>( cast_ref</I0/>(b) ).get_ref() ) != ust::ref_to_int(b) );
+		halt if( ust::ref_to_int( ust::polymorph_cast</B/>( cast_ref</I1/>(b) ).get_ref() ) != ust::ref_to_int(b) );
+
+		halt if( !ust::polymorph_cast</C/>( cast_ref</I0/>(b) ).empty() );
+		halt if( !ust::polymorph_cast</C/>( cast_ref</I1/>(b) ).empty() );
 	}
 	return 0;
 }
