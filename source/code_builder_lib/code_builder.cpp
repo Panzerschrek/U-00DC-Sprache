@@ -614,7 +614,7 @@ Type CodeBuilder::PrepareType(
 			this_.ProcessFunctionTypeReferencesPollution( names_scope.GetErrors(), function_type_name, function_type );
 
 			function_type.llvm_function_type= this_.GetLLVMFunctionType( function_type );
-			function_pointer_type.llvm_function_pointer_type= llvm::PointerType::get( function_type.llvm_function_type, 0u );
+			function_pointer_type.llvm_function_pointer_type= function_type.llvm_function_type->getPointerTo();
 			return std::move(function_pointer_type);
 		}
 
@@ -651,7 +651,7 @@ llvm::FunctionType* CodeBuilder::GetLLVMFunctionType( const Function& function_t
 		else if( const Class* const class_type= function_type.return_type.GetClassType() )
 		{
 			// Add return-value ponter as "sret" argument for class types.
-			args_llvm_types.push_back( llvm::PointerType::get( class_type->llvm_type, 0u ) );
+			args_llvm_types.push_back( class_type->llvm_type->getPointerTo() );
 			first_arg_is_sret= true;
 		}
 		else U_ASSERT( false );
@@ -661,7 +661,7 @@ llvm::FunctionType* CodeBuilder::GetLLVMFunctionType( const Function& function_t
 	{
 		llvm::Type* type= arg.type.GetLLVMType();
 		if( arg.is_reference )
-			type= llvm::PointerType::get( type, 0u );
+			type= type->getPointerTo();
 		else
 		{
 			if( arg.type.GetFundamentalType() != nullptr || arg.type.GetEnumType() != nullptr || arg.type.GetFunctionPointerType() )
@@ -669,7 +669,7 @@ llvm::FunctionType* CodeBuilder::GetLLVMFunctionType( const Function& function_t
 			else if( arg.type.GetClassType() != nullptr )
 			{
 				// Mark value-parameters of class types as pointer. Lately this parameters will be marked as "byval".
-				type= llvm::PointerType::get( type, 0u );
+				type= type->getPointerTo();
 			}
 			else U_ASSERT( false );
 		}
@@ -683,7 +683,7 @@ llvm::FunctionType* CodeBuilder::GetLLVMFunctionType( const Function& function_t
 	{
 		llvm_function_return_type= function_type.return_type.GetLLVMType();
 		if( function_type.return_value_is_reference )
-			llvm_function_return_type= llvm::PointerType::get( llvm_function_return_type, 0u );
+			llvm_function_return_type= llvm_function_return_type->getPointerTo();
 	}
 
 	return llvm::FunctionType::get( llvm_function_return_type, args_llvm_types, false );
@@ -3589,7 +3589,7 @@ llvm::Value* CodeBuilder::CreateReferenceCast( llvm::Value* const ref, const Typ
 	U_ASSERT( src_type.ReferenceIsConvertibleTo( dst_type ) );
 
 	if( dst_type == void_type_ )
-		return function_context.llvm_ir_builder.CreatePointerCast( ref, llvm::PointerType::get( dst_type.GetLLVMType(), 0 ) );
+		return function_context.llvm_ir_builder.CreatePointerCast( ref, dst_type.GetLLVMType()->getPointerTo() );
 	else
 	{
 		const Class* const src_class_type= src_type.GetClassType();

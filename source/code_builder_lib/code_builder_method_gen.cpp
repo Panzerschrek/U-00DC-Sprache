@@ -85,7 +85,7 @@ void CodeBuilder::TryGenerateDefaultConstructor( Class& the_class, const Type& c
 	constructor_type.args.back().is_reference= true;
 
 	ArgsVector<llvm::Type*> args_llvm_types;
-	args_llvm_types.push_back( llvm::PointerType::get( class_type.GetLLVMType(), 0u ) );
+	args_llvm_types.push_back( class_type.GetLLVMType()->getPointerTo() );
 
 	constructor_type.llvm_function_type=
 		llvm::FunctionType::get(
@@ -277,8 +277,8 @@ void CodeBuilder::TryGenerateCopyConstructor( Class& the_class, const Type& clas
 	}
 
 	ArgsVector<llvm::Type*> args_llvm_types;
-	args_llvm_types.push_back( llvm::PointerType::get( class_type.GetLLVMType(), 0u ) );
-	args_llvm_types.push_back( llvm::PointerType::get( class_type.GetLLVMType(), 0u ) );
+	args_llvm_types.push_back( class_type.GetLLVMType()->getPointerTo() );
+	args_llvm_types.push_back( class_type.GetLLVMType()->getPointerTo() );
 
 	constructor_type.llvm_function_type=
 		llvm::FunctionType::get(
@@ -394,7 +394,7 @@ FunctionVariable CodeBuilder::GenerateDestructorPrototype( Class& the_class, con
 	destructor_type.args[0].is_mutable= true;
 	destructor_type.args[0].is_reference= true;
 
-	llvm::Type* const this_llvm_type= llvm::PointerType::get( class_type.GetLLVMType(), 0u );
+	llvm::Type* const this_llvm_type= class_type.GetLLVMType()->getPointerTo();
 	destructor_type.llvm_function_type=
 		llvm::FunctionType::get(
 			fundamental_llvm_types_.void_for_ret,
@@ -568,8 +568,8 @@ void CodeBuilder::TryGenerateCopyAssignmentOperator( Class& the_class, const Typ
 	}
 
 	ArgsVector<llvm::Type*> args_llvm_types;
-	args_llvm_types.push_back( llvm::PointerType::get( class_type.GetLLVMType(), 0u ) );
-	args_llvm_types.push_back( llvm::PointerType::get( class_type.GetLLVMType(), 0u ) );
+	args_llvm_types.push_back( class_type.GetLLVMType()->getPointerTo() );
+	args_llvm_types.push_back( class_type.GetLLVMType()->getPointerTo() );
 
 	op_type.llvm_function_type=
 		llvm::FunctionType::get(

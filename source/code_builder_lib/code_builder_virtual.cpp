@@ -249,7 +249,7 @@ void CodeBuilder::PrepareClassVirtualTableType( const ClassProxyPtr& class_type 
 	for( const Class::VirtualTableEntry& virtual_table_entry : the_class.virtual_table )
 	{
 		const Function& function_type= *virtual_table_entry.function_variable.type.GetFunctionType();
-		virtual_table_struct_fields.push_back( llvm::PointerType::get( function_type.llvm_function_type, 0u ) ); // Function pointer field.
+		virtual_table_struct_fields.push_back( function_type.llvm_function_type->getPointerTo() ); // Function pointer field.
 	}
 
 	the_class.virtual_table_llvm_type->setBody( virtual_table_struct_fields );
@@ -288,7 +288,7 @@ void CodeBuilder::BuildClassVirtualTables_r( Class& the_class, const Type& class
 		llvm::Value* const function_pointer_casted=
 			global_function_context_->llvm_ir_builder.CreateBitOrPointerCast(
 				overriden_in_this_class->function_variable.llvm_function,
-				llvm::PointerType::get( ancestor_virtual_table_entry.function_variable.type.GetFunctionType()->llvm_function_type, 0 ) );
+				ancestor_virtual_table_entry.function_variable.type.GetFunctionType()->llvm_function_type->getPointerTo() );
 
 		initializer_values.push_back( llvm::dyn_cast<llvm::Constant>(function_pointer_casted) );
 	} // for ancestor virtual table
@@ -365,7 +365,7 @@ void CodeBuilder::BuildClassVirtualTables( Class& the_class, const Type& class_t
 	the_class.this_class_virtual_table->setUnnamedAddr( true );
 
 	// Recursive build virtual tables for all instances of all ancestors.
-	llvm::Value* const this_nullptr= llvm::Constant::getNullValue( llvm::PointerType::get( the_class.llvm_type, 0u ) );
+	llvm::Value* const this_nullptr= llvm::Constant::getNullValue( the_class.llvm_type->getPointerTo() );
 	for( size_t i= 0u; i < the_class.parents.size(); ++i )
 	{
 		llvm::Value* index_list[2];
@@ -408,7 +408,7 @@ std::pair<Variable, llvm::Value*> CodeBuilder::TryFetchVirtualFunction(
 
 		// Fetch vtable pointer.
 		// Virtual table pointer is always first field.
-		llvm::Value* const ptr_to_virtual_table_ptr= function_context.llvm_ir_builder.CreateBitCast( this_casted.llvm_value, llvm::PointerType::get( llvm::PointerType::get( class_type->virtual_table_llvm_type, 0u ), 0u ) );
+		llvm::Value* const ptr_to_virtual_table_ptr= function_context.llvm_ir_builder.CreateBitCast( this_casted.llvm_value, class_type->virtual_table_llvm_type->getPointerTo()->getPointerTo() );
 		llvm::Value* const virtual_table_ptr= function_context.llvm_ir_builder.CreateLoad( ptr_to_virtual_table_ptr );
 		// Fetch function.
 		llvm::Value* index_list[2];
@@ -423,7 +423,7 @@ std::pair<Variable, llvm::Value*> CodeBuilder::TryFetchVirtualFunction(
 		// Correct "this" pointer.
 		llvm::Value* const this_ptr_as_int= function_context.llvm_ir_builder.CreatePtrToInt( this_casted.llvm_value, fundamental_llvm_types_.int_ptr );
 		llvm::Value* this_sub_offset= function_context.llvm_ir_builder.CreateSub( this_ptr_as_int, offset );
-		this_casted.llvm_value= function_context.llvm_ir_builder.CreateIntToPtr( this_sub_offset, llvm::PointerType::get( this_casted.type.GetLLVMType(), 0u ) );
+		this_casted.llvm_value= function_context.llvm_ir_builder.CreateIntToPtr( this_sub_offset, this_casted.type.GetLLVMType()->getPointerTo() );
 	}
 
 	return std::make_pair( std::move(this_casted), llvm_function_ptr );
@@ -456,7 +456,7 @@ void CodeBuilder::SetupVirtualTablePointers_r(
 	}
 
 	// Overwrite, if needed, first parent virtual table.
-	llvm::Value* const ptr_to_vtable_ptr= function_context.llvm_ir_builder.CreateBitCast( this_, llvm::PointerType::get( llvm::PointerType::get( the_class.virtual_table_llvm_type, 0u ), 0u ) );
+	llvm::Value* const ptr_to_vtable_ptr= function_context.llvm_ir_builder.CreateBitCast( this_, the_class.virtual_table_llvm_type->getPointerTo()->getPointerTo() );
 	function_context.llvm_ir_builder.CreateStore( virtual_tables.find(class_path)->second, ptr_to_vtable_ptr );
 }
 
@@ -488,7 +488,7 @@ void CodeBuilder::SetupVirtualTablePointers(
 	}
 
 	// Overwrite, if needed, first parent virtual table.
-	llvm::Value* const ptr_to_vtable_ptr= function_context.llvm_ir_builder.CreateBitCast( this_, llvm::PointerType::get( llvm::PointerType::get( the_class.virtual_table_llvm_type, 0u ), 0u ) );
+	llvm::Value* const ptr_to_vtable_ptr= function_context.llvm_ir_builder.CreateBitCast( this_,  the_class.virtual_table_llvm_type->getPointerTo()->getPointerTo() );
 	function_context.llvm_ir_builder.CreateStore( the_class.this_class_virtual_table, ptr_to_vtable_ptr );
 }
 

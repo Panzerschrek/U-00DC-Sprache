@@ -475,7 +475,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type, const T
 			class_declaration.kind_attribute_ == Synt::ClassKindAttribute::Interface ) )
 		{
 			U_ASSERT( fields_llvm_types.empty() );
-			fields_llvm_types.emplace_back( llvm::PointerType::get( fundamental_llvm_types_.void_, 0u ) ); // set exact type later.
+			fields_llvm_types.emplace_back( fundamental_llvm_types_.void_->getPointerTo() ); // set exact type later.
 			allocate_virtual_table_pointer= true;
 		}
 
@@ -486,7 +486,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type, const T
 				{
 					class_field->index= static_cast<unsigned int>(fields_llvm_types.size());
 					if( class_field->is_reference )
-						fields_llvm_types.emplace_back( llvm::PointerType::get( class_field->type.GetLLVMType(), 0u ) );
+						fields_llvm_types.emplace_back( class_field->type.GetLLVMType()->getPointerTo() );
 					else
 					{
 						if( !class_field->type.GetLLVMType()->isSized() )
@@ -723,7 +723,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type, const T
 
 		PrepareClassVirtualTableType( class_type );
 		if( allocate_virtual_table_pointer )
-			fields_llvm_types[0]= llvm::PointerType::get( the_class.virtual_table_llvm_type, 0u );
+			fields_llvm_types[0]= the_class.virtual_table_llvm_type->getPointerTo();
 
 		// Check opaque before set body for cases of errors (class body duplication).
 		if( the_class.llvm_type->isOpaque() )

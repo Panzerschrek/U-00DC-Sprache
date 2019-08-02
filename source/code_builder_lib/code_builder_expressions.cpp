@@ -47,7 +47,7 @@ Variable CodeBuilder::BuildExpressionCodeEnsureVariable(
 
 		Variable dummy_result;
 		dummy_result.type= invalid_type_;
-		dummy_result.llvm_value= llvm::UndefValue::get( llvm::PointerType::get( invalid_type_.GetLLVMType(), 0u ) );
+		dummy_result.llvm_value= llvm::UndefValue::get( invalid_type_.GetLLVMType()->getPointerTo() );
 		return dummy_result;
 	}
 	return std::move( *result_variable );
@@ -1167,7 +1167,7 @@ Value CodeBuilder::DoReferenceCast(
 			result.llvm_value= CreateReferenceCast( src_value, var.type, type, function_context );
 		else
 		{
-			result.llvm_value= function_context.llvm_ir_builder.CreatePointerCast( src_value, llvm::PointerType::get( type.GetLLVMType(), 0 ) );
+			result.llvm_value= function_context.llvm_ir_builder.CreatePointerCast( src_value, type.GetLLVMType()->getPointerTo() );
 			if( !enable_unsafe )
 				REPORT_ERROR( TypesMismatch, names.GetErrors(), file_pos, type, var.type );
 		}
@@ -1556,7 +1556,7 @@ Value CodeBuilder::BuildTernaryOperator( const Synt::TernaryOperator& ternary_op
 
 	if( result.value_type != ValueType::Value )
 	{
-		llvm::PHINode* const phi= function_context.llvm_ir_builder.CreatePHI( llvm::PointerType::get( result.type.GetLLVMType(), 0 ), 2u );
+		llvm::PHINode* const phi= function_context.llvm_ir_builder.CreatePHI( result.type.GetLLVMType()->getPointerTo(), 2u );
 		phi->addIncoming( branches_reference_values[0], branches_basic_blocks[0] );
 		phi->addIncoming( branches_reference_values[1], branches_basic_blocks[1] );
 		result.llvm_value= phi;

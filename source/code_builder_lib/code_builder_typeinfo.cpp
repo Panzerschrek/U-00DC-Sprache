@@ -123,7 +123,7 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, Variable& typeinfo_variab
 		typeinfo_class.members.AddName(
 			name,
 			Value( ClassField( typeinfo_class_proxy, dependent_type_typeinfo.type, static_cast<unsigned int>(fields_llvm_types.size()), false, true ), g_dummy_file_pos ) );
-		fields_llvm_types.push_back( llvm::PointerType::get( dependent_type_typeinfo.type.GetLLVMType(), 0u ) );
+		fields_llvm_types.push_back( dependent_type_typeinfo.type.GetLLVMType()->getPointerTo() );
 		fields_initializers.push_back( llvm::dyn_cast<llvm::GlobalVariable>( dependent_type_typeinfo.llvm_value ) );
 	};
 
@@ -133,7 +133,7 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, Variable& typeinfo_variab
 		typeinfo_class.members.AddName(
 			name,
 			Value( ClassField( typeinfo_class_proxy, variable.type, static_cast<unsigned int>(fields_llvm_types.size()), false, true ), g_dummy_file_pos ) );
-		fields_llvm_types.push_back( llvm::PointerType::get( variable.type.GetLLVMType(), 0u ) );
+		fields_llvm_types.push_back( variable.type.GetLLVMType()->getPointerTo() );
 		fields_initializers.push_back( llvm::dyn_cast<llvm::GlobalVariable>( variable.llvm_value ) );
 	};
 
@@ -259,7 +259,7 @@ const Variable& CodeBuilder::GetTypeinfoListEndNode( NamesScope& root_namespace 
 	node_type_class.members.AddName(
 		g_next_node_name,
 		Value( ClassField( node_type, node_type, static_cast<unsigned int>(fields_llvm_types.size()), false, true ), g_dummy_file_pos ) );
-	fields_llvm_types.push_back( llvm::PointerType::get( node_type_class.llvm_type, 0u ) );
+	fields_llvm_types.push_back( node_type_class.llvm_type->getPointerTo() );
 	fields_initializers.push_back( nullptr );
 
 	FinishTypeinfoClass( node_type_class, node_type, fields_llvm_types );
@@ -331,7 +331,7 @@ Variable CodeBuilder::BuildTypeinfoEnumElementsList( const Enum& enum_type, Name
 			node_type_class.members.AddName(
 				g_next_node_name,
 				Value( ClassField( node_type, head.type, static_cast<unsigned int>(fields_llvm_types.size()), false, true ), g_dummy_file_pos ) );
-			fields_llvm_types.push_back( llvm::PointerType::get( head.type.GetLLVMType(), 0u ) );
+			fields_llvm_types.push_back( head.type.GetLLVMType()->getPointerTo() );
 			fields_initializers.push_back( llvm::dyn_cast<llvm::GlobalVariable>(head.llvm_value) );
 
 			node_type_class.members.AddName(
@@ -434,7 +434,7 @@ Variable CodeBuilder::BuildTypeinfoClassFieldsList( const ClassProxyPtr& class_t
 			node_type_class.members.AddName(
 				g_next_node_name,
 				Value( ClassField( node_type, head.type, static_cast<unsigned int>(fields_llvm_types.size()), false, true ), g_dummy_file_pos ) );
-			fields_llvm_types.push_back( llvm::PointerType::get( head.type.GetLLVMType(), 0u ) );
+			fields_llvm_types.push_back( head.type.GetLLVMType()->getPointerTo() );
 			fields_initializers.push_back( llvm::dyn_cast<llvm::GlobalVariable>(head.llvm_value) );
 
 			{
@@ -442,7 +442,7 @@ Variable CodeBuilder::BuildTypeinfoClassFieldsList( const ClassProxyPtr& class_t
 				ClassField field( node_type, field_type_typeinfo.type, static_cast<unsigned int>(fields_llvm_types.size()), false, true );
 
 				node_type_class.members.AddName( g_type_field_name, Value( std::move(field), g_dummy_file_pos ) );
-				fields_llvm_types.push_back( llvm::PointerType::get( field_type_typeinfo.type.GetLLVMType(), 0u ) );
+				fields_llvm_types.push_back( field_type_typeinfo.type.GetLLVMType()->getPointerTo() );
 				fields_initializers.push_back( llvm::dyn_cast<llvm::GlobalVariable>( field_type_typeinfo.llvm_value ) );
 			}
 			{
@@ -450,7 +450,7 @@ Variable CodeBuilder::BuildTypeinfoClassFieldsList( const ClassProxyPtr& class_t
 				ClassField field( node_type, fields_class_type_typeinfo.type, static_cast<unsigned int>(fields_llvm_types.size()), false, true );
 
 				node_type_class.members.AddName( "class_type"_SpC, Value( std::move(field), g_dummy_file_pos ) );
-				fields_llvm_types.push_back( llvm::PointerType::get( fields_class_type_typeinfo.type.GetLLVMType(), 0u ) );
+				fields_llvm_types.push_back( fields_class_type_typeinfo.type.GetLLVMType()->getPointerTo() );
 				fields_initializers.push_back( llvm::dyn_cast<llvm::GlobalVariable>( fields_class_type_typeinfo.llvm_value ) );
 			}
 			{
@@ -532,7 +532,7 @@ Variable CodeBuilder::BuildTypeinfoClassTypesList( const ClassProxyPtr& class_ty
 			node_type_class.members.AddName(
 				g_next_node_name,
 				Value( ClassField( node_type, head.type, static_cast<unsigned int>(fields_llvm_types.size()), false, true ), g_dummy_file_pos ) );
-			fields_llvm_types.push_back( llvm::PointerType::get( head.type.GetLLVMType(), 0u ) );
+			fields_llvm_types.push_back( head.type.GetLLVMType()->getPointerTo() );
 			fields_initializers.push_back( llvm::dyn_cast<llvm::GlobalVariable>(head.llvm_value) );
 
 			{
@@ -540,7 +540,7 @@ Variable CodeBuilder::BuildTypeinfoClassTypesList( const ClassProxyPtr& class_ty
 				ClassField field( node_type, dependent_type_typeinfo.type, static_cast<unsigned int>(fields_llvm_types.size()), false, true );
 
 				node_type_class.members.AddName( g_type_field_name, Value( std::move(field), g_dummy_file_pos ) );
-				fields_llvm_types.push_back( llvm::PointerType::get( dependent_type_typeinfo.type.GetLLVMType(), 0u ) );
+				fields_llvm_types.push_back( dependent_type_typeinfo.type.GetLLVMType()->getPointerTo() );
 				fields_initializers.push_back( llvm::dyn_cast<llvm::GlobalVariable>( dependent_type_typeinfo.llvm_value ) );
 			}
 
@@ -583,7 +583,7 @@ Variable CodeBuilder::BuildTypeinfoClassFunctionsList( const ClassProxyPtr& clas
 				node_type_class.members.AddName(
 					g_next_node_name,
 					Value( ClassField( node_type, head.type, static_cast<unsigned int>(fields_llvm_types.size()), false, true ), g_dummy_file_pos ) );
-				fields_llvm_types.push_back( llvm::PointerType::get( head.type.GetLLVMType(), 0u ) );
+				fields_llvm_types.push_back( head.type.GetLLVMType()->getPointerTo() );
 				fields_initializers.push_back( llvm::dyn_cast<llvm::GlobalVariable>(head.llvm_value) );
 
 				{
@@ -591,7 +591,7 @@ Variable CodeBuilder::BuildTypeinfoClassFunctionsList( const ClassProxyPtr& clas
 					ClassField field( node_type, dependent_type_typeinfo.type, static_cast<unsigned int>(fields_llvm_types.size()), false, true );
 
 					node_type_class.members.AddName( g_type_field_name, Value( std::move(field), g_dummy_file_pos ) );
-					fields_llvm_types.push_back( llvm::PointerType::get( dependent_type_typeinfo.type.GetLLVMType(), 0u ) );
+					fields_llvm_types.push_back( dependent_type_typeinfo.type.GetLLVMType()->getPointerTo() );
 					fields_initializers.push_back( llvm::dyn_cast<llvm::GlobalVariable>( dependent_type_typeinfo.llvm_value ) );
 				}
 
@@ -656,7 +656,7 @@ Variable CodeBuilder::BuildeTypeinfoClassParentsList( const ClassProxyPtr& class
 		node_type_class.members.AddName(
 			g_next_node_name,
 			Value( ClassField( node_type, head.type, static_cast<unsigned int>(fields_llvm_types.size()), false, true ), g_dummy_file_pos ) );
-		fields_llvm_types.push_back( llvm::PointerType::get( head.type.GetLLVMType(), 0u ) );
+		fields_llvm_types.push_back( head.type.GetLLVMType()->getPointerTo() );
 		fields_initializers.push_back( llvm::dyn_cast<llvm::GlobalVariable>(head.llvm_value) );
 
 		{
@@ -664,7 +664,7 @@ Variable CodeBuilder::BuildeTypeinfoClassParentsList( const ClassProxyPtr& class
 			ClassField field( node_type, parent_type_typeinfo.type, static_cast<unsigned int>(fields_llvm_types.size()), false, true );
 
 			node_type_class.members.AddName( g_type_field_name, Value( std::move(field), g_dummy_file_pos ) );
-			fields_llvm_types.push_back( llvm::PointerType::get( parent_type_typeinfo.type.GetLLVMType(), 0u ) );
+			fields_llvm_types.push_back( parent_type_typeinfo.type.GetLLVMType()->getPointerTo() );
 			fields_initializers.push_back( llvm::dyn_cast<llvm::GlobalVariable>( parent_type_typeinfo.llvm_value ) );
 		}
 
@@ -705,7 +705,7 @@ Variable CodeBuilder::BuildTypeinfoFunctionArguments( const Function& function_t
 		node_type_class.members.AddName(
 			g_next_node_name,
 			Value( ClassField( node_type, head.type, static_cast<unsigned int>(fields_llvm_types.size()), false, true ), g_dummy_file_pos ) );
-		fields_llvm_types.push_back( llvm::PointerType::get( head.type.GetLLVMType(), 0u ) );
+		fields_llvm_types.push_back( head.type.GetLLVMType()->getPointerTo() );
 		fields_initializers.push_back( llvm::dyn_cast<llvm::GlobalVariable>(head.llvm_value) );
 
 		{
@@ -713,7 +713,7 @@ Variable CodeBuilder::BuildTypeinfoFunctionArguments( const Function& function_t
 			ClassField field( node_type, dependent_type_typeinfo.type, static_cast<unsigned int>(fields_llvm_types.size()), false, true );
 
 			node_type_class.members.AddName( g_type_field_name, Value( std::move(field), g_dummy_file_pos ) );
-			fields_llvm_types.push_back( llvm::PointerType::get( dependent_type_typeinfo.type.GetLLVMType(), 0u ) );
+			fields_llvm_types.push_back( dependent_type_typeinfo.type.GetLLVMType()->getPointerTo() );
 			fields_initializers.push_back( llvm::dyn_cast<llvm::GlobalVariable>( dependent_type_typeinfo.llvm_value ) );
 		}
 
