@@ -72,7 +72,7 @@ static void SortClassFields( Class& class_, ClassFieldsVector<llvm::Type*>& fiel
 	for( llvm::Type* type : fields_llvm_types )
 	{
 		const unsigned int alignment= data_layout.getABITypeAlignment( type );
-		const unsigned int padding= ( current_offst + alignment - 1u ) % alignment * alignment;
+		const unsigned int padding= ( alignment - current_offst % alignment ) % alignment;
 		current_offst+= padding + static_cast<unsigned int>( data_layout.getTypeAllocSize( type ) );
 	}
 
@@ -86,11 +86,7 @@ static void SortClassFields( Class& class_, ClassFieldsVector<llvm::Type*>& fiel
 			const unsigned int alignment= data_layout.getABITypeAlignment( best_field_it->second->is_reference ? it->second->type.GetLLVMType()->getPointerTo() : it->second->type.GetLLVMType() );
 			U_ASSERT( alignment != 0u );
 
-			unsigned int padding;
-			if( current_offst % alignment == 0u )
-				padding= 0u;
-			else
-				padding= alignment - current_offst % alignment;
+			const unsigned int padding= ( alignment - current_offst % alignment ) % alignment;
 			if( padding < best_field_padding )
 			{
 				best_field_padding= padding;
