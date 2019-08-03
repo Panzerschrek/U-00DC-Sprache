@@ -1,4 +1,6 @@
+import "optional_ref.u"
 import "pointer.u"
+import "type_traits.u"
 
 namespace ust
 {
@@ -6,28 +8,77 @@ namespace ust
 template</type T/>
 fn polymorph_restore_original_ref( T &imut ref ) : void &imut
 {
+	static_if( polymorph_impl::is_polymorph</T/>() )
+	{
+		unsafe
+		{
+			// Virtual table pointer is always first filed in class.
+			auto offset= cast_ref_unsafe</ polymorph_impl::virtual_class />(ref).vptr.offset_of_allocated_object;
+
+			auto original_ptr= raw_ptr_mut</u8/>( cast_ref_unsafe</u8/>(cast_mut(ref)) ) - offset;
+			return int_to_ref( ref_to_int( original_ptr.get_ref() ) );
+		}
+	}
+	else
+	{
+		return ref;
+	}
+}
+
+template</type A, type B/>
+fn polymorph_is_same_type( A& a, B& b ) : bool
+{
+	static_if( polymorph_impl::is_polymorph</A/>() && polymorph_impl::is_polymorph</B/>() )
+	{
+		unsafe
+		{
+			// Virtual table pointer is always first filed in class.
+			return
+				cast_ref_unsafe</ polymorph_impl::virtual_class />(a).vptr.type_id ==
+				cast_ref_unsafe</ polymorph_impl::virtual_class />(b).vptr.type_id;
+		}
+	}
+	else
+	{
+		return is_same_type</A, B/>();
+	}
+}
+
+template</ type A, type B />
+fn polymorph_is_instance_of( B& b ) : bool
+{
+	static_if( polymorph_impl::is_polymorph</A/>() && polymorph_impl::is_polymorph</B/>() )
+	{
+		unsafe
+		{
+			return cast_ref_unsafe</ polymorph_impl::virtual_class />(b).vptr.type_id == ust::ref_to_int( typeinfo</A/>.type_id );
+		}
+	}
+	else
+	{
+		return false;
+	}
+}
+
+template</ type To, type From />
+fn polymorph_cast( From & mut from ) : optional_ref</ To, true  />
+{
+	polymorph_impl::polymorph_cast_impl</To/>(from);
+}
+
+template</ type To, type From />
+fn polymorph_cast( From &imut from ) : optional_ref</ To, false />
+{
 	unsafe
 	{
-		static_if( typeinfo</T/>.is_class )
+		auto res= polymorph_impl::polymorph_cast_impl</To/>( cast_mut(from) );
+		if( !res.empty() )
 		{
-			static_if( typeinfo</T/>.is_polymorph )
-			{
-				// Virtual table pointer is always first filed in class.
-				auto &mut ref_mut= cast_mut(ref);
-				var polymorph_impl::virtual_class_ptr ptr_to_virtual_class( cast_ref_unsafe</ polymorph_impl::virtual_class />(ref_mut) );
-				auto offset= ptr_to_virtual_class.get_ref().vptr.get_ref().offset_of_allocated_object;
-
-				auto original_ptr= raw_ptr_mut</u8/>( cast_ref_unsafe</u8/>(ref_mut) ) - offset;
-				return int_to_ref( ref_to_int( original_ptr.get_ref() ) );
-			}
-			else
-			{
-				return ref;
-			}
+			return optional_ref</ To, false />( res.get_ref_unsafe() );
 		}
 		else
 		{
-			return ref;
+			return optional_ref</ To, false />();
 		}
 	}
 }
@@ -39,16 +90,65 @@ namespace polymorph_impl
 struct virtual_table
 {
 	size_type offset_of_allocated_object;
+	size_type type_id;
 }
-
-type virtual_table_ptr= raw_ptr_mut</virtual_table/>;
 
 struct virtual_class
 {
-	virtual_table_ptr vptr;
+	virtual_table& vptr;
 }
 
-type virtual_class_ptr= raw_ptr_mut</virtual_class/>;
+template</type T/>
+fn constexpr is_polymorph() : bool
+{
+	static_if( typeinfo</T/>.is_class )
+	{
+		return typeinfo</T/>.is_polymorph;
+	}
+	else
+	{
+		return false;
+	}
+}
+
+template</ type To, type From />
+fn polymorph_cast_impl( From & mut from ) : optional_ref</ To, true />
+{
+	static_if( is_polymorph</From/>() && is_polymorph</To/>() )
+	{
+		static_if( is_same_type</ From, To />() || is_ancestor_for</ To, From />() )
+		{
+			// Derived to base cast.
+			return optional_ref</ To, true  />( from );
+		}
+		else if( is_ancestor_for</ From, To />() )
+		{
+			// Base to derived cast.
+			unsafe
+			{
+				// TODO - support cast A->B in hierarchy A->B->C
+				if( cast_ref_unsafe</ virtual_class />(from).vptr.type_id == ust::ref_to_int( typeinfo</To/>.type_id ) )
+				{
+					return optional_ref</ To, true />( cast_ref_unsafe</To/>( cast_mut( polymorph_restore_original_ref(from) ) ) );
+				}
+				else
+				{
+					return optional_ref</ To, true />();
+				}
+			}
+		}
+		else
+		{
+			static_assert(false); // Unsupported polymorph_cast.
+			halt;
+		}
+	}
+	else
+	{
+		static_assert(false); // polymorph_cast works only for polymorph classes.
+		halt;
+	}
+}
 
 } // namespace polymorph_impl
 

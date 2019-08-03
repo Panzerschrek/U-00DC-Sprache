@@ -1,0 +1,11 @@
+import "inc.u"
+
+fn GetSomeClassIdB() : size_type
+{
+	var SomeClass some_class;
+	unsafe
+	{
+		var virtual_class& virtual_class= cast_ref_unsafe</virtual_class/>( some_class );
+		return virtual_class.vptr.type_id;
+	}
+}

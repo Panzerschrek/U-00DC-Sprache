@@ -266,4 +266,21 @@ if( REALLY_BUILD_LINKAGE_TESTS )
 	add_executable( IncludeDirsTest tests/include_dirs_test/entry.c include_dirs_test.o )
 	add_dependencies( IncludeDirsTest Compiler )
 
+	#
+	# type_id test
+	#
+	set( TYPE_ID_TEST_SOURCES tests/type_id_test/type_id_a.u tests/type_id_test/type_id_b.u )
+	CompileUSources( "${TYPE_ID_TEST_SOURCES}" )
+	set( TYPE_ID_TEST_OBJECTS ${U_SOURCE_OBJECTS} )
+
+	add_executable( TypeIdTest tests/type_id_test/entry.c ${TYPE_ID_TEST_OBJECTS} )
+	add_dependencies( TypeIdTest Compiler )
+
+	# Run type_id test
+	add_custom_target(
+		TypeIdTestRun ALL
+		COMMAND TypeIdTest
+		DEPENDS TypeIdTest
+		WORKING_DIRECTORY ${CMAKE_BINARY_DIR} )
+
 endif( REALLY_BUILD_LINKAGE_TESTS )

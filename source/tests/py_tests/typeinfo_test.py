@@ -957,31 +957,3 @@ def TypeinfoForTypeinfo_Test1():
 		static_assert( typeinfo</ typeof( typeinfo</ S />.fields_list.next ) />.is_typeinfo );
 	"""
 	tests_lib.build_program( c_program_text )
-
-
-def VirtualTableOffset_Test0():
-	c_program_text= """
-		struct A{}
-		struct B{ i32 x; }
-		class C{ [ f32, 2 ] arr; }
-		// For non-polymorph classes virtual_table_offset is zero
-		static_assert( typeinfo</A/>.virtual_table_offset == size_type(0) );
-		static_assert( typeinfo</B/>.virtual_table_offset == size_type(0) );
-		static_assert( typeinfo</C/>.virtual_table_offset == size_type(0) );
-	"""
-	tests_lib.build_program( c_program_text )
-
-
-def VirtualTableOffset_Test1():
-	c_program_text= """
-		class I0 interface {}
-		class I1 interface {}
-		class A : I0, I1 {}
-		class B : A {}
-		static_assert( typeinfo</I0/>.virtual_table_offset < typeinfo</I0/>.size_of );
-		static_assert( typeinfo</I1/>.virtual_table_offset < typeinfo</I1/>.size_of );
-		static_assert( typeinfo</A/>.virtual_table_offset < typeinfo</A/>.size_of );
-		static_assert( typeinfo</B/>.virtual_table_offset < typeinfo</B/>.size_of );
-
-	"""
-	tests_lib.build_program( c_program_text )

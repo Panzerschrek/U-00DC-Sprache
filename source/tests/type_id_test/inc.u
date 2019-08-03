@@ -1,0 +1,15 @@
+// Must emit virtual table, type_id
+class SomeClass polymorph{}
+
+
+// If compiler virtual table layout changed, this must be changed too!
+struct virtual_table
+{
+	size_type offset_of_allocated_object;
+	size_type type_id;
+}
+
+struct virtual_class
+{
+	virtual_table& vptr;
+}
