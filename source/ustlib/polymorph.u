@@ -44,6 +44,22 @@ fn polymorph_is_same_type( A& a, B& b ) : bool
 	}
 }
 
+template</ type A, type B />
+fn polymorph_is_instance_of( B& b ) : bool
+{
+	static_if( polymorph_impl::is_polymorph</A/>() && polymorph_impl::is_polymorph</B/>() )
+	{
+		unsafe
+		{
+			return cast_ref_unsafe</ polymorph_impl::virtual_class />(b).vptr.type_id == ust::ref_to_int( typeinfo</A/>.type_id );
+		}
+	}
+	else
+	{
+		return false;
+	}
+}
+
 template</ type To, type From />
 fn polymorph_cast( From & mut from ) : optional_ref</ To, true  />
 {

@@ -111,5 +111,20 @@ fn U_Main() : i32
 		halt if( !ust::polymorph_cast</C/>( cast_ref</I0/>(b) ).empty() );
 		halt if( !ust::polymorph_cast</C/>( cast_ref</I1/>(b) ).empty() );
 	}
+	{ // is_insance_of
+
+		var B b;
+		halt if( !ust::polymorph_is_instance_of</B/>( cast_ref</B />(b) ) );
+		halt if( !ust::polymorph_is_instance_of</B/>( cast_ref</A />(b) ) );
+		halt if( !ust::polymorph_is_instance_of</B/>( cast_ref</I0/>(b) ) );
+		halt if( !ust::polymorph_is_instance_of</B/>( cast_ref</I1/>(b) ) );
+		halt if(  ust::polymorph_is_instance_of</C/>( cast_ref</B />(b) ) );
+		halt if(  ust::polymorph_is_instance_of</C/>( cast_ref</A />(b) ) );
+		halt if(  ust::polymorph_is_instance_of</C/>( cast_ref</I0/>(b) ) );
+		halt if(  ust::polymorph_is_instance_of</C/>( cast_ref</I1/>(b) ) );
+		halt if( ust::polymorph_is_instance_of</i32/>( b ) );
+		halt if( ust::polymorph_is_instance_of</B  />( 0 ) );
+		halt if( ust::polymorph_is_instance_of</S  />( b ) );
+	}
 	return 0;
 }
