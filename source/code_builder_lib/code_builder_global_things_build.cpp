@@ -540,25 +540,33 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type, const T
 			allocate_virtual_table_pointer= true;
 		}
 
-		the_class.members.ForEachValueInThisScope(
-			[&]( Value& value )
-			{
-				if( ClassField* const class_field= value.GetClassField() )
-				{
-					class_field->index= static_cast<unsigned int>(fields_llvm_types.size());
-					if( class_field->is_reference )
-						fields_llvm_types.emplace_back( class_field->type.GetLLVMType()->getPointerTo() );
-					else
-					{
-						if( !class_field->type.GetLLVMType()->isSized() )
-							fields_llvm_types.emplace_back( fundamental_llvm_types_.i8 );// May be in case of error (such dependency loop )
-						else
-							fields_llvm_types.emplace_back( class_field->type.GetLLVMType() );
-					}
-				}
-			});
+		{ // Create fields.
+			std::map< unsigned int, ClassField* > class_fields_in_original_order;
 
-		SortClassFields( the_class, fields_llvm_types, data_layout_ );
+			the_class.members.ForEachValueInThisScope(
+				[&]( Value& value )
+				{
+					if( ClassField* const class_field= value.GetClassField() )
+						class_fields_in_original_order[class_field->original_index]= class_field;
+				});
+
+			for( const auto& field_entry : class_fields_in_original_order )
+			{
+				ClassField* const class_field= field_entry.second;
+				class_field->index= static_cast<unsigned int>(fields_llvm_types.size());
+				if( class_field->is_reference )
+					fields_llvm_types.emplace_back( class_field->type.GetLLVMType()->getPointerTo() );
+				else
+				{
+					if( !class_field->type.GetLLVMType()->isSized() )
+						fields_llvm_types.emplace_back( fundamental_llvm_types_.i8 );// May be in case of error (such dependency loop )
+					else
+						fields_llvm_types.emplace_back( class_field->type.GetLLVMType() );
+				}
+			}
+
+			SortClassFields( the_class, fields_llvm_types, data_layout_ );
+		}
 
 		// Complete another body elements.
 		// For class completeness we needs only fields, functions. Constants, types and type templates dones not needed.
