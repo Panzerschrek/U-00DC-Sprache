@@ -70,3 +70,85 @@ def FieldsSort_Test4():
 		static_assert( typeinfo</S/>.size_of == size_type(24) );
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def KeepFieldsOrder_Test0():
+	c_program_text= """
+	template</ size_type size0, size_type size1 />
+	fn constexpr StringEquals( [ char8, size0 ]& s0, [ char8, size1 ]& s1 ) : bool
+	{
+		if( size0 != size1 ) { return false; }
+		var size_type mut i(0);
+		while( i < size0 )
+		{
+			if( s0[i] != s1[i] ) { return false; }
+			++i;
+		}
+		return true;
+	}
+
+	template</ type T, size_type name_size />
+	fn constexpr GetFieldOffset( T& node, [ char8, name_size ]& name ) : size_type
+	{
+		static_if( T::is_end )
+		{
+			halt;
+		}
+		else
+		{
+			if( StringEquals( node.name, name ) )
+			{
+				return node.offset;
+			}
+			else
+			{
+				return ::GetFieldOffset( node.next, name );
+			}
+		}
+	}
+
+	struct A ordered
+	{
+		bool x;
+		i32 y;
+		bool z;
+	}
+	static_assert( GetFieldOffset( typeinfo</A/>.fields_list, "x" ) == size_type(0) );
+	static_assert( GetFieldOffset( typeinfo</A/>.fields_list, "y" ) > GetFieldOffset( typeinfo</A/>.fields_list, "x" ) );
+	static_assert( GetFieldOffset( typeinfo</A/>.fields_list, "z" ) > GetFieldOffset( typeinfo</A/>.fields_list, "y" ) );
+
+	struct B ordered
+	{
+		bool z;
+		f64 y;
+		bool x;
+	}
+	static_assert( GetFieldOffset( typeinfo</B/>.fields_list, "z" ) == size_type(0) );
+	static_assert( GetFieldOffset( typeinfo</B/>.fields_list, "y" ) > GetFieldOffset( typeinfo</B/>.fields_list, "z" ) );
+	static_assert( GetFieldOffset( typeinfo</B/>.fields_list, "x" ) > GetFieldOffset( typeinfo</B/>.fields_list, "y" ) );
+
+	struct C ordered
+	{
+		bool a;
+		f32 b;
+		bool c;
+		f64 d;
+		f32 e;
+		bool f;
+		bool g;
+		i16 h;
+		i32 i;
+		bool j;
+	}
+	static_assert( GetFieldOffset( typeinfo</C/>.fields_list, "a" ) == size_type(0) );
+	static_assert( GetFieldOffset( typeinfo</C/>.fields_list, "b" ) > GetFieldOffset( typeinfo</C/>.fields_list, "a" ) );
+	static_assert( GetFieldOffset( typeinfo</C/>.fields_list, "c" ) > GetFieldOffset( typeinfo</C/>.fields_list, "b" ) );
+	static_assert( GetFieldOffset( typeinfo</C/>.fields_list, "d" ) > GetFieldOffset( typeinfo</C/>.fields_list, "c" ) );
+	static_assert( GetFieldOffset( typeinfo</C/>.fields_list, "e" ) > GetFieldOffset( typeinfo</C/>.fields_list, "d" ) );
+	static_assert( GetFieldOffset( typeinfo</C/>.fields_list, "f" ) > GetFieldOffset( typeinfo</C/>.fields_list, "e" ) );
+	static_assert( GetFieldOffset( typeinfo</C/>.fields_list, "g" ) > GetFieldOffset( typeinfo</C/>.fields_list, "f" ) );
+	static_assert( GetFieldOffset( typeinfo</C/>.fields_list, "h" ) > GetFieldOffset( typeinfo</C/>.fields_list, "g" ) );
+	static_assert( GetFieldOffset( typeinfo</C/>.fields_list, "i" ) > GetFieldOffset( typeinfo</C/>.fields_list, "h" ) );
+	static_assert( GetFieldOffset( typeinfo</C/>.fields_list, "j" ) > GetFieldOffset( typeinfo</C/>.fields_list, "i" ) );
+	"""
+	tests_lib.build_program( c_program_text )

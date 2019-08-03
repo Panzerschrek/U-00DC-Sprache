@@ -565,7 +565,8 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type, const T
 				}
 			}
 
-			SortClassFields( the_class, fields_llvm_types, data_layout_ );
+			if( !class_declaration.keep_fields_order_ )
+				SortClassFields( the_class, fields_llvm_types, data_layout_ );
 		}
 
 		// Complete another body elements.
