@@ -96,10 +96,14 @@ static void SortClassFields( Class& class_, ClassFieldsVector<llvm::Type*>& fiel
 			}
 		}
 
+		llvm::Type* best_field_llvm_type= best_field_it->second->type.GetLLVMType();
+		if( best_field_it->second->is_reference )
+			best_field_llvm_type= best_field_llvm_type->getPointerTo();
+
 		best_field_it->second->index= field_index;
 		++field_index;
-		fields_llvm_types.push_back( best_field_it->second->is_reference ? best_field_it->second->type.GetLLVMType()->getPointerTo() : best_field_it->second->type.GetLLVMType() );
-		current_offst+= best_field_padding + static_cast<unsigned int>(data_layout.getTypeAllocSize( best_field_it->second->type.GetLLVMType() ) );
+		fields_llvm_types.push_back( best_field_llvm_type );
+		current_offst+= best_field_padding + static_cast<unsigned int>(data_layout.getTypeAllocSize( best_field_llvm_type ));
 		fields.erase( best_field_it );
 	}
 }
