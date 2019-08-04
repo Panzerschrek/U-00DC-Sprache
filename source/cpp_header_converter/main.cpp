@@ -28,16 +28,56 @@ private:
 	void ProcessDecl( const clang::Decl* const decl )
 	{
 		if( const clang::RecordDecl* const record_decl= llvm::dyn_cast<clang::RecordDecl>(decl) )
-			std::cout << "record " << record_decl->getName().str() << std::endl;
+		{
+			if( record_decl->isStruct() || record_decl->isClass() )
+				std::cout << "struct " << record_decl->getName().str() << "{};" << std::endl;
+		}
 		if( const clang::FunctionDecl* const func_decl= llvm::dyn_cast<clang::FunctionDecl>(decl) )
-			std::cout << "function " << func_decl->getName().str() << std::endl;
+		{
+			std::cout << "fn " << func_decl->getName().str() << "( ";
+			size_t i= 0u;
+
+			for( const clang::ParmVarDecl* const param : func_decl->parameters() )
+			{
+				const clang::QualType& type= param->getType();
+				std::cout << TranslateNamedType(type.getAsString()) << " " << param->getName().str();
+				++i;
+				if( i != func_decl->param_size() )
+					std::cout << ", ";
+			}
+			std::cout << " )";
+
+			std::cout << " : " << TranslateNamedType(func_decl->getReturnType().getAsString());
+			std::cout << ";" << std::endl;
+		}
 		if( const clang::NamespaceDecl* const namespace_decl= llvm::dyn_cast<clang::NamespaceDecl>(decl) )
 		{
 			std::cout << "namespace " << namespace_decl->getName().str() << "\n{\n" << std::endl;
 			for( const clang::Decl* const sub_decl : namespace_decl->decls() )
 				ProcessDecl( sub_decl );
-			std::cout << "/n}" << std::endl;
+			std::cout << "\n}" << std::endl;
 		}
+	}
+
+	std::string TranslateNamedType( const std::string& cpp_type_name )
+	{
+		static const std::map< std::string, std::string > c_map
+		{
+			{ "int", "i32" },
+			{ "unsigned int", "u32" },
+			{ "long int", "i64" },
+			{ "long unsigned int", "u64" },
+			{ "char", "char8" },
+			{ "signed char", "i8" },
+			{ "unsigned char", "u8" },
+			{ "float", "f32" },
+			{ "double", "f64" },
+		};
+
+		const auto it= c_map.find(cpp_type_name);
+		if( it != c_map.end() )
+			return it->second;
+		return cpp_type_name;
 	}
 };
 
