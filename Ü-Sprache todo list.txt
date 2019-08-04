@@ -40,7 +40,6 @@ Standart library:
 *) More math functions
 
 Compiler:
-*) Sort struct fields to minimize gaps
 *) move-assignment without hacks.
 *) Standartized entry point, such "main" in some languages
 *) Virtual call for final function optimization
@@ -53,3 +52,6 @@ QtCreator plugin:
 *) "go to defenition" possibility
 *) Indentation in editor
 *) More advanced program model updating
+
+Other:
+*) Tool for C/C++ headers conversion to Ü header
