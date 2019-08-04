@@ -272,6 +272,7 @@ ClassProxyPtr CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::
 			Class& the_class;
 			const ProgramString& class_name;
 			ClassMemberVisibility current_visibility= ClassMemberVisibility::Public;
+			unsigned int field_number= 0u;
 
 			Visitor( CodeBuilder& in_this, const Synt::Class& in_class_declaration, ClassProxyPtr& in_class_type, Class& in_the_class, const ProgramString& in_class_name )
 				: this_(in_this), class_declaration(in_class_declaration), class_type(in_class_type), the_class(in_the_class), class_name(in_class_name)
@@ -281,6 +282,7 @@ ClassProxyPtr CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::
 			{
 				ClassField class_field;
 				class_field.syntax_element= &in_class_field;
+				class_field.original_index= field_number;
 
 				if( IsKeyword( in_class_field.name ) )
 					REPORT_ERROR( UsingKeywordAsName, the_class.members.GetErrors(), class_declaration.file_pos_ );
@@ -289,6 +291,7 @@ ClassProxyPtr CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::
 				if( the_class.members.AddName( in_class_field.name, Value( class_field, in_class_field.file_pos_ ) ) == nullptr )
 					REPORT_ERROR( Redefinition, the_class.members.GetErrors(), in_class_field.file_pos_, in_class_field.name );
 
+				++field_number;
 				the_class.SetMemberVisibility( in_class_field.name, current_visibility );
 			}
 			void operator()( const Synt::FunctionPtr& func )

@@ -281,6 +281,7 @@ private:
 	ClassKindAttribute TryParseClassKindAttribute();
 	std::vector<ComplexName> TryParseClassParentsList();
 	bool TryParseClassSharedState();
+	bool TryParseClassFieldsOrdered();
 
 	Typedef ParseTypedef();
 	Typedef ParseTypedefBody();
@@ -2905,6 +2906,16 @@ bool SyntaxAnalyzer::TryParseClassSharedState()
 	return false;
 }
 
+bool SyntaxAnalyzer::TryParseClassFieldsOrdered()
+{
+	if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::ordered_ )
+	{
+		NextLexem();
+		return true;
+	}
+	return false;
+}
+
 Typedef SyntaxAnalyzer::ParseTypedef()
 {
 	U_ASSERT( it_->text == Keywords::type_ );
@@ -3331,6 +3342,7 @@ std::unique_ptr<Class> SyntaxAnalyzer::ParseClass()
 		parents_list= TryParseClassParentsList();
 	}
 	const bool have_shared_state= TryParseClassSharedState();
+	const bool keep_fields_order= TryParseClassFieldsOrdered();
 
 	std::unique_ptr<Class> result= ParseClassBody();
 	if( result != nullptr )
@@ -3339,6 +3351,7 @@ std::unique_ptr<Class> SyntaxAnalyzer::ParseClass()
 		result->name_= std::move(name);
 		result->kind_attribute_= class_kind_attribute;
 		result->have_shared_state_= have_shared_state;
+		result->keep_fields_order_= keep_fields_order;
 		result->parents_= std::move(parents_list);
 	}
 
@@ -3705,6 +3718,7 @@ TemplateBasePtr SyntaxAnalyzer::ParseTemplate()
 				class_parents_list= TryParseClassParentsList();
 			}
 			const bool have_shared_state= TryParseClassSharedState();
+			const bool keep_fields_order= TryParseClassFieldsOrdered();
 			class_template->class_= ParseClassBody();
 			if( class_template->class_ != nullptr )
 			{
@@ -3712,6 +3726,7 @@ TemplateBasePtr SyntaxAnalyzer::ParseTemplate()
 				class_template->class_->name_= std::move(name);
 				class_template->class_->kind_attribute_= class_kind_attribute;
 				class_template->class_->have_shared_state_= have_shared_state;
+				class_template->class_->keep_fields_order_= keep_fields_order;
 				class_template->class_->parents_= std::move(class_parents_list);
 			}
 			return std::move(class_template);

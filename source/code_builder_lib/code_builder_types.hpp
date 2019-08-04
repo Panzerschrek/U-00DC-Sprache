@@ -328,6 +328,7 @@ struct ClassField final
 	ClassProxyWeakPtr class_;
 	const Synt::ClassField* syntax_element= nullptr;
 	unsigned int index= ~0u;
+	unsigned int original_index= ~0u;
 	bool is_mutable= true;
 	bool is_reference= false;
 

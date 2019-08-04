@@ -33,6 +33,7 @@ enum class Keywords : unsigned int
 	interface_,
 	abstract_,
 	shared_,
+	ordered_,
 
 	nomangle_,
 	virtual_,

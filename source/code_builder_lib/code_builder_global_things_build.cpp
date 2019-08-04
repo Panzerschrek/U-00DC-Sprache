@@ -42,6 +42,67 @@ private:
 	} \
 	GlobalsLoopsDetectorGuard glbals_loop_detector_guard( [this]{ global_things_stack_.pop_back(); } );
 
+static void SortClassFields( Class& class_, ClassFieldsVector<llvm::Type*>& fields_llvm_types, const llvm::DataLayout& data_layout )
+{
+	// Fields in original order
+	using FieldsMap= std::map< unsigned int, ClassField* >;
+	FieldsMap fields;
+
+	bool fields_is_ok= true;
+	class_.members.ForEachValueInThisScope(
+		[&]( Value& value )
+		{
+			if( ClassField* const field= value.GetClassField() )
+			{
+				fields[field->index]= field;
+				if( !field->is_reference && !field->type.GetLLVMType()->isSized() )
+					fields_is_ok= false;
+			}
+		} );
+
+	if( fields.empty() || !fields_is_ok )
+		return;
+
+	unsigned int field_index= fields.begin()->first;
+
+	fields_llvm_types.resize( field_index ); // Remove all fields ( parent classes and virtual table pointers are not in fields list ).
+
+	// Calculate start offset, include parents fields, virtual table pointer.
+	unsigned int current_offst= 0u;
+	for( llvm::Type* type : fields_llvm_types )
+	{
+		const unsigned int alignment= data_layout.getABITypeAlignment( type );
+		const unsigned int padding= ( alignment - current_offst % alignment ) % alignment;
+		current_offst+= padding + static_cast<unsigned int>( data_layout.getTypeAllocSize( type ) );
+	}
+
+	// Sort fields, minimize paddings and minimize fields reprdering.
+	while( !fields.empty() )
+	{
+		FieldsMap::iterator best_field_it= fields.begin();
+		unsigned int best_field_padding= ~0u;
+		for( auto it= fields.begin(); it != fields.end(); ++it )
+		{
+			const unsigned int alignment= data_layout.getABITypeAlignment( best_field_it->second->is_reference ? it->second->type.GetLLVMType()->getPointerTo() : it->second->type.GetLLVMType() );
+			U_ASSERT( alignment != 0u );
+
+			const unsigned int padding= ( alignment - current_offst % alignment ) % alignment;
+			if( padding < best_field_padding )
+			{
+				best_field_padding= padding;
+				best_field_it= it;
+				if( padding == 0 )
+					break;
+			}
+		}
+
+		best_field_it->second->index= field_index;
+		++field_index;
+		fields_llvm_types.push_back( best_field_it->second->is_reference ? best_field_it->second->type.GetLLVMType()->getPointerTo() : best_field_it->second->type.GetLLVMType() );
+		current_offst+= best_field_padding + static_cast<unsigned int>(data_layout.getTypeAllocSize( best_field_it->second->type.GetLLVMType() ) );
+		fields.erase( best_field_it );
+	}
+}
 //
 // CodeBuilder
 //
@@ -479,23 +540,34 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type, const T
 			allocate_virtual_table_pointer= true;
 		}
 
-		the_class.members.ForEachValueInThisScope(
-			[&]( Value& value )
-			{
-				if( ClassField* const class_field= value.GetClassField() )
+		{ // Create fields.
+			std::map< unsigned int, ClassField* > class_fields_in_original_order;
+
+			the_class.members.ForEachValueInThisScope(
+				[&]( Value& value )
 				{
-					class_field->index= static_cast<unsigned int>(fields_llvm_types.size());
-					if( class_field->is_reference )
-						fields_llvm_types.emplace_back( class_field->type.GetLLVMType()->getPointerTo() );
+					if( ClassField* const class_field= value.GetClassField() )
+						class_fields_in_original_order[class_field->original_index]= class_field;
+				});
+
+			for( const auto& field_entry : class_fields_in_original_order )
+			{
+				ClassField* const class_field= field_entry.second;
+				class_field->index= static_cast<unsigned int>(fields_llvm_types.size());
+				if( class_field->is_reference )
+					fields_llvm_types.emplace_back( class_field->type.GetLLVMType()->getPointerTo() );
+				else
+				{
+					if( !class_field->type.GetLLVMType()->isSized() )
+						fields_llvm_types.emplace_back( fundamental_llvm_types_.i8 );// May be in case of error (such dependency loop )
 					else
-					{
-						if( !class_field->type.GetLLVMType()->isSized() )
-							fields_llvm_types.emplace_back( fundamental_llvm_types_.i8 );// May be in case of error (such dependency loop )
-						else
-							fields_llvm_types.emplace_back( class_field->type.GetLLVMType() );
-					}
+						fields_llvm_types.emplace_back( class_field->type.GetLLVMType() );
 				}
-			});
+			}
+
+			if( !class_declaration.keep_fields_order_ )
+				SortClassFields( the_class, fields_llvm_types, data_layout_ );
+		}
 
 		// Complete another body elements.
 		// For class completeness we needs only fields, functions. Constants, types and type templates dones not needed.
