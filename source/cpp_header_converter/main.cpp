@@ -20,14 +20,24 @@ public:
 	virtual bool HandleTopLevelDecl( const clang::DeclGroupRef decl_group ) override
 	{
 		for( const clang::Decl* const decl : decl_group )
-		{
-			if( decl->isFunctionOrFunctionTemplate() )
-			{
-				if( const clang::FunctionDecl* const func = decl->getAsFunction() )
-					std::cout << func->getName().str() << std::endl;
-			}
-		}
+			ProcessDecl( decl );
 		return true;
+	}
+
+private:
+	void ProcessDecl( const clang::Decl* const decl )
+	{
+		if( const clang::RecordDecl* const record_decl= llvm::dyn_cast<clang::RecordDecl>(decl) )
+			std::cout << "record " << record_decl->getName().str() << std::endl;
+		if( const clang::FunctionDecl* const func_decl= llvm::dyn_cast<clang::FunctionDecl>(decl) )
+			std::cout << "function " << func_decl->getName().str() << std::endl;
+		if( const clang::NamespaceDecl* const namespace_decl= llvm::dyn_cast<clang::NamespaceDecl>(decl) )
+		{
+			std::cout << "namespace " << namespace_decl->getName().str() << "\n{\n" << std::endl;
+			for( const clang::Decl* const sub_decl : namespace_decl->decls() )
+				ProcessDecl( sub_decl );
+			std::cout << "/n}" << std::endl;
+		}
 	}
 };
 
