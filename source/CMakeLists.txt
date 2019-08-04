@@ -144,6 +144,20 @@ if( BUILD_COMPILER )
 endif( BUILD_COMPILER )
 
 #
+# CppHeaderConverter
+#
+
+if( DEFINED LLVM_EXTERNAL_CLANG_SOURCE_DIR )
+	file( GLOB CPP_HEADER_CONVERTER_SOURCES "cpp_header_converter/*" )
+	add_executable( CppHeaderConverter ${CPP_HEADER_CONVERTER_SOURCES} )
+	target_link_libraries( CppHeaderConverter CompilerLib )
+	target_link_libraries( CppHeaderConverter clangTooling )
+	# Hack! Clang libraries does not exports their include directories, set it manually.
+	target_include_directories( CppHeaderConverter PRIVATE ${LLVM_EXTERNAL_CLANG_SOURCE_DIR}/include )
+	target_include_directories( CppHeaderConverter PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/llvm/tools/clang/include )
+endif()
+
+#
 # Tests
 #
 if( BUILD_TESTS )
