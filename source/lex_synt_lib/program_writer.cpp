@@ -396,6 +396,36 @@ static void ElementWrite( const Function& function, std::ostream& stream )
 		stream << KeywordAscii( Keywords::op_ );
 	stream << " ";
 
+	switch( function.virtual_function_kind_ )
+	{
+	case VirtualFunctionKind::None:
+		break;
+	case VirtualFunctionKind::DeclareVirtual:
+		stream << KeywordAscii( Keywords::virtual_ ) << " ";
+		break;
+	case VirtualFunctionKind::VirtualOverride:
+		stream << KeywordAscii( Keywords::override_ ) << " ";
+		break;
+	case VirtualFunctionKind::VirtualFinal:
+		stream << KeywordAscii( Keywords::final_ ) << " ";
+		break;
+	case VirtualFunctionKind::VirtualPure:
+		stream << KeywordAscii( Keywords::pure_ ) << " ";
+		break;
+	};
+
+	if( function.constexpr_ )
+		stream << KeywordAscii( Keywords::constexpr_ ) << " ";
+	if( function.no_mangle_ )
+		stream << KeywordAscii( Keywords::nomangle_ ) << " ";
+
+	if( boost::get<EmptyVariant>(&function.condition_) == nullptr )
+	{
+		stream << KeywordAscii( Keywords::enable_if_ ) << "( ";
+		ElementWrite( function.condition_, stream );
+		stream << " ) ";
+	}
+
 	ElementWrite( function.name_, stream );
 
 	stream << " ( ";
