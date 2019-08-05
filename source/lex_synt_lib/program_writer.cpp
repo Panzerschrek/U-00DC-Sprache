@@ -543,10 +543,9 @@ static void ElementWrite( const Enum& enum_, std::ostream& stream )
 
 static void ElementWrite( const Typedef& typedef_, std::ostream& stream )
 {
-	U_UNUSED(typedef_);
-	U_UNUSED(stream);
-	U_ASSERT(false);
-	// Not implemented yet.
+	stream << KeywordAscii( Keywords::type_ ) << " " << ToUTF8( typedef_.name ) << " = ";
+	ElementWrite( typedef_.value, stream );
+	stream << ";\n";
 }
 
 static void ElementWrite( const TypeTemplateBase& type_template, std::ostream& stream )

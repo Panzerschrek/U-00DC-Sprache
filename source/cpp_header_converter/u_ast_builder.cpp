@@ -60,6 +60,13 @@ void CppAstConsumer::ProcessDecl( const clang::Decl& decl, Synt::ProgramElements
 			program_elements.push_back( std::move(class_) );
 		}
 	}
+	else if( const clang::TypedefDecl* const typedef_decl= llvm::dyn_cast<clang::TypedefDecl>(&decl) )
+	{
+		Synt::Typedef typedef_( g_dummy_file_pos );
+		typedef_.name= TranslateIdentifier( typedef_decl->getName().str() );
+		typedef_.value= TranslateType( *typedef_decl->getUnderlyingType().getTypePtr() );
+		program_elements.push_back( std::move(typedef_) );
+	}
 	else if( const clang::FunctionDecl* const func_decl= llvm::dyn_cast<clang::FunctionDecl>(&decl) )
 	{
 		Synt::FunctionPtr func( new Synt::Function(g_dummy_file_pos) );
