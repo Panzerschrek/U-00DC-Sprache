@@ -7,6 +7,7 @@
 #include "../code_builder_lib/pop_llvm_warnings.hpp"
 
 #include "../lex_synt_lib/assert.hpp"
+#include "../lex_synt_lib/keywords.hpp"
 
 #include "u_ast_builder.hpp"
 
@@ -18,11 +19,13 @@ static const FilePos g_dummy_file_pos{ 0u, 0u, 0u };
 CppAstConsumer::CppAstConsumer(
 	Synt::ProgramElements& out_elements,
 	const clang::SourceManager& source_manager,
-	const clang::LangOptions& lang_options )
+	const clang::LangOptions& lang_options,
+	const clang::ASTContext& ast_context )
 	: root_program_elements_(out_elements)
 	, source_manager_(source_manager)
 	, lang_options_(lang_options)
 	, printing_policy_(lang_options_)
+	, ast_context_(ast_context)
 {}
 
 bool CppAstConsumer::HandleTopLevelDecl( const clang::DeclGroupRef decl_group )
@@ -48,7 +51,7 @@ void CppAstConsumer::ProcessDecl( const clang::Decl& decl, Synt::ProgramElements
 		if( record_decl->isStruct() || record_decl->isClass() )
 		{
 			Synt::ClassPtr class_( new Synt::Class(g_dummy_file_pos) );
-			class_->name_= ToProgramString( record_decl->getName().data() );
+			class_->name_= TranslateIdentifier( record_decl->getName().data() );
 			class_->keep_fields_order_= true; // C/C++ structs/classes have fixed fields order.
 
 			for( const clang::Decl* const sub_decl : record_decl->decls() )
@@ -62,7 +65,7 @@ void CppAstConsumer::ProcessDecl( const clang::Decl& decl, Synt::ProgramElements
 		Synt::FunctionPtr func( new Synt::Function(g_dummy_file_pos) );
 
 		func->name_.components.emplace_back();
-		func->name_.components.back().name= ToProgramString( func_decl->getName().str() );
+		func->name_.components.back().name= TranslateIdentifier( func_decl->getName().str() );
 		func->no_mangle_= current_externc;
 		func->type_.unsafe_= true; // All C/C++ functions is unsafe.
 
@@ -71,10 +74,9 @@ void CppAstConsumer::ProcessDecl( const clang::Decl& decl, Synt::ProgramElements
 		for( const clang::ParmVarDecl* const param : func_decl->parameters() )
 		{
 			Synt::FunctionArgument arg( g_dummy_file_pos );
-			arg.name_= ToProgramString( param->getName().str() );
+			arg.name_= TranslateIdentifier( param->getName().str() );
 			if( arg.name_.empty() )
 				arg.name_= ToProgramString( "arg" + std::to_string(i) );
-
 
 			const clang::Type* arg_type= param->getType().getTypePtr();
 			if( arg_type->isReferenceType() )
@@ -154,15 +156,20 @@ void CppAstConsumer::ProcessClassDecl( const clang::Decl& decl, Synt::ClassEleme
 		Synt::ClassField field( g_dummy_file_pos );
 
 		field.type= TranslateType( *field_decl->getType().getTypePtr() );
-		field.name= ToProgramString( field_decl->getName().str() );
+		field.name= TranslateIdentifier( field_decl->getName().str() );
 		class_elements.push_back( std::move(field) );
 	}
 }
 
-Synt::TypeName CppAstConsumer::TranslateType( const clang::Type& in_type ) const
+Synt::TypeName CppAstConsumer::TranslateType( const clang::Type& in_type )
 {
-	if( const clang::BuiltinType* const build_in_type= llvm::dyn_cast<clang::BuiltinType>(&in_type) )
-		return TranslateNamedType( build_in_type->getNameAsCString( printing_policy_ ) );
+	if( const clang::BuiltinType* const built_in_type= llvm::dyn_cast<clang::BuiltinType>(&in_type) )
+	{
+		Synt::NamedTypeName named_type(g_dummy_file_pos);
+		named_type.name.components.emplace_back();
+		named_type.name.components.back().name= GetUFundamentalType( *built_in_type );
+		return std::move(named_type);
+	}
 	else if( const clang::RecordType* const record_type= llvm::dyn_cast<clang::RecordType>(&in_type) )
 		return TranslateNamedType( record_type->getDecl()->getName().str() );
 	else if( const clang::TypedefType* const typedef_type= llvm::dyn_cast<clang::TypedefType>(&in_type) )
@@ -208,44 +215,61 @@ Synt::TypeName CppAstConsumer::TranslateType( const clang::Type& in_type ) const
 	return TranslateNamedType( "void" );
 }
 
-Synt::NamedTypeName CppAstConsumer::TranslateNamedType( const std::string& cpp_type_name ) const
+ProgramString CppAstConsumer::GetUFundamentalType( const clang::BuiltinType& in_type )
 {
-	static const std::map< std::string, std::string > c_map
+	switch( in_type.getKind() )
 	{
-		{ "signed char"      ,  "i8" },
-		{ "int8_t"           ,  "i8" },
-		{ "unsigned char"    ,  "u8" },
-		{ "uint8_t"          ,  "i8" },
-		{ "sort"             , "i16" },
-		{ "int16_t"          , "i16" },
-		{ "unsigned short"   , "u16" },
-		{ "uint16_t"         , "u16" },
-		{ "int"              , "i32" },
-		{ "int32_t"          , "i32" },
-		{ "unsigned int"     , "u32" },
-		{ "uint32_t"         , "u32" },
-		{ "long int"         , "i64" },
-		{ "int64_t"          , "i64" },
-		{ "long unsigned int", "u64" },
-		{ "uint64_t"         , "u64" },
-		{ "char"  , "char8" },
-		{ "float" ,  "f32" },
-		{ "double",  "f64" },
-	};
+	case clang::BuiltinType::Void: return Keyword( Keywords::void_ );
+	case clang::BuiltinType::Bool: return Keyword( Keywords::bool_ );
 
+	//case clang::BuiltinType::Char  : return Keyword( Keywords::char8_ );
+	case clang::BuiltinType::Char_S: return Keyword( Keywords::char8_ );
+	case clang::BuiltinType::Char_U: return Keyword( Keywords::char8_ );
+	case clang::BuiltinType::Char16: return Keyword( Keywords::char16_ );
+	case clang::BuiltinType::Char32: return Keyword( Keywords::char32_ );
+
+	case clang::BuiltinType::NullPtr: return Keyword( Keywords::size_type_ );
+
+	default:
+		const auto size= ast_context_.getTypeSize( &in_type );
+		if( in_type.isFloatingPoint() )
+		{
+			if( size == 32 )
+				return Keyword( Keywords::f32_ );
+			else
+				return Keyword( Keywords::f64_ );
+		}
+		if( in_type.isSignedInteger() )
+		{
+			if( size ==  8 ) return Keyword( Keywords:: i8_ );
+			if( size == 16 ) return Keyword( Keywords::i16_ );
+			if( size == 32 ) return Keyword( Keywords::i32_ );
+			if( size == 64 ) return Keyword( Keywords::i64_ );
+			return Keyword( Keywords::i64_ );
+		}
+		if( in_type.isUnsignedInteger() )
+		{
+			if( size ==  8 ) return Keyword( Keywords:: u8_ );
+			if( size == 16 ) return Keyword( Keywords::u16_ );
+			if( size == 32 ) return Keyword( Keywords::u32_ );
+			if( size == 64 ) return Keyword( Keywords::u64_ );
+			return Keyword( Keywords::u64_ );
+		}
+		std::cout << "is hz " << std::endl;
+		return Keyword( Keywords::void_ );
+	};
+}
+
+Synt::NamedTypeName CppAstConsumer::TranslateNamedType( const std::string& cpp_type_name )
+{
 	Synt::NamedTypeName named_type(g_dummy_file_pos);
 	named_type.name.components.emplace_back();
-
-	const auto it= c_map.find(cpp_type_name);
-	if( it != c_map.end() )
-		named_type.name.components.back().name= ToProgramString( it->second );
-	else
-		named_type.name.components.back().name= ToProgramString( cpp_type_name );
+	named_type.name.components.back().name= TranslateIdentifier( cpp_type_name );
 
 	return std::move(named_type);
 }
 
-Synt::FunctionTypePtr CppAstConsumer::TranslateFunctionType( const clang::FunctionProtoType& in_type ) const
+Synt::FunctionTypePtr CppAstConsumer::TranslateFunctionType( const clang::FunctionProtoType& in_type )
 {
 	Synt::FunctionTypePtr function_type( new Synt::FunctionType( g_dummy_file_pos ) );
 
@@ -313,6 +337,17 @@ Synt::FunctionTypePtr CppAstConsumer::TranslateFunctionType( const clang::Functi
 	return std::move(function_type);
 }
 
+ProgramString CppAstConsumer::TranslateIdentifier( const std::string& identifier )
+{
+	// For case of errors or something anonimous, generate unqiue identifier.
+	if( identifier.empty() )
+		return ToProgramString( "ident" + std::to_string( ++unique_name_index_ ) );
+	// In Ü identifier can not start with "_", shadow it. "_" in C++ used for impl identiferes, so, it may not needed.
+	else if( identifier[0] == '_' )
+		return DecodeUTF8("ü") + ToProgramString( identifier );
+	return ToProgramString( identifier );
+}
+
 CppAstProcessor::CppAstProcessor( ParsedUnitsPtr out_result )
 	: out_result_(std::move(out_result))
 {}
@@ -326,7 +361,8 @@ std::unique_ptr<clang::ASTConsumer> CppAstProcessor::CreateASTConsumer(
 			new CppAstConsumer(
 				(*out_result_)[in_file.str()],
 				compiler_intance.getSourceManager(),
-				compiler_intance.getLangOpts()) );
+				compiler_intance.getLangOpts(),
+				compiler_intance.getASTContext() ) );
 }
 
 FrontendActionFactory::FrontendActionFactory( ParsedUnitsPtr out_result )

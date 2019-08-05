@@ -15,7 +15,8 @@ public:
 	CppAstConsumer(
 		Synt::ProgramElements& out_elements,
 		const clang::SourceManager& source_manager,
-		const clang::LangOptions& lang_options );
+		const clang::LangOptions& lang_options,
+		const clang::ASTContext& ast_context );
 
 public:
 	virtual bool HandleTopLevelDecl( clang::DeclGroupRef decl_group ) override;
@@ -23,9 +24,11 @@ public:
 private:
 	void ProcessDecl( const clang::Decl& decl, Synt::ProgramElements& program_elements, bool externc );
 	void ProcessClassDecl( const clang::Decl& decl, Synt::ClassElements& class_elements, bool externc );
-	Synt::TypeName TranslateType( const clang::Type& in_type ) const;
-	Synt::NamedTypeName TranslateNamedType( const std::string& cpp_type_name ) const;
-	Synt::FunctionTypePtr TranslateFunctionType( const clang::FunctionProtoType& in_type ) const;
+	Synt::TypeName TranslateType( const clang::Type& in_type );
+	ProgramString GetUFundamentalType( const clang::BuiltinType& in_type );
+	Synt::NamedTypeName TranslateNamedType( const std::string& cpp_type_name );
+	Synt::FunctionTypePtr TranslateFunctionType( const clang::FunctionProtoType& in_type );
+	ProgramString TranslateIdentifier( const std::string& identifier );
 
 private:
 	Synt::ProgramElements& root_program_elements_;
@@ -33,6 +36,8 @@ private:
 	const clang::SourceManager& source_manager_;
 	const clang::LangOptions& lang_options_;
 	const clang::PrintingPolicy printing_policy_;
+	const clang::ASTContext& ast_context_;
+	size_t unique_name_index_= 0u;
 };
 
 using ParsedUnits= std::map< std::string, Synt::ProgramElements >;
