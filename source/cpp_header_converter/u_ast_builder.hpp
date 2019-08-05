@@ -22,6 +22,7 @@ public:
 
 private:
 	void ProcessDecl( const clang::Decl& decl, Synt::ProgramElements& program_elements, bool externc );
+	void ProcessClassDecl( const clang::Decl& decl, Synt::ClassElements& class_elements, bool externc );
 	Synt::TypeName TranslateType( const clang::Type& in_type ) const;
 	std::string TranslateNamedType( const std::string& cpp_type_name ) const;
 

@@ -84,7 +84,7 @@ static void ElementWriteFunctionTypeEnding( const FunctionType& function_type, s
 
 	if( function_type.return_type_ != nullptr )
 	{
-		stream << ": ";
+		stream << " : ";
 		ElementWrite( *function_type.return_type_, stream );
 	}
 	else
@@ -429,7 +429,7 @@ static void ElementWrite( const Function& function, std::ostream& stream )
 static void ElementWrite( const Class& class_, std::ostream& stream )
 {
 	stream << KeywordAscii(class_.kind_attribute_ == ClassKindAttribute::Struct ? Keywords::struct_ : Keywords::class_ );
-	stream << " " << ToUTF8( class_.name_ );
+	stream << " " << ToUTF8( class_.name_ ) << " ";
 
 	switch( class_.kind_attribute_ )
 	{

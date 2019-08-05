@@ -49,6 +49,11 @@ void CppAstConsumer::ProcessDecl( const clang::Decl& decl, Synt::ProgramElements
 		{
 			Synt::ClassPtr class_( new Synt::Class(g_dummy_file_pos) );
 			class_->name_= ToProgramString( record_decl->getName().data() );
+			class_->keep_fields_order_= true; // C/C++ structs/classes have fixed fields order.
+
+			for( const clang::Decl* const sub_decl : record_decl->decls() )
+				ProcessClassDecl( *sub_decl, class_->elements_, current_externc );
+
 			program_elements.push_back( std::move(class_) );
 		}
 	}
@@ -62,13 +67,41 @@ void CppAstConsumer::ProcessDecl( const clang::Decl& decl, Synt::ProgramElements
 		func->type_.unsafe_= true; // All C/C++ functions is unsafe.
 
 		func->type_.arguments_.reserve( func_decl->param_size() );
+		size_t i= 0u;
 		for( const clang::ParmVarDecl* const param : func_decl->parameters() )
 		{
 			Synt::FunctionArgument arg( g_dummy_file_pos );
 			arg.name_= ToProgramString( param->getName().str() );
-			arg.type_= TranslateType( *param->getType().getTypePtr() );
-			func->type_.arguments_.push_back(std::move(arg));
+			if( arg.name_.empty() )
+				arg.name_= ToProgramString( "arg" + std::to_string(i) );
 
+
+			const clang::Type* arg_type= param->getType().getTypePtr();
+			if( arg_type->isReferenceType() )
+			{
+				arg.reference_modifier_= Synt::ReferenceModifier::Reference;
+				arg_type= arg_type->getPointeeType().getTypePtr();
+
+				if( param->getType().isConstQualified() )
+					arg.mutability_modifier_= Synt::MutabilityModifier::Immutable;
+				else
+					arg.mutability_modifier_= Synt::MutabilityModifier::Mutable;
+			}
+			else if( arg_type->isPointerType() )
+			{
+				arg.reference_modifier_= Synt::ReferenceModifier::Reference;
+				const clang::QualType type_qual= arg_type->getPointeeType();
+				arg_type= type_qual.getTypePtr();
+
+				if( type_qual.isConstQualified() )
+					arg.mutability_modifier_= Synt::MutabilityModifier::Immutable;
+				else
+					arg.mutability_modifier_= Synt::MutabilityModifier::Mutable;
+			}
+
+			arg.type_= TranslateType( *arg_type );
+			func->type_.arguments_.push_back(std::move(arg));
+			++i;
 		}
 
 		func->type_.return_type_.reset( new Synt::TypeName( TranslateType( *func_decl->getReturnType().getTypePtr() ) ) );
@@ -91,16 +124,33 @@ void CppAstConsumer::ProcessDecl( const clang::Decl& decl, Synt::ProgramElements
 	}
 }
 
+void CppAstConsumer::ProcessClassDecl( const clang::Decl& decl, Synt::ClassElements& class_elements, bool externc )
+{
+	U_UNUSED(externc);
+	if( const clang::FieldDecl* const field_decl= llvm::dyn_cast<clang::FieldDecl>(&decl) )
+	{
+		Synt::ClassField field( g_dummy_file_pos );
+
+		field.type= TranslateType( *field_decl->getType().getTypePtr() );
+		field.name= ToProgramString( field_decl->getName().str() );
+		class_elements.push_back( std::move(field) );
+	}
+}
+
 Synt::TypeName CppAstConsumer::TranslateType( const clang::Type& in_type ) const
 {
 	// TODO
 	Synt::NamedTypeName named_type(g_dummy_file_pos);
 	named_type.name.components.emplace_back();
 
-	if( const auto* const build_in_type= llvm::dyn_cast<clang::BuiltinType>(&in_type) )
+	if( const clang::BuiltinType* const build_in_type= llvm::dyn_cast<clang::BuiltinType>(&in_type) )
 		named_type.name.components.back().name= ToProgramString( TranslateNamedType( build_in_type->getNameAsCString( printing_policy_ ) ) );
 	else if( const clang::RecordType* const record_type= llvm::dyn_cast<clang::RecordType>(&in_type) )
+	{
 		named_type.name.components.back().name= ToProgramString( record_type->getDecl()->getName().str() );
+	}
+	else if( const clang::TypedefType* const typedef_type= llvm::dyn_cast<clang::TypedefType>(&in_type) )
+		named_type.name.components.back().name= ToProgramString( typedef_type->getDecl()->getName().str() );
 
 	return std::move(named_type);
 }
@@ -109,15 +159,25 @@ std::string CppAstConsumer::TranslateNamedType( const std::string& cpp_type_name
 {
 	static const std::map< std::string, std::string > c_map
 	{
-		{ "int", "i32" },
-		{ "unsigned int", "u32" },
-		{ "long int", "i64" },
+		{ "signed char"      ,  "i8" },
+		{ "int8_t"           ,  "i8" },
+		{ "unsigned char"    ,  "u8" },
+		{ "uint8_t"          ,  "i8" },
+		{ "sort"             , "i16" },
+		{ "int16_t"          , "i16" },
+		{ "unsigned short"   , "u16" },
+		{ "uint16_t"         , "u16" },
+		{ "int"              , "i32" },
+		{ "int32_t"          , "i32" },
+		{ "unsigned int"     , "u32" },
+		{ "uint32_t"         , "u32" },
+		{ "long int"         , "i64" },
+		{ "int64_t"          , "i64" },
 		{ "long unsigned int", "u64" },
-		{ "char", "char8" },
-		{ "signed char", "i8" },
-		{ "unsigned char", "u8" },
-		{ "float", "f32" },
-		{ "double", "f64" },
+		{ "uint64_t"         , "u64" },
+		{ "char"  , "char8" },
+		{ "float" ,  "f32" },
+		{ "double",  "f64" },
 	};
 
 	const auto it= c_map.find(cpp_type_name);
