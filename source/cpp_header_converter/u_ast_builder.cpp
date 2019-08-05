@@ -242,6 +242,8 @@ Synt::TypeName CppAstConsumer::TranslateType( const clang::Type& in_type )
 	}
 	else if( const clang::ParenType* const paren_type= llvm::dyn_cast<clang::ParenType>( &in_type ) )
 		return TranslateType( *paren_type->getInnerType().getTypePtr() );
+	else if( const clang::ElaboratedType* const elaborated_type= llvm::dyn_cast<clang::ElaboratedType>( &in_type ) )
+		return TranslateType( *elaborated_type->desugar().getTypePtr() );
 
 	return TranslateNamedType( "void" );
 }
