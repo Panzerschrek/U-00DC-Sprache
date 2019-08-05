@@ -162,8 +162,32 @@ void CppAstConsumer::ProcessClassDecl( const clang::Decl& decl, Synt::ClassEleme
 	{
 		Synt::ClassField field( g_dummy_file_pos );
 
-		field.type= TranslateType( *field_decl->getType().getTypePtr() );
+		const clang::Type* field_type= field_decl->getType().getTypePtr();
+		if( field_type->isReferenceType() )
+		{
+			field.reference_modifier= Synt::ReferenceModifier::Reference;
+			field_type= field_type->getPointeeType().getTypePtr();
+
+			if( field_decl->getType().isConstQualified() )
+				field.mutability_modifier= Synt::MutabilityModifier::Immutable;
+			else
+				field.mutability_modifier= Synt::MutabilityModifier::Mutable;
+		}
+		else if( field_type->isPointerType() )
+		{
+			field.reference_modifier= Synt::ReferenceModifier::Reference;
+			const clang::QualType type_qual= field_type->getPointeeType();
+			field_type= type_qual.getTypePtr();
+
+			if( type_qual.isConstQualified() )
+				field.mutability_modifier= Synt::MutabilityModifier::Immutable;
+			else
+				field.mutability_modifier= Synt::MutabilityModifier::Mutable;
+		}
+
+		field.type= TranslateType( *field_type );
 		field.name= TranslateIdentifier( field_decl->getName().str() );
+
 		class_elements.push_back( std::move(field) );
 	}
 }

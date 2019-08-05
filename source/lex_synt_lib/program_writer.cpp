@@ -567,6 +567,9 @@ static void ElementWrite( const FunctionTemplate& function_template, std::ostrea
 static void ElementWrite( const ClassField& class_field, std::ostream& stream )
 {
 	ElementWrite( class_field.type, stream );
+	stream << " ";
+	ElementWrite( class_field.reference_modifier, stream );
+	ElementWrite( class_field.mutability_modifier, stream );
 	stream << " " << ToUTF8( class_field.name ) << ";\n";
 }
 
