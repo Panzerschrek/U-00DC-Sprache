@@ -104,7 +104,29 @@ void CppAstConsumer::ProcessDecl( const clang::Decl& decl, Synt::ProgramElements
 			++i;
 		}
 
-		func->type_.return_type_.reset( new Synt::TypeName( TranslateType( *func_decl->getReturnType().getTypePtr() ) ) );
+		const clang::Type* return_type= func_decl->getReturnType().getTypePtr();
+		if( return_type->isReferenceType() )
+		{
+			func->type_.return_value_reference_modifier_= Synt::ReferenceModifier::Reference;
+			return_type= return_type->getPointeeType().getTypePtr();
+
+			if( func_decl->getReturnType().isConstQualified() )
+				func->type_.return_value_mutability_modifier_= Synt::MutabilityModifier::Immutable;
+			else
+				func->type_.return_value_mutability_modifier_= Synt::MutabilityModifier::Mutable;
+		}
+		else if( return_type->isPointerType() )
+		{
+			func->type_.return_value_reference_modifier_= Synt::ReferenceModifier::Reference;
+			const clang::QualType type_qual= return_type->getPointeeType();
+			return_type= type_qual.getTypePtr();
+
+			if( type_qual.isConstQualified() )
+				func->type_.return_value_mutability_modifier_= Synt::MutabilityModifier::Immutable;
+			else
+				func->type_.return_value_mutability_modifier_= Synt::MutabilityModifier::Mutable;
+		}
+		func->type_.return_type_.reset( new Synt::TypeName( TranslateType( *return_type ) ) );
 
 		program_elements.push_back(std::move(func));
 	}
@@ -139,23 +161,54 @@ void CppAstConsumer::ProcessClassDecl( const clang::Decl& decl, Synt::ClassEleme
 
 Synt::TypeName CppAstConsumer::TranslateType( const clang::Type& in_type ) const
 {
-	// TODO
-	Synt::NamedTypeName named_type(g_dummy_file_pos);
-	named_type.name.components.emplace_back();
-
 	if( const clang::BuiltinType* const build_in_type= llvm::dyn_cast<clang::BuiltinType>(&in_type) )
-		named_type.name.components.back().name= ToProgramString( TranslateNamedType( build_in_type->getNameAsCString( printing_policy_ ) ) );
+		return TranslateNamedType( build_in_type->getNameAsCString( printing_policy_ ) );
 	else if( const clang::RecordType* const record_type= llvm::dyn_cast<clang::RecordType>(&in_type) )
-	{
-		named_type.name.components.back().name= ToProgramString( record_type->getDecl()->getName().str() );
-	}
+		return TranslateNamedType( record_type->getDecl()->getName().str() );
 	else if( const clang::TypedefType* const typedef_type= llvm::dyn_cast<clang::TypedefType>(&in_type) )
-		named_type.name.components.back().name= ToProgramString( typedef_type->getDecl()->getName().str() );
+		return TranslateNamedType( typedef_type->getDecl()->getName().str() );
+	else if( const clang::ConstantArrayType* const constna_array_type= llvm::dyn_cast<clang::ConstantArrayType>(&in_type) )
+	{
+		// For arrays with constant size use normal Ü array.
+		Synt::ArrayTypeName array_type(g_dummy_file_pos);
+		array_type.element_type.reset( new Synt::TypeName( TranslateType( *constna_array_type->getElementType().getTypePtr() ) ) );
 
-	return std::move(named_type);
+		Synt::NumericConstant numeric_constant( g_dummy_file_pos );
+		numeric_constant.value_= static_cast<Synt::NumericConstant::LongFloat>( constna_array_type->getSize().getLimitedValue() );
+		numeric_constant.type_suffix_[0]= 'u';
+		array_type.size.reset( new Synt::Expression( std::move(numeric_constant) ) );
+
+		return std::move(array_type);
+	}
+	else if( const clang::ArrayType* const array_type= llvm::dyn_cast<clang::ArrayType>(&in_type) )
+	{
+		// For other variants of array types use zero size.
+		Synt::ArrayTypeName out_array_type(g_dummy_file_pos);
+		out_array_type.element_type.reset( new Synt::TypeName( TranslateType( *array_type->getElementType().getTypePtr() ) ) );
+
+		Synt::NumericConstant numeric_constant( g_dummy_file_pos );
+		numeric_constant.value_= 0;
+		numeric_constant.type_suffix_[0]= 'u';
+		out_array_type.size.reset( new Synt::Expression( std::move(numeric_constant) ) );
+
+		return std::move(out_array_type);
+	}
+	else if( in_type.isFunctionPointerType() )
+	{
+		const clang::Type* function_type= in_type.getPointeeType().getTypePtr();
+		while( const clang::ParenType* const paren_type= llvm::dyn_cast<clang::ParenType>( function_type ) )
+			function_type= paren_type->getInnerType().getTypePtr();
+
+		if( const clang::FunctionProtoType* const function_proto_type= llvm::dyn_cast<clang::FunctionProtoType>( function_type ) )
+			return TranslateFunctionType( *function_proto_type );
+	}
+	else if( const clang::ParenType* const paren_type= llvm::dyn_cast<clang::ParenType>( &in_type ) )
+		return TranslateType( *paren_type->getInnerType().getTypePtr() );
+
+	return TranslateNamedType( "void" );
 }
 
-std::string CppAstConsumer::TranslateNamedType( const std::string& cpp_type_name ) const
+Synt::NamedTypeName CppAstConsumer::TranslateNamedType( const std::string& cpp_type_name ) const
 {
 	static const std::map< std::string, std::string > c_map
 	{
@@ -180,10 +233,84 @@ std::string CppAstConsumer::TranslateNamedType( const std::string& cpp_type_name
 		{ "double",  "f64" },
 	};
 
+	Synt::NamedTypeName named_type(g_dummy_file_pos);
+	named_type.name.components.emplace_back();
+
 	const auto it= c_map.find(cpp_type_name);
 	if( it != c_map.end() )
-		return it->second;
-	return cpp_type_name;
+		named_type.name.components.back().name= ToProgramString( it->second );
+	else
+		named_type.name.components.back().name= ToProgramString( cpp_type_name );
+
+	return std::move(named_type);
+}
+
+Synt::FunctionTypePtr CppAstConsumer::TranslateFunctionType( const clang::FunctionProtoType& in_type ) const
+{
+	Synt::FunctionTypePtr function_type( new Synt::FunctionType( g_dummy_file_pos ) );
+
+	function_type->unsafe_= true; // All C/C++ functions is unsafe.
+
+	function_type->arguments_.reserve( in_type.getNumParams() );
+	size_t i= 0u;
+	for( const clang::QualType& param_qual : in_type.getParamTypes() )
+	{
+		Synt::FunctionArgument arg( g_dummy_file_pos );
+		arg.name_= ToProgramString( "arg" + std::to_string(i) );
+
+		const clang::Type* arg_type= param_qual.getTypePtr();
+		if( arg_type->isReferenceType() )
+		{
+			arg.reference_modifier_= Synt::ReferenceModifier::Reference;
+			arg_type= arg_type->getPointeeType().getTypePtr();
+
+			if( param_qual.isConstQualified() )
+				arg.mutability_modifier_= Synt::MutabilityModifier::Immutable;
+			else
+				arg.mutability_modifier_= Synt::MutabilityModifier::Mutable;
+		}
+		else if( arg_type->isPointerType() )
+		{
+			arg.reference_modifier_= Synt::ReferenceModifier::Reference;
+			const clang::QualType type_qual= arg_type->getPointeeType();
+			arg_type= type_qual.getTypePtr();
+
+			if( type_qual.isConstQualified() )
+				arg.mutability_modifier_= Synt::MutabilityModifier::Immutable;
+			else
+				arg.mutability_modifier_= Synt::MutabilityModifier::Mutable;
+		}
+
+		arg.type_= TranslateType( *arg_type );
+		function_type->arguments_.push_back(std::move(arg));
+		++i;
+	}
+
+	const clang::Type* return_type= in_type.getReturnType().getTypePtr();
+	if( return_type->isReferenceType() )
+	{
+		function_type->return_value_reference_modifier_= Synt::ReferenceModifier::Reference;
+		return_type= return_type->getPointeeType().getTypePtr();
+
+		if( in_type.getReturnType().isConstQualified() )
+			function_type->return_value_mutability_modifier_= Synt::MutabilityModifier::Immutable;
+		else
+			function_type->return_value_mutability_modifier_= Synt::MutabilityModifier::Mutable;
+	}
+	else if( return_type->isPointerType() )
+	{
+		function_type->return_value_reference_modifier_= Synt::ReferenceModifier::Reference;
+		const clang::QualType type_qual= return_type->getPointeeType();
+		return_type= type_qual.getTypePtr();
+
+		if( type_qual.isConstQualified() )
+			function_type->return_value_mutability_modifier_= Synt::MutabilityModifier::Immutable;
+		else
+			function_type->return_value_mutability_modifier_= Synt::MutabilityModifier::Mutable;
+	}
+	function_type->return_type_.reset( new Synt::TypeName( TranslateType( *return_type ) ) );
+
+	return std::move(function_type);
 }
 
 CppAstProcessor::CppAstProcessor( ParsedUnitsPtr out_result )

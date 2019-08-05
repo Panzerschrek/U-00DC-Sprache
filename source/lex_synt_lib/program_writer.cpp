@@ -111,15 +111,16 @@ static void ElementWriteFunctionTypeEnding( const FunctionType& function_type, s
 
 static void ElementWrite( const FunctionType& function_type_name, std::ostream& stream )
 {
-	stream << KeywordAscii( Keywords::fn_ ) << "( ";
+	stream << "( " << KeywordAscii( Keywords::fn_ ) << "( ";
 	for( const FunctionArgument& arg : function_type_name.arguments_ )
 	{
 		ElementWrite( arg, stream );
 		if( &arg != &function_type_name.arguments_.back() )
 			stream << ", ";
 	}
-	stream << ")";
+	stream << " ) ";
 	ElementWriteFunctionTypeEnding( function_type_name, stream );
+	stream << " )";
 }
 
 static void ElementWrite( const FunctionArgument& arg, std::ostream& stream )
