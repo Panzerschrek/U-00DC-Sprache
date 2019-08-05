@@ -60,11 +60,35 @@ void CppAstConsumer::ProcessDecl( const clang::Decl& decl, Synt::ProgramElements
 			program_elements.push_back( std::move(class_) );
 		}
 	}
-	else if( const clang::TypedefDecl* const typedef_decl= llvm::dyn_cast<clang::TypedefDecl>(&decl) )
+	else if( const clang::TypedefNameDecl* const type_alias_decl= llvm::dyn_cast<clang::TypedefNameDecl>(&decl) )
 	{
 		Synt::Typedef typedef_( g_dummy_file_pos );
-		typedef_.name= TranslateIdentifier( typedef_decl->getName().str() );
-		typedef_.value= TranslateType( *typedef_decl->getUnderlyingType().getTypePtr() );
+		typedef_.name= TranslateIdentifier( type_alias_decl->getName().str() );
+
+		const clang::Type* underlaying_type= type_alias_decl->getUnderlyingType().getTypePtr();
+
+		while( const clang::ParenType* const paren_type= llvm::dyn_cast<clang::ParenType>( underlaying_type ) )
+			underlaying_type= paren_type->getInnerType().getTypePtr();
+		while( const clang::ElaboratedType* const elaborated_type= llvm::dyn_cast<clang::ElaboratedType>( underlaying_type ) )
+			underlaying_type= elaborated_type->desugar().getTypePtr();
+
+		const clang::RecordType* const record= llvm::dyn_cast<clang::RecordType>(underlaying_type);
+		if( record != nullptr && record->getDecl()->getName().empty() )
+		{
+			// handle something, like " typedef SomeStruct= struct{}; "
+			const ProgramString name_for_anon_struct= TranslateIdentifier( "" );
+			Synt::ClassPtr class_( new Synt::Class(g_dummy_file_pos) );
+			class_->name_= name_for_anon_struct;
+			class_->keep_fields_order_= true; // C/C++ structs/classes have fixed fields order.
+			for( const clang::Decl* const sub_decl : record->getDecl()->decls() )
+				ProcessClassDecl( *sub_decl, class_->elements_, current_externc );
+			program_elements.push_back( std::move(class_) );
+
+			typedef_.value= TranslateNamedType( ToUTF8( name_for_anon_struct ) );
+		}
+		else
+			typedef_.value= TranslateType( *type_alias_decl->getUnderlyingType().getTypePtr() );
+
 		program_elements.push_back( std::move(typedef_) );
 	}
 	else if( const clang::FunctionDecl* const func_decl= llvm::dyn_cast<clang::FunctionDecl>(&decl) )
