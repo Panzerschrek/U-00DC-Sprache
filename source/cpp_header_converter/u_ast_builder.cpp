@@ -3,6 +3,7 @@
 #include "../code_builder_lib/push_disable_llvm_warnings.hpp"
 #include <clang/AST/Attr.h>
 #include <clang/AST/DeclBase.h>
+#include <clang/Frontend/CompilerInstance.h>
 #include "../code_builder_lib/pop_llvm_warnings.hpp"
 
 #include "../lex_synt_lib/assert.hpp"
@@ -12,14 +13,26 @@
 namespace U
 {
 
+static const FilePos g_dummy_file_pos{ 0u, 0u, 0u };
+
+CppAstConsumer::CppAstConsumer(
+	Synt::ProgramElements& out_elements,
+	const clang::SourceManager& source_manager,
+	const clang::LangOptions& lang_options )
+	: root_program_elements_(out_elements)
+	, source_manager_(source_manager)
+	, lang_options_(lang_options)
+	, printing_policy_(lang_options_)
+{}
+
 bool CppAstConsumer::HandleTopLevelDecl( const clang::DeclGroupRef decl_group )
 {
 	for( const clang::Decl* const decl : decl_group )
-		ProcessDecl( *decl, false );
+		ProcessDecl( *decl, root_program_elements_, false );
 	return true;
 }
 
-void CppAstConsumer::ProcessDecl( const clang::Decl& decl, const bool externc )
+void CppAstConsumer::ProcessDecl( const clang::Decl& decl, Synt::ProgramElements& program_elements, const bool externc )
 {
 	bool current_externc= externc;
 	if( const auto decl_context= llvm::dyn_cast<clang::DeclContext>(&decl) )
@@ -33,42 +46,63 @@ void CppAstConsumer::ProcessDecl( const clang::Decl& decl, const bool externc )
 	if( const clang::RecordDecl* const record_decl= llvm::dyn_cast<clang::RecordDecl>(&decl) )
 	{
 		if( record_decl->isStruct() || record_decl->isClass() )
-			std::cout << "struct " << record_decl->getName().str() << "{};" << std::endl;
+		{
+			Synt::ClassPtr class_( new Synt::Class(g_dummy_file_pos) );
+			class_->name_= ToProgramString( record_decl->getName().data() );
+			program_elements.push_back( std::move(class_) );
+		}
 	}
 	else if( const clang::FunctionDecl* const func_decl= llvm::dyn_cast<clang::FunctionDecl>(&decl) )
 	{
-		std::cout << "fn ";
-		if( current_externc )
-			std::cout << " nomangle ";
-		std::cout << func_decl->getName().str();
+		Synt::FunctionPtr func( new Synt::Function(g_dummy_file_pos) );
 
-		std::cout << "( ";
-		size_t i= 0u;
+		func->name_.components.emplace_back();
+		func->name_.components.back().name= ToProgramString( func_decl->getName().str() );
+		func->no_mangle_= current_externc;
+		func->type_.unsafe_= true; // All C/C++ functions is unsafe.
+
+		func->type_.arguments_.reserve( func_decl->param_size() );
 		for( const clang::ParmVarDecl* const param : func_decl->parameters() )
 		{
-			const clang::QualType& type= param->getType();
-			std::cout << TranslateNamedType(type.getAsString()) << " " << param->getName().str();
-			++i;
-			if( i != func_decl->param_size() )
-				std::cout << ", ";
-		}
-		std::cout << " )";
+			Synt::FunctionArgument arg( g_dummy_file_pos );
+			arg.name_= ToProgramString( param->getName().str() );
+			arg.type_= TranslateType( *param->getType().getTypePtr() );
+			func->type_.arguments_.push_back(std::move(arg));
 
-		std::cout << " unsafe : " << TranslateNamedType(func_decl->getReturnType().getAsString());
-		std::cout << ";" << std::endl;
+		}
+
+		func->type_.return_type_.reset( new Synt::TypeName( TranslateType( *func_decl->getReturnType().getTypePtr() ) ) );
+
+		program_elements.push_back(std::move(func));
 	}
 	else if( const clang::NamespaceDecl* const namespace_decl= llvm::dyn_cast<clang::NamespaceDecl>(&decl) )
 	{
-		std::cout << "namespace " << namespace_decl->getName().str() << "\n{\n" << std::endl;
+		Synt::NamespacePtr namespace_( new Synt::Namespace( g_dummy_file_pos ) );
+		namespace_->name_= ToProgramString( namespace_decl->getName() );
 		for( const clang::Decl* const sub_decl : namespace_decl->decls() )
-			ProcessDecl( *sub_decl, current_externc );
-		std::cout << "\n}" << std::endl;
+			ProcessDecl( *sub_decl, namespace_->elements_, current_externc );
+
+		program_elements.push_back(std::move(namespace_));
 	}
 	else if( const clang::DeclContext* const decl_context= llvm::dyn_cast<clang::DeclContext>(&decl) )
 	{
 		for( const clang::Decl* const sub_decl : decl_context->decls() )
-			ProcessDecl( *sub_decl, current_externc );
+			ProcessDecl( *sub_decl, program_elements, current_externc );
 	}
+}
+
+Synt::TypeName CppAstConsumer::TranslateType( const clang::Type& in_type ) const
+{
+	// TODO
+	Synt::NamedTypeName named_type(g_dummy_file_pos);
+	named_type.name.components.emplace_back();
+
+	if( const auto* const build_in_type= llvm::dyn_cast<clang::BuiltinType>(&in_type) )
+		named_type.name.components.back().name= ToProgramString( TranslateNamedType( build_in_type->getNameAsCString( printing_policy_ ) ) );
+	else if( const clang::RecordType* const record_type= llvm::dyn_cast<clang::RecordType>(&in_type) )
+		named_type.name.components.back().name= ToProgramString( record_type->getDecl()->getName().str() );
+
+	return std::move(named_type);
 }
 
 std::string CppAstConsumer::TranslateNamedType( const std::string& cpp_type_name ) const
@@ -92,13 +126,29 @@ std::string CppAstConsumer::TranslateNamedType( const std::string& cpp_type_name
 	return cpp_type_name;
 }
 
+CppAstProcessor::CppAstProcessor( ParsedUnitsPtr out_result )
+	: out_result_(std::move(out_result))
+{}
+
 std::unique_ptr<clang::ASTConsumer> CppAstProcessor::CreateASTConsumer(
 	clang::CompilerInstance& compiler_intance,
 	const llvm::StringRef in_file )
 {
-	U_UNUSED( compiler_intance );
-	U_UNUSED( in_file );
-	return std::unique_ptr<clang::ASTConsumer>( new CppAstConsumer() );
+	return
+		std::unique_ptr<clang::ASTConsumer>(
+			new CppAstConsumer(
+				(*out_result_)[in_file.str()],
+				compiler_intance.getSourceManager(),
+				compiler_intance.getLangOpts()) );
+}
+
+FrontendActionFactory::FrontendActionFactory( ParsedUnitsPtr out_result )
+	: out_result_(std::move(out_result))
+{}
+
+clang::FrontendAction* FrontendActionFactory::create()
+{
+	return new CppAstProcessor(out_result_);
 }
 
 } // namespace U
