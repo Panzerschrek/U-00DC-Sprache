@@ -59,6 +59,32 @@ void CppAstConsumer::ProcessDecl( const clang::Decl& decl, Synt::ProgramElements
 
 			program_elements.push_back( std::move(class_) );
 		}
+		else if( record_decl->isUnion() )
+		{
+			// Emulate union, using array if ints with maximum alignment.
+
+			Synt::ClassPtr class_( new Synt::Class(g_dummy_file_pos) );
+			class_->name_= TranslateIdentifier( record_decl->getName().data() );
+			class_->keep_fields_order_= true; // C/C++ structs/classes have fixed fields order.
+
+			const auto size= ast_context_.getTypeSize( record_decl->getTypeForDecl() ) / 8u;
+			const auto int_size= 8u;
+			const auto num= ( size + int_size - 1u ) / int_size;
+
+			Synt::ClassField field( g_dummy_file_pos );
+			field.name= "union_content"_SpC;
+
+			Synt::ArrayTypeName array_type( g_dummy_file_pos );
+			array_type.element_type.reset( new Synt::TypeName( TranslateNamedType( KeywordAscii( Keywords::u64_ ) ) ) );
+
+			Synt::NumericConstant numeric_constant( g_dummy_file_pos );
+			numeric_constant.value_= num;
+			array_type.size.reset( new Synt::Expression( std::move(numeric_constant) ) );
+
+			field.type= std::move(array_type);
+			class_->elements_.push_back( std::move(field) );
+			program_elements.push_back( std::move(class_) );
+		}
 	}
 	else if( const clang::TypedefNameDecl* const type_alias_decl= llvm::dyn_cast<clang::TypedefNameDecl>(&decl) )
 	{
