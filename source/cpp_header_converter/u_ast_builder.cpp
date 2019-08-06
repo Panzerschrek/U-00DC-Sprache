@@ -79,17 +79,7 @@ void CppAstConsumer::ProcessDecl( const clang::Decl& decl, Synt::ProgramElements
 				arg.name_= ToProgramString( "arg" + std::to_string(i) );
 
 			const clang::Type* arg_type= param->getType().getTypePtr();
-			if( arg_type->isReferenceType() )
-			{
-				arg.reference_modifier_= Synt::ReferenceModifier::Reference;
-				arg_type= arg_type->getPointeeType().getTypePtr();
-
-				if( param->getType().isConstQualified() )
-					arg.mutability_modifier_= Synt::MutabilityModifier::Immutable;
-				else
-					arg.mutability_modifier_= Synt::MutabilityModifier::Mutable;
-			}
-			else if( arg_type->isPointerType() )
+			if( arg_type->isPointerType() || arg_type->isReferenceType() )
 			{
 				arg.reference_modifier_= Synt::ReferenceModifier::Reference;
 				const clang::QualType type_qual= arg_type->getPointeeType();
@@ -107,17 +97,7 @@ void CppAstConsumer::ProcessDecl( const clang::Decl& decl, Synt::ProgramElements
 		}
 
 		const clang::Type* return_type= func_decl->getReturnType().getTypePtr();
-		if( return_type->isReferenceType() )
-		{
-			func->type_.return_value_reference_modifier_= Synt::ReferenceModifier::Reference;
-			return_type= return_type->getPointeeType().getTypePtr();
-
-			if( func_decl->getReturnType().isConstQualified() )
-				func->type_.return_value_mutability_modifier_= Synt::MutabilityModifier::Immutable;
-			else
-				func->type_.return_value_mutability_modifier_= Synt::MutabilityModifier::Mutable;
-		}
-		else if( return_type->isPointerType() )
+		if( return_type->isPointerType() || return_type->isReferenceType() )
 		{
 			func->type_.return_value_reference_modifier_= Synt::ReferenceModifier::Reference;
 			const clang::QualType type_qual= return_type->getPointeeType();
@@ -159,17 +139,7 @@ void CppAstConsumer::ProcessClassDecl( const clang::Decl& decl, Synt::ClassEleme
 
 		const clang::Type* field_type= field_decl->getType().getTypePtr();
 
-		if( field_type->isReferenceType() )
-		{
-			field.reference_modifier= Synt::ReferenceModifier::Reference;
-			field_type= field_type->getPointeeType().getTypePtr();
-
-			if( field_decl->getType().isConstQualified() )
-				field.mutability_modifier= Synt::MutabilityModifier::Immutable;
-			else
-				field.mutability_modifier= Synt::MutabilityModifier::Mutable;
-		}
-		else if( field_type->isPointerType() )
+		if( field_type->isPointerType() || field_type->isReferenceType() )
 		{
 			field.reference_modifier= Synt::ReferenceModifier::Reference;
 			const clang::QualType type_qual= field_type->getPointeeType();
@@ -391,17 +361,7 @@ Synt::FunctionTypePtr CppAstConsumer::TranslateFunctionType( const clang::Functi
 		arg.name_= ToProgramString( "arg" + std::to_string(i) );
 
 		const clang::Type* arg_type= param_qual.getTypePtr();
-		if( arg_type->isReferenceType() )
-		{
-			arg.reference_modifier_= Synt::ReferenceModifier::Reference;
-			arg_type= arg_type->getPointeeType().getTypePtr();
-
-			if( param_qual.isConstQualified() )
-				arg.mutability_modifier_= Synt::MutabilityModifier::Immutable;
-			else
-				arg.mutability_modifier_= Synt::MutabilityModifier::Mutable;
-		}
-		else if( arg_type->isPointerType() )
+		if( arg_type->isPointerType() || arg_type->isReferenceType() )
 		{
 			arg.reference_modifier_= Synt::ReferenceModifier::Reference;
 			const clang::QualType type_qual= arg_type->getPointeeType();
@@ -419,17 +379,7 @@ Synt::FunctionTypePtr CppAstConsumer::TranslateFunctionType( const clang::Functi
 	}
 
 	const clang::Type* return_type= in_type.getReturnType().getTypePtr();
-	if( return_type->isReferenceType() )
-	{
-		function_type->return_value_reference_modifier_= Synt::ReferenceModifier::Reference;
-		return_type= return_type->getPointeeType().getTypePtr();
-
-		if( in_type.getReturnType().isConstQualified() )
-			function_type->return_value_mutability_modifier_= Synt::MutabilityModifier::Immutable;
-		else
-			function_type->return_value_mutability_modifier_= Synt::MutabilityModifier::Mutable;
-	}
-	else if( return_type->isPointerType() )
+	if( return_type->isPointerType() || return_type->isReferenceType() )
 	{
 		function_type->return_value_reference_modifier_= Synt::ReferenceModifier::Reference;
 		const clang::QualType type_qual= return_type->getPointeeType();
