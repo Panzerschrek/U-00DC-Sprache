@@ -297,4 +297,28 @@ if( REALLY_BUILD_LINKAGE_TESTS )
 		DEPENDS TypeIdTest
 		WORKING_DIRECTORY ${CMAKE_BINARY_DIR} )
 
+	#
+	# CppHeaderConverter test
+	#
+	if( DEFINED LLVM_EXTERNAL_CLANG_SOURCE_DIR )
+		add_custom_command(
+			OUTPUT c_converted.u
+			DEPENDS tests/cpp_header_converter_test/c_test.h CppHeaderConverter
+			COMMAND
+				CppHeaderConverter -o c_converted.u
+				${CMAKE_SOURCE_DIR}/tests/cpp_header_converter_test/c_test.h -- -std=c99 )
+
+		add_custom_command(
+			OUTPUT cpp_header_converter_test.o
+			DEPENDS tests/cpp_header_converter_test/cpp_header_converter_test.u  c_converted.u Compiler
+			COMMAND
+				Compiler --produce-object-file
+				${CMAKE_SOURCE_DIR}/tests/cpp_header_converter_test/cpp_header_converter_test.u -o cpp_header_converter_test.o
+				${SPRACHE_COMPILER_PIC_OPTIONS}
+				--include-dir ${CMAKE_BINARY_DIR} )
+
+		add_executable( CppHeaderConverterTest cpp_header_converter_test.o data/entry.cpp tests/cpp_header_converter_test/c_test.c )
+		add_dependencies( CppHeaderConverterTest Compiler )
+	endif()
+
 endif( REALLY_BUILD_LINKAGE_TESTS )

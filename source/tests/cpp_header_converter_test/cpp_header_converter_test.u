@@ -1,0 +1,75 @@
+import "/c_converted.u"
+
+fn SomeLocalFunc( f32 x ){}
+
+
+template</ type A />
+struct is_same_type_impl
+{
+	// Use type templates overloading for type equality comparison.
+	template</ type B /> struct same</ B />
+	{
+		auto constexpr value= false;
+	}
+
+	template</ /> struct same</ A />
+	{
+		auto constexpr value= true;
+	}
+}
+
+template</ type A, type B />
+fn constexpr types_are_same() : bool
+{
+	return is_same_type_impl</A/>::same</B/>::value;
+}
+
+fn U_Main() : i32
+{
+	unsafe
+	{
+		var i32 mut x= 0;
+		Function_ZeroArgs();
+		Function_ArgVal(x);
+		Function_ArgPtr(x);
+		Function_ArgConstPtr(x);
+		var i32 r0= Function_RetVal();
+		var i32& mut r1= Function_RetPtr();
+		var i32& imut r2= Function_RetConstPtr();
+		Function_UnnamedArgs( 0, 0.0f, 0.0 );
+	}
+	{
+		static_assert( types_are_same</ CPP_char8, char8 />() );
+		static_assert( types_are_same</ CPP_i8 ,  i8 />() );
+		static_assert( types_are_same</ CPP_u8 ,  u8 />() );
+		static_assert( types_are_same</ CPP_i16, i16 />() );
+		static_assert( types_are_same</ CPP_u16, u16 />() );
+		static_assert( types_are_same</ CPP_i32, i32 />() );
+		static_assert( types_are_same</ CPP_u32, u32 />() );
+		static_assert( types_are_same</ CPP_f32, f32 />() );
+		static_assert( types_are_same</ CPP_f64, f64 />() );
+		static_assert( types_are_same</ ArrayType15, [ i32, 15 ] />() );
+		static_assert( types_are_same</ MultidimentionalArrayType44, [ [ f32, 4 ], 4 ] />() );
+	}
+	{
+		var i32 mut a= 0, imut b= 0;
+		var RegularStruct s{ .x= 0, .y= 0.0f, .ptr_field= a, .const_ptr_field= b, .function_ptr_filed= SomeLocalFunc };
+		unsafe{ s.function_ptr_filed( 3.14f ); }
+	}
+	{
+		var TypedefedStruct mut s{ .data= zero_init };
+		s.data[0u]= "f"c8;
+	}
+	{
+		var StructWithAnonimousRecordsInside mut s
+		{
+			.anon_struct{ .anon_struct_content= 0 },
+			.anon_union= zero_init,
+			.anon_struct_as_array= zero_init,
+		};
+
+		s.anon_struct_as_array[2u].anon_struct_as_array_content= 66;
+	}
+
+	return 0;
+}
