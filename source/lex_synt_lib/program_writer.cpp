@@ -134,6 +134,7 @@ static void ElementWrite( const FunctionArgument& arg, std::ostream& stream )
 		stream << ToUTF8( arg.reference_tag_ ) << " ";
 	}
 
+	stream << " ";
 	ElementWrite( arg.mutability_modifier_, stream );
 
 	stream << " " << ToUTF8( arg.name_ );
