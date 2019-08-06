@@ -94,13 +94,21 @@ endif()
 add_compile_options( -Wall -Wextra -Wconversion )
 
 #
+# LexSyntLib
+#
+
+file( GLOB LEX_SYNT_LIB_SOURCES "lex_synt_lib/*" )
+add_library( LexSyntLib ${LEX_SYNT_LIB_SOURCES} )
+
+#
 # CompilerLib
 #
 
-file( GLOB COMPILER_LIB_SOURCES "code_builder_lib/*" "lex_synt_lib/*" )
+file( GLOB COMPILER_LIB_SOURCES "code_builder_lib/*" )
 
 add_library( CompilerLib ${COMPILER_LIB_SOURCES} )
 target_link_libraries( CompilerLib ${LLVM_LIBS_FOR_COMPILER_LIB} )
+target_link_libraries( CompilerLib LexSyntLib )
 if( NOT WIN32 )
 	target_link_libraries( CompilerLib pthread dl )
 endif()
@@ -150,7 +158,7 @@ endif( BUILD_COMPILER )
 if( DEFINED LLVM_EXTERNAL_CLANG_SOURCE_DIR )
 	file( GLOB CPP_HEADER_CONVERTER_SOURCES "cpp_header_converter/*" )
 	add_executable( CppHeaderConverter ${CPP_HEADER_CONVERTER_SOURCES} )
-	target_link_libraries( CppHeaderConverter CompilerLib )
+	target_link_libraries( CppHeaderConverter LexSyntLib )
 	target_link_libraries( CppHeaderConverter clangTooling )
 	# Hack! Clang libraries does not exports their include directories, set it manually.
 	target_include_directories( CppHeaderConverter PRIVATE ${LLVM_EXTERNAL_CLANG_SOURCE_DIR}/include )
