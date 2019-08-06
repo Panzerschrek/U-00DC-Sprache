@@ -28,8 +28,9 @@ CppAstConsumer::CppAstConsumer(
 
 bool CppAstConsumer::HandleTopLevelDecl( const clang::DeclGroupRef decl_group )
 {
+	const bool externc= !lang_options_.CPlusPlus;
 	for( const clang::Decl* const decl : decl_group )
-		ProcessDecl( *decl, root_program_elements_, false );
+		ProcessDecl( *decl, root_program_elements_, externc );
 	return true;
 }
 
