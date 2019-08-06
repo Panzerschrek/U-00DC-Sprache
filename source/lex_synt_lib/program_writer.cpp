@@ -80,15 +80,13 @@ static void ElementWrite( const NamedTypeName& named_type_name, std::ostream& st
 static void ElementWriteFunctionTypeEnding( const FunctionType& function_type, std::ostream& stream )
 {
 	if( function_type.unsafe_ )
-		stream << KeywordAscii( Keywords::unsafe_ );
+		stream << " " << KeywordAscii( Keywords::unsafe_ );
 
+	stream << " : ";
 	if( function_type.return_type_ != nullptr )
-	{
-		stream << " : ";
 		ElementWrite( *function_type.return_type_, stream );
-	}
 	else
-		stream << ": " << KeywordAscii( Keywords::void_ );
+		stream << KeywordAscii( Keywords::void_ );
 
 	if( !function_type.return_value_inner_reference_tags_.empty() )
 	{
@@ -106,7 +104,14 @@ static void ElementWriteFunctionTypeEnding( const FunctionType& function_type, s
 	}
 
 	ElementWrite( function_type.return_value_reference_modifier_, stream );
-	ElementWrite( function_type.return_value_mutability_modifier_, stream );
+	if( !function_type.return_value_reference_tag_.empty() )
+		stream << "'" << ToUTF8( function_type.return_value_reference_tag_ );
+
+	if( function_type.return_value_mutability_modifier_ != MutabilityModifier::None )
+	{
+		stream << " ";
+		ElementWrite( function_type.return_value_mutability_modifier_, stream );
+	}
 }
 
 static void ElementWrite( const FunctionType& function_type_name, std::ostream& stream )
@@ -131,13 +136,15 @@ static void ElementWrite( const FunctionArgument& arg, std::ostream& stream )
 	if( !arg.reference_tag_.empty() )
 	{
 		stream << "'";
-		stream << ToUTF8( arg.reference_tag_ ) << " ";
+		stream << ToUTF8( arg.reference_tag_ );
 	}
 
 	stream << " ";
 	ElementWrite( arg.mutability_modifier_, stream );
 
-	stream << " " << ToUTF8( arg.name_ );
+	if( arg.mutability_modifier_ != MutabilityModifier::None )
+		stream << " ";
+	stream << ToUTF8( arg.name_ );
 
 	if( !arg.inner_arg_reference_tags_.empty() )
 	{
@@ -429,14 +436,19 @@ static void ElementWrite( const Function& function, std::ostream& stream )
 
 	ElementWrite( function.name_, stream );
 
-	stream << " ( ";
-	for( const FunctionArgument& arg : function.type_.arguments_ )
+	if( function.type_.arguments_.empty() )
+		stream << "()";
+	else
 	{
-		ElementWrite( arg, stream );
-		if( &arg != &function.type_.arguments_.back() )
-			stream << ", ";
+		stream << "( ";
+		for( const FunctionArgument& arg : function.type_.arguments_ )
+		{
+			ElementWrite( arg, stream );
+			if( &arg != &function.type_.arguments_.back() )
+				stream << ", ";
+		}
+		stream << " )";
 	}
-	stream << " ) ";
 
 	ElementWriteFunctionTypeEnding( function.type_, stream );
 
@@ -567,11 +579,14 @@ static void ElementWrite( const FunctionTemplate& function_template, std::ostrea
 
 static void ElementWrite( const ClassField& class_field, std::ostream& stream )
 {
+	stream << "\t";
 	ElementWrite( class_field.type, stream );
-	stream << " ";
 	ElementWrite( class_field.reference_modifier, stream );
+	stream << " ";
 	ElementWrite( class_field.mutability_modifier, stream );
-	stream << " " << ToUTF8( class_field.name ) << ";\n";
+	if( class_field.mutability_modifier != MutabilityModifier::None )
+		stream << " ";
+	stream << ToUTF8( class_field.name ) << ";\n";
 }
 
 static void ElementWrite( const ClassVisibilityLabel& visibility_label, std::ostream& stream )
