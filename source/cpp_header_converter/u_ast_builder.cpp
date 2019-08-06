@@ -82,7 +82,7 @@ void CppAstConsumer::ProcessClassDecl( const clang::Decl& decl, Synt::ClassEleme
 
 		const clang::Type* field_type= field_decl->getType().getTypePtr();
 
-		if( field_type->isPointerType() || field_type->isReferenceType() )
+		if( ( field_type->isPointerType() || field_type->isReferenceType() ) && !field_type->isFunctionPointerType() )
 		{
 			field.reference_modifier= Synt::ReferenceModifier::Reference;
 			const clang::QualType type_qual= field_type->getPointeeType();
@@ -182,7 +182,7 @@ Synt::FunctionPtr CppAstConsumer::ProcessFunction( const clang::FunctionDecl& fu
 			arg.name_= ToProgramString( "arg" + std::to_string(i) );
 
 		const clang::Type* arg_type= param->getType().getTypePtr();
-		if( arg_type->isPointerType() || arg_type->isReferenceType() )
+		if( ( arg_type->isPointerType() || arg_type->isReferenceType() ) && ! arg_type->isFunctionPointerType() )
 		{
 			arg.reference_modifier_= Synt::ReferenceModifier::Reference;
 			const clang::QualType type_qual= arg_type->getPointeeType();
@@ -200,7 +200,7 @@ Synt::FunctionPtr CppAstConsumer::ProcessFunction( const clang::FunctionDecl& fu
 	}
 
 	const clang::Type* return_type= func_decl.getReturnType().getTypePtr();
-	if( return_type->isPointerType() || return_type->isReferenceType() )
+	if( ( return_type->isPointerType() || return_type->isReferenceType() ) && ! return_type->isFunctionPointerType() )
 	{
 		func->type_.return_value_reference_modifier_= Synt::ReferenceModifier::Reference;
 		const clang::QualType type_qual= return_type->getPointeeType();
@@ -371,7 +371,7 @@ Synt::FunctionTypePtr CppAstConsumer::TranslateFunctionType( const clang::Functi
 		arg.name_= ToProgramString( "arg" + std::to_string(i) );
 
 		const clang::Type* arg_type= param_qual.getTypePtr();
-		if( arg_type->isPointerType() || arg_type->isReferenceType() )
+		if( ( arg_type->isPointerType() || arg_type->isReferenceType() ) && !arg_type->isFunctionPointerType() )
 		{
 			arg.reference_modifier_= Synt::ReferenceModifier::Reference;
 			const clang::QualType type_qual= arg_type->getPointeeType();
@@ -389,7 +389,7 @@ Synt::FunctionTypePtr CppAstConsumer::TranslateFunctionType( const clang::Functi
 	}
 
 	const clang::Type* return_type= in_type.getReturnType().getTypePtr();
-	if( return_type->isPointerType() || return_type->isReferenceType() )
+	if( ( return_type->isPointerType() || return_type->isReferenceType() ) && !return_type->isFunctionPointerType() )
 	{
 		function_type->return_value_reference_modifier_= Synt::ReferenceModifier::Reference;
 		const clang::QualType type_qual= return_type->getPointeeType();
