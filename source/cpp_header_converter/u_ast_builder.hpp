@@ -24,7 +24,9 @@ public:
 private:
 	void ProcessDecl( const clang::Decl& decl, Synt::ProgramElements& program_elements, bool externc );
 	void ProcessClassDecl( const clang::Decl& decl, Synt::ClassElements& class_elements, bool externc );
+	Synt::ClassPtr ProcessRecord( const clang::RecordDecl& record_decl, bool externc );
 	Synt::TypeName TranslateType( const clang::Type& in_type );
+	ProgramString TranslateRecordType( const clang::RecordType& in_type );
 	ProgramString GetUFundamentalType( const clang::BuiltinType& in_type );
 	Synt::NamedTypeName TranslateNamedType( const std::string& cpp_type_name );
 	Synt::FunctionTypePtr TranslateFunctionType( const clang::FunctionProtoType& in_type );
@@ -38,6 +40,7 @@ private:
 	const clang::PrintingPolicy printing_policy_;
 	const clang::ASTContext& ast_context_;
 	size_t unique_name_index_= 0u;
+	std::unordered_map< const clang::RecordType*, ProgramString > anon_records_names_cache_;
 };
 
 using ParsedUnits= std::map< std::string, Synt::ProgramElements >;

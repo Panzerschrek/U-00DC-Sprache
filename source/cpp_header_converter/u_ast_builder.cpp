@@ -48,72 +48,15 @@ void CppAstConsumer::ProcessDecl( const clang::Decl& decl, Synt::ProgramElements
 
 	if( const clang::RecordDecl* const record_decl= llvm::dyn_cast<clang::RecordDecl>(&decl) )
 	{
-		if( record_decl->isStruct() || record_decl->isClass() )
-		{
-			Synt::ClassPtr class_( new Synt::Class(g_dummy_file_pos) );
-			class_->name_= TranslateIdentifier( record_decl->getName().data() );
-			class_->keep_fields_order_= true; // C/C++ structs/classes have fixed fields order.
-
-			for( const clang::Decl* const sub_decl : record_decl->decls() )
-				ProcessClassDecl( *sub_decl, class_->elements_, current_externc );
-
-			program_elements.push_back( std::move(class_) );
-		}
-		else if( record_decl->isUnion() )
-		{
-			// Emulate union, using array if ints with maximum alignment.
-
-			Synt::ClassPtr class_( new Synt::Class(g_dummy_file_pos) );
-			class_->name_= TranslateIdentifier( record_decl->getName().data() );
-			class_->keep_fields_order_= true; // C/C++ structs/classes have fixed fields order.
-
-			const auto size= ast_context_.getTypeSize( record_decl->getTypeForDecl() ) / 8u;
-			const auto int_size= 8u;
-			const auto num= ( size + int_size - 1u ) / int_size;
-
-			Synt::ClassField field( g_dummy_file_pos );
-			field.name= "union_content"_SpC;
-
-			Synt::ArrayTypeName array_type( g_dummy_file_pos );
-			array_type.element_type.reset( new Synt::TypeName( TranslateNamedType( KeywordAscii( Keywords::u64_ ) ) ) );
-
-			Synt::NumericConstant numeric_constant( g_dummy_file_pos );
-			numeric_constant.value_= num;
-			array_type.size.reset( new Synt::Expression( std::move(numeric_constant) ) );
-
-			field.type= std::move(array_type);
-			class_->elements_.push_back( std::move(field) );
-			program_elements.push_back( std::move(class_) );
-		}
+		Synt::ClassPtr record= ProcessRecord( *record_decl, current_externc );
+		if( record != nullptr )
+			program_elements.push_back( std::move(record) );
 	}
 	else if( const clang::TypedefNameDecl* const type_alias_decl= llvm::dyn_cast<clang::TypedefNameDecl>(&decl) )
 	{
 		Synt::Typedef typedef_( g_dummy_file_pos );
 		typedef_.name= TranslateIdentifier( type_alias_decl->getName().str() );
-
-		const clang::Type* underlaying_type= type_alias_decl->getUnderlyingType().getTypePtr();
-
-		while( const clang::ParenType* const paren_type= llvm::dyn_cast<clang::ParenType>( underlaying_type ) )
-			underlaying_type= paren_type->getInnerType().getTypePtr();
-		while( const clang::ElaboratedType* const elaborated_type= llvm::dyn_cast<clang::ElaboratedType>( underlaying_type ) )
-			underlaying_type= elaborated_type->desugar().getTypePtr();
-
-		const clang::RecordType* const record= llvm::dyn_cast<clang::RecordType>(underlaying_type);
-		if( record != nullptr && record->getDecl()->getName().empty() )
-		{
-			// handle something, like " typedef SomeStruct= struct{}; "
-			const ProgramString name_for_anon_struct= TranslateIdentifier( "" );
-			Synt::ClassPtr class_( new Synt::Class(g_dummy_file_pos) );
-			class_->name_= name_for_anon_struct;
-			class_->keep_fields_order_= true; // C/C++ structs/classes have fixed fields order.
-			for( const clang::Decl* const sub_decl : record->getDecl()->decls() )
-				ProcessClassDecl( *sub_decl, class_->elements_, current_externc );
-			program_elements.push_back( std::move(class_) );
-
-			typedef_.value= TranslateNamedType( ToUTF8( name_for_anon_struct ) );
-		}
-		else
-			typedef_.value= TranslateType( *type_alias_decl->getUnderlyingType().getTypePtr() );
+		typedef_.value= TranslateType( *type_alias_decl->getUnderlyingType().getTypePtr() );
 
 		program_elements.push_back( std::move(typedef_) );
 	}
@@ -207,12 +150,15 @@ void CppAstConsumer::ProcessDecl( const clang::Decl& decl, Synt::ProgramElements
 
 void CppAstConsumer::ProcessClassDecl( const clang::Decl& decl, Synt::ClassElements& class_elements, bool externc )
 {
-	U_UNUSED(externc);
+	if( decl.isImplicit() )
+		return;
+
 	if( const clang::FieldDecl* const field_decl= llvm::dyn_cast<clang::FieldDecl>(&decl) )
 	{
 		Synt::ClassField field( g_dummy_file_pos );
 
 		const clang::Type* field_type= field_decl->getType().getTypePtr();
+
 		if( field_type->isReferenceType() )
 		{
 			field.reference_modifier= Synt::ReferenceModifier::Reference;
@@ -240,6 +186,56 @@ void CppAstConsumer::ProcessClassDecl( const clang::Decl& decl, Synt::ClassEleme
 
 		class_elements.push_back( std::move(field) );
 	}
+	else if( const clang::RecordDecl* const record_decl= llvm::dyn_cast<clang::RecordDecl>(&decl) )
+	{
+		Synt::ClassPtr record= ProcessRecord( *record_decl, externc );
+		if( record != nullptr )
+			class_elements.push_back( std::move(record) );
+	}
+}
+
+Synt::ClassPtr CppAstConsumer::ProcessRecord( const clang::RecordDecl& record_decl, const bool externc )
+{
+	if( record_decl.isStruct() || record_decl.isClass() )
+	{
+		Synt::ClassPtr class_( new Synt::Class(g_dummy_file_pos) );
+		class_->name_= TranslateRecordType( *llvm::dyn_cast<clang::RecordType>( record_decl.getTypeForDecl() ) );
+		class_->keep_fields_order_= true; // C/C++ structs/classes have fixed fields order.
+
+		for( const clang::Decl* const sub_decl : record_decl.decls() )
+			ProcessClassDecl( *sub_decl, class_->elements_, externc );
+
+		return std::move(class_);
+	}
+	else if( record_decl.isUnion() )
+	{
+		// Emulate union, using array if ints with maximum alignment.
+
+		Synt::ClassPtr class_( new Synt::Class(g_dummy_file_pos) );
+		class_->name_= TranslateRecordType( *llvm::dyn_cast<clang::RecordType>( record_decl.getTypeForDecl() ) );
+		class_->keep_fields_order_= true; // C/C++ structs/classes have fixed fields order.
+
+		const auto size= ast_context_.getTypeSize( record_decl.getTypeForDecl() ) / 8u;
+		const auto int_size= 8u;
+		const auto num= ( size + int_size - 1u ) / int_size;
+
+		Synt::ClassField field( g_dummy_file_pos );
+		field.name= "union_content"_SpC;
+
+		Synt::ArrayTypeName array_type( g_dummy_file_pos );
+		array_type.element_type.reset( new Synt::TypeName( TranslateNamedType( KeywordAscii( Keywords::u64_ ) ) ) );
+
+		Synt::NumericConstant numeric_constant( g_dummy_file_pos );
+		numeric_constant.value_= num;
+		array_type.size.reset( new Synt::Expression( std::move(numeric_constant) ) );
+
+		field.type= std::move(array_type);
+		class_->elements_.push_back( std::move(field) );
+
+		return std::move(class_);
+	}
+
+	return nullptr;
 }
 
 Synt::TypeName CppAstConsumer::TranslateType( const clang::Type& in_type )
@@ -252,7 +248,12 @@ Synt::TypeName CppAstConsumer::TranslateType( const clang::Type& in_type )
 		return std::move(named_type);
 	}
 	else if( const clang::RecordType* const record_type= llvm::dyn_cast<clang::RecordType>(&in_type) )
-		return TranslateNamedType( record_type->getDecl()->getName().str() );
+	{
+		Synt::NamedTypeName named_type(g_dummy_file_pos);
+		named_type.name.components.emplace_back();
+		named_type.name.components.back().name= TranslateRecordType( *record_type );
+		return std::move(named_type);
+	}
 	else if( const clang::TypedefType* const typedef_type= llvm::dyn_cast<clang::TypedefType>(&in_type) )
 		return TranslateNamedType( typedef_type->getDecl()->getName().str() );
 	else if( const clang::ConstantArrayType* const constna_array_type= llvm::dyn_cast<clang::ConstantArrayType>(&in_type) )
@@ -301,6 +302,25 @@ Synt::TypeName CppAstConsumer::TranslateType( const clang::Type& in_type )
 		return TranslateType( *elaborated_type->desugar().getTypePtr() );
 
 	return TranslateNamedType( "void" );
+}
+
+ProgramString CppAstConsumer::TranslateRecordType( const clang::RecordType& in_type )
+{
+	const std::string name= in_type.getDecl()->getName().str();
+	if( name.empty() )
+	{
+		const auto it= anon_records_names_cache_.find( &in_type );
+		if( it != anon_records_names_cache_.end() )
+			return it->second;
+		else
+		{
+			const ProgramString& anon_name= DecodeUTF8( "anon_record_" ) + ToProgramString( std::to_string( ++unique_name_index_ ) );
+			anon_records_names_cache_[ &in_type ]= anon_name;
+			return anon_name;
+		}
+	}
+	else
+		return TranslateIdentifier( name );
 }
 
 ProgramString CppAstConsumer::GetUFundamentalType( const clang::BuiltinType& in_type )
