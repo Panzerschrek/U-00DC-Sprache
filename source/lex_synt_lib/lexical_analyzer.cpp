@@ -194,6 +194,8 @@ static void ParseNumberImpl(
 			result.text.push_back(*it);
 			++it;
 		}
+		else if( it < it_end && *it == '+' )
+			++it;
 
 		while( it < it_end && is_digit_func(*it) )
 		{

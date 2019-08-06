@@ -26,6 +26,18 @@ fn constexpr types_are_same() : bool
 
 fn U_Main() : i32
 {
+	var i32 one= ONE_CONSTANT;
+	static_assert( ONE_CONSTANT == 1 );
+
+	var f64 pi_d= PI_CONSTANT;
+	var f32 pi_f= PI_CONSTANT_F;
+
+	var u32 unsigned_constant= UNSIGNED_CONSTANT;
+	static_assert( UNSIGNED_CONSTANT == 12345u );
+
+	var i32 hex_constant= HEX_CONSTNT;
+	static_assert( HEX_CONSTNT == 0xFF );
+
 	unsafe
 	{
 		var i32 mut x= 0;

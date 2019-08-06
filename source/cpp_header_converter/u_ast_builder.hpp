@@ -14,11 +14,13 @@ class CppAstConsumer : public clang::ASTConsumer
 public:
 	CppAstConsumer(
 		Synt::ProgramElements& out_elements,
+		const clang::CompilerInstance& compiler_intance,
 		const clang::LangOptions& lang_options,
 		const clang::ASTContext& ast_context );
 
 public:
 	virtual bool HandleTopLevelDecl( clang::DeclGroupRef decl_group ) override;
+	virtual void HandleTranslationUnit( clang:: ASTContext& ast_context ) override;
 
 private:
 	void ProcessDecl( const clang::Decl& decl, Synt::ProgramElements& program_elements, bool externc );
@@ -38,6 +40,7 @@ private:
 private:
 	Synt::ProgramElements& root_program_elements_;
 
+	const clang::CompilerInstance& compiler_intance_;
 	const clang::LangOptions& lang_options_;
 	const clang::PrintingPolicy printing_policy_;
 	const clang::ASTContext& ast_context_;

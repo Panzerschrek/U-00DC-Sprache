@@ -1,5 +1,11 @@
 // Test C header for convertion to Ü header.
 
+#define ONE_CONSTANT 1
+#define PI_CONSTANT   3.1415926535
+#define PI_CONSTANT_F 3.1415926535f
+#define UNSIGNED_CONSTANT 12345u
+#define HEX_CONSTNT 0xFF
+
 void Function_ZeroArgs();
 void Function_ArgVal( int x );
 void Function_ArgPtr( int* x );

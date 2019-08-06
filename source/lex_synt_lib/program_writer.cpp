@@ -204,7 +204,7 @@ static void ElementWrite( const Expression& expression, std::ostream& stream )
 		}
 		void operator()( const NumericConstant& numeric_constant ) const
 		{
-			stream << numeric_constant.value_;
+			stream << numeric_constant.value_ << ToUTF8( numeric_constant.type_suffix_.data() );
 		}
 		void operator()( const StringLiteral& string_literal ) const
 		{
@@ -532,10 +532,17 @@ static void ElementWrite( const VariablesDeclaration& variables_declaration, std
 
 static void ElementWrite( const AutoVariableDeclaration& auto_variable_declaration, std::ostream& stream )
 {
-	U_UNUSED(auto_variable_declaration);
-	U_UNUSED(stream);
-	U_ASSERT(false);
-	// Not implemented yet.
+	stream << KeywordAscii( Keywords::auto_ );
+	ElementWrite( auto_variable_declaration.reference_modifier, stream );
+	stream << " ";
+	ElementWrite( auto_variable_declaration.mutability_modifier, stream );
+	if( auto_variable_declaration.mutability_modifier != MutabilityModifier::None )
+		stream << " ";
+
+	stream << ToUTF8( auto_variable_declaration.name );
+	stream << " = ";
+	ElementWrite( auto_variable_declaration.initializer_expression, stream );
+	stream << ";\n";
 }
 
 static void ElementWrite( const StaticAssert& static_assert_, std::ostream& stream )

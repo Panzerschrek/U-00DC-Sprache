@@ -4,6 +4,8 @@
 #include <clang/AST/Attr.h>
 #include <clang/AST/DeclBase.h>
 #include <clang/Frontend/CompilerInstance.h>
+#include <clang/Lex/LiteralSupport.h>
+#include <clang/Lex/Preprocessor.h>
 #include "../code_builder_lib/pop_llvm_warnings.hpp"
 
 #include "../lex_synt_lib/assert.hpp"
@@ -18,9 +20,11 @@ static const FilePos g_dummy_file_pos{ 0u, 0u, 0u };
 
 CppAstConsumer::CppAstConsumer(
 	Synt::ProgramElements& out_elements,
+	const clang::CompilerInstance& compiler_intance,
 	const clang::LangOptions& lang_options,
 	const clang::ASTContext& ast_context )
 	: root_program_elements_(out_elements)
+	, compiler_intance_(compiler_intance)
 	, lang_options_(lang_options)
 	, printing_policy_(lang_options_)
 	, ast_context_(ast_context)
@@ -32,6 +36,96 @@ bool CppAstConsumer::HandleTopLevelDecl( const clang::DeclGroupRef decl_group )
 	for( const clang::Decl* const decl : decl_group )
 		ProcessDecl( *decl, root_program_elements_, externc );
 	return true;
+}
+
+void CppAstConsumer::HandleTranslationUnit( clang:: ASTContext& ast_context )
+{
+	U_UNUSED(ast_context);
+
+	// Dump definitions of simple constants, using "define" as numeric constants.
+	clang::Preprocessor& preprocessor= compiler_intance_.getPreprocessor();
+	for( const clang::Preprocessor::macro_iterator::value_type& macro_pair : preprocessor.macros() )
+	{
+		const clang::IdentifierInfo* ident_info= macro_pair.first;
+
+		const std::string name= ident_info->getName().str();
+		if( name.empty() )
+			continue;
+		if( preprocessor.getPredefines().find( "#define " + name ) != std::string::npos )
+			continue;
+
+		const clang::MacroDirective* const macro_directive= macro_pair.second.getLatest();
+		if( macro_directive->getKind() != clang::MacroDirective::MD_Define )
+			continue;
+
+		const clang::MacroInfo* const macro_info= macro_directive->getMacroInfo();
+		if( macro_info->isBuiltinMacro() )
+			continue;
+
+		if( macro_info->getNumArgs() != 0u || macro_info->isFunctionLike() )
+			continue;
+		if( macro_info->getNumTokens() != 1u )
+			continue;
+
+		const clang::Token& token= macro_info->tokens().front();
+		if( token.getKind() != clang::tok::numeric_constant )
+			continue;
+
+		const std::string numeric_literal_str( token.getLiteralData(), token.getLength() );
+		clang::NumericLiteralParser numeric_literal_parser(
+			numeric_literal_str,
+			token.getLocation(),
+			preprocessor );
+
+		Synt::AutoVariableDeclaration auto_variable_declaration( g_dummy_file_pos );
+		auto_variable_declaration.mutability_modifier= Synt::MutabilityModifier::Constexpr;
+		auto_variable_declaration.name= TranslateIdentifier( name );
+
+		Synt::NumericConstant numeric_constant( g_dummy_file_pos );
+
+		if( numeric_literal_parser.getRadix() == 10 )
+		{
+			llvm::APFloat float_val(0.0);
+			numeric_literal_parser.GetFloatValue( float_val );
+
+			// "HACK! fix infinity.
+			if( float_val.isInfinity() )
+				float_val= llvm::APFloat::getLargest( float_val.getSemantics(), float_val.isNegative() );
+			numeric_constant.value_= float_val.convertToDouble();
+		}
+		else
+		{
+			llvm::APInt int_val( 64u, 0u );
+			numeric_literal_parser.GetIntegerValue( int_val );
+			numeric_constant.value_= static_cast<Synt::NumericConstant::LongFloat>(int_val.getLimitedValue());
+		}
+
+		if( numeric_literal_parser.isFloat )
+			numeric_constant.type_suffix_[0]= 'f';
+		else if( numeric_literal_parser.isUnsigned )
+		{
+			if( numeric_literal_parser.isLongLong )
+			{
+				numeric_constant.type_suffix_[0]= 'i';
+				numeric_constant.type_suffix_[1]= '6';
+				numeric_constant.type_suffix_[2]= '4';
+			}
+			else
+				numeric_constant.type_suffix_[0]= 'u';
+		}
+		else
+		{
+			if( numeric_literal_parser.isLongLong )
+			{
+				numeric_constant.type_suffix_[0]= 'u';
+				numeric_constant.type_suffix_[1]= '6';
+				numeric_constant.type_suffix_[2]= '4';
+			}
+		}
+
+		auto_variable_declaration.initializer_expression= std::move(numeric_constant);
+		root_program_elements_.push_back( std::move( auto_variable_declaration ) );
+	}
 }
 
 void CppAstConsumer::ProcessDecl( const clang::Decl& decl, Synt::ProgramElements& program_elements, const bool externc )
@@ -428,6 +522,7 @@ std::unique_ptr<clang::ASTConsumer> CppAstProcessor::CreateASTConsumer(
 		std::unique_ptr<clang::ASTConsumer>(
 			new CppAstConsumer(
 				(*out_result_)[in_file.str()],
+				compiler_intance,
 				compiler_intance.getLangOpts(),
 				compiler_intance.getASTContext() ) );
 }
