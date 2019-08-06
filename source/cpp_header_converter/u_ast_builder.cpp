@@ -135,7 +135,7 @@ void CppAstConsumer::ProcessDecl( const clang::Decl& decl, Synt::ProgramElements
 	else if( const clang::NamespaceDecl* const namespace_decl= llvm::dyn_cast<clang::NamespaceDecl>(&decl) )
 	{
 		Synt::NamespacePtr namespace_( new Synt::Namespace( g_dummy_file_pos ) );
-		namespace_->name_= ToProgramString( namespace_decl->getName() );
+		namespace_->name_= TranslateIdentifier( namespace_decl->getName() );
 		for( const clang::Decl* const sub_decl : namespace_decl->decls() )
 			ProcessDecl( *sub_decl, namespace_->elements_, current_externc );
 
