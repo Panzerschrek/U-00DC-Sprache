@@ -14,7 +14,6 @@ class CppAstConsumer : public clang::ASTConsumer
 public:
 	CppAstConsumer(
 		Synt::ProgramElements& out_elements,
-		const clang::SourceManager& source_manager,
 		const clang::LangOptions& lang_options,
 		const clang::ASTContext& ast_context );
 
@@ -24,7 +23,11 @@ public:
 private:
 	void ProcessDecl( const clang::Decl& decl, Synt::ProgramElements& program_elements, bool externc );
 	void ProcessClassDecl( const clang::Decl& decl, Synt::ClassElements& class_elements, bool externc );
+
 	Synt::ClassPtr ProcessRecord( const clang::RecordDecl& record_decl, bool externc );
+	Synt::Typedef ProcessTypedef( const clang::TypedefNameDecl& typedef_decl );
+	Synt::FunctionPtr ProcessFunction( const clang::FunctionDecl& func_decl, bool externc );
+
 	Synt::TypeName TranslateType( const clang::Type& in_type );
 	ProgramString TranslateRecordType( const clang::RecordType& in_type );
 	ProgramString GetUFundamentalType( const clang::BuiltinType& in_type );
@@ -35,7 +38,6 @@ private:
 private:
 	Synt::ProgramElements& root_program_elements_;
 
-	const clang::SourceManager& source_manager_;
 	const clang::LangOptions& lang_options_;
 	const clang::PrintingPolicy printing_policy_;
 	const clang::ASTContext& ast_context_;
