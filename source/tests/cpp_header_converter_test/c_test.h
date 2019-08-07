@@ -10,7 +10,7 @@
 #define LARGE_CONSTANT 560000000000.0
 #define STRING_CONSTANT_ASCII "WTF?009a"
 #define STRING_CONSTANT_UTF8_IMPLICIT "Чё?"
-#define STRING_CONSTANT_WITH_SPECIAL_SYMBOLS "one \t two \n quote \' double \" slash \\ "
+#define STRING_CONSTANT_WITH_SPECIAL_SYMBOLS "\u00DC \x13 one \t two \n quote \' double \" slash \\ "
 #define CHAR_CONSTANT 'Z'
 
 void Function_ZeroArgs();

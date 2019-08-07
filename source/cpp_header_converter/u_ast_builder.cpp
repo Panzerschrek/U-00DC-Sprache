@@ -137,6 +137,7 @@ void CppAstConsumer::HandleTranslationUnit( clang::ASTContext& ast_context )
 
 				Synt::StringLiteral string_constant( g_dummy_file_pos );
 				string_constant.value_= DecodeUTF8( string_literal_parser.GetString().str() );
+				string_constant.value_.push_back( '\0' ); // C/C++ have null-terminated strings, instead of Ü.
 
 				auto_variable_declaration.initializer_expression= std::move(string_constant);
 				root_program_elements_.push_back( std::move( auto_variable_declaration ) );

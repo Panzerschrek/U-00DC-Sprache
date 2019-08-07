@@ -247,10 +247,22 @@ static void ElementWrite( const Expression& expression, std::ostream& stream )
 					escaped.push_back( '\\' );
 					escaped.push_back( 't' );
 					break;
-
-
 				default:
-					escaped.push_back(c);
+					if( c < 32u )
+					{
+						escaped.push_back('\\');
+						escaped.push_back('u');
+						for( unsigned int i= 0u; i < 4u; ++i )
+						{
+							const unsigned int val= ( c >> ((3u-i) * 4u ) ) & 15u;
+							if( val < 10u )
+								escaped.push_back( sprache_char( '0' + int(val) ) );
+							else
+								escaped.push_back( sprache_char( 'a' + int(val-10u) ) );
+						}
+					}
+					else
+						escaped.push_back(c);
 					break;
 				};
 			}
