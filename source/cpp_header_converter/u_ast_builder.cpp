@@ -212,8 +212,13 @@ Synt::ClassPtr CppAstConsumer::ProcessRecord( const clang::RecordDecl& record_de
 		class_->name_= TranslateRecordType( *llvm::dyn_cast<clang::RecordType>( record_decl.getTypeForDecl() ) );
 		class_->keep_fields_order_= true; // C/C++ structs/classes have fixed fields order.
 
-		for( const clang::Decl* const sub_decl : record_decl.decls() )
-			ProcessClassDecl( *sub_decl, class_->elements_, externc );
+		if( record_decl.isCompleteDefinition() )
+		{
+			for( const clang::Decl* const sub_decl : record_decl.decls() )
+				ProcessClassDecl( *sub_decl, class_->elements_, externc );
+		}
+		else
+			class_->is_forward_declaration_= true;
 
 		return std::move(class_);
 	}
@@ -225,22 +230,27 @@ Synt::ClassPtr CppAstConsumer::ProcessRecord( const clang::RecordDecl& record_de
 		class_->name_= TranslateRecordType( *llvm::dyn_cast<clang::RecordType>( record_decl.getTypeForDecl() ) );
 		class_->keep_fields_order_= true; // C/C++ structs/classes have fixed fields order.
 
-		const auto size= ast_context_.getTypeSize( record_decl.getTypeForDecl() ) / 8u;
-		const auto int_size= 8u;
-		const auto num= ( size + int_size - 1u ) / int_size;
+		if( record_decl.isCompleteDefinition() )
+		{
+			const auto size= ast_context_.getTypeSize( record_decl.getTypeForDecl() ) / 8u;
+			const auto int_size= 8u;
+			const auto num= ( size + int_size - 1u ) / int_size;
 
-		Synt::ClassField field( g_dummy_file_pos );
-		field.name= "union_content"_SpC;
+			Synt::ClassField field( g_dummy_file_pos );
+			field.name= "union_content"_SpC;
 
-		Synt::ArrayTypeName array_type( g_dummy_file_pos );
-		array_type.element_type.reset( new Synt::TypeName( TranslateNamedType( KeywordAscii( Keywords::u64_ ) ) ) );
+			Synt::ArrayTypeName array_type( g_dummy_file_pos );
+			array_type.element_type.reset( new Synt::TypeName( TranslateNamedType( KeywordAscii( Keywords::u64_ ) ) ) );
 
-		Synt::NumericConstant numeric_constant( g_dummy_file_pos );
-		numeric_constant.value_= num;
-		array_type.size.reset( new Synt::Expression( std::move(numeric_constant) ) );
+			Synt::NumericConstant numeric_constant( g_dummy_file_pos );
+			numeric_constant.value_= num;
+			array_type.size.reset( new Synt::Expression( std::move(numeric_constant) ) );
 
-		field.type= std::move(array_type);
-		class_->elements_.push_back( std::move(field) );
+			field.type= std::move(array_type);
+			class_->elements_.push_back( std::move(field) );
+		}
+		else
+			class_->is_forward_declaration_= true;
 
 		return std::move(class_);
 	}

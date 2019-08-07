@@ -30,6 +30,8 @@ typedef float MultidimentionalArrayType44[4][4];
 
 CPP_u32 UseTypedefAsTypeName( CPP_char8 c );
 
+struct RegularStruct; // Forward declaration
+
 struct RegularStruct
 {
 	int x;
@@ -61,6 +63,8 @@ struct StructWithAnonimousRecordsInside
 		int anon_struct_as_array_content;
 	} anon_struct_as_array[5];
 };
+
+union UnionForwardDeclaration;
 
 enum SequentialEnum
 {
