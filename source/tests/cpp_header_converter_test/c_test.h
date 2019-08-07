@@ -8,6 +8,10 @@
 #define TWO_CONSTANT_DOUBLE 2.0
 #define SMALL_CONSTANT 0.00000000056
 #define LARGE_CONSTANT 560000000000.0
+#define STRING_CONSTANT_ASCII "WTF?009a"
+#define STRING_CONSTANT_UTF8_IMPLICIT "Чё?"
+#define STRING_CONSTANT_WITH_SPECIAL_SYMBOLS "one \t two \n quote \' double \" slash \\ "
+#define CHAR_CONSTANT 'Z'
 
 void Function_ZeroArgs();
 void Function_ArgVal( int x );

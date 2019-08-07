@@ -24,6 +24,19 @@ fn constexpr types_are_same() : bool
 	return is_same_type_impl</A/>::same</B/>::value;
 }
 
+template</ size_type size0, size_type size1 />
+fn constexpr string_equals( [ char8, size0 ]& s0, [ char8, size1 ]& s1 ) : bool
+{
+	if( size0 != size1 ) { return false; }
+	var size_type mut i(0);
+	while( i < size0 )
+	{
+		if( s0[i] != s1[i] ) { return false; }
+		++i;
+	}
+	return true;
+}
+
 fn U_Main() : i32
 {
 	var i32 one= ONE_CONSTANT;
@@ -42,6 +55,11 @@ fn U_Main() : i32
 	static_assert( TWO_CONSTANT_DOUBLE == 2.0 );
 
 	var f64 small_f64= SMALL_CONSTANT, large_f64= LARGE_CONSTANT;
+
+	static_assert( string_equals( STRING_CONSTANT_ASCII, "WTF?009a" ) );
+	static_assert( string_equals( STRING_CONSTANT_UTF8_IMPLICIT,"Чё?" ) );
+	static_assert( string_equals( STRING_CONSTANT_WITH_SPECIAL_SYMBOLS, "one \t two \n quote ' double \" slash \\ " ) );
+	static_assert( CHAR_CONSTANT == "Z"c8 );
 
 	unsafe
 	{

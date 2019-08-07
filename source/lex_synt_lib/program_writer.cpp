@@ -214,7 +214,47 @@ static void ElementWrite( const Expression& expression, std::ostream& stream )
 		}
 		void operator()( const StringLiteral& string_literal ) const
 		{
-			stream << "\"" << ToUTF8( string_literal.value_ ) << "\"" << ToUTF8( string_literal.type_suffix_.data() );
+			ProgramString escaped;
+			for( const sprache_char c : string_literal.value_ )
+			{
+				switch(c)
+				{
+				case '\"':
+					escaped.push_back( '\\' );
+					escaped.push_back( '\"' );
+					break;
+				case '\\':
+					escaped.push_back( '\\' );
+					escaped.push_back( '\\' );
+					break;
+				case '\b':
+					escaped.push_back( '\\' );
+					escaped.push_back( 'b' );
+					break;
+				case '\f':
+					escaped.push_back( '\\' );
+					escaped.push_back( 'f' );
+					break;
+				case '\n':
+					escaped.push_back( '\\' );
+					escaped.push_back( 'n' );
+					break;
+				case '\r':
+					escaped.push_back( '\\' );
+					escaped.push_back( 'r' );
+					break;
+				case '\t':
+					escaped.push_back( '\\' );
+					escaped.push_back( 't' );
+					break;
+
+
+				default:
+					escaped.push_back(c);
+					break;
+				};
+			}
+			stream << "\"" << ToUTF8(escaped) << "\"" << ToUTF8( string_literal.type_suffix_.data() );
 		}
 		void operator()( const BooleanConstant& boolean_constant ) const
 		{

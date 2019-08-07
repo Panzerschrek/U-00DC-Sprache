@@ -40,7 +40,7 @@ void CppAstConsumer::HandleTranslationUnit( clang::ASTContext& ast_context )
 {
 	U_UNUSED(ast_context);
 
-	// Dump definitions of simple constants, using "define" as numeric constants.
+	// Dump definitions of simple constants, using "define".
 	for( const clang::Preprocessor::macro_iterator::value_type& macro_pair : preprocessor_.macros() )
 	{
 		const clang::IdentifierInfo* ident_info= macro_pair.first;
@@ -65,66 +65,105 @@ void CppAstConsumer::HandleTranslationUnit( clang::ASTContext& ast_context )
 			continue;
 
 		const clang::Token& token= macro_info->tokens().front();
-		if( token.getKind() != clang::tok::numeric_constant )
-			continue;
-
-		const std::string numeric_literal_str( token.getLiteralData(), token.getLength() );
-		clang::NumericLiteralParser numeric_literal_parser(
-			numeric_literal_str,
-			token.getLocation(),
-			preprocessor_ );
-
-		Synt::AutoVariableDeclaration auto_variable_declaration( g_dummy_file_pos );
-		auto_variable_declaration.mutability_modifier= Synt::MutabilityModifier::Constexpr;
-		auto_variable_declaration.name= TranslateIdentifier( name );
-
-		Synt::NumericConstant numeric_constant( g_dummy_file_pos );
-
-		if( numeric_literal_parser.getRadix() == 10 )
+		if( token.getKind() == clang::tok::numeric_constant )
 		{
-			llvm::APFloat float_val(0.0);
-			numeric_literal_parser.GetFloatValue( float_val );
+			const std::string numeric_literal_str( token.getLiteralData(), token.getLength() );
+			clang::NumericLiteralParser numeric_literal_parser(
+				numeric_literal_str,
+				token.getLocation(),
+				preprocessor_ );
 
-			// "HACK! fix infinity.
-			if( float_val.isInfinity() )
-				float_val= llvm::APFloat::getLargest( float_val.getSemantics(), float_val.isNegative() );
-			numeric_constant.value_= float_val.convertToDouble();
-		}
-		else
-		{
-			llvm::APInt int_val( 64u, 0u );
-			numeric_literal_parser.GetIntegerValue( int_val );
-			numeric_constant.value_= static_cast<Synt::NumericConstant::LongFloat>(int_val.getLimitedValue());
-		}
+			Synt::AutoVariableDeclaration auto_variable_declaration( g_dummy_file_pos );
+			auto_variable_declaration.mutability_modifier= Synt::MutabilityModifier::Constexpr;
+			auto_variable_declaration.name= TranslateIdentifier( name );
 
-		if( numeric_literal_parser.isFloat )
-			numeric_constant.type_suffix_[0]= 'f';
-		else if( numeric_literal_parser.isUnsigned )
-		{
-			if( numeric_literal_parser.isLongLong )
+			Synt::NumericConstant numeric_constant( g_dummy_file_pos );
+
+			if( numeric_literal_parser.getRadix() == 10 )
 			{
-				numeric_constant.type_suffix_[0]= 'i';
-				numeric_constant.type_suffix_[1]= '6';
-				numeric_constant.type_suffix_[2]= '4';
+				llvm::APFloat float_val(0.0);
+				numeric_literal_parser.GetFloatValue( float_val );
+
+				// "HACK! fix infinity.
+				if( float_val.isInfinity() )
+					float_val= llvm::APFloat::getLargest( float_val.getSemantics(), float_val.isNegative() );
+				numeric_constant.value_= float_val.convertToDouble();
 			}
 			else
-				numeric_constant.type_suffix_[0]= 'u';
-		}
-		else
-		{
-			if( numeric_literal_parser.isLongLong )
 			{
-				numeric_constant.type_suffix_[0]= 'u';
-				numeric_constant.type_suffix_[1]= '6';
-				numeric_constant.type_suffix_[2]= '4';
+				llvm::APInt int_val( 64u, 0u );
+				numeric_literal_parser.GetIntegerValue( int_val );
+				numeric_constant.value_= static_cast<Synt::NumericConstant::LongFloat>(int_val.getLimitedValue());
+			}
+
+			if( numeric_literal_parser.isFloat )
+				numeric_constant.type_suffix_[0]= 'f';
+			else if( numeric_literal_parser.isUnsigned )
+			{
+				if( numeric_literal_parser.isLongLong )
+				{
+					numeric_constant.type_suffix_[0]= 'i';
+					numeric_constant.type_suffix_[1]= '6';
+					numeric_constant.type_suffix_[2]= '4';
+				}
+				else
+					numeric_constant.type_suffix_[0]= 'u';
+			}
+			else
+			{
+				if( numeric_literal_parser.isLongLong )
+				{
+					numeric_constant.type_suffix_[0]= 'u';
+					numeric_constant.type_suffix_[1]= '6';
+					numeric_constant.type_suffix_[2]= '4';
+				}
+			}
+
+			numeric_constant.has_fractional_point_= numeric_literal_parser.isFloatingLiteral();
+
+			auto_variable_declaration.initializer_expression= std::move(numeric_constant);
+			root_program_elements_.push_back( std::move( auto_variable_declaration ) );
+		}
+		else if( clang::tok::isStringLiteral( token.getKind() ) )
+		{
+			clang::StringLiteralParser string_literal_parser( { token }, preprocessor_ );
+
+			if( string_literal_parser.isAscii() || string_literal_parser.isUTF8() )
+			{
+				Synt::AutoVariableDeclaration auto_variable_declaration( g_dummy_file_pos );
+				auto_variable_declaration.reference_modifier= Synt::ReferenceModifier::Reference;
+				auto_variable_declaration.mutability_modifier= Synt::MutabilityModifier::Constexpr;
+				auto_variable_declaration.name= TranslateIdentifier( name );
+
+				Synt::StringLiteral string_constant( g_dummy_file_pos );
+				string_constant.value_= DecodeUTF8( string_literal_parser.GetString().str() );
+
+				auto_variable_declaration.initializer_expression= std::move(string_constant);
+				root_program_elements_.push_back( std::move( auto_variable_declaration ) );
 			}
 		}
+		else if( token.getKind() == clang::tok::char_constant || token.getKind() == clang::tok::utf8_char_constant )
+		{
+			clang::CharLiteralParser char_literal_parser(
+					token.getLiteralData(),
+					token.getLiteralData() + token.getLength(),
+					token.getLocation(),
+					preprocessor_,
+					token.getKind() );
 
-		numeric_constant.has_fractional_point_= numeric_literal_parser.isFloatingLiteral();
+			Synt::AutoVariableDeclaration auto_variable_declaration( g_dummy_file_pos );
+			auto_variable_declaration.mutability_modifier= Synt::MutabilityModifier::Constexpr;
+			auto_variable_declaration.name= TranslateIdentifier( name );
 
-		auto_variable_declaration.initializer_expression= std::move(numeric_constant);
-		root_program_elements_.push_back( std::move( auto_variable_declaration ) );
-	}
+			Synt::StringLiteral string_constant( g_dummy_file_pos );
+			string_constant.value_.push_back( sprache_char( char_literal_parser.getValue() ) );
+			string_constant.type_suffix_[0]= 'c';
+			string_constant.type_suffix_[1]= '8';
+
+			auto_variable_declaration.initializer_expression= std::move(string_constant);
+			root_program_elements_.push_back( std::move( auto_variable_declaration ) );
+		}
+	} // for defines
 }
 
 void CppAstConsumer::ProcessDecl( const clang::Decl& decl, Synt::ProgramElements& program_elements, const bool externc )
