@@ -143,7 +143,10 @@ void CppAstConsumer::ProcessDecl( const clang::Decl& decl, Synt::ProgramElements
 			program_elements.push_back( std::move(record) );
 	}
 	else if( const auto type_alias_decl= llvm::dyn_cast<clang::TypedefNameDecl>(&decl) )
-		program_elements.push_back( ProcessTypedef(*type_alias_decl) );
+	{
+		if( type_alias_decl->isFirstDecl() )
+			program_elements.push_back( ProcessTypedef(*type_alias_decl) );
+	}
 	else if( const auto func_decl= llvm::dyn_cast<clang::FunctionDecl>(&decl) )
 	{
 		if( func_decl->isFirstDecl() )
@@ -209,7 +212,10 @@ void CppAstConsumer::ProcessClassDecl( const clang::Decl& decl, Synt::ClassEleme
 			class_elements.push_back( ProcessFunction(* func_decl, false ) );
 	}
 	else if( const auto type_alias_decl= llvm::dyn_cast<clang::TypedefNameDecl>(&decl) )
-		class_elements.push_back( ProcessTypedef(*type_alias_decl) );
+	{
+		if( type_alias_decl->isFirstDecl() )
+			class_elements.push_back( ProcessTypedef(*type_alias_decl) );
+	}
 }
 
 Synt::ClassPtr CppAstConsumer::ProcessRecord( const clang::RecordDecl& record_decl, const bool externc )
