@@ -29,6 +29,7 @@ private:
 	Synt::ClassPtr ProcessRecord( const clang::RecordDecl& record_decl, bool externc );
 	Synt::Typedef ProcessTypedef( const clang::TypedefNameDecl& typedef_decl );
 	Synt::FunctionPtr ProcessFunction( const clang::FunctionDecl& func_decl, bool externc );
+	void ProcessEnum( const clang::EnumDecl& enum_decl, Synt::ProgramElements& out_elements );
 
 	Synt::TypeName TranslateType( const clang::Type& in_type );
 	ProgramString TranslateRecordType( const clang::RecordType& in_type );

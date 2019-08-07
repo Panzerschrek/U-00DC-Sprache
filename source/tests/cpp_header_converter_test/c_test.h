@@ -61,3 +61,13 @@ struct StructWithAnonimousRecordsInside
 		int anon_struct_as_array_content;
 	} anon_struct_as_array[5];
 };
+
+enum SequentialEnum
+{
+	Red, Green, Blue,
+};
+
+enum NonSequentialEnum
+{
+	Zero= 0, One= 1, Ten= 10, MinusTwo= -2, Large32bit= 5000000, LargeNegative= -142536 - 50
+};

@@ -83,5 +83,18 @@ fn U_Main() : i32
 		s.anon_struct_as_array[2u].anon_struct_as_array_content= 66;
 	}
 
+	static_assert( i32(SequentialEnum::Red) == 0 );
+	static_assert( i32(SequentialEnum::Green) == 1 );
+	static_assert( i32(SequentialEnum::Blue) == 2 );
+
+	static_assert( NonSequentialEnum_namespace::Zero == 0 );
+	static_assert( NonSequentialEnum_namespace::One == 1 );
+	static_assert( NonSequentialEnum_namespace::Ten == 10 );
+	static_assert( NonSequentialEnum_namespace::MinusTwo == -2 );
+	static_assert( NonSequentialEnum_namespace::Large32bit == 5000000 );
+	static_assert( NonSequentialEnum_namespace::LargeNegative == -142586 );
+
+	var NonSequentialEnum ersatz_vnum_value= NonSequentialEnum_namespace::Zero;
+
 	return 0;
 }

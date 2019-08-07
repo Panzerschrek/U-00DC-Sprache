@@ -372,6 +372,33 @@ static void ElementWrite( const Expression& expression, std::ostream& stream )
 	}
 }
 
+static void ElementWrite( const Initializer& initializer, std::ostream& stream )
+{
+	if( const auto constructor_initializer= boost::get<ConstructorInitializer>( &initializer ) )
+	{
+		if( constructor_initializer->call_operator.arguments_.empty() )
+		{
+			stream << "()";
+		}
+		else
+		{
+			stream << "( ";
+			for( const Expression& arg :constructor_initializer->call_operator.arguments_ )
+			{
+				ElementWrite( arg, stream );
+				if( &arg != &constructor_initializer->call_operator.arguments_.back() )
+					stream << ", ";
+			}
+			stream << " )";
+		}
+	}
+	else
+	{
+		U_ASSERT(false);
+		// Not implemented yet.
+	}
+}
+
 static void ElementWrite( const ReferenceModifier& reference_modifier, std::ostream& stream )
 {
 	if( reference_modifier == ReferenceModifier::Reference )
@@ -524,10 +551,23 @@ static void ElementWrite( const Namespace& namespace_, std::ostream& stream )
 
 static void ElementWrite( const VariablesDeclaration& variables_declaration, std::ostream& stream )
 {
-	U_UNUSED(variables_declaration);
-	U_UNUSED(stream);
-	U_ASSERT(false);
-	// Not implemented yet.
+	stream << KeywordAscii( Keywords::var_ ) << " ";
+	ElementWrite( variables_declaration.type, stream );
+	stream << " ";
+
+	for( const VariablesDeclaration::VariableEntry& var : variables_declaration.variables )
+	{
+		ElementWrite( var.reference_modifier, stream );
+		ElementWrite( var.mutability_modifier, stream );
+		stream << " "  << ToUTF8( var.name );
+
+		if( var.initializer != nullptr )
+			ElementWrite( *var.initializer, stream );
+
+		if( &var != &variables_declaration.variables.back() )
+			stream << ", ";
+	}
+	stream << ";\n";
 }
 
 static void ElementWrite( const AutoVariableDeclaration& auto_variable_declaration, std::ostream& stream )
@@ -555,10 +595,16 @@ static void ElementWrite( const StaticAssert& static_assert_, std::ostream& stre
 
 static void ElementWrite( const Enum& enum_, std::ostream& stream )
 {
-	U_UNUSED(enum_);
-	U_UNUSED(stream);
-	U_ASSERT(false);
-	// Not implemented yet.
+	stream << KeywordAscii( Keywords::enum_ ) << " " << ToUTF8( enum_.name );
+	if( !enum_.underlaying_type_name.components.empty() )
+	{
+		stream << " : ";
+		ElementWrite( enum_.underlaying_type_name, stream );
+	}
+	stream << "\n{\n";
+	for( const Enum::Member& enum_member : enum_.members )
+		stream << "\t" << ToUTF8( enum_member.name ) << ",\n";
+	stream << "}\n";
 }
 
 static void ElementWrite( const Typedef& typedef_, std::ostream& stream )

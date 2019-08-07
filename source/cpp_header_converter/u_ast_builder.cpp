@@ -146,6 +146,8 @@ void CppAstConsumer::ProcessDecl( const clang::Decl& decl, Synt::ProgramElements
 		program_elements.push_back( ProcessTypedef(*type_alias_decl) );
 	else if( const auto func_decl= llvm::dyn_cast<clang::FunctionDecl>(&decl) )
 		program_elements.push_back( ProcessFunction(* func_decl, current_externc ) );
+	else if( const auto enum_decl= llvm::dyn_cast<clang::EnumDecl>(&decl) )
+		ProcessEnum( *enum_decl, program_elements );
 	else if( const auto namespace_decl= llvm::dyn_cast<clang::NamespaceDecl>(&decl) )
 	{
 		Synt::NamespacePtr namespace_( new Synt::Namespace( g_dummy_file_pos ) );
@@ -305,6 +307,97 @@ Synt::FunctionPtr CppAstConsumer::ProcessFunction( const clang::FunctionDecl& fu
 	func->type_.return_type_.reset( new Synt::TypeName( TranslateType( *return_type ) ) );
 
 	return func;
+}
+
+void CppAstConsumer::ProcessEnum( const clang::EnumDecl& enum_decl, Synt::ProgramElements& out_elements )
+{
+	if( !enum_decl.isComplete() )
+		return;
+
+	const ProgramString enum_name= TranslateIdentifier( enum_decl.getName().str() );
+	const auto enumerators_range= enum_decl.enumerators();
+
+	// C++ enum can be Ü enum, if it`s members form sequence 0-N with step 1.
+	bool can_be_u_enum= true;
+	{
+		auto it= enumerators_range.begin();
+		llvm::APSInt prev_val= it->getInitVal();
+		if( prev_val.getLimitedValue() != 0 )
+		{
+			can_be_u_enum= false;
+			goto end_check;
+		}
+
+		++it;
+		for(; it != enumerators_range.end(); ++it )
+		{
+			const llvm::APSInt cur_val= it->getInitVal();
+			if( (cur_val - prev_val).getLimitedValue() != 1u )
+			{
+				can_be_u_enum= false;
+				goto end_check;
+			}
+			prev_val= cur_val;
+		}
+	}
+
+	end_check:
+	if( can_be_u_enum )
+	{
+		Synt::Enum enum_( g_dummy_file_pos );
+		enum_.name= enum_name;
+
+		Synt::TypeName type_name= TranslateType( *enum_decl.getIntegerType().getTypePtr() );
+		if( Synt::NamedTypeName* const named_type_name= boost::get<Synt::NamedTypeName>( &type_name ) )
+			enum_.underlaying_type_name= std::move(named_type_name->name);
+
+		for( const clang::EnumConstantDecl* const enumerator : enum_decl.enumerators() )
+		{
+			enum_.members.emplace_back();
+			enum_.members.back().file_pos= g_dummy_file_pos;
+			enum_.members.back().name= TranslateIdentifier( enumerator->getName().str() );
+		}
+
+		out_elements.push_back( std::move(enum_) );
+	}
+	else
+	{
+		Synt::NamespacePtr enum_namespace_( new Synt::Namespace( g_dummy_file_pos ) );
+		enum_namespace_->name_= enum_name + "_namespace"_SpC;
+
+		Synt::VariablesDeclaration variables_declaration( g_dummy_file_pos );
+		variables_declaration.type= TranslateType( *enum_decl.getIntegerType().getTypePtr() );
+
+		for( const clang::EnumConstantDecl* const enumerator : enum_decl.enumerators() )
+		{
+			Synt::VariablesDeclaration::VariableEntry var;
+			var.file_pos= g_dummy_file_pos;
+			var.name= TranslateIdentifier( enumerator->getName().str() );
+			var.mutability_modifier= Synt::MutabilityModifier::Constexpr;
+
+			Synt::ConstructorInitializer initializer( g_dummy_file_pos );
+			Synt::NumericConstant initializer_number( g_dummy_file_pos );
+
+			const llvm::APSInt val= enumerator->getInitVal();
+			if( val.isNegative() )
+				initializer_number.value_= val.getExtValue();
+			else
+				initializer_number.value_= val.getLimitedValue();
+
+			initializer.call_operator.arguments_.push_back( std::move(initializer_number) );
+
+			var.initializer.reset( new Synt::Initializer( std::move(initializer) ) );
+			variables_declaration.variables.push_back( std::move(var) );
+		}
+
+		enum_namespace_->elements_.push_back( std::move(variables_declaration) );
+		out_elements.push_back( std::move(enum_namespace_) );
+
+		Synt::Typedef typedef_( g_dummy_file_pos );
+		typedef_.name= enum_name;
+		typedef_.value= TranslateType( *enum_decl.getIntegerType().getTypePtr() );
+		out_elements.push_back( std::move( typedef_ ) );
+	}
 }
 
 Synt::TypeName CppAstConsumer::TranslateType( const clang::Type& in_type )
