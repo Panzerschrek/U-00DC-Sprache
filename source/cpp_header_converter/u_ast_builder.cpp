@@ -189,6 +189,8 @@ void CppAstConsumer::ProcessClassDecl( const clang::Decl& decl, Synt::ClassEleme
 
 		field.type= TranslateType( *field_type );
 		field.name= TranslateIdentifier( field_decl->getName().str() );
+		if( IsKeyword( field.name ) )
+			field.name+= "_"_SpC;
 
 		class_elements.push_back( std::move(field) );
 	}
@@ -283,6 +285,8 @@ Synt::FunctionPtr CppAstConsumer::ProcessFunction( const clang::FunctionDecl& fu
 		arg.name_= TranslateIdentifier( param->getName().str() );
 		if( arg.name_.empty() )
 			arg.name_= ToProgramString( "arg" + std::to_string(i) );
+		if( IsKeyword( arg.name_ ) )
+			arg.name_+= "_"_SpC;
 
 		const clang::Type* arg_type= param->getType().getTypePtr();
 		if( ( arg_type->isPointerType() || arg_type->isReferenceType() ) && ! arg_type->isFunctionPointerType() )
@@ -606,7 +610,8 @@ ProgramString CppAstConsumer::TranslateIdentifier( const std::string& identifier
 	// In Ü identifier can not start with "_", shadow it. "_" in C++ used for impl identiferes, so, it may not needed.
 	else if( identifier[0] == '_' )
 		return DecodeUTF8("ü") + ToProgramString( identifier );
-	return ToProgramString( identifier );
+
+	return ToProgramString(identifier);
 }
 
 CppAstProcessor::CppAstProcessor( ParsedUnitsPtr out_result )
