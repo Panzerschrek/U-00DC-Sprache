@@ -14,7 +14,7 @@ class CppAstConsumer : public clang::ASTConsumer
 public:
 	CppAstConsumer(
 		Synt::ProgramElements& out_elements,
-		const clang::CompilerInstance& compiler_intance,
+		clang::Preprocessor& preprocessor,
 		const clang::LangOptions& lang_options,
 		const clang::ASTContext& ast_context );
 
@@ -35,15 +35,17 @@ private:
 	ProgramString GetUFundamentalType( const clang::BuiltinType& in_type );
 	Synt::NamedTypeName TranslateNamedType( const std::string& cpp_type_name );
 	Synt::FunctionTypePtr TranslateFunctionType( const clang::FunctionProtoType& in_type );
+
 	ProgramString TranslateIdentifier( const std::string& identifier );
 
 private:
 	Synt::ProgramElements& root_program_elements_;
 
-	const clang::CompilerInstance& compiler_intance_;
+	clang::Preprocessor& preprocessor_;
 	const clang::LangOptions& lang_options_;
 	const clang::PrintingPolicy printing_policy_;
 	const clang::ASTContext& ast_context_;
+
 	size_t unique_name_index_= 0u;
 	std::unordered_map< const clang::RecordType*, ProgramString > anon_records_names_cache_;
 };

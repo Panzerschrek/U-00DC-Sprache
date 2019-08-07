@@ -1,5 +1,3 @@
-#include <iostream>
-
 #include "../code_builder_lib/push_disable_llvm_warnings.hpp"
 #include <clang/AST/Attr.h>
 #include <clang/AST/DeclBase.h>
@@ -20,11 +18,11 @@ static const FilePos g_dummy_file_pos{ 0u, 0u, 0u };
 
 CppAstConsumer::CppAstConsumer(
 	Synt::ProgramElements& out_elements,
-	const clang::CompilerInstance& compiler_intance,
+	clang::Preprocessor& preprocessor,
 	const clang::LangOptions& lang_options,
 	const clang::ASTContext& ast_context )
 	: root_program_elements_(out_elements)
-	, compiler_intance_(compiler_intance)
+	, preprocessor_(preprocessor)
 	, lang_options_(lang_options)
 	, printing_policy_(lang_options_)
 	, ast_context_(ast_context)
@@ -38,20 +36,19 @@ bool CppAstConsumer::HandleTopLevelDecl( const clang::DeclGroupRef decl_group )
 	return true;
 }
 
-void CppAstConsumer::HandleTranslationUnit( clang:: ASTContext& ast_context )
+void CppAstConsumer::HandleTranslationUnit( clang::ASTContext& ast_context )
 {
 	U_UNUSED(ast_context);
 
 	// Dump definitions of simple constants, using "define" as numeric constants.
-	clang::Preprocessor& preprocessor= compiler_intance_.getPreprocessor();
-	for( const clang::Preprocessor::macro_iterator::value_type& macro_pair : preprocessor.macros() )
+	for( const clang::Preprocessor::macro_iterator::value_type& macro_pair : preprocessor_.macros() )
 	{
 		const clang::IdentifierInfo* ident_info= macro_pair.first;
 
 		const std::string name= ident_info->getName().str();
 		if( name.empty() )
 			continue;
-		if( preprocessor.getPredefines().find( "#define " + name ) != std::string::npos )
+		if( preprocessor_.getPredefines().find( "#define " + name ) != std::string::npos )
 			continue;
 
 		const clang::MacroDirective* const macro_directive= macro_pair.second.getLatest();
@@ -75,7 +72,7 @@ void CppAstConsumer::HandleTranslationUnit( clang:: ASTContext& ast_context )
 		clang::NumericLiteralParser numeric_literal_parser(
 			numeric_literal_str,
 			token.getLocation(),
-			preprocessor );
+			preprocessor_ );
 
 		Synt::AutoVariableDeclaration auto_variable_declaration( g_dummy_file_pos );
 		auto_variable_declaration.mutability_modifier= Synt::MutabilityModifier::Constexpr;
@@ -437,7 +434,6 @@ ProgramString CppAstConsumer::GetUFundamentalType( const clang::BuiltinType& in_
 			if( size == 64 ) return Keyword( Keywords::u64_ );
 			return Keyword( Keywords::u64_ );
 		}
-		std::cout << "is hz " << std::endl;
 		return Keyword( Keywords::void_ );
 	};
 }
@@ -522,7 +518,7 @@ std::unique_ptr<clang::ASTConsumer> CppAstProcessor::CreateASTConsumer(
 		std::unique_ptr<clang::ASTConsumer>(
 			new CppAstConsumer(
 				(*out_result_)[in_file.str()],
-				compiler_intance,
+				compiler_intance.getPreprocessor(),
 				compiler_intance.getLangOpts(),
 				compiler_intance.getASTContext() ) );
 }
