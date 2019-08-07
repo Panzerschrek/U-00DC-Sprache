@@ -145,7 +145,10 @@ void CppAstConsumer::ProcessDecl( const clang::Decl& decl, Synt::ProgramElements
 	else if( const auto type_alias_decl= llvm::dyn_cast<clang::TypedefNameDecl>(&decl) )
 		program_elements.push_back( ProcessTypedef(*type_alias_decl) );
 	else if( const auto func_decl= llvm::dyn_cast<clang::FunctionDecl>(&decl) )
-		program_elements.push_back( ProcessFunction(* func_decl, current_externc ) );
+	{
+		if( func_decl->isFirstDecl() )
+			program_elements.push_back( ProcessFunction( *func_decl, current_externc ) );
+	}
 	else if( const auto enum_decl= llvm::dyn_cast<clang::EnumDecl>(&decl) )
 		ProcessEnum( *enum_decl, program_elements );
 	else if( const auto namespace_decl= llvm::dyn_cast<clang::NamespaceDecl>(&decl) )
@@ -201,7 +204,10 @@ void CppAstConsumer::ProcessClassDecl( const clang::Decl& decl, Synt::ClassEleme
 			class_elements.push_back( std::move(record) );
 	}
 	else if( const auto func_decl= llvm::dyn_cast<clang::FunctionDecl>(&decl) )
-		class_elements.push_back( ProcessFunction(* func_decl, false ) );
+	{
+		if( func_decl->isFirstDecl() )
+			class_elements.push_back( ProcessFunction(* func_decl, false ) );
+	}
 	else if( const auto type_alias_decl= llvm::dyn_cast<clang::TypedefNameDecl>(&decl) )
 		class_elements.push_back( ProcessTypedef(*type_alias_decl) );
 }

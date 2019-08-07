@@ -39,3 +39,8 @@ void Function_UnnamedArgs( int a, float b, double c )
 	(void)b;
 	(void)c;
 }
+
+void DuplicatedProto( int xx )
+{
+	(void)xx;
+}

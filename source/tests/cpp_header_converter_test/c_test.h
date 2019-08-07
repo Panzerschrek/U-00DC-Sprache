@@ -16,6 +16,9 @@ const int* Function_RetConstPtr();
 
 void Function_UnnamedArgs( int, float, double );
 
+void DuplicatedProto( int x );
+void DuplicatedProto( int xx );
+
 typedef char CPP_char8;
 typedef   signed char  CPP_i8;
 typedef unsigned char  CPP_u8;

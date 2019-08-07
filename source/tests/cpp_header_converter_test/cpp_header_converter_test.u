@@ -49,6 +49,7 @@ fn U_Main() : i32
 		var i32& mut r1= Function_RetPtr();
 		var i32& imut r2= Function_RetConstPtr();
 		Function_UnnamedArgs( 0, 0.0f, 0.0 );
+		DuplicatedProto(0);
 	}
 	{
 		static_assert( types_are_same</ CPP_char8, char8 />() );
