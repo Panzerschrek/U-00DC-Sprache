@@ -204,6 +204,12 @@ static void ElementWrite( const Expression& expression, std::ostream& stream )
 		}
 		void operator()( const NumericConstant& numeric_constant ) const
 		{
+			stream.precision( std::numeric_limits<double>::digits10 + 1 );
+			if( numeric_constant.has_fractional_point_ )
+				stream.flags( stream.flags() | std::ios_base::showpoint );
+			else
+				stream.flags( stream.flags() & (~std::ios_base::showpoint) );
+
 			stream << numeric_constant.value_ << ToUTF8( numeric_constant.type_suffix_.data() );
 		}
 		void operator()( const StringLiteral& string_literal ) const
@@ -558,10 +564,11 @@ static void ElementWrite( const VariablesDeclaration& variables_declaration, std
 {
 	stream << KeywordAscii( Keywords::var_ ) << " ";
 	ElementWrite( variables_declaration.type, stream );
-	stream << " ";
+	stream << "\n";
 
 	for( const VariablesDeclaration::VariableEntry& var : variables_declaration.variables )
 	{
+		stream << "\t";
 		ElementWrite( var.reference_modifier, stream );
 		ElementWrite( var.mutability_modifier, stream );
 		stream << " "  << ToUTF8( var.name );
@@ -570,7 +577,7 @@ static void ElementWrite( const VariablesDeclaration& variables_declaration, std
 			ElementWrite( *var.initializer, stream );
 
 		if( &var != &variables_declaration.variables.back() )
-			stream << ", ";
+			stream << ",\n";
 	}
 	stream << ";\n";
 }

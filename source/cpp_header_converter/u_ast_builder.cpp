@@ -120,6 +120,8 @@ void CppAstConsumer::HandleTranslationUnit( clang::ASTContext& ast_context )
 			}
 		}
 
+		numeric_constant.has_fractional_point_= numeric_literal_parser.isFloatingLiteral();
+
 		auto_variable_declaration.initializer_expression= std::move(numeric_constant);
 		root_program_elements_.push_back( std::move( auto_variable_declaration ) );
 	}

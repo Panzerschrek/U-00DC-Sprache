@@ -5,6 +5,9 @@
 #define PI_CONSTANT_F 3.1415926535f
 #define UNSIGNED_CONSTANT 12345u
 #define HEX_CONSTNT 0xFF
+#define TWO_CONSTANT_DOUBLE 2.0
+#define SMALL_CONSTANT 0.00000000056
+#define LARGE_CONSTANT 560000000000.0
 
 void Function_ZeroArgs();
 void Function_ArgVal( int x );

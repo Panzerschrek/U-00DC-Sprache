@@ -38,6 +38,11 @@ fn U_Main() : i32
 	var i32 hex_constant= HEX_CONSTNT;
 	static_assert( HEX_CONSTNT == 0xFF );
 
+	var f64 f64_constants= TWO_CONSTANT_DOUBLE;
+	static_assert( TWO_CONSTANT_DOUBLE == 2.0 );
+
+	var f64 small_f64= SMALL_CONSTANT, large_f64= LARGE_CONSTANT;
+
 	unsafe
 	{
 		var i32 mut x= 0;
