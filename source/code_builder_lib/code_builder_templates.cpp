@@ -1,4 +1,4 @@
-#include <algorithm>
+﻿#include <algorithm>
 
 #include <boost/range/adaptor/reversed.hpp>
 
@@ -24,7 +24,8 @@ namespace CodeBuilderPrivate
 static const ProgramString g_name_for_generated_class= "_"_SpC;
 static const ProgramString g_template_parameters_namespace_prefix= "_tp_ns-"_SpC;
 
-static ProgramString EncodeTemplateParameters( DeducibleTemplateParameters& deduced_template_args )
+template< class TemplateParam >
+static ProgramString EncodeTemplateParameters( std::vector<TemplateParam>& deduced_template_args )
 {
 	ProgramString r;
 	for(const auto& arg : deduced_template_args )
@@ -32,7 +33,7 @@ static ProgramString EncodeTemplateParameters( DeducibleTemplateParameters& dedu
 		if( const Type* const type= boost::get<Type>( &arg ) )
 		{
 			// We needs full mangled name of template parameter here, because short type names from different spaces may coincide.
-			r+= ToProgramString( MangleType( *type ) );
+			r+= DecodeUTF8( MangleType( *type ) );
 		}
 		else if( const Variable* const variable= boost::get<Variable>( &arg ) )
 		{
@@ -887,12 +888,18 @@ CodeBuilder::TemplateTypeGenerationResult CodeBuilder::GenTemplateType(
 	const TypeTemplate& type_template= *type_template_ptr;
 	NamesScope& template_names_scope= *type_template.parent_namespace;
 
+	ProgramString type_template_name;
+	if( const auto template_class= dynamic_cast<const Synt::ClassTemplate*>( type_template.syntax_element ) )
+		type_template_name= template_class->class_->name_;
+	else if( const auto  typedef_template= dynamic_cast<const Synt::TypedefTemplate*>( type_template.syntax_element ) )
+		type_template_name= typedef_template->name_;
+
 	if( template_arguments.size() < type_template.first_optional_signature_argument )
 		return result;
 
 	DeducibleTemplateParameters deduced_template_args( type_template.template_parameters.size() );
 
-	const NamesScopePtr template_parameters_namespace = std::make_shared<NamesScope>( ""_SpC, &template_names_scope );
+	const NamesScopePtr template_parameters_namespace= std::make_shared<NamesScope>( g_template_parameters_namespace_prefix, &template_names_scope );
 	for( const TypeTemplate::TemplateParameter& param : type_template.template_parameters )
 		template_parameters_namespace->AddName( param.name, YetNotDeducedTemplateArg() );
 
@@ -996,7 +1003,6 @@ CodeBuilder::TemplateTypeGenerationResult CodeBuilder::GenTemplateType(
 	}
 
 	// Encode name.
-	// TODO - maybe generate correct mangled name for template?
 	ProgramString name_encoded= g_template_parameters_namespace_prefix + type_template.syntax_element->name_;
 	name_encoded+= EncodeTemplateParameters( deduced_template_args );
 	name_encoded+= ToProgramString( std::to_string( reinterpret_cast<uintptr_t>(&type_template) ) ); // Encode also template itself, because we can have multiple templates with same name.
@@ -1012,7 +1018,9 @@ CodeBuilder::TemplateTypeGenerationResult CodeBuilder::GenTemplateType(
 		}
 	}
 
-	template_parameters_namespace->SetThisNamespaceName( name_encoded );
+	// Encode signature parameters for namespace. Each class template have different signature (parameters itslef may be same).
+	template_parameters_namespace->SetThisNamespaceName( g_template_parameters_namespace_prefix + type_template_name + EncodeTemplateParameters( result_signature_parameters ) );
+
 	generated_template_things_storage_.insert( std::make_pair( name_encoded, Value( template_parameters_namespace, type_template_ptr->syntax_element->file_pos_ ) ) );
 
 	CreateTemplateErrorsContext( arguments_names_scope.GetErrors(), file_pos, template_parameters_namespace, type_template, deduced_template_args );
@@ -1103,7 +1111,7 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 
 	DeducibleTemplateParameters deduced_template_args( function_template.template_parameters.size() );
 
-	const auto template_parameters_namespace= std::make_shared<NamesScope>( ""_SpC, &template_names_scope );
+	const auto template_parameters_namespace= std::make_shared<NamesScope>( g_template_parameters_namespace_prefix, &template_names_scope );
 	for( size_t i= 0u; i < function_template.template_parameters.size(); ++i )
 		template_parameters_namespace->AddName( function_template.template_parameters[i].name, YetNotDeducedTemplateArg() );
 	for( size_t i= 0u; i < function_template.known_template_parameters.size(); ++i )
@@ -1241,7 +1249,9 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 	}
 
 	// Encode name.
-	// TODO - maybe generate correct mangled name for template?
+	// Use encoded name only for cache search.
+	// For function template namespace use only default namespace name.
+	// Template namespace encoding does not needed, because in normal program each function (and template function) have different parameters and mangled name.
 	ProgramString name_encoded= g_template_parameters_namespace_prefix + function_template.syntax_element->function_->name_.components.front().name;
 	name_encoded+= EncodeTemplateParameters( deduced_template_args );
 	name_encoded+= ToProgramString( std::to_string( reinterpret_cast<uintptr_t>(&function_template) ) ); // HACK! use address of template object, because we can have multiple templates with same name.
@@ -1258,7 +1268,6 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 			return &result_functions_set.functions.front();
 		}
 	}
-	template_parameters_namespace->SetThisNamespaceName( name_encoded );
 
 	CreateTemplateErrorsContext( errors_container, file_pos, template_parameters_namespace, function_template, deduced_template_args, function_template.known_template_parameters );
 
