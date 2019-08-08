@@ -33,10 +33,10 @@ Templates:
 *) Function pointers as template variable-parameters
 
 Standart library:
-*) Type traits
 *) Associative containers - map, set, unordered_set, string_map
 *) Time library - get time functions, timers
 *) File library
+*) More type traits
 *) More math functions
 
 Compiler:
@@ -53,5 +53,5 @@ QtCreator plugin:
 *) Indentation in editor
 *) More advanced program model updating
 
-Other:
-*) Tool for C/C++ headers conversion to Ü header
+CPP Header converter:
+* fix "typedef struct X{} X;"
