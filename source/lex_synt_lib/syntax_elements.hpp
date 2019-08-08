@@ -293,8 +293,8 @@ public:
 	TypeName type_;
 	ProgramString reference_tag_;
 	ReferencesTagsList inner_arg_reference_tags_;
-	MutabilityModifier mutability_modifier_;
-	ReferenceModifier reference_modifier_;
+	MutabilityModifier mutability_modifier_= MutabilityModifier::None;
+	ReferenceModifier reference_modifier_= ReferenceModifier::None;
 };
 
 struct BinaryOperator final : public SyntaxElementBase

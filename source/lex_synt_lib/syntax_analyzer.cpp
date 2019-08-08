@@ -996,6 +996,8 @@ NumericConstant SyntaxAnalyzer::ParseNumericConstant()
 			is_negative= true;
 			++it;
 		}
+		else if( it < it_end && *it == '+' )
+			++it;
 
 		while( it < it_end && is_number_func(*it) )
 		{
@@ -1007,8 +1009,6 @@ NumericConstant SyntaxAnalyzer::ParseNumericConstant()
 
 		number*= std::pow<NumericConstant::LongFloat>( base, power );
 	}
-
-
 
 	NumericConstant result( it_->file_pos );
 	result.value_= number;

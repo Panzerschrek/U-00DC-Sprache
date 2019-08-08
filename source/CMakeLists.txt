@@ -94,13 +94,21 @@ endif()
 add_compile_options( -Wall -Wextra -Wconversion )
 
 #
+# LexSyntLib
+#
+
+file( GLOB LEX_SYNT_LIB_SOURCES "lex_synt_lib/*" )
+add_library( LexSyntLib ${LEX_SYNT_LIB_SOURCES} )
+
+#
 # CompilerLib
 #
 
-file( GLOB COMPILER_LIB_SOURCES "code_builder_lib/*" "lex_synt_lib/*" )
+file( GLOB COMPILER_LIB_SOURCES "code_builder_lib/*" )
 
 add_library( CompilerLib ${COMPILER_LIB_SOURCES} )
 target_link_libraries( CompilerLib ${LLVM_LIBS_FOR_COMPILER_LIB} )
+target_link_libraries( CompilerLib LexSyntLib )
 if( NOT WIN32 )
 	target_link_libraries( CompilerLib pthread dl )
 endif()
@@ -142,6 +150,20 @@ if( BUILD_COMPILER )
 	target_link_libraries( Compiler CompilerLib ${LLVM_LIBS_FOR_COMPILER} )
 	target_link_libraries( Compiler ${Boost_LIBRARIES} )
 endif( BUILD_COMPILER )
+
+#
+# CppHeaderConverter
+#
+
+if( DEFINED LLVM_EXTERNAL_CLANG_SOURCE_DIR )
+	file( GLOB CPP_HEADER_CONVERTER_SOURCES "cpp_header_converter/*" )
+	add_executable( CppHeaderConverter ${CPP_HEADER_CONVERTER_SOURCES} )
+	target_link_libraries( CppHeaderConverter LexSyntLib )
+	target_link_libraries( CppHeaderConverter clangTooling )
+	# Hack! Clang libraries does not exports their include directories, set it manually.
+	target_include_directories( CppHeaderConverter PRIVATE ${LLVM_EXTERNAL_CLANG_SOURCE_DIR}/include )
+	target_include_directories( CppHeaderConverter PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/llvm/tools/clang/include )
+endif()
 
 #
 # Tests
@@ -282,5 +304,29 @@ if( REALLY_BUILD_LINKAGE_TESTS )
 		COMMAND TypeIdTest
 		DEPENDS TypeIdTest
 		WORKING_DIRECTORY ${CMAKE_BINARY_DIR} )
+
+	#
+	# CppHeaderConverter test
+	#
+	if( DEFINED LLVM_EXTERNAL_CLANG_SOURCE_DIR )
+		add_custom_command(
+			OUTPUT c_converted.u
+			DEPENDS tests/cpp_header_converter_test/c_test.h CppHeaderConverter
+			COMMAND
+				CppHeaderConverter -o c_converted.u
+				${CMAKE_SOURCE_DIR}/tests/cpp_header_converter_test/c_test.h -- -std=c99 )
+
+		add_custom_command(
+			OUTPUT cpp_header_converter_test.o
+			DEPENDS tests/cpp_header_converter_test/cpp_header_converter_test.u  c_converted.u Compiler
+			COMMAND
+				Compiler --produce-object-file
+				${CMAKE_SOURCE_DIR}/tests/cpp_header_converter_test/cpp_header_converter_test.u -o cpp_header_converter_test.o
+				${SPRACHE_COMPILER_PIC_OPTIONS}
+				--include-dir ${CMAKE_BINARY_DIR} )
+
+		add_executable( CppHeaderConverterTest cpp_header_converter_test.o data/entry.cpp tests/cpp_header_converter_test/c_test.c )
+		add_dependencies( CppHeaderConverterTest Compiler )
+	endif()
 
 endif( REALLY_BUILD_LINKAGE_TESTS )
