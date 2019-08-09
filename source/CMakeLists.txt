@@ -1,6 +1,7 @@
 ﻿cmake_minimum_required(VERSION 2.8)
 
 project(Sprache)
+set( PROJECT_VERSION 0.5 )
 
 option( BUILD_COMPILER "Enable compilation of compiler" YES )
 option( BUILD_TESTS "Enable compilation of base tests" YES )
@@ -149,6 +150,7 @@ if( BUILD_COMPILER )
 	add_executable( Compiler ${COMPILER_SOURCES} ${bc_files} ${USTLIB_SOURCES} ${USTLIB_TEST_SOURCES} )
 	target_link_libraries( Compiler CompilerLib ${LLVM_LIBS_FOR_COMPILER} )
 	target_link_libraries( Compiler ${Boost_LIBRARIES} )
+	target_compile_definitions( Compiler PRIVATE "SPRACHE_VERSION=${PROJECT_VERSION}" )
 endif( BUILD_COMPILER )
 
 #

@@ -267,8 +267,9 @@ int main( const int argc, const char* const argv[])
 	po::options_description program_options( u8"Ǖ-compiler options" );
 	program_options.add_options()
 		( "help,h", "produce help message" )
+		( "version,v", "print version and exit" )
 		( "input", po::value< std::vector< std::string> >()->composing(), "add input file" )
-		( "output,o", po::value<std::string>()->required(), "set output file" )
+		( "output,o", po::value<std::string>(), "set output file" )
 		( "include-dir", po::value< std::vector<std::string> >(), "add include dir" )
 		( "compiler-data-dir", po::value< std::string >(), "set path to compiler data directory" )
 		( "produce-object-file", po::bool_switch()->default_value(false), "poduce native object file, instead of .ir file" )
@@ -311,6 +312,11 @@ int main( const int argc, const char* const argv[])
 		program_options.print( std::cout );
 		return 0;
 	}
+	if( program_options_map.count( "version" ) )
+	{
+		std::cout << "Ü-Sprache version " << SPRACHE_VERSION << ", llvm version " << LLVM_VERSION_STRING << std::endl;
+		return 0;
+	}
 
 	if( program_options_map.count( "include-dir" ) != 0 )
 		include_directories= program_options_map["include-dir"].as< std::vector<std::string> >();
@@ -327,6 +333,11 @@ int main( const int argc, const char* const argv[])
 
 	if( program_options_map.count( "output" ) != 0 )
 		output_file= program_options_map["output"].as< std::string >();
+	else
+	{
+		std::cout << "Output file missing, specify output file name, using \"-o\" option." << std::endl;
+		return 1;
+	}
 
 	if( program_options_map.count( "input" ) != 0 )
 		input_files= program_options_map["input"].as< std::vector< std::string > >();
