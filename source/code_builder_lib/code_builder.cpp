@@ -1029,7 +1029,10 @@ size_t CodeBuilder::PrepareFunction(
 
 		for( const Synt::FunctionArgument& arg : func.type_.arguments_ )
 		{
-			const bool is_this= &arg == &func.type_.arguments_.front() && arg.name_ == Keywords::this_;
+			const bool is_this=
+				&arg == &func.type_.arguments_.front() &&
+				arg.name_ == Keywords::this_ &&
+				boost::get<Synt::EmptyVariant>(&arg.type_) != nullptr;
 
 			if( !is_this && IsKeyword( arg.name_ ) )
 				REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), arg.file_pos_ );
@@ -1042,7 +1045,7 @@ size_t CodeBuilder::PrepareFunction(
 				func_variable.is_this_call= true;
 				if( base_class == nullptr )
 				{
-					REPORT_ERROR( ThisInNonclassFunction, names_scope.GetErrors(), func.file_pos_, func_name );
+					REPORT_ERROR( ThisInNonclassFunction, names_scope.GetErrors(), arg.file_pos_, func_name );
 					return ~0u;
 				}
 				out_arg.type= base_class;

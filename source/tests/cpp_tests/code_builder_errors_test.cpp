@@ -146,6 +146,26 @@ U_TEST(UsingKeywordAsName3)
 	U_TEST_ASSERT( error.file_pos.line == 4u );
 }
 
+U_TEST(UsingKeywordAsName4)
+{
+	// Argument with name "this", that is not actual "this".
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			fn Foo( i32 this );
+		}
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::UsingKeywordAsName );
+	U_TEST_ASSERT( error.file_pos.line == 4u );
+}
+
 U_TEST(Redefinition0)
 {
 	// Variable redefinition in same scope.
