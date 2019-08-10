@@ -105,6 +105,7 @@ void SyntaxHighlighter::highlightBlock( const QString& text )
 			format= Formats::MacroIdentifier; break;
 
 		case Lexem::Type::String:
+		case Lexem::Type::LiteralSuffix:
 			format= Formats::String; break;
 
 		case Lexem::Type::Number:
