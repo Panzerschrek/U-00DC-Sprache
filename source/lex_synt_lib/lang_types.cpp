@@ -9,7 +9,8 @@ bool IsUnsignedInteger( const U_FundamentalType type )
 		type == U_FundamentalType::u8  ||
 		type == U_FundamentalType::u16 ||
 		type == U_FundamentalType::u32 ||
-		type == U_FundamentalType::u64;
+		type == U_FundamentalType::u64 ||
+		type == U_FundamentalType::u128;
 }
 
 bool IsSignedInteger( const U_FundamentalType type )
@@ -18,7 +19,8 @@ bool IsSignedInteger( const U_FundamentalType type )
 		type == U_FundamentalType::i8  ||
 		type == U_FundamentalType::i16 ||
 		type == U_FundamentalType::i32 ||
-		type == U_FundamentalType::i64;
+		type == U_FundamentalType::i64 ||
+		type == U_FundamentalType::i128;
 }
 
 bool IsInteger( const U_FundamentalType type )

@@ -751,6 +751,8 @@ llvm::Constant* CodeBuilder::ApplyZeroInitializer(
 		case U_FundamentalType::u32:
 		case U_FundamentalType::i64:
 		case U_FundamentalType::u64:
+		case U_FundamentalType::i128:
+		case U_FundamentalType::u128:
 		case U_FundamentalType::char8 :
 		case U_FundamentalType::char16:
 		case U_FundamentalType::char32:
