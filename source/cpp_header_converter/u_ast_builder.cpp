@@ -562,7 +562,6 @@ ProgramString CppAstConsumer::GetUFundamentalType( const clang::BuiltinType& in_
 	case clang::BuiltinType::Void: return Keyword( Keywords::void_ );
 	case clang::BuiltinType::Bool: return Keyword( Keywords::bool_ );
 
-	//case clang::BuiltinType::Char  : return Keyword( Keywords::char8_ );
 	case clang::BuiltinType::Char_S: return Keyword( Keywords::char8_ );
 	case clang::BuiltinType::Char_U: return Keyword( Keywords::char8_ );
 	case clang::BuiltinType::Char16: return Keyword( Keywords::char16_ );
@@ -581,19 +580,21 @@ ProgramString CppAstConsumer::GetUFundamentalType( const clang::BuiltinType& in_
 		}
 		if( in_type.isSignedInteger() )
 		{
-			if( size ==  8 ) return Keyword( Keywords:: i8_ );
-			if( size == 16 ) return Keyword( Keywords::i16_ );
-			if( size == 32 ) return Keyword( Keywords::i32_ );
-			if( size == 64 ) return Keyword( Keywords::i64_ );
-			return Keyword( Keywords::i64_ );
+			if( size ==   8 ) return Keyword( Keywords::  i8_ );
+			if( size ==  16 ) return Keyword( Keywords:: i16_ );
+			if( size ==  32 ) return Keyword( Keywords:: i32_ );
+			if( size ==  64 ) return Keyword( Keywords:: i64_ );
+			if( size == 128 ) return Keyword( Keywords::i128_ );
+			return Keyword( Keywords::i32_ );
 		}
 		if( in_type.isUnsignedInteger() )
 		{
-			if( size ==  8 ) return Keyword( Keywords:: u8_ );
-			if( size == 16 ) return Keyword( Keywords::u16_ );
-			if( size == 32 ) return Keyword( Keywords::u32_ );
-			if( size == 64 ) return Keyword( Keywords::u64_ );
-			return Keyword( Keywords::u64_ );
+			if( size ==   8 ) return Keyword( Keywords::  u8_ );
+			if( size ==  16 ) return Keyword( Keywords:: u16_ );
+			if( size ==  32 ) return Keyword( Keywords:: u32_ );
+			if( size ==  64 ) return Keyword( Keywords:: u64_ );
+			if( size == 128 ) return Keyword( Keywords::u128_ );
+			return Keyword( Keywords::u32_ );
 		}
 		return Keyword( Keywords::void_ );
 	};
