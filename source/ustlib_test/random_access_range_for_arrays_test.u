@@ -53,6 +53,23 @@ fn U_Main() : i32
 		IntRangeMut(arr).back()= 42;
 		halt if( arr[4u] != 42 );
 	}
-
+	{ // Subrange.
+		var [ i32, 5 ] arr= zero_init;
+		var IntRangeImut range(arr);
+		halt if( range.size() != size_type(5) );
+		halt if( range.subrange( size_type(1), size_type(5) ).size() != size_type(4) );
+		halt if( range.subrange( size_type(2), size_type(3) ).size() != size_type(1) );
+		halt if( range.subrange( size_type(0), size_type(0) ).size() != size_type(0) );
+	}
+	{ // Can modify array content, using subrange range.
+		var [ i32, 4 ] mut arr= zero_init;
+		{
+			auto range= IntRangeMut(arr).subrange( size_type(1), size_type(3) );
+			range.front()= 45;
+			range.back()= 66;
+		}
+		halt if( arr[1u] != 45 );
+		halt if( arr[2u] != 66 );
+	}
 	return 0;
 }

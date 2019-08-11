@@ -81,6 +81,17 @@ fn U_Main() : i32
 		foreach( x : range ) { res/= x; }
 		halt if( res != 65 );
 	}
+	{
+		var VecType mut vec;
+		vec.push_back( 22 );
+		vec.push_back( 55 );
+		vec.push_back( 11 );
+		vec.push_back( 33 );
+		auto range= vec.range();
+		auto mut res= 1;
+		foreach( x : range.subrange( size_type(1), size_type(3) ) ) { res*= x; }
+		halt if( res != 55 * 11 );
+	}
 
 	return 0;
 }

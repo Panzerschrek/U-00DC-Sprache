@@ -108,6 +108,13 @@ public:
 		unsafe{  return cast_mut( cast_ref_unsafe</T/>( int_to_ref( ref_to_int( ( end_ - size_type(1) ).get_ref() ) ) ) );  }
 	}
 
+	fn subrange( this'x', size_type start_index, size_type end_index ) : this_type'x'
+	{
+		halt if( start_index > end_index );
+		halt if( end_index > size() );
+		unsafe{  return this_type( begin_ + start_index, begin_ + end_index );  }
+	}
+
 	fn empty( this ) : bool
 	{
 		return begin_ == end_;
