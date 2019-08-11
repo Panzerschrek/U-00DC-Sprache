@@ -184,5 +184,15 @@ fn U_Main() : i32
 		str= ust::string8("W") + range;
 		halt if( str != "WRaNgE" );
 	}
+	{ // substr.
+		var ust::string8 s( "abcdef012345" );
+		auto l= s.substr( size_type(0), size_type(6) );
+		halt if( l != "abcdef" );
+		halt if( s.substr( size_type(6), size_type(12) ) != "012345" );
+		halt if( l.substr( size_type(1), size_type(4) ) != s.substr( size_type(1), size_type(4) ) );
+		halt if( s.substr( size_type(2), size_type(10) ) != "cdef0123" );
+		halt if( s.substr( size_type(7), s.size() ) != "12345" );
+		halt if( !s.substr( size_type(8), size_type(8) ).empty() );
+	}
 	return 0;
 }

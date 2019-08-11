@@ -251,6 +251,11 @@ public:
 		unsafe{  return range_imut( ptr_, ptr_ + size_ );  }
 	}
 
+	fn substr( this, size_type start_index, size_type end_index ) : this_type
+	{
+		return this_type( range().subrange( start_index, end_index ) );
+	}
+
 	// compare
 
 	op==( this_type& l, this_type& r ) : bool
