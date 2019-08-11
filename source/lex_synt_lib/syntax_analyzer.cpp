@@ -922,7 +922,7 @@ NumericConstant SyntaxAnalyzer::ParseNumericConstant()
 			is_number_func=
 				[]( sprache_char c ) -> bool
 				{
-					return c >= '0' && c <= '9';
+					return c >= '0' && c <= '7';
 				};
 			break;
 
