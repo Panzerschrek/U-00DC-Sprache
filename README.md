@@ -10,9 +10,10 @@ So, this is reference-compiler for this language.
 
 ### How to build
 * Install boost (version 1.60.0 used).  
+* Build boost. Required libraries are "system", "filesystem", "program_options"  
 * Download llvm (llvm 3.7.1 used in this project).  
-* Set path to your llvm installation in CmakeLists.txt.  
-* Run cmake for source/CMakeLists.txt and generate project for your favorite IDE or build system. You must set paths to boost and llvm in cmake arguments.
+* Run cmake for source/CMakeLists.txt and generate project for your favorite IDE or build system. You must set paths to boost and llvm in cmake arguments.  
+* (optional) for CppHeaderConverter you need to download clang sources and set cmake variable LLVM_EXTERNAL_CLANG_SOURCE_DIR.  
 
 ### How to build QCreator plugin
 * Download QtCreator.  
