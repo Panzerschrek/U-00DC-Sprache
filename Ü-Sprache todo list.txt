@@ -5,6 +5,7 @@ When feature was implemented, delete it from list.
 Common:
 *) Dereference operator - for pointer-like classes
 *) Continious initializer for arrays
+*) Different calling conventions (for API calls, for example)
 *) Tuples. Template-like iteration over tuples.
 *) switch-case
 *) "Disassembly operator" - declare variables with initializer as members of
@@ -12,8 +13,7 @@ Common:
 *) Function to function pointer assignment
 *) == and != methods generation
 *) Functions references info in "typeinfo".
-*) 128-bit integers
-*) 128-bit float
+*) More float types (16 bit, 128 bit )
 *) Constructor initializer for constexpr structs
 *) Function pointers inside constexpr functions
 *) Reference result of constexpr function evaluation
