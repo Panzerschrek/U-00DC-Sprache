@@ -606,7 +606,7 @@ U_TEST(TuplesInitializersErrors_Test3)
 	R"(
 		fn Foo()
 		{
-			var tup( f32, bool, i64 ) t( 0.5f );
+			var tup( f32, bool, i64 ) t[ 0.5f ];
 		}
 	)";
 
@@ -625,7 +625,7 @@ U_TEST(TuplesInitializersErrors_Test4)
 	R"(
 		fn Foo()
 		{
-			var tup( f32, bool, i64 ) t( 0.5f, true );
+			var tup( f32, bool, i64 ) t[ 0.5f, true ];
 		}
 	)";
 
@@ -644,7 +644,7 @@ U_TEST(TuplesInitializersErrors_Test5)
 	R"(
 		fn Foo()
 		{
-			var tup( f32, bool ) t( 0.5f, true, 666 );
+			var tup( f32, bool ) t[ 0.5f, true, 666 ];
 		}
 	)";
 
@@ -679,6 +679,25 @@ U_TEST(TuplesInitializersErrors_Test6)
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::OperationNotSupportedForThisType );
 	U_TEST_ASSERT( error.file_pos.line == 9u );
+}
+
+U_TEST(TuplesInitializersErrors_Test7)
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo()
+		{
+			var tup( f32, bool ) t( 0.5f, true );
+		}
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ConstructorInitializerForUnsupportedType );
+	U_TEST_ASSERT( error.file_pos.line == 4u );
 }
 
 } // namespace U

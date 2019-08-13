@@ -190,35 +190,15 @@ U_TEST(ConstructorInitializerForFundamentalTypesTest1)
 	U_TEST_ASSERT( 2017.52 == result_value.DoubleVal );
 }
 
+
 U_TEST(ConstructorInitializer_ForTuples_Test0)
-{
-	// Constructor initializer for tuples
-	static const char c_program_text[]=
-	R"(
-		fn Foo() : f64
-		{
-			var tup( i32, f32 ) t( 668, 2.0f + 2.0f );
-			return f64(t[0u]) - f64(t[1u]);
-		}
-	)";
-
-	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
-
-	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
-	U_TEST_ASSERT( function != nullptr );
-
-	const llvm::GenericValue result_value= engine->runFunction( function, {} );
-	U_TEST_ASSERT( result_value.DoubleVal == 664.0 );
-}
-
-U_TEST(ConstructorInitializer_ForTuples_Test1)
 {
 	// Constructor initializer for tuples - make copy of tuple.
 	static const char c_program_text[]=
 	R"(
 		fn Foo() : i32
 		{
-			var tup( i32, f32 ) t( 562, 3.0f + 2.0f );
+			var tup( i32, f32 ) t[ 562, 3.0f + 2.0f ];
 			var tup( i32, f32 ) t_copy(t);
 			return i32(t_copy[0u]) - i32(t_copy[1u]);
 		}
@@ -233,29 +213,7 @@ U_TEST(ConstructorInitializer_ForTuples_Test1)
 	U_TEST_ASSERT( result_value.IntVal.getLimitedValue() == 562u - 5u );
 }
 
-U_TEST(ConstructorInitializer_ForTuples_Test2)
-{
-	// Constructor initializer for tuples with 1 element.
-	static const char c_program_text[]=
-	R"(
-		fn Foo() : i32
-		{
-			var tup( i32 ) t( 666 );
-			var tup( i32 ) t_copy(t);
-			return t_copy[0u];
-		}
-	)";
-
-	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
-
-	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
-	U_TEST_ASSERT( function != nullptr );
-
-	const llvm::GenericValue result_value= engine->runFunction( function, {} );
-	U_TEST_ASSERT( result_value.IntVal.getLimitedValue() == 666u );
-}
-
-U_TEST(ConstructorInitializer_ForTuples_Test3)
+U_TEST(ConstructorInitializer_ForTuples_Test1)
 {
 	// Constructor initializer for empty tuple.
 	static const char c_program_text[]=
@@ -269,7 +227,7 @@ U_TEST(ConstructorInitializer_ForTuples_Test3)
 	BuildProgram( c_program_text );
 }
 
-U_TEST(ConstructorInitializer_ForTuples_Test4)
+U_TEST(ConstructorInitializer_ForTuples_Test2)
 {
 	// Empty constructor initializer for tuple with default-constructible fields.
 	static const char c_program_text[]=
@@ -401,6 +359,63 @@ U_TEST(TwodimensionalArrayInitializerTest0)
 	U_TEST_ASSERT(
 		static_cast<uint64_t>( (175) + (-8 * 5) + (95684) + (48) + (-14) * (2 + 2 * 2 ) ) ==
 		result_value.IntVal.getLimitedValue() );
+}
+
+U_TEST(ArrayInitializer_ForTuples_Test0)
+{
+	// Array initializer for tuples
+	static const char c_program_text[]=
+	R"(
+		fn Foo() : f64
+		{
+			var tup( i32, f32 ) t[ 668, 2.0f + 2.0f ];
+			return f64(t[0u]) - f64(t[1u]);
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	const llvm::GenericValue result_value= engine->runFunction( function, {} );
+	U_TEST_ASSERT( result_value.DoubleVal == 664.0 );
+}
+
+U_TEST(ArrayInitializer_ForTuples_Test1)
+{
+	// Array initializer for tuples with 1 element.
+	static const char c_program_text[]=
+	R"(
+		fn Foo() : i32
+		{
+			var tup( i32 ) t[ 666 ];
+			var tup( i32 ) t_copy(t);
+			return t_copy[0u];
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	const llvm::GenericValue result_value= engine->runFunction( function, {} );
+	U_TEST_ASSERT( result_value.IntVal.getLimitedValue() == 666u );
+}
+
+U_TEST(ArrayInitializer_ForTuples_Test2)
+{
+	// Array initializer for empty tuple.
+	static const char c_program_text[]=
+	R"(
+		fn Foo()
+		{
+			var tup() t[];
+		}
+	)";
+
+	BuildProgram( c_program_text );
 }
 
 U_TEST(StructNamedInitializersTest0)

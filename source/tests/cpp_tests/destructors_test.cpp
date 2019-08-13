@@ -927,8 +927,8 @@ U_TEST(DestructorsTest22_DestructorForTuples)
 
 		fn Foo()
 		{
-			var tup( i32, S ) t0( 0, S( 52 ) );
-			var tup( S, f32 ) t1( S(21), 0.25f );
+			var tup( i32, S ) t0[ 0, S( 52 ) ];
+			var tup( S, f32 ) t1[ S(21), 0.25f ];
 		}
 	)";
 
@@ -958,7 +958,7 @@ U_TEST(DestructorsTest23_DestructorForTuples)
 
 		struct T
 		{
-			tup( S, bool ) t( S( 885 ), false );
+			tup( S, bool ) t[ ( 885 ), false ];
 		}
 
 		fn Foo()
@@ -994,8 +994,9 @@ U_TEST(DestructorsTest24_DestructorForTuples)
 		fn Bar( tup( i32, S ) s ){}
 		fn Foo()
 		{
-			Bar( tup( i32, S )( 0, S( 66 ) ) ); // Destructor of moved to function argument tuplemust be called.
-			var tup( i32, S ) t( 0, S(41) );
+			var tup( i32, S ) mut t0[ 0, ( 66 ) ];
+			Bar( move(t0) ); // Destructor of moved to function argument tuplemust be called.
+			var tup( i32, S ) t1[ 0, (41) ];
 
 		}
 	)";

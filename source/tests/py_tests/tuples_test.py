@@ -110,7 +110,7 @@ def TupleFunctionArgument_Test0():
 		}
 		fn Foo() : i32
 		{
-			var tup( f32, i32 ) t( 52.1f, 6 );
+			var tup( f32, i32 ) t[ 52.1f, 6 ];
 			return Diff(t);
 		}
 	"""
@@ -128,7 +128,7 @@ def TupleFunctionArgument_Test1():
 		}
 		fn Foo() : i32
 		{
-			var tup( f32, i32 ) t( 52.1f, 17 );
+			var tup( f32, i32 ) t[ 52.1f, 17 ];
 			return Diff(t);
 		}
 	"""
@@ -146,7 +146,7 @@ def TupleFunctionArgument_Test2():
 		}
 		fn Foo() : i32
 		{
-			var tup( f32, i32 ) mut t( 6521.3f, -142 );
+			var tup( f32, i32 ) mut t[ 6521.3f, -142 ];
 			ZeroIt(t);
 			return i32(t[0u]) + t[1u];
 		}
