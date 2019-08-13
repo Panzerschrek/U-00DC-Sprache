@@ -237,6 +237,24 @@ static NamePair GetTypeName_r( const Type& type, NamesCache& names_cache )
 			names_cache.AddName( result.full );
 		}
 	}
+	else if( const Tuple* const tuple_type= type.GetTupleType() )
+	{
+		// Encode tuples, like in "Rust".
+		result.full= "T"_SpC;
+		for( const Type& element_type : tuple_type->elements )
+		{
+			const NamePair element_type_name= GetTypeName_r( element_type, names_cache );
+			result.full+= element_type_name.full;
+			result.compressed_and_escaped+= element_type_name.compressed_and_escaped;
+		}
+		result.full+= "E"_SpC;
+
+		const size_t replacement_candidate= names_cache.GetRepalcement( result.full );
+		if( replacement_candidate != std::numeric_limits<size_t>::max() )
+			result.compressed_and_escaped= names_cache.RetReplacementString( replacement_candidate );
+		else
+			names_cache.AddName( result.full );
+	}
 	else if( const Class* const class_type= type.GetClassType() )
 	{
 		result= GetNestedName( class_type->members.GetThisNamespaceName(), true, *class_type->members.GetParent(), false, names_cache );

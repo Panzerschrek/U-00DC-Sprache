@@ -11,7 +11,7 @@ namespace U
 namespace CodeBuilderPrivate
 {
 
-static_assert( sizeof(Type) <=24u, "Type is too heavy!" );
+static_assert( sizeof(Type) <= 40u, "Type is too heavy!" );
 static_assert( sizeof(Value) <= 160u, "Value is too heavy!" );
 
 static SizeType GetFundamentalTypeSize( const U_FundamentalType type )
@@ -69,6 +69,16 @@ bool operator!=( const FundamentalType& r, const FundamentalType& l )
 	return !( r == l );
 }
 
+bool operator==( const Tuple& r, const Tuple& l )
+{
+	return r.elements == l.elements;
+}
+
+bool operator!=( const Tuple& r, const Tuple& l )
+{
+	return !( r == l );
+}
+
 Type::Type( const Type& other )
 {
 	*this= other;
@@ -102,6 +112,11 @@ Type::Type( const Array& array_type )
 Type::Type( Array&& array_type )
 {
 	something_= ArrayPtr( new Array( std::move( array_type ) ) );
+}
+
+Type::Type( Tuple&& tuple_type )
+{
+	something_= std::move( tuple_type );
 }
 
 Type::Type( ClassProxyPtr class_type )
@@ -139,6 +154,11 @@ Type& Type::operator=( const Type& other )
 		{
 			U_ASSERT( array != nullptr );
 			this_.something_= ArrayPtr( new Array( *array ) );
+		}
+
+		void operator()( const Tuple& tuple )
+		{
+			this_.something_= tuple;
 		}
 
 		void operator()( const ClassProxyPtr& class_ )
@@ -219,6 +239,16 @@ const Array* Type::GetArrayType() const
 	if( array_type == nullptr )
 		return nullptr;
 	return array_type->get();
+}
+
+Tuple* Type::GetTupleType()
+{
+	return  boost::get<Tuple>( &something_ );
+}
+
+const Tuple* Type::GetTupleType() const
+{
+	return  boost::get<Tuple>( &something_ );
 }
 
 ClassProxyPtr Type::GetClassTypeProxy() const
@@ -398,6 +428,11 @@ llvm::Type* Type::GetLLVMType() const
 			return array->llvm_type;
 		}
 
+		llvm::Type* operator()( const Tuple& tuple ) const
+		{
+			return tuple.llvm_type;
+		}
+
 		llvm::Type* operator()( const ClassProxyPtr& class_ ) const
 		{
 			U_ASSERT( class_ != nullptr && class_->class_ != nullptr );
@@ -451,11 +486,25 @@ ProgramString Type::ToString() const
 			return result;
 		}
 
-		ProgramString  operator()( const ArrayPtr& array ) const
+		ProgramString operator()( const ArrayPtr& array ) const
 		{
 			return
 				"[ "_SpC + array->type.ToString() + ", "_SpC +
 				ToProgramString( std::to_string( array->size ) ) + " ]"_SpC;
+		}
+
+		ProgramString operator()( const Tuple& tuple ) const
+		{
+			ProgramString res= "tup( "_SpC;
+
+			for( const Type& element_type : tuple.elements )
+			{
+				res+= element_type.ToString();
+				if( &element_type != & tuple.elements.back() )
+					res+= ", "_SpC;
+			}
+			res+= " )"_SpC;
+			return res;
 		}
 
 		ProgramString operator()( const ClassProxyPtr& class_ ) const

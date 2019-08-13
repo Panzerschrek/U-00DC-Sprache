@@ -625,9 +625,25 @@ Type CodeBuilder::PrepareType(
 
 		Type operator()( const Synt::TupleType& tuple_type_name )
 		{
-			// TODO
-			U_UNUSED(tuple_type_name);
-			return this_.invalid_type_;
+			Tuple tuple;
+			tuple.elements.reserve( tuple_type_name.element_types_.size() );
+
+			std::vector<llvm::Type*> elements_llvm_types;
+			elements_llvm_types.reserve( tuple_type_name.element_types_.size() );
+
+			for( const Synt::TypeName& element_type_name : tuple_type_name.element_types_ )
+			{
+				Type element_type= this_.PrepareType( element_type_name, names_scope, function_context );
+				if( element_type == this_.invalid_type_ )
+					return this_.invalid_type_;
+
+				elements_llvm_types.push_back( element_type.GetLLVMType() );
+				tuple.elements.push_back( std::move(element_type) );
+			}
+
+			tuple.llvm_type= llvm::StructType::get( this_.llvm_context_, elements_llvm_types );
+
+			return std::move(tuple);
 		}
 
 		Type operator()( const Synt::NamedTypeName& named_type_name )

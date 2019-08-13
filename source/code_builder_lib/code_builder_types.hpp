@@ -30,6 +30,7 @@ using Synt::ClassMemberVisibility;
 struct Function;
 struct FunctionPointer;
 struct Array;
+struct Tuple;
 class Class;
 struct Enum;
 
@@ -79,6 +80,15 @@ struct FundamentalType final
 bool operator==( const FundamentalType& r, const FundamentalType& l );
 bool operator!=( const FundamentalType& r, const FundamentalType& l );
 
+struct Tuple final
+{
+	std::vector<Type> elements;
+	llvm::StructType* llvm_type= nullptr;
+};
+
+bool operator==( const Tuple& r, const Tuple& l );
+bool operator!=( const Tuple& r, const Tuple& l );
+
 class Type final
 {
 public:
@@ -96,6 +106,7 @@ public:
 	Type( Function&& function_type );
 	Type( const Array& array_type );
 	Type( Array&& array_type );
+	Type( Tuple&& tuple_type );
 	Type( ClassProxyPtr class_type );
 	Type( EnumPtr enum_type );
 
@@ -108,6 +119,8 @@ public:
 	const FunctionPointer* GetFunctionPointerType() const;
 	Array* GetArrayType();
 	const Array* GetArrayType() const;
+	Tuple* GetTupleType();
+	const Tuple* GetTupleType() const;
 	ClassProxyPtr GetClassTypeProxy() const;
 	Class* GetClassType() const;
 	Enum* GetEnumType() const;
@@ -139,7 +152,8 @@ private:
 		ArrayPtr,
 		ClassProxyPtr,
 		EnumPtr,
-		FunctionPointerPtr> something_;
+		FunctionPointerPtr,
+		Tuple > something_;
 };
 
 bool operator==( const Type& r, const Type& l );

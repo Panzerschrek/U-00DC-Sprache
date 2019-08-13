@@ -828,6 +828,30 @@ llvm::Constant* CodeBuilder::ApplyZeroInitializer(
 						std::vector<llvm::Constant*>( size_t(array_type->size), const_value ) );
 		}
 	}
+	else if( const Tuple* const tuple_type= variable.type.GetTupleType() )
+	{
+		Variable tuple_member= variable;
+		tuple_member.location= Variable::Location::Pointer;
+
+		std::vector<llvm::Constant*> elements_const_values;
+
+		for( const Type& element_type : tuple_type->elements )
+		{
+			const size_t i= size_t( &element_type - tuple_type->elements.data() );
+			tuple_member.type= element_type;
+			tuple_member.llvm_value= function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, { GetZeroGEPIndex(), GetFieldGEPIndex(i) } );
+
+			llvm::Constant* const const_value=
+				ApplyZeroInitializer( tuple_member, initializer, block_names, function_context );
+			if( const_value != nullptr )
+				elements_const_values.push_back( const_value );
+		}
+
+		if( elements_const_values.size() == tuple_type->elements.size() )
+			return llvm::ConstantStruct::get( tuple_type->llvm_type, elements_const_values );
+		else
+			return nullptr;
+	}
 	else if( const Class* const class_type= variable.type.GetClassType() )
 	{
 		if( class_type->have_explicit_noncopy_constructors )

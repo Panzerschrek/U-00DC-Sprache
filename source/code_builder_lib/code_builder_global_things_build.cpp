@@ -148,6 +148,13 @@ bool CodeBuilder::EnsureTypeCompleteness( const Type& type, const TypeCompletene
 	}
 	else if( const auto array_type= type.GetArrayType() )
 		return EnsureTypeCompleteness( array_type->type, completeness );
+	else if( const auto tuple_type= type.GetTupleType() )
+	{
+		bool ok= true;
+		for( const Type& element_type : tuple_type->elements )
+			ok= EnsureTypeCompleteness( element_type, completeness ) || ok;
+		return ok;
+	}
 	else if( const auto class_type= type.GetClassTypeProxy() )
 	{
 		GlobalThingBuildClass( class_type, completeness );
