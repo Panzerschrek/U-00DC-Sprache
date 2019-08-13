@@ -656,13 +656,46 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 					return nullptr;
 				}
 
-				CopyInitializeTupleElements_r(
-					element_type,
-					function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, { GetZeroGEPIndex(), GetFieldGEPIndex(i) } ),
-					CreateReferenceCast( expression_result.llvm_value, expression_result.type, element_type, function_context ),
-					call_operator.file_pos_,
-					block_names,
-					function_context );
+				llvm::Value* const element_llvm_value= function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, { GetZeroGEPIndex(), GetFieldGEPIndex(i) } );
+				if( expression_result.type == element_type && expression_result.value_type == ValueType::Value )
+				{
+					CopyBytes( expression_result.llvm_value, element_llvm_value, element_type, function_context );
+
+					const ReferencesGraphNodePtr& src_node= expression_result.node;
+					const ReferencesGraphNodePtr& dst_node= variable.node;
+					if( src_node != nullptr && dst_node != nullptr )
+					{
+						U_ASSERT( src_node->kind == ReferencesGraphNode::Kind::Variable );
+						if( const auto moved_node_inner_reference= function_context.variables_state.GetNodeInnerReference( src_node ) )
+						{
+							ReferencesGraphNodePtr dst_inner_reference= function_context.variables_state.GetNodeInnerReference( dst_node );
+							if( dst_inner_reference == nullptr )
+							{
+								dst_inner_reference= std::make_shared<ReferencesGraphNode>( dst_node->name + " inner variable"_SpC, moved_node_inner_reference->kind );
+								function_context.variables_state.SetNodeInnerReference( dst_node, dst_inner_reference );
+							}
+							else
+							{
+								if( moved_node_inner_reference->kind != dst_inner_reference->kind )
+								{
+									// TODO - make separate error.
+									REPORT_ERROR( NotImplemented, block_names.GetErrors(), call_operator.file_pos_, "inner reference mutability changing" );
+									return nullptr;
+								}
+							}
+							function_context.variables_state.AddLink( moved_node_inner_reference, dst_inner_reference );
+						}
+						function_context.variables_state.MoveNode( src_node );
+					}
+				}
+				else
+					CopyInitializeTupleElements_r(
+						element_type,
+						element_llvm_value,
+						CreateReferenceCast( expression_result.llvm_value, expression_result.type, element_type, function_context ),
+						call_operator.file_pos_,
+						block_names,
+						function_context );
 			}
 			return nullptr;
 		}

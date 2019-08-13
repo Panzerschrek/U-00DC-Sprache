@@ -799,8 +799,11 @@ void CodeBuilder::CopyBytes_r(
 	if( llvm_type->isIntegerTy() || llvm_type->isFloatingPointTy() || llvm_type->isPointerTy() )
 	{
 		// Create simple load-store.
-		llvm::Value* const val= function_context.llvm_ir_builder.CreateLoad( src );
-		function_context.llvm_ir_builder.CreateStore( val, dst );
+		if( src->getType() == dst->getType() )
+			function_context.llvm_ir_builder.CreateStore( function_context.llvm_ir_builder.CreateLoad( src ), dst );
+		else if( src->getType() == dst->getType()->getPointerElementType() )
+			function_context.llvm_ir_builder.CreateStore( src, dst );
+		else U_ASSERT(false);
 	}
 	else if( llvm_type->isArrayTy() )
 	{
