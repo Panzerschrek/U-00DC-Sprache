@@ -100,3 +100,57 @@ def TupleElementAccess_Test5():
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "TupleIndexOutOfBounds" )
 	assert( errors_list[0].file_pos.line == 5 )
+
+
+def TupleFunctionArgument_Test0():
+	c_program_text= """
+		fn Diff( tup( f32, i32 ) t ) : i32 // Immutable value argument
+		{
+			return i32(t[0u]) - t[1u];
+		}
+		fn Foo() : i32
+		{
+			var tup( f32, i32 ) t( 52.1f, 6 );
+			return Diff(t);
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 52 - 6 )
+
+
+def TupleFunctionArgument_Test1():
+	c_program_text= """
+		fn Diff( tup( f32, i32 ) mut t ) : i32 // Mutable value argument
+		{
+			t[0u]*= 3.0f;
+			return i32(t[0u]) - t[1u];
+		}
+		fn Foo() : i32
+		{
+			var tup( f32, i32 ) t( 52.1f, 17 );
+			return Diff(t);
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 52 * 3 - 17 )
+
+
+def TupleFunctionArgument_Test2():
+	c_program_text= """
+		fn ZeroIt( tup( f32, i32 ) &mut t ) // Mutable reference argument
+		{
+			t[0u]= 0.0f;
+			t[1u]= 0;
+		}
+		fn Foo() : i32
+		{
+			var tup( f32, i32 ) mut t( 6521.3f, -142 );
+			ZeroIt(t);
+			return i32(t[0u]) + t[1u];
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 0 )

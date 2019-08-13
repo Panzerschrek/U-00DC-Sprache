@@ -2529,7 +2529,7 @@ Value CodeBuilder::DoCallFunction(
 
 			if( arg.type.GetFundamentalType() != nullptr || arg.type.GetEnumType() != nullptr || arg.type.GetFunctionPointerType() != nullptr )
 				llvm_args[j]= CreateMoveToLLVMRegisterInstruction( expr, function_context );
-			else if( const ClassProxyPtr class_type= arg.type.GetClassTypeProxy() )
+			else if( arg.type.GetClassType() != nullptr || arg.type.GetTupleType() != nullptr )
 			{
 				// Lock inner references.
 				// Do it only if arg type can contain any reference inside.
@@ -2571,14 +2571,16 @@ Value CodeBuilder::DoCallFunction(
 						continue;
 					}
 
-					// Create copy of class value. Call copy constructor.
+					// Create copy of class or tuple value. Call copy constructor.
 					llvm::Value* const arg_copy= function_context.alloca_ir_builder.CreateAlloca( arg.type.GetLLVMType() );
-
-					llvm::Value* value_for_copy= expr.llvm_value;
-					if( expr.type != arg.type )
-						value_for_copy= CreateReferenceCast( value_for_copy, expr.type, arg.type, function_context );
-					TryCallCopyConstructor( names.GetErrors(), file_pos, arg_copy, value_for_copy, class_type, function_context );
 					llvm_args[j]= arg_copy;
+					CopyInitializeTupleElements_r(
+						arg.type,
+						arg_copy,
+						CreateReferenceCast( expr.llvm_value, expr.type, arg.type, function_context ),
+						file_pos,
+						names,
+						function_context );
 				}
 			}
 			else U_ASSERT( false );

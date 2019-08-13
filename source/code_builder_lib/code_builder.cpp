@@ -606,6 +606,7 @@ Type CodeBuilder::PrepareType(
 				if( !out_arg.is_reference &&
 					!( out_arg.type.GetFundamentalType() != nullptr ||
 					   out_arg.type.GetClassType() != nullptr ||
+					   out_arg.type.GetTupleType() != nullptr ||
 					   out_arg.type.GetEnumType() != nullptr ||
 					   out_arg.type.GetFunctionPointerType() != nullptr ) )
 					REPORT_ERROR( NotImplemented, names_scope.GetErrors(), arg.file_pos_, "parameters types except fundamentals, classes, enums, functionpointers" );
@@ -676,10 +677,10 @@ llvm::FunctionType* CodeBuilder::GetLLVMFunctionType( const Function& function_t
 			function_type.return_type.GetEnumType() != nullptr ||
 			function_type.return_type.GetFunctionPointerType() != nullptr )
 		{}
-		else if( const Class* const class_type= function_type.return_type.GetClassType() )
+		else if( function_type.return_type.GetClassType() != nullptr || function_type.return_type.GetTupleType() != nullptr )
 		{
-			// Add return-value ponter as "sret" argument for class types.
-			args_llvm_types.push_back( class_type->llvm_type->getPointerTo() );
+			// Add return-value ponter as "sret" argument for class and tuple types.
+			args_llvm_types.push_back( function_type.return_type.GetLLVMType()->getPointerTo() );
 			first_arg_is_sret= true;
 		}
 		else U_ASSERT( false );
@@ -694,9 +695,9 @@ llvm::FunctionType* CodeBuilder::GetLLVMFunctionType( const Function& function_t
 		{
 			if( arg.type.GetFundamentalType() != nullptr || arg.type.GetEnumType() != nullptr || arg.type.GetFunctionPointerType() )
 			{}
-			else if( arg.type.GetClassType() != nullptr )
+			else if( arg.type.GetClassType() != nullptr || arg.type.GetTupleType() )
 			{
-				// Mark value-parameters of class types as pointer. Lately this parameters will be marked as "byval".
+				// Mark value-parameters of class and tuple types as pointer.
 				type= type->getPointerTo();
 			}
 			else U_ASSERT( false );
@@ -1099,6 +1100,7 @@ size_t CodeBuilder::PrepareFunction(
 			if( !out_arg.is_reference &&
 				!( out_arg.type.GetFundamentalType() != nullptr ||
 				   out_arg.type.GetClassType() != nullptr ||
+				   out_arg.type.GetTupleType() != nullptr ||
 				   out_arg.type.GetEnumType() != nullptr ||
 				   out_arg.type.GetFunctionPointerType() != nullptr ) )
 			{
@@ -1413,7 +1415,7 @@ Type CodeBuilder::BuildFuncCode(
 		{
 			const unsigned int arg_attr_index= static_cast<unsigned int>(i + 1u + (first_arg_is_sret ? 1u : 0u ));
 			const Function::Arg& arg= function_type->args[i];
-			if( arg.is_reference )
+			if( arg.is_reference || arg.type.GetClassType() != nullptr || arg.type.GetTupleType() )
 				llvm_function->addAttribute( arg_attr_index, llvm::Attribute::NonNull );
 			if( arg.is_reference && arg.is_mutable )
 				llvm_function->addAttribute( arg_attr_index, llvm::Attribute::NoAlias );
@@ -1517,9 +1519,9 @@ Type CodeBuilder::BuildFuncCode(
 				var.llvm_value= address;
 				var.location= Variable::Location::Pointer;
 			}
-			else if( arg.type.GetClassType() != nullptr )
+			else if( arg.type.GetClassType() != nullptr || arg.type.GetTupleType() != nullptr )
 			{
-				// Value classes parameters using llvm-pointers with "byval" attribute.
+				// Value classes and tuples parameters using llvm-pointers.
 				var.location= Variable::Location::Pointer;
 			}
 			else U_ASSERT(false);

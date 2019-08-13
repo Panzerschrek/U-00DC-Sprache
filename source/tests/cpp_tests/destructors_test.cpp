@@ -976,6 +976,39 @@ U_TEST(DestructorsTest23_DestructorForTuples)
 	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 885 } ) );
 }
 
+U_TEST(DestructorsTest24_DestructorForTuples)
+{
+	DestructorTestPrepare();
+
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+
+		class S
+		{
+			i32 x;
+			fn conversion_constructor( i32 in_x ) ( x= in_x ) {}
+			fn destructor() { DestructorCalled(x); }
+		}
+
+		fn Bar( tup( i32, S ) s ){}
+		fn Foo()
+		{
+			Bar( tup( i32, S )( 0, S( 66 ) ) ); // Destructor of moved to function argument tuplemust be called.
+			var tup( i32, S ) t( 0, S(41) );
+
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 66, 41 } ) );
+}
+
 U_TEST(EralyTempVariablesDestruction_Test0)
 {
 	DestructorTestPrepare();

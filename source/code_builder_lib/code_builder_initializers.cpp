@@ -652,7 +652,7 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 				const Variable expression_result= BuildExpressionCodeEnsureVariable( call_operator.arguments_[i], block_names, function_context );
 				if( !ReferenceIsConvertible( expression_result.type, element_type, block_names.GetErrors(), call_operator.file_pos_ ) )
 				{
-					REPORT_ERROR( TypesMismatch, block_names.GetErrors(), call_operator.file_pos_, variable.type, expression_result.type );
+					REPORT_ERROR( TypesMismatch, block_names.GetErrors(), call_operator.file_pos_, element_type, expression_result.type );
 					return nullptr;
 				}
 
