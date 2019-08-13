@@ -538,4 +538,147 @@ U_TEST(ZeroInitializerForClass_Test0)
 	U_TEST_ASSERT( error.file_pos.line == 5u );
 }
 
+
+U_TEST(TuplesInitializersErrors_Test0)
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo()
+		{
+			var tup( i32, bool ) t;
+		}
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedInitializer );
+	U_TEST_ASSERT( error.file_pos.line == 4u );
+}
+
+U_TEST(TuplesInitializersErrors_Test1)
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo()
+		{
+			var tup( f32, f64, i64 ) t();
+		}
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedInitializer );
+	U_TEST_ASSERT( error.file_pos.line == 4u );
+}
+
+U_TEST(TuplesInitializersErrors_Test2)
+{
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			fn constructor(){}
+		}
+		fn Foo()
+		{
+			var tup( f32, S, i64 ) t= zero_init;
+		}
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::InitializerDisabledBecauseClassHaveExplicitNoncopyConstructors );
+	U_TEST_ASSERT( error.file_pos.line == 8u );
+}
+
+U_TEST(TuplesInitializersErrors_Test3)
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo()
+		{
+			var tup( f32, bool, i64 ) t( 0.5f );
+		}
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::TupleInitializersCountMismatch );
+	U_TEST_ASSERT( error.file_pos.line == 4u );
+}
+
+U_TEST(TuplesInitializersErrors_Test4)
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo()
+		{
+			var tup( f32, bool, i64 ) t( 0.5f, true );
+		}
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::TupleInitializersCountMismatch );
+	U_TEST_ASSERT( error.file_pos.line == 4u );
+}
+
+U_TEST(TuplesInitializersErrors_Test5)
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo()
+		{
+			var tup( f32, bool ) t( 0.5f, true, 666 );
+		}
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::TupleInitializersCountMismatch );
+	U_TEST_ASSERT( error.file_pos.line == 4u );
+}
+
+U_TEST(TuplesInitializersErrors_Test6)
+{
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			fn constructor( mut this, S&imut other )= delete;
+		}
+		fn Foo()
+		{
+			var tup( f32, S ) t= zero_init;
+			var tup( f32, S ) t_copy(t); // Can not copy tuple, because tuple element "struct S" is not copyable.
+		}
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::OperationNotSupportedForThisType );
+	U_TEST_ASSERT( error.file_pos.line == 9u );
+}
+
 } // namespace U

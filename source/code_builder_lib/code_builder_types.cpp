@@ -313,6 +313,13 @@ bool Type::IsDefaultConstructible() const
 		U_ASSERT( *array != nullptr );
 		return (*array)->ArraySizeOrZero() == 0u || (*array)->type.IsDefaultConstructible();
 	}
+	else if( const Tuple* const tuple= boost::get<Tuple>( &something_ ) )
+	{
+		bool default_constructible= true;
+		for( const Type& element : tuple->elements )
+			default_constructible= default_constructible && element.IsDefaultConstructible();
+		return default_constructible;
+	}
 
 	return false;
 }
@@ -335,6 +342,13 @@ bool Type::IsCopyConstructible() const
 		U_ASSERT( *array != nullptr );
 		return (*array)->ArraySizeOrZero() == 0u || (*array)->type.IsCopyConstructible();
 	}
+	else if( const Tuple* const tuple= boost::get<Tuple>( &something_ ) )
+	{
+		bool copy_constructible= true;
+		for( const Type& element : tuple->elements )
+			copy_constructible= copy_constructible && element.IsCopyConstructible();
+		return copy_constructible;
+	}
 
 	return false;
 }
@@ -352,6 +366,13 @@ bool Type::IsCopyAssignable() const
 	{
 		U_ASSERT( *array != nullptr );
 		return (*array)->ArraySizeOrZero() == 0u || (*array)->type.IsCopyAssignable();
+	}
+	else if( const Tuple* const tuple= boost::get<Tuple>( &something_ ) )
+	{
+		bool copy_assignable= true;
+		for( const Type& element : tuple->elements )
+			copy_assignable= copy_assignable && element.IsCopyAssignable();
+		return copy_assignable;
 	}
 
 	return false;
@@ -402,6 +423,13 @@ size_t Type::ReferencesTagsCount() const
 	{
 		U_ASSERT( *array != nullptr );
 		return (*array)->type.ReferencesTagsCount();
+	}
+	else if( const Tuple* const tuple= boost::get<Tuple>( &something_ ) )
+	{
+		size_t res= 0u;
+		for( const Type& element : tuple->elements )
+			res= std::max( res, element.ReferencesTagsCount() );
+		return res;
 	}
 
 	return 0u;
@@ -606,10 +634,13 @@ bool operator==( const Type& r, const Type& l )
 	{
 		return r.GetEnumType() == l.GetEnumType();
 	}
-
 	else if( r.something_.which() == 5 )
 	{
 		return *r.GetFunctionPointerType() == *l.GetFunctionPointerType();
+	}
+	else if( r.something_.which() == 6 )
+	{
+		return *r.GetTupleType() == *l.GetTupleType();
 	}
 
 	U_ASSERT(false);

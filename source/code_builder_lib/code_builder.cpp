@@ -3617,6 +3617,9 @@ llvm::Value* CodeBuilder::CreateReferenceCast( llvm::Value* const ref, const Typ
 {
 	U_ASSERT( src_type.ReferenceIsConvertibleTo( dst_type ) );
 
+	if( src_type == dst_type )
+		return ref;
+
 	if( dst_type == void_type_ )
 		return function_context.llvm_ir_builder.CreatePointerCast( ref, dst_type.GetLLVMType()->getPointerTo() );
 	else

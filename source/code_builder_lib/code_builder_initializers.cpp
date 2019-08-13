@@ -103,6 +103,20 @@ void CodeBuilder::ApplyEmptyInitializer(
 			},
 			function_context);
 	}
+	else if( const Tuple* const tuple_type= variable.type.GetTupleType() )
+	{
+		Variable tuple_member= variable;
+		tuple_member.location= Variable::Location::Pointer;
+
+		for( const Type& element_type : tuple_type->elements )
+		{
+			const size_t i= size_t( &element_type - tuple_type->elements.data() );
+			tuple_member.type= element_type;
+			tuple_member.llvm_value= function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, { GetZeroGEPIndex(), GetFieldGEPIndex(i) } );
+
+			ApplyEmptyInitializer( variable_name, file_pos, tuple_member, block_names, function_context );
+		}
+	}
 	else if( const Class* const class_type= variable.type.GetClassType() )
 	{
 		// If initializer for class variable is empty, try to call default constructor.
@@ -559,6 +573,107 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 
 		return InitializeFunctionPointer( variable, call_operator.arguments_.front(), block_names, function_context );
 	}
+	else if( const Tuple* const tuple_type= variable.type.GetTupleType() )
+	{
+		if( call_operator.arguments_.empty() )
+		{
+			ApplyEmptyInitializer( variable.node == nullptr ? ""_SpC : variable.node->name, call_operator.file_pos_, variable, block_names, function_context );
+			return nullptr;
+		}
+		else if( call_operator.arguments_.size() == 1u )
+		{
+			const Variable expression_result= BuildExpressionCodeEnsureVariable( call_operator.arguments_.front(), block_names, function_context );
+			if(
+				tuple_type->elements.size() == 1u &&
+				ReferenceIsConvertible( expression_result.type, tuple_type->elements.front(), block_names.GetErrors(), call_operator.file_pos_ ) )
+			{
+				// Initialize tuple with size 1
+				const Type& element_type= tuple_type->elements.front();
+				CopyInitializeTupleElements_r(
+					element_type,
+					function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, { GetZeroGEPIndex(), GetFieldGEPIndex(0u) } ),
+					CreateReferenceCast( expression_result.llvm_value, expression_result.type, element_type, function_context ),
+					call_operator.file_pos_,
+					block_names,
+					function_context );
+				return nullptr;
+			}
+			else if( expression_result.type == variable.type )
+			{
+				// Copy/move initialize tuple.
+				if( expression_result.value_type == ValueType::Value )
+				{
+					CopyBytes( expression_result.llvm_value, variable.llvm_value, variable.type, function_context );
+
+					const ReferencesGraphNodePtr& src_node= expression_result.node;
+					const ReferencesGraphNodePtr& dst_node= variable.node;
+					if( src_node != nullptr && dst_node != nullptr )
+					{
+						U_ASSERT( src_node->kind == ReferencesGraphNode::Kind::Variable );
+						if( const auto moved_node_inner_reference= function_context.variables_state.GetNodeInnerReference( src_node ) )
+						{
+							ReferencesGraphNodePtr dst_inner_reference= function_context.variables_state.GetNodeInnerReference( dst_node );
+							if( dst_inner_reference == nullptr )
+							{
+								dst_inner_reference= std::make_shared<ReferencesGraphNode>( dst_node->name + " inner variable"_SpC, moved_node_inner_reference->kind );
+								function_context.variables_state.SetNodeInnerReference( dst_node, dst_inner_reference );
+							}
+							else
+							{
+								if( moved_node_inner_reference->kind != dst_inner_reference->kind )
+								{
+									// TODO - make separate error.
+									REPORT_ERROR( NotImplemented, block_names.GetErrors(), call_operator.file_pos_, "inner reference mutability changing" );
+									return nullptr;
+								}
+							}
+							function_context.variables_state.AddLink( moved_node_inner_reference, dst_inner_reference );
+						}
+						function_context.variables_state.MoveNode( src_node );
+					}
+				}
+				else
+					CopyInitializeTupleElements_r(
+						variable.type,
+						variable.llvm_value,
+						expression_result.llvm_value,
+						call_operator.file_pos_,
+						block_names,
+						function_context );
+				return nullptr;
+			}
+		}
+		else if( call_operator.arguments_.size() == tuple_type->elements.size() )
+		{
+			for( size_t i= 0u; i < tuple_type->elements.size(); ++i )
+			{
+				const Type& element_type= tuple_type->elements[i];
+
+				const Variable expression_result= BuildExpressionCodeEnsureVariable( call_operator.arguments_[i], block_names, function_context );
+				if( !ReferenceIsConvertible( expression_result.type, element_type, block_names.GetErrors(), call_operator.file_pos_ ) )
+				{
+					REPORT_ERROR( TypesMismatch, block_names.GetErrors(), call_operator.file_pos_, variable.type, expression_result.type );
+					return nullptr;
+				}
+
+				CopyInitializeTupleElements_r(
+					element_type,
+					function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, { GetZeroGEPIndex(), GetFieldGEPIndex(i) } ),
+					CreateReferenceCast( expression_result.llvm_value, expression_result.type, element_type, function_context ),
+					call_operator.file_pos_,
+					block_names,
+					function_context );
+			}
+			return nullptr;
+		}
+
+		REPORT_ERROR( TupleInitializersCountMismatch,
+			block_names.GetErrors(),
+			call_operator.file_pos_,
+			tuple_type->elements.size(),
+			call_operator.arguments_.size() );
+		return nullptr;
+	}
 	else if( const Class* const class_type= variable.type.GetClassType() )
 	{
 		// Try do move-construct.
@@ -660,6 +775,60 @@ llvm::Constant* CodeBuilder::ApplyExpressionInitializer(
 	}
 	else if( variable.type.GetFunctionPointerType() != nullptr )
 		return InitializeFunctionPointer( variable, initializer.expression, block_names, function_context );
+	else if( variable.type.GetTupleType() != nullptr )
+	{
+		Variable expression_result= BuildExpressionCodeEnsureVariable( initializer.expression, block_names, function_context );
+		if( expression_result.type != variable.type )
+		{
+			REPORT_ERROR( TypesMismatch, block_names.GetErrors(), initializer.file_pos_, variable.type, expression_result.type );
+			return nullptr;
+		}
+
+		const ReferencesGraphNodePtr& src_node= expression_result.node;
+		const ReferencesGraphNodePtr& dst_node= variable.node;
+		if( src_node != nullptr && dst_node != nullptr && variable.type.ReferencesTagsCount() > 0u )
+		{
+			const auto src_node_inner_references= function_context.variables_state.GetAllAccessibleInnerNodes_r( src_node );
+			if( !src_node_inner_references.empty() )
+			{
+				bool node_is_mutable= false;
+				for( const ReferencesGraphNodePtr& src_node_inner_reference : src_node_inner_references )
+					node_is_mutable= node_is_mutable || src_node_inner_reference->kind == ReferencesGraphNode::Kind::ReferenceMut;
+
+				const auto dst_node_inner_reference= std::make_shared<ReferencesGraphNode>( dst_node->name + " inner variable"_SpC, node_is_mutable ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut );
+				function_context.variables_state.SetNodeInnerReference( dst_node, dst_node_inner_reference );
+				for( const ReferencesGraphNodePtr& src_node_inner_reference : src_node_inner_references )
+					function_context.variables_state.AddLink( src_node_inner_reference, dst_node_inner_reference );
+			}
+		}
+
+		// Move or try call copy constructor.
+		// TODO - produce constant initializer for generated copy constructor, if source is constant.
+		if( expression_result.value_type == ValueType::Value && expression_result.type == variable.type )
+		{
+			if( src_node != nullptr )
+			{
+				U_ASSERT( src_node->kind == ReferencesGraphNode::Kind::Variable );
+				function_context.variables_state.MoveNode( src_node );
+			}
+			CopyBytes( expression_result.llvm_value, variable.llvm_value, variable.type, function_context );
+
+			DestroyUnusedTemporaryVariables( function_context, block_names.GetErrors(), initializer.file_pos_ );
+
+			return expression_result.constexpr_value; // Move can preserve constexpr.
+		}
+		else
+		{
+			CopyInitializeTupleElements_r(
+				variable.type,
+				variable.llvm_value,
+				expression_result.llvm_value,
+				initializer.file_pos_,
+				block_names,
+				function_context );
+			return nullptr; // Call to constructors may not preserve constexpr value.
+		}
+	}
 	else if( variable.type.GetClassType() != nullptr )
 	{
 		// Currently we support "=" initializer for copying and moving of structs.
@@ -917,6 +1086,58 @@ llvm::Constant* CodeBuilder::ApplyUninitializedInitializer(
 		return llvm::UndefValue::get( variable.type.GetLLVMType() );
 	else
 		return nullptr;
+}
+
+void CodeBuilder::CopyInitializeTupleElements_r(
+	const Type& type,
+	llvm::Value* const dst, llvm::Value* const src,
+	const FilePos& file_pos,
+	NamesScope& block_names,
+	FunctionContext& function_context )
+{
+	// TODO - make reference pollution.
+
+	if( type.GetFundamentalType() != nullptr || type.GetEnumType() != nullptr || type.GetFunctionPointerType() != nullptr )
+	{
+		if( src->getType() == dst->getType() )
+			function_context.llvm_ir_builder.CreateStore( function_context.llvm_ir_builder.CreateLoad( src ), dst );
+		else if( src->getType() == dst->getType()->getPointerElementType() )
+			function_context.llvm_ir_builder.CreateStore( src, dst );
+		else U_ASSERT( false );
+	}
+	else if( const Array* const array_type= type.GetArrayType() )
+	{
+		GenerateLoop(
+			array_type->size,
+			[&]( llvm::Value* const counter_value )
+			{
+				llvm::Value* const index_list[2]{ GetZeroGEPIndex(), counter_value };
+				CopyInitializeTupleElements_r(
+					array_type->type,
+					function_context.llvm_ir_builder.CreateGEP( dst, index_list ),
+					function_context.llvm_ir_builder.CreateGEP( src, index_list ),
+					file_pos,
+					block_names,
+					function_context );
+			},
+			function_context );
+	}
+	else if( const Tuple* const tuple_type= type.GetTupleType() )
+	{
+		for( const Type& element_type : tuple_type->elements )
+		{
+			llvm::Value* const index_list[2]{ GetZeroGEPIndex(), GetFieldGEPIndex( &element_type - tuple_type->elements.data() ) };
+			CopyInitializeTupleElements_r(
+				element_type,
+				function_context.llvm_ir_builder.CreateGEP( dst, index_list ),
+				function_context.llvm_ir_builder.CreateGEP( src, index_list ),
+				file_pos,
+				block_names,
+				function_context );
+		}
+	}
+	else if( const ClassProxyPtr class_type= type.GetClassTypeProxy() )
+		TryCallCopyConstructor( block_names.GetErrors(), file_pos, dst, src, class_type, function_context );
 }
 
 llvm::Constant* CodeBuilder::InitializeReferenceField(

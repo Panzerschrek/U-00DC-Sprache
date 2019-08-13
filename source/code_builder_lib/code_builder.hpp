@@ -746,6 +746,13 @@ private:
 		NamesScope& block_names,
 		FunctionContext& function_context );
 
+	void CopyInitializeTupleElements_r(
+		const Type& type,
+		llvm::Value* dst, llvm::Value* src,
+		const FilePos& file_pos,
+		NamesScope& block_names,
+		FunctionContext& function_context );
+
 	llvm::Constant* InitializeReferenceField(
 		const Variable& variable,
 		const ClassField& field,

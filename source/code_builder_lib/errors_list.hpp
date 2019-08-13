@@ -69,6 +69,7 @@ PROCESS_ERROR( TupleIndexOutOfBounds, "Tuple index out of bounds. Index is %1%, 
 // Initializers errors.
 PROCESS_ERROR( ArrayInitializerForNonArray, "Array initializer for nonarray." )
 PROCESS_ERROR( ArrayInitializersCountMismatch, "Array initializers count mismatch. Expected %1%, got %2%." )
+PROCESS_ERROR( TupleInitializersCountMismatch, "Tuple initializers count mismatch. Expected %1%, got %2%." )
 PROCESS_ERROR( FundamentalTypesHaveConstructorsWithExactlyOneParameter, "Fundamental types have constructors with exactly one parameter." )
 PROCESS_ERROR( ReferencesHaveConstructorsWithExactlyOneParameter, "References have constructors with exactly one parameter." )
 PROCESS_ERROR( UnsupportedInitializerForReference, "Unsupported initializer for reference." )
