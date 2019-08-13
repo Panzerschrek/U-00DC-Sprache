@@ -910,6 +910,72 @@ U_TEST(DestructorsTest22_DestructorForTemporaryConvertedReferenceArgument)
 	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 66 } ) );
 }
 
+U_TEST(DestructorsTest22_DestructorForTuples)
+{
+	DestructorTestPrepare();
+
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+
+		class S
+		{
+			i32 x;
+			fn conversion_constructor( i32 in_x ) ( x= in_x ) {}
+			fn destructor() { DestructorCalled(x); }
+		}
+
+		fn Foo()
+		{
+			var tup( i32, S ) t0( 0, S( 52 ) );
+			var tup( S, f32 ) t1( S(21), 0.25f );
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 21, 52 } ) );
+}
+
+U_TEST(DestructorsTest23_DestructorForTuples)
+{
+	DestructorTestPrepare();
+
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+
+		class S
+		{
+			i32 x;
+			fn conversion_constructor( i32 in_x ) ( x= in_x ) {}
+			fn destructor() { DestructorCalled(x); }
+		}
+
+		struct T
+		{
+			tup( S, bool ) t( S( 885 ), false );
+		}
+
+		fn Foo()
+		{
+			var T t;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 885 } ) );
+}
+
 U_TEST(EralyTempVariablesDestruction_Test0)
 {
 	DestructorTestPrepare();

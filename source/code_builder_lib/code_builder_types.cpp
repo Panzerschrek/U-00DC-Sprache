@@ -390,6 +390,13 @@ bool Type::HaveDestructor() const
 		U_ASSERT( *array != nullptr );
 		return (*array)->type.HaveDestructor();
 	}
+	else if( const Tuple* const tuple= boost::get<Tuple>( &something_ ) )
+	{
+		bool have_destructor= false;
+		for( const Type& element : tuple->elements )
+			have_destructor= have_destructor || element.HaveDestructor();
+		return have_destructor;
+	}
 
 	return false;
 }
@@ -409,6 +416,13 @@ bool Type::CanBeConstexpr() const
 	}
 	else if( const Class* const class_= GetClassType() )
 		return class_->can_be_constexpr;
+	else if( const Tuple* const tuple= boost::get<Tuple>( &something_ ) )
+	{
+		bool can_be_constexpr= true;
+		for( const Type& element : tuple->elements )
+			can_be_constexpr= can_be_constexpr && element.CanBeConstexpr();
+		return can_be_constexpr;
+	}
 
 	return false;
 }

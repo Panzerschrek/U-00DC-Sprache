@@ -874,6 +874,19 @@ void CodeBuilder::CallDestructor(
 			},
 			function_context );
 	}
+	else if( const Tuple* const tuple_type= type.GetTupleType() )
+	{
+		for( const Type& element_type : tuple_type->elements )
+		{
+			if( element_type.HaveDestructor() )
+				CallDestructor(
+					function_context.llvm_ir_builder.CreateGEP( ptr, { GetZeroGEPIndex(), GetFieldGEPIndex( &element_type - tuple_type->elements.data() ) } ),
+					element_type,
+					function_context,
+					errors_container,
+					file_pos );
+		}
+	}
 	else U_ASSERT(false);
 }
 
