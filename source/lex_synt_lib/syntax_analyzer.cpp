@@ -1322,7 +1322,7 @@ Expression SyntaxAnalyzer::ParseExpression()
 				current_node= std::move(typeinfo_);
 				current_node_ptr= boost::get<TypeInfo>( &current_node );
 			}
-			else if( it_->text == Keywords::fn_ || it_->text == Keywords::typeof_ )
+			else if( it_->text == Keywords::fn_ || it_->text == Keywords::typeof_ || it_->text == Keywords::tup_ )
 			{
 				// Parse function type name: fn( i32 x )
 				TypeNameInExpression type_name_in_expression( it_->file_pos );
@@ -1797,6 +1797,53 @@ TypeName SyntaxAnalyzer::ParseTypeName()
 		NextLexem();
 
 		return std::move(typeof_type_name);
+	}
+	else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::tup_ )
+	{
+		NextLexem();
+
+		TupleType tuple_type( it_->file_pos );
+
+		if( it_->type != Lexem::Type::BracketLeft )
+		{
+			PushErrorMessage();
+			return std::move(tuple_type);
+		}
+		NextLexem();
+
+		while( NotEndOfFile() )
+		{
+			if( it_->type == Lexem::Type::BracketRight )
+			{
+				NextLexem();
+				break;
+			}
+
+			tuple_type.element_types_.push_back( ParseTypeName() );
+			if( it_->type == Lexem::Type::BracketRight )
+			{
+				NextLexem();
+				break;
+			}
+			else
+			{
+				if( it_->type != Lexem::Type::Comma )
+				{
+					PushErrorMessage();
+					return std::move(tuple_type);
+				}
+				NextLexem();
+
+				if( it_->type == Lexem::Type::BracketRight )
+				{
+					// something, like ,)
+					PushErrorMessage();
+					return std::move(tuple_type);
+				}
+			}
+		}
+
+		return std::move(tuple_type);
 	}
 	else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::fn_ )
 		return ParseFunctionType();

@@ -623,6 +623,13 @@ Type CodeBuilder::PrepareType(
 			return std::move(function_pointer_type);
 		}
 
+		Type operator()( const Synt::TupleType& tuple_type_name )
+		{
+			// TODO
+			U_UNUSED(tuple_type_name);
+			return this_.invalid_type_;
+		}
+
 		Type operator()( const Synt::NamedTypeName& named_type_name )
 		{
 			if( const Value* value= this_.ResolveValue( named_type_name.file_pos_, names_scope, named_type_name.name ) )

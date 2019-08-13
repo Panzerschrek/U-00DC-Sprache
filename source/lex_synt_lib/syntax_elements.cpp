@@ -30,6 +30,10 @@ ArrayTypeName::ArrayTypeName( const FilePos& file_pos )
 	: SyntaxElementBase(file_pos)
 {}
 
+TupleType::TupleType( const FilePos& file_pos )
+	: SyntaxElementBase(file_pos)
+{}
+
 TypeofTypeName::TypeofTypeName( const FilePos& file_pos )
 	: SyntaxElementBase(file_pos)
 {}

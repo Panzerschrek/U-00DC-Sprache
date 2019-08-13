@@ -50,6 +50,7 @@ static const Globals& GetGlobals()
 		[ size_t(Keywords::move_) ]= "move",
 		[ size_t(Keywords::select_) ]= "select",
 
+		[ size_t(Keywords::tup_) ]= "tup",
 		[ size_t(Keywords::struct_) ]= "struct",
 		[ size_t(Keywords::class_) ]= "class",
 		[ size_t(Keywords::final_) ]= "final",

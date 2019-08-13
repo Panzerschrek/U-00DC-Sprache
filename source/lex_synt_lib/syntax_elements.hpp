@@ -21,6 +21,7 @@ struct ArrayTypeName;
 struct TypeofTypeName;
 struct NamedTypeName;
 struct FunctionType;
+struct TupleType;
 
 struct UnaryPlus;
 struct UnaryMinus;
@@ -94,7 +95,8 @@ using TypeName= boost::variant<
 	ArrayTypeName,
 	TypeofTypeName,
 	NamedTypeName,
-	FunctionTypePtr >;
+	FunctionTypePtr,
+	TupleType >;
 
 using UnaryPrefixOperator= boost::variant<
 	UnaryPlus,
@@ -238,6 +240,15 @@ public:
 
 	std::unique_ptr<TypeName> element_type;
 	std::unique_ptr<Expression> size;
+};
+
+struct TupleType final : public SyntaxElementBase
+{
+public:
+	TupleType( const FilePos& file_pos );
+
+public:
+	std::vector<TypeName> element_types_;
 };
 
 struct TypeofTypeName final : public SyntaxElementBase
