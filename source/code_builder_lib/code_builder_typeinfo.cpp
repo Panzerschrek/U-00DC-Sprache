@@ -155,6 +155,7 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, Variable& typeinfo_variab
 	add_bool_field( "is_fundamental"_SpC     , type.GetFundamentalType()     != nullptr );
 	add_bool_field( "is_enum"_SpC            , type.GetEnumType()            != nullptr );
 	add_bool_field( "is_array"_SpC           , type.GetArrayType()           != nullptr );
+	add_bool_field( "is_tuple"_SpC           , type.GetTupleType()           != nullptr );
 	add_bool_field( "is_class"_SpC           , type.GetClassType()           != nullptr );
 	add_bool_field( "is_function_pointer"_SpC, type.GetFunctionPointerType() != nullptr );
 	add_bool_field( "is_function"_SpC        , type.GetFunctionType()        != nullptr );
@@ -184,6 +185,11 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, Variable& typeinfo_variab
 	{
 		add_size_field( "element_count"_SpC, array_type->ArraySizeOrZero() );
 		add_typeinfo_field( "element_type"_SpC, array_type->type );
+	}
+	else if( const Tuple* const tuple_type= type.GetTupleType() )
+	{
+		add_size_field( "element_count"_SpC, tuple_type->elements.size() );
+		add_list_head_field( "elements_list"_SpC, BuildypeinfoTupleElements( *tuple_type, root_namespace ) );
 	}
 	else if( const Class* const class_type= type.GetClassType() )
 	{
@@ -739,6 +745,66 @@ Variable CodeBuilder::BuildTypeinfoFunctionArguments( const Function& function_t
 
 		// SPRACHE_TODO - add reference pollution
 
+		FinishTypeinfoClass( node_type_class, node_type, fields_llvm_types );
+
+		llvm::GlobalVariable* const global_variable=
+			CreateGlobalConstantVariable(
+				node_type,
+				GetTypeinfoVariableName( node_type ),
+				llvm::ConstantStruct::get( node_type_class.llvm_type, fields_initializers ) );
+
+		head= Variable( node_type, Variable::Location::Pointer, ValueType::ConstReference, global_variable, global_variable->getInitializer() );
+	}
+
+	return head;
+}
+
+Variable CodeBuilder::BuildypeinfoTupleElements( const Tuple& tuple_type, NamesScope& root_namespace )
+{
+	const llvm::StructLayout* const struct_layout= data_layout_.getStructLayout( tuple_type.llvm_type );
+
+	Variable head= GetTypeinfoListEndNode( root_namespace );
+	for( const Type& element_type : tuple_type.elements )
+	{
+		const size_t element_index= size_t( &element_type - tuple_type.elements.data() );
+
+		const ClassProxyPtr node_type= CreateTypeinfoClass( root_namespace );
+		Class& node_type_class= *node_type->class_;
+
+		ClassFieldsVector<llvm::Type*> fields_llvm_types;
+		ClassFieldsVector<llvm::Constant*> fields_initializers;
+
+		AddTypeinfoNodeIsEndVariable( node_type_class );
+
+		node_type_class.members.AddName(
+			g_next_node_name,
+			Value( ClassField( node_type, head.type, static_cast<unsigned int>(fields_llvm_types.size()), false, true ), g_dummy_file_pos ) );
+		fields_llvm_types.push_back( head.type.GetLLVMType()->getPointerTo() );
+		fields_initializers.push_back( llvm::dyn_cast<llvm::GlobalVariable>(head.llvm_value) );
+
+		{
+			const Variable dependent_type_typeinfo= BuildTypeInfo( element_type, root_namespace );
+			ClassField field( node_type, dependent_type_typeinfo.type, static_cast<unsigned int>(fields_llvm_types.size()), false, true );
+
+			node_type_class.members.AddName( g_type_field_name, Value( std::move(field), g_dummy_file_pos ) );
+			fields_llvm_types.push_back( dependent_type_typeinfo.type.GetLLVMType()->getPointerTo() );
+			fields_initializers.push_back( llvm::dyn_cast<llvm::GlobalVariable>( dependent_type_typeinfo.llvm_value ) );
+		}
+		{
+			node_type_class.members.AddName(
+				"index"_SpC,
+				Value( ClassField( node_type, size_type_, static_cast<unsigned int>(fields_llvm_types.size()), true, false ), g_dummy_file_pos ) );
+			fields_llvm_types.push_back( size_type_.GetLLVMType() );
+			fields_initializers.push_back( llvm::Constant::getIntegerValue( size_type_.GetLLVMType(), llvm::APInt( size_type_.GetLLVMType()->getIntegerBitWidth(), element_index ) ) );
+		}
+		{
+			const auto offset= struct_layout->getElementOffset( static_cast<unsigned int>(element_index) );
+			node_type_class.members.AddName(
+				"offset"_SpC,
+				Value( ClassField( node_type, size_type_, static_cast<unsigned int>(fields_llvm_types.size()), true, false ), g_dummy_file_pos ) );
+			fields_llvm_types.push_back( size_type_.GetLLVMType() );
+			fields_initializers.push_back( llvm::Constant::getIntegerValue( size_type_.GetLLVMType(), llvm::APInt( size_type_.GetLLVMType()->getIntegerBitWidth(), offset ) ) );
+		}
 		FinishTypeinfoClass( node_type_class, node_type, fields_llvm_types );
 
 		llvm::GlobalVariable* const global_variable=

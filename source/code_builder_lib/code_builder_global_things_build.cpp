@@ -194,7 +194,8 @@ void CodeBuilder::GlobalThingBuildNamespace( NamesScope& names_scope )
 			{
 				if( type->GetFundamentalType() != nullptr ||
 					type->GetFunctionPointerType() != nullptr ||
-					type->GetArrayType() != nullptr )
+					type->GetArrayType() != nullptr ||
+					type->GetTupleType() != nullptr )
 				{}
 				else if( const ClassProxyPtr class_type= type->GetClassTypeProxy() )
 				{

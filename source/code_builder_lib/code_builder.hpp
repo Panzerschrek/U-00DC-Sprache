@@ -573,6 +573,7 @@ private:
 	Variable BuildTypeinfoClassFunctionsList( const ClassProxyPtr& class_type, NamesScope& root_namespace );
 	Variable BuildeTypeinfoClassParentsList( const ClassProxyPtr& class_type, NamesScope& root_namespace );
 	Variable BuildTypeinfoFunctionArguments( const Function& function_type, NamesScope& root_namespace );
+	Variable BuildypeinfoTupleElements( const Tuple& tuple_type, NamesScope& root_namespace );
 
 	// Block elements
 

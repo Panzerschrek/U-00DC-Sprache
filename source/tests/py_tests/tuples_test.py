@@ -207,3 +207,65 @@ def TupleReturnValue_Test2():
 	tests_lib.build_program( c_program_text )
 	call_result= tests_lib.run_function( "_Z3Foov" )
 	assert( call_result == 124 - 22 )
+
+
+def Typeinfo_ForTuples_Test0():
+	c_program_text= """
+		struct S{}
+		static_assert( typeinfo</ tup() />.is_tuple );
+		static_assert( typeinfo</ tup( i32 ) />.is_tuple );
+		static_assert( typeinfo</ tup( f32, bool ) />.is_tuple );
+		static_assert( typeinfo</ tup( S ) />.is_tuple );
+		static_assert( typeinfo</ tup( S, bool, S ) />.is_tuple );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def Typeinfo_ForTuples_Test1():
+	c_program_text= """
+		struct S{}
+		static_assert( typeinfo</ tup() />.element_count == size_type(0) );
+		static_assert( typeinfo</ tup( i32 ) />.element_count == size_type(1) );
+		static_assert( typeinfo</ tup( f32, bool ) />.element_count == size_type(2) );
+		static_assert( typeinfo</ tup( S ) />.element_count == size_type(1) );
+		static_assert( typeinfo</ tup( S, bool, S ) />.element_count == size_type(3) );
+		static_assert( typeinfo</ tup( i32, i32, i32, bool, char8, f64, f32, i16, u8, u64 ) />.element_count == size_type(10) );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def Typeinfo_ForTuples_Test2():
+	c_program_text= """
+		template</ type T />
+		fn constexpr TupleMemebersListNodeOffset( T& node, size_type index ) : size_type
+		{
+			static_if( T::is_end )
+			{
+				halt;
+			}
+			else
+			{
+				if( node.index == index )
+				{
+					return node.offset;
+				}
+				else
+				{
+					return ::TupleMemebersListNodeOffset( node.next, index );
+				}
+			}
+		}
+
+		static_assert( typeinfo</ tup(i32) />.elements_list.type.is_signed_integer );
+		static_assert( typeinfo</ tup(i32) />.elements_list.offset == size_type(0) );
+
+		type T= tup( u64, i64, i32, f32, char8, u8 );
+		static_assert( TupleMemebersListNodeOffset( typeinfo</T/>.elements_list, size_type(0) ) == size_type(0) );
+		static_assert( TupleMemebersListNodeOffset( typeinfo</T/>.elements_list, size_type(1) ) == size_type(8) );
+		static_assert( TupleMemebersListNodeOffset( typeinfo</T/>.elements_list, size_type(2) ) == size_type(16) );
+		static_assert( TupleMemebersListNodeOffset( typeinfo</T/>.elements_list, size_type(3) ) == size_type(20) );
+		static_assert( TupleMemebersListNodeOffset( typeinfo</T/>.elements_list, size_type(4) ) == size_type(24) );
+		static_assert( TupleMemebersListNodeOffset( typeinfo</T/>.elements_list, size_type(5) ) == size_type(25) );
+
+	"""
+	tests_lib.build_program( c_program_text )
