@@ -587,6 +587,7 @@ Type CodeBuilder::PrepareType(
 			if( !function_type.return_value_is_reference &&
 				!( function_type.return_type.GetFundamentalType() != nullptr ||
 				   function_type.return_type.GetClassType() != nullptr ||
+				   function_type.return_type.GetTupleType() != nullptr ||
 				   function_type.return_type.GetEnumType() != nullptr ||
 				   function_type.return_type.GetFunctionPointerType() != nullptr ) )
 				REPORT_ERROR( NotImplemented, names_scope.GetErrors(), function_type_name.file_pos_, "return value types except fundamentals, enums, classes, function pointers" );
@@ -1053,6 +1054,7 @@ size_t CodeBuilder::PrepareFunction(
 		if( !function_type.return_value_is_reference &&
 			!( function_type.return_type.GetFundamentalType() != nullptr ||
 			   function_type.return_type.GetClassType() != nullptr ||
+			   function_type.return_type.GetTupleType() != nullptr ||
 			   function_type.return_type.GetEnumType() != nullptr ||
 			   function_type.return_type.GetFunctionPointerType() != nullptr ) )
 		{
@@ -2975,8 +2977,6 @@ void CodeBuilder::BuildReturnOperatorCode(
 
 		if( function_context.s_ret_ != nullptr )
 		{
-			const ClassProxyPtr class_= function_context.return_type->GetClassTypeProxy();
-			U_ASSERT( class_ != nullptr );
 			if( expression_result.value_type == ValueType::Value )
 			{
 				if( expression_result.node != nullptr )
@@ -2984,7 +2984,13 @@ void CodeBuilder::BuildReturnOperatorCode(
 				CopyBytes( expression_result.llvm_value, function_context.s_ret_, *function_context.return_type, function_context );
 			}
 			else
-				TryCallCopyConstructor( names.GetErrors(), return_operator.file_pos_, function_context.s_ret_, expression_result.llvm_value, class_, function_context );
+				CopyInitializeTupleElements_r(
+					*function_context.return_type,
+					function_context.s_ret_,
+					CreateReferenceCast( expression_result.llvm_value, expression_result.type, *function_context.return_type, function_context ),
+					return_operator.file_pos_,
+					names,
+					function_context );
 
 			CallDestructorsBeforeReturn( names, function_context, return_operator.file_pos_ );
 			function_context.llvm_ir_builder.CreateRetVoid();

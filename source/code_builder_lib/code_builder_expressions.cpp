@@ -2593,7 +2593,9 @@ Value CodeBuilder::DoCallFunction(
 	if( evaluate_args_in_reverse_order )
 		std::reverse( locked_args_references.begin(), locked_args_references.end() );
 
-	const bool return_value_is_sret= function_type.return_type.GetClassType() != nullptr && !function_type.return_value_is_reference;
+	const bool return_value_is_sret=
+		!function_type.return_value_is_reference &&
+		( function_type.return_type.GetClassType() != nullptr || function_type.return_type.GetTupleType() != nullptr );
 
 	llvm::Value* s_ret_value= nullptr;
 	if( return_value_is_sret )

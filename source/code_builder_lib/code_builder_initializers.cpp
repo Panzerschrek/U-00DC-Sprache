@@ -1093,7 +1093,7 @@ llvm::Constant* CodeBuilder::ApplyUninitializedInitializer(
 		return nullptr;
 }
 
-void CodeBuilder::CopyInitializeTupleElements_r(
+void CodeBuilder::CopyInitializeTupleElements_r( // TODO - rename to TryCallCopyConstructor_r
 	const Type& type,
 	llvm::Value* const dst, llvm::Value* const src,
 	const FilePos& file_pos,

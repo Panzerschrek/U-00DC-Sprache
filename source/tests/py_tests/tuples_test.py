@@ -154,3 +154,56 @@ def TupleFunctionArgument_Test2():
 	tests_lib.build_program( c_program_text )
 	call_result= tests_lib.run_function( "_Z3Foov" )
 	assert( call_result == 0 )
+
+
+def TupleReturnValue_Test0():
+	c_program_text= """
+		fn MakeTuple( i32 x, f64 y ) : tup( i32, f64 )
+		{
+			var tup( i32, f64 ) t[ x, y ];
+			return t; // return copy
+		}
+		fn Foo() : i32
+		{
+			var tup( i32, f64 ) t= MakeTuple( 72, 52.0 );
+			return t[0u] - i32(t[1u]);
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 72 - 52 )
+
+
+def TupleReturnValue_Test1():
+	c_program_text= """
+		fn MakeTuple( i32 x, f64 y ) : tup( i32, f64 )
+		{
+			var tup( i32, f64 ) mut t[ x, y ];
+			return move(t); // return moved value
+		}
+		fn Foo() : i32
+		{
+			var tup( i32, f64 ) t= MakeTuple( 256, 13.0 );
+			return t[0u] - i32(t[1u]);
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 256 - 13 )
+
+
+def TupleReturnValue_Test2():
+	c_program_text= """
+		fn Pass( tup( f32, i32 ) &imut t ) : tup( f32, i32 ) &imut // return reference to tuple
+		{
+			return t;
+		}
+		fn Foo() : i32
+		{
+			var tup( f32, i32 ) t[ 124.1f, 22 ];
+			return i32(Pass(t)[0u]) - Pass(t)[1u];
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 124 - 22 )
