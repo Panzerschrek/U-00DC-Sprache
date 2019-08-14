@@ -131,6 +131,8 @@ boost::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 			move_result.type= void_type_;
 			return Value( std::move(move_result), file_pos );
 		}
+		else if( args.front().type == args.back().type && args.front().type.GetTupleType() != nullptr )
+			return CallBinaryOperatorForTuple( op, left_expr, right_expr, file_pos, names, function_context );
 
 		overloaded_operator= GetOverloadedOperator( args, op, names.GetErrors(), file_pos );
 
@@ -170,6 +172,136 @@ boost::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 	}
 
 	return boost::none;
+}
+
+Value CodeBuilder::CallBinaryOperatorForTuple(
+	OverloadedOperator op,
+	const Synt::Expression&  left_expr,
+	const Synt::Expression& right_expr,
+	const FilePos& file_pos,
+	NamesScope& names,
+	FunctionContext& function_context )
+{
+	if( op == OverloadedOperator::Assign )
+	{
+		const Variable r_var= BuildExpressionCodeEnsureVariable( right_expr, names, function_context );
+		boost::optional<ReferencesGraphNodeHolder> r_var_lock;
+		if( r_var.node != nullptr )
+		{
+			if( function_context.variables_state.HaveOutgoingMutableNodes( r_var.node ) )
+				REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), file_pos, r_var.node->name );
+			r_var_lock.emplace(
+				std::make_shared<ReferencesGraphNode>( "lock "_SpC + r_var.node->name, ReferencesGraphNode::Kind::ReferenceImut ),
+				function_context );
+			function_context.variables_state.AddLink( r_var.node, r_var_lock->Node() );
+		}
+
+		const Variable l_var= BuildExpressionCodeEnsureVariable(  left_expr, names, function_context );
+		if( l_var.node != nullptr && function_context.variables_state.HaveOutgoingLinks( l_var.node ) )
+			REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), file_pos, l_var.node->name );
+
+		U_ASSERT( l_var.type == r_var.type ); // Checked before.
+		if( !l_var.type.IsCopyAssignable() )
+		{
+			REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), file_pos, l_var.type );
+			return ErrorValue();
+		}
+		if( l_var.value_type != ValueType::Reference )
+		{
+			REPORT_ERROR( ExpectedReferenceValue, names.GetErrors(), file_pos );
+			return ErrorValue();
+		}
+
+		// TODO - make reference pollution.
+
+		CopyAssignTupleElements_r(
+			l_var.type,
+			l_var.llvm_value, r_var.llvm_value,
+			file_pos,
+			names,
+			function_context );
+
+		Variable result;
+		result.type= void_type_for_ret_;
+		return Value( std::move(result), file_pos );
+	}
+	else
+	{
+		const Variable l_var= BuildExpressionCodeEnsureVariable( left_expr, names, function_context );
+		REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), file_pos, l_var.type );
+		return ErrorValue();
+	}
+}
+
+void CodeBuilder::CopyAssignTupleElements_r(
+	const Type& type,
+	llvm::Value* dst, llvm::Value* src,
+	const FilePos& file_pos,
+	NamesScope& block_names,
+	FunctionContext& function_context )
+{
+	U_ASSERT( type.IsCopyAssignable() );
+
+	if( type.GetFundamentalType() != nullptr || type.GetEnumType() != nullptr || type.GetFunctionPointerType() != nullptr )
+	{
+		if( src->getType() == dst->getType() )
+			function_context.llvm_ir_builder.CreateStore( function_context.llvm_ir_builder.CreateLoad( src ), dst );
+		else if( src->getType() == dst->getType()->getPointerElementType() )
+			function_context.llvm_ir_builder.CreateStore( src, dst );
+		else U_ASSERT( false );
+	}
+	else if( const Array* const array_type= type.GetArrayType() )
+	{
+		GenerateLoop(
+			array_type->size,
+			[&]( llvm::Value* const counter_value )
+			{
+				llvm::Value* const index_list[2]{ GetZeroGEPIndex(), counter_value };
+				CopyAssignTupleElements_r(
+					array_type->type,
+					function_context.llvm_ir_builder.CreateGEP( dst, index_list ),
+					function_context.llvm_ir_builder.CreateGEP( src, index_list ),
+					file_pos,
+					block_names,
+					function_context );
+			},
+			function_context );
+	}
+	else if( const Tuple* const tuple_type= type.GetTupleType() )
+	{
+		for( const Type& element_type : tuple_type->elements )
+		{
+			llvm::Value* const index_list[2]{ GetZeroGEPIndex(), GetFieldGEPIndex( &element_type - tuple_type->elements.data() ) };
+			CopyAssignTupleElements_r(
+				element_type,
+				function_context.llvm_ir_builder.CreateGEP( dst, index_list ),
+				function_context.llvm_ir_builder.CreateGEP( src, index_list ),
+				file_pos,
+				block_names,
+				function_context );
+		}
+	}
+	else if( const ClassProxyPtr class_type= type.GetClassTypeProxy() )
+	{
+		const FunctionVariable* copy_assignment_op= nullptr;
+
+		const Value* const assignment_operator_value= class_type->class_->members.GetThisScopeValue( OverloadedOperatorToString(OverloadedOperator::Assign) );
+		U_ASSERT( assignment_operator_value != nullptr );
+		const OverloadedFunctionsSet* const operators= assignment_operator_value->GetFunctionsSet();
+		U_ASSERT( operators != nullptr );
+		for( const FunctionVariable& op : operators->functions )
+		{
+			if( IsCopyAssignmentOperator( *op.type.GetFunctionType(), class_type ) )
+			{
+				copy_assignment_op= &op;
+				break;
+			}
+		}
+
+		U_ASSERT( copy_assignment_op != nullptr );
+		function_context.llvm_ir_builder.CreateCall( copy_assignment_op->llvm_function, { dst, src } );
+	}
+	else U_ASSERT(false);
 }
 
 Value CodeBuilder::BuildExpressionCode(

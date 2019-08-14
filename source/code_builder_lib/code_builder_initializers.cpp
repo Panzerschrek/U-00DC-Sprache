@@ -1143,6 +1143,7 @@ void CodeBuilder::CopyInitializeTupleElements_r( // TODO - rename to TryCallCopy
 	}
 	else if( const ClassProxyPtr class_type= type.GetClassTypeProxy() )
 		TryCallCopyConstructor( block_names.GetErrors(), file_pos, dst, src, class_type, function_context );
+	else U_ASSERT(false);
 }
 
 llvm::Constant* CodeBuilder::InitializeReferenceField(

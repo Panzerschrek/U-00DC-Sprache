@@ -269,3 +269,86 @@ def Typeinfo_ForTuples_Test2():
 
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def TupleCopyAssignment_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			var tup( f32, i32 ) t0[ 552.7f, 1237827 ];
+			var tup( f32, i32 ) mut t1= zero_init;
+			t1= t0;
+			halt if( t1[0u] != 552.7f );
+			halt if( t1[1u] !=1237827 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def TupleCopyAssignment_Test1():
+	c_program_text= """
+		struct S{ i32 x; i32 y; }
+		fn Foo()
+		{
+			var tup( S, bool ) t0[ { .x= 42, .y= 24 }, true ];
+			var tup( S, bool ) mut t1= zero_init;
+			t1= t0;
+			halt if( t1[0u].x != 42 );
+			halt if( t1[0u].y != 24 );
+			halt if( t1[1u] != true );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def TupleCopyAssignment_Test2():
+	c_program_text= """
+		fn Foo()
+		{
+			var tup( [ i32, 2 ], char8 ) t0[ [ 639, 582 ], "q"c8 ];
+			var tup( [ i32, 2 ], char8 ) mut t1= zero_init;
+			t1= t0; // Assignemnt works also for array elements of tuples.
+			halt if( t1[0u][0u] != 639 );
+			halt if( t1[0u][1u] != 582 );
+			halt if( t1[1u] != "q"c8 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def TupleCopyAssignment_Test3():
+	c_program_text= """
+		struct S
+		{
+			op=( mut this, S &imut other )= delete;
+			i32 x; i32 y;
+		}
+		fn Foo()
+		{
+			var tup( S, bool ) t0[ { .x= 42, .y= 24 }, true ];
+			var tup( S, bool ) mut t1= zero_init;
+			t1= t0;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "OperationNotSupportedForThisType" )
+	assert( errors_list[0].file_pos.line == 11 )
+
+
+def TupleCopyAssignment_Test3():
+	c_program_text= """
+		fn Foo()
+		{
+			var tup( f32, bool ) t0[ 0.25f, false ];
+			var tup( f32, bool ) t1= zero_init;
+			t1= t0; // Assign to const referenfe
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ExpectedReferenceValue" )
+	assert( errors_list[0].file_pos.line == 6 )

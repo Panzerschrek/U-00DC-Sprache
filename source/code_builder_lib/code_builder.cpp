@@ -2618,7 +2618,7 @@ void CodeBuilder::BuildAssignmentOperatorCode(
 			block_names,
 			function_context ) == boost::none )
 	{ // Here process default assignment operator for fundamental types.
-		// Evalueate right part
+		// Evaluate right part
 		Variable r_var= BuildExpressionCodeEnsureVariable( assignment_operator.r_value_, block_names, function_context );
 
 		if( r_var.type.GetFundamentalType() != nullptr || r_var.type.GetEnumType() != nullptr || r_var.type.GetFunctionPointerType() != nullptr )

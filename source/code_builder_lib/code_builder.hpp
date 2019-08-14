@@ -456,6 +456,21 @@ private:
 		NamesScope& names,
 		FunctionContext& function_context );
 
+	Value CallBinaryOperatorForTuple(
+		OverloadedOperator op,
+		const Synt::Expression&  left_expr,
+		const Synt::Expression& right_expr,
+		const FilePos& file_pos,
+		NamesScope& names,
+		FunctionContext& function_context );
+
+	void CopyAssignTupleElements_r(
+		const Type& type,
+		llvm::Value* dst, llvm::Value* src,
+		const FilePos& file_pos,
+		NamesScope& block_names,
+		FunctionContext& function_context );
+
 	Value BuildBinaryOperator(
 		const Variable& l_var,
 		const Variable& r_var,
