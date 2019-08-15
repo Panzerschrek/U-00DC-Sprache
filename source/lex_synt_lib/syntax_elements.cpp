@@ -183,6 +183,11 @@ WhileOperator::WhileOperator( const FilePos& file_pos)
 	, block_(file_pos)
 {}
 
+ForOperator::ForOperator( const FilePos& file_pos)
+	: SyntaxElementBase(file_pos)
+	, block_(file_pos)
+{}
+
 BreakOperator::BreakOperator( const FilePos& file_pos )
 	: SyntaxElementBase(file_pos)
 {}

@@ -2076,6 +2076,11 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockCode(
 			this_.BuildWhileOperatorCode( while_operator, block_names, function_context );
 			return false;
 		}
+		bool operator()( const Synt::ForOperator& for_operator )
+		{
+			this_.BuildForOperatorCode( for_operator, block_names, function_context );
+			return false;
+		}
 		bool operator()( const Synt::BreakOperator& break_operator )
 		{
 			this_.BuildBreakOperatorCode( break_operator, block_names, function_context );
@@ -3080,6 +3085,45 @@ void CodeBuilder::BuildWhileOperatorCode(
 
 	const auto errors= ReferencesGraph::CheckWhileBlokVariablesState( variables_state_before_while, function_context.variables_state, while_operator.block_.end_file_pos_ );
 	names.GetErrors().insert( names.GetErrors().end(), errors.begin(), errors.end() );
+}
+
+void CodeBuilder::BuildForOperatorCode(
+	const Synt::ForOperator& for_operator,
+	NamesScope& names,
+	FunctionContext& function_context )
+{
+	const StackVariablesStorage temp_variables_storage( function_context );
+	const Variable sequence_expression= BuildExpressionCodeEnsureVariable( for_operator.sequence_, names, function_context );
+
+	if( const Tuple* const tuple_type= sequence_expression.type.GetTupleType() )
+	{
+		// TODO - support break/continue
+		U_ASSERT( sequence_expression.location == Variable::Location::Pointer );
+		for( const Type& element_type : tuple_type->elements )
+		{
+			const size_t element_index= size_t( &element_type - tuple_type->elements.data() );
+			NamesScope loop_names( ""_SpC, &names );
+
+			// TODO - make copy of variable, if reference modifier is "none".
+			Variable var;
+			var.type= element_type;
+			var.llvm_value= function_context.llvm_ir_builder.CreateGEP( sequence_expression.llvm_value, { GetZeroGEPIndex(), GetFieldGEPIndex( element_index ) } );
+			var.value_type= for_operator.mutability_modifier_ == MutabilityModifier::Mutable ? ValueType::Reference : ValueType::ConstReference;
+			var.node= sequence_expression.node;
+
+			loop_names.AddName( for_operator.loop_variable_name_, Value( std::move(var), for_operator.file_pos_ ) );
+
+			// TODO - create template errors context.
+			BuildBlockCode( for_operator.block_, loop_names, function_context );
+		}
+	}
+	else
+	{
+		REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), for_operator.file_pos_, sequence_expression.type );
+		return;
+	}
+
+	CallDestructors( *function_context.stack_variables_stack.back(), names, function_context, for_operator.file_pos_ );
 }
 
 void CodeBuilder::BuildBreakOperatorCode(

@@ -352,3 +352,21 @@ def TupleCopyAssignment_Test3():
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ExpectedReferenceValue" )
 	assert( errors_list[0].file_pos.line == 6 )
+
+
+def TupleFor_Test0():
+	c_program_text= """
+		fn Foo() : i32
+		{
+			var tup( f32, i32, i64 ) t[ 952.1f, 56, 741i64 ];
+			var i32 mut res= 0;
+			for( e : t )
+			{
+				res+= i32(e);
+			}
+			return res;
+		}
+	"""
+	tests_lib.build_program( c_program_text, True )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 952 + 56 + 741 )
