@@ -2206,6 +2206,7 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 		}
 		if( variable_declaration.reference_modifier != ReferenceModifier::Reference )
 		{
+			// TODO - check also tuple elements.
 			if( const Class* const class_type= type.GetClassType() )
 				if( class_type->kind == Class::Kind::Abstract || class_type->kind == Class::Kind::Interface )
 					REPORT_ERROR( ConstructingAbstractClassOrInterface, block_names.GetErrors(), variables_declaration.file_pos_, type );
@@ -2414,6 +2415,7 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 	}
 	if( auto_variable_declaration.reference_modifier != ReferenceModifier::Reference )
 	{
+		// TODO - check also tuple elements.
 		if( const Class* const class_type= variable.type.GetClassType() )
 			if( class_type->kind == Class::Kind::Abstract || class_type->kind == Class::Kind::Interface )
 				REPORT_ERROR( ConstructingAbstractClassOrInterface, block_names.GetErrors(), auto_variable_declaration.file_pos_, variable.type );
@@ -3095,6 +3097,14 @@ void CodeBuilder::BuildForOperatorCode(
 	const StackVariablesStorage temp_variables_storage( function_context );
 	const Variable sequence_expression= BuildExpressionCodeEnsureVariable( for_operator.sequence_, names, function_context );
 
+	boost::optional<ReferencesGraphNodeHolder> sequence_lock;
+	if( sequence_expression.node != nullptr )
+		sequence_lock.emplace(
+			std::make_shared<ReferencesGraphNode>(
+				sequence_expression.node->name + " seequence lock"_SpC,
+				sequence_expression.value_type == ValueType::Reference ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut ),
+			function_context );
+
 	if( const Tuple* const tuple_type= sequence_expression.type.GetTupleType() )
 	{
 		// TODO - support break/continue
@@ -3103,18 +3113,83 @@ void CodeBuilder::BuildForOperatorCode(
 		{
 			const size_t element_index= size_t( &element_type - tuple_type->elements.data() );
 			NamesScope loop_names( ""_SpC, &names );
+			const StackVariablesStorage element_pass_variables_storage( function_context );
 
-			// TODO - make copy of variable, if reference modifier is "none".
-			Variable var;
-			var.type= element_type;
-			var.llvm_value= function_context.llvm_ir_builder.CreateGEP( sequence_expression.llvm_value, { GetZeroGEPIndex(), GetFieldGEPIndex( element_index ) } );
-			var.value_type= for_operator.mutability_modifier_ == MutabilityModifier::Mutable ? ValueType::Reference : ValueType::ConstReference;
-			var.node= sequence_expression.node;
+			Variable variable;
+			variable.type= element_type;
 
-			loop_names.AddName( for_operator.loop_variable_name_, Value( std::move(var), for_operator.file_pos_ ) );
+			ReferencesGraphNode::Kind node_kind;
+			if( for_operator.reference_modifier_ != ReferenceModifier::Reference )
+				node_kind= ReferencesGraphNode::Kind::Variable;
+			else if( for_operator.mutability_modifier_ == MutabilityModifier::Mutable )
+				node_kind= ReferencesGraphNode::Kind::ReferenceMut;
+			else
+				node_kind= ReferencesGraphNode::Kind::ReferenceImut;
+			const auto var_node= std::make_shared<ReferencesGraphNode>( for_operator.loop_variable_name_, node_kind );
+
+			if( for_operator.reference_modifier_ == ReferenceModifier::Reference )
+			{
+				if( for_operator.mutability_modifier_ == MutabilityModifier::Mutable && sequence_expression.value_type != ValueType::Reference )
+				{
+					REPORT_ERROR( BindingConstReferenceToNonconstReference, names.GetErrors(), for_operator.file_pos_ );
+					return;
+				}
+
+				variable.llvm_value= function_context.llvm_ir_builder.CreateGEP( sequence_expression.llvm_value, { GetZeroGEPIndex(), GetFieldGEPIndex( element_index ) } );
+				variable.value_type= for_operator.mutability_modifier_ == MutabilityModifier::Mutable ? ValueType::Reference : ValueType::ConstReference;
+
+				function_context.stack_variables_stack.back()->RegisterVariable( std::make_pair( var_node, variable ) );
+				variable.node= var_node;
+
+				const bool is_mutable= variable.value_type == ValueType::Reference;
+				if( sequence_lock != boost::none )
+				{
+					if( is_mutable )
+					{
+						if( function_context.variables_state.HaveOutgoingLinks( sequence_expression.node ) )
+							REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), for_operator.file_pos_, sequence_expression.node->name );
+					}
+					else if( function_context.variables_state.HaveOutgoingMutableNodes( sequence_expression.node ) )
+						REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), for_operator.file_pos_, sequence_expression.node->name );
+					function_context.variables_state.AddLink( sequence_lock->Node(), var_node );
+				}
+			}
+			else
+			{
+				if( !EnsureTypeCompleteness( element_type, TypeCompleteness::Complete ) )
+				{
+					REPORT_ERROR( UsingIncompleteType, names.GetErrors(), for_operator.file_pos_, element_type );
+					return;
+				}
+				if( !element_type.IsCopyConstructible() )
+				{
+					REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), for_operator.file_pos_, element_type );
+					return;
+				}
+
+				variable.value_type= for_operator.mutability_modifier_ == MutabilityModifier::Mutable ? ValueType::Reference : ValueType::ConstReference;
+				variable.llvm_value= function_context.alloca_ir_builder.CreateAlloca( element_type.GetLLVMType() );
+				variable.llvm_value->setName( ToUTF8( for_operator.loop_variable_name_ ) );
+
+				function_context.stack_variables_stack.back()->RegisterVariable( std::make_pair( var_node, variable ) );
+				variable.node= var_node;
+
+				// TODO - lock inner references
+
+				CopyInitializeTupleElements_r(
+					element_type,
+					variable.llvm_value,
+					function_context.llvm_ir_builder.CreateGEP( sequence_expression.llvm_value, { GetZeroGEPIndex(), GetFieldGEPIndex( element_index ) } ),
+					for_operator.file_pos_,
+					loop_names,
+					function_context );
+			}
+
+			loop_names.AddName( for_operator.loop_variable_name_, Value( std::move(variable), for_operator.file_pos_ ) );
 
 			// TODO - create template errors context.
 			BuildBlockCode( for_operator.block_, loop_names, function_context );
+			CallDestructors( *function_context.stack_variables_stack.back(), names, function_context, for_operator.file_pos_ );
 		}
 	}
 	else

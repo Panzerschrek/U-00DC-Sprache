@@ -481,6 +481,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type, const T
 				}
 				else
 				{
+					// TODO - check also tuple elements.
 					if( const Class* const field_class_type= class_field->type.GetClassType() )
 						if( field_class_type->kind == Class::Kind::Abstract || field_class_type->kind == Class::Kind::Interface )
 							REPORT_ERROR( ConstructingAbstractClassOrInterface, class_parent_namespace.GetErrors(), in_field.file_pos_, class_field->type );

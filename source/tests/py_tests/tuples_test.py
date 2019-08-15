@@ -360,13 +360,82 @@ def TupleFor_Test0():
 		{
 			var tup( f32, i32, i64 ) t[ 952.1f, 56, 741i64 ];
 			var i32 mut res= 0;
-			for( e : t )
+			for( e : t ) // Value for element
 			{
 				res+= i32(e);
 			}
 			return res;
 		}
 	"""
-	tests_lib.build_program( c_program_text, True )
+	tests_lib.build_program( c_program_text )
 	call_result= tests_lib.run_function( "_Z3Foov" )
 	assert( call_result == 952 + 56 + 741 )
+
+
+def TupleFor_Test1():
+	c_program_text= """
+		fn Foo()
+		{
+			var tup( f32, i32, i64 ) mut t[ 0.25f, 14, 29i64 ];
+			for( mut e : t ) // Can modify value for element
+			{
+				e*= typeof(e)(10);
+			}
+			// Tuple itslef unchanged
+			halt if( t[0u] != 0.25f);
+			halt if( t[1u] != 14 );
+			halt if( t[2u] != 29i64 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def TupleFor_Test2():
+	c_program_text= """
+		fn Foo()
+		{
+			var tup( f32, i32, i64 ) mut t[ 12.1f, 745, 124i64 ];
+			for( &mut e : t ) // Mutable reference for element
+			{
+				e*= typeof(e)(2);
+			}
+			halt if( t[0u] != 12.1f * 2.0f );
+			halt if( t[1u] != 745 * 2 );
+			halt if( t[2u] != 124i64 * 2i64 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def TupleFor_Test3():
+	c_program_text= """
+		fn Foo()
+		{
+			var tup( f32, i32, i64 ) t= zero_init;
+			for( &mut e : t ) {}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "BindingConstReferenceToNonconstReference" )
+	assert( errors_list[0].file_pos.line == 5 )
+
+
+def TupleFor_Test4():
+	c_program_text= """
+		struct S
+		{
+			fn constructor( mut this, S &imut other )= delete;
+		}
+		fn Foo()
+		{
+			var tup( S ) t= zero_init;
+			for( e : t ) {} // Can not copy value, because on of types is not copy-constructible.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "OperationNotSupportedForThisType" )
+	assert( errors_list[0].file_pos.line == 9 )
