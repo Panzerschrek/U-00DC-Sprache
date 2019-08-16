@@ -3117,6 +3117,7 @@ void CodeBuilder::BuildForOperatorCode(
 
 			Variable variable;
 			variable.type= element_type;
+			variable.value_type= for_operator.mutability_modifier_ == MutabilityModifier::Mutable ? ValueType::Reference : ValueType::ConstReference;
 
 			ReferencesGraphNode::Kind node_kind;
 			if( for_operator.reference_modifier_ != ReferenceModifier::Reference )
@@ -3136,8 +3137,6 @@ void CodeBuilder::BuildForOperatorCode(
 				}
 
 				variable.llvm_value= function_context.llvm_ir_builder.CreateGEP( sequence_expression.llvm_value, { GetZeroGEPIndex(), GetFieldGEPIndex( element_index ) } );
-				variable.value_type= for_operator.mutability_modifier_ == MutabilityModifier::Mutable ? ValueType::Reference : ValueType::ConstReference;
-
 				function_context.stack_variables_stack.back()->RegisterVariable( std::make_pair( var_node, variable ) );
 				variable.node= var_node;
 
@@ -3167,10 +3166,7 @@ void CodeBuilder::BuildForOperatorCode(
 					return;
 				}
 
-				variable.value_type= for_operator.mutability_modifier_ == MutabilityModifier::Mutable ? ValueType::Reference : ValueType::ConstReference;
-				variable.llvm_value= function_context.alloca_ir_builder.CreateAlloca( element_type.GetLLVMType() );
-				variable.llvm_value->setName( ToUTF8( for_operator.loop_variable_name_ ) );
-
+				variable.llvm_value= function_context.alloca_ir_builder.CreateAlloca( element_type.GetLLVMType(), nullptr, ToUTF8( for_operator.loop_variable_name_ ) + std::to_string(element_index) );
 				function_context.stack_variables_stack.back()->RegisterVariable( std::make_pair( var_node, variable ) );
 				variable.node= var_node;
 
@@ -3194,6 +3190,7 @@ void CodeBuilder::BuildForOperatorCode(
 	}
 	else
 	{
+		// TODO - support array types.
 		REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), for_operator.file_pos_, sequence_expression.type );
 		return;
 	}
