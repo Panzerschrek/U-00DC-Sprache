@@ -630,6 +630,11 @@ private:
 		NamesScope& names,
 		FunctionContext& function_context );
 
+	void BuildForOperatorCode(
+		const Synt::ForOperator& for_operator,
+		NamesScope& names,
+		FunctionContext& function_context );
+
 	void BuildBreakOperatorCode(
 		const Synt::BreakOperator& break_operator,
 		NamesScope& names,

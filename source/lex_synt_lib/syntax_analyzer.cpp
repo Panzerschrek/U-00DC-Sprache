@@ -267,6 +267,7 @@ private:
 
 	ReturnOperator ParseReturnOperator();
 	WhileOperator ParseWhileOperator();
+	ForOperator ParseForOperator();
 	BreakOperator ParseBreakOperator();
 	ContinueOperator ParseContinueOperator();
 	IfOperator ParseIfOperator();
@@ -2457,6 +2458,71 @@ WhileOperator SyntaxAnalyzer::ParseWhileOperator()
 	return result;
 }
 
+ForOperator SyntaxAnalyzer::ParseForOperator()
+{
+	U_ASSERT( it_->type == Lexem::Type::Identifier && it_->text == Keywords::for_ );
+	ForOperator result( it_->file_pos );
+
+	NextLexem();
+	if( it_->type != Lexem::Type::BracketLeft )
+	{
+		PushErrorMessage();
+		return result;
+	}
+
+	NextLexem();
+
+	if( it_->type == Lexem::Type::And )
+	{
+		result.reference_modifier_= ReferenceModifier::Reference;
+		NextLexem();
+	}
+	if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::mut_ )
+	{
+		result.mutability_modifier_= MutabilityModifier::Mutable;
+		NextLexem();
+	}
+	else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::imut_ )
+	{
+		result.mutability_modifier_= MutabilityModifier::Immutable;
+		NextLexem();
+	}
+
+	if( it_->type != Lexem::Type::Identifier )
+	{
+		PushErrorMessage();
+		return result;
+	}
+	result.loop_variable_name_= it_->text;
+	NextLexem();
+
+	if( it_->type != Lexem::Type::Colon )
+	{
+		PushErrorMessage();
+		return result;
+	}
+	NextLexem();
+
+	result.sequence_= ParseExpression();
+
+	if( it_->type != Lexem::Type::BracketRight )
+	{
+		PushErrorMessage();
+		return result;
+	}
+
+	NextLexem();
+
+	if( it_->type != Lexem::Type::BraceLeft )
+	{
+		PushErrorMessage();
+		return result;
+	}
+
+	result.block_= ParseBlock();
+	return result;
+}
+
 BreakOperator SyntaxAnalyzer::ParseBreakOperator()
 {
 	U_ASSERT( it_->type == Lexem::Type::Identifier && it_->text == Keywords::break_ );
@@ -2745,6 +2811,8 @@ std::vector<BlockElement> SyntaxAnalyzer::ParseBlockElements()
 			elements.emplace_back( ParseReturnOperator() );
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::while_ )
 			elements.emplace_back( ParseWhileOperator() );
+		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::for_ )
+			elements.emplace_back( ParseForOperator() );
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::break_ )
 			elements.emplace_back( ParseBreakOperator() );
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::continue_ )

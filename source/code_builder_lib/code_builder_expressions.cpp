@@ -2938,6 +2938,7 @@ Variable CodeBuilder::BuildTempVariableConstruction(
 		REPORT_ERROR( UsingIncompleteType, names.GetErrors(), call_operator.file_pos_, type );
 		return Variable();
 	}
+	// TODO - check also tuple elements.
 	if( const Class* const class_type= type.GetClassType() )
 		if( class_type->kind == Class::Kind::Abstract || class_type->kind == Class::Kind::Interface )
 			REPORT_ERROR( ConstructingAbstractClassOrInterface, names.GetErrors(), call_operator.file_pos_, type );
