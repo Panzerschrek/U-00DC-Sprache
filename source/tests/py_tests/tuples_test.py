@@ -488,3 +488,85 @@ def AutoVariableDeclaration_ForTuples_Test3():
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "OperationNotSupportedForThisType" )
 	assert( errors_list[0].file_pos.line == 10 )
+
+
+def TupleFieldCopy_Test0():
+	c_program_text= """
+		struct S
+		{
+			tup( i32, f32 ) t;
+		}
+		fn Foo()
+		{
+			var S s{ .t[ 541, 56.0f ] };
+			var S s_copy(s); // Generated copy constructor must copy tuple elements.
+			halt if( s_copy.t[0u] != 541 );
+			halt if( s_copy.t[1u] != 56.0f );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def TupleFieldCopy_Test1():
+	c_program_text= """
+		struct S
+		{
+			tup( f32, i32 ) t;
+		}
+		fn Foo()
+		{
+			var S s0{ .t[ -92.5f, 11111 ] };
+			var S mut s1= zero_init;
+			s1= s0; // Generated copy assignnment operator must copy tuple elements.
+			halt if( s1.t[0u] != -92.5f );
+			halt if( s1.t[1u] != 11111 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def TupleFieldCopy_Test2():
+	c_program_text= """
+		struct T
+		{
+			fn constructor( mut this, T &imut other )= delete;
+		}
+		struct S
+		{
+			tup( T ) t;
+		}
+		fn Foo()
+		{
+			var S s;
+			var S s_copy(s); // Copy constructor not generated, because memmber of struct tuple field is noncopyable.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "CouldNotSelectOverloadedFunction" )
+	assert( errors_list[0].file_pos.line == 13 )
+
+
+def TupleFieldCopy_Test3():
+	c_program_text= """
+		struct T
+		{
+			op=( mut this, T &imut other )= delete;
+		}
+		struct S
+		{
+			tup( T ) t;
+		}
+		fn Foo()
+		{
+			var S s0;
+			var S mut s1;
+			s1= s0; // Copy assignment operator not generated, because memmber of struct tuple field is noncopyable.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "OperationNotSupportedForThisType" )
+	assert( errors_list[0].file_pos.line == 14 )

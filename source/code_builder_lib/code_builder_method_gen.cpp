@@ -518,7 +518,7 @@ void CodeBuilder::TryGenerateCopyAssignmentOperator( Class& the_class, const Typ
 	}
 
 	if( prev_operator_variable == nullptr && the_class.kind != Class::Kind::Struct )
-		return; // Do not generate copy-constructor for classes. Generate it only if "=default" explicitly specified for this method.
+		return; // Do not generate copy-assignement operator for classes. Generate it only if "=default" explicitly specified for this method.
 
 	bool all_fields_is_copy_assignable= true;
 
@@ -694,6 +694,18 @@ void CodeBuilder::BuildCopyConstructorPart(
 			},
 			function_context);
 	}
+	else if( const Tuple* const tuple_type= type.GetTupleType() )
+	{
+		for( const Type& element_type : tuple_type->elements )
+		{
+			llvm::Value* const index_list[2]{ GetZeroGEPIndex(), GetFieldGEPIndex( &element_type - tuple_type->elements.data() ) };
+			BuildCopyConstructorPart(
+				function_context.llvm_ir_builder.CreateGEP( src, index_list ),
+				function_context.llvm_ir_builder.CreateGEP( dst, index_list ),
+				element_type,
+				function_context );
+		}
+	}
 	else if( const ClassProxyPtr class_type_proxy= type.GetClassTypeProxy() )
 	{
 		const Type filed_class_type= class_type_proxy;
@@ -757,6 +769,18 @@ void CodeBuilder::BuildCopyAssignmentOperatorPart(
 					function_context );
 			},
 			function_context);
+	}
+	else if( const Tuple* const tuple_type= type.GetTupleType() )
+	{
+		for( const Type& element_type : tuple_type->elements )
+		{
+			llvm::Value* const index_list[2]{ GetZeroGEPIndex(), GetFieldGEPIndex( &element_type - tuple_type->elements.data() ) };
+			BuildCopyAssignmentOperatorPart(
+				function_context.llvm_ir_builder.CreateGEP( src, index_list ),
+				function_context.llvm_ir_builder.CreateGEP( dst, index_list ),
+				element_type,
+				function_context );
+		}
 	}
 	else if( const ClassProxyPtr class_type_proxy= type.GetClassTypeProxy() )
 	{
