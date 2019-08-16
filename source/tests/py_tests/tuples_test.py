@@ -439,3 +439,52 @@ def TupleFor_Test4():
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "OperationNotSupportedForThisType" )
 	assert( errors_list[0].file_pos.line == 9 )
+
+
+def AutoVariableDeclaration_ForTuples_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			var tup( f32, i32 ) t0[ 75.5f, 666 ];
+			auto t1= t0; // Copy tuple with fundamental elements
+			halt if( t1[0u] != 75.5f );
+			halt if( t1[1u] != 666 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def AutoVariableDeclaration_ForTuples_Test1():
+	c_program_text= """
+		struct S{ i32 x; i32 y; }
+		fn Foo()
+		{
+			var tup( S, bool ) t0[ { .x= 42, .y= 24 }, true ];
+			auto t1= t0; // Copy tuple with struct elements
+			halt if( t1[0u].x != 42 );
+			halt if( t1[0u].y != 24 );
+			halt if( t1[1u] != true );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def AutoVariableDeclaration_ForTuples_Test3():
+	c_program_text= """
+		struct S
+		{
+			fn constructor( mut this, S &imut other )= delete;
+			i32 x; i32 y;
+		}
+		fn Foo()
+		{
+			var tup( S, bool ) t0[ { .x= 42, .y= 24 }, true ];
+			auto t1= t0;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "OperationNotSupportedForThisType" )
+	assert( errors_list[0].file_pos.line == 10 )

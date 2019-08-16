@@ -2379,6 +2379,7 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 		const bool type_is_ok=
 			initializer_experrsion.type.GetFundamentalType() != nullptr ||
 			initializer_experrsion.type.GetArrayType() != nullptr ||
+			initializer_experrsion.type.GetTupleType() != nullptr ||
 			initializer_experrsion.type.GetClassType() != nullptr ||
 			initializer_experrsion.type.GetEnumType() != nullptr ||
 			initializer_experrsion.type.GetFunctionPointerType() != nullptr;
@@ -2478,75 +2479,65 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 		if( !variable.type.CanBeConstexpr() )
 			function_context.have_non_constexpr_operations_inside= true; // Declaring variable with non-constexpr type in constexpr function not allowed.
 
-		variable.llvm_value= function_context.alloca_ir_builder.CreateAlloca( variable.type.GetLLVMType() );
-		variable.llvm_value->setName( ToUTF8( auto_variable_declaration.name ) );
+		variable.llvm_value= function_context.alloca_ir_builder.CreateAlloca( variable.type.GetLLVMType(), nullptr, ToUTF8( auto_variable_declaration.name ) );
 
 		function_context.stack_variables_stack[ function_context.stack_variables_stack.size() - 2u ]->RegisterVariable( std::make_pair( var_node, variable ) );
 		variable.node= var_node;
 
-		if( variable.type.GetFundamentalType() != nullptr || variable.type.GetEnumType() != nullptr || variable.type.GetFunctionPointerType() != nullptr )
+		if( initializer_experrsion.value_type == ValueType::Value )
 		{
-			llvm::Value* const value_for_assignment= CreateMoveToLLVMRegisterInstruction( initializer_experrsion, function_context );
-			function_context.llvm_ir_builder.CreateStore( value_for_assignment, variable.llvm_value );
-			variable.constexpr_value= initializer_experrsion.constexpr_value;
-		}
-		else if( const ClassProxyPtr class_type= variable.type.GetClassTypeProxy() )
-		{
-			U_ASSERT( class_type->class_->completeness == TypeCompleteness::Complete );
-			if( initializer_experrsion.value_type == ValueType::Value )
+			const ReferencesGraphNodePtr& variable_for_move= initializer_experrsion.node;
+			if( variable_for_move != nullptr )
 			{
-				const ReferencesGraphNodePtr& variable_for_move= initializer_experrsion.node;
-				if( variable_for_move != nullptr )
+				U_ASSERT(variable_for_move->kind == ReferencesGraphNode::Kind::Variable );
+
+				const ReferencesGraphNodePtr initializer_expression_inner_node= function_context.variables_state.GetNodeInnerReference( variable_for_move );
+				if( initializer_expression_inner_node != nullptr )
 				{
-					U_ASSERT(variable_for_move->kind == ReferencesGraphNode::Kind::Variable );
-
-					const ReferencesGraphNodePtr initializer_expression_inner_node= function_context.variables_state.GetNodeInnerReference( variable_for_move );
-					if( initializer_expression_inner_node != nullptr )
-					{
-						const ReferencesGraphNodePtr inner_reference= std::make_shared<ReferencesGraphNode>(
-							"var"_SpC + auto_variable_declaration.name + " inner node"_SpC,
-							initializer_expression_inner_node->kind);
-						function_context.variables_state.SetNodeInnerReference( var_node, inner_reference );
-						function_context.variables_state.AddLink( initializer_expression_inner_node, inner_reference );
-					}
-					function_context.variables_state.MoveNode( variable_for_move );
+					const ReferencesGraphNodePtr inner_reference= std::make_shared<ReferencesGraphNode>(
+						"var"_SpC + auto_variable_declaration.name + " inner node"_SpC,
+						initializer_expression_inner_node->kind);
+					function_context.variables_state.SetNodeInnerReference( var_node, inner_reference );
+					function_context.variables_state.AddLink( initializer_expression_inner_node, inner_reference );
 				}
-
-				CopyBytes( initializer_experrsion.llvm_value, variable.llvm_value, variable.type, function_context );
-				variable.constexpr_value= initializer_experrsion.constexpr_value; // Move can preserve constexpr.
+				function_context.variables_state.MoveNode( variable_for_move );
 			}
-			else
-			{
-				TryCallCopyConstructor(
-					block_names.GetErrors(),
-					auto_variable_declaration.file_pos_,
-					variable.llvm_value, initializer_experrsion.llvm_value,
-					variable.type.GetClassTypeProxy(),
-					function_context );
 
-				const ReferencesGraphNodePtr& src_node= initializer_experrsion.node;
-				if( src_node != nullptr )
-				{
-					const auto src_node_inner_references= function_context.variables_state.GetAllAccessibleInnerNodes_r( src_node );
-					if( !src_node_inner_references.empty() )
-					{
-						bool node_is_mutable= false;
-						for( const ReferencesGraphNodePtr& src_node_inner_reference : src_node_inner_references )
-							node_is_mutable= node_is_mutable || src_node_inner_reference->kind == ReferencesGraphNode::Kind::ReferenceMut;
-
-						const auto dst_node_inner_reference= std::make_shared<ReferencesGraphNode>( var_node->name + " inner variable"_SpC, node_is_mutable ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut );
-						function_context.variables_state.SetNodeInnerReference( var_node, dst_node_inner_reference );
-						for( const ReferencesGraphNodePtr& src_node_inner_reference : src_node_inner_references )
-							function_context.variables_state.AddLink( src_node_inner_reference, dst_node_inner_reference );
-					}
-				}
-			}
+			CopyBytes( initializer_experrsion.llvm_value, variable.llvm_value, variable.type, function_context );
 		}
 		else
 		{
-			REPORT_ERROR( NotImplemented, block_names.GetErrors(), auto_variable_declaration.file_pos_, "expression initialization for nonfundamental types" );
-			return;
+			if( !variable.type.IsCopyConstructible() )
+			{
+				REPORT_ERROR( OperationNotSupportedForThisType, block_names.GetErrors(), auto_variable_declaration.file_pos_, variable.type );
+				return;
+			}
+			CopyInitializeTupleElements_r(
+				variable.type,
+				variable.llvm_value, initializer_experrsion.llvm_value,
+				auto_variable_declaration.file_pos_,
+				block_names,
+				function_context );
+
+			const ReferencesGraphNodePtr& src_node= initializer_experrsion.node;
+			if( src_node != nullptr )
+			{
+				const auto src_node_inner_references= function_context.variables_state.GetAllAccessibleInnerNodes_r( src_node );
+				if( !src_node_inner_references.empty() )
+				{
+					bool node_is_mutable= false;
+					for( const ReferencesGraphNodePtr& src_node_inner_reference : src_node_inner_references )
+						node_is_mutable= node_is_mutable || src_node_inner_reference->kind == ReferencesGraphNode::Kind::ReferenceMut;
+
+					const auto dst_node_inner_reference= std::make_shared<ReferencesGraphNode>( var_node->name + " inner variable"_SpC, node_is_mutable ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut );
+					function_context.variables_state.SetNodeInnerReference( var_node, dst_node_inner_reference );
+					for( const ReferencesGraphNodePtr& src_node_inner_reference : src_node_inner_references )
+						function_context.variables_state.AddLink( src_node_inner_reference, dst_node_inner_reference );
+				}
+			}
 		}
+		// constexpr preserved for move/copy.
+		variable.constexpr_value= initializer_experrsion.constexpr_value;
 	}
 	else U_ASSERT(false);
 
