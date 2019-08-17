@@ -114,7 +114,7 @@ U_TEST(ExpressionInitializerTest4)
 		struct S{ i32 x; i32 y; }
 		fn Foo()
 		{
-			var tup( i32, f32, S, [ bool, 2 ] ) mut t= zero_init;
+			var tup[ i32, f32, S, [ bool, 2 ] ] mut t= zero_init;
 			t[0u]= 43;
 			t[1u]= 0.25f;
 			t[2u].x= 11;
@@ -123,7 +123,7 @@ U_TEST(ExpressionInitializerTest4)
 			t[3u][1u]= false;
 
 			// Here tuple must be recursively copied. For structs copy constructor must be called.
-			var tup( i32, f32, S, [ bool, 2 ] ) t_copy= t;
+			var tup[ i32, f32, S, [ bool, 2 ] ] t_copy= t;
 
 			halt if( t_copy[0u] != 43 );
 			halt if( t_copy[1u] != 0.25f );
@@ -198,8 +198,8 @@ U_TEST(ConstructorInitializer_ForTuples_Test0)
 	R"(
 		fn Foo() : i32
 		{
-			var tup( i32, f32 ) t[ 562, 3.0f + 2.0f ];
-			var tup( i32, f32 ) t_copy(t);
+			var tup[ i32, f32 ] t[ 562, 3.0f + 2.0f ];
+			var tup[ i32, f32 ] t_copy(t);
 			return i32(t_copy[0u]) - i32(t_copy[1u]);
 		}
 	)";
@@ -329,7 +329,7 @@ U_TEST(ArrayInitializer_ForTuples_Test0)
 	R"(
 		fn Foo() : f64
 		{
-			var tup( i32, f32 ) t[ 668, 2.0f + 2.0f ];
+			var tup[ i32, f32 ] t[ 668, 2.0f + 2.0f ];
 			return f64(t[0u]) - f64(t[1u]);
 		}
 	)";
@@ -350,8 +350,8 @@ U_TEST(ArrayInitializer_ForTuples_Test1)
 	R"(
 		fn Foo() : i32
 		{
-			var tup( i32 ) t[ 666 ];
-			var tup( i32 ) t_copy(t);
+			var tup[ i32 ] t[ 666 ];
+			var tup[ i32 ] t_copy(t);
 			return t_copy[0u];
 		}
 	)";
@@ -372,7 +372,7 @@ U_TEST(ArrayInitializer_ForTuples_Test2)
 	R"(
 		fn Foo()
 		{
-			var tup() t[];
+			var tup[] t[];
 		}
 	)";
 

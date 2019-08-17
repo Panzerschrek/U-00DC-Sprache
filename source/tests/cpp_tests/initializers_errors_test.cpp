@@ -545,7 +545,7 @@ U_TEST(TuplesInitializersErrors_Test0)
 	R"(
 		fn Foo()
 		{
-			var tup( i32, bool ) t;
+			var tup[ i32, bool ] t;
 		}
 	)";
 
@@ -564,7 +564,7 @@ U_TEST(TuplesInitializersErrors_Test1)
 	R"(
 		fn Foo()
 		{
-			var tup( f32, f64, i64 ) t;
+			var tup[ f32, f64, i64 ] t;
 		}
 	)";
 
@@ -587,7 +587,7 @@ U_TEST(TuplesInitializersErrors_Test2)
 		}
 		fn Foo()
 		{
-			var tup( f32, S, i64 ) t= zero_init;
+			var tup[ f32, S, i64 ] t= zero_init;
 		}
 	)";
 
@@ -606,7 +606,7 @@ U_TEST(TuplesInitializersErrors_Test3)
 	R"(
 		fn Foo()
 		{
-			var tup( f32, bool, i64 ) t[ 0.5f ];
+			var tup[ f32, bool, i64 ] t[ 0.5f ];
 		}
 	)";
 
@@ -625,7 +625,7 @@ U_TEST(TuplesInitializersErrors_Test4)
 	R"(
 		fn Foo()
 		{
-			var tup( f32, bool, i64 ) t[ 0.5f, true ];
+			var tup[ f32, bool, i64 ] t[ 0.5f, true ];
 		}
 	)";
 
@@ -644,7 +644,7 @@ U_TEST(TuplesInitializersErrors_Test5)
 	R"(
 		fn Foo()
 		{
-			var tup( f32, bool ) t[ 0.5f, true, 666 ];
+			var tup[ f32, bool ] t[ 0.5f, true, 666 ];
 		}
 	)";
 
@@ -667,8 +667,8 @@ U_TEST(TuplesInitializersErrors_Test6)
 		}
 		fn Foo()
 		{
-			var tup( f32, S ) t= zero_init;
-			var tup( f32, S ) t_copy(t); // Can not copy tuple, because tuple element "struct S" is not copyable.
+			var tup[ f32, S ] t= zero_init;
+			var tup[ f32, S ] t_copy(t); // Can not copy tuple, because tuple element "struct S" is not copyable.
 		}
 	)";
 
@@ -687,7 +687,7 @@ U_TEST(TuplesInitializersErrors_Test7)
 	R"(
 		fn Foo()
 		{
-			var tup( f32, bool ) t( 0.5f, true );
+			var tup[ f32, bool ] t( 0.5f, true );
 		}
 	)";
 
@@ -710,8 +710,8 @@ U_TEST(TuplesInitializersErrors_Test8)
 		}
 		fn Foo()
 		{
-			var tup( S ) t0= zero_init;
-			var tup( S ) t1= t0;
+			var tup[ S ] t0= zero_init;
+			var tup[ S ] t1= t0;
 		}
 	)";
 

@@ -306,7 +306,7 @@ def ConstructingAbstractClassOrInterface_Test9():
 		class A abstract {}
 		fn Foo()
 		{
-			var tup( A, bool ) arr; // Tuple of abstact classes can not be constructed
+			var tup[ A, bool ] arr; // Tuple of abstact classes can not be constructed
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
@@ -320,7 +320,7 @@ def ConstructingAbstractClassOrInterface_Test10():
 		class A interface {}
 		fn Foo()
 		{
-			var tup( f32, A ) arr; // Tuple of interfaces can not be constructed
+			var tup[ f32, A ] arr; // Tuple of interfaces can not be constructed
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )

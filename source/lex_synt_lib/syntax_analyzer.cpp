@@ -1805,7 +1805,7 @@ TypeName SyntaxAnalyzer::ParseTypeName()
 
 		TupleType tuple_type( it_->file_pos );
 
-		if( it_->type != Lexem::Type::BracketLeft )
+		if( it_->type != Lexem::Type::SquareBracketLeft )
 		{
 			PushErrorMessage();
 			return std::move(tuple_type);
@@ -1814,14 +1814,14 @@ TypeName SyntaxAnalyzer::ParseTypeName()
 
 		while( NotEndOfFile() )
 		{
-			if( it_->type == Lexem::Type::BracketRight )
+			if( it_->type == Lexem::Type::SquareBracketRight )
 			{
 				NextLexem();
 				break;
 			}
 
 			tuple_type.element_types_.push_back( ParseTypeName() );
-			if( it_->type == Lexem::Type::BracketRight )
+			if( it_->type == Lexem::Type::SquareBracketRight )
 			{
 				NextLexem();
 				break;
@@ -1835,7 +1835,7 @@ TypeName SyntaxAnalyzer::ParseTypeName()
 				}
 				NextLexem();
 
-				if( it_->type == Lexem::Type::BracketRight )
+				if( it_->type == Lexem::Type::SquareBracketRight )
 				{
 					// something, like ,)
 					PushErrorMessage();

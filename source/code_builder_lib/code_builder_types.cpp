@@ -563,7 +563,7 @@ ProgramString Type::ToString() const
 
 		ProgramString operator()( const Tuple& tuple ) const
 		{
-			ProgramString res= "tup( "_SpC;
+			ProgramString res= "tup[ "_SpC;
 
 			for( const Type& element_type : tuple.elements )
 			{
@@ -571,7 +571,7 @@ ProgramString Type::ToString() const
 				if( &element_type != & tuple.elements.back() )
 					res+= ", "_SpC;
 			}
-			res+= " )"_SpC;
+			res+= " ]"_SpC;
 			return res;
 		}
 
