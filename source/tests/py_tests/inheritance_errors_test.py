@@ -271,3 +271,59 @@ def ConstructingAbstractClassOrInterface_Test6():
 		}
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def ConstructingAbstractClassOrInterface_Test7():
+	c_program_text= """
+		class A abstract {}
+		fn Foo()
+		{
+			var [ A, 2 ] arr; // Array of abstact classes can not be constructed
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ConstructingAbstractClassOrInterface" )
+	assert( errors_list[0].file_pos.line == 5 )
+
+
+def ConstructingAbstractClassOrInterface_Test8():
+	c_program_text= """
+		class A interface {}
+		fn Foo()
+		{
+			var [ A, 2 ] arr; // Array of interfaces can not be constructed
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ConstructingAbstractClassOrInterface" )
+	assert( errors_list[0].file_pos.line == 5 )
+
+
+def ConstructingAbstractClassOrInterface_Test9():
+	c_program_text= """
+		class A abstract {}
+		fn Foo()
+		{
+			var tup( A, bool ) arr; // Tuple of abstact classes can not be constructed
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ConstructingAbstractClassOrInterface" )
+	assert( errors_list[0].file_pos.line == 5 )
+
+
+def ConstructingAbstractClassOrInterface_Test10():
+	c_program_text= """
+		class A interface {}
+		fn Foo()
+		{
+			var tup( f32, A ) arr; // Tuple of interfaces can not be constructed
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ConstructingAbstractClassOrInterface" )
+	assert( errors_list[0].file_pos.line == 5 )

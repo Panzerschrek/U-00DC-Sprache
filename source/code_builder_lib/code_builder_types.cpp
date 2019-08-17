@@ -427,6 +427,32 @@ bool Type::CanBeConstexpr() const
 	return false;
 }
 
+bool Type::IsAbstract() const
+{
+	if( boost::get<FundamentalType>( &something_ ) != nullptr ||
+		boost::get<EnumPtr>( &something_ ) != nullptr ||
+		boost::get<FunctionPointerPtr>( &something_ ) != nullptr )
+	{
+		return false;
+	}
+	else if( const ArrayPtr* const array= boost::get<ArrayPtr>( &something_ ) )
+	{
+		U_ASSERT( *array != nullptr );
+		return (*array)->type.IsAbstract();
+	}
+	else if( const Class* const class_= GetClassType() )
+		return class_->kind == Class::Kind::Abstract || class_->kind == Class::Kind::Interface;
+	else if( const Tuple* const tuple= boost::get<Tuple>( &something_ ) )
+	{
+		bool is_abstract= false;
+		for( const Type& element : tuple->elements )
+			is_abstract= is_abstract || element.IsAbstract();
+		return is_abstract;
+	}
+
+	return false;
+}
+
 size_t Type::ReferencesTagsCount() const
 {
 	if( const Class* const class_type= GetClassType() )

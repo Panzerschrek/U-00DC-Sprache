@@ -2204,13 +2204,8 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 				continue;
 			}
 		}
-		if( variable_declaration.reference_modifier != ReferenceModifier::Reference )
-		{
-			// TODO - check also tuple elements.
-			if( const Class* const class_type= type.GetClassType() )
-				if( class_type->kind == Class::Kind::Abstract || class_type->kind == Class::Kind::Interface )
-					REPORT_ERROR( ConstructingAbstractClassOrInterface, block_names.GetErrors(), variables_declaration.file_pos_, type );
-		}
+		if( variable_declaration.reference_modifier != ReferenceModifier::Reference && type.IsAbstract() )
+			REPORT_ERROR( ConstructingAbstractClassOrInterface, block_names.GetErrors(), variables_declaration.file_pos_, type );
 
 		if( variable_declaration.reference_modifier != ReferenceModifier::Reference && !type.CanBeConstexpr() )
 			function_context.have_non_constexpr_operations_inside= true; // Declaring variable with non-constexpr type in constexpr function not allowed.
@@ -2414,13 +2409,8 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 			return;
 		}
 	}
-	if( auto_variable_declaration.reference_modifier != ReferenceModifier::Reference )
-	{
-		// TODO - check also tuple elements.
-		if( const Class* const class_type= variable.type.GetClassType() )
-			if( class_type->kind == Class::Kind::Abstract || class_type->kind == Class::Kind::Interface )
-				REPORT_ERROR( ConstructingAbstractClassOrInterface, block_names.GetErrors(), auto_variable_declaration.file_pos_, variable.type );
-	}
+	if( auto_variable_declaration.reference_modifier != ReferenceModifier::Reference && variable.type.IsAbstract() )
+		REPORT_ERROR( ConstructingAbstractClassOrInterface, block_names.GetErrors(), auto_variable_declaration.file_pos_, variable.type );
 
 	if( auto_variable_declaration.mutability_modifier == MutabilityModifier::Constexpr && !variable.type.CanBeConstexpr() )
 	{

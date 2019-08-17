@@ -479,13 +479,8 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type, const T
 					if( class_field->type.ReferencesTagsCount() > 0u )
 						REPORT_ERROR( ReferenceFiledOfTypeWithReferencesInside, class_parent_namespace.GetErrors(), in_field.file_pos_, in_field.name );
 				}
-				else
-				{
-					// TODO - check also tuple elements.
-					if( const Class* const field_class_type= class_field->type.GetClassType() )
-						if( field_class_type->kind == Class::Kind::Abstract || field_class_type->kind == Class::Kind::Interface )
-							REPORT_ERROR( ConstructingAbstractClassOrInterface, class_parent_namespace.GetErrors(), in_field.file_pos_, class_field->type );
-				}
+				else if( class_field->type.IsAbstract() )
+					REPORT_ERROR( ConstructingAbstractClassOrInterface, class_parent_namespace.GetErrors(), in_field.file_pos_, class_field->type );
 
 				if( class_field->is_reference ) // Reference-fields are immutable by default
 					class_field->is_mutable= in_field.mutability_modifier == Synt::MutabilityModifier::Mutable;
