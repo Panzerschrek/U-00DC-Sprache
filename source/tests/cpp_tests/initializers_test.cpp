@@ -213,45 +213,6 @@ U_TEST(ConstructorInitializer_ForTuples_Test0)
 	U_TEST_ASSERT( result_value.IntVal.getLimitedValue() == 562u - 5u );
 }
 
-U_TEST(ConstructorInitializer_ForTuples_Test1)
-{
-	// Constructor initializer for empty tuple.
-	static const char c_program_text[]=
-	R"(
-		fn Foo()
-		{
-			var tup() t();
-		}
-	)";
-
-	BuildProgram( c_program_text );
-}
-
-U_TEST(ConstructorInitializer_ForTuples_Test2)
-{
-	// Empty constructor initializer for tuple with default-constructible fields.
-	static const char c_program_text[]=
-	R"(
-		struct A{ i32 x= 1; i32 y= 2; }
-		struct B{ f32 x= 0.25f; f32 y= 5.0f; }
-		fn Foo()
-		{
-			var tup( A, B ) t();
-			halt if( t[0u].x != 1 );
-			halt if( t[0u].y != 2 );
-			halt if( t[1u].x != 0.25f );
-			halt if( t[1u].y != 5.0f );
-		}
-	)";
-
-	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
-
-	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
-	U_TEST_ASSERT( function != nullptr );
-
-	engine->runFunction( function, {} );
-}
-
 U_TEST(ConstructorInitializerForReferencesTest0)
 {
 	// Constructor initializer for floats

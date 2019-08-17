@@ -564,7 +564,7 @@ U_TEST(TuplesInitializersErrors_Test1)
 	R"(
 		fn Foo()
 		{
-			var tup( f32, f64, i64 ) t();
+			var tup( f32, f64, i64 ) t;
 		}
 	)";
 
