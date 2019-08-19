@@ -438,7 +438,7 @@ bool Type::IsAbstract() const
 	else if( const ArrayPtr* const array= boost::get<ArrayPtr>( &something_ ) )
 	{
 		U_ASSERT( *array != nullptr );
-		return (*array)->type.IsAbstract();
+		return (*array)->ArraySizeOrZero() > 0u && (*array)->type.IsAbstract();
 	}
 	else if( const Class* const class_= GetClassType() )
 		return class_->kind == Class::Kind::Abstract || class_->kind == Class::Kind::Interface;

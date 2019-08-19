@@ -327,3 +327,14 @@ def ConstructingAbstractClassOrInterface_Test10():
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ConstructingAbstractClassOrInterface" )
 	assert( errors_list[0].file_pos.line == 5 )
+
+
+def ConstructingAbstractClassOrInterface_Test11():
+	c_program_text= """
+		class A interface {}
+		fn Foo()
+		{
+			var [ A, 0 ] arr; // ok - array size is zero
+		}
+	"""
+	tests_lib.build_program( c_program_text )
