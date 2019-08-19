@@ -607,9 +607,11 @@ void CodeBuilder::TryGenerateCopyAssignmentOperator( Class& the_class, const Typ
 		llvm::Value* index_list[2];
 		index_list[0]= GetZeroGEPIndex();
 		index_list[1]= GetFieldGEPIndex(  0u /*base class is allways first field */ );
-		llvm::Value* const src= function_context.llvm_ir_builder.CreateGEP( src_llvm_value , index_list );
-		llvm::Value* const dst= function_context.llvm_ir_builder.CreateGEP( this_llvm_value, index_list );
-		BuildCopyAssignmentOperatorPart( src, dst, the_class.base_class, function_context );
+		BuildCopyAssignmentOperatorPart(
+			function_context.llvm_ir_builder.CreateGEP( this_llvm_value, index_list ),
+			function_context.llvm_ir_builder.CreateGEP( src_llvm_value , index_list ),
+			the_class.base_class,
+			function_context );
 	}
 
 	the_class.members.ForEachValueInThisScope(
@@ -625,8 +627,8 @@ void CodeBuilder::TryGenerateCopyAssignmentOperator( Class& the_class, const Typ
 			index_list[1]= GetFieldGEPIndex( field->index );
 
 			BuildCopyAssignmentOperatorPart(
-				function_context.llvm_ir_builder.CreateGEP( src_llvm_value , index_list ),
 				function_context.llvm_ir_builder.CreateGEP( this_llvm_value, index_list ),
+				function_context.llvm_ir_builder.CreateGEP( src_llvm_value , index_list ),
 				field->type,
 				function_context );
 		} ); // For fields.
@@ -745,15 +747,18 @@ void CodeBuilder::BuildCopyConstructorPart(
 }
 
 void CodeBuilder::BuildCopyAssignmentOperatorPart(
-	llvm::Value* src, llvm::Value* dst,
+	llvm::Value* const dst, llvm::Value* const src,
 	const Type& type,
 	FunctionContext& function_context )
 {
 	if( type.GetFundamentalType() != nullptr || type.GetEnumType() != nullptr || type.GetFunctionPointerType() != nullptr )
 	{
 		// Create simple load-store.
-		llvm::Value* const val= function_context.llvm_ir_builder.CreateLoad( src );
-		function_context.llvm_ir_builder.CreateStore( val, dst );
+		if( src->getType() == dst->getType() )
+			function_context.llvm_ir_builder.CreateStore( function_context.llvm_ir_builder.CreateLoad( src ), dst );
+		else if( src->getType() == dst->getType()->getPointerElementType() )
+			function_context.llvm_ir_builder.CreateStore( src, dst );
+		else U_ASSERT( false );
 	}
 	else if( const Array* const array_type_ptr= type.GetArrayType() )
 	{
@@ -768,8 +773,8 @@ void CodeBuilder::BuildCopyAssignmentOperatorPart(
 				index_list[1]= counter_value;
 
 				BuildCopyAssignmentOperatorPart(
-					function_context.llvm_ir_builder.CreateGEP( src, index_list ),
 					function_context.llvm_ir_builder.CreateGEP( dst, index_list ),
+					function_context.llvm_ir_builder.CreateGEP( src, index_list ),
 					array_type.type,
 					function_context );
 			},
@@ -781,8 +786,8 @@ void CodeBuilder::BuildCopyAssignmentOperatorPart(
 		{
 			llvm::Value* const index_list[2]{ GetZeroGEPIndex(), GetFieldGEPIndex( &element_type - tuple_type->elements.data() ) };
 			BuildCopyAssignmentOperatorPart(
-				function_context.llvm_ir_builder.CreateGEP( src, index_list ),
 				function_context.llvm_ir_builder.CreateGEP( dst, index_list ),
+				function_context.llvm_ir_builder.CreateGEP( src, index_list ),
 				element_type,
 				function_context );
 		}

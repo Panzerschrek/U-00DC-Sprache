@@ -214,11 +214,9 @@ Value CodeBuilder::CallBinaryOperatorForTuple(
 
 		// TODO - make reference pollution.
 
-		CopyAssignTupleElements_r(
-			l_var.type,
+		BuildCopyAssignmentOperatorPart(
 			l_var.llvm_value, r_var.llvm_value,
-			file_pos,
-			names,
+			l_var.type,
 			function_context );
 
 		Variable result;
@@ -231,77 +229,6 @@ Value CodeBuilder::CallBinaryOperatorForTuple(
 		REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), file_pos, l_var.type );
 		return ErrorValue();
 	}
-}
-
-void CodeBuilder::CopyAssignTupleElements_r(
-	const Type& type,
-	llvm::Value* dst, llvm::Value* src,
-	const FilePos& file_pos,
-	NamesScope& block_names,
-	FunctionContext& function_context )
-{
-	U_ASSERT( type.IsCopyAssignable() );
-
-	if( type.GetFundamentalType() != nullptr || type.GetEnumType() != nullptr || type.GetFunctionPointerType() != nullptr )
-	{
-		if( src->getType() == dst->getType() )
-			function_context.llvm_ir_builder.CreateStore( function_context.llvm_ir_builder.CreateLoad( src ), dst );
-		else if( src->getType() == dst->getType()->getPointerElementType() )
-			function_context.llvm_ir_builder.CreateStore( src, dst );
-		else U_ASSERT( false );
-	}
-	else if( const Array* const array_type= type.GetArrayType() )
-	{
-		GenerateLoop(
-			array_type->size,
-			[&]( llvm::Value* const counter_value )
-			{
-				llvm::Value* const index_list[2]{ GetZeroGEPIndex(), counter_value };
-				CopyAssignTupleElements_r(
-					array_type->type,
-					function_context.llvm_ir_builder.CreateGEP( dst, index_list ),
-					function_context.llvm_ir_builder.CreateGEP( src, index_list ),
-					file_pos,
-					block_names,
-					function_context );
-			},
-			function_context );
-	}
-	else if( const Tuple* const tuple_type= type.GetTupleType() )
-	{
-		for( const Type& element_type : tuple_type->elements )
-		{
-			llvm::Value* const index_list[2]{ GetZeroGEPIndex(), GetFieldGEPIndex( &element_type - tuple_type->elements.data() ) };
-			CopyAssignTupleElements_r(
-				element_type,
-				function_context.llvm_ir_builder.CreateGEP( dst, index_list ),
-				function_context.llvm_ir_builder.CreateGEP( src, index_list ),
-				file_pos,
-				block_names,
-				function_context );
-		}
-	}
-	else if( const ClassProxyPtr class_type= type.GetClassTypeProxy() )
-	{
-		const FunctionVariable* copy_assignment_op= nullptr;
-
-		const Value* const assignment_operator_value= class_type->class_->members.GetThisScopeValue( OverloadedOperatorToString(OverloadedOperator::Assign) );
-		U_ASSERT( assignment_operator_value != nullptr );
-		const OverloadedFunctionsSet* const operators= assignment_operator_value->GetFunctionsSet();
-		U_ASSERT( operators != nullptr );
-		for( const FunctionVariable& op : operators->functions )
-		{
-			if( IsCopyAssignmentOperator( *op.type.GetFunctionType(), class_type ) )
-			{
-				copy_assignment_op= &op;
-				break;
-			}
-		}
-
-		U_ASSERT( copy_assignment_op != nullptr );
-		function_context.llvm_ir_builder.CreateCall( copy_assignment_op->llvm_function, { dst, src } );
-	}
-	else U_ASSERT(false);
 }
 
 Value CodeBuilder::BuildExpressionCode(

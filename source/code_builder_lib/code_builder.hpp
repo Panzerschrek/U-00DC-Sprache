@@ -329,7 +329,7 @@ private:
 		FunctionContext& function_context );
 
 	void BuildCopyAssignmentOperatorPart(
-		llvm::Value* src, llvm::Value* dst,
+		llvm::Value* dst, llvm::Value* src,
 		const Type& type,
 		FunctionContext& function_context );
 
@@ -462,13 +462,6 @@ private:
 		const Synt::Expression& right_expr,
 		const FilePos& file_pos,
 		NamesScope& names,
-		FunctionContext& function_context );
-
-	void CopyAssignTupleElements_r(
-		const Type& type,
-		llvm::Value* dst, llvm::Value* src,
-		const FilePos& file_pos,
-		NamesScope& block_names,
 		FunctionContext& function_context );
 
 	Value BuildBinaryOperator(
