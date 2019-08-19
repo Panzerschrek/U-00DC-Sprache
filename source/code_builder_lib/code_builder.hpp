@@ -324,7 +324,7 @@ private:
 	void TryGenerateCopyAssignmentOperator( Class& the_class, const Type& class_type );
 
 	void BuildCopyConstructorPart(
-		llvm::Value* src, llvm::Value* dst,
+		llvm::Value* dst, llvm::Value* src,
 		const Type& type,
 		FunctionContext& function_context );
 
@@ -764,13 +764,6 @@ private:
 	llvm::Constant* ApplyUninitializedInitializer(
 		const Variable& variable,
 		const Synt::UninitializedInitializer& initializer,
-		NamesScope& block_names,
-		FunctionContext& function_context );
-
-	void CopyInitializeTupleElements_r(
-		const Type& type,
-		llvm::Value* dst, llvm::Value* src,
-		const FilePos& file_pos,
 		NamesScope& block_names,
 		FunctionContext& function_context );
 

@@ -2706,12 +2706,10 @@ Value CodeBuilder::DoCallFunction(
 					// Create copy of class or tuple value. Call copy constructor.
 					llvm::Value* const arg_copy= function_context.alloca_ir_builder.CreateAlloca( arg.type.GetLLVMType() );
 					llvm_args[j]= arg_copy;
-					CopyInitializeTupleElements_r(
-						arg.type,
+					BuildCopyConstructorPart(
 						arg_copy,
 						CreateReferenceCast( expr.llvm_value, expr.type, arg.type, function_context ),
-						file_pos,
-						names,
+						arg.type,
 						function_context );
 				}
 			}

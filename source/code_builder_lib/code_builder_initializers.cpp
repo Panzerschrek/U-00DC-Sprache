@@ -664,13 +664,19 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 			}
 		}
 		else
-			CopyInitializeTupleElements_r(
-				variable.type,
+		{
+			if( !variable.type.IsCopyConstructible() )
+			{
+				REPORT_ERROR( OperationNotSupportedForThisType, block_names.GetErrors(), call_operator.file_pos_, variable.type );
+				return nullptr;
+			}
+
+			BuildCopyConstructorPart(
 				variable.llvm_value,
 				expression_result.llvm_value,
-				call_operator.file_pos_,
-				block_names,
+				variable.type,
 				function_context );
+		}
 
 		return nullptr;
 	}
@@ -819,12 +825,16 @@ llvm::Constant* CodeBuilder::ApplyExpressionInitializer(
 		}
 		else
 		{
-			CopyInitializeTupleElements_r(
-				variable.type,
+			if( !variable.type.IsCopyConstructible() )
+			{
+				REPORT_ERROR( OperationNotSupportedForThisType, block_names.GetErrors(), initializer.file_pos_, variable.type );
+				return nullptr;
+			}
+
+			BuildCopyConstructorPart(
 				variable.llvm_value,
 				expression_result.llvm_value,
-				initializer.file_pos_,
-				block_names,
+				variable.type,
 				function_context );
 			return nullptr; // Call to constructors may not preserve constexpr value.
 		}
@@ -1086,59 +1096,6 @@ llvm::Constant* CodeBuilder::ApplyUninitializedInitializer(
 		return llvm::UndefValue::get( variable.type.GetLLVMType() );
 	else
 		return nullptr;
-}
-
-void CodeBuilder::CopyInitializeTupleElements_r( // TODO - rename to TryCallCopyConstructor_r
-	const Type& type,
-	llvm::Value* const dst, llvm::Value* const src,
-	const FilePos& file_pos,
-	NamesScope& block_names,
-	FunctionContext& function_context )
-{
-	// TODO - make reference pollution.
-
-	if( type.GetFundamentalType() != nullptr || type.GetEnumType() != nullptr || type.GetFunctionPointerType() != nullptr )
-	{
-		if( src->getType() == dst->getType() )
-			function_context.llvm_ir_builder.CreateStore( function_context.llvm_ir_builder.CreateLoad( src ), dst );
-		else if( src->getType() == dst->getType()->getPointerElementType() )
-			function_context.llvm_ir_builder.CreateStore( src, dst );
-		else U_ASSERT( false );
-	}
-	else if( const Array* const array_type= type.GetArrayType() )
-	{
-		GenerateLoop(
-			array_type->size,
-			[&]( llvm::Value* const counter_value )
-			{
-				llvm::Value* const index_list[2]{ GetZeroGEPIndex(), counter_value };
-				CopyInitializeTupleElements_r(
-					array_type->type,
-					function_context.llvm_ir_builder.CreateGEP( dst, index_list ),
-					function_context.llvm_ir_builder.CreateGEP( src, index_list ),
-					file_pos,
-					block_names,
-					function_context );
-			},
-			function_context );
-	}
-	else if( const Tuple* const tuple_type= type.GetTupleType() )
-	{
-		for( const Type& element_type : tuple_type->elements )
-		{
-			llvm::Value* const index_list[2]{ GetZeroGEPIndex(), GetFieldGEPIndex( &element_type - tuple_type->elements.data() ) };
-			CopyInitializeTupleElements_r(
-				element_type,
-				function_context.llvm_ir_builder.CreateGEP( dst, index_list ),
-				function_context.llvm_ir_builder.CreateGEP( src, index_list ),
-				file_pos,
-				block_names,
-				function_context );
-		}
-	}
-	else if( const ClassProxyPtr class_type= type.GetClassTypeProxy() )
-		TryCallCopyConstructor( block_names.GetErrors(), file_pos, dst, src, class_type, function_context );
-	else U_ASSERT(false);
 }
 
 llvm::Constant* CodeBuilder::InitializeReferenceField(

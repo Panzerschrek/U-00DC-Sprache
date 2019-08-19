@@ -2502,11 +2502,9 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 				REPORT_ERROR( OperationNotSupportedForThisType, block_names.GetErrors(), auto_variable_declaration.file_pos_, variable.type );
 				return;
 			}
-			CopyInitializeTupleElements_r(
-				variable.type,
+			BuildCopyConstructorPart(
 				variable.llvm_value, initializer_experrsion.llvm_value,
-				auto_variable_declaration.file_pos_,
-				block_names,
+				variable.type,
 				function_context );
 
 			const ReferencesGraphNodePtr& src_node= initializer_experrsion.node;
@@ -2972,12 +2970,10 @@ void CodeBuilder::BuildReturnOperatorCode(
 				CopyBytes( expression_result.llvm_value, function_context.s_ret_, *function_context.return_type, function_context );
 			}
 			else
-				CopyInitializeTupleElements_r(
-					*function_context.return_type,
+				BuildCopyConstructorPart(
 					function_context.s_ret_,
 					CreateReferenceCast( expression_result.llvm_value, expression_result.type, *function_context.return_type, function_context ),
-					return_operator.file_pos_,
-					names,
+					*function_context.return_type,
 					function_context );
 
 			CallDestructorsBeforeReturn( names, function_context, return_operator.file_pos_ );
@@ -3153,12 +3149,10 @@ void CodeBuilder::BuildForOperatorCode(
 
 				// TODO - lock inner references
 
-				CopyInitializeTupleElements_r(
-					element_type,
+				BuildCopyConstructorPart(
 					variable.llvm_value,
 					function_context.llvm_ir_builder.CreateGEP( sequence_expression.llvm_value, { GetZeroGEPIndex(), GetFieldGEPIndex( element_index ) } ),
-					for_operator.file_pos_,
-					loop_names,
+					element_type,
 					function_context );
 			}
 
