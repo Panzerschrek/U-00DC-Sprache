@@ -337,6 +337,22 @@ static ProgramString Stringify( const Synt::TypeName& type_name )
 			return result;
 		}
 
+		ProgramString operator()( const Synt::TupleType& tuple_type_name )
+		{
+			ProgramString result;
+
+			result+= "tup[ "_SpC;
+			for( const Synt::TypeName& element_type : tuple_type_name.element_types_ )
+			{
+				result+= Stringify( element_type );
+				if( &element_type != &tuple_type_name.element_types_.back() )
+					result+= ", "_SpC;
+			}
+			result+= " ]"_SpC;
+
+			return result;
+		}
+
 		ProgramString operator()( const Synt::TypeofTypeName& typeof_type_name )
 		{
 			if( typeof_type_name.expression != nullptr )
