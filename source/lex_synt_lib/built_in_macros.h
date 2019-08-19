@@ -28,6 +28,11 @@ R"(
 				++ ??i;
 			}
 		}
+		else if( typeinfo</ typeof(??e_result) />.is_tuple )
+		{
+			for( ?r<? & ?> ?m<? mut ?> ?var_name : ??e_result )
+			?b
+		}
 		else
 		{
 			auto mut ??r= ??e_result.range();
