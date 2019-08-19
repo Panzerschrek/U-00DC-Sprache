@@ -612,3 +612,48 @@ def TuplesConstexpr_Test2():
 		static_assert( t1[0u].y == 222 );
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def TupleTemplateArgument_Test0():
+	c_program_text= """
+		template</ type T />
+		struct S</ tup[ f32, T ] />
+		{
+			type RealT= T;
+		}
+
+		fn Foo()
+		{
+			var S</ tup[ f32, bool ] />::RealT b= false;
+			var S</ tup[ f32, f64 ] />::RealT d= 0.125;
+			var S</ tup[ f32, tup[ i32 ] ] />::RealT t[ 66 ];
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def TupleTemplateArgument_Test1():
+	c_program_text= """
+		template</ type T /> struct S</ tup[ T ] /> { auto constexpr x= 555; }
+		template</ type T/> struct S</ T /> { auto constexpr x= 999; }
+		template<//> struct S</ tup[ i64 ] /> { auto constexpr x= 11111; }
+
+		static_assert( S</ tup[ f32 ] />::x == 555 ); // Select more specialized template.
+		static_assert( S</ bool />::x == 999 ); // More specialized template applied only for tuples.
+		static_assert( S</ tup[ i64 ] />::x == 11111 ); // Full specialization for tuple.
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def TupleTemplateArgument_Test2():
+	c_program_text= """
+		template</ type T /> fn constexpr GetX( T& t ) : i32 { return 951; }
+		template</ type T /> fn constexpr GetX( tup[ T, T ] & t ) : i32 { return 753; }
+
+		var tup[ i32, i32 ] constexpr t0= zero_init;
+		static_assert( GetX(t0) == 753 ); // Select more specialized tempate function.
+
+		var tup[ i32, f32 ] constexpr t1= zero_init;
+		static_assert( GetX(t1) == 951 ); // Only less specialized template matches.
+	"""
+	tests_lib.build_program( c_program_text )

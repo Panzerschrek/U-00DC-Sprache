@@ -437,6 +437,11 @@ void CodeBuilder::PrepareTemplateSignatureParameter(
 		PrepareTemplateSignatureParameter( *array_type_name->size, names_scope, template_parameters, template_parameters_usage_flags );
 		PrepareTemplateSignatureParameter( *array_type_name->element_type, names_scope, template_parameters, template_parameters_usage_flags );
 	}
+	else if( const auto tuple_type_name= boost::get<const Synt::TupleType>(&type_name_template_parameter) )
+	{
+		for( const auto& element_type : tuple_type_name->element_types_ )
+			PrepareTemplateSignatureParameter( element_type, names_scope, template_parameters, template_parameters_usage_flags );
+	}
 	else if( const auto function_pointer_type_name_ptr= boost::get<const Synt::FunctionTypePtr>(&type_name_template_parameter) )
 	{
 		const Synt::FunctionType& function_pointer_type_name= **function_pointer_type_name_ptr;
@@ -741,6 +746,33 @@ DeducedTemplateParameter CodeBuilder::DeduceTemplateArguments(
 			return DeducedTemplateParameter::Type();
 
 		return std::move(result);
+	}
+	else if( const auto tuple_type_ptr= boost::get<const Synt::TupleType>(&signature_parameter) )
+	{
+		const Type* const param_type= boost::get<const Type>( &template_parameter );
+		if( param_type == nullptr )
+			return DeducedTemplateParameter::Invalid();
+		const Tuple* const param_tuple_type= param_type->GetTupleType();
+		if( param_tuple_type == nullptr )
+			return DeducedTemplateParameter::Invalid();
+		if( tuple_type_ptr->element_types_.size() != param_tuple_type->elements.size() )
+			return DeducedTemplateParameter::Invalid();
+
+		DeducedTemplateParameter::Tuple result;
+		result.element_types.reserve( param_tuple_type->elements.size() );
+		bool all_types_are_known= true;
+		for( size_t i= 0u; i < param_tuple_type->elements.size(); ++i )
+		{
+			result.element_types.push_back( DeduceTemplateArguments( template_, param_tuple_type->elements[i], tuple_type_ptr->element_types_[i], signature_parameter_file_pos, deducible_template_parameters, names_scope ) );
+			if( result.element_types.back().IsInvalid() )
+				return DeducedTemplateParameter::Invalid();
+			all_types_are_known= all_types_are_known && result.element_types.back().IsType();
+		}
+
+		if( all_types_are_known )
+			return DeducedTemplateParameter::Type();
+		else
+			return std::move(result);
 	}
 	else if( const auto function_pointer_type_ptr= boost::get<const Synt::FunctionTypePtr>(&signature_parameter) )
 	{

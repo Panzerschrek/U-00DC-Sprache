@@ -1387,6 +1387,11 @@ DeducedTemplateParameter::DeducedTemplateParameter( Array array )
 	something_= std::move(array);
 }
 
+DeducedTemplateParameter::DeducedTemplateParameter( Tuple tuple )
+{
+	something_= std::move(tuple);
+}
+
 DeducedTemplateParameter::DeducedTemplateParameter( Function function )
 {
 	something_= std::move(function);
@@ -1420,6 +1425,11 @@ bool DeducedTemplateParameter::IsTemplateParameter() const
 const DeducedTemplateParameter::Array* DeducedTemplateParameter::GetArray() const
 {
 	return boost::get<Array>( &something_ );
+}
+
+const DeducedTemplateParameter::Tuple* DeducedTemplateParameter::GetTuple() const
+{
+	return boost::get<Tuple>( &something_ );
 }
 
 const DeducedTemplateParameter::Function* DeducedTemplateParameter::GetFunction() const

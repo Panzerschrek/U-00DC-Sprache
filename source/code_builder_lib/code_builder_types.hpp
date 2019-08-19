@@ -768,6 +768,11 @@ public:
 		Array& operator=( const Array& other );
 	};
 
+	struct Tuple
+	{
+		std::vector<DeducedTemplateParameter> element_types;
+	};
+
 	struct Function
 	{
 		std::unique_ptr<DeducedTemplateParameter> return_type;
@@ -792,6 +797,7 @@ public:
 	DeducedTemplateParameter( Variable variable );
 	DeducedTemplateParameter( TemplateParameter template_parameter );
 	DeducedTemplateParameter( Array array );
+	DeducedTemplateParameter( Tuple tuple );
 	DeducedTemplateParameter( Function function );
 	DeducedTemplateParameter( Template template_ );
 
@@ -800,6 +806,7 @@ public:
 	bool IsVariable() const;
 	bool IsTemplateParameter() const;
 	const Array* GetArray() const;
+	const Tuple* GetTuple() const;
 	const Function* GetFunction() const;
 	const Template* GetTemplate() const;
 
@@ -810,6 +817,7 @@ private:
 		Variable,
 		TemplateParameter,
 		Array,
+		Tuple,
 		Function,
 		Template> something_;
 };
