@@ -630,8 +630,25 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 			return nullptr;
 		}
 
+		const ReferencesGraphNodePtr& src_node= expression_result.node;
+		const ReferencesGraphNodePtr& dst_node= variable.node;
+		if( src_node != nullptr && dst_node != nullptr && variable.type.ReferencesTagsCount() > 0u )
+		{
+			const auto src_node_inner_references= function_context.variables_state.GetAllAccessibleInnerNodes_r( src_node );
+			if( !src_node_inner_references.empty() )
+			{
+				bool node_is_mutable= false;
+				for( const ReferencesGraphNodePtr& src_node_inner_reference : src_node_inner_references )
+					node_is_mutable= node_is_mutable || src_node_inner_reference->kind == ReferencesGraphNode::Kind::ReferenceMut;
+
+				const auto dst_node_inner_reference= std::make_shared<ReferencesGraphNode>( dst_node->name + " inner variable"_SpC, node_is_mutable ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut );
+				function_context.variables_state.SetNodeInnerReference( dst_node, dst_node_inner_reference );
+				for( const ReferencesGraphNodePtr& src_node_inner_reference : src_node_inner_references )
+					function_context.variables_state.AddLink( src_node_inner_reference, dst_node_inner_reference );
+			}
+		}
+
 		// Copy/move initialize tuple.
-		// TODO - process references.
 		if( expression_result.value_type == ValueType::Value )
 		{
 			CopyBytes( expression_result.llvm_value, variable.llvm_value, variable.type, function_context );
