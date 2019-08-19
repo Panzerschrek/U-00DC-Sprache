@@ -695,7 +695,8 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 				function_context );
 		}
 
-		return nullptr;
+		// Copy constructor for constexpr type is trivial, so, we can just take constexpr value of source.
+		return expression_result.constexpr_value;
 	}
 	else if( const Class* const class_type= variable.type.GetClassType() )
 	{
@@ -837,8 +838,6 @@ llvm::Constant* CodeBuilder::ApplyExpressionInitializer(
 			CopyBytes( expression_result.llvm_value, variable.llvm_value, variable.type, function_context );
 
 			DestroyUnusedTemporaryVariables( function_context, block_names.GetErrors(), initializer.file_pos_ );
-
-			return expression_result.constexpr_value; // Move can preserve constexpr.
 		}
 		else
 		{
@@ -853,8 +852,10 @@ llvm::Constant* CodeBuilder::ApplyExpressionInitializer(
 				expression_result.llvm_value,
 				variable.type,
 				function_context );
-			return nullptr; // Call to constructors may not preserve constexpr value.
 		}
+
+		// Copy constructor for constexpr type is trivial, so, we can just take constexpr value of source.
+		return expression_result.constexpr_value;
 	}
 	else if( variable.type.GetClassType() != nullptr )
 	{

@@ -1088,6 +1088,7 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 			const bool type_is_ok=
 				initializer_experrsion.type.GetFundamentalType() != nullptr ||
 				initializer_experrsion.type.GetArrayType() != nullptr ||
+				initializer_experrsion.type.GetTupleType() != nullptr ||
 				initializer_experrsion.type.GetClassType() != nullptr ||
 				initializer_experrsion.type.GetEnumType() != nullptr ||
 				initializer_experrsion.type.GetFunctionPointerType() != nullptr;
@@ -1134,34 +1135,19 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 		{
 			llvm::GlobalVariable* const global_variable= CreateGlobalConstantVariable( variable.type, MangleGlobalVariable( names_scope, auto_variable_declaration->name ) );
 			variable.llvm_value= global_variable;
+			// Copy constructor for constexpr type is trivial, so, we can just take constexpr value of source.
+			variable.constexpr_value= initializer_experrsion.constexpr_value;
 
-			if( variable.type.GetFundamentalType() != nullptr || variable.type.GetEnumType() != nullptr || variable.type.GetFunctionPointerType() != nullptr )
+			if( initializer_experrsion.value_type == ValueType::Value )
 			{
-				llvm::Value* const value_for_assignment= CreateMoveToLLVMRegisterInstruction( initializer_experrsion, function_context );
-				function_context.llvm_ir_builder.CreateStore( value_for_assignment, variable.llvm_value );
-				variable.constexpr_value= initializer_experrsion.constexpr_value;
-			}
-			else if( const ClassProxyPtr class_type= variable.type.GetClassTypeProxy() )
-			{
-				U_ASSERT( class_type->class_->completeness == TypeCompleteness::Complete );
-				if( initializer_experrsion.value_type == ValueType::Value )
-				{
-					CopyBytes( initializer_experrsion.llvm_value, variable.llvm_value, variable.type, function_context );
-					variable.constexpr_value= initializer_experrsion.constexpr_value; // Move can preserve constexpr.
-				}
-				else
-					TryCallCopyConstructor(
-						names_scope.GetErrors(),
-						auto_variable_declaration->file_pos_,
-						variable.llvm_value, initializer_experrsion.llvm_value,
-						variable.type.GetClassTypeProxy(),
-						function_context );
+				CopyBytes( initializer_experrsion.llvm_value, variable.llvm_value, variable.type, function_context );
+				variable.constexpr_value= initializer_experrsion.constexpr_value; // Move can preserve constexpr.
 			}
 			else
-			{
-				REPORT_ERROR( NotImplemented, names_scope.GetErrors(), auto_variable_declaration->file_pos_, "expression initialization for nonfundamental types" );
-				FAIL_RETURN;
-			}
+				BuildCopyConstructorPart(
+					variable.llvm_value, initializer_experrsion.llvm_value,
+					variable.type,
+					function_context );
 
 			if( global_variable != nullptr && variable.constexpr_value != nullptr )
 				global_variable->setInitializer( variable.constexpr_value );

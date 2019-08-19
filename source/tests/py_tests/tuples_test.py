@@ -570,3 +570,45 @@ def TupleFieldCopy_Test3():
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "OperationNotSupportedForThisType" )
 	assert( errors_list[0].file_pos.line == 14 )
+
+
+def TuplesConstexpr_Test0():
+	c_program_text= """
+		var tup[ i32, f32 ] constexpr t[ 851, 52.3f ]; // Array initializer can produce constexpr tuple value.
+		static_assert( t[0u] == 851 );
+		static_assert( t[1u] == 52.3f );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def TuplesConstexpr_Test1():
+	c_program_text= """
+		var tup[ i32, f32 ] constexpr t[ -52, 3.5f ];
+		var tup[ i32, f32 ] constexpr t_copy0(t); // Constructor initializer can produce constexpr tuple value.
+		var tup[ i32, f32 ] constexpr t_copy1= t; // Expression initializer can produce constexpr tuple value.
+		auto constexpr t_copy2= t; // Auto variable initialization can produce constexpr tuple value.
+		static_assert( t_copy0[0u] == -52 );
+		static_assert( t_copy0[1u] == 3.5f );
+		static_assert( t_copy0[0u] == t[0u] );
+		static_assert( t_copy0[1u] == t[1u] );
+		static_assert( t_copy1[0u] == t[0u] );
+		static_assert( t_copy1[1u] == t[1u] );
+		static_assert( t_copy2[0u] == t[0u] );
+		static_assert( t_copy2[1u] == t[1u] );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def TuplesConstexpr_Test2():
+	c_program_text= """
+		struct S
+		{
+			i32 x= 0; i32 y= 0;
+		}
+		var tup[ S ] constexpr t0[ {} ], constexpr t1[ { .x= 555, .y= 222 } ];
+		static_assert( t0[0u].x == 0 );
+		static_assert( t0[0u].y == 0 );
+		static_assert( t1[0u].x == 555 );
+		static_assert( t1[0u].y == 222 );
+	"""
+	tests_lib.build_program( c_program_text )

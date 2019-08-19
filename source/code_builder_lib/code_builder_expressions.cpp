@@ -2083,6 +2083,9 @@ Value CodeBuilder::BuildIndexationOperator(
 		result.llvm_value=
 			function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, { GetZeroGEPIndex(), GetFieldGEPIndex(index_value) } );
 
+		if( variable.constexpr_value != nullptr )
+			result.constexpr_value= variable.constexpr_value->getAggregateElement( static_cast<unsigned int>(index_value) );
+
 		return Value( std::move(result), indexation_operator.file_pos_ );
 	}
 	else
