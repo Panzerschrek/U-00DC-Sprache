@@ -67,6 +67,8 @@ static void SortClassFields( Class& class_, ClassFieldsVector<llvm::Type*>& fiel
 
 	fields_llvm_types.resize( field_index ); // Remove all fields ( parent classes and virtual table pointers are not in fields list ).
 
+	// "getABITypeAlignment" "getTypeAllocSize" functions used, as in llvm/lib/IR/DataLayout.cpp:40.
+
 	// Calculate start offset, include parents fields, virtual table pointer.
 	unsigned int current_offst= 0u;
 	for( llvm::Type* type : fields_llvm_types )
@@ -76,7 +78,7 @@ static void SortClassFields( Class& class_, ClassFieldsVector<llvm::Type*>& fiel
 		current_offst+= padding + static_cast<unsigned int>( data_layout.getTypeAllocSize( type ) );
 	}
 
-	// Sort fields, minimize paddings and minimize fields reprdering.
+	// Sort fields, minimize paddings and minimize fields reordering.
 	while( !fields.empty() )
 	{
 		FieldsMap::iterator best_field_it= fields.begin();
@@ -107,6 +109,7 @@ static void SortClassFields( Class& class_, ClassFieldsVector<llvm::Type*>& fiel
 		fields.erase( best_field_it );
 	}
 }
+
 //
 // CodeBuilder
 //

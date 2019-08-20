@@ -145,8 +145,9 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, Variable& typeinfo_variab
 		if( llvm_type == fundamental_llvm_types_.void_for_ret )
 			llvm_type= fundamental_llvm_types_.void_;
 
+		// see llvm/lib/IR/DataLayout.cpp:40
 		add_size_field( "size_of"_SpC , data_layout.getTypeAllocSize   ( llvm_type ) );
-		add_size_field( "align_of"_SpC, data_layout.getABITypeAlignment( llvm_type ) ); // TODO - is this correct alignment?
+		add_size_field( "align_of"_SpC, data_layout.getABITypeAlignment( llvm_type ) );
 	}
 
 	add_size_field( "references_tags_count"_SpC, type.ReferencesTagsCount() );
