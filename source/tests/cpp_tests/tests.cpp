@@ -51,6 +51,16 @@ private:
 
 } // namespace
 
+static void PrinteErrors_r( const CodeBuilderErrorsContainer& errors )
+{
+	for( const CodeBuilderError& error : errors)
+	{
+		std::cout << error.file_pos.line << ":" << error.file_pos.pos_in_line << " " << ToUTF8( error.text ) << "\n";
+		if( error.template_context != nullptr )
+			PrinteErrors_r( error.template_context->errors );
+	}
+}
+
 std::unique_ptr<llvm::Module> BuildProgram( const char* const text )
 {
 	const ProgramString file_path= "_"_SpC;
@@ -67,9 +77,7 @@ std::unique_ptr<llvm::Module> BuildProgram( const char* const text )
 			llvm::sys::getProcessTriple(),
 			llvm::DataLayout( GetTestsDataLayout() ) ).BuildProgram( *source_graph );
 
-	for( const CodeBuilderError& error : build_result.errors )
-		std::cout << error.file_pos.line << ":" << error.file_pos.pos_in_line << " " << ToUTF8( error.text ) << "\n";
-
+	PrinteErrors_r( build_result.errors );
 	U_TEST_ASSERT( build_result.errors.empty() );
 
 	return std::move( build_result.module );
@@ -105,9 +113,7 @@ std::unique_ptr<llvm::Module> BuildMultisourceProgram( std::vector<SourceEntry> 
 			llvm::sys::getProcessTriple(),
 			llvm::DataLayout( GetTestsDataLayout() ) ).BuildProgram( *source_graph );
 
-	for( const CodeBuilderError& error : build_result.errors )
-		std::cout << error.file_pos.line << ":" << error.file_pos.pos_in_line << " " << ToUTF8( error.text ) << "\n";
-
+	PrinteErrors_r( build_result.errors );
 	U_TEST_ASSERT( build_result.errors.empty() );
 
 	return std::move( build_result.module );
