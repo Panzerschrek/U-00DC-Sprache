@@ -855,7 +855,7 @@ private:
 
 	// Other stuff
 
-	static U_FundamentalType GetNumericConstantType( const Synt::NumericConstant& number );
+	U_FundamentalType GetNumericConstantType( const Synt::NumericConstant& number );
 
 	llvm::Type* GetFundamentalLLVMType( U_FundamentalType fundmantal_type );
 

@@ -146,6 +146,12 @@ def NumericConstants_TypeSuffix_Test0():
 			check_type( 0o7u, u32(0) );
 			check_type( 1.1u, u32(0) ); // Even if numeric constant has fractional point, type specified by suffix.
 
+			// "s" suffix for size_type.
+			check_type( 0s, size_type(0) );
+			check_type( 0b000101110s, size_type(0) );
+			check_type( 102452752s, size_type(0) );
+			check_type( 0xFFs, size_type(0) );
+
 			// "f" for 32-bit floating point.
 			check_type( 3.14f, f32(0) );
 			check_type( 99f, f32(0) );

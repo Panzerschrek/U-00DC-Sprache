@@ -3645,6 +3645,9 @@ U_FundamentalType CodeBuilder::GetNumericConstantType( const Synt::NumericConsta
 	// SPRACHE_TODO - maybe add "i" suffix for i32 type?
 	if( type_suffix == "u"_SpC )
 		return U_FundamentalType::u32;
+	// Suffix for size_type
+	else if( type_suffix == "s"_SpC )
+		return size_type_.GetFundamentalType()->fundamental_type;
 	// Simple "f" suffix for 32bit floats.
 	else if( type_suffix == "f"_SpC )
 		return U_FundamentalType::f32;
