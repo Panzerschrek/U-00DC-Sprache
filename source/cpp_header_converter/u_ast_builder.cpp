@@ -280,7 +280,7 @@ Synt::ClassPtr CppAstConsumer::ProcessRecord( const clang::RecordDecl& record_de
 	}
 	else if( record_decl.isUnion() )
 	{
-		// Emulate union, using array if ints with maximum alignment.
+		// Emulate union, using array of ints with required alignment.
 
 		Synt::ClassPtr class_( new Synt::Class(g_dummy_file_pos) );
 		class_->name_= TranslateRecordType( *llvm::dyn_cast<clang::RecordType>( record_decl.getTypeForDecl() ) );
@@ -289,19 +289,33 @@ Synt::ClassPtr CppAstConsumer::ProcessRecord( const clang::RecordDecl& record_de
 		if( record_decl.isCompleteDefinition() )
 		{
 			const auto size= ast_context_.getTypeSize( record_decl.getTypeForDecl() ) / 8u;
-			const auto int_size= 8u;
+			const auto int_size= ast_context_.getTypeAlign( record_decl.getTypeForDecl() ) / 8u;
 			const auto num= ( size + int_size - 1u ) / int_size;
 
-			Synt::ClassField field( g_dummy_file_pos );
-			field.name= "union_content"_SpC;
+			ProgramString int_name;
+			switch(int_size)
+			{
+			case  1: int_name= Keyword( Keywords::  u8_ ); break;
+			case  2: int_name= Keyword( Keywords:: u16_ ); break;
+			case  4: int_name= Keyword( Keywords:: u32_ ); break;
+			case  8: int_name= Keyword( Keywords:: u64_ ); break;
+			case 16: int_name= Keyword( Keywords::u128_ ); break;
+			default: U_ASSERT(false); break;
+			};
+
+			Synt::NamedTypeName named_type_name(g_dummy_file_pos);
+			named_type_name.name.components.emplace_back();
+			named_type_name.name.components.back().name= std::move(int_name);
 
 			Synt::ArrayTypeName array_type( g_dummy_file_pos );
-			array_type.element_type.reset( new Synt::TypeName( TranslateNamedType( KeywordAscii( Keywords::u64_ ) ) ) );
+			array_type.element_type.reset( new Synt::TypeName( std::move(named_type_name) ) );
 
 			Synt::NumericConstant numeric_constant( g_dummy_file_pos );
 			numeric_constant.value_= num;
 			array_type.size.reset( new Synt::Expression( std::move(numeric_constant) ) );
 
+			Synt::ClassField field( g_dummy_file_pos );
+			field.name= "union_content"_SpC;
 			field.type= std::move(array_type);
 			class_->elements_.push_back( std::move(field) );
 		}

@@ -111,6 +111,13 @@ fn U_Main() : i32
 		s.anon_struct_as_array[2u].anon_struct_as_array_content= 66;
 	}
 
+	static_assert( typeinfo</UnionAlign1/>.size_of == 1s );
+	static_assert( typeinfo</UnionAlign1/>.align_of == 1s );
+	static_assert( typeinfo</UnionAlign2/>.size_of == 2s );
+	static_assert( typeinfo</UnionAlign2/>.align_of == 2s );
+	static_assert( typeinfo</UnionAlign4/>.size_of == 4s );
+	static_assert( typeinfo</UnionAlign4/>.align_of == 4s );
+
 	static_assert( i32(SequentialEnum::Red) == 0 );
 	static_assert( i32(SequentialEnum::Green) == 1 );
 	static_assert( i32(SequentialEnum::Blue) == 2 );

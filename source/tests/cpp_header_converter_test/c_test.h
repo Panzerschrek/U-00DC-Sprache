@@ -78,6 +78,10 @@ struct StructWithAnonimousRecordsInside
 	} anon_struct_as_array[5];
 };
 
+union UnionAlign1 { char c; };
+union UnionAlign2 { short s; };
+union UnionAlign4 { int i; };
+
 union UnionForwardDeclaration;
 
 enum SequentialEnum
