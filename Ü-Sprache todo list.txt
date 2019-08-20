@@ -6,8 +6,6 @@ Common:
 *) Dereference operator - for pointer-like classes
 *) Continious initializer for arrays
 *) Different calling conventions (for API calls, for example)
-*) Tuples in typeinfo, instead of linked lists.
-*) break/continue in tuple-for.
 *) build-in "for" for array tupes.
 *) switch-case
 *) "Disassembly operator" - declare variables with initializer as members of
