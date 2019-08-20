@@ -77,7 +77,7 @@ declare double @atan2 (double %y, double %x)
 ;
 
 $_U_halt_handler = comdat any
-@_U_halt_handler = global void()* null, comdat
+@_U_halt_handler = global void()* @__U_default_halt_handler, comdat
 
 $__U_default_halt_handler = comdat any
 define linkonce_odr void @__U_default_halt_handler() unnamed_addr #0 comdat
