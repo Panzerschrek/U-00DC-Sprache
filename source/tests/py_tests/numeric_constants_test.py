@@ -114,3 +114,68 @@ def NumericConstants_HexadecimalConstants_Test1():
 		static_assert( 0xffffffffffffffffu64 == ~0u64 ); // max u64
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def NumericConstants_TypeSuffix_Test0():
+	c_program_text= """
+		template</ type T />
+		fn check_type( T& x, T& y ){}
+
+		fn Foo()
+		{
+			// No suffix and no fractional part - is signed 32bit integer.
+			check_type( 23, i32(0) );
+			check_type( 9652412, i32(0) );
+			check_type( 1e10, i32(0) );
+			check_type( 0xDEADC0DE, i32(0) );
+			check_type( 0b101, i32(0) );
+			check_type( 0o52147, i32(0) );
+
+			// No suffix and has fractional part - is 64bit floating point.
+			check_type( 0.25, f64(0) );
+			check_type( 65354.1, f64(0) );
+			check_type( 0.001, f64(0) );
+			check_type( 5.34e-5, f64(0) );
+			check_type( 7.2e11, f64(0) );
+
+			// "u" siffix for unsigned 32bit integer.
+			check_type( 99u, u32(0) );
+			check_type( 953652114u, u32(0) );
+			check_type( 0xF41Au, u32(0) );
+			check_type( 0b1110u, u32(0) );
+			check_type( 0o7u, u32(0) );
+			check_type( 1.1u, u32(0) ); // Even if numeric constant has fractional point, type specified by suffix.
+
+			// "f" for 32-bit floating point.
+			check_type( 3.14f, f32(0) );
+			check_type( 99f, f32(0) );
+			check_type( 0b1.1f, f32(0) );
+			check_type( 2e9f, f32(0) );
+			check_type( 3.1e2f, f32(0) );
+			check_type( 653e-3f, f32(0) );
+
+			// Short char literals
+			check_type( 95c8, char8(0) );
+			check_type( 32c8, char8(0) );
+			check_type( 32564c16, char16(0) );
+			check_type( 1235678c32, char32(0) );
+
+			// Using fundamental types names as suffixes.
+			check_type( 52i8, i8(0) );
+			check_type( 254u8, u8(0) );
+			check_type( 1254i16, i16(0) );
+			check_type( 45214u16, u16(0) );
+			check_type( 32i32, i32(0) );
+			check_type( 0u32, u32(0) );
+			check_type( 12425635875i64, i64(0) );
+			check_type( 653214785365245u64, u64(0) );
+			check_type( 100i128, i128(0) );
+			check_type( 100u128, u128(0) );
+			check_type( 8f32, f32(0) );
+			check_type( 25f64, f64(0) );
+			check_type( 62char8, char8(0) );
+			check_type( 25647char16, char16(0) );
+			check_type( 7586954char32, char32(0) );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
