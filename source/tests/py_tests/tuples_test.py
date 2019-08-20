@@ -21,9 +21,9 @@ def TupleElementAccess_Test0():
 		fn Foo() : i32
 		{
 			var tup[ f32, i32 ] mut t= zero_init;
-			t[0u]= 45.3f;
-			t[1u]= 9;
-			return i32(t[0u]) - t[ u64(7 - 6) ];
+			t[0]= 45.3f;
+			t[1]= 9;
+			return i32(t[0]) - t[ u64(7 - 6) ];
 		}
 	"""
 	tests_lib.build_program( c_program_text )
@@ -94,6 +94,20 @@ def TupleElementAccess_Test5():
 		{
 			var tup[] mut t= zero_init;
 			t[0u]; // index out of bounds
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "TupleIndexOutOfBounds" )
+	assert( errors_list[0].file_pos.line == 5 )
+
+
+def TupleElementAccess_Test6():
+	c_program_text= """
+		fn Foo()
+		{
+			var tup[ f32, i32 ] mut t= zero_init;
+			t[ -1 ]; // index out of bounds
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text) )

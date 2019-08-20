@@ -658,6 +658,39 @@ U_TEST(TypesMismatchTest11)
 	U_TEST_ASSERT( error.file_pos.line == 6u );
 }
 
+U_TEST(TypesMismatchTest12)
+{
+	// Unexpected type in array index.
+	static const char c_program_text[]=
+	R"(
+		struct S{}
+		fn Foo()
+		{
+			var [ i32, 16 ] arr= zero_init;
+			var i32 mut x= 0;
+			arr[ 0.25f ]; // f32
+			arr[ 0.5 ]; // f64
+			arr[ "Z"c8 ]; // char
+			arr[ x ]; // non-constexpr signed integer
+			arr[ S() ]; // struct type
+		}
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	U_TEST_ASSERT( build_result.errors.size() >= 5u );
+
+	U_TEST_ASSERT( build_result.errors[0u].code == CodeBuilderErrorCode::TypesMismatch );
+	U_TEST_ASSERT( build_result.errors[0u].file_pos.line == 7u );
+	U_TEST_ASSERT( build_result.errors[1u].code == CodeBuilderErrorCode::TypesMismatch );
+	U_TEST_ASSERT( build_result.errors[1u].file_pos.line == 8u );
+	U_TEST_ASSERT( build_result.errors[2u].code == CodeBuilderErrorCode::TypesMismatch );
+	U_TEST_ASSERT( build_result.errors[2u].file_pos.line == 9u );
+	U_TEST_ASSERT( build_result.errors[3u].code == CodeBuilderErrorCode::TypesMismatch );
+	U_TEST_ASSERT( build_result.errors[3u].file_pos.line == 10u );
+	U_TEST_ASSERT( build_result.errors[4u].code == CodeBuilderErrorCode::TypesMismatch );
+	U_TEST_ASSERT( build_result.errors[4u].file_pos.line == 11u );
+}
+
 U_TEST(NoMatchBinaryOperatorForGivenTypesTest0)
 {
 	// Add for array and int.

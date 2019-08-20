@@ -1968,7 +1968,9 @@ Value CodeBuilder::BuildIndexationOperator(
 		const Variable index= BuildExpressionCodeEnsureVariable( indexation_operator.index_, names, function_context );
 
 		const FundamentalType* const index_fundamental_type= index.type.GetFundamentalType();
-		if( index_fundamental_type == nullptr || !IsUnsignedInteger( index_fundamental_type->fundamental_type ) )
+		if( !( index_fundamental_type != nullptr && (
+			( index.constexpr_value != nullptr && IsInteger( index_fundamental_type->fundamental_type ) ) ||
+			( index.constexpr_value == nullptr && IsUnsignedInteger( index_fundamental_type->fundamental_type ) ) ) ) )
 		{
 			REPORT_ERROR( TypesMismatch, names.GetErrors(), indexation_operator.file_pos_, "any unsigned integer"_SpC, index.type );
 			return ErrorValue();
@@ -1984,9 +1986,17 @@ Value CodeBuilder::BuildIndexationOperator(
 		if( index.constexpr_value != nullptr && llvm::dyn_cast<llvm::UndefValue>(index.constexpr_value) == nullptr &&
 			array_type->size != Array::c_undefined_size )
 		{
-			const SizeType index_value= SizeType( index.constexpr_value->getUniqueInteger().getLimitedValue() );
-			if( index_value >= array_type->size )
-				REPORT_ERROR( ArrayIndexOutOfBounds, names.GetErrors(), indexation_operator.file_pos_, index_value, array_type->size );
+			const llvm::APInt index_value= index.constexpr_value->getUniqueInteger();
+			if( IsSignedInteger(index_fundamental_type->fundamental_type) )
+			{
+				if( index_value.getLimitedValue() >= array_type->size || index_value.isNegative() )
+					REPORT_ERROR( ArrayIndexOutOfBounds, names.GetErrors(), indexation_operator.file_pos_, index_value.getSExtValue(), array_type->size );
+			}
+			else
+			{
+				if( index_value.getLimitedValue() >= array_type->size )
+					REPORT_ERROR( ArrayIndexOutOfBounds, names.GetErrors(), indexation_operator.file_pos_, index_value.getLimitedValue(), array_type->size );
+			}
 		}
 
 		Variable result;
@@ -2050,9 +2060,9 @@ Value CodeBuilder::BuildIndexationOperator(
 		const Variable index= BuildExpressionCodeEnsureVariable( indexation_operator.index_, names, function_context );
 
 		const FundamentalType* const index_fundamental_type= index.type.GetFundamentalType();
-		if( index_fundamental_type == nullptr || !IsUnsignedInteger( index_fundamental_type->fundamental_type ) )
+		if( index_fundamental_type == nullptr || !IsInteger( index_fundamental_type->fundamental_type ) )
 		{
-			REPORT_ERROR( TypesMismatch, names.GetErrors(), indexation_operator.file_pos_, "any unsigned integer"_SpC, index.type );
+			REPORT_ERROR( TypesMismatch, names.GetErrors(), indexation_operator.file_pos_, "any integer"_SpC, index.type );
 			return ErrorValue();
 		}
 
@@ -2068,11 +2078,23 @@ Value CodeBuilder::BuildIndexationOperator(
 			REPORT_ERROR( ExpectedConstantExpression, names.GetErrors(), indexation_operator.file_pos_ );
 			return ErrorValue();
 		}
-		const uint64_t index_value= index.constexpr_value->getUniqueInteger().getLimitedValue();
-		if( index_value >= tuple_type->elements.size() )
+		const llvm::APInt index_value_raw= index.constexpr_value->getUniqueInteger();
+		const size_t index_value= index_value_raw.getLimitedValue();
+		if( IsSignedInteger(index_fundamental_type->fundamental_type) )
 		{
-			REPORT_ERROR( TupleIndexOutOfBounds, names.GetErrors(), indexation_operator.file_pos_, index_value, tuple_type->elements.size() );
-			return ErrorValue();
+			if( index_value >= tuple_type->elements.size() || index_value_raw.isNegative() )
+			{
+				REPORT_ERROR( TupleIndexOutOfBounds, names.GetErrors(), indexation_operator.file_pos_, index_value_raw.getSExtValue(), tuple_type->elements.size() );
+				return ErrorValue();
+			}
+		}
+		else
+		{
+			if( index_value >= tuple_type->elements.size() )
+			{
+				REPORT_ERROR( TupleIndexOutOfBounds, names.GetErrors(), indexation_operator.file_pos_, index_value, tuple_type->elements.size() );
+				return ErrorValue();
+			}
 		}
 
 		Variable result;

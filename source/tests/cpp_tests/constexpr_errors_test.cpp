@@ -343,11 +343,12 @@ U_TEST( ArrayIndexOutOfBoundsTest0 )
 			arr[6u]; // index > size
 			arr[8278282u]; // index >> size
 			zero_arr[0u]; // indexation of zero-size array
+			arr[ -1 ];
 		}
 	)";
 
 	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( build_result.errors.size() >= 4u );
+	U_TEST_ASSERT( build_result.errors.size() >= 5u );
 
 	U_TEST_ASSERT( build_result.errors[0u].code == CodeBuilderErrorCode::ArrayIndexOutOfBounds );
 	U_TEST_ASSERT( build_result.errors[0u].file_pos.line == 6u );
@@ -357,6 +358,8 @@ U_TEST( ArrayIndexOutOfBoundsTest0 )
 	U_TEST_ASSERT( build_result.errors[2u].file_pos.line == 8u );
 	U_TEST_ASSERT( build_result.errors[3u].code == CodeBuilderErrorCode::ArrayIndexOutOfBounds );
 	U_TEST_ASSERT( build_result.errors[3u].file_pos.line == 9u );
+	U_TEST_ASSERT( build_result.errors[4u].code == CodeBuilderErrorCode::ArrayIndexOutOfBounds );
+	U_TEST_ASSERT( build_result.errors[4u].file_pos.line == 10u );
 }
 
 } // namespace U

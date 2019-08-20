@@ -226,8 +226,8 @@ U_TEST(ArraysTest0)
 	fn Foo( i32 x ) : i32\
 	{\
 		var [ i32, 17 ] mut tmp= zero_init;\
-		tmp[5u32]= x;\
-		return tmp[5u] + 5;\
+		tmp[5]= x;\
+		return tmp[5] + 5;\
 	}"
 	;
 
@@ -255,8 +255,8 @@ U_TEST(ArraysTest1)
 	fn Foo( i32 x ) : i32\
 	{\
 		var [ [ [ i32, 3 ], 5 ], 17 ] mut tmp= zero_init;\
-		tmp[5u32][3u32][1u32]= x;\
-		return tmp[5u][3u][1u] + 5;\
+		tmp[5][3][1]= x;\
+		return tmp[5][3][1] + 5;\
 	}"
 	;
 
