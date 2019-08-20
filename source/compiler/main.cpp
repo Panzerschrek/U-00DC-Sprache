@@ -251,24 +251,29 @@ namespace Options
 
 namespace cl= llvm::cl;
 
+static cl::OptionCategory options_category( "Ü compier options" );
+
 static cl::list<std::string> input_files(
 	cl::Positional,
 	cl::desc("<source0> [... <sourceN>]"),
 	cl::value_desc("iinput files"),
-	cl::OneOrMore );
+	cl::OneOrMore,
+	cl::cat(options_category) );
 
 static cl::opt<std::string> output_file_name(
 	"o",
 	cl::desc("Output filename"),
 	cl::value_desc("filename"),
-	cl::Required );
+	cl::Required,
+	cl::cat(options_category) );
 
 static cl::list<std::string> include_dir(
 	"include-dir",
 	cl::Prefix,
 	cl::desc("<dir0> [... <dirN>]"),
-	cl::value_desc("include directories"),
-	cl::ZeroOrMore );
+	cl::value_desc("directory for search of \"import\" files"),
+	cl::ZeroOrMore,
+	cl::cat(options_category));
 
 enum class FileType{ BC, Obj };
 static cl::opt< FileType > file_type(
@@ -278,19 +283,22 @@ static cl::opt< FileType > file_type(
 	cl::values(
 		clEnumValN( FileType::BC, "bc", "Emit an llvm bitcode ('.bc') file" ),
 		clEnumValN( FileType::Obj, "obj", "Emit a native object ('.o') file" ),
-		clEnumValEnd) );
+		clEnumValEnd),
+	cl::cat(options_category) );
 
 static cl::opt<char> optimization_level(
 	"O",
 	cl::desc("Optimization level. [-O0, -O1, -O2, -O3, -Os or -Oz] (default = '-O0')"),
 	cl::Prefix,
 	cl::Optional,
-	cl::init('0') );
+	cl::init('0'),
+	cl::cat(options_category) );
 
 static cl::opt<std::string> architecture(
 	"march",
 	cl::desc("Architecture to generate code for (see --version)"),
-	cl::init("native") );
+	cl::init("native"),
+	cl::cat(options_category) );
 
 static cl::opt<llvm::Reloc::Model> relocation_model(
 	"relocation-model",
@@ -301,22 +309,26 @@ static cl::opt<llvm::Reloc::Model> relocation_model(
 		clEnumValN( llvm::Reloc::Static, "static", "Non-relocatable code" ),
 		clEnumValN( llvm::Reloc::PIC_, "pic", "Fully relocatable, position independent code" ),
 		clEnumValN( llvm::Reloc::DynamicNoPIC, "dynamic-no-pic", "Relocatable external references, non-relocatable code" ),
-		clEnumValEnd) );
+		clEnumValEnd),
+	cl::cat(options_category) );
 
 static cl::opt<bool> enable_pie(
 	"enable-pie",
 	cl::desc("Assume the creation of a position independent executable."),
-	cl::init(false) );
+	cl::init(false),
+	cl::cat(options_category) );
 
 static cl::opt<bool> tests_output(
 	"tests-output",
 	cl::desc("Print code builder errors in test mode."),
-	cl::init(false) );
+	cl::init(false),
+	cl::cat(options_category) );
 
 static cl::opt<bool> print_llvm_asm(
 	"print-llvm-asm",
 	cl::desc("Print LLVM code."),
-	cl::init(false) );
+	cl::init(false),
+	cl::cat(options_category) );
 
 } // namespace Options
 
@@ -328,6 +340,7 @@ int main( const int argc, const char* const argv[])
 		[] {
 			std::cout << "Ü-Sprache version " << SPRACHE_VERSION << ", llvm version " << LLVM_VERSION_STRING << std::endl;
 		} );
+	llvm::cl::HideUnrelatedOptions( Options::options_category );
 	llvm::cl::ParseCommandLineOptions( argc, argv, "Ü-Sprache compiler\n" );
 
 	// Select optimization level.
