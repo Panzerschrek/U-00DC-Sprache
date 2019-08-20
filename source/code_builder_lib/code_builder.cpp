@@ -3177,6 +3177,9 @@ void CodeBuilder::BuildForOperatorCode(
 			// TODO - create template errors context.
 			BuildBlockCode( for_operator.block_, loop_names, function_context );
 			CallDestructors( *function_context.stack_variables_stack.back(), names, function_context, for_operator.file_pos_ );
+
+			// Overloading resolution uses addresses of syntax elements as keys. Reset it, because we use same syntax elements multiple times.
+			function_context.overloading_resolution_cache.clear();
 		}
 	}
 	else
