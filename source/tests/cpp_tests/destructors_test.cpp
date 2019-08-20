@@ -1010,6 +1010,127 @@ U_TEST(DestructorsTest24_DestructorForTuples)
 	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 66, 41 } ) );
 }
 
+U_TEST(DestructorsTest25_DestructorForTuples)
+{
+	DestructorTestPrepare();
+
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+
+		class S
+		{
+			i32 x;
+			fn conversion_constructor( i32 in_x ) ( x= in_x ) {}
+			fn destructor() { DestructorCalled(x); }
+		}
+
+		fn Foo()
+		{
+			var tup[ i32, f32, bool ] t= zero_init;
+			var i32 mut iterations(0);
+			for( &e : t )
+			{
+				var S s0( iterations * 1000 + 93 );
+				{
+					var S s1( iterations * 1000 + 56 );
+					++iterations;
+					continue;
+				}
+			}
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 56, 93, 1056, 1093, 2056, 2093} ) );
+}
+
+U_TEST(DestructorsTest26_DestructorForTuples)
+{
+	DestructorTestPrepare();
+
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+
+		class S
+		{
+			i32 x;
+			fn conversion_constructor( i32 in_x ) ( x= in_x ) {}
+			fn destructor() { DestructorCalled(x); }
+		}
+
+		fn Foo()
+		{
+			var tup[ i32, f32, bool ] t= zero_init;
+			var i32 mut iterations(0);
+			for( &e : t )
+			{
+				var S s0( iterations * 100 + 7 );
+				{
+					var S s1( iterations * 100 + 2 );
+					++iterations;
+					break;
+				}
+			}
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 2, 7 } ) );
+}
+
+U_TEST(DestructorsTest27_DestructorForTuples)
+{
+	DestructorTestPrepare();
+
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+
+		class S
+		{
+			i32 x;
+			fn conversion_constructor( i32 in_x ) ( x= in_x ) {}
+			fn destructor() { DestructorCalled(x); }
+		}
+
+		fn Foo()
+		{
+			var tup[ i32, f32, bool, char8, i16, u8 ] t= zero_init;
+			var i32 mut iterations(0);
+			for( &e : t )
+			{
+				++iterations;
+				var S s0( iterations * 100 + 12 );
+				if( ( iterations & 1 ) == 0 )
+				{
+					var S s1( iterations * 1000 + 5 );
+					continue;
+				}
+			}
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 112,   2005, 212,   312,   4005, 412,   512,   6005, 612 } ) );
+}
+
 U_TEST(EralyTempVariablesDestruction_Test0)
 {
 	DestructorTestPrepare();

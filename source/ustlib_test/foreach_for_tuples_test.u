@@ -28,5 +28,38 @@ fn U_Main() : i32
 		halt if( iterations != size_type(0) );
 	}
 
+	{ // "break" in tuples for
+		var tup[ u32, f32, i32 ] mut t[ 54u, -2564.0f, 142 ];
+		var size_type mut iterations(0);
+		foreach( &mut x : t )
+		{
+			x*= typeof(x)(3);
+			++iterations;
+			if( x < typeof(x)(0) ) { break; }
+		}
+		halt if( iterations != size_type(2) );
+		halt if( t[0u] != 54u * 3u );
+		halt if( t[1u] != -2564.0f * 3.0f );
+		halt if( t[2u] != 142 );
+	}
+	{ // "continue" in tuples for
+		var tup[ f32, i32, i64 ] mut t[ 17.0f, 56, 89i64 ];
+		var size_type mut iterations(0);
+		foreach( &mut x : t )
+		{
+			if( x < typeof(x)(20) ) { continue; }
+			x*= typeof(x)(5);
+			++iterations;
+		}
+		halt if( iterations != size_type(2) );
+		halt if( t[0] != 17.0f );
+		halt if( t[1] != 280 );
+		halt if( t[2] != 445i64 );
+	}
+	{ // foreach for empty tuple
+		var tup[] t;
+		foreach( x : t ){}
+	}
+
 	return 0;
 }

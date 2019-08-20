@@ -2173,7 +2173,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockCode(
 	}
 
 	if( block_element_index < block.elements_.size() )
-		REPORT_ERROR( UnreachableCode, names.GetErrors(),  Synt::GetBlockElementFilePos( block.elements_[ block_element_index ] ) );
+		REPORT_ERROR( UnreachableCode, names.GetErrors(), Synt::GetBlockElementFilePos( block.elements_[ block_element_index ] ) );
 
 	// If there are undconditional "break", "continue", "return" operators,
 	// we didn`t need call destructors, it must be called in this operators.
@@ -3082,7 +3082,8 @@ void CodeBuilder::BuildForOperatorCode(
 
 	if( const Tuple* const tuple_type= sequence_expression.type.GetTupleType() )
 	{
-		// TODO - support break/continue
+		llvm::BasicBlock* const finish_basic_block= tuple_type->elements.empty() ? nullptr : llvm::BasicBlock::Create( llvm_context_ );
+
 		U_ASSERT( sequence_expression.location == Variable::Location::Pointer );
 		for( const Type& element_type : tuple_type->elements )
 		{
@@ -3172,12 +3173,30 @@ void CodeBuilder::BuildForOperatorCode(
 
 			loop_names.AddName( for_operator.loop_variable_name_, Value( std::move(variable), for_operator.file_pos_ ) );
 
+
+			llvm::BasicBlock* const next_basic_block=
+				( element_index + 1u == tuple_type->elements.size() )
+					? finish_basic_block
+					: llvm::BasicBlock::Create( llvm_context_ );
+			function_context.loops_stack.emplace_back();
+			function_context.loops_stack.back().block_for_continue= next_basic_block;
+			function_context.loops_stack.back().block_for_break= finish_basic_block;
+			function_context.loops_stack.back().stack_variables_stack_size= function_context.stack_variables_stack.size();
+
 			// TODO - create template errors context.
-			BuildBlockCode( for_operator.block_, loop_names, function_context );
+			const BlockBuildInfo block_build_info= BuildBlockCode( for_operator.block_, loop_names, function_context );
 			CallDestructors( *function_context.stack_variables_stack.back(), names, function_context, for_operator.file_pos_ );
 
 			// Overloading resolution uses addresses of syntax elements as keys. Reset it, because we use same syntax elements multiple times.
 			function_context.overloading_resolution_cache.clear();
+
+			function_context.loops_stack.pop_back();
+
+			if( !block_build_info.have_terminal_instruction_inside )
+				function_context.llvm_ir_builder.CreateBr( next_basic_block );
+
+			function_context.function->getBasicBlockList().push_back( next_basic_block );
+			function_context.llvm_ir_builder.SetInsertPoint( next_basic_block );
 		}
 	}
 	else
