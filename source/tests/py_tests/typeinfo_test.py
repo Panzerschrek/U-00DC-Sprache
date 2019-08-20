@@ -234,8 +234,8 @@ def ClassTypesInfo_Test2():
 		template</ type T /> fn constexpr MustBeSame( T& a, T& b ) : bool { return true; }
 		fn Foo()
 		{
-			static_assert( MustBeSame( typeinfo</B/>.fields_list.class_type, typeinfo</A/> ) );
-			static_assert( MustBeSame( typeinfo</A/>.fields_list.class_type, typeinfo</A/>.fields_list.class_type ) );
+			static_assert( MustBeSame( typeinfo</B/>.fields_list[0].class_type, typeinfo</A/> ) );
+			static_assert( MustBeSame( typeinfo</A/>.fields_list[0].class_type, typeinfo</A/>.fields_list[0].class_type ) );
 		}
 	"""
 	tests_lib.build_program( c_program_text )
@@ -257,23 +257,16 @@ def ClassTypesInfo_Test3():
 	}
 
 	template</ type T, size_type name_size />
-	fn constexpr ClassFieldsListNodeOffset( T& node, [ char8, name_size ]& name ) : size_type
+	fn constexpr ClassFieldsListNodeOffset( T& list, [ char8, name_size ]& name ) : size_type
 	{
-		static_if( T::is_end )
+		for( & field_info : list )
 		{
-			halt;
-		}
-		else
-		{
-			if( StringEquals( node.name, name ) )
+			if( StringEquals( field_info.name, name ) )
 			{
-				return node.offset;
-			}
-			else
-			{
-				return ::ClassFieldsListNodeOffset( node.next, name );
+				return field_info.offset;
 			}
 		}
+		halt;
 	}
 
 	struct S
@@ -314,24 +307,17 @@ def ClassTypesInfo_Test4():
 		bool is_protected;
 	}
 	template</ type T, size_type name_size />
-	fn constexpr GetVisibility( T& node, [ char8, name_size ]& name ) : PPP
+	fn constexpr GetVisibility( T& list, [ char8, name_size ]& name ) : PPP
 	{
-		static_if( T::is_end )
+		for( & list_element : list )
 		{
-			halt;
-		}
-		else
-		{
-			if( StringEquals( node.name, name ) )
+			if( StringEquals( list_element.name, name ) )
 			{
-				var PPP result{ .is_public= node.is_public, .is_private= node.is_private, .is_protected= node.is_protected };
+				var PPP result{ .is_public= list_element.is_public, .is_private= list_element.is_private, .is_protected= list_element.is_protected };
 				return result;
 			}
-			else
-			{
-				return ::GetVisibility( node.next, name );
-			}
 		}
+		halt;
 	}
 
 	class A polymorph
@@ -584,35 +570,28 @@ def TypeinfoList_EnumList_Test0():
 		}
 
 		template</ type T, size_type name_size />
-		fn constexpr NodeListHaveName( T& node, [ char8, name_size ]& name ) : bool
+		fn constexpr ListHaveName( T& list, [ char8, name_size ]& name ) : bool
 		{
-			static_if( T::is_end )
+			for( &list_element : list )
 			{
-				return false;
-			}
-			else
-			{
-				if( StringEquals( node.name, name ) )
+				if( StringEquals( list_element.name, name ) )
 				{
 					return true;
 				}
-				else
-				{
-					return ::NodeListHaveName( node.next, name );
-				}
 			}
+			return false;
 		}
 
 		enum E{ A, B, C, Dee, Frtr }
 
-		static_assert( NodeListHaveName( typeinfo</E/>.elements_list, "A" ) );
-		static_assert( NodeListHaveName( typeinfo</E/>.elements_list, "B" ) );
-		static_assert( NodeListHaveName( typeinfo</E/>.elements_list, "C" ) );
-		static_assert( NodeListHaveName( typeinfo</E/>.elements_list, "Dee" ) );
-		static_assert( NodeListHaveName( typeinfo</E/>.elements_list, "Frtr" ) );
-		static_assert( !NodeListHaveName( typeinfo</E/>.elements_list, "D" ) );
-		static_assert( !NodeListHaveName( typeinfo</E/>.elements_list, "LOL" ) );
-		static_assert( !NodeListHaveName( typeinfo</E/>.elements_list, "a" ) );
+		static_assert( ListHaveName( typeinfo</E/>.elements_list, "A" ) );
+		static_assert( ListHaveName( typeinfo</E/>.elements_list, "B" ) );
+		static_assert( ListHaveName( typeinfo</E/>.elements_list, "C" ) );
+		static_assert( ListHaveName( typeinfo</E/>.elements_list, "Dee" ) );
+		static_assert( ListHaveName( typeinfo</E/>.elements_list, "Frtr" ) );
+		static_assert( !ListHaveName( typeinfo</E/>.elements_list, "D" ) );
+		static_assert( !ListHaveName( typeinfo</E/>.elements_list, "LOL" ) );
+		static_assert( !ListHaveName( typeinfo</E/>.elements_list, "a" ) );
 	"""
 	tests_lib.build_program( c_program_text )
 
@@ -633,23 +612,16 @@ def TypeinfoList_EnumList_Test1():
 		}
 
 		template</ type T, size_type name_size />
-		fn constexpr GetEnumNodeValue( T& node, [ char8, name_size ]& name ) : u32
+		fn constexpr GetEnumNodeValue( T& list, [ char8, name_size ]& name ) : u32
 		{
-			static_if( T::is_end )
+			for( &list_element : list )
 			{
-				halt;
-			}
-			else
-			{
-				if( StringEquals( node.name, name ) )
+				if( StringEquals( list_element.name, name ) )
 				{
-					return node.value;
-				}
-				else
-				{
-					return ::GetEnumNodeValue( node.next, name );
+					return list_element.value;
 				}
 			}
+			halt;
 		}
 
 		enum E : u32 { A, B, C, Dee, Frtr }
@@ -665,11 +637,8 @@ def TypeinfoList_EnumList_Test1():
 
 def TypeinfoList_ClassFieldsList_Test0():
 	c_program_text= """
-		template</ type T />
-		fn constexpr IsEmptyClassFieldsList( T& node ) : bool { return T::is_end; }
-
 		struct S{}
-		static_assert( IsEmptyClassFieldsList( typeinfo</S/>.fields_list ) );
+		static_assert( typeinfo</ typeof( typeinfo</S/>.fields_list ) />.element_count == 0s );
 	"""
 	tests_lib.build_program( c_program_text )
 
@@ -690,23 +659,16 @@ def TypeinfoList_ClassFieldsList_Test1():
 		}
 
 		template</ type T, size_type name_size />
-		fn constexpr NodeListHaveName( T& node, [ char8, name_size ]& name ) : bool
+		fn constexpr NodeListHaveName( T& list, [ char8, name_size ]& name ) : bool
 		{
-			static_if( T::is_end )
+			for( & list_element : list )
 			{
-				return false;
-			}
-			else
-			{
-				if( StringEquals( node.name, name ) )
+				if( StringEquals( list_element.name, name ) )
 				{
 					return true;
 				}
-				else
-				{
-					return ::NodeListHaveName( node.next, name );
-				}
 			}
+			return false;
 		}
 
 		struct S{ i32 x; f32 y; bool zzz; }
@@ -736,23 +698,16 @@ def TypeinfoList_ClassTypesList_Test0():
 		}
 
 		template</ type T, size_type name_size />
-		fn constexpr NodeListHaveName( T& node, [ char8, name_size ]& name ) : bool
+		fn constexpr NodeListHaveName( T& list, [ char8, name_size ]& name ) : bool
 		{
-			static_if( T::is_end )
+			for( & list_element : list )
 			{
-				return false;
-			}
-			else
-			{
-				if( StringEquals( node.name, name ) )
+				if( StringEquals( list_element.name, name ) )
 				{
 					return true;
 				}
-				else
-				{
-					return ::NodeListHaveName( node.next, name );
-				}
 			}
+			return false;
 		}
 
 		struct S
@@ -789,21 +744,17 @@ def TypeinfoList_ClassFunctionsList_Test0():
 		}
 
 		template</ type T, size_type name_size />
-		fn constexpr NodeListNameCount( T& node, [ char8, name_size ]& name ) : u32
+		fn constexpr NodeListNameCount( T& list, [ char8, name_size ]& name ) : size_type
 		{
-			static_if( T::is_end )
+			var size_type mut count(0);
+			for( & list_element : list )
 			{
-				return 0u;
-			}
-			else
-			{
-				var u32 mut result(0);
-				if( StringEquals( node.name, name ) )
+				if( StringEquals( list_element.name, name ) )
 				{
-					++result;
+					++count;
 				}
-				return result + ::NodeListNameCount( node.next, name );
 			}
+			return count;
 		}
 
 		struct S
@@ -817,13 +768,13 @@ def TypeinfoList_ClassFunctionsList_Test0():
 			op+( S& a, S& b ) {}
 		}
 
-		static_assert( NodeListNameCount( typeinfo</S/>.functions_list, "Foo" ) == 1u );
-		static_assert( NodeListNameCount( typeinfo</S/>.functions_list, "Bar" ) == 2u );
-		static_assert( NodeListNameCount( typeinfo</S/>.functions_list, "constructor" ) == 2u );
-		static_assert( NodeListNameCount( typeinfo</S/>.functions_list, "destructor" ) == 1u );
-		static_assert( NodeListNameCount( typeinfo</S/>.functions_list, "+" ) == 1u );
-		static_assert( NodeListNameCount( typeinfo</S/>.functions_list, "-" ) == 0u );
-		static_assert( NodeListNameCount( typeinfo</S/>.functions_list, "UnknownFunc" ) == 0u );
+		static_assert( NodeListNameCount( typeinfo</S/>.functions_list, "Foo" ) == 1s );
+		static_assert( NodeListNameCount( typeinfo</S/>.functions_list, "Bar" ) == 2s );
+		static_assert( NodeListNameCount( typeinfo</S/>.functions_list, "constructor" ) == 2s );
+		static_assert( NodeListNameCount( typeinfo</S/>.functions_list, "destructor" ) == 1s );
+		static_assert( NodeListNameCount( typeinfo</S/>.functions_list, "+" ) == 1s );
+		static_assert( NodeListNameCount( typeinfo</S/>.functions_list, "-" ) == 0s );
+		static_assert( NodeListNameCount( typeinfo</S/>.functions_list, "UnknownFunc" ) == 0s );
 	"""
 	tests_lib.build_program( c_program_text )
 
@@ -844,23 +795,16 @@ def TypeinfoList_ClassFunctionsList_Test1():
 		}
 
 		template</ type T, size_type name_size />
-		fn constexpr GetFunctionUnsafe( T& node, [ char8, name_size ]& name ) : bool
+		fn constexpr GetFunctionUnsafe( T& list, [ char8, name_size ]& name ) : bool
 		{
-			static_if( T::is_end )
+			for( & list_element : list )
 			{
-				halt;
-			}
-			else
-			{
-				if( StringEquals( node.name, name ) )
+				if( StringEquals( list_element.name, name ) )
 				{
-					return node.type.unsafe;
-				}
-				else
-				{
-					return ::GetFunctionUnsafe( node.next, name );
+					return list_element.type.unsafe;
 				}
 			}
+			halt;
 		}
 
 		class A
@@ -884,16 +828,9 @@ def TypeinfoList_ClassFunctionsList_Test1():
 def TypeinfoList_ClassParentsList_Test0():
 	c_program_text= """
 		template</ type T />
-		fn constexpr GetParentCount( T& node ) : u32
+		fn constexpr GetParentCount( T& list ) : u32
 		{
-			static_if( T::is_end )
-			{
-				return 0u;
-			}
-			else
-			{
-				return 1u + ::GetParentCount( node.next );
-			}
+			return u32( typeinfo</T/>.element_count );
 		}
 
 		class A interface{}
@@ -953,7 +890,6 @@ def TypeinfoForTypeinfo_Test1():
 		struct S{ i32 x; }
 		static_assert( typeinfo</ typeof( typeinfo</ f32 /> ) />.is_typeinfo );
 		static_assert( typeinfo</ typeof( typeinfo</ S /> ) />.is_typeinfo );
-		static_assert( typeinfo</ typeof( typeinfo</ S />.fields_list ) />.is_typeinfo );
-		static_assert( typeinfo</ typeof( typeinfo</ S />.fields_list.next ) />.is_typeinfo );
+		static_assert( typeinfo</ typeof( typeinfo</ S />.fields_list[0] ) />.is_typeinfo );
 	"""
 	tests_lib.build_program( c_program_text )

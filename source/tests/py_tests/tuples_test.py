@@ -251,27 +251,20 @@ def Typeinfo_ForTuples_Test1():
 def Typeinfo_ForTuples_Test2():
 	c_program_text= """
 		template</ type T />
-		fn constexpr TupleMemebersListNodeOffset( T& node, size_type index ) : size_type
+		fn constexpr TupleMemebersListNodeOffset( T& list, size_type index ) : size_type
 		{
-			static_if( T::is_end )
+			for( & list_element : list )
 			{
-				halt;
-			}
-			else
-			{
-				if( node.index == index )
+				if( list_element.index == index )
 				{
-					return node.offset;
-				}
-				else
-				{
-					return ::TupleMemebersListNodeOffset( node.next, index );
+					return list_element.offset;
 				}
 			}
+			halt;
 		}
 
-		static_assert( typeinfo</ tup[i32] />.elements_list.type.is_signed_integer );
-		static_assert( typeinfo</ tup[i32] />.elements_list.offset == size_type(0) );
+		static_assert( typeinfo</ tup[i32] />.elements_list[0].type.is_signed_integer );
+		static_assert( typeinfo</ tup[i32] />.elements_list[0].offset == size_type(0) );
 
 		type T= tup[ u64, i64, i32, f32, char8, u8 ];
 		static_assert( TupleMemebersListNodeOffset( typeinfo</T/>.elements_list, size_type(0) ) == size_type(0) );

@@ -9,7 +9,6 @@ namespace CodeBuilderPrivate
 {
 
 static const ProgramString g_next_node_name= "next"_SpC;
-static const ProgramString g_is_end_var_name= "is_end"_SpC;
 static const ProgramString g_name_field_name= "name"_SpC;
 static const ProgramString g_type_field_name= "type"_SpC;
 static const FilePos g_dummy_file_pos{ 0u, 0u, 0u };
@@ -127,7 +126,7 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, Variable& typeinfo_variab
 		fields_initializers.push_back( llvm::dyn_cast<llvm::GlobalVariable>( dependent_type_typeinfo.llvm_value ) );
 	};
 
-	const auto add_list_head_field=
+	const auto add_list_field=
 	[&]( const ProgramString& name, const Variable& variable )
 	{
 		typeinfo_class.members.AddName(
@@ -179,7 +178,7 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, Variable& typeinfo_variab
 	{
 		add_size_field( "element_count"_SpC, enum_type->element_count );
 		add_typeinfo_field( "underlaying_type"_SpC, enum_type->underlaying_type );
-		add_list_head_field( "elements_list"_SpC, BuildTypeinfoEnumElementsList( *enum_type, root_namespace ) );
+		add_list_field( "elements_list"_SpC, BuildTypeinfoEnumElementsList( *enum_type, root_namespace ) );
 	}
 	else if( const Array* const array_type= type.GetArrayType() )
 	{
@@ -189,7 +188,7 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, Variable& typeinfo_variab
 	else if( const Tuple* const tuple_type= type.GetTupleType() )
 	{
 		add_size_field( "element_count"_SpC, tuple_type->elements.size() );
-		add_list_head_field( "elements_list"_SpC, BuildypeinfoTupleElements( *tuple_type, root_namespace ) );
+		add_list_field( "elements_list"_SpC, BuildypeinfoTupleElements( *tuple_type, root_namespace ) );
 	}
 	else if( const Class* const class_type= type.GetClassType() )
 	{
@@ -205,10 +204,10 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, Variable& typeinfo_variab
 		add_size_field( "parent_count"_SpC, class_type->parents.size() );
 
 		const ClassProxyPtr class_proxy= type.GetClassTypeProxy();
-		add_list_head_field( "fields_list"_SpC   , BuildTypeinfoClassFieldsList(    class_proxy, root_namespace ) );
-		add_list_head_field( "types_list"_SpC    , BuildTypeinfoClassTypesList(     class_proxy, root_namespace ) );
-		add_list_head_field( "functions_list"_SpC, BuildTypeinfoClassFunctionsList( class_proxy, root_namespace ) );
-		add_list_head_field( "parents_list"_SpC  , BuildeTypeinfoClassParentsList(  class_proxy, root_namespace ) );
+		add_list_field( "fields_list"_SpC   , BuildTypeinfoClassFieldsList(    class_proxy, root_namespace ) );
+		add_list_field( "types_list"_SpC    , BuildTypeinfoClassTypesList(     class_proxy, root_namespace ) );
+		add_list_field( "functions_list"_SpC, BuildTypeinfoClassFunctionsList( class_proxy, root_namespace ) );
+		add_list_field( "parents_list"_SpC  , BuildeTypeinfoClassParentsList(  class_proxy, root_namespace ) );
 
 		if( is_polymorph )
 		{
@@ -242,7 +241,7 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, Variable& typeinfo_variab
 	else if( const Function* const function_type= type.GetFunctionType() )
 	{
 		add_typeinfo_field( "return_type"_SpC, function_type->return_type );
-		add_list_head_field( "arguments_list"_SpC      , BuildTypeinfoFunctionArguments( *function_type, root_namespace ) );
+		add_list_field( "arguments_list"_SpC      , BuildTypeinfoFunctionArguments( *function_type, root_namespace ) );
 		add_bool_field( "return_value_is_reference"_SpC, function_type->return_value_is_reference );
 		add_bool_field( "return_value_is_mutable"_SpC  , function_type->return_value_is_mutable );
 		add_bool_field( "unsafe"_SpC                   , function_type->unsafe );
@@ -255,64 +254,6 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, Variable& typeinfo_variab
 	// Prepare result value
 	typeinfo_variable.constexpr_value= llvm::ConstantStruct::get( typeinfo_class.llvm_type, fields_initializers );
 	llvm::dyn_cast<llvm::GlobalVariable>(typeinfo_variable.llvm_value)->setInitializer( typeinfo_variable.constexpr_value );
-}
-
-const Variable& CodeBuilder::GetTypeinfoListEndNode( NamesScope& root_namespace )
-{
-	if (typeinfo_list_end_node_ != boost::none )
-		return *typeinfo_list_end_node_;
-
-	const ClassProxyPtr node_type= CreateTypeinfoClass( root_namespace );
-	Class& node_type_class= *node_type->class_;
-
-	ClassFieldsVector<llvm::Type*> fields_llvm_types;
-	ClassFieldsVector<llvm::Constant*> fields_initializers;
-
-	AddTypeinfoNodeIsEndVariable( node_type_class, true );
-
-	node_type_class.members.AddName(
-		g_next_node_name,
-		Value( ClassField( node_type, node_type, static_cast<unsigned int>(fields_llvm_types.size()), false, true ), g_dummy_file_pos ) );
-	fields_llvm_types.push_back( node_type_class.llvm_type->getPointerTo() );
-	fields_initializers.push_back( nullptr );
-
-	FinishTypeinfoClass( node_type_class, node_type, fields_llvm_types );
-
-	llvm::GlobalVariable* const global_variable=
-		CreateGlobalConstantVariable(
-			node_type,
-			GetTypeinfoVariableName( node_type ),
-			nullptr );
-
-	// Save self-reference.
-	fields_initializers[0u]= global_variable;
-	global_variable->setInitializer( llvm::ConstantStruct::get( node_type_class.llvm_type, fields_initializers ) );
-
-	typeinfo_list_end_node_= Variable( node_type, Variable::Location::Pointer, ValueType::ConstReference, global_variable, global_variable->getInitializer() );
-	return *typeinfo_list_end_node_;
-}
-
-void CodeBuilder::AddTypeinfoNodeIsEndVariable( Class& node_class, const bool is_end )
-{
-	// Reuse llvm global variable for "is_end" variables.
-	// TODO - maybe reuse all scalar constants?
-
-	const unsigned int i= is_end ? 1u : 0u;
-	if( typeinfo_is_end_variable_[i] == nullptr )
-		typeinfo_is_end_variable_[i]=
-			CreateGlobalConstantVariable(
-				bool_type_,
-				MangleGlobalVariable( node_class.members, g_is_end_var_name ),
-				llvm::Constant::getIntegerValue( fundamental_llvm_types_.bool_, llvm::APInt( 1u, i ) ) );
-
-	node_class.members.AddName(
-		g_is_end_var_name,
-		Value(
-			Variable(
-				bool_type_,
-				Variable::Location::Pointer, ValueType::ConstReference,
-				typeinfo_is_end_variable_[i], typeinfo_is_end_variable_[i]->getInitializer() ),
-			FilePos() ) );
 }
 
 void CodeBuilder::FinishTypeinfoClass( Class& class_, const ClassProxyPtr class_proxy, const ClassFieldsVector<llvm::Type*>& fields_llvm_types )
@@ -329,7 +270,12 @@ void CodeBuilder::FinishTypeinfoClass( Class& class_, const ClassProxyPtr class_
 
 Variable CodeBuilder::BuildTypeinfoEnumElementsList( const Enum& enum_type, NamesScope& root_namespace )
 {
-	Variable head= GetTypeinfoListEndNode( root_namespace );
+	Tuple list_type;
+	std::vector< llvm::Type* > list_elements_llvm_types;
+	std::vector< llvm::Constant* > list_elements_initializers;
+	list_type.elements.reserve( enum_type.element_count );
+	list_elements_llvm_types.reserve( enum_type.element_count );
+	list_elements_initializers.reserve( enum_type.element_count );
 
 	enum_type.members.ForEachInThisScope(
 		[&]( const ProgramString& name, const Value& enum_member )
@@ -339,14 +285,6 @@ Variable CodeBuilder::BuildTypeinfoEnumElementsList( const Enum& enum_type, Name
 
 			ClassFieldsVector<llvm::Type*> fields_llvm_types;
 			ClassFieldsVector<llvm::Constant*> fields_initializers;
-
-			AddTypeinfoNodeIsEndVariable( node_type_class );
-
-			node_type_class.members.AddName(
-				g_next_node_name,
-				Value( ClassField( node_type, head.type, static_cast<unsigned int>(fields_llvm_types.size()), false, true ), g_dummy_file_pos ) );
-			fields_llvm_types.push_back( head.type.GetLLVMType()->getPointerTo() );
-			fields_initializers.push_back( llvm::dyn_cast<llvm::GlobalVariable>(head.llvm_value) );
 
 			node_type_class.members.AddName(
 				"value"_SpC,
@@ -370,16 +308,26 @@ Variable CodeBuilder::BuildTypeinfoEnumElementsList( const Enum& enum_type, Name
 
 			FinishTypeinfoClass( node_type_class, node_type, fields_llvm_types );
 
-			llvm::GlobalVariable* const global_variable=
-				CreateGlobalConstantVariable(
-					node_type,
-					GetTypeinfoVariableName( node_type ),
-					llvm::ConstantStruct::get( node_type_class.llvm_type, fields_initializers ) );
+			list_type.elements.push_back( node_type );
+			list_elements_llvm_types.push_back( node_type_class.llvm_type );
+			list_elements_initializers.push_back( llvm::ConstantStruct::get( node_type_class.llvm_type, fields_initializers ) );
+		} );
 
-			head= Variable( node_type, Variable::Location::Pointer, ValueType::ConstReference, global_variable, global_variable->getInitializer() );
-		}); // for enum elements
+	list_type.llvm_type= llvm::StructType::get( llvm_context_, list_elements_llvm_types );
 
-	return head;
+	llvm::GlobalVariable* const global_variable=
+		CreateGlobalConstantVariable(
+			list_type,
+			"_element_list_for_enum", // TODO - set proper name.
+			llvm::ConstantStruct::get( list_type.llvm_type, list_elements_initializers ) );
+
+	return
+		Variable(
+			std::move(list_type),
+			Variable::Location::Pointer,
+			ValueType::ConstReference,
+			global_variable,
+			global_variable->getInitializer() );
 }
 
 void CodeBuilder::CreateTypeinfoClassMembersListNodeCommonFields(
@@ -426,7 +374,12 @@ void CodeBuilder::CreateTypeinfoClassMembersListNodeCommonFields(
 
 Variable CodeBuilder::BuildTypeinfoClassFieldsList( const ClassProxyPtr& class_type, NamesScope& root_namespace )
 {
-	Variable head= GetTypeinfoListEndNode( root_namespace );
+	Tuple list_type;
+	std::vector< llvm::Type* > list_elements_llvm_types;
+	std::vector< llvm::Constant* > list_elements_initializers;
+	list_type.elements.reserve( class_type->class_->field_count );
+	list_elements_llvm_types.reserve( class_type->class_->field_count );
+	list_elements_initializers.reserve( class_type->class_->field_count );
 
 	const llvm::DataLayout& data_layout= module_->getDataLayout();
 
@@ -442,14 +395,6 @@ Variable CodeBuilder::BuildTypeinfoClassFieldsList( const ClassProxyPtr& class_t
 
 			ClassFieldsVector<llvm::Type*> fields_llvm_types;
 			ClassFieldsVector<llvm::Constant*> fields_initializers;
-
-			AddTypeinfoNodeIsEndVariable( node_type_class );
-
-			node_type_class.members.AddName(
-				g_next_node_name,
-				Value( ClassField( node_type, head.type, static_cast<unsigned int>(fields_llvm_types.size()), false, true ), g_dummy_file_pos ) );
-			fields_llvm_types.push_back( head.type.GetLLVMType()->getPointerTo() );
-			fields_initializers.push_back( llvm::dyn_cast<llvm::GlobalVariable>(head.llvm_value) );
 
 			{
 				const Variable field_type_typeinfo= BuildTypeInfo( class_field->type, root_namespace );
@@ -509,21 +454,33 @@ Variable CodeBuilder::BuildTypeinfoClassFieldsList( const ClassProxyPtr& class_t
 
 			FinishTypeinfoClass( node_type_class, node_type, fields_llvm_types );
 
-			llvm::GlobalVariable* const global_variable=
-				CreateGlobalConstantVariable(
-					node_type,
-					GetTypeinfoVariableName( node_type ),
-					llvm::ConstantStruct::get( node_type_class.llvm_type, fields_initializers ) );
-
-			head= Variable( node_type, Variable::Location::Pointer, ValueType::ConstReference, global_variable, global_variable->getInitializer() );
+			list_type.elements.push_back( node_type );
+			list_elements_llvm_types.push_back( node_type_class.llvm_type );
+			list_elements_initializers.push_back( llvm::ConstantStruct::get( node_type_class.llvm_type, fields_initializers ) );
 		} ); // for class elements
 
-	return head;
+	list_type.llvm_type= llvm::StructType::get( llvm_context_, list_elements_llvm_types );
+
+	llvm::GlobalVariable* const global_variable=
+		CreateGlobalConstantVariable(
+			list_type,
+			"_element_list_for_class_fields", // TODO - set proper name.
+			llvm::ConstantStruct::get( list_type.llvm_type, list_elements_initializers ) );
+
+	return
+		Variable(
+			std::move(list_type),
+			Variable::Location::Pointer,
+			ValueType::ConstReference,
+			global_variable,
+			global_variable->getInitializer() );
 }
 
 Variable CodeBuilder::BuildTypeinfoClassTypesList( const ClassProxyPtr& class_type, NamesScope& root_namespace )
 {
-	Variable head= GetTypeinfoListEndNode( root_namespace );
+	Tuple list_type;
+	std::vector< llvm::Type* > list_elements_llvm_types;
+	std::vector< llvm::Constant* > list_elements_initializers;
 
 	class_type->class_->members.ForEachInThisScope(
 		[&]( const ProgramString& name, Value& class_member )
@@ -541,14 +498,6 @@ Variable CodeBuilder::BuildTypeinfoClassTypesList( const ClassProxyPtr& class_ty
 			ClassFieldsVector<llvm::Type*> fields_llvm_types;
 			ClassFieldsVector<llvm::Constant*> fields_initializers;
 
-			AddTypeinfoNodeIsEndVariable( node_type_class );
-
-			node_type_class.members.AddName(
-				g_next_node_name,
-				Value( ClassField( node_type, head.type, static_cast<unsigned int>(fields_llvm_types.size()), false, true ), g_dummy_file_pos ) );
-			fields_llvm_types.push_back( head.type.GetLLVMType()->getPointerTo() );
-			fields_initializers.push_back( llvm::dyn_cast<llvm::GlobalVariable>(head.llvm_value) );
-
 			{
 				const Variable dependent_type_typeinfo= BuildTypeInfo( *class_inner_type, root_namespace );
 				ClassField field( node_type, dependent_type_typeinfo.type, static_cast<unsigned int>(fields_llvm_types.size()), false, true );
@@ -562,21 +511,33 @@ Variable CodeBuilder::BuildTypeinfoClassTypesList( const ClassProxyPtr& class_ty
 
 			FinishTypeinfoClass( node_type_class, node_type, fields_llvm_types );
 
-			llvm::GlobalVariable* const global_variable=
-				CreateGlobalConstantVariable(
-					node_type,
-					GetTypeinfoVariableName( node_type ),
-					llvm::ConstantStruct::get( node_type_class.llvm_type, fields_initializers ) );
-
-			head= Variable( node_type, Variable::Location::Pointer, ValueType::ConstReference, global_variable, global_variable->getInitializer() );
+			list_type.elements.push_back( node_type );
+			list_elements_llvm_types.push_back( node_type_class.llvm_type );
+			list_elements_initializers.push_back( llvm::ConstantStruct::get( node_type_class.llvm_type, fields_initializers ) );
 		} ); // for class elements
 
-	return head;
+	list_type.llvm_type= llvm::StructType::get( llvm_context_, list_elements_llvm_types );
+
+	llvm::GlobalVariable* const global_variable=
+		CreateGlobalConstantVariable(
+			list_type,
+			"_element_list_for_class_types", // TODO - set proper name.
+			llvm::ConstantStruct::get( list_type.llvm_type, list_elements_initializers ) );
+
+	return
+		Variable(
+			std::move(list_type),
+			Variable::Location::Pointer,
+			ValueType::ConstReference,
+			global_variable,
+			global_variable->getInitializer() );
 }
 
 Variable CodeBuilder::BuildTypeinfoClassFunctionsList( const ClassProxyPtr& class_type, NamesScope& root_namespace )
 {
-	Variable head= GetTypeinfoListEndNode( root_namespace );
+	Tuple list_type;
+	std::vector< llvm::Type* > list_elements_llvm_types;
+	std::vector< llvm::Constant* > list_elements_initializers;
 
 	class_type->class_->members.ForEachInThisScope(
 		[&]( const ProgramString& name, const Value& class_member )
@@ -591,14 +552,6 @@ Variable CodeBuilder::BuildTypeinfoClassFunctionsList( const ClassProxyPtr& clas
 
 				ClassFieldsVector<llvm::Type*> fields_llvm_types;
 				ClassFieldsVector<llvm::Constant*> fields_initializers;
-
-				AddTypeinfoNodeIsEndVariable( node_type_class );
-
-				node_type_class.members.AddName(
-					g_next_node_name,
-					Value( ClassField( node_type, head.type, static_cast<unsigned int>(fields_llvm_types.size()), false, true ), g_dummy_file_pos ) );
-				fields_llvm_types.push_back( head.type.GetLLVMType()->getPointerTo() );
-				fields_initializers.push_back( llvm::dyn_cast<llvm::GlobalVariable>(head.llvm_value) );
 
 				{
 					const Variable dependent_type_typeinfo= BuildTypeInfo( function.type, root_namespace );
@@ -637,25 +590,40 @@ Variable CodeBuilder::BuildTypeinfoClassFunctionsList( const ClassProxyPtr& clas
 
 				FinishTypeinfoClass( node_type_class, node_type, fields_llvm_types );
 
-				llvm::GlobalVariable* const global_variable=
-					CreateGlobalConstantVariable(
-						node_type,
-						GetTypeinfoVariableName( node_type ),
-						llvm::ConstantStruct::get( node_type_class.llvm_type, fields_initializers ) );
-
-				head= Variable( node_type, Variable::Location::Pointer, ValueType::ConstReference, global_variable, global_variable->getInitializer() );
+				list_type.elements.push_back( node_type );
+				list_elements_llvm_types.push_back( node_type_class.llvm_type );
+				list_elements_initializers.push_back( llvm::ConstantStruct::get( node_type_class.llvm_type, fields_initializers ) );
 			} // for functions
 		} ); // for class elements
 
-	return head;
+	list_type.llvm_type= llvm::StructType::get( llvm_context_, list_elements_llvm_types );
+
+	llvm::GlobalVariable* const global_variable=
+		CreateGlobalConstantVariable(
+			list_type,
+			"_element_list_for_class_functions", // TODO - set proper name.
+			llvm::ConstantStruct::get( list_type.llvm_type, list_elements_initializers ) );
+
+	return
+		Variable(
+			std::move(list_type),
+			Variable::Location::Pointer,
+			ValueType::ConstReference,
+			global_variable,
+			global_variable->getInitializer() );
 }
 
 Variable CodeBuilder::BuildeTypeinfoClassParentsList( const ClassProxyPtr& class_type, NamesScope& root_namespace )
 {
-	Variable head= GetTypeinfoListEndNode( root_namespace );
-
 	const Class& class_= *class_type->class_;
 	const llvm::StructLayout* const struct_layout= module_->getDataLayout().getStructLayout( class_.llvm_type );
+
+	Tuple list_type;
+	std::vector< llvm::Type* > list_elements_llvm_types;
+	std::vector< llvm::Constant* > list_elements_initializers;
+	list_type.elements.reserve( class_.parents.size() );
+	list_elements_llvm_types.reserve( class_.parents.size() );
+	list_elements_initializers.reserve( class_.parents.size() );
 
 	for( size_t i= 0u; i < class_.parents.size(); ++i )
 	{
@@ -664,14 +632,6 @@ Variable CodeBuilder::BuildeTypeinfoClassParentsList( const ClassProxyPtr& class
 
 		ClassFieldsVector<llvm::Type*> fields_llvm_types;
 		ClassFieldsVector<llvm::Constant*> fields_initializers;
-
-		AddTypeinfoNodeIsEndVariable( node_type_class );
-
-		node_type_class.members.AddName(
-			g_next_node_name,
-			Value( ClassField( node_type, head.type, static_cast<unsigned int>(fields_llvm_types.size()), false, true ), g_dummy_file_pos ) );
-		fields_llvm_types.push_back( head.type.GetLLVMType()->getPointerTo() );
-		fields_initializers.push_back( llvm::dyn_cast<llvm::GlobalVariable>(head.llvm_value) );
 
 		{
 			const Variable parent_type_typeinfo= BuildTypeInfo( class_.parents[i].class_, root_namespace );
@@ -691,21 +651,37 @@ Variable CodeBuilder::BuildeTypeinfoClassParentsList( const ClassProxyPtr& class
 
 		FinishTypeinfoClass( node_type_class, node_type, fields_llvm_types );
 
-		llvm::GlobalVariable* const global_variable=
-			CreateGlobalConstantVariable(
-				node_type,
-				GetTypeinfoVariableName( node_type ),
-				llvm::ConstantStruct::get( node_type_class.llvm_type, fields_initializers ) );
-
-		head= Variable( node_type, Variable::Location::Pointer, ValueType::ConstReference, global_variable, global_variable->getInitializer() );
+		list_type.elements.push_back( node_type );
+		list_elements_llvm_types.push_back( node_type_class.llvm_type );
+		list_elements_initializers.push_back( llvm::ConstantStruct::get( node_type_class.llvm_type, fields_initializers ) );
 	} // for parents
 
-	return head;
+	list_type.llvm_type= llvm::StructType::get( llvm_context_, list_elements_llvm_types );
+
+	llvm::GlobalVariable* const global_variable=
+		CreateGlobalConstantVariable(
+			list_type,
+			"_element_list_for_class_parents", // TODO - set proper name.
+			llvm::ConstantStruct::get( list_type.llvm_type, list_elements_initializers ) );
+
+	return
+		Variable(
+			std::move(list_type),
+			Variable::Location::Pointer,
+			ValueType::ConstReference,
+			global_variable,
+			global_variable->getInitializer() );
 }
 
 Variable CodeBuilder::BuildTypeinfoFunctionArguments( const Function& function_type, NamesScope& root_namespace )
 {
-	Variable head= GetTypeinfoListEndNode( root_namespace );
+	Tuple list_type;
+	std::vector< llvm::Type* > list_elements_llvm_types;
+	std::vector< llvm::Constant* > list_elements_initializers;
+	list_type.elements.reserve( function_type.args.size() );
+	list_elements_llvm_types.reserve( function_type.args.size() );
+	list_elements_initializers.reserve( function_type.args.size() );
+
 	for( const Function::Arg& arg : function_type.args )
 	{
 		const ClassProxyPtr node_type= CreateTypeinfoClass( root_namespace );
@@ -713,14 +689,6 @@ Variable CodeBuilder::BuildTypeinfoFunctionArguments( const Function& function_t
 
 		ClassFieldsVector<llvm::Type*> fields_llvm_types;
 		ClassFieldsVector<llvm::Constant*> fields_initializers;
-
-		AddTypeinfoNodeIsEndVariable( node_type_class );
-
-		node_type_class.members.AddName(
-			g_next_node_name,
-			Value( ClassField( node_type, head.type, static_cast<unsigned int>(fields_llvm_types.size()), false, true ), g_dummy_file_pos ) );
-		fields_llvm_types.push_back( head.type.GetLLVMType()->getPointerTo() );
-		fields_initializers.push_back( llvm::dyn_cast<llvm::GlobalVariable>(head.llvm_value) );
 
 		{
 			const Variable dependent_type_typeinfo= BuildTypeInfo( arg.type, root_namespace );
@@ -747,23 +715,39 @@ Variable CodeBuilder::BuildTypeinfoFunctionArguments( const Function& function_t
 
 		FinishTypeinfoClass( node_type_class, node_type, fields_llvm_types );
 
-		llvm::GlobalVariable* const global_variable=
-			CreateGlobalConstantVariable(
-				node_type,
-				GetTypeinfoVariableName( node_type ),
-				llvm::ConstantStruct::get( node_type_class.llvm_type, fields_initializers ) );
-
-		head= Variable( node_type, Variable::Location::Pointer, ValueType::ConstReference, global_variable, global_variable->getInitializer() );
+		list_type.elements.push_back( node_type );
+		list_elements_llvm_types.push_back( node_type_class.llvm_type );
+		list_elements_initializers.push_back( llvm::ConstantStruct::get( node_type_class.llvm_type, fields_initializers ) );
 	}
 
-	return head;
+	list_type.llvm_type= llvm::StructType::get( llvm_context_, list_elements_llvm_types );
+
+	llvm::GlobalVariable* const global_variable=
+		CreateGlobalConstantVariable(
+			list_type,
+			"_element_list_for_function_arguments", // TODO - set proper name.
+			llvm::ConstantStruct::get( list_type.llvm_type, list_elements_initializers ) );
+
+	return
+		Variable(
+			std::move(list_type),
+			Variable::Location::Pointer,
+			ValueType::ConstReference,
+			global_variable,
+			global_variable->getInitializer() );
 }
 
 Variable CodeBuilder::BuildypeinfoTupleElements( const Tuple& tuple_type, NamesScope& root_namespace )
 {
+	Tuple list_type;
+	std::vector< llvm::Type* > list_elements_llvm_types;
+	std::vector< llvm::Constant* > list_elements_initializers;
+	list_type.elements.reserve( tuple_type.elements.size() );
+	list_elements_llvm_types.reserve( tuple_type.elements.size() );
+	list_elements_initializers.reserve( tuple_type.elements.size() );
+
 	const llvm::StructLayout* const struct_layout= data_layout_.getStructLayout( tuple_type.llvm_type );
 
-	Variable head= GetTypeinfoListEndNode( root_namespace );
 	for( const Type& element_type : tuple_type.elements )
 	{
 		const size_t element_index= size_t( &element_type - tuple_type.elements.data() );
@@ -774,13 +758,6 @@ Variable CodeBuilder::BuildypeinfoTupleElements( const Tuple& tuple_type, NamesS
 		ClassFieldsVector<llvm::Type*> fields_llvm_types;
 		ClassFieldsVector<llvm::Constant*> fields_initializers;
 
-		AddTypeinfoNodeIsEndVariable( node_type_class );
-
-		node_type_class.members.AddName(
-			g_next_node_name,
-			Value( ClassField( node_type, head.type, static_cast<unsigned int>(fields_llvm_types.size()), false, true ), g_dummy_file_pos ) );
-		fields_llvm_types.push_back( head.type.GetLLVMType()->getPointerTo() );
-		fields_initializers.push_back( llvm::dyn_cast<llvm::GlobalVariable>(head.llvm_value) );
 
 		{
 			const Variable dependent_type_typeinfo= BuildTypeInfo( element_type, root_namespace );
@@ -807,16 +784,26 @@ Variable CodeBuilder::BuildypeinfoTupleElements( const Tuple& tuple_type, NamesS
 		}
 		FinishTypeinfoClass( node_type_class, node_type, fields_llvm_types );
 
-		llvm::GlobalVariable* const global_variable=
-			CreateGlobalConstantVariable(
-				node_type,
-				GetTypeinfoVariableName( node_type ),
-				llvm::ConstantStruct::get( node_type_class.llvm_type, fields_initializers ) );
-
-		head= Variable( node_type, Variable::Location::Pointer, ValueType::ConstReference, global_variable, global_variable->getInitializer() );
+		list_type.elements.push_back( node_type );
+		list_elements_llvm_types.push_back( node_type_class.llvm_type );
+		list_elements_initializers.push_back( llvm::ConstantStruct::get( node_type_class.llvm_type, fields_initializers ) );
 	}
 
-	return head;
+	list_type.llvm_type= llvm::StructType::get( llvm_context_, list_elements_llvm_types );
+
+	llvm::GlobalVariable* const global_variable=
+		CreateGlobalConstantVariable(
+			list_type,
+			"_element_list_for_tuple_elements", // TODO - set proper name.
+			llvm::ConstantStruct::get( list_type.llvm_type, list_elements_initializers ) );
+
+	return
+		Variable(
+			std::move(list_type),
+			Variable::Location::Pointer,
+			ValueType::ConstReference,
+			global_variable,
+			global_variable->getInitializer() );
 }
 
 } // namespace CodeBuilderPrivate

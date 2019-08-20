@@ -39,32 +39,28 @@ fn constexpr args_are_same( A& a, B& b ) : bool
 	return is_same_type_impl</A/>::same</B/>::value;
 }
 
-template</ type ParentCandidate, type NodeListType />
-fn constexpr has_parent( NodeListType& parents_list_node ) : bool
+template</ type ParentCandidate, type ParentListType />
+fn constexpr has_parent( ParentListType& parents_list ) : bool
 {
-	static_if( NodeListType::is_end )
-	{ return false; }
-	else
+	for( &list_elemet : parents_list )
 	{
-		if( args_are_same( typeinfo</ParentCandidate/>, parents_list_node.type ) )
+		if( args_are_same( typeinfo</ParentCandidate/>, list_elemet.type ) )
 		{ return true; }
-		return type_traits_impl::has_parent</ ParentCandidate />( parents_list_node.next );
 	}
+	return false;
 }
 
-template</ type ParentCandidate, type NodeListType />
-fn constexpr has_ancestor( NodeListType& parents_list_node ) : bool
+template</ type ParentCandidate, type ParentListType />
+fn constexpr has_ancestor( ParentListType& parents_list ) : bool
 {
-	static_if( NodeListType::is_end )
-	{ return false; }
-	else
+	for( &list_elemet : parents_list )
 	{
-		if( args_are_same( typeinfo</ParentCandidate/>, parents_list_node.type ) )
+		if( args_are_same( typeinfo</ParentCandidate/>, list_elemet.type ) )
 		{ return true; }
-		if( type_traits_impl::has_ancestor</ ParentCandidate />( parents_list_node.type.parents_list ) )
+		if( type_traits_impl::has_ancestor</ ParentCandidate />( list_elemet.type.parents_list ) )
 		{ return true; }
-		return type_traits_impl::has_ancestor</ ParentCandidate />( parents_list_node.next );
 	}
+	return false;
 }
 
 template</ type TypeinfoType />
@@ -90,32 +86,24 @@ fn constexpr have_shared_state_impl( TypeinfoType& typeinfo_ ) : bool
 	}
 }
 
-template</ type NodeType/>
-fn constexpr class_have_shared_state_fields( NodeType& fields_list_node ) : bool
+template</ type ListType />
+fn constexpr class_have_shared_state_fields( ListType& fields_list ) : bool
 {
-	static_if( NodeType::is_end )
+	for( &list_element : fields_list )
 	{
-		return false;
+		if( have_shared_state_impl( list_element.type ) ){ return true; }
 	}
-	else
-	{
-		if( have_shared_state_impl( fields_list_node.type ) ){ return true; }
-		return type_traits_impl::class_have_shared_state_fields( fields_list_node.next );
-	}
+	return false;
 }
 
-template</ type NodeType/>
-fn constexpr class_have_shared_state_parents( NodeType& parents_list_node ) : bool
+template</ type ListType />
+fn constexpr class_have_shared_state_parents( ListType& parents_list ) : bool
 {
-	static_if( NodeType::is_end )
+	for( &list_element : parents_list )
 	{
-		return false;
+		if( have_shared_state_impl( list_element.type ) ){ return true; }
 	}
-	else
-	{
-		if( have_shared_state_impl( parents_list_node.type ) ){ return true; }
-		return type_traits_impl::class_have_shared_state_parents( parents_list_node.next );
-	}
+	return false;
 }
 
 } // namespace type_traits_impl
@@ -146,24 +134,17 @@ fn is_ancestor_for() : bool
 	else{ return false; }
 }
 
-template</ type NodeType, size_type name_size />
-fn constexpr class_have_field( NodeType& fields_list_node, [ char8, name_size ]& name ) : bool
+template</ type ListType, size_type name_size />
+fn constexpr class_have_field( ListType& fields_list, [ char8, name_size ]& name ) : bool
 {
-	static_if( NodeType::is_end )
+	for( &list_element : fields_list )
 	{
-		return false;
-	}
-	else
-	{
-		if( type_traits_impl::string_equals( fields_list_node.name, name ) )
+		if( type_traits_impl::string_equals( list_element.name, name ) )
 		{
 			return true;
 		}
-		else
-		{
-			return ust::class_have_field( fields_list_node.next, name );
-		}
 	}
+	return false;
 }
 
 template</ type T />

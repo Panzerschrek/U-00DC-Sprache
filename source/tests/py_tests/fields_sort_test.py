@@ -88,23 +88,16 @@ def KeepFieldsOrder_Test0():
 	}
 
 	template</ type T, size_type name_size />
-	fn constexpr GetFieldOffset( T& node, [ char8, name_size ]& name ) : size_type
+	fn constexpr GetFieldOffset( T& list, [ char8, name_size ]& name ) : size_type
 	{
-		static_if( T::is_end )
+		for( &list_element : list )
 		{
-			halt;
-		}
-		else
-		{
-			if( StringEquals( node.name, name ) )
+			if( StringEquals( list_element.name, name ) )
 			{
-				return node.offset;
-			}
-			else
-			{
-				return ::GetFieldOffset( node.next, name );
+				return list_element.offset;
 			}
 		}
+		halt;
 	}
 
 	struct A ordered

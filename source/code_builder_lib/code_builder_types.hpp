@@ -106,6 +106,7 @@ public:
 	Type( Function&& function_type );
 	Type( const Array& array_type );
 	Type( Array&& array_type );
+	Type( const Tuple& tuple_type );
 	Type( Tuple&& tuple_type );
 	Type( ClassProxyPtr class_type );
 	Type( EnumPtr enum_type );

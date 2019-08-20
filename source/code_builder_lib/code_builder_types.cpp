@@ -114,6 +114,11 @@ Type::Type( Array&& array_type )
 	something_= ArrayPtr( new Array( std::move( array_type ) ) );
 }
 
+Type::Type( const Tuple& tuple_type )
+{
+	something_= tuple_type;
+}
+
 Type::Type( Tuple&& tuple_type )
 {
 	something_= std::move( tuple_type );

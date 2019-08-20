@@ -210,8 +210,6 @@ ICodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_g
 	enums_table_.clear();
 	template_classes_cache_.clear();
 	typeinfo_cache_.clear();
-	typeinfo_list_end_node_.reset();
-	typeinfo_is_end_variable_[0]= typeinfo_is_end_variable_[1]= nullptr;
 	typeinfo_class_table_.clear();
 
 	NormalizeErrors( global_errors_ );

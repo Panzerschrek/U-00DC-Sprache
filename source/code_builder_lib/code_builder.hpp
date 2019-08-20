@@ -569,7 +569,6 @@ private:
 	Variable BuildTypeinfoPrototype( const Type& type, NamesScope& root_namespace );
 	void BuildFullTypeinfo( const Type& type, Variable& typeinfo_variable, NamesScope& root_namespace );
 	const Variable& GetTypeinfoListEndNode( NamesScope& root_namespace );
-	void AddTypeinfoNodeIsEndVariable( Class& node_class, bool is_end= false );
 	void FinishTypeinfoClass( Class& class_, const ClassProxyPtr class_proxy, const ClassFieldsVector<llvm::Type*>& fields_llvm_types );
 	Variable BuildTypeinfoEnumElementsList( const Enum& enum_type, NamesScope& root_namespace );
 	void CreateTypeinfoClassMembersListNodeCommonFields(
@@ -947,8 +946,6 @@ private:
 	// We needs to generate same typeinfo classes for same types. Use cache for it.
 	// TODO - create hasher for type and use unordered_map.
 	std::list< std::pair< Type, Variable > > typeinfo_cache_;
-	boost::optional< Variable > typeinfo_list_end_node_; // Lazy initialized.
-	llvm::GlobalVariable* typeinfo_is_end_variable_[2u]= { nullptr, nullptr }; // Lazy initialized.
 	ClassTable typeinfo_class_table_;
 
 	// Names map for generated template types/functions. We can not insert it in regular namespaces, because we needs insert it, while iterating regular namespaces.
