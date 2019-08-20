@@ -534,7 +534,7 @@ Type CodeBuilder::PrepareType(
 					if( IsInteger( size_fundamental_type->fundamental_type ) )
 					{
 						if( llvm::dyn_cast<llvm::UndefValue>(size_variable.constexpr_value) != nullptr )
-							array_type.size= Array::c_undefined_size;
+							array_type.size= 1u;
 						else
 						{
 							const llvm::APInt& size_value= size_variable.constexpr_value->getUniqueInteger();
@@ -554,7 +554,7 @@ Type CodeBuilder::PrepareType(
 				REPORT_ERROR( ExpectedConstantExpression, names_scope.GetErrors(), num_file_pos );
 
 			// TODO - generate error, if total size of type (incuding arrays) is more, than half of address space of target architecture.
-			array_type.llvm_type= llvm::ArrayType::get( array_type.type.GetLLVMType(), array_type.ArraySizeOrZero() );
+			array_type.llvm_type= llvm::ArrayType::get( array_type.type.GetLLVMType(), array_type.size );
 			return std::move(array_type);
 		}
 
@@ -864,7 +864,7 @@ void CodeBuilder::CallDestructor(
 	{
 		// SPRACHE_TODO - maybe call destructors of arrays in reverse order?
 		GenerateLoop(
-			array_type->ArraySizeOrZero(),
+			array_type->size,
 			[&]( llvm::Value* const index )
 			{
 				CallDestructor(

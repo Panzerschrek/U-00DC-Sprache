@@ -183,7 +183,7 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, Variable& typeinfo_variab
 	}
 	else if( const Array* const array_type= type.GetArrayType() )
 	{
-		add_size_field( "element_count"_SpC, array_type->ArraySizeOrZero() );
+		add_size_field( "element_count"_SpC, array_type->size );
 		add_typeinfo_field( "element_type"_SpC, array_type->type );
 	}
 	else if( const Tuple* const tuple_type= type.GetTupleType() )

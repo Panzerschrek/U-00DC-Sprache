@@ -93,7 +93,7 @@ void CodeBuilder::ApplyEmptyInitializer(
 		array_member.location= Variable::Location::Pointer;
 
 		GenerateLoop(
-			array_type->ArraySizeOrZero(),
+			array_type->size,
 			[&](llvm::Value* const counter_value)
 			{
 				array_member.llvm_value=
@@ -147,7 +147,7 @@ llvm::Constant* CodeBuilder::ApplyArrayInitializer(
 {
 	if( const Array* const array_type= variable.type.GetArrayType() )
 	{
-		if( array_type->size != Array::c_undefined_size && initializer.initializers.size() != array_type->size )
+		if(  initializer.initializers.size() != array_type->size )
 		{
 			REPORT_ERROR( ArrayInitializersCountMismatch,
 				block_names.GetErrors(),
@@ -186,12 +186,7 @@ llvm::Constant* CodeBuilder::ApplyArrayInitializer(
 		U_ASSERT( members_constants.size() == initializer.initializers.size() || !is_constant );
 
 		if( is_constant )
-		{
-			if( array_type->size == Array::c_undefined_size )
-				return llvm::UndefValue::get( array_type->llvm_type );
-			else
-				return llvm::ConstantArray::get( array_type->llvm_type, members_constants );
-		}
+			return llvm::ConstantArray::get( array_type->llvm_type, members_constants );
 	}
 	else if( const Tuple* const tuple_type= variable.type.GetTupleType() )
 	{
@@ -1005,7 +1000,7 @@ llvm::Constant* CodeBuilder::ApplyZeroInitializer(
 		llvm::Constant* const_value= nullptr;
 
 		GenerateLoop(
-			array_type->ArraySizeOrZero(),
+			array_type->size,
 			[&](llvm::Value* const counter_value)
 			{
 				array_member.llvm_value=
@@ -1015,15 +1010,10 @@ llvm::Constant* CodeBuilder::ApplyZeroInitializer(
 			function_context);
 
 		if( const_value != nullptr && array_type->type.CanBeConstexpr() )
-		{
-			if( array_type->size == Array::c_undefined_size )
-				return llvm::UndefValue::get( array_type->llvm_type );
-			else
 				return
 					llvm::ConstantArray::get(
 						array_type->llvm_type,
 						std::vector<llvm::Constant*>( size_t(array_type->size), const_value ) );
-		}
 	}
 	else if( const Tuple* const tuple_type= variable.type.GetTupleType() )
 	{

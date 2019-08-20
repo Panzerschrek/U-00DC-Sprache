@@ -1982,9 +1982,8 @@ Value CodeBuilder::BuildIndexationOperator(
 			return ErrorValue();
 		}
 
-		// If index is constant and not undefined and array size is not undefined - statically check index.
-		if( index.constexpr_value != nullptr && llvm::dyn_cast<llvm::UndefValue>(index.constexpr_value) == nullptr &&
-			array_type->size != Array::c_undefined_size )
+		// If index is constant and not undefined statically check index.
+		if( index.constexpr_value != nullptr && llvm::dyn_cast<llvm::UndefValue>(index.constexpr_value) == nullptr )
 		{
 			const llvm::APInt index_value= index.constexpr_value->getUniqueInteger();
 			if( IsSignedInteger(index_fundamental_type->fundamental_type) )
@@ -2019,8 +2018,8 @@ Value CodeBuilder::BuildIndexationOperator(
 		index_list[0]= GetZeroGEPIndex();
 		index_list[1]= CreateMoveToLLVMRegisterInstruction( index, function_context );
 
-		// If index is not const and array size is not undefined - check bounds.
-		if( index.constexpr_value == nullptr && array_type->size != Array::c_undefined_size )
+		// If index is not constant - check bounds.
+		if( index.constexpr_value == nullptr )
 		{
 			llvm::Value* index_value= index_list[1];
 			const SizeType index_size= index_fundamental_type->GetSize();

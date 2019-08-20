@@ -686,7 +686,7 @@ void CodeBuilder::BuildCopyConstructorPart(
 		const Array& array_type= *array_type_ptr;
 
 		GenerateLoop(
-			array_type.ArraySizeOrZero(),
+			array_type.size,
 			[&](llvm::Value* const counter_value)
 			{
 				llvm::Value* index_list[2];
@@ -765,7 +765,7 @@ void CodeBuilder::BuildCopyAssignmentOperatorPart(
 		const Array& array_type= *array_type_ptr;
 
 		GenerateLoop(
-			array_type.ArraySizeOrZero(),
+			array_type.size,
 			[&](llvm::Value* const counter_value)
 			{
 				llvm::Value* index_list[2];

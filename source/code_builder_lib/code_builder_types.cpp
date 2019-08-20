@@ -311,7 +311,7 @@ bool Type::IsDefaultConstructible() const
 	else if( const ArrayPtr* const array= boost::get<ArrayPtr>( &something_ ) )
 	{
 		U_ASSERT( *array != nullptr );
-		return (*array)->ArraySizeOrZero() == 0u || (*array)->type.IsDefaultConstructible();
+		return (*array)->size == 0u || (*array)->type.IsDefaultConstructible();
 	}
 	else if( const Tuple* const tuple= boost::get<Tuple>( &something_ ) )
 	{
@@ -340,7 +340,7 @@ bool Type::IsCopyConstructible() const
 	else if( const ArrayPtr* const array= boost::get<ArrayPtr>( &something_ ) )
 	{
 		U_ASSERT( *array != nullptr );
-		return (*array)->ArraySizeOrZero() == 0u || (*array)->type.IsCopyConstructible();
+		return (*array)->size == 0u || (*array)->type.IsCopyConstructible();
 	}
 	else if( const Tuple* const tuple= boost::get<Tuple>( &something_ ) )
 	{
@@ -365,7 +365,7 @@ bool Type::IsCopyAssignable() const
 	else if( const ArrayPtr* const array= boost::get<ArrayPtr>( &something_ ) )
 	{
 		U_ASSERT( *array != nullptr );
-		return (*array)->ArraySizeOrZero() == 0u || (*array)->type.IsCopyAssignable();
+		return (*array)->size == 0u || (*array)->type.IsCopyAssignable();
 	}
 	else if( const Tuple* const tuple= boost::get<Tuple>( &something_ ) )
 	{
@@ -438,7 +438,7 @@ bool Type::IsAbstract() const
 	else if( const ArrayPtr* const array= boost::get<ArrayPtr>( &something_ ) )
 	{
 		U_ASSERT( *array != nullptr );
-		return (*array)->ArraySizeOrZero() > 0u && (*array)->type.IsAbstract();
+		return (*array)->size > 0u && (*array)->type.IsAbstract();
 	}
 	else if( const Class* const class_= GetClassType() )
 		return class_->kind == Class::Kind::Abstract || class_->kind == Class::Kind::Interface;
