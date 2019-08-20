@@ -46,7 +46,7 @@ if( NOT DEFINED BOOST_ROOT )
 	message( FATAL_ERROR "BOOST_ROOT not defined. You can define path to boost library, using variable BOOST_ROOT" )
 endif()
 set( Boost_USE_STATIC_LIBS yes )
-find_package( Boost COMPONENTS system filesystem program_options REQUIRED )
+find_package( Boost COMPONENTS system filesystem REQUIRED )
 include_directories( ${Boost_INCLUDE_DIRS} )
 
 # LLVM
@@ -225,7 +225,7 @@ if( REALLY_BUILD_LINKAGE_TESTS )
 		add_custom_command(
 			OUTPUT ${object_name}
 			DEPENDS ${u_source_file} Compiler
-			COMMAND Compiler --produce-object-file ${CMAKE_SOURCE_DIR}/${u_source_file} -o ${object_name} ${SPRACHE_COMPILER_PIC_OPTIONS} )
+			COMMAND Compiler ${CMAKE_SOURCE_DIR}/${u_source_file} -o ${object_name} ${SPRACHE_COMPILER_PIC_OPTIONS} )
 		set( U_SOURCE_OBJECT ${object_name} PARENT_SCOPE )
 	endfunction()
 
@@ -280,7 +280,7 @@ if( REALLY_BUILD_LINKAGE_TESTS )
 		OUTPUT include_dirs_test.o
 		DEPENDS ${u_source_file} Compiler
 		COMMAND
-			Compiler --produce-object-file
+			Compiler
 			${CMAKE_SOURCE_DIR}/tests/include_dirs_test/root.u -o include_dirs_test.o
 			${SPRACHE_COMPILER_PIC_OPTIONS}
 			--include-dir ${CMAKE_SOURCE_DIR}/tests/include_dirs_test/a
@@ -322,7 +322,7 @@ if( REALLY_BUILD_LINKAGE_TESTS )
 			OUTPUT cpp_header_converter_test.o
 			DEPENDS tests/cpp_header_converter_test/cpp_header_converter_test.u  c_converted.u Compiler
 			COMMAND
-				Compiler --produce-object-file
+				Compiler
 				${CMAKE_SOURCE_DIR}/tests/cpp_header_converter_test/cpp_header_converter_test.u -o cpp_header_converter_test.o
 				${SPRACHE_COMPILER_PIC_OPTIONS}
 				--include-dir ${CMAKE_BINARY_DIR} )

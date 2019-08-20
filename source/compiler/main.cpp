@@ -4,7 +4,6 @@
 
 #include "../lex_synt_lib/push_disable_boost_warnings.hpp"
 #include <boost/filesystem/operations.hpp>
-#include <boost/program_options.hpp>
 #include "../lex_synt_lib/pop_boost_warnings.hpp"
 
 #include "../code_builder_lib/push_disable_llvm_warnings.hpp"
@@ -28,7 +27,6 @@
 #include "../code_builder_lib/code_builder.hpp"
 
 namespace fs= boost::filesystem;
-namespace po = boost::program_options;
 
 static bool ReadFileRaw( const char* const name, std::string& out_file_content )
 {
@@ -248,154 +246,114 @@ extern const char _binary_asm_funcs_64_bc_start;
 extern const char _binary_asm_funcs_64_bc_end;
 extern const char _binary_asm_funcs_64_bc_size;
 
+namespace Options
+{
+
+namespace cl= llvm::cl;
+
+static cl::list<std::string> input_files(
+	cl::Positional,
+	cl::desc("<source0> [... <sourceN>]"),
+	cl::value_desc("iinput files"),
+	cl::OneOrMore );
+
+static cl::opt<std::string> output_file_name(
+	"o",
+	cl::desc("Output filename"),
+	cl::value_desc("filename"),
+	cl::Required );
+
+static cl::list<std::string> include_dir(
+	"include-dir",
+	cl::Prefix,
+	cl::desc("<dir0> [... <dirN>]"),
+	cl::value_desc("include directories"),
+	cl::ZeroOrMore );
+
+enum class FileType{ BC, Obj };
+static cl::opt< FileType > file_type(
+	"filetype",
+	cl::init(FileType::Obj),
+	cl::desc("Choose a file type (not all types are supported by all targets):"),
+	cl::values(
+		clEnumValN( FileType::BC, "bc", "Emit an llvm bitcode ('.bc') file" ),
+		clEnumValN( FileType::Obj, "obj", "Emit a native object ('.o') file" ),
+		clEnumValEnd) );
+
+static cl::opt<char> optimization_level(
+	"O",
+	cl::desc("Optimization level. [-O0, -O1, -O2, -O3, -Os or -Oz] (default = '-O0')"),
+	cl::Prefix,
+	cl::Optional,
+	cl::init('0') );
+
+static cl::opt<std::string> architecture(
+	"march",
+	cl::desc("Architecture to generate code for (see --version)"),
+	cl::init("native") );
+
+static cl::opt<llvm::Reloc::Model> relocation_model(
+	"relocation-model",
+	cl::desc("Choose relocation model"),
+	cl::init(llvm::Reloc::Default),
+	cl::values(
+		clEnumValN( llvm::Reloc::Default, "default", "Target default relocation model" ),
+		clEnumValN( llvm::Reloc::Static, "static", "Non-relocatable code" ),
+		clEnumValN( llvm::Reloc::PIC_, "pic", "Fully relocatable, position independent code" ),
+		clEnumValN( llvm::Reloc::DynamicNoPIC, "dynamic-no-pic", "Relocatable external references, non-relocatable code" ),
+		clEnumValEnd) );
+
+static cl::opt<bool> enable_pie(
+	"enable-pie",
+	cl::desc("Assume the creation of a position independent executable."),
+	cl::init(false) );
+
+static cl::opt<bool> tests_output(
+	"tests-output",
+	cl::desc("Print code builder errors in test mode."),
+	cl::init(false) );
+
+static cl::opt<bool> print_llvm_asm(
+	"print-llvm-asm",
+	cl::desc("Print LLVM code."),
+	cl::init(false) );
+
+} // namespace Options
+
 int main( const int argc, const char* const argv[])
 {
 	// Options
-	std::vector<std::string> input_files;
-	std::vector<std::string> include_directories;
-	std::string output_file;
-	std::string architecture;
-	fs::path compiler_data_dir= fs::system_complete( argv[0] ).parent_path(); // By default search compiler data near it`s executable.
-	llvm::Reloc::Model relocation_model= llvm::Reloc::Default;
-	bool produce_object_file= false;
-	bool tests_output= false;
-	bool print_llvm_asm= false;
-	bool enable_pie= false;
+
+	llvm::cl::SetVersionPrinter(
+		[] {
+			std::cout << "Ü-Sprache version " << SPRACHE_VERSION << ", llvm version " << LLVM_VERSION_STRING << std::endl;
+		} );
+	llvm::cl::ParseCommandLineOptions( argc, argv, "Ü-Sprache compiler\n" );
+
+	// Select optimization level.
 	unsigned int optimization_level= 0u;
 	unsigned int size_optimization_level= 0u;
-
-	po::options_description program_options( u8"Ǖ-compiler options" );
-	program_options.add_options()
-		( "help,h", "produce help message" )
-		( "version,v", "print version and exit" )
-		( "input", po::value< std::vector< std::string> >()->composing(), "add input file" )
-		( "output,o", po::value<std::string>(), "set output file" )
-		( "include-dir", po::value< std::vector<std::string> >(), "add include dir" )
-		( "compiler-data-dir", po::value< std::string >(), "set path to compiler data directory" )
-		( "produce-object-file", po::bool_switch()->default_value(false), "poduce native object file, instead of .ir file" )
-		( "tests-output", po::bool_switch()->default_value(false), "print code builder errors in test mode" )
-		( "print-llvm-asm", po::bool_switch()->default_value(false), "print llvm asm" )
-		( "relocation-model", po::value< std::string >(), "relocation model of target" )
-		( "enable-pie", po::bool_switch()->default_value(false), "assume the creation of a position independent executable" )
-		( "optimization-level,O", po::value<std::string>(), "optimization level" )
-		( "arch", po::value<std::string>()->default_value("native"), "target architecture" )
-	;
-
-	po::positional_options_description positional_options;
-	positional_options.add( "input", -1 );
-
-	if( argc <= 1 )
+		 if( Options::optimization_level == '0' )
+		optimization_level= 0u;
+	else if( Options::optimization_level == '1' )
+		optimization_level= 1u;
+	else if( Options::optimization_level == '2' )
+		optimization_level= 2u;
+	else if( Options::optimization_level == '3' )
+		optimization_level= 3u;
+	else if( Options::optimization_level == 's' )
 	{
-		program_options.print( std::cout );
-		return 0;
+		size_optimization_level= 1u;
+		optimization_level= 2u;
 	}
-
-	po::variables_map program_options_map;
-	try
+	else if( Options::optimization_level == 'z' )
 	{
-		const auto options_parsed=
-			po::command_line_parser( argc, argv )
-				.options(program_options)
-				.positional(positional_options)
-				.allow_unregistered()
-				.run();
-		po::store( options_parsed, program_options_map );
-		po::notify( program_options_map );
-	} catch( std::exception& e )
-	{
-		std::cout << e.what() << std::endl;
-		return 1;
+		size_optimization_level= 2u;
+		optimization_level= 2u;
 	}
-
-	if( program_options_map.count( "help" ) )
-	{
-		program_options.print( std::cout );
-		return 0;
-	}
-	if( program_options_map.count( "version" ) )
-	{
-		std::cout << "Ü-Sprache version " << SPRACHE_VERSION << ", llvm version " << LLVM_VERSION_STRING << std::endl;
-		return 0;
-	}
-
-	if( program_options_map.count( "include-dir" ) != 0 )
-		include_directories= program_options_map["include-dir"].as< std::vector<std::string> >();
-
-	if( program_options_map.count( "compiler-data-dir" ) != 0 )
-		compiler_data_dir= fs::path( program_options_map["compiler-data-dir"].as<std::string>() );
-
-	if( program_options_map.count( "produce-object-file" ) != 0 )
-		produce_object_file= program_options_map[ "produce-object-file" ].as<bool>();
-	if( program_options_map.count( "tests-output" ) != 0 )
-		tests_output= program_options_map[ "tests-output" ].as<bool>();
-	if( program_options_map.count( "print-llvm-asm" ) != 0 )
-		print_llvm_asm= program_options_map[ "print-llvm-asm" ].as<bool>();
-
-	if( program_options_map.count( "output" ) != 0 )
-		output_file= program_options_map["output"].as< std::string >();
 	else
 	{
-		std::cout << "Output file missing, specify output file name, using \"-o\" option." << std::endl;
-		return 1;
-	}
-
-	if( program_options_map.count( "input" ) != 0 )
-		input_files= program_options_map["input"].as< std::vector< std::string > >();
-
-	if( program_options_map.count( "relocation-model" ) != 0 )
-	{
-		const std::string model_str= program_options_map["relocation-model"].as<std::string>();
-		if( model_str == "default" ) relocation_model= llvm::Reloc::Default;
-		else if( model_str == "static" ) relocation_model= llvm::Reloc::Static;
-		else if( model_str == "pic" ) relocation_model= llvm::Reloc::PIC_;
-		else if( model_str == "dynamic-no-pic" ) relocation_model= llvm::Reloc::DynamicNoPIC;
-		else
-		{
-			std::cout << "Unknown relocation model: " << model_str << ". Supported relocation models are \"default\", \"static\", \"pic\", \"dynamic-no-pic\"." << std::endl;
-			return 1;
-		}
-	}
-
-	if( program_options_map.count( "enable-pie" ) != 0 )
-		enable_pie= program_options_map[ "enable-pie" ].as<bool>();
-
-	if( program_options_map.count( "optimization-level" ) != 0 )
-	{
-		const std::string& str= program_options_map["optimization-level"].as<std::string>();
-		if( str == "0" )
-			optimization_level= 0u;
-		else if( str == "1" )
-			optimization_level= 1u;
-		else if( str == "2" )
-			optimization_level= 2u;
-		else if( str == "s" )
-		{
-			size_optimization_level= 1u;
-			optimization_level= 2u;
-		}
-		else if( str == "z" )
-		{
-			size_optimization_level= 2u;
-			optimization_level= 2u;
-		}
-		else
-		{
-			std::cout << "Unknown optimization: " << str << std::endl;
-			return 1;
-		}
-	}
-
-	if( program_options_map.count( "arch" ) != 0 )
-		architecture= program_options_map["arch"].as<std::string>();
-
-	if( input_files.empty() )
-	{
-		std::cout << "No input files" << std::endl;
-		return 1;
-	}
-	if( output_file.empty() )
-	{
-		std::cout << "No output file" << std::endl;
+		std::cout << "Unknown optimization: " << Options::optimization_level << std::endl;
 		return 1;
 	}
 
@@ -410,7 +368,7 @@ int main( const int argc, const char* const argv[])
 
 		const llvm::Target* target= nullptr;
 		std::string error_str, features_str, cpu_name;
-		if( architecture == "native" )
+		if( Options::architecture == "native" )
 		{
 			target_triple_str= llvm::sys::getDefaultTargetTriple();
 			target= llvm::TargetRegistry::lookupTarget( target_triple_str, error_str );
@@ -420,7 +378,7 @@ int main( const int argc, const char* const argv[])
 		else
 		{
 			llvm::Triple traget_triple;
-			target= llvm::TargetRegistry::lookupTarget( architecture, traget_triple, error_str );
+			target= llvm::TargetRegistry::lookupTarget( Options::architecture, traget_triple, error_str );
 			target_triple_str= traget_triple.getTriple();
 		}
 
@@ -441,13 +399,15 @@ int main( const int argc, const char* const argv[])
 		}
 
 		llvm::TargetOptions target_options;
-		target_options.PositionIndependentExecutable= enable_pie;
+		target_options.PositionIndependentExecutable= Options::enable_pie;
 
 		llvm::CodeGenOpt::Level code_gen_optimization_level;
 		if( optimization_level >= 2u || size_optimization_level > 0u )
 			code_gen_optimization_level= llvm::CodeGenOpt::Default;
 		else if( optimization_level == 1u )
 			code_gen_optimization_level= llvm::CodeGenOpt::Less;
+		else if( optimization_level == 3u )
+			code_gen_optimization_level= llvm::CodeGenOpt::Aggressive;
 		else
 			code_gen_optimization_level= llvm::CodeGenOpt::None;
 
@@ -457,7 +417,7 @@ int main( const int argc, const char* const argv[])
 				cpu_name,
 				features_str,
 				target_options,
-				relocation_model,
+				Options::relocation_model,
 				llvm::CodeModel::Default,
 				code_gen_optimization_level ) );
 
@@ -469,7 +429,7 @@ int main( const int argc, const char* const argv[])
 	}
 	const llvm::DataLayout data_layout= target_machine->createDataLayout();
 
-	const auto vfs= U::VfsOverSystemFS::Create( include_directories );
+	const auto vfs= U::VfsOverSystemFS::Create( Options::include_dir );
 	if( vfs == nullptr )
 		return 1u;
 
@@ -477,7 +437,7 @@ int main( const int argc, const char* const argv[])
 	U::SourceGraphLoader source_graph_loader( vfs );
 	std::unique_ptr<llvm::Module> result_module;
 	bool have_some_errors= false;
-	for( const std::string& input_file : input_files )
+	for( const std::string& input_file : Options::input_files )
 	{
 		const U::SourceGraphPtr source_graph= source_graph_loader.LoadSource( U::ToProgramString( input_file.c_str() ) );
 		U_ASSERT( source_graph != nullptr );
@@ -490,7 +450,7 @@ int main( const int argc, const char* const argv[])
 		U::CodeBuilder::BuildResult build_result=
 			U::CodeBuilder( target_triple_str, data_layout ).BuildProgram( *source_graph );
 
-		if( tests_output )
+		if( Options::tests_output )
 		{
 			// For tests we print errors as "file.u 88 NameNotFound"
 			for( const U::CodeBuilderError& error : build_result.errors )
@@ -569,7 +529,6 @@ int main( const int argc, const char* const argv[])
 
 		{
 			llvm::PassManagerBuilder pass_manager_builder;
-
 			pass_manager_builder.OptLevel = optimization_level;
 			pass_manager_builder.SizeLevel = size_optimization_level;
 
@@ -592,16 +551,16 @@ int main( const int argc, const char* const argv[])
 		pass_manager.run( *result_module );
 	}
 
-	if( print_llvm_asm )
+	if( Options::print_llvm_asm )
 	{
 		llvm::raw_os_ostream stream(std::cout);
 		result_module->print( stream, nullptr );
 	}
 
 	std::error_code file_error_code;
-	llvm::raw_fd_ostream out_file_stream( output_file, file_error_code, llvm::sys::fs::F_None );
+	llvm::raw_fd_ostream out_file_stream( Options::output_file_name, file_error_code, llvm::sys::fs::F_None );
 
-	if( produce_object_file )
+	if( Options::file_type == Options::FileType::Obj )
 	{
 		llvm::PassRegistry& registry= *llvm::PassRegistry::getPassRegistry();
 		llvm::initializeCore(registry);
@@ -635,7 +594,7 @@ int main( const int argc, const char* const argv[])
 	out_file_stream.flush();
 	if( out_file_stream.has_error() )
 	{
-		std::cout << "Error while writing output file \"" << output_file << "\"" << std::endl;
+		std::cout << "Error while writing output file \"" << Options::output_file_name << "\"" << std::endl;
 		return 1;
 	}
 

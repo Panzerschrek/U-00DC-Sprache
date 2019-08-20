@@ -169,7 +169,7 @@ def DoSuccessTest( file_path ):
 	object_file= file_name + "_temp.o"
 	executable_file= file_name + "_temp.exe"
 
-	compiler_args= [ g_compiler_executable, file_path, "--produce-object-file", "-o", object_file ]
+	compiler_args= [ g_compiler_executable, file_path, "-o", object_file ]
 	if g_use_position_independent_code :
 		compiler_args= compiler_args + [ "--relocation-model", "pic", "--enable-pie" ]
 

@@ -13,7 +13,7 @@ tar -xf boost_1_66_0.tar &&\
 # Buuld boost
 cd boost_1_66_0 &&\
 ./bootstrap.sh &&\
-./b2 --with-system --with-filesystem --with-program_options &&\
+./b2 --with-system --with-filesystem &&\
 cd .. &&\
 \
 # Configure build
