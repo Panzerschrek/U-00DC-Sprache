@@ -65,6 +65,18 @@ static void ElementWrite( const ArrayTypeName& array_type_name, std::ostream& st
 	stream << " ]";
 }
 
+static void ElementWrite( const TupleType& tuple_type_name, std::ostream& stream )
+{
+	stream << KeywordAscii( Keywords::tup_ ) << "( ";
+	for( const TypeName& element_type : tuple_type_name.element_types_ )
+	{
+		ElementWrite( element_type, stream );
+		if( &element_type != &tuple_type_name.element_types_.back() )
+			stream << ", ";
+	}
+	stream << " )";
+}
+
 static void ElementWrite( const TypeofTypeName& typeof_type_name, std::ostream& stream )
 {
 	stream << KeywordAscii( Keywords::typeof_ ) << "( ";

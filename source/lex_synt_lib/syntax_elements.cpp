@@ -30,6 +30,10 @@ ArrayTypeName::ArrayTypeName( const FilePos& file_pos )
 	: SyntaxElementBase(file_pos)
 {}
 
+TupleType::TupleType( const FilePos& file_pos )
+	: SyntaxElementBase(file_pos)
+{}
+
 TypeofTypeName::TypeofTypeName( const FilePos& file_pos )
 	: SyntaxElementBase(file_pos)
 {}
@@ -175,6 +179,11 @@ ReturnOperator::ReturnOperator( const FilePos& file_pos )
 {}
 
 WhileOperator::WhileOperator( const FilePos& file_pos)
+	: SyntaxElementBase(file_pos)
+	, block_(file_pos)
+{}
+
+ForOperator::ForOperator( const FilePos& file_pos)
 	: SyntaxElementBase(file_pos)
 	, block_(file_pos)
 {}

@@ -11,7 +11,7 @@ namespace U
 namespace CodeBuilderPrivate
 {
 
-static_assert( sizeof(Type) <=24u, "Type is too heavy!" );
+static_assert( sizeof(Type) <= 40u, "Type is too heavy!" );
 static_assert( sizeof(Value) <= 160u, "Value is too heavy!" );
 
 static SizeType GetFundamentalTypeSize( const U_FundamentalType type )
@@ -69,6 +69,16 @@ bool operator!=( const FundamentalType& r, const FundamentalType& l )
 	return !( r == l );
 }
 
+bool operator==( const Tuple& r, const Tuple& l )
+{
+	return r.elements == l.elements;
+}
+
+bool operator!=( const Tuple& r, const Tuple& l )
+{
+	return !( r == l );
+}
+
 Type::Type( const Type& other )
 {
 	*this= other;
@@ -102,6 +112,11 @@ Type::Type( const Array& array_type )
 Type::Type( Array&& array_type )
 {
 	something_= ArrayPtr( new Array( std::move( array_type ) ) );
+}
+
+Type::Type( Tuple&& tuple_type )
+{
+	something_= std::move( tuple_type );
 }
 
 Type::Type( ClassProxyPtr class_type )
@@ -139,6 +154,11 @@ Type& Type::operator=( const Type& other )
 		{
 			U_ASSERT( array != nullptr );
 			this_.something_= ArrayPtr( new Array( *array ) );
+		}
+
+		void operator()( const Tuple& tuple )
+		{
+			this_.something_= tuple;
 		}
 
 		void operator()( const ClassProxyPtr& class_ )
@@ -221,6 +241,16 @@ const Array* Type::GetArrayType() const
 	return array_type->get();
 }
 
+Tuple* Type::GetTupleType()
+{
+	return  boost::get<Tuple>( &something_ );
+}
+
+const Tuple* Type::GetTupleType() const
+{
+	return  boost::get<Tuple>( &something_ );
+}
+
 ClassProxyPtr Type::GetClassTypeProxy() const
 {
 	const ClassProxyPtr* const class_type= boost::get<ClassProxyPtr>( &something_ );
@@ -283,6 +313,13 @@ bool Type::IsDefaultConstructible() const
 		U_ASSERT( *array != nullptr );
 		return (*array)->ArraySizeOrZero() == 0u || (*array)->type.IsDefaultConstructible();
 	}
+	else if( const Tuple* const tuple= boost::get<Tuple>( &something_ ) )
+	{
+		bool default_constructible= true;
+		for( const Type& element : tuple->elements )
+			default_constructible= default_constructible && element.IsDefaultConstructible();
+		return default_constructible;
+	}
 
 	return false;
 }
@@ -305,6 +342,13 @@ bool Type::IsCopyConstructible() const
 		U_ASSERT( *array != nullptr );
 		return (*array)->ArraySizeOrZero() == 0u || (*array)->type.IsCopyConstructible();
 	}
+	else if( const Tuple* const tuple= boost::get<Tuple>( &something_ ) )
+	{
+		bool copy_constructible= true;
+		for( const Type& element : tuple->elements )
+			copy_constructible= copy_constructible && element.IsCopyConstructible();
+		return copy_constructible;
+	}
 
 	return false;
 }
@@ -323,6 +367,13 @@ bool Type::IsCopyAssignable() const
 		U_ASSERT( *array != nullptr );
 		return (*array)->ArraySizeOrZero() == 0u || (*array)->type.IsCopyAssignable();
 	}
+	else if( const Tuple* const tuple= boost::get<Tuple>( &something_ ) )
+	{
+		bool copy_assignable= true;
+		for( const Type& element : tuple->elements )
+			copy_assignable= copy_assignable && element.IsCopyAssignable();
+		return copy_assignable;
+	}
 
 	return false;
 }
@@ -338,6 +389,13 @@ bool Type::HaveDestructor() const
 	{
 		U_ASSERT( *array != nullptr );
 		return (*array)->type.HaveDestructor();
+	}
+	else if( const Tuple* const tuple= boost::get<Tuple>( &something_ ) )
+	{
+		bool have_destructor= false;
+		for( const Type& element : tuple->elements )
+			have_destructor= have_destructor || element.HaveDestructor();
+		return have_destructor;
 	}
 
 	return false;
@@ -358,6 +416,39 @@ bool Type::CanBeConstexpr() const
 	}
 	else if( const Class* const class_= GetClassType() )
 		return class_->can_be_constexpr;
+	else if( const Tuple* const tuple= boost::get<Tuple>( &something_ ) )
+	{
+		bool can_be_constexpr= true;
+		for( const Type& element : tuple->elements )
+			can_be_constexpr= can_be_constexpr && element.CanBeConstexpr();
+		return can_be_constexpr;
+	}
+
+	return false;
+}
+
+bool Type::IsAbstract() const
+{
+	if( boost::get<FundamentalType>( &something_ ) != nullptr ||
+		boost::get<EnumPtr>( &something_ ) != nullptr ||
+		boost::get<FunctionPointerPtr>( &something_ ) != nullptr )
+	{
+		return false;
+	}
+	else if( const ArrayPtr* const array= boost::get<ArrayPtr>( &something_ ) )
+	{
+		U_ASSERT( *array != nullptr );
+		return (*array)->ArraySizeOrZero() > 0u && (*array)->type.IsAbstract();
+	}
+	else if( const Class* const class_= GetClassType() )
+		return class_->kind == Class::Kind::Abstract || class_->kind == Class::Kind::Interface;
+	else if( const Tuple* const tuple= boost::get<Tuple>( &something_ ) )
+	{
+		bool is_abstract= false;
+		for( const Type& element : tuple->elements )
+			is_abstract= is_abstract || element.IsAbstract();
+		return is_abstract;
+	}
 
 	return false;
 }
@@ -372,6 +463,13 @@ size_t Type::ReferencesTagsCount() const
 	{
 		U_ASSERT( *array != nullptr );
 		return (*array)->type.ReferencesTagsCount();
+	}
+	else if( const Tuple* const tuple= boost::get<Tuple>( &something_ ) )
+	{
+		size_t res= 0u;
+		for( const Type& element : tuple->elements )
+			res= std::max( res, element.ReferencesTagsCount() );
+		return res;
 	}
 
 	return 0u;
@@ -396,6 +494,11 @@ llvm::Type* Type::GetLLVMType() const
 		{
 			U_ASSERT( array != nullptr );
 			return array->llvm_type;
+		}
+
+		llvm::Type* operator()( const Tuple& tuple ) const
+		{
+			return tuple.llvm_type;
 		}
 
 		llvm::Type* operator()( const ClassProxyPtr& class_ ) const
@@ -451,11 +554,25 @@ ProgramString Type::ToString() const
 			return result;
 		}
 
-		ProgramString  operator()( const ArrayPtr& array ) const
+		ProgramString operator()( const ArrayPtr& array ) const
 		{
 			return
 				"[ "_SpC + array->type.ToString() + ", "_SpC +
 				ToProgramString( std::to_string( array->size ) ) + " ]"_SpC;
+		}
+
+		ProgramString operator()( const Tuple& tuple ) const
+		{
+			ProgramString res= "tup[ "_SpC;
+
+			for( const Type& element_type : tuple.elements )
+			{
+				res+= element_type.ToString();
+				if( &element_type != & tuple.elements.back() )
+					res+= ", "_SpC;
+			}
+			res+= " ]"_SpC;
+			return res;
 		}
 
 		ProgramString operator()( const ClassProxyPtr& class_ ) const
@@ -557,10 +674,13 @@ bool operator==( const Type& r, const Type& l )
 	{
 		return r.GetEnumType() == l.GetEnumType();
 	}
-
 	else if( r.something_.which() == 5 )
 	{
 		return *r.GetFunctionPointerType() == *l.GetFunctionPointerType();
+	}
+	else if( r.something_.which() == 6 )
+	{
+		return *r.GetTupleType() == *l.GetTupleType();
 	}
 
 	U_ASSERT(false);
@@ -1267,6 +1387,11 @@ DeducedTemplateParameter::DeducedTemplateParameter( Array array )
 	something_= std::move(array);
 }
 
+DeducedTemplateParameter::DeducedTemplateParameter( Tuple tuple )
+{
+	something_= std::move(tuple);
+}
+
 DeducedTemplateParameter::DeducedTemplateParameter( Function function )
 {
 	something_= std::move(function);
@@ -1300,6 +1425,11 @@ bool DeducedTemplateParameter::IsTemplateParameter() const
 const DeducedTemplateParameter::Array* DeducedTemplateParameter::GetArray() const
 {
 	return boost::get<Array>( &something_ );
+}
+
+const DeducedTemplateParameter::Tuple* DeducedTemplateParameter::GetTuple() const
+{
+	return boost::get<Tuple>( &something_ );
 }
 
 const DeducedTemplateParameter::Function* DeducedTemplateParameter::GetFunction() const

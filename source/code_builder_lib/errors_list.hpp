@@ -62,11 +62,14 @@ PROCESS_ERROR( StaticAssertExpressionIsNotConstant, "Expression in static_assert
 PROCESS_ERROR( StaticAssertionFailed, "Static assertion failed." )
 
 // Compile-time checks.
-PROCESS_ERROR( ArrayIndexOutOfBounds, "Array inex out of bounds. Index is %1%, but aray constains only %2% elements." )
+PROCESS_ERROR( ArrayIndexOutOfBounds, "Array index out of bounds. Index is %1%, but array contains only %2% elements." )
+PROCESS_ERROR( TupleIndexOutOfBounds, "Tuple index out of bounds. Index is %1%, but tuple contains only %2% elements." )
+
 
 // Initializers errors.
-PROCESS_ERROR( ArrayInitializerForNonArray, "Array initializer for nonarray." )
+PROCESS_ERROR( ArrayInitializerForNonArray, "Array initializer for not array or tuple." )
 PROCESS_ERROR( ArrayInitializersCountMismatch, "Array initializers count mismatch. Expected %1%, got %2%." )
+PROCESS_ERROR( TupleInitializersCountMismatch, "Tuple initializers count mismatch. Expected %1%, got %2%." )
 PROCESS_ERROR( FundamentalTypesHaveConstructorsWithExactlyOneParameter, "Fundamental types have constructors with exactly one parameter." )
 PROCESS_ERROR( ReferencesHaveConstructorsWithExactlyOneParameter, "References have constructors with exactly one parameter." )
 PROCESS_ERROR( UnsupportedInitializerForReference, "Unsupported initializer for reference." )

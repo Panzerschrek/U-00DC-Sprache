@@ -21,6 +21,7 @@ struct ArrayTypeName;
 struct TypeofTypeName;
 struct NamedTypeName;
 struct FunctionType;
+struct TupleType;
 
 struct UnaryPlus;
 struct UnaryMinus;
@@ -58,6 +59,7 @@ struct VariablesDeclaration;
 struct AutoVariableDeclaration;
 struct ReturnOperator;
 struct WhileOperator;
+struct ForOperator;
 struct BreakOperator;
 struct ContinueOperator;
 struct IfOperator;
@@ -94,7 +96,8 @@ using TypeName= boost::variant<
 	ArrayTypeName,
 	TypeofTypeName,
 	NamedTypeName,
-	FunctionTypePtr >;
+	FunctionTypePtr,
+	TupleType >;
 
 using UnaryPrefixOperator= boost::variant<
 	UnaryPlus,
@@ -139,6 +142,7 @@ using BlockElement= boost::variant<
 	AutoVariableDeclaration,
 	ReturnOperator,
 	WhileOperator,
+	ForOperator,
 	BreakOperator,
 	ContinueOperator,
 	IfOperator,
@@ -238,6 +242,15 @@ public:
 
 	std::unique_ptr<TypeName> element_type;
 	std::unique_ptr<Expression> size;
+};
+
+struct TupleType final : public SyntaxElementBase
+{
+public:
+	TupleType( const FilePos& file_pos );
+
+public:
+	std::vector<TypeName> element_types_;
 };
 
 struct TypeofTypeName final : public SyntaxElementBase
@@ -596,6 +609,18 @@ public:
 	WhileOperator( const FilePos& file_pos );
 
 	Expression condition_;
+	Block block_;
+};
+
+struct ForOperator final : public SyntaxElementBase
+{
+public:
+	ForOperator( const FilePos& file_pos );
+
+	ReferenceModifier reference_modifier_= ReferenceModifier::None;
+	MutabilityModifier mutability_modifier_= MutabilityModifier::None;
+	ProgramString loop_variable_name_;
+	Expression sequence_;
 	Block block_;
 };
 

@@ -26,6 +26,7 @@ enum class Keywords : unsigned int
 	move_,
 	select_,
 
+	tup_,
 	struct_,
 	class_,
 	final_,

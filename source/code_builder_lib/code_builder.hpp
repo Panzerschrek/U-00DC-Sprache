@@ -324,12 +324,12 @@ private:
 	void TryGenerateCopyAssignmentOperator( Class& the_class, const Type& class_type );
 
 	void BuildCopyConstructorPart(
-		llvm::Value* src, llvm::Value* dst,
+		llvm::Value* dst, llvm::Value* src,
 		const Type& type,
 		FunctionContext& function_context );
 
 	void BuildCopyAssignmentOperatorPart(
-		llvm::Value* src, llvm::Value* dst,
+		llvm::Value* dst, llvm::Value* src,
 		const Type& type,
 		FunctionContext& function_context );
 
@@ -456,6 +456,14 @@ private:
 		NamesScope& names,
 		FunctionContext& function_context );
 
+	Value CallBinaryOperatorForTuple(
+		OverloadedOperator op,
+		const Synt::Expression&  left_expr,
+		const Synt::Expression& right_expr,
+		const FilePos& file_pos,
+		NamesScope& names,
+		FunctionContext& function_context );
+
 	Value BuildBinaryOperator(
 		const Variable& l_var,
 		const Variable& r_var,
@@ -573,6 +581,7 @@ private:
 	Variable BuildTypeinfoClassFunctionsList( const ClassProxyPtr& class_type, NamesScope& root_namespace );
 	Variable BuildeTypeinfoClassParentsList( const ClassProxyPtr& class_type, NamesScope& root_namespace );
 	Variable BuildTypeinfoFunctionArguments( const Function& function_type, NamesScope& root_namespace );
+	Variable BuildypeinfoTupleElements( const Tuple& tuple_type, NamesScope& root_namespace );
 
 	// Block elements
 
@@ -611,6 +620,11 @@ private:
 
 	void BuildWhileOperatorCode(
 		const Synt::WhileOperator& while_operator,
+		NamesScope& names,
+		FunctionContext& function_context );
+
+	void BuildForOperatorCode(
+		const Synt::ForOperator& for_operator,
 		NamesScope& names,
 		FunctionContext& function_context );
 

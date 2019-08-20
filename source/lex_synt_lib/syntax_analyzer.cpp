@@ -267,6 +267,7 @@ private:
 
 	ReturnOperator ParseReturnOperator();
 	WhileOperator ParseWhileOperator();
+	ForOperator ParseForOperator();
 	BreakOperator ParseBreakOperator();
 	ContinueOperator ParseContinueOperator();
 	IfOperator ParseIfOperator();
@@ -1322,7 +1323,7 @@ Expression SyntaxAnalyzer::ParseExpression()
 				current_node= std::move(typeinfo_);
 				current_node_ptr= boost::get<TypeInfo>( &current_node );
 			}
-			else if( it_->text == Keywords::fn_ || it_->text == Keywords::typeof_ )
+			else if( it_->text == Keywords::fn_ || it_->text == Keywords::typeof_ || it_->text == Keywords::tup_ )
 			{
 				// Parse function type name: fn( i32 x )
 				TypeNameInExpression type_name_in_expression( it_->file_pos );
@@ -1797,6 +1798,53 @@ TypeName SyntaxAnalyzer::ParseTypeName()
 		NextLexem();
 
 		return std::move(typeof_type_name);
+	}
+	else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::tup_ )
+	{
+		NextLexem();
+
+		TupleType tuple_type( it_->file_pos );
+
+		if( it_->type != Lexem::Type::SquareBracketLeft )
+		{
+			PushErrorMessage();
+			return std::move(tuple_type);
+		}
+		NextLexem();
+
+		while( NotEndOfFile() )
+		{
+			if( it_->type == Lexem::Type::SquareBracketRight )
+			{
+				NextLexem();
+				break;
+			}
+
+			tuple_type.element_types_.push_back( ParseTypeName() );
+			if( it_->type == Lexem::Type::SquareBracketRight )
+			{
+				NextLexem();
+				break;
+			}
+			else
+			{
+				if( it_->type != Lexem::Type::Comma )
+				{
+					PushErrorMessage();
+					return std::move(tuple_type);
+				}
+				NextLexem();
+
+				if( it_->type == Lexem::Type::SquareBracketRight )
+				{
+					// something, like ,)
+					PushErrorMessage();
+					return std::move(tuple_type);
+				}
+			}
+		}
+
+		return std::move(tuple_type);
 	}
 	else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::fn_ )
 		return ParseFunctionType();
@@ -2410,6 +2458,71 @@ WhileOperator SyntaxAnalyzer::ParseWhileOperator()
 	return result;
 }
 
+ForOperator SyntaxAnalyzer::ParseForOperator()
+{
+	U_ASSERT( it_->type == Lexem::Type::Identifier && it_->text == Keywords::for_ );
+	ForOperator result( it_->file_pos );
+
+	NextLexem();
+	if( it_->type != Lexem::Type::BracketLeft )
+	{
+		PushErrorMessage();
+		return result;
+	}
+
+	NextLexem();
+
+	if( it_->type == Lexem::Type::And )
+	{
+		result.reference_modifier_= ReferenceModifier::Reference;
+		NextLexem();
+	}
+	if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::mut_ )
+	{
+		result.mutability_modifier_= MutabilityModifier::Mutable;
+		NextLexem();
+	}
+	else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::imut_ )
+	{
+		result.mutability_modifier_= MutabilityModifier::Immutable;
+		NextLexem();
+	}
+
+	if( it_->type != Lexem::Type::Identifier )
+	{
+		PushErrorMessage();
+		return result;
+	}
+	result.loop_variable_name_= it_->text;
+	NextLexem();
+
+	if( it_->type != Lexem::Type::Colon )
+	{
+		PushErrorMessage();
+		return result;
+	}
+	NextLexem();
+
+	result.sequence_= ParseExpression();
+
+	if( it_->type != Lexem::Type::BracketRight )
+	{
+		PushErrorMessage();
+		return result;
+	}
+
+	NextLexem();
+
+	if( it_->type != Lexem::Type::BraceLeft )
+	{
+		PushErrorMessage();
+		return result;
+	}
+
+	result.block_= ParseBlock();
+	return result;
+}
+
 BreakOperator SyntaxAnalyzer::ParseBreakOperator()
 {
 	U_ASSERT( it_->type == Lexem::Type::Identifier && it_->text == Keywords::break_ );
@@ -2698,6 +2811,8 @@ std::vector<BlockElement> SyntaxAnalyzer::ParseBlockElements()
 			elements.emplace_back( ParseReturnOperator() );
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::while_ )
 			elements.emplace_back( ParseWhileOperator() );
+		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::for_ )
+			elements.emplace_back( ParseForOperator() );
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::break_ )
 			elements.emplace_back( ParseBreakOperator() );
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::continue_ )

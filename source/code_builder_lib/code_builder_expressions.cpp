@@ -131,6 +131,8 @@ boost::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 			move_result.type= void_type_;
 			return Value( std::move(move_result), file_pos );
 		}
+		else if( args.front().type == args.back().type && args.front().type.GetTupleType() != nullptr )
+			return CallBinaryOperatorForTuple( op, left_expr, right_expr, file_pos, names, function_context );
 
 		overloaded_operator= GetOverloadedOperator( args, op, names.GetErrors(), file_pos );
 
@@ -170,6 +172,79 @@ boost::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 	}
 
 	return boost::none;
+}
+
+Value CodeBuilder::CallBinaryOperatorForTuple(
+	OverloadedOperator op,
+	const Synt::Expression&  left_expr,
+	const Synt::Expression& right_expr,
+	const FilePos& file_pos,
+	NamesScope& names,
+	FunctionContext& function_context )
+{
+	if( op == OverloadedOperator::Assign )
+	{
+		const Variable r_var= BuildExpressionCodeEnsureVariable( right_expr, names, function_context );
+		boost::optional<ReferencesGraphNodeHolder> r_var_lock;
+		if( r_var.node != nullptr )
+		{
+			if( function_context.variables_state.HaveOutgoingMutableNodes( r_var.node ) )
+				REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), file_pos, r_var.node->name );
+			r_var_lock.emplace(
+				std::make_shared<ReferencesGraphNode>( "lock "_SpC + r_var.node->name, ReferencesGraphNode::Kind::ReferenceImut ),
+				function_context );
+			function_context.variables_state.AddLink( r_var.node, r_var_lock->Node() );
+		}
+
+		const Variable l_var= BuildExpressionCodeEnsureVariable(  left_expr, names, function_context );
+		if( l_var.node != nullptr && function_context.variables_state.HaveOutgoingLinks( l_var.node ) )
+			REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), file_pos, l_var.node->name );
+
+		U_ASSERT( l_var.type == r_var.type ); // Checked before.
+		if( !l_var.type.IsCopyAssignable() )
+		{
+			REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), file_pos, l_var.type );
+			return ErrorValue();
+		}
+		if( l_var.value_type != ValueType::Reference )
+		{
+			REPORT_ERROR( ExpectedReferenceValue, names.GetErrors(), file_pos );
+			return ErrorValue();
+		}
+
+		const ReferencesGraphNodePtr& src_node= r_var.node;
+		const ReferencesGraphNodePtr& dst_node= l_var.node;
+		if( src_node != nullptr && dst_node != nullptr && l_var.type.ReferencesTagsCount() > 0u )
+		{
+			const auto src_node_inner_references= function_context.variables_state.GetAllAccessibleInnerNodes_r( src_node );
+			if( !src_node_inner_references.empty() )
+			{
+				bool node_is_mutable= false;
+				for( const ReferencesGraphNodePtr& src_node_inner_reference : src_node_inner_references )
+					node_is_mutable= node_is_mutable || src_node_inner_reference->kind == ReferencesGraphNode::Kind::ReferenceMut;
+
+				const auto dst_node_inner_reference= std::make_shared<ReferencesGraphNode>( dst_node->name + " inner variable"_SpC, node_is_mutable ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut );
+				function_context.variables_state.SetNodeInnerReference( dst_node, dst_node_inner_reference );
+				for( const ReferencesGraphNodePtr& src_node_inner_reference : src_node_inner_references )
+					function_context.variables_state.AddLink( src_node_inner_reference, dst_node_inner_reference );
+			}
+		}
+
+		BuildCopyAssignmentOperatorPart(
+			l_var.llvm_value, r_var.llvm_value,
+			l_var.type,
+			function_context );
+
+		Variable result;
+		result.type= void_type_for_ret_;
+		return Value( std::move(result), file_pos );
+	}
+	else
+	{
+		const Variable l_var= BuildExpressionCodeEnsureVariable( left_expr, names, function_context );
+		REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), file_pos, l_var.type );
+		return ErrorValue();
+	}
 }
 
 Value CodeBuilder::BuildExpressionCode(
@@ -1877,101 +1952,147 @@ Value CodeBuilder::BuildIndexationOperator(
 		}
 		else
 			function_context.overloading_resolution_cache[ &indexation_operator ]= boost::none;
-	}
 
-	const Array* const array_type= variable.type.GetArrayType();
-	if( array_type == nullptr )
+		REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), indexation_operator.file_pos_, value.GetKindName() );
+		return ErrorValue();
+	}
+	else if( const Array* const array_type= variable.type.GetArrayType() )
+	{
+		// Lock array. We must prevent modification of array in index calcualtion.
+		const ReferencesGraphNodeHolder array_lock(
+			std::make_shared<ReferencesGraphNode>( "array lock"_SpC, variable.value_type == ValueType::Reference ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut ),
+			function_context );
+		if( variable.node != nullptr )
+			function_context.variables_state.AddLink( variable.node, array_lock.Node() );
+
+		const Variable index= BuildExpressionCodeEnsureVariable( indexation_operator.index_, names, function_context );
+
+		const FundamentalType* const index_fundamental_type= index.type.GetFundamentalType();
+		if( index_fundamental_type == nullptr || !IsUnsignedInteger( index_fundamental_type->fundamental_type ) )
+		{
+			REPORT_ERROR( TypesMismatch, names.GetErrors(), indexation_operator.file_pos_, "any unsigned integer"_SpC, index.type );
+			return ErrorValue();
+		}
+
+		if( variable.location != Variable::Location::Pointer )
+		{
+			// TODO - Strange variable location.
+			return ErrorValue();
+		}
+
+		// If index is constant and not undefined and array size is not undefined - statically check index.
+		if( index.constexpr_value != nullptr && llvm::dyn_cast<llvm::UndefValue>(index.constexpr_value) == nullptr &&
+			array_type->size != Array::c_undefined_size )
+		{
+			const SizeType index_value= SizeType( index.constexpr_value->getUniqueInteger().getLimitedValue() );
+			if( index_value >= array_type->size )
+				REPORT_ERROR( ArrayIndexOutOfBounds, names.GetErrors(), indexation_operator.file_pos_, index_value, array_type->size );
+		}
+
+		Variable result;
+		result.location= Variable::Location::Pointer;
+		result.value_type= variable.value_type == ValueType::Reference ? ValueType::Reference : ValueType::ConstReference;
+		result.node= variable.node;
+		result.type= array_type->type;
+
+		if( variable.constexpr_value != nullptr && index.constexpr_value != nullptr )
+		{
+			if( llvm::dyn_cast<llvm::UndefValue>(variable.constexpr_value) != nullptr ||
+				llvm::dyn_cast<llvm::UndefValue>(index.constexpr_value) != nullptr )
+				result.constexpr_value= llvm::UndefValue::get( array_type->llvm_type )->getElementValue( index.constexpr_value );
+			else
+				result.constexpr_value= variable.constexpr_value->getAggregateElement( index.constexpr_value );
+		}
+
+		// Make first index = 0 for array to pointer conversion.
+		llvm::Value* index_list[2];
+		index_list[0]= GetZeroGEPIndex();
+		index_list[1]= CreateMoveToLLVMRegisterInstruction( index, function_context );
+
+		// If index is not const and array size is not undefined - check bounds.
+		if( index.constexpr_value == nullptr && array_type->size != Array::c_undefined_size )
+		{
+			llvm::Value* index_value= index_list[1];
+			const SizeType index_size= index_fundamental_type->GetSize();
+			const SizeType size_type_size= size_type_.GetFundamentalType()->GetSize();
+			if( index_size > size_type_size )
+				index_value= function_context.llvm_ir_builder.CreateTrunc( index_value, size_type_.GetLLVMType() );
+			else if( index_size < size_type_size )
+				index_value= function_context.llvm_ir_builder.CreateZExt( index_value, size_type_.GetLLVMType() );
+
+			llvm::Value* const condition=
+				function_context.llvm_ir_builder.CreateICmpUGE( // if( index >= array_size ) {halt;}
+					index_value,
+					llvm::Constant::getIntegerValue( size_type_.GetLLVMType(), llvm::APInt( size_type_.GetLLVMType()->getIntegerBitWidth(), array_type->size ) ) );
+
+			llvm::BasicBlock* const halt_block= llvm::BasicBlock::Create( llvm_context_ );
+			llvm::BasicBlock* const block_after_if= llvm::BasicBlock::Create( llvm_context_ );
+			function_context.llvm_ir_builder.CreateCondBr( condition, halt_block, block_after_if );
+
+			function_context.function->getBasicBlockList().push_back( halt_block );
+			function_context.llvm_ir_builder.SetInsertPoint( halt_block );
+			function_context.llvm_ir_builder.CreateCall( halt_func_ );
+			function_context.llvm_ir_builder.CreateUnreachable(); // terminate block.
+
+			function_context.function->getBasicBlockList().push_back( block_after_if );
+			function_context.llvm_ir_builder.SetInsertPoint( block_after_if );
+		}
+
+		DestroyUnusedTemporaryVariables( function_context, names.GetErrors(), indexation_operator.file_pos_ ); // Destroy temporaries of index expression.
+
+		result.llvm_value=
+			function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, index_list );
+
+		return Value( std::move(result), indexation_operator.file_pos_ );
+	}
+	else if( const Tuple* const tuple_type= variable.type.GetTupleType() )
+	{
+		const Variable index= BuildExpressionCodeEnsureVariable( indexation_operator.index_, names, function_context );
+
+		const FundamentalType* const index_fundamental_type= index.type.GetFundamentalType();
+		if( index_fundamental_type == nullptr || !IsUnsignedInteger( index_fundamental_type->fundamental_type ) )
+		{
+			REPORT_ERROR( TypesMismatch, names.GetErrors(), indexation_operator.file_pos_, "any unsigned integer"_SpC, index.type );
+			return ErrorValue();
+		}
+
+		if( variable.location != Variable::Location::Pointer )
+		{
+			// TODO - Strange variable location.
+			return ErrorValue();
+		}
+
+		// For tuple indexing only constexpr indeces are valid.
+		if( index.constexpr_value == nullptr )
+		{
+			REPORT_ERROR( ExpectedConstantExpression, names.GetErrors(), indexation_operator.file_pos_ );
+			return ErrorValue();
+		}
+		const uint64_t index_value= index.constexpr_value->getUniqueInteger().getLimitedValue();
+		if( index_value >= tuple_type->elements.size() )
+		{
+			REPORT_ERROR( TupleIndexOutOfBounds, names.GetErrors(), indexation_operator.file_pos_, index_value, tuple_type->elements.size() );
+			return ErrorValue();
+		}
+
+		Variable result;
+		result.location= Variable::Location::Pointer;
+		result.value_type= variable.value_type == ValueType::Reference ? ValueType::Reference : ValueType::ConstReference;
+		result.node= variable.node;
+		result.type= tuple_type->elements[index_value];
+		result.llvm_value=
+			function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, { GetZeroGEPIndex(), GetFieldGEPIndex(index_value) } );
+
+		if( variable.constexpr_value != nullptr )
+			result.constexpr_value= variable.constexpr_value->getAggregateElement( static_cast<unsigned int>(index_value) );
+
+		return Value( std::move(result), indexation_operator.file_pos_ );
+	}
+	else
 	{
 		REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), indexation_operator.file_pos_, value.GetKindName() );
 		return ErrorValue();
 	}
-
-	// Lock array. We must prevent modification of array in index calcualtion.
-	const ReferencesGraphNodeHolder array_lock(
-		std::make_shared<ReferencesGraphNode>( "array lock"_SpC, variable.value_type == ValueType::Reference ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut ),
-		function_context );
-	if( variable.node != nullptr )
-		function_context.variables_state.AddLink( variable.node, array_lock.Node() );
-
-	const Variable index= BuildExpressionCodeEnsureVariable( indexation_operator.index_, names, function_context );
-
-	const FundamentalType* const index_fundamental_type= index.type.GetFundamentalType();
-	if( index_fundamental_type == nullptr || !IsUnsignedInteger( index_fundamental_type->fundamental_type ) )
-	{
-		REPORT_ERROR( TypesMismatch, names.GetErrors(), indexation_operator.file_pos_, "any unsigned integer"_SpC, index.type );
-		return ErrorValue();
-	}
-
-	if( variable.location != Variable::Location::Pointer )
-	{
-		// TODO - Strange variable location.
-		return ErrorValue();
-	}
-
-	// If index is constant and not undefined and array size is not undefined - statically check index.
-	if( index.constexpr_value != nullptr && llvm::dyn_cast<llvm::UndefValue>(index.constexpr_value) == nullptr &&
-		array_type->size != Array::c_undefined_size )
-	{
-		const SizeType index_value= SizeType( index.constexpr_value->getUniqueInteger().getLimitedValue() );
-		if( index_value >= array_type->size )
-			REPORT_ERROR( ArrayIndexOutOfBounds, names.GetErrors(), indexation_operator.file_pos_, index_value, array_type->size );
-	}
-
-	Variable result;
-	result.location= Variable::Location::Pointer;
-	result.value_type= variable.value_type == ValueType::Reference ? ValueType::Reference : ValueType::ConstReference;
-	result.node= variable.node;
-	result.type= array_type->type;
-
-	if( variable.constexpr_value != nullptr && index.constexpr_value != nullptr )
-	{
-		if( llvm::dyn_cast<llvm::UndefValue>(variable.constexpr_value) != nullptr ||
-			llvm::dyn_cast<llvm::UndefValue>(index.constexpr_value) != nullptr )
-			result.constexpr_value= llvm::UndefValue::get( array_type->llvm_type )->getElementValue( index.constexpr_value );
-		else
-			result.constexpr_value= variable.constexpr_value->getAggregateElement( index.constexpr_value );
-	}
-
-	// Make first index = 0 for array to pointer conversion.
-	llvm::Value* index_list[2];
-	index_list[0]= GetZeroGEPIndex();
-	index_list[1]= CreateMoveToLLVMRegisterInstruction( index, function_context );
-
-	// If index is not const and array size is not undefined - check bounds.
-	if( index.constexpr_value == nullptr && array_type->size != Array::c_undefined_size )
-	{
-		llvm::Value* index_value= index_list[1];
-		const SizeType index_size= index_fundamental_type->GetSize();
-		const SizeType size_type_size= size_type_.GetFundamentalType()->GetSize();
-		if( index_size > size_type_size )
-			index_value= function_context.llvm_ir_builder.CreateTrunc( index_value, size_type_.GetLLVMType() );
-		else if( index_size < size_type_size )
-			index_value= function_context.llvm_ir_builder.CreateZExt( index_value, size_type_.GetLLVMType() );
-
-		llvm::Value* const condition=
-			function_context.llvm_ir_builder.CreateICmpUGE( // if( index >= array_size ) {halt;}
-				index_value,
-				llvm::Constant::getIntegerValue( size_type_.GetLLVMType(), llvm::APInt( size_type_.GetLLVMType()->getIntegerBitWidth(), array_type->size ) ) );
-
-		llvm::BasicBlock* const halt_block= llvm::BasicBlock::Create( llvm_context_ );
-		llvm::BasicBlock* const block_after_if= llvm::BasicBlock::Create( llvm_context_ );
-		function_context.llvm_ir_builder.CreateCondBr( condition, halt_block, block_after_if );
-
-		function_context.function->getBasicBlockList().push_back( halt_block );
-		function_context.llvm_ir_builder.SetInsertPoint( halt_block );
-		function_context.llvm_ir_builder.CreateCall( halt_func_ );
-		function_context.llvm_ir_builder.CreateUnreachable(); // terminate block.
-
-		function_context.function->getBasicBlockList().push_back( block_after_if );
-		function_context.llvm_ir_builder.SetInsertPoint( block_after_if );
-	}
-
-	DestroyUnusedTemporaryVariables( function_context, names.GetErrors(), indexation_operator.file_pos_ ); // Destroy temporaries of index expression.
-
-	result.llvm_value=
-		function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, index_list );
-
-	return Value( std::move(result), indexation_operator.file_pos_ );
 }
 
 Value CodeBuilder::BuildMemberAccessOperator(
@@ -2486,7 +2607,7 @@ Value CodeBuilder::DoCallFunction(
 
 			if( arg.type.GetFundamentalType() != nullptr || arg.type.GetEnumType() != nullptr || arg.type.GetFunctionPointerType() != nullptr )
 				llvm_args[j]= CreateMoveToLLVMRegisterInstruction( expr, function_context );
-			else if( const ClassProxyPtr class_type= arg.type.GetClassTypeProxy() )
+			else if( arg.type.GetClassType() != nullptr || arg.type.GetTupleType() != nullptr )
 			{
 				// Lock inner references.
 				// Do it only if arg type can contain any reference inside.
@@ -2528,14 +2649,14 @@ Value CodeBuilder::DoCallFunction(
 						continue;
 					}
 
-					// Create copy of class value. Call copy constructor.
+					// Create copy of class or tuple value. Call copy constructor.
 					llvm::Value* const arg_copy= function_context.alloca_ir_builder.CreateAlloca( arg.type.GetLLVMType() );
-
-					llvm::Value* value_for_copy= expr.llvm_value;
-					if( expr.type != arg.type )
-						value_for_copy= CreateReferenceCast( value_for_copy, expr.type, arg.type, function_context );
-					TryCallCopyConstructor( names.GetErrors(), file_pos, arg_copy, value_for_copy, class_type, function_context );
 					llvm_args[j]= arg_copy;
+					BuildCopyConstructorPart(
+						arg_copy,
+						CreateReferenceCast( expr.llvm_value, expr.type, arg.type, function_context ),
+						arg.type,
+						function_context );
 				}
 			}
 			else U_ASSERT( false );
@@ -2548,7 +2669,9 @@ Value CodeBuilder::DoCallFunction(
 	if( evaluate_args_in_reverse_order )
 		std::reverse( locked_args_references.begin(), locked_args_references.end() );
 
-	const bool return_value_is_sret= function_type.return_type.GetClassType() != nullptr && !function_type.return_value_is_reference;
+	const bool return_value_is_sret=
+		!function_type.return_value_is_reference &&
+		( function_type.return_type.GetClassType() != nullptr || function_type.return_type.GetTupleType() != nullptr );
 
 	llvm::Value* s_ret_value= nullptr;
 	if( return_value_is_sret )
@@ -2759,9 +2882,8 @@ Variable CodeBuilder::BuildTempVariableConstruction(
 		REPORT_ERROR( UsingIncompleteType, names.GetErrors(), call_operator.file_pos_, type );
 		return Variable();
 	}
-	if( const Class* const class_type= type.GetClassType() )
-		if( class_type->kind == Class::Kind::Abstract || class_type->kind == Class::Kind::Interface )
-			REPORT_ERROR( ConstructingAbstractClassOrInterface, names.GetErrors(), call_operator.file_pos_, type );
+	else if( type.IsAbstract() )
+		REPORT_ERROR( ConstructingAbstractClassOrInterface, names.GetErrors(), call_operator.file_pos_, type );
 
 	Variable variable;
 	variable.type= type;
