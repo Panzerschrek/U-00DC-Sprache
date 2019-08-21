@@ -1,4 +1,6 @@
 dist: xenial
 language: cpp
-compiler: gcc
+compiler:
+  - g++
+  - clang
 script: ./travis_build.sh
