@@ -45,8 +45,7 @@ set( CMAKE_CXX_STANDARD 11 )
 if( NOT DEFINED BOOST_ROOT )
 	message( FATAL_ERROR "BOOST_ROOT not defined. You can define path to boost library, using variable BOOST_ROOT" )
 endif()
-set( Boost_USE_STATIC_LIBS yes )
-find_package( Boost COMPONENTS system filesystem REQUIRED )
+find_package( Boost )
 include_directories( ${Boost_INCLUDE_DIRS} )
 
 # LLVM
@@ -149,7 +148,6 @@ if( BUILD_COMPILER )
 
 	add_executable( Compiler ${COMPILER_SOURCES} ${bc_files} ${USTLIB_SOURCES} ${USTLIB_TEST_SOURCES} )
 	target_link_libraries( Compiler CompilerLib ${LLVM_LIBS_FOR_COMPILER} )
-	target_link_libraries( Compiler ${Boost_LIBRARIES} )
 	target_compile_definitions( Compiler PRIVATE "SPRACHE_VERSION=${PROJECT_VERSION}" )
 endif( BUILD_COMPILER )
 

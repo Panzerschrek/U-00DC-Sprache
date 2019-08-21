@@ -72,7 +72,7 @@ std::string ToUTF8( const ProgramString& str )
 	return result;
 }
 
-static ProgramString DecodeUTF8( const char* start, const char* end )
+ProgramString DecodeUTF8( const char* start, const char* end )
 {
 	U_ASSERT( start <= end );
 

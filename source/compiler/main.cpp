@@ -1,10 +1,4 @@
-#include <cstdio>
-#include <cstring>
 #include <iostream>
-
-#include "../lex_synt_lib/push_disable_boost_warnings.hpp"
-#include <boost/filesystem/operations.hpp>
-#include "../lex_synt_lib/pop_boost_warnings.hpp"
 
 #include "../code_builder_lib/push_disable_llvm_warnings.hpp"
 #include <llvm/AsmParser/Parser.h>
@@ -13,9 +7,11 @@
 #include <llvm/IR/Verifier.h>
 #include <llvm/Linker/Linker.h>
 #include <llvm/Support/FileSystem.h>
+#include <llvm/Support/MemoryBuffer.h>
+#include <llvm/Support/Path.h>
+#include <llvm/Support/raw_os_ostream.h>
 #include <llvm/Support/TargetSelect.h>
 #include <llvm/Support/TargetRegistry.h>
-#include <llvm/Support/raw_os_ostream.h>
 #include <llvm/Target/TargetMachine.h>
 #include <llvm/Transforms/IPO.h>
 #include <llvm/Transforms/IPO/PassManagerBuilder.h>
@@ -26,84 +22,41 @@
 #include "../lex_synt_lib/source_graph_loader.hpp"
 #include "../code_builder_lib/code_builder.hpp"
 
-namespace fs= boost::filesystem;
-
-static bool ReadFileRaw( const char* const name, std::string& out_file_content )
-{
-	std::FILE* const f= std::fopen( name, "rb" );
-	if( f == nullptr )
-		return false;
-
-	std::fseek( f, 0, SEEK_END );
-	const size_t file_size= size_t(std::ftell( f ));
-	std::fseek( f, 0, SEEK_SET );
-
-	out_file_content.resize(file_size);
-
-	size_t read_total= 0u;
-	bool read_error= false;
-	do
-	{
-		const size_t read= std::fread( const_cast<char*>(out_file_content.data()) + read_total, 1, file_size - read_total, f );
-		if( std::ferror(f) != 0 )
-		{
-			read_error= true;
-			break;
-		}
-		if( read == 0 )
-			break;
-
-		read_total+= read;
-	} while( read_total < file_size );
-
-	std::fclose(f);
-
-	return !read_error;
-}
-
-static bool ReadFile( const char* const name, U::ProgramString& out_file_content )
-{
-	std::string file_content_raw;
-	if( !ReadFileRaw( name, file_content_raw ) )
-		return false;
-
-	out_file_content= U::DecodeUTF8( file_content_raw );
-	return true;
-}
-
 namespace U
 {
+
+namespace fs= llvm::sys::fs;
+namespace fsp= llvm::sys::path;
 
 class VfsOverSystemFS final : public IVfs
 {
 	struct PrivateTag{};
+	using fs_path= llvm::SmallString<256>;
 
 public:
 	static std::shared_ptr<VfsOverSystemFS> Create( const std::vector<std::string>& include_dirs )
 	{
-		std::vector<fs::path> result_include_dirs;
+		std::vector<fs_path> result_include_dirs;
 
 		bool all_ok= true;
 		for( const std::string& include_dir : include_dirs )
 		{
-			try
+			fs_path dir_path= llvm::StringRef( include_dir );
+			fs::make_absolute(dir_path);
+			if( !fs::exists(dir_path) )
 			{
-				fs::path dir_path{ include_dir };
-				dir_path.make_preferred();
-				if( !fs::exists( dir_path ) )
-				{
-					std::cout << "include dir \"" << include_dir << "\" does not exists." << std::endl;
-					all_ok= false;
-					continue;
-				}
-
-				result_include_dirs.push_back( std::move( dir_path ) );
-			}
-			catch( const std::exception& e )
-			{
-				std::cout << e.what() << std::endl;
+				std::cout << "include dir \"" << include_dir << "\" does not exists." << std::endl;
 				all_ok= false;
+				continue;
 			}
+			if( !fs::is_directory(dir_path) )
+			{
+				std::cout << "\"" << include_dir << "\" is not a directory." << std::endl;
+				all_ok= false;
+				continue;
+			}
+
+			result_include_dirs.push_back( std::move(dir_path) );
 		}
 
 		if( !all_ok )
@@ -112,7 +65,7 @@ public:
 		return std::make_shared<VfsOverSystemFS>( std::move(result_include_dirs), PrivateTag() );
 	}
 
-	VfsOverSystemFS( std::vector<fs::path> include_dirs, PrivateTag )
+	VfsOverSystemFS( std::vector<fs_path> include_dirs, PrivateTag )
 		: include_dirs_(std::move(include_dirs))
 	{}
 
@@ -121,16 +74,19 @@ public:
 	{
 		try
 		{
-			fs::path result_path= GetFullFilePathInternal( file_path, full_parent_file_path );
+			fs_path result_path= GetFullFilePathInternal( file_path, full_parent_file_path );
 			if( result_path.empty() )
 				return boost::none;
 
 			LoadFileResult result;
-			// TODO - maybe use here native format of path string?
-			if( !ReadFile( result_path.string<std::string>().c_str(), result.file_content ) )
+
+			llvm::ErrorOr< std::unique_ptr<llvm::MemoryBuffer> > file_mapped=
+				llvm::MemoryBuffer::getFile( result_path );
+			if( !file_mapped || *file_mapped == nullptr )
 				return boost::none;
 
-			result.full_file_path= ToProgramString( result_path.string<std::string>().c_str() );
+			result.file_content= DecodeUTF8( (*file_mapped)->getBufferStart(), (*file_mapped)->getBufferEnd() );
+			result.full_file_path= ToProgramString( result_path.str().str() );
 			return std::move(result);
 		}
 		catch( const std::exception& e )
@@ -143,51 +99,60 @@ public:
 
 	virtual Path GetFullFilePath( const Path& file_path, const Path& full_parent_file_path ) override
 	{
-		return ToProgramString( GetFullFilePathInternal( file_path, full_parent_file_path ).string<std::string>() );
+		return ToProgramString( GetFullFilePathInternal( file_path, full_parent_file_path ).str().str() );
 	}
 
 private:
-	fs::path GetFullFilePathInternal( const Path& file_path, const Path& full_parent_file_path )
+	fs_path GetFullFilePathInternal( const Path& file_path, const Path& full_parent_file_path )
 	{
-		try
-		{
-			const fs::path file_path_r( ToUTF8(file_path) );
-			fs::path result_path;
+		const fs_path file_path_r( ToUTF8(file_path) );
+		fs_path result_path;
 
-			if( full_parent_file_path.empty() )
-				result_path= fs::canonical( file_path_r );
-			else if( !file_path.empty() && file_path[0] == '/' )
+		if( full_parent_file_path.empty() )
+		{
+			result_path= file_path_r;
+			fs::make_absolute(result_path);
+		}
+		else if( !file_path.empty() && file_path[0] == '/' )
+		{
+			// If file path is absolute, like "/some_lib/some_file.u" search file in include dirs.
+			// Return real file system path to first existent file.
+			for( const fs_path& include_dir : include_dirs_ )
 			{
-				// If file path is absolute, like "/some_lib/some_file.u" search file in include dirs.
-				// Return real file system path to first existent file.
-				for( const fs::path& include_dir : include_dirs_ )
+				fs_path full_file_path= include_dir;
+				fsp::append( full_file_path, file_path_r );
+				if( fs::exists( full_file_path ) && fs::is_regular_file( full_file_path ) )
 				{
-					fs::path full_file_path= include_dir / file_path_r;
-					if( fs::exists( full_file_path ) )
-					{
-						result_path= fs::canonical( fs::path(ToUTF8(file_path.substr(1u))), include_dir );
-						break;
-					}
+					result_path= full_file_path;
+					break;
 				}
 			}
-			else
-			{
-				const fs::path base_dir= fs::path( ToUTF8(full_parent_file_path) ).parent_path();
-				result_path= fs::canonical( file_path_r, base_dir );
-			}
-			result_path.make_preferred();
-			return result_path;
 		}
-		catch( const std::exception& e )
+		else
 		{
-			std::cout << e.what() << std::endl;
+			result_path= fsp::parent_path( llvm::StringRef( ToUTF8(full_parent_file_path) ) );
+			fsp::append( result_path, file_path_r );
 		}
+		return NormalizePath( result_path );
+	}
 
-		return fs::path();
+	static fs_path NormalizePath( const fs_path& p )
+	{
+		fs_path result;
+		for( auto it= llvm::sys::path::begin(p), it_end= llvm::sys::path::end(p); it != it_end; ++it)
+		{
+			if( it->size() == 1 && *it == "." )
+				continue;
+			if( it->size() == 2 && *it == ".." )
+				llvm::sys::path::remove_filename( result );
+			else
+				llvm::sys::path::append( result, *it );
+		}
+		return result;
 	}
 
 private:
-	const std::vector<fs::path> include_dirs_;
+	const std::vector<fs_path> include_dirs_;
 };
 
 } // namespace U

@@ -10,12 +10,6 @@ wget https://dl.bintray.com/boostorg/release/1.66.0/source/boost_1_66_0.tar.gz &
 gzip -d boost_1_66_0.tar.gz &&\
 tar -xf boost_1_66_0.tar &&\
 \
-# Buuld boost
-cd boost_1_66_0 &&\
-./bootstrap.sh &&\
-./b2 --with-system --with-filesystem &&\
-cd .. &&\
-\
 # Configure build
 mkdir build-travis &&\
 cd build-travis &&\

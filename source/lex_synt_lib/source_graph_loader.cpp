@@ -69,7 +69,7 @@ size_t SourceGraphLoader::LoadNode_r(
 	if( loaded_file == boost::none )
 	{
 		Synt::SyntaxErrorMessage error_message;
-		error_message.text= "Can not read file \""_SpC + file_path +"\""_SpC;
+		error_message.text= "Can not read file \""_SpC + file_path + "\""_SpC;
 		error_message.file_pos= FilePos{ 0u, 0u, static_cast<unsigned short>(node_index) };
 
 		std::cerr << ToUTF8(error_message.text) << std::endl;
