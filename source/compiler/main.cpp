@@ -198,6 +198,18 @@ static void PrintErrors( const U::SourceGraph& source_graph, const U::CodeBuilde
 	}
 }
 
+static void PrintAvailableTargets()
+{
+	std::string targets_list;
+	for( const llvm::Target& target : llvm::TargetRegistry::targets() )
+	{
+		if( !targets_list.empty() )
+			targets_list+= ", ";
+		targets_list+= std::string(target.getName());
+	}
+	std::cout << "Available targets: " << targets_list << std::endl;
+}
+
 // Linked into executable resource files with standart library bitcode.
 extern const char _binary_asm_funcs_bc_start;
 extern const char _binary_asm_funcs_bc_end;
@@ -304,7 +316,10 @@ int main( const int argc, const char* const argv[])
 	llvm::cl::SetVersionPrinter(
 		[] {
 			std::cout << "Ü-Sprache version " << SPRACHE_VERSION << ", llvm version " << LLVM_VERSION_STRING << std::endl;
+			llvm::InitializeAllTargets();
+			PrintAvailableTargets();
 		} );
+
 	llvm::cl::HideUnrelatedOptions( Options::options_category );
 	llvm::cl::ParseCommandLineOptions( argc, argv, "Ü-Sprache compiler\n" );
 
@@ -362,17 +377,8 @@ int main( const int argc, const char* const argv[])
 
 		if( target == nullptr )
 		{
-			std::cout << "Error, selecting target: " << error_str << std::endl;
-
-			std::string targets_list;
-			for( const llvm::Target& target : llvm::TargetRegistry::targets() )
-			{
-				if( !targets_list.empty() )
-					targets_list+= ", ";
-				targets_list+= std::string(target.getName());
-			}
-			std::cout << "Available targets: " << targets_list << std::endl;
-
+			std::cerr << "Error, selecting target: " << error_str << std::endl;
+			PrintAvailableTargets();
 			return 1;
 		}
 
