@@ -72,29 +72,20 @@ public:
 public:
 	virtual boost::optional<LoadFileResult> LoadFileContent( const Path& file_path, const Path& full_parent_file_path ) override
 	{
-		try
-		{
-			fs_path result_path= GetFullFilePathInternal( file_path, full_parent_file_path );
-			if( result_path.empty() )
-				return boost::none;
+		fs_path result_path= GetFullFilePathInternal( file_path, full_parent_file_path );
+		if( result_path.empty() )
+			return boost::none;
 
-			LoadFileResult result;
+		LoadFileResult result;
 
-			llvm::ErrorOr< std::unique_ptr<llvm::MemoryBuffer> > file_mapped=
-				llvm::MemoryBuffer::getFile( result_path );
-			if( !file_mapped || *file_mapped == nullptr )
-				return boost::none;
+		llvm::ErrorOr< std::unique_ptr<llvm::MemoryBuffer> > file_mapped=
+			llvm::MemoryBuffer::getFile( result_path );
+		if( !file_mapped || *file_mapped == nullptr )
+			return boost::none;
 
-			result.file_content= DecodeUTF8( (*file_mapped)->getBufferStart(), (*file_mapped)->getBufferEnd() );
-			result.full_file_path= ToProgramString( result_path.str().str() );
-			return std::move(result);
-		}
-		catch( const std::exception& e )
-		{
-			std::cout << e.what() << std::endl;
-		}
-
-		return boost::none;
+		result.file_content= DecodeUTF8( (*file_mapped)->getBufferStart(), (*file_mapped)->getBufferEnd() );
+		result.full_file_path= ToProgramString( result_path.str().str() );
+		return std::move(result);
 	}
 
 	virtual Path GetFullFilePath( const Path& file_path, const Path& full_parent_file_path ) override
