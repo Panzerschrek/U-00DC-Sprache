@@ -526,6 +526,7 @@ LexicalAnalysisResult LexicalAnalysis( const sprache_char* const program_text_da
 				{
 					it+= s;
 					lexem.type= lexem_it->second;
+					lexem.text= fixed_lexem_str;
 					goto push_lexem;
 				}
 				fixed_lexem_str.pop_back();
