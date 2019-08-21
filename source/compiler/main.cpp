@@ -252,13 +252,14 @@ static cl::list<std::string> include_dir(
 	cl::ZeroOrMore,
 	cl::cat(options_category));
 
-enum class FileType{ BC, Obj, Asm };
+enum class FileType{ BC, LL, Obj, Asm };
 static cl::opt< FileType > file_type(
 	"filetype",
 	cl::init(FileType::Obj),
 	cl::desc("Choose a file type (not all types are supported by all targets):"),
 	cl::values(
 		clEnumValN( FileType::BC, "bc", "Emit an llvm bitcode ('.bc') file" ),
+		clEnumValN( FileType::LL, "ll", "Emit an llvm asm ('.ll') file" ),
 		clEnumValN( FileType::Obj, "obj", "Emit a native object ('.o') file" ),
 		clEnumValN( FileType::Asm, "asm", "Emit an assembly ('.s') file" ),
 		clEnumValEnd),
@@ -547,6 +548,8 @@ int main( const int argc, const char* const argv[])
 
 	if( Options::file_type == Options::FileType::BC )
 		llvm::WriteBitcodeToFile( result_module.get(), out_file_stream );
+	else if( Options::file_type == Options::FileType::LL )
+		result_module->print( out_file_stream, nullptr );
 	else
 	{
 		llvm::PassRegistry& registry= *llvm::PassRegistry::getPassRegistry();
@@ -561,7 +564,9 @@ int main( const int argc, const char* const argv[])
 		{
 		case Options::FileType::Obj: file_type= llvm::TargetMachine::CGFT_ObjectFile; break;
 		case Options::FileType::Asm: file_type= llvm::TargetMachine::CGFT_AssemblyFile; break;
-		case Options::FileType::BC: U_ASSERT(false);
+		case Options::FileType::BC:
+		case Options::FileType::LL:
+		U_ASSERT(false);
 		};
 
 		const bool no_verify= true;
