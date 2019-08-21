@@ -252,7 +252,7 @@ static cl::list<std::string> include_dir(
 	cl::ZeroOrMore,
 	cl::cat(options_category));
 
-enum class FileType{ BC, Obj };
+enum class FileType{ BC, Obj, Asm };
 static cl::opt< FileType > file_type(
 	"filetype",
 	cl::init(FileType::Obj),
@@ -260,6 +260,7 @@ static cl::opt< FileType > file_type(
 	cl::values(
 		clEnumValN( FileType::BC, "bc", "Emit an llvm bitcode ('.bc') file" ),
 		clEnumValN( FileType::Obj, "obj", "Emit a native object ('.o') file" ),
+		clEnumValN( FileType::Asm, "asm", "Emit an assembly ('.s') file" ),
 		clEnumValEnd),
 	cl::cat(options_category) );
 
@@ -544,7 +545,9 @@ int main( const int argc, const char* const argv[])
 	std::error_code file_error_code;
 	llvm::raw_fd_ostream out_file_stream( Options::output_file_name, file_error_code, llvm::sys::fs::F_None );
 
-	if( Options::file_type == Options::FileType::Obj )
+	if( Options::file_type == Options::FileType::BC )
+		llvm::WriteBitcodeToFile( result_module.get(), out_file_stream );
+	else
 	{
 		llvm::PassRegistry& registry= *llvm::PassRegistry::getPassRegistry();
 		llvm::initializeCore(registry);
@@ -553,7 +556,14 @@ int main( const int argc, const char* const argv[])
 		llvm::initializeLowerIntrinsicsPass(registry);
 		llvm::initializeUnreachableBlockElimPass(registry);
 
-		const llvm::TargetMachine::CodeGenFileType file_type= llvm::TargetMachine::CodeGenFileType::CGFT_ObjectFile;
+		llvm::TargetMachine::CodeGenFileType file_type= llvm::TargetMachine::CGFT_Null;
+		switch( Options::file_type )
+		{
+		case Options::FileType::Obj: file_type= llvm::TargetMachine::CGFT_ObjectFile; break;
+		case Options::FileType::Asm: file_type= llvm::TargetMachine::CGFT_AssemblyFile; break;
+		case Options::FileType::BC: U_ASSERT(false);
+		};
+
 		const bool no_verify= true;
 
 		llvm::legacy::PassManager pass_manager;
@@ -569,10 +579,6 @@ int main( const int argc, const char* const argv[])
 		}
 
 		pass_manager.run(*result_module);
-	}
-	else
-	{
-		llvm::WriteBitcodeToFile( result_module.get(), out_file_stream );
 	}
 
 	out_file_stream.flush();
