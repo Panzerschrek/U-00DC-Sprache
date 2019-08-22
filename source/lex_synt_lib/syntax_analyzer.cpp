@@ -951,13 +951,23 @@ NumericConstant SyntaxAnalyzer::ParseNumericConstant()
 	}
 
 	uint64_t integer_part= 0, fractional_part= 0;
-	int exponent= 0, fractional_part_pow= 0;
+	int fractional_part_digits= 0, exponent= 0;
 	bool has_fraction_point= false;
 
 	while( it < it_end && is_number_func( *it ) )
 	{
+		const uint64_t integer_part_before= integer_part;
 		integer_part= integer_part * base + number_func( *it );
 		++it;
+
+		if( integer_part < integer_part_before ) // Check overflow
+		{
+			SyntaxErrorMessage msg;
+			msg.file_pos= it_->file_pos;
+			msg.text= "Integer part of numeric literal is too long"_SpC;
+			error_messages_.push_back( msg );
+			break;
+		}
 	}
 
 	if( it < it_end && *it == '.' )
@@ -967,9 +977,19 @@ NumericConstant SyntaxAnalyzer::ParseNumericConstant()
 
 		while( it < it_end && is_number_func(*it) )
 		{
-			fractional_part= fractional_part * base+ number_func( *it );
-			++fractional_part_pow;
+			const uint64_t fractional_part_before= fractional_part;
+			fractional_part= fractional_part * base + number_func( *it );
+			++fractional_part_digits;
 			++it;
+
+			if( fractional_part < fractional_part_before ) // Check overflow
+			{
+				SyntaxErrorMessage msg;
+				msg.file_pos= it_->file_pos;
+				msg.text= "Fractional part of numeric literal is too long"_SpC;
+				error_messages_.push_back( msg );
+				break;
+			}
 		}
 	}
 
@@ -1001,7 +1021,7 @@ NumericConstant SyntaxAnalyzer::ParseNumericConstant()
 	NumericConstant result( it_->file_pos );
 
 	result.value_double_=
-		double(fractional_part) * std::pow( double(base), double( exponent - fractional_part_pow ) ) +
+		double(fractional_part) * std::pow( double(base), double( exponent - fractional_part_digits ) ) +
 		double(integer_part) * std::pow( double(base), double(exponent) );
 
 	result.value_int_= integer_part;
@@ -1011,9 +1031,9 @@ NumericConstant SyntaxAnalyzer::ParseNumericConstant()
 		result.value_int_/= base;
 
 	uint64_t fractional_part_corrected= fractional_part;
-	for( int i= 0; i < exponent - fractional_part_pow; ++i )
+	for( int i= 0; i < exponent - fractional_part_digits; ++i )
 		fractional_part_corrected*= base;
-	for( int i= 0; i < fractional_part_pow - exponent; ++i )
+	for( int i= 0; i < fractional_part_digits - exponent; ++i )
 		fractional_part_corrected/= base;
 	result.value_int_+= fractional_part_corrected;
 
@@ -1023,7 +1043,7 @@ NumericConstant SyntaxAnalyzer::ParseNumericConstant()
 	{
 		SyntaxErrorMessage msg;
 		msg.file_pos= it_->file_pos;
-		msg.text= "String literal is too long"_SpC;
+		msg.text= "Type suffix of numeric literal is too long"_SpC;
 		error_messages_.push_back( msg );
 		return result;
 	}
