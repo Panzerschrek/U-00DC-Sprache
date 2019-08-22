@@ -198,6 +198,4 @@ def StaticIfHaveSeparateVisibilityScope_Test():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 1 )
-	assert( errors_list[1].error_code == "NameNotFound" )
-	assert( errors_list[1].file_pos.line == 8 )
+	assert( HaveError( errors_list, "NameNotFound", 8 ) )
