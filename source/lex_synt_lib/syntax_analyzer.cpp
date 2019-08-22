@@ -876,9 +876,9 @@ NumericConstant SyntaxAnalyzer::ParseNumericConstant()
 {
 	const ProgramString& text= it_->text;
 
-	NumericConstant::LongFloat base= 10;
-	unsigned int (*number_func)( sprache_char) =
-		[]( sprache_char c ) -> unsigned int
+	uint64_t base= 10;
+	uint64_t (*number_func)( sprache_char) =
+		[]( sprache_char c ) -> uint64_t
 		{
 			U_ASSERT( c >= '0' && c <= '9' );
 			return c - '0';
@@ -899,7 +899,7 @@ NumericConstant SyntaxAnalyzer::ParseNumericConstant()
 			it+= 2;
 			base= 2;
 			number_func=
-				[]( sprache_char c ) -> unsigned int
+				[]( sprache_char c ) -> uint64_t
 				{
 					U_ASSERT( c >= '0' && c <= '1' );
 					return c - '0';
@@ -915,7 +915,7 @@ NumericConstant SyntaxAnalyzer::ParseNumericConstant()
 			it+= 2;
 			base= 8;
 			number_func=
-				[]( sprache_char c ) -> unsigned int
+				[]( sprache_char c ) -> uint64_t
 				{
 					U_ASSERT( c >= '0' && c <= '7' );
 					return c - '0';
@@ -931,7 +931,7 @@ NumericConstant SyntaxAnalyzer::ParseNumericConstant()
 			it+= 2;
 			base= 16;
 			number_func=
-				[]( sprache_char c ) -> unsigned int
+				[]( sprache_char c ) -> uint64_t
 				{
 					if( c >= '0' && c <= '9' )
 						return c - '0';
@@ -950,37 +950,27 @@ NumericConstant SyntaxAnalyzer::ParseNumericConstant()
 		};
 	}
 
-	NumericConstant::LongFloat number{ 0 };
+	uint64_t integer_part= 0, fractional_part= 0;
+	int exponent= 0, fractional_part_pow= 0;
 	bool has_fraction_point= false;
 
-	ProgramString::const_iterator integer_part_end= it;
-	while( integer_part_end < it_end &&
-		is_number_func( *integer_part_end ) )
-		++integer_part_end;
-
+	while( it < it_end && is_number_func( *it ) )
 	{
-		NumericConstant::LongFloat pow{ 1 };
-		for( auto n= integer_part_end - 1; n >= it; --n, pow*= base )
-			number+= number_func(*n) * pow;
+		integer_part= integer_part * base + number_func( *it );
+		++it;
 	}
 
-	it= integer_part_end;
 	if( it < it_end && *it == '.' )
 	{
 		++it;
 		has_fraction_point= true;
 
-		NumericConstant::LongFloat fractional_part{ 0 };
-		NumericConstant::LongFloat pow{ 1 / base };
-
 		while( it < it_end && is_number_func(*it) )
 		{
-			fractional_part+= number_func( *it ) * pow;
-			pow/= base;
+			fractional_part= fractional_part * base+ number_func( *it );
+			++fractional_part_pow;
 			++it;
 		}
-
-		number+= fractional_part;
 	}
 
 	// Exponent
@@ -989,7 +979,6 @@ NumericConstant SyntaxAnalyzer::ParseNumericConstant()
 		++it;
 
 		U_ASSERT( base == 10 );
-		int power= 0;
 		bool is_negative= false;
 
 		if( it < it_end && *it == '-' )
@@ -1002,17 +991,32 @@ NumericConstant SyntaxAnalyzer::ParseNumericConstant()
 
 		while( it < it_end && is_number_func(*it) )
 		{
-			power*= int(base);
-			power+= number_func(*it);
+			exponent= exponent * int(base) + int(number_func(*it));
 			++it;
 		}
-		if( is_negative ) power= -power;
-
-		number*= std::pow<NumericConstant::LongFloat>( base, power );
+		if( is_negative )
+			exponent= -exponent;
 	}
 
 	NumericConstant result( it_->file_pos );
-	result.value_= number;
+
+	result.value_double_=
+		double(fractional_part) * std::pow( double(base), double( exponent - fractional_part_pow ) ) +
+		double(integer_part) * std::pow( double(base), double(exponent) );
+
+	result.value_int_= integer_part;
+	for( int i= 0; i < exponent; ++i )
+		result.value_int_*= base;
+	for( int i= 0; i < -exponent; ++i )
+		result.value_int_/= base;
+
+	uint64_t fractional_part_corrected= fractional_part;
+	for( int i= 0; i < exponent - fractional_part_pow; ++i )
+		fractional_part_corrected*= base;
+	for( int i= 0; i < fractional_part_pow - exponent; ++i )
+		fractional_part_corrected/= base;
+	result.value_int_+= fractional_part_corrected;
+
 	result.has_fractional_point_= has_fraction_point;
 
 	if( size_t(it_end - it) > sizeof(TypeSuffix) / sizeof(TypeSuffix::value_type) - 1 )
