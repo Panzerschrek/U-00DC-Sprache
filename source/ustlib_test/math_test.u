@@ -71,7 +71,7 @@ fn DoFloatsTest()
 	halt if( ust::sqrt( T(4.0) ) != T(2.0) );
 	halt if( ust::sqrt( T(9.0) ) != T(3.0) );
 	halt if( ust::sqrt( T(10000.0) ) != T(100.0) );
-	halt if( ust::sqrt( T(0.09) ) != T(0.3) );
+	ExpectNear( ust::sqrt( T(0.09) ), T(0.3), T(1.0e-7) );
 	halt if( ust::sqrt( T(40.96) ) != T(6.4) );
 	halt if( ust::sqrt( T(-1.0) ) == ust::sqrt( T(-1.0) ) ); // result for negative values is nan
 	halt if( !ust::is_nan( ust::sqrt( ust::nan</T/>() ) ) ); // result for nan is nan
