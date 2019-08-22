@@ -140,9 +140,9 @@ def CastRef_Test7_CompleteteTypeRequiredForSource():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "UsingIncompleteType" )
-	assert( errors_list[0].file_pos.line == 6 )
+	assert( len(errors_list) > 1 )
+	assert( errors_list[1].error_code == "UsingIncompleteType" )
+	assert( errors_list[1].file_pos.line == 6 )
 
 
 def CastRef_Test8_CompleteteTypeRequiredForDestination():
@@ -155,9 +155,9 @@ def CastRef_Test8_CompleteteTypeRequiredForDestination():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "UsingIncompleteType" )
-	assert( errors_list[0].file_pos.line == 6 )
+	assert( len(errors_list) > 1 )
+	assert( errors_list[1].error_code == "UsingIncompleteType" )
+	assert( errors_list[1].file_pos.line == 6 )
 
 
 def CastRef_Test9_ShouldPreserveReferencedVariables():

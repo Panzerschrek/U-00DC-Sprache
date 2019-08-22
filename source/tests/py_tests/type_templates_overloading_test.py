@@ -167,9 +167,9 @@ def TypeTemplatesOvelroading_SpecializationErrors_Test0():
 		fn Foo( S</ i32, i32 /> & s );  // Error, different best-specialized templates for first and second template arguments.
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "CouldNotSelectMoreSpicializedTypeTemplate" )
-	assert( errors_list[0].file_pos.line == 5 )
+	assert( len(errors_list) > 1 )
+	assert( errors_list[1].error_code == "CouldNotSelectMoreSpicializedTypeTemplate" )
+	assert( errors_list[1].file_pos.line == 5 )
 
 
 def TypeTemplatesOvelroading_SpecializationErrors_Test1():
@@ -183,9 +183,9 @@ def TypeTemplatesOvelroading_SpecializationErrors_Test1():
 		fn Foo( S</ i32 /> & s );  // Error, more-specialized template selection does not works here for only first argument.
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "CouldNotSelectMoreSpicializedTypeTemplate" )
-	assert( errors_list[0].file_pos.line == 8 )
+	assert( len(errors_list) > 1 )
+	assert( errors_list[1].error_code == "CouldNotSelectMoreSpicializedTypeTemplate" )
+	assert( errors_list[1].file_pos.line == 8 )
 
 
 def LessSpecializedTemplateTypesNotGenerated_Test0():

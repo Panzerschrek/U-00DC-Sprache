@@ -17,8 +17,8 @@ U_TEST( InvalidValueAsTemplateArgumentTest0 )
 
 	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_TEST_ASSERT( !build_result.errors.empty() );
-	const CodeBuilderError& error= build_result.errors.front();
+	U_TEST_ASSERT( build_result.errors.size() >= 2u );
+	const CodeBuilderError& error= build_result.errors[1u];
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::InvalidValueAsTemplateArgument );
 	U_TEST_ASSERT( error.file_pos.line == 6u );
@@ -37,8 +37,8 @@ U_TEST( InvalidTypeOfTemplateVariableArgumentTest0 )
 
 	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_TEST_ASSERT( !build_result.errors.empty() );
-	const CodeBuilderError& error= build_result.errors.front();
+	U_TEST_ASSERT( build_result.errors.size() >= 2u );
+	const CodeBuilderError& error= build_result.errors[1u];
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::InvalidTypeOfTemplateVariableArgument );
 	U_TEST_ASSERT( error.file_pos.line == 5u );
@@ -110,11 +110,7 @@ U_TEST( ValueIsNotTemplateTest0 )
 
 	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_TEST_ASSERT( !build_result.errors.empty() );
-	const CodeBuilderError& error= build_result.errors.front();
-
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ValueIsNotTemplate );
-	U_TEST_ASSERT( error.file_pos.line == 5u );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ValueIsNotTemplate, 5u ) );
 }
 
 U_TEST( TemplateInstantiationRequiredTest0 )
@@ -131,11 +127,7 @@ U_TEST( TemplateInstantiationRequiredTest0 )
 
 	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_TEST_ASSERT( !build_result.errors.empty() );
-	const CodeBuilderError& error= build_result.errors.front();
-
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::TemplateInstantiationRequired );
-	U_TEST_ASSERT( error.file_pos.line == 6u );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::TemplateInstantiationRequired, 6u ) );
 }
 
 U_TEST( CouldNotOverloadFunction_ForClassTemplates_Test0 )
