@@ -199,20 +199,20 @@ static BinaryOperatorType GetAdditiveAssignmentOperator( const Lexem& lexem )
 	};
 }
 
-static uint64_t PowI( const uint64_t base, const uint64_t pow )
+static double PowI( const uint64_t base, const uint64_t pow )
 {
 	if( pow == 0u )
-		return 1u;
+		return 1.0;
 	if( pow == 1u )
-		return base;
+		return double(base);
 	if( pow == 2u )
-		return base * base;
+		return double(base * base);
 
 	const uint64_t half_pow= pow / 2u;
-	uint64_t res= PowI( base, half_pow );
+	double res= PowI( base, half_pow );
 	res= res * res;
 	if( half_pow * 2u != pow )
-		res*= base;
+		res*= double(base);
 	return res;
 }
 
@@ -1043,13 +1043,13 @@ NumericConstant SyntaxAnalyzer::ParseNumericConstant()
 	// 3 / 10 - right
 	// 3 * (1/10) - wrong
 	if( exponent >= 0 )
-		result.value_double_= double(integer_part) * double( PowI( base, exponent ) );
+		result.value_double_= double(integer_part) * PowI( base, exponent );
 	else
-		result.value_double_= double(integer_part) / double( PowI( base, -exponent ) );
+		result.value_double_= double(integer_part) / PowI( base, -exponent );
 	if( exponent >= fractional_part_digits )
-		result.value_double_+= double(fractional_part) * double( PowI( base, exponent - fractional_part_digits ) );
+		result.value_double_+= double(fractional_part) * PowI( base, exponent - fractional_part_digits );
 	else
-		result.value_double_+= double(fractional_part) / double( PowI( base, fractional_part_digits - exponent ) );
+		result.value_double_+= double(fractional_part) / PowI( base, fractional_part_digits - exponent );
 
 	result.value_int_= integer_part;
 	for( int i= 0; i < exponent; ++i )
