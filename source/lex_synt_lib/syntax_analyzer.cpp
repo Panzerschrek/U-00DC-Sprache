@@ -199,6 +199,23 @@ static BinaryOperatorType GetAdditiveAssignmentOperator( const Lexem& lexem )
 	};
 }
 
+static uint64_t PowI( const uint64_t base, const uint64_t pow )
+{
+	if( pow == 0u )
+		return 1u;
+	if( pow == 1u )
+		return base;
+	if( pow == 2u )
+		return base * base;
+
+	const uint64_t half_pow= pow / 2u;
+	uint64_t res= PowI( base, half_pow );
+	res= res * res;
+	if( half_pow * 2u != pow )
+		res*= base;
+	return res;
+}
+
 class SyntaxAnalyzer final
 {
 public:
@@ -1020,9 +1037,19 @@ NumericConstant SyntaxAnalyzer::ParseNumericConstant()
 
 	NumericConstant result( it_->file_pos );
 
-	result.value_double_=
-		double(fractional_part) * std::pow( double(base), double( exponent - fractional_part_digits ) ) +
-		double(integer_part) * std::pow( double(base), double(exponent) );
+	// For double calculate only powers > 0, because pow( base, positive ) is always integer and have exact double representation.
+	// pow( base, negative ) may have not exact double representation (1/10 for example).
+	// Example:
+	// 3 / 10 - right
+	// 3 * (1/10) - wrong
+	if( exponent >= 0 )
+		result.value_double_= double(integer_part) * double( PowI( base, exponent ) );
+	else
+		result.value_double_= double(integer_part) / double( PowI( base, -exponent ) );
+	if( exponent >= fractional_part_digits )
+		result.value_double_+= double(fractional_part) * double( PowI( base, exponent - fractional_part_digits ) );
+	else
+		result.value_double_+= double(fractional_part) / double( PowI( base, fractional_part_digits - exponent ) );
 
 	result.value_int_= integer_part;
 	for( int i= 0; i < exponent; ++i )

@@ -13,6 +13,10 @@ def NumericConstants_DecimalConstants_Test0():
 		static_assert( 256000.0e-3 == 256.0 ); // floating point with negative exponent
 		static_assert( 13e2 == 1300 ); // integer with exponent
 		static_assert( 13.52e3i32 == 13520i32 ); // fractional part saved for integer constant
+		static_assert( 0.3 == 3.0 / 10.0 );
+		static_assert( 25.0e-5 == 0.00025 );
+		static_assert( 0.00025 == 25.0 / 100000.0 );
+		static_assert( 0.32145e5 == 32145.0 );
 	"""
 	tests_lib.build_program( c_program_text )
 
