@@ -1,5 +1,3 @@
-#include <map>
-
 #include "assert.hpp"
 
 #include "lexical_analyzer.hpp"

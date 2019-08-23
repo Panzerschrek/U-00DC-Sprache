@@ -1,5 +1,3 @@
-#include <set>
-
 #include "assert.hpp"
 
 #include "keywords.hpp"

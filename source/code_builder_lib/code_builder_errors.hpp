@@ -4,9 +4,6 @@
 #include <boost/format.hpp>
 #include "../lex_synt_lib/pop_boost_warnings.hpp"
 
-#include "../lex_synt_lib/lang_types.hpp"
-#include "../lex_synt_lib/lexical_analyzer.hpp"
-#include "../lex_synt_lib/program_string.hpp"
 #include "../lex_synt_lib/syntax_elements.hpp"
 
 namespace U
