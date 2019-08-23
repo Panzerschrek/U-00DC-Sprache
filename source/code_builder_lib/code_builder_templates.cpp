@@ -10,7 +10,6 @@
 
 #include "../lex_synt_lib/assert.hpp"
 #include "../lex_synt_lib/keywords.hpp"
-#include "../lex_synt_lib/lang_types.hpp"
 #include "mangling.hpp"
 
 #include "code_builder.hpp"

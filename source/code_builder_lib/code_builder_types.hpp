@@ -13,9 +13,9 @@
 #include <llvm/IR/Constants.h>
 #include "pop_llvm_warnings.hpp"
 
-#include "../lex_synt_lib/lang_types.hpp"
 #include "../lex_synt_lib/syntax_elements.hpp"
 #include "references_graph.hpp"
+#include "lang_types.hpp"
 #include "small_types.hpp"
 
 namespace U
