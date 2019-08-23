@@ -450,5 +450,5 @@ def ReferenceTagsForTemplateDependentType_Test3():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "TemplateContext" )
-	assert( errors_list[0].template_errors.errors[0].error_code == "InvalidReferenceTagCount" )
-	assert( errors_list[0].template_errors.errors[0].file_pos.line == 3 )
+	assert( errors_list[0].template_errors.errors[1].error_code == "InvalidReferenceTagCount" )
+	assert( errors_list[0].template_errors.errors[1].file_pos.line == 3 )

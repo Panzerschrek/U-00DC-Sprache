@@ -1742,16 +1742,16 @@ Value CodeBuilder::BuildNumericConstant(
 
 	if( IsInteger( type ) || IsChar( type ) )
 		result.constexpr_value=
-			llvm::Constant::getIntegerValue( llvm_type, llvm::APInt( llvm_type->getIntegerBitWidth(), uint64_t(numeric_constant.value_) ) );
+			llvm::Constant::getIntegerValue( llvm_type, llvm::APInt( llvm_type->getIntegerBitWidth(), numeric_constant.value_int_ ) );
 	else if( IsFloatingPoint( type ) )
 		result.constexpr_value=
-			llvm::ConstantFP::get( llvm_type, static_cast<double>( numeric_constant.value_) );
+			llvm::ConstantFP::get( llvm_type, numeric_constant.value_double_ );
 	else
 		U_ASSERT(false);
 
 	result.llvm_value= result.constexpr_value;
 
-	const ReferencesGraphNodePtr node= std::make_shared<ReferencesGraphNode>( ToProgramString( "numeric constant " + std::to_string(numeric_constant.value_) ), ReferencesGraphNode::Kind::Variable );
+	const ReferencesGraphNodePtr node= std::make_shared<ReferencesGraphNode>( ToProgramString( "numeric constant " + std::to_string(numeric_constant.value_double_) ), ReferencesGraphNode::Kind::Variable );
 	function_context.stack_variables_stack.back()->RegisterVariable( std::make_pair( node, result ) );
 	result.node= node;
 	return Value( std::move(result), numeric_constant.file_pos_ );

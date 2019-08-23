@@ -410,14 +410,10 @@ using TypeSuffix= std::array<sprache_char, 7>;
 struct NumericConstant final : public ExpressionComponentWithUnaryOperators
 {
 public:
-	using LongFloat= long double;
-	static_assert(
-		std::numeric_limits<LongFloat>::digits >= 64,
-		"Too short \"LongFloat\". LongFloat must store all uint64_t and int64_t values exactly." );
-
 	NumericConstant( const FilePos& file_pos );
 
-	LongFloat value_;
+	double value_double_;
+	uint64_t value_int_;
 	TypeSuffix type_suffix_;
 	bool has_fractional_point_= false;
 };

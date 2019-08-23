@@ -8,9 +8,9 @@ def FunctionDeclarationOutsideItsScope_ForFunctionTemplates_Test0():
 		fn NS::Foo(){}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "FunctionDeclarationOutsideItsScope" )
-	assert( errors_list[0].file_pos.line == 3 )
+	assert( len(errors_list) > 1 )
+	assert( errors_list[1].error_code == "FunctionDeclarationOutsideItsScope" )
+	assert( errors_list[1].file_pos.line == 3 )
 
 
 def ValueIsNotTemplate_ForFunctionTemplates_Test0():
@@ -145,9 +145,9 @@ def TemplateParametersDeductionFailed_Test0():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "TemplateParametersDeductionFailed" )
-	assert( errors_list[0].file_pos.line == 11 )
+	assert( len(errors_list) > 1 )
+	assert( errors_list[1].error_code == "TemplateParametersDeductionFailed" )
+	assert( errors_list[1].file_pos.line == 11 )
 
 
 def TemplateParametersDeductionFailed_Test1():
@@ -161,9 +161,9 @@ def TemplateParametersDeductionFailed_Test1():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "TemplateParametersDeductionFailed" )
-	assert( errors_list[0].file_pos.line == 7 )
+	assert( len(errors_list) > 1 )
+	assert( errors_list[1].error_code == "TemplateParametersDeductionFailed" )
+	assert( errors_list[1].file_pos.line == 7 )
 
 
 def TemplateParametersDeductionFailed_Test2():
@@ -376,9 +376,9 @@ def TemplateFunctionGenerationFailed_Test0():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "TemplateFunctionGenerationFailed" )
-	assert( errors_list[0].file_pos.line == 7 )
+	assert( len(errors_list) > 1 )
+	assert( errors_list[1].error_code == "TemplateFunctionGenerationFailed" )
+	assert( errors_list[1].file_pos.line == 7 )
 
 
 def TemplateFunctionGenerationFailed_Test1():
@@ -392,9 +392,9 @@ def TemplateFunctionGenerationFailed_Test1():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "TemplateFunctionGenerationFailed" )
-	assert( errors_list[0].file_pos.line == 7 )
+	assert( len(errors_list) > 1 )
+	assert( errors_list[1].error_code == "TemplateFunctionGenerationFailed" )
+	assert( errors_list[1].file_pos.line == 7 )
 
 
 def TemplateFunctionGenerationFailed_Test2():
@@ -409,9 +409,9 @@ def TemplateFunctionGenerationFailed_Test2():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "TemplateFunctionGenerationFailed" )
-	assert( errors_list[0].file_pos.line == 8 )
+	assert( len(errors_list) > 1 )
+	assert( errors_list[1].error_code == "TemplateFunctionGenerationFailed" )
+	assert( errors_list[1].file_pos.line == 8 )
 
 
 def TemplateFunctionGenerationFailed_Test3():
@@ -426,9 +426,9 @@ def TemplateFunctionGenerationFailed_Test3():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "TemplateFunctionGenerationFailed" )
-	assert( errors_list[0].file_pos.line == 8 )
+	assert( len(errors_list) > 1 )
+	assert( errors_list[1].error_code == "TemplateFunctionGenerationFailed" )
+	assert( errors_list[1].file_pos.line == 8 )
 
 
 def TemplateFunctionGenerationFailed_Test5():
@@ -442,6 +442,6 @@ def TemplateFunctionGenerationFailed_Test5():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "TemplateFunctionGenerationFailed" )
-	assert( errors_list[0].file_pos.line == 7 )
+	assert( len(errors_list) > 1 )
+	assert( errors_list[1].error_code == "TemplateFunctionGenerationFailed" )
+	assert( errors_list[1].file_pos.line == 7 )

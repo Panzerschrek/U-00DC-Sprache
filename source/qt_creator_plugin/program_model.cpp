@@ -43,7 +43,7 @@ static ProgramString Stringify( const Synt::Expression& expression )
 		}
 		ProgramString operator()( const Synt::NumericConstant& numeric_constant )
 		{
-			return QStringToProgramString( QString::number(static_cast<double>(numeric_constant.value_)) ) + numeric_constant.type_suffix_.data();
+			return QStringToProgramString( QString::number(numeric_constant.value_double_) ) + numeric_constant.type_suffix_.data();
 		}
 		ProgramString operator()( const Synt::StringLiteral& string_literal )
 		{

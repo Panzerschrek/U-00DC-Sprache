@@ -62,7 +62,12 @@ set( LLVM_ENABLE_RTTI ON CACHE BOOL "rtti for llvm" )
 add_subdirectory( ${LLVM_SRC_DIR} ${CMAKE_BINARY_DIR}/llvm )
 
 include_directories( ${LLVM_SRC_DIR}/include ${CMAKE_BINARY_DIR}/llvm/include )
-add_definitions( ${LLVM_DEFINITIONS} )
+
+# llvm does not export definitions as target properties, so, retrieve compile definitions manually.
+get_directory_property( LLVM_COMPILE_DEFINITIONS DIRECTORY ${LLVM_SRC_DIR} COMPILE_DEFINITIONS )
+foreach( d ${LLVM_COMPILE_DEFINITIONS} )
+	add_definitions( "-D${d}" )
+endforeach()
 
 llvm_map_components_to_libnames( LLVM_LIBS_FOR_COMPILER_LIB Core )
 llvm_map_components_to_libnames( LLVM_LIBS_FOR_COMPILER

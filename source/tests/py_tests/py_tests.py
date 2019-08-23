@@ -11,7 +11,7 @@ def GetTestsList( tests_modules_list ):
 	result=[]
 	for module_name in tests_modules_list:
 		importlib.import_module( module_name )
-		module_tests= [ obj for name, obj in inspect.getmembers(sys.modules[module_name]) if inspect.isfunction(obj) and obj != ConvertErrors ]
+		module_tests= [ obj for name, obj in inspect.getmembers(sys.modules[module_name]) if inspect.isfunction(obj) and obj != ConvertErrors and obj != HaveError ]
 		result = result + module_tests
 
 	return result

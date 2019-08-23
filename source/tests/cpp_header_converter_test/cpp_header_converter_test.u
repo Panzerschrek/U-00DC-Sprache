@@ -56,6 +56,7 @@ fn U_Main() : i32
 
 	var f64 small_f64= SMALL_CONSTANT, large_f64= LARGE_CONSTANT;
 
+	static_assert( LARGE_INTEGER_CONSTANT == 153124586353854499 );
 	static_assert( string_equals( STRING_CONSTANT_ASCII, "WTF?009a\u0000" ) );
 	static_assert( string_equals( STRING_CONSTANT_UTF8_IMPLICIT,"Чё?\u0000" ) );
 	static_assert( string_equals( STRING_CONSTANT_WITH_SPECIAL_SYMBOLS, "Ü \u0013 one \t two \n quote ' double \" slash \\ \u0000" ) );

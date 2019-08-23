@@ -79,6 +79,10 @@ void CppAstConsumer::HandleTranslationUnit( clang::ASTContext& ast_context )
 
 			Synt::NumericConstant numeric_constant( g_dummy_file_pos );
 
+			llvm::APInt int_val( 64u, 0u );
+			numeric_literal_parser.GetIntegerValue( int_val );
+			numeric_constant.value_int_= int_val.getLimitedValue();
+
 			if( numeric_literal_parser.getRadix() == 10 )
 			{
 				llvm::APFloat float_val(0.0);
@@ -87,14 +91,10 @@ void CppAstConsumer::HandleTranslationUnit( clang::ASTContext& ast_context )
 				// "HACK! fix infinity.
 				if( float_val.isInfinity() )
 					float_val= llvm::APFloat::getLargest( float_val.getSemantics(), float_val.isNegative() );
-				numeric_constant.value_= float_val.convertToDouble();
+				numeric_constant.value_double_= float_val.convertToDouble();
 			}
 			else
-			{
-				llvm::APInt int_val( 64u, 0u );
-				numeric_literal_parser.GetIntegerValue( int_val );
-				numeric_constant.value_= static_cast<Synt::NumericConstant::LongFloat>(int_val.getLimitedValue());
-			}
+				numeric_constant.value_double_= static_cast<double>(numeric_constant.value_int_);
 
 			if( numeric_literal_parser.isFloat )
 				numeric_constant.type_suffix_[0]= 'f';
@@ -311,7 +311,8 @@ Synt::ClassPtr CppAstConsumer::ProcessRecord( const clang::RecordDecl& record_de
 			array_type.element_type.reset( new Synt::TypeName( std::move(named_type_name) ) );
 
 			Synt::NumericConstant numeric_constant( g_dummy_file_pos );
-			numeric_constant.value_= num;
+			numeric_constant.value_int_= num;
+			numeric_constant.value_double_= static_cast<double>(numeric_constant.value_int_);
 			array_type.size.reset( new Synt::Expression( std::move(numeric_constant) ) );
 
 			Synt::ClassField field( g_dummy_file_pos );
@@ -462,9 +463,10 @@ void CppAstConsumer::ProcessEnum( const clang::EnumDecl& enum_decl, Synt::Progra
 
 			const llvm::APSInt val= enumerator->getInitVal();
 			if( val.isNegative() )
-				initializer_number.value_= val.getExtValue();
+				initializer_number.value_int_= val.getExtValue();
 			else
-				initializer_number.value_= val.getLimitedValue();
+				initializer_number.value_int_= val.getLimitedValue();
+			initializer_number.value_double_= static_cast<double>(initializer_number.value_int_);
 
 			initializer.call_operator.arguments_.push_back( std::move(initializer_number) );
 
@@ -507,7 +509,8 @@ Synt::TypeName CppAstConsumer::TranslateType( const clang::Type& in_type )
 		array_type.element_type.reset( new Synt::TypeName( TranslateType( *constna_array_type->getElementType().getTypePtr() ) ) );
 
 		Synt::NumericConstant numeric_constant( g_dummy_file_pos );
-		numeric_constant.value_= static_cast<Synt::NumericConstant::LongFloat>( constna_array_type->getSize().getLimitedValue() );
+		numeric_constant.value_int_= constna_array_type->getSize().getLimitedValue();
+		numeric_constant.value_double_= static_cast<double>(numeric_constant.value_int_);
 		numeric_constant.type_suffix_[0]= 'u';
 		array_type.size.reset( new Synt::Expression( std::move(numeric_constant) ) );
 
@@ -520,7 +523,8 @@ Synt::TypeName CppAstConsumer::TranslateType( const clang::Type& in_type )
 		out_array_type.element_type.reset( new Synt::TypeName( TranslateType( *array_type->getElementType().getTypePtr() ) ) );
 
 		Synt::NumericConstant numeric_constant( g_dummy_file_pos );
-		numeric_constant.value_= 0;
+		numeric_constant.value_int_= 0;
+		numeric_constant.value_double_= 0.0;
 		numeric_constant.type_suffix_[0]= 'u';
 		out_array_type.size.reset( new Synt::Expression( std::move(numeric_constant) ) );
 

@@ -19,7 +19,12 @@ bool operator!=( const CodeBuilderError& l, const CodeBuilderError& r )
 
 bool operator< ( const CodeBuilderError& l, const CodeBuilderError& r )
 {
-	return l.file_pos < r.file_pos;
+	// Sort by position in file, then, by code, then, by text.
+	if( l.file_pos != r.file_pos )
+		return l.file_pos < r.file_pos;
+	if( l.code != r.code )
+		return l.code < r.code;
+	return l.text < r.text;
 }
 
 const char* CodeBuilderErrorCodeToString( const CodeBuilderErrorCode code )
