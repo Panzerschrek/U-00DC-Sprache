@@ -361,7 +361,7 @@ private:
 	// Generates for loop from 0 to iteration_count - 1
 	// Calls callback with argument - size_type with index
 	void GenerateLoop(
-		SizeType iteration_count,
+		uint64_t iteration_count,
 		const std::function<void(llvm::Value* counter_value)>& loop_body,
 		FunctionContext& function_context);
 

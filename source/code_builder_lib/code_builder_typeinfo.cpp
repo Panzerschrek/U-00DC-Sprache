@@ -102,7 +102,7 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, Variable& typeinfo_variab
 	};
 
 	const auto add_size_field=
-	[&]( const ProgramString& name, const SizeType value )
+	[&]( const ProgramString& name, const uint64_t value )
 	{
 		typeinfo_class.members.AddName(
 			name,

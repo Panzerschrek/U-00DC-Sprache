@@ -14,7 +14,7 @@ namespace CodeBuilderPrivate
 static_assert( sizeof(Type) <= 40u, "Type is too heavy!" );
 static_assert( sizeof(Value) <= 160u, "Value is too heavy!" );
 
-static SizeType GetFundamentalTypeSize( const U_FundamentalType type )
+static uint64_t GetFundamentalTypeSize( const U_FundamentalType type )
 {
 	switch(type)
 	{
@@ -54,7 +54,7 @@ FundamentalType::FundamentalType(
 	, llvm_type(in_llvm_type)
 {}
 
-SizeType FundamentalType::GetSize() const
+uint64_t FundamentalType::GetSize() const
 {
 	return GetFundamentalTypeSize(fundamental_type);
 }

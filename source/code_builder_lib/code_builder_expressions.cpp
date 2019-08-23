@@ -1019,8 +1019,8 @@ Value CodeBuilder::BuildBinaryOperator(
 				REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), file_pos, r_type );
 				return ErrorValue();
 			}
-			const SizeType l_type_size= l_fundamental_type->GetSize();
-			const SizeType r_type_size= r_fundamental_type->GetSize();
+			const uint64_t l_type_size= l_fundamental_type->GetSize();
+			const uint64_t r_type_size= r_fundamental_type->GetSize();
 
 			if( l_var.constexpr_value != nullptr && r_var.constexpr_value != nullptr )
 			{
@@ -1762,7 +1762,7 @@ Value CodeBuilder::BuildStringLiteral( const Synt::StringLiteral& string_literal
 	U_UNUSED( function_context );
 
 	U_FundamentalType char_type= U_FundamentalType::InvalidType;
-	SizeType array_size= ~0u; // ~0 - means non-array
+	uint64_t array_size= ~0u; // ~0 - means non-array
 	llvm::Constant* initializer= nullptr;
 
 	const ProgramString type_suffix= string_literal.type_suffix_.data();
@@ -2022,8 +2022,8 @@ Value CodeBuilder::BuildIndexationOperator(
 		if( index.constexpr_value == nullptr )
 		{
 			llvm::Value* index_value= index_list[1];
-			const SizeType index_size= index_fundamental_type->GetSize();
-			const SizeType size_type_size= size_type_.GetFundamentalType()->GetSize();
+			const uint64_t index_size= index_fundamental_type->GetSize();
+			const uint64_t size_type_size= size_type_.GetFundamentalType()->GetSize();
 			if( index_size > size_type_size )
 				index_value= function_context.llvm_ir_builder.CreateTrunc( index_value, size_type_.GetLLVMType() );
 			else if( index_size < size_type_size )

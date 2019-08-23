@@ -532,7 +532,7 @@ void ConstexprFunctionEvaluator::ProcessLoad( const llvm::Instruction* const ins
 	}
 	else if( element_type->isPointerTy() )
 	{
-		SizeType ptr;
+		uint64_t ptr;
 		std::memcpy( &ptr, data_ptr, size_t(data_layout_.getTypeAllocSize( element_type )) );
 		llvm::GenericValue val;
 		val.IntVal= llvm::APInt( 64u , ptr );
@@ -568,7 +568,7 @@ void ConstexprFunctionEvaluator::ProcessStore( const llvm::Instruction* const in
 		std::memcpy( data_ptr, &val.DoubleVal, size_t(data_layout_.getTypeAllocSize( element_type )) );
 	else if( element_type->isPointerTy() )
 	{
-		SizeType ptr= val.IntVal.getLimitedValue();
+		uint64_t ptr= val.IntVal.getLimitedValue();
 		std::memcpy( data_ptr, &ptr, size_t(data_layout_.getTypeAllocSize( element_type )) );
 	}
 	else U_ASSERT(false);

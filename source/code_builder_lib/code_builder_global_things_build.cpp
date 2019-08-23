@@ -916,9 +916,9 @@ void CodeBuilder::GlobalThingBuildEnum( const EnumPtr enum_, TypeCompleteness co
 	}
 
 	{
-		const SizeType max_value_plus_one=
-			SizeType(1) << ( SizeType(enum_->underlaying_type.llvm_type->getIntegerBitWidth()) - ( IsSignedInteger( enum_->underlaying_type.fundamental_type ) ? 1u : 0u ) );
-		const SizeType max_value= max_value_plus_one - 1u;
+		const uint64_t max_value_plus_one=
+			uint64_t(1) << ( uint64_t(enum_->underlaying_type.llvm_type->getIntegerBitWidth()) - ( IsSignedInteger( enum_->underlaying_type.fundamental_type ) ? 1u : 0u ) );
+		const uint64_t max_value= max_value_plus_one - 1u;
 
 		if( enum_->element_count > max_value )
 			REPORT_ERROR( UnderlayingTypeForEnumIsTooSmall, names_scope.GetErrors(), enum_decl.file_pos_, enum_->element_count - 1u, max_value );

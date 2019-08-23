@@ -74,7 +74,7 @@ struct FundamentalType final
 	llvm::Type* llvm_type;
 
 	FundamentalType( U_FundamentalType fundamental_type= U_FundamentalType::Void, llvm::Type* llvm_type= nullptr );
-	SizeType GetSize() const;
+	uint64_t GetSize() const;
 };
 
 bool operator==( const FundamentalType& r, const FundamentalType& l );
@@ -232,7 +232,7 @@ bool operator!=( const FunctionPointer& r, const FunctionPointer& l );
 struct Array final
 {
 	Type type;
-	SizeType size= 0u;
+	uint64_t size= 0u;
 
 	llvm::ArrayType* llvm_type= nullptr;
 };
@@ -695,7 +695,7 @@ struct Enum
 	Enum( const ProgramString& name, NamesScope* parent_scope );
 
 	NamesScope members;
-	SizeType element_count= 0u;
+	uint64_t element_count= 0u;
 	FundamentalType underlaying_type; // must be integer
 
 	const Synt::Enum* syntax_element= nullptr; // Null if completed

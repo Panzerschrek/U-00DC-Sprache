@@ -539,7 +539,7 @@ Type CodeBuilder::PrepareType(
 							if( IsSignedInteger( size_fundamental_type->fundamental_type ) && size_value.isNegative() )
 								REPORT_ERROR( ArraySizeIsNegative, names_scope.GetErrors(), num_file_pos );
 							else
-								array_type.size= SizeType( size_value.getLimitedValue() );
+								array_type.size= size_value.getLimitedValue();
 						}
 					}
 					else
@@ -761,7 +761,7 @@ void CodeBuilder::TryCallCopyConstructor(
 }
 
 void CodeBuilder::GenerateLoop(
-	const SizeType iteration_count,
+	const uint64_t iteration_count,
 	const std::function<void(llvm::Value* counter_value)>& loop_body,
 	FunctionContext& function_context)
 {
