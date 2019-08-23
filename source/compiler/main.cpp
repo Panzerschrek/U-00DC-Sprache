@@ -149,6 +149,14 @@ private:
 
 } // namespace U
 
+static std::string GetFeaturesStr( const llvm::ArrayRef<std::string> features_list )
+{
+	llvm::SubtargetFeatures features;
+	for( auto& f : features_list )
+		features.AddFeature( f, true );
+	return features.getString();
+}
+
 static std::string GetNativeTargetFeaturesStr()
 {
 	llvm::SubtargetFeatures features;
@@ -271,6 +279,20 @@ static cl::opt<std::string> architecture(
 	cl::init("native"),
 	cl::cat(options_category) );
 
+static cl::opt<std::string> target_cpu(
+	"mcpu",
+	cl::desc("Target a specific cpu type (-mcpu=help for details)"),
+	cl::value_desc("cpu-name"),
+	cl::init(""),
+	cl::cat(options_category) );
+
+static cl::list<std::string> target_attributes(
+	"mattr",
+	cl::CommaSeparated,
+	cl::desc("Target specific attributes (-mattr=help for details)"),
+	cl::value_desc("a1,+a2,-a3,..."),
+	cl::cat(options_category) );
+
 static cl::opt<llvm::Reloc::Model> relocation_model(
 	"relocation-model",
 	cl::desc("Choose relocation model"),
@@ -367,6 +389,8 @@ int main( const int argc, const char* const argv[])
 			llvm::Triple traget_triple;
 			target= llvm::TargetRegistry::lookupTarget( Options::architecture, traget_triple, error_str );
 			target_triple_str= traget_triple.getTriple();
+			features_str= GetFeaturesStr( Options::target_attributes );
+			cpu_name= Options::target_cpu;
 		}
 
 		if( target == nullptr )
