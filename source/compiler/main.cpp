@@ -1,6 +1,7 @@
 #include <iostream>
 
 #include "../code_builder_lib/push_disable_llvm_warnings.hpp"
+#include <llvm/Analysis/TargetTransformInfo.h>
 #include <llvm/AsmParser/Parser.h>
 #include <llvm/Bitcode/ReaderWriter.h>
 #include <llvm/IR/LegacyPassManager.h>
@@ -503,6 +504,9 @@ int main( const int argc, const char* const argv[])
 	{
 		llvm::legacy::FunctionPassManager function_pass_manager( result_module.get() );
 		llvm::legacy::PassManager pass_manager;
+
+		// Setup target-dependent optimizations.
+		pass_manager.add( llvm::createTargetTransformInfoWrapperPass( target_machine->getTargetIRAnalysis() ) );
 
 		{
 			llvm::PassManagerBuilder pass_manager_builder;
