@@ -40,6 +40,10 @@ Standart library:
 *) More math functions
 
 Compiler:
+*) Stable "typeinfo" classes mangling
+*) Safety, returning references and references pollution in function types
+	mangling
+*) Template functions mangling with all template parameters
 *) move-assignment without hacks.
 *) Standartized entry point, such "main" in some languages
 *) Virtual call for final function optimization

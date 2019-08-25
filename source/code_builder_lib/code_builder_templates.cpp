@@ -1331,6 +1331,7 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 	return &function_variable;
 }
 
+// TODO - pass function context.
 Value* CodeBuilder::GenTemplateFunctionsUsingTemplateParameters(
 	const FilePos& file_pos,
 	const std::vector<FunctionTemplatePtr>& function_templates,
