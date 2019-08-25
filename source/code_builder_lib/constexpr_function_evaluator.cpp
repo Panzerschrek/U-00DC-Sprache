@@ -446,27 +446,30 @@ llvm::GenericValue ConstexprFunctionEvaluator::GetVal( const llvm::Value* const 
 		if( constant_expression->getOpcode() == llvm::Instruction::GetElementPtr )
 		{
 			const llvm::GenericValue ptr= GetVal( constant_expression->getOperand(0u) );
-			const llvm::GenericValue index= GetVal( constant_expression->getOperand(2u) );
 
-			llvm::Type* const aggregate_type= llvm::dyn_cast<llvm::PointerType>(constant_expression->getOperand(0u)->getType())->getElementType();
+			uint64_t index_accumulated= 0u;
+			llvm::Type* aggregate_type= constant_expression->getOperand(0u)->getType()->getPointerElementType();
+			for( unsigned int op= 2u; op < constant_expression->getNumOperands(); ++op )
+			{
+				const llvm::GenericValue index= GetVal( constant_expression->getOperand(op) );
 
+				if( aggregate_type->isArrayTy() )
+				{
+					llvm::Type* const element_type= aggregate_type->getArrayElementType();
+					index_accumulated+= index.IntVal.getLimitedValue() * data_layout_.getTypeAllocSize( element_type );
+					aggregate_type= element_type;
+				}
+				else if( aggregate_type->isStructTy() )
+				{
+					const llvm::StructLayout& struct_layout= *data_layout_.getStructLayout( llvm::dyn_cast<llvm::StructType>(aggregate_type) );
+					const unsigned int element_index= static_cast<unsigned int>(index.IntVal.getLimitedValue());
+					index_accumulated+= struct_layout.getElementOffset( element_index );
+					aggregate_type= aggregate_type->getStructElementType( element_index );
+				}
+				else U_ASSERT(false);
+			}
 			llvm::GenericValue new_ptr;
-			if( aggregate_type->isArrayTy() )
-			{
-				llvm::Type* const element_type= llvm::dyn_cast<llvm::ArrayType>( aggregate_type )->getElementType();
-				new_ptr.IntVal=
-					ptr.IntVal +
-					llvm::APInt( ptr.IntVal.getBitWidth(), index.IntVal.getLimitedValue() ) *
-					llvm::APInt( ptr.IntVal.getBitWidth(), data_layout_.getTypeAllocSize( element_type ) );
-			}
-			else if( aggregate_type->isStructTy() )
-			{
-				const llvm::StructLayout& struct_layout= *data_layout_.getStructLayout( llvm::dyn_cast<llvm::StructType>(aggregate_type) );
-				new_ptr.IntVal=
-					ptr.IntVal +
-					llvm::APInt( ptr.IntVal.getBitWidth(), struct_layout.getElementOffset( static_cast<unsigned int>(index.IntVal.getLimitedValue()) ) );
-			}
-			else U_ASSERT(false);
+			new_ptr.IntVal= ptr.IntVal + llvm::APInt( ptr.IntVal.getBitWidth(), index_accumulated );
 			return new_ptr;
 		}
 		else U_ASSERT(false);
