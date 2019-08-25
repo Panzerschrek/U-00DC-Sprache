@@ -76,8 +76,8 @@ struct FundamentalType final
 	uint64_t GetSize() const;
 };
 
-bool operator==( const FundamentalType& r, const FundamentalType& l );
-bool operator!=( const FundamentalType& r, const FundamentalType& l );
+bool operator==( const FundamentalType& l, const FundamentalType& r );
+bool operator!=( const FundamentalType& l, const FundamentalType& r );
 
 struct Tuple final
 {
@@ -85,8 +85,8 @@ struct Tuple final
 	llvm::StructType* llvm_type= nullptr;
 };
 
-bool operator==( const Tuple& r, const Tuple& l );
-bool operator!=( const Tuple& r, const Tuple& l );
+bool operator==( const Tuple& l, const Tuple& r );
+bool operator!=( const Tuple& l, const Tuple& r );
 
 class Type final
 {
@@ -157,8 +157,8 @@ private:
 		Tuple > something_;
 };
 
-bool operator==( const Type& r, const Type& l );
-bool operator!=( const Type& r, const Type& l );
+bool operator==( const Type& l, const Type& r );
+bool operator!=( const Type& l, const Type& r );
 
 struct Function final
 {
@@ -221,12 +221,12 @@ struct FunctionPointer
 
 bool operator==( const Function::InToOutReferences& l, const Function::InToOutReferences& r );
 bool operator!=( const Function::InToOutReferences& l, const Function::InToOutReferences& r );
-bool operator==( const Function::Arg& r, const Function::Arg& l );
-bool operator!=( const Function::Arg& r, const Function::Arg& l );
-bool operator==( const Function& r, const Function& l );
-bool operator!=( const Function& r, const Function& l );
-bool operator==( const FunctionPointer& r, const FunctionPointer& l );
-bool operator!=( const FunctionPointer& r, const FunctionPointer& l );
+bool operator==( const Function::Arg& l, const Function::Arg& r );
+bool operator!=( const Function::Arg& l, const Function::Arg& r );
+bool operator==( const Function& l, const Function& r );
+bool operator!=( const Function& l, const Function& r );
+bool operator==( const FunctionPointer& l, const FunctionPointer& r );
+bool operator!=( const FunctionPointer& l, const FunctionPointer& r );
 
 struct Array final
 {

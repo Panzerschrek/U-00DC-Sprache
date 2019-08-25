@@ -59,24 +59,24 @@ uint64_t FundamentalType::GetSize() const
 	return GetFundamentalTypeSize(fundamental_type);
 }
 
-bool operator==( const FundamentalType& r, const FundamentalType& l )
+bool operator==( const FundamentalType& l, const FundamentalType& r )
 {
-	return r.fundamental_type == l.fundamental_type;
+	return l.fundamental_type == r.fundamental_type;
 }
 
-bool operator!=( const FundamentalType& r, const FundamentalType& l )
+bool operator!=( const FundamentalType& l, const FundamentalType& r )
 {
-	return !( r == l );
+	return !( l == r );
 }
 
-bool operator==( const Tuple& r, const Tuple& l )
+bool operator==( const Tuple& l, const Tuple& r )
 {
-	return r.elements == l.elements;
+	return l.elements == r.elements;
 }
 
-bool operator!=( const Tuple& r, const Tuple& l )
+bool operator!=( const Tuple& l, const Tuple& r )
 {
-	return !( r == l );
+	return !( l == r );
 }
 
 Type::Type( const Type& other )
@@ -661,47 +661,47 @@ ProgramString Type::ToString() const
 	return boost::apply_visitor( Visitor(), something_ );
 }
 
-bool operator==( const Type& r, const Type& l )
+bool operator==( const Type& l, const Type& r )
 {
-	if( r.something_.which() != l.something_.which() )
+	if( l.something_.which() != r.something_.which() )
 		return false;
 
-	if( r.something_.which() == 0 )
+	if( l.something_.which() == 0 )
 	{
-		return *r.GetFundamentalType() == *l.GetFundamentalType();
+		return *l.GetFundamentalType() == *r.GetFundamentalType();
 	}
-	else if( r.something_.which() == 1 )
+	else if( l.something_.which() == 1 )
 	{
-		return *r.GetFunctionType() == *l.GetFunctionType();
+		return *l.GetFunctionType() == *r.GetFunctionType();
 	}
-	else if( r.something_.which() == 2 )
+	else if( l.something_.which() == 2 )
 	{
-		return *r.GetArrayType() == *l.GetArrayType();
+		return *l.GetArrayType() == *r.GetArrayType();
 	}
-	else if( r.something_.which() == 3 )
+	else if( l.something_.which() == 3 )
 	{
-		return r.GetClassTypeProxy() == l.GetClassTypeProxy();
+		return l.GetClassTypeProxy() == r.GetClassTypeProxy();
 	}
-	else if( r.something_.which() == 4 )
+	else if( l.something_.which() == 4 )
 	{
-		return r.GetEnumType() == l.GetEnumType();
+		return l.GetEnumType() == r.GetEnumType();
 	}
-	else if( r.something_.which() == 5 )
+	else if( l.something_.which() == 5 )
 	{
-		return *r.GetFunctionPointerType() == *l.GetFunctionPointerType();
+		return *l.GetFunctionPointerType() == *r.GetFunctionPointerType();
 	}
-	else if( r.something_.which() == 6 )
+	else if( l.something_.which() == 6 )
 	{
-		return *r.GetTupleType() == *l.GetTupleType();
+		return *l.GetTupleType() == *r.GetTupleType();
 	}
 
 	U_ASSERT(false);
 	return false;
 }
 
-bool operator!=( const Type& r, const Type& l )
+bool operator!=( const Type& l, const Type& r )
 {
-	return !( r == l );
+	return !( l == r );
 }
 
 bool Function::PointerCanBeConvertedTo( const Function& other ) const
@@ -782,50 +782,50 @@ bool operator!=( const Function::InToOutReferences& l, const Function::InToOutRe
 	return !( l == r );
 }
 
-bool operator==( const Function::Arg& r, const Function::Arg& l )
+bool operator==( const Function::Arg& l, const Function::Arg& r )
 {
-	return r.type == l.type && r.is_mutable == l.is_mutable && r.is_reference == l.is_reference;
+	return l.type == r.type && l.is_mutable == r.is_mutable && l.is_reference == r.is_reference;
 }
 
-bool operator!=( const Function::Arg& r, const Function::Arg& l )
+bool operator!=( const Function::Arg& l, const Function::Arg& r )
 {
-	return !( r == l );
+	return !( l == r );
 }
 
-bool operator==( const Function& r, const Function& l )
+bool operator==( const Function& l, const Function& r )
 {
 	return
-		r.return_type == l.return_type &&
-		r.return_value_is_mutable == l.return_value_is_mutable &&
-		r.return_value_is_reference == l.return_value_is_reference &&
-		r.args == l.args &&
-		r.return_references == l.return_references &&
-		r.references_pollution == l.references_pollution &&
-		r.unsafe == l.unsafe;
+		l.return_type == r.return_type &&
+		l.return_value_is_mutable == r.return_value_is_mutable &&
+		l.return_value_is_reference == r.return_value_is_reference &&
+		l.args == r.args &&
+		l.return_references == r.return_references &&
+		l.references_pollution == r.references_pollution &&
+		l.unsafe == r.unsafe;
 }
 
-bool operator!=( const Function& r, const Function& l )
+bool operator!=( const Function& l, const Function& r )
+{
+	return !( l == r );
+}
+
+bool operator==( const FunctionPointer& l, const FunctionPointer& r )
+{
+	return l.function == r.function;
+}
+bool operator!=( const FunctionPointer& l, const FunctionPointer& r )
 {
 	return !( r == l );
 }
 
-bool operator==( const FunctionPointer& r, const FunctionPointer& l )
+bool operator==( const Array& l, const Array& r )
 {
-	return r.function == l.function;
-}
-bool operator!=( const FunctionPointer& r, const FunctionPointer& l )
-{
-	return !( r == l );
+	return l.type == r.type && l.size == r.size;
 }
 
-bool operator==( const Array& r, const Array& l )
+bool operator!=( const Array& l, const Array& r )
 {
-	return r.type == l.type && r.size == l.size;
-}
-
-bool operator!=( const Array& r, const Array& l )
-{
-	return !( r == l );
+	return !( l == r );
 }
 
 constexpr size_t Function::c_arg_reference_tag_number;
