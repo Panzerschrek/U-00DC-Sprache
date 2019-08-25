@@ -537,26 +537,7 @@ ProgramString Type::ToString() const
 
 		ProgramString operator()( const FunctionPtr& function ) const
 		{
-			// TODO - actualize this
-			ProgramString result;
-			result+= "fn "_SpC;
-			result+= function->return_type.ToString();
-			result+= " ( "_SpC;
-			for( const Function::Arg& arg : function->args )
-			{
-				if( arg.is_reference )
-					result+= "&"_SpC;
-				if( arg.is_mutable )
-					result+= "mut "_SpC;
-				else
-					result+= "imut "_SpC;
-
-				result+= arg.type.ToString();
-				if( &arg != &function->args.back() )
-					result+= ", "_SpC;
-			}
-			result+= " )"_SpC;
-			return result;
+			return ProcessFunctionType( *function );
 		}
 
 		ProgramString operator()( const ArrayPtr& array ) const
@@ -646,8 +627,34 @@ ProgramString Type::ToString() const
 
 		ProgramString operator()( const FunctionPointerPtr& function_pointer ) const
 		{
-			U_UNUSED(function_pointer);
-			return "ptr to "_SpC; // TODO
+			return ProcessFunctionType( function_pointer->function );
+		}
+
+	private:
+		ProgramString ProcessFunctionType( const Function& function ) const
+		{
+			// TODO - actualize this
+			ProgramString result;
+			result+= "fn "_SpC;
+			result+= function.return_type.ToString();
+			result+= " ( "_SpC;
+			for( const Function::Arg& arg : function.args )
+			{
+				if( arg.is_reference )
+					result+= "&"_SpC;
+				if( arg.is_mutable )
+					result+= "mut "_SpC;
+				else
+					result+= "imut "_SpC;
+
+				result+= arg.type.ToString();
+				if( &arg != &function.args.back() )
+					result+= ", "_SpC;
+			}
+			result+= " )"_SpC;
+			if( function.unsafe )
+				result+= " unsafe"_SpC;
+			return result;
 		}
 	};
 
