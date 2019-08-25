@@ -336,7 +336,7 @@ static NamePair GetTypeName_r( const Type& type, NamesCache& names_cache )
 			result.compressed_and_escaped+= type_name.compressed_and_escaped;
 		}
 
-		const ProgramString function_prefix= "F"_SpC;
+		const ProgramString function_prefix= "F"_SpC + (function->unsafe ? "unsafe"_SpC : ""_SpC);
 		const ProgramString function_postfix= "E"_SpC;
 		const ProgramString prefixed_type_name= function_prefix + result.full + function_postfix;
 		result.full= prefixed_type_name;
