@@ -187,4 +187,24 @@ fn constexpr have_shared_state() : bool
 	return type_traits_impl::have_shared_state_impl( typeinfo</T/> );
 }
 
+template</ type T, type FnT, size_type name_size />
+fn constexpr class_have_method( [ char8, name_size ]& name ) : bool
+{
+	static_assert( typeinfo</FnT/>.is_function_pointer );
+	static_if( typeinfo</T/>.is_class )
+	{
+		for( &list_element : typeinfo</T/>.functions_list )
+		{
+			if( type_traits_impl::string_equals( list_element.name, name ) )
+			{
+				// Same type of typeinfo means same type
+				if( type_traits_impl::args_are_same( list_element.type, typeinfo</FnT/>.element_type ) )
+				{ return true; }
+			}
+		}
+	}
+
+	return false;
+}
+
 } // namespace ust

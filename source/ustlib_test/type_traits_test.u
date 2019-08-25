@@ -22,6 +22,13 @@ class I : F, G {}
 class J : I, H {}
 class K : J {}
 
+class LargeClassWithMethods
+{
+	fn Bar( mut this );
+	fn EmptyStatic();
+	fn SomeUnsafe( this ) unsafe;
+}
+
 //
 // is_same_type
 //
@@ -119,6 +126,21 @@ static_assert( !ust::is_array_typeinfo_type</ typeof( typeinfo</i32/> ) />() );
 static_assert( !ust::is_array_typeinfo_type</ EmptyStruct />() );
 static_assert( ust::is_array_typeinfo_type</ typeof( typeinfo</ [ i32, 2 ] /> ) />() );
 static_assert( ust::is_array_typeinfo_type</ typeof( typeinfo</ [ A, 2 ] /> ) />() );
+
+//
+// HaveMethod
+//
+
+static_assert( !ust::class_have_method</ LargeClassWithMethods, fn() />( "Foo" ) );
+static_assert( !ust::class_have_method</ LargeClassWithMethods, fn( i32 x ) />( "Bar" ) );
+static_assert(  ust::class_have_method</ LargeClassWithMethods, fn( LargeClassWithMethods &mut c ) />( "Bar" ) );
+static_assert(  ust::class_have_method</ LargeClassWithMethods, fn() />( "EmptyStatic" ) );
+static_assert( !ust::class_have_method</ LargeClassWithMethods, fn( i32 x ) />( "EmptyStatic" ) );
+static_assert( !ust::class_have_method</ LargeClassWithMethods, fn() unsafe />( "EmptyStatic" ) );
+static_assert(  ust::class_have_method</ LargeClassWithMethods, fn( LargeClassWithMethods &imut c ) unsafe />( "SomeUnsafe" ) );
+static_assert( !ust::class_have_method</ LargeClassWithMethods, fn( LargeClassWithMethods &imut c ) />( "SomeUnsafe" ) );
+static_assert(  ust::class_have_method</ LargeClassWithMethods, fn( LargeClassWithMethods &mut c ) />( "destructor" ) );
+
 
 fn U_Main() : i32
 {
