@@ -436,7 +436,6 @@ void CodeBuilder::CopyClass(
 	copy->references_tags_count= src.references_tags_count;
 	copy->completeness= src.completeness;
 
-	copy->is_typeinfo= src.is_typeinfo;
 	copy->have_explicit_noncopy_constructors= src.have_explicit_noncopy_constructors;
 	copy->is_default_constructible= src.is_default_constructible;
 	copy->is_copy_constructible= src.is_copy_constructible;
@@ -450,6 +449,7 @@ void CodeBuilder::CopyClass(
 
 	copy->llvm_type= src.llvm_type;
 	copy->base_template= src.base_template;
+	copy->typeinfo_type= src.typeinfo_type;
 
 	copy->kind= src.kind;
 	copy->base_class= src.base_class;

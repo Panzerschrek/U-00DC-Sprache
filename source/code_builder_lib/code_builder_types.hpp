@@ -124,6 +124,7 @@ public:
 	ClassProxyPtr GetClassTypeProxy() const;
 	Class* GetClassType() const;
 	Enum* GetEnumType() const;
+	EnumPtr GetEnumTypePtr() const;
 
 	bool ReferenceIsConvertibleTo( const Type& other ) const;
 
@@ -652,7 +653,6 @@ public:
 	size_t field_count= 0u;
 	size_t references_tags_count= 0u;
 	TypeCompleteness completeness= TypeCompleteness::Incomplete;
-	bool is_typeinfo= false;
 	bool have_explicit_noncopy_constructors= false;
 	bool is_default_constructible= false;
 	bool is_copy_constructible= false;
@@ -668,6 +668,9 @@ public:
 
 	// Exists only for classes, generated from class templates.
 	boost::optional<BaseTemplate> base_template;
+
+	// If this class is typeinfo, contains source type.
+	boost::optional<Type> typeinfo_type;
 
 	Kind kind= Kind::Struct;
 

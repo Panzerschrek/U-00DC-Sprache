@@ -565,12 +565,12 @@ private:
 
 	Value BuildTypeinfoOperator( const Synt::TypeInfo& typeinfo_op, NamesScope& names, FunctionContext& function_context );
 	Variable BuildTypeInfo( const Type& type, NamesScope& root_namespace );
-	ClassProxyPtr CreateTypeinfoClass( NamesScope& root_namespace );
+	ClassProxyPtr CreateTypeinfoClass( NamesScope& root_namespace, const Type& src_type, const ProgramString& name );
 	Variable BuildTypeinfoPrototype( const Type& type, NamesScope& root_namespace );
 	void BuildFullTypeinfo( const Type& type, Variable& typeinfo_variable, NamesScope& root_namespace );
 	const Variable& GetTypeinfoListEndNode( NamesScope& root_namespace );
 	void FinishTypeinfoClass( Class& class_, const ClassProxyPtr class_proxy, const ClassFieldsVector<llvm::Type*>& fields_llvm_types );
-	Variable BuildTypeinfoEnumElementsList( const Enum& enum_type, NamesScope& root_namespace );
+	Variable BuildTypeinfoEnumElementsList( const EnumPtr& enum_type, NamesScope& root_namespace );
 	void CreateTypeinfoClassMembersListNodeCommonFields(
 		const Class& class_, const ClassProxyPtr& node_class_proxy,
 		const ProgramString& member_name,

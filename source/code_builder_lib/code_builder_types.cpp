@@ -280,6 +280,14 @@ Enum* Type::GetEnumType() const
 	return *enum_ptr;
 }
 
+EnumPtr Type::GetEnumTypePtr() const
+{
+	const EnumPtr* enum_ptr= boost::get<EnumPtr>( &something_ );
+	if( enum_ptr == nullptr )
+		return nullptr;
+	return *enum_ptr;
+}
+
 bool Type::ReferenceIsConvertibleTo( const Type& other ) const
 {
 	if( *this == other )

@@ -2231,7 +2231,7 @@ Value CodeBuilder::BuildMemberAccessOperator(
 	if( variable.constexpr_value != nullptr )
 	{
 		llvm::Constant* var_constexpr_value= variable.constexpr_value;
-		if( class_type->is_typeinfo ) // HACK!!! Replace old constexpr value with new for typeinfo, because constexpr value for incomplete type may be undef.
+		if( class_type->typeinfo_type != boost::none ) // HACK!!! Replace old constexpr value with new for typeinfo, because constexpr value for incomplete type may be undef.
 		{
 			for( const auto& typeinfo_cache_entry : typeinfo_cache_ )
 			{

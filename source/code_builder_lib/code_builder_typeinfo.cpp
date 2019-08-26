@@ -1,4 +1,5 @@
 #include "../lex_synt_lib/assert.hpp"
+#include "../lex_synt_lib/keywords.hpp"
 #include "mangling.hpp"
 #include "code_builder.hpp"
 
@@ -12,6 +13,15 @@ static const ProgramString g_next_node_name= "next"_SpC;
 static const ProgramString g_name_field_name= "name"_SpC;
 static const ProgramString g_type_field_name= "type"_SpC;
 static const FilePos g_dummy_file_pos{ 0u, 0u, 0u };
+
+static const ProgramString g_typeinfo_root_class_name= "TI"_SpC;
+static const ProgramString g_typeinfo_enum_elements_list_node_class_name= "TIEL_"_SpC;
+static const ProgramString g_typeinfo_class_fields_list_node_class_name= "TICFL_"_SpC;
+static const ProgramString g_typeinfo_class_types_list_node_class_name= "TICTL_"_SpC;
+static const ProgramString g_typeinfo_class_functions_list_node_class_name= "TICFL_"_SpC;
+static const ProgramString g_typeinfo_class_parents_list_node_class_name= "TICPL_"_SpC;
+static const ProgramString g_typeinfo_function_arguments_list_node_class_name= "TIAL_"_SpC;
+static const ProgramString g_typeinfo_tuple_elements_list_node_class_name= "TITL_"_SpC;
 
 static std::string GetTypeinfoVariableName( const ClassProxyPtr& typeinfo_class )
 {
@@ -38,19 +48,18 @@ Variable CodeBuilder::BuildTypeInfo( const Type& type, NamesScope& root_namespac
 	return typeinfo_cache_.back().second;
 }
 
-ClassProxyPtr CodeBuilder::CreateTypeinfoClass( NamesScope& root_namespace )
+ClassProxyPtr CodeBuilder::CreateTypeinfoClass( NamesScope& root_namespace, const Type& src_type, const ProgramString& name )
 {
 	// Currently, give "random" names for typeinfo classes.
 	llvm::StructType* const llvm_type= llvm::StructType::create( llvm_context_ );
 
-	const ProgramString typeinfo_class_name= "_typeinfo_"_SpC + ToProgramString(std::to_string(reinterpret_cast<uintptr_t>(llvm_type)));
 	const ClassProxyPtr typeinfo_class_proxy= std::make_shared<ClassProxy>();
-	typeinfo_class_table_[typeinfo_class_proxy].reset( new Class( typeinfo_class_name, &root_namespace ) );
+	typeinfo_class_table_[typeinfo_class_proxy].reset( new Class( name, &root_namespace ) );
 	typeinfo_class_proxy->class_= typeinfo_class_table_[typeinfo_class_proxy].get();
 	typeinfo_class_proxy->class_->llvm_type= llvm_type;
-	typeinfo_class_proxy->class_->is_typeinfo= true;
+	typeinfo_class_proxy->class_->typeinfo_type= src_type;
 
-	llvm_type->setName( ToUTF8( typeinfo_class_name ) );
+	llvm_type->setName( MangleType( typeinfo_class_proxy ) );
 
 	typeinfo_class_proxy->class_->references_tags_count= 1u; // Almost all typeinfo have references to another typeinfo.
 	typeinfo_class_proxy->class_->completeness=  TypeCompleteness::ReferenceTagsComplete;
@@ -62,7 +71,7 @@ Variable CodeBuilder::BuildTypeinfoPrototype( const Type& type, NamesScope& root
 {
 	U_UNUSED(type);
 
-	const ClassProxyPtr typeinfo_class_proxy= CreateTypeinfoClass( root_namespace );
+	const ClassProxyPtr typeinfo_class_proxy= CreateTypeinfoClass( root_namespace, type, g_typeinfo_root_class_name );
 	Variable result( typeinfo_class_proxy, Variable::Location::Pointer, ValueType::ConstReference );
 
 	result.constexpr_value= llvm::UndefValue::get( typeinfo_class_proxy->class_->llvm_type ); // Currently uninitialized.
@@ -179,7 +188,7 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, Variable& typeinfo_variab
 	{
 		add_size_field( "element_count"_SpC, enum_type->element_count );
 		add_typeinfo_field( "underlaying_type"_SpC, enum_type->underlaying_type );
-		add_list_field( "elements_list"_SpC, BuildTypeinfoEnumElementsList( *enum_type, root_namespace ) );
+		add_list_field( "elements_list"_SpC, BuildTypeinfoEnumElementsList( type.GetEnumTypePtr(), root_namespace ) );
 	}
 	else if( const Array* const array_type= type.GetArrayType() )
 	{
@@ -232,7 +241,7 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, Variable& typeinfo_variab
 
 		add_bool_field( "is_interface"_SpC, class_type->kind == Class::Kind::Interface );
 
-		add_bool_field( "is_typeinfo"_SpC, class_type->is_typeinfo );
+		add_bool_field( "is_typeinfo"_SpC, class_type->typeinfo_type != boost::none );
 		add_bool_field( "shared"_SpC, class_type->have_shared_state );
 	}
 	else if( const FunctionPointer* const function_pointer_type= type.GetFunctionPointerType() )
@@ -267,21 +276,26 @@ void CodeBuilder::FinishTypeinfoClass( Class& class_, const ClassProxyPtr class_
 	// Generate only destructor, because almost all structs and classes must have it.
 	// Other methods - constructors, assignment operators does not needs for typeinfo classes.
 	TryGenerateDestructor( class_, class_proxy );
+
+	// HACK! Correct destructor name, because regular mangling does not works correctly for it.
+	llvm::Function* const destructor= class_.members.GetThisScopeValue( Keyword( Keywords::destructor_ ) )->GetFunctionsSet()->functions.front().llvm_function;
+	destructor->setName( MangleType( class_proxy ) + "D0" );
+	destructor->setComdat( module_->getOrInsertComdat( destructor->getName() ) );
 }
 
-Variable CodeBuilder::BuildTypeinfoEnumElementsList( const Enum& enum_type, NamesScope& root_namespace )
+Variable CodeBuilder::BuildTypeinfoEnumElementsList( const EnumPtr& enum_type, NamesScope& root_namespace )
 {
 	Tuple list_type;
 	std::vector< llvm::Type* > list_elements_llvm_types;
 	std::vector< llvm::Constant* > list_elements_initializers;
-	list_type.elements.reserve( enum_type.element_count );
-	list_elements_llvm_types.reserve( enum_type.element_count );
-	list_elements_initializers.reserve( enum_type.element_count );
+	list_type.elements.reserve( enum_type->element_count );
+	list_elements_llvm_types.reserve( enum_type->element_count );
+	list_elements_initializers.reserve( enum_type->element_count );
 
-	enum_type.members.ForEachInThisScope(
+	enum_type->members.ForEachInThisScope(
 		[&]( const ProgramString& name, const Value& enum_member )
 		{
-			const ClassProxyPtr node_type= CreateTypeinfoClass( root_namespace );
+			const ClassProxyPtr node_type= CreateTypeinfoClass( root_namespace, enum_type, g_typeinfo_enum_elements_list_node_class_name + name );
 			Class& node_type_class= *node_type->class_;
 
 			ClassFieldsVector<llvm::Type*> fields_llvm_types;
@@ -289,8 +303,8 @@ Variable CodeBuilder::BuildTypeinfoEnumElementsList( const Enum& enum_type, Name
 
 			node_type_class.members.AddName(
 				"value"_SpC,
-				Value( ClassField( node_type, enum_type.underlaying_type, static_cast<unsigned int>(fields_llvm_types.size()), true, false ), g_dummy_file_pos ) );
-			fields_llvm_types.push_back( enum_type.underlaying_type.llvm_type );
+				Value( ClassField( node_type, enum_type->underlaying_type, static_cast<unsigned int>(fields_llvm_types.size()), true, false ), g_dummy_file_pos ) );
+			fields_llvm_types.push_back( enum_type->underlaying_type.llvm_type );
 			fields_initializers.push_back( enum_member.GetVariable()->constexpr_value );
 
 			{
@@ -387,7 +401,7 @@ Variable CodeBuilder::BuildTypeinfoClassFieldsList( const ClassProxyPtr& class_t
 			if( class_field == nullptr )
 				return;
 
-			const ClassProxyPtr node_type= CreateTypeinfoClass( root_namespace );
+			const ClassProxyPtr node_type= CreateTypeinfoClass( root_namespace, class_type, g_typeinfo_class_fields_list_node_class_name + member_name );
 			Class& node_type_class= *node_type->class_;
 
 			ClassFieldsVector<llvm::Type*> fields_llvm_types;
@@ -484,7 +498,7 @@ Variable CodeBuilder::BuildTypeinfoClassTypesList( const ClassProxyPtr& class_ty
 			if( class_inner_type == nullptr )
 				return;
 
-			const ClassProxyPtr node_type= CreateTypeinfoClass( root_namespace );
+			const ClassProxyPtr node_type= CreateTypeinfoClass( root_namespace, class_type, g_typeinfo_class_types_list_node_class_name + name );
 			Class& node_type_class= *node_type->class_;
 
 			ClassFieldsVector<llvm::Type*> fields_llvm_types;
@@ -534,7 +548,11 @@ Variable CodeBuilder::BuildTypeinfoClassFunctionsList( const ClassProxyPtr& clas
 				return;
 			for( const FunctionVariable& function : functions_set->functions )
 			{
-				const ClassProxyPtr node_type= CreateTypeinfoClass( root_namespace );
+				const ClassProxyPtr node_type=
+					CreateTypeinfoClass(
+						root_namespace,
+						class_type,
+						g_typeinfo_class_functions_list_node_class_name + ToProgramString( function.llvm_function->getName().str() ) );
 				Class& node_type_class= *node_type->class_;
 
 				ClassFieldsVector<llvm::Type*> fields_llvm_types;
@@ -609,7 +627,7 @@ Variable CodeBuilder::BuildeTypeinfoClassParentsList( const ClassProxyPtr& class
 
 	for( size_t i= 0u; i < class_.parents.size(); ++i )
 	{
-		const ClassProxyPtr node_type= CreateTypeinfoClass( root_namespace );
+		const ClassProxyPtr node_type= CreateTypeinfoClass( root_namespace, class_type, g_typeinfo_class_parents_list_node_class_name + ToProgramString( std::to_string(i) ) );
 		Class& node_type_class= *node_type->class_;
 
 		ClassFieldsVector<llvm::Type*> fields_llvm_types;
@@ -661,7 +679,8 @@ Variable CodeBuilder::BuildTypeinfoFunctionArguments( const Function& function_t
 
 	for( const Function::Arg& arg : function_type.args )
 	{
-		const ClassProxyPtr node_type= CreateTypeinfoClass( root_namespace );
+		const size_t arg_index= size_t(&arg - function_type.args.data());
+		const ClassProxyPtr node_type= CreateTypeinfoClass( root_namespace, function_type, g_typeinfo_function_arguments_list_node_class_name + ToProgramString( std::to_string(arg_index) ) );
 		Class& node_type_class= *node_type->class_;
 
 		ClassFieldsVector<llvm::Type*> fields_llvm_types;
@@ -724,7 +743,7 @@ Variable CodeBuilder::BuildypeinfoTupleElements( const Tuple& tuple_type, NamesS
 	{
 		const size_t element_index= size_t( &element_type - tuple_type.elements.data() );
 
-		const ClassProxyPtr node_type= CreateTypeinfoClass( root_namespace );
+		const ClassProxyPtr node_type= CreateTypeinfoClass( root_namespace, tuple_type, g_typeinfo_tuple_elements_list_node_class_name + ToProgramString( std::to_string(element_index) ) );
 		Class& node_type_class= *node_type->class_;
 
 		ClassFieldsVector<llvm::Type*> fields_llvm_types;

@@ -349,7 +349,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type, const T
 		( the_class.syntax_element != nullptr && the_class.syntax_element->is_forward_declaration_ ) )
 		return;
 
-	if( the_class.is_typeinfo )
+	if( the_class.typeinfo_type != boost::none )
 	{
 		if( completeness <= TypeCompleteness::ReferenceTagsComplete )
 			return;

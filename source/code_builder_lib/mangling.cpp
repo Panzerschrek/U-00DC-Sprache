@@ -257,7 +257,22 @@ static NamePair GetTypeName_r( const Type& type, NamesCache& names_cache )
 	}
 	else if( const Class* const class_type= type.GetClassType() )
 	{
-		result= GetNestedName( class_type->members.GetThisNamespaceName(), true, *class_type->members.GetParent(), false, names_cache );
+		if( class_type->typeinfo_type != boost::none )
+		{
+			result.full= class_type->members.GetThisNamespaceName();
+			result.compressed_and_escaped= result.full;
+			const NamePair dependent_type_name= GetTypeName_r( *class_type->typeinfo_type, names_cache );
+			result.full+= dependent_type_name.full;
+			result.compressed_and_escaped+= dependent_type_name.compressed_and_escaped;
+
+			const size_t replacement_candidate= names_cache.GetRepalcement( result.full );
+			if( replacement_candidate != std::numeric_limits<size_t>::max() )
+				result.compressed_and_escaped= names_cache.RetReplacementString( replacement_candidate );
+			else
+				names_cache.AddName( result.full );
+		}
+		else
+			result= GetNestedName( class_type->members.GetThisNamespaceName(), true, *class_type->members.GetParent(), false, names_cache );
 	}
 	else if( const Enum* const enum_type= type.GetEnumType() )
 	{
