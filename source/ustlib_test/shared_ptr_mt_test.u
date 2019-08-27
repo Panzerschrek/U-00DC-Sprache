@@ -66,7 +66,7 @@ fn U_Main() : i32
 		var IntPtrNullableMut  mut ptr_mut (5);
 		var IntPtrNullableImut mut ptr_imut(7);
 
-		halt if( ptr_mut. lock_mut ().get_ref() != 5 );
+		{ auto mut l= ptr_mut.lock_mut(); halt if( l.get_ref() != 5 ); }
 		halt if( ptr_imut.lock_imut().get_ref() != 7 );
 
 		ptr_mut.reset ();
@@ -76,8 +76,8 @@ fn U_Main() : i32
 	}
 	{ // Can modyfy stored value.
 		var IntPtrMut ptr(99);
-		++ptr.lock_mut().get_ref();
-		halt if( ptr.lock_mut ().get_ref() != 100 );
+		{ auto mut l= ptr.lock_mut(); ++l.get_ref(); }
+		{ auto mut l= ptr.lock_mut(); halt if( l.get_ref() != 100 ); }
 		halt if( ptr.lock_imut().get_ref() != 100 );
 	}
 	{ // Can share value
@@ -87,11 +87,11 @@ fn U_Main() : i32
 		halt if( ptr0.lock_imut().get_ref() != 42 );
 		halt if( ptr1.lock_imut().get_ref() != 42 );
 
-		ptr0.lock_mut().get_ref()= 66;
+		{ auto mut l= ptr0.lock_mut(); l.get_ref()= 66; }
 		halt if( ptr0.lock_imut().get_ref() != 66 );
 		halt if( ptr1.lock_imut().get_ref() != 66 );
 
-		--ptr1.lock_mut().get_ref();
+		{ auto mut l= ptr1.lock_mut(); --l.get_ref(); }
 		halt if( ptr0.lock_imut().get_ref() != 65 );
 		halt if( ptr1.lock_imut().get_ref() != 65 );
 	}
@@ -123,7 +123,7 @@ fn U_Main() : i32
 		halt if( ptr0.lock_imut().get_ref() != 37 );
 		halt if( ptr1.lock_imut().get_ref() != 20 );
 
-		ptr1.lock_mut().get_ref()= 91;
+		{ auto mut l= ptr1.lock_mut(); l.get_ref()= 91; }
 		halt if( ptr0.lock_imut().get_ref() != 37 );
 		halt if( ptr1.lock_imut().get_ref() != 91 );
 	}
@@ -140,7 +140,7 @@ fn U_Main() : i32
 		var IntPtrMut ptr(0);
 
 		halt if( IsMut( ptr.lock_imut().get_ref() ) );
-		halt if( !IsMut( ptr.lock_mut().get_ref() ) );
+		{ auto mut l= ptr.lock_mut(); halt if( !IsMut( l.get_ref() ) ); }
 	}
 	{ // construct shared_ptr from weak ptr.
 		var IntPtrMut mut ptr0(11);

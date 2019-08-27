@@ -24,7 +24,8 @@ struct Incrementer
 	ust::shared_ptr_mt_mut</ i32 /> ptr;
 	op()( mut this )
 	{
-		++ptr.lock_mut().get_ref();
+		auto mut lock= ptr.lock_mut();
+		++lock.get_ref();
 	}
 }
 

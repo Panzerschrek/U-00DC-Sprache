@@ -309,9 +309,12 @@ public:
 	}
 
 	// Mark reference by "this" tag, instead of inner tag, for prevention of "lock" destruction.
-	fn get_ref( this'this' ) : T &'this  mut
+	fn get_ref( mut this ) : T &'this  mut
 	{
-		return value_;
+		unsafe
+		{
+			return cast_mut( cast_ref_unsafe</T/>( int_to_ref( ref_to_int( value_ ) ) ) );
+		}
 	}
 
 private:
@@ -335,9 +338,12 @@ public:
 	}
 
 	// Mark reference by "this" tag, instead of inner tag, for prevention of "lock" destruction.
-	fn get_ref( this'this' ) : T &'this imut
+	fn get_ref( this ) : T &'this imut
 	{
-		return value_;
+		unsafe
+		{
+			return cast_ref_unsafe</T/>( int_to_ref( ref_to_int( value_ ) ) );
+		}
 	}
 
 private:
