@@ -18,6 +18,15 @@ struct NamePair final
 	ProgramString compressed_and_escaped;
 };
 
+static sprache_char Base36Digit( size_t value )
+{
+	value %= 36u;
+	if( value < 10 )
+		return sprache_char('0' + value);
+	else
+		return sprache_char('A' + ( value - 10 ) );
+}
+
 class NamesCache final
 {
 public:
@@ -51,11 +60,7 @@ public:
 		{
 			const size_t base36_digit= n % 36u;
 			n/= 36u;
-
-			if( base36_digit <= 9u )
-				result.insert( result.begin(), sprache_char( '0' + base36_digit ) );
-			else
-				result.insert( result.begin(), sprache_char( 'A' + ( base36_digit - 10u ) ) );
+			result.insert( result.begin(), Base36Digit( base36_digit ) );
 		}
 		while( n > 0u );
 
@@ -349,6 +354,61 @@ static NamePair GetTypeName_r( const Type& type, NamesCache& names_cache )
 
 			result.full+= type_name.full;
 			result.compressed_and_escaped+= type_name.compressed_and_escaped;
+		}
+
+		if( !function->return_references.empty() )
+		{
+			ProgramString rr;
+			rr+= "_RR"_SpC;
+
+			U_ASSERT( function->return_references.size() < 36u );
+			rr.push_back( Base36Digit(function->return_references.size()) );
+
+			for( const Function::ArgReference& arg_and_tag : function->return_references )
+			{
+				U_ASSERT( arg_and_tag.first  < 36u );
+				U_ASSERT( arg_and_tag.second < 36u || arg_and_tag.second == Function::c_arg_reference_tag_number );
+
+				rr.push_back( Base36Digit(arg_and_tag.first) );
+				rr.push_back(
+					arg_and_tag.second == Function::c_arg_reference_tag_number
+					? sprache_char('_') :
+					Base36Digit(arg_and_tag.second) );
+			}
+
+			result.full+= rr;
+			result.compressed_and_escaped+= rr;
+		}
+		if( !function->references_pollution.empty() )
+		{
+			ProgramString rp;
+			rp+= "_RP"_SpC;
+
+			U_ASSERT( function->references_pollution.size() < 36u );
+			rp.push_back( Base36Digit(function->references_pollution.size()) );
+
+			for( const Function::ReferencePollution& pollution : function->references_pollution )
+			{
+				U_ASSERT( pollution.dst.first  < 36u );
+				U_ASSERT( pollution.dst.second < 36u || pollution.dst.second == Function::c_arg_reference_tag_number );
+				U_ASSERT( pollution.src.first  < 36u );
+				U_ASSERT( pollution.src.second < 36u || pollution.src.second == Function::c_arg_reference_tag_number );
+
+				rp.push_back( Base36Digit(pollution.dst.first) );
+				rp.push_back(
+					pollution.dst.second == Function::c_arg_reference_tag_number
+					? sprache_char('_') :
+					Base36Digit(pollution.dst.second) );
+				rp.push_back( Base36Digit(pollution.src.first) );
+				rp.push_back(
+					pollution.src.second == Function::c_arg_reference_tag_number
+					? sprache_char('_') :
+					Base36Digit(pollution.src.second) );
+				rp.push_back( pollution.src_is_mutable ? '1' : '0' );
+			}
+
+			result.full+= rp;
+			result.compressed_and_escaped+= rp;
 		}
 
 		const ProgramString function_prefix= "F"_SpC + (function->unsafe ? "unsafe"_SpC : ""_SpC);
