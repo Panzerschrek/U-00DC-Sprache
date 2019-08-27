@@ -819,14 +819,14 @@ bool Function::ReferencePollution::operator==( const ReferencePollution& other )
 	return this->dst == other.dst && this->src == other.src && this->src_is_mutable == other.src_is_mutable;
 }
 
-size_t Function::ReferencePollutionHasher::operator()( const ReferencePollution& r ) const
+bool Function::ReferencePollution::operator<( const ReferencePollution& other ) const
 {
-	size_t result= 0u;
-	boost::hash_combine( result, r.dst.first );
-	boost::hash_combine( result, r.dst.second );
-	boost::hash_combine( result, r.src.first );
-	boost::hash_combine( result, r.src.second );
-	return result;
+	// Order is significant, because references pollution is part of stable function type.
+	if( this->dst != other.dst )
+		return this->dst < other.dst;
+	if( this->src != other.src )
+		return this->src < other.src;
+	return this->src_is_mutable < other.src_is_mutable;
 }
 
 bool FunctionVariable::VirtuallyEquals( const FunctionVariable& other ) const

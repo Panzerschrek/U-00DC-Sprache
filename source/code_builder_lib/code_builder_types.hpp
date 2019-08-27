@@ -181,27 +181,25 @@ public:
 		ArgReference src; // second = ~0, if reference itself, else - inner reference.
 		bool src_is_mutable= true;
 		bool operator==( const ReferencePollution& other ) const;
-	};
-
-	struct ReferencePollutionHasher
-	{
-		size_t operator()( const ReferencePollution& r ) const;
+		bool operator<( const ReferencePollution& other ) const;
 	};
 
 	bool PointerCanBeConvertedTo( const Function& other ) const;
 
 public:
 	// If this changed, virtual functions compare function must be changed too!
+	ArgsVector<Arg> args;
 	Type return_type;
 	bool return_value_is_reference= false;
 	bool return_value_is_mutable= false;
-	ArgsVector<Arg> args;
 	bool unsafe= false;
+
+	// Use "std::set" for references description, because we needs stable order for function type mangling.
 
 	// for functions, returning references this is references of reference itslef.
 	// For function, returning values, this is inner references.
-	ArgsVector<ArgReference> return_references;
-	std::unordered_set< ReferencePollution, ReferencePollutionHasher > references_pollution;
+	std::set<ArgReference> return_references;
+	std::set<ReferencePollution> references_pollution;
 
 	llvm::FunctionType* llvm_function_type= nullptr;
 };
