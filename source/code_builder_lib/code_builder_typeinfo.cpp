@@ -147,7 +147,6 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, Variable& typeinfo_variab
 
 	// Fields sorted by alignment - first, "size_type" types and reference types, then, bool types.
 
-	const llvm::DataLayout& data_layout= module_->getDataLayout();
 	if( type.GetFunctionType() == nullptr )
 	{
 		llvm::Type* llvm_type= type.GetLLVMType();
@@ -155,8 +154,8 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, Variable& typeinfo_variab
 			llvm_type= fundamental_llvm_types_.void_;
 
 		// see llvm/lib/IR/DataLayout.cpp:40
-		add_size_field( "size_of"_SpC , data_layout.getTypeAllocSize   ( llvm_type ) );
-		add_size_field( "align_of"_SpC, data_layout.getABITypeAlignment( llvm_type ) );
+		add_size_field( "size_of"_SpC , data_layout_.getTypeAllocSize   ( llvm_type ) );
+		add_size_field( "align_of"_SpC, data_layout_.getABITypeAlignment( llvm_type ) );
 	}
 
 	add_size_field( "references_tags_count"_SpC, type.ReferencesTagsCount() );
@@ -392,8 +391,6 @@ Variable CodeBuilder::BuildTypeinfoClassFieldsList( const ClassProxyPtr& class_t
 	list_elements_llvm_types.reserve( class_type->class_->field_count );
 	list_elements_initializers.reserve( class_type->class_->field_count );
 
-	const llvm::DataLayout& data_layout= module_->getDataLayout();
-
 	class_type->class_->members.ForEachInThisScope(
 		[&]( const ProgramString& member_name, const Value& class_member )
 		{
@@ -431,13 +428,13 @@ Variable CodeBuilder::BuildTypeinfoClassFieldsList( const ClassProxyPtr& class_t
 				{
 					if( class_for_field_search == class_field->class_.lock() )
 					{
-						offset+= data_layout.getStructLayout( class_for_field_search->class_->llvm_type )->getElementOffset( class_field->index );
+						offset+= data_layout_.getStructLayout( class_for_field_search->class_->llvm_type )->getElementOffset( class_field->index );
 						break;
 					}
 					else
 					{
 						U_ASSERT( class_for_field_search->class_->base_class != nullptr );
-						offset+= data_layout.getStructLayout( class_for_field_search->class_->llvm_type )->getElementOffset( 0u /*base class is allways first field */ );
+						offset+= data_layout_.getStructLayout( class_for_field_search->class_->llvm_type )->getElementOffset( 0u /*base class is allways first field */ );
 						class_for_field_search= class_for_field_search->class_->base_class;
 					}
 				}
@@ -616,7 +613,7 @@ Variable CodeBuilder::BuildTypeinfoClassFunctionsList( const ClassProxyPtr& clas
 Variable CodeBuilder::BuildeTypeinfoClassParentsList( const ClassProxyPtr& class_type, NamesScope& root_namespace )
 {
 	const Class& class_= *class_type->class_;
-	const llvm::StructLayout* const struct_layout= module_->getDataLayout().getStructLayout( class_.llvm_type );
+	const llvm::StructLayout* const struct_layout= data_layout_.getStructLayout( class_.llvm_type );
 
 	Tuple list_type;
 	std::vector< llvm::Type* > list_elements_llvm_types;
