@@ -1570,28 +1570,17 @@ Type CodeBuilder::BuildFuncCode(
 		++arg_number;
 	}
 
+	// Fill list of allowed for returning references.
 	if( function_type->return_value_is_reference || function_type->return_type.ReferencesTagsCount() > 0u )
 	{
-		// Fill list of allowed for returning references.
-		for (size_t i= 0u; i < function_type->args.size(); ++i )
+		for( const Function::ArgReference& arg_and_tag : function_type->return_references )
 		{
-			// For reference arguments try add reference to list of allowed for returning references.
-			for( const Function::ArgReference& arg_and_tag : function_type->return_references )
-			{
-				if( arg_and_tag.first == i )
-				{
-					if( arg_and_tag.second == Function::c_arg_reference_tag_number )
-					{
-						function_context.allowed_for_returning_references.emplace( args_nodes[i].first );
-						break;
-					}
-					else if( arg_and_tag.second == 0u && args_nodes[i].second != nullptr )
-					{
-						function_context.allowed_for_returning_references.emplace( args_nodes[i].second );
-						break;
-					}
-				}
-			}
+			const size_t arg_n= arg_and_tag.first;
+			U_ASSERT( arg_n < args_nodes.size() );
+			if( arg_and_tag.second == Function::c_arg_reference_tag_number )
+				function_context.allowed_for_returning_references.emplace( args_nodes[arg_n].first );
+			else if( arg_and_tag.second == 0u && args_nodes[arg_n].second != nullptr )
+				function_context.allowed_for_returning_references.emplace( args_nodes[arg_n].second );
 		}
 	}
 
@@ -1687,7 +1676,7 @@ Type CodeBuilder::BuildFuncCode(
 				can_be_constexpr= false;
 
 			// We support constexpr functions with mutable reference-arguments, but such functions can not be used as root for constexpr function evaluation.
-			// We support also constexpr constructors (except constexpr copy constructors), but constexpr constructors currently can not e used for constexpr variables initialization.
+			// We support also constexpr constructors (except constexpr copy constructors), but constexpr constructors currently can not be used for constexpr variables initialization.
 		}
 
 		if( auto_contexpr )

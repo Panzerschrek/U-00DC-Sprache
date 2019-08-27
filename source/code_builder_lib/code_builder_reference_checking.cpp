@@ -186,8 +186,7 @@ void CodeBuilder::TryGenerateFunctionReturnReferencesMapping(
 {
 	// Generate mapping of input references to output references, if reference tags are not specified explicitly.
 
-	if( function_type.return_value_is_reference &&
-		( function_type.return_references.empty() && function_type.return_references.empty() ) )
+	if( function_type.return_value_is_reference && function_type.return_references.empty() )
 	{
 		if( !func.return_value_reference_tag_.empty() )
 		{
