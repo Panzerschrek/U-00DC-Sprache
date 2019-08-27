@@ -430,6 +430,8 @@ LexicalAnalysisResult LexicalAnalysis( const sprache_char* const program_text_da
 	Iterator it= program_text_data;
 	const Iterator it_end= program_text_data + program_text_size;
 
+	int comments_depth= 0;
+
 	unsigned short line= 1; // Count lines from "1", in human-readable format.
 	Iterator last_newline_it= program_text_data;
 
@@ -467,6 +469,40 @@ LexicalAnalysisResult LexicalAnalysis( const sprache_char* const program_text_da
 			last_newline_it= it;
 			continue;
 		}
+		if( c == '/' && it_end - it > 1 && *(it+1) == '*' )
+		{
+			++comments_depth;
+			if( collect_comments )
+			{
+				Lexem comment_lexem;
+				comment_lexem.file_pos.line= line;
+				comment_lexem.file_pos.pos_in_line= pos_in_line;
+				comment_lexem.type= Lexem::Type::Comment;
+				comment_lexem.text= "/*"_SpC;
+				result.lexems.emplace_back( std::move(comment_lexem) );
+			}
+			it+= 2;
+			continue;
+		}
+		if( c == '*' && it_end - it > 1 && *(it+1) == '/' )
+		{
+			--comments_depth;
+			if( collect_comments )
+			{
+				Lexem comment_lexem;
+				comment_lexem.file_pos.line= line;
+				comment_lexem.file_pos.pos_in_line= pos_in_line;
+				comment_lexem.type= Lexem::Type::Comment;
+				comment_lexem.text= "*/"_SpC;
+				result.lexems.emplace_back( std::move(comment_lexem) );
+			}
+			else if( comments_depth < 0 )
+				result.error_messages.emplace_back(
+					std::to_string(line) + ":" + std::to_string(it - last_newline_it) +
+					" Lexical error: unexpected */" );
+			it+= 2;
+			continue;
+		}
 		else if( IsNewline(c) )
 		{
 			++line;
@@ -487,7 +523,8 @@ LexicalAnalysisResult LexicalAnalysis( const sprache_char* const program_text_da
 				// Parse string suffix.
 				lexem.file_pos.line= line;
 				lexem.file_pos.pos_in_line= pos_in_line;
-				result.lexems.emplace_back( std::move(lexem) );
+				if( comments_depth == 0 || collect_comments )
+					result.lexems.emplace_back( std::move(lexem) );
 
 				lexem= ParseIdentifier( it, it_end );
 				lexem.type= Lexem::Type::LiteralSuffix;
@@ -522,21 +559,30 @@ LexicalAnalysisResult LexicalAnalysis( const sprache_char* const program_text_da
 				fixed_lexem_str.pop_back();
 			}
 
-			result.error_messages.emplace_back(
-				std::to_string(line) + ":" + std::to_string(it - last_newline_it) +
-				" Lexical error: unrecognized character: " + std::to_string(*it) );
+			if( comments_depth == 0 )
+				result.error_messages.emplace_back(
+					std::to_string(line) + ":" + std::to_string(it - last_newline_it) +
+					" Lexical error: unrecognized character: " + std::to_string(*it) );
 			++it;
 			continue;
 		}
 
 	push_lexem:
+		if( comments_depth != 0 && !collect_comments )
+			continue;
+
 		lexem.file_pos.file_index= 0;
 		lexem.file_pos.line= line;
 		lexem.file_pos.pos_in_line= static_cast<unsigned short>( pos_in_line );
 
 		result.lexems.emplace_back( std::move(lexem) );
-
 	} // while not end
+
+	if( !collect_comments )
+		for( int i= 0; i < comments_depth; ++i )
+			result.error_messages.emplace_back(
+				std::to_string(line) + ":" + std::to_string(it - last_newline_it) +
+				" Lexical error: expected */" );
 
 	Lexem eof_lexem;
 	eof_lexem.type= Lexem::Type::EndOfFile;

@@ -63,6 +63,9 @@ void SyntaxHighlighter::highlightBlock( const QString& text )
 		return;
 	}
 
+	const int prev_comments_state= std::max( 0, previousBlockState() );
+	int cur_comments_state= prev_comments_state;
+
 	QVector<TextEditor::Parenthesis> parentheses;
 
 	setFormat( 0, text.size(), formatForCategory( int(Formats::Whitespace) ) );
@@ -89,7 +92,12 @@ void SyntaxHighlighter::highlightBlock( const QString& text )
 		switch( lexem.type )
 		{
 		case Lexem::Type::Comment:
-			format= Formats::Comment; break;
+			format= Formats::Comment;
+			if( lexem.text == "/*"_SpC )
+				++cur_comments_state;
+			else if( lexem.text == "*/"_SpC )
+				--cur_comments_state;
+			break;
 
 		case Lexem::Type::Identifier:
 			if( IsKeyword( lexem.text ) )
@@ -115,6 +123,8 @@ void SyntaxHighlighter::highlightBlock( const QString& text )
 		default:
 			format= Formats::Regular; break;
 		}
+		if( cur_comments_state != 0 )
+			format= Formats::Comment;
 
 		setFormat( current_linear_pos, next_linear_pos, formatForCategory( int(format) ) );
 
@@ -147,6 +157,7 @@ void SyntaxHighlighter::highlightBlock( const QString& text )
 		}
 	} // for lexems
 
+	setCurrentBlockState( cur_comments_state );
 	TextEditor::TextDocumentLayout::setParentheses(currentBlock(), parentheses);
 }
 
