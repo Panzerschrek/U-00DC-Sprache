@@ -1575,25 +1575,17 @@ Type CodeBuilder::BuildFuncCode(
 		// Fill list of allowed for returning references.
 		for (size_t i= 0u; i < function_type->args.size(); ++i )
 		{
-			const Function::Arg& arg= function_type->args[i];
-
 			// For reference arguments try add reference to list of allowed for returning references.
-			if( arg.is_reference )
+			for( const Function::ArgReference& arg_and_tag : function_type->return_references )
 			{
-				for( const size_t arg_n : function_type->return_references.args_references )
+				if( arg_and_tag.first == i )
 				{
-					if( arg_n == i )
+					if( arg_and_tag.second == Function::c_arg_reference_tag_number )
 					{
 						function_context.allowed_for_returning_references.emplace( args_nodes[i].first );
 						break;
 					}
-				}
-			}
-			if( arg.type.ReferencesTagsCount() > 0u )
-			{
-				for( const Function::ArgReference& arg_and_tag : function_type->return_references.inner_args_references )
-				{
-					if( arg_and_tag.first == i && arg_and_tag.second == 0u )
+					else if( arg_and_tag.second == 0u && args_nodes[i].second != nullptr )
 					{
 						function_context.allowed_for_returning_references.emplace( args_nodes[i].second );
 						break;

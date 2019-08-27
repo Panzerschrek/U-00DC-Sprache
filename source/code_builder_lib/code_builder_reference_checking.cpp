@@ -42,20 +42,20 @@ void CodeBuilder::ProcessFunctionArgReferencesTags(
 		// Arg reference to return reference
 		if( out_arg.is_reference && !in_arg.reference_tag_.empty() &&
 			in_arg.reference_tag_ == func.return_value_reference_tag_ )
-			function_type.return_references.args_references.push_back( arg_number );
+			function_type.return_references.emplace_back( arg_number, Function::c_arg_reference_tag_number );
 
 		// Inner arg references to return reference
 		for( size_t tag_number= 0u; tag_number < regular_tag_count; ++tag_number )
 		{
 			if( in_arg.inner_arg_reference_tags_[tag_number] == func.return_value_reference_tag_ )
-				function_type.return_references.inner_args_references.emplace_back( arg_number, tag_number );
+				function_type.return_references.emplace_back( arg_number, tag_number );
 		}
 		if( has_continuous_tag )
 		{
 			for( size_t tag_number= regular_tag_count; tag_number < arg_reference_tag_count; ++tag_number )
 			{
 				if( in_arg.inner_arg_reference_tags_[regular_tag_count] == func.return_value_reference_tag_ )
-					function_type.return_references.inner_args_references.emplace_back( arg_number, tag_number );
+					function_type.return_references.emplace_back( arg_number, tag_number );
 			}
 		}
 	}
@@ -73,14 +73,14 @@ void CodeBuilder::ProcessFunctionArgReferencesTags(
 			for( size_t ret_tag_number= 0u; ret_tag_number < return_value_regular_tag_count; ++ ret_tag_number )
 			{
 				if( func.return_value_inner_reference_tags_[ret_tag_number] == in_arg.reference_tag_ )
-					function_type.return_references.args_references.push_back( arg_number );
+					function_type.return_references.emplace_back( arg_number, Function::c_arg_reference_tag_number );
 			}
 			if( return_value_has_continuous_tag )
 			{
 				for( size_t ret_tag_number= return_value_regular_tag_count; ret_tag_number < return_value_reference_tag_count; ++ret_tag_number )
 				{
 					if( func.return_value_inner_reference_tags_[return_value_regular_tag_count] == in_arg.reference_tag_ )
-						function_type.return_references.args_references.push_back( arg_number );
+						function_type.return_references.emplace_back( arg_number, Function::c_arg_reference_tag_number );
 				}
 			}
 		}
@@ -94,14 +94,14 @@ void CodeBuilder::ProcessFunctionArgReferencesTags(
 				for( size_t ret_tag_number= 0u; ret_tag_number < return_value_regular_tag_count; ++ ret_tag_number )
 				{
 					if( arg_tag == func.return_value_inner_reference_tags_[ret_tag_number] )
-						function_type.return_references.inner_args_references.emplace_back( arg_number, arg_tag_number );
+						function_type.return_references.emplace_back( arg_number, arg_tag_number );
 				}
 				if( return_value_has_continuous_tag )
 				{
 					for( size_t ret_tag_number= return_value_regular_tag_count; ret_tag_number < return_value_reference_tag_count; ++ret_tag_number )
 					{
 						if( arg_tag == func.return_value_inner_reference_tags_[return_value_regular_tag_count] )
-							function_type.return_references.inner_args_references.emplace_back( arg_number, arg_tag_number );
+							function_type.return_references.emplace_back( arg_number, arg_tag_number );
 					}
 				}
 			}
@@ -113,14 +113,14 @@ void CodeBuilder::ProcessFunctionArgReferencesTags(
 					for( size_t ret_tag_number= 0u; ret_tag_number < return_value_regular_tag_count; ++ ret_tag_number )
 					{
 						if( arg_tag == func.return_value_inner_reference_tags_[ret_tag_number] )
-							function_type.return_references.inner_args_references.emplace_back( arg_number, arg_tag_number );
+							function_type.return_references.emplace_back( arg_number, arg_tag_number );
 					}
 					if( return_value_has_continuous_tag )
 					{
 						for( size_t ret_tag_number= return_value_regular_tag_count; ret_tag_number < return_value_reference_tag_count; ++ret_tag_number )
 						{
 							if( arg_tag == func.return_value_inner_reference_tags_[return_value_regular_tag_count] )
-								function_type.return_references.inner_args_references.emplace_back( arg_number, arg_tag_number );
+								function_type.return_references.emplace_back( arg_number, arg_tag_number );
 						}
 					}
 				}
@@ -187,7 +187,7 @@ void CodeBuilder::TryGenerateFunctionReturnReferencesMapping(
 	// Generate mapping of input references to output references, if reference tags are not specified explicitly.
 
 	if( function_type.return_value_is_reference &&
-		( function_type.return_references.args_references.empty() && function_type.return_references.inner_args_references.empty() ) )
+		( function_type.return_references.empty() && function_type.return_references.empty() ) )
 	{
 		if( !func.return_value_reference_tag_.empty() )
 		{
@@ -211,7 +211,7 @@ void CodeBuilder::TryGenerateFunctionReturnReferencesMapping(
 		for( size_t i= 0u; i < function_type.args.size(); ++i )
 		{
 			if( function_type.args[i].is_reference )
-				function_type.return_references.args_references.push_back(i);
+				function_type.return_references.emplace_back( i, Function::c_arg_reference_tag_number );
 		}
 	}
 
@@ -222,7 +222,7 @@ void CodeBuilder::TryGenerateFunctionReturnReferencesMapping(
 		for( size_t i= 0u; i < function_type.args.size(); ++i )
 		{
 			if( function_type.args[i].is_reference )
-				function_type.return_references.args_references.push_back(i);
+				function_type.return_references.emplace_back( i, Function::c_arg_reference_tag_number );
 		}
 	}
 }

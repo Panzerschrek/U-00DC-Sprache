@@ -736,24 +736,10 @@ bool Function::PointerCanBeConvertedTo( const Function& other ) const
 	}
 
 	// We can convert function, returning less references to function, returning more referenes.
-	for( const size_t src_arg_reference : src_function_type.return_references.args_references )
+	for( const Function::ArgReference& src_inner_arg_reference : src_function_type.return_references )
 	{
 		bool found= false;
-		for( const size_t dst_arg_reference : dst_function_type.return_references.args_references )
-		{
-			if( dst_arg_reference == src_arg_reference )
-			{
-				found= true;
-				break;
-			}
-		}
-		if( !found )
-			return false;
-	}
-	for( const Function::ArgReference& src_inner_arg_reference : src_function_type.return_references.inner_args_references )
-	{
-		bool found= false;
-		for( const Function::ArgReference& dst_inner_arg_reference : dst_function_type.return_references.inner_args_references )
+		for( const Function::ArgReference& dst_inner_arg_reference : dst_function_type.return_references )
 		{
 			if( dst_inner_arg_reference == src_inner_arg_reference )
 			{
@@ -778,16 +764,6 @@ bool Function::PointerCanBeConvertedTo( const Function& other ) const
 
 	// Finally, we check all conditions
 	return true;
-}
-
-bool operator==( const Function::InToOutReferences& l, const Function::InToOutReferences& r )
-{
-	return l.args_references == r.args_references && l.inner_args_references == r.inner_args_references;
-}
-
-bool operator!=( const Function::InToOutReferences& l, const Function::InToOutReferences& r )
-{
-	return !( l == r );
 }
 
 bool operator==( const Function::Arg& l, const Function::Arg& r )

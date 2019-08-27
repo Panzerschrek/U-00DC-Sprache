@@ -175,14 +175,6 @@ public:
 	static constexpr size_t c_arg_reference_tag_number= ~0u;
 	using ArgReference= std::pair< size_t, size_t >;
 
-	struct InToOutReferences
-	{
-		// Numers of args.
-		ArgsVector<size_t> args_references;
-		// Pairs of arg number and tag number.
-		ArgsVector< ArgReference> inner_args_references;
-	};
-
 	struct ReferencePollution
 	{
 		ArgReference dst;
@@ -208,7 +200,7 @@ public:
 
 	// for functions, returning references this is references of reference itslef.
 	// For function, returning values, this is inner references.
-	InToOutReferences return_references;
+	ArgsVector<ArgReference> return_references;
 	std::unordered_set< ReferencePollution, ReferencePollutionHasher > references_pollution;
 
 	llvm::FunctionType* llvm_function_type= nullptr;
@@ -220,8 +212,6 @@ struct FunctionPointer
 	llvm::PointerType* llvm_function_pointer_type= nullptr;
 };
 
-bool operator==( const Function::InToOutReferences& l, const Function::InToOutReferences& r );
-bool operator!=( const Function::InToOutReferences& l, const Function::InToOutReferences& r );
 bool operator==( const Function::Arg& l, const Function::Arg& r );
 bool operator!=( const Function::Arg& l, const Function::Arg& r );
 bool operator==( const Function& l, const Function& r );
