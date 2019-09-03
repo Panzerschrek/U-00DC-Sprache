@@ -277,6 +277,16 @@ if( REALLY_BUILD_LINKAGE_TESTS )
 	add_dependencies( ImportTest Compiler )
 
 	#
+	# Unciode file names test
+	#
+	set( UNICODE_FILE_NAMES_SOURCES "tests/unicode_file_names_test/Entry ФшЯё_66.ü" )
+	CompileUSources( "${UNICODE_FILE_NAMES_SOURCES}" )
+	set( UNICODE_FILE_NAMES_OBJECTS ${U_SOURCE_OBJECTS} )
+
+	add_executable( UnicodeFileNamesTest tests/unicode_file_names_test/entry.c ${UNICODE_FILE_NAMES_OBJECTS} )
+	add_dependencies( UnicodeFileNamesTest Compiler )
+
+	#
 	# Include dirs test
 	#
 	add_custom_command(

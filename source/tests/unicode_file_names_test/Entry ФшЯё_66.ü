@@ -1,0 +1,3 @@
+import "dir_Ё/include_πρςστ_ß.u"
+
+static_assert( Y == 2019 );
