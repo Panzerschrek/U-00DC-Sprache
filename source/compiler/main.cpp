@@ -441,7 +441,7 @@ int main( const int argc, const char* const argv[])
 	bool have_some_errors= false;
 	for( const std::string& input_file : Options::input_files )
 	{
-		const U::SourceGraphPtr source_graph= source_graph_loader.LoadSource( U::ToProgramString( input_file.c_str() ) );
+		const U::SourceGraphPtr source_graph= source_graph_loader.LoadSource( U::DecodeUTF8( input_file.c_str() ) );
 		U_ASSERT( source_graph != nullptr );
 		if( source_graph->have_errors || !source_graph->lexical_errors.empty() || !source_graph->syntax_errors.empty() )
 		{
