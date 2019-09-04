@@ -1,4 +1,3 @@
-#include <cmath>
 #include <iostream>
 
 #include <Python.h>

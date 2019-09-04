@@ -1,5 +1,3 @@
-#include <iostream>
-
 #include "tests.hpp"
 
 namespace U
