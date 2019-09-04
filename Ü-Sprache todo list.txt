@@ -1,8 +1,8 @@
-﻿Here placed language features for future development of language itself and
-compiler. Features grouped and sorted by priority inside each group.
-When feature was implemented, delete it from list.
+﻿Here are some language features for future development of the language itself and its
+compiler. Features are grouped and sorted by priority inside each group.
+Delete the features from the list as soon as they are implemented.
 
-Common:
+General:
 *) Dereference operator - for pointer-like classes
 *) Continious initializer for arrays
 *) Different calling conventions (for API calls, for example)
