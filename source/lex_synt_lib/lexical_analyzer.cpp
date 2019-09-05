@@ -208,8 +208,6 @@ static Lexem ParseString(
 	const Iterator it_end,
 	LexicalErrorMessages& out_errors )
 {
-	// Ü-string fromat is simular to JSON string format.
-
 	U_ASSERT( *it == '"' );
 	++it;
 
@@ -249,6 +247,7 @@ static Lexem ParseString(
 			case 'n': result.text.push_back('\n'); ++it; break;
 			case 'r': result.text.push_back('\r'); ++it; break;
 			case 't': result.text.push_back('\t'); ++it; break;
+			case '0': result.text.push_back('\0'); ++it; break;
 
 			case 'u':
 				{

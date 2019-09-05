@@ -264,6 +264,10 @@ static void ElementWrite( const Expression& expression, std::ostream& stream )
 					escaped.push_back( '\\' );
 					escaped.push_back( 't' );
 					break;
+				case '\0':
+					escaped.push_back( '\\' );
+					escaped.push_back( '0' );
+					break;
 				default:
 					if( c < 32u )
 					{

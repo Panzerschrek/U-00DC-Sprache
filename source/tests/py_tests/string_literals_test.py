@@ -231,6 +231,18 @@ def StringLiteral_EscapeSequences_Test2():
 	assert( call_result == ord('"') )
 
 
+def StringLiteral_EscapeSequences_Test3():
+	c_program_text= """
+		fn Foo() : char8
+		{
+			return "\\0"c8;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 0 )
+
+
 def StringLiteral_CharNumber_Test0():
 	c_program_text= """
 		fn Foo() : char16
