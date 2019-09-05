@@ -1295,6 +1295,10 @@ void CodeBuilder::CheckOverloadedOperator(
 	if( !is_this_class )
 		REPORT_ERROR( OperatorDoesNotHaveParentClassArguments, errors_container, file_pos );
 
+	const bool ret_is_void=
+		( func_type.return_type == void_type_ || func_type.return_type == void_type_for_ret_ ) &&
+		!func_type.return_value_is_reference;
+
 	switch( overloaded_operator )
 	{
 	case OverloadedOperator::Add:
@@ -1333,7 +1337,7 @@ void CodeBuilder::CheckOverloadedOperator(
 	case OverloadedOperator::AssignShiftRight:
 		if( func_type.args.size() != 2u )
 			REPORT_ERROR( InvalidArgumentCountForOperator, errors_container, file_pos );
-		if( func_type.return_type != void_type_ )
+		if( !ret_is_void )
 			REPORT_ERROR( InvalidReturnTypeForOperator, errors_container, file_pos, void_type_ );
 		break;
 
@@ -1346,7 +1350,7 @@ void CodeBuilder::CheckOverloadedOperator(
 	case OverloadedOperator::Assign:
 		if( func_type.args.size() != 2u )
 			REPORT_ERROR( InvalidArgumentCountForOperator, errors_container, file_pos );
-		if( func_type.return_type != void_type_ )
+		if( !ret_is_void )
 			REPORT_ERROR( InvalidReturnTypeForOperator, errors_container, file_pos, void_type_ );
 		break;
 
@@ -1354,7 +1358,7 @@ void CodeBuilder::CheckOverloadedOperator(
 	case OverloadedOperator::Decrement:
 		if( func_type.args.size() != 1u )
 			REPORT_ERROR( InvalidArgumentCountForOperator, errors_container, file_pos );
-		if( func_type.return_type != void_type_ )
+		if( !ret_is_void )
 			REPORT_ERROR( InvalidReturnTypeForOperator, errors_container, file_pos, void_type_ );
 		break;
 
