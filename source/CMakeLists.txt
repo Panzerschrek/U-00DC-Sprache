@@ -7,6 +7,7 @@ option( BUILD_COMPILER "Enable compilation of compiler" YES )
 option( BUILD_TESTS "Enable compilation of base tests" YES )
 option( BUILD_LINKAGE_TESTS "Enable compilation of linkage tests" YES )
 option( BUILD_PY_TESTS "Enable compilation of py_tests" YES )
+option( BUILD_UNICODE_FILE_NAMES_TEST "Enable compilation of unicode filenames test (such test may not work correctly is some environmens)" YES )
 
 if( BUILD_COMPILER )
 	message( STATUS "Build compiler" )
@@ -279,12 +280,14 @@ if( REALLY_BUILD_LINKAGE_TESTS )
 	#
 	# Unciode file names test
 	#
+	if( BUILD_UNICODE_FILE_NAMES_TEST )
 	set( UNICODE_FILE_NAMES_SOURCES "tests/unicode_file_names_test/Entry ФшЯё_66.ü" )
 	CompileUSources( "${UNICODE_FILE_NAMES_SOURCES}" )
 	set( UNICODE_FILE_NAMES_OBJECTS ${U_SOURCE_OBJECTS} )
 
 	add_executable( UnicodeFileNamesTest tests/unicode_file_names_test/entry.c ${UNICODE_FILE_NAMES_OBJECTS} )
 	add_dependencies( UnicodeFileNamesTest Compiler )
+	endif()
 
 	#
 	# Include dirs test
