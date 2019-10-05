@@ -345,3 +345,11 @@ if( REALLY_BUILD_LINKAGE_TESTS )
 	endif()
 
 endif( REALLY_BUILD_LINKAGE_TESTS )
+
+#
+# Docs
+#
+if( LLVM_BUILD_DOCS AND LLVM_ENABLE_SPHINX )
+	message( "Include Ü docs" )
+	add_subdirectory( docs )
+endif()
