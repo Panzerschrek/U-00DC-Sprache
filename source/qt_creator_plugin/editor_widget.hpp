@@ -5,8 +5,8 @@
 
 #include <plugins/texteditor/texteditor.h>
 
-#include "program_model.h"
-#include "outline_widget_model.h"
+#include "program_model.hpp"
+#include "outline_widget_model.hpp"
 
 namespace U
 {

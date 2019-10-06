@@ -1,6 +1,6 @@
 #pragma once
 #include <QAbstractItemModel>
-#include "program_model.h"
+#include "program_model.hpp"
 
 namespace U
 {

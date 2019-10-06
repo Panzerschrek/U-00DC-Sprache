@@ -3,9 +3,9 @@
 #include "../lex_synt_lib/lexical_analyzer.hpp"
 #include "../lex_synt_lib/program_string.hpp"
 #include "../lex_synt_lib/syntax_analyzer.hpp"
-#include "strings.h"
+#include "strings.hpp"
 
-#include "program_model.h"
+#include "program_model.hpp"
 
 namespace U
 {

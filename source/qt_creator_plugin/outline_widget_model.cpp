@@ -1,6 +1,6 @@
 #include <libs/cplusplus/Icons.h>
 
-#include "outline_widget_model.h"
+#include "outline_widget_model.hpp"
 
 namespace U
 {

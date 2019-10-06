@@ -1,9 +1,9 @@
 #include <coreplugin/coreconstants.h>
 #include <coreplugin/editormanager/editormanager.h>
-#include "editor_widget.h"
-#include "syntax_highlighter.h"
+#include "editor_widget.hpp"
+#include "syntax_highlighter.hpp"
 
-#include "plugin.h"
+#include "plugin.hpp"
 
 namespace U
 {

@@ -2,7 +2,7 @@
 #include <coreplugin/editormanager/editormanager.h>
 #include "strings.h"
 
-#include "editor_widget.h"
+#include "editor_widget.hpp"
 
 namespace U
 {
