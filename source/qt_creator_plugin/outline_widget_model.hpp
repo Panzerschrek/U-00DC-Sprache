@@ -13,7 +13,7 @@ class OutlineWidgetModel final : public QAbstractItemModel
 	Q_OBJECT
 
 public:
-	OutlineWidgetModel( QObject* parent= nullptr );
+	explicit OutlineWidgetModel( QObject* parent= nullptr );
 
 	void Update( ProgramModelPtr program_model );
 	QModelIndex IndexForNode( const ProgramModel::ProgramTreeNode* const node );

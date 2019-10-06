@@ -13,7 +13,6 @@ namespace U
 namespace QtCreatorPlugin
 {
 
-
 static ProgramString Stringify( const Synt::ComplexName& complex_name );
 static ProgramString Stringify( const Synt::TypeName& type_name );
 
@@ -217,7 +216,6 @@ static ProgramString Stringify( const Synt::ComplexName& complex_name )
 
 	return result;
 }
-
 
 static ProgramString Stringify( const Synt::FunctionArgument& arg )
 {

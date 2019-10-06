@@ -19,7 +19,7 @@ class OutlineTreeViewComboBox : public QComboBox
 	Q_OBJECT
 
 public:
-	OutlineTreeViewComboBox( QWidget* parent = nullptr );
+	explicit OutlineTreeViewComboBox( QWidget* parent = nullptr );
 
 	virtual bool eventFilter( QObject* object, QEvent* event ) override;
 	virtual void hidePopup() override;
