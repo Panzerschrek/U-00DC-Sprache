@@ -36,7 +36,7 @@ else()
 endif( BUILD_PY_TESTS )
 
 
-set( CMAKE_CXX_STANDARD 11 )
+set( CMAKE_CXX_STANDARD 14 )
 
 #
 # External dependencies
