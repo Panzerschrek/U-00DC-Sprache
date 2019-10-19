@@ -10,5 +10,5 @@
 ==========
 .. toctree::
    basics
-   variables
    functions
+   variables
