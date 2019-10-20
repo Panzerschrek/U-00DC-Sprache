@@ -15,3 +15,4 @@
    block_elements
    control_flow
    types
+   enums
