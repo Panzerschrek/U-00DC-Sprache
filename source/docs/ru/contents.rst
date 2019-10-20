@@ -16,3 +16,4 @@
    control_flow
    types
    enums
+   structs
